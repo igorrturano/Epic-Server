@@ -60,6 +60,8 @@ use util;
 include ":tn:characters";
 include ":debug:Controller/DebugController";
 include ":attributes:skills";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 /*
  * CheckStatsForSkill(mobile, skill_name)
@@ -318,7 +320,7 @@ endfunction
  * if the character has the "Budōka" (Monk) ability.
  */
 function HandleBudokaSkillTransform(mobile, skill_name)
-    if (TemHabilidade(mobile, "Budōka") && skill_name == "Wrestling")
+    if (MobileWrapper(mobile).HasAbility(ABILITY_ID::MARTIAL_ARTIST) && skill_name == "Wrestling")
         var chardata := GetObjProperty(mobile, "chardata");
         var skillsmap := chardata.Skills;
         var skillsArray := skillsmap.keys();

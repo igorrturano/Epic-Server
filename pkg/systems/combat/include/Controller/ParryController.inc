@@ -146,7 +146,7 @@ function CalculateParryChance(byRef attackInfo)
 
 	// Aplica penalidade de chance de bloqueio se estiver usando apenas arma
 	if (attackInfo.GetParryEquip().GetObjRef().IsA(POLCLASS_WEAPON))
-		if (attackInfo.GetDefender().HasAbility(ABILITY_ID::TABIBITO_NO_MICHI))
+		if (attackInfo.GetDefender().HasAbility(ABILITY_ID::WANDERER_PATH))
 			parry_chance := CInt(parry_chance * 1.3);
 		else
 			parry_chance := CInt(parry_chance * 0.7);

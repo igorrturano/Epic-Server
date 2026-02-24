@@ -2,15 +2,6 @@
 // Add new ability includes here as they are migrated
 
 //===========================================
-// COMBATENTE (200-204)
-//===========================================
-include ":abilities:classes/combatente/Halfsword";
-include ":abilities:classes/combatente/MurderBlow";
-include ":abilities:classes/combatente/CrossCut";
-include ":abilities:classes/combatente/RageCut";
-include ":abilities:classes/combatente/DeathSentence";
-
-//===========================================
 // ARQUEIRO (1-5)
 //===========================================
 include ":abilities:classes/arqueiro/PowerShot";
@@ -27,6 +18,15 @@ include ":abilities:classes/cacador/ExpertHunter";
 include ":abilities:classes/cacador/BeastMaster";
 include ":abilities:classes/cacador/WildStalker";
 include ":abilities:classes/cacador/RelentlessHunter";
+
+//===========================================
+// COMBATENTE (200-204)
+//===========================================
+include ":abilities:classes/combatente/Halfsword";
+include ":abilities:classes/combatente/MurderBlow";
+include ":abilities:classes/combatente/CrossCut";
+include ":abilities:classes/combatente/RageCut";
+include ":abilities:classes/combatente/DeathSentence";
 
 //===========================================
 // DEFENSOR (300-304)
@@ -49,8 +49,35 @@ include ":abilities:classes/paladino/DivineChampion";
 //===========================================
 // AKLATTUR (500-504)
 //===========================================
-// include ":abilities:classes/aklattur/FuriaDoDeserto";
-// include ":abilities:classes/aklattur/SanguePorSangue";
-// include ":abilities:classes/aklattur/MarcaDaPresa";
-// include ":abilities:classes/aklattur/ResistenciaDoDeserto";
-// include ":abilities:classes/aklattur/Carnificina";
+include ":abilities:classes/aklattur/DesertFury";
+include ":abilities:classes/aklattur/BloodForBlood";
+include ":abilities:classes/aklattur/PreyMark";
+include ":abilities:classes/aklattur/DesertResilience";
+include ":abilities:classes/aklattur/Carnage";
+
+//===========================================
+// BARBARO (600-604)
+//===========================================
+include ":abilities:classes/barbaro/Fury";
+include ":abilities:classes/barbaro/BarbarianResilience";
+include ":abilities:classes/barbaro/UntamableFury";
+include ":abilities:classes/barbaro/RelentlessFury";
+include ":abilities:classes/barbaro/Destroyer";
+
+//===========================================
+// MONGE (700-704)
+//===========================================
+include ":abilities:classes/monge/MartialArtist";
+include ":abilities:classes/monge/DragonStance";
+include ":abilities:classes/monge/CrabStyle";
+include ":abilities:classes/monge/TigerStance";
+include ":abilities:classes/monge/BodyAndMind";
+
+//===========================================
+// SAMURAI (800-804)
+//===========================================
+include ":abilities:classes/samurai/WandererPath";
+include ":abilities:classes/samurai/DragonFury";
+include ":abilities:classes/samurai/PerfectExecution";
+include ":abilities:classes/samurai/WindStrike";
+include ":abilities:classes/samurai/SwordMaster";
