@@ -263,41 +263,33 @@ function CalculateAbilityHitModifier(byref hit_chance, attackInfo)
 	endif
 
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::DANCA_DAS_SOMBRAS))
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::DANCA_DAS_SOMBRAS))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(ARCANA) / 5);
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::MOVIMENTACAO_GRACIOSA))
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::MOVIMENTACAO_GRACIOSA))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(TACTICS) / 10);
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MOVIMENTACAO_GRACIOSA))
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MOVIMENTACAO_GRACIOSA))
 		hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(TACTICS) / 10);
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::MANCHA_DA_CORRUPCAO))
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::MANCHA_DA_CORRUPCAO))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(THEOLOGY) / 10);
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MANCHA_DA_CORRUPCAO))
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MANCHA_DA_CORRUPCAO))
 		hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(THEOLOGY) / 10);
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::OLEO_DO_CACADOR))
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::OLEO_DO_CACADOR))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(SCIENCE) / 5);
 	endif
 
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::TIROTHAN))
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::TIROTHAN))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(ARCANA) / 10);
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::AURA_DE_FE))
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::AURA_DE_FE))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetObjRef().party.members.size());
 	endif
@@ -341,8 +333,7 @@ endfunction
 
 function CalculateCooldownHitModifier(byref hit_chance, attackInfo)
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia") && attackInfo.GetAttacker().HasAbility(ABILITY_ID::FURIA_INDOMAVEL))
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia") && attackInfo.GetAttacker().HasAbility(ABILITY_ID::FURIA_INDOMAVEL))
-		if (!attackInfo.GetDefender().HasAbility("Fortitudo Impia"))
+		if (!attackInfo.GetDefender().HasAbility(ABILITY_ID::PRESENCA_DIVINA))
 			hit_chance += 10.0;
 		endif
 	endif
