@@ -7,6 +7,8 @@ include ":combat:Controller/DamageController_legacy";
 include ":attributes:attributes";
 include "include/epicConstants";
 include ":nature:nature";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 var leatherArmors := { 0x13C7, 0x13CD, 0x13C6, 0x1DB9, 0x13CB, 0x13CC, 0x13D3, 0x13D6,
 					   0x13D5, 0x13D4, 0x13DA, 0x13DB, 0x170B, 0x1711 };
@@ -64,7 +66,7 @@ program neve(params)
 				dif := dif - 2;
 			endif
 
-			if (TemHabilidade(who, "Kani no Sutairu"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::CRAB_STYLE))
 				dif := dif - 2;
 			endif
 
