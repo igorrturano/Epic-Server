@@ -34,9 +34,6 @@ function TryToParry(byRef attackInfo)
 	// Se estiver sem escudo, tenta bloquear com a arma
 	var equip := attackInfo.GetDefender().GetEquipBySlot(SHIELD) ?: attackInfo.GetDefender().GetEquipBySlot(WEAPON);
 
-	// Se estiver sem escudo, tenta bloquear com a arma
-	var equip := attackInfo.GetDefender().GetEquipBySlot(SHIELD) ?: attackInfo.GetDefender().GetEquipBySlot(WEAPON);
-
 	if (!equip || equip.GetAttribute() == RANGED)
 		return false;
 	endif
@@ -143,7 +140,6 @@ function CalculateParryChance(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::REFLEXO_ESTRATEGICO))
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::REFLEXO_ESTRATEGICO))
 		skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
 	else
 		skill := CInt(attackInfo.GetDefender().GetSkill(PARRY));
@@ -177,9 +173,6 @@ function CalculateParryDelay(byRef attackInfo)
 	// if (TryToExecuteHab_BarreiraIndestrutivel(attackInfo))
 	// 	return 2;
 	// endif
-	// if (TryToExecuteHab_BarreiraIndestrutivel(attackInfo))
-	// 	return 2;
-	// endif
 
 	// Aplica delay básico do escudo, reduz delay com base na skill e soma fator de balanceamento
 	var parryDelay := CInt(
@@ -189,12 +182,7 @@ function CalculateParryDelay(byRef attackInfo)
 	);
 
 	// Aumenta a frequência em que é possível bloquear o mesmo atacante quando o defensor está sob efeito de habilidade Inspirar Defesas
-	
-	// TODO: Desativado porque nem na lista de habilidades está
-	// if (MobileWrapper(attackInfo.GetDefender().GetObjRef().party.leader).HasAbility(Ability(ABILITY_ID::INSPIRAR_DEFESAS)))
-	// 	parryDelay := parryDelay - 1;
-	// endif
-	
+
 	// TODO: Desativado porque nem na lista de habilidades está
 	// if (MobileWrapper(attackInfo.GetDefender().GetObjRef().party.leader).HasAbility(Ability(ABILITY_ID::INSPIRAR_DEFESAS)))
 	// 	parryDelay := parryDelay - 1;
@@ -214,9 +202,7 @@ function CheckDisarmShield(byRef attackInfo)
 
 		if (RandomInt(100 + 1) < attackInfo.GetParryChance())
 			// Pike: disarms DEFENDER when blocking without shield
-			// Pike: disarms DEFENDER when blocking without shield
 			// TODO: Trocar esse graphic hardcoded por algum identificador de arma do tipo Pike
-			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE)
 			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE)
 				if (attackInfo.GetParryEquip().GetObjType() != 0x1F020)
 					var defenderPos := attackInfo.GetDefender().GetPosition();
@@ -237,11 +223,6 @@ function CheckDisarmShield(byRef attackInfo)
 			// TryToExecuteHab_KenNoTatsujin(attackInfo);
 		endif
 	endif
-
-	// Execute activated abilities that trigger on parry (e.g. ChallengerManeuver)
-	ExecuteCombatAbilitiesOnParry(attackInfo);
-	// Execute passive abilities that trigger on parry
-	ExecutePassiveAbilitiesOnParry(attackInfo);
 
 	// Execute activated abilities that trigger on parry (e.g. ChallengerManeuver)
 	ExecuteCombatAbilitiesOnParry(attackInfo);

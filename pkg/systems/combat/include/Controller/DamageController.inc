@@ -138,10 +138,9 @@ function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
 	// Check if druid with metamorfose + survival ability
 	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
-	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
 		skill := THEOLOGY;
 	endif
-	
+
 	var skillDamage := struct{
 		skill := skill,
 		damageMod := 0
@@ -421,11 +420,6 @@ function CalculateAttackerCriticalHit(byRef attackInfo)
 		attackInfo.SetCriticalHitChance(CalculateCriticalChance(attackInfo));
 		attackInfo.RollCriticalHitChance();
 	endif
-	// Only calculate if not already forced by ability
-	if (!attackInfo.GetDamage().IsCritical())
-		attackInfo.SetCriticalHitChance(CalculateCriticalChance(attackInfo));
-		attackInfo.RollCriticalHitChance();
-	endif
 
 	if (attackInfo.GetDamage().IsCritical())
 		ApplyCriticalDamage(attackInfo);
@@ -446,14 +440,12 @@ function CalculateCriticalChance(byRef attackInfo)
 	endif
 
 	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MUMIFICACAO))
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MUMIFICACAO))
 		Message("Seu crítico não surte efeito", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		Message("Seu corpo evita o crítico", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
 		return 0;
 	endif
 
 	// Check if druid with metamorfose + survival ability
-	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
 	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
 		skillUsedForCritical := THEOLOGY;
 	endif
@@ -524,22 +516,6 @@ function ApplyCriticalDamage(byRef attackInfo)
 					 + attackInfo.GetDamage().GetPoisonRawDamage()
 					 + attackInfo.GetDamage().GetEnergyRawDamage();
 
-	// Calculate effective raw damage using only active posture's physical damage + elementals
-	// (stat/skill bonuses are added to all 3 physical types, but only the active posture is applied)
-	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
-	var effectiveRawDmg := 0;
-	if (posture == DAMAGE_TYPE::SLASH)
-		effectiveRawDmg := attackInfo.GetDamage().GetSlashRawDamage();
-	elseif (posture == DAMAGE_TYPE::PIERCING)
-		effectiveRawDmg := attackInfo.GetDamage().GetPiercingRawDamage();
-	elseif (posture == DAMAGE_TYPE::BLUNT)
-		effectiveRawDmg := attackInfo.GetDamage().GetBluntRawDamage();
-	endif
-	effectiveRawDmg += attackInfo.GetDamage().GetFireRawDamage()
-					 + attackInfo.GetDamage().GetColdRawDamage()
-					 + attackInfo.GetDamage().GetPoisonRawDamage()
-					 + attackInfo.GetDamage().GetEnergyRawDamage();
-
 	foreach hitscript in (weapon_scripts)
 		// Damage multipliers: multiply the Damage object so it flows through armor + ApplyCombatDamage as one result
 		if (hitscript["damage2"] || hitscript["damage3"])
@@ -592,7 +568,6 @@ function ApplyCriticalDamage(byRef attackInfo)
 					attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
 					armor.GetObjRef(),
 					attackInfo.GetDamage().GetTotalBaseDamage(),
-					effectiveRawDmg
 					effectiveRawDmg
 				}
 			);
@@ -757,7 +732,6 @@ function CheckPoison(byRef attackInfo)
 				duration := 2;
 			endif
 
-			if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::VENENO_PURO))
 			if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::VENENO_PURO))
 				duration := duration * 2;
 			endif
