@@ -166,10 +166,6 @@ function ApplyParryDelay(byRef attackInfo, modifier := 1)
 endfunction
 
 function CalculateParryDelay(byRef attackInfo)
-	// if (TryToExecuteHab_BarreiraIndestrutivel(attackInfo))
-	// 	return 2;
-	// endif
-
 	// Aplica delay básico do escudo, reduz delay com base na skill e soma fator de balanceamento
 	var parryDelay := CInt(
 		-(CInt(attackInfo.GetParryEquip().GetShieldAttributes().GetParryDelay())) + // Parry Delay Básico do escudo
@@ -177,15 +173,8 @@ function CalculateParryDelay(byRef attackInfo)
 		8 // Fator de balanceamento
 	);
 
-	// Aumenta a frequência em que é possível bloquear o mesmo atacante quando o defensor está sob efeito de habilidade Inspirar Defesas
-
 	// TODO: Desativado porque nem na lista de habilidades está
 	// if (MobileWrapper(attackInfo.GetDefender().GetObjRef().party.leader).HasAbility(Ability(ABILITY_ID::INSPIRAR_DEFESAS)))
-	// 	parryDelay := parryDelay - 1;
-	// endif
-
-	var tempParryBonus := CInt(attackInfo.GetDefender().GetObjRef().GetProp("#tempparrybonus"));
-	// Faz com que os bloqueios garantidos por cauda de habilidade resetem o delay de bloqueio
 	if (tempParryBonus == 100)
 		return 0;
 	endif
@@ -214,8 +203,6 @@ function CheckDisarmShield(byRef attackInfo)
 					);
 				endif
 			endif
-
-			// TryToExecuteHab_KenNoTatsujin(attackInfo);
 		endif
 	endif
 
@@ -223,6 +210,3 @@ function CheckDisarmShield(byRef attackInfo)
 	ExecuteCombatAbilitiesOnParry(attackInfo);
 	// Execute passive abilities that trigger on parry
 	ExecutePassiveAbilitiesOnParry(attackInfo);
-
-	return false;
-endfunction
