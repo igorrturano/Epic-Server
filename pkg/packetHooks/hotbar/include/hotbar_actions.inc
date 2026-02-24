@@ -123,7 +123,6 @@ function ExecuteAbility(who, actionId)
 
     var mobileWrapper := MobileWrapper(who);
     var abilityId := CInt(hab_id);
-
     if (!ABILITY_CLASSES.exists(abilityId))
         SendSysMessage(who, "Habilidade inválida.");
         return 0;
