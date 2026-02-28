@@ -13,6 +13,8 @@ include "include/say";
 include ":charactercreation:habilidades";
 include ":spells:include/swordmage";
 include ":alchemy:alchemy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program do_poisoning(who)
 	EraseObjProperty(who, "IsMeditating");
@@ -144,7 +146,7 @@ program do_poisoning(who)
 	endif
 
 	if (isFood)
-		if (!TemHabilidade(who, "Mestre dos Venenos"))
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DOS_VENENOS))
 			SendSysMessageEx(who, "Voce nao sabe como envenenar isto sem deixar obvio que o item contem veneno.",
 							  SSM_FAIL);
 			return;
@@ -155,7 +157,7 @@ program do_poisoning(who)
 		SendSysMessageEx(who, "Voce aplicou o liquido mas ele nao parece com veneno.", SSM_FAIL);
 		return;
 	endif
-	if (TemHabilidade(who, "Mestre dos Venenos") || tier == 1 || who.cmdlevel > 1)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DOS_VENENOS) || tier == 1 || who.cmdlevel > 1)
 		// if (GetObjProperty(who, "classe") == "ladino")
 		// 	SkillCheck(who, BEGGING, -1);
 		// endif
@@ -170,7 +172,7 @@ program do_poisoning(who)
 		poisonInfo.+difficulty := difficulty;
 		poisonInfo.+difficulty_mod := difficulty_mod;
 		poisonInfo.+tier := tier;
-		if (temHabilidade(who, "Veneno Puro"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::VENENO_PURO))
 			poisonInfo.dosage := CInt(poisonInfo.dosage * 1.5);
 			poisonInfo.time := CInt(poisonInfo.time * 1.25);
 		endif
@@ -180,7 +182,7 @@ program do_poisoning(who)
 		endif
 		SetObjProperty(the_item, "poisonInfo", poisonInfo);
 		if (the_item.isA(POLCLASS_WEAPON))
-			if (!TemHabilidade(who, "Mestre dos Venenos"))
+			if (!MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DOS_VENENOS))
 				if (the_item.hp < 11)
 					MoveObjectToLocation(the_item, 1, 1, 1, who.realm, MOVEOBJECT_FORCELOCATION);
 					SetObjProperty(the_item, "broken", 1);

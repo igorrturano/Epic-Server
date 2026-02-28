@@ -11,6 +11,8 @@ include ":timedscripts:timedScripts";
 include ":fls_core:packets";
 include "include/say";
 include ":spells:tnmagery";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program TimerControl(mobile)
 	if (!mobile.IsA(POLCLASS_MOBILE))
@@ -213,7 +215,7 @@ function AddTimer(mobile, byref event, byref timer_list, byref cooldowns, byref 
 			SendSysMessageEx(mobile, "O veneno nao faz efeito em voce.", SSM_INFO);
 			return 0;
 		endif
-		if (TemHabilidade(mobile, "Mumificacao"))
+		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::MUMIFICACAO))
 			SendSysMessageEx(mobile, "O veneno nao faz efeito em voce.", SSM_INFO);
 			return 0;
 		endif

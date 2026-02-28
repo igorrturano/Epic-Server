@@ -108,3 +108,12 @@ include ":abilities:classes/assassino/SneakAttack";
 include ":abilities:classes/assassino/ShadowArsenal";
 include ":abilities:classes/assassino/KillerInstinct";
 include ":abilities:classes/assassino/BloodScent";
+
+//===========================================
+// VIVISSECCIONISTA (1400-1404)
+//===========================================
+include ":abilities:classes/vivisseccionista/PoisonMaster";
+include ":abilities:classes/vivisseccionista/BloodyStrike";
+include ":abilities:classes/vivisseccionista/PurePoison";
+include ":abilities:classes/vivisseccionista/SurgicalPrecision";
+include ":abilities:classes/vivisseccionista/Mummification";
