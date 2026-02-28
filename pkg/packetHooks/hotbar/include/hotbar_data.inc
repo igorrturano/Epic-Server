@@ -13,6 +13,8 @@ include ":charactercreation:habilidades";
 include ":attributes:attributes";
 include ":hotbar:include/icon_manager";
 include ":hotbar:include/spell_index";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":hotbar:include/command_discovery"; // Auto-discover commands
 include ":hotbar:hotbar_utils";
 
@@ -676,7 +678,7 @@ function GetSpellsData(who)
     // OPTIMIZED: Check all ability-based spell access once
     var has_paladin := TemHabilidade(who, "Consagracao Divina");
     var has_trickster := TemHabilidade(who, "Sensibilidade Arcana");
-    var has_demonhunter := TemHabilidade(who, "Sigilo de Protecao");
+    var has_demonhunter := MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO);
 
     // Load Paladin spells
     if (has_paladin)

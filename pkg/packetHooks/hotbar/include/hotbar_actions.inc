@@ -371,7 +371,7 @@ function ExecuteSpell(who, actionId)
         spell_configs.append(":spells:config/paladinspells");
         spell_types.append(SPELL_TYPE_PALADIN);
     endif
-    if (TemHabilidade(who, "Sigilo de Protecao"))
+    if (MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
         spell_configs.append(":spells:config/demonhunterspells");
         spell_types.append(SPELL_TYPE_DEMONHUNTER);
     endif

@@ -18,6 +18,8 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":spells:spellbooks";
 include ":spells:include/tnmagery";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 // Spell type constants
 const SPELL_TYPE_CANTRIP      := "cantrip";
@@ -202,7 +204,7 @@ function ValidateSpellAccess(who, spell_type)
             endif
             
         SPELL_TYPE_DEMONHUNTER:
-            if (!TemHabilidade(who, "Sigilo de Protecao"))
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
                 SendSysMessageEx(who, "Apenas Cacadores de Demonios podem usar este comando.", SSM_FAIL);
                 return 0;
             endif

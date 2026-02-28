@@ -108,7 +108,7 @@ exported function GetIntrinsicWill(mobile)
 	var paladin_bonus := Cint(AP_GetSkill(mobile, THEOLOGY) / 20);
 	if ( GetCooldown(mobile, "VontadeIndomavel"))
 		vontade += 5;
-	elseif (temHabilidade(mobile, "Sigilo de Protecao"))
+	elseif (MobileWrapper(mobile).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
 		vontade += 5;
 	elseif (TemHabilidade(mobile, "Conexao Divina"))
 		vontade += 8;
