@@ -4,6 +4,8 @@ include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":tn:cooldown";
 include "include/facings";
 include "include/creationUtils";
@@ -212,7 +214,7 @@ function CanHide(who, orig_x, orig_y, override_hiding := 0)
 	endif
 
 	var hostiles := ListHostiles(who, range);
-	if (temHabilidade(who, "Fuga de Emergencia") || temHabilidade(who, "Mestre Espiao"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::FUGA_DE_EMERGENCIA) || temHabilidade(who, "Mestre Espiao"))
 		return 1;
 	elseif (hostiles[1])
 		SendSysMessageEx(who, "Voce nao pode se esconder enquanto " + hostiles[1].name

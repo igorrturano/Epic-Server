@@ -126,3 +126,12 @@ include ":abilities:classes/esgrimista/StrategicReflex";
 include ":abilities:classes/esgrimista/Demoralize";
 include ":abilities:classes/esgrimista/SwashbucklerFeint";
 include ":abilities:classes/esgrimista/MasterDuelist";
+
+//===========================================
+// LADRAO (1600-1604)
+//===========================================
+include ":abilities:classes/ladrao/Pickpocket";
+include ":abilities:classes/ladrao/DirtyTrick";
+include ":abilities:classes/ladrao/Bully";
+include ":abilities:classes/ladrao/ExpertTrickster";
+include ":abilities:classes/ladrao/EmergencyEscape";
