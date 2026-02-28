@@ -16,6 +16,8 @@ include ":timedScripts:timedScripts";
 // include ":equipsys:utils/consts";
 include "include/epicNPCUtils";
 include ":combat:weaponInfo";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
@@ -543,7 +545,7 @@ function CalcDamageHabs(attacker, defender, damage)
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Consagracao Divina]: " + CInt(damagemod));
 		endif
-	elseif (TemHabilidade(attacker, "Sigilo de Protecao"))
+	elseif (MobileWrapper(attacker).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := array{"Demon"}; 

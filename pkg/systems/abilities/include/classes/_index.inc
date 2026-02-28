@@ -144,3 +144,12 @@ include ":abilities:classes/dancarino_das_sombras/ShadowBlade";
 include ":abilities:classes/dancarino_das_sombras/Valdruk";
 include ":abilities:classes/dancarino_das_sombras/DeathDance";
 include ":abilities:classes/dancarino_das_sombras/ShadowForm";
+
+//===========================================
+// CACADOR DE DEMONIOS (1900-1904)
+//===========================================
+include ":abilities:classes/cacador_de_demonios/ProtectionSigil";
+include ":abilities:classes/cacador_de_demonios/ProfaneSentence";
+include ":abilities:classes/cacador_de_demonios/CorruptionMark";
+include ":abilities:classes/cacador_de_demonios/DemonicTrap";
+include ":abilities:classes/cacador_de_demonios/AbyssalForm";

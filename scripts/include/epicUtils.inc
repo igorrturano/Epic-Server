@@ -2,6 +2,9 @@ use uo;
 use util;
 use math;
 
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
 function RemoveAcentos(text)
     var acentos := "áàãâäéèêëíìîïóòõôöúùûüũçÁÀÃÂÄÉÈÊËÍÌÎÏÓÒÕÔÖÚÙÛÜŨÇ";
     var semAcentos := "aaaaaeeeeiiiiooooouuuuucAAAAAEEEEIIIIOOOOOUUUUUC";
@@ -74,7 +77,7 @@ function ChooseWings(who)
     
     var wing_types := array{0xF050, 0xF051, 0xF052, 0xF053, 0xF054, 0xF055};
     var wing_gumps:= array{0xD0A1, 0xD0A2, 0xD0A3, 0xD0A4, 0xD0A5, 0xD0A6};
-    if (TemHabilidade(who, "Sigilo de Protecao"))
+    if (MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
         wing_types := array{0xF054, 0xF055, 0xF056, 0xF057, 0xF058, 0xF059};
         wing_gumps := array{0xD0A5, 0xD0A6, 0xD0A7, 0xD0A8, 0xD0A9, 0xD0AA};
     endif
