@@ -8,6 +8,7 @@ include "epicSpecial";
 include "NPCMageryUtils";
 include "include/epicLoggerUtils";
 include ":abilities:include/models/Ability";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 function HumanoidBrain()
     var ev;
@@ -835,7 +836,7 @@ function HandleThiefBehavior(opponent)
             DoThiefSteal(opponent);
         else // In combat 
             var npcState := getNPCState(me);
-            if (npcState == "dying" && TemHabilidade(me, "Fuga de Emergencia"))
+            if (npcState == "dying" && MobileWrapper(me).HasAbility(ABILITY_ID::FUGA_DE_EMERGENCIA))
                 FleeFrom(opponent);
                 SetCooldown(me, "thief_abilities", 30);
             endif

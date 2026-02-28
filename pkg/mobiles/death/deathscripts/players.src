@@ -14,6 +14,8 @@ include "include/say";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";
 include ":attributes:advanceCheck";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":charactercreation:resists";
 include ":charactercreation:createchar";
 include ":containers:storageAreas";
@@ -205,6 +207,11 @@ program death(params)
 	endif
 	if (temhabilidade(ghost, "Recuperacao"))
 		tempo := tempo / 2;
+	endif
+	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::TRAPACEIRO_EXPERIENTE) && GetCooldown(ghost, "trapacearmorte") == 0)
+		tempo := 1;
+		SetCooldown(ghost, "trapacearmorte", 300);
+		SendSysMessage(ghost, "Sua experiencia como trapaceiro lhe permite se recuperar rapidamente!");
 	endif
 	if (save)
 		tempo := 0;
