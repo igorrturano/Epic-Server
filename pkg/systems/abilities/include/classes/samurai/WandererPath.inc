@@ -33,7 +33,7 @@ class WandererPath(CombatAbility)
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
 
-		who.SetProperty("#tempparrybonus", 100);
+		mobile.SetProperty("#tempparrybonus", 100);
 		SetCooldown(who, "parrydelay", 0);
 
 		Message("*prepara a lamina para defender*").SendAbove(who);
