@@ -99,3 +99,12 @@ include ":abilities:classes/cacador_de_tesouros/DistractOpponents";
 include ":abilities:classes/cacador_de_tesouros/AlwaysAlert";
 include ":abilities:classes/cacador_de_tesouros/BreakInSpecialist";
 include ":abilities:classes/cacador_de_tesouros/InfiniteBag";
+
+//===========================================
+// ASSASSINO (1200-1204)
+//===========================================
+include ":abilities:classes/assassino/ShadowLeap";
+include ":abilities:classes/assassino/SneakAttack";
+include ":abilities:classes/assassino/ShadowArsenal";
+include ":abilities:classes/assassino/KillerInstinct";
+include ":abilities:classes/assassino/BloodScent";
