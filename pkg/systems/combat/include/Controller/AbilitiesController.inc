@@ -72,6 +72,14 @@ function ExecuteCombatAbilitiesOnMiss(byRef attackInfo)
 endfunction
 
 /**
+ * ATTACKER-CENTRIC: Executes ON_MISS abilities for attacker only.
+ * Called when attacker misses - attacker reactions (e.g. MasterDuelist re-attack).
+ */
+function ExecuteCombatAbilitiesOnMissAttacker(byRef attackInfo)
+	_ExecuteCombatAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::ON_MISS, attackInfo);
+endfunction
+
+/**
  * DEFENDER-CENTRIC: Executes ON_PARRY abilities for defender only.
  * Called when defender successfully parries - activated abilities that trigger on parry.
  */

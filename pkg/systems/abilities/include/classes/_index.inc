@@ -117,3 +117,12 @@ include ":abilities:classes/vivisseccionista/BloodyStrike";
 include ":abilities:classes/vivisseccionista/PurePoison";
 include ":abilities:classes/vivisseccionista/SurgicalPrecision";
 include ":abilities:classes/vivisseccionista/Mummification";
+
+//===========================================
+// ESGRIMISTA (1500-1504)
+//===========================================
+include ":abilities:classes/esgrimista/GracefulMovement";
+include ":abilities:classes/esgrimista/StrategicReflex";
+include ":abilities:classes/esgrimista/Demoralize";
+include ":abilities:classes/esgrimista/SwashbucklerFeint";
+include ":abilities:classes/esgrimista/MasterDuelist";

@@ -169,6 +169,7 @@ function TryToAttack(byRef attackInfo)
 		PlayAttackFX(attackInfo);
 		PlayAttackSFX(attackInfo);
 		ExecuteCombatAbilitiesOnMiss(attackInfo);
+		ExecuteCombatAbilitiesOnMissAttacker(attackInfo);
 	endif
 
 	// Counter-attack (crosscut) - triggers on any attack attempt
