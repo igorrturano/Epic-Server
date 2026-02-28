@@ -6,6 +6,8 @@ use util;
 include ":datafile:datafile";
 include "include/sysEvent";
 include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program spell_MirrorImage(params)
 	var who := params[1];
@@ -13,7 +15,7 @@ program spell_MirrorImage(params)
 
 	var numCopies := Cint(mlore / 30);
 	var copyDuration := Cint(mlore / 5);
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		numCopies := numCopies * 2;
 		copyDuration := copyDuration * 2;
 	endif

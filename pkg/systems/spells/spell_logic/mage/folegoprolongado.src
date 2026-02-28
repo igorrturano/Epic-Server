@@ -4,6 +4,8 @@ include "include/say";
 include ":tn:cooldown";
 include ":combat:Controller/DamageController_legacy";
 include ":spells:tnmagery";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -22,7 +24,7 @@ program SpellScript(params)
 	var duration := 120 * Cint((AP_GetSkill(who, "ARCANA") / 20));
 
 	// Bonus de especialização
-	if (Temhabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := Cint(duration * 1.2);
 	endif
 

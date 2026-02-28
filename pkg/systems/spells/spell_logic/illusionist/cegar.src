@@ -3,6 +3,8 @@ include "include/dungeons";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
 include ":awareness:awareness";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":charactercreation:resists";
 include ":timedscripts:timedScripts";
 
@@ -21,7 +23,7 @@ program SpellScript(params)
 	endif
 
 	var duration := CInt(AP_GetSkill(who, ARCANA) / 8);
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := CInt(duration * 2);
 	endif
 

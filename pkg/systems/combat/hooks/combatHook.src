@@ -181,8 +181,7 @@ endfunction
 function DoAttack(byRef attackInfo)
 	attackInfo.GetDefender().GetObjRef().frozen := 0;
 
-	// EVILTODO: Forma umbral nao deveria ser revelado ; shadowsteps.src -> protected() PRecisa refatorar?
-	if (attackInfo.GetAttacker().GetObjRef().cmdlevel == 0)
+	if (attackInfo.GetAttacker().GetObjRef().cmdlevel == 0 && !attackInfo.GetAttacker().HasAbility(ABILITY_ID::FORMA_UMBRAL))
 		attackInfo.GetAttacker().GetObjRef().concealed := 0;
 	endif
 

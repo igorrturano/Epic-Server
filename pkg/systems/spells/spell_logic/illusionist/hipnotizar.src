@@ -2,6 +2,8 @@ include "include/say";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
 include "include/epicNPCUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":charactercreation:resists";
 include ":tn:boss";
 include "include/sysEvent";
@@ -22,7 +24,7 @@ program SpellScript(params)
 	endif
 
 	var duration := cint(AP_GetSkill(who, ARCANA) / 5);
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := Cint(duration * 2);
 		controlNPC(who, targ);
 	endif
@@ -44,7 +46,7 @@ program SpellScript(params)
 	sleep(duration);
 	EraseObjProperty(targ, "charmed_by");
 
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		endControlNPC(targ);
 		var event := struct{ "type" := SYSEVENT_ENGAGED, "source" := who };
 		SendEvent(targ, event);
