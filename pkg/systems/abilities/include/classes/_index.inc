@@ -81,3 +81,21 @@ include ":abilities:classes/samurai/DragonFury";
 include ":abilities:classes/samurai/PerfectExecution";
 include ":abilities:classes/samurai/WindStrike";
 include ":abilities:classes/samurai/SwordMaster";
+
+//===========================================
+// MALANDRO ARCANO (1000-1004)
+//===========================================
+include ":abilities:classes/malandro_arcano/ArcaneSensitivity";
+include ":abilities:classes/malandro_arcano/SpellThief";
+include ":abilities:classes/malandro_arcano/ChaosInvocation";
+include ":abilities:classes/malandro_arcano/ReuseScroll";
+include ":abilities:classes/malandro_arcano/Ghost";
+
+//===========================================
+// CACADOR DE TESOUROS (1100-1104)
+//===========================================
+include ":abilities:classes/cacador_de_tesouros/BornExplorer";
+include ":abilities:classes/cacador_de_tesouros/DistractOpponents";
+include ":abilities:classes/cacador_de_tesouros/AlwaysAlert";
+include ":abilities:classes/cacador_de_tesouros/BreakInSpecialist";
+include ":abilities:classes/cacador_de_tesouros/InfiniteBag";
