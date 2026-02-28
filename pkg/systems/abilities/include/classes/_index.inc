@@ -135,3 +135,12 @@ include ":abilities:classes/ladrao/DirtyTrick";
 include ":abilities:classes/ladrao/Bully";
 include ":abilities:classes/ladrao/ExpertTrickster";
 include ":abilities:classes/ladrao/EmergencyEscape";
+
+//===========================================
+// DANCARINO DAS SOMBRAS (1800-1804)
+//===========================================
+include ":abilities:classes/dancarino_das_sombras/ShadowDance";
+include ":abilities:classes/dancarino_das_sombras/ShadowBlade";
+include ":abilities:classes/dancarino_das_sombras/Valdruk";
+include ":abilities:classes/dancarino_das_sombras/DeathDance";
+include ":abilities:classes/dancarino_das_sombras/ShadowForm";

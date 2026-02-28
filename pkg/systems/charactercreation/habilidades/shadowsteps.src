@@ -9,6 +9,8 @@ include ":tn:cooldown";
 include "include/packets";
 include "include/epicCombatUtils";
 include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program sanctuary(params)
 	var who := params[1];
@@ -47,7 +49,7 @@ program sanctuary(params)
 endprogram
 
 function protected(who)
-	if (who.warmode && !TemHabilidade(who, "Forma Umbral"))
+	if (who.warmode && !MobileWrapper(who).HasAbility(ABILITY_ID::FORMA_UMBRAL))
 		SendSysMessage(who, "Voce entrou em modo de combate, saindo das sombras");
 		return 0;
 	elseif (GetObjProperty(who, "truesight"))

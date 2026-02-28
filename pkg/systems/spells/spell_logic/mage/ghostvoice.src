@@ -1,5 +1,7 @@
 include ":attributes:attributes";
 include ":gumps:requestGump";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 const PACKET_UC_SPEECH := 0xAE;
 
@@ -31,7 +33,7 @@ program SpellScript(params)
 
 	// 🔑 Decide RP language (pure game logic)
 	var rp_language := GetObjProperty(who, "lingua_escolhida");
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		rp_language := GetObjProperty(targ, "lingua_escolhida");
 	endif
 
