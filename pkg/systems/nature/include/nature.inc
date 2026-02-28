@@ -258,6 +258,8 @@ endfunction
 function MoonFase()
     var currentDate := getCurrentDate();
     SetGlobalProperty("moonfase", currentDate.moonPhase);
+    sleepms(5);
+    UpdateGlobalEventLevers(currentDate.moonPhase);
 endfunction
 
 function getDay()
@@ -790,18 +792,41 @@ function resistPenaltyByClimate(temp)
     endif
 endfunction
 
+function GetEventCategory(event_type)
+   var day_events := {"dia", "noite"};
+   var season_events := {"Primavera", "Verão", "Outono", "Inverno"};
+   var moon_events := {"Kalendae", "Nonae", "Idus", "Decrescens"};
+
+   if (event_type in day_events)
+      return day_events;
+   elseif (event_type in season_events)
+      return season_events;
+   elseif (event_type in moon_events)
+      return moon_events;
+   endif
+
+   return array{};
+endfunction
+
 function UpdateGlobalEventLevers(event_type)
    var ds := OpenDataFile(":itemutils:lever_events2");
-   
+
    var keys_ds := ds.Keys();
-   
+
    if (keys_ds.size() == 0)
       print("ERRO: DataFile está vazio! Verificar arquivo físico.");
       return;
    endif
-   
+
+   var category := GetEventCategory(event_type);
+
    // Percorre TODOS os eventos do DS
    foreach event in keys_ds
+      // Só afeta levers da mesma categoria (dia/noite, estação, ou lua)
+      if (category.size() > 0 && !(event in category))
+         continue;
+      endif
+
       var elem := ds.FindElement(event);
       if (elem)
          var lever_string := elem.GetProp("levers");
@@ -810,11 +835,11 @@ function UpdateGlobalEventLevers(event_type)
             var lever_list := SplitWords(lever_string);
             var valid_levers := array{};
             var needs_cleanup := 0;
-            
+
             foreach serial_str in lever_list
                var lever_serial := CInt("0x" + serial_str);
                var lever := SystemFindObjectBySerial(lever_serial);
-               
+
                if (lever)
                   // Se é o evento atual, mostra. Se não é, esconde.
                   if (event == event_type)
@@ -823,7 +848,7 @@ function UpdateGlobalEventLevers(event_type)
                      lever.invisible := 1;
                   endif
                   valid_levers.append(serial_str);
-               else 
+               else
                   //needs_cleanup := 1;
                   //print("DEBUG: needs_cleanup marcado como 1");
                endif
