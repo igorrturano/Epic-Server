@@ -192,11 +192,8 @@ endfunction
 // - Player (cmdlevel <= 1): Show ONLY player commands
 // ============================================================================
 function GetCommandsData(who)
-    if (who.cmdlevel > 1)
-        return DiscoverGMCommands();
-    else
-        return DiscoverPlayerCommands();
-    endif
+    // GM gets player commands only (full GM list + all spells exceeds packet buffer)
+    return DiscoverPlayerCommands();
 endfunction
 
 // ============================================================================

@@ -142,6 +142,8 @@ function GetCommandDescription(cmd_name)
     descriptions["clima"] := "Indica horario e temperatura atual";
     descriptions["clima"] := "Indica horario e temperatura atual";
     descriptions["fix"] := "Impede um item de tomar decay, fixando-o no chao";
+    descriptions["deitar"] := "Deita o personagem";
+    descriptions["cabelo"] := "Muda o cabelo se ele for longo";
 
     // Magia
     descriptions["arcoelemental"] := "Arco elemental";
@@ -155,6 +157,8 @@ function GetCommandDescription(cmd_name)
     descriptions["p"] := "Atalho server-side para magias de Cacadores de Demonio";
     descriptions["m"] := "Atalho server-side para magias de Conjuradores";
     descriptions["m"] := "Atalho server-side para truques magicos(Cantrip)";
+    descriptions["t"] := "Atalho server-side para truques magicos(Trickster)";
+    descriptions["c"] := "Atalho server-side para magias de Cacadores de Demonios";
 
     // Combate
     descriptions["golpe"] := "Mesmo da aba Combate";

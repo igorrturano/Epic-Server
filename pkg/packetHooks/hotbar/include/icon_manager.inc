@@ -64,7 +64,6 @@ endfunction
 // Falls back to class default icon if ability-specific icon not found
 // ============================================================================
 function GetAbilityIcon(hab_id)
-	print("Getting icon for ability: " + hab_id);
 	var cfg := ReadConfigFile(":abilities:configs/habilidades");
 	if (!cfg)
 		return struct{"iconid" := 0x9bac, "hue" := 0};
