@@ -153,3 +153,12 @@ include ":abilities:classes/cacador_de_demonios/ProfaneSentence";
 include ":abilities:classes/cacador_de_demonios/CorruptionMark";
 include ":abilities:classes/cacador_de_demonios/DemonicTrap";
 include ":abilities:classes/cacador_de_demonios/AbyssalForm";
+
+//===========================================
+// NECROMANTE (2000-2004)
+//===========================================
+include ":abilities:classes/necromante/FleshSacrifice";
+include ":abilities:classes/necromante/InflictFear";
+include ":abilities:classes/necromante/DeathScepter";
+include ":abilities:classes/necromante/ControlUndead";
+include ":abilities:classes/necromante/Lich";
