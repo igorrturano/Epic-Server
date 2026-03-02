@@ -19,8 +19,8 @@ function GetSpecialIcon(special_name)
 		return struct{"iconid" := 0x7E, "hue" := 0};
 	endif
 
-	// Find element by key "Special {name}"
-	var elem := FindConfigElem(cfg, "Special " + special_name);
+	var key := StrReplace(special_name, " ", "");
+	var elem := FindConfigElem(cfg, key);
 	if (!elem)
 		return struct{"iconid" := 0x7E, "hue" := 0};
 	endif
