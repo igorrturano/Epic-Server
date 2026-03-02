@@ -7,6 +7,7 @@ include "include/epicConstants";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":abilities:models/Ability";
+include ":wrappers:Objects/Model/MobileWrapper";
 include "include/packets";
 include ":combat:Controller/DamageController_legacy";
 
@@ -144,11 +145,11 @@ endfunction
 
 function handleSpellResistDiffForSpecialists(who, school)
 	var diff := RESIST_EASY;
-	if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 		diff := RESIST_MEDIUM;
-	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
 		diff := RESIST_MEDIUM;
-	elseif (TemHabilidade(who, "Cetro da Morte") && school == KAIJIN)
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::CETRO_DA_MORTE) && school == KAIJIN)
 		diff := RESIST_MEDIUM;
 	endif
 

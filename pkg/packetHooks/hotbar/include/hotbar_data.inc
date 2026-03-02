@@ -380,6 +380,11 @@ function GetSpellsData(who)
     var spells := array{};
     var chardata := GetObjProperty(who, "chardata");
 
+    // GM: load ALL spells from ALL config files
+    // if (who.cmdlevel > 1)
+    //     return GetAllSpellsForGM();
+    // endif
+
     // Find spellbook in backpack
     var backpack := who.backpack;
     if (!backpack)
@@ -802,6 +807,79 @@ function GetSpellsData(who)
             endforeach
         endif
     endif
+
+    return spells;
+endfunction
+
+// ============================================================================
+// GetAllSpellsForGM - Load ALL spells from ALL config files (GM only)
+// ============================================================================
+function GetAllSpellsForGM()
+    var spells := LoadSpellsFromCfg(":spells:config/cantripspells",     "Cantrip");
+    // spells := spells + LoadSpellsFromCfg(":spells:config/priestspells",      "Priest");
+    // spells := spells + LoadSpellsFromCfg(":spells:config/shamanspells",      "Shaman");
+    // spells := spells + LoadSpellsFromCfg(":spells:config/druidspells",       "Druid");
+    // spells := spells + LoadSpellsFromCfg(":spells:config/paladinspells",     "Paladino");
+    // spells := spells + LoadSpellsFromCfg(":spells:config/demonhunterspells", "Demon Hunter");
+    // spells := spells + LoadSpellsFromCfg(":spells:config/tricksterspells",   "Trickster");
+    // spells := spells + LoadSpellsFromCfg(":spells:config/spellcaster",       "Spellcaster");
+    return spells;
+endfunction
+
+function LoadSpellsFromCfg(cfg_path, default_school)
+    var spells := array{};
+
+    var spell_cfg := ReadConfigFile(cfg_path);
+    if (!spell_cfg)
+        return spells;
+    endif
+
+    var spell_ids := GetConfigIntKeys(spell_cfg);
+    if (!spell_ids)
+        return spells;
+    endif
+
+    foreach spell_id in spell_ids
+        var spell_elem := FindConfigElem(spell_cfg, spell_id);
+        if (!spell_elem)
+            continue;
+        endif
+
+        var spell_name := GetConfigString(spell_elem, "Name");
+        if (!spell_name)
+            continue;
+        endif
+
+        var icon_id := GetConfigInt(spell_elem, "Icon");
+        var icon_hue := GetConfigInt(spell_elem, "Hue");
+        if (!icon_id)
+            icon_id := 0x5DCD;
+        endif
+
+        var school := GetConfigString(spell_elem, "School");
+        if (!school)
+            school := default_school;
+        endif
+
+        var desc := GetConfigString(spell_elem, "Desc");
+        if (!desc)
+            desc := "";
+        endif
+
+        var spell := struct{};
+        spell.+id := spell_id;
+        spell.+name := spell_name;
+        spell.+magic_path := default_school;
+        spell.+school := school;
+        spell.+circle := CInt(GetConfigString(spell_elem, "Circle"));
+        spell.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+        spell.+iconid := icon_id;
+        spell.+hue := icon_hue;
+        spell.+desc := desc;
+        spell.+command_prefix := "m";
+
+        spells.append(spell);
+    endforeach
 
     return spells;
 endfunction
