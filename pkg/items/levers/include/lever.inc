@@ -117,26 +117,19 @@ function CheckAllLevers(lever, lever_list, opts)
             return 0;
          endif
       else
-	    // Para desativação com ordem: apenas verificar se a primeira alavanca da ordem está sendo desativada
+         // Desativação: qualquer alavanca desativada reseta TODAS e não executa efeitos
          if (GetObjProperty(lever, "status") == "off")
-            var first_lever_serial := order[1];
-            if (lever.serial == first_lever_serial)
-               // Se a primeira alavanca da ordem foi desativada, reseta todas
-               foreach serial in order
-                  var item := SystemFindObjectBySerial(serial);
-                  if (GetObjProperty(item, "status") == "on")
-                     ChangeLeverStatus(serial);
-                  endif
-                  sleepms(2);
-               endforeach
-               return 1; // Permite que os efeitos sejam executados para reset
-            else
-               // Se não é a primeira alavanca, apenas desativa ela sem executar efeitos
-               return 0;
-            endif
+            foreach serial in order
+               var item := SystemFindObjectBySerial(serial);
+               if (item && GetObjProperty(item, "status") == "on")
+                  ChangeLeverStatus(serial);
+               endif
+               sleepms(2);
+            endforeach
+            return 0;
          endif
 
-         // Verificar ordem específica
+         // Verificar ordem específica (ativação)
          foreach serial in order
             var item := SystemFindObjectBySerial(serial);
             if (item.serial == lever.serial)
@@ -147,7 +140,15 @@ function CheckAllLevers(lever, lever_list, opts)
             endif
 
             if (GetObjProperty(item, "status") != "on")
+               // Ordem errada! Desativar TODAS as alavancas ativadas
                ChangeLeverStatus(lever.serial);
+               foreach reset_serial in order
+                  var reset_item := SystemFindObjectBySerial(reset_serial);
+                  if (reset_item && GetObjProperty(reset_item, "status") == "on")
+                     ChangeLeverStatus(reset_serial);
+                  endif
+                  sleepms(2);
+               endforeach
                PrintTextAbove(lever, "*desativa*");
                return 0;
             endif
@@ -326,6 +327,12 @@ endif
 		sleepms(2);
 		SendSysMessageEx(char, msg, SSM_INFO);
 	endforeach
+
+   // Para levers linkadas com all_levers, usar a alavanca mestre para efeitos
+   // (as configurações de efeitos ficam na mestre, não nas escravas)
+   if (opts.item_ref)
+      item := opts.item_ref;
+   endif
 
    if (opts.lights)
       lightswitch(item, opts);
