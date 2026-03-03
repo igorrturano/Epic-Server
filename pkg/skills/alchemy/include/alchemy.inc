@@ -312,7 +312,7 @@ endfunction
 Function PotionSpecialistBonus (who, bonus, science)
 	var spec := 2;
 
-		if (TemHabilidade(who, "Bombardeiro Eficiente") && science == BOMBA);
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::BOMBARDEIRO_EFICIENTE) && science == BOMBA);
 			bonus := Cint(bonus * spec);
 		elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VENENO_PURO) && science == VENENO);
 			bonus := Cint(bonus * spec);
