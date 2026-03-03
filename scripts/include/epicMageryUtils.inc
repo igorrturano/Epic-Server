@@ -83,7 +83,7 @@ endfunction
 function distanceAllowedForSpells(who, mlore, school)
 	var dist_allowed := 5 + mlore;
 
-	if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 		dist_allowed := dist_allowed + (mlore * 2);
 	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
 		dist_allowed := dist_allowed + (mlore * 2);
@@ -99,7 +99,7 @@ endfunction
 function bonusSpellDamageForSpecialists(who, dmg, school)
 	var bonus := 1.2;
 
-	if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 		dmg := Cint(dmg * bonus);
 	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
 		dmg := Cint(dmg * bonus);

@@ -6,6 +6,8 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -15,7 +17,7 @@ program SpellScript(params)
 	var tempo := cint(AP_GetSkill(who, ARCANA) / 10);
 
 	// Bonus de especialização
-	if (TemHabilidade(who, ABILITY_ID::EVOCATOR))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR))
 		tempo := Cint(tempo * 1.2);
 	endif
 
