@@ -14,6 +14,8 @@ include ":tn:boss";
 include ":tn:npcutil";
 include ":timedscripts:timedScripts";
 include ":epicai:epicai";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 const MAX_TRANSFORMATIONS := 10; // Maximum number of wildshape_forms to store
 
@@ -140,7 +142,7 @@ endfunction
 function StoreTransformation(who, targ)
 	// Calculate max transformations based on Magery/10
 	var max_transformations := CInt(AP_GetSkill(who, MAGERY) / 20);
-	if (TemHabilidade(who, "Coração da Matilha"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		max_transformations := max_transformations * 2;
 	endif
 	// Use AP_GetStat to fetch strength, dexterity, intelligence from the NPC

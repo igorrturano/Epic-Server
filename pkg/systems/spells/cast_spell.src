@@ -72,7 +72,7 @@ function initializeSpellCasting(mobile, byref spellinfo, scroll)
 		EraseObjProperty(mobile, "#magiasilenciosa");
 	endif
 
-	if (GetObjProperty(mobile, "metamorfose") != error && !TemHabilidade(mobile, "Elo Natural"))
+	if (GetObjProperty(mobile, "metamorfose") != error && !MobileWrapper(mobile).HasAbility(ABILITY_ID::ELO_NATURAL))
 		SendSysMessageEx(mobile, "Voce nao pode usar magias metamorfoseado.");
 		return 0;
 	endif

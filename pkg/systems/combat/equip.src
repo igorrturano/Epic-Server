@@ -12,6 +12,7 @@ include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":debug:Controller/DebugController";
 include ":entropy:entropy";
+include ":abilities:models/Ability";
 
 program equipweapon(who, item)
 	var descmod_item := GetObjProperty(item, "descmod");
@@ -72,7 +73,7 @@ program equipweapon(who, item)
 	endif
 
 	if (GetObjProperty(who, "metamorfose") != error)
-		if (TemHabilidade(who, "Elo Natural"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::ELO_NATURAL))
 			if (item.isa(POLCLASS_WEAPON) || item.isa(POLCLASS_ARMOR))
 				SendSysMessageEx(who, "Voce nao pode equipar nada nessa forma.");
 				return 0;

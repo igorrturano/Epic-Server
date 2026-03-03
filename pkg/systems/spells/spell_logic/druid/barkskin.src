@@ -9,6 +9,8 @@ include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -35,7 +37,7 @@ program SpellScript(params)
 	var duration := CInt(120 + (magiclore_skill * 3)); // Base 120 + up to 300 seconds
 
 	// Bonus de especialização
-	if (Temhabilidade(who, "Coração da Matilha"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		duration := Cint(duration * 1.2);
 		armor_bonus := Cint(armor_bonus * 1.2);
 	endif

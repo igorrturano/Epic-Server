@@ -159,11 +159,11 @@ endfunction
 function bonusSpellDurationForSpecialists(who, duration, school)
 	var bonus := 1.2;
 
-   if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
+   if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 	  duration := Cint(duration * bonus);
    elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
 	  duration := Cint(duration * bonus);
-   elseif(Temhabilidade(who, "Coração da Matilha") && school == ARADALORE)
+   elseif(MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA) && school == ARADALORE)
 	  duration := Cint(duration * bonus);
    endif
 

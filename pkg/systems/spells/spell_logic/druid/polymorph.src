@@ -11,6 +11,8 @@ include ":attributes:attributes";
 include ":tn:npcutil";
 include ":brainAI:npcUtil";
 include ":spells:summon";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SummonMagicCreature(params)
 
@@ -46,7 +48,7 @@ program SummonMagicCreature(params)
 	var namepoly := GetConfigString(elem, "namepoly");
 
 	var bonus := 0;
-	if (TemHabilidade(who, "Instinto de Sobrevivência"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
 		bonus := CINT(AP_GetSkill(who, THEOLOGY) / 5);
 		skill_a := skill_a + bonus;
 		skill_d := skill_d + bonus;
@@ -62,7 +64,7 @@ program SummonMagicCreature(params)
 	endif
 
 	// Bonus de especialização
-	if (Temhabilidade(who, "Coração da Matilha"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		skill_a := Cint(skill_a * 1.2);
 		skill_d := Cint(skill_d * 1.2);
 		resistmod := Cint(resistmod * 1.2);
@@ -86,7 +88,7 @@ program SummonMagicCreature(params)
 	ApplyEpicHealing(who, hitsmod);
 
 	var metamorfosetime := 60 + 540 * AP_GetSkill(who, THEOLOGY) / 100;
-	if (TemHabilidade(who, "Coração da Matilha"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		metamorfosetime := metamorfosetime * 2;
 	endif
 
@@ -101,7 +103,7 @@ function Transforma(who, animal, snd, graphic, namepoly)
 		SetObjProperty(who, "charname", who.name);
 	endif
 
-	if (TemHabilidade(who, "Elo Natural"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::ELO_NATURAL))
 		UnequipArmor(who);
 		UnequipWeapons(who);
 	else // Desequipa tudo
