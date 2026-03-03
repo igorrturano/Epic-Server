@@ -13,6 +13,8 @@ include "include/sounds";
 include ":spells:summon";
 include "include/tileEffects";
 include ":timedScripts:timedScripts";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include "include/sysEvent";
 include "include/eventID";
 include "include/epicMageryUtils";
@@ -58,7 +60,7 @@ program SpellScript(params)
 		var level := CInt(magiclore_skill / 5) + 5;
 
 		// Bonus de especialização
-		if (TemHabilidade(who, ABILITY_ID::EVOCATOR))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR))
 			level := Cint(level * 1.2);
 		endif
 
