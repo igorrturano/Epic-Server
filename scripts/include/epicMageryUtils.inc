@@ -294,7 +294,7 @@ function ConsumeArcaneCharges(who, quantidade)
 	var retorno := ConsumeItemArcaneCharges(who.weapon, quantidade);
 
 	if (elementalWeapon != error && retorno.isSucesso)
-		if (elementalWeapon.serial != who.serial && !TemHabilidade(who, "Vínculo Elemental"))
+		if (elementalWeapon.serial != who.serial && !MobileWrapper(who).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
 			ApplyDamageHabElementalWeapon(0, who, elementalWeapon.bonus, elementalWeapon.type, retorno.divisor);
 			SendSysMessageEx(who, "O controle das energias arcanas da arma se torna caótico e acaba ferindo você.",
 							  SSM_INFO);
