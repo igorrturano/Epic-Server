@@ -98,7 +98,7 @@ function initializeSpellCasting(mobile, byref spellinfo, scroll)
 		return 0;
 	endif
 
-	if (!TemHabilidade(mobile, "Vínculo Elemental") && !TemHabilidade(mobile, "Concentracao Macabra"))
+	if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) && !TemHabilidade(mobile, "Concentracao Macabra"))
 		mobile.frozen := 1;
 	endif
 
@@ -242,7 +242,7 @@ function performCastingProcess(mobile, spellinfo)
 	var orig_hp := AP_GetVital(mobile, "Hits");
 	var delay := spellinfo.delay + CInt(GetObjProperty(mobile, "#delayspell"));
 	var moveCheck_script;
-	if (!TemHabilidade(mobile, "Vínculo Elemental"))
+	if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
 		moveCheck_script := Start_Script(":fls_magery:moveCheck/moveCheck", array{ mobile, GetPid() });
 	endif
 
@@ -333,7 +333,7 @@ function performSpellDelay(mobile, delay, orig_hp)
 endfunction
 
 function checkSpellInterruption(mobile, orig_hp)
-	if (orig_hp > AP_GetVital(mobile, "Hits") && (!TemHabilidade(mobile, "Vínculo Elemental") &&
+	if (orig_hp > AP_GetVital(mobile, "Hits") && (!MobileWrapper(mobile).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) &&
 	 !TemHabilidade(mobile, "Concentracao Macabra")))
 		SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.",
 				   SSM_FAIL);

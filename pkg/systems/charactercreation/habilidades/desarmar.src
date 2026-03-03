@@ -8,6 +8,8 @@ include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
 include ":timedScripts:timedScripts";
 include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program doubleattack(params)
 	var attacker := params[1];
@@ -18,7 +20,7 @@ program doubleattack(params)
 	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
 
-	if (TemHabilidade(defender, "Vínculo Elemental"))
+	if (MobileWrapper(defender).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
 		if (GetObjProperty(defender.weapon, "#elementalweapon"))
 			SendSysMessageEx(attacker, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
 			return 1;

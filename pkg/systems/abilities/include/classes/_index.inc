@@ -180,3 +180,12 @@ include ":abilities:classes/magus/EtherealJump";
 include ":abilities:classes/magus/Evocator";
 include ":abilities:classes/magus/DimensionalPrison";
 include ":abilities:classes/magus/OpenPortals";
+
+//===========================================
+// LAMINA ARCANA (2300-2304)
+//===========================================
+include ":abilities:classes/lamina_arcana/ElementalBond";
+include ":abilities:classes/lamina_arcana/Fluency";
+include ":abilities:classes/lamina_arcana/VitalDomain";
+include ":abilities:classes/lamina_arcana/ArcaneArmor";
+include ":abilities:classes/lamina_arcana/PrismaticVortex";
