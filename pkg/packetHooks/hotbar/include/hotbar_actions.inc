@@ -17,11 +17,7 @@ include ":hotbar:include/hotbar_data";
 include ":hotbar:include/hotbar_write";
 include ":hotbar:hotbar_utils";
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":abilities:AbilityRegistry";
-include ":abilities:controllers/AbilityMonitor";
-include ":hotbar:hotbar_utils";
-include ":wrappers:Objects/Model/MobileWrapper";
-include ":abilities:AbilityRegistry";
+include ":abilities:AbilityRegistryBase";
 include ":abilities:controllers/AbilityMonitor";
 
 // ============================================================================

@@ -6,7 +6,6 @@ include ":debug:Controller/DebugController";
 include ":attributes:attributes";
 include ":tn:cooldown";
 include ":timedScripts:timedScripts";
-include ":combat:Controller/DamageController_legacy";
 include ":destroyable:include/destroyItem";
 include ":taming:taming";
 include "include/sounds";

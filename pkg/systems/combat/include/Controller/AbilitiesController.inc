@@ -165,6 +165,14 @@ function ExecutePassiveAbilitiesAttackerBeforeDamage(byRef attackInfo)
 endfunction
 
 /**
+ * ATTACKER-CENTRIC: Executes passive abilities for attacker on miss.
+ * Used for passives that reset state on miss (e.g. consecutive hit counters).
+ */
+function ExecutePassiveAbilitiesOnMissAttacker(byRef attackInfo)
+	_ExecutePassiveAbilities(attackInfo.GetAttacker(), ABILITY_ACTIVATION::ON_MISS, attackInfo);
+endfunction
+
+/**
  * DEFENDER-CENTRIC: Executes passive abilities for defender before damage.
  * Used for defender-side passives like damage reduction and crit immunity.
  */
@@ -207,6 +215,8 @@ function _ExecutePassiveAbilities(byRef mobile, passiveMoment, byRef attackInfo)
 				triggered := ability.OnPassiveOnParry(attackInfo);
 			ABILITY_ACTIVATION::ON_KILL:
 				triggered := ability.OnPassiveOnKill(attackInfo);
+			ABILITY_ACTIVATION::ON_MISS:
+				triggered := ability.OnPassiveOnMiss(attackInfo);
 			ABILITY_ACTIVATION::BEFORE_DAMAGE:
 				triggered := ability.OnPassiveBeforeDamage(attackInfo);
 			ABILITY_ACTIVATION::AFTER_DAMAGE:

@@ -5,7 +5,6 @@ include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
 include ":blood:blood";
-include ":combat:Controller/DamageController_legacy";
 
 /**
  * Sacrificio da Carne (Flesh Sacrifice) - ABILITY_ID::SACRIFICIO_DA_CARNE (2000)

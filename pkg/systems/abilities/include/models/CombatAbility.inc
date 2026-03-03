@@ -114,6 +114,10 @@ class CombatAbility(Ability)
         return false;
     endfunction
 
+    function OnPassiveOnMiss(this, attackInfo)
+        return false;
+    endfunction
+
     //===========================================
     // EXECUTION ROUTER (called by AbilitiesController)
     //===========================================

@@ -189,3 +189,12 @@ include ":abilities:classes/lamina_arcana/Fluency";
 include ":abilities:classes/lamina_arcana/VitalDomain";
 include ":abilities:classes/lamina_arcana/ArcaneArmor";
 include ":abilities:classes/lamina_arcana/PrismaticVortex";
+
+//===========================================
+// ARQUEIRO ARCANO (2400-2404)
+//===========================================
+include ":abilities:classes/arqueiro_arcano/ElementalBow";
+include ":abilities:classes/arqueiro_arcano/ElementalAffinity";
+include ":abilities:classes/arqueiro_arcano/ChanneledShot";
+include ":abilities:classes/arqueiro_arcano/Tirothan";
+include ":abilities:classes/arqueiro_arcano/ElementalStorm";
