@@ -3,7 +3,7 @@
  * Purpose
  * Criado para organizar a lógica de cálculo de chance de acerto do combate
  */
-// include "AbilitiesController";
+// include "CombatAbilityController";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":abilities:models/Ability";
 include "include/packets";
