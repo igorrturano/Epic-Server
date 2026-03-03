@@ -87,7 +87,7 @@ function distanceAllowedForSpells(who, mlore, school)
 		dist_allowed := dist_allowed + (mlore * 2);
 	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
 		dist_allowed := dist_allowed + (mlore * 2);
-	elseif (TemHabilidade(who, "Tirothan") && school == EVOCATIUM)
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::TIROTHAN) && school == EVOCATIUM)
 		dist_allowed := dist_allowed + (mlore * 2);
 	elseif (who.npctemplate)
 		dist_allowed := dist_allowed + (mlore * 2);

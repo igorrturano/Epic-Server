@@ -9,6 +9,8 @@ include "include/say";
 include ":fls_magery:basicMagery";
 include "include/client";
 include "include/epicConstants";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program doubleattack(who)
 	if (!EquipmentCheck(who))
@@ -49,7 +51,7 @@ program doubleattack(who)
 	sleep(2);
 	who.frozen := 0;
 	var the_bow := 0xFA6D;
-	if (TemHabilidade(who, "Tirothan"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::TIROTHAN))
 		the_bow := 0xF997;
 	endif
 
