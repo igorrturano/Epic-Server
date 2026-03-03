@@ -19,6 +19,7 @@ include ":hotbar:hotbar_utils";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:AbilityRegistryBase";
 include ":abilities:controllers/AbilityMonitor";
+include ":abilities:models/Ability";
 
 // ============================================================================
 // ExecuteSkillAction - Unified skill execution
@@ -123,12 +124,11 @@ function ExecuteAbility(who, actionId)
 
     var mobileWrapper := MobileWrapper(who);
     var abilityId := CInt(hab_id);
-    if (!ABILITY_CLASSES.exists(abilityId))
+    var ability := Ability(abilityId);
+    if (!ability.GetName())
         SendSysMessage(who, "Habilidade inválida.");
         return 0;
     endif
-
-    var ability := CreateAbility(abilityId);
 
     var monitor := AbilityMonitor(ability);
     var result := monitor.ActivateOn(mobileWrapper);

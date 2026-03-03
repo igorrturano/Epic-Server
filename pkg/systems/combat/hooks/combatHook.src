@@ -5,7 +5,7 @@ use cfgfile;
 include ":combat:Model/AttackInfo";
 include ":combat:Controller/HitController";
 include ":combat:Controller/FXController";
-include ":combat:Controller/AbilitiesController";
+include ":combat:Controller/CombatAbilityController";
 include ":abilities:AbilityRegistry";
 include ":combat:armorZones";
 include ":combat:settings";

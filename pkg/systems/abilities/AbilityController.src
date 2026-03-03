@@ -1,0 +1,62 @@
+use os;
+
+include ":abilities:AbilityRegistry";
+include ":abilities:models/Ability";
+
+program AbilityController(params)
+	var mode := params[1];
+	var abilityId := CInt(params[2]);
+	var attackInfo := params[3];
+	var moment := "";
+
+	if (params.size() >= 4)
+		moment := params[4];
+	endif
+
+	if (!ABILITY_CLASSES.exists(abilityId))
+		return struct{ executed := 0, singleUse := 0 };
+	endif
+
+	var ability := ABILITY_CLASSES[abilityId].new();
+	if (ability.errortext)
+		return struct{ executed := 0, singleUse := 0 };
+	endif
+
+	if (mode == "active")
+		var executed := ability.ExecuteOn(attackInfo);
+		var singleUse := 0;
+		var executedInt := 0;
+		if (ability.IsSingleUse())
+			singleUse := 1;
+		endif
+		if (executed)
+			executedInt := 1;
+		endif
+		return struct{ executed := executedInt, singleUse := singleUse };
+	endif
+
+	if (mode == "passive")
+		var triggered := 0;
+		var triggeredInt := 0;
+		case (moment)
+			ABILITY_ACTIVATION::ON_PARRY:
+				triggered := ability.OnPassiveOnParry(attackInfo);
+			ABILITY_ACTIVATION::ON_KILL:
+				triggered := ability.OnPassiveOnKill(attackInfo);
+			ABILITY_ACTIVATION::ON_MISS:
+				triggered := ability.OnPassiveOnMiss(attackInfo);
+			ABILITY_ACTIVATION::BEFORE_DAMAGE:
+				triggered := ability.OnPassiveBeforeDamage(attackInfo);
+			ABILITY_ACTIVATION::AFTER_DAMAGE:
+				triggered := ability.OnPassiveAfterDamage(attackInfo);
+		endcase
+
+		if (triggered)
+			triggeredInt := 1;
+		endif
+
+		return struct{ executed := triggeredInt, singleUse := 0 };
+	endif
+
+	return struct{ executed := 0, singleUse := 0 };
+endprogram

@@ -1,9 +1,9 @@
 use uo;
 use os;
 
-include ":abilities:AbilityRegistry";
 include ":message:model/Message";
 include ":abilities:controllers/AbilityMonitor";
+include ":abilities:AbilityRegistry";
 include ":abilities:models/Ability";
 include ":attributes:attributes";
 
@@ -17,7 +17,23 @@ program AbilityMonitor(params)
 	endif
 
 	monitor.SetPid(GetPid());
-	var ability := monitor.GetAbility();
+	var abilityId := monitor.GetAbilityId();
+	if (!ABILITY_CLASSES.exists(abilityId))
+		Message("Habilidade não implementada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return;
+	endif
+
+	var ability := ABILITY_CLASSES[abilityId].new();
+	if (ability.errortext)
+		Message("Habilidade não implementada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return;
+	endif
+
+	if (!ability.CanActivate(who))
+		Message("Condições para ativar habilidade não atendidas.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return;
+	endif
+
 	SetScriptController(who.GetObjRef());
 	who.ActivateAbility(ability, monitor);
 	ability.OnActivate(who);
@@ -30,6 +46,9 @@ program AbilityMonitor(params)
 	endif
 
 	var duration := monitor.GetDuration();
+	if (duration <= 0)
+		duration := ability.GetDurationFor(who);
+	endif
 	if (duration <= 0)
 		duration := 1;
 	endif
