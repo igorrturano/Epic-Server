@@ -198,3 +198,12 @@ include ":abilities:classes/arqueiro_arcano/ElementalAffinity";
 include ":abilities:classes/arqueiro_arcano/ChanneledShot";
 include ":abilities:classes/arqueiro_arcano/Tirothan";
 include ":abilities:classes/arqueiro_arcano/ElementalStorm";
+
+//===========================================
+// GRANADEIRO (2500-2504)
+//===========================================
+include ":abilities:classes/granadeiro/ExperiencedAlchemist";
+include ":abilities:classes/granadeiro/ChemicalInfusion";
+include ":abilities:classes/granadeiro/EfficientBombardier";
+include ":abilities:classes/granadeiro/ExplosiveEssence";
+include ":abilities:classes/granadeiro/EnhancedInfusion";
