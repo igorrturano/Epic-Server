@@ -36,10 +36,12 @@ include ":tn:npcutil";
 include ":brainAI:npcUtil";
 include ":spells:summon";
 include ":survival:fishingFunctions";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program transformprimordial(who, text)
 	// Check if player has the ability
-	if (!TemHabilidade(who, "Chamado da forma primordial"))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::CHAMADO_DA_FORMA_PRIMORDIAL))
 		SendSysMessageEx(who, "Você não conhece esta técnica.", SSM_FAIL);
 		return;
 	endif
@@ -444,7 +446,7 @@ function PerformTransformation(who, form)
 	endif
 
 	// Handle squelch based on abilities
-	if (TemHabilidade(who, "Elo Natural"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::ELO_NATURAL))
 		who.squelch(0);
 	else
 		who.squelch(-1);
@@ -466,7 +468,7 @@ endfunction
 
 function HandleWildShapeUnequip(who)
 	UnequipAllWild(who);
-	if (TemHabilidade(who, "Elo Natural"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::ELO_NATURAL))
 		UnequipArmorWild(who);
 		UnequipWeaponsWild(who);
 	else
@@ -512,15 +514,15 @@ function ApplyAttributeModifiers(who, form, duration, transformation_duration)
 
 	var bonusMagery := 0;
 	bonusMagery:= 1 + (AP_GetSkill(who, MAGERY) / 300); 
-	if (TemHabilidade(who, "Coração da Matilha"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		skill_a_calc := CINT(skill_a_calc * bonusMagery);
-		hitsmod_calc := CINT(hitsmod_calc * bonusMagery); 
-		resistmod_calc := CINT(resistmod_calc * bonusMagery); 
+		hitsmod_calc := CINT(hitsmod_calc * bonusMagery);
+		resistmod_calc := CINT(resistmod_calc * bonusMagery);
 	endif
 
 	var bonusMagicLore := 0;
 	bonusMagicLore := CINT(AP_GetSkill(who, THEOLOGY) / 6);
-	if (TemHabilidade(who, "Instinto de Sobrevivência"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
 		skill_a_calc := CINT(skill_a_calc + bonusMagicLore);
 		hitsmod_calc := CINT(hitsmod_calc + bonusMagicLore);
 		resistmod_calc := CINT(resistmod_calc + bonusMagicLore);

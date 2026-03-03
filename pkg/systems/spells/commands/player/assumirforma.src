@@ -33,6 +33,8 @@ include ":attributes:attributes";
 include ":tn:npcutil";
 include ":brainAI:npcUtil";
 include ":spells:summon";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program transformwildshape(who, formname)
 	if (formname == "")
@@ -118,7 +120,7 @@ endfunction
 
 function HandleWildShapeUnequip(who)
 	UnequipAllWild(who);
-	if (TemHabilidade(who, "Elo Natural"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::ELO_NATURAL))
 		UnequipArmorWild(who);
 		UnequipWeaponsWild(who);
 	else
@@ -172,15 +174,15 @@ function ApplyAttributeModifiers(who, form, duration)
 
 	var bonusMagery := 0;
 	bonusMagery:= 1 + (AP_GetSkill(who, MAGERY) / 500); 
-	if (TemHabilidade(who, "Coração da Matilha"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		skill_a_calc := CINT(skill_a_calc * bonusMagery);
-		hitsmod_calc := CINT(hitsmod_calc * bonusMagery); 
-		resistmod_calc := CINT(resistmod_calc * bonusMagery); 
+		hitsmod_calc := CINT(hitsmod_calc * bonusMagery);
+		resistmod_calc := CINT(resistmod_calc * bonusMagery);
 	endif
 
 	var bonusMagicLore := 0;
 	bonusMagicLore := CINT(AP_GetSkill(who, THEOLOGY) / 10);
-	if (TemHabilidade(who, "Instinto de Sobrevivência"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
 		skill_a_calc := CINT(skill_a_calc + bonusMagicLore); 
 		hitsmod_calc := CINT(hitsmod_calc + bonusMagicLore); 
 		resistmod_calc := CINT(resistmod_calc + bonusMagicLore); 
@@ -337,7 +339,7 @@ endfunction
 
 function CalculateTransformationDuration(who)
 	var duration := 60 + 540 * AP_GetSkill(who, THEOLOGY) / 100;
-	if (TemHabilidade(who, "Coração da Matilha"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		duration := duration * 2;
 	endif
 	// Print for debugging

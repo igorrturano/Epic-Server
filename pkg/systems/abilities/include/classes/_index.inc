@@ -162,3 +162,21 @@ include ":abilities:classes/necromante/InflictFear";
 include ":abilities:classes/necromante/DeathScepter";
 include ":abilities:classes/necromante/ControlUndead";
 include ":abilities:classes/necromante/Lich";
+
+//===========================================
+// DRUIDA (2100-2104)
+//===========================================
+include ":abilities:classes/druida/NaturalBond";
+include ":abilities:classes/druida/WildSummoning";
+include ":abilities:classes/druida/SurvivalInstinct";
+include ":abilities:classes/druida/PackHeart";
+include ":abilities:classes/druida/PrimordialFormCall";
+
+//===========================================
+// MAGUS (2200-2204)
+//===========================================
+include ":abilities:classes/magus/ArcaneDetermination";
+include ":abilities:classes/magus/EtherealJump";
+include ":abilities:classes/magus/Evocator";
+include ":abilities:classes/magus/DimensionalPrison";
+include ":abilities:classes/magus/OpenPortals";
