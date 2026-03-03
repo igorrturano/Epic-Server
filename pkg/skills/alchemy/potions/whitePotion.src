@@ -3,6 +3,8 @@ use uo;
 use util;
 use cfgfile;
 include ":alchemy:alchemy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program drink_blue(who, potion)
 	EraseObjProperty(who, "IsMeditating");
@@ -27,7 +29,7 @@ program drink_blue(who, potion)
 	var bonus := GetObjProperty(potion, "bonus");
 	var tier := getObjProperty(potion, "tier");
 	var stat := AP_GetTrueStat(who, STRENGTH);
-	if (temHabilidade(who, "Impulso Metabolico"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
 		tier := (tier + 2);
 	endif
 	var buff := 0.05 * tier;

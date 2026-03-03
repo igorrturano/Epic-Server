@@ -207,3 +207,12 @@ include ":abilities:classes/granadeiro/ChemicalInfusion";
 include ":abilities:classes/granadeiro/EfficientBombardier";
 include ":abilities:classes/granadeiro/ExplosiveEssence";
 include ":abilities:classes/granadeiro/EnhancedInfusion";
+
+//===========================================
+// MUTANTE (900-904)
+//===========================================
+include ":abilities:classes/mutante/AdaptableForm";
+include ":abilities:classes/mutante/HunterOil";
+include ":abilities:classes/mutante/MetabolicBoost";
+include ":abilities:classes/mutante/Transmute";
+include ":abilities:classes/mutante/Mutagenic";

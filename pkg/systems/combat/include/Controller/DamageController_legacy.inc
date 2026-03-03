@@ -555,7 +555,7 @@ function CalcDamageHabs(attacker, defender, damage)
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Sigilo de Protecao]: " + CInt(damagemod));
 		endif
-	elseif (TemHabilidade(attacker, "Oleo do Cacador"))
+	elseif (MobileWrapper(attacker).HasAbility(ABILITY_ID::OLEO_DO_CACADOR))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := GetObjProperty(attacker, "Óleo");
