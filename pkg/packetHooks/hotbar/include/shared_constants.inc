@@ -272,7 +272,7 @@ endfunction
 // Default Icons
 // =============================================================================
 
-const DEFAULT_ABILITY_ICON := 0x9bac;
+const DEFAULT_ABILITY_ICON := 2973;
 const DEFAULT_SPELL_ICON := 0x9BAC;
 const DEFAULT_COMMAND_ICON := 0x9b90;
 const DEFAULT_SKILL_ICON := 0x9b90;
