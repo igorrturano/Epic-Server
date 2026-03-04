@@ -66,7 +66,7 @@ endfunction
 function GetAbilityIcon(hab_id)
 	var cfg := ReadConfigFile(":abilities:configs/habilidades");
 	if (!cfg)
-		return struct{"iconid" := 0x9bac, "hue" := 0};
+		return struct{"iconid" := DEFAULT_ABILITY_ICON, "hue" := 0};
 	endif
 
 	var elem := FindConfigElem(cfg, hab_id);
@@ -80,5 +80,5 @@ function GetAbilityIcon(hab_id)
 	endif
 
 	// Final fallback
-	return struct{"iconid" := 0x9bac, "hue" := 0};
+	return struct{"iconid" := DEFAULT_ABILITY_ICON, "hue" := 0};
 endfunction

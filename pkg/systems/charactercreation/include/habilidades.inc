@@ -297,6 +297,9 @@ function ComprarHabGump(who, habs, habsfac)
 		var uso := GetConfigString(habelem, "uso");
 		var nome := GetConfigString(habelem, "nome");
 		var icon := GetConfigInt(habelem, "icon");
+		if (!icon || uso == "Passiva")
+			icon := 2973;
+		endif
 
 		if (uso == "Ativa")
 			var delay := GetConfigInt(habelem, "delay");
