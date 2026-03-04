@@ -5,6 +5,7 @@ include ":wrappers:Objects/Model/MobileWrapper";
 class CombatAbility(Ability)
 
     var SingleUse := false;
+    var IsPool := false;
 
     function CombatAbility(this, abilityEnum)
         Super(abilityEnum);
@@ -14,6 +15,10 @@ class CombatAbility(Ability)
 
     function IsSingleUse(this)
         return this.SingleUse;
+    endfunction
+
+    function IsPoolAbility(this)
+        return this.IsPool;
     endfunction
 
     // Override: Custom activation conditions
@@ -115,6 +120,14 @@ class CombatAbility(Ability)
     endfunction
 
     function OnPassiveOnMiss(this, attackInfo)
+        return false;
+    endfunction
+
+    function OnPassiveBeforeHitAttacker(this, attackInfo)
+        return false;
+    endfunction
+
+    function OnPassiveBeforeHitDefender(this, attackInfo)
         return false;
     endfunction
 

@@ -216,3 +216,31 @@ include ":abilities:classes/mutante/HunterOil";
 include ":abilities:classes/mutante/MetabolicBoost";
 include ":abilities:classes/mutante/Transmute";
 include ":abilities:classes/mutante/Mutagenic";
+
+//===========================================
+// CAMINHO - Weapon Specializations (3000-3013)
+//===========================================
+include ":abilities:classes/caminho/WeaponSpecialization";
+
+//===========================================
+// CAMINHO - Fight Styles (3100-3105)
+//===========================================
+include ":abilities:classes/caminho/SingleWeaponStyle";
+include ":abilities:classes/caminho/SwordAndBoard";
+include ":abilities:classes/caminho/TwoHandedStyle";
+include ":abilities:classes/caminho/DualWieldStyle";
+include ":abilities:classes/caminho/RangedStyle";
+include ":abilities:classes/caminho/TavernBrawler";
+
+//===========================================
+// CAMINHO - Armor Specializations (3200-3202)
+//===========================================
+include ":abilities:classes/caminho/LightArmorSpec";
+include ":abilities:classes/caminho/MediumArmorSpec";
+include ":abilities:classes/caminho/HeavyArmorSpec";
+
+//===========================================
+// CAMINHO - Shield & Mounted (3300-3301)
+//===========================================
+include ":abilities:classes/caminho/ShieldSpecialization";
+include ":abilities:classes/caminho/MountedCombat";

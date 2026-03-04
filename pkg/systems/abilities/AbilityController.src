@@ -49,6 +49,10 @@ program AbilityController(params)
 				triggered := ability.OnPassiveBeforeDamage(attackInfo);
 			ABILITY_ACTIVATION::AFTER_DAMAGE:
 				triggered := ability.OnPassiveAfterDamage(attackInfo);
+			ABILITY_ACTIVATION::BEFORE_HIT:
+				triggered := ability.OnPassiveBeforeHitAttacker(attackInfo);
+			ABILITY_ACTIVATION::BEFORE_HIT_DEFENDER:
+				triggered := ability.OnPassiveBeforeHitDefender(attackInfo);
 		endcase
 
 		if (triggered)
