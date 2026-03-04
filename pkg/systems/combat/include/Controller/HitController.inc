@@ -89,9 +89,16 @@ function _GetSkillForCombat(byRef mobile)
 			skill := mobile.GetSkill(attribute);
 		endif
 
-		if (mobile.IsMounted() && // Se estiver montado
-			mobile.GetObjRef().GetProp("chardata").trait != "Cavalaria de Escaramuça") // E não tiver hab de cavalaria
-			skill := skill / 2;
+		if (mobile.IsMounted())
+			var hasTrait := mobile.GetObjRef().GetProp("chardata").trait == "Cavalaria de Escaramuça";
+			var hasAbility := mobile.HasAbility(ABILITY_ID::MOUNTED_COMBAT);
+
+			if (!hasTrait && !hasAbility)
+				skill := skill / 2; // 50% penalty
+			elseif (!hasTrait || !hasAbility)
+				skill := CInt(skill * 75 / 100); // 25% penalty
+			endif
+			// Both trait + ability = no penalty
 		endif
 	endif
 

@@ -190,6 +190,15 @@ function HabilidadesPorNivelPossiveis(who, classe, povo, lvl)
 			else
 				possiveis.append(key);
 			endif
+		elseif (c.Exists("Caminho"))
+			// Caminho abilities available to all classes at levels 4,8,12,16,18 (nivel 2,4,6,8,9)
+			var caminhoLevels := array{2, 4, 6, 8, 9};
+			if (lvl in caminhoLevels)
+				var isPool := CInt(GetConfigInt(elem, "pool"));
+				if (isPool || !TemHabilidade(who, key))
+					possiveis.append(key);
+				endif
+			endif
 		endif
 	endforeach
 	return possiveis;
@@ -515,6 +524,14 @@ function comprarHabilidade(who, item, nv:=-1)
 		habs[nivel] := 2;
 		SetObjProperty(who, "buyhab", habs);
 		SetObjProperty(who, "myhabs", myhabs);
+
+		// Update pool counter for pool abilities (e.g., weapon specializations)
+		if (CInt(GetConfigInt(habelem_display, "pool")))
+			var poolCounts := GetObjProperty(who, "myhabs_pool") ?: dictionary;
+			poolCounts[escolhida_id] := CInt(poolCounts[escolhida_id]) + 1;
+			SetObjProperty(who, "myhabs_pool", poolCounts);
+		endif
+
 		if(item)
 			DestroyItem(item);
 		endif
@@ -622,7 +639,7 @@ function ShowHabilidadesPage(byref gump, who)
                 var hab_elem := habcfg[hab_id];
                 var hab_nome := hab_elem.nome;
                 if (hab_elem.uso == "Ativa")
-                    var texto := hab_nome + " ["+hab_elem.uso + "] " + "["+hab_elem.duracao + "] " + "["+hab_elem.delay + " s] ";
+                    var texto := hab_nome + " ["+hab_elem.uso + "] " + "["+hab_elem.delay + " s] ";
                     if (hab_elem.stam != error)
                         texto := texto + "["+hab_elem.stam + " stam] ";
                     else
