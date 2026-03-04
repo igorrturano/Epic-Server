@@ -228,104 +228,79 @@ endfunction
 function ComprarHabGump(who, habs, habsfac)
 
 	UnloadConfigFile(":abilities:configs/habilidades");
-
-	var gump := GFCreateGump();
-
-	var habsize := habs.size();
-	var sizey := (habsize*100) + 120;
-	var newsizey := (habsfac.size()*100) + 120; //facção
-	if (newsizey > sizey)//facção
-		sizey := newsizey;
-	endif
-
-	var newsizex := 0;
-	if (habsfac.size() >= 1) //facção
-		newsizex := 320;
-	endif
-
-	if (habsize > 10)
-		newsizex := newsizex + 600;
-		sizey := 620;
-	elseif (habsize > 5)
-		newsizex := newsizex + 300;
-		sizey := 620;
-	endif
-
-    GFDisposable(gump, 0);
-	GFResizePic(gump, 0, 25, 3600, 380+newsizex, sizey+30);
-	GFResizePic(gump, 15, 40, 0x13BE, 350+newsizex, sizey);
-	GFTextMid(gump, 80, 50, 250, 1153, "Habilidades de Classe");
-	if (habsfac.size() >= 1) //facção
-		GFTextMid(gump, 80+newsizex, 50, 250, 1153, "Habilidades de Faccao");
-	endif
-
 	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 
-	var x := 40;
-	var y := 80;
-
+	// Build combined entries list preserving button ID convention
+	var entries := array{};
 	var i := 1;
 	foreach hab in habs
-		var habelem := FindConfigElem(habcfg, hab);
-		var desc := GetConfigString(habelem, "desc");
-		var uso := GetConfigString(habelem, "uso");
-		var nome := GetConfigString(habelem, "nome");
-		if (uso == "Ativa")
-			var delay := GetConfigInt(habelem, "delay");
-			nome := nome + " ["+delay+" s]";
-			var stam := GetConfigInt(habelem, "stam");
-			if (!stam)
-				stam := GetConfigInt(habelem, "mana");
-				nome := nome + " [" + stam + " mana]";
-			else
-				nome := nome + " [" + stam + " stam]";
-			endif
-		endif
-		var nivel := GetConfigInt(habelem, nivel);
-		var requisitos := getConfigstringArray(habelem, "requisito");
-		//var gumpid :=  Hex(GetConfigInt(habelem, "gump"));
-
-		GFAddButton(gump, x-20, y+4, 2103, 2104, 1, i );
-		//GFGumpPic(gump, x, y+20, gumpid) ;
-		GFTextLine(gump, x, y, 1153, nome + " [" + uso + "]" );
-		if (requisitos.size() )
-			desc := desc + "<cr> Pre-Requisitos: ";
-			foreach req in requisitos
-				desc := desc + req + " ";
-			endforeach
-		endif
-		GFHTMLArea( gump, x, y+20, 300, 90, desc, 1150, 0);
-
+		var entry := struct{};
+		entry.+habId := hab;
+		entry.+buttonId := i;
+		entries.append(entry);
 		i := i + 1;
-		y := y + 110;
-		if (i == 6)
-			x := 355;
-			y := 80;
-		elseif (i == 11)
-			x := 670;
-			y := 80;
-		endif
 	endforeach
-
-	y := 80;
-	x := 355;
-	if (habsize > 10)
-		x := 985;
-		y := 80;
-	elseif (habsize > 5)
-		x := 670;
-		y := 80;
-	endif
 	i := 1;
-
 	foreach hab in habsfac
-		var habelem := FindConfigElem(habcfg, hab);
+		var entry := struct{};
+		entry.+habId := hab;
+		entry.+buttonId := 20 + i;
+		entries.append(entry);
+		i := i + 1;
+	endforeach
+
+	var ITEMS_PER_PAGE := 4;
+	var totalPages := CInt((entries.size() + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE);
+	if (totalPages < 1)
+		totalPages := 1;
+	endif
+
+	var GUMP_W := 460;
+	var GUMP_H := 570;
+	var CARD_H := 115;
+	var CARD_START_Y := 60;
+	var NAV_Y := GUMP_H - 45;
+
+	var gump := GFCreateGump();
+	GFDisposable(gump, 0);
+
+	// Page 0 - static background (always visible)
+	GFPage(gump, 0);
+	GFResizePic(gump, 0, 0, 3600, GUMP_W, GUMP_H);
+	GFResizePic(gump, 15, 15, 0x13BE, GUMP_W - 30, GUMP_H - 30);
+	GFTextMid(gump, 15, 25, GUMP_W - 30, 1153, "Habilidades Disponíveis");
+
+	// Build paginated content
+	var pageNum := 1;
+	var itemOnPage := 0;
+	GFPage(gump, pageNum);
+
+	foreach entry in entries
+		if (itemOnPage >= ITEMS_PER_PAGE)
+			// Next arrow on current page
+			GFAddButton(gump, GUMP_W - 70, NAV_Y, 5601, 5605, GF_PAGE_BTN, pageNum + 1);
+			GFTextLine(gump, GUMP_W - 115, NAV_Y + 2, 1153, "Próxima");
+			GFTextMid(gump, 15, NAV_Y + 2, GUMP_W - 30, 1153, $"Pág. {pageNum}/{totalPages}");
+
+			pageNum := pageNum + 1;
+			GFPage(gump, pageNum);
+
+			// Prev arrow on new page
+			GFAddButton(gump, 30, NAV_Y, 5603, 5607, GF_PAGE_BTN, pageNum - 1);
+			GFTextLine(gump, 60, NAV_Y + 2, 1153, "Anterior");
+
+			itemOnPage := 0;
+		endif
+
+		var habelem := FindConfigElem(habcfg, entry.habId);
 		var desc := GetConfigString(habelem, "desc");
 		var uso := GetConfigString(habelem, "uso");
 		var nome := GetConfigString(habelem, "nome");
+		var icon := GetConfigInt(habelem, "icon");
+
 		if (uso == "Ativa")
 			var delay := GetConfigInt(habelem, "delay");
-			nome := nome + " ["+delay+" s]";
+			nome := nome + " [" + delay + "s]";
 			var stam := GetConfigInt(habelem, "stam");
 			if (!stam)
 				stam := GetConfigInt(habelem, "mana");
@@ -334,32 +309,52 @@ function ComprarHabGump(who, habs, habsfac)
 				nome := nome + " [" + stam + " stam]";
 			endif
 		endif
-		var nivel := GetConfigInt(habelem, nivel);
-		var requisitos := getConfigstringArray(habelem, "requisito");
-		//var gumpid :=  Hex(GetConfigInt(habelem, "gump"));
 
-		GFAddButton(gump, x-20, y+4, 2103, 2104, 1, 20+i );
-		//GFGumpPic(gump, x, y+20, gumpid) ;
-		GFTextLine(gump, x, y, 1153, nome + " [" + uso + "]" );
-		if (requisitos.size() )
-			desc := desc + "<cr> Pre-Requisitos: ";
+		var requisitos := GetConfigStringArray(habelem, "requisito");
+		if (requisitos.size())
+			desc := desc + "<cr>Requisitos: ";
 			foreach req in requisitos
 				desc := desc + req + " ";
 			endforeach
 		endif
-		GFHTMLArea( gump, x, y+20, 300, 90, desc, 1150, 0);
 
-		i := i + 1;
-		y := y + 110;
+		var y := CARD_START_Y + (itemOnPage * CARD_H);
+		var textX := 35;
+
+		// Icon (if available)
+		if (icon)
+			GFGumpPic(gump, 30, y + 8, icon);
+			textX := 85;
+		endif
+
+		// Name + type
+		GFTextLine(gump, textX, y, 1153, nome + " [" + uso + "]");
+
+		// Description
+		GFHTMLArea(gump, textX, y + 20, GUMP_W - textX - 80, 75, desc, 1150, 0);
+
+		// Buy button
+		GFAddButton(gump, GUMP_W - 60, y + 30, 4005, 4007, 1, entry.buttonId);
+		GFTextLine(gump, GUMP_W - 62, y + 12, 1153, "Obter");
+
+		itemOnPage := itemOnPage + 1;
 	endforeach
+
+	// Navigation for last page
+	if (totalPages > 1)
+		GFTextMid(gump, 15, NAV_Y + 2, GUMP_W - 30, 1153, $"Pág. {pageNum}/{totalPages}");
+		if (pageNum > 1)
+			GFAddButton(gump, 30, NAV_Y, 5603, 5607, GF_PAGE_BTN, pageNum - 1);
+			GFTextLine(gump, 60, NAV_Y + 2, 1153, "Anterior");
+		endif
+	endif
 
 	var input := GFSendGump(who, gump);
 	input := input[0];
 
-
 	if (input > 0)
 		if (input >= 20)
-			input := input-20;
+			input := input - 20;
 			return habsfac[input];
 		endif
 		return habs[input];
