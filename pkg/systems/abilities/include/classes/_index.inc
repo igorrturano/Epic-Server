@@ -209,6 +209,15 @@ include ":abilities:classes/granadeiro/ExplosiveEssence";
 include ":abilities:classes/granadeiro/EnhancedInfusion";
 
 //===========================================
+// SHAMAN / XAMÃ (2600-2604)
+//===========================================
+include ":abilities:classes/shaman/SoulHarvest";
+include ":abilities:classes/shaman/Bloodthirst";
+include ":abilities:classes/shaman/SandBrothers";
+include ":abilities:classes/shaman/ElementalAncestry";
+include ":abilities:classes/shaman/BloodArena";
+
+//===========================================
 // MUTANTE (900-904)
 //===========================================
 include ":abilities:classes/mutante/AdaptableForm";
