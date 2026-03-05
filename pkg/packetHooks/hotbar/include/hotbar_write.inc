@@ -85,7 +85,7 @@ function CalculateCommandsSize(items)
     var size := 0;
     foreach item in items
         size := size + 2 + len(item.command);    // command length + command
-        size := size + 2 + len(item.desc);       // desc length + desc
+        size := size + 2;                         // desc length (empty string, loaded on hover)
         size := size + 2;                         // iconid
         size := size + 1;                         // index
         size := size + 2 + len(item.category);   // category length + category
