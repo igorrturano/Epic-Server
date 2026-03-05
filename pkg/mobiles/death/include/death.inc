@@ -11,6 +11,8 @@ use util;
 include ":brainAI:npcUtil";
 include ":attributes:attributes";
 include ":timeutils:time";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 /*
  * DP_PlayDeathSound(corpse, ghost:=0)
@@ -186,7 +188,7 @@ function ShamanSoulHarvest(mobile)
 				continue; // Skip NPCs, only check players
 			endif
 
-			if (!TemHabilidade(player, "Colheita de Almas"))
+			if (!MobileWrapper(player).HasAbility(ABILITY_ID::SOUL_HARVEST))
 				continue; // Skip players without the ability
 			endif
 

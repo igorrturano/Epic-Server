@@ -215,9 +215,8 @@ program core_npcDeath(params)
 		var shaman_reap_bonus := Cint(AP_GetSkill(mob, THEOLOGY) / 10);
 
 		// HABILIDADES SHAMAN
-		if (TemHabilidade(mob, "Sede de Sangue"))
+		if (MobileWrapper(mob).HasAbility(ABILITY_ID::BLOODTHIRST))
 			applyEpicHealing(mob, shaman_reap_bonus);
-		// colocar o efeito roxinho
 		endif
 		// FIM HABILIDADES SHAMAN
 

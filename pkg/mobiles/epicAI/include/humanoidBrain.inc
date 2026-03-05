@@ -806,7 +806,7 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
             ABILITY_ID::INVOCACAO_DO_CAOS: 
             ABILITY_ID::GWAENEDH:
             ABILITY_ID::FORMA_ADAPTAVEL:
-            ABILITY_ID::IRMAOS_DE_AREIA:
+            ABILITY_ID::SAND_BROTHERS:
             ABILITY_ID::CANHONEIRO:
             ABILITY_ID::QUINQUILHARIAS:
             ABILITY_ID::CONSTRUTOR_DE_GOLEMS: 
