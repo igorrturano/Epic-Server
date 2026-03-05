@@ -7,6 +7,8 @@ include ":charactercreation:habilidades";
 include ":timedscripts:timedScripts";
 include ":food:include/hunger";
 include ":attributes:skills";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program Install()
 	print("INSTALLING: Exported Vital - RegenRate and MaxValue functions ...");
@@ -76,7 +78,7 @@ exported function GetManaRegenRate(mobile)
 		base_regen := CInt(AP_GetSettingsCfgElem("Regen").Mana * 100);
 	endif
 
-	if (TemHabilidade(mobile, "Mente Tranquila"))
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::QUIET_MIND))
 		base_regen := base_regen + base_regen;
 	endif
 

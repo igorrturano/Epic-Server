@@ -218,7 +218,7 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
 		if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::DETERMINACAO_ARCANA) && !isBloodied(mobile))
 			SendSysMessageEx(mobile, "Voce nao possui os componentes materiais necessarios para invocacao desta magia arcana.",
 							  SSM_FAIL);
-			if (TemHabilidade(mobile, "Mago Precavido"))
+			if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SUPPORT_CASTER))
 				HealMana(mobile, CInt(spellinfo.mana * 0.5));
 			endif
 			FailSpell(mobile);
@@ -338,7 +338,7 @@ function checkSpellInterruption(mobile, orig_hp)
 		SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.",
 				   SSM_FAIL);
 		FailSpell(mobile);
-		if (TemHabilidade(mobile, "Mago Precavido"))
+		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SUPPORT_CASTER))
 			HealMana(mobile, CInt(GetObjProperty(mobile, "#Casting").mana * 0.5));
 		endif
 		if (!GetObjProperty(mobile, "#magiasilenciosa"))
@@ -355,7 +355,7 @@ function checkSpellInterruption(mobile, orig_hp)
 			FailSpell(mobile);
 		endif
 
-		if (TemHabilidade(mobile, "Mago Precavido"))
+		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SUPPORT_CASTER))
 			HealMana(mobile, CInt(GetObjProperty(mobile, "#Casting").mana * 0.5));
 		endif
 		return 0;
@@ -465,6 +465,13 @@ function checkCastingSuccess(mobile, spellinfo, scroll)
 	endif
 
 	var difficulty := CInt(spellinfo.Difficulty);
+
+	// Caminho: School Specialization (-10 difficulty)
+	var schoolSpecId := _GetSchoolSpecForSpell(spellinfo);
+	if (schoolSpecId && MobileWrapper(mobile).HasAbility(schoolSpecId))
+		difficulty := difficulty - 10;
+	endif
+
 	var skill_check := SkillCheck(mobile, attribute, difficulty);
 
 	// Chance to also up magic lore on cast
@@ -517,7 +524,7 @@ function consumeScroll(mobile, scroll)
 endfunction
 
 function handleFailedSpell(mobile, spellinfo)
-	if (TemHabilidade(mobile, "Mago Precavido"))
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SUPPORT_CASTER))
 		HealMana(mobile, CInt(spellinfo.mana * 0.5));
 	endif
 
@@ -526,4 +533,15 @@ function handleFailedSpell(mobile, spellinfo)
 	endif
 
 	SendSysMessageEx(mobile, "Voce falhou em invocar a magia.", SSM_FAIL);
+endfunction
+
+function _GetSchoolSpecForSpell(spellinfo)
+	var school := spellinfo.School;
+	case (school)
+		"Evocatium":     return ABILITY_ID::SCHOOL_SPEC_EVOCATIUM;
+		"Velkyn":        return ABILITY_ID::SCHOOL_SPEC_VELKYN;
+		"Ahtaleloreth":  return ABILITY_ID::SCHOOL_SPEC_AHTALELORETH;
+		"Kaijin":        return ABILITY_ID::SCHOOL_SPEC_KAIJIN;
+		default:         return 0;
+	endcase
 endfunction
