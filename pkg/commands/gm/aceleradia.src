@@ -3,6 +3,9 @@ use os;
 include "include/epicConstants";
 
 program ateste (quem, param)
+
+	SendSysMessage(quem,"Desativado em producao");
+	return 0;
 	Print(param);
 	var parametro := cint(param);
 	var gmAcceleration := cint(GetGlobalProperty("daynightAccelaration"));

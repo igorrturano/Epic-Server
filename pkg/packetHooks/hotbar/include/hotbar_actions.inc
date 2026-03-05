@@ -408,7 +408,8 @@ endfunction
 function ExecuteCommand(who, actionId)
     // Use command_discovery.inc to get command by index (single source of truth)
     // actionId is the sequential index (1, 2, 3...) sent by client
-    var cmd_data := GetCommandByIndex(actionId);
+    // Pass who so it picks GM vs player command list
+    var cmd_data := GetCommandByIndex(actionId, who);
     
     if (cmd_data && cmd_data != error)
         var result := Start_Script(cmd_data.script_path, who);
