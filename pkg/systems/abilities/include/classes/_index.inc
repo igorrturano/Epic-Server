@@ -244,3 +244,12 @@ include ":abilities:classes/caminho/HeavyArmorSpec";
 //===========================================
 include ":abilities:classes/caminho/ShieldSpecialization";
 include ":abilities:classes/caminho/MountedCombat";
+
+//===========================================
+// CAMINHO - Caster (3400-3423)
+//===========================================
+include ":abilities:classes/caminho/QuietMind";
+include ":abilities:classes/caminho/SupportCaster";
+include ":abilities:classes/caminho/SpellRange";
+include ":abilities:classes/caminho/ElementalSpecialization";
+include ":abilities:classes/caminho/SchoolSpecialization";

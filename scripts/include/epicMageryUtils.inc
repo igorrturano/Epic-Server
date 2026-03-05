@@ -93,6 +93,11 @@ function distanceAllowedForSpells(who, mlore, school)
 		dist_allowed := dist_allowed + (mlore * 2);
 	endif
 
+	// Caminho: Spell Range (+5 tiles)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SPELL_RANGE))
+		dist_allowed := dist_allowed + 5;
+	endif
+
 	return dist_allowed;
 endfunction
 

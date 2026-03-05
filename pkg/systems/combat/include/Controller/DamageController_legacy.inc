@@ -39,6 +39,16 @@ enum DAMAGE_TYPES
 	DMG_ENERGY		:= "Energy"
 endenum
 
+function _GetElementalSpecForDmgType(dmgType)
+	case (dmgType)
+		DMG_FIRE:    return ABILITY_ID::ELEMENTAL_SPEC_FIRE;
+		DMG_COLD:    return ABILITY_ID::ELEMENTAL_SPEC_COLD;
+		DMG_ENERGY:  return ABILITY_ID::ELEMENTAL_SPEC_ENERGY;
+		DMG_POISON:  return ABILITY_ID::ELEMENTAL_SPEC_POISON;
+		default:     return 0;
+	endcase
+endfunction
+
 function getNewDamageList(attacker)
 	var list := dictionary;
 
@@ -387,6 +397,18 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	var totaldmg;
 	var attackInfo := struct{};
 
+	// Caminho: Elemental Specialization bonus (+2 per purchase)
+	if (source && type != DMG_FORCED)
+		var elemSpecId := _GetElementalSpecForDmgType(type);
+		if (elemSpecId)
+			var mob := MobileWrapper(source);
+			var count := mob.GetPoolAbilityCount(elemSpecId);
+			if (count > 0)
+				dmg := dmg + (count * 2);
+			endif
+		endif
+	endif
+
 	if (type == DMG_FORCED)
 		totaldmg := CInt(dmg);
 	else
@@ -450,16 +472,6 @@ function CalcDamageHabs(attacker, defender, damage)
 		var damagemod := RandomDiceRoll(bonus);
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + CInt(damagemod));
-	endif
-
-	if (TemHabilidade(attacker, "Taticas Arcanas"))
-		var manaatual := AP_GetVital(attacker, "MANA");
-		var manatotal := AP_GetVitalMaximumValue(attacker, "MANA");
-		if (manaatual >= manatotal / 2)
-			var damagemod := CInt(manaatual / 20);
-			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Taticas Arcanas]: " + CInt(damagemod));
-		endif
 	endif
 
 	if (GetCooldown(attacker, "lobosolitario"))
