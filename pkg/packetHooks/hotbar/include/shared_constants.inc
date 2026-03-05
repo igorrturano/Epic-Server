@@ -33,6 +33,8 @@ const PACKET_EXTENDED := 0xD7;
 const SUBCOMMAND_REQUEST := 0x50;
 const SUBCOMMAND_EXECUTE := 0x51;
 const SUBCOMMAND_RESPONSE := 0x52;
+const SUBCOMMAND_TOOLTIP_REQUEST := 0x60;
+const SUBCOMMAND_TOOLTIP_RESPONSE := 0x61;
 
 // Request types (Client → Server)
 const REQUEST_ABILITIES := 0x01;
@@ -52,6 +54,7 @@ const SUBCOMMAND_ABILITIES_RESPONSE := 0x53;
 const SUBCOMMAND_SPECIALS_RESPONSE := 0x54;
 const SUBCOMMAND_SPELLS_RESPONSE := 0x55;
 const SUBCOMMAND_SKILLS_RESPONSE := 0x56;
+const SUBCOMMAND_COMMANDS_RESPONSE := 0x59;
 
 // =============================================================================
 // Active Skills Discovery (from attributes.cfg)
