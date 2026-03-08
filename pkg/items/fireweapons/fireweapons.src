@@ -141,10 +141,6 @@ function ReloadWeapon(who, item, weapon_info)
 			return 0;
 		endif
 
-		if (TemHabilidade(who, "Municiador Experiente") && powder_needed > 2)
-			powder_needed := 2;
-		endif
-
 		if (powder.amount < powder_needed)
 			SendSysMessageEx(who, "Voce nao tem polvora suficiente.", SSM_FAIL);
 			return 0;
@@ -167,9 +163,6 @@ function ReloadWeapon(who, item, weapon_info)
 	PrintTextAbove(who, "*Socando a polvora*");
 
 	var reload_time := weapon_info.reload_time;
-	if (TemHabilidade(who, "Municiador Experiente"))
-		reload_time := CInt(reload_time / 2);
-	endif
 
 	// Animation and sound effects
 	var i := 0;
@@ -277,7 +270,7 @@ function AimAndShoot(who, item, targ, weapon_info)
 	endif
 
 	// Handle weapon malfunction
-	if (RandomFloat(100) <= 5 && !TemHabilidade(who, "Artilheiro preparado"))
+	if (RandomFloat(100) <= 5)
 		SendSysMessageEx(who, "O tiro saiu pela culatra!", SSM_FAIL);
 		DestroyItem(item);
 		DamageFLS(who, dmg, DMG_FORCED, who);
@@ -313,12 +306,7 @@ function CalculateWeaponDamage(who, item, targ, weapon_info, dist)
 		endif
 	endif
 
-	var skill_dmgmod := TACTICS;
-	if (TemHabilidade(who, "Artilheiro Preparado"))
-		skill_dmgmod := METALWORKING;
-	endif
-
-	dmg += CInt(AP_GetStat(who, DEXTERITY) / 10) + CInt(AP_GetSkill(who, skill_dmgmod) / 10);
+	dmg += CInt(AP_GetStat(who, DEXTERITY) / 10) + CInt(AP_GetSkill(who, TACTICS) / 10);
 
 	if (GetObjProperty(item, "Excepcional"))
 		dmg := CInt(dmg * 1.2);

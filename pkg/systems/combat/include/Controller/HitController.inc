@@ -230,10 +230,6 @@ function ConsumeAmmo(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
 		var powderNeeded := GetPowderAmount(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory());
 
-		if (TemHabilidade(attackInfo.GetAttacker().GetObjRef(), "Municiador Experiente") && powderNeeded > 2)
-			powderNeeded := 2;
-		endif
-
 		var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST).GetObjRef();
 		var powder := FindObjtypeInContainer(bandolier, 0x9092); // Pólvora
 		if (powder.amount < powderNeeded)

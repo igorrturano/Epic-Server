@@ -227,6 +227,15 @@ include ":abilities:classes/mutante/Transmute";
 include ":abilities:classes/mutante/Mutagenic";
 
 //===========================================
+// CONSTRUTOR DE GOLEMS (2700-2704)
+//===========================================
+include ":abilities:classes/engenheiro/ExplosiveFist";
+include ":abilities:classes/engenheiro/TargetingVisor";
+include ":abilities:classes/engenheiro/RocketJump";
+include ":abilities:classes/engenheiro/GrapplingHook";
+include ":abilities:classes/engenheiro/GolemAssembly";
+
+//===========================================
 // CAMINHO - Weapon Specializations (3000-3013)
 //===========================================
 include ":abilities:classes/caminho/WeaponSpecialization";

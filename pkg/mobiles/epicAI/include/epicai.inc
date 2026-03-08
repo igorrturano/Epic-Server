@@ -232,12 +232,12 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 SetupAlchemistLoadout(mobile);
             endif
 
-            if ("Artilheiro Preparado" in habs)
+            if (ABILITY_ID::EXPLOSIVE_FIST in habs)
                 makeRace(mobile, ANAO);
                 SetupFireweaponLoadout(mobile);
             endif
 
-            if ("Construtor de Golems" in habs)
+            if (ABILITY_ID::GOLEM_ASSEMBLY in habs)
                 makeRace(mobile, ANAO);
                 // Store mobile's current position before hiding it
                 SetObjProperty(mobile, "#original_pos", struct{
