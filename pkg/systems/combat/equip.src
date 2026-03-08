@@ -111,7 +111,7 @@ program equipweapon(who, item)
 		endif
 	endif
 
-	if (TemHabilidade(who, "Fúria"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::FURIA))
 		if (item.objtype == 0x13ec || item.objtype == 0x13ed || item.objtype == 0x13ee ||
 	  item.objtype == 0x13ef || item.objtype == 0x13f0 || item.objtype == 0x13f1 ||
 	  item.objtype == 0x13f2 || item.objtype == 0x13BB || item.objtype == 0x13C0 ||

@@ -31,7 +31,7 @@ program magia(who, spellname := "")
 	
 	// Determine spell type (trickster vs regular mage)
 	var spell_type := SPELL_TYPE_MAGE;
-	if (TemHabilidade(who, "Sensibilidade Arcana"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
 		spell_type := SPELL_TYPE_TRICKSTER;
 	endif
 	

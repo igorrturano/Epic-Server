@@ -193,7 +193,7 @@ program skill_Stealing(mobile)
 
 			var check := SkillCheck(mobile, PICKPOCKETING, diff);
 			if (check > 0)
-				if (temHabilidade(targ, "Vínculo Elemental"))
+				if (MobileWrapper(targ).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
 					if (GetObjProperty(steal, "#elementalweapon"))
 						Message("O alvo tem uma ligacao magica com a arma.").SetColor(SSM_FAIL).SendSys(mobile);
 						return 1;

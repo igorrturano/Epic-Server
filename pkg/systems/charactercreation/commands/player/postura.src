@@ -8,6 +8,7 @@ include ":charactercreation:chargumps";
 include ":tn:characters";
 include ":tn:tngumps";
 include ":attributes:attributes";
+include ":charactercreation:habilidades";
 include ":tn:cooldown";
 
 program postura(who, text)

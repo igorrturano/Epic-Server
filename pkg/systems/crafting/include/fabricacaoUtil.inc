@@ -13,7 +13,7 @@ include "/include/epicConstants";
 include ":keys:key";
 include ":crafting:/include/caracteristicasFabricacao";
 include ":crafting:/include/util/fabricacaoConstants";
-
+include "include/epicUtils";
 var itemsConfig := ReadConfigFile(":*:itemdesc");
 
 function ClassificaNomeReceita(nomeReceita)

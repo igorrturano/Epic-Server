@@ -23,7 +23,7 @@ function HumanoidBrain()
     var is_ranged := me.weapon.attribute == "Ranged" || (me.isSage() && me.weapon.objtype == FIST);
 
     // Enable archer-specific abilities if needed
-    if (TemHabilidade(me, ABILITY_ID::TIRO_EM_MOVIMENTO))
+    if (MobileWrapper(me).HasAbility(ABILITY_ID::TIRO_EM_MOVIMENTO))
         GrantPrivilege(me, "firewhilemoving");
         me.enable("firewhilemoving");
     endif
@@ -270,7 +270,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
 
     // Let the combat hook handle the actual attacks
     if (is_ranged)
-        if (Distance(me, opponent) < 2 && !TemHabilidade(me, ABILITY_ID::TIRO_EM_MOVIMENTO))
+        if (Distance(me, opponent) < 2 && !MobileWrapper(me).HasAbility(ABILITY_ID::TIRO_EM_MOVIMENTO))
             reachForMeleeWeapon(opponent);
         endif
 

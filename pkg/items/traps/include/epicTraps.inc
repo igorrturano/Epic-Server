@@ -239,7 +239,7 @@ function ExecuteEpicTrapEffect(mobile, trap)
     // Check for resist/evasion
     var damage_multiplier := 1.0;
     if (CheckResist(mobile, REFLEXES, RESIST_HARD))
-        if (temHabilidade(mobile, "Desbravador Nato"))
+        if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
             SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
             return 1;
         else

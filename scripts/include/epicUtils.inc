@@ -4,6 +4,8 @@ use math;
 
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
 
 function RemoveAcentos(text)
     var acentos := "áàãâäéèêëíìîïóòõôöúùûüũçÁÀÃÂÄÉÈÊËÍÌÎÏÓÒÕÔÖÚÙÛÜŨÇ";
@@ -31,10 +33,6 @@ function NormalizeString(text)
     text := StrReplace(text, "_", " ");
     text := StrReplace(text, "  ", " ");
     return Trim(text);
-endfunction
-
-function updateToolTip(obj_reference)
-   IncRevision(obj_reference);
 endfunction
 
 function isMaleGraphic(who)

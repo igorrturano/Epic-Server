@@ -5,6 +5,7 @@ include "include/client";
 include ":attributes:skillCheck";
 include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
+include ":charactercreation:habilidades";
 
 program UseGrower(who, grower)
 	if (!ReserveItem(grower))

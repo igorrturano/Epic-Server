@@ -117,15 +117,11 @@ function performPreCastingChecks(mobile, byref spellinfo)
 	endif
 
 	var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0";
-	var battlemageHabs := { "Concentracao Macabra", "Consagracao Divina", "Sigilo de Protecao", "Vínculo Elemental",
-							"Colheita de Almas", "Campeao das Montanhas", "Visao verdadeira", "Sensibilidade Arcana" };
-	var tem_hab := 0;
-	foreach hab in battlemageHabs
-		if (TemHabilidade(mobile, hab))
-			tem_hab := 1;
-			break;
-		endif
-	endforeach
+	var mw := MobileWrapper(mobile);
+	var tem_hab := TemHabilidade(mobile, "Concentracao Macabra") || TemHabilidade(mobile, "Campeao das Montanhas") ||
+		mw.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA) || mw.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO) ||
+		mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) || mw.HasAbility(ABILITY_ID::SOUL_HARVEST) ||
+		mw.HasAbility(ABILITY_ID::CONEXAO_DIVINA) || mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA);
 
 	if (mobile.squelched && !mobile.npctemplate)
 		SendSysMessageEx(mobile, "Voce precisa falar devido os componentes verbais da magia.", SSM_FAIL);
@@ -452,7 +448,7 @@ endfunction
 
 function checkCastingSuccess(mobile, spellinfo, scroll)
 	var attribute := MAGERY;
-	if (TemHabilidade(mobile, "Sensibilidade Arcana"))
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
 		attribute := ARCANA;
 	elseif (spellinfo.Type == "Divine")
 		attribute := THEOLOGY;
@@ -494,7 +490,7 @@ endfunction
 function getSupportingSkill(mobile)
 	var chardata := getobjProperty(mobile, "chardata");
 	var attribute := ARCANA;
-	if (chardata != error && chardata.wisdom_path != "Mago" && !(Temhabilidade(mobile, "Sensibilidade Arcana")))
+	if (chardata != error && chardata.wisdom_path != "Mago" && !(MobileWrapper(mobile).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)))
 		attribute := THEOLOGY;
 	endif
 	return attribute;
@@ -509,11 +505,11 @@ function finalizeCasting(mobile, spellinfo, targ, scroll)
 endfunction
 
 function consumeScroll(mobile, scroll)
-	if (!TemHabilidade(mobile, "Reaproveitar Pergaminho"))
+	if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::REAPROVEITAR_PERGAMINHO))
 		SubtractAmount(scroll, 1);
 	else
 		var attrib_value := MAGERY;
-		if (TemHabilidade(mobile, "Sensibilidade Arcana"))
+		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
 			attrib_value := ARCANA;
 		endif
 		var chance := RandomIntMinMax(0, 100);

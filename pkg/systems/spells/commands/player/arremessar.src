@@ -25,7 +25,7 @@ endenum
 program arremesso(params)
 	var who := params[1];
 	params := 0; // No longer needed
-	if (who.hidden && !TemHabilidade(who, "Espionagem"))
+	if (who.hidden && !MobileWrapper(who).HasAbility(ABILITY_ID::ESPIONAGEM))
 		SendSysMessageEx(who, "Voce nao pode fazer isso escondido.", SSM_FAIL);
 		return 0;
 	elseif (GetEquipmentByLayer(who, 0x19) && GetObjProperty(who, "chardata").trait != "Cavalaria de Escaramuça")
@@ -50,14 +50,14 @@ program arremesso(params)
 		SendSysMessageEx(who, "Cancelled.", SSM_FAIL);
 		return 0;
 	elseif (targ.IsA(POLCLASS_MOBILE))
-		if (!TemHabilidade(who, "Brigador de Taverna"))
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::TAVERN_BRAWLER))
 			SendSysMessageEx(who, "Voce nao consegue arremessar essa pessoa.", SSM_FAIL);
 			return 0;
 		elseif (AP_GetStat(who, STRENGTH) <= AP_GetStat(targ, STRENGTH))
 			SendSysMessageEx(who, "Voce nao e forte o suficiente para arremessar essa pessoa.", SSM_FAIL);
 			return 0;
 		endif
-	elseif (targ.npctemplate && !TemHabilidade(who, "Brigador de Taverna"))
+	elseif (targ.npctemplate && !MobileWrapper(who).HasAbility(ABILITY_ID::TAVERN_BRAWLER))
 		SendSysMessageEx(who, "Voce nao consegue arremessar essa pessoa.", SSM_FAIL);
 		return 0;
 	elseif (Distance(who, targ) > 1)
@@ -151,7 +151,7 @@ program arremesso(params)
 	var str_bonus := AP_GetStat(who, STRENGTH);
 	var dex_bonus := AP_GetStat(who, DEXTERITY);
 	var dmg_bonus := 0;
-	if (TemHabilidade(who, "Brigador de Taverna"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::TAVERN_BRAWLER))
 		dmg_bonus := Cint((str_bonus + dex_bonus) / 20);
 	endif
 	dmg += dmg_bonus;
@@ -237,7 +237,7 @@ program arremesso(params)
 		endif
 	endif
 
-	if (who.hidden && !TemHabilidade(who, "Furtividade Aprimorada"))
+	if (who.hidden && !MobileWrapper(who).HasAbility(ABILITY_ID::FURTIVIDADE_APRIMORADA))
 		who.hidden := 0;
 	else
 		if (AP_GetVital(who, "Stamina") < 50)

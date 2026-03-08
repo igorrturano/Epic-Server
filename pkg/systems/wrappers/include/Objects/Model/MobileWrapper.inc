@@ -15,6 +15,7 @@ include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
+include "include/NPCUtil";
 include ":achievements:utils/datafile";
 include ":serialization:StructSerializer";
 include ":abilities:controllers/AbilityMonitor";

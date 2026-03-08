@@ -85,7 +85,7 @@ function distanceAllowedForSpells(who, mlore, school)
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 		dist_allowed := dist_allowed + (mlore * 2);
-	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
 		dist_allowed := dist_allowed + (mlore * 2);
 	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::TIROTHAN) && school == EVOCATIUM)
 		dist_allowed := dist_allowed + (mlore * 2);
@@ -106,7 +106,7 @@ function bonusSpellDamageForSpecialists(who, dmg, school)
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 		dmg := Cint(dmg * bonus);
-	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
 		dmg := Cint(dmg * bonus);
 	endif
 
@@ -166,7 +166,7 @@ function bonusSpellDurationForSpecialists(who, duration, school)
 
    if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 	  duration := Cint(duration * bonus);
-   elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+   elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
 	  duration := Cint(duration * bonus);
    elseif(MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA) && school == ARADALORE)
 	  duration := Cint(duration * bonus);
@@ -401,7 +401,7 @@ endfunction
 function HandleSpellSkill(who)
 	var chardata := getobjProperty(who, "chardata");
 	var skill := Cint(AP_GetSkill(who, ARCANA));
-	if (chardata != error && chardata.wisdom_path != "Mago" && !(Temhabilidade(who, "Sensibilidade Arcana")))
+	if (chardata != error && chardata.wisdom_path != "Mago" && !(MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)))
 		skill := Cint(AP_GetSkill(who, THEOLOGY));
 	endif
 

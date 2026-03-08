@@ -22,7 +22,7 @@ exported function GetIntrinsicFortitude(mobile)
 		fortitude += 5;
 	endif
 
-	if (TemHabilidade(mobile, ABILITY_ID::CACADOR_IMPLACAVEL))
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::CACADOR_IMPLACAVEL))
 		fortitude += 2;
 	endif
 	if (TemHabilidade(mobile, "Campeao das Montanhas"))
@@ -68,8 +68,8 @@ exported function GetIntrinsicReflexes(mobile)
 		reflexos += 5;
 	endif
 
-	if (TemHabilidade(mobile, "Reaproveitar Pergaminho"))
-			reflexos := reflexos + 5;
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::REAPROVEITAR_PERGAMINHO))
+		reflexos := reflexos + 5;
 	endif
 
 	if (chardata.classe == "Ladino")
@@ -110,9 +110,9 @@ exported function GetIntrinsicWill(mobile)
 		vontade += 5;
 	elseif (MobileWrapper(mobile).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
 		vontade += 5;
-	elseif (TemHabilidade(mobile, "Conexao Divina"))
+	elseif (MobileWrapper(mobile).HasAbility(ABILITY_ID::CONEXAO_DIVINA))
 		vontade += 8;
-	elseif (TemHabilidade(mobile, "Consagracao Divina"))
+	elseif (MobileWrapper(mobile).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
 		vontade += paladin_bonus;
 	endif
 

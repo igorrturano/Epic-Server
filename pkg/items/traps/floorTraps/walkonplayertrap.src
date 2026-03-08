@@ -42,7 +42,7 @@ program TrapWalkOn(mobile, trap)
 				var dmg := CInt(RandomDiceRoll("1d10")) + 20;
 				SendSysMessageEx(mobile, "Voce pisou em uma armadilha de urso!", SSM_FAIL);
 				if (CheckResist(mobile, REFLEXES, RESIST_ALMOST_IMPOSSIBLE))
-					if (temHabilidade(mobile, "Desbravador Nato"))
+					if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 						SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
 						sleep(10);
 						continue;
@@ -106,7 +106,7 @@ program TrapWalkOn(mobile, trap)
 			var dmg := CInt(RandomDiceRoll("1d10")) + 15;
 			dmg := dmg * level;
 			if (CheckResist(mobile, REFLEXES, RESIST_ALMOST_IMPOSSIBLE))
-				if (temHabilidade(mobile, "Desbravador Nato"))
+				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
 					sleep(10);
 					continue;
@@ -175,7 +175,7 @@ program TrapWalkOn(mobile, trap)
 			var dmg := CInt(RandomDiceRoll("1d10")) + 8;
 			dmg := dmg * level;
 			if (CheckResist(mobile, REFLEXES, RESIST_ALMOST_IMPOSSIBLE))
-				if (temHabilidade(mobile, "Desbravador Nato"))
+				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
 					sleep(10);
 					continue;

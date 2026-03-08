@@ -8,6 +8,7 @@ include ":gumpDesigner:Control/Tooltip";
 include ":timedScripts:timedScripts";
 include ":combat:Model/CombatTraits";
 include ":combat:Controller/StanceController";
+include ":tn:cooldown";
 
 const STANCE_COOLDOWN := 30; // seconds
 

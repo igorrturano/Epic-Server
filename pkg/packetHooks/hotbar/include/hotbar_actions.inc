@@ -214,7 +214,7 @@ function ExecuteSpell(who, actionId)
         spell_types.append(SPELL_TYPE_PRIEST);
     endif
 
-    if (TemHabilidade(who, "Consagracao Divina"))
+    if (MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
         spell_configs.append(":spells:config/paladinspells");
         spell_types.append(SPELL_TYPE_PALADIN);
     endif
@@ -222,7 +222,7 @@ function ExecuteSpell(who, actionId)
         spell_configs.append(":spells:config/demonhunterspells");
         spell_types.append(SPELL_TYPE_DEMONHUNTER);
     endif
-    if (TemHabilidade(who, "Sensibilidade Arcana"))
+    if (MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
         spell_configs.append(":spells:config/tricksterspells");
         spell_types.append(SPELL_TYPE_TRICKSTER);
     endif
