@@ -47,6 +47,11 @@ program unequipweapon(who, item)
 		EraseObjProperty(who, "twohanded");
 	endif
 
+	// Steam Legs: remove carry capacity bonus
+	if (item.objtype == 0xC62A)
+		who.carrying_capacity_mod := who.carrying_capacity_mod - 50;
+	endif
+
 	Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
 
 endprogram

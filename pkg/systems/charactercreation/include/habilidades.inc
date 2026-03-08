@@ -500,12 +500,11 @@ function comprarHabilidade(who, item, nv:=-1)
 		// 	who.resist_cold_mod  := who.resist_cold_mod + 25;
 		// 	who.resist_poison_mod  := who.resist_poison_mod + 25;
 		// 	who.resist_energy_mod  := who.resist_energy_mod + 25;
-		elseif (escolhida_id == ABILITY_ID::ARTILHEIRO_PREPARADO)
+		elseif (escolhida_id == ABILITY_ID::EXPLOSIVE_FIST)
 			if (chardata.wisdom_path != "Engenheiro")
 				SendSysMessageEx(who, "Apenas engenheiros podem comprar essa habilidade.", SSM_FAIL);
 				return 0;
 			endif
-			who.carrying_capacity_mod := 50;
 		elseif (escolhida_id == ABILITY_ID::BOLSA_INFINITA)
 			who.carrying_capacity_mod := 120;
 		elseif (escolhida_id == ABILITY_ID::AINALAITH)
