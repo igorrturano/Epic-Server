@@ -1,4 +1,5 @@
 include ":abilities:models/CombatAbility";
+include "include/epicUtils";
 
 /**
  * Forma Abissal (Abyssal Form) - ABILITY_ID::FORMA_ABISSAL (1904)
