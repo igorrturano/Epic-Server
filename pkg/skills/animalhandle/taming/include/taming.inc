@@ -170,7 +170,7 @@ function GetMaxPets(who)
 	endif
 
 	//Influência de Habs na quantidade
-	if(TemHabilidade(who, ABILITY_ID::ESPREITA_SELVAGEM))
+	if(MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM))
 		maxpets := maxpets + 1;
 	endif
 
@@ -330,7 +330,7 @@ function RessuscitarPet(corpse, owner, is_bandage := 0)
 
     // Lógica de contagem de animais fidelizados
     var pets := GetObjProperty(owner, "TamedPets");
-    var habs := TemHabilidade(owner, ABILITY_ID::ESPREITA_SELVAGEM);
+    var habs := MobileWrapper(owner).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM);
     var limite_animais := habs ? 2 : 1;
     var animais_fidelizados := 0;
     foreach serial in pets

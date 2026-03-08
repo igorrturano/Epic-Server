@@ -198,7 +198,7 @@ function ValidateSpellAccess(who, spell_type)
             endif
             
         SPELL_TYPE_PALADIN:
-            if (!TemHabilidade(who, "Consagracao Divina"))
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
                 SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
                 return 0;
             endif
@@ -261,7 +261,7 @@ function ValidateSpellRequirements(who, spell_data, spell_type)
         SPELL_TYPE_MAGE:
             // Check grimoire for non-GMs, unless they have Sensibilidade Arcana
             if (!who.cmdlevel && spell_data.circle != 0)
-                if (!TemHabilidade(who, "Sensibilidade Arcana"))
+                if (!MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
                     var spellBookInfo := FindSpellInSpellBooks(who, spell_data.id);
                     if (!spellBookInfo.found)
                         SendSysMessageEx(who, "Voce nao possui a magia " + spell_data.name + " no seu grimorio.", SSM_FAIL);

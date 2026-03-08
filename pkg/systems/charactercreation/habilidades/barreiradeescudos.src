@@ -4,6 +4,7 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
 include ":tn:cooldown";
+include ":charactercreation:habilidades";
 
 program manobra(attacker)
 

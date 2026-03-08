@@ -5,6 +5,7 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
 include ":combat:Controller/DamageController_legacy";
+include ":charactercreation:habilidades";
 include ":tn:cooldown";
 
 program aurafe(paladin)

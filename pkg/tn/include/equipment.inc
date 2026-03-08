@@ -59,9 +59,9 @@ function SetEquipmentMods(who, item)
 	// Caminho: Armor spec dex penalty reduction
 	if (item.isa(POLCLASS_ARMOR))
 		var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
-		if (tipoProtecao["Armadura Pesada"] && TemHabilidade(who, ABILITY_ID::HEAVY_ARMOR_SPEC))
+		if (tipoProtecao["Armadura Pesada"] && MobileWrapper(who).HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
 			penalty -= 2;
-		elseif (tipoProtecao["Armadura Media"] && TemHabilidade(who, ABILITY_ID::MEDIUM_ARMOR_SPEC))
+		elseif (tipoProtecao["Armadura Media"] && MobileWrapper(who).HasAbility(ABILITY_ID::MEDIUM_ARMOR_SPEC))
 			penalty -= 1;
 		endif
 	endif
@@ -274,9 +274,9 @@ function RemoveEquipmentMods(who, item)
 	if (item.isa(POLCLASS_ARMOR))
 		var itemdesc_full := ReadConfigFile("::itemdesc");
 		var tipoProtecao := CStr(itemdesc_full[item.objtype].TipoProtecao);
-		if (tipoProtecao["Armadura Pesada"] && TemHabilidade(who, ABILITY_ID::HEAVY_ARMOR_SPEC))
+		if (tipoProtecao["Armadura Pesada"] && MobileWrapper(who).HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
 			penalty -= 2;
-		elseif (tipoProtecao["Armadura Media"] && TemHabilidade(who, ABILITY_ID::MEDIUM_ARMOR_SPEC))
+		elseif (tipoProtecao["Armadura Media"] && MobileWrapper(who).HasAbility(ABILITY_ID::MEDIUM_ARMOR_SPEC))
 			penalty -= 1;
 		endif
 		if (penalty < 0)

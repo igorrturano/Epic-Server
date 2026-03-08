@@ -24,7 +24,7 @@ program magia_paladin(who, spellname := "")
 	endif
 
 	// Check if player has paladin ability
-	var isPaladin := TemHabilidade(who, "Consagracao Divina");
+	var isPaladin := MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA);
 	if (!isPaladin)
 		SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
 		return 0;

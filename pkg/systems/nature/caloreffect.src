@@ -111,7 +111,7 @@ program calor(params)
 				dif := dif - 5;
 			endif
 			
-			if (TemHabilidade(who, "Resistência do Deserto"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::RESISTENCIA_DO_DESERTO))
 				dif := dif - 5;
 			endif
 

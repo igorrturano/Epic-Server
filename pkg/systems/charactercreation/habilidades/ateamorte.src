@@ -1,6 +1,7 @@
 use uo;
 
 include ":attributes:attributes";
+include ":charactercreation:habilidades";
 include ":timedScripts:timedScripts";
 include "include/say";
 include ":combat:Controller/DamageController_legacy";

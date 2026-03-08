@@ -43,7 +43,7 @@ program SpellScript(params)
     endif
 
     var duration := cint(AP_GetSkill(who, ARCANA) / 5);
-    if (TemHabilidade(who, "Irmaos de Areia"))
+    if (MobileWrapper(who).HasAbility(ABILITY_ID::SAND_BROTHERS))
         duration := Cint(duration * 1.5);
     endif
 

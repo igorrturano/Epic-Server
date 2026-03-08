@@ -119,7 +119,7 @@ function CalculateDHDiff(who, mobile)
 	var dist := Distance(who, mobile);
 	var difficulty;
 
-	if (TemHabilidade(mobile, "Furtividade Aprimorada") && !TemHabilidade(who, "Sempre Alerta"))
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::FURTIVIDADE_APRIMORADA) && !MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA))
 		difficulty := CInt(mobile_skill);
 	else
 		if (dist >=8)
@@ -151,7 +151,7 @@ function ExaminarArea(who)
 
 	var range := CInt( AP_GetSkill(who, AWARENESS) / 10 ) + 1;
 
-	if ( TemHabilidade(who, "Sempre Alerta") )
+	if ( MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA) )
 		range := range + 5;
 	endif
 
@@ -248,7 +248,7 @@ function CheckForSecretDoors(who)
 	var awareness_skill := CInt(AP_GetSkill(who, AWARENESS));
 	var range := CInt(awareness_skill / 10) + 1;
 
-	if (TemHabilidade(who, "Sempre Alerta"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA))
 		range := range + 5;
 	endif
 

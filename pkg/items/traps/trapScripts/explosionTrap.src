@@ -44,7 +44,7 @@ program trapScript(params)
 			PlayObjectCenteredEffect(mobile, FX_EXPLODE_3, 10, 10);
 
 			if (CheckResist(mobile, REFLEXES, RESIST_MEDIUM, -2 * dmg))
-				if (temHabilidade(mobile, "Desbravador Nato"))
+				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha explosiva.", SSM_INFO);
 					mobile.hidden := 0;
 					continue;

@@ -8,6 +8,7 @@ include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
 include ":timedScripts:timedScripts";
 include "include/say";
+include ":charactercreation:habilidades";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 

@@ -116,7 +116,7 @@ function ReloadWeapon(who, item, weapon_info)
 		PlaySoundEffect(who, SFX_HIT_11);
 		SetObjProperty(item, "balas", 1);
 		PrintTextAbove(who, "*Arma recarregada*");
-		updateToolTip(item);
+		IncRevision(item);
 
 		return 1;
 	endif
@@ -192,7 +192,7 @@ function ReloadWeapon(who, item, weapon_info)
 	PlaySoundEffect(who, SFX_HIT_11);
 	SetObjProperty(item, "balas", 1);
 	PrintTextAbove(who, "*Arma recarregada*");
-	updateToolTip(item);
+	IncRevision(item);
 
 	return 1;
 endfunction
@@ -218,7 +218,7 @@ function FireWeapon(who, item, weapon_info)
 	// Update ammo count
 	var balas := CInt(GetObjProperty(item, "balas")) - 1;
 	SetObjProperty(item, "balas", balas);
-	updateToolTip(item);
+	IncRevision(item);
 endfunction
 
 function AimAndShoot(who, item, targ, weapon_info)

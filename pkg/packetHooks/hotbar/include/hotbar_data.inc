@@ -681,8 +681,8 @@ function GetSpellsData(who)
     endif
 
     // OPTIMIZED: Check all ability-based spell access once
-    var has_paladin := TemHabilidade(who, "Consagracao Divina");
-    var has_trickster := TemHabilidade(who, "Sensibilidade Arcana");
+    var has_paladin := MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA);
+    var has_trickster := MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA);
     var has_demonhunter := MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO);
 
     // Load Paladin spells

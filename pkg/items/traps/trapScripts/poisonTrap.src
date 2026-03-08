@@ -36,7 +36,7 @@ program trapScript(params)
 	foreach mobile in mobiles
 		if (!mobile.npctemplate)
 			if (CheckResist(mobile, REFLEXES, RESIST_MEDIUM, -2 * poisonLvl))
-				if (temHabilidade(mobile, "Desbravador Nato"))
+				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha venenosa.", SSM_INFO);
 					mobile.hidden := 0;
 					continue;

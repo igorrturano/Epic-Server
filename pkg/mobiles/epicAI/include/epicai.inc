@@ -261,7 +261,7 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 endif
             endif
 
-            if ("Vínculo Elemental" in habs)
+            if (ABILITY_ID::VINCULO_ELEMENTAL in habs)
                 makeRace(mobile, ELFO);
                 var elementals := array{0x13fe, 0x26C9, 0x26C5, 0x26CB, 0x26CF, 0xF9E6};
                 EquipRandomFromArray(mobile, elementals);

@@ -4,6 +4,8 @@ use npc;
 use util;
 
 include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include ":gumps:gumps";
 include "include/sysEvent";
 include "include/say";
 include ":mounts:mounts";

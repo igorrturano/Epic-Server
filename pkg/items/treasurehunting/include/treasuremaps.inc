@@ -71,7 +71,7 @@ function CanDecodeMap(who, map)
     endif
     
     // Verifica habilidade de Desbravador Nato
-    return TemHabilidade(who, "Desbravador Nato");
+    return MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO);
 endfunction
 
 /*

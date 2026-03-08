@@ -18,7 +18,7 @@ include "include/epicNPCUtils";
 include ":combat:weaponInfo";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
-
+include ":charactercreation:habilidades";
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
  * These could be attributes, but not every shard will want to
