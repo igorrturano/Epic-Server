@@ -47,6 +47,15 @@ include ":abilities:classes/paladino/DivinePresence";
 include ":abilities:classes/paladino/DivineChampion";
 
 //===========================================
+// CLERIC / SABIO (2800-2804)
+//===========================================
+include ":abilities:classes/cleric/DivineConnection";
+include ":abilities:classes/cleric/RadiantSmite";
+include ":abilities:classes/cleric/DivineAura";
+include ":abilities:classes/cleric/DivineAuthority";
+include ":abilities:classes/cleric/Apotheosis";
+
+//===========================================
 // AKLATTUR (500-504)
 //===========================================
 include ":abilities:classes/aklattur/DesertFury";
