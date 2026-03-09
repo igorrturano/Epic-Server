@@ -87,18 +87,7 @@ program summontotem(params)
 		i := i + 1;
 	endwhile
 	SendSysMessageEx(who, "Voce teve sucesso em invocar a criatura.", SSM_INFO);
-
-	if (temHabilidade(who, "Guardião do Bosque"))
-		espirito.resist_physical_mod := 25;
-		espirito.resist_cold_mod := 25;
-		espirito.resist_poison_mod := 25;
-		espirito.resist_energy_mod := 25;
-		espirito.resist_fire_mod := 25;
-		SetObjProperty(espirito, "#ReflexosMod", 25);
-		SetObjProperty(espirito, "#FortitudeMod", 25);
-		SetObjProperty(espirito, "#VontadeMod", 25);
-	endif
-
+	
 	var duracao := 120 + 180 * AP_GetSkill(who, THEOLOGY) / 100;
 	var fator := (AP_GetSkill(who, THEOLOGY) - 20.0) / 4; // skill 0 -> -5 // Skill 20 -> 0 // Skill 40 -> +5 // Skill 100 -> +20
 

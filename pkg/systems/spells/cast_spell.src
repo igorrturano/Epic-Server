@@ -98,7 +98,7 @@ function initializeSpellCasting(mobile, byref spellinfo, scroll)
 		return 0;
 	endif
 
-	if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) && !TemHabilidade(mobile, "Concentracao Macabra"))
+	if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
 		mobile.frozen := 1;
 	endif
 

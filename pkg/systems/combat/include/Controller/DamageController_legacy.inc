@@ -482,27 +482,19 @@ function CalcDamageHabs(attacker, defender, damage)
 		endif
 	endif
 
-	if (TemHabilidade(attacker, "Precisao Cirurgica"))
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::PRECISAO_CIRURGICA))
 		var damagemod := CInt(AP_GetSkill(attacker, SCIENCE) / 20);
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Precisão Cirurgica]: " + CInt(damagemod));
 	endif
 
-    if (TemHabilidade(attacker, "Arsenal Sombrio"))
+    if (MobileWrapper(attacker).HasAbility(ABILITY_ID::ARSENAL_SOMBRIO))
         var damagemod := CInt(AP_GetSkill(attacker, SNEAK) / 20);
         if (isAssassinWeapon(attacker))
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));
         endif
     endif
-
-	if (TemHabilidade(attacker, "Estilo Mao Livre"))
-		if (attacker.weapon.attribute == "One_Handed" && !attacker.shield)
-			var damagemod := CInt(AP_GetSkill(attacker, TACTICS) / 25);
-			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Estilo Mao Livre]: " + CInt(damagemod));
-		endif
-	endif
 
 	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::AINALAITH))
 		var damagemod := 0;
@@ -537,17 +529,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Ainalaith]: " + CInt(damagemod));
 	endif
 
-	if (TemHabilidade(attacker, "Inimigo Predileto"))
-		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":*:npcdesc");
-		var inimigo := GetObjProperty(attacker, "InimigoPredileto");
-
-		if (cfg[npctemplate.template].Category == inimigo)
-			var damagemod := Cint(AP_GetSkill(attacker, SURVIVAL) / 20);
-			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Inimigo Predileto]: " + CInt(damagemod));
-		endif
-    elseif (TemHabilidade(attacker, "Consagracao Divina"))
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := array{"Undead"};
@@ -584,7 +566,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Presa]: " + CInt(damagemod));
 	endif
 
-	if (temHabilidade(attacker, "Instinto de Sobreviência") && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, THEOLOGY) / 2))
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA) && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, THEOLOGY) / 2))
 		if (GetObjProperty(attacker, "metamorfose") != error)
 			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage += damagemod;
@@ -622,7 +604,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		endif
 	endif
 
-	if (TemHabilidade(attacker, "Budōka"))
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::MARTIAL_ARTIST))
 		var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020, 0x27AD, 0x27AE, 0x27A7};
         var isArmor := array{"ArmaduraPesada", "ArmaduraMedia", "ArmaduraLeve"};
 		var damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
@@ -654,19 +636,18 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (GetCooldown(attacker, "furia"))
 		var damagemod := CInt(AP_GetSkill(attacker, TACTICS) / 20);
-		if (TemHabilidade(attacker, "Destruidor"))
+		if (MobileWrapper(attacker).HasAbility(ABILITY_ID::DESTRUIDOR))
 			damagemod := damagemod * 2;
 		endif
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Furia]: " + CInt(damagemod));
 	endif
 
-	if(TemHabilidade(attacker, "Flanquear"))
-		if(IsBehind(defender, attacker.x, attacker.y))
-			var damagemod := RandomDiceRoll("1d4");
-			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Flanquear]: " + CInt(damagemod));
-		endif
+	// TODO: Migrate Flanquear to V3 DamageController as a combat mechanic (+1d4 damage if behind)
+	if(IsBehind(defender, attacker.x, attacker.y))
+		var damagemod := RandomDiceRoll("1d4");
+		damage += damagemod;
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Flanquear]: " + CInt(damagemod));
 	endif
 
 	if (CInt(GetObjProperty(attacker, "#mataroumorrer")) > 0)

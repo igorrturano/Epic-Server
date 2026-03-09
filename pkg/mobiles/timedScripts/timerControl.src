@@ -211,10 +211,6 @@ function AddTimer(mobile, byref event, byref timer_list, byref cooldowns, byref 
 			SendSysMessageEx(mobile, "O veneno nao faz efeito em voce.", SSM_INFO);
 			return 0;
 		endif
-		if (TemHabilidade(mobile, "Resistencia a Venenos"))
-			SendSysMessageEx(mobile, "O veneno nao faz efeito em voce.", SSM_INFO);
-			return 0;
-		endif
 		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::MUMIFICACAO))
 			SendSysMessageEx(mobile, "O veneno nao faz efeito em voce.", SSM_INFO);
 			return 0;
