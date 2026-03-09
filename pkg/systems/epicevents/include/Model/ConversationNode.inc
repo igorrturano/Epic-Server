@@ -45,15 +45,16 @@ class ConversationNode()
 			ans.+next_node := answer.next_node;
 			ans.+conditions := answer.conditions;
 
-			// Serialize actions array
+			// Serialize actions array - always create clean structs
 			var acts := array{};
 			if (answer.actions)
 				foreach action in (answer.actions)
-					if (action.ToStruct)
-						acts.append(action.ToStruct());
-					else
-						acts.append(action);
-					endif
+					var act_struct := struct{};
+					act_struct.+type := action.type;
+					act_struct.+params := action.params;
+					act_struct.+condition := action.condition;
+					act_struct.+delay := action.delay;
+					acts.append(act_struct);
 				endforeach
 			endif
 			ans.+actions := acts;

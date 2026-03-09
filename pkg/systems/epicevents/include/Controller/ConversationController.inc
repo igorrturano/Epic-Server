@@ -181,7 +181,7 @@ function GetNodeList(conversation_id)
 endfunction
 
 function GenerateNodeId()
-	return "node_" + CStr(polcore().systime) + "_" + CStr(RandomInt(9999));
+	return "dialogo_" + CStr(RandomInt(99999));
 endfunction
 
 function GetNodeSummary(conversation_id, node_id)

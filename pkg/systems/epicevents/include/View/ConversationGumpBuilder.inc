@@ -3,7 +3,6 @@ use uo;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:epicGumps";
-include ":gumps:requestGump";
 include ":epicevents:Controller/ConversationController";
 include ":text:Color";
 
@@ -54,6 +53,128 @@ const BTN_PLAYER_ANS_BASE := 600;  // 600+ for answer buttons
 
 // Internal background
 const CONV_INTERNAL_BG := 9350;
+
+// ============================================================================
+// BOOK-BASED TEXT EDITOR (supports paste + pre-fill)
+// ============================================================================
+
+function BigRequestGumpWithText(who, question, existing_text)
+	// Create temporary book in player's backpack
+	var book := CreateItemAtLocation(who.x, who.y, who.z, "book1", 1, who.realm);
+	if (!book || book.errortext)
+		Message("Erro ao criar livro temporario!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	book.SetTitle(question);
+	book.SetAuthor(who.name);
+	SetObjProperty(book, "#TempConvBook", 1);
+
+	// Pre-fill book with existing text (split into lines)
+	if (existing_text && existing_text != "")
+		var lines := GFWordWrap(existing_text, 200);
+		var i;
+		for (i := 1; i <= lines.size(); i := i + 1)
+			book.SetLine(i, lines[i]);
+		endfor
+	endif
+
+	if (!MoveItemToContainer(book, who.backpack))
+		Message("Erro ao mover livro para mochila!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		DestroyItem(book);
+		return 0;
+	endif
+
+	// Open the book for editing
+	SendOpenBook(who, book);
+
+	// Show confirmation gump while player edits
+	var confirmGump := GFCreateGump(200, 200);
+	GFResizePic(confirmGump, 0, 0, GFCfgConst("Defaults", "BackGround"), 300, 150);
+	GFResizePic(confirmGump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 280, 30);
+	GFTextMid(confirmGump, 10, 15, 280, 2100, question);
+
+	GFResizePic(confirmGump, 10, 45, GFCfgConst("Backgrounds", "GOLDTRIM"), 280, 60);
+	GFTextLine(confirmGump, 20, 55, 1153, "Edite o livro na sua mochila.");
+	GFTextLine(confirmGump, 20, 75, 1153, "Voce pode colar texto livremente.");
+	GFTextLine(confirmGump, 20, 90, 1153, "Clique em Concluido quando terminar.");
+
+	GFResizePic(confirmGump, 10, 108, GFCfgConst("Defaults", "ForeGround"), 280, 30);
+	GFAddButton(confirmGump, 100, 113, 4023, 4024, GF_CLOSE_BTN, 1);
+	GFTextLine(confirmGump, 130, 113, 2100, "Concluido");
+
+	var confirm := GFSendGump(who, confirmGump);
+
+	if (!confirm || confirm[0] == 0)
+		DestroyConvTempBook(book);
+		return 0;
+	endif
+
+	// Extract text from the book
+	var text := ExtractConvBookText(book);
+
+	// Clean up
+	DestroyConvTempBook(book);
+
+	return text;
+endfunction
+
+function ExtractConvBookText(book)
+	var contents := book.GetContents();
+	if (!contents || contents.size() == 0)
+		return "";
+	endif
+
+	var text := "";
+	foreach line in contents
+		if (line && line != "")
+			if (text != "")
+				var lastChar := text[len(text), 1];
+				var firstChar := line[1, 1];
+
+				// If previous ends with word breaker or current starts with space, add space
+				// Otherwise it's a broken word - join directly
+				if (IsConvWordBreaker(lastChar) || firstChar == " ")
+					text := text + " " + line;
+				else
+					text := text + line;
+				endif
+			else
+				text := line;
+			endif
+		endif
+	endforeach
+
+	// Clean up double spaces
+	text := StrReplace(text, "  ", " ");
+
+	return text;
+endfunction
+
+function IsConvWordBreaker(ch)
+	if (!ch || ch == "")
+		return 1;
+	endif
+	if (ch == " " || ch == "." || ch == "," || ch == "!" || ch == "?" ||
+	    ch == ";" || ch == ":" || ch == ")" || ch == "]" || ch == "}")
+		return 1;
+	endif
+	return 0;
+endfunction
+
+function DestroyConvTempBook(book)
+	if (!book || book.errortext)
+		return;
+	endif
+	ReleaseItem(book);
+	sleepms(50);
+	var result := DestroyItem(book);
+	if (!result)
+		sleepms(200);
+		ReleaseItem(book);
+		DestroyItem(book);
+	endif
+endfunction
 
 // ============================================================================
 // PLAYER DIALOGUE GUMP
@@ -135,7 +256,7 @@ function BuildNodeEditorGump(conversation_id, node)
 	var y := 80;
 
 	// Header with node ID
-	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, $"NO: {node.id}");
+	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, $"DIALOGO: {node.id}");
 	y := y + 25;
 	GFResizePic(gump, 30, y, 3000, 540, 2);
 	y := y + 15;
@@ -152,6 +273,7 @@ function BuildNodeEditorGump(conversation_id, node)
 
 	// Edit text button
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_EDIT_TEXT);
+	GFTooltipText(gump, "Abrir editor de texto do dialogo");
 	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::LABEL, "Editar Texto");
 	y := y + 35;
 
@@ -173,10 +295,12 @@ function BuildNodeEditorGump(conversation_id, node)
 		GFResizePic(gump, x, y, 0x2486, 540, 55);
 
 		// Edit button
-		GFAddButton(gump, x + 5, y + 5, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_ANS_EDIT_BASE + ans_index);
+		GFAddButton(gump, x + 5, y + 5, 0x659, 0x65A, GF_CLOSE_BTN, BTN_CONV_ANS_EDIT_BASE + ans_index);
+		GFTooltipText(gump, "Editar esta resposta");
 
 		// Delete button
-		GFAddButton(gump, x + 5, y + 30, 2708, 2709, GF_CLOSE_BTN, BTN_CONV_ANS_DELETE_BASE + ans_index);
+		GFAddButton(gump, x + 5, y + 30, 30008, 30009, GF_CLOSE_BTN, BTN_CONV_ANS_DELETE_BASE + ans_index);
+		GFTooltipText(gump, "Remover esta resposta");
 
 		// Answer text
 		var ans_text := answer.text ? answer.text : "(sem texto)";
@@ -187,13 +311,18 @@ function BuildNodeEditorGump(conversation_id, node)
 		if (!answer.next_node || answer.next_node == "")
 			next_label := "[FIM]";
 		else
-			next_label := $"[{answer.next_node}]";
+			var next_summary := GetNodeSummary(conversation_id, answer.next_node);
+			if (Len(next_summary) > 15)
+				next_summary := next_summary[1, 15] + "...";
+			endif
+			next_label := $"[{next_summary}]";
 		endif
 		GFTextLine(gump, x + 400, y + 3, GUMP_COLOR::HELP_TEXT, $"> {next_label}");
 
 		// Navigate to linked node button (if has next node)
 		if (answer.next_node && answer.next_node != "")
 			GFAddButton(gump, x + 520, y + 3, 2117, 2118, GF_CLOSE_BTN, BTN_CONV_ANS_GOTO_BASE + ans_index);
+			GFTooltipText(gump, "Ir para o dialogo desta resposta");
 		endif
 
 		// Condition and action info
@@ -221,18 +350,22 @@ function BuildNodeEditorGump(conversation_id, node)
 
 	// Add answer button
 	GFAddButton(gump, x, y + 5, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_ADD_ANSWER);
+	GFTooltipText(gump, "Criar uma nova opcao de resposta");
 	GFTextLine(gump, x + 40, y + 7, GUMP_COLOR::HIGHLIGHT, "+ Adicionar Resposta");
 	y := y + 35;
 
 	// Bottom buttons
 	var bottom_y := 600;
 	GFAddButton(gump, 30, bottom_y, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_GOTO_NODE);
-	GFTextLine(gump, 70, bottom_y + 2, GUMP_COLOR::LABEL, "Ir para No...");
+	GFTooltipText(gump, "Navegar para outro dialogo");
+	GFTextLine(gump, 70, bottom_y + 2, GUMP_COLOR::LABEL, "Ir para Dialogo...");
 
-	GFAddButton(gump, 220, bottom_y, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_TREE_VIEW);
-	GFTextLine(gump, 260, bottom_y + 2, GUMP_COLOR::LABEL, "Visao Arvore");
+	GFAddButton(gump, 230, bottom_y, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_TREE_VIEW);
+	GFTooltipText(gump, "Ver todos os dialogos da conversa");
+	GFTextLine(gump, 270, bottom_y + 2, GUMP_COLOR::LABEL, "Visao Arvore");
 
 	GFAddButton(gump, 430, bottom_y, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_DONE);
+	GFTooltipText(gump, "Fechar o editor de conversa");
 	GFTextLine(gump, 470, bottom_y + 2, GUMP_COLOR::HIGHLIGHT, "Concluir");
 
 	return gump;
@@ -270,7 +403,7 @@ function BuildAnswerEditorGump(conversation_id, answer, node_list)
 	y := y + 15;
 
 	// Next node selection
-	GFTextLine(gump, x, y, GUMP_COLOR::HIGHLIGHT, "PROXIMO NO");
+	GFTextLine(gump, x, y, GUMP_COLOR::HIGHLIGHT, "PARA ONDE LEVA ESTA RESPOSTA?");
 	y := y + 22;
 
 	GFSetRadioGroup(gump, 1);
@@ -283,11 +416,12 @@ function BuildAnswerEditorGump(conversation_id, answer, node_list)
 
 	// Create new node option
 	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, 0, RADIO_CONV_NEXT_NEW_NODE);
-	GFTextLine(gump, x + 35, y + 3, GUMP_COLOR::LABEL, "Criar novo no");
+	GFTextLine(gump, x + 35, y + 3, GUMP_COLOR::LABEL, "Criar novo dialogo");
 	y := y + 22;
 
 	// Existing nodes
 	var radio_index := 0;
+	var node_number := 1;
 	foreach node_id in (node_list)
 		if (radio_index >= 8)
 			break;
@@ -297,10 +431,11 @@ function BuildAnswerEditorGump(conversation_id, answer, node_list)
 		var summary := GetNodeSummary(conversation_id, node_id);
 
 		GFRadioButton(gump, x, y, 0x25F8, 0x25FB, is_selected, RADIO_CONV_NEXT_NODE_BASE + radio_index);
-		GFTextLine(gump, x + 35, y + 3, GUMP_COLOR::LABEL, $"{node_id}: {summary}");
+		GFTextLine(gump, x + 35, y + 3, GUMP_COLOR::LABEL, $"Dialogo {node_number}: {summary}");
 		y := y + 22;
 
 		radio_index := radio_index + 1;
+		node_number := node_number + 1;
 	endforeach
 
 	y := y + 10;
@@ -422,28 +557,30 @@ function BuildTreeOverviewGump(conversation_id)
 	var x := 30;
 	var y := 85;
 
-	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, $"ARVORE DE CONVERSA ({num_nodes} nos)");
+	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, $"ARVORE DE CONVERSA ({num_nodes} dialogos)");
 	y := y + 25;
 	GFResizePic(gump, 30, y, 3000, 540, 2);
 	y := y + 15;
 
 	var node_index := 0;
+	var node_number := 1;
 	foreach node_id in (node_list)
 		if (node_index >= 10)
-			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, $"... e mais {num_nodes - 10} no(s)");
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, $"... e mais {num_nodes - 10} dialogo(s)");
 			break;
 		endif
 
 		var node := LoadConversationNode(conversation_id, node_id);
 		if (!node)
 			node_index := node_index + 1;
+			node_number := node_number + 1;
 			continue;
 		endif
 
 		// Node entry
 		var is_root := (node_id == root_id);
 		var label_color := is_root ? GUMP_COLOR::HIGHLIGHT : GUMP_COLOR::LABEL;
-		var root_tag := is_root ? " (RAIZ)" : "";
+		var root_tag := is_root ? " (INICIO)" : "";
 
 		// Navigate button
 		GFAddButton(gump, x, y, 2117, 2118, GF_CLOSE_BTN, BTN_CONV_TREE_NODE_BASE + node_index);
@@ -453,14 +590,14 @@ function BuildTreeOverviewGump(conversation_id)
 		if (Len(summary) > 40)
 			summary := summary[1, 40] + "...";
 		endif
-		GFTextLine(gump, x + 25, y, label_color, $"{node_id}{root_tag}");
+		GFTextLine(gump, x + 25, y, label_color, $"Dialogo {node_number}{root_tag}");
 		y := y + 18;
 		GFTextLine(gump, x + 40, y, GUMP_COLOR::HELP_TEXT, $"\"{summary}\"");
 		y := y + 18;
 
 		// Show answer connections
 		foreach answer in (node.answers)
-			var next_label := (!answer.next_node || answer.next_node == "") ? "[FIM]" : answer.next_node;
+			var next_label := (!answer.next_node || answer.next_node == "") ? "[FIM]" : "[Dialogo]";
 			var ans_preview := answer.text;
 			if (Len(ans_preview) > 25)
 				ans_preview := ans_preview[1, 25] + "...";
@@ -471,6 +608,7 @@ function BuildTreeOverviewGump(conversation_id)
 
 		y := y + 10;
 		node_index := node_index + 1;
+		node_number := node_number + 1;
 	endforeach
 
 	// Back button
@@ -499,12 +637,13 @@ function BuildNodeSelectionGump(conversation_id)
 	var x := 30;
 	var y := 85;
 
-	GFTextMid(gump, 0, y, 450, GUMP_COLOR::SECTION_HEADER, "SELECIONE UM NO");
+	GFTextMid(gump, 0, y, 450, GUMP_COLOR::SECTION_HEADER, "SELECIONE UM DIALOGO");
 	y := y + 25;
 	GFResizePic(gump, 30, y, 3000, 390, 2);
 	y := y + 15;
 
 	var node_index := 0;
+	var node_number := 1;
 	foreach node_id in (node_list)
 		if (node_index >= 10)
 			break;
@@ -512,10 +651,11 @@ function BuildNodeSelectionGump(conversation_id)
 
 		var summary := GetNodeSummary(conversation_id, node_id);
 		GFAddButton(gump, x, y, 2117, 2118, GF_CLOSE_BTN, BTN_CONV_TREE_NODE_BASE + node_index);
-		GFTextLine(gump, x + 25, y, GUMP_COLOR::LABEL, $"{node_id}: {summary}");
+		GFTextLine(gump, x + 25, y, GUMP_COLOR::LABEL, $"Dialogo {node_number}: {summary}");
 		y := y + 22;
 
 		node_index := node_index + 1;
+		node_number := node_number + 1;
 	endforeach
 
 	return gump;
