@@ -246,11 +246,6 @@ function ExecuteEpicTrapEffect(mobile, trap)
             SendSysMessageEx(mobile, "Voce evitou parte do dano da armadilha.", SSM_INFO);
             damage_multiplier := 0.5;
         endif
-    else
-        if (temHabilidade(mobile, "Evasao Aprimorada"))
-            SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha.", SSM_INFO);
-            damage_multiplier := 0.5;
-        endif
     endif
 
     var final_damage := CInt(base_damage * damage_multiplier);

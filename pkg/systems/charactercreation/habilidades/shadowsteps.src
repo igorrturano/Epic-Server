@@ -23,7 +23,7 @@ program sanctuary(params)
 		endif
 	endif
 
-	if (TemHabilidade(who, "Avanco Sombrio"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		if (InDarkness(who))
 			var duration_shadowdancer := cint(HandleSpellSkill(who) / 2.5);
 			TS_StartTimer(who, "spectralform", duration_shadowdancer);

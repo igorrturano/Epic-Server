@@ -51,12 +51,6 @@ program TrapWalkOn(mobile, trap)
 						tempo := 5;
 						dmg := CInt(dmg * 0.5);
 					endif
-				else
-					if (temHabilidade(mobile, "Evasao Aprimorada"))
-						SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha.", SSM_INFO);
-						tempo := 5;
-						dmg := CInt(dmg * 0.5);
-					endif
 				endif
 				SendSysMessage(mobile, "Voce ficou preso na armadilha.");
 				TS_StartTimer(mobile, "paralysis", tempo);
@@ -112,11 +106,6 @@ program TrapWalkOn(mobile, trap)
 					continue;
 				else
 					SendSysMessageEx(mobile, "Voce evitou parte do dano da armadilha.", SSM_INFO);
-					dmg := CInt(dmg * 0.5);
-				endif
-			else
-				if (temHabilidade(mobile, "Evasao Aprimorada"))
-					SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha.", SSM_INFO);
 					dmg := CInt(dmg * 0.5);
 				endif
 			endif
@@ -181,11 +170,6 @@ program TrapWalkOn(mobile, trap)
 					continue;
 				else
 					SendSysMessageEx(mobile, "Voce evitou parte do dano da armadilha.", SSM_INFO);
-					dmg := CInt(dmg * 0.5);
-				endif
-			else
-				if (temHabilidade(mobile, "Evasao Aprimorada"))
-					SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha.", SSM_INFO);
 					dmg := CInt(dmg * 0.5);
 				endif
 			endif
