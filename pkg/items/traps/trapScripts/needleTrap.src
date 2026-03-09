@@ -46,12 +46,6 @@ program trapScript(params)
 					SendSysMessageEx(mobile, "Voce evitou parte do dano da armadilha de dardos.", SSM_INFO);
 					dmgfinal := CInt(dmgfinal * 0.5);
 				endif
-			else
-				if (temHabilidade(mobile, "Evasao Aprimorada"))
-					SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha de dardos.",
-									  SSM_INFO);
-					dmgfinal := CInt(dmgfinal * 0.5);
-				endif
 			endif
 
 			PerformAction(mobile, HUMAN_ANIM::HIT);

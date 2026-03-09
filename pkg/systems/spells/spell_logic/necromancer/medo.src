@@ -23,7 +23,7 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	if (temhabilidade(targ, "Aura Divina"))
+	if (MobileWrapper(targ).HasAbility(ABILITY_ID::AURA_DIVINA))
 		SendSysMessageEx(who, "O alvo resistiu a magia.", SSM_FAIL);
 		SendSysMessageEx(targ, "Você não conhece o medo.", SSM_INFO);
 		return 1;

@@ -5,6 +5,8 @@ include "include/say";
 include "include/sysEvent";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program Test(who)
 
@@ -58,10 +60,10 @@ program Test(who)
 	endif
 
 	var desgaste := 500;
-	if (TemHabilidade(who, "Vigor do Extrator"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
 		desgaste := desgaste - 100;
 	endif
-	if (TemHabilidade(who, "Carregador"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PACK_MULE))
 		desgaste := desgaste - 200;
 	endif
 
