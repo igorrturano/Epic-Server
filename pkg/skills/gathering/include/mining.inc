@@ -5,6 +5,8 @@ include ":attributes:attributes";
 include "include/client";
 include "include/say";
 include ":timedScripts:timedScripts";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":treasurehunting:treasuredigging";
 
 
@@ -14,7 +16,7 @@ function Garimpeiro(who)
 	var rand := RandomFloat(200);
 	if(rand < 2)
 		EncontraGema(who);
-	elseif(TemHabilidade(who, "Minerador Talentoso") && rand < 10)
+	elseif(MobileWrapper(who).HasAbility(ABILITY_ID::GEM_MINER) && rand < 10)
 		EncontraGema(who);
 		SendSysMessageEx(who, "Só um minerador talentoso acharia essa pedra preciosa!", SSM_INFO);
 	endif

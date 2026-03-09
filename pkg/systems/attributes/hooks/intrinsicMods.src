@@ -25,9 +25,6 @@ exported function GetIntrinsicFortitude(mobile)
 	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::CACADOR_IMPLACAVEL))
 		fortitude += 2;
 	endif
-	if (TemHabilidade(mobile, "Campeao das Montanhas"))
-		fortitude += 2;
-	endif
 
 	if (GetObjProperty(mobile, "corruption"))
 		var corruption_penalty := GetObjProperty(mobile, "corruption_penalty");

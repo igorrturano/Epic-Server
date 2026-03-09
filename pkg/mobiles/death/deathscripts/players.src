@@ -205,7 +205,7 @@ program death(params)
 	if (dmg > CInt(AP_GetVitalMaximumValue(ghost, HITS) / 5))
 		tempo := tempo * 2;
 	endif
-	if (temhabilidade(ghost, "Recuperacao"))
+	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::RECOVERY))
 		tempo := tempo / 2;
 	endif
 	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::TRAPACEIRO_EXPERIENTE) && GetCooldown(ghost, "trapacearmorte") == 0)
@@ -381,7 +381,7 @@ function KataWakeUp(ghost, corpse)
 		endif
 	endforeach
 
-	if (TemHabilidade(ghost, "Recuperacao"))
+	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::RECOVERY))
 		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.9));
 	else
 		// 		PrintTextAbove(ghost, " " + GetHP(ghost));

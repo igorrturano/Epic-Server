@@ -1,6 +1,7 @@
 // AbilityRegistryCaminho.inc - Caminho abilities (IDs 3000+)
 // Weapon Specializations, Fight Styles, Armor Specializations,
-// Shield & Mounted, Caster Specializations
+// Shield & Mounted, Caster Specializations,
+// Extrator, Agropecuarista, Cross-Class
 
 include ":abilities:AbilityRegistryBase";
 
@@ -40,6 +41,21 @@ include ":abilities:classes/caminho/SupportCaster";
 include ":abilities:classes/caminho/SpellRange";
 include ":abilities:classes/caminho/ElementalSpecialization";
 include ":abilities:classes/caminho/SchoolSpecialization";
+
+//===========================================
+// CAMINHO - Extrator (3560-3569)
+//===========================================
+include ":abilities:classes/caminho/ExtractorAbilities";
+
+//===========================================
+// CAMINHO - Agropecuarista (3580-3588)
+//===========================================
+include ":abilities:classes/caminho/FarmerAbilities";
+
+//===========================================
+// CAMINHO - Cross-Class (3600+)
+//===========================================
+include ":abilities:classes/caminho/CrossClassAbilities";
 
 // === ABILITY_CLASSES Registrations ===
 
@@ -92,3 +108,31 @@ ABILITY_CLASSES[ABILITY_ID::SCHOOL_SPEC_EVOCATIUM] := @SchoolSpecEvocatium;
 ABILITY_CLASSES[ABILITY_ID::SCHOOL_SPEC_VELKYN] := @SchoolSpecVelkyn;
 ABILITY_CLASSES[ABILITY_ID::SCHOOL_SPEC_AHTALELORETH] := @SchoolSpecAhtaleloreth;
 ABILITY_CLASSES[ABILITY_ID::SCHOOL_SPEC_KAIJIN] := @SchoolSpecKaijin;
+
+// Caminho - Extrator (3560-3569)
+ABILITY_CLASSES[ABILITY_ID::EXTRACTOR_VIGOR] := @ExtractorVigor;
+ABILITY_CLASSES[ABILITY_ID::GEM_MINER] := @GemMiner;
+ABILITY_CLASSES[ABILITY_ID::CLEAN_CUT] := @CleanCut;
+ABILITY_CLASSES[ABILITY_ID::MINE_RARITIES] := @MineRarities;
+ABILITY_CLASSES[ABILITY_ID::TREASURE_FROM_TRASH] := @TreasureFromTrash;
+ABILITY_CLASSES[ABILITY_ID::PACK_MULE] := @PackMule;
+ABILITY_CLASSES[ABILITY_ID::TALENTED_MINER] := @TalentedMiner;
+ABILITY_CLASSES[ABILITY_ID::TALENTED_LUMBERJACK] := @TalentedLumberjack;
+ABILITY_CLASSES[ABILITY_ID::PROSPECTOR] := @Prospector;
+
+// Caminho - Agropecuarista (3580-3588)
+ABILITY_CLASSES[ABILITY_ID::RURAL_LIFE] := @RuralLife;
+ABILITY_CLASSES[ABILITY_ID::GREEN_THUMB] := @GreenThumb;
+ABILITY_CLASSES[ABILITY_ID::TALENTED_FARMER] := @TalentedFarmer;
+ABILITY_CLASSES[ABILITY_ID::NO_WASTE] := @NoWaste;
+ABILITY_CLASSES[ABILITY_ID::GUARANTEED_REPLANT] := @GuaranteedReplant;
+ABILITY_CLASSES[ABILITY_ID::SHEPHERD] := @Shepherd;
+ABILITY_CLASSES[ABILITY_ID::HARVEST_LUCK] := @HarvestLuck;
+
+// Caminho - Cross-Class (3600+)
+ABILITY_CLASSES[ABILITY_ID::ARCHAEOLOGIST] := @Archaeologist;
+ABILITY_CLASSES[ABILITY_ID::EXPERT_HERBALIST] := @ExpertHerbalist;
+ABILITY_CLASSES[ABILITY_ID::RECOVERY] := @Recovery;
+ABILITY_CLASSES[ABILITY_ID::ARCHITECT] := @Architect;
+ABILITY_CLASSES[ABILITY_ID::TOOL_PRESERVATION] := @ToolPreservation;
+ABILITY_CLASSES[ABILITY_ID::WRITE_SCROLLS] := @WriteScrolls;

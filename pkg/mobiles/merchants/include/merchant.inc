@@ -6,6 +6,8 @@ include ":brainAI:npcUtil";
 include ":npcs:thor/handling/thorai";
 include ":megacliloc:/include/gettersTTipUtils";
 include ":brainAI:npcCommands";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 //Constantes de ID de Botões de Gump
 const BOTAO_ITENS_COLOCAR_A_VENDA := 0x1;
@@ -1327,7 +1329,7 @@ function GetTooltipText(item_template, who)
 			var linguagem := item_template.lingua;
 			if (linguagem!=error)
 				var linguas := GetObjProperty(who, "linguas_conhecidas");
-				if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica") || linguagem in linguas)
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO) || linguagem in linguas)
 					xDesc := xDesc + white + "" + desc + "<br>";
 				else
 					xDesc :=  xDesc + "*Inscrições em Língua Desconhecida*<br>";

@@ -13,6 +13,8 @@ include ":tn:tngumps";
 include ":gumps:yesNo";
 include "include/say";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":treasurehunting:treasuremaps"; // Adiciona esta linha
 
 const CLAY_BALL := 0x6074;
@@ -79,7 +81,7 @@ program SandMining(who, scoop)
 	var my_facing := who.facing;
 
 	while (MiningLoop(who, scoop, my_x, my_y, my_facing, location_name))
-		if (TemHabilidade(who, "Vigor do Extrator"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
 			if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
 				break;
 			elseif (AP_GetVital(who, "Stamina") < 3)
