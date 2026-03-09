@@ -12,17 +12,80 @@ include ":message:model/Message";
 // CONDITION EDITOR
 // ============================================================================
 
-// Handle condition editing with support for item targeting
+// Handle condition editing with support for item targeting and character dropdowns
 // Returns: condition struct, 0 (no condition), or -1 (cancelled)
 function HandleConditionEdit(who, existing_condition)
 	var working_condition := existing_condition;
 
+	// Ensure working_condition has character params initialized
+	if (working_condition && working_condition.params)
+		if (!working_condition.params.character_race)
+			working_condition.params.+character_race := "";
+		endif
+		if (!working_condition.params.character_culture)
+			working_condition.params.+character_culture := "";
+		endif
+		if (!working_condition.params.character_religion)
+			working_condition.params.+character_religion := "";
+		endif
+	endif
+
+	// Create dropdown manager for race/culture/religion
+	var gerenciador := GerenciadorDropDown(
+		COND_DD_MAX_OPCOES,
+		COND_DD_ID_DROPDOWN,
+		COND_DD_ID_OPCOES,
+		COND_DD_MAX_DROPDOWN
+	);
+
 	while (1)
-		var cond_gump := BuildConditionGump(working_condition);
+		gerenciador.FechaTodosDropdowns(who);
+
+		// Setup dropdown options
+		SetupCharacterDropdowns(gerenciador);
+
+		var cond_gump := BuildConditionGump(working_condition, gerenciador);
 		var cond_input := GFSendGump(who, cond_gump);
 
 		if (!cond_input)
+			gerenciador.FechaTodosDropdowns(who);
 			return -1;  // Cancelled
+		endif
+
+		// Handle dropdown button clicks (open dropdown overlay)
+		if (gerenciador.IsIdDentroDropDowns(cond_input[0]))
+			// Preserve form data before opening dropdown
+			working_condition := PreserveConditionFormData(cond_input, working_condition);
+
+			var posicao := cond_input[0] - gerenciador.PegaAdicionalIdDropDown();
+			var dropdown := gerenciador.BuscaDropDownPorPosicao(posicao);
+			gerenciador.FechaTodosDropdowns(who);
+			dropdown.SendGump(who, GetPid());
+			continue;
+
+		// Handle dropdown option selection
+		elseif (gerenciador.IsIdDentroOpcoes(cond_input[0]))
+			var dropdown := gerenciador.DefineValorEscolhido(cond_input[0]);
+			var valor := dropdown.PegaValorEscolhido();
+			var pos := dropdown.PegaPosicaoBottao();
+
+			// Ensure working_condition exists with params
+			if (!working_condition || !working_condition.params)
+				working_condition := struct{ type := "CONDITION", params := struct{} };
+				working_condition.params.+character_race := "";
+				working_condition.params.+character_culture := "";
+				working_condition.params.+character_religion := "";
+			endif
+
+			// Update the selected character field
+			if (pos == 1)
+				working_condition.params.character_race := valor;
+			elseif (pos == 2)
+				working_condition.params.character_culture := valor;
+			elseif (pos == 3)
+				working_condition.params.character_religion := valor;
+			endif
+			continue;
 		endif
 
 		var result := ParseConditionInput(cond_input);
@@ -48,7 +111,6 @@ function HandleConditionEdit(who, existing_condition)
 					working_condition.params.+has_item_amount := 1;
 				endif
 
-				// Update existing property (not .+ which adds new)
 				working_condition.params.has_item_objtype := targ.objtype;
 				if (!working_condition.params.has_item_amount)
 					working_condition.params.has_item_amount := 1;
@@ -62,7 +124,33 @@ function HandleConditionEdit(who, existing_condition)
 			continue;  // Show gump again
 		endif
 
-		// Normal save/skip result
+		// Normal save/skip result - merge character dropdown values
+		if (result && result.params && working_condition && working_condition.params)
+			result.params.character_race := working_condition.params.character_race ? working_condition.params.character_race : "";
+			result.params.character_culture := working_condition.params.character_culture ? working_condition.params.character_culture : "";
+			result.params.character_religion := working_condition.params.character_religion ? working_condition.params.character_religion : "";
+		// If ParseConditionInput returned 0 (no item/nature), but character dropdowns have values
+		elseif (!result && working_condition && working_condition.params)
+			var has_char := (working_condition.params.character_race && working_condition.params.character_race != "") ||
+			                (working_condition.params.character_culture && working_condition.params.character_culture != "") ||
+			                (working_condition.params.character_religion && working_condition.params.character_religion != "");
+			if (has_char && cond_input[CHK_COND_CHARACTER])
+				result := struct{ type := "CONDITION", params := struct{} };
+				result.params.+character_race := working_condition.params.character_race ? working_condition.params.character_race : "";
+				result.params.+character_culture := working_condition.params.character_culture ? working_condition.params.character_culture : "";
+				result.params.+character_religion := working_condition.params.character_religion ? working_condition.params.character_religion : "";
+				result.params.+has_item_objtype := 0;
+				result.params.+has_item_amount := 0;
+				result.params.+should_consume_item := 0;
+				result.params.+moon_phases := array{};
+				result.params.+day_night := "";
+				result.params.+seasons := array{};
+				result.params.+time_min := 0;
+				result.params.+time_max := 0;
+			endif
+		endif
+
+		gerenciador.FechaTodosDropdowns(who);
 		return result;
 	endwhile
 
@@ -129,6 +217,17 @@ function PreserveConditionFormData(input, existing_condition)
 	var time_max_str := Trim(GFExtractData(input, ID_COND_TIME_MAX));
 	params.+time_min := (time_min_str != "") ? CInt(time_min_str) : 0;
 	params.+time_max := (time_max_str != "") ? CInt(time_max_str) : 0;
+
+	// Preserve CHARACTER fields (from dropdown selections stored in working_condition)
+	params.+character_race := "";
+	params.+character_culture := "";
+	params.+character_religion := "";
+
+	if (existing_condition && existing_condition.params)
+		params.character_race := existing_condition.params.character_race ? existing_condition.params.character_race : "";
+		params.character_culture := existing_condition.params.character_culture ? existing_condition.params.character_culture : "";
+		params.character_religion := existing_condition.params.character_religion ? existing_condition.params.character_religion : "";
+	endif
 
 	return struct{ type := "CONDITION", params := params };
 endfunction
@@ -297,9 +396,16 @@ function HandleConversationEdit(who, existing_action)
 		Message($"Nova conversa criada: {conversation_id}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
 	endif
 
+	// Try to resolve NPC from conversation metadata
+	var npc := 0;
+	var meta := GetConversationMeta(conversation_id);
+	if (meta && meta.npc_serial)
+		npc := SystemFindObjectBySerial(CInt(meta.npc_serial));
+	endif
+
 	// Enter the conversation editor loop
 	var root_id := GetRootNodeId(conversation_id);
-	ConversationEditorLoop(who, conversation_id, root_id);
+	ConversationEditorLoop(who, conversation_id, root_id, npc);
 
 	// Return the action config
 	var action := ActionConfig("CONVERSATION");
@@ -307,7 +413,7 @@ function HandleConversationEdit(who, existing_action)
 	return action;
 endfunction
 
-function ConversationEditorLoop(who, conversation_id, start_node_id)
+function ConversationEditorLoop(who, conversation_id, start_node_id, npc := 0)
 	var current_node_id := start_node_id;
 
 	while (current_node_id)
@@ -317,15 +423,27 @@ function ConversationEditorLoop(who, conversation_id, start_node_id)
 			break;
 		endif
 
-		var editor_gump := BuildNodeEditorGump(conversation_id, node);
+		var editor_gump := BuildNodeEditorGump(conversation_id, node, npc);
 		var input := GFSendGump(who, editor_gump);
 
 		if (!input)
 			break;
 		endif
 
+		// Edit NPC profile
+		if (input[BTN_CONV_EDIT_PROFILE] && npc)
+			var profile_gump := BuildNpcProfileEditorGump(npc);
+			var profile_input := GFSendGump(who, profile_gump);
+			var profile_result := ParseNpcProfileEditorInput(profile_input);
+			if (profile_result && profile_result.action == "save")
+				SetObjProperty(npc, "url", profile_result.url);
+				SetObjProperty(npc, "descricao", profile_result.descricao);
+				Message("Perfil do NPC atualizado!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			endif
+			continue;
+
 		// Edit dialogue text
-		if (input[BTN_CONV_EDIT_TEXT])
+		elseif (input[BTN_CONV_EDIT_TEXT])
 			var existing_text := node.text ? node.text : "";
 			var new_text := BigRequestGumpWithText(who, "Texto do dialogo:", existing_text);
 			if (new_text && new_text != "")
