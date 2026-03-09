@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":gumps:gumps";
+include ":gumps:yesNo";
 include ":epicevents:Controller/ConversationController";
 include ":epicevents:Controller/ConditionController";
 include ":epicevents:Controller/ActionController";
@@ -24,15 +25,19 @@ program CONVERSATION_Action(params)
 		return 0;
 	endif
 
-	// GM: open conversation editor instead of player dialogue
+	var root_id := GetRootNodeId(conversation_id);
+	if (!root_id)
+		return 0;
+	endif
+
+	// GM: choose between editing or testing the conversation
 	if (player.cmdlevel > 1)
-		var root_id := GetRootNodeId(conversation_id);
-		if (!root_id)
-			Message("Erro: conversa sem no raiz!", Color(SYSTEM_COLOR::FAIL)).SendSys(player);
-			return 0;
+		var open_editor := YesNo(player, "Abrir o Editor de Conversa?", "Editor", "Testar");
+		if (open_editor)
+			ConversationEditorLoop(player, conversation_id, root_id);
+			return 1;
 		endif
-		ConversationEditorLoop(player, conversation_id, root_id);
-		return 1;
+		// else: fall through to player dialogue for testing
 	endif
 
 	// Busy check: NPC already talking to someone else
@@ -47,12 +52,6 @@ program CONVERSATION_Action(params)
 
 	// Mark NPC as busy with this player
 	SetObjProperty(npc, "#conversation_busy", player.serial);
-
-	var root_id := GetRootNodeId(conversation_id);
-	if (!root_id)
-		EraseObjProperty(npc, "#conversation_busy");
-		return 0;
-	endif
 
 	var current_node_id := root_id;
 

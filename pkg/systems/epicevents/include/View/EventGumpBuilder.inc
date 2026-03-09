@@ -1037,7 +1037,7 @@ endfunction
 // Action type selection gump
 function BuildActionTypeSelectionGump()
 	var gump := GFECreateGump("Selecione o Tipo de Acao", 500, 420);
-	var y := SetupGumpFrame(gump, 500, 350);
+	var y := SetupGumpFrame(gump, 500, 420);
 
 	var x := 40;
 	var spacing := 70;

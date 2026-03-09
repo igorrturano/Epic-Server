@@ -1,7 +1,6 @@
 use uo;
 
 include ":gumps:gumps";
-include ":gumps:requestGump";
 include ":epicevents:View/EventGumpBuilder";
 include ":epicevents:View/ConversationGumpBuilder";
 include ":epicevents:Controller/ConversationController";
@@ -327,7 +326,8 @@ function ConversationEditorLoop(who, conversation_id, start_node_id)
 
 		// Edit dialogue text
 		if (input[BTN_CONV_EDIT_TEXT])
-			var new_text := RequestGump(who, "Texto do dialogo:");
+			var existing_text := node.text ? node.text : "";
+			var new_text := BigRequestGumpWithText(who, "Texto do dialogo:", existing_text);
 			if (new_text && new_text != "")
 				node.text := new_text;
 				SaveConversationNode(conversation_id, node);
