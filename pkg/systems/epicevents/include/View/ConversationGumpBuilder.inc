@@ -47,6 +47,17 @@ const BTN_NPC_COPY_GRAPHIC := 702;
 const ID_NPC_GRAPHIC := 710;
 const ID_NPC_NAME := 711;
 
+// NPC Profile editor buttons/fields
+const BTN_CONV_EDIT_PROFILE := 505;
+const BTN_CONV_PROFILE_SAVE := 506;
+const BTN_CONV_PROFILE_CANCEL := 507;
+const ID_NPC_PROFILE_URL := 712;
+const ID_NPC_PROFILE_DESC := 713;
+
+// NPC Profile display constants
+const NPC_PROFILE_IMG_WIDTH := 200;
+const NPC_PROFILE_IMG_HEIGHT := 200;
+
 // Player dialogue buttons
 const BTN_PLAYER_END_CONVERSATION := 650;
 const BTN_PLAYER_ANS_BASE := 600;  // 600+ for answer buttons
@@ -181,28 +192,54 @@ endfunction
 // ============================================================================
 
 function BuildPlayerDialogueGump(npc, dialogue_text, visible_answers)
-	var gump := GFECreateGump("Conversa", 500, 500);
+	var npc_url := GetObjProperty(npc, "url");
+	var npc_desc := GetObjProperty(npc, "descricao");
+	var has_profile := (npc_url && npc_url != "");
+
+	// Wider gump when profile image is present
+	var gump_width := has_profile ? 730 : 500;
+	var gump := GFECreateGump("Conversa", gump_width, 500);
 	GFDisposable(gump, 0);
 
-	// Internal background
-	GFResizePic(gump, 15, 70, CONV_INTERNAL_BG, 470, 415);
+	// Profile panel (left side) - only when NPC has a profile image
+	var content_x := 15;
+	if (has_profile)
+		// Profile background
+		GFResizePic(gump, 15, 70, CONV_INTERNAL_BG, 220, 415);
+
+		// NPC image
+		var img_html := "<img src=\"" + npc_url + "\" width=\"" + NPC_PROFILE_IMG_WIDTH + "\" height=\"" + NPC_PROFILE_IMG_HEIGHT + "\" x=\"0\" y=\"0\">";
+		GFHTMLArea(gump, 25, 80, NPC_PROFILE_IMG_WIDTH, NPC_PROFILE_IMG_HEIGHT, img_html, 0, 0);
+
+		// NPC description below image
+		if (npc_desc && npc_desc != "")
+			GFResizePic(gump, 25, 290, CONV_INTERNAL_BG, 200, 185);
+			GFHTMLArea(gump, 30, 295, 190, 175, npc_desc, 0, 1);
+		endif
+
+		content_x := 245;
+	endif
+
+	// Main dialogue area (right side, or centered if no profile)
+	var dialog_width := has_profile ? 470 : 470;
+	GFResizePic(gump, content_x, 70, CONV_INTERNAL_BG, dialog_width, 415);
 
 	// NPC name header
 	var y := 80;
-	GFTextMid(gump, 0, y, 500, GUMP_COLOR::SECTION_HEADER, npc.name);
+	GFTextMid(gump, content_x, y, dialog_width, GUMP_COLOR::SECTION_HEADER, npc.name);
 	y := y + 25;
 
 	// Divider
-	GFResizePic(gump, 30, y, 3000, 440, 2);
+	GFResizePic(gump, content_x + 15, y, 3000, dialog_width - 30, 2);
 	y := y + 15;
 
 	// Dialogue text (scrollable HTML area)
-	GFResizePic(gump, 25, y, CONV_INTERNAL_BG, 450, 180);
-	GFHTMLArea(gump, 30, y + 5, 440, 170, dialogue_text, 0, 1);
+	GFResizePic(gump, content_x + 10, y, CONV_INTERNAL_BG, dialog_width - 20, 180);
+	GFHTMLArea(gump, content_x + 15, y + 5, dialog_width - 30, 170, dialogue_text, 0, 1);
 	y := y + 195;
 
 	// Divider
-	GFResizePic(gump, 30, y, 3000, 440, 2);
+	GFResizePic(gump, content_x + 15, y, 3000, dialog_width - 30, 2);
 	y := y + 15;
 
 	// Answer buttons
@@ -211,16 +248,17 @@ function BuildPlayerDialogueGump(npc, dialogue_text, visible_answers)
 		if (i > 8)
 			break;
 		endif
-		GFAddButton(gump, 30, y, 0xFAE, 0x1764, GF_CLOSE_BTN, BTN_PLAYER_ANS_BASE + i);
-		GFTextLine(gump, 55, y, GUMP_COLOR::LABEL, answer.text);
+		GFAddButton(gump, content_x + 15, y, 0xFAE, 0x1764, GF_CLOSE_BTN, BTN_PLAYER_ANS_BASE + i);
+		GFTextLine(gump, content_x + 40, y, GUMP_COLOR::LABEL, answer.text);
 		y := y + 22;
 		i := i + 1;
 	endforeach
 
 	// End conversation button
 	y := 455;
-	GFAddButton(gump, 380, y, 0xFB1, 0xFB2, GF_CLOSE_BTN, BTN_PLAYER_END_CONVERSATION);
-	GFTextLine(gump, 310, y + 3, GUMP_COLOR::HELP_TEXT, "Encerrar");
+	var end_x := content_x + dialog_width - 120;
+	GFAddButton(gump, end_x, y, 0xFB1, 0xFB2, GF_CLOSE_BTN, BTN_PLAYER_END_CONVERSATION);
+	GFTextLine(gump, end_x - 70, y + 3, GUMP_COLOR::HELP_TEXT, "Encerrar");
 
 	return gump;
 endfunction
@@ -245,7 +283,7 @@ endfunction
 // GM - NODE EDITOR GUMP
 // ============================================================================
 
-function BuildNodeEditorGump(conversation_id, node)
+function BuildNodeEditorGump(conversation_id, node, npc := 0)
 	var gump := GFECreateGump("Editor de Conversa", 600, 650);
 	GFDisposable(gump, 0);
 
@@ -275,6 +313,16 @@ function BuildNodeEditorGump(conversation_id, node)
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_EDIT_TEXT);
 	GFTooltipText(gump, "Abrir editor de texto do dialogo");
 	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::LABEL, "Editar Texto");
+
+	// Edit NPC profile button (only if NPC is available)
+	if (npc)
+		GFAddButton(gump, x + 250, y, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_EDIT_PROFILE);
+		GFTooltipText(gump, "Editar imagem e descricao do NPC");
+		var has_npc_profile := (GetObjProperty(npc, "url") && GetObjProperty(npc, "url") != "");
+		var profile_label := has_npc_profile ? "Editar Perfil (Configurado)" : "Editar Perfil";
+		var profile_color := has_npc_profile ? GUMP_COLOR::HIGHLIGHT : GUMP_COLOR::LABEL;
+		GFTextLine(gump, x + 290, y + 2, profile_color, profile_label);
+	endif
 	y := y + 35;
 
 	// Divider
