@@ -9,6 +9,8 @@ include ":attributes:skills";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
 include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 /*program skill_Anatomy(who)
 
@@ -22,7 +24,7 @@ include "include/say";
 		return 0;
 	elseif(subject.graphic == 0x2006)
 		PrintTextAbove(who, "*examinando o corpo*");
-		if (temHabilidade(who, "Formacao Academica"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::ACADEMIC_TRAINING))
 			if (GetObjProperty(subject, "morto") == 1)
 				SendSysMessageEx(who, "Parece morto para voce.", SSM_INFO);
 				if( SkillCheck(who, MEDICINE, 50) > 0 )
@@ -58,7 +60,7 @@ include "include/say";
 		endif
 	elseif(subject.objtype == 0xEFFF)
 		PrintTextAbove(who, "*examinando os ossos*");
-		if (temHabilidade(who, "Formacao Academica"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::ACADEMIC_TRAINING))
 			SendSysMessageEx(who, "Parece inanimado para voce.", SSM_INFO);
 			if( SkillCheck(who, MEDICINE, 50) > 0 )
 				if (GetObjProperty(subject, "WeaponKill"))
@@ -123,7 +125,7 @@ include "include/say";
 	else sucesso := SkillCheck(who, MEDICINE, 30);
 	endif
 
-	if (temHabilidade(who, "Formacao Academica"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::ACADEMIC_TRAINING))
 		if(sucesso > 0)
 			SendSysMessageEx(who, strMsg + " parece " + streng +" (" +AP_GetStat(subject, "Strength") + "),", SSM_INFO);
 			SendSysMessageEx(who, dext +" (" + AP_GetStat(subject, "Dexterity") + "),", SSM_INFO);
@@ -349,7 +351,7 @@ function DPMsg(who, medic)
     if (GetObjProperty(who, "morto"))
         return "morto";
     endif
-    if(temHabilidade(medic, "Formacao Academica"))
+    if(MobileWrapper(medic).HasAbility(ABILITY_ID::ACADEMIC_TRAINING))
         var DPs := CInt(AP_GetVital(who, "DP") / 10);
         case (DPs)
             0: return "morto (0 DP)";

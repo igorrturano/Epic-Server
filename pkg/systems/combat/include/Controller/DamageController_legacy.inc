@@ -452,7 +452,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Tiro Penetrante]: " + CInt(damagemod));
 	endif
 
-	if (TemHabilidade(attacker, "Brigador de Taverna") && attacker.weapon.objtype == 0x1F020)
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::TAVERN_BRAWLER) && attacker.weapon.objtype == 0x1F020)
         var damagemod := 2;
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Brigador de Taverna]: " + CInt(damagemod));
@@ -577,13 +577,13 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (IsRaging(attacker))
 		var damagemod;
-		if (temHabilidade(attacker, "Nazg Khalug") || attacker.hasRage())
+		if (MobileWrapper(attacker).HasAbility(ABILITY_ID::FURIA_DO_DESERTO) || attacker.hasRage())
 			damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Nazg Khalug]: " + CInt(damagemod));
 			PrintTextAbove(attacker, "*enfurecido*");
 		endif
-		if (temHabilidade(attacker, "Furia Primitiva"))
+		if (MobileWrapper(attacker).HasAbility(ABILITY_ID::FURIA))
 			if (GetObjProperty(attacker, "metamorfose") != error)
 				damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 				damage += damagemod;
@@ -627,7 +627,7 @@ function CalcDamageHabs(attacker, defender, damage)
 	endif
 
 	if (isRaging(defender))
-		if (temHabilidade(attacker, "Burz"))
+		if (MobileWrapper(attacker).HasAbility(ABILITY_ID::FURIA))
 			var damagemod := CInt(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Burz]: " + CInt(damagemod));
