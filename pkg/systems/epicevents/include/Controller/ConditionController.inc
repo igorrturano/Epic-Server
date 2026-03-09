@@ -217,26 +217,31 @@ function EvaluateCharacter(params, event)
 		return 0;
 	endif
 
-	var mobile := MobileWrapper(event.source);
-	if (mobile.GetObjRef().errortext)
+	// Read chardata directly - MobileWrapper.GetRace() has a bug
+	// (reads .race but chardata uses .raca)
+	var chardata := GetObjProperty(event.source, "chardata");
+	if (!chardata)
 		return 0;
 	endif
 
 	// AND logic - all non-empty fields must match
 	if (params.character_race && params.character_race != "")
-		if (Upper(mobile.GetRace()) != Upper(params.character_race))
+		var player_race := chardata.raca ? chardata.raca : "";
+		if (Upper(player_race) != Upper(params.character_race))
 			return 0;
 		endif
 	endif
 
 	if (params.character_culture && params.character_culture != "")
-		if (Upper(mobile.GetCulture()) != Upper(params.character_culture))
+		var player_culture := chardata.culture ? chardata.culture : "";
+		if (Upper(player_culture) != Upper(params.character_culture))
 			return 0;
 		endif
 	endif
 
 	if (params.character_religion && params.character_religion != "")
-		if (Upper(mobile.GetReligion()) != Upper(params.character_religion))
+		var player_religion := chardata.religion ? chardata.religion : "";
+		if (Upper(player_religion) != Upper(params.character_religion))
 			return 0;
 		endif
 	endif
