@@ -79,6 +79,12 @@ program CONVERSATION_Action(params)
 			break;
 		endif
 
+		// Consume items if answer condition requires it (now that player selected it)
+		if (selected.conditions)
+			var consume_state := struct{};
+			EvaluateCondition(selected.conditions, consume_state, event);
+		endif
+
 		// Execute answer's actions (if any)
 		if (selected.actions && selected.actions.size() > 0)
 			ExecuteAnswerActions(npc, event, selected.actions);
@@ -103,9 +109,9 @@ function FilterAnswersByConditions(answers, player, event)
 			continue;
 		endif
 
-		// Use existing condition evaluation from ConditionController
+		// Evaluate without consuming items (consume_items=0) - consumption happens on selection
 		var action_state := struct{};
-		if (EvaluateCondition(answer.conditions, action_state, event))
+		if (EvaluateCondition(answer.conditions, action_state, event, 0))
 			visible.append(answer);
 		endif
 	endforeach
