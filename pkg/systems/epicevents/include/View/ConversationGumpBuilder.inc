@@ -803,3 +803,79 @@ function ParseNpcSetupInput(input)
 
 	return 0;
 endfunction
+
+// ============================================================================
+// GM - NPC PROFILE EDITOR GUMP
+// ============================================================================
+
+function BuildNpcProfileEditorGump(npc)
+	var gump := GFECreateGump("Editar Perfil do NPC", 500, 400);
+	GFDisposable(gump, 0);
+
+	GFResizePic(gump, 15, 70, CONV_INTERNAL_BG, 470, 315);
+
+	var x := 30;
+	var y := 85;
+
+	GFTextMid(gump, 0, y, 500, GUMP_COLOR::SECTION_HEADER, $"PERFIL: {npc.name}");
+	y := y + 25;
+	GFResizePic(gump, 30, y, 3000, 440, 2);
+	y := y + 15;
+
+	// URL da Imagem
+	var current_url := GetObjProperty(npc, "url");
+	if (!current_url)
+		current_url := "";
+	endif
+	GFTextLine(gump, x, y, GUMP_COLOR::HIGHLIGHT, "URL DA IMAGEM (200x200)");
+	y := y + 20;
+	GFResizePic(gump, x, y, CONV_INTERNAL_BG, 440, 25);
+	GFTextEntry(gump, x + 5, y + 3, 430, 20, GUMP_COLOR::TEXT_ENTRY, current_url, ID_NPC_PROFILE_URL);
+	y := y + 35;
+
+	// Descricao
+	var current_desc := GetObjProperty(npc, "descricao");
+	if (!current_desc)
+		current_desc := "";
+	endif
+	GFTextLine(gump, x, y, GUMP_COLOR::HIGHLIGHT, "DESCRICAO");
+	y := y + 20;
+	GFResizePic(gump, x, y, CONV_INTERNAL_BG, 440, 120);
+	GFTextEntry(gump, x + 5, y + 3, 430, 115, GUMP_COLOR::TEXT_ENTRY, current_desc, ID_NPC_PROFILE_DESC);
+	y := y + 135;
+
+	// Preview hint
+	if (current_url != "")
+		GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Imagem atual configurada. Salve para atualizar.");
+	else
+		GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Nenhuma imagem configurada.");
+	endif
+
+	// Buttons
+	var bottom_y := 350;
+	GFAddButton(gump, 150, bottom_y, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_PROFILE_SAVE);
+	GFTextLine(gump, 190, bottom_y + 2, GUMP_COLOR::HIGHLIGHT, "Salvar");
+
+	GFAddButton(gump, 320, bottom_y, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_PROFILE_CANCEL);
+	GFTextLine(gump, 360, bottom_y + 2, GUMP_COLOR::LABEL, "Cancelar");
+
+	return gump;
+endfunction
+
+function ParseNpcProfileEditorInput(input)
+	if (!input || input[BTN_CONV_PROFILE_CANCEL])
+		return 0;
+	endif
+
+	if (input[BTN_CONV_PROFILE_SAVE])
+		var url := Trim(GFExtractData(input, ID_NPC_PROFILE_URL));
+		var desc := Trim(GFExtractData(input, ID_NPC_PROFILE_DESC));
+		return struct{
+			action := "save",
+			url := url,
+			descricao := desc
+		};
+	endif
+
+	return 0;
+endfunction

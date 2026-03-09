@@ -34,7 +34,7 @@ program CONVERSATION_Action(params)
 	if (player.cmdlevel > 1)
 		var open_editor := YesNo(player, "Abrir o Editor de Conversa?", "Editor", "Testar");
 		if (open_editor)
-			ConversationEditorLoop(player, conversation_id, root_id);
+			ConversationEditorLoop(player, conversation_id, root_id, npc);
 			return 1;
 		endif
 		// else: fall through to player dialogue for testing

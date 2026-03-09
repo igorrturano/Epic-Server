@@ -3,6 +3,7 @@ use uo;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:epicGumps";
+include ":gumps:dropDownGump";
 include ":epicevents:Model/EventConfig";
 include ":epicevents:Model/ActionConfig";
 include ":epicevents:Model/CreatureSpawnInfo";
@@ -85,9 +86,17 @@ const CHCK_COND_ITEM_CONSUME := 454;
 
 // CHARACTER condition fields
 const CHK_COND_CHARACTER := 460;
-const ID_COND_CHAR_RACE := 461;
-const ID_COND_CHAR_CULTURE := 462;
-const ID_COND_CHAR_RELIGION := 463;
+
+// CHARACTER condition - Dropdown configuration
+// GerenciadorDropDown params: maxOpcoes, adicionalIdDropDown, adicionalIdOpcoes, maxDropDown
+const COND_DD_MAX_OPCOES := 10;
+const COND_DD_ID_DROPDOWN := 1460;
+const COND_DD_ID_OPCOES := 1500;
+const COND_DD_MAX_DROPDOWN := 3;
+// Dropdown button IDs (must match adicionalIdDropDown + position)
+const BTN_COND_RACE_DROPDOWN := 1461;
+const BTN_COND_CULTURE_DROPDOWN := 1462;
+const BTN_COND_RELIGION_DROPDOWN := 1463;
 
 // Event delay fields
 const ID_EVENT_MIN_DELAY := 340;
@@ -539,9 +548,9 @@ function FormatItemsList(required_items)
 endfunction
 
 // Condition configuration gump - unified conditions (HAS_ITEM + NATURE)
-function BuildConditionGump(existing_condition := 0)
-	var gump := GFECreateGump("Condicoes de Ativacao", 500, 750);
-	var y := SetupGumpFrame(gump, 500, 750);
+function BuildConditionGump(existing_condition := 0, gerenciador := 0)
+	var gump := GFECreateGump("Condicoes de Ativacao", 500, 800);
+	var y := SetupGumpFrame(gump, 500, 800);
 
 	var x := 40;
 
@@ -635,27 +644,52 @@ function BuildConditionGump(existing_condition := 0)
 
 	GFCheckBox(gump, x, y, 0x938, 0x939, character_enabled, CHK_COND_CHARACTER);
 	GFTextLine(gump, x + 25, y + 3, GUMP_COLOR::LABEL, "Verificar personagem:");
-	y := y + 30;
+	y := y + 28;
 
-	GFTextLine(gump, x + 25, y + 3, GUMP_COLOR::HELP_TEXT, "Raca:");
-	GFResizePic(gump, x + 80, y, 9350, 150, 25);
-	GFTextEntry(gump, x + 85, y + 5, 140, 20, GUMP_COLOR::TEXT_ENTRY, character_race, ID_COND_CHAR_RACE);
-	GFTextLine(gump, x + 240, y + 3, GUMP_COLOR::LABEL, "(ex: ORC, HUMANO, ELFO)");
-	y := y + 30;
+	// Race dropdown
+	var race_display := character_race != "" ? character_race : "Qualquer";
+	GFTextLine(gump, x + 10, y, GUMP_COLOR::HIGHLIGHT, "Raca:");
+	GFAddButton(gump, x + 80, y, 2117, 2118, GF_CLOSE_BTN, BTN_COND_RACE_DROPDOWN);
+	GFTextLine(gump, x + 105, y + 2, 1153, race_display);
+	if (gerenciador)
+		var dd_race := gerenciador.BuscaDropDownPorPosicao(1);
+		if (dd_race)
+			dd_race.AtribuiX(x + 80);
+			dd_race.AtribuiY(y + 22);
+		endif
+	endif
+	y := y + 28;
 
-	GFTextLine(gump, x + 25, y + 3, GUMP_COLOR::HELP_TEXT, "Cultura:");
-	GFResizePic(gump, x + 80, y, 9350, 150, 25);
-	GFTextEntry(gump, x + 85, y + 5, 140, 20, GUMP_COLOR::TEXT_ENTRY, character_culture, ID_COND_CHAR_CULTURE);
-	GFTextLine(gump, x + 240, y + 3, GUMP_COLOR::LABEL, "(ex: BJORSKA, AIGLANA)");
-	y := y + 30;
+	// Culture dropdown
+	var culture_display := character_culture != "" ? character_culture : "Qualquer";
+	GFTextLine(gump, x + 10, y, GUMP_COLOR::HIGHLIGHT, "Cultura:");
+	GFAddButton(gump, x + 80, y, 2117, 2118, GF_CLOSE_BTN, BTN_COND_CULTURE_DROPDOWN);
+	GFTextLine(gump, x + 105, y + 2, 1153, culture_display);
+	if (gerenciador)
+		var dd_culture := gerenciador.BuscaDropDownPorPosicao(2);
+		if (dd_culture)
+			dd_culture.AtribuiX(x + 80);
+			dd_culture.AtribuiY(y + 22);
+		endif
+	endif
+	y := y + 28;
 
-	GFTextLine(gump, x + 25, y + 3, GUMP_COLOR::HELP_TEXT, "Religiao:");
-	GFResizePic(gump, x + 80, y, 9350, 150, 25);
-	GFTextEntry(gump, x + 85, y + 5, 140, 20, GUMP_COLOR::TEXT_ENTRY, character_religion, ID_COND_CHAR_RELIGION);
-	y := y + 30;
+	// Religion dropdown
+	var religion_display := character_religion != "" ? character_religion : "Qualquer";
+	GFTextLine(gump, x + 10, y, GUMP_COLOR::HIGHLIGHT, "Religiao:");
+	GFAddButton(gump, x + 80, y, 2117, 2118, GF_CLOSE_BTN, BTN_COND_RELIGION_DROPDOWN);
+	GFTextLine(gump, x + 105, y + 2, 1153, religion_display);
+	if (gerenciador)
+		var dd_religion := gerenciador.BuscaDropDownPorPosicao(3);
+		if (dd_religion)
+			dd_religion.AtribuiX(x + 80);
+			dd_religion.AtribuiY(y + 22);
+		endif
+	endif
+	y := y + 28;
 
-	GFTextLine(gump, x + 25, y, GUMP_COLOR::LABEL, "Deixe vazio para ignorar. Logica E (todos devem bater).");
-	y := y + 35;
+	GFTextLine(gump, x + 10, y, GUMP_COLOR::HELP_TEXT, "Logica E (todos devem bater). Dropdown = Qualquer para ignorar.");
+	y := y + 30;
 
 	// ==================== SECTION: NATURE ====================
 	GFTextMid(gump, 0, y, 500, GUMP_COLOR::SECTION_HEADER, "CONDICOES DE NATUREZA");
@@ -679,6 +713,7 @@ function BuildConditionGump(existing_condition := 0)
 	// Dia/Noite (radio - exclusivo)
 	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Periodo:");
 	y := y + 22;
+	GFSetRadioGroup(gump, 1);
 	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (day_night == ""), RADIO_DAYNIGHT_ANY);
 	GFTextLine(gump, x + 25, y + 3, 1153, "Qualquer");
 	GFRadioButton(gump, x + 110, y, 0x25F8, 0x25FB, (day_night == "dia"), RADIO_DAYNIGHT_DIA);
@@ -803,37 +838,71 @@ function ParseConditionInput(input)
 	params.+time_max := (time_max_str != "") ? CInt(time_max_str) : 0;
 
 	// ===== CHARACTER section =====
+	// Character values are handled via dropdowns in HandleConditionEdit
+	// and merged into the result there. Initialize empty here.
 	params.+character_race := "";
 	params.+character_culture := "";
 	params.+character_religion := "";
-
-	if (input[CHK_COND_CHARACTER])
-		var race_str := Trim(GFExtractData(input, ID_COND_CHAR_RACE));
-		var culture_str := Trim(GFExtractData(input, ID_COND_CHAR_CULTURE));
-		var religion_str := Trim(GFExtractData(input, ID_COND_CHAR_RELIGION));
-
-		if (race_str && race_str != "")
-			params.character_race := Upper(race_str);
-		endif
-		if (culture_str && culture_str != "")
-			params.character_culture := Upper(culture_str);
-		endif
-		if (religion_str && religion_str != "")
-			params.character_religion := religion_str;
-		endif
-	endif
 
 	// Check if any condition is configured
 	var has_item_configured := (params.has_item_objtype > 0);
 	var has_nature_configured := (params.moon_phases.size() > 0 || params.day_night != "" ||
 	                              params.seasons.size() > 0 || params.time_min || params.time_max);
-	var has_character_configured := (params.character_race != "" || params.character_culture != "" || params.character_religion != "");
+	// Character is configured via dropdown (values merged in HandleConditionEdit)
+	// Check the checkbox to know if user wants character conditions
+	var has_character_configured := input[CHK_COND_CHARACTER] ? 1 : 0;
 
 	if (!has_item_configured && !has_nature_configured && !has_character_configured)
 		return 0;
 	endif
 
 	return struct{ type := "CONDITION", params := params };
+endfunction
+
+// Helper: Setup character dropdowns (race, culture, religion) for condition gump
+function SetupCharacterDropdowns(gerenciador)
+	// Race dropdown (position 1)
+	var dd_race := gerenciador.ObtemDropDown(1, 250);
+	var race_options := dictionary{
+		"Qualquer" -> "",
+		"Anão" -> "Anão",
+		"Drow" -> "Drow",
+		"Elfo" -> "Elfo",
+		"Humano" -> "Humano",
+		"Orc" -> "Orc",
+		"Pequilho" -> "Pequilho"
+	};
+	dd_race.AdicionaOpcoes(race_options);
+
+	// Culture dropdown (position 2)
+	var dd_culture := gerenciador.ObtemDropDown(2, 250);
+	var culture_options := dictionary{
+		"Qualquer" -> "",
+		"Aiglana" -> "Aiglana",
+		"Alüriel" -> "Alüriel",
+		"Badûran" -> "Badûran",
+		"Björska" -> "Björska",
+		"Gulthrak" -> "Gulthrak",
+		"Har'oloth" -> "Har'oloth",
+		"Polkinea" -> "Polkinea",
+		"Povos do Leste" -> "Povos do Leste"
+	};
+	dd_culture.AdicionaOpcoes(culture_options);
+
+	// Religion dropdown (position 3)
+	var dd_religion := gerenciador.ObtemDropDown(3, 250);
+	var religion_options := dictionary{
+		"Qualquer" -> "",
+		"Bokk Bharaz" -> "Bokk Bharaz",
+		"Céticos" -> "Céticos",
+		"Eluith'orth" -> "Eluith'orth",
+		"Halleuad" -> "Halleuad",
+		"Kai" -> "Kai",
+		"Lórё" -> "Lórё",
+		"Ushkr'ar" -> "Ushkr'ar",
+		"Veneratio" -> "Veneratio"
+	};
+	dd_religion.AdicionaOpcoes(religion_options);
 endfunction
 
 // Action list gump - shows all configured actions
