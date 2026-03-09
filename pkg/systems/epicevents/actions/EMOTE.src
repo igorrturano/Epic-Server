@@ -20,6 +20,12 @@ program EMOTE_Action(params)
 		return 1;
 	endif
 
+	// If item is an NPC, show text directly above it (no anchor needed)
+	if (item.npctemplate)
+		Message(emote_text, Color(MESSAGE_COLOR::NARRATOR)).SendAbove(item);
+		return 1;
+	endif
+
 	var anchor := CreateItemAtLocation(item.x, item.y, item.z, 0x00C3, 1, item.realm);
 	anchor.movable := 0;
 

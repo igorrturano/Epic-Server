@@ -1,6 +1,7 @@
 use uo;
 
 include ":nature:include/nature";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 function EvaluateCondition(condition, byref action_state, event)
 	if (!condition)
@@ -83,6 +84,11 @@ function EvaluateCombinedCondition(params, event)
 
 	// Check NATURE conditions
 	if (!EvaluateNature(params))
+		return 0;
+	endif
+
+	// Check CHARACTER conditions
+	if (!EvaluateCharacter(params, event))
 		return 0;
 	endif
 
@@ -196,6 +202,42 @@ function EvaluateNature(params)
 			if (hour < min_h || hour > max_h)
 				return 0;
 			endif
+		endif
+	endif
+
+	return 1;
+endfunction
+
+function EvaluateCharacter(params, event)
+	if (!params.character_race && !params.character_culture && !params.character_religion)
+		return 1;
+	endif
+
+	if (!event.source || !event.source.acctname)
+		return 0;
+	endif
+
+	var mobile := MobileWrapper(event.source);
+	if (mobile.GetObjRef().errortext)
+		return 0;
+	endif
+
+	// AND logic - all non-empty fields must match
+	if (params.character_race && params.character_race != "")
+		if (Upper(mobile.GetRace()) != Upper(params.character_race))
+			return 0;
+		endif
+	endif
+
+	if (params.character_culture && params.character_culture != "")
+		if (Upper(mobile.GetCulture()) != Upper(params.character_culture))
+			return 0;
+		endif
+	endif
+
+	if (params.character_religion && params.character_religion != "")
+		if (Upper(mobile.GetReligion()) != Upper(params.character_religion))
+			return 0;
 		endif
 	endif
 

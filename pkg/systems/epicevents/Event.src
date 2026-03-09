@@ -2,9 +2,10 @@ use uo;
 use os;
 
 include ":gumps:gumps";
+include ":gumps:requestGump";
 include ":epicevents:View/EventGumpBuilder";
+include ":epicevents:Controller/EventEditorController";
 include ":epicevents:Model/EventConfig";
-include ":epicevents:Model/ActionConfig";
 include ":message:model/Message";
 include "include/utility";
 
@@ -54,24 +55,50 @@ function CreateEventFlow(who)
 
 	Message($"Gatilho selecionado: {trigger_type}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
-	// Step 2: Configure trigger parameters and delays
-	var config_gump := BuildTriggerConfigGump(trigger_type);
-	var config_input := GFSendGump(who, config_gump);
+	// Step 2: Configure trigger parameters and delays (with Target button loop)
+	var working_params := struct{};
+	var config_result;
+	var trigger_config_loop := 1;
 
-	if (!config_input)
-		Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-		return 0;
-	endif
+	while (trigger_config_loop)
+		var config_gump := BuildTriggerConfigGump(trigger_type, working_params);
+		var config_input := GFSendGump(who, config_gump);
 
-	var config_result := ParseTriggerConfigInput(config_input, trigger_type);
-	if (!config_result)
-		if (trigger_type == "SPEECH")
-			Message("Palavra-chave obrigatoria para gatilho de fala!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-		else
-			Message("Configuracao invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		if (!config_input)
+			Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
 		endif
-		return 0;
-	endif
+
+		// Check for Target button (ITEM_GIVEN)
+		if (config_input[BTN_TRIGGER_TARGET_ITEM])
+			Message("Selecione o item para adicionar a lista.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			var targ := Target(who);
+			if (targ)
+				var current_list := Trim(GFExtractData(config_input, ID_TRIGGER_ITEMS_LIST));
+				if (current_list && current_list != "")
+					current_list := current_list + $", {Hex(targ.objtype)}:1";
+				else
+					current_list := $"{Hex(targ.objtype)}:1";
+				endif
+				working_params.+items_list := current_list;
+			endif
+			continue;
+		endif
+
+		config_result := ParseTriggerConfigInput(config_input, trigger_type);
+		if (!config_result)
+			if (trigger_type == "SPEECH")
+				Message("Palavra-chave obrigatoria para gatilho de fala!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			elseif (trigger_type == "ITEM_GIVEN")
+				Message("Pelo menos um item deve ser configurado!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			else
+				Message("Configuracao invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			endif
+			return 0;
+		endif
+
+		trigger_config_loop := 0;
+	endwhile
 
 	var trigger_params := config_result.trigger_params;
 	var min_delay := config_result.min_delay;
@@ -218,33 +245,63 @@ function CreateEventFlow(who)
 	config.condition := event_condition;
 	config.one_time_only := one_time_only;
 
-	// Target location
-	Message("Selecione a localizacao do Event Spawner.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-	var targ := TargetCoordinates(who);
-	if (!targ)
-		Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-		return 0;
-	endif
+	// NPC-based triggers: use NPC setup wizard
+	if (trigger_type == "ITEM_GIVEN" || trigger_type == "DOUBLECLICKED")
+		var targ := NpcSetupWizard(who);
+		if (!targ)
+			return 0;
+		endif
 
-	// Create event spawner item
-	var item := CreateItemAtLocation(targ.x, targ.y, targ.z, 0x1F13, 1, who.realm);
-	if (!item || item.errortext)
-		Message("Erro ao criar o item do event spawner: " + item.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-		return 0;
-	endif
+		// Load existing configs or create new array
+		var configs_data := GetObjProperty(targ, "event_configs");
+		if (!configs_data)
+			configs_data := array{};
+		endif
 
-	item.invisible := 1;
-	item.movable := 0;
+		// Append new config
+		configs_data.append(config.ToStruct());
+		SetObjProperty(targ, "event_configs", configs_data);
 
-	// Save configuration
-	SetObjProperty(item, "config", config.ToStruct());
+		// Save original script for potential restoration
+		if (!GetObjProperty(targ, "original_script"))
+			SetObjProperty(targ, "original_script", targ.script);
+		endif
 
-	// Success message
-	Message($"Epic Event criado com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
-	Message($"Gatilho: {trigger_type}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-	Message($"Acoes configuradas: {actions.size()}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-	if (config.GetCreatureCount() > 0)
-		Message($"Criaturas: {config.GetCreatureCount()} tipo(s) configurado(s)", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		// Set NPC's main script to our event controller and restart it
+		// This is required because EnableEvents only works on the NPC's primary script
+		targ.script := ":epicevents:NpcEventController";
+		RestartScript(targ);
+
+		Message($"Epic Event NPC criado com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+		Message($"NPC: {targ.name} (Serial: {Hex(targ.serial)})", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		Message($"Gatilho: {trigger_type}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		Message($"Configs no NPC: {configs_data.size()}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	else
+		// Item-based triggers: create event spawner item at location
+		Message("Selecione a localizacao do Event Spawner.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		var targ := TargetCoordinates(who);
+		if (!targ)
+			Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
+		endif
+
+		var item := CreateItemAtLocation(targ.x, targ.y, targ.z, 0x1F13, 1, who.realm);
+		if (!item || item.errortext)
+			Message("Erro ao criar o item do event spawner: " + item.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return 0;
+		endif
+
+		item.invisible := 1;
+		item.movable := 0;
+
+		SetObjProperty(item, "config", config.ToStruct());
+
+		Message($"Epic Event criado com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+		Message($"Gatilho: {trigger_type}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		Message($"Acoes configuradas: {actions.size()}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		if (config.GetCreatureCount() > 0)
+			Message($"Criaturas: {config.GetCreatureCount()} tipo(s) configurado(s)", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		endif
 	endif
 
 	return 1;
@@ -528,24 +585,50 @@ function EditTrigger(who, config)
 		return 0;
 	endif
 
-	// Step 2: Configure trigger parameters
-	var config_gump := BuildTriggerConfigGump(trigger_type);
-	var config_input := GFSendGump(who, config_gump);
+	// Step 2: Configure trigger parameters (with Target button loop)
+	var working_params := struct{};
+	var config_result;
+	var trigger_config_loop := 1;
 
-	if (!config_input)
-		Message("Edicao cancelada.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-		return 0;
-	endif
+	while (trigger_config_loop)
+		var config_gump := BuildTriggerConfigGump(trigger_type, working_params);
+		var config_input := GFSendGump(who, config_gump);
 
-	var config_result := ParseTriggerConfigInput(config_input, trigger_type);
-	if (!config_result)
-		if (trigger_type == "SPEECH")
-			Message("Palavra-chave obrigatoria para gatilho de fala!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-		else
-			Message("Configuracao invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		if (!config_input)
+			Message("Edicao cancelada.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
 		endif
-		return 0;
-	endif
+
+		// Check for Target button (ITEM_GIVEN)
+		if (config_input[BTN_TRIGGER_TARGET_ITEM])
+			Message("Selecione o item para adicionar a lista.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			var targ := Target(who);
+			if (targ)
+				var current_list := Trim(GFExtractData(config_input, ID_TRIGGER_ITEMS_LIST));
+				if (current_list && current_list != "")
+					current_list := current_list + $", {Hex(targ.objtype)}:1";
+				else
+					current_list := $"{Hex(targ.objtype)}:1";
+				endif
+				working_params.+items_list := current_list;
+			endif
+			continue;
+		endif
+
+		config_result := ParseTriggerConfigInput(config_input, trigger_type);
+		if (!config_result)
+			if (trigger_type == "SPEECH")
+				Message("Palavra-chave obrigatoria para gatilho de fala!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			elseif (trigger_type == "ITEM_GIVEN")
+				Message("Pelo menos um item deve ser configurado!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			else
+				Message("Configuracao invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			endif
+			return 0;
+		endif
+
+		trigger_config_loop := 0;
+	endwhile
 
 	// Update config with new trigger settings
 	config.trigger_type := trigger_type;
@@ -668,127 +751,6 @@ function EditCondition(who, config)
 	return config;
 endfunction
 
-// Handle condition editing with support for item targeting
-// Returns: condition struct, 0 (no condition), or -1 (cancelled)
-function HandleConditionEdit(who, existing_condition)
-	var working_condition := existing_condition;
-
-	while (1)
-		var cond_gump := BuildConditionGump(working_condition);
-		var cond_input := GFSendGump(who, cond_gump);
-
-		if (!cond_input)
-			return -1;  // Cancelled
-		endif
-
-		var result := ParseConditionInput(cond_input);
-
-		// Check if user clicked target button
-		if (result && result.action == "target_item")
-			// Preserve current form data
-			working_condition := PreserveConditionFormData(cond_input, working_condition);
-
-			Message("Clique no item desejado...", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-			var targ := Target(who);
-
-			if (targ && targ.objtype)
-				// Update the working condition with targeted item
-				if (!working_condition)
-					working_condition := struct{ type := "CONDITION", params := struct{} };
-					working_condition.params.+has_item_objtype := 0;
-					working_condition.params.+has_item_amount := 1;
-				endif
-				if (!working_condition.params)
-					working_condition.params := struct{};
-					working_condition.params.+has_item_objtype := 0;
-					working_condition.params.+has_item_amount := 1;
-				endif
-
-				// Update existing property (not .+ which adds new)
-				working_condition.params.has_item_objtype := targ.objtype;
-				if (!working_condition.params.has_item_amount)
-					working_condition.params.has_item_amount := 1;
-				endif
-
-				Message($"Item selecionado: {targ.objtype} ({Hex(targ.objtype)})", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
-			else
-				Message("Target cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-			endif
-
-			continue;  // Show gump again
-		endif
-
-		// Normal save/skip result
-		return result;
-	endwhile
-
-	return -1;
-endfunction
-
-// Preserve condition form data when targeting
-function PreserveConditionFormData(input, existing_condition)
-	var params := struct{};
-
-	// Preserve HAS_ITEM fields
-	var objtype_str := Trim(GFExtractData(input, ID_COND_ITEM_OBJTYPE));
-	var amount_str := Trim(GFExtractData(input, ID_COND_ITEM_AMOUNT));
-
-	if (objtype_str && objtype_str != "")
-		params.+has_item_objtype := CInt(objtype_str);
-	elseif (existing_condition && existing_condition.params && existing_condition.params.has_item_objtype)
-		params.+has_item_objtype := existing_condition.params.has_item_objtype;
-	else
-		params.+has_item_objtype := 0;
-	endif
-
-	params.+has_item_amount := (amount_str && amount_str != "") ? CInt(amount_str) : 1;
-	params.+should_consume_item := input[CHCK_COND_ITEM_CONSUME] ? 1 : 0;
-
-	// Preserve NATURE fields
-	params.+moon_phases := array{};
-	if (input[CHK_MOON_KALENDAE])
-		params.moon_phases.append("Kalendae");
-	endif
-	if (input[CHK_MOON_NONAE])
-		params.moon_phases.append("Nonae");
-	endif
-	if (input[CHK_MOON_IDUS])
-		params.moon_phases.append("Idus");
-	endif
-	if (input[CHK_MOON_DECRESCENS])
-		params.moon_phases.append("Decrescens");
-	endif
-
-	if (input[RADIO_DAYNIGHT_DIA])
-		params.+day_night := "dia";
-	elseif (input[RADIO_DAYNIGHT_NOITE])
-		params.+day_night := "noite";
-	else
-		params.+day_night := "";
-	endif
-
-	params.+seasons := array{};
-	if (input[CHK_SEASON_SUMMER])
-		params.seasons.append(1);
-	endif
-	if (input[CHK_SEASON_AUTUMN])
-		params.seasons.append(2);
-	endif
-	if (input[CHK_SEASON_WINTER])
-		params.seasons.append(4);
-	endif
-	if (input[CHK_SEASON_SPRING])
-		params.seasons.append(5);
-	endif
-
-	var time_min_str := Trim(GFExtractData(input, ID_COND_TIME_MIN));
-	var time_max_str := Trim(GFExtractData(input, ID_COND_TIME_MAX));
-	params.+time_min := (time_min_str != "") ? CInt(time_min_str) : 0;
-	params.+time_max := (time_max_str != "") ? CInt(time_max_str) : 0;
-
-	return struct{ type := "CONDITION", params := params };
-endfunction
-
 function ConfirmDelete(who)
 	var gump := GFECreateGump("Confirmar Exclusao", 400, 200);
 	SetupGumpFrame(gump, 400, 200, 0);
@@ -813,139 +775,78 @@ function SaveConfig(item, config)
 	RestartScript(item);
 endfunction
 
-function HandleActionEdit(who, action_type, existing_action)
-	if (action_type == "SPAWN")
-		// Reconstruct EventConfig from existing action params for editing
-		var existing_spawn_config := 0;
-		if (existing_action && existing_action.params)
-			existing_spawn_config := EventConfig();
-			existing_spawn_config.FromStruct(existing_action.params);
-		endif
+// ============================================================================
+// NPC SETUP WIZARD
+// ============================================================================
+function NpcSetupWizard(who)
+	var working_params := struct{};
+	working_params.+graphic := "0x0190";
+	working_params.+npc_name := "NPC";
 
-		var spawn_gump := BuildEventConfigGump(existing_spawn_config);
-		var spawn_input := GFSendGump(who, spawn_gump);
+	while (1)
+		var setup_gump := BuildNpcSetupGump(working_params);
+		var setup_input := GFSendGump(who, setup_gump);
 
-		if (!spawn_input || !spawn_input[BTN_OK])
+		var result := ParseNpcSetupInput(setup_input);
+		if (!result)
+			Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 			return 0;
 		endif
 
-		var spawn_config := ParseEventConfigInput(spawn_input);
-		if (!spawn_config)
-			return 0;
-		endif
-
-		var spawn_action := ActionConfig("SPAWN");
-		spawn_action.params := spawn_config.ToStruct();
-		return spawn_action;
-	endif
-
-	var editing := 1;
-	var working_action := existing_action;
-
-	while (editing)
-		var edit_gump := BuildActionEditGump(action_type, working_action, who);
-		var edit_input := GFSendGump(who, edit_gump);
-
-		if (edit_input[BTN_TARGET_ITEM])
-			PreserveFormDataForTargeting(working_action, edit_input, action_type);
-
-			Message("Target o item desejado...", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-			var targ := Target(who);
-
-			if (!targ)
-				Message("Target cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-				continue;
-			endif
-
-			// Preserve existing values or default
-			var existing_amount := 1;
-			var existing_consume := 0;
-			if (working_action.condition && working_action.condition.params)
-				if (working_action.condition.params.amount)
-					existing_amount := working_action.condition.params.amount;
+		case (result.action)
+			"use_existing":
+				Message("Selecione o NPC alvo para o evento.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+				var targ := Target(who);
+				if (!targ)
+					Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+					return 0;
 				endif
-				if (working_action.condition.params.should_consume_item)
-					existing_consume := working_action.condition.params.should_consume_item;
+				if (!targ.npctemplate)
+					Message("O alvo deve ser um NPC!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
 				endif
-			endif
+				return targ;
 
-			// Replace condition with new struct to ensure clean update
-			working_action.condition := struct{
-				type := "PLAYER_HAS_ITEM",
-				params := struct{ objtype := targ.objtype, amount := existing_amount, should_consume_item := existing_consume }
-			};
-
-			Message($"Item selecionado: {targ.objtype} (0x{Hex(targ.objtype)})", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
-			continue;
-		endif
-
-		if (edit_input[BTN_TARGET_COORDS])
-			PreserveFormDataForTargeting(working_action, edit_input, action_type);
-
-			Message("Selecione a localizacao de destino...", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-			var targ := TargetCoordinates(who);
-
-			if (!targ)
-				Message("Target cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			"copy_graphic":
+				Message("Clique na criatura/NPC para copiar o graphic.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+				var targ := Target(who);
+				if (targ)
+					working_params.graphic := Hex(targ.graphic);
+					Message($"Graphic copiado: {Hex(targ.graphic)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+				endif
+				if (result.npc_name && result.npc_name != "")
+					working_params.npc_name := result.npc_name;
+				endif
 				continue;
-			endif
 
-			// Replace params with new struct to ensure clean update
-			working_action.params := struct{ x := targ.x, y := targ.y, z := targ.z, realm := who.realm };
+			"create_new":
+				var graphic_val := CInt(result.graphic);
+				if (!graphic_val || graphic_val <= 0)
+					graphic_val := 0x0190;
+				endif
 
-			Message($"Localizacao selecionada: ({targ.x}, {targ.y}, {targ.z}) [{who.realm}]", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
-			continue;
-		endif
+				var npc_name := result.npc_name;
+				if (!npc_name || npc_name == "")
+					npc_name := "NPC";
+				endif
 
-		var parsed_action := ParseActionEditInput(edit_input, action_type);
+				var npc := CreateNpcFromTemplate(":epicevents:epic_event_npc", who.x, who.y, who.z, 0, who.realm);
+				if (!npc || npc.errortext)
+					Message($"Erro ao criar NPC: {npc.errortext}", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return 0;
+				endif
 
-		if (!parsed_action)
-			return 0;
-		endif
+				npc.graphic := graphic_val;
+				npc.name := npc_name;
+				npc.title_suffix := "";
 
-		return parsed_action;
+				Message($"NPC criado: {npc.name} (Graphic: {Hex(graphic_val)})", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+				return npc;
+		endcase
 	endwhile
 
 	return 0;
 endfunction
 
-function PreserveFormDataForTargeting(byref working_action, edit_input, action_type)
-	if (!working_action)
-		working_action := ActionConfig(action_type);
-	endif
-
-	var delay_str := Trim(GFExtractData(edit_input, ID_ACTION_DELAY));
-	if (delay_str && delay_str != "")
-		working_action.delay := CInt(delay_str);
-	endif
-
-	case (action_type)
-		"EMOTE":
-			var text := Trim(GFExtractData(edit_input, ID_ACTION_EMOTE_TEXT));
-			var show_on_source := edit_input[BTN_EMOTE_SHOW_ON_PLAYER] ? 1 : 0;
-			working_action.params := struct{ text := text, show_on_source := show_on_source };
-
-		"TELEPORT":
-			var x_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_X));
-			var y_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_Y));
-			var z_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_Z));
-			var realm_str := Trim(GFExtractData(edit_input, ID_ACTION_TELEPORT_REALM));
-
-			var new_params := struct{};
-			if (x_str && x_str != "")
-				new_params.+x := CInt(x_str);
-			endif
-			if (y_str && y_str != "")
-				new_params.+y := CInt(y_str);
-			endif
-			if (z_str && z_str != "")
-				new_params.+z := CInt(z_str);
-			endif
-			if (realm_str && realm_str != "")
-				new_params.+realm := realm_str;
-			endif
-			working_action.params := new_params;
-	endcase
-
-	return 1;
-endfunction
+// Editor functions (HandleConditionEdit, HandleActionEdit, ConversationEditorLoop, etc.)
+// are provided by include/Controller/EventEditorController.inc
