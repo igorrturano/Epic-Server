@@ -55,3 +55,21 @@ class WriteScrolls(CombatAbility)
 		Super(ABILITY_ID::WRITE_SCROLLS);
 	endfunction
 endclass
+
+// Healing Herbs - ABILITY_ID::HEALING_HERBS (3625)
+// Passive: Unlocks herb-based healing (ginseng, garlic, mushrooms).
+// Effect handled in medicine/healing.src.
+class HealingHerbs(CombatAbility)
+	function HealingHerbs(this)
+		Super(ABILITY_ID::HEALING_HERBS);
+	endfunction
+endclass
+
+// Academic Training - ABILITY_ID::ACADEMIC_TRAINING (3626)
+// Passive: Better anatomy/diagnosis, leech procedure bonus.
+// Effect handled in medicine/anatomy.src, anatomy.inc, leech.src.
+class AcademicTraining(CombatAbility)
+	function AcademicTraining(this)
+		Super(ABILITY_ID::ACADEMIC_TRAINING);
+	endfunction
+endclass
