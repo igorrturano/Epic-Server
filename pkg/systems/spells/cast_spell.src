@@ -118,10 +118,12 @@ function performPreCastingChecks(mobile, byref spellinfo)
 
 	var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0";
 	var mw := MobileWrapper(mobile);
-	var tem_hab := TemHabilidade(mobile, "Concentracao Macabra") || TemHabilidade(mobile, "Campeao das Montanhas") ||
-		mw.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA) || mw.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO) ||
-		mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) || mw.HasAbility(ABILITY_ID::SOUL_HARVEST) ||
-		mw.HasAbility(ABILITY_ID::CONEXAO_DIVINA) || mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA);
+	var tem_hab := mw.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
+		|| mw.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO) 
+		|| mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) 
+		|| mw.HasAbility(ABILITY_ID::SOUL_HARVEST) 
+		|| mw.HasAbility(ABILITY_ID::CONEXAO_DIVINA) 
+		|| mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA);
 
 	if (mobile.squelched && !mobile.npctemplate)
 		SendSysMessageEx(mobile, "Voce precisa falar devido os componentes verbais da magia.", SSM_FAIL);
@@ -329,8 +331,7 @@ function performSpellDelay(mobile, delay, orig_hp)
 endfunction
 
 function checkSpellInterruption(mobile, orig_hp)
-	if (orig_hp > AP_GetVital(mobile, "Hits") && (!MobileWrapper(mobile).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) &&
-	 !TemHabilidade(mobile, "Concentracao Macabra")))
+	if (orig_hp > AP_GetVital(mobile, "Hits") && (!MobileWrapper(mobile).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL)))
 		SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.",
 				   SSM_FAIL);
 		FailSpell(mobile);

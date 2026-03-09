@@ -73,9 +73,6 @@ function SetEquipmentMods(who, item)
 
 	//sneak
 	penalty := GetObjProperty(item, "atributos").SneakPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -85,9 +82,6 @@ function SetEquipmentMods(who, item)
 
 	//mechanical apitude
 	penalty := GetObjProperty(item, "atributos").MAPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -97,9 +91,6 @@ function SetEquipmentMods(who, item)
 
 	//awareness
 	penalty := GetObjProperty(item, "atributos").AwarenessPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -288,9 +279,7 @@ function RemoveEquipmentMods(who, item)
 
 	//sneak
   	penalty := GetObjProperty(item, "atributos").SneakPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
+
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -300,9 +289,6 @@ function RemoveEquipmentMods(who, item)
 
 	//mechanical  apitude
   	penalty := GetObjProperty(item, "atributos").MAPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -312,9 +298,6 @@ function RemoveEquipmentMods(who, item)
 
 	//awareness
   	penalty := GetObjProperty(item, "atributos").AwarenessPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
 	if (penalty < 0)
 		penalty := 0;
 	endif
