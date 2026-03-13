@@ -884,7 +884,7 @@ function SetupCharacterDropdowns(gerenciador)
 		"Björska" -> "Björska",
 		"Gulthrak" -> "Gulthrak",
 		"Har'oloth" -> "Har'oloth",
-		"Polkinea" -> "Polkinea",
+		"Colhesiana" -> "Colhesiana",
 		"Povos do Leste" -> "Povos do Leste"
 	};
 	dd_culture.AdicionaOpcoes(culture_options);

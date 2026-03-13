@@ -2935,7 +2935,7 @@ function GetColorValue(color)
                         RandomIntMinMax(1801, 1908),  // Neutro
                         RandomInt({0, 946, 947})      // Cinza
                      });
-        POLKINEA:    return RandomColorFromRanges({
+        COLHESIANA:    return RandomColorFromRanges({
                         RandomIntMinMax(1501, 1554),  // Laranja
                         RandomIntMinMax(1701, 1754),  // Amarelo
                         RandomIntMinMax(1401, 1454),  // Verde

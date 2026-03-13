@@ -3741,7 +3741,7 @@ function HandleAddColors(who, byref form_data)
 	y_pos += 25;
 
 	var regional_colors := array{ AIGLANA, HAROLOTH, LESTE, BJORSKA, ALURIEL,
-							  	BADURAN, GULTHRAK, POLKINEA };
+							  	BADURAN, GULTHRAK, COLHESIANA };
 
 	col := 0;
 	colors_per_row := 2; // Fewer per row since names are longer
@@ -3830,8 +3830,8 @@ function HandleAddColors(who, byref form_data)
 		127: // GULTHRAK
 			AddColorRange(form_data, GULTHRAK);
 			return HandleAddColors(who, form_data);
-		128: // POLKINEA
-			AddColorRange(form_data, POLKINEA);
+		128: // COLHESIANA
+			AddColorRange(form_data, COLHESIANA);
 			return HandleAddColors(who, form_data);
 
 		default:

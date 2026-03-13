@@ -399,7 +399,7 @@ program MerchantMenu(params)
 				endif
 
 				// Culture restrictions
-				var culturas_disponiveis := {AIGLANA, HAROLOTH, LESTE, BJORSKA, ALURIEL, BADURAN, GULTHRAK, POLKINEA};
+				var culturas_disponiveis := {AIGLANA, HAROLOTH, LESTE, BJORSKA, ALURIEL, BADURAN, GULTHRAK, COLHESIANA};
 				var culturas_selecionadas := CheckBoxGump(player, 300, 200, "Selecione as culturas que podem ver este rumor (deixe vazio para todas):", culturas_disponiveis);
 				if (culturas_selecionadas.size() > 0)
 					rumor.+culturas := culturas_selecionadas;
