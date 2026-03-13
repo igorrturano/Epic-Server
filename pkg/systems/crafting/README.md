@@ -12,7 +12,7 @@ Este diretório contém o **sistema de fabricação customizado** do servidor, r
 ## 1) Visão Geral do Fluxo de Fabricação
 
 ### 1 Processo
-1. O jogador usa a mesa de fabricaç~çao de componentes, ela abr o "Gump de criação de componentes".
+1. O jogador usa a mesa de fabricaçao de componentes, ela abre o "Gump de criação de componentes".
 2. Ele escolhe componente que deseja produzir, ou usa a ferramenta de memoria para trazer uma lista de componentes.
 3. Após selecionar ele escolhe o esforço (se deseja fazer na melhor qualidade ou menor), os materiais necessários (sendo 1 deles o principal), se deseja reciclar e a quantidade.
 4. Os componentes serão criados de 20 em vinte, no máximo. Todo componente criado terá uma qualidade atribuída a ele baseada na skill do criador.
