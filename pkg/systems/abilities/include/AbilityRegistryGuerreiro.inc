@@ -1,7 +1,7 @@
 // AbilityRegistryGuerreiro.inc - Guerreiro archetype abilities (IDs 1-999)
 // Arqueiro, Cacador, Combatente, Defensor, Paladino, Aklattur, Barbaro, Monge, Samurai, Mutante
 
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
 
 //===========================================
 // ARQUEIRO (1-5)

@@ -2,7 +2,7 @@
 // Necromante, Druida, Magus, Lamina Arcana, Arqueiro Arcano, Granadeiro,
 // Shaman, Engenheiro, Cleric
 
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
 
 //===========================================
 // NECROMANTE (2000-2004)

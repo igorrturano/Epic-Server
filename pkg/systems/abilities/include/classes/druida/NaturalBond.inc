@@ -112,7 +112,7 @@ class NaturalBond(CombatAbility)
                     "realm" := animal.realm
                 };
 
-                Start_Script(":charactercreation:revertWildshape", params);
+                Start_Script(":abilities:scripts/revertWildshape", params);
                 return true;
             endif
         endif

@@ -3,7 +3,7 @@ use os;
 
 include ":message:model/Message";
 include ":abilities:controllers/AbilityMonitor";
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
 include ":abilities:models/Ability";
 include ":attributes:attributes";
 

@@ -3,7 +3,7 @@
 // Shield & Mounted, Caster Specializations,
 // Extrator, Agropecuarista, Cross-Class
 
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
 
 //===========================================
 // CAMINHO - Weapon Specializations (3000-3013)

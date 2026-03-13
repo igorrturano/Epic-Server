@@ -17,7 +17,7 @@ include ":hotbar:include/hotbar_exec_helpers";
 include ":hotbar:hotbar_utils";
 include ":hotbar:include/command_discovery";
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
 include ":abilities:controllers/AbilityMonitor";
 include ":abilities:models/Ability";
 include ":charactercreation:habilidades";
