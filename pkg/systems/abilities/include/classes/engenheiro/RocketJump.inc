@@ -7,7 +7,6 @@ include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
-include "include/facings";
 include "include/utils";
 include "include/epicCombatUtils";
 
@@ -28,24 +27,9 @@ class RocketJump(CombatAbility)
 		endif
 		SubtractAmount(coal, 2);
 
-		who.frozen := 1;
-		PerformAction(who, 12);
-		Message("*Aciona os propulsores*").SendAbove(who);
-
-		var world_z := GetStandingHeight(who.x, who.y, who.z + 15, who.realm);
-		var moved := 0;
-		if (world_z.z <= who.z + 1)
-			moved := 1;
-			MoveObjectToLocation(who, who.x, who.y, who.z + 15, who.realm, MOVEOBJECT_FORCELOCATION);
-		endif
-		sleepms(100);
-		_RocketPushForward(who, 5, 50);
-
-		sleepms(200);
-		if (moved)
-			MoveObjectToLocation(who, who.x, who.y, who.z - 15, who.realm);
-		endif
-		sleepms(500);
+		// Launch movement as separate script so network packets flush properly
+		var pid := Start_Script(":abilities:scripts/Ativa/OnUse/rocketjump", {who});
+		sleepms(1500);
 
 		var has_powder := 0;
 		var powder := FindObjtypeInContainer(who.backpack, 0x9092);
@@ -108,39 +92,7 @@ class RocketJump(CombatAbility)
 			);
 		endif
 
-		who.frozen := 0;
 		return true;
 	endfunction
 
 endclass
-
-function _RocketPushForward(who, dist, delay)
-	var mod := GetModByFacing(who.facing);
-	var x := mod[1];
-	var y := mod[2];
-
-	var finalx := who.x + (dist * x);
-	var finaly := who.y + (dist * y);
-	var world_z := GetStandingHeight(finalx, finaly, who.z - 15, who.realm);
-	var force := _ifElse(world_z.z != error && world_z.z <= who.z, MOVEOBJECT_FORCELOCATION,
-					  MOVEOBJECT_NORMAL);
-	for i := 1 to dist
-		finalx := (who.x + x);
-		finaly := (who.y + y);
-		if (!CheckLosAt(who, finalx, finaly, who.z))
-			return 0;
-		endif
-		world_z := GetStandingHeight(who.x, who.y, who.z, who.realm);
-		if (world_z.z > who.z)
-			return 0;
-		endif
-
-		var err := MoveObjectToLocation(who, finalx, finaly, who.z, who.realm, force);
-		if (err == error)
-			return 0;
-		endif
-		sleepms(delay);
-	endfor
-
-	return 1;
-endfunction

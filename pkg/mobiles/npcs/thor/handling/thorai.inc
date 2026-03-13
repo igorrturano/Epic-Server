@@ -308,7 +308,7 @@ function MapRegionToCulture(region)
 		return "gulthrak";
 	endif
 
-	// Swamp regions = could be multiple, default to Polkinea (halflings)
+	// Swamp regions = could be multiple, default to Colhesiana (halflings)
 	if (find(region_lower, "swamp", 1) || find(region_lower, "pantano", 1))
 		return "polkinea";
 	endif

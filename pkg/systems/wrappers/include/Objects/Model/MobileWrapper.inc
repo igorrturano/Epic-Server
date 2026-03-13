@@ -45,7 +45,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this.Religion := err;
 				this.CombatTraitsVar := err;
 			else // Se entrar aqui, é player
-				this.Race := this.GetProperty(MOBILE_PROPNAME::CHARDATA).race;
+				this.Race := this.GetProperty(MOBILE_PROPNAME::CHARDATA).raca;
 				this.Culture := this.GetProperty(MOBILE_PROPNAME::CHARDATA).culture;
 				this.Religion := this.GetProperty(MOBILE_PROPNAME::CHARDATA).religion;
 

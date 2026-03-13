@@ -55,7 +55,7 @@ function ShouldGetSecondChance(defender, resist_type)
         (chardata.culture == HAROLOTH && resist_type == FORTITUDE) ||
         (MobileWrapper(defender).HasAbility(ABILITY_ID::AURA_DIVINA) && resist_type == FORTITUDE) ||
         (chardata.raca == ANAO && resist_type == WILL) ||
-        (chardata.culture == POLKINEA) ||
+        (chardata.culture == COLHESIANA) ||
 		(MobileWrapper(defender).GetEntropy() <= -8000 && resist_type == FORTITUDE)
     );
 endfunction
@@ -68,7 +68,7 @@ function GetSecondChanceMessage(defender, resist_type)
         return "Sua aura divina expurga o veneno";
     elseif (chardata.raca == ANAO && resist_type == WILL)
         return "Sua constituição anã o salvou da magia";
-    elseif (chardata.culture == POLKINEA)
+    elseif (chardata.culture == COLHESIANA)
         return "Um pequilho sempre pode contar com a própria sorte";
 	elseif (MobileWrapper(defender).GetEntropy() <= -8000 && resist_type == FORTITUDE)
 		return "Sua alma corrupta expurga o veneno";
