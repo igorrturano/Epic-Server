@@ -7,11 +7,10 @@ include "include/say";
 include ":charactercreation:habilidades";
 include ":gumps:requestGump";
 include ":gumps:yesNo";
-
-include ":charactercreation:habilidades";
 include ":sysbook:include/sealedBooks";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":tn:cooldown";
 
 program useBook(who, book)
 	if (!ReserveItem(book))
@@ -58,7 +57,7 @@ program useBook(who, book)
 
 	if (linguagem != error)
 		if (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO) ||
-	  linguagem in linguas)
+	  getCooldown(who, "decifrar") || linguagem in linguas)
 			SendOpenBook(who, book);
 		else
 			SendSysMessageEx(who, "Voce nao conhece essa lingua: " + linguagem);
