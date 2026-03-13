@@ -31,8 +31,25 @@ Este diretório contém o **sistema de fabricação customizado** do servidor, r
 5. Com os componentes em mãos, o jogador segue para a mesa de fabricação de complexos da respectiva profissão.
 1. O jogador abre o **Gump de Fabricação** (menu UI) usando a a mesa respectiva (ex: Blacksmithy, Woodworking, Tailoring, etc).
 	- Cada profissão tem um cfg especifico para definir as receitas que aparecem no menu de fabricação, ex: Blacksmith -> `SmithMenu.cfg`, Alchemy -> `AlchMenu.cfg.
-	- As receitas que existem são definidas no arquivo `recipes.cfg`
-	- Toda receita presente nos "Menus.cfg" precisa fazer referência a um objtype [Ou name ] da definição de um itemdesc.
+	- As receitas que existem são definidas no arquivo `recipes.cfg`. Este arquivo é usado para criação de pergaminhos.
+	- Toda receita presente nos "Menus.cfg" precisa fazer referência a um objtype [Ou name ] da definição de um itemdesc. Aqui também é definido a classe da receita, ela permite que uma mesma receita tenha diferentes configurações. Para definir uma receita com classe utilize a nomenclatura "nome-classe", exemplo:
+				`
+					Item	roundnecklace-2
+				`
+		Agora no arquivo `fabricacaoDesc.cfg` respectivo, defina os encaixes como no exemplo:
+				fabricacao 0x1088
+				{
+					name     necklace
+					skill    40 60
+					DuracaoFabricacao MUITO_RAPIDO
+
+					ComponenteEncaixe 1 prestigio baseMetalica 1 principal
+
+					#Classe 2
+					ComponenteEncaixe 2 prestigio gema 1 principal
+					ComponenteEncaixe 2 vazio baseMetalica 1
+				}
+				`
 	- Além disso, É preciso descrever as caracteristicas e encaixes de cada receita. Isso é feito na config `fabricacaoDesc.cfg` especifico de cada profissão.
 			Exemplo de definição:
 				`fabricacao 0x1efd // Objtype do itemdesc do item
