@@ -49,7 +49,7 @@ function GetRacialTraits(raca)
         ELFO: return GetAlurielCaracteristicas();
         ORC: return GetGulthrakCaracteristicas();
         HUMANO: return GetBjorskeCaracteristicas();
-        PEQUILHO: return GetPolkineaCaracteristicas();
+        PEQUILHO: return GetColhesianaCaracteristicas();
         default: return error;
     endcase
 endfunction
@@ -377,7 +377,7 @@ function GetGulthrakCaracteristicas()
     return caracteristicas;
 endfunction
 
-function GetPolkineaCaracteristicas()
+function GetColhesianaCaracteristicas()
     var caracteristicas := struct{
         "Altura" := struct{
             "nome" := "Altura",

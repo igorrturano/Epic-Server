@@ -1,6 +1,6 @@
 use os;
 
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
 include ":abilities:models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:model/Message";

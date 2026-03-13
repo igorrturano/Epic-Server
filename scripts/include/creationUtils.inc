@@ -16,7 +16,7 @@ const BADURAN_ID := 0x9E9;
 const BJORSKA_ID := 0x9EA;
 const GULTHRAK_ID := 0x9EB;
 const HAROLOTH_ID := 0x9EC;
-const POLKINEA_ID := 0x9ED;
+const COLHESIANA_ID := 0x9ED;
 const LESTE_ID := 0x9EE;
 
 const BOKK_BHARAZ_ID := 0x9EF;
@@ -57,7 +57,7 @@ function getCultureByPictureId(culture_id)
             return GULTHRAK;
         HAROLOTH_ID:
             return HAROLOTH;
-        POLKINEA_ID:
+        COLHESIANA_ID:
             return COLHESIANA;
         LESTE_ID:
             return LESTE;
@@ -78,7 +78,7 @@ function getCraftCultureByPictureId(culture_id)
             return "Gulthrak";
         HAROLOTH_ID:
             return "Haroloth";
-        POLKINEA_ID:
+        COLHESIANA_ID:
             return "Colhesiana";
         LESTE_ID:
             return "Leste";
@@ -122,8 +122,8 @@ function getCulturalDescriptionByPictureId(culture_id)
             return FindConfigElem(textosConfig, "gulthrak").descricao;
         HAROLOTH_ID:
             return FindConfigElem(textosConfig, "haroloth").descricao;
-        POLKINEA_ID:
-            return FindConfigElem(textosConfig, "polkinea").descricao;
+        COLHESIANA_ID:
+            return FindConfigElem(textosConfig, "colhesiana").descricao;
         LESTE_ID:
             return FindConfigElem(textosConfig, "leste").descricao;
     endcase
@@ -190,7 +190,7 @@ function getRaceByCulturalId(culture_pic)
             races := {DROW};
         ALURIEL_ID:
             races := {ELFO};
-        POLKINEA_ID:
+        COLHESIANA_ID:
             races := {PEQUILHO};
         GULTHRAK_ID:
             races := {ORC};

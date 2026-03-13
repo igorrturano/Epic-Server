@@ -12,7 +12,7 @@
  **********************************/
 
 include ":debug:Controller/DebugController";
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
 include ":abilities:controllers/AbilityMonitor";
 
 function ExecuteCombatAbilitiesBeforeDamage(byRef attackInfo)

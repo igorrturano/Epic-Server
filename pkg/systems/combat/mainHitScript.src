@@ -7,7 +7,7 @@ include ":combat:Controller/HitScriptController";
 include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
 include ":abilities:models/Ability";
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
 include ":combat:weardown";
 
 // External

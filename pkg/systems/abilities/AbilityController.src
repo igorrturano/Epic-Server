@@ -1,6 +1,6 @@
 use os;
 
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
 
 program AbilityController(params)
 	var abilityId := CInt(params[2]);

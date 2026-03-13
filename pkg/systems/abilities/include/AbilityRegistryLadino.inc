@@ -2,7 +2,7 @@
 // Malandro Arcano, Cacador de Tesouros, Assassino, Vivisseccionista,
 // Esgrimista, Ladrao, Dancarino das Sombras, Cacador de Demonios
 
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
 
 //===========================================
 // MALANDRO ARCANO (1000-1004)

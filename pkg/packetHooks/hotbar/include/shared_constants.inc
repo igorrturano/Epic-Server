@@ -36,19 +36,6 @@ const SUBCOMMAND_RESPONSE := 0x52;
 const SUBCOMMAND_TOOLTIP_REQUEST := 0x60;
 const SUBCOMMAND_TOOLTIP_RESPONSE := 0x61;
 
-// Request types (Client → Server)
-const REQUEST_ABILITIES := 0x01;
-const REQUEST_SPECIALS := 0x02;
-const REQUEST_COMMANDS := 0x03;
-const REQUEST_SPELLS := 0x04;
-const REQUEST_SKILLS := 0x05;
-
-// Execute types (Client → Server via binary protocol)
-const EXECUTE_ABILITY := 0x01;
-const EXECUTE_SPECIAL := 0x02;
-const EXECUTE_COMMAND := 0x03;
-const EXECUTE_SKILL := 0x04;
-
 // Response types (Server → Client)
 const SUBCOMMAND_ABILITIES_RESPONSE := 0x53;
 const SUBCOMMAND_SPECIALS_RESPONSE := 0x54;
@@ -113,23 +100,6 @@ function GetActiveSkills()
     g_active_skills_cache := active_skills;
     return active_skills;
 endfunction
-
-/*
- * Get skill name by SkillId
- * @param skill_id Custom SkillId from attributes.cfg
- * @return Skill name or error
- */
-// function GetSkillNameById(skill_id)
-//     var active_skills := GetActiveSkills();
-
-//     foreach skill in active_skills
-//         if (skill.skillid == skill_id)
-//             return skill.name;
-//         endif
-//     endforeach
-
-//     return error;
-// endfunction
 
 /*
  * Get skill data by SkillId
