@@ -61,11 +61,13 @@ Este diretório contém o **sistema de fabricação customizado** do servidor, r
 					# (ComponenteEncaixe) (classe da receita) (caracteristica) (encaixe) (quantidade necessária) [principal|opcional]
 					ComponenteEncaixe 1 resistenciaClimaCalor tecidoAlinhado 5 principal
 				}`
+
 2. Ele escolhe uma **receita** (produto final) e pode criar ou selecionar um **esquema** (lista de componentes escolhidos).
 3. O sistema gera uma prop `propFabricado` para representar o produto em construção. Ele contém:
    - receita selecionada (objtype, skill, etc)
    - esquema (componentes escolhidos, cor, material principal, qualidade, modificadores)
    - componentes escolhidos (cada um com `caracteristica`, `encaixe`, `qualidade`, `poderAvaliado` etc)
+
 4. O produto é **montado** (fase de criação) usando `CriaItemFabricado` + `CriaComponenteDescriptor`.
    - Todo item montado é representado pelo mesmo itemDesc(objtype), só o graphic deste item que muda.
 		`
@@ -86,7 +88,7 @@ Este diretório contém o **sistema de fabricação customizado** do servidor, r
    - `cicloTratamentoProduto.src` (loops de ciclos de tratamento / sucessos e falhas)
    - `animacaoTratamentoProduto.src` (mostra animações / validações de estação e ferramenta)
 6. Ao final, o item recebe modificadores finais (qualidade, hp, peso, efeitos de material, fechadura, etc) e é finalmente criado..
-
+   - Os valores finais do item serão um somatório do valor da qualidade de cada `caracteristica` dos componentes escolhidos para cada `ComponenteEncaixe` em `fabricacaoDesc`,  mais o valor do `ComponenteEfeito` respectivo em  `resourceList.cfg`.
 ---
 
 ## 2) Componentes-chave e Arquivos Principais
