@@ -263,8 +263,8 @@ function backgroundSelection(who, culture_pic)
 			chardata.+bgBonus := GATHERING;
 			break;
 		elseif (btn_value == 203)
-			chardata.+background := BACKGROUNDS.MECHANICAL_APITUDE;
-			chardata.+bgBonus := MECHANICS;
+			chardata.+background := BACKGROUNDS.SNEAK;
+			chardata.+bgBonus := SNEAK;
 			break;
 		elseif (btn_value == 204)
 			chardata.+background := BACKGROUNDS.MEDICINE;

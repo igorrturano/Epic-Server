@@ -8,7 +8,7 @@
 include ":combat:Model/AttackInfo";
 include ":abilities:models/Ability";
 include ":combat:Controller/FXController";
-include ":combat:Controller/AbilitiesController";
+include ":combat:Controller/CombatAbilityController";
 include ":combat:weardown";
 include ":message:model/Message";
 
@@ -175,6 +175,7 @@ function CalculateParryDelay(byRef attackInfo)
 
 	// TODO: Desativado porque nem na lista de habilidades está
 	// if (MobileWrapper(attackInfo.GetDefender().GetObjRef().party.leader).HasAbility(Ability(ABILITY_ID::INSPIRAR_DEFESAS)))
+	var tempParryBonus := CInt(attackInfo.GetDefender().GetProperty("#tempparrybonus"));
 	if (tempParryBonus == 100)
 		return 0;
 	endif
@@ -210,3 +211,4 @@ function CheckDisarmShield(byRef attackInfo)
 	ExecuteCombatAbilitiesOnParry(attackInfo);
 	// Execute passive abilities that trigger on parry
 	ExecutePassiveAbilitiesOnParry(attackInfo);
+endfunction

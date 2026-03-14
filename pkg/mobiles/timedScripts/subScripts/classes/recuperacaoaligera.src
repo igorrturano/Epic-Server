@@ -27,7 +27,7 @@ program default_poison(params)
 
 			sleep(2);
 		endwhile
-	elseif (TemHabilidade(who, "Manobra da Resiliencia"))
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::MANOBRA_DA_RESILIENCIA))
 		time := CInt(AP_GetSkill(who, PARRY) / 5);
 		while (1 < time)
 			if (who.dead)

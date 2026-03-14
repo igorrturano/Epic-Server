@@ -5,6 +5,8 @@ use util;
 
 include "include/client";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 const UOBJECT_EMPTY_BOTTLE := 0x0f0e;
 
 //TODO: Ver se futuramente precisa remover essa função, talvez tenha virado Dead Code
@@ -23,8 +25,8 @@ function EsfriarLiga(user, item)
       else
         SendSysMessage(user, "Voce esfriou o metal derretido e fez as barras.", FONT_NORMAL, 90);
         CreateItemInBackpack(user, ingot, amt);
-        SendSysMessage(user, ""+TemHabilidade(user, "Tesouro do Lixo"));
-        if (TemHabilidade(user, "Tesouro do Lixo"))
+        SendSysMessage(user, ""+MobileWrapper(user).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH));
+        if (MobileWrapper(user).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH))
           smeltaImpurezasRaras(user, amt);
         endif
       endif
@@ -75,8 +77,8 @@ function EsfriarLiga(user, item)
         endif
       else
         CreateItemInBackpack(user, ingot, amt);
-        SendSysMessage(user, ""+TemHabilidade(user, "Tesouro do Lixo"));
-        if (TemHabilidade(user, "Tesouro do Lixo"))
+        SendSysMessage(user, ""+MobileWrapper(user).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH));
+        if (MobileWrapper(user).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH))
           smeltaImpurezasRaras(user, amt);
         endif
       endif

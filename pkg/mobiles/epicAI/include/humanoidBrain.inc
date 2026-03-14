@@ -8,6 +8,7 @@ include "epicSpecial";
 include "NPCMageryUtils";
 include "include/epicLoggerUtils";
 include ":abilities:include/models/Ability";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 function HumanoidBrain()
     var ev;
@@ -22,7 +23,7 @@ function HumanoidBrain()
     var is_ranged := me.weapon.attribute == "Ranged" || (me.isSage() && me.weapon.objtype == FIST);
 
     // Enable archer-specific abilities if needed
-    if (TemHabilidade(me, ABILITY_ID::TIRO_EM_MOVIMENTO))
+    if (MobileWrapper(me).HasAbility(ABILITY_ID::TIRO_EM_MOVIMENTO))
         GrantPrivilege(me, "firewhilemoving");
         me.enable("firewhilemoving");
     endif
@@ -269,7 +270,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
 
     // Let the combat hook handle the actual attacks
     if (is_ranged)
-        if (Distance(me, opponent) < 2 && !TemHabilidade(me, ABILITY_ID::TIRO_EM_MOVIMENTO))
+        if (Distance(me, opponent) < 2 && !MobileWrapper(me).HasAbility(ABILITY_ID::TIRO_EM_MOVIMENTO))
             reachForMeleeWeapon(opponent);
         endif
 
@@ -805,10 +806,10 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
             ABILITY_ID::INVOCACAO_DO_CAOS: 
             ABILITY_ID::GWAENEDH:
             ABILITY_ID::FORMA_ADAPTAVEL:
-            ABILITY_ID::IRMAOS_DE_AREIA:
-            ABILITY_ID::CANHONEIRO:
-            ABILITY_ID::QUINQUILHARIAS:
-            ABILITY_ID::CONSTRUTOR_DE_GOLEMS: 
+            ABILITY_ID::SAND_BROTHERS:
+            ABILITY_ID::TACTICAL_SHOULDER:
+            ABILITY_ID::TARGETING_VISOR:
+            ABILITY_ID::GOLEM_ASSEMBLY:
                 ProccessHab(me, hab);
         endcase
     endforeach
@@ -835,7 +836,7 @@ function HandleThiefBehavior(opponent)
             DoThiefSteal(opponent);
         else // In combat 
             var npcState := getNPCState(me);
-            if (npcState == "dying" && TemHabilidade(me, "Fuga de Emergencia"))
+            if (npcState == "dying" && MobileWrapper(me).HasAbility(ABILITY_ID::FUGA_DE_EMERGENCIA))
                 FleeFrom(opponent);
                 SetCooldown(me, "thief_abilities", 30);
             endif

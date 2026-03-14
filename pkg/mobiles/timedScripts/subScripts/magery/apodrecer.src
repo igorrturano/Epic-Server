@@ -16,7 +16,7 @@ program TimedScript_Clumsy(params)
 	endif
 
 	SendSysMessage(who, "Voce sente fraqueza e odor de morte no seu corpo", 3, 0);
-	SetObjProperty(who, "apodrecer", 1);
+	who.hitchance_mod := who.hitchance_mod - 15;
 
 	return 1;
 endprogram

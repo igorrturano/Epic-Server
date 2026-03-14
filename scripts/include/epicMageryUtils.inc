@@ -7,6 +7,7 @@ include "include/epicConstants";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":abilities:models/Ability";
+include ":wrappers:Objects/Model/MobileWrapper";
 include "include/packets";
 include ":combat:Controller/DamageController_legacy";
 
@@ -82,14 +83,19 @@ endfunction
 function distanceAllowedForSpells(who, mlore, school)
 	var dist_allowed := 5 + mlore;
 
-	if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 		dist_allowed := dist_allowed + (mlore * 2);
-	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
 		dist_allowed := dist_allowed + (mlore * 2);
-	elseif (TemHabilidade(who, "Tirothan") && school == EVOCATIUM)
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::TIROTHAN) && school == EVOCATIUM)
 		dist_allowed := dist_allowed + (mlore * 2);
 	elseif (who.npctemplate)
 		dist_allowed := dist_allowed + (mlore * 2);
+	endif
+
+	// Caminho: Spell Range (+5 tiles)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SPELL_RANGE))
+		dist_allowed := dist_allowed + 5;
 	endif
 
 	return dist_allowed;
@@ -98,9 +104,9 @@ endfunction
 function bonusSpellDamageForSpecialists(who, dmg, school)
 	var bonus := 1.2;
 
-	if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 		dmg := Cint(dmg * bonus);
-	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
 		dmg := Cint(dmg * bonus);
 	endif
 
@@ -144,11 +150,11 @@ endfunction
 
 function handleSpellResistDiffForSpecialists(who, school)
 	var diff := RESIST_EASY;
-	if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 		diff := RESIST_MEDIUM;
-	elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
 		diff := RESIST_MEDIUM;
-	elseif (TemHabilidade(who, "Cetro da Morte") && school == KAIJIN)
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::CETRO_DA_MORTE) && school == KAIJIN)
 		diff := RESIST_MEDIUM;
 	endif
 
@@ -158,11 +164,11 @@ endfunction
 function bonusSpellDurationForSpecialists(who, duration, school)
 	var bonus := 1.2;
 
-   if (TemHabilidade(who, ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
+   if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
 	  duration := Cint(duration * bonus);
-   elseif (TemHabilidade(who, "Valdruk") && school == VELKYN)
+   elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
 	  duration := Cint(duration * bonus);
-   elseif(Temhabilidade(who, "Coração da Matilha") && school == ARADALORE)
+   elseif(MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA) && school == ARADALORE)
 	  duration := Cint(duration * bonus);
    endif
 
@@ -293,7 +299,7 @@ function ConsumeArcaneCharges(who, quantidade)
 	var retorno := ConsumeItemArcaneCharges(who.weapon, quantidade);
 
 	if (elementalWeapon != error && retorno.isSucesso)
-		if (elementalWeapon.serial != who.serial && !TemHabilidade(who, "Vínculo Elemental"))
+		if (elementalWeapon.serial != who.serial && !MobileWrapper(who).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
 			ApplyDamageHabElementalWeapon(0, who, elementalWeapon.bonus, elementalWeapon.type, retorno.divisor);
 			SendSysMessageEx(who, "O controle das energias arcanas da arma se torna caótico e acaba ferindo você.",
 							  SSM_INFO);
@@ -395,7 +401,7 @@ endfunction
 function HandleSpellSkill(who)
 	var chardata := getobjProperty(who, "chardata");
 	var skill := Cint(AP_GetSkill(who, ARCANA));
-	if (chardata != error && chardata.wisdom_path != "Mago" && !(Temhabilidade(who, "Sensibilidade Arcana")))
+	if (chardata != error && chardata.wisdom_path != "Mago" && !(MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)))
 		skill := Cint(AP_GetSkill(who, THEOLOGY));
 	endif
 

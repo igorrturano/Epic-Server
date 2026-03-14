@@ -11,6 +11,8 @@ include ":spells:include/tnmagery";
 include ":timeUtils:time";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 const SPELL_BTN := 200;
 
@@ -33,7 +35,7 @@ program orderSpells(who, item)
 		endif
 	endif
 
-	if (altar == LORE && cultura == ALURIEL && !TemHabilidade(who, "Gwaenedh") && classe == SABIO)
+	if (altar == LORE && cultura == ALURIEL && !MobileWrapper(who).HasAbility(ABILITY_ID::GWAENEDH) && classe == SABIO)
 		if (ArcaneArcherDevotion(who))
 			playAltarAnimations(who, item);
 			return;

@@ -17,6 +17,8 @@ include ":gumps:yesNo";
 include ":charactercreation:habilidades";
 include ":tn:cooldown";
 include ":entropy:entropy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program skinning(parms)
 	var who := parms[1];
@@ -166,7 +168,7 @@ program skinning(parms)
 						minamt := corpseamt[i];
 					endif
 					qtd := minamt;
-					if (TemHabilidade(who, "Sem Desperdicio"))
+					if (MobileWrapper(who).HasAbility(ABILITY_ID::NO_WASTE))
 						qtd := qtd + CInt(qtd * AP_GetSkill(who, SURVIVAL) / 100);
 					endif
 					var item := CreateItemInContainer(cadaver, cstr(thing), cint(qtd));

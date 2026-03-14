@@ -9,7 +9,7 @@
 include ":combat:armorZones";
 // include ":abilities:models/Ability";
 include ":combat:Model/Damage";
-include "AbilitiesController";
+include "CombatAbilityController";
 include "SkillController";
 include "ParryController";
 include ":combat:weardown";

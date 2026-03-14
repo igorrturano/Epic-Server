@@ -111,7 +111,7 @@ program calor(params)
 				dif := dif - 5;
 			endif
 			
-			if (TemHabilidade(who, "Resistência do Deserto"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::RESISTENCIA_DO_DESERTO))
 				dif := dif - 5;
 			endif
 
@@ -168,7 +168,7 @@ program calor(params)
 					SendSysMessageEX(who, "O Protetor de Gelo lhe protege do calor.", SSM_INFO);
 					dif := dif - 5;
 				endif
-				if ((TemHabilidade(mobile, "Caçador Experiente")) && who.party &&
+				if ((MobileWrapper(mobile).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE)) && who.party &&
 		(who.party.leader == mobile.party.leader))
 					resistchecked := mobile;
 				endif

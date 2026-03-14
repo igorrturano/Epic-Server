@@ -1,7 +1,7 @@
 use uo;
 
 include ":abilities:models/CombatAbility";
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
 include ":abilities:controllers/AbilityMonitor";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";

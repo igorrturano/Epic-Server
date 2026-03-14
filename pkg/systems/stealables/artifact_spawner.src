@@ -21,9 +21,7 @@ include ":traps:traps";
 // Constantes
 const CHECK_INTERVAL := 60; // Intervalo de verificação em segundos
 
-program artifact_spawner(params)
-	var spawner := params[1];
-	
+program artifact_spawner(spawner)	
 	if (!spawner)
 		return 0;
 	endif

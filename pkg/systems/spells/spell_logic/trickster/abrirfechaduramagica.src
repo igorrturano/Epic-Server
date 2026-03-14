@@ -1,0 +1,54 @@
+use uo;
+use os;
+
+include ":keys:key";
+include ":traps:traps";
+include ":message:model/Message";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0;
+
+	if (!targ)
+		Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	elseif (!targ.IsA(POLCLASS_ITEM))
+		Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	elseif (!targ.IsDoor())
+		Message("Você só pode destruir barreiras em portas.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	elseif (!GetObjProperty(targ, "time") || !GetObjProperty(targ, "level"))
+		Message("Isto não parece uma porta de dungeon.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	elseif (targ.locked == 0)
+		Message("Essa porta não está trancada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	elseif (!KP_IsLockable(targ))
+		Message("Isto não pode ser destrancado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	elseif (Distance(who, targ) > 1)
+		Message("Você está muito longe do alvo!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	if (GetObjProperty(targ, "TrapList") != error)
+		if (!GetObjProperty(targ, "trap_inativa"))
+			RemoveTrap(targ, 1);
+			targ.usescript := "";
+			var name := targ.desc;
+			name[" [trapped]"] := "";
+			SetName(targ, name);
+		endif
+	endif
+
+	KP_ToggleLock(targ, who);
+	SetObjProperty(targ, "arrombado", $"{who.name}");
+	SetObjProperty(targ, "locktime", polcore().systime);
+	PlaySoundEffect(targ, 0x0200);
+	PlayObjectCenteredEffect(targ, 0x3763, 1, 16);
+	Message("Você magicamente destrói a barreira e abre a fechadura.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+
+	return 1;
+endprogram

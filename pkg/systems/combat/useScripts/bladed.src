@@ -12,6 +12,8 @@ include "include/say";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";
 include ":destroyable:include/destroyItem";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program use_Bladed(who, tool)
 
@@ -287,7 +289,7 @@ function CarveMobiles(who, tool, mobile)
 		else
 			mobile.graphic := 223;
 			var qtd := 2;
-			if (TemHabilidade(who, "Sem Desperdicio"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::NO_WASTE))
 				qtd := qtd + CInt(AP_GetSkill(who, SURVIVAL) / 20);
 			endif
 			CreateItemInContainer(who.backpack, 0xf125, qtd);

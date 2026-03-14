@@ -127,7 +127,7 @@ program textcmd_massmove(who, text)
 		low_y := coordStructOne.y;
 	endif
 
-	var temp_list := ListObjectsInBox(high_x, high_y, z_minus, low_x, low_y, z_plus);
+	var temp_list := ListObjectsInBox(high_x, high_y, z_minus, low_x, low_y, z_plus, who.realm);
 
 	if (item_filter)
 		var temp_list2 := array{};

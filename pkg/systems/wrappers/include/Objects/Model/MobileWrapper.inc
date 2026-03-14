@@ -15,6 +15,7 @@ include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
+include "include/NPCUtil";
 include ":achievements:utils/datafile";
 include ":serialization:StructSerializer";
 include ":abilities:controllers/AbilityMonitor";
@@ -44,7 +45,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this.Religion := err;
 				this.CombatTraitsVar := err;
 			else // Se entrar aqui, é player
-				this.Race := this.GetProperty(MOBILE_PROPNAME::CHARDATA).race;
+				this.Race := this.GetProperty(MOBILE_PROPNAME::CHARDATA).raca;
 				this.Culture := this.GetProperty(MOBILE_PROPNAME::CHARDATA).culture;
 				this.Religion := this.GetProperty(MOBILE_PROPNAME::CHARDATA).religion;
 
@@ -858,6 +859,41 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	// 	return this.GetActiveAbilities()[ability.GetActivationMoment()].exists(ability.GetName());
 	// endfunction
 
+	// ================ Pool Abilities ================= //
+
+	function AddPoolAbility(this, ability)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!ability.GetName())
+			return InvalidAbilityException("This is not a valid ability!");
+		endif
+
+		// Store in myhabs like normal
+		var abilities := this.GetAbilities();
+		abilities[ability.GetName()] := ability.GetId();
+		this.SetProperty(MOBILE_PROPNAME::ABILITIES, abilities);
+
+		// Increment pool count
+		var poolCounts := this.GetProperty(MOBILE_PROPNAME::POOL_ABILITIES) ?: dictionary{};
+		var abilityId := CInt(ability.GetId());
+		var currentCount := CInt(poolCounts[abilityId]) ?: 0;
+		poolCounts[abilityId] := currentCount + 1;
+		this.SetProperty(MOBILE_PROPNAME::POOL_ABILITIES, poolCounts);
+
+		return this;
+	endfunction
+
+	function GetPoolAbilityCount(this, abilityId)
+		if (this.GetObjRef() is @Exception)
+			return 0;
+		endif
+
+		var poolCounts := this.GetProperty(MOBILE_PROPNAME::POOL_ABILITIES) ?: dictionary{};
+		return CInt(poolCounts[CInt(abilityId)]) ?: 0;
+	endfunction
+
 	// ================ Achievements ================= //
 	function GetAchievement(this, who, type, key, name)
 		return LoadAchievement(type, who, key, name);
@@ -1243,7 +1279,8 @@ enum class MOBILE_PROPNAME
 	LANGUAGE := "langdata",
 	ENTROPY := "entropy",
 	ABILITIES := "myhabs",
-	ACTIVE_ABILITIES := "activehabs"
+	ACTIVE_ABILITIES := "activehabs",
+	POOL_ABILITIES := "myhabs_pool"
 endenum
 
 enum class ENTROPY_LIMITS

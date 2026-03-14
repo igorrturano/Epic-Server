@@ -88,9 +88,9 @@ program jogarede(who, rede)
 
 		var mod := 0;
 
-		if (TemHabilidade(who, "Prestidigitacao"))
-			mod := -20;
-		endif
+		// if (TemHabilidade(who, "Prestidigitacao"))
+		// 	mod := -20;
+		// endif
 
 		alvo.frozen := 1;
 

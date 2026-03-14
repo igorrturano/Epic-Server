@@ -1,0 +1,93 @@
+use uo;
+
+include ":message:model/Message";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":gumps:gumps";
+include ":gumps:selectionGump";
+
+const STEAMARMS_OBJTYPE := 0xC62B;
+const HANDCANNON_OBJTYPE := 0xC5FF;
+const HARPOON_OBJTYPE := 0xFFA9;
+const POWDERTRAP_OBJTYPE := 0x6202;
+
+program use_steamarms(who, item)
+	// If not equipped, equip it
+	if (!_IsEquipped(who, item))
+		if (EquipItem(who, item))
+			Message("Voce equipa os Bracos a Vapor!").SetColor(SSM_INFO).SendSys(who);
+			return 1;
+		else
+			Message("Nao foi possivel equipar.").SetColor(SSM_FAIL).SendSys(who);
+			return 0;
+		endif
+	endif
+
+	// Must have Tactical Shoulder ability
+	var mobile := MobileWrapper(who);
+	if (!mobile.HasAbility(ABILITY_ID::TACTICAL_SHOULDER))
+		Message("Voce nao possui a habilidade Ombreira Tatica.").SetColor(SSM_FAIL).SendSys(who);
+		return 0;
+	endif
+
+	// Build options list
+	var current := GetObjProperty(item, "InstalledGadget");
+	var current_name := "Nenhum";
+	case (current)
+		"handcannon": current_name := "Canhao de Mao";
+		"harpoon":    current_name := "Arpao Mecanico";
+		"powdertrap": current_name := "Armadilha de Polvora";
+	endcase
+
+	var options := array{};
+	if (FindObjtypeInContainer(who.backpack, HANDCANNON_OBJTYPE))
+		options.append("Instalar Canhao de Mao");
+	endif
+	if (FindObjtypeInContainer(who.backpack, HARPOON_OBJTYPE))
+		options.append("Instalar Arpao Mecanico");
+	endif
+	if (FindObjtypeInContainer(who.backpack, POWDERTRAP_OBJTYPE))
+		options.append("Instalar Armadilha de Polvora");
+	endif
+	if (current)
+		options.append("Remover gadget atual");
+	endif
+
+	if (options.size() == 0)
+		Message($"Nenhum gadget disponivel. [Instalado: {current_name}]", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	var choice := SelectionGump(who, $"Ombreira Tatica [Instalado: {current_name}]", options);
+	if (!choice || choice.errortext)
+		return 0;
+	endif
+
+	if (choice["Canhao"])
+		SetObjProperty(item, "InstalledGadget", "handcannon");
+		Message("Canhao de Mao instalado na ombreira!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+		PlaySoundEffect(who, 0x4F);
+	elseif (choice["Arpao"])
+		SetObjProperty(item, "InstalledGadget", "harpoon");
+		Message("Arpao Mecanico instalado na ombreira!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+		PlaySoundEffect(who, 0x4F);
+	elseif (choice["Armadilha"])
+		SetObjProperty(item, "InstalledGadget", "powdertrap");
+		Message("Armadilha de Polvora instalada na ombreira!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+		PlaySoundEffect(who, 0x4F);
+	elseif (choice["Remover"])
+		EraseObjProperty(item, "InstalledGadget");
+		Message("Gadget removido da ombreira.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	endif
+
+	return 1;
+endprogram
+
+function _IsEquipped(who, item)
+	foreach equipped in ListEquippedItems(who)
+		if (equipped.serial == item.serial)
+			return 1;
+		endif
+	endforeach
+	return 0;
+endfunction

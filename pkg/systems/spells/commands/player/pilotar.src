@@ -1,6 +1,7 @@
 use uo;
 use os;
-include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":commands:possess";
 include "include/epicCombatUtils";
 include "include/facings";
@@ -8,7 +9,7 @@ include ":tn:equipment";
 
 program cleric(who)
 
-	if (!TemHabilidade(who, "Construtor de Golems"))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::GOLEM_ASSEMBLY))
 		SendSysMessage(who, "Apenas construtores de golems sao capazes de pilota-los");
 		return 0;
 	endif

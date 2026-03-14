@@ -14,9 +14,7 @@ include ":itemutils:canAccess";
 
 program Make_Trap(who, trap)
 
-	if ((temHabilidade(who, "Instalar Armadilha")) || (TemHabilidade(who, ABILITY_ID::CACADOR_EXPERIENTE)))
-
-	else
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE))
 		SendSysMessageEx(who, "Voce nao tem a menor ideia de como usar isso.", SSM_FAIL);
 		return 0;
 	endif

@@ -1,69 +1,31 @@
-// AbilityRegistry.inc - Full registry: class definitions + registrations
-// For lightweight usage (no class defs), include AbilityRegistryBase.inc instead.
+// AbilityRegistry.inc - ABILITY_CLASSES dictionary + CreateAbility factory.
+// Each AbilityRegistry{Archetype}.inc includes this, then registers its abilities.
 
-include ":abilities:AbilityRegistryBase";  // ABILITY_CLASSES dict + CreateAbility
-include ":abilities:classes/_index";       // All ability class definitions
+include ":abilities:models/Ability";
 
-// Arqueiro (1-5)
-ABILITY_CLASSES[ABILITY_ID::TIRO_PODEROSO] := @PowerShot;
-ABILITY_CLASSES[ABILITY_ID::TIRO_CARREGADO] := @ChargedShot;
-ABILITY_CLASSES[ABILITY_ID::TIRO_EM_MOVIMENTO] := @ShootWhileMoving;
-ABILITY_CLASSES[ABILITY_ID::ENCONTRAR_BRECHA] := @FindOpening;
-ABILITY_CLASSES[ABILITY_ID::DISPARO_MULTIPLO] := @MultiShot;
+var ABILITY_CLASSES := dictionary{};
 
-// Combatente (200-204)
-ABILITY_CLASSES[ABILITY_ID::HALFSWORD] := @Halfsword;
-ABILITY_CLASSES[ABILITY_ID::GOLPE_MORTAL] := @MurderBlow;
-ABILITY_CLASSES[ABILITY_ID::CONTRAGOLPE_CRUZADO] := @CrossCut;
-ABILITY_CLASSES[ABILITY_ID::GOLPES_FURIOSOS] := @RageCut;
-ABILITY_CLASSES[ABILITY_ID::SENTENCA_DE_MORTE] := @DeathSentence;
+// Creates ability instance from registry
+// @param abilityId ABILITY_ID enum value
+// @return CombatAbility subclass instance, or error if not registered
+function GetAbilityArchetype(abilityId)
+    if (abilityId < 1000)
+        return "Guerreiro";
+    elseif (abilityId < 2000)
+        return "Ladino";
+    elseif (abilityId < 3000)
+        return "Sabio";
+    else
+        return "Caminho";
+    endif
+endfunction
 
-// Cacador (100-104)
-ABILITY_CLASSES[ABILITY_ID::CAMUFLAGEM] := @Camouflage;
-ABILITY_CLASSES[ABILITY_ID::CACADOR_EXPERIENTE] := @ExpertHunter;
-ABILITY_CLASSES[ABILITY_ID::MESTRE_DE_FERAS] := @BeastMaster;
-ABILITY_CLASSES[ABILITY_ID::ESPREITA_SELVAGEM] := @WildStalker;
-ABILITY_CLASSES[ABILITY_ID::CACADOR_IMPLACAVEL] := @RelentlessHunter;
+function CreateAbility(abilityId)
+    if (!ABILITY_CLASSES.exists(abilityId))
+        return error{"errortext" := $"Ability {abilityId} not registered in ABILITY_CLASSES"};
+    endif
 
-// Defensor (300-304)
-ABILITY_CLASSES[ABILITY_ID::PROVOCAR] := @Taunt;
-ABILITY_CLASSES[ABILITY_ID::MANOBRA_DE_DEFESA] := @DefenseManeuver;
-ABILITY_CLASSES[ABILITY_ID::MANOBRA_DESAFIADORA] := @ChallengerManeuver;
-ABILITY_CLASSES[ABILITY_ID::MANOBRA_DA_RESILIENCIA] := @ResilienceManeuver;
-ABILITY_CLASSES[ABILITY_ID::MANOBRA_DA_INVENCIBILIDADE] := @InvincibilityManeuver;
+    var ability := ABILITY_CLASSES[abilityId].new();
 
-// Paladino (400-404)
-ABILITY_CLASSES[ABILITY_ID::CONSAGRACAO_DIVINA] := @DivineConsecration;
-ABILITY_CLASSES[ABILITY_ID::GOLPE_DIVINO] := @DivineSmite;
-ABILITY_CLASSES[ABILITY_ID::AURA_DE_FE] := @AuraOfFaith;
-ABILITY_CLASSES[ABILITY_ID::PRESENCA_DIVINA] := @DivinePresence;
-ABILITY_CLASSES[ABILITY_ID::CAMPEAO_DIVINO] := @DivineChampion;
-
-// Aklattur (500-504)
-ABILITY_CLASSES[ABILITY_ID::FURIA_DO_DESERTO] := @DesertFury;
-ABILITY_CLASSES[ABILITY_ID::SANGUE_POR_SANGUE] := @BloodForBlood;
-ABILITY_CLASSES[ABILITY_ID::MARCA_DA_PRESA] := @PreyMark;
-ABILITY_CLASSES[ABILITY_ID::RESISTENCIA_DO_DESERTO] := @DesertResilience;
-ABILITY_CLASSES[ABILITY_ID::CARNIFICINA] := @Carnage;
-
-// Barbaro (600-604)
-ABILITY_CLASSES[ABILITY_ID::FURIA] := @Fury;
-ABILITY_CLASSES[ABILITY_ID::RESILIENCIA_BARBARA] := @BarbarianResilience;
-ABILITY_CLASSES[ABILITY_ID::FURIA_INDOMAVEL] := @UntamableFury;
-ABILITY_CLASSES[ABILITY_ID::FURIA_IMPLACAVEL] := @RelentlessFury;
-ABILITY_CLASSES[ABILITY_ID::DESTRUIDOR] := @Destroyer;
-
-// Monge (700-704)
-ABILITY_CLASSES[ABILITY_ID::MARTIAL_ARTIST] := @MartialArtist;
-ABILITY_CLASSES[ABILITY_ID::DRAGON_STANCE] := @DragonStance;
-ABILITY_CLASSES[ABILITY_ID::CRAB_STYLE] := @CrabStyle;
-ABILITY_CLASSES[ABILITY_ID::TIGER_STANCE] := @TigerStance;
-ABILITY_CLASSES[ABILITY_ID::BODY_AND_MIND] := @BodyAndMind;
-
-// Samurai (800-804)
-ABILITY_CLASSES[ABILITY_ID::WANDERER_PATH] := @WandererPath;
-ABILITY_CLASSES[ABILITY_ID::DRAGON_FURY] := @DragonFury;
-ABILITY_CLASSES[ABILITY_ID::PERFECT_EXECUTION] := @PerfectExecution;
-ABILITY_CLASSES[ABILITY_ID::WIND_STRIKE] := @WindStrike;
-ABILITY_CLASSES[ABILITY_ID::SWORD_MASTER] := @SwordMaster;
-
+    return ability;
+endfunction

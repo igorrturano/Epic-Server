@@ -7,6 +7,8 @@ include ":tn:tngumps";
 include "include/client";
 include ":charactercreation:habilidades";
 include ":timedscripts:timedScripts";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 function removeDisguise(who)
 	var original := GetObjProperty(who, "disfarce");
@@ -95,7 +97,7 @@ function removedisfarce(who)
 		return 1;
 	endif
 
-	if (TemHabilidade(who, "Dissimulacao"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::DISSIMULACAO))
 		removeDisguise(who);
 	else
 		TS_LowerDuration(who, "kitdisfarce", -1);

@@ -10,6 +10,8 @@ include "spellSounds";
 include ":charactercreation:resists";
 include ":charactercreation:habilidades";
 include ":entropy:entropy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 function spelllearn(who)
 	var spell := GetObjProperty(who, "spellcraft");
@@ -648,11 +650,11 @@ function WritespellInfo(who, byref spellinfo)
 		cfg := ReadConfigFile(":spells:config/priestspells");
 	elseif (chardata.magia == "Druid")
 		cfg := ReadConfigFile(":spells:config/druidspells");
-	elseif (TemHabilidade(who, "Consagracao Divina")) // ✅ FIX: Check ability for Paladin
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
 		cfg := ReadConfigFile(":spells:config/paladinspells");
-	elseif (TemHabilidade(who, "Sensibilidade Arcana"))
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
 		cfg := ReadConfigFile(":spells:config/tricksterspells");
-	elseif (TemHabilidade(who, "Sigilo de Protecao"))
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
 		cfg := ReadConfigFile(":spells:config/demonhunterspells");
 	elseif (chardata.magia == "spellcaster" && chardata.wisdom_path == "Mago")
 		cfg := ReadConfigFile(":spells:config/spellcaster");

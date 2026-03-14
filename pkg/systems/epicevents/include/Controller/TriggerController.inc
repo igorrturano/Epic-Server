@@ -19,9 +19,9 @@ function ProcessTriggerEvent(item, event, triggerConfig)
 		"LEFTAREA":
 			return ValidateAreaTrigger(event, triggerConfig);
 		"ITEM_GIVEN":
-			// return ValidateItemGivenTrigger(event, triggerConfig);
+			return ValidateItemGivenTrigger(event, triggerConfig);
 		"DOUBLECLICKED":
-			// return ValidateDoubleClickTrigger(event, triggerConfig);
+			return ValidateDoubleClickTrigger(event, triggerConfig);
 		default:
 			return 0;
 	endcase

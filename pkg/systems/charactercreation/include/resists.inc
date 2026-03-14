@@ -5,6 +5,7 @@ include "include/say";
 include "include/creationUtils";
 include "include/epicConstants";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
  // ATENçÃO: este metodo só existe para compatibilidade com o sistema antigo de resistências
  // A atuação das resistências agora é feita via atributos intrínsecos e ganchos. veja: pkg/systems/attributes/hooks/intrinsicMods.src
@@ -52,9 +53,9 @@ function ShouldGetSecondChance(defender, resist_type)
     var chardata := GetObjProperty(defender, "chardata");
     return (
         (chardata.culture == HAROLOTH && resist_type == FORTITUDE) ||
-        (TemHabilidade(defender, "Aura Divina") && resist_type == FORTITUDE) ||
+        (MobileWrapper(defender).HasAbility(ABILITY_ID::AURA_DIVINA) && resist_type == FORTITUDE) ||
         (chardata.raca == ANAO && resist_type == WILL) ||
-        (chardata.culture == POLKINEA) ||
+        (chardata.culture == COLHESIANA) ||
 		(MobileWrapper(defender).GetEntropy() <= -8000 && resist_type == FORTITUDE)
     );
 endfunction
@@ -63,11 +64,11 @@ function GetSecondChanceMessage(defender, resist_type)
     var chardata := GetObjProperty(defender, "chardata");
     if (chardata.culture == HAROLOTH && resist_type == FORTITUDE)
         return "Seu organismo drow expurga o veneno";
-    elseif (TemHabilidade(defender, "Aura Divina") && resist_type == FORTITUDE)
+    elseif (MobileWrapper(defender).HasAbility(ABILITY_ID::AURA_DIVINA) && resist_type == FORTITUDE)
         return "Sua aura divina expurga o veneno";
     elseif (chardata.raca == ANAO && resist_type == WILL)
         return "Sua constituição anã o salvou da magia";
-    elseif (chardata.culture == POLKINEA)
+    elseif (chardata.culture == COLHESIANA)
         return "Um pequilho sempre pode contar com a própria sorte";
 	elseif (MobileWrapper(defender).GetEntropy() <= -8000 && resist_type == FORTITUDE)
 		return "Sua alma corrupta expurga o veneno";

@@ -12,6 +12,7 @@ include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":debug:Controller/DebugController";
 include ":entropy:entropy";
+include ":abilities:models/Ability";
 
 program equipweapon(who, item)
 	var descmod_item := GetObjProperty(item, "descmod");
@@ -72,7 +73,7 @@ program equipweapon(who, item)
 	endif
 
 	if (GetObjProperty(who, "metamorfose") != error)
-		if (TemHabilidade(who, "Elo Natural"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::ELO_NATURAL))
 			if (item.isa(POLCLASS_WEAPON) || item.isa(POLCLASS_ARMOR))
 				SendSysMessageEx(who, "Voce nao pode equipar nada nessa forma.");
 				return 0;
@@ -88,7 +89,29 @@ program equipweapon(who, item)
 		return 0;
 	endif
 
-	if (TemHabilidade(who, "Fúria"))
+	// Steam Gloves: block gloves, weapons and shields
+	var steamGloves := GetEquipmentByLayer(who, LAYER_GLOVES);
+	if (steamGloves && steamGloves.objtype == 0xC629)
+		if (item.objtype != 0xC629)
+			if (item.tile_layer == LAYER_GLOVES || item.tile_layer == LAYER_HAND1 || item.tile_layer == LAYER_HAND2)
+				SendSysMessageEx(who, "Remova suas manoplas a vapor primeiro.", SSM_FAIL);
+				return 0;
+			endif
+		endif
+	elseif (item.objtype == 0xC629)
+		if (steamGloves)
+			SendSysMessageEx(who, "Remova suas luvas antes de equipar as manoplas a vapor.", SSM_FAIL);
+			return 0;
+		endif
+		var rh := GetEquipmentByLayer(who, LAYER_HAND1);
+		var lh := GetEquipmentByLayer(who, LAYER_HAND2);
+		if (rh || lh)
+			SendSysMessageEx(who, "Remova sua arma ou escudo antes de equipar as manoplas a vapor.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::FURIA))
 		if (item.objtype == 0x13ec || item.objtype == 0x13ed || item.objtype == 0x13ee ||
 	  item.objtype == 0x13ef || item.objtype == 0x13f0 || item.objtype == 0x13f1 ||
 	  item.objtype == 0x13f2 || item.objtype == 0x13BB || item.objtype == 0x13C0 ||
@@ -164,6 +187,11 @@ program equipweapon(who, item)
 	var cfg := readconfigfile(":combat:itemdesc");
 	if (cint(cfg[item.objtype].parrybonus) > 0)
 		EraseObjProperty(who, "twohanded");
+	endif
+
+	// Steam Legs: +50 carry capacity
+	if (item.objtype == 0xC62A)
+		who.carrying_capacity_mod := who.carrying_capacity_mod + 50;
 	endif
 
 	return 1;

@@ -1,7 +1,7 @@
 // Internal
 include ":combat:armorZones";
 // include ":combat:Controller/DamageController_legacy";
-// include ":combat:Controller/AbilitiesController";
+// include ":combat:Controller/CombatAbilityController";
 include ":combat:weardown";
 
 // External
@@ -16,7 +16,9 @@ include ":timedScripts:timedScripts";
 // include ":equipsys:utils/consts";
 include "include/epicNPCUtils";
 include ":combat:weaponInfo";
-
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":charactercreation:habilidades";
 /*
  * http://uo.stratics.com/content/guides/resistance.shtml
  * These could be attributes, but not every shard will want to
@@ -36,6 +38,16 @@ enum DAMAGE_TYPES
 	DMG_POISON		:= "Poison",
 	DMG_ENERGY		:= "Energy"
 endenum
+
+function _GetElementalSpecForDmgType(dmgType)
+	case (dmgType)
+		DMG_FIRE:    return ABILITY_ID::ELEMENTAL_SPEC_FIRE;
+		DMG_COLD:    return ABILITY_ID::ELEMENTAL_SPEC_COLD;
+		DMG_ENERGY:  return ABILITY_ID::ELEMENTAL_SPEC_ENERGY;
+		DMG_POISON:  return ABILITY_ID::ELEMENTAL_SPEC_POISON;
+		default:     return 0;
+	endcase
+endfunction
 
 function getNewDamageList(attacker)
 	var list := dictionary;
@@ -385,6 +397,18 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	var totaldmg;
 	var attackInfo := struct{};
 
+	// Caminho: Elemental Specialization bonus (+2 per purchase)
+	if (source && type != DMG_FORCED)
+		var elemSpecId := _GetElementalSpecForDmgType(type);
+		if (elemSpecId)
+			var mob := MobileWrapper(source);
+			var count := mob.GetPoolAbilityCount(elemSpecId);
+			if (count > 0)
+				dmg := dmg + (count * 2);
+			endif
+		endif
+	endif
+
 	if (type == DMG_FORCED)
 		totaldmg := CInt(dmg);
 	else
@@ -428,7 +452,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Tiro Penetrante]: " + CInt(damagemod));
 	endif
 
-	if (TemHabilidade(attacker, "Brigador de Taverna") && attacker.weapon.objtype == 0x1F020)
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::TAVERN_BRAWLER) && attacker.weapon.objtype == 0x1F020)
         var damagemod := 2;
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Brigador de Taverna]: " + CInt(damagemod));
@@ -450,16 +474,6 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Faro por Sangue]: " + CInt(damagemod));
 	endif
 
-	if (TemHabilidade(attacker, "Taticas Arcanas"))
-		var manaatual := AP_GetVital(attacker, "MANA");
-		var manatotal := AP_GetVitalMaximumValue(attacker, "MANA");
-		if (manaatual >= manatotal / 2)
-			var damagemod := CInt(manaatual / 20);
-			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Taticas Arcanas]: " + CInt(damagemod));
-		endif
-	endif
-
 	if (GetCooldown(attacker, "lobosolitario"))
 		if (ListHostiles(attacker, 3, LH_FLAG_LOS) > 2)
 			var damagemod := CInt(AP_GetSkill(attacker, SURVIVAL) / 20);
@@ -468,13 +482,13 @@ function CalcDamageHabs(attacker, defender, damage)
 		endif
 	endif
 
-	if (TemHabilidade(attacker, "Precisao Cirurgica"))
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::PRECISAO_CIRURGICA))
 		var damagemod := CInt(AP_GetSkill(attacker, SCIENCE) / 20);
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Precisão Cirurgica]: " + CInt(damagemod));
 	endif
 
-    if (TemHabilidade(attacker, "Arsenal Sombrio"))
+    if (MobileWrapper(attacker).HasAbility(ABILITY_ID::ARSENAL_SOMBRIO))
         var damagemod := CInt(AP_GetSkill(attacker, SNEAK) / 20);
         if (isAssassinWeapon(attacker))
 			damage += damagemod;
@@ -482,15 +496,7 @@ function CalcDamageHabs(attacker, defender, damage)
         endif
     endif
 
-	if (TemHabilidade(attacker, "Estilo Mao Livre"))
-		if (attacker.weapon.attribute == "One_Handed" && !attacker.shield)
-			var damagemod := CInt(AP_GetSkill(attacker, TACTICS) / 25);
-			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Estilo Mao Livre]: " + CInt(damagemod));
-		endif
-	endif
-
-	if (TemHabilidade(attacker, "Ainalaith"))
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::AINALAITH))
 		var damagemod := 0;
 		var arrow_effects := GetObjProperty(attacker, "#shooting_effects");
 		if (!arrow_effects)
@@ -523,17 +529,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Ainalaith]: " + CInt(damagemod));
 	endif
 
-	if (TemHabilidade(attacker, "Inimigo Predileto"))
-		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
-		var cfg := ReadConfigFile(":*:npcdesc");
-		var inimigo := GetObjProperty(attacker, "InimigoPredileto");
-
-		if (cfg[npctemplate.template].Category == inimigo)
-			var damagemod := Cint(AP_GetSkill(attacker, SURVIVAL) / 20);
-			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Inimigo Predileto]: " + CInt(damagemod));
-		endif
-    elseif (TemHabilidade(attacker, "Consagracao Divina"))
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := array{"Undead"};
@@ -543,7 +539,7 @@ function CalcDamageHabs(attacker, defender, damage)
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Consagracao Divina]: " + CInt(damagemod));
 		endif
-	elseif (TemHabilidade(attacker, "Sigilo de Protecao"))
+	elseif (MobileWrapper(attacker).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := array{"Demon"}; 
@@ -553,7 +549,7 @@ function CalcDamageHabs(attacker, defender, damage)
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Sigilo de Protecao]: " + CInt(damagemod));
 		endif
-	elseif (TemHabilidade(attacker, "Oleo do Cacador"))
+	elseif (MobileWrapper(attacker).HasAbility(ABILITY_ID::OLEO_DO_CACADOR))
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := GetObjProperty(attacker, "Óleo");
@@ -570,7 +566,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Presa]: " + CInt(damagemod));
 	endif
 
-	if (temHabilidade(attacker, "Instinto de Sobreviência") && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, THEOLOGY) / 2))
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA) && AP_GetVital(attacker, HITS) <= (AP_GetSkill(attacker, THEOLOGY) / 2))
 		if (GetObjProperty(attacker, "metamorfose") != error)
 			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage += damagemod;
@@ -581,13 +577,13 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (IsRaging(attacker))
 		var damagemod;
-		if (temHabilidade(attacker, "Nazg Khalug") || attacker.hasRage())
+		if (MobileWrapper(attacker).HasAbility(ABILITY_ID::FURIA_DO_DESERTO) || attacker.hasRage())
 			damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Nazg Khalug]: " + CInt(damagemod));
 			PrintTextAbove(attacker, "*enfurecido*");
 		endif
-		if (temHabilidade(attacker, "Furia Primitiva"))
+		if (MobileWrapper(attacker).HasAbility(ABILITY_ID::FURIA))
 			if (GetObjProperty(attacker, "metamorfose") != error)
 				damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 				damage += damagemod;
@@ -608,7 +604,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		endif
 	endif
 
-	if (TemHabilidade(attacker, "Budōka"))
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::MARTIAL_ARTIST))
 		var monk_weapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020, 0x27AD, 0x27AE, 0x27A7};
         var isArmor := array{"ArmaduraPesada", "ArmaduraMedia", "ArmaduraLeve"};
 		var damagemod := Cint(AP_GetSkill(attacker, TACTICS) / 20);
@@ -631,7 +627,7 @@ function CalcDamageHabs(attacker, defender, damage)
 	endif
 
 	if (isRaging(defender))
-		if (temHabilidade(attacker, "Burz"))
+		if (MobileWrapper(attacker).HasAbility(ABILITY_ID::FURIA))
 			var damagemod := CInt(AP_GetSkill(attacker, TACTICS) / 20);
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Burz]: " + CInt(damagemod));
@@ -640,19 +636,18 @@ function CalcDamageHabs(attacker, defender, damage)
 
 	if (GetCooldown(attacker, "furia"))
 		var damagemod := CInt(AP_GetSkill(attacker, TACTICS) / 20);
-		if (TemHabilidade(attacker, "Destruidor"))
+		if (MobileWrapper(attacker).HasAbility(ABILITY_ID::DESTRUIDOR))
 			damagemod := damagemod * 2;
 		endif
 		damage += damagemod;
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Furia]: " + CInt(damagemod));
 	endif
 
-	if(TemHabilidade(attacker, "Flanquear"))
-		if(IsBehind(defender, attacker.x, attacker.y))
-			var damagemod := RandomDiceRoll("1d4");
-			damage += damagemod;
-			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Flanquear]: " + CInt(damagemod));
-		endif
+	// TODO: Migrate Flanquear to V3 DamageController as a combat mechanic (+1d4 damage if behind)
+	if(IsBehind(defender, attacker.x, attacker.y))
+		var damagemod := RandomDiceRoll("1d4");
+		damage += damagemod;
+		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Flanquear]: " + CInt(damagemod));
 	endif
 
 	if (CInt(GetObjProperty(attacker, "#mataroumorrer")) > 0)

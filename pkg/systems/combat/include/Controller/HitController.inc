@@ -3,7 +3,7 @@
  * Purpose
  * Criado para organizar a lógica de cálculo de chance de acerto do combate
  */
-// include "AbilitiesController";
+// include "CombatAbilityController";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":abilities:models/Ability";
 include "include/packets";
@@ -89,9 +89,16 @@ function _GetSkillForCombat(byRef mobile)
 			skill := mobile.GetSkill(attribute);
 		endif
 
-		if (mobile.IsMounted() && // Se estiver montado
-			mobile.GetObjRef().GetProp("chardata").trait != "Cavalaria de Escaramuça") // E não tiver hab de cavalaria
-			skill := skill / 2;
+		if (mobile.IsMounted())
+			var hasTrait := mobile.GetObjRef().GetProp("chardata").trait == "Cavalaria de Escaramuça";
+			var hasAbility := mobile.HasAbility(ABILITY_ID::MOUNTED_COMBAT);
+
+			if (!hasTrait && !hasAbility)
+				skill := skill / 2; // 50% penalty
+			elseif (!hasTrait || !hasAbility)
+				skill := CInt(skill * 75 / 100); // 25% penalty
+			endif
+			// Both trait + ability = no penalty
 		endif
 	endif
 
@@ -222,10 +229,6 @@ endfunction
 function ConsumeAmmo(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
 		var powderNeeded := GetPowderAmount(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory());
-
-		if (TemHabilidade(attackInfo.GetAttacker().GetObjRef(), "Municiador Experiente") && powderNeeded > 2)
-			powderNeeded := 2;
-		endif
 
 		var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST).GetObjRef();
 		var powder := FindObjtypeInContainer(bandolier, 0x9092); // Pólvora

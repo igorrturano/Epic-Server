@@ -19,8 +19,8 @@ function GetSpecialIcon(special_name)
 		return struct{"iconid" := 0x7E, "hue" := 0};
 	endif
 
-	// Find element by key "Special {name}"
-	var elem := FindConfigElem(cfg, "Special " + special_name);
+	var key := StrReplace(special_name, " ", "");
+	var elem := FindConfigElem(cfg, key);
 	if (!elem)
 		return struct{"iconid" := 0x7E, "hue" := 0};
 	endif
@@ -64,10 +64,9 @@ endfunction
 // Falls back to class default icon if ability-specific icon not found
 // ============================================================================
 function GetAbilityIcon(hab_id)
-	print("Getting icon for ability: " + hab_id);
 	var cfg := ReadConfigFile(":abilities:configs/habilidades");
 	if (!cfg)
-		return struct{"iconid" := 0x9bac, "hue" := 0};
+		return struct{"iconid" := DEFAULT_ABILITY_ICON, "hue" := 0};
 	endif
 
 	var elem := FindConfigElem(cfg, hab_id);
@@ -81,5 +80,5 @@ function GetAbilityIcon(hab_id)
 	endif
 
 	// Final fallback
-	return struct{"iconid" := 0x9bac, "hue" := 0};
+	return struct{"iconid" := DEFAULT_ABILITY_ICON, "hue" := 0};
 endfunction

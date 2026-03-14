@@ -5,6 +5,8 @@ include ":attributes:attributes";
 include "include/say";
 include ":gumps:gumps";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 function SpellYesNo(who, nome, targname)
 	var gump := GfCreateGump(140, 100);
@@ -76,7 +78,7 @@ program spell(params)
 	mana := mana * 2;
 	var spellname := GetConfigString(elem, "Name");
 
-	if (temhabilidade(mage, "Manter Magias"))
+	if (MobileWrapper(mage).HasAbility(ABILITY_ID::SUPPORT_CASTER))
 		mana := mana / 2;
 	endif
 
