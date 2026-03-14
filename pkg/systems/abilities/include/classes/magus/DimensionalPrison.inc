@@ -80,7 +80,7 @@ class DimensionalPrison(CombatAbility)
         endif
 
         // Teleport to prison dimension
-        MoveObjectToLocation(targ, 5934, 2411, 40, "britannia", MOVEOBJECT_FORCELOCATION);
+        MoveObjectToLocation(targ, 2210, 2653, 97, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 
         Message($"*aprisiona {targ.name} na dimensao por {duration}s*").SendAbove(who);
         Message("*voce foi aprisionado em outra dimensao!*", Color(SYSTEM_COLOR::FAIL)).SendAbove(targ);
