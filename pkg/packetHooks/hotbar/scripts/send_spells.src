@@ -17,6 +17,7 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:AbilityRegistry";
+include ":spells:SpellRegistry";
 
 program SendSpells(who)
     var spells;
@@ -87,14 +88,17 @@ endprogram
 // GetAllSpellsForGM - Load ALL spells from ALL config files
 // ============================================================================
 function GetAllSpellsForGM()
-    var spells := LoadSpellsFromCfg(":spells:config/cantripspells",     "Cantrip",      "t");
-    spells := spells + LoadSpellsFromCfg(":spells:config/spellcaster",       "Spellcaster",  "m");
-    spells := spells + LoadSpellsFromCfg(":spells:config/priestspells",      "Priest",       "d");
-    spells := spells + LoadSpellsFromCfg(":spells:config/shamanspells",      "Shaman",       "d");
-    spells := spells + LoadSpellsFromCfg(":spells:config/druidspells",       "Druid",        "d");
-    spells := spells + LoadSpellsFromCfg(":spells:config/paladinspells",     "Paladino",     "p");
-    spells := spells + LoadSpellsFromCfg(":spells:config/demonhunterspells", "Demon Hunter", "c");
-    spells := spells + LoadSpellsFromCfg(":spells:config/tricksterspells",   "Trickster",    "m");
+    var spells := LoadSpellsFromCfg(":spells:config/cantrips",     "Cantrip",      "t");
+    spells := spells + LoadSpellsFromCfg(":spells:config/evocation",    "Evocatium",    "m");
+    spells := spells + LoadSpellsFromCfg(":spells:config/necromancy",   "Kaijin",       "m");
+    spells := spells + LoadSpellsFromCfg(":spells:config/illusion",     "Velkyn",       "m");
+    spells := spells + LoadSpellsFromCfg(":spells:config/swordmage",    "Ahtaleloreth", "m");
+    spells := spells + LoadSpellsFromCfg(":spells:config/priest",       "Priest",       "d");
+    spells := spells + LoadSpellsFromCfg(":spells:config/shaman",       "Shaman",       "d");
+    spells := spells + LoadSpellsFromCfg(":spells:config/druid",        "Druid",        "d");
+    spells := spells + LoadSpellsFromCfg(":spells:config/paladin",      "Paladino",     "p");
+    spells := spells + LoadSpellsFromCfg(":spells:config/demonhunter",  "Demon Hunter", "c");
+    spells := spells + LoadSpellsFromCfg(":spells:config/trickster",    "Trickster",    "m");
     return spells;
 endfunction
 
@@ -174,29 +178,34 @@ function GetPlayerSpells(who)
                 booktype := "spellcaster";
             endif
 
-            var spell_cfg_path := ":spells:config/spellcaster";
+            var spell_cfg_path := "";
             case (booktype)
                 "spellcaster":
                 "mage":
-                    spell_cfg_path := ":spells:config/spellcaster";
+                    // With unique IDs, spells resolve via SpellRegistry
+                    // Default to evocation; individual spells use GetConfigFromId
+                    spell_cfg_path := "";
                 "priest":
-                    spell_cfg_path := ":spells:config/priestspells";
+                    spell_cfg_path := ":spells:config/priest";
                 "druid":
-                    spell_cfg_path := ":spells:config/druidspells";
+                    spell_cfg_path := ":spells:config/druid";
                 "shaman":
                 "Shaman":
-                    spell_cfg_path := ":spells:config/shamanspells";
+                    spell_cfg_path := ":spells:config/shaman";
                 "paladin":
-                    spell_cfg_path := ":spells:config/paladinspells";
+                    spell_cfg_path := ":spells:config/paladin";
                 "demonhunter":
-                    spell_cfg_path := ":spells:config/demonhunterspells";
+                    spell_cfg_path := ":spells:config/demonhunter";
                 "trickster":
-                    spell_cfg_path := ":spells:config/tricksterspells";
+                    spell_cfg_path := ":spells:config/trickster";
                 "cantrip":
-                    spell_cfg_path := ":spells:config/cantripspells";
+                    spell_cfg_path := ":spells:config/cantrips";
             endcase
 
-            var spell_cfg := ReadConfigFile(spell_cfg_path);
+            var spell_cfg;
+            if (spell_cfg_path)
+                spell_cfg := ReadConfigFile(spell_cfg_path);
+            endif
             var spells_array := GetObjProperty(item, "spells");
 
             if (!spells_array || TypeOf(spells_array) != "Array")
@@ -206,7 +215,13 @@ function GetPlayerSpells(who)
             foreach spell_struct in spells_array
                 if (TypeOf(spell_struct) == "Struct")
                     var spell_id := spell_struct.id;
-                    var spell_elem := FindConfigElem(spell_cfg, spell_id);
+                    // For mage books (no fixed cfg), resolve each spell via SpellRegistry
+                    var spell_elem;
+                    if (spell_cfg)
+                        spell_elem := FindConfigElem(spell_cfg, spell_id);
+                    else
+                        spell_elem := ResolveSpell(spell_id);
+                    endif
 
                     var spell_name := "<unknown>";
                     var spell_circle := 1;
@@ -248,7 +263,7 @@ function GetPlayerSpells(who)
         var trait := chardata.trait;
 
         if (player_magia == "spellcaster" || trait == "Natureza Arcana" || player_magia == "Arqueiro Arcano")
-            var cantrip_cfg := ReadConfigFile(":spells:config/cantripspells");
+            var cantrip_cfg := ReadConfigFile(":spells:config/cantrips");
             if (cantrip_cfg)
                 foreach cantrip_id in GetConfigIntKeys(cantrip_cfg)
                     var cantrip_elem := FindConfigElem(cantrip_cfg, cantrip_id);
@@ -283,7 +298,7 @@ function GetPlayerSpells(who)
     if (chardata && chardata.magia == "Shaman")
         var shaman_list := GetObjProperty(who, "shaman_list");
         if (shaman_list && TypeOf(shaman_list) == "Array" && shaman_list.size() > 0)
-            var shaman_cfg := ReadConfigFile(":spells:config/shamanspells");
+            var shaman_cfg := ReadConfigFile(":spells:config/shaman");
             if (shaman_cfg)
                 foreach spell_data in shaman_list
                     if (!spell_data.id)
@@ -326,7 +341,7 @@ function GetPlayerSpells(who)
     if (chardata && (chardata.magia == "Priest" || chardata.magia == "Sacerdote"))
         var priest_list := GetObjProperty(who, "priest_list");
         if (priest_list && TypeOf(priest_list) == "Array" && priest_list.size() > 0)
-            var priest_cfg := ReadConfigFile(":spells:config/priestspells");
+            var priest_cfg := ReadConfigFile(":spells:config/priest");
             if (priest_cfg)
                 foreach spell_data in priest_list
                     var spell_elem;
@@ -385,7 +400,7 @@ function GetPlayerSpells(who)
     if (chardata && (chardata.magia == "Druid" || chardata.magia == "Druida"))
         var druid_list := GetObjProperty(who, "druid_list");
         if (druid_list && TypeOf(druid_list) == "Array" && druid_list.size() > 0)
-            var druid_cfg := ReadConfigFile(":spells:config/druidspells");
+            var druid_cfg := ReadConfigFile(":spells:config/druid");
             if (druid_cfg)
                 foreach spell_data in druid_list
                     var spell_elem;
@@ -447,7 +462,7 @@ function GetPlayerSpells(who)
 
     // Paladin spells
     if (has_paladin)
-        var paladin_cfg := ReadConfigFile(":spells:config/paladinspells");
+        var paladin_cfg := ReadConfigFile(":spells:config/paladin");
         if (paladin_cfg)
             var theology_skill := CInt(AP_GetSkill(who, "Theology"));
             var max_circle := theology_skill / 20;
@@ -494,7 +509,7 @@ function GetPlayerSpells(who)
 
     // Trickster spells
     if (has_trickster)
-        var trickster_cfg := ReadConfigFile(":spells:config/tricksterspells");
+        var trickster_cfg := ReadConfigFile(":spells:config/trickster");
         if (trickster_cfg)
             foreach spell_id in GetConfigIntKeys(trickster_cfg)
                 var spell_elem := FindConfigElem(trickster_cfg, spell_id);
@@ -530,7 +545,7 @@ function GetPlayerSpells(who)
 
     // Demon Hunter spells
     if (has_demonhunter)
-        var dh_cfg := ReadConfigFile(":spells:config/demonhunterspells");
+        var dh_cfg := ReadConfigFile(":spells:config/demonhunter");
         if (dh_cfg)
             foreach spell_id in GetConfigIntKeys(dh_cfg)
                 var spell_elem := FindConfigElem(dh_cfg, spell_id);

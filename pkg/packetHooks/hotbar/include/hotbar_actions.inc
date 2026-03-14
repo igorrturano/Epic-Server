@@ -17,6 +17,7 @@ include ":hotbar:include/hotbar_exec_helpers";
 include ":hotbar:hotbar_utils";
 include ":hotbar:include/command_discovery";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":spells:SpellRegistry";
 include ":abilities:AbilityRegistry";
 include ":abilities:controllers/AbilityMonitor";
 include ":abilities:models/Ability";
@@ -181,77 +182,14 @@ function ExecutePosture(who, actionId)
 endfunction
 
 function ExecuteSpell(who, actionId)
-    var chardata := GetObjProperty(who, "chardata");
-    var player_magia := "";
-
-    if (chardata)
-        player_magia := chardata.magia;
-    endif
-
-    var spell_configs := array{};
-    var spell_types := array{};
-
-    var has_natureza_arcana := (chardata.trait == "Natureza Arcana");
-
-    if (has_natureza_arcana)
-        spell_configs.append(":spells:config/cantripspells");
-        spell_types.append(SPELL_TYPE_CANTRIP);
-    endif
-
-    if (player_magia == "Shaman")
-        spell_configs.append(":spells:config/shamanspells");
-        spell_types.append(SPELL_TYPE_SHAMAN);
-    elseif (player_magia == "spellcaster" || player_magia == "Arqueiro Arcano")
-        spell_configs.append(":spells:config/cantripspells");
-        spell_types.append(SPELL_TYPE_CANTRIP);
-        spell_configs.append(":spells:config/spellcaster");
-        spell_types.append(SPELL_TYPE_MAGE);
-    elseif (player_magia == "Druid")
-        spell_configs.append(":spells:config/druidspells");
-        spell_types.append(SPELL_TYPE_DRUID);
-    elseif (player_magia == "Sacerdote")
-        spell_configs.append(":spells:config/priestspells");
-        spell_types.append(SPELL_TYPE_PRIEST);
-    endif
-
-    if (MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
-        spell_configs.append(":spells:config/paladinspells");
-        spell_types.append(SPELL_TYPE_PALADIN);
-    endif
-    if (MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
-        spell_configs.append(":spells:config/demonhunterspells");
-        spell_types.append(SPELL_TYPE_DEMONHUNTER);
-    endif
-    if (MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
-        spell_configs.append(":spells:config/tricksterspells");
-        spell_types.append(SPELL_TYPE_TRICKSTER);
-    endif
-
-    var found_spell_type := "";
-
-    var i := 1;
-    foreach cfg_path in spell_configs
-        var spell_cfg := ReadConfigFile(cfg_path);
-        if (!spell_cfg)
-            i += 1;
-            continue;
-        endif
-
-        var spell_elem := FindConfigElem(spell_cfg, actionId);
-        if (spell_elem)
-            found_spell_type := spell_types[i];
-            break;
-        endif
-        i += 1;
-    endforeach
-
-    if (found_spell_type)
-        return ExecuteSpellById(who, actionId, found_spell_type);
-    else
+    // With unique spell IDs, use SpellRegistry for O(1) lookup
+    var spell_type := GetSpellTypeFromId(actionId);
+    if (!spell_type)
         SendSysMessage(who, $"[BINARY] Magia ID {actionId} não encontrada");
+        return 1;
     endif
 
-    return 1;
+    return ExecuteSpellById(who, actionId, spell_type);
 endfunction
 
 function ExecuteCommand(who, actionId)

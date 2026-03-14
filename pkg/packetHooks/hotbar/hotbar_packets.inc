@@ -98,14 +98,17 @@ endfunction
 // Look up spell description by ID across all spell configs
 function GetSpellDescription(spell_id)
     var spell_configs := array{
-        ":spells:config/cantripspells",
-        ":spells:config/spellcaster",
-        ":spells:config/priestspells",
-        ":spells:config/shamanspells",
-        ":spells:config/druidspells",
-        ":spells:config/paladinspells",
-        ":spells:config/demonhunterspells",
-        ":spells:config/tricksterspells"
+        ":spells:config/cantrips",
+        ":spells:config/evocation",
+        ":spells:config/necromancy",
+        ":spells:config/illusion",
+        ":spells:config/swordmage",
+        ":spells:config/priest",
+        ":spells:config/shaman",
+        ":spells:config/druid",
+        ":spells:config/paladin",
+        ":spells:config/demonhunter",
+        ":spells:config/trickster"
     };
 
     foreach cfg_path in spell_configs
