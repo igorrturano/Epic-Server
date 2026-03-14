@@ -150,6 +150,8 @@ function _RunMonitorActivate(params)
 		return _ActivationError("Condições para ativar habilidade não atendidas.");
 	endif
 
+	SetScriptController(who.GetObjRef());
+
 	who.ActivateAbility(ability, monitor);
 	ability.OnActivate(who);
 

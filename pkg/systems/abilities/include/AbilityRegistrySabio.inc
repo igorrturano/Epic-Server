@@ -73,7 +73,7 @@ include ":abilities:classes/shaman/BloodArena";
 include ":abilities:classes/engenheiro/ExplosiveFist";
 include ":abilities:classes/engenheiro/TargetingVisor";
 include ":abilities:classes/engenheiro/RocketJump";
-include ":abilities:classes/engenheiro/GrapplingHook";
+include ":abilities:classes/engenheiro/TacticalShoulder";
 include ":abilities:classes/engenheiro/GolemAssembly";
 
 //===========================================
@@ -140,7 +140,7 @@ ABILITY_CLASSES[ABILITY_ID::BLOOD_ARENA] := @BloodArena;
 ABILITY_CLASSES[ABILITY_ID::EXPLOSIVE_FIST] := @ExplosiveFist;
 ABILITY_CLASSES[ABILITY_ID::TARGETING_VISOR] := @TargetingVisor;
 ABILITY_CLASSES[ABILITY_ID::STEAM_JUMP] := @RocketJump;
-ABILITY_CLASSES[ABILITY_ID::GRAPPLING_HOOK] := @GrapplingHook;
+ABILITY_CLASSES[ABILITY_ID::TACTICAL_SHOULDER] := @TacticalShoulder;
 ABILITY_CLASSES[ABILITY_ID::GOLEM_ASSEMBLY] := @GolemAssembly;
 
 // Cleric / Clerigo (2800-2804)
