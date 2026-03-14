@@ -3,6 +3,8 @@ use cfgfile;
 use util;
 use os;
 
+include ":spells:SpellRegistry";
+
 program cria(item)
 
 	if (GetObjProperty(item, "spellinfo") != error)
@@ -19,27 +21,34 @@ program cria(item)
 		lvl := 1;
 	endif
 
-	var spellcfg := ReadConfigFile(":spells:config/spellcaster");
-
-	var keys := GetConfigIntKeys(spellcfg);
 	var randomspells := array;
-	foreach key in keys
-		var spelllvl := GetConfigInt(FindconfigElem(spellcfg, key), "Circle");
-		var spelltype := GetConfigString(FindconfigElem(spellcfg, key), "Type");
-		var school := GetConfigString(FindconfigElem(spellcfg, key), "School");
-
-		if (spelltype == "spellcaster")
-			if (spelllvl == lvl)
-				randomspells.append(key);
-			endif
+	foreach cfg_path in (GetMageSchoolConfigPaths())
+		var spellcfg := ReadConfigFile(cfg_path);
+		if (!spellcfg)
+			continue;
 		endif
+		var keys := GetConfigIntKeys(spellcfg);
+		foreach key in keys
+			var elem := FindconfigElem(spellcfg, key);
+			var spelllvl := GetConfigInt(elem, "Circle");
+			var spelltype := GetConfigString(elem, "Type");
+
+			if (spelltype == "spellcaster")
+				if (spelllvl == lvl)
+					randomspells.append(key);
+				endif
+			endif
+		endforeach
 	endforeach
 
-	var random_spell_id := RandomInt(randomspells.size()) + 1;
-	spellinfo.+id := randomspells[random_spell_id];
+	var random_spell_idx := RandomInt(randomspells.size()) + 1;
+	spellinfo.+id := randomspells[random_spell_idx];
 	spellinfo.+magic_path := spelltype_item;
 	if (spellinfo.magic_path == "spellcaster")
-		spellinfo.+School := GetConfigString(FindconfigElem(spellcfg, random_spell_id), "School");
+		var elem := ResolveSpell(spellinfo.id);
+		if (elem)
+			spellinfo.+School := GetConfigString(elem, "School");
+		endif
 		if (spellinfo.School == "Kaijin")
 			item.graphic := 0x0E39;
 		elseif (spellinfo.School == "Evocatium")

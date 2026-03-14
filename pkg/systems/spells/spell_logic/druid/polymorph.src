@@ -29,7 +29,7 @@ program SummonMagicCreature(params)
 
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
 
-	var cfg := ReadConfigFile(":spells:spellcaster");
+	var cfg := ReadConfigFile(":spells:config/druid");
 	var elem := FindConfigElem(cfg, spellid);
 	if (elem == error)
 		SendSysMessage(who, "Erro ao ler o template.");

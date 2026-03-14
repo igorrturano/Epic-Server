@@ -147,21 +147,28 @@ endfunction
 function GetSpellConfigPath(spell_type)
     case (spell_type)
         "spellcaster":
-            return ":spells:config/spellcaster";
+        "evocation":
+            return ":spells:config/evocation";
+        "necromancy":
+            return ":spells:config/necromancy";
+        "illusion":
+            return ":spells:config/illusion";
+        "swordmage":
+            return ":spells:config/swordmage";
         "paladin":
-            return ":spells:config/paladinspells";
+            return ":spells:config/paladin";
         "druid":
-            return ":spells:config/druidspells";
+            return ":spells:config/druid";
         "priest":
-            return ":spells:config/priestspells";
+            return ":spells:config/priest";
         "shaman":
-            return ":spells:config/shamanspells";
+            return ":spells:config/shaman";
         "demonhunter":
-            return ":spells:config/demonhunterspells";
+            return ":spells:config/demonhunter";
         "trickster":
-            return ":spells:config/tricksterspells";
+            return ":spells:config/trickster";
         "cantrip":
-            return ":spells:config/cantripspells";
+            return ":spells:config/cantrips";
         default:
             return "";
     endcase

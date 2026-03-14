@@ -18,6 +18,7 @@ include ":abilities:models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":spells:spellbooks";
 include ":spells:include/swordmage";
+include ":spells:SpellRegistry";
 include "include/facings";
 include ":tn:cooldown";
 include "include/meusProcessos";
@@ -61,7 +62,7 @@ endprogram
 
 function initializeSpellCasting(mobile, byref spellinfo, scroll)
 	if (spellinfo.id != error)
-		if (spellinfo.magic_path == "cantripspells")
+		if (IsCantrip(spellinfo.id))
 			WriteCantripSpellInfo(mobile, spellinfo);
 		else
 			writeSpellInfo(mobile, spellinfo);

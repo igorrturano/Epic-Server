@@ -30,7 +30,7 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Você não está sendo atacado.", SSM_FAIL);
 		return 0;
 	else
-		var cfg := ReadConfigFile(":spells:config/cantripspells");
+		var cfg := ReadConfigFile(":spells:config/cantrips");
 		var elem := FindConfigElem(cfg, spellid.id);
 		var template := getConfigString(elem, "npcTemplate");
 

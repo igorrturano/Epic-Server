@@ -24,14 +24,17 @@ function InitializeSpellConfigs()
     var start := ReadMillisecondClock();
 
     // Build index for each spell type
-    BuildSpellNameIndex("spellcaster", ":spells:config/spellcaster");
-    BuildSpellNameIndex("paladin", ":spells:config/paladinspells");
-    BuildSpellNameIndex("druid", ":spells:config/druidspells");
-    BuildSpellNameIndex("priest", ":spells:config/priestspells");
-    BuildSpellNameIndex("shaman", ":spells:config/shamanspells");
-    BuildSpellNameIndex("demonhunter", ":spells:config/demonhunterspells");
-    BuildSpellNameIndex("trickster", ":spells:config/tricksterspells");
-    BuildSpellNameIndex("cantrip", ":spells:config/cantripspells");
+    BuildSpellNameIndex("evocation", ":spells:config/evocation");
+    BuildSpellNameIndex("necromancy", ":spells:config/necromancy");
+    BuildSpellNameIndex("illusion", ":spells:config/illusion");
+    BuildSpellNameIndex("swordmage", ":spells:config/swordmage");
+    BuildSpellNameIndex("paladin", ":spells:config/paladin");
+    BuildSpellNameIndex("druid", ":spells:config/druid");
+    BuildSpellNameIndex("priest", ":spells:config/priest");
+    BuildSpellNameIndex("shaman", ":spells:config/shaman");
+    BuildSpellNameIndex("demonhunter", ":spells:config/demonhunter");
+    BuildSpellNameIndex("trickster", ":spells:config/trickster");
+    BuildSpellNameIndex("cantrip", ":spells:config/cantrips");
 
     g_spell_configs_loaded := 1;
 
@@ -45,7 +48,7 @@ endfunction
  * Build name→ID index for a specific spell config
  *
  * @param config_name Internal name (e.g., "paladin")
- * @param config_path Full config path (e.g., ":spells:config/paladinspells")
+ * @param config_path Full config path (e.g., ":spells:config/paladin")
  */
 function BuildSpellNameIndex(config_name, config_path)
     var spell_cfg := ReadConfigFile(config_path);
