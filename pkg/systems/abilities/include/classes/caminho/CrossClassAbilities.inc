@@ -73,3 +73,12 @@ class AcademicTraining(CombatAbility)
 		Super(ABILITY_ID::ACADEMIC_TRAINING);
 	endfunction
 endclass
+
+// Prestidigitator - ABILITY_ID::PRESTIDIGITATOR (3627)
+// Passive: Sleight of hand - cheat at dice/coin games, hide items during searches, rope bonus.
+// Effect handled in dicegame.src, caraoucoroa.src, revistar.src, corda.src.
+class Prestidigitator(CombatAbility)
+	function Prestidigitator(this)
+		Super(ABILITY_ID::PRESTIDIGITATOR);
+	endfunction
+endclass

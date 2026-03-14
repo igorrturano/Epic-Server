@@ -41,7 +41,7 @@ program rope(who, item)
 		diff := 100;
 	endif
 	var mod := 0;
-	if (TemHabilidade(who, "Prestidigitador"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PRESTIDIGITATOR))
 		mod := 20;
 	endif
 
