@@ -16,7 +16,7 @@ const BADURAN_ID := 0x9E9;
 const BJORSKA_ID := 0x9EA;
 const GULTHRAK_ID := 0x9EB;
 const HAROLOTH_ID := 0x9EC;
-const POLKINEA_ID := 0x9ED;
+const COLHESIANA_ID := 0x9ED;
 const LESTE_ID := 0x9EE;
 
 const BOKK_BHARAZ_ID := 0x9EF;
@@ -40,8 +40,8 @@ const FORADALEI_ID := 0x15B;
 const INOCENTE_ID := 0x15C;
 const SABIO_ID := 0x15D;
 
-var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
-var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Precisão Élfica", "Björska" := "Cavalaria Nórdica", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
+var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", SNEAK := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
+var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Prole Abissal", "Colhesiana" := "Armadilheiro", "Alüriel" := "Guardião", "Björska" := "Cavalaria Nórdica", "Gulthrak" := "Flagelo das Areias", "Badûran" := "Filho do progresso", "Povos do Leste" := "Discípulo das Lâminas"};
 
 function getCultureByPictureId(culture_id)
     case (culture_id)
@@ -57,8 +57,8 @@ function getCultureByPictureId(culture_id)
             return GULTHRAK;
         HAROLOTH_ID:
             return HAROLOTH;
-        POLKINEA_ID:
-            return POLKINEA;
+        COLHESIANA_ID:
+            return COLHESIANA;
         LESTE_ID:
             return LESTE;
     endcase
@@ -78,8 +78,8 @@ function getCraftCultureByPictureId(culture_id)
             return "Gulthrak";
         HAROLOTH_ID:
             return "Haroloth";
-        POLKINEA_ID:
-            return "Polkinea";
+        COLHESIANA_ID:
+            return "Colhesiana";
         LESTE_ID:
             return "Leste";
     endcase
@@ -122,8 +122,8 @@ function getCulturalDescriptionByPictureId(culture_id)
             return FindConfigElem(textosConfig, "gulthrak").descricao;
         HAROLOTH_ID:
             return FindConfigElem(textosConfig, "haroloth").descricao;
-        POLKINEA_ID:
-            return FindConfigElem(textosConfig, "polkinea").descricao;
+        COLHESIANA_ID:
+            return FindConfigElem(textosConfig, "colhesiana").descricao;
         LESTE_ID:
             return FindConfigElem(textosConfig, "leste").descricao;
     endcase
@@ -190,7 +190,7 @@ function getRaceByCulturalId(culture_pic)
             races := {DROW};
         ALURIEL_ID:
             races := {ELFO};
-        POLKINEA_ID:
+        COLHESIANA_ID:
             races := {PEQUILHO};
         GULTHRAK_ID:
             races := {ORC};
@@ -761,20 +761,20 @@ function culturalTraitBonus(who, byref chardata)
     var culturalBg := chardata.background;
     if (culturalBg == "Legionário")
         return chardata.+bgBonus := PARRY;
-    elseif (culturalBg == "Véu de Idrith")
+    elseif (culturalBg == "Prole Abissal")
         return chardata.+bgBonus := AWARENESS;
-    elseif (culturalBg == "Pés Leves")
-        return chardata.+bgBonus := SNEAK;
+    elseif (culturalBg == "Armadilheiro")
+        return chardata.+bgBonus := MECHANICS;
     elseif (culturalBg == "Cavalaria Nórdica")
         return chardata.+bgBonus := HANDLEANIMAL;
-    elseif (culturalBg == "Precisão Élfica")
+    elseif (culturalBg == "Guardião")
         return chardata.+bgBonus := RANGED;
-    elseif (culturalBg == "Brutamontes")
+    elseif (culturalBg == "Flagelo das Areias")
         return chardata.+bgBonus := TWOHANDED;
     elseif (culturalBg == "Filho do progresso")
         return chardata.+bgBonus := ALCHEMY;
-    elseif (culturalBg == "Andarilho")
-        return chardata.+bgBonus := ONEHANDED;
+    elseif (culturalBg == "Discípulo das Lâminas")
+        return chardata.+bgBonus := DUALWIELD;
     endif
 endfunction
 
@@ -987,7 +987,7 @@ function weaponsByClassAndCulture(who)
         endif
     endif
 
-    if (chardata.culture == POLKINEA)
+    if (chardata.culture == COLHESIANA)
         CreateItemInicial(who, 0xF998, 1); // Adaga
 
     
@@ -1117,7 +1117,7 @@ function armorsByCulture(who)
         CreateItemInicial(who, 0x13DB, 1); // Studded Leather
     endif
 
-    if (chardata.culture == POLKINEA)
+    if (chardata.culture == COLHESIANA)
         CreateItemInicial(who, 0x13C7, 1); // Armadura de couro simples
         CreateItemInicial(who, 0x13CD, 1); // Armadura de couro simples
         CreateItemInicial(who, 0x1DB9, 1); // Armadura de couro simples
@@ -1555,7 +1555,7 @@ function parseLanguageByCulture(who, linguasOpt)
             return linguasOpt[3];
         elseif (culture == LESTE)
             return linguasOpt[4];
-        elseif (culture == POLKINEA)
+        elseif (culture == COLHESIANA)
             return linguasOpt[5];
         elseif (culture == GULTHRAK)
             return linguasOpt[6];

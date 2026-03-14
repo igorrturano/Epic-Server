@@ -6,6 +6,8 @@ include ":acid:acid";
 include "include/epicNPCUtils";
 include ":combat:Model/AttackInfo";
 include ":combat:Controller/FXController";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 function StartCharge(attacker, defender)
    var dist := CoordinateDistance(attacker.x, attacker.y, defender.x, defender.y);
@@ -119,7 +121,7 @@ function DoThiefSteal(opponent)
 
         if (check > 0)
             // Check for elemental weapon
-            if (TemHabilidade(opponent, "Vínculo Elemental"))
+            if (MobileWrapper(opponent).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
                 if (GetObjProperty(opponent.weapon, "#elementalweapon"))
                     return 1;
                 endif

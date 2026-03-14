@@ -18,6 +18,8 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":spells:spellbooks";
 include ":spells:include/tnmagery";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 // Spell type constants
 const SPELL_TYPE_CANTRIP      := "cantrip";
@@ -196,13 +198,13 @@ function ValidateSpellAccess(who, spell_type)
             endif
             
         SPELL_TYPE_PALADIN:
-            if (!TemHabilidade(who, "Consagracao Divina"))
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
                 SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
                 return 0;
             endif
             
         SPELL_TYPE_DEMONHUNTER:
-            if (!TemHabilidade(who, "Sigilo de Protecao"))
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
                 SendSysMessageEx(who, "Apenas Cacadores de Demonios podem usar este comando.", SSM_FAIL);
                 return 0;
             endif
@@ -259,7 +261,7 @@ function ValidateSpellRequirements(who, spell_data, spell_type)
         SPELL_TYPE_MAGE:
             // Check grimoire for non-GMs, unless they have Sensibilidade Arcana
             if (!who.cmdlevel && spell_data.circle != 0)
-                if (!TemHabilidade(who, "Sensibilidade Arcana"))
+                if (!MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
                     var spellBookInfo := FindSpellInSpellBooks(who, spell_data.id);
                     if (!spellBookInfo.found)
                         SendSysMessageEx(who, "Voce nao possui a magia " + spell_data.name + " no seu grimorio.", SSM_FAIL);

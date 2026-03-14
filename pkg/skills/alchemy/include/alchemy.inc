@@ -6,6 +6,8 @@ include "include/say";
 include ":fls_core:fls_characters";
 include ":charactercreation:resists";
 include "include/epicConstants";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 CONST DRINK_SOUND := 0x32;
 
@@ -280,7 +282,7 @@ function do_poison(who, potion)
     poisonInfo.+acc := who.acctname;
     poisonInfo.+time := 20 + level;
     poisonInfo.+difficulty_mod := difficulty_mod;
-    if (temHabilidade(who, "Veneno Puro"))
+    if (MobileWrapper(who).HasAbility(ABILITY_ID::VENENO_PURO))
       poisonInfo.dosage := CInt(poisonInfo.dosage * 1.5);
       poisonInfo.time := CInt(poisonInfo.time * 1.25);
     endif
@@ -310,11 +312,11 @@ endfunction
 Function PotionSpecialistBonus (who, bonus, science)
 	var spec := 2;
 
-		if (TemHabilidade(who, "Bombardeiro Eficiente") && science == BOMBA);
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::BOMBARDEIRO_EFICIENTE) && science == BOMBA);
 			bonus := Cint(bonus * spec);
-		elseif (TemHabilidade(who, "Veneno Puro") && science == VENENO);
+		elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VENENO_PURO) && science == VENENO);
 			bonus := Cint(bonus * spec);
-		elseif (TemHabilidade(who, "Impulso Metabolico") && science == BUFF);
+		elseif (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO) && science == BUFF);
 			bonus := Cint(bonus * spec);
 		endif
 
@@ -358,7 +360,7 @@ function VicioSTR (who, potion)
   var vicio := AP_GetVital(who, "viciostr");
   var bonus := 0;
   
-  if (temhabilidade(who, "Impulso Metabolico"))
+  if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
       bonus := (getobjProperty(potion, "bonus")*-1);
   endif
   
@@ -383,7 +385,7 @@ function VicioDEX (who, potion)
   var vicio := AP_GetVital(who, "viciodex");
   var bonus := 0;
   
-  if (temhabilidade(who, "Impulso Metabolico"))
+  if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
       bonus := (getobjProperty(potion, "bonus")*-1);
   endif
   
@@ -408,7 +410,7 @@ function VicioINT (who, potion)
   var vicio := AP_GetVital(who, "vicioint");
   var bonus := 0;
   
-  if (temhabilidade(who, "Impulso Metabolico"))
+  if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
       bonus := (getobjProperty(potion, "bonus")*-1);
   endif
   

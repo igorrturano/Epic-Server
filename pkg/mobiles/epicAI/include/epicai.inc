@@ -232,12 +232,12 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 SetupAlchemistLoadout(mobile);
             endif
 
-            if ("Artilheiro Preparado" in habs)
+            if (ABILITY_ID::EXPLOSIVE_FIST in habs)
                 makeRace(mobile, ANAO);
                 SetupFireweaponLoadout(mobile);
             endif
 
-            if ("Construtor de Golems" in habs)
+            if (ABILITY_ID::GOLEM_ASSEMBLY in habs)
                 makeRace(mobile, ANAO);
                 // Store mobile's current position before hiding it
                 SetObjProperty(mobile, "#original_pos", struct{
@@ -261,7 +261,7 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 endif
             endif
 
-            if ("Vínculo Elemental" in habs)
+            if (ABILITY_ID::VINCULO_ELEMENTAL in habs)
                 makeRace(mobile, ELFO);
                 var elementals := array{0x13fe, 0x26C9, 0x26C5, 0x26CB, 0x26CF, 0xF9E6};
                 EquipRandomFromArray(mobile, elementals);
@@ -2935,7 +2935,7 @@ function GetColorValue(color)
                         RandomIntMinMax(1801, 1908),  // Neutro
                         RandomInt({0, 946, 947})      // Cinza
                      });
-        POLKINEA:    return RandomColorFromRanges({
+        COLHESIANA:    return RandomColorFromRanges({
                         RandomIntMinMax(1501, 1554),  // Laranja
                         RandomIntMinMax(1701, 1754),  // Amarelo
                         RandomIntMinMax(1401, 1454),  // Verde

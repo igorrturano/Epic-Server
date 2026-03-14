@@ -1,8 +1,9 @@
 use uo;
 
 include ":nature:include/nature";
+include ":wrappers:Objects/Model/MobileWrapper";
 
-function EvaluateCondition(condition, byref action_state, event)
+function EvaluateCondition(condition, byref action_state, event, consume_items := 1)
 	if (!condition)
 		return 1;
 	endif
@@ -11,11 +12,11 @@ function EvaluateCondition(condition, byref action_state, event)
 		"ACTION_SUCCEEDED":
 			return EvaluateActionSucceeded(condition, action_state);
 		"PLAYER_HAS_ITEM":
-			return EvaluatePlayerHasItem(condition, event);
+			return EvaluatePlayerHasItem(condition, event, consume_items);
 		"NATURE":
 			return EvaluateNature(condition.params);
 		"CONDITION":
-			return EvaluateCombinedCondition(condition.params, event);
+			return EvaluateCombinedCondition(condition.params, event, consume_items);
 		"NONE":
 			return 1;
 		default:
@@ -24,7 +25,7 @@ function EvaluateCondition(condition, byref action_state, event)
 endfunction
 
 // Combined condition - checks both HAS_ITEM and NATURE (AND logic)
-function EvaluateCombinedCondition(params, event)
+function EvaluateCombinedCondition(params, event, consume_items := 1)
 	// Check HAS_ITEM condition first
 	if (params.has_item_objtype && params.has_item_objtype > 0)
 		if (!event.source || !event.source.acctname)
@@ -60,8 +61,8 @@ function EvaluateCombinedCondition(params, event)
 			return 0;
 		endif
 
-		// Consume items if required
-		if (should_consume)
+		// Consume items if required (only when consume_items flag is set)
+		if (should_consume && consume_items)
 			var remaining := required_amount;
 			foreach item in to_consume
 				if (remaining <= 0)
@@ -86,6 +87,11 @@ function EvaluateCombinedCondition(params, event)
 		return 0;
 	endif
 
+	// Check CHARACTER conditions
+	if (!EvaluateCharacter(params, event))
+		return 0;
+	endif
+
 	return 1;
 endfunction
 
@@ -105,7 +111,7 @@ function EvaluateActionSucceeded(condition, byref action_state)
 	return 0;
 endfunction
 
-function EvaluatePlayerHasItem(condition, event)
+function EvaluatePlayerHasItem(condition, event, consume_items := 1)
 	if (!event.source || !event.source.acctname)
 		return 0;
 	endif
@@ -134,8 +140,8 @@ function EvaluatePlayerHasItem(condition, event)
 		endif
 	endforeach
 
-	// Consume items if required
-	if (should_consume && found >= required_amount)
+	// Consume items if required (only when consume_items flag is set)
+	if (should_consume && consume_items && found >= required_amount)
 		var remaining := required_amount;
 		foreach item in to_consume
 			if (remaining <= 0)
@@ -196,6 +202,47 @@ function EvaluateNature(params)
 			if (hour < min_h || hour > max_h)
 				return 0;
 			endif
+		endif
+	endif
+
+	return 1;
+endfunction
+
+function EvaluateCharacter(params, event)
+	if (!params.character_race && !params.character_culture && !params.character_religion)
+		return 1;
+	endif
+
+	if (!event.source || !event.source.acctname)
+		return 0;
+	endif
+
+	// Read chardata directly - MobileWrapper.GetRace() has a bug
+	// (reads .race but chardata uses .raca)
+	var chardata := GetObjProperty(event.source, "chardata");
+	if (!chardata)
+		return 0;
+	endif
+
+	// AND logic - all non-empty fields must match
+	if (params.character_race && params.character_race != "")
+		var player_race := chardata.raca ? chardata.raca : "";
+		if (Upper(player_race) != Upper(params.character_race))
+			return 0;
+		endif
+	endif
+
+	if (params.character_culture && params.character_culture != "")
+		var player_culture := chardata.culture ? chardata.culture : "";
+		if (Upper(player_culture) != Upper(params.character_culture))
+			return 0;
+		endif
+	endif
+
+	if (params.character_religion && params.character_religion != "")
+		var player_religion := chardata.religion ? chardata.religion : "";
+		if (Upper(player_religion) != Upper(params.character_religion))
+			return 0;
 		endif
 	endif
 

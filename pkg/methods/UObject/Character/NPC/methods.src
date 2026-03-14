@@ -37,6 +37,8 @@ include "include/epicConstants";
 include "include/client";
 include ":charactercreation:habilidades";
 include ":epicAI:npcDataCache";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program Install()
 	print("INSTALLING: Methods for NPC... OK!");
@@ -465,8 +467,7 @@ endfunction
  * Runtime check - player abilities
  */
 exported function isDemonHunter(who)
-	var habs := GetObjProperty(who, "myhabs");
-	if ("Sigilo de Protecao" in habs)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
 		return 1;
 	endif
 	return 0;

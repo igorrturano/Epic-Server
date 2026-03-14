@@ -198,11 +198,7 @@ function WeaponHitScripts(byRef attackInfo)
 		// EraseObjProperty(attacker, "#golpesangrento");
 		var dmg := 1;
 
-		if (attackInfo.GetAttacker().HasAbility("Golpe Afiado"))
-			dmg := attackInfo.GetDamage().GetTotalBaseDamage() + CInt(attackInfo.GetDamage().GetTotalRawDamage() * (attackInfo.GetAttacker().GetSkill(TACTICS) / 100));
-		else
-			dmg := attackInfo.GetDamage().GetTotalBaseDamage() + CInt(attackInfo.GetDamage().GetTotalRawDamage() * (attackInfo.GetAttacker().GetSkill(ALCHEMY) / 100));
-		endif
+		dmg := attackInfo.GetDamage().GetTotalBaseDamage() + CInt(attackInfo.GetDamage().GetTotalRawDamage() * (attackInfo.GetAttacker().GetSkill(ALCHEMY) / 100));
 		
 		foreach armor in (armorsInSlot)
 			start_script(

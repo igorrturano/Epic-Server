@@ -1,0 +1,188 @@
+use uo;
+use os;
+use npc;
+
+include ":epicevents:Controller/TriggerController";
+include ":epicevents:Controller/ActionController";
+include ":epicevents:Model/EventConfig";
+include ":epicevents:Model/TriggerConfig";
+include "include/sysEvent";
+
+const EVENT_LOOP_THROTTLE_MS := 100;
+
+var npc := Self();
+
+program npcEventController()
+	Set_Event_Queue_Size(50);
+
+	var configs := LoadNpcEventConfigs(npc);
+	if (!configs || configs.size() == 0)
+		return;
+	endif
+
+	// This runs as the NPC's primary script (set via npc.script + RestartScript)
+	// EnableEvents works here because it's the NPC's main AI script
+	var trigger_configs := SetupNpcTriggerEvents(npc, configs);
+
+	while (npc)
+		var ev := os::wait_for_event(1);
+		if (ev)
+			ProcessNpcEvent(npc, ev, configs, trigger_configs);
+		endif
+		sleepms(EVENT_LOOP_THROTTLE_MS);
+	endwhile
+endprogram
+
+// Load all event configs from the NPC
+function LoadNpcEventConfigs(npc)
+	var configs_data := GetObjProperty(npc, "event_configs");
+	if (!configs_data)
+		return array{};
+	endif
+
+	var configs := array{};
+	foreach config_struct in configs_data
+		var config := EventConfig();
+		config.FromStruct(config_struct);
+		configs.append(config);
+	endforeach
+
+	return configs;
+endfunction
+
+// Register for all event types needed across all configs
+function SetupNpcTriggerEvents(npc, configs)
+	var trigger_configs := array{};
+	var registered_types := array{};
+
+	foreach config in configs
+		var trigger_type := config.trigger_type;
+
+		// Register each event type only once
+		if (!(trigger_type in registered_types))
+			var radius := DEFAULT_TRIGGER_RADIUS;
+			if (config.trigger_params && config.trigger_params.radius)
+				radius := CInt(config.trigger_params.radius);
+				if (radius < 1)
+					radius := DEFAULT_TRIGGER_RADIUS;
+				endif
+			endif
+
+			case (trigger_type)
+				"SPEECH":
+					RegisterForSpeechEvents(npc, radius);
+				"ENTEREDAREA":
+					EnableEvents(SYSEVENT_ENTEREDAREA, radius);
+				"LEFTAREA":
+					EnableEvents(SYSEVENT_LEFTAREA, radius);
+				"ITEM_GIVEN":
+					EnableEvents(SYSEVENT_ITEM_GIVEN);
+				"DOUBLECLICKED":
+					EnableEvents(SYSEVENT_DOUBLECLICKED);
+			endcase
+
+			registered_types.append(trigger_type);
+		endif
+
+		// Build trigger config for each event config
+		var trigger_config := TriggerConfig(trigger_type);
+		if (config.trigger_params)
+			trigger_config.params := config.trigger_params;
+		endif
+		trigger_configs.append(trigger_config);
+	endforeach
+
+	return trigger_configs;
+endfunction
+
+// Process event with fallthrough: try configs in order, skip if condition fails
+function ProcessNpcEvent(npc, ev, configs, trigger_configs)
+	var i := 1;
+	foreach config in configs
+		var trigger_config := trigger_configs[i];
+
+		// Check if trigger type matches and validates
+		if (ProcessTriggerEvent(npc, ev, trigger_config))
+			// Check cooldown for this specific config
+			if (!CanTriggerByIndex(npc, i))
+				i := i + 1;
+				continue;
+			endif
+
+			// Execute actions (includes trigger-level condition check)
+			var executed := 0;
+			if (config.actions && config.actions.size() > 0)
+				executed := ExecuteActions(npc, ev, config.actions, config.condition);
+			endif
+
+			// If condition failed (executed == 0 and condition exists), fallthrough to next
+			if (!executed && config.condition)
+				i := i + 1;
+				continue;
+			endif
+
+			// Trigger matched and executed (or no condition) — set cooldown and stop
+			// Skip cooldown for CONVERSATION actions (always allow interaction)
+			if (!HasConversationAction(config))
+				SetCooldownByIndex(npc, i, config);
+			endif
+
+			// Remove config if one-time only
+			if (config.one_time_only)
+				RemoveNpcEventConfig(npc, i);
+			endif
+
+			return;
+		endif
+
+		i := i + 1;
+	endforeach
+endfunction
+
+function CanTriggerByIndex(npc, index)
+	var next_trigger_time := GetObjProperty(npc, $"next_trigger_time_{index}");
+	if (!next_trigger_time)
+		return 1;
+	endif
+	return (polcore().systime >= next_trigger_time);
+endfunction
+
+function SetCooldownByIndex(npc, index, config)
+	var min_minutes := CInt(config.min_delay);
+	var max_minutes := CInt(config.max_delay);
+
+	if (min_minutes < 1)
+		min_minutes := 1;
+	endif
+	if (max_minutes < min_minutes)
+		max_minutes := min_minutes;
+	endif
+
+	var delay_minutes := RandomInt(max_minutes - min_minutes + 1) + min_minutes;
+	var cooldown_seconds := delay_minutes * 60;
+	var next_time := polcore().systime + cooldown_seconds;
+
+	SetObjProperty(npc, $"next_trigger_time_{index}", next_time);
+endfunction
+
+function RemoveNpcEventConfig(npc, index)
+	var configs_data := GetObjProperty(npc, "event_configs");
+	if (!configs_data)
+		return;
+	endif
+
+	configs_data.erase(index);
+	SetObjProperty(npc, "event_configs", configs_data);
+endfunction
+
+function HasConversationAction(config)
+	if (!config.actions)
+		return 0;
+	endif
+	foreach action in (config.actions)
+		if (action.type == "CONVERSATION")
+			return 1;
+		endif
+	endforeach
+	return 0;
+endfunction

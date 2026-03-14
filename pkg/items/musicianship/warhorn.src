@@ -28,7 +28,7 @@ program warhorn(who, item)
 		ALURIEL:  sound_id := 0x691;
 		BADURAN:  sound_id := 0x68F;
 		GULTHRAK: sound_id := 0x695;
-		POLKINEA: sound_id := 0x694;
+		COLHESIANA: sound_id := 0x694;
 		default:  sound_id := 0x68F;
 	endcase
 

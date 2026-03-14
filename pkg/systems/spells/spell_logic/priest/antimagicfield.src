@@ -1,5 +1,5 @@
 include ":attributes:attributes";
-
+include ":tn:cooldown";
 program SpellScript(params)
 	var who := params[1];
 	// Calculate duration based on Theology skill

@@ -1,6 +1,8 @@
 include "include/say";
 include "include/epicMageryUtils";
 include ":charactercreation:resists";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -49,7 +51,7 @@ program SpellScript(params)
 	endforeach
 
 	var duration := cint(AP_GetSkill(who, ARCANA) / 2);
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := Cint(duration * 2);
 	endif
 

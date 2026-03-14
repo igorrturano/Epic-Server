@@ -1,0 +1,45 @@
+use uo;
+use os;
+use util;
+use vitals;
+
+include ":timedScripts:timedScripts";
+
+program controlScript(trap)
+	SetObjProperty(trap, "#PID", GetPid());
+
+	var ownerSerial := CInt(GetObjProperty(trap, "#OwnerSerial"));
+	var damage := CInt(GetObjProperty(trap, "Damage"));
+	if (damage < 1)
+		damage := 10;
+	endif
+
+	while (trap)
+		// Check if trap got wet (nature system sets "wet" prop)
+		if (GetObjProperty(trap, "wet"))
+			DestroyItem(trap);
+			return 1;
+		endif
+
+		var event := Wait_For_Event(5);
+		if (event)
+			// Someone walked on the trap
+			if (event.serial != ownerSerial)
+				// EXPLODE
+				PlayStationaryEffect(trap.x, trap.y, trap.z, 0x6D0E, 0, 10, 0, trap.realm);
+				PlaySoundEffect(trap, 0x306);
+
+				var nearby := ListMobilesNearLocation(trap.x, trap.y, trap.z, 1, trap.realm);
+				foreach mob in nearby
+					if (mob.serial != ownerSerial)
+						ApplyRawDamage(mob, damage);
+						TS_StartTimer(mob, "tombar", 2);
+					endif
+				endforeach
+
+				DestroyItem(trap);
+				return 1;
+			endif
+		endif
+	endwhile
+endprogram

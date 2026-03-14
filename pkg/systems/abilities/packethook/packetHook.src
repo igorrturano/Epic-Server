@@ -1,3 +1,0 @@
-
-exported function PacketHandler(who, byRef packet)
-endfunction

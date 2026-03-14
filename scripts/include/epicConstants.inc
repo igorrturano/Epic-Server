@@ -18,7 +18,7 @@ enum CULTURA
     ALURIEL := "Alüriel",
     BADURAN := "Badûran",
     GULTHRAK := "Gulthrak",
-    POLKINEA := "Polkinea"
+    COLHESIANA := "Colhesiana"
 endenum
 
 enum RACA

@@ -14,6 +14,8 @@ include "include/say";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";
 include ":attributes:advanceCheck";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":charactercreation:resists";
 include ":charactercreation:createchar";
 include ":containers:storageAreas";
@@ -203,8 +205,13 @@ program death(params)
 	if (dmg > CInt(AP_GetVitalMaximumValue(ghost, HITS) / 5))
 		tempo := tempo * 2;
 	endif
-	if (temhabilidade(ghost, "Recuperacao"))
+	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::RECOVERY))
 		tempo := tempo / 2;
+	endif
+	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::TRAPACEIRO_EXPERIENTE) && GetCooldown(ghost, "trapacearmorte") == 0)
+		tempo := 1;
+		SetCooldown(ghost, "trapacearmorte", 300);
+		SendSysMessage(ghost, "Sua experiencia como trapaceiro lhe permite se recuperar rapidamente!");
 	endif
 	if (save)
 		tempo := 0;
@@ -374,7 +381,7 @@ function KataWakeUp(ghost, corpse)
 		endif
 	endforeach
 
-	if (TemHabilidade(ghost, "Recuperacao"))
+	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::RECOVERY))
 		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.9));
 	else
 		// 		PrintTextAbove(ghost, " " + GetHP(ghost));

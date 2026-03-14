@@ -13,6 +13,8 @@ include ":crafting:toolWear";
 include ":gathering:mining";
 include "include/say";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":tn:tngumps";
 include ":treasurehunting:treasuremaps"; // Adiciona esta linha
 include ":treasurehunting:treasuredigging";
@@ -101,7 +103,7 @@ program OreMining(who, tool)
 	while (MiningLoop(who, tool, my_x, my_y, targ.x, targ.y, my_facing))
 		CheckToolWear(who, tool, GATHERING);
 
-		if (TemHabilidade(who, "Vigor do Extrator"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
 			if (!CheckLoop(who, tool, my_x, my_y, my_facing))
 				break;
 			elseif (AP_GetVital(who, "Stamina") < 3)
@@ -167,7 +169,7 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 
 			if (SkillCheck(who, GATHERING, difficulty) > 0)
 				var amt := Cint(AP_GetSkill(who, GATHERING) / 20);
-				if (TemHabilidade(who, "Minerador Talentoso") || chardata.trait == "Cavar Buracos")
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_MINER) || chardata.trait == "Cavar Buracos")
 					amt := amt + 2;
 				endif
 				if (amt <= 0)
@@ -185,7 +187,7 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 				if (AP_GetSkill(who, GATHERING) > 40.0)
 					Garimpeiro(who);
 				endif
-				if (TemHabilidade(who, "Minerar Raridades"))
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::MINE_RARITIES))
 					if (mineraRaroAleatorio(who))
 						PrintTextAbove(who, "*encontra algo chamativo*");
 					endif

@@ -3,6 +3,7 @@ use uo;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:epicGumps";
+include ":gumps:dropDownGump";
 include ":epicevents:Model/EventConfig";
 include ":epicevents:Model/ActionConfig";
 include ":epicevents:Model/CreatureSpawnInfo";
@@ -28,6 +29,8 @@ const BTN_TRIGGER_DOUBLECLICKED := 214;
 // Trigger config IDs
 const ID_TRIGGER_KEYWORD := 120;
 const ID_TRIGGER_RADIUS := 121;
+const ID_TRIGGER_ITEMS_LIST := 130;
+const BTN_TRIGGER_TARGET_ITEM := 132;
 
 // Action management buttons
 const BTN_ACTION_ADD := 220;
@@ -40,6 +43,7 @@ const BTN_ACTION_CONDITION := 251;
 const BTN_ACTION_TYPE_EMOTE := 260;
 const BTN_ACTION_TYPE_SPAWN := 261;
 const BTN_ACTION_TYPE_TELEPORT := 262;
+const BTN_ACTION_TYPE_CONVERSATION := 263;
 
 // Action edit field IDs
 const ID_ACTION_DELAY := 300;
@@ -79,6 +83,20 @@ const ID_COND_ITEM_OBJTYPE := 451;
 const ID_COND_ITEM_AMOUNT := 452;
 const BTN_COND_TARGET_ITEM := 453;
 const CHCK_COND_ITEM_CONSUME := 454;
+
+// CHARACTER condition fields
+const CHK_COND_CHARACTER := 460;
+
+// CHARACTER condition - Dropdown configuration
+// GerenciadorDropDown params: maxOpcoes, adicionalIdDropDown, adicionalIdOpcoes, maxDropDown
+const COND_DD_MAX_OPCOES := 10;
+const COND_DD_ID_DROPDOWN := 1460;
+const COND_DD_ID_OPCOES := 1500;
+const COND_DD_MAX_DROPDOWN := 3;
+// Dropdown button IDs (must match adicionalIdDropDown + position)
+const BTN_COND_RACE_DROPDOWN := 1461;
+const BTN_COND_CULTURE_DROPDOWN := 1462;
+const BTN_COND_RELIGION_DROPDOWN := 1463;
 
 // Event delay fields
 const ID_EVENT_MIN_DELAY := 340;
@@ -294,22 +312,22 @@ function BuildTriggerSelectionGump()
 	GFTextLine(gump, x + 40, y + 22, GUMP_COLOR::LABEL, "Jogador sai da area (punicao por covardia!)");
 	y := y + spacing;
 
-	// ITEM_GIVEN trigger - DISABLED (Phase 2)
-	// GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_ITEM_GIVEN);
-	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Entrega de Item (Oferenda) [DESABILITADO]");
-	GFTextLine(gump, x + 40, y + 22, GUMP_COLOR::LABEL, "Jogador entrega um item especifico");
+	// ITEM_GIVEN trigger
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_ITEM_GIVEN);
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Entrega de Item (Oferenda)");
+	GFTextLine(gump, x + 40, y + 22, GUMP_COLOR::LABEL, "Jogador entrega um item especifico ao NPC");
 	y := y + spacing;
 
-	// DOUBLECLICKED trigger - DISABLED (Phase 2)
-	// GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_DOUBLECLICKED);
-	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Clique Duplo (Interacao) [DESABILITADO]");
-	GFTextLine(gump, x + 40, y + 22, GUMP_COLOR::LABEL, "Jogador clica duas vezes no item");
+	// DOUBLECLICKED trigger
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_DOUBLECLICKED);
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Clique Duplo (Interacao)");
+	GFTextLine(gump, x + 40, y + 22, GUMP_COLOR::LABEL, "Jogador clica duas vezes no NPC/item");
 
 	return gump;
 endfunction
 
 // Trigger configuration gump (for triggers that need extra params)
-function BuildTriggerConfigGump(trigger_type)
+function BuildTriggerConfigGump(trigger_type, existing_params := 0)
 	var gump := GFECreateGump("Configurar Gatilho", 600, 550);
 	var y := SetupGumpFrame(gump, 600, 550, 0);
 
@@ -355,6 +373,24 @@ function BuildTriggerConfigGump(trigger_type)
 			y := y + 35;
 			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Distancia que o jogador deve sair para ativar");
 			GFTextLine(gump, x, y + 15, GUMP_COLOR::LABEL, "o evento de saida (punicao por covardia!).");
+		"ITEM_GIVEN":
+			var items_default := "";
+			if (existing_params && existing_params.items_list)
+				items_default := existing_params.items_list;
+			endif
+
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Itens aceitos para ativacao:");
+			y := y + 25;
+			GFResizePic(gump, x, y, 9350, 420, 25);
+			GFTextEntry(gump, x + 5, y + 5, 410, 20, GUMP_COLOR::TEXT_ENTRY, items_default, ID_TRIGGER_ITEMS_LIST);
+			GFAddButton(gump, x + 430, y + 2, 2152, 2153, GF_CLOSE_BTN, BTN_TRIGGER_TARGET_ITEM);
+			GFTextLine(gump, x + 470, y + 2, GUMP_COLOR::HIGHLIGHT, "Target");
+			y := y + 35;
+			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Formato: 0xOBJTYPE:QTD separados por virgula");
+			GFTextLine(gump, x, y + 15, GUMP_COLOR::LABEL, "Exemplo: 0x1BF2:1, 0x0EED:5");
+			GFTextLine(gump, x, y + 30, GUMP_COLOR::LABEL, "Qualquer um destes itens ativa o evento (logica OU).");
+			y := y + 60;
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Nota: Este gatilho requer um NPC como alvo.");
 		default:
 			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Este gatilho nao requer configuracao adicional.");
 			GFTextLine(gump, x, y + 20, GUMP_COLOR::LABEL, "Clique em Proximo para continuar.");
@@ -427,6 +463,16 @@ function ParseTriggerConfigInput(input, trigger_type)
 			if (params.radius < 1)
 				params.radius := DEFAULT_TRIGGER_RADIUS;
 			endif
+		"ITEM_GIVEN":
+			var items_str := Trim(GFExtractData(input, ID_TRIGGER_ITEMS_LIST));
+			if (!items_str || items_str == "")
+				return 0;
+			endif
+			params.+items_list := items_str;
+			params.+required_items := ParseItemsList(items_str);
+			if (!params.required_items || params.required_items.size() == 0)
+				return 0;
+			endif
 		default:
 			// No params needed
 	endcase
@@ -455,10 +501,56 @@ function ParseTriggerConfigInput(input, trigger_type)
 	return result;
 endfunction
 
+// Parse items list string "0x1234:1, 0x5678:3" into array of struct{ objtype, amount }
+function ParseItemsList(items_str)
+	var result := array{};
+	var entries := SplitWords(items_str, ",");
+
+	foreach entry in entries
+		entry := Trim(entry);
+		if (entry == "")
+			continue;
+		endif
+
+		var parts := SplitWords(entry, ":");
+		if (parts.size() < 1)
+			continue;
+		endif
+
+		var objtype_str := Trim(parts[1]);
+		var amount := 1;
+		if (parts.size() >= 2)
+			amount := CInt(Trim(parts[2]));
+			if (amount < 1)
+				amount := 1;
+			endif
+		endif
+
+		var objtype := CInt(objtype_str);
+		if (objtype > 0)
+			var item_entry := struct{};
+			item_entry.+objtype := objtype;
+			item_entry.+amount := amount;
+			result.append(item_entry);
+		endif
+	endforeach
+
+	return result;
+endfunction
+
+// Format items array back to display string
+function FormatItemsList(required_items)
+	var parts := array{};
+	foreach item in required_items
+		parts.append($"{Hex(item.objtype)}:{item.amount}");
+	endforeach
+	return ", ".join(parts);
+endfunction
+
 // Condition configuration gump - unified conditions (HAS_ITEM + NATURE)
-function BuildConditionGump(existing_condition := 0)
-	var gump := GFECreateGump("Condicoes de Ativacao", 500, 620);
-	var y := SetupGumpFrame(gump, 500, 620);
+function BuildConditionGump(existing_condition := 0, gerenciador := 0)
+	var gump := GFECreateGump("Condicoes de Ativacao", 500, 800);
+	var y := SetupGumpFrame(gump, 500, 800);
 
 	var x := 40;
 
@@ -476,6 +568,11 @@ function BuildConditionGump(existing_condition := 0)
 	var has_item_objtype := "";
 	var has_item_amount := "1";
 	var should_consume_item := 0;
+
+	var character_enabled := 0;
+	var character_race := "";
+	var character_culture := "";
+	var character_religion := "";
 
 	if (existing_condition && existing_condition.params)
 		if (existing_condition.params.moon_phases)
@@ -502,6 +599,12 @@ function BuildConditionGump(existing_condition := 0)
 			if (existing_condition.params.should_consume_item)
 				should_consume_item := 1;
 			endif
+		endif
+		if (existing_condition.params.character_race || existing_condition.params.character_culture || existing_condition.params.character_religion)
+			character_enabled := 1;
+			character_race := existing_condition.params.character_race ? existing_condition.params.character_race : "";
+			character_culture := existing_condition.params.character_culture ? existing_condition.params.character_culture : "";
+			character_religion := existing_condition.params.character_religion ? existing_condition.params.character_religion : "";
 		endif
 	endif
 
@@ -533,6 +636,61 @@ function BuildConditionGump(existing_condition := 0)
 	GFCheckBox(gump, x + 220, y, 0x938, 0x939, should_consume_item, CHCK_COND_ITEM_CONSUME);
 	y := y + 40;
 
+	// ==================== SECTION: CHARACTER ====================
+	GFTextMid(gump, 0, y, 500, GUMP_COLOR::SECTION_HEADER, "PERSONAGEM (RACA/CULTURA/RELIGIAO)");
+	y := y + 20;
+	GFResizePic(gump, 30, y, 3000, 440, 2);
+	y := y + 15;
+
+	GFCheckBox(gump, x, y, 0x938, 0x939, character_enabled, CHK_COND_CHARACTER);
+	GFTextLine(gump, x + 25, y + 3, GUMP_COLOR::LABEL, "Verificar personagem:");
+	y := y + 28;
+
+	// Race dropdown
+	var race_display := character_race != "" ? character_race : "Qualquer";
+	GFTextLine(gump, x + 10, y, GUMP_COLOR::HIGHLIGHT, "Raca:");
+	GFAddButton(gump, x + 80, y, 2117, 2118, GF_CLOSE_BTN, BTN_COND_RACE_DROPDOWN);
+	GFTextLine(gump, x + 105, y + 2, 1153, race_display);
+	if (gerenciador)
+		var dd_race := gerenciador.BuscaDropDownPorPosicao(1);
+		if (dd_race)
+			dd_race.AtribuiX(x + 80);
+			dd_race.AtribuiY(y + 22);
+		endif
+	endif
+	y := y + 28;
+
+	// Culture dropdown
+	var culture_display := character_culture != "" ? character_culture : "Qualquer";
+	GFTextLine(gump, x + 10, y, GUMP_COLOR::HIGHLIGHT, "Cultura:");
+	GFAddButton(gump, x + 80, y, 2117, 2118, GF_CLOSE_BTN, BTN_COND_CULTURE_DROPDOWN);
+	GFTextLine(gump, x + 105, y + 2, 1153, culture_display);
+	if (gerenciador)
+		var dd_culture := gerenciador.BuscaDropDownPorPosicao(2);
+		if (dd_culture)
+			dd_culture.AtribuiX(x + 80);
+			dd_culture.AtribuiY(y + 22);
+		endif
+	endif
+	y := y + 28;
+
+	// Religion dropdown
+	var religion_display := character_religion != "" ? character_religion : "Qualquer";
+	GFTextLine(gump, x + 10, y, GUMP_COLOR::HIGHLIGHT, "Religiao:");
+	GFAddButton(gump, x + 80, y, 2117, 2118, GF_CLOSE_BTN, BTN_COND_RELIGION_DROPDOWN);
+	GFTextLine(gump, x + 105, y + 2, 1153, religion_display);
+	if (gerenciador)
+		var dd_religion := gerenciador.BuscaDropDownPorPosicao(3);
+		if (dd_religion)
+			dd_religion.AtribuiX(x + 80);
+			dd_religion.AtribuiY(y + 22);
+		endif
+	endif
+	y := y + 28;
+
+	GFTextLine(gump, x + 10, y, GUMP_COLOR::HELP_TEXT, "Logica E (todos devem bater). Dropdown = Qualquer para ignorar.");
+	y := y + 30;
+
 	// ==================== SECTION: NATURE ====================
 	GFTextMid(gump, 0, y, 500, GUMP_COLOR::SECTION_HEADER, "CONDICOES DE NATUREZA");
 	y := y + 20;
@@ -555,6 +713,7 @@ function BuildConditionGump(existing_condition := 0)
 	// Dia/Noite (radio - exclusivo)
 	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Periodo:");
 	y := y + 22;
+	GFSetRadioGroup(gump, 1);
 	GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (day_night == ""), RADIO_DAYNIGHT_ANY);
 	GFTextLine(gump, x + 25, y + 3, 1153, "Qualquer");
 	GFRadioButton(gump, x + 110, y, 0x25F8, 0x25FB, (day_night == "dia"), RADIO_DAYNIGHT_DIA);
@@ -678,16 +837,72 @@ function ParseConditionInput(input)
 	params.+time_min := (time_min_str != "") ? CInt(time_min_str) : 0;
 	params.+time_max := (time_max_str != "") ? CInt(time_max_str) : 0;
 
+	// ===== CHARACTER section =====
+	// Character values are handled via dropdowns in HandleConditionEdit
+	// and merged into the result there. Initialize empty here.
+	params.+character_race := "";
+	params.+character_culture := "";
+	params.+character_religion := "";
+
 	// Check if any condition is configured
 	var has_item_configured := (params.has_item_objtype > 0);
 	var has_nature_configured := (params.moon_phases.size() > 0 || params.day_night != "" ||
 	                              params.seasons.size() > 0 || params.time_min || params.time_max);
+	// Character is configured via dropdown (values merged in HandleConditionEdit)
+	// Check the checkbox to know if user wants character conditions
+	var has_character_configured := input[CHK_COND_CHARACTER] ? 1 : 0;
 
-	if (!has_item_configured && !has_nature_configured)
+	if (!has_item_configured && !has_nature_configured && !has_character_configured)
 		return 0;
 	endif
 
 	return struct{ type := "CONDITION", params := params };
+endfunction
+
+// Helper: Setup character dropdowns (race, culture, religion) for condition gump
+function SetupCharacterDropdowns(gerenciador)
+	// Race dropdown (position 1)
+	var dd_race := gerenciador.ObtemDropDown(1, 250);
+	var race_options := dictionary{
+		"Qualquer" -> "",
+		"Anão" -> "Anão",
+		"Drow" -> "Drow",
+		"Elfo" -> "Elfo",
+		"Humano" -> "Humano",
+		"Orc" -> "Orc",
+		"Pequilho" -> "Pequilho"
+	};
+	dd_race.AdicionaOpcoes(race_options);
+
+	// Culture dropdown (position 2)
+	var dd_culture := gerenciador.ObtemDropDown(2, 250);
+	var culture_options := dictionary{
+		"Qualquer" -> "",
+		"Aiglana" -> "Aiglana",
+		"Alüriel" -> "Alüriel",
+		"Badûran" -> "Badûran",
+		"Björska" -> "Björska",
+		"Gulthrak" -> "Gulthrak",
+		"Har'oloth" -> "Har'oloth",
+		"Colhesiana" -> "Colhesiana",
+		"Povos do Leste" -> "Povos do Leste"
+	};
+	dd_culture.AdicionaOpcoes(culture_options);
+
+	// Religion dropdown (position 3)
+	var dd_religion := gerenciador.ObtemDropDown(3, 250);
+	var religion_options := dictionary{
+		"Qualquer" -> "",
+		"Bokk Bharaz" -> "Bokk Bharaz",
+		"Céticos" -> "Céticos",
+		"Eluith'orth" -> "Eluith'orth",
+		"Halleuad" -> "Halleuad",
+		"Kai" -> "Kai",
+		"Lórё" -> "Lórё",
+		"Ushkr'ar" -> "Ushkr'ar",
+		"Veneratio" -> "Veneratio"
+	};
+	dd_religion.AdicionaOpcoes(religion_options);
 endfunction
 
 // Action list gump - shows all configured actions
@@ -804,6 +1019,8 @@ function GetActionDescription(action)
 				tp_desc := tp_desc + $" [{action.params.realm}]";
 			endif
 			return tp_desc;
+		"CONVERSATION":
+			return "Conversa (Dialogo)";
 		default:
 			return action.type;
 	endcase
@@ -888,8 +1105,8 @@ endfunction
 
 // Action type selection gump
 function BuildActionTypeSelectionGump()
-	var gump := GFECreateGump("Selecione o Tipo de Acao", 500, 350);
-	var y := SetupGumpFrame(gump, 500, 350);
+	var gump := GFECreateGump("Selecione o Tipo de Acao", 500, 420);
+	var y := SetupGumpFrame(gump, 500, 420);
 
 	var x := 40;
 	var spacing := 70;
@@ -914,6 +1131,12 @@ function BuildActionTypeSelectionGump()
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_TYPE_TELEPORT);
 	GFTextLine(gump, x + 40, y, GUMP_COLOR::HIGHLIGHT, "Teleporte");
 	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Teleportar o jogador para outro local");
+	y := y + spacing;
+
+	// CONVERSATION action
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_TYPE_CONVERSATION);
+	GFTextLine(gump, x + 40, y, GUMP_COLOR::HIGHLIGHT, "Conversa (Dialogo)");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Arvore de dialogo interativa com o NPC");
 
 	return gump;
 endfunction
@@ -928,6 +1151,8 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 			title_text := title_text + "Spawn de Criaturas";
 		"TELEPORT":
 			title_text := title_text + "Teleporte";
+		"CONVERSATION":
+			title_text := title_text + "Conversa (Dialogo)";
 	endcase
 
 	var gump := GFECreateGump(title_text, 600, 500);
@@ -1085,6 +1310,8 @@ function ParseActionTypeSelectionInput(input)
 		return "SPAWN";
 	elseif (input[BTN_ACTION_TYPE_TELEPORT])
 		return "TELEPORT";
+	elseif (input[BTN_ACTION_TYPE_CONVERSATION])
+		return "CONVERSATION";
 	endif
 
 	return 0;

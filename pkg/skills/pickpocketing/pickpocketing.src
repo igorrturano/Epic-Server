@@ -20,6 +20,8 @@ include ":stealables:stealables";
 include ":traps:traps";
 include ":message:model/Message";
 include ":tn:cooldown";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program skill_Stealing(mobile)
 	if (GetProcess(CInt(GetObjProperty(mobile, "#PickPid"))))
@@ -80,7 +82,7 @@ program skill_Stealing(mobile)
 		Message("O alvo esta muito longe.").SetColor(SSM_FAIL).SendSys(mobile);
 		return 0;
 	elseif (!IsBehind(targ, mobile.x, mobile.y))
-		if (!temHabilidade(mobile, "Batedor de Carteira"))
+		if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
 			Message("Voce precisa estar nas costas do alvo.").SetColor(SSM_FAIL).SendSys(mobile);
 			return 0;
 		else
@@ -89,7 +91,7 @@ program skill_Stealing(mobile)
 	endif
 
 	var diff := 15 + CInt(AP_GetSkill(targ, AWARENESS));
-	if (temHabilidade(mobile, "Valentao"))
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::VALENTAO))
 		var multidao := ListMobilesNearLocation(targ.x, targ.y, targ.z, 4, targ.realm).size();
 		if (multidao > 4)
 			var bonus := 5 * (multidao - 4);
@@ -135,7 +137,7 @@ program skill_Stealing(mobile)
 				Message("O alvo se afastou demais.").SetColor(SSM_FAIL).SendSys(mobile);
 				break;
 			elseif (!IsBehind(targ, mobile.x, mobile.y))
-				if (!temHabilidade(mobile, "Batedor de Carteira"))
+				if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
 					Message("O alvo nao esta mais de costas para voce.").SetColor(SSM_FAIL).SendSys(mobile);
 					break;
 				endif
@@ -162,7 +164,7 @@ program skill_Stealing(mobile)
 
 			if (steal.objtype IN { 0xba63, 0xba64, 0xba65 }) // moeda
 				diff := CInt(steal.amount / 5);
-				if (temHabilidade(mobile, "Batedor de Carteira"))
+				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
 					diff := 0;
 				endif
 			elseif (steal.objtype IN { 0x1085, 0x1086, 0x1087, 0x1088, 0xA349, 0x1089, 0x108a,
@@ -170,12 +172,12 @@ program skill_Stealing(mobile)
 			
 
 				diff := CInt(steal.weight * 10);
-				if (temHabilidade(mobile, "Batedor de Carteira"))
+				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
 					diff := 0;
 				endif
 			elseif (steal.objtype IN { 0x1011, 0x100E, 0x100F, 0x1010, 0x1012, 0x1013 }) // chaves
 				diff := 35;
-				if (temHabilidade(mobile, "Batedor de Carteira"))
+				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
 					diff := 0;
 				endif
 			else
@@ -191,7 +193,7 @@ program skill_Stealing(mobile)
 
 			var check := SkillCheck(mobile, PICKPOCKETING, diff);
 			if (check > 0)
-				if (temHabilidade(targ, "Vínculo Elemental"))
+				if (MobileWrapper(targ).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
 					if (GetObjProperty(steal, "#elementalweapon"))
 						Message("O alvo tem uma ligacao magica com a arma.").SetColor(SSM_FAIL).SendSys(mobile);
 						return 1;

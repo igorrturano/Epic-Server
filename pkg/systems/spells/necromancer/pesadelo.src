@@ -10,6 +10,8 @@ include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":charactercreation:resists";
 include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -32,7 +34,7 @@ program SpellScript(params)
 		dmg := dmg / 2;
 	endif
 
-	if (temHabilidade(who, "Sacrificio da Carne"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SACRIFICIO_DA_CARNE))
 		if (isBloodied(who))
 			dmg := CInt(dmg * 1.5);
 		endif

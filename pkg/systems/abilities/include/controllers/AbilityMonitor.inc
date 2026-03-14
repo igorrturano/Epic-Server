@@ -1,6 +1,7 @@
 use os;
 
-include ":abilities:AbilityRegistryBase";
+include ":abilities:AbilityRegistry";
+include ":abilities:models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:model/Message";
 include "system/exception/ProcessExeception/InvalidProcessException";
@@ -61,10 +62,10 @@ class AbilityMonitor()
 			return InvalidFormatException("The param must be a MobileWrapper object!");
 		endif
 
-		var ability := this.GetAbility();
-		if (ability.errortext)
+		var ability := Ability(this.AbilityId);
+		if (!ability.GetName())
 			Message("Habilidade não implementada.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile.GetObjRef());
-			return ability; // Return the error
+			return error{"errortext" := $"Ability {this.AbilityId} not found in config"};
 		endif
 
 		var mobileRef := mobile.GetObjRef();
@@ -96,9 +97,7 @@ class AbilityMonitor()
 			return error{"errortext" := "Ability on cooldown"};
 		endif
 
-		if (!ability.CanActivate(mobile))
-			return error{"errortext" := "Ability conditions not met"};
-		endif
+
 		if (!mobile.GetObjRef().cmdlevel)
 			// === CONSUME COSTS ===
 			if (ability.GetCostSTAM() > 0)

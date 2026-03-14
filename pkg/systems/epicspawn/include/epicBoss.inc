@@ -38,7 +38,7 @@ function CreateEpicBoss(boss, x, y, z, realm)
 
     if (boss.description)
         SetObjProperty(npc, "descmodboss", boss.description + "<br>");
-        updateToolTip(npc);
+        IncRevision(npc);
     endif
     
     if (boss.trueboss)

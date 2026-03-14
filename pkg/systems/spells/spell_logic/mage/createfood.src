@@ -4,6 +4,8 @@ use os;
 include ":attributes:attributes";
 include ":magery:spells";
 include "include/sounds";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 // Define uma lista de tipos de comida (objtypes)
 var food_objtypes := array{ 0x09C0, 0x09C9, 0x09D0, 0x172C, 0x09D1, 0x1608, 0x09F2 };
@@ -19,7 +21,7 @@ program SpellScript(params)
 
 	// Bonus de especialização
 	var amt := 1;
-	if (Temhabilidade(who, "Coração da Matilha"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		amt := 2;
 	endif
 

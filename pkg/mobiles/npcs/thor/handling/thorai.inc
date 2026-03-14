@@ -207,7 +207,7 @@ function BuildVariedContext(base_context, npc_type, npc := 0)
 					"cheiro de ervas e flores",
 					"silêncio contemplativo prevalece"
 				};
-			"polkinea":
+			"colhesiana":
 				// Halfling, comfortable, peaceful
 				culture_moods := array{"hospitaleiro", "nervoso com grandes", "confortável", "orgulhoso de jardim", "pacífico"};
 				culture_activities := array{
@@ -308,9 +308,9 @@ function MapRegionToCulture(region)
 		return "gulthrak";
 	endif
 
-	// Swamp regions = could be multiple, default to Polkinea (halflings)
+	// Swamp regions = could be multiple, default to Colhesiana (halflings)
 	if (find(region_lower, "swamp", 1) || find(region_lower, "pantano", 1))
-		return "polkinea";
+		return "colhesiana";
 	endif
 
 	// Default: Aigla (most common post-Calamity, surface regions)
