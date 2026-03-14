@@ -807,7 +807,7 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
             ABILITY_ID::GWAENEDH:
             ABILITY_ID::FORMA_ADAPTAVEL:
             ABILITY_ID::SAND_BROTHERS:
-            ABILITY_ID::GRAPPLING_HOOK:
+            ABILITY_ID::TACTICAL_SHOULDER:
             ABILITY_ID::TARGETING_VISOR:
             ABILITY_ID::GOLEM_ASSEMBLY:
                 ProccessHab(me, hab);
