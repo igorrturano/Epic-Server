@@ -214,7 +214,7 @@ function CanHide(who, orig_x, orig_y, override_hiding := 0)
 	endif
 
 	var hostiles := ListHostiles(who, range);
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::FUGA_DE_EMERGENCIA) || MobileWrapper(who).HasAbility(ABILITY_ID::GHOST_STANCE))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::FUGA_DE_EMERGENCIA) || MobileWrapper(who).HasAbility(ABILITY_ID::STEALTH_RUN))
 		return 1;
 	elseif (hostiles[1])
 		SendSysMessageEx(who, "Voce nao pode se esconder enquanto " + hostiles[1].name

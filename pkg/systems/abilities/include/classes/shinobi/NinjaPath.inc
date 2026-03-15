@@ -60,7 +60,7 @@ class NinjaPath(CombatAbility)
 				hasDagger := 1;
 			endif
 		endif
-
+		var item_graphic := 0x1BFE; // Default kunai graphic
 		if (!hasDagger)
 			// Check backpack for any dagger
 			foreach item in (EnumerateItemsInContainer(who.backpack))
@@ -90,7 +90,7 @@ class NinjaPath(CombatAbility)
 		endif
 
 		// Visual: throw kunai effect
-		PlayMovingEffect(who, targ, 0x1BFE, 10);
+		PlayMovingEffect(who, targ, 0xF99A, 10);
 		PlaySoundEffect(targ, 0x51C);
 
 		// Set mark with expiration

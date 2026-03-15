@@ -45,21 +45,51 @@ function TeleportBehindTarget(who, targ)
 endfunction
 
 /**
- * IsInSmokeZone - Checks if a mobile is inside an active smoke zone.
+ * IsInShinobiSmokeZone - Checks if a mobile is inside an active smoke zone.
  *
  * @param who - Mobile to check (raw obj ref)
  * @return 1 if in active smoke zone, 0 otherwise
  */
-function IsInSmokeZone(who)
-	var smoke_expires := GetObjProperty(who, "#smoke_protected");
+function IsInShinobiSmokeZone(who)
+	var smoke_state := GetObjProperty(who, "#smoke_state");
+	if (!smoke_state || smoke_state == error)
+		return 0;
+	endif
+
+	var smoke_expires := smoke_state.expires;
 	if (!smoke_expires)
+		ClearSmokeProtection(who);
 		return 0;
 	endif
 
 	if (ReadGameClock() > smoke_expires)
-		EraseObjProperty(who, "#smoke_protected");
+		ClearSmokeProtection(who);
+		return 0;
+	endif
+
+	var smoke_x := smoke_state.x;
+	var smoke_y := smoke_state.y;
+	var smoke_radius := smoke_state.radius;
+
+	if (smoke_x == error || smoke_y == error || smoke_radius == error)
+		ClearSmokeProtection(who);
+		return 0;
+	endif
+
+	var dx := CInt(who.x) - CInt(smoke_x);
+	var dy := CInt(who.y) - CInt(smoke_y);
+	var radius := CInt(smoke_radius);
+
+	if ((dx * dx + dy * dy) > (radius * radius))
+		ClearSmokeProtection(who);
 		return 0;
 	endif
 
 	return 1;
+endfunction
+
+function ClearSmokeProtection(who)
+	EraseObjProperty(who, "#smoke_state");
+	who.concealed := 0;
+	RevokePrivilege(who, "hiddenattack");
 endfunction

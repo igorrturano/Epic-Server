@@ -131,6 +131,11 @@ function InitializeAnimalNPC(mobile, npc_elem, elem, sounds)
 endfunction
 
 function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
+    // Clones already have appearance copied from their creator
+    if (GetObjProperty(mobile, "MirrorImage"))
+        return;
+    endif
+
     var has_colors := npc_elem.colors;
     var isBoss := GetObjProperty(mobile, "EpicBossStruct");
     var race := npc_elem.epicRace;
@@ -150,7 +155,7 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
         makeRace(mobile, race);
     elseif (race)
         makeRace(mobile, race);
-    else 
+    else
         makeRace(mobile);
     endif
 
