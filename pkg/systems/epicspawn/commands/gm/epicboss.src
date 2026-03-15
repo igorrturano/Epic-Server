@@ -1729,7 +1729,21 @@ function ShowPage5(who, title, gump_width, gump_height)
 	if (form_data.loot && form_data.loot.size() > 0)
 
 		foreach item in (form_data.loot)
-			GFTextLine(gump, 580, loot_y, 1153, "- " + item.desc + " (" + item.drop_chance + "%)");
+			var loot_name := item.desc;
+			if (item.template)
+				if (item.template.name && item.template.name != "")
+					loot_name := item.template.name;
+				elseif (item.template.desc && item.template.desc != "")
+					loot_name := item.template.desc;
+				endif
+			endif
+
+			var loot_label := "- " + loot_name + " (" + item.drop_chance + "%)";
+			if (item.template && item.template.color)
+				loot_label := loot_label + " [hue " + item.template.color + "]";
+			endif
+
+			GFTextLine(gump, 580, loot_y, 1153, loot_label);
 			// Add delete button for each item
 			GFAddButton(gump, 550, loot_y, 4017, 4019, 1, 91 + _item_iter);
 			loot_y += 20;
