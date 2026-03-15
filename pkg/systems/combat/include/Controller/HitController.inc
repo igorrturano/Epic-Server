@@ -6,6 +6,7 @@
 // include "CombatAbilityController";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":abilities:models/Ability";
+include ":tn:cooldown";
 include "include/packets";
 
 /**
@@ -156,8 +157,12 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
 endfunction
 
 function HasLightNearby(defender)
+    if (GetCooldown(defender, "fire_arrow_lit"))
+        return 1;
+    endif
+
     const SEARCH_RANGE := 2;
-    
+
     // Check for items with light flag
     var flag_lightsources := ListItemsNearLocationWithFlag(defender.x, defender.y, defender.z, SEARCH_RANGE, TILEDATA_FLAG_LIGHTSOURCE, defender.realm);
     if (flag_lightsources.size() > 0)
