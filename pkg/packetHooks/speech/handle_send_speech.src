@@ -90,7 +90,7 @@ function CheckSaying(byRef messageData)
 endfunction
 
 function CanSpeak(byRef messageData)
-	if (messageData.source.GetProperty("metamorfose") && !messageData.source.HasAbility("Elo Natural"))
+	if (messageData.source.GetProperty("metamorfose") && !messageData.source.HasAbility(ABILITY_ID::ELO_NATURAL))
 		if (messageData.type == MESSAGE_TYPE::NORMAL)
 			return false;
 		endif
@@ -109,15 +109,15 @@ endfunction
 
 function CanHear(byRef messageData)
 	var rangeMod := CheckLineOfSight(messageData.source, messageData.target) ? 1 : 2;
-	
+
 	if (messageData.type == MESSAGE_TYPE::WHISPER)
 		if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::WHISPER / rangeMod)
 			return false;
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::YELL)
-		if (messageData.source.HasAbility("Mestre Espiao"))
+		if (messageData.target.HasAbility(ABILITY_ID::NINJA_PATH))
 			if (Distance(messageData.source, messageData.target) > (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
-				return false;				
+				return false;
 			elseif (Abs(messageData.source.z - messageData.target.z) >= (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
 				return false;
 			endif
