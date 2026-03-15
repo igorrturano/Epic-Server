@@ -35,8 +35,8 @@ function HandleExecute(who, packet)
         return 1;
     endif
 
-    var actionId   := packet.GetInt8(9);
-    var actionType := packet.GetInt8(10);
+    var actionId   := packet.GetInt16(9);
+    var actionType := packet.GetInt8(11);
 
     case (actionType)
         ACTION_TYPE_POSTURE: return ExecutePosture(who, actionId);

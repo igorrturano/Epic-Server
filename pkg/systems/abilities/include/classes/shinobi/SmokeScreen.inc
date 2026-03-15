@@ -4,6 +4,7 @@ use os;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":attributes:attributes";
+include ":abilities:helpers/shinobiHelpers";
 include "include/client";
 
 /**
@@ -22,6 +23,9 @@ class SmokeScreen(CombatAbility)
 	endfunction
 
 	function ExecuteOn(this, mobile)
+		if (!this)
+			return false;
+		endif
 		var who := mobile.GetObjRef();
 		var tactics := CInt(mobile.GetSkill(TACTICS));
 
@@ -31,43 +35,33 @@ class SmokeScreen(CombatAbility)
 		endif
 
 		var duration := CInt(tactics / 5);
-		if (duration < 3)
-			duration := 3;
+		if (duration < 1)
+			duration := 1;
 		endif
+
+		var smoke_expires := ReadGameClock() + duration;
 
 		// Animation
 		PerformAction(who, HUMAN_ANIM::CAST_AREA);
 		PlaySoundEffect(who, 0x228);
 
-		// Create smoke visual effects
-		var smoke_tiles := array{};
-		for dx := -area to area
-			for dy := -area to area
-				if ((dx * dx + dy * dy) <= (area * area))
-					var sx := who.x + dx;
-					var sy := who.y + dy;
-					var smoke_item := CreateItemAtLocation(sx, sy, who.z, 0x3728, 1, who.realm);
-					if (smoke_item)
-						smoke_item.movable := 0;
-						SetObjProperty(smoke_item, "Timer", ReadGameClock() + duration);
-						smoke_tiles.append(smoke_item);
-					endif
-				endif
-			endfor
-		endfor
+		// Set smoke protection on the ninja (only inside smoke area)
+		SetObjProperty(
+			who,
+			"#smoke_state",
+			struct{
+				"expires" := smoke_expires,
+				"x" := who.x,
+				"y" := who.y,
+				"radius" := area
+			}
+		);
 
-		// Play smoke particle effects
-		foreach tile in smoke_tiles
-			PlayObjectCenteredEffect(tile, 0x3728, 10, duration * 10);
-			sleepms(2);
-		endforeach
-
-		// Set smoke protection on the ninja (only the ninja attacks without revealing)
-		var smoke_expires := ReadGameClock() + duration;
-		SetObjProperty(who, "#smoke_protected", smoke_expires);
+		GrantPrivilege(who, "hiddenattack");
+		who.enable("hiddenattack");
 
 		// Hide the ninja
-		who.hidden := 1;
+		who.concealed := 1;
 		Message("*Lanca uma bomba de fumaca!*").SendEmote(who);
 
 		// Hide party members in range (they only get hidden, reveal normally on attack)
@@ -85,6 +79,25 @@ class SmokeScreen(CombatAbility)
 			DEBUG_HAB,
 			Message($"[SMOKE_SCREEN] Area: {area}, Duracao: {duration}s", Color(SYSTEM_COLOR::SUCCESS))
 		);
+
+		// Smoke visual loop - replay stationary effects each tick
+		var cx := who.x;
+		var cy := who.y;
+		while (ReadGameClock() <= smoke_expires)
+			if (!IsInShinobiSmokeZone(who))
+				return true;
+			endif
+			for dx := -area to area
+				for dy := -area to area
+					if ((dx * dx + dy * dy) <= (area * area))
+						PlayStationaryEffect(cx + dx, cy + dy, who.z, 0x3728, 10, 10, 0, who.realm);
+					endif
+				endfor
+			endfor
+			sleep(1);
+		endwhile
+
+		ClearSmokeProtection(who);
 
 		return true;
 	endfunction

@@ -9,16 +9,15 @@ include ":abilities:helpers/shinobiHelpers";
 include "include/client";
 
 /**
- * Postura Fantasma (Ghost Stance) - ABILITY_ID::GHOST_STANCE (1304)
+ * Golpe Fantasma (Phantom Strike) - ABILITY_ID::PHANTOM_STRIKE (1304)
  *
- * Passive: Can hide while being attacked, can run while stealthy.
  * Active (OnUse): Select up to Tactics/20 nearby opponents, teleport behind
- *   each one attacking and paralyzing them.
+ *   each one attacking and paralyzing them. Re-hides after execution.
  */
-class GhostStance(CombatAbility)
+class PhantomStrike(CombatAbility)
 
-	function GhostStance(this)
-		Super(ABILITY_ID::GHOST_STANCE);
+	function PhantomStrike(this)
+		Super(ABILITY_ID::PHANTOM_STRIKE);
 		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	endfunction
 
@@ -60,7 +59,7 @@ class GhostStance(CombatAbility)
 		endforeach
 
 		// Animation start
-		Message("*Assume a Postura Fantasma!*").SendEmote(who);
+		Message("*Golpe Fantasma!*").SendEmote(who);
 		PlaySoundEffect(who, 0x51C);
 
 		// Strike each target
@@ -88,7 +87,7 @@ class GhostStance(CombatAbility)
 		DebugMsg(
 			who,
 			DEBUG_HAB,
-			Message($"[GHOST_STANCE] Targets: {len(targets)}, Paralyze: {paralyze_duration}s", Color(SYSTEM_COLOR::SUCCESS))
+			Message($"[PHANTOM_STRIKE] Targets: {len(targets)}, Paralyze: {paralyze_duration}s", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;
