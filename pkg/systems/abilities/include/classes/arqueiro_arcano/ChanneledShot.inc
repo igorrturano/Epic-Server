@@ -9,21 +9,20 @@ include ":timedScripts:timedScripts";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include "include/epicConstants";
-include "include/epicNPCUtils";
 
 /**
- * Channeled Shot (Disparo Canalizado) - ABILITY_ID::DISPARO_CANALIZADO (2402)
+ * Channeled Shot (Disparo Canalizado) - ABILITY_ID::CHANNELED_SHOT (2402)
  *
- * Active (OnUse): Requires active arcane_bow. Fires a channeled elemental attack
- * based on arrow type:
- * - Fire → runs fireball spell
- * - Cold → freeze target (doubled damage if already frozen)
- * - Energy → teleport to target
+ * Active (OnUse): Requires active arcane_bow. Fires an elemental shot in a straight
+ * line that pierces all targets, applying the active element's effect to each:
+ * - fire_arrow  → queimar (burn) on each target hit
+ * - cold_arrow  → lentidao (slow) on each target hit
+ * - energy_arrow → attacker becomes concealed for arcana/20 seconds
  */
 class ChanneledShot(CombatAbility)
 
 	function ChanneledShot(this)
-		Super(ABILITY_ID::DISPARO_CANALIZADO);
+		Super(ABILITY_ID::CHANNELED_SHOT);
 		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	endfunction
 
@@ -35,78 +34,141 @@ class ChanneledShot(CombatAbility)
 			return false;
 		endif
 
+		var weapon := mobile.GetEquipBySlot(WEAPON);
+		if (!weapon)
+			Message("Voce precisa estar com o arco elemental equipado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return false;
+		endif
+
 		return true;
 	endfunction
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
 		var weapon := mobile.GetEquipBySlot(WEAPON);
-
-		if (!weapon)
-			return false;
-		endif
-
 		var weaponRef := weapon.GetObjRef();
-		PrintTextAbove(who, "*Disparo Canalizando*");
 
-		var isFireArrow := GetObjProperty(weaponRef, "fire_arrow");
-		var isColdArrow := GetObjProperty(weaponRef, "cold_arrow");
+		var isFireArrow   := GetObjProperty(weaponRef, "fire_arrow");
+		var isColdArrow   := GetObjProperty(weaponRef, "cold_arrow");
 		var isEnergyArrow := GetObjProperty(weaponRef, "energy_arrow");
-		var mlore := CInt(mobile.GetSkill(ARCANA) / 5);
 
-		var ammo_color := 0;
+		var ammo_color;
 		var sound;
 		if (isFireArrow)
 			ammo_color := COLOR_ELEMENTAL_FIRE;
 			sound := 0x5cb;
-		elseif (isEnergyArrow)
-			ammo_color := COLOR_ELEMENTAL_ENERGY;
-			sound := 0x666;
 		elseif (isColdArrow)
 			ammo_color := COLOR_ELEMENTAL_ICE;
 			sound := 0x5c8;
+		elseif (isEnergyArrow)
+			ammo_color := COLOR_ELEMENTAL_ENERGY;
+			sound := 0x666;
+		else
+			Message("Seu arco nao possui elemento ativo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return false;
 		endif
 
-		if (isFireArrow || isColdArrow)
-			var targ := Target(who);
-			if (who.npctemplate)
-				targ := GetRandomNearbyHostile(who);
-			endif
-			if (!targ)
-				Message("Voce precisa selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-				return false;
-			endif
+		Message("*Disparo Canalizado*").SendAbove(who);
 
-			if (!CheckLineOfSight(who, targ))
-				Message("Voce nao tem linha de visao para o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-				return false;
-			endif
+		SetScriptController(who);
+		Message("Escolha a direcao do disparo.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		var targ := TargetCoordinates(who);
+		if (!targ)
+			Message("Disparo cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return false;
+		endif
 
-			if (isColdArrow)
-				if (targ.frozen)
-					mlore *= 2;
-					targ.frozen := 0;
-				else
-					TS_StartTimer(targ, "congelamento", CInt(mlore / 2));
-				endif
-				start_script(":combat:weaponHitScripts/IceHit", array{ who, targ, 0, 0, 0, mlore });
-			else
-				Run_Script(":spells:spell_logic/mage/fireball", { who, targ });
-			endif
-			PlaySoundEffect(who, sound);
-			PlayMovingEffectXYZHued(who, targ, 0xf42, 10, 10, 0, ammo_color);
+		if (!CheckLOSAt(who, targ.x, targ.y, targ.z))
+			Message("Voce nao tem linha de visao para o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return false;
+		endif
 
+		PlaySoundEffect(who, sound);
+
+		var targetsInLine := _GetTargetsInLine(who, targ.x, targ.y);
+
+		foreach target in targetsInLine
+			PlayMovingEffectXYZHued(who, target, 0xf42, 10, 10, 0, ammo_color);
+			sleepms(80);
+			who.attack_once(target);
+
+			if (isFireArrow)
+				TS_StartTimer(target, "queimar", 10);
+			elseif (isColdArrow)
+				TS_StartTimer(target, "lentidao", 10);
+			endif
+		endforeach
+
+		if (isEnergyArrow)
+			var concealDuration := CInt(mobile.GetSkill(ARCANA) / 20);
+			who.concealed := 1;
+			DebugMsg(
+				who,
+				DEBUG_HAB,
+				Message($"[CHANNELED_SHOT] Concealed por {concealDuration}s", Color(SYSTEM_COLOR::SUCCESS))
+			);
+			sleep(concealDuration);
+			who.concealed := 0;
+		endif
+
+		var elemento := "fogo";
+		if (isColdArrow)
+			elemento := "gelo";
 		elseif (isEnergyArrow)
-			Run_Script(":spells:spell_logic/mage/teleport", { who });
+			elemento := "raio";
 		endif
 
 		DebugMsg(
 			who,
 			DEBUG_HAB,
-			Message("[DISPARO_CANALIZADO] Disparo canalizado executado", Color(SYSTEM_COLOR::SUCCESS))
+			Message($"[CHANNELED_SHOT] {targetsInLine.size()} alvos atingidos, elemento: {elemento}", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;
 	endfunction
 
 endclass
+
+function _GetTargetsInLine(who, targetX, targetY)
+	var validTargets := array{};
+	var alreadyTargeted := array{};
+
+	var lineCoords := GetCoordsInLine(who.x, who.y, targetX, targetY);
+
+	foreach point in lineCoords
+		var mobiles := ListMobilesNearLocation(point.x, point.y, who.z, 1, who.realm);
+
+		foreach mobile in mobiles
+			if (mobile.serial in alreadyTargeted)
+				continue;
+			endif
+			if (mobile == who)
+				continue;
+			endif
+			if (who.party && mobile in who.party.members)
+				continue;
+			endif
+			if (GetObjProperty(mobile, "owner") == who.serial)
+				continue;
+			endif
+			if (who.party)
+				var skipPet := 0;
+				foreach member in (who.party.members)
+					if (GetObjProperty(mobile, "owner") == member.serial)
+						skipPet := 1;
+						break;
+					endif
+				endforeach
+				if (skipPet)
+					continue;
+				endif
+			endif
+
+			validTargets.append(mobile);
+			alreadyTargeted.append(mobile.serial);
+		endforeach
+	endforeach
+
+	return validTargets;
+endfunction
+

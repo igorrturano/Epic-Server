@@ -46,8 +46,8 @@ include ":abilities:classes/lamina_arcana/PrismaticVortex";
 include ":abilities:classes/arqueiro_arcano/ElementalBow";
 include ":abilities:classes/arqueiro_arcano/ElementalAffinity";
 include ":abilities:classes/arqueiro_arcano/ChanneledShot";
-include ":abilities:classes/arqueiro_arcano/Tirothan";
-include ":abilities:classes/arqueiro_arcano/ElementalStorm";
+include ":abilities:classes/arqueiro_arcano/ArcaneMastery";
+include ":abilities:classes/arqueiro_arcano/PrismaticShot";
 
 //===========================================
 // GRANADEIRO (2500-2504)
@@ -116,11 +116,11 @@ ABILITY_CLASSES[ABILITY_ID::ARMADURA_ARCANA] := @ArcaneArmor;
 ABILITY_CLASSES[ABILITY_ID::VORTICE_PRISMATICO] := @PrismaticVortex;
 
 // Arqueiro Arcano (2400-2404)
-ABILITY_CLASSES[ABILITY_ID::GWAENEDH] := @ElementalBow;
-ABILITY_CLASSES[ABILITY_ID::AINALAITH] := @ElementalAffinity;
-ABILITY_CLASSES[ABILITY_ID::DISPARO_CANALIZADO] := @ChanneledShot;
-ABILITY_CLASSES[ABILITY_ID::TIROTHAN] := @Tirothan;
-ABILITY_CLASSES[ABILITY_ID::TEMPESTADE_ELEMENTAL] := @ElementalStorm;
+ABILITY_CLASSES[ABILITY_ID::ARCANE_BOW] := @ElementalBow;
+ABILITY_CLASSES[ABILITY_ID::ELEMENTAL_AFFINITY] := @ElementalAffinity;
+ABILITY_CLASSES[ABILITY_ID::CHANNELED_SHOT] := @ChanneledShot;
+ABILITY_CLASSES[ABILITY_ID::ARCANE_MASTERY] := @ArcaneMastery;
+ABILITY_CLASSES[ABILITY_ID::PRISMATIC_SHOT] := @PrismaticShot;
 
 // Granadeiro (2500-2504)
 ABILITY_CLASSES[ABILITY_ID::ALQUIMISTA_EXPERIENTE] := @ExperiencedAlchemist;

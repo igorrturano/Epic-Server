@@ -16,6 +16,7 @@ include "include/creationUtils";
 include "include/sounds";
 include "include/epicConstants";
 include ":charactercreation:include/RPTraits";
+include ":abilities:include/models/Ability";
 include ":nature:nature";
 include ":crafting:fabricaComplexos";
 
@@ -839,6 +840,24 @@ function pathOfWisdom(who, culture_pic)
 			};
 			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
 			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
+			break;
+		elseif (selectedPath == "Arqueiro Arcano")
+			chardata.+wisdom_path := "arcane_archer";
+			chardata.+magia := "arcane_archer";
+			chardata.+religion := LORE;
+			// Unlock ARCANE_BOW automatically (level 2 ability slot)
+			var myhabs := GetObjProperty(who, "myhabs");
+			if (myhabs == error)
+				myhabs := dictionary;
+			endif
+			var habs := GetObjProperty(who, "buyhab");
+			if (habs[0] == error)
+				habs[0] := 1;
+			endif
+			myhabs[2] := ABILITY_ID::ARCANE_BOW;
+			habs[2] := 2;
+			SetObjProperty(who, "myhabs", myhabs);
+			SetObjProperty(who, "buyhab", habs);
 			break;
 		else
 			SendSysMessageEX(who, "Defina seu caminho da sabedoria", SSM_FAIL);

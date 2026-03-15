@@ -288,7 +288,7 @@ function CalculateAbilityHitModifier(byref hit_chance, attackInfo)
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(SCIENCE) / 5);
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::TIROTHAN))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::ARCANE_MASTERY))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(ARCANA) / 10);
 	endif
 

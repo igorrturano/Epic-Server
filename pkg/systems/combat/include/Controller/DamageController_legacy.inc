@@ -496,7 +496,7 @@ function CalcDamageHabs(attacker, defender, damage)
         endif
     endif
 
-	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::AINALAITH))
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::ELEMENTAL_AFFINITY))
 		var damagemod := 0;
 		var arrow_effects := GetObjProperty(attacker, "#shooting_effects");
 		if (!arrow_effects)

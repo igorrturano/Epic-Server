@@ -7,7 +7,7 @@ include ":message:model/Message";
 include ":debug:Controller/DebugController";
 
 /**
- * Elemental Affinity (Ainalaith) - ABILITY_ID::AINALAITH (2401)
+ * Elemental Affinity (Ainalaith) - ABILITY_ID::ELEMENTAL_AFFINITY (2401)
  *
  * Passive (OnPassiveBeforeDamage + OnPassiveOnMiss, attacker-side):
  * - Tracks consecutive hits with the same arrow element via #shooting_effects
@@ -20,7 +20,7 @@ include ":debug:Controller/DebugController";
 class ElementalAffinity(CombatAbility)
 
 	function ElementalAffinity(this)
-		Super(ABILITY_ID::AINALAITH);
+		Super(ABILITY_ID::ELEMENTAL_AFFINITY);
 	endfunction
 
 	function OnPassiveBeforeDamage(this, attackInfo)
@@ -82,7 +82,7 @@ class ElementalAffinity(CombatAbility)
 					DebugMsg(
 						who,
 						DEBUG_HAB,
-						Message($"[AINALAITH] Bonus dano energia: +{bonus}", Color(SYSTEM_COLOR::SUCCESS))
+						Message($"[ELEMENTAL_AFFINITY] Bonus dano energia: +{bonus}", Color(SYSTEM_COLOR::SUCCESS))
 					);
 			endcase
 
@@ -91,7 +91,7 @@ class ElementalAffinity(CombatAbility)
 			DebugMsg(
 				who,
 				DEBUG_HAB,
-				Message($"[AINALAITH] 3o disparo consecutivo! Efeito: {activeArrow}", Color(SYSTEM_COLOR::SUCCESS))
+				Message($"[ELEMENTAL_AFFINITY] 3o disparo consecutivo! Efeito: {activeArrow}", Color(SYSTEM_COLOR::SUCCESS))
 			);
 		endif
 
@@ -116,7 +116,7 @@ class ElementalAffinity(CombatAbility)
 			DebugMsg(
 				who,
 				DEBUG_HAB,
-				Message("[AINALAITH] Errou! Contadores resetados.", Color(SYSTEM_COLOR::FAIL))
+				Message("[ELEMENTAL_AFFINITY] Errou! Contadores resetados.", Color(SYSTEM_COLOR::FAIL))
 			);
 
 			return true;
