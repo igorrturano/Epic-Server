@@ -463,6 +463,18 @@ function ConversationEditorLoop(who, conversation_id, start_node_id, npc := 0)
 			endif
 			continue;
 
+		// Create a new dialogue node (without forcing immediate linking)
+		elseif (input[BTN_CONV_CREATE_NODE])
+			var next_dialog_number := GetNodeList(conversation_id).size() + 1;
+			var default_dialog_text := $"Dialogo_{next_dialog_number}";
+			var created_node_id := CreateNewNode(conversation_id, default_dialog_text);
+			if (created_node_id)
+				Message($"Novo dialogo criado: {created_node_id}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			else
+				Message("Erro ao criar novo dialogo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			endif
+			continue;
+
 		// Done - exit editor
 		elseif (input[BTN_CONV_DONE])
 			break;
@@ -553,10 +565,10 @@ function ConversationEditorLoop(who, conversation_id, start_node_id, npc := 0)
 endfunction
 
 function AnswerEditorFlow(who, conversation_id, existing_answer)
-	var node_list := GetNodeList(conversation_id);
 	var working_answer := existing_answer;
 
 	while (1)
+		var node_list := GetNodeList(conversation_id);
 		var ans_gump := BuildAnswerEditorGump(conversation_id, working_answer, node_list);
 		var ans_input := GFSendGump(who, ans_gump);
 
