@@ -187,12 +187,19 @@ function _RunMonitorQueryIsOnUse(params)
 endfunction
 
 function _RunMonitorActivateAsync(params)
+	var abilityId := CInt(params[2]);
+	var who := params[3];
+
 	var result := _RunMonitorActivate(params);
 	if (result.hasError)
-		var who := params[3];
 		Message(result.errorMsg, Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return 0;
 	endif
+
+	// Execute the ON_USE ability (may block for targeting)
+	var ability := ABILITY_CLASSES[abilityId].new();
+	ability.ExecuteOn(who);
+	who.DeactivateAbility(ability);
 
 	return 1;
 endfunction
