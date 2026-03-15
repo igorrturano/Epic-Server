@@ -1,0 +1,50 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/client";
+include "include/sysEvent";
+include ":attributes:attributes";
+
+/**
+ * Distracao (Mayowashi) - Spell 1104
+ * Distract enemies attacking you, making them switch targets.
+ */
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	var hostiles := ListHostiles(who, 10, LH_FLAG_LOS);
+	if (!hostiles || len(hostiles) == 0)
+		SendSysMessageEx(who, "Nenhum inimigo proximo para distrair.", SSM_FAIL);
+		return 0;
+	endif
+
+	PlaySoundEffect(who, 0x228);
+	PrintTextAbove(who, "*Cria uma distracao!*");
+
+	var distracted := 0;
+	foreach mob in hostiles
+		if (mob.opponent && mob.opponent.serial == who.serial)
+			// Find another target for this hostile
+			var others := ListHostiles(mob, 10, LH_FLAG_LOS);
+			foreach other in others
+				if (other.serial != who.serial)
+					var event := struct{ "type" := SYSEVENT_ENGAGED, "source" := other };
+					SendEvent(mob, event);
+					distracted := distracted + 1;
+					break;
+				endif
+			endforeach
+		endif
+		sleepms(10);
+	endforeach
+
+	if (distracted > 0)
+		SendSysMessageEx(who, $"Voce distraiu {distracted} inimigo(s).", SSM_INFO);
+	else
+		SendSysMessageEx(who, "Nenhum inimigo foi distraido.", SSM_INFO);
+	endif
+
+	return 1;
+endprogram

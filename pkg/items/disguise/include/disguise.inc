@@ -97,7 +97,7 @@ function removedisfarce(who)
 		return 1;
 	endif
 
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::DISSIMULACAO))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		removeDisguise(who);
 	else
 		TS_LowerDuration(who, "kitdisfarce", -1);

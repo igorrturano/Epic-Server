@@ -15,6 +15,7 @@ include ":combat:Controller/DamageController_legacy";
 include ":combat:Controller/DamageController_legacy";
 include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
+include ":wrappers:Objects/Model/WeaponWrapper";
 
 enum arrremesso
 	ARREMESSO_TIPO_ITEM,
@@ -25,7 +26,7 @@ endenum
 program arremesso(params)
 	var who := params[1];
 	params := 0; // No longer needed
-	if (who.hidden && !MobileWrapper(who).HasAbility(ABILITY_ID::ESPIONAGEM))
+	if (who.hidden && !MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		SendSysMessageEx(who, "Voce nao pode fazer isso escondido.", SSM_FAIL);
 		return 0;
 	elseif (GetEquipmentByLayer(who, 0x19) && GetObjProperty(who, "chardata").trait != "Cavalaria de Escaramuça")
@@ -127,13 +128,23 @@ program arremesso(params)
 		return 0;
 	endif
 
-	// Não entendi essa parte então não mexi. Ass: Deiro.
-	if (who.weapon.IsThrowingWeapon())
+	// Ninja Path: daggers don't cost stamina
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH) && targ.isA(POLCLASS_ITEM))
+		var _ww := WeaponWrapper(targ);
+		if (!_ww.GetObjRef().errortext && _ww.GetCategory() == WEAPON_CATEGORY::DAGGER)
+			// No stamina cost for daggers with Ninja Path
+		else
+			if (who.weapon.IsThrowingWeapon())
+				AP_ConsumeVital(who, "Stamina", 10);
+			else
+				AP_ConsumeVital(who, "Stamina", 20);
+			endif
+		endif
+	elseif (who.weapon.IsThrowingWeapon())
 		AP_ConsumeVital(who, "Stamina", 10);
 	else
 		AP_ConsumeVital(who, "Stamina", 20);
 	endif
-	//
 
 	var to_miss_chance := 50;
 	if (alvo.isA(POLCLASS_MOBILE))
@@ -237,7 +248,7 @@ program arremesso(params)
 		endif
 	endif
 
-	if (who.hidden && !MobileWrapper(who).HasAbility(ABILITY_ID::FURTIVIDADE_APRIMORADA))
+	if (who.hidden && !MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		who.hidden := 0;
 	else
 		if (AP_GetVital(who, "Stamina") < 50)

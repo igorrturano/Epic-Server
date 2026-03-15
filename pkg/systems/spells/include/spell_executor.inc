@@ -35,6 +35,7 @@ const SPELL_TYPE_DRUID        := "druid";
 const SPELL_TYPE_PALADIN      := "paladin";
 const SPELL_TYPE_DEMONHUNTER  := "demonhunter";
 const SPELL_TYPE_TRICKSTER    := "trickster";
+const SPELL_TYPE_SHINOBI      := "shinobi";
 
 /*
  * ExecuteSpellByName - Main entry point for all spell execution
@@ -212,6 +213,12 @@ function ValidateSpellAccess(who, spell_type)
                 SendSysMessageEx(who, "Apenas Cacadores de Demonios podem usar este comando.", SSM_FAIL);
                 return 0;
             endif
+
+        SPELL_TYPE_SHINOBI:
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
+                SendSysMessageEx(who, "Apenas Shinobis podem usar este comando.", SSM_FAIL);
+                return 0;
+            endif
     endcase
     
     return 1;
@@ -222,6 +229,18 @@ endfunction
  */
 function ValidateSpellRequirements(who, spell_data, spell_type)
     case (spell_type)
+        SPELL_TYPE_SHINOBI:
+            // Check tactics skill for circle access
+            var tactics_skill := CInt(AP_GetSkill(who, TACTICS));
+            var max_circle_shinobi := tactics_skill / 20;
+            if (max_circle_shinobi < 1)
+                max_circle_shinobi := 1;
+            endif
+            if (spell_data.circle > max_circle_shinobi)
+                SendSysMessageEx(who, "Voce nao possui conhecimento tatico suficiente para esta tecnica.", SSM_FAIL);
+                return 0;
+            endif
+
         SPELL_TYPE_PALADIN:
         SPELL_TYPE_DEMONHUNTER:
             // Check theology skill for circle access
@@ -296,6 +315,7 @@ function GetSpellConfigPathForType(spell_type)
         SPELL_TYPE_DRUID:       return ":spells:config/druid";
         SPELL_TYPE_PALADIN:     return ":spells:config/paladin";
         SPELL_TYPE_DEMONHUNTER: return ":spells:config/demonhunter";
+        SPELL_TYPE_SHINOBI:     return ":spells:config/shinobi";
     endcase
     return "";
 endfunction
@@ -382,6 +402,8 @@ function GetBooktypeForSpell(who, spell_data, spell_type)
             return "paladin";
         SPELL_TYPE_DEMONHUNTER:
             return "demonhunter";
+        SPELL_TYPE_SHINOBI:
+            return "shinobi";
     endcase
     
     return 0;

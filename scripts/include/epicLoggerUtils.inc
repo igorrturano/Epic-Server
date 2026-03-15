@@ -85,9 +85,9 @@ function GetPlayersInRange( who, range )
                                             who.realm );
   foreach player in players
     if ( !CheckLineOfSight( who, player ) )
-      if ( MobileWrapper( player ).HasAbility(ABILITY_ID::MESTRE_ESPIAO) )
+      if ( MobileWrapper( player ).HasAbility(ABILITY_ID::GHOST_STANCE) )
         players_in_range.append( player.name );
-      elseif ( MobileWrapper( player ).HasAbility(ABILITY_ID::ESPIONAGEM) )
+      elseif ( MobileWrapper( player ).HasAbility(ABILITY_ID::NINJA_PATH) )
         if ( Distance( who, player ) < 12 && abs( who.z - player.z ) < 19 )
           players_in_range.append( player.name );
         endif

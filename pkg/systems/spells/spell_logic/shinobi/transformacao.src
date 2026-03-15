@@ -1,0 +1,42 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/client";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+/**
+ * Transformacao (Henge) - Spell 1101
+ * Disguise as another person. Triggers the disguise kit system.
+ */
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	// Find disguise kit in backpack
+	var kit := 0;
+	foreach item in (EnumerateItemsInContainer(who.backpack))
+		if (item.objtype == 0x14F0) // Disguise kit objtype
+			kit := item;
+			break;
+		endif
+	endforeach
+
+	if (!kit)
+		SendSysMessageEx(who, "Voce precisa de um kit de disfarces na mochila.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Start the disguise script
+	PlaySoundEffect(who, 0x228);
+	PrintTextAbove(who, "*Realiza uma transformacao*");
+
+	var script := Start_Script(":disguise:disguise", array{ who, kit });
+	if (script.errortext)
+		SendSysMessageEx(who, "Erro ao iniciar disfarce: " + script.errortext, SSM_FAIL);
+		return 0;
+	endif
+
+	return 1;
+endprogram

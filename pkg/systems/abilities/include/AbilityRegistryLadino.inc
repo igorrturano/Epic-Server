@@ -32,6 +32,15 @@ include ":abilities:classes/assassino/KillerInstinct";
 include ":abilities:classes/assassino/BloodScent";
 
 //===========================================
+// SHINOBI (1300-1304)
+//===========================================
+include ":abilities:classes/shinobi/NinjaPath";
+include ":abilities:classes/shinobi/VitalStrike";
+include ":abilities:classes/shinobi/SmokeScreen";
+include ":abilities:classes/shinobi/ShadowClone";
+include ":abilities:classes/shinobi/GhostStance";
+
+//===========================================
 // VIVISSECCIONISTA (1400-1404)
 //===========================================
 include ":abilities:classes/vivisseccionista/PoisonMaster";
@@ -99,6 +108,13 @@ ABILITY_CLASSES[ABILITY_ID::ARSENAL_SOMBRIO] := @ShadowArsenal;
 ABILITY_CLASSES[ABILITY_ID::INSTINTO_ASSASSINO] := @KillerInstinct;
 ABILITY_CLASSES[ABILITY_ID::FARO_POR_SANGUE] := @BloodScent;
 
+// Shinobi (1300-1304)
+ABILITY_CLASSES[ABILITY_ID::NINJA_PATH] := @NinjaPath;
+ABILITY_CLASSES[ABILITY_ID::VITAL_STRIKE] := @VitalStrike;
+ABILITY_CLASSES[ABILITY_ID::SMOKE_SCREEN] := @SmokeScreen;
+ABILITY_CLASSES[ABILITY_ID::SHADOW_CLONE] := @ShadowClone;
+ABILITY_CLASSES[ABILITY_ID::GHOST_STANCE] := @GhostStance;
+
 // Vivisseccionista (1400-1404)
 ABILITY_CLASSES[ABILITY_ID::MESTRE_DOS_VENENOS] := @PoisonMaster;
 ABILITY_CLASSES[ABILITY_ID::GOLPE_SANGRENTO] := @BloodyStrike;
@@ -133,3 +149,4 @@ ABILITY_CLASSES[ABILITY_ID::SENTENCA_PROFANA] := @ProfaneSentence;
 ABILITY_CLASSES[ABILITY_ID::MANCHA_DA_CORRUPCAO] := @CorruptionMark;
 ABILITY_CLASSES[ABILITY_ID::ARMADILHA_DEMONIACA] := @DemonicTrap;
 ABILITY_CLASSES[ABILITY_ID::FORMA_ABISSAL] := @AbyssalForm;
+

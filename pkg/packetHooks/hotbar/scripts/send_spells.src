@@ -459,6 +459,7 @@ function GetPlayerSpells(who)
     var has_paladin := MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA);
     var has_trickster := MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA);
     var has_demonhunter := MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO);
+    var has_shinobi := MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH);
 
     // Paladin spells
     if (has_paladin)
@@ -573,6 +574,53 @@ function GetPlayerSpells(who)
                 var dh_desc := GetConfigString(spell_elem, "Desc");
                 spell.+desc := dh_desc ? dh_desc : "";
                 spell.+command_prefix := "c";
+
+                spells.append(spell);
+            endforeach
+        endif
+    endif
+
+    // Shinobi techniques
+    if (has_shinobi)
+        var shinobi_cfg := ReadConfigFile(":spells:config/shinobi");
+        if (shinobi_cfg)
+            var tactics_skill := CInt(AP_GetSkill(who, TACTICS));
+            var max_circle_sh := tactics_skill / 20;
+            if (max_circle_sh < 1)
+                max_circle_sh := 1;
+            endif
+
+            foreach spell_id in GetConfigIntKeys(shinobi_cfg)
+                var spell_elem := FindConfigElem(shinobi_cfg, spell_id);
+                if (!spell_elem)
+                    continue;
+                endif
+                var spell_circle := CInt(GetConfigInt(spell_elem, "Circle"));
+                if (spell_circle > max_circle_sh)
+                    continue;
+                endif
+                var spell_name := GetConfigString(spell_elem, "Name");
+                if (!spell_name)
+                    continue;
+                endif
+                var icon_id := GetConfigInt(spell_elem, "Icon");
+                var icon_hue := GetConfigInt(spell_elem, "Hue");
+                if (!icon_id)
+                    icon_id := 0x9b96;
+                    icon_hue := 1109;
+                endif
+
+                var spell := struct{};
+                spell.+id := spell_id;
+                spell.+name := spell_name;
+                spell.+school := "Shinobi";
+                spell.+circle := spell_circle;
+                spell.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                spell.+iconid := icon_id;
+                spell.+hue := icon_hue;
+                var sh_desc := GetConfigString(spell_elem, "Desc");
+                spell.+desc := sh_desc ? sh_desc : "";
+                spell.+command_prefix := "n";
 
                 spells.append(spell);
             endforeach

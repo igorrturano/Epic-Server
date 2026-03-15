@@ -1,0 +1,51 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/client";
+include ":attributes:attributes";
+
+/**
+ * Passo Rapido (Shunshin) - Spell 1102
+ * Teleport to the selected location.
+ */
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0;
+
+	if (!targ)
+		return 0;
+	endif
+
+	var tactics := CInt(AP_GetSkill(who, TACTICS));
+	var range := CInt(tactics / 5);
+	if (range < 5)
+		range := 5;
+	endif
+
+	var dist := CoordinateDistance(who.x, who.y, targ.x, targ.y);
+	if (dist > range)
+		SendSysMessageEx(who, "Muito longe. Alcance maximo: " + range + " tiles.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!CheckLosAt(who, targ.x, targ.y, targ.z))
+		SendSysMessageEx(who, "Voce nao consegue ver o destino.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Visual effect at origin
+	PlayObjectCenteredEffect(who, 0x3728, 10, 10);
+	PlaySoundEffect(who, 0x51C);
+
+	// Teleport
+	MoveObjectToLocation(who, targ.x, targ.y, targ.z, who.realm, MOVEOBJECT_FORCELOCATION);
+
+	// Visual effect at destination
+	PlayObjectCenteredEffect(who, 0x3728, 10, 10);
+
+	PrintTextAbove(who, "*Desaparece em um flash*");
+
+	return 1;
+endprogram
