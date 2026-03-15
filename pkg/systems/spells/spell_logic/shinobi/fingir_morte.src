@@ -1,0 +1,65 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/client";
+include ":attributes:attributes";
+
+/**
+ * Fingir Morte (Gishi) - Spell 1103
+ * Play dead - assume a dead appearance temporarily.
+ * Reduces detection and makes enemies lose interest.
+ */
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	if (who.dead)
+		SendSysMessageEx(who, "Voce ja esta morto.", SSM_FAIL);
+		return 0;
+	endif
+
+	var tactics := CInt(AP_GetSkill(who, TACTICS));
+	var duration := CInt(tactics / 5);
+	if (duration < 5)
+		duration := 5;
+	endif
+
+	// Save original state
+	var original_graphic := who.graphic;
+
+	// Play death animation
+	PerformAction(who, HUMAN_ANIM::DIE_BACK);
+	PlaySoundEffect(who, 0x1C0);
+	sleepms(500);
+
+	// Hide and set playing dead flag
+	who.hidden := 1;
+	who.frozen := 1;
+	SetObjProperty(who, "#fingindo_morte", 1);
+
+	PrintTextAbove(who, "*Cai no chao aparentemente morto*");
+	SendSysMessageEx(who, $"Voce esta se fingindo de morto por {duration} segundos. Qualquer acao cancela.", SSM_INFO);
+
+	// Wait for duration or cancellation
+	var start := ReadGameClock();
+	while (ReadGameClock() - start < duration)
+		if (!GetObjProperty(who, "#fingindo_morte"))
+			break;
+		endif
+		if (who.dead)
+			break;
+		endif
+		sleepms(500);
+	endwhile
+
+	// Restore
+	EraseObjProperty(who, "#fingindo_morte");
+	who.frozen := 0;
+
+	if (!who.dead)
+		SendSysMessageEx(who, "Voce para de se fingir de morto.", SSM_INFO);
+	endif
+
+	return 1;
+endprogram

@@ -119,7 +119,7 @@ function CalculateDHDiff(who, mobile)
 	var dist := Distance(who, mobile);
 	var difficulty;
 
-	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::FURTIVIDADE_APRIMORADA) && !MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA))
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SMOKE_SCREEN) && !MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA))
 		difficulty := CInt(mobile_skill);
 	else
 		if (dist >=8)

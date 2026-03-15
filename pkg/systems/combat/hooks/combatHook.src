@@ -183,12 +183,16 @@ endfunction
 function DoAttack(byRef attackInfo)
 	attackInfo.GetDefender().GetObjRef().frozen := 0;
 
-	if (attackInfo.GetAttacker().GetObjRef().cmdlevel == 0 && !attackInfo.GetAttacker().HasAbility(ABILITY_ID::FORMA_UMBRAL))
-		attackInfo.GetAttacker().GetObjRef().concealed := 0;
+	var _atkRef := attackInfo.GetAttacker().GetObjRef();
+	var _smokeProtected := GetObjProperty(_atkRef, "#smoke_protected");
+	var _inSmoke := (_smokeProtected && ReadGameClock() <= _smokeProtected);
+
+	if (_atkRef.cmdlevel == 0 && !attackInfo.GetAttacker().HasAbility(ABILITY_ID::FORMA_UMBRAL) && !_inSmoke)
+		_atkRef.concealed := 0;
 	endif
 
-	if (attackInfo.GetAttacker().GetObjRef().hidden)
-		attackInfo.GetAttacker().GetObjRef().hidden := 0;
+	if (_atkRef.hidden && !_inSmoke)
+		_atkRef.hidden := 0;
 	endif
 	
 	if (!attackInfo.GetAttacker().IsNPC() &&

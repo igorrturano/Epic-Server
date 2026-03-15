@@ -51,13 +51,13 @@ program skill_Stealth(who)
 		baseSteps := Cint(baseSteps * 2.0);
 	endif
 
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::FURTIVIDADE_APRIMORADA))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SMOKE_SCREEN))
 		baseSteps := baseSteps * 2;
 	endif
 
 	var atualStep := CInt(GetObjProperty(who, "#steathsteps"));
 	var diff := 15 + atualStep * 10;
-	if (!MobileWrapper(who).HasAbility(ABILITY_ID::ESPIONAGEM) || !MobileWrapper(who).HasAbility(ABILITY_ID::SALTO_DAS_SOMBRAS))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH) || !MobileWrapper(who).HasAbility(ABILITY_ID::SALTO_DAS_SOMBRAS))
 		diff := diff + 50;
 	endif
 
