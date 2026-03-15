@@ -143,7 +143,7 @@ function WeaponHitScripts(byRef attackInfo)
 		var dmg := attackInfo.GetDamage().GetTotalBaseDamage() + CInt(attackInfo.GetDamage().GetTotalRawDamage() * (attackInfo.GetAttacker().GetSkill(ARCANA) / 100));
 		var arcane_damage;
 
-		if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::TIROTHAN))
+		if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::ARCANE_MASTERY))
 			arcane_damage := dmg * 1.0;
 		else
 			arcane_damage := dmg * 0.5;

@@ -385,7 +385,7 @@ function comprarHabilidade(who, item, nv:=-1)
 			return 0;
 		endif
 
-		if (escolhida_id == ABILITY_ID::GWAENEDH && magia != "Arqueiro Arcano")
+		if (escolhida_id == ABILITY_ID::ARCANE_BOW && magia != "arcane_archer")
 			SendSysMessageEx(who, "Apenas arqueiros arcanos podem comprar essa habilidade.", SSM_FAIL);
 			return 0;
 		endif
@@ -410,7 +410,7 @@ function comprarHabilidade(who, item, nv:=-1)
 			endif
 		elseif (escolhida_id == ABILITY_ID::BOLSA_INFINITA)
 			who.carrying_capacity_mod := 120;
-		elseif (escolhida_id == ABILITY_ID::AINALAITH)
+		elseif (escolhida_id == ABILITY_ID::ELEMENTAL_AFFINITY)
 			var damage_effect := struct{};
 			damage_effect.+fire_arrow := 0;
 			damage_effect.+cold_arrow := 0;

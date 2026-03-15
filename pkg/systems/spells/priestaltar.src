@@ -35,7 +35,7 @@ program orderSpells(who, item)
 		endif
 	endif
 
-	if (altar == LORE && cultura == ALURIEL && !MobileWrapper(who).HasAbility(ABILITY_ID::GWAENEDH) && classe == SABIO)
+	if (altar == LORE && cultura == ALURIEL && !MobileWrapper(who).HasAbility(ABILITY_ID::ARCANE_BOW) && classe == SABIO)
 		if (ArcaneArcherDevotion(who))
 			playAltarAnimations(who, item);
 			return;
@@ -245,7 +245,8 @@ function ArcaneArcherDevotion(who)
 	var chardata := GetObjProperty(who, "chardata");
 	var yes := YesNo(who, "Deseja se tornar um Arqueiro Arcano? Perderá suas magias.", "Sim", "Não");
 	if (yes)
-		chardata.magia := "Arqueiro Arcano";
+		chardata.magia := "arcane_archer";
+		chardata.wisdom_path := "arcane_archer";
 		SetObjProperty(who, "chardata", chardata);
 		SendSysMessageEx(who, "Você se tornou um Arqueiro Arcano.", SSM_INFO);
 		return 1;

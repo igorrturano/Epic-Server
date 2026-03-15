@@ -173,7 +173,7 @@ function ValidateSpellAccess(who, spell_type)
     
     case (spell_type)
         SPELL_TYPE_CANTRIP:
-            if (magia != "spellcaster" && trait != "Natureza Arcana" && magia != "Arqueiro Arcano")
+            if (magia != "spellcaster" && trait != "Natureza Arcana" && magia != "arcane_archer")
                 SendSysMessageEx(who, "Voce nao possui acesso a truques.", SSM_FAIL);
                 return 0;
             endif

@@ -262,7 +262,7 @@ function GetPlayerSpells(who)
         var player_magia := chardata.magia;
         var trait := chardata.trait;
 
-        if (player_magia == "spellcaster" || trait == "Natureza Arcana" || player_magia == "Arqueiro Arcano")
+        if (player_magia == "spellcaster" || trait == "Natureza Arcana" || player_magia == "arcane_archer")
             var cantrip_cfg := ReadConfigFile(":spells:config/cantrips");
             if (cantrip_cfg)
                 foreach cantrip_id in GetConfigIntKeys(cantrip_cfg)

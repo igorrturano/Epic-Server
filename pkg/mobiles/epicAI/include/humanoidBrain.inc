@@ -804,7 +804,7 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
                 endif
                 ProccessHab(me, hab);
             ABILITY_ID::INVOCACAO_DO_CAOS: 
-            ABILITY_ID::GWAENEDH:
+            ABILITY_ID::ARCANE_BOW:
             ABILITY_ID::FORMA_ADAPTAVEL:
             ABILITY_ID::SAND_BROTHERS:
             ABILITY_ID::TACTICAL_SHOULDER:

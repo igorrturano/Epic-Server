@@ -1449,6 +1449,8 @@ function getWisdomPathsByCulture(who)
         wisdomPaths.append("Clériga de Idrith");
     elseif (culture == BJORSKA || culture == LESTE)
         wisdomPaths.append("Clérigo");
+    elseif (culture == ALURIEL)
+        wisdomPaths.append("Arqueiro Arcano");
     endif
     
     if (culture != HAROLOTH && culture != GULTHRAK)

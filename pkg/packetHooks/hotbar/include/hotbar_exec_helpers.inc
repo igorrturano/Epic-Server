@@ -44,9 +44,9 @@ function GetCombatHotkeys(who)
                 special_class := "Engenheiro";
                 special_hue := 2101;
                 special_index := 3;
-            elseif (chardata.magia == "Arqueiro Arcano")
+            elseif (chardata.magia == "arcane_archer")
                 special_name := "Velocidade Arcana";
-                special_class := "Arqueiro Arcano";
+                special_class := "arcane_archer";
                 special_hue := 16;
                 special_index := 5;
             else
