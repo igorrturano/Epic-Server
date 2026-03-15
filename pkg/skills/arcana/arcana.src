@@ -38,7 +38,7 @@ program skill_armslore(who)
 					ActivateMagicItem(item);
 				endif
 				SendSysMessageEx(who, "Voce identificou encantamentos nesse item.", SSM_INFO);
-				var cfg := ReadConfigFile(":spells:config/allspells");
+				var cfg := ReadConfigFile(":spells:config/swordmage");
 				var elem := FindConfigElem(cfg, whos[1]);
 				var name := GetConfigString(elem, "Name");
 				if (name)

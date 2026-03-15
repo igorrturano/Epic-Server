@@ -25,7 +25,7 @@ program magia(who, spellname := "")
 		spellname := params[2];
 	endif
 	
-	var cfg := ReadConfigFile(":spells:cantripspells");
+	var cfg := ReadConfigFile(":spells:config/cantrips");
 
 	// Validate access
 	var chardata := GetObjProperty(who, "chardata");
@@ -47,7 +47,7 @@ endprogram
 
 function CantripsGump(who, shaman_list)
 	var gump := GFCreateGump();
-	var cfg := ReadConfigFile(":spells:cantripspells");
+	var cfg := ReadConfigFile(":spells:config/cantrips");
 
 	var size := shaman_list.Size();
 	if (size >= 1)

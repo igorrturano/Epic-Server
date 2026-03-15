@@ -4,6 +4,7 @@ include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:epicGumps";
 include ":epicevents:Controller/ConversationController";
+include ":message:model/Message";
 include ":text:Color";
 
 // ============================================================================
@@ -51,6 +52,7 @@ const ID_NPC_NAME := 711;
 const BTN_CONV_EDIT_PROFILE := 505;
 const BTN_CONV_PROFILE_SAVE := 506;
 const BTN_CONV_PROFILE_CANCEL := 507;
+const BTN_CONV_CREATE_NODE := 508;
 const ID_NPC_PROFILE_URL := 712;
 const ID_NPC_PROFILE_DESC := 713;
 
@@ -249,7 +251,7 @@ function BuildPlayerDialogueGump(npc, dialogue_text, visible_answers)
 			break;
 		endif
 		GFAddButton(gump, content_x + 15, y, 0xFAE, 0x1764, GF_CLOSE_BTN, BTN_PLAYER_ANS_BASE + i);
-		GFTextLine(gump, content_x + 40, y, GUMP_COLOR::LABEL, answer.text);
+		GFTextLine(gump, content_x + 45, y, GUMP_COLOR::LABEL, answer.text);
 		y := y + 22;
 		i := i + 1;
 	endforeach
@@ -400,6 +402,11 @@ function BuildNodeEditorGump(conversation_id, node, npc := 0)
 	GFAddButton(gump, x, y + 5, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_ADD_ANSWER);
 	GFTooltipText(gump, "Criar uma nova opcao de resposta");
 	GFTextLine(gump, x + 40, y + 7, GUMP_COLOR::HIGHLIGHT, "+ Adicionar Resposta");
+
+	// Create node button (supports "nodes first" workflow)
+	GFAddButton(gump, x + 280, y + 5, 2152, 2153, GF_CLOSE_BTN, BTN_CONV_CREATE_NODE);
+	GFTooltipText(gump, "Criar um novo dialogo sem precisar de resposta agora");
+	GFTextLine(gump, x + 320, y + 7, GUMP_COLOR::HIGHLIGHT, "+ Criar Dialogo");
 	y := y + 35;
 
 	// Bottom buttons

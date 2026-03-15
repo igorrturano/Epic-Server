@@ -52,7 +52,7 @@ endprogram
 
 function DemonHunterSpellsGump(who, max_circle)
 	var gump := GFCreateGump();
-	var cfg := ReadConfigFile(":spells:config/demonhunterspells");
+	var cfg := ReadConfigFile(":spells:config/demonhunter");
 	var spell_list := array{};
 
 	foreach spell_id in (GetConfigIntKeys(cfg))

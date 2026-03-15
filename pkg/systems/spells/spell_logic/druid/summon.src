@@ -27,7 +27,7 @@ program summontotem(params)
 	// Efeito da magia
 	PlaySoundEffect(who, SFX_SPELL_SUMMON_ELEMENTAL);
 	PlayObjectCenteredEffect(who, FX_BLUE_SPARKLE_GROUND, 0, 5);
-	var cfg := ReadConfigFile(":spells:spellcaster");
+	var cfg := ReadConfigFile(":spells:config/druid");
 	var elem := FindConfigElem(cfg, spellid);
 
 	var template := getConfigString(elem, "npcTemplate");

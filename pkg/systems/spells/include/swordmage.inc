@@ -3,7 +3,7 @@
 
 function getSwordSpellName(id)
 
-	var cfg := ReadconfigFile(":spells:config/allspells");
+	var cfg := ReadconfigFile(":spells:config/swordmage");
 	var elem := FindConfigElem(cfg, id);
 
 	var element := GetConfigString(elem, "Name");
@@ -101,7 +101,7 @@ endfunction
 
 function getElemental(id)
 
-	var cfg := ReadconfigFile(":spells:config/allspells");
+	var cfg := ReadconfigFile(":spells:config/swordmage");
 	var elem := FindConfigElem(cfg, id);
 
 	var elemental := GetConfigString(elem, "Elemental");

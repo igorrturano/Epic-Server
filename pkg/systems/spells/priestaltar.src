@@ -60,7 +60,7 @@ program orderSpells(who, item)
 	endif
 
 	var mlore := cint(AP_GetSkill(who, THEOLOGY));
-	var cfg := ReadConfigFile(":spells:config/priestspells");
+	var cfg := ReadConfigFile(":spells:config/priest");
 	var priest_slots := Cint(mlore / 5);
 
 	var priest_list := GetObjProperty(who, "priest_list");
