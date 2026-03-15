@@ -205,52 +205,15 @@ function HabilidadesPorNivelPossiveis(who, classe, povo, lvl)
 
 endfunction
 
-function HabilidadesPorNivelFaccao(who, faccao, lvl)
-
-	var possiveis := array;
-
-	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
-	var keys := getConfigStringKeys( habcfg );
-
-	foreach key in keys
-		var elem := FindConfigElem( habcfg, key );
-		var d := GetConfigStringDictionary( elem, "faccao" );
-		if ( cint(d[faccao]) == lvl && d[faccao] != error)
-			possiveis.append(key);
-		endif
-	endforeach
-
-	return possiveis;
-
-endfunction
 
 
-function ComprarHabGump(who, habs, habsfac)
+function ComprarHabGump(who, habs)
 
 	UnloadConfigFile(":abilities:configs/habilidades");
 	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 
-	// Build combined entries list preserving button ID convention
-	var entries := array{};
-	var i := 1;
-	foreach hab in habs
-		var entry := struct{};
-		entry.+habId := hab;
-		entry.+buttonId := i;
-		entries.append(entry);
-		i := i + 1;
-	endforeach
-	i := 1;
-	foreach hab in habsfac
-		var entry := struct{};
-		entry.+habId := hab;
-		entry.+buttonId := 20 + i;
-		entries.append(entry);
-		i := i + 1;
-	endforeach
-
 	var ITEMS_PER_PAGE := 4;
-	var totalPages := CInt((entries.size() + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE);
+	var totalPages := CInt((habs.size() + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE);
 	if (totalPages < 1)
 		totalPages := 1;
 	endif
@@ -275,7 +238,8 @@ function ComprarHabGump(who, habs, habsfac)
 	var itemOnPage := 0;
 	GFPage(gump, pageNum);
 
-	foreach entry in entries
+	var i := 1;
+	foreach hab in habs
 		if (itemOnPage >= ITEMS_PER_PAGE)
 			// Next arrow on current page
 			GFAddButton(gump, GUMP_W - 70, NAV_Y, 5601, 5605, GF_PAGE_BTN, pageNum + 1);
@@ -292,7 +256,7 @@ function ComprarHabGump(who, habs, habsfac)
 			itemOnPage := 0;
 		endif
 
-		var habelem := FindConfigElem(habcfg, entry.habId);
+		var habelem := FindConfigElem(habcfg, hab);
 		var desc := GetConfigString(habelem, "desc");
 		var uso := GetConfigString(habelem, "uso");
 		var nome := GetConfigString(habelem, "nome");
@@ -337,10 +301,11 @@ function ComprarHabGump(who, habs, habsfac)
 		GFHTMLArea(gump, textX, y + 20, GUMP_W - textX - 80, 75, desc, 1150, 0);
 
 		// Buy button
-		GFAddButton(gump, GUMP_W - 60, y + 30, 4005, 4007, 1, entry.buttonId);
+		GFAddButton(gump, GUMP_W - 60, y + 30, 4005, 4007, 1, i);
 		GFTextLine(gump, GUMP_W - 62, y + 12, 1153, "Obter");
 
 		itemOnPage := itemOnPage + 1;
+		i := i + 1;
 	endforeach
 
 	// Navigation for last page
@@ -356,10 +321,6 @@ function ComprarHabGump(who, habs, habsfac)
 	input := input[0];
 
 	if (input > 0)
-		if (input >= 20)
-			input := input - 20;
-			return habsfac[input];
-		endif
 		return habs[input];
 	else
 		return 0;
@@ -368,7 +329,6 @@ function ComprarHabGump(who, habs, habsfac)
 endfunction
 
 function comprarHabilidade(who, item, nv:=-1)
-	var itemdesc := ReadConfigFile("::itemdesc");
 	var nivel;
 
 	if (nv != -1)
@@ -379,11 +339,8 @@ function comprarHabilidade(who, item, nv:=-1)
 		SendSysMessage(who,"Chamada inválida da função");
 		return;
 	endif
-	var classe := GetObjProperty(who, "classe");
-	var faccao := GetObjProperty(who, "faccao"); //facção
 	var chardata := GetObjProperty(who, "chardata");
 	var cultura := chardata.culture;
-	var raca := chardata.raca;
 	var religiao := chardata.religion;
 	var magia := chardata.magia;
 	var habs := GetObjProperty(who, "buyhab");
@@ -395,13 +352,7 @@ function comprarHabilidade(who, item, nv:=-1)
 	if ( (myhabs == error)  )
 		myhabs := dictionary;
 	endif
-	//SendSysMessage(who, GetObjProperty(who, "chardata").classe +" "+ GetObjProperty(who, "chardata").povo + " " + nivel);
 	var possiveis := HabilidadesPorNivelPossiveis(who, chardata.classe, chardata.culture, nivel);
-
-	//var possiveis := HabilidadesPorNivel(who, classe, nivel);
-	var possiveisfaccao := HabilidadesPorNivelFaccao(who, faccao, nivel); //facção
-
-	//sendsysmessage(who, "Procurando Habs possiveis!");
 
 	nivel := nivel*2;
 
@@ -410,33 +361,19 @@ function comprarHabilidade(who, item, nv:=-1)
 		return 0;
 	endif
 
-	if ( possiveis.size() > 0 || possiveisfaccao.size() > 0)
-		//sendsysmessage(who, "Tem alguma hab!");
-
+	if ( possiveis.size() > 0 )
 		SendSysMessageEx(who, "Escolha sua habilidade.", SSM_REQUEST);
-		var escolhida := ComprarHabGump(who, possiveis, possiveisfaccao);
+		var escolhida := ComprarHabGump(who, possiveis);
 		if (!escolhida)
 			SendSysMessageEx(who, "Voce cancelou a compra da habilidade.", SSM_FAIL);
 			return 0;
 		endif
-		//var escolhida := RadioGump(who, 300, 380, "Escolha a habilidade que quer aprender", possiveis);
 		if (!temRequisito(who, escolhida))
 			return 0;
 		endif
 
 		// escolhida is now an ability ID - convert to int for comparisons
 		var escolhida_id := CInt(escolhida);
-
-		// TODO: Legacy abilities not in current config - commented out for review
-		// if (escolhida_id == ABILITY_ID::VISAO_VERDADEIRA && who.gender != 1 && cultura != HAROLOTH && religiao != ELUITHORTH)
-		//     SendSysMessageEx(who, "Apenas drows femeas podem comprar essa habilidade.", SSM_FAIL);
-		//     return 0;
-		// endif
-
-		// if (escolhida_id == ABILITY_ID::AURA_MORTIS && religiao != VENERATIO && cultura != AIGLANA)
-		// 	SendSysMessageEx(who, "Apenas aiglanos Veneratio podem comprar essa habilidade.", SSM_FAIL);
-		// 	return 0;
-		// endif
 
 		if (escolhida_id == ABILITY_ID::ELO_NATURAL && cultura == HAROLOTH)
 			SendSysMessageEx(who, "Drows Har'oloth não podem ser druidas.", SSM_FAIL);
@@ -464,42 +401,8 @@ function comprarHabilidade(who, item, nv:=-1)
 			hitsmod := hitsmod + 20;
 			setObjProperty(who, "hitsmod", hitsmod);
 			recalcvitals(who);
-		// TODO: Legacy abilities not in current config - commented out for review
-		// elseif (escolhida_id == ABILITY_ID::ARMA_PREDILETA)
-		// 	SendSysMessageEx(who, "Escolha qual vai ser sua arma predileta.", SSM_REQUEST);
-		// 	var targ := Target(who);
-		// 	while(!targ.isA(POLCLASS_WEAPON))
-		// 		targ := Target(who);
-		// 	endwhile
-		// 	SetObjProperty(who, "armapredileta", targ.objtype);
-		// 	SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
-		// elseif (escolhida_id == ABILITY_ID::FOCO_COM_ARMA)
-		// 	SendSysMessageEx(who, "Escolha qual vai ser sua arma para a habilidade foco com arma.", SSM_REQUEST);
-		// 	var targ := Target(who);
-		// 	while(!targ.isA(POLCLASS_WEAPON))
-		// 		targ := Target(who);
-		// 	endwhile
-		// 	SetObjProperty(who, "fococomarma", targ.objtype);
-		// 	SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
-		// elseif (escolhida_id == ABILITY_ID::INIMIGO_PREDILETO)
-		// 	var inimigo := RadioGump(who, 300, 380, "Escolha seu Inimigo Predileto", array{"Dragon","Undead","Giants","GiantAnimal","EvilHuman","Goblin", "Underdark"});
-		// 	SetObjProperty(who, "InimigoPredileto", inimigo);
-		// elseif (escolhida_id == ABILITY_ID::INVENTARIO_FERREIRO)
-		// 	var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Armas","Escudos","Armaduras"});
-		// 	Start_Script(":charactercreation:habilidades/inventario", {who, "ferreiro", inventario});
-		// elseif (escolhida_id == ABILITY_ID::INVENTARIO_CARPINTEIRO)
-		// 	var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Equipamentos","Mobilia"});
-		// 	Start_Script(":charactercreation:habilidades/inventario", {who, "carpinteiro", inventario});
-		// elseif (escolhida_id == ABILITY_ID::INVENTARIO_COSTUREIRO)
-		// 	var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Couro","Tecido"});
-		// 	Start_Script(":charactercreation:habilidades/inventario", {who, "costureiro", inventario});
 		elseif (escolhida_id == ABILITY_ID::ELO_NATURAL)
 			setObjProperty(who, "empatiacomanimais", 1);
-		// elseif (escolhida_id == ABILITY_ID::PROTECAO_ELEMENTAL_KITAHNE)
-		// 	who.resist_fire_mod  := who.resist_fire_mod + 25;
-		// 	who.resist_cold_mod  := who.resist_cold_mod + 25;
-		// 	who.resist_poison_mod  := who.resist_poison_mod + 25;
-		// 	who.resist_energy_mod  := who.resist_energy_mod + 25;
 		elseif (escolhida_id == ABILITY_ID::EXPLOSIVE_FIST)
 			if (chardata.wisdom_path != "Engenheiro")
 				SendSysMessageEx(who, "Apenas engenheiros podem comprar essa habilidade.", SSM_FAIL);

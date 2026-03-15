@@ -23,17 +23,22 @@ program AbilityMonitor(params)
 
 	SetScriptController(who.GetObjRef());
 
+	// Query executor metadata only (does not run ability activation).
+	var shouldRunAsyncOnUse := run_script_to_completion(executorScript,
+		array{"query_is_on_use", abilityId});
+
+	if (shouldRunAsyncOnUse)
+		// ON_USE with targeting must run asynchronously to preserve client interaction.
+		run_script(executorScript, array{"activate_async", abilityId, who, monitor});
+		return;
+	endif
+
 	// Phase 1: Activate (delegates to executor)
 	var result := run_script_to_completion(executorScript,
 		array{"activate", abilityId, who, monitor});
 
 	if (result.errortext)
 		Message(result.errorMsg, Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
-		return;
-	endif
-
-	// ON_USE: already executed + deactivated inside executor
-	if (result.isOnUse)
 		return;
 	endif
 

@@ -21,29 +21,10 @@ class CombatAbility(Ability)
         return this.IsPool;
     endfunction
 
-    // Override: Custom activation conditions
-    // @param mobile MobileWrapper - who is activating the ability
-    function CanActivate(this, mobile)
-        return true;
-    endfunction
-
-    // Override: Setup when ability activates (visual effects, etc.)
-    // @param mobile MobileWrapper - who activated
-    function OnActivate(this, mobile)
-        // To be overridden by subclasses
-    endfunction
-
     // Override: Cleanup when ability deactivates (by any reason: expiry, abort, move, complete)
     // @param mobile MobileWrapper - who had the ability
     function OnDeactivate(this, mobile)
         // To be overridden by subclasses
-    endfunction
-
-    // Override: Calculate duration from mobile's stats
-    // @param mobile MobileWrapper - who activated
-    // @return Integer - duration in seconds
-    function GetDurationFor(this, mobile)
-        return this.GetDuration();
     endfunction
 
     //===========================================

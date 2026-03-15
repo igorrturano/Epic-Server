@@ -18,12 +18,17 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":spells:spellbooks";
 include ":spells:include/tnmagery";
+include ":spells:SpellRegistry";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 
 // Spell type constants
 const SPELL_TYPE_CANTRIP      := "cantrip";
 const SPELL_TYPE_MAGE         := "mage";
+const SPELL_TYPE_EVOCATION    := "evocation";
+const SPELL_TYPE_NECROMANCY   := "necromancy";
+const SPELL_TYPE_ILLUSION     := "illusion";
+const SPELL_TYPE_SWORDMAGE   := "swordmage";
 const SPELL_TYPE_PRIEST       := "priest";
 const SPELL_TYPE_SHAMAN       := "shaman";
 const SPELL_TYPE_DRUID        := "druid";
@@ -100,25 +105,24 @@ function ExecuteSpellById(who, spell_id, spell_type)
         SendSysMessageEx(who, "Voce nao pode invocar uma magia agora.", SSM_FAIL);
         return 0;
     endif
-    
+
     // Validate access
     if (!ValidateSpellAccess(who, spell_type))
         return 0;
     endif
-    
-    // Get config path
-    var cfg_path := GetSpellConfigPathForType(spell_type);
+
+    // Use SpellRegistry to resolve spell by ID directly
+    var cfg_path := GetConfigFromId(spell_id);
     if (!cfg_path)
         SendSysMessageEx(who, "Tipo de magia invalido.", SSM_FAIL);
         return 0;
     endif
-    
-    // Find spell by ID
+
     var cfg := ReadConfigFile(cfg_path);
     if (!cfg)
         return 0;
     endif
-    
+
     var spell_elem := FindConfigElem(cfg, spell_id);
     if (!spell_elem)
         SendSysMessageEx(who, "Magia ID " + spell_id + " nao encontrada.", SSM_FAIL);
@@ -280,14 +284,18 @@ endfunction
  */
 function GetSpellConfigPathForType(spell_type)
     case (spell_type)
-        SPELL_TYPE_CANTRIP:     return ":spells:config/cantripspells";
-        SPELL_TYPE_MAGE:        return ":spells:config/spellcaster";
-        SPELL_TYPE_TRICKSTER:   return ":spells:config/tricksterspells";
-        SPELL_TYPE_PRIEST:      return ":spells:config/priestspells";
-        SPELL_TYPE_SHAMAN:      return ":spells:config/shamanspells";
-        SPELL_TYPE_DRUID:       return ":spells:config/druidspells";
-        SPELL_TYPE_PALADIN:     return ":spells:config/paladinspells";
-        SPELL_TYPE_DEMONHUNTER: return ":spells:config/demonhunterspells";
+        SPELL_TYPE_CANTRIP:     return ":spells:config/cantrips";
+        SPELL_TYPE_MAGE:        return ":spells:config/evocation";  // Default mage school; use GetConfigFromId() for specific spells
+        SPELL_TYPE_EVOCATION:   return ":spells:config/evocation";
+        SPELL_TYPE_NECROMANCY:  return ":spells:config/necromancy";
+        SPELL_TYPE_ILLUSION:    return ":spells:config/illusion";
+        SPELL_TYPE_SWORDMAGE:   return ":spells:config/swordmage";
+        SPELL_TYPE_TRICKSTER:   return ":spells:config/trickster";
+        SPELL_TYPE_PRIEST:      return ":spells:config/priest";
+        SPELL_TYPE_SHAMAN:      return ":spells:config/shaman";
+        SPELL_TYPE_DRUID:       return ":spells:config/druid";
+        SPELL_TYPE_PALADIN:     return ":spells:config/paladin";
+        SPELL_TYPE_DEMONHUNTER: return ":spells:config/demonhunter";
     endcase
     return "";
 endfunction
@@ -337,8 +345,8 @@ function BuildSpellInfo(who, spell_data, spell_type, cfg_path)
     spellinfo.+id := spell_data.id;
     
     // Set magic_path for cantrips (important for WriteCantripSpellInfo)
-    if (spell_type == SPELL_TYPE_CANTRIP)
-        spellinfo.+magic_path := "cantripspells";
+    if (spell_type == SPELL_TYPE_CANTRIP || IsCantrip(spell_data.id))
+        spellinfo.+magic_path := "cantrips";
     endif
     
     // For some spell types, we need to populate full info

@@ -7,6 +7,7 @@ include ":tn:tngumps";
 include "include/epicConstants";
 include ":gumps:epicGumps";
 include ":message:include/model/Message";
+include ":spells:SpellRegistry";
 //include ":nature:nature";
 //include ":charactercreation:include/RPTraits";
 
@@ -2315,29 +2316,34 @@ function UpdateCharacterSkin(who, chardata)
 endfunction
 
 function spellChoices(who)
-    var spellcfg := ReadConfigFile(":spells:config/spellcaster");
-    var keys := GetConfigIntKeys(spellcfg);
     var mageryLevel := CInt(GetObjProperty(who, "chardata").Skills[MAGERY]);
 
-    // Get spells by circle
+    // Get spells by circle from all 4 mage school configs
     var spellsByCircle := dictionary;
     spellsByCircle[1] := array;
     spellsByCircle[2] := array;
 
-    foreach key in keys
-        var elem := FindConfigElem(spellcfg, key);
-        var spelllvl := GetConfigInt(elem, "Circle");
-        var spelltype := GetConfigString(elem, "Type");
-        
-        if (spelltype == "spellcaster" && (spelllvl == 1 || spelllvl == 2))
-            var spell := dictionary;
-            spell["id"] := key;
-            spell["circle"] := spelllvl;
-            spell["name"] := GetConfigString(elem, "Name");
-            spell["desc"] := GetConfigString(elem, "Desc");
-            spell["school"] := GetConfigString(elem, "School");
-            spellsByCircle[spelllvl].append(spell);
+    foreach cfg_path in (GetMageSchoolConfigPaths())
+        var spellcfg := ReadConfigFile(cfg_path);
+        if (!spellcfg)
+            continue;
         endif
+        var keys := GetConfigIntKeys(spellcfg);
+        foreach key in keys
+            var elem := FindConfigElem(spellcfg, key);
+            var spelllvl := GetConfigInt(elem, "Circle");
+            var spelltype := GetConfigString(elem, "Type");
+
+            if (spelltype == "spellcaster" && (spelllvl == 1 || spelllvl == 2))
+                var spell := dictionary;
+                spell["id"] := key;
+                spell["circle"] := spelllvl;
+                spell["name"] := GetConfigString(elem, "Name");
+                spell["desc"] := GetConfigString(elem, "Desc");
+                spell["school"] := GetConfigString(elem, "School");
+                spellsByCircle[spelllvl].append(spell);
+            endif
+        endforeach
     endforeach
 
     var selected_spells := array;

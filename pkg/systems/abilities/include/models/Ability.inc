@@ -137,7 +137,6 @@ class Ability(IAbility)
 	endfunction
 
 	function ExecuteOn(this, attackInfo)
-		// Override in CombatAbility
 		return false;
 	endfunction
 
@@ -452,4 +451,5 @@ enum class ABILITY_ID
 	WRITE_SCROLLS := 3624,
 	HEALING_HERBS := 3625,
 	ACADEMIC_TRAINING := 3626,
+	PRESTIDIGITATOR := 3627,
 endenum

@@ -87,6 +87,22 @@ function CreateItemTemplate(item)
 		template["hitscript"] := item.hitscript;
 	endif
 
+	if (item.name != error && item.name != "")
+		template["name"] := item.name;
+	endif
+
+	if (item.desc != error && item.desc != "")
+		template["desc"] := item.desc;
+	endif
+
+	if (item.color != error)
+		template["color"] := item.color;
+	endif
+
+	if (item.graphic != error)
+		template["graphic"] := item.graphic;
+	endif
+
 	foreach name in GetObjPropertyNames(item);
 		template.CProps.insert(name, GetObjProperty(item, name));
 		sleepms(2);

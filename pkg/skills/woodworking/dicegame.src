@@ -14,7 +14,7 @@ program diceroll(who, item)
 
 	EraseObjProperty(who, "IsMeditating");
 
-	if (TemHabilidade(who, "Prestidigitador"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PRESTIDIGITATOR))
 		var usarhab := YesNo(who, "Deseja usar sua habilidade de roubar no resultado?", "Sim.", "Nao.");
 		var segundoresultado := (RandomInt(6) + 1);
 		if (usarhab)
