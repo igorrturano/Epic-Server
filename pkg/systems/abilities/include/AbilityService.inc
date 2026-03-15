@@ -14,6 +14,8 @@
 
 include ":abilities:controllers/AbilityMonitor";
 include ":abilities:models/Ability";
+include ":message:model/Message";
+include ":attributes:attributes";
 
 function _ControllerResult(executed, singleUse)
 	var result := struct{};
@@ -24,19 +26,15 @@ endfunction
 
 function _ActivationError(errorMsg)
 	var result := struct{};
-	result.+error := 1;
+	result.+hasError := 1;
 	result.+errorMsg := errorMsg;
-	result.+isOnUse := 0;
-	result.+duration := 0;
-	result.+name := "";
 	return result;
 endfunction
 
-function _ActivationSuccess(isOnUse, duration, name)
+function _ActivationSuccess(duration, name)
 	var result := struct{};
-	result.+error := 0;
+	result.+hasError := 0;
 	result.+errorMsg := "";
-	result.+isOnUse := isOnUse;
 	result.+duration := duration;
 	result.+name := name;
 	return result;
@@ -48,7 +46,9 @@ function RunAbilityExecutor(params)
 	case (action)
 		"active":     return _RunControllerActive(params);
 		"passive":    return _RunControllerPassive(params);
+		"query_is_on_use": return _RunMonitorQueryIsOnUse(params);
 		"activate":   return _RunMonitorActivate(params);
+		"activate_async": return _RunMonitorActivateAsync(params);
 		"deactivate": return _RunMonitorDeactivate(params);
 	endcase
 
@@ -155,13 +155,6 @@ function _RunMonitorActivate(params)
 	who.ActivateAbility(ability, monitor);
 	ability.OnActivate(who);
 
-	// ON_USE abilities execute immediately and end
-	if (ability.GetActivationMoment() == ABILITY_ACTIVATION::ON_USE)
-		ability.ExecuteOn(who);
-		who.DeactivateAbility(ability);
-		return _ActivationSuccess(1, 0, "");
-	endif
-
 	var duration := monitor.GetDuration();
 	if (duration <= 0)
 		duration := ability.GetDurationFor(who);
@@ -170,7 +163,38 @@ function _RunMonitorActivate(params)
 		duration := 1;
 	endif
 
-	return _ActivationSuccess(0, duration, ability.GetName());
+	return _ActivationSuccess(duration, ability.GetName());
+endfunction
+
+// Query-only helper. This does not activate ability effects.
+function _RunMonitorQueryIsOnUse(params)
+	var abilityId := CInt(params[2]);
+
+	if (!ABILITY_CLASSES.exists(abilityId))
+		return 0;
+	endif
+
+	var ability := ABILITY_CLASSES[abilityId].new();
+	if (ability.errortext)
+		return 0;
+	endif
+
+	if (ability.GetActivationMoment() == ABILITY_ACTIVATION::ON_USE)
+		return 1;
+	endif
+
+	return 0;
+endfunction
+
+function _RunMonitorActivateAsync(params)
+	var result := _RunMonitorActivate(params);
+	if (result.hasError)
+		var who := params[3];
+		Message(result.errorMsg, Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return 0;
+	endif
+
+	return 1;
 endfunction
 
 function _RunMonitorDeactivate(params)

@@ -137,7 +137,6 @@ class Ability(IAbility)
 	endfunction
 
 	function ExecuteOn(this, attackInfo)
-		// Override in CombatAbility
 		return false;
 	endfunction
 
