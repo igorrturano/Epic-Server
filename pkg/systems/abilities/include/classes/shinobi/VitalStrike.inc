@@ -11,7 +11,7 @@ include ":timedscripts:timedScripts";
  *
  * Active (BeforeDamage - as ATTACKER, SingleUse):
  * - Paralyzes the target for Tactics/10 seconds
- * - Drains Tactics/2 stamina from the target
+ * - Drains Tactics/3 stamina from the target
  * - SingleUse: auto-deactivates after first hit
  */
 class VitalStrike(CombatAbility)
@@ -42,12 +42,12 @@ class VitalStrike(CombatAbility)
 			paralyze_duration := 1;
 		endif
 
-		var stamina_drain := CInt(tactics / 2);
+		var stamina_drain := CInt(tactics / 3);
 
 		// Visual effects
 		Message("*Atinge os pontos vitais*").SendEmote(who);
 		PlayObjectCenteredEffect(targ, 0x376A, 1, 16);
-		PlaySoundEffect(targ, 0x204);
+		PlaySoundEffect(targ, 0x511);
 
 		// Apply paralysis
 		TS_StartTimer(targ, "paralysis", paralyze_duration);

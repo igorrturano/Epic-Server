@@ -66,6 +66,7 @@ class PhantomStrike(CombatAbility)
 		foreach targ in targets
 			if (targ && !targ.dead)
 				// Teleport behind target
+				PlaySoundEffect(who, 0x513);
 				TeleportBehindTarget(who, targ);
 
 				// Guaranteed hit + attack
