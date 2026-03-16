@@ -140,7 +140,8 @@ function TryToAttack(byRef attackInfo)
 	endif
 
 	if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(RANGED) &&
-		!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable())
+		!attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable() &&
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 		if (!attackInfo.GetAttacker().IsNPC())
 			if (ConsumeAmmo(attackInfo)) // Consome munição
 				TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
@@ -214,12 +215,8 @@ function CheckAmmo(byRef attackInfo)
 		return true;
 	endif
 
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "arcane_bow"))
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MAGICBOW)
-			return true;
-		else
-			return false;
-		endif
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MAGICBOW)
+		return true;
 	endif
 
 	var ammoSerial := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("ammo");
@@ -270,8 +267,7 @@ function arcane_shooting(byRef attackInfo)
 		return 1;
 	endif
 
-	var arcane_bows := array{ 0xFA6D, 0XF997 };
-	if (!GetCooldown(attackInfo.GetAttacker().GetObjRef(), "arcane_bow") && !(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() in arcane_bows))
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 		return 1;
 	endif
 
@@ -280,16 +276,16 @@ function arcane_shooting(byRef attackInfo)
 		return 0;
 	endif
 	
-	var ammo_color := 0;
+	var ammo_effect := 0xf42;
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("fire_arrow"))
-		ammo_color := COLOR_ELEMENTAL_FIRE;
+		ammo_effect := FX_FIRE_ARROW;
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("energy_arrow"))
-		ammo_color := COLOR_ELEMENTAL_ENERGY;
+		ammo_effect := FX_ELETRIC_BOLT;
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("cold_arrow"))
-		ammo_color := COLOR_ELEMENTAL_ICE;
+		ammo_effect := 0xe3e5;
 	endif
 
-	PlayMovingEffectXYZHued(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), 0xf42, 10, 10, 0, ammo_color);
+	PlayMovingEffect(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), ammo_effect, 10);
 	return 1;
 endfunction
 

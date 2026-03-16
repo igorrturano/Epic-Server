@@ -72,7 +72,6 @@ function meditarPrincipal(params)
 	var full_mana := AP_GetVitalMaximumValue(who, MANA);
 	var current_mana := AP_GetVital(who, MANA);
 	var start_hp := AP_GetVital(who, "Hits");
-	var arcane_bows := array{ 0xFA6D, 0XF997 };
 	var amt := Cint(HandleSpellSkill(who) / 20);
 	var delay := 300;
 	if (GetObjPRoperty(who, "chardata").raca == ELFO)

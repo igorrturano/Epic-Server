@@ -27,6 +27,8 @@ function PlayAttackFX(byRef attackInfo)
 	if (hpPercent < 20)
 		MakeBleed(attackInfo.GetDefender().GetObjRef());
 	endif
+
+	PlayElementalHitFX(attackInfo);
 endfunction
 
 function PlayAttackSFX(byRef attackInfo)
@@ -75,7 +77,8 @@ function GetAttackerFX(byRef attackInfo)
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_SLASH, HUMAN_ANIM::ATTACK_1HAND_PIERCING, HUMAN_ANIM::ATTACK_1HAND_BLUNT};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_PUNCH};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW)
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW ||
+				attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MAGICBOW)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_BOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_BOW};
 		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
@@ -256,6 +259,18 @@ function GetWeaponSFX(byRef attackInfo)
 		weaponSFX.hit := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{};
+	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MAGICBOW)
+		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("fire_arrow"))
+			weaponSFX.hit := array{0x5D0};
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("energy_arrow"))
+			weaponSFX.hit := array{0x029};
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("cold_arrow"))
+			weaponSFX.hit := array{0x22B};
+		else
+			weaponSFX.hit := array{0x235};
+		endif
+		weaponSFX.miss := array{0x526};
+		weaponSFX.critical := array{};
 	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
@@ -365,4 +380,41 @@ function PlayShootingFX(byRef attackInfo)
 		attackInfo.GetDefender(),
 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAmmo().GetAnim()
 	);
+endfunction
+
+function PlayElementalHitFX(byRef attackInfo)
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
+		return;
+	endif
+
+	if (!attackInfo.Succeeded())
+		return;
+	endif
+
+	var defender := attackInfo.GetDefender().GetObjRef();
+	var attacker := attackInfo.GetAttacker().GetObjRef();
+	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+
+	var element := "";
+	if (weapon.GetProp("fire_arrow"))
+		element := "fire";
+	elseif (weapon.GetProp("cold_arrow"))
+		element := "cold";
+	elseif (weapon.GetProp("energy_arrow"))
+		element := "energy";
+	endif
+
+	// Third consecutive hit FX (Afinidade Elemental) — reads flag set by ElementalAffinity.inc
+	var triggered := attacker.GetProp("#elemental_affinity_triggered");
+	if (triggered)
+		attacker.EraseProp("#elemental_affinity_triggered");
+		if (triggered == "fire_arrow")
+			PlayObjectCenteredEffect(defender, FX_FIRE_PROTECT, 0, 30);
+		elseif (triggered == "cold_arrow")
+			PlayObjectCenteredEffect(defender, FX_SPEED_BEAM_MAGIC, 0, 30);
+		elseif (triggered == "energy_arrow")
+			PlayObjectCenteredEffect(defender, FX_RAIO_PROTECTOR, 0, 30);
+			PlayObjectCenteredEffect(defender, FX_RAIO_PEQUENO, 0, 30);
+		endif
+	endif
 endfunction

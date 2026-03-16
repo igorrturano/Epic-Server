@@ -22,7 +22,20 @@ program disguise(who, kit)
 	if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		SendSysMessageEx(who, "Voce nao sabe usar isto.", SSM_FAIL);
 		return 1;
-	elseif (GetObjProperty(who, "disfarce"))
+	endif
+
+	// Kit must be on the ground, not in backpack
+	if (kit.container)
+		SendSysMessageEx(who, "O kit de disfarce precisa estar no chao para ser usado.", SSM_FAIL);
+		return 1;
+	endif
+
+	if (Distance(who, kit) > 2)
+		SendSysMessageEx(who, "Voce esta muito longe do kit de disfarce.", SSM_FAIL);
+		return 1;
+	endif
+
+	if (GetObjProperty(who, "disfarce"))
 		SendSysMessageEx(who, "Caso deseje remover o disfarce digite .removerdisfarce", SSM_INFO);
 	endif
 

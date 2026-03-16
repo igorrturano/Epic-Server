@@ -27,7 +27,7 @@ class SupportCaster(CombatAbility)
 		var attacker := attackInfo.GetAttacker();
 		var who := attacker.GetObjRef();
 
-		if (!GetCooldown(who, "arcane_bow"))
+		if (attacker.GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 			return false;
 		endif
 
@@ -46,7 +46,7 @@ class SupportCaster(CombatAbility)
 		var attacker := attackInfo.GetAttacker();
 		var who := attacker.GetObjRef();
 
-		if (!GetCooldown(who, "arcane_bow"))
+		if (attacker.GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 			return false;
 		endif
 

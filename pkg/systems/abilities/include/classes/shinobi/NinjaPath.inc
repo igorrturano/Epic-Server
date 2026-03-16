@@ -105,6 +105,9 @@ class NinjaPath(CombatAbility)
 		Message($"*Marca {targ.name} com uma adaga*").SendEmote(who);
 		Message($"Alvo marcado por {mark_duration} segundos. Use novamente para teleportar.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
 
+		// Reset cooldown so player can use the ability again to teleport
+		EraseObjProperty(who, $"AbilityCooldown_{ABILITY_ID::NINJA_PATH}");
+
 		DebugMsg(
 			who,
 			DEBUG_HAB,

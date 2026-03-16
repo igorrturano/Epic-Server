@@ -1,5 +1,6 @@
 include "include/say";
 include ":tn:cooldown";
+include ":wrappers:Objects/Model/WeaponWrapper";
 use os;
 
 program meditar(who, text)
@@ -9,9 +10,7 @@ program meditar(who, text)
 		return;
 	endif
 
-	var arcane_bows := array{ 0xFA6D, 0XF997 };
-
-	if (!GetCooldown(who, "arcane_bow") && !(who.weapon.objtype in arcane_bows))
+	if (WeaponWrapper(who.weapon).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 		SendSysMessageEx(who, "Você precisa estar com seu arco elemental conjurado!", SSM_FAIL);
 		return;
 	endif

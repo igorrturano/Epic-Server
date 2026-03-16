@@ -496,39 +496,6 @@ function CalcDamageHabs(attacker, defender, damage)
         endif
     endif
 
-	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::ELEMENTAL_AFFINITY))
-		var damagemod := 0;
-		var arrow_effects := GetObjProperty(attacker, "#shooting_effects");
-		if (!arrow_effects)
-			// return 0; // No effects recorded, exit early
-		endif
-
-		var arrow_types := array{"fire_arrow", "cold_arrow", "energy_arrow"};
-		foreach arrow_type in arrow_types
-			if (arrow_effects[arrow_type] >= 3)
-				case (arrow_type)
-					"fire_arrow":
-						TS_StartTimer(defender, "queimar", 10);
-						break;
-
-					"cold_arrow":
-						TS_StartTimer(defender, "lentidao", 10);
-						break;
-
-					"energy_arrow":
-						damagemod += Cint(AP_GetSkill(attacker, ARCANA) / 20);
-						break;
-				endcase
-
-				arrow_effects[arrow_type] := 0;
-				SetObjProperty(attacker, "#shooting_effects", arrow_effects);
-			endif
-		endforeach
-
-		damage += damagemod;
-		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Ainalaith]: " + CInt(damagemod));
-	endif
-
 	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
         var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":*:npcdesc");

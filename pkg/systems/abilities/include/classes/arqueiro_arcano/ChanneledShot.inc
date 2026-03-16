@@ -29,7 +29,7 @@ class ChanneledShot(CombatAbility)
 	function CanActivate(this, mobile)
 		var who := mobile.GetObjRef();
 
-		if (!GetCooldown(who, "arcane_bow"))
+		if (mobile.GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 			Message("Voce precisa estar com seu arco elemental conjurado!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
@@ -52,16 +52,16 @@ class ChanneledShot(CombatAbility)
 		var isColdArrow   := GetObjProperty(weaponRef, "cold_arrow");
 		var isEnergyArrow := GetObjProperty(weaponRef, "energy_arrow");
 
-		var ammo_color;
+		var ammo_effect := 0xf42;
 		var sound;
 		if (isFireArrow)
-			ammo_color := COLOR_ELEMENTAL_FIRE;
+			ammo_effect := FX_FIRE_ARROW;
 			sound := 0x5cb;
 		elseif (isColdArrow)
-			ammo_color := COLOR_ELEMENTAL_ICE;
+			ammo_effect := 0xe3e5;
 			sound := 0x5c8;
 		elseif (isEnergyArrow)
-			ammo_color := COLOR_ELEMENTAL_ENERGY;
+			ammo_effect := FX_ELETRIC_BOLT;
 			sound := 0x666;
 		else
 			Message("Seu arco nao possui elemento ativo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
@@ -78,6 +78,8 @@ class ChanneledShot(CombatAbility)
 			return false;
 		endif
 
+		PlayObjectCenteredEffect(who, 0xDF4B, 7, 16);
+
 		if (!CheckLOSAt(who, targ.x, targ.y, targ.z))
 			Message("Voce nao tem linha de visao para o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
@@ -88,7 +90,7 @@ class ChanneledShot(CombatAbility)
 		var targetsInLine := _GetTargetsInLine(who, targ.x, targ.y);
 
 		foreach target in targetsInLine
-			PlayMovingEffectXYZHued(who, target, 0xf42, 10, 10, 0, ammo_color);
+			PlayMovingEffect(who, target, ammo_effect, 10);
 			sleepms(80);
 			who.attack_once(target);
 

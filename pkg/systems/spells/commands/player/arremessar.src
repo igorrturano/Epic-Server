@@ -132,7 +132,7 @@ program arremesso(params)
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH) && targ.isA(POLCLASS_ITEM))
 		var _ww := WeaponWrapper(targ);
 		if (!_ww.GetObjRef().errortext && _ww.GetCategory() == WEAPON_CATEGORY::DAGGER)
-			// No stamina cost for daggers with Ninja Path
+			AP_ConsumeVital(who, "Stamina", 5);
 		else
 			if (who.weapon.IsThrowingWeapon())
 				AP_ConsumeVital(who, "Stamina", 10);

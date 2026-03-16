@@ -419,6 +419,8 @@ function comprarHabilidade(who, item, nv:=-1)
 		elseif (escolhida_id == ABILITY_ID::TIRO_EM_MOVIMENTO)
 			GrantPrivilege(who, "firewhilemoving");
 			who.enable("firewhilemoving");
+		elseif (escolhida_id == ABILITY_ID::NINJA_PATH)
+			CreateItemInBackPack(who, 3592, 1);
 		endif
 		myhabs[nivel] := escolhida_id;
 		habs[nivel] := 2;
