@@ -42,9 +42,9 @@ class SmokeScreen(CombatAbility)
 		var smoke_expires := ReadGameClock() + duration;
 
 		// Animation
-		PerformAction(who, HUMAN_ANIM::CAST_AREA);
-		PlaySoundEffect(who, 0x228);
-
+		PerformAction(who, HUMAN_ANIM::ATTACK_2HAND_BLUNT);
+		PlaySoundEffect(who, 0x533);
+		Sleep(1);
 		// Set smoke protection on the ninja (only inside smoke area)
 		SetObjProperty(
 			who,

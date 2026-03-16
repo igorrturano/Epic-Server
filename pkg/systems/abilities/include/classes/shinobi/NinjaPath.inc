@@ -90,8 +90,9 @@ class NinjaPath(CombatAbility)
 		endif
 
 		// Visual: throw kunai effect
+		PlaySoundEffect(targ, 0x531);
+		sleep(1);
 		PlayMovingEffect(who, targ, 0xF99A, 10);
-		PlaySoundEffect(targ, 0x51C);
 
 		// Set mark with expiration
 		var mark_duration := CInt(tactics / 2);
@@ -198,7 +199,7 @@ class NinjaPath(CombatAbility)
 		endif
 
 		// Teleport behind target
-		PlaySoundEffect(who, 0x51C);
+		PlaySoundEffect(who, 0x511);
 		TeleportBehindTarget(who, targ);
 
 		// Guaranteed attack

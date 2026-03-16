@@ -39,7 +39,13 @@ class StealthRun(CombatAbility)
 			Message($"[STEALTH_RUN] Concealed por {duration}s (Sneak: {sneakSkill})", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
-		sleep(duration);
+		var expires := ReadGameClock() + duration;
+		while (ReadGameClock() < expires)
+			if (who.warmode)
+				break;
+			endif
+			sleepms(500);
+		endwhile
 
 		if (who.concealed)
 			who.concealed := 0;
