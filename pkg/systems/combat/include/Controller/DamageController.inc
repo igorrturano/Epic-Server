@@ -63,6 +63,7 @@ function CalculateAttackerDamage(byRef attackInfo)
 	CalculateWeaponDamage(attackInfo);
 	CalculateEntropyDamage(attackInfo);
 	CalculatePrimordialDamage(attackInfo);
+	CalculateArcaneBowDamage(attackInfo);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
@@ -287,6 +288,46 @@ function CalculatePrimordialDamage(byRef attackInfo)
 
 	attackInfo.SetDamage(damage);
 	return rawDamage;
+endfunction
+
+/**
+ * Applies elemental bonus damage for MagicBow (Arcane Archer).
+ * With ARCANE_MASTERY: arcana / 10. Without: arcana / 20.
+ * Injected into attackInfo so critical/resist/debug all work automatically.
+ */
+function CalculateArcaneBowDamage(byRef attackInfo)
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
+		return;
+	endif
+
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+	var bonus;
+
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::ARCANE_MASTERY))
+		bonus := CInt(arcana / 10);
+	else
+		bonus := CInt(arcana / 20);
+	endif
+
+	if (bonus < 1)
+		bonus := 1;
+	endif
+
+	var damage := attackInfo.GetDamage();
+	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+
+	if (weapon.GetProp("fire_arrow"))
+		damage.IncreaseFireRawDamage(bonus);
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus elemental do Arco Arcano (fire): +{bonus}"));
+	elseif (weapon.GetProp("cold_arrow"))
+		damage.IncreaseColdRawDamage(bonus);
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus elemental do Arco Arcano (cold): +{bonus}"));
+	elseif (weapon.GetProp("energy_arrow"))
+		damage.IncreaseEnergyRawDamage(bonus);
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus elemental do Arco Arcano (energy): +{bonus}"));
+	endif
+
+	attackInfo.SetDamage(damage);
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)

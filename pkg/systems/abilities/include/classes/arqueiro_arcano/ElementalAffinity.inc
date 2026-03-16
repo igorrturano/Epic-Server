@@ -87,6 +87,7 @@ class ElementalAffinity(CombatAbility)
 			endcase
 
 			arrow_effects[activeArrow] := 0;
+			SetObjProperty(who, "#elemental_affinity_triggered", activeArrow);
 
 			DebugMsg(
 				who,

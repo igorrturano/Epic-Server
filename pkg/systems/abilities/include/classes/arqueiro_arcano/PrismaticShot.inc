@@ -32,7 +32,7 @@ class PrismaticShot(CombatAbility)
 	function CanActivate(this, mobile)
 		var who := mobile.GetObjRef();
 
-		if (!GetCooldown(who, "arcane_bow"))
+		if (mobile.GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 			Message("Voce precisa estar com seu arco elemental conjurado!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
@@ -73,19 +73,19 @@ class PrismaticShot(CombatAbility)
 
 		// Shot 1 — Cold
 		PlaySoundEffect(who, 0x5c8);
-		PlayMovingEffectXYZHued(who, targ, 0xf42, 10, 10, 0, COLOR_ELEMENTAL_ICE);
+		PlayMovingEffect(who, targ, 0xe3e5, 10);
 		who.attack_once(targ);
 		sleep(1);
 
 		// Shot 2 — Energy
 		PlaySoundEffect(who, 0x666);
-		PlayMovingEffectXYZHued(who, targ, 0xf42, 10, 10, 0, COLOR_ELEMENTAL_ENERGY);
+		PlayMovingEffect(who, targ, FX_ELETRIC_BOLT, 10);
 		who.attack_once(targ);
 		sleep(1);
 
 		// Shot 3 — Fire + active element special effect
 		PlaySoundEffect(who, 0x5cb);
-		PlayMovingEffectXYZHued(who, targ, 0xf42, 10, 10, 0, COLOR_ELEMENTAL_FIRE);
+		PlayMovingEffect(who, targ, FX_FIRE_ARROW, 10);
 		who.attack_once(targ);
 
 		case (activeElement)

@@ -138,62 +138,6 @@ function WeaponHitScripts(byRef attackInfo)
 		endif
 	endif
 
-	var arcane_bows := array{ 0xFA6D, 0XF997 };
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "arcane_bow") && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() in arcane_bows)
-		var dmg := attackInfo.GetDamage().GetTotalBaseDamage() + CInt(attackInfo.GetDamage().GetTotalRawDamage() * (attackInfo.GetAttacker().GetSkill(ARCANA) / 100));
-		var arcane_damage;
-
-		if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::ARCANE_MASTERY))
-			arcane_damage := dmg * 1.0;
-		else
-			arcane_damage := dmg * 0.5;
-		endif
-
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("fire_arrow"))
-			foreach armor in (armorsInSlot)
-				start_script(
-					":combat:weaponHitScripts/FireHit",
-					array{
-						attackInfo.GetAttacker().GetObjRef(),
-						attackInfo.GetDefender().GetObjRef(),
-						attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-						armor.GetObjRef(),
-						attackInfo.GetDamage().GetFireBaseDamage(),
-						arcane_damage
-					}
-				);
-			endforeach
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("cold_arrow"))
-			foreach armor in (armorsInSlot)
-				start_script(
-					":combat:weaponHitScripts/IceHit",
-					array{
-						attackInfo.GetAttacker().GetObjRef(),
-						attackInfo.GetDefender().GetObjRef(),
-						attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-						armor.GetObjRef(),
-						attackInfo.GetDamage().GetColdBaseDamage(),
-						arcane_damage
-					}
-				);
-			endforeach
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("energy_arrow"))
-			foreach armor in (armorsInSlot)
-				start_script(
-					":combat:weaponHitScripts/LightningHit",
-					array{
-						attackInfo.GetAttacker().GetObjRef(),
-						attackInfo.GetDefender().GetObjRef(),
-						attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-						armor.GetObjRef(),
-						attackInfo.GetDamage().GetEnergyBaseDamage(),
-						arcane_damage
-					}
-				);
-			endforeach
-		endif
-	endif
-
 	if (attackInfo.GetAttacker().GetObjRef().GetProp("#golpesangrento")) // VIVISEC do Igor
 		// EraseObjProperty(attacker, "#golpesangrento");
 		var dmg := 1;
