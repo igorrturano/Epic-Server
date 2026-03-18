@@ -27,7 +27,7 @@ class NinjaPath(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
-		var tactics := CInt(mobile.GetSkill(TACTICS));
+		var sneak := CInt(mobile.GetSkill(SNEAK));
 
 		// Check if we already have a mark
 		var mark_serial := GetObjProperty(who, "#ninja_mark");
@@ -43,14 +43,14 @@ class NinjaPath(CombatAbility)
 			endif
 
 			// Teleport to marked target
-			return this._TeleportToMark(who, mark_serial, tactics);
+			return this._TeleportToMark(who, mark_serial, sneak);
 		else
 			// Mark a new target
-			return this._MarkTarget(who, tactics);
+			return this._MarkTarget(who, sneak);
 		endif
 	endfunction
 
-	function _MarkTarget(this, who, tactics)
+	function _MarkTarget(this, who, sneak)
 		// Validate player has a dagger
 		var weapon := who.weapon;
 		var hasDagger := 0;
@@ -95,7 +95,7 @@ class NinjaPath(CombatAbility)
 		PlayMovingEffect(who, targ, 0xF99A, 10);
 
 		// Set mark with expiration
-		var mark_duration := CInt(tactics / 2);
+		var mark_duration := CInt(sneak / 2);
 		if (mark_duration < 3)
 			mark_duration := 3;
 		endif
@@ -135,14 +135,13 @@ class NinjaPath(CombatAbility)
 		EraseObjProperty(defRef, "#substituicao_active");
 
 		var attacker := attackInfo.GetAttacker().GetObjRef();
-		var tactics := CInt(defender.GetSkill(TACTICS));
+		var sneak := CInt(defender.GetSkill(SNEAK));
 
 		// Stun the attacker
-		var stun_duration := CInt(tactics / 10);
+		var stun_duration := CInt(sneak / 10);
 		if (stun_duration < 2)
 			stun_duration := 2;
 		endif
-		TS_StartTimer(attacker, "paralysis", stun_duration);
 
 		// Create a log at the ninja's position
 		var log_item := CreateItemAtLocation(defRef.x, defRef.y, defRef.z, 0x1BDD, 1, defRef.realm);
@@ -159,18 +158,18 @@ class NinjaPath(CombatAbility)
 		PlayObjectCenteredEffect(defRef, 0x3728, 10, 10);
 
 		Message("*Substituicao!*").SendEmote(defRef);
-		Message($"Voce substituiu seu corpo por uma tora! Inimigo paralisado por {stun_duration}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(defRef);
+		Message($"Voce substituiu seu corpo por uma tora!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(defRef);
 
 		// Force miss by setting a very negative hit chance modifier
 		attackInfo.SetHitChanceMod(-1000);
 
 		DebugMsg(defRef, DEBUG_HAB,
-			Message($"[NINJA_PATH] Substituicao triggered! Stun: {stun_duration}s", Color(SYSTEM_COLOR::SUCCESS)));
+			Message($"[NINJA_PATH] Substituicao triggered!", Color(SYSTEM_COLOR::SUCCESS)));
 
 		return true;
 	endfunction
 
-	function _TeleportToMark(this, who, mark_serial, tactics)
+	function _TeleportToMark(this, who, mark_serial, sneak)
 		var targ := SystemFindObjectBySerial(mark_serial);
 
 		if (!targ || !targ.isA(POLCLASS_MOBILE))
@@ -185,7 +184,7 @@ class NinjaPath(CombatAbility)
 			return false;
 		endif
 
-		var range := CInt(tactics / 5);
+		var range := CInt(sneak / 5);
 		if (range < 5)
 			range := 5;
 		endif

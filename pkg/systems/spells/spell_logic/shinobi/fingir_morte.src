@@ -50,7 +50,7 @@ program SpellScript(params)
 			SendSysMessageEx(who, "Voce nao esta mais no local inicial.", SSM_FAIL);
 			break;
 		endif
-		sleep(1);
+		sleepms(500);
 	endwhile
 
 	who.concealed := 0;

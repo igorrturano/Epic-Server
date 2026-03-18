@@ -63,7 +63,9 @@ program core_chrDeath(params)
 
 	CheckForAutoRes(ghost, corpse);
 
-	MoveObjectToLocation(ghost, 4216, 1849, 1);
+	if (!GetObjProperty(ghost, "forjoumorte"))
+		MoveObjectToLocation(ghost, 4216, 1849, 1);
+	endif
 	Start_Script("deathscripts/players", params);
 
 	return 1;
