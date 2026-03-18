@@ -1,0 +1,75 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/client";
+include ":attributes:attributes";
+
+/**
+ * Irekawari no Jutsu - Spell 1108
+ * Swap positions with the targeted player/NPC.
+ */
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	SendSysMessageEx(who, "Escolha um alvo para trocar de lugar.", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!targ)
+		return 0;
+	endif
+
+	if (targ == who)
+		SendSysMessageEx(who, "Voce nao pode trocar de lugar consigo mesmo.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Voce so pode trocar de lugar com criaturas.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (targ.dead)
+		SendSysMessageEx(who, "O alvo esta morto.", SSM_FAIL);
+		return 0;
+	endif
+
+	var sneak := CInt(AP_GetSkill(who, SNEAK));
+	var maxRange := CInt(sneak / 10);
+	if (maxRange < 3)
+		maxRange := 3;
+	endif
+
+	if (Distance(who, targ) > maxRange)
+		SendSysMessageEx(who, "O alvo esta muito longe.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!CheckLineOfSight(who, targ))
+		SendSysMessageEx(who, "Voce precisa ter visao do alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Save positions
+	var whoX := who.x;
+	var whoY := who.y;
+	var whoZ := who.z;
+	var targX := targ.x;
+	var targY := targ.y;
+	var targZ := targ.z;
+
+	// Swap
+	PlaySoundEffect(who, 0x228);
+	PrintTextAbove(who, "*Irekawari no Jutsu!*");
+
+	MoveObjectToLocation(who, targX, targY, targZ, who.realm, MOVEOBJECT_FORCELOCATION);
+	MoveObjectToLocation(targ, whoX, whoY, whoZ, targ.realm, MOVEOBJECT_FORCELOCATION);
+
+	PlayObjectCenteredEffect(who, 0x3728, 10, 10);
+	PlayObjectCenteredEffect(targ, 0x3728, 10, 10);
+
+	SendSysMessageEx(who, $"Voce trocou de lugar com {targ.name}.", SSM_INFO);
+
+	return 1;
+endprogram
