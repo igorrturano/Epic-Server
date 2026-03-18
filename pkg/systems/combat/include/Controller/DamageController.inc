@@ -65,6 +65,7 @@ function CalculateAttackerDamage(byRef attackInfo)
 	CalculateEntropyDamage(attackInfo);
 	CalculatePrimordialDamage(attackInfo);
 	CalculateArcaneBowDamage(attackInfo);
+	CalculateElementalWeaponDamage(attackInfo);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
@@ -327,6 +328,40 @@ function CalculateArcaneBowDamage(byRef attackInfo)
 		damage.IncreaseEnergyRawDamage(bonus);
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus elemental do Arco Arcano (energy): +{bonus}"));
 	endif
+
+	attackInfo.SetDamage(damage);
+endfunction
+
+/**
+ * Applies elemental bonus damage for Sword Mage (Lâmina Arcana) enchanted weapons.
+ * Reads the #elementalweapon CProp set by Lamina Flamejante/Gelo/Elétrica spells,
+ * rolls the bonus dice, and injects the result into the Damage object.
+ */
+function CalculateElementalWeaponDamage(byRef attackInfo)
+	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+	var elemental := weapon.GetProp("#elementalweapon");
+
+	if (elemental == error)
+		return;
+	endif
+
+	var bonus := RandomDiceRoll(elemental.bonus);
+
+	if (bonus < 1)
+		return;
+	endif
+
+	var damage := attackInfo.GetDamage();
+
+	if (elemental.type == "Fire")
+		damage.IncreaseFireRawDamage(bonus);
+	elseif (elemental.type == "Cold")
+		damage.IncreaseColdRawDamage(bonus);
+	elseif (elemental.type == "Energy")
+		damage.IncreaseEnergyRawDamage(bonus);
+	endif
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus elemental da Lâmina Arcana ({elemental.type}): +{bonus}"));
 
 	attackInfo.SetDamage(damage);
 endfunction
