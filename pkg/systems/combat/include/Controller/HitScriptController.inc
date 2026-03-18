@@ -82,54 +82,30 @@ function WeaponHitScripts(byRef attackInfo)
 		var elemental := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("#elementalweapon");
 
 		if (elemental != error)
-			var dmg;
-			if (elemental.type == "Fire")
-				dmg := attackInfo.GetDamage().GetFireBaseDamage() + CInt(attackInfo.GetDamage().GetFireRawDamage() * (attackInfo.GetAttacker().GetSkill(ARCANA) / 100));
-				dmg := ApplyChargesCalculation(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), dmg, 1);
-				
-				foreach armor in (armorsInSlot)
-					start_script(
-						":combat:weaponHitScripts/FireHit",
-						array{
-							attackInfo.GetAttacker().GetObjRef(),
-							attackInfo.GetDefender().GetObjRef(),
-							attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-							armor.GetObjRef(),
-							attackInfo.GetDamage().GetFireBaseDamage(),
-							dmg * 2
-						}
-					);
-				endforeach
-			elseif (elemental.type == "Cold")
-				dmg := attackInfo.GetDamage().GetColdBaseDamage() + CInt(attackInfo.GetDamage().GetColdRawDamage() * (attackInfo.GetAttacker().GetSkill(ARCANA) / 100));
-				dmg := ApplyChargesCalculation(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), dmg, 1);
+			// Burst damage: Arcana/10 + INT/20 (hit script applies *0.5+1)
+			var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+			var dmg := CInt(arcana / 10) + CInt(attackInfo.GetAttacker().GetInt() / 20);
+			dmg := ApplyChargesCalculation(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), dmg, 1);
 
-				foreach armor in (armorsInSlot)
-					start_script(
-						":combat:weaponHitScripts/IceHit",
-						array{
-							attackInfo.GetAttacker().GetObjRef(),
-							attackInfo.GetDefender().GetObjRef(),
-							attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-							armor.GetObjRef(),
-							attackInfo.GetDamage().GetColdBaseDamage(),
-							dmg * 2
-						}
-					);
-				endforeach
+			var hitScript;
+			if (elemental.type == "Fire")
+				hitScript := ":combat:weaponHitScripts/FireHit";
+			elseif (elemental.type == "Cold")
+				hitScript := ":combat:weaponHitScripts/IceHit";
 			elseif (elemental.type == "Energy")
-				dmg := attackInfo.GetDamage().GetEnergyBaseDamage() + CInt(attackInfo.GetDamage().GetEnergyRawDamage() * (attackInfo.GetAttacker().GetSkill(ARCANA) / 100));
-				dmg := ApplyChargesCalculation(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), dmg, 1);
-				
+				hitScript := ":combat:weaponHitScripts/LightningHit";
+			endif
+
+			if (hitScript)
 				foreach armor in (armorsInSlot)
 					start_script(
-						":combat:weaponHitScripts/LightningHit",
+						hitScript,
 						array{
 							attackInfo.GetAttacker().GetObjRef(),
 							attackInfo.GetDefender().GetObjRef(),
 							attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
 							armor.GetObjRef(),
-							attackInfo.GetDamage().GetEnergyBaseDamage(),
+							0,
 							dmg * 2
 						}
 					);
