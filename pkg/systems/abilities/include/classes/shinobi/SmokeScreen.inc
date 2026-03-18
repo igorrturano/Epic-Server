@@ -27,14 +27,14 @@ class SmokeScreen(CombatAbility)
 			return false;
 		endif
 		var who := mobile.GetObjRef();
-		var tactics := CInt(mobile.GetSkill(TACTICS));
+		var sneak := CInt(mobile.GetSkill(SNEAK));
 
-		var area := CInt(tactics / 20);
+		var area := CInt(sneak / 20);
 		if (area < 1)
 			area := 1;
 		endif
 
-		var duration := CInt(tactics / 5);
+		var duration := CInt(sneak / 5);
 		if (duration < 1)
 			duration := 1;
 		endif

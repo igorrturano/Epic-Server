@@ -131,7 +131,7 @@ program arremesso(params)
 	// Ninja Path: daggers don't cost stamina
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH) && targ.isA(POLCLASS_ITEM))
 		var _ww := WeaponWrapper(targ);
-		if (!_ww.GetObjRef().errortext && _ww.GetCategory() == WEAPON_CATEGORY::DAGGER)
+		if (!_ww.GetObjRef().errortext && _ww.GetCategory() == WEAPON_CATEGORY::DAGGER || _ww.GetObjRef().objtype == 0x27AC) // Shuriken
 			AP_ConsumeVital(who, "Stamina", 5);
 		else
 			if (who.weapon.IsThrowingWeapon())

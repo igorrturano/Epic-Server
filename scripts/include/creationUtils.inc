@@ -759,24 +759,9 @@ function howManyPrimarias(chardata)
 endfunction
 
 function culturalTraitBonus(who, byref chardata)
+    var cfg := ReadConfigFile(":charactercreation:config/backgrounds");
     var culturalBg := chardata.background;
-    if (culturalBg == "Legionário")
-        return chardata.+bgBonus := PARRY;
-    elseif (culturalBg == "Prole Abissal")
-        return chardata.+bgBonus := AWARENESS;
-    elseif (culturalBg == "Armadilheiro")
-        return chardata.+bgBonus := MECHANICS;
-    elseif (culturalBg == "Cavalaria Nórdica")
-        return chardata.+bgBonus := HANDLEANIMAL;
-    elseif (culturalBg == "Guardião")
-        return chardata.+bgBonus := RANGED;
-    elseif (culturalBg == "Flagelo das Areias")
-        return chardata.+bgBonus := TWOHANDED;
-    elseif (culturalBg == "Filho do progresso")
-        return chardata.+bgBonus := ALCHEMY;
-    elseif (culturalBg == "Discípulo das Lâminas")
-        return chardata.+bgBonus := DUALWIELD;
-    endif
+    return chardata.+bgBonus := cfg[culturalBg].Bonus;
 endfunction
 
 function attributeGump(who, culture_pic, byref chardata)

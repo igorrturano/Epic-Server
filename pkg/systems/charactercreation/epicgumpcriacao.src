@@ -250,46 +250,33 @@ endfunction
 function backgroundSelection(who, culture_pic)
 	var btn_value;
 	var chardata := GetObjProperty(who, "chardata");
+	var cfg := ReadConfigFile(":charactercreation:config/backgrounds");
+
+	// Build array in same iteration order as backgroundGump()
+	var bg_list := array;
+	var all_backgrounds := BACKGROUNDS;
+	foreach bg in (all_backgrounds)
+		bg_list.append(bg);
+	endforeach
+
+	var cultural_bg := backgroundByCulture(who);
+	var cultural_btn := 200 + bg_list.size() + 1;
+
 	while (1)
 		var input := backgroundGump(who, culture_pic);
 		foreach key in (input.keys)
 			btn_value := key;
 		endforeach
-		if (btn_value == 201)
-			chardata.+background := BACKGROUNDS.DOMESTIC_WORK;
-			chardata.+bgBonus := DOMESTIC_WORK;
+
+		var idx := btn_value - 200;
+		if (btn_value == cultural_btn)
+			chardata.+background := cultural_bg;
+			chardata.+bgBonus := cfg[cultural_bg].Bonus;
 			break;
-		elseif (btn_value == 202)
-			chardata.+background := BACKGROUNDS.GATHERING;
-			chardata.+bgBonus := GATHERING;
-			break;
-		elseif (btn_value == 203)
-			chardata.+background := BACKGROUNDS.SNEAK;
-			chardata.+bgBonus := SNEAK;
-			break;
-		elseif (btn_value == 204)
-			chardata.+background := BACKGROUNDS.MEDICINE;
-			chardata.+bgBonus := MEDICINE;
-			break;
-		elseif (btn_value == 205)
-			chardata.+background := BACKGROUNDS.METAL_WORK;
-			chardata.+bgBonus := METALWORKING;
-			break;
-		elseif (btn_value == 206)
-			chardata.+background := BACKGROUNDS.PICK_POCKETING;
-			chardata.+bgBonus := PICKPOCKETING;
-			break;
-		elseif (btn_value == 207)
-			chardata.+background := BACKGROUNDS.SURVIVAL;
-			chardata.+bgBonus := SURVIVAL;
-			break;
-		elseif (btn_value == 208)
-			chardata.+background := BACKGROUNDS.WOOD_WORK;
-			chardata.+bgBonus := WOODWORKING;
-			break;
-		elseif (btn_value == 209)
-			chardata.+background := backgroundByCulture(who);
-			chardata.+bgBonus := culturalTraitBonus(who, chardata);
+		elseif (idx >= 1 && idx <= bg_list.size())
+			var selected_bg := bg_list[idx];
+			chardata.+background := selected_bg;
+			chardata.+bgBonus := cfg[selected_bg].Bonus;
 			break;
 		else
 			SendSysMessageEX(who, "Escolha seu histórico", SSM_FAIL);

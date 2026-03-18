@@ -47,6 +47,7 @@ function CalculateCombatDamage(byRef attackInfo)
 	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
 	ExecutePassiveAbilitiesAttackerBeforeDamage(attackInfo);
 	ExecutePassiveAbilitiesDefenderBeforeDamage(attackInfo);
+	CalculateFlankingDamage(attackInfo);
 	CalculateAttackerCriticalHit(attackInfo);
 	CalculateDefenderResist(attackInfo);
 endfunction
@@ -328,6 +329,25 @@ function CalculateArcaneBowDamage(byRef attackInfo)
 	endif
 
 	attackInfo.SetDamage(damage);
+endfunction
+
+function CalculateFlankingDamage(byRef attackInfo)
+	if (attackInfo.GetDirection() != ATTACK_DIRECTION::BACK)
+		return;
+	endif
+
+	var bonus := RandomDiceRoll("1d4");
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
+
+	if (posture == DAMAGE_TYPE::SLASH)
+		attackInfo.GetDamage().IncreaseSlashRawDamage(bonus);
+	elseif (posture == DAMAGE_TYPE::PIERCING)
+		attackInfo.GetDamage().IncreasePiercingRawDamage(bonus);
+	elseif (posture == DAMAGE_TYPE::BLUNT)
+		attackInfo.GetDamage().IncreaseBluntRawDamage(bonus);
+	endif
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de flanquear (costas): +{bonus}"));
 endfunction
 
 function CalculateDefenderResist(byRef attackInfo)

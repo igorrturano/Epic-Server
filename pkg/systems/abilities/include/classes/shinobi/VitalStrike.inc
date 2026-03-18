@@ -23,7 +23,7 @@ class VitalStrike(CombatAbility)
 	endfunction
 
 	function GetDurationFor(this, mobile)
-		var duration := CInt(mobile.GetSkill(TACTICS) / 10);
+		var duration := CInt(mobile.GetSkill(SNEAK) / 10);
 		if (duration < 2)
 			duration := 2;
 		endif
@@ -35,14 +35,14 @@ class VitalStrike(CombatAbility)
 		var defender := attackInfo.GetDefender();
 		var who := attacker.GetObjRef();
 		var targ := defender.GetObjRef();
-		var tactics := CInt(attacker.GetSkill(TACTICS));
+		var sneak := CInt(attacker.GetSkill(SNEAK));
 
-		var paralyze_duration := CInt(tactics / 10);
+		var paralyze_duration := CInt(sneak / 10);
 		if (paralyze_duration < 1)
 			paralyze_duration := 1;
 		endif
 
-		var stamina_drain := CInt(tactics / 3);
+		var stamina_drain := CInt(sneak / 3);
 
 		// Visual effects
 		Message("*Atinge os pontos vitais*").SendEmote(who);

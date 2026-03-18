@@ -3,12 +3,13 @@ use os;
 
 include "include/say";
 include "include/client";
-include "include/sysEvent";
+include "include/eventID";
 include ":attributes:attributes";
+include ":brainai:npcUtil";
 
 /**
- * Distracao (Mayowashi) - Spell 1104
- * Distract enemies attacking you, making them switch targets.
+ * Distracao (Mayowashi no Jutsu) - Spell 1104
+ * Creates a decoy NPC that taunts nearby enemies, giving the ninja time to escape.
  */
 program SpellScript(params)
 	var who := params[1];
@@ -20,31 +21,40 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	PlaySoundEffect(who, 0x228);
-	PrintTextAbove(who, "*Cria uma distracao!*");
+	var sneak := CInt(AP_GetSkill(who, SNEAK));
+	var duration := CInt(sneak / 10);
+	if (duration < 3)
+		duration := 3;
+	endif
 
-	var distracted := 0;
+	// Create decoy NPC
+	var decoy := CreateNpcFromTemplate(":brainai:globodeluz", who.x, who.y, who.z, 0, who.realm);
+	if (!decoy)
+		SendSysMessageEx(who, "A distracao falhou.", SSM_FAIL);
+		return 0;
+	endif
+
+	decoy.name := "Distracao";
+	SetObjProperty(decoy, "NoCorpse", 1);
+	SetObjProperty(decoy, "hitsmod", 500);
+
+	PlaySoundEffect(who, 0x228);
+	PrintTextAbove(who, "*Mayowashi no Jutsu!*");
+
+	// Taunt all hostiles to attack the decoy
 	foreach mob in hostiles
-		if (mob.opponent && mob.opponent.serial == who.serial)
-			// Find another target for this hostile
-			var others := ListHostiles(mob, 10, LH_FLAG_LOS);
-			foreach other in others
-				if (other.serial != who.serial)
-					var event := struct{ "type" := SYSEVENT_ENGAGED, "source" := other };
-					SendEvent(mob, event);
-					distracted := distracted + 1;
-					break;
-				endif
-			endforeach
-		endif
+		SetObjProperty(mob, "#ForcedTarget", decoy.serial);
+		var event := struct{ "type" := EVID_TAUNT, "source" := decoy };
+		SendEvent(mob, event);
 		sleepms(10);
 	endforeach
 
-	if (distracted > 0)
-		SendSysMessageEx(who, $"Voce distraiu {distracted} inimigo(s).", SSM_INFO);
-	else
-		SendSysMessageEx(who, "Nenhum inimigo foi distraido.", SSM_INFO);
-	endif
+	SendSysMessageEx(who, $"Voce distraiu {len(hostiles)} inimigo(s) por {duration}s.", SSM_INFO);
+
+	// Decoy lasts for duration then dies
+	sleep(duration);
+	SetObjProperty(decoy, "guardkill", 1);
+	ApplyDamage(decoy, 9999);
 
 	return 1;
 endprogram

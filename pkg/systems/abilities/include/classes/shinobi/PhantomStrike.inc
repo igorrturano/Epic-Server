@@ -23,19 +23,19 @@ class PhantomStrike(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
-		var tactics := CInt(mobile.GetSkill(TACTICS));
+		var sneak := CInt(mobile.GetSkill(SNEAK));
 
-		var maxTargets := CInt(tactics / 20);
+		var maxTargets := CInt(sneak / 20);
 		if (maxTargets < 1)
 			maxTargets := 1;
 		endif
 
-		var paralyze_duration := CInt(tactics / 10);
+		var paralyze_duration := CInt(sneak / 10);
 		if (paralyze_duration < 1)
 			paralyze_duration := 1;
 		endif
 
-		var range := CInt(tactics / 10);
+		var range := CInt(sneak / 10);
 		if (range < 5)
 			range := 5;
 		endif
