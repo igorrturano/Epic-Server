@@ -253,7 +253,7 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 });
                 
                 // Create the golem slightly offset
-                var golem := CreateNpcFromTemplate(":epicai:GolemMartelo_NPC", mobile.x+1, mobile.y+1, mobile.z, 0, mobile.realm);
+                var golem := CreateNpcFromTemplate(":epicai:PowerArmor", mobile.x+1, mobile.y+1, mobile.z, 0, mobile.realm);
 
                 SetObjProperty(golem, "golem_maker", mobile.serial);
                 SetObjProperty(mobile, "pilotando", 1);

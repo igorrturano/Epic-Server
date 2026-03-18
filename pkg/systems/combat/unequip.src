@@ -48,8 +48,15 @@ program unequipweapon(who, item)
 	endif
 
 	// Steam Legs: remove carry capacity bonus
-	if (item.objtype == 0xC62A)
+	if (item.objtype == 0xFFC2)
 		who.carrying_capacity_mod := who.carrying_capacity_mod - 50;
+	endif
+
+	// Steam Armor: remove dex penalty
+	var steam_dex_penalty := CInt(GetObjProperty(item, "#steam_dex_penalty"));
+	if (steam_dex_penalty > 0)
+		AP_ModifyStatMod(who, DEXTERITY, steam_dex_penalty);
+		EraseObjProperty(item, "#steam_dex_penalty");
 	endif
 
 	Run_Script_To_Completion(":equipsys:unequipitem", { who, item });

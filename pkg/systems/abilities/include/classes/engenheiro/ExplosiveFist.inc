@@ -14,11 +14,17 @@ class ExplosiveFist(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
-		var gloves := GetEquipmentByLayer(who, 0x07); // LAYER_GLOVES
+		var gloves := GetEquipmentByLayer(who, 0x02); // LAYER_HAND2
+
+		// Cleanup: if server restarted with fist active, restore color
+		if (gloves && gloves.objtype == 0xFFC1 && GetObjProperty(gloves, "original_color") != error && !GetObjProperty(who, "#explosive_fist"))
+			gloves.color := CInt(GetObjProperty(gloves, "original_color"));
+			EraseObjProperty(gloves, "original_color");
+		endif
 
 		if (GetObjProperty(who, "#explosive_fist"))
 			EraseObjProperty(who, "#explosive_fist");
-			if (gloves && gloves.objtype == 0xC629)
+			if (gloves && gloves.objtype == 0xFFC1)
 				gloves.color := Cint(GetObjProperty(gloves, "original_color"));
 				EraseObjProperty(gloves, "original_color");
 			endif
@@ -35,7 +41,7 @@ class ExplosiveFist(CombatAbility)
 				return false;
 			endif
 			SetObjProperty(who, "#explosive_fist", 1);
-			if (gloves && gloves.objtype == 0xC629)
+			if (gloves && gloves.objtype == 0xFFC1)
 				SetObjProperty(gloves, "original_color", gloves.color);
 				gloves.color := 0x489;
 			endif

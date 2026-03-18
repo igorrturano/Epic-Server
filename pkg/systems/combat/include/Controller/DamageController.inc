@@ -533,8 +533,8 @@ function ApplyCriticalDamage(byRef attackInfo)
 	elseif (attackInfo.GetAttacker().IsNPC())
 		weapon_scripts := npcCfg.GetPropertyValue("CriticalHitScripts");
 	endif
-
-	Message("*CRÍTICO*", Color(GENERAL_COLOR::RED)).SendAbove(attackInfo.GetAttacker().GetObjRef());
+	// PEnsar numa solucao pra mensagem subir no NPC sem o [Language] como prefixo
+	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
 	if (!attackInfo.GetAttacker().IsNpc())
 		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 4);
 	endif

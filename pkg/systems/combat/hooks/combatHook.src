@@ -109,7 +109,7 @@ function CanAttack(byRef attackInfo)
 		return false;
 	endif
 	
-	if (attackInfo.GetAttacker().GetObjRef().npctemplate == ":brainai:GolemMartelo")
+	if (attackInfo.GetAttacker().GetObjRef().npctemplate == ":epicai:PowerArmor")
 		return false;
 	endif
 
