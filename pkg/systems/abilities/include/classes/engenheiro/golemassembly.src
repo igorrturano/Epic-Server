@@ -93,7 +93,7 @@ program golemassembly(mobile)
 	who.frozen := 0;
 	PlaySoundEffect(who, SFX_SPELL_SUMMON_ELEMENTAL);
 
-	var template := ":brainai:GolemMartelo";
+	var template := ":epicai:PowerArmor";
 	var golem := CreateNpcFromTemplate(template, who.x, who.y, who.z, 0, who.realm);
 	golem.frozen := 1;
 	SetObjProperty(golem, "golem_maker", who.serial);

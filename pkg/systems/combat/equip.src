@@ -89,24 +89,39 @@ program equipweapon(who, item)
 		return 0;
 	endif
 
+	// Steam Gadgets: can only be installed via Ombreira Tatica
+	if (item.objtype == 0xFFC6 || item.objtype == 0xFFC7 || item.objtype == 0xFFC8)
+		if (GetObjProperty(item, "#steam_install"))
+			EraseObjProperty(item, "#steam_install");
+		else
+			SendSysMessageEx(who, "Acople seu mecanismo atraves da ombreira.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	// Steam Armor: Dwarves only
+	var steam_objtypes := array{ 0xFFC1, 0xFFC2, 0xFFC3, 0xFFC4, 0xFFC5, 0xFFC9 };
+	if (item.objtype in steam_objtypes)
+		var raca := GetObjProperty(who, "chardata").raca;
+		if (raca != "Anão")
+			SendSysMessageEx(who, "Essa armadura nao se encaixa em voce.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
 	// Steam Gloves: block gloves, weapons and shields
-	var steamGloves := GetEquipmentByLayer(who, LAYER_GLOVES);
-	if (steamGloves && steamGloves.objtype == 0xC629)
-		if (item.objtype != 0xC629)
+	var steamGloves := GetEquipmentByLayer(who, LAYER_HAND2);
+	if (steamGloves && steamGloves.objtype == 0xFFC1)
+		if (item.objtype != 0xFFC1)
 			if (item.tile_layer == LAYER_GLOVES || item.tile_layer == LAYER_HAND1 || item.tile_layer == LAYER_HAND2)
 				SendSysMessageEx(who, "Remova suas manoplas a vapor primeiro.", SSM_FAIL);
 				return 0;
 			endif
 		endif
-	elseif (item.objtype == 0xC629)
-		if (steamGloves)
-			SendSysMessageEx(who, "Remova suas luvas antes de equipar as manoplas a vapor.", SSM_FAIL);
-			return 0;
-		endif
+	elseif (item.objtype == 0xFFC1)
 		var rh := GetEquipmentByLayer(who, LAYER_HAND1);
-		var lh := GetEquipmentByLayer(who, LAYER_HAND2);
-		if (rh || lh)
-			SendSysMessageEx(who, "Remova sua arma ou escudo antes de equipar as manoplas a vapor.", SSM_FAIL);
+		if (rh)
+			SendSysMessageEx(who, "Remova sua arma antes de equipar as manoplas a vapor.", SSM_FAIL);
 			return 0;
 		endif
 	endif
@@ -190,8 +205,28 @@ program equipweapon(who, item)
 	endif
 
 	// Steam Legs: +50 carry capacity
-	if (item.objtype == 0xC62A)
+	if (item.objtype == 0xFFC2)
 		who.carrying_capacity_mod := who.carrying_capacity_mod + 50;
+	endif
+
+	// Steam Armor: Dex penalty (double heaviest normal armor)
+	if (item.objtype in steam_objtypes)
+		var dex_penalty := 0;
+		case (item.objtype)
+			0xFFC1: dex_penalty := 12; // Gloves
+			0xFFC2: dex_penalty := 14; // Legs
+			0xFFC3: dex_penalty := 14; // Arms
+			0xFFC4: dex_penalty := 12; // Helm
+			0xFFC5: dex_penalty := 20; // Chest
+			0xFFC9: dex_penalty := 12; // Gorget
+		endcase
+
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::EXPLOSIVE_FIST))
+			dex_penalty := CInt(dex_penalty / 2);
+		endif
+
+		SetObjProperty(item, "#steam_dex_penalty", dex_penalty);
+		AP_ModifyStatMod(who, DEXTERITY, -dex_penalty);
 	endif
 
 	return 1;

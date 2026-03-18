@@ -9,10 +9,10 @@ include ":timedScripts:timedScripts";
 include "include/utils";
 include "include/epicCombatUtils";
 
-const STEAMARMS_OBJTYPE := 0xC62B;
-const HANDCANNON_OBJTYPE := 0xC5FF;
-const HARPOON_OBJTYPE := 0xFFA9;
-const POWDERTRAP_OBJTYPE := 0x6202;
+const STEAMARMS_OBJTYPE := 0xFFC3;
+const HANDCANNON_OBJTYPE := 0xFFC7;
+const HARPOON_OBJTYPE := 0xFFC6;
+const POWDERTRAP_OBJTYPE := 0xFFC8;
 const CANNONBALL_OBJTYPE := 0x4224;
 const GUNPOWDER_OBJTYPE := 0x9092;
 
@@ -81,12 +81,6 @@ class TacticalShoulder(CombatAbility)
 endclass
 
 function _FireHandcannon(mobile, who)
-	// Consume ammo
-	var ball := FindObjtypeInContainer(who.backpack, CANNONBALL_OBJTYPE);
-	SubtractAmount(ball, 1);
-	var powder := FindObjtypeInContainer(who.backpack, GUNPOWDER_OBJTYPE);
-	SubtractAmount(powder, 5);
-
 	SetScriptController(who);
 	Message("Escolha o alvo do disparo.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 	var targ := TargetCoordinates(who);
@@ -105,6 +99,12 @@ function _FireHandcannon(mobile, who)
 		Message("Alvo muito distante! Alcance maximo: 8 tiles.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return false;
 	endif
+
+	// Consume ammo after validation
+	var ball := FindObjtypeInContainer(who.backpack, CANNONBALL_OBJTYPE);
+	SubtractAmount(ball, 1);
+	var powder := FindObjtypeInContainer(who.backpack, GUNPOWDER_OBJTYPE);
+	SubtractAmount(powder, 5);
 
 	// Cannon animation
 	Message("*Dispara o canhao de mao!*").SendEmote(who);
