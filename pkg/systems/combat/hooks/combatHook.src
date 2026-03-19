@@ -123,6 +123,14 @@ function CanAttack(byRef attackInfo)
 		return false;
 	endif
 
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::SPIRITUALBLADE)
+		var elemental := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("#elementalweapon");
+		if (elemental == error)
+			Message("Sua lâmina espiritual não consegue transpassar o oponente.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			return false;
+		endif
+	endif
+
 	return true;
 endfunction
 
