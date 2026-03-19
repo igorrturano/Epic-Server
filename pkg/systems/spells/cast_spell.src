@@ -117,6 +117,16 @@ function performPreCastingChecks(mobile, byref spellinfo)
 		spellinfo.mana += Cint(entropy / 4000);
 	endif
 
+	// Spiritual weapon prerequisite for Ahtaleloreth spells (except Absorver Arma 422)
+	if (spellinfo.School == "Ahtaleloreth" && CInt(spellinfo.id) != 422)
+		if (!GetCooldown(mobile, "spiritual_weapon"))
+			SendSysMessageEx(mobile, "Voce precisa invocar sua lamina espiritual primeiro.", SSM_FAIL);
+			mobile.frozen := 0;
+			EraseObjProperty(mobile, "#Casting");
+			return 0;
+		endif
+	endif
+
 	var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0";
 	var mw := MobileWrapper(mobile);
 	var tem_hab := mw.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)

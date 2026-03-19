@@ -72,23 +72,6 @@ function GetElementalType(who)
 
 endfunction
 
-function CriticoElemental(attacker, defender, armor, basedamage, rawdamage)
-
-	if (Swordmageweapon(attacker))
-		if (FundamentalAtiva(attacker))			
-			var type := GetElementalType(attacker);
-	
-			if (type == DMG_FIRE)
-				start_script(":combat:weaponHitScripts/FireHit", {attacker, defender, attacker.weapon, armor, basedamage, rawdamage*3});
-			elseif (type == DMG_COLD)
-				start_script(":combat:weaponHitScripts/IceHit", {attacker, defender, attacker.weapon, armor, basedamage, rawdamage*3});
-			elseif( type == DMG_ENERGY)
-				start_script(":combat:weaponHitScripts/LightningHit", {attacker, defender, attacker.weapon, armor, basedamage, rawdamage*3});
-			endif
-		endif
-	endif
-
-endfunction
 
 function releasegems(who, sword)
 

@@ -291,20 +291,6 @@ endfunction
  * [struct].divisor: Será o divisor de eficiência, pois consumimos mais do que tinhamos.
  * [struct].isSucesso: retorna true se reduzimos ou false caso a arma não esteja encantada.
 */
-function ConsumeArcaneCharges(who, quantidade)
-
-	var elementalWeapon := GetObjProperty(who.weapon, "#elementalweapon");
-	var retorno := ConsumeItemArcaneCharges(who.weapon, quantidade);
-
-	if (elementalWeapon != error && retorno.isSucesso)
-		if (elementalWeapon.serial != who.serial && !MobileWrapper(who).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
-			ApplyDamageHabElementalWeapon(0, who, elementalWeapon.bonus, elementalWeapon.type, retorno.divisor);
-			SendSysMessageEx(who, "O controle das energias arcanas da arma se torna caótico e acaba ferindo você.",
-							  SSM_INFO);
-		endif
-	endif
-	return retorno;
-endfunction
 
 /*
  * Purpose -
@@ -382,13 +368,6 @@ function LogOffElementalWeapon(who)
 	endforeach
 endfunction
 
-function ApplyDamageHabElementalWeapon(attacker, defender, damageDice, elementalType , divisor)
-	var dmgBonus := RandomDiceRoll(damageDice);
-	var totalDamage := CalculateDamage(defender, elementalType, dmgBonus);
-	totalDamage := CInt(Floor(totalDamage / divisor)); // Não tinha cargas suficiente, entao diminui a eficência do dano.
-	DisplayDamage(defender, totalDamage, attacker);
-	ApplyRawDamage(defender, totalDamage);
-endfunction
 
 function ApplyChargesCalculation(weapon, dmg, chargesAmount)
 	var cargasRetorno := ConsumeItemArcaneCharges(weapon, chargesAmount);

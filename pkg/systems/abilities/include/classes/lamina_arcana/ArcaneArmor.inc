@@ -67,17 +67,18 @@ class ArcaneArmor(CombatAbility)
         endif
 
         var weapon := who.weapon;
+        var elemental := GetObjProperty(weapon, "#elementalweapon");
         var status_duration := 5;
 
-        if (weapon.color == COLOR_ELEMENTAL_FIRE)
+        if (elemental.type == "Fire")
             TS_StartTimer(attacker, "queimar", status_duration);
             PlaySoundEffect(attacker, 0x5cb);
             PlayObjectCenteredEffectHuefx(attacker, 0x6d77, 7, 30, COLOR_ELEMENTAL_FIRE, 0);
-        elseif (weapon.color == COLOR_ELEMENTAL_ICE)
+        elseif (elemental.type == "Cold")
             TS_StartTimer(attacker, "congelamento", status_duration);
             PlaySoundEffect(attacker, 0x5c8);
             PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 30, COLOR_ELEMENTAL_ICE, 0);
-        elseif (weapon.color == COLOR_ELEMENTAL_ENERGY)
+        elseif (elemental.type == "Energy")
             TS_StartTimer(attacker, "lentidao", status_duration);
             PlaySoundEffect(attacker, 0x666);
             PlayObjectCenteredEffectHuefx(attacker, 0xcdaf, 7, 30, COLOR_ELEMENTAL_ENERGY, 0);
@@ -98,16 +99,21 @@ endclass
 
 function _GrantArmorBonus(who, duration)
     var weapon := who.weapon;
+    var elemental := GetObjProperty(weapon, "#elementalweapon");
     var effect_color := 0;
+    var element_type := "";
 
-    if (weapon.color == COLOR_ELEMENTAL_FIRE)
+    if (elemental.type == "Fire")
         effect_color := COLOR_ELEMENTAL_FIRE;
+        element_type := "Fire";
         who.resist_fire_mod := who.resist_fire_mod + 100;
-    elseif (weapon.color == COLOR_ELEMENTAL_ICE)
+    elseif (elemental.type == "Cold")
         effect_color := COLOR_ELEMENTAL_ICE;
+        element_type := "Cold";
         who.resist_cold_mod := who.resist_cold_mod + 100;
-    elseif (weapon.color == COLOR_ELEMENTAL_ENERGY)
+    elseif (elemental.type == "Energy")
         effect_color := COLOR_ELEMENTAL_ENERGY;
+        element_type := "Energy";
         who.resist_energy_mod := who.resist_energy_mod + 100;
     endif
 
@@ -115,15 +121,15 @@ function _GrantArmorBonus(who, duration)
         PlayObjectCenteredEffectHuefx(who, 0x5454, 6, duration * 20, effect_color, 0);
     endif
 
-    return effect_color;
+    return element_type;
 endfunction
 
-function _RevokeArmorBonus(who, effect_color)
-    if (effect_color == COLOR_ELEMENTAL_FIRE)
+function _RevokeArmorBonus(who, element_type)
+    if (element_type == "Fire")
         who.resist_fire_mod := who.resist_fire_mod - 100;
-    elseif (effect_color == COLOR_ELEMENTAL_ICE)
+    elseif (element_type == "Cold")
         who.resist_cold_mod := who.resist_cold_mod - 100;
-    elseif (effect_color == COLOR_ELEMENTAL_ENERGY)
+    elseif (element_type == "Energy")
         who.resist_energy_mod := who.resist_energy_mod - 100;
     endif
 endfunction
