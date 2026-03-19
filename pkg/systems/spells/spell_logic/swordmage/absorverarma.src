@@ -11,19 +11,16 @@ include ":IO:CFGFile";
 include ":attributes:attributes";
 include ":message:model/Message";
 
-// Absorver Arma - Absorbs a 1H weapon's essence (graphic + name) into the spiritual pool.
-// Pool capacity: Arcana / 30 (min 1). The spiritual blade uses these visuals when summoned.
+// Absorver Arma - Absorbs a weapon's essence (graphic + name) into the spiritual pool.
+// Pool capacity: 3 with Vinculo Elemental, 1 otherwise.
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
 	params := 0;
 
-	// Pool capacity check
-	var arcana := CInt(AP_GetSkill(who, ARCANA));
-	var maxSlots := CInt(arcana / 30);
-	if (maxSlots < 1)
-		maxSlots := 1;
-	endif
+	// Pool capacity: 3 for Vinculo Elemental, 1 for others
+	var mw := MobileWrapper(who);
+	var maxSlots := mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) ? 3 : 1;
 
 	var pool := GetObjProperty(who, "spiritualWeaponPool");
 	if (!pool)
@@ -54,10 +51,11 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	// Store graphic + name in pool
+	// Store graphic + name + objtype in pool
 	var weaponData := struct{};
 	weaponData.+graphic := targ.graphic;
 	weaponData.+name := targ.desc;
+	weaponData.+objtype := targ.objtype;
 	pool.Append(weaponData);
 	SetObjProperty(who, "spiritualWeaponPool", pool);
 

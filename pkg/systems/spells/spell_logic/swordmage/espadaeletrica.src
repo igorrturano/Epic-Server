@@ -16,9 +16,15 @@ program SpellScript(params)
 	var info := params[2];
 
 	var targ := who.weapon;
-	if (!targ)
-		Message("Cancelado", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-		return;
+	var summoned := 0;
+
+	// No weapon equipped (fist) — summon spiritual blade from pool
+	if (!targ || targ.objtype == FIST)
+		targ := SummonSpiritualBlade(who);
+		if (!targ)
+			return 0;
+		endif
+		summoned := 1;
 	endif
 
 	if (targ.isA(POLCLASS_WEAPON))
