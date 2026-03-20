@@ -53,7 +53,6 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 	xDesc := PegaDescComum(objeto,xDesc);
 
 	xDesc := PegaDescCargasRunicas(objeto,who,xDesc);
-
 	
 	if (isArma || isArmadura)
 		
