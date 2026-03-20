@@ -13,8 +13,6 @@ include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 include ":crafting:include/util/fabricacaoConstants";
 
- //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
-
 function InicializaSessaoComplexos(byref profissaoCraftProp, modoGm)
 	var sessao := struct;
 
@@ -356,6 +354,7 @@ endfunction
 
 function TrataGMEscolhaComponente(quem, byref sessao)
 	var modoGm := sessao.modoGm;
+
 	var encaixeEscolhido := modoGm.encaixeEscolhido;
 	var componenteEscolhido := modoGm.componenteEscolhido;
 	var qualidadeEscolhida := modoGm.qualidadeEscolhida;
@@ -729,10 +728,14 @@ function TratarEscolhaDropDown(quem, dropdown,byref sessao, configRecursos)
 
 	if(sessao.modoGm)
 		var retornoMapeado := MapeiaRetornoGump(
+											dropdown.PegaIdBottao(), 
 											dropdown.PegaGerenciador().PegaAdicionalIdDropDown(), 
 											3
 										);
 		var valorEscolhido := dropdown.PegaValorEscolhido();
+			Print("valorEscolhido escolhido: {}.".format(
+		valorEscolhido
+	));
 
 		case(retornoMapeado.indiceBotao)
 			1:
@@ -942,7 +945,7 @@ function CarregaDropDownGmMode(byref sessao,byref gerenciador)
 				var tipo := componenteEscolhido.principalMaterial;
 
 				var materiais := LISTA_TIPO_MATERIAL[UPPER(tipo)];
-				
+				Print("Tipo: {}. componenteEscolhido: {}".format(tipo, componenteEscolhido));
 				foreach material in materiais
 					DropDown::AdicionaOpcao(dropDown,material.name,_material_iter,material);
 				endforeach
