@@ -17,7 +17,7 @@ include "include/epicValidAction";
 function PegaPericiaPeloMaterial(tipoMaterial)
 	case (tipoMaterial)
 		"metal":
-		"gems":
+		"gem":
 			return "Metal_Working";
 		"cloth":
 		"ossos":
@@ -473,7 +473,7 @@ function IsMaterialTrabalhavel(quem, componente, chaveMaterial)
 	var pericia := PegaPericiaPeloMaterial(materialPrincipal);
 	
 	if(lower(materialPrincipal) == lower(tipoMaterial))
-		return materialDetalhe.Skill <= AP_GetSkill(quem,pericia);
+		return cDbl(materialDetalhe.Skill) <= AP_GetSkill(quem,pericia);
 	else
 		return tipoMaterial in (componente.selecione.materiais.keys());
 	endif

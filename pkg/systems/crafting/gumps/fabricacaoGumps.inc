@@ -1,6 +1,7 @@
 //Author: Deiro || Rafael Santos
 
 include ":gumps:/include/epicGumps";
+include ":crafting:include/util/fabricacaoConstants";
 include "include/string";
 
 const G_LARGURA := 800;
@@ -748,7 +749,7 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 	GFResizePic(gump, x, y, 1579, 120, 150);//5170, 1755,
 	GFTooltipText(gump,receita.textoDescItem);
 
-	if(receita.receitaClassificada.classe)
+	if(receita.receitaClassificada.classe != CLASSE_PADRAO)
 		GFGumpPic(gump,x + 30 ,y + 10,1592,coresClassesReceitas[cint(receita.receitaClassificada.classe)]); //
 	endif
 	var corPino := 0;
