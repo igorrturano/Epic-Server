@@ -731,7 +731,6 @@ function TratarEscolhaDropDown(quem, dropdown,byref sessao, configRecursos)
 
 	if(sessao.modoGm)
 		var retornoMapeado := MapeiaRetornoGump(
-											dropdown.PegaIdBottao(), 
 											dropdown.PegaGerenciador().PegaAdicionalIdDropDown(), 
 											3
 										);
@@ -797,7 +796,7 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 	if(componenteNecessario.isPrincipal)
 			esquemaSelecionado.cor := configRecursos[componenteEscolhido.material.chave].color;
 			esquemaSelecionado.material := componenteEscolhido.material.chave;
-			esquemaSelecionado.classe := classe ? classe: 1;
+			esquemaSelecionado.classe := classe ? classe: CLASSE_PADRAO;
 	endif
 
 	DefineTagQualidade(
@@ -1024,7 +1023,6 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 
 				endif
 
-
 				var chaveMat := GetObjProperty(item,PROPNAME_MATERIAL);
 				var material := configRecursos[chaveMat];
 				var tier := PegaComponenteTierDesc(GetObjProperty(item,PROPNAME_TIER_COMPONENTE));
@@ -1146,6 +1144,7 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 		propriedades.+valorPrincipal := valorEfeitos.valorPrincipal;
 		if(Find(Upper(caracteristica), "VAZIO",1) <= 0)
 			propriedades.valorPrincipal := propriedades.valorPrincipal + Cint(tierProduto.valor);
+		else
 		endif
 	endif
 	
@@ -1283,7 +1282,7 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 
 	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig, receitaClassificada.classe, quantidadeOpicionais);
 	receita.+sucessosNecessarios := PegaDescDuracaoFabricacao(duracao).sucessos;
-	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao);
+	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao, receitaClassificada.classe);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, duracao, definicaoFabricacao.lote);
 	receita.+dificuldade := PegaDificuldadeFrabicarObjeto(quem,objtype,nomeProfissao,nomePericia, receitaClassificada.classe);
 	receita.+objtype := objtype;
@@ -1397,9 +1396,29 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 	return componentes;
 endfunction
 
-function PegaMateriaisNecessarios(descritorFabricacao)
+function PegaMateriaisNecessarios(descritorFabricacao, classe)
 	var materials := GetConfigStringArray(descritorFabricacao, "materials");
-	return materials;
+	var arrayRetorno := array;
+	
+	foreach material in materials
+		Sleepms(2);
+		var splitMaterial := SplitWords(material);
+		var material, quantidade;
+
+		if(splitMaterial.size() > 2)
+			if(cint(splitMaterial[1]) != cint(classe)) continue; endif
+			material :=  splitMaterial[2];
+			quantidade := splitMaterial[3];
+		else
+			if(CLASSE_PADRAO != cint(classe)) continue; endif
+			material :=  splitMaterial[1];
+			quantidade := splitMaterial[2];
+		endif
+
+		arrayRetorno.append(material + " " + quantidade);
+	endforeach
+
+	return arrayRetorno;
 endfunction
 
 function DeveAparecerReceita(
