@@ -15,8 +15,6 @@ include ":crafting:include/util/fabricacaoConstants";
 
  //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
 
-var LISTA_TIPO_MATERIAL := PegaListaTipoMateriais();
-
 function InicializaSessaoComplexos(byref profissaoCraftProp, modoGm)
 	var sessao := struct;
 

@@ -2,6 +2,7 @@
 
 include ":gumps:/include/epicGumps";
 include "include/string";
+include "/include/epicConstants";
 
 const G_LARGURA := 800;
 const G_ALTURA := 600;
@@ -407,7 +408,7 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	return gump;
 endfunction
 
-function DefinirMateriais(byref gump,x,y,material, materialPrincipal, quantidade,byref sessao,indice)
+function DefinirMateriais(byref gump,x,y,material, materialPrincipal, infoOpcao,byref sessao,indice)
 	if(indice < 1 || indice > 10 )
 		return 0;
 	endif
@@ -419,13 +420,17 @@ function DefinirMateriais(byref gump,x,y,material, materialPrincipal, quantidade
 	var isPrincipal := material == materialPrincipal;
 	var corTexto := isPrincipal ? "<basefont size=55 color=#FFD336>" : "<basefont size=55 color=#B7B7B8>";
 	var corValor := "<basefont size=55 color=#83C542>";
+	var textoPossiveis := "" ;
+	
+	foreach possivel in (infoOpcao.possiveis)
+		Sleepms(2);
+		textoPossiveis += "<br>{}{}".format(WHITE,possivel.name);
+	endforeach
 	
 	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, dropDownAtual.PegaIdBottao());
-	GFHTMLArea(gump,x + 25,y,300,20,"{}{}".format(corTexto,quantidade));
+	GFHTMLArea(gump,x + 25,y,300,20,"{}{}".format(corTexto,infoOpcao.quantidade));
 	GFHTMLArea(gump,x + 50,y,300,20,"{}{}: {}{}".format(corTexto,material,corValor,nome));
-	if(isPrincipal)
-		GFTooltipText(gump,"Material principal do componente.");
-	endif
+	GFTooltipText(gump,"{}Possíveis: {}".format(AMARELO_CLARO,textoPossiveis));
 endfunction
 
 function MontaTratamentoGump(x, y, byref sessao)
