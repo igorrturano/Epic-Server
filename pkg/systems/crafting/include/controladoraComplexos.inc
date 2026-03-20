@@ -733,9 +733,6 @@ function TratarEscolhaDropDown(quem, dropdown,byref sessao, configRecursos)
 											3
 										);
 		var valorEscolhido := dropdown.PegaValorEscolhido();
-			Print("valorEscolhido escolhido: {}.".format(
-		valorEscolhido
-	));
 
 		case(retornoMapeado.indiceBotao)
 			1:
@@ -945,7 +942,6 @@ function CarregaDropDownGmMode(byref sessao,byref gerenciador)
 				var tipo := componenteEscolhido.principalMaterial;
 
 				var materiais := LISTA_TIPO_MATERIAL[UPPER(tipo)];
-				Print("Tipo: {}. componenteEscolhido: {}".format(tipo, componenteEscolhido));
 				foreach material in materiais
 					DropDown::AdicionaOpcao(dropDown,material.name,_material_iter,material);
 				endforeach
