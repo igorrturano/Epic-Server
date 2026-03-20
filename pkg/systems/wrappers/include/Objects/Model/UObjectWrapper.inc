@@ -32,9 +32,10 @@ class UObjectWrapper(IUObjectWrapper)
 			this.Color := object.color;
 			this.Weight := object.weight;
 		elseif (TypeOfInt(object) == OT_CONFIGELEMREF)
-			this.Template := object;
+			this.ObjType := GetObjtypeByName(object.name);
 			this.CProps := object.CProps;
 		elseif (object.isVendorTemplate)
+			this.Template := GetObjtypeByName(object.name);
 			this.ObjType := object.objtype;
 			this.Name := object.name;
 			this.Graphic := object.graphic;
