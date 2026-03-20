@@ -14,13 +14,23 @@ include ":keys:key";
 include ":crafting:/include/caracteristicasFabricacao";
 include ":crafting:/include/util/fabricacaoConstants";
 include "include/epicUtils";
+
+var LISTA_TIPO_MATERIAL := PegaListaTipoMateriais();
 var itemsConfig := ReadConfigFile(":*:itemdesc");
 
 function ClassificaNomeReceita(nomeReceita)
 	var dividido := SplitWords(nomeReceita,"-");
+	var classe := CLASSE_PADRAO;
+
+	if(TypeOfInt(dividido[2]) == OT_ERROR || TypeOfInt(dividido[2]) == OT_UNINIT || TypeOfInt(dividido[2]) == OT_UNKNOWN) 
+		classe := CLASSE_PADRAO;
+	else
+		classe := dividido[2];
+	endif
+
 	return dictionary {
 		"nome" -> dividido[1],
-		"classe" -> dividido[2]
+		"classe" -> classe
 	};
 endfunction
 
@@ -306,8 +316,15 @@ function ResolveEfeitoCaracteristica(valorEfeito)
 endfunction
 
 function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
-	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
 	var retornoEfeitos := struct;
+	if(FIND(UPPER(caracteristica),"VAZIO", 1) > 0)
+		retornoEfeitos.+valorPrincipal := 0;
+		retornoEfeitos.+valorLiteralPrincipal := 0;
+		retornoEfeitos.+valorTotalSubefeitos := 0;
+		return retornoEfeitos;
+	endif
+	
+	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
 	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
 	var efeitosMaterialString := efeitosMaterial[caracteristica];
 	var subEfeitosMaterial;
