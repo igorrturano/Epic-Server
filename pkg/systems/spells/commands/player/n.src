@@ -61,7 +61,7 @@ function ShinobiSpellsGump(who, max_circle)
 		var spell_elem := FindConfigElem(cfg, spell_id);
 		var circle := CInt(spell_elem.Circle);
 
-		if (circle <= max_circle)
+		if (circle >= 1 && circle <= max_circle)
 			spell_list.append(spell_id);
 		endif
 		sleepms(2);
@@ -90,62 +90,40 @@ function ShinobiSpellsGump(who, max_circle)
 	GFGumpPic(gump, 41, 84, 1469);
 
 	var y := 90;
-	var current_circle := -1;
 
-	foreach spell_id in spell_list
-		var spell := FindConfigElem(cfg, spell_id);
-		var circle := CInt(spell.Circle);
+	for circle_level := 1 to max_circle
+		var printed_circle_header := 0;
 
-		if (circle != current_circle && ((circle > 0) || (current_circle == -1 && circle == 0)))
-			current_circle := circle;
-			var circle_name := "Ninjutsu Basico";
-			if (circle > 0)
-				circle_name := "Ninjutsu Nivel " + circle;
+		foreach spell_id in spell_list
+			var spell := FindConfigElem(cfg, spell_id);
+			var circle := CInt(spell.Circle);
+
+			if (circle == circle_level)
+				if (!printed_circle_header)
+					printed_circle_header := 1;
+					var circle_name := "Ninjutsu Nivel " + circle_level;
+
+					GFHTMLArea(gump, 52, y, 192, 24, "<BASEFONT color=#4444FF><B>" + circle_name + "</B>", 1, 0);
+					y += 26;
+				endif
+
+				var spellname := spell.name;
+				var desc := spell.desc;
+
+				GFAddButton(gump, 30, y + 2, 2117, 2118, GF_CLOSE_BTN, spell_id);
+				GFHTMLArea(gump, 52, y, 192, 24, "<BASEFONT color=#FFFFFF>" + spellname, 1, 0);
+				GFToolTipText(gump, "<BASEFONT color=#4444FF>" + spellname + "<br><BASEFONT color=#FFFFFF>"
+							   + desc);
+
+				y += 26;
+				sleepms(2);
 			endif
-
-			GFHTMLArea(gump, 52, y, 192, 24, "<BASEFONT color=#4444FF><B>" + circle_name + "</B>", 1, 0);
-			y += 26;
-		endif
-
-		var spellname := spell.name;
-		var desc := spell.desc;
-
-		GFAddButton(gump, 30, y + 2, 2117, 2118, GF_CLOSE_BTN, spell_id);
-		GFHTMLArea(gump, 52, y, 192, 24, "<BASEFONT color=#FFFFFF>" + spellname, 1, 0);
-		GFToolTipText(gump, "<BASEFONT color=#4444FF>" + spellname + "<br><BASEFONT color=#FFFFFF>"
-					   + desc);
-
-		y += 26;
-		sleepms(2);
-	endforeach
+		endforeach
+	endfor
 
 	var input := GFSendGump(who, gump);
 	if (input[0] > 0)
-		var elem := FindConfigElem(cfg, input[0]);
-		if (!elem)
-			SendSysMessageEx(who, "Erro ao encontrar informacoes da tecnica.", SSM_FAIL);
-			return 0;
-		endif
-
-		var spellinfo := struct{ "id" := elem.SpellId,
-						 		"name" := elem.Name,
-						 		"desc" := elem.Desc,
-						 		"alvo" := elem.Target,
-						 		"powerwords" := elem.PowerWords,
-						 		"script" := elem.SpellScript,
-						 		"type" := elem.Type,
-						 		"circle" := CInt(elem.Circle),
-						 		"difficulty" := CInt(elem.Difficulty),
-						 		"mana" := CInt(elem.Mana),
-						 		"delay" := CInt(elem.Delay),
-						 		"cycles" := CInt(elem.Cycles),
-						 		"range" := elem.Range };
-
-		var script := Start_Script(":spells:cast_spell", { who, spellinfo });
-		if (script.errortext)
-			SendSysMessage(who, "Erro ao iniciar a tecnica -> " + script.errortext);
-			return 0;
-		endif
+		return ExecuteSpellById(who, input[0], SPELL_TYPE_SHINOBI);
 	endif
 
 	return 1;
