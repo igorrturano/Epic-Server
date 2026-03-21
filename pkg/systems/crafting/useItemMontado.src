@@ -42,13 +42,13 @@ program useItemMontado(quem, item)
 		endif
 	endforeach
 	
-	Message("Selecione uma estação válida [{}]".format(Trim(stringEstacoes))).SetColor(SSM_INFO).SendSys(quem);
+	Message("Selecione uma estação válida [{}]".format(Trim(stringEstacoes))).SendSys(quem);
 	var alvo := TargetCoordinates(quem);
 	if (alvo)
-		Message("Processo de Tratamento iniciado!".format(Trim(stringEstacoes))).SetColor(SSM_INFO).SendSys(quem);
+		Message("Processo de Tratamento iniciado!".format(Trim(stringEstacoes))).SendSys(quem);
 		Start_Script(":crafting:gerenteTratamentoProduto", array{ quem, item, alvo });
 	else
-		Message("Alvo cancelado.".format(Trim(stringEstacoes))).SetColor(SSM_FAIL).SendSys(quem);
+		Message("Alvo cancelado.".format(Trim(stringEstacoes))).SendSys(quem);
 	endif
 	return;
 endprogram

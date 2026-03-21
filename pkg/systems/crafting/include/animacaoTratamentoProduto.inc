@@ -250,7 +250,8 @@ endfunction
 
 function PegaEstacaoFerreiro (quem, bigorna)
 
-	if(bigorna.objtype != UOBJ_ANVIL1 || bigorna.objtype != UOBJ_ANVIL2)
+	Print(bigorna.objtype);
+	if(!(bigorna.objtype  in array{UOBJ_ANVIL1,UOBJ_ANVIL2}))
 		SendSysMessageEX(quem,"A estação escolhida não é uma bigorna.", SSM_FAIL);
 		return 0;
 	endif
