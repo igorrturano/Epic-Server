@@ -430,9 +430,10 @@ endfunction
 
 function isEstacaoValida(quem, estacaoAlvo, profissao)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
-	var estacoesValidas := GetConfigStringArray(profissaoConfig[profissao], "EstacoesValidas");
+	var estacoesValidas := GetConfigString(profissaoConfig[profissao], "EstacoesValidas");
+	estacoesValidas := SplitWords(estacoesValidas);
 
-	if(cstr(estacaoAlvo.item.objtype) in estacoesValidas ||  "superficie" in estacoesValidas )
+	if(cstr(Lower(hex(estacaoAlvo.item.objtype))) in estacoesValidas ||  "superficie" in estacoesValidas )
 		var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
 		
 		if(ocupanteSerial)
