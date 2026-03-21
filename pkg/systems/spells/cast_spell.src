@@ -132,6 +132,7 @@ function performPreCastingChecks(mobile, byref spellinfo)
 	var mw := MobileWrapper(mobile);
 	var tem_hab := mw.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
 		|| mw.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO) 
+		|| mw.HasAbility(ABILITY_ID::NINJA_PATH)
 		|| mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) 
 		|| mw.HasAbility(ABILITY_ID::SOUL_HARVEST) 
 		|| mw.HasAbility(ABILITY_ID::CONEXAO_DIVINA) 
