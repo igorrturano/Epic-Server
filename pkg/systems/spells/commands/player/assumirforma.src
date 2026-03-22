@@ -102,13 +102,10 @@ function PerformTransformation(who, form)
 	// Always mute transformed players by default
 	who.squelch(-1);
 
-	// Check if player prepared the Wild Speech spell
-	if (GetObjProperty(who, "wildspeech_preparada"))
+	// Wild Speech active timer allows speech while transformed
+	var wildspeech_duration := TS_GetTimerDuration(who, "wildspeech");
+	if (wildspeech_duration != error && wildspeech_duration > 0)
 		who.squelch(0);
-		var base_difficulty := CINT(AP_GetSkill(who, THEOLOGY) * 0.8);
-		start_script(":spells:maintenance/wildspeechmaintenance", array{who, base_difficulty});
-		SetObjProperty(who, "wildspeech_ativa", 1);
-		EraseObjProperty(who, "wildspeech_preparada");
 	endif
 
 	// Reveal in animal form with green nature sparkles

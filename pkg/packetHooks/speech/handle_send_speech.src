@@ -90,15 +90,15 @@ function CheckSaying(byRef messageData)
 endfunction
 
 function CanSpeak(byRef messageData)
-	if (messageData.source.GetProperty("metamorfose") && !messageData.source.HasAbility(ABILITY_ID::ELO_NATURAL))
-		if (messageData.type == MESSAGE_TYPE::NORMAL)
-			return false;
-		endif
-	endif
+	// if (messageData.source.GetProperty("metamorfose") && !messageData.source.HasAbility(ABILITY_ID::ELO_NATURAL))
+	// 	if (messageData.type == MESSAGE_TYPE::NORMAL)
+	// 		return false;
+	// 	endif
+	// endif
 
-	if (messageData.source.GetProperty("mudo"))
-		return false;
-	endif
+	// if (messageData.source.GetProperty("mudo"))
+	// 	return false;
+	// endif
 
 	if (messageData.source.GetProperty("#sleep"))
 		return false;

@@ -408,6 +408,7 @@ enum class ABILITY_ID
 	// CAMINHO - Caster Core (3400-3403)
 	QUIET_MIND := 3400,
 	SUPPORT_CASTER := 3401,
+	FOCO_ARCANO := 3402,
 	SPELL_RANGE := 3403,
 
 	// CAMINHO - Elemental Specializations (3410-3413)

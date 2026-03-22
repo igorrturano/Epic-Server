@@ -109,9 +109,10 @@ function CanAttack(byRef attackInfo)
 		return false;
 	endif
 	
-	if (attackInfo.GetAttacker().GetObjRef().npctemplate == ":epicai:PowerArmor")
-		return false;
-	endif
+	// if (attackInfo.GetAttacker().GetProperty("pilotando"))
+	// 	Message("Utilize a habilidade Montagem do Golem para atacar enquanto pilota.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+	// 	return false;
+	// endif
 
 	if (CInt(attackInfo.GetAttacker().GetObjRef().GetProp("charmed_by")) == attackInfo.GetDefender().GetSerial())
 		Message("*hipnotizado*").SendAbove(attackInfo.GetAttacker().GetObjRef());
@@ -279,7 +280,12 @@ function arcane_shooting(byRef attackInfo)
 		return 1;
 	endif
 
-	if (!DamageMANA(attackInfo.GetAttacker().GetObjRef(), 4))
+	var manaCost := 4;
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::FOCO_ARCANO))
+		manaCost := manaCost - CInt(manaCost / 5);
+	endif
+
+	if (!DamageMANA(attackInfo.GetAttacker().GetObjRef(), manaCost))
 		Message("Você está sem mana!", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
 		return 0;
 	endif

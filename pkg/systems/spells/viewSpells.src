@@ -39,7 +39,7 @@ program clericPowerWords(who)
 		var available_slots := cleric_slots - slots_used;
 		var canceled := 0;
 		while (!canceled)
-			var input := CreateClericGump(who, shaman_list, available_slots);
+			var input := CreateClericGump(who, shaman_list, available_slots, slots_used, cleric_slots);
 
 			if (!input[0])
 				canceled := 1;
@@ -89,7 +89,7 @@ program clericPowerWords(who)
 		var available_slots := cleric_slots - slots_used;
 		var canceled := 0;
 		while (!canceled)
-			var input := CreateClericGump(who, priest_list, available_slots);
+			var input := CreateClericGump(who, priest_list, available_slots, slots_used, cleric_slots);
 
 			if (!input[0])
 				canceled := 1;
@@ -139,7 +139,7 @@ program clericPowerWords(who)
 		var available_slots := cleric_slots - slots_used;
 		var canceled := 0;
 		while (!canceled)
-			var input := CreateClericGump(who, druid_list, available_slots);
+			var input := CreateClericGump(who, druid_list, available_slots, slots_used, cleric_slots);
 
 			if (!input[0])
 				canceled := 1;
@@ -177,7 +177,7 @@ program clericPowerWords(who)
 	endif
 endprogram
 
-function CreateClericGump(who, shaman_list, available_slots)
+function CreateClericGump(who, shaman_list, available_slots, slots_used, total_slots)
 	// Get saved gump position
 	var gump_x := GetObjProperty(who, "#spell_gump_x");
 	var gump_y := GetObjProperty(who, "#spell_gump_y");
@@ -206,6 +206,7 @@ function CreateClericGump(who, shaman_list, available_slots)
 	// // GFResizePic(gump, 36, 84, 1469, 130, 2); // barra branca
 	GFGumpPic(gump, 31, 68, 9773, 0); // seta p baixo
 	GFTextLine(gump, 56, 65, 1445, "Rituais Memorizados");
+	GFTextLine(gump, 56, 45, 1445, "Slots: {}/{}".format(slots_used, total_slots));
 
 	// for i := 1 to available_slots
 	//      shaman_list.append(struct{});

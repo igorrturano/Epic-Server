@@ -16,6 +16,7 @@ include "include/say";
 include ":charactercreation:habilidades";
 include ":abilities:models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
 include ":spells:spellbooks";
 include ":spells:include/swordmage";
 include ":spells:SpellRegistry";
@@ -176,7 +177,7 @@ function performPreCastingChecks(mobile, byref spellinfo)
 endfunction
 
 function consumeResourcesForSpell(mobile, spellinfo, scroll)
-	var mana_cost := spellinfo.mana;
+	var mana_cost := _ApplyFocoArcanoManaDiscount(mobile, spellinfo.mana);
 	var current_mana := AP_GetVital(mobile, MANA);
 	var current_stamina := AP_GetVital(mobile, STAMINA);
 	if (GetObjProperty(mobile, "#free_cast"))
@@ -239,6 +240,35 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
 	endif
 
 	return 1;
+endfunction
+
+function _ApplyFocoArcanoManaDiscount(mobile, manaCost)
+	if (manaCost <= 0)
+		return manaCost;
+	endif
+
+	if (!_HasFocoArcanoManaDiscount(mobile))
+		return manaCost;
+	endif
+
+	return manaCost - CInt(manaCost / 5);
+endfunction
+
+function _HasFocoArcanoManaDiscount(mobile)
+	var mobileWrapper := MobileWrapper(mobile);
+	if (!mobileWrapper.HasAbility(ABILITY_ID::FOCO_ARCANO))
+		return false;
+	endif
+
+	var weapon := mobileWrapper.GetEquipBySlot(WEAPON);
+	if (!weapon || weapon is @Exception)
+		return false;
+	endif
+
+	var weaponCategory := weapon.GetCategory();
+	return weaponCategory == WEAPON_CATEGORY::STAFF ||
+	       weaponCategory == WEAPON_CATEGORY::SPIRITUALBLADE ||
+	       weaponCategory == WEAPON_CATEGORY::MAGICBOW;
 endfunction
 
 function performCastingProcess(mobile, spellinfo)
