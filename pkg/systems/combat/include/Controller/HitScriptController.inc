@@ -5,8 +5,24 @@ include ":IO:CFGFile";
 // include ":message:Model/Message";
 include "include/epicMageryUtils";
 
+function _NormalizeArmorsForWeaponHit(armorsInSlot)
+	if (armorsInSlot == error)
+		return array{uninit};
+	endif
+
+	return armorsInSlot;
+endfunction
+
+function _ArmorObjRefOrUninit(armor)
+	if (!armor)
+		return uninit;
+	endif
+
+	return armor.GetObjRef();
+endfunction
+
 function WeaponHitScripts(byRef attackInfo)
-	var armorsInSlot := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
+	var armorsInSlot := _NormalizeArmorsForWeaponHit(attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()));
 
 	var weaponCfg := CFGFile("*", "itemdesc").SetElementName(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType());
 	var weapon_scripts := array{};
@@ -60,7 +76,7 @@ function WeaponHitScripts(byRef attackInfo)
 					attackInfo.GetAttacker().GetObjRef(),
 					attackInfo.GetDefender().GetObjRef(),
 					attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-					armor.GetObjRef(),
+					_ArmorObjRefOrUninit(armor),
 					attackInfo.GetDamage().GetTotalBaseDamage(),
 					attackInfo.GetDamage().GetTotalRawDamage(),
 					hitopt
@@ -80,61 +96,39 @@ function WeaponHitScripts(byRef attackInfo)
 	if (GetCooldown(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), "ataqueelemental"))
 		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().EraseProp("#ataqueelemental");
 		var elemental := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("#elementalweapon");
-
+		print("Debug: Elemental weapon hit - element: " + (elemental != error ? elemental.type : "none") + ", attacker: " + attackInfo.GetAttacker().GetName());
 		if (elemental != error)
-			var dmg;
-			if (elemental.type == "Fire")
-				dmg := attackInfo.GetDamage().GetFireBaseDamage() + CInt(attackInfo.GetDamage().GetFireRawDamage() * (attackInfo.GetAttacker().GetSkill(ARCANA) / 100));
-				dmg := ApplyChargesCalculation(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), dmg, 1);
-				
-				foreach armor in (armorsInSlot)
-					start_script(
-						":combat:weaponHitScripts/FireHit",
-						array{
-							attackInfo.GetAttacker().GetObjRef(),
-							attackInfo.GetDefender().GetObjRef(),
-							attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-							armor.GetObjRef(),
-							attackInfo.GetDamage().GetFireBaseDamage(),
-							dmg * 2
-						}
-					);
-				endforeach
-			elseif (elemental.type == "Cold")
-				dmg := attackInfo.GetDamage().GetColdBaseDamage() + CInt(attackInfo.GetDamage().GetColdRawDamage() * (attackInfo.GetAttacker().GetSkill(ARCANA) / 100));
-				dmg := ApplyChargesCalculation(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), dmg, 1);
+			// Burst damage: Arcana/10 + INT/20 (hit script applies *0.5+1)
+			var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+			var dmg := CInt(arcana / 10) + CInt(attackInfo.GetAttacker().GetInt() / 20);
 
-				foreach armor in (armorsInSlot)
-					start_script(
-						":combat:weaponHitScripts/IceHit",
-						array{
-							attackInfo.GetAttacker().GetObjRef(),
-							attackInfo.GetDefender().GetObjRef(),
-							attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-							armor.GetObjRef(),
-							attackInfo.GetDamage().GetColdBaseDamage(),
-							dmg * 2
-						}
-					);
-				endforeach
+			var hitScript;
+			if (elemental.type == "Fire")
+				hitScript := ":combat:weaponHitScripts/FireHit";
+			elseif (elemental.type == "Cold")
+				hitScript := ":combat:weaponHitScripts/IceHit";
 			elseif (elemental.type == "Energy")
-				dmg := attackInfo.GetDamage().GetEnergyBaseDamage() + CInt(attackInfo.GetDamage().GetEnergyRawDamage() * (attackInfo.GetAttacker().GetSkill(ARCANA) / 100));
-				dmg := ApplyChargesCalculation(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), dmg, 1);
-				
+				hitScript := ":combat:weaponHitScripts/LightningHit";
+			endif
+			print("Debug: Elemental weapon hit - selected hit script: " + (hitScript ? hitScript : "none"));
+			if (hitScript)
 				foreach armor in (armorsInSlot)
 					start_script(
-						":combat:weaponHitScripts/LightningHit",
+						hitScript,
 						array{
 							attackInfo.GetAttacker().GetObjRef(),
 							attackInfo.GetDefender().GetObjRef(),
 							attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-							armor.GetObjRef(),
-							attackInfo.GetDamage().GetEnergyBaseDamage(),
+							_ArmorObjRefOrUninit(armor),
+							0,
 							dmg * 2
 						}
 					);
 				endforeach
 			endif
+
+			// Consume charges after hit scripts fire
+			ApplyChargesCalculation(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), dmg, 1);
 		endif
 	endif
 
@@ -151,7 +145,7 @@ function WeaponHitScripts(byRef attackInfo)
 					attackInfo.GetAttacker().GetObjRef(),
 					attackInfo.GetDefender().GetObjRef(),
 					attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-					armor.GetObjRef(),
+					_ArmorObjRefOrUninit(armor),
 					attackInfo.GetDamage().GetTotalBaseDamage(),
 					dmg * 2
 				}
@@ -159,7 +153,7 @@ function WeaponHitScripts(byRef attackInfo)
 		endforeach
 	endif
 
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "circulodevas"))
+	if (GetCooldown(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(), "circulodevas"))
 		var elemental := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("#elementalweapon");
 
 		if (elemental != error)
@@ -177,7 +171,7 @@ function WeaponHitScripts(byRef attackInfo)
 						attackInfo.GetAttacker().GetObjRef(),
 						attackInfo.GetDefender().GetObjRef(),
 						attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-						armor.GetObjRef(),
+						_ArmorObjRefOrUninit(armor),
 						attackInfo.GetDamage().GetTotalBaseDamage(),
 						dmg * 2,
 						elemental.type,
@@ -202,7 +196,7 @@ function WeaponHitScripts(byRef attackInfo)
 					attackInfo.GetAttacker().GetObjRef(),
 					attackInfo.GetDefender().GetObjRef(),
 					attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-					armor.GetObjRef(),
+					_ArmorObjRefOrUninit(armor),
 					attackInfo.GetDamage().GetTotalBaseDamage(),
 					dmg,
 					DMG_PHYSICAL
@@ -223,7 +217,7 @@ function WeaponHitScripts(byRef attackInfo)
 						attackInfo.GetAttacker().GetObjRef(),
 						attackInfo.GetDefender().GetObjRef(),
 						attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
-						armor.GetObjRef(),
+						_ArmorObjRefOrUninit(armor),
 						attackInfo.GetDamage().GetTotalBaseDamage(),
 						attackInfo.GetDamage().GetTotalRawDamage() * 2,
 						elemental.type,

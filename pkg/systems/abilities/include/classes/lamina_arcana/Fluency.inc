@@ -43,8 +43,8 @@ class Fluency(CombatAbility)
             return 0;
         endif
 
-        var enchantmentColors := array{ COLOR_ELEMENTAL_FIRE, COLOR_ELEMENTAL_ICE, COLOR_ELEMENTAL_ENERGY };
-        if (!(who.weapon.color in enchantmentColors))
+        var elemental := GetObjProperty(who.weapon, "#elementalweapon");
+        if (elemental == error)
             Message("Sua arma nao esta encantada!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
             return 0;
         endif
@@ -76,18 +76,19 @@ endclass
 
 function _GrantBonus(who, targ)
     var weapon := who.weapon;
+    var elemental := GetObjProperty(weapon, "#elementalweapon");
     var effect_color := 0;
     var armor_drain := CInt(AP_GetSkill(who, ARCANA) * 0.3);
 
-    if (weapon.color == COLOR_ELEMENTAL_FIRE)
+    if (elemental.type == "Fire")
         effect_color := COLOR_ELEMENTAL_FIRE;
         targ.resist_fire_mod := targ.resist_fire_mod - armor_drain;
         who.resist_fire_mod := who.resist_fire_mod + armor_drain;
-    elseif (weapon.color == COLOR_ELEMENTAL_ICE)
+    elseif (elemental.type == "Cold")
         effect_color := COLOR_ELEMENTAL_ICE;
         targ.resist_cold_mod := targ.resist_cold_mod - armor_drain;
         who.resist_cold_mod := who.resist_cold_mod + armor_drain;
-    elseif (weapon.color == COLOR_ELEMENTAL_ENERGY)
+    elseif (elemental.type == "Energy")
         effect_color := COLOR_ELEMENTAL_ENERGY;
         targ.resist_energy_mod := targ.resist_energy_mod - armor_drain;
         who.resist_energy_mod := who.resist_energy_mod + armor_drain;
@@ -99,15 +100,16 @@ endfunction
 
 function _RevokeBonus(who, targ)
     var weapon := who.weapon;
+    var elemental := GetObjProperty(weapon, "#elementalweapon");
     var armor_drain := CInt(AP_GetSkill(who, ARCANA) * 0.3);
 
-    if (weapon.color == COLOR_ELEMENTAL_FIRE)
+    if (elemental.type == "Fire")
         targ.resist_fire_mod := targ.resist_fire_mod + armor_drain;
         who.resist_fire_mod := who.resist_fire_mod - armor_drain;
-    elseif (weapon.color == COLOR_ELEMENTAL_ICE)
+    elseif (elemental.type == "Cold")
         targ.resist_cold_mod := targ.resist_cold_mod + armor_drain;
         who.resist_cold_mod := who.resist_cold_mod - armor_drain;
-    elseif (weapon.color == COLOR_ELEMENTAL_ENERGY)
+    elseif (elemental.type == "Energy")
         targ.resist_energy_mod := targ.resist_energy_mod + armor_drain;
         who.resist_energy_mod := who.resist_energy_mod - armor_drain;
     endif

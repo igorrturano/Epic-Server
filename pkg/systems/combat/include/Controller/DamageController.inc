@@ -65,6 +65,7 @@ function CalculateAttackerDamage(byRef attackInfo)
 	CalculateEntropyDamage(attackInfo);
 	CalculatePrimordialDamage(attackInfo);
 	CalculateArcaneBowDamage(attackInfo);
+	CalculateSpiritualBladeDamage(attackInfo);
 	CalculateElementalWeaponDamage(attackInfo);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
@@ -333,35 +334,110 @@ function CalculateArcaneBowDamage(byRef attackInfo)
 endfunction
 
 /**
- * Applies elemental bonus damage for Sword Mage (Lâmina Arcana) enchanted weapons.
- * Reads the #elementalweapon CProp set by Lamina Flamejante/Gelo/Elétrica spells,
- * rolls the bonus dice, and injects the result into the Damage object.
+ * Applies flat physical bonus damage for Spiritual Blade (Lâmina Arcana).
+ * Scales with Arcana skill: arcana / 10.
+ * Only applies when wielding a SpiritualBlade category weapon.
+ */
+function CalculateSpiritualBladeDamage(byRef attackInfo)
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::SPIRITUALBLADE)
+		return;
+	endif
+
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+	var bonus := CInt(arcana / 10);
+	if (bonus < 1)
+		bonus := 1;
+	endif
+
+	var damage := attackInfo.GetDamage();
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
+
+	if (posture == DAMAGE_TYPE::SLASH)
+		damage.IncreaseSlashRawDamage(bonus);
+	elseif (posture == DAMAGE_TYPE::PIERCING)
+		damage.IncreasePiercingRawDamage(bonus);
+	elseif (posture == DAMAGE_TYPE::BLUNT)
+		damage.IncreaseBluntRawDamage(bonus);
+	endif
+
+	attackInfo.SetDamage(damage);
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus da Lâmina Espiritual ({posture}): +{bonus}"));
+endfunction
+
+/**
+ * Applies elemental damage for Sword Mage (Lâmina Arcana) enchanted weapons.
+ * Converts a percentage of the active posture's physical raw damage to elemental damage,
+ * based on Arcana skill (Arcana/2 %). Also adds a flat INT/20 elemental bonus.
+ * Consumes 1 arcane charge per hit.
  */
 function CalculateElementalWeaponDamage(byRef attackInfo)
 	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
-	var elemental := weapon.GetProp("#elementalweapon");
+	var elemental := weapon.GetProperty("#elementalweapon");
 
 	if (elemental == error)
 		return;
 	endif
 
-	var bonus := RandomDiceRoll(elemental.bonus);
+	var damage := attackInfo.GetDamage();
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
 
-	if (bonus < 1)
+	// Get the active posture's physical raw damage
+	var physicalRaw := 0;
+	if (posture == DAMAGE_TYPE::SLASH)
+		physicalRaw := damage.GetSlashRawDamage();
+	elseif (posture == DAMAGE_TYPE::PIERCING)
+		physicalRaw := damage.GetPiercingRawDamage();
+	elseif (posture == DAMAGE_TYPE::BLUNT)
+		physicalRaw := damage.GetBluntRawDamage();
+	endif
+
+	// Calculate conversion: Arcana/2 % of physical damage becomes elemental
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+	var conversionRate := arcana / 200.0;
+	var convertedDamage := CInt(physicalRaw * conversionRate);
+
+	// Flat INT bonus + Arcana/10 bonus on top
+	var intBonus := CInt(attackInfo.GetAttacker().GetInt() / 20);
+	var arcanaBonus := CInt(arcana / 10);
+	var totalElemental := convertedDamage + intBonus + arcanaBonus;
+
+	if (totalElemental < 1)
 		return;
 	endif
 
-	var damage := attackInfo.GetDamage();
-
-	if (elemental.type == "Fire")
-		damage.IncreaseFireRawDamage(bonus);
-	elseif (elemental.type == "Cold")
-		damage.IncreaseColdRawDamage(bonus);
-	elseif (elemental.type == "Energy")
-		damage.IncreaseEnergyRawDamage(bonus);
+	// Subtract converted portion from physical
+	if (posture == DAMAGE_TYPE::SLASH)
+		damage.DecreaseSlashRawDamage(convertedDamage);
+	elseif (posture == DAMAGE_TYPE::PIERCING)
+		damage.DecreasePiercingRawDamage(convertedDamage);
+	elseif (posture == DAMAGE_TYPE::BLUNT)
+		damage.DecreaseBluntRawDamage(convertedDamage);
 	endif
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus elemental da Lâmina Arcana ({elemental.type}): +{bonus}"));
+	// Add elemental damage
+	if (elemental.type == "Fire")
+		damage.IncreaseFireRawDamage(totalElemental);
+	elseif (elemental.type == "Cold")
+		damage.IncreaseColdRawDamage(totalElemental);
+	elseif (elemental.type == "Energy")
+		damage.IncreaseEnergyRawDamage(totalElemental);
+	endif
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Lâmina Arcana ({elemental.type}): Converteu {convertedDamage} físico + {intBonus} INT + {arcanaBonus} Arcana = {totalElemental} elemental"));
+
+	// Consume 1 arcane charge per hit
+	elemental.cargas := elemental.cargas - 1;
+	if (elemental.cargas <= 0)
+		weapon.EraseProp("#elementalweapon");
+		weapon.color := elemental.originalColor;
+		IncRevision(weapon);
+		if (weapon.character_owner != error)
+			Message("Sua arma não está mais encantada.", Color(SYSTEM_COLOR::FAIL)).SendSys(weapon.character_owner);
+		endif
+	else
+		weapon.SetProp("#elementalweapon", elemental);
+	endif
 
 	attackInfo.SetDamage(damage);
 endfunction

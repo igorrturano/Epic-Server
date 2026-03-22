@@ -32,12 +32,14 @@ endfunction
 
 function leaveGolem(who)
 	EraseObjProperty(who, "skill_a");
-	EraseObjProperty(who, "skill_d");
 	EraseObjProperty(who, "dicedmg");
 
-    var hitsmod := cint(getObjProperty(who, "golemhitsmod"));
-	setobjproperty(who, "hitsmod", cint(getobjproperty(who,"hitsmod")) - hitsmod);
-	var resist := cint(GetObjProperty(who, "resistmod"));
+	var hitsmod := CInt(GetObjProperty(who, "golemhitsmod"));
+	SetObjProperty(who, "hitsmod", CInt(GetObjProperty(who, "hitsmod")) - hitsmod);
+	var resist := CInt(GetObjProperty(who, "golemresistmod"));
+	if (!resist)
+		resist := CInt(GetObjProperty(who, "resistmod"));
+	endif
 
 	who.resist_physical_mod := who.resist_physical_mod - resist;
 	who.resist_fire_mod := who.resist_fire_mod - resist;
@@ -45,31 +47,30 @@ function leaveGolem(who)
 	who.resist_poison_mod := who.resist_poison_mod - resist;
 	who.resist_energy_mod := who.resist_energy_mod - resist;
 
-	EraseObjProperty(who, "polymorphbonus");
-	EraseObjProperty(who, "metamorfose");
 	EraseObjProperty(who, "golemhitsmod");
+	EraseObjProperty(who, "golemresistmod");
 endfunction
 
 function enterGolem(who)
-    var skill_a := Ap_GetSkill(who, METALWORKING) * 0.8;
-    var skill_d := Ap_GetSkill(who, METALWORKING) * 0.6;
-    var dicedmg := "1d12";
-    var hitsmod := 200;
+	var metalworking := Ap_GetSkill(who, METALWORKING);
+
+	var skill_a := metalworking * 0.8;
+	var dicedmg := array{ "TWOHANDED_LOW", "TWOHANDED_LOW", "TWOHANDED_LOW" };
+	var hitsmod := CInt(metalworking * 2);
+	var resistmod := CInt(metalworking * 0.6);
 
 	SetObjProperty(who, "skill_a", skill_a);
-	SetObjProperty(who, "skill_d", skill_d);
 	SetObjProperty(who, "dicedmg", dicedmg);
 	SetObjProperty(who, "golemhitsmod", hitsmod);
+	SetObjProperty(who, "golemresistmod", resistmod);
 
-    var resistmod := 60;
-	who.resist_physical_mod := resistmod;
-	who.resist_fire_mod := resistmod;
-	who.resist_cold_mod := resistmod;
-	who.resist_poison_mod := resistmod;
-	who.resist_energy_mod := 0;
-    
-	SetObjProperty(who, "resistmod", resistmod);
-	SetObjProperty(who, "hitsmod", hitsmod);
+	who.resist_physical_mod := who.resist_physical_mod + resistmod;
+	who.resist_fire_mod := who.resist_fire_mod + resistmod;
+	who.resist_cold_mod := who.resist_cold_mod + resistmod;
+	who.resist_poison_mod := who.resist_poison_mod + resistmod;
+	who.resist_energy_mod := who.resist_energy_mod + resistmod;
+
+	SetObjProperty(who, "hitsmod", CInt(GetObjProperty(who, "hitsmod")) + hitsmod);
 
 	recalcvitals(who);
 	ApplyEpicHealing(who, hitsmod);

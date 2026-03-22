@@ -50,7 +50,8 @@ class PrismaticVortex(CombatAbility)
         var range := CInt(AP_GetSkill(who, ARCANA) / 10);
         var accumulated := CInt(GetObjProperty(who, "#vortice_dmg"));
         var total_dmg := accumulated + CInt(AP_GetSkill(who, ARCANA));
-        var effect := who.weapon.color;
+        var weaponElemental := GetObjProperty(who.weapon, "#elementalweapon");
+        var effect := weaponElemental.type;
 
         PerformAction(who, HUMAN_ANIM::CAST_AREA);
 
@@ -82,17 +83,17 @@ class PrismaticVortex(CombatAbility)
             var char_owner := GetObjProperty(char, "owner");
             if (!(char in party_members) && char != who)
                 if (!(char in allPets) && !(char_owner == who.serial))
-                    if (effect == COLOR_ELEMENTAL_FIRE)
+                    if (effect == "Fire")
                         PlaySoundEffect(char, 0x5D0);
                         PlayObjectCenteredEffect(char, 0x6d77, 7, 60);
                         DamageFLS(char, total_dmg, DMG_FIRE, who);
                         TS_StartTimer(char, "queimar", 10);
-                    elseif (effect == COLOR_ELEMENTAL_ICE)
+                    elseif (effect == "Cold")
                         PlaySoundEffect(char, 0x65b);
                         PlayObjectCenteredEffectHuefx(char, 0x54f7, 30, 60, COLOR_ELEMENTAL_ICE, 0);
                         DamageFLS(char, total_dmg, DMG_COLD, who);
                         TS_StartTimer(char, "congelamento", 10);
-                    elseif (effect == COLOR_ELEMENTAL_ENERGY)
+                    elseif (effect == "Energy")
                         PlaySoundEffect(char, 0x5CF);
                         DamageFLS(char, CInt(total_dmg * 1.2), DMG_ENERGY, who);
                         PlayObjectCenteredEffect(char, 0xcdaf, 7, 30);
