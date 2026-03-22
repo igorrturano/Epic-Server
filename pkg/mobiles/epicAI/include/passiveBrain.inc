@@ -172,6 +172,50 @@ function _PB_GadgetGump(who)
 		return;
 	endif
 
+	// Removal animation (5 seconds) - same pattern as steamarms_use.src
+	if (current)
+		PrintTextAbove(me, "*Removendo o mecanismo atual...*");
+		for i := 1 to 5
+			PerformAction(who, 19); // ATTACK_XBOW
+			PlaySoundEffect(who, 0x22C);
+			sleep(1);
+			if (who.dead)
+				return;
+			endif
+		endfor
+		PerformAction(who, 12); // ATTACK_2HAND_BLUNT
+	endif
+
+	// Installation animation (10 seconds) - only if not just removing
+	if (butid != 10)
+		PrintTextAbove(me, "*Instalando novo mecanismo...*");
+		for i := 1 to 5
+			PerformAction(who, 19); // ATTACK_XBOW
+			PlaySoundEffect(who, 0x22C);
+			sleep(2);
+			if (who.dead)
+				return;
+			endif
+		endfor
+		PerformAction(who, 12); // ATTACK_2HAND_BLUNT
+	endif
+
+	// Return current gadget to player's backpack
+	if (current)
+		var return_objtype := 0;
+		case (current)
+			"handcannon": return_objtype := PB_HANDCANNON_OBJTYPE;
+			"harpoon":    return_objtype := PB_HARPOON_OBJTYPE;
+			"powdertrap": return_objtype := PB_POWDERTRAP_OBJTYPE;
+		endcase
+		if (return_objtype)
+			var returned := CreateItemInContainer(who.backpack, return_objtype, 1);
+			if (returned)
+				PrintTextAbove(me, "*Devolve o gadget antigo*");
+			endif
+		endif
+	endif
+
 	case (butid)
 		1:
 			var gadget := FindObjtypeInContainer(who.backpack, PB_HANDCANNON_OBJTYPE);
@@ -198,4 +242,6 @@ function _PB_GadgetGump(who)
 			EraseObjProperty(me, "InstalledGadget");
 			PrintTextAbove(me, "*Gadget removido*");
 	endcase
+
+	PlaySoundEffect(who, 0x02B); // completion sound
 endfunction

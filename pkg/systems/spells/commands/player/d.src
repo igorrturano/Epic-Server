@@ -39,6 +39,11 @@ program ritual(who, spellname := "")
 
 	// If no spell name provided, open the ritual gump
 	if (!spellname || spellname == "")
+		if (!GetObjProperty(who, "cantrips_granted"))
+			SendSysMessageEx(who, "Voce primeiro precisa visitar um altar.", SSM_FAIL);
+			return 0;
+		endif
+
 		Start_Script(":spells:viewSpells", who);
 		return 1;
 	endif

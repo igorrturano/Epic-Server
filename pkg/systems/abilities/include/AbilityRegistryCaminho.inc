@@ -38,6 +38,7 @@ include ":abilities:classes/caminho/MountedCombat";
 //===========================================
 include ":abilities:classes/caminho/QuietMind";
 include ":abilities:classes/caminho/SupportCaster";
+include ":abilities:classes/caminho/FocoArcano";
 include ":abilities:classes/caminho/SpellRange";
 include ":abilities:classes/caminho/ElementalSpecialization";
 include ":abilities:classes/caminho/SchoolSpecialization";
@@ -95,6 +96,7 @@ ABILITY_CLASSES[ABILITY_ID::MOUNTED_COMBAT] := @MountedCombat;
 // Caminho - Caster Core (3400-3403)
 ABILITY_CLASSES[ABILITY_ID::QUIET_MIND] := @QuietMind;
 ABILITY_CLASSES[ABILITY_ID::SUPPORT_CASTER] := @SupportCaster;
+ABILITY_CLASSES[ABILITY_ID::FOCO_ARCANO] := @FocoArcano;
 ABILITY_CLASSES[ABILITY_ID::SPELL_RANGE] := @SpellRange;
 
 // Caminho - Elemental Specializations (3410-3413)

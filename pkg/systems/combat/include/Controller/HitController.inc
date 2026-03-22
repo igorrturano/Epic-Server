@@ -80,12 +80,6 @@ function _GetSkillForCombat(byRef mobile)
 		if ((mobile.GetObjRef().GetProp("metamorfose") != error) ||
 			(mobile.GetObjRef().GetProp("pilotando") != error)) // Se é Metamorfo ou Piloto de Golem, a skill tá na prop
 			skill := mobile.GetObjRef().GetProp("skill_a");
-		elseif (attribute == WRESTLING) // Se é melee desarmado, pega a maior entre as skills de melee
-			skill := Max(array{
-				mobile.GetSkill(ONEHANDED),
-				mobile.GetSkill(TWOHANDED),
-				mobile.GetSkill(DUALWIELD)
-			});
 		else
 			skill := mobile.GetSkill(attribute);
 		endif

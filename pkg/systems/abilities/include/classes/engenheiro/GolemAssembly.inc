@@ -14,6 +14,13 @@ const GADGET_HANDCANNON := 0xFFC7;
 const GADGET_HARPOON := 0xFFC6;
 const GADGET_POWDERTRAP := 0xFFC8;
 
+const STEAM_GLOVES := 0xFFC1;
+const STEAM_LEGS   := 0xFFC2;
+const STEAM_ARMS   := 0xFFC3;
+const STEAM_HELM   := 0xFFC4;
+const STEAM_CHEST  := 0xFFC5;
+const STEAM_GORGET := 0xFFC9;
+
 class GolemAssembly(CombatAbility)
 
 	function GolemAssembly(this)
@@ -118,7 +125,24 @@ class GolemAssembly(CombatAbility)
 			gadget_key := choice.key;
 		endif
 
-		if (!yesno(who, "Voce utilizara 100 minerios de Mithril, 50 couros curtidos e 1 gadget. Deseja continuar?"))
+		// Check all steam armor pieces in backpack
+		var armor_parts := array{
+			struct{ objtype := STEAM_GLOVES, name := "Manoplas a Vapor" },
+			struct{ objtype := STEAM_LEGS,   name := "Grevas a Vapor" },
+			struct{ objtype := STEAM_ARMS,   name := "Bracos a Vapor" },
+			struct{ objtype := STEAM_HELM,   name := "Elmo a Vapor" },
+			struct{ objtype := STEAM_CHEST,  name := "Peitoral a Vapor" },
+			struct{ objtype := STEAM_GORGET, name := "Pescoceira a Vapor" }
+		};
+
+		foreach part in armor_parts
+			if (!FindObjtypeInContainer(who.backpack, part.objtype))
+				Message($"Voce precisa de {part.name} na mochila!").SendSys(who);
+				return false;
+			endif
+		endforeach
+
+		if (!yesno(who, "Voce utilizara 100 minerios de Mithril, 50 couros curtidos, todas as pecas de Armadura a Vapor e 1 gadget. Deseja continuar?"))
 			return false;
 		endif
 
@@ -153,6 +177,12 @@ class GolemAssembly(CombatAbility)
 		// Consume the gadget
 		SubtractAmount(gadget_item, 1);
 
+		// Consume all steam armor pieces
+		foreach part in armor_parts
+			var armor_item := FindObjtypeInContainer(who.backpack, part.objtype);
+			DestroyItem(armor_item);
+		endforeach
+
 		who.frozen := 1;
 		if (anvil.objtype == 0xA108)
 			anvil.graphic := 0xA103;
@@ -161,14 +191,14 @@ class GolemAssembly(CombatAbility)
 		endif
 
 		var i := 0;
-		// while (i < 10)
-		// 	PerformAction(who, 12);
-		// 	Message("*Construindo*").SendAbove(who);
-		// 	PlaySoundEffect(who, SFX_ANVIL);
-		// 	PlayStationaryEffect(who.x, who.y, who.z, 0x6DF1, 0, 40, 0, who.realm);
-		// 	sleep(4);
-		// 	i++;
-		// endwhile
+		while (i < 10)
+			PerformAction(who, 12);
+			Message("*Construindo*").SendAbove(who);
+			PlaySoundEffect(who, SFX_ANVIL);
+			PlayStationaryEffect(who.x, who.y, who.z, 0x6DF1, 0, 40, 0, who.realm);
+			sleep(4);
+			i++;
+		endwhile
 
 		if (anvil.graphic == 0xA103)
 			anvil.graphic := 0xA108;
@@ -208,7 +238,7 @@ function _GolemCleave(mobile, who)
 	SetObjProperty(who, "#golem_cleaving", 1);
 
 	PerformAction(who, HUMAN_ANIM::ATTACK_2HAND_BLUNT);
-	PlaySoundEffect(who, 0x306);
+	PlaySoundEffect(who, 0x11F);
 
 	var mods := GetModByFacing(who.facing);
 	var dx := mods[1];
@@ -216,7 +246,7 @@ function _GolemCleave(mobile, who)
 	var attacker := MobileWrapper(who);
 	var festa := who.party;
 
-	for i := 1 to 3
+	for i := 0 to 3
 		var tx := who.x + (dx * i);
 		var ty := who.y + (dy * i);
 		// Check 1 tile radius around the line for width

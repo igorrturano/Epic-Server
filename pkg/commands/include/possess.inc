@@ -24,11 +24,8 @@ function possess (me, npc)
 	SetObjProperty(me, "lastpossessedserial", npc.serial);
 
 	clonar(oldbody, me);
-	var itemsinbag := EnumerateItemsInContainer( me.backpack );
-	foreach iteminbag in itemsinbag
-     	var copyitem := CreateItemCopyAtLocation(5384, 923, 0, iteminbag);
-		MoveItemToContainer( copyitem, oldbody.backpack);
-		destroyitem ( iteminbag );
+	foreach iteminbag in EnumerateItemsInContainer(me.backpack, ENUMERATE_ROOT_ONLY)
+		MoveItemToContainer(iteminbag, oldbody.backpack);
 		sleepms(10);
 	endforeach
 
@@ -36,11 +33,8 @@ function possess (me, npc)
 	DestroyItem(me.backpack);
 	var bolsa := CreateItemAtLocation(5384, 923, 0, 0x9B2);
 	EquipItem(me, bolsa);
-	var itemsinbag2 := EnumerateItemsInContainer( npc.backpack );
-	foreach iteminbag in itemsinbag2
-     	var copyitem := CreateItemCopyAtLocation(5384, 923, 0, iteminbag);
-		MoveItemToContainer( copyitem, me.backpack );
-		destroyitem ( iteminbag );
+	foreach iteminbag in EnumerateItemsInContainer(npc.backpack, ENUMERATE_ROOT_ONLY)
+		MoveItemToContainer(iteminbag, me.backpack);
 		sleepms(10);
 	endforeach
 
@@ -108,11 +102,9 @@ function unpossess(me, freeze :=1, allowMissingPossessed := 0)
 			DestroyItem(oldnpc.backpack);
 			var bolsa := CreateItemAtLocation(5383, 923, 0, 0x9B2);
 			EquipItem(oldnpc, bolsa);
-			var itemsinbag := EnumerateItemsInContainer( me.backpack );
-			foreach iteminbag in itemsinbag
-	     		var copyitem := CreateItemCopyAtLocation(5383, 923, 0, iteminbag);
-				MoveItemToContainer( copyitem, oldnpc.backpack);
-				destroyitem ( iteminbag );
+			foreach iteminbag in EnumerateItemsInContainer(me.backpack, ENUMERATE_ROOT_ONLY)
+				MoveItemToContainer(iteminbag, oldnpc.backpack);
+				sleepms(10);
 			endforeach
 			oldnpc.facing := me.facing;
 			MoveObjectToLocation (oldnpc, me.x, me.y, me.z, me.realm, MOVEOBJECT_FORCELOCATION);
@@ -135,11 +127,8 @@ function unpossess(me, freeze :=1, allowMissingPossessed := 0)
 	DestroyItem(me.backpack);
 	var bolsa := CreateItemAtLocation(5383, 923, 0, 0x9B2);
 	EquipItem(me, bolsa);
-	var itemsinbag2 := EnumerateItemsInContainer( oldbody.backpack );
-	foreach iteminbag in itemsinbag2
-     	var copyitem := CreateItemCopyAtLocation(5383, 923, 0, iteminbag);
-		MoveItemToContainer( copyitem, me.backpack );
-		destroyitem ( iteminbag );
+	foreach iteminbag in EnumerateItemsInContainer(oldbody.backpack, ENUMERATE_ROOT_ONLY)
+		MoveItemToContainer(iteminbag, me.backpack);
 		sleepms(10);
 	endforeach
 
