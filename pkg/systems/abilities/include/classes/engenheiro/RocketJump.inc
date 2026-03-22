@@ -19,23 +19,45 @@ class RocketJump(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
+		var is_piloting := GetObjProperty(who, "pilotando");
 
-		var coal := FindObjtypeInContainer(who.backpack, 0x1bde);
-		if (!coal || coal.amount < 2)
-			Message("Voce precisa de pelo menos 2 carvoes para acionar os propulsores!").SendSys(who);
-			return false;
+		// Coal check
+		if (is_piloting)
+			var golem := _RJ_GetGolemRef(who);
+			var stored_coal := CInt(GetObjProperty(golem, "golem_coal"));
+			if (!golem || stored_coal < 2)
+				Message("O golem precisa de pelo menos 2 carvoes!").SendSys(who);
+				return false;
+			endif
+			SetObjProperty(golem, "golem_coal", stored_coal - 2);
+		else
+			var coal := FindObjtypeInContainer(who.backpack, 0x1bde);
+			if (!coal || coal.amount < 2)
+				Message("Voce precisa de pelo menos 2 carvoes para acionar os propulsores!").SendSys(who);
+				return false;
+			endif
+			SubtractAmount(coal, 2);
 		endif
-		SubtractAmount(coal, 2);
 
 		// Launch movement as separate script so network packets flush properly
 		var pid := Start_Script(":abilities:scripts/Ativa/OnUse/rocketjump", {who});
 		sleepms(1500);
 
+		// Powder check
 		var has_powder := 0;
-		var powder := FindObjtypeInContainer(who.backpack, 0x9092);
-		if (powder && powder.amount >= 5)
-			SubtractAmount(powder, 5);
-			has_powder := 1;
+		if (is_piloting)
+			var golem := _RJ_GetGolemRef(who);
+			var stored_powder := CInt(GetObjProperty(golem, "golem_powder"));
+			if (golem && stored_powder >= 5)
+				SetObjProperty(golem, "golem_powder", stored_powder - 5);
+				has_powder := 1;
+			endif
+		else
+			var powder := FindObjtypeInContainer(who.backpack, 0x9092);
+			if (powder && powder.amount >= 5)
+				SubtractAmount(powder, 5);
+				has_powder := 1;
+			endif
 		endif
 
 		if (has_powder)
@@ -96,3 +118,11 @@ class RocketJump(CombatAbility)
 	endfunction
 
 endclass
+
+function _RJ_GetGolemRef(who)
+	var serial := GetObjProperty(who, "lastpossessedserial");
+	if (!serial)
+		return 0;
+	endif
+	return SystemFindObjectBySerial(serial);
+endfunction

@@ -10,6 +10,9 @@ include ":abilities:models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
 include "include/packets";
 include ":combat:Controller/DamageController_legacy";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":tn:cooldown";
 
 function playAltarAnimations(who, item)
 	var altar := altarByObjtype(who, item);
@@ -291,20 +294,6 @@ endfunction
  * [struct].divisor: Será o divisor de eficiência, pois consumimos mais do que tinhamos.
  * [struct].isSucesso: retorna true se reduzimos ou false caso a arma não esteja encantada.
 */
-function ConsumeArcaneCharges(who, quantidade)
-
-	var elementalWeapon := GetObjProperty(who.weapon, "#elementalweapon");
-	var retorno := ConsumeItemArcaneCharges(who.weapon, quantidade);
-
-	if (elementalWeapon != error && retorno.isSucesso)
-		if (elementalWeapon.serial != who.serial && !MobileWrapper(who).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
-			ApplyDamageHabElementalWeapon(0, who, elementalWeapon.bonus, elementalWeapon.type, retorno.divisor);
-			SendSysMessageEx(who, "O controle das energias arcanas da arma se torna caótico e acaba ferindo você.",
-							  SSM_INFO);
-		endif
-	endif
-	return retorno;
-endfunction
 
 /*
  * Purpose -
@@ -382,13 +371,6 @@ function LogOffElementalWeapon(who)
 	endforeach
 endfunction
 
-function ApplyDamageHabElementalWeapon(attacker, defender, damageDice, elementalType , divisor)
-	var dmgBonus := RandomDiceRoll(damageDice);
-	var totalDamage := CalculateDamage(defender, elementalType, dmgBonus);
-	totalDamage := CInt(Floor(totalDamage / divisor)); // Não tinha cargas suficiente, entao diminui a eficência do dano.
-	DisplayDamage(defender, totalDamage, attacker);
-	ApplyRawDamage(defender, totalDamage);
-endfunction
 
 function ApplyChargesCalculation(weapon, dmg, chargesAmount)
 	var cargasRetorno := ConsumeItemArcaneCharges(weapon, chargesAmount);
@@ -408,6 +390,124 @@ endfunction
 
 function handleSpellResistDiffForDivineCasters(who, school)
    var diff := Cint(AP_GetSkill(who, THEOLOGY) / 4); // Baseado na skill de teologia
-    
+
    return diff;
+endfunction
+
+/*
+ * SummonSpiritualBlade - Summons a spiritual blade from the player's weapon pool.
+ * Used by elemental weapon spells (Lamina Flamejante/Gelo/Eletrica).
+ * Returns the created weapon item, or 0 on failure.
+ */
+function SummonSpiritualBlade(who)
+	if (GetCooldown(who, "spiritual_weapon"))
+		Message("Voce ja possui uma lamina espiritual invocada!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	var pool := GetObjProperty(who, "spiritualWeaponPool");
+	if (!pool || pool.size() < 1)
+		Message("Voce nao possui armas absorvidas! Use Absorver Arma primeiro.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	var weaponData;
+	if (pool.size() == 1)
+		weaponData := pool[1];
+	else
+		// Multiple weapons - show selection gump
+		var result := _ShowSpiritualBladeGump(who, pool);
+		var buttonId := result[0];
+
+		if (!buttonId || buttonId == 0)
+			Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return 0;
+		endif
+
+		// Handle "forget weapon" buttons (300+)
+		if (buttonId >= 300)
+			var forgetIdx := buttonId - 300;
+			if (forgetIdx >= 1 && forgetIdx <= pool.size())
+				var forgotten := pool[forgetIdx];
+				pool.Erase(forgetIdx);
+				SetObjProperty(who, "spiritualWeaponPool", pool);
+				Message($"A essencia de {forgotten.name} foi dissipada.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			endif
+			return 0;
+		endif
+
+		if (buttonId < 200 || buttonId >= 300)
+			return 0;
+		endif
+
+		var selectedIdx := buttonId - 200;
+		if (selectedIdx < 1 || selectedIdx > pool.size())
+			return 0;
+		endif
+
+		weaponData := pool[selectedIdx];
+	endif
+
+	// Summoning ritual
+	who.frozen := 1;
+	PerformAction(who, HUMAN_ANIM::CAST_DIR);
+	Message("*Invocando lamina espiritual*").SendAbove(who);
+	PlaySoundEffect(who, 0x5cb);
+	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0xB462, 8, 40, COLOR_ELEMENTAL_ENERGY);
+	sleep(2);
+
+	var weapon := CreateItemInBackpack(who, 0x090C, 1);
+	if (!weapon)
+		who.frozen := 0;
+		Message("Erro ao criar lamina espiritual.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	weapon.graphic := weaponData.graphic;
+	weapon.color := 30000;
+	EquipItem(who, weapon);
+
+	if (weapon.maxhp > 0)
+		weapon.hp := weapon.maxhp;
+	endif
+
+	PlaySoundEffect(who, 0x245);
+	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0xB462, 8, 40, COLOR_ELEMENTAL_ENERGY);
+
+	who.frozen := 0;
+
+	SetCooldown(who, "spiritual_weapon", 99999);
+	Message("Sua lamina espiritual se materializa!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+	return weapon;
+endfunction
+
+function _ShowSpiritualBladeGump(player, pool)
+	var gump := GFCreateGump();
+
+	var rowHeight := 26;
+	var gumpHeight := 125 + pool.size() * rowHeight;
+
+	GFResizePic(gump, 17, 31, 9390, 400, gumpHeight);
+	GFHTMLArea(gump, 114, 69, 250, 20, "<BASEFONT Size=5 Color=#999999 >Lamina Espiritual", 0, 0);
+	GFHTMLArea(gump, 116, 71, 250, 20, "<BASEFONT Size=5 Color=#999999 >Lamina Espiritual", 0, 0);
+	GFHTMLArea(gump, 115, 70, 250, 20, "<BASEFONT Size=5 Color=#ffffff >Lamina Espiritual", 0, 0);
+	GFGumpPic(gump, 63, 91, 1469);
+	GFGumpPic(gump, 80, 91, 1469);
+	GFTextLine(gump, 63, 100, 0, "Armas Absorvidas");
+	GFTextLine(gump, 259, 100, 0, "Invocar");
+	GFTextLine(gump, 330, 100, 0, "Esquecer");
+	GFGumpPic(gump, 38, 103, 9773, 0);
+
+	var y := 121;
+	var i;
+	for (i := 1; i <= pool.size(); i++)
+		var entry := pool[i];
+		GFHTMLArea(gump, 63, y, 192, 24, "<BASEFONT color=#000000>{} (0x{:04X})".format(entry.name, entry.graphic), 1, 0);
+		GFAddButton(gump, 274, y + 5, 10006, 10006, GF_CLOSE_BTN, 200 + i);
+		GFAddButton(gump, 345, y + 5, 10006, 10006, GF_CLOSE_BTN, 300 + i);
+		y += rowHeight;
+	endfor
+
+	return GFSendGump(player, gump);
 endfunction

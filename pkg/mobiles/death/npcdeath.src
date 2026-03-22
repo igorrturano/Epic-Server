@@ -173,11 +173,11 @@ program core_npcDeath(params)
 					MoveObjectToLocation(who, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION);
 				else
 					leaveGolem(who);
+					unpossess(who, 1, 1);
+					who.concealed := 0;
 				endif
 
 				EraseObjProperty(who, "golem_maker");
-				EraseObjProperty(who, "pilotando");
-				who.concealed := 0;
 				PrintTextAbove(corpse, "*EJETAR*");
 				sleep(1);
 				PushBackEX(who, 3, 300);

@@ -1,0 +1,39 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+
+/**
+ * Iryo Ninjutsu - Spell 1107
+ * Activates chakra points on an unconscious body, improving circulation
+ * and making them wake up faster. (Same mechanic as Despertar)
+ */
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0;
+
+	if (!targ.isa(POLCLASS_CORPSE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa tecnica.", SSM_FAIL);
+		return;
+	endif
+
+	if (GetObjProperty(targ, "morto") != error)
+		SendSysMessageEx(who, "O alvo ja esta morto.", SSM_FAIL);
+		return;
+	endif
+
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+	PrintTextAbove(who, "*Iryo Ninjutsu!*");
+
+	if (!targ.npctemplate)
+		SetObjProperty(targ, "curado", 1);
+	endif
+
+	SendSysMessageEx(who, "Voce ativou os pontos de chakra do alvo.", SSM_INFO);
+
+	return 1;
+endprogram

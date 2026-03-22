@@ -88,7 +88,37 @@ function GetAttackerFX(byRef attackInfo)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
 		else
-			if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))
+			if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::SPIRITUALBLADE))
+			// Use absorbed weapon's objtype for animation lookup (stored when spiritual blade is summoned)
+				var cfg := ReadConfigFile(":*:itemdesc");
+				var weaponRef := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+				// The spiritual blade's graphic IS the absorbed weapon's objtype (set by ElementalBond)
+				var absorbedObjtype := weaponRef.graphic;
+				var attribute := cfg[absorbedObjtype].Attribute;
+				if (Upper(attribute) == Upper(TWOHANDED))
+					if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
+						attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
+						attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
+					elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::PIERCING))
+						attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_PIERCING};
+						attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_PIERCING};
+					elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::BLUNT))
+						attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
+						attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
+					endif
+				elseif (Upper(attribute) == Upper(ONEHANDED) || Upper(attribute) == Upper(DUALWIELD))
+					if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
+						attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_SLASH};
+						attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_SLASH};
+					elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::PIERCING))
+						attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_PIERCING};
+						attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_PIERCING};
+					elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::BLUNT))
+						attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_BLUNT};
+						attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_BLUNT};
+					endif
+				endif
+			elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))
 				if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
