@@ -6,6 +6,7 @@ include "include/animalBrain";
 include "include/humanoidBrain";
 include "include/epicNPCUtils";
 include "include/genericBrain";
+include "include/passiveBrain";
 include "include/eventID";
 
 var brain_type;
@@ -67,6 +68,7 @@ program KillPlayers()
             "monster":  MonsterBrain();
             "animal":   AnimalBrain();
             "humanoid": HumanoidBrain();
+            "passive":  PassiveBrain();
             default:    GenericBrain();
         endcase
 

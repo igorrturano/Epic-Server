@@ -14,7 +14,6 @@ program cleric(who)
 		return 0;
 	endif
 	if (GetObjProperty(who, "pilotando"))
-		EraseObjProperty(who, "pilotando");
 		leaveGolem(who);
 		PrintTextAbove(who, "*Fecha a escotilha*");
 		unpossess(who, 1);
@@ -32,12 +31,12 @@ program cleric(who)
 	endif
 
 	if (IsBehind(targ, who.x, who.y))
-		setObjproperty(who, "pilotando", 1);
 		PrintTextAbove(targ, "*Abre a escotilha*");
 		UnequipAll(who);
 		sleep(2);
 		enterGolem(who);
 		possess(who, targ);
+		SetObjProperty(who, "pilotando", 1);
 	else
 		SendSysMessage(who, "Voce precisa estar atras do golem para pilotar.");
 		return 0;
