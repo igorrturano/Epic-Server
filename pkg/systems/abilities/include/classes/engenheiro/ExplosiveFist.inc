@@ -35,10 +35,19 @@ class ExplosiveFist(CombatAbility)
 				Message("[EXPLOSIVE_FIST] Desativado", Color(SYSTEM_COLOR::INFO))
 			);
 		else
-			var powder := FindObjtypeInContainer(who.backpack, 0x9092);
-			if (!powder)
-				Message("Voce precisa de polvora para ativar os punhos explosivos!").SendSys(who);
-				return false;
+			// Check ammo source: golem or backpack
+			if (GetObjProperty(who, "pilotando"))
+				var golem := _EF_GetGolemRef(who);
+				if (!golem || CInt(GetObjProperty(golem, "golem_powder")) < 1)
+					Message("O golem nao tem polvora!").SendSys(who);
+					return false;
+				endif
+			else
+				var powder := FindObjtypeInContainer(who.backpack, 0x9092);
+				if (!powder)
+					Message("Voce precisa de polvora para ativar os punhos explosivos!").SendSys(who);
+					return false;
+				endif
 			endif
 			SetObjProperty(who, "#explosive_fist", 1);
 			if (gloves && gloves.objtype == 0xFFC1)
@@ -66,14 +75,25 @@ class ExplosiveFist(CombatAbility)
 			return false;
 		endif
 
-		var powder := FindObjtypeInContainer(who.backpack, 0x9092);
-		if (!powder)
-			EraseObjProperty(who, "#explosive_fist");
-			Message("*Polvora esgotada! Punhos explosivos desativados.*").SendSys(who);
-			return false;
+		// Consume ammo from golem or backpack
+		if (GetObjProperty(who, "pilotando"))
+			var golem := _EF_GetGolemRef(who);
+			var stored := CInt(GetObjProperty(golem, "golem_powder"));
+			if (!golem || stored < 1)
+				EraseObjProperty(who, "#explosive_fist");
+				Message("*Polvora do golem esgotada! Punhos explosivos desativados.*").SendSys(who);
+				return false;
+			endif
+			SetObjProperty(golem, "golem_powder", stored - 1);
+		else
+			var powder := FindObjtypeInContainer(who.backpack, 0x9092);
+			if (!powder)
+				EraseObjProperty(who, "#explosive_fist");
+				Message("*Polvora esgotada! Punhos explosivos desativados.*").SendSys(who);
+				return false;
+			endif
+			SubtractAmount(powder, 1);
 		endif
-
-		SubtractAmount(powder, 1);
 
 		var bonus := CInt(attacker.GetSkill(METALWORKING) / 10);
 		if (bonus > 0)
@@ -109,6 +129,14 @@ class ExplosiveFist(CombatAbility)
 	endfunction
 
 endclass
+
+function _EF_GetGolemRef(who)
+	var serial := GetObjProperty(who, "lastpossessedserial");
+	if (!serial)
+		return 0;
+	endif
+	return SystemFindObjectBySerial(serial);
+endfunction
 
 function _PushBack(who, dist, delay)
 	var x := 0;

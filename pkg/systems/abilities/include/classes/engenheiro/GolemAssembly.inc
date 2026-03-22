@@ -5,8 +5,14 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
 include "include/sounds";
+include "include/facings";
 include ":gumps:yesNo";
+
+const GADGET_HANDCANNON := 0xFFC7;
+const GADGET_HARPOON := 0xFFC6;
+const GADGET_POWDERTRAP := 0xFFC8;
 
 class GolemAssembly(CombatAbility)
 
@@ -46,6 +52,11 @@ class GolemAssembly(CombatAbility)
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
 
+		// If piloting a golem, use frontal cleave instead of creation
+		if (mobile.GetProperty("pilotando"))
+			return _GolemCleave(mobile, who);
+		endif
+
 		if (mobile.GetProperty("golem_maker"))
 			Message("Ter mais de um golem para uso pessoal eh um desperdicio de recursos!").SendSys(who);
 			return false;
@@ -68,7 +79,46 @@ class GolemAssembly(CombatAbility)
 			return false;
 		endif
 
-		if (!yesno(who, "Voce utilizara 100 minerios de Mithril e 50 couros curtidos. Deseja continuar?"))
+		// Find gadget in backpack
+		var gadget_item := 0;
+		var gadget_key := "";
+		var cannon := FindObjtypeInContainer(who.backpack, GADGET_HANDCANNON);
+		var harpoon := FindObjtypeInContainer(who.backpack, GADGET_HARPOON);
+		var trap := FindObjtypeInContainer(who.backpack, GADGET_POWDERTRAP);
+
+		var gadget_count := 0;
+		if (cannon)
+			gadget_count += 1;
+			gadget_item := cannon;
+			gadget_key := "handcannon";
+		endif
+		if (harpoon)
+			gadget_count += 1;
+			gadget_item := harpoon;
+			gadget_key := "harpoon";
+		endif
+		if (trap)
+			gadget_count += 1;
+			gadget_item := trap;
+			gadget_key := "powdertrap";
+		endif
+
+		if (gadget_count == 0)
+			Message("Voce precisa de um gadget (canhao, arpao ou mina) para construir o golem!").SendSys(who);
+			return false;
+		endif
+
+		// If multiple gadgets, let the player choose
+		if (gadget_count > 1)
+			var choice := _GadgetSelectionGump(who, cannon, harpoon, trap);
+			if (!choice)
+				return false;
+			endif
+			gadget_item := choice.item;
+			gadget_key := choice.key;
+		endif
+
+		if (!yesno(who, "Voce utilizara 100 minerios de Mithril, 50 couros curtidos e 1 gadget. Deseja continuar?"))
 			return false;
 		endif
 
@@ -100,6 +150,9 @@ class GolemAssembly(CombatAbility)
 			return false;
 		endif
 
+		// Consume the gadget
+		SubtractAmount(gadget_item, 1);
+
 		who.frozen := 1;
 		if (anvil.objtype == 0xA108)
 			anvil.graphic := 0xA103;
@@ -130,6 +183,7 @@ class GolemAssembly(CombatAbility)
 		var golem := CreateNpcFromTemplate(template, who.x, who.y, who.z, 0, who.realm);
 		golem.frozen := 1;
 		SetObjProperty(golem, "golem_maker", who.serial);
+		SetObjProperty(golem, "InstalledGadget", gadget_key);
 		mobile.SetProperty("golem_maker", 1);
 
 		Message("O mecanismo esta pronto para ser operado").SendAbove(golem);
@@ -138,10 +192,106 @@ class GolemAssembly(CombatAbility)
 		DebugMsg(
 			who,
 			DEBUG_HAB,
-			Message("[GOLEM_ASSEMBLY] Golem criado com sucesso!", Color(SYSTEM_COLOR::SUCCESS))
+			Message($"[GOLEM_ASSEMBLY] Golem criado com gadget: {gadget_key}", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;
 	endfunction
 
 endclass
+
+function _GolemCleave(mobile, who)
+	// Recursion guard
+	if (GetObjProperty(who, "#golem_cleaving"))
+		return false;
+	endif
+	SetObjProperty(who, "#golem_cleaving", 1);
+
+	PerformAction(who, HUMAN_ANIM::ATTACK_2HAND_BLUNT);
+	PlaySoundEffect(who, 0x306);
+
+	var mods := GetModByFacing(who.facing);
+	var dx := mods[1];
+	var dy := mods[2];
+	var attacker := MobileWrapper(who);
+	var festa := who.party;
+
+	for i := 1 to 3
+		var tx := who.x + (dx * i);
+		var ty := who.y + (dy * i);
+		// Check 1 tile radius around the line for width
+		foreach targ in ListMobilesNearLocation(tx, ty, who.z, 1, who.realm)
+			if (targ == who || targ.dead || targ.concealed)
+				continue;
+			endif
+			if (festa && targ in festa.members)
+				continue;
+			endif
+			var char_owner := GetObjProperty(targ, "owner");
+			if (char_owner == who.serial)
+				continue;
+			endif
+			attacker.Attack(MobileWrapper(targ));
+		endforeach
+	endfor
+
+	EraseObjProperty(who, "#golem_cleaving");
+
+	DebugMsg(
+		who,
+		DEBUG_HAB,
+		Message("[GOLEM_ASSEMBLY] Golem Cleave!", Color(SYSTEM_COLOR::SUCCESS))
+	);
+
+	return true;
+endfunction
+
+function _GadgetSelectionGump(who, cannon, harpoon, trap)
+	var gump := GFCreateGump();
+	GFClosable(gump, 1);
+	GFMovable(gump, 1);
+	GFResizePic(gump, 0, 0, 0x0A28, 400, 200);
+	GFHTMLArea(gump, 0, 16, 400, 25, "<CENTER><BASEFONT SIZE=5 COLOR=#DDAA44>Escolha o Gadget</BASEFONT></CENTER>", 0, 0);
+
+	var x := 15;
+	if (cannon)
+		GFTilePic(gump, x + 35, 50, CInt(GADGET_HANDCANNON), 0);
+		GFTextLine(gump, x + 5, 105, 0x0, "Canhao de Mao");
+		GFAddButton(gump, x + 35, 140, 0xFA5, 0xFA7, GF_CLOSE_BTN, 1);
+	endif
+	x += 125;
+	if (harpoon)
+		GFTilePic(gump, x + 35, 50, CInt(GADGET_HARPOON), 0);
+		GFTextLine(gump, x + 5, 105, 0x0, "Arpao Mecanico");
+		GFAddButton(gump, x + 35, 140, 0xFA5, 0xFA7, GF_CLOSE_BTN, 2);
+	endif
+	x += 125;
+	if (trap)
+		GFTilePic(gump, x + 35, 50, CInt(GADGET_POWDERTRAP), 0);
+		GFTextLine(gump, x + 5, 105, 0x0, "Mina de Polvora");
+		GFAddButton(gump, x + 35, 140, 0xFA5, 0xFA7, GF_CLOSE_BTN, 3);
+	endif
+
+	var result := GFSendGump(who, gump);
+	var butid := result[0];
+	if (!butid)
+		return 0;
+	endif
+
+	var ret := struct{};
+	case (butid)
+		1:
+			ret.+item := cannon;
+			ret.+key := "handcannon";
+		2:
+			ret.+item := harpoon;
+			ret.+key := "harpoon";
+		3:
+			ret.+item := trap;
+			ret.+key := "powdertrap";
+		default:
+			return 0;
+	endcase
+
+	return ret;
+endfunction

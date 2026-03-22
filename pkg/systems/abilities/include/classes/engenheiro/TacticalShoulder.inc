@@ -25,45 +25,84 @@ class TacticalShoulder(CombatAbility)
 
 	function CanActivate(this, mobile)
 		var who := mobile.GetObjRef();
-		var steamArms := _GetSteamArms(who);
-		if (!steamArms)
-			Message("Voce precisa estar usando os Bracos a Vapor.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-			return false;
-		endif
+		var gadget;
 
-		var gadget := GetObjProperty(steamArms, "InstalledGadget");
-		if (!gadget)
-			Message("Nenhum gadget instalado na ombreira. Clique duas vezes nos Bracos a Vapor para instalar.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-			return false;
-		endif
+		if (GetObjProperty(who, "pilotando"))
+			var golem := _TS_GetGolemRef(who);
+			if (!golem)
+				Message("Golem nao encontrado!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				return false;
+			endif
+			gadget := GetObjProperty(golem, "InstalledGadget");
+			if (!gadget)
+				Message("Nenhum gadget instalado no golem. Clique duas vezes no golem para instalar.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				return false;
+			endif
 
-		case (gadget)
-			"handcannon":
-				var ball := FindObjtypeInContainer(who.backpack, CANNONBALL_OBJTYPE);
-				if (!ball || ball.amount < 1)
-					Message("Voce precisa de uma bala de canhao!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
-				endif
-				var powder := FindObjtypeInContainer(who.backpack, GUNPOWDER_OBJTYPE);
-				if (!powder || powder.amount < 5)
-					Message("Voce precisa de pelo menos 5 polvoras!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
-				endif
-			"powdertrap":
-				var trap := FindObjtypeInContainer(who.backpack, POWDERTRAP_OBJTYPE);
-				if (!trap)
-					Message("Voce precisa de uma armadilha de polvora na mochila!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
-				endif
-		endcase
+			case (gadget)
+				"handcannon":
+					if (CInt(GetObjProperty(golem, "golem_cannonball")) < 1)
+						Message("O golem precisa de balas de canhao!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
+					if (CInt(GetObjProperty(golem, "golem_powder")) < 5)
+						Message("O golem precisa de pelo menos 5 polvoras!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
+				"powdertrap":
+					if (CInt(GetObjProperty(golem, "golem_powder")) < 5)
+						Message("O golem precisa de polvora para a armadilha!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
+			endcase
+		else
+			var steamArms := _GetSteamArms(who);
+			if (!steamArms)
+				Message("Voce precisa estar usando os Bracos a Vapor.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				return false;
+			endif
+
+			gadget := GetObjProperty(steamArms, "InstalledGadget");
+			if (!gadget)
+				Message("Nenhum gadget instalado na ombreira. Clique duas vezes nos Bracos a Vapor para instalar.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				return false;
+			endif
+
+			case (gadget)
+				"handcannon":
+					var ball := FindObjtypeInContainer(who.backpack, CANNONBALL_OBJTYPE);
+					if (!ball || ball.amount < 1)
+						Message("Voce precisa de uma bala de canhao!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
+					var powder := FindObjtypeInContainer(who.backpack, GUNPOWDER_OBJTYPE);
+					if (!powder || powder.amount < 5)
+						Message("Voce precisa de pelo menos 5 polvoras!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
+				"powdertrap":
+					var trap := FindObjtypeInContainer(who.backpack, POWDERTRAP_OBJTYPE);
+					if (!trap)
+						Message("Voce precisa de uma armadilha de polvora na mochila!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
+			endcase
+		endif
 
 		return true;
 	endfunction
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
-		var steamArms := _GetSteamArms(who);
-		var gadget := GetObjProperty(steamArms, "InstalledGadget");
+		var gadget;
+
+		if (GetObjProperty(who, "pilotando"))
+			var golem := _TS_GetGolemRef(who);
+			gadget := GetObjProperty(golem, "InstalledGadget");
+		else
+			var steamArms := _GetSteamArms(who);
+			gadget := GetObjProperty(steamArms, "InstalledGadget");
+		endif
 
 		case (gadget)
 			"handcannon":
@@ -101,10 +140,18 @@ function _FireHandcannon(mobile, who)
 	endif
 
 	// Consume ammo after validation
-	var ball := FindObjtypeInContainer(who.backpack, CANNONBALL_OBJTYPE);
-	SubtractAmount(ball, 1);
-	var powder := FindObjtypeInContainer(who.backpack, GUNPOWDER_OBJTYPE);
-	SubtractAmount(powder, 5);
+	if (GetObjProperty(who, "pilotando"))
+		var golem := _TS_GetGolemRef(who);
+		var stored_balls := CInt(GetObjProperty(golem, "golem_cannonball"));
+		SetObjProperty(golem, "golem_cannonball", stored_balls - 1);
+		var stored_powder := CInt(GetObjProperty(golem, "golem_powder"));
+		SetObjProperty(golem, "golem_powder", stored_powder - 5);
+	else
+		var ball := FindObjtypeInContainer(who.backpack, CANNONBALL_OBJTYPE);
+		SubtractAmount(ball, 1);
+		var powder := FindObjtypeInContainer(who.backpack, GUNPOWDER_OBJTYPE);
+		SubtractAmount(powder, 5);
+	endif
 
 	// Cannon animation
 	Message("*Dispara o canhao de mao!*").SendEmote(who);
@@ -262,8 +309,14 @@ function _FireHarpoon(mobile, who)
 endfunction
 
 function _DeployPowderTrap(mobile, who)
-	var trap_item := FindObjtypeInContainer(who.backpack, POWDERTRAP_OBJTYPE);
-	SubtractAmount(trap_item, 1);
+	if (GetObjProperty(who, "pilotando"))
+		var golem := _TS_GetGolemRef(who);
+		var stored := CInt(GetObjProperty(golem, "golem_powder"));
+		SetObjProperty(golem, "golem_powder", stored - 5);
+	else
+		var trap_item := FindObjtypeInContainer(who.backpack, POWDERTRAP_OBJTYPE);
+		SubtractAmount(trap_item, 1);
+	endif
 
 	var metalworking := mobile.GetSkill(METALWORKING);
 	var dano := CInt(metalworking / 2);
@@ -293,6 +346,14 @@ function _DeployPowderTrap(mobile, who)
 	);
 
 	return true;
+endfunction
+
+function _TS_GetGolemRef(who)
+	var serial := GetObjProperty(who, "lastpossessedserial");
+	if (!serial)
+		return 0;
+	endif
+	return SystemFindObjectBySerial(serial);
 endfunction
 
 function _GetSteamArms(who)
