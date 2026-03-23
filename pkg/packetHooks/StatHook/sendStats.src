@@ -178,21 +178,23 @@ exported function HandleSendStats(character, byref packet)
 			//pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::GOLD, mobileEnvelopado.GetGold());
 			pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::GOLD, 0);
 
+			var spellResist := mobileEnvelopado.GetSpellResist();
 			foreach camadaArmadura in ARMOR_RESISTENCE_PACKET_ARRAY
 				Sleepms(2);
 				var itemEquipado := GetEquipmentByLayer(character,camadaArmadura);
-				var envelopeArmadura := ArmorWrapper(itemEquipado); 
+				var envelopeArmadura := ArmorWrapper(itemEquipado);
 				var resistencias := envelopeArmadura.GetResists();
 				var indiceLote := (_camadaArmadura_iter - 1) * QTD_RESISTENCIAS;
 				var indiceInicial := NEW_STATUS_OFFSETS::AMOR_RESISTANCES_START;
-				
-				pacoteFinal.SetInt8(indiceInicial + indiceLote,resistencias.GetSlashResist());
-				pacoteFinal.SetInt8(indiceInicial + indiceLote + 1,resistencias.GetPiercingResist());
-				pacoteFinal.SetInt8(indiceInicial + indiceLote + 2,resistencias.GetBluntResist());
-				pacoteFinal.SetInt8(indiceInicial + indiceLote + 3,resistencias.GetFireResist());
-				pacoteFinal.SetInt8(indiceInicial + indiceLote + 4,resistencias.GetColdResist());
-				pacoteFinal.SetInt8(indiceInicial + indiceLote + 5,resistencias.GetPoisonResist());
-				pacoteFinal.SetInt8(indiceInicial + indiceLote + 6,resistencias.GetEnergyResist());
+
+				// Feito dessa forma, porque se o valor for erro, o resistencias nao soma com a spellResist. Por isso o ternario.
+				pacoteFinal.SetInt8(indiceInicial + indiceLote,     (resistencias.GetSlashResist()    ? resistencias.GetSlashResist()    : 0) + spellResist.GetSlashResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 1, (resistencias.GetPiercingResist() ? resistencias.GetPiercingResist() : 0) + spellResist.GetPiercingResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 2, (resistencias.GetBluntResist()    ? resistencias.GetBluntResist()    : 0) + spellResist.GetBluntResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 3, (resistencias.GetFireResist()     ? resistencias.GetFireResist()     : 0) + spellResist.GetFireResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 4, (resistencias.GetColdResist()     ? resistencias.GetColdResist()     : 0) + spellResist.GetColdResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 5, (resistencias.GetPoisonResist()   ? resistencias.GetPoisonResist()   : 0) + spellResist.GetPoisonResist());
+				pacoteFinal.SetInt8(indiceInicial + indiceLote + 6, (resistencias.GetEnergyResist()   ? resistencias.GetEnergyResist()   : 0) + spellResist.GetEnergyResist());
 			endforeach
 
 			var indicePosArmadura := NEW_STATUS_OFFSETS::AMOR_RESISTANCES_START + ARMOR_RESISTENCE_PACKET_ARRAY.size() * QTD_RESISTENCIAS;

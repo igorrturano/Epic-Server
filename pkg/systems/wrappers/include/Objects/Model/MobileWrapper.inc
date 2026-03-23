@@ -392,7 +392,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (this.GetTemplate() is @Exception)
 			return this.GetTemplate();
 		endif
-		
+
 		var phys, elem;
 		phys := SplitWords(this.GetTemplate().EpicFisResists);
 		elem := SplitWords(this.GetTemplate().EpicElemResists);
@@ -400,6 +400,24 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return ArmorResist(
 			GetResistValueByTier(phys[1]), GetResistValueByTier(phys[2]), GetResistValueByTier(phys[3]),
 			GetResistValueByTier(elem[1]), GetResistValueByTier(elem[2]), GetResistValueByTier(elem[3]), GetResistValueByTier(elem[4])
+		);
+	endfunction
+
+	/**
+	 * Returns the spell resist bonuses active on this mobile.
+	 * Spell resist is a virtual armor layer applied by magic (barkskin, protection, etc.)
+	 * and is read by both DamageController and sendStats.
+	 *
+	 * @return ArmorResist with spell resist values (all zeros if no active spell resist)
+	 */
+	function GetSpellResist(this)
+		var sr := this.GetProperty("#SpellResist");
+		if (!sr || sr is @Exception)
+			return ArmorResist();
+		endif
+		return ArmorResist(
+			CInt(sr.slash), CInt(sr.piercing), CInt(sr.blunt),
+			CInt(sr.fire), CInt(sr.cold), CInt(sr.energy), CInt(sr.poison)
 		);
 	endfunction
 

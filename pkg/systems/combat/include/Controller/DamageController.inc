@@ -479,7 +479,18 @@ function CalculateDefenderResist(byRef attackInfo)
 						  .DecreasePoisonBaseDamage(bodyResist.GetPoisonResist())
 						  .DecreaseEnergyBaseDamage(bodyResist.GetEnergyResist());
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Defesa natural (BODY) do defensor reduziu dano em: {bodyResist.ToString()}"));
-	
+
+	// Spell resist (virtual armor layer from magic: barkskin, protection, etc.)
+	var spellResist := attackInfo.GetDefender().GetSpellResist();
+	attackInfo.GetDamage().DecreaseSlashBaseDamage(spellResist.GetSlashResist())
+						  .DecreasePiercingBaseDamage(spellResist.GetPiercingResist())
+						  .DecreaseBluntBaseDamage(spellResist.GetBluntResist())
+						  .DecreaseFireBaseDamage(spellResist.GetFireResist())
+						  .DecreaseColdBaseDamage(spellResist.GetColdResist())
+						  .DecreasePoisonBaseDamage(spellResist.GetPoisonResist())
+						  .DecreaseEnergyBaseDamage(spellResist.GetEnergyResist());
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Proteção mágica do defensor reduziu dano em: {spellResist.ToString()}"));
+
 	if (armorsInBodyRegion == array{})
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Não há armadura na região atingida. Dano direto no corpo do defensor."));
 	else
