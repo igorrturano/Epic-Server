@@ -37,6 +37,7 @@ function SC_ApplyEffect(caster, targ, opts, duration, spellId, timerName := "spe
 	_SC_ApplyOpts(targ, opts);
 
 	opts.+spellId := spellId;
+	opts.+totalDuration := duration;
 	MobileWrapper(targ).SetProperty($"#SpellOpts_{spellId}", opts);
 
 	if (spellId)
@@ -44,7 +45,7 @@ function SC_ApplyEffect(caster, targ, opts, duration, spellId, timerName := "spe
 		SendSpellBuff(caster, targ, spellId, duration, desc);
 	endif
 
-	TS_StartTimer(targ, timerName, duration, spellId, caster, 0);
+	TS_StartTimer(targ, $"{timerName}_{spellId}", duration, spellId, caster, 0);
 endfunction
 
 /**
@@ -189,6 +190,56 @@ function _SC_RemoveResist(targ, opts)
 	mw.SetProperty("#SpellResist", sr);
 endfunction
 
+/**
+ * Re-syncs spell effects on login.
+ * Re-sends buff icons for active spell timers, or cleans up
+ * orphaned properties if the timer expired during offline.
+ *
+ * @param mobile Mobile - the player logging in
+ */
+function SC_ResyncOnLogin(mobile)
+	var timer_list := TS_GetTimerList(mobile);
+	var found := 0;
+
+	foreach timer in (timer_list)
+		if (_timer_iter[1, 12] != "spelleffect_")
+			continue;
+		endif
+
+		found := 1;
+		var spellId := CInt(timer.level);
+		if (!spellId)
+			continue;
+		endif
+
+		var remaining := CInt(timer.endtime - ReadGameClock());
+		if (remaining <= 0)
+			SC_RemoveEffect(mobile, spellId);
+			continue;
+		endif
+
+		var mw := MobileWrapper(mobile);
+		var opts := mw.GetProperty($"#SpellOpts_{spellId}");
+		if (opts && !opts.errortext)
+			var desc := _SC_BuildDescription(opts);
+			var totalDur := CInt(opts.totalDuration);
+			SendSpellBuff(mobile, mobile, spellId, remaining, desc, totalDur);
+		endif
+	endforeach
+
+	if (!found)
+		_SC_CleanupOrphans(mobile);
+	endif
+endfunction
+
+function _SC_CleanupOrphans(mobile)
+	var mw := MobileWrapper(mobile);
+	var sr := mw.GetProperty("#SpellResist");
+	if (sr && !sr.errortext)
+		mw.EraseProperty("#SpellResist");
+	endif
+endfunction
+
 // ============================================================
 // Internal: Build description for buff icon
 // ============================================================
@@ -203,13 +254,13 @@ function _SC_BuildDescription(opts)
 	if (opts.cold_resist)     parts.Append($"+{opts.cold_resist} Gelo");         endif
 	if (opts.poison_resist)   parts.Append($"+{opts.poison_resist} Veneno");     endif
 	if (opts.energy_resist)   parts.Append($"+{opts.energy_resist} Energia");    endif
-	if (opts.str_mod)         parts.Append($"+{opts.str_mod} FOR");              endif
-	if (opts.dex_mod)         parts.Append($"+{opts.dex_mod} DES");              endif
-	if (opts.int_mod)         parts.Append($"+{opts.int_mod} INT");              endif
+	if (opts.str_mod)         parts.Append($"{opts.str_mod} FOR");               endif
+	if (opts.dex_mod)         parts.Append($"{opts.dex_mod} DES");               endif
+	if (opts.int_mod)         parts.Append($"{opts.int_mod} INT");               endif
 
 	if (parts.size() == 0)
 		return "";
 	endif
 
-	return parts.join(", ");
+	return ", ".join(parts);
 endfunction

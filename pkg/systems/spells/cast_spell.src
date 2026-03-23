@@ -334,7 +334,7 @@ function replaceAccentedCharacters(text)
 endfunction
 
 function performSpellCycles(mobile, spellinfo, orig_hp)
-	var cycles := Max(CInt(spellinfo.Cycles), 1);
+	var cycles := CInt(spellinfo.Cycles);
 
 	if (GetObjProperty(mobile, "#free_cast"))
 		cycles := 1;

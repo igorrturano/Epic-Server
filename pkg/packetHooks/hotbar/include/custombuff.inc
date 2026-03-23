@@ -30,12 +30,15 @@ const ABILITY_BUFF_OFFSET := 10000;
 // @param durationSecs - duration in seconds
 // @param name      - buff display name
 // @param description - optional description text
-function SendCustomBuff(who, buffId, gumpIcon, durationSecs, name, description := "")
+function SendCustomBuff(who, buffId, gumpIcon, durationSecs, name, description := "", totalDurationSecs := 0)
+    if (!totalDurationSecs)
+        totalDurationSecs := durationSecs;
+    endif
     var name_len := len(name);
     var desc_len := len(description);
     // Header: packetId(1) + size(2) + subcommand(2) = 5
-    // Data: action(1) + buffId(2) + gumpId(2) + duration(2) + nameLen(2) + name + descLen(2) + desc
-    var packet_size := 5 + 1 + 2 + 2 + 2 + 2 + name_len + 2 + desc_len;
+    // Data: action(1) + buffId(2) + gumpId(2) + duration(2) + nameLen(2) + name + descLen(2) + desc + totalDuration(2)
+    var packet_size := 5 + 1 + 2 + 2 + 2 + 2 + name_len + 2 + desc_len + 2;
 
     var packet := CreatePacket(PACKET_EXTENDED, packet_size);
     packet.SetInt8(0, PACKET_EXTENDED);
@@ -49,6 +52,7 @@ function SendCustomBuff(who, buffId, gumpIcon, durationSecs, name, description :
     offset := SetInt16BE(packet, offset, durationSecs);
     offset := WriteStringBE(packet, offset, name);
     offset := WriteStringBE(packet, offset, description);
+    offset := SetInt16BE(packet, offset, totalDurationSecs);
 
     packet.SendPacket(who);
 endfunction
@@ -78,7 +82,7 @@ endfunction
 // @param spellId      - spell ID (matches Spell cfg entry, e.g. 715)
 // @param durationSecs - duration in seconds
 // @param description  - optional description (e.g. "+10 AR")
-function SendSpellBuff(who, targ, spellId, durationSecs, description := "")
+function SendSpellBuff(who, targ, spellId, durationSecs, description := "", totalDurationSecs := 0)
     var spell_cfgs := array{
         ":spells:config/cantrips",
         ":spells:config/evocation",
@@ -90,7 +94,8 @@ function SendSpellBuff(who, targ, spellId, durationSecs, description := "")
         ":spells:config/druid",
         ":spells:config/paladin",
         ":spells:config/demonhunter",
-        ":spells:config/trickster"
+        ":spells:config/trickster",
+        ":spells:config/shinobi"
     };
 
     foreach cfg_path in spell_cfgs
@@ -108,7 +113,7 @@ function SendSpellBuff(who, targ, spellId, durationSecs, description := "")
                 return; // No icon configured
             endif
 
-            SendCustomBuff(targ, spellId, icon, durationSecs, name, description);
+            SendCustomBuff(targ, spellId, icon, durationSecs, name, description, totalDurationSecs);
             return;
         endif
     endforeach
