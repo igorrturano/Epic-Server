@@ -106,7 +106,14 @@ function StartUp(mobile, byref timer_list, byref cooldowns, byref num_poisons)
 	foreach timer in (temp_list)
 		var event := struct;
 		event.+name := _timer_iter;
-		event.+amount := timer.duration;
+
+		// Use saved endtime to calculate real remaining time (accounts for offline time)
+		var remaining := CInt(timer.endtime - ReadGameClock());
+		if (remaining <= 0)
+			remaining := 1; // Expired during offline — let it expire immediately on restore
+		endif
+		event.+amount := remaining;
+
 		event.+level := timer.level;
 		event.+mobserial := mobile.serial;
 
@@ -135,22 +142,29 @@ function LogOff(mobile, byref timer_list, byref cooldowns)
 
 	foreach timer in (timer_list)
 		timer := timer; // So the compiler doesn't warn.
-		KillTimedScript(mobile, timer_list.pid, timer_list, _timer_iter);
-
 		var elem_info := TS_GetCfgElem(_timer_iter);
 		if (elem_info.errortext)
 			print("Error::LogOff() - Unable to find elem [" + _timer_iter + "] " + elem_info.errortext);
 			continue;
-		elseif (elem_info.LogOffScript)
+		endif
+
+		// Timers with PersistOnLogoff skip cleanup — they survive logoff/login
+		if (CInt(elem_info.PersistOnLogoff))
+			continue;
+		endif
+
+		KillTimedScript(mobile, timer.pid, timer_list, _timer_iter);
+
+		if (elem_info.LogOffScript)
 			var script := Start_Script(elem_info.LogOffScript, array{ mobile, "LogOff" });
 			if (script.errortext)
 				print("Error::LogOff() - [" + elem_info.LogOffScript + "] " + script.errortext);
 			endif
 		elseif (elem_info.EndScript)
-			SetObjProperty(mobile, "prop", timer);
+			SetObjProperty(mobile, "prop", timer.level);
 			var script := Start_Script(elem_info.EndScript, mobile);
 			if (script.errortext)
-				print("Error::LogOff() - [" + elem_info.LogOffScript + "] " + script.errortext);
+				print("Error::LogOff() - [" + elem_info.EndScript + "] " + script.errortext);
 			endif
 		endif
 	endforeach

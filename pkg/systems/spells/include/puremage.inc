@@ -38,7 +38,7 @@ function dispel(targ);
 			TS_LowerDuration(targ, timer, -1);
 		elseif (timer == "desviarprojetil")
 			TS_LowerDuration(targ, timer, -1);
-		elseif (timer == "spelleffect")
+		elseif (timer[1, 12] == "spelleffect_")
 			TS_LowerDuration(targ, timer, -1);
 		endif
 		

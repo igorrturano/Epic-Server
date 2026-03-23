@@ -66,6 +66,11 @@ function TS_GetCfgElem(elem_name, byref cfg_file:=0)
 
 	var elem := cfg_file[elem_name];
 
+	// Prefix fallback: "spelleffect_200" → "spelleffect"
+	if (elem.errortext && elem_name[1, 12] == "spelleffect_")
+		elem := cfg_file["spelleffect"];
+	endif
+
 	if ( elem.errortext )
 		print("Error::TS_GetCfgElem - Unable to find elem ["+elem_name+"] ->"+elem.errortext);
 	endif
