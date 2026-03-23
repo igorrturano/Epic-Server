@@ -11,7 +11,6 @@ include "include/epicUtils";
  *   religion-specific effects + Theology/10/2 raw damage
  *
  * Lifecycle:
- *   CanActivate: first-time wing selection (ChooseWings gump, stored permanently)
  *   OnActivate: store back item, equip wings, apply stat buffs, VFX, set #formaabissal
  *   OnBeforeHit: rebuke - religion-specific retaliation to attacker
  *   OnDeactivate: remove wings, re-equip stored back item, erase flags
@@ -25,22 +24,6 @@ class AbyssalForm(CombatAbility)
 
     function GetDurationFor(this, mobile)
         return 20;
-    endfunction
-
-    function CanActivate(this, mobile)
-        var who := mobile.GetObjRef();
-        var wing_type := who.GetProp("chosen_wings");
-
-        if (!wing_type)
-            wing_type := ChooseWings(who);
-            if (!wing_type)
-                Message("Selecao de asas cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-                return false;
-            endif
-            who.SetProp("chosen_wings", wing_type);
-        endif
-
-        return true;
     endfunction
 
     function OnActivate(this, mobile)
