@@ -1,5 +1,5 @@
 include ":abilities:models/CombatAbility";
-
+include ":hotbar:custombuff"; // For SendAbilityBuff
 /**
  * Campeao Divino (Divine Champion) - ABILITY_ID::CAMPEAO_DIVINO (404)
  *
@@ -24,22 +24,6 @@ class DivineChampion(CombatAbility)
 
     function GetDurationFor(this, mobile)
         return 20;
-    endfunction
-
-    function CanActivate(this, mobile)
-        var who := mobile.GetObjRef();
-        var wing_type := who.GetProp("chosen_wings");
-
-        if (!wing_type)
-            wing_type := ChooseWings(who);
-            if (!wing_type)
-                Message("Selecao de asas cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-                return false;
-            endif
-            who.SetProp("chosen_wings", wing_type);
-        endif
-
-        return true;
     endfunction
 
     function OnActivate(this, mobile)
@@ -77,6 +61,9 @@ class DivineChampion(CombatAbility)
         // Visual and sound effects
         PlaySoundEffect(who, 0x208);
         PlayObjectCenteredEffect(who, 0x376A, 1, 32);
+
+        // Add Buff Icon
+        SendAbilityBuff(who, ABILITY_ID::CAMPEAO_DIVINO, duration, $"+{stat_bonus} STR/AGI/INT");
     endfunction
 
     function OnBeforeHit(this, attackInfo)

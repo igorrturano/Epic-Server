@@ -421,6 +421,11 @@ function comprarHabilidade(who, item, nv:=-1)
 			who.enable("firewhilemoving");
 		elseif (escolhida_id == ABILITY_ID::NINJA_PATH)
 			CreateItemInBackPack(who, 3592, 1);
+		elseif (escolhida_id == ABILITY_ID::CAMPEAO_DIVINO || escolhida_id == ABILITY_ID::FORMA_ABISSAL)
+			var wing_type := ChooseWings(who);
+			if (wing_type)
+				SetObjProperty(who, "chosen_wings", wing_type);
+			endif
 		endif
 		myhabs[nivel] := escolhida_id;
 		habs[nivel] := 2;

@@ -42,6 +42,7 @@ const SUBCOMMAND_SPECIALS_RESPONSE := 0x54;
 const SUBCOMMAND_SPELLS_RESPONSE := 0x55;
 const SUBCOMMAND_SKILLS_RESPONSE := 0x56;
 const SUBCOMMAND_COMMANDS_RESPONSE := 0x59;
+const SUBCOMMAND_CUSTOM_BUFF := 0x62;
 
 // =============================================================================
 // Active Skills Discovery (from attributes.cfg)
