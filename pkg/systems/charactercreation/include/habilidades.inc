@@ -426,6 +426,8 @@ function comprarHabilidade(who, item, nv:=-1)
 			if (wing_type)
 				SetObjProperty(who, "chosen_wings", wing_type);
 			endif
+		elseif (escolhida_id == ABILITY_ID::PACK_MULE)
+			who.carrying_capacity_mod := who.carrying_capacity_mod + 60;
 		endif
 		myhabs[nivel] := escolhida_id;
 		habs[nivel] := 2;

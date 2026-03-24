@@ -145,9 +145,6 @@ exported function GetStaminaMaximumValue(mobile)
 																									"#stammod"))) * 100);
 
 	if (!mobile.npctemplate)
-		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::PACK_MULE))
-			mobile.carrying_capacity_mod := mobile.carrying_capacity_mod + 60;
-		endif
 		var hunger := CInt(AP_GetVital(mobile, "Hunger") / 60);
 		if (hunger >= FomeGetLimiar())
 			vital_points := vital_points - (FomeCalcDebuff(hunger) * 50);
