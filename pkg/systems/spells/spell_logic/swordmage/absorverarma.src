@@ -45,6 +45,13 @@ program SpellScript(params)
 		return 0;
 	endif
 
+	var targWeapon := WeaponWrapper(targ);
+	var attr := targWeapon.GetAttribute();
+	if (attr == "Ranged" || attr == "Throwing")
+		Message("Apenas armas corpo a corpo podem ser absorvidas.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
 	// Must be in backpack (not equipped)
 	if (targ.container != who.backpack)
 		Message("A arma precisa estar no seu inventario.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
