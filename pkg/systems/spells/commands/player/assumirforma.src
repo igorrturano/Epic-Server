@@ -154,35 +154,28 @@ function UnequipWeaponsWild(who)
 endfunction
 
 function ApplyAttributeModifiers(who, form, duration)
-	var skill_a_calc := CINT(0.1318 * form.strength + 0.2316 * form.dexterity + 0.5974 * 40); 
-	var resistmod_calc := CINT(-0.0015 * form.strength + 0.0375 * form.intelligence + 0.2125 * form.dexterity); 
+	var skill_a_calc := CINT(0.1318 * form.strength + 0.2316 * form.dexterity + 0.5974 * 40);
+	// Base resist is the animal's native tier number (0–5), stored at study time.
+	// Old forms without this field default to 0 via CInt(error) = 0.
+	var resistmod_calc := CInt(form.resistTier);
 	var hitsmod_calc := CINT(form.strength / 3);
 	var manamod_calc := CINT(form.dexterity / 5);
 	var stammod_calc := CINT(form.intelligence / 5);
-	var dicedmg_calc := CalculateDiceDamage(form.strength); 
+	var dicedmg_calc := CalculateDiceDamage(form.strength);
 
-	// Print for debugging
-	// SendSysMessageEx( who, "Skill Attack: " + skill_a_calc, SSM_INFO );
-	// SendSysMessageEx( who, "Histmod;: " + hitsmod_calc, SSM_INFO );
-	// SendSysMessageEx( who, "ResistMod: " + resistmod_calc, SSM_INFO );
-	// SendSysMessageEx( who, "Form Strength: " + form.strength, SSM_INFO );
-	// SendSysMessageEx( who, "Form Dexterity: " + form.dexterity, SSM_INFO );
-	// SendSysMessageEx( who, "Form Intelligence: " + form.intelligence, SSM_INFO );
-
-	var bonusMagery := 0;
-	bonusMagery:= 1 + (AP_GetSkill(who, MAGERY) / 500); 
+	// Coracao da Matilha: offensive/HP bonus only — this ability is about summons, not tankiness
+	var bonusMagery := 1 + (AP_GetSkill(who, MAGERY) / 500);
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		skill_a_calc := CINT(skill_a_calc * bonusMagery);
 		hitsmod_calc := CINT(hitsmod_calc * bonusMagery);
-		resistmod_calc := CINT(resistmod_calc * bonusMagery);
 	endif
 
-	var bonusMagicLore := 0;
-	bonusMagicLore := CINT(AP_GetSkill(who, THEOLOGY) / 10);
+	// Instinto de Sobrevivencia: survival specialist — resist bonus = Theology/30 (max +3)
+	var bonusMagicLore := CINT(AP_GetSkill(who, THEOLOGY) / 10);
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
-		skill_a_calc := CINT(skill_a_calc + bonusMagicLore); 
-		hitsmod_calc := CINT(hitsmod_calc + bonusMagicLore); 
-		resistmod_calc := CINT(resistmod_calc + bonusMagicLore); 
+		skill_a_calc := CINT(skill_a_calc + bonusMagicLore);
+		hitsmod_calc := CINT(hitsmod_calc + bonusMagicLore);
+		resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 30);
 	endif
 
 	/////////// START SPECIAL BEHAVIOURS (TODO: modularize it into a separate function)
@@ -235,7 +228,7 @@ function ApplyAttributeModifiers(who, form, duration)
 
 	// nomoon, nowildshape
 	if (moon_fase == "Kalendae")
-		SendSysMessageEx(who, "Você não consegue manter sua transformação em lua nova!", SSM_INFO);
+		SendSysMessageEx(who, "Você não consegue manter sua transformação em lua nova! (Lua: Kalendae - duração reduzida para 5s)", SSM_FAIL);
 		TS_StartTimer(who, "metamorfosedruida", 5);
 	endif
 
@@ -297,6 +290,21 @@ function applyResistMod(who, resistmod_calc)
 	who.resist_cold_mod := who.resist_cold_mod + resistmod_calc;
 	who.resist_poison_mod := who.resist_poison_mod + resistmod_calc;
 	who.resist_energy_mod := who.resist_energy_mod + resistmod_calc;
+
+	// Update #SpellResist so the status bar reflects wildshape resistances
+	var mw := MobileWrapper(who);
+	var sr := mw.GetProperty("#SpellResist");
+	if (!sr || sr.errortext)
+		sr := struct{slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0};
+	endif
+	sr.slash    += resistmod_calc;
+	sr.piercing += resistmod_calc;
+	sr.blunt    += resistmod_calc;
+	sr.fire     += resistmod_calc;
+	sr.cold     += resistmod_calc;
+	sr.poison   += resistmod_calc;
+	sr.energy   += resistmod_calc;
+	mw.SetProperty("#SpellResist", sr);
 endfunction
 
 function ApplyAttributeBoosts(who, form, duration)

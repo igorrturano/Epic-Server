@@ -135,7 +135,7 @@ program orderSpells(who, item)
 	var canceled := 0;
 	while (!canceled)
 		RemoveUsedSpells(who, priest_list, available_slots);
-		var input := CreateClericGump(who, spell_list, available_slots, priest_list);
+		var input := CreateClericGump(who, spell_list, available_slots, priest_list, slots_used, priest_slots);
 
 		if (input[0] >= 200)
 			if (TS_GetTimerInfo(who, "orderspell")) // TODO
@@ -153,7 +153,7 @@ program orderSpells(who, item)
 	endwhile
 endprogram
 
-function CreateClericGump(who, spell_list, available_slots, priest_list)
+function CreateClericGump(who, spell_list, available_slots, priest_list, slots_used, total_slots)
 	var gump := GFCreateGump();
 	// Count only non-cantrip spells (circle != 0) for gump sizing
 	var non_cantrip_count := 0;
@@ -202,6 +202,8 @@ function CreateClericGump(who, spell_list, available_slots, priest_list)
 			y += 26;
 		endif
 	endforeach
+
+	GFTextLine(gump, 63, y + 15, 0, "Slots: {}/{}".format(slots_used, total_slots));
 
 	return GFSendGump(who, gump);
 endfunction
