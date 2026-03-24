@@ -47,6 +47,9 @@ program do_poisoning(who)
 	elseif (Distance(who, the_poison) > 1)
 		SendSysMessageEx(who, " Voce esta muito distante!", SSM_FAIL);
 		return;
+	elseif (the_item.Category == WEAPON_CATEGORY::SPIRITUALBLADE)
+		SendSysMessageEx(who, "Voce nao pode envenenar uma Lâmina Espiritual!", SSM_FAIL);
+		return;
 	endif
 
 	// pega info sobre a poçao
@@ -113,10 +116,7 @@ program do_poisoning(who)
 
 	var canBePoisoned := 0;
 	var isFood := 0;
-	if (the_item.objtype IN { 0x0df0, 0x13f9, 0x0e8a, 0x0f5c, 0x1406, 0x1438, 0x143a,
-						  	0x143c, 0x13e4, 0x13b3, 0x13e3, 0x27a6, 0x26C6 }) // Staffs e Maces
-	
-
+	if (the_item.isA(POLCLASS_WEAPON) && the_item.TipoAtaque == "Contusivo")
 		SendSysMessageEx(who, "Voce nao pode envenenar armas impactantes.", SSM_FAIL);
 		return 0;
 	elseif (theitem.Attribute == "Ranged" && !theitem.Throwable)
