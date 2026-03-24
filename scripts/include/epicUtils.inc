@@ -104,6 +104,32 @@ function ChooseWings(who)
     return 0;
 endfunction
 
+function ChooseFlag(who)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9380, 400, 300);
+    GFTextMid(gump, 10, 30, 380, 2100, "Escolha Sua Bandeira");
+    GFTextMid(gump, 10, 60, 380, 2100, "Esta escolha é permanente");
+
+    var flag_types := array{0xECE9, 0xECEA, 0xECEB};
+    var flag_gumps := array{0xD179, 0xD17A, 0xD17B};
+
+    var x_pos := 50;
+    var y_pos := 100;
+
+    foreach graphic in flag_gumps
+        GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, _graphic_iter);
+        GFResizePic(gump, x_pos + 40, y_pos, 9350, 100, 100);
+        GFGumpPic(gump, x_pos, y_pos - 40, graphic);
+        x_pos += 120;
+        sleepms(2);
+    endforeach
+
+    var input := GFSendGump(who, gump);
+    if (input[0])
+        CreateItemInBackpack(who, flag_types[input[0]], 1);
+    endif
+endfunction
+
 function DistribuicaoGaussianaNormalizada(valoresEixoX,pico,declinio,eixoYMaximo := 100)
 
 	var gaussianas := array; 
