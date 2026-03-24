@@ -2303,8 +2303,6 @@ function UpdateCharacterSkin(who, chardata)
 endfunction
 
 function spellChoices(who)
-    var mageryLevel := CInt(GetObjProperty(who, "chardata").Skills[MAGERY]);
-
     // Get spells by circle from all 4 mage school configs
     var spellsByCircle := dictionary;
     spellsByCircle[1] := array;
@@ -2319,9 +2317,8 @@ function spellChoices(who)
         foreach key in keys
             var elem := FindConfigElem(spellcfg, key);
             var spelllvl := GetConfigInt(elem, "Circle");
-            var spelltype := GetConfigString(elem, "Type");
 
-            if (spelltype == "spellcaster" && (spelllvl == 1 || spelllvl == 2))
+            if (spelllvl == 1 || spelllvl == 2)
                 var spell := dictionary;
                 spell["id"] := key;
                 spell["circle"] := spelllvl;
@@ -2335,21 +2332,10 @@ function spellChoices(who)
 
     var selected_spells := array;
     var btn_value;
-    var total_amount := 0;
-    
-    // Calculate how many spells they can choose
-    if (mageryLevel >= 1)
-        total_amount := 1;
-    endif
-    if (mageryLevel >= 2)
-        total_amount := 2;
-    endif
-    if (mageryLevel >= 3)
-        total_amount := 3; // 2 from circle 1 + 1 from circle 2
-    endif
+    var total_amount := 3;
     
     while (1)
-        var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel);
+        var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount);
 
         foreach key in (input.keys)
             btn_value := key;
@@ -2362,33 +2348,20 @@ function spellChoices(who)
             endif
         endforeach
 
-        // Validate selection
-        if (mageryLevel < 3 && selected_spells.size() != total_amount)
-            selected_spells := array;
-            SendSysMessageEx(who, "Você deve escolher exatamente " + total_amount + " magia(s) do círculo 1.", SSM_FAIL);
-        elseif (mageryLevel >= 3)
-            // Count circle 1 and 2 spells
-            var circle1_count := 0;
-            var circle2_count := 0;
-            foreach chosen_spell in (selected_spells)
-                foreach spell in (spellsByCircle[1])
-                    if (spell.id == chosen_spell.id)
-                        circle1_count += 1;
-                    endif
-                endforeach
-                foreach spell in (spellsByCircle[2])
-                    if (spell.id == chosen_spell.id)
-                        circle2_count += 1;
-                    endif
-                endforeach
-            endforeach
-            
-            if (circle1_count != 2 || circle2_count != 1)
-                selected_spells := array;
-                SendSysMessageEx(who, "Você deve escolher 2 magias do círculo 1 e 1 magia do círculo 2.", SSM_FAIL);
-            else
-                break;
+        // Validate selection: always 3 spells, max 1 from circle 2
+        var circle2_count := 0;
+        foreach chosen_spell in (selected_spells)
+            if (chosen_spell.circle == 2)
+                circle2_count += 1;
             endif
+        endforeach
+
+        if (selected_spells.size() != total_amount)
+            selected_spells := array;
+            SendSysMessageEx(who, "Você deve escolher exatamente " + total_amount + " magias.", SSM_FAIL);
+        elseif (circle2_count > 1)
+            selected_spells := array;
+            SendSysMessageEx(who, "Você pode escolher no máximo 1 magia do círculo 2.", SSM_FAIL);
         else
             break;
         endif
@@ -2398,7 +2371,7 @@ function spellChoices(who)
     return selected_spells;
 endfunction
 
-function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel)
+function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount)
     var gump := GFCreateGump();
     GFClosable(gump, 0);
     
@@ -2424,27 +2397,27 @@ function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, 
         i += 1;
     endforeach
     
-    // Circle 2 spells if magery level 3
-    if (mageryLevel >= 3)
-        x += 300;
-        y := 50;
-        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 2:", 1, 0);
-        y += 26;
+    // Circle 2 spells
+    x += 300;
+    y := 50;
+    GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 2:", 1, 0);
+    y += 26;
 
-        i := 1;
-        foreach spell in (spellsByCircle[2])
-            var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
-            GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=" + color + ">" + spell.name, 1, 0);
-            GFTooltipText(gump, spell.desc);
-            if (!(spell.id in selected_spells) && (selected_spells.size() < total_amount))
-                GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 300+i);
-            endif
-            y += 26;
-            i += 1;
-        endforeach
-    endif
+    i := 1;
+    foreach spell in (spellsByCircle[2])
+        var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=" + color + ">" + spell.name, 1, 0);
+        GFTooltipText(gump, spell.desc);
+        if (!(spell.id in selected_spells) && (selected_spells.size() < total_amount))
+            GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 300+i);
+        endif
+        y += 26;
+        i += 1;
+    endforeach
     
     var remaining := total_amount - selected_spells.size();
+    GFHTMLArea(gump, 115, 645, 380, 20, "<BASEFONT Size=3 Color=#999999>Total: 3 magias (máx. 1 do círculo 2)", 0, 0);
+    GFHTMLArea(gump, 116, 646, 380, 20, "<BASEFONT Size=3 Color=#ffffff>Total: 3 magias (máx. 1 do círculo 2)", 0, 0);
     GFHTMLArea(gump, 115, 665, 192, 40, "<BASEFONT Size=5 Color=#999999>Escolha " + remaining + " magia(s)", 0, 0);
     GFHTMLArea(gump, 116, 666, 192, 40, "<BASEFONT Size=5 Color=#ffffff>Escolha " + remaining + " magia(s)", 0, 0);
     
