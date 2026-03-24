@@ -32,16 +32,18 @@ program SpellScript(params)
 		return;
 	endif
 
-	var healed := cint(AP_GetSkill(who, THEOLOGY) / 2);
-	if (healed < 20)
-		healed := 20;
+	// AP_GetSkill uses internal scale (ex: 70.0 => ~700).
+	// Rule: with 70 Theology => 17 instant + 17 over time in 4 ticks.
+	var base_heal := cint(AP_GetSkill(who, THEOLOGY) / 40);
+	if (base_heal < 1)
+		base_heal := 1;
 	endif
 
-	// Split healing: half instant, half over time
-	var instant_heal := cint(healed / 2);
-	var hot_total := healed - instant_heal;
-	var hot_ticks := 5; // 5 ticks over time
-	var hot_per_tick := cint(hot_total / hot_ticks);
+	var instant_heal := base_heal;
+	var hot_total := base_heal;
+	var hot_ticks := 4;
+	var hot_base_tick := cint(hot_total / hot_ticks);
+	var hot_remainder := hot_total - (hot_base_tick * hot_ticks);
 
 	// Apply instant heal
 	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
@@ -58,7 +60,8 @@ program SpellScript(params)
 	var hot_params := struct{
 		"caster" := who,
 		"target" := targ,
-		"heal_amount" := hot_per_tick,
+		"base_tick_heal" := hot_base_tick,
+		"remainder" := hot_remainder,
 		"remaining_ticks" := hot_ticks,
 		"total_ticks" := hot_ticks
 	};
@@ -71,7 +74,8 @@ endprogram
 function HealOverTime(params)
 	var caster := params.caster;
 	var targ := params.target;
-	var heal_amount := params.heal_amount;
+	var base_tick_heal := params.base_tick_heal;
+	var remainder := params.remainder;
 	var remaining_ticks := params.remaining_ticks;
 	var total_ticks := params.total_ticks;
 	var current_tick := 1;
@@ -89,9 +93,14 @@ function HealOverTime(params)
 			return;
 		endif
 
-		// Apply the heal tick
+		// Apply the heal tick (distribute remainder in the first ticks)
+		var tick_heal := base_tick_heal;
+		if (current_tick <= remainder)
+			tick_heal := tick_heal + 1;
+		endif
+
 		var hp_before := GetVital(targ, HITS);
-		applyEpicHealing(targ, heal_amount);
+		applyEpicHealing(targ, tick_heal);
 		var hp_after := GetVital(targ, HITS);
 		var tick_real_heal := hp_after - hp_before;
 		ShowHealFeedback(caster, targ, tick_real_heal, 1, current_tick, total_ticks);
