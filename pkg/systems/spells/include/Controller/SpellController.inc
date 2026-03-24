@@ -233,6 +233,11 @@ function SC_ResyncOnLogin(mobile)
 endfunction
 
 function _SC_CleanupOrphans(mobile)
+	// Do not erase #SpellResist while player is in wildshape — it holds transformation resistances
+	if (GetObjProperty(mobile, "metamorfose") != error)
+		return;
+	endif
+
 	var mw := MobileWrapper(mobile);
 	var sr := mw.GetProperty("#SpellResist");
 	if (sr && !sr.errortext)

@@ -13,6 +13,7 @@ include ":tn:npcutil";
 include ":timedscripts:timedScripts";
 include ":epicai:epicai";
 include ":datafile:datafile";
+include "include/epicNPCUtils";
 
 /**
  * Elo Natural (Natural Bond) - ABILITY_ID::ELO_NATURAL (2100)
@@ -184,6 +185,17 @@ class NaturalBond(CombatAbility)
         Message($"Destreza: {targ_dexterity}").SendSys(who);
         Message($"Inteligencia: {targ_intelligence}").SendSys(who);
 
+        // Parse physical resist tier number (T0–T5 → 0–5) from config
+        var tier_number := 0;
+        var fis_str := GetConfigString(elem, "EpicFisResists");
+        if (fis_str && !fis_str.errortext)
+            var fis_parts := SplitWords(fis_str);
+            var tier_str := CStr(fis_parts[1]);  // e.g. "T1"
+            if (tier_str.size() >= 2)
+                tier_number := CInt(tier_str[2]);  // '1' from "T1"
+            endif
+        endif
+
         var transformation := struct;
         transformation.+name := targ.name;
         transformation.+graphic := targ.graphic;
@@ -194,6 +206,7 @@ class NaturalBond(CombatAbility)
         transformation.+intelligence := targ_intelligence;
         transformation.+category := targ_category;
         transformation.+taxonomy := targ_taxonomy;
+        transformation.+resistTier := tier_number;  // 0–5, used for wildshape AR
 
         var transformation_list := GetObjProperty(who, "wildshape_forms");
         if (transformation_list == error)

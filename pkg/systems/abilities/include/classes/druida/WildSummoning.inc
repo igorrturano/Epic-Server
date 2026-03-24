@@ -16,6 +16,7 @@ include ":timedScripts:timedScripts";
 include "include/epicConstants";
 include "include/packets";
 include "include/sounds";
+include "include/epicNPCUtils";
 
 const _WS_BTN_SUMMON := 200;
 const _WS_BTN_BOND := 100;
@@ -153,11 +154,14 @@ class WildSummoning(CombatAbility)
         sleepms(1500);
 
         var creature := summon(selected_creature.template, targ, who);
-        creature.color := 30000;
         if (!creature)
             Message("Falha ao invocar o espirito.").SendSys(who);
             return false;
         endif
+
+        creature.color := 30000;
+        creature.name := selected_creature.name;
+        customizeNpc(creature, CInt(selected_creature.tier));
 
         PrintTextAbove(who, "*invocando " + selected_creature.name + "*");
         Message("Voce invocou " + selected_creature.name + "!").SendSys(who);

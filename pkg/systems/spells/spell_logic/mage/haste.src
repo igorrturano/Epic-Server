@@ -5,6 +5,7 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
+include "include/epicMageryUtils";
 include ":timedScripts:timedScripts";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
@@ -14,7 +15,7 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-	var tempo := cint(AP_GetSkill(who, ARCANA) / 10);
+	var tempo := cint(HandleSpellSkill(who) / 5);
 
 	// Bonus de especialização
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR))

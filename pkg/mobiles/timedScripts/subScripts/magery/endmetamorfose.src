@@ -9,9 +9,14 @@ include ":death:settings";
 include ":attributes:vitals";
 include ":timedscripts:timedScripts";
 include ":fls_core:packets";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program cureScript(params)
 	var who := params[1];
+
+	// Diagnostic: show moon phase when transformation ends (helps debug early reversion)
+	var moon_fase := GetGlobalProperty("moonfase");
+	SendSysMessageEx(who, "[DEBUG] Forma encerrada. Lua: " + moon_fase, SSM_INFO);
 
 	// Check if the player used the voltar command and already reverted manually
 	if (GetObjProperty(who, "voltou"))
@@ -60,6 +65,20 @@ program cureScript(params)
 		who.resist_cold_mod := who.resist_cold_mod - resist;
 		who.resist_poison_mod := who.resist_poison_mod - resist;
 		who.resist_energy_mod := who.resist_energy_mod - resist;
+
+		// Clear wildshape portion from #SpellResist (used by status bar and DamageController)
+		var mw := MobileWrapper(who);
+		var sr := mw.GetProperty("#SpellResist");
+		if (sr && !sr.errortext)
+			sr.slash    -= resist;
+			sr.piercing -= resist;
+			sr.blunt    -= resist;
+			sr.fire     -= resist;
+			sr.cold     -= resist;
+			sr.poison   -= resist;
+			sr.energy   -= resist;
+			mw.SetProperty("#SpellResist", sr);
+		endif
 	endif
 
 	// Call the new function to handle werewolf buffs removal

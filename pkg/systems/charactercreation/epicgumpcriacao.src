@@ -39,6 +39,7 @@ program epicCreationGump(who)
 	religionSelection(who);
 	// gameModeSelection(who);
 	pathOfWisdom(who, culture_pic);
+	itemInheritance(who);
 	languageSelection(who, culture_pic);
 	signSelection(who);
 	birthDaySelection(who);
@@ -55,7 +56,6 @@ program epicCreationGump(who)
 
 	// Open Beta 28/09
 	startAdventure(who);
-	itemInheritance(who);
 	
 	// Mark creation as completed
 	SetObjProperty(who, "creation_completed", 1);
