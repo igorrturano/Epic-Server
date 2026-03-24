@@ -162,18 +162,12 @@ function ApplyAttributeModifiers(who, form, duration)
 	var stammod_calc := CINT(form.intelligence / 5);
 	var dicedmg_calc := CalculateDiceDamage(form.strength);
 
-	// Coracao da Matilha: offensive/HP bonus only — this ability is about summons, not tankiness
-	var bonusMagery := 1 + (AP_GetSkill(who, MAGERY) / 500);
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
-		skill_a_calc := CINT(skill_a_calc * bonusMagery);
-		hitsmod_calc := CINT(hitsmod_calc * bonusMagery);
-	endif
-
 	// Instinto de Sobrevivencia: survival specialist — resist bonus = Theology/30 (max +3)
 	var bonusMagicLore := CINT(AP_GetSkill(who, THEOLOGY) / 10);
+	var bonusInstintoHP := CINT(AP_GetSkill(who, THEOLOGY) / 3);
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
 		skill_a_calc := CINT(skill_a_calc + bonusMagicLore);
-		hitsmod_calc := CINT(hitsmod_calc + bonusMagicLore);
+		hitsmod_calc := CINT(hitsmod_calc + bonusInstintoHP);
 		resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 30);
 	endif
 

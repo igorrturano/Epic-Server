@@ -522,9 +522,10 @@ function ApplyAttributeModifiers(who, form, duration, transformation_duration)
 
 	var bonusMagicLore := 0;
 	bonusMagicLore := CINT(AP_GetSkill(who, THEOLOGY) / 6);
+	var bonusInstintoHP := CINT(AP_GetSkill(who, THEOLOGY) / 3);
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
 		skill_a_calc := CINT(skill_a_calc + bonusMagicLore);
-		hitsmod_calc := CINT(hitsmod_calc + bonusMagicLore);
+		hitsmod_calc := CINT(hitsmod_calc + bonusInstintoHP);
 		resistmod_calc := CINT(resistmod_calc + bonusMagicLore);
 	endif
 
