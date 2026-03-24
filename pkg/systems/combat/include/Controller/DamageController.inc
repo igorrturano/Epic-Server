@@ -723,6 +723,7 @@ endfunction
 
 function ApplyCombatDamage(byRef attackInfo)
 	ExecuteCombatAbilitiesOnHit(attackInfo);
+	var totalAppliedDamage := 0;
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano aplicado em: {attackInfo.GetDefender().GetName()}"));
@@ -738,6 +739,7 @@ function ApplyCombatDamage(byRef attackInfo)
 
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetSlashBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetSlashBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetSlashBaseDamage();
 	elseif (posture == DAMAGE_TYPE::PIERCING)
 		if (attackInfo.GetDamage().GetPiercingBaseDamage() < 1)
 			attackInfo.GetDamage().SetPiercingBaseDamage(1);
@@ -748,6 +750,7 @@ function ApplyCombatDamage(byRef attackInfo)
 
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPiercingBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPiercingBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetPiercingBaseDamage();
 	elseif (posture == DAMAGE_TYPE::BLUNT)
 		if (attackInfo.GetDamage().GetBluntBaseDamage() < 1)
 			attackInfo.GetDamage().SetBluntBaseDamage(1);
@@ -758,31 +761,70 @@ function ApplyCombatDamage(byRef attackInfo)
 
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetBluntBaseDamage();
 	endif
 
 	if (attackInfo.GetDamage().GetFireBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetFireBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {attackInfo.GetDamage().GetFireBaseDamage()}"));
 	endif
 
 	if (attackInfo.GetDamage().GetColdBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetColdBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {attackInfo.GetDamage().GetColdBaseDamage()}"));
 	endif
 
 	if (attackInfo.GetDamage().GetPoisonBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetPoisonBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {attackInfo.GetDamage().GetPoisonBaseDamage()}"));
 	endif
 
 	if (attackInfo.GetDamage().GetEnergyBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetEnergyBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {attackInfo.GetDamage().GetEnergyBaseDamage()}"));
 	endif
+
+	if (totalAppliedDamage > 0)
+		var owner := ResolvePetOwner(attackInfo.GetAttacker().GetObjRef());
+		if (owner)
+			MostraDano(owner, attackInfo.GetAttacker().GetObjRef(), totalAppliedDamage);
+		endif
+	endif
+endfunction
+
+function ResolvePetOwner(attacker)
+	if (!attacker || !attacker.npctemplate)
+		return 0;
+	endif
+
+	var owner := attacker.master;
+	if (owner && owner.acctname && owner.connected)
+		return owner;
+	endif
+
+	var ownerSerial := CInt(GetObjProperty(attacker, "owner"));
+	if (!ownerSerial)
+		ownerSerial := CInt(GetObjProperty(attacker, "owneri"));
+	endif
+
+	if (!ownerSerial)
+		return 0;
+	endif
+
+	owner := SystemFindObjectBySerial(ownerSerial);
+	if (!owner || !owner.acctname || !owner.connected)
+		return 0;
+	endif
+
+	return owner;
 endfunction
 
 function CheckPoison(byRef attackInfo)

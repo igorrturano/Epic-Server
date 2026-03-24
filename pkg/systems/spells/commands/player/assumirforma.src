@@ -31,7 +31,6 @@ include ":spells:tnmagery";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":tn:npcutil";
-include ":brainAI:npcUtil";
 include ":spells:summon";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
@@ -157,7 +156,7 @@ function ApplyAttributeModifiers(who, form, duration)
 	var skill_a_calc := CINT(0.1318 * form.strength + 0.2316 * form.dexterity + 0.5974 * 40);
 	// Base resist is the animal's native tier number (0–5), stored at study time.
 	// Old forms without this field default to 0 via CInt(error) = 0.
-	var resistmod_calc := CInt(form.resistTier);
+	var resistmod_calc := ResolveWildshapeResistTier(form);
 	var hitsmod_calc := CINT(form.strength / 3);
 	var manamod_calc := CINT(form.dexterity / 5);
 	var stammod_calc := CINT(form.intelligence / 5);
@@ -279,18 +278,37 @@ function ApplyAttributeModifiers(who, form, duration)
 	applyResistMod(who, resistmod_calc);
 endfunction
 
-function applyResistMod(who, resistmod_calc)
-	who.resist_physical_mod := 0;
-	who.resist_fire_mod := 0;
-	who.resist_cold_mod := 0;
-	who.resist_poison_mod := 0;
-	who.resist_energy_mod := 0;
-	who.resist_physical_mod := who.resist_physical_mod + resistmod_calc;
-	who.resist_fire_mod := who.resist_fire_mod + resistmod_calc;
-	who.resist_cold_mod := who.resist_cold_mod + resistmod_calc;
-	who.resist_poison_mod := who.resist_poison_mod + resistmod_calc;
-	who.resist_energy_mod := who.resist_energy_mod + resistmod_calc;
+function ResolveWildshapeResistTier(form)
+	var tier_number := CInt(form.resistTier);
+	if (tier_number > 0)
+		return tier_number;
+	endif
 
+	if (!form.template)
+		return 0;
+	endif
+
+	var parsed_template := NPC_ParseTemplateName(form.template);
+	var elem := NPC_GetNPCConfig(":epicai:" + parsed_template.template);
+
+	if (!elem || elem.errortext)
+		return 0;
+	endif
+
+	var fis_parts := GetConfigStringArray(elem, "EpicFisResists");
+	if (!fis_parts || fis_parts.errortext || fis_parts.size() == 0)
+		return 0;
+	endif
+
+	var tier_str := CStr(fis_parts[1]);
+	if (tier_str.size() >= 2)
+		tier_number := CInt(tier_str[2]);
+	endif
+
+	return tier_number;
+endfunction
+
+function applyResistMod(who, resistmod_calc)
 	// Update #SpellResist so the status bar reflects wildshape resistances
 	var mw := MobileWrapper(who);
 	var sr := mw.GetProperty("#SpellResist");

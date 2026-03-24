@@ -177,7 +177,8 @@ class NaturalBond(CombatAbility)
         var targ_dexterity := AP_GetStat(targ, "Dexterity");
         var targ_intelligence := AP_GetStat(targ, "Intelligence");
 
-        var elem := NPC_GetNPCConfig(targ.npctemplate);
+        var parsed_template := NPC_ParseTemplateName(targ.npctemplate);
+        var elem := NPC_GetNPCConfig(":epicai:" + parsed_template.template);
         var targ_category := GetConfigString(elem, "Category");
         var targ_taxonomy := elem.Taxonomy;
 
