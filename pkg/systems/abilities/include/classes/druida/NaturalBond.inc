@@ -309,11 +309,11 @@ class NaturalBond(CombatAbility)
             resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 30);
         endif
 
-        if (form.category && Lower(form.category) == "giantanimal")
-            hitsmod_calc := CInt(hitsmod_calc + form.strength);
-            Message("Voce se sente lento!").SendSys(who);
-            TS_StartTimer(who, "lentidao", CInt(duration));
-        endif
+        // if (form.category && Lower(form.category) == "giantanimal")
+        //     // hitsmod_calc := CInt(hitsmod_calc + form.strength);
+        //     Message("Voce se sente lento!").SendSys(who);
+        //     TS_StartTimer(who, "lentidao", CInt(duration));
+        // endif
 
         var hitscript := this._GetTaxonomyScript(form.taxonomy);
         if (hitscript)
@@ -422,6 +422,14 @@ class NaturalBond(CombatAbility)
     endfunction
 
     function _ApplyResistMod(this, who, resistmod_calc)
+        // Apply to engine-level resist mods (visible on char sheet, consumed by combat)
+        who.resist_physical_mod := who.resist_physical_mod + resistmod_calc;
+        who.resist_fire_mod     := who.resist_fire_mod     + resistmod_calc;
+        who.resist_cold_mod     := who.resist_cold_mod     + resistmod_calc;
+        who.resist_poison_mod   := who.resist_poison_mod   + resistmod_calc;
+        who.resist_energy_mod   := who.resist_energy_mod   + resistmod_calc;
+
+        // Keep #SpellResist in sync (used by DamageController and status bar)
         var mw := MobileWrapper(who);
         var sr := mw.GetProperty("#SpellResist");
         if (!sr || sr.errortext)

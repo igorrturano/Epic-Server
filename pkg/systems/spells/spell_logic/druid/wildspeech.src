@@ -3,6 +3,7 @@ use os;
 include "include/say";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
@@ -25,7 +26,9 @@ program SpellScript(params)
 		duration_minutes := 1;
 	endif
 
-	TS_StartTimer(who, "wildspeech", duration_minutes * 60);
+	var duration_secs := duration_minutes * 60;
+	TS_StartTimer(who, "wildspeech", duration_secs);
+	SendSpellBuff(who, who, 708, duration_secs, $"{duration_minutes} min");
 	SendSysMessageEx(who, $"Sua fala selvagem foi despertada por {duration_minutes} minutos.", SSM_INFO);
 	
 	return 1;
