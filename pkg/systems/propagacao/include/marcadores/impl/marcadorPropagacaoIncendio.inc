@@ -315,6 +315,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       if(this._DeveRegredirEstado(valorRegresso))
 
         var novoValorEstado := this.estado + valorRegresso;
+
         this.AtualizaEstado(novoValorEstado);
 
         this.medidorEstimulo := 0;
@@ -401,8 +402,11 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     endif
   endfunction
 
-  function _DeveRegredirEstado(this, valorAvanco)
-    return true;
+  function _DeveRegredirEstado(this, valorRegresso)
+    var isEstadoDormente := 
+      this.IsEstadoMarcador(ESTADO_PROPAGACAO::DORMENTE) && 
+      (this.medidorEstimulo - valorRegresso) <= this.limiteEstimuloEstadoInferior;
+    return !isEstadoDormente;
   endfunction
   
   function _isMedidorAcimaLimiteEstado(this)
