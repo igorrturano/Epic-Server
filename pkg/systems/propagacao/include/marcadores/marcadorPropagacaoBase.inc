@@ -25,6 +25,7 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
 		this.marcadoresAdjacentes := dictionary;
 		this.estado := propPropagacao.estadoInicial;
 		this.ciclosDesdeUltimoEstimulo := 0;
+		this.ciclos := 0;
 		this.isAcumulando := false;
 		this.estadoControle := CONTROLE_PROPAGACAO::ATIVO;
 		this.fatorMudancaEstado := 1; //divede o medidor de estimulo. limite
