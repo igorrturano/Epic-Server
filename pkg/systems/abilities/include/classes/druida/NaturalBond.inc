@@ -386,9 +386,9 @@ class NaturalBond(CombatAbility)
         SetObjProperty(who, "stammod",             cur_stammod   + stammod_calc);
         SetObjProperty(who, "resistmod",           cur_resistmod + resistmod_calc);
 
+        this._ApplyResistMod(who, resistmod_calc);
         recalcvitals(who);
         applyEpicHealing(who, hitsmod_calc);
-        this._ApplyResistMod(who, resistmod_calc);
     endfunction
 
     function _ResolveResistTier(this, form)
