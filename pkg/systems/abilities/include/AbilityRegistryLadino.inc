@@ -68,6 +68,15 @@ include ":abilities:classes/ladrao/ExpertTrickster";
 include ":abilities:classes/ladrao/EmergencyEscape";
 
 //===========================================
+// BARDO V3 (1708-1712)
+//===========================================
+include ":abilities:classes/bardo/VoxArcana";
+include ":abilities:classes/bardo/Resonance";
+include ":abilities:classes/bardo/RealityTear";
+include ":abilities:classes/bardo/ChaosMastery";
+include ":abilities:classes/bardo/FinalSymphony";
+
+//===========================================
 // DANCARINO DAS SOMBRAS (1800-1804)
 //===========================================
 include ":abilities:classes/dancarino_das_sombras/ShadowDance";
@@ -135,6 +144,13 @@ ABILITY_CLASSES[ABILITY_ID::TRUQUE_SUJO] := @DirtyTrick;
 ABILITY_CLASSES[ABILITY_ID::VALENTAO] := @Bully;
 ABILITY_CLASSES[ABILITY_ID::TRAPACEIRO_EXPERIENTE] := @ExpertTrickster;
 ABILITY_CLASSES[ABILITY_ID::FUGA_DE_EMERGENCIA] := @EmergencyEscape;
+
+// Bardo V3 (1708-1712)
+ABILITY_CLASSES[ABILITY_ID::VOX_ARCANA]      := @VoxArcana;
+ABILITY_CLASSES[ABILITY_ID::RESONANCE]       := @Resonance;
+ABILITY_CLASSES[ABILITY_ID::REALITY_TEAR]    := @RealityTear;
+ABILITY_CLASSES[ABILITY_ID::CHAOS_MASTERY]   := @ChaosMastery;
+ABILITY_CLASSES[ABILITY_ID::FINAL_SYMPHONY]  := @FinalSymphony;
 
 // Dancarino das Sombras (1800-1804)
 ABILITY_CLASSES[ABILITY_ID::DANCA_DAS_SOMBRAS] := @ShadowDance;

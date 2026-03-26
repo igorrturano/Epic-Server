@@ -107,7 +107,8 @@ function EditAppearance(who, npc)
 		endif
 		y_pos += 20;
 
-		GFTextLine(gump, 40, y_pos, 2100, "Cor de pele: " + npc.skin_color);
+		var cur_skin_color := npc.truecolor ? npc.truecolor : npc.color;
+		GFTextLine(gump, 40, y_pos, 2100, "Cor de pele: " + cur_skin_color);
 		y_pos += 35;
 
 		GFResizePic(gump, 30, y_pos - 5, 3000, 440, 2);
@@ -134,7 +135,6 @@ function EditAppearance(who, npc)
 		y_pos += 40;
 
 		GFAddButton(gump, 40, y_pos, 2128, 2129, GF_CLOSE_BTN, 999);
-		GFTextLine(gump, 70, y_pos, 33, "Voltar");
 
 		var input := GFSendGump(who, gump);
 
@@ -483,7 +483,7 @@ function EditSkinColor(who, npc)
 	endcase
 
 	var skin_colors := GetConfigStringArray(skin_config, "color");
-	var cur_color := npc.skin_color;
+	var cur_color := npc.truecolor ? npc.truecolor : npc.color;
 
 	var gump := GFCreateGump();
 	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 600);
@@ -517,7 +517,8 @@ function EditSkinColor(who, npc)
 	if (input[0] == 998)
 		foreach key in (input.keys)
 			if (key > 1000 && key != 998 && key != 999)
-				npc.skin_color := key;
+				npc.color := key;
+				npc.truecolor := key;
 				SendSysMessage(who, "Cor de pele aplicada.");
 				break;
 			endif

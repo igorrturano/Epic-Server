@@ -16,6 +16,7 @@
  *   demonhunter.cfg  → 900 - 999
  *   trickster.cfg    → 1000 - 1099
  *   shinobi.cfg      → 1100 - 1199
+ *   bardo.cfg        → 1200 - 1299
  */
 
 use cfgfile;
@@ -55,6 +56,8 @@ function GetConfigFromId(spell_id)
         return ":spells:config/trickster";
     elseif (spell_id < 1200)
         return ":spells:config/shinobi";
+    elseif (spell_id < 1300)
+        return ":spells:config/bardo";
     endif
 
     return "";
@@ -120,6 +123,8 @@ function GetSpellTypeFromId(spell_id)
         return "trickster";
     elseif (spell_id < 1200)
         return "shinobi";
+    elseif (spell_id < 1300)
+        return "bard";
     endif
 
     return "";
@@ -143,7 +148,8 @@ function GetAllSpellConfigPaths()
         ":spells:config/paladin",
         ":spells:config/demonhunter",
         ":spells:config/trickster",
-        ":spells:config/shinobi"
+        ":spells:config/shinobi",
+        ":spells:config/bardo"
     };
 endfunction
 
