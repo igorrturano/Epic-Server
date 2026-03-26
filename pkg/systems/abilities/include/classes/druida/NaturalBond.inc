@@ -313,9 +313,18 @@ class NaturalBond(CombatAbility)
         var fis_str := GetConfigString(elem, "EpicFisResists");
         if (fis_str && !fis_str.errortext)
             var fis_parts := SplitWords(fis_str);
-            var tier_str  := CStr(fis_parts[1]);
-            if (tier_str.size() >= 2)
-                resistmod_calc := CInt(tier_str[2]);
+            if (fis_parts.size() >= 1)
+                // Wildshape uses linear tier scaling to avoid overpowered resistance spikes.
+                // T1 -> 1, T2 -> 2, ... T5 -> 5
+                var tier_str := Upper(CStr(fis_parts[1]));
+                case (tier_str)
+                    "T0": resistmod_calc := 0;
+                    "T1": resistmod_calc := 1;
+                    "T2": resistmod_calc := 2;
+                    "T3": resistmod_calc := 3;
+                    "T4": resistmod_calc := 4;
+                    "T5": resistmod_calc := 5;
+                endcase
             endif
         endif
 
@@ -400,6 +409,7 @@ class NaturalBond(CombatAbility)
         this._ApplyResistMod(who, resistmod_calc);
         recalcvitals(who);
         applyEpicHealing(who, hitsmod_calc);
+        SendStatus(who);
     endfunction
 
     function _ApplyResistMod(this, who, resistmod_calc)

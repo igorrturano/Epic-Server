@@ -1,0 +1,32 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+// O Sussurro do Vento (1200) - C0
+// Envia uma mensagem privada ao alvo em ate 20 tiles
+program SpellScript(params)
+	var who  := params[1];
+	var targ := params[2];
+
+	if (!targ || !targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (Distance(who, targ) > 20)
+		SendSysMessageEx(who, "O alvo esta longe demais para o sussurro alcancar.", SSM_FAIL);
+		return 0;
+	endif
+
+	var msg := RequestInput(who, who, "O que deseja sussurrar?");
+	if (!msg || msg == "")
+		return 0;
+	endif
+
+	PrintTextPrivate(targ, $"*{who.name} sussurra: {msg}*", who, 3, 191);
+	SendSysMessageEx(who, $"Voce sussurra para {targ.name}.", SSM_INFO);
+	PlaySoundEffect(who, 0x3D);
+
+	return 1;
+endprogram
