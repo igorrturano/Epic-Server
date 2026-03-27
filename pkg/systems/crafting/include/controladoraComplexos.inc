@@ -728,6 +728,7 @@ function TratarEscolhaDropDown(quem, dropdown,byref sessao, configRecursos)
 
 	if(sessao.modoGm)
 		var retornoMapeado := MapeiaRetornoGump(
+											dropdown.PegaIdBottao(), 
 											dropdown.PegaGerenciador().PegaAdicionalIdDropDown(), 
 											3
 										);
