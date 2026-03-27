@@ -872,9 +872,12 @@ function startAdventure(who)
 	// CreateItemInBackpack(who, 0xC627, 1);
 	// CreateItemInBackpack(who, 0x6161, 1);
 
+	PlayStationaryEffect(who.x, who.y, who.z, 0xD11B, 0, 30, 0, who.realm);
+	PlaySoundEffect(who, 0x1f2);
+
 	// PlayObjectCenteredEffect(who, FX_SMOKE, 0, 5);
-	sleep(1);
-	// startAdventureGump(who);
+	sleep(2);
+	startAdventureGump(who);
 endfunction
 
 function languageSelection(who, culture_pic)
