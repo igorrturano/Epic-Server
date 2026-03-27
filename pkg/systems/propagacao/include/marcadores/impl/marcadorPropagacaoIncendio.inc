@@ -39,22 +39,22 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     this.limiteEstimuloEstadoInferior := this._CalculaLimiteEstimuloInferior();
     this.catalogoDanoBase := MontaCatalogoDano();
     this.aceleradorContraLatente := cint(propagacaoConfig["incendio"].contraLatente);
+    this.multiplicadorDescansoDormente := cint(propagacaoConfig["sistema"].multiplicadorDescansoDormente);
     this.tileProspectado := this.Prospectar();
   endfunction
 
   function EfetuarCiclo(this)
     if(!this.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO))
-      var tileProspectado := this.Prospectar(array {TILE_SCANNER::ITENS, TILE_SCANNER::STATICOS, TILE_SCANNER::MOBILES}, this.tileProspectado);
+      this.tileProspectado := this.Prospectar(array {TILE_SCANNER::ITENS, TILE_SCANNER::MOBILES}, this.tileProspectado);
+      
       this.isAcumulando := false;
 
       if(this.IsEstadoControle(CONTROLE_PROPAGACAO::ATIVO))
-        var isAlvoEncontrado := this._EfetuarCicloAtivo(tileProspectado);
-        if(!isAlvoEncontrado)
-          this.estadoControle := CONTROLE_PROPAGACAO::DORMENTE;
-        endif
+        this._EfetuarCicloAtivo(this.tileProspectado);
       else
-        this._EfetuarCicloDormente(tileProspectado);
+        this._EfetuarCicloDormente(this.tileProspectado);
       endif
+      this.ciclos++;
     endif
   endfunction
 
@@ -68,12 +68,10 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function _EfetuarCicloAtivo(this,tileProspectado)
     var isAlvoEncontrado := this._ProcessaAlvos(tileProspectado);
-    //TODO corrigir isso, a equivalência tem que ser feita na hora de consumir combustivel só. 
-    //     aqui é melhor chamar sempre, se não nãoa dianta ser ativo. exemplo: se rodou 5 vezes no ativo, 
-    //     se mudar pra passivo, quando for consumir combustivel tem que consumir 5 vezes mais.
-    if(ReadMillisecondClock() - this.momentoNascimento % this.descansoControleDormente == 0)
-      this._ExecutaRotinaPropagacao(tileProspectado);
+    if(!isAlvoEncontrado)
+      this.estadoControle := CONTROLE_PROPAGACAO::DORMENTE;
     endif
+    this._ExecutaRotinaPropagacao(tileProspectado);
 
     return isAlvoEncontrado;
   endfunction
@@ -100,7 +98,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function _ProcessaEstimulos(this)
     this._ProcessaAutoEstimulo();
-
+    
     if(this.DevePropagar())
       this.Propagar();
       this.EnviaEstimulo(this.estado);
@@ -191,6 +189,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
 
   function _ConsomeCombustivel(this, tipoCombustivel)
     this.fatorMudancaEstado := tipoCombustivel.fatorInflamavel;
+
     tipoCombustivel.ConsomeCombustivel(this.estado);
     this.isAcumulando := true;
   endfunction
@@ -316,6 +315,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       if(this._DeveRegredirEstado(valorRegresso))
 
         var novoValorEstado := this.estado + valorRegresso;
+
         this.AtualizaEstado(novoValorEstado);
 
         this.medidorEstimulo := 0;
@@ -402,8 +402,11 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     endif
   endfunction
 
-  function _DeveRegredirEstado(this, valorAvanco)
-    return true;
+  function _DeveRegredirEstado(this, valorRegresso)
+    var isEstadoDormente := 
+      this.IsEstadoMarcador(ESTADO_PROPAGACAO::DORMENTE) && 
+      (this.medidorEstimulo - valorRegresso) <= this.limiteEstimuloEstadoInferior;
+    return !isEstadoDormente;
   endfunction
   
   function _isMedidorAcimaLimiteEstado(this)
@@ -422,7 +425,8 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function _CalcuraInfluenciaTemperatura(this)
-    var temperaturaRegion := getTemperature(this.esteItemMarcador) + PROPAGACAO_TEMPERATURA_BASE;
+    //var temperaturaRegion := getTemperature(this.esteItemMarcador) + PROPAGACAO_TEMPERATURA_BASE; pegar  a temperatura eestava deixando tudo 1000x mais pesado.
+    var temperaturaRegion := PROPAGACAO_TEMPERATURA_BASE;
     var sinal := (temperaturaRegion >= 0) ? 1 : -1;
     var porcentagem := Abs(temperaturaRegion) * 0.4 / 100;
     return (1 - sinal * porcentagem);
