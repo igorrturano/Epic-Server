@@ -51,7 +51,23 @@ class Apotheosis(CombatAbility)
 				Message("Voce manifesta a Gloria Eterna de Veneratio!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			BOKK_BHARAZ:
-				start_script(":charactercreation:habilidades/pelepedra", who);
+				var pp_duration := CInt(theology_skill / 10);
+				if (pp_duration < 3)
+					pp_duration := 3;
+				endif
+				PlaySoundEffect(who, 0x216);
+				PlayObjectCenteredEffect(who, 0x6C79, 0, 25);
+				PlaySoundEffect(who, 0x65b);
+				GrantPrivilege(who, "invul");
+				who.enable("invul");
+				var pp_i := 0;
+				while (pp_i < CInt(pp_duration / 3))
+					PlayObjectCenteredEffect(who, 0x6CE8, 10, 60);
+					sleep(3);
+					pp_i++;
+				endwhile
+				RevokePrivilege(who, "invul");
+				who.disable("invul");
 				Message("Voce manifesta a Fortaleza Inabalavel de Bokk Bharaz!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			HALLEUAD:
@@ -88,7 +104,27 @@ class Apotheosis(CombatAbility)
 				Message("Voce manifesta o Sol Divino de Halleuad!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			ELUITHORTH:
-				start_script(":charactercreation:habilidades/tormentoidrith", who);
+				var tor_range := CInt(theology_skill / 5);
+				var tor_dano := CInt(theology_skill / 2);
+				var tor_dur := CInt(theology_skill / 8);
+				if (tor_dur < 1)
+					tor_dur := 1;
+				endif
+				var isInDarkness := (GetGlobalProperty("dia") != "dia") || (who.realm != "britannia");
+				PerformAction(who, HUMAN_ANIM::CAST_AREA);
+				PlaySoundEffect(who, 0x684);
+				var tor_enemies := GetNearbyEnemies(who, tor_range);
+				foreach mob in tor_enemies
+					TS_StartTimer(mob, "paralysis", tor_dur);
+					PlayObjectCenteredEffect(mob, 0x54F7, 10, 30);
+					Message("*atormentado*").SendAbove(mob);
+					ApplyRawDamage(mob, tor_dano);
+					if (isInDarkness)
+						TS_StartTimer(mob, "blinded", tor_dur + CInt(theology_skill / 5), 0, who);
+						Message("*cegueira*").SendAbove(mob);
+					endif
+					sleepms(20);
+				endforeach
 				Message("Voce manifesta o Tormento de Idrith!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			KAI:
