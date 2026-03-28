@@ -18,8 +18,9 @@ include "include/packets";
 include "include/sounds";
 include "include/epicNPCUtils";
 
+const _WS_BTN_FORGET := 300;
 const _WS_BTN_SUMMON := 200;
-const _WS_BTN_BOND := 100;
+const _WS_BTN_BOND   := 100;
 
 /**
  * Convocacao Selvagem (Wild Summoning) - ABILITY_ID::CONVOCACAO_SELVAGEM (2101)
@@ -62,6 +63,9 @@ class WildSummoning(CombatAbility)
 
         if (input[0] == _WS_BTN_BOND)
             return this._BondWithCreature(who);
+        elseif (input[0] >= _WS_BTN_FORGET)
+            var forget_index := input[0] - _WS_BTN_FORGET;
+            return this._ForgetBond(who, forget_index, bonded_creatures);
         elseif (input[0] >= _WS_BTN_SUMMON)
             var selected_index := input[0] - _WS_BTN_SUMMON;
             if (selected_index < 1 || selected_index > bonded_creatures.size())
@@ -201,17 +205,19 @@ class WildSummoning(CombatAbility)
         GFGumpPic(gump, 63, 91, 1469);
         GFGumpPic(gump, 80, 91, 1469);
         GFTextLine(gump, 63, 100, 0, "Espiritos Vinculados");
-        GFTextLine(gump, 259, 100, 0, "Tier");
-        GFTextLine(gump, 304, 100, 0, "Invocar");
+        GFTextLine(gump, 220, 100, 0, "Tier");
+        GFTextLine(gump, 255, 100, 0, "Invocar");
+        GFTextLine(gump, 299, 100, 0, "Esquecer");
         GFGumpPic(gump, 38, 103, 9773, 0);
         GFGumpPic(gump, 296, 0, 9000, 0);
 
         var y := 121;
         foreach creature in bonded_creatures
             var color := "2d8a2d";
-            GFHTMLArea(gump, 63, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, creature.name), 1, 0);
-            GFHTMLArea(gump, 259, y, 34, 24, "<center>{}".format(creature.tier), 1, 0);
-            GFAddButton(gump, 319, y + 4, 10006, 10006, GF_CLOSE_BTN, _WS_BTN_SUMMON + _creature_iter);
+            GFHTMLArea(gump, 63, y, 152, 24, "<BASEFONT color=#{}>{}".format(color, creature.name), 1, 0);
+            GFHTMLArea(gump, 220, y, 30, 24, "<center>{}".format(creature.tier), 1, 0);
+            GFAddButton(gump, 255, y + 4, 10006, 10006, GF_CLOSE_BTN, _WS_BTN_SUMMON + _creature_iter);
+            GFAddButton(gump, 299, y + 4, 10006, 10006, GF_CLOSE_BTN, _WS_BTN_FORGET  + _creature_iter);
             sleepms(2);
             y += 26;
         endforeach
@@ -325,6 +331,18 @@ class WildSummoning(CombatAbility)
         PerformAction(who, HUMAN_ANIM::CAST_AREA);
         PrintTextAbove(who, "*criando um vinculo espiritual com " + targ.name + "*");
 
+        return true;
+    endfunction
+
+    function _ForgetBond(this, who, index, bonds)
+        if (index < 1 || index > bonds.size())
+            return false;
+        endif
+
+        var forgotten := bonds[index];
+        bonds.erase(index);
+        SetObjProperty(who, "spirit_bonds", bonds);
+        Message("Voce quebrou o vinculo espiritual com " + forgotten.name + ".").SendSys(who);
         return true;
     endfunction
 

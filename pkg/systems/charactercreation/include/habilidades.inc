@@ -428,6 +428,8 @@ function comprarHabilidade(who, item, nv:=-1)
 			endif
 		elseif (escolhida_id == ABILITY_ID::PACK_MULE)
 			who.carrying_capacity_mod := who.carrying_capacity_mod + 60;
+		elseif(escolhida_id == ABILITY_ID::AURA_DE_FE)
+			ChooseFlag(who);
 		endif
 		myhabs[nivel] := escolhida_id;
 		habs[nivel] := 2;
