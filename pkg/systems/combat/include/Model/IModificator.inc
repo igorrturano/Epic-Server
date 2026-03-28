@@ -1,5 +1,6 @@
 enum class MOD_SOURCES
-	CRAFTING := "fabricacao"
+	CRAFTING := "fabricacao",
+	RUNE := "runa"
 endenum
 
 class IModificator()

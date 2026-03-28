@@ -8,6 +8,10 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
+include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+const BARKSKIN_SPELL_ID := 715;
 
 program SpellScript(params)
 	var who := params[1];
@@ -32,36 +36,94 @@ program SpellScript(params)
 	var timer_list := TS_GetTimerList(targ);
 	var dispelled := 0;
 
-	// Remove all buff and debuff timers
+	// Remove all buff and debuff timers (TS-based)
 	foreach timer in (timer_list.keys())
 		timer := lower(timer);
-		// Attribute buffs
-		if (timer == "agility" || timer == "strength" || timer == "intelligence" || timer == "velocidade" ||
-	  timer == "bless")
+
+		// Stat buffs/debuffs
+		if (timer == "agility" || timer == "strength" || timer == "intelligence" ||
+		  timer == "velocidade" || timer == "bless" || timer == "gloria" ||
+		  timer == "weaken" || timer == "clumsy" || timer == "feeblemind")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 
 		// Resistance buffs
-		elseif (timer == "physicalresist" || timer == "phmod" || timer == "fimod" || timer == "comod" ||
+		elseif (timer == "phmod" || timer == "fimod" || timer == "comod" ||
 		  timer == "enmod" || timer == "pomod")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 
-		// Special effects
-		elseif (timer == "disfarce" || timer == "gloria" || timer == "desviarprojetil" || timer == "weaken" ||
-		  timer == "clumsy" || timer == "feeblemind")
+		// curse effects
+		elseif (timer == "disfarce" || timer == "desviarprojetil" || timer == "dmgreturn" ||
+		  timer == "desarmar" || timer == "dmgreduction")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 
-		// Combat effects
-		elseif (timer == "paralyze" || timer == "bleed" || timer == "poison" || timer == "blind" ||
-		  timer == "sleep" || timer == "silence")
+		// Control effects
+		elseif (timer == "paralysis" || timer == "blinded" || timer == "lentidao" ||
+		  timer == "sleep" || timer == "bleed" || timer == "spectralform")
+			TS_LowerDuration(targ, timer, -1);
+			dispelled := 1;
+
+		// Necromancer/debuff effects
+		elseif (timer == "nocure" || timer == "atrasarmagias" || timer == "fugademana" ||
+		  timer == "apodrecer" || timer == "aparenciacadaverica" || timer == "vinganca" ||
+		  timer == "defaultpoison" || timer == "manapoison")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 		endif
 	endforeach
 
-	// Attempt to banish summons
+	// --- Barkskin (SC_ApplyEffect, spell ID 715) ---
+	var barkskin_opts := MobileWrapper(targ).GetProperty($"#SpellOpts_{BARKSKIN_SPELL_ID}");
+	if (barkskin_opts && !barkskin_opts.errortext)
+		SC_RemoveEffect(targ, BARKSKIN_SPELL_ID);
+		TS_LowerDuration(targ, $"spelleffect_{BARKSKIN_SPELL_ID}", -1);
+		dispelled := 1;
+	endif
+
+	// --- Cooldown-based debuffs ---
+	if (GetCooldown(targ, "charmed") > 0)
+		SetCooldown(targ, "charmed", 0);
+		EraseObjProperty(targ, "charmed_by");
+		EraseObjProperty(targ, "charmed_cannot_attack");
+		dispelled := 1;
+	endif
+
+	if (GetCooldown(targ, "silence") > 0)
+		SetCooldown(targ, "silence", 0);
+		dispelled := 1;
+	endif
+
+	if (GetCooldown(targ, "darkness") > 0)
+		SetCooldown(targ, "darkness", 1);
+		dispelled := 1;
+	endif
+
+	// --- Bard property-based effects ---
+	var bard_props := array{ "#bard_sleeping", "#bard_feared", "#bard_silenced",
+	                          "#bard_hallucination", "#bard_charmed" };
+	foreach prop in (bard_props)
+		if (GetObjProperty(targ, prop) != error)
+			EraseObjProperty(targ, prop);
+			dispelled := 1;
+		endif
+	endforeach
+
+	// --- Chain of pain (property-based) ---
+	if (GetObjProperty(targ, "#chainofpain") != error)
+		EraseObjProperty(targ, "#chainofpain");
+		EraseObjProperty(targ, "#mageserial");
+		dispelled := 1;
+	endif
+
+	// --- Aparência cadavérica (property companion) ---
+	if (GetObjProperty(targ, "aparenciacadaverica") != error)
+		EraseObjProperty(targ, "aparenciacadaverica");
+		// TS timer "aparenciacadaverica" already handled in the loop above
+	endif
+
+	// --- Attempt to banish summons ---
 	if (targ.npctemplate)
 		var summoned := GetObjProperty(targ, "summoned");
 		if (summoned)
