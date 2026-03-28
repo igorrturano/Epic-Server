@@ -27,7 +27,7 @@ var SUBCLASS_SHINOBI         := array{ "Shinobi",            1300, 1304 };
 var SUBCLASS_VIVISSECCIONISTA := array{ "Vivisseccionista",   1400, 1404 };
 var SUBCLASS_ESGRIMISTA      := array{ "Esgrimista",         1500, 1504 };
 var SUBCLASS_LADRAO          := array{ "Ladrao",             1600, 1604 };
-var SUBCLASS_BARDO           := array{ "Bardo",              1700, 1707 };
+var SUBCLASS_BARDO           := array{ "Bardo",              1708, 1712 };
 var SUBCLASS_DANC_SOMBRAS    := array{ "Dancarino das Sombras", 1800, 1804 };
 var SUBCLASS_CAC_DEMONIOS    := array{ "Cacador de Demonios", 1900, 1904 };
 
