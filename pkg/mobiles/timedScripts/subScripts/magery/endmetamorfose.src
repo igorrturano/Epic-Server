@@ -10,13 +10,10 @@ include ":attributes:vitals";
 include ":timedscripts:timedScripts";
 include ":fls_core:packets";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
 
 program cureScript(params)
 	var who := params[1];
-
-	// Diagnostic: show moon phase when transformation ends (helps debug early reversion)
-	var moon_fase := GetGlobalProperty("moonfase");
-	SendSysMessageEx(who, "[DEBUG] Forma encerrada. Lua: " + moon_fase, SSM_INFO);
 
 	// Check if the player used the voltar command and already reverted manually
 	if (GetObjProperty(who, "voltou"))
@@ -27,7 +24,7 @@ program cureScript(params)
 	// Proceed with reverting the player
 	var metamorfose := GetObjProperty(who, "metamorfose");
 	if (metamorfose == error)
-		SendSysMessageEx(who, "Você não está metamorfoseado.", SSM_FAIL);
+		Message("Voce nao esta metamorfoseado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return;
 	endif
 
@@ -79,6 +76,7 @@ program cureScript(params)
 			sr.energy   -= resist;
 			mw.SetProperty("#SpellResist", sr);
 		endif
+		EraseObjProperty(who, "polymorph_resistmod");
 	endif
 
 	// Call the new function to handle werewolf buffs removal

@@ -89,7 +89,7 @@ function HealOverTime(params)
 		sleep(5);
 
 		// Check if target is still valid
-		if (!targ || targ.dead || !targ.connected)
+		if (!targ || targ.dead)
 			return;
 		endif
 
