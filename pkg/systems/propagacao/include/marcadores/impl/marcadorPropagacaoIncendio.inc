@@ -82,6 +82,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
     if(isAlvoEncontrado)
       this.estadoControle := CONTROLE_PROPAGACAO::ATIVO;
     endif
+
     this._ExecutaRotinaPropagacao(tileProspectado);
   endfunction
 
@@ -106,7 +107,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   endfunction
 
   function _ProcessaAutoEstimulo(this)
-    if(this.isAcumulando && this.estado > ESTADO_PROPAGACAO::LATENTE)
+    if(this.isAcumulando && this.estado >= ESTADO_PROPAGACAO::LATENTE)
         this.RecebeEstimulo(this.estado);
     else
         var valorEstimulo := -this.estado;
@@ -243,6 +244,10 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       return 0;
     endif
     
+    /* // [Debug]
+    Print("processo {}; ciclo {}: Recebeu estímulo: {} - medidor: {} - acumulando ?: {} - estado: {}".format(this.esteItemMarcador.serial, this.ciclos, valor, this.medidorEstimulo, this.isAcumulando, this.estado));
+    */
+
     this.medidorEstimulo += (this._DeveInverterEstimulo(valor,isRemetenteAcumulando) ?  valor * -1 : valor);
 
     this.ProcessaMudancaEstado();
@@ -295,6 +300,17 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
   function ProcessaMudancaEstado(this);
     this.limiteEstimuloEstadoSuperior := _CalculaLimiteEstimuloSuperior(this);
     this.limiteEstimuloEstadoInferior := _CalculaLimiteEstimuloInferior(this);
+    /* // [Debug]
+    Print("processo {}; ciclo {};  - medidor: {} - acumulando ?: {} - estado: {} - limites: {}|{}"
+      .format(
+      this.esteItemMarcador.serial, 
+      this.ciclos,
+      this.medidorEstimulo,
+      this.isAcumulando,
+      this.estado,
+      this.limiteEstimuloEstadoSuperior,
+      this.limiteEstimuloEstadoInferior)); 
+    */
 
     if(this._isMedidorAcimaLimiteEstado())  
       var valorAvanco := this._ObtemQuantidadeAvancoEstado();
