@@ -85,7 +85,7 @@ function MiningLoop(who, scoop, my_x, my_y, my_facing, location_name)
 
 	SetResource(resource_type, location_elem, resource_amount - 1);
 
-	var difficulty := 20; // CInt(100 - (resource_amount * 100 / MAX_RESOURCE_AMOUNT));
+	var difficulty := 5; // CInt(100 - (resource_amount * 100 / MAX_RESOURCE_AMOUNT));
 
 	var skill := Cint(AP_GetSkill(who, GATHERING));
 
