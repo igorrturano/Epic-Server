@@ -277,23 +277,25 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 			quantidadeFinal := cint(quantidade * propFabricadoMontado.receita.lote);
 		endif
 			
-		var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
-		if(!item)
-			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
+		if(!propFabricadoMontado.receita.isEmpilhavel)
+			for i := 1 to quantidadeFinal
+					Sleepms(2);
+					var item := CreateItemInBackpack(quem,descriptor);
+					if(!item)
+						item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, 1, quem.realm);
+					endif
+
+					AplicaAtributosItemFabricado(quem,item, propFabricadoMontado);
+			endfor
+		else
+			var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
+			if(!item)
+				item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
+			endif
+
+			AplicaAtributosItemFabricado(quem,item, propFabricadoMontado);
 		endif
 
-		item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
-		item.hp := item.maxhp;
-		
-		if(!item)
-			SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
-			return 0;
-		endif
-
-		AplicaFechadura(quem, item);
-		item.setAttrBase();
-		item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
-	
 	else
 		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
 		Print("Erro: O Item " +  produto.desc + " não é um Produto Montado.");
@@ -301,6 +303,20 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 	endif
 	
 	return 1;
+endfunction
+
+function AplicaAtributosItemFabricado(quem, item, propFabricadoMontado)
+	item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
+	item.hp := item.maxhp;
+
+	if(!item)
+		SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
+		return 0;
+	endif
+
+	AplicaFechadura(quem, item);
+	item.setAttrBase();
+	item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? CDbl((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 1;
 endfunction
 
 function ResolveEfeitoCaracteristica(valorEfeito)

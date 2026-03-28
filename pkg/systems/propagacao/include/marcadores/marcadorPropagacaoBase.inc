@@ -2,6 +2,7 @@
 use util;
 include ":propagacao:include/propagacao";
 include ":propagacao:include/marcadores/IMarcadorPropagacao";
+include "/include/epicPropNames";
 
 class MarcadorPropagacaoBase(IMarcadorPropagacao)
 	function MarcadorPropagacaoBase( this, esteItemMarcador, propPropagacao, momentoNascimento, descansoMinimo := 0)
@@ -32,6 +33,7 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
 		this.medidorEstimulo := 0; // exemplo: vai de -50 a + 50
 		this.descasoMinimo := descansoMinimo ? descansoMinimo : cint(propagacaoConfig["sistema"].descansoMinimo);
 		this.descansoControleDormente := this.descasoMinimo * cint(propagacaoConfig["sistema"].multiplicadorDescansoDormente);
+		this.limitePorOrigem := cint(propagacaoConfig["sistema"].limitePorOrigem);
 		this.momentoNascimento := momentoNascimento;
 	endfunction
 
@@ -88,7 +90,7 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
 												);
 					marcadorPropagacaoEncontrado := posicaoMarcador.marcadorEncontrado;
 
-					if(DeveCriarMarcadorPropagacaoAdjacente(
+					if(this.DeveCriarMarcadorPropagacaoAdjacente(
 															marcadorPropagacaoEncontrado,
 															this.geracao,
 															this.estado
@@ -188,12 +190,17 @@ class MarcadorPropagacaoBase(IMarcadorPropagacao)
 		endif
 	endfunction
 
-	function DeveCriarMarcadorPropagacaoAdjacente(marcadorPropagacaoEncontrado, geracao, estado)
+	function DeveCriarMarcadorPropagacaoAdjacente(this, marcadorPropagacaoEncontrado, geracao, estado)
 		return !marcadorPropagacaoEncontrado 
 				&& !IsLimiteGeracaoAlcancado(geracao) 
 				&& estado != ESTADO_PROPAGACAO::DORMENTE
-				&& estado != ESTADO_PROPAGACAO::LATENTE;
+				&& estado != ESTADO_PROPAGACAO::LATENTE
+				&& !this.IsLimiteGlobalAlcancado();
 		
+	endfunction
+
+	function IsLimiteGlobalAlcancado(this)
+		return this.limitePorOrigem <= LerLimitadoraGlobal(this.PegaPropPropagacao().origem);
 	endfunction
 
 	function Prospectar(this, opcoes := array, tileProspectado := 0)
