@@ -455,6 +455,7 @@ endfunction
 
 function checkTargetValidity(mobile, targ, spellinfo)
 	if (GetCooldown(targ, "repeal") > 0)
+		EraseObjProperty(mobile, "#Casting");
 		SendSysMessageEx(mobile, "O alvo esta invulneravel a magias.", SSM_FAIL);
 		return 0;
 	endif
