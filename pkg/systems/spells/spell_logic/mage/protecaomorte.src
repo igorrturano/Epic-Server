@@ -26,7 +26,8 @@ program SpellScript(params)
 	var time := 90 + Cint(AP_GetSkill(who, THEOLOGY) * 1.5); // até 3min
 	SetCooldown(targ, "protecaomorte", time);
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
-	SendSysMessageEx(who, "O alvo foi encantado com sucesso.", SSM_INFO);
+	SendSysMessageEx(who, "O alvo foi encantado com sucesso por " + time + " segundos.", SSM_INFO);
+	SendSysMessageEx(targ, "Voce sente uma protecao contra a morte te envolvendo por " + time + " segundos.", SSM_INFO);
 
 	return 1;
 endprogram
