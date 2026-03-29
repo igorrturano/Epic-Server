@@ -244,7 +244,9 @@ function EnviaItensComplexosGump(quem,profissao, modoGm)
 				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS,3);
 				var chaveEsquema := sessao.receitaSelecionada.esquemas.keys()[retornoMapeado.indiceItem];
 				var esquema := sessao.receitaSelecionada.esquemas[chaveEsquema];
-				var nomeReceitaClassificado := PegaNomeReceitaClassificada(sessao.receitaSelecionada.receita.receitaClassificada);
+				var receitaClassificada := sessao.receitaSelecionada.receita.receitaClassificada;
+				esquema.classe := receitaClassificada.classe ? cint(receitaClassificada.classe) : CLASSE_PADRAO;
+				var nomeReceitaClassificado := PegaNomeReceitaClassificada(receitaClassificada);
 
 				case (retornoMapeado.indiceBotao)
 					1: //Editar
@@ -415,15 +417,17 @@ function MontaMelhorEsquema(quem, sessao)
 		var quantidadeComponentesNecessaria :=  sessao.receitaSelecionada.receita.componentesNecessarios.size();
 		var opcaoEncontrada := MontaObetoOpcaoComponente(componenteEncontrado.melhor, componenteEncontrado.indiceEncaixe);
 		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
-		
+
 		AcrescentaComponenteEscolhido(
 				sessao.receitaSelecionada.esquemaSelecionado,
 				componenteNecessario,
 				componenteEscolhido, 
-				opcaoEncontrada.indiceEncaixeComponente, 
-				sessao.receitaSelecionada.receita.receitaClassificada.classe);
+				opcaoEncontrada.indiceEncaixeComponente);
 
 	endforeach
+
+	var classe := sessao.receitaSelecionada.receita.receitaClassificada.classe;
+	sessao.receitaSelecionada.esquemaSelecionado.classe := classe ? cint(classe) : CLASSE_PADRAO;
 
 	return sessao.receitaSelecionada.esquemaSelecionado;
 endfunction
@@ -785,16 +789,13 @@ function TrataComponenteEncontrado(
 									sessao.receitaSelecionada.esquemaSelecionado,
 									componenteNecessario,
 									componenteEscolhidoMontado, 
-									indiceEncaixeComponente, 
-									sessao.receitaSelecionada.receita.receitaClassificada.classe
-								);
+									indiceEncaixeComponente);
 endfunction
 
-function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNecessario, componenteEscolhido, indiceEncaixe, classe)
+function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNecessario, componenteEscolhido, indiceEncaixe)
 	if(componenteNecessario.isPrincipal)
 			esquemaSelecionado.cor := configRecursos[componenteEscolhido.material.chave].color;
 			esquemaSelecionado.material := componenteEscolhido.material.chave;
-			esquemaSelecionado.classe := classe ? classe: CLASSE_PADRAO;
 	endif
 
 	DefineTagQualidade(
@@ -1365,6 +1366,7 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 	var encaixesItem := GetConfigStringArray(receitaCfgElemento,"ComponenteEncaixe");
 	var configEncaixes := ReadConfigFile(":*:encaixes");
 	classe := classe ? classe : 1;
+	var quantidadePrincipal := 0;
 
 	var componentes := array;
 	foreach encaixe in encaixesItem
@@ -1379,7 +1381,9 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 		componente.+qtdNecessaria := splitEncaixe[DESC_ENCAIXE_QTD_NECESSARIA];
 
 		case (splitEncaixe[DESC_ENCAIXE_CONDICIONAL])
-			"principal": componente.+isPrincipal := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "principal"; break;
+			"principal": componente.+isPrincipal := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "principal"; 
+						quantidadePrincipal += 1;
+						break;
 			"opcional": componente.+isOpcional := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "opcional"; 
 						quantidadeOpicionais += 1; 
 						break;
@@ -1389,6 +1393,10 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 		componente.+itens := GetConfigStringArray(configEncaixes[componente.encaixe],"Item");
 		componentes.append(componente);
 	endforeach
+
+	if(quantidadePrincipal == 0 && componentes.size() > 0)
+		return Print("Erro [ " + objtype +  " ] Para receitas com componentes, o componente principal é obrigatório e não foi definido  " + CStr(Hex(objtype)));
+	endif
 
 	return componentes;
 endfunction
@@ -1523,7 +1531,7 @@ function CriaPropFabricadoGerada(
 
 	var receita := MontaReceitaItem(0,objtype,"",fabricacaoDescConfig,0,0, struct{nome := objetoDesc.name, classe := classe});
 	var componentesEscolhidos := dictionary;
-	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0);
+	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0,"", classe);
 	var tierInfo := PegaComponenteTierDesc(tier);
 
 	foreach componenteNecessario in (receita.componentesNecessarios)
@@ -1615,8 +1623,7 @@ function CriaPropFabricadoGerada(
 										objetoEsquema,
 										componenteNecessario,
 										componenteEscolhido, 
-										opcaoEncontrada.indiceEncaixeComponente, 
-										classe);
+										opcaoEncontrada.indiceEncaixeComponente);
 	endforeach
 	
 
