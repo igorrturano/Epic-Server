@@ -18,16 +18,22 @@ function PegaPericiaPeloMaterial(tipoMaterial)
 	case (tipoMaterial)
 		"metal":
 		"gem":
+		"glass":
+		"stone":
+		"brick":
+		"arrowhead":
 			return "Metal_Working";
 		"cloth":
 		"ossos":
 		"leather":
+		"scales":
 			return "Domestic_Work";
 		"wood":
 			return "Wood_Working";
 		"ingredient": //TODO pedir pro l4nc1s definir um tipo pros materiais de alquimia 
 		"oleo":
 		"solvente":
+		"alcool":
 			return "Alchemy";
 		default:
 			return "Wood_Working";
