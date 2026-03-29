@@ -31,6 +31,12 @@ class TargetingVisor(CombatAbility)
 		var attacker := attackInfo.GetAttacker();
 		var who := attacker.GetObjRef();
 
+		// Equipment check
+		var visor := GetEquipmentByLayer(who, 0x04); // LAYER_HAT
+		if (!visor || visor.objtype != 0xFFC4) // Steam Helmet
+			return false;
+		endif
+
 		attackInfo.SetIgnoreArmor();
 
 		DebugMsg(
