@@ -72,7 +72,7 @@ program TrapWalkOn(mobile, trap)
 		return 1;
 	endif
 
-	if (cint(trap.objtype) == 0xff9A) // beartrap
+	if (cint(trap.objtype) == 0x4004) // beartrap
 		do
 			if (!GetObjProperty(trap, "trap_ativada"))
 				trap.invisible := 0;
