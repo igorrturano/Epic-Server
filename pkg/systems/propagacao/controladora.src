@@ -57,9 +57,7 @@ program controladoraPropagacao(esteItemMarcador)
 			endif
 
 			if (event == EV_PROPAGACAO::TIMEOUT)
-				if (!esteObjetoMarcador.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO))
-					esteObjetoMarcador.AtribuiEstadoControle(CONTROLE_PROPAGACAO::DORMENTE);
-				endif
+				//Por enquanto nada.
 			elseif (event.id == EV_PROPAGACAO::ESTIMULO)
 				esteObjetoMarcador.RecebeEstimulo(event.valor, event.isAcumulando);
 			elseif (event.id == EV_PROPAGACAO::COMBUSTIVEL)

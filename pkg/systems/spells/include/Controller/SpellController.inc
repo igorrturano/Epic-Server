@@ -230,6 +230,53 @@ function SC_ResyncOnLogin(mobile)
 	if (!found)
 		_SC_CleanupOrphans(mobile);
 	endif
+
+	_SC_ResyncMetamorphosisResist(mobile);
+endfunction
+
+function _SC_ResyncMetamorphosisResist(mobile)
+	if (GetObjProperty(mobile, "metamorfose") == error)
+		return;
+	endif
+
+	var resist := CInt(GetObjProperty(mobile, "polymorph_resistmod"));
+	if (resist <= 0)
+		return;
+	endif
+
+	// Rebuild runtime engine resist mods that may reset across restart.
+	if (mobile.resist_physical_mod < resist)
+		mobile.resist_physical_mod := resist;
+	endif
+	if (mobile.resist_fire_mod < resist)
+		mobile.resist_fire_mod := resist;
+	endif
+	if (mobile.resist_cold_mod < resist)
+		mobile.resist_cold_mod := resist;
+	endif
+	if (mobile.resist_poison_mod < resist)
+		mobile.resist_poison_mod := resist;
+	endif
+	if (mobile.resist_energy_mod < resist)
+		mobile.resist_energy_mod := resist;
+	endif
+
+	// Ensure virtual spell resist layer also contains the polymorph resist value.
+	var mw := MobileWrapper(mobile);
+	var sr := mw.GetProperty("#SpellResist");
+	if (!sr || sr.errortext)
+		sr := struct{slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0};
+	endif
+
+	if (CInt(sr.slash) < resist)    sr.slash := resist; endif
+	if (CInt(sr.piercing) < resist) sr.piercing := resist; endif
+	if (CInt(sr.blunt) < resist)    sr.blunt := resist; endif
+	if (CInt(sr.fire) < resist)     sr.fire := resist; endif
+	if (CInt(sr.cold) < resist)     sr.cold := resist; endif
+	if (CInt(sr.poison) < resist)   sr.poison := resist; endif
+	if (CInt(sr.energy) < resist)   sr.energy := resist; endif
+
+	mw.SetProperty("#SpellResist", sr);
 endfunction
 
 function _SC_CleanupOrphans(mobile)

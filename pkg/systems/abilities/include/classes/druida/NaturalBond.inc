@@ -203,6 +203,17 @@ class NaturalBond(CombatAbility)
             return false;
         endif
 
+        if (!form.template || form.template.errortext)
+            Message("Esta forma precisa ser re-estudada para ser utilizada.").SendSys(who);
+            return false;
+        endif
+
+        var elem := NPC_GetNPCConfig(form.template);
+        if (!elem || elem.errortext)
+            Message("Nao foi possivel carregar os dados desta forma.").SendSys(who);
+            return false;
+        endif
+
         this._UnequipWild(who, mobile);
         this._PlayTransformEffects(who);
         this._DoTransform(who, form);
@@ -210,8 +221,8 @@ class NaturalBond(CombatAbility)
         var duration := this._CalcDuration(who, mobile);
         TS_StartTimer(who, "metamorfosedruida", duration);
 
-        this._ApplyBoosts(who, form, duration);
-        this._ApplyModifiers(who, form, duration, mobile);
+        this._ApplyBoosts(who, elem, duration);
+        this._ApplyModifiers(who, elem, duration, mobile);
 
         Message("Voce se transforma em " + form.name + ".").SendSys(who);
         return true;
@@ -242,7 +253,7 @@ class NaturalBond(CombatAbility)
         sleepms(1200);
 
         who.graphic := form.graphic;
-        who.color   := form.color;
+        who.color   := GetEquipmentByLayer(who, LAYER_HAIR).color;
 
         if (GetObjProperty(who, "charname") == error)
             SetObjProperty(who, "charname", who.name);
@@ -286,19 +297,42 @@ class NaturalBond(CombatAbility)
         return duration;
     endfunction
 
-    function _ApplyBoosts(this, who, form, duration)
-        TS_StartTimer(who, "agility",      CInt(duration), CInt(form.dexterity    / 4));
-        TS_StartTimer(who, "strength",     CInt(duration), CInt(form.strength     / 4));
-        TS_StartTimer(who, "intelligence", CInt(duration), CInt(form.intelligence / 4));
+    function _ApplyBoosts(this, who, elem, duration)
+        TS_StartTimer(who, "agility",      CInt(duration), CInt(CInt(elem.Dexterity)    / 4));
+        TS_StartTimer(who, "strength",     CInt(duration), CInt(CInt(elem.Strength)     / 4));
+        TS_StartTimer(who, "intelligence", CInt(duration), CInt(CInt(elem.Intelligence) / 4));
     endfunction
 
-    function _ApplyModifiers(this, who, form, duration, mobile)
-        var skill_a_calc   := CInt(0.1318 * form.strength + 0.2316 * form.dexterity + 0.5974 * 40);
-        var resistmod_calc := this._ResolveResistTier(form);
-        var hitsmod_calc   := CInt(form.strength / 3);
-        var manamod_calc   := CInt(form.dexterity / 5);
-        var stammod_calc   := CInt(form.intelligence / 5);
-        var dicedmg_calc   := this._CalcDice(form.strength);
+    function _ApplyModifiers(this, who, elem, duration, mobile)
+        var strength     := CInt(elem.Strength);
+        var dexterity    := CInt(elem.Dexterity);
+        var intelligence := CInt(elem.Intelligence);
+        var taxonomy     := elem.Taxonomy;
+
+        var resistmod_calc := 0;
+        var fis_str := GetConfigString(elem, "EpicFisResists");
+        if (fis_str && !fis_str.errortext)
+            var fis_parts := SplitWords(fis_str);
+            if (fis_parts.size() >= 1)
+                // Wildshape uses linear tier scaling to avoid overpowered resistance spikes.
+                // T1 -> 1, T2 -> 2, ... T5 -> 5
+                var tier_str := Upper(CStr(fis_parts[1]));
+                case (tier_str)
+                    "T0": resistmod_calc := 0;
+                    "T1": resistmod_calc := 1;
+                    "T2": resistmod_calc := 2;
+                    "T3": resistmod_calc := 3;
+                    "T4": resistmod_calc := 4;
+                    "T5": resistmod_calc := 5;
+                endcase
+            endif
+        endif
+
+        var skill_a_calc := CInt(0.1318 * strength + 0.2316 * dexterity + 0.5974 * 40);
+        var hitsmod_calc := CInt(strength / 3);
+        var manamod_calc := CInt(dexterity / 5);
+        var stammod_calc := CInt(intelligence / 5);
+        var dicedmg_calc := this._CalcDice(strength);
 
         var bonusMagicLore  := CInt(AP_GetSkill(who, THEOLOGY) / 10);
         var bonusInstintoHP := CInt(AP_GetSkill(who, THEOLOGY) / 3);
@@ -309,32 +343,26 @@ class NaturalBond(CombatAbility)
             resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 30);
         endif
 
-        // if (form.category && Lower(form.category) == "giantanimal")
-        //     // hitsmod_calc := CInt(hitsmod_calc + form.strength);
-        //     Message("Voce se sente lento!").SendSys(who);
-        //     TS_StartTimer(who, "lentidao", CInt(duration));
-        // endif
-
-        var hitscript := this._GetTaxonomyScript(form.taxonomy);
+        var hitscript := this._GetTaxonomyScript(taxonomy);
         if (hitscript)
             SetObjProperty(who, "HitScripts", array{hitscript});
         endif
 
-        if (form.dexterity / form.strength >= 2)
+        if (dexterity / strength >= 2)
             hitsmod_calc   := 0;
             resistmod_calc := 0;
             Message("Voce se sente mais veloz!").SendSys(who);
             TS_StartTimer(who, "velocidade", 30);
         endif
 
-        if (form.intelligence >= 65)
+        if (intelligence >= 65)
             Message("Voce sente sua mente expandindo!").SendSys(who);
-            manamod_calc := CInt(form.intelligence / 3);
+            manamod_calc := CInt(intelligence / 3);
         endif
 
-        if (form.dexterity >= 100)
+        if (dexterity >= 100)
             Message("Voce se sente mais sagaz!").SendSys(who);
-            stammod_calc := CInt(form.dexterity / 3);
+            stammod_calc := CInt(dexterity / 3);
         endif
 
         var moon_fase := GetGlobalProperty("moonfase");
@@ -345,11 +373,11 @@ class NaturalBond(CombatAbility)
         endif
 
         if (moon_fase == "Kalendae")
-            Message("Voce nao consegue manter sua transformacao em lua nova! (Lua: Kalendae - duracao reduzida para 5s)").SendSys(who);
+            Message("Voce nao consegue manter sua transformacao em lua nova! (Lua: Kalendae - duracao reduzida para 5s)", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
             TS_StartTimer(who, "metamorfosedruida", 5);
         endif
 
-        if (Lower(form.name) == "cavalo manso" || Lower(form.name) == "cavalo selvagem")
+        if (elem.NPCRace == "Cavalo")
             Message("Voce se transforma em um cavalo e sente-se mais rapido!").SendSys(who);
             skill_a_calc := CInt(skill_a_calc - bonusMagicLore);
             hitsmod_calc := CInt(hitsmod_calc - bonusMagicLore);
@@ -362,18 +390,10 @@ class NaturalBond(CombatAbility)
         var cur_stammod   := GetObjProperty(who, "stammod");
         var cur_resistmod := GetObjProperty(who, "resistmod");
 
-        if (cur_hitsmod == error)
-            cur_hitsmod := 0;
-        endif
-        if (cur_manamod == error)
-            cur_manamod := 0;
-        endif
-        if (cur_stammod == error)
-            cur_stammod := 0;
-        endif
-        if (cur_resistmod == error)
-            cur_resistmod := 0;
-        endif
+        if (cur_hitsmod == error)   cur_hitsmod   := 0; endif
+        if (cur_manamod == error)   cur_manamod   := 0; endif
+        if (cur_stammod == error)   cur_stammod   := 0; endif
+        if (cur_resistmod == error) cur_resistmod := 0; endif
 
         SetObjProperty(who, "skill_a",             skill_a_calc);
         SetObjProperty(who, "dicedmg",             dicedmg_calc);
@@ -386,39 +406,10 @@ class NaturalBond(CombatAbility)
         SetObjProperty(who, "stammod",             cur_stammod   + stammod_calc);
         SetObjProperty(who, "resistmod",           cur_resistmod + resistmod_calc);
 
+        this._ApplyResistMod(who, resistmod_calc);
         recalcvitals(who);
         applyEpicHealing(who, hitsmod_calc);
-        this._ApplyResistMod(who, resistmod_calc);
-    endfunction
-
-    function _ResolveResistTier(this, form)
-        var tier_number := CInt(form.resistTier);
-        if (tier_number > 0)
-            return tier_number;
-        endif
-
-        if (!form.template)
-            return 0;
-        endif
-
-        var parsed_template := NPC_ParseTemplateName(form.template);
-        var elem := NPC_GetNPCConfig(":epicai:" + parsed_template.template);
-
-        if (!elem || elem.errortext)
-            return 0;
-        endif
-
-        var fis_parts := GetConfigStringArray(elem, "EpicFisResists");
-        if (!fis_parts || fis_parts.errortext || fis_parts.size() == 0)
-            return 0;
-        endif
-
-        var tier_str := CStr(fis_parts[1]);
-        if (tier_str.size() >= 2)
-            tier_number := CInt(tier_str[2]);
-        endif
-
-        return tier_number;
+        SendStatus(who);
     endfunction
 
     function _ApplyResistMod(this, who, resistmod_calc)
@@ -564,40 +555,10 @@ class NaturalBond(CombatAbility)
             max_transformations := max_transformations * 2;
         endif
 
-        var targ_strength     := AP_GetStat(targ, "Strength");
-        var targ_dexterity    := AP_GetStat(targ, "Dexterity");
-        var targ_intelligence := AP_GetStat(targ, "Intelligence");
-
-        var parsed_template := NPC_ParseTemplateName(targ.npctemplate);
-        var elem            := NPC_GetNPCConfig(":epicai:" + parsed_template.template);
-        var targ_category   := GetConfigString(elem, "Category");
-        var targ_taxonomy   := elem.Taxonomy;
-
-        Message($"Forca: {targ_strength}").SendSys(who);
-        Message($"Destreza: {targ_dexterity}").SendSys(who);
-        Message($"Inteligencia: {targ_intelligence}").SendSys(who);
-
-        var tier_number := 0;
-        var fis_str := GetConfigString(elem, "EpicFisResists");
-        if (fis_str && !fis_str.errortext)
-            var fis_parts := SplitWords(fis_str);
-            var tier_str  := CStr(fis_parts[1]);
-            if (tier_str.size() >= 2)
-                tier_number := CInt(tier_str[2]);
-            endif
-        endif
-
         var transformation := struct;
-        transformation.+name         := targ.name;
-        transformation.+graphic      := targ.graphic;
-        transformation.+color        := targ.color;
-        transformation.+gender       := targ.gender;
-        transformation.+strength     := targ_strength;
-        transformation.+dexterity    := targ_dexterity;
-        transformation.+intelligence := targ_intelligence;
-        transformation.+category     := targ_category;
-        transformation.+taxonomy     := targ_taxonomy;
-        transformation.+resistTier   := tier_number;
+        transformation.+name     := targ.name;
+        transformation.+graphic  := targ.graphic;
+        transformation.+template := targ.npctemplate;
 
         var transformation_list := GetObjProperty(who, "wildshape_forms");
         if (transformation_list == error)

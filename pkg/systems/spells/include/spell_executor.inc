@@ -37,6 +37,7 @@ const SPELL_TYPE_PALADIN      := "paladin";
 const SPELL_TYPE_DEMONHUNTER  := "demonhunter";
 const SPELL_TYPE_TRICKSTER    := "trickster";
 const SPELL_TYPE_SHINOBI      := "shinobi";
+const SPELL_TYPE_BARD         := "bard";
 const SHINOBI_JUTSU_COOLDOWN  := 20;
 
 /*
@@ -168,8 +169,36 @@ function ExecuteSpellById(who, spell_id, spell_type)
     endif
 
     ApplySpellCooldownAndBuff(who, spell_data, spell_type);
-    
+
+    // Phase 5: Bard cantico entropy award
+    if (spell_type == SPELL_TYPE_BARD)
+        _AwardBardCanticoEntropy(who, spell_data.circle);
+    endif
+
     return 1;
+endfunction
+
+// Inline bard entropy (avoids cross-package include of musicianship)
+function _AwardBardCanticoEntropy(who, circle)
+    var amt;
+    case (circle)
+        0: 1: amt := 150;   break;
+        2:    amt := 350;   break;
+        3:    amt := 750;   break;
+        4:    amt := -2000; break; // C4 canticos generate negative entropy
+        default: return; break;
+    endcase
+    var cur := CInt(GetObjProperty(who, "entropy"));
+    if (!cur) cur := 0; endif
+    SetObjProperty(who, "entropy", cur + amt);
+    var global_ent := CInt(GetGlobalProperty("GlobalEntropy"));
+    if (!global_ent) global_ent := 0; endif
+    SetGlobalProperty("GlobalEntropy", global_ent + amt);
+    if (amt > 0)
+        SendSysMessageEx(who, $"Voce ganhou {amt} pontos de entropia", SSM_REQUEST);
+    else
+        SendSysMessageEx(who, $"Voce perdeu {Abs(amt)} pontos de entropia", SSM_FAIL);
+    endif
 endfunction
 
 function ValidateSpellCooldown(who, spell_type)
@@ -253,6 +282,16 @@ function ValidateSpellAccess(who, spell_type)
                 SendSysMessageEx(who, "Apenas Shinobis podem usar este comando.", SSM_FAIL);
                 return 0;
             endif
+
+        SPELL_TYPE_BARD:
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::VOX_ARCANA))
+                SendSysMessageEx(who, "Apenas Bardos podem usar canticos.", SSM_FAIL);
+                return 0;
+            endif
+            if (GetObjProperty(who, "#bard_silenced"))
+                SendSysMessageEx(who, "Voce esta silenciado e nao pode cantar.", SSM_FAIL);
+                return 0;
+            endif
     endcase
     
     return 1;
@@ -311,6 +350,39 @@ function ValidateSpellRequirements(who, spell_data, spell_type)
                 return 0;
             endif
             
+        SPELL_TYPE_BARD:
+            var mobile_bard := MobileWrapper(who);
+            // Circle access gates
+            var max_cantico_circle := 1;
+            if (mobile_bard.HasAbility(ABILITY_ID::CHAOS_MASTERY))
+                max_cantico_circle := 4;
+            elseif (mobile_bard.HasAbility(ABILITY_ID::REALITY_TEAR))
+                max_cantico_circle := 3;
+            elseif (mobile_bard.HasAbility(ABILITY_ID::RESONANCE))
+                max_cantico_circle := 2;
+            endif
+            if (spell_data.circle > max_cantico_circle)
+                SendSysMessageEx(who, "Voce nao possui acesso a canticos deste circulo.", SSM_FAIL);
+                return 0;
+            endif
+            // Learned check for C1+ (GMs bypass)
+            if (spell_data.circle > 0 && !who.cmdlevel)
+                var cantico_list := GetObjProperty(who, "cantico_list");
+                var cantico_found := 0;
+                if (cantico_list)
+                    foreach c in cantico_list
+                        if (c == spell_data.id)
+                            cantico_found := 1;
+                            break;
+                        endif
+                    endforeach
+                endif
+                if (!cantico_found)
+                    SendSysMessageEx(who, "Voce nao aprendeu o cantico '" + spell_data.name + "'.", SSM_FAIL);
+                    return 0;
+                endif
+            endif
+
         SPELL_TYPE_MAGE:
             // Check grimoire for non-GMs, unless they have Sensibilidade Arcana
             if (!who.cmdlevel && spell_data.circle != 0)
@@ -346,6 +418,7 @@ function GetSpellConfigPathForType(spell_type)
         SPELL_TYPE_PALADIN:     return ":spells:config/paladin";
         SPELL_TYPE_DEMONHUNTER: return ":spells:config/demonhunter";
         SPELL_TYPE_SHINOBI:     return ":spells:config/shinobi";
+        SPELL_TYPE_BARD:        return ":spells:config/bardo";
     endcase
     return "";
 endfunction
@@ -434,8 +507,10 @@ function GetBooktypeForSpell(who, spell_data, spell_type)
             return "demonhunter";
         SPELL_TYPE_SHINOBI:
             return "shinobi";
+        SPELL_TYPE_BARD:
+            return "bardo";
     endcase
-    
+
     return 0;
 endfunction
 

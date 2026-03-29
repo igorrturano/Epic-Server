@@ -1,0 +1,65 @@
+use uo;
+use os;
+
+include "include/client";
+include ":abilities:include/models/Ability";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+// Minimum ability required per circle
+function _USC_CanLearnCircle(who, circle)
+    if (!MobileWrapper(who).HasAbility(ABILITY_ID::VOX_ARCANA))
+        return 0;
+    endif
+    case (circle)
+        0: 1: return 1;
+        2:    return MobileWrapper(who).HasAbility(ABILITY_ID::RESONANCE);
+        3:    return MobileWrapper(who).HasAbility(ABILITY_ID::REALITY_TEAR);
+        4:    return MobileWrapper(who).HasAbility(ABILITY_ID::CHAOS_MASTERY);
+    endcase
+    return 0;
+endfunction
+
+program usarCanticoSagrado(who, item)
+    var cantico_id     := CInt(GetObjProperty(item, "cantico_id"));
+    var cantico_circle := CInt(GetObjProperty(item, "cantico_circle"));
+    var cantico_name   := GetObjProperty(item, "cantico_name");
+
+    if (!cantico_id)
+        SendSysMessageEx(who, "Este cantico esta corrompido e nao pode ser aprendido.", SSM_FAIL);
+        return 0;
+    endif
+
+    if (!_USC_CanLearnCircle(who, cantico_circle))
+        case (cantico_circle)
+            0: 1: SendSysMessageEx(who, "Voce precisa de Vox Arcana para aprender este cantico.", SSM_FAIL);
+            2:    SendSysMessageEx(who, "Voce precisa de Ressonancia para aprender este cantico.", SSM_FAIL);
+            3:    SendSysMessageEx(who, "Voce precisa de Tear da Realidade para aprender este cantico.", SSM_FAIL);
+            4:    SendSysMessageEx(who, "Voce precisa de Maestria do Caos para aprender este cantico.", SSM_FAIL);
+            default: SendSysMessageEx(who, "Voce nao possui a habilidade bardica necessaria.", SSM_FAIL);
+        endcase
+        return 0;
+    endif
+
+    // Check if already known
+    var cantico_list := GetObjProperty(who, "cantico_list");
+    if (!cantico_list)
+        cantico_list := array{};
+    endif
+
+    foreach c in cantico_list
+        if (c == cantico_id)
+            SendSysMessageEx(who, "Voce ja conhece este cantico.", SSM_FAIL);
+            return 0;
+        endif
+    endforeach
+
+    cantico_list.append(cantico_id);
+    SetObjProperty(who, "cantico_list", cantico_list);
+
+    var name_display := cantico_name ? cantico_name : CStr(cantico_id);
+    SendSysMessageEx(who, $"Voce aprendeu o cantico: {name_display}!", SSM_INFO);
+    PrintTextAbove(who, $"*{name_display}*", 3, 568);
+
+    DestroyItem(item);
+    return 1;
+endprogram
