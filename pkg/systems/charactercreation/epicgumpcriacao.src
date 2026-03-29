@@ -19,6 +19,7 @@ include ":charactercreation:include/RPTraits";
 include ":abilities:include/models/Ability";
 include ":nature:nature";
 include ":crafting:fabricaComplexos";
+include ":census:include/CensusController";
 
 program epicCreationGump(who)
 	resetCharacter(who);
@@ -59,6 +60,12 @@ program epicCreationGump(who)
 	
 	// Mark creation as completed
 	SetObjProperty(who, "creation_completed", 1);
+
+	// Track character creation for census (only players, not GMs)
+	if (who.cmdlevel == 0)
+		var chardata_census := GetObjProperty(who, "chardata");
+		CensusTrackCreation(chardata_census);
+	endif
 endprogram
 
 function culturalSelection(who)
