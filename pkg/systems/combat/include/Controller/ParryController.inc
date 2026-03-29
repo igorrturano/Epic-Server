@@ -189,7 +189,7 @@ function CheckDisarmShield(byRef attackInfo)
 		if (RandomInt(100 + 1) < attackInfo.GetParryChance())
 			// Pike: disarms DEFENDER when blocking without shield
 			// TODO: Trocar esse graphic hardcoded por algum identificador de arma do tipo Pike
-			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0x26BE)
+			if (attackInfo.GetAttacker().GetObjRef().GetGraphic() == 0xFFA8)
 				if (attackInfo.GetParryEquip().GetObjType() != 0x1F020)
 					var defenderPos := attackInfo.GetDefender().GetPosition();
 					defenderPos.SetX(defenderPos.GetX() + RandomIntMinMax(-2, 3));
