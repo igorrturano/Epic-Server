@@ -19,11 +19,6 @@ program Make_Trap(who, trap)
 		return 0;
 	endif
 
-	if (trap.objtype == 0xff97)
-		SendSysMessageEx(who, "Esta armadilha ja esta pronta para uso.", SSM_FAIL);
-		return 0;
-	endif
-
 	var trapcheck := GetObjProperty(trap, "traptype");
 
 	if (Distance(trap, who) > 2)
