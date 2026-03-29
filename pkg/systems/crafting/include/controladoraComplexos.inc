@@ -1394,8 +1394,8 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 		componentes.append(componente);
 	endforeach
 
-	if(quantidadePrincipal == 0)
-		return Print("Erro [ " + objtype +  " ] Componente principal é obrigatório e não foi definido  " + CStr(Hex(objtype)));
+	if(quantidadePrincipal == 0 && encaixesItem.size() > 0)
+		return Print("Erro [ " + objtype +  " ] Para receitas com componentes, o componente principal é obrigatório e não foi definido  " + CStr(Hex(objtype)));
 	endif
 
 	return componentes;
