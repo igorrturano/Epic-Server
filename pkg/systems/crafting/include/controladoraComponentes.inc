@@ -462,7 +462,6 @@ function CarregaMateriaisEncontrados(quem,configRecursos, componente)
 		Sleepms(2);
 		var materialDetalhe := configRecursos[item.objtype];
 		if(materialDetalhe)
-			Print("item: " + item.desc + " - " + materialDetalhe);
 			if(!IsMaterialTrabalhavel(quem, componente, item.objtype)) continue; endif //Só importa skill para o material principal.
 			MontaMaterialEncontrado(retorno,Lower(materialDetalhe.type),item);
 		endif
@@ -479,7 +478,6 @@ function IsMaterialTrabalhavel(quem, componente, chaveMaterial)
 	var materialPrincipal := Lower(componente.selecione.materialPrincipal);
 	var pericia := PegaPericiaPeloMaterial(materialPrincipal);
 	
-	Print("Tipo material: " + tipoMaterial + " - Material Principal: " + materialPrincipal + " - Perícia: " + pericia);
 	if(lower(materialPrincipal) == lower(tipoMaterial))
 		return cDbl(materialDetalhe.Skill) <= AP_GetSkill(quem,pericia);
 	else
