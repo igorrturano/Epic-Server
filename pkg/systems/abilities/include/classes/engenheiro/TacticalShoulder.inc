@@ -94,6 +94,16 @@ class TacticalShoulder(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
+
+		// Equipment check
+		if (!GetObjProperty(who, "pilotando"))
+			var arms := GetEquipmentByLayer(who, 0x13); // LAYER_ARMS
+			if (!arms || arms.objtype != STEAMARMS_OBJTYPE) // Steam Arms (0xFFC3)
+				Message("Você precisa estar usando os Braços a Vapor para ativar a Ombreira Tática!").SendSys(who);
+				return false;
+			endif
+		endif
+
 		var gadget;
 
 		if (GetObjProperty(who, "pilotando"))
