@@ -18,16 +18,22 @@ function PegaPericiaPeloMaterial(tipoMaterial)
 	case (tipoMaterial)
 		"metal":
 		"gem":
+		"glass":
+		"stone":
+		"brick":
+		"arrowhead":
 			return "Metal_Working";
 		"cloth":
 		"ossos":
 		"leather":
+		"scales":
 			return "Domestic_Work";
 		"wood":
 			return "Wood_Working";
 		"ingredient": //TODO pedir pro l4nc1s definir um tipo pros materiais de alquimia 
 		"oleo":
 		"solvente":
+		"alcool":
 			return "Alchemy";
 		default:
 			return "Wood_Working";
@@ -456,6 +462,7 @@ function CarregaMateriaisEncontrados(quem,configRecursos, componente)
 		Sleepms(2);
 		var materialDetalhe := configRecursos[item.objtype];
 		if(materialDetalhe)
+			Print("item: " + item.desc + " - " + materialDetalhe);
 			if(!IsMaterialTrabalhavel(quem, componente, item.objtype)) continue; endif //Só importa skill para o material principal.
 			MontaMaterialEncontrado(retorno,Lower(materialDetalhe.type),item);
 		endif
@@ -472,6 +479,7 @@ function IsMaterialTrabalhavel(quem, componente, chaveMaterial)
 	var materialPrincipal := Lower(componente.selecione.materialPrincipal);
 	var pericia := PegaPericiaPeloMaterial(materialPrincipal);
 	
+	Print("Tipo material: " + tipoMaterial + " - Material Principal: " + materialPrincipal + " - Perícia: " + pericia);
 	if(lower(materialPrincipal) == lower(tipoMaterial))
 		return cDbl(materialDetalhe.Skill) <= AP_GetSkill(quem,pericia);
 	else
