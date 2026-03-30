@@ -38,7 +38,7 @@ program TrapWalkOn(mobile, trap)
 	cfg := cfg[trap.objtype];
 
 	// Se for trap atraiinimigo
-	if (trap.objtype == 0xff9f)
+	if (trap.objtype == 0xee2)
 		// Check if the trap is on cooldown
 		if (GetObjProperty(trap, "last_triggered"))
 			var last_time := GetObjProperty(trap, "last_triggered");
