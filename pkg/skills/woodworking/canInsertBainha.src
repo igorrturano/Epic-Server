@@ -50,7 +50,7 @@ program on_insert(who, bainha, movetype, inserttype, item, existing_stack, amt)
 		endif
 	// bainha.graphic := xyz; TODO adicionar o grafico correto depois
 	elseif (bainha.objtype == 0xa40c) // bainha de maça
-		var macas := array{ 0x1406, 0x143a, 0x13e4, 0x0f5c, 0x143c, 11568, 0x26C6, 0x13e3 };
+		var macas := array{ 0x1406, 0x143a, 0x13e4, 0xFFAD, 0x143c, 11568, 0x26C6, 0x13e3 };
 		if (item.objtype in macas)
 			if (bainha.item_count > 2)
 				SendSysMessageEx(who, "Ja existe uma maca nesta bainha.", SSM_FAIL);

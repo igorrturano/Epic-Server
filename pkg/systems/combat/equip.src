@@ -90,7 +90,7 @@ program equipweapon(who, item)
 	endif
 
 	// Steam Gadgets: can only be installed via Ombreira Tatica
-	if (item.objtype == 0xFFC6 || item.objtype == 0xFFC7 || item.objtype == 0xFFC8)
+	if (item.objtype == 0xFFC6 || item.objtype == 0xFFC7 || item.objtype == 0xFFC8 || item.objtype == 0xFFCA)
 		if (GetObjProperty(item, "#steam_install"))
 			EraseObjProperty(item, "#steam_install");
 		else
@@ -112,7 +112,7 @@ program equipweapon(who, item)
 	// Steam Gloves: block gloves, weapons and shields
 	var steamGloves := GetEquipmentByLayer(who, LAYER_HAND2);
 	if (steamGloves && steamGloves.objtype == 0xFFC1)
-		if (item.objtype != 0xFFC1)
+		if (item.objtype != 0xFFC1 && item.objtype != 0xFFCA)
 			if (item.tile_layer == LAYER_GLOVES || item.tile_layer == LAYER_HAND1 || item.tile_layer == LAYER_HAND2)
 				SendSysMessageEx(who, "Remova suas manoplas a vapor primeiro.", SSM_FAIL);
 				return 0;
@@ -122,6 +122,11 @@ program equipweapon(who, item)
 		var rh := GetEquipmentByLayer(who, LAYER_HAND1);
 		if (rh)
 			SendSysMessageEx(who, "Remova sua arma antes de equipar as manoplas a vapor.", SSM_FAIL);
+			return 0;
+		endif
+		var existing_gloves := GetEquipmentByLayer(who, LAYER_GLOVES);
+		if (existing_gloves)
+			SendSysMessageEx(who, "Remova suas luvas antes de equipar as manoplas a vapor.", SSM_FAIL);
 			return 0;
 		endif
 	endif
@@ -199,6 +204,30 @@ program equipweapon(who, item)
 	endif
 	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
 
+	// SteamGloves: auto-equip companion armor for hands protection
+	if (item.objtype == 0xFFC1)
+		var companion := CreateItemInContainer(who.backpack, 0xFFCA, 1);
+		if (companion)
+			SetObjProperty(companion, "#steam_install", 1);
+			SetObjProperty(companion, "#steamgloves_companion", 1);
+			EquipItem(who, companion);
+
+			// Patch itemInfo with material defense bonus from SteamGloves
+			// fabricado on a weapon has no "defesa" component, so we compute it directly
+			var glove_fabricado := GetObjProperty(item, "fabricado");
+			if (glove_fabricado != error && glove_fabricado.materialPrincipal)
+				var matBonus := getResistPhysicalByMaterial(CInt(glove_fabricado.materialPrincipal));
+				var info := GetObjProperty(companion, "itemInfo");
+				if (info != error)
+					info.SlashResist := CInt(info.SlashResist) + matBonus.GetSlashResist();
+					info.PiercingResist := CInt(info.PiercingResist) + matBonus.GetPiercingResist();
+					info.BluntResist := CInt(info.BluntResist) + matBonus.GetBluntResist();
+					SetObjProperty(companion, "itemInfo", info);
+				endif
+			endif
+		endif
+	endif
+
 	var cfg := readconfigfile(":combat:itemdesc");
 	if (cint(cfg[item.objtype].parrybonus) > 0)
 		EraseObjProperty(who, "twohanded");
@@ -210,10 +239,10 @@ program equipweapon(who, item)
 	endif
 
 	// Steam Armor: Dex penalty (double heaviest normal armor)
+	// Note: SteamGloves (0xFFC1) dex penalty is handled by companion armor now
 	if (item.objtype in steam_objtypes)
 		var dex_penalty := 0;
 		case (item.objtype)
-			0xFFC1: dex_penalty := 12; // Gloves
 			0xFFC2: dex_penalty := 14; // Legs
 			0xFFC3: dex_penalty := 14; // Arms
 			0xFFC4: dex_penalty := 12; // Helm

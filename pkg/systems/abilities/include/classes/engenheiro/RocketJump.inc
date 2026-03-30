@@ -22,7 +22,7 @@ class RocketJump(CombatAbility)
 
 		// Equipment check
 		if (!GetObjProperty(who, "pilotando"))
-			var legs := GetEquipmentByLayer(who, 0x03); // LAYER_PANTS
+			var legs := GetEquipmentByLayer(who, LAYER_PANTS); // LAYER_PANTS
 			if (!legs || legs.objtype != 0xFFC2) // Steam Legs
 				Message("Você precisa estar usando as Grevas de Vapor para ativar os Propulsores!").SendSys(who);
 				return false;
