@@ -59,6 +59,22 @@ program unequipweapon(who, item)
 		EraseObjProperty(item, "#steam_dex_penalty");
 	endif
 
+	// Block SteamArms removal if a gadget is installed
+	if (item.objtype == 0xFFC3)
+		if (GetObjProperty(item, "InstalledGadget"))
+			SendSysMessageEx(who, "Remova o gadget instalado antes de desequipar os Bracos a Vapor.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	// Destroy SteamGloves companion armor on unequip
+	if (item.objtype == 0xFFC1)
+		var companion := GetEquipmentByLayer(who, LAYER_GLOVES);
+		if (companion && GetObjProperty(companion, "#steamgloves_companion"))
+			DestroyItem(companion);
+		endif
+	endif
+
 	Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
 
 endprogram

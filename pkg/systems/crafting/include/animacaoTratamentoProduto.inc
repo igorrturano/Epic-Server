@@ -16,15 +16,15 @@ function isAnimacaoFerreiroPossivel(quem, estacao, ferramentaNecessaria, posicao
 	if(!CheckCanWork(quem,saudeInicial,posicaoInicial))
 		return  false;
 	endif
-	if(!Accessible(quem,estacao[FONTE_CALOR],1) || !CheckLineOfSight( quem, estacao[FONTE_CALOR]))
+	if(!Accessible(quem,estacao[FONTE_CALOR],2) || !CheckLineOfSight( quem, estacao[FONTE_CALOR]))
 		SendSysMessageEx(quem,"É necessário que haja uma fonte de calor próximo a você.",SSM_FAIL);
 		return false;
 	endif
-	if(!Accessible(quem,estacao[FONTE_AGUA],1) || !CheckLineOfSight( quem, estacao[FONTE_AGUA]))
+	if(!Accessible(quem,estacao[FONTE_AGUA],2) || !CheckLineOfSight( quem, estacao[FONTE_AGUA]))
 		SendSysMessageEx(quem,"É necessário que haja uma fonte de resfriamento próximo a você.",SSM_FAIL);
 		return false;
 	endif
-	if(!Accessible(quem,estacao[BIGORNA],1) || !CheckLineOfSight( quem, estacao[BIGORNA]))
+	if(!Accessible(quem,estacao[BIGORNA],2) || !CheckLineOfSight( quem, estacao[BIGORNA]))
 		SendSysMessageEx(quem,"É necessário que haja uma bigorna próxima a você.",SSM_FAIL);
 		return false;
 	endif
@@ -266,8 +266,8 @@ function PegaEstacaoFerreiro (quem, bigorna)
 	endif
 	
 	if(!estacao.exists(FONTE_AGUA) || !estacao.exists(FONTE_CALOR))
-		var itensProximos := ListItemsNearLocation(quem.x,quem.y,quem.z,1,quem.realm);
-		var staticosProximos := ListStaticsNearLocation(quem.x,quem.y,quem.z,1,quem.realm);
+		var itensProximos := ListItemsNearLocation(quem.x,quem.y,quem.z,2,quem.realm);
+		var staticosProximos := ListStaticsNearLocation(quem.x,quem.y,quem.z,2,quem.realm);
 		itensProximos := itensProximos + staticosProximos;
 
 		foreach itemProximo in itensProximos

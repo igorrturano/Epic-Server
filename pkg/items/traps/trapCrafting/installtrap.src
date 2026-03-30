@@ -29,10 +29,6 @@ program installtrap(who, trap)
 	var traptype := "";
 	if (trap.objtype == 0x367a)
 		traptype := "PoisonGas";
-	elseif (trap.objtype == 0xff97)
-		traptype := "Explosion";
-	elseif (trap.objtype == 0xff98)
-		traptype := "Needle";
 	endif
 
 	if (alvo.isA(POLCLASS_CONTAINER))

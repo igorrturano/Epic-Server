@@ -1,6 +1,9 @@
 include ":abilities:models/CombatAbility";
 include ":timedscripts:timedScripts";
 include ":attributes:attributes";
+include ":spells:summon";
+include "include/facings";
+include "include/epicCombatUtils";
 
 /**
  * Aura Divina (Divine Aura) - ABILITY_ID::AURA_DIVINA (2802)
@@ -37,10 +40,91 @@ class DivineAura(CombatAbility)
 					Message("Voce deve selecionar um local.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 					return false;
 				endif
-				start_script(":charactercreation:habilidades/prolesombria", array{ who, targ });
+				var ps_lvl := CInt(theology_bonus * 5);
+				var ps_template := ":epicai:GiantSpider";
+				if (ps_lvl >= 90)
+					ps_template := ":epicai:BlackHugeSpider";
+				elseif (ps_lvl >= 70)
+					ps_template := ":epicai:HugeRedSpider";
+				elseif (ps_lvl >= 50)
+					ps_template := ":epicai:DreadGiantSpider";
+				endif
+				who.frozen := 1;
+				var ps_i := 0;
+				while (ps_i < 4)
+					PerformAction(who, HUMAN_ANIM::CAST_DIR);
+					sleep(1);
+					ps_i++;
+				endwhile
+				who.frozen := 0;
+				PlaySoundEffect(targ, SFX_SPELL_SUMMON_ELEMENTAL);
+				PlaySoundEffect(who, 0x686);
+				var ps_dur := 120 + CInt(180 * ps_lvl / 100);
+				var ps_mount := summon(ps_template, targ, who);
+				if (ps_mount)
+					TS_StartTimer(ps_mount, "summon", ps_dur);
+					PlayObjectCenteredEffect(ps_mount, 0x37C4, 10, 20);
+				endif
+				var ps_isDark := (GetGlobalProperty("dia") != "dia") || (who.realm != "britannia");
+				if (ps_isDark)
+					var ps_mount2 := summon(ps_template, targ, who);
+					if (ps_mount2)
+						TS_StartTimer(ps_mount2, "summon", ps_dur);
+					endif
+				endif
+				Message("Sua prole sombria esta pronta para servi-la", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			BOKK_BHARAZ:
-				start_script(":charactercreation:habilidades/saltobigorna", array{ who });
+				var sb_dano := CInt(theology_bonus * 5 / 2);
+				var sb_dur := theology_bonus;
+				if (sb_dur < 1)
+					sb_dur := 1;
+				endif
+				PerformAction(who, 12);
+				Message("*Arremessa o martelo*").SendAbove(who);
+				var sb_wz := GetStandingHeight(who.x, who.y, who.z + 15, who.realm);
+				var sb_moved := 0;
+				if (sb_wz.z <= who.z + 1)
+					sb_moved := 1;
+					MoveObjectToLocation(who, who.x, who.y, who.z + 15, who.realm, MOVEOBJECT_FORCELOCATION);
+				endif
+				sleepms(100);
+				_SaltoBigornaJump(who, 5, 500);
+				sleepms(200);
+				if (sb_moved)
+					MoveObjectToLocation(who, who.x, who.y, who.z - 15, who.realm);
+				endif
+				sleepms(500);
+				PlayStationaryEffect(who.x + 2, who.y + 2, who.z, 0x6C9B, 0, 10, 0, who.realm);
+				PlaySoundEffect(who, 0x221);
+				sleepms(500);
+				var sb_nearby := ListMobilesNearLocation(who.x, who.y, who.z, 2, who.realm);
+				var sb_party := who.party ? who.party.members : array{};
+				var sb_pets := array{};
+				foreach sb_member in sb_party
+					if (sb_member != who)
+						var sb_mobj := SystemFindObjectBySerial(sb_member.serial);
+						if (sb_mobj)
+							var sb_mpets := ListAllPetsAndSummonedPetsNear(sb_mobj, 8);
+							foreach sb_pet in sb_mpets
+								sb_pets.append(sb_pet);
+							endforeach
+						endif
+					endif
+				endforeach
+				foreach sb_char in sb_nearby
+					if (sb_char == who || sb_char in sb_party || sb_char in sb_pets)
+						continue;
+					endif
+					if (GetObjProperty(sb_char, "owner") == who.serial)
+						continue;
+					endif
+					PlayObjectCenteredEffect(sb_char, 0x6d67, 0, 10);
+					TS_StartTimer(sb_char, "tombar", sb_dur);
+					TS_StartTimer(sb_char, "lentidao", sb_dur * 2);
+					TS_StartTimer(sb_char, "paralysis", sb_dur);
+					ApplyRawDamage(sb_char, sb_dano);
+				endforeach
 
 			HALLEUAD:
 				var targ := Target(who);
@@ -108,3 +192,27 @@ class DivineAura(CombatAbility)
 	endfunction
 
 endclass
+
+function _SaltoBigornaJump(who, dist, delay)
+	var mod := GetModByFacing(who.facing);
+	var x := mod[1];
+	var y := mod[2];
+
+	for i := 1 to dist
+		var finalx := who.x + x;
+		var finaly := who.y + y;
+		if (!CheckLosAt(who, finalx, finaly, who.z))
+			return 0;
+		endif
+		var world_z := GetStandingHeight(who.x, who.y, who.z, who.realm);
+		if (world_z.z > who.z)
+			return 0;
+		endif
+		var err := MoveObjectToLocation(who, finalx, finaly, who.z, who.realm, MOVEOBJECT_NORMAL);
+		if (err == error)
+			return 0;
+		endif
+		sleepms(delay);
+	endfor
+	return 1;
+endfunction

@@ -179,10 +179,6 @@ function PegaDescArmas(objeto,who,cfg := struct)
 
 	xDesc := xDesc + "Velocidade: " + GetVelStringDesc2(weapon.GetSpeedTier()) + "<br>";
 
-	if (PegaPropObjItemOrTemplate(objeto, "polida"))
-		xDesc := xDesc + WHITE + "Polimentos: " + PegaPropObjItemOrTemplate(objeto, "polida") + "<br>";
-	endif
-
 	var crits := GetCriticalInfo(cfg.elem);
 	if (crits != "")
 		xDesc := xDesc + LARANJA + crits;
