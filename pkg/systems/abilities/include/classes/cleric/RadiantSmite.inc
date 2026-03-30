@@ -1,6 +1,7 @@
 include ":abilities:models/CombatAbility";
 include ":timedscripts:timedScripts";
 include ":attributes:attributes";
+include ":wrappers:Objects/Model/WeaponWrapper";
 
 /**
  * Golpe Radiante (Radiant Smite) - ABILITY_ID::GOLPE_RADIANTE (2801)
@@ -31,10 +32,58 @@ class RadiantSmite(CombatAbility)
 
 		case (religiao)
 			ELUITHORTH:
-				start_script(":charactercreation:habilidades/dominanciamatriarcal", who);
+				var dm_targ := Target(who);
+				if (!dm_targ || !dm_targ.isA(POLCLASS_MOBILE))
+					Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return false;
+				endif
+				if (Distance(who, dm_targ) > 3)
+					Message("O alvo esta muito distante.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return false;
+				endif
+				if (!who.weapon || who.weapon.objtype != 0x166E)
+					Message("Voce precisa estar usando chicote para usar essa habilidade.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return false;
+				endif
+				var dm_dano := mobile.GetSkill(THEOLOGY);
+				var dm_isInDarkness := (GetGlobalProperty("dia") != "dia") || (who.realm != "britannia");
+				mobile.SetProperty("#GuaranteedHit", 1);
+				if (dm_isInDarkness)
+					PlaySoundEffect(who, 0x685);
+					TS_StartTimer(dm_targ, "paralysis", theology_bonus);
+				endif
+				ApplyRawDamage(dm_targ, CInt(dm_dano / 5));
+				ApplyRawDamage(dm_targ, CInt(dm_dano / 5));
+				Message("*chicotada dominante*").SendAbove(who);
 
 			BOKK_BHARAZ:
-				start_script(":charactercreation:habilidades/martelotempestuoso", array{ who });
+				var mt_targ := Target(who);
+				if (!mt_targ || !mt_targ.isA(POLCLASS_MOBILE))
+					Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return false;
+				endif
+				if (Distance(who, mt_targ) > 6)
+					Message("O alvo esta muito distante.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return false;
+				endif
+				if (!who.weapon)
+					Message("Voce precisa utilizar armas contusivas.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return false;
+				endif
+				var mt_weapon := WeaponWrapper(who.weapon);
+				if (mt_weapon.GetAttackType() != "Contusivo")
+					Message("Voce precisa utilizar armas contusivas.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return false;
+				endif
+				PerformAction(who, 12);
+				PlayMovingEffect(who, mt_targ, FX_HAMMER_THROW, 0, 40);
+				sleep(2);
+				PlayMovingEffect(mt_targ, who, FX_HAMMER_THROW, 0, 40);
+				TS_StartTimer(mt_targ, "paralysis", theology_bonus);
+				var mt_dano := CInt(mobile.GetSkill(THEOLOGY) / 2);
+				ApplyRawDamage(mt_targ, mt_dano);
+				var mt_lightning := {41, 42, 519};
+				PlaySoundEffect(mt_targ, mt_lightning[RandomInt(3) + 1]);
 
 			HALLEUAD:
 				var targ := GetValidTarget(who);

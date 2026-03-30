@@ -31,7 +31,7 @@ program TimedScript_Blinded(params)
 	PrintTextAbove(mobile, "*cegueira*");
 
 	// Hide nearby mobiles (blinded effect - same as current implementation)
-	var mobiles := ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16);
+	var mobiles := ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16, mobile.realm);
 	foreach nearby_mobile in mobiles
 		DeleteObject(mobile, nearby_mobile);
 		sleepms(20);

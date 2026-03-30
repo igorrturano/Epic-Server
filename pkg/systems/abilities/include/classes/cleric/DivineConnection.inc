@@ -45,7 +45,31 @@ class DivineConnection(CombatAbility)
 				Message("Voce sente vitalidade inabalavel fluindo por seu corpo!", Color(SYSTEM_COLOR::INFO)).SendSys(targ);
 
 			ELUITHORTH:
-				start_script(":charactercreation:habilidades/truesight", who);
+				var isInDarkness := (GetGlobalProperty("dia") != "dia") || (who.realm != "britannia");
+				if (!isInDarkness)
+					Message("Sua visao verdadeira funciona apenas na escuridao", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return false;
+				endif
+				var ts_range := CInt(mobile.GetSkill(THEOLOGY) / 5);
+				var ts_duration := CInt(mobile.GetSkill(THEOLOGY) / 10);
+				if (ts_duration < 1)
+					ts_duration := 1;
+				endif
+				PlaySoundEffect(who, 0x687);
+				var nearby := ListMobilesNearLocationEx(who.x, who.y, who.z, ts_range,
+				                                        LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
+				foreach char in nearby
+					if (char == who || char.cmdlevel > 0)
+						continue;
+					endif
+					if (!CheckLineOfSight(who, char))
+						continue;
+					endif
+					char.hidden := 0;
+					char.concealed := 0;
+					SetCooldown(char, "truesight_revealed", ts_duration);
+					Message("*revelado pela visao divina*").SendAbove(char);
+				endforeach
 				Message("Sua visao verdadeira se ativa!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			VENERATIO:
@@ -67,7 +91,18 @@ class DivineConnection(CombatAbility)
 				ApplyRawDamage(targ, CInt(dmg));
 
 			BOKK_BHARAZ:
-				start_script(":charactercreation:habilidades/barreiradeescudos", who);
+				if (!who.party)
+					Message("Voce nao tem aliados!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return false;
+				endif
+				var barreira := struct;
+				barreira.+blocker := who.serial;
+				barreira.+chance := CInt(mobile.GetSkill(THEOLOGY) / 4);
+				who.party.setprop("BarreiraDeEscudos", barreira);
+				SetCooldown(who, "BarreiraDeEscudos", 60);
+				foreach member in (who.party.members)
+					Message("Fique proximo do seu aliado com o escudo para se proteger!", Color(SYSTEM_COLOR::INFO)).SendSys(member);
+				endforeach
 				Message("Voce canaliza a protecao divina!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 				Message("*Parede de Escudos*").SendAbove(who);
 

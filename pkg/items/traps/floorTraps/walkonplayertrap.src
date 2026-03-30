@@ -34,7 +34,7 @@ program TrapWalkOn(mobile, trap)
 	cfg := cfg[trap.objtype];
 	var trapcheck := GetObjProperty(trap, "traptype");
 
-	if (trap.objtype == 0xff98) // beartrap
+	if (trap.objtype == 0x4004) // beartrap
 		do
 			if (!GetObjProperty(trap, "trap_ativada"))
 				trap.invisible := 0;
@@ -81,7 +81,7 @@ program TrapWalkOn(mobile, trap)
 					PlaySoundEffect(mobile, 0x32F);
 				endif
 				sleep(5);
-				CreateItemAtLocation(trap.x, trap.y, trap.z, 0xff97, 1, trap.realm);
+				CreateItemAtLocation(trap.x, trap.y, trap.z, 0x4140, 1, trap.realm);
 				DestroyItem(trap);
 			endif
 			sleep(10);
