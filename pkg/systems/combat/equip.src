@@ -212,18 +212,15 @@ program equipweapon(who, item)
 			SetObjProperty(companion, "#steamgloves_companion", 1);
 			EquipItem(who, companion);
 
-			// Patch itemInfo with material defense bonus from SteamGloves
-			// fabricado on a weapon has no "defesa" component, so we compute it directly
+			// Copy defesa component from SteamGloves fabricado to companion
+			// (SteamGloves now have defesa from the crafting recipe)
 			var glove_fabricado := GetObjProperty(item, "fabricado");
-			if (glove_fabricado != error && glove_fabricado.materialPrincipal)
-				var matBonus := getResistPhysicalByMaterial(CInt(glove_fabricado.materialPrincipal));
-				var info := GetObjProperty(companion, "itemInfo");
-				if (info != error)
-					info.SlashResist := CInt(info.SlashResist) + matBonus.GetSlashResist();
-					info.PiercingResist := CInt(info.PiercingResist) + matBonus.GetPiercingResist();
-					info.BluntResist := CInt(info.BluntResist) + matBonus.GetBluntResist();
-					SetObjProperty(companion, "itemInfo", info);
-				endif
+			if (glove_fabricado != error && glove_fabricado.componentes && glove_fabricado.componentes["defesa"])
+				var defesaComp := glove_fabricado.componentes["defesa"];
+				var companionFabricado := struct{};
+				companionFabricado.+componentes := dictionary{};
+				companionFabricado.componentes["defesa"] := defesaComp;
+				SetObjProperty(companion, "fabricado", companionFabricado);
 			endif
 		endif
 	endif
