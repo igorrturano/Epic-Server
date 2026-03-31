@@ -277,7 +277,8 @@ function PegaEstacaoFerreiro (quem, bigorna)
 					estacao.insert(FONTE_AGUA, itemProximo);
 					propFoiAlterada := true;
 				endif
-			elseif(!estacao.exists(FONTE_CALOR))
+			endif
+			if(!estacao.exists(FONTE_CALOR))
 				if(itemProximo.objtype in CATALOGO_FONTE_CALOR)
 					estacao.insert(FONTE_CALOR, itemProximo);
 					propFoiAlterada := true;
