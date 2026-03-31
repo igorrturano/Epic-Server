@@ -270,7 +270,7 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
 		endif
 
-		descriptor.color := propFabricadoMontado.esquema.cor;
+		descriptor.color := propFabricadoMontado.receita.corObrigatoria ? propFabricadoMontado.receita.corObrigatoria : propFabricadoMontado.esquema.cor;
 
 		var quantidadeFinal := 1;
 		if(propFabricadoMontado.receita.lote && propFabricadoMontado.receita.lote > 1)
