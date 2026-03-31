@@ -611,12 +611,15 @@ function CalculateCriticalChance(byRef attackInfo)
 		skillUsedForCritical := THEOLOGY;
 	endif
 
+	var opponentCriticalReduction := CalculateDefenderCriticalReduction(attackInfo.GetDefender(), attackInfo.GetBodyRegion());
+
 	chance := CInt(
 		CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCriticalChance()) +	// Crítico base da arma
 		CInt(attackInfo.GetAttacker().GetCriticalChance()) +						// Crítico extra do Char (base + mod)
-		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) 			// Crítico extra da Skill
+		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) -			// Crítico extra da Skill
+		CInt(opponentCriticalReduction) //Redução de crítico do defensor
 	);
-
+	
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::DESTRUIDOR) && GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia"))
 		chance := chance * 2.0;
 	endif
@@ -629,6 +632,22 @@ function CalculateCriticalChance(byRef attackInfo)
 	endif
 
 	return CInt(chance);
+endfunction
+
+function CalculateDefenderCriticalReduction(defender, bodyRegion)
+	var reduction := 0;
+	
+	foreach equip in (defender.GetEquipBySlot(bodyRegion))
+		Sleepms(2);
+		var wraper := ArmorWrapper(equip);
+		reduction += equip.GetCriticalReduction();
+	endforeach
+
+	if(defender.IsNPC())
+		reduction += defender.GetTemplate().GetTier() - 1;
+	endif
+
+	return reduction;
 endfunction
 
 function ApplyCriticalDamage(byRef attackInfo)
