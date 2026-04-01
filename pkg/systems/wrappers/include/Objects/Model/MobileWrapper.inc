@@ -202,6 +202,26 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return AP_GetStatMod(this.GetObjRef(), WILL);
 	endfunction
 
+	function GetVicioStr(this)
+		return AP_GetVital(this.GetObjRef(), ADDICTION_STR);
+	endfunction
+	function GetVicioDex(this)
+		return AP_GetVital(this.GetObjRef(), ADDICTION_DEX);
+	endfunction
+	function GetVicioInt(this)
+		return AP_GetVital(this.GetObjRef(), ADDICTION_INT);
+	endfunction
+
+	function GetVisibleVicioStr(this)
+		return VICIO_MAX_POINTS - cint(this.GetVicioStr());
+	endfunction
+	function GetVisibleVicioDex(this)
+		return VICIO_MAX_POINTS - cint(this.GetVicioDex());
+	endfunction
+	function GetVisibleVicioInt(this)
+		return VICIO_MAX_POINTS - cint(this.GetVicioInt());
+	endfunction
+
 	function GetCurrentHP(this)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
