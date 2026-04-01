@@ -30,7 +30,7 @@ function PegaPericiaPeloMaterial(tipoMaterial)
 			return "Domestic_Work";
 		"wood":
 			return "Wood_Working";
-		"ingredient": //TODO pedir pro l4nc1s definir um tipo pros materiais de alquimia 
+		"catalist":
 		"oleo":
 		"solvente":
 		"alcool":
