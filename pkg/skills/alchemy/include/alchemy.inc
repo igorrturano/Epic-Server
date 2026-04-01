@@ -246,7 +246,7 @@ endfunction
 
 
 function is_poison(potion)
-  var fabr := getobjproperty(potion, "fabricado");
+  var fabricado := getobjproperty(potion, "fabricado");
   var poison_level := fabricado.classe;
   return poison_level;
 endfunction
@@ -391,7 +391,6 @@ Function AplicaVicio (who, potion, Atr)
   if (vicio < 0)
     vicio := 0;
   endif
-
   var ultimouso := readgameclock();
   AP_SetVital(who, att, vicio);
   SetObjProperty(who, ult, ultimouso);
