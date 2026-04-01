@@ -394,11 +394,7 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 		//Refatora o dict para usar como indice a caracteristica, assim dá para ir direto ao assunto se quiser pegar o componente que tá dando aquela caracteristica.
 		foreach componente in (propFabricadoMontado.esquema.componentesEscolhidos)
 			Sleepms(2);
-			if(componente.componenteNecessario.caracteristica != "vazio")
-				componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
-			else
-				componentesRefatorado.insert(_componente_iter,componente);
-			endif
+			componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
 		endforeach
 	else
 		componentesRefatorado := propFabricadoMontado.esquema.componentesEscolhidos;
@@ -448,23 +444,25 @@ function isEstacaoValida(quem, estacaoAlvo, profissao)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
 	var estacoesValidas := GetConfigString(profissaoConfig[profissao], "EstacoesValidas");
 	estacoesValidas := SplitWords(estacoesValidas);
-
-	if(cstr(Lower(hex(estacaoAlvo.item.objtype))) in estacoesValidas ||  "superficie" in estacoesValidas )
-		var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
-		
-		if(ocupanteSerial)
-			var ocupante := SystemFindObjectBySerial(ocupanteSerial);
-			if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
-				SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
-				return 0;
+	
+	foreach estacaoValida in estacoesValidas
+		Sleepms(2);
+		if(Lower(cstr(hex(estacaoAlvo.item.objtype))) == lower(cstr(hex(estacaoValida))) ||  "superficie" == estacaoValida)
+			var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
+			
+			if(ocupanteSerial)
+				var ocupante := SystemFindObjectBySerial(ocupanteSerial);
+				if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
+					SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
+					return 0;
+				endif
 			endif
+			SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
+			return 1;
 		endif
-	else
-		SendSysMessageEX(quem,"Estação inválida.", SSM_FAIL);
-		return 0;
-	endif
-	SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
-	return 1;
+	endforeach
+	SendSysMessageEX(quem,"Estação inválida.", SSM_FAIL);
+	return 0;
 endfunction
 
 function PegaDescDuracaoFabricacao(qtdSucessos)
