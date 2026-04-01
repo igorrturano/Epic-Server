@@ -1061,7 +1061,7 @@ function weaponsByClassAndCulture(who)
 
     if (skills[RANGED] >= 1)
         var ammo_amount := skills[RANGED] * 80;
-        CreateItemInBackpack(who, 0x13B2, 1); // bow
+        CreateItemInicial(who, 0x13B2, 1); // bow
         CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
 
         CreateItemInicial(who, 0x2fb7, 1); // aljava
