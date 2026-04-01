@@ -37,7 +37,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			this.WeightVar := this.__CalculateWeight();
 			this.STRRequired := this.__CalculateSTRRequired();
 			this.__InitModifiers();
-			this.CriticalReductionMod := PegaValorFabricacao(this.ItemOrTemplate,CARACTERISTICA_FABRICACAO_REDUCAOCRITICO);
+			this.CriticalReductionMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_REDUCAOCRITICO);
 		else
 			var err := InvalidTemplateException("The param must be an Armor ObjRef or a valid Template!");
 			this.Coverage := err;
@@ -110,7 +110,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		return this.ResistsMod.GetTotal();
 	endfunction
 
-	function GetCriticalReductionMod(this)
+	function GetCriticalReduction(this)
 		return this.CriticalReductionMod;
 	endfunction
 
