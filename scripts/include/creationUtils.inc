@@ -1175,7 +1175,7 @@ function workingItems(who)
         CreateItemInBackpack(who, 0x1832, 1); // balao
         CreateItemInBackpack(who, 0x1830, 1); // beker
         CreateItemInBackpack(who, 0x1849, 1); // aparato
-        CreateItemInBackpack(who, 0x0F0E, skills[ALCHEMY] * 5); // frascos
+        CreateItemInBackpack(who, 0x1BE3, skills[ALCHEMY] * 10); // vidro pros frascos, porque precisa do material
         var book1 := CreateItemInBackpack(who, "alchemybook");
             book1.newbie := 1;
 		    setobjproperty(book1, "serialid", who.serial);
