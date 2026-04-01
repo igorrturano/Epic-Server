@@ -788,6 +788,7 @@ function pathOfWisdom(who, culture_pic)
 			CreateItemInBackPack(who, "ammo", 20);
 			CreateItemInBackPack(who, "powder", 20);
 			CreateItemInBackPack(who, "powderfixer", 1);
+			CreateItemInBackpack(who, 0xC892, 1); // Bandoleira
 
 			var pistol1 := CreateItemInBackPack(who, "pistol1", 1);
 			var pistol2 := CreateItemInBackPack(who, "pistol2", 1);
