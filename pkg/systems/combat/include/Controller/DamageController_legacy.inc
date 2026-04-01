@@ -1134,22 +1134,6 @@ function CalcDamageReducer(attacker, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, $"Redutor de Dano: {CDbl((1-damagemod)*100)}%");
 	endif
 
-	var polida := GetObjProperty(attacker.weapon, "polida");
-	if (!polida)
-		var penalty := 0.8;
-		var damagemod := damage * (1-penalty);
-		damage -= damagemod;
-		DebugMsg(attacker, DEBUG_DAMAGE, $"Penalidade polidez (20%): {damagemod}");
-	else
-		polida -= 1;
-		if (polida < 1)
-			EraseObjProperty(attacker.weapon, "polida");
-			SendSysMessageEX(attacker, "Sua arma perdeu a polidez.", SSM_INFO);
-		else
-			SetObjProperty(attacker.weapon, "polida", polida);
-		endif
-	endif
-
 	if (GetObjProperty(attacker, "chardata").trait == "Defensor Anão")
 		var penalty := 0.7;
 		var damagemod := damage * (1-penalty);
@@ -1204,10 +1188,6 @@ function ApplyCriticalHit(attacker, defender, weapon, armor, basedamage, rawdama
 		multiplicador -= (criticoFabricacao - reducaoCriticoFabricacao);
 		
 		var critdelay := RandomIntMinMax(15 * multiplicador, 130 + (15 * multiplicador));
-		if (!GetObjProperty(weapon, "polida"))
-			Message("Sua arma está embotada!").SetColor(SSM_FAIL).SendSys(attacker);
-			critdelay := ReadGameClock() + RandomIntMinMax(240, 450);
-		endif
 
 		Message("*CRÍTICO*").SetColor(2118).SendAbove(attacker);
 		SetObjProperty(attacker, "critdelay", ReadGameClock() + critdelay);

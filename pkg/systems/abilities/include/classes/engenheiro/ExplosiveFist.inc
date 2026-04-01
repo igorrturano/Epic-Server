@@ -16,6 +16,11 @@ class ExplosiveFist(CombatAbility)
 		var who := mobile.GetObjRef();
 		var gloves := GetEquipmentByLayer(who, 0x02); // LAYER_HAND2
 
+		if (gloves.objtype != 0xFFC1) // Steam Gloves
+			Message("Você precisa estar usando as Luvas de Vapor para ativar os Punhos Explosivos!").SendSys(who);
+			return false;
+		endif
+
 		// Cleanup: if server restarted with fist active, restore color
 		if (gloves && gloves.objtype == 0xFFC1 && GetObjProperty(gloves, "original_color") != error && !GetObjProperty(who, "#explosive_fist"))
 			gloves.color := CInt(GetObjProperty(gloves, "original_color"));

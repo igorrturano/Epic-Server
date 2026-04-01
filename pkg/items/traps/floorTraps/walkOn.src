@@ -38,7 +38,7 @@ program TrapWalkOn(mobile, trap)
 	cfg := cfg[trap.objtype];
 
 	// Se for trap atraiinimigo
-	if (trap.objtype == 0xff99)
+	if (trap.objtype == 0xee2)
 		// Check if the trap is on cooldown
 		if (GetObjProperty(trap, "last_triggered"))
 			var last_time := GetObjProperty(trap, "last_triggered");
@@ -72,7 +72,7 @@ program TrapWalkOn(mobile, trap)
 		return 1;
 	endif
 
-	if (cint(trap.objtype) == 0xff9A) // beartrap
+	if (cint(trap.objtype) == 0x4004) // beartrap
 		do
 			if (!GetObjProperty(trap, "trap_ativada"))
 				trap.invisible := 0;

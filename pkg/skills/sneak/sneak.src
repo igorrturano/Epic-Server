@@ -10,6 +10,7 @@ include ":tn:cooldown";
 include "include/facings";
 include "include/creationUtils";
 include "include/dungeons";
+include ":message:model/Message";
 
 program skill_Hide(who)
 
@@ -85,7 +86,7 @@ program skill_Hide(who)
 				SendSysMessageEx(who, "Voce falhou ao tentar se esconder.", SSM_FAIL);
 				who.hidden := 0;
 			elseif (semfalha <= 79) // Falha Cr�tica
-				PrintTextAbove(who, "*tentando se esconder*");
+				Message("*tentando se esconder*").SendEmote(who);
 			endif
 		endwhile
 		SetObjProperty(who, "#hidewait", readgameclock() + 5);
@@ -145,7 +146,7 @@ program skill_Hide(who)
 				SendSysMessageEx(who, "Voce falhou ao tentar se esconder.", SSM_FAIL);
 				who.hidden := 0;
 			elseif (semfalha <= 79) // Falha Cr�tica
-				PrintTextAbove(who, "*tentando se esconder*");
+				Message("*tentando se esconder*").SendEmote(who);
 			endif
 		endwhile
 		SetObjProperty(who, "#hidewait", readgameclock() + 5);

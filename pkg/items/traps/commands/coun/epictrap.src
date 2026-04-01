@@ -95,7 +95,7 @@ program epictrap(who)
         endif
 
         // Create the trap
-        var trap := CreateItemAtLocation(targ.x, targ.y, targ.z, 0xff9B, 1, who.realm);
+        var trap := CreateItemAtLocation(targ.x, targ.y, targ.z, 0xee7, 1, who.realm);
         if (trap)
             SetObjProperty(trap, "epic_trap_name", trap_name);
             SetObjProperty(trap, "epic_trap_sfx", sfx_id);
