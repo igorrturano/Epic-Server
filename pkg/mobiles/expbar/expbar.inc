@@ -22,26 +22,14 @@ include ":achievements:controllers/CombatController";
 const MAX_LEVEL := 20;
 
 // =============================================================================
-// XP CALCULATION - Fibonacci sequence (1k, 3k, 5k, 8k, 13k, 21k...)
+// XP CALCULATION - Linear: current_level * 1000
+// Level 1→2: 1k | 2→3: 2k | 3→4: 3k | ... | 19→20: 19k
 // =============================================================================
 function CalculateNextLevelXP(level)
-    if (level == 0)
-        return 1000;
-    elseif (level == 1)
-        return 3000;
-    elseif (level >= MAX_LEVEL)
+    if (level >= MAX_LEVEL)
         return 0;
     endif
-
-    var prev := 2;
-    var curr := 3;
-    for i := 2 to level
-        var next := prev + curr;
-        prev := curr;
-        curr := next;
-    endfor
-
-    return curr * 1000;
+    return CInt(level * (level + 1) / 2 * 1000);
 endfunction
 
 function GetXPForLevel(level)
@@ -147,12 +135,20 @@ function UpdateXPClient(who)
     var curr_level := GetPlayerLevel(who);
     var curr_xp := GetPlayerXP(who);
 
-    // Calculate progress within current level
-    var level_start := GetXPForLevel(curr_level);       // XP where current level begins
-    var level_end := CalculateNextLevelXP(curr_level);  // XP needed for next level
+    var xp_progress;
+    var xp_needed;
 
-    var xp_progress := curr_xp - level_start;
-    var xp_needed := level_end - level_start;
+    if (curr_level >= MAX_LEVEL)
+        // Max level: show full bar
+        var prev_cost := GetXPForLevel(curr_level) - GetXPForLevel(curr_level - 1);
+        xp_progress := prev_cost;
+        xp_needed := prev_cost;
+    else
+        var level_start := GetXPForLevel(curr_level);
+        var level_end := CalculateNextLevelXP(curr_level);
+        xp_progress := curr_xp - level_start;
+        xp_needed := level_end - level_start;
+    endif
 
     // Novo Tamanho: 1(ID) + 2(Len) + 2(Sub) + 4(XP) + 4(MaxXP) = 13 bytes
     var packet := CreatePacket(0xD7, MSGLEN_VARIABLE);
