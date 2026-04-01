@@ -8,7 +8,7 @@ include "include/utils";
 program drink_blue(who, potion)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
-	var tier := potion.tier;
+	var tier := PegaNivelPocao(potion);
 	if (!Accessible(who, potion))
 		return;
 	endif

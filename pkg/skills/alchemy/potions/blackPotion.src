@@ -33,5 +33,5 @@ program drink_blue(who, potion)
 
 	ApplyMagicalVision(who, duration);
 
-	VicioDEX(who, potion);
+	AplicaVicio(who, potion, DEXTERITY);
 endprogram

@@ -60,28 +60,42 @@ program do_poisoning(who)
 	var bonus := Cint(GetObjProperty(the_poison, "bonus"));
 	bonus := PotionSpecialistBonus(who, bonus, VENENO);
 	level := skill;
-	var tier := getobjProperty(the_poison, "tier");
+	var tier := PegaNivelPocao(the_poison);
 
 	// se for uma poçao que nao a default a formula eh essa:
 	var difficulty_mod := bonus;
 	points := difficulty;
 	case (the_poison.objtype)
 		0xdc04:
-			difficulty := RESIST_EASY;
-			points := 50;
-			poisonType := "alchPoison";
+			case(tier)
+				1:
+					difficulty := RESIST_EASY;
+					points := 50;
+					poisonType := "alchPoison";
+				2:
+					difficulty := RESIST_MEDIUM;
+					points := 40;
+					poisonType := "alchPoison";
+				3:
+					difficulty := RESIST_HARD;
+					points := 60;
+					poisonType := "alchPoison";
+			endcase
 		0xbf01:
 			poisonType := "strPoison";
 			difficulty := RESIST_MEDIUM;
 			points := 70;
+			level := level/(2.5/tier);
 		0xbf20:
 			poisonType := "dexPoison";
 			difficulty := RESIST_MEDIUM;
 			points := 70;
+			level := level/(2.5/tier);
 		0xef54:
 			poisonType := "intPoison";
 			difficulty := RESIST_MEDIUM;
 			points := 70;
+			level := level/(2.5/tier);
 		0xbf02:
 			poisonType := "staminaPoison";
 			difficulty := RESIST_MEDIUM;
@@ -96,18 +110,11 @@ program do_poisoning(who)
 			points := 70;
 			poisonType := "manaPoison";
 			level := level / 20;
-		0xbf04:
-			difficulty := RESIST_HARD;
-			points := 60;
-			poisonType := "alchPoison";
-		0x6072:
-			difficulty := RESIST_MEDIUM;
-			points := 40;
-			poisonType := "alchPoison";
 		0xbf05:
 			difficulty := RESIST_VERY_HARD;
 			points := 100;
 			poisonType := "alchPoison";
+			tier := 4;
 		default:
 			difficulty := 0;
 			points := 0;
