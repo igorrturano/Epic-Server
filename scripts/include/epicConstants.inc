@@ -2,6 +2,7 @@ use uo;
 
 const PROFISSAO_CONFIG_PATH := ":crafting:config/craftConfig";
 const RECURSOS_CONFIG_PATH := ":crafting:config/resourceList";
+const VICIO_MAX_POINTS := 100;
 
 const CRAFTING_ESTACAO_SUPERFICIE := "superficie";
 
