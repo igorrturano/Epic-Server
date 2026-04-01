@@ -304,6 +304,7 @@ function applyEpicHealing(mobile, amt)
 			damage := Cint(amt / 2);
             ApplyRawDamage(mobile, damage);
 			return true;
+		endif
     endif
 
 	// ENTROPIA POSITIVA: Bônus de cura
