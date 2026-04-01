@@ -448,23 +448,26 @@ function isEstacaoValida(quem, estacaoAlvo, profissao)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
 	var estacoesValidas := GetConfigString(profissaoConfig[profissao], "EstacoesValidas");
 	estacoesValidas := SplitWords(estacoesValidas);
-
-	if(cstr(Lower(hex(estacaoAlvo.item.objtype))) in estacoesValidas ||  "superficie" in estacoesValidas )
-		var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
-		
-		if(ocupanteSerial)
-			var ocupante := SystemFindObjectBySerial(ocupanteSerial);
-			if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
-				SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
-				return 0;
+	
+	foreach estacaoValida in estacoesValidas
+		Sleepms(2);
+		Print("Comparando " + cstr(hex(estacaoAlvo.item.objtype)) + " com " + cstr(hex(estacaoValida)));
+		if(Lower(cstr(hex(estacaoAlvo.item.objtype))) == lower(cstr(hex(estacaoValida))) ||  "superficie" == estacaoValida)
+			var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
+			
+			if(ocupanteSerial)
+				var ocupante := SystemFindObjectBySerial(ocupanteSerial);
+				if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
+					SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
+					return 0;
+				endif
 			endif
+			SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
+			return 1;
 		endif
-	else
-		SendSysMessageEX(quem,"Estação inválida.", SSM_FAIL);
-		return 0;
-	endif
-	SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
-	return 1;
+	endforeach
+	SendSysMessageEX(quem,"Estação inválida.", SSM_FAIL);
+	return 0;
 endfunction
 
 function PegaDescDuracaoFabricacao(qtdSucessos)
