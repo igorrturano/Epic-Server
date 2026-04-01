@@ -261,7 +261,6 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
             // now compare stored enum id (or 0) against the option's enum id
             var caracteristica := chardata.caracteristicas_rp[category];
             is_selected := (caracteristica == option_ids[i] && OT_UNINIT != TypeOfInt(caracteristica));
-            Print("Category: {}, Option: {}, Stored: {}, Is selected: {}".format(category, options[i], caracteristica, is_selected));
             GFHTMLArea(gump, x, option_y, 192, 24, "<BASEFONT color=#000000>{}".format(options[i]), 1, 0);
             
             if (category != "Idade Aparente")
@@ -355,7 +354,6 @@ function ProcessSelection(byref chardata, input)
             // Map the 1-based option index to the enum id for this race/category
             var racial_traits := GetRacialTraits(chardata.raca);
             var option_ids := racial_traits[category].opcoes_ids;
-            Print("Option selected: {} for category: {}".format(option, category));
             if (option >= 1 && option <= option_ids.size())
                 chardata.caracteristicas_rp[category] := option_ids[option];
             endif
@@ -2525,7 +2523,6 @@ function CreateItemInicial(who, objtype, qtd)
                                 );
 
     if(!item)
-        Print("Erro ao criar item incial {} [{}]".format(Hex(objtype), item.errortext));
         Message("Erro ao criar item incial {}".format(Hex(objtype))).SetColor(SSM_FAIL).SendSys(who);
     endif
 endfunction
