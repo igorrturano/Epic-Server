@@ -1156,9 +1156,18 @@ function workingItems(who)
         CreateItemInBackpack(who, 0xe21, (skills[MEDICINE] * 40)); // Bandages
     endif
 
+    if (skills[MEDICINE] == 3)
+		CreateItemInBackpack(who, 0xedfe, 1);
+		CreateItemInBackpack(who, 0xed2a, 1);
+
+		SendSysMessageEX(who, "Você recebeu itens de medicina por ter Medicine como primária.", SSM_INFO);
+	endif
+
     if (skills[MECHANICS] >= 1)
         CreateItemInicial(who, 0x14FB, (skills[MECHANICS] * 8)); // lockpick
     endif
+
+    
 
     if (skills[DOMESTIC_WORK] >= 1)
         CreateItemInicial(who, 0x0f9d, 1); // sewingkit

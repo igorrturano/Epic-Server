@@ -48,7 +48,6 @@ program epicCreationGump(who)
 	setBirthdate(who);
 	looksSelection(who);
 	setCitizenship(who);
-	giveItemsMedic(who);
 
 	AP_SetVital(who, "Hunger", 0);
 	ApplyEpicHealing(who, 200);
@@ -997,20 +996,5 @@ function setBirthdate(who)
 				   + ", Ano " + birthdate.year, SSM_INFO);
 	else
 		SendSysMessageEX(who, "Não foi possível calcular a data de nascimento.", SSM_FAIL);
-	endif
-endfunction
-
-function giveItemsMedic(who)
-	var chardata := GetObjProperty(who, "chardata");
-
-	if (!chardata)
-		return;
-	endif
-
-	if (chardata.Skills["Medicine"] && chardata.Skills["Medicine"] == 3)
-		CreateItemInBackpack(who, 0xedfe, 1);
-		CreateItemInBackpack(who, 0xed2a, 1);
-
-		SendSysMessageEX(who, "Você recebeu itens de medicina por ter Medicine como primária.", SSM_INFO);
 	endif
 endfunction

@@ -189,7 +189,6 @@ class WildSummoning(CombatAbility)
         PrintTextAbove(who, "*invocando " + selected_creature.name + "*");
         Message("Voce invocou " + selected_creature.name + "!").SendSys(who);
 
-        var theology := AP_GetSkill(who, THEOLOGY);
         var duration := 60 + (theology * 3);
         var level := CInt(theology / 5) + 5;
 
