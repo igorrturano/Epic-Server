@@ -120,6 +120,7 @@ var larguraCelula :=  G_LARGURA / G_CELULA_DIVISOR;
 var espacamentoAplicado := G_ESPACAMENTO * 2;
 
 var coresClassesReceitas := array{0,737,727,717,707,797};
+const GUMPIC_ID_PROFISSOES_DEFAULT := 5581;
 var gumpicIdProfissoes := dictionary {
 							"Alchemy" -> 5557,
 							"Blacksmithy" -> 5555,
@@ -483,9 +484,11 @@ function MontaTratamentoGump(x, y, byref sessao)
 		tooltipChance += modificador.origem.format(modificador.valor);
 	endforeach
 	GFTooltipText(gump,tooltipChance);
+	var gumpIdProfissaoPressed := sessao.gumpIdProfissaoPressed ? sessao.gumpIdProfissaoPressed : GUMPIC_ID_PROFISSOES_DEFAULT;
+	var gumpIdProfissaoUnpressed := sessao.gumpIdProfissaoUnpressed ? sessao.gumpIdProfissaoUnpressed : GUMPIC_ID_PROFISSOES_DEFAULT;
 
 	GFHTMLArea(gump,cint(x - 24 + larguraCelula* 10),y + 15 + alturaCelula * 5,40,30,"<basefont size=55 color=#016210><center>{}%</center>".format(cint(sessao.dificuldade.chanceTotal)));
-	GFAddButton(gump,x - 24 + larguraCelula * 2, y - 10 + alturaCelula * 5,gumpicIdProfissoes[sessao.profissao],gumpicIdProfissoes[sessao.profissao] + 1,GF_CLOSE_BTN, 6); // Botao ajuda pericia.
+	GFAddButton(gump,x - 24 + larguraCelula * 2, y - 10 + alturaCelula * 5,gumpIdProfissaoPressed,gumpIdProfissaoUnpressed,GF_CLOSE_BTN, 6); // Botao ajuda pericia.
 	GFAddButton(gump,x + larguraCelula * 4, cint(y - 10 + alturaCelula * 9.9) ,2119,2120,GF_CLOSE_BTN, 3);
 	if(sessao.fazerTodos)
 		GFHTMLArea(gump,x + cint(larguraCelula) * 6, cint(y - 10 + alturaCelula * 9.9),180,30,"<basefont size=55 color=#000000><right>Produzindo Semelhantes.</right>");
@@ -696,14 +699,16 @@ function PreencheCategorias(byref gump,larguraPainelCategoria, parametros, sessa
 	var margemEsquerdaLocal := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10;
 	var margemSuperiorLocal := G_MARGEM_SUPERIOR + G_ESPACAMENTO + 25;
 	var alturaIniciocategorias := margemSuperiorLocal + 93;
+	var gumpIdProfissaoPressed := parametros.gumpIdProfissaoPressed ? parametros.gumpIdProfissaoPressed : GUMPIC_ID_PROFISSOES_DEFAULT;
+	var gumpIdProfissaoUnpressed := parametros.gumpIdProfissaoUnpressed ? parametros.gumpIdProfissaoUnpressed : GUMPIC_ID_PROFISSOES_DEFAULT;
 
 	GFResizePic(gump, margemEsquerdaLocal, margemSuperiorLocal -14, 9250, larguraPainelCategoria - 18, 130);
 	GFGumpPic(gump,margemEsquerdaLocal + larguraPainelCategoria / 2 - 50,margemSuperiorLocal + 5,1417); // Fundo Imagem Profissão
 	GFAddButton(
 			gump,
 			margemEsquerdaLocal + larguraPainelCategoria / 2 - 50 + 8,
-			margemSuperiorLocal + 15,gumpicIdProfissoes[parametros.profissao],
-			gumpicIdProfissoes[parametros.profissao] + 1,GF_CLOSE_BTN,
+			margemSuperiorLocal + 15,gumpIdProfissaoPressed,
+			gumpIdProfissaoUnpressed,GF_CLOSE_BTN,
 			COMPLEXOS_BTN_AJUDA); // botao ajuda profissão
 
 	GFTooltipText(gump,"Clique aqui para mais informações sobre como o sistema funciona.");
