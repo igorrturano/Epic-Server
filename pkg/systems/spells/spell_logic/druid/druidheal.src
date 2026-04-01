@@ -34,7 +34,7 @@ program SpellScript(params)
 
 	// AP_GetSkill uses internal scale (ex: 70.0 => ~700).
 	// Rule: with 70 Theology => 17 instant + 17 over time in 4 ticks.
-	var base_heal := cint(AP_GetSkill(who, THEOLOGY) / 40);
+	var base_heal := cint(AP_GetSkill(who, THEOLOGY) / 4);
 	if (base_heal < 1)
 		base_heal := 1;
 	endif
