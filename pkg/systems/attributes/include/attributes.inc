@@ -225,7 +225,7 @@ function maolivre(who, qtd, checkmount := 1)
 endfunction
 
 function GetHP(who)
-	var hp := CInt(AP_GetTrueStat(who, "Strength"))/4;
+	var hp := CInt(AP_GetTrueStat(who, "Strength"));
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::RESISTENCIA_DO_DESERTO))
 		hp := hp + 30;
@@ -254,7 +254,7 @@ function GetPH(who)
 		ph := ph + 25;
 	endif
 
-	ph := ph + Cint(GetObjProperty(who, "phmod")) + Cint(GetObjProperty(who, "#phmod")) +  CInt(AP_GetTrueStat(who, "Strength"))/2;
+	ph := ph + Cint(GetObjProperty(who, "phmod")) + Cint(GetObjProperty(who, "#phmod"));
 
 	return ph;
 endfunction
