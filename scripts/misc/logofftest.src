@@ -20,7 +20,7 @@ program core_logoffTest(who)
 		return 0;
 	endif
 
-	var logout_delay := 10;
+	var logout_delay := 300;
 
 	// Check if player is camping
 	if (CInt(GetObjProperty(who, "#camped")) == 1)
