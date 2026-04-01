@@ -135,7 +135,8 @@ exported function HandleSendStats(character, byref packet)
 			var envelopeArma := WeaponWrapper(weapon);
 			var attackInfo := AttackInfo(mobileEnvelopado, 0);
 			var dps_current := Trunc(mobileEnvelopado.GetCurrentDp(),2);
-			var levelAtual := CInt(GetObjProperty(character, "Level")) ? CInt(GetObjProperty(character, "Level")) : 0;
+			var levelAtual := CInt(GetObjProperty(character, "Level"));
+				if (!levelAtual) levelAtual := 1; endif
 
 			attackInfo.SetDamageHand(DAMAGE_HAND::MAINHAND);
 			var mainHandDmg := CalculateEstimatedMinMaxDamage(attackInfo);
