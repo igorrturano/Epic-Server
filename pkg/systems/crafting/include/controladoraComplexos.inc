@@ -1021,6 +1021,9 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 
 				endif
 
+				if(!GetObjProperty(item,PROPNAME_ENCAIXE_COMPONENTE))
+					continue;
+				endif
 				var chaveMat := GetObjProperty(item,PROPNAME_MATERIAL);
 				var material := configRecursos[chaveMat];
 				var tier := PegaComponenteTierDesc(GetObjProperty(item,PROPNAME_TIER_COMPONENTE));
