@@ -19,6 +19,16 @@ class RocketJump(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
+
+		// Equipment check
+		if (!GetObjProperty(who, "pilotando"))
+			var legs := GetEquipmentByLayer(who, LAYER_PANTS); // LAYER_PANTS
+			if (!legs || legs.objtype != 0xFFC2) // Steam Legs
+				Message("Você precisa estar usando as Grevas de Vapor para ativar os Propulsores!").SendSys(who);
+				return false;
+			endif
+		endif
+
 		var is_piloting := GetObjProperty(who, "pilotando");
 
 		// Coal check
