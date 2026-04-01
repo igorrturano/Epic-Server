@@ -862,6 +862,7 @@ function pathOfWisdom(who, culture_pic)
 endfunction
 
 function startAdventure(who)
+	SetObjProperty(who, "Level", 1);
 	MoveObjectToLocation(who, 1407, 1062, -4, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 
 	// PlaySoundEffectPrivate(who, 0x306, who);
