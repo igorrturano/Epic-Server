@@ -246,7 +246,8 @@ endfunction
 
 
 function is_poison(potion)
-  var poison_level := GetObjProperty(potion, "tier");
+  var fabr := getobjproperty(potion, "fabricado");
+  var poison_level := fabricado.classe;
   return poison_level;
 endfunction
 
@@ -254,22 +255,24 @@ function do_poison(who, potion)
   var level, difficulty, points, poisonType;
   var skill := Cint(GetObjProperty(potion, "crafterskill"));
   var bonus := Cint(GetObjProperty(potion, "bonus"));
+  var tier := PegaNivelPocao(potion);
   level := skill;
-  var tier := getobjProperty (potion, "tier");
-
+  
   //se for uma poçao que nao a default a formula eh essa:
   var difficulty_mod := bonus;
   points := difficulty;
   case(potion.objtype)
-    0xdc04: difficulty := RESIST_EASY; points := 50; poisonType := "alchPoison";
-    0xbf01: poisonType :="strPoison"; difficulty := RESIST_MEDIUM; points := 70;
-    0xbf20: poisonType :="dexPoison"; difficulty := RESIST_MEDIUM; points := 70;
-    0xef54: poisonType :="intPoison"; difficulty := RESIST_MEDIUM; points := 70;
+    0xdc04: case(tier)
+              1: difficulty := RESIST_EASY; points := 50; poisonType := "alchPoison";
+              2: difficulty := RESIST_MEDIUM; points := 40; poisonType := "alchPoison";
+              3: difficulty := RESIST_HARD; points := 60; poisonType := "alchPoison";
+            endcase
+    0xbf01: poisonType :="strPoison"; difficulty := RESIST_MEDIUM; points := 70; level := cint(skill/(2.5/tier));
+    0xbf20: poisonType :="dexPoison"; difficulty := RESIST_MEDIUM; points := 70; level := cint(skill/(2.5/tier));
+    0xef54: poisonType :="intPoison"; difficulty := RESIST_MEDIUM; points := 70; level := cint(skill/(2.5/tier));
     0xbf02: poisonType:="staminaPoison"; difficulty := RESIST_MEDIUM; points := 70; level := level/20;
     0xbf03: poisonType:="paralyzePoison"; difficulty := RESIST_HARD; points := 100;
     0xbf06: difficulty := RESIST_HARD; points := 70; poisonType :="manaPoison"; level := level/20;
-    0xbf04: difficulty := RESIST_HARD; points := 60; poisonType := "alchPoison";
-    0x6072: difficulty := RESIST_MEDIUM; points := 40; poisonType := "alchPoison";
     0xbf05: difficulty := RESIST_VERY_HARD; points := 100; poisonType := "alchPoison";
     default: difficulty := 0; points := 0; poisonType := "invalid";
   endcase
@@ -331,7 +334,6 @@ Function epicPotionDamageRoll(tier, bonus)
       dice := cstr("3d8");
     elseif (tier == 4)
       dice := cstr("4d10");
-
     endif
 
   var dmg := RandomDiceRoll(dice);
@@ -355,35 +357,26 @@ Function AlchLabTransfer (item, alvo)
   EraseObjProperty(alvo, "science");
 endfunction
 
-function VicioSTR (who, potion)
-  var tier := getobjProperty(potion,"tier");
-  var vicio := AP_GetVital(who, "viciostr");
+Function AplicaVicio (who, potion, Atr)
+  var tier := PegaNivelPocao(potion);
   var bonus := 0;
-  
-  if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
-      bonus := (getobjProperty(potion, "bonus")*-1);
-  endif
-  
-  var dmg := epicPotionDamageRoll (tier, bonus);
-  If(dmg < 0)
-    dmg := 0;
-  endif
-  dmg := TesteVicio(who, tier, dmg);
-  vicio := vicio-dmg;
-  if (vicio < 0)
-    vicio := 0;
-  endif
-  
-  AP_SetVital(who,"viciostr", vicio);
- 	
-  var ultimouso := readgameclock();
-	SetObjProperty(who, "ultimastr", ultimouso);
-endfunction
+  var vicio := 0;
+  var att := 0;
+  var ult := 0;
 
-function VicioDEX (who, potion)
-  var tier := getobjProperty(potion,"tier");
-  var vicio := AP_GetVital(who, "viciodex");
-  var bonus := 0;
+  if (Atr == STRENGTH)
+    vicio := AP_GetVital(who, "viciostr");
+    att := "viciostr";
+    ult := "ultimastr";
+  elseif (Atr == DEXTERITY)
+    vicio := AP_GetVital(who, "viciodex");
+    att := "viciodex";
+    ult := "ultimadex";
+  elseif (atr == INTELLIGENCE)
+    vicio := AP_GetVital(who, "vicioint");
+    att := "vicioint";
+    ult := "ultimaint";
+  endif
   
   if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
       bonus := (getobjProperty(potion, "bonus")*-1);
@@ -398,37 +391,12 @@ function VicioDEX (who, potion)
   if (vicio < 0)
     vicio := 0;
   endif
-  
-  AP_SetVital(who,"viciodex", vicio);
- 	
-  var ultimouso := readgameclock();
-	SetObjProperty(who, "ultimadex", ultimouso);
-endfunction
 
-function VicioINT (who, potion)
-  var tier := getobjProperty(potion,"tier");
-  var vicio := AP_GetVital(who, "vicioint");
-  var bonus := 0;
-  
-  if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
-      bonus := (getobjProperty(potion, "bonus")*-1);
-  endif
-  
-  var dmg := epicPotionDamageRoll (tier, bonus);
-  If(dmg < 0)
-    dmg := 0;
-  endif
-  dmg := TesteVicio(who, tier, dmg);
-  vicio := vicio-dmg;
-  if (vicio < 0)
-    vicio := 0;
-  endif
-  
-  AP_SetVital(who,"vicioint", vicio);
- 	
   var ultimouso := readgameclock();
-	SetObjProperty(who, "ultimaint", ultimouso);
-endfunction
+  AP_SetVital(who, att, vicio);
+  SetObjProperty(who, ult, ultimouso);
+
+Endfunction
 
 function TesteVicio(who, tier, dmg)
   if (tier == 1)
@@ -475,4 +443,10 @@ function WriteDyeInfo(byref recipe)
 	recipe.+difficulty := GetConfigInt( elem, "skill" );
 	recipe.+description := GetConfigString( elem, "desc" );
 	recipe.+level := GetConfigInt( elem, "level" );
+endfunction
+
+function PegaNivelPocao(pocao)
+	var fabricado := GetObjProperty(pocao, "fabricado");
+	var tier := fabricado.classe;
+  return tier;
 endfunction

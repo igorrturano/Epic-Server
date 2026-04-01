@@ -18,7 +18,7 @@ include ":abilities:models/Ability";
 program exploder(parms)
 
 	var potion := parms[1];
-	var tier := cint(GetObjProperty(potion, "tier"));
+	var tier := PegaNivelPocao(potion);
 	// 	if(GetObjProperty(potion,"running"))
 	// 		return;
 	// 	endif
@@ -42,16 +42,10 @@ program exploder(parms)
 		case (potion.objtype)
 			// 56328: dmg :=  dmg + 20; ExplosionEffect(who, potion, dmg);
 			0xef60: ExplosionEffect(who, potion, dmg);
-			0xef61: ExplosionEffect(who, potion, dmg);
-			0xef62: ExplosionEffect(who, potion, dmg);
-			0xef63: FlashbangEffect(who, potion);
+			0xef63: FlashbangEffect(who, potion, bonus);
 			0xbf0e: GlueEffect(who, potion);
-			0xbf0f: PoisonEffect(who, potion, 1);
-			0xbf10: PoisonEffect(who, potion, 2);
-			0xbf11: PoisonEffect(who, potion, 3);
+			0xbf0f: PoisonEffect(who, potion, tier);
 			0xbf13: FlameEffect(who, potion, tier, bonus);
-			0xbf14: FlameEffect(who, potion, tier, bonus);
-			0xbf15: FlameEffect(who, potion, tier, bonus);
 			0xbf16: HalluEffect(who, potion, 3);
 			0xbf1c: Acideffetct(who, potion);
 			0xbf1d: Sleepeffect(who, potion, bonus);
@@ -385,7 +379,7 @@ function MudBomb(who, potion, bonus)
 	return 1;
 endfunction
 
-function FlashbangEffect(who, potion)
+function FlashbangEffect(who, potion, bonus)
 	// Efeito visual de explosão
 	PlayStationaryEffect(potion.x, potion.y, potion.z, 0x36b0, 7, 10, 1, potion.realm);
 	PlaySoundEffect(potion, 0x208);
@@ -411,6 +405,7 @@ function FlashbangEffect(who, potion)
 				SendScreenFlash(critter, FLASH_DROW_ON);
 				SendSysMessageEx(critter, "VOCE FOI OFUSCADO!", SSM_FAIL);
 				PlaySoundEffect(critter, 0x0028); // Som de zumbido nos ouvidos
+				TS_StartTimer(critter, "blinded", bonus / 2, 0, who);
 			endif
 		endif
 		Sleepms(2);

@@ -27,5 +27,5 @@ program drink_blue(who, potion)
 	var bonus := GetObjProperty(potion, "bonus");
 	bonus := PotionSpecialistBonus(who, bonus, BUFF);
 	TS_StartTimer(who, "velocidade", (360 + bonus * 10 * vicio), 20);
-	VicioDEX(who, potion);
+	Aplicavicio(who, potion, DEXTERITY);
 endprogram
