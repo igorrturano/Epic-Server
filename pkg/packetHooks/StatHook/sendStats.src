@@ -103,13 +103,15 @@ enum class NEW_STATUS_OFFSETS
 	WILL := 72,
 	DEATH_POINTS := 73,
 	DEATH_POINTS_MAX := 75,
-	ADDICTION := 77,
-	HUNGER := 79,
-	XP_CURRENT := 80,
-	XP_NEXT := 84,
-	LEVEL := 80,
-	GOLD := 81,
-	AMOR_RESISTANCES_START := 85,
+	ADDICTION_STR := 77,
+	ADDICTION_DEX := 78,
+	ADDICTION_INT := 79,
+	HUNGER := 80,
+//	XP_CURRENT := 80,
+//	XP_NEXT := 84,
+	LEVEL := 81,
+	GOLD := 82,
+	AMOR_RESISTANCES_START := 86,
 	MOBILE_LAST_INDEX := 42,
 	//PICTURE_URL := 121,
 endenum
@@ -171,9 +173,10 @@ exported function HandleSendStats(character, byref packet)
 			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::WILL,  cint(mobileEnvelopado.GetWill()));
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEATH_POINTS,  cint(mobileEnvelopado.GetCurrentDp()));
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEATH_POINTS_MAX,  cint(mobileEnvelopado.GetMaxDp()));
-			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::ADDICTION,  cint(GetObjProperty(character, "vicio")));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::ADDICTION_STR,  cint(mobileEnvelopado.GetVisibleVicioStr()));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::ADDICTION_DEX,  cint(mobileEnvelopado.GetVisibleVicioDex()));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::ADDICTION_INT,  cint(mobileEnvelopado.GetVisibleVicioInt()));
 			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::HUNGER,  CInt( mobileEnvelopado.GetCurrentHunger() / 60));
-
 			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::LEVEL,  levelAtual);
 			//pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::GOLD, mobileEnvelopado.GetGold());
 			pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::GOLD, 0);
