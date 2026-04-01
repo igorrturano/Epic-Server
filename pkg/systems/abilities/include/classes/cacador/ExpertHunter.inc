@@ -44,7 +44,7 @@ class ExpertHunter(CombatAbility)
 			return false;
 		endif
 
-		if ((trap.objtype != 0x6076) && (trap.objtype != 0xff97) && (trap.objtype != 0x1BE6))
+		if ((trap.objtype != 0x6076) && (trap.objtype != 0x4140) && (trap.objtype != 0x1BE6))
 			Message("Isto não é uma armadilha.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
@@ -54,8 +54,8 @@ class ExpertHunter(CombatAbility)
 			return false;
 		endif
 
-		// Net trap (0xff97)
-		if (trap.objtype == 0xff97)
+		// Bear trap (0x4140)
+		if (trap.objtype == 0x4140)
 			return _InstallNetTrap(who, trap);
 		endif
 
@@ -97,7 +97,7 @@ function _InstallNetTrap(who, trap)
 	Message("*instalando armadilha*").SendAbove(who);
 	DestroyItem(trap);
 	sleep(4);
-	var armadilhanochao := CreateItemAtLocation(who.x, who.y, who.z - 1, 0xff98, 1, who.realm);
+	var armadilhanochao := CreateItemAtLocation(who.x, who.y, who.z - 1, 0x4004, 1, who.realm);
 	Message("Terminou de instalar a armadilha.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
 	sleep(5);
 	armadilhanochao.invisible := 1;

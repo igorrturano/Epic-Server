@@ -12,7 +12,7 @@ include "include/epicCombatUtils";
 const STEAMARMS_OBJTYPE := 0xFFC3;
 const HANDCANNON_OBJTYPE := 0xFFC7;
 const HARPOON_OBJTYPE := 0xFFC6;
-const POWDERTRAP_OBJTYPE := 0xFFC8;
+const POWDERTRAP_OBJTYPE := 0x2808;
 const CANNONBALL_OBJTYPE := 0x4224;
 const GUNPOWDER_OBJTYPE := 0x9092;
 
@@ -94,6 +94,16 @@ class TacticalShoulder(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
+
+		// Equipment check
+		if (!GetObjProperty(who, "pilotando"))
+			var arms := GetEquipmentByLayer(who, LAYER_ARMS);
+			if (!arms || arms.objtype != STEAMARMS_OBJTYPE) // Steam Arms (0xFFC3)
+				Message("Você precisa estar usando os Braços a Vapor para ativar a Ombreira Tática!").SendSys(who);
+				return false;
+			endif
+		endif
+
 		var gadget;
 
 		if (GetObjProperty(who, "pilotando"))
@@ -309,6 +319,14 @@ function _FireHarpoon(mobile, who)
 endfunction
 
 function _DeployPowderTrap(mobile, who)
+	SetScriptController(who);
+	Message("Escolha o local para colocar a armadilha.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	var targ := TargetCoordinates(who);
+	if (!targ)
+		Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return false;
+	endif
+
 	if (GetObjProperty(who, "pilotando"))
 		var golem := _TS_GetGolemRef(who);
 		var stored := CInt(GetObjProperty(golem, "golem_powder"));
@@ -325,7 +343,7 @@ function _DeployPowderTrap(mobile, who)
 		dano := CInt(dano * 1.5);
 	endif
 
-	var placed := CreateItemAtLocation(who.x, who.y, who.z, POWDERTRAP_OBJTYPE, 1, who.realm);
+	var placed := CreateItemAtLocation(targ.x, targ.y, targ.z, POWDERTRAP_OBJTYPE, 1, who.realm);
 	if (!placed)
 		Message("Erro ao colocar a armadilha.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return false;

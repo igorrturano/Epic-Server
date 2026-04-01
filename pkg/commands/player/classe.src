@@ -38,9 +38,9 @@ var SUBCLASS_MAGUS           := array{ "Magus",              2200, 2204 };
 var SUBCLASS_LAMINA_ARCANA   := array{ "Lamina Arcana",      2300, 2304 };
 var SUBCLASS_ARQ_ARCANO      := array{ "Arqueiro Arcano",    2400, 2404 };
 var SUBCLASS_ALQUIMISTA      := array{ "Alquimista",         2500, 2504 };
-var SUBCLASS_CLERIGO         := array{ "Clerigo",            2600, 2604 };
+var SUBCLASS_CLERIGO         := array{ "Clerigo",            2800, 2804 };
 var SUBCLASS_ENGENHEIRO      := array{ "Engenheiro",         2700, 2704 };
-var SUBCLASS_SHAMAN          := array{ "Shaman",             2800, 2804 };
+var SUBCLASS_SHAMAN          := array{ "Shaman",             2600, 2604 };
 var SUBCLASS_Desloc_SOMBRAS    := array{ "Deslocador das Sombras", 1800, 1804 };
 
 program classe(who, text)

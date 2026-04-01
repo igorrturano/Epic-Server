@@ -5,6 +5,7 @@ include "include/epicConstants";
 include "include/epicUtils";
 include ":tn:equipment";
 include ":abilities:include/models/Ability";
+include ":census:include/CensusController";
 
 function NivelHabilidade(habilidade, classe)
 
@@ -435,6 +436,9 @@ function comprarHabilidade(who, item, nv:=-1)
 		habs[nivel] := 2;
 		SetObjProperty(who, "buyhab", habs);
 		SetObjProperty(who, "myhabs", myhabs);
+		if (who.cmdlevel == 0)
+			CensusTrackAbility(escolhida_id);
+		endif
 
 		// Update pool counter for pool abilities (e.g., weapon specializations)
 		if (CInt(GetConfigInt(habelem_display, "pool")))
