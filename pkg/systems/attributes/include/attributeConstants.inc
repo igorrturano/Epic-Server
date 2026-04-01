@@ -12,6 +12,9 @@ enum VITALS
 	STAMINA			:= "Stamina",
 	HUNGER			:= "Hunger",
 	DEATH_POINTS 	:= "DP",
+	ADDICTION_STR		:= "Viciostr",
+	ADDICTION_DEX		:= "Viciodex",
+	ADDICTION_INT		:= "Vicioint",
 endenum
 
 enum STATS

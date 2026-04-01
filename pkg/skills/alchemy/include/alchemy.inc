@@ -375,7 +375,7 @@ function VicioSTR (who, potion)
   endif
   
   AP_SetVital(who,"viciostr", vicio);
- 	
+  
   var ultimouso := readgameclock();
 	SetObjProperty(who, "ultimastr", ultimouso);
 endfunction
@@ -400,7 +400,7 @@ function VicioDEX (who, potion)
   endif
   
   AP_SetVital(who,"viciodex", vicio);
- 	
+
   var ultimouso := readgameclock();
 	SetObjProperty(who, "ultimadex", ultimouso);
 endfunction
@@ -425,7 +425,7 @@ function VicioINT (who, potion)
   endif
   
   AP_SetVital(who,"vicioint", vicio);
- 	
+
   var ultimouso := readgameclock();
 	SetObjProperty(who, "ultimaint", ultimouso);
 endfunction
