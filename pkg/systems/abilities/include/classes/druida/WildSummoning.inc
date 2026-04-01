@@ -143,6 +143,25 @@ class WildSummoning(CombatAbility)
     endfunction
 
     function _SummonSelectedCreature(this, who, selected_creature)
+        var theology := AP_GetSkill(who, THEOLOGY);
+        var max_slots := CInt(theology / 20);
+        if (max_slots < 1)
+            max_slots := 1;
+        elseif (max_slots > 5)
+            max_slots := 5;
+        endif
+
+        var used_slots := GetNumSummons(who);
+        var creature_tier := CInt(selected_creature.tier);
+        if (creature_tier < 1)
+            creature_tier := 1;
+        endif
+
+        if (used_slots + creature_tier > max_slots)
+            Message($"Voce nao tem espacos suficientes para invocar {selected_creature.name}. (Usando {used_slots}/{max_slots}, precisa de {creature_tier})").SendSys(who);
+            return false;
+        endif
+
         Message("Escolha o local para invocar " + selected_creature.name + ".").SendSys(who);
         var targ := TargetCoordinates(who);
 
