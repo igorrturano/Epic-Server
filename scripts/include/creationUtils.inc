@@ -929,7 +929,7 @@ function weaponsByClassAndCulture(who)
             if( chardata.magia == "Shaman")
                 CreateItemInicial(who, 0x26C4, 1); // scythe
             else
-                CreateItemInicial(who, 0x0F4E, 1); // bardiche
+                CreateItemInicial(who, 0x0f45, 1); // Grishnak
             endif
         endif
         if (skills[DUALWIELD] >= 1)
