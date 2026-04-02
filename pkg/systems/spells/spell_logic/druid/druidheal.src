@@ -120,10 +120,6 @@ function ShowHealFeedback(caster, targ, amount, is_hot, tick, total_ticks)
 		amount := 0;
 	endif
 
-	if (amount > 0)
-		PrintTextAbove(targ, $"+{amount}");
-	endif
-
 	if (!caster || !caster.connected)
 		return;
 	endif

@@ -7,109 +7,15 @@
 
 use uo;
 use os;
-use cfgfile;
-use math;
 
 include ":hotbar:include/shared_constants";
 include ":hotbar:include/hotbar_write";
-include ":hotbar:include/icon_manager";
-include ":timedScripts:timedScripts";
+include ":hotbar:include/hotbar_exec_helpers";
 
 program SendCombatHotkeys(who)
-    var chardata := GetObjProperty(who, "chardata");
-    if (!chardata)
+    var combat_hotkeys := GetCombatHotkeys(who);
+    if (!combat_hotkeys.size())
         return 0;
-    endif
-
-    var combat_hotkeys := array{};
-    var special_name := "";
-    var special_class := "";
-    var special_index := 0;
-
-    case (chardata.classe)
-        "Guerreiro":
-            special_name := "Ataque Extra";
-            special_class := "Guerreiro";
-            special_index := 1;
-        "Ladino":
-            special_name := "Evasao";
-            special_class := "Ladino";
-            special_index := 2;
-        "Sabio":
-            if (chardata.wisdom_path == "Engenheiro")
-                special_name := "Recarga Rapida";
-                special_class := "Engenheiro";
-                special_index := 3;
-            elseif (chardata.magia == "arcane_archer")
-                special_name := "Velocidade Arcana";
-                special_class := "arcane_archer";
-                special_index := 5;
-            else
-                special_name := "Conjuracao Rapida";
-                special_class := "Conjurador";
-                special_index := 4;
-            endif
-    endcase
-
-    var level := CInt(GetObjProperty(who, "Level"));
-    if (!level) level := 1; endif
-    var final_cooldown := 180 - (Floor(level / 4) * 30);
-    if (final_cooldown < 30) final_cooldown := 30; endif
-
-    var remaining_cooldown := CInt(TS_GetCooldown(who, "special_ability"));
-    if (!remaining_cooldown || remaining_cooldown < 0) remaining_cooldown := 0; endif
-
-    if (special_name != "")
-        var special_desc := "";
-        case (special_index)
-            1: special_desc := "Executa um ataque instantâneo adicional";
-            2: special_desc := "Fica invisível por 0.5s e recua 4 tiles";
-            3: special_desc := "Adiciona 1 bala instantaneamente na arma de fogo";
-            4: special_desc := "Permite conjurar a próxima magia instantaneamente";
-            5: special_desc := "Aumenta a velocidade de movimento por 4 segundos";
-            default: special_desc := "Habilidade especial de " + special_class;
-        endcase
-
-        var icon_data := GetSpecialIcon(special_name);
-
-        combat_hotkeys.append(struct{
-            "name" := special_name,
-            "classe" := special_class,
-            "desc" := special_desc,
-            "iconid" := icon_data.iconid,
-            "hue" := icon_data.hue,
-            "index" := special_index,
-            "delay" := final_cooldown,
-            "remaining" := remaining_cooldown
-        });
-    endif
-
-    var golpe_icon := GetCommandIcon("golpe");
-    if (!golpe_icon.errortext)
-        combat_hotkeys.append(struct{
-            "name" := ".golpe",
-            "classe" := special_class,
-            "desc" := "Golpe especial de arma",
-            "iconid" := golpe_icon.iconid,
-            "hue" := golpe_icon.hue,
-            "index" := 10,
-            "delay" := 0,
-            "remaining" := 0
-        });
-    endif
-
-    var combate_icon := GetCommandIcon("combate");
-    if (!combate_icon.errortext)
-        combat_hotkeys.append(struct{
-            "name" := ".combate",
-            "classe" := special_class,
-            "desc" := "Mudar postura de combate",
-            "iconid" := combate_icon.iconid,
-            "hue" := combate_icon.hue,
-            "index" := 11,
-            "delay" := 0,
-            "remaining" := 0
-        });
     endif
 
     // Build packet
