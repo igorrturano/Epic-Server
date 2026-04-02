@@ -49,7 +49,12 @@ program Logon(who)
 	endif
 
 	var players := EnumerateOnlineCharacters();
-	var total := players.size();
+	var total := 0;
+	foreach player in players
+		if (player.cmdlevel == 0)
+			total += 1;
+		endif
+	endforeach
 	if (total > recorde)
 		BroadCast("Novo recorde do shard de players online batido! Total: " + total + "!", FONT_BOLD,
 				   SSM_INFO);
