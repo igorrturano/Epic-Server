@@ -18,11 +18,15 @@ program neve(params)
 	var who := params[1];
 
 	SetObjProperty(who, "neve", 1);
+
+	if (GetObjProperty(who, "teste_de_frio") != error)
+		return;
+	endif
+
+	SetObjProperty(who, "teste_de_frio", 1);
 	detach();
 
-	if (GetObjProperty(who, "teste_de_frio") == error)
-		while (1)
-			SetObjProperty(who, "teste_de_frio", 1);
+	while (1)
 			sleep(300);
 
 			if (GetObjProperty(who, "neve") == error)
@@ -175,7 +179,6 @@ program neve(params)
 
 			SetObjProperty(who, "penalidadeclima", penalty);
 		endwhile
-	endif
 endprogram
 
 function RemoveColdMod(who, mod)

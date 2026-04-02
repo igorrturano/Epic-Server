@@ -41,7 +41,7 @@ function ExecuteSkillAction(who, skill_id, verbose := 0)
 
     var skill_value := CInt(AP_GetSkill(who, skill_name));
 
-    if (skill_value <= 0)
+    if (skill_value <= 0 && GetObjProperty(who, "chardata").Skills[skill_name] == 0)
         SendSysMessage(who, $"Você não possui pontos em {skill_name}!");
         return 0;
     endif
