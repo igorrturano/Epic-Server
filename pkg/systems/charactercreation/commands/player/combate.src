@@ -31,6 +31,7 @@ program cmd_combate(who)
 	endif
 
 	// Check if in combat
+	/* Removi, achei que isso só dá dor de cabeça pra player. Ass: deiro.
 	var hostiles := ListHostiles(who.GetObjRef());
 
 	if (!hostiles.size())
@@ -38,6 +39,8 @@ program cmd_combate(who)
 			.SendSys(who.GetObjRef());
 		return;
 	endif
+	
+	*/
 
 	// Check cooldown
 	if (GetCooldown(who.GetObjRef(), "combat_stance_change") > 0)
