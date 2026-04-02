@@ -10,10 +10,10 @@ include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":datafile:datafile";
 
-const BOTAO_CRIAR := 1;
-const BOTAO_EDITAR := 2;
-const BOTAO_VISUALIZAR := 3;
-const BOTAO_AVALIACOES := 4;
+const BOTAO_CRIAR := 10;
+const BOTAO_EDITAR := 11;
+const BOTAO_VISUALIZAR := 12;
+const BOTAO_AVALIACOES := 13;
 
 const MENU_CRIAR := 1;
 const MENU_EDITAR := 2;
@@ -32,14 +32,35 @@ var _txt_comportamentos_id := 1000;
 var _txt_objetivos_id := 2000;
 
 program fichaRP(who, text)
-	var input := ShowCriarGump(who);
+	text := Lower(Trim(text));
+
+	// GM pode visualizar ficha de outro jogador com .ficharp ver
+	if (text == "ver" && who.cmdlevel >= 3)
+		SendSysMessage(who, "Selecione o jogador para visualizar a ficha RP.");
+		var targ := Target(who);
+		if (!targ || !targ.acctname)
+			SendSysMessage(who, "Alvo inválido.");
+			return 0;
+		endif
+		ShowVisualizarGump(who, targ);
+		return 1;
+	endif
+
+	var input;
+	case (text)
+		"criar":      input := ShowCriarGump(who);
+		"editar":     input := ShowEditarGump(who);
+		"visualizar": input := ShowVisualizarGump(who, who);
+		"avaliacoes": input := ShowAvaliacoesGump(who);
+		default:      input := ShowCriarGump(who);
+	endcase
 
 	while (input != 0)
 		var new_menu := AtualizarEstadoMenu(input[0]);
 		case (new_menu)
 			MENU_CRIAR:      input := ShowCriarGump(who);
 			MENU_EDITAR:     input := ShowEditarGump(who);
-			MENU_VISUALIZAR: input := ShowVisualizarGump(who);
+			MENU_VISUALIZAR: input := ShowVisualizarGump(who, who);
 			MENU_AVALIACOES: input := ShowAvaliacoesGump(who);
 			default:         input := 0;
 		endcase
@@ -107,7 +128,6 @@ function ShowCriarGump(who)
 
 		SalvarFichaRP(who, comportamentos, objetivos);
 		SendSysMessage(who, "Ficha RP criada com sucesso!");
-		SetObjProperty(who, "fichaRP", 1);
 
 		return 0; // retorna zero como sucesso
 
@@ -186,7 +206,11 @@ function ShowEditarGump(who)
 	return input[0];
 endfunction
 
-function ShowVisualizarGump(who)
+function ShowVisualizarGump(who, targ := 0)
+	if (!targ)
+		targ := who;
+	endif
+
 	var gump := GFCreateGump();
 	GFClosable(gump, 1);
 	GFDisposable(gump, 0);
@@ -194,13 +218,13 @@ function ShowVisualizarGump(who)
 	GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
 	AdicionarMoldura(gump);
 
-	GFTextMid(gump, 45, 22, GUMP_WIDTH - 50, 53, "Visualizar Ficha RP de " + who.name);
+	GFTextMid(gump, 45, 22, GUMP_WIDTH - 50, 53, "Visualizar Ficha RP de " + targ.name);
 
 	AdicionarBotoesNavegacao(gump);
 
 	var y_pos := 95; // Abaixado em 35 pixels
 
-	var ficha := CarregarFichaRP(who);
+	var ficha := CarregarFichaRP(targ);
 
 	GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Características Comportamentais");
 	y_pos += 25;
@@ -376,6 +400,7 @@ function SalvarFichaRP(who, comportamentos, objetivos)
 
 	ficharp_elem.SetProp("Comportamento", comportamentos);
 	ficharp_elem.SetProp("Objetivos", objetivos);
+	SetObjProperty(who, "fichaRP", 1);
 
 	if (!ficharp_elem.GetProp("Avaliacoes"))
 		ficharp_elem.SetProp("Avaliacoes", array{});

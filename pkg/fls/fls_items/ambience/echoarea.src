@@ -63,6 +63,9 @@ function CreateEcho(ev, rune, range)
 
 	// Se não for emote, processa como texto normal
 	var speaker_language := GetObjProperty(mobile, "lingua_escolhida");
+	if (!speaker_language)
+		speaker_language := "Comum";
+	endif
 	var nearby_players := ListMobilesNearLocationEx(rune.x, rune.y, rune.z, range, LISTEX_FLAG_NORMAL,
 													 mobile.realm);
 
