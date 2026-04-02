@@ -209,25 +209,25 @@ function getStreng(subject, graphic, gender)
             strGender := "ela";
         endif
     endif
-    if(subject >= 100)
+    if(subject >= 120)
         return strSuper + " sobrehumana";
-    elseif(subject >= 90)
+    elseif(subject >= 110)
         return "ser como uma das mais fortes " + strType + " que você já viu";
-    elseif(subject >= 80)
+    elseif(subject >= 100)
         return "ser forte como uma besta";
-    elseif(subject >= 70)
+    elseif(subject >= 90)
         return "ser extraordinariamente forte";
+    elseif(subject >= 80)
+        return "ser bem forte";
+    elseif(subject >= 70)
+        return "ser forte";
     elseif(subject >= 60)
-        return "ser extremamente forte";
+        return "ser um pouco forte";
     elseif(subject >= 50)
-        return "ser muito forte";
-    elseif(subject >= 40)
-        return "ser um tanto forte";
-    elseif(subject >= 30)
         return "ser normal";
-    elseif(subject >= 20)
+    elseif(subject >= 40)
         return "ser fraco";
-    elseif(subject >= 10)
+    elseif(subject >= 30)
         return "ser bastante fraco";
     else
         return "ter problemas levantando uma pena";
@@ -279,25 +279,41 @@ function getDext(subject, graphic, gender)
 endfunction
 
 function getHit(subject)
-	if(subject >= 100)
+    // fix sys msgs
+    var strSuper, strType, strGender;
+    if(graphic != 0x190 && graphic != 0x191)
+        strSuper := "anormalmente";
+        strType := "criaturas";
+        strGender := "ela";
+    else
+        strSuper := "sobre-humanamente";
+        strType := "pessoa";
+        // Determine the proper pronoun for later use in messages.
+        if(gender == 0)
+            strGender := "ele";
+        elseif(gender == 1)
+            strGender := "ela";
+        endif
+    endif
+	if(subject >= 140)
 		return "parece ter saude sobre-humana";
-	elseif(subject >= 99)
+	elseif(subject >= 130)
 		return "uma das pessoas mais saudaveis que voce ja viu";
-	elseif(subject >= 89)
+	elseif(subject >= 120)
 		return "parece que nunca deve ficar doente";
-	elseif(subject >= 79)
+	elseif(subject >= 110)
 		return "extraordinariamente saudavel";
-	elseif(subject >= 69)
+	elseif(subject >= 100)
 		return "extremamente saudavel";
-	elseif(subject >= 59)
+	elseif(subject >= 90)
 		return "muito saudavel";
-	elseif(subject >= 49)
+	elseif(subject >= 80)
 		return "um pouco saudavel";
-	elseif(subject >= 39)
+	elseif(subject >= 70)
 		return "moderadamente saudavel";
-	elseif(subject >= 29)
+	elseif(subject >= 60)
 		return "parece ter a saude comprometida";
-	elseif(subject >= 19)
+	elseif(subject >= 50)
 		return "parece doentio";
 	else
 		return "";
@@ -407,19 +423,17 @@ endfunction
 //------------------------------------------------------
 
 function getFort(subject)
-    if (subject >= 105)
+	if (subject >= 35)
         return "de um deus";
-    elseif(subject >= 90)
-        return "de um semi-deus";
-    elseif(subject >= 75)
-        return "excepcional";
-    elseif(subject >= 60)
-        return "muito forte";
-    elseif(subject >= 45)
-        return "forte";
     elseif(subject >= 30)
-        return "mediano";
+        return "de um semi-deus";
+    elseif(subject >= 25)
+        return "excepcional";
+    elseif(subject >= 20)
+        return "forte";
     elseif(subject >= 15)
+        return "mediano";
+    elseif(subject >= 10)
         return "frágil";
     elseif(subject >= 0)
         return "muito frágil";
