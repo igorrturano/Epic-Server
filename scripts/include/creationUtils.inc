@@ -1589,13 +1589,13 @@ function signSelection(who)
     var chardata := GetObjProperty(who, "chardata");
     var sign_pic := CUIDADOR_ID;
     var btn_value;
-    while (1)
+    while (!GetObjProperty(who, "creation_completed"))
         var input := SignGump(who, sign_pic);
-        btn_value := input[0]; 
+        btn_value := input[0];
 
         if (btn_value == 201)
             sign_pic++;
-        elseif (btn_value == 210) 
+        elseif (btn_value == 210)
             sign_pic--;
         elseif (btn_value == 666)
             break;
@@ -1704,9 +1704,9 @@ function birthDaySelection(who)
     var selected_day := 0;
     var month_index := getMonthBySign(chardata.sign);
     var btn_value;
-    while (1)
+    while (!GetObjProperty(who, "creation_completed"))
         var input := BirthDayGump(who, selected_day);
-        btn_value := input[0]; 
+        btn_value := input[0];
         if (btn_value == 666 && selected_day != 0)
             break;
         elseif (btn_value >= 1 && btn_value <= MONTHS[month_index].days)
@@ -2336,7 +2336,7 @@ function spellChoices(who)
     var btn_value;
     var total_amount := 3;
     
-    while (1)
+    while (!GetObjProperty(who, "creation_completed"))
         var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount);
 
         foreach key in (input.keys)
@@ -2459,7 +2459,7 @@ function AlchChoices(who)
 
     var selected_recipes := array;
     var btn_value;
-    while (1)
+    while (!GetObjProperty(who, "creation_completed"))
         var qtd := (skill*2)+2;
         var input := alchSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
 
