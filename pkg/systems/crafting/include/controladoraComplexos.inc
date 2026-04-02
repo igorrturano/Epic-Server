@@ -464,7 +464,6 @@ endfunction
 
 function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarRequisitos := false)
 	var contagem := ContaQuantidadeRequisitos(quem,esquema, receita, deveIgnorarRequisitos);
-	
 
 	if(isRequisitoSuficiente(quem,contagem, receita, esquema, quantidade, deveIgnorarRequisitos))
 		if(!deveIgnorarRequisitos)
@@ -560,7 +559,7 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 	
 	foreach elemento in contagem
 		Sleepms(2);
-		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade * elemento.lote )
+		if(elemento.quantidadeEncontrada < cint(elemento.quantidadeNecessaria) * cint(quantidade) * cint(elemento.lote))
 			var mensagem; 
 			if (elemento.?encaixe)
 				mensagem := "Você não tem {} [{}] suficiente.".format(elemento.nomeItem,elemento.tierDesc);
@@ -594,6 +593,8 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 		endif
 	
 	endforeach
+
+	Print("Requisitos suficientes.");
 
 	return true;
 endfunction
@@ -661,13 +662,12 @@ endfunction
 function ConsomeRequisitos(contagem, quantidade := 1)
 	foreach contado in contagem
 		Sleepms(2);
-		var quantidadeRestante := contado.quantidadeNecessaria * contado.lote * quantidade;
+		var quantidadeRestante := cint(contado.quantidadeNecessaria) * cint(contado.lote) * cint(quantidade);
 		foreach itemEncontrado in (contado.itemRefArray)
 			Sleepms(2);
 			If(quantidadeRestante <= 0) 
 				break; 
 			endif;
-			
 			if(itemEncontrado.stackable)
 				var quantidadeSubtraida :=  quantidadeRestante - itemEncontrado.amount;
 				SubtractAmount(itemEncontrado, quantidadeRestante);
