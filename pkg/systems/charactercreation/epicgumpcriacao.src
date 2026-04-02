@@ -908,7 +908,7 @@ function languageSelection(who, culture_pic)
 		var total_amount := 1;
 		known_languages.append(parseLanguageByCulture(who, linguasOpt));
 		if (AP_GetTrueStat(who, INTELLIGENCE) >= 40)
-			total_amount += cint(((AP_GetTrueStat(who, INTELLIGENCE) - 40) / 30) + 1);
+			total_amount += cint(((AP_GetTrueStat(who, INTELLIGENCE) - 30) / 30) + 1);
 			known_languages.append("Comum");
 		endif
 		var input := languageSelectionGump(who, culture_pic, linguasOpt, known_languages, total_amount);
