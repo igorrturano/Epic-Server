@@ -111,5 +111,5 @@ function RodaEfeitosAnim(quem, arma, alvo)
 endfunction
 
 function CalculaConsumoStamina(fonteDano, byref consumoStamina)
-	consumoStamina := CInt(fonteDano.weight * 3);
+	consumoStamina := CInt(fonteDano.weight);
 endfunction

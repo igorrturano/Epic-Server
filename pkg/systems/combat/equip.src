@@ -15,10 +15,10 @@ include ":entropy:entropy";
 include ":abilities:models/Ability";
 
 program equipweapon(who, item)
+	//TODO Refatorar este script, tá meio bagunçado. ass: Deiro.
 	var descmod_item := GetObjProperty(item, "descmod");
 	var descmod := array;
 	var aux := array;
-
 	descmod := GetObjProperty(who, "descmod");
 
 	if (descmod_item != error)
@@ -159,13 +159,14 @@ program equipweapon(who, item)
 	endif
 
 	// STR Required check
-	var str_required := GetObjProperty(item, "atributos").STRRequired;
+	var wrapper := item.isA(POLCLASS_ARMOR) ? ArmorWrapper(item) : item.isA(POLCLASS_WEAPON) ? WeaponWrapper(item) : EquipWrapper(item);
+	var str_required := wrapper.GetStrRequired();
 	if (str_required > 0)
 		var who_str := AP_GetStat(who, STRENGTH);
 		var str_mod := AP_GetStatMod(who, STRENGTH);
 		var total_str := who_str + str_mod;
 		if (total_str < str_required)
-			SendSysMessageEx(who, "Voce nao tem forca suficiente para equipar este item.", SSM_FAIL);
+			SendSysMessageEx(who, "Você não tem força suficiente para equipar este item.", SSM_FAIL);
 			return 0;
 		endif
 	endif
