@@ -21,9 +21,17 @@ include ":nature:nature";
 include ":crafting:fabricaComplexos";
 include ":census:include/CensusController";
 
+function CreationCompleted(who)
+	return GetObjProperty(who, "creation_completed");
+endfunction
+
 program epicCreationGump(who)
+	if (CreationCompleted(who))
+		return;
+	endif
+
 	resetCharacter(who);
-	
+
 	// Create chardata at the very start - this serves as the "creation in progress" flag
 	var chardata := struct;
 	SetObjProperty(who, "chardata", chardata);
@@ -72,7 +80,7 @@ function culturalSelection(who)
 	var chardata := struct;
 	var culture_pic := 0x9E7;
 	var btn_value;
-	while (1)
+	while (!CreationCompleted(who))
 		var input := CultureGump(who, culture_pic);
 		btn_value := input[0];
 
@@ -102,7 +110,7 @@ function racialSelection(who, culture_pic)
 	var btn_value;
 	var chardata := GetObjProperty(who, "chardata");
 
-	while (1)
+	while (!CreationCompleted(who))
 		var input := EpicRaceGump(who, culture_pic);
 		foreach key in (input.keys)
 			btn_value := key;
@@ -181,7 +189,7 @@ function RPcharacteristicsSelection(who, culture_pic)
 	var input;
 	var all_requirements_met := 0;
 
-	while (!all_requirements_met)
+	while (!all_requirements_met && !CreationCompleted(who))
 		input := CaracteristicasRPGump(who, chardata, culture_pic);
 
 		var age_input := GFExtractData(input, 1000); // Textbox ID for Age
@@ -229,7 +237,7 @@ endfunction
 function classSelection(who, culture_pic)
 	var btn_value;
 	var chardata := GetObjProperty(who, "chardata");
-	while (1)
+	while (!CreationCompleted(who))
 		var input := ClassGump(who, culture_pic);
 		foreach key in (input.keys)
 			btn_value := key;
@@ -268,7 +276,7 @@ function backgroundSelection(who, culture_pic)
 	var cultural_bg := backgroundByCulture(who);
 	var cultural_btn := 200 + bg_list.size() + 1;
 
-	while (1)
+	while (!CreationCompleted(who))
 		var input := backgroundGump(who, culture_pic);
 		foreach key in (input.keys)
 			btn_value := key;
@@ -299,7 +307,7 @@ function traitSelection(who, culture_pic)
 	var traits := listTraits(who, chardata);
 	var i := 1;
 
-	while (1)
+	while (!CreationCompleted(who))
 		var input := traitGump(who, culture_pic, traits);
 		foreach key in (input.keys)
 			btn_value := key;
@@ -331,7 +339,7 @@ function skillSelection(who, culture_pic)
 	chardata.+Skills := dictionary;
 	var points := chardata.points;
 	var pri_count := 0;
-	while (1)
+	while (!CreationCompleted(who))
 		if (chardata.points < 0)
 			SendSysMessageEX(who, "Compra de habilidade inválida", SSM_FAIL);
 			DisconnectClient(who);
@@ -469,7 +477,7 @@ function attributeSelection(who, culture_pic)
 	var traits := listTraits(who, chardata);
 	var i := 1;
 
-	while (1)
+	while (!CreationCompleted(who))
 		var input := attributeGump(who, culture_pic, chardata);
 		foreach key in (input.keys)
 			btn_value := key;
@@ -511,7 +519,7 @@ function religionSelection(who)
 	var chardata := GetObjProperty(who, "chardata");
 	var religion_pic := 0x9F6;
 	var btn_value;
-	while (1)
+	while (!CreationCompleted(who))
 		var input := ReligionGump(who, religion_pic);
 		btn_value := input[0];
 
@@ -540,7 +548,7 @@ function gameModeSelection(who)
 	var chardata := GetObjProperty(who, "chardata");
 	var game_mode_pic := 0x9FB;
 	var btn_value;
-	while (1)
+	while (!CreationCompleted(who))
 		var input := gameModeGump(who, game_mode_pic);
 		btn_value := input[0];
 
@@ -576,7 +584,7 @@ function looksSelection(who)
 	// reseta cabelo e barba antes de iniciar as opções
 	resetHairAndBeard(who, chardata);
 
-	while (continue_loop)
+	while (continue_loop && !CreationCompleted(who))
 		var input := hairSelectionGump(who, chardata, currentPage);
 		btn_value := input[0];
 		case (btn_value)
@@ -632,7 +640,7 @@ function hairAndBeardColorSelection(who, byref chardata)
 	var currentPage := 1;
 	var continue_loop := 1;
 
-	while (continue_loop)
+	while (continue_loop && !CreationCompleted(who))
 		var input := hairAndBeardColorSelectionGump(who, chardata, currentPage);
 		btn_value := input[0];
 		case (btn_value)
@@ -661,7 +669,7 @@ function skinColorSelection(who, byref chardata)
 	var currentPage := 1;
 	var continue_loop := 1;
 
-	while (continue_loop)
+	while (continue_loop && !CreationCompleted(who))
 		var input := skinColorSelectionGump(who, chardata, currentPage);
 		btn_value := input[0];
 		case (btn_value)
@@ -687,7 +695,7 @@ function beardSelection(who, byref chardata)
 	chardata.+beard_item := 0;
 	var continue_loop := 1;
 
-	while (continue_loop)
+	while (continue_loop && !CreationCompleted(who))
 		var input := beardSelectionGump(who, chardata, currentPage);
 		btn_value := input[0];
 		case (btn_value)
@@ -718,7 +726,7 @@ function pathOfWisdom(who, culture_pic)
 	if (chardata.classe != "Sabio")
 		return;
 	endif
-	while (1)
+	while (!CreationCompleted(who))
 		var input := pathOfWisdomGump(who, culture_pic);
 		foreach key in (input.keys)
 			btn_value := key;
@@ -788,6 +796,7 @@ function pathOfWisdom(who, culture_pic)
 			CreateItemInBackPack(who, "ammo", 20);
 			CreateItemInBackPack(who, "powder", 20);
 			CreateItemInBackPack(who, "powderfixer", 1);
+			CreateItemInBackpack(who, 0xC892, 1); // Bandoleira
 
 			var pistol1 := CreateItemInBackPack(who, "pistol1", 1);
 			var pistol2 := CreateItemInBackPack(who, "pistol2", 1);
@@ -895,7 +904,7 @@ function languageSelection(who, culture_pic)
 	var known_languages := array;
 	var btn_value;
 	SetObjProperty(who, "#LastSpeechTime", ReadGameClock());
-	while (1)
+	while (!CreationCompleted(who))
 		var total_amount := 1;
 		known_languages.append(parseLanguageByCulture(who, linguasOpt));
 		if (AP_GetTrueStat(who, INTELLIGENCE) >= 40)
