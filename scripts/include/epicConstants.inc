@@ -11,6 +11,12 @@ enum class DAYNIGHT_EVTS
     EV_DAY_ACCELATARION_CHANGE_ID
 endenum
 
+enum class SKILL_PRIORITY
+    PRIMARY := 3,
+    SECONDARY := 2,
+    TERTIARY := 1
+endenum
+
 enum CULTURA
     AIGLANA := "Aiglana",
     HAROLOTH := "Har'oloth",

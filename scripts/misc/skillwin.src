@@ -50,7 +50,7 @@ program core_skillWin(who)
 		return;
 	endif
 
-	CheckPlayerLevel(who);
+	SetPlayerSkillLevel(who);
 	var gump;
 	var page := 1;
 	while (1)
