@@ -281,6 +281,7 @@ endfunction
 function getHit(subject)
     // fix sys msgs
     var strSuper, strType, strGender;
+	var graphic := subject.graphic;
     if(graphic != 0x190 && graphic != 0x191)
         strSuper := "anormalmente";
         strType := "criaturas";
@@ -289,6 +290,7 @@ function getHit(subject)
         strSuper := "sobre-humanamente";
         strType := "pessoa";
         // Determine the proper pronoun for later use in messages.
+		var gender := subject.gender;
         if(gender == 0)
             strGender := "ele";
         elseif(gender == 1)
