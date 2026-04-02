@@ -1,10 +1,9 @@
 use uo;
 use os;
-
-include ":attributes:attributes";
-include "include/client";
-include "include/sounds";
 include "include/say";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
@@ -15,15 +14,22 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	// Check if spell is already prepared
-	if (GetObjProperty(who, "wildspeech_preparada"))
-		SendSysMessageEx(who, "Você já preparou o dom da fala selvagem.", SSM_FAIL);
+	// Check if effect is already active
+	var wildspeech_duration := TS_GetTimerDuration(who, "wildspeech");
+	if (wildspeech_duration != error && wildspeech_duration > 0)
+		SendSysMessageEx(who, "Você já está sob o dom da fala selvagem.", SSM_FAIL);
 		return 0;
-	endif;
+	endif
 
-	// Prepare the spell for next transformation
-	SetObjProperty(who, "wildspeech_preparada", 1);
-	SendSysMessageEx(who, "Você se prepara para falar na forma selvagem.", SSM_INFO);
+	var duration_minutes := CInt(AP_GetSkill(who, THEOLOGY));
+	if (duration_minutes < 1)
+		duration_minutes := 1;
+	endif
+
+	var duration_secs := duration_minutes * 60;
+	TS_StartTimer(who, "wildspeech", duration_secs);
+	SendSpellBuff(who, who, 708, duration_secs, $"{duration_minutes} min");
+	SendSysMessageEx(who, $"Sua fala selvagem foi despertada por {duration_minutes} minutos.", SSM_INFO);
 	
 	return 1;
 endprogram

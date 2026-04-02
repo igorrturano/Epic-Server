@@ -8,6 +8,7 @@ use os;
 include "include/say";
 // include ":timedscripts:timedScripts";
 include ":spells:auraControl";
+include ":spells:Controller/SpellController";
 
 program Logon(who)
 	/* var result := TS_StartController(who);
@@ -16,6 +17,8 @@ program Logon(who)
 	endif */
 	// SendSysMessage(who, "->"+who.name);
 	// c_START(WHO);
+
+	SC_ResyncOnLogin(who);
 
 	var e := Start_Script("auraControl", { who });
 	if (e == error)

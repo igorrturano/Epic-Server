@@ -114,5 +114,14 @@ enum class MESSAGE_COLOR
 	WHISPER := 51,
 	YELL := 33,
 	SYSTEM := GENERAL_COLOR::YELLOW,
-	PRIVATE := GENERAL_COLOR::MAGENTA
+	PRIVATE := GENERAL_COLOR::MAGENTA,
+	NARRATOR := 946
+endenum
+
+enum class GUMP_COLOR
+	SECTION_HEADER := 1149,  // Bright Cyan
+	HIGHLIGHT := 53,         // Gold/Yellow (same as GENERAL_COLOR::YELLOW)
+	LABEL := 2100,           // Light Gray
+	HELP_TEXT := 1153,       // Dark Gray
+	TEXT_ENTRY := 1150       // White/Light for text entries
 endenum

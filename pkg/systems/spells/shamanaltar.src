@@ -31,7 +31,7 @@ program orderSpells(who, item)
 		return;
 	endif
 	var mlore := cint(AP_GetSkill(who, THEOLOGY));
-	var cfg := ReadConfigFile(":spells:config/shamanspells");
+	var cfg := ReadConfigFile(":spells:config/shaman");
 	var cleric_slots := Cint(mlore / 5);
 
 	var shaman_list := GetObjProperty(who, "shaman_list");
@@ -43,7 +43,7 @@ program orderSpells(who, item)
 	if (!GetObjProperty(who, "cantrips_granted"))
 		foreach spell in (GetConfigIntKeys(cfg))
 			spell := FindConfigElem(cfg, spell);
-			WriteSpellInfo(spell, ":spells:config/shamanspells");
+			WriteSpellInfo(spell, ":spells:config/shaman");
 			sleepms(2);
 			if (spell.circle == 0)
 				var cantrip := struct{
@@ -77,7 +77,7 @@ program orderSpells(who, item)
 	foreach spell in (GetConfigIntKeys(cfg))
 		spell := FindConfigElem(cfg, spell);
 		sleepms(2);
-		WriteSpellInfo(spell, ":spells:config/shamanspells");
+		WriteSpellInfo(spell, ":spells:config/shaman");
 
 		if (spell.circle > Cint((mlore + 10) / 20)) // 10, 30, 50 , 70 , 90 habs pra castar
 			continue;
@@ -94,7 +94,7 @@ program orderSpells(who, item)
 	var canceled := 0;
 	while (!canceled)
 		RemoveUsedSpells(who, shaman_list, available_slots);
-		var input := CreateClericGump(who, spell_list, available_slots, shaman_list);
+		var input := CreateClericGump(who, spell_list, available_slots, shaman_list, slots_used, cleric_slots);
 
 		if (input[0] >= 200)
 			if (TS_GetTimerInfo(who, "orderspell")) // TODO
@@ -112,7 +112,7 @@ program orderSpells(who, item)
 	endwhile
 endprogram
 
-function CreateClericGump(who, spell_list, available_slots, shaman_list)
+function CreateClericGump(who, spell_list, available_slots, shaman_list, slots_used, total_slots)
 	var gump := GFCreateGump();
 	// Count only non-cantrip spells (circle != 0) for gump sizing
 	var non_cantrip_count := 0;
@@ -161,6 +161,8 @@ function CreateClericGump(who, spell_list, available_slots, shaman_list)
 			y += 26;
 		endif
 	endforeach
+
+	GFTextLine(gump, 63, y + 15, 0, "Slots: {}/{}".format(slots_used, total_slots));
 
 	return GFSendGump(who, gump);
 endfunction

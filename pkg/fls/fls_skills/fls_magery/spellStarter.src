@@ -65,14 +65,11 @@ program SpellStarter(params)
 			mobile.frozen := 1;
 		endif
 	endif
-	var battlemageHabs := array{ "Concentracao Macabra", "Consagracao Divina", "Vínculo Elemental",
-							 	"Colheita de Almas", "Campeao das Montanhas" };
-	var tem_hab := 0;
-	foreach hab in battlemageHabs
-		if (TemHabilidade(mobile, hab))
-			tem_hab := 1;
-		endif
-	endforeach
+	var mw := MobileWrapper(mobile);
+	var tem_hab := mw.HasAbility(ABILITY_ID::CETRO_DA_MORTE)
+		|| mw.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA) 
+		|| mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) 
+		|| mw.HasAbility(ABILITY_ID::SOUL_HARVEST);
 	// Perform various checks to see if mobile can perform the spell
 	if (mobile.squelched && !mobile.npctemplate)
 		SendSysMessage(mobile, "Voce precisa falar devido os componentes verbais da magia.");

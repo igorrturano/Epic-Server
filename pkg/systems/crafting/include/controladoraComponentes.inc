@@ -17,17 +17,23 @@ include "include/epicValidAction";
 function PegaPericiaPeloMaterial(tipoMaterial)
 	case (tipoMaterial)
 		"metal":
-		"gems":
+		"gem":
+		"glass":
+		"stone":
+		"brick":
+		"arrowhead":
 			return "Metal_Working";
 		"cloth":
 		"ossos":
 		"leather":
+		"scales":
 			return "Domestic_Work";
 		"wood":
 			return "Wood_Working";
-		"ingredient": //TODO pedir pro l4nc1s definir um tipo pros materiais de alquimia 
+		"catalist":
 		"oleo":
 		"solvente":
+		"alcool":
 			return "Alchemy";
 		default:
 			return "Wood_Working";
@@ -407,7 +413,7 @@ function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, confi
 		var dropDown := GerenciadorDropDown::ObtemDropDown(gerenciador,_materialNecessario_iter);
 
 		var tipo := materiaisNecessariosInvertidos[_materialNecessario_iter];
-		var qtd := materiaisNecessarios[materialNecessario];
+		var qtd := materiaisNecessarios[materialNecessario].quantidade;
 		var indiceOpcoes := 1;
 		var materiaisEncontrados := sessao.materiaisEncontrados[Lower(materialNecessario)].keys();
 
@@ -473,7 +479,7 @@ function IsMaterialTrabalhavel(quem, componente, chaveMaterial)
 	var pericia := PegaPericiaPeloMaterial(materialPrincipal);
 	
 	if(lower(materialPrincipal) == lower(tipoMaterial))
-		return materialDetalhe.Skill <= AP_GetSkill(quem,pericia);
+		return cDbl(materialDetalhe.Skill) <= AP_GetSkill(quem,pericia);
 	else
 		return tipoMaterial in (componente.selecione.materiais.keys());
 	endif
@@ -609,6 +615,7 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 		var materiaisNecessarios := GetConfigStringArray( configProfissao[chave], "materials" );
 		var materiaisConcatenados := "";
 		var dicionarioMateriais := dictionary;
+		var materiaisPossiveis := array;
 
 		foreach material in materiaisNecessarios
 			if(_material_iter != 1)
@@ -616,11 +623,18 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 			endif
 
 			var tipoEQuantidade := SplitWords(material);
-			dicionarioMateriais.insert(tipoEQuantidade[1],tipoEQuantidade[2]);
+			dicionarioMateriais.insert(
+					tipoEQuantidade[1],
+					struct { 
+						quantidade := tipoEQuantidade[2], 
+						possiveis := LISTA_TIPO_MATERIAL[UPPER(tipoEQuantidade[1])] 
+					}
+				);
+
 			materiaisConcatenados += tipoEQuantidade[2] + " " + tipoEQuantidade[1];
 			Sleepms(2);
 		endforeach
-
+		
 		var quantidadeLotePrefixo := cint(configProfissao[chave].lote) > 1? configProfissao[chave].lote + "x " : "";
 
 		var componente := struct;
@@ -629,10 +643,11 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 		componente.+materiais := materiaisConcatenados;
 		componente.+encaixe := encaixesConfig[configProfissao[chave].encaixe].Desc;
 		componente.+selecione := struct{
-									isColunaBotao := true, 
-									objtype := chave, 
-									materiais := dicionarioMateriais, 
-									materialPrincipal := configProfissao[chave].principalMaterial};
+										isColunaBotao := true, 
+										objtype := chave, 
+										materiais := dicionarioMateriais, 
+										materialPrincipal := configProfissao[chave].principalMaterial
+									};
 
 		componentes.append(componente);
 	endforeach

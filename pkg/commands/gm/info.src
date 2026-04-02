@@ -647,97 +647,91 @@ function OpenStorage(who, targ, input_info)
 	endif
 endfunction
 
-// Nova função para criar o gump de navegação
+// Nova função para criar o gump de navegação (usa loop em vez de recursão)
 function PropEditWithNavigation(who, targ, prop_name)
-	var value := ParseMembers(targ, prop_name);
+	current_prop_name := prop_name;
+	current_prop_target := targ;
 
-	var gump := GFCreateGump();
-	GFPage(gump, 0);
-	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 400, 200);
+	while (1)
+		var value := ParseMembers(targ, prop_name);
 
-	// Título
-	GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 370, 35);
-	GFTextLine(gump, 25, 22, 2100, "Editando: " + prop_name + " de " + targ.name);
+		var gump := GFCreateGump();
+		GFPage(gump, 0);
+		GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 400, 200);
 
-	// Área principal
-	GFResizePic(gump, 15, 60, GFCfgConst("Defaults", "ForeGround"), 370, 100);
+		// Título
+		GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 370, 35);
+		GFTextLine(gump, 25, 22, 2100, "Editando: " + prop_name + " de " + targ.name);
 
-	// Valor atual
-	GFTextLine(gump, 25, 80, 2100, "Valor atual:");
-	GFTextLine(gump, 120, 80, 2100, CStr(value));
+		// Área principal
+		GFResizePic(gump, 15, 60, GFCfgConst("Defaults", "ForeGround"), 370, 100);
 
-	// Botões de navegação
-	GFAddButton(gump, 25, 110, 4014, 4015, GF_CLOSE_BTN, PROP_PREV_BTN); // Seta esquerda
-	GFTextLine(gump, 50, 113, 2100, "-1");
+		// Valor atual
+		GFTextLine(gump, 25, 80, 2100, "Valor atual:");
+		GFTextLine(gump, 120, 80, 2100, CStr(value));
 
-	GFAddButton(gump, 120, 110, 4005, 4006, GF_CLOSE_BTN, PROP_NEXT_BTN); // Seta direita
-	GFTextLine(gump, 145, 113, 2100, "+1");
+		// Botões de navegação
+		GFAddButton(gump, 25, 110, 4014, 4015, GF_CLOSE_BTN, PROP_PREV_BTN); // Seta esquerda
+		GFTextLine(gump, 50, 113, 2100, "-1");
 
-	// Campo de entrada manual
-	GFTextLine(gump, 200, 80, 2100, "Ou digite valor:");
-	var campo_gra := GFTextEntry(gump, 200, 100, 100, 20, 2100, CStr(value), 0, 1);
+		GFAddButton(gump, 120, 110, 4005, 4006, GF_CLOSE_BTN, PROP_NEXT_BTN); // Seta direita
+		GFTextLine(gump, 145, 113, 2100, "+1");
 
-	// Botões de ação
-	GFAddButton(gump, 25, 170, 4023, 4024, GF_CLOSE_BTN, PROP_OK_BTN); // OK
-	GFTextLine(gump, 50, 173, 2100, "Fechar");
+		// Campo de entrada manual
+		GFTextLine(gump, 200, 80, 2100, "Ou digite valor:");
+		var campo_gra := GFTextEntry(gump, 200, 100, 100, 20, 2100, CStr(value), 0, 1);
 
-	GFAddButton(gump, 120, 170, 4020, 4021, GF_CLOSE_BTN, 0); // Cancelar
-	GFTextLine(gump, 145, 173, 2100, "Cancelar");
+		// Botões de ação
+		GFAddButton(gump, 25, 170, 4023, 4024, GF_CLOSE_BTN, PROP_OK_BTN); // OK
+		GFTextLine(gump, 50, 173, 2100, "Fechar");
 
-	// Botão para aplicar valor digitado
-	GFAddButton(gump, 320, 100, 4023, 4024, GF_CLOSE_BTN, 999); // Aplicar
-	GFTextLine(gump, 345, 103, 2100, "Aplicar");
+		GFAddButton(gump, 120, 170, 4020, 4021, GF_CLOSE_BTN, 0); // Cancelar
+		GFTextLine(gump, 145, 173, 2100, "Cancelar");
 
-	var input := GFSendGump(who, gump);
-	var button := input[0];
-	var text := input[1];
-	var novocampogra := GFExtractData(input, campo_gra);
+		// Botão para aplicar valor digitado
+		GFAddButton(gump, 320, 100, 4023, 4024, GF_CLOSE_BTN, 999); // Aplicar
+		GFTextLine(gump, 345, 103, 2100, "Aplicar");
 
-	if (button == 999 && novocampogra) // Aplicar valor digitado
-		var new_value := novocampogra;
-		ParseMembers(targ, prop_name, new_value);
-		PropEditWithNavigation(who, targ, prop_name); // Reabrir para mostrar novo valor
-	elseif (button >= PROP_PREV_BTN && button <= PROP_OK_BTN)
-		ProcessPropNavigation(who, targ, button);
-	elseif (button == PROP_OK_BTN || button == 0)
-		// Fechar ou cancelar
-		current_prop_name := "";
-		current_prop_target := 0;
-	endif
+		var input := GFSendGump(who, gump);
+		var button := input[0];
+		var novocampogra := GFExtractData(input, campo_gra);
 
+		if (button == 999 && novocampogra) // Aplicar valor digitado
+			ParseMembers(targ, prop_name, novocampogra);
+			// Continua o loop para mostrar novo valor
+		elseif (button == PROP_PREV_BTN)
+			var new_val := CInt(value) - 1;
+			if (new_val >= 0)
+				ParseMembers(targ, prop_name, new_val);
+			endif
+			// Continua o loop
+		elseif (button == PROP_NEXT_BTN)
+			ParseMembers(targ, prop_name, CInt(value) + 1);
+			// Continua o loop
+		else
+			// Qualquer outro botão (OK, Cancelar, ou fechar) sai do loop
+			break;
+		endif
+	endwhile
+
+	current_prop_name := "";
+	current_prop_target := 0;
 	return 1;
 endfunction
 
-// Nova função para processar a navegação de propriedades
+// Função auxiliar para processar navegação de propriedades (chamada do loop principal)
 function ProcessPropNavigation(who, targ, input)
+	targ := targ; // Evita warning de variável não usada
+	input := input; // Evita warning de variável não usada
+
+	// Esta função não é mais necessária para o gump de navegação
+	// Mantida para compatibilidade caso seja chamada de outro lugar
 	if (!current_prop_target || !current_prop_name)
 		return 0;
 	endif
 
-	var current_value := ParseMembers(current_prop_target, current_prop_name);
-	var new_value := current_value;
-
-	case (input)
-		PROP_PREV_BTN:
-			new_value := CInt(current_value) - 1;
-			if (new_value < 0)
-				new_value := 0;
-			endif
-			break;
-		PROP_NEXT_BTN: new_value := CInt(current_value) + 1; break;
-		PROP_OK_BTN:
-			// Botão OK - apenas fecha o gump de navegação
-			current_prop_name := "";
-			current_prop_target := 0;
-			return 1;
-	endcase
-
-	// Aplicar o novo valor
-	ParseMembers(current_prop_target, current_prop_name, new_value);
-
-	// Reabrir o gump de navegação
-	PropEditWithNavigation(who, targ, current_prop_name);
-
+	// Redireciona para o gump de navegação
+	PropEditWithNavigation(who, current_prop_target, current_prop_name);
 	return 1;
 endfunction
 
@@ -753,72 +747,87 @@ function SoundEdit(who, targ, input_info)
 	return 1;
 endfunction
 
-// Nova função para criar o gump de navegação de sons
+// Nova função para criar o gump de navegação de sons (usa loop em vez de recursão)
 function SoundEditWithNavigation(who, targ, sound_type)
-	var value := GetNPCSound(targ, sound_type);
+	current_sound_type := sound_type;
+	current_sound_target := targ;
 
-	var gump := GFCreateGump();
-	GFPage(gump, 0);
-	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 450, 250);
+	while (1)
+		var value := GetNPCSound(targ, sound_type);
 
-	// Título
-	GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 420, 35);
-	GFTextLine(gump, 25, 22, 2100, "Editando Som: " + sound_type + " de " + targ.name);
+		var gump := GFCreateGump();
+		GFPage(gump, 0);
+		GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 450, 250);
 
-	// Área principal
-	GFResizePic(gump, 15, 60, GFCfgConst("Defaults", "ForeGround"), 420, 150);
+		// Título
+		GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 420, 35);
+		GFTextLine(gump, 25, 22, 2100, "Editando Som: " + sound_type + " de " + targ.name);
 
-	// Valor atual
-	GFTextLine(gump, 25, 80, 2100, "Som atual:");
-	GFTextLine(gump, 120, 80, 2100, CStr(value));
+		// Área principal
+		GFResizePic(gump, 15, 60, GFCfgConst("Defaults", "ForeGround"), 420, 150);
 
-	// Botões de navegação
-	GFAddButton(gump, 25, 110, 4014, 4015, GF_CLOSE_BTN, SOUND_PREV_BTN); // Seta esquerda
-	GFTextLine(gump, 50, 113, 2100, "-1");
+		// Valor atual
+		GFTextLine(gump, 25, 80, 2100, "Som atual:");
+		GFTextLine(gump, 120, 80, 2100, CStr(value));
 
-	GFAddButton(gump, 120, 110, 4005, 4006, GF_CLOSE_BTN, SOUND_NEXT_BTN); // Seta direita
-	GFTextLine(gump, 145, 113, 2100, "+1");
+		// Botões de navegação
+		GFAddButton(gump, 25, 110, 4014, 4015, GF_CLOSE_BTN, SOUND_PREV_BTN); // Seta esquerda
+		GFTextLine(gump, 50, 113, 2100, "-1");
 
-	// Botão para tocar som
-	GFAddButton(gump, 220, 110, 4029, 4030, GF_CLOSE_BTN, SOUND_PLAY_BTN); // Play
-	GFTextLine(gump, 245, 113, 2100, "Tocar Som");
+		GFAddButton(gump, 120, 110, 4005, 4006, GF_CLOSE_BTN, SOUND_NEXT_BTN); // Seta direita
+		GFTextLine(gump, 145, 113, 2100, "+1");
 
-	// Campo de entrada manual
-	GFTextLine(gump, 25, 140, 2100, "Ou digite valor:");
-	var campo_sound := GFTextEntry(gump, 25, 160, 100, 20, 2100, CStr(value), 0, 5);
+		// Botão para tocar som
+		GFAddButton(gump, 220, 110, 4029, 4030, GF_CLOSE_BTN, SOUND_PLAY_BTN); // Play
+		GFTextLine(gump, 245, 113, 2100, "Tocar Som");
 
-	// Botão para aplicar valor digitado
-	GFAddButton(gump, 140, 160, 4023, 4024, GF_CLOSE_BTN, 998); // Aplicar
-	GFTextLine(gump, 165, 163, 2100, "Aplicar");
+		// Campo de entrada manual
+		GFTextLine(gump, 25, 140, 2100, "Ou digite valor:");
+		var campo_sound := GFTextEntry(gump, 25, 160, 100, 20, 2100, CStr(value), 0, 5);
 
-	// Informação sobre o tipo de som
-	var sound_desc := GetSoundDescription(sound_type);
-	GFTextLine(gump, 250, 140, 2100, sound_desc);
+		// Botão para aplicar valor digitado
+		GFAddButton(gump, 140, 160, 4023, 4024, GF_CLOSE_BTN, 998); // Aplicar
+		GFTextLine(gump, 165, 163, 2100, "Aplicar");
 
-	// Botões de ação
-	GFAddButton(gump, 25, 220, 4023, 4024, GF_CLOSE_BTN, SOUND_OK_BTN); // OK
-	GFTextLine(gump, 50, 223, 2100, "Fechar");
+		// Informação sobre o tipo de som
+		var sound_desc := GetSoundDescription(sound_type);
+		GFTextLine(gump, 250, 140, 2100, sound_desc);
 
-	GFAddButton(gump, 120, 220, 4020, 4021, GF_CLOSE_BTN, 0); // Cancelar
-	GFTextLine(gump, 145, 223, 2100, "Cancelar");
+		// Botões de ação
+		GFAddButton(gump, 25, 220, 4023, 4024, GF_CLOSE_BTN, SOUND_OK_BTN); // OK
+		GFTextLine(gump, 50, 223, 2100, "Fechar");
 
-	var input := GFSendGump(who, gump);
-	var button := input[0];
-	var text := input[5];
-	var novocampo := GFExtractData(input, campo_sound);
+		GFAddButton(gump, 120, 220, 4020, 4021, GF_CLOSE_BTN, 0); // Cancelar
+		GFTextLine(gump, 145, 223, 2100, "Cancelar");
 
-	if (button == 998 && novocampo) // Aplicar valor digitado
-		var new_value := novocampo;
-		SetNPCSound(targ, sound_type, new_value);
-		SoundEditWithNavigation(who, targ, sound_type); // Reabrir para mostrar novo valor
-	elseif (button >= SOUND_PREV_BTN && button <= SOUND_OK_BTN)
-		ProcessSoundNavigation(who, targ, button);
-	elseif (button == SOUND_OK_BTN || button == 0)
-		// Fechar ou cancelar
-		current_sound_type := "";
-		current_sound_target := 0;
-	endif
+		var input := GFSendGump(who, gump);
+		var button := input[0];
+		var novocampo := GFExtractData(input, campo_sound);
 
+		if (button == 998 && novocampo) // Aplicar valor digitado
+			SetNPCSound(targ, sound_type, novocampo);
+			// Continua o loop para mostrar novo valor
+		elseif (button == SOUND_PREV_BTN)
+			var new_val := CInt(value) - 1;
+			if (new_val >= 0)
+				SetNPCSound(targ, sound_type, new_val);
+			endif
+			// Continua o loop
+		elseif (button == SOUND_NEXT_BTN)
+			SetNPCSound(targ, sound_type, CInt(value) + 1);
+			// Continua o loop
+		elseif (button == SOUND_PLAY_BTN)
+			// Tocar o som atual
+			PlaySoundEffect(targ, value);
+			// Continua o loop
+		else
+			// Qualquer outro botão (OK, Cancelar, ou fechar) sai do loop
+			break;
+		endif
+	endwhile
+
+	current_sound_type := "";
+	current_sound_target := 0;
 	return 1;
 endfunction
 
@@ -863,41 +872,19 @@ function GetSoundDescription(sound_type)
 	endcase
 endfunction
 
-// Nova função para processar a navegação de sons
+// Função auxiliar para processar navegação de sons (chamada do loop principal)
 function ProcessSoundNavigation(who, targ, input)
+	targ := targ; // Evita warning de variável não usada
+	input := input; // Evita warning de variável não usada
+
+	// Esta função não é mais necessária para o gump de navegação
+	// Mantida para compatibilidade caso seja chamada de outro lugar
 	if (!current_sound_target || !current_sound_type)
 		return 0;
 	endif
 
-	var current_value := GetNPCSound(current_sound_target, current_sound_type);
-	var new_value := current_value;
-
-	case (input)
-		SOUND_PREV_BTN:
-			new_value := CInt(current_value) - 1;
-			if (new_value < 0)
-				new_value := 0;
-			endif
-			break;
-		SOUND_NEXT_BTN: new_value := CInt(current_value) + 1; break;
-		SOUND_PLAY_BTN:
-			// Tocar o som atual para todos ao redor
-			PlaySoundEffect(targ, current_value);
-			SoundEditWithNavigation(who, targ, current_sound_type);
-			return 1;
-		SOUND_OK_BTN:
-			// Botão OK - apenas fecha o gump de navegação
-			current_sound_type := "";
-			current_sound_target := 0;
-			return 1;
-	endcase
-
-	// Aplicar o novo valor
-	SetNPCSound(current_sound_target, current_sound_type, new_value);
-
-	// Reabrir o gump de navegação
-	SoundEditWithNavigation(who, targ, current_sound_type);
-
+	// Redireciona para o gump de navegação
+	SoundEditWithNavigation(who, current_sound_target, current_sound_type);
 	return 1;
 endfunction
 

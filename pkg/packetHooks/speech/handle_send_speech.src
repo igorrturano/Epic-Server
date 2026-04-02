@@ -90,15 +90,15 @@ function CheckSaying(byRef messageData)
 endfunction
 
 function CanSpeak(byRef messageData)
-	if (messageData.source.GetProperty("metamorfose") && !messageData.source.HasAbility("Elo Natural"))
-		if (messageData.type == MESSAGE_TYPE::NORMAL)
-			return false;
-		endif
-	endif
+	// if (messageData.source.GetProperty("metamorfose") && !messageData.source.HasAbility(ABILITY_ID::ELO_NATURAL))
+	// 	if (messageData.type == MESSAGE_TYPE::NORMAL)
+	// 		return false;
+	// 	endif
+	// endif
 
-	if (messageData.source.GetProperty("mudo"))
-		return false;
-	endif
+	// if (messageData.source.GetProperty("mudo"))
+	// 	return false;
+	// endif
 
 	if (messageData.source.GetProperty("#sleep"))
 		return false;
@@ -109,15 +109,15 @@ endfunction
 
 function CanHear(byRef messageData)
 	var rangeMod := CheckLineOfSight(messageData.source, messageData.target) ? 1 : 2;
-	
+
 	if (messageData.type == MESSAGE_TYPE::WHISPER)
 		if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::WHISPER / rangeMod)
 			return false;
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::YELL)
-		if (messageData.source.HasAbility("Mestre Espiao"))
+		if (messageData.target.HasAbility(ABILITY_ID::NINJA_PATH))
 			if (Distance(messageData.source, messageData.target) > (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
-				return false;				
+				return false;
 			elseif (Abs(messageData.source.z - messageData.target.z) >= (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
 				return false;
 			endif
@@ -241,8 +241,8 @@ function CheckPrefixAndSuffix(byRef messageData)
 	var typesToPrefix := array{MESSAGE_TYPE::NORMAL, MESSAGE_TYPE::WHISPER, MESSAGE_TYPE::YELL};
 
 	if (messageData.type in typesToPrefix)
-		var chosen_language := messageData.target.GetProperty("lingua_escolhida");
-		if (chosen_language && chosen_language != "Comum")
+		var chosen_language := messageData.source.GetProperty("lingua_escolhida");
+		if (chosen_language && chosen_language != error && chosen_language != "Comum")
 			messageData.message := $"[{chosen_language}] " + messageData.message;
 		endif
 	endif
@@ -257,12 +257,15 @@ function CanUnderstand(byRef messageData)
 		return true;
 	endif
 
-	if (!messageData.source.IsNPC())
-		var sourceLanguage := messageData.source.GetProperty("lingua_escolhida");
-		var targetKnownLanguages := messageData.target.GetProperty("linguas_conhecidas");
-		if (sourceLanguage in targetKnownLanguages)
-			return true;
-		endif
+	if (messageData.source.IsNPC())
+		return true;
+	endif
+
+	var sourceLanguage := messageData.source.GetProperty("lingua_escolhida");
+	var targetKnownLanguages := messageData.target.GetProperty("linguas_conhecidas");
+
+	if (sourceLanguage in targetKnownLanguages)
+		return true;
 	endif
 
 	return false;

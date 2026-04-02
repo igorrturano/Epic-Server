@@ -6,6 +6,8 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include ":timedscripts:timedScripts";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -18,7 +20,7 @@ program SpellScript(params)
 	var x := who.x;
 	var y := who.y;
 	var delay := 2;
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		Magiclore := MagicLore * 1.2;
 		delay := 1;
 	endif

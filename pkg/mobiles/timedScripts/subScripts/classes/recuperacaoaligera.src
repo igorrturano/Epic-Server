@@ -5,6 +5,8 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":timedscripts:poisonUtil";
 include ":combat:Controller/DamageController_legacy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program default_poison(params)
 	var who := params[1];
@@ -16,7 +18,7 @@ program default_poison(params)
 	var i := 0;
 
 	var parry_bonus := CInt(AP_GetSkill(who, PARRY) / 10);
-	if (TemHabilidade(who, "Budōka"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::MARTIAL_ARTIST))
 		while (1 < time)
 			if (who.dead)
 				break;
@@ -25,7 +27,7 @@ program default_poison(params)
 
 			sleep(2);
 		endwhile
-	elseif (TemHabilidade(who, "Manobra da Resiliencia"))
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::MANOBRA_DA_RESILIENCIA))
 		time := CInt(AP_GetSkill(who, PARRY) / 5);
 		while (1 < time)
 			if (who.dead)

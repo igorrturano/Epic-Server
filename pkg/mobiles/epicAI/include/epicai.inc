@@ -12,6 +12,7 @@ include ":npcs:NPCUtilities";
 include ":fls_core:fls_skillCheck";
 include ":io:CFGFile";
 include ":epicAI:npcDataCache";
+include ":abilities:include/models/Ability";
 
 function InitializeEpicNPC(mobile)
     var npc_already_initiliazed := GetObjProperty(mobile, "started");
@@ -21,7 +22,7 @@ function InitializeEpicNPC(mobile)
 
     // Build NPC cache FIRST - all subsequent calls will use O(1) lookups
     var cache := NPC_GetCachedData(mobile);
-    var npc_elem := NPC_GetNPCConfig(mobile);  
+    var npc_elem := NPC_GetNPCConfig(mobile);
 
     var npccfgfile := ReadConfigFile( ":epicai:npcdesc" );
     var mytemplate := cache.template;  // Use cached template name
@@ -67,6 +68,40 @@ function InitializeEpicNPC(mobile)
     SetObjProperty(mobile, "started", 1);
 endfunction
 
+/*
+ * InitializeEnterArea()
+ *
+ * Purpose: Trigger ENTEREDAREA events for nearby players/combatants on spawn
+ * This ensures newly spawned NPCs detect nearby threats immediately instead of
+ * waiting up to 60 seconds in dormant mode.
+ *
+ * Similar to brainAI's InitializeEnterArea() function
+ */
+function InitializeEnterArea(mobile)
+    // Scan for nearby players and trigger ENTEREDAREA events
+    // This ensures consistent behavior between spawn and re-activation
+    var nearby := ListMobilesNearLocationEx(mobile.x, mobile.y, LIST_IGNORE_Z,
+                                            AREA_SIZE, LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL + LISTEX_FLAG_CONCEALED,
+                                            mobile.realm);
+
+    foreach nearby_mobile in nearby
+        if (nearby_mobile.serial == mobile.serial)
+            continue;  // Skip self
+        endif
+
+        // Only trigger for players, pets, or valid combat targets
+        if (nearby_mobile.acctname || nearby_mobile.master)
+            var ev := struct;
+            ev.+type := SYSEVENT_ENTEREDAREA;
+            ev.+source := nearby_mobile;
+            SendEvent(mobile, ev);
+            sleepms(5);  // Small delay to prevent event flooding
+        endif
+    endforeach
+
+    return 1;
+endfunction
+
 function InitializeMonsterNPC(mobile, npc_elem, elem, sounds)
     var has_colors := npc_elem.colors;
     if (has_colors)
@@ -96,6 +131,11 @@ function InitializeAnimalNPC(mobile, npc_elem, elem, sounds)
 endfunction
 
 function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
+    // Clones already have appearance copied from their creator
+    if (GetObjProperty(mobile, "MirrorImage"))
+        return;
+    endif
+
     var has_colors := npc_elem.colors;
     var isBoss := GetObjProperty(mobile, "EpicBossStruct");
     var race := npc_elem.epicRace;
@@ -115,7 +155,7 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
         makeRace(mobile, race);
     elseif (race)
         makeRace(mobile, race);
-    else 
+    else
         makeRace(mobile);
     endif
 
@@ -142,12 +182,12 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
 
     case (npc_elem.Classe)
         GUERREIRO:
-            if ("Budōka" in habs)
+            if (ABILITY_ID::MARTIAL_ARTIST in habs)
                 var monk_weapons := array{0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020};
                 EquipRandomFromArray(mobile, monk_weapons);
             endif
 
-            if ("Camuflagem" in habs)
+            if (ABILITY_ID::CAMUFLAGEM in habs)
                 var tier := 0;
                 var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
                 if (boss_struct && boss_struct.tier)
@@ -157,20 +197,20 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                     tier := CInt(npc_elem.Tier);
                 endif
 
-                var template := GetAnimalTemplateByTier(tier);
-                if (template)
-                    SetObjProperty(mobile, "#camuflagem_template", template);
-                    var pet := CreateNpcFromTemplate(":epicai:"+template, mobile.x, mobile.y, mobile.z, 0, mobile.realm);
-                    sleepms(250);  // This was the key - giving the NPC time to initialize
-                    pet.alignment := 1;
-                    SetObjProperty(pet, "owner", mobile.serial);
-                    GrantPrivilege(pet, "hiddenattack");
-                    pet.enable("hiddenattack");
-                    GrantPrivilege(mobile, "hiddenattack");
-                    mobile.enable("hiddenattack");
-                    mobile.stealthsteps := 30;
-                    pet.stealthsteps := 30;
-                endif
+                // var template := GetAnimalTemplateByTier(tier);
+                // if (template)
+                //     SetObjProperty(mobile, "#camuflagem_template", template);
+                //     var pet := CreateNpcFromTemplate(":epicai:"+template, mobile.x, mobile.y, mobile.z, 0, mobile.realm);
+                //     sleepms(250);  // This was the key - giving the NPC time to initialize
+                //     pet.alignment := 1;
+                //     SetObjProperty(pet, "owner", mobile.serial);
+                //     GrantPrivilege(pet, "hiddenattack");
+                //     pet.enable("hiddenattack");
+                //     GrantPrivilege(mobile, "hiddenattack");
+                //     mobile.enable("hiddenattack");
+                //     mobile.stealthsteps := 30;
+                //     pet.stealthsteps := 30;
+                // endif
                 var net := CreateItemInBackpack(mobile, "net", RandomInt(2)+1);
             endif
 
@@ -197,12 +237,12 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 SetupAlchemistLoadout(mobile);
             endif
 
-            if ("Artilheiro Preparado" in habs)
+            if (ABILITY_ID::EXPLOSIVE_FIST in habs)
                 makeRace(mobile, ANAO);
                 SetupFireweaponLoadout(mobile);
             endif
 
-            if ("Construtor de Golems" in habs)
+            if (ABILITY_ID::GOLEM_ASSEMBLY in habs)
                 makeRace(mobile, ANAO);
                 // Store mobile's current position before hiding it
                 SetObjProperty(mobile, "#original_pos", struct{
@@ -213,7 +253,7 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 });
                 
                 // Create the golem slightly offset
-                var golem := CreateNpcFromTemplate(":epicai:GolemMartelo_NPC", mobile.x+1, mobile.y+1, mobile.z, 0, mobile.realm);
+                var golem := CreateNpcFromTemplate(":epicai:PowerArmor", mobile.x+1, mobile.y+1, mobile.z, 0, mobile.realm);
 
                 SetObjProperty(golem, "golem_maker", mobile.serial);
                 SetObjProperty(mobile, "pilotando", 1);
@@ -226,7 +266,7 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 endif
             endif
 
-            if ("Vínculo Elemental" in habs)
+            if (ABILITY_ID::VINCULO_ELEMENTAL in habs)
                 makeRace(mobile, ELFO);
                 var elementals := array{0x13fe, 0x26C9, 0x26C5, 0x26CB, 0x26CF, 0xF9E6};
                 EquipRandomFromArray(mobile, elementals);
@@ -394,32 +434,32 @@ function SetupWizardClass(mobile, npc_elem)
     // First try to get school from config
     var spellschool := GetConfigString(npc_elem, "SpellSchool") ? GetConfigString(npc_elem, "SpellSchool") : GetObjProperty(mobile, "SpellSchool");
     var base_ability := 0;
-    
-    // If no school defined in config, check habs
+
+    // If no school defined in config, check habs (now stores IDs)
     if (!spellschool)
         var habs := GetObjProperty(mobile, "myhabs");
         if (habs)
-            if ("Vínculo Elemental" in habs)
+            if (ABILITY_ID::VINCULO_ELEMENTAL in habs)
                 spellschool := "Ahtaleloreth";
-            elseif ("Elo Natural" in habs)
+            elseif (ABILITY_ID::ELO_NATURAL in habs)
                 spellschool := "Aradalore";
-            elseif ("Sacrificio da Carne" in habs)
+            elseif (ABILITY_ID::SACRIFICIO_DA_CARNE in habs)
                 spellschool := "Kaijin";
-            elseif ("Danca das Sombras" in habs)
+            elseif (ABILITY_ID::DANCA_DAS_SOMBRAS in habs)
                 spellschool := "Velkyn";
-            elseif ("Determinacao Arcana" in habs)
+            elseif (ABILITY_ID::DETERMINACAO_ARCANA in habs)
                 spellschool := "Evocatium";
             endif
         endif
     endif
 
-    // Map school to base ability
+    // Map school to base ability ID
     case (spellschool)
-        "Kaijin": base_ability := "Sacrificio da Carne";
-        "Ahtaleloreth": base_ability := "Vínculo Elemental";
-        "Aradalore": base_ability := "Elo Natural";
-        "Evocatium": base_ability := "Determinacao Arcana";
-        "Velkyn": base_ability := "Danca das Sombras";
+        "Kaijin": base_ability := ABILITY_ID::SACRIFICIO_DA_CARNE;
+        "Ahtaleloreth": base_ability := ABILITY_ID::VINCULO_ELEMENTAL;
+        "Aradalore": base_ability := ABILITY_ID::ELO_NATURAL;
+        "Evocatium": base_ability := ABILITY_ID::DETERMINACAO_ARCANA;
+        "Velkyn": base_ability := ABILITY_ID::DANCA_DAS_SOMBRAS;
     endcase
 
     if (!base_ability)
@@ -430,7 +470,7 @@ function SetupWizardClass(mobile, npc_elem)
     SetObjProperty(mobile, "SpellSchool", spellschool);
 
     // Build progression based on base ability
-    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
     var progression := GetClassProgression(habcfg, base_ability);
     SetObjProperty(mobile, "myhabs", progression);
 
@@ -445,9 +485,10 @@ function SetupWarriorClass(mobile, npc_elem)
     var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
     var isArcher := (speed_type[1] == "RANGED");
     if (isArcher)
-      subclass := "Tiro Poderoso";
+        subclass := ABILITY_ID::TIRO_PODEROSO;
     endif
 
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
     var progression := GetClassProgression(habcfg, subclass);
     SetObjProperty(mobile, "myhabs", progression);
 
@@ -1099,7 +1140,7 @@ endfunction
  * CheckNearbyThreats()
  *
  * Phase 3: Hybrid Threat Detection
- * Purpose: Use cached threats (fast) with fallback area scan (reliable)
+ * Purpose: Use cached threats (fast) / removed fallback area scan (slow)
  * This prevents NPCs from giving up when cache is empty due to event timing
  */
 function CheckNearbyThreats()
@@ -1108,18 +1149,6 @@ function CheckNearbyThreats()
     if (threat)
         return threat;
     endif
-
-    // Fallback: Do actual area scan if cache is empty
-    // This catches edge cases where events didn't update cache
-    // (e.g., player already in range when NPC activated, LoS temporarily blocked)
-    var mobiles := ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm);
-    foreach mobile in mobiles
-        if (CanFight(me, mobile))
-            // Add to cache for next time
-            UpdateThreatList(me, struct{"type" := SYSEVENT_ENTEREDAREA, "source" := mobile});
-            return mobile;
-        endif
-    endforeach
 
     return 0;
 endfunction
@@ -1152,7 +1181,8 @@ function GetNearbyMobilesOnce(mobile, range, flags := LISTEX_FLAG_NORMAL)
     endif
 
     // Cache miss or expired - perform scan
-    var mobiles := ListMobilesNearLocationEx(mobile.x, mobile.y, mobile.z, range, flags, mobile.realm);
+    // Use LIST_IGNORE_Z to detect mobiles at any Z level (fixes summoned creature detection)
+    var mobiles := ListMobilesNearLocationEx(mobile.x, mobile.y, LIST_IGNORE_Z, range, flags, mobile.realm);
 
     // Store in cache with timestamp
     SetObjProperty(mobile, cache_key, struct{
@@ -1285,7 +1315,11 @@ endfunction
 
 // New function to handle ally behavior
 function AlertAllies(invasor, me)
-  if (isAlly(invasor))
+    if (me.alignment != 1)
+        return 0;
+    endif
+
+    if (isAlly(invasor))
         return 0;
     endif
 
@@ -1894,7 +1928,7 @@ endfunction
 function HandleIdleState()
     DisableMainEvents();
     EnableEvents(SYSEVENT_ENTEREDAREA + SYSEVENT_ENGAGED + SYSEVENT_DAMAGED, AREA_SIZE);
-    
+
     // Return to spawn point if we have one
     var spawn_serial := GetObjProperty(me, "spawnpoint");
     var spawn_point := 0;
@@ -1915,26 +1949,32 @@ function HandleIdleState()
         return;
     endif
 
-    if (!HasPlayerNear(me))
+    // OPTIMIZATION: Check cached threats FIRST (O(1) property access, fast path)
+    if (CheckNearbyThreats())
+        return; // Found threat, stay alert
+    endif
+
+    // OPTIMIZATION: Only check HasPlayerNear if no cached threats (now cached itself)
+    // if (!HasPlayerNear(me))
         var attempts := 0;
         // DA pra simplificar, remover esse Coordinate Distance e so fazer ele ir voltando pra casa. SE a distancia for maior que 30, apenas retorna anti exploit
         if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts < 20)
             if (CheckNearbyThreats())
-                return; // Abort returning home if threats are nearby
+                return; // Abort returning home if threats appear
             endif
             WalkTowardLocation(home_x, home_y);
             sleepms(100);
             attempts += 1;
         endif
-        
+
         // If still not home after 20 attempts, just teleport
         if (CoordinateDistance(me.x, me.y, home_x, home_y) > 5 && attempts >= 20)
             PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
             sleep(3);
             MoveObjectToLocation(me, home_x, home_y, anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
         endif
-    endif
-    
+    // endif
+
     return 1;
 endfunction
 
@@ -2103,9 +2143,15 @@ function MaintainSimpleDistance(opponent, dist, sleepdelay)
 endfunction
 
 function DoThiefCombatBehavior(opponent)
+    if (GetCooldown(me, "thief_behavior"))
+        return 0;
+    endif
+
     if (Distance(me, opponent) < 6)
         return 0;
     endif
+
+    SetCooldown(me, "thief_behavior", 30);
 
     // 50% chance to steal, 50% chance to sneak attack
     if (RandomInt(100) < 50)
@@ -2894,7 +2940,7 @@ function GetColorValue(color)
                         RandomIntMinMax(1801, 1908),  // Neutro
                         RandomInt({0, 946, 947})      // Cinza
                      });
-        POLKINEA:    return RandomColorFromRanges({
+        COLHESIANA:    return RandomColorFromRanges({
                         RandomIntMinMax(1501, 1554),  // Laranja
                         RandomIntMinMax(1701, 1754),  // Amarelo
                         RandomIntMinMax(1401, 1454),  // Verde
@@ -2992,7 +3038,11 @@ function DoppelgangerTransformation(mobile, opponent)
     endif
 
     // Don't transform NPCs or already dead opponents
-    if (opponent.npctemplate || opponent.dead)
+    if (opponent.npctemplate || opponent.dead || opponent.concealed || opponent.hidden)
+        return 0;
+    endif
+
+    if (Distance(mobile, opponent) > 10)
         return 0;
     endif
 

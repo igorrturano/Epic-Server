@@ -23,7 +23,7 @@ program decode_map(who, map)
 	// var maxlevel := GetMaxMapLevel( who );
 
 	// if( maplevel > maxlevel )
-	if (!TemHabilidade(who, "Desbravador Nato"))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 		SendSysMessageEx(who, "Voce nao compreende esse mapa.", SSM_FAIL);
 	else
 		CreateTreasureMap(who, map, maplevel);

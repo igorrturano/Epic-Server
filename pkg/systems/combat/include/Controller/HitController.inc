@@ -3,9 +3,10 @@
  * Purpose
  * Criado para organizar a lógica de cálculo de chance de acerto do combate
  */
-// include "AbilitiesController";
+// include "CombatAbilityController";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":abilities:models/Ability";
+include ":tn:cooldown";
 include "include/packets";
 
 /**
@@ -79,19 +80,20 @@ function _GetSkillForCombat(byRef mobile)
 		if ((mobile.GetObjRef().GetProp("metamorfose") != error) ||
 			(mobile.GetObjRef().GetProp("pilotando") != error)) // Se é Metamorfo ou Piloto de Golem, a skill tá na prop
 			skill := mobile.GetObjRef().GetProp("skill_a");
-		elseif (attribute == WRESTLING) // Se é melee desarmado, pega a maior entre as skills de melee
-			skill := Max(array{
-				mobile.GetSkill(ONEHANDED),
-				mobile.GetSkill(TWOHANDED),
-				mobile.GetSkill(DUALWIELD)
-			});
 		else
 			skill := mobile.GetSkill(attribute);
 		endif
 
-		if (mobile.IsMounted() && // Se estiver montado
-			mobile.GetObjRef().GetProp("chardata").trait != "Cavalaria de Escaramuça") // E não tiver hab de cavalaria
-			skill := skill / 2;
+		if (mobile.IsMounted())
+			var hasTrait := mobile.GetObjRef().GetProp("chardata").trait == "Cavalaria de Escaramuça";
+			var hasAbility := mobile.HasAbility(ABILITY_ID::MOUNTED_COMBAT);
+
+			if (!hasTrait && !hasAbility)
+				skill := skill / 2; // 50% penalty
+			elseif (!hasTrait || !hasAbility)
+				skill := CInt(skill * 75 / 100); // 25% penalty
+			endif
+			// Both trait + ability = no penalty
 		endif
 	endif
 
@@ -138,8 +140,7 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
 			endif
         endif
     elseif (!in_darkness && attacker_race == DROW)
-		SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
-		if (GetCooldown(attacker, "lightvision") > 0)
+		if (GetCooldown(attacker, "nightvision") > 0)
 			hit_chance -= 10;
 			SendSysMessageEx(attacker, "Você luta com dificuldade.", SSM_FAIL);
 		else
@@ -150,8 +151,12 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
 endfunction
 
 function HasLightNearby(defender)
+    if (GetCooldown(defender, "fire_arrow_lit"))
+        return 1;
+    endif
+
     const SEARCH_RANGE := 2;
-    
+
     // Check for items with light flag
     var flag_lightsources := ListItemsNearLocationWithFlag(defender.x, defender.y, defender.z, SEARCH_RANGE, TILEDATA_FLAG_LIGHTSOURCE, defender.realm);
     if (flag_lightsources.size() > 0)
@@ -224,10 +229,6 @@ function ConsumeAmmo(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
 		var powderNeeded := GetPowderAmount(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory());
 
-		if (TemHabilidade(attackInfo.GetAttacker().GetObjRef(), "Municiador Experiente") && powderNeeded > 2)
-			powderNeeded := 2;
-		endif
-
 		var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST).GetObjRef();
 		var powder := FindObjtypeInContainer(bandolier, 0x9092); // Pólvora
 		if (powder.amount < powderNeeded)
@@ -256,7 +257,7 @@ function GetPowderAmount(weaponCategory)
 endfunction
 
 function CalculateAbilityHitModifier(byref hit_chance, attackInfo)
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::BUDOKA))
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MARTIAL_ARTIST))
 		if (attackInfo.GetDefender().GetWeapon().GetAttribute() == WRESTLING)
 			hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(TACTICS) / 5);
 		endif
@@ -286,7 +287,7 @@ function CalculateAbilityHitModifier(byref hit_chance, attackInfo)
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(SCIENCE) / 5);
 	endif
 
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::TIROTHAN))
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::ARCANE_MASTERY))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(ARCANA) / 10);
 	endif
 
@@ -333,7 +334,7 @@ endfunction
 
 function CalculateCooldownHitModifier(byref hit_chance, attackInfo)
 	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia") && attackInfo.GetAttacker().HasAbility(ABILITY_ID::FURIA_INDOMAVEL))
-		if (!attackInfo.GetDefender().HasAbility("Fortitudo Impia"))
+		if (!attackInfo.GetDefender().HasAbility(ABILITY_ID::PRESENCA_DIVINA))
 			hit_chance += 10.0;
 		endif
 	endif

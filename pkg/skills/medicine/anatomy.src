@@ -9,6 +9,8 @@ include ":attributes:skills";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
 include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program skill_Anatomy(who)
 
@@ -22,7 +24,7 @@ program skill_Anatomy(who)
 		return 0;
 	elseif (subject.graphic == 0x2006)
 		PrintTextAbove(who, "*examinando o corpo*");
-		if (temHabilidade(who, "Formacao Academica"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::ACADEMIC_TRAINING))
 			if (GetObjProperty(subject, "morto") == 1)
 				SendSysMessageEx(who, "Parece morto para voce.", SSM_INFO);
 				if (SkillCheck(who, MEDICINE, 50) > 0)
@@ -59,7 +61,7 @@ program skill_Anatomy(who)
 		endif
 	elseif (subject.objtype == 0xEFFF)
 		PrintTextAbove(who, "*examinando os ossos*");
-		if (temHabilidade(who, "Formacao Academica"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::ACADEMIC_TRAINING))
 			SendSysMessageEx(who, "Parece inanimado para voce.", SSM_INFO);
 			if (SkillCheck(who, MEDICINE, 50) > 0)
 				if (GetObjProperty(subject, "WeaponKill"))
@@ -96,8 +98,8 @@ program skill_Anatomy(who)
 	var dext := getDext(AP_GetStat(subject, "Dexterity"));
 
 	var fort := getFort(GetResist(subject, FORTITUDE));
-	var refl := getRefl(GetResist(subject, REFLEXOS));
-	var vont := getVont(GetResist(subject, VONTADE));
+	var refl := getRefl(GetResist(subject, REFLEXES));
+	var vont := getVont(GetResist(subject, WILL));
 	// var con := getVit( Cint(GetObjProperty(who, "Vitality") ));
 	var endur_percentage := CInt(CInt(AP_GetVital(subject, "Stamina")) / CDbl(AP_GetVitalMaximumValue(subject,
 																									   "Stamina")) * 100);
@@ -127,15 +129,15 @@ program skill_Anatomy(who)
 		sucesso := SkillCheck(who, MEDICINE, 30);
 	endif
 
-	if (temHabilidade(who, "Formacao Academica"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::ACADEMIC_TRAINING))
 		if (sucesso > 0)
 			SendSysMessageEx(who, strMsg + " parece " + streng + " (" + AP_GetStat(subject, "Strength") + "),",
 							  SSM_INFO);
 			SendSysMessageEx(who, dext + " (" + AP_GetStat(subject, "Dexterity") + "),", SSM_INFO);
 			SendSysMessageEx(who, endur + ".", SSM_INFO);
 			SendSysMessageEx(who, fort + " (" + GetResist(subject, FORTITUDE) + "),", SSM_INFO);
-			SendSysMessageEx(who, refl + " (" + GetResist(subject, REFLEXOS) + "),", SSM_INFO);
-			SendSysMessageEx(who, vont + " (" + GetResist(subject, VONTADE) + "),", SSM_INFO);
+			SendSysMessageEx(who, refl + " (" + GetResist(subject, REFLEXES) + "),", SSM_INFO);
+			SendSysMessageEx(who, vont + " (" + GetResist(subject, WILL) + "),", SSM_INFO);
 			if (who.serial == subject.serial)
 				SendSysMessageEx(who, "O alvo esta " + DPMsg(subject, who), SSM_INFO);
 			endif
@@ -294,7 +296,7 @@ function DPMsg(who, medic)
 	if (GetObjProperty(who, "morto"))
 		return "morto";
 	endif
-	if (temHabilidade(medic, "Formacao Academica"))
+	if (MobileWrapper(medic).HasAbility(ABILITY_ID::ACADEMIC_TRAINING))
 		var DPs := CInt(AP_GetVital(who, "DP") / 10);
 		case (DPs)
 			0: return "morto (0 DP)";

@@ -1,0 +1,13 @@
+use os;
+
+include ":message:model/Message";
+
+program epicevents(who)
+	if (who.cmdlevel < 2)
+		Message("Voce nao tem permissao para usar este comando.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	start_script(":epicevents:Event", who);
+	return 1;
+endprogram

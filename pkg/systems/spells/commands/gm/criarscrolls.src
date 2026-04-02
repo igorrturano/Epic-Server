@@ -1,6 +1,8 @@
 use uo;
 use cfgfile;
 
+include ":spells:SpellRegistry";
+
 program make_scrolls(who, amt)
 
 	if (!amt)
@@ -11,16 +13,21 @@ program make_scrolls(who, amt)
 	bolsa.color := 2600;
 	bolsa.name := "Bolsa de Pergaminhos magicos";
 
-	var cfg := ReadConfigFile(":spells:spellcaster");
-
 	var spellinfo := struct;
 	var perg;
 	spellinfo.+id;
 	spellinfo.+magic_path := "spellcaster";
-	foreach spell in (GetConfigIntKeys(cfg))
-		spellinfo.id := spell;
-		SetObjProperty(perg, "spellinfo", spellinfo);
 
-		perg := CreateItemInContainer(bolsa, "pergaminhospellcaster1", amount := amt);
+	foreach cfg_path in (GetMageSchoolConfigPaths())
+		var cfg := ReadConfigFile(cfg_path);
+		if (!cfg)
+			continue;
+		endif
+		foreach spell in (GetConfigIntKeys(cfg))
+			spellinfo.id := spell;
+			SetObjProperty(perg, "spellinfo", spellinfo);
+
+			perg := CreateItemInContainer(bolsa, "pergaminhospellcaster1", amount := amt);
+		endforeach
 	endforeach
 endprogram

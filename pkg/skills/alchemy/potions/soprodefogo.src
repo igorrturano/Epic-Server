@@ -58,7 +58,7 @@ program use_explosion(who, potion)
 				continue;
 			endif
 
-			var tier := cint(GetObjProperty(potion, "tier"));
+			var tier := PegaNivelPocao(potion);
 			var bonus := cint(GetObjProperty(potion, "bonus"));
 			var damage := epicPotionDamageRoll(tier, bonus);
 

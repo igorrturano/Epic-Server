@@ -13,14 +13,24 @@ include "/include/epicConstants";
 include ":keys:key";
 include ":crafting:/include/caracteristicasFabricacao";
 include ":crafting:/include/util/fabricacaoConstants";
+include "include/epicUtils";
 
+var LISTA_TIPO_MATERIAL := PegaListaTipoMateriais();
 var itemsConfig := ReadConfigFile(":*:itemdesc");
 
 function ClassificaNomeReceita(nomeReceita)
 	var dividido := SplitWords(nomeReceita,"-");
+	var classe := CLASSE_PADRAO;
+
+	if(TypeOfInt(dividido[2]) == OT_ERROR || TypeOfInt(dividido[2]) == OT_UNINIT || TypeOfInt(dividido[2]) == OT_UNKNOWN) 
+		classe := CLASSE_PADRAO;
+	else
+		classe := dividido[2];
+	endif
+
 	return dictionary {
 		"nome" -> dividido[1],
-		"classe" -> dividido[2]
+		"classe" -> classe
 	};
 endfunction
 
@@ -260,30 +270,32 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
 		endif
 
-		descriptor.color := propFabricadoMontado.esquema.cor;
+		descriptor.color := propFabricadoMontado.receita.corObrigatoria ? propFabricadoMontado.receita.corObrigatoria : propFabricadoMontado.esquema.cor;
 
 		var quantidadeFinal := 1;
 		if(propFabricadoMontado.receita.lote && propFabricadoMontado.receita.lote > 1)
 			quantidadeFinal := cint(quantidade * propFabricadoMontado.receita.lote);
 		endif
 			
-		var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
-		if(!item)
-			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
+		if(!propFabricadoMontado.receita.isEmpilhavel)
+			for i := 1 to quantidadeFinal
+					Sleepms(2);
+					var item := CreateItemInBackpack(quem,descriptor);
+					if(!item)
+						item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, 1, quem.realm);
+					endif
+
+					AplicaAtributosItemFabricado(quem,item, propFabricadoMontado);
+			endfor
+		else
+			var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
+			if(!item)
+				item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
+			endif
+
+			AplicaAtributosItemFabricado(quem,item, propFabricadoMontado);
 		endif
 
-		item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
-		item.hp := item.maxhp;
-		
-		if(!item)
-			SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
-			return 0;
-		endif
-
-		AplicaFechadura(quem, item);
-		item.setAttrBase();
-		item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
-	
 	else
 		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
 		Print("Erro: O Item " +  produto.desc + " não é um Produto Montado.");
@@ -291,6 +303,20 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 	endif
 	
 	return 1;
+endfunction
+
+function AplicaAtributosItemFabricado(quem, item, propFabricadoMontado)
+	item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
+	item.hp := item.maxhp;
+
+	if(!item)
+		SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
+		return 0;
+	endif
+
+	AplicaFechadura(quem, item);
+	item.setAttrBase();
+	item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? CDbl((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 1;
 endfunction
 
 function ResolveEfeitoCaracteristica(valorEfeito)
@@ -306,8 +332,15 @@ function ResolveEfeitoCaracteristica(valorEfeito)
 endfunction
 
 function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
-	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
 	var retornoEfeitos := struct;
+	if(FIND(UPPER(caracteristica),"VAZIO", 1) > 0)
+		retornoEfeitos.+valorPrincipal := 0;
+		retornoEfeitos.+valorLiteralPrincipal := 0;
+		retornoEfeitos.+valorTotalSubefeitos := 0;
+		return retornoEfeitos;
+	endif
+	
+	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
 	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
 	var efeitosMaterialString := efeitosMaterial[caracteristica];
 	var subEfeitosMaterial;
@@ -361,11 +394,7 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 		//Refatora o dict para usar como indice a caracteristica, assim dá para ir direto ao assunto se quiser pegar o componente que tá dando aquela caracteristica.
 		foreach componente in (propFabricadoMontado.esquema.componentesEscolhidos)
 			Sleepms(2);
-			if(componente.componenteNecessario.caracteristica != "vazio")
-				componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
-			else
-				componentesRefatorado.insert(_componente_iter,componente);
-			endif
+			componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
 		endforeach
 	else
 		componentesRefatorado := propFabricadoMontado.esquema.componentesEscolhidos;
@@ -413,24 +442,27 @@ endfunction
 
 function isEstacaoValida(quem, estacaoAlvo, profissao)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
-	var estacoesValidas := GetConfigStringArray(profissaoConfig[profissao], "EstacoesValidas");
-
-	if(cstr(estacaoAlvo.item.objtype) in estacoesValidas ||  "superficie" in estacoesValidas )
-		var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
-		
-		if(ocupanteSerial)
-			var ocupante := SystemFindObjectBySerial(ocupanteSerial);
-			if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
-				SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
-				return 0;
+	var estacoesValidas := GetConfigString(profissaoConfig[profissao], "EstacoesValidas");
+	estacoesValidas := SplitWords(estacoesValidas);
+	
+	foreach estacaoValida in estacoesValidas
+		Sleepms(2);
+		if(Lower(cstr(hex(estacaoAlvo.item.objtype))) == lower(cstr(hex(estacaoValida))) ||  "superficie" == estacaoValida)
+			var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
+			
+			if(ocupanteSerial)
+				var ocupante := SystemFindObjectBySerial(ocupanteSerial);
+				if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
+					SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
+					return 0;
+				endif
 			endif
+			SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
+			return 1;
 		endif
-	else
-		SendSysMessageEX(quem,"Estação inválida.", SSM_FAIL);
-		return 0;
-	endif
-	SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
-	return 1;
+	endforeach
+	SendSysMessageEX(quem,"Estação inválida.", SSM_FAIL);
+	return 0;
 endfunction
 
 function PegaDescDuracaoFabricacao(qtdSucessos)

@@ -13,6 +13,8 @@ include "include/say";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":spells:include/spell_executor";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 const GUMPID_DEMONHUNTERSPELL := 0x00001E;
 
@@ -26,7 +28,7 @@ program sigilodeprotecao(who, spellname := "")
 	endif
 
 	// Check if player has demon hunter ability
-	var isDemonHunter := TemHabilidade(who, "Sigilo de Protecao");
+	var isDemonHunter := MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO);
 	if (!isDemonHunter)
 		SendSysMessageEx(who, "Apenas Caçadores de Demônios podem usar este comando.", SSM_FAIL);
 		return 0;
@@ -50,7 +52,7 @@ endprogram
 
 function DemonHunterSpellsGump(who, max_circle)
 	var gump := GFCreateGump();
-	var cfg := ReadConfigFile(":spells:config/demonhunterspells");
+	var cfg := ReadConfigFile(":spells:config/demonhunter");
 	var spell_list := array{};
 
 	foreach spell_id in (GetConfigIntKeys(cfg))

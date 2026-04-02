@@ -3,6 +3,8 @@ use uo;
 use os;
 
 include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program TimedScript_Clumsy(params)
 	var who := params[1];
@@ -13,7 +15,7 @@ program TimedScript_Clumsy(params)
 		return 0;
 	endif
 	var total := Cdbl(skill / 200); // 50% da skill
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		total := total * 0.8;
 	endif
 	SetObjProperty(who, "dmgreduction", Cdbl(GetObjProperty(who, "dmgreduction") + total));

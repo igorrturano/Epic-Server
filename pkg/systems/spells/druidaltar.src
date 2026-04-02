@@ -22,7 +22,7 @@ program orderSpells(who, item)
 	endif
 
 	var mlore := cint(AP_GetSkill(who, THEOLOGY));
-	var cfg := ReadConfigFile(":spells:config/druidspells");
+	var cfg := ReadConfigFile(":spells:config/druid");
 	var cleric_slots := Cint(mlore / 5);
 
 	var druid_list := GetObjProperty(who, "druid_list");
@@ -82,7 +82,7 @@ program orderSpells(who, item)
 	var canceled := 0;
 	while (!canceled)
 		RemoveUsedSpells(who, druid_list, available_slots);
-		var input := CreateDruidGump(who, spell_list, available_slots, druid_list);
+		var input := CreateDruidGump(who, spell_list, available_slots, druid_list, slots_used, cleric_slots);
 
 		if (input[0] >= 200)
 			if (TS_GetTimerInfo(who, "orderspell")) // TODO
@@ -92,7 +92,15 @@ program orderSpells(who, item)
 			var spell := spell_list[input[0] - 200];
 			var ret := StoreSpell(who, spell, druid_list, available_slots);
 			if (ret)
-				playAltarAnimations(who, item);
+				var i := 1;
+				var item_graphic := item.graphic;
+				while (i < 8)
+					item.graphic := Cint(item.graphic) + 1;
+					sleepms(100);
+					i += 1;
+				endwhile
+				item.graphic := item_graphic;
+				// playAltarAnimations(who, item);
 			endif
 		elseif (!input[0])
 			canceled := 1;
@@ -100,7 +108,7 @@ program orderSpells(who, item)
 	endwhile
 endprogram
 
-function CreateDruidGump(who, spell_list, available_slots, druid_list)
+function CreateDruidGump(who, spell_list, available_slots, druid_list, slots_used, total_slots)
 	var gump := GFCreateGump();
 	// Count only non-cantrip spells (circle != 0) for gump sizing
 	var non_cantrip_count := 0;
@@ -148,6 +156,8 @@ function CreateDruidGump(who, spell_list, available_slots, druid_list)
 			y += 26;
 		endif
 	endforeach
+
+	GFTextLine(gump, 63, y + 15, 0, "Slots: {}/{}".format(slots_used, total_slots));
 
 	return GFSendGump(who, gump);
 endfunction

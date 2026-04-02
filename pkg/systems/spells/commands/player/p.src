@@ -24,18 +24,18 @@ program magia_paladin(who, spellname := "")
 	endif
 
 	// Check if player has paladin ability
-	var isPaladin := TemHabilidade(who, "Consagracao Divina");
+	var isPaladin := MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA);
 	if (!isPaladin)
 		SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
 		return 0;
 	endif
 
-	// If no spell name provided, show the paladin gump
+	// If no spell name provided, nothing to do
 	if (!spellname || spellname == "")
-		Start_Script(":charactercreation:habilidades/paladin/consagracaodivina", who);
-		return 1;
+		SendSysMessageEx(who, "Use: .p <nome_da_magia>", SSM_FAIL);
+		return 0;
 	endif
-	
+
 	// Execute the spell using the unified executor
 	return ExecuteSpellByName(who, spellname, SPELL_TYPE_PALADIN);
 endprogram

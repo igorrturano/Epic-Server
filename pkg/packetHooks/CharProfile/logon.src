@@ -1,0 +1,24 @@
+// =============================================================================
+// Profile URL Logon Script
+// Sends profile URLs on player login
+// =============================================================================
+
+use uo;
+use os;
+
+include "profile_packets";
+
+program logon(who)
+    sleep(1);  // Wait for logon processes to complete
+
+    // Send own profile URL to self
+    var url := GetObjProperty(who, "url");
+    if (url && url != "")
+        UpdateProfileClient(who, who.serial, url);
+    endif
+
+    // Send all party member profiles to this player
+    SendPartyMemberProfiles(who);
+
+    return 1;
+endprogram

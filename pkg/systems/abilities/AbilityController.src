@@ -1,0 +1,9 @@
+use os;
+
+include ":abilities:AbilityRegistry";
+
+program AbilityController(params)
+	var abilityId := CInt(params[2]);
+	var archetype := GetAbilityArchetype(abilityId);
+	return run_script_to_completion($"{ABILITY_PKG}AbilityExecutor{archetype}", params);
+endprogram

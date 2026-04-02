@@ -59,6 +59,9 @@ function ProgressAttackSkills(byRef attackInfo)
 	if (can_gain)
 		var gain_wait := CInt(CS_GetSettingsCfgElem("General").GainWait);
 		attackInfo.GetAttacker().GetObjRef().SetProp("#CS_GainTime", ReadGameClock() + gain_wait);
+		var attackerWeapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
+		var shouldGainArcana := attackerWeapon.GetCategory() == WEAPON_CATEGORY::MAGICBOW
+			|| attackerWeapon.GetCategory() == WEAPON_CATEGORY::SPIRITUALBLADE;
 
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() == 0x13b9)
 			if (!attackInfo.GetAttacker().GetEquipBySlot(SHIELD))
@@ -72,5 +75,9 @@ function ProgressAttackSkills(byRef attackInfo)
 
 		SleepMS(5);
 		SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+
+		if (shouldGainArcana)
+			SkillCheck(attackInfo.GetAttacker().GetObjRef(), ARCANA, -1);
+		endif
 	endif
 endfunction

@@ -249,7 +249,25 @@ function ShowTracosRaciaisGump(who, targ)
 			var value := "Não selecionado";
 			if (chardata.caracteristicas_rp && chardata.caracteristicas_rp.exists(category) &&
 	   chardata.caracteristicas_rp[category] != 0)
-				value := racial_traits[category].opcoes[chardata.caracteristicas_rp[category]];
+				value := TranslateRacialTrait(category, chardata.caracteristicas_rp[category], chardata);
+				if (value == error)
+					var option_ids_fb := racial_traits[category].opcoes_ids;
+					var found_idx := 0;
+					var j;
+					for (j := 1; j <= option_ids_fb.size(); j := j + 1)
+						if (option_ids_fb[j] == chardata.caracteristicas_rp[category])
+							found_idx := j;
+							break;
+						endif
+					endfor
+					if (found_idx > 0)
+						value := racial_traits[category].opcoes[found_idx];
+					elseif (typeof(chardata.caracteristicas_rp[category]) == "number" && chardata.caracteristicas_rp[category] >= 1 && chardata.caracteristicas_rp[category] <= racial_traits[category].opcoes.size())
+						value := racial_traits[category].opcoes[chardata.caracteristicas_rp[category]];
+					else
+						value := "Não selecionado";
+					endif
+				endif
 			endif
 
 			var category_name := racial_traits[category].nome;

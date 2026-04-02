@@ -1,6 +1,6 @@
 function GetAradoloreSpells()
    // All spells that belong to the Aradalore school
-   // Important: Cross reference with spellcaster.cfg to match names exactly
+   // Important: Cross reference with mage school configs to match names exactly
    return array{
      "Invoc. Espir. Urso",
      "Invoc. Espir. Lobo",
@@ -220,16 +220,27 @@ function SortSpellsByPriority(spells)
 endfunction
 
 function GetSpellCircle(spellname)
-    // Need access to spell config to get circle
-    var cfg := ReadConfigFile(":spells:config/spellcaster");
-    foreach spellId in (GetConfigIntKeys(cfg))
-        var elem := FindConfigElem(cfg, spellId);
-        if (Lower(elem.Name) == Lower(spellname))
-            return CInt(elem.Circle);
+    // Need access to spell config to get circle - search all mage school configs
+    var mage_configs := array{
+        ":spells:config/evocation",
+        ":spells:config/necromancy",
+        ":spells:config/illusion",
+        ":spells:config/swordmage"
+    };
+    foreach cfg_path in mage_configs
+        var cfg := ReadConfigFile(cfg_path);
+        if (!cfg)
+            continue;
         endif
-        sleepms(2);
+        foreach spellId in (GetConfigIntKeys(cfg))
+            var elem := FindConfigElem(cfg, spellId);
+            if (Lower(elem.Name) == Lower(spellname))
+                return CInt(elem.Circle);
+            endif
+            sleepms(2);
+        endforeach
     endforeach
-    
+
     return 1; // Default to circle 1 if not found
 endfunction
 
@@ -250,6 +261,22 @@ function ChooseWeightedSpell(valid_spells)
     endforeach
     
     return valid_spells[1].name; // Fallback to highest priority spell
+endfunction
+
+function FindMageSpellInConfigs(spellname)
+    var mage_configs := array{
+        ":spells:config/evocation",
+        ":spells:config/necromancy",
+        ":spells:config/illusion",
+        ":spells:config/swordmage"
+    };
+    foreach cfg_path in mage_configs
+        var result := FindSpellInConfig(spellname, cfg_path);
+        if (result)
+            return result;
+        endif
+    endforeach
+    return 0;
 endfunction
 
 function FindSpellInConfig( spellname, cfgFile )
@@ -285,17 +312,28 @@ function getAvailableSpells(monster)
 
    var spells := array{"Misseis Magicos"}; // All casters have magic missile
 
-   // Get spellcaster config
-   var cfg := ReadConfigFile(":spells:config/spellcaster");
+   // Get spellcaster configs (now split into 4 mage schools)
+   var mage_configs := array{
+      ":spells:config/evocation",
+      ":spells:config/necromancy",
+      ":spells:config/illusion",
+      ":spells:config/swordmage"
+   };
    var school := getSpellSchool(monster);
 
-   // Add spells from school up to tier
-   foreach spellId in (GetConfigIntKeys(cfg))
-      var elem := FindConfigElem(cfg, spellId);
-      if (elem.School == school && elem.Circle <= tier)
-         spells.append(elem.Name);
+   // Add spells from school up to tier across all mage configs
+   foreach cfg_path in mage_configs
+      var cfg := ReadConfigFile(cfg_path);
+      if (!cfg)
+         continue;
       endif
-      sleepms(2);
+      foreach spellId in (GetConfigIntKeys(cfg))
+         var elem := FindConfigElem(cfg, spellId);
+         if (elem.School == school && elem.Circle <= tier)
+            spells.append(elem.Name);
+         endif
+         sleepms(2);
+      endforeach
    endforeach
    return spells;
 endfunction
@@ -317,7 +355,6 @@ function getSpellSchool(monster)
 endfunction
 
 function ChooseSpell(me, opponent, spells)
-    var cfgFile := ":spells:config/spellcaster";
     var school := getSpellSchool(me);
 
     if (school == "Ahtaleloreth")
@@ -326,8 +363,8 @@ function ChooseSpell(me, opponent, spells)
 
     // Get ideal spell based on tactical considerations
     var chosen_spell := ChooseIdealSpell(me, opponent, spells);
-    // Get spell info for the chosen spell
-    var spellInfo := FindSpellInConfig(chosen_spell, cfgFile);
+    // Get spell info for the chosen spell - search across all mage school configs
+    var spellInfo := FindMageSpellInConfigs(chosen_spell);
     if (!spellInfo)
         SetObjProperty(me, "#SpellTarget", opponent.serial);
         return "Misseis Magicos";
@@ -412,8 +449,7 @@ function MageBehavior(me, opponent)
 endfunction
 
 function NPC_CastSpell(me, spellname)
-   var cfgFile := ":spells:config/spellcaster";
-   var spellInfo := FindSpellInConfig(spellname, cfgFile);
+   var spellInfo := FindMageSpellInConfigs(spellname);
    
    if (!spellInfo)
       return 0;
@@ -510,7 +546,7 @@ function GetAvailableShamanSpells(monster)
     var spells := array{"Enfraquecer"};
 
     // Read shaman spells configuration file
-    var cfg := ReadConfigFile(":spells:config/shamanspells");
+    var cfg := ReadConfigFile(":spells:config/shaman");
     foreach spellId in GetConfigIntKeys(cfg)
         var elem := FindConfigElem(cfg, spellId);
         // Use the spell's Circle value to determine if it is available at the current tier
@@ -524,7 +560,7 @@ function GetAvailableShamanSpells(monster)
 endfunction
 
 function NPC_CastShamanSpell(me, spellname)
-    var cfgFile := ":spells:config/shamanspells";
+    var cfgFile := ":spells:config/shaman";
     var spellInfo := FindSpellInConfig(spellname, cfgFile);
     if (!spellInfo)
         return 0;
@@ -565,7 +601,7 @@ function HumanoidShamanBehavior(me, opponent)
     endif
 
     // Retrieve the chosen spell's configuration so that we can set the proper target.
-    var cfgFile := ":spells:config/shamanspells";
+    var cfgFile := ":spells:config/shaman";
     var spellInfo := FindSpellInConfig(chosen_spell, cfgFile);
     if (!spellInfo) 
         // Default to opponent if no spell info is found
@@ -584,7 +620,7 @@ function HumanoidShamanBehavior(me, opponent)
 endfunction
 
 function ChooseShamanSpell(me, opponent, spells)
-    var cfgFile := ":spells:config/shamanspells";
+    var cfgFile := ":spells:config/shaman";
 
     // Get ideal spell based on tactical considerations
     var chosen_spell := ChooseIdealShamanSpells(me, opponent, spells);
@@ -630,7 +666,7 @@ function ChooseIdealShamanSpells(me, opponent, spells)
         return "Enraizar";
     endif
 
-    // Build a weighted list from the available shaman spells (only those in shamanspells.cfg).
+    // Build a weighted list from the available shaman spells (only those in shaman.cfg).
     var valid_spells := array{};
     foreach spell in spells
         var weight := 50; // base weight for every available spell
@@ -675,7 +711,7 @@ function GetAvailablePriestSpells(monster)
     var spells := array{"Cura Leve"};
 
     // Read priest spells configuration file
-    var cfg := ReadConfigFile(":spells:config/priestspells");
+    var cfg := ReadConfigFile(":spells:config/priest");
     foreach spellId in GetConfigIntKeys(cfg)
         var elem := FindConfigElem(cfg, spellId);
         // Use the spell's Circle value to determine if it's available at the current tier
@@ -705,7 +741,7 @@ function HumanoidPriestBehavior(me, opponent)
     endif
 
     // Set the appropriate target based on the spell type
-    var cfgFile := ":spells:config/priestspells";
+    var cfgFile := ":spells:config/priest";
     var spellInfo := FindSpellInConfig(chosen_spell, cfgFile);
     if (!spellInfo)
         SetObjProperty(me, "#SpellTarget", opponent.serial);
@@ -801,7 +837,7 @@ function ChoosePriestSpell(me, opponent, spells)
 endfunction
 
 function NPC_CastPriestSpell(me, spellname)
-    var cfgFile := ":spells:config/priestspells";
+    var cfgFile := ":spells:config/priest";
     var spellInfo := FindSpellInConfig(spellname, cfgFile);
     
     if (!spellInfo)

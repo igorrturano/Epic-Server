@@ -320,6 +320,8 @@ function diagnosis(who, subject)
 	// variables for sys messages
 	var streng := getStreng(AP_GetStat(subject, STRENGTH), subject.graphic, subject.gender);
 	var dext := getDext(AP_GetStat(subject, DEXTERITY), subject.graphic, subject.gender);
+	var int := getInt(AP_GetStat(subject, INTELLIGENCE));
+	var fort := getFort(AP_GetStat(subject, FORTITUDE));
 	var skill := GetAttribute(who, MEDICINE);
 	var strMsg;
 	var humanoides := { 0x190, 0x191, 1828, 1829, 1830, 1831, 1832, 1833 };
@@ -330,8 +332,8 @@ function diagnosis(who, subject)
 	endif
 
 	var base_diagnosis := strMsg + " aparenta " + streng + " e é " + dext + ". " + " Seus trejeitos indicam "
-													  + getInt(subject) + ", e está " + DPMsg(subject,
-													  who) + ". Seu sistema imunológico é " + getFort(subject) + ".";
+													  + int + ", e está " + DPMsg(subject,
+													  who) + ". Seu sistema imunológico é " + fort + ".";
 
 	return base_diagnosis;
 endfunction

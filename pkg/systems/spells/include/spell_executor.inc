@@ -18,16 +18,27 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":spells:spellbooks";
 include ":spells:include/tnmagery";
+include ":spells:SpellRegistry";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":hotbar:include/custombuff";
 
 // Spell type constants
 const SPELL_TYPE_CANTRIP      := "cantrip";
 const SPELL_TYPE_MAGE         := "mage";
+const SPELL_TYPE_EVOCATION    := "evocation";
+const SPELL_TYPE_NECROMANCY   := "necromancy";
+const SPELL_TYPE_ILLUSION     := "illusion";
+const SPELL_TYPE_SWORDMAGE   := "swordmage";
 const SPELL_TYPE_PRIEST       := "priest";
 const SPELL_TYPE_SHAMAN       := "shaman";
 const SPELL_TYPE_DRUID        := "druid";
 const SPELL_TYPE_PALADIN      := "paladin";
 const SPELL_TYPE_DEMONHUNTER  := "demonhunter";
 const SPELL_TYPE_TRICKSTER    := "trickster";
+const SPELL_TYPE_SHINOBI      := "shinobi";
+const SPELL_TYPE_BARD         := "bard";
+const SHINOBI_JUTSU_COOLDOWN  := 20;
 
 /*
  * ExecuteSpellByName - Main entry point for all spell execution
@@ -67,6 +78,10 @@ function ExecuteSpellByName(who, spell_name, spell_type)
     if (!ValidateSpellRequirements(who, spell_data, spell_type))
         return 0;
     endif
+
+    if (!ValidateSpellCooldown(who, spell_type))
+        return 0;
+    endif
     
     // Build spellinfo struct
     var spellinfo := BuildSpellInfo(who, spell_data, spell_type, cfg_path);
@@ -80,6 +95,8 @@ function ExecuteSpellByName(who, spell_name, spell_type)
         SendSysMessage(who, "Erro ao conjurar magia: " + script.errortext);
         return 0;
     endif
+
+    ApplySpellCooldownAndBuff(who, spell_data, spell_type);
     
     return 1;
 endfunction
@@ -98,25 +115,24 @@ function ExecuteSpellById(who, spell_id, spell_type)
         SendSysMessageEx(who, "Voce nao pode invocar uma magia agora.", SSM_FAIL);
         return 0;
     endif
-    
+
     // Validate access
     if (!ValidateSpellAccess(who, spell_type))
         return 0;
     endif
-    
-    // Get config path
-    var cfg_path := GetSpellConfigPathForType(spell_type);
+
+    // Use SpellRegistry to resolve spell by ID directly
+    var cfg_path := GetConfigFromId(spell_id);
     if (!cfg_path)
         SendSysMessageEx(who, "Tipo de magia invalido.", SSM_FAIL);
         return 0;
     endif
-    
-    // Find spell by ID
+
     var cfg := ReadConfigFile(cfg_path);
     if (!cfg)
         return 0;
     endif
-    
+
     var spell_elem := FindConfigElem(cfg, spell_id);
     if (!spell_elem)
         SendSysMessageEx(who, "Magia ID " + spell_id + " nao encontrada.", SSM_FAIL);
@@ -134,6 +150,10 @@ function ExecuteSpellById(who, spell_id, spell_type)
     if (!ValidateSpellRequirements(who, spell_data, spell_type))
         return 0;
     endif
+
+    if (!ValidateSpellCooldown(who, spell_type))
+        return 0;
+    endif
     
     // Build spellinfo
     var spellinfo := BuildSpellInfo(who, spell_data, spell_type, cfg_path);
@@ -147,7 +167,57 @@ function ExecuteSpellById(who, spell_id, spell_type)
         SendSysMessage(who, "Erro ao conjurar magia: " + script.errortext);
         return 0;
     endif
-    
+
+    ApplySpellCooldownAndBuff(who, spell_data, spell_type);
+
+    // Phase 5: Bard cantico entropy award
+    if (spell_type == SPELL_TYPE_BARD)
+        _AwardBardCanticoEntropy(who, spell_data.circle);
+    endif
+
+    return 1;
+endfunction
+
+// Inline bard entropy (avoids cross-package include of musicianship)
+function _AwardBardCanticoEntropy(who, circle)
+    var amt;
+    case (circle)
+        0: 1: amt := 150;   break;
+        2:    amt := 350;   break;
+        3:    amt := 750;   break;
+        4:    amt := -2000; break; // C4 canticos generate negative entropy
+        default: return; break;
+    endcase
+    var cur := CInt(GetObjProperty(who, "entropy"));
+    if (!cur) cur := 0; endif
+    SetObjProperty(who, "entropy", cur + amt);
+    var global_ent := CInt(GetGlobalProperty("GlobalEntropy"));
+    if (!global_ent) global_ent := 0; endif
+    SetGlobalProperty("GlobalEntropy", global_ent + amt);
+    if (amt > 0)
+        SendSysMessageEx(who, $"Voce ganhou {amt} pontos de entropia", SSM_REQUEST);
+    else
+        SendSysMessageEx(who, $"Voce perdeu {Abs(amt)} pontos de entropia", SSM_FAIL);
+    endif
+endfunction
+
+function ValidateSpellCooldown(who, spell_type)
+    if (spell_type == SPELL_TYPE_SHINOBI)
+        if (GetCooldown(who, "jutsu") > 0)
+            SendSysMessageEx(who, "Voce deve esperar um pouco antes de usar outra tecnica shinobi.", SSM_FAIL);
+            return 0;
+        endif
+    endif
+
+    return 1;
+endfunction
+
+function ApplySpellCooldownAndBuff(who, spell_data, spell_type)
+    if (spell_type == SPELL_TYPE_SHINOBI)
+        SetCooldown(who, "jutsu", SHINOBI_JUTSU_COOLDOWN);
+        SendSpellBuff(who, who, spell_data.id, SHINOBI_JUTSU_COOLDOWN, spell_data.name);
+    endif
+
     return 1;
 endfunction
 
@@ -166,7 +236,7 @@ function ValidateSpellAccess(who, spell_type)
     
     case (spell_type)
         SPELL_TYPE_CANTRIP:
-            if (magia != "spellcaster" && trait != "Natureza Arcana" && magia != "Arqueiro Arcano")
+            if (magia != "spellcaster" && trait != "Natureza Arcana" && magia != "arcane_archer")
                 SendSysMessageEx(who, "Voce nao possui acesso a truques.", SSM_FAIL);
                 return 0;
             endif
@@ -196,14 +266,30 @@ function ValidateSpellAccess(who, spell_type)
             endif
             
         SPELL_TYPE_PALADIN:
-            if (!TemHabilidade(who, "Consagracao Divina"))
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
                 SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
                 return 0;
             endif
             
         SPELL_TYPE_DEMONHUNTER:
-            if (!TemHabilidade(who, "Sigilo de Protecao"))
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
                 SendSysMessageEx(who, "Apenas Cacadores de Demonios podem usar este comando.", SSM_FAIL);
+                return 0;
+            endif
+
+        SPELL_TYPE_SHINOBI:
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
+                SendSysMessageEx(who, "Apenas Shinobis podem usar este comando.", SSM_FAIL);
+                return 0;
+            endif
+
+        SPELL_TYPE_BARD:
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::VOX_ARCANA))
+                SendSysMessageEx(who, "Apenas Bardos podem usar canticos.", SSM_FAIL);
+                return 0;
+            endif
+            if (GetObjProperty(who, "#bard_silenced"))
+                SendSysMessageEx(who, "Voce esta silenciado e nao pode cantar.", SSM_FAIL);
                 return 0;
             endif
     endcase
@@ -216,6 +302,14 @@ endfunction
  */
 function ValidateSpellRequirements(who, spell_data, spell_type)
     case (spell_type)
+        SPELL_TYPE_SHINOBI:
+            // Check sneak skill against spell difficulty
+            var sneak_skill := CInt(AP_GetSkill(who, SNEAK));
+            if (sneak_skill < spell_data.difficulty)
+                SendSysMessageEx(who, "Voce nao possui furtividade suficiente para esta tecnica.", SSM_FAIL);
+                return 0;
+            endif
+
         SPELL_TYPE_PALADIN:
         SPELL_TYPE_DEMONHUNTER:
             // Check theology skill for circle access
@@ -256,10 +350,43 @@ function ValidateSpellRequirements(who, spell_data, spell_type)
                 return 0;
             endif
             
+        SPELL_TYPE_BARD:
+            var mobile_bard := MobileWrapper(who);
+            // Circle access gates
+            var max_cantico_circle := 1;
+            if (mobile_bard.HasAbility(ABILITY_ID::CHAOS_MASTERY))
+                max_cantico_circle := 4;
+            elseif (mobile_bard.HasAbility(ABILITY_ID::REALITY_TEAR))
+                max_cantico_circle := 3;
+            elseif (mobile_bard.HasAbility(ABILITY_ID::RESONANCE))
+                max_cantico_circle := 2;
+            endif
+            if (spell_data.circle > max_cantico_circle)
+                SendSysMessageEx(who, "Voce nao possui acesso a canticos deste circulo.", SSM_FAIL);
+                return 0;
+            endif
+            // Learned check for C1+ (GMs bypass)
+            if (spell_data.circle > 0 && !who.cmdlevel)
+                var cantico_list := GetObjProperty(who, "cantico_list");
+                var cantico_found := 0;
+                if (cantico_list)
+                    foreach c in cantico_list
+                        if (c == spell_data.id)
+                            cantico_found := 1;
+                            break;
+                        endif
+                    endforeach
+                endif
+                if (!cantico_found)
+                    SendSysMessageEx(who, "Voce nao aprendeu o cantico '" + spell_data.name + "'.", SSM_FAIL);
+                    return 0;
+                endif
+            endif
+
         SPELL_TYPE_MAGE:
             // Check grimoire for non-GMs, unless they have Sensibilidade Arcana
             if (!who.cmdlevel && spell_data.circle != 0)
-                if (!TemHabilidade(who, "Sensibilidade Arcana"))
+                if (!MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
                     var spellBookInfo := FindSpellInSpellBooks(who, spell_data.id);
                     if (!spellBookInfo.found)
                         SendSysMessageEx(who, "Voce nao possui a magia " + spell_data.name + " no seu grimorio.", SSM_FAIL);
@@ -278,14 +405,20 @@ endfunction
  */
 function GetSpellConfigPathForType(spell_type)
     case (spell_type)
-        SPELL_TYPE_CANTRIP:     return ":spells:config/cantripspells";
-        SPELL_TYPE_MAGE:        return ":spells:config/spellcaster";
-        SPELL_TYPE_TRICKSTER:   return ":spells:config/tricksterspells";
-        SPELL_TYPE_PRIEST:      return ":spells:config/priestspells";
-        SPELL_TYPE_SHAMAN:      return ":spells:config/shamanspells";
-        SPELL_TYPE_DRUID:       return ":spells:config/druidspells";
-        SPELL_TYPE_PALADIN:     return ":spells:config/paladinspells";
-        SPELL_TYPE_DEMONHUNTER: return ":spells:config/demonhunterspells";
+        SPELL_TYPE_CANTRIP:     return ":spells:config/cantrips";
+        SPELL_TYPE_MAGE:        return ":spells:config/evocation";  // Default mage school; use GetConfigFromId() for specific spells
+        SPELL_TYPE_EVOCATION:   return ":spells:config/evocation";
+        SPELL_TYPE_NECROMANCY:  return ":spells:config/necromancy";
+        SPELL_TYPE_ILLUSION:    return ":spells:config/illusion";
+        SPELL_TYPE_SWORDMAGE:   return ":spells:config/swordmage";
+        SPELL_TYPE_TRICKSTER:   return ":spells:config/trickster";
+        SPELL_TYPE_PRIEST:      return ":spells:config/priest";
+        SPELL_TYPE_SHAMAN:      return ":spells:config/shaman";
+        SPELL_TYPE_DRUID:       return ":spells:config/druid";
+        SPELL_TYPE_PALADIN:     return ":spells:config/paladin";
+        SPELL_TYPE_DEMONHUNTER: return ":spells:config/demonhunter";
+        SPELL_TYPE_SHINOBI:     return ":spells:config/shinobi";
+        SPELL_TYPE_BARD:        return ":spells:config/bardo";
     endcase
     return "";
 endfunction
@@ -335,8 +468,8 @@ function BuildSpellInfo(who, spell_data, spell_type, cfg_path)
     spellinfo.+id := spell_data.id;
     
     // Set magic_path for cantrips (important for WriteCantripSpellInfo)
-    if (spell_type == SPELL_TYPE_CANTRIP)
-        spellinfo.+magic_path := "cantripspells";
+    if (spell_type == SPELL_TYPE_CANTRIP || IsCantrip(spell_data.id))
+        spellinfo.+magic_path := "cantrips";
     endif
     
     // For some spell types, we need to populate full info
@@ -372,8 +505,12 @@ function GetBooktypeForSpell(who, spell_data, spell_type)
             return "paladin";
         SPELL_TYPE_DEMONHUNTER:
             return "demonhunter";
+        SPELL_TYPE_SHINOBI:
+            return "shinobi";
+        SPELL_TYPE_BARD:
+            return "bardo";
     endcase
-    
+
     return 0;
 endfunction
 

@@ -158,6 +158,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	endif
 
 	var weapon := WeaponWrapper(objeto);
+	weapon.SetCprops(objeto.Cprops);
 	var character := MobileWrapper(who);
 	var xDesc := cfg.desc;
 	// Coloca vermelho se a força do usuario for menor, verde se for maior ou igual a força exigida
@@ -178,10 +179,6 @@ function PegaDescArmas(objeto,who,cfg := struct)
 
 	xDesc := xDesc + "Velocidade: " + GetVelStringDesc2(weapon.GetSpeedTier()) + "<br>";
 
-	if (GetObjProperty(objeto, "polida"))
-		xDesc := xDesc + WHITE + "Polimentos: " + GetObjProperty(objeto, "polida") + "<br>";
-	endif
-
 	var crits := GetCriticalInfo(cfg.elem);
 	if (crits != "")
 		xDesc := xDesc + LARANJA + crits;
@@ -196,9 +193,9 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		xDesc := xDesc + ROXO + "Bônus Item PVs "+ objeto.hp_mod;
 	endif
 
-	if (GetObjProperty(objeto, "Aprimoramentos"))
+	if (PegaPropObjItemOrTemplate(objeto, "Aprimoramentos"))
 		xDesc := xDesc + ROXO + "Aprimoramentos: " +  "<br>";
-		foreach key in (GetObjProperty(objeto, "Aprimoramentos").keys())
+		foreach key in (PegaPropObjItemOrTemplate(objeto, "Aprimoramentos").keys())
 				xDesc := xDesc + AMARELO_CLARO + key + "<br>";
 		endforeach
 	endif
@@ -311,6 +308,7 @@ function PegaDescArmaduras(objeto,cfg := struct)
 	endif
 
 	var armadura := ArmorWrapper(objeto); 
+	armadura.SetCprops(objeto.Cprops);
 
 	var xDesc := cfg.desc;
 

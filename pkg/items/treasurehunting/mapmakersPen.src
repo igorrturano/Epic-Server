@@ -14,6 +14,8 @@ include "include/say";
 include ":charactercreation:habilidades";
 include ":tn:tngumps";
 include ":treasurehunting:treasuremaps";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 var item_config := ReadConfigFile(":treasurehunting:itemdesc");
 var craft_config := ReadConfigFile(":treasurehunting:cartography");
@@ -98,7 +100,7 @@ program use_MapmakersPen(who, tool)
 					SendSysMessageEx(who, "Voce nao pode escrever neste livro.", SSM_FAIL);
 					return;
 				elseif (linguagem != error)
-					if (!(temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica") ||
+					if (!(MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO) ||
 		 (linguas != error && linguagem in linguas)))
 						SendSysMessageEx(who, "Voce nao conhece essa lingua para copiar o livro.");
 						return;
@@ -106,7 +108,7 @@ program use_MapmakersPen(who, tool)
 						var traduzir := YesNo(who, "Traduzir pra idioma comum ou copiar o livro?", "Traduzir",
 											   "Copiar");
 						if (traduzir)
-							if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica"))
+							if (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 								linguas := array{ "Antigo vanirio", "Antigo aquilrano", "Antigo thuriao", "Antigo Asanita",
 				  								"Antigo Zharkiano", "Draconiano", "Abissal", "Silvestre", "Lingua dos Mortos" };
 								linguas.append("Antigo Esquecido");
@@ -141,7 +143,7 @@ program use_MapmakersPen(who, tool)
 			var yes;
 			var idiomaEscrita;
 
-			if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 				linguas := array{ "Imperialis", "Aglâb", "Ahruwën", "Haiei",
 				  				"Phalk", "Grumnak", "Björ", "Idrith'har" };
 			endif

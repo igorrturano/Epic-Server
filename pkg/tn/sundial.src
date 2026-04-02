@@ -24,9 +24,7 @@ function ShowSundialGump(who)
 
 	// Usar as novas funções para obter hora e minuto
 	var hour := getCurrentHour();
-	print(" Hora atual: " + hour);
 	var minute := getCurrentMinute();
-	print(" Minuto atual: " + minute);
 	var is_day := GetGlobalProperty("dia");
 
 	// Informações de clima e ambiente

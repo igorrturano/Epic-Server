@@ -119,7 +119,7 @@ function CalculateDHDiff(who, mobile)
 	var dist := Distance(who, mobile);
 	var difficulty;
 
-	if (TemHabilidade(mobile, "Furtividade Aprimorada") && !TemHabilidade(who, "Sempre Alerta"))
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SMOKE_SCREEN) && !MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA))
 		difficulty := CInt(mobile_skill);
 	else
 		if (dist >=8)
@@ -151,7 +151,7 @@ function ExaminarArea(who)
 
 	var range := CInt( AP_GetSkill(who, AWARENESS) / 10 ) + 1;
 
-	if ( TemHabilidade(who, "Sempre Alerta") )
+	if ( MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA) )
 		range := range + 5;
 	endif
 
@@ -159,6 +159,7 @@ function ExaminarArea(who)
 	var lvl;
 	var found := 0;
 	var difficulty;
+	var itemdescCfg := ReadConfigFile(":*:itemdesc");
 	foreach mobile in ListMobilesNearLocationEX(who.x, who.y, who.z, range, LISTEX_FLAG_HIDDEN, who.realm)
 		if ( CheckLineOfSight(who, mobile) && abs(mobile.z - who.z ) < 19 )
 			difficulty := CalculateDHDiff(who, mobile);
@@ -206,6 +207,11 @@ function ExaminarArea(who)
 
 		// Process discoverable hidden items (invisible with level)
 		if ( item.invisible && lvl != error)
+			// Items permanently invisible by itemdesc should never be revealed
+			var elemDesc := FindConfigElem(itemdescCfg, item.objtype);
+			if (elemDesc.Invisible)
+				continue;
+			endif
 			case (lvl)
 				1: diff := 20;
 				2: diff := 40;
@@ -242,7 +248,7 @@ function CheckForSecretDoors(who)
 	var awareness_skill := CInt(AP_GetSkill(who, AWARENESS));
 	var range := CInt(awareness_skill / 10) + 1;
 
-	if (TemHabilidade(who, "Sempre Alerta"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA))
 		range := range + 5;
 	endif
 

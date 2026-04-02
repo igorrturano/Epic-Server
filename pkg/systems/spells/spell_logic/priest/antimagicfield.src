@@ -1,5 +1,5 @@
 include ":attributes:attributes";
-
+include ":tn:cooldown";
 program SpellScript(params)
 	var who := params[1];
 	// Calculate duration based on Theology skill
@@ -14,27 +14,26 @@ program SpellScript(params)
 
 	var silenced_count := 0;
 
-	SendSysMessageEx(who, "Voce criou um campo anti-magia, silenciando " + silenced_count + " criatura(s) por " + duration + " segundos.", SSM_INFO);
-
 	for i := 0 to Cint(duration/10)
 		PlayObjectCenteredEffect(who, FX_MAGIC_IMMUNITY, 10, 255);
 
 		foreach mobile in nearby
-		if (mobile != who)
-			SetCooldown(mobile, "silence", Cint(duration/10));
-			PlaySoundEffect(who, SFX_SPELL_ENERGY_FIELD);
-			PlayObjectCenteredEffect(mobile, FX_MAGIC_IMMUNITY, 10, 255);
+			if (mobile != who)
+				SetCooldown(mobile, "silence", Cint(duration/10));
+				PlaySoundEffect(who, SFX_SPELL_ENERGY_FIELD);
+				PlayObjectCenteredEffect(mobile, FX_MAGIC_IMMUNITY, 10, 255);
 
-			SendSysMessageEx(mobile, "Voce foi silenciado por um campo anti-magia!", SSM_FAIL);
+				SendSysMessageEx(mobile, "Voce foi silenciado por um campo anti-magia!", SSM_FAIL);
 
-			silenced_count := silenced_count + 1;
-			sleepms(20);
-		endif
+				silenced_count := silenced_count + 1;
+				sleepms(20);
+			endif
 		endforeach
 
-		Sleep(10);
+		Sleep(Cint(duration/10));
 	endfor
 
+	SendSysMessageEx(who, "Voce criou um campo anti-magia, silenciando " + silenced_count + " criatura(s) por " + duration + " segundos.", SSM_INFO);
 
 	return 1;
 endprogram

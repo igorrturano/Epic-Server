@@ -17,7 +17,7 @@ program cara_ou_coroa(who, item)
 
 	EraseObjProperty(who, "IsMeditating");
 	var cara;
-	if (TemHabilidade(who, "Prestidigitador"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PRESTIDIGITATOR))
 		var usarhab := YesNo(who, "Deseja usar sua habilidade de roubar o resultado?", "Sim.", "Não.");
 
 		if (usarhab)

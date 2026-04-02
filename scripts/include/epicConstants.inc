@@ -2,8 +2,14 @@ use uo;
 
 const PROFISSAO_CONFIG_PATH := ":crafting:config/craftConfig";
 const RECURSOS_CONFIG_PATH := ":crafting:config/resourceList";
+const VICIO_MAX_POINTS := 100;
 
 const CRAFTING_ESTACAO_SUPERFICIE := "superficie";
+
+enum class DAYNIGHT_EVTS
+    EV_ADVANCE_DAY_ID,
+    EV_DAY_ACCELATARION_CHANGE_ID
+endenum
 
 enum CULTURA
     AIGLANA := "Aiglana",
@@ -13,7 +19,7 @@ enum CULTURA
     ALURIEL := "Alüriel",
     BADURAN := "Badûran",
     GULTHRAK := "Gulthrak",
-    POLKINEA := "Polkinea"
+    COLHESIANA := "Colhesiana"
 endenum
 
 enum RACA

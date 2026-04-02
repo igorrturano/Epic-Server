@@ -75,13 +75,10 @@ endfunction
 
 function DoSageAbility(who, chardata, cooldown)
 	case (chardata.wisdom_path)
-		"Engenheiro": return DoEngineerAbility(who, cooldown);
-		default:      // Mago, Xamã, Clérigo
-			if (chardata.magia == "Arqueiro Arcano")
-				return DoArcaneArcherAbility(who, cooldown);
-			else
-				return DoSpellcasterAbility(who, cooldown);
-			endif
+		"Engenheiro":    return DoEngineerAbility(who, cooldown);
+		"arcane_archer": return DoArcaneArcherAbility(who, cooldown);
+		default:
+			return DoSpellcasterAbility(who, cooldown);
 	endcase
 endfunction
 

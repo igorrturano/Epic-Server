@@ -1,7 +1,9 @@
 use os;
 
+include ":abilities:AbilityRegistry";
 include ":abilities:models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
 include "system/exception/ProcessExeception/InvalidProcessException";
 
 class AbilityMonitor()
@@ -9,11 +11,18 @@ class AbilityMonitor()
 	var ActivationTime := 0;
 	var MobileSerial := 0x0;
 	var AbilityId := 0;
-	var Charges := 0;
+	var Duration := 0;
 
 	function AbilityMonitor(this, ability)
 		this.AbilityId := ability.GetId();
-		this.Charges := ability.GetCharges();
+	endfunction
+
+	function GetDuration(this)
+		return this.Duration;
+	endfunction
+
+	function SetDuration(this, duration)
+		this.Duration := duration;
 	endfunction
 
 	function GetPid(this)
@@ -45,27 +54,7 @@ class AbilityMonitor()
 	endfunction
 
 	function GetAbility(this)
-		return Ability(this.AbilityId);
-	endfunction
-
-	function GetCharges(this)
-		return this.Charges;
-	endfunction
-
-	function SetCharges(this, amount)
-		this.Charges := amount;
-	endfunction
-
-	function ConsumeCharge(this, amount)
-		if (this.GetCharges() > 0)
-			this.Charges -= amount;
-		endif
-
-		if (this.GetCharges() <= 0)
-			this.Charges := 0;
-		endif
-
-		return this;
+		return CreateAbility(this.AbilityId);
 	endfunction
 
 	function ActivateOn(this, mobile)
@@ -73,14 +62,71 @@ class AbilityMonitor()
 			return InvalidFormatException("The param must be a MobileWrapper object!");
 		endif
 
+		var ability := Ability(this.AbilityId);
+		if (!ability.GetName())
+			Message("Habilidade não implementada.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile.GetObjRef());
+			return error{"errortext" := $"Ability {this.AbilityId} not found in config"};
+		endif
+
+		var mobileRef := mobile.GetObjRef();
+
+		// Validate stamina cost
+		if (ability.GetCostSTAM() > 0 && ability.GetCostSTAM() > mobile.GetCurrentStamina())
+			Message("Stamina insuficiente!", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
+			return error{"errortext" := "Insufficient stamina"};
+		endif
+
+		// Validate mana cost
+		if (ability.GetCostMANA() > 0 && ability.GetCostMANA() > mobile.GetCurrentMana())
+			Message("Mana insuficiente!", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
+			return error{"errortext" := "Insufficient mana"};
+		endif
+
+		// Validate HP cost
+		if (ability.GetCostHP() > 0 && ability.GetCostHP() > mobile.GetCurrentHP())
+			Message("HP insuficiente!", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
+			return error{"errortext" := "Insufficient HP"};
+		endif
+
+		// Validate cooldown
+		var cooldownProp := $"AbilityCooldown_{ability.GetId()}";
+		var cooldownEnd := mobile.GetProperty(cooldownProp);
+		if (cooldownEnd && POLCore().systime < cooldownEnd)
+			var remaining := cooldownEnd - POLCore().systime;
+			Message($"Aguarde {remaining}s para usar novamente.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
+			return error{"errortext" := "Ability on cooldown"};
+		endif
+
+
+		if (!mobile.GetObjRef().cmdlevel)
+			// === CONSUME COSTS ===
+			if (ability.GetCostSTAM() > 0)
+				mobile.ConsumeStamina(ability.GetCostSTAM());
+			endif
+			if (ability.GetCostMANA() > 0)
+				mobile.ConsumeMana(ability.GetCostMANA());
+			endif
+			if (ability.GetCostHP() > 0)
+				mobile.ConsumeHP(ability.GetCostHP());
+			endif
+
+			// === SET COOLDOWN ===
+			if (ability.GetAbilityCooldown() > 0)
+				SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetAbilityCooldown());
+			endif
+		endif
+
+		this.Duration := ability.GetDurationFor(mobile);
+
+		// === ACTIVATE ===
 		this.MobileSerial := mobile.GetSerial();
 		this.ActivationTime := POLCore().systime;
 
-		var existingMonitor := mobile.GetAbilityMonitor(this.GetAbility());
+		var existingMonitor := mobile.GetAbilityMonitor(ability);
 		if (existingMonitor is @AbilityMonitor)
 			existingMonitor._GetProcess().SendEvent(ABILITY_EVENT_ID::REFRESH);
 		else
-			var script := Start_Script($"{ABILITY_PKG}/AbilityMonitor", array{mobile, this});
+			Start_Script($"{ABILITY_PKG}AbilityMonitor", array{mobile, this});
 		endif
 	endfunction
 
@@ -93,13 +139,13 @@ class AbilityMonitor()
 	endfunction
 
 	function ToString(this)
-		return $"AbilityMonitor(abilityId={this.abilityId}, mobileSerial={this.mobileSerial}, pid={this.pid}, charges={this.charges})";
+		return $"AbilityMonitor(abilityId={this.AbilityId}, mobileSerial={this.MobileSerial}, pid={this.Pid})";
 	endfunction
 endclass
 
 enum class ABILITY_EVENT_ID
 	EXPIRE,
 	REFRESH,
-	USED,
-	ABORT
+	ABORT,
+	COMPLETE // Single-use abilities end silently after execution
 endenum

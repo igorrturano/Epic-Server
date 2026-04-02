@@ -5,6 +5,8 @@ include "include/sysEvent";
 include ":attributes:attributes";
 include ":commands:possess";
 include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program spell_Pressagio(params)
 	var who := params[1];
@@ -13,7 +15,7 @@ program spell_Pressagio(params)
 
 	// Duração baseada em Magic Lore
 	var duration := CInt(mlore / 10);
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := CInt(duration * 2);
 		SetObjProperty(who, "unattack", "sim");
 	endif

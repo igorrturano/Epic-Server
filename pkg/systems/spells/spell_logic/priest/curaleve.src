@@ -10,6 +10,8 @@ include ":timedScripts:timedScripts";
 include "include/tileEffects";
 include ":charactercreation:habilidades";
 include ":combat:Controller/DamageController_legacy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":brainai:npcUtil";
 include ":epicAI:epicai";
 
@@ -57,7 +59,7 @@ program SpellScript(params)
 			endif
 		endif
 	else
-		if (temHabilidade(who, "Ultimo Milagre"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::AURA_DIVINA))
 			if (isBloodied(targ))
 				healed := healed * 2;
 			endif

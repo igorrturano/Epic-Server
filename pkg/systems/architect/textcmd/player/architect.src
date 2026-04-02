@@ -22,6 +22,8 @@ include ":architect:include/architect";
 include ":architect:include/systemclock";
 include ":charactercreation:habilidades";
 include ":destroyable:include/destroyItem";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 const SIGENA := 0;
 const BLOCK_OF_STONE := 0x5001;
@@ -44,7 +46,7 @@ program architect_gump(who)
 	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); // Adicionado para diminuir a quantidade de logs no arquivo script.log
 
 	if (who.cmdlevel < STAFFMODELEVEL)
-		if (!TemHabilidade(who, "Arquiteto")) // Habilidade de construcao necessaria para executar o comando
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT)) // Habilidade de construcao necessaria para executar o comando
 			SendSysMessageEx(who, "Voce nao tem habilidade de arquiteto.", SSM_INFO);
 			return 0;
 		endif

@@ -1,6 +1,8 @@
 include "include/say";
 include "include/epicMageryUtils";
 include ":charactercreation:resists";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -49,19 +51,23 @@ program SpellScript(params)
 	endforeach
 
 	var duration := cint(AP_GetSkill(who, ARCANA) / 2);
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := Cint(duration * 2);
 	endif
 
 	if (targ.acctname)
 		var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 		var bonus := epicWisdomPathBonus(who);
-		if (CheckResist(targ, VONTADE, diff, -bonus))
+		if (CheckResist(targ, WILL, diff, -bonus))
 			SendSysMessageEx(who, "Você nota que o alvo nao foi afetado.", SSM_FAIL);
 			handleSilentMagic(who, targ, 0x3BE);
 			return;
 		endif
-		targ.setlightlevel(30, 6000);
+		// Read darken level from config - single source of truth
+		var lightConfig := ReadConfigFile(":nature:config/daynight");
+		lightConfig := lightConfig["settings"];
+		var darkenLevel := CInt(lightConfig.DungeonDarkness);
+		targ.setlightlevel(darkenLevel, 6000);
 		SetCooldown(targ, "nightvision", 0);
 		SetCooldown(targ, "darkness", duration);
 		SendSysMessageEx(targ, "Sua visão noturna cessou!", SSM_FAIL);

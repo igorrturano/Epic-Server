@@ -12,7 +12,7 @@ program cureScript(params)
 		mobile.color := color;
 	endif
 	EraseObjProperty(mobile, "#RealColor");
-	EraseObjProperty(mobile, "apodrecer");
+	mobile.hitchance_mod := mobile.hitchance_mod + 15;
 
 	return 1;
 endprogram

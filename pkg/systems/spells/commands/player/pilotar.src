@@ -1,6 +1,7 @@
 use uo;
 use os;
-include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":commands:possess";
 include "include/epicCombatUtils";
 include "include/facings";
@@ -8,12 +9,11 @@ include ":tn:equipment";
 
 program cleric(who)
 
-	if (!TemHabilidade(who, "Construtor de Golems"))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::GOLEM_ASSEMBLY))
 		SendSysMessage(who, "Apenas construtores de golems sao capazes de pilota-los");
 		return 0;
 	endif
 	if (GetObjProperty(who, "pilotando"))
-		EraseObjProperty(who, "pilotando");
 		leaveGolem(who);
 		PrintTextAbove(who, "*Fecha a escotilha*");
 		unpossess(who, 1);
@@ -25,18 +25,18 @@ program cleric(who)
 	SendSysMessage(who, "Escolha o golem que sera pilotado");
 	var targ := Target(who);
 
-	if (targ.npctemplate != ":brainai:GolemMartelo")
+	if (targ.npctemplate != ":epicai:PowerArmor")
 		SendSysMessage(who, "Alvo invalido.");
 		return 0;
 	endif
 
 	if (IsBehind(targ, who.x, who.y))
-		setObjproperty(who, "pilotando", 1);
 		PrintTextAbove(targ, "*Abre a escotilha*");
 		UnequipAll(who);
 		sleep(2);
 		enterGolem(who);
 		possess(who, targ);
+		SetObjProperty(who, "pilotando", 1);
 	else
 		SendSysMessage(who, "Voce precisa estar atras do golem para pilotar.");
 		return 0;

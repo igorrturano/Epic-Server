@@ -9,7 +9,7 @@
 include ":combat:armorZones";
 // include ":abilities:models/Ability";
 include ":combat:Model/Damage";
-// include "AbilitiesController";
+include "CombatAbilityController";
 include "SkillController";
 include "ParryController";
 include ":combat:weardown";
@@ -18,24 +18,36 @@ include ":combat:weardown";
 include ":io:CFGFile";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":charactercreation:resists";
+include ":charactercreation:habilidades";
 
 function ProccessCombatDamage(byRef attackInfo)
-	// Pre Hit
+	// Pre Damage
 	CalculateCombatDamage(attackInfo);
 	CheckParry(attackInfo);
-	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
-	
-	// Hit
+
+	// Damage
 	ApplyCombatDamage(attackInfo);
-	
-	// Post Hit
+
+	// Post Damage
 	CheckPoison(attackInfo);
 	ExecuteCombatAbilitiesAfterDamage(attackInfo);
+	ExecutePassiveAbilitiesAfterDamage(attackInfo);
+
+	// On Kill
+	if (attackInfo.GetDefender().IsDead())
+		ExecuteCombatAbilitiesOnKill(attackInfo);
+		ExecutePassiveAbilitiesOnKill(attackInfo);
+	endif
+
 	ProgressAttackSkills(attackInfo);
 endfunction
 
 function CalculateCombatDamage(byRef attackInfo)
 	CalculateAttackerDamage(attackInfo);
+	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
+	ExecutePassiveAbilitiesAttackerBeforeDamage(attackInfo);
+	ExecutePassiveAbilitiesDefenderBeforeDamage(attackInfo);
+	CalculateFlankingDamage(attackInfo);
 	CalculateAttackerCriticalHit(attackInfo);
 	CalculateDefenderResist(attackInfo);
 endfunction
@@ -45,58 +57,92 @@ function CalculateAttackerDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("CÁLCULO DE DANO!"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	attackInfo.SetDamage(Damage());
-	CalculateStatusDamage(attackInfo);
-	CalculateSkillDamage(attackInfo);
+	var statusDamageInfo := CalculateStatusDamage(attackInfo);
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(statusDamageInfo.stat)}: {statusDamageInfo.damageMod}"));
+	var skillDamageInfo := CalculateSkillDamage(attackInfo);
+	DebugMsg(skillDamageInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill}: {skillDamageInfo.damageMod}"));
 	CalculateWeaponDamage(attackInfo);
 	CalculateEntropyDamage(attackInfo);
+	CalculatePrimordialDamage(attackInfo);
+	CalculateArcaneBowDamage(attackInfo);
+	CalculateSpiritualBladeDamage(attackInfo);
+	CalculateElementalWeaponDamage(attackInfo);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
 
+function CalculateEstimatedMinMaxDamage(attackInfo)
+	
+	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
+	var statusDamage := CalculateStatusDamage(attackInfo);
+	var skillDamage := CalculateSkillDamage(attackInfo);
+	var primordialDamage := CalculatePrimordialDamage(attackInfo);
+	var finalDamage := CalculateEstimatedMinMaxWeaponDamage(attackInfo);
+
+	finalDamage.max += statusDamage.damageMod + skillDamage.damageMod + primordialDamage;
+	finalDamage.min += statusDamage.damageMod + skillDamage.damageMod + primordialDamage;
+	finalDamage.+Damage := attackInfo.GetDamage(); 
+
+	return finalDamage;
+endfunction
+
 function CalculateStatusDamage(byRef attackInfo)
-	var stat := "";
-	var damageMod := 0;
+
+	var statusDamage := struct{
+		stat := "",
+		damageMod := 0
+	};
 
 	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
-			stat := $"{STRENGTH} + {DEXTERITY}";
+			statusDamage.stat := $"{STRENGTH} + {DEXTERITY}";
 
-			damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+			statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
 						 attackInfo.GetAttacker().GetMainDamageModifierBy(STRENGTH, DEXTERITY) :
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH, DEXTERITY);
 		else
-			stat := DEXTERITY;
+			statusDamage.stat := DEXTERITY;
 
-			damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+			statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
 						 attackInfo.GetAttacker().GetMainDamageModifierBy(DEXTERITY) :
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(DEXTERITY);
 		endif
 	else
-		stat := STRENGTH;
+		statusDamage.stat := STRENGTH;
 
-		damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+		statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
 					 attackInfo.GetAttacker().GetMainDamageModifierBy(STRENGTH) :
 					 attackInfo.GetAttacker().GetOffDamageModifierBy(STRENGTH);
 	endif
 
-	
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(stat)}: {damageMod}"));
-	
-	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod)
-						  .IncreasePiercingRawDamage(damageMod)
-						  .IncreaseBluntRawDamage(damageMod);
+	attackInfo.GetDamage().IncreaseSlashRawDamage(statusDamage.damageMod)
+						  .IncreasePiercingRawDamage(statusDamage.damageMod)
+						  .IncreaseBluntRawDamage(statusDamage.damageMod);
+						
+	return statusDamage;
 endfunction
 
 function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
-	var handDivisor := attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND ? 2 : 1;
-	var damageMod := CInt(attackInfo.GetAttacker().GetDamageModifierBy(skill) / handDivisor);
+	// Check if druid with metamorfose + survival ability
+	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
+		skill := THEOLOGY;
+	endif
 
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(skill)}: {damageMod}"));
+	var skillDamage := struct{
+		skill := skill,
+		damageMod := 0
+	};
+
+	skillDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+					 attackInfo.GetAttacker().GetMainDamageModifierBy(skill) :
+					 attackInfo.GetAttacker().GetOffDamageModifierBy(skill);
 	
-	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod)
-						  .IncreasePiercingRawDamage(damageMod)
-						  .IncreaseBluntRawDamage(damageMod);
+	attackInfo.GetDamage().IncreaseSlashRawDamage(skillDamage.damageMod)
+						  .IncreasePiercingRawDamage(skillDamage.damageMod)
+						  .IncreaseBluntRawDamage(skillDamage.damageMod);
+
+	return skillDamage;
 endfunction
 
 function CalculateWeaponDamage(byRef attackInfo)
@@ -170,7 +216,258 @@ function CalculateWeaponDamage(byRef attackInfo)
 	endif
 endfunction
 
+function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
+	var MinMaxWeaponDamage := 
+		struct{
+			max := 0,
+			min := 0
+		};
+
+	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
+
+	if(weapon)
+		var damageDice := 0;
+		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
+			damageDice := weapon.GetMainDamage();
+		else
+			damageDice := weapon.GetOffDamage();
+		endif
+		
+		var damageMod := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetDamageMod();
+		var physicalDamage := 0;
+
+		if(attackInfo.GetAttackType() == DAMAGE_TYPE::SLASH)
+			physicalDamage += damageMod.GetSlashRawDamage();
+			attackInfo.GetDamage().IncreaseSlashBaseDamage(damageMod.GetSlashRawDamage());
+		elseif(attackInfo.GetAttackType() == DAMAGE_TYPE::PIERCING)
+			physicalDamage += damageMod.GetPiercingRawDamage();
+			attackInfo.GetDamage().IncreasePiercingBaseDamage(damageMod.GetPiercingRawDamage());
+		else
+			physicalDamage += damageMod.GetBluntRawDamage();
+			attackInfo.GetDamage().IncreaseBluntBaseDamage(damageMod.GetBluntRawDamage());
+		endif
+
+		var totalModDamage := physicalDamage 
+								+ damageMod.GetFireRawDamage() 
+								+ damageMod.GetColdRawDamage() 
+								+ damageMod.GetPoisonRawDamage() 
+								+ damageMod.GetEnergyRawDamage();
+
+		MinMaxWeaponDamage.max := damageDice.GetMaximum(attackInfo.GetAttackType()) + totalModDamage;
+		MinMaxWeaponDamage.min := damageDice.GetMinimum(attackInfo.GetAttackType()) + totalModDamage;
+
+		attackInfo.GetDamage().IncreaseFireBaseDamage(damageMod.GetFireRawDamage())
+							.IncreaseColdBaseDamage(damageMod.GetColdRawDamage())
+							.IncreasePoisonBaseDamage(damageMod.GetPoisonRawDamage())
+							.IncreaseEnergyBaseDamage(damageMod.GetEnergyRawDamage());
+	endif
+
+
+	return MinMaxWeaponDamage;
+endfunction
+
+/**
+ * Applies primordial elemental bonus for metamorfose elemental transformations.
+ *
+ * @param attackInfo AttackInfo Combat information containing attacker and damage data
+ */
+function CalculatePrimordialDamage(byRef attackInfo)
+	if (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "metamorfose") == error)
+		return 0;
+	endif
+	
+	var damage := attackInfo.GetDamage();
+	var rawDamage := damage.GetBluntRawDamage();
+	
+	if (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_fire") != error)
+		damage.IncreaseFireRawDamage(rawDamage);
+	elseif (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_cold") != error)
+		damage.IncreaseColdRawDamage(rawDamage);
+	elseif (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_poison") != error)
+		damage.IncreasePoisonRawDamage(rawDamage);	
+	elseif (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "primordial_energy") != error)
+		damage.IncreaseEnergyRawDamage(rawDamage);
+	endif
+
+	attackInfo.SetDamage(damage);
+	return rawDamage;
+endfunction
+
+/**
+ * Applies elemental bonus damage for MagicBow (Arcane Archer).
+ * With ARCANE_MASTERY: arcana / 10. Without: arcana / 20.
+ * Injected into attackInfo so critical/resist/debug all work automatically.
+ */
+function CalculateArcaneBowDamage(byRef attackInfo)
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
+		return;
+	endif
+
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+	var bonus;
+
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::ARCANE_MASTERY))
+		bonus := CInt(arcana / 10);
+	else
+		bonus := CInt(arcana / 20);
+	endif
+
+	if (bonus < 1)
+		bonus := 1;
+	endif
+
+	var damage := attackInfo.GetDamage();
+	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+
+	if (weapon.GetProp("fire_arrow"))
+		damage.IncreaseFireRawDamage(bonus);
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus elemental do Arco Arcano (fire): +{bonus}"));
+	elseif (weapon.GetProp("cold_arrow"))
+		damage.IncreaseColdRawDamage(bonus);
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus elemental do Arco Arcano (cold): +{bonus}"));
+	elseif (weapon.GetProp("energy_arrow"))
+		damage.IncreaseEnergyRawDamage(bonus);
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus elemental do Arco Arcano (energy): +{bonus}"));
+	endif
+
+	attackInfo.SetDamage(damage);
+endfunction
+
+/**
+ * Applies flat physical bonus damage for Spiritual Blade (Lâmina Arcana).
+ * Scales with Arcana skill: arcana / 10.
+ * Only applies when wielding a SpiritualBlade category weapon.
+ */
+function CalculateSpiritualBladeDamage(byRef attackInfo)
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::SPIRITUALBLADE)
+		return;
+	endif
+
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+	var bonus := CInt(arcana / 10);
+	if (bonus < 1)
+		bonus := 1;
+	endif
+
+	var damage := attackInfo.GetDamage();
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
+
+	if (posture == DAMAGE_TYPE::SLASH)
+		damage.IncreaseSlashRawDamage(bonus);
+	elseif (posture == DAMAGE_TYPE::PIERCING)
+		damage.IncreasePiercingRawDamage(bonus);
+	elseif (posture == DAMAGE_TYPE::BLUNT)
+		damage.IncreaseBluntRawDamage(bonus);
+	endif
+
+	attackInfo.SetDamage(damage);
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus da Lâmina Espiritual ({posture}): +{bonus}"));
+endfunction
+
+/**
+ * Applies elemental damage for Sword Mage (Lâmina Arcana) enchanted weapons.
+ * Converts a percentage of the active posture's physical raw damage to elemental damage,
+ * based on Arcana skill (Arcana/2 %). Also adds a flat INT/20 elemental bonus.
+ * Consumes 1 arcane charge per hit.
+ */
+function CalculateElementalWeaponDamage(byRef attackInfo)
+	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+	var elemental := weapon.GetProperty("#elementalweapon");
+
+	if (elemental == error)
+		return;
+	endif
+
+	var damage := attackInfo.GetDamage();
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
+
+	// Get the active posture's physical raw damage
+	var physicalRaw := 0;
+	if (posture == DAMAGE_TYPE::SLASH)
+		physicalRaw := damage.GetSlashRawDamage();
+	elseif (posture == DAMAGE_TYPE::PIERCING)
+		physicalRaw := damage.GetPiercingRawDamage();
+	elseif (posture == DAMAGE_TYPE::BLUNT)
+		physicalRaw := damage.GetBluntRawDamage();
+	endif
+
+	// Calculate conversion: Arcana/2 % of physical damage becomes elemental
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+	var conversionRate := arcana / 200.0;
+	var convertedDamage := CInt(physicalRaw * conversionRate);
+
+	// Flat INT bonus + Arcana/10 bonus on top
+	var intBonus := CInt(attackInfo.GetAttacker().GetInt() / 20);
+	var arcanaBonus := CInt(arcana / 10);
+	var totalElemental := convertedDamage + intBonus + arcanaBonus;
+
+	if (totalElemental < 1)
+		return;
+	endif
+
+	// Subtract converted portion from physical
+	if (posture == DAMAGE_TYPE::SLASH)
+		damage.DecreaseSlashRawDamage(convertedDamage);
+	elseif (posture == DAMAGE_TYPE::PIERCING)
+		damage.DecreasePiercingRawDamage(convertedDamage);
+	elseif (posture == DAMAGE_TYPE::BLUNT)
+		damage.DecreaseBluntRawDamage(convertedDamage);
+	endif
+
+	// Add elemental damage
+	if (elemental.type == "Fire")
+		damage.IncreaseFireRawDamage(totalElemental);
+	elseif (elemental.type == "Cold")
+		damage.IncreaseColdRawDamage(totalElemental);
+	elseif (elemental.type == "Energy")
+		damage.IncreaseEnergyRawDamage(totalElemental);
+	endif
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Lâmina Arcana ({elemental.type}): Converteu {convertedDamage} físico + {intBonus} INT + {arcanaBonus} Arcana = {totalElemental} elemental"));
+
+	// Consume 1 arcane charge per hit
+	elemental.cargas := elemental.cargas - 1;
+	if (elemental.cargas <= 0)
+		weapon.EraseProp("#elementalweapon");
+		weapon.color := elemental.originalColor;
+		IncRevision(weapon);
+		if (weapon.character_owner != error)
+			Message("Sua arma não está mais encantada.", Color(SYSTEM_COLOR::FAIL)).SendSys(weapon.character_owner);
+		endif
+	else
+		weapon.SetProp("#elementalweapon", elemental);
+	endif
+
+	attackInfo.SetDamage(damage);
+endfunction
+
+function CalculateFlankingDamage(byRef attackInfo)
+	if (attackInfo.GetDirection() != ATTACK_DIRECTION::BACK)
+		return;
+	endif
+
+	var bonus := RandomDiceRoll("1d4");
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
+
+	if (posture == DAMAGE_TYPE::SLASH)
+		attackInfo.GetDamage().IncreaseSlashRawDamage(bonus);
+	elseif (posture == DAMAGE_TYPE::PIERCING)
+		attackInfo.GetDamage().IncreasePiercingRawDamage(bonus);
+	elseif (posture == DAMAGE_TYPE::BLUNT)
+		attackInfo.GetDamage().IncreaseBluntRawDamage(bonus);
+	endif
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de flanquear (costas): +{bonus}"));
+endfunction
+
 function CalculateDefenderResist(byRef attackInfo)
+	// Check if ability set IgnoreArmor flag (encontrarbrecha, marcadacaca, etc.)
+	if (attackInfo.IgnoresArmor())
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("[ABILITY] Ignorando toda armadura!"));
+		return; // Early return - skip ALL armor reduction
+	endif
+
 	var armorsInBodyRegion := GetEquipsByAttackDirection(attackInfo);
 	var bodyResist := attackInfo.GetDefender().GetBodyResist();
 
@@ -182,7 +479,18 @@ function CalculateDefenderResist(byRef attackInfo)
 						  .DecreasePoisonBaseDamage(bodyResist.GetPoisonResist())
 						  .DecreaseEnergyBaseDamage(bodyResist.GetEnergyResist());
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Defesa natural (BODY) do defensor reduziu dano em: {bodyResist.ToString()}"));
-	
+
+	// Spell resist (virtual armor layer from magic: barkskin, protection, etc.)
+	var spellResist := attackInfo.GetDefender().GetSpellResist();
+	attackInfo.GetDamage().DecreaseSlashBaseDamage(spellResist.GetSlashResist())
+						  .DecreasePiercingBaseDamage(spellResist.GetPiercingResist())
+						  .DecreaseBluntBaseDamage(spellResist.GetBluntResist())
+						  .DecreaseFireBaseDamage(spellResist.GetFireResist())
+						  .DecreaseColdBaseDamage(spellResist.GetColdResist())
+						  .DecreasePoisonBaseDamage(spellResist.GetPoisonResist())
+						  .DecreaseEnergyBaseDamage(spellResist.GetEnergyResist());
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Proteção mágica do defensor reduziu dano em: {spellResist.ToString()}"));
+
 	if (armorsInBodyRegion == array{})
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Não há armadura na região atingida. Dano direto no corpo do defensor."));
 	else
@@ -268,9 +576,11 @@ function GetEquipsByAttackDirection(byRef attackInfo)
 endfunction
 
 function CalculateAttackerCriticalHit(byRef attackInfo)
-	attackInfo.SetCriticalHitChance(CalculateCriticalChance(attackInfo));
-	attackInfo.SetCriticalHitChanceMod(CalculateCriticalChanceMod(attackInfo));
-	attackInfo.RollCriticalHitChance();
+	// Only calculate if not already forced by ability
+	if (!attackInfo.GetDamage().IsCritical())
+		attackInfo.SetCriticalHitChance(CalculateCriticalChance(attackInfo));
+		attackInfo.RollCriticalHitChance();
+	endif
 
 	if (attackInfo.GetDamage().IsCritical())
 		ApplyCriticalDamage(attackInfo);
@@ -296,29 +606,23 @@ function CalculateCriticalChance(byRef attackInfo)
 		return 0;
 	endif
 
+	// Check if druid with metamorfose + survival ability
+	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
+		skillUsedForCritical := THEOLOGY;
+	endif
+
+	var opponentCriticalReduction := CalculateDefenderCriticalReduction(attackInfo.GetDefender(), attackInfo.GetBodyRegion());
+
 	chance := CInt(
 		CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCriticalChance()) +	// Crítico base da arma
 		CInt(attackInfo.GetAttacker().GetCriticalChance()) +						// Crítico extra do Char (base + mod)
-		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) 			// Crítico extra da Skill
+		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) -			// Crítico extra da Skill
+		CInt(opponentCriticalReduction) //Redução de crítico do defensor
 	);
-
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::DESTRUIDOR))
+	
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::DESTRUIDOR) && GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia"))
 		chance := chance * 2.0;
 	endif
-
-	// TODO: Não está na lista de habilidades
-	// if (attackInfo.GetDefender().HasAbility(ABILITY_ID::LADRAO_DA_SORTE))
-	// 	Message("Seu alvo desviou do crítico!", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
-	// 	Message("Você desviou do crítico e usará isso contra seu oponente!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetDefender().GetObjRef());
-	// 	attackInfo.GetDefender().SetProperty("#nextcritical", true);
-	// 	return 0;
-	// endif
-
-	// TODO: Não está na lista de habilidades
-	// if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::OPORTUNIDADE_CRITICA))
-	// 	Message("*ataque de oportunidade*").SendAbove(attackInfo.GetAttacker().GetObjRef());
-	// 	attackInfo.GetAttacker().Attack(attackInfo.GetDefender());
-	// endif
 
 	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "VontadeIndomavel") ||
 		GetCooldown(attackInfo.GetDefender().GetObjRef(), "vitalidadeinabalavel") > 0 ||
@@ -330,12 +634,20 @@ function CalculateCriticalChance(byRef attackInfo)
 	return CInt(chance);
 endfunction
 
-function CalculateCriticalChanceMod(byRef attackInfo)
-	var criticalChanceMod := 0;
+function CalculateDefenderCriticalReduction(defender, bodyRegion)
+	var reduction := 0;
+	
+	foreach equip in (defender.GetEquipBySlot(bodyRegion))
+		Sleepms(2);
+		var wraper := ArmorWrapper(equip);
+		reduction += equip.GetCriticalReduction();
+	endforeach
 
-	criticalChanceMod -= CInt(attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()).GetCriticalReductionMod()); // Redução de critico da Armadura defensora.
+	if(defender.IsNPC())
+		reduction += defender.GetTemplate().GetTier() - 1;
+	endif
 
-	return CInt(criticalChanceMod);
+	return reduction;
 endfunction
 
 function ApplyCriticalDamage(byRef attackInfo)
@@ -362,14 +674,49 @@ function ApplyCriticalDamage(byRef attackInfo)
 	elseif (attackInfo.GetAttacker().IsNPC())
 		weapon_scripts := npcCfg.GetPropertyValue("CriticalHitScripts");
 	endif
-
+	// PEnsar numa solucao pra mensagem subir no NPC sem o [Language] como prefixo
 	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
 	if (!attackInfo.GetAttacker().IsNpc())
 		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 4);
 	endif
-	// TODO: Checar se isso vai buscar apenas o 1º atributo ou se vem o array
-	// TODO: Nao ta entrando nenhum critico de arma, revisar (testei apenas com adaga bjorska)
+	// Calculate effective raw damage using only active posture's physical damage + elementals
+	// (stat/skill bonuses are added to all 3 physical types, but only the active posture is applied)
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
+	var effectiveRawDmg := 0;
+	if (posture == DAMAGE_TYPE::SLASH)
+		effectiveRawDmg := attackInfo.GetDamage().GetSlashRawDamage();
+	elseif (posture == DAMAGE_TYPE::PIERCING)
+		effectiveRawDmg := attackInfo.GetDamage().GetPiercingRawDamage();
+	elseif (posture == DAMAGE_TYPE::BLUNT)
+		effectiveRawDmg := attackInfo.GetDamage().GetBluntRawDamage();
+	endif
+	effectiveRawDmg += attackInfo.GetDamage().GetFireRawDamage()
+					 + attackInfo.GetDamage().GetColdRawDamage()
+					 + attackInfo.GetDamage().GetPoisonRawDamage()
+					 + attackInfo.GetDamage().GetEnergyRawDamage();
+
 	foreach hitscript in (weapon_scripts)
+		// Damage multipliers: multiply the Damage object so it flows through armor + ApplyCombatDamage as one result
+		if (hitscript["damage2"] || hitscript["damage3"])
+			var multiplier := hitscript["damage3"] ? 2 : 1; // damage2 = 2x total (increase by 1x), damage3 = 3x total (increase by 2x)
+			var d := attackInfo.GetDamage();
+
+			if (posture == DAMAGE_TYPE::SLASH)
+				d.IncreaseSlashRawDamage(d.GetSlashRawDamage() * multiplier);
+			elseif (posture == DAMAGE_TYPE::PIERCING)
+				d.IncreasePiercingRawDamage(d.GetPiercingRawDamage() * multiplier);
+			elseif (posture == DAMAGE_TYPE::BLUNT)
+				d.IncreaseBluntRawDamage(d.GetBluntRawDamage() * multiplier);
+			endif
+
+			d.IncreaseFireRawDamage(d.GetFireRawDamage() * multiplier)
+			 .IncreaseColdRawDamage(d.GetColdRawDamage() * multiplier)
+			 .IncreasePoisonRawDamage(d.GetPoisonRawDamage() * multiplier)
+			 .IncreaseEnergyRawDamage(d.GetEnergyRawDamage() * multiplier);
+
+			continue;
+		endif
+
 		foreach armor in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
 			var script := start_script(
 				hitscript,
@@ -379,7 +726,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 					attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
 					armor.GetObjRef(),
 					attackInfo.GetDamage().GetTotalBaseDamage(),
-					attackInfo.GetDamage().GetTotalRawDamage()
+					effectiveRawDmg
 				}
 			);
 			if (!script || script.errortext)
@@ -395,6 +742,7 @@ endfunction
 
 function ApplyCombatDamage(byRef attackInfo)
 	ExecuteCombatAbilitiesOnHit(attackInfo);
+	var totalAppliedDamage := 0;
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano aplicado em: {attackInfo.GetDefender().GetName()}"));
@@ -410,6 +758,7 @@ function ApplyCombatDamage(byRef attackInfo)
 
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetSlashBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetSlashBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetSlashBaseDamage();
 	elseif (posture == DAMAGE_TYPE::PIERCING)
 		if (attackInfo.GetDamage().GetPiercingBaseDamage() < 1)
 			attackInfo.GetDamage().SetPiercingBaseDamage(1);
@@ -420,6 +769,7 @@ function ApplyCombatDamage(byRef attackInfo)
 
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPiercingBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPiercingBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetPiercingBaseDamage();
 	elseif (posture == DAMAGE_TYPE::BLUNT)
 		if (attackInfo.GetDamage().GetBluntBaseDamage() < 1)
 			attackInfo.GetDamage().SetBluntBaseDamage(1);
@@ -430,31 +780,70 @@ function ApplyCombatDamage(byRef attackInfo)
 
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetBluntBaseDamage();
 	endif
 
 	if (attackInfo.GetDamage().GetFireBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetFireBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {attackInfo.GetDamage().GetFireBaseDamage()}"));
 	endif
 
 	if (attackInfo.GetDamage().GetColdBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetColdBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {attackInfo.GetDamage().GetColdBaseDamage()}"));
 	endif
 
 	if (attackInfo.GetDamage().GetPoisonBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetPoisonBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {attackInfo.GetDamage().GetPoisonBaseDamage()}"));
 	endif
 
 	if (attackInfo.GetDamage().GetEnergyBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage());
+		totalAppliedDamage += attackInfo.GetDamage().GetEnergyBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {attackInfo.GetDamage().GetEnergyBaseDamage()}"));
 	endif
+
+	if (totalAppliedDamage > 0)
+		var owner := ResolvePetOwner(attackInfo.GetAttacker().GetObjRef());
+		if (owner)
+			MostraDano(owner, attackInfo.GetAttacker().GetObjRef(), totalAppliedDamage);
+		endif
+	endif
+endfunction
+
+function ResolvePetOwner(attacker)
+	if (!attacker || !attacker.npctemplate)
+		return 0;
+	endif
+
+	var owner := attacker.master;
+	if (owner && owner.acctname && owner.connected)
+		return owner;
+	endif
+
+	var ownerSerial := CInt(GetObjProperty(attacker, "owner"));
+	if (!ownerSerial)
+		ownerSerial := CInt(GetObjProperty(attacker, "owneri"));
+	endif
+
+	if (!ownerSerial)
+		return 0;
+	endif
+
+	owner := SystemFindObjectBySerial(ownerSerial);
+	if (!owner || !owner.acctname || !owner.connected)
+		return 0;
+	endif
+
+	return owner;
 endfunction
 
 function CheckPoison(byRef attackInfo)

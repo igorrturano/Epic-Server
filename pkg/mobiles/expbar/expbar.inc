@@ -22,26 +22,14 @@ include ":achievements:controllers/CombatController";
 const MAX_LEVEL := 20;
 
 // =============================================================================
-// XP CALCULATION - Fibonacci sequence (1k, 3k, 5k, 8k, 13k, 21k...)
+// XP CALCULATION - Linear: current_level * 1000
+// Level 1→2: 1k | 2→3: 2k | 3→4: 3k | ... | 19→20: 19k
 // =============================================================================
 function CalculateNextLevelXP(level)
-    if (level == 0)
-        return 1000;
-    elseif (level == 1)
-        return 3000;
-    elseif (level >= MAX_LEVEL)
+    if (level >= MAX_LEVEL)
         return 0;
     endif
-
-    var prev := 2;
-    var curr := 3;
-    for i := 2 to level
-        var next := prev + curr;
-        prev := curr;
-        curr := next;
-    endfor
-
-    return curr * 1000;
+    return CInt(level * (level + 1) / 2 * 1000);
 endfunction
 
 function GetXPForLevel(level)
@@ -88,9 +76,10 @@ function AddXP(who, amount)
     var curr_xp := GetPlayerXP(who) + amount;
     SetObjProperty(who, "Experience", curr_xp);
 
-    if (curr_xp >= CalculateNextLevelXP(curr_level))
+    while (curr_xp >= CalculateNextLevelXP(curr_level) && curr_level < MAX_LEVEL)
         LevelUp(who);
-    endif
+        curr_level := GetPlayerLevel(who);
+    endwhile
 
     UpdateXPClient(who);
     return 1;
@@ -137,21 +126,37 @@ function LevelUp(who)
     AP_RefreshVitals(who);
     SendSysMessage(who, "Voce alcancou o nivel " + curr_level + "!");
 
+    UpdateXPClient(who);
     discrete_gump(who);
     return 1;
 endfunction
 
 function UpdateXPClient(who)
+    var curr_level := GetPlayerLevel(who);
     var curr_xp := GetPlayerXP(who);
-    var next_xp := CalculateNextLevelXP(GetPlayerLevel(who));
-    
+
+    var xp_progress;
+    var xp_needed;
+
+    if (curr_level >= MAX_LEVEL)
+        // Max level: show full bar
+        var prev_cost := GetXPForLevel(curr_level) - GetXPForLevel(curr_level - 1);
+        xp_progress := prev_cost;
+        xp_needed := prev_cost;
+    else
+        var level_start := GetXPForLevel(curr_level);
+        var level_end := CalculateNextLevelXP(curr_level);
+        xp_progress := curr_xp - level_start;
+        xp_needed := level_end - level_start;
+    endif
+
     // Novo Tamanho: 1(ID) + 2(Len) + 2(Sub) + 4(XP) + 4(MaxXP) = 13 bytes
-    var packet := CreatePacket(0xD7, MSGLEN_VARIABLE); 
+    var packet := CreatePacket(0xD7, MSGLEN_VARIABLE);
     packet.SetInt16(1, 13);          // Tamanho total ajustado
-        
+
     packet.SetInt16(3, 0x57);        // Subcomando agora vai direto no Offset 3
-    packet.SetInt32(5, CInt(curr_xp));  // XP Atual (Offset 3 + 2 bytes do sub = 5)
-    packet.SetInt32(9, CInt(next_xp));  // XP Max (Offset 5 + 4 bytes do XP = 9)
+    packet.SetInt32(5, CInt(xp_progress));  // XP progress within level
+    packet.SetInt32(9, CInt(xp_needed));    // Total XP needed for this level
 
     packet.SendPacket(who);
 endfunction

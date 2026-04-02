@@ -6,6 +6,8 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":timedscripts:poisonUtil";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program UseLeech(who, leech)
 	SendSysMessage(who, "Em quem voce deseja usar isto?");
@@ -21,7 +23,7 @@ program UseLeech(who, leech)
 		SendSysMessage(who, targ.name + " esta muito distante.");
 		return;
 	endif
-	if (temHabilidade(who, "Formacao Academica"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::ACADEMIC_TRAINING))
 		if (SkillCheck(who, MEDICINE, 60) > 0)
 			SendSysMessage(who, "Voce aplicou a sanguessuga em " + targ.name);
 			var healing := AP_GetSkill(who, MEDICINE);
@@ -33,7 +35,7 @@ program UseLeech(who, leech)
 			SubtractAmount(leech, 1);
 		endif
 	else
-		SendSysMessage(who, "Voce tem jeito suficiente para aplicar a sanguessuga corretamente em "
+		SendSysMessage(who, "Voce não tem jeito suficiente para aplicar a sanguessuga corretamente em "
 						+ targ.name);
 		SendSysMessage(who, "A sanguessuga morreu");
 		SubtractAmount(leech, 1);

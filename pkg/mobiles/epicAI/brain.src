@@ -6,6 +6,7 @@ include "include/animalBrain";
 include "include/humanoidBrain";
 include "include/epicNPCUtils";
 include "include/genericBrain";
+include "include/passiveBrain";
 include "include/eventID";
 
 var brain_type;
@@ -15,9 +16,9 @@ const AREA_SIZE := 15;
 /*
  * KillPlayers()
  *
- * Phase 2: Event-Driven Dormancy Implementation
- * - NPCs now use ENTEREDAREA events instead of polling
- * - No more dormant property or npctracker.src
+ * Phase 3: Pure Event-Driven Dormancy (No Polling)
+ * - NPCs only wake from ENTEREDAREA events, zero CPU when dormant
+ * - No HasPlayerNear polling fallback
  * - Script loops between dormant and active states
  */
 program KillPlayers()
@@ -29,28 +30,26 @@ program KillPlayers()
         InitializeEpicNPC(me);
         set_critical(0);
     endif
+
     EnableMainEvents();
+
+    // Check for players already in range at spawn time
+    InitializeEnterArea(me);
+
     // Main event loop - alternates between dormant and active states
     while (me)
         // ===== DORMANT MODE =====
-        while (1)
-            var ev := wait_for_event(60000); // 60 second timeout
+        // Pure event-driven: only wake on ENTEREDAREA, no polling
+        while (me)
+            var ev := wait_for_event(120); // 2 min timeout, just keeps script alive
 
             if (!ev)
-                // Timeout - fallback check for nearby players
-                if (!HasPlayerNear(me))
-                    continue; // Stay dormant
-                else
-                    // Found player nearby, activate
-                    break;
-                endif
+                continue; // Timeout - stay dormant, no polling
             endif
 
             if (ev.type == SYSEVENT_ENTEREDAREA)
                 if (ev.source.acctname)
                     // Player entered range - activate brain!
-                    // Note: Don't check CanFight here - even if behind wall,
-                    // brain should activate to start detection behaviors
                     break;
                 endif
             endif
@@ -61,10 +60,15 @@ program KillPlayers()
         DetermineBrainType();
         SetWarMode(0);
 
+        // Send ENTEREDAREA events for nearby players/pets so brain can detect them
+        // (Must be called here and before dormant loop, so brain receives the events)
+        InitializeEnterArea(me);
+
         case (brain_type)
             "monster":  MonsterBrain();
             "animal":   AnimalBrain();
             "humanoid": HumanoidBrain();
+            "passive":  PassiveBrain();
             default:    GenericBrain();
         endcase
 
