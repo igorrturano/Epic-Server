@@ -493,7 +493,8 @@ endfunction
 
 function checkCastingSuccess(mobile, spellinfo, scroll)
 	var attribute := MAGERY;
-	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
+	var mw := MobileWrapper(mobile);
+	if (mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
 		attribute := ARCANA;
 	elseif (spellinfo.Type == "Divine")
 		attribute := THEOLOGY;
