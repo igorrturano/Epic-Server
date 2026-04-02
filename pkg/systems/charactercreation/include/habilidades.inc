@@ -118,7 +118,7 @@ function IsBloodied(mobile)
 		if (AP_GetVital(mobile, HITS) < CInt(AP_GetVitalMaximumValue(mobile, HITS)/4))
 			return 1;
 		endif
-	elseif (AP_GetVital(mobile, HITS) < GetHP(mobile))
+	elseif (AP_GetVital(mobile, HITS) < (GetHP(mobile) * 0.25))
 		return 1;
 	endif
 	return 0;

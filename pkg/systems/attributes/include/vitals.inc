@@ -304,10 +304,7 @@ function applyEpicHealing(mobile, amt)
 			damage := Cint(amt / 2);
             ApplyRawDamage(mobile, damage);
 			return true;
-        else
-            Message("Alvo invalido.").SetColor(SSM_FAIL).SendAbove(wrapper);
-			return false;
-        endif
+		endif
     endif
 
 	// ENTROPIA POSITIVA: Bônus de cura
