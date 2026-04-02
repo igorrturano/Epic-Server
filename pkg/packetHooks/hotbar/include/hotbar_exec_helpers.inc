@@ -69,7 +69,7 @@ function GetCombatHotkeys(who)
         var special_desc := "";
         case (special_index)
             1: special_desc := "Executa um ataque instantâneo adicional";
-            2: special_desc := "Fica invisível por 0.5s e recua 4 tiles";
+            2: special_desc := "Fica invisível por 0.5s e avanca 4 tiles";
             3: special_desc := "Adiciona 1 bala instantaneamente na arma de fogo";
             4: special_desc := "Permite conjurar a próxima magia instantaneamente";
             5: special_desc := "Aumenta a velocidade de movimento por 4 segundos";
