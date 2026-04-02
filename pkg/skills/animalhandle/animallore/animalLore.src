@@ -227,22 +227,22 @@ function AL_LoadGump(who, creature)
 	GFHTMLArea(gump, 280, 186, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(stamina) + "</div>");
 
 	// Strength (Força)
-	GFHTMLArea(gump, 153, 222, 160, 18, "<basefont color=#4A3929>Força");
-	GFHTMLArea(gump, 280, 222, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(str) + "</div>");
+	GFHTMLArea(gump, 153, 204, 160, 18, "<basefont color=#4A3929>Força");
+	GFHTMLArea(gump, 280, 204, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(str) + "</div>");
 
 	// Dexterity (Destreza)
-	GFHTMLArea(gump, 153, 240, 160, 18, "<basefont color=#4A3929>Destreza");
-	GFHTMLArea(gump, 280, 240, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(dex) + "</div>");
+	GFHTMLArea(gump, 153, 222, 160, 18, "<basefont color=#4A3929>Destreza");
+	GFHTMLArea(gump, 280, 222, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(dex) + "</div>");
 
 	// Slot (Adjusted Y-coordinate to avoid overlap)
-	GFHTMLArea(gump, 153, 258, 160, 18, "<basefont color=#4A3929>Slot");
-	GFHTMLArea(gump, 280, 258, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(petSlot) + "</div>");
+	GFHTMLArea(gump, 153, 240, 160, 18, "<basefont color=#4A3929>Slot");
+	GFHTMLArea(gump, 280, 240, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(petSlot) + "</div>");
 
 	// Loyalty section (Lealdade)
-	GFGumpPic(gump, 128, 276, 2086);
-	GFHTMLArea(gump, 147, 276, 160, 18, "<basefont color=#A52A2A>Lealdade");
-	GFHTMLArea(gump, 135, 294, 360, 18, "<basefont color=#4A3929>" + loyalty);
-	GFHTMLArea(gump, 135, 312, 360, 18, "<basefont color=#4A3929>" + dono);
+	GFGumpPic(gump, 128, 258, 2086);
+	GFHTMLArea(gump, 147, 258, 160, 18, "<basefont color=#A52A2A>Lealdade");
+	GFHTMLArea(gump, 135, 276, 360, 18, "<basefont color=#4A3929>" + loyalty);
+	GFHTMLArea(gump, 135, 294, 360, 18, "<basefont color=#4A3929>" + dono);
 
 	if (who.serial == GetObjProperty(creature, "owner")) // apenas se quem tá analisando é dono aparece o tempo que falta para fidelizar
 		GFHTMLArea(gump, 135, 312, 360, 18, "<basefont color=#4A3929>" + tempo_fidelizar);
