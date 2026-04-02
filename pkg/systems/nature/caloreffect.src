@@ -55,11 +55,15 @@ program calor(params)
 	var who := params[1];
 
 	SetObjProperty(who, "calor", 1);
+
+	if (GetObjProperty(who, "teste_de_calor") != error)
+		return;
+	endif
+
+	SetObjProperty(who, "teste_de_calor", 1);
 	detach();
 
-	if (GetObjProperty(who, "teste_de_calor") == error)
-		while (1)
-			SetObjProperty(who, "teste_de_calor", 1);
+	while (1)
 			sleep(300);
 
 			if (GetObjProperty(who, "calor") == error)
@@ -204,7 +208,6 @@ program calor(params)
 			endif
 			SetObjProperty(who, "penalidadeclima", penalty);
 		endwhile
-	endif
 endprogram
 
 function RemoveHeatMod(who, mod)
