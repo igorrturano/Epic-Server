@@ -3,8 +3,6 @@ function TranslateCritical(crit)
 		return "Dano Triplo";
 	elseif (crit == "damage2")
 		return "Dano Duplo";
-	elseif (crit == "armorignore")
-		return "Ignorar Armadura";
 	elseif ( crit == "stun")
 		return "Ataque Atordoante";
 	elseif (Crit == "bleed")

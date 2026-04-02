@@ -184,6 +184,8 @@ function MP_GetMountRestriction(npc)
 	case (npc.graphic)
 		0x5F7:		// Capybara
 			return struct{race := PEQUILHO, gender := 0, race_name := "pequilhos"};
+		0x7C8:		// Beagle (dog2)
+			return struct{race := PEQUILHO, gender := 0, race_name := "pequilhos"};
 	endcase
 
 	return 0; // No restriction
@@ -250,6 +252,8 @@ function MP_Mount(mobile, npc)
 	var npctemplate := NPC_ParseTemplateName(npc.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
 
+	var cfg_elem := cfg[npctemplate.template];
+
 	if (cfg[npctemplate.template].Category != "Mount")
 		Message("Nao pode montar este animal").SetColor(SSM_FAIL).SendSys(mobile);
 		return 0;
@@ -275,7 +279,8 @@ function MP_Mount(mobile, npc)
 
 	// Check if mount is allowed in dungeon
 	var coord := struct{x := mobile.x, y := mobile.y, z := mobile.z, realm := mobile.realm};
-	if (InDungeon(coord))
+	var in_dungeon := InDungeon(coord);
+	if (in_dungeon)
 		if (!IsDungeonApprovedMount(mount_graphic))
 			Message("Você não pode usar essa montaria em masmorras").SetColor(SSM_FAIL).SendSys(mobile);
 			return 0;

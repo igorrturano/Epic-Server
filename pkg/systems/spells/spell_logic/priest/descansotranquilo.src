@@ -42,7 +42,7 @@ program SpellScript(params)
 			break;
 		endif
 
-		var nearbypeople := ListMobilesNearLocation(targ.x, targ.y, targ.z, 6);
+		var nearbypeople := ListMobilesNearLocation(targ.x, targ.y, targ.z, 6, targ.realm);
 		var continuehealing := 1;
 		foreach char in (nearbypeople)
 			if (char.warmode)

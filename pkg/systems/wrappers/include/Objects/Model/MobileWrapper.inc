@@ -1,4 +1,5 @@
 use uo;
+use os;
 
 // Internal
 include "IMobileWrapper";
@@ -8,116 +9,125 @@ include "WeaponWrapper";
 
 // External
 include ":attributes:skills";
+include ":merchants:cambio";
 include ":attributes:vitals";
 include ":attributes:stats";
 include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
+include "include/NPCUtil";
+include ":achievements:utils/datafile";
+include ":serialization:StructSerializer";
+include ":abilities:controllers/AbilityMonitor";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
-	var _backpack; // ContainerWrapper class
-	var _race := "";
-	var _culture := "";
-	var _religion := "";
-	var _combatTraits; // CombatTraits class
+	var BackpackSerial := 0x0; 
+	var Race := "";
+	var Culture := "";
+	var Religion := "";
+	var CombatTraitsVar; // CombatTraits class
+	var Abilities; // Dictionary<ABILITY_ID, Integer>
+	var ActiveAbilities; // Dictionary<ACTIVATION_MOMENT, Dictionary<ABILITY_ID, INTEGER>> // O valor dentro do 2º é quantas cargas ativas existem dessa habilidade
 
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
 
-		if (TypeOfInt(mobile) == OT_MOBILEREF)
+		if (TypeOfInt(mobile) == OT_MOBILEREF || TypeOfInt(mobile) == OT_OFFLINEMOBILEREF)
 			if (mobile.isA(POLCLASS_NPC))
-				this._cfgFile := CFGFile("epicAI", "npcdesc");
-				this._template := this._cfgFile.SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
-				this._category := this._template.Category;
+				this.CfgFile := CFGFile("epicAI", "npcdesc");
+				this.Template := this.GetCfgFile().SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
+				this.Category := this.GetTemplate().Category;
 
 				// Variáveis que indicarão que é um NPC ou não encontrou template
 				var err := IsNPCException();
-				this._race := err;
-				this._culture := err;
-				this._religion := err;
-				this._combatTraits := err;
+				this.Race := err;
+				this.Culture := err;
+				this.Religion := err;
+				this.CombatTraitsVar := err;
 			else // Se entrar aqui, é player
-				this._race := this.GetProperty(MOBILE_PROPNAME::CHARDATA).race;
-				this._culture := this.GetProperty(MOBILE_PROPNAME::CHARDATA).culture;
-				this._religion := this.GetProperty(MOBILE_PROPNAME::CHARDATA).religion;
+				this.Race := this.GetProperty(MOBILE_PROPNAME::CHARDATA).raca;
+				this.Culture := this.GetProperty(MOBILE_PROPNAME::CHARDATA).culture;
+				this.Religion := this.GetProperty(MOBILE_PROPNAME::CHARDATA).religion;
 
 				// Variáveis que indicarão que é um player
 				var err := IsPlayerException();
-				this._template := err;
-				this._objType := err;
+				this.Template := err;
+				this.ObjType := err;
 			endif
 
-			this._name := this._objRef.name;
-			this._backpack := ContainerWrapper(this._objRef.backpack);
+			this.Name := this.GetObjRef().name;
+			this.BackpackSerial := this.GetObjRef().backpack.serial;
 		else
-			this._cfgFile := CFGFile("epicAI", "npcdesc");
-			this._template := this._cfgFile.SetElementName(mobile).GetElement();
+			this.CfgFile := CFGFile("epicAI", "npcdesc");
+			this.Template := this.GetCfgFile().SetElementName(mobile).GetElement();
 
 			// Variáveis que indicarão que é apenas um template ou algum erro ocorreu
 			var err;
-			if (!this._template)
+			if (!this.Template)
 				err := InvalidFormatException("The param must be a Mobile ObjRef or a valid Template!");
-				this._objType := err;
-				this._name := err;
-				this._graphic := err;
-				this._color := err;
+				this.ObjType := err;
+				this.Name := err;
+				this.Graphic := err;
+				this.Color := err;
 			else
 				err := IsTemplateException();
-				this._name := this._template.desc;
-				this._graphic := this._template.graphic;
-				this._color := this._template.color;
-				this._category := this._template.Category;
+				this.Name := this.GetTemplate().desc;
+				this.Graphic := this.GetTemplate().graphic;
+				this.Color := this.GetTemplate().color;
+				this.Category := this.GetTemplate().Category;
 			endif
-			
-			this._objRef := err;
-			this._serial := err;
 
-			this._backpack := err;
-			this._race := err;
-			this._culture := err;
-			this._religion := err;
-			this._combatTraits := err;
+			this.ObjRef := err;
+			this.Serial := err;
+
+			this.BackpackSerial := err;
+			this.Race := err;
+			this.Culture := err;
+			this.Religion := err;
+			this.CombatTraitsVar := err;
+			this.Abilities := err;
+			this.ActiveAbilities := err;
 		endif
 	endfunction
 
 	function GetAccountName(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return this._objRef.acctname;
+		return this.GetObjRef().acctname;
 	endfunction
 	
 	function GetBackpack(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return this._backpack;
+		return ContainerWrapper(this.BackpackSerial);
 	endfunction
 	
 	function GetRace(this)
-		if (this._race is @Exception)
-			return this._race;
+		if (this.Race is @Exception)
+			return this.Race;
 		endif
 
-		return this._race;
+		return this.Race;
 	endfunction
 
 	function GetCulture(this)
-		if (this._culture is @Exception)
-			return this._culture;
+		if (this.Culture is @Exception)
+			return this.Culture;
 		endif
 
-		return this._culture;
+		return this.Culture;
 	endfunction
 
 	function GetReligion(this)
-		if (this._religion is @Exception)
-			return this._religion;
+		if (this.Religion is @Exception)
+			return this.Religion;
 		endif
 
-		return this._religion;
+		return this.Religion;
 	endfunction
 	
 	function GetStr(this)
@@ -125,11 +135,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetStrBase(this)
-		return AP_GetTrueStat(this._objRef, STRENGTH);
+		return AP_GetTrueStat(this.GetObjRef(), STRENGTH);
 	endfunction
 
 	function GetStrMod(this)
-		return AP_GetStatMod(this._objRef, STRENGTH);
+		return AP_GetStatMod(this.GetObjRef(), STRENGTH);
 	endfunction
 
 	function GetDex(this)
@@ -137,11 +147,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetDexBase(this)
-		return AP_GetTrueStat(this._objRef, DEXTERITY);
+		return AP_GetTrueStat(this.GetObjRef(), DEXTERITY);
 	endfunction
 
 	function GetDexMod(this)
-		return AP_GetStatMod(this._objRef, DEXTERITY);
+		return AP_GetStatMod(this.GetObjRef(), DEXTERITY);
 	endfunction
 
 	function GetInt(this)
@@ -149,108 +159,160 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function GetIntBase(this)
-		return AP_GetTrueStat(this._objRef, INTELLIGENCE);
+		return AP_GetTrueStat(this.GetObjRef(), INTELLIGENCE);
 	endfunction
 
 	function GetIntMod(this)
-		return AP_GetStatMod(this._objRef, INTELLIGENCE);
+		return AP_GetStatMod(this.GetObjRef(), INTELLIGENCE);
+	endfunction
+
+	function GetFortitude(this)
+		return AP_GetStat(this.GetObjRef(), FORTITUDE);
+	endfunction
+
+	function GetFortitudeBase(this)
+		return AP_GetTrueStat(this.GetObjRef(), FORTITUDE);
+	endfunction
+
+	function GetFortitudeMod(this)
+		return AP_GetStatMod(this.GetObjRef(), FORTITUDE);
+	endfunction
+
+	function GetReflexes(this)
+		return AP_GetStat(this.GetObjRef(), REFLEXES);
+	endfunction
+
+	function GetReflexesBase(this)
+		return AP_GetTrueStat(this.GetObjRef(), REFLEXES);
+	endfunction
+
+	function GetReflexesMod(this)
+		return AP_GetStatMod(this.GetObjRef(), REFLEXES);
+	endfunction
+
+	function GetWill(this)
+		return AP_GetStat(this.GetObjRef(), WILL);
+	endfunction
+
+	function GetWillBase(this)
+		return AP_GetTrueStat(this.GetObjRef(), WILL);
+	endfunction
+
+	function GetWillMod(this)
+		return AP_GetStatMod(this.GetObjRef(), WILL);
+	endfunction
+
+	function GetVicioStr(this)
+		return AP_GetVital(this.GetObjRef(), ADDICTION_STR);
+	endfunction
+	function GetVicioDex(this)
+		return AP_GetVital(this.GetObjRef(), ADDICTION_DEX);
+	endfunction
+	function GetVicioInt(this)
+		return AP_GetVital(this.GetObjRef(), ADDICTION_INT);
+	endfunction
+
+	function GetVisibleVicioStr(this)
+		return VICIO_MAX_POINTS - cint(this.GetVicioStr());
+	endfunction
+	function GetVisibleVicioDex(this)
+		return VICIO_MAX_POINTS - cint(this.GetVicioDex());
+	endfunction
+	function GetVisibleVicioInt(this)
+		return VICIO_MAX_POINTS - cint(this.GetVicioInt());
 	endfunction
 
 	function GetCurrentHP(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		this.Update();
-		return AP_GetVital(this._objRef, HITS);
+		return AP_GetVital(this.GetObjRef(), HITS);
+	endfunction
+
+	function GetCurrentDp(this)
+		return AP_GetVital(this.GetObjRef(), DEATH_POINTS);
 	endfunction
 
 	function GetCurrentStamina(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		this.Update();
-		return AP_GetVital(this._objRef, STAMINA);
+		return AP_GetVital(this.GetObjRef(), STAMINA);
 	endfunction
 
 	function GetCurrentMana(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		this.Update();
-		return AP_GetVital(this._objRef, MANA);
+		return AP_GetVital(this.GetObjRef(), MANA);
 	endfunction
 
 	function GetCurrentHunger(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		this.Update();
-		return AP_GetVital(this._objRef, HUNGER);
+		return AP_GetVital(this.GetObjRef(), HUNGER);
 	endfunction
 
 	function GetMaxHP(this)
-		this.Update();
-		return AP_GetVitalMaximumValue(this._objRef, HITS);
+		return AP_GetVitalMaximumValue(this.GetObjRef(), HITS);
 	endfunction
 
 	function GetMaxStamina(this)
-		this.Update();
-		return AP_GetVitalMaximumValue(this._objRef, STAMINA);
+		return AP_GetVitalMaximumValue(this.GetObjRef(), STAMINA);
 	endfunction
 
 	function GetMaxMana(this)
-		this.Update();
-		return AP_GetVitalMaximumValue(this._objRef, MANA);
+		return AP_GetVitalMaximumValue(this.GetObjRef(), MANA);
 	endfunction
 
 	function GetMaxHunger(this)
-		this.Update();
-		return AP_GetVitalMaximumValue(this._objRef, HUNGER);
+		return AP_GetVitalMaximumValue(this.GetObjRef(), HUNGER);
+	endfunction
+
+	function GetMaxDp(this)
+		return AP_GetVitalMaximumValue(this.GetObjRef(), DEATH_POINTS);
 	endfunction
 
 	function GetRegenHP(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		this.Update();
-		return AP_GetVitalRegenRate(this._objRef, HITS);
+		return AP_GetVitalRegenRate(this.GetObjRef(), HITS);
 	endfunction
 
 	function GetRegenStamina(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		this.Update();
-		return AP_GetVitalRegenRate(this._objRef, STAMINA);
+		return AP_GetVitalRegenRate(this.GetObjRef(), STAMINA);
 	endfunction
 
 	function GetRegenMana(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		this.Update();
-		return AP_GetVitalRegenRate(this._objRef, MANA);
+		return AP_GetVitalRegenRate(this.GetObjRef(), MANA);
 	endfunction
 
 	function GetRegenHunger(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		this.Update();
-		return AP_GetVitalRegenRate(this._objRef, HUNGER);
+		return AP_GetVitalRegenRate(this.GetObjRef(), HUNGER);
 	endfunction
 
 	function GetLanguageOptions(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
 		return this.GetProperty(MOBILE_PROPNAME::LANGUAGE);
@@ -271,13 +333,13 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @throws error Se não houver nem referência de objeto nem template válido
 	 */
 	function GetGender(this)
-		if (this._objRef is @Exception)
-			if (this._template is @Exception)
+		if (this.GetObjRef() is @Exception)
+			if (this.GetTemplate() is @Exception)
 				return error{errortext := "This is not a Player, NPC or valid template!"};
 			else
-				if (this._template.Gender == 0)
+				if (this.GetTemplate().Gender == 0)
 					return MOBILE_GENDER::MALE;
-				elseif (this._template.Gender == 1)
+				elseif (this.GetTemplate().Gender == 1)
 					return MOBILE_GENDER::FEMALE;
 				else
 					return MOBILE_GENDER::UNDEFINED;
@@ -285,9 +347,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			endif
 		endif
 		
-		if (this._objRef.gender == 0)
+		if (this.GetObjRef().gender == 0)
 			return MOBILE_GENDER::MALE;
-		elseif (this._objRef.gender == 1)
+		elseif (this.GetObjRef().gender == 1)
 			return MOBILE_GENDER::FEMALE;
 		else
 			return MOBILE_GENDER::UNDEFINED;
@@ -302,11 +364,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @note Se o template for uma Exception, retorna a própria Exception ao invés do tier
 	 */
 	function GetTier(this)
-		if (this._template is @Exception)
-			return this._template;
+		if (this.GetTemplate() is @Exception)
+			return this.GetTemplate();
 		endif
 		
-		return CInt(this._template.Tier);
+		return CInt(this.GetTemplate().Tier);
 	endfunction
 
 	function GetCriticalChance(this)
@@ -314,49 +376,68 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 	
 	function GetCriticalChanceBase(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
 		return CInt(this.GetProperty("CriticalChance"));
 	endfunction
 
 	function GetCriticalChanceMod(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
-		
+
 		return CInt(this.GetProperty("#CriticalChance"));
 	endfunction
 
-	function GetTemplateName(this)
-		if (this._template is @Exception)
-			return this._template;
+	function SetCriticalChanceMod(this, value)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return this._cfgFile.GetElementName();
+		this.SetProperty("#CriticalChance", CInt(value));
+		return this;
 	endfunction
 
-	function GetNPCDamage(this)
-		if (this._template is @Exception)
-			return this._template;
+	function GetTemplateName(this)
+		if (this.GetTemplate() is @Exception)
+			return this.GetTemplate();
 		endif
-		
-		return this._template.Damage;
+
+		return this.GetCfgFile().GetElementName();
 	endfunction
 
 	function GetBodyResist(this)
-		if (this._template is @Exception)
-			return this._template;
+		if (this.GetTemplate() is @Exception)
+			return this.GetTemplate();
 		endif
-		
+
 		var phys, elem;
-		phys := SplitWords(this._template.EpicFisResists);
-		elem := SplitWords(this._template.EpicElemResists);
+		phys := SplitWords(this.GetTemplate().EpicFisResists);
+		elem := SplitWords(this.GetTemplate().EpicElemResists);
 
 		return ArmorResist(
 			GetResistValueByTier(phys[1]), GetResistValueByTier(phys[2]), GetResistValueByTier(phys[3]),
 			GetResistValueByTier(elem[1]), GetResistValueByTier(elem[2]), GetResistValueByTier(elem[3]), GetResistValueByTier(elem[4])
+		);
+	endfunction
+
+	/**
+	 * Returns the spell resist bonuses active on this mobile.
+	 * Spell resist is a virtual armor layer applied by magic (barkskin, protection, etc.)
+	 * and is read by both DamageController and sendStats.
+	 *
+	 * @return ArmorResist with spell resist values (all zeros if no active spell resist)
+	 */
+	function GetSpellResist(this)
+		var sr := this.GetProperty("#SpellResist");
+		if (!sr || sr is @Exception)
+			return ArmorResist();
+		endif
+		return ArmorResist(
+			CInt(sr.slash), CInt(sr.piercing), CInt(sr.blunt),
+			CInt(sr.fire), CInt(sr.cold), CInt(sr.energy), CInt(sr.poison)
 		);
 	endfunction
 
@@ -375,49 +456,60 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @error "Wrong slot specified!" - Quando o slot informado não é válido
 	 */
 	function GetEquipBySlot(this, equipSlot)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
-		
+
 		var equipsInSlot := array{};
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
-			var weapon := WeaponWrapper(this._objRef.weapon);
+			var weapon := WeaponWrapper(this.GetObjRef().weapon);
 
-			if (this.IsNPC())
-				weapon.SetMainDamage(DamageDice(
-					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[1])),
-					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[2])),
-					Dice(GetDamageByTier(SplitWords(this._template.EpicAttackDamage)[3]))
-				));
+			if (GetObjProperty(this._objRef, "metamorfose") != error)
+				var dicedmgProp := GetObjProperty(this._objRef, "dicedmg");
+				if (dicedmgProp != error)
+					// Use dicedmg from metamorfose transformation
+					weapon.SetMainDamage(
+						Dice(dicedmgProp[1]), 
+						Dice(dicedmgProp[2]), 
+						Dice(dicedmgProp[3])
+					);
+				endif
+			elseif (this.IsNPC())
+				// Use template damage for normal NPCs
+				weapon.SetMainDamage(
+					Dice(GetDamageByTier(SplitWords(this.GetTemplate().EpicAttackDamage)[1])),
+					Dice(GetDamageByTier(SplitWords(this.GetTemplate().EpicAttackDamage)[2])),
+					Dice(GetDamageByTier(SplitWords(this.GetTemplate().EpicAttackDamage)[3]))
+				);
 				weapon.SetDamageMod(Damage(
-					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[1]),
-					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[2]),
-					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[3]),
-					GetDamageByTier(SplitWords(this._template.EpicElemDamage)[4])
+					GetDamageByTier(SplitWords(this.GetTemplate().EpicElemDamage)[1]),
+					GetDamageByTier(SplitWords(this.GetTemplate().EpicElemDamage)[2]),
+					GetDamageByTier(SplitWords(this.GetTemplate().EpicElemDamage)[3]),
+					GetDamageByTier(SplitWords(this.GetTemplate().EpicElemDamage)[4])
 				));
-
-
 			endif
+			// If neither (normal player with equipped weapon), weapon damage is already set from item
 
 			return weapon;
 		elseif (equipSlot == SHIELD)
-			return ArmorWrapper(this._objRef.shield);
+			if (!this.GetObjRef().shield) return uninit; endif
+			return ArmorWrapper(this.GetObjRef().shield);
 		elseif (equipSlot == HEAD)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, HEAD);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this.GetObjRef(), HEAD);
 		elseif (equipSlot == NECK)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, NECK);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this.GetObjRef(), NECK);
 		elseif (equipSlot == ARMS)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, ARMS);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this.GetObjRef(), ARMS);
 		elseif (equipSlot == BODY)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, BODY);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this.GetObjRef(), BODY);
 		elseif (equipSlot == HANDS)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, HANDS);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this.GetObjRef(), HANDS);
 		elseif (equipSlot == LEGS)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, LEGS);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this.GetObjRef(), LEGS);
 		elseif (equipSlot == FEET)
-			equipsInSlot := CS_GetEquipmentInArmorZone(this._objRef, FEET);
+			equipsInSlot := CS_GetEquipmentInArmorZone(this.GetObjRef(), FEET);
 		else
 			return error{errortext := "Wrong slot specified!"};
 		endif
@@ -438,67 +530,56 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *
 	 * @param this Referência ao objeto Mobile
 	 * @param layerEnum Enumeração da camada de equipamento a ser consultada
-	 * @param itemType Tipo do item (ITEM_TYPE::WEAPON, ITEM_TYPE::ARMOR ou ITEM_TYPE::CONTAINER)
 	 *
 	 * @return Retorna o equipamento encapsulado no wrapper correspondente ao tipo especificado
 	 *         (WeaponWrapper, ArmorWrapper ou ContainerWrapper).
-	 *         Retorna Exception se o objeto de referência for inválido, ou InvalidFormatException se
-	 *         o itemType não for válido.
+	 *         Retorna Exception se o objeto de referência for inválido, ou InvalidFormatException
 	 */
-	function GetEquipByLayer(this, layerEnum, itemType)
-		if (this._objRef is @Exception)
-			return this._objRef;
+	function GetEquipByLayer(this, layerEnum)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		var equip := GetEquipmentByLayer(this._objRef, layerEnum);
-		if (itemType == ITEM_TYPE::WEAPON)
+		var equip := GetEquipmentByLayer(this.GetObjRef(), layerEnum);
+		if (equip.IsA(POLCLASS_WEAPON))
 			equip := WeaponWrapper(equip);
-		elseif (itemType == ITEM_TYPE::ARMOR)
+		elseif (equip.IsA(POLCLASS_ARMOR))
 			equip := ArmorWrapper(equip);
-		elseif (itemType == ITEM_TYPE::CONTAINER)
+		elseif (equip.IsA(POLCLASS_CONTAINER))
 			equip := ContainerWrapper(equip);
-		else
-			return InvalidFormatException("The itemType param must be a valid ITEM_TYPE enum value!");
 		endif
 
+		// TODO: Se retornou o item, tem que ver se ele precisa de Wrapper pra adicionar aqui em cima.
 		return equip;
 	endfunction
 
 	function GetSkill(this, skillName)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		return this.GetSkillBase(skillName) + this.GetSkillMod(skillName);
 	endfunction
 
 	function GetSkillBase(this, skillName)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return AP_GetTrueSkill(this._objRef, skillName);
+		return AP_GetTrueSkill(this.GetObjRef(), skillName);
 	endfunction
 
 	function GetSkillMod(this, skillName)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return AP_GetSkillMod(this._objRef, skillName);
-	endfunction
-
-	function GetAbility(this, abilityName)
-		if (this._objRef is @Exception)
-			return this._objRef;
-		endif
-
-		// TODO: Implementar retorno de CombatAbility
+		return AP_GetSkillMod(this.GetObjRef(), skillName);
 	endfunction
 
 	function GetCombatTraits(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		var propData := this.GetProperty(MOBILE_PROPNAME::COMBAT_TRAITS);
@@ -506,9 +587,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			propData := CombatTraits().Serialize();
 		endif
 
-		this._combatTraits := CombatTraits().Deserialize(propData);
+		this.CombatTraitsVar := CombatTraits().Deserialize(propData);
 
-		return this._combatTraits;
+		return this.CombatTraitsVar;
 	endfunction
 
 	/*
@@ -530,90 +611,338 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *
 	 * Nota: O divisor padrão utilizado é 20 para normalizar os valores dos atributos
 	 */
-	function GetMainDamageMinimumBasedOn(this, criteria...)
+	function GetMainDamageModifierBy(this, criteria...)
 		var divisor := 20;
 		var value := 0;
 
-		if (STRENGTH in criteria)
-			var statValue := 0;
-
-			if (DEXTERITY in criteria)
-				value := CInt((this.GetStr() + this.GetDex()) / 2);
-			else
-				value := CInt(this.GetStr());
-			endif
-
-			statValue /= divisor;
-			value += statValue;
+		if (STRENGTH in criteria && DEXTERITY in criteria)
+			// Both stats - use average
+			var statValue := CInt((this.GetStr() + this.GetDex()) / 2);
+			value += CInt(statValue / divisor);
+		elseif (STRENGTH in criteria)
+			// Only strength
+			value += CInt(this.GetStr() / divisor);
+		elseif (DEXTERITY in criteria)
+			// Only dexterity
+			value += CInt(this.GetDex() / divisor);
 		endif
 
-		if (TACTICS in criteria)
+		if (TACTICS in criteria )
 			value += CInt(this.GetSkill(TACTICS) / divisor);
 		endif
 
-		return value;
+		return CInt(value);
 	endfunction
 
-	/**
-	 * Calcula o dano mínimo secundário (mão secundária) baseado em critérios especificados.
-	 *
-	 * Esta função calcula um valor de dano mínimo para a mão secundária, considerando diferentes
-	 * atributos do mobile, como força, destreza e habilidade de táticas. O cálculo aplica uma
-	 * penalidade de 50% em relação ao dano da mão principal (divisor dobrado).
-	 *
-	 * @param this Referência ao objeto MobileWrapper atual
-	 * @param criteria Lista variável de critérios para cálculo (STRENGTH, DEXTERITY, TACTICS)
-	 *
-	 * @return Integer O valor calculado do dano mínimo secundário baseado nos critérios fornecidos
-	 *
-	 * @note Comportamento:
-	 *       - Se STRENGTH estiver nos critérios:
-	 *         - Se DEXTERITY também estiver presente, usa a média entre força e destreza
-	 *         - Caso contrário, usa apenas o valor de força
-	 *       - Se TACTICS estiver nos critérios, adiciona o valor da habilidade de táticas dividido pelo divisor
-	 *       - O divisor base é 20, mas é multiplicado por 2 (totalizando 40) como penalidade da mão secundária
-	 */
-	function GetOffDamageMinimumBasedOn(this, criteria...)
-		var divisor := 20;
-		divisor *= 2; // Mão secundário possui penalidade
-		var value := 0;
-
-		if (STRENGTH in criteria)
-			var statValue := 0;
-
-			if (DEXTERITY in criteria)
-				statValue := CInt((this.GetStr() + this.GetDex()) / 2);
-			else
-				statValue := CInt(this.GetStr());
-			endif
-			
-			statValue /= divisor;
-			value += statValue;
-		endif
-
-		if (TACTICS in criteria)
-			value += CInt(this.GetSkill(TACTICS) / divisor);
-		endif
-
-		return value;
+	function GetOffDamageModifierBy(this, criteria...)
+		var offHandDivisor := 2;
+		
+		return CInt(this.GetMainDamageModifierBy(criteria...) / offHandDivisor);
 	endfunction
 
 	function SetSkillBase(this, skillName, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		AP_SetTrueSkill(this._objRef, skillName, CDbl(value));
+		AP_SetTrueSkill(this.GetObjRef(), skillName, CDbl(value));
 		return this;
 	endfunction
 
 	function SetSkillMod(this, skillName, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
-		AP_SetSkillMod(this._objRef, skillName, CDbl(value));
+		AP_SetSkillMod(this.GetObjRef(), skillName, CDbl(value));
 		return this;
+	endfunction
+
+	// ================= Abilities ================= //
+	/**
+	 * Obtém as habilidades do mobile.
+	 *
+	 * Este método recupera as habilidades armazenadas no mobile através da propriedade
+	 * ABILITIES. Se o objeto de referência for uma exceção, retorna a própria exceção.
+	 *
+	 * @param this Referência ao objeto wrapper do mobile
+	 * @return Array As habilidades do mobile ou uma Exception caso ocorra erro
+	 */
+	function GetAbilities(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return this.GetProperty(MOBILE_PROPNAME::ABILITIES) ?: dictionary{};
+	endfunction
+
+	/**
+	 * Adiciona uma habilidade ao objeto móvel.
+	 *
+	 * Este método adiciona uma nova habilidade ao dicionário de habilidades do objeto,
+	 * associando-a ao nível em que foi adquirida.
+	 *
+	 * @param ability A habilidade a ser adicionada ao objeto
+	 * @param levelBought O nível no qual a habilidade foi adquirida
+	 * @return this Retorna a própria instância do wrapper para encadeamento de métodos,
+	 *              ou uma Exception se a referência do objeto for inválida ou a habilidade for inválida
+	 * @throws InvalidAbilityException Se a habilidade fornecida não for válida (não possui script)
+	 */
+	function AddAbility(this, ability, levelBought)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!ability.GetName())
+			return InvalidAbilityException("This is not a valid ability!");
+		endif
+
+		var abilities := this.GetAbilities();
+
+		abilities[ability.GetName()] := levelBought;
+		this.SetProperty(MOBILE_PROPNAME::ABILITIES, abilities);
+
+		return this;
+	endfunction
+
+	/**
+	 * Remove uma habilidade do personagem móvel.
+	 *
+	 * @param {MobileWrapper} this - Referência ao objeto wrapper do personagem móvel
+	 * @param {Ability} ability - Objeto de habilidade a ser removido
+	 * 
+	 * @return {MobileWrapper|Exception} Retorna o próprio objeto wrapper em caso de sucesso,
+	 *                                    ou uma exceção em caso de erro:
+	 *                                    - Exception se _objRef for inválido
+	 *                                    - InvalidAbilityException se a habilidade não for válida
+	 *                                    - InvalidPropException se o móvel não possuir habilidades
+	 *                                    - InvalidAbilityException se o móvel não possuir a habilidade especificada
+	 *
+	 * @throws {InvalidAbilityException} Quando a habilidade não é válida ou não está presente no móvel
+	 * @throws {InvalidPropException} Quando o móvel não possui a propriedade de habilidades
+	 */
+	function RemoveAbility(this, ability)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!ability.GetName())
+			return InvalidAbilityException("This is not a valid ability!");
+		endif
+
+		var abilities := this.GetAbilities();
+		if (abilities.size() == 0)
+			return InvalidPropException("This mobile has no abilities!");
+		endif
+
+		if (!this.HasAbility(ability))
+			return InvalidAbilityException("This mobile does not have the specified ability!");
+		endif
+
+		abilities.remove(ability.GetName());
+		this.SetProperty(MOBILE_PROPNAME::ABILITIES, abilities);
+
+		return this;
+	endfunction
+
+	/*
+	 * Verifica se o mobile possui uma habilidade específica.
+	 *
+	 * @param this Referência ao objeto MobileWrapper atual
+	 * @param ability Objeto da habilidade a ser verificada
+	 * @return Retorna o objeto de exceção se _objRef for uma Exception,
+	 *         caso contrário retorna true se o mobile possui a habilidade,
+	 *         ou false se não possui
+	 */
+	function HasAbility(this, abilityId)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		// myhabs stores ability IDs (integers) keyed by level
+		var abilities := this.GetAbilities();
+		var targetId := CInt(abilityId);
+
+		foreach level in (abilities.keys())
+			if (CInt(abilities[level]) == targetId)
+				return true;
+			endif
+		endforeach
+
+		return false;
+	endfunction
+
+	/**
+	 * Obtém as habilidades ativas do mobile.
+	 * 
+	 * @param this Referência ao objeto MobileWrapper
+	 * @return Dictionary com as habilidades ativas ou uma Exception caso a referência do objeto seja inválida
+	 */
+	function GetActiveAbilities(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return this.GetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES) ?: dictionary{};
+	endfunction
+
+	/**
+	 * Obtém o monitor de uma habilidade ativa específica do mobile.
+	 * 
+	 * @param {MobileWrapper} this - Referência ao objeto MobileWrapper
+	 * @param {Ability} ability - Objeto de habilidade para consultar o monitor
+	 * 
+	 * @return {Struct} Retorna a estrutura deserializada do monitor da habilidade ativa
+	 * @return {Exception} Retorna exceção se a referência do objeto for inválida
+	 * @return {InvalidAbilityException} Retorna exceção se o mobile não possuir a habilidade ativa especificada
+	 * 
+	 * @throws {InvalidAbilityException} Quando a habilidade não existe no momento de ativação especificado
+	 */
+	function GetAbilityMonitor(this, ability)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var activeAbilities := this.GetActiveAbilities();
+		if (!activeAbilities[ability.GetActivationMoment()].exists(ability.GetId()))
+			return InvalidAbilityException("This ability is not active on mobile!");
+		endif
+
+		var monitor := StructSerializer().Deserialize(
+			activeAbilities[ability.GetActivationMoment()][ability.GetId()],
+			AbilityMonitor(ability)
+		);
+
+		// Stale monitor check - clean up if process died (server restart, etc.)
+		if (!GetProcess(monitor.GetPid()))
+			activeAbilities[ability.GetActivationMoment()].erase(ability.GetId());
+			this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
+			return InvalidAbilityException("This ability is not active on mobile!");
+		endif
+
+		return monitor;
+	endfunction
+
+	/**
+	 * Ativa uma habilidade para o objeto móvel.
+	 * 
+	 * @param {MobileWrapper} this - Referência ao objeto móvel
+	 * @param {Ability} ability - Habilidade a ser ativada
+	 * 
+	 * @return {MobileWrapper|Exception} Retorna a própria instância do objeto em caso de sucesso,
+	 *                                   ou uma Exception se o objeto for inválido ou a habilidade não for válida
+	 * 
+	 * @throws {InvalidAbilityException} Lançada quando a habilidade não possui um script válido
+	 */
+	function ActivateAbility(this, ability, abilityMonitor)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!ability.GetName())
+			return InvalidAbilityException("This ability is not registered!");
+		endif
+
+		if (!ability.GetActivationMoment())
+			return InvalidAbilityException("This ability has no activation moment defined to monitor!");
+		endif
+
+		var activeAbilities := this.GetActiveAbilities();
+
+		if (!activeAbilities.exists(ability.GetActivationMoment()))
+			activeAbilities[ability.GetActivationMoment()] := dictionary{};
+		endif
+
+		activeAbilities[ability.GetActivationMoment()][ability.GetId()] := StructSerializer().Serialize(abilityMonitor);
+		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
+
+		return this;
+	endfunction
+
+	/*
+	 * Desativa uma habilidade ativa do mobile.
+	 *
+	 * @param this       Referência ao objeto MobileWrapper atual
+	 * @param ability    A habilidade a ser desativada
+	 *
+	 * @return Retorna o próprio objeto MobileWrapper para encadeamento de métodos,
+	 *         ou uma exceção caso o objeto seja inválido ou a habilidade não seja válida
+	 *
+	 * @throws Exception          Se a referência do objeto for uma exceção
+	 * @throws InvalidAbilityException Se a habilidade não possuir um script válido
+	 */
+	function DeactivateAbility(this, ability)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!ability.GetName())
+			return InvalidAbilityException("This is not a valid ability!");
+		endif
+
+		ability.OnDeactivate(this);
+
+		var activeAbilities := this.GetActiveAbilities();
+		activeAbilities[ability.GetActivationMoment()].erase(ability.GetId());
+		this.SetProperty(MOBILE_PROPNAME::ACTIVE_ABILITIES, activeAbilities);
+
+		return this;
+	endfunction
+
+	// function HasActiveAbility(this, ability)
+	// 	if (this._objRef is @Exception)
+	// 		return this._objRef;
+	// 	endif
+
+	// 	return this.GetActiveAbilities()[ability.GetActivationMoment()].exists(ability.GetName());
+	// endfunction
+
+	// ================ Pool Abilities ================= //
+
+	function AddPoolAbility(this, ability)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!ability.GetName())
+			return InvalidAbilityException("This is not a valid ability!");
+		endif
+
+		// Store in myhabs like normal
+		var abilities := this.GetAbilities();
+		abilities[ability.GetName()] := ability.GetId();
+		this.SetProperty(MOBILE_PROPNAME::ABILITIES, abilities);
+
+		// Increment pool count
+		var poolCounts := this.GetProperty(MOBILE_PROPNAME::POOL_ABILITIES) ?: dictionary{};
+		var abilityId := CInt(ability.GetId());
+		var currentCount := CInt(poolCounts[abilityId]) ?: 0;
+		poolCounts[abilityId] := currentCount + 1;
+		this.SetProperty(MOBILE_PROPNAME::POOL_ABILITIES, poolCounts);
+
+		return this;
+	endfunction
+
+	function GetPoolAbilityCount(this, abilityId)
+		if (this.GetObjRef() is @Exception)
+			return 0;
+		endif
+
+		var poolCounts := this.GetProperty(MOBILE_PROPNAME::POOL_ABILITIES) ?: dictionary{};
+		return CInt(poolCounts[CInt(abilityId)]) ?: 0;
+	endfunction
+
+	// ================ Achievements ================= //
+	function GetAchievement(this, who, type, key, name)
+		return LoadAchievement(type, who, key, name);
+	endfunction
+
+	function GetListAchievement(this, who)
+		return LoadListAchievement(who);
+	endfunction
+
+	function SetAchievement(this, who, type, elem, achievement)
+		return SaveAchievement(type, elem, achievement);
 	endfunction
 
 	/**
@@ -633,15 +962,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return InvalidFormatException("The param must be a CombatTraits object!");
 		endif
 		
-		this._combatTraits := combatTrait;
-		this.SetProperty(MOBILE_PROPNAME::COMBAT_TRAITS, this._combatTraits.Serialize());
+		this.CombatTraitsVar := combatTrait;
+		this.SetProperty(MOBILE_PROPNAME::COMBAT_TRAITS, this.CombatTraitsVar.Serialize());
 
 		return this;
 	endfunction
 
 	function SetLanguageOptions(this, langOptions)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 		
 		return this.SetProperty(MOBILE_PROPNAME::LANGUAGE, langOptions);
@@ -660,8 +989,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * entre cada aplicação de modificador.
 	 */
 	function ApplyItemModifiers(this, byRef itemWrapped)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
@@ -669,7 +998,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
-			mod.ApplyOn(this._objRef);
+			mod.ApplyOn(this.GetObjRef());
 			SleepMS(2);
 		endforeach
 
@@ -688,8 +1017,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @return Error - Retorna erro se o parâmetro não for um ArmorWrapper ou WeaponWrapper
 	 */
 	function RemoveItemModifiers(this, byRef itemWrapped)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		if (!(itemWrapped is @ArmorWrapper) && !(itemWrapped is @WeaponWrapper))
@@ -697,64 +1026,61 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		foreach mod in (itemWrapped.GetModifiers())
-			mod.RemoveFrom(this._objRef);
+			mod.RemoveFrom(this.GetObjRef());
 			SleepMS(2);
 		endforeach
 
 		return this;
 	endfunction
 
-	function HasAbility(this, abilityName)
-		if (this._objRef is @Exception)
-			return this._objRef;
-		endif
-
-		return TemHabilidade(this._objRef, abilityName);
-	endfunction
-
 	function IsNPC(this)
-		return (this._template && !(this._template is @Exception));
+		return (this.Template && !(this.Template is @Exception));
 	endfunction
 
 	function IsDead(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		var objRef := this.GetObjRef();
+		if (objRef is @Exception)
+			return 1;
 		endif
-		
-		return this._objRef.dead == true;
+		// !objRef catches destroyed NPCs, .dead catches dead players
+		return !objRef || objRef.dead;
 	endfunction
 
 	function IsWarMode(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return this._objRef.warmode == true;
+		return this.GetObjRef().warmode == 1;
 	endfunction
 
 	function IsMounted(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		// TODO: Isso aqui vai dar errado
-		return this.GetEquipByLayer(LAYER_MOUNT) == true;
+		return this.GetEquipByLayer(LAYER_MOUNT) != error;
 	endfunction
 
 	function IsConnected(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return this._objRef.connected;
+		return this.GetObjRef().connected;
 	endfunction
 
 	function IsHidden(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return this._objRef.hidden;
+		return this.GetObjRef().hidden;
+	endfunction
+
+	function GetGold(this)
+		return ContaCapital(this._objRef).valorTotal;
 	endfunction
 
 	/*
@@ -769,15 +1095,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *   var distancia := mobile.DistanceTo(target);
 	 */
 	function DistanceTo(this, otherObj)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		if (!(otherObj is @UObjectWrapper))
 			return InvalidFormatException("The param must be an Object Wrapper!");
 		endif
 
-		return Distance(this._objRef, otherObj.GetObjRef());
+		return Distance(this.GetObjRef(), otherObj.GetObjRef());
 	endfunction
 
 	/**
@@ -793,83 +1119,83 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @return Retorna o resultado da execução da ação PerformAction
 	 */
 	function PlayAnimation(this, animID, framecount := 5, repeatcount := 1, backward := ACTION_DIR_FORWARD, repeatflag := ACTION_NOREPEAT, delay := 1)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return PerformAction(this._objRef, animID, repeatcount, framecount, backward, repeatflag, delay);
+		return PerformAction(this.GetObjRef(), animID, repeatcount, framecount, backward, repeatflag, delay);
 	endfunction
 
 	function PlayMusic(this, musicID)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return PlayMusic(this._objRef, musicID);
+		return PlayMusic(this.GetObjRef(), musicID);
 	endfunction
 
 	function Update(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return RecalcVitals(this._objRef);
+		return RecalcVitals(this.GetObjRef());
 	endfunction
 
 	function GetTarget(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return Target(this._objRef);
+		return Target(this.GetObjRef());
 	endfunction
 
 	function ConsumeHP(this, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return AP_ConsumeVital(this._objRef, HITS, CDbl(value));
+		return AP_ConsumeVital(this.GetObjRef(), HITS, CDbl(value));
 	endfunction
 
 	function ConsumeStamina(this, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return AP_ConsumeVital(this._objRef, STAMINA, CDbl(value));
+		return AP_ConsumeVital(this.GetObjRef(), STAMINA, CDbl(value));
 	endfunction
 
 	function ConsumeMana(this, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return AP_ConsumeVital(this._objRef, MANA, CDbl(value));
+		return AP_ConsumeVital(this.GetObjRef(), MANA, CDbl(value));
 	endfunction
 
 	function RestoreHP(this, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return HealHits(this._objRef, CDbl(value));
+		return HealHits(this.GetObjRef(), CDbl(value));
 	endfunction
 
 	function RestoreStamina(this, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return HealStamina(this._objRef, CDbl(value));
+		return HealStamina(this.GetObjRef(), CDbl(value));
 	endfunction
 
 	function RestoreMana(this, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return HealMana(this._objRef, CDbl(value));
+		return HealMana(this.GetObjRef(), CDbl(value));
 	endfunction
 
 	/**
@@ -882,20 +1208,15 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *         - O parâmetro targetWrapper não for um objeto do tipo MobileWrapper (retorna InvalidFormatException)
 	 */
 	function Attack(this, byRef targetWrapper)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		if (!(targetWrapper is @MobileWrapper))
 			return InvalidFormatException("The param must be a MobileWrapper object!");
 		endif
 
-		return this._objRef.attack_once(targetWrapper.GetObjRef());
-	endfunction
-
-	function Dispose(this)
-		this._objRef := 0;
-		this._name := "";
+		return this.GetObjRef().attack_once(targetWrapper.GetObjRef());
 	endfunction
 
 	function Equals(this, byRef otherMobileWrapper)
@@ -908,11 +1229,11 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	function ToString(this)
-		return $"Mobile {this._name}: " +
-			$"Serial: {this._serial}, " +
-			$"ObjType: {this._objType}, " +
-			$"Graphic: {this._graphic} ({this._graphic}), " +
-			$"Color: {this._color} ({this._color}), " +
+		return $"Mobile {this.GetName()}: " +
+			$"Serial: {this.GetSerial()}, " +
+			$"ObjType: {this.GetObjType()}, " +
+			$"Graphic: {this.GetGraphic()} ({this.GetGraphic()}), " +
+			$"Color: {this.GetColor()} ({this.GetColor()}), " +
 			$"Str: {this.GetStr()}, " +
 			$"Dex: {this.GetDex()}, " +
 			$"Int: {this.GetInt()}";
@@ -929,8 +1250,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @return Exception Se o objeto de referência for inválido
 	 */
 	function GetEntropy(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		var entropy := this.GetProperty(MOBILE_PROPNAME::ENTROPY);
@@ -948,8 +1269,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @return Exception Se o objeto de referência for inválido
 	 */
 	function SetEntropy(this, value)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		if (value > ENTROPY_LIMITS::MAX)
@@ -974,8 +1295,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 * @return Exception Se o objeto de referência for inválido
 	 */
 	function UpdateEntropy(this, amt)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		var current := this.GetEntropy();
@@ -994,7 +1315,10 @@ enum class MOBILE_PROPNAME
 	CHARDATA := "chardata",
 	COMBAT_TRAITS := "combattraits",
 	LANGUAGE := "langdata",
-	ENTROPY := "entropy"
+	ENTROPY := "entropy",
+	ABILITIES := "myhabs",
+	ACTIVE_ABILITIES := "activehabs",
+	POOL_ABILITIES := "myhabs_pool"
 endenum
 
 enum class ENTROPY_LIMITS

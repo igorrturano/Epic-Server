@@ -1,0 +1,130 @@
+/*
+ * Shinobi Technique Command (.n)
+ *
+ * Entry point for shinobi techniques. Works with both:
+ * - Text commands: .n substituicao (who, spellname as separate args)
+ * - Hotbar/scripts: Start_Script(script, {who, spellname})
+ *
+ * If no technique name is provided, shows a gump listing available techniques.
+ */
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":charactercreation:habilidades";
+include ":attributes:attributes";
+include ":spells:include/spell_executor";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+const GUMPID_SHINOBI_SPELLS := 0x00001F;
+
+// Main program - handles both text commands and Start_Script calls
+program magia_shinobi(who, spellname := "")
+	// Handle Start_Script array format: {who, spellname}
+	if (TypeOf(who) == "Array")
+		var params := who;
+		who := params[1];
+		spellname := params[2];
+	endif
+
+	// Check if player has shinobi ability
+	var isShinobi := MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH);
+	if (!isShinobi)
+		SendSysMessageEx(who, "Apenas Shinobis podem usar este comando.", SSM_FAIL);
+		return 0;
+	endif
+
+	// If no spell name provided, show techniques gump
+	if (!spellname || spellname == "")
+		var sneak_skill := CInt(AP_GetSkill(who, SNEAK));
+		var max_circle := sneak_skill / 20;
+		if (max_circle < 1)
+			max_circle := 1;
+		endif
+		ShinobiSpellsGump(who, max_circle);
+		return 1;
+	endif
+
+	// Execute the spell using the unified executor
+	return ExecuteSpellByName(who, spellname, SPELL_TYPE_SHINOBI);
+endprogram
+
+
+function ShinobiSpellsGump(who, max_circle)
+	var gump := GFCreateGump();
+	var cfg := ReadConfigFile(":spells:config/shinobi");
+	var spell_list := array{};
+
+	foreach spell_id in (GetConfigIntKeys(cfg))
+		var spell_elem := FindConfigElem(cfg, spell_id);
+		var circle := CInt(spell_elem.Circle);
+
+		if (circle >= 1 && circle <= max_circle)
+			spell_list.append(spell_id);
+		endif
+		sleepms(2);
+	endforeach
+
+	var size := spell_list.size();
+	if (size >= 1)
+		size := size * 26;
+		var circles := dictionary{};
+		foreach spell_id in spell_list
+			var spell_elem := FindConfigElem(cfg, spell_id);
+			var circle := CInt(spell_elem.Circle);
+			circles[circle] := 1;
+		endforeach
+		size += circles.keys().size() * 26;
+	else
+		size := 0;
+	endif
+
+	GFSetId(gump, GUMPID_SHINOBI_SPELLS);
+	GFClosable(gump, 1);
+	GFResizePic(gump, 10, 26, 9390, 276, 100 + size);
+	GFHTMLArea(gump, 80, 65, 142, 20, "<BASEFONT Size=5 Color=#666666>Tecnicas Shinobi", 0, 0);
+	GFHTMLArea(gump, 82, 67, 142, 20, "<BASEFONT Size=5 Color=#666666>Tecnicas Shinobi", 0, 0);
+	GFHTMLArea(gump, 81, 66, 142, 20, "<BASEFONT Size=5 Color=#4444FF>Tecnicas Shinobi", 0, 0);
+	GFGumpPic(gump, 41, 84, 1469);
+
+	var y := 90;
+
+	for circle_level := 1 to max_circle
+		var printed_circle_header := 0;
+
+		foreach spell_id in spell_list
+			var spell := FindConfigElem(cfg, spell_id);
+			var circle := CInt(spell.Circle);
+
+			if (circle == circle_level)
+				if (!printed_circle_header)
+					printed_circle_header := 1;
+					var circle_name := "Ninjutsu Nivel " + circle_level;
+
+					GFHTMLArea(gump, 52, y, 192, 24, "<BASEFONT color=#4444FF><B>" + circle_name + "</B>", 1, 0);
+					y += 26;
+				endif
+
+				var spellname := spell.name;
+				var desc := spell.desc;
+
+				GFAddButton(gump, 30, y + 2, 2117, 2118, GF_CLOSE_BTN, spell_id);
+				GFHTMLArea(gump, 52, y, 192, 24, "<BASEFONT color=#FFFFFF>" + spellname, 1, 0);
+				GFToolTipText(gump, "<BASEFONT color=#4444FF>" + spellname + "<br><BASEFONT color=#FFFFFF>"
+							   + desc);
+
+				y += 26;
+				sleepms(2);
+			endif
+		endforeach
+	endfor
+
+	var input := GFSendGump(who, gump);
+	if (input[0] > 0)
+		return ExecuteSpellById(who, input[0], SPELL_TYPE_SHINOBI);
+	endif
+
+	return 1;
+endfunction

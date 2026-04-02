@@ -2,6 +2,8 @@ use uo;
 use util;
 use os;
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program colheReagente(who, item)
 
@@ -12,11 +14,11 @@ program colheReagente(who, item)
 
 	var amt := 1;
 
-	if (temHabilidade(who, "Sorte na Coleta"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::HARVEST_LUCK))
 		amt := amt + 1;
 	endif
 
-	if (temHabilidade(who, "Herbalista Experiente"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EXPERT_HERBALIST))
 		if (RandomInt(100) < 30)
 			amt := amt + 1;
 		endif

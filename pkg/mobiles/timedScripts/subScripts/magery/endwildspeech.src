@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+include ":hotbar:include/custombuff";
+
+program TimedScript_EndWildSpeech(mobile)
+	if (GetObjProperty(mobile, "metamorfose") != error)
+		mobile.squelch(-1);
+	endif
+
+	RemoveSpellBuff(mobile, 708);
+
+	return 1;
+endprogram

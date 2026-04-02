@@ -1,0 +1,892 @@
+/****************************************************************************************************
+# Description:
+This script handles player transformation into a primordial Fire Elemental form using the command:
+`.formaprimordial`. This uses the same transformation system as wildshape but with a single fixed
+high-tier form.
+
+# Transformation Process:
+- Validates the transformation request (fixed Fire Elemental form).
+- Changes the player's appearance and applies attribute boosts.
+- Uses the SAME properties and timers as wildshape.
+- Starts the standard metamorfose timer.
+
+# Interaction with `.voltar` and `endmetamorfose.src`:
+- Uses the exact same cleanup process as wildshape transformations
+- The `.voltar` command works identically
+- All properties and timers are the same
+
+
+TODO: Add entropia para alterar transformacoes de mesmo bioma
+TODO: Add criteria for z-index, itens, minerios for certain transformations
+
+****************************************************************************************************/
+use uo;
+use os;
+use util;
+use cfgfile;
+use vitals;
+
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":spells:tnmagery";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":tn:npcutil";
+include ":brainAI:npcUtil";
+include ":spells:summon";
+include ":survival:fishingFunctions";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program transformprimordial(who, text)
+	// Check if player has the ability
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::CHAMADO_DA_FORMA_PRIMORDIAL))
+		SendSysMessageEx(who, "Você não conhece esta técnica.", SSM_FAIL);
+		return;
+	endif
+
+	// Get form database and terrain mapping
+	var form_db := InitFormDatabase();
+	var terrain_mapping := GetTerrainToFormsMapping();
+
+	// Parse requested form name
+	text := Lower(Trim(text));
+	if (!text || text == "")
+		// Get current terrain to show available forms
+		var current_terrain := GetTerrainAtLocation(who, who.x, who.y, who.realm);
+		if (current_terrain)
+			var allowed_forms := terrain_mapping[current_terrain];
+			if (allowed_forms && allowed_forms.size() > 0)
+				var available_list := "";
+				foreach form_key in allowed_forms
+					if (available_list != "")
+						available_list := available_list + "|";
+					endif
+					available_list := available_list + form_key;
+				endforeach
+				SendSysMessageEx(who, "Use: .formaprimordial <" + available_list + ">", SSM_FAIL);
+			else
+				SendSysMessageEx(who, "Nenhuma forma primordial pode ser invocada neste terreno.", SSM_FAIL);
+			endif
+		else
+			SendSysMessageEx(who, "Use: .formaprimordial <forma> - Este terreno não permite transformação primordial.", SSM_FAIL);
+		endif
+		return;
+	endif
+
+	// Get current terrain
+	var current_terrain := GetTerrainAtLocation(who, who.x, who.y, who.realm);
+	if (!current_terrain)
+		SendSysMessageEx(who, "Este terreno não permite transformação primordial.", SSM_FAIL);
+		return;
+	endif
+
+	// Get allowed forms for this terrain
+	var allowed_forms := terrain_mapping[current_terrain];
+	if (!allowed_forms)
+		SendSysMessageEx(who, "Nenhuma forma primordial pode ser invocada neste terreno.", SSM_FAIL);
+		return;
+	endif
+
+	// Check if requested form is allowed on this terrain
+	var form_allowed := 0;
+	foreach form_key in allowed_forms
+		if (form_key == text)
+			form_allowed := 1;
+			break;
+		endif
+	endforeach
+
+	if (!form_allowed)
+		var available_list := "";
+		foreach form_key in allowed_forms
+			if (available_list != "")
+				available_list := available_list + ", ";
+			endif
+			available_list := available_list + form_key;
+		endforeach
+		SendSysMessageEx(who, "Esta forma não está disponível neste terreno. Formas disponíveis: " + available_list, SSM_FAIL);
+		return;
+	endif
+
+	// Get the form from database
+	var primordial_form := form_db[text];
+	if (!primordial_form)
+		SendSysMessageEx(who, "Forma desconhecida.", SSM_FAIL);
+		return;
+	endif
+
+	var selected_form := ValidateTransformation(who, primordial_form);
+	if (!selected_form)
+		return;
+	endif
+
+	HandleWildShapeUnequip(who);
+
+	PlayTransformationEffects(who);
+
+	PerformTransformation(who, selected_form);
+
+	var transformation_duration := CalculateTransformationDuration(who);
+	TS_StartTimer(who, "metamorfosedruida", transformation_duration);
+
+	ApplyAttributeBoosts(who, selected_form, transformation_duration);
+	ApplyAttributeModifiers(who, selected_form, transformation_duration, transformation_duration);
+
+	// Aplica dano elemental baseado na forma
+	ApplyTransformationElementalDamage(who, selected_form.key, transformation_duration);
+
+	// Apply elemental hitscripts to character body
+	var hitscript := GetPrimordialHitScript(selected_form.key);
+	if (hitscript)
+		SetObjProperty(who, "HitScripts", array{hitscript});
+		SendSysMessageEx(who, "[HITSCRIPT] Forma primordial: " + selected_form.key + " -> " + hitscript, SSM_INFO);
+	elseif (selected_form.key)
+		SendSysMessageEx(who, "[HITSCRIPT] Forma sem efeito elemental: " + selected_form.key, SSM_INFO);
+	endif
+
+	SendSysMessageEx(who, "Você se transforma em " + selected_form.name + ".", SSM_INFO);
+endprogram
+
+function InitFormDatabase()
+	var db := dictionary;
+
+	// Fire Elemental (FireElemental)
+	var fogo := struct;
+	fogo.+key := "fogo";
+	fogo.+name := "Elemental de Fogo";
+	fogo.+graphic := 0xF;
+	fogo.+color := 0;
+	fogo.+strength := 125;
+	fogo.+dexterity := 90;
+	fogo.+intelligence := 71;
+	db["fogo"] := fogo;
+
+	// Ice Elemental (IceElemental)
+	var gelo := struct;
+	gelo.+key := "gelo";
+	gelo.+name := "Elemental de Gelo";
+	gelo.+graphic := 0x759;
+	gelo.+color := 0;
+	gelo.+strength := 125;
+	gelo.+dexterity := 90;
+	gelo.+intelligence := 71;
+	db["gelo"] := gelo;
+
+	// Water Elemental (WaterElemental)
+	var agua := struct;
+	agua.+key := "agua";
+	agua.+name := "Elemental de Água";
+	agua.+graphic := 0x10;
+	agua.+color := 0;
+	agua.+strength := 120;
+	agua.+dexterity := 120;
+	agua.+intelligence := 71;
+	db["agua"] := agua;
+
+	// Sand Elemental (ElementaldaAreia)
+	var areia := struct;
+	areia.+key := "areia";
+	areia.+name := "Elemental de Areia";
+	areia.+graphic := 0x745;
+	areia.+color := 0;
+	areia.+strength := 120;
+	areia.+dexterity := 120;
+	areia.+intelligence := 71;
+	db["areia"] := areia;
+
+	// Air Elemental (AirElemental)
+	var ar := struct;
+	ar.+key := "ar";
+	ar.+name := "Elemental de Ar";
+	ar.+graphic := 0xD;
+	ar.+color := 0;
+	ar.+strength := 80;
+	ar.+dexterity := 166;
+	ar.+intelligence := 71;
+	db["ar"] := ar;
+
+	// Energy Elemental (energyelemental)
+	var energia := struct;
+	energia.+key := "energia";
+	energia.+name := "Elemental de Energia";
+	energia.+graphic := 0xC7;
+	energia.+color := 0;
+	energia.+strength := 80;
+	energia.+dexterity := 166;
+	energia.+intelligence := 71;
+	db["energia"] := energia;
+
+	// Ent Medium (Ent) - bigger thin trunk
+	var ent_medio := struct;
+	ent_medio.+key := "ent_medio";
+	ent_medio.+name := "Ent Médio";
+	ent_medio.+graphic := 0x12D;
+	ent_medio.+color := 0;
+	ent_medio.+strength := 100;
+	ent_medio.+dexterity := 80;
+	ent_medio.+intelligence := 10;
+	db["ent_medio"] := ent_medio;
+
+	// Ent Large (Ent7) - bigger bulk tree-like ent
+	var ent_grande := struct;
+	ent_grande.+key := "ent_grande";
+	ent_grande.+name := "Ent Grande";
+	ent_grande.+graphic := 0x64F;
+	ent_grande.+color := 0;
+	ent_grande.+strength := 250;
+	ent_grande.+dexterity := 80;
+	ent_grande.+intelligence := 10;
+	db["ent_grande"] := ent_grande;
+
+	// Ent Tall (Ent8) - tall thin trunk
+	var ent_alto := struct;
+	ent_alto.+key := "ent_alto";
+	ent_alto.+name := "Ent Alto";
+	ent_alto.+graphic := 0x11D;
+	ent_alto.+color := 0;
+	ent_alto.+strength := 100;
+	ent_alto.+dexterity := 80;
+	ent_alto.+intelligence := 10;
+	db["ent_alto"] := ent_alto;
+
+	// Earth Golem (golem6) - Golem de Terra
+	var terra := struct;
+	terra.+key := "terra";
+	terra.+name := "Golem de Terra";
+	terra.+graphic := 0xE;
+	terra.+color := 0;
+	terra.+strength := 216;
+	terra.+dexterity := 66;
+	terra.+intelligence := 71;
+	db["terra"] := terra;
+
+	// Stone Golem (golem7) - Golem de Pedra
+	var pedra := struct;
+	pedra.+key := "pedra";
+	pedra.+name := "Golem de Pedra";
+	pedra.+graphic := 0x7AB;
+	pedra.+color := 0;
+	pedra.+strength := 126;
+	pedra.+dexterity := 66;
+	pedra.+intelligence := 71;
+	db["pedra"] := pedra;
+
+	// Obsidian Golem (golem8) - Golem de Obsidiana
+	var obsidiana := struct;
+	obsidiana.+key := "obsidiana";
+	obsidiana.+name := "Golem de Obsidiana";
+	obsidiana.+graphic := 0x7BB;
+	obsidiana.+color := 0;
+	obsidiana.+strength := 136;
+	obsidiana.+dexterity := 51;
+	obsidiana.+intelligence := 86;
+	db["obsidiana"] := obsidiana;
+
+	// Totem (Totem) - Totem Amaldiçoado
+	var totem := struct;
+	totem.+key := "totem";
+	totem.+name := "Totem Amaldiçoado";
+	totem.+graphic := 0x33D;
+	totem.+color := 0;
+	totem.+strength := 550;
+	totem.+dexterity := 80;
+	totem.+intelligence := 100;
+	db["totem"] := totem;
+
+	return db;
+endfunction
+
+function GetTerrainToFormsMapping()
+	var mapping := dictionary;
+
+	mapping["lava"] := {"fogo"};
+	mapping["snow"] := {"gelo"};
+	mapping["forest"] := {"ent_medio", "ent_grande", "ent_alto", "totem"};
+	mapping["forrest"] := {"ent_medio", "ent_grande", "ent_alto", "totem"};
+	mapping["tree"] := {"ent_medio", "ent_grande", "ent_alto", "totem"};
+	mapping["leaves"] := {"ent_medio", "ent_grande", "ent_alto", "totem"};
+	mapping["jungle"] := {"ent_medio", "ent_grande", "ent_alto", "totem"};
+	mapping["water"] := {"agua"};
+	mapping["sand"] := {"areia", "ar"};
+	mapping["cave"] := {"gelo", "fogo", "terra", "pedra", "obsidiana", "totem"};
+	mapping["Cave"] := {"gelo", "fogo", "terra", "pedra", "obsidiana", "totem"};
+	mapping["rock"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["stone"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["marble"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["cobblestones"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["brick"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["embank"] := {"terra", "pedra", "obsidiana", "totem"};
+	mapping["grass"] := {"ent_medio", "ent_grande", "ent_alto", "fogo"};
+	mapping["dirt"] := {"terra", "pedra", "obsidiana", "fogo"};
+	mapping["void"] := {"energia"};
+
+	return mapping;
+endfunction
+
+function PlayTransformationEffects(who)
+	PlaySoundEffect(who, SFX_SPELL_HEAL);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
+endfunction
+
+function GetElementalEffects(form_name)
+	var effects := struct;
+	
+	case (form_name)
+		"fogo":
+			effects.buildup_sound := 0x0226;  // Flame
+			effects.buildup_effect := 0xD040; // Small flames
+			effects.engulf_effect := 0xD06F;  // Fire engulf
+			effects.reveal_sound := 0x0112;   // Fire elemental
+			effects.reveal_effect := 0xD05E;  // Emergence
+			
+		"gelo":
+			effects.buildup_sound := 0x0041;  // Ice shatter
+			effects.engulf_effect := 0x6D82;  // Ice spikes
+			effects.reveal_sound := 0x0041;   // Ice shatter
+			
+		"agua":
+			effects.buildup_sound := 0x0013;  // Wave
+			effects.buildup_effect := 0x352D; // Splash
+			effects.engulf_effect := 0x6DC3;  // Water explosion
+			effects.reveal_sound := 0x0117;   // Water elemental
+			effects.reveal_effect := 0x352D;  // Splash
+			
+		"areia":
+			effects.buildup_sound := 0x0015;  // Wind
+			effects.engulf_effect := 0xCADD;  // Tornado/dust
+			effects.reveal_sound := 0x0015;   // Wind
+			
+		"ar":
+			effects.buildup_sound := 0x0108;  // Air elemental
+			effects.engulf_effect := 0xCADD;  // Tornado
+			effects.reveal_sound := 0x0108;   // Air elemental
+			
+		"energia":
+			effects.buildup_sound := 0x002A;  // Thunder
+			effects.use_lightning := 1;       // Flag to use PlayLightningBoltEffect
+			effects.reveal_sound := 0x002A;   // Thunder
+			effects.reveal_effect := 0x6CEC;  // Energy waves
+			
+		"ent_medio":
+		"ent_grande":
+		"ent_alto":
+		"totem":
+			effects.buildup_sound := 0x0053;  // Quiet wood/earth sound
+			effects.buildup_effect := 0x38C8; // Vines at ground level
+			effects.engulf_effect := 0x38C8;  // Vines at ground level
+			effects.reveal_sound := 0x0053;   // Quiet wood/earth sound
+			effects.reveal_effect := 0x38C8;  // Vines emerging from ground
+			
+		"terra":
+		"pedra":
+		"obsidiana":
+			effects.buildup_sound := 0x0116;  // Stone/rock
+			effects.buildup_effect := 0x3728; // Smoke/dust
+			effects.engulf_effect := 0x6D67;  // Earthquake
+			effects.reveal_sound := 0x010D;   // Earth elemental
+			effects.reveal_effect := 0x3728;  // Dust settling
+			
+		default:
+			// Fallback to wood effects
+			effects.buildup_sound := 0x010D;  // Earth elemental
+			effects.buildup_effect := 0x6D01; // Roots
+			effects.engulf_effect := 0x6D01;  // Roots
+			effects.reveal_sound := 0x010D;   // Earth elemental
+			effects.reveal_effect := 0x6D01;  // Root emergence
+	endcase
+	
+	return effects;
+endfunction
+
+function PerformTransformation(who, form)
+	// Save the player's original appearance before transformation
+	var metamorfose := struct;
+	metamorfose.+originalcolor := who.color;
+	metamorfose.+originalgraphic := who.graphic;
+	metamorfose.+originalname := who.name;
+	metamorfose.+newgraphic := form.graphic;
+	SetObjProperty(who, "metamorfose", metamorfose);
+
+	// Get element-specific effects
+	var effects := GetElementalEffects(form.key);
+
+	// Pre-transformation: casting animation and elemental buildup
+	PlaySoundEffect(who, effects.buildup_sound);
+	PerformAction(who, HUMAN_ANIM::CAST_AREA);
+	PrintTextAbove(who, "*transformando-se em forma primordial*");
+	
+	// Freeze and hide player during transformation
+	who.frozen := 1;
+	sleepms(500);
+	
+	// Elemental buildup effect
+	if (effects.buildup_effect)
+		PlayObjectCenteredEffect(who, effects.buildup_effect, 10, 15);
+		sleepms(600);
+	endif
+	
+	// Engulf/transformation effect
+	if (effects.use_lightning)
+		PlayLightningBoltEffect(who);
+	elseif (effects.engulf_effect)
+		PlayObjectCenteredEffect(who, effects.engulf_effect, 10, 30);
+	endif
+	who.hidden := 1;
+	sleepms(1200);
+	
+	// Transform
+	who.graphic := form.graphic;
+	who.color := form.color;
+	
+	// Adjust player's name using SetName function
+	if (GetObjProperty(who, "charname") == error)
+		SetObjProperty(who, "charname", who.name);
+	endif
+
+	// Handle squelch based on abilities
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::ELO_NATURAL))
+		who.squelch(0);
+	else
+		who.squelch(-1);
+	endif
+
+	// Reveal in elemental form with emergence effect
+	who.hidden := 0;
+	if (effects.reveal_sound)
+		PlaySoundEffect(who, effects.reveal_sound);
+	endif
+	if (effects.use_lightning)
+		PlayLightningBoltEffect(who);
+	elseif (effects.reveal_effect)
+		PlayObjectCenteredEffect(who, effects.reveal_effect, 10, 25);
+	endif
+	sleepms(500);
+	who.frozen := 0;
+endfunction
+
+function HandleWildShapeUnequip(who)
+	UnequipAllWild(who);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::ELO_NATURAL))
+		UnequipArmorWild(who);
+		UnequipWeaponsWild(who);
+	else
+		UnequipAllWild(who);
+	endif
+endfunction
+
+function UnequipAllWild(who)
+	var equips := EnumeratePhysicalItems(who);
+
+	foreach equip in equips
+		MoveItemToContainer(equip, who.backpack);
+	endforeach
+endfunction
+
+function UnequipArmorWild(who)
+	var equips := EnumeratePhysicalItems(who);
+
+	foreach equip in equips
+		if ((equip.isa(POLCLASS_ARMOR)) && equip.resist_physical > 0)
+			MoveItemToContainer(equip, who.backpack);
+		endif
+	endforeach
+endfunction
+
+function UnequipWeaponsWild(who)
+	var equips := EnumeratePhysicalItems(who);
+
+	foreach equip in equips
+		if (equip.isa(POLCLASS_WEAPON))
+			MoveItemToContainer(equip, who.backpack);
+		endif
+	endforeach
+endfunction
+
+function ApplyAttributeModifiers(who, form, duration, transformation_duration)
+	var skill_a_calc := CINT(0.1318 * form.strength + 0.5316 * form.dexterity + 0.5974 * 40); 
+	var resistmod_calc := CINT(-0.0015 * form.strength + 0.0375 * form.intelligence + 0.1125 * form.dexterity); 
+	var hitsmod_calc := CINT(form.strength / 3);
+	var manamod_calc := CINT(form.dexterity / 3);
+	var stammod_calc := CINT(form.intelligence / 3);
+	var dicedmg_calc := CalculateDiceDamage();
+
+	var bonusMagery := 0;
+	bonusMagery:= 1 + (AP_GetSkill(who, MAGERY) / 300); 
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
+		skill_a_calc := CINT(skill_a_calc * bonusMagery);
+		hitsmod_calc := CINT(hitsmod_calc * bonusMagery);
+		resistmod_calc := CINT(resistmod_calc * bonusMagery);
+	endif
+
+	var bonusMagicLore := 0;
+	bonusMagicLore := CINT(AP_GetSkill(who, THEOLOGY) / 6);
+	var bonusInstintoHP := CINT(AP_GetSkill(who, THEOLOGY) / 3);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
+		skill_a_calc := CINT(skill_a_calc + bonusMagicLore);
+		hitsmod_calc := CINT(hitsmod_calc + bonusInstintoHP);
+		resistmod_calc := CINT(resistmod_calc + bonusMagicLore);
+	endif
+
+	var current_hitsmod := GetObjProperty(who, "hitsmod");
+	var current_manamod := GetObjProperty(who, "manamod");
+	var current_stammod := GetObjProperty(who, "stammod");
+	var current_resistmod := GetObjProperty(who, "resistmod");
+
+	// Handle cases where property doesn't exist
+	if (current_hitsmod == error)
+		current_hitsmod := 0;
+	endif
+	if (current_manamod == error)
+		current_manamod := 0;
+	endif
+	if (current_stammod == error)
+		current_stammod := 0;
+	endif
+	if (current_resistmod == error)
+		current_resistmod := 0;
+	endif
+
+	SetObjProperty(who, "skill_a", skill_a_calc);
+	SetObjProperty(who, "dicedmg", dicedmg_calc);
+	SetObjProperty(who, "polymorph_hitsmod", hitsmod_calc);
+	SetObjProperty(who, "polymorph_manamod", manamod_calc);
+	SetObjProperty(who, "polymorph_stammod", stammod_calc);
+	SetObjProperty(who, "polymorph_resistmod", resistmod_calc);
+	SetObjProperty(who, "hitsmod", current_hitsmod + hitsmod_calc);
+	SetObjProperty(who, "manamod", current_manamod + manamod_calc);
+	SetObjProperty(who, "stammod", current_stammod + stammod_calc);
+	SetObjProperty(who, "resistmod", current_resistmod + resistmod_calc);
+	recalcvitals(who);
+	ApplyEpicHealing(who, hitsmod_calc);
+	applyResistMod(who, resistmod_calc, form, transformation_duration);
+endfunction
+
+function applyResistMod(who, resistmod_calc, form, transformation_duration)
+	// Reset all resist mods
+	who.resist_physical_mod := 0;
+	who.resist_fire_mod := 0;
+	who.resist_cold_mod := 0;
+	who.resist_poison_mod := 0;
+	who.resist_energy_mod := 0;
+	
+	// Apply base resistance to all elements
+	who.resist_physical_mod := who.resist_physical_mod + resistmod_calc;
+	who.resist_fire_mod := who.resist_fire_mod + resistmod_calc;
+	who.resist_cold_mod := who.resist_cold_mod + resistmod_calc;
+	who.resist_poison_mod := who.resist_poison_mod + resistmod_calc;
+	who.resist_energy_mod := who.resist_energy_mod + resistmod_calc;
+
+endfunction
+
+function ApplyAttributeBoosts(who, form, duration)
+	var strength_boost := CINT(form.strength / 3);
+	var agility_boost := CINT(form.dexterity / 3);
+	var intelligence_boost := CINT(form.intelligence / 3);
+
+	TS_StartTimer(who, "agility", CINT(duration), agility_boost);
+	TS_StartTimer(who, "strength", CINT(duration), strength_boost);
+	TS_StartTimer(who, "intelligence", CINT(duration), intelligence_boost);
+endfunction
+
+function CalculateDiceDamage()
+	var primary_dice := "12d2"; 
+	return array{primary_dice, primary_dice, primary_dice};
+endfunction
+
+function CalculateTransformationDuration(who)
+	var duration := 60 + 540 * AP_GetSkill(who, THEOLOGY) / 100;
+	return duration;
+endfunction
+
+function FailTransformation(who)
+	who.frozen := 0;
+	PlayObjectCenteredEffect(who, FX_FIZZLE, 5, 50);
+	PlaySoundEffect(who, SFX_SPELL_FAIL);
+	return 1;
+endfunction
+
+function ValidateTransformation(who, form)
+	if (who.npctemplate)
+		return form;
+	endif
+
+	if (IsPlayerInTransformation(who))
+		SendSysMessageEx(who, "Você já está sob a forma de outra criatura. Primeiro, volte à sua forma normal.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!CanTransform(who, form))
+		SendSysMessageEx(who, "Você falhou em assumir a forma primordial.", SSM_FAIL);
+		FailTransformation(who);
+		return 0;
+	endif
+
+	return form;
+endfunction
+
+function IsPlayerInTransformation(who)
+	return GetObjProperty(who, "metamorfose") != error;
+endfunction
+
+function GetTerrainAtLocation(player, x, y, realm)
+	var terrain_map := dictionary{
+		// Dirt terrains (200+ tiles)
+		0x71->"dirt", 0x72->"dirt", 0x73->"dirt", 0x74->"dirt", 0x75->"dirt", 0x76->"dirt", 0x77->"dirt", 0x78->"dirt", 0x79->"dirt", 0x7a->"dirt", 0x7b->"dirt", 0x7c->"dirt",
+		0x82->"dirt", 0x83->"dirt", 0x85->"dirt", 0x86->"dirt", 0x87->"dirt", 0x88->"dirt", 0x89->"dirt", 0x8a->"dirt", 0x8b->"dirt", 0x8c->"dirt", 0x8d->"dirt", 0x8e->"dirt", 0x8f->"dirt",
+		0x90->"dirt", 0x91->"dirt", 0x92->"dirt", 0x93->"dirt", 0x94->"dirt", 0x95->"dirt", 0x96->"dirt", 0x97->"dirt", 0x98->"dirt", 0x99->"dirt", 0x9a->"dirt", 0x9b->"dirt", 0x9c->"dirt", 0x9d->"dirt", 0x9e->"dirt", 0x9f->"dirt",
+		0xa0->"dirt", 0xa1->"dirt", 0xa2->"dirt", 0xa3->"dirt", 0xa4->"dirt", 0xa5->"dirt", 0xa6->"dirt", 0xa7->"dirt",
+		0xdc->"dirt", 0xdd->"dirt", 0xde->"dirt", 0xdf->"dirt", 0xe0->"dirt", 0xe1->"dirt", 0xe2->"dirt", 0xe3->"dirt", 0xe8->"dirt", 0xe9->"dirt", 0xea->"dirt", 0xeb->"dirt",
+		0x141->"dirt", 0x142->"dirt", 0x143->"dirt", 0x144->"dirt", 0x14c->"dirt", 0x14d->"dirt", 0x14e->"dirt", 0x14f->"dirt",
+		0x169->"dirt", 0x16a->"dirt", 0x16b->"dirt", 0x16c->"dirt", 0x16d->"dirt", 0x16e->"dirt", 0x16f->"dirt", 0x170->"dirt", 0x171->"dirt", 0x172->"dirt", 0x173->"dirt", 0x174->"dirt",
+		0x1dc->"dirt", 0x1dd->"dirt", 0x1de->"dirt", 0x1df->"dirt", 0x1e0->"dirt", 0x1e1->"dirt", 0x1e2->"dirt", 0x1e3->"dirt", 0x1e4->"dirt", 0x1e5->"dirt", 0x1e6->"dirt", 0x1e7->"dirt", 0x1ec->"dirt", 0x1ed->"dirt", 0x1ee->"dirt", 0x1ef->"dirt",
+		0x272->"dirt", 0x273->"dirt", 0x274->"dirt", 0x275->"dirt", 0x27e->"dirt", 0x27f->"dirt", 0x280->"dirt", 0x281->"dirt",
+		0x2d0->"dirt", 0x2d1->"dirt", 0x2d2->"dirt", 0x2d3->"dirt", 0x2d4->"dirt", 0x2d5->"dirt", 0x2d6->"dirt", 0x2d7->"dirt",
+		0x2e5->"dirt", 0x2e6->"dirt", 0x2e7->"dirt", 0x2e8->"dirt", 0x2e9->"dirt", 0x2ea->"dirt", 0x2eb->"dirt", 0x2ec->"dirt", 0x2ed->"dirt", 0x2ee->"dirt", 0x2ef->"dirt", 0x2f0->"dirt", 0x2f1->"dirt", 0x2f2->"dirt", 0x2f3->"dirt", 0x2f4->"dirt", 0x2f5->"dirt", 0x2f6->"dirt", 0x2f7->"dirt", 0x2f8->"dirt", 0x2f9->"dirt", 0x2fa->"dirt", 0x2fb->"dirt", 0x2fc->"dirt", 0x2fd->"dirt", 0x2fe->"dirt", 0x2ff->"dirt",
+		0x303->"dirt", 0x304->"dirt", 0x305->"dirt", 0x306->"dirt", 0x307->"dirt", 0x308->"dirt", 0x309->"dirt", 0x30a->"dirt", 0x30b->"dirt", 0x30c->"dirt", 0x30d->"dirt", 0x30e->"dirt", 0x30f->"dirt", 0x310->"dirt", 0x311->"dirt", 0x312->"dirt", 0x313->"dirt", 0x314->"dirt", 0x315->"dirt", 0x316->"dirt", 0x317->"dirt", 0x318->"dirt", 0x319->"dirt", 0x31a->"dirt", 0x31b->"dirt", 0x31c->"dirt", 0x31d->"dirt", 0x31e->"dirt", 0x31f->"dirt",
+		0x32c->"dirt", 0x32d->"dirt", 0x32e->"dirt", 0x32f->"dirt", 0x33d->"dirt", 0x33e->"dirt", 0x33f->"dirt", 0x340->"dirt",
+		0x345->"dirt", 0x346->"dirt", 0x347->"dirt", 0x348->"dirt", 0x349->"dirt", 0x34a->"dirt", 0x34b->"dirt", 0x34c->"dirt",
+		0x355->"dirt", 0x356->"dirt", 0x357->"dirt", 0x358->"dirt",
+		0x367->"dirt", 0x368->"dirt", 0x369->"dirt", 0x36a->"dirt", 0x36b->"dirt", 0x36c->"dirt", 0x36d->"dirt", 0x36e->"dirt",
+		0x377->"dirt", 0x378->"dirt", 0x379->"dirt", 0x37a->"dirt",
+		0x38d->"dirt", 0x38e->"dirt", 0x38f->"dirt", 0x390->"dirt",
+		0x395->"dirt", 0x396->"dirt", 0x397->"dirt", 0x398->"dirt", 0x399->"dirt", 0x39a->"dirt", 0x39b->"dirt", 0x39c->"dirt",
+		0x3a5->"dirt", 0x3a6->"dirt", 0x3a7->"dirt", 0x3a8->"dirt",
+		0x3f6->"dirt", 0x3f7->"dirt", 0x3f9->"dirt", 0x3fa->"dirt", 0x3fb->"dirt", 0x3fc->"dirt", 0x3fd->"dirt", 0x3fe->"dirt", 0x3ff->"dirt", 0x400->"dirt", 0x401->"dirt", 0x402->"dirt", 0x403->"dirt", 0x404->"dirt", 0x405->"dirt",
+		0x547->"dirt", 0x548->"dirt", 0x549->"dirt", 0x54a->"dirt", 0x54b->"dirt", 0x54c->"dirt", 0x54d->"dirt", 0x54e->"dirt",
+		0x553->"dirt", 0x554->"dirt", 0x555->"dirt", 0x556->"dirt",
+		0x597->"dirt", 0x598->"dirt", 0x599->"dirt", 0x59a->"dirt", 0x59b->"dirt", 0x59c->"dirt", 0x59d->"dirt", 0x59e->"dirt",
+		0x623->"dirt", 0x624->"dirt", 0x625->"dirt", 0x626->"dirt", 0x627->"dirt", 0x628->"dirt", 0x629->"dirt", 0x62a->"dirt", 0x62b->"dirt", 0x62c->"dirt", 0x62d->"dirt", 0x62e->"dirt", 0x62f->"dirt", 0x630->"dirt", 0x631->"dirt", 0x632->"dirt", 0x633->"dirt", 0x634->"dirt", 0x635->"dirt", 0x636->"dirt", 0x637->"dirt", 0x638->"dirt", 0x639->"dirt", 0x63a->"dirt",
+		0x6f3->"dirt", 0x6f4->"dirt", 0x6f5->"dirt", 0x6f6->"dirt", 0x6f7->"dirt", 0x6f8->"dirt", 0x6f9->"dirt", 0x6fa->"dirt",
+		0x777->"dirt", 0x778->"dirt", 0x779->"dirt", 0x77a->"dirt", 0x77b->"dirt", 0x77c->"dirt", 0x77d->"dirt", 0x77e->"dirt", 0x77f->"dirt", 0x780->"dirt", 0x781->"dirt", 0x782->"dirt", 0x783->"dirt", 0x784->"dirt", 0x785->"dirt", 0x786->"dirt", 0x787->"dirt", 0x788->"dirt", 0x789->"dirt", 0x78a->"dirt", 0x78b->"dirt", 0x78c->"dirt", 0x78d->"dirt", 0x78e->"dirt", 0x78f->"dirt", 0x790->"dirt", 0x791->"dirt",
+		
+		// Grass terrains (100+ tiles)
+		0x3->"grass", 0x4->"grass", 0x5->"grass", 0x6->"grass", 0x3b->"grass", 0x3c->"grass", 0x3d->"grass", 0x3e->"grass", 0x7d->"grass", 0x7e->"grass", 0x7f->"grass",
+		0xc0->"grass", 0xc1->"grass", 0xc2->"grass", 0xc3->"grass", 0xd8->"grass", 0xd9->"grass", 0xda->"grass", 0xdb->"grass",
+		0x1a4->"grass", 0x1a5->"grass", 0x1a6->"grass", 0x1a7->"grass",
+		0x231->"grass", 0x232->"grass", 0x233->"grass", 0x234->"grass", 0x239->"grass", 0x23a->"grass", 0x23b->"grass", 0x23c->"grass", 0x23d->"grass", 0x23e->"grass", 0x23f->"grass", 0x240->"grass", 0x241->"grass", 0x242->"grass", 0x243->"grass",
+		0x36f->"grass", 0x370->"grass", 0x371->"grass", 0x372->"grass", 0x373->"grass", 0x374->"grass", 0x375->"grass", 0x376->"grass", 0x37b->"grass", 0x37c->"grass", 0x37d->"grass", 0x37e->"grass",
+		0x3bf->"grass", 0x3c0->"grass", 0x3c1->"grass", 0x3c2->"grass", 0x3c3->"grass", 0x3c4->"grass", 0x3c5->"grass", 0x3c6->"grass", 0x3cb->"grass", 0x3cc->"grass", 0x3cd->"grass", 0x3ce->"grass",
+		0x579->"grass", 0x57a->"grass", 0x57b->"grass", 0x57c->"grass", 0x57d->"grass", 0x57e->"grass", 0x57f->"grass", 0x580->"grass", 0x58b->"grass", 0x58c->"grass",
+		0x5d7->"grass", 0x5d8->"grass", 0x5d9->"grass", 0x5da->"grass", 0x5db->"grass", 0x5dc->"grass", 0x5dd->"grass", 0x5de->"grass", 0x5e3->"grass", 0x5e4->"grass", 0x5e5->"grass", 0x5e6->"grass",
+		0x67d->"grass", 0x67e->"grass", 0x67f->"grass", 0x680->"grass", 0x681->"grass", 0x682->"grass", 0x683->"grass", 0x684->"grass", 0x689->"grass", 0x68a->"grass", 0x68b->"grass", 0x68c->"grass",
+		0x695->"grass", 0x696->"grass", 0x697->"grass", 0x698->"grass", 0x699->"grass", 0x69a->"grass", 0x69b->"grass", 0x69c->"grass", 0x6a1->"grass", 0x6a2->"grass", 0x6a3->"grass", 0x6a4->"grass",
+		0x6b5->"grass", 0x6b6->"grass", 0x6b7->"grass", 0x6b8->"grass", 0x6b9->"grass", 0x6ba->"grass", 0x6bf->"grass", 0x6c0->"grass", 0x6c1->"grass", 0x6c2->"grass",
+		0x6d2->"grass", 0x6d3->"grass", 0x6d4->"grass", 0x6d5->"grass", 0x6d6->"grass", 0x6d7->"grass", 0x6d8->"grass", 0x6d9->"grass", 0x6de->"grass", 0x6df->"grass", 0x6e0->"grass", 0x6e1->"grass",
+		
+		// Rock terrains (150+ tiles)
+		0xe4->"rock", 0xe5->"rock", 0xe6->"rock", 0xe7->"rock", 0xf4->"rock", 0xf5->"rock", 0xf6->"rock", 0xf7->"rock",
+		0x104->"rock", 0x105->"rock", 0x106->"rock", 0x107->"rock", 0x110->"rock", 0x111->"rock", 0x112->"rock", 0x113->"rock", 0x122->"rock", 0x123->"rock", 0x124->"rock", 0x125->"rock",
+		0x1d3->"rock", 0x1d4->"rock", 0x1d5->"rock", 0x1d6->"rock", 0x1d7->"rock", 0x1d8->"rock", 0x1d9->"rock", 0x1da->"rock",
+		0x21f->"rock", 0x220->"rock", 0x221->"rock", 0x222->"rock", 0x223->"rock", 0x224->"rock", 0x225->"rock", 0x226->"rock", 0x227->"rock", 0x228->"rock", 0x229->"rock", 0x22a->"rock", 0x22b->"rock", 0x22c->"rock", 0x22d->"rock", 0x22e->"rock", 0x22f->"rock", 0x230->"rock", 0x235->"rock", 0x236->"rock", 0x237->"rock", 0x238->"rock",
+		0x6cd->"rock", 0x6ce->"rock", 0x6cf->"rock", 0x6d0->"rock", 0x6d1->"rock", 0x6da->"rock", 0x6db->"rock", 0x6dc->"rock", 0x6dd->"rock",
+		0x6eb->"rock", 0x6ec->"rock", 0x6ed->"rock", 0x6ee->"rock", 0x6ef->"rock", 0x6f0->"rock", 0x6f1->"rock", 0x6f2->"rock",
+		0x6fb->"rock", 0x6fc->"rock", 0x6fd->"rock", 0x6fe->"rock", 0x70d->"rock", 0x70e->"rock", 0x70f->"rock", 0x710->"rock", 0x711->"rock", 0x712->"rock", 0x713->"rock", 0x714->"rock",
+		0x71d->"rock", 0x71e->"rock", 0x71f->"rock", 0x720->"rock", 0x72b->"rock", 0x72c->"rock", 0x72d->"rock", 0x72e->"rock", 0x72f->"rock", 0x730->"rock", 0x731->"rock", 0x732->"rock",
+		0x73b->"rock", 0x73c->"rock", 0x73d->"rock", 0x73e->"rock", 0x749->"rock", 0x74a->"rock", 0x74b->"rock", 0x74c->"rock", 0x74d->"rock", 0x74e->"rock", 0x74f->"rock", 0x750->"rock",
+		0x759->"rock", 0x75a->"rock", 0x75b->"rock", 0x75c->"rock",
+		0x9ec->"rock", 0x9ed->"rock", 0x9ee->"rock", 0x9ef->"rock", 0x9f0->"rock", 0x9f1->"rock", 0x9f2->"rock", 0x9f3->"rock", 0x9f4->"rock", 0x9f5->"rock", 0x9f6->"rock", 0x9f7->"rock", 0x9f8->"rock", 0x9f9->"rock", 0x9fa->"rock", 0x9fb->"rock", 0x9fc->"rock", 0x9fd->"rock", 0x9fe->"rock", 0x9ff->"rock",
+		0xa00->"rock", 0xa01->"rock", 0xa02->"rock", 0xa03->"rock", 0xa0c->"rock", 0xa0d->"rock", 0xa0e->"rock", 0xa0f->"rock",
+		0xa1a->"rock", 0xa1b->"rock", 0xa1c->"rock", 0xa1d->"rock", 0xa1e->"rock", 0xa1f->"rock",
+		0xa2a->"rock", 0xa2b->"rock", 0xa2c->"rock", 0xa2d->"rock", 0xa2e->"rock", 0xa2f->"rock",
+		0xa3a->"rock", 0xa3b->"rock", 0xa3c->"rock", 0xa3d->"rock", 0xa3e->"rock", 0xa3f->"rock",
+		0xa4a->"rock", 0xa4b->"rock", 0xa4c->"rock", 0xa4d->"rock", 0xa4e->"rock", 0xa4f->"rock",
+		0xa5a->"rock", 0xa5b->"rock", 0xa5c->"rock", 0xa5d->"rock", 0xa5e->"rock", 0xa5f->"rock",
+		0xa6a->"rock", 0xa6b->"rock", 0xa6c->"rock", 0xa6d->"rock", 0xa6e->"rock", 0xa6f->"rock",
+		0xa7a->"rock", 0xa7b->"rock", 0xa7c->"rock", 0xa7d->"rock", 0xa7e->"rock", 0xa7f->"rock",
+		0xa8a->"rock", 0xa8b->"rock", 0xa8c->"rock", 0xa8d->"rock", 0xa8e->"rock", 0xa8f->"rock",
+		0xa9a->"rock", 0xa9b->"rock", 0xa9c->"rock", 0xa9d->"rock", 0xa9e->"rock", 0xa9f->"rock",
+		
+		0x16->"sand", 0x17->"sand", 0x18->"sand", 0x19->"sand", 0x1a->"sand", 0x1b->"sand", 0x1c->"sand", 0x1d->"sand", 0x1e->"sand", 0x1f->"sand",
+		0x20->"sand", 0x21->"sand", 0x22->"sand", 0x23->"sand", 0x24->"sand", 0x25->"sand", 0x26->"sand", 0x27->"sand", 0x28->"sand", 0x29->"sand",
+		0x2a->"sand", 0x2b->"sand", 0x2c->"sand", 0x2d->"sand", 0x2e->"sand", 0x2f->"sand", 0x30->"sand", 0x31->"sand", 0x32->"sand", 0x33->"sand",
+		0x34->"sand", 0x35->"sand", 0x36->"sand", 0x37->"sand", 0x38->"sand", 0x39->"sand", 0x3a->"sand", 0x44->"sand", 0x45->"sand", 0x46->"sand",
+		0x47->"sand", 0x48->"sand", 0x49->"sand", 0x4a->"sand", 0x4b->"sand",
+		0x11e->"sand", 0x11f->"sand", 0x120->"sand", 0x121->"sand", 0x126->"sand", 0x127->"sand", 0x128->"sand", 0x129->"sand", 0x12a->"sand", 0x12b->"sand", 0x12c->"sand", 0x12d->"sand",
+		0x1a8->"sand", 0x1a9->"sand", 0x1aa->"sand", 0x1ab->"sand",
+		0x1b9->"sand", 0x1ba->"sand", 0x1bb->"sand", 0x1bc->"sand", 0x1bd->"sand", 0x1be->"sand", 0x1bf->"sand", 0x1c0->"sand", 0x1c1->"sand", 0x1c2->"sand", 0x1c3->"sand", 0x1c4->"sand", 0x1c5->"sand", 0x1c6->"sand", 0x1c7->"sand", 0x1c8->"sand", 0x1c9->"sand", 0x1ca->"sand", 0x1cb->"sand", 0x1cc->"sand", 0x1cd->"sand", 0x1ce->"sand", 0x1cf->"sand", 0x1d0->"sand", 0x1d1->"sand",
+		0x282->"sand", 0x283->"sand", 0x284->"sand", 0x285->"sand", 0x28a->"sand", 0x28b->"sand", 0x28c->"sand", 0x28d->"sand", 0x28e->"sand", 0x28f->"sand", 0x290->"sand", 0x291->"sand",
+		0x335->"sand", 0x336->"sand", 0x337->"sand", 0x338->"sand", 0x339->"sand", 0x33a->"sand", 0x33b->"sand", 0x33c->"sand", 0x341->"sand", 0x342->"sand", 0x343->"sand", 0x344->"sand",
+		0x34d->"sand", 0x34e->"sand", 0x34f->"sand", 0x350->"sand", 0x351->"sand", 0x352->"sand", 0x353->"sand", 0x354->"sand", 0x359->"sand", 0x35a->"sand", 0x35b->"sand", 0x35c->"sand",
+		0x3b7->"sand", 0x3b8->"sand", 0x3b9->"sand", 0x3ba->"sand", 0x3bb->"sand", 0x3bc->"sand", 0x3bd->"sand", 0x3be->"sand", 0x3c7->"sand", 0x3c8->"sand", 0x3c9->"sand", 0x3ca->"sand",
+		0x446->"sand", 0x447->"sand", 0x448->"sand", 0x449->"sand", 0x44a->"sand", 0x44b->"sand", 0x44c->"sand", 0x44d->"sand", 0x44e->"sand", 0x44f->"sand", 0x450->"sand", 0x451->"sand", 0x452->"sand", 0x453->"sand", 0x454->"sand", 0x455->"sand", 0x456->"sand", 0x457->"sand", 0x458->"sand", 0x459->"sand", 0x45a->"sand", 0x45b->"sand", 0x45c->"sand", 0x45d->"sand", 0x45e->"sand", 0x45f->"sand", 0x460->"sand", 0x461->"sand", 0x462->"sand", 0x463->"sand", 0x464->"sand", 0x465->"sand", 0x466->"sand", 0x467->"sand", 0x468->"sand", 0x469->"sand", 0x46a->"sand", 0x46b->"sand", 0x46c->"sand", 0x46d->"sand", 0x46e->"sand", 0x46f->"sand", 0x470->"sand", 0x471->"sand", 0x472->"sand", 0x473->"sand", 0x474->"sand", 0x475->"sand", 0x476->"sand", 0x477->"sand", 0x478->"sand", 0x479->"sand",
+		0x5a7->"sand", 0x5a8->"sand", 0x5a9->"sand", 0x5aa->"sand", 0x5ab->"sand", 0x5ac->"sand", 0x5ad->"sand", 0x5ae->"sand", 0x5af->"sand", 0x5b0->"sand", 0x5b1->"sand", 0x5b2->"sand",
+		0x64b->"sand", 0x64c->"sand", 0x64d->"sand", 0x64e->"sand", 0x64f->"sand", 0x650->"sand", 0x651->"sand", 0x652->"sand", 0x657->"sand", 0x658->"sand", 0x659->"sand", 0x65a->"sand",
+		0x663->"sand", 0x664->"sand", 0x665->"sand", 0x666->"sand", 0x667->"sand", 0x668->"sand", 0x669->"sand", 0x66a->"sand", 0x66f->"sand", 0x670->"sand", 0x671->"sand", 0x672->"sand",
+		
+		0x10c->"snow", 0x10d->"snow", 0x10e->"snow", 0x10f->"snow", 0x114->"snow", 0x115->"snow", 0x116->"snow", 0x117->"snow", 0x11a->"snow", 0x11b->"snow", 0x11c->"snow", 0x11d->"snow", 0x12e->"snow", 0x12f->"snow", 0x130->"snow", 0x131->"snow",
+		0x179->"snow", 0x17a->"snow", 0x17b->"snow", 0x17c->"snow", 0x17d->"snow", 0x17e->"snow", 0x17f->"snow", 0x180->"snow", 0x181->"snow", 0x182->"snow", 0x183->"snow", 0x184->"snow", 0x185->"snow", 0x186->"snow", 0x187->"snow", 0x188->"snow", 0x189->"snow", 0x18a->"snow",
+		0x385->"snow", 0x386->"snow", 0x387->"snow", 0x388->"snow", 0x389->"snow", 0x38a->"snow", 0x38b->"snow", 0x38c->"snow",
+		0x391->"snow", 0x392->"snow", 0x393->"snow", 0x394->"snow", 0x39d->"snow", 0x39e->"snow", 0x39f->"snow", 0x3a0->"snow", 0x3a1->"snow", 0x3a2->"snow", 0x3a3->"snow", 0x3a4->"snow",
+		0x3a9->"snow", 0x3aa->"snow", 0x3ab->"snow", 0x3ac->"snow",
+		0x5bf->"snow", 0x5c0->"snow", 0x5c1->"snow", 0x5c2->"snow", 0x5c3->"snow", 0x5c4->"snow", 0x5c5->"snow", 0x5c6->"snow", 0x5c7->"snow", 0x5c8->"snow", 0x5c9->"snow", 0x5ca->"snow", 0x5cb->"snow", 0x5cc->"snow", 0x5cd->"snow", 0x5ce->"snow", 0x5cf->"snow", 0x5d0->"snow", 0x5d1->"snow", 0x5d2->"snow", 0x5d3->"snow", 0x5d4->"snow", 0x5d5->"snow", 0x5d6->"snow",
+		0x5df->"snow", 0x5e0->"snow", 0x5e1->"snow", 0x5e2->"snow",
+		0x745->"snow", 0x746->"snow", 0x747->"snow", 0x748->"snow", 0x751->"snow", 0x752->"snow", 0x753->"snow", 0x754->"snow", 0x755->"snow", 0x756->"snow", 0x757->"snow", 0x758->"snow",
+		0x75d->"snow", 0x75e->"snow", 0x75f->"snow", 0x760->"snow", 0x76d->"snow", 0x76e->"snow", 0x76f->"snow", 0x770->"snow", 0x771->"snow", 0x772->"snow", 0x773->"snow",
+		
+		0xa8->"water", 0xa9->"water", 0xaa->"water", 0xab->"water", 0x136->"water", 0x137->"water",
+		
+		0x1f4->"lava", 0x1f5->"lava", 0x1f6->"lava", 0x1f7->"lava",
+		
+		0x1fa->"void", 0x1fb->"void", 0x1fc->"void", 0x1fd->"void", 0x1fe->"void", 0x1ff->"void",
+		
+		0x245->"cave", 0x246->"cave", 0x247->"cave", 0x248->"cave", 0x249->"cave", 0x24a->"cave", 0x24b->"cave", 0x24c->"cave", 0x24d->"cave", 0x24e->"cave", 0x24f->"cave", 0x250->"cave", 0x251->"cave", 0x252->"cave", 0x253->"cave", 0x254->"cave", 0x255->"cave", 0x256->"cave", 0x257->"cave", 0x258->"cave", 0x259->"cave", 0x25a->"cave", 0x25b->"cave", 0x25c->"cave", 0x25d->"cave", 0x25e->"cave", 0x25f->"cave", 0x260->"cave", 0x261->"cave", 0x262->"cave", 0x263->"cave", 0x264->"cave", 0x265->"cave", 0x266->"cave", 0x267->"cave", 0x268->"cave", 0x269->"cave", 0x26a->"cave", 0x26b->"cave", 0x26c->"cave", 0x26d->"cave",
+		0x2bc->"cave", 0x2bd->"cave", 0x2be->"cave", 0x2bf->"cave", 0x2c0->"cave", 0x2c1->"cave", 0x2c2->"cave", 0x2c3->"cave", 0x2c4->"cave", 0x2c5->"cave", 0x2c6->"cave", 0x2c7->"cave", 0x2c8->"cave", 0x2c9->"cave", 0x2ca->"cave", 0x2cb->"cave",
+		0x63b->"cave", 0x63c->"cave", 0x63d->"cave", 0x63e->"cave", 0x7ed->"cave", 0x7ee->"cave", 0x7ef->"cave", 0x7f0->"cave", 0x7f1->"cave",
+		0x834->"cave", 0x835->"cave", 0x836->"cave", 0x837->"cave", 0x838->"cave", 0x839->"cave",
+		
+		0xc4->"forest", 0xc5->"forest", 0xc6->"forest", 0xc7->"forest", 0xc8->"forest", 0xc9->"forest", 0xca->"forest", 0xcb->"forest", 0xcc->"forest", 0xcd->"forest", 0xce->"forest", 0xcf->"forest", 0xd0->"forest", 0xd1->"forest", 0xd2->"forest", 0xd3->"forest", 0xd4->"forest", 0xd5->"forest", 0xd6->"forest", 0xd7->"forest",
+		0xed->"forest", 0xee->"forest", 0xef->"forest", 0xf0->"forest", 0xf1->"forest", 0xf2->"forest", 0xf3->"forest", 0xf8->"forest", 0xf9->"forest", 0xfa->"forest", 0xfb->"forest",
+		0x15d->"forest", 0x15e->"forest", 0x15f->"forest", 0x160->"forest", 0x161->"forest", 0x162->"forest", 0x163->"forest", 0x164->"forest", 0x165->"forest", 0x166->"forest", 0x167->"forest", 0x168->"forest",
+		0x324->"forest", 0x325->"forest", 0x326->"forest", 0x327->"forest", 0x328->"forest", 0x329->"forest", 0x32a->"forest", 0x32b->"forest",
+		0x54f->"forest", 0x550->"forest", 0x551->"forest", 0x552->"forest",
+		0x5f1->"forest", 0x5f2->"forest", 0x5f3->"forest", 0x5f4->"forest", 0x5f9->"forest", 0x5fa->"forest", 0x5fb->"forest", 0x5fc->"forest", 0x5fd->"forest", 0x5fe->"forest", 0x5ff->"forest", 0x600->"forest", 0x601->"forest", 0x602->"forest", 0x603->"forest", 0x604->"forest",
+		0x611->"forest", 0x612->"forest", 0x613->"forest", 0x614->"forest", 0x653->"forest", 0x654->"forest", 0x655->"forest", 0x656->"forest",
+		0x65b->"forest", 0x65c->"forest", 0x65d->"forest", 0x65e->"forest", 0x65f->"forest", 0x660->"forest", 0x661->"forest", 0x662->"forest", 0x66b->"forest", 0x66c->"forest", 0x66d->"forest", 0x66e->"forest",
+		0x6af->"forest", 0x6b0->"forest", 0x6b1->"forest", 0x6b2->"forest", 0x6b3->"forest", 0x6b4->"forest", 0x6bb->"forest", 0x6bc->"forest", 0x6bd->"forest", 0x6be->"forest",
+		0x709->"forest", 0x70a->"forest", 0x70b->"forest", 0x70c->"forest", 0x715->"forest", 0x716->"forest", 0x717->"forest", 0x718->"forest", 0x719->"forest", 0x71a->"forest", 0x71b->"forest", 0x71c->"forest",
+		0x2728->"forest", 0x2729->"forest", 0x272a->"forest", 0x272b->"forest", 0x272c->"forest", 0x272d->"forest", 0x272e->"forest", 0x272f->"forest", 0x2730->"forest", 0x2731->"forest", 0x2732->"forest", 0x2733->"forest", 0x2734->"forest", 0x2735->"forest", 0x2736->"forest",
+		
+		0xac->"jungle", 0xad->"jungle", 0xae->"jungle", 0xaf->"jungle", 0xb0->"jungle", 0xb3->"jungle", 0xb6->"jungle", 0xb9->"jungle", 0xbc->"jungle", 0xbd->"jungle", 0xbe->"jungle", 0xbf->"jungle",
+		0xec->"jungle", 0xfc->"jungle", 0xfd->"jungle", 0xfe->"jungle", 0xff->"jungle", 0x100->"jungle", 0x101->"jungle", 0x102->"jungle", 0x103->"jungle", 0x108->"jungle", 0x109->"jungle", 0x10a->"jungle", 0x10b->"jungle",
+		0x1f0->"jungle", 0x1f1->"jungle", 0x1f2->"jungle", 0x1f3->"jungle",
+		0x26e->"jungle", 0x26f->"jungle", 0x270->"jungle", 0x271->"jungle", 0x276->"jungle", 0x277->"jungle", 0x278->"jungle", 0x279->"jungle", 0x27a->"jungle", 0x27b->"jungle", 0x27c->"jungle", 0x27d->"jungle",
+		0x286->"jungle", 0x287->"jungle", 0x288->"jungle", 0x289->"jungle", 0x292->"jungle", 0x293->"jungle", 0x294->"jungle", 0x295->"jungle",
+		0x581->"jungle", 0x582->"jungle", 0x583->"jungle", 0x584->"jungle", 0x585->"jungle", 0x586->"jungle", 0x587->"jungle", 0x588->"jungle", 0x589->"jungle", 0x58a->"jungle", 0x58d->"jungle", 0x58e->"jungle", 0x58f->"jungle", 0x590->"jungle",
+		0x59f->"jungle", 0x5a0->"jungle", 0x5a1->"jungle", 0x5a2->"jungle", 0x5a3->"jungle", 0x5a4->"jungle", 0x5a5->"jungle", 0x5a6->"jungle",
+		0x5b3->"jungle", 0x5b4->"jungle", 0x5b5->"jungle", 0x5b6->"jungle", 0x5b7->"jungle", 0x5b8->"jungle", 0x5b9->"jungle", 0x5ba->"jungle",
+		0x5f5->"jungle", 0x5f6->"jungle", 0x5f7->"jungle", 0x5f8->"jungle",
+		0x605->"jungle", 0x606->"jungle", 0x607->"jungle", 0x608->"jungle", 0x609->"jungle", 0x60a->"jungle", 0x60b->"jungle", 0x60c->"jungle", 0x60d->"jungle", 0x60e->"jungle", 0x60f->"jungle", 0x610->"jungle",
+		0x615->"jungle", 0x616->"jungle", 0x617->"jungle", 0x618->"jungle",
+		0x727->"jungle", 0x728->"jungle", 0x729->"jungle", 0x72a->"jungle", 0x733->"jungle", 0x734->"jungle", 0x735->"jungle", 0x736->"jungle", 0x737->"jungle", 0x738->"jungle", 0x739->"jungle", 0x73a->"jungle"
+	};
+
+	// Create array of tiles to check: 5x5 grid with player at center (25 tiles total)
+	var tiles_to_check := array{
+		// Row 1 (y-2)
+		{x-2, y-2}, {x-1, y-2}, {x, y-2}, {x+1, y-2}, {x+2, y-2},
+		// Row 2 (y-1)
+		{x-2, y-1}, {x-1, y-1}, {x, y-1}, {x+1, y-1}, {x+2, y-1},
+		// Row 3 (y) - CENTER ROW with player at center position
+		{x-2, y}, {x-1, y}, {x, y}, {x+1, y}, {x+2, y},
+		// Row 4 (y+1)
+		{x-2, y+1}, {x-1, y+1}, {x, y+1}, {x+1, y+1}, {x+2, y+1},
+		// Row 5 (y+2)
+		{x-2, y+2}, {x-1, y+2}, {x, y+2}, {x+1, y+2}, {x+2, y+2}
+	};
+
+	// Count terrain types found in the grid
+	var terrain_counts := dictionary;
+	
+	foreach tile in tiles_to_check
+		var check_x := tile[1];
+		var check_y := tile[2];
+		
+		var statics := ListStaticsAtLocation(check_x, check_y, LIST_IGNORE_Z, 0, realm);
+		
+		foreach static in statics
+			var static_id := static.objtype;
+			var static_terrain := terrain_map[static_id];
+			
+			if (static_id != 0x244 && static_terrain)
+				if (!terrain_counts.exists(static_terrain))
+					terrain_counts[static_terrain] := 0;
+				endif
+				terrain_counts[static_terrain] := terrain_counts[static_terrain] + 1;
+			endif
+		endforeach
+		
+		var mapinfo := GetMapInfo(check_x, check_y, realm);
+		if (mapinfo)
+			var landtile_id := mapinfo.landtile;
+			var terrain_name := terrain_map[landtile_id];
+			
+			if (terrain_name)
+				if (!terrain_counts.exists(terrain_name))
+					terrain_counts[terrain_name] := 0;
+				endif
+				terrain_counts[terrain_name] := terrain_counts[terrain_name] + 1;
+			else
+				// Check if undefined terrain is water via config
+				var water_check := struct;
+				water_check.+x := check_x;
+				water_check.+y := check_y;
+				if (IsWater(water_check, mapinfo))
+					if (!terrain_counts.exists("water"))
+						terrain_counts["water"] := 0;
+					endif
+					terrain_counts["water"] := terrain_counts["water"] + 1;
+				endif
+			endif
+		endif
+	endforeach
+
+	// Find the dominant terrain type
+	var dominant_terrain := error;
+	var max_count := 0;
+	
+	foreach terrain_type in (terrain_counts.keys())
+		var count := terrain_counts[terrain_type];
+		if (count > max_count)
+			max_count := count;
+			dominant_terrain := terrain_type;
+		endif
+	endforeach
+
+	return dominant_terrain;
+endfunction
+
+function CanTransform(who, form)
+	var skill := AP_GetSkill(who, MAGERY);
+	var difficulty := 35; // Hardcoded difficulty for all primordial forms
+	if (SkillCheck(who, MAGERY, difficulty * 1.2 + 15) <= 0)
+		return 0;
+	endif
+
+	var manaCost := difficulty / 2;
+	if (!AP_ConsumeVital(who, MANA, manaCost))
+		return 0;
+	endif
+
+	return 1;
+endfunction
+
+function ApplyTransformationElementalDamage(who, form_key, duration)
+	// Mapeia forma para primordial flag (100% conversão elemental de dano)
+	case (form_key)
+		"fogo":         SetObjProperty(who, "primordial_fire", 1);
+		"gelo":         SetObjProperty(who, "primordial_cold", 1);
+		"agua":         SetObjProperty(who, "primordial_cold", 1);
+		"ar":           SetObjProperty(who, "primordial_energy", 1);
+		"areia":        SetObjProperty(who, "primordial_energy", 1);
+		"energia":      SetObjProperty(who, "primordial_energy", 1);
+		"ent_medio":    SetObjProperty(who, "primordial_poison", 1);
+		"ent_grande":   SetObjProperty(who, "primordial_poison", 1);
+		"ent_alto":     SetObjProperty(who, "primordial_poison", 1);
+		"totem":        SetObjProperty(who, "primordial_poison", 1);
+		"terra":        SetObjProperty(who, "primordial_physical", 1);
+		"pedra":        SetObjProperty(who, "primordial_physical", 1);
+		"obsidiana":    SetObjProperty(who, "primordial_energy", 1);
+		default:        return 0;
+	endcase
+
+	return 1;
+endfunction
+
+function GetPrimordialHitScript(form_key)
+	case (form_key)
+		"fogo":         return ":combat:weaponHitScripts/FireHit";       // fire damage + explosion
+		"gelo":         return ":combat:weaponHitScripts/IceHit";        // cold damage + frost
+		"agua":         return ":combat:weaponHitScripts/IceHit";        // cold damage + frost
+		"ent_medio":    return ":combat:weaponHitScripts/spitacid";      // acid/poison damage
+		"ent_grande":   return ":combat:weaponHitScripts/spitacid";      // acid/poison damage
+		"ent_alto":     return ":combat:weaponHitScripts/spitacid";      // acid/poison damage
+		"totem":        return ":combat:weaponHitScripts/spitacid";      // acid/poison damage
+		"ar":           return ":combat:weaponHitScripts/LightningHit";  // energy damage + lightning
+		"areia":        return ":combat:weaponHitScripts/LightningHit";  // energy damage + lightning
+		"energia":      return ":combat:weaponHitScripts/LightningHit";  // energy damage + lightning
+		"obsidiana":    return ":combat:weaponHitScripts/LightningHit";  // energy damage + lightning
+		default:        return 0; // terra/pedra = no special effect
+	endcase
+endfunction

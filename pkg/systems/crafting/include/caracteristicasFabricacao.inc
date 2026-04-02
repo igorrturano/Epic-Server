@@ -22,6 +22,25 @@ function PegaSubValoresFabricacao(item, caracteristica)
 	return propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais; 
 endfunction
 
+/*
+PegaComponenteFabricacao(item, caracteristica)
+
+Retorno: 
+struct{ 
+	componenteNecessario: struct{ caracteristica , classe , encaixe, encaixeDesc , isPrincipal , itens , qtdNecessaria },
+	item: struct{ nome, objtype}, 
+	material: struct{ chave, nome }, //Chave é o objtype do material.
+	poderAvaliado: struct{ modHp, modPeso, poderContado},
+	propriedades = struct{ caracteristica , modificadorHp , valorPrincipal}, 
+	tier = struct{ desc , valor } //Qualidade do componente
+}
+*/
+function PegaComponenteFabricacao(item, caracteristica)
+	var propFabricadoMontado := PegaPropFabricadoMontado(item);
+	var retorno := propFabricadoMontado.componentes[caracteristica]; 
+	return retorno;
+endfunction
+
 function PegaPropFabricadoMontado(objeto)
 	var propFabricadoMontado;
 	if( objeto.isA(POLCLASS_ITEM))

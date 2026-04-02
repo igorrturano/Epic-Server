@@ -13,6 +13,8 @@ include "include/say";
 include ":taming:taming";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":combat:Controller/DamageController_legacy";
 
 var MIN_SKILL_FOR_BLOODIED := 40;
@@ -38,11 +40,11 @@ program UseBandage(mobile, bandage)
 	var heal_skill := AP_GetSkill(mobile, MEDICINE);
 	var quantidade := min(max(1, CInt((heal_skill) / 4)), min(targ.amount, bandage.amount));
 	var bandagem_especial;
-	if (targ.objtype == 0xF85 && (heal_skill >= 70 || temHabilidade(mobile, "Ervas Curativas"))) // se for ginseng
+	if (targ.objtype == 0xF85 && (heal_skill >= 70 || MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))) // se for ginseng
 		SendSysMessageEx(mobile, "Tentando passar o extrato de ginseng nas ataduras.", SSM_INFO);
 		PlaySoundEffectPrivate(mobile, 0x1C9, mobile);
 		Sleep(1);
-		if ((SkillCheck(mobile, MEDICINE, 70) > 0) || temHabilidade(mobile, "Ervas Curativas"))
+		if ((SkillCheck(mobile, MEDICINE, 70) > 0) || MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))
 			SendSysMessageEx(mobile, "Voce passou o extrato de ginseng nas ataduras.", SSM_INFO);
 			Set_Critical(1);
 			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z + 5, "bandages",
@@ -60,11 +62,11 @@ program UseBandage(mobile, bandage)
 			SubtractAmount(targ, quantidade);
 			return;
 		endif
-	elseif (targ.objtype == 0xF84 && (heal_skill >= 70 || temHabilidade(mobile, "Ervas Curativas"))) // se for garlic
+	elseif (targ.objtype == 0xF84 && (heal_skill >= 70 || MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))) // se for garlic
 		SendSysMessageEx(mobile, "Tentando passar o extrato de alho nas ataduras.", SSM_INFO);
 		PlaySoundEffectPrivate(mobile, 0x1C9, mobile);
 		Sleep(1);
-		if ((SkillCheck(mobile, MEDICINE, 70) > 0) || temHabilidade(mobile, "Ervas Curativas"))
+		if ((SkillCheck(mobile, MEDICINE, 70) > 0) || MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))
 			SendSysMessageEx(mobile, "Voce passou o extrato de alho nas ataduras.", SSM_INFO);
 			Set_Critical(1);
 			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z + 5, "bandages",
@@ -83,11 +85,11 @@ program UseBandage(mobile, bandage)
 			return;
 		endif // Antes tava esse aqui que nao tem drop: 0x26b7
 	elseif (targ.objtype == 0xd16 && (heal_skill >= 84 ||
-		 temHabilidade(mobile, "Ervas Curativas"))) // se for cogumelo
+		 MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))) // se for cogumelo
 		SendSysMessageEx(mobile, "Tentando passar o extrato de cogumelos nas ataduras.", SSM_INFO);
 		PlaySoundEffectPrivate(mobile, 0x1C9, mobile);
 		Sleep(1);
-		if ((SkillCheck(mobile, MEDICINE, 85) > 0) || temHabilidade(mobile, "Ervas Curativas"))
+		if ((SkillCheck(mobile, MEDICINE, 85) > 0) || MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))
 			SendSysMessageEx(mobile, "Voce passou o extrato de cogumelos nas ataduras.", SSM_INFO);
 			Set_Critical(1);
 			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z + 5, "bandages",
@@ -106,11 +108,11 @@ program UseBandage(mobile, bandage)
 			return;
 		endif
 	elseif (targ.objtype == 0xF83 && (heal_skill >= 90 ||
-		 temHabilidade(mobile, "Ervas Curativas"))) // se for cogumelo
+		 MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))) // se for cogumelo
 		SendSysMessageEx(mobile, "Tentando passar o extrato de cogumelos nas ataduras.", SSM_INFO);
 		PlaySoundEffectPrivate(mobile, 0x1C9, mobile);
 		Sleep(1);
-		if ((SkillCheck(mobile, MEDICINE, 100) > 0) || temHabilidade(mobile, "Ervas Curativas"))
+		if ((SkillCheck(mobile, MEDICINE, 100) > 0) || MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))
 			SendSysMessageEx(mobile, "Voce passou o extrato de cogumelos nas ataduras.", SSM_INFO);
 			Set_Critical(1);
 			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z + 5, "bandages",
@@ -129,11 +131,11 @@ program UseBandage(mobile, bandage)
 			return;
 		endif
 	elseif (targ.objtype == 0xF7B && (heal_skill >= 60 ||
-		 temHabilidade(mobile, "Ervas Curativas"))) // se for cogumelo
+		 MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))) // se for cogumelo
 		SendSysMessageEx(mobile, "Tentando passar o extrato de musgo nas ataduras.", SSM_INFO);
 		PlaySoundEffectPrivate(mobile, 0x1C9, mobile);
 		Sleep(1);
-		if ((SkillCheck(mobile, MEDICINE, 60) > 0) || temHabilidade(mobile, "Ervas Curativas"))
+		if ((SkillCheck(mobile, MEDICINE, 60) > 0) || MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))
 			SendSysMessageEx(mobile, "Voce passou o extrato de musgo nas ataduras.", SSM_INFO);
 			Set_Critical(1);
 			bandagem_especial := CreateItemAtLocation(mobile.x, mobile.y, mobile.z + 5, "bandages",
@@ -210,7 +212,7 @@ program UseBandage(mobile, bandage)
 		var restauraDP := 0;
 		if (GetObjProperty(bandage, "cap") == 1)
 			valor := 100;
-			if (temHabilidade(mobile, "Ervas Curativas"))
+			if (MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))
 				valor := valor - 20;
 			endif
 			if ((SkillCheck(mobile, MEDICINE, valor) > 0))
@@ -251,7 +253,7 @@ program UseBandage(mobile, bandage)
 		var bonus := 0;
 		var poison := 0;
 		valor := 0;
-		if (temHabilidade(mobile, "Ervas Curativas"))
+		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::HEALING_HERBS))
 			valor := valor - 20;
 		endif
 
@@ -288,8 +290,7 @@ program UseBandage(mobile, bandage)
 		endif
 		EraseObjProperty(targ, "curando");
 		var chance := 30;
-		// deixa isso pode ser util
-		if (temHabilidade(mobile, "Conservar Bandagens"))
+		if (AP_GetSkill(mobile, MEDICINE) >= 71)
 			chance := 90;
 		endif
 		if (RandomInt(100) < chance)

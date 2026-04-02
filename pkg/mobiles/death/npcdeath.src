@@ -27,7 +27,6 @@ include ":taming:taming";
 include "include/epicCombatUtils";
 include ":commands:possess";
 include ":expbar:expbar";
-include ":achievements:CombatController";
 include ":epicAI:epicai";
 // include ":entropy:entropy";
 
@@ -57,7 +56,7 @@ program core_npcDeath(params)
 	if (cint(GetObjProperty(corpse, "soulstone")) == 1)
 		CreateItemInContainer(corpse, "soulstone", 1);
 	endif
-	handleExpGain(corpse);
+	HandleExpGain(corpse);
 	// handleEntropyGain(corpse);
 	foreach item in (EnumerateItemsInContainer(corpse))
 		// Lista de itens que podem dropar do npc, mas ficam com prop de restrito_mob, não deixando o player equipar
@@ -134,6 +133,7 @@ program core_npcDeath(params)
 			elseif (!getobjproperty(corpse, "Necro"))
 				GetNumPets(master);
 				var teste := GetObjProperty(corpse, "LastDP");
+				SetObjProperty(master, "LastPetCorpse", corpse.serial);
 				if (GetObjProperty(corpse, "NeverRelease")) // &&
 					// if (GetObjProperty(corpse, "LastDP") >= 10 ) ) // PARA TESTAR VOLTAR DPS
 					SendSysMessageEx(master, "Seu pet fiel irá acordar em 3 minutos", SSM_INFO);
@@ -173,11 +173,11 @@ program core_npcDeath(params)
 					MoveObjectToLocation(who, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION);
 				else
 					leaveGolem(who);
+					unpossess(who, 1, 1);
+					who.concealed := 0;
 				endif
 
 				EraseObjProperty(who, "golem_maker");
-				EraseObjProperty(who, "pilotando");
-				who.concealed := 0;
 				PrintTextAbove(corpse, "*EJETAR*");
 				sleep(1);
 				PushBackEX(who, 3, 300);
@@ -215,9 +215,8 @@ program core_npcDeath(params)
 		var shaman_reap_bonus := Cint(AP_GetSkill(mob, THEOLOGY) / 10);
 
 		// HABILIDADES SHAMAN
-		if (TemHabilidade(mob, "Sede de Sangue"))
+		if (MobileWrapper(mob).HasAbility(ABILITY_ID::BLOODTHIRST))
 			applyEpicHealing(mob, shaman_reap_bonus);
-		// colocar o efeito roxinho
 		endif
 		// FIM HABILIDADES SHAMAN
 

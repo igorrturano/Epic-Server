@@ -10,33 +10,33 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	function ItemWrapper(this, byRef item)
 		Super(item);
 
-		this._cfgFile := CFGFile("*", "itemdesc");
-		this._template := this._cfgFile.SetElementName(this._objtype).GetElement();
+		this.CfgFile := CFGFile("*", "itemdesc");
+		this.Template := this.GetCfgFile().SetElementName(this.ObjType).GetElement();
 
-		if (TypeOfInt(this._objRef) == OT_ITEMREF)
-			this._category := this._template.Category;
+		if (TypeOfInt(this.ObjRef) == OT_ITEMREF)
+			this.Category := this.GetTemplate().Category;
 		else
 			var err;
-			if (!this._template)
+			if (!this.Template)
 				err := InvalidFormatException("The param must be a Item ObjRef or a valid Template!");
-				this._objType := err;
-				this._name := err;
-				this._graphic := err;
-				this._color := err;
-				this._weight := err;
+				this.ObjType := err;
+				this.Name := err;
+				this.Graphic := err;
+				this.Color := err;
+				this.Weight := err;
 
-				this._category := err;
+				this.Category := err;
 			else
 				err := IsTemplateException();
-				this._name := this._template.desc;
-				this._graphic := this._template.graphic;
-				this._color := this._template.color;
-				this._weight := this._template.weight;
-				this._category := this._template.Category;
+				this.Name := this.GetTemplate().desc;
+				this.Graphic := this.GetTemplate().graphic;
+				this.Color := this.GetTemplate().color;
+				this.Weight := this.GetTemplate().weight;
+				this.Category := this.GetTemplate().Category;
 			endif
 
-			this._objRef := err;
-			this._serial := err;
+			this.ObjRef := err;
+			this.Serial := err;
 		endif
 	endfunction
 
@@ -46,11 +46,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @return Integer com a quantidade do item ou Exception se o item for inválido
 	 */
 	function GetAmount(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return this._objRef.amount;
+		return this.GetObjRef().amount;
 	endfunction
 
 	/**
@@ -59,11 +59,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @return ContainerWrapper do container que contém o item ou Exception se o item for inválido
 	 */
 	function GetContainer(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return ContainerWrapper(this._objRef.container);
+		return ContainerWrapper(this.GetObjRef().container);
 	endfunction
 
 	/**
@@ -72,11 +72,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @return Double com o valor de qualidade do item ou Exception se o item for inválido
 	 */
 	function GetQuality(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return CDbl(this._objRef.quality);
+		return CDbl(this.GetObjRef().quality);
 	endfunction
 	
 	/**
@@ -87,15 +87,15 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @throws InvalidFormatException Se o parâmetro não for um objeto ItemWrapper
 	 */
 	function IsStackableWith(this, byRef otherItemWrapped)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
 		if (!(otherItemWrapped is @ItemWrapper))
 			return InvalidFormatException("The param must be a ItemWrapper object!");
 		endif
 
-		return IsStackable(this._objRef, otherItemWrapped.GetObjRef());
+		return IsStackable(this.GetObjRef(), otherItemWrapped.GetObjRef());
 	endfunction
 
 	/**
@@ -104,11 +104,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @return Boolean true se o item é movível, false caso contrário, ou Exception se o item for inválido
 	 */
 	function IsMovable(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return this._objRef.movable == true;
+		return this.GetObjRef().movable == true;
 	endfunction
 	
 	/**
@@ -118,11 +118,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @see Unlock
 	 */
 	function Lock(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return ReserveItem(this._objRef);
+		return ReserveItem(this.GetObjRef());
 	endfunction
 
 	/**
@@ -132,11 +132,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @see Lock
 	 */
 	function Unlock(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return ReleaseItem(this._objRef);
+		return ReleaseItem(this.GetObjRef());
 	endfunction
 
 	/**
@@ -148,11 +148,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @return Boolean indicando se a operação foi bem-sucedida ou Exception se o item for inválido
 	 */
 	function Consume(this, amount)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return SubtractAmount(this._objRef, CInt(amount));
+		return SubtractAmount(this.GetObjRef(), CInt(amount));
 	endfunction
 
 	/**
@@ -161,11 +161,11 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @return Boolean indicando sucesso da atualização ou Exception se o item for inválido
 	 */
 	function Update(this)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return UpdateItem(this._objRef);
+		return UpdateItem(this.GetObjRef());
 	endfunction
 
 	/**
@@ -178,21 +178,21 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @return Boolean indicando sucesso da movimentação ou Exception se o item for inválido
 	 */
 	function MoveToContainer(this, byRef containerWrapped, x := -1, y := -1, add_to_existing_stack := 0)
-		if (this._objRef is @Exception)
-			return this._objRef;
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
 		endif
 
-		return MoveItemToContainer(this._objRef, containerWrapped.GetObjRef(), x, y, add_to_existing_stack);
+		return MoveItemToContainer(this.GetObjRef(), containerWrapped.GetObjRef(), x, y, add_to_existing_stack);
 	endfunction
 
 	function ToString(this)
-		return $"Item {this._name}:" +
-			   $"Serial: {this._serial}, " +
-			   $"ObjType: {this._objType}, " +
-			   $"Graphic: {this._graphic}, " +
-			   $"Color: {this._color}, " +
-			   $"Weight: {this._weight}, " +
-			   $"Category: {this._category}";
+		return $"Item {this.GetName()}:" +
+			   $"Serial: {this.GetSerial()}, " +
+			   $"ObjType: {this.GetObjType()}, " +
+			   $"Graphic: {this.GetGraphic()}, " +
+			   $"Color: {this.GetColor()}, " +
+			   $"Weight: {this.GetWeight()}, " +
+			   $"Category: {this.GetCategory()}";
 	endfunction
 endclass
 

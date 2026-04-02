@@ -1,4 +1,5 @@
 use uo;
+use cfgfile;
 include "include/client";
 include "include/say";
 include ":spells:tnmagery";
@@ -16,6 +17,10 @@ program SpellScript(params)
 		return;
 	endif
 	PlaySoundEffect(targ, 0x1e4);
-	targ.setlightlevel(0, 1800);
+	// Read light level from config - single source of truth
+	var config := ReadConfigFile(":nature:config/daynight");
+	config := config["settings"];
+	var lightLevel := CInt(config.DrowCaveVision);
+	targ.setlightlevel(lightLevel, 1800);
 	SendSysMessageEx(who, "Voce consegue ver no escuro.", SSM_INFO);
 endprogram

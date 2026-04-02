@@ -9,6 +9,8 @@ include ":death:settings";
 include ":attributes:vitals";
 include ":timedscripts:timedScripts";
 include ":fls_core:packets";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
 
 program cureScript(params)
 	var who := params[1];
@@ -22,7 +24,7 @@ program cureScript(params)
 	// Proceed with reverting the player
 	var metamorfose := GetObjProperty(who, "metamorfose");
 	if (metamorfose == error)
-		SendSysMessageEx(who, "Você não está metamorfoseado.", SSM_FAIL);
+		Message("Voce nao esta metamorfoseado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return;
 	endif
 
@@ -60,6 +62,21 @@ program cureScript(params)
 		who.resist_cold_mod := who.resist_cold_mod - resist;
 		who.resist_poison_mod := who.resist_poison_mod - resist;
 		who.resist_energy_mod := who.resist_energy_mod - resist;
+
+		// Clear wildshape portion from #SpellResist (used by status bar and DamageController)
+		var mw := MobileWrapper(who);
+		var sr := mw.GetProperty("#SpellResist");
+		if (sr && !sr.errortext)
+			sr.slash    -= resist;
+			sr.piercing -= resist;
+			sr.blunt    -= resist;
+			sr.fire     -= resist;
+			sr.cold     -= resist;
+			sr.poison   -= resist;
+			sr.energy   -= resist;
+			mw.SetProperty("#SpellResist", sr);
+		endif
+		EraseObjProperty(who, "polymorph_resistmod");
 	endif
 
 	// Call the new function to handle werewolf buffs removal
@@ -83,6 +100,11 @@ program cureScript(params)
 	EraseObjProperty(who, "polymorph_manamod");
 	EraseObjProperty(who, "polymorph_stammod");
 	EraseObjProperty(who, "namechar");
+	EraseObjProperty(who, "HitScripts");
+	
+	// Restore speech on form end
+	who.squelch(0);
+	
 	SendPacket(who, "BF0006002600"); // Disable speed boost packet
 
 	if (who.npctemplate)

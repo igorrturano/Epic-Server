@@ -11,6 +11,8 @@ include ":spells:include/tnmagery";
 include ":timeUtils:time";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 const SPELL_BTN := 200;
 
@@ -33,7 +35,7 @@ program orderSpells(who, item)
 		endif
 	endif
 
-	if (altar == LORE && cultura == ALURIEL && !TemHabilidade(who, "Gwaenedh") && classe == SABIO)
+	if (altar == LORE && cultura == ALURIEL && !MobileWrapper(who).HasAbility(ABILITY_ID::ARCANE_BOW) && classe == SABIO)
 		if (ArcaneArcherDevotion(who))
 			playAltarAnimations(who, item);
 			return;
@@ -58,7 +60,7 @@ program orderSpells(who, item)
 	endif
 
 	var mlore := cint(AP_GetSkill(who, THEOLOGY));
-	var cfg := ReadConfigFile(":spells:config/priestspells");
+	var cfg := ReadConfigFile(":spells:config/priest");
 	var priest_slots := Cint(mlore / 5);
 
 	var priest_list := GetObjProperty(who, "priest_list");
@@ -69,20 +71,24 @@ program orderSpells(who, item)
 	// Auto-grant cantrips on first visit (circle 0 spells)
 	if (!GetObjProperty(who, "cantrips_granted"))
 		foreach spell in (GetConfigIntKeys(cfg))
-			spell := FindConfigElem(cfg, spell);
-			WriteSpellInfo(spell, ":spells:config/priestspells");
-			sleepms(2);
-			if (spell.circle == 0)
+			var spell_elem := FindConfigElem(cfg, spell);
+			if (!spell_elem)
+				continue;
+			endif
+			
+			var circle := GetConfigInt(spell_elem, "Circle");
+			if (circle == 0)
 				var cantrip := struct{
-					"id" := spell.SpellId,
-					"name" := spell.name,
+					"id" := GetConfigInt(spell_elem, "SpellId"),
+					"name" := GetConfigString(spell_elem, "Name"),
 					"circle" := 0,
-					"description" := spell.desc, // funciona
-					"flavortext" := spell.flavortext,
+					"description" := GetConfigString(spell_elem, "Desc"),
+					"flavortext" := GetConfigString(spell_elem, "FlavorText"),
 					"cantrip" := 1  // Flag to prevent removal
 				};
 				priest_list.Append(cantrip);
 			endif
+			sleepms(2);
 		endforeach
 		SetObjProperty(who, "priest_list", priest_list);
 		SetObjProperty(who, "cantrips_granted", 1);
@@ -100,18 +106,27 @@ program orderSpells(who, item)
 	endforeach
 
 	// Build list of available spells to memorize
-	foreach spell in (GetConfigIntKeys(cfg))
-		spell := FindConfigElem(cfg, spell);
-		sleepms(2);
-		WriteSpellInfo(spell, ":spells:config/priestspells");
-
-		if (spell.circle > Cint((mlore + 10) / 20)) // 10, 30, 50 , 70 , 90 habs pra castar
-			continue;
-		elseif (spell.type == "Auto")
-			continue;
-		elseif (spell.circle == 0) // Skip cantrips - they're auto-granted
+	foreach spell_id in (GetConfigIntKeys(cfg))
+		var spell_elem := FindConfigElem(cfg, spell_id);
+		if (!spell_elem)
 			continue;
 		endif
+		
+		var circle := GetConfigInt(spell_elem, "Circle");
+		if (circle > Cint((mlore + 10) / 20)) // 10, 30, 50 , 70 , 90 habs pra castar
+			continue;
+		elseif (GetConfigString(spell_elem, "Type") == "Auto")
+			continue;
+		elseif (circle == 0) // Skip cantrips - they're auto-granted
+			continue;
+		endif
+		
+		var spell := struct{
+			"SpellId" := GetConfigInt(spell_elem, "SpellId"),
+			"name" := GetConfigString(spell_elem, "Name"),
+			"circle" := circle,
+			"desc" := GetConfigString(spell_elem, "Desc")
+		};
 		spell_list.append(spell);
 		sleepms(2);
 	endforeach
@@ -120,7 +135,7 @@ program orderSpells(who, item)
 	var canceled := 0;
 	while (!canceled)
 		RemoveUsedSpells(who, priest_list, available_slots);
-		var input := CreateClericGump(who, spell_list, available_slots, priest_list);
+		var input := CreateClericGump(who, spell_list, available_slots, priest_list, slots_used, priest_slots);
 
 		if (input[0] >= 200)
 			if (TS_GetTimerInfo(who, "orderspell")) // TODO
@@ -138,7 +153,7 @@ program orderSpells(who, item)
 	endwhile
 endprogram
 
-function CreateClericGump(who, spell_list, available_slots, priest_list)
+function CreateClericGump(who, spell_list, available_slots, priest_list, slots_used, total_slots)
 	var gump := GFCreateGump();
 	// Count only non-cantrip spells (circle != 0) for gump sizing
 	var non_cantrip_count := 0;
@@ -188,6 +203,8 @@ function CreateClericGump(who, spell_list, available_slots, priest_list)
 		endif
 	endforeach
 
+	GFTextLine(gump, 63, y + 15, 0, "Slots: {}/{}".format(slots_used, total_slots));
+
 	return GFSendGump(who, gump);
 endfunction
 
@@ -230,7 +247,8 @@ function ArcaneArcherDevotion(who)
 	var chardata := GetObjProperty(who, "chardata");
 	var yes := YesNo(who, "Deseja se tornar um Arqueiro Arcano? Perderá suas magias.", "Sim", "Não");
 	if (yes)
-		chardata.magia := "Arqueiro Arcano";
+		chardata.magia := "arcane_archer";
+		chardata.wisdom_path := "arcane_archer";
 		SetObjProperty(who, "chardata", chardata);
 		SendSysMessageEx(who, "Você se tornou um Arqueiro Arcano.", SSM_INFO);
 		return 1;

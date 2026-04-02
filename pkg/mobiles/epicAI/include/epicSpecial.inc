@@ -6,6 +6,8 @@ include ":acid:acid";
 include "include/epicNPCUtils";
 include ":combat:Model/AttackInfo";
 include ":combat:Controller/FXController";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 function StartCharge(attacker, defender)
    var dist := CoordinateDistance(attacker.x, attacker.y, defender.x, defender.y);
@@ -80,22 +82,9 @@ function SporeSpecial(attacker, defender)
                 endif
             
             3: // Blind
-                if (!CheckResist(mobile, REFLEXOS, RESIST_MEDIUM))
+                if (!CheckResist(mobile, REFLEXES, RESIST_MEDIUM))
                     PrintTextAbove(attacker, "*libera esporos cegantes*");
-                    PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z+10, mobile.realm, 0x6e0d, 5, 15, 2, 2740);
-                    SetCooldown(mobile, "blinded", 15);
-                    PrintTextAbove(mobile, "*cegueira*");
-                    
-                    foreach mob in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16)
-                        DeleteObject(mobile, mob);
-                        sleepms(20);
-                    endforeach
-                    
-                    sleep(15);
-                    foreach mob in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16)
-                        DrawObject(mobile, mob, mob.graphic, mob.color);
-                        sleepms(20);
-                    endforeach
+                    TS_StartTimer(mobile, "blinded", 15, 0, attacker);
                 endif
         endcase
 
@@ -132,7 +121,7 @@ function DoThiefSteal(opponent)
 
         if (check > 0)
             // Check for elemental weapon
-            if (TemHabilidade(opponent, "Vínculo Elemental"))
+            if (MobileWrapper(opponent).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
                 if (GetObjProperty(opponent.weapon, "#elementalweapon"))
                     return 1;
                 endif
@@ -173,13 +162,15 @@ function DoThiefSneakAttack(opponent)
 
     // Try to get behind the target without breaking stealth
     var attempts := 0;
-    while (!IsBehind(me, opponent.x, opponent.y) && attempts < 10)
+    while (!IsBehind(opponent, me.x, me.y) && attempts < 20)
         attempts += 1;
-        
-        // Calculate position behind target
-        var behind_x := opponent.x + (opponent.x - me.x);
-        var behind_y := opponent.y + (opponent.y - me.y);
-        
+
+        // Calculate position behind target based on their facing
+        var behind_facing := (opponent.facing + 4) % 8;
+        var mods := GetModByFacing(behind_facing);
+        var behind_x := opponent.x + mods[1];
+        var behind_y := opponent.y + mods[2];
+
         WalkTowardLocation(behind_x, behind_y);
         sleepms(100);
 
@@ -190,18 +181,14 @@ function DoThiefSneakAttack(opponent)
     endwhile
 
     // Only attack if still hidden and in position
-    if (me.hidden && IsBehind(me, opponent.x, opponent.y))
-        PrintTextAbove(me, "*ataque furtivo*");
+    if (me.hidden && /* IsBehind(opponent, me.x, me.y) && */ Distance(me, opponent) <= 1)
         SetObjProperty(me, "backstab", 1);
         SetObjProperty(me.weapon, "backstab", 1);
         me.attack_once(opponent);
     else
-        // If stealth attack failed, engage in normal combat
-        case (brain_type)
-            "monster": HandleMonsterCombatEvent(opponent, 0);
-            "humanoid": 
-        endcase
-
+        // If stealth attack failed, reveal and engage normally
+        me.hidden := 0;
+        SendEvent(me, struct{ "type" := SYSEVENT_ENGAGED, "source" := opponent });
     endif
 endfunction
 
@@ -267,7 +254,7 @@ function CastEnraizar(shaman, targ, diff)
    PrintTextAbove(shaman, "*conjura raízes*");
    PerformAction(shaman, HUMAN_ANIM::CAST_AREA);
    
-   if (!CheckResist(targ, VONTADE, diff))
+   if (!CheckResist(targ, WILL, diff))
       var duration := CInt(AP_GetSkill(shaman, ARCANA) / 10);
       PlayStationaryEffect(targ.x, targ.y, targ.z-5, 0x6D01, 7, 40, 0, targ.realm);
       TS_StartTimer(targ, "paralysis", duration);
@@ -288,7 +275,7 @@ function CastWeaken(shaman, targ, diff)
    
    var bonus := CInt(AP_GetSkill(shaman, ARCANA) / 20); // Small bonus based on skill
    
-   if (!CheckResist(targ, VONTADE, diff, -bonus))
+   if (!CheckResist(targ, WILL, diff, -bonus))
       var duration := CInt(AP_GetSkill(shaman, ARCANA));
       var amount := 10 + CInt(bonus / 2); // Base amount plus skill bonus
       TS_StartTimer(targ, "weaken", duration, amount, shaman, 1);
@@ -323,7 +310,8 @@ endfunction
 
 function HiveMind(me)
     // Get all nearby me allies
-    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL);
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    var allies := GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL);
     var ally := 0;
     
     foreach mobile in allies
@@ -337,8 +325,8 @@ function HiveMind(me)
     
     // Apply hive mind bonus
     if (ally > 0)
-        var bonus := ally * 2;
-        SetObjProperty(me, "#attackbonus", bonus);
+        var bonus := 2;
+        me.hitchance_mod := me.hitchance_mod + bonus;
         if (!GetCooldown(me, "hivemind_effect"))
             PrintTextAbove(me, "*sincroniza com a colmeia*");
             PlayObjectCenteredEffect(me, 0x376A, 7, 16);
@@ -359,9 +347,10 @@ function TunnelTactics(me, targ)
     endif
     
     SetCooldown(me, "tunnel_tactics", 30); // 30 second cooldown
-    
+
     // Alert nearby allies to join the attack
-    var allies := ListMobilesNearLocationEx(me.x, me.y, me.z, 4, LISTEX_FLAG_NORMAL);
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    var allies := GetNearbyMobilesOnce(me, 4, LISTEX_FLAG_NORMAL);
     var attacking_formation := array{me};
 
     foreach mobile in allies
@@ -425,7 +414,8 @@ function doConfusion(opponent)
         return 0;
     endif
 
-    var nearby := ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL);
+    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+    var nearby := GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL);
     
     var enemies := array{};
     foreach mobile in nearby
@@ -444,7 +434,7 @@ function doConfusion(opponent)
 
     var confusion_type := RandomInt(3)+1;
     if (enemies.size() < 2) confusion_type := RandomInt(2)+1; endif
-    if (CheckResist(opponent, VONTADE, RESIST_HARD)) return 0; endif;
+    if (CheckResist(opponent, WILL, RESIST_HARD)) return 0; endif;
 
     case (confusion_type)
         1: // Paralyze
@@ -530,7 +520,7 @@ function Bite(me, opponent)
     PlaySoundEffect(me, 0x28a);
     PlayAttackFX(AttackInfo(MobileWrapper(me), MobileWrapper(false)));
     
-    var resist := CheckResist(opponent, REFLEXOS, RESIST_MEDIUM);
+    var resist := CheckResist(opponent, REFLEXES, RESIST_MEDIUM);
     if (!resist)
         DamageFLS(opponent, bite_dmg, DMG_FORCED, me);
     elseif (resist == -1) // Falha crítica
@@ -654,7 +644,7 @@ function TongueGrab(toad, opponent)
                       0x0F51, 8, 0, 0, toad.realm); //red line effect
     
     // Initial resistance check
-    if (CheckResist(opponent, REFLEXOS, RESIST_MEDIUM))
+    if (CheckResist(opponent, REFLEXES, RESIST_MEDIUM))
         PrintTextAbove(opponent, "*desvia da língua*");
         SetCooldown(toad, "tongue_grab", 10);
         return 0;
@@ -798,7 +788,7 @@ function CreateThrowEffect(attacker, defender, throw_info)
 endfunction
 
 function ApplyThrowEffect(attacker, defender, throw_info)
-   if (CheckResist(defender, REFLEXOS, RESIST_MEDIUM))
+   if (CheckResist(defender, REFLEXES, RESIST_MEDIUM))
       return 0;
    endif
 
@@ -873,7 +863,7 @@ function WebShot(spider, opponent)
    PrintTextAbove(spider, "*dispara teia*");
    PlayMovingEffect(spider, opponent, 3814, 50);
 
-   if (!CheckResist(opponent, REFLEXOS, RESIST_MEDIUM))
+   if (!CheckResist(opponent, REFLEXES, RESIST_MEDIUM))
       PrintTextAbove(opponent, "*preso na teia*");
 	  TS_StartTimer(opponent, "paralysis", 5);
    else
@@ -950,8 +940,8 @@ function PoisonBite(spider, opponent)
       return 0;
    endif
 
-   var npc_elem := NPC_GetNPCConfig(spider);
-   var tier := CInt(npc_elem.Tier);
+   var cache := NPC_GetCachedData(spider);  // O(1) lookup
+   var tier := cache.tier;
    if (!tier) tier := 1; endif
 
    PrintTextAbove(spider, "*morde venenosamente*");
@@ -984,7 +974,7 @@ function LayEggSac(spider)
    var egg := CreateItemAtLocation(spider.x, spider.y, spider.z, "SpiderEggSac", 1, spider.realm);
    if (egg)
       PrintTextAbove(spider, "*deposita ovos*");
-      SetObjProperty(egg, "ParentTier", NPC_GetNPCConfig(spider).Tier);
+      SetObjProperty(egg, "ParentTier", NPC_GetCachedData(spider).tier);
       SetCooldown(spider, "egg_sac", 600);
 
       egg.decayAt := ReadGameClock() + (60 * 15);
@@ -1013,7 +1003,7 @@ function CreateInvisibleWeb(spider)
         web.graphic := web_graphics[RandomInt(web_graphics.size())+1];
         web.invisible := 1;
         web.decayAt := ReadGameClock() + 120;
-        SetObjProperty(web, "level", CInt(NPC_GetNPCConfig(spider).Tier));
+        SetObjProperty(web, "level", NPC_GetCachedData(spider).tier);
         return 1;
     endif
 
@@ -1021,28 +1011,26 @@ function CreateInvisibleWeb(spider)
 endfunction
 
 function charmOpponent(attacker, defender)
-    if (!CheckResist(defender, VONTADE, RESIST_VERY_HARD))
+    if (!CheckResist(defender, WILL, RESIST_VERY_HARD))
         PrintTextAbove(attacker, "*Hipnotiza*");
         PlayStationaryEffectEx(defender.x, defender.y, defender.z+10, defender.realm, 0x6e0d, 5, 45, 2, 2740);
-        
+
         SetObjProperty(defender, "charmed_by", attacker.serial);
         sleep(15);
         EraseObjProperty(defender, "charmed_by");
-        var npc_name:= NPC_GetNPCConfig(attacker).Name;
-        SendSysMessageEx(defender, "Você foi hipnotizado por " + npc_name, SSM_INFO);
+        SendSysMessageEx(defender, "Você foi hipnotizado por " + attacker.name, SSM_INFO);
     endif
 endfunction
 
 // Function to frighten opponents if they fail VONTADE check
 function frightenOpponent(attacker, defender)
-    if (!CheckResist(defender, VONTADE, RESIST_HARD))
+    if (!CheckResist(defender, WILL, RESIST_HARD))
         PlayStationaryEffectEx(defender.x, defender.y, defender.z+10, defender.realm, 0x6e0d, 5, 45, 2, 2740);
         var skill := Cint(AP_GetSkill(attacker, WRESTLING));
 
         TS_StartTimer(defender, "dmgreduction", 15, skill, attacker, 1);
 
-        var npc_name:= NPC_GetNPCConfig(attacker).Name;
-        SendSysMessageEx(defender, "Você foi aterrorizado por " + npc_name, SSM_INFO);
+        SendSysMessageEx(defender, "Você foi aterrorizado por " + attacker.name, SSM_INFO);
     endif
 endfunction
 
@@ -1057,7 +1045,7 @@ function petrify(attacker, defender)
 	endif
 
 	// Check resistance
-	if (CheckResist(defender, VONTADE, RESIST_HARD))
+	if (CheckResist(defender, WILL, RESIST_HARD))
 		PrintTextAbove(defender, "*resiste à petrificação*");
 		return 0;
 	endif

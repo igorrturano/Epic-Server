@@ -6,49 +6,88 @@ include "include/animalBrain";
 include "include/humanoidBrain";
 include "include/epicNPCUtils";
 include "include/genericBrain";
+include "include/passiveBrain";
 include "include/eventID";
 
 var brain_type;
 var me := Self();
 const AREA_SIZE := 15;
 
+/*
+ * KillPlayers()
+ *
+ * Phase 3: Pure Event-Driven Dormancy (No Polling)
+ * - NPCs only wake from ENTEREDAREA events, zero CPU when dormant
+ * - No HasPlayerNear polling fallback
+ * - Script loops between dormant and active states
+ */
 program KillPlayers()
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
 
-    // Only initialize if not already done
-    var already_started := GetObjProperty(me, "started");
-    if (!already_started)
+    // Initialize NPC once at spawn
+    if (!GetObjProperty(me, "started"))
         set_critical(1);
         InitializeEpicNPC(me);
         set_critical(0);
-        SetObjProperty(me, "dormant", 1);
     endif
-    
-    // Check if dormant - if so, just exit
-    if (GetObjProperty(me, "dormant"))
-        return;
-    endif
-    
-    DetermineBrainType();
-    SetWarMode(0);
 
-    // Run the active brain
-    case (brain_type)
-        "monster":  MonsterBrain();
-        "animal":   AnimalBrain();
-        "humanoid": HumanoidBrain();
-        default:    GenericBrain();
-    endcase
-    
-    // Brain returned (went idle) - go back to dormant
-    SetObjProperty(me, "dormant", 1);
-    SetWarMode(0);
-    SetOpponent(0);
+    EnableMainEvents();
+
+    // Check for players already in range at spawn time
+    InitializeEnterArea(me);
+
+    // Main event loop - alternates between dormant and active states
+    while (me)
+        // ===== DORMANT MODE =====
+        // Pure event-driven: only wake on ENTEREDAREA, no polling
+        while (me)
+            var ev := wait_for_event(120); // 2 min timeout, just keeps script alive
+
+            if (!ev)
+                continue; // Timeout - stay dormant, no polling
+            endif
+
+            if (ev.type == SYSEVENT_ENTEREDAREA)
+                if (ev.source.acctname)
+                    // Player entered range - activate brain!
+                    break;
+                endif
+            endif
+        endwhile
+
+        // ===== ACTIVE MODE =====
+        // Player is nearby, run appropriate brain AI
+        DetermineBrainType();
+        SetWarMode(0);
+
+        // Send ENTEREDAREA events for nearby players/pets so brain can detect them
+        // (Must be called here and before dormant loop, so brain receives the events)
+        InitializeEnterArea(me);
+
+        case (brain_type)
+            "monster":  MonsterBrain();
+            "animal":   AnimalBrain();
+            "humanoid": HumanoidBrain();
+            "passive":  PassiveBrain();
+            default:    GenericBrain();
+        endcase
+
+        // Brain returned (ShouldGoDormant triggered) - loop back to dormant
+        SetWarMode(0);
+        SetOpponent(0);
+        // Loop continues to dormant mode automatically
+    endwhile
 endprogram
 
+/*
+ * DetermineBrainType()
+ *
+ * Purpose: Determine which brain AI to run
+ * Now uses cached data instead of config lookup
+ */
 function DetermineBrainType()
-    var npc_config := NPC_GetNPCConfig(me);
-    brain_type := lower(npc_config.BrainType);
+    var cache := NPC_GetCachedData(me);
+    brain_type := cache.brain_type;
     if (!brain_type)
         brain_type := "generic";
     endif

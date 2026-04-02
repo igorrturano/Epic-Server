@@ -1,32 +1,32 @@
 include "IShieldAttributes";
 
 class ShieldAttributes(IShieldAttributes)
-	var _parryBonus := 0;
-	var _parryDelay := 0;
+	var ParryBonus := 0;
+	var ParryDelay := 0;
 
 	function ShieldAttributes(this, parryBonus := 0, parryDelay := 0)
-		this._parryBonus := CInt(parryBonus);
-		this._parryDelay := CInt(parryDelay);
+		this.ParryBonus := CInt(parryBonus);
+		this.ParryDelay := CInt(parryDelay);
 	endfunction
 
 	function GetParryBonus(this)
-		return this._parryBonus;
+		return this.ParryBonus;
 	endfunction
 
 	function GetParryDelay(this)
-		return this._parryDelay;
+		return this.ParryDelay;
 	endfunction
 
 	function SetParryBonus(this, value)
-		this._parryBonus := CInt(value);
+		this.ParryBonus := CInt(value);
 	endfunction
 
 	function SetParryDelay(this, value)
-		this._parryDelay := CInt(value);
+		this.ParryDelay := CInt(value);
 	endfunction
 
 	function ToString(this)
-		return $"ParryBonus: {this._parryBonus}, " +
-			   $"ParryDelay: {this._parryDelay}";
+		return $"ParryBonus: {this.GetParryBonus()}, " +
+			   $"ParryDelay: {this.GetParryDelay()}";
 	endfunction
 endclass

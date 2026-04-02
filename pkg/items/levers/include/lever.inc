@@ -12,6 +12,7 @@ include "include/say";
 include ":destroyable:include/destroyItem";
 include ":epicspawn:epicBoss";
 include ":message:include/model/Message";
+include ":propagacao:include/efeitosPatogenicos";
 
 function ChangeLeverStatus(la, only_on_levers := 0)
    if (typeof(la) != "Array")
@@ -116,26 +117,19 @@ function CheckAllLevers(lever, lever_list, opts)
             return 0;
          endif
       else
-	    // Para desativação com ordem: apenas verificar se a primeira alavanca da ordem está sendo desativada
+         // Desativação: qualquer alavanca desativada reseta TODAS e não executa efeitos
          if (GetObjProperty(lever, "status") == "off")
-            var first_lever_serial := order[1];
-            if (lever.serial == first_lever_serial)
-               // Se a primeira alavanca da ordem foi desativada, reseta todas
-               foreach serial in order
-                  var item := SystemFindObjectBySerial(serial);
-                  if (GetObjProperty(item, "status") == "on")
-                     ChangeLeverStatus(serial);
-                  endif
-                  sleepms(2);
-               endforeach
-               return 1; // Permite que os efeitos sejam executados para reset
-            else
-               // Se não é a primeira alavanca, apenas desativa ela sem executar efeitos
-               return 0;
-            endif
+            foreach serial in order
+               var item := SystemFindObjectBySerial(serial);
+               if (item && GetObjProperty(item, "status") == "on")
+                  ChangeLeverStatus(serial);
+               endif
+               sleepms(2);
+            endforeach
+            return 0;
          endif
 
-         // Verificar ordem específica
+         // Verificar ordem específica (ativação)
          foreach serial in order
             var item := SystemFindObjectBySerial(serial);
             if (item.serial == lever.serial)
@@ -146,7 +140,15 @@ function CheckAllLevers(lever, lever_list, opts)
             endif
 
             if (GetObjProperty(item, "status") != "on")
+               // Ordem errada! Desativar TODAS as alavancas ativadas
                ChangeLeverStatus(lever.serial);
+               foreach reset_serial in order
+                  var reset_item := SystemFindObjectBySerial(reset_serial);
+                  if (reset_item && GetObjProperty(reset_item, "status") == "on")
+                     ChangeLeverStatus(reset_serial);
+                  endif
+                  sleepms(2);
+               endforeach
                PrintTextAbove(lever, "*desativa*");
                return 0;
             endif
@@ -284,6 +286,38 @@ function normalusage(who, item)
       return;
    endif
 
+// =====================================================
+// EFEITO: NUVEM PATOGÊNICA (PROPAGAÇÃO)
+// =====================================================
+if (GetObjProperty(item, "LEVER_PATOGENICO") && status == "off")
+
+   // parâmetros mínimos e seguros
+   var alcance := GetObjProperty(item, "patog_alcance");
+   var ciclosAteExpancao := GetObjProperty(item, "patog_ciclos");
+   var duracaoNuvem := GetObjProperty(item, "patog_duracao_nuvem");
+   var gravidadeInfeccao := GetObjProperty(item, "patog_gravidade");
+   var arraySintomas := GetObjProperty(item, "patog_sintomas");
+   var duracaoPatogenico := GetObjProperty(item, "patog_duracao");
+   var nivelInfeccao := GetObjProperty(item, "patog_nivel");
+
+   CriaMarcadorPatogenico(
+      item.x,
+      item.y,
+      item.z,
+      item.realm,
+      who.serial,
+      alcance,
+      ciclosAteExpancao,
+      duracaoNuvem,
+      gravidadeInfeccao,
+      arraySintomas,
+      duracaoPatogenico,
+      nivelInfeccao
+   );
+endif
+// =====================================================
+
+
    var msg := opts.ontext;
    if(!msg)
       msg := "Você ouve algo se movendo...";
@@ -293,6 +327,12 @@ function normalusage(who, item)
 		sleepms(2);
 		SendSysMessageEx(char, msg, SSM_INFO);
 	endforeach
+
+   // Para levers linkadas com all_levers, usar a alavanca mestre para efeitos
+   // (as configurações de efeitos ficam na mestre, não nas escravas)
+   if (opts.item_ref)
+      item := opts.item_ref;
+   endif
 
    if (opts.lights)
       lightswitch(item, opts);
@@ -615,26 +655,48 @@ endfunction
 function CheckItemDelivery(who, item)
    var required_items := GetObjProperty(item, "required_items");
    if (!required_items || !required_items.size())
-      return 0; // Não tem itens configurados
+      return 0;
    endif
-   
-   // MUDANÇA 1: Verificar se tem todos os itens ANTES de iniciar o processo
+
+   // Mapear itens encontrados na bag para consumir depois
+   var items_to_consume := array{};  // {item, amount}
    var missing_items := array{};
+
    foreach req_item in required_items
-      var found_amount := 0;
+      sleepms(2);
+      var amount_needed := req_item.amount;
+      var items_for_this_req := array{};
+
+      // Procurar todos os itens desse tipo na bag
       foreach backpack_item in EnumerateItemsInContainer(who.backpack)
-         if (backpack_item.objtype == req_item.objtype)
-            found_amount += backpack_item.amount;
+         if (backpack_item.objtype == req_item.objtype && amount_needed > 0)
+            var amount_from_this := backpack_item.amount;
+            if (amount_from_this > amount_needed)
+               amount_from_this := amount_needed;
+            endif
+
+            items_for_this_req.append(struct{
+               "item" := backpack_item,
+               "amount" := amount_from_this
+            });
+            amount_needed -= amount_from_this;
          endif
          sleepms(2);
       endforeach
-      
-      if (found_amount < req_item.amount)
+
+      if (amount_needed > 0)
+         var found_amount := req_item.amount - amount_needed;
          missing_items.append("" + req_item.amount + "x " + req_item.desc + " (você tem " + found_amount + ")");
+      else
+         // Adicionar todos os itens encontrados para esse requisito
+         foreach item_entry in items_for_this_req
+            items_to_consume.append(item_entry);
+            sleepms(2);
+         endforeach
       endif
    endforeach
-   
-   // Se faltam itens, para aqui
+
+   // Se faltam itens, mostra o que falta
    if (missing_items.size() > 0)
       SendSysMessageEx(who, "Você não possui todos os itens necessários:", SSM_FAIL);
       foreach missing in missing_items
@@ -643,98 +705,28 @@ function CheckItemDelivery(who, item)
       endforeach
       return 0;
    endif
-   
-   var selected_items := array{}; // MUDANÇA 2: Guarda itens selecionados SEM consumir
-   var required_copy := array{};
-   
-   // Criar uma cópia dos itens necessários para controle
+
+   // Mostrar lista de itens que serão consumidos e pedir confirmação
+   var item_list_text := "Itens que serão entregues:\n";
    foreach req_item in required_items
-      required_copy.append(struct{
-         "objtype" := req_item.objtype,
-         "amount" := req_item.amount,
-         "desc" := req_item.desc,
-         "delivered" := 0
-      });
+      item_list_text += "- " + req_item.amount + "x " + req_item.desc + "\n";
+      sleepms(2);
    endforeach
-   
-   var continue_delivery := 1;
-   while (continue_delivery)
-      SendSysMessage(who, "Selecione um item para entregar ou ESC para cancelar:");
-      var target_item := Target(who);
-      
-      if (!target_item)
-         SendSysMessage(who, "Entrega cancelada.");
-         return 0;
-      endif
-      
-      if (target_item.container != who.backpack)
-         SendSysMessage(who, "O item deve estar no seu inventário.");
-         continue;
-      endif
-      
-      // Verificar se o item é um dos necessários
-      var item_found := 0;
-      foreach req_item in required_copy
-         if (req_item.objtype == target_item.objtype && req_item.delivered < req_item.amount)
-            var amount_needed := req_item.amount - req_item.delivered;
-            var amount_to_take := target_item.amount;
-            
-            if (amount_to_take > amount_needed)
-               amount_to_take := amount_needed;
-            endif
-            
-            // Verificar se o jogador tem quantidade suficiente
-            if (target_item.amount >= amount_to_take)
-               // MUDANÇA 3: NÃO consome ainda, apenas guarda para consumir depois
-               selected_items.append(struct{
-                  "item" := target_item,
-                  "amount" := amount_to_take
-               });
-               
-               req_item.delivered += amount_to_take;
-               SendSysMessage(who, "Selecionou " + amount_to_take + "x " + target_item.desc);
-               item_found := 1;
-               break;
-            else
-               SendSysMessage(who, "Quantidade insuficiente.");
-               item_found := 1;
-               break;
-            endif
-         endif
-      endforeach
-      
-      if (!item_found)
-         SendSysMessageEx(who, "Este item não parece funcionar aqui", SSM_FAIL);
-         continue;
-      endif
-      
-      // Verificar se todos os itens foram selecionados
-      var all_selected := 1;
-      foreach req_item in required_copy
-         if (req_item.delivered < req_item.amount)
-            all_selected := 0;
-            SendSysMessage(who, "Ainda falta: " + (req_item.amount - req_item.delivered) + "x de determinado item");
-         endif
-      endforeach
-      
-      if (all_selected)
-         // MUDANÇA 4: Confirma ANTES de consumir
-         var confirm := YesNo(who, "Confirma a entrega de todos os itens selecionados?");
-         if (confirm)
-            // Só agora consome os itens
-            foreach selected in selected_items
-               SubtractAmount(selected.item, selected.amount);
-            endforeach
-            SendSysMessage(who, "Todos os itens foram usados com sucesso!");
-            return 1;
-         else
-            SendSysMessage(who, "Entrega cancelada.");
-            return 0;
-         endif
-      endif
-   endwhile
-   
-   return 0; // Não deveria chegar aqui
+
+   var confirm := YesNo(who, item_list_text + "\nDeseja entregar esses itens?");
+   if (!confirm)
+      SendSysMessageEx(who, "Entrega cancelada.", SSM_FAIL);
+      return 0;
+   endif
+
+   // Consumir os itens automaticamente
+   foreach consume_entry in items_to_consume
+      SubtractAmount(consume_entry.item, consume_entry.amount);
+      sleepms(2);
+   endforeach
+
+   SendSysMessageEx(who, "Itens entregues com sucesso!", SSM_INFO);
+   return 1;
 endfunction
 
 function reset(item, force_reset := 0)
@@ -800,6 +792,10 @@ function reset(item, force_reset := 0)
   foreach serial in  (opts.graphicarraysitem)
      serial := SystemFindObjectBySerial(CInt(serial));
          serial.graphic := GetObjProperty(serial, "originalgraphic");
+         var name_antigo := GetObjProperty(serial, "old_name");
+         if (name_antigo)
+            serial.name := name_antigo;
+         endif
 endforeach
 	endif
    if (opts.moveitems)

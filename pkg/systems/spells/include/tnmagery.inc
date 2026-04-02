@@ -10,6 +10,9 @@ include "spellSounds";
 include ":charactercreation:resists";
 include ":charactercreation:habilidades";
 include ":entropy:entropy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":spells:SpellRegistry";
 
 function spelllearn(who)
 	var spell := GetObjProperty(who, "spellcraft");
@@ -544,13 +547,7 @@ function TNCheckReagents(who, byref spellinfo, scroll)
 	elseif ( spellinfo.type == "Entender" )
 		reagent_costs["MandrakeRoot"] := 1;
 	elseif ( spellinfo.type == "Outro")
-		var cfg;
-		cfg :=  ReadConfigFile(":spells:config/allspells"); //ReadConfigFile(GetBookScripts(scroll));
-		if (!cfg)
-			SendSysMessageEx(who, "spell.cfg nao encontrado", SSM_FAIL);
-			return 0;
-		endif
-		var elem := FindConfigElem(cfg, spellinfo.id);
+		var elem := ResolveSpell(spellinfo.id);
 		if (!elem)
 			SendSysMessageEx(who, "spellid nao encontrado " + spellinfo.id, SSM_FAIL);
 			return 0;
@@ -597,7 +594,7 @@ function GetSpellDuration(skill)
 endfunction
 
 function WriteCantripSpellInfo(who, byref spellinfo)
-	var cfg := ReadConfigFile(":spells:config/cantripspells");
+	var cfg := ReadConfigFile(":spells:config/cantrips");
 
 	var elem := FindConfigElem(cfg, spellinfo.id);
 	spellinfo.+name := GetConfigString( elem, "Name" );
@@ -621,23 +618,21 @@ function WriteCantripSpellInfo(who, byref spellinfo)
 endfunction
 
 function WritespellInfo(who, byref spellinfo)
-	var cfg;
-	var chardata := GetObjProperty(who, "chardata");
-	if (chardata.magia == "Shaman")
-		cfg := ReadConfigFile(":spells:config/shamanspells");
-		// REMOVED: spellinfo.used := 1; - usage tracking no longer needed
-	elseif (chardata.magia == "Sacerdote")
-		cfg := ReadConfigFile(":spells:config/priestspells");
-		// REMOVED: spellinfo.used := 1; - usage tracking no longer needed
-	elseif (chardata.magia == "Druid")
-		cfg := ReadConfigFile(":spells:config/druidspells");
-	elseif (TemHabilidade(who, "Sensibilidade Arcana"))
-		cfg := ReadConfigFile(":spells:config/tricksterspells");
-	elseif (chardata.magia == "spellcaster" && chardata.wisdom_path == "Mago")
-		cfg := ReadConfigFile(":spells:config/spellcaster");
+	// Use SpellRegistry to resolve spell by ID - no more class-based guessing
+	var cfg_path := GetConfigFromId(spellinfo.id);
+	if (!cfg_path)
+		return;
+	endif
+
+	var cfg := ReadConfigFile(cfg_path);
+	if (!cfg)
+		return;
 	endif
 
 	var elem := FindConfigElem(cfg, spellinfo.id);
+	if (!elem)
+		return;
+	endif
 
 	spellinfo.+name := GetConfigString( elem, "Name" );
 	spellinfo.+powerwords := GetConfigString( elem, "PowerWords" );
@@ -654,13 +649,11 @@ function WritespellInfo(who, byref spellinfo)
 	spellinfo.+script := GetConfigString( elem, "SpellScript" );
 	spellinfo.+reagents := GetConfigStringDictionary(elem, "RegCost");
 	spellinfo.+spelltype := GetConfigString(elem, "Type");
-	spellinfo.+align := GetConfigString(elem, "Align");  // FIX: Changed from GetConfigStringDictionary to GetConfigString
+	spellinfo.+align := GetConfigString(elem, "Align");
 	spellinfo.+flavortext := GetConfigString( elem, "FlavorText" );
 	spellinfo.+cycles := GetConfigInt( elem, "Cycles" );
 	spellinfo.+corruption := GetConfigInt( elem, "Corruption" );
-	if(spellinfo.spelltype == "spellcaster")
-		spellinfo.+School := GetConfigString( elem, "School" );
-	endif
+	spellinfo.+School := GetConfigString( elem, "School" );
 	if (spellinfo.flavortext == error)
 		spellinfo.flavortext := "";
 	else
@@ -758,9 +751,11 @@ function Corromper(who, spell, targ)
 		return 0;
 	endif
 
-	// Read spell configuration
-	var cfg := ReadConfigFile(":spells:config/allspells");
-	var elem := FindConfigElem(cfg, spell);
+	// Read spell configuration via SpellRegistry
+	var elem := ResolveSpell(spell);
+	if (!elem)
+		return 0;
+	endif
 	var spellinfo := dictionary;
 	spellinfo.+name := GetConfigString( elem, "Name" );
 	spellinfo.+mana := GetConfigInt( elem, "Mana" );
@@ -770,7 +765,7 @@ function Corromper(who, spell, targ)
 	var corrupcao;
 
 	// Test willpower resistance
-	if (CheckResist(who, VONTADE, RESIST_HARD+spellinfo.cycles))
+	if (CheckResist(who, WILL, RESIST_HARD+spellinfo.cycles))
 		return 0;
 	endif
 

@@ -1,11 +1,11 @@
 include "include/client";
 
 class Color()
-	var _name := ""; // ENUM da cor
+	var _name := "";
 	var _value := 0;
 	var _htmlValue := "";
 
-	function Color(this, colorEnum := COLOR_NAME::_DEFAULT)
+	function Color(this, colorEnum := GENERAL_COLOR::_DEFAULT)
 		this._value := colorEnum;
 		this._InitValues();
 	endfunction
@@ -34,7 +34,7 @@ class Color()
 	endfunction
 endclass
 
-enum class COLOR_NAME
+enum class GENERAL_COLOR
 	_DEFAULT := 0,
 	BLACK := 1,
 	TRUE_BLACK := 1279,
@@ -87,25 +87,25 @@ enum class COLOR_NAME
 endenum
 
 enum class SYSTEM_COLOR
-	INFO := COLOR_NAME::BLUE,
-	GOOD := COLOR_NAME::BLUE,
-	SUCCESS := COLOR_NAME::BLUE,
+	INFO := GENERAL_COLOR::BLUE,
+	GOOD := GENERAL_COLOR::BLUE,
+	SUCCESS := GENERAL_COLOR::BLUE,
 
-	ALERT := COLOR_NAME::YELLOW,
+	ALERT := GENERAL_COLOR::YELLOW,
 
-	FAIL := COLOR_NAME::RED,
-	ERRO := COLOR_NAME::RED,
-	BAD := COLOR_NAME::RED
+	FAIL := GENERAL_COLOR::RED,
+	ERRO := GENERAL_COLOR::RED,
+	BAD := GENERAL_COLOR::RED
 endenum
 
 enum class COMBAT_COLOR
-	PHYSICAL := COLOR_NAME::YELLOW,
-	CRITICAL := COLOR_NAME::RED,
-	FIRE := COLOR_NAME::ELEMENTAL_FIRE,
-	COLD := COLOR_NAME::ELEMENTAL_ICE,
-	POISON := COLOR_NAME::GREEN,
-	ENERGY := COLOR_NAME::ELEMENTAL_ENERGY,
-	HEAL := COLOR_NAME::BLUE
+	PHYSICAL := GENERAL_COLOR::YELLOW,
+	CRITICAL := GENERAL_COLOR::RED,
+	FIRE := GENERAL_COLOR::ELEMENTAL_FIRE,
+	COLD := GENERAL_COLOR::ELEMENTAL_ICE,
+	POISON := GENERAL_COLOR::GREEN,
+	ENERGY := GENERAL_COLOR::ELEMENTAL_ENERGY,
+	HEAL := GENERAL_COLOR::BLUE
 endenum
 
 enum class MESSAGE_COLOR
@@ -113,6 +113,15 @@ enum class MESSAGE_COLOR
 	EMOTE := 33,
 	WHISPER := 51,
 	YELL := 33,
-	SYSTEM := COLOR_NAME::YELLOW,
-	PRIVATE := COLOR_NAME::MAGENTA
+	SYSTEM := GENERAL_COLOR::YELLOW,
+	PRIVATE := GENERAL_COLOR::MAGENTA,
+	NARRATOR := 946
+endenum
+
+enum class GUMP_COLOR
+	SECTION_HEADER := 1149,  // Bright Cyan
+	HIGHLIGHT := 53,         // Gold/Yellow (same as GENERAL_COLOR::YELLOW)
+	LABEL := 2100,           // Light Gray
+	HELP_TEXT := 1153,       // Dark Gray
+	TEXT_ENTRY := 1150       // White/Light for text entries
 endenum

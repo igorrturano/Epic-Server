@@ -11,6 +11,7 @@ program aura(params)
 
 	var who := params[1];
 
+	// TODO: Migrate "Magia Divina" to become a priest spell
 	if (TemHabilidade(who, "Magia Divina"))
 		// SendSysMessage(who, "clerigo "+ who.name);
 

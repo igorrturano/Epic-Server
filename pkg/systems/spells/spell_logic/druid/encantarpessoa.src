@@ -5,6 +5,8 @@ include "include/epicNPCUtils";
 include ":charactercreation:resists";
 include ":tn:boss";
 include "include/sysEvent";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -36,14 +38,14 @@ program SpellScript(params)
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
 
-	if (CheckResist(targ, VONTADE, diff, -bonus) || isTrueBoss(targ))
+	if (CheckResist(targ, WILL, diff, -bonus) || isTrueBoss(targ))
 		SendSysMessageEx(who, "Você nota que o alvo não foi afetado.", SSM_FAIL);
 		SendSysMessageEx(targ, "Você resistiu a magia.", SSM_INFO);
 		return;
 	endif
 
 	var duration := cint(AP_GetSkill(who, ARCANA) / 5);
-	if (TemHabilidade(who, "Coração da Matilha"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		duration := Cint(duration * 1.5);
 	endif
 

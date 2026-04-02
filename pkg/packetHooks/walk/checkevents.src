@@ -1,6 +1,9 @@
+use os;
+
 include "include/say";
 include ":charactercreation:habilidades";
-include ":achievements:ExplorationController";
+include ":achievements:controllers/ExplorationController";
+include ":abilities:controllers/AbilityMonitor";
 
 program checkeventsonwalk()
 	Print("INSTALLING: checkeventsonwalk...");
@@ -40,6 +43,16 @@ exported function CheckEventsWalk(who, byref packet)
 		elseif (who.facing == 5 || who.facing == 6)
 			CreateItemAtLocation(who.x, who.y, who.z + 1, 0x1E03, 1, who.realm);
 		endif
+	endif
+
+	// Cancel-on-move: abilities/spells set #cancel_on_move_pid to their monitor PID
+	var cancelPid := GetObjProperty(who, "#cancel_on_move_pid");
+	if (cancelPid)
+		var proc := GetProcess(cancelPid);
+		if (proc)
+			proc.SendEvent(ABILITY_EVENT_ID::ABORT);
+		endif
+		EraseObjProperty(who, "#cancel_on_move_pid");
 	endif
 
 	return 0;

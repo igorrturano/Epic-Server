@@ -1,11 +1,16 @@
 include "include/say";
 include ":tn:cooldown";
+include ":wrappers:Objects/Model/WeaponWrapper";
 use os;
 
 program meditar(who, text)
-	var arcane_bows := array{ 0xFA6D, 0XF997 };
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata.magia != "arcane_archer")
+		SendSysMessageEx(who, "Apenas arqueiros arcanos podem usar este comando.", SSM_FAIL);
+		return;
+	endif
 
-	if (!GetCooldown(who, "arcane_bow") && !(who.weapon.objtype in arcane_bows))
+	if (WeaponWrapper(who.weapon).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 		SendSysMessageEx(who, "Você precisa estar com seu arco elemental conjurado!", SSM_FAIL);
 		return;
 	endif
@@ -37,15 +42,15 @@ program meditar(who, text)
 
 	who.frozen := 1;
 	var sound := 0x666; // Energy
-	if (GetObjProperty(who, "fire_arrow"))
+	if (GetObjProperty(who.weapon, "fire_arrow"))
 		sound := 0x5cb;
-	elseif (GetObjProperty(who, "cold_arrow"))
+	elseif (GetObjProperty(who.weapon, "cold_arrow"))
 		sound := 0x5c8;
 	endif
 	PrintTextAbove(who, "*Canalizando Elemento*");
-	PlaySoundEffect(who, sound); // hammer
+	PlaySoundEffect(who, sound);
 	sleep(2);
-	PlaySoundEffect(who, 0x656); // purgeMagic
+	PlaySoundEffect(who, 0x656);
 
 	who.frozen := 0;
 

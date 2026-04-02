@@ -6,14 +6,15 @@ include ":combat:Controller/HitController";
 include ":combat:Controller/HitScriptController";
 include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
-include ":combat:Model/CombatAbility";
+include ":abilities:models/Ability";
+include ":abilities:AbilityRegistry";
 include ":combat:weardown";
 
 // External
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":mastery:CombatController";
-include ":achievements:CombatController";
+include ":achievements:controllers/CombatController";
 include ":IO:CFGFile";
 // include ":message:model/Message";
 include ":tn:cooldown";

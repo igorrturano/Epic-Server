@@ -13,10 +13,6 @@ include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 include ":crafting:include/util/fabricacaoConstants";
 
- //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
-
-var LISTA_TIPO_MATERIAL := PegaListaTipoMateriais();
-
 function InicializaSessaoComplexos(byref profissaoCraftProp, modoGm)
 	var sessao := struct;
 
@@ -248,7 +244,9 @@ function EnviaItensComplexosGump(quem,profissao, modoGm)
 				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS,3);
 				var chaveEsquema := sessao.receitaSelecionada.esquemas.keys()[retornoMapeado.indiceItem];
 				var esquema := sessao.receitaSelecionada.esquemas[chaveEsquema];
-				var nomeReceitaClassificado := PegaNomeReceitaClassificada(sessao.receitaSelecionada.receita.receitaClassificada);
+				var receitaClassificada := sessao.receitaSelecionada.receita.receitaClassificada;
+				esquema.classe := receitaClassificada.classe ? cint(receitaClassificada.classe) : CLASSE_PADRAO;
+				var nomeReceitaClassificado := PegaNomeReceitaClassificada(receitaClassificada);
 
 				case (retornoMapeado.indiceBotao)
 					1: //Editar
@@ -358,6 +356,7 @@ endfunction
 
 function TrataGMEscolhaComponente(quem, byref sessao)
 	var modoGm := sessao.modoGm;
+
 	var encaixeEscolhido := modoGm.encaixeEscolhido;
 	var componenteEscolhido := modoGm.componenteEscolhido;
 	var qualidadeEscolhida := modoGm.qualidadeEscolhida;
@@ -418,15 +417,17 @@ function MontaMelhorEsquema(quem, sessao)
 		var quantidadeComponentesNecessaria :=  sessao.receitaSelecionada.receita.componentesNecessarios.size();
 		var opcaoEncontrada := MontaObetoOpcaoComponente(componenteEncontrado.melhor, componenteEncontrado.indiceEncaixe);
 		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
-		
+
 		AcrescentaComponenteEscolhido(
 				sessao.receitaSelecionada.esquemaSelecionado,
 				componenteNecessario,
 				componenteEscolhido, 
-				opcaoEncontrada.indiceEncaixeComponente, 
-				sessao.receitaSelecionada.receita.receitaClassificada.classe);
+				opcaoEncontrada.indiceEncaixeComponente);
 
 	endforeach
+
+	var classe := sessao.receitaSelecionada.receita.receitaClassificada.classe;
+	sessao.receitaSelecionada.esquemaSelecionado.classe := classe ? cint(classe) : CLASSE_PADRAO;
 
 	return sessao.receitaSelecionada.esquemaSelecionado;
 endfunction
@@ -788,16 +789,13 @@ function TrataComponenteEncontrado(
 									sessao.receitaSelecionada.esquemaSelecionado,
 									componenteNecessario,
 									componenteEscolhidoMontado, 
-									indiceEncaixeComponente, 
-									sessao.receitaSelecionada.receita.receitaClassificada.classe
-								);
+									indiceEncaixeComponente);
 endfunction
 
-function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNecessario, componenteEscolhido, indiceEncaixe, classe)
+function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNecessario, componenteEscolhido, indiceEncaixe)
 	if(componenteNecessario.isPrincipal)
 			esquemaSelecionado.cor := configRecursos[componenteEscolhido.material.chave].color;
 			esquemaSelecionado.material := componenteEscolhido.material.chave;
-			esquemaSelecionado.classe := classe ? classe: 1;
 	endif
 
 	DefineTagQualidade(
@@ -945,7 +943,6 @@ function CarregaDropDownGmMode(byref sessao,byref gerenciador)
 				var tipo := componenteEscolhido.principalMaterial;
 
 				var materiais := LISTA_TIPO_MATERIAL[UPPER(tipo)];
-				
 				foreach material in materiais
 					DropDown::AdicionaOpcao(dropDown,material.name,_material_iter,material);
 				endforeach
@@ -1024,7 +1021,9 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 
 				endif
 
-
+				if(!GetObjProperty(item,PROPNAME_ENCAIXE_COMPONENTE))
+					continue;
+				endif
 				var chaveMat := GetObjProperty(item,PROPNAME_MATERIAL);
 				var material := configRecursos[chaveMat];
 				var tier := PegaComponenteTierDesc(GetObjProperty(item,PROPNAME_TIER_COMPONENTE));
@@ -1146,6 +1145,7 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 		propriedades.+valorPrincipal := valorEfeitos.valorPrincipal;
 		if(Find(Upper(caracteristica), "VAZIO",1) <= 0)
 			propriedades.valorPrincipal := propriedades.valorPrincipal + Cint(tierProduto.valor);
+		else
 		endif
 	endif
 	
@@ -1175,9 +1175,15 @@ function PreparaItensComplexosGump(quem, profissao, modoGm)
 	var categorias := GetConfigStringArray(menuPericiaCfg["Index"], "Group");
 	parametrosGump.+receitasPorPagina := NR_MAXIMO_RECEITAS_POR_PAGINA;
 	parametrosGump.+encaixesPorPagina := NR_MAXIMO_ENCAIXES_POR_PAGINA;
-	parametrosGump.+profissao := profissao;
+	parametrosGump.+profissao := profissaoConfig[profissao].MenuFile;
 	parametrosGump.+propCraft := propCraft;
 	parametrosGump.+receitasConfig := ReadConfigFile(profissaoConfig[profissao].InfoFabricacao);
+	parametrosGump.+gumpIdProfissaoPressed := profissaoConfig[profissao].GumpicPressionado 
+													? cint(profissaoConfig[profissao].GumpicPressionado )
+													: 0;
+	parametrosGump.+gumpIdProfissaoUnpressed := profissaoConfig[profissao].GumpicNaoPressionado 
+													? cint(profissaoConfig[profissao].GumpicNaoPressionado)
+													: 0;
 	parametrosGump.+pericia := profissaoConfig[profissao].Attribute;
 	parametrosGump.+visaoReceitas := MontaVisaoReceitas(
 											quem,
@@ -1283,7 +1289,7 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 
 	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig, receitaClassificada.classe, quantidadeOpicionais);
 	receita.+sucessosNecessarios := PegaDescDuracaoFabricacao(duracao).sucessos;
-	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao);
+	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao, receitaClassificada.classe);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, duracao, definicaoFabricacao.lote);
 	receita.+dificuldade := PegaDificuldadeFrabicarObjeto(quem,objtype,nomeProfissao,nomePericia, receitaClassificada.classe);
 	receita.+objtype := objtype;
@@ -1369,6 +1375,7 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 	var encaixesItem := GetConfigStringArray(receitaCfgElemento,"ComponenteEncaixe");
 	var configEncaixes := ReadConfigFile(":*:encaixes");
 	classe := classe ? classe : 1;
+	var quantidadePrincipal := 0;
 
 	var componentes := array;
 	foreach encaixe in encaixesItem
@@ -1383,7 +1390,9 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 		componente.+qtdNecessaria := splitEncaixe[DESC_ENCAIXE_QTD_NECESSARIA];
 
 		case (splitEncaixe[DESC_ENCAIXE_CONDICIONAL])
-			"principal": componente.+isPrincipal := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "principal"; break;
+			"principal": componente.+isPrincipal := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "principal"; 
+						quantidadePrincipal += 1;
+						break;
 			"opcional": componente.+isOpcional := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "opcional"; 
 						quantidadeOpicionais += 1; 
 						break;
@@ -1394,12 +1403,36 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 		componentes.append(componente);
 	endforeach
 
+	if(quantidadePrincipal == 0 && componentes.size() > 0)
+		return Print("Erro [ " + objtype +  " ] Para receitas com componentes, o componente principal é obrigatório e não foi definido  " + CStr(Hex(objtype)));
+	endif
+
 	return componentes;
 endfunction
 
-function PegaMateriaisNecessarios(descritorFabricacao)
+function PegaMateriaisNecessarios(descritorFabricacao, classe)
 	var materials := GetConfigStringArray(descritorFabricacao, "materials");
-	return materials;
+	var arrayRetorno := array;
+	
+	foreach material in materials
+		Sleepms(2);
+		var splitMaterial := SplitWords(material);
+		var material, quantidade;
+
+		if(splitMaterial.size() > 2)
+			if(cint(splitMaterial[1]) != cint(classe)) continue; endif
+			material :=  splitMaterial[2];
+			quantidade := splitMaterial[3];
+		else
+			if(CLASSE_PADRAO != cint(classe)) continue; endif
+			material :=  splitMaterial[1];
+			quantidade := splitMaterial[2];
+		endif
+
+		arrayRetorno.append(material + " " + quantidade);
+	endforeach
+
+	return arrayRetorno;
 endfunction
 
 function DeveAparecerReceita(
@@ -1507,7 +1540,7 @@ function CriaPropFabricadoGerada(
 
 	var receita := MontaReceitaItem(0,objtype,"",fabricacaoDescConfig,0,0, struct{nome := objetoDesc.name, classe := classe});
 	var componentesEscolhidos := dictionary;
-	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0);
+	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0,"", classe);
 	var tierInfo := PegaComponenteTierDesc(tier);
 
 	foreach componenteNecessario in (receita.componentesNecessarios)
@@ -1599,8 +1632,7 @@ function CriaPropFabricadoGerada(
 										objetoEsquema,
 										componenteNecessario,
 										componenteEscolhido, 
-										opcaoEncontrada.indiceEncaixeComponente, 
-										classe);
+										opcaoEncontrada.indiceEncaixeComponente);
 	endforeach
 	
 

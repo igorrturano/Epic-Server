@@ -7,6 +7,7 @@ include ":tn:tngumps";
 include "include/epicConstants";
 include ":gumps:epicGumps";
 include ":message:include/model/Message";
+include ":spells:SpellRegistry";
 //include ":nature:nature";
 //include ":charactercreation:include/RPTraits";
 
@@ -16,7 +17,7 @@ const BADURAN_ID := 0x9E9;
 const BJORSKA_ID := 0x9EA;
 const GULTHRAK_ID := 0x9EB;
 const HAROLOTH_ID := 0x9EC;
-const POLKINEA_ID := 0x9ED;
+const COLHESIANA_ID := 0x9ED;
 const LESTE_ID := 0x9EE;
 
 const BOKK_BHARAZ_ID := 0x9EF;
@@ -40,8 +41,8 @@ const FORADALEI_ID := 0x15B;
 const INOCENTE_ID := 0x15C;
 const SABIO_ID := 0x15D;
 
-var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
-var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Precisão Élfica", "Björska" := "Cavalaria Nórdica", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
+var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", SNEAK := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
+var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Prole Abissal", "Colhesiana" := "Armadilheiro", "Alüriel" := "Guardião", "Björska" := "Cavalaria Nórdica", "Gulthrak" := "Flagelo das Areias", "Badûran" := "Filho do progresso", "Povos do Leste" := "Discípulo das Lâminas"};
 
 function getCultureByPictureId(culture_id)
     case (culture_id)
@@ -57,8 +58,8 @@ function getCultureByPictureId(culture_id)
             return GULTHRAK;
         HAROLOTH_ID:
             return HAROLOTH;
-        POLKINEA_ID:
-            return POLKINEA;
+        COLHESIANA_ID:
+            return COLHESIANA;
         LESTE_ID:
             return LESTE;
     endcase
@@ -78,8 +79,8 @@ function getCraftCultureByPictureId(culture_id)
             return "Gulthrak";
         HAROLOTH_ID:
             return "Haroloth";
-        POLKINEA_ID:
-            return "Polkinea";
+        COLHESIANA_ID:
+            return "Colhesiana";
         LESTE_ID:
             return "Leste";
     endcase
@@ -122,8 +123,8 @@ function getCulturalDescriptionByPictureId(culture_id)
             return FindConfigElem(textosConfig, "gulthrak").descricao;
         HAROLOTH_ID:
             return FindConfigElem(textosConfig, "haroloth").descricao;
-        POLKINEA_ID:
-            return FindConfigElem(textosConfig, "polkinea").descricao;
+        COLHESIANA_ID:
+            return FindConfigElem(textosConfig, "colhesiana").descricao;
         LESTE_ID:
             return FindConfigElem(textosConfig, "leste").descricao;
     endcase
@@ -190,7 +191,7 @@ function getRaceByCulturalId(culture_pic)
             races := {DROW};
         ALURIEL_ID:
             races := {ELFO};
-        POLKINEA_ID:
+        COLHESIANA_ID:
             races := {PEQUILHO};
         GULTHRAK_ID:
             races := {ORC};
@@ -252,10 +253,14 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
         
         var options := racial_traits[category].opcoes;
         current_y := current_y + 30;
+        // option_ids maps each displayed option to a stable enum id
+        var option_ids := racial_traits[category].opcoes_ids;
         for (i := 1; i <= options.size(); i := i + 1)
             option_y := current_y + ((i-1) * 25);
             button_id := 100 + (category_iter * 5) + (i - 1);
-            is_selected := (chardata.caracteristicas_rp[category] == i);
+            // now compare stored enum id (or 0) against the option's enum id
+            var caracteristica := chardata.caracteristicas_rp[category];
+            is_selected := (caracteristica == option_ids[i] && OT_UNINIT != TypeOfInt(caracteristica));
             GFHTMLArea(gump, x, option_y, 192, 24, "<BASEFONT color=#000000>{}".format(options[i]), 1, 0);
             
             if (category != "Idade Aparente")
@@ -280,7 +285,7 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
 
     var input := GFSendGump(who, gump);
     
-    if (input[0] == 222)
+   /* if (input[0] == 222)
         var age_input := GFExtractData(input, age_textbox);
         var all_required_selected := true;
         
@@ -309,7 +314,7 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
             chardata.idade_real := final_age[2];
             return input;
         endif
-    endif
+    endif*/
 
     return input;
 endfunction
@@ -346,7 +351,12 @@ function ProcessSelection(byref chardata, input)
         
         if (category_index < categories.size())
             var category := categories[category_index + 1];
-            chardata.caracteristicas_rp[category] := option;
+            // Map the 1-based option index to the enum id for this race/category
+            var racial_traits := GetRacialTraits(chardata.raca);
+            var option_ids := racial_traits[category].opcoes_ids;
+            if (option >= 1 && option <= option_ids.size())
+                chardata.caracteristicas_rp[category] := option_ids[option];
+            endif
         endif
 endfunction
 
@@ -731,7 +741,7 @@ function skillGump(who, culture_pic, byref chardata)
     SetObjProperty(who, "chardata", chardata);
     GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Pontos restantes", 0, 0);
     GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Pontos restantes", 0, 0); //shadow
-    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color=#DAA520 >{}".format(chardata.points), 1, 0);
+    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color={} >{}".format(Color(GENERAL_COLOR::BLACK).GetHtmlValue(), chardata.points), 1, 0);
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Botão de fechar
 
@@ -747,24 +757,9 @@ function howManyPrimarias(chardata)
 endfunction
 
 function culturalTraitBonus(who, byref chardata)
+    var cfg := ReadConfigFile(":charactercreation:config/backgrounds");
     var culturalBg := chardata.background;
-    if (culturalBg == "Legionário")
-        return chardata.+bgBonus := PARRY;
-    elseif (culturalBg == "Véu de Idrith")
-        return chardata.+bgBonus := AWARENESS;
-    elseif (culturalBg == "Pés Leves")
-        return chardata.+bgBonus := SNEAK;
-    elseif (culturalBg == "Cavalaria Nórdica")
-        return chardata.+bgBonus := HANDLEANIMAL;
-    elseif (culturalBg == "Precisão Élfica")
-        return chardata.+bgBonus := RANGED;
-    elseif (culturalBg == "Brutamontes")
-        return chardata.+bgBonus := TWOHANDED;
-    elseif (culturalBg == "Filho do progresso")
-        return chardata.+bgBonus := ALCHEMY;
-    elseif (culturalBg == "Andarilho")
-        return chardata.+bgBonus := ONEHANDED;
-    endif
+    return chardata.+bgBonus := cfg[culturalBg].Bonus;
 endfunction
 
 function attributeGump(who, culture_pic, byref chardata)
@@ -809,8 +804,7 @@ function attributeGump(who, culture_pic, byref chardata)
 
     GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Pontos restantes", 0, 0);
     GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Pontos restantes", 0, 0); //shadow
-    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color=#DAA520 >{}".format(chardata.attribute_points), 1, 0);
-
+    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color={} >{}".format(Color(GENERAL_COLOR::BLACK).GetHtmlValue(), chardata.attribute_points), 1, 0);
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Botão de fechar
 
     return GFSendGump(who, gump);
@@ -913,8 +907,9 @@ function genericItems(who)
     CreateItemInicial(who, 0x152e, 1); // short pants
     CreateItemInicial(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
-    var oleo := CreateItemInBackpack(who, 0x606f, 2); // Oleo de Polir Armaduras
-    SetObjProperty(oleo, "descmod", "Óleo de polir armaduras" + "<br>");
+    CreateItemInBackpack(who, 0xC61F, 1); // laterna cintura
+    var oleo := CreateItemInBackpack(who, 0x606f, 2); // Oleo de Polir Equipamentos
+    SetObjProperty(oleo, "descmod", "Óleo de polir equipamentos" + "<br>");
 endfunction
 
 function weaponsByClassAndCulture(who)
@@ -976,7 +971,7 @@ function weaponsByClassAndCulture(who)
         endif
     endif
 
-    if (chardata.culture == POLKINEA)
+    if (chardata.culture == COLHESIANA)
         CreateItemInicial(who, 0xF998, 1); // Adaga
 
     
@@ -1064,7 +1059,7 @@ function weaponsByClassAndCulture(who)
 
     if (skills[RANGED] >= 1)
         var ammo_amount := skills[RANGED] * 80;
-        CreateItemInBackpack(who, 0x13B2, 1); // bow
+        CreateItemInicial(who, 0x13B2, 1); // bow
         CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
 
         CreateItemInicial(who, 0x2fb7, 1); // aljava
@@ -1106,7 +1101,7 @@ function armorsByCulture(who)
         CreateItemInicial(who, 0x13DB, 1); // Studded Leather
     endif
 
-    if (chardata.culture == POLKINEA)
+    if (chardata.culture == COLHESIANA)
         CreateItemInicial(who, 0x13C7, 1); // Armadura de couro simples
         CreateItemInicial(who, 0x13CD, 1); // Armadura de couro simples
         CreateItemInicial(who, 0x1DB9, 1); // Armadura de couro simples
@@ -1141,7 +1136,7 @@ function workingItems(who)
     var skills := chardata.Skills;
 
     if (skills[WOODWORKING] >= 1)
-        CreateItemInicial(who, 0x1035, 1); // saw
+        CreateItemInicial(who, 0x1034, 1); // saw
         CreateItemInicial(who, 0x1022, 1);
     endif
     if (skills[METALWORKING] >= 1)
@@ -1161,9 +1156,18 @@ function workingItems(who)
         CreateItemInBackpack(who, 0xe21, (skills[MEDICINE] * 40)); // Bandages
     endif
 
+    if (skills[MEDICINE] == 3)
+		CreateItemInBackpack(who, 0xedfe, 1);
+		CreateItemInBackpack(who, 0xed2a, 1);
+
+		SendSysMessageEX(who, "Você recebeu itens de medicina por ter Medicine como primária.", SSM_INFO);
+	endif
+
     if (skills[MECHANICS] >= 1)
         CreateItemInicial(who, 0x14FB, (skills[MECHANICS] * 8)); // lockpick
     endif
+
+    
 
     if (skills[DOMESTIC_WORK] >= 1)
         CreateItemInicial(who, 0x0f9d, 1); // sewingkit
@@ -1178,7 +1182,7 @@ function workingItems(who)
         CreateItemInBackpack(who, 0x1832, 1); // balao
         CreateItemInBackpack(who, 0x1830, 1); // beker
         CreateItemInBackpack(who, 0x1849, 1); // aparato
-        CreateItemInBackpack(who, 0x0F0E, skills[ALCHEMY] * 5); // frascos
+        CreateItemInBackpack(who, 0x1BE3, skills[ALCHEMY] * 10); // vidro pros frascos, porque precisa do material
         var book1 := CreateItemInBackpack(who, "alchemybook");
             book1.newbie := 1;
 		    setobjproperty(book1, "serialid", who.serial);
@@ -1325,9 +1329,9 @@ function resetCharacter(who)
 endfunction
 
 function resetGender(who)
-    if (who.graphic == 1828 || who.graphic == 1830 || who.graphic == 1832 || who.graphic == 1834)
+    if (who.graphic == 1828 || who.graphic == 1830 || who.graphic == 1832 || who.graphic == 1835)
         who.graphic := 400;
-    elseif (who.graphic == 1829 || who.graphic == 1831 || who.graphic == 1833 || who.graphic == 1835)
+    elseif (who.graphic == 1829 || who.graphic == 1831 || who.graphic == 1833 || who.graphic == 1834)
         who.graphic := 401;
     endif
 endfunction
@@ -1437,6 +1441,8 @@ function getWisdomPathsByCulture(who)
         wisdomPaths.append("Clériga de Idrith");
     elseif (culture == BJORSKA || culture == LESTE)
         wisdomPaths.append("Clérigo");
+    elseif (culture == ALURIEL)
+        wisdomPaths.append("Arqueiro Arcano");
     endif
     
     if (culture != HAROLOTH && culture != GULTHRAK)
@@ -1479,24 +1485,19 @@ function startAdventureGump(who)
     var gump := GFCreateGump();
     GFClosable(gump, 0);
 
-    var x := 63;
-    var y := 100;
-    var i := 1;
-    x := 255;
-    y := 90;
-    // Background
-    GFGumpPic(gump, 17, 31, 0x9E6); 
-    //Header
-    GFHTMLArea(gump, x+1, y-24, 292, 40, "<BASEFONT Size=55 Color=#999999 > Epic! Prólogo - Uma jornada inesperada", 0, 0); //shadow
-    GFHTMLArea(gump, x, y-25, 292, 400, "<BASEFONT Size=55 Color=#ffffff > Epic! Prólogo - Uma jornada inesperada", 0, 0);
+    GFResizePic(gump, 0, 0, 9270, 760, 625);
 
-    // Adventure main image
-    GFGumpPic(gump, 50, 100, 0xFFFD);
+    // Title with shadow (above the image)
+    GFHTMLArea(gump, 21, 16, 740, 40, "<BASEFONT Size=55 Color=#000000 >Epic! Beta Test - A Ilha", 0, 0);
+    GFHTMLArea(gump, 20, 15, 740, 40, "<BASEFONT Size=55 Color=#ffffff >Epic! Beta Test - A Ilha", 0, 0);
 
-    // Adventure Description
-    GFHTMLArea(gump, 100, 550, 650, 120, FindConfigElem(textosConfig, "adventureStart").descricao, 1, 1);
+    // Adventure main image (below title)
+    GFGumpPic(gump, 20, 50, 0xFFFD);
 
-    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200); // Botão de fechar
+    // Description and button overlaid on bottom of image
+    GFHTMLArea(gump, 20, 470, 720, 110, FindConfigElem(textosConfig, "adventureStart").descricao, 1, 1);
+
+    GFAddButton(gump, 710, 590, 4005, 4007, GF_CLOSE_BTN, 200);
     return GFSendGump(who, gump);
 endfunction
 
@@ -1544,7 +1545,7 @@ function parseLanguageByCulture(who, linguasOpt)
             return linguasOpt[3];
         elseif (culture == LESTE)
             return linguasOpt[4];
-        elseif (culture == POLKINEA)
+        elseif (culture == COLHESIANA)
             return linguasOpt[5];
         elseif (culture == GULTHRAK)
             return linguasOpt[6];
@@ -1588,13 +1589,13 @@ function signSelection(who)
     var chardata := GetObjProperty(who, "chardata");
     var sign_pic := CUIDADOR_ID;
     var btn_value;
-    while (1)
+    while (!GetObjProperty(who, "creation_completed"))
         var input := SignGump(who, sign_pic);
-        btn_value := input[0]; 
+        btn_value := input[0];
 
         if (btn_value == 201)
             sign_pic++;
-        elseif (btn_value == 210) 
+        elseif (btn_value == 210)
             sign_pic--;
         elseif (btn_value == 666)
             break;
@@ -1703,9 +1704,9 @@ function birthDaySelection(who)
     var selected_day := 0;
     var month_index := getMonthBySign(chardata.sign);
     var btn_value;
-    while (1)
+    while (!GetObjProperty(who, "creation_completed"))
         var input := BirthDayGump(who, selected_day);
-        btn_value := input[0]; 
+        btn_value := input[0];
         if (btn_value == 666 && selected_day != 0)
             break;
         elseif (btn_value >= 1 && btn_value <= MONTHS[month_index].days)
@@ -2011,8 +2012,8 @@ function GetPaperdollBackground(graphic)
         1831: result := 0xF; // Elfo F
         1832: result := 54596; // Orc M
         1833: result := 54595; // Orc F
-        1834: result := 54534; // Pequilho M
-        1835: result := 54533; // Pequilho F
+        1834: result := 54533; // Pequilho F
+        1835: result := 54534; // Pequilho M
     endcase
     return result;
 endfunction
@@ -2304,48 +2305,39 @@ function UpdateCharacterSkin(who, chardata)
 endfunction
 
 function spellChoices(who)
-    var spellcfg := ReadConfigFile(":spells:config/spellcaster");
-    var keys := GetConfigIntKeys(spellcfg);
-    var mageryLevel := CInt(GetObjProperty(who, "chardata").Skills[MAGERY]);
-
-    // Get spells by circle
+    // Get spells by circle from all 4 mage school configs
     var spellsByCircle := dictionary;
     spellsByCircle[1] := array;
     spellsByCircle[2] := array;
 
-    foreach key in keys
-        var elem := FindConfigElem(spellcfg, key);
-        var spelllvl := GetConfigInt(elem, "Circle");
-        var spelltype := GetConfigString(elem, "Type");
-        
-        if (spelltype == "spellcaster" && (spelllvl == 1 || spelllvl == 2))
-            var spell := dictionary;
-            spell["id"] := key;
-            spell["circle"] := spelllvl;
-            spell["name"] := GetConfigString(elem, "Name");
-            spell["desc"] := GetConfigString(elem, "Desc");
-            spell["school"] := GetConfigString(elem, "School");
-            spellsByCircle[spelllvl].append(spell);
+    foreach cfg_path in (GetMageSchoolConfigPaths())
+        var spellcfg := ReadConfigFile(cfg_path);
+        if (!spellcfg)
+            continue;
         endif
+        var keys := GetConfigIntKeys(spellcfg);
+        foreach key in keys
+            var elem := FindConfigElem(spellcfg, key);
+            var spelllvl := GetConfigInt(elem, "Circle");
+
+            if (spelllvl == 1 || spelllvl == 2)
+                var spell := dictionary;
+                spell["id"] := key;
+                spell["circle"] := spelllvl;
+                spell["name"] := GetConfigString(elem, "Name");
+                spell["desc"] := GetConfigString(elem, "Desc");
+                spell["school"] := GetConfigString(elem, "School");
+                spellsByCircle[spelllvl].append(spell);
+            endif
+        endforeach
     endforeach
 
     var selected_spells := array;
     var btn_value;
-    var total_amount := 0;
+    var total_amount := 3;
     
-    // Calculate how many spells they can choose
-    if (mageryLevel >= 1)
-        total_amount := 1;
-    endif
-    if (mageryLevel >= 2)
-        total_amount := 2;
-    endif
-    if (mageryLevel >= 3)
-        total_amount := 3; // 2 from circle 1 + 1 from circle 2
-    endif
-    
-    while (1)
-        var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel);
+    while (!GetObjProperty(who, "creation_completed"))
+        var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount);
 
         foreach key in (input.keys)
             btn_value := key;
@@ -2358,33 +2350,20 @@ function spellChoices(who)
             endif
         endforeach
 
-        // Validate selection
-        if (mageryLevel < 3 && selected_spells.size() != total_amount)
-            selected_spells := array;
-            SendSysMessageEx(who, "Você deve escolher exatamente " + total_amount + " magia(s) do círculo 1.", SSM_FAIL);
-        elseif (mageryLevel >= 3)
-            // Count circle 1 and 2 spells
-            var circle1_count := 0;
-            var circle2_count := 0;
-            foreach chosen_spell in (selected_spells)
-                foreach spell in (spellsByCircle[1])
-                    if (spell.id == chosen_spell.id)
-                        circle1_count += 1;
-                    endif
-                endforeach
-                foreach spell in (spellsByCircle[2])
-                    if (spell.id == chosen_spell.id)
-                        circle2_count += 1;
-                    endif
-                endforeach
-            endforeach
-            
-            if (circle1_count != 2 || circle2_count != 1)
-                selected_spells := array;
-                SendSysMessageEx(who, "Você deve escolher 2 magias do círculo 1 e 1 magia do círculo 2.", SSM_FAIL);
-            else
-                break;
+        // Validate selection: always 3 spells, max 1 from circle 2
+        var circle2_count := 0;
+        foreach chosen_spell in (selected_spells)
+            if (chosen_spell.circle == 2)
+                circle2_count += 1;
             endif
+        endforeach
+
+        if (selected_spells.size() != total_amount)
+            selected_spells := array;
+            SendSysMessageEx(who, "Você deve escolher exatamente " + total_amount + " magias.", SSM_FAIL);
+        elseif (circle2_count > 1)
+            selected_spells := array;
+            SendSysMessageEx(who, "Você pode escolher no máximo 1 magia do círculo 2.", SSM_FAIL);
         else
             break;
         endif
@@ -2394,7 +2373,7 @@ function spellChoices(who)
     return selected_spells;
 endfunction
 
-function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel)
+function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount)
     var gump := GFCreateGump();
     GFClosable(gump, 0);
     
@@ -2420,27 +2399,27 @@ function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, 
         i += 1;
     endforeach
     
-    // Circle 2 spells if magery level 3
-    if (mageryLevel >= 3)
-        x += 300;
-        y := 50;
-        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 2:", 1, 0);
-        y += 26;
+    // Circle 2 spells
+    x += 300;
+    y := 50;
+    GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 2:", 1, 0);
+    y += 26;
 
-        i := 1;
-        foreach spell in (spellsByCircle[2])
-            var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
-            GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=" + color + ">" + spell.name, 1, 0);
-            GFTooltipText(gump, spell.desc);
-            if (!(spell.id in selected_spells) && (selected_spells.size() < total_amount))
-                GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 300+i);
-            endif
-            y += 26;
-            i += 1;
-        endforeach
-    endif
+    i := 1;
+    foreach spell in (spellsByCircle[2])
+        var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=" + color + ">" + spell.name, 1, 0);
+        GFTooltipText(gump, spell.desc);
+        if (!(spell.id in selected_spells) && (selected_spells.size() < total_amount))
+            GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 300+i);
+        endif
+        y += 26;
+        i += 1;
+    endforeach
     
     var remaining := total_amount - selected_spells.size();
+    GFHTMLArea(gump, 115, 645, 380, 20, "<BASEFONT Size=3 Color=#999999>Total: 3 magias (máx. 1 do círculo 2)", 0, 0);
+    GFHTMLArea(gump, 116, 646, 380, 20, "<BASEFONT Size=3 Color=#ffffff>Total: 3 magias (máx. 1 do círculo 2)", 0, 0);
     GFHTMLArea(gump, 115, 665, 192, 40, "<BASEFONT Size=5 Color=#999999>Escolha " + remaining + " magia(s)", 0, 0);
     GFHTMLArea(gump, 116, 666, 192, 40, "<BASEFONT Size=5 Color=#ffffff>Escolha " + remaining + " magia(s)", 0, 0);
     
@@ -2480,7 +2459,7 @@ function AlchChoices(who)
 
     var selected_recipes := array;
     var btn_value;
-    while (1)
+    while (!GetObjProperty(who, "creation_completed"))
         var qtd := (skill*2)+2;
         var input := alchSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
 
@@ -2553,7 +2532,6 @@ function CreateItemInicial(who, objtype, qtd)
                                 );
 
     if(!item)
-        Print("Erro ao criar item incial {} [{}]".format(Hex(objtype), item.errortext));
         Message("Erro ao criar item incial {}".format(Hex(objtype))).SetColor(SSM_FAIL).SendSys(who);
     endif
 endfunction

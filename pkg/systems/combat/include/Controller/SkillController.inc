@@ -1,6 +1,6 @@
 include ":combat:settings";
 include ":combat:Model/AttackInfo";
-include ":combat:Model/CombatAbility";
+include ":abilities:models/Ability";
 
 include ":wrappers:Objects/Model/MobileWrapper";
 // include ":wrappers:Objects/Model/WeaponWrapper";
@@ -30,15 +30,11 @@ function ProgressAttackSkills(byRef attackInfo)
 			skillDefender := attackInfo.GetDefender().GetSkill(TWOHANDED);
 		endif
 
-		if (attackInfo.GetAttacker().HasAbility(COMBAT_ABILITY::MAESTRIA_DE_DEVASTACAO) &&
-			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("swordmage") == attackInfo.GetAttacker().GetSerial())
-			
+		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("swordmage") == attackInfo.GetAttacker().GetSerial())
 			skillAttacker := attackInfo.GetAttacker().GetSkill(ONEHANDED);
 		endif
 
-		if (attackInfo.GetDefender().HasAbility(COMBAT_ABILITY::MAESTRIA_DE_DEVASTACAO) &&
-			attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetObjRef().GetProp("swordmage") == attackInfo.GetDefender().GetSerial())
-			
+		if (attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetObjRef().GetProp("swordmage") == attackInfo.GetDefender().GetSerial())
 			skillDefender := attackInfo.GetDefender().GetSkill(ONEHANDED);
 		endif
 	endif
@@ -63,6 +59,9 @@ function ProgressAttackSkills(byRef attackInfo)
 	if (can_gain)
 		var gain_wait := CInt(CS_GetSettingsCfgElem("General").GainWait);
 		attackInfo.GetAttacker().GetObjRef().SetProp("#CS_GainTime", ReadGameClock() + gain_wait);
+		var attackerWeapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
+		var shouldGainArcana := attackerWeapon.GetCategory() == WEAPON_CATEGORY::MAGICBOW
+			|| attackerWeapon.GetCategory() == WEAPON_CATEGORY::SPIRITUALBLADE;
 
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() == 0x13b9)
 			if (!attackInfo.GetAttacker().GetEquipBySlot(SHIELD))
@@ -76,5 +75,9 @@ function ProgressAttackSkills(byRef attackInfo)
 
 		SleepMS(5);
 		SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+
+		if (shouldGainArcana)
+			SkillCheck(attackInfo.GetAttacker().GetObjRef(), ARCANA, -1);
+		endif
 	endif
 endfunction

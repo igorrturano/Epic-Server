@@ -4,7 +4,7 @@ include ":musicianship:bardmusic"; // As constantes estao nesse arquivo
 
 // Programa para selecionar os alvos das magias de bardo
 program menuBardo(who)
-	if (TemHabilidade(who, "Compositor Talentoso"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VOX_ARCANA))
 		var alvos := GetObjProperty(who, "BardTargets");
 
 		// caso seja o primeiro uso do comando, inicializa a CProp de Alvos

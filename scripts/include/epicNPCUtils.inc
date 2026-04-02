@@ -94,13 +94,27 @@ function ReturnCharDataPlayerNear(who)
 endfunction
 
 function HasPlayerNear(who)
+    // OPTIMIZATION: Use 1-second cached scan to reduce expensive 30-tile scans
+    var cache_key := "#hasnear_30";
+    var cached := GetObjProperty(who, cache_key);
+    var now := polcore().systime;
+
+    if (cached && (CDbl(now) - CDbl(cached.time)) < 1.0)
+        return cached.result;
+    endif
+
+    // Cache miss - perform scan
     var nearby := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
+    var has_player := 0;
     foreach mobile in nearby
         if (mobile.acctname)
-            return 1;
+            has_player := 1;
+            break;
         endif
     endforeach
-    return 0;
+
+    SetObjProperty(who, cache_key, struct{"result" := has_player, "time" := now});
+    return has_player;
 endfunction
 
 function HasPlayerNearLocation(x, y, realm := 0)
