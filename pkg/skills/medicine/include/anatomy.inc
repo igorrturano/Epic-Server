@@ -279,22 +279,6 @@ function getDext(subject, graphic, gender)
 endfunction
 
 function getHit(subject)
-    // fix sys msgs
-    var strSuper, strType, strGender;
-    if(graphic != 0x190 && graphic != 0x191)
-        strSuper := "anormalmente";
-        strType := "criaturas";
-        strGender := "ela";
-    else
-        strSuper := "sobre-humanamente";
-        strType := "pessoa";
-        // Determine the proper pronoun for later use in messages.
-        if(gender == 0)
-            strGender := "ele";
-        elseif(gender == 1)
-            strGender := "ela";
-        endif
-    endif
 	if(subject >= 140)
 		return "parece ter saude sobre-humana";
 	elseif(subject >= 130)
