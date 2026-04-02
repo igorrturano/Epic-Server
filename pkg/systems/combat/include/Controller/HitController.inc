@@ -133,7 +133,7 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
         if (!HasLightNearby(defender))
 			if (GetCooldown(attacker, "nightvision") > 0)
             	hit_chance -= 10;
-            	SendSysMessageEx(attacker, "A escuridão faz você lutar com dificuldade.", SSM_FAIL);
+            	SendSysMessageEx(attacker, "A escuridão faz você lutar com certa dificuldade.", SSM_FAIL);
 			else
 				hit_chance -= 20;
 				SendSysMessageEx(attacker, "A escuridão faz você lutar com muita dificuldade.", SSM_FAIL);
@@ -142,7 +142,7 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
     elseif (!in_darkness && attacker_race == DROW)
 		if (GetCooldown(attacker, "nightvision") > 0)
 			hit_chance -= 10;
-			SendSysMessageEx(attacker, "A claridade faz você lutar com dificuldade.", SSM_FAIL);
+			SendSysMessageEx(attacker, "A claridade faz você lutar com certa dificuldade.", SSM_FAIL);
 		else
 			hit_chance -= 20;
 			SendSysMessageEx(attacker, "A claridade faz você lutar com muita dificuldade.", SSM_FAIL);
