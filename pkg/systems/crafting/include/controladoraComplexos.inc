@@ -594,8 +594,6 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 	
 	endforeach
 
-	Print("Requisitos suficientes.");
-
 	return true;
 endfunction
 
