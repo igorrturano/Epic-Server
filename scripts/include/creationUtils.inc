@@ -1136,7 +1136,7 @@ function workingItems(who)
     var skills := chardata.Skills;
 
     if (skills[WOODWORKING] >= 1)
-        CreateItemInicial(who, 0x1035, 1); // saw
+        CreateItemInicial(who, 0x1034, 1); // saw
         CreateItemInicial(who, 0x1022, 1);
     endif
     if (skills[METALWORKING] >= 1)
