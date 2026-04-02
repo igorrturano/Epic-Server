@@ -172,7 +172,6 @@ function HabilidadesPorNivelPossiveis(who, classe, povo, lvl)
 	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var keys := getConfigStringKeys( habcfg );
 
-
 	foreach key in keys
 		var elem := FindConfigElem( habcfg, key );
 		var c := GetConfigStringDictionary( elem, "classe" );
@@ -356,9 +355,10 @@ function comprarHabilidade(who, item, nv:=-1)
 	var possiveis := HabilidadesPorNivelPossiveis(who, chardata.classe, chardata.culture, nivel);
 
 	nivel := nivel*2;
-
-	if (habs[nivel] != 1)
-		SendSysMessageEx(who, "Voce nao pode comprar habilidade desse nivel " + nivel , SSM_FAIL);
+	var diference := GetBuyHabDiference(who, nivel);
+	
+	if (diference > 0)
+		SendSysMessageEx(who, "Voce nao pode comprar habilidade desse nivel, faltam {} pontos distribuídos nas suas primárias. ".format(diference), SSM_FAIL);
 		return 0;
 	endif
 
@@ -682,39 +682,55 @@ function Habilidades(who, nivel)
 	return 1;
 endfunction
 
-function CheckPlayerLevel(who)
-	var chardata := GetObjProperty(who, "chardata");
+function SetPlayerSkillLevel(who)
+
 	var habs := GetObjProperty(who, "buyhab");
-	var myhabs := GetObjProperty(who, "myhabs");
-	var primSum := 0;
-	var primarias := 0;
-
-	if (!myhabs)
-		myhabs := dictionary;
-	endif
-
-	if (!habs[0])
+	if(!habs)
 		habs[0] := 1;
 	endif
 
-	foreach skill in (chardata.Skills.keys())
-		if (chardata.Skills[skill]  == 3)
-			primarias := primarias + 1;
-			primSum := primSum + AP_GetTrueSkill(who, skill); //Sobe de nivel com base apenas no valor base da skill
-		endif
-	endforeach
-	primSum := primSum - primarias*40; //so conta os pontos que subiu a partir de 40
-	primarias := primarias*3;
-	primSum := cint(primSum/primarias);
+	var levelInfo := GetSkillLevelInfo(who);
 
-	var i;
-	for(i := 1; i <= primSum; i := i + 1)
-		if (!habs[i])
-			habs[i] := 1;
+	for level := 1 to levelInfo.currentLevel
+		if (!habs[level])
+			habs[level] := 1;
 		endif
 	endfor
+
 	SetObjProperty(who, "buyhab", habs);
 endfunction
+
+function GetSkillLevelInfo(who)
+	var characterPrimarySkills := GetCharacterSkills(who, SKILL_PRIORITY::PRIMARY);
+	var periciaCombinadaAcima := characterPrimarySkills.combinedSkillsValue - characterPrimarySkills.skills.Size() * 40; //so conta os pontos que subiu a partir de 40
+	var divisor := characterPrimarySkills.skills.Size() * 3;
+	var levelAtual := cint(periciaCombinadaAcima/divisor);
+
+	return struct { primaryDivisor := divisor, currentLevel := levelAtual , relevantCombinedSkills := periciaCombinadaAcima};
+endfunction
+
+function GetBuyHabDiference(who, desiredLevel)
+	var skillLevelInfo := GetSkillLevelInfo(who);
+	return (skillLevelInfo.relevantCombinedSkills - (desiredLevel * skillLevelInfo.primaryDivisor)) * -1;
+endfunction
+
+function GetCharacterSkills(who, prioridadePericia)
+	var chardata := GetObjProperty(who, "chardata");
+	var retorno := struct { skills := array, combinedSkillsValue := 0 };
+	var returnList := array;
+
+	foreach pericia in (chardata.Skills.keys())
+		Sleepms(2);
+		if (cint(chardata.Skills[pericia])  == prioridadePericia || prioridadePericia == 0)
+			var valor := AP_GetTrueSkill(who, pericia);
+			retorno.skills.append(struct {name := pericia, value := valor});
+			retorno.combinedSkillsValue := retorno.combinedSkillsValue + valor;
+		endif
+	endforeach
+
+	return retorno;
+endfunction
+
 
 function GetSkillColor(skill)
     var temp := cint(skill/10);
