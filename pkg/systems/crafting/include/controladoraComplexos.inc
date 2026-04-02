@@ -1021,6 +1021,9 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 
 				endif
 
+				if(!GetObjProperty(item,PROPNAME_ENCAIXE_COMPONENTE))
+					continue;
+				endif
 				var chaveMat := GetObjProperty(item,PROPNAME_MATERIAL);
 				var material := configRecursos[chaveMat];
 				var tier := PegaComponenteTierDesc(GetObjProperty(item,PROPNAME_TIER_COMPONENTE));
@@ -1172,9 +1175,15 @@ function PreparaItensComplexosGump(quem, profissao, modoGm)
 	var categorias := GetConfigStringArray(menuPericiaCfg["Index"], "Group");
 	parametrosGump.+receitasPorPagina := NR_MAXIMO_RECEITAS_POR_PAGINA;
 	parametrosGump.+encaixesPorPagina := NR_MAXIMO_ENCAIXES_POR_PAGINA;
-	parametrosGump.+profissao := profissao;
+	parametrosGump.+profissao := profissaoConfig[profissao].MenuFile;
 	parametrosGump.+propCraft := propCraft;
 	parametrosGump.+receitasConfig := ReadConfigFile(profissaoConfig[profissao].InfoFabricacao);
+	parametrosGump.+gumpIdProfissaoPressed := profissaoConfig[profissao].GumpicPressionado 
+													? cint(profissaoConfig[profissao].GumpicPressionado )
+													: 0;
+	parametrosGump.+gumpIdProfissaoUnpressed := profissaoConfig[profissao].GumpicNaoPressionado 
+													? cint(profissaoConfig[profissao].GumpicNaoPressionado)
+													: 0;
 	parametrosGump.+pericia := profissaoConfig[profissao].Attribute;
 	parametrosGump.+visaoReceitas := MontaVisaoReceitas(
 											quem,
