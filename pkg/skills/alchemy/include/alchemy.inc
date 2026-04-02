@@ -8,6 +8,7 @@ include ":charactercreation:resists";
 include "include/epicConstants";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":crafting:/include/caracteristicasFabricacao";
 
 CONST DRINK_SOUND := 0x32;
 
@@ -44,7 +45,8 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
   var objtype := GetObjType(potion);
   
 	if (!GetObjProperty(potion, "goles"))
-		goles := cint(GetObjProperty(potion, "crafterskill") / 20);
+    var frasco := PegaComponenteFabricacao(potion, "vazio");
+  	goles := frasco.tier.valor + 1;
 		SetObjProperty(potion, "goles", goles);
 	else
 		goles := cint(GetObjProperty(potion, "goles"));
@@ -70,14 +72,14 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
       setobjproperty(potion, "goles", goles);
     endif
   else
+    var props := PegaComponenteFabricacao(potion, "vazio");
     SubtractAmount( potion, 1 );
 	  var stacknow := GetAmount(0x0F0E);
-		if (stacknow > 0)
-			Addamount(0x0F0E, 1);
-		else
-			var pot := CreateItemInBackpack(character, 0x0F0E, 1);
-		endif
-	return 1;
+		var pot := CreateItemInBackpack(character, 0x0F0E, 1);
+    setobjproperty(pot, "encaixeComponente", props.componenteNecessario.encaixedesc);
+    setobjproperty(pot, "material", 7139);
+    setobjproperty(pot, "tierComponente", props.tier.valor + 1);
+	  return 1;
 	endif
 
 endfunction
