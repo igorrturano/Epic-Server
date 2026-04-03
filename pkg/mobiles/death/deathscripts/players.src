@@ -152,7 +152,7 @@ program death(params)
 					killer_name := "desconhecido";
 				endif
 				ProcurarItensQuarto(ghost);
-				if (!CInt(GetObjProperty(ghost, "morto")))
+				if (CInt(GetObjProperty(ghost, "morto")))
 					Start_script(":DiscordWebhook:discord", { tipo, nome, ghost.acctname, killer_name,
 											  				region, coords, corpse });
 				endif
