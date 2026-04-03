@@ -44,10 +44,10 @@ program use_SmithTool(who, tool)
 	var resmeltit := rinfo[4];
 
 	if (repairit)
-		repair_this(who, craft_skill);
+		//repair_this(who, craft_skill);
 		return 0;
 	elseif (resmeltit)
-		resmelt(who, craft_skill);
+		//resmelt(who, craft_skill);
 		return 0;
 	endif
 
