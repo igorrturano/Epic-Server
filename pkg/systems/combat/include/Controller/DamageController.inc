@@ -819,7 +819,7 @@ function ApplyCombatDamage(byRef attackInfo)
 		var attacker := attackInfo.GetAttacker().GetObjRef();
 		var lastHit := dictionary;
 		lastHit["attacker"] := attacker.serial;
-		lastHit["amount"] := totalAppliedDamage;
+		lastHit["amount"] := attackInfo.GetDamage().GetTotalBaseDamage();
 		lastHit["time"] := polcore().systime;
 		SetObjProperty(defender, "lastHit", lastHit);
 		SetObjProperty(defender, "lastHit", lastHit);
