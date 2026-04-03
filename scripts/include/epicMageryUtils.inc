@@ -465,15 +465,7 @@ function SummonSpiritualBlade(who)
 
 	weapon.graphic := weaponData.graphic;
 	weapon.color := 30000;
-	weapon.movable := 0;
 	EquipItem(who, weapon);
-
-	if (who.weapon)
-		DestroyItem(weapon);
-		who.frozen := 0;
-		Message("Voce precisa ter as maos livres para invocar a lamina espiritual.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-		return 0;
-	endif
 
 	if (weapon.maxhp > 0)
 		weapon.hp := weapon.maxhp;

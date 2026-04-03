@@ -85,7 +85,7 @@ function PreencheNomePersonagem(quem,objeto, nomeObjeto := "")
 		conhecidos := GetObjProperty(quem, "conhecidos"); //Lista de pessoas conhecidadas
 
 		if(conhecidos)
-			var ID := verificaDisfarce(objeto);
+			var ID := verificaDisfarce(objeto, quem);
 			nomeObjeto := conhecidos.Exists(ID)? conhecidos[ID] : objeto.name;
 		else
 			nomeObjeto := objeto.name;
