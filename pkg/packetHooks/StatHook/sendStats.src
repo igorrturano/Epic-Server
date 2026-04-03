@@ -234,7 +234,12 @@ function TrataNomeMobile(character, source)
 			if (GetObjProperty(character, "conhecidos"))
 				var ID := Cstr(source.serial); // Salva o serial do personagem
 				if (GetObjProperty(source, "disfarce"))
-					ID := Cstr(GetObjProperty(source, "FakeID")); // Substitui o serial pelo falso quando o personagem observado está disfarçado
+					var now := ReadGameClock();
+					var canSee := CInt(GetObjProperty(character, "#truesight_active")) > now
+					              || AP_GetSkill(character, AWARENESS) >= 70;
+					if (!canSee)
+						ID := Cstr(GetObjProperty(source, "FakeID"));
+					endif
 				endif
 
 				conhecidos := GetObjProperty(character, "conhecidos"); // Lista de pessoas conhecidadas
