@@ -27,6 +27,8 @@ program TrapWalkOn(mobile, trap)
 		return 0;
 	elseif (cint(GetObjProperty(trap, "trap_inativa")) == 1)
 		return 0;
+	elseif (GetCooldown(mobile, "res_trap_protection") > 0)
+		return 0;
 	endif
 
 	var cfg := ReadConfigFile(":*:itemdesc");

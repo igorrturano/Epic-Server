@@ -22,7 +22,20 @@ include ":crafting:fabricaComplexos";
 include ":census:include/CensusController";
 
 function CreationCompleted(who)
+	if (!who.connected)
+		return 1;
+	endif
 	return GetObjProperty(who, "creation_completed");
+endfunction
+
+// Retorna 1 se o gump retornou algo válido, 0 se foi fechado por colisão/erro.
+// Previne tight loops quando SendDialogGump retorna imediatamente.
+function IsGumpValid(input)
+	if (!input || input == error)
+		sleepms(500);
+		return 0;
+	endif
+	return 1;
 endfunction
 
 program epicCreationGump(who)
@@ -82,6 +95,9 @@ function culturalSelection(who)
 	var btn_value;
 	while (!CreationCompleted(who))
 		var input := CultureGump(who, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		btn_value := input[0];
 
 		if (btn_value == 201)
@@ -112,6 +128,9 @@ function racialSelection(who, culture_pic)
 
 	while (!CreationCompleted(who))
 		var input := EpicRaceGump(who, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		foreach key in (input.keys)
 			btn_value := key;
 		endforeach
@@ -191,6 +210,9 @@ function RPcharacteristicsSelection(who, culture_pic)
 
 	while (!all_requirements_met && !CreationCompleted(who))
 		input := CaracteristicasRPGump(who, chardata, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 
 		var age_input := GFExtractData(input, 1000); // Textbox ID for Age
 
@@ -200,6 +222,7 @@ function RPcharacteristicsSelection(who, culture_pic)
 
 			if (selected_count == 4 && age_filled)
 				all_requirements_met := 1;
+				chardata.idade_escolhida := CInt(age_input);
 
 				var age_info := ConvertAge(chardata.raca, CInt(chardata.idade_escolhida));
 				chardata.idade_aparente := age_info[1];
@@ -239,6 +262,9 @@ function classSelection(who, culture_pic)
 	var chardata := GetObjProperty(who, "chardata");
 	while (!CreationCompleted(who))
 		var input := ClassGump(who, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		foreach key in (input.keys)
 			btn_value := key;
 		endforeach
@@ -278,6 +304,9 @@ function backgroundSelection(who, culture_pic)
 
 	while (!CreationCompleted(who))
 		var input := backgroundGump(who, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		foreach key in (input.keys)
 			btn_value := key;
 		endforeach
@@ -309,6 +338,9 @@ function traitSelection(who, culture_pic)
 
 	while (!CreationCompleted(who))
 		var input := traitGump(who, culture_pic, traits);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		foreach key in (input.keys)
 			btn_value := key;
 		endforeach
@@ -345,6 +377,9 @@ function skillSelection(who, culture_pic)
 			DisconnectClient(who);
 		endif
 		var input := skillGump(who, culture_pic, chardata);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		foreach key in (input.keys)
 			btn_value := key;
 		endforeach
@@ -479,6 +514,9 @@ function attributeSelection(who, culture_pic)
 
 	while (!CreationCompleted(who))
 		var input := attributeGump(who, culture_pic, chardata);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		foreach key in (input.keys)
 			btn_value := key;
 		endforeach
@@ -521,6 +559,9 @@ function religionSelection(who)
 	var btn_value;
 	while (!CreationCompleted(who))
 		var input := ReligionGump(who, religion_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		btn_value := input[0];
 
 		if (btn_value == 201)
@@ -550,6 +591,9 @@ function gameModeSelection(who)
 	var btn_value;
 	while (!CreationCompleted(who))
 		var input := gameModeGump(who, game_mode_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		btn_value := input[0];
 
 		if (btn_value == 201)
@@ -586,6 +630,9 @@ function looksSelection(who)
 
 	while (continue_loop && !CreationCompleted(who))
 		var input := hairSelectionGump(who, chardata, currentPage);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		btn_value := input[0];
 		case (btn_value)
 			1001: currentPage += 1; // Next page
@@ -642,6 +689,9 @@ function hairAndBeardColorSelection(who, byref chardata)
 
 	while (continue_loop && !CreationCompleted(who))
 		var input := hairAndBeardColorSelectionGump(who, chardata, currentPage);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		btn_value := input[0];
 		case (btn_value)
 			1001: currentPage += 1; // Next page
@@ -671,6 +721,9 @@ function skinColorSelection(who, byref chardata)
 
 	while (continue_loop && !CreationCompleted(who))
 		var input := skinColorSelectionGump(who, chardata, currentPage);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		btn_value := input[0];
 		case (btn_value)
 			1:   currentPage += 1; // Next page
@@ -697,6 +750,9 @@ function beardSelection(who, byref chardata)
 
 	while (continue_loop && !CreationCompleted(who))
 		var input := beardSelectionGump(who, chardata, currentPage);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		btn_value := input[0];
 		case (btn_value)
 			1001: currentPage += 1; // Next page
@@ -728,6 +784,9 @@ function pathOfWisdom(who, culture_pic)
 	endif
 	while (!CreationCompleted(who))
 		var input := pathOfWisdomGump(who, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
 		foreach key in (input.keys)
 			btn_value := key;
 		endforeach
@@ -912,6 +971,10 @@ function languageSelection(who, culture_pic)
 			known_languages.append("Comum");
 		endif
 		var input := languageSelectionGump(who, culture_pic, linguasOpt, known_languages, total_amount);
+		if (!IsGumpValid(input))
+			known_languages := array;
+			continue;
+		endif
 
 		foreach key in (input.keys)
 			btn_value := key;

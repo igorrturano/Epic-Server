@@ -152,7 +152,7 @@ program death(params)
 					killer_name := "desconhecido";
 				endif
 				ProcurarItensQuarto(ghost);
-				if (!CInt(GetObjProperty(ghost, "morto")))
+				if (CInt(GetObjProperty(ghost, "morto")))
 					Start_script(":DiscordWebhook:discord", { tipo, nome, ghost.acctname, killer_name,
 											  				region, coords, corpse });
 				endif
@@ -372,6 +372,7 @@ function KataWakeUp(ghost, corpse)
 	endif
 
 	Resurrect(ghost);
+	SetCooldown(ghost, "res_trap_protection", 10);
 	var ressrobe := GetEquipmentByLayer(ghost, 0x16);
 	DestroyItem(ressrobe);
 

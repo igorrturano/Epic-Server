@@ -56,6 +56,7 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPLEXOS_BTN_FABRICAR_GM_CMPNT := 12,
 	COMPLEXOS_BTN_ESQ_PROX_PAGINA := 13,
 	COMPLEXOS_BTN_ESQ_ANT_PAGINA := 14,
+	COMPLEXOS_BTN_REPARAR := 15,
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do Gump de intes complexos.
@@ -78,7 +79,8 @@ enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do 
 	RT_ESQ_ANT_PAGINA,
 	RT_MEMORIZAR_COMPONENTES,
 	RT_LIMPAR_MEMORIA,
-	RT_AJUDA_CPX
+	RT_AJUDA_CPX,
+	RT_REPARAR
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPNT //(RT = RETORNO) Classificação do retorno do Gump de Componentes.
@@ -172,7 +174,10 @@ function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 		GFTextLine(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO +  cint(larguraCelula * 3),alturaCelula * 11 + 14,149,"*Modo GM*");
 	endif
 
-	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.8),alturaCelula * 11 + 10, 5054, cint(larguraCelula * 0.9), alturaPainelRodape);	
+	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.4),alturaCelula * 11 + 10, 5054, cint(larguraCelula * 1.3), alturaPainelRodape);	
+	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.5) - 2, alturaCelula * 11 + 17,1537,1538, GF_CLOSE_BTN, COMPLEXOS_BTN_REPARAR);// Botão reparar
+	GFTooltipText(gump,"Reparar objeto.");
+	
 	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.9) - 2, alturaCelula * 11 + 17,1533,1534, GF_CLOSE_BTN, COMPLEXOS_BTN_MEMORIZAR_COMPONENTES);// Botão memoriza componentes
 	GFTooltipText(gump,"Memorizar encaixes de componente.");
 	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 23 + cint(larguraCelula * 8.9),alturaCelula * 11 + 17,1541,1542, GF_CLOSE_BTN, COMPLEXOS_BTN_LIMPAR_MEMORIA);// Botão limpar memória.

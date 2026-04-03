@@ -234,7 +234,14 @@ function CheckAmmo(byRef attackInfo)
 		return false;
 	endif
 
-	var ammo := Ammo(SystemFindObjectBySerial(ammoSerial));
+	var ammoObj := SystemFindObjectBySerial(ammoSerial);
+	if (!ammoObj)
+		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().EraseProp("ammo");
+		Message("Sua munição acabou.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+		return false;
+	endif
+
+	var ammo := Ammo(ammoObj);
 	attackInfo.SetAmmo(ammo);
 
 	var weaponCategory := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory();
