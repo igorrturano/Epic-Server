@@ -75,7 +75,7 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
     var props := PegaComponenteFabricacao(potion, "vazio");
     SubtractAmount( potion, 1 );
 		var pot := CreateItemInBackpack(character, 0x0F0E, 1);
-    setobjproperty(pot, "encaixeComponente", props.componenteNecessario.encaixedesc);
+    setobjproperty(pot, "encaixeComponente", "frasco");
     setobjproperty(pot, "material", 7139);
     setobjproperty(pot, "tierComponente", props.tier.valor + 1);
 	  return 1;
