@@ -813,7 +813,7 @@ function ApplyCombatDamage(byRef attackInfo)
 		if (owner)
 			MostraDano(owner, attackInfo.GetAttacker().GetObjRef(), totalDamage);
 		endif
-	endif
+	endif		
 endfunction
 
 function AttackLogger(attackInfo)
@@ -829,7 +829,6 @@ function LogLastHit(attackInfo)
 		lastHit["attacker"] := attacker.serial;
 		lastHit["amount"] := attackInfo.GetDamage().GetTotalBaseDamage();
 		lastHit["time"] := polcore().systime;
-		SetObjProperty(defender, "lastHit", lastHit);
 		SetObjProperty(defender, "lastHit", lastHit);
 endfunction
 

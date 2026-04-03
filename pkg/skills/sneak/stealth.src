@@ -17,19 +17,6 @@ program skill_Stealth(who)
 		return 0;
 	endif
 
-	/*
-	Como Stealth agora eh integrado, ele s� roda quando j� estiver em hiding mesmo
-	if ( !who.hidden )
-		var script := start_script(":hiding:hiding", who);
-		while ( script.pid )
-			sleepms(500);
-		endwhile
-		if (!who.hidden)
-			SendSysMessageEx(who, "Voce deve estar escondido para se mover furtivamente.", SSM_FAIL);
-			return;
-		endif
-	endif
-*/
 	var skill := AP_GetSkill(who, SNEAK);
 	var skillTested := SNEAK;
 
@@ -57,7 +44,7 @@ program skill_Stealth(who)
 
 	var atualStep := CInt(GetObjProperty(who, "#steathsteps"));
 	var diff := 15 + atualStep * 10;
-	if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH) || !MobileWrapper(who).HasAbility(ABILITY_ID::SALTO_DAS_SOMBRAS))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH) && !MobileWrapper(who).HasAbility(ABILITY_ID::SALTO_DAS_SOMBRAS))
 		diff := diff + 50;
 	endif
 

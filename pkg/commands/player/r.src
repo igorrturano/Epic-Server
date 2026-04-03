@@ -22,7 +22,7 @@ program reconhecer(who, param)
 		return 0;
 	endif
 
-	var ID := VerificaDisfarce(targ);
+	var ID := VerificaDisfarce(targ, who);
 
 	if (targ.IsA(POLCLASS_MOBILE))
 		if (targ.npctemplate)

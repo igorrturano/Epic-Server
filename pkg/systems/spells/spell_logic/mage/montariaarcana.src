@@ -56,7 +56,8 @@ program SpellScript(params)
 		if (CheckLosAt(who, finalx, finaly, height))
 			globo := CreateNpcFromTemplate(template, finalx, finaly, height, 0, who.realm);
 		endif
-		if (tentativas == 10)
+		tentativas := tentativas + 1;
+		if (tentativas >= 10)
 			SendSysMessageEx(who, "Nao existe nenhuma montaria por perto.", SSM_FAIL);
 			return 1;
 		endif

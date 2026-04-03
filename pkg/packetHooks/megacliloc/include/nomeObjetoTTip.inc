@@ -45,7 +45,7 @@ function PreencheNomeNpc(quem,objeto, nomeObjeto := "")
 		nomeObjeto := objeto.name +"<br>"+WHITE+desc_npc;
 	endif
 	if (quem.weapon.attribute != WRESTLING)
-		if ( (AP_GetSkill(objeto, WRESTLING) + 10) > AP_GetSkill(quem, quem.weapon.attribute))
+		if ( (AP_GetSkill(objeto, WRESTLING) + 10) >= AP_GetSkill(quem, quem.weapon.attribute))
 			nomeObjeto :=  AMARELO_CLARO + nomeObjeto;
 		endif
 	else
@@ -64,7 +64,7 @@ function PreencheNomeNpc(quem,objeto, nomeObjeto := "")
 		if (sk4 > maxsk)
 			maxsk := sk4;
 		endif
-		if (AP_GetSkill(objeto, WRESTLING)+10 > maxsk)
+		if (AP_GetSkill(objeto, WRESTLING)+10 >= maxsk)
 			nomeObjeto :=  AMARELO_CLARO + nomeObjeto;
 		endif
 	endif
@@ -85,7 +85,7 @@ function PreencheNomePersonagem(quem,objeto, nomeObjeto := "")
 		conhecidos := GetObjProperty(quem, "conhecidos"); //Lista de pessoas conhecidadas
 
 		if(conhecidos)
-			var ID := verificaDisfarce(objeto);
+			var ID := verificaDisfarce(objeto, quem);
 			nomeObjeto := conhecidos.Exists(ID)? conhecidos[ID] : objeto.name;
 		else
 			nomeObjeto := objeto.name;
