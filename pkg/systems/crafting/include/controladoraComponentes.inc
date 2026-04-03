@@ -211,24 +211,23 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 					for i := 1 to lotes
 						
 						var interrompido := CheckCanWork(quem, vidaInicial, posicaoInicial);
-
-						PerformAction( quem, HUMAN_ANIM::HORSE_ATTACK_XBOW ); 
-						PlaySoundEffect(quem, SFX_56);
 						
 						if(!interrompido)
 							break;
 						endif
 						Sleep(2);
-						ProduzComponentes(quem,
-							configRecursos,
-							sessao.componenteSelecionado.selecione.objtype,
-							sessao.materiaisEncontrados,
-							materiaisEscolhidos,
-							sessao.deveReciclar,
-							i == lotes && resto > 0 ? resto : quantidadePorLote,
-							sessao.componenteSelecionado.encaixe,
-							sessao.picoPericia,
-							Cint(configComponentes[sessao.componenteSelecionado.selecione.objtype].lote));
+						var isProduzido := ProduzComponentes(quem,
+																	configRecursos,
+																	sessao.componenteSelecionado.selecione.objtype,
+																	sessao.materiaisEncontrados,
+																	materiaisEscolhidos,
+																	sessao.deveReciclar,
+																	i == lotes && resto > 0 ? resto : quantidadePorLote,
+																	sessao.componenteSelecionado.encaixe,
+																	sessao.picoPericia,
+																	Cint(configComponentes[sessao.componenteSelecionado.selecione.objtype].lote));
+															
+						if(!isProduzido) break; endif
 					endfor
 				endif
 
@@ -263,7 +262,7 @@ function AtualizaPesquisaComponentes(configComponentes,byref sessao)
 	sessao.componenteSelecionado := 0;
 endfunction
 
-function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, materiaisEscolhidos, deveReciclar,quantidade, encaixe, picoPericia, lote)
+function ProduzComponentes(quem,configRecursos,objtype,byref materiaisEncontrados, materiaisEscolhidos, deveReciclar,quantidade, encaixe, picoPericia, lote)
 
 	var maiorQualidade := 1;
 	var quantidadeRecicladaTotal := 0;
@@ -276,7 +275,14 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 		return 0;
 	endif
 
-	ConsomeMateriais(chaveMaterialPrincipal,materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer);
+	var isConsumido := ConsomeMateriais(chaveMaterialPrincipal,materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer);
+	if(!isConsumido)
+		SendSysMessageEX(quem,"Consumo de material interrompido, ação cancelada.",SSM_FAIL);
+		return 0;
+	endif
+
+	PerformAction( quem, HUMAN_ANIM::HORSE_ATTACK_XBOW ); 
+	PlaySoundEffect(quem, SFX_56);
 
 	lote := lote ? lote : 1;
 	var qualidades := DistribuiQualidadeComponentes(quantidadeAFazer * lote,picoPericia);
@@ -305,6 +311,7 @@ function ProduzComponentes(quem,configRecursos,objtype,materiaisEncontrados, mat
 		SendSysMessageEX(quem,"Reciclado(s) {}, retornando {} materiai(s).".format(quantidadeRecicladaTotal, quantidadeMaterialRetornado),SSM_INFO_IC);
 	endif
 	SendSysMessageEX(quem,"{} componete(s) criado(s).".format((quantidadeAFazer * lote) - quantidadeRecicladaTotal),SSM_INFO);
+	return 1;
 endfunction
 
 function CriaMaterialReciclado(quem, materiaisEscolhidos, quantidade)
@@ -339,7 +346,7 @@ function CriaMaterialReciclado(quem, materiaisEscolhidos, quantidade)
 	return materialRecicladoTotal;
 endfunction
 
-function CalculaQuantidadePossivel(quantidade,materiaisEscolhidos, materiaisEncontrados)
+function CalculaQuantidadePossivel(quantidade, materiaisEscolhidos,byref materiaisEncontrados)
 	
 	if(!materiaisEscolhidos || materiaisEscolhidos.size() == 0 )
 		return 0;
@@ -348,8 +355,8 @@ function CalculaQuantidadePossivel(quantidade,materiaisEscolhidos, materiaisEnco
 	var quantidadeAFazer := quantidade;
 	
 	foreach materialEscolhido in materiaisEscolhidos
-
-		var qtdPossivel := cInt(materiaisEncontrados[Lower(materialEscolhido.tipoMaterial)][materialEscolhido.objtype].quantidadeTotal / materialEscolhido.quantidadeNecessaria );
+		var total := materiaisEncontrados[Lower(materialEscolhido.tipoMaterial)][materialEscolhido.objtype].quantidadeTotal;
+		var qtdPossivel := cInt(total / materialEscolhido.quantidadeNecessaria );
 		qtdPossivel := qtdPossivel >= quantidade? cInt(quantidade) : qtdPossivel;
 		
 		if(qtdPossivel < quantidadeAFazer) // a menor quantidade possivel determina a quantidade final.
@@ -357,13 +364,12 @@ function CalculaQuantidadePossivel(quantidade,materiaisEscolhidos, materiaisEnco
 		endif
 		Sleepms(2);
 	endforeach
-	
 	return quantidadeAFazer;
 endfunction
 
-function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer)
-
+function ConsomeMateriais(byref chaveMaterialPrincipal,byref materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer)
 	foreach materialEscolhido in materiaisEscolhidos
+			
 	
 		if(materialEscolhido.isPrincipal) 
 			chaveMaterialPrincipal := materialEscolhido.objtype; 
@@ -371,24 +377,49 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 
 		var quantidadeConsumo := cInt(materialEscolhido.quantidadeNecessaria) * quantidadeAFazer;
 		var quantidadeRestante := quantidadeConsumo;
-
+		
 		foreach itemEncontrado in (
 							materiaisEncontrados
 								[Lower(materialEscolhido.tipoMaterial)]
 								[materialEscolhido.objtype]
 								.itensEncontrados
-							)			
-
+							)
+			if(!itemEncontrado)
+				continue;
+			endif			
 			If(quantidadeRestante <= 0) 
 				break; 
 			endif;
 			
 			if(itemEncontrado.stackable)
-				SubtractAmount(itemEncontrado, quantidadeRestante);
-				quantidadeRestante -= itemEncontrado.amount;
+				var quantidadeASubtrair := quantidadeRestante;
+				var quantidadeItem := itemEncontrado.amount;
+				var redutor; 
+				var isSucesso := SubtractAmount(itemEncontrado, quantidadeRestante);
+				quantidadeRestante := quantidadeRestante  - cint(quantidadeItem);
+
+				if(quantidadeRestante < 0)
+					redutor := quantidadeASubtrair;
+				else
+					redutor := quantidadeItem;
+				endif
+
+				if(isSucesso)
+					SubtraiTotal(
+						materiaisEncontrados, 
+						Lower(materialEscolhido.tipoMaterial), 
+						materialEscolhido.objtype, 
+						redutor
+					);
+				else
+					return 0;
+				endif
+				
 			else
+				
 				quantidadeRestante -= 1;
 				DestroyItem(itemEncontrado);
+				SubtraiTotal(materiaisEncontrados, Lower(materialEscolhido.tipoMaterial), materialEscolhido.objtype, 1);
 			endif
 			Sleepms(2);
 		endforeach
@@ -396,6 +427,13 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,materiaisEncontrados,mate
 		Sleepms(2);
 	endforeach
 
+	return 1;
+endfunction
+
+function SubtraiTotal(byref materiaisEncontrados, tipoMaterial, objtype, quantidade)
+		var dictMateriais := materiaisEncontrados[tipoMaterial];
+		dictMateriais[objtype].quantidadeTotal -= quantidade;
+		materiaisEncontrados[tipoMaterial] := dictMateriais;
 endfunction
 
 function PreparaDropDownsComponentes(quem, byref sessao,byref gerenciador, configRecursos)
@@ -496,7 +534,7 @@ function MontaMaterialEncontrado(byref categorias, tipo, item)
 	dictitemsEncontrados := categorias[tipo]; 
 
 	var pacoteItem := struct{ itensEncontrados := array , quantidadeTotal := 0};
-
+	
 	if(!dictitemsEncontrados.exists(item.objtype)) // contabiliza os itens, se nao existir cria novo registro de contabilidade.
 		pacoteItem.itensEncontrados.append(item);
 		pacoteItem.quantidadeTotal := item.amount;
@@ -506,6 +544,7 @@ function MontaMaterialEncontrado(byref categorias, tipo, item)
 	else
 		dictitemsEncontrados[item.objtype].itensEncontrados.append(item);
 		dictitemsEncontrados[item.objtype].quantidadeTotal += item.amount;
+		categorias[tipo] := dictitemsEncontrados;
 	endif
 endfunction
 
