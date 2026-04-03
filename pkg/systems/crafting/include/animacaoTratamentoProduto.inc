@@ -45,7 +45,7 @@ function isAnimacaoPadraoPossivel(quem, estacao, ferramentaNecessaria, posicaoIn
 		return false;
 	endif
 
-	if(!ferramentaNecessaria)
+	if(!ferramentaNecessaria && profissaoElem.Ferramenta)
 		var ferramentas := SplitWords(GetConfigString(profissaoElem,"Ferramenta"));
 		var texto := "";
 		foreach ferramentaPossivel in ferramentas
