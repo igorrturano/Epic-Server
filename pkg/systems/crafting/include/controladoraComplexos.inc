@@ -1043,7 +1043,7 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 				var chaveMat := GetObjProperty(item,PROPNAME_MATERIAL);
 				var material := configRecursos[chaveMat];
 				var tier := PegaComponenteTierDesc(GetObjProperty(item,PROPNAME_TIER_COMPONENTE));
-				var chaveUnica := "{}{}{}".format(item.objtype, chaveMat, tier.valor);
+				var chaveUnica := "{}{}{}".format(item.objtype, chaveMat, tier.id);
 				var envelope ;
 
 				if(!retorno[componenteNecessario.encaixe].conjunto.exists(chaveUnica))
