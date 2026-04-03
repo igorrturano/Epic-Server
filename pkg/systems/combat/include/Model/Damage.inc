@@ -88,11 +88,27 @@ class Damage(IDamage)
 	endfunction
 
 	function GetTotalRawDamage(this)
-		return CInt(this.GetSlashRawDamage() + this.GetPiercingRawDamage() + this.GetBluntRawDamage() + this.GetFireRawDamage() + this.GetColdRawDamage() + this.GetPoisonRawDamage() + this.GetEnergyRawDamage());
+		return CInt(
+			CInt(this.GetSlashRawDamage()) +
+			CInt(this.GetPiercingRawDamage()) +
+			CInt(this.GetBluntRawDamage()) +
+			CInt(this.GetFireRawDamage()) +
+			CInt(this.GetColdRawDamage()) +
+			CInt(this.GetPoisonRawDamage()) +
+			CInt(this.GetEnergyRawDamage())
+		);
 	endfunction
 
 	function GetTotalBaseDamage(this)
-		return CInt(this.GetSlashBaseDamage() + this.GetPiercingBaseDamage() + this.GetBluntBaseDamage() + this.GetFireBaseDamage() + this.GetColdBaseDamage() + this.GetPoisonBaseDamage() + this.GetEnergyBaseDamage());
+		return CInt(
+			CInt(this.GetSlashBaseDamage()) +
+			CInt(this.GetPiercingBaseDamage()) +
+			CInt(this.GetBluntBaseDamage()) +
+			CInt(this.GetFireBaseDamage()) +
+			CInt(this.GetColdBaseDamage()) +
+			CInt(this.GetPoisonBaseDamage()) +
+			CInt(this.GetEnergyBaseDamage())
+		);
 	endfunction
 
 	function SetSlashRawDamage(this, value)

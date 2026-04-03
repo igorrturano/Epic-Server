@@ -27,6 +27,7 @@ function ProccessCombatDamage(byRef attackInfo)
 
 	// Damage
 	ApplyCombatDamage(attackInfo);
+	AttackLogger(attackInfo);
 
 	// Post Damage
 	CheckPoison(attackInfo);
@@ -742,13 +743,13 @@ endfunction
 
 function ApplyCombatDamage(byRef attackInfo)
 	ExecuteCombatAbilitiesOnHit(attackInfo);
-	var totalAppliedDamage := 0;
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano aplicado em: {attackInfo.GetDefender().GetName()}"));
 
 	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
 	if (posture == DAMAGE_TYPE::SLASH)
+		attackInfo.GetDamage().SetPiercingRawDamage(0).SetBluntRawDamage(0);
 		if (attackInfo.GetDamage().GetSlashBaseDamage() < 1)
 			attackInfo.GetDamage().SetSlashBaseDamage(1);
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: Dano mínimo (1) garantido.", Color(SYSTEM_COLOR::FAIL)));
@@ -758,8 +759,8 @@ function ApplyCombatDamage(byRef attackInfo)
 
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetSlashBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetSlashBaseDamage());
-		totalAppliedDamage += attackInfo.GetDamage().GetSlashBaseDamage();
 	elseif (posture == DAMAGE_TYPE::PIERCING)
+		attackInfo.GetDamage().SetSlashRawDamage(0).SetBluntRawDamage(0);
 		if (attackInfo.GetDamage().GetPiercingBaseDamage() < 1)
 			attackInfo.GetDamage().SetPiercingBaseDamage(1);
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: Dano mínimo (1) garantido.", Color(SYSTEM_COLOR::FAIL)));
@@ -769,8 +770,8 @@ function ApplyCombatDamage(byRef attackInfo)
 
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPiercingBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPiercingBaseDamage());
-		totalAppliedDamage += attackInfo.GetDamage().GetPiercingBaseDamage();
 	elseif (posture == DAMAGE_TYPE::BLUNT)
+		attackInfo.GetDamage().SetSlashRawDamage(0).SetPiercingRawDamage(0);
 		if (attackInfo.GetDamage().GetBluntBaseDamage() < 1)
 			attackInfo.GetDamage().SetBluntBaseDamage(1);
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: Dano mínimo (1) garantido.", Color(SYSTEM_COLOR::FAIL)));
@@ -780,55 +781,55 @@ function ApplyCombatDamage(byRef attackInfo)
 
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage());
-		totalAppliedDamage += attackInfo.GetDamage().GetBluntBaseDamage();
 	endif
 
 	if (attackInfo.GetDamage().GetFireBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage());
-		totalAppliedDamage += attackInfo.GetDamage().GetFireBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {attackInfo.GetDamage().GetFireBaseDamage()}"));
 	endif
 
 	if (attackInfo.GetDamage().GetColdBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage());
-		totalAppliedDamage += attackInfo.GetDamage().GetColdBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {attackInfo.GetDamage().GetColdBaseDamage()}"));
 	endif
 
 	if (attackInfo.GetDamage().GetPoisonBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage());
-		totalAppliedDamage += attackInfo.GetDamage().GetPoisonBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {attackInfo.GetDamage().GetPoisonBaseDamage()}"));
 	endif
 
 	if (attackInfo.GetDamage().GetEnergyBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage());
-		totalAppliedDamage += attackInfo.GetDamage().GetEnergyBaseDamage();
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {attackInfo.GetDamage().GetEnergyBaseDamage()}"));
 	endif
 
-	if (totalAppliedDamage > 0)
+	var totalDamage := attackInfo.GetDamage().GetTotalBaseDamage();
+	if (totalDamage > 0)
 		var owner := ResolvePetOwner(attackInfo.GetAttacker().GetObjRef());
 		if (owner)
-			MostraDano(owner, attackInfo.GetAttacker().GetObjRef(), totalAppliedDamage);
+			MostraDano(owner, attackInfo.GetAttacker().GetObjRef(), totalDamage);
 		endif
-				
+	endif		
+endfunction
+
+function AttackLogger(attackInfo)
+		LogLastHit(attackInfo);
+		// Outros logs são criados em cada sua função abaixo
+endfunction
+
+function LogLastHit(attackInfo)
 		//inserção by Frajolas, para funcionar o VigiliaGM + Sistema de Investigação
 		var defender := attackInfo.GetDefender().GetObjRef();
 		var attacker := attackInfo.GetAttacker().GetObjRef();
 		var lastHit := dictionary;
 		lastHit["attacker"] := attacker.serial;
-		lastHit["amount"] := totalAppliedDamage;
+		lastHit["amount"] := attackInfo.GetDamage().GetTotalBaseDamage();
 		lastHit["time"] := polcore().systime;
 		SetObjProperty(defender, "lastHit", lastHit);
-		SetObjProperty(defender, "lastHit", lastHit);
-	endif
-		//end
-		
 endfunction
 
 function ResolvePetOwner(attacker)

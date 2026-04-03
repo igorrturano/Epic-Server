@@ -372,10 +372,10 @@ class NaturalBond(CombatAbility)
             hitsmod_calc := CInt(hitsmod_calc + bonusMagicLore);
         endif
 
-        if (moon_fase == "Kalendae")
-            Message("Voce nao consegue manter sua transformacao em lua nova! (Lua: Kalendae - duracao reduzida para 5s)", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-            TS_StartTimer(who, "metamorfosedruida", 5);
-        endif
+        // if (moon_fase == "Kalendae")
+        //     Message("Voce nao consegue manter sua transformacao em lua nova! (Lua: Kalendae - duracao reduzida para 5s)", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        //     TS_StartTimer(who, "metamorfosedruida", 5);
+        // endif
 
         if (elem.NPCRace == "Cavalo")
             Message("Voce se transforma em um cavalo e sente-se mais rapido!").SendSys(who);
