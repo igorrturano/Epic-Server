@@ -38,20 +38,24 @@ endfunction
 
 function isAnimacaoPadraoPossivel(quem, estacao, ferramentaNecessaria, posicaoInicial, saudeInicial, profissao)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
-	
+	var profissaoElem :=FindConfigElem( profissaoConfig, profissao );
 	var verificaLos := !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm)  && TypeOfInt(estacao.item) != OT_ITEMREF;
 	if(CoordinateDistance(quem.x, quem.y, estacao.x, estacao.y) > 1 || !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm))
 		SendSysMessageEx(quem,"Você não alcança a estação escolhida",SSM_FAIL);
 		return false;
 	endif
 
-	if(profissaoConfig[profissao].Ferramenta)
-		if(ferramentaNecessaria.objtype != profissaoConfig[profissao].Ferramenta)
+	if(!ferramentaNecessaria)
+		var ferramentas := SplitWords(GetConfigString(profissaoElem,"Ferramenta"));
+		var texto := "";
+		foreach ferramentaPossivel in ferramentas
+			sleepms(2);
 			var item_cfg := ReadConfigFile(":*:itemdesc");
-			var nomeFerramenta := item_cfg[cint(profissaoConfig[profissao].Ferramenta)];
-			SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação. [{}]".format(nomeFerramenta.name),SSM_FAIL);
-			return false;
-		endif
+			var nomeFerramenta := item_cfg[cint(ferramentaPossivel)];
+			texto += "{} ".format(nomeFerramenta.desc? nomeFerramenta.desc : nomeFerramenta.name);
+		endforeach
+		SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação. [{}]".format(texto),SSM_FAIL);
+		return false;
 	endif
 	
 	return CheckCanWork(quem,saudeInicial,posicaoInicial);
@@ -231,11 +235,18 @@ endfunction
 function BuscaFerramenta (quem, profissao)
 	var ferramenta;
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
+	var ferramentas := SplitWords(profissaoConfig[profissao].Ferramenta);
 
-	if(quem.weapon.objtype == cint(profissaoConfig[profissao].Ferramenta))
+	if(cstr(hex(quem.weapon.objtype)) in ferramentas)
 		ferramenta := quem.weapon;
 	else
-		ferramenta := FindObjtypeInContainer(quem.backpack, cint(profissaoConfig[profissao].Ferramenta));
+		foreach ferramentaPossivel in ferramentas
+			var ferramentaEncontrada := FindObjtypeInContainer(quem.backpack, cint(hex(ferramentaPossivel)));
+			if(ferramentaEncontrada)
+				ferramenta := ferramentaEncontrada;
+				break;
+			endif
+		endforeach
 	endif
 
 	return ferramenta;
