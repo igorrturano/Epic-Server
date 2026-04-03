@@ -813,7 +813,19 @@ function ApplyCombatDamage(byRef attackInfo)
 		if (owner)
 			MostraDano(owner, attackInfo.GetAttacker().GetObjRef(), totalDamage);
 		endif
+				
+		//inserção by Frajolas, para funcionar o VigiliaGM + Sistema de Investigação
+		var defender := attackInfo.GetDefender().GetObjRef();
+		var attacker := attackInfo.GetAttacker().GetObjRef();
+		var lastHit := dictionary;
+		lastHit["attacker"] := attacker.serial;
+		lastHit["amount"] := totalAppliedDamage;
+		lastHit["time"] := polcore().systime;
+		SetObjProperty(defender, "lastHit", lastHit);
+		SetObjProperty(defender, "lastHit", lastHit);
 	endif
+		//end
+		
 endfunction
 
 function AttackLogger(attackInfo)

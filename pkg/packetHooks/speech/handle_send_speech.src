@@ -257,6 +257,10 @@ function CanUnderstand(byRef messageData)
 		return true;
 	endif
 
+	if (!messageData.source.GetObjRef().IsA(POLCLASS_MOBILE))
+		return true;
+	endif
+
 	if (messageData.source.IsNPC())
 		return true;
 	endif

@@ -8,6 +8,7 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 include "include/tileEffects";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
@@ -42,20 +43,16 @@ program SpellScript(params)
 		endif
 
 		// Check if mobile is an ally (not hostile to caster)
-		if (mobile == who || !mobile.IsHostile(who))
+		if (!mobile.IsHostile(who))
 			// Set the attack bonus property on the target
 			SetObjProperty(mobile, "#hit_mod", bonus);
-
-			// Set a timed script to remove the bonus after duration
-			TS_StartTimer(mobile, "blessbonus", duration);
 
 			// Visual and audio feedback
 			PlayStationaryEffect(mobile.x, mobile.y, mobile.z, FX_BLESS_EFFECT, 2, 2);
 			PlaySoundEffect(mobile, SFX_BLESS);
 
-			if (mobile != who)
-				SendSysMessageEx(mobile, "Voce sente uma bencao divina guiando seus golpes. (+" + bonus + " no ataque por " + duration + " segundos)", SSM_INFO);
-			endif
+			SendSysMessageEx(mobile, "Voce sente uma bencao divina guiando seus golpes. (+" + bonus + " no ataque por " + duration + " segundos)", SSM_INFO);
+			SendSpellBuff(who, mobile, 507, duration, "+" + bonus + " no ataque");
 
 			blessed_count := blessed_count + 1;
 		endif
