@@ -1558,8 +1558,12 @@ function signSelection(who)
     var chardata := GetObjProperty(who, "chardata");
     var sign_pic := CUIDADOR_ID;
     var btn_value;
-    while (!GetObjProperty(who, "creation_completed"))
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
         var input := SignGump(who, sign_pic);
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
         btn_value := input[0];
 
         if (btn_value == 201)
@@ -1673,8 +1677,12 @@ function birthDaySelection(who)
     var selected_day := 0;
     var month_index := getMonthBySign(chardata.sign);
     var btn_value;
-    while (!GetObjProperty(who, "creation_completed"))
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
         var input := BirthDayGump(who, selected_day);
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
         btn_value := input[0];
         if (btn_value == 666 && selected_day != 0)
             break;
@@ -2305,8 +2313,12 @@ function spellChoices(who)
     var btn_value;
     var total_amount := 3;
     
-    while (!GetObjProperty(who, "creation_completed"))
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
         var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount);
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
 
         foreach key in (input.keys)
             btn_value := key;
@@ -2428,9 +2440,13 @@ function AlchChoices(who)
 
     var selected_recipes := array;
     var btn_value;
-    while (!GetObjProperty(who, "creation_completed"))
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
         var qtd := (skill*2)+2;
         var input := alchSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
 
         foreach key in (input.keys)
             btn_value := key;
