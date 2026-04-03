@@ -39,7 +39,10 @@ program death(params)
 	endif
 
 	var lastHit := GetObjProperty(ghost, "lastHit");
-	var killer := SystemFindObjectBySerial(lastHit.attacker);
+		var killer := 0;
+	if (lastHit != error && lastHit["attacker"])
+		killer := SystemFindObjectBySerial(lastHit["attacker"]);
+	endif			 											
 	var dmg := lastHit.amount;
 
 	if (killer.npctemplate || killer.connected) // Assassino existente
@@ -147,9 +150,11 @@ program death(params)
 				var tipo := "morreu";
 				var coords := { corpse.x, corpse.y, corpse.z, corpse.realm };
 				var nome := GetObjProperty(ghost, "nome_inicial");
-				var killer_name := killer.name;
-				if (!killer_name || killer_name.errortext)
-					killer_name := "desconhecido";
+				var killer_name := "desconhecido";
+				if (lastHit != error && lastHit["source"] == "trap")
+					killer_name := "armadilha";
+				elseif (killer && killer.name && !killer.name.errortext)
+					killer_name := killer.name;
 				endif
 				ProcurarItensQuarto(ghost);
 				if (!CInt(GetObjProperty(ghost, "morto")))
@@ -372,6 +377,7 @@ function KataWakeUp(ghost, corpse)
 	endif
 
 	Resurrect(ghost);
+	SetCooldown(ghost, "res_trap_protection", 10);
 	var ressrobe := GetEquipmentByLayer(ghost, 0x16);
 	DestroyItem(ressrobe);
 

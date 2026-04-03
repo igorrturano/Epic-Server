@@ -10,6 +10,7 @@ include ":gumps:/include/dropDownGump";
 include ":crafting:include/craftGumps";
 include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
+include ":crafting:/include/craftingRepair";
 include "include/epicValidAction";
 include ":crafting:include/util/fabricacaoConstants";
 
@@ -294,6 +295,23 @@ function EnviaItensComplexosGump(quem,profissao, modoGm)
 			RT_LIMPAR_MEMORIA:
 				LimparMemoriaEncaixes(quem);
 				SendSysMessageEX(quem,"Os encaixes memorizados foram esquecidos.", SSM_INFO);
+				break;
+
+			RT_REPARAR:
+				var alvo := 1;
+				SendSysMessageEX(quem,"Escolha o item que deseja reparar", SSM_INFO);
+				While(alvo)
+					alvo := Target(quem);
+					sleepms(2);
+
+					if(alvo)
+						repair_item(quem, alvo,parametros.pericia);
+					endif
+				endwhile
+
+				if(!alvo)
+					SendSysMessageEX(quem,"Nenhum item selecionado para reparo.", SSM_FAIL);
+				endif
 				break;
 
 			RT_MEMORIZAR_COMPONENTES:
@@ -1507,6 +1525,8 @@ function ClassificaRetornoComplexos(retorno,sessao)
 		return RT_GM_COMPONENTE_SELECIONADO;
 	elseif(valorRetorno == COMPLEXOS_BTN_FABRICAR_GM_CMPNT)
 		return RT_GM_ESQUEMA_FABRICAR;
+	elseif(valorRetorno == COMPLEXOS_BTN_REPARAR)
+		return RT_REPARAR;
 
 	//CANCELAMENTOS
 	elseif((valorRetorno == 1 || valorRetorno == 0) && sessao.gumpAtual == ESQUEMAS)

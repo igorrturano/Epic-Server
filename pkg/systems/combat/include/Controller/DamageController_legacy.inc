@@ -432,6 +432,24 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	ApplyRawDamage(defender, totaldmg);
 	SetLastDamageInfo(defender, totaldmg, type, source, spell);
 
+//FRAJOLAS Adicionado para o discordwebhook detectar dano de trap
+if (totaldmg > 0)
+    var lastHit := dictionary;
+
+    if (source) // dano normal (npc/player)
+        lastHit["attacker"] := source.serial;
+    else // trap ou dano sem source
+        lastHit["attacker"] := 0;
+        lastHit["source"] := "trap";
+    endif
+
+    lastHit["amount"] := totaldmg;
+    lastHit["time"] := polcore().systime;
+
+    SetObjProperty(defender, "lastHit", lastHit);
+endif
+//end FRAJOLAS
+
 	// Checa as habilidades depois do dano
 	// CheckHab_RecuperacaoSalvadora(0, defender, attackInfo);
 	// CheckHab_Vinganca(0, defender, attackInfo);
@@ -646,6 +664,24 @@ function DamageEPIC(attacker, defender, weapon, armor, damage, type := DMG_FORCE
 	DisplayDamage(defender, totaldamage, attacker);
 	ApplyRawDamage(defender, totaldamage);
 	SetLastDamageInfo(defender, totaldamage, type, attacker);
+
+//FRAJOLAS Adicionado para o discordwebhook detectar dano de trap
+if (totaldmg > 0)
+    var lastHit := dictionary;
+
+    if (source) // dano normal (npc/player)
+        lastHit["attacker"] := source.serial;
+    else // trap ou dano sem source
+        lastHit["attacker"] := 0;
+        lastHit["source"] := "trap";
+    endif
+
+    lastHit["amount"] := totaldmg;
+    lastHit["time"] := polcore().systime;
+
+    SetObjProperty(defender, "lastHit", lastHit);
+endif
+//end FRAJOLAS
 
 	// CheckDefenderHabsAfterDamage(attacker, defender, attackInfo);
 	// CheckAttackerHabsAfterDamage(attacker, defender, attackInfo);

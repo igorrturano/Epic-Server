@@ -284,37 +284,6 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 222);
 
     var input := GFSendGump(who, gump);
-    
-   /* if (input[0] == 222)
-        var age_input := GFExtractData(input, age_textbox);
-        var all_required_selected := true;
-        
-        foreach category in required_categories
-            if (!chardata.caracteristicas_rp[category])
-                all_required_selected := false;
-                break;
-            endif
-        endforeach
-
-        var idade_maxima := GetRaceMaximumAge(chardata.raca);
-
-        if (!all_required_selected)
-            SendSysMessageEX(who, "Por favor, selecione uma opção para Altura, Peso, Olhos e Voz.", SSM_FAIL);
-            return CaracteristicasRPGump(who, chardata, culture_pic);
-        elseif (age_input == "" || typeof(age_input) == "Error")
-            SendSysMessageEX(who, "Por favor, insira sua idade.", SSM_FAIL);
-            return CaracteristicasRPGump(who, chardata, culture_pic);
-        elseif (CInt(age_input) > idade_maxima)
-            SendSysMessageEX(who, "A idade limite permitida pra sua raça é " + CStr(idade_maxima) + ".", SSM_FAIL);
-            return CaracteristicasRPGump(who, chardata, culture_pic);
-        else
-            chardata.idade_escolhida := CInt(age_input);
-            var final_age := ConvertAge(chardata.raca, chardata.idade_escolhida);
-            chardata.idade_aparente := final_age[1];
-            chardata.idade_real := final_age[2];
-            return input;
-        endif
-    endif*/
 
     return input;
 endfunction
@@ -1589,8 +1558,12 @@ function signSelection(who)
     var chardata := GetObjProperty(who, "chardata");
     var sign_pic := CUIDADOR_ID;
     var btn_value;
-    while (!GetObjProperty(who, "creation_completed"))
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
         var input := SignGump(who, sign_pic);
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
         btn_value := input[0];
 
         if (btn_value == 201)
@@ -1704,8 +1677,12 @@ function birthDaySelection(who)
     var selected_day := 0;
     var month_index := getMonthBySign(chardata.sign);
     var btn_value;
-    while (!GetObjProperty(who, "creation_completed"))
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
         var input := BirthDayGump(who, selected_day);
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
         btn_value := input[0];
         if (btn_value == 666 && selected_day != 0)
             break;
@@ -2336,8 +2313,12 @@ function spellChoices(who)
     var btn_value;
     var total_amount := 3;
     
-    while (!GetObjProperty(who, "creation_completed"))
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
         var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount);
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
 
         foreach key in (input.keys)
             btn_value := key;
@@ -2459,9 +2440,13 @@ function AlchChoices(who)
 
     var selected_recipes := array;
     var btn_value;
-    while (!GetObjProperty(who, "creation_completed"))
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
         var qtd := (skill*2)+2;
         var input := alchSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
 
         foreach key in (input.keys)
             btn_value := key;
