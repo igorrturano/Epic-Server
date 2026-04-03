@@ -33,9 +33,13 @@ program do_empty(who)
 		return;
 
 	else
+		var props := PegaComponenteFabricacao(the_potion, "vazio");
 		SendSysMessageEx(who, "Voce esvaziou a pocao.", SSM_REQUEST);
 		PlaySoundEffect(who, 0x241);
-		CreateItemInBackpack(who, 0xf0e, the_potion.amount);
+		var pot := CreateItemInBackpack(who, 0x0F0E, the_potion.amount);
+		setobjproperty(pot, "encaixeComponente", props.componenteNecessario.encaixedesc);
+		setobjproperty(pot, "material", 7139);
+	    setobjproperty(pot, "tierComponente", props.tier.valor + 1);
 		DestroyItem(the_potion);
 		return;
 	endif
