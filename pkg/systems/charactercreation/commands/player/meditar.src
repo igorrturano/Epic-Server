@@ -72,7 +72,11 @@ function meditarPrincipal(params)
 	var full_mana := AP_GetVitalMaximumValue(who, MANA);
 	var current_mana := AP_GetVital(who, MANA);
 	var start_hp := AP_GetVital(who, "Hits");
-	var amt := Cint(HandleSpellSkill(who) / 20);
+	var arcana := Cint(AP_GetSkill(who, ARCANA));
+	var theology := Cint(AP_GetSkill(who, THEOLOGY));
+	var skill := (arcana > theology) ? arcana : theology;
+	var amt := Cint(skill / 20);
+
 	var delay := 300;
 	if (GetObjPRoperty(who, "chardata").raca == ELFO)
 		amt *= 2;
