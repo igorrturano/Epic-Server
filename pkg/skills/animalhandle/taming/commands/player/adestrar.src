@@ -84,6 +84,7 @@ function taming(who)
 
 	SetTamingCooldown(who);
 
+	var tamed_success := 0;
 	while (TameLoop(who, targ, info))
 		SetTamingCooldown(who);
 
@@ -103,6 +104,7 @@ function taming(who)
 			tamed.append(targ.serial);
 			SetObjProperty(who, "TamedPets", tamed);
 
+			tamed_success := 1;
 			break;
 		endif
 
@@ -111,7 +113,9 @@ function taming(who)
 		endif
 
 	endwhile
-	PostTameSuccess(who, targ);
+	if (tamed_success)
+		PostTameSuccess(who, targ);
+	endif
 endfunction
 
 function TameLoop(who, targ, byref info)
