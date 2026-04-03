@@ -18,7 +18,6 @@ include ":attributes:stats";
  *   opts.+slash_resist := bonus;
  *   opts.+str_mod := 5;
  *   opts.+color := 2826;
- *   opts.+original_color := targ.color;
  *   SC_ApplyEffect(caster, targ, opts, duration, CInt(spell.id));
  */
 
@@ -137,8 +136,8 @@ function _SC_RemoveOpts(targ, opts)
 	endif
 
 	// Restore color
-	if (opts.original_color)
-		targ.color := opts.original_color;
+	if (opts.color)
+		targ.color := targ.truecolor;
 	endif
 
 	// Restore speed
