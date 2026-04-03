@@ -79,6 +79,9 @@ program arremesso(params)
 	elseif (targ.objtype in arcane_bows)
 		SendSysMessageEx(who, "Voce nao pode arremessar isso.", SSM_FAIL);
 		return 0;
+	elseif (targ.amount > 1)
+		SendSysMessageEx(who, "Voce so pode arremessar um item por vez.", SSM_FAIL);
+		return 0;
 	endif
 
 	SendSysMessageEx(who, "Aonde vai arremessar?", SSM_REQUEST);
