@@ -25,6 +25,10 @@ program trapScript(params)
 	endwhile
 	object.color := origcolor;
 
+	if (GetCooldown(mobile, "res_trap_protection") > 0)
+		return 0;
+	endif
+
 	SendSysMessage(mobile, "Voce ativou uma armadilha magica!");
 	PlaySoundEffect(mobile, 0x214);
 	// PlayStationaryEffect(object.x, object.y, object.z, FX_POISON_GAS, 10,10, 0, object.realm);

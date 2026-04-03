@@ -103,6 +103,24 @@ function StartUp(mobile, byref timer_list, byref cooldowns, byref num_poisons)
 	var temp_list := TS_GetTimerList(mobile); // Will initialize dictionary.
 	var temp_cooldowns := TS_GetCooldownList(mobile);
 
+	// Clean up stale state from persistent timers before restarting them.
+	// SubScripts store state in ObjProperties and modify mobile properties (hitchance_mod, stat mods, etc).
+	// On reconnect, those properties may be stale or reset — running EndScript first ensures a clean slate.
+	SetObjProperty(mobile, "#reconnecting", 1);
+	foreach timer in (temp_list)
+		var elem_info := TS_GetCfgElem(_timer_iter);
+		if (CInt(elem_info.PersistOnLogoff) && elem_info.EndScript)
+			SetObjProperty(mobile, "prop", timer.level);
+			var cleanup := Start_Script(elem_info.EndScript, mobile);
+			if (cleanup)
+				while (cleanup.pid && GetProcess(cleanup.pid))
+					SleepMS(5);
+				endwhile
+			endif
+		endif
+	endforeach
+	EraseObjProperty(mobile, "#reconnecting");
+
 	foreach timer in (temp_list)
 		var event := struct;
 		event.+name := _timer_iter;
@@ -110,7 +128,15 @@ function StartUp(mobile, byref timer_list, byref cooldowns, byref num_poisons)
 		// Use saved endtime to calculate real remaining time (accounts for offline time)
 		var remaining := CInt(timer.endtime - ReadGameClock());
 		if (remaining <= 0)
-			remaining := 1; // Expired during offline — let it expire immediately on restore
+			var elem_info := TS_GetCfgElem(_timer_iter);
+			if (CInt(elem_info.NoEnd))
+				remaining := CInt(elem_info.MaxDuration);
+				if (remaining <= 0)
+					remaining := 9999;
+				endif
+			else
+				remaining := 1; // Expired during offline — let it expire immediately on restore
+			endif
 		endif
 		event.+amount := remaining;
 

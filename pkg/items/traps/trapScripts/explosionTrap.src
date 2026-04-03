@@ -11,6 +11,7 @@ include ":charactercreation:habilidades";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include ":destroyable:include/destroyItem";
+include ":timedscripts:timedScripts";
 
 program trapScript(params)
 	var mobile := params[1];
@@ -39,7 +40,7 @@ program trapScript(params)
 
 	PlaySoundEffect(object, 0x208);
 	foreach mobile in mobiles
-		if (!mobile.npctemplate)
+		if (!mobile.npctemplate && GetCooldown(mobile, "res_trap_protection") == 0)
 			SendSysMessageEx(mobile, "Voce foi atingido por uma armadilha explosiva.", SSM_FAIL);
 			PlayObjectCenteredEffect(mobile, FX_EXPLODE_3, 10, 10);
 
