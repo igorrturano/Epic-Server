@@ -64,6 +64,7 @@ program textcmd_openPack(who)
 				SendSysMessageEx(who, "O alvo se afastou demais.", SSM_FAIL);
 				break;
 			endif
+			sleepms(500);
 		endwhile
 
 		who.facing := who.facing;

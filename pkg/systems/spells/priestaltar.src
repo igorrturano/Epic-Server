@@ -35,12 +35,12 @@ program orderSpells(who, item)
 		endif
 	endif
 
-	if (altar == LORE && cultura == ALURIEL && !MobileWrapper(who).HasAbility(ABILITY_ID::ARCANE_BOW) && classe == SABIO)
-		if (ArcaneArcherDevotion(who))
-			playAltarAnimations(who, item);
-			return;
-		endif
-	endif
+	// if (altar == LORE && cultura == ALURIEL && !MobileWrapper(who).HasAbility(ABILITY_ID::ARCANE_BOW) && classe == SABIO)
+	// 	if (ArcaneArcherDevotion(who))
+	// 		playAltarAnimations(who, item);
+	// 		return;
+	// 	endif
+	// endif
 
 	if (magia != "Sacerdote")
 		if (religiao == altar && !GetCooldown(who, "religion_bless"))
@@ -243,18 +243,18 @@ function RemoveUsedSpells(who, byref priest_list, byref available_slots)
 	SetObjProperty(who, "priest_list", priest_list);
 endfunction
 
-function ArcaneArcherDevotion(who)
-	var chardata := GetObjProperty(who, "chardata");
-	var yes := YesNo(who, "Deseja se tornar um Arqueiro Arcano? Perderá suas magias.", "Sim", "Não");
-	if (yes)
-		chardata.magia := "arcane_archer";
-		chardata.wisdom_path := "arcane_archer";
-		SetObjProperty(who, "chardata", chardata);
-		SendSysMessageEx(who, "Você se tornou um Arqueiro Arcano.", SSM_INFO);
-		return 1;
-	endif
-	return 0;
-endfunction
+// function ArcaneArcherDevotion(who)
+// 	var chardata := GetObjProperty(who, "chardata");
+// 	var yes := YesNo(who, "Deseja se tornar um Arqueiro Arcano? Perderá suas magias.", "Sim", "Não");
+// 	if (yes)
+// 		chardata.magia := "arcane_archer";
+// 		chardata.wisdom_path := "arcane_archer";
+// 		SetObjProperty(who, "chardata", chardata);
+// 		SendSysMessageEx(who, "Você se tornou um Arqueiro Arcano.", SSM_INFO);
+// 		return 1;
+// 	endif
+// 	return 0;
+// endfunction
 
 function handleReligionConversion(who, altar)
 	var chardata := GetObjProperty(who, "chardata");

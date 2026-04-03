@@ -55,7 +55,6 @@ program SpellScript(params)
 	opts.+piercing_resist := armor_bonus;
 	opts.+blunt_resist := armor_bonus;
 	opts.+color := 2826;
-	opts.+original_color := targ.color;
 
 	// Apply effect via SpellController (no sleep needed)
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
