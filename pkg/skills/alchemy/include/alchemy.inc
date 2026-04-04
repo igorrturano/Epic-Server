@@ -9,6 +9,7 @@ include "include/epicConstants";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 include ":crafting:/include/caracteristicasFabricacao";
+include ":crafting:/include/fabricacaoUtil";
 
 CONST DRINK_SOUND := 0x32;
 
@@ -46,7 +47,7 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
   
 	if (!GetObjProperty(potion, "goles"))
     var frasco := PegaComponenteFabricacao(potion, "vazio");
-  	goles := frasco.tier.valor + 1;
+  	goles := frasco.tier.id? frasco.tier.id :  1;
 		SetObjProperty(potion, "goles", goles);
 	else
 		goles := cint(GetObjProperty(potion, "goles"));
@@ -73,11 +74,14 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
     endif
   else
     var props := PegaComponenteFabricacao(potion, "vazio");
+    
+    var tierFinal;
+
     SubtractAmount( potion, 1 );
 		var pot := CreateItemInBackpack(character, 0x0F0E, 1);
-    setobjproperty(pot, "encaixeComponente", "frasco");
+    setobjproperty(pot, "encaixeComponente", props.componenteNecessario.encaixe);
     setobjproperty(pot, "material", 7139);
-    setobjproperty(pot, "tierComponente", props.tier.valor + 1);
+    setobjproperty(pot, "tierComponente", props.tier.id ? props.tier.id : 1);
 	  return 1;
 	endif
 
