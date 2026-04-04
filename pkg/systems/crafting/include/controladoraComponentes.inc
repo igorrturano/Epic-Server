@@ -223,7 +223,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 																	materiaisEscolhidos,
 																	sessao.deveReciclar,
 																	i == lotes && resto > 0 ? resto : quantidadePorLote,
-																	sessao.componenteSelecionado.encaixe,
+																	sessao.componenteSelecionado.selecione.encaixeReal,
 																	sessao.picoPericia,
 																	Cint(configComponentes[sessao.componenteSelecionado.selecione.objtype].lote));
 															
@@ -685,7 +685,8 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 										isColunaBotao := true, 
 										objtype := chave, 
 										materiais := dicionarioMateriais, 
-										materialPrincipal := configProfissao[chave].principalMaterial
+										materialPrincipal := configProfissao[chave].principalMaterial,
+										encaixeReal := configProfissao[chave].encaixe
 									};
 
 		componentes.append(componente);

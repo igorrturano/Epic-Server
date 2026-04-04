@@ -30,7 +30,7 @@ function GeraDescriptorComplexo(
 endfunction
 
 function GeraItemComplexo( 
-							quem,
+							container,
 							objtype,
 							quantidade,
 							tier,
@@ -52,7 +52,7 @@ function GeraItemComplexo(
 
 	if(!descriptor) return descriptor; endif
 
-	var item := CreateItemInContainer( quem.backpack, descriptor, quantidade );
+	var item := CreateItemInContainer( container, descriptor, quantidade );
 	item.hp := item.maxhp;
 
 	return item;

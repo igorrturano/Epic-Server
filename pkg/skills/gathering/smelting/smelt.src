@@ -214,9 +214,9 @@ endfunction
 function SmeltOres(who, pot, mainOre, itemsToSmelt, amt)
 	if (CheckSmeltDifficulty(who, mainOre))
 		if (Len(itemsToSmelt) > 1)
-			SendSysMessageEx(who, "Você fez a fusão entre os metais.", FONT_NORMAL, 90);
+			SendSysMessageEx(who, "Você fez a fusão entre os metais.", COLOR_CYAN_LIGHT , FONT_NORMAL);
 		else
-			SendSysMessageEx(who, "Você derreteu o minério e retirou as impurezas", FONT_NORMAL, 90);
+			SendSysMessageEx(who, "Você derreteu o minério e retirou as impurezas", COLOR_CYAN_LIGHT , FONT_NORMAL);
 		endif
 
 		var prop := struct{ "ingot" := mainOre.ingotObjType, "amount" := amt };
