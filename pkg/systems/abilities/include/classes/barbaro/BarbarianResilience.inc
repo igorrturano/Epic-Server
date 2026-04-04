@@ -61,11 +61,6 @@ class BarbarianResilience(CombatAbility)
 			return false;
 		endif
 
-		var armorsInBodyRegion := defender.GetEquipBySlot(attackInfo.GetBodyRegion());
-		if (armorsInBodyRegion && armorsInBodyRegion != array{})
-			return false;
-		endif
-
 		var reduction := CInt(defender.GetSkill(TACTICS) / 10);
 		if (reduction <= 0)
 			return false;
