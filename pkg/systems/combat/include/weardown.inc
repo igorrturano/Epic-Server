@@ -91,7 +91,12 @@ function WearDownShield(defender, shield, rawdamage, weapon)
 	endif
 	
 	var bonus := 0;
-	var wearchance := 80;
+	var wearchance;
+	if (shield.IsA(POLCLASS_WEAPON))
+		wearchance := 20;
+	else
+		wearchance := 80;
+	endif
 	//Amplia o dano no escudo se a arma tiver a propriedade
 	if (CInt(GetObjProperty(weapon, "ArmorDmg") == 1))
 		bonus := RandomInt(3)+1;
