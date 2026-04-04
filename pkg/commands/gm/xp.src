@@ -13,6 +13,7 @@ program start_xpbar(who, xp_amt)
 
 		AddXP(targ, CInt(xp_amt));
 		SendSysMessage(who, "Dado " + xp_amt + " XP para " + targ.name);
+		PrintTextAbovePrivate(targ, "Você recebeu " + xp_amt + " XP pela qualidade do seu RP, parabens!!", targ);
 		return 1;
 	endif
 
