@@ -137,13 +137,13 @@ endfunction
 
 function PegaComponenteTierDesc(tier)
 	case (tier)
-		COMPONENTE_TIERS::MEDIOCRE : return struct {desc := "Normal" , valor := 0}; break;
-		COMPONENTE_TIERS::COMUM : return struct {desc := "Melhorado" , valor := 1}; break;
-		COMPONENTE_TIERS::NOTAVEL : return struct {desc := "Notável" , valor := 2}; break;
-		COMPONENTE_TIERS::SUPERIOR : return struct {desc := "Superior" , valor := 3}; break;
-		COMPONENTE_TIERS::EXCEPCIONAL : return struct {desc := "Excepcional" , valor := 4}; break;
+		COMPONENTE_TIERS::MEDIOCRE : return struct {id:= COMPONENTE_TIERS::MEDIOCRE, desc := "Normal" , valor := 0}; break;
+		COMPONENTE_TIERS::COMUM : return struct {id:= COMPONENTE_TIERS::COMUM, desc := "Melhorado" , valor := 1}; break;
+		COMPONENTE_TIERS::NOTAVEL : return struct {id:= COMPONENTE_TIERS::NOTAVEL, desc := "Notável" , valor := 2}; break;
+		COMPONENTE_TIERS::SUPERIOR : return struct {id:= COMPONENTE_TIERS::SUPERIOR, desc := "Superior" , valor := 3}; break;
+		COMPONENTE_TIERS::EXCEPCIONAL : return struct {id:= COMPONENTE_TIERS::EXCEPCIONAL, desc := "Excepcional" , valor := 4}; break;
 		default:
-			return struct {desc := "Erro!" , valor := 0}; break;
+			return struct {id := error, desc := "Erro!" , valor := 0}; break;
 	endcase
 endfunction
 
