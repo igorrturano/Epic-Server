@@ -418,3 +418,102 @@ function UnequipWeapons(who)
 		endif
 	endforeach
 endfunction
+
+function ApplyEquipObjMods(who, item)
+	var mods := GetObjProperty(item, "equip");
+	if (!mods)
+		return;
+	endif
+	if (mods.keys().size() < 1)
+		return;
+	endif
+
+	foreach mod in (mods.keys())
+		if (GetObjProperty(item, "magic") == 1)
+			continue;
+		endif
+
+		case (mod)
+			"strmod":
+				AP_ModifyStatMod(who, STRENGTH, CInt(mods["strmod"]));
+			"dexmod":
+				AP_ModifyStatMod(who, DEXTERITY, CInt(mods["dexmod"]));
+			"intmod":
+				AP_ModifyStatMod(who, INTELLIGENCE, CInt(mods["intmod"]));
+			"manamod":
+				SetObjProperty(who, "#manamod", CInt(GetObjProperty(who, "#manamod")) + CInt(mods["manamod"]));
+				RecalcVitals(who);
+			"hitsmod":
+				SetObjProperty(who, "#hitsmod", CInt(GetObjProperty(who, "#hitsmod")) + CInt(mods["hitsmod"]));
+				RecalcVitals(who);
+			"stammod":
+				SetObjProperty(who, "#stammod", CInt(GetObjProperty(who, "#stammod")) + CInt(mods["stammod"]));
+				RecalcVitals(who);
+			"ColdResistMod":
+			"FireResistMod":
+			"PhysicalResistMod":
+			"EnergyResistMod":
+			"PoisonResistMod":
+				RecalcVitals(who);
+			"setprop":
+				SetObjProperty(who, "#" + GetObjProperty(item, "propname"), GetObjProperty(item, "propvalue"));
+			"sacred":
+			"cursed":
+				// Flags de categoria, nao sao mods
+			default:
+				AP_ModifySkillMod(who, mod, CInt(mods[mod]));
+		endcase
+	endforeach
+endfunction
+
+function RemoveEquipObjMods(who, item)
+	var mods := GetObjProperty(item, "equip");
+	if (!mods)
+		return;
+	endif
+	if (mods.keys().size() < 1)
+		return;
+	endif
+
+	foreach mod in (mods.keys())
+		if (GetObjProperty(item, "magic") == 1)
+			continue;
+		endif
+
+		case (mod)
+			"strmod":
+				AP_ModifyStatMod(who, STRENGTH, -CInt(mods["strmod"]));
+			"dexmod":
+				AP_ModifyStatMod(who, DEXTERITY, -CInt(mods["dexmod"]));
+			"intmod":
+				AP_ModifyStatMod(who, INTELLIGENCE, -CInt(mods["intmod"]));
+			"manamod":
+				SetObjProperty(who, "#manamod", CInt(GetObjProperty(who, "#manamod")) - CInt(mods["manamod"]));
+				RecalcVitals(who);
+			"hitsmod":
+				var final := CInt(GetObjProperty(who, "#hitsmod")) - CInt(mods["hitsmod"]);
+				if (final <= 0)
+					EraseObjProperty(who, "#hitsmod");
+				else
+					SetObjProperty(who, "#hitsmod", final);
+				endif
+				RecalcVitals(who);
+			"stammod":
+				SetObjProperty(who, "#stammod", CInt(GetObjProperty(who, "#stammod")) - CInt(mods["stammod"]));
+				RecalcVitals(who);
+			"ColdResistMod":
+			"FireResistMod":
+			"PhysicalResistMod":
+			"EnergyResistMod":
+			"PoisonResistMod":
+				RecalcVitals(who);
+			"setprop":
+				EraseObjProperty(who, "#" + GetObjProperty(item, "propname"));
+			"sacred":
+			"cursed":
+				// Flags de categoria, nao sao mods
+			default:
+				AP_ModifySkillMod(who, mod, -CInt(mods[mod]));
+		endcase
+	endforeach
+endfunction

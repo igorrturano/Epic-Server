@@ -24,7 +24,7 @@ program UnequipTest(mobile, item)
 	endif
 
 	if (retval)
-		// RemoveEquipmentMods(mobile, item);
+		RemoveEquipObjMods(mobile, item);
 		EraseObjProperty(item, "#EquippedOn");
 		if (coverFace(item))
 			mobile.name := GetObjProperty(mobile, "realname");
