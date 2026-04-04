@@ -4,7 +4,7 @@ use os;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
-include ":IO:CFGFile";
+
 
 /**
  * Budōka / Artista Marcial (Martial Artist) - ABILITY_ID::MARTIAL_ARTIST (700)
@@ -71,12 +71,13 @@ class MartialArtist(CombatAbility)
 		endif
 
 		// Check no armor equipped
-		var itemdesc := CFGFile("*", "itemdesc");
+		var itemdesc := ReadConfigFile(":*:itemdesc");
 		foreach item in (ListEquippedItems(who))
-			var itemCfg := itemdesc.SetElementName(item.objtype);
-			var tipoProtecao := itemCfg.GetPropertyValue("TipoProtecao");
-			if (tipoProtecao && tipoProtecao["Armadura"])
-				return false;
+			if (item.isa(POLCLASS_ARMOR))
+				var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
+				if (tipoProtecao["Armadura"])
+					return false;
+				endif
 			endif
 		endforeach
 
