@@ -332,7 +332,7 @@ class NaturalBond(CombatAbility)
         var hitsmod_calc := CInt(strength / 3);
         var manamod_calc := CInt(dexterity / 5);
         var stammod_calc := CInt(intelligence / 5);
-        var dicedmg_calc := this._CalcDice(strength);
+        var dicedmg_calc := this._CalcDice(AP_GetSkill(who, THEOLOGY));
 
         var bonusMagicLore  := CInt(AP_GetSkill(who, THEOLOGY) / 10);
         var bonusInstintoHP := CInt(AP_GetSkill(who, THEOLOGY) / 3);
@@ -436,21 +436,18 @@ class NaturalBond(CombatAbility)
         mw.SetProperty("#SpellResist", sr);
     endfunction
 
-    function _CalcDice(this, strength)
-        var s := CInt(strength);
-        if (s < 10)
-            return array{"1d2", "1d2", "1d2"};
-        elseif (s <= 50)
-            return array{"2d2", "2d2", "2d2"};
-        elseif (s <= 100)
-            return array{"3d2", "3d2", "3d2"};
-        elseif (s <= 150)
-            return array{"4d2", "4d2", "4d2"};
-        elseif (s <= 200)
-            return array{"5d2", "5d2", "5d2"};
-        else
-            return array{"6d2", "6d2", "6d2"};
-        endif
+    function _CalcDice(this, theology)
+        var tier := CInt(CInt(theology) / 20);
+        var dice;
+        case (tier)
+            0: dice := "1d4";
+            1: dice := "1d4";
+            2: dice := "1d6";
+            3: dice := "1d8";
+            4: dice := "1d10";
+            default: dice := "1d12";
+        endcase
+        return array{dice, dice, dice};
     endfunction
 
     function _GetTaxonomyScript(this, taxonomy)
