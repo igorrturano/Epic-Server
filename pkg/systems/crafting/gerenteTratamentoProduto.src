@@ -62,7 +62,6 @@ program GerenteTratamentoProduto(parametros)
 					PrintTextAbove(produto, "*O Item se parte*");
 					Sleepms(200);
 					CloseGump(quem, processosGerenciados[GUMP_INTERATIVO].pid, 0);
-					DestroyItem(produto);
 					processosGerenciados[CICLO].kill();
 					estadoGerenciamento := FINALIZADO;
 					break;
@@ -82,11 +81,7 @@ program GerenteTratamentoProduto(parametros)
 				
 				var produtoAntigo := produto;
 
-				if (produtoAntigo.stackable)
-					SubtractAmount(produtoAntigo, 1);
-				else
-					DestroyItem(produtoAntigo);
-				endif
+				ConsomeProduto(produtoAntigo);
 
 				if(produtoAntigo.amount > 0)
 					produto := produtoAntigo;
@@ -104,11 +99,7 @@ program GerenteTratamentoProduto(parametros)
 					estadoGerenciamento := FINALIZADO;
 				endif
 			else
-				if (produto.stackable)
-					SubtractAmount(produto, 1);
-				else
-					DestroyItem(produto);
-				endif
+				ConsomeProduto(produto);
 			endif
 		else
 			if (produto)
@@ -124,6 +115,14 @@ program GerenteTratamentoProduto(parametros)
 	EraseObjProperty(alvo.item, PROPNAME_ISESTACAO_OCUPADA);
 	SendSysMessageEX(quem, "Tratamento Finalizado.", SSM_INFO);
 endprogram
+
+function ConsomeProduto(produto)
+	if (produto.stackable)
+		SubtractAmount(produto, 1);
+	else
+		DestroyItem(produto);
+	endif
+endfunction
 
 function DeveFinalizarTratamento(estadoGerenciamento)
 	return estadoGerenciamento == FINALIZADO || estadoGerenciamento == CANCELADO;
