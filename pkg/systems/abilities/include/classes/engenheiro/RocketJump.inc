@@ -17,35 +17,42 @@ class RocketJump(CombatAbility)
 		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	endfunction
 
-	function ExecuteOn(this, mobile)
+	function CanActivate(this, mobile)
 		var who := mobile.GetObjRef();
-
-		// Equipment check
 		if (!GetObjProperty(who, "pilotando"))
-			var legs := GetEquipmentByLayer(who, LAYER_PANTS); // LAYER_PANTS
-			if (!legs || legs.objtype != 0xFFC2) // Steam Legs
+			var legs := GetEquipmentByLayer(who, LAYER_PANTS);
+			if (!legs || legs.objtype != 0xFFC2)
 				Message("Você precisa estar usando as Grevas de Vapor para ativar os Propulsores!").SendSys(who);
 				return false;
 			endif
 		endif
-
-		var is_piloting := GetObjProperty(who, "pilotando");
-
-		// Coal check
-		if (is_piloting)
+		if (GetObjProperty(who, "pilotando"))
 			var golem := _RJ_GetGolemRef(who);
-			var stored_coal := CInt(GetObjProperty(golem, "golem_coal"));
-			if (!golem || stored_coal < 2)
+			if (!golem || CInt(GetObjProperty(golem, "golem_coal")) < 2)
 				Message("O golem precisa de pelo menos 2 carvoes!").SendSys(who);
 				return false;
 			endif
-			SetObjProperty(golem, "golem_coal", stored_coal - 2);
 		else
 			var coal := FindObjtypeInContainer(who.backpack, 0x1bde);
 			if (!coal || coal.amount < 2)
 				Message("Voce precisa de pelo menos 2 carvoes para acionar os propulsores!").SendSys(who);
 				return false;
 			endif
+		endif
+		return true;
+	endfunction
+
+	function ExecuteOn(this, mobile)
+		var who := mobile.GetObjRef();
+		var is_piloting := GetObjProperty(who, "pilotando");
+
+		// Consume coal
+		if (is_piloting)
+			var golem := _RJ_GetGolemRef(who);
+			var stored_coal := CInt(GetObjProperty(golem, "golem_coal"));
+			SetObjProperty(golem, "golem_coal", stored_coal - 2);
+		else
+			var coal := FindObjtypeInContainer(who.backpack, 0x1bde);
 			SubtractAmount(coal, 2);
 		endif
 
