@@ -17,6 +17,7 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 include ":treasurehunting:treasuremaps";
 include ":chestspawn:treasurechest";
+include ":message:model/Message";
 
 const CLAY_BALL := 0x6074;
 const MINING_ANIMATION := 0x0E;
@@ -302,7 +303,7 @@ function DesenterrarBau(who, scoop, targ)
 	var initial_x := who.x;
 	var initial_y := who.y;
 
-	PrintTextAbove(who, "*Começa a cavar a terra*");
+	Message("*Começa a cavar a terra*").SendEmote(who);
 	SendSysMessageEx(who, "Permaneça parado enquanto cava.", SSM_INFO);
 
 	// Cria o baú enterrado em Z-5
@@ -349,11 +350,11 @@ function DesenterrarBau(who, scoop, targ)
 		PlaySoundEffect(who, MINING_SOUND);
 
 		case (i)
-			1: PrintTextAbove(who, "*Cavando...*");
-			2: PrintTextAbove(who, "*Continuando a cavar...*");
-			3: PrintTextAbove(who, "*A terra está cedendo...*");
-			4: PrintTextAbove(who, "*Algo está aparecendo...*");
-			5: PrintTextAbove(who, "*Quase lá...*");
+			1: Message("*Cavando...*").SendEmote(who);
+			2: Message("*Continuando a cavar...*").SendEmote(who);
+			3: Message("*A terra está cedendo...*").SendEmote(who);
+			4: Message("*Algo está aparecendo...*").SendEmote(who);
+			5: Message("*Quase lá...*").SendEmote(who);
 		endcase
 
 		current_z := current_z + 1;
@@ -417,7 +418,7 @@ function DesenterrarBau(who, scoop, targ)
 
 	DestroyItem(dirt);
 
-	PrintTextAbove(who, "*Termina de desenterrar o baú*");
+	Message("*Termina de desenterrar o baú*").SendEmote(who);
 	SendSysMessageEx(who, "Você desenterrou um baú!", SSM_INFO);
 
 	CheckToolWear(who, scoop, GATHERING);
