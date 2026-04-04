@@ -7,6 +7,7 @@ use basic;
 include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
 include ":sysbook:include/sealedBooks";
+include ":crafting:/include/fabricaComplexos";
 
 var itemdesc_cache := dictionary{};
 
@@ -84,8 +85,23 @@ function Loot_CreateItem(container, line)
     if(Loot_ChanceCheck(parsed.chance))
         var i;
         for(i := 1; i <= parsed.amount; i := i + 1)
-            var item := CreateItemInContainer(container, parsed.name);
-            
+            var combatDesc := ReadConfigFile(":combat:itemdesc");
+            var objtype := GetObjtypeByName(parsed.name);
+            var combatItem := combatDesc[objtype];
+            var item;
+            if(combatItem)
+                item :=  GeraItemComplexo(
+                                            container,
+                                            objtype,
+                                            1,
+                                            RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
+                                            1, 
+                                            array {0x630e}, //ouro
+                                            FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
+                                        );
+            else
+                item := CreateItemInContainer(container, parsed.name);
+            endif
             SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
 
             sleepms(2);
