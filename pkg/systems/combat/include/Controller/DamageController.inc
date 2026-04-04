@@ -544,6 +544,10 @@ function CalculateDefenderResist(byRef attackInfo)
 	else
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
+
+			WearDownArmor(attackInfo.GetDefender().GetObjRef(), equip.GetObjRef(), attackInfo.GetDamage().GetTotalBaseDamage(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em {armorResist.ToString()} e perdeu {attackInfo.GetDamage().GetTotalBaseDamage()} de durabilidade."));
+
 			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist())
 								  .DecreasePiercingBaseDamage(armorResist.GetPiercingResist())
 								  .DecreaseBluntBaseDamage(armorResist.GetBluntResist())
@@ -551,7 +555,6 @@ function CalculateDefenderResist(byRef attackInfo)
 								  .DecreaseColdBaseDamage(armorResist.GetColdResist())
 								  .DecreasePoisonBaseDamage(armorResist.GetPoisonResist())
 								  .DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}"));
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Restou: {attackInfo.GetDamage().ToString()}"));
 		endforeach
 	endif
