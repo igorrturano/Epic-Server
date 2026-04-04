@@ -40,7 +40,6 @@ function ProccessCombatDamage(byRef attackInfo)
 		ExecutePassiveAbilitiesOnKill(attackInfo);
 	endif
 
-	ProgressAttackSkills(attackInfo);
 endfunction
 
 function CalculateCombatDamage(byRef attackInfo)
@@ -787,24 +786,32 @@ function ApplyCombatDamage(byRef attackInfo)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {attackInfo.GetDamage().GetFireBaseDamage()}"));
+	else
+		attackInfo.GetDamage().SetFireBaseDamage(0); // Garante que dano elemental que ficou negativo por causa da resistência não seja aplicado
 	endif
 
 	if (attackInfo.GetDamage().GetColdBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {attackInfo.GetDamage().GetColdBaseDamage()}"));
+	else
+		attackInfo.GetDamage().SetColdBaseDamage(0); // Garante que dano elemental que ficou negativo por causa da resistência não seja aplicado
 	endif
 
 	if (attackInfo.GetDamage().GetPoisonBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {attackInfo.GetDamage().GetPoisonBaseDamage()}"));
+	else
+		attackInfo.GetDamage().SetPoisonBaseDamage(0); // Garante que dano elemental que ficou negativo por causa da resistência não seja aplicado
 	endif
 
 	if (attackInfo.GetDamage().GetEnergyBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {attackInfo.GetDamage().GetEnergyBaseDamage()}"));
+	else
+		attackInfo.GetDamage().SetEnergyBaseDamage(0); // Garante que dano elemental que ficou negativo por causa da resistência não seja aplicado
 	endif
 
 	var totalDamage := attackInfo.GetDamage().GetTotalBaseDamage();
