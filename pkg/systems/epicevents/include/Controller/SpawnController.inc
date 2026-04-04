@@ -44,6 +44,7 @@ function SpawnCreatureType(item, spawnInfo, color, emote, npc_lifetime)
 			ScheduleNpcDespawn(npc, npc_lifetime);
 			spawned += 1;
 		endif
+		sleepms(20);
 	endfor
 
 	return spawned;

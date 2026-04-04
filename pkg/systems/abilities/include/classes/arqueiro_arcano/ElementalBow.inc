@@ -3,7 +3,7 @@ use os;
 
 include ":abilities:models/CombatAbility";
 include ":fls_core:packets";
-include ":fls_magery:basicMagery";
+include "include/epicMageryUtils";
 include ":attributes:attributes";
 include ":tn:cooldown";
 include ":message:model/Message";

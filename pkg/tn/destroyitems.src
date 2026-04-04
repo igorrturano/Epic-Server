@@ -24,6 +24,7 @@ program destroyitems(parms)
 		if (!isPossivelDestruir(quem, itemAlvo, fonteDano, consumoStamina))
 			break;
 		endif
+		sleepms(2);
 		TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina);
 
 		Sleep(2);

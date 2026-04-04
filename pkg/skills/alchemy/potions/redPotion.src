@@ -34,10 +34,12 @@ program drink_blue(who, potion)
 	vicio := vicio / 100;
 	var healed := 0;
 	healed := AP_GetVitalMaximumValue(who, STAMINA);
-	var tier := PegaNivelPocao(potion);
+	var tier := peganivelpocao(who, potion);
 	case (tier)
-		1:	healed := cint(healed * 0.7 * vicio);
-		2:	healed := cint(healed * 0.3 * vicio);
+		1:	healed := cint(healed * 0.3 * vicio);
+		2:	healed := cint(healed * 0.5 * vicio);
+		3:  healed := cint(healed * 0.7 * vicio);
+		4:  healed := cint(healed * 1 * vicio);
 	endcase
 	empty_bottle(who, potion);
 	TS_StartCooldown(who, "staminapot", cint(healed * 0.5) + 1);

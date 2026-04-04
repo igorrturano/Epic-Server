@@ -11,7 +11,7 @@ include "include/client";
 program SpellScript(params)
 	var who := params[1];
 
-	var arcana    := CInt(AP_GetSkill(who, ARCANA) / 10);
+	var arcana    := CInt(AP_GetSkill(who, ARCANA));
 	var burst_dmg := CInt(arcana / 3);
 	if (burst_dmg < 1)  burst_dmg := 1;  endif
 	if (burst_dmg > 33) burst_dmg := 33; endif

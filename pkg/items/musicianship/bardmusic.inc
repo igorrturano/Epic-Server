@@ -2256,7 +2256,7 @@ function TambourBuffGump(byref who, byref item)
 
     var has_resonance  := MobileWrapper(who).HasAbility(ABILITY_ID::RESONANCE);
     var has_tear       := MobileWrapper(who).HasAbility(ABILITY_ID::REALITY_TEAR);
-    var arcana         := CInt(AP_GetSkill(who, ARCANA) / 10);
+    var arcana         := CInt(AP_GetSkill(who, ARCANA));
     var gump := GFCreateGump();
     GFResizePic(gump, 50, 50, 302, 420, 280);
     GFTextLine(gump, 70, 60, BARD_FONT_COLOR_LENDARIA, "Ritmo de Batalha");

@@ -11,7 +11,7 @@ include "include/sounds";
 program SpellScript(params)
 	var who := params[1];
 
-	var arcana   := CInt(AP_GetSkill(who, ARCANA) / 10);
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
 	var hit_bonus := CInt(arcana / 15);
 	if (hit_bonus < 1)  hit_bonus := 1;  endif
 	if (hit_bonus > 6)  hit_bonus := 6;  endif

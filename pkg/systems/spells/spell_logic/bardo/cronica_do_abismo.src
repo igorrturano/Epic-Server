@@ -12,7 +12,7 @@ include "include/sounds";
 program SpellScript(params)
 	var who := params[1];
 
-	var arcana := CInt(AP_GetSkill(who, ARCANA) / 10);
+	var arcana := CInt(AP_GetSkill(who, ARCANA));
 	var tier   := CInt(arcana / 20);
 	if (tier < 1) tier := 1; endif
 	if (tier > 5) tier := 5; endif

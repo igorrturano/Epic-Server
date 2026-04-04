@@ -5,7 +5,7 @@ use math;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":fls_magery:spellSounds";
+;
 include "include/client";
 include "include/sounds";
 include ":combat:Controller/DamageController_legacy";
@@ -58,7 +58,7 @@ program use_explosion(who, potion)
 				continue;
 			endif
 
-			var tier := PegaNivelPocao(potion);
+			var tier := peganivelpocao(who, potion);
 			var bonus := cint(GetObjProperty(potion, "bonus"));
 			var damage := epicPotionDamageRoll(tier, bonus);
 

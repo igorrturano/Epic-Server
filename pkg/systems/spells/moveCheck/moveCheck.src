@@ -4,7 +4,7 @@ use os;
 program moveCheck(params)
 	var mobile := params[1];
 	var spell_starter := GetProcess(params[2]);
-	params := 0; // Not needed anymore
+	params := 0;
 
 	var orig_x := mobile.x;
 	var orig_y := mobile.y;

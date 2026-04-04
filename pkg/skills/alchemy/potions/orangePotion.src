@@ -19,13 +19,14 @@ program drink_orange(who, potion)
 	if (!checkifcandrink(who, "orange"))
 		return;
 	endif
-	var tier := PegaNivelPocao(potion);
+	var tier := peganivelpocao(who, potion);
 	var potion_strength := 1;
 	var time := 120;
 	case (tier)
-		2: potion_strength := 2; time := 120;
-		3: potion_strength := 3; time := 240;
-		4: potion_strength := 5; time := 480;
+		1: potion_strength := 2; time := 120;
+		2: potion_strength := 3; time := 240;
+		3: potion_strength := 4; time := 480;
+		4: potion_strength := 5; time := 960;
 	endcase
 	empty_bottle(who, potion);
 
