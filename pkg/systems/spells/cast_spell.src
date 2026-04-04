@@ -8,8 +8,8 @@ include ":attributes:vitals";
 include ":containers:containers";
 include ":itemutils:itemdesc";
 include "include/client";
-include ":fls_magery:basicMagery";
-include ":fls_magery:spells";
+;
+;
 include "include/sounds";
 include ":spells:tnmagery";
 include "include/say";
@@ -284,7 +284,7 @@ function performCastingProcess(mobile, spellinfo)
 	var delay := spellinfo.delay + CInt(GetObjProperty(mobile, "#delayspell"));
 	var moveCheck_script;
 	if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
-		moveCheck_script := Start_Script(":fls_magery:moveCheck/moveCheck", array{ mobile, GetPid() });
+		moveCheck_script := Start_Script(":spells:moveCheck/moveCheck", array{ mobile, GetPid() });
 	endif
 
 	if (!performSpellCycles(mobile, spellinfo, orig_hp))

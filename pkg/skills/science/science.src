@@ -40,7 +40,7 @@ program skill_science(who)
 			return 1;
 		elseif (SkillCheck(who, SCIENCE, -1) > 0)
 			var cfg := ReadConfigFile(":*:itemdesc");
-			var nivel := NomeNivelPocao(item);
+			var nivel := NomeNivelPocao(who, item);
 			var entry := cfg[item.objtype];
 			var desc := entry.Type + " " + nivel;
 			if (entry)
@@ -74,8 +74,8 @@ program skill_science(who)
 	endif
 endprogram
 
-function NomeNivelPocao(pocao)
-	var tier := PegaNivelPocao(pocao);
+function NomeNivelPocao(who, pocao)
+	var tier := PegaNivelPocao(who, pocao);
 	case (tier)
 		1: return "Menor";
 		2: return ;

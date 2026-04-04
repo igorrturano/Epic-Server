@@ -27,6 +27,7 @@ program SendCommands(who)
 
     // Resolve descriptions from cfg (ReadConfigFile is engine-cached, no data segment cost)
     foreach item in commands
+        sleepms(2);
         var cmd_name := item.command;
         if (cmd_name[1] == ".")
             cmd_name := cmd_name[2, len(cmd_name)];

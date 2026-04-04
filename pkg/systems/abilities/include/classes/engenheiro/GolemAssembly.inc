@@ -56,24 +56,19 @@ class GolemAssembly(CombatAbility)
 		return true;
 	endfunction
 
-	function ExecuteOn(this, mobile)
+	function CanActivate(this, mobile)
 		var who := mobile.GetObjRef();
-
-		// If piloting a golem, use frontal cleave instead of creation
 		if (mobile.GetProperty("pilotando"))
-			return _GolemCleave(mobile, who);
+			return true;
 		endif
-
 		if (mobile.GetProperty("golem_maker"))
 			Message("Ter mais de um golem para uso pessoal eh um desperdicio de recursos!").SendSys(who);
 			return false;
 		endif
-
 		if (who.weapon.objtype != 0x13e3)
 			Message("Use um martelo de ferreiro.").SendSys(who);
 			return false;
 		endif
-
 		var anvil;
 		foreach item in ListItemsNearLocation(who.x, who.y, who.z, 1, who.realm)
 			if (item.objtype == 0xA102 || item.objtype == 0xA108)
@@ -85,6 +80,23 @@ class GolemAssembly(CombatAbility)
 			Message("Voce precisa estar perto de uma bigorna para criar seu golem.").SendSys(who);
 			return false;
 		endif
+		return true;
+	endfunction
+
+	function ExecuteOn(this, mobile)
+		var who := mobile.GetObjRef();
+
+		if (mobile.GetProperty("pilotando"))
+			return _GolemCleave(mobile, who);
+		endif
+
+		var anvil;
+		foreach item in ListItemsNearLocation(who.x, who.y, who.z, 1, who.realm)
+			if (item.objtype == 0xA102 || item.objtype == 0xA108)
+				anvil := item;
+				break;
+			endif
+		endforeach
 
 		// Find gadget in backpack
 		var gadget_item := 0;

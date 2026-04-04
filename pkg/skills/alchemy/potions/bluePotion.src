@@ -27,7 +27,7 @@ program drink_blue(who, potion)
 	endif
 	vicio := vicio / 100;
 	var bonus := GetObjProperty(potion, "bonus");
-	var tier := PegaNivelPocao(potion);
+	var tier := peganivelpocao(who, potion);
 	var stat := AP_GetTrueStat(who, DEXTERITY);
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
 		tier := (tier + 2);

@@ -260,7 +260,7 @@ function do_poison(who, potion)
   var level, difficulty, points, poisonType;
   var skill := Cint(GetObjProperty(potion, "crafterskill"));
   var bonus := Cint(GetObjProperty(potion, "bonus"));
-  var tier := PegaNivelPocao(potion);
+  var tier := peganivelpocao(who, potion);
   level := skill;
   
   //se for uma poçao que nao a default a formula eh essa:
@@ -363,7 +363,7 @@ Function AlchLabTransfer (item, alvo)
 endfunction
 
 Function AplicaVicio (who, potion, Atr)
-  var tier := PegaNivelPocao(potion);
+  var tier := peganivelpocao(who, potion);
   var bonus := 0;
   var vicio := 0;
   var att := 0;
@@ -449,8 +449,18 @@ function WriteDyeInfo(byref recipe)
 	recipe.+level := GetConfigInt( elem, "level" );
 endfunction
 
-function PegaNivelPocao(pocao)
+function PegaNivelPocao(who, pocao)
 	var fabricado := GetObjProperty(pocao, "fabricado");
 	var tier := fabricado.classe;
+  if(getobjProperty(who, "#powerpot"))
+    if((getobjproperty(who, "#power_time"))+15 > readgameclock())
+      tier := tier+1;
+    else
+      SendSysMessageEx(who, "Você demorou demais para usar sua poção.", SSM_FAIL);
+    endif
+  endif
+  eraseobjproperty(who, "#powerpot");
+  eraseobjproperty(who, "#power_time");
+
   return tier;
 endfunction

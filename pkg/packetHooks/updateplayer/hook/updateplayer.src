@@ -11,22 +11,10 @@ program Install()
 endprogram
 
 exported function UpdatePlayer(who, byref packet)
-	var mobile := SystemFindObjectBySerial(packet.GetInt32(1));
-
-	// if(who.cmdlevel < 1)
-	foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, 18, who.realm)
-		if (mobile.serial != who.serial && !who.npctemplate)
-			// Who não está vendo mobile
-			if (!CheckLineOfSight(who, mobile))
-				UpdatePlayerGraphic(mobile, who, 16000, mobile.color);
-			// Who está vendo mobile
-			else
-				UpdatePlayerGraphic(mobile, who, mobile.graphic, mobile.color);
-			endif
-		endif
-	endforeach
-// endif
-
+	// Disabled: LOS-based visibility system was causing extreme CPU usage
+	// (ListMobilesNearLocation radius 18 + CheckLineOfSight per mobile on every update packet)
+	// Same system was already disabled in checkevents.src walk hook
+	return 1;
 endfunction
 
 function UpdatePlayerGraphic(who, forwho, graphic, color)
