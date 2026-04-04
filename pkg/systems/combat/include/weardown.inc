@@ -8,6 +8,7 @@ include ":runecarving:runeCarving";
 
 function WearDownArmor(defender, armor, rawdamage, weapon)
 	var bonus;
+	var wearchance := 30;
 	//Amplia o dano na armadura se a arma tiver a propriedade
 	if (CInt(GetObjProperty(weapon, "ArmorDmg") == 1))
 		bonus := RandomDiceRoll("1d4");
@@ -90,6 +91,7 @@ function WearDownShield(defender, shield, rawdamage, weapon)
 	endif
 	
 	var bonus := 0;
+	var wearchance := 80;
 	//Amplia o dano no escudo se a arma tiver a propriedade
 	if (CInt(GetObjProperty(weapon, "ArmorDmg") == 1))
 		bonus := RandomInt(3)+1;
@@ -102,7 +104,6 @@ function WearDownShield(defender, shield, rawdamage, weapon)
 		var dmg_to_wear := CDbl(CDbl(armr_elem.DmgToWear) * CDbl(shield.hp)) / 100.0;
 
 		//Diminui pela metade a chance de um equipamento quebrar com a habilidde Conservar Equipamento
-		var wearchance := armr_elem.WearChance;
 		if (GetObjProperty(shield, "encerada"))
 			// Reduz a chance de desgaste em 10% se a armadura estiver encerada
 			wearchance := wearchance - 15;
@@ -145,7 +146,7 @@ function WearDownWeapon(attacker, weapon,wearRateMlt := 1)
 		//Calcula danos nas armas normais
 		else
 			var wpn_elem := CS_GetSettingsCfgElem("Weapons");
-			var wearchance := CDbl(wpn_elem.WearChance);
+			var wearchance := 2;
 
 			if (GetObjProperty(weapon, "encerada"))
 				// Reduz a chance de desgaste em 10% se a armadura estiver encerada

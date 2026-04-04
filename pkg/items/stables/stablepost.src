@@ -67,12 +67,13 @@ function GuardarAnimal(who, post)
 		return 0;
 	endif // <--- Adicionei este endif aqui
 
+	var regiaoBanco := GetObjProperty(post, "City") ? GetObjProperty(post, "City") : CP_DEFAULT_AREA;
 	// 5. Verificar pagamento (agora sem pedir dias)
-	if (ContaCapital(who, CP_DEFAULT_AREA).valorTotal < 1) 
+	if (ContaCapital(who, regiaoBanco).valorTotal < precoPorDia) 
 		SendSysMessage(who, "Você não tem moedas o suficiente para efetuar o pagamento.");
 		return 0;
 	else
-		who.spendgold(1);
+		who.spendgold(precoPorDia);
 	endif
 
 	// 6. Guardar animal
