@@ -1033,6 +1033,43 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this;
 	endfunction
 
+	// ================ Mastery ================= //
+	function GetMasteries(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return this.GetProperty(MOBILE_PROPNAME::MASTERY) ?: dictionary{};
+	endfunction
+
+	function AddMastery(this, mastery)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var masteries := this.GetMasteries();
+		masteries[mastery.GetName()] := mastery.GetLevel();
+		this.SetProperty(MOBILE_PROPNAME::MASTERY, masteries);
+
+		return this;
+	endfunction
+
+	function RemoveMastery(this, mastery)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var masteries := this.GetMasteries();
+		if (!masteries.exists(mastery.GetName()))
+			return InvalidMasteryException("This mastery is not present on mobile!");
+		endif
+
+		masteries.erase(mastery.GetName());
+		this.SetProperty(MOBILE_PROPNAME::MASTERY, masteries);
+
+		return this;
+	endfunction
+
 	function IsNPC(this)
 		return (this.Template && !(this.Template is @Exception));
 	endfunction
@@ -1318,7 +1355,8 @@ enum class MOBILE_PROPNAME
 	ENTROPY := "entropy",
 	ABILITIES := "myhabs",
 	ACTIVE_ABILITIES := "activehabs",
-	POOL_ABILITIES := "myhabs_pool"
+	POOL_ABILITIES := "myhabs_pool",
+	MASTERY := "masteries"
 endenum
 
 enum class ENTROPY_LIMITS

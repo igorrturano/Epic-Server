@@ -13,7 +13,7 @@ program Install()
 endprogram
 
 include ":debug:methods/Character";
-include ":mastery:methods/Character";
+// include ":mastery:methods/Character";
 include ":charactercreation:methods/Character";
 include ":merchants:cambio";
 
