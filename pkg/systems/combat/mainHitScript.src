@@ -42,8 +42,10 @@ program MainHitScript(attackInfo)
 	PlayAttackFX(attackInfo);
 	PlayAttackSFX(attackInfo);
 
+	ProgressAttackSkills(attackInfo);
 	MasteryCombat_Advance(attackInfo.GetAttacker().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalBaseDamage() });
 	AchievementCombat_Advance(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalBaseDamage() });
+
 
 	return 1;
 endprogram
