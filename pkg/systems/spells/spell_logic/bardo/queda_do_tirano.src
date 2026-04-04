@@ -17,7 +17,7 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	var arcana   := CInt(AP_GetSkill(who, ARCANA) / 10);
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
 	var damage   := CInt(arcana / 3);
 	if (damage < 1)  damage   := 1;  endif
 	if (damage > 33) damage   := 33; endif

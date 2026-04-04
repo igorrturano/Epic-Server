@@ -10,6 +10,7 @@ include "include/epicConstants";
 include "include/flash";
 include ":tn:cooldown";
 include ":nature:Controller/LightController";
+include ":hotbar:include/cooldown_packet";
 
 function IsPoisonImune(who, poison)
 
@@ -218,5 +219,5 @@ function sendCooldownToClientUpdate(who, delay, habelem)
 	endif
 	
 	// Send cooldown message to client with class-specific gump ID
-	SendSysMessageEx(who, "[HAB_CD] " + hab + "|" + delay + "|" + Hex(gumpid), SSM_INFO);
+	SendCooldownPacket(who, hab, CInt(delay), gumpid, COOLDOWN_TYPE_ABILITY);
 endfunction

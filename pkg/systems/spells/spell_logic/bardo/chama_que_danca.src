@@ -17,7 +17,7 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	var arcana  := CInt(AP_GetSkill(who, ARCANA) / 10);
+	var arcana  := CInt(AP_GetSkill(who, ARCANA));
 	var dmg_tick := CInt(arcana / 10);
 	if (dmg_tick < 1) dmg_tick := 1; endif
 	var ticks   := CInt(arcana / 5);

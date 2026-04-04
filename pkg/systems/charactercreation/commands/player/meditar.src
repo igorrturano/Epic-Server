@@ -17,7 +17,7 @@ program meditar(who, text)
 endprogram
 
 function InitialMeditationCheck(who)
-	if (!EquipmentCheck(who))
+	if (!MeditationEquipmentCheck(who))
 		SendSysMessage(who, "Suas mãos precisam estar livres", SSM_FAIL);
 		return 0;
 	endif
@@ -37,7 +37,7 @@ function MeditationConditionsCheck(who, oldx, oldy, start_hp)
 		SendSysMessage(who, "Você perdeu sua concentração", SSM_FAIL);
 		return 0;
 	endif
-	if (!EquipmentCheck(who)) // Check if hands became occupied during meditation
+	if (!MeditationEquipmentCheck(who)) // Check if hands became occupied during meditation
 		SendSysMessage(who, "Suas mãos precisam estar livres", SSM_FAIL);
 		return 0;
 	endif
@@ -48,7 +48,7 @@ function MeditationConditionsCheck(who, oldx, oldy, start_hp)
 	return 1;
 endfunction
 
-function EquipmentCheck(who)
+function MeditationEquipmentCheck(who)
 	var hand_1 := GetEquipmentByLayer(who, LAYER_HAND1);
 
 	if (hand_1)
