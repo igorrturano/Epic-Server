@@ -12,7 +12,7 @@ include ":abilities:models/Ability";
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
-	var MagicLore := AP_GetSkill(who, ARCANA);
+	var MagicLore := Cint(AP_GetSkill(who, ARCANA) / 5);
 	params := 0; // No longer needed
 
 	PlaySoundEffect(who, SFX_SPELL_HEAL);
@@ -21,7 +21,7 @@ program SpellScript(params)
 	var y := who.y;
 	var delay := 2;
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
-		Magiclore := MagicLore * 1.2;
+		Magiclore := MagicLore * 2;
 		delay := 1;
 	endif
 	sleep(delay);
@@ -32,8 +32,7 @@ program SpellScript(params)
 
 	if (!who.dead)
 		SendSysMessageEx(who, "Voce esta escondido.", SSM_INFO);
-		TS_StartTimer(who, "invis", MagicLore * 3, MagicLore);
-		who.hidden := 1;
+		TS_StartTimer(who, "invis", MagicLore);
 	endif
 
 	return 1;
