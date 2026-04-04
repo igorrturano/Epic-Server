@@ -85,7 +85,10 @@ function WearDownArmor(defender, armor, rawdamage, weapon)
 endfunction
 
 function WearDownShield(defender, shield, rawdamage, weapon)
-
+	if (shield.objtype == 0x1F020) // Se for escudo natural, não desgasta
+		return false;
+	endif
+	
 	var bonus := 0;
 	//Amplia o dano no escudo se a arma tiver a propriedade
 	if (CInt(GetObjProperty(weapon, "ArmorDmg") == 1))
