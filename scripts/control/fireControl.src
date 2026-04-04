@@ -31,6 +31,7 @@ program field_control(item)
 	endif
 	fieldstrength := RandomInt(dmg);
 	foreach character in ListMobilesNearLocation(item.x, item.y, item.z, 0, item.realm)
+		sleepms(2);
 		set_priority(1);
 		PlaySoundEffect(character, 0x209);
 		ApplyRawSpellDamageEX(character, fieldstrength, DMG_FIRE, boss, 2, "Fire Field");
@@ -39,6 +40,7 @@ program field_control(item)
 	sleepms(1500);
 	while (item)
 		foreach character in ListMobilesNearLocation(item.x, item.y, item.z, 0, item.realm)
+			sleepms(2);
 			if ((AP_GetVital(character, HITS) > 1) && (character.cmdlevel < 2))
 				fieldstrength := RandomInt(dmg);
 				PlaySoundEffect(character, 0x209);
