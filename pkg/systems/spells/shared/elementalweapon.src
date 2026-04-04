@@ -4,7 +4,7 @@ use os;
 include ":combat:Controller/DamageController_legacy";
 include "include/epicConstants";
 include "include/epicMageryUtils";
-include ":fls_magery:spellSounds";
+;
 
 program armasagrada(param)
 	var arma := param[1];

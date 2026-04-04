@@ -352,23 +352,23 @@ endfunction
  * Purpose: Calculates skill cap based on character age
  * Parameters: who: character reference
  * Return: skill cap (minimum 6, max 100)
- * Cap diario / Cap dia
+ * Cap diario / Cap dia / Daily Cap / Total Cap
  */
 function limiteportempo(who)
     if (who.npctemplate)
-        return 100;  // NPCs always have a skill cap of 100
+        return 100;
     endif
 
-    var dias := idadeChar(who);  
-    var lim := 6;  
+    var dias := idadeChar(who);
+    var lim := 6;
 
-    if (dias <= 15)
-        lim := lim + dias*2;  
+    if (dias <= 6)
+        lim := lim + dias;
     else
-        lim := 30 + dias*0.3;  
+        lim := 12 + (dias - 6) * 0.5;
     endif
 
-    return Min(lim, 60);  
+    return Min(lim, 100);
 endfunction
 
 /*

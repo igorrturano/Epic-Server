@@ -358,7 +358,7 @@ function comprarHabilidade(who, item, nv:=-1)
 	var diference := GetBuyHabDiference(who, nivel);
 	
 	if (diference > 0)
-		SendSysMessageEx(who, "Voce nao pode comprar habilidade desse nivel, faltam {} pontos distribuídos nas suas primárias. ".format(diference), SSM_FAIL);
+		SendSysMessageEx(who, "Voce nao pode comprar habilidade desse nivel, faltam {} pontos distribuídos nas suas primárias. ".format(Cint(diference)), SSM_FAIL);
 		return 0;
 	endif
 

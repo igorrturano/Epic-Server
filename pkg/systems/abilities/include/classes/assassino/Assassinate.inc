@@ -24,9 +24,8 @@ class Assassinate(CombatAbility)
 		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	endfunction
 
-	function ExecuteOn(this, mobile)
+	function CanActivate(this, mobile)
 		var who := mobile.GetObjRef();
-
 		if (!who.hidden)
 			Message("Você precisa estar furtivo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
@@ -34,12 +33,15 @@ class Assassinate(CombatAbility)
 			Message("Você não consegue se mover.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
-
 		if (!CanBackStab(mobile) || !isAssassinWeapon(who))
 			Message("Esta arma não é apropriada para um ataque furtivo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
+		return true;
+	endfunction
 
+	function ExecuteOn(this, mobile)
+		var who := mobile.GetObjRef();
 		var range := CInt(AP_GetSkill(who, SNEAK) / 5);
 
 		var targ := Target(who);
@@ -104,6 +106,7 @@ class Assassinate(CombatAbility)
 	function OnDeactivate(this, mobile)
 		var who := mobile.GetObjRef();
 		RevokePrivilege(who, "hiddenattack");
+		who.hidden := 0;
 	endfunction
 
 endclass
