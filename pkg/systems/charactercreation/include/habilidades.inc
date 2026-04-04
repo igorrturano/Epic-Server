@@ -6,6 +6,7 @@ include "include/epicUtils";
 include ":tn:equipment";
 include ":abilities:include/models/Ability";
 include ":census:include/CensusController";
+include "/include/math";
 
 function NivelHabilidade(habilidade, classe)
 
@@ -355,10 +356,10 @@ function comprarHabilidade(who, item, nv:=-1)
 	var possiveis := HabilidadesPorNivelPossiveis(who, chardata.classe, chardata.culture, nivel);
 
 	nivel := nivel*2;
-	var diference := GetBuyHabDiference(who, nivel);
+	var diference := Trunc(GetBuyHabDiference(who, nivel),1);
 	
 	if (diference > 0)
-		SendSysMessageEx(who, "Voce nao pode comprar habilidade desse nivel, faltam {} pontos distribuídos nas suas primárias. ".format(Cint(diference)), SSM_FAIL);
+		SendSysMessageEx(who, "Voce nao pode comprar habilidade desse nivel, faltam {} pontos distribuídos nas suas primárias. ".format(diference), SSM_FAIL);
 		return 0;
 	endif
 
