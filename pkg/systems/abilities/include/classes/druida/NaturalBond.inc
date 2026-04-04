@@ -276,7 +276,7 @@ class NaturalBond(CombatAbility)
         var equips := EnumeratePhysicalItems(who);
         if (mobile.HasAbility(ABILITY_ID::ELO_NATURAL))
             foreach equip in equips
-                if (equip.isa(POLCLASS_ARMOR) && equip.resist_physical > 0)
+                if (equip.isa(POLCLASS_ARMOR) && equip.objtype != 0x1F022)
                     MoveItemToContainer(equip, who.backpack);
                 elseif (equip.isa(POLCLASS_WEAPON))
                     MoveItemToContainer(equip, who.backpack);
