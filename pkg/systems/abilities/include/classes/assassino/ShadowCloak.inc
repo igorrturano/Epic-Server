@@ -22,15 +22,8 @@ class ShadowCloak(CombatAbility)
 		var attacker := attackInfo.GetAttacker();
 		var who := attacker.GetObjRef();
 
-		if (!who.GetProp("backstab"))
+		if (!who.hidden)
 			return false;
-		endif
-
-		// Cleanup backstab props
-		EraseObjProperty(who, "backstab");
-		var weapon := attacker.GetEquipBySlot(WEAPON);
-		if (weapon)
-			EraseObjProperty(weapon, "backstab");
 		endif
 
 		// Sneak vs Awareness contest
