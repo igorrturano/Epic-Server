@@ -104,6 +104,7 @@ class Assassinate(CombatAbility)
 	function OnDeactivate(this, mobile)
 		var who := mobile.GetObjRef();
 		RevokePrivilege(who, "hiddenattack");
+		who.hidden := 0;
 	endfunction
 
 endclass
