@@ -2,10 +2,10 @@ use os;
 use uo;
 
 include ":abilities:models/CombatAbility";
+include ":abilities:helpers/shinobiHelpers";
 include ":message:model/Message";
 include ":attributes:attributes";
 include ":combat:Controller/HitController";
-include "include/facings";
 include "include/utils";
 include "include/client";
 include "include/epicCombatUtils";
@@ -13,9 +13,9 @@ include "include/epicCombatUtils";
 /**
  * Assassinar (Assassinate) - ABILITY_ID::ASSASSINAR (1200)
  *
- * OnUse: While hidden, leaps behind a target (range = SNEAK/5) and
- * prepares a backstab. Guarantees hit if hidden, critical if has
- * Instinto Assassino.
+ * OnUse: While hidden, leaps behind a target (range = SNEAK/5).
+ * Guarantees hit if hidden, critical if has Instinto Assassino.
+ * PassiveBeforeDamage: Adds SNEAK/20 bonus damage.
  */
 class Assassinate(CombatAbility)
 
@@ -56,33 +56,8 @@ class Assassinate(CombatAbility)
 			return false;
 		endif
 
-		// Move in line to target
-		var coords := GetCoordsInLine(who.x, who.y, targ.x, targ.y);
-		coords.Erase(coords.size());
-		foreach coord in coords
-			MoveObjectToLocation(who, coord.x, coord.y, targ.z, who.realm, MOVEOBJECT_FORCELOCATION);
-			sleepms(50);
-		endforeach
-
-		// Position behind target
-		var behind := InverseFacing(targ.facing);
-		behind := GetModByFacing(behind);
-		if (CanWalk("L", who.x, who.y, who.z, targ.x + behind[1], targ.y + behind[2]))
-			MoveObjectToLocation(who, targ.x + behind[1], targ.y + behind[2], targ.z, who.realm, MOVEOBJECT_FORCELOCATION);
-		else
-			var radius := GetPointsInRadius(targ.x, targ.y, 1);
-			var random := radius.randomentry();
-			while (!MoveObjectToLocation(who, random.x, random.y, targ.z, who.realm))
-				random := radius.randomentry();
-				sleep(2);
-			endwhile
-		endif
-
-		who.SetFacing(GetFacing(who.x, who.y, targ.x, targ.y));
-
-		// Prepare backstab
-		mobile.SetProperty("backstab", 1);
-		mobile.GetEquipBySlot(WEAPON).SetProperty("backstab", 1);
+		who.setwarmode(1);
+		TeleportBehindTarget(who, targ);
 
 		if (mobile.IsHidden())
 			mobile.SetProperty("#GuaranteedHit", 1);
@@ -94,7 +69,41 @@ class Assassinate(CombatAbility)
 		GrantPrivilege(who, "hiddenattack");
 		who.enable("hiddenattack");
 
+		who.attack_once(targ);
+
 		return true;
+	endfunction
+
+	function OnPassiveBeforeDamage(this, attackInfo)
+		var attacker := attackInfo.GetAttacker();
+		var who := attacker.GetObjRef();
+
+		if (!who.hidden)
+			return false;
+		endif
+
+		var sneak := CInt(AP_GetSkill(who, SNEAK));
+		var bonus := CInt(sneak / 20);
+
+		if (bonus > 0)
+			attackInfo.GetDamage()
+				.IncreaseSlashRawDamage(bonus)
+				.IncreasePiercingRawDamage(bonus)
+				.IncreaseBluntRawDamage(bonus);
+
+			DebugMsg(
+				who,
+				DEBUG_HAB,
+				Message($"[ASSASSINAR] Bônus de dano furtivo (SNEAK/20): +{bonus}", Color(SYSTEM_COLOR::SUCCESS))
+			);
+		endif
+
+		return true;
+	endfunction
+
+	function OnDeactivate(this, mobile)
+		var who := mobile.GetObjRef();
+		RevokePrivilege(who, "hiddenattack");
 	endfunction
 
 endclass
