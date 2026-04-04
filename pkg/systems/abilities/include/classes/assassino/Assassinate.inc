@@ -4,20 +4,23 @@ use uo;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":attributes:attributes";
+include ":combat:Controller/HitController";
 include "include/facings";
 include "include/utils";
 include "include/client";
+include "include/epicCombatUtils";
 
 /**
- * Salto das Sombras (Shadow Leap) - ABILITY_ID::SALTO_DAS_SOMBRAS (1200)
+ * Assassinar (Assassinate) - ABILITY_ID::ASSASSINAR (1200)
  *
- * OnUse: While hidden, leaps to a target mobile (range = SNEAK/5),
- * positioning behind them. Does not consume hidden steps.
+ * OnUse: While hidden, leaps behind a target (range = SNEAK/5) and
+ * prepares a backstab. Guarantees hit if hidden, critical if has
+ * Instinto Assassino.
  */
-class ShadowLeap(CombatAbility)
+class Assassinate(CombatAbility)
 
-	function ShadowLeap(this)
-		Super(ABILITY_ID::SALTO_DAS_SOMBRAS);
+	function Assassinate(this)
+		Super(ABILITY_ID::ASSASSINAR);
 		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	endfunction
 
@@ -29,6 +32,11 @@ class ShadowLeap(CombatAbility)
 			return false;
 		elseif (who.frozen || who.paralyzed)
 			Message("Você não consegue se mover.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return false;
+		endif
+
+		if (!CanBackStab(mobile) || !isAssassinWeapon(who))
+			Message("Esta arma não é apropriada para um ataque furtivo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
 
@@ -71,6 +79,20 @@ class ShadowLeap(CombatAbility)
 		endif
 
 		who.SetFacing(GetFacing(who.x, who.y, targ.x, targ.y));
+
+		// Prepare backstab
+		mobile.SetProperty("backstab", 1);
+		mobile.GetEquipBySlot(WEAPON).SetProperty("backstab", 1);
+
+		if (mobile.IsHidden())
+			mobile.SetProperty("#GuaranteedHit", 1);
+			if (mobile.HasAbility(ABILITY_ID::INSTINTO_ASSASSINO))
+				mobile.SetProperty("#nextcritical", 1);
+			endif
+		endif
+
+		GrantPrivilege(who, "hiddenattack");
+		who.enable("hiddenattack");
 
 		return true;
 	endfunction
