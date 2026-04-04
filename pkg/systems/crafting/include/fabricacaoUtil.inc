@@ -246,6 +246,9 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 											);
 		else
 			descriptor := GetItemDescriptor(receitaObjtype);
+			if(!descriptor.movable)
+				descriptor.movable := 1;
+			endif
 			descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
 			descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
 		endif
@@ -271,7 +274,6 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 		endif
 
 		descriptor.color := propFabricadoMontado.receita.corObrigatoria ? propFabricadoMontado.receita.corObrigatoria : propFabricadoMontado.esquema.cor;
-
 		var quantidadeFinal := 1;
 		if(propFabricadoMontado.receita.lote && propFabricadoMontado.receita.lote > 1)
 			quantidadeFinal := cint(quantidade * propFabricadoMontado.receita.lote);
@@ -295,7 +297,6 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 
 			AplicaAtributosItemFabricado(quem,item, propFabricadoMontado);
 		endif
-
 	else
 		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
 		Print("Erro: O Item " +  produto.desc + " não é um Produto Montado.");
