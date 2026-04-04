@@ -77,6 +77,7 @@ function DoSageAbility(who, chardata, cooldown)
 	case (chardata.wisdom_path)
 		"Engenheiro":    return DoEngineerAbility(who, cooldown);
 		"arcane_archer": return DoArcaneArcherAbility(who, cooldown);
+		"Alquimista": return DoAlchemistAbility(who, cooldown);
 		default:
 			return DoSpellcasterAbility(who, cooldown);
 	endcase
@@ -130,5 +131,17 @@ function DoArcaneArcherAbility(who, cooldown)
 	// ✅ Send cooldown message to client with gump ID
 	SendSysMessageEx(who, "[SPECIAL_CD] Velocidade Arcana|" + cooldown + "|0x7E", SSM_INFO);
 	
+	return 1;
+endfunction
+
+function DoAlchemistAbility(who, cooldown)
+	SetObjProperty(who, "#powerpot", 1);
+	SetObjProperty(who, "#power_time", ReadGameClock());
+	PrintTextAbove(who, "*potencializar poção*");
+	Setcooldown(who, "special_ability", cooldown);
+
+	// ✅ Send cooldown message to client with gump ID
+	SendSysMessageEx(who, "[SPECIAL_CD] Potencializar Poção|" + cooldown + "|0x7E", SSM_INFO);
+
 	return 1;
 endfunction

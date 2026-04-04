@@ -31,7 +31,7 @@ program drink_potion (who, potion)
 		return 0;
 	endif
 
-	var tier := PegaNivelPocao(potion);
+	var tier := peganivelpocao(who, potion);
 	if (!tier)
 		tier := 1;
 	endif
