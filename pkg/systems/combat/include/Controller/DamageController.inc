@@ -72,16 +72,21 @@ function CalculateAttackerDamage(byRef attackInfo)
 endfunction
 
 function CalculateEstimatedMinMaxDamage(attackInfo)
-	
+
 	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
 	var statusDamage := CalculateStatusDamage(attackInfo);
 	var skillDamage := CalculateSkillDamage(attackInfo);
 	var primordialDamage := CalculatePrimordialDamage(attackInfo);
+	var arcaneBowBonus := EstimateArcaneBowDamage(attackInfo);
+	var spiritualBladeBonus := EstimateSpiritualBladeDamage(attackInfo);
+	var elementalWeaponBonus := EstimateElementalWeaponDamage(attackInfo);
 	var finalDamage := CalculateEstimatedMinMaxWeaponDamage(attackInfo);
 
-	finalDamage.max += statusDamage.damageMod + skillDamage.damageMod + primordialDamage;
-	finalDamage.min += statusDamage.damageMod + skillDamage.damageMod + primordialDamage;
-	finalDamage.+Damage := attackInfo.GetDamage(); 
+	var flatBonus := statusDamage.damageMod + skillDamage.damageMod + primordialDamage
+					+ arcaneBowBonus + spiritualBladeBonus + elementalWeaponBonus;
+	finalDamage.max += flatBonus;
+	finalDamage.min += flatBonus;
+	finalDamage.+Damage := attackInfo.GetDamage();
 
 	return finalDamage;
 endfunction
@@ -264,6 +269,49 @@ function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
 
 
 	return MinMaxWeaponDamage;
+endfunction
+
+function EstimateArcaneBowDamage(attackInfo)
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
+		return 0;
+	endif
+
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::ARCANE_MASTERY))
+		return CInt(arcana / 5);
+	endif
+
+	return CInt(arcana / 10);
+endfunction
+
+function EstimateSpiritualBladeDamage(attackInfo)
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::SPIRITUALBLADE)
+		return 0;
+	endif
+
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+	var bonus := CInt(arcana / 5);
+	if (bonus < 1)
+		bonus := 1;
+	endif
+
+	return bonus;
+endfunction
+
+function EstimateElementalWeaponDamage(attackInfo)
+	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+	var elemental := weapon.GetProperty("#elementalweapon");
+
+	if (elemental == error)
+		return 0;
+	endif
+
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+	var intBonus := CInt(attackInfo.GetAttacker().GetInt() / 20);
+	var arcanaBonus := CInt(arcana / 10);
+
+	return intBonus + arcanaBonus;
 endfunction
 
 /**
@@ -496,6 +544,10 @@ function CalculateDefenderResist(byRef attackInfo)
 	else
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
+
+			WearDownArmor(attackInfo.GetDefender().GetObjRef(), equip.GetObjRef(), attackInfo.GetDamage().GetTotalBaseDamage(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em {armorResist.ToString()} e perdeu {attackInfo.GetDamage().GetTotalBaseDamage()} de durabilidade."));
+
 			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist())
 								  .DecreasePiercingBaseDamage(armorResist.GetPiercingResist())
 								  .DecreaseBluntBaseDamage(armorResist.GetBluntResist())
@@ -503,7 +555,6 @@ function CalculateDefenderResist(byRef attackInfo)
 								  .DecreaseColdBaseDamage(armorResist.GetColdResist())
 								  .DecreasePoisonBaseDamage(armorResist.GetPoisonResist())
 								  .DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}"));
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Restou: {attackInfo.GetDamage().ToString()}"));
 		endforeach
 	endif

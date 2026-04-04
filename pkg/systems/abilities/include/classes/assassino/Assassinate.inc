@@ -100,6 +100,8 @@ class Assassinate(CombatAbility)
 			);
 		endif
 
+		PlaySoundEffect(who, 0x51b);
+
 		return true;
 	endfunction
 

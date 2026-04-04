@@ -627,8 +627,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			value += CInt(this.GetDex() / divisor);
 		endif
 
-		if (TACTICS in criteria )
+		if (TACTICS in criteria)
 			value += CInt(this.GetSkill(TACTICS) / divisor);
+		elseif (THEOLOGY in criteria)
+			value += CInt(this.GetSkill(THEOLOGY) / divisor);
 		endif
 
 		return CInt(value);

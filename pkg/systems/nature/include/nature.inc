@@ -672,7 +672,6 @@ function GetTempRegion(diaounoite, who, x, y)
 				tempmod := (tempmod - 20);
 			endif
 			if (InDungeon(who))
-				SendSysMessageEx(who, "Esse comando nao pode ser usado dentro de Dungeons ou Cavernas.", SSM_FAIL);
 				return 999;
 			endif
 			return tempmod;
