@@ -28,7 +28,7 @@ program drink_blue(who, potion)
 	var bonus := GetObjProperty(potion, "bonus");
 	bonus := PotionSpecialistBonus(who, bonus, BUFF);
 	var skill := GetObjProperty(potion, "crafterskill");
-	var tier := PegaNivelPocao(potion);
+	var tier := peganivelpocao(who, potion);
 
 	case (tier)
 		1: TS_StartTimer(who, "invis", (120 + bonus * 10) * vicio, skill * 0.5 * vicio);

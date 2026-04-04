@@ -60,7 +60,7 @@ program do_poisoning(who)
 	var bonus := Cint(GetObjProperty(the_poison, "bonus"));
 	bonus := PotionSpecialistBonus(who, bonus, VENENO);
 	level := skill;
-	var tier := PegaNivelPocao(the_poison);
+	var tier := PegaNivelPocao(who, the_poison);
 
 	// se for uma poçao que nao a default a formula eh essa:
 	var difficulty_mod := bonus;
