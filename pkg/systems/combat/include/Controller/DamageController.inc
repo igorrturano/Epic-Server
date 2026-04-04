@@ -126,7 +126,7 @@ endfunction
 function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
 	// Check if druid with metamorfose + survival ability
-	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
+	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error)
 		skill := THEOLOGY;
 	endif
 
@@ -308,9 +308,9 @@ function CalculateArcaneBowDamage(byRef attackInfo)
 	var bonus;
 
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::ARCANE_MASTERY))
-		bonus := CInt(arcana / 10);
+		bonus := CInt(arcana / 5);
 	else
-		bonus := CInt(arcana / 20);
+		bonus := CInt(arcana / 10);
 	endif
 
 	if (bonus < 1)
@@ -345,7 +345,7 @@ function CalculateSpiritualBladeDamage(byRef attackInfo)
 	endif
 
 	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
-	var bonus := CInt(arcana / 10);
+	var bonus := CInt(arcana / 5);
 	if (bonus < 1)
 		bonus := 1;
 	endif
