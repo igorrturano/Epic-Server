@@ -77,10 +77,10 @@ function meditarPrincipal(params)
 	var skill := (arcana > theology) ? arcana : theology;
 	var amt := Cint(skill / 20);
 
-	var delay := 300;
+	var delay := 240;
 	if (GetObjPRoperty(who, "chardata").raca == ELFO)
 		amt *= 2;
-		delay := 240;
+		delay := 180;
 	endif
 
 	// Track initial player position
