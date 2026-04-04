@@ -677,8 +677,7 @@ function ChooseRogueAbility(npc, state, habs)
     if (npc.hidden)
         foreach hab in habs
             case (hab)
-                "Ataque Furtivo":
-                "Salto das Sombras": return hab;
+                "Assassinar": return hab;
             endcase
         endforeach
     endif

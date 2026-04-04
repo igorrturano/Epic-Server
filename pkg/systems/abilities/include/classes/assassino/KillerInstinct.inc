@@ -1,12 +1,12 @@
 include ":abilities:models/CombatAbility";
 
 /**
- * Instinto Assassino (Killer Instinct) - ABILITY_ID::INSTINTO_ASSASSINO (1203)
+ * Instinto Assassino (Killer Instinct) - ABILITY_ID::INSTINTO_ASSASSINO (1201)
  *
  * Passive: When landing a sneak attack, guarantees a critical hit.
  *
  * Logic lives in:
- *   - SneakAttack.inc ExecuteOn() — checks HasAbility(INSTINTO_ASSASSINO), sets #nextcritical
+ *   - Assassinate.inc ExecuteOn() — checks HasAbility(INSTINTO_ASSASSINO), sets #nextcritical
  *   - DamageController.inc CalculateCriticalChance() — checks #nextcritical, returns 100%
  */
 class KillerInstinct(CombatAbility)

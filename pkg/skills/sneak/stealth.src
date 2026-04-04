@@ -44,7 +44,7 @@ program skill_Stealth(who)
 
 	var atualStep := CInt(GetObjProperty(who, "#steathsteps"));
 	var diff := 15 + atualStep * 10;
-	if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH) && !MobileWrapper(who).HasAbility(ABILITY_ID::SALTO_DAS_SOMBRAS))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH) && !MobileWrapper(who).HasAbility(ABILITY_ID::ASSASSINAR))
 		diff := diff + 50;
 	endif
 
