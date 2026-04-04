@@ -18,7 +18,6 @@ include ":abilities:models/Ability";
 program exploder(parms)
 
 	var potion := parms[1];
-	var tier := PegaNivelPocao(potion);
 	// 	if(GetObjProperty(potion,"running"))
 	// 		return;
 	// 	endif
@@ -34,7 +33,7 @@ program exploder(parms)
 		thecenter := thecenter.item;
 	endwhile
 	SetScriptController(who);
-
+	var tier := peganivelpocao(who, potion);
 	var bonus := CInt(GetObjProperty(potion, "bonus"));
 	bonus := (PotionSpecialistBonus(who, bonus, BOMBA));
 	var dmg := epicPotionDamageRoll(tier, bonus);

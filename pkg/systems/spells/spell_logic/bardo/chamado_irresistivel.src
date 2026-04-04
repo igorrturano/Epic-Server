@@ -10,7 +10,7 @@ include "include/sounds";
 program SpellScript(params)
 	var who := params[1];
 
-	var arcana   := CInt(AP_GetSkill(who, ARCANA) / 10);
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
 	var duration := CInt(arcana / 3);
 	if (duration < 5)  duration := 5;  endif
 	if (duration > 33) duration := 33; endif
