@@ -200,10 +200,27 @@ program equipweapon(who, item)
 		start_script(":spells:spell_logic:swordmage", { who, item });
 	endif
 
+	// Epic Item: check entropy threshold for sacred/cursed items
+	var epic_entropy := GetObjProperty(item, "epicEntropy");
+	if (epic_entropy != error && CInt(epic_entropy) != 0)
+		var equip_mods := GetObjProperty(item, "equip");
+		var current_entropy := CInt(GetObjProperty(who, "entropy"));
+		if (equip_mods)
+			if (equip_mods.sacred && current_entropy < CInt(epic_entropy))
+				SendSysMessageEx(who, "Sua alma nao eh pura o suficiente para empunhar este item sagrado.", SSM_FAIL);
+				return 0;
+			elseif (equip_mods.cursed && current_entropy > CInt(epic_entropy))
+				SendSysMessageEx(who, "Sua alma nao eh corrupta o suficiente para empunhar este item.", SSM_FAIL);
+				return 0;
+			endif
+		endif
+	endif
+
 	if (item.cursed == 1)
 		UpdateMobileEntropy(who, -100);
 	endif
 	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
+	ApplyEquipObjMods(who, item);
 
 	// SteamGloves: auto-equip companion armor for hands protection
 	if (item.objtype == 0xFFC1)
