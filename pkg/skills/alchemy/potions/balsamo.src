@@ -48,7 +48,7 @@ program drink_blue(who, potion)
 	healed := skill / 5;
 	var delay := 1000;
 	var cd := 5;
-	var tier := PegaNivelPocao(potion);
+	var tier := peganivelpocao(who, potion);
 
 	healed := AP_GetVitalMaximumValue(who, HITS);
 
