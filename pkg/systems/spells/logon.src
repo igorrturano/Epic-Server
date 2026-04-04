@@ -35,31 +35,5 @@ program Logon(who)
 	// 	Start_Script(":spells:powerWords", array{ who });
 	// endif
 
-	// Start NPC tracker with error checking and retry logic
-	var tracker_pid := Start_Script(":epicai:scripts/npctracker", who);
-	if (!tracker_pid || tracker_pid == error)
-		// Retry once after a short delay
-		sleepms(100);
-		tracker_pid := Start_Script(":epicai:scripts/npctracker", who);
-
-		if (!tracker_pid || tracker_pid == error)
-			// Send Discord alert about the failure
-			var error_text := tracker_pid.errortext;
-			if (!error_text)
-				error_text := "unknown error";
-			endif
-			Start_Script(":DiscordWebhook:discord", { "npctracker_erro", who.name, who.acctname, error_text, "", "", "" });
-
-			// Also log it
-			syslog("npctracker failed to start for player " + who.name + " (acct: " + who.acctname + "): " + error_text);
-		else
-			// Success on retry
-			SetObjProperty(who, "#npctracker_pid", tracker_pid);
-		endif
-	else
-		// Store the PID for verification later
-		SetObjProperty(who, "#npctracker_pid", tracker_pid);
-	endif
-
 	return 1;
 endprogram
