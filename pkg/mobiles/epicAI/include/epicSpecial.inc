@@ -224,7 +224,7 @@ function PerformHealingRain(shaman, allies)
     endforeach
     
     // Damage enemies
-    foreach mobile in ListMobilesNearLocation(shaman.x, shaman.y, shaman.z, 12)
+    foreach mobile in GetNearbyMobilesOnce(shaman, 12, LISTEX_FLAG_NORMAL)
         if (!mobile.isUnderRoof() && CanFight(shaman, mobile))
             PlayLightningBoltEffect(mobile);
             DamageFLS(mobile, RandomDiceRoll("1d10") + 20, DMG_ENERGY, shaman);

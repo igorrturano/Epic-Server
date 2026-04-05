@@ -1235,8 +1235,9 @@ function CheckForIdealTarget()
       "priority" := -1
    };
 
+   var preferred_target := GetObjProperty(me, "preferred_target");
+
    foreach opponent in potential_opponents
-      // Skip invalid opponents
       if (!CanFight(me, opponent))
          continue;
       endif
@@ -1245,39 +1246,33 @@ function CheckForIdealTarget()
       var opponent_is_ranged := opponent.weapon.isRanged() || opponent_class == SABIO;
       var priority := 0;
 
-       // Current opponent gets huge priority bonus to maintain aggro
       if (opponent == me.opponent)
          priority += 15;
       endif
 
-      // Fast NPC prioritizes ranged players
       if (opponent_is_ranged)
          priority += 2;
       endif
 
-      // Class-based opponenting
-      if (me.isSage()) // NPC mage prefers warriors
+      if (me.isSage())
          if (opponent_class == GUERREIRO)
             priority += 2;
          endif
-      elseif (me.isWarrior()) // NPC warrior prefers rogues
+      elseif (me.isWarrior())
          if (opponent_class == LADINO)
             priority += 2;
          endif
-      elseif (me.isRogue()) // NPC rogue prefers mages
+      elseif (me.isRogue())
          if (opponent_class == SABIO)
             priority += 2;
          endif
       endif
 
-      // Prioritize close opponents slightly
       var dist := Distance(me, opponent);
       if (dist <= 4)
          priority += 1;
       endif
 
-      // Check for preferred target types
-      var preferred_target := GetObjProperty(me, "preferred_target");
       if (preferred_target)
           case (preferred_target)
           "Ranged": if (opponent_is_ranged) priority += 4; endif

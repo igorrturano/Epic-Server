@@ -289,17 +289,14 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     endif
 
     if (me.isMage())
-        PrintTextAbove(me, "Mage Behavior");
         MageBehavior(me, opponent);
     endif
 
     if (me.isShaman())
-        PrintTextAbove(me, "Shaman Behavior");
         HumanoidShamanBehavior(me, opponent);
     endif
 
     if (me.isPriest())
-        PrintTextAbove(me, "Priest Behavior");
         HumanoidPriestBehavior(me, opponent);
     endif
 
@@ -307,7 +304,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         Bite(me, opponent);
     endif
 
-    // if (TemHabilidade(me, "Alquimista Experiente"))
+    if (MobileWrapper(me).HasAbility(ABILITY_ID::ALQUIMISTA_EXPERIENTE))
         var explosive_potions := array{0xbf13, 0xbf14, 0xbf15, 0xef60, 0xef61, 0xef62};
 
         foreach item in EnumerateItemsInContainer(me.backpack)
@@ -316,7 +313,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
                 break;
             endif
         endforeach
-    // endif
+    endif
 
     return 1;
 endfunction
@@ -494,34 +491,26 @@ function GetClassProgression(habcfg, subclass)
     var name_to_id := struct{};  // Map ability names to IDs
     var base_hab := 0;
 
-    // Build ability tree ALWAYS, regardless of subclass
-    // First pass: build name-to-ID mapping
+    // Single pass: build name-to-ID mapping AND prerequisite tree
+    var my_class := cache.classe;
+
     foreach hab_id in (GetConfigStringKeys(habcfg))
         var elem := FindConfigElem(habcfg, hab_id);
         var ability_name := GetConfigString(elem, "nome");
         if (ability_name)
             name_to_id[ability_name] := CInt(hab_id);
         endif
-    endforeach
 
-    // Second pass: build the prerequisite tree using IDs
-    foreach hab_id in (GetConfigStringKeys(habcfg))
-        var elem := FindConfigElem(habcfg, hab_id);
         var meta := ParseAbilityMeta(elem);
         if (meta == error)
             continue;
         endif
 
-        var my_class := cache.classe;
-
-        // Only process abilities for this NPC's class
         if (meta.hab_class == my_class)
-            // Store level 2 abilities without prerequisites as potential base choices
             if (!meta.requisito && meta.level == 2)
                 class_choice.append(CInt(hab_id));
             endif
 
-            // Build the prerequisite tree using IDs (convert to string for struct keys)
             if (meta.requisito)
                 var requisito_id := name_to_id[meta.requisito];
                 if (requisito_id)
@@ -587,61 +576,34 @@ function DetermineCombatSuccess(old_state, new_state)
 endfunction
 
 function ChooseWarriorAbility(npc, state, habs)
-    // Get count of nearby enemies
-    var enemies := ListHostiles(npc, 3);
     var opponent := npc.opponent;
 
     if (Distance(me, opponent) > 1)
         return 0;
     endif
-    
-    // Emergency abilities when low health
+
+    var hab_set := dictionary;
+    foreach hab in habs
+        hab_set[CInt(hab)] := 1;
+    endforeach
+
     if (state.health == "dying")
-        foreach hab in habs
-            case (hab)
-                "Manobra da Resiliencia":
-                "Shintai to Kokoro": 
-                "Shar Krith":
-                "Nazg Gûl":
-                "Resiliência Bárbara": return hab;
-            endcase
-        endforeach
-    endif
-    
-    // Multiple enemies
-    if (enemies.size() >= 2)
-        foreach hab in habs
-            case (hab)
-                "Golpes Amplos":
-                "Trespassar":
-                "Provocar":
-                "Manobra Desafiadora":
-                "Burz":
-                "Ghâshburz": return hab;
-            endcase
-        endforeach
+        if (hab_set.exists(ABILITY_ID::MANOBRA_DA_RESILIENCIA))  return ABILITY_ID::MANOBRA_DA_RESILIENCIA;  endif
+        if (hab_set.exists(ABILITY_ID::RESILIENCIA_BARBARA))     return ABILITY_ID::RESILIENCIA_BARBARA;     endif
     endif
 
-    // Against ranged opponents
-    if (opponent.weapon.isRanged())
-        foreach hab in habs
-            case (hab)
-                "Ryū no Kamae": return hab;
-            endcase
-        endforeach
+    var enemies := ListHostiles(npc, 3);
+    if (enemies.size() >= 2)
+        if (hab_set.exists(ABILITY_ID::PROVOCAR))              return ABILITY_ID::PROVOCAR;              endif
+        if (hab_set.exists(ABILITY_ID::MANOBRA_DESAFIADORA))   return ABILITY_ID::MANOBRA_DESAFIADORA;   endif
     endif
 
     if (opponent.master)
-        foreach hab in habs
-            case (hab)
-                ABILITY_ID::CACADOR_IMPLACAVEL:
-                "Nazg khalug": return hab;
-            endcase
-        endforeach
+        if (hab_set.exists(ABILITY_ID::CACADOR_IMPLACAVEL))    return ABILITY_ID::CACADOR_IMPLACAVEL;    endif
     endif
 
-    var chosen_hab := habs[RandomInt(habs.size())+1]; // Fallback to random
-    if (chosen_hab == "Caçador Experiente")
+    var chosen_hab := habs[RandomInt(habs.size())+1];
+    if (CInt(chosen_hab) == ABILITY_ID::CACADOR_EXPERIENTE)
         var net := CreateItemInBackpack(npc, 0x1EA3, 1);
         UseItem(net, npc);
     endif
@@ -656,139 +618,81 @@ function ChooseRogueAbility(npc, state, habs)
         return 0;
     endif
 
-    // Emergency abilities when low health
+    var hab_set := dictionary;
+    foreach hab in habs
+        hab_set[CInt(hab)] := 1;
+    endforeach
+
     if (state.health == "dying")
-        foreach hab in habs
-            case (hab)
-                "Distrair Oponentes": return hab;
-            endcase
-        endforeach
+        if (hab_set.exists(ABILITY_ID::DISTRAIR_OPONENTES))   return ABILITY_ID::DISTRAIR_OPONENTES;   endif
     endif
 
     if (AP_GetVital(npc, STAMINA) < 40)
-        foreach hab in habs
-            case (hab)
-                "Reflexo Estrategico": return hab;
-            endcase
-        endforeach
+        if (hab_set.exists(ABILITY_ID::REFLEXO_ESTRATEGICO))  return ABILITY_ID::REFLEXO_ESTRATEGICO;  endif
     endif
-    
-    // If hidden, prioritize surprise attacks
+
     if (npc.hidden)
-        foreach hab in habs
-            case (hab)
-                "Assassinar": return hab;
-            endcase
-        endforeach
+        if (hab_set.exists(ABILITY_ID::ASSASSINAR))            return ABILITY_ID::ASSASSINAR;            endif
     endif
 
     if (opponent.master)
-        foreach hab in habs
-            case (hab)
-                "Fantasma":
-                "Nazg khalug": return hab;
-            endcase
-        endforeach
+        if (hab_set.exists(ABILITY_ID::FANTASMA))              return ABILITY_ID::FANTASMA;              endif
     endif
 
-    // When behind opponent
     if (state.has_advantage)
-        foreach hab in habs
-            case (hab)
-                "Faro por Sangue":
-                "Golpe Sangrento": return hab;
-            endcase
-        endforeach
+        if (hab_set.exists(ABILITY_ID::FARO_POR_SANGUE))      return ABILITY_ID::FARO_POR_SANGUE;      endif
+        if (hab_set.exists(ABILITY_ID::GOLPE_SANGRENTO))       return ABILITY_ID::GOLPE_SANGRENTO;       endif
     endif
-    
-    // Against mages
+
     if (opponent.isSage())
-        foreach hab in habs
-            case (hab)
-                "Ladrao de Magias":
-                "Lamina da Escuridao": return hab;
-            endcase
-        endforeach
+        if (hab_set.exists(ABILITY_ID::LADRAO_DE_MAGIAS))     return ABILITY_ID::LADRAO_DE_MAGIAS;     endif
+        if (hab_set.exists(ABILITY_ID::LAMINA_DA_ESCURIDAO))  return ABILITY_ID::LAMINA_DA_ESCURIDAO;  endif
     endif
-      
+
     return habs[RandomInt(habs.size())+1];
 endfunction
 
 function ChooseSageAbility(npc, state, habs)
     var opponent := npc.opponent;
-    
-    // Emergency abilities when low health
-    if (state.health == "dying")
-        foreach hab in habs
-            case (hab)
-                "Tactus Tenebris":
-                "Guardião do Bosque":
-                "Instinto de Sobrevivência":
-                "Prisão Dimensional":
-                "Aegis Vitalis":
-                "Decretum Venerationis":
-                "Sede de Sangue": 
-                "Salto Etéreo":
-                "Pele de pedra":
-                "Abrir Portais": return hab;
-            endcase
-        endforeach
-    endif
 
-    // Find corpses nearby
-    var nearby_corpses := ListItemsNearLocation(npc.x, npc.y, npc.z, 5, npc.realm);
-    foreach item in nearby_corpses
-        if (item.IsA(POLCLASS_CORPSE))
-            foreach hab in habs
-                case (hab)
-                    "Controlar Mortos":
-                    "Colheita de Almas": return hab;
-                endcase
-            endforeach
-            break;
-        endif
-        sleepms(2);
+    var hab_set := dictionary;
+    foreach hab in habs
+        hab_set[CInt(hab)] := 1;
     endforeach
 
-    // Multiple enemies
-    var enemies := ListHostiles(npc, 8);
-    if (enemies.size() >= 2)
-        foreach hab in habs
-            case (hab)
-                "Natureza Selvagem":
-                "Tormento de Idrith":
-                "Provocar":
-                "Ancestralidade Elemental": return hab;
-            endcase
+    if (state.health == "dying")
+        if (hab_set.exists(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA)) return ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA; endif
+        if (hab_set.exists(ABILITY_ID::PRISAO_DIMENSIONAL))        return ABILITY_ID::PRISAO_DIMENSIONAL;        endif
+        if (hab_set.exists(ABILITY_ID::BLOODTHIRST))               return ABILITY_ID::BLOODTHIRST;               endif
+        if (hab_set.exists(ABILITY_ID::SALTO_ETEREO))              return ABILITY_ID::SALTO_ETEREO;              endif
+        if (hab_set.exists(ABILITY_ID::ABRIR_PORTAIS))             return ABILITY_ID::ABRIR_PORTAIS;             endif
+    endif
+
+    if (hab_set.exists(ABILITY_ID::CONTROLAR_MORTOS) || hab_set.exists(ABILITY_ID::SOUL_HARVEST))
+        foreach item in ListItemsNearLocation(npc.x, npc.y, npc.z, 5, npc.realm)
+            if (item.IsA(POLCLASS_CORPSE))
+                if (hab_set.exists(ABILITY_ID::CONTROLAR_MORTOS)) return ABILITY_ID::CONTROLAR_MORTOS; endif
+                if (hab_set.exists(ABILITY_ID::SOUL_HARVEST))     return ABILITY_ID::SOUL_HARVEST;     endif
+            endif
+            sleepms(2);
         endforeach
     endif
 
-    // Against mages
-    if (opponent.isSage())
-        foreach hab in habs
-            case (hab)
-                "Vindicta Sancta": return hab;
-            endcase
-        endforeach
-    endif
-
-    if (opponent.hidden)
-        foreach hab in habs
-            case (hab)
-                "Visao verdadeira": return hab;
-            endcase
-        endforeach
+    if (hab_set.exists(ABILITY_ID::PROVOCAR) || hab_set.exists(ABILITY_ID::ELEMENTAL_ANCESTRY))
+        var enemies := ListHostiles(npc, 8);
+        if (enemies.size() >= 2)
+            if (hab_set.exists(ABILITY_ID::PROVOCAR))              return ABILITY_ID::PROVOCAR;              endif
+            if (hab_set.exists(ABILITY_ID::ELEMENTAL_ANCESTRY))    return ABILITY_ID::ELEMENTAL_ANCESTRY;    endif
+        endif
     endif
 
     if (opponent.master)
-        foreach hab in habs
-            case (hab)
-                "Elo Natural": Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_GetCachedData(npc).template});
-                "Coração da Matilha": return hab; // controlar a besta
-            endcase
-        endforeach
+        if (hab_set.exists(ABILITY_ID::ELO_NATURAL))
+            Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_GetCachedData(npc).template});
+        endif
+        if (hab_set.exists(ABILITY_ID::CORACAO_DA_MATILHA))    return ABILITY_ID::CORACAO_DA_MATILHA;    endif
     endif
-       
+
     return habs[RandomInt(habs.size())+1];
 endfunction
 
