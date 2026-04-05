@@ -7,7 +7,6 @@ include ":gumps:gumps";
 include "include/say";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
-include ":statushook:include/updateStats";
 include "include/creationUtils";
 
 const MOEDA_OBJTYPE := 47715;
@@ -185,7 +184,6 @@ function StatRedistribution(who, npc)
 						SetObjProperty(who, "chardata", chardata);
 					endif
 
-					UpdateStatsClient(who);
 					SendSysMessageEx(who, "Seus atributos foram redistribuidos!", SSM_INFO);
 					return;
 				endif
