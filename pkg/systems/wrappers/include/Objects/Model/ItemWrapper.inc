@@ -40,6 +40,26 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		endif
 	endfunction
 
+	// override
+	function GetName(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return this.GetObjRef().desc;
+	endfunction
+
+	// override
+	function _SetName(this, name)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		this.GetObjRef().desc := name;
+
+		return this;
+	endfunction
+
 	/**
 	 * Obtém a quantidade do item.
 	 *
