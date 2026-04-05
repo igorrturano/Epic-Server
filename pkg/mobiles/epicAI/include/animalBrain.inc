@@ -53,11 +53,13 @@ function AnimalBrain()
         endif
 
         if (ev)
+            // Cache flee check once per event (avoids 3x GetObjProperty + vital reads)
+            var should_flee := ShouldFlee(me);
+
             case (ev.type)
                 SYSEVENT_ENGAGED:
                     last_activity_time := polcore().systime;
-                    // Neutral/passive animals flee FIRST - before any combat logic
-                    if (ShouldFlee(me))
+                    if (should_flee)
                         SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
                     else
                         AlertAllies(ev.source, me);
@@ -65,13 +67,11 @@ function AnimalBrain()
                     endif
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
-                    // Break ambush on damage
                     if (SM_GetState() == "AMBUSH")
                         me.hidden := 0;
                         SM_TransitionTo("COMBAT");
                     endif
-                    // Neutral animals flee on damage too
-                    if (ShouldFlee(me))
+                    if (should_flee)
                         SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
                     else
                         HandleAnimalCombatEvent(ev.source);
@@ -79,8 +79,7 @@ function AnimalBrain()
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source))
                         UpdateThreatList(me, ev);
-                        // Neutral animals flee when player enters area
-                        if (ShouldFlee(me))
+                        if (should_flee)
                             SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
                         else
                             AlertAllies(ev.source, me);
