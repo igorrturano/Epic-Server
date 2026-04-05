@@ -8,7 +8,7 @@ include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
 include ":abilities:models/Ability";
 include ":abilities:AbilityRegistry";
-include ":combat:weardown";
+include ":combat:weardown_legacy";
 
 // External
 include ":wrappers:Objects/Model/MobileWrapper";

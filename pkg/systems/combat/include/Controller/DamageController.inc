@@ -12,7 +12,7 @@ include ":combat:Model/Damage";
 include "CombatAbilityController";
 include "SkillController";
 include "ParryController";
-include ":combat:weardown";
+include ":combat:weardown_legacy";
 
 // External
 include ":io:CFGFile";

@@ -9,7 +9,7 @@ include ":combat:Model/AttackInfo";
 include ":abilities:models/Ability";
 include ":combat:Controller/FXController";
 include ":combat:Controller/CombatAbilityController";
-include ":combat:weardown";
+include ":combat:weardown_legacy";
 include ":message:model/Message";
 
 include ":tn:cooldown";
