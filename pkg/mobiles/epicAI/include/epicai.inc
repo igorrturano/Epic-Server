@@ -974,7 +974,6 @@ endfunction
 function TacticalReposition(opponent, chasing)
     var runs := 0;
     var max_dist := 12;
-    var start_pos := struct{ "x" := me.x, "y" := me.y };
     var stuck_count := 0;
 
     while(Distance(me, opponent) < max_dist && runs < 10)
@@ -983,11 +982,9 @@ function TacticalReposition(opponent, chasing)
         runs += 1;
         sleepms(200);
 
-        // Check if we're stuck
         if (me.x == old_pos.x && me.y == old_pos.y)
             stuck_count += 1;
             if (stuck_count >= 2)
-                // Try to find an alternative path
                 var possible_locations := GetAlternativeLocations(opponent);
                 foreach loc in possible_locations
                     if (CheckLosAt(me, loc.x, loc.y, me.z))
@@ -996,7 +993,12 @@ function TacticalReposition(opponent, chasing)
                     endif
                     sleepms(2);
                 endforeach
+                // All alternatives failed — switch to melee combat
+                SwitchToMelee();
+                return PursueMelee(opponent);
             endif
+        else
+            stuck_count := 0;
         endif
     endwhile
 
@@ -1484,6 +1486,9 @@ const PURSUIT_PATH_CACHE_DURATION := 8;      // seconds to cache pathfinding res
 const PURSUIT_TARGET_MOVE_THRESHOLD := 3;    // tiles moved before recalculating path
 
 // Helper: Calculate the ideal engagement distance based on weapon/brain type
+// Capped at 6 to prevent NPCs from retreating too far and getting stuck
+const MAX_RANGED_PURSUIT_DISTANCE := 6;
+
 function CalculateIdealPursuitDistance()
     // Use cached weapon range (computed once per brain activation, not per tick)
     if (!cached_weapon_range)
@@ -1493,6 +1498,9 @@ function CalculateIdealPursuitDistance()
 
     if (me.isHumanoidBrain())
         if (me.weapon.isRanged() || range_info.max_range > 1)
+            if (range_info.max_range > MAX_RANGED_PURSUIT_DISTANCE)
+                return MAX_RANGED_PURSUIT_DISTANCE;
+            endif
             return range_info.max_range;
         elseif (me.isSage() && me.weapon.objtype == FIST)
             return 6;
@@ -1500,9 +1508,12 @@ function CalculateIdealPursuitDistance()
     else
         if (isMonsterRanged())
             if (me.weapon && range_info.max_range > 1)
+                if (range_info.max_range > MAX_RANGED_PURSUIT_DISTANCE)
+                    return MAX_RANGED_PURSUIT_DISTANCE;
+                endif
                 return range_info.max_range;
             else
-                return 8;
+                return MAX_RANGED_PURSUIT_DISTANCE;
             endif
         endif
     endif
@@ -1698,8 +1709,9 @@ function PursueTarget(opponent)
     // Ranged retreat logic (too close)
     if (dist < ideal_distance)
         var retreat_attempts := 0;
-        var stuck_retreating := 0;
+        var total_stuck := 0;
         var old_x, old_y;
+        var start_dist := dist;
 
         while (dist < ideal_distance && retreat_attempts < 10)
             old_x := me.x;
@@ -1715,20 +1727,22 @@ function PursueTarget(opponent)
             dist := Distance(me, opponent);
 
             if (me.x == old_x && me.y == old_y)
-                stuck_retreating += 1;
-                if (stuck_retreating == 3)
+                total_stuck += 1;
+                if (total_stuck == 3)
                     var alt_locs := GetAlternativeLocations(opponent);
                     if (alt_locs.size() > 0)
                         RunTowardLocation(alt_locs[1].x, alt_locs[1].y);
                         sleepms(100);
                     endif
-                elseif (stuck_retreating >= 5)
-                    break;
                 endif
-            else
-                stuck_retreating := 0;
             endif
         endwhile
+
+        // If we couldn't gain meaningful distance after all attempts, go melee
+        if (dist <= start_dist + 1)
+            SwitchToMelee();
+            return PursueMelee(opponent);
+        endif
         return 1;
     endif
 
@@ -2044,9 +2058,10 @@ function MaintainHumanoidDistance(opponent, dist, sleepdelay, range_info)
                 TryToRunAway(opponent);
                 sleepms(sleepdelay);
             else
-                // If we can't move back, just maintain current position
+                // Cornered — switch to melee instead of standing still getting hit
+                SwitchToMelee();
                 TurnToward(opponent);
-                return StayNearAllies(4, sleepdelay, opponent);
+                return 1;
             endif
         elseif (dist > ideal_range)
             if (can_move_forward)
@@ -2509,6 +2524,34 @@ endfunction
 function ClearCombatState()
     SetWarMode(0);
     SetOpponent(0);
+endfunction
+
+/*
+ * SwitchToMelee()
+ *
+ * When a ranged NPC is stuck retreating (cornered, no escape path),
+ * switch to a melee weapon and fight close range instead of running forever.
+ * Resets cached_weapon_range so CalculateIdealPursuitDistance returns 1 (melee).
+ * Returns 1 if switched, 0 if no melee weapon available (NPC uses fists).
+ */
+function SwitchToMelee()
+    // Stow ranged weapon and create a simple melee weapon
+    var current_weapon := me.weapon;
+    if (current_weapon && current_weapon.isRanged())
+        if (me.backpack)
+            MoveItemToContainer(current_weapon, me.backpack);
+        endif
+    endif
+
+    var sword := CreateItemAtLocation(me.x, me.y, me.z, 0x0F60, 1, me.realm); // longsword
+    if (sword)
+        EquipItem(me, sword);
+    endif
+
+    // Reset weapon range cache so next CalculateIdealPursuitDistance returns melee
+    cached_weapon_range := 0;
+    PrintTextAbove(me, "*avanca para o combate*");
+    return 1;
 endfunction
 
 
