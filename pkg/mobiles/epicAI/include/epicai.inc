@@ -2230,12 +2230,11 @@ function FindMostWoundedAlly(wounded_allies)
 endfunction
 
 function AskForHealing(me)
-    // First look specifically for shamans
     if (!isHurt(me))
         return 0;
     endif
 
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12, me.realm)
+    foreach mobile in GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL)
         if (mobile.npctemplate && mobile != me)
             if (mobile.isSage())
                 SetObjProperty(mobile, "#healing_needed", me.serial);
@@ -2244,7 +2243,7 @@ function AskForHealing(me)
         endif
         sleepms(2);
     endforeach
-endfunction 
+endfunction
 
 function shouldKeepPursuing(opponent, dist)
     if (!opponent)
@@ -2537,13 +2536,15 @@ function GetWeaponRangeInfo()
         return struct{ "min_range" := 1, "max_range" := 1 };
     endif
 
-    // var wpn_elem := GetWpnCfgInfo(me, weapon);
-	var wpn_elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElement(); 
+    var itemdesc := ReadConfigFile(":*:itemdesc");
+    var wpn_elem := FindConfigElem(itemdesc, weapon.objtype);
     var min_range := 1;
     var max_range := 1;
-    
-    min_range := CInt(wpn_elem.MinRange) ? CInt(wpn_elem.MinRange) : 1;
-    max_range := CInt(wpn_elem.MaxRange) ? CInt(wpn_elem.MaxRange) : 1;
+
+    if (wpn_elem && wpn_elem != error)
+        min_range := CInt(GetConfigInt(wpn_elem, "MinRange")) ? CInt(GetConfigInt(wpn_elem, "MinRange")) : 1;
+        max_range := CInt(GetConfigInt(wpn_elem, "MaxRange")) ? CInt(GetConfigInt(wpn_elem, "MaxRange")) : 1;
+    endif
 
     return struct{
         "min_range" := min_range,

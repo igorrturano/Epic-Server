@@ -122,12 +122,19 @@ exported function HandleSendStats(character, byref packet)
 	var serial :=  packet.GetInt32(OLD_STATUS_OFFSETS::SOURCE_SERIAL);
 	
 	var source := SystemFindObjectBySerial(serial);
+	if (!source || source == error)
+		return 0;
+	endif
 	var mobileEnvelopado := MobileWrapper(source);
-	
+
 	pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::SOURCE_SERIAL, serial);
 
 	if (source.IsA(POLCLASS_MOBILE))
-		pacoteFinal.SetString(NEW_STATUS_OFFSETS::NAME, TrataNomeMobile(character, source), 1);
+		var nome := TrataNomeMobile(character, source);
+		if (!nome || nome == error)
+			nome := source.name;
+		endif
+		pacoteFinal.SetString(NEW_STATUS_OFFSETS::NAME, nome, 1);
 		pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::HITS, packet.GetInt16(OLD_STATUS_OFFSETS::HITS));
 		pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::HITS_MAX, packet.GetInt16(OLD_STATUS_OFFSETS::HITS_MAX));
 		pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::IS_RENAMABLE, packet.GetInt8(OLD_STATUS_OFFSETS::IS_RENAMABLE));
