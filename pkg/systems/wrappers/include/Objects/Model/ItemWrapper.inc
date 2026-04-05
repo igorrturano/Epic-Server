@@ -3,6 +3,7 @@ use uo;
 include "UObjectWrapper";
 include "IItemWrapper";
 include "ContainerWrapper";
+include "MobileWrapper";
 
 include ":io:CFGFile";
 
@@ -84,6 +85,19 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		endif
 
 		return ContainerWrapper(this.GetObjRef().container);
+	endfunction
+
+	/**
+	 * Obtém o dono (mobile) deste item.
+	 *
+	 * @return MobileWrapper do dono do item ou Exception se o item for inválido
+	 */
+	function GetOwner(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return MobileWrapper(this.GetObjRef().character_owner);
 	endfunction
 
 	/**
@@ -223,9 +237,13 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @param add_to_existing_stack Se deve adicionar a uma pilha existente (padrão: 0)
 	 * @return Boolean indicando sucesso da movimentação ou Exception se o item for inválido
 	 */
-	function MoveToContainer(this, byRef containerWrapped, x := -1, y := -1, add_to_existing_stack := 0)
+	function MoveToContainer(this, containerWrapped, x := -1, y := -1, add_to_existing_stack := 0)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
+		endif
+
+		if (!(containerWrapped is @ContainerWrapper))
+			return InvalidFormatException("The param containerWrapped must be a ContainerWrapper object!");
 		endif
 
 		return MoveItemToContainer(this.GetObjRef(), containerWrapped.GetObjRef(), x, y, add_to_existing_stack);

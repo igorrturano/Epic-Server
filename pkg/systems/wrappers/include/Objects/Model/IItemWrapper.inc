@@ -4,4 +4,5 @@ class IItemWrapper()
 	uninit function GetCurrentHP(this);
 	uninit function SetCurrentHP(this, hp);
 	uninit function GetMaxHP(this);
+	uninit function GetOwner(this);
 endclass
