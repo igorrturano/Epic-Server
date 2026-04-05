@@ -125,6 +125,8 @@ program epicchest(who)
 		// If text entry is empty, use default of 5
 		endif
 
+		var is_buried := CInt(res[70]); // Checkbox for buried chest (ID 70)
+
 		var spawner := CreateItemAtLocation(who.x, who.y, who.z, 0x9F16, 1, who.realm);
 		if (spawner)
 			SetObjProperty(spawner, "epic_level", level);
@@ -135,6 +137,7 @@ program epicchest(who)
 			SetObjProperty(spawner, "epic_mimic_chance", mimic_chance);
 			SetObjProperty(spawner, "epic_is_puzzle", is_puzzle);
 			SetObjProperty(spawner, "epic_puzzle_limit_count", puzzle_limit_count);
+			SetObjProperty(spawner, "epic_is_buried", is_buried);
 			
 			// Save selected chest graphics
 			if (selected_chest_graphics.size() > 0)
@@ -278,7 +281,7 @@ function OpenChestGallery(who, previous_selected_graphics)
 endfunction
 
 function CreateEpicChestGump(who, selected_chest_graphics)
-	var gump := GFECreateGump("Epic! Configuração de Baús", 480, 650); // Increased height by 50px
+	var gump := GFECreateGump("Epic! Configuração de Baús", 480, 700);
 
 	var y_pos := 80;
 	var x_label := 30;
@@ -398,9 +401,17 @@ function CreateEpicChestGump(who, selected_chest_graphics)
 	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
 	y_pos += 20;
 
+	// --- Buried Chest Options ---
+	GFCheckbox(gump, x_label, y_pos, 210, 211, 0, 70); // ID 70 for buried chest
+	GFTextLine(gump, x_label + 25, y_pos, 1153, "Gerar como Baú Enterrado? (Requer Pá para desenterrar)");
+	y_pos += 30;
+
+	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+	y_pos += 20;
+
 	// --- Buttons ---
-	GFAddButton(gump, x_label + 80, y_pos, 2450, 2451, GF_CLOSE_BTN, 99); // Create ID 99 (moved up 20px)
-	GFAddButton(gump, x_label + 250, y_pos, 2453, 2454, GF_CLOSE_BTN, 0); // Cancel ID 0 (moved up 20px)
+	GFAddButton(gump, x_label + 80, y_pos, 2450, 2451, GF_CLOSE_BTN, 99); // Create ID 99
+	GFAddButton(gump, x_label + 250, y_pos, 2453, 2454, GF_CLOSE_BTN, 0); // Cancel ID 0
 
 	return GFSendGump(who, gump);
 endfunction

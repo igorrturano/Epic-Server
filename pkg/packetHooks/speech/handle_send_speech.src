@@ -220,7 +220,7 @@ function ReassemblePacket(byRef packet, byRef messageData);
 	packet.SetInt16(PACKET_POSITION::COLOR, messageData.color);
 	packet.SetInt16(PACKET_POSITION::FONT, messageData.font);
 	packet.SetString(PACKET_POSITION::LANGUAGE, messageData.language, 0);
-	packet.SetString(PACKET_POSITION::NAME_ID, messageData.sourceName, 0);
+	packet.SetString(PACKET_POSITION::NAME_ID, messageData.sourceName, 1);
 	packet.SetUnicodeString(PACKET_POSITION::MESSAGE, messageData.message, 1);
 endfunction
 

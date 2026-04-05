@@ -3,7 +3,7 @@ use os;
 
 include ":attributes:attributes";
 include ":gumps:yesNo";
-include ":fls_magery:basicMagery";
+;
 
 program cureScript(params)
 	var mobile := params[1];

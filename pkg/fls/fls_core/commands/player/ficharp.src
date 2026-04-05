@@ -35,7 +35,7 @@ program fichaRP(who, text)
 	text := Lower(Trim(text));
 
 	// GM pode visualizar ficha de outro jogador com .ficharp ver
-	if (text == "ver" && who.cmdlevel >= 3)
+	if (text == "ver" && who.cmdlevel > 0)
 		SendSysMessage(who, "Selecione o jogador para visualizar a ficha RP.");
 		var targ := Target(who);
 		if (!targ || !targ.acctname)
@@ -47,6 +47,17 @@ program fichaRP(who, text)
 	endif
 
 	var input;
+	if (text == "avaliar" && who.cmdlevel > 0)
+		SendSysMessage(who, "Selecione o jogador para avaliar.");
+		var targ := Target(who);
+		if (!targ || !targ.acctname)
+			SendSysMessage(who, "Alvo inválido.");
+			return 0;
+		endif
+		AdicionarAvaliacao(who, targ);
+		return 1;
+	endif
+
 	case (text)
 		"criar":      input := ShowCriarGump(who);
 		"editar":     input := ShowEditarGump(who);
@@ -285,7 +296,7 @@ function ShowAvaliacoesGump(who)
 	endif
 	GFHTMLArea(gump, 50, 100 + 5, BACKGROUND_WIDTH - 10, 340, txt_avaliacoes, 0, 1);
 
-	if (who.cmdlevel >= 3)
+	if (who.cmdlevel > 0)
 		GFAddButton(gump, 200, GUMP_HEIGHT - 45, 2128, 2129, 1, 200); // Adicionar Avaliação
 	endif
 
@@ -293,14 +304,20 @@ function ShowAvaliacoesGump(who)
 
 	if (input[0] == 0) // Botão direito ou Cancelar
 		return 0;
-	elseif (input[0] == 200 && who.cmdlevel >= 3)
-		AdicionarAvaliacao(who);
+	elseif (input[0] == 200 && who.cmdlevel > 0)
+		SendSysMessage(who, "Selecione o jogador para avaliar.");
+		var targ := Target(who);
+		if (targ && targ.acctname)
+			AdicionarAvaliacao(who, targ);
+		else
+			SendSysMessage(who, "Alvo inválido.");
+		endif
 	endif
 
 	return input[0];
 endfunction
 
-function AdicionarAvaliacao(who)
+function AdicionarAvaliacao(who, targ)
 	var gump := GFCreateGump();
 	GFClosable(gump, 1);
 	GFDisposable(gump, 0);
@@ -308,15 +325,12 @@ function AdicionarAvaliacao(who)
 	GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
 	AdicionarMoldura(gump);
 
-	GFTextMid(gump, 45, 22, GUMP_WIDTH - 50, 53, "Adicionar Avaliação");
+	GFTextMid(gump, 45, 22, GUMP_WIDTH - 50, 53, "Avaliar Ficha de " + targ.name);
 
 	var y_pos := 60;
 
 	GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 400);
-	var txt_avaliacao := GFTextEntry(gump, 50, y_pos + 5, BACKGROUND_WIDTH - 40, 390, 0, ""); // Mudado para preto (0)
-
-	// GFAddButton(gump, BACKGROUND_WIDTH + 20, y_pos, SCROLL_UP, SCROLL_UP, GF_CLOSE_BTN, 1000);
-	// GFAddButton(gump, BACKGROUND_WIDTH + 20, y_pos + 380, SCROLL_DOWN, SCROLL_DOWN, GF_CLOSE_BTN, 1001);
+	var txt_avaliacao := GFTextEntry(gump, 50, y_pos + 5, BACKGROUND_WIDTH - 40, 390, 0, "");
 
 	GFAddButton(gump, 200, GUMP_HEIGHT - 45, 2128, 2129, 1, 100); // Confirmar
 	GFAddButton(gump, 280, GUMP_HEIGHT - 45, 2119, 2120, 1, 1); // Cancelar
@@ -326,14 +340,12 @@ function AdicionarAvaliacao(who)
 	if (input[0] == 100)
 		var avaliacao := GFExtractData(input, txt_avaliacao);
 		if (avaliacao != "")
-			AdicionarAvaliacaoFichaRP(who, who.name, avaliacao);
-			SendSysMessage(who, "Avaliação adicionada com sucesso!");
+			AdicionarAvaliacaoFichaRP(targ, who.name, avaliacao);
+			SendSysMessage(who, "Avaliação adicionada na ficha de " + targ.name + "!");
+			SendSysMessage(targ, "Voce recebeu uma avaliacao! Leia atraves do comando .ficharp");
 		else
 			SendSysMessage(who, "A avaliação não pode estar vazia.");
 		endif
-	elseif (input[0] >= 1000 && input[0] <= 1001)
-		// Implementar lógica de scroll para o campo de avaliação, se necessário
-		return AdicionarAvaliacao(who);
 	endif
 endfunction
 

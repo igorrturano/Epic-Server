@@ -36,6 +36,7 @@ program SendSkills(who)
     var all_skill_names := GetConfigStringKeys(attr_cfg);
 
     foreach skill_name in all_skill_names
+        sleepms(2);
         var skill_elem := FindConfigElem(attr_cfg, skill_name);
         if (!skill_elem)
             continue;

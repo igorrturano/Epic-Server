@@ -56,7 +56,7 @@ program core_npcDeath(params)
 	if (cint(GetObjProperty(corpse, "soulstone")) == 1)
 		CreateItemInContainer(corpse, "soulstone", 1);
 	endif
-	HandleExpGain(corpse);
+	var nearbyMobs := HandleExpGain(corpse);
 	// handleEntropyGain(corpse);
 	foreach item in (EnumerateItemsInContainer(corpse))
 		// Lista de itens que podem dropar do npc, mas ficam com prop de restrito_mob, não deixando o player equipar
@@ -196,7 +196,7 @@ program core_npcDeath(params)
 		endif
 	endif
 
-	foreach mob in (ListMobilesNearLocation(corpse.x, corpse.y, corpse.z, 5, corpse.realm))
+	foreach mob in nearbyMobs
 		// PrintTextAbove(corpse, "procurando mobs " + mob.name);
 		if (cint(GetObjProperty(mob, "#satisfacaosadica")))
 			// 	PrintTextAbove(corpse, "tem satisfacao " + cint(GetObjProperty(mob, "#satisfacaosadica")) + " " + readgameclock() );

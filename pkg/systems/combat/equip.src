@@ -131,15 +131,10 @@ program equipweapon(who, item)
 		endif
 	endif
 
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::FURIA))
-		if (item.objtype == 0x13ec || item.objtype == 0x13ed || item.objtype == 0x13ee ||
-	  item.objtype == 0x13ef || item.objtype == 0x13f0 || item.objtype == 0x13f1 ||
-	  item.objtype == 0x13f2 || item.objtype == 0x13BB || item.objtype == 0x13C0 ||
-	  item.objtype == 0x13BE || item.objtype == 0x13C3 || item.objtype == 0x13BF ||
-	  item.objtype == 0xFFE6 || item.objtype == 0x13C4 || item.objtype == 0x1415 ||
-	  item.objtype == 0x1416 || item.objtype == 0x1410 || item.objtype == 0x1417 ||
-	  item.objtype == 0x1411 || item.objtype == 0x141A || item.objtype == 0x1414 ||
-	  item.objtype == 0x1418 || item.objtype == 0x1413)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::FURIA) && item.isa(POLCLASS_ARMOR))
+		var cfg := ReadConfigFile(":combat:itemdesc");
+		var tipoProtecao := CStr(cfg[item.objtype].TipoProtecao);
+		if (tipoProtecao["Armadura Pesada"])
 			SendSysMessageEx(who, "Como bárbaro você se recusa a usar armaduras de metal", SSM_FAIL);
 			return 0;
 		endif
@@ -200,10 +195,27 @@ program equipweapon(who, item)
 		start_script(":spells:spell_logic:swordmage", { who, item });
 	endif
 
+	// Epic Item: check entropy threshold for sacred/cursed items
+	var epic_entropy := GetObjProperty(item, "epicEntropy");
+	if (epic_entropy != error && CInt(epic_entropy) != 0)
+		var equip_mods := GetObjProperty(item, "equip");
+		var current_entropy := CInt(GetObjProperty(who, "entropy"));
+		if (equip_mods)
+			if (equip_mods.sacred && current_entropy < CInt(epic_entropy))
+				SendSysMessageEx(who, "Sua alma nao eh pura o suficiente para empunhar este item sagrado.", SSM_FAIL);
+				return 0;
+			elseif (equip_mods.cursed && current_entropy > CInt(epic_entropy))
+				SendSysMessageEx(who, "Sua alma nao eh corrupta o suficiente para empunhar este item.", SSM_FAIL);
+				return 0;
+			endif
+		endif
+	endif
+
 	if (item.cursed == 1)
 		UpdateMobileEntropy(who, -100);
 	endif
 	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
+	ApplyEquipObjMods(who, item);
 
 	// SteamGloves: auto-equip companion armor for hands protection
 	if (item.objtype == 0xFFC1)

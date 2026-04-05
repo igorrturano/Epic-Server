@@ -9,7 +9,7 @@ const T_HORA := 3600;
 
 program vigilanteDestruiveis()
 	while (true)
-		sleep(60);
+		sleep(300);
 		var retornoListaItens := PegaListaItens(T_HORA * 2);
 
 		foreach infoItem in (retornoListaItens.itens)
@@ -56,6 +56,13 @@ function CriaItemMarcado(infoItem)
 		else
 			copy := CreateItemAtLocation(infoItem.x, infoItem.y, infoItem.z, infoItem.objtype, infoItem.amount,
 										  infoItem.realm);
+			
+			foreach property in (infoItem.cProps.keys())
+				Sleepms(2);
+				SetObjProperty(copy, property, infoItem.cProps[property]);
+			endforeach
+
+			SetName(copy, infoItem.nome);
 		endif
 		copy.movable := infoItem.movable;
 		var atributos := MontaAtributosItem(copy);

@@ -41,7 +41,7 @@ function ProgressAttackSkills(byRef attackInfo)
 
 	// se a skill do atacante for maior 10 pontos a mais que a do defesor, não upa
 	if (skillAttacker > (skillDefender + 10))
-		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_UP, Message("Skill UP bloqueado: diferença de skill maior que 10 pontos."));
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_UP, Message("Skill UP bloqueado: Voce tem 10 de skill a mais que seu oponente"));
 		return 0;
 	endif
 

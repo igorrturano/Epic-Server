@@ -25,10 +25,10 @@ include ":abilities:classes/cacador_de_tesouros/InfiniteBag";
 //===========================================
 // ASSASSINO (1200-1204)
 //===========================================
-include ":abilities:classes/assassino/ShadowLeap";
-include ":abilities:classes/assassino/SneakAttack";
+include ":abilities:classes/assassino/Assassinate";
 include ":abilities:classes/assassino/ShadowArsenal";
 include ":abilities:classes/assassino/KillerInstinct";
+include ":abilities:classes/assassino/ShadowCloak";
 include ":abilities:classes/assassino/BloodScent";
 
 //===========================================
@@ -111,11 +111,11 @@ ABILITY_CLASSES[ABILITY_ID::ESPECIALISTA_EM_INVASOES] := @BreakInSpecialist;
 ABILITY_CLASSES[ABILITY_ID::BOLSA_INFINITA] := @InfiniteBag;
 
 // Assassino (1200-1204)
-ABILITY_CLASSES[ABILITY_ID::SALTO_DAS_SOMBRAS] := @ShadowLeap;
-ABILITY_CLASSES[ABILITY_ID::ATAQUE_FURTIVO] := @SneakAttack;
-ABILITY_CLASSES[ABILITY_ID::ARSENAL_SOMBRIO] := @ShadowArsenal;
+ABILITY_CLASSES[ABILITY_ID::ASSASSINAR] := @Assassinate;
 ABILITY_CLASSES[ABILITY_ID::INSTINTO_ASSASSINO] := @KillerInstinct;
+ABILITY_CLASSES[ABILITY_ID::ARSENAL_SOMBRIO] := @ShadowArsenal;
 ABILITY_CLASSES[ABILITY_ID::FARO_POR_SANGUE] := @BloodScent;
+ABILITY_CLASSES[ABILITY_ID::MANTO_DAS_SOMBRAS] := @ShadowCloak;
 
 // Shinobi (1300-1304)
 ABILITY_CLASSES[ABILITY_ID::NINJA_PATH] := @NinjaPath;

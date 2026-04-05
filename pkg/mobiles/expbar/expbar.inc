@@ -165,7 +165,7 @@ endfunction
 // =============================================================================
 function handleExpGain(corpse)
     var nearby := ListMobilesNearLocationEx(
-        corpse.x, corpse.y, LIST_IGNORE_Z, 16,
+        corpse.x, corpse.y, LIST_IGNORE_Z, 8,
         LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, corpse.realm
     );
 
@@ -180,7 +180,7 @@ function handleExpGain(corpse)
         AwardXPFromKill(killers, corpse);
     endif
 
-    return 1;
+    return nearby;
 endfunction
 
 function AwardXPFromKill(killers, corpse)

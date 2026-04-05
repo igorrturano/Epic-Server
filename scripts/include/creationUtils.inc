@@ -2507,7 +2507,7 @@ endfunction
 
 function CreateItemInicial(who, objtype, qtd)
     var item :=  GeraItemComplexo(
-                                    who,
+                                    who.backpack,
                                     objtype,
                                     qtd,
                                     RandomIntMinMax(1,10) > 7 ? "1>2" : 1,

@@ -16,6 +16,7 @@ include ":abilities:controllers/AbilityMonitor";
 include ":abilities:models/Ability";
 include ":message:model/Message";
 include ":attributes:attributes";
+include ":hotbar:include/cooldown_packet";
 
 function _ControllerResult(executed, singleUse)
 	var result := struct{};
@@ -29,6 +30,22 @@ function _ActivationError(errorMsg)
 	result.+hasError := 1;
 	result.+errorMsg := errorMsg;
 	return result;
+endfunction
+
+function _RollbackActivation(who, abilityId)
+	var ability := Ability(abilityId);
+	var mobileRef := who.GetObjRef();
+	EraseObjProperty(mobileRef, $"AbilityCooldown_{abilityId}");
+	SendCooldownPacket(mobileRef, ability.GetName(), 0, ability.GetIcon(), COOLDOWN_TYPE_ABILITY);
+	if (ability.GetCostSTAM() > 0)
+		who.RestoreStamina(ability.GetCostSTAM());
+	endif
+	if (ability.GetCostMANA() > 0)
+		who.RestoreMana(ability.GetCostMANA());
+	endif
+	if (ability.GetCostHP() > 0)
+		who.RestoreHP(ability.GetCostHP());
+	endif
 endfunction
 
 function _ActivationSuccess(duration, name)
@@ -193,6 +210,7 @@ function _RunMonitorActivateAsync(params)
 	var result := _RunMonitorActivate(params);
 	if (result.hasError)
 		Message(result.errorMsg, Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		_RollbackActivation(who, abilityId);
 		return 0;
 	endif
 

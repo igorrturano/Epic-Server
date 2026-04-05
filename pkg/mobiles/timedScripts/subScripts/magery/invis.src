@@ -6,28 +6,5 @@ include ":attributes:attributes";
 
 program TimedScript_Clumsy(params)
 	var mobile := params[1];
-	var attacker := params[2];
-	var level := params[3];
-	var sneak := AP_GetSkill(mobile, SNEAK);
-	var bonus := level - sneak;
-	if (bonus < 5)
-		bonus := 5;
-	endif
-	var teste := GetObjProperty(mobile, "#InvisMod");
-	if (teste) // verifica se ja esta sob efeito similar
-		if (bonus > teste) // se o novo efeito é maior, aplica a diferença
-			Set_Critical(1);
-			SetObjProperty(mobile, "#InvisMod", bonus);
-			AP_ModifySkillMod(mobile, SNEAK, (bonus - teste));
-			Set_Critical(0);
-			return 1;
-		else
-			return 0;
-		endif
-	else
-
-		SetObjProperty(mobile, "#InvisMod", bonus);
-		AP_ModifySkillMod(mobile, SNEAK, bonus);
-		return 1;
-	endif
+	mobile.hidden := 1;
 endprogram
