@@ -163,10 +163,12 @@ function TryToAttack(byRef attackInfo)
 
 	attackInfo.RollHitChance();
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("Rolagem de acerto: " + attackInfo.GetHitChanceResult()));
+	sleepms(2);
 
 	ExecuteCombatAbilitiesBeforeHit(attackInfo);
 	ExecutePassiveAbilitiesAttackerBeforeHit(attackInfo);
 	ExecutePassiveAbilitiesDefenderBeforeHit(attackInfo);
+	sleepms(2);
 	if (attackInfo.Succeeded())
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message("***ACERTOU!***", Color(SYSTEM_COLOR::SUCCESS)));
 		

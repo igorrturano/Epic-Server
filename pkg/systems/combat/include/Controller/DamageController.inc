@@ -47,6 +47,7 @@ function CalculateCombatDamage(byRef attackInfo)
 	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
 	ExecutePassiveAbilitiesAttackerBeforeDamage(attackInfo);
 	ExecutePassiveAbilitiesDefenderBeforeDamage(attackInfo);
+	sleepms(2);
 	CalculateFlankingDamage(attackInfo);
 	CalculateAttackerCriticalHit(attackInfo);
 	CalculateDefenderResist(attackInfo);
