@@ -1,6 +1,9 @@
 use npc;
 
 include "include/epicai";
+include "include/spellCache";
+include "include/stateManager";
+include "include/abilityTable";
 include "include/monsterBrain";
 include "include/animalBrain";
 include "include/humanoidBrain";
@@ -21,6 +24,8 @@ var runaway_progress_var := 0;
 var target_lock_var := 0;
 var threat_list_var := array{};
 var cached_weapon_range := 0;
+var combat_abilities := array{};
+var enter_abilities := array{};
 
 /*
  * KillPlayers()
@@ -39,6 +44,9 @@ program KillPlayers()
         InitializeEpicNPC(me);
         set_critical(0);
     endif
+
+    // Build spell cache once (lazy init shared across all NPC scripts via script-level vars)
+    InitSpellCache();
 
     EnableMainEvents();
 
@@ -92,6 +100,12 @@ program KillPlayers()
         target_lock_var := 0;
         threat_list_var := array{};
         cached_weapon_range := 0;
+        combat_abilities := array{};
+        enter_abilities := array{};
+        nearby_cache_var := dictionary;
+        enemy_last_loc_var := 0;
+        initial_allies_var := 0;
+        SM_TransitionTo("IDLE");
     endwhile
 endprogram
 
