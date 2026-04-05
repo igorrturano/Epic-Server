@@ -10,7 +10,6 @@ use cfgfile;
 include ":timedscripts:timedScripts";
 include ":fls_core:packets";
 include "include/say";
-include ":spells:tnmagery";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 
@@ -485,7 +484,6 @@ function LowerDuration(mobile, byref event, byref timer_list, byref cooldowns, b
 	if (event.amount == -1)
 		EndTimedScript(mobile, event.name, num_poisons);
 		KillTimedScript(mobile, timer_info.pid, timer_list, event.name);
-		// sendsysmessage(mobile, "mantain "+ timer_info.mantain);
 		if (timer_info.mantain)
 			MantainSpell(timer_info);
 		endif
@@ -501,7 +499,6 @@ function LowerDuration(mobile, byref event, byref timer_list, byref cooldowns, b
 		if (elem_info.Icon)
 			SendBuff(mobile, 0, elem_info.Icon);
 		endif
-		// sendsysmessage(mobile, "mantain "+ timer_info.mantain);
 		if (timer_info.mantain)
 			MantainSpell(timer_info);
 		endif
@@ -586,4 +583,10 @@ function KillTimedScript(mobile, byref pid, byref timer_list, byref timer_name)
 	SaveState(mobile, timer_list, NO_COOLDOWNS);
 
 	return 1;
+endfunction
+
+function MantainSpell(byref info)
+	if (info.mage.connected)
+		Start_Script(":spells:shared/mantainSpell", {info.mage, info.mobserial, info.name, info.duration, info.level});
+	endif
 endfunction
