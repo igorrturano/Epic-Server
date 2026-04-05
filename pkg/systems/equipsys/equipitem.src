@@ -21,7 +21,7 @@ program equipitem(params)
 	equip.Update();
 
 	if (who.isShaman())
-		who.AddModifier(AttributeModifier(MAGERY, 0));
+		equip.SetModifier(AttributeModifier(MAGERY, 0));
 	endif
 
 	who.ApplyItemModifiers(equip);
@@ -86,11 +86,11 @@ function debugArmor(who, equip)
 	DebugMsg(who, DEBUG_EQUIP, Message($"Energia: {equip.EnergyResist}"));
 
 	DebugMsg(who, DEBUG_EQUIP, Message($"[PENALIDADES]"));
-	DebugMsg(who, DEBUG_EQUIP, Message($"Dexterity: {equip.GetPenalties()[DEXTERITY]}"));
-	DebugMsg(who, DEBUG_EQUIP, Message($"Sneak: {equip.GetPenalties()[SNEAK]}"));
-	DebugMsg(who, DEBUG_EQUIP, Message($"Mechanics: {equip.GetPenalties()[MECHANICS]}"));
-	DebugMsg(who, DEBUG_EQUIP, Message($"Magery: {equip.GetPenalties()[MAGERY]}"));
-	DebugMsg(who, DEBUG_EQUIP, Message($"Awareness: {equip.GetPenalties()[AWARENESS]}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Dexterity: {equip.GetModifier(DEXTERITY).GetValue()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Sneak: {equip.GetModifier(SNEAK).GetValue()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Mechanics: {equip.GetModifier(MECHANICS).GetValue()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Magery: {equip.GetModifier(MAGERY).GetValue()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Awareness: {equip.GetModifier(AWARENESS).GetValue()}"));
 
 	DebugMsg(who, DEBUG_EQUIP, Message($"[MODIFICADORES]"));
 // DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");

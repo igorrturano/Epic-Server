@@ -18,7 +18,7 @@ exported function GetIntrinsicFortitude(mobile)
 	var chardata := GetObjProperty(mobile, "chardata");
 	var fortitude := 0;
 	
-	if(chardata.kit == "Fortitude do Urso")
+	if(chardata.trait == "Fortitude do Urso")
 		fortitude += 5;
 	endif
 
@@ -61,7 +61,7 @@ exported function GetIntrinsicReflexes(mobile)
 	var chardata := GetObjProperty(mobile, "chardata");
 	var reflexos := 0;
 
-	if(chardata.kit == "Reflexos de Pantera")
+	if(chardata.trait == "Reflexos de Pantera")
 		reflexos += 5;
 	endif
 
@@ -89,7 +89,7 @@ exported function GetIntrinsicWill(mobile)
 	var chardata := GetObjProperty(mobile, "chardata");
 	var vontade := 0;
 
-	if(chardata.kit == "Vontade da Aguia")
+	if(chardata.trait == "Vontade da Aguia")
 		vontade += 5;
 	endif
 

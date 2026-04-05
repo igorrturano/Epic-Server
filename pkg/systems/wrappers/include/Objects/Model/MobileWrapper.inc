@@ -28,6 +28,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var CombatTraitsVar; // CombatTraits class
 	var Abilities; // Dictionary<ABILITY_ID, Integer>
 	var ActiveAbilities; // Dictionary<ACTIVATION_MOMENT, Dictionary<ABILITY_ID, INTEGER>> // O valor dentro do 2º é quantas cargas ativas existem dessa habilidade
+	var _cachedWeapon;       // WeaponWrapper cacheado pra evitar recriação a cada GetEquipBySlot(WEAPON)
+	var _cachedWeaponSerial; // Serial da arma que gerou o cache
 
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
@@ -464,20 +466,25 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 		// Feito assim pra garantir que a variável pertença ao ENUM, e também caso necessite customizar o retorno de algum slot
 		if (equipSlot == WEAPON)
-			var weapon := WeaponWrapper(this.GetObjRef().weapon);
+			var currentWeapon := this.GetObjRef().weapon;
+			var currentSerial := currentWeapon ? currentWeapon.serial : 0;
+
+			if (this._cachedWeapon && this._cachedWeaponSerial == currentSerial)
+				return this._cachedWeapon;
+			endif
+
+			var weapon := WeaponWrapper(currentWeapon);
 
 			if (GetObjProperty(this._objRef, "metamorfose") != error)
 				var dicedmgProp := GetObjProperty(this._objRef, "dicedmg");
 				if (dicedmgProp != error)
-					// Use dicedmg from metamorfose transformation
 					weapon.SetMainDamage(
-						Dice(dicedmgProp[1]), 
-						Dice(dicedmgProp[2]), 
+						Dice(dicedmgProp[1]),
+						Dice(dicedmgProp[2]),
 						Dice(dicedmgProp[3])
 					);
 				endif
 			elseif (this.IsNPC())
-				// Use template damage for normal NPCs
 				weapon.SetMainDamage(
 					Dice(GetDamageByTier(SplitWords(this.GetTemplate().EpicAttackDamage)[1])),
 					Dice(GetDamageByTier(SplitWords(this.GetTemplate().EpicAttackDamage)[2])),
@@ -490,8 +497,9 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 					GetDamageByTier(SplitWords(this.GetTemplate().EpicElemDamage)[4])
 				));
 			endif
-			// If neither (normal player with equipped weapon), weapon damage is already set from item
 
+			this._cachedWeapon := weapon;
+			this._cachedWeaponSerial := currentSerial;
 			return weapon;
 		elseif (equipSlot == SHIELD)
 			if (!this.GetObjRef().shield) return uninit; endif

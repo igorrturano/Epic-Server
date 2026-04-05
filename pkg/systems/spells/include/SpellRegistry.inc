@@ -131,29 +131,6 @@ function GetSpellTypeFromId(spell_id)
 endfunction
 
 /*
- * GetAllSpellConfigPaths - Returns array of all spell config file paths
- *
- * @return Array of config path strings
- */
-function GetAllSpellConfigPaths()
-    return array{
-        ":spells:config/cantrips",
-        ":spells:config/evocation",
-        ":spells:config/necromancy",
-        ":spells:config/illusion",
-        ":spells:config/swordmage",
-        ":spells:config/priest",
-        ":spells:config/shaman",
-        ":spells:config/druid",
-        ":spells:config/paladin",
-        ":spells:config/demonhunter",
-        ":spells:config/trickster",
-        ":spells:config/shinobi",
-        ":spells:config/bardo"
-    };
-endfunction
-
-/*
  * GetMageSchoolConfigPaths - Returns config paths for the 4 mage schools
  * (evocation, necromancy, illusion, swordmage)
  *
@@ -181,13 +158,3 @@ function IsCantrip(spell_id)
     return (spell_id >= 1 && spell_id < 100);
 endfunction
 
-/*
- * IsMageSpell - Check if a spell ID belongs to one of the 4 mage schools
- *
- * @param spell_id - The spell ID to check
- * @return 1 if mage spell (evocation/necromancy/illusion/swordmage), 0 otherwise
- */
-function IsMageSpell(spell_id)
-    spell_id := CInt(spell_id);
-    return (spell_id >= 100 && spell_id < 500);
-endfunction
