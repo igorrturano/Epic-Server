@@ -180,7 +180,7 @@ function GetNonIdealSpells()
 endfunction
 
 function SortSpellsByPriority(spells)
-    // Bubble sort implementation for POL
+    // Bubble sort - now uses O(1) cached circle lookups instead of 4-config iteration
     var n := spells.size();
     var sorted := 0;
     while (!sorted)
@@ -188,26 +188,23 @@ function SortSpellsByPriority(spells)
         for i := 1 to (n-1)
             var a := spells[i];
             var b := spells[i+1];
-            
-            var circle_a := GetSpellCircle(a.name);
-            var circle_b := GetSpellCircle(b.name);
-            
+
+            var circle_a := GetSpellCircleCached(a.name);
+            var circle_b := GetSpellCircleCached(b.name);
+
             var should_swap := 0;
-            
+
             if (circle_a == circle_b)
-                // If same circle, sort by weight
                 if (a.weight < b.weight)
                     should_swap := 1;
                 endif
             else
-                // Sort by circle (higher circle first)
                 if (circle_a < circle_b)
                     should_swap := 1;
                 endif
             endif
-            
+
             if (should_swap)
-                // Swap elements
                 var temp := spells[i];
                 spells[i] := spells[i+1];
                 spells[i+1] := temp;
@@ -215,33 +212,8 @@ function SortSpellsByPriority(spells)
             endif
         endfor
     endwhile
-  
+
     return spells;
-endfunction
-
-function GetSpellCircle(spellname)
-    // Need access to spell config to get circle - search all mage school configs
-    var mage_configs := array{
-        ":spells:config/evocation",
-        ":spells:config/necromancy",
-        ":spells:config/illusion",
-        ":spells:config/swordmage"
-    };
-    foreach cfg_path in mage_configs
-        var cfg := ReadConfigFile(cfg_path);
-        if (!cfg)
-            continue;
-        endif
-        foreach spellId in (GetConfigIntKeys(cfg))
-            var elem := FindConfigElem(cfg, spellId);
-            if (Lower(elem.Name) == Lower(spellname))
-                return CInt(elem.Circle);
-            endif
-            sleepms(2);
-        endforeach
-    endforeach
-
-    return 1; // Default to circle 1 if not found
 endfunction
 
 function ChooseWeightedSpell(valid_spells)
@@ -263,79 +235,24 @@ function ChooseWeightedSpell(valid_spells)
     return valid_spells[1].name; // Fallback to highest priority spell
 endfunction
 
+// O(1) cached lookup - replaces iterating 4 config files
 function FindMageSpellInConfigs(spellname)
-    var mage_configs := array{
-        ":spells:config/evocation",
-        ":spells:config/necromancy",
-        ":spells:config/illusion",
-        ":spells:config/swordmage"
-    };
-    foreach cfg_path in mage_configs
-        var result := FindSpellInConfig(spellname, cfg_path);
-        if (result)
-            return result;
-        endif
-    endforeach
-    return 0;
+    return FindSpellInfoCached(spellname);
 endfunction
 
-function FindSpellInConfig( spellname, cfgFile )
-    var cfg := ReadConfigFile( cfgFile );
-
-        foreach spellId in ( GetConfigIntKeys( cfg ) )
-            var elem := FindConfigElem( cfg, spellId );
-
-            if ( Lower( GetConfigString( elem, "Name" ) ) == Lower( spellname ) )
-                var dict := dictionary{ 
-                "id" -> spellId,
-                "circle" -> GetConfigInt( elem,"Circle" ),
-                "name" -> GetConfigString( elem, "Name" ),
-                "Difficulty" -> GetConfigInt( elem, "Difficulty" ),
-                "School" -> GetConfigString( elem, "School" ),
-                "Target" -> GetConfigString( elem, "Target" ),
-                "script" -> GetConfigString( elem, "SpellScript" ),
-                "Cycles" -> GetConfigInt( elem, "Cycles" ),
-                "PowerWords" -> GetConfigString( elem, "PowerWords" ),
-                "mana" -> GetConfigInt( elem, "Mana" )
-                };
-                return dict;
-            endif
-        endforeach
-
-    return 0;
+// Kept for backward compatibility (shaman/priest code calls this directly with a config path)
+// Now uses cached data instead of iterating config entries
+function FindSpellInConfig(spellname, cfgFile)
+    return FindSpellInfoCached(spellname);
 endfunction
 
+// O(1) cached lookup - replaces iterating 4 config files with sleepms(2) per entry
 function getAvailableSpells(monster)
-   var cache := NPC_GetCachedData(monster);  // O(1) lookup
+   var cache := NPC_GetCachedData(monster);
    var tier := cache.tier;
    if (!tier) tier := 1; endif
-
-   var spells := array{"Misseis Magicos"}; // All casters have magic missile
-
-   // Get spellcaster configs (now split into 4 mage schools)
-   var mage_configs := array{
-      ":spells:config/evocation",
-      ":spells:config/necromancy",
-      ":spells:config/illusion",
-      ":spells:config/swordmage"
-   };
    var school := getSpellSchool(monster);
-
-   // Add spells from school up to tier across all mage configs
-   foreach cfg_path in mage_configs
-      var cfg := ReadConfigFile(cfg_path);
-      if (!cfg)
-         continue;
-      endif
-      foreach spellId in (GetConfigIntKeys(cfg))
-         var elem := FindConfigElem(cfg, spellId);
-         if (elem.School == school && elem.Circle <= tier)
-            spells.append(elem.Name);
-         endif
-         sleepms(2);
-      endforeach
-   endforeach
-   return spells;
+   return GetAvailableSpellsCached(school, tier);
 endfunction
 
 function getSpellSchool(monster)
@@ -537,26 +454,12 @@ endfunction
 
 // New functions for humanoid shaman mage behavior
 
+// O(1) cached lookup - replaces iterating shaman config with sleepms(2) per entry
 function GetAvailableShamanSpells(monster)
-    var cache := NPC_GetCachedData(monster);  // O(1) lookup
+    var cache := NPC_GetCachedData(monster);
     var tier := cache.tier;
-    if (!tier) tier := 1; endif;
-
-    // All shamans have a basic fallback spell
-    var spells := array{"Enfraquecer"};
-
-    // Read shaman spells configuration file
-    var cfg := ReadConfigFile(":spells:config/shaman");
-    foreach spellId in GetConfigIntKeys(cfg)
-        var elem := FindConfigElem(cfg, spellId);
-        // Use the spell's Circle value to determine if it is available at the current tier
-        // TODO: Ver se vale a pena deixar a 0, e colocar um CD menor, depois que fazer o Ideal Spell funcionar pra cada magia shaman
-        if (CInt(elem.Circle) <= tier && Cint(elem.Circle) > 0)
-            spells.append(elem.Name);
-        endif
-        sleepms(2);
-    endforeach
-    return spells;
+    if (!tier) tier := 1; endif
+    return GetAvailableShamanSpellsCached(tier);
 endfunction
 
 function NPC_CastShamanSpell(me, spellname)
@@ -702,25 +605,12 @@ function ChooseIdealShamanSpells(me, opponent, spells)
     return "Enfraquecer";
 endfunction
 
+// O(1) cached lookup - replaces iterating priest config with sleepms(2) per entry
 function GetAvailablePriestSpells(monster)
-    var cache := NPC_GetCachedData(monster);  // O(1) lookup
+    var cache := NPC_GetCachedData(monster);
     var tier := cache.tier;
-    if (!tier) tier := 1; endif;
-
-    // All priests have basic healing
-    var spells := array{"Cura Leve"};
-
-    // Read priest spells configuration file
-    var cfg := ReadConfigFile(":spells:config/priest");
-    foreach spellId in GetConfigIntKeys(cfg)
-        var elem := FindConfigElem(cfg, spellId);
-        // Use the spell's Circle value to determine if it's available at the current tier
-        if (CInt(elem.Circle) <= tier)
-            spells.append(elem.Name);
-        endif
-        sleepms(2);
-    endforeach
-    return spells;
+    if (!tier) tier := 1; endif
+    return GetAvailablePriestSpellsCached(tier);
 endfunction
 
 function HumanoidPriestBehavior(me, opponent)

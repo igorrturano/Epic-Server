@@ -543,9 +543,9 @@ function HandleAmbush(me, opponent)
     if (RandomInt(100) > chance)
         return 0;
     endif
-    
-    // Don't ambush if already in combat
-    if (me.opponent || GetObjProperty(me, "#inambush"))
+
+    // Don't ambush if already in combat or already ambushing
+    if (me.opponent || SM_GetState() == "AMBUSH")
         return 0;
     endif
 
@@ -553,57 +553,11 @@ function HandleAmbush(me, opponent)
     GrantPrivilege(me, "hiddenattack");
     me.enable("hiddenattack");
     me.hidden := 1;
-    
-    // Mark that we're in ambush mode
-    SetObjProperty(me, "#inambush", 1);
-    
-    // Distance at which ambush triggers
-    const AMBUSH_DISTANCE := 3;
-    
-    // Wait for opponent to get close enough or max 30 seconds
-    var wait_time := 0;
-    var check_frequency := 2; // Check every 2 seconds
-    const MAX_WAIT := 30; // Maximum 30 seconds wait
-    
-    while (wait_time < MAX_WAIT)
-        // Break ambush if monster takes damage
-        if (!me.hidden)
-            EraseObjProperty(me, "#inambush");
-            return 0;
-        endif
-        
-        var dist := Distance(me, opponent);
-        
-        // When target gets close enough, ambush!
-        if (dist <= AMBUSH_DISTANCE)
-            MoveObjectToLocation(me, opponent.x, opponent.y, opponent.z, opponent.realm, MOVEOBJECT_FORCELOCATION);
-            me.hidden := 0;
-            PrintTextAbove(me, "*emboscada*");
-            
-            // Set up advantage hits
-            SetObjProperty(me, "backstab", 1);
-            SetObjProperty(me.weapon, "backstab", 1);
-            
-            // Attack with advantage
-            me.attack_once(opponent);
-            
-            // Clean up properties
-            EraseObjProperty(me, "#inambush");
-            EraseObjProperty(me, "backstab");
-            EraseObjProperty(me.weapon, "backstab");
-            
-            return 1;
-        endif
-        
-        sleep(check_frequency);
-        wait_time += check_frequency;
-    endwhile
-    
-    // If we waited too long, clear ambush state
-    me.hidden := 0;
-    EraseObjProperty(me, "#inambush");
-    
-    return 0;
+
+    // Transition to AMBUSH state - SM_TickAmbush in stateManager.inc handles the rest
+    // Brain loop processes ONE tick per iteration, events still fire (damage breaks ambush)
+    SM_TransitionTo("AMBUSH", struct{ "target" := opponent });
+    return 1;
 endfunction
 
 function inSwampWater(who)

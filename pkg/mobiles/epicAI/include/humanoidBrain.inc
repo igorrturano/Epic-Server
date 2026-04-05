@@ -32,6 +32,12 @@ function HumanoidBrain()
     var npc_template := cache.template;
     var combat_history := LoadCombatHistory(npc_template);
 
+    // Build ability tables ONCE at brain activation (script-level vars in brain.src)
+    combat_abilities := BuildCombatAbilities(me);
+    enter_abilities := BuildEnterAbilities(me);
+
+    SM_TransitionTo("IDLE");
+
     while (me)
         ev := os::wait_for_event(0);
 
@@ -44,43 +50,52 @@ function HumanoidBrain()
         if (CheckDarknessCreatureSurvival(me))
             return;
         endif
-    
+
+        // Process active states (non-blocking, ONE step per tick)
+        var state := SM_GetState();
+        if (state == "FLEEING")
+            SM_TickFlee();
+        elseif (state == "AMBUSH")
+            SM_TickAmbush();
+        endif
+
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
                 HandleHumanoidLeftArea(me.opponent);
             else
-                var dist := Distance(me, me.opponent);
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
-
-                // PursueTarget now handles ideal distance calculation internally
-                // Let it decide when to stop based on weapon type
-                PursueTarget(me.opponent);
+                if (SM_GetState() != "FLEEING")
+                    PursueTarget(me.opponent);
+                endif
             endif
         endif
-        
-        if (ev)            
+
+        if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED:
                     AlertAllies(ev.source, me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
+                    // Break ambush on damage
+                    if (SM_GetState() == "AMBUSH")
+                        me.hidden := 0;
+                        SM_TransitionTo("COMBAT");
+                    endif
                     AskForHealing(me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
                     HandleHumanoidSpeech(ev.text, ev.source, is_ranged);
                     HandleEnteredAreaAbilities(ev.source, is_ranged);
                     if (!IsAlly(ev.source))
-                        // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
                         HandleHumanoidEnteredArea(ev.source, is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
-                        // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
                         HandleHumanoidLeftArea(is_ranged);
                     endif
@@ -95,7 +110,6 @@ function HumanoidBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    // Taunt forces a target switch - clear current opponent first
                     SetOpponent(0);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
@@ -107,12 +121,12 @@ function HumanoidBrain()
                     endif
                 EVID_FLEE:
                     last_activity_time := polcore().systime;
-                    FleeFrom(ev.source);
+                    SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
             endcase
         endif
 
         // Idle behavior when no events and no combat
-        if (!me.opponent)
+        if (!me.opponent && SM_GetState() == "IDLE")
             HumanoidIdle(wanders, is_ranged);
             if (RandomInt(100) < 30)
                 wanders += 1;
@@ -124,8 +138,8 @@ function HumanoidBrain()
         endif
 
         // Dynamic sleep: fast in combat, slow when idle
-        if (me.opponent || (polcore().systime - last_activity_time) < 5)
-            sleepms(100); // Combat mode or recently active
+        if (me.opponent || SM_GetState() != "IDLE" || (polcore().systime - last_activity_time) < 5)
+            sleepms(100); // Combat mode, active state, or recently active
         else
             sleepms(1000); // Idle mode - save CPU
         endif
@@ -224,7 +238,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     endif
 
     if (ShouldFlee(me))
-        FleeFrom(opponent);
+        SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
         return 1;
     endif
 
@@ -255,20 +269,16 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         PursueTarget(opponent);
     endif
 
-    if (me.isMage())
-        MageBehavior(me, opponent);
-    endif
+    // Dispatch shared abilities from pre-built table (Bite, MageBehavior, etc.)
+    TickCombatAbilities(me, opponent, combat_abilities);
 
+    // Humanoid-specific caster behaviors (heal allies, not just damage)
     if (me.isShaman())
         HumanoidShamanBehavior(me, opponent);
     endif
 
     if (me.isPriest())
         HumanoidPriestBehavior(me, opponent);
-    endif
-
-    if (me.CanBite())
-        Bite(me, opponent);
     endif
 
     if (MobileWrapper(me).HasAbility(ABILITY_ID::ALQUIMISTA_EXPERIENTE))
@@ -355,21 +365,13 @@ function HandleHumanoidEnteredArea(source, is_ranged)
     if (!source)
         return 0;
     endif
-    
-    if (me.canCharge())
-        StartCharge(me, source);
-    endif
 
+    // Dispatch enter-area abilities from pre-built table (Charge, TunnelTactics, Ambush)
+    TickEnterAbilities(me, source, enter_abilities);
+
+    // Thief behavior is humanoid-specific, not table-dispatched
     if (me.isThief())
         DoThiefCombatBehavior(source);
-    endif
-
-    if (me.hasTunnelTactics())
-        TunnelTactics(me, source);
-    endif
-
-    if (me.CanAmbush())
-        HandleAmbush(me, source);
     endif
 
     HandleHumanoidCombatEvent(source, is_ranged);
