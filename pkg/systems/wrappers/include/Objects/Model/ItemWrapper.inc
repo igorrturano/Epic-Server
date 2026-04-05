@@ -78,6 +78,32 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 
 		return CDbl(this.GetObjRef().quality);
 	endfunction
+
+	function GetCurrentHP(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return this.GetObjRef().hp;
+	endfunction
+
+	function SetCurrentHP(this, hp)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		this.GetObjRef().hp := hp;
+
+		return this;
+	endfunction
+
+	function GetMaxHP(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return this.GetObjRef().maxhp;
+	endfunction
 	
 	/**
 	 * Verifica se este item pode ser empilhado com outro item.
