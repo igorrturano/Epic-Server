@@ -11,6 +11,25 @@ include ":abilities:models/Ability";
 include ":crafting:/include/caracteristicasFabricacao";
 
 CONST DRINK_SOUND := 0x32;
+CONST GATILHO_PAVIO := 11;
+CONST GATILHO_IMPACTO := 12;
+CONST GATILHO_MINA := 13;
+
+CONST ELEMENTO_FOGO := 21;
+CONST ELEMENTO_ENERGIA := 22;
+CONST ELEMENTO_GELO := 23;
+
+CONST INVOLUCRO_BASE := 31;
+CONST INVOLUCRO_FRAGMENTACAO := 32;
+CONST INVOLUCRO_CONCUSSAO := 33;
+
+CONST CARGA_BALANCEADA := 41;
+CONST CARGA_CONCENTRADA := 42;
+CONST CARGA_DISPERSA := 43;
+
+CONST REFORCO_COMUM := 51;
+CONST REFORCO_CARGA_DUPLA := 52;
+CONST REFORCO_POTENCIA_ELEM := 53;
 
 function checkifcandrink(character, type)
   // Check to make sure they have at least one hand free to drink the potion
@@ -459,4 +478,22 @@ function PegaNivelPocao(who, pocao)
   eraseobjproperty(who, "#power_time");
 
   return tier;
+endfunction
+
+function Pushback_alch(mobile, cx, cy, cz, realm, raio, forca, passos, delay_ms)
+        var dx := mobile.x - cx;
+        var dy := mobile.y - cy;
+
+        if (dx == 0 && dy == 0)
+            dx := 1;
+        endif
+
+        var dist := Sqrt(dx * dx + dy * dy);
+        var nx := dx / dist;
+        var ny := dy / dist;
+
+        // Dispara um script separado para cada mobile
+        // para que todos se movam simultaneamente
+        Start_Script(":alchemy:pushback", array{ mobile, nx, ny, forca, passos, delay_ms, realm, cz });
+
 endfunction
