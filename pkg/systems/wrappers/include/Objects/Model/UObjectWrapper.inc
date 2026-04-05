@@ -225,6 +225,10 @@ class UObjectWrapper(IUObjectWrapper)
 			return this.GetObjRef();
 		endif
 
+		if (!(position is @PositionWrapper))
+			return InvalidFormatException("The param position must be a PositionWrapper object!");
+		endif
+
 		return MoveObjectToLocation(this.GetObjRef(), position.GetX(), position.GetY(), position.GetZ(), position.GetRealm(), flags);
 	endfunction
 
