@@ -1651,32 +1651,27 @@ function PursueTarget(opponent)
         endif
 
         // Track if retreat is actually gaining distance
-        if (!pursuit_tracker || !pursuit_tracker.retreat_start_dist)
-            if (!pursuit_tracker)
-                pursuit_tracker := struct{};
-            endif
-            pursuit_tracker.retreat_start_dist := dist;
+        if (!pursuit_tracker)
+            pursuit_tracker := struct{ "retreat_dist" := dist, "retreat_ticks" := 0 };
+        elseif (!pursuit_tracker.retreat_dist)
+            pursuit_tracker.retreat_dist := dist;
             pursuit_tracker.retreat_ticks := 0;
         endif
         pursuit_tracker.retreat_ticks += 1;
 
-        // After 5 ticks, check if we gained any distance
         if (pursuit_tracker.retreat_ticks >= 5)
-            var new_dist := Distance(me, opponent);
-            if (new_dist <= pursuit_tracker.retreat_start_dist + 1)
+            if (Distance(me, opponent) <= pursuit_tracker.retreat_dist + 1)
+                // No progress after 5 ticks - cornered/oscillating
                 pursuit_tracker := 0;
                 SwitchToMelee();
                 return PursueMelee(opponent);
             endif
-            pursuit_tracker.retreat_start_dist := 0;
-            pursuit_tracker.retreat_ticks := 0;
+            pursuit_tracker.retreat_dist := 0;
         endif
         return 1;
     else
-        // Not retreating, reset counter
-        if (pursuit_tracker && pursuit_tracker.retreat_start_dist)
-            pursuit_tracker.retreat_start_dist := 0;
-            pursuit_tracker.retreat_ticks := 0;
+        if (pursuit_tracker && pursuit_tracker.retreat_dist)
+            pursuit_tracker.retreat_dist := 0;
         endif
     endif
 
@@ -2464,20 +2459,10 @@ function SwitchToMelee()
         endif
     endif
 
-    // Reuse existing melee sword if we already created one
-    var sword_serial := GetObjProperty(me, "#melee_sword");
-    var sword;
-    if (sword_serial)
-        sword := SystemFindObjectBySerial(sword_serial);
-    endif
-
+    var sword := FindObjtypeInContainer(me.backpack, 0x0F60);
     if (!sword)
         sword := CreateItemAtLocation(me.x, me.y, me.z, 0x0F60, 1, me.realm);
-        if (sword)
-            SetObjProperty(me, "#melee_sword", sword.serial);
-        endif
     endif
-
     if (sword)
         EquipItem(me, sword);
     endif
