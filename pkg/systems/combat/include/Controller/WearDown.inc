@@ -21,23 +21,23 @@ function WearDownEquip(equip, weapon) // equip EquipWrapper
 
 endfunction
 
-function BreakEquip(equip)
-	var hp := equip.GetHP();
+
+/**
+ * Marca um equipamento como danificado e o move para a mochila do proprietário.
+ * 
+ * @param equip O EquipWrapper a ser danificado.
+ * @param owner O MobileWrapper dono do equipamento.
+ * 
+ * @return void
+ */
+function BreakEquip(equip, owner)
+	equip.SetProperty("broken", 1);
+	equip.SetProperty("realdesc", equip.desc);
+	equip._SetName(equip.desc+" [danificado]");
+	MoveItemToContainer(equip, owner.GetBackpack().GetObjRef());
 	
-	if ( armorhp <= 0 )
-		SendSysMessage(defender, armor.desc+" foi destruida.");
-		SetObjProperty(armor, "broken", 1);
-		SetObjProperty(armor, "realdesc", armor.desc);
-		SetName(armor, armor.desc+" [danificado]");
-		MoveItemToContainer(armor, defender.backpack);
-		//DestroyItem(armor);
-	elseif ( armor.hp > armor.maxhp )
-		armor.hp := armor.maxhp;
-	else
-		armor.hp := armorhp;
-	endif
-	var nome := armor.name;
-	SetName(armor, nome + " -");
+	var nome := equip.name;
+	SetName(equip, nome + " -");
 	sleepms(30);
-	SetName(armor, nome);
+	SetName(equip, nome);
 endfunction
