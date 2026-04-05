@@ -13,6 +13,15 @@ var brain_type;
 var me := Self();
 const AREA_SIZE := 15;
 
+// Script-level vars for ephemeral combat state (replaces per-tick SetObjProperty/GetObjProperty)
+var pursuit_tracker := 0;
+var los_cache_var := 0;
+var path_cache_var := 0;
+var runaway_progress_var := 0;
+var target_lock_var := 0;
+var threat_list_var := array{};
+var cached_weapon_range := 0;
+
 /*
  * KillPlayers()
  *
@@ -75,7 +84,14 @@ program KillPlayers()
         // Brain returned (ShouldGoDormant triggered) - loop back to dormant
         SetWarMode(0);
         SetOpponent(0);
-        // Loop continues to dormant mode automatically
+        // Reset ephemeral combat state
+        pursuit_tracker := 0;
+        los_cache_var := 0;
+        path_cache_var := 0;
+        runaway_progress_var := 0;
+        target_lock_var := 0;
+        threat_list_var := array{};
+        cached_weapon_range := 0;
     endwhile
 endprogram
 

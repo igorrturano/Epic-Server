@@ -168,44 +168,15 @@ function HandleHumanoidSpeech(text, source, is_ranged)
 endfunction
 
 function HandleHumanoidLeftArea(is_ranged)
-    // Clear current combat state
     ClearCombatState();
-    
-    // Check for nearby threats first
+
     var threat := CheckNearbyThreats();
     if (threat)
         HandleHumanoidCombatEvent(threat, is_ranged);
         return 1;
     endif
 
-    // If no opponents found, look for corpses to loot
-    var corpses := array{};
-    foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
-        if (item.IsA(POLCLASS_CORPSE))
-            corpses.append(item);
-        endif
-        sleepms(2);
-    endforeach
-
-    // Try to loot any found corpses
-    if (corpses.size() > 0)
-        foreach corpse in corpses
-            if (LootCorpse(corpse))
-                SetCooldown(me, "loot_cooldown", 300);
-                return 1;
-            endif
-            sleepms(100);
-        endforeach
-    endif
-
-    // Re-check for threats after looting attempt (in case one appeared while looting)
-    threat := CheckNearbyThreats();
-    if (threat)
-        HandleHumanoidCombatEvent(threat, is_ranged);
-        return 1;
-    endif
-
-    // If nothing else to do, go idle
+    // Corpse looting moved to HumanoidIdle to avoid item scans on every LEFTAREA event
     HandleIdleState();
     return 1;
 endfunction
@@ -270,10 +241,6 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
 
     // Let the combat hook handle the actual attacks
     if (is_ranged)
-        if (Distance(me, opponent) < 2 && !MobileWrapper(me).HasAbility(ABILITY_ID::TIRO_EM_MOVIMENTO))
-            reachForMeleeWeapon(opponent);
-        endif
-
         // PursueTarget now handles positioning for ranged attackers
         // It will maintain ideal distance internally with tolerance
         PursueTarget(opponent);
@@ -329,7 +296,18 @@ function HumanoidIdle(wanders, is_ranged)
         HealDamage(me, heal_amount);
     endif
 
-    // Removed idle target scanning - rely on ENTEREDAREA events instead (100% perf boost)
+    // Loot corpses when idle (moved from HandleLeftArea to avoid item scans during combat events)
+    if (!GetCooldown(me, "loot_cooldown"))
+        foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
+            if (item.IsA(POLCLASS_CORPSE))
+                if (LootCorpse(item))
+                    SetCooldown(me, "loot_cooldown", 300);
+                    return;
+                endif
+            endif
+            sleepms(2);
+        endforeach
+    endif
 
     // If didn't see anyone, try to hear footsteps (no LoS required)
     var heard_mobile := NPCHearFootsteps(me);

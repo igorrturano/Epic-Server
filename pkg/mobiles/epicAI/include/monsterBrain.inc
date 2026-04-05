@@ -39,9 +39,9 @@ function MonsterBrain()
             if (!CanFight(me, me.opponent))
                 HandleMonsterLeftArea(me.opponent);
             else
-                if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
-                is_ranged := isMonsterRanged();
-                // PursueTarget now handles ideal distance for both melee and ranged
+                if (GetObjProperty(me, "metamorfose"))
+                    is_ranged := 0;
+                endif
                 PursueTarget(me.opponent);
             endif
         endif
@@ -81,7 +81,7 @@ function MonsterBrain()
                     last_activity_time := polcore().systime;
                     // Taunt forces a target switch - clear current opponent and target lock
                     SetOpponent(0);
-                    EraseObjProperty(me, "#target_lock");
+                    target_lock_var := 0;
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
                     ShamanBehavior(me);
@@ -147,44 +147,15 @@ function HandleMonsterSpeech(text, source, is_ranged)
 endfunction
 
 function HandleMonsterLeftArea(is_ranged)
-    // Clear current combat state
     ClearCombatState();
-    
-    // Check for nearby threats first
+
     var threat := CheckNearbyThreats();
     if (threat)
         HandleMonsterCombatEvent(threat, is_ranged);
         return 1;
     endif
 
-    // If no opponents found, look for corpses to loot
-    var corpses := array{};
-    foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
-        if (item.IsA(POLCLASS_CORPSE))
-            corpses.append(item);
-        endif
-        sleepms(2);
-    endforeach
-
-    // Try to loot any found corpses
-    if (corpses.size() > 0)
-        foreach corpse in corpses
-            if (LootCorpse(corpse))
-                SetCooldown(me, "loot_cooldown", 300);
-                return 1;
-            endif
-            sleepms(100);
-        endforeach
-    endif
-
-    // Re-check for threats after looting attempt (in case one appeared while looting)
-    threat := CheckNearbyThreats();
-    if (threat)
-        HandleMonsterCombatEvent(threat, is_ranged);
-        return 1;
-    endif
-
-    // If nothing else to do, go idle
+    // Corpse looting moved to MonsterIdle to avoid item scans on every LEFTAREA event
     HandleIdleState();
     return 1;
 endfunction
@@ -208,15 +179,15 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
                 opponent := taunter;
                 SetOpponent(opponent);
                 // Maintain taunt lock - prevent CheckForIdealTarget from overriding
-                SetObjProperty(me, "#target_lock", struct{
+                target_lock_var := struct{
                     "serial" := taunter.serial,
                     "time" := ReadGameClock(),
-                    "taunt" := 1  // Flag to indicate this is a taunt lock
-                });
+                    "taunt" := 1
+                };
             else
                 // Taunter is no longer valid, clear taunt
                 EraseObjProperty(me, "#taunter");
-                EraseObjProperty(me, "#target_lock");
+                target_lock_var := 0;
                 SetCooldown(me, "taunted", 0);
             endif
         endif
@@ -234,11 +205,24 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         endif
     endif
 
-    // Let the combat hook handle the actual attacks
-    // PursueTarget now handles positioning for both melee and ranged
     TurnToward(opponent);
     PursueTarget(opponent);
-    
+
+    // Ranged special abilities (relocated from PursueTarget for cleaner separation)
+    var combat_dist := Distance(me, opponent);
+    if (combat_dist >= 2 && combat_dist <= 8)
+        if (combat_dist <= 6)
+            if (me.canSpitAcid())
+                AcidSpray(me, opponent);
+            elseif (me.canShootWeb())
+                WebShot(me, opponent);
+            endif
+        endif
+        if (me.canThrow())
+            ThrowSpecial(me, opponent);
+        endif
+    endif
+
     if (me.isMyrkonid())
         SporeSpecial(me, opponent);
     endif
@@ -290,7 +274,18 @@ function MonsterIdle(wanders, is_ranged)
         HealDamage(me, heal_amount);
     endif
 
-    // Removed idle target scanning - rely on ENTEREDAREA events instead (100% perf boost)
+    // Loot corpses when idle (moved from HandleLeftArea to avoid item scans during combat events)
+    if (!GetCooldown(me, "loot_cooldown"))
+        foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
+            if (item.IsA(POLCLASS_CORPSE))
+                if (LootCorpse(item))
+                    SetCooldown(me, "loot_cooldown", 300);
+                    return;
+                endif
+            endif
+            sleepms(2);
+        endforeach
+    endif
 
     // If didn't see anyone, try to hear footsteps (no LoS required)
     var heard_mobile := NPCHearFootsteps(me);
