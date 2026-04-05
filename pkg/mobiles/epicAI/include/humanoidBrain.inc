@@ -666,6 +666,11 @@ function ChooseSageAbility(npc, state, habs)
         if (hab_set.exists(ABILITY_ID::BLOODTHIRST))               return ABILITY_ID::BLOODTHIRST;               endif
         if (hab_set.exists(ABILITY_ID::SALTO_ETEREO))              return ABILITY_ID::SALTO_ETEREO;              endif
         if (hab_set.exists(ABILITY_ID::ABRIR_PORTAIS))             return ABILITY_ID::ABRIR_PORTAIS;             endif
+        if (hab_set.exists(ABILITY_ID::RESILIENCIA_BARBARA))       return ABILITY_ID::RESILIENCIA_BARBARA;       endif
+    endif
+
+    if (opponent.hidden && me.getRace() == DROW)
+        if (hab_set.exists(ABILITY_ID::CONEXAO_DIVINA))            return ABILITY_ID::CONEXAO_DIVINA;            endif
     endif
 
     if (hab_set.exists(ABILITY_ID::CONTROLAR_MORTOS) || hab_set.exists(ABILITY_ID::SOUL_HARVEST))
