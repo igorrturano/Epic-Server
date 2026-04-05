@@ -308,29 +308,6 @@ function performSpellVocalization(mobile, spellinfo)
 	if (spellinfo.powerwords && GetObjProperty(mobile, "#magiasilenciosa") == error)
 		PrintTextAbove(mobile, spellinfo.powerwords);
 	endif
-// if (spellinfo.prayer[1] && GetObjProperty(mobile, "#magiasilenciosa") == error)
-//     if (RandomInt(100) < 15)
-//         var prayer := spellinfo.prayer[RandomInt(spellinfo.prayer.size()) + 1];
-//         prayer := replaceAccentedCharacters(prayer);
-//         PrintTextAbove(mobile, prayer);
-//     endif
-// endif
-endfunction
-
-function replaceAccentedCharacters(text)
-	text := StrReplace(text, "&atilde;", "ã");
-	text := StrReplace(text, "&Atilde;", "Ã");
-	text := StrReplace(text, "&eacute;", "é");
-	text := StrReplace(text, "&Eacute;", "É");
-	text := StrReplace(text, "&ccedil;", "ç");
-	text := StrReplace(text, "&Ccedil;", "Ç");
-	text := StrReplace(text, "&ecirc;", "ê");
-	text := StrReplace(text, "&Ecirc;", "Ê");
-	text := StrReplace(text, "&otilde;", "õ");
-	text := StrReplace(text, "&Otilde;", "Õ");
-	text := StrReplace(text, "&ocirc;", "ô");
-	text := StrReplace(text, "&Ocirc;", "Ô");
-	return text;
 endfunction
 
 function performSpellCycles(mobile, spellinfo, orig_hp)
