@@ -36,6 +36,7 @@ program SendSpells(who)
     // Calculate packet size
     var data_size := 0;
     foreach item in spells
+        sleepms(2);
         data_size := data_size + 2 + len(item.name);
         data_size := data_size + 2 + len(CStr(item.circle));
         data_size := data_size + 2 + len(item.desc);
@@ -66,6 +67,7 @@ program SendSpells(who)
     offset := SetInt16BE(packet, offset, spells.size());
 
     foreach item in spells
+        sleepms(2);
         offset := WriteStringBE(packet, offset, item.name);
         offset := WriteStringBE(packet, offset, CStr(item.circle));
         offset := WriteStringBE(packet, offset, item.desc);
