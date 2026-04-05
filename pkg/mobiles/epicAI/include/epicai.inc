@@ -1183,13 +1183,10 @@ function CheckForIdealTarget()
           endcase
       endif
 
-      // Check if this is a better opponent
       if (priority > best_opponent.priority)
          best_opponent.mobile := opponent;
          best_opponent.priority := priority;
       endif
-
-      sleepms(2);
    endforeach
 
    // Lock onto the best opponent for 20 seconds
@@ -1653,19 +1650,34 @@ function PursueTarget(opponent)
             WalkAwayFrom(opponent);
         endif
 
-        // Detect wall hit using native lastcoord
-        if (me.x == me.lastcoord.lastx && me.y == me.lastcoord.lasty)
-            // Movement failed - try alternative direction
-            var alt_locs := GetAlternativeLocations(opponent);
-            if (alt_locs.size() > 0)
-                RunTowardLocation(alt_locs[1].x, alt_locs[1].y);
-            else
-                // Completely cornered - switch to melee
+        // Track if retreat is actually gaining distance
+        if (!pursuit_tracker || !pursuit_tracker.retreat_start_dist)
+            if (!pursuit_tracker)
+                pursuit_tracker := struct{};
+            endif
+            pursuit_tracker.retreat_start_dist := dist;
+            pursuit_tracker.retreat_ticks := 0;
+        endif
+        pursuit_tracker.retreat_ticks += 1;
+
+        // After 5 ticks, check if we gained any distance
+        if (pursuit_tracker.retreat_ticks >= 5)
+            var new_dist := Distance(me, opponent);
+            if (new_dist <= pursuit_tracker.retreat_start_dist + 1)
+                pursuit_tracker := 0;
                 SwitchToMelee();
                 return PursueMelee(opponent);
             endif
+            pursuit_tracker.retreat_start_dist := 0;
+            pursuit_tracker.retreat_ticks := 0;
         endif
         return 1;
+    else
+        // Not retreating, reset counter
+        if (pursuit_tracker && pursuit_tracker.retreat_start_dist)
+            pursuit_tracker.retreat_start_dist := 0;
+            pursuit_tracker.retreat_ticks := 0;
+        endif
     endif
 
     // Pursuit tracker (script-level var)
@@ -2441,7 +2453,10 @@ endfunction
  * Returns 1 if switched, 0 if no melee weapon available (NPC uses fists).
  */
 function SwitchToMelee()
-    // Stow ranged weapon and create a simple melee weapon
+    if (brain_type != "humanoid")
+        return 0;
+    endif
+
     var current_weapon := me.weapon;
     if (current_weapon && current_weapon.isRanged())
         if (me.backpack)
@@ -2449,16 +2464,26 @@ function SwitchToMelee()
         endif
     endif
 
-    var sword := CreateItemAtLocation(me.x, me.y, me.z, 0x0F60, 1, me.realm); // longsword
+    // Reuse existing melee sword if we already created one
+    var sword_serial := GetObjProperty(me, "#melee_sword");
+    var sword;
+    if (sword_serial)
+        sword := SystemFindObjectBySerial(sword_serial);
+    endif
+
+    if (!sword)
+        sword := CreateItemAtLocation(me.x, me.y, me.z, 0x0F60, 1, me.realm);
+        if (sword)
+            SetObjProperty(me, "#melee_sword", sword.serial);
+        endif
+    endif
+
     if (sword)
         EquipItem(me, sword);
     endif
 
-    // Reset weapon range cache so next CalculateIdealPursuitDistance returns melee
     cached_weapon_range := 0;
-    if (brain_type == "humanoid")
-        PrintTextAbove(me, "*avanca para o combate*");
-    endif
+    PrintTextAbove(me, "*avanca para o combate*");
     return 1;
 endfunction
 

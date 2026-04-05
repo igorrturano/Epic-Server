@@ -6,7 +6,6 @@ include "include/facings";
 include ":npcs:thor/handling/thorai";
 include "epicSpecial";
 include "NPCMageryUtils";
-include "include/epicLoggerUtils";
 include ":abilities:include/models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
 
@@ -27,10 +26,6 @@ function HumanoidBrain()
         GrantPrivilege(me, "firewhilemoving");
         me.enable("firewhilemoving");
     endif
-
-    // Load Combat History - use cached template
-    var npc_template := cache.template;
-    var combat_history := LoadCombatHistory(npc_template);
 
     // Build ability tables ONCE at brain activation (script-level vars in brain.src)
     combat_abilities := BuildCombatAbilities(me);
@@ -242,16 +237,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         return 1;
     endif
 
-    // Track initial state before combat
-    var initial_state := GetCombatState(me, opponent);
-    var used_ability := UseAbilities(me, opponent);
-    
-    if (used_ability)
-        Sleep(2);
-        var end_state := GetCombatState(me, opponent);
-        var success := DetermineCombatSuccess(initial_state, end_state);
-        LogCombatAction(me, initial_state, used_ability, success); 
-    endif
+    UseAbilities(me, opponent);
 
     // Let the combat hook handle the actual attacks
     if (is_ranged)
@@ -378,8 +364,6 @@ function HandleHumanoidEnteredArea(source, is_ranged)
     
     return 1;
 endfunction
-
-var state_values := dictionary; // Global state-value mapping
 
 function UseAbilities(npc, opponent)
    if (GetCooldown(npc, "ability_cooldown"))
@@ -534,25 +518,6 @@ function GetClassProgression(habcfg, subclass)
         endwhile
     endif
     return progression;
-endfunction
-
-function FormatStateKey(state, hab)
-   return state.health + "_" + 
-          CStr(state.distance) + "_" + 
-          CStr(state.stamina) + "_" + 
-          CStr(state.opponent_casting) + "_" + 
-          CStr(state.has_advantage) + "_" + 
-          hab;
-endfunction
-
-function DetermineCombatSuccess(old_state, new_state)
-    if (old_state.health == "dying" && new_state.health != "dying")
-        return 1;
-    elseif (old_state.has_advantage == 0 && new_state.has_advantage == 1)
-        return 1; 
-    endif
-    
-    return new_state.distance >= 1;
 endfunction
 
 function ChooseWarriorAbility(npc, state, habs)
