@@ -6,13 +6,21 @@ include ":wrappers:include/Objects/Model/UObjectWrapper";
 
 function PegaValorFabricacao(item, caracteristica)
 	var propFabricadoMontado := PegaPropFabricadoMontado(item);
-	var retorno := propFabricadoMontado.componentes[caracteristica].propriedades.valorPrincipal; 
-	return TypeOfInt(retorno) != OT_ERROR ? Cint(retorno): 0;
+	var valorRetorno := ExecutaOperadorCaracteristica(
+												caracteristica, 
+												propFabricadoMontado.componentes[caracteristica].propriedades.valorPrincipal
+											);
+	
+	return TypeOfInt(valorRetorno) != OT_ERROR ? Cint(valorRetorno): 0;
 endfunction
 
 function PegaSubValorFabricacao(item, caracteristica, subEfeitoAlvo)
 	var propFabricadoMontado := PegaPropFabricadoMontado(item);
-	var retorno := propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais[subEfeitoAlvo].valor;
+	var retorno := ExecutaOperadorCaracteristica(
+									caracteristica, 
+									propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais[subEfeitoAlvo].valor
+								);
+	
 	return TypeOfInt(retorno) != OT_ERROR ? Cint(retorno): 0;
 
 endfunction
@@ -20,6 +28,32 @@ endfunction
 function PegaSubValoresFabricacao(item, caracteristica)
 	var propFabricadoMontado := PegaPropFabricadoMontado(item);
 	return propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais; 
+endfunction
+
+function ExecutaOperadorCaracteristica(caracteristica, valor)
+	var caracteristicasConfig := ReadConfigFile(":crafting:config/caracteristicas");
+	var elementoConfig := caracteristicasConfig[caracteristica];
+	var valorTotal := valor;
+
+	if(elementoConfig)
+		var operador := elementoConfig["operador"];
+		var valorOperacao := cint(elementoConfig["valor"]);
+		
+		case (lower(operador))
+			"soma":
+				valorTotal += valorOperacao;
+			"subtracao":
+				valorTotal -= valorOperacao;
+			"divisao":
+				if(valorOperacao != 0)
+					valorTotal /= valorOperacao;
+				endif
+			"multiplicacao":
+				valorTotal *= valorOperacao;
+		endcase
+	endif
+
+	return valorTotal;
 endfunction
 
 /*

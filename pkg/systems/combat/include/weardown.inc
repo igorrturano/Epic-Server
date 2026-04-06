@@ -40,9 +40,11 @@ function WearDownArmor(defender, armor, rawdamage, weapon)
 			armorhp := armorhp - Cint(armr_elem.WearRate + bonus);
 			if ( armorhp <= 0 )
 				SendSysMessage(defender, armor.desc+" foi destruida.");
-				SetObjProperty(armor, "broken", 1);
-				SetObjProperty(armor, "realdesc", armor.desc);
-				SetName(armor, armor.desc+" [danificado]");
+				if (!GetObjProperty(armor, "broken"))
+					SetObjProperty(armor, "broken", 1);
+					SetObjProperty(armor, "realdesc", armor.desc);
+					SetName(armor, armor.desc+" [danificado]");
+				endif
 				MoveItemToContainer(armor, defender.backpack);
 				//DestroyItem(armor);
 			elseif ( armor.hp > armor.maxhp )
@@ -124,9 +126,11 @@ function WearDownShield(defender, shield, rawdamage, weapon)
 			shieldhp := shieldhp - Cint(armr_elem.WearRate + bonus);
 			if ( shieldhp <= 0 )
 				SendSysMessage(defender, shield.desc+" foi destruido.");
-				SetObjProperty(shield, "broken", 1);
-				SetObjProperty(shield, "realdesc", shield.desc);
-				SetName(shield, shield.desc+" [danificado]");
+				if (!GetObjProperty(shield, "broken"))
+					SetObjProperty(shield, "broken", 1);
+					SetObjProperty(shield, "realdesc", shield.desc);
+					SetName(shield, shield.desc+" [danificado]");
+				endif
 				MoveItemToContainer(shield, defender.backpack);
 				//DestroyItem(shield);
 			elseif (shield.hp > shield.maxhp)
@@ -167,11 +171,13 @@ function WearDownWeapon(attacker, weapon,wearRateMlt := 1)
 				if ( weaponhp <= 0 )
 					SendSysMessage(attacker, weapon.desc+" quebrou.");
 					MoveObjectToLocation(weapon, 1, 1, 1, attacker.realm, MOVEOBJECT_FORCELOCATION);
-					SetObjProperty(weapon, "broken", 1);
-					SetObjProperty(weapon, "realdesc", weapon.desc);
+					if (!GetObjProperty(weapon, "broken"))
+						SetObjProperty(weapon, "broken", 1);
+						SetObjProperty(weapon, "realdesc", weapon.desc);
+						SetName(weapon, weapon.desc+" [danificado]");
+					endif
 					releasegems(attacker, weapon);
 					eraseobjproperty(weapon, "gems");
-					SetName(weapon, weapon.desc+" [danificado]");
 					MoveItemToContainer(weapon, attacker.backpack);
 					//DestroyItem(weapon);
 				elseif ( weapon.hp > weapon.maxhp )

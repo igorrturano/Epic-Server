@@ -356,9 +356,9 @@ function CalculaQuantidadePossivel(quantidade, materiaisEscolhidos,byref materia
 	
 	foreach materialEscolhido in materiaisEscolhidos
 		var total := materiaisEncontrados[Lower(materialEscolhido.tipoMaterial)][materialEscolhido.objtype].quantidadeTotal;
-		var qtdPossivel := cInt(total / materialEscolhido.quantidadeNecessaria );
-		qtdPossivel := qtdPossivel >= quantidade? cInt(quantidade) : qtdPossivel;
-		
+		var qtdPossivel := cInt(cint(total) / cint(materialEscolhido.quantidadeNecessaria) );
+		qtdPossivel := qtdPossivel >= cint(quantidade)? cInt(quantidade) : qtdPossivel;
+	
 		if(qtdPossivel < quantidadeAFazer) // a menor quantidade possivel determina a quantidade final.
 			quantidadeAFazer := qtdPossivel;
 		endif
