@@ -1,4 +1,3 @@
-use npc;
 include "include/sysEvent";
 include "include/sounds";
 include ":combat:Controller/DamageController_legacy";
@@ -59,6 +58,14 @@ function MonsterBrain()
                 if (SM_GetState() != "FLEEING")
                     PursueTarget(me.opponent);
                 endif
+                // Per-tick casting — keep offensive pressure on opponent
+                TickCombatAbilities(me, me.opponent, combat_abilities);
+                var tick_cache := NPC_GetCachedData(me);
+                if (tick_cache.spell_school == "Shaman")
+                    ShamanBehavior(me);
+                elseif (tick_cache.spell_school == "Druid")
+                    DruidBehavior(me, me.opponent);
+                endif
             endif
         endif
 
@@ -102,7 +109,19 @@ function MonsterBrain()
                     target_lock_var := 0;
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
-                    ShamanBehavior(me);
+                    if (!GetCooldown(me, "buddy_heal"))
+                        var hurt_ally := ev.source;
+                        if (hurt_ally && !hurt_ally.dead && isHurt(hurt_ally))
+                            var heal_cache := NPC_GetCachedData(me);
+                            var heal_spell := "Cura Leve";
+                            if (heal_cache.tier >= 3)
+                                heal_spell := "Cura Grave";
+                            endif
+                            spell_target_var := hurt_ally.serial;
+                            NPC_CastSpell(me, heal_spell);
+                            SetCooldown(me, "buddy_heal", 15);
+                        endif
+                    endif
                 EVID_FLEE:
                     last_activity_time := polcore().systime;
                     SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
@@ -229,9 +248,11 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
     // Dispatch abilities from pre-built table (replaces 12+ sequential if-checks)
     TickCombatAbilities(me, opponent, combat_abilities);
 
-    // Shaman behavior is event-driven (EVID_BUDDYATTACKED), not table-dispatched
-    if (me.isShaman())
+    var mon_cache := NPC_GetCachedData(me);
+    if (mon_cache.spell_school == "Shaman")
         ShamanBehavior(me);
+    elseif (mon_cache.spell_school == "Druid")
+        DruidBehavior(me, opponent);
     endif
 
     if (ShouldFlee(me))
