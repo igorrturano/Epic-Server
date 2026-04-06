@@ -38,6 +38,7 @@ program my_use(chr)
 			endif
 		else
 			att["null"] += 1;
+			print("NULL_ATTACHED: " + script.name + " pid=" + script.pid);
 		endif
 		sleepms(1);
 	endforeach
