@@ -125,7 +125,7 @@ exported function HandleSendStats(character, byref packet)
 	if (!source || source == error)
 		return 0;
 	endif
-	var mobileEnvelopado := MobileWrapper(source);
+	//var mobileEnvelopado := MobileWrapper(source);
 
 	pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::SOURCE_SERIAL, serial);
 
@@ -223,7 +223,7 @@ exported function HandleSendStats(character, byref packet)
 			endforeach
 			*/
 
-			
+
 			/*var indicePosArmadura := NEW_STATUS_OFFSETS::AMOR_RESISTANCES_START + ARMOR_RESISTENCE_PACKET_ARRAY.size() * QTD_RESISTENCIAS;
 			pacoteFinal.SetInt8(indicePosArmadura + INT8_SIZE,mainHandDmg.Damage.GetFireRawDamage());
 			pacoteFinal.SetInt8(indicePosArmadura + INT8_SIZE * 2,mainHandDmg.Damage.GetColdRawDamage());
