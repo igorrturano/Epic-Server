@@ -1,4 +1,4 @@
-use npc;
+
 
 const FOLLOW_CMD := 0xA001;
 function AnimalBrain()
@@ -19,11 +19,6 @@ function AnimalBrain()
 
         // Check FORCE dormant FIRST - before anything else
         if (ShouldGoDormant(last_activity_time))
-            return;
-        endif
-
-        // Kill darkness creatures (undead/Mobnoturno) if not in darkness
-        if (CheckDarknessCreatureSurvival(me))
             return;
         endif
 
@@ -77,6 +72,9 @@ function AnimalBrain()
                         HandleAnimalCombatEvent(ev.source);
                     endif
                 SYSEVENT_ENTEREDAREA:
+                    if (CheckDarknessCreatureSurvival(me))
+                        return;
+                    endif
                     if (!IsAlly(ev.source))
                         UpdateThreatList(me, ev);
                         if (should_flee)
@@ -270,13 +268,13 @@ function AnimalIdle(wanders)
     // Removed idle target scanning - rely on ENTEREDAREA events instead (100% perf boost)
 
 
-    var anchor := GetObjProperty(me, "anchor");
+    var anchor := anchor_var;
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
       PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
     endif
-    
+
     WanderAroundAnchor(me);
 
     if (RandomInt(100) < 10) // 10% de chance de criar traps
