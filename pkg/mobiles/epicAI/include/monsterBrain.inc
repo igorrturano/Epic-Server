@@ -63,6 +63,8 @@ function MonsterBrain()
                 var tick_cache := NPC_GetCachedData(me);
                 if (tick_cache.spell_school == "Shaman")
                     ShamanBehavior(me);
+                elseif (tick_cache.spell_school == "Druid")
+                    DruidBehavior(me, me.opponent);
                 endif
             endif
         endif
@@ -246,10 +248,11 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
     // Dispatch abilities from pre-built table (replaces 12+ sequential if-checks)
     TickCombatAbilities(me, opponent, combat_abilities);
 
-    // Shaman offensive spells — only for actual shaman school NPCs (not mages who happen to be sages)
     var mon_cache := NPC_GetCachedData(me);
     if (mon_cache.spell_school == "Shaman")
         ShamanBehavior(me);
+    elseif (mon_cache.spell_school == "Druid")
+        DruidBehavior(me, opponent);
     endif
 
     if (ShouldFlee(me))

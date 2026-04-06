@@ -405,7 +405,7 @@ function ChooseShamanSpell(me, opponent, spells)
     var spellInfo := FindSpellInfoCached(chosen_spell);
     if (!spellInfo)
         spell_target_var := opponent.serial;
-        return "Enfraquecer";
+        return "Dardo Igneo";
     endif
 
     // Set appropriate target based on spell type
@@ -430,8 +430,12 @@ function ChooseIdealShamanSpells(me, opponent, spells)
         "Protecao Contra a Morte", "Forca do Touro", "Lama", "Circulo de Pedras"
     };
 
-    // Root if enemy in melee
-    if (dist <= 2 && ("Enraizar" in spells))
+    // Debuffs — cast once per target, don't spam (they don't stack)
+    var debuffs := array{ "Enfraquecer", "Intimidar", "Enraizar", "Rajada de Vento" };
+
+    // Root if enemy in melee (once per cooldown)
+    if (dist <= 2 && ("Enraizar" in spells) && !GetCooldown(opponent, "shaman_enraizar"))
+        SetCooldown(opponent, "shaman_enraizar", 30);
         return "Enraizar";
     endif
 
@@ -442,24 +446,31 @@ function ChooseIdealShamanSpells(me, opponent, spells)
             continue;
         endif
 
+        // Skip debuffs already applied to this target
+        if (spell in debuffs && GetCooldown(opponent, "shaman_" + spell))
+            continue;
+        endif
+
         var weight := 50;
 
         if (spell == "Dardo Igneo" || spell == "Raio de Gelo")
             weight := 70;
         elseif (spell == "Enraizar")
-            weight := 60;
+            weight := 40;
         elseif (spell == "Intimidar")
-            weight := 60;
+            weight := 40;
         elseif (spell == "Enfraquecer")
-            weight := 65;
+            weight := 40;
         elseif ((spell == "Terremoto" || spell == "Trovao") && enemy_count > 2)
             weight := 90;
         elseif (spell == "Sugar Alma")
             weight := 75;
         elseif (spell == "Rajada de Vento" && dist <= 3)
-            weight := 70;
+            weight := 50;
         elseif (spell == "Frenesi")
             weight := 55;
+        elseif (spell == "Rito de Sangue")
+            weight := 60;
         endif
 
         valid_spells.append(struct{ "name" := spell, "weight" := weight });
@@ -468,11 +479,15 @@ function ChooseIdealShamanSpells(me, opponent, spells)
     valid_spells := SortSpellsByPriority(valid_spells);
 
     if (valid_spells.size() > 0)
-        return ChooseWeightedSpell(valid_spells);
+        var chosen := ChooseWeightedSpell(valid_spells);
+        // Set debuff cooldown on target so we don't re-cast it
+        if (chosen in debuffs)
+            SetCooldown(opponent, "shaman_" + chosen, 30);
+        endif
+        return chosen;
     endif
 
-    // If no appropriate spell is found, do not cast any spell.
-    return "Enfraquecer";
+    return "Dardo Igneo";
 endfunction
 
 // O(1) cached lookup - replaces iterating priest config with sleepms(2) per entry
@@ -582,3 +597,106 @@ function ChoosePriestSpell(me, opponent, spells)
     return spells[1];
 endfunction
 
+// Druid NPC behavior
+
+function GetAvailableDruidSpells(monster)
+    var cache := NPC_GetCachedData(monster);
+    var tier := cache.tier;
+    if (!tier) tier := 1; endif
+    return GetAvailableDruidSpellsCached(tier);
+endfunction
+
+function DruidBehavior(me, opponent)
+    if (GetCooldown(me, "spell_cast"))
+        return 0;
+    endif
+
+    var spells := GetAvailableDruidSpells(me);
+    if (!spells.size())
+        return 0;
+    endif
+
+    var chosen_spell := ChooseDruidSpell(me, opponent, spells);
+    if (!chosen_spell)
+        return 0;
+    endif
+
+    return NPC_CastSpell(me, chosen_spell);
+endfunction
+
+function ChooseDruidSpell(me, opponent, spells)
+    var chosen_spell := ChooseIdealDruidSpells(me, opponent, spells);
+    var spellInfo := FindSpellInfoCached(chosen_spell);
+    if (!spellInfo)
+        spell_target_var := opponent.serial;
+        return "Fogo Fatuo";
+    endif
+
+    if (spellInfo.Target in array{"Unico", "Area"})
+        spell_target_var := opponent.serial;
+    elseif (spellInfo.Target == "Self")
+        spell_target_var := me.serial;
+    endif
+
+    return chosen_spell;
+endfunction
+
+function ChooseIdealDruidSpells(me, opponent, spells)
+    var dist := Distance(me, opponent);
+    var enemy_count := NPC_GetPlayersPetsAndSummonsNearby(me).size();
+
+    // Non-ideal druid spells for NPC combat
+    var non_ideal := array{
+        "Criar comida", "Manter Fogueira", "Fala Selvagem", "Acalmar bestas",
+        "Percepção da Coruja", "Invocar Wisp", "Cura Leve", "Pomo da Vitalidade",
+        "Canção das águas cristalinas", "Revelação da Lua", "Despetrificar",
+        "Encantar Pessoa", "Saltar", "Caminhada do vento", "Reviver animais",
+        "Manto da Casca de Carvalho", "Misericórdia da Corrente"
+    };
+
+    // Root if enemy in melee
+    if (dist <= 2 && ("Enraizar" in spells))
+        return "Enraizar";
+    endif
+
+    var valid_spells := array{};
+    foreach spell in spells
+        if (spell in non_ideal)
+            continue;
+        endif
+
+        var weight := 50;
+
+        if (spell == "Fogo Fatuo" || spell == "Queimadura por frio" || spell == "Vento Silvestre")
+            weight := 70;
+        elseif (spell == "Tempestade de Espinhos")
+            weight := 75;
+        elseif (spell == "Enraizar")
+            weight := 60;
+        elseif (spell == "Pira Purificadora")
+            weight := 70;
+        elseif (spell == "Renascimento da Terra" && enemy_count > 2)
+            weight := 85;
+        elseif (spell == "Enxame")
+            weight := 75;
+        elseif (spell == "Ventania selvagem" && dist <= 3)
+            weight := 80;
+        elseif (spell == "Corrente viva")
+            weight := 70;
+        elseif (spell == "Crescimento selvagem")
+            weight := 65;
+        elseif (spell == "Tremor dos antigos" && enemy_count > 2)
+            weight := 90;
+        endif
+
+        valid_spells.append(struct{ "name" := spell, "weight" := weight });
+    endforeach
+
+    valid_spells := SortSpellsByPriority(valid_spells);
+
+    if (valid_spells.size() > 0)
+        return ChooseWeightedSpell(valid_spells);
+    endif
+
+    return "Fogo Fatuo";
+endfunction
