@@ -4,8 +4,8 @@ use polsys;
 use uo;
 use util;
 
-program textcommand(chr)
-	chr := chr;
+program textcmd_perfil(who)
+	who := who;
 
 	var pc := PolCore();
 
