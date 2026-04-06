@@ -1,15 +1,22 @@
+// Script-level cached spell category arrays (built once, reused every spell decision)
+var _aradalore_spells := 0;
+var _anti_mage_spells := 0;
+var _anti_melee_spells := 0;
+var _aoe_spells := 0;
+var _non_ideal_spells := 0;
+var _always_good_base := 0;
+
 function GetAradoloreSpells()
-   // All spells that belong to the Aradalore school
-   // Important: Cross reference with mage school configs to match names exactly
-   return array{
+   if (_aradalore_spells) return _aradalore_spells; endif
+   _aradalore_spells := array{
      "Invoc. Espir. Urso",
      "Invoc. Espir. Lobo",
-     "Invoc. Espir. Serpente", 
+     "Invoc. Espir. Serpente",
      "Invoc. Espir. Pantera",
      "Invoc. Espir. Cura",
      "Invoc. Driade",
      "Invoc. Ent",
-     "Forma de Urso", 
+     "Forma de Urso",
      "Forma Grande Urso",
      "Forma do Lobo",
      "Forma da Serpente",
@@ -18,6 +25,7 @@ function GetAradoloreSpells()
      "Invoc. Espir. Fogo",
      "Invoc. Colosso"
    };
+   return _aradalore_spells;
 endfunction
 
 function RemoveNonIdealSpells(spells, school)
@@ -33,15 +41,15 @@ function RemoveNonIdealSpells(spells, school)
     return valid_spells;
 endfunction
 
-function ChooseIdealSpell(me, opponent, spells)
+function ChooseIdealSpell(me, opponent, spells, school := 0)
     var chosen_spells := array{};
     var opponent_class := opponent.getClass();
     var is_ranged := opponent.weapon.attribute == "RangedCombat";
     var dist := Distance(me, opponent);
     var low_health := AP_GetVital(me, HITS) < (AP_GetVitalMaximumValue(me, HITS) * 0.3);
     var is_drow := (GetObjProperty(opponent, "chardata").raca == "Drow");
-    var enemy_count := ListHostiles(me, 10).size();
-    var school := getSpellSchool(me);
+    var enemy_count := NPC_GetPlayersPetsAndSummonsNearby(me).size();
+    if (!school) school := getSpellSchool(me); endif
     
     // First priority - emergency spells
     if (low_health && "Invisibilidade" in spells)
@@ -124,59 +132,69 @@ function ChooseIdealSpell(me, opponent, spells)
 endfunction
 
 function GetAlwaysGoodSpells(school, is_drow)
-    var spells := array{
-        "Misseis Magicos", "Ampliar Dor", "Drenar Folego", "Relampago",
-        "Incinerar", "Congelar", "Pesadelo", "Impedir Cura",
-        "Forma Amaldicoada", "Drenar Vida", "Maldicao de Zhao",
-        "Paralisar", "Envenenar", "Velocidade", "Clones das sombras",
-        "Hipnotizar", "Cegar"
-    };
-    
-    // Add Escurecer only against non-drow
+    if (!_always_good_base)
+        _always_good_base := array{
+            "Misseis Magicos", "Ampliar Dor", "Drenar Folego", "Relampago",
+            "Incinerar", "Congelar", "Pesadelo", "Impedir Cura",
+            "Forma Amaldicoada", "Drenar Vida", "Maldicao de Zhao",
+            "Paralisar", "Envenenar", "Velocidade", "Clones das sombras",
+            "Hipnotizar", "Cegar"
+        };
+    endif
+
+    // Copy base and append conditional entries
+    var spells := _always_good_base + array{};
+
     if (!is_drow)
         spells.append("Escurecer");
     endif
-    
-    // Add all Aradalore spells if that's the school
 
     if (school == "Aradalore")
         spells := spells + GetAradoloreSpells();
     endif
-    
+
     return spells;
 endfunction
 
 function GetAntiMageSpells()
-    return array{
+    if (_anti_mage_spells) return _anti_mage_spells; endif
+    _anti_mage_spells := array{
         "Enfraquecer Intelecto", "Atrasar Magias", "Fuga de Mana",
         "Drenar Mana", "Envenenar Espirito", "Silenciar"
     };
+    return _anti_mage_spells;
 endfunction
 
 function GetAntiMeleeSpells()
-    return array{
+    if (_anti_melee_spells) return _anti_melee_spells; endif
+    _anti_melee_spells := array{
         "Retribuicao Profana", "Muralha de Fogo", "Muralha de Pedra",
         "Correntes de dor", "Medo", "Vinganca Recorrente",
         "Horror Paralisante", "Forma Espectral"
     };
+    return _anti_melee_spells;
 endfunction
 
 function GetAoESpells()
-    return array{
+    if (_aoe_spells) return _aoe_spells; endif
+    _aoe_spells := array{
         "Bola de Fogo", "Nuvem Acida", "Corrente de Raios",
         "Chuva de Meteoros", "Terremoto", "Chuva de Gelo",
         "Parar o Tempo"
     };
+    return _aoe_spells;
 endfunction
 
 function GetNonIdealSpells()
-    return array{
+    if (_non_ideal_spells) return _non_ideal_spells; endif
+    _non_ideal_spells := array{
         "Sangue em mana", "Satisfacao Sadica", "Presente Espiritual",
         "Invoc. Espir. Luz", "Aprisionar Alma", "Aparencia Cadaverica",
         "Pacto Sepultura", "Remover Encantamentos", "Teleportar",
         "Folego prolongado", "Encantar objeto", "Manipular Sombras",
-        "Iludir", "Pressagio"
+        "Iludir", "Pressagio", "Prolongar Desmaio", "Levantar os Mortos"
     };
+    return _non_ideal_spells;
 endfunction
 
 function SortSpellsByPriority(spells)
@@ -247,11 +265,11 @@ function FindSpellInConfig(spellname, cfgFile)
 endfunction
 
 // O(1) cached lookup - replaces iterating 4 config files with sleepms(2) per entry
-function getAvailableSpells(monster)
+function getAvailableSpells(monster, school := 0)
    var cache := NPC_GetCachedData(monster);
    var tier := cache.tier;
    if (!tier) tier := 1; endif
-   var school := getSpellSchool(monster);
+   if (!school) school := getSpellSchool(monster); endif
    return GetAvailableSpellsCached(school, tier);
 endfunction
 
@@ -271,42 +289,31 @@ function getSpellSchool(monster)
    return school;
 endfunction
 
-function ChooseSpell(me, opponent, spells)
-    var school := getSpellSchool(me);
+function ChooseSpell(me, opponent, spells, school := 0)
+    if (!school) school := getSpellSchool(me); endif
 
     if (school == "Ahtaleloreth")
-        return HandleSwordMageSpellChoice(opponent);
+        var name := HandleSwordMageSpellChoice(opponent);
+        return struct{ "name" := name, "info" := FindMageSpellInConfigs(name) };
     endif
 
-    // Get ideal spell based on tactical considerations
-    var chosen_spell := ChooseIdealSpell(me, opponent, spells);
-    // Get spell info for the chosen spell - search across all mage school configs
+    var chosen_spell := ChooseIdealSpell(me, opponent, spells, school);
     var spellInfo := FindMageSpellInConfigs(chosen_spell);
     if (!spellInfo)
-        SetObjProperty(me, "#SpellTarget", opponent.serial);
-        return "Misseis Magicos";
+        spell_target_var := opponent.serial;
+        chosen_spell := "Misseis Magicos";
+        spellInfo := FindMageSpellInConfigs(chosen_spell);
+        return struct{ "name" := chosen_spell, "info" := spellInfo };
     endif
 
     // Set appropriate target based on spell type
     if (spellInfo.Target in array{"Unico", "Area"})
-        SetObjProperty(me, "#SpellTarget", opponent.serial);
+        spell_target_var := opponent.serial;
     elseif (spellInfo.Target == "Self")
-        SetObjProperty(me, "#SpellTarget", me.serial);
+        spell_target_var := me.serial;
     endif
 
-    // Special targeting for corpse-related spells
-    if (chosen_spell in array{"Prolongar Desmaio", "Levantar os Mortos"})
-        var nearby_corpses := ListItemsNearLocation(me.x, me.y, me.z, 12);
-        foreach item in nearby_corpses
-            if (item.IsA(POLCLASS_CORPSE))
-                SetObjProperty(me, "#SpellTarget", item.serial);
-                break;
-            endif
-            sleepms(2);
-        endforeach
-    endif
-
-    return chosen_spell;
+    return struct{ "name" := chosen_spell, "info" := spellInfo };
 endfunction
 
 function DoHarmfulSpell()
@@ -332,7 +339,6 @@ function DoHarmfulSpell()
             return 1;
          endif
       endif
-      sleepms(2);
    endforeach
 
    SetCooldown(me, "DoHarmfulSpell", 15);
@@ -348,42 +354,43 @@ function MageBehavior(me, opponent)
       return 0;
    endif
 
-   // Get available spells
-   var spells := getAvailableSpells(me);
+   // Compute school ONCE, pass through the entire chain
+   var school := getSpellSchool(me);
+
+   var spells := getAvailableSpells(me, school);
    if (!spells.size())
       return 0;
    endif
 
-   // Choose spell based on situation
-   var chosen_spell := ChooseSpell(me, opponent, spells);
-
-   if (!chosen_spell)
+   var result := ChooseSpell(me, opponent, spells, school);
+   if (!result)
       return 0;
    endif
 
-   PrintTextAbove(me, "Casting " + chosen_spell);
-   return NPC_CastSpell(me, chosen_spell);
+   PrintTextAbove(me, "Casting " + result.name);
+   return NPC_CastSpell(me, result.name, result.info);
 endfunction
 
-function NPC_CastSpell(me, spellname)
-   var spellInfo := FindMageSpellInConfigs(spellname);
-   
+function NPC_CastSpell(me, spellname, spellInfo := 0)
+   if (!spellInfo)
+      spellInfo := FindMageSpellInConfigs(spellname);
+   endif
+
    if (!spellInfo)
       return 0;
    endif
-   
-   // Start the cast_spell script with target info
-   var targ := SystemFindObjectBySerial(GetObjProperty(me, "#SpellTarget"));
-   EraseObjProperty(me, "#SpellTarget");
-   
+
+   var targ := SystemFindObjectBySerial(spell_target_var);
+   spell_target_var := 0;
+
    var params := array{me, spellInfo, 0, targ};
    var script := Start_Script(":spells:cast_spell", params);
    if (script.errortext)
       PrintTextAbove(me, "Error starting spell: " + script.errortext);
       return 0;
    endif
-   
-   SetCooldown(me, "spell_cast", 15);
+
+   SetCooldown(me, "spell_cast", 5);
    return 1;
 endfunction
 
@@ -427,7 +434,7 @@ function HandleSwordMageSpellChoice(opponent)
         if (!elementalWeapon)
             var spells := array{"Lamina Flamejante", "Lamina de Gelo", "Lamina Eletrica"};
             var chosen_spell := spells[RandomInt(spells.size())+1];
-            SetObjProperty(me, "#SpellTarget", me.weapon.serial);
+            spell_target_var := me.weapon.serial;
             return chosen_spell;
         endif
 
@@ -443,7 +450,7 @@ function HandleSwordMageSpellChoice(opponent)
         endcase
 
         if (spell)
-            SetObjProperty(me, "#SpellTarget", opponent.serial);
+            spell_target_var := opponent.serial;
             return spell;
         endif
     endif
@@ -462,16 +469,16 @@ function GetAvailableShamanSpells(monster)
     return GetAvailableShamanSpellsCached(tier);
 endfunction
 
-function NPC_CastShamanSpell(me, spellname)
-    var cfgFile := ":spells:config/shaman";
-    var spellInfo := FindSpellInConfig(spellname, cfgFile);
+function NPC_CastShamanSpell(me, spellname, spellInfo := 0)
+    if (!spellInfo)
+        spellInfo := FindSpellInConfig(spellname, ":spells:config/shaman");
+    endif
     if (!spellInfo)
         return 0;
     endif
 
-    // Look up the target as set by the behavior (or default to opponent)
-    var targ := SystemFindObjectBySerial(GetObjProperty(me, "#SpellTarget"));
-    EraseObjProperty(me, "#SpellTarget");
+    var targ := SystemFindObjectBySerial(spell_target_var);
+    spell_target_var := 0;
 
     var params := array{me, spellInfo, 0, targ};
     var script := Start_Script(":spells:cast_spell", params);
@@ -480,7 +487,7 @@ function NPC_CastShamanSpell(me, spellname)
         return 0;
     endif
 
-    SetCooldown(me, "spell_cast", 15);
+    SetCooldown(me, "spell_cast", 10);
     return 1;
 endfunction
 
@@ -495,53 +502,33 @@ function HumanoidShamanBehavior(me, opponent)
         return 0;
     endif
 
-    // Choose a spell based on current conditions.
-    // (Here we re-use the generic ChooseSpell function for simplicity.
-    // Later you could add additional conditions to favor buffs versus harmful spells.)
-    var chosen_spell := ChooseShamanSpell(me, opponent, spells);
-    if (!chosen_spell)
+    var result := ChooseShamanSpell(me, opponent, spells);
+    if (!result)
         return 0;
     endif
 
-    // Retrieve the chosen spell's configuration so that we can set the proper target.
-    var cfgFile := ":spells:config/shaman";
-    var spellInfo := FindSpellInConfig(chosen_spell, cfgFile);
-    if (!spellInfo) 
-        // Default to opponent if no spell info is found
-        SetObjProperty(me, "#SpellTarget", opponent.serial);
-    else
-        // Target selection: For spells marked "Unico" or "Area" use opponent; for "Self" use self.
-        if (spellInfo.Target in array{"Unico", "Area"})
-            SetObjProperty(me, "#SpellTarget", opponent.serial);
-        elseif (spellInfo.Target == "Self")
-            SetObjProperty(me, "#SpellTarget", me.serial);
-        endif
-    endif
-
-    PrintTextAbove(me, "Casting " + chosen_spell + " (Shaman)");
-    return NPC_CastShamanSpell(me, chosen_spell);
+    PrintTextAbove(me, "Casting " + result.name + " (Shaman)");
+    return NPC_CastShamanSpell(me, result.name, result.info);
 endfunction
 
 function ChooseShamanSpell(me, opponent, spells)
-    var cfgFile := ":spells:config/shaman";
-
-    // Get ideal spell based on tactical considerations
     var chosen_spell := ChooseIdealShamanSpells(me, opponent, spells);
-    // Get spell info for the chosen spell
-    var spellInfo := FindSpellInConfig(chosen_spell, cfgFile);
+    var spellInfo := FindSpellInConfig(chosen_spell, ":spells:config/shaman");
     if (!spellInfo)
-        SetObjProperty(me, "#SpellTarget", opponent.serial);
-        return "Enfraquecer";
+        spell_target_var := opponent.serial;
+        chosen_spell := "Enfraquecer";
+        spellInfo := FindSpellInConfig(chosen_spell, ":spells:config/shaman");
+        return struct{ "name" := chosen_spell, "info" := spellInfo };
     endif
 
-    // Set appropriate target based on spell type
+    // Set target based on spell type
     if (spellInfo.Target in array{"Unico", "Area"})
-        SetObjProperty(me, "#SpellTarget", opponent.serial);
+        spell_target_var := opponent.serial;
     elseif (spellInfo.Target == "Self")
-        SetObjProperty(me, "#SpellTarget", me.serial);
+        spell_target_var := me.serial;
     endif
 
-    return chosen_spell;
+    return struct{ "name" := chosen_spell, "info" := spellInfo };
 endfunction
 
 function ChooseIdealShamanSpells(me, opponent, spells)
@@ -551,17 +538,20 @@ function ChooseIdealShamanSpells(me, opponent, spells)
     var dist := Distance(me, opponent);
     var low_health := AP_GetVital(me, HITS) < (AP_GetVitalMaximumValue(me, HITS) * 0.3);
     var hurt := AP_GetVital(me, HITS) < (AP_GetVitalMaximumValue(me, HITS) * 0.7);
-    var enemy_count := ListHostiles(me, 10).size();
+    var enemy_count := NPC_GetPlayersPetsAndSummonsNearby(me).size();
     var allies := NPC_GetNearbyAllies(me);
     var ally_count := allies.size();
-    // Emergency priority:
-    // If low on health, try "Cura Grave" if available.
-    if (low_health && ("Cura Grave" in spells))
-        return "Cura Grave";
-    endif
+    var self_cache := NPC_GetCachedData(me);
+    var self_is_undead := (self_cache.category_lower == "undead" || self_cache.category_lower == "demons");
 
-    if (hurt && ("Cura Leve" in spells))
-        return "Cura Leve";
+    // Emergency priority: self-heal (skip if undead — healing damages them)
+    if (!self_is_undead)
+        if (low_health && ("Cura Grave" in spells))
+            return "Cura Grave";
+        endif
+        if (hurt && ("Cura Leve" in spells))
+            return "Cura Leve";
+        endif
     endif
 
     // If the opponent has summoned creatures, try "Enraizar" if available.
@@ -580,14 +570,14 @@ function ChooseIdealShamanSpells(me, opponent, spells)
             weight += 20;
         endif
 
-        // Example condition: if many enemies are present, and the spell is an AoE like "Cura em Area",
-        // add extra weight.
-        // Also check for hurt allies
-        foreach ally in allies
-            if (AP_GetVital(ally, HITS) < (AP_GetVitalMaximumValue(ally, HITS) * 0.7) && spell == "Cura em Area")
-                weight += 15;
-            endif
-        endforeach
+        // AoE heal boost only if caster isn't undead (healing damages undead)
+        if (!self_is_undead)
+            foreach ally in allies
+                if (AP_GetVital(ally, HITS) < (AP_GetVitalMaximumValue(ally, HITS) * 0.7) && spell == "Cura em Area")
+                    weight += 15;
+                endif
+            endforeach
+        endif
 
         // Add the spell structure into our weighted list.
         valid_spells.append(struct{ "name" := spell, "weight" := weight });
@@ -624,54 +614,56 @@ function HumanoidPriestBehavior(me, opponent)
         return 0;
     endif
 
-    // Choose a spell based on current conditions
     var chosen_spell := ChoosePriestSpell(me, opponent, spells);
     if (!chosen_spell)
         return 0;
     endif
 
-    // Set the appropriate target based on the spell type
-    var cfgFile := ":spells:config/priest";
-    var spellInfo := FindSpellInConfig(chosen_spell, cfgFile);
-    if (!spellInfo)
-        SetObjProperty(me, "#SpellTarget", opponent.serial);
-    else
-        if (spellInfo.Target == "Self")
-            SetObjProperty(me, "#SpellTarget", me.serial);
+    var spellInfo := FindSpellInConfig(chosen_spell, ":spells:config/priest");
+
+    // Set target if not already set by ChoosePriestSpell (ally healing sets it there)
+    if (!spell_target_var)
+        if (spellInfo && spellInfo.Target == "Self")
+            spell_target_var := me.serial;
         else
-            SetObjProperty(me, "#SpellTarget", opponent.serial);
+            spell_target_var := opponent.serial;
         endif
     endif
 
     PrintTextAbove(me, "Casting " + chosen_spell + " (Priest)");
-    return NPC_CastPriestSpell(me, chosen_spell);
+    return NPC_CastPriestSpell(me, chosen_spell, spellInfo);
 endfunction
 
 function ChoosePriestSpell(me, opponent, spells)
     // Gather battlefield information
     var my_health_pct := CDbl(AP_GetVital(me, HITS)) / CDbl(AP_GetVitalMaximumValue(me, HITS));
     var opponent_health_pct := CDbl(AP_GetVital(opponent, HITS)) / CDbl(AP_GetVitalMaximumValue(opponent, HITS));
+    var self_cache := NPC_GetCachedData(me);
+    var self_is_undead := (self_cache.category_lower == "undead" || self_cache.category_lower == "demons");
+
     // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
     var allies := GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL);
     var hurt_allies := 0;
-    
-    // Count hurt allies
+
+    // Count hurt allies (skip undead/demons — healing damages them)
     foreach ally in allies
-        if (!ally.npctemplate) // Skip if not player
+        if (!ally.npctemplate)
             continue;
         endif
-        
-        if (ally.serial != me.serial && !ally.dead) // Don't count self or dead allies
-            var ally_health_pct := CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS));
-            if (ally_health_pct < 0.7) // Consider allies below 70% health as hurt
-                hurt_allies += 1;
+
+        if (ally.serial != me.serial && !ally.dead)
+            var ally_cache := NPC_GetCachedData(ally);
+            if (ally_cache.category_lower != "undead" && ally_cache.category_lower != "demons")
+                var ally_health_pct := CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS));
+                if (ally_health_pct < 0.7)
+                    hurt_allies += 1;
+                endif
             endif
         endif
-        sleepms(2);
     endforeach
 
-    // Emergency priority spells (when health is critical)
-    if (my_health_pct < 0.3)
+    // Emergency priority spells (skip if undead — healing damages them)
+    if (!self_is_undead && my_health_pct < 0.3)
         if ("Santuario" in spells)
             return "Santuario";
         elseif ("Cura Grave" in spells)
@@ -686,21 +678,23 @@ function ChoosePriestSpell(me, opponent, spells)
         return "Descanso Tranquilo";
     endif
 
-    // Single target healing for very hurt allies
+    // Single target healing for very hurt allies (undead already filtered above)
     foreach ally in allies
         if (!ally.npctemplate && !ally.dead)
-            var ally_health_pct := CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS));
-            if (ally_health_pct < 0.4)
-                if ("Cura Grave" in spells)
-                    SetObjProperty(me, "#SpellTarget", ally.serial);
-                    return "Cura Grave";
-                elseif ("Cura Leve" in spells)
-                    SetObjProperty(me, "#SpellTarget", ally.serial);
-                    return "Cura Leve";
+            var ally_cache := NPC_GetCachedData(ally);
+            if (ally_cache.category_lower != "undead" && ally_cache.category_lower != "demons")
+                var ally_health_pct := CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS));
+                if (ally_health_pct < 0.4)
+                    if ("Cura Grave" in spells)
+                        spell_target_var := ally.serial;
+                        return "Cura Grave";
+                    elseif ("Cura Leve" in spells)
+                        spell_target_var := ally.serial;
+                        return "Cura Leve";
+                    endif
                 endif
             endif
         endif
-        sleepms(2);
     endforeach
 
     // Defensive spells when under attack
@@ -726,17 +720,18 @@ function ChoosePriestSpell(me, opponent, spells)
     return "Cura Leve";
 endfunction
 
-function NPC_CastPriestSpell(me, spellname)
-    var cfgFile := ":spells:config/priest";
-    var spellInfo := FindSpellInConfig(spellname, cfgFile);
-    
+function NPC_CastPriestSpell(me, spellname, spellInfo := 0)
+    if (!spellInfo)
+        spellInfo := FindSpellInConfig(spellname, ":spells:config/priest");
+    endif
+
     if (!spellInfo)
         return 0;
     endif
     
     // Start the cast_spell script with target info
-    var targ := SystemFindObjectBySerial(GetObjProperty(me, "#SpellTarget"));
-    EraseObjProperty(me, "#SpellTarget");
+    var targ := SystemFindObjectBySerial(spell_target_var);
+    spell_target_var := 0;
     
     var params := array{me, spellInfo, 0, targ};
     var script := Start_Script(":spells:cast_spell", params);
@@ -745,6 +740,6 @@ function NPC_CastPriestSpell(me, spellname)
         return 0;
     endif
     
-    SetCooldown(me, "spell_cast", 15);
+    SetCooldown(me, "spell_cast", 10);
     return 1;
 endfunction

@@ -94,102 +94,26 @@ function SporeSpecial(attacker, defender)
     return 1;
 endfunction
 
+// Non-blocking: transitions to STEALING state, one step per brain tick
 function DoThiefSteal(opponent)
     if (!opponent.backpack)
         return 0;
     endif
 
-    // First try to hide
-    GrantPrivilege(me, "hiddenattack");
-    me.enable("hiddenattack");
     me.hidden := 1;
     me.stealthsteps := 30;
 
-    // Move close to target
-    while (Distance(me, opponent) > 1)
-        WalkToward(opponent);
-        sleepms(100);
-        if (Distance(me, opponent) > AREA_SIZE)
-            break;
-        endif
-    endwhile
-
-    // Try to steal if close enough
-    if (Distance(me, opponent) <= 1)
-        var diff := 15 + CInt(AP_GetSkill(opponent, AWARENESS));
-        var check := SkillCheck(me, PICKPOCKETING, diff);
-
-        if (check > 0)
-            // Check for elemental weapon
-            if (MobileWrapper(opponent).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
-                if (GetObjProperty(opponent.weapon, "#elementalweapon"))
-                    return 1;
-                endif
-            endif
-
-            // Attempt steal
-            var items := EnumerateItemsInContainer(opponent.backpack);
-            if (items.size() > 0)
-                var item := items[RandomInt(items.size())+1];
-                if (item.movable && !item.newbie)
-                    if (!me.backpack)
-                        var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
-                        EquipItem(me, backpack);
-                    endif
-                    MoveItemToContainer(item, me.backpack);
-                    PrintTextAbove(me, "*furtou " + item.desc + "*");
-                endif
-            endif
-        else
-            StealCriticalFailure(me, opponent);
-        endif
-    endif
-    
-    if (me.hidden == 1)
-        me.hidden := 0;
-    endif
+    SM_TransitionTo("STEALING", struct{ "target" := opponent, "phase" := "approach" });
+    return 1;
 endfunction
 
-function DoThiefSneakAttack(opponent)   
-    // Grant stealth privileges
-    GrantPrivilege(me, "hiddenattack");
-    me.enable("hiddenattack");
-    GrantPrivilege(me, "runwhilestealth");
-    me.enable("runwhilestealth");
-
+// Non-blocking: transitions to SNEAKING state, one step per brain tick
+function DoThiefSneakAttack(opponent)
     me.hidden := 1;
     me.stealthsteps := 100;
 
-    // Try to get behind the target without breaking stealth
-    var attempts := 0;
-    while (!IsBehind(opponent, me.x, me.y) && attempts < 20)
-        attempts += 1;
-
-        // Calculate position behind target based on their facing
-        var behind_facing := (opponent.facing + 4) % 8;
-        var mods := GetModByFacing(behind_facing);
-        var behind_x := opponent.x + mods[1];
-        var behind_y := opponent.y + mods[2];
-
-        WalkTowardLocation(behind_x, behind_y);
-        sleepms(100);
-
-        // Break if we lost stealth or got too far
-        if (!me.hidden || Distance(me, opponent) > 16)
-            break;
-        endif
-    endwhile
-
-    // Only attack if still hidden and in position
-    if (me.hidden && /* IsBehind(opponent, me.x, me.y) && */ Distance(me, opponent) <= 1)
-        SetObjProperty(me, "backstab", 1);
-        SetObjProperty(me.weapon, "backstab", 1);
-        me.attack_once(opponent);
-    else
-        // If stealth attack failed, reveal and engage normally
-        me.hidden := 0;
-        SendEvent(me, struct{ "type" := SYSEVENT_ENGAGED, "source" := opponent });
-    endif
+    SM_TransitionTo("SNEAKING", struct{ "target" := opponent, "attempts" := 0 });
+    return 1;
 endfunction
 
 function PerformHeal(shaman, targ, tier)
@@ -873,8 +797,8 @@ function WallClimb(spider)
       me.stealthsteps := 100;
       
       PrintTextAbove(spider, "*ataca do alto*");
-      SetObjProperty(spider, "backstab", 1);
-      SetObjProperty(spider.weapon, "backstab", 1);
+      SetObjProperty(spider, "#GuaranteedHit", 1);
+      SetObjProperty(spider, "#nextcritical", 1);
 
       spider.attack_once(closest);
       
