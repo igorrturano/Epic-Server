@@ -16,8 +16,8 @@ program unequipitem(params)
 
 	who := MobileWrapper(who);
 	if (who.isShaman())
-		who.AddModifier(AttributeModifier(MAGERY, 0));
+		equip.SetModifier(AttributeModifier(MAGERY, 0));
 	endif
 
-	MobileWrapper(who).RemoveItemModifiers(equip);
+	who.RemoveItemModifiers(equip);
 endprogram

@@ -15,7 +15,7 @@ include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 
 function PegaPericiaPeloMaterial(tipoMaterial)
-	case (tipoMaterial)
+	case (Lower(tipoMaterial))
 		"metal":
 		"gem":
 		"glass":
@@ -31,7 +31,7 @@ function PegaPericiaPeloMaterial(tipoMaterial)
 		"wood":
 			return "Wood_Working";
 		"catalist":
-		"oleo":
+		"Oleo":
 		"solvente":
 		"alcool":
 			return "Alchemy";
@@ -223,7 +223,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 																	materiaisEscolhidos,
 																	sessao.deveReciclar,
 																	i == lotes && resto > 0 ? resto : quantidadePorLote,
-																	sessao.componenteSelecionado.encaixe,
+																	sessao.componenteSelecionado.selecione.encaixeReal,
 																	sessao.picoPericia,
 																	Cint(configComponentes[sessao.componenteSelecionado.selecione.objtype].lote));
 															
@@ -663,7 +663,7 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 
 			var tipoEQuantidade := SplitWords(material);
 			dicionarioMateriais.insert(
-					tipoEQuantidade[1],
+					Lower(tipoEQuantidade[1]),
 					struct { 
 						quantidade := tipoEQuantidade[2], 
 						possiveis := LISTA_TIPO_MATERIAL[UPPER(tipoEQuantidade[1])] 
@@ -685,7 +685,8 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 										isColunaBotao := true, 
 										objtype := chave, 
 										materiais := dicionarioMateriais, 
-										materialPrincipal := configProfissao[chave].principalMaterial
+										materialPrincipal := configProfissao[chave].principalMaterial,
+										encaixeReal := configProfissao[chave].encaixe
 									};
 
 		componentes.append(componente);

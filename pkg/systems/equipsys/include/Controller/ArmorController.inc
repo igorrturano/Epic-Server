@@ -125,7 +125,7 @@ endfunction
 
 function GetModifiersBySlot(slot)
 	var modifiers := array{};
-	case(Upper(slot))
+	case(slot)
 		HEAD: modifiers := {-1,0,0,-1,0}; break;
 		NECK: modifiers := {-1,0,0,-1,0}; break;
 		BODY: modifiers := {-4,0,0,-12,0}; break;
@@ -149,7 +149,7 @@ endfunction
 
 function GetModifiersByProtection(protection)
 	var modifiers := array{};
-	case(Upper(protection)) // {Dexterity, Sneak, Mechanics, Magery, Awareness}
+	case(protection) // {Dexterity, Sneak, Mechanics, Magery, Awareness}
 		//TIER 1
 		ARMOR_LOWLOW: modifiers := {0,0,0,0,0}; break;
 		ARMOR_LOWMID: modifiers := {0,0,0,0,0}; break;

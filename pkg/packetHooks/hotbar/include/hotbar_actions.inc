@@ -22,6 +22,7 @@ include ":abilities:AbilityRegistry";
 include ":abilities:controllers/AbilityMonitor";
 include ":abilities:models/Ability";
 include ":charactercreation:habilidades";
+include ":hotbar:include/cooldown_packet";
 
 // ============================================================================
 // ExecuteSkillAction - Unified skill execution
@@ -123,7 +124,7 @@ function ExecuteAbility(who, actionId)
     endif
 
     if (ability.GetAbilityCooldown() > 0)
-        SendSysMessageEx(who, $"[HAB_CD] {ability.GetName()}|{ability.GetAbilityCooldown()}|{ability.GetIcon()}", SSM_INFO);
+        SendCooldownPacket(who, ability.GetName(), ability.GetAbilityCooldown(), ability.GetIcon(), COOLDOWN_TYPE_ABILITY);
     endif
 
     return 1;

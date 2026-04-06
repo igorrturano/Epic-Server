@@ -378,6 +378,32 @@ function ApplyChargesCalculation(weapon, dmg, chargesAmount)
 	return damage;
 endfunction
 
+function FailSpell(who, spellinfo := 0)
+	who.frozen := 0;
+	EraseObjProperty(who, "#medding");
+	EraseObjProperty(who, "#Casting");
+	PlayObjectCenteredEffect(who, FX_FIZZLE, 5, 50);
+	PlaySoundEffect(who, SFX_SPELL_FAIL);
+	return 1;
+endfunction
+
+function EquipmentCheck(who)
+	var hand_1 := GetEquipmentByLayer(who, LAYER_HAND1);
+	if (hand_1)
+		if (!hand_1.IsA(POLCLASS_SPELLBOOK))
+			return 0;
+		endif
+	endif
+	var hand_2 := GetEquipmentByLayer(who, LAYER_HAND2);
+	if (hand_2)
+		if (!hand_2.IsA(POLCLASS_SPELLBOOK))
+			return 0;
+		endif
+	endif
+
+	return 1;
+endfunction
+
 function HandleSpellSkill(who)
 	var chardata := getobjProperty(who, "chardata");
 	var skill := Cint(AP_GetSkill(who, ARCANA));

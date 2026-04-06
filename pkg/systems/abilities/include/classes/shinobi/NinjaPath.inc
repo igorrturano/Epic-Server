@@ -25,57 +25,45 @@ class NinjaPath(CombatAbility)
 		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	endfunction
 
+	function CanActivate(this, mobile)
+		var who := mobile.GetObjRef();
+		var mark_serial := GetObjProperty(who, "#ninja_mark");
+		if (mark_serial)
+			if (who.frozen || who.paralyzed)
+				Message("Voce nao consegue se mover.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				return false;
+			endif
+		else
+			if (!_NP_HasDagger(who))
+				Message("Voce precisa ter uma adaga para marcar o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				return false;
+			endif
+		endif
+		return true;
+	endfunction
+
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
 		var sneak := CInt(mobile.GetSkill(SNEAK));
 
-		// Check if we already have a mark
 		var mark_serial := GetObjProperty(who, "#ninja_mark");
 		var mark_expires := GetObjProperty(who, "#ninja_mark_expires");
 
 		if (mark_serial)
-			// Check expiration
 			if (ReadGameClock() > mark_expires)
 				EraseObjProperty(who, "#ninja_mark");
 				EraseObjProperty(who, "#ninja_mark_expires");
 				Message("A marca expirou.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 				return false;
 			endif
-
-			// Teleport to marked target
 			return this._TeleportToMark(who, mark_serial, sneak);
 		else
-			// Mark a new target
 			return this._MarkTarget(who, sneak);
 		endif
 	endfunction
 
 	function _MarkTarget(this, who, sneak)
-		// Validate player has a dagger
-		var weapon := who.weapon;
-		var hasDagger := 0;
-		if (weapon)
-			var weaponWrapper := WeaponWrapper(weapon);
-			if (!weaponWrapper.GetObjRef().errortext && weaponWrapper.GetCategory() == WEAPON_CATEGORY::DAGGER)
-				hasDagger := 1;
-			endif
-		endif
-		var item_graphic := 0x1BFE; // Default kunai graphic
-		if (!hasDagger)
-			// Check backpack for any dagger
-			foreach item in (EnumerateItemsInContainer(who.backpack))
-				var ww := WeaponWrapper(item);
-				if (!ww.GetObjRef().errortext && ww.GetCategory() == WEAPON_CATEGORY::DAGGER)
-					hasDagger := 1;
-					break;
-				endif
-			endforeach
-		endif
-
-		if (!hasDagger)
-			Message("Voce precisa ter uma adaga para marcar o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-			return false;
-		endif
+		var item_graphic := 0x1BFE;
 
 		Message("Selecione o alvo para marcar.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 		var targ := Target(who);
@@ -179,11 +167,6 @@ class NinjaPath(CombatAbility)
 			return false;
 		endif
 
-		if (who.frozen || who.paralyzed)
-			Message("Voce nao consegue se mover.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-			return false;
-		endif
-
 		var range := CInt(sneak / 5);
 		if (range < 5)
 			range := 5;
@@ -221,3 +204,20 @@ class NinjaPath(CombatAbility)
 	endfunction
 
 endclass
+
+function _NP_HasDagger(who)
+	var weapon := who.weapon;
+	if (weapon)
+		var ww := WeaponWrapper(weapon);
+		if (!ww.GetObjRef().errortext && ww.GetCategory() == WEAPON_CATEGORY::DAGGER)
+			return 1;
+		endif
+	endif
+	foreach item in (EnumerateItemsInContainer(who.backpack))
+		var ww := WeaponWrapper(item);
+		if (!ww.GetObjRef().errortext && ww.GetCategory() == WEAPON_CATEGORY::DAGGER)
+			return 1;
+		endif
+	endforeach
+	return 0;
+endfunction

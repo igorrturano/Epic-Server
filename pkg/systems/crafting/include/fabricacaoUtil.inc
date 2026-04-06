@@ -137,13 +137,13 @@ endfunction
 
 function PegaComponenteTierDesc(tier)
 	case (tier)
-		COMPONENTE_TIERS::MEDIOCRE : return struct {desc := "Normal" , valor := 0}; break;
-		COMPONENTE_TIERS::COMUM : return struct {desc := "Melhorado" , valor := 1}; break;
-		COMPONENTE_TIERS::NOTAVEL : return struct {desc := "Notável" , valor := 2}; break;
-		COMPONENTE_TIERS::SUPERIOR : return struct {desc := "Superior" , valor := 3}; break;
-		COMPONENTE_TIERS::EXCEPCIONAL : return struct {desc := "Excepcional" , valor := 4}; break;
+		COMPONENTE_TIERS::MEDIOCRE : return struct {id:= COMPONENTE_TIERS::MEDIOCRE, desc := "Normal" , valor := 0}; break;
+		COMPONENTE_TIERS::COMUM : return struct {id:= COMPONENTE_TIERS::COMUM, desc := "Melhorado" , valor := 1}; break;
+		COMPONENTE_TIERS::NOTAVEL : return struct {id:= COMPONENTE_TIERS::NOTAVEL, desc := "Notável" , valor := 2}; break;
+		COMPONENTE_TIERS::SUPERIOR : return struct {id:= COMPONENTE_TIERS::SUPERIOR, desc := "Superior" , valor := 3}; break;
+		COMPONENTE_TIERS::EXCEPCIONAL : return struct {id:= COMPONENTE_TIERS::EXCEPCIONAL, desc := "Excepcional" , valor := 4}; break;
 		default:
-			return struct {desc := "Erro!" , valor := 0}; break;
+			return struct {id := error, desc := "Erro!" , valor := 0}; break;
 	endcase
 endfunction
 
@@ -246,6 +246,9 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 											);
 		else
 			descriptor := GetItemDescriptor(receitaObjtype);
+			if(!descriptor.movable)
+				descriptor.movable := 1;
+			endif
 			descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
 			descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
 		endif
@@ -271,7 +274,6 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 		endif
 
 		descriptor.color := propFabricadoMontado.receita.corObrigatoria ? propFabricadoMontado.receita.corObrigatoria : propFabricadoMontado.esquema.cor;
-
 		var quantidadeFinal := 1;
 		if(propFabricadoMontado.receita.lote && propFabricadoMontado.receita.lote > 1)
 			quantidadeFinal := cint(quantidade * propFabricadoMontado.receita.lote);
@@ -295,7 +297,6 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 
 			AplicaAtributosItemFabricado(quem,item, propFabricadoMontado);
 		endif
-
 	else
 		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
 		Print("Erro: O Item " +  produto.desc + " não é um Produto Montado.");

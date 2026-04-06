@@ -1043,7 +1043,7 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 				var chaveMat := GetObjProperty(item,PROPNAME_MATERIAL);
 				var material := configRecursos[chaveMat];
 				var tier := PegaComponenteTierDesc(GetObjProperty(item,PROPNAME_TIER_COMPONENTE));
-				var chaveUnica := "{}{}{}".format(item.objtype, chaveMat, tier.valor);
+				var chaveUnica := "{}{}{}".format(item.objtype, chaveMat, tier.id);
 				var envelope ;
 
 				if(!retorno[componenteNecessario.encaixe].conjunto.exists(chaveUnica))
@@ -1560,9 +1560,10 @@ function CriaPropFabricadoGerada(
 	var componentesEscolhidos := dictionary;
 	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0,"", classe);
 	var tierInfo := PegaComponenteTierDesc(tier);
+	Sleepms(50);
 
 	foreach componenteNecessario in (receita.componentesNecessarios)
-		Sleepms(2);
+		Sleepms(5);
 		if(janelaTier.size() > 1)
 			tier := RandomIntMinMax(cint(janelaTier[1]), cint(janelaTier[2]) + 1);
 			tierInfo := PegaComponenteTierDesc(tier);
@@ -1578,7 +1579,7 @@ function CriaPropFabricadoGerada(
 		var materiaisPossiveisPorTier := dictionary;
 
 		foreach materialPossivel in materiaisPossiveis
-			sleepms(2);
+			sleepms(5);
 			if(cint(materialPossivel.chave)  in listaDeMateriaisIgnorados)
 				continue;	
 			endif
@@ -1639,6 +1640,8 @@ function CriaPropFabricadoGerada(
 			return error{"errorText" := "Não foi possível encontrar material para este valor de tier [{}].".format(valorTier) };
 		endif
 
+		Sleepms(50);
+		
 		var componenteEscolhido := MontaComponenteEscolhido(
 														opcaoEncontrada, 
 														componenteNecessario, 

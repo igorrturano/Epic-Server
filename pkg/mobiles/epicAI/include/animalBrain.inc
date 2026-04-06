@@ -1,13 +1,18 @@
 use npc;
 
 const FOLLOW_CMD := 0xA001;
-var following := 0;
 function AnimalBrain()
     var ev;
     var wanders := 0;
     var last_activity_time := polcore().systime;
     EnableMainEvents();
     Set_Event_Queue_Size(50);
+
+    // Build ability tables ONCE at brain activation (script-level vars in brain.src)
+    combat_abilities := BuildCombatAbilities(me);
+    enter_abilities := BuildEnterAbilities(me);
+
+    SM_TransitionTo("IDLE");
 
     while (me)
         ev := os::wait_for_event(0);
@@ -24,38 +29,67 @@ function AnimalBrain()
 
         HandleAnimalChanges(me);
 
+        // Process active states (non-blocking, ONE step per tick)
+        var state := SM_GetState();
+        if (state == "FLEEING")
+            SM_TickFlee();
+        elseif (state == "HERDING")
+            SM_TickHerding();
+        elseif (state == "FOLLOWING")
+            SM_TickFollowing();
+        elseif (state == "AMBUSH")
+            SM_TickAmbush();
+        endif
+
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
                 HandleAnimalLeftArea(me.opponent);
             else
-                PursueTarget(me.opponent);
+                if (SM_GetState() != "FLEEING")
+                    PursueTarget(me.opponent);
+                endif
             endif
         endif
 
-        if (ev)            
+        if (ev)
+            // Cache flee check once per event (avoids 3x GetObjProperty + vital reads)
+            var should_flee := ShouldFlee(me);
+
             case (ev.type)
                 SYSEVENT_ENGAGED:
                     last_activity_time := polcore().systime;
-                    AlertAllies(ev.source, me);
-                    HandleAnimalCombatEvent(ev.source);
+                    if (should_flee)
+                        SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
+                    else
+                        AlertAllies(ev.source, me);
+                        HandleAnimalCombatEvent(ev.source);
+                    endif
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
-                    HandleAnimalCombatEvent(ev.source);
+                    if (SM_GetState() == "AMBUSH")
+                        me.hidden := 0;
+                        SM_TransitionTo("COMBAT");
+                    endif
+                    if (should_flee)
+                        SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
+                    else
+                        HandleAnimalCombatEvent(ev.source);
+                    endif
                 SYSEVENT_ENTEREDAREA:
-                    //if (me.alignment != 1) return; endif// Only aggressive animals respond to ENTEREDAREA
-
                     if (!IsAlly(ev.source))
-                        // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
-                        AlertAllies(ev.source, me);
-                        HandleAnimalEnteredArea(ev.source);
+                        if (should_flee)
+                            SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
+                        else
+                            AlertAllies(ev.source, me);
+                            HandleAnimalEnteredArea(ev.source);
+                        endif
                     endif
                 SYSEVENT_LEFTAREA:
-                    if (me.alignment != 1) return; endif // Only aggressive animals respond to LEFTAREA
+                    if (me.alignment != 1) return; endif
 
                     if (!IsAlly(ev.source))
-                        // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
                         HandleAnimalLeftArea(ev.source);
                     endif
@@ -79,35 +113,18 @@ function AnimalBrain()
                     sleep(1);
                 EVID_FLEE:
                     last_activity_time := polcore().systime;
-                    FleeFrom(ev.source);
-				EVID_HERDING:
-					PrintTextAbove(me, "*pastoreado*");
-					var target1 := ev.data;
-					// loop real de movimento
-					while (me && CoordinateDistance(me.x, me.y, target1.x, target1.y) > 1)
-						RunTowardLocation(target1.x, target1.y);
-						sleepms(120);
-					endwhile
-				FOLLOW_CMD:
-					PrintTextAbove(me, "*segue*");
-					following := ev.source;
-					while (me && following && !following.dead)
-						var timers := TS_GetTimerNames(me);
-						// acabou o encantamento → para de seguir
-						if (!("encantar" in timers))
-							following := 0;
-							break;
-						endif
-						if (Distance(me, following) > 2)
-							RunToward(following);
-						endif
-						sleepms(300);
-					endwhile
+                    SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
+                EVID_HERDING:
+                    PrintTextAbove(me, "*pastoreado*");
+                    SM_TransitionTo("HERDING", struct{ "target" := ev.data });
+                FOLLOW_CMD:
+                    PrintTextAbove(me, "*segue*");
+                    SM_TransitionTo("FOLLOWING", struct{ "target" := ev.source });
             endcase
         endif
 
         // Idle behavior when no events and no combat
-        if (!me.opponent)
+        if (!me.opponent && SM_GetState() == "IDLE")
             AnimalIdle(wanders);
             if (RandomInt(100) < 30)
                 wanders += 1;
@@ -119,13 +136,12 @@ function AnimalBrain()
         endif
 
         // Dynamic sleep: fast in combat, slow when idle
-        if (me.opponent || (polcore().systime - last_activity_time) < 5)
-            sleepms(100); // Combat mode or recently active
+        if (me.opponent || SM_GetState() != "IDLE" || (polcore().systime - last_activity_time) < 5)
+            sleepms(100); // Combat mode, active state, or recently active
         else
             sleepms(1000); // Idle mode - save CPU
         endif
     endwhile
-	
 
 endfunction
 
@@ -134,17 +150,8 @@ function HandleAnimalEnteredArea(source)
         return 0;
     endif
 
-    if (me.canCharge())
-        StartCharge(me, source);
-    endif
-
-    if (me.hasTunnelTactics())
-        TunnelTactics(me, source);
-    endif
-
-    if (me.CanAmbush())
-        HandleAmbush(me, source);
-    endif
+    // Dispatch enter-area abilities from pre-built table (Charge, TunnelTactics, Ambush)
+    TickEnterAbilities(me, source, enter_abilities);
 
     HandleAnimalCombatEvent(source);
 
@@ -193,40 +200,11 @@ function HandleAnimalCombatEvent(opponent)
     TurnToward(opponent);
     PursueTarget(opponent);
     
-    if (me.hasHiveMind())
-        HiveMind(me);
-    endif
-
-    if (me.canDoConfusion())
-        doConfusion(opponent);
-    endif
-
-    if (me.CanBite())
-        Bite(me, opponent);
-    endif
-
-    if (me.CanTongueGrab())
-        TongueGrab(me, opponent);
-    endif
-
-    if (me.CanPoisonBite())
-        PoisonBite(me, opponent);
-    endif
-
-    if (me.CanClimbWall())
-        WallClimb(me);
-    endif
-    // TODO, add dragons here
-    if (me.CanFrighten())
-        frightenOpponent(me, opponent);
-    endif
-
-    if (me.canPetrify())
-        petrify(me, opponent);
-    endif
+    // Dispatch abilities from pre-built table (replaces 9+ sequential if-checks)
+    TickCombatAbilities(me, opponent, combat_abilities);
 
     if (ShouldFlee(me))
-        FleeFrom(opponent);
+        SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
         return 1;
     endif
 

@@ -51,6 +51,7 @@ program HitScript(params)
 								range, FX_BLUE_SPARKLE_GROUND);
 		foreach defender in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, range,
 													  attacker.realm))
+			sleepms(2);
 			if (!(defender in attacker.party.members) && !(defender in allPets))
 				if (defender.serial != attacker.serial)
 					PlayObjectCenteredEffect(defender, FX_BLUE_SPARKLE_GROUND, 7, 16);
@@ -68,6 +69,7 @@ program HitScript(params)
 								range, FX_EXPLODE_1);
 		foreach defender in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, range,
 													  attacker.realm))
+			sleepms(2);
 			if (!(defender in attacker.party.members) && !(defender in allPets))
 				if (defender.serial != attacker.serial)
 					PlayObjectCenteredEffect(defender, FX_EXPLODE_1, 7, 16);
@@ -84,6 +86,7 @@ program HitScript(params)
 								range, FX_ENERGY);
 		foreach defender in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, range,
 													  attacker.realm))
+			sleepms(2);
 			if (!(defender in attacker.party.members) && !(defender in allPets))
 				if (defender.serial != attacker.serial)
 					PlayMovingEffectXYZ(defender.x, defender.y, defender.z + 15, defender.x - 1, defender.y,
@@ -107,6 +110,7 @@ program HitScript(params)
 								range, 0x22c6);
 		foreach defender in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, range,
 													  attacker.realm))
+			sleepms(2);
 			if (!(defender in attacker.party.members) && !(defender in allPets))
 				if (defender.serial != attacker.serial)
 					PlayObjectCenteredEffectEx(defender, 0x22c6, 1, 9);

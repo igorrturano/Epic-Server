@@ -35,13 +35,16 @@ program MainHitScript(attackInfo)
 
 	WeaponHitScripts(attackInfo);
 	ArmorHitScripts(attackInfo);
-	DoMovement(attackInfo);
+	// DoMovement(attackInfo); Dead code, agora tudo na V3 eh direto no .inc
+	sleepms(2);
 
 	WearDownWeapon(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
 	ProccessCombatDamage(attackInfo);
+	sleepms(2);
 	PlayAttackFX(attackInfo);
 	PlayAttackSFX(attackInfo);
 
+	ProgressAttackSkills(attackInfo);
 	MasteryCombat_Advance(attackInfo.GetAttacker().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalBaseDamage() });
 	AchievementCombat_Advance(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalBaseDamage() });
 

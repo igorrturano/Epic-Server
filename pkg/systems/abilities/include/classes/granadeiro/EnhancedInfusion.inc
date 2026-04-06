@@ -4,7 +4,7 @@ use os;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
-include ":fls_magery:basicMagery";
+;
 include "include/client";
 include "include/epicConstants";
 

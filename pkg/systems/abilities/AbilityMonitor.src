@@ -6,6 +6,7 @@ include ":abilities:controllers/AbilityMonitor";
 include ":abilities:AbilityRegistry";
 include ":abilities:models/Ability";
 include ":attributes:attributes";
+include ":hotbar:include/cooldown_packet";
 
 program AbilityMonitor(params)
 	var who := params[1]; // MobileWrapper
@@ -36,9 +37,21 @@ program AbilityMonitor(params)
 	// Phase 1: Activate (delegates to executor)
 	var result := run_script_to_completion(executorScript,
 		array{"activate", abilityId, who, monitor});
-
-	if (result.errortext)
+	if (result.hasError)
 		Message(result.errorMsg, Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		var ability := Ability(abilityId);
+		var mobileRef := who.GetObjRef();
+		EraseObjProperty(mobileRef, $"AbilityCooldown_{abilityId}");
+		SendCooldownPacket(mobileRef, ability.GetName(), 0, ability.GetIcon(), COOLDOWN_TYPE_ABILITY);
+		if (ability.GetCostSTAM() > 0)
+			who.RestoreStamina(ability.GetCostSTAM());
+		endif
+		if (ability.GetCostMANA() > 0)
+			who.RestoreMana(ability.GetCostMANA());
+		endif
+		if (ability.GetCostHP() > 0)
+			who.RestoreHP(ability.GetCostHP());
+		endif
 		return;
 	endif
 
