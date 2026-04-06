@@ -60,25 +60,25 @@ function empty_bottle(character, potion, potiontype := 0)
 
   PlaySoundEffect(character, DRINK_SOUND);
   PrintTextAbove(character, "*usa uma pocao*");
-  var goles;
+  var doses;
 
-  if (!GetObjProperty(potion, "goles"))
-    goles := 3;
-    SetObjProperty(potion, "goles", goles);
+  if (!GetObjProperty(potion, "doses"))
+    doses := 3;
+    SetObjProperty(potion, "doses", doses);
   else
-    goles := cint(GetObjProperty(potion, "goles"));
+    doses := cint(GetObjProperty(potion, "doses"));
   endif
 
   if(potiontype == 1)  //eh uma poção de 1 so gole
-    goles := 0;
+    doses := 0;
   endif
 
-  if (goles > 1)
-    goles := goles - 1;
-    SetObjProperty(potion, "goles", goles);
+  if (doses > 1)
+    doses := doses - 1;
+    SetObjProperty(potion, "doses", doses);
   else
     SetObjProperty(potion, "acabou", 1);
-    SetObjProperty(potion, "goles", 0);
+    SetObjProperty(potion, "doses", 0);
   endif
 endfunction
 

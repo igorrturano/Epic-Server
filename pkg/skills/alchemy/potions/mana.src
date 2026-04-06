@@ -46,7 +46,7 @@ program drink_blue(who, potion)
 		4: healed := cint(healed * 0.80 * vicio); cd := healed * 0.5;
 	endcase
 
-	empty_bottle(who, potion, 1);
+	empty_bottle(who, potion);
 	TS_StartCooldown(who, "manapot", cint(healed) * 3);
 	SetObjProperty(who, "#manapotion", 1);
 	Detach();

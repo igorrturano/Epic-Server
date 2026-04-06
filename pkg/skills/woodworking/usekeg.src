@@ -198,8 +198,8 @@ function addDrink(who, item)
 		if (getobjproperty(targ, "fullness") != error)
 			SendSysMEssageEx(who, "Voce so pode armazenar garrafas cheias.", SSM_FAIL);
 			return 1;
-		elseif (getobjproperty(targ, "goles") != error &&
-		  (getobjproperty(targ, "goles") != getobjproperty(targ, "crafterskill") / 20))
+		elseif (getobjproperty(targ, "doses") != error &&
+		  (getobjproperty(targ, "doses") != getobjproperty(targ, "crafterskill") / 20))
 			SendSysMEssageEx(who, "Voce so pode armazenar garrafas cheias.", SSM_FAIL);
 			return 1;
 		endif
