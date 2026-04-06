@@ -65,7 +65,7 @@ function MontaDescricaoItem(objeto,who, xDesc := "")
 	endif
 
 	xDesc := PegaDescMagicLore(objeto,who,xDesc);
-	XDesc := PegaDescGoles(objeto,xDesc);
+	XDesc := PegaDescDoses(objeto,xDesc);
 	xDesc := PegaDescProdutoMontado(objeto,xDesc);
 	
 	return xDesc;

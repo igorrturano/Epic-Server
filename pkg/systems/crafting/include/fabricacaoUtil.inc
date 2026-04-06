@@ -255,19 +255,6 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 
 		descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
 		descriptor.maxhp := propFabricadoMontado.esquema.modificadorHpTotal? descriptor.maxhp + propFabricadoMontado.esquema.modificadorHpTotal : descriptor.maxhp;
-		//TODO trecho a seguir foi trazido do antigo sistema de Alchemy. remover uma vez que o novo sistema estiver UP.
-		var alchemyRecipes := ReadConfigFile(":alchemy:itemdesc");
-		var science := (alchemyRecipes[receitaObjtype].science);
-		if(science)
-			var tier := (alchemyRecipes[receitaObjtype].tier);
-			var crafterskill := Cint((AP_GetSkill(quem, SCIENCE))/10);
-			var crafterInt := AP_GetTrueStat (quem, INTELLIGENCE);
-			var bonus := (((crafterInt-50)/10)+(crafterskill));
-			descriptor.CProps.insert("bonus",bonus);
-			descriptor.CProps.insert("tier",tier);
-			descriptor.CProps.insert("crafterskill",crafterskill*10);
-			descriptor.CProps.insert("science",science);
-		endif
 
 		if(!propFabricadoMontado.receita.isEmpilhavel)
 			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
@@ -307,17 +294,29 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 endfunction
 
 function AplicaAtributosItemFabricado(quem, item, propFabricadoMontado)
-	item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
-	item.hp := item.maxhp;
-
 	if(!item)
 		SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
 		return 0;
 	endif
 
+	item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
+	item.hp := item.maxhp;
+	item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? CDbl((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 1;
+	
+	var infoPote := MontaInfoPote(quem,  CInt(propFabricadoMontado.receita.objtype));
+	if(infoPote) //Pote Alquimia 
+		var quantidadeDoses := PegaValorFabricacao(item, "doses");
+		if(quantidadeDoses)
+			SetObjProperty(item, "doses", quantidadeDoses);
+		endif
+		SetObjProperty(item, "tier", infoPote.tier);
+		SetObjProperty(item, "crafterskill", infoPote.crafterskill);
+		SetObjProperty(item, "science", infoPote.science);
+		SetObjProperty(item, "bonus", infoPote.bonus);
+	endif
+
 	AplicaFechadura(quem, item);
 	item.setAttrBase();
-	item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? CDbl((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 1;
 endfunction
 
 function ResolveEfeitoCaracteristica(valorEfeito)
@@ -539,4 +538,23 @@ function PegaTipoMaterialAleatorio(tipoMaterial)
 	endforeach
 
 	return materiais[RandomIntMinMax(1,materiais.size())];
+endfunction
+
+function MontaInfoPote(quem, receitaObjtype)
+	var alchemyRecipes := ReadConfigFile(":alchemy:itemdesc");
+	var science := (alchemyRecipes[receitaObjtype].science);
+	
+	if(science)
+		var crafterskill := Cint((AP_GetSkill(quem, SCIENCE))/10);
+		var crafterInt := AP_GetTrueStat (quem, INTELLIGENCE);
+		var bonus := (((crafterInt-50)/10)+(crafterskill));
+
+		return struct {
+			tier := alchemyRecipes[receitaObjtype].tier,
+			crafterskill := crafterskill * 10,
+			science := alchemyRecipes[receitaObjtype].science,
+			bonus := bonus
+		};
+	endif
+	return 0;
 endfunction
