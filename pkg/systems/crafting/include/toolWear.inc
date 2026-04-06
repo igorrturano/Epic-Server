@@ -16,7 +16,7 @@ function CheckToolWear (who, tool, craft_skill)
       "fortified":      bonus := 40;
       "indestructable": bonus := 50;
     endcase
-    swings := Cint(50 * tool.quality) + bonus;
+    swings := Cint(55 * tool.quality) + bonus;
     SetObjProperty(tool,"swings", swings);
   endif
   if(swings <= 0)
