@@ -49,9 +49,11 @@ function DesgastaInstrumento(who, instrumento)
 		instrumentohp := instrumentohp - 1;
 		if (instrumentohp <= 0)
 			SendSysMessage(who, instrumento.desc + " foi destruido.");
-			SetObjProperty(instrumento, "broken", 1);
-			SetObjProperty(instrumento, "realdesc", instrumento.desc);
-			SetName(instrumento, instrumento.desc + " [danificado]");
+			if (!GetObjProperty(instrumento, "broken"))
+				SetObjProperty(instrumento, "broken", 1);
+				SetObjProperty(instrumento, "realdesc", instrumento.desc);
+				SetName(instrumento, instrumento.desc + " [danificado]");
+			endif
 			MoveItemToContainer(instrumento, who.backpack);
 		// DestroyItem(instrumento);
 		elseif (instrumento.hp > instrumento.maxhp)
