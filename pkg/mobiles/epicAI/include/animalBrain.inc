@@ -1,5 +1,3 @@
-use npc;
-
 const FOLLOW_CMD := 0xA001;
 function AnimalBrain()
     var ev;
