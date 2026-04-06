@@ -160,7 +160,7 @@ function HandleHumanoidSpeech(text, source, is_ranged)
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
             PrintTextAbove(me, "*"+me.name+" se acovarda*");
-            FleeFrom(source);
+            SM_TransitionTo("FLEEING", struct{ "target" := source, "steps" := 0 });
             return 1;
         endif
     endif
@@ -690,7 +690,7 @@ function HandleThiefBehavior(opponent)
         else // In combat 
             var npcState := getNPCState(me);
             if (npcState == "dying" && MobileWrapper(me).HasAbility(ABILITY_ID::FUGA_DE_EMERGENCIA))
-                FleeFrom(opponent);
+                SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
                 SetCooldown(me, "thief_abilities", 30);
             endif
         endif

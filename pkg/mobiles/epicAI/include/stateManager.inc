@@ -54,12 +54,6 @@ function SM_TickFlee()
         return 1;
     endif
 
-    if (!AP_ConsumeVital(me, STAMINA, 5))
-        PrintTextAbove(me, "*Exausto*");
-        SM_TransitionTo("IDLE");
-        return 1;
-    endif
-
     TryToRunAway(_sm_data.target);
     _sm_data.steps += 1;
 

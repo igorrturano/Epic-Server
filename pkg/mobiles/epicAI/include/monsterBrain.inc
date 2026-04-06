@@ -148,7 +148,7 @@ function HandleMonsterSpeech(text, source, is_ranged)
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
             PrintTextAbove(me, "*"+me.name+" se acovarda*");
-            FleeFrom(source);
+            SM_TransitionTo("FLEEING", struct{ "target" := source, "steps" := 0 });
             return 1;
         endif
     endif

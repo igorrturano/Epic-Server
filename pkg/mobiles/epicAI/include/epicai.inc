@@ -1905,22 +1905,6 @@ function HandleIdleState()
     return 1;
 endfunction
 
-function FleeFrom(opponent)
-    if (!opponent)
-        return 0;
-    endif
-
-    var runs := 0;
-    while (opponent && Distance(me, opponent) < 16 && runs < 20)
-        TryToRunAway(opponent);
-        if(!AP_ConsumeVital(me, STAMINA, 5))
-            PrintTextAbove(me, "*Exausto*");
-            break;
-        endif
-        runs += 1;
-        sleepms(100);
-    endwhile
-endfunction
 
 function MaintainRange(opponent)
     var sleepdelay := 275 - me.run_speed;
@@ -2221,8 +2205,8 @@ function shouldKeepPursuing(opponent, dist)
                 
                 if (RandomInt(100) < flee_chance)
                     PrintTextAbove(me, "*"+me.name+" recua*");
-                    FleeFrom(opponent);
-                    return 0;  // Added return 0 after fleeing
+                    SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
+                    return 0;
                 endif
             endif
         endif
