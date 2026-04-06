@@ -36,6 +36,7 @@ program SendSpells(who)
     // Calculate packet size
     var data_size := 0;
     foreach item in spells
+        sleepms(2);
         data_size := data_size + 2 + len(item.name);
         data_size := data_size + 2 + len(CStr(item.circle));
         data_size := data_size + 2 + len(item.desc);
@@ -66,6 +67,7 @@ program SendSpells(who)
     offset := SetInt16BE(packet, offset, spells.size());
 
     foreach item in spells
+        sleepms(2);
         offset := WriteStringBE(packet, offset, item.name);
         offset := WriteStringBE(packet, offset, CStr(item.circle));
         offset := WriteStringBE(packet, offset, item.desc);
@@ -120,6 +122,7 @@ function LoadSpellsFromCfg(cfg_path, default_school, default_prefix := "m")
     endif
 
     foreach spell_id in spell_ids
+        sleepms(2);
         var spell_elem := FindConfigElem(spell_cfg, spell_id);
         if (!spell_elem)
             continue;
@@ -173,6 +176,7 @@ function GetPlayerSpells(who)
     endif
 
     foreach item in EnumerateItemsInContainer(backpack)
+        sleepms(2);
         if (item.objtype == 0xEFA || item.objtype == 0x2253 || item.objtype == 0x9E80)
             var booktype := GetObjProperty(item, "Booktype");
             if (!booktype)
@@ -214,6 +218,7 @@ function GetPlayerSpells(who)
             endif
 
             foreach spell_struct in spells_array
+                sleepms(2);
                 if (TypeOf(spell_struct) == "Struct")
                     var spell_id := spell_struct.id;
                     // For mage books (no fixed cfg), resolve each spell via SpellRegistry
@@ -267,6 +272,7 @@ function GetPlayerSpells(who)
             var cantrip_cfg := ReadConfigFile(":spells:config/cantrips");
             if (cantrip_cfg)
                 foreach cantrip_id in GetConfigIntKeys(cantrip_cfg)
+                    sleepms(2);
                     var cantrip_elem := FindConfigElem(cantrip_cfg, cantrip_id);
                     if (cantrip_elem)
                         var cantrip_name := GetConfigString(cantrip_elem, "Name");
@@ -302,6 +308,7 @@ function GetPlayerSpells(who)
             var shaman_cfg := ReadConfigFile(":spells:config/shaman");
             if (shaman_cfg)
                 foreach spell_data in shaman_list
+                    sleepms(2);
                     if (!spell_data.id)
                         continue;
                     endif
@@ -345,6 +352,7 @@ function GetPlayerSpells(who)
             var priest_cfg := ReadConfigFile(":spells:config/priest");
             if (priest_cfg)
                 foreach spell_data in priest_list
+                    sleepms(2);
                     var spell_elem;
                     var spell_id;
                     var spell_name;
@@ -404,6 +412,7 @@ function GetPlayerSpells(who)
             var druid_cfg := ReadConfigFile(":spells:config/druid");
             if (druid_cfg)
                 foreach spell_data in druid_list
+                    sleepms(2);
                     var spell_elem;
                     var spell_id;
                     var spell_name;
@@ -473,6 +482,7 @@ function GetPlayerSpells(who)
             endif
 
             foreach spell_id in GetConfigIntKeys(paladin_cfg)
+                sleepms(2);
                 var spell_elem := FindConfigElem(paladin_cfg, spell_id);
                 if (!spell_elem)
                     continue;
@@ -514,6 +524,7 @@ function GetPlayerSpells(who)
         var trickster_cfg := ReadConfigFile(":spells:config/trickster");
         if (trickster_cfg)
             foreach spell_id in GetConfigIntKeys(trickster_cfg)
+                sleepms(2);
                 var spell_elem := FindConfigElem(trickster_cfg, spell_id);
                 if (!spell_elem)
                     continue;
@@ -550,6 +561,7 @@ function GetPlayerSpells(who)
         var dh_cfg := ReadConfigFile(":spells:config/demonhunter");
         if (dh_cfg)
             foreach spell_id in GetConfigIntKeys(dh_cfg)
+                sleepms(2);
                 var spell_elem := FindConfigElem(dh_cfg, spell_id);
                 if (!spell_elem)
                     continue;
@@ -592,6 +604,7 @@ function GetPlayerSpells(who)
             endif
 
             foreach spell_id in GetConfigIntKeys(shinobi_cfg)
+                sleepms(2);
                 var spell_elem := FindConfigElem(shinobi_cfg, spell_id);
                 if (!spell_elem)
                     continue;

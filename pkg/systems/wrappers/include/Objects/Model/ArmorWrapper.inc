@@ -301,10 +301,11 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	function __InitModifiers(this)
 		this.Modifiers := dictionary{};
-		
-		if (this.Prop.Modifiers.size() >= 1)
-			foreach modifier in (this.Prop.Modifiers.keys())
-				this.SetModifier(AttributeModifier(modifier, this.Prop.Modifiers[modifier]));
+
+		var storedMods := (!(this.EquipProp is @Exception)) ? this.EquipProp.Modifiers : 0;
+		if (storedMods && storedMods.size() >= 1)
+			foreach modifier in (storedMods.keys())
+				this.SetModifier(AttributeModifier(modifier, storedMods[modifier]));
 			endforeach
 		else
 			if (this.GetTipoProtecao())

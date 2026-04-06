@@ -1,0 +1,23 @@
+use uo;
+
+include "include/say";
+include ":commands:include/epicitemGump";
+
+program textcmd_epicitem(who, params)
+	params := 0;
+
+	SendSysMessageEx(who, "Clique no item que deseja configurar.", SSM_REQUEST);
+	var item := Target(who, TGTOPT_CHECK_LOS);
+
+	if (!item)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if (!item.IsA(POLCLASS_ITEM))
+		SendSysMessageEx(who, "Alvo invalido. Selecione um item.", SSM_FAIL);
+		return;
+	endif
+
+	EpicItemEditor(who, item);
+endprogram

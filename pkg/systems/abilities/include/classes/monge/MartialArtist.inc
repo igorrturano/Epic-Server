@@ -4,7 +4,7 @@ use os;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
-include ":IO:CFGFile";
+
 
 /**
  * Budōka / Artista Marcial (Martial Artist) - ABILITY_ID::MARTIAL_ARTIST (700)
@@ -65,18 +65,19 @@ class MartialArtist(CombatAbility)
 		var attacker := attackInfo.GetAttacker();
 		var who := attacker.GetObjRef();
 
-		var monkWeapons := array{ 0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020, 0x27AD, 0x27AE, 0x27A7 };
-		if (!(attacker.GetEquipBySlot(WEAPON).GetObjType() in monkWeapons))
+		// Weapon Attribute == Wrestling
+		if ((attacker.GetEquipBySlot(WEAPON).GetAttribute() != WRESTLING))
 			return false;
 		endif
 
 		// Check no armor equipped
-		var armorTypes := array{ "ArmaduraPesada", "ArmaduraMedia", "ArmaduraLeve" };
-		var itemdesc := CFGFile("*", "itemdesc");
+		var itemdesc := ReadConfigFile(":*:itemdesc");
 		foreach item in (ListEquippedItems(who))
-			var itemCfg := itemdesc.SetElementName(item.objtype);
-			if (itemCfg.GetPropertyValue("TipoProtecao") in armorTypes)
-				return false;
+			if (item.isa(POLCLASS_ARMOR))
+				var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
+				if (tipoProtecao["Armadura"])
+					return false;
+				endif
 			endif
 		endforeach
 

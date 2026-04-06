@@ -6,6 +6,7 @@ include ":debug:Controller/DebugController";
 include ":tn:cooldown";
 include ":attributes:attributes";
 
+
 /**
  * Furia (Fury) - ABILITY_ID::FURIA (600)
  *
@@ -19,6 +20,21 @@ class Fury(CombatAbility)
 	function Fury(this)
 		Super(ABILITY_ID::FURIA);
 		this.ActivationMoment := ABILITY_ACTIVATION::BEFORE_DAMAGE;
+	endfunction
+
+	function CanActivate(this, mobile)
+		var who := mobile.GetObjRef();
+		var itemdesc := ReadConfigFile(":*:itemdesc");
+		foreach item in (ListEquippedItems(who))
+			if (item.isa(POLCLASS_ARMOR))
+				var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
+				if (tipoProtecao["Armadura Pesada"])
+					Message("Voce nao pode usar Furia com armadura pesada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return false;
+				endif
+			endif
+		endforeach
+		return true;
 	endfunction
 
 	function GetDurationFor(this, mobile)

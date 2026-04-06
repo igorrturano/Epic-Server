@@ -7,6 +7,7 @@ include "include/say";
 include ":timedscripts:timedScripts";
 include ":charactercreation:habilidades";
 include "include/utils";
+include ":hotbar:include/cooldown_packet";
 
 program specialAbilities(who)
 	if (!who)
@@ -54,7 +55,7 @@ function DoWarriorAbility(who, cooldown)
 	SetCooldown(who, "special_ability", cooldown);
 	
 	// ✅ Send cooldown message to client with gump ID
-	SendSysMessageEx(who, "[SPECIAL_CD] Ataque Extra|" + cooldown + "|0x7E", SSM_INFO);
+	SendCooldownPacket(who, "Ataque Extra", cooldown, 0x7E, COOLDOWN_TYPE_SPECIAL);
 	
 	return 1;
 endfunction
@@ -68,7 +69,7 @@ function DoRogueAbility(who, cooldown)
 	SetCooldown(who, "special_ability", cooldown);
 	
 	// ✅ Send cooldown message to client with gump ID
-	SendSysMessageEx(who, "[SPECIAL_CD] Evasão|" + cooldown + "|0x7E", SSM_INFO);
+	SendCooldownPacket(who, "Evasão", cooldown, 0x7E, COOLDOWN_TYPE_SPECIAL);
 	
 	return 1;
 endfunction
@@ -106,7 +107,7 @@ function FastReload(who, weapon, cooldown)
 	SetCooldown(who, "special_ability", cooldown);
 	
 	// ✅ Send cooldown message to client with gump ID
-	SendSysMessageEx(who, "[SPECIAL_CD] Recarga Rápida|" + cooldown + "|0x7E", SSM_INFO);
+	SendCooldownPacket(who, "Recarga Rápida", cooldown, 0x7E, COOLDOWN_TYPE_SPECIAL);
 	
 	return 1;
 endfunction
@@ -118,7 +119,7 @@ function DoSpellcasterAbility(who, cooldown)
 	SetCooldown(who, "special_ability", cooldown);
 	
 	// ✅ Send cooldown message to client with gump ID
-	SendSysMessageEx(who, "[SPECIAL_CD] Conjuração Rápida|" + cooldown + "|0x7E", SSM_INFO);
+	SendCooldownPacket(who, "Conjuração Rápida", cooldown, 0x7E, COOLDOWN_TYPE_SPECIAL);
 	
 	return 1;
 endfunction
@@ -129,7 +130,7 @@ function DoArcaneArcherAbility(who, cooldown)
 	SetCooldown(who, "special_ability", cooldown);
 	
 	// ✅ Send cooldown message to client with gump ID
-	SendSysMessageEx(who, "[SPECIAL_CD] Velocidade Arcana|" + cooldown + "|0x7E", SSM_INFO);
+	SendCooldownPacket(who, "Velocidade Arcana", cooldown, 0x7E, COOLDOWN_TYPE_SPECIAL);
 	
 	return 1;
 endfunction

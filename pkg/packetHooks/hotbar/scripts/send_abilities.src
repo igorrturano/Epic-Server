@@ -33,6 +33,7 @@ program SendAbilities(who)
     var hab_index := 1;
 
     foreach hab_id in filtered_hab_ids
+        sleepms(2);
         var habelem := FindConfigElem(habcfg, hab_id);
         if (!habelem) continue; endif
 

@@ -40,7 +40,6 @@ function ProccessCombatDamage(byRef attackInfo)
 		ExecutePassiveAbilitiesOnKill(attackInfo);
 	endif
 
-	ProgressAttackSkills(attackInfo);
 endfunction
 
 function CalculateCombatDamage(byRef attackInfo)
@@ -48,6 +47,7 @@ function CalculateCombatDamage(byRef attackInfo)
 	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
 	ExecutePassiveAbilitiesAttackerBeforeDamage(attackInfo);
 	ExecutePassiveAbilitiesDefenderBeforeDamage(attackInfo);
+	sleepms(2);
 	CalculateFlankingDamage(attackInfo);
 	CalculateAttackerCriticalHit(attackInfo);
 	CalculateDefenderResist(attackInfo);
@@ -73,16 +73,21 @@ function CalculateAttackerDamage(byRef attackInfo)
 endfunction
 
 function CalculateEstimatedMinMaxDamage(attackInfo)
-	
+
 	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
 	var statusDamage := CalculateStatusDamage(attackInfo);
 	var skillDamage := CalculateSkillDamage(attackInfo);
 	var primordialDamage := CalculatePrimordialDamage(attackInfo);
+	var arcaneBowBonus := EstimateArcaneBowDamage(attackInfo);
+	var spiritualBladeBonus := EstimateSpiritualBladeDamage(attackInfo);
+	var elementalWeaponBonus := EstimateElementalWeaponDamage(attackInfo);
 	var finalDamage := CalculateEstimatedMinMaxWeaponDamage(attackInfo);
 
-	finalDamage.max += statusDamage.damageMod + skillDamage.damageMod + primordialDamage;
-	finalDamage.min += statusDamage.damageMod + skillDamage.damageMod + primordialDamage;
-	finalDamage.+Damage := attackInfo.GetDamage(); 
+	var flatBonus := statusDamage.damageMod + skillDamage.damageMod + primordialDamage
+					+ arcaneBowBonus + spiritualBladeBonus + elementalWeaponBonus;
+	finalDamage.max += flatBonus;
+	finalDamage.min += flatBonus;
+	finalDamage.+Damage := attackInfo.GetDamage();
 
 	return finalDamage;
 endfunction
@@ -126,7 +131,7 @@ endfunction
 function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
 	// Check if druid with metamorfose + survival ability
-	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
+	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error)
 		skill := THEOLOGY;
 	endif
 
@@ -267,6 +272,49 @@ function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
 	return MinMaxWeaponDamage;
 endfunction
 
+function EstimateArcaneBowDamage(attackInfo)
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
+		return 0;
+	endif
+
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::ARCANE_MASTERY))
+		return CInt(arcana / 5);
+	endif
+
+	return CInt(arcana / 10);
+endfunction
+
+function EstimateSpiritualBladeDamage(attackInfo)
+	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::SPIRITUALBLADE)
+		return 0;
+	endif
+
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+	var bonus := CInt(arcana / 5);
+	if (bonus < 1)
+		bonus := 1;
+	endif
+
+	return bonus;
+endfunction
+
+function EstimateElementalWeaponDamage(attackInfo)
+	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+	var elemental := weapon.GetProperty("#elementalweapon");
+
+	if (elemental == error)
+		return 0;
+	endif
+
+	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
+	var intBonus := CInt(attackInfo.GetAttacker().GetInt() / 20);
+	var arcanaBonus := CInt(arcana / 10);
+
+	return intBonus + arcanaBonus;
+endfunction
+
 /**
  * Applies primordial elemental bonus for metamorfose elemental transformations.
  *
@@ -308,9 +356,9 @@ function CalculateArcaneBowDamage(byRef attackInfo)
 	var bonus;
 
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::ARCANE_MASTERY))
-		bonus := CInt(arcana / 10);
+		bonus := CInt(arcana / 5);
 	else
-		bonus := CInt(arcana / 20);
+		bonus := CInt(arcana / 10);
 	endif
 
 	if (bonus < 1)
@@ -345,7 +393,7 @@ function CalculateSpiritualBladeDamage(byRef attackInfo)
 	endif
 
 	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
-	var bonus := CInt(arcana / 10);
+	var bonus := CInt(arcana / 5);
 	if (bonus < 1)
 		bonus := 1;
 	endif
@@ -497,6 +545,10 @@ function CalculateDefenderResist(byRef attackInfo)
 	else
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
+
+			WearDownArmor(attackInfo.GetDefender().GetObjRef(), equip.GetObjRef(), attackInfo.GetDamage().GetTotalBaseDamage(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em {armorResist.ToString()} e perdeu {attackInfo.GetDamage().GetTotalBaseDamage()} de durabilidade."));
+
 			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist())
 								  .DecreasePiercingBaseDamage(armorResist.GetPiercingResist())
 								  .DecreaseBluntBaseDamage(armorResist.GetBluntResist())
@@ -504,7 +556,6 @@ function CalculateDefenderResist(byRef attackInfo)
 								  .DecreaseColdBaseDamage(armorResist.GetColdResist())
 								  .DecreasePoisonBaseDamage(armorResist.GetPoisonResist())
 								  .DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
-			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em: {armorResist.ToString()}"));
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Restou: {attackInfo.GetDamage().ToString()}"));
 		endforeach
 	endif
@@ -787,24 +838,32 @@ function ApplyCombatDamage(byRef attackInfo)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetFireBaseDamage());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {attackInfo.GetDamage().GetFireBaseDamage()}"));
+	else
+		attackInfo.GetDamage().SetFireBaseDamage(0); // Garante que dano elemental que ficou negativo por causa da resistência não seja aplicado
 	endif
 
 	if (attackInfo.GetDamage().GetColdBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetColdBaseDamage());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {attackInfo.GetDamage().GetColdBaseDamage()}"));
+	else
+		attackInfo.GetDamage().SetColdBaseDamage(0); // Garante que dano elemental que ficou negativo por causa da resistência não seja aplicado
 	endif
 
 	if (attackInfo.GetDamage().GetPoisonBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetPoisonBaseDamage());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {attackInfo.GetDamage().GetPoisonBaseDamage()}"));
+	else
+		attackInfo.GetDamage().SetPoisonBaseDamage(0); // Garante que dano elemental que ficou negativo por causa da resistência não seja aplicado
 	endif
 
 	if (attackInfo.GetDamage().GetEnergyBaseDamage() > 0)
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetEnergyBaseDamage());
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {attackInfo.GetDamage().GetEnergyBaseDamage()}"));
+	else
+		attackInfo.GetDamage().SetEnergyBaseDamage(0); // Garante que dano elemental que ficou negativo por causa da resistência não seja aplicado
 	endif
 
 	var totalDamage := attackInfo.GetDamage().GetTotalBaseDamage();

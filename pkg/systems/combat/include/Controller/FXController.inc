@@ -87,6 +87,9 @@ function GetAttackerFX(byRef attackInfo)
 		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
+		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
+			attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
+			attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
 		else
 			if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::SPIRITUALBLADE))
 			// Use absorbed weapon's objtype for animation lookup (stored when spiritual blade is summoned)

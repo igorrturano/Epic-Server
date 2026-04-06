@@ -54,6 +54,7 @@ function BuildNPCCache(mobile)
         "brain_type" := Lower(npc_elem.BrainType),
         "spell_school" := npc_elem.SpellSchool,
         "attack_speed" := npc_elem.EpicAttackSpeed,
+        "is_ranged" := (Lower(SplitWords(npc_elem.EpicAttackSpeed, "_")[1]) == "ranged"),
         "abilities" := abilities,
         "npc_elem" := npc_elem  // Keep reference for any other config lookups
     };

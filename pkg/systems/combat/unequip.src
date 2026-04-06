@@ -76,5 +76,6 @@ program unequipweapon(who, item)
 	endif
 
 	Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
+	RemoveEquipObjMods(who, item);
 
 endprogram

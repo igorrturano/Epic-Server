@@ -21,6 +21,12 @@ function MonsterBrain()
         me.enable("firewhilemoving");
     endif
 
+    // Build ability tables ONCE at brain activation (script-level vars in brain.src)
+    combat_abilities := BuildCombatAbilities(me);
+    enter_abilities := BuildEnterAbilities(me);
+
+    SM_TransitionTo("IDLE");
+
     while (me)
         ev := os::wait_for_event(0);
 
@@ -34,18 +40,28 @@ function MonsterBrain()
             return;
         endif
 
+        // Process active states (non-blocking, ONE step per tick)
+        var state := SM_GetState();
+        if (state == "FLEEING")
+            SM_TickFlee();
+        elseif (state == "AMBUSH")
+            SM_TickAmbush();
+        endif
+
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
                 HandleMonsterLeftArea(me.opponent);
             else
-                if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
-                is_ranged := isMonsterRanged();
-                // PursueTarget now handles ideal distance for both melee and ranged
-                PursueTarget(me.opponent);
+                if (GetObjProperty(me, "metamorfose"))
+                    is_ranged := 0;
+                endif
+                if (SM_GetState() != "FLEEING")
+                    PursueTarget(me.opponent);
+                endif
             endif
         endif
-        
+
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED:
@@ -54,17 +70,20 @@ function MonsterBrain()
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
                     AskForHealing(me);
+                    // Break ambush on taking damage
+                    if (SM_GetState() == "AMBUSH")
+                        me.hidden := 0;
+                        SM_TransitionTo("COMBAT");
+                    endif
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source))
-                        // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
                         HandleMonsterEnteredArea(ev.source, is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
-                        // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
                         HandleMonsterLeftArea(is_ranged);
                     endif
@@ -79,20 +98,19 @@ function MonsterBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    // Taunt forces a target switch - clear current opponent and target lock
                     SetOpponent(0);
-                    EraseObjProperty(me, "#target_lock");
+                    target_lock_var := 0;
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
                     ShamanBehavior(me);
                 EVID_FLEE:
                     last_activity_time := polcore().systime;
-                    FleeFrom(ev.source);
+                    SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
             endcase
         endif
 
         // Idle behavior when no events and no combat
-        if (!me.opponent)
+        if (!me.opponent && SM_GetState() == "IDLE")
             MonsterIdle(wanders, is_ranged);
             if (RandomInt(100) < 30)
                 wanders += 1;
@@ -103,8 +121,8 @@ function MonsterBrain()
         endif
 
         // Dynamic sleep: fast in combat, slow when idle
-        if (me.opponent || (polcore().systime - last_activity_time) < 5)
-            sleepms(100); // Combat mode or recently active
+        if (me.opponent || SM_GetState() != "IDLE" || (polcore().systime - last_activity_time) < 5)
+            sleepms(100); // Combat mode, active state, or recently active
         else
             sleepms(1000); // Idle mode - save CPU
         endif
@@ -147,44 +165,15 @@ function HandleMonsterSpeech(text, source, is_ranged)
 endfunction
 
 function HandleMonsterLeftArea(is_ranged)
-    // Clear current combat state
     ClearCombatState();
-    
-    // Check for nearby threats first
+
     var threat := CheckNearbyThreats();
     if (threat)
         HandleMonsterCombatEvent(threat, is_ranged);
         return 1;
     endif
 
-    // If no opponents found, look for corpses to loot
-    var corpses := array{};
-    foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
-        if (item.IsA(POLCLASS_CORPSE))
-            corpses.append(item);
-        endif
-        sleepms(2);
-    endforeach
-
-    // Try to loot any found corpses
-    if (corpses.size() > 0)
-        foreach corpse in corpses
-            if (LootCorpse(corpse))
-                SetCooldown(me, "loot_cooldown", 300);
-                return 1;
-            endif
-            sleepms(100);
-        endforeach
-    endif
-
-    // Re-check for threats after looting attempt (in case one appeared while looting)
-    threat := CheckNearbyThreats();
-    if (threat)
-        HandleMonsterCombatEvent(threat, is_ranged);
-        return 1;
-    endif
-
-    // If nothing else to do, go idle
+    // Corpse looting moved to MonsterIdle to avoid item scans on every LEFTAREA event
     HandleIdleState();
     return 1;
 endfunction
@@ -208,15 +197,15 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
                 opponent := taunter;
                 SetOpponent(opponent);
                 // Maintain taunt lock - prevent CheckForIdealTarget from overriding
-                SetObjProperty(me, "#target_lock", struct{
+                target_lock_var := struct{
                     "serial" := taunter.serial,
                     "time" := ReadGameClock(),
-                    "taunt" := 1  // Flag to indicate this is a taunt lock
-                });
+                    "taunt" := 1
+                };
             else
                 // Taunter is no longer valid, clear taunt
                 EraseObjProperty(me, "#taunter");
-                EraseObjProperty(me, "#target_lock");
+                target_lock_var := 0;
                 SetCooldown(me, "taunted", 0);
             endif
         endif
@@ -234,45 +223,19 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         endif
     endif
 
-    // Let the combat hook handle the actual attacks
-    // PursueTarget now handles positioning for both melee and ranged
     TurnToward(opponent);
     PursueTarget(opponent);
-    
-    if (me.isMyrkonid())
-        SporeSpecial(me, opponent);
-    endif
 
-    if (me.isMage())
-        MageBehavior(me, opponent);
-    endif
+    // Dispatch abilities from pre-built table (replaces 12+ sequential if-checks)
+    TickCombatAbilities(me, opponent, combat_abilities);
 
+    // Shaman behavior is event-driven (EVID_BUDDYATTACKED), not table-dispatched
     if (me.isShaman())
         ShamanBehavior(me);
     endif
 
-    if (me.hasHiveMind())
-        HiveMind(me);
-    endif
-
-    if (me.isUmberHulk())
-        doConfusion(opponent);
-    endif
-
-    if (me.CanBite())
-        Bite(me, opponent);
-    endif
-
-    if (me.CanTongueGrab())
-        TongueGrab(me, opponent);
-    endif
-
-    if (me.CanCharm())
-        CharmOpponent(me, opponent);
-    endif
-
     if (ShouldFlee(me))
-        FleeFrom(opponent);
+        SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
         return 1;
     endif
 
@@ -290,7 +253,18 @@ function MonsterIdle(wanders, is_ranged)
         HealDamage(me, heal_amount);
     endif
 
-    // Removed idle target scanning - rely on ENTEREDAREA events instead (100% perf boost)
+    // Loot corpses when idle (moved from HandleLeftArea to avoid item scans during combat events)
+    if (!GetCooldown(me, "loot_cooldown"))
+        foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
+            if (item.IsA(POLCLASS_CORPSE))
+                if (LootCorpse(item))
+                    SetCooldown(me, "loot_cooldown", 300);
+                    return;
+                endif
+            endif
+            sleepms(2);
+        endforeach
+    endif
 
     // If didn't see anyone, try to hear footsteps (no LoS required)
     var heard_mobile := NPCHearFootsteps(me);
@@ -361,21 +335,12 @@ function HandleMonsterEnteredArea(source, is_ranged)
         me.hidden := 0;
     endif
 
-    // handleMonsterInitialReaction(source);
-    if (me.canCharge())
-        StartCharge(me, source);
-    endif
+    // Dispatch enter-area abilities from pre-built table (Charge, TunnelTactics, Ambush)
+    TickEnterAbilities(me, source, enter_abilities);
 
+    // Thief behavior is monster-specific, not table-dispatched
     if (me.isThief())
         DoThiefCombatBehavior(source);
-    endif
-
-    if (me.hasTunnelTactics())
-        TunnelTactics(me, source);
-    endif
-
-    if (me.CanAmbush())
-        HandleAmbush(me, source);
     endif
 
     HandleMonsterCombatEvent(source, is_ranged);

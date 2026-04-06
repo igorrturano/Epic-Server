@@ -1,6 +1,9 @@
 use npc;
 
 include "include/epicai";
+include "include/spellCache";
+include "include/stateManager";
+include "include/abilityTable";
 include "include/monsterBrain";
 include "include/animalBrain";
 include "include/humanoidBrain";
@@ -12,6 +15,17 @@ include "include/eventID";
 var brain_type;
 var me := Self();
 const AREA_SIZE := 15;
+
+// Script-level vars for ephemeral combat state (replaces per-tick SetObjProperty/GetObjProperty)
+var pursuit_tracker := 0;
+var los_cache_var := 0;
+var path_cache_var := 0;
+var runaway_progress_var := 0;
+var target_lock_var := 0;
+var threat_list_var := array{};
+var cached_weapon_range := 0;
+var combat_abilities := array{};
+var enter_abilities := array{};
 
 /*
  * KillPlayers()
@@ -30,6 +44,9 @@ program KillPlayers()
         InitializeEpicNPC(me);
         set_critical(0);
     endif
+
+    // Build spell cache once (lazy init shared across all NPC scripts via script-level vars)
+    InitSpellCache();
 
     EnableMainEvents();
 
@@ -75,7 +92,20 @@ program KillPlayers()
         // Brain returned (ShouldGoDormant triggered) - loop back to dormant
         SetWarMode(0);
         SetOpponent(0);
-        // Loop continues to dormant mode automatically
+        // Reset ephemeral combat state
+        pursuit_tracker := 0;
+        los_cache_var := 0;
+        path_cache_var := 0;
+        runaway_progress_var := 0;
+        target_lock_var := 0;
+        threat_list_var := array{};
+        cached_weapon_range := 0;
+        combat_abilities := array{};
+        enter_abilities := array{};
+        nearby_cache_var := dictionary;
+        enemy_last_loc_var := 0;
+        initial_allies_var := 0;
+        SM_TransitionTo("IDLE");
     endwhile
 endprogram
 
