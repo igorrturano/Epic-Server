@@ -124,7 +124,6 @@ function DamageRuneCharges(equip)
 endfunction
 
 function ApplyDamageOnEquip(equip, damage)
-	print("Aplicando dano no equipamento...");
 	equip.SetHP(equip.GetHP() - damage);
 	
 	if (equip.GetHP() <= 0)

@@ -72,7 +72,7 @@ function DoParry(byRef attackInfo)
 	endif
 
 	attackInfo.GetDefender().GetObjRef().EraseProp("#tempparrybonus"); // Remove o bônus temporário de parry, se houver
-	WearDownEquip(attackInfo.GetParryEquip(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON));
+	WearDownEquip(attackInfo.GetParryEquip(), attackInfo.GetWeapon());
 
 	CheckDisarmShield(attackInfo);
 
