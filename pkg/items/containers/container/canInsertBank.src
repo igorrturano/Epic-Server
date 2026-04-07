@@ -52,7 +52,8 @@ program canInsert(mobile, container, movetype, inserttype, item, existing_stack,
 			   	0xF16,
 			   	0xF18,
 			   	0xF25,
-			   	0xF30,         // pedras preciosas
+			   	0xF30,
+			   	0x7850,        // pedras preciosas
 			   	
 			   	0xE34,
 			   	0x6116,
