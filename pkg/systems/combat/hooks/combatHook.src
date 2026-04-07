@@ -31,6 +31,7 @@ exported function Attack(attacker, defender)
 	attacker := MobileWrapper(attacker);
 	defender := MobileWrapper(defender);
 	var attackInfo := AttackInfo(attacker, defender);
+	attackInfo.SetWeapon(attacker.GetEquipBySlot(WEAPON));
 
 	DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("================="));
 	DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("ATAQUE INICIADO!"));
@@ -46,7 +47,7 @@ exported function Attack(attacker, defender)
 
 	TryToAttack(attackInfo);
 
-	if (attacker.GetEquipBySlot(WEAPON).GetAttribute() == DUALWIELD) // Se é DualWield tenta atacar de novo
+	if (attackInfo.GetWeapon().GetAttribute() == DUALWIELD) // Se é DualWield tenta atacar de novo
 		attackInfo.SetDamageHand(DAMAGE_HAND::OFFHAND); // Troca a mão para a secundária
 		TryToAttack(attackInfo);
 	endif
@@ -129,8 +130,8 @@ function CanAttack(byRef attackInfo)
 		return false;
 	endif
 
-	if (attacker.GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::SPIRITUALBLADE)
-		var elemental := attacker.GetEquipBySlot(WEAPON).GetObjRef().GetProp("#elementalweapon");
+	if (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::SPIRITUALBLADE)
+		var elemental := attackInfo.GetWeapon().GetObjRef().GetProp("#elementalweapon");
 		if (elemental == error)
 			Message("Sua lâmina espiritual não consegue transpassar o oponente.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
 			return false;
@@ -155,9 +156,9 @@ function TryToAttack(byRef attackInfo)
 		DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message($"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}({attackInfo.GetHitChanceMod()})"));
 	endif
 
-	if (Upper(attacker.GetEquipBySlot(WEAPON).GetAttribute()) == Upper(RANGED) &&
-		!attacker.GetEquipBySlot(WEAPON).IsThrowable() &&
-		attacker.GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
+	if (Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(RANGED) &&
+		!attackInfo.GetWeapon().IsThrowable() &&
+		attackInfo.GetWeapon().GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 		if (!attacker.IsNPC())
 			if (ConsumeAmmo(attackInfo)) // Consome munição
 				TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
@@ -229,7 +230,7 @@ function DoAttack(byRef attackInfo)
 endfunction
 
 function CheckAmmo(byRef attackInfo)
-	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
+	var weapon := attackInfo.GetWeapon();
 	
 	if (!weapon.GetTemplate().ProjectileType)
 		return true;
@@ -284,7 +285,7 @@ endfunction
 function arcane_shooting(byRef attackInfo)
 	var attacker := attackInfo.GetAttacker();
 	var defender := attackInfo.GetDefender();
-	var attackerWeapon := attacker.GetEquipBySlot(WEAPON);
+	var attackerWeapon := attackInfo.GetWeapon();
 	
 	if (!attackerWeapon.GetTemplate().ProjectileType)
 		return 1;

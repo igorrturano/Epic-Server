@@ -18,11 +18,11 @@ function ProgressAttackSkills(byRef attackInfo)
 	// Testa se é possivel ganhar skill com o NPC alvo
 	// var skillAttacker := AP_GetSkill(attacker, attacker.weapon.attribute);
 	// var skillDefender := AP_GetSkill(defender, defender.weapon.attribute);
-	var skillAttacker := attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute());
+	var skillAttacker := attackInfo.GetAttacker().GetSkill(attackInfo.GetWeapon().GetAttribute());
 	var skillDefender := attackInfo.GetDefender().GetSkill(attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetAttribute()); // TODO: Verificar se isso funciona com NPCs sem arma equipada (se pega WRESTLING)
 
 	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetAttacker().IsConnected())
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() == 0x13b9 && !attackInfo.GetAttacker().GetEquipBySlot(SHIELD)) // bastarda
+		if (attackInfo.GetWeapon().GetObjType() == 0x13b9 && !attackInfo.GetAttacker().GetEquipBySlot(SHIELD)) // bastarda
 			skillAttacker := attackInfo.GetAttacker().GetSkill(TWOHANDED);
 		endif
 
@@ -30,7 +30,7 @@ function ProgressAttackSkills(byRef attackInfo)
 			skillDefender := attackInfo.GetDefender().GetSkill(TWOHANDED);
 		endif
 
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("swordmage") == attackInfo.GetAttacker().GetSerial())
+		if (attackInfo.GetWeapon().GetObjRef().GetProp("swordmage") == attackInfo.GetAttacker().GetSerial())
 			skillAttacker := attackInfo.GetAttacker().GetSkill(ONEHANDED);
 		endif
 
@@ -59,19 +59,19 @@ function ProgressAttackSkills(byRef attackInfo)
 	if (can_gain)
 		var gain_wait := CInt(CS_GetSettingsCfgElem("General").GainWait);
 		attackInfo.GetAttacker().GetObjRef().SetProp("#CS_GainTime", ReadGameClock() + gain_wait);
-		var attackerWeapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
+		var attackerWeapon := attackInfo.GetWeapon();
 		var shouldGainArcana := attackerWeapon.GetCategory() == WEAPON_CATEGORY::MAGICBOW
 			|| attackerWeapon.GetCategory() == WEAPON_CATEGORY::SPIRITUALBLADE;
 
 		var weaponSkill;
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() == 0x13b9)
+		if (attackInfo.GetWeapon().GetObjType() == 0x13b9)
 			if (!attackInfo.GetAttacker().GetEquipBySlot(SHIELD))
 				weaponSkill := TWOHANDED;
 			else
 				weaponSkill := ONEHANDED;
 			endif
 		else
-			weaponSkill := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute();
+			weaponSkill := attackInfo.GetWeapon().GetAttribute();
 		endif
 
 		// Randomize order so weapon skill and tactics level up ~50/50
