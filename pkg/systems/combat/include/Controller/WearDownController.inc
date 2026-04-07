@@ -45,9 +45,7 @@ function WearDownEquip(equip, weapon := false) // equip EquipWrapper, weapon Wea
 endfunction
 
 function CalculateWearChance(equip)
-	return 100.0;
 	var wearChance := 0.0;
-	var settings := CFGFile("combat", "settings");
 	
 	if (equip is @ArmorWrapper)
 		if (equip.IsShield())
