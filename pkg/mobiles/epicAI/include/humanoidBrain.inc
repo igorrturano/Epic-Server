@@ -1,4 +1,3 @@
-
 include "include/sysEvent";
 include "include/sounds";
 include ":combat:Controller/DamageController_legacy";
@@ -50,6 +49,21 @@ function HumanoidBrain()
 
     SM_TransitionTo("IDLE");
 
+    // Cache myhabs at activation — only active abilities, avoids per-tick disk I/O
+    var raw_habs := GetObjProperty(me, "myhabs");
+    if (raw_habs)
+        myhabs_var := array{};
+        myhabs_set_var := dictionary;
+        var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+        foreach hab in raw_habs
+            var habelem := FindConfigElem(habcfg, CInt(hab));
+            if (habelem && GetConfigString(habelem, "uso") == "Ativa")
+                myhabs_var.append(CInt(hab));
+            endif
+            myhabs_set_var[CInt(hab)] := 1;
+        endforeach
+    endif
+
     while (me)
         ev := os::wait_for_event(0);
 
@@ -91,6 +105,15 @@ function HumanoidBrain()
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
                 if (SM_GetState() != "FLEEING")
                     PursueTarget(me.opponent);
+                endif
+                // Per-tick casting + abilities — keep offensive pressure
+                UseAbilities(me, me.opponent);
+                TickCombatAbilities(me, me.opponent, combat_abilities);
+                if (me.isShaman())
+                    HumanoidShamanBehavior(me, me.opponent);
+                endif
+                if (me.isPriest())
+                    HumanoidPriestBehavior(me, me.opponent);
                 endif
             endif
         endif
@@ -140,11 +163,20 @@ function HumanoidBrain()
                     SetOpponent(0);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
-                    if (me.isShaman())
-                        HumanoidShamanBehavior(me, ev.source);
-                    endif
-                    if (me.isPriest())
-                        HumanoidPriestBehavior(me, ev.source);
+                    if (!GetCooldown(me, "buddy_heal"))
+                        var hurt_ally := ev.source;
+                        if (hurt_ally && !hurt_ally.dead && isHurt(hurt_ally))
+                            if (me.isShaman() || me.isPriest())
+                                var heal_cache := NPC_GetCachedData(me);
+                                var heal_spell := "Cura Leve";
+                                if (heal_cache.tier >= 3)
+                                    heal_spell := "Cura Grave";
+                                endif
+                                spell_target_var := hurt_ally.serial;
+                                NPC_CastSpell(me, heal_spell);
+                                SetCooldown(me, "buddy_heal", 15);
+                            endif
+                        endif
                     endif
                 EVID_FLEE:
                     last_activity_time := polcore().systime;
@@ -192,7 +224,7 @@ function HandleHumanoidSpeech(text, source, is_ranged)
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
             PrintTextAbove(me, "*"+me.name+" se acovarda*");
-            FleeFrom(source);
+            SM_TransitionTo("FLEEING", struct{ "target" := source, "steps" := 0 });
             return 1;
         endif
     endif
@@ -365,13 +397,10 @@ function HandleHumanoidEnteredArea(source, is_ranged)
     return 1;
 endfunction
 
-// NPC-specific ability activation by ID - bypasses ProccessHab's O(n) string scan
-// Uses FindConfigElem(cfg, id) which is O(1) by key
 function NPC_UseAbilityById(npc, abilityId)
     if (!abilityId || abilityId == error)
         return 0;
     endif
-
     if (npc.dead)
         return 0;
     endif
@@ -382,52 +411,41 @@ function NPC_UseAbilityById(npc, abilityId)
         return 0;
     endif
 
-    var hab := GetConfigString(habelem, "nome");
     var uso := GetConfigString(habelem, "uso");
     if (uso != "Ativa")
         return 0;
     endif
 
-    if (TS_GetCooldown(npc, hab) != error)
-        return 0;
-    endif
-
-    var stam := CInt(GetConfigInt(habelem, "stam"));
-    if (stam && !AP_ConsumeVital(npc, STAMINA, stam))
-        return 0;
-    endif
-
-    var mana := CInt(GetConfigInt(habelem, "mana"));
-    if (mana && !AP_ConsumeVital(npc, MANA, mana))
-        if (stam)
-            HealStamina(npc, stam);
-        endif
-        return 0;
-    endif
-
+    // Delegate ALL validation, resource consumption, and cooldown to AbilityMonitor
     var ability := Ability(abilityId);
-    AbilityMonitor(ability).ActivateOn(MobileWrapper(npc));
-
-    var delay := CInt(GetConfigInt(habelem, "delay"));
-    TS_StartCooldown(npc, hab, delay);
-
+    var result := AbilityMonitor(ability).ActivateOn(MobileWrapper(npc));
+    if (result.errortext)
+        return 0;
+    endif
     return 1;
 endfunction
 
 function UseAbilities(npc, opponent)
-   if (GetCooldown(npc, "ability_cooldown"))
-      return 0;
-   endif
+    if (GetCooldown(npc, "ability_cooldown"))
+        return 0;
+    endif
+    if (!myhabs_var)
+        return 0;
+    endif
 
-   var state := GetCombatState(npc, opponent);
-   if (!myhabs_var)
-      return 0;
-   endif
-
+    var state := GetCombatState(npc, opponent);
     var best_hab := ChooseAbility(npc, state, myhabs_var);
-    var success := CInt(NPC_UseAbilityById(npc, best_hab));
-    SetCooldown(npc, "ability_cooldown", 5);
+    if (!best_hab)
+        return 0;
+    endif
 
+    var success := CInt(NPC_UseAbilityById(npc, best_hab));
+    // Always set cooldown — 5s on success, 2s on failure (prevents 100ms spam)
+    if (success)
+        SetCooldown(npc, "ability_cooldown", 5);
+    else
+        SetCooldown(npc, "ability_cooldown", 2);
+    endif
     return success;
 endfunction
 
@@ -571,7 +589,7 @@ endfunction
 function ChooseWarriorAbility(npc, state, habs)
     var opponent := npc.opponent;
 
-    if (Distance(me, opponent) > 1)
+    if (Distance(npc, opponent) > 1)
         return 0;
     endif
 
@@ -580,7 +598,7 @@ function ChooseWarriorAbility(npc, state, habs)
         if (myhabs_set_var.exists(ABILITY_ID::RESILIENCIA_BARBARA))     return ABILITY_ID::RESILIENCIA_BARBARA;     endif
     endif
 
-    var enemies := ListHostiles(npc, 3);
+    var enemies := NPC_GetPlayersPetsAndSummonsNearby(npc);
     if (enemies.size() >= 2)
         if (myhabs_set_var.exists(ABILITY_ID::PROVOCAR))              return ABILITY_ID::PROVOCAR;              endif
         if (myhabs_set_var.exists(ABILITY_ID::MANOBRA_DESAFIADORA))   return ABILITY_ID::MANOBRA_DESAFIADORA;   endif
@@ -602,7 +620,7 @@ endfunction
 function ChooseRogueAbility(npc, state, habs)
     var opponent := npc.opponent;
 
-    if (Distance(me, opponent) > 1)
+    if (Distance(npc, opponent) > 1)
         return 0;
     endif
 
@@ -647,7 +665,7 @@ function ChooseSageAbility(npc, state, habs)
         if (myhabs_set_var.exists(ABILITY_ID::RESILIENCIA_BARBARA))       return ABILITY_ID::RESILIENCIA_BARBARA;       endif
     endif
 
-    if (opponent.hidden && me.getRace() == DROW)
+    if (opponent.hidden && npc.getRace() == DROW)
         if (myhabs_set_var.exists(ABILITY_ID::CONEXAO_DIVINA))            return ABILITY_ID::CONEXAO_DIVINA;            endif
     endif
 
@@ -657,12 +675,11 @@ function ChooseSageAbility(npc, state, habs)
                 if (myhabs_set_var.exists(ABILITY_ID::CONTROLAR_MORTOS)) return ABILITY_ID::CONTROLAR_MORTOS; endif
                 if (myhabs_set_var.exists(ABILITY_ID::SOUL_HARVEST))     return ABILITY_ID::SOUL_HARVEST;     endif
             endif
-            sleepms(2);
         endforeach
     endif
 
     if (myhabs_set_var.exists(ABILITY_ID::PROVOCAR) || myhabs_set_var.exists(ABILITY_ID::ELEMENTAL_ANCESTRY))
-        var enemies := ListHostiles(npc, 8);
+        var enemies := NPC_GetPlayersPetsAndSummonsNearby(npc);
         if (enemies.size() >= 2)
             if (myhabs_set_var.exists(ABILITY_ID::PROVOCAR))              return ABILITY_ID::PROVOCAR;              endif
             if (myhabs_set_var.exists(ABILITY_ID::ELEMENTAL_ANCESTRY))    return ABILITY_ID::ELEMENTAL_ANCESTRY;    endif
@@ -679,7 +696,6 @@ function ChooseSageAbility(npc, state, habs)
     return habs[RandomInt(habs.size())+1];
 endfunction
 
-// TODO: Criar uma IA pro Ladrao/Punguista
 function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
     if (!myhabs_var)
         return;
@@ -691,7 +707,7 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
                     me.hidden := 1;
                 endif
                 NPC_UseAbilityById(me, hab);
-            ABILITY_ID::INVOCACAO_DO_CAOS:
+            ABILITY_ID::INVOCACAO_DO_CAOS: 
             ABILITY_ID::ARCANE_BOW:
             ABILITY_ID::FORMA_ADAPTAVEL:
             ABILITY_ID::SAND_BROTHERS:
@@ -725,7 +741,7 @@ function HandleThiefBehavior(opponent)
         else // In combat 
             var npcState := getNPCState(me);
             if (npcState == "dying" && MobileWrapper(me).HasAbility(ABILITY_ID::FUGA_DE_EMERGENCIA))
-                FleeFrom(opponent);
+                SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
                 SetCooldown(me, "thief_abilities", 30);
             endif
         endif
