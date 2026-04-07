@@ -55,7 +55,8 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
-
+		
+		Super::_SetName(this, name);
 		this.GetObjRef().desc := name;
 
 		return this;
@@ -113,7 +114,7 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return CDbl(this.GetObjRef().quality);
 	endfunction
 
-	function GetCurrentHP(this)
+	function GetHP(this)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
@@ -121,7 +122,7 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		return this.GetObjRef().hp;
 	endfunction
 
-	function SetCurrentHP(this, hp)
+	function SetHP(this, hp)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
