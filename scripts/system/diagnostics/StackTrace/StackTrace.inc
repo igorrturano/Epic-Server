@@ -56,7 +56,7 @@ class StackTrace()
 	function ToString(this)
 		var result := "\n";
 		if (!this.frames[1].GetMethodName() || !this.frames[1].GetLineNumber())
-			result += "[!!!] To a more detailed stack trace, compile with debug mode enabled: \"ecompile -r <path> -x\"\n";
+			result += "[!!!] To a more detailed stack trace, compile with debug mode enabled: \"ecompile -r <path> -f -x\"\n";
 		endif
 
 		result += $"Stack Trace ({this.frame_count} frames):\n";
