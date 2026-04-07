@@ -26,9 +26,26 @@ function HumanoidBrain()
         me.enable("firewhilemoving");
     endif
 
+    // Grant stealth privileges once for Ladino NPCs (avoids per-steal/sneak GrantPrivilege calls)
+    if (me.isThief())
+        GrantPrivilege(me, "hiddenattack");
+        me.enable("hiddenattack");
+        GrantPrivilege(me, "runwhilestealth");
+        me.enable("runwhilestealth");
+    endif
+
     // Build ability tables ONCE at brain activation (script-level vars in brain.src)
     combat_abilities := BuildCombatAbilities(me);
     enter_abilities := BuildEnterAbilities(me);
+
+    // Cache myhabs as script-level vars (avoids per-tick GetObjProperty disk I/O)
+    myhabs_var := GetObjProperty(me, "myhabs");
+    if (myhabs_var)
+        myhabs_set_var := dictionary;
+        foreach hab in myhabs_var
+            myhabs_set_var[CInt(hab)] := 1;
+        endforeach
+    endif
 
     SM_TransitionTo("IDLE");
 
@@ -55,24 +72,35 @@ function HumanoidBrain()
             return;
         endif
 
-        // Kill darkness creatures (undead/Mobnoturno) if not in darkness
-        if (CheckDarknessCreatureSurvival(me))
-            return;
-        endif
-
         // Process active states (non-blocking, ONE step per tick)
         var state := SM_GetState();
         if (state == "FLEEING")
             SM_TickFlee();
         elseif (state == "AMBUSH")
             SM_TickAmbush();
+        elseif (state == "STEALING")
+            SM_TickStealing();
+        elseif (state == "SNEAKING")
+            SM_TickSneaking();
         endif
 
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
-                HandleHumanoidLeftArea(me.opponent);
+                // Loot on kill: if opponent died (not just left area), loot their corpse
+                if (me.opponent.dead && !GetCooldown(me, "loot_cooldown"))
+                    foreach item in ListItemsNearLocation(me.x, me.y, me.z, 5, me.realm)
+                        if (item.IsA(POLCLASS_CORPSE))
+                            if (LootCorpse(item))
+                                SetCooldown(me, "loot_cooldown", 300);
+                                break;
+                            endif
+                        endif
+                        sleepms(2);
+                    endforeach
+                endif
+                HandleHumanoidLeftArea(is_ranged);
             else
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
                 if (SM_GetState() != "FLEEING")
@@ -97,14 +125,18 @@ function HumanoidBrain()
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
-                    // Break ambush on damage
-                    if (SM_GetState() == "AMBUSH")
+                    // Break stealth states on damage
+                    var dmg_state := SM_GetState();
+                    if (dmg_state == "AMBUSH" || dmg_state == "STEALING" || dmg_state == "SNEAKING")
                         me.hidden := 0;
                         SM_TransitionTo("COMBAT");
                     endif
                     AskForHealing(me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
+                    if (CheckDarknessCreatureSurvival(me))
+                        return;
+                    endif
                     HandleHumanoidSpeech(ev.text, ev.source, is_ranged);
                     HandleEnteredAreaAbilities(ev.source, is_ranged);
                     if (!IsAlly(ev.source))
@@ -324,39 +356,7 @@ function HumanoidIdle(wanders, is_ranged)
         HealDamage(me, heal_amount);
     endif
 
-    // Loot corpses when idle (moved from HandleLeftArea to avoid item scans during combat events)
-    if (!GetCooldown(me, "loot_cooldown"))
-        foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
-            if (item.IsA(POLCLASS_CORPSE))
-                if (LootCorpse(item))
-                    SetCooldown(me, "loot_cooldown", 300);
-                    return;
-                endif
-            endif
-            sleepms(2);
-        endforeach
-    endif
-
-    // If didn't see anyone, try to hear footsteps (no LoS required)
-    var heard_mobile := NPCHearFootsteps(me);
-    if (heard_mobile)
-        // Check if we can see them now (might have moved into view)
-        if (CanFight(me, heard_mobile))
-            HandleHumanoidCombatEvent(heard_mobile, is_ranged);
-            return;
-        endif
-
-        // Only show alert and investigate if not on cooldown (prevents spam)
-        if (GetCooldown(me, "heard_sound") == 0)
-            Message("*!*").SetColor(500).SendAbove(me);
-            SetCooldown(me, "heard_sound", 5);  // 5 second cooldown between alerts
-        endif
-
-        // Move toward the sound - NPC will investigate the last known position
-        PursueTarget(heard_mobile);
-    endif
-
-    var anchor := GetObjProperty(me, "anchor");
+    var anchor := anchor_var;
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
       PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
@@ -727,8 +727,8 @@ function HandleAssassinBehavior(opponent)
         me.stealthsteps := 30;
         
         if (GetCooldown(me, "FaroPorSangue"))
-            SetObjProperty(me, "backstab", 1);
-            SetObjProperty(me.weapon, "backstab", 1);
+            SetObjProperty(me, "#GuaranteedHit", 1);
+            SetObjProperty(me, "#nextcritical", 1);
             me.attack_once(opponent);
         endif
     endif
