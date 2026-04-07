@@ -56,7 +56,6 @@ exported function handleUCOutgoing(character, byref packet)
 		else
 			CheckPrefixAndSuffix(messageData);
 		endif
-	elseif (CheckEmote(messageData))
 	endif
 
 	if (!CanSpeak(messageData))
