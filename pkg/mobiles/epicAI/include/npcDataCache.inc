@@ -151,8 +151,8 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         "isAnimalBrain" := (brain_type == "animal"),
         "isMonsterBrain" := (brain_type == "monster"),
 
-        // Mage check (SpellSchool defined in config)
-        "hasMageConfig" := (npc_elem.SpellSchool != error)
+        // Mage check — Shaman/Priest/Druid have dedicated behaviors, don't dispatch MageBehavior for them
+        "hasMageConfig" := (npc_elem.SpellSchool != error && !(npc_elem.SpellSchool in array{"Shaman", "Druid"}))
     };
 endfunction
 
