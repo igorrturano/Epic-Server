@@ -6,18 +6,38 @@ include ":runecarving:runeCarving";
 
 include ":combat:Exceptions/InvalidEquipmentException";
 
-function WearDownEquip(equip, weapon) // equip EquipWrapper, weapon WeaponWrapper
+/**
+ * Aplica o desgaste em um equipamento baseado em chance de dano.
+ * 
+ * Esta função realiza o processo completo de desgaste de um equipamento,
+ * determinando se o equipamento será danificado por meio de um teste de dado
+ * e, consequentemente, causará dano ao equipamento.
+ * 
+ * @param equip O equipamento (ArmorWrapper ou WeaponWrapper) a sofrer desgaste.
+ * @param weapon (Opcional) A arma utilizada para calcular dano adicional ao armamento.
+ *                          Se false, o dano não considera a arma. Padrão: false.
+ * 
+ * @return void. Lança InvalidEquipmentException se os parâmetros forem inválidos.
+ * 
+ * @throws InvalidEquipmentException Se equip não for uma instância de EquipWrapper.
+ * @throws InvalidEquipmentException Se weapon não for false e nem uma instância de WeaponWrapper.
+ * 
+ * @example
+ * WearDownEquip(myWeapon);
+ * WearDownEquip(defensorArmor, attackerWeapon);
+ */
+function WearDownEquip(equip, weapon := false) // equip EquipWrapper, weapon WeaponWrapper
 	if (!(equip is @EquipWrapper))
 		return InvalidEquipmentException("The equipment must be an instance of ArmorWrapper or WeaponWrapper!");
 	endif
 
-	if (!(weapon is @WeaponWrapper))
+	if (weapon != false && !(weapon is @WeaponWrapper))
 		return InvalidEquipmentException("The weapon must be an instance of WeaponWrapper!");
 	endif
 	
 	var wearChance := CalculateWearChance(equip);
 
-	if (DiceRoll("1d100").Roll().GetResult() > wearChance)
+	if (Dice("1d100").Roll().GetResult() > wearChance)
 		return;
 	endif
 	
@@ -25,7 +45,9 @@ function WearDownEquip(equip, weapon) // equip EquipWrapper, weapon WeaponWrappe
 endfunction
 
 function CalculateWearChance(equip)
+	return 100.0;
 	var wearChance := 0.0;
+	var settings := CFGFile("combat", "settings");
 	
 	if (equip is @ArmorWrapper)
 		if (equip.IsShield())
@@ -49,8 +71,8 @@ function CalculateWearChance(equip)
 endfunction
 
 function DamageEquipment(equip, weapon)
-	var damage := 0;
-	var extraDamage := 0;
+	print("Dano no equipamento...");
+	var damage := CalculateWearDamage(equip);
 	var owner := equip.GetOwner();
 	
 	if (equip is @ArmorWrapper)
@@ -60,23 +82,32 @@ function DamageEquipment(equip, weapon)
 			return;
 		endif
 
-		if (weapon.GetProperty("ArmorDmg") == 1)
-			extraDamage := DiceRoll("1d4").Roll().GetResult();
-		endif
 	elseif (equip is @WeaponWrapper)
 		if (equip.GetCategory() == WEAPON_CATEGORY::UNARMED)
 			return; // Arma natural, não desgasta
 		endif
 	endif
 
-	if (extraDamage > 0)
-		Message($"{equip.GetName()} foi bem danificada!").SetColor(Color(SYSTEM_COLOR::BAD)).SendSys(owner);
-	else
-		Message($"{equip.GetName()} foi danificada.").SetColor(Color(SYSTEM_COLOR::BAD)).SendSys(owner);
+	Message($"{equip.GetName()} levou {damage} de dano.").SetColor(Color(SYSTEM_COLOR::BAD)).SendSys(owner);
+	print($"{equip.GetName()} levou {damage} de dano.");
+
+	ApplyDamageOnEquip(equip, damage);
+endfunction
+
+function CalculateWearDamage(equip)
+	var damage := 0;
+
+	if (equip is @WeaponWrapper)
+		damage := 1;
+	elseif (equip is @ArmorWrapper)
+		if (equip.IsShield())
+			damage := 5;
+		else
+			damage := 1;
+		endif
 	endif
 
-	damage += extraDamage;
-	ApplyDamageOnEquip(equip, damage);
+	return damage;
 endfunction
 
 function DamageRuneCharges(equip)
@@ -95,6 +126,7 @@ function DamageRuneCharges(equip)
 endfunction
 
 function ApplyDamageOnEquip(equip, damage)
+	print("Aplicando dano no equipamento...");
 	equip.SetHP(equip.GetHP() - damage);
 	
 	if (equip.GetHP() <= 0)
@@ -115,8 +147,8 @@ function BreakEquip(equip)
 	// TODO: Herdado do weardown_legacy...
 	
 	equip.SetProperty("broken", 1);
-	equip.SetProperty("realdesc", equip.desc);
-	equip._SetName(equip.desc + " [danificado]");
+	equip.SetProperty("realdesc", equip.GetObjRef().desc);
+	equip._SetName(equip.GetObjRef().desc + " [danificado]");
 	equip.MoveToContainer(equip.GetOwner().GetBackpack());
 	
 	// Gambiarra antiga, deixei aqui porque não sei se vai quebrar o refresh
