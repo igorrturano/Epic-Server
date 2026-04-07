@@ -20,6 +20,7 @@ include ":charactercreation:resists";
 include ":charactercreation:createchar";
 include ":containers:storageAreas";
 include ":keys:key";
+include ":death:wakeup";
 
 program death(params)
 
@@ -190,6 +191,8 @@ program death(params)
 				// 	logs := dias;
 				// endif
 				// FindAccount(ghost.acctname).setprop("mortelog", logs);
+				EraseObjProperty(ghost, "death_waketime");
+				EraseObjProperty(ghost, "death_corpse_serial");
 				sleep(5);
 				return 1;
 			endif
@@ -227,6 +230,8 @@ program death(params)
 	if (save)
 		tempo := 0;
 	endif
+	SetObjProperty(ghost, "death_waketime", polcore().systime + (tempo * 30));
+	SetObjProperty(ghost, "death_corpse_serial", corpse.serial);
 	while (tempo > 0)
 		if (tempo % 2 == 0)
 			SendSysMessage(ghost, "Voce acordara em " + (tempo / 2) + " minuto(s).");
@@ -288,6 +293,8 @@ program death(params)
 			//    logs := dias;
 			// endif
 			// FindAccount(ghost.acctname).setprop("mortelog", logs);
+			EraseObjProperty(ghost, "death_waketime");
+			EraseObjProperty(ghost, "death_corpse_serial");
 			return 1;
 		elseif (GetObjProperty(corpse, "webseal"))
 			tempo := 1;
@@ -348,92 +355,6 @@ function RessPlayer(who, corpse)
 
 endfunction
 
-function KataWakeUp(ghost, corpse)
-	var serialC := ghost.serial;
-	// TS_StartTimer(ghost, "mortedelay", 10);
-	setcooldown(ghost, "deathtime", 25);
-
-	if (corpse.graphic == 0x10DA) // Web Cocconut
-		corpse.graphic := corpse.objtype;
-	endif
-
-	if (!MoveObjectToLocation(ghost, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION))
-		SendSysMessage(ghost, "Ocorreu algum problema ao retornar seu personagem para o corpo. Solicite ajude da Staff");
-
-		if (!CInt(GetObjProperty(corpse, "morto")) && !CInt(GetObjProperty(ghost, "morto")))
-			// Seta a prop para caso dê algum erro para o player acordar
-			SetObjProperty(corpse, "erro_retornar_corpo", 1);
-			// Seta o decay para nunca = 0
-			corpse.decayat := 0;
-
-			foreach item in EnumerateItemsInContainer(corpse)
-				if (item.container == corpse)
-					item.decayat := 0;
-				endif
-			endforeach
-
-			return;
-		endif
-	endif
-
-	Resurrect(ghost);
-	SetCooldown(ghost, "res_trap_protection", 10);
-	var ressrobe := GetEquipmentByLayer(ghost, 0x16);
-	DestroyItem(ressrobe);
-
-	foreach item in EnumerateItemsInContainer(corpse)
-		if (item.container == corpse)
-			MoveObjectToLocation(item, ghost.x, ghost.y, ghost.z, ghost.realm);
-			MoveItemToContainer(item, ghost.backpack);
-			if (CInt(GetObjProperty(item, "#EquippedOn")) == serialC)
-				if (!EquipItem(ghost, item))
-					EraseObjProperty(item, "#EquippedOn");
-				endif
-			endif
-		endif
-	endforeach
-
-	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::RECOVERY))
-		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.9));
-	else
-		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.15));
-	endif
-	SetVital(ghost, "stamina", CInt(GetVitalMaximumValue(ghost, "stamina") * 0.5));
-	SetVital(ghost, "mana", CInt(GetVitalMaximumValue(ghost, "mana") * 0.5));
-	RecalcVitals(ghost);
-
-	DestroyItem(corpse);
-
-	if (GetObjProperty(ghost, "corda"))
-		PrintTextAbove(ghost, "*amarrado*");
-		SendSysMessage(ghost, "Para tentar se soltar utilize o comando .soltar");
-		var item;
-		item := GetEquipmentByLayer(ghost, LAYER_HAND1);
-		if (item)
-			MoveItemToContainer(item, ghost.backpack);
-		endif
-		item := GetEquipmentByLayer(ghost, LAYER_HAND2);
-		if (item)
-			MoveItemToContainer(item, ghost.backpack);
-		endif
-		ghost.frozen := 1;
-	endif
-	// SetCoolDown(ghost, "deathtime", 30);
-
-	var save := GetObjProperty(ghost, "savegame");
-	if (save != error)
-		MoveObjectToLocation(ghost, save.x, save.y, save.z, save.realm, MOVEOBJECT_FORCELOCATION);
-		AP_SetVital(ghost, STAMINA, cint(save.stamina));
-		AP_SetVital(ghost, MANA, cint(save.mana));
-		AP_SetVital(ghost, HITS, cint(save.hits));
-		eraseobjproperty(ghost, "savegame");
-	endif
-
-	if (GetObjProperty(ghost, "metamorfose"))
-		TS_LowerDuration(ghost, "metamorfosedruida", 10000, 1);
-	endif
-
-endfunction
 
 function PactoSepulturaCheck(ghost, corpse)
 
