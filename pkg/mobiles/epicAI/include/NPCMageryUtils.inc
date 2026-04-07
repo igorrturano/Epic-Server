@@ -225,7 +225,7 @@ function ChooseSpell(me, opponent, spells, school := 0)
 
     if (school == "Ahtaleloreth")
         var name := HandleSwordMageSpellChoice(opponent);
-        return struct{ "name" := name, "info" := FindMageSpellInConfigs(name) };
+        return name;
     endif
 
     // Get ideal spell based on tactical considerations
@@ -240,9 +240,7 @@ function ChooseSpell(me, opponent, spells, school := 0)
     // Set appropriate target based on spell type
     if (spellInfo.Target in array{"Unico", "Area"})
         spell_target_var := opponent.serial;
-        spell_target_var := opponent.serial;
     elseif (spellInfo.Target == "Self")
-        spell_target_var := me.serial;
         spell_target_var := me.serial;
     endif
 
@@ -284,7 +282,7 @@ function MageBehavior(me, opponent)
       return 0;
    endif
 
-   return NPC_CastSpell(me, chosen_spell);
+   return NPC_CastSpell(me, result);
 endfunction
 
 function NPC_CastSpell(me, spellname)
@@ -297,17 +295,11 @@ function NPC_CastSpell(me, spellname)
    var targ := SystemFindObjectBySerial(spell_target_var);
    spell_target_var := 0;
 
-
-   var targ := SystemFindObjectBySerial(spell_target_var);
-   spell_target_var := 0;
-
    var params := array{me, spellInfo, 0, targ};
    var script := Start_Script(":spells:cast_spell", params);
    if (script.errortext)
       return 0;
    endif
-
-   SetCooldown(me, "spell_cast", 5);
 
    SetCooldown(me, "spell_cast", 5);
    return 1;
@@ -354,7 +346,6 @@ function HandleSwordMageSpellChoice(opponent)
             var spells := array{"Lamina Flamejante", "Lamina de Gelo", "Lamina Eletrica"};
             var chosen_spell := spells[RandomInt(spells.size())+1];
             spell_target_var := me.weapon.serial;
-            spell_target_var := me.weapon.serial;
             return chosen_spell;
         endif
 
@@ -370,7 +361,6 @@ function HandleSwordMageSpellChoice(opponent)
         endcase
 
         if (spell)
-            spell_target_var := opponent.serial;
             spell_target_var := opponent.serial;
             return spell;
         endif
@@ -389,7 +379,6 @@ function GetAvailableShamanSpells(monster)
     if (!tier) tier := 1; endif
     return GetAvailableShamanSpellsCached(tier);
 endfunction
-
 
 function HumanoidShamanBehavior(me, opponent)
     if (GetCooldown(me, "spell_cast"))
@@ -422,9 +411,7 @@ function ChooseShamanSpell(me, opponent, spells)
     // Set target based on spell type
     if (spellInfo.Target in array{"Unico", "Area"})
         spell_target_var := opponent.serial;
-        spell_target_var := opponent.serial;
     elseif (spellInfo.Target == "Self")
-        spell_target_var := me.serial;
         spell_target_var := me.serial;
     endif
 
