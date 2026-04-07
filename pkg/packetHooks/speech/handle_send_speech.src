@@ -120,7 +120,7 @@ function CanSpeak(byRef messageData)
 endfunction
 
 function CanHear(byRef messageData)
-	var rangeMod := CheckLineOfSight(messageData.source, messageData.target) ? 1 : 2; // TODO: Diminuir range caso tenha obstáculo
+	var rangeMod := CheckLineOfSight(messageData.source, messageData.target) ? 1 : 3;
 
 	if (messageData.type == MESSAGE_TYPE::WHISPER)
 		if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::WHISPER / rangeMod)
