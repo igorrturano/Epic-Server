@@ -48,23 +48,23 @@ exported function handleUCOutgoing(character, byref packet)
 		return 1;
 	endif
 
+	CheckSourceName(messageData);
+
 	if (CheckSaying(messageData))
-		if (!CanSpeak(messageData))
-			return 1;
-		endif
-
-		if (!CanHear(messageData))
-			return 1;
-		endif
-
 		if (!CanUnderstand(messageData))
 			messageData.message := "*Incompreensível*";
-			ReassemblePacket(packet, messageData);
-			return 0;
+		else
+			CheckPrefixAndSuffix(messageData);
 		endif
+	elseif (CheckEmote(messageData))
+	endif
 
-		CheckSourceName(messageData);
-		CheckPrefixAndSuffix(messageData);
+	if (!CanSpeak(messageData))
+		return 1;
+	endif
+
+	if (!CanHear(messageData))
+		return 1;
 	endif
 
 	ReassemblePacket(packet, messageData);
@@ -73,12 +73,15 @@ exported function handleUCOutgoing(character, byref packet)
 endfunction
 
 function CheckSaying(byRef messageData)
-	if (messageData.type == MESSAGE_TYPE::BROADCAST ||
-		messageData.type == MESSAGE_TYPE::SYSTEM ||
-		messageData.type == MESSAGE_TYPE::MESSAGE_CORNER ||
-		messageData.type == MESSAGE_TYPE::SPELL)
-		return false;
-	endif
+	case (messageData.type)
+		MESSAGE_TYPE::NORMAL:
+		MESSAGE_TYPE::YELL:
+		MESSAGE_TYPE::WHISPER:
+			return true;
+
+		default:
+			return false;
+	endcase
 
 	// Ê packet nativo do POL cagado, hein.....
 	if (messageData.source == 0 ||
@@ -86,7 +89,16 @@ function CheckSaying(byRef messageData)
 		return false;
 	endif
 
-	return true;
+	return false;
+endfunction
+
+function CheckEmote(byRef messageData)
+	case (messageData.type)
+		MESSAGE_TYPE::EMOTE:
+			return true;
+	endcase
+
+	return false;
 endfunction
 
 function CanSpeak(byRef messageData)
@@ -108,7 +120,7 @@ function CanSpeak(byRef messageData)
 endfunction
 
 function CanHear(byRef messageData)
-	var rangeMod := CheckLineOfSight(messageData.source, messageData.target) ? 1 : 2;
+	var rangeMod := CheckLineOfSight(messageData.source, messageData.target) ? 1 : 2; // TODO: Diminuir range caso tenha obstáculo
 
 	if (messageData.type == MESSAGE_TYPE::WHISPER)
 		if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::WHISPER / rangeMod)
