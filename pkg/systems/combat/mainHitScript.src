@@ -8,7 +8,7 @@ include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
 include ":abilities:models/Ability";
 include ":abilities:AbilityRegistry";
-include ":combat:weardown";
+include ":combat:Controller/WearDownController";
 
 // External
 include ":wrappers:Objects/Model/MobileWrapper";
@@ -38,7 +38,8 @@ program MainHitScript(attackInfo)
 	// DoMovement(attackInfo); Dead code, agora tudo na V3 eh direto no .inc
 	sleepms(2);
 
-	WearDownWeapon(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
+	// WearDownWeapon(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
+	WearDownEquip(attackInfo.GetAttacker().GetEquipBySlot(WEAPON));
 	ProccessCombatDamage(attackInfo);
 	sleepms(2);
 	PlayAttackFX(attackInfo);

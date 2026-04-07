@@ -12,7 +12,7 @@ include ":combat:Model/Damage";
 include "CombatAbilityController";
 include "SkillController";
 include "ParryController";
-include ":combat:weardown";
+include ":combat:Controller/WearDownController";
 
 // External
 include ":io:CFGFile";
@@ -546,7 +546,8 @@ function CalculateDefenderResist(byRef attackInfo)
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
 
-			WearDownArmor(attackInfo.GetDefender().GetObjRef(), equip.GetObjRef(), attackInfo.GetDamage().GetTotalBaseDamage(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
+			// WearDownArmor(attackInfo.GetDefender().GetObjRef(), equip.GetObjRef(), attackInfo.GetDamage().GetTotalBaseDamage(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
+			WearDownEquip(equip, attackInfo.GetAttacker().GetEquipBySlot(WEAPON));
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em {armorResist.ToString()} e perdeu {attackInfo.GetDamage().GetTotalBaseDamage()} de durabilidade."));
 
 			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist())

@@ -1,5 +1,3 @@
-include "include/client";
-
 class Color()
 	var _name := "";
 	var _value := 0;
