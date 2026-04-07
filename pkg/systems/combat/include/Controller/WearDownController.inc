@@ -71,7 +71,6 @@ function CalculateWearChance(equip)
 endfunction
 
 function DamageEquipment(equip, weapon)
-	print("Dano no equipamento...");
 	var damage := CalculateWearDamage(equip);
 	var owner := equip.GetOwner();
 	
