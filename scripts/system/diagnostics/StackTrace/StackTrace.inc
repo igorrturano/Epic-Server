@@ -9,13 +9,17 @@ class StackTrace()
 	function StackTrace(this)
 		this.frames := array{};
 		this.frame_count := 0;
-		this.CaptureStackTrace();
+		this._CaptureStackTrace();
 	endfunction
 	
-	function CaptureStackTrace(this)
-		var stack_info := this.GetStackTrace();
+	function _CaptureStackTrace(this)
+		var stack_info := array{};
+		stack_info := GetProcess().stacktrace(struct{ format := "array" });
 		
 		if (stack_info)
+			stack_info.erase(1); // Remove a primeira frame relacionada à captura da stack trace (CaptureStackTrace)
+			stack_info.erase(2); // Remove a segunda frame relacionada à captura da stack trace (GetStackTrace)
+
 			foreach s in stack_info
 				if (s.name == "CaptureStackTrace" || s.name == "GetStackTrace" || s.name == "StackTrace")
 					continue;
@@ -32,13 +36,6 @@ class StackTrace()
 				this.frame_count++;
 			endforeach
 		endif
-	endfunction
-
-	function GetStackTrace(this)
-		var arr := array{};
-		arr := GetProcess().stacktrace(struct{ format := "array" });
-		
-		return arr;
 	endfunction
 	
 	function GetFrame(this, index)
