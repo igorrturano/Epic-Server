@@ -87,7 +87,7 @@ function DamageEquipment(equip, weapon)
 		endif
 	endif
 
-	Message($"{equip.GetName()} levou {damage} de dano.").SetColor(Color(SYSTEM_COLOR::BAD)).SendSys(owner);
+	Message($"{equip.GetName()} levou {damage} de dano.").SetColor(Color(SYSTEM_COLOR::BAD)).SendSys(owner.GetObjRef());
 	print($"{equip.GetName()} levou {damage} de dano.");
 
 	ApplyDamageOnEquip(equip, damage);
