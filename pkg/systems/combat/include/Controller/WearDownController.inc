@@ -58,7 +58,7 @@ function CalculateWearChance(equip)
 			wearChance -= 15.0;
 		endif
 	elseif (equip is @WeaponWrapper)
-		wearChance := 20.0;
+		wearChance := 2.0;
 	endif
 
 	if (wearChance < 5.0)
