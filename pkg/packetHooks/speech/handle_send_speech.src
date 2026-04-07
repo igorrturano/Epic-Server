@@ -119,28 +119,28 @@ function CanSpeak(byRef messageData)
 endfunction
 
 function CanHear(byRef messageData)
-	var rangeMod := CheckLineOfSight(messageData.source, messageData.target) ? 1 : 3;
+	var rangeMod := CheckLineOfSight(messageData.source.GetObjRef(), messageData.target.GetObjRef()) ? 1 : 3;
 
 	if (messageData.type == MESSAGE_TYPE::WHISPER)
-		if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::WHISPER / rangeMod)
+		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > MESSAGE_DISTANCE::WHISPER / rangeMod)
 			return false;
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::YELL)
 		if (messageData.target.HasAbility(ABILITY_ID::NINJA_PATH))
-			if (Distance(messageData.source, messageData.target) > (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
+			if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
 				return false;
-			elseif (Abs(messageData.source.z - messageData.target.z) >= (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
+			elseif (Abs(messageData.source.GetObjRef().z - messageData.target.GetObjRef().z) >= (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
 				return false;
 			endif
 		else
-			if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::YELL / rangeMod)
+			if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > MESSAGE_DISTANCE::YELL / rangeMod)
 				return false;
-			elseif (Abs(messageData.source.z - messageData.target.z) >= MESSAGE_DISTANCE::YELL / rangeMod)
+			elseif (Abs(messageData.source.GetObjRef().z - messageData.target.GetObjRef().z) >= MESSAGE_DISTANCE::YELL / rangeMod)
 				return false;
 			endif
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::NORMAL)
-		if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::NORMAL / rangeMod)
+		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > MESSAGE_DISTANCE::NORMAL / rangeMod)
 			return false;
 		endif
 	endif
