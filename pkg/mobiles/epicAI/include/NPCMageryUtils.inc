@@ -1,55 +1,32 @@
-// Script-level cached spell category arrays (built once, reused every spell decision)
-var _aradalore_spells := 0;
-var _anti_mage_spells := 0;
-var _anti_melee_spells := 0;
-var _aoe_spells := 0;
-var _non_ideal_spells := 0;
-var _always_good_base := 0;
+// Script-level cached spell lists (lazy init, built once per brain lifetime)
+var _cached_anti_mage := 0;
+var _cached_anti_melee := 0;
+var _cached_aoe := 0;
+var _cached_non_ideal := 0;
+var _cached_always_good_base := 0;
 
-function GetAradoloreSpells()
-   if (_aradalore_spells) return _aradalore_spells; endif
-   _aradalore_spells := array{
-     "Invoc. Espir. Urso",
-     "Invoc. Espir. Lobo",
-     "Invoc. Espir. Serpente",
-     "Invoc. Espir. Pantera",
-     "Invoc. Espir. Cura",
-     "Invoc. Driade",
-     "Invoc. Ent",
-     "Forma de Urso",
-     "Forma Grande Urso",
-     "Forma do Lobo",
-     "Forma da Serpente",
-     "Forma da Pantera",
-     "Forma Licantropa",
-     "Invoc. Espir. Fogo",
-     "Invoc. Colosso"
-   };
-   return _aradalore_spells;
-endfunction
+
 
 function RemoveNonIdealSpells(spells, school)
     var non_ideal := GetNonIdealSpells();
     var valid_spells := array{};
-    
+
     foreach spell in spells
         if (!(spell.name in non_ideal))
             valid_spells.append(spell);
         endif
     endforeach
-    
+
     return valid_spells;
 endfunction
 
-function ChooseIdealSpell(me, opponent, spells, school := 0)
-    var chosen_spells := array{};
+function ChooseIdealSpell(me, opponent, spells)
     var opponent_class := opponent.getClass();
     var is_ranged := opponent.weapon.attribute == "RangedCombat";
     var dist := Distance(me, opponent);
     var low_health := AP_GetVital(me, HITS) < (AP_GetVitalMaximumValue(me, HITS) * 0.3);
-    var is_drow := (GetObjProperty(opponent, "chardata").raca == "Drow");
     var enemy_count := NPC_GetPlayersPetsAndSummonsNearby(me).size();
-    if (!school) school := getSpellSchool(me); endif
+    var school := getSpellSchool(me);
     
     // First priority - emergency spells
     if (low_health && "Invisibilidade" in spells)
@@ -70,7 +47,7 @@ function ChooseIdealSpell(me, opponent, spells, school := 0)
     
     // Always good spells get high priority
     foreach spell in spells
-        if (spell in GetAlwaysGoodSpells(school, is_drow))
+        if (spell in GetAlwaysGoodSpells())
             valid_spells.append(struct{ "name" := spell, "weight" := 80 });
         endif
     endforeach
@@ -131,106 +108,70 @@ function ChooseIdealSpell(me, opponent, spells, school := 0)
     return "Misseis Magicos"; // Default fallback
 endfunction
 
-function GetAlwaysGoodSpells(school, is_drow)
-    if (!_always_good_base)
-        _always_good_base := array{
+function GetAlwaysGoodSpells()
+    if (!_cached_always_good_base)
+        _cached_always_good_base := array{
             "Misseis Magicos", "Ampliar Dor", "Drenar Folego", "Relampago",
             "Incinerar", "Congelar", "Pesadelo", "Impedir Cura",
             "Forma Amaldicoada", "Drenar Vida", "Maldicao de Zhao",
             "Paralisar", "Envenenar", "Velocidade", "Clones das sombras",
-            "Hipnotizar", "Cegar"
+            "Hipnotizar", "Cegar", "Escurecer"
         };
     endif
-
-    // Copy base and append conditional entries
-    var spells := _always_good_base + array{};
-
-    if (!is_drow)
-        spells.append("Escurecer");
-    endif
-
-    if (school == "Aradalore")
-        spells := spells + GetAradoloreSpells();
-    endif
-
-    return spells;
+    return _cached_always_good_base;
 endfunction
 
 function GetAntiMageSpells()
-    if (_anti_mage_spells) return _anti_mage_spells; endif
-    _anti_mage_spells := array{
-        "Enfraquecer Intelecto", "Atrasar Magias", "Fuga de Mana",
-        "Drenar Mana", "Envenenar Espirito", "Silenciar"
-    };
-    return _anti_mage_spells;
+    if (!_cached_anti_mage)
+        _cached_anti_mage := array{
+            "Enfraquecer Intelecto", "Atrasar Magias", "Fuga de Mana",
+            "Drenar Mana", "Envenenar Espirito", "Silenciar"
+        };
+    endif
+    return _cached_anti_mage;
 endfunction
 
 function GetAntiMeleeSpells()
-    if (_anti_melee_spells) return _anti_melee_spells; endif
-    _anti_melee_spells := array{
-        "Retribuicao Profana", "Muralha de Fogo", "Muralha de Pedra",
-        "Correntes de dor", "Medo", "Vinganca Recorrente",
-        "Horror Paralisante", "Forma Espectral"
-    };
-    return _anti_melee_spells;
+    if (!_cached_anti_melee)
+        _cached_anti_melee := array{
+            "Retribuicao Profana", "Muralha de Fogo", "Muralha de Pedra",
+            "Correntes de dor", "Medo", "Vinganca Recorrente",
+            "Horror Paralisante", "Forma Espectral"
+        };
+    endif
+    return _cached_anti_melee;
 endfunction
 
 function GetAoESpells()
-    if (_aoe_spells) return _aoe_spells; endif
-    _aoe_spells := array{
-        "Bola de Fogo", "Nuvem Acida", "Corrente de Raios",
-        "Chuva de Meteoros", "Terremoto", "Chuva de Gelo",
-        "Parar o Tempo"
-    };
-    return _aoe_spells;
+    if (!_cached_aoe)
+        _cached_aoe := array{
+            "Bola de Fogo", "Nuvem Acida", "Corrente de Raios",
+            "Chuva de Meteoros", "Terremoto", "Chuva de Gelo",
+            "Parar o Tempo"
+        };
+    endif
+    return _cached_aoe;
 endfunction
 
 function GetNonIdealSpells()
-    if (_non_ideal_spells) return _non_ideal_spells; endif
-    _non_ideal_spells := array{
-        "Sangue em mana", "Satisfacao Sadica", "Presente Espiritual",
-        "Invoc. Espir. Luz", "Aprisionar Alma", "Aparencia Cadaverica",
-        "Pacto Sepultura", "Remover Encantamentos", "Teleportar",
-        "Folego prolongado", "Encantar objeto", "Manipular Sombras",
-        "Iludir", "Pressagio", "Prolongar Desmaio", "Levantar os Mortos"
-    };
-    return _non_ideal_spells;
+    if (!_cached_non_ideal)
+        _cached_non_ideal := array{
+            "Sangue em mana", "Satisfacao Sadica", "Presente Espiritual",
+            "Invoc. Espir. Luz", "Aprisionar Alma", "Aparencia Cadaverica",
+            "Pacto Sepultura", "Remover Encantamentos", "Teleportar",
+            "Folego prolongado", "Encantar objeto", "Manipular Sombras",
+            "Iludir", "Pressagio"
+        };
+    endif
+    return _cached_non_ideal;
 endfunction
 
+// Add circle bonus to weight and do direct weighted random — O(n) replaces O(n²) bubble sort
 function SortSpellsByPriority(spells)
-    // Bubble sort - now uses O(1) cached circle lookups instead of 4-config iteration
-    var n := spells.size();
-    var sorted := 0;
-    while (!sorted)
-        sorted := 1;
-        for i := 1 to (n-1)
-            var a := spells[i];
-            var b := spells[i+1];
-
-            var circle_a := GetSpellCircleCached(a.name);
-            var circle_b := GetSpellCircleCached(b.name);
-
-            var should_swap := 0;
-
-            if (circle_a == circle_b)
-                if (a.weight < b.weight)
-                    should_swap := 1;
-                endif
-            else
-                if (circle_a < circle_b)
-                    should_swap := 1;
-                endif
-            endif
-
-            if (should_swap)
-                var temp := spells[i];
-                spells[i] := spells[i+1];
-                spells[i+1] := temp;
-                sorted := 0;
-            endif
-        endfor
-    endwhile
-
+    foreach spell in spells
+        var circle := GetSpellCircleCached(spell.name);
+        spell.weight += circle * 10;
+    endforeach
     return spells;
 endfunction
 
@@ -253,16 +194,6 @@ function ChooseWeightedSpell(valid_spells)
     return valid_spells[1].name; // Fallback to highest priority spell
 endfunction
 
-// O(1) cached lookup - replaces iterating 4 config files
-function FindMageSpellInConfigs(spellname)
-    return FindSpellInfoCached(spellname);
-endfunction
-
-// Kept for backward compatibility (shaman/priest code calls this directly with a config path)
-// Now uses cached data instead of iterating config entries
-function FindSpellInConfig(spellname, cfgFile)
-    return FindSpellInfoCached(spellname);
-endfunction
 
 // O(1) cached lookup - replaces iterating 4 config files with sleepms(2) per entry
 function getAvailableSpells(monster, school := 0)
@@ -282,8 +213,8 @@ function getSpellSchool(monster)
         school := spellSchool;
     endif
    if (!school)
-        var schools := array{"Evocatium", "Aradalore", "Ahtaleloreth", "Kaijin", "Velkyn"};
-        school := schools[RandomInt(5)+1];
+        var schools := array{"Evocatium", "Ahtaleloreth", "Kaijin", "Velkyn"};
+        school := schools[RandomInt(4)+1];
     endif
 
    return school;
@@ -294,16 +225,16 @@ function ChooseSpell(me, opponent, spells, school := 0)
 
     if (school == "Ahtaleloreth")
         var name := HandleSwordMageSpellChoice(opponent);
-        return struct{ "name" := name, "info" := FindMageSpellInConfigs(name) };
+        return name;
     endif
 
-    var chosen_spell := ChooseIdealSpell(me, opponent, spells, school);
-    var spellInfo := FindMageSpellInConfigs(chosen_spell);
+    // Get ideal spell based on tactical considerations
+    var chosen_spell := ChooseIdealSpell(me, opponent, spells);
+    // Get spell info for the chosen spell - search across all mage school configs
+    var spellInfo := FindSpellInfoCached(chosen_spell);
     if (!spellInfo)
         spell_target_var := opponent.serial;
-        chosen_spell := "Misseis Magicos";
-        spellInfo := FindMageSpellInConfigs(chosen_spell);
-        return struct{ "name" := chosen_spell, "info" := spellInfo };
+        return "Misseis Magicos";
     endif
 
     // Set appropriate target based on spell type
@@ -313,37 +244,21 @@ function ChooseSpell(me, opponent, spells, school := 0)
         spell_target_var := me.serial;
     endif
 
-    return struct{ "name" := chosen_spell, "info" := spellInfo };
-endfunction
-
-function DoHarmfulSpell()
-    var diff := getNpcResist();
-    if (GetCooldown(me, "DoHarmfulSpell"))
-        return 0;
+    // Special targeting for corpse-related spells
+    if (chosen_spell in array{"Prolongar Desmaio", "Levantar os Mortos"})
+        var nearby_corpses := ListItemsNearLocation(me.x, me.y, me.z, 12);
+        foreach item in nearby_corpses
+            if (item.IsA(POLCLASS_CORPSE))
+                spell_target_var := item.serial;
+                break;
+            endif
+            sleepms(2);
+        endforeach
     endif
-    
-   // If me is being attacked, prioritize Enraizar
-   if (me.opponent)
-      if (!GetCooldown(me.opponent, "enraizar_cooldown"))
-         CastEnraizar(me, me.opponent, diff);
-         return 1;
-      endif
-   endif
-   
-   // Otherwise, look for enemies attacking allies to weaken
-   var allies := NPC_GetNearbyAllies(me);
-   foreach ally in allies
-      if (ally.opponent)
-         if (!GetCooldown(ally.opponent, "weaken_cooldown"))
-            CastWeaken(me, ally.opponent, diff);
-            return 1;
-         endif
-      endif
-   endforeach
 
-   SetCooldown(me, "DoHarmfulSpell", 15);
-   return 0;
+    return chosen_spell;
 endfunction
+
 
 function MageBehavior(me, opponent)
    if (GetCooldown(me, "spell_cast"))
@@ -367,14 +282,11 @@ function MageBehavior(me, opponent)
       return 0;
    endif
 
-   PrintTextAbove(me, "Casting " + result.name);
-   return NPC_CastSpell(me, result.name, result.info);
+   return NPC_CastSpell(me, result);
 endfunction
 
-function NPC_CastSpell(me, spellname, spellInfo := 0)
-   if (!spellInfo)
-      spellInfo := FindMageSpellInConfigs(spellname);
-   endif
+function NPC_CastSpell(me, spellname)
+   var spellInfo := FindSpellInfoCached(spellname);
 
    if (!spellInfo)
       return 0;
@@ -386,7 +298,6 @@ function NPC_CastSpell(me, spellname, spellInfo := 0)
    var params := array{me, spellInfo, 0, targ};
    var script := Start_Script(":spells:cast_spell", params);
    if (script.errortext)
-      PrintTextAbove(me, "Error starting spell: " + script.errortext);
       return 0;
    endif
 
@@ -469,56 +380,32 @@ function GetAvailableShamanSpells(monster)
     return GetAvailableShamanSpellsCached(tier);
 endfunction
 
-function NPC_CastShamanSpell(me, spellname, spellInfo := 0)
-    if (!spellInfo)
-        spellInfo := FindSpellInConfig(spellname, ":spells:config/shaman");
-    endif
-    if (!spellInfo)
-        return 0;
-    endif
-
-    var targ := SystemFindObjectBySerial(spell_target_var);
-    spell_target_var := 0;
-
-    var params := array{me, spellInfo, 0, targ};
-    var script := Start_Script(":spells:cast_spell", params);
-    if (script.errortext)
-        PrintTextAbove(me, "Error starting shaman spell: " + script.errortext);
-        return 0;
-    endif
-
-    SetCooldown(me, "spell_cast", 10);
-    return 1;
-endfunction
-
 function HumanoidShamanBehavior(me, opponent)
     if (GetCooldown(me, "spell_cast"))
         return 0;
     endif
 
-    // Get castable shaman spells based on the caster's tier
     var spells := GetAvailableShamanSpells(me);
     if (!spells.size())
         return 0;
     endif
 
-    var result := ChooseShamanSpell(me, opponent, spells);
-    if (!result)
+    // ChooseShamanSpell already sets spell_target_var
+    var chosen_spell := ChooseShamanSpell(me, opponent, spells);
+    if (!chosen_spell)
         return 0;
     endif
 
-    PrintTextAbove(me, "Casting " + result.name + " (Shaman)");
-    return NPC_CastShamanSpell(me, result.name, result.info);
+    return NPC_CastSpell(me, chosen_spell);
 endfunction
 
 function ChooseShamanSpell(me, opponent, spells)
+    // Get ideal spell based on tactical considerations
     var chosen_spell := ChooseIdealShamanSpells(me, opponent, spells);
-    var spellInfo := FindSpellInConfig(chosen_spell, ":spells:config/shaman");
+    var spellInfo := FindSpellInfoCached(chosen_spell);
     if (!spellInfo)
         spell_target_var := opponent.serial;
-        chosen_spell := "Enfraquecer";
-        spellInfo := FindSpellInConfig(chosen_spell, ":spells:config/shaman");
-        return struct{ "name" := chosen_spell, "info" := spellInfo };
+        return "Dardo Igneo";
     endif
 
     // Set target based on spell type
@@ -532,67 +419,75 @@ function ChooseShamanSpell(me, opponent, spells)
 endfunction
 
 function ChooseIdealShamanSpells(me, opponent, spells)
-    // Gather battlefield information
-    var opponent_class := opponent.getClass();
-    var is_ranged := (opponent.weapon.attribute == "RangedCombat");
     var dist := Distance(me, opponent);
-    var low_health := AP_GetVital(me, HITS) < (AP_GetVitalMaximumValue(me, HITS) * 0.3);
-    var hurt := AP_GetVital(me, HITS) < (AP_GetVitalMaximumValue(me, HITS) * 0.7);
     var enemy_count := NPC_GetPlayersPetsAndSummonsNearby(me).size();
-    var allies := NPC_GetNearbyAllies(me);
-    var ally_count := allies.size();
-    var self_cache := NPC_GetCachedData(me);
-    var self_is_undead := (self_cache.category_lower == "undead" || self_cache.category_lower == "demons");
 
-    // Emergency priority: self-heal (skip if undead — healing damages them)
-    if (!self_is_undead)
-        if (low_health && ("Cura Grave" in spells))
-            return "Cura Grave";
-        endif
-        if (hurt && ("Cura Leve" in spells))
-            return "Cura Leve";
-        endif
-    endif
+    // Non-ideal shaman spells (useless for NPCs) — healing handled by BUDDYATTACKED event
+    var non_ideal := array{
+        "Criar comida", "Levitar", "Manter Fogueira", "Visao Noturna", "Voz Fantasma",
+        "Observar", "Despertar", "Sacrificar Animal", "Montaria das Areias",
+        "Encantar Monstros", "Cura Leve", "Cura Grave", "Nutrir o corpo",
+        "Protecao Contra a Morte", "Forca do Touro", "Lama", "Circulo de Pedras"
+    };
 
-    // If the opponent has summoned creatures, try "Enraizar" if available.
-    if (NPC_HasSummonedCreaturesNearby(opponent) && ("Enraizar" in spells))
+    // Debuffs — cast once per target, don't spam (they don't stack)
+    var debuffs := array{ "Enfraquecer", "Intimidar", "Enraizar", "Rajada de Vento" };
+
+    // Root if enemy in melee (once per cooldown)
+    if (dist <= 2 && ("Enraizar" in spells) && !GetCooldown(opponent, "shaman_enraizar"))
+        SetCooldown(opponent, "shaman_enraizar", 30);
         return "Enraizar";
     endif
 
-    // Build a weighted list from the available shaman spells (only those in shaman.cfg).
+    // Build weighted list of offensive spells
     var valid_spells := array{};
     foreach spell in spells
-        var weight := 50; // base weight for every available spell
-
-        // Example condition: if opponent is a warrior and the spell is "Enfraquecer",
-        // add bonus weight.
-        if (opponent_class == GUERREIRO && spell == "Enfraquecer")
-            weight += 20;
+        if (spell in non_ideal)
+            continue;
         endif
 
-        // AoE heal boost only if caster isn't undead (healing damages undead)
-        if (!self_is_undead)
-            foreach ally in allies
-                if (AP_GetVital(ally, HITS) < (AP_GetVitalMaximumValue(ally, HITS) * 0.7) && spell == "Cura em Area")
-                    weight += 15;
-                endif
-            endforeach
+        // Skip debuffs already applied to this target
+        if (spell in debuffs && GetCooldown(opponent, "shaman_" + spell))
+            continue;
         endif
 
-        // Add the spell structure into our weighted list.
+        var weight := 50;
+
+        if (spell == "Dardo Igneo" || spell == "Raio de Gelo")
+            weight := 70;
+        elseif (spell == "Enraizar")
+            weight := 40;
+        elseif (spell == "Intimidar")
+            weight := 40;
+        elseif (spell == "Enfraquecer")
+            weight := 40;
+        elseif ((spell == "Terremoto" || spell == "Trovao") && enemy_count > 2)
+            weight := 90;
+        elseif (spell == "Sugar Alma")
+            weight := 75;
+        elseif (spell == "Rajada de Vento" && dist <= 3)
+            weight := 50;
+        elseif (spell == "Frenesi")
+            weight := 55;
+        elseif (spell == "Rito de Sangue")
+            weight := 60;
+        endif
+
         valid_spells.append(struct{ "name" := spell, "weight" := weight });
     endforeach
 
-    // Sort the spells by priority (this function can take into account spell circles as well if applicable).
     valid_spells := SortSpellsByPriority(valid_spells);
 
-    // Choose one spell by weighted selection.
     if (valid_spells.size() > 0)
-        return ChooseWeightedSpell(valid_spells);
+        var chosen := ChooseWeightedSpell(valid_spells);
+        // Set debuff cooldown on target so we don't re-cast it
+        if (chosen in debuffs)
+            SetCooldown(opponent, "shaman_" + chosen, 30);
+        endif
+        return chosen;
     endif
 
-    // If no appropriate spell is found, do not cast any spell.
-    return "Enfraquecer";
+    return "Dardo Igneo";
 endfunction
 
 // O(1) cached lookup - replaces iterating priest config with sleepms(2) per entry
@@ -608,138 +503,200 @@ function HumanoidPriestBehavior(me, opponent)
         return 0;
     endif
 
-    // Get available priest spells based on the caster's tier
     var spells := GetAvailablePriestSpells(me);
     if (!spells.size())
         return 0;
     endif
 
+    // ChoosePriestSpell already sets spell_target_var
     var chosen_spell := ChoosePriestSpell(me, opponent, spells);
     if (!chosen_spell)
         return 0;
     endif
 
-    var spellInfo := FindSpellInConfig(chosen_spell, ":spells:config/priest");
-
-    // Set target if not already set by ChoosePriestSpell (ally healing sets it there)
-    if (!spell_target_var)
-        if (spellInfo && spellInfo.Target == "Self")
-            spell_target_var := me.serial;
-        else
-            spell_target_var := opponent.serial;
-        endif
-    endif
-
-    PrintTextAbove(me, "Casting " + chosen_spell + " (Priest)");
-    return NPC_CastPriestSpell(me, chosen_spell, spellInfo);
+    return NPC_CastSpell(me, chosen_spell);
 endfunction
 
 function ChoosePriestSpell(me, opponent, spells)
-    // Gather battlefield information
-    var my_health_pct := CDbl(AP_GetVital(me, HITS)) / CDbl(AP_GetVitalMaximumValue(me, HITS));
-    var opponent_health_pct := CDbl(AP_GetVital(opponent, HITS)) / CDbl(AP_GetVitalMaximumValue(opponent, HITS));
-    var self_cache := NPC_GetCachedData(me);
-    var self_is_undead := (self_cache.category_lower == "undead" || self_cache.category_lower == "demons");
+    // Healing handled by BUDDYATTACKED event — this function is offense/protection only
+    var non_ideal := array{
+        "Luz Divina", "Orientar", "Benzer Atadura", "Olhar da Justica",
+        "Detectar Magia", "Detectar Impurezas", "Imbuir Protecao",
+        "Ressureicao", "Detectar Corrupcao", "Cura Leve", "Cura Grave",
+        "Cura em Massa", "Santuario", "Prece Curativa", "Despertar",
+        "Descanso", "Sacrificio", "Campo Anti-Magia"
+    };
 
-    // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
-    var allies := GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL);
-    var hurt_allies := 0;
-
-    // Count hurt allies (skip undead/demons — healing damages them)
-    foreach ally in allies
-        if (!ally.npctemplate)
-            continue;
-        endif
-
-        if (ally.serial != me.serial && !ally.dead)
-            var ally_cache := NPC_GetCachedData(ally);
-            if (ally_cache.category_lower != "undead" && ally_cache.category_lower != "demons")
-                var ally_health_pct := CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS));
-                if (ally_health_pct < 0.7)
-                    hurt_allies += 1;
-                endif
-            endif
-        endif
-    endforeach
-
-    // Emergency priority spells (skip if undead — healing damages them)
-    if (!self_is_undead && my_health_pct < 0.3)
-        if ("Santuario" in spells)
-            return "Santuario";
-        elseif ("Cura Grave" in spells)
-            return "Cura Grave";
-        elseif ("Cura Leve" in spells)
-            return "Cura Leve";
-        endif
-    endif
-
-    // Healing priority for allies
-    if (hurt_allies > 1 && "Descanso Tranquilo" in spells)
-        return "Descanso Tranquilo";
-    endif
-
-    // Single target healing for very hurt allies (undead already filtered above)
-    foreach ally in allies
-        if (!ally.npctemplate && !ally.dead)
-            var ally_cache := NPC_GetCachedData(ally);
-            if (ally_cache.category_lower != "undead" && ally_cache.category_lower != "demons")
-                var ally_health_pct := CDbl(AP_GetVital(ally, HITS)) / CDbl(AP_GetVitalMaximumValue(ally, HITS));
-                if (ally_health_pct < 0.4)
-                    if ("Cura Grave" in spells)
-                        spell_target_var := ally.serial;
-                        return "Cura Grave";
-                    elseif ("Cura Leve" in spells)
-                        spell_target_var := ally.serial;
-                        return "Cura Leve";
-                    endif
-                endif
-            endif
-        endif
-    endforeach
-
-    // Defensive spells when under attack
+    // Defensive buffs when under attack
     if (me.opponent)
-        if ("Protecao" in spells && !GetCooldown(me, "protection_spell"))
-            SetCooldown(me, "protection_spell", 30);
-            return "Protecao";
-        elseif ("Aura Mortis" in spells && !GetCooldown(me, "aura_mortis"))
+        if ("Escudo de Fe" in spells && !GetCooldown(me, "shield_spell"))
+            SetCooldown(me, "shield_spell", 30);
+            spell_target_var := me.serial;
+            return "Escudo de Fe";
+        endif
+        if ("Abencoar" in spells && !GetCooldown(me, "bless_spell"))
+            SetCooldown(me, "bless_spell", 30);
+            spell_target_var := me.serial;
+            return "Abencoar";
+        endif
+        if ("Circulo de Protecao" in spells && !GetCooldown(me, "circle_protection"))
+            SetCooldown(me, "circle_protection", 45);
+            spell_target_var := me.serial;
+            return "Circulo de Protecao";
+        endif
+        if ("Aura Mortis" in spells && !GetCooldown(me, "aura_mortis"))
             SetCooldown(me, "aura_mortis", 45);
+            spell_target_var := me.serial;
             return "Aura Mortis";
         endif
     endif
 
-    // Offensive support against strong opponents
-    if (opponent_health_pct > 0.7)
-        if ("Destruir o Mal" in spells && !GetCooldown(me, "destroy_evil"))
-            SetCooldown(me, "destroy_evil", 60);
-            return "Destruir o Mal";
+    // Build weighted list of offensive/protective spells
+    var valid_spells := array{};
+    foreach spell in spells
+        if (spell in non_ideal)
+            continue;
         endif
+
+        var weight := 50;
+
+        if (spell == "Chama Sagrada")
+            weight := 70;
+        elseif (spell == "Juizo Flamejante")
+            weight := 80;
+        elseif (spell == "Destruir o Mal")
+            weight := 85;
+        elseif (spell == "Remover Maldicao")
+            weight := 40;
+        elseif (spell == "Dissipar Magia")
+            weight := 45;
+        elseif (spell == "Repelir Magias")
+            weight := 50;
+        elseif (spell == "Protecao Contra a Morte")
+            weight := 45;
+        elseif (spell == "Imunidade a Veneno")
+            weight := 40;
+        endif
+
+        valid_spells.append(struct{ "name" := spell, "weight" := weight });
+    endforeach
+
+    valid_spells := SortSpellsByPriority(valid_spells);
+
+    if (valid_spells.size() > 0)
+        var chosen := ChooseWeightedSpell(valid_spells);
+        spell_target_var := opponent.serial;
+        return chosen;
     endif
 
-    // Default to basic healing if nothing else is appropriate
-    return "Cura Leve";
+    // Fallback: Chama Sagrada if available, else first available non-ideal spell
+    spell_target_var := opponent.serial;
+    if ("Chama Sagrada" in spells)
+        return "Chama Sagrada";
+    endif
+    return spells[1];
 endfunction
 
-function NPC_CastPriestSpell(me, spellname, spellInfo := 0)
-    if (!spellInfo)
-        spellInfo := FindSpellInConfig(spellname, ":spells:config/priest");
+// Druid NPC behavior
+
+function GetAvailableDruidSpells(monster)
+    var cache := NPC_GetCachedData(monster);
+    var tier := cache.tier;
+    if (!tier) tier := 1; endif
+    return GetAvailableDruidSpellsCached(tier);
+endfunction
+
+function DruidBehavior(me, opponent)
+    if (GetCooldown(me, "spell_cast"))
+        return 0;
     endif
 
+    var spells := GetAvailableDruidSpells(me);
+    if (!spells.size())
+        return 0;
+    endif
+
+    var chosen_spell := ChooseDruidSpell(me, opponent, spells);
+    if (!chosen_spell)
+        return 0;
+    endif
+
+    return NPC_CastSpell(me, chosen_spell);
+endfunction
+
+function ChooseDruidSpell(me, opponent, spells)
+    var chosen_spell := ChooseIdealDruidSpells(me, opponent, spells);
+    var spellInfo := FindSpellInfoCached(chosen_spell);
     if (!spellInfo)
-        return 0;
+        spell_target_var := opponent.serial;
+        return "Fogo Fatuo";
     endif
-    
-    // Start the cast_spell script with target info
-    var targ := SystemFindObjectBySerial(spell_target_var);
-    spell_target_var := 0;
-    
-    var params := array{me, spellInfo, 0, targ};
-    var script := Start_Script(":spells:cast_spell", params);
-    if (script.errortext)
-        PrintTextAbove(me, "Error starting priest spell: " + script.errortext);
-        return 0;
+
+    if (spellInfo.Target in array{"Unico", "Area"})
+        spell_target_var := opponent.serial;
+    elseif (spellInfo.Target == "Self")
+        spell_target_var := me.serial;
     endif
-    
-    SetCooldown(me, "spell_cast", 10);
-    return 1;
+
+    return chosen_spell;
+endfunction
+
+function ChooseIdealDruidSpells(me, opponent, spells)
+    var dist := Distance(me, opponent);
+    var enemy_count := NPC_GetPlayersPetsAndSummonsNearby(me).size();
+
+    // Non-ideal druid spells for NPC combat
+    var non_ideal := array{
+        "Criar comida", "Manter Fogueira", "Fala Selvagem", "Acalmar bestas",
+        "Percepção da Coruja", "Invocar Wisp", "Cura Leve", "Pomo da Vitalidade",
+        "Canção das águas cristalinas", "Revelação da Lua", "Despetrificar",
+        "Encantar Pessoa", "Saltar", "Caminhada do vento", "Reviver animais",
+        "Manto da Casca de Carvalho", "Misericórdia da Corrente"
+    };
+
+    // Root if enemy in melee
+    if (dist <= 2 && ("Enraizar" in spells))
+        return "Enraizar";
+    endif
+
+    var valid_spells := array{};
+    foreach spell in spells
+        if (spell in non_ideal)
+            continue;
+        endif
+
+        var weight := 50;
+
+        if (spell == "Fogo Fatuo" || spell == "Queimadura por frio" || spell == "Vento Silvestre")
+            weight := 70;
+        elseif (spell == "Tempestade de Espinhos")
+            weight := 75;
+        elseif (spell == "Enraizar")
+            weight := 60;
+        elseif (spell == "Pira Purificadora")
+            weight := 70;
+        elseif (spell == "Renascimento da Terra" && enemy_count > 2)
+            weight := 85;
+        elseif (spell == "Enxame")
+            weight := 75;
+        elseif (spell == "Ventania selvagem" && dist <= 3)
+            weight := 80;
+        elseif (spell == "Corrente viva")
+            weight := 70;
+        elseif (spell == "Crescimento selvagem")
+            weight := 65;
+        elseif (spell == "Tremor dos antigos" && enemy_count > 2)
+            weight := 90;
+        endif
+
+        valid_spells.append(struct{ "name" := spell, "weight" := weight });
+    endforeach
+
+    valid_spells := SortSpellsByPriority(valid_spells);
+
+    if (valid_spells.size() > 0)
+        return ChooseWeightedSpell(valid_spells);
+    endif
+
+    return "Fogo Fatuo";
 endfunction

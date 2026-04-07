@@ -1,5 +1,3 @@
-
-
 const FOLLOW_CMD := 0xA001;
 function AnimalBrain()
     var ev;
@@ -77,16 +75,10 @@ function AnimalBrain()
                     endif
                     if (!IsAlly(ev.source))
                         UpdateThreatList(me, ev);
-                        if (should_flee)
-                            SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
-                        else
-                            AlertAllies(ev.source, me);
-                            HandleAnimalEnteredArea(ev.source);
-                        endif
+                        AlertAllies(ev.source, me);
+                        HandleAnimalEnteredArea(ev.source);
                     endif
                 SYSEVENT_LEFTAREA:
-                    if (me.alignment != 1) return; endif
-
                     if (!IsAlly(ev.source))
                         UpdateThreatList(me, ev);
                         HandleAnimalLeftArea(ev.source);

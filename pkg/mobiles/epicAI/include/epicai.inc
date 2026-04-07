@@ -296,21 +296,21 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 EquipItem(mobile, hammer);
             endif
 
-            if ("Sede de Sangue" in habs)
+            if (ABILITY_ID::BLOODTHIRST in habs)
                 makeRace(mobile, ORC);
                 var two_handed := array{0x1401, 0x1440, 0x0f51, 0x0f63, 0x143c, 0x13B2};
                 EquipRandomFromArray(mobile, two_handed);
             endif
 
-            if ("Gwaenedh" in habs)
+            if (ABILITY_ID::ARCANE_BOW  in habs)
                 makeRace(mobile, ELFO);
             endif
 
-            if ("Elo Natural" in habs)
+            if (ABILITY_ID::ELO_NATURAL in habs)
                 makeRace(mobile, ELFO);
             endif
 
-            if ("Forma Adaptavel" in habs)
+            if (ABILITY_ID::FORMA_ADAPTAVEL in habs)
                 var two_handed := array{0x1401, 0x1440, 0x0f51, 0x0f63, 0x143c, 0x13B2};
                 EquipRandomFromArray(mobile, two_handed);
             endif
@@ -1890,22 +1890,6 @@ function HandleIdleState()
     return 1;
 endfunction
 
-function FleeFrom(opponent)
-    if (!opponent)
-        return 0;
-    endif
-
-    var runs := 0;
-    while (opponent && Distance(me, opponent) < 16 && runs < 20)
-        TryToRunAway(opponent);
-        if(!AP_ConsumeVital(me, STAMINA, 5))
-            PrintTextAbove(me, "*Exausto*");
-            break;
-        endif
-        runs += 1;
-        sleepms(100);
-    endwhile
-endfunction
 
 function MaintainRange(opponent)
     var sleepdelay := 275 - me.run_speed;
@@ -2075,36 +2059,22 @@ function DoThiefCombatBehavior(opponent)
 endfunction
 
 function ShamanBehavior(shaman)
-    // First priority: Check allies health
-    if (GetCooldown(shaman, "heal_check"))
+    if (GetCooldown(shaman, "spell_cast"))
         return 0;
     endif
-
-    // Get all allies nearby
-    var wounded_allies := array{};
-
-    // Check allies' health
-    wounded_allies := CheckForWoundedAllies(shaman);
-
-    if (wounded_allies.size() == 0)
-        DoHarmfulSpell();
+    var opponent := shaman.opponent;
+    if (!opponent)
+        return 0;
     endif
-
-    // If multiple allies need help, cast healing rain
-    if (wounded_allies.size() >= 3 && !GetCooldown(shaman, "healing_rain"))
-        PerformHealingRain(shaman, wounded_allies);
-        SetCooldown(shaman, "healing_rain", 45);
-        return 1;
+    var spells := GetAvailableShamanSpells(shaman);
+    if (!spells.size())
+        return 0;
     endif
-
-    var most_wounded := FindMostWoundedAlly(wounded_allies);
-    if (most_wounded)
-        PerformHeal(shaman, most_wounded, 1);
-        SetCooldown(shaman, "heal_check", 15);
-        return 1;
+    var result := ChooseShamanSpell(shaman, opponent, spells);
+    if (!result)
+        return 0;
     endif
-
-    return 0;
+    return NPC_CastSpell(shaman, result);
 endfunction
 
 function CheckForWoundedAllies(who)
@@ -2153,11 +2123,9 @@ function AskForHealing(me)
     foreach mobile in GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL)
         if (mobile.npctemplate && mobile != me)
             if (mobile.isSage())
-                SetObjProperty(mobile, "#healing_needed", me.serial);
                 SendEvent(mobile, struct{ "type" := EVID_BUDDYATTACKED, "source" := me });
             endif
         endif
-        sleepms(2);
     endforeach
 endfunction
 
@@ -2209,8 +2177,8 @@ function shouldKeepPursuing(opponent, dist)
                 
                 if (RandomInt(100) < flee_chance)
                     PrintTextAbove(me, "*"+me.name+" recua*");
-                    FleeFrom(opponent);
-                    return 0;  // Added return 0 after fleeing
+                    SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
+                    return 0;
                 endif
             endif
         endif

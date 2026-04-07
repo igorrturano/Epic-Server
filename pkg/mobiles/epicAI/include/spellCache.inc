@@ -27,6 +27,9 @@ var _shaman_spells_by_tier := dictionary;
 // "priest_" + tier -> array of spell names
 var _priest_spells_by_tier := dictionary;
 
+// "druid_" + tier -> array of spell names
+var _druid_spells_by_tier := dictionary;
+
 function InitSpellCache()
     if (_spell_cache_built)
         return;
@@ -111,15 +114,16 @@ function InitSpellCache()
                 "mana" -> GetConfigInt(elem, "Mana")
             };
 
-            if (circle > 0)
-                for tier := circle to 5
-                    var key := "shaman_" + CStr(tier);
-                    if (!_shaman_spells_by_tier.exists(key))
-                        _shaman_spells_by_tier[key] := array{};
-                    endif
-                    _shaman_spells_by_tier[key].append(name);
-                endfor
-            endif
+            // Include circle 0 cantrips (Dardo Igneo, Raio de Gelo) — available at all tiers
+            var start_tier := circle;
+            if (start_tier < 1) start_tier := 1; endif
+            for tier := start_tier to 5
+                var key := "shaman_" + CStr(tier);
+                if (!_shaman_spells_by_tier.exists(key))
+                    _shaman_spells_by_tier[key] := array{};
+                endif
+                _shaman_spells_by_tier[key].append(name);
+            endfor
         endforeach
     endif
 
@@ -156,6 +160,46 @@ function InitSpellCache()
                     _priest_spells_by_tier[key] := array{};
                 endif
                 _priest_spells_by_tier[key].append(name);
+            endfor
+        endforeach
+    endif
+
+    // Druid config
+    var druid_cfg := ReadConfigFile(":spells:config/druid");
+    if (druid_cfg)
+        foreach spellId in (GetConfigIntKeys(druid_cfg))
+            var elem := FindConfigElem(druid_cfg, spellId);
+            var name := GetConfigString(elem, "Name");
+            if (!name)
+                continue;
+            endif
+            var name_lower := Lower(name);
+            var circle := CInt(GetConfigInt(elem, "Circle"));
+
+            _spell_circle_cache[name_lower] := circle;
+
+            _spell_info_cache[name_lower] := dictionary{
+                "id" -> CInt(spellId),
+                "circle" -> circle,
+                "name" -> name,
+                "Difficulty" -> GetConfigInt(elem, "Difficulty"),
+                "School" -> GetConfigString(elem, "School"),
+                "Target" -> GetConfigString(elem, "Target"),
+                "script" -> GetConfigString(elem, "SpellScript"),
+                "Cycles" -> GetConfigInt(elem, "Cycles"),
+                "PowerWords" -> GetConfigString(elem, "PowerWords"),
+                "mana" -> GetConfigInt(elem, "Mana")
+            };
+
+            // Include circle 0 cantrips (Fogo Fatuo, Queimadura por frio, etc.) — available at all tiers
+            var start_tier := circle;
+            if (start_tier < 1) start_tier := 1; endif
+            for tier := start_tier to 5
+                var key := "druid_" + CStr(tier);
+                if (!_druid_spells_by_tier.exists(key))
+                    _druid_spells_by_tier[key] := array{};
+                endif
+                _druid_spells_by_tier[key].append(name);
             endfor
         endforeach
     endif
@@ -202,10 +246,7 @@ function GetAvailableShamanSpellsCached(tier)
     var key := "shaman_" + CStr(tier);
     var spells := _shaman_spells_by_tier[key];
     if (!spells)
-        return array{"Enfraquecer"};
-    endif
-    if (!("Enfraquecer" in spells))
-        spells.append("Enfraquecer");
+        return array{"Dardo Igneo"};
     endif
     return spells;
 endfunction
@@ -222,6 +263,21 @@ function GetAvailablePriestSpellsCached(tier)
     endif
     if (!("Cura Leve" in spells))
         spells.append("Cura Leve");
+    endif
+    return spells;
+endfunction
+
+function GetAvailableDruidSpellsCached(tier)
+    if (!tier)
+        tier := 1;
+    endif
+    var key := "druid_" + CStr(tier);
+    var spells := _druid_spells_by_tier[key];
+    if (!spells)
+        return array{"Fogo Fatuo"};
+    endif
+    if (!("Fogo Fatuo" in spells))
+        spells.append("Fogo Fatuo");
     endif
     return spells;
 endfunction
