@@ -10,12 +10,6 @@ include "include/say";
 include "include/client";
 
 function KataWakeUp(ghost, corpse)
-	if (!ghost.dead)
-		EraseObjProperty(ghost, "death_waketime");
-		EraseObjProperty(ghost, "death_corpse_serial");
-		return;
-	endif
-
 	var serialC := ghost.serial;
 	setcooldown(ghost, "deathtime", 25);
 
@@ -40,7 +34,9 @@ function KataWakeUp(ghost, corpse)
 		endif
 	endif
 
-	Resurrect(ghost);
+	if (ghost.dead)
+		Resurrect(ghost);
+	endif
 	SetCooldown(ghost, "res_trap_protection", 10);
 	var ressrobe := GetEquipmentByLayer(ghost, 0x16);
 	DestroyItem(ressrobe);
@@ -93,21 +89,17 @@ function KataWakeUp(ghost, corpse)
 	endif
 
 	if (GetObjProperty(ghost, "metamorfose"))
-		TS_LowerDuration(ghost, "metamorfosedruida", 10000, 1);
+		TS_LowerDuration(ghost, "metamorfosedruida", -1);
 	endif
 
-	EraseObjProperty(ghost, "death_waketime");
+	EraseObjProperty(ghost, "death_remaining");
 	EraseObjProperty(ghost, "death_corpse_serial");
 endfunction
 
 function FallbackResurrect(ghost)
-	if (!ghost.dead)
-		EraseObjProperty(ghost, "death_waketime");
-		EraseObjProperty(ghost, "death_corpse_serial");
-		return;
+	if (ghost.dead)
+		Resurrect(ghost);
 	endif
-
-	Resurrect(ghost);
 	SetCooldown(ghost, "res_trap_protection", 10);
 	var ressrobe := GetEquipmentByLayer(ghost, 0x16);
 	DestroyItem(ressrobe);
@@ -119,6 +111,6 @@ function FallbackResurrect(ghost)
 
 	SendSysMessage(ghost, "Voce acordou, mas seu corpo nao foi encontrado.");
 
-	EraseObjProperty(ghost, "death_waketime");
+	EraseObjProperty(ghost, "death_remaining");
 	EraseObjProperty(ghost, "death_corpse_serial");
 endfunction

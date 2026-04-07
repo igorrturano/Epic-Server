@@ -191,7 +191,7 @@ program death(params)
 				// 	logs := dias;
 				// endif
 				// FindAccount(ghost.acctname).setprop("mortelog", logs);
-				EraseObjProperty(ghost, "death_waketime");
+				EraseObjProperty(ghost, "death_remaining");
 				EraseObjProperty(ghost, "death_corpse_serial");
 				sleep(5);
 				return 1;
@@ -230,7 +230,7 @@ program death(params)
 	if (save)
 		tempo := 0;
 	endif
-	SetObjProperty(ghost, "death_waketime", polcore().systime + (tempo * 30));
+	SetObjProperty(ghost, "death_remaining", tempo * 30);
 	SetObjProperty(ghost, "death_corpse_serial", corpse.serial);
 	while (tempo > 0)
 		if (tempo % 2 == 0)
@@ -263,6 +263,7 @@ program death(params)
 			EraseObjProperty(corpse, "prolongardesmaio");
 			SetObjProperty(corpse, "japrolongou", 1);
 			tempo := tempo * 2;
+			SetObjProperty(ghost, "death_remaining", tempo * 30);
 		elseif (CInt(GetObjProperty(corpse, "morto")) || CInt(GetObjProperty(ghost, "morto")))
 			SendSysMessage(ghost, "Algo aconteceu... Voce morreu.");
 			SetObjProperty(corpse, "morto", 1);
@@ -293,7 +294,7 @@ program death(params)
 			//    logs := dias;
 			// endif
 			// FindAccount(ghost.acctname).setprop("mortelog", logs);
-			EraseObjProperty(ghost, "death_waketime");
+			EraseObjProperty(ghost, "death_remaining");
 			EraseObjProperty(ghost, "death_corpse_serial");
 			return 1;
 		elseif (GetObjProperty(corpse, "webseal"))
@@ -301,6 +302,7 @@ program death(params)
 			SendSysMessageEx(corpse, "Você está preso na teia de aranha!", SSM_FAIL);
 		endif
 		tempo := tempo - 1;
+		SetObjProperty(ghost, "death_remaining", tempo * 30);
 	endwhile
 	EraseObjProperty(corpse, "japrolongou");
 
