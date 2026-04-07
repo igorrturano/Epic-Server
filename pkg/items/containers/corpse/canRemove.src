@@ -7,6 +7,9 @@ include "include/say";
 program canRemove(character, container, item, move_type)
 	if (container.ownerserial == character.serial)
 		return 1;
+	elseif (character.warmode)
+		SendSysMessageEx(character, "Você não pode pegar itens em modo de guerra.", SSM_FAIL);
+		return 0;
 	elseif (!maoLivre(character, 1))
 		return 0;
 	elseif (character.frozen || character.paralyzed)
