@@ -396,8 +396,7 @@ function KataWakeUp(ghost, corpse)
 	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::RECOVERY))
 		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.9));
 	else
-		// 		PrintTextAbove(ghost, " " + GetHP(ghost));
-		ApplyEpicHealing(ghost, GetHP(ghost) + 1);
+		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.15));
 	endif
 	SetVital(ghost, "stamina", CInt(GetVitalMaximumValue(ghost, "stamina") * 0.5));
 	SetVital(ghost, "mana", CInt(GetVitalMaximumValue(ghost, "mana") * 0.5));
