@@ -34,7 +34,7 @@ function CalculateHitChance(byRef attackInfo)
 		return 100;
 	endif
 
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED && GetCooldown(attackInfo.GetDefender().GetObjRef(), "Desviar Disparos") > 0)
+	if (attackInfo.GetWeapon().GetAttribute() == RANGED && GetCooldown(attackInfo.GetDefender().GetObjRef(), "Desviar Disparos") > 0)
 		Message("*desviar disparos*").SendAbove(attackInfo.GetDefender().GetObjRef());
 		return 0;
 	endif
@@ -101,9 +101,9 @@ function _GetSkillForCombat(byRef mobile)
 endfunction
 
 function CalculateDualWieldPenalty(attackInfo)
-	attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute());
+	attackInfo.GetAttacker().GetSkill(attackInfo.GetWeapon().GetAttribute());
 
-	var penalty := (100 - attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute())) / 2;
+	var penalty := (100 - attackInfo.GetAttacker().GetSkill(attackInfo.GetWeapon().GetAttribute())) / 2;
 
 	if (penalty < 10)
 		penalty := 10;
@@ -226,8 +226,8 @@ function CanBackStab(attacker) // attacker: MobileWrapper
 endfunction
 
 function ConsumeAmmo(byRef attackInfo)
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
-		var powderNeeded := GetPowderAmount(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory());
+	if (attackInfo.GetWeapon().isFireWeapon())
+		var powderNeeded := GetPowderAmount(attackInfo.GetWeapon().GetCategory());
 
 		var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST).GetObjRef();
 		var powder := FindObjtypeInContainer(bandolier, 0x9092); // Pólvora
