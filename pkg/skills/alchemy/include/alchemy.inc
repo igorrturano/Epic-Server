@@ -12,6 +12,25 @@ include ":crafting:/include/caracteristicasFabricacao";
 include ":crafting:/include/fabricacaoUtil";
 
 CONST DRINK_SOUND := 0x32;
+CONST GATILHO_PAVIO := 11;
+CONST GATILHO_IMPACTO := 12;
+CONST GATILHO_MINA := 13;
+
+CONST ELEMENTO_FOGO := 21;
+CONST ELEMENTO_ENERGIA := 22;
+CONST ELEMENTO_GELO := 23;
+
+CONST INVOLUCRO_BASE := 31;
+CONST INVOLUCRO_FRAGMENTACAO := 32;
+CONST INVOLUCRO_CONCUSSAO := 33;
+
+CONST CARGA_BALANCEADA := 41;
+CONST CARGA_CONCENTRADA := 42;
+CONST CARGA_DISPERSA := 43;
+
+CONST REFORCO_COMUM := 51;
+CONST REFORCO_CARGA_DUPLA := 52;
+CONST REFORCO_POTENCIA_ELEM := 53;
 
 function checkifcandrink(character, type)
   // Check to make sure they have at least one hand free to drink the potion
@@ -36,29 +55,23 @@ function checkifcandrink(character, type)
   endif
 endfunction
 
-function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
+function empty_bottle(character, potion, drinkSound:= 1)
 
   if (drinkSound)
     PlaySoundEffect(character, DRINK_SOUND);
   endif
   PrintTextAbove(character, "*usa uma pocao*");
-  var goles;
+  var doses;
   var objtype := GetObjType(potion);
   
-	if (!GetObjProperty(potion, "goles"))
-    var frasco := PegaComponenteFabricacao(potion, "vazio");
-  	goles := frasco.tier.id? frasco.tier.id :  1;
-		SetObjProperty(potion, "goles", goles);
+	if (!GetObjProperty(potion, "doses"))
+		doses := 1;
 	else
-		goles := cint(GetObjProperty(potion, "goles"));
-	endif
-
-	if(potiontype == 1)  //eh uma poção de 1 so gole
-		goles := 0;
+		doses := cint(GetObjProperty(potion, "doses"));
 	endif
   
-  if (goles > 1)
-		goles := goles - 1;
+  if (doses > 1)
+		doses := doses - 1;
     if (potion.amount > 1)
       var props := getobjpropertynames(potion);
       var pot := CreateItemInBackpack(character, objtype, 1);
@@ -66,24 +79,27 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
         var prop_value := getobjproperty(potion, key);
         SetObjProperty(pot, key, prop_value);
   	  endforeach
-      SetObjProperty(pot, "goles", goles);
+      SetObjProperty(pot, "doses", doses);
+      pot.color := potion.color;
       sleepms(100);
       subtractamount(potion, 1);
     else
-      setobjproperty(potion, "goles", goles);
+      setobjproperty(potion, "doses", doses);
     endif
   else
-    var props := PegaComponenteFabricacao(potion, "vazio");
-    
-    var tierFinal;
+    var props := PegaComponenteFabricacao(potion, "doses");
+    if(!props)
+      props := PegaComponenteFabricacao(potion, "vazio");
+    endif
 
     SubtractAmount( potion, 1 );
 		var pot := CreateItemInBackpack(character, 0x0F0E, 1);
-    setobjproperty(pot, "encaixeComponente", props.componenteNecessario.encaixe);
+    setobjproperty(pot, "encaixeComponente", "frasco");
     setobjproperty(pot, "material", 7139);
     setobjproperty(pot, "tierComponente", props.tier.id ? props.tier.id : 1);
 	  return 1;
 	endif
+  IncRevision(potion);
 
 endfunction
 
@@ -132,7 +148,7 @@ function isotherreagent(what) //essa funcao so se mantem pra checar o que não �
     0x1f9e: //JARRA D'ÁGUA
 
     ///// INGOTS /////
-		0x6993: //BARRA DE PRATA LUNAR
+		0x6993: //BARRA DE PRATA
 		0x630e: //BARRA DE OURO
       return 1;
 	endcase
@@ -222,7 +238,7 @@ function GetReagName(objtype)
 
   case(Lower(objtype)) //EvilLink
     ///// INGOTS /////
-    0x6993: return "barras de prata lunar";
+    0x6993: return "barras de prata";
     0x630e: return "barras de ouro";
 
     ///// GRAVETOS NUMAJA /////
@@ -239,8 +255,6 @@ function GetReagName(objtype)
     0xc026: return "graveto mogno";
     0xc02c: return "graveto cogumelo";
     0xc02f: return "graveto ebano";
-
- 
 
     ///// OTHERS /////
     0x1f9e: return "Jarra de Água";
@@ -463,4 +477,22 @@ function PegaNivelPocao(who, pocao)
   eraseobjproperty(who, "#power_time");
 
   return tier;
+endfunction
+
+function Pushback_alch(mobile, cx, cy, cz, realm, raio, forca, passos, delay_ms)
+        var dx := mobile.x - cx;
+        var dy := mobile.y - cy;
+
+        if (dx == 0 && dy == 0)
+            dx := 1;
+        endif
+
+        var dist := Sqrt(dx * dx + dy * dy);
+        var nx := dx / dist;
+        var ny := dy / dist;
+
+        // Dispara um script separado para cada mobile
+        // para que todos se movam simultaneamente
+        Start_Script(":alchemy:pushback", array{ mobile, nx, ny, forca, passos, delay_ms, realm, cz });
+
 endfunction

@@ -37,7 +37,7 @@ program do_empty(who)
 		SendSysMessageEx(who, "Voce esvaziou a pocao.", SSM_REQUEST);
 		PlaySoundEffect(who, 0x241);
 		var pot := CreateItemInBackpack(who, 0x0F0E, the_potion.amount);
-		setobjproperty(pot, "encaixeComponente", props.componenteNecessario.encaixe);
+		setobjproperty(pot, "encaixeComponente", "frasco");
 		setobjproperty(pot, "material", 7139);
 	    setobjproperty(pot, "tierComponente", props.tier.id);
 		DestroyItem(the_potion);

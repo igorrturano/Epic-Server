@@ -192,11 +192,13 @@ program do_poisoning(who)
 			if (!MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DOS_VENENOS))
 				if (the_item.hp < 11)
 					MoveObjectToLocation(the_item, 1, 1, 1, who.realm, MOVEOBJECT_FORCELOCATION);
-					SetObjProperty(the_item, "broken", 1);
-					SetObjProperty(the_item, "realdesc", the_item.desc);
+					if (!GetObjProperty(the_item, "broken"))
+						SetObjProperty(the_item, "broken", 1);
+						SetObjProperty(the_item, "realdesc", the_item.desc);
+						SetName(the_item, the_item.desc + " [danificado]");
+					endif
 					releasegems(who, the_item);
 					eraseobjproperty(the_item, "gems");
-					SetName(the_item, the_item.desc + " [danificado]");
 					MoveItemToContainer(the_item, who.backpack);
 					SendSysMessageEx(who, "A arma ja estava muito danificada e se quebrou na aplicacao do veneno.",
 									  SSM_FAIL);

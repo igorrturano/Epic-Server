@@ -1,0 +1,70 @@
+use basic;
+use os;
+use polsys;
+use uo;
+use util;
+
+program textcmd_perfil(who)
+	who := who;
+
+	var pc := PolCore();
+
+	print("===== PERFIL DE PERFORMANCE =====");
+
+	// System stats first
+	print("sysload: " + pc.sysload);
+	print("sysload_severity: " + pc.sysload_severity);
+	print("instr_per_min: " + pc.instr_per_min);
+	print("error_creations_per_min: " + pc.error_creations_per_min);
+	print("events_per_min: " + pc.events_per_min);
+	print("scripts_late_per_min: " + pc.scripts_late_per_min);
+	print("scripts_ontime_per_min: " + pc.scripts_ontime_per_min);
+	print("tasks_late_per_min: " + pc.tasks_late_per_min);
+	print("tasks_ontime_per_min: " + pc.tasks_ontime_per_min);
+	print("tasks_late_ticks_per_min: " + pc.tasks_late_ticks_per_min);
+	print("mobilecount: " + pc.mobilecount);
+	print("itemcount: " + pc.itemcount);
+	print("memory_usage: " + pc.memory_usage);
+	print("uptime: " + pc.uptime);
+
+	// Script profiles - the actual CPU data
+	print("===== SCRIPT PROFILES (by CPU%) =====");
+	foreach profile in (pc.script_profiles)
+		if (profile.instr_percent >= 0.1)
+			print("PROFILE: " + profile.name + " | instr%=" + profile.instr_percent + " | instr=" + profile.instr + " | invocations=" + profile.invocations + " | per_invoc=" + profile.instr_per_invoc);
+		endif
+		sleepms(1);
+	endforeach
+
+	// Script instance counts - top consumers only
+	print("===== SCRIPT INSTANCES (top) =====");
+	var stt := struct;
+	var null_scripts := array;
+	foreach script in (pc.all_scripts)
+		if (stt.exists(script.name))
+			stt[script.name].amount += 1;
+		else
+			stt.insert(script.name, struct{ "amount" := 1 });
+		endif
+		if (!script.attached_to)
+			null_scripts.append(script.name + " pid=" + script.pid);
+		endif
+		sleepms(1);
+	endforeach
+
+	foreach namescript in (stt.keys())
+		if (stt[namescript].amount >= 5)
+			print("INSTANCES: " + namescript + " = " + stt[namescript].amount);
+		endif
+		sleepms(1);
+	endforeach
+
+	// Null-attached scripts
+	print("===== NULL ATTACHED (" + null_scripts.size() + " total) =====");
+	foreach ns in (null_scripts)
+		print("NULL: " + ns);
+	endforeach
+
+	print("===== FIM PERFIL =====");
+	pc.log_profile(1);
+endprogram

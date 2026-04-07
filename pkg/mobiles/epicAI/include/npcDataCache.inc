@@ -54,6 +54,7 @@ function BuildNPCCache(mobile)
         "brain_type" := Lower(npc_elem.BrainType),
         "spell_school" := npc_elem.SpellSchool,
         "attack_speed" := npc_elem.EpicAttackSpeed,
+        "is_ranged" := (Lower(SplitWords(npc_elem.EpicAttackSpeed, "_")[1]) == "ranged"),
         "abilities" := abilities,
         "npc_elem" := npc_elem  // Keep reference for any other config lookups
     };
@@ -150,8 +151,8 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         "isAnimalBrain" := (brain_type == "animal"),
         "isMonsterBrain" := (brain_type == "monster"),
 
-        // Mage check (SpellSchool defined in config)
-        "hasMageConfig" := (npc_elem.SpellSchool != error)
+        // Mage check — Shaman/Priest/Druid have dedicated behaviors, don't dispatch MageBehavior for them
+        "hasMageConfig" := (npc_elem.SpellSchool != error && !(npc_elem.SpellSchool in array{"Shaman", "Druid"}))
     };
 endfunction
 
