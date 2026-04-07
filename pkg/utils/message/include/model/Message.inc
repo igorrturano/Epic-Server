@@ -60,9 +60,7 @@ class Message(IMessage)
 	endfunction
 
 	function SetColor(this, color)
-		print(color.ToString());
 		if (!(color is @Color))
-			print("Nao é color");
 			return InvalidFormatException("Parameter 'color' must be of type Color.");
 		endif
 
