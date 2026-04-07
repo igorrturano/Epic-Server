@@ -99,8 +99,8 @@ function CalculateStatusDamage(byRef attackInfo)
 		damageMod := 0
 	};
 
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED)
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
+	if (attackInfo.GetWeapon().GetAttribute() == RANGED)
+		if (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::THROWING)
 			statusDamage.stat := $"{STRENGTH} + {DEXTERITY}";
 
 			statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
@@ -155,9 +155,9 @@ function CalculateWeaponDamage(byRef attackInfo)
 	var damageDice;
 
 	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
-		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetMainDamage();
+		damageDice := attackInfo.GetWeapon().GetMainDamage();
 	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
-		damageDice := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetOffDamage();
+		damageDice := attackInfo.GetWeapon().GetOffDamage();
 	endif
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
@@ -199,7 +199,7 @@ function CalculateWeaponDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Modificadores de dano:"));
 
-	var damageMod := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetDamageMod();
+	var damageMod := attackInfo.GetWeapon().GetDamageMod();
 
 	attackInfo.GetDamage().IncreaseSlashRawDamage(damageMod.GetSlashRawDamage())
 						  .IncreasePiercingRawDamage(damageMod.GetPiercingRawDamage())
@@ -229,7 +229,7 @@ function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
 			min := 0
 		};
 
-	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
+	var weapon := attackInfo.GetWeapon();
 
 	if(weapon)
 		var damageDice := 0;
@@ -239,7 +239,7 @@ function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
 			damageDice := weapon.GetOffDamage();
 		endif
 		
-		var damageMod := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetDamageMod();
+		var damageMod := attackInfo.GetWeapon().GetDamageMod();
 		var physicalDamage := 0;
 
 		if(attackInfo.GetAttackType() == DAMAGE_TYPE::SLASH)
@@ -273,7 +273,7 @@ function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
 endfunction
 
 function EstimateArcaneBowDamage(attackInfo)
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
+	if (attackInfo.GetWeapon().GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 		return 0;
 	endif
 
@@ -287,7 +287,7 @@ function EstimateArcaneBowDamage(attackInfo)
 endfunction
 
 function EstimateSpiritualBladeDamage(attackInfo)
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::SPIRITUALBLADE)
+	if (attackInfo.GetWeapon().GetCategory() != WEAPON_CATEGORY::SPIRITUALBLADE)
 		return 0;
 	endif
 
@@ -301,7 +301,7 @@ function EstimateSpiritualBladeDamage(attackInfo)
 endfunction
 
 function EstimateElementalWeaponDamage(attackInfo)
-	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+	var weapon := attackInfo.GetWeapon().GetObjRef();
 	var elemental := weapon.GetProperty("#elementalweapon");
 
 	if (elemental == error)
@@ -348,7 +348,7 @@ endfunction
  * Injected into attackInfo so critical/resist/debug all work automatically.
  */
 function CalculateArcaneBowDamage(byRef attackInfo)
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
+	if (attackInfo.GetWeapon().GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 		return;
 	endif
 
@@ -366,7 +366,7 @@ function CalculateArcaneBowDamage(byRef attackInfo)
 	endif
 
 	var damage := attackInfo.GetDamage();
-	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+	var weapon := attackInfo.GetWeapon().GetObjRef();
 
 	if (weapon.GetProp("fire_arrow"))
 		damage.IncreaseFireRawDamage(bonus);
@@ -388,7 +388,7 @@ endfunction
  * Only applies when wielding a SpiritualBlade category weapon.
  */
 function CalculateSpiritualBladeDamage(byRef attackInfo)
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::SPIRITUALBLADE)
+	if (attackInfo.GetWeapon().GetCategory() != WEAPON_CATEGORY::SPIRITUALBLADE)
 		return;
 	endif
 
@@ -421,7 +421,7 @@ endfunction
  * Consumes 1 arcane charge per hit.
  */
 function CalculateElementalWeaponDamage(byRef attackInfo)
-	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+	var weapon := attackInfo.GetWeapon().GetObjRef();
 	var elemental := weapon.GetProperty("#elementalweapon");
 
 	if (elemental == error)
@@ -546,8 +546,8 @@ function CalculateDefenderResist(byRef attackInfo)
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
 
-			// WearDownArmor(attackInfo.GetDefender().GetObjRef(), equip.GetObjRef(), attackInfo.GetDamage().GetTotalBaseDamage(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
-			WearDownEquip(equip, attackInfo.GetAttacker().GetEquipBySlot(WEAPON));
+			// WearDownArmor(attackInfo.GetDefender().GetObjRef(), equip.GetObjRef(), attackInfo.GetDamage().GetTotalBaseDamage(), attackInfo.GetWeapon().GetObjRef());
+			WearDownEquip(equip, attackInfo.GetWeapon());
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em {armorResist.ToString()} e perdeu {attackInfo.GetDamage().GetTotalBaseDamage()} de durabilidade."));
 
 			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist())
@@ -667,7 +667,7 @@ function CalculateCriticalChance(byRef attackInfo)
 	var opponentCriticalReduction := CalculateDefenderCriticalReduction(attackInfo.GetDefender(), attackInfo.GetBodyRegion());
 
 	chance := CInt(
-		CInt(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCriticalChance()) +	// Crítico base da arma
+		CInt(attackInfo.GetWeapon().GetCriticalChance()) +	// Crítico base da arma
 		CInt(attackInfo.GetAttacker().GetCriticalChance()) +						// Crítico extra do Char (base + mod)
 		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) -			// Crítico extra da Skill
 		CInt(opponentCriticalReduction) //Redução de crítico do defensor
@@ -713,7 +713,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 
 	var npcCfg := CFGFile("combat", "npcdesc").SetElementName(attackInfo.GetAttacker().GetTemplate());
 	var tamingCfg := CFGFile("taming", "taming").SetElementName(attackInfo.GetAttacker().GetObjRef().GetProp("Critic"));
-	var weaponCfg := CFGFile("*", "itemdesc").SetElementName(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType());
+	var weaponCfg := CFGFile("*", "itemdesc").SetElementName(attackInfo.GetWeapon().GetObjType());
 
 	var pet_instinto := attackInfo.GetAttacker().GetObjRef().GetProp("Group_savage"); // animal tamado com a hab Instinto Selvagem para adicionad criticos diferentes
 	var pet_selvagem := attackInfo.GetAttacker().GetObjRef().GetProp("Selvagem"); // verifica se é animal selvagem - nunca tamado, para dar dano critico
@@ -722,7 +722,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 	if (pet_instinto || pet_selvagem) // Se for pet
 		weapon_scripts := tamingCfg.GetPropertyValue("CriticalHitScripts");
 		Message(pet_txt[1]).SendAbove(attackInfo.GetAttacker().GetObjRef());
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON))
+	elseif (attackInfo.GetWeapon())
 		weapon_scripts := weaponCfg.GetPropertyValue("CriticalHitScripts");
 	elseif (attackInfo.GetAttacker().IsNPC())
 		weapon_scripts := npcCfg.GetPropertyValue("CriticalHitScripts");
@@ -776,7 +776,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 				array{
 					attackInfo.GetAttacker().GetObjRef(),
 					attackInfo.GetDefender().GetObjRef(),
-					attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
+					attackInfo.GetWeapon().GetObjRef(),
 					armor.GetObjRef(),
 					attackInfo.GetDamage().GetTotalBaseDamage(),
 					effectiveRawDmg
@@ -968,7 +968,7 @@ function CheckPoison(byRef attackInfo)
 			return false;
 		endif
 	else // Se for player, checa pela arma/munição
-		var sourcePoison := attackInfo.GetAmmo().GetItem().GetObjRef() ?: attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+		var sourcePoison := attackInfo.GetAmmo().GetItem().GetObjRef() ?: attackInfo.GetWeapon().GetObjRef();
 		var poisonInfo := sourcePoison.GetProp("poisonInfo");
 
 		if (poisonInfo == error)
@@ -1110,8 +1110,8 @@ function ApplyAmmoDamage(byref attackInfo)
 			endforeach
 
 			// Apply as PIERCING for arrows/bolts, BLUNT for fireweapon ammo
-			if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW ||
-				attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
+			if (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::BOW ||
+				attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::CROSSBOW)
 				attackInfo.GetDamage().IncreasePiercingRawDamage(physicalDamage);
 				DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {physicalDamage}"));
 			else
