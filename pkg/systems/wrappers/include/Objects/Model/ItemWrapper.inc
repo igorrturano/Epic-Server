@@ -3,6 +3,7 @@ use uo;
 include "UObjectWrapper";
 include "IItemWrapper";
 include "ContainerWrapper";
+include "MobileWrapper";
 
 include ":io:CFGFile";
 
@@ -40,6 +41,27 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		endif
 	endfunction
 
+	// override
+	function GetName(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return this.GetObjRef().desc;
+	endfunction
+
+	// override
+	function _SetName(this, name)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+		
+		Super::_SetName(this, name);
+		this.GetObjRef().desc := name;
+
+		return this;
+	endfunction
+
 	/**
 	 * Obtém a quantidade do item.
 	 *
@@ -67,6 +89,19 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	endfunction
 
 	/**
+	 * Obtém o dono (mobile) deste item.
+	 *
+	 * @return MobileWrapper do dono do item ou Exception se o item for inválido
+	 */
+	function GetOwner(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return MobileWrapper(this.GetObjRef().character_owner);
+	endfunction
+
+	/**
 	 * Obtém a qualidade do item.
 	 *
 	 * @return Double com o valor de qualidade do item ou Exception se o item for inválido
@@ -77,6 +112,32 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 		endif
 
 		return CDbl(this.GetObjRef().quality);
+	endfunction
+
+	function GetHP(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return this.GetObjRef().hp;
+	endfunction
+
+	function SetHP(this, hp)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		this.GetObjRef().hp := hp;
+
+		return this;
+	endfunction
+
+	function GetMaxHP(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return this.GetObjRef().maxhp;
 	endfunction
 	
 	/**
@@ -177,9 +238,13 @@ class ItemWrapper(IItemWrapper, UObjectWrapper)
 	 * @param add_to_existing_stack Se deve adicionar a uma pilha existente (padrão: 0)
 	 * @return Boolean indicando sucesso da movimentação ou Exception se o item for inválido
 	 */
-	function MoveToContainer(this, byRef containerWrapped, x := -1, y := -1, add_to_existing_stack := 0)
+	function MoveToContainer(this, containerWrapped, x := -1, y := -1, add_to_existing_stack := 0)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
+		endif
+
+		if (!(containerWrapped is @ContainerWrapper))
+			return InvalidFormatException("The param containerWrapped must be a ContainerWrapper object!");
 		endif
 
 		return MoveItemToContainer(this.GetObjRef(), containerWrapped.GetObjRef(), x, y, add_to_existing_stack);
