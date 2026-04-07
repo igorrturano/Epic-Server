@@ -9,13 +9,17 @@ class StackTrace()
 	function StackTrace(this)
 		this.frames := array{};
 		this.frame_count := 0;
-		this.CaptureStackTrace();
+		this._CaptureStackTrace();
 	endfunction
 	
-	function CaptureStackTrace(this)
-		var stack_info := this.GetStackTrace();
+	function _CaptureStackTrace(this)
+		var stack_info := array{};
+		stack_info := GetProcess().stacktrace(struct{ format := "array" });
 		
 		if (stack_info)
+			stack_info.erase(1); // Remove a primeira frame relacionada à captura da stack trace (CaptureStackTrace)
+			stack_info.erase(2); // Remove a segunda frame relacionada à captura da stack trace (GetStackTrace)
+
 			foreach s in stack_info
 				if (s.name == "CaptureStackTrace" || s.name == "GetStackTrace" || s.name == "StackTrace")
 					continue;
@@ -33,13 +37,6 @@ class StackTrace()
 			endforeach
 		endif
 	endfunction
-
-	function GetStackTrace(this)
-		var arr := array{};
-		arr := GetProcess().stacktrace(struct{ format := "array" });
-		
-		return arr;
-	endfunction
 	
 	function GetFrame(this, index)
 		if (index >= 0 && index < this.frames.size())
@@ -56,7 +53,7 @@ class StackTrace()
 	function ToString(this)
 		var result := "\n";
 		if (!this.frames[1].GetMethodName() || !this.frames[1].GetLineNumber())
-			result += "[!!!] To a more detailed stack trace, compile with debug mode enabled: \"ecompile -r <path> -x\"\n";
+			result += "[!!!] To a more detailed stack trace, compile with debug mode enabled: \"ecompile -r <path> -f -x\"\n";
 		endif
 
 		result += $"Stack Trace ({this.frame_count} frames):\n";
