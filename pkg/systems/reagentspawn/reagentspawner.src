@@ -5,13 +5,13 @@ use util;
 
 program regionalreagentspawner()
 	while (1)
-		sleep((600 * 1) + (1 * (RandomInt(10) + 1)));
+		sleep(240 + (RandomInt(10) + 1));
 		if (GetGlobalProperty("#reagentspawnerisrunning"))
 			gmreport("spawn de ragente ta rodando desde a ultima chamada");
 		else
 			start_script("nowspawn");
 		endif
-		sleep((600 * 1));
+		sleep(240);
 	endwhile
 
 endprogram
