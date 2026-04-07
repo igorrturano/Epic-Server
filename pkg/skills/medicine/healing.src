@@ -351,7 +351,10 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 	// PrintTextAbove(targ, "Loops: "+q+" | Cura: "+heal_amt/q+" | Total: "+heal_amt);
 	for (i := 0; i < q; i := i + 1)
 		Sleep(1);
-		if (x != targ.x || y != targ.y)
+		if (targ.warmode)
+			SendSysMessage(targ, "A cura foi interrompida por entrar em modo de combate.");
+			return 1;
+		elseif (x != targ.x || y != targ.y)
 			SendSysMessage(targ, "Voce interrompeu a cura.");
 			return 1;
 		elseif (AP_GetVital(targ, "hits") >= AP_GetVitalMaximumValue(targ, "hits"))
