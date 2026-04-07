@@ -148,7 +148,7 @@ function isotherreagent(what) //essa funcao so se mantem pra checar o que não �
     0x1f9e: //JARRA D'ÁGUA
 
     ///// INGOTS /////
-		0x6993: //BARRA DE PRATA LUNAR
+		0x6993: //BARRA DE PRATA
 		0x630e: //BARRA DE OURO
       return 1;
 	endcase
@@ -238,7 +238,7 @@ function GetReagName(objtype)
 
   case(Lower(objtype)) //EvilLink
     ///// INGOTS /////
-    0x6993: return "barras de prata lunar";
+    0x6993: return "barras de prata";
     0x630e: return "barras de ouro";
 
     ///// GRAVETOS NUMAJA /////

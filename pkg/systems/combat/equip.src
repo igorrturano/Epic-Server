@@ -157,9 +157,7 @@ program equipweapon(who, item)
 	var wrapper := item.isA(POLCLASS_ARMOR) ? ArmorWrapper(item) : item.isA(POLCLASS_WEAPON) ? WeaponWrapper(item) : EquipWrapper(item);
 	var str_required := wrapper.GetStrRequired();
 	if (str_required > 0)
-		var who_str := AP_GetStat(who, STRENGTH);
-		var str_mod := AP_GetStatMod(who, STRENGTH);
-		var total_str := who_str + str_mod;
+		var total_str := AP_GetStat(who, STRENGTH);
 		if (total_str < str_required)
 			SendSysMessageEx(who, "Você não tem força suficiente para equipar este item.", SSM_FAIL);
 			return 0;

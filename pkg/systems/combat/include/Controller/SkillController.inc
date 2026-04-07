@@ -63,18 +63,27 @@ function ProgressAttackSkills(byRef attackInfo)
 		var shouldGainArcana := attackerWeapon.GetCategory() == WEAPON_CATEGORY::MAGICBOW
 			|| attackerWeapon.GetCategory() == WEAPON_CATEGORY::SPIRITUALBLADE;
 
+		var weaponSkill;
 		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() == 0x13b9)
 			if (!attackInfo.GetAttacker().GetEquipBySlot(SHIELD))
-				SkillCheck(attackInfo.GetAttacker().GetObjRef(), TWOHANDED, -1);
+				weaponSkill := TWOHANDED;
 			else
-				SkillCheck(attackInfo.GetAttacker().GetObjRef(), ONEHANDED, -1);
+				weaponSkill := ONEHANDED;
 			endif
 		else
-			SkillCheck(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute(), -1);
+			weaponSkill := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute();
 		endif
 
-		SleepMS(5);
-		SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+		// Randomize order so weapon skill and tactics level up ~50/50
+		if (RandomInt(2) == 0)
+			SkillCheck(attackInfo.GetAttacker().GetObjRef(), weaponSkill, -1);
+			SleepMS(5);
+			SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+		else
+			SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+			SleepMS(5);
+			SkillCheck(attackInfo.GetAttacker().GetObjRef(), weaponSkill, -1);
+		endif
 
 		if (shouldGainArcana)
 			SkillCheck(attackInfo.GetAttacker().GetObjRef(), ARCANA, -1);
