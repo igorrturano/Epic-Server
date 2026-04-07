@@ -196,11 +196,11 @@ endfunction
 
 
 // O(1) cached lookup - replaces iterating 4 config files with sleepms(2) per entry
-function getAvailableSpells(monster)
+function getAvailableSpells(monster, school := 0)
    var cache := NPC_GetCachedData(monster);
    var tier := cache.tier;
    if (!tier) tier := 1; endif
-   var school := getSpellSchool(monster);
+   if (!school) school := getSpellSchool(monster); endif
    return GetAvailableSpellsCached(school, tier);
 endfunction
 
@@ -220,11 +220,12 @@ function getSpellSchool(monster)
    return school;
 endfunction
 
-function ChooseSpell(me, opponent, spells)
-    var school := getSpellSchool(me);
+function ChooseSpell(me, opponent, spells, school := 0)
+    if (!school) school := getSpellSchool(me); endif
 
     if (school == "Ahtaleloreth")
-        return HandleSwordMageSpellChoice(opponent);
+        var name := HandleSwordMageSpellChoice(opponent);
+        return struct{ "name" := name, "info" := FindMageSpellInConfigs(name) };
     endif
 
     // Get ideal spell based on tactical considerations
@@ -239,7 +240,9 @@ function ChooseSpell(me, opponent, spells)
     // Set appropriate target based on spell type
     if (spellInfo.Target in array{"Unico", "Area"})
         spell_target_var := opponent.serial;
+        spell_target_var := opponent.serial;
     elseif (spellInfo.Target == "Self")
+        spell_target_var := me.serial;
         spell_target_var := me.serial;
     endif
 
@@ -268,16 +271,16 @@ function MageBehavior(me, opponent)
       return 0;
    endif
 
-   // Get available spells
-   var spells := getAvailableSpells(me);
+   // Compute school ONCE, pass through the entire chain
+   var school := getSpellSchool(me);
+
+   var spells := getAvailableSpells(me, school);
    if (!spells.size())
       return 0;
    endif
 
-   // Choose spell based on situation
-   var chosen_spell := ChooseSpell(me, opponent, spells);
-
-   if (!chosen_spell)
+   var result := ChooseSpell(me, opponent, spells, school);
+   if (!result)
       return 0;
    endif
 
@@ -294,11 +297,17 @@ function NPC_CastSpell(me, spellname)
    var targ := SystemFindObjectBySerial(spell_target_var);
    spell_target_var := 0;
 
+
+   var targ := SystemFindObjectBySerial(spell_target_var);
+   spell_target_var := 0;
+
    var params := array{me, spellInfo, 0, targ};
    var script := Start_Script(":spells:cast_spell", params);
    if (script.errortext)
       return 0;
    endif
+
+   SetCooldown(me, "spell_cast", 5);
 
    SetCooldown(me, "spell_cast", 5);
    return 1;
@@ -345,6 +354,7 @@ function HandleSwordMageSpellChoice(opponent)
             var spells := array{"Lamina Flamejante", "Lamina de Gelo", "Lamina Eletrica"};
             var chosen_spell := spells[RandomInt(spells.size())+1];
             spell_target_var := me.weapon.serial;
+            spell_target_var := me.weapon.serial;
             return chosen_spell;
         endif
 
@@ -360,6 +370,7 @@ function HandleSwordMageSpellChoice(opponent)
         endcase
 
         if (spell)
+            spell_target_var := opponent.serial;
             spell_target_var := opponent.serial;
             return spell;
         endif
@@ -408,14 +419,16 @@ function ChooseShamanSpell(me, opponent, spells)
         return "Dardo Igneo";
     endif
 
-    // Set appropriate target based on spell type
+    // Set target based on spell type
     if (spellInfo.Target in array{"Unico", "Area"})
+        spell_target_var := opponent.serial;
         spell_target_var := opponent.serial;
     elseif (spellInfo.Target == "Self")
         spell_target_var := me.serial;
+        spell_target_var := me.serial;
     endif
 
-    return chosen_spell;
+    return struct{ "name" := chosen_spell, "info" := spellInfo };
 endfunction
 
 function ChooseIdealShamanSpells(me, opponent, spells)

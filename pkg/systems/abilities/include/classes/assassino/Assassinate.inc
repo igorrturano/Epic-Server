@@ -42,7 +42,7 @@ class Assassinate(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
-		var range := CInt(AP_GetSkill(who, SNEAK) / 5);
+		var range := CInt(AP_GetSkill(who, SNEAK) / 2);
 
 		var targ := Target(who);
 		if (!targ)

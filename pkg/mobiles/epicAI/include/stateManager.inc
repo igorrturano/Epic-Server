@@ -113,11 +113,9 @@ function SM_TickAmbush()
         MoveObjectToLocation(me, _sm_data.target.x, _sm_data.target.y, _sm_data.target.z, _sm_data.target.realm, MOVEOBJECT_FORCELOCATION);
         me.hidden := 0;
         PrintTextAbove(me, "*emboscada*");
-        SetObjProperty(me, "backstab", 1);
-        SetObjProperty(me.weapon, "backstab", 1);
+        SetObjProperty(me, "#GuaranteedHit", 1);
+        SetObjProperty(me, "#nextcritical", 1);
         me.attack_once(_sm_data.target);
-        EraseObjProperty(me, "backstab");
-        EraseObjProperty(me.weapon, "backstab");
         SM_TransitionTo("COMBAT");
         return 1;
     endif
@@ -158,6 +156,139 @@ function SM_TickFollowing()
     if (Distance(me, _sm_data.target) > 2)
         RunToward(_sm_data.target);
     endif
+
+    return 0;
+endfunction
+
+// Returns 1 when stealing is complete
+// Phases: "approach" (walk toward target), "steal" (execute steal)
+function SM_TickStealing()
+    if (!_sm_data.target || _sm_data.target.dead)
+        me.hidden := 0;
+        SM_TransitionTo("IDLE");
+        return 1;
+    endif
+
+    // Timeout
+    if (SM_ElapsedInState() >= 15)
+        me.hidden := 0;
+        SM_TransitionTo("IDLE");
+        return 1;
+    endif
+
+    // Stealth broken
+    if (!me.hidden)
+        SM_TransitionTo("COMBAT");
+        return 1;
+    endif
+
+    if (_sm_data.phase == "approach")
+        if (Distance(me, _sm_data.target) > AREA_SIZE)
+            me.hidden := 0;
+            SM_TransitionTo("IDLE");
+            return 1;
+        endif
+
+        if (Distance(me, _sm_data.target) <= 1)
+            _sm_data.phase := "steal";
+            return 0;
+        endif
+
+        WalkToward(_sm_data.target);
+        return 0;
+    endif
+
+    if (_sm_data.phase == "steal")
+        var opponent := _sm_data.target;
+
+        var diff := 15 + CInt(AP_GetSkill(opponent, AWARENESS));
+        var check := SkillCheck(me, PICKPOCKETING, diff);
+
+        if (check > 0)
+            if (MobileWrapper(opponent).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
+                if (GetObjProperty(opponent.weapon, "#elementalweapon"))
+                    me.hidden := 0;
+                    SM_TransitionTo("IDLE");
+                    return 1;
+                endif
+            endif
+
+            var items := EnumerateItemsInContainer(opponent.backpack);
+            if (items.size() > 0)
+                var item := items[RandomInt(items.size())+1];
+                if (item.movable && !item.newbie)
+                    if (!me.backpack)
+                        var backpack := CreateItemAtLocation(me.x, me.y, me.z, "Backpack", 1);
+                        EquipItem(me, backpack);
+                    endif
+                    MoveItemToContainer(item, me.backpack);
+                    PrintTextAbove(me, "*furtou " + item.desc + "*");
+                endif
+            endif
+        else
+            StealCriticalFailure(me, opponent);
+        endif
+
+        me.hidden := 0;
+        SM_TransitionTo("COMBAT");
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
+// Returns 1 when sneak attack is complete
+// One positioning step per tick, backstab when in position
+function SM_TickSneaking()
+    if (!_sm_data.target || _sm_data.target.dead)
+        me.hidden := 0;
+        SM_TransitionTo("IDLE");
+        return 1;
+    endif
+
+    // Stealth broken or too far
+    if (!me.hidden || Distance(me, _sm_data.target) > 16)
+        me.hidden := 0;
+        SendEvent(me, struct{ "type" := SYSEVENT_ENGAGED, "source" := _sm_data.target });
+        SM_TransitionTo("IDLE");
+        return 1;
+    endif
+
+    // Max attempts reached
+    if (_sm_data.attempts >= 20)
+        me.hidden := 0;
+        SendEvent(me, struct{ "type" := SYSEVENT_ENGAGED, "source" := _sm_data.target });
+        SM_TransitionTo("IDLE");
+        return 1;
+    endif
+
+    // In position - execute backstab then reveal
+    if (IsBehind(_sm_data.target, me.x, me.y) && Distance(me, _sm_data.target) <= 1)
+        SetObjProperty(me, "#GuaranteedHit", 1);
+        SetObjProperty(me, "#nextcritical", 1);
+        me.attack_once(_sm_data.target);
+        me.hidden := 0;
+        SM_TransitionTo("COMBAT");
+        return 1;
+    endif
+
+    // Close enough even without behind - still attack then reveal
+    if (_sm_data.attempts >= 10 && Distance(me, _sm_data.target) <= 1)
+        SetObjProperty(me, "#GuaranteedHit", 1);
+        SetObjProperty(me, "#nextcritical", 1);
+        me.attack_once(_sm_data.target);
+        me.hidden := 0;
+        SM_TransitionTo("COMBAT");
+        return 1;
+    endif
+
+    // One positioning step: walk toward behind position
+    var behind_facing := (_sm_data.target.facing + 4) % 8;
+    var mods := GetModByFacing(behind_facing);
+    var behind_x := _sm_data.target.x + mods[1];
+    var behind_y := _sm_data.target.y + mods[2];
+    WalkTowardLocation(behind_x, behind_y);
+    _sm_data.attempts += 1;
 
     return 0;
 endfunction

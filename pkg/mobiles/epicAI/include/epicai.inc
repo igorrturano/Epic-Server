@@ -150,7 +150,10 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
         setupNPCColor(mobile, has_colors);
     endif
 
-    SetupHumanoidHabs(mobile);
+    var cache := NPC_GetCachedData(mobile);
+    if (cache.tier >= 2)
+        SetupHumanoidHabs(mobile);
+    endif
     SetupItemsForSpecificClasses(mobile, npc_elem);
 
     setupNPCGender(mobile, Cint(isBoss.gender));
@@ -169,7 +172,7 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
 
     SetupBaseLanguages(mobile);
 
-    if (mobile.isSage())
+    if (cache.tier >= 2 && mobile.isSage())
         SetupWizardClass(mobile, npc_elem);
     endif
 
@@ -432,7 +435,6 @@ function SetupHumanoidHabs(mobile)
     var habs := array{};
     foreach hab in habs_by_level
         habs.append(hab);
-        sleepms(2);
     endforeach
 
     SetObjProperty(mobile, "myhabs", habs);
@@ -480,24 +482,6 @@ function SetupWizardClass(mobile, npc_elem)
     // Build progression based on base ability
     var habcfg := ReadConfigFile(":abilities:configs/habilidades");
     var progression := GetClassProgression(habcfg, base_ability);
-    SetObjProperty(mobile, "myhabs", progression);
-
-    return 1;
-endfunction
-
-function SetupWarriorClass(mobile, npc_elem)
-    if (!npc.isWarrior())
-        return 0;
-    endif
-    var subclass;
-    var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
-    var isArcher := (speed_type[1] == "RANGED");
-    if (isArcher)
-        subclass := ABILITY_ID::TIRO_PODEROSO;
-    endif
-
-    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
-    var progression := GetClassProgression(habcfg, subclass);
     SetObjProperty(mobile, "myhabs", progression);
 
     return 1;
@@ -2097,10 +2081,13 @@ function CheckForWoundedAllies(who)
 	var allies := NPC_GetNearbyAllies(who);
 	var wounded_allies := array{};
 
-	// Check allies' health
+	// Check allies' health (skip undead/demons — healing damages them)
 	foreach ally in allies
-		if (isHurt(ally)) // Is Hurt
-			wounded_allies.append(ally);
+		if (isHurt(ally))
+			var cache := NPC_GetCachedData(ally);
+			if (cache.category_lower != "undead" && cache.category_lower != "demons")
+				wounded_allies.append(ally);
+			endif
 		endif
 	endforeach
 
@@ -3027,6 +3014,7 @@ function DoppelgangerTransformation(mobile, opponent)
         combat_properties.spell_school := GetObjProperty(opponent, "SpellSchool");
         if (combat_properties.spell_school)
             SetObjProperty(mobile, "SpellSchool", combat_properties.spell_school);
+            InitSpellCache();
         endif
         combat_properties.is_ranged := 1;
     elseif (opponent.weapon && opponent.weapon.isRanged())
@@ -3168,7 +3156,10 @@ endfunction
  * Checks if the destination is within the allowed range from the anchor point
  */
 function WanderAroundAnchor(mobile)
-    var anchor := GetObjProperty(mobile, "anchor");
+    var anchor := anchor_var;
+    if (!anchor)
+        anchor := GetObjProperty(mobile, "anchor");
+    endif
     var range := 6;
     if (anchor[4])
         range := anchor[4];
