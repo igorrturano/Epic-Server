@@ -327,6 +327,9 @@ function CheckLoop(who, tool, my_x, my_y, my_facing)
 		return 0;
 	elseif (!tool)
 		return 0;
+	elseif (!(tool in ListEquippedItems(who)))
+		SendSysMessage(who, "Você precisa estar segurando a picareta.");
+		return 0;
 	else
 		return 1;
 	endif
