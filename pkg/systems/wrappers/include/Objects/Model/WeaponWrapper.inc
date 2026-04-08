@@ -31,7 +31,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var AccuracyMod := 0;
 	var StrRequired := 0;
 	var Ammo; // Ammo class
-	var MinRange := 1;
+	var MinRange := 0;
 	var MaxRange := 1;
 	var IsThrowableVar := false;
 	var EpicMainDamage := "";
@@ -76,7 +76,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this.WeightVar := this._CalculateWeight();
 			this.StrRequired := this._CalculateSTRRequired();
 			this.Ammo := this.Template.ProjectileType ? Ammo(this.Template.ProjectileType) : uninit;
-			this.MinRange := this.Template.MinRange ?: 1;
+			this.MinRange := this.Template.MinRange ?: 0;
 			this.MaxRange := this.Template.MaxRange ?: 1;
 			this.IsThrowableVar := Boolean(this.Template.Throwable) ?: false;
 			this.CriticalChanceMod := PegaValorFabricacao(this.ItemOrTemplate,CARACTERISTICA_FABRICACAO_CRITICO);

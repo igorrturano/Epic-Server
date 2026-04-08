@@ -133,6 +133,81 @@ Applied state manager to all 3 brain types:
 
 ---
 
+## Phase 7: Ladino Performance Fixes
+
+**Problem:** Ladino (Rogue) NPCs had 3 categories of performance issues surviving the V2 refactor: blocking loops in steal/sneak (up to 2s each freezing events), per-tick disk I/O from `GetObjProperty("myhabs")`, and O(n) config scans in `ProccessHab` on every ability use.
+
+### Fix 1: STEALING/SNEAKING HFSM States
+
+**Blocking loops eliminated:**
+| Function | Was | Now |
+|----------|-----|-----|
+| DoThiefSteal | while(Distance>1) + sleepms(100) | STEALING state, 2-phase (approach + steal), 1 step/tick |
+| DoThiefSneakAttack | while(!IsBehind) x 20 + sleepms(100) | SNEAKING state, 1 positioning step/tick |
+
+**States added to `stateManager.inc`:**
+- `SM_TickStealing()` - Phase "approach": walk one step toward target. Phase "steal": skill check + item move. 15s timeout.
+- `SM_TickSneaking()` - Walk toward behind position, backstab when `IsBehind && Distance <= 1`. Fallback attack after 10 attempts. 20 max attempts.
+- Both states break on SYSEVENT_DAMAGED (alongside AMBUSH).
+
+### Fix 2: Cache `myhabs` as Script-Level Vars
+
+**Problem:** `UseAbilities()` called `GetObjProperty(npc, "myhabs")` every combat tick - disk deserialization of the full ability array.
+
+**Solution:** Two new script-level vars in `brain.src`:
+| Var | Purpose | Loaded At |
+|-----|---------|-----------|
+| `myhabs_var` | Cached ability ID array | Brain activation |
+| `myhabs_set_var` | Dictionary for O(1) `.exists()` checks | Brain activation |
+
+`ChooseWarriorAbility`, `ChooseRogueAbility`, `ChooseSageAbility` no longer rebuild a `hab_set` dictionary each tick.
+
+### Fix 3: NPC_UseAbilityById (Bypass ProccessHab)
+
+**Problem:** `ProccessHab(npc, abilityId)` iterates ALL config keys with `NormalizeString()` comparison to find the matching ability - O(n) on every ability use. The NPC already has the integer ID.
+
+**Solution:** `NPC_UseAbilityById(npc, abilityId)` in `humanoidBrain.inc`:
+- Uses `FindConfigElem(habcfg, abilityId)` - O(1) direct key lookup
+- Validates cooldown, stamina, mana
+- Calls `Ability(abilityId)` -> `AbilityMonitor().ActivateOn()` directly
+- Skips mimic logic and client gump updates (NPC-only path)
+- `ProccessHab` remains untouched for player use
+
+### Fix 4: GrantPrivilege at Brain Activation
+
+**Problem:** `GrantPrivilege(me, "hiddenattack")` + `me.enable("hiddenattack")` called every steal/sneak attempt (2-4 POL calls per invocation).
+
+**Solution:** Granted once at brain activation for `me.isThief()` NPCs in both `humanoidBrain` and `monsterBrain`. Privileges: `hiddenattack`, `runwhilestealth`.
+
+---
+
+## Phase 8: Mage AI Optimization + Undead Healing Bug Fix
+
+**Bug Fix:** Undead/demon NPCs (e.g. Skeleton Mage Necromancer) were casting healing spells on themselves and allies, which `applyEpicHealing()` converts to 50% damage — effectively killing themselves. Fixed by checking `category_lower` before any healing decision.
+
+**Where undead checks were added:**
+- `CheckForWoundedAllies()` in `epicai.inc` — filters undead/demon allies from healing target list
+- `ChooseIdealShamanSpells()` — gates self-heal (Cura Grave/Leve) and AoE heal boost on `!self_is_undead`
+- `ChoosePriestSpell()` — gates emergency self-heal and filters undead from ally healing loop
+
+**Performance: Eliminated redundant per-cast work in `NPCMageryUtils.inc`:**
+
+| Optimization | Was | Now |
+|---|---|---|
+| Spell category arrays | 6 arrays rebuilt every spell decision (every 5s) | Script-level vars, lazy-init once per brain lifetime |
+| `getSpellSchool()` | Called 3x per spell decision (cache + GetObjProperty each) | Called 1x, threaded as parameter through chain |
+| `#SpellTarget` ObjProperty | 3 disk serialization ops per cast (Set + Get + Erase) | `spell_target_var` script-level var (zero cost) |
+| `FindSpellInfoCached()` | Called 2-3x per cast (ChooseSpell + Behavior + CastSpell) | Called 1x, result passed through as struct |
+| `ListHostiles(me, 10)` | Uncached POL native scan per spell decision | `NPC_GetPlayersPetsAndSummonsNearby()` (1s cached scan) |
+| `sleepms(2)` in small loops | Yielded in DoHarmfulSpell ally loop, priest ally loops | Removed (iterating cached arrays < 10 items) |
+| Corpse-targeting spells | `ListItemsNearLocation` scan with `sleepms(2)` per item | "Prolongar Desmaio"/"Levantar os Mortos" added to non-ideal filter |
+
+**Structural change:** `ChooseSpell()` and `ChooseShamanSpell()` now return `struct{ "name", "info" }` instead of a bare spell name, carrying the spell config lookup result through to `NPC_Cast*Spell()` to avoid re-lookup.
+
+**Duplicate target setting eliminated:** Shaman path had target set in both `ChooseShamanSpell` and `HumanoidShamanBehavior`. Now set once in `ChooseShamanSpell` only.
+
+---
+
 ## Files Created/Modified
 
 ### New Files
@@ -141,13 +216,14 @@ Applied state manager to all 3 brain types:
 - `include/abilityTable.inc` - Pre-built ability dispatch tables
 
 ### Modified Files
-- `brain.src` - Includes, InitSpellCache, script-level vars, dormant reset
+- `brain.src` - Includes, InitSpellCache, script-level vars (+ myhabs_var, myhabs_set_var), dormant reset
 - `include/epicai.inc` - ObjProperty -> script vars, non-blocking pursuit, anti-exploit
 - `include/NPCMageryUtils.inc` - 6 functions replaced with cached versions
-- `include/epicSpecial.inc` - HandleAmbush converted to state transition
-- `include/monsterBrain.inc` - State machine + ability table
+- `include/epicSpecial.inc` - HandleAmbush converted to state transition, DoThiefSteal/DoThiefSneakAttack converted to HFSM state transitions
+- `include/stateManager.inc` - SM_TickStealing(), SM_TickSneaking() added
+- `include/monsterBrain.inc` - State machine + ability table + STEALING/SNEAKING dispatch + Ladino privilege grants at activation
 - `include/animalBrain.inc` - State machine + ability table + flee-first for neutrals
-- `include/humanoidBrain.inc` - State machine + ability table
+- `include/humanoidBrain.inc` - State machine + ability table + NPC_UseAbilityById + myhabs caching + STEALING/SNEAKING dispatch + Ladino privilege grants at activation
 - `include/npcUtils.inc` - Ally/enemy scan piggybacks on GetNearbyMobilesOnce
 - `include/makeRace.inc` - Hair/beard skip-if-exists guards
 
