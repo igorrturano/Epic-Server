@@ -104,7 +104,16 @@ function SetEquipmentMods(who, item)
 		penalty := 0;
 	endif
 	if (penalty > 0)
-		if (!(GetObjProperty(who, "chardata").magia == "Shaman"))
+		var skip_magery_pen := 0;
+		if (GetObjProperty(who, "chardata").magia == "Shaman")
+			skip_magery_pen := 1;
+		elseif (item.isa(POLCLASS_ARMOR) && MobileWrapper(who).HasAbility(ABILITY_ID::CONEXAO_DIVINA))
+			var tipoProtecaoMag := CStr(itemdesc[item.objtype].TipoProtecao);
+			if (tipoProtecaoMag["Armadura Leve"] || tipoProtecaoMag["Armadura Media"])
+				skip_magery_pen := 1;
+			endif
+		endif
+		if (!skip_magery_pen)
 			AP_ModifySkillMod(who, MAGERY, (-1)*penalty);
 		endif
 	endif
@@ -310,7 +319,17 @@ function RemoveEquipmentMods(who, item)
 		penalty := 0;
 	endif
 	if (penalty > 0)
-		if (!(GetObjProperty(who, "chardata").magia == "Shaman"))
+		var skip_magery_pen := 0;
+		if (GetObjProperty(who, "chardata").magia == "Shaman")
+			skip_magery_pen := 1;
+		elseif (item.isa(POLCLASS_ARMOR) && MobileWrapper(who).HasAbility(ABILITY_ID::CONEXAO_DIVINA))
+			var itemdesc_mag := ReadConfigFile("::itemdesc");
+			var tipoProtecaoMag := CStr(itemdesc_mag[item.objtype].TipoProtecao);
+			if (tipoProtecaoMag["Armadura Leve"] || tipoProtecaoMag["Armadura Media"])
+				skip_magery_pen := 1;
+			endif
+		endif
+		if (!skip_magery_pen)
 			AP_ModifySkillMod(who, MAGERY, penalty);
 		endif
 	endif
