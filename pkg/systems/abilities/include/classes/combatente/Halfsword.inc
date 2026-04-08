@@ -37,7 +37,7 @@ class Halfsword(CombatAbility)
         return true;
     endfunction
 
-    function OnPassiveOnParry(this, attackInfo)
+    function OnParry(this, attackInfo)
         var parryEquip := attackInfo.GetParryEquip();
         var parryObjRef := parryEquip.GetObjRef();
 
