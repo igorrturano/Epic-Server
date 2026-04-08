@@ -13,7 +13,7 @@ include ":combat:settings";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":debug:Controller/DebugController";
-include ":mastery:Abilities";
+include ":mastery:controllers/AbilityController";
 include ":abilities:helpers/shinobiHelpers";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";

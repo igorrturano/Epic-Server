@@ -18,7 +18,7 @@ use uo;
 use polsys;
 
 include "include/say";
-include ":mastery:Abilities";
+include ":mastery:controllers/AbilityController";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":combat:Model/AttackInfo";
 include ":message:model/Message";
