@@ -1,0 +1,12 @@
+use uo;
+use os;
+
+include ":duel:duel";
+include ":attributes:attributes";
+
+program skill_TwoHanded(who)
+
+	ChallengeDuel(who, TWOHANDED);
+	return 1;
+
+endprogram

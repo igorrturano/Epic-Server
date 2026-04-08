@@ -4,6 +4,7 @@ use os;
 include ":attributes:attributes";
 include ":gumps:yesNo";
 include ":message:model/Message";
+include ":duel:duel";
 include "include/say";
 
 program skill_Wrestling(who)
@@ -13,7 +14,7 @@ program skill_Wrestling(who)
 		return 0;
 	endif
 
-	Message("Selecione um jogador para desafiar para uma queda de braco.").SetColor(SSM_REQUEST).SendSys(who);
+	Message("Selecione um jogador para desafiar.").SetColor(SSM_REQUEST).SendSys(who);
 	var targ := Target(who);
 
 	if (!targ)
@@ -31,8 +32,21 @@ program skill_Wrestling(who)
 	elseif (!targ.connected)
 		Message("O jogador esta desconectado.").SetColor(SSM_FAIL).SendSys(who);
 		return 0;
-	elseif (Distance(who, targ) > 2)
+	elseif (Distance(who, targ) > 10)
 		Message("O alvo esta muito longe.").SetColor(SSM_FAIL).SendSys(who);
+		return 0;
+	endif
+
+	var choice := YesNo(who, "O que deseja fazer?", "Queda de Braco", "Duelo");
+
+	if (!choice) // Duelo
+		ChallengeDuelWithTarget(who, targ, WRESTLING);
+		return 1;
+	endif
+
+	// Queda de braco - requires closer range
+	if (Distance(who, targ) > 2)
+		Message("O alvo esta muito longe para uma queda de braco.").SetColor(SSM_FAIL).SendSys(who);
 		return 0;
 	endif
 
