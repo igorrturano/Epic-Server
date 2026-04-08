@@ -18,19 +18,6 @@ function removeDisguise(who)
 		return 1;
 	endif
 	EraseObjProperty(who, "disfarce");
-
-	// Clear custom names assigned to disguised identity before erasing FakeID
-	var fakeID := CStr(GetObjProperty(who, "FakeID"));
-	if (fakeID)
-		foreach player in (EnumerateOnlineCharacters())
-			var conhecidos := GetObjProperty(player, "conhecidos");
-			if (conhecidos && conhecidos.Exists(fakeID))
-				conhecidos.Erase(fakeID);
-				SetObjProperty(player, "conhecidos", conhecidos);
-			endif
-		endforeach
-	endif
-
 	EraseObjProperty(who, "FakeID");
 
 	if (original.barba)
