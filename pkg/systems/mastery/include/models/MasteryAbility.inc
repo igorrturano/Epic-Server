@@ -9,9 +9,12 @@ class MasteryAbility(IMasteryAbility)
 	var Description;
 	var ActivationMomentum;
 	
-	function MasteryAbility(abilityId)
-		var cfgFile := CFGFile();
-		
+	function MasteryAbility(this, abilityId)
+		var cfgFile := CFGFile("mastery", "configs/abilities.cfg", false).SetElementName(abilityId);
+		this.Id := abilityId;
+		this.Name := cfgFile.GetPropertyValue("Name");
+		this.Description := cfgFile.GetPropertyValue("Description");
+		this.ActivationMomentum := cfgFile.GetPropertyValue("ActivationMomentum");
 	endfunction
 
 	function GetId(this)
