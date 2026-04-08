@@ -24,7 +24,7 @@ include "system/exception/FormatException/InvalidFormatException";
 	var Type; // Tipo da maestria (ex: COMBAT, WORKING, etc.)
 	var Level;
 	var XP;
-	var Attributes := dictionary{}; // attributes[MASTERY_ATTRIBUTE] := 0;
+	var Attributes := dictionary{}; // Attributes[MASTERY_ATTRIBUTE] := 0;
 
 	function Mastery(this, ref)
 		this.Ref := ref;

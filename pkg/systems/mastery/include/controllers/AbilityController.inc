@@ -33,7 +33,7 @@ endfunction
  * @param attacker Referência ao personagem atacante que possui a arma
  * @param defender Referência ao personagem defensor que receberá o ataque
  */
-function ExecuteBeforeEngage(byRef attackInfo)
+function ExecuteBeforeEngage(attackInfo)
 	if (attackInfo.GetAttackerWeapon().GetAttribute() != RANGED) // Armas melee
 		if (attackInfo.GetAttackerWeapon().GetCategory() == WEAPON_CATEGORY::GREATSWORD)
 			ExecuteMasteryAbility_DownwardCut(attackInfo);
@@ -45,7 +45,7 @@ function ExecuteBeforeEngage(byRef attackInfo)
 	endif
 endfunction
 
-function ExecuteAfterEngage(byRef attackInfo)
+function ExecuteAfterEngage(attackInfo)
 	if (Upper(attackInfo.GetAttackerWeapon().GetAttribute()) == Upper(RANGED))
 		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::BOW))
 			ExecuteMasteryAbility_DoubleShot(attackInfo);
