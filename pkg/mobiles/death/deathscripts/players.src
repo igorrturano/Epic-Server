@@ -255,6 +255,15 @@ program death(params)
 			SetObjProperty(ghost, "death_remaining", tempo * 30);
 		elseif (CInt(GetObjProperty(corpse, "morto")) || CInt(GetObjProperty(ghost, "morto")))
 			SendSysMessage(ghost, "Algo aconteceu... Voce morreu.");
+			// Penalizar o assassino que matou o jogador desmaiado
+			var finalHit := GetObjProperty(ghost, "lastHit");
+			if (finalHit != error && finalHit["attacker"])
+				var assassino := SystemFindObjectBySerial(finalHit["attacker"]);
+				if (assassino.acctname && !assassino.cmdlevel)
+					AP_ConsumeVital(assassino, "DP", 10);
+					SendSysMessage(assassino, "Voce assassinou um jogador desmaiado e perdeu 1 DP. Agora tem " + AP_GetVital(assassino, "DP") / 10);
+				endif
+			endif
 			SetObjProperty(corpse, "morto", 1);
 			SetObjProperty(ghost, "morto", 1);
 			SetObjProperty(corpse, "deathtimer", polcore().systime);

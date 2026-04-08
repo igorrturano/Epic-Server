@@ -15,35 +15,35 @@ const DUEL_RECENT_NPC_HIT := 30; // seconds
 function ChallengeDuel(who, skill_name)
 
 	if (IsInDuel(who))
-		Message("Voce ja esta em um duelo.").SetColor(SSM_FAIL).SendSys(who);
+		Message("Voce ja esta em um duelo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
 
 	if (who.warmode)
-		Message("Voce nao pode iniciar um duelo em modo de guerra.").SetColor(SSM_FAIL).SendSys(who);
+		Message("Voce nao pode iniciar um duelo em modo de guerra.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
 
-	Message("Selecione um jogador para desafiar para um duelo.").SetColor(SSM_REQUEST).SendSys(who);
+	Message("Selecione um jogador para desafiar para um duelo.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 	var targ := Target(who);
 
 	if (!targ)
-		Message("Cancelado.").SetColor(SSM_FAIL).SendSys(who);
+		Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	elseif (!targ.IsA(POLCLASS_MOBILE))
-		Message("Alvo invalido.").SetColor(SSM_FAIL).SendSys(who);
+		Message("Alvo invalido.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	elseif (targ.npctemplate)
-		Message("Voce so pode desafiar jogadores.").SetColor(SSM_FAIL).SendSys(who);
+		Message("Voce so pode desafiar jogadores.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	elseif (targ == who)
-		Message("Voce nao pode desafiar a si mesmo.").SetColor(SSM_FAIL).SendSys(who);
+		Message("Voce nao pode desafiar a si mesmo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	elseif (!targ.connected)
-		Message("O jogador esta desconectado.").SetColor(SSM_FAIL).SendSys(who);
+		Message("O jogador esta desconectado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	elseif (targ.warmode)
-		Message("O alvo esta em modo de guerra.").SetColor(SSM_FAIL).SendSys(who);
+		Message("O alvo esta em modo de guerra.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
 
@@ -52,7 +52,7 @@ function ChallengeDuel(who, skill_name)
 		max_range := 15;
 	endif
 	if (Distance(who, targ) > max_range)
-		Message("O alvo esta muito longe.").SetColor(SSM_FAIL).SendSys(who);
+		Message("O alvo esta muito longe.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
 
@@ -60,11 +60,11 @@ function ChallengeDuel(who, skill_name)
 		return 0;
 	endif
 
-	Message($"Voce convidou {targ.name} para um duelo.").SetColor(SSM_SUCCESS).SendSys(who);
+	Message($"Voce convidou {targ.name} para um duelo.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
 	var perm := YesNo(targ, $"Voce aceita duelar {who.name}?", "Sim", "Nao");
 
 	if (!perm)
-		Message(targ.name + " recusou o duelo.").SetColor(SSM_INFO).SendSys(who);
+		Message(targ.name + " recusou o duelo.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 		return 0;
 	endif
 
@@ -84,11 +84,11 @@ function ChallengeDuelWithTarget(who, targ, skill_name)
 		return 0;
 	endif
 
-	Message($"Voce convidou {targ.name} para um duelo.").SetColor(SSM_SUCCESS).SendSys(who);
+	Message($"Voce convidou {targ.name} para um duelo.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
 	var perm := YesNo(targ, $"Voce aceita duelar {who.name}?", "Sim", "Nao");
 
 	if (!perm)
-		Message(targ.name + " recusou o duelo.").SetColor(SSM_INFO).SendSys(who);
+		Message(targ.name + " recusou o duelo.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 		return 0;
 	endif
 
@@ -104,32 +104,32 @@ endfunction
 function ValidateDuelConditions(who, targ)
 
 	if (IsInDuel(who))
-		Message("Voce ja esta em um duelo.").SetColor(SSM_FAIL).SendSys(who);
+		Message("Voce ja esta em um duelo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
 	if (IsInDuel(targ))
-		Message("O alvo ja esta em um duelo.").SetColor(SSM_FAIL).SendSys(who);
+		Message("O alvo ja esta em um duelo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
 
 	var hostiles_who := ListHostiles(who, 10);
 	if (hostiles_who[1])
-		Message("Voce nao pode fazer isso enquanto esta em combate.").SetColor(SSM_FAIL).SendSys(who);
+		Message("Voce nao pode fazer isso enquanto esta em combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
 
 	var hostiles_targ := ListHostiles(targ, 10);
 	if (hostiles_targ[1])
-		Message("O alvo esta em combate.").SetColor(SSM_FAIL).SendSys(who);
+		Message("O alvo esta em combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
 
 	if (HasRecentNpcHit(who))
-		Message("Voce foi atacado por um NPC recentemente. Aguarde.").SetColor(SSM_FAIL).SendSys(who);
+		Message("Voce foi atacado por um NPC recentemente. Aguarde.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
 	if (HasRecentNpcHit(targ))
-		Message("O alvo foi atacado por um NPC recentemente.").SetColor(SSM_FAIL).SendSys(who);
+		Message("O alvo foi atacado por um NPC recentemente.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;
 	endif
 
@@ -171,8 +171,11 @@ function StartDuel(who, targ, skill_name)
 	duel_targ["skill"] := skill_name;
 	SetObjProperty(targ, "#duel", duel_targ);
 
-	Message($"Duelo iniciado com {targ.name}!").SetColor(SSM_INFO).SendSys(who);
-	Message($"Duelo iniciado com {who.name}!").SetColor(SSM_INFO).SendSys(targ);
+	who.SetWarMode(1);
+	targ.SetWarMode(1);
+
+	Message($"Duelo iniciado com {targ.name}!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+	Message($"Duelo iniciado com {who.name}!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(targ);
 
 	PrintTextAbovePrivate(who, $"*Duelando {targ.name}*", who);
 	PrintTextAbovePrivate(who, $"*Duelando {targ.name}*", targ);
@@ -215,10 +218,10 @@ function EndDuel(who, targ, reason)
 	endcase
 
 	if (who && who.connected)
-		Message(msg).SetColor(SSM_INFO).SendSys(who);
+		Message(msg, Color(SYSTEM_COLOR::INFO)).SendSys(who);
 	endif
 	if (targ && targ.connected)
-		Message(msg).SetColor(SSM_INFO).SendSys(targ);
+		Message(msg, Color(SYSTEM_COLOR::INFO)).SendSys(targ);
 	endif
 
 endfunction
