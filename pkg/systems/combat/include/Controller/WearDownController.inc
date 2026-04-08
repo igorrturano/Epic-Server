@@ -97,7 +97,7 @@ function CalculateWearDamage(equip)
 		damage := 1;
 	elseif (equip is @ArmorWrapper)
 		if (equip.IsShield())
-			damage := 5;
+			damage := 3;
 		else
 			damage := 1;
 		endif
