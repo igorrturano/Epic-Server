@@ -16,15 +16,15 @@ program SpellScript(params)
 	var info := params[2];
 
 	var targ := who.weapon;
-	var summoned := 0;
 
-	// No weapon equipped (fist) — summon spiritual blade from pool
 	if (!targ || targ.objtype == FIST)
 		targ := SummonSpiritualBlade(who);
 		if (!targ)
 			return 0;
 		endif
-		summoned := 1;
+	elseif (WeaponWrapper(targ).Category != WEAPON_CATEGORY::SPIRITUALBLADE)
+		Message("Voce nao pode encantar uma arma nao espiritual!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
 	endif
 
 	if (targ.isA(POLCLASS_WEAPON))

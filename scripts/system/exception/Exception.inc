@@ -1,3 +1,6 @@
+use os;
+include "system/diagnostics/StackTrace/StackTrace";
+
 class Exception()
 	var _message := "";
 	var _innerException;
@@ -6,7 +9,7 @@ class Exception()
 	function Exception(this, message := "", innerException := 0)
 		this._message := message;
 		this._innerException := innerException;
-		this._stackTrace := this.GetStackTrace();
+		this._stackTrace := StackTrace();
 	endfunction
 
 	function GetMessage(this)
@@ -21,11 +24,15 @@ class Exception()
 		return this._stackTrace;
 	endfunction
 
+	function printStackTrace(this)
+		SysLog(this._stackTrace.ToString());
+	endfunction
+
 	function ToString(this)
 		var result := "Exception: " + this._message;
 
 		if (this._stackTrace)
-			result += "\nStack Trace:\n" + this._stackTrace;
+			result += "\nStack Trace:\n" + this._stackTrace.ToString();
 		endif
 		
 		if (this._innerException)

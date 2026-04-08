@@ -34,7 +34,7 @@ function CalculateHitChance(byRef attackInfo)
 		return 100;
 	endif
 
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute() == RANGED && GetCooldown(attackInfo.GetDefender().GetObjRef(), "Desviar Disparos") > 0)
+	if (attackInfo.GetWeapon().GetAttribute() == RANGED && GetCooldown(attackInfo.GetDefender().GetObjRef(), "Desviar Disparos") > 0)
 		Message("*desviar disparos*").SendAbove(attackInfo.GetDefender().GetObjRef());
 		return 0;
 	endif
@@ -101,9 +101,9 @@ function _GetSkillForCombat(byRef mobile)
 endfunction
 
 function CalculateDualWieldPenalty(attackInfo)
-	attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute());
+	attackInfo.GetAttacker().GetSkill(attackInfo.GetWeapon().GetAttribute());
 
-	var penalty := (100 - attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute())) / 2;
+	var penalty := (100 - attackInfo.GetAttacker().GetSkill(attackInfo.GetWeapon().GetAttribute())) / 2;
 
 	if (penalty < 10)
 		penalty := 10;
@@ -151,46 +151,15 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
 endfunction
 
 function HasLightNearby(defender)
-    if (GetCooldown(defender, "fire_arrow_lit"))
-        return 1;
-    endif
+	if (GetCooldown(defender, "fire_arrow_lit"))
+		return 1;
+	endif
 
-    const SEARCH_RANGE := 2;
+	const SEARCH_RANGE := 2;
 
-    // Check for items with light flag
-    var flag_lightsources := ListItemsNearLocationWithFlag(defender.x, defender.y, defender.z, SEARCH_RANGE, TILEDATA_FLAG_LIGHTSOURCE, defender.realm);
-    if (flag_lightsources.size() > 0)
-        return 1;
-    endif
-
-	var statics_lightsources := ListStaticsInBox( defender.x+SEARCH_RANGE, defender.y+SEARCH_RANGE, defender.z+5, defender.x-SEARCH_RANGE, defender.y-SEARCH_RANGE, defender.z-5, 0, defender.realm);
-    // Check for specific light source objects
-	UnloadConfigFile(":combat:config/lightsources");
-    var cfg := ReadConfigFile(":combat:config/lightsources");
-    var elem := cfg["LightSources"];
-    var objtype_lightsources := array{};
-
-	foreach light in GetConfigStringArray(elem, "LightSource")
-        objtype_lightsources.append(light);
-	endforeach
-
-	foreach light in objtype_lightsources
-		foreach static in statics_lightsources
-			if (CInt(static.objtype) == CInt(light))
-				return 1;
-			endif
-		endforeach
-	endforeach
-
-    var nearby_items := ListItemsNearLocation(defender.x, defender.y, defender.z, SEARCH_RANGE, defender.realm);
-    foreach obj in nearby_items
-        if (obj.objtype in objtype_lightsources)
-            return 1;
-        endif
-    endforeach
-
+	// Mais barato: checa tochas/lanternas equipadas em players proximos (caso mais comum)
 	var nearby_mobiles := ListMobilesNearLocation(defender.x, defender.y, defender.z, SEARCH_RANGE, defender.realm);
-	var isEquippedLightSource := {0x0a12, 0x0a22, 0x0a23, 0x0a24, 0x0a15, 0xC626, 0xC620, 0xC622, 0xC628}; // tocha e lanterna acesas
+	var isEquippedLightSource := {0x0a12, 0x0a22, 0x0a23, 0x0a24, 0x0a15, 0xC626, 0xC620, 0xC622, 0xC628};
 
 	foreach mob in nearby_mobiles
 		if (!mob.npctemplate)
@@ -201,7 +170,38 @@ function HasLightNearby(defender)
 			endforeach
 		endif
 	endforeach
-    
+
+	// Medio: checa tiledata flag de light source em itens proximos
+	var flag_lightsources := ListItemsNearLocationWithFlag(defender.x, defender.y, defender.z, SEARCH_RANGE, TILEDATA_FLAG_LIGHTSOURCE, defender.realm);
+	if (flag_lightsources.size() > 0)
+		return 1;
+	endif
+
+	// Pesado: checa statics e itens contra lista de light sources do config
+	var cfg := ReadConfigFile(":combat:config/lightsources");
+	var elem := cfg["LightSources"];
+	var objtype_lightsources := array{};
+
+	foreach light in GetConfigStringArray(elem, "LightSource")
+		objtype_lightsources.append(light);
+	endforeach
+
+	var statics_lightsources := ListStaticsInBox(defender.x+SEARCH_RANGE, defender.y+SEARCH_RANGE, defender.z+5, defender.x-SEARCH_RANGE, defender.y-SEARCH_RANGE, defender.z-5, 0, defender.realm);
+	foreach light in objtype_lightsources
+		foreach static in statics_lightsources
+			if (CInt(static.objtype) == CInt(light))
+				return 1;
+			endif
+		endforeach
+	endforeach
+
+	var nearby_items := ListItemsNearLocation(defender.x, defender.y, defender.z, SEARCH_RANGE, defender.realm);
+	foreach obj in nearby_items
+		if (obj.objtype in objtype_lightsources)
+			return 1;
+		endif
+	endforeach
+
 	return 0;
 endfunction
 
@@ -226,8 +226,8 @@ function CanBackStab(attacker) // attacker: MobileWrapper
 endfunction
 
 function ConsumeAmmo(byRef attackInfo)
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
-		var powderNeeded := GetPowderAmount(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory());
+	if (attackInfo.GetWeapon().isFireWeapon())
+		var powderNeeded := GetPowderAmount(attackInfo.GetWeapon().GetCategory());
 
 		var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST).GetObjRef();
 		var powder := FindObjtypeInContainer(bandolier, 0x9092); // Pólvora

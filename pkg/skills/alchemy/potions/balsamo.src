@@ -71,7 +71,7 @@ program drink_blue(who, potion)
 			cd := cint(healed * 0.13 * 3);
 	endcase
 
-	empty_bottle(who, potion, 1);
+	empty_bottle(who, potion);
 	TS_StartCooldown(who, "healingpot", cd + 1);
 
 	Detach();

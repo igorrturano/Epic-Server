@@ -42,7 +42,7 @@ class Assassinate(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
-		var range := CInt(AP_GetSkill(who, SNEAK) / 5);
+		var range := CInt(AP_GetSkill(who, SNEAK) / 2);
 
 		var targ := Target(who);
 		if (!targ)
@@ -85,7 +85,7 @@ class Assassinate(CombatAbility)
 		endif
 
 		var sneak := CInt(AP_GetSkill(who, SNEAK));
-		var bonus := CInt(sneak / 5);
+		var bonus := CInt(sneak / 2);
 
 		if (bonus > 0)
 			attackInfo.GetDamage()
@@ -96,9 +96,11 @@ class Assassinate(CombatAbility)
 			DebugMsg(
 				who,
 				DEBUG_HAB,
-				Message($"[ASSASSINAR] Bônus de dano furtivo (SNEAK/5): +{bonus}", Color(SYSTEM_COLOR::SUCCESS))
+				Message($"[ASSASSINAR] Bônus de dano furtivo (SNEAK/2): +{bonus}", Color(SYSTEM_COLOR::SUCCESS))
 			);
 		endif
+
+		PlaySoundEffect(who, 0x51b);
 
 		return true;
 	endfunction

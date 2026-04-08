@@ -1,5 +1,6 @@
 use cfgfile;
 use datafile;
+use npc;
 
 include ":loot:include/lootParser";
 include ":tn:recipes";
@@ -13,6 +14,11 @@ include ":fls_core:fls_skillCheck";
 include ":io:CFGFile";
 include ":epicAI:npcDataCache";
 include ":abilities:include/models/Ability";
+
+// Script-level caches (replaces ObjProperty serialization for per-tick data)
+var nearby_cache_var := dictionary;
+var enemy_last_loc_var := 0;
+var initial_allies_var := 0;
 
 function InitializeEpicNPC(mobile)
     var npc_already_initiliazed := GetObjProperty(mobile, "started");
@@ -39,7 +45,7 @@ function InitializeEpicNPC(mobile)
     setupChampspawnNPC(mobile);
     setupNPCBackPack(mobile);
     GenerateRecipeLoot(mobile);
-    SetupAmmo(mobile, npccfgfile);
+    SetupAmmo(mobile, npccfgfile, mytemplate);
     var loot := npccfgfile[mytemplate].Loot;
     if (loot)
         Loot_Generate(mobile.backpack, loot);
@@ -144,12 +150,15 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
         setupNPCColor(mobile, has_colors);
     endif
 
-    SetupHumanoidHabs(mobile);
+    var cache := NPC_GetCachedData(mobile);
+    if (cache.tier >= 2)
+        SetupHumanoidHabs(mobile);
+    endif
     SetupItemsForSpecificClasses(mobile, npc_elem);
 
-    SetupNPCEquip(mobile, npc_elem);
     setupNPCGender(mobile, Cint(isBoss.gender));
 
+    // makeRace BEFORE equip - equip config may override hair/beard from race
     if (isBoss)
         race := isBoss.race;
         makeRace(mobile, race);
@@ -159,9 +168,11 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
         makeRace(mobile);
     endif
 
+    SetupNPCEquip(mobile, npc_elem);
+
     SetupBaseLanguages(mobile);
 
-    if (mobile.isSage())
+    if (cache.tier >= 2 && mobile.isSage())
         SetupWizardClass(mobile, npc_elem);
     endif
 
@@ -285,21 +296,21 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 EquipItem(mobile, hammer);
             endif
 
-            if ("Sede de Sangue" in habs)
+            if (ABILITY_ID::BLOODTHIRST in habs)
                 makeRace(mobile, ORC);
                 var two_handed := array{0x1401, 0x1440, 0x0f51, 0x0f63, 0x143c, 0x13B2};
                 EquipRandomFromArray(mobile, two_handed);
             endif
 
-            if ("Gwaenedh" in habs)
+            if (ABILITY_ID::ARCANE_BOW  in habs)
                 makeRace(mobile, ELFO);
             endif
 
-            if ("Elo Natural" in habs)
+            if (ABILITY_ID::ELO_NATURAL in habs)
                 makeRace(mobile, ELFO);
             endif
 
-            if ("Forma Adaptavel" in habs)
+            if (ABILITY_ID::FORMA_ADAPTAVEL in habs)
                 var two_handed := array{0x1401, 0x1440, 0x0f51, 0x0f63, 0x143c, 0x13B2};
                 EquipRandomFromArray(mobile, two_handed);
             endif
@@ -424,7 +435,6 @@ function SetupHumanoidHabs(mobile)
     var habs := array{};
     foreach hab in habs_by_level
         habs.append(hab);
-        sleepms(2);
     endforeach
 
     SetObjProperty(mobile, "myhabs", habs);
@@ -477,24 +487,6 @@ function SetupWizardClass(mobile, npc_elem)
     return 1;
 endfunction
 
-function SetupWarriorClass(mobile, npc_elem)
-    if (!npc.isWarrior())
-        return 0;
-    endif
-    var subclass;
-    var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
-    var isArcher := (speed_type[1] == "RANGED");
-    if (isArcher)
-        subclass := ABILITY_ID::TIRO_PODEROSO;
-    endif
-
-    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
-    var progression := GetClassProgression(habcfg, subclass);
-    SetObjProperty(mobile, "myhabs", progression);
-
-    return 1;
-endfunction
-
 function SetupBaseLanguages(mobile)
     SetObjProperty(mobile, "linguas_conhecidas", {"Comum"});
     SetObjProperty(mobile, "lingua_escolhida", "Comum");
@@ -505,18 +497,22 @@ function InitializeGenericNPC(mobile, npc_elem, elem, sounds)
    // eu deva só adicionar mobs que eu tenha criado
 endfunction
 
-function SetupAmmo(mobile, npccfgfile)
+function SetupAmmo(mobile, npccfgfile, template := 0)
+	if (!template)
+		template := ParseTemplateName(mobile.npctemplate).template;
+	endif
 
-	if ( npccfgfile[ParseTemplateName(mobile.npctemplate).template].MissileWeapon )
-		var weapon := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, npccfgfile[ParseTemplateName(mobile.npctemplate).template].MissileWeapon, 1, mobile.realm);
+	var elem := npccfgfile[template];
+	if ( elem.MissileWeapon )
+		var weapon := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, elem.MissileWeapon, 1, mobile.realm);
 		if ( !EquipItem(mobile, weapon) )
 			DestroyItem(weapon);
 		endif
 	endif
 
-	if ( npccfgfile[ParseTemplateName(mobile.npctemplate).template].AmmoType )
-		if ( CInt(npccfgfile[ParseTemplateName(mobile.npctemplate).template].AmmoAmount) > 0 )
-			var ammo := CreateItemInBackpack(mobile, npccfgfile[ParseTemplateName(mobile.npctemplate).template].AmmoType, CInt(npccfgfile[ParseTemplateName(mobile.npctemplate).template].AmmoAmount));
+	if ( elem.AmmoType )
+		if ( CInt(elem.AmmoAmount) > 0 )
+			var ammo := CreateItemInBackpack(mobile, elem.AmmoType, CInt(elem.AmmoAmount));
 			if ( !ammo )
 				return ammo;
 			endif
@@ -525,7 +521,6 @@ function SetupAmmo(mobile, npccfgfile)
 	endif
 
 	return 1;
-
 endfunction
 
 function SetupNPCEquip(who, npc_elem)
@@ -539,16 +534,19 @@ function SetupNPCEquip(who, npc_elem)
     var template := ReadConfigFile(":ghaia:config/equip2");
     var group := FindConfigElem(template, categ);
     if(group)
+        // Read config files ONCE, pass to all EquipNPCItemString calls
+        var colors_cfg := ReadConfigFile(":ghaia:config/colors");
+        var vestiments_cfg := ReadConfigFile(":ghaia:config/cloths");
         var str;
         var lastc := 0;
         foreach str in GetConfigStringArray(group, "Equip")
-            lastc := EquipNPCItemString(who, str, lastc);
+            lastc := EquipNPCItemString(who, str, lastc, colors_cfg, vestiments_cfg);
         endforeach
         foreach str in GetConfigStringArray(group, "Armor")
-            lastc := EquipNPCItemString(who, str, lastc );
+            lastc := EquipNPCItemString(who, str, lastc, colors_cfg, vestiments_cfg);
         endforeach
         foreach str in GetConfigStringArray(group, "Weapon")
-            lastc := EquipNPCItemString(who, str, lastc);
+            lastc := EquipNPCItemString(who, str, lastc, colors_cfg, vestiments_cfg);
         endforeach
     endif
     var boss := GetObjProperty(who, "EpicBossStruct");
@@ -798,14 +796,14 @@ function ParseTemplateName(template_name)
   return parsed;
 endfunction
 
-function EquipNPCItemString(who, str, lastcolor)
+function EquipNPCItemString(who, str, lastcolor, colors := 0, vestiments := 0)
     var params := SplitWords(str);
     var objname;
     var color;
     var chance;
     var lastc := 0;
-    var colors := ReadConfigFile(":ghaia:config/colors");
-    var vestiments := ReadConfigFile(":ghaia:config/cloths");
+    if (!colors) colors := ReadConfigFile(":ghaia:config/colors"); endif
+    if (!vestiments) vestiments := ReadConfigFile(":ghaia:config/cloths"); endif
     var epicBoss := GetObjProperty(who, "EpicBossStruct");
     var bossColor := epicBoss.color_ranges;
     objname := params[1];
@@ -893,83 +891,9 @@ function EquipNPCItemString(who, str, lastcolor)
   return lastc;
 endfunction
 
-function Flee(byref opponent, sleepdelay := 0, change_opponent := 0)
-  //  if ("FleeStealth" in custombehaviors)
-  //     if (!GetCooldown(me, "fleestealth"))
-  //        PrintTextAbove(me, "*esconde*");
-  //        sleep(1);
-  //        me.hidden := 1;
-  //        me.stealthsteps := 30;
-  //        SetCooldown(me, "fleestealth", 30);
-  //     endif
-  //  endif
-
-   var numflees := cint(GetObjProperty(me,"#flees"));
-   if(numflees > 10)
-      EraseObjProperty(me, "#flees");
-      RestartScript(me);
-   else
-      numflees := numflees + 1;
-      SetObjProperty(me,"#flees", numflees);
-   endif
-   
-   var runs := 0;
-   if (!sleepdelay)
-      sleepdelay := 275 - me.run_speed;
-   endif
-   var last_loc := array{opponent.x, opponent.y, opponent.z};
-   while(Distance(me, opponent) < 30 && runs < 50 && CoordinateDistance(opponent.x, opponent.y, last_loc[1], last_loc[2]) <= 3)
-      sleepms(sleepdelay);
-      var ev := wait_for_event(0);
-      TryToRunAway(opponent);
-      runs := runs +1;
-
-      if (change_opponent && randomint(6) <= 2)
-         me.setAggro(opponent.serial, -100);
-         if (ChooseHighestOpponent(me, opponent))
-            break;
-         endif
-      endif
-
-      if (ev.type == SYSEVENT_DAMAGED)
-         if (((ev.source.npctemplate) and (CheckLineOfSight(me, ev.source))) 
-               || (CoordinateDistance(me.x, me.y, ev.source.x, ev.source.y) < CoordinateDistance(me.x, me.y ,opponent.x, opponent.y)) 
-               || (!CheckLineOfSight(me, opponent)) || (!opponent) || (RandomInt(3)==1))
-            opponent := ev.source;
-            SetOpponent(opponent);
-            me.setAggro(opponent, 300);
-         endif
-      endif
-
-      findAnotherPath();
-   endwhile
-
-   SetObjProperty(me, "#noback", polcore().systime+15);
-endfunction
-
-function ChooseHighestOpponent(me, byref opponent, new_opponent := 0, force_change := 0)
-   if (!opponent && new_opponent)
-      opponent := new_opponent;
-      SetOpponent(new_opponent);
-      TurnToward(new_opponent);
-      return 1;
-   elseif (opponent && new_opponent)
-      SetOpponent(opponent);
-      TurnToward(opponent);
-      return 1;
-   elseif (opponent && !CheckLineOfSight(me, opponent))
-      me.setAggro(opponent.serial, -50);
-   endif
-
-   if (GetCooldown(me, "#blockaggro"))
-      return 0;
-   endif
-endfunction
-
 function TacticalReposition(opponent, chasing)
     var runs := 0;
     var max_dist := 12;
-    var start_pos := struct{ "x" := me.x, "y" := me.y };
     var stuck_count := 0;
 
     while(Distance(me, opponent) < max_dist && runs < 10)
@@ -978,11 +902,9 @@ function TacticalReposition(opponent, chasing)
         runs += 1;
         sleepms(200);
 
-        // Check if we're stuck
         if (me.x == old_pos.x && me.y == old_pos.y)
             stuck_count += 1;
             if (stuck_count >= 2)
-                // Try to find an alternative path
                 var possible_locations := GetAlternativeLocations(opponent);
                 foreach loc in possible_locations
                     if (CheckLosAt(me, loc.x, loc.y, me.z))
@@ -991,7 +913,12 @@ function TacticalReposition(opponent, chasing)
                     endif
                     sleepms(2);
                 endforeach
+                // All alternatives failed — switch to melee combat
+                SwitchToMelee();
+                return PursueMelee(opponent);
             endif
+        else
+            stuck_count := 0;
         endif
     endwhile
 
@@ -1037,34 +964,6 @@ function GetAlternativeLocations(opponent)
     return locations;
 endfunction
 
-function findAnotherPath()
-    var start_pos := struct{ "x" := me.x, "y" := me.y };
-    var reposition_tries := 0;
-
-    if (me.x == start_pos.x && me.y == start_pos.y)
-        reposition_tries += 1;
-        if (reposition_tries >= 3)
-            // Try to move laterally
-            var directions := array{
-                struct{ "x" := 2, "y" := 0 },
-                struct{ "x" := -2, "y" := 0 },
-                struct{ "x" := 0, "y" := 2 },
-                struct{ "x" := 0, "y" := -2 }
-            };
-            foreach dir in directions
-                var new_x := me.x + dir.x;
-                var new_y := me.y + dir.y;
-                if (CheckLosAt(me, new_x, new_y, me.z))
-                    RunTowardLocation(new_x, new_y);
-                    sleepms(200);
-                    break;
-                endif
-                sleepms(2);
-            endforeach
-            reposition_tries := 0;
-        endif
-    endif
-endfunction
 
 /*
  * UpdateThreatList(mobile, ev)
@@ -1078,33 +977,23 @@ function UpdateThreatList(mobile, ev)
         return;
     endif
 
-    var threats := GetObjProperty(mobile, "#threat_list");
-    if (!threats)
-        threats := array{};
-    endif
-
     case (ev.type)
         SYSEVENT_ENTEREDAREA:
-            // Add to threat list if hostile
             if (CanFight(mobile, ev.source))
-                // Only add if not already in list
-                if (!(ev.source.serial in threats))
-                    threats.append(ev.source.serial);
+                if (!(ev.source.serial in threat_list_var))
+                    threat_list_var.append(ev.source.serial);
                 endif
             endif
         SYSEVENT_LEFTAREA:
-            // Remove from threat list
             var idx := 1;
-            foreach serial in threats
+            foreach serial in threat_list_var
                 if (serial == ev.source.serial)
-                    threats.erase(idx);
+                    threat_list_var.erase(idx);
                     break;
                 endif
                 idx += 1;
             endforeach
     endcase
-
-    SetObjProperty(mobile, "#threat_list", threats);
 endfunction
 
 /*
@@ -1116,23 +1005,18 @@ endfunction
  * Replaces: CheckNearbyThreats() - eliminates 70% of area scans
  */
 function GetCachedThreats()
-    var threats := GetObjProperty(me, "#threat_list");
-    if (!threats || threats.size() == 0)
+    if (!threat_list_var || threat_list_var.size() == 0)
         return 0;
     endif
 
-    // Validate threats and return first valid one
-    var valid_threats := array{};
-    foreach serial in threats
+    foreach serial in threat_list_var
         var mobile := SystemFindObjectBySerial(serial);
         if (mobile && CanFight(me, mobile))
-            // Found valid threat, return immediately
             return mobile;
         endif
         sleepms(2);
     endforeach
 
-    // No valid threats found
     return 0;
 endfunction
 
@@ -1170,42 +1054,38 @@ endfunction
  * Eliminates: Redundant scans when CheckForIdealTarget, AlertAllies, etc. run in same tick
  */
 function GetNearbyMobilesOnce(mobile, range, flags := LISTEX_FLAG_NORMAL)
-    // Create cache key based on scan parameters
-    var cache_key := $"#nearby_cache_{range}_{flags}";
-    var cached := GetObjProperty(mobile, cache_key);
+    // Script-level cache (no ObjProperty serialization)
+    var cache_key := $"{range}_{flags}";
     var now := polcore().systime;
 
-    // Cache valid for 1s
-    if (cached && (CDbl(now) - CDbl(cached.time)) < 1.0)
-        return cached.mobiles;
+    if (nearby_cache_var.exists(cache_key))
+        var cached := nearby_cache_var[cache_key];
+        if ((CDbl(now) - CDbl(cached.time)) < 1.0)
+            return cached.mobiles;
+        endif
     endif
 
     // Cache miss or expired - perform scan
-    // Use LIST_IGNORE_Z to detect mobiles at any Z level (fixes summoned creature detection)
     var mobiles := ListMobilesNearLocationEx(mobile.x, mobile.y, LIST_IGNORE_Z, range, flags, mobile.realm);
 
-    // Store in cache with timestamp
-    SetObjProperty(mobile, cache_key, struct{
+    nearby_cache_var[cache_key] := struct{
         "mobiles" := mobiles,
         "time" := now
-    });
+    };
 
     return mobiles;
 endfunction
 
 function CheckForIdealTarget()
    // Check if we're locked onto a target (20 second lock)
-   var target_lock := GetObjProperty(me, "#target_lock");
-   if (target_lock)
-      var locked_target := SystemFindObjectBySerial(target_lock.serial);
-      var time_locked := ReadGameClock() - target_lock.time;
-      
-      // If lock is still valid (< 20 seconds) and target is still valid, keep it
+   if (target_lock_var)
+      var locked_target := SystemFindObjectBySerial(target_lock_var.serial);
+      var time_locked := ReadGameClock() - target_lock_var.time;
+
       if (time_locked < 20 && locked_target && CanFight(me, locked_target))
          return locked_target;
       else
-         // Lock expired or target invalid, clear it
-         EraseObjProperty(me, "#target_lock");
+         target_lock_var := 0;
       endif
    endif
 
@@ -1235,8 +1115,9 @@ function CheckForIdealTarget()
       "priority" := -1
    };
 
+   var preferred_target := GetObjProperty(me, "preferred_target");
+
    foreach opponent in potential_opponents
-      // Skip invalid opponents
       if (!CanFight(me, opponent))
          continue;
       endif
@@ -1245,39 +1126,33 @@ function CheckForIdealTarget()
       var opponent_is_ranged := opponent.weapon.isRanged() || opponent_class == SABIO;
       var priority := 0;
 
-       // Current opponent gets huge priority bonus to maintain aggro
       if (opponent == me.opponent)
          priority += 15;
       endif
 
-      // Fast NPC prioritizes ranged players
       if (opponent_is_ranged)
          priority += 2;
       endif
 
-      // Class-based opponenting
-      if (me.isSage()) // NPC mage prefers warriors
+      if (me.isSage())
          if (opponent_class == GUERREIRO)
             priority += 2;
          endif
-      elseif (me.isWarrior()) // NPC warrior prefers rogues
+      elseif (me.isWarrior())
          if (opponent_class == LADINO)
             priority += 2;
          endif
-      elseif (me.isRogue()) // NPC rogue prefers mages
+      elseif (me.isRogue())
          if (opponent_class == SABIO)
             priority += 2;
          endif
       endif
 
-      // Prioritize close opponents slightly
       var dist := Distance(me, opponent);
       if (dist <= 4)
          priority += 1;
       endif
 
-      // Check for preferred target types
-      var preferred_target := GetObjProperty(me, "preferred_target");
       if (preferred_target)
           case (preferred_target)
           "Ranged": if (opponent_is_ranged) priority += 4; endif
@@ -1293,21 +1168,18 @@ function CheckForIdealTarget()
           endcase
       endif
 
-      // Check if this is a better opponent
       if (priority > best_opponent.priority)
          best_opponent.mobile := opponent;
          best_opponent.priority := priority;
       endif
-
-      sleepms(2);
    endforeach
 
    // Lock onto the best opponent for 20 seconds
    if (best_opponent.mobile)
-      SetObjProperty(me, "#target_lock", struct{
+      target_lock_var := struct{
          "serial" := best_opponent.mobile.serial,
          "time" := ReadGameClock()
-      });
+      };
    endif
 
    return best_opponent.mobile;
@@ -1530,30 +1402,39 @@ const PURSUIT_PATH_CACHE_DURATION := 8;      // seconds to cache pathfinding res
 const PURSUIT_TARGET_MOVE_THRESHOLD := 3;    // tiles moved before recalculating path
 
 // Helper: Calculate the ideal engagement distance based on weapon/brain type
+// Capped at 6 to prevent NPCs from retreating too far and getting stuck
+const MAX_RANGED_PURSUIT_DISTANCE := 6;
+
 function CalculateIdealPursuitDistance()
-    var range_info := GetWeaponRangeInfo();
+    // Use cached weapon range (computed once per brain activation, not per tick)
+    if (!cached_weapon_range)
+        cached_weapon_range := GetWeaponRangeInfo();
+    endif
+    var range_info := cached_weapon_range;
 
     if (me.isHumanoidBrain())
         if (me.weapon.isRanged() || range_info.max_range > 1)
+            if (range_info.max_range > MAX_RANGED_PURSUIT_DISTANCE)
+                return MAX_RANGED_PURSUIT_DISTANCE;
+            endif
             return range_info.max_range;
         elseif (me.isSage() && me.weapon.objtype == FIST)
             return 6;
         endif
     else
-        // For monsters and animals, check if they're ranged
-        var is_monster_ranged := isMonsterRanged();
-        if (is_monster_ranged)
-            // Ranged monsters should use their weapon's max range if equipped
-            // Otherwise use 8 for special abilities (acid spit, web, etc.)
+        if (isMonsterRanged())
             if (me.weapon && range_info.max_range > 1)
+                if (range_info.max_range > MAX_RANGED_PURSUIT_DISTANCE)
+                    return MAX_RANGED_PURSUIT_DISTANCE;
+                endif
                 return range_info.max_range;
             else
-                return 8; // Safe distance for acid spit, web, etc.
+                return MAX_RANGED_PURSUIT_DISTANCE;
             endif
         endif
     endif
 
-    return 1; // Default melee distance
+    return 1;
 endfunction
 
 // Helper: Check if we're already at the desired distance
@@ -1567,37 +1448,26 @@ endfunction
 
 // Helper: Get cached path or calculate new one
 function GetOrCreatePursuitPath(opponent)
-    var path_cache := GetObjProperty(me, "#pursuit_path_cache");
+    if (path_cache_var)
+        var cache_age := ReadGameClock() - path_cache_var.created_time;
+        var target_moved := CoordinateDistance(opponent.x, opponent.y, path_cache_var.target_x, path_cache_var.target_y);
 
-    // Check if we have a valid cached path
-    if (path_cache)
-        var cache_age := ReadGameClock() - path_cache.created_time;
-        var target_moved := CoordinateDistance(opponent.x, opponent.y, path_cache.target_x, path_cache.target_y);
-
-        // Use cached path if:
-        // 1. Cache is fresh (not expired)
-        // 2. Target hasn't moved significantly
-        // 3. We still have path steps remaining
         if (cache_age < PURSUIT_PATH_CACHE_DURATION &&
             target_moved < PURSUIT_TARGET_MOVE_THRESHOLD &&
-            path_cache.path && path_cache.path.size() > 0)
-            return path_cache.path;
+            path_cache_var.path && path_cache_var.path.size() > 0)
+            return path_cache_var.path;
         endif
     endif
 
-    // Cache invalid or expired - calculate new path
-    // Use searchskirt=15 to handle complex paths (L-shapes, long detours, etc.)
     var new_path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES, 20);
 
     if (new_path)
-        // Store new path in cache
-        path_cache := struct{
+        path_cache_var := struct{
             "path" := new_path,
             "target_x" := opponent.x,
             "target_y" := opponent.y,
             "created_time" := ReadGameClock()
         };
-        SetObjProperty(me, "#pursuit_path_cache", path_cache);
     endif
 
     return new_path;
@@ -1605,124 +1475,193 @@ endfunction
 
 // Cache LOS check for pursuit (20% performance gain)
 function GetCachedLOS(opponent)
-    var los_cache := GetObjProperty(me, "#los_cache");
     var current_time := ReadGameClock();
 
-    // Cache valid for 1 second
-    if (los_cache &&
-        los_cache.opponent_serial == opponent.serial &&
-        (current_time - los_cache.time) < 1)
-        return los_cache.has_los;
+    if (los_cache_var &&
+        los_cache_var.opponent_serial == opponent.serial &&
+        (current_time - los_cache_var.time) < 1)
+        return los_cache_var.has_los;
     endif
 
-    // Cache miss - calculate and store
     var has_los := CheckLineOfSight(me, opponent);
-    SetObjProperty(me, "#los_cache", struct{
+    los_cache_var := struct{
         "opponent_serial" := opponent.serial,
         "has_los" := has_los,
         "time" := current_time
-    });
+    };
 
     return has_los;
 endfunction
 
+/*
+ * PursueMelee(opponent)
+ *
+ * Fast pursuit for melee NPCs. One movement action per call, no internal sleep loops.
+ * The brain loop handles iteration at 100ms intervals, keeping event processing responsive.
+ */
+function PursueMelee(opponent)
+    var dist := Distance(me, opponent);
+
+    if (dist > AREA_SIZE + 6)
+        return 0;
+    endif
+
+    if (dist <= 1)
+        TurnToward(opponent);
+        return 1;
+    endif
+
+    var should_run := !(me.hidden || me.concealed);
+
+    // Direct movement when we have line of sight
+    if (CheckLineOfSight(me, opponent))
+        enemy_last_loc_var := struct{
+            "x" := opponent.x, "y" := opponent.y, "z" := opponent.z, "time" := ReadGameClock()
+        };
+        if (should_run)
+            RunToward(opponent);
+        else
+            WalkToward(opponent);
+        endif
+        pursuit_tracker := 0; // Reset stuck detection on successful LOS movement
+        return 1;
+    endif
+
+    // No LOS — stuck detection using script-level var
+    var current_time := ReadGameClock();
+    if (!pursuit_tracker || pursuit_tracker.target_serial != opponent.serial)
+        pursuit_tracker := struct{
+            "start_time" := current_time,
+            "start_pos_x" := me.x,
+            "start_pos_y" := me.y,
+            "target_serial" := opponent.serial,
+            "failed_moves" := 0,
+            "total_moves" := 0
+        };
+    endif
+
+    var old_x := me.x;
+    var old_y := me.y;
+
+    // Try pathfinding (no caching — use immediately)
+    var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES, 20);
+    if (path && path.size() > 0)
+        var coord := path[1];
+        if (should_run)
+            RunTowardLocation(coord.x, coord.y);
+        else
+            WalkTowardLocation(coord.x, coord.y);
+        endif
+    else
+        // Fallback: try last known position
+        var last_loc := enemy_last_loc_var;
+        if (last_loc && (current_time - last_loc.time) < 30)
+            if (should_run)
+                RunTowardLocation(last_loc.x, last_loc.y);
+            else
+                WalkTowardLocation(last_loc.x, last_loc.y);
+            endif
+        else
+            if (should_run)
+                RunToward(opponent);
+            else
+                WalkToward(opponent);
+            endif
+        endif
+    endif
+
+    // Update stuck tracking using native lastcoord for instant wall detection
+    pursuit_tracker.total_moves += 1;
+    if (me.x == me.lastcoord.lastx && me.y == me.lastcoord.lasty)
+        pursuit_tracker.failed_moves += 1;
+    endif
+
+    // Flee if stuck for 10+ seconds with <30% movement success
+    var time_elapsed := current_time - pursuit_tracker.start_time;
+    if (time_elapsed >= 10 && pursuit_tracker.total_moves > 0)
+        var success_rate := CInt((CDbl(pursuit_tracker.total_moves - pursuit_tracker.failed_moves) / CDbl(pursuit_tracker.total_moves)) * 100);
+        if (success_rate < 30)
+            pursuit_tracker := 0;
+            // Teleport to anchor as anti-exploit instead of blocking Flee loop
+            var anchor := GetObjProperty(me, "anchor");
+            if (anchor)
+                PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+                MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
+            endif
+            return 0;
+        endif
+    endif
+
+    return 1;
+endfunction
+
 function PursueTarget(opponent)
-    // === PHASE 1: Cache ALL expensive calculations upfront ===
+    var ideal_distance := CalculateIdealPursuitDistance();
+
+    // Fast path for melee NPCs — no internal sleep loops, one action per call
+    if (ideal_distance <= 1)
+        return PursueMelee(opponent);
+    endif
+
+    // === Ranged/special NPC pursuit below ===
     var current_time := ReadGameClock();
     var dist := Distance(me, opponent);
-    var ideal_distance := CalculateIdealPursuitDistance();
-    var is_ranged := (ideal_distance > 1);
+    var is_ranged := 1;
     var should_run := !(me.hidden || me.concealed);
     var has_los := GetCachedLOS(opponent);
     var my_x := me.x;
     var my_y := me.y;
     var opp_serial := opponent.serial;
 
-    // === PHASE 2: Early exits (cheapest checks first) ===
-    // Check distance limits before any expensive operations
     if (dist > AREA_SIZE + 6)
         return 0;
     endif
 
-    // Already at ideal distance? Done.
-    // For ranged: need to be far enough (dist >= ideal_distance)
-    // For melee: need to be close enough (dist <= ideal_distance)
-    if (is_ranged)
-        // Ranged: only stop if we're at or beyond ideal distance
-        if (dist == ideal_distance && has_los)
-            return 1;
-        endif
-    else
-        // Melee: stop if we're within ideal distance
-        if (dist <= ideal_distance && has_los)
-            return 1;
-        endif
-    endif
-
-    // === PHASE 3: Store last known position (only if we have LOS) ===
-    if (has_los)
-        SetObjProperty(me, "#enemy_last_loc", struct{
-            "x" := opponent.x, "y" := opponent.y, "z" := opponent.z, "time" := current_time
-        });
-    endif
-
-    // === PHASE 4: Ranged retreat logic (too close) ===
-    if (is_ranged && dist < ideal_distance)
-        var retreat_attempts := 0;
-        var stuck_retreating := 0;
-        var old_x, old_y;
-
-        while (dist < ideal_distance && retreat_attempts < 10)
-            old_x := me.x;
-            old_y := me.y;
-
-            if (should_run)
-                RunAwayFrom(opponent);
-            else
-                WalkAwayFrom(opponent);
-            endif
-            sleepms(100);
-            retreat_attempts += 1;
-
-            // Update distance once per iteration
-            dist := Distance(me, opponent);
-
-            // Check if we moved
-            if (me.x == old_x && me.y == old_y)
-                stuck_retreating += 1;
-                // Only try alternatives after 3 failures, and only once
-                if (stuck_retreating == 3)
-                    var alt_locs := GetAlternativeLocations(opponent);
-                    if (alt_locs.size() > 0)
-                        RunTowardLocation(alt_locs[1].x, alt_locs[1].y);
-                        sleepms(100);
-                    endif
-                elseif (stuck_retreating >= 5)
-                    break;
-                endif
-            else
-                stuck_retreating := 0;
-            endif
-        endwhile
+    if (dist == ideal_distance && has_los)
         return 1;
     endif
 
-    // === PHASE 5: Special abilities (check distance once, then abilities) ===
-    if (dist >= 2 && dist <= 8)
-        if (dist <= 6)
-            if (me.canSpitAcid())
-                AcidSpray(me, opponent);
-            elseif (me.canShootWeb())
-                WebShot(me, opponent);
-            endif
+    if (has_los)
+        enemy_last_loc_var := struct{
+            "x" := opponent.x, "y" := opponent.y, "z" := opponent.z, "time" := current_time
+        };
+    endif
+
+    // Ranged retreat logic (too close) - one attempt per tick, non-blocking
+    if (dist < ideal_distance)
+        if (should_run)
+            RunAwayFrom(opponent);
+        else
+            WalkAwayFrom(opponent);
         endif
-        if (me.canThrow())
-            ThrowSpecial(me, opponent);
+
+        // Track if retreat is actually gaining distance
+        if (!pursuit_tracker)
+            pursuit_tracker := struct{ "retreat_dist" := dist, "retreat_ticks" := 0 };
+        elseif (!pursuit_tracker.retreat_dist)
+            pursuit_tracker.retreat_dist := dist;
+            pursuit_tracker.retreat_ticks := 0;
+        endif
+        pursuit_tracker.retreat_ticks += 1;
+
+        if (pursuit_tracker.retreat_ticks >= 5)
+            if (Distance(me, opponent) <= pursuit_tracker.retreat_dist + 1)
+                // No progress after 5 ticks - cornered/oscillating
+                pursuit_tracker := 0;
+                SwitchToMelee();
+                return PursueMelee(opponent);
+            endif
+            pursuit_tracker.retreat_dist := 0;
+        endif
+        return 1;
+    else
+        if (pursuit_tracker && pursuit_tracker.retreat_dist)
+            pursuit_tracker.retreat_dist := 0;
         endif
     endif
 
-    // === PHASE 6: Pursuit tracker (single GetObjProperty call) ===
-    var tracker := GetObjProperty(me, "#pursuit_tracker");
+    // Pursuit tracker (script-level var)
+    var tracker := pursuit_tracker;
     var tracker_needs_reset := (!tracker || tracker.target_serial != opp_serial);
 
     if (tracker_needs_reset)
@@ -1741,49 +1680,25 @@ function PursueTarget(opponent)
         };
     endif
 
-    // === PHASE 7: Direct movement with LOS ===
+    // Direct movement with LOS - one step per tick, non-blocking
     var use_pathfinding := !has_los;
 
-    if (has_los)
-        var movement_attempts := 0;
-        var stuck_count := 0;
-        var old_x, old_y, old_dist, new_dist;
+    if (has_los && dist > ideal_distance)
+        if (should_run)
+            RunToward(opponent);
+        else
+            WalkToward(opponent);
+        endif
 
-        while (dist > ideal_distance && movement_attempts < 10)
-            old_x := me.x;
-            old_y := me.y;
-            old_dist := dist;
-
-            if (should_run)
-                RunToward(opponent);
-            else
-                WalkToward(opponent);
-            endif
-            sleepms(100);
-            movement_attempts += 1;
-
-            new_dist := Distance(me, opponent);
-
-            // Check progress
-            if (me.x == old_x && me.y == old_y || new_dist >= old_dist)
-                stuck_count += 1;
-                if (stuck_count >= 2)
-                    EraseObjProperty(me, "#pursuit_path_cache");
-                    if (is_ranged)
-                        TacticalReposition(opponent, 1);
-                    endif
-                    use_pathfinding := 1;
-                    break;
-                endif
-            else
-                stuck_count := 0;
-            endif
-
-            dist := new_dist;
-        endwhile
+        // Detect stuck using native lastcoord
+        if (me.x == me.lastcoord.lastx && me.y == me.lastcoord.lasty)
+            path_cache_var := 0;
+            TacticalReposition(opponent, 1);
+            use_pathfinding := 1;
+        endif
     endif
 
-    // === PHASE 8: Stuck detection and flee logic ===
+    // Stuck detection and flee logic
     var time_elapsed := current_time - tracker.start_time;
     var distance_from_start := CoordinateDistance(me.x, me.y, tracker.start_pos_x, tracker.start_pos_y);
     var moved_this_cycle := (me.x != tracker.last_pos_x || me.y != tracker.last_pos_y);
@@ -1795,20 +1710,23 @@ function PursueTarget(opponent)
     tracker.last_pos_x := me.x;
     tracker.last_pos_y := me.y;
 
-    // Flee check: 5+ seconds, stuck in same area, low movement success
     if (time_elapsed >= 10 && distance_from_start <= 6)
-        var success_rate := (tracker.total_moves > 0) ? 
+        var success_rate := (tracker.total_moves > 0) ?
             CInt((CDbl(tracker.total_moves - tracker.failed_moves) / CDbl(tracker.total_moves)) * 100) : 0;
-        
+
         if (success_rate < 30)
-            EraseObjProperty(me, "#pursuit_tracker");
-            EraseObjProperty(me, "#pursuit_path_cache");
-            Flee(opponent, 100, 1);
+            pursuit_tracker := 0;
+            path_cache_var := 0;
+            // Anti-exploit: teleport to anchor instead of blocking Flee loop
+            var anchor := GetObjProperty(me, "anchor");
+            if (anchor)
+                PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
+                MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
+            endif
             return 0;
         endif
     endif
 
-    // Reset tracker on significant progress
     var distance_improvement := tracker.start_distance - dist;
     if (distance_from_start > 8 || distance_improvement > 3)
         tracker.start_time := current_time;
@@ -1819,7 +1737,7 @@ function PursueTarget(opponent)
         tracker.total_moves := 0;
     endif
 
-    // === PHASE 9: Pathfinding (only when needed) ===
+    // Pathfinding (only when needed)
     if (use_pathfinding)
         var path := GetOrCreatePursuitPath(opponent);
         if (path)
@@ -1830,13 +1748,12 @@ function PursueTarget(opponent)
                     break;
                 endif
 
-                // Check LOS every 3 steps instead of every step
                 step_count += 1;
                 if (step_count % 3 == 0 && CheckLineOfSight(me, opponent))
-                    SetOpponent(opponent);  // Ensure opponent is locked
-                    TurnToward(opponent);   // Face the target immediately
-                    EraseObjProperty(me, "#los_cache");  // ← ADD THIS
-                    break;  // Exit path loop - main brain loop handles next action
+                    SetOpponent(opponent);
+                    TurnToward(opponent);
+                    los_cache_var := 0;
+                    break;
                 endif
 
                 if (should_run)
@@ -1847,15 +1764,13 @@ function PursueTarget(opponent)
                 sleepms(100);
             endforeach
         else
-            // Fallback: last known position or height difference handling
-            var last_loc := GetObjProperty(me, "#enemy_last_loc");
+            var last_loc := enemy_last_loc_var;
             if (last_loc && (current_time - last_loc.time) < 30)
                 var last_path := FindPath(me.x, me.y, me.z, last_loc.x, last_loc.y, last_loc.z, me.realm, FP_IGNORE_MOBILES, 20);
                 if (last_path)
                     foreach coord in last_path
                         if (CheckLineOfSight(me, opponent))
                             SendEvent(me, struct{ "type" := SYSEVENT_ENGAGED, "source" := opponent });
-
                             break;
                         endif
                         if (should_run)
@@ -1868,7 +1783,6 @@ function PursueTarget(opponent)
                 endif
             endif
 
-            // Height difference handling
             if (Abs(me.z - opponent.z) >= 19)
                 var attempts := 0;
                 while (attempts < 5 && !CheckLineOfSight(me, opponent))
@@ -1888,7 +1802,7 @@ function PursueTarget(opponent)
         endif
     endif
 
-    // === PHASE 10: Progress check (interval-based) ===
+    // Progress check (interval-based)
     if (current_time >= tracker.last_progress_check + PURSUIT_PROGRESS_CHECK_INTERVAL)
         var current_dist := Distance(me, opponent);
         if (!moved_this_cycle || current_dist >= dist)
@@ -1900,17 +1814,15 @@ function PursueTarget(opponent)
 
         if (tracker.no_progress_count >= PURSUIT_MAX_NO_PROGRESS_COUNT)
             EraseObjProperty(me, "path");
-            EraseObjProperty(me, "#enemy_last_loc");
-            EraseObjProperty(me, "#pursuit_path_cache");
-            if (is_ranged)
-                TacticalReposition(opponent, 1);
-            endif
+            enemy_last_loc_var := 0;
+            path_cache_var := 0;
+            TacticalReposition(opponent, 1);
             tracker.no_progress_count := 0;
         endif
     endif
 
-    // Single SetObjProperty at the end
-    SetObjProperty(me, "#pursuit_tracker", tracker);
+    // Store tracker in script-level var
+    pursuit_tracker := tracker;
     return 1;
 endfunction
 
@@ -1978,22 +1890,6 @@ function HandleIdleState()
     return 1;
 endfunction
 
-function FleeFrom(opponent)
-    if (!opponent)
-        return 0;
-    endif
-
-    var runs := 0;
-    while (opponent && Distance(me, opponent) < 16 && runs < 20)
-        TryToRunAway(opponent);
-        if(!AP_ConsumeVital(me, STAMINA, 5))
-            PrintTextAbove(me, "*Exausto*");
-            break;
-        endif
-        runs += 1;
-        sleepms(100);
-    endwhile
-endfunction
 
 function MaintainRange(opponent)
     var sleepdelay := 275 - me.run_speed;
@@ -2044,9 +1940,10 @@ function MaintainHumanoidDistance(opponent, dist, sleepdelay, range_info)
                 TryToRunAway(opponent);
                 sleepms(sleepdelay);
             else
-                // If we can't move back, just maintain current position
+                // Cornered — switch to melee instead of standing still getting hit
+                SwitchToMelee();
                 TurnToward(opponent);
-                return StayNearAllies(4, sleepdelay, opponent);
+                return 1;
             endif
         elseif (dist > ideal_range)
             if (can_move_forward)
@@ -2162,46 +2059,35 @@ function DoThiefCombatBehavior(opponent)
 endfunction
 
 function ShamanBehavior(shaman)
-    // First priority: Check allies health
-    if (GetCooldown(shaman, "heal_check"))
+    if (GetCooldown(shaman, "spell_cast"))
         return 0;
     endif
-
-    // Get all allies nearby
-    var wounded_allies := array{};
-
-    // Check allies' health
-    wounded_allies := CheckForWoundedAllies(shaman);
-
-    if (wounded_allies.size() == 0)
-        DoHarmfulSpell();
+    var opponent := shaman.opponent;
+    if (!opponent)
+        return 0;
     endif
-
-    // If multiple allies need help, cast healing rain
-    if (wounded_allies.size() >= 3 && !GetCooldown(shaman, "healing_rain"))
-        PerformHealingRain(shaman, wounded_allies);
-        SetCooldown(shaman, "healing_rain", 45);
-        return 1;
+    var spells := GetAvailableShamanSpells(shaman);
+    if (!spells.size())
+        return 0;
     endif
-
-    var most_wounded := FindMostWoundedAlly(wounded_allies);
-    if (most_wounded)
-        PerformHeal(shaman, most_wounded, 1);
-        SetCooldown(shaman, "heal_check", 15);
-        return 1;
+    var result := ChooseShamanSpell(shaman, opponent, spells);
+    if (!result)
+        return 0;
     endif
-
-    return 0;
+    return NPC_CastSpell(shaman, result);
 endfunction
 
 function CheckForWoundedAllies(who)
 	var allies := NPC_GetNearbyAllies(who);
 	var wounded_allies := array{};
 
-	// Check allies' health
+	// Check allies' health (skip undead/demons — healing damages them)
 	foreach ally in allies
-		if (isHurt(ally)) // Is Hurt
-			wounded_allies.append(ally);
+		if (isHurt(ally))
+			var cache := NPC_GetCachedData(ally);
+			if (cache.category_lower != "undead" && cache.category_lower != "demons")
+				wounded_allies.append(ally);
+			endif
 		endif
 	endforeach
 
@@ -2230,21 +2116,18 @@ function FindMostWoundedAlly(wounded_allies)
 endfunction
 
 function AskForHealing(me)
-    // First look specifically for shamans
     if (!isHurt(me))
         return 0;
     endif
 
-    foreach mobile in ListMobilesNearLocation(me.x, me.y, me.z, 12, me.realm)
+    foreach mobile in GetNearbyMobilesOnce(me, 8, LISTEX_FLAG_NORMAL)
         if (mobile.npctemplate && mobile != me)
             if (mobile.isSage())
-                SetObjProperty(mobile, "#healing_needed", me.serial);
                 SendEvent(mobile, struct{ "type" := EVID_BUDDYATTACKED, "source" := me });
             endif
         endif
-        sleepms(2);
     endforeach
-endfunction 
+endfunction
 
 function shouldKeepPursuing(opponent, dist)
     if (!opponent)
@@ -2278,11 +2161,11 @@ function shouldKeepPursuing(opponent, dist)
     var allies := NPC_GetNearbyAllies(me);
     if (allies.size() > 0)
         if (!GetCooldown(me, "allies"))
-            SetObjProperty(me, "initial_allies", allies.size());
+            initial_allies_var := allies.size();
             SetCooldown(me, "allies", 15);
         endif
 
-        var initial_allies := GetObjProperty(me, "initial_allies");
+        var initial_allies := initial_allies_var;
         var already_fighting := GetObjProperty(me, "already_fighting");
         
         // Only consider fleeing if we've lost allies
@@ -2294,8 +2177,8 @@ function shouldKeepPursuing(opponent, dist)
                 
                 if (RandomInt(100) < flee_chance)
                     PrintTextAbove(me, "*"+me.name+" recua*");
-                    FleeFrom(opponent);
-                    return 0;  // Added return 0 after fleeing
+                    SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
+                    return 0;
                 endif
             endif
         endif
@@ -2512,19 +2395,39 @@ function ClearCombatState()
     SetOpponent(0);
 endfunction
 
-function reachForMeleeWeapon(opponent)
-    // Switch to melee weapon when enemy gets close
-    if (Distance(me, opponent) <= 2)
-        var backup_weapon := 0;
-        foreach item in (EnumerateItemsInContainer(me.backpack))
-            if (item.isa(POLCLASS_WEAPON) && !item.isRanged())
-                backup_weapon := item;
-                break;
-            endif
-            sleepms(2);
-        endforeach
+/*
+ * SwitchToMelee()
+ *
+ * When a ranged NPC is stuck retreating (cornered, no escape path),
+ * switch to a melee weapon and fight close range instead of running forever.
+ * Resets cached_weapon_range so CalculateIdealPursuitDistance returns 1 (melee).
+ * Returns 1 if switched, 0 if no melee weapon available (NPC uses fists).
+ */
+function SwitchToMelee()
+    if (brain_type != "humanoid")
+        return 0;
     endif
+
+    var current_weapon := me.weapon;
+    if (current_weapon && current_weapon.isRanged())
+        if (me.backpack)
+            MoveItemToContainer(current_weapon, me.backpack);
+        endif
+    endif
+
+    var sword := FindObjtypeInContainer(me.backpack, 0x0F60);
+    if (!sword)
+        sword := CreateItemAtLocation(me.x, me.y, me.z, 0x0F60, 1, me.realm);
+    endif
+    if (sword)
+        EquipItem(me, sword);
+    endif
+
+    cached_weapon_range := 0;
+    PrintTextAbove(me, "*avanca para o combate*");
+    return 1;
 endfunction
+
 
 function GetWeaponRangeInfo()
     // Get the actual equipped item in hand
@@ -2537,13 +2440,15 @@ function GetWeaponRangeInfo()
         return struct{ "min_range" := 1, "max_range" := 1 };
     endif
 
-    // var wpn_elem := GetWpnCfgInfo(me, weapon);
-	var wpn_elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElement(); 
+    var itemdesc := ReadConfigFile(":*:itemdesc");
+    var wpn_elem := FindConfigElem(itemdesc, weapon.objtype);
     var min_range := 1;
     var max_range := 1;
-    
-    min_range := CInt(wpn_elem.MinRange) ? CInt(wpn_elem.MinRange) : 1;
-    max_range := CInt(wpn_elem.MaxRange) ? CInt(wpn_elem.MaxRange) : 1;
+
+    if (wpn_elem && wpn_elem != error)
+        min_range := CInt(GetConfigInt(wpn_elem, "MinRange")) ? CInt(GetConfigInt(wpn_elem, "MinRange")) : 1;
+        max_range := CInt(GetConfigInt(wpn_elem, "MaxRange")) ? CInt(GetConfigInt(wpn_elem, "MaxRange")) : 1;
+    endif
 
     return struct{
         "min_range" := min_range,
@@ -2569,60 +2474,47 @@ function StayNearAllies(max_distance, sleepdelay, opponent)
 endfunction
 
 function isMonsterRanged()
-    // Check for doppelganger override first
     if (GetObjProperty(me, "#force_ranged"))
         return 1;
     endif
 
-    // Get monster configuration - O(1) cache lookup
     var cache := NPC_GetCachedData(me);
-    var speed_type := SplitWords(cache.attack_speed, "_");
-    var is_ranged := (speed_type[1] == "RANGED") || me.isSage();
-
-    return is_ranged;
+    return cache.is_ranged || me.isSage();
 endfunction
 
 function TryToRunAway(opponent, chasing := 0)
-    var progress := GetObjProperty(me, "#runaway_progress");
-    if (!progress)
-        progress := struct{
+    if (!runaway_progress_var)
+        runaway_progress_var := struct{
             "last_pos" := struct{ "x" := me.x, "y" := me.y },
             "last_check_time" := ReadGameClock(),
             "no_progress_count" := 0
         };
     endif
 
-    // Run away from opponent
     if (!chasing)
         RunAwayFrom(opponent);
     endif
 
-    // Check progress every 1 seconds
-    if (ReadGameClock() >= progress.last_check_time + 1)
-        // Check if we're stuck in roughly the same area (2-3 tiles)
-        var current_dist := CoordinateDistance(me.x, me.y, progress.last_pos.x, progress.last_pos.y);
+    if (ReadGameClock() >= runaway_progress_var.last_check_time + 1)
+        var current_dist := CoordinateDistance(me.x, me.y, runaway_progress_var.last_pos.x, runaway_progress_var.last_pos.y);
         if (current_dist <= 3)
-            progress.no_progress_count += 1;
+            runaway_progress_var.no_progress_count += 1;
         else
-            progress.no_progress_count := 0;
+            runaway_progress_var.no_progress_count := 0;
         endif
 
-        // If stuck for multiple checks, find alternative path
-        if (progress.no_progress_count >= 1)
+        if (runaway_progress_var.no_progress_count >= 1)
             var alternative_locations := GetAlternativeLocations(opponent);
             if (alternative_locations.size() > 0)
                 RunTowardLocation(alternative_locations[1].x, alternative_locations[1].y);
             endif
-            progress.no_progress_count := 0;
+            runaway_progress_var.no_progress_count := 0;
         endif
 
-        // Update tracking info
-        progress.last_pos.x := me.x;
-        progress.last_pos.y := me.y;
-        progress.last_check_time := ReadGameClock();
+        runaway_progress_var.last_pos.x := me.x;
+        runaway_progress_var.last_pos.y := me.y;
+        runaway_progress_var.last_check_time := ReadGameClock();
     endif
-
-    SetObjProperty(me, "#runaway_progress", progress);
 endfunction
 
 /*
@@ -3122,6 +3014,7 @@ function DoppelgangerTransformation(mobile, opponent)
         combat_properties.spell_school := GetObjProperty(opponent, "SpellSchool");
         if (combat_properties.spell_school)
             SetObjProperty(mobile, "SpellSchool", combat_properties.spell_school);
+            InitSpellCache();
         endif
         combat_properties.is_ranged := 1;
     elseif (opponent.weapon && opponent.weapon.isRanged())
@@ -3263,7 +3156,10 @@ endfunction
  * Checks if the destination is within the allowed range from the anchor point
  */
 function WanderAroundAnchor(mobile)
-    var anchor := GetObjProperty(mobile, "anchor");
+    var anchor := anchor_var;
+    if (!anchor)
+        anchor := GetObjProperty(mobile, "anchor");
+    endif
     var range := 6;
     if (anchor[4])
         range := anchor[4];

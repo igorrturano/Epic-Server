@@ -15,7 +15,7 @@ include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 
 function PegaPericiaPeloMaterial(tipoMaterial)
-	case (tipoMaterial)
+	case (Lower(tipoMaterial))
 		"metal":
 		"gem":
 		"glass":
@@ -31,7 +31,7 @@ function PegaPericiaPeloMaterial(tipoMaterial)
 		"wood":
 			return "Wood_Working";
 		"catalist":
-		"oleo":
+		"Oleo":
 		"solvente":
 		"alcool":
 			return "Alchemy";
@@ -356,9 +356,9 @@ function CalculaQuantidadePossivel(quantidade, materiaisEscolhidos,byref materia
 	
 	foreach materialEscolhido in materiaisEscolhidos
 		var total := materiaisEncontrados[Lower(materialEscolhido.tipoMaterial)][materialEscolhido.objtype].quantidadeTotal;
-		var qtdPossivel := cInt(total / materialEscolhido.quantidadeNecessaria );
-		qtdPossivel := qtdPossivel >= quantidade? cInt(quantidade) : qtdPossivel;
-		
+		var qtdPossivel := cInt(cint(total) / cint(materialEscolhido.quantidadeNecessaria) );
+		qtdPossivel := qtdPossivel >= cint(quantidade)? cInt(quantidade) : qtdPossivel;
+	
 		if(qtdPossivel < quantidadeAFazer) // a menor quantidade possivel determina a quantidade final.
 			quantidadeAFazer := qtdPossivel;
 		endif
@@ -663,7 +663,7 @@ function MontaVisaoComponentes(configProfissao, isFiltroMemoria, encaixesMemoriz
 
 			var tipoEQuantidade := SplitWords(material);
 			dicionarioMateriais.insert(
-					tipoEQuantidade[1],
+					Lower(tipoEQuantidade[1]),
 					struct { 
 						quantidade := tipoEQuantidade[2], 
 						possiveis := LISTA_TIPO_MATERIAL[UPPER(tipoEQuantidade[1])] 

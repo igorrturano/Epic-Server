@@ -8,7 +8,7 @@ include ":combat:Controller/FXController";
 include ":combat:Model/AttackInfo";
 include ":abilities:models/Ability";
 include ":abilities:AbilityRegistry";
-include ":combat:weardown";
+include ":combat:Controller/WearDownController";
 
 // External
 include ":wrappers:Objects/Model/MobileWrapper";
@@ -35,17 +35,17 @@ program MainHitScript(attackInfo)
 
 	WeaponHitScripts(attackInfo);
 	ArmorHitScripts(attackInfo);
-	DoMovement(attackInfo);
+	sleepms(2);
 
-	WearDownWeapon(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef());
+	WearDownEquip(attackInfo.GetWeapon());
 	ProccessCombatDamage(attackInfo);
+	sleepms(2);
 	PlayAttackFX(attackInfo);
 	PlayAttackSFX(attackInfo);
 
 	ProgressAttackSkills(attackInfo);
 	MasteryCombat_Advance(attackInfo.GetAttacker().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalBaseDamage() });
 	AchievementCombat_Advance(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalBaseDamage() });
-
 
 	return 1;
 endprogram
@@ -68,7 +68,7 @@ function DoMovement(byRef attackInfo)
 					array{
 						attackInfo.GetAttacker().GetObjRef(),
 						attackInfo.GetDefender().GetObjRef(),
-						attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef(),
+						attackInfo.GetWeapon().GetObjRef(),
 						armor,
 						attackInfo.GetDamage().GetTotalBaseDamage(),
 						attackInfo.GetDamage().GetTotalRawDamage()

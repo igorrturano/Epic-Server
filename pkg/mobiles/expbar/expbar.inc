@@ -18,6 +18,7 @@ include ":charactercreation:habilidades";
 include ":gumps:epicGumps";
 include ":mastery:CombatController";
 include ":achievements:controllers/CombatController";
+include ":containers:storageAreas";
 
 const MAX_LEVEL := 20;
 
@@ -95,6 +96,11 @@ function LevelUp(who)
     // Even levels: scroll reward | Odd levels: HP bonus
     if (curr_level % 2 == 0)
         var scroll := CreateItemInBackpack(who, "pergaminho_" + curr_level);
+        if (!scroll)
+            var bank := CP_GetStorageContainerForMobile(who, CP_DEFAULT_AREA, CP_CREATE);
+            scroll := CreateItemInContainer(bank, "pergaminho_" + curr_level);
+            SendSysMessageEx(who, "Pergaminho enviado para o banco.", SSM_INFO);
+        endif
         if (scroll)
             SetObjProperty(scroll, "owner", who.serial);
             scroll.color := 2117;
@@ -165,7 +171,7 @@ endfunction
 // =============================================================================
 function handleExpGain(corpse)
     var nearby := ListMobilesNearLocationEx(
-        corpse.x, corpse.y, LIST_IGNORE_Z, 16,
+        corpse.x, corpse.y, LIST_IGNORE_Z, 8,
         LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, corpse.realm
     );
 
@@ -180,7 +186,7 @@ function handleExpGain(corpse)
         AwardXPFromKill(killers, corpse);
     endif
 
-    return 1;
+    return nearby;
 endfunction
 
 function AwardXPFromKill(killers, corpse)

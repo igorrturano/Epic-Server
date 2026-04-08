@@ -877,7 +877,7 @@ function genericItems(who)
     CreateItemInicial(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
     CreateItemInBackpack(who, 0xC61F, 1); // laterna cintura
-    var oleo := CreateItemInBackpack(who, 0x606f, 2); // Oleo de Polir Equipamentos
+    var oleo := CreateItemInicial(who, 0x606f, 2); // Oleo de Polir Equipamentos
     SetObjProperty(oleo, "descmod", "Óleo de polir equipamentos" + "<br>");
 endfunction
 
@@ -2512,12 +2512,12 @@ function CreateItemInicial(who, objtype, qtd)
                                     qtd,
                                     RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
                                     1, 
-                                    array {0x630e}, //ouro
+                                    array {0x630e}, //exclui ouro
                                     FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
                                 );
 
     if(!item)
-        Message("Erro ao criar item incial {}".format(Hex(objtype))).SetColor(SSM_FAIL).SendSys(who);
+        SendSysMessageEX(who, "Erro ao criar item inicial {} - {}".format(Hex(objtype), item), SSM_FAIL);
     endif
 endfunction
 

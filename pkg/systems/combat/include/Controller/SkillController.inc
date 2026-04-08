@@ -18,24 +18,24 @@ function ProgressAttackSkills(byRef attackInfo)
 	// Testa se é possivel ganhar skill com o NPC alvo
 	// var skillAttacker := AP_GetSkill(attacker, attacker.weapon.attribute);
 	// var skillDefender := AP_GetSkill(defender, defender.weapon.attribute);
-	var skillAttacker := attackInfo.GetAttacker().GetSkill(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute());
-	var skillDefender := attackInfo.GetDefender().GetSkill(attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetAttribute()); // TODO: Verificar se isso funciona com NPCs sem arma equipada (se pega WRESTLING)
+	var skillAttacker := attackInfo.GetAttacker().GetSkillBase(attackInfo.GetWeapon().GetAttribute());
+	var skillDefender := attackInfo.GetDefender().GetSkillBase(attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetAttribute()); // TODO: Verificar se isso funciona com NPCs sem arma equipada (se pega WRESTLING)
 
 	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetAttacker().IsConnected())
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() == 0x13b9 && !attackInfo.GetAttacker().GetEquipBySlot(SHIELD)) // bastarda
-			skillAttacker := attackInfo.GetAttacker().GetSkill(TWOHANDED);
+		if (attackInfo.GetWeapon().GetObjType() == 0x13b9 && !attackInfo.GetAttacker().GetEquipBySlot(SHIELD)) // bastarda
+			skillAttacker := attackInfo.GetAttacker().GetSkillBase(TWOHANDED);
 		endif
 
 		if (attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetObjType() == 0x13b9 && !attackInfo.GetDefender().GetEquipBySlot(SHIELD))
-			skillDefender := attackInfo.GetDefender().GetSkill(TWOHANDED);
+			skillDefender := attackInfo.GetDefender().GetSkillBase(TWOHANDED);
 		endif
 
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("swordmage") == attackInfo.GetAttacker().GetSerial())
-			skillAttacker := attackInfo.GetAttacker().GetSkill(ONEHANDED);
+		if (attackInfo.GetWeapon().GetObjRef().GetProp("swordmage") == attackInfo.GetAttacker().GetSerial())
+			skillAttacker := attackInfo.GetAttacker().GetSkillBase(ONEHANDED);
 		endif
 
 		if (attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetObjRef().GetProp("swordmage") == attackInfo.GetDefender().GetSerial())
-			skillDefender := attackInfo.GetDefender().GetSkill(ONEHANDED);
+			skillDefender := attackInfo.GetDefender().GetSkillBase(ONEHANDED);
 		endif
 	endif
 
@@ -59,22 +59,31 @@ function ProgressAttackSkills(byRef attackInfo)
 	if (can_gain)
 		var gain_wait := CInt(CS_GetSettingsCfgElem("General").GainWait);
 		attackInfo.GetAttacker().GetObjRef().SetProp("#CS_GainTime", ReadGameClock() + gain_wait);
-		var attackerWeapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
+		var attackerWeapon := attackInfo.GetWeapon();
 		var shouldGainArcana := attackerWeapon.GetCategory() == WEAPON_CATEGORY::MAGICBOW
 			|| attackerWeapon.GetCategory() == WEAPON_CATEGORY::SPIRITUALBLADE;
 
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType() == 0x13b9)
+		var weaponSkill;
+		if (attackInfo.GetWeapon().GetObjType() == 0x13b9)
 			if (!attackInfo.GetAttacker().GetEquipBySlot(SHIELD))
-				SkillCheck(attackInfo.GetAttacker().GetObjRef(), TWOHANDED, -1);
+				weaponSkill := TWOHANDED;
 			else
-				SkillCheck(attackInfo.GetAttacker().GetObjRef(), ONEHANDED, -1);
+				weaponSkill := ONEHANDED;
 			endif
 		else
-			SkillCheck(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute(), -1);
+			weaponSkill := attackInfo.GetWeapon().GetAttribute();
 		endif
 
-		SleepMS(5);
-		SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+		// Randomize order so weapon skill and tactics level up ~50/50
+		if (RandomInt(2) == 0)
+			SkillCheck(attackInfo.GetAttacker().GetObjRef(), weaponSkill, -1);
+			SleepMS(5);
+			SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+		else
+			SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+			SleepMS(5);
+			SkillCheck(attackInfo.GetAttacker().GetObjRef(), weaponSkill, -1);
+		endif
 
 		if (shouldGainArcana)
 			SkillCheck(attackInfo.GetAttacker().GetObjRef(), ARCANA, -1);
