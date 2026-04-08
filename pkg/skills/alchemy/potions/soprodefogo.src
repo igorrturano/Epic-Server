@@ -73,7 +73,7 @@ program use_explosion(who, potion)
 			sleepms(100);
 		endif
 	endforeach
-	DestroyItem(Potion);
+	empty_bottle(who, potion, 1);
 endprogram
 
 function PlayEffectLines(who, effect_id, lines_count, effect_distance, effect_duration, realm)
