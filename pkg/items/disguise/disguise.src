@@ -266,6 +266,16 @@ function usarDisfarce(who, disfarce)
 
 	SetName(who, who.name);
 
+	// Clear custom names assigned to real identity
+	var realSerial := CStr(who.serial);
+	foreach player in (EnumerateOnlineCharacters())
+		var conhecidos := GetObjProperty(player, "conhecidos");
+		if (conhecidos && conhecidos.Exists(realSerial))
+			conhecidos.Erase(realSerial);
+			SetObjProperty(player, "conhecidos", conhecidos);
+		endif
+	endforeach
+
 	/* //Antes de ajusatar o .r para mostrar raça dos desconhecidos
 	if (disfarce.aparencia != "")
 		SetName(who, disfarce.aparencia);

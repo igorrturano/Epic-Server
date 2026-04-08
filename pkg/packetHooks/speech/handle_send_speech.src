@@ -7,6 +7,7 @@ include "include/epicLoggerUtils";
 // include ":message:model/TranslatableText";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:Controller/Translator";
+include ":attributes:attributes";
 
 program speech_hooks()
 	Print("Hooking Unicode Outgoing...");
@@ -149,12 +150,26 @@ function CanHear(byRef messageData)
 endfunction
 
 function CheckSourceName(byRef messageData)
-	var sourceSerial := CStr(messageData.source.GetSerial());
 	var targetKnownNames := messageData.target.GetProperty("conhecidos");
+	if (!targetKnownNames)
+		return;
+	endif
 
-	var name := targetKnownNames[sourceSerial];
-	if (name)
-		messageData.sourceName := name;
+	var sourceObj := messageData.source.GetObjRef();
+	var ID := CStr(messageData.source.GetSerial());
+
+	if (GetObjProperty(sourceObj, "disfarce"))
+		var targetObj := messageData.target.GetObjRef();
+		var now := ReadGameClock();
+		var canSee := CInt(GetObjProperty(targetObj, "#truesight_active")) > now
+		              || AP_GetSkill(targetObj, AWARENESS) >= 70;
+		if (!canSee)
+			ID := CStr(GetObjProperty(sourceObj, "FakeID"));
+		endif
+	endif
+
+	if (targetKnownNames.Exists(ID))
+		messageData.sourceName := targetKnownNames[ID];
 	endif
 endfunction
 
