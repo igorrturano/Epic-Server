@@ -56,6 +56,10 @@ class Halfsword(CombatAbility)
             return false;
         endif
 
+        if (Distance(attackinfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef()) > 2)
+            return false;
+        endif
+
         // Calculate disarm timer based on defender's tactics
         var tactics_bonus := CInt(attackInfo.GetDefender().GetSkill(TACTICS) / 5);
         if (tactics_bonus < 1)
@@ -80,10 +84,10 @@ class Halfsword(CombatAbility)
         ))
             TS_StartTimer(attackInfo.GetAttacker().GetObjRef(), "desarmar", tactics_bonus, 0, attackInfo.GetDefender().GetObjRef());
 
-            Message("*sua arma foi desarmada pela técnica de contra-empunhadura!*")
+            Message("*sua arma foi desarmada*")
                 .SendAbove(attackInfo.GetAttacker().GetObjRef());
 
-            Message("*desarma a arma do oponente com técnica de contra-empunhadura!*")
+            Message("*desarma a arma do oponente!*")
                 .SendAbove(attackInfo.GetDefender().GetObjRef());
 
             return true;
