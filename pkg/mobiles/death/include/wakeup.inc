@@ -56,7 +56,7 @@ function KataWakeUp(ghost, corpse)
 	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::RECOVERY))
 		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.9));
 	else
-		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.15));
+		SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.21));
 	endif
 	SetVital(ghost, "stamina", CInt(GetVitalMaximumValue(ghost, "stamina") * 0.5));
 	SetVital(ghost, "mana", CInt(GetVitalMaximumValue(ghost, "mana") * 0.5));
@@ -104,7 +104,7 @@ function FallbackResurrect(ghost)
 	var ressrobe := GetEquipmentByLayer(ghost, 0x16);
 	DestroyItem(ressrobe);
 
-	SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.15));
+	SetVital(ghost, "hits", CInt(GetVitalMaximumValue(ghost, "hits") * 0.21));
 	SetVital(ghost, "stamina", CInt(GetVitalMaximumValue(ghost, "stamina") * 0.5));
 	SetVital(ghost, "mana", CInt(GetVitalMaximumValue(ghost, "mana") * 0.5));
 	RecalcVitals(ghost);
