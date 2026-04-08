@@ -509,3 +509,16 @@ function PegaDescCargasRunicas(objeto, who, XDesc := "")
 	endif
 	return XDesc;
 endfunction
+
+function PegaDescEstudavel(objeto, xDesc := "")
+	var skill_name := GetObjProperty(objeto, "estudavel");
+	if (!skill_name)
+		return xDesc;
+	endif
+
+	var skill_traduzida := TraduzirProfissao(skill_name);
+	xDesc := xDesc + "<BASEFONT COLOR=#a8d8ea>[Item de Estudo]<br>";
+	xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>Área: " + skill_traduzida + "<br>";
+	xDesc := xDesc + "<BASEFONT COLOR=#C0C0C0>Limite de estudo: 52.0<br>";
+	return xDesc;
+endfunction
