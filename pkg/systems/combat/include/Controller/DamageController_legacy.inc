@@ -2,7 +2,7 @@
 include ":combat:armorZones";
 // include ":combat:Controller/DamageController_legacy";
 // include ":combat:Controller/CombatAbilityController";
-include ":combat:weardown";
+include ":combat:weardown_legacy";
 
 // External
 include ":tn:cooldown";

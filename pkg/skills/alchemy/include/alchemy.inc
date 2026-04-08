@@ -55,29 +55,23 @@ function checkifcandrink(character, type)
   endif
 endfunction
 
-function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
+function empty_bottle(character, potion, drinkSound:= 1)
 
   if (drinkSound)
     PlaySoundEffect(character, DRINK_SOUND);
   endif
   PrintTextAbove(character, "*usa uma pocao*");
-  var goles;
+  var doses;
   var objtype := GetObjType(potion);
   
-	if (!GetObjProperty(potion, "goles"))
-    var frasco := PegaComponenteFabricacao(potion, "vazio");
-  	goles := frasco.tier.id? frasco.tier.id :  1;
-		SetObjProperty(potion, "goles", goles);
+	if (!GetObjProperty(potion, "doses"))
+		doses := 1;
 	else
-		goles := cint(GetObjProperty(potion, "goles"));
-	endif
-
-	if(potiontype == 1)  //eh uma poção de 1 so gole
-		goles := 0;
+		doses := cint(GetObjProperty(potion, "doses"));
 	endif
   
-  if (goles > 1)
-		goles := goles - 1;
+  if (doses > 1)
+		doses := doses - 1;
     if (potion.amount > 1)
       var props := getobjpropertynames(potion);
       var pot := CreateItemInBackpack(character, objtype, 1);
@@ -85,16 +79,18 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
         var prop_value := getobjproperty(potion, key);
         SetObjProperty(pot, key, prop_value);
   	  endforeach
-      SetObjProperty(pot, "goles", goles);
+      SetObjProperty(pot, "doses", doses);
+      pot.color := potion.color;
       sleepms(100);
       subtractamount(potion, 1);
     else
-      setobjproperty(potion, "goles", goles);
+      setobjproperty(potion, "doses", doses);
     endif
   else
-    var props := PegaComponenteFabricacao(potion, "vazio");
-    
-    var tierFinal;
+    var props := PegaComponenteFabricacao(potion, "doses");
+    if(!props)
+      props := PegaComponenteFabricacao(potion, "vazio");
+    endif
 
     SubtractAmount( potion, 1 );
 		var pot := CreateItemInBackpack(character, 0x0F0E, 1);
@@ -103,6 +99,7 @@ function empty_bottle(character, potion, potiontype := 0, drinkSound:= 1)
     setobjproperty(pot, "tierComponente", props.tier.id ? props.tier.id : 1);
 	  return 1;
 	endif
+  IncRevision(potion);
 
 endfunction
 
@@ -151,7 +148,7 @@ function isotherreagent(what) //essa funcao so se mantem pra checar o que não �
     0x1f9e: //JARRA D'ÁGUA
 
     ///// INGOTS /////
-		0x6993: //BARRA DE PRATA LUNAR
+		0x6993: //BARRA DE PRATA
 		0x630e: //BARRA DE OURO
       return 1;
 	endcase
@@ -241,7 +238,7 @@ function GetReagName(objtype)
 
   case(Lower(objtype)) //EvilLink
     ///// INGOTS /////
-    0x6993: return "barras de prata lunar";
+    0x6993: return "barras de prata";
     0x630e: return "barras de ouro";
 
     ///// GRAVETOS NUMAJA /////
@@ -258,8 +255,6 @@ function GetReagName(objtype)
     0xc026: return "graveto mogno";
     0xc02c: return "graveto cogumelo";
     0xc02f: return "graveto ebano";
-
- 
 
     ///// OTHERS /////
     0x1f9e: return "Jarra de Água";

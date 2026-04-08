@@ -21,7 +21,7 @@ const PERGAMINHO_AMOUNT_EXTENSIVA := 20;
 const PERGAMINHO_AMOUNT_RAPIDA := 5;
 const MIN_SKILL := 40;
 const MIN_MANA := 40;
-const RESEARCH_DURATION_MINUTES := 2; // 3 minutos para testes, 10080 para 7 dias
+const RESEARCH_DURATION_MINUTES := 7200; // 5 dias = 7200 minutos
 const BARRA_BACKGROUND := 83;
 const BARRA_FOREGROUND := 50;
 
@@ -340,7 +340,7 @@ function ShowExtensiveResearchGump(who)
 			GFTextLine(gump, 448, 133, 2517, "+");
 			GFTextLine(gump, 363, 160, 2517, "Consome 40 de mana");
 			GFTextLine(gump, 448, 187, 2517, "+");
-			GFTextLine(gump, 360, 214, 2517, "Duração de 7 dias ou 168 horas");
+			GFTextLine(gump, 360, 214, 2517, "Duração de 5 dias ou 120 horas");
 			GFTextLine(gump, 360, 250, 2517, "* Pode produzir instruções de MetalWorking,");
 			GFTextLine(gump, 360, 270, 2517, "WoodWorking e DomesticWork");
 			GFResizePic(gump, 365, 290, 83, 124, 131);

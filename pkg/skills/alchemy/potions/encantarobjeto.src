@@ -37,7 +37,7 @@ program drink_blue(who, potion)
 	var bonus := Cint(GetObjProperty(potion, "crafterskill"));
 	bonus := bonus * 0.05;
 
-	empty_bottle(who.GetObjRef(), potion, 1, 0);
+	empty_bottle(who.GetObjRef(), potion, 0);
 
 	Message("Você encantou o objeto.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
 	setBonus(who, use_on, bonus);

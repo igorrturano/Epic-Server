@@ -1,0 +1,31 @@
+use uo;
+use os;
+
+program applyIncognito(params)
+	var mobile := params[1];
+	var item := params[2];
+
+	sleepms(100);
+
+	if (item.container != mobile)
+		return 0;
+	endif
+
+	if (!GetObjProperty(mobile, "realname") && !GetObjProperty(mobile, "realrace"))
+		SetObjProperty(mobile, "realname", mobile.name);
+		SetObjProperty(mobile, "realrace", mobile.title_race);
+	endif
+	if (GetObjProperty(mobile, "description"))
+		SetObjProperty(mobile, "olddescription", GetObjProperty(mobile, "description"));
+		EraseObjProperty(mobile, "description");
+	endif
+	mobile.name := "Desconhecido";
+	mobile.title_race := "Desconhecido";
+
+	SetObjProperty(mobile, "Incognito", "true");
+	var old_url := GetObjProperty(mobile, "url");
+	SetObjProperty(mobile, "old_url", old_url);
+	SetObjProperty(mobile, "url", "https://th.bing.com/th/id/OIG.0XmfkJZCmPd.wGE6C9x_?pid=ImgGn&w=1024&h=1024&rs=1");
+
+	return 1;
+endprogram

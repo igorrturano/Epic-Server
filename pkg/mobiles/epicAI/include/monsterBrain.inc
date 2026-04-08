@@ -1,4 +1,3 @@
-use npc;
 include "include/sysEvent";
 include "include/sounds";
 include ":combat:Controller/DamageController_legacy";
@@ -21,6 +20,14 @@ function MonsterBrain()
         me.enable("firewhilemoving");
     endif
 
+    // Grant stealth privileges once for Ladino monsters
+    if (me.isThief())
+        GrantPrivilege(me, "hiddenattack");
+        me.enable("hiddenattack");
+        GrantPrivilege(me, "runwhilestealth");
+        me.enable("runwhilestealth");
+    endif
+
     // Build ability tables ONCE at brain activation (script-level vars in brain.src)
     combat_abilities := BuildCombatAbilities(me);
     enter_abilities := BuildEnterAbilities(me);
@@ -35,29 +42,48 @@ function MonsterBrain()
             return;
         endif
 
-        // Kill darkness creatures (undead/Mobnoturno) if not in darkness
-        if (CheckDarknessCreatureSurvival(me))
-            return;
-        endif
-
         // Process active states (non-blocking, ONE step per tick)
         var state := SM_GetState();
         if (state == "FLEEING")
             SM_TickFlee();
         elseif (state == "AMBUSH")
             SM_TickAmbush();
+        elseif (state == "STEALING")
+            SM_TickStealing();
+        elseif (state == "SNEAKING")
+            SM_TickSneaking();
         endif
 
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
-                HandleMonsterLeftArea(me.opponent);
+                // Loot on kill: if opponent died (not just left area), loot their corpse
+                if (me.opponent.dead && !GetCooldown(me, "loot_cooldown"))
+                    foreach item in ListItemsNearLocation(me.x, me.y, me.z, 5, me.realm)
+                        if (item.IsA(POLCLASS_CORPSE))
+                            if (LootCorpse(item))
+                                SetCooldown(me, "loot_cooldown", 300);
+                                break;
+                            endif
+                        endif
+                        sleepms(2);
+                    endforeach
+                endif
+                HandleMonsterLeftArea(is_ranged);
             else
                 if (GetObjProperty(me, "metamorfose"))
                     is_ranged := 0;
                 endif
                 if (SM_GetState() != "FLEEING")
                     PursueTarget(me.opponent);
+                endif
+                // Per-tick casting — keep offensive pressure on opponent
+                TickCombatAbilities(me, me.opponent, combat_abilities);
+                var tick_cache := NPC_GetCachedData(me);
+                if (tick_cache.spell_school == "Shaman")
+                    ShamanBehavior(me);
+                elseif (tick_cache.spell_school == "Druid")
+                    DruidBehavior(me, me.opponent);
                 endif
             endif
         endif
@@ -70,13 +96,17 @@ function MonsterBrain()
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
                     AskForHealing(me);
-                    // Break ambush on taking damage
-                    if (SM_GetState() == "AMBUSH")
+                    // Break stealth states on damage
+                    var dmg_state := SM_GetState();
+                    if (dmg_state == "AMBUSH" || dmg_state == "STEALING" || dmg_state == "SNEAKING")
                         me.hidden := 0;
                         SM_TransitionTo("COMBAT");
                     endif
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
+                    if (CheckDarknessCreatureSurvival(me))
+                        return;
+                    endif
                     if (!IsAlly(ev.source))
                         UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
@@ -102,7 +132,19 @@ function MonsterBrain()
                     target_lock_var := 0;
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
-                    ShamanBehavior(me);
+                    if (!GetCooldown(me, "buddy_heal"))
+                        var hurt_ally := ev.source;
+                        if (hurt_ally && !hurt_ally.dead && isHurt(hurt_ally))
+                            var heal_cache := NPC_GetCachedData(me);
+                            var heal_spell := "Cura Leve";
+                            if (heal_cache.tier >= 3)
+                                heal_spell := "Cura Grave";
+                            endif
+                            spell_target_var := hurt_ally.serial;
+                            NPC_CastSpell(me, heal_spell);
+                            SetCooldown(me, "buddy_heal", 15);
+                        endif
+                    endif
                 EVID_FLEE:
                     last_activity_time := polcore().systime;
                     SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
@@ -148,7 +190,7 @@ function HandleMonsterSpeech(text, source, is_ranged)
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
             PrintTextAbove(me, "*"+me.name+" se acovarda*");
-            FleeFrom(source);
+            SM_TransitionTo("FLEEING", struct{ "target" := source, "steps" := 0 });
             return 1;
         endif
     endif
@@ -229,9 +271,11 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
     // Dispatch abilities from pre-built table (replaces 12+ sequential if-checks)
     TickCombatAbilities(me, opponent, combat_abilities);
 
-    // Shaman behavior is event-driven (EVID_BUDDYATTACKED), not table-dispatched
-    if (me.isShaman())
+    var mon_cache := NPC_GetCachedData(me);
+    if (mon_cache.spell_school == "Shaman")
         ShamanBehavior(me);
+    elseif (mon_cache.spell_school == "Druid")
+        DruidBehavior(me, opponent);
     endif
 
     if (ShouldFlee(me))
@@ -253,40 +297,8 @@ function MonsterIdle(wanders, is_ranged)
         HealDamage(me, heal_amount);
     endif
 
-    // Loot corpses when idle (moved from HandleLeftArea to avoid item scans during combat events)
-    if (!GetCooldown(me, "loot_cooldown"))
-        foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
-            if (item.IsA(POLCLASS_CORPSE))
-                if (LootCorpse(item))
-                    SetCooldown(me, "loot_cooldown", 300);
-                    return;
-                endif
-            endif
-            sleepms(2);
-        endforeach
-    endif
-
-    // If didn't see anyone, try to hear footsteps (no LoS required)
-    var heard_mobile := NPCHearFootsteps(me);
-    if (heard_mobile)
-        // Check if we can see them now (might have moved into view)
-        if (CanFight(me, heard_mobile))
-            HandleMonsterCombatEvent(heard_mobile, is_ranged);
-            return;
-        endif
-
-        // Only show alert and investigate if not on cooldown (prevents spam)
-        if (GetCooldown(me, "heard_sound") == 0)
-            Message("*!*").SetColor(500).SendAbove(me);
-            SetCooldown(me, "heard_sound", 5);  // 5 second cooldown between alerts
-        endif
-
-        // Move toward the sound - NPC will investigate the last known position
-        PursueTarget(heard_mobile);
-    endif
-
     if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
-    var anchor := GetObjProperty(me, "anchor");
+    var anchor := anchor_var;
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
       PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);

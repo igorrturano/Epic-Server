@@ -946,9 +946,8 @@ function startAdventure(who)
 	// CreateItemInBackpack(who, 0xC61F, 1);
 	// CreateItemInBackpack(who, 0xC627, 1);
 	// CreateItemInBackpack(who, 0x6161, 1);
-	CreateItemInBackpack(who, 0xdce6, 3); // pocao adaptar visao
+	CreateItemInicial(who,0xdce6, 3);// pocao adaptar visao
 	
-
 	PlayStationaryEffect(who.x, who.y, who.z, 0xD11B, 0, 30, 0, who.realm);
 	PlaySoundEffect(who, 0x1f2);
 

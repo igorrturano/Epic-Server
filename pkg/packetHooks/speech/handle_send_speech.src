@@ -7,6 +7,7 @@ include "include/epicLoggerUtils";
 // include ":message:model/TranslatableText";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:Controller/Translator";
+include ":attributes:attributes";
 
 program speech_hooks()
 	Print("Hooking Unicode Outgoing...");
@@ -48,23 +49,22 @@ exported function handleUCOutgoing(character, byref packet)
 		return 1;
 	endif
 
+	CheckSourceName(messageData);
+
 	if (CheckSaying(messageData))
-		if (!CanSpeak(messageData))
-			return 1;
-		endif
-
-		if (!CanHear(messageData))
-			return 1;
-		endif
-
 		if (!CanUnderstand(messageData))
 			messageData.message := "*Incompreensível*";
-			ReassemblePacket(packet, messageData);
-			return 0;
+		else
+			CheckPrefixAndSuffix(messageData);
 		endif
+	endif
 
-		CheckSourceName(messageData);
-		CheckPrefixAndSuffix(messageData);
+	if (!CanSpeak(messageData))
+		return 1;
+	endif
+
+	if (!CanHear(messageData))
+		return 1;
 	endif
 
 	ReassemblePacket(packet, messageData);
@@ -73,12 +73,15 @@ exported function handleUCOutgoing(character, byref packet)
 endfunction
 
 function CheckSaying(byRef messageData)
-	if (messageData.type == MESSAGE_TYPE::BROADCAST ||
-		messageData.type == MESSAGE_TYPE::SYSTEM ||
-		messageData.type == MESSAGE_TYPE::MESSAGE_CORNER ||
-		messageData.type == MESSAGE_TYPE::SPELL)
-		return false;
-	endif
+	case (messageData.type)
+		MESSAGE_TYPE::NORMAL:
+		MESSAGE_TYPE::YELL:
+		MESSAGE_TYPE::WHISPER:
+			return true;
+
+		default:
+			return false;
+	endcase
 
 	// Ê packet nativo do POL cagado, hein.....
 	if (messageData.source == 0 ||
@@ -86,7 +89,16 @@ function CheckSaying(byRef messageData)
 		return false;
 	endif
 
-	return true;
+	return false;
+endfunction
+
+function CheckEmote(byRef messageData)
+	case (messageData.type)
+		MESSAGE_TYPE::EMOTE:
+			return true;
+	endcase
+
+	return false;
 endfunction
 
 function CanSpeak(byRef messageData)
@@ -108,28 +120,28 @@ function CanSpeak(byRef messageData)
 endfunction
 
 function CanHear(byRef messageData)
-	var rangeMod := CheckLineOfSight(messageData.source, messageData.target) ? 1 : 2;
+	var rangeMod := CheckLineOfSight(messageData.source.GetObjRef(), messageData.target.GetObjRef()) ? 1 : 3;
 
 	if (messageData.type == MESSAGE_TYPE::WHISPER)
-		if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::WHISPER / rangeMod)
+		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > MESSAGE_DISTANCE::WHISPER / rangeMod)
 			return false;
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::YELL)
 		if (messageData.target.HasAbility(ABILITY_ID::NINJA_PATH))
-			if (Distance(messageData.source, messageData.target) > (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
+			if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
 				return false;
-			elseif (Abs(messageData.source.z - messageData.target.z) >= (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
+			elseif (Abs(messageData.source.GetObjRef().z - messageData.target.GetObjRef().z) >= (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
 				return false;
 			endif
 		else
-			if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::YELL / rangeMod)
+			if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > MESSAGE_DISTANCE::YELL / rangeMod)
 				return false;
-			elseif (Abs(messageData.source.z - messageData.target.z) >= MESSAGE_DISTANCE::YELL / rangeMod)
+			elseif (Abs(messageData.source.GetObjRef().z - messageData.target.GetObjRef().z) >= MESSAGE_DISTANCE::YELL / rangeMod)
 				return false;
 			endif
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::NORMAL)
-		if (Distance(messageData.source, messageData.target) > MESSAGE_DISTANCE::NORMAL / rangeMod)
+		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > MESSAGE_DISTANCE::NORMAL / rangeMod)
 			return false;
 		endif
 	endif
@@ -138,12 +150,26 @@ function CanHear(byRef messageData)
 endfunction
 
 function CheckSourceName(byRef messageData)
-	var sourceSerial := CStr(messageData.source.GetSerial());
 	var targetKnownNames := messageData.target.GetProperty("conhecidos");
+	if (!targetKnownNames)
+		return;
+	endif
 
-	var name := targetKnownNames[sourceSerial];
-	if (name)
-		messageData.sourceName := name;
+	var sourceObj := messageData.source.GetObjRef();
+	var ID := CStr(messageData.source.GetSerial());
+
+	if (GetObjProperty(sourceObj, "disfarce"))
+		var targetObj := messageData.target.GetObjRef();
+		var now := ReadGameClock();
+		var canSee := CInt(GetObjProperty(targetObj, "#truesight_active")) > now
+		              || AP_GetSkill(targetObj, AWARENESS) >= 70;
+		if (!canSee)
+			ID := CStr(GetObjProperty(sourceObj, "FakeID"));
+		endif
+	endif
+
+	if (targetKnownNames.Exists(ID))
+		messageData.sourceName := targetKnownNames[ID];
 	endif
 endfunction
 

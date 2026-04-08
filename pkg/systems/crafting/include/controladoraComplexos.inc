@@ -269,27 +269,19 @@ function EnviaItensComplexosGump(quem,profissao, modoGm)
 				break;
 
 			RT_RCT_PROX_PAGINA:
-				if(cint(sessao.paginador.complexos.pagina) + 1 < (parametros.visaoReceitas[sessao.categoriaSelecionada] / parametros.receitasPorPagina))
 					sessao.paginador.complexos.pagina += 1;
-				endif
 				break;
 
 			RT_RCT_ANT_PAGINA:
-				if(cint(sessao.paginador.complexos.pagina) - 1 >= 0)
 					sessao.paginador.complexos.pagina -= 1;
-				endif
 				break;
 
 			RT_ESQ_PROX_PAGINA:
-				if(cint(sessao.paginador.esquemas.pagina) + 1 < (sessao.receitaSelecionada.receita.componentesNecessarios / parametros.encaixesPorPagina))
 					sessao.paginador.esquemas.pagina += 1;
-				endif
 				break;
 
 			RT_ESQ_ANT_PAGINA:
-				if(cint(sessao.paginador.esquemas.pagina) - 1 >= 0)
 					sessao.paginador.esquemas.pagina -= 1;
-				endif
 				break;
 
 			RT_LIMPAR_MEMORIA:
@@ -1201,6 +1193,8 @@ function PreparaItensComplexosGump(quem, profissao, modoGm)
 													? cint(profissaoConfig[profissao].GumpicNaoPressionado)
 													: 0;
 	parametrosGump.+pericia := profissaoConfig[profissao].Attribute;
+	//TODO Por questão de performace, é melhor carregar as receitas de forma "Lazy" ao clicar na categoria 
+	//e não aqui carregando tudo no inicio, alterar isso no futuro. ass: deiro
 	parametrosGump.+visaoReceitas := MontaVisaoReceitas(
 											quem,
 											categorias,
@@ -1560,8 +1554,8 @@ function CriaPropFabricadoGerada(
 	var componentesEscolhidos := dictionary;
 	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0,"", classe);
 	var tierInfo := PegaComponenteTierDesc(tier);
-	Sleepms(50);
 
+	Sleepms(50);
 	foreach componenteNecessario in (receita.componentesNecessarios)
 		Sleepms(5);
 		if(janelaTier.size() > 1)
@@ -1583,7 +1577,7 @@ function CriaPropFabricadoGerada(
 			if(cint(materialPossivel.chave)  in listaDeMateriaisIgnorados)
 				continue;	
 			endif
-
+			//Print("Analisando material: " + recursosConfig[hex(materialPossivel.chave)].name + " para componente: " + componenteDescConfig[hex(componenteAleatorio)].name);
 			if(Find(UPPER(componenteNecessario.caracteristica),"VAZIO",1) > 0 )
 				
 				var chaveValorTier := PegaComponenteTierDesc(cint(recursosConfig[materialPossivel.chave].tier)).valor;
@@ -1599,7 +1593,7 @@ function CriaPropFabricadoGerada(
 				var valorTierMaterial := efeitosmaterial.valorPrincipal + efeitosmaterial.valorTotalSubefeitos;
 				var tiers :=  PegaComponenteTiers();
 				var chaveValorTier := valorTierMaterial > tiers[tiers.size()] ? tiers[tiers.size()] : valorTierMaterial;
-
+				//Print("Material: " + recursosConfig[hex(materialPossivel.chave)].name + " valorTierMaterial: " + valorTierMaterial + " chaveValorTier: " + chaveValorTier);
 				if( DeveEscreverMaterial(materiaisPossiveisPorTier,chaveValorTier))
 					materiaisPossiveisPorTier.insert(
 														chaveValorTier,
@@ -1636,7 +1630,6 @@ function CriaPropFabricadoGerada(
 				indiceEncaixeComponente := componenteNecessario.caracteristica};
 		
 		if(TypeOfInt(opcaoEncontrada.chaveMaterial) == OT_ERROR || TypeOfInt(opcaoEncontrada.chaveMaterial) == OT_UNINIT)
-			//Print("receita.componentesNecessarios: " + componenteNecessario + " materiaisPossiveisPorTier:  " + materiaisPossiveisPorTier);
 			return error{"errorText" := "Não foi possível encontrar material para este valor de tier [{}].".format(valorTier) };
 		endif
 

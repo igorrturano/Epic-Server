@@ -680,7 +680,7 @@ function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,alt
 			
 			MontaJanelaReceita(gump , x + deslocamentoX , y + deslocamentoY,linha, (indice - 1) % colunasLinha,receita,indice,sessao);
 
-			if(receitas.size() > paginador.indicePaginaSeguinte)
+			if(receitas.size() >= paginador.indicePaginaSeguinte)
 				GFAddButton(gump,x + largura - 45, y + altura / 2,4005,4006,GF_CLOSE_BTN,COMPLEXOS_BTN_RCT_PROX_PAGINA);
 			endif
 			if(1 >= paginador.indicePaginaAnterior)
@@ -756,9 +756,6 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 		deslocamentoGraphicY := 15; //Fix - alguns graphics estão saindo da janela.
 	else
 		deslocamentoGraphicY := 0;
-	endif
-	if(receita.receitaClassificada.nome == "drowsaber")
-		Print("Montando receita: {} na posicao baseIdBotao: {} indice: {}".format(receita.receitaClassificada.nome, baseIdBotao, indice));
 	endif
 
 	GFResizePic(gump, x, y, 1579, 120, 150);//5170, 1755,

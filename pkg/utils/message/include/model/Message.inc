@@ -7,7 +7,6 @@ include "include/client";
 include ":text:_all";
 include "system/exception/FormatException/InvalidFormatException";
 
-// TODO: Fazer receber apenas 1 mensagem, para evitar bugs de concatenação
 class Message(IMessage)
 	var _isAsync := false;
 	var _translate := false; // Boolean indicando se a mensagem deve ser traduzida
@@ -122,12 +121,16 @@ class Message(IMessage)
 	endfunction
 
 	function SendSys(this, who)
+		if (!(who.isA(POLCLASS_MOBILE)))
+			return InvalidFormatException("Parameter 'who' must be of type MobileRef.");
+		endif
+		
 		this._toWhom := who;
 		this._type := MESSAGE_TYPE::SYSTEM;
 		if (this._color.GetValue() == GENERAL_COLOR::_DEFAULT)
 			this._color := Color(MESSAGE_COLOR::SYSTEM);
 		endif
-		this._translate := _WantTranslation(who);
+		this._translate := this._WantTranslation(who);
 
 		this._Send();
 
@@ -143,13 +146,17 @@ class Message(IMessage)
 	endfunction
 
 	function SendAbove(this, who)
+		if (!(who.isA(POLCLASS_MOBILE)))
+			return InvalidFormatException("Parameter 'who' must be of type MobileRef.");
+		endif
+		
 		this._toWhom := who;
 		this._type := MESSAGE_TYPE::NORMAL;
 		if (this._color.GetValue() == GENERAL_COLOR::_DEFAULT)
 			this._color := Color(MESSAGE_COLOR::NORMAL);
 		endif
 
-		this._translate := _WantTranslation(who);
+		this._translate := this._WantTranslation(who);
 
 		this._Send();
 
@@ -157,13 +164,17 @@ class Message(IMessage)
 	endfunction
 
 	function SendAbovePrivate(this, who, whoSee := false)
+		if (!(who.isA(POLCLASS_MOBILE)))
+			return InvalidFormatException("Parameter 'who' must be of type MobileRef.");
+		endif
+
 		this._toWhom := who;
 		this._fromWhom := whoSee ?: who;
 		this._type := MESSAGE_TYPE::NORMAL_PRIVATE;
 		if (this._color.GetValue() == GENERAL_COLOR::_DEFAULT)
 			this._color := Color(MESSAGE_COLOR::PRIVATE);
 		endif
-		this._translate := _WantTranslation(who);
+		this._translate := this._WantTranslation(who);
 
 		this._Send();
 
@@ -171,12 +182,16 @@ class Message(IMessage)
 	endfunction
 
 	function SendEmote(this, who)
+		if (!(who.isA(POLCLASS_MOBILE)))
+			return InvalidFormatException("Parameter 'who' must be of type MobileRef.");
+		endif
+
 		this._toWhom := who;
 		this._type := MESSAGE_TYPE::EMOTE;
 		if (this._color.GetValue() == GENERAL_COLOR::_DEFAULT)
 			this._color := Color(MESSAGE_COLOR::EMOTE);
 		endif
-		this._translate := _WantTranslation(who);
+		this._translate := this._WantTranslation(who);
 
 		this._Send();
 
@@ -210,10 +225,14 @@ class Message(IMessage)
 		endif
 	endfunction
 
-	function _WantTranslation(who)
-		who.GetProp("langdata");
+	function _WantTranslation(this, who)
+		var wantsTranslation := who.GetProp("langdata"); // Ajeitar essa prop aqui, essa é só um PLACEHOLDER
 		
-		return false; // TODO: Pegar prop se o char quer tradução ou não
+		if (wantsTranslation.wantsTranslation)
+			this.SetAsync(true); // Se quiser tradução, obriga a ser async por causa do POST na API de tradução
+		else
+			this.SetAsync(false);
+		endif
 	endfunction
 endclass
 
