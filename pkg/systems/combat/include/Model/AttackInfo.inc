@@ -34,6 +34,7 @@ class AttackInfo(IAttackInfo)
 	var _damage; // Damage object
 	var _damageHand := DAMAGE_HAND::MAINHAND;
 	var _attackType := DAMAGE_TYPE::SLASH; // enum da postura que o atacante está usando no ataque
+	var _weapon; // WeaponWrapper object
 	var _ammo; // Ammo object
 	var _hitChance := 100;
 	var _hitChanceMod := 0;
@@ -143,6 +144,32 @@ class AttackInfo(IAttackInfo)
 	 */
 	function GetAttackType(this)
 		return this._attackType;
+	endfunction
+
+	/**
+	 * Obtém a arma usada no ataque.
+	 *
+	 * @return WeaponWrapper Objeto representando a arma equipada
+	 */
+	function GetWeapon(this)
+		return this._weapon;
+	endfunction
+	
+	/**
+	 * Define a arma utilizada no ataque.
+	 *
+	 * @param weapon WeaponWrapper Objeto que representa a arma equipada pelo atacante
+	 * @return AttackInfo Retorna a própria instância para encadeamento
+	 * @throws InvalidFormatException Se o parâmetro não for um objeto WeaponWrapper
+	 */
+	function SetWeapon(this, weapon)
+		if (!(weapon is @WeaponWrapper))
+			return InvalidFormatException("Parameter must be a WeaponWrapper object!");
+		endif
+		
+		this._weapon := weapon;
+
+		return this;
 	endfunction
 
 	/**

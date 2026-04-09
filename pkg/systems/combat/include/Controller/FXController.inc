@@ -43,11 +43,11 @@ endfunction
 
 function PlayWeaponFX(byRef attackInfo)
 	if (attackInfo.GetAttacker().GetProperty("throwItem") ||
-		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).IsThrowable())
+		attackInfo.GetWeapon().IsThrowable())
 		PlayThrowingFX(attackInfo);
-	elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::BOW) ||
-			Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW) ||
-			attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
+	elseif (Upper(attackInfo.GetWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::BOW) ||
+			Upper(attackInfo.GetWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW) ||
+			attackInfo.GetWeapon().isFireWeapon())
 		PlayShootingFX(attackInfo);
 	endif
 endfunction
@@ -70,31 +70,31 @@ function GetAttackerFX(byRef attackInfo)
 		critical := array{}
 	};
 	
-	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
+	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::UNARMED)
 		attackerFX.hit := array{4, 5, 6};
 		attackerFX.critical := array{4, 5, 6};
 	else
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
+		if (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::UNARMED)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_SLASH, HUMAN_ANIM::ATTACK_1HAND_PIERCING, HUMAN_ANIM::ATTACK_1HAND_BLUNT};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_PUNCH};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW ||
-				attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MAGICBOW)
+		elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::BOW ||
+				attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::MAGICBOW)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_BOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_BOW};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
+		elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::CROSSBOW)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon())
+		elseif (attackInfo.GetWeapon().isFireWeapon())
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_XBOW};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_XBOW};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
+		elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::THROWING)
 			attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
 			attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
 		else
-			if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::SPIRITUALBLADE))
+			if (Upper(attackInfo.GetWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SPIRITUALBLADE))
 			// Use absorbed weapon's objtype for animation lookup (stored when spiritual blade is summoned)
 				var cfg := ReadConfigFile(":*:itemdesc");
-				var weaponRef := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+				var weaponRef := attackInfo.GetWeapon().GetObjRef();
 				// The spiritual blade's graphic IS the absorbed weapon's objtype (set by ElementalBond)
 				var absorbedObjtype := weaponRef.graphic;
 				var attribute := cfg[absorbedObjtype].Attribute;
@@ -121,7 +121,7 @@ function GetAttackerFX(byRef attackInfo)
 						attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_BLUNT};
 					endif
 				endif
-			elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))
+			elseif (Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(TWOHANDED))
 				if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
@@ -132,8 +132,8 @@ function GetAttackerFX(byRef attackInfo)
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_BLUNT};
 				endif
-			elseif (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(ONEHANDED) ||
-					Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(DUALWIELD))
+			elseif (Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(ONEHANDED) ||
+					Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(DUALWIELD))
 				if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_1HAND_SLASH};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_SLASH};
@@ -283,61 +283,61 @@ function GetWeaponSFX(byRef attackInfo)
 		critical := array{}
 	};
 
-	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
+	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::UNARMED)
 		var npcTemplate := attackInfo.GetAttacker().GetTemplate();
 		weaponSFX.hit := array{npcTemplate.AttackHitSound};
 		weaponSFX.miss := array{npcTemplate.AttackMissSound};
 		weaponSFX.critical := array{npcTemplate.AttackHitSound};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::UNARMED)
+	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::UNARMED)
 		weaponSFX.hit := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MAGICBOW)
-		if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("fire_arrow"))
+	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::MAGICBOW)
+		if (attackInfo.GetWeapon().GetObjRef().GetProp("fire_arrow"))
 			weaponSFX.hit := array{0x5D0};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("energy_arrow"))
+		elseif (attackInfo.GetWeapon().GetObjRef().GetProp("energy_arrow"))
 			weaponSFX.hit := array{0x029};
-		elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef().GetProp("cold_arrow"))
+		elseif (attackInfo.GetWeapon().GetObjRef().GetProp("cold_arrow"))
 			weaponSFX.hit := array{0x22B};
 		else
 			weaponSFX.hit := array{0x235};
 		endif
 		weaponSFX.miss := array{0x526};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::BOW)
+	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::BOW)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CROSSBOW)
+	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::CROSSBOW)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).isFireWeapon() == WEAPON_CATEGORY::PISTOL)
+	elseif (attackInfo.GetWeapon().isFireWeapon() == WEAPON_CATEGORY::PISTOL)
 		weaponSFX.hit := array{0x11C};
 		weaponSFX.miss := array{0x11C};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::HANDCANNON)
+	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::HANDCANNON)
 		weaponSFX.hit := array{0x308};
 		weaponSFX.miss := array{0x308};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::CARABINE)
+	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::CARABINE)
 		weaponSFX.hit := array{0x309};
 		weaponSFX.miss := array{0x309};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::MUSKET)
+	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::MUSKET)
 		weaponSFX.hit := array{0x11E};
 		weaponSFX.miss := array{0x11E};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::WHIP)
+	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::WHIP)
 		weaponSFX.hit := array{0x67F};
 		weaponSFX.miss := array{0x67F};
 		weaponSFX.critical := array{0x67F};
-	elseif (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() == WEAPON_CATEGORY::THROWING)
+	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::THROWING)
 		weaponSFX.hit := array{0x531};
 		weaponSFX.miss := array{0x532};
 		weaponSFX.critical := array{0x531};
 	else
-		if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(TWOHANDED))
+		if (Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(TWOHANDED))
 			if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 				weaponSFX.hit := array{0x237, 0x238};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
@@ -406,21 +406,21 @@ function PlayThrowingFX(byRef attackInfo)
 		var effect := attackInfo.GetAttacker().GetObjRef().GetProp("throwItem");
 		attackInfo.GetAttacker().PlayEffectTo(attackInfo.GetDefender(), effect);
 	else
-		var effect := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjType();
+		var effect := attackInfo.GetWeapon().GetObjType();
 		attackInfo.GetAttacker().PlayEffectTo(attackInfo.GetDefender(), effect);
-		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).MoveToLocation(attackInfo.GetDefender().GetPosition());
+		attackInfo.GetWeapon().MoveToLocation(attackInfo.GetDefender().GetPosition());
 	endif
 endfunction
 
 function PlayShootingFX(byRef attackInfo)
 	attackInfo.GetAttacker().PlayEffectTo(
 		attackInfo.GetDefender(),
-		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAmmo().GetAnim()
+		attackInfo.GetWeapon().GetAmmo().GetAnim()
 	);
 endfunction
 
 function PlayElementalHitFX(byRef attackInfo)
-	if (attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetCategory() != WEAPON_CATEGORY::MAGICBOW)
+	if (attackInfo.GetWeapon().GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 		return;
 	endif
 
@@ -430,7 +430,7 @@ function PlayElementalHitFX(byRef attackInfo)
 
 	var defender := attackInfo.GetDefender().GetObjRef();
 	var attacker := attackInfo.GetAttacker().GetObjRef();
-	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef();
+	var weapon := attackInfo.GetWeapon().GetObjRef();
 
 	var element := "";
 	if (weapon.GetProp("fire_arrow"))

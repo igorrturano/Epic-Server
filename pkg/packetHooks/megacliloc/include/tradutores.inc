@@ -43,6 +43,9 @@ function TraduzirProfissao(profissao)
         "Wood_Working": return "Carpinteiro";
         "Gathering": return "Coletor";
         "Handle_Animal": return "Adestrador de Animais";
+        "Theology": return "Teologia";
+        "Science": return "Ciência";
+        "Arcana": return "Arcana";
         default: return profissao;
     endcase
 endfunction
