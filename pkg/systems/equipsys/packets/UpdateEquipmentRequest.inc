@@ -62,6 +62,7 @@ function SendUpdateEquipmentRequest(quem, equip, isEquipping, layer := 0)
 		if(isEquipping)
 			
 			var attackInfo := AttackInfo(quem, 0);
+			attackInfo.SetWeapon(wrappedEquip);
 			var mainHandDmg := CalculateEstimatedMinMaxDamage(attackInfo);
 			var offHandDmg := struct{ min := 0, max := 0 };
 
@@ -86,7 +87,6 @@ function SendUpdateEquipmentRequest(quem, equip, isEquipping, layer := 0)
 		return 0;
 	endif
 	packet.SetInt(PACKET_SIZE_INDEX,packet.Length());
-	packet.PrintPacket();
 	packet.Send(quem.GetObjRef());
 
 	return 1;
