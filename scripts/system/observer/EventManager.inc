@@ -10,7 +10,7 @@ class EventManager()
 	endfunction
 
 	function addListener(this, listener)
-		if (!listener || !(listener is @IEventListener))
+		if (!(listener is @IEventListener))
 			return InvalidEventException("Listener must implement IEventListener");
 		endif
 

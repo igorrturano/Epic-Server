@@ -1,18 +1,17 @@
+use uo;
+use os;
+
 include "IEvent";
 
 class Event(IEvent)
 	var PID;
-	var Source; 
 	var Name;
-	var Payload;
 	var Timestamp;
 
-	function Event(this)
-		this.PID := 0;
-		this.Source := 0;
+	function Event(this, source)
+		this.PID := source.pid;
 		this.Name := "";
-		this.Payload := 0;
-		this.Timestamp := 0;
+		this.Timestamp := POLCore().systime;
 	endfunction
 
 	function GetPID(this)
@@ -24,35 +23,23 @@ class Event(IEvent)
 	endfunction
 
 	function GetSource(this)
-		return this.Source;
+		return GetProcess(this.PID);
 	endfunction
 
 	function SetSource(this, source)
 		this.Source := source;
 	endfunction
 
-	function GetEventName(this)
+	function GetName(this)
 		return this.Name;
 	endfunction
 
-	function SetEventName(this, eventName)
+	function _SetName(this, eventName)
 		this.Name := eventName;
-	endfunction
-
-	function GetPayload(this)
-		return this.Payload;
-	endfunction
-
-	function SetPayload(this, payload)
-		this.Payload := payload;
 	endfunction
 
 	function GetTimestamp(this)
 		return this.Timestamp;
-	endfunction
-
-	function SetTimestamp(this, timestamp)
-		this.Timestamp := timestamp;
 	endfunction
 
 	function ToString(this)

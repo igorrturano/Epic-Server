@@ -2,5 +2,5 @@ class IEventListener()
 	function IEventListener(this)
 	endfunction
 
-	uninit function notify(this);
+	uninit function Notify(this);
 endclass
