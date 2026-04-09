@@ -350,7 +350,7 @@ function Faccoes(who)
 		endif
 
 	elseif (input == BTN_NEW_FACCAO)
-		var custo := 10000;
+		var custo := 100;
 		SendSysMessageEx(who, "Voce precisa pagar " + custo + " moedas para criar uma Faccao", SSM_REQUEST);
 		var targ := Target(who, options := TGTOPT_CHECK_LOS + TGTOPT_NEUTRAL);
 		if (!targ)
