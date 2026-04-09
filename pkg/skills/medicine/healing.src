@@ -316,7 +316,7 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 	else
 		PrintTextAbove(mobile, "*tratando o paciente*");
 	endif
-	if (!WaitCura(mobile, 5, mobile == targ))
+	if (!WaitCura(mobile, 5))
 		SendSysMessage(mobile, "Voce interrompeu a cura.");
 		return 0;
 	endif
@@ -456,14 +456,14 @@ function GetHealingAmt(heal_skill, aux_skill)
 	return amt;
 endfunction
 
-function WaitCura(who, segundos, forcarSemDano := 0)
+function WaitCura(who, segundos)
 	var seconds := segundos;
 	if (temHabilidade(who, "Procedimento Veloz"))
 		seconds := seconds - 3;
 	endif
 
 	var stopByDmg := 1;
-	if (temHabilidade(who, "Poder da Empatia") || forcarSemDano)
+	if (temHabilidade(who, "Poder da Empatia"))
 		stopByDmg := 0;
 	endif
 
