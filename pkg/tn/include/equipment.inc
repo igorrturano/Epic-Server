@@ -230,7 +230,6 @@ function SetEquipMod(item, modname, value)
 endfunction
 
 function RemoveEquipmentMods(who, item)
-	var itemdesc := ReadConfigFile("itemdesc");
 	var penalty := GetObjProperty(item, "atributos").DexPen;
 	var penaltyBonus := Cint(getObjProperty(item, "penaltybonus"));
 	penalty := penalty - penaltyBonus;
@@ -261,17 +260,8 @@ function RemoveEquipmentMods(who, item)
         penalty /= 2;
     endif
 
-	// Caminho: Armor spec dex penalty reduction
-	if (item.isa(POLCLASS_ARMOR))
-		var tipoProtecao := CStr(ReadConfigFile(":combat:itemdesc")[item.objtype].TipoProtecao);
-		if (tipoProtecao["Armadura Pesada"] && MobileWrapper(who).HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
-			penalty -= 2;
-		elseif (tipoProtecao["Armadura Media"] && MobileWrapper(who).HasAbility(ABILITY_ID::MEDIUM_ARMOR_SPEC))
-			penalty -= 1;
-		endif
-		if (penalty < 0)
-			penalty := 0;
-		endif
+	if (penalty < 0)
+		penalty := 0;
 	endif
 
 	AP_ModifyStatMod(who, DEXTERITY, penalty);
