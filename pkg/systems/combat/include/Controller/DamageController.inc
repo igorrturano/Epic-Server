@@ -85,6 +85,7 @@ function CalculateEstimatedMinMaxDamage(attackInfo)
 
 	var flatBonus := statusDamage.damageMod + skillDamage.damageMod + primordialDamage
 					+ arcaneBowBonus + spiritualBladeBonus + elementalWeaponBonus;
+	
 	finalDamage.max += flatBonus;
 	finalDamage.min += flatBonus;
 	finalDamage.+Damage := attackInfo.GetDamage();
@@ -230,7 +231,7 @@ function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
 		};
 
 	var weapon := attackInfo.GetAttacker().GetEquipBySlot(WEAPON);
-
+	Print("weapon: " + weapon);
 	if(weapon)
 		var damageDice := 0;
 		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)

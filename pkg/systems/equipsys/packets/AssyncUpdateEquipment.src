@@ -1,0 +1,15 @@
+use uo;
+use os;
+
+include ":equipsys:packets/UpdateEquipmentRequest";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program assyncEquipUpdate(args)
+	var who := MobileWrapper(args[1]);
+	var equip := args[2];
+	var layer := args[4];//marreta, pq o itemref tava vindo sem a layer ao desequipar.fa
+	Sleepms(50);
+	Print("args[4] " + args[4] );
+	SendUpdateEquipmentRequest(who, equip, args[3], layer);
+	return 1;
+endprogram

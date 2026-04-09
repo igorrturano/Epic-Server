@@ -2,11 +2,12 @@ include ":message:model/Message";
 include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
+include "packets/UpdateEquipmentRequest";
 
 program unequipitem(params)
 	var who := params[1];
 	var item := params[2];
-
+	Print("item1: " + item.layer);
 	var equip;
 	if (item.IsA(POLCLASS_ARMOR))
 		equip := ArmorWrapper(item);
@@ -20,4 +21,6 @@ program unequipitem(params)
 	endif
 
 	who.RemoveItemModifiers(equip);
+	Print("item2: " + item.layer);
+	Start_Script("packets/AssyncUpdateEquipment", array{who.GetObjRef(), item, false, item.layer});
 endprogram

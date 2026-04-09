@@ -2,6 +2,7 @@ include ":message:model/Message";
 include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
+include "packets/UpdateEquipmentRequest";
 include ":debug:Controller/DebugController";
 
 program equipitem(params)
@@ -25,6 +26,8 @@ program equipitem(params)
 	endif
 
 	who.ApplyItemModifiers(equip);
+	Start_Script("packets/AssyncUpdateEquipment", array{who.GetObjRef(), item, true, item.layer});
+	return 1;
 endprogram
 
 function debugWeapon(who, equip)
