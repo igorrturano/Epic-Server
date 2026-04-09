@@ -18,7 +18,9 @@ include "include/epicNPCUtils";
 include "include/NPCUtil";
 include ":achievements:utils/datafile";
 include ":serialization:StructSerializer";
+include ":serialization:DictionarySerializer";
 include ":abilities:controllers/AbilityMonitor";
+include ":mastery:models/Mastery";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var BackpackSerial := 0x0; 
@@ -1048,34 +1050,26 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
+		
+		var masteries := this.GetProperty(MOBILE_PROPNAME::MASTERY) ?: dictionary{};
 
-		return this.GetProperty(MOBILE_PROPNAME::MASTERY) ?: dictionary{};
+		foreach masteryRef in (masteries.keys())
+			masteries[masteryRef] := DictionarySerializer().Deserialize(masteries[masteryRef], Mastery(masteryRef));
+		endforeach
+
+		return masteries;
 	endfunction
-
-	function AddMastery(this, mastery)
+	
+	function SetMasteries(this, masteriesList)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
 
-		var masteries := this.GetMasteries();
-		masteries[mastery.GetName()] := mastery.GetLevel();
-		this.SetProperty(MOBILE_PROPNAME::MASTERY, masteries);
+		foreach mastery in (masteriesList)
+			masteriesList[mastery] := DictionarySerializer().Serialize(masteriesList[mastery]);
+		endforeach
 
-		return this;
-	endfunction
-
-	function RemoveMastery(this, mastery)
-		if (this.GetObjRef() is @Exception)
-			return this.GetObjRef();
-		endif
-
-		var masteries := this.GetMasteries();
-		if (!masteries.exists(mastery.GetName()))
-			return InvalidMasteryException("This mastery is not present on mobile!");
-		endif
-
-		masteries.erase(mastery.GetName());
-		this.SetProperty(MOBILE_PROPNAME::MASTERY, masteries);
+		this.SetProperty(MOBILE_PROPNAME::MASTERY, masteriesList);
 
 		return this;
 	endfunction

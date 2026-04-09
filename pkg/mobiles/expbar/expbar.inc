@@ -16,8 +16,9 @@ include ":tn:tngumps";
 include ":tn:npcutil";
 include ":charactercreation:habilidades";
 include ":gumps:epicGumps";
-include ":mastery:CombatController";
+include ":mastery:controllers/CombatController";
 include ":achievements:controllers/CombatController";
+include ":wrappers:Objects/Model/MobileWrapper";
 include ":containers:storageAreas";
 
 const MAX_LEVEL := 20;
@@ -204,8 +205,13 @@ function AwardXPFromKill(killers, corpse)
 
     foreach killer in killers
         AddXP(killer, xp_gain);
-        MasteryCombat_Advance(killer, struct{ kills := 1 });
-        AchievementCombat_Advance(killer, corpse, struct{ xp := xp_gain, kills := 1 });
+        MasteryCombat_Advance(MobileWrapper(killer), dictionary{
+			MasteryCombatAtributes::Kills -> 1
+		});
+        AchievementCombat_Advance(killer, corpse, struct{
+			xp := xp_gain,
+			kills := 1
+		});
     endforeach
 
     return 1;

@@ -1,5 +1,5 @@
 class IMastery()
-	uninit function IMastery(this);
+	uninit function IMastery(this, ref);
 
 	uninit function GetType(this);
 	uninit function SetType(this, value);

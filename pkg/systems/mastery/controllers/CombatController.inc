@@ -1,6 +1,5 @@
-// O combatInfo deve ser sempre um struct com as informações do que está rolando no combate. Mesmo que contenha apenas 1 variável.
-// Foi feito com struct pra evitar refatoramento e um monte de parametros.
-include ":mastery:models/MasteryCombat";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":mastery:models/Mastery";
 include ":debug:Controller/DebugController";
 
 const MAX_MASTERIES := 3; // Limite máximo de maestrias que um personagem pode ter.
@@ -19,51 +18,41 @@ const MAX_MASTERIES := 3; // Limite máximo de maestrias que um personagem pode 
  * A função também registra mensagens de debug com as informações de progresso da maestria.
  *
  * Parameters
- * attacker: Objeto do jogador/personagem que está atacando
- * combatInfo: Struct contendo informações do combate (xp, hits, kills, damage, etc).
+ * attacker: MobileWrapper do jogador/personagem que vai avancar a maestria.
+ * combatInfo: Dictionary contendo informações do que vai upar (hits, kills, damage, etc).
+ * 				Usar o ENUM MasteryCombatAtributes para as chaves do dicionário.
+ * 				Exemplo: combatInfo[MasteryCombatAtributes::Damage] := 15;
  */
-function MasteryCombat_Advance(attacker, combatInfo)
-	var key := Hex(attacker.weapon.objtype); // Chave para o índice.
-	var mastery := attacker.GetMastery(key) ?: MasteryCombat(key);
+function MasteryCombat_Advance(player, advanceInfo)
+	var weapon := player.GetEquipBySlot(WEAPON);
+	var mastery := Mastery(weapon.GetObjRef());
+	var playerMasteries := player.GetMasteries();
 
-	if (HasReachedMasteriesLimit(attacker, mastery))
-		DebugMsg(attacker, DEBUG_MASTERY, Message("Limite de maestrias atingido. Para avançar, remova uma maestria existente.", Color(SYSTEM_COLOR::FAIL)));
+	if (HasReachedMasteriesLimit(mastery, playerMasteries))
+		DebugMsg(player, DEBUG_MASTERY, Message("Limite de maestrias atingido. Para avançar, remova uma maestria existente.", Color(SYSTEM_COLOR::FAIL)));
 		return;
 	endif
 
-	var earnedXP := CalcXPEarned(combatInfo);
-	mastery._SetName(attacker.weapon.desc);
+	var earnedXP := CalcXPEarned(advanceInfo);
+	mastery._SetName(weapon.GetName());
 	mastery.AddXP(earnedXP);
-	mastery.AddKills(combatInfo.kills);
-	mastery.AddHits(combatInfo.hits);
-	mastery.AddDamage(combatInfo.damage);
-	DebugMsg(attacker, DEBUG_MASTERY, Message($"Ganho de maestria para a arma: {mastery.GetName()} ({mastery.GetKey()})"));
-	DebugMsg(attacker, DEBUG_MASTERY, Message($"XP: {CInt(earnedXP)} - Hits: {CInt(combatInfo.hits)} - Kills: {CInt(combatInfo.kills)} - Damage: {CInt(combatInfo.damage)}"));
-	DebugMsg(attacker, DEBUG_MASTERY, Message($"Maestria (acumulado) -> XP: {mastery.GetXP()} - Level: {mastery.GetLevel()} - Hits: {mastery.GetHits()} - Kills: {mastery.GetKills()} - Damage: {mastery.GetDamage()}"));
+	AdvanceMastery(player, playerMasteries, mastery, advanceInfo);
 
-	attacker.SetMastery(mastery);
+	DebugMsg(player, DEBUG_MASTERY, Message($"Ganho de maestria para a arma: {mastery.GetName()} ({mastery.GetRef()})"));
+	DebugAdvanced(player, advanceInfo);
+	DebugMsg(player, DEBUG_MASTERY, Message($"Maestria (acumulado) -> XP: {mastery.GetXP()} - Level: {mastery.GetLevel()} - Hits: {mastery.GetHits()} - Kills: {mastery.GetKills()} - Damage: {mastery.GetDamage()}"));
+
 endfunction
 
-/**
- * HasReachedMasteriesLimit(attacker, mastery)
- * 
- * Esta função determina se um jogador pode adicionar uma nova maestria baseado
- * no limite máximo configurado (MAX_MASTERIES). Se o jogador já possui o número
- * máximo de maestrias, só poderá adicionar se já possuir a maestria específica.
- * 
- * @param attacker O objeto jogador/atacante que está tentando adicionar a maestria
- * @param mastery O objeto maestria que está sendo verificado
- * @return true se o limite foi atingido e a maestria não pode ser adicionada,
- *         false se a maestria pode ser adicionada ou se ainda há espaço disponível
- */
-function HasReachedMasteriesLimit(attacker, mastery)
-	var propMastery := attacker.GetMasteryProp();
-	if (propMastery.size() >= MAX_MASTERIES)
-		if (mastery.GetKey() in propMastery.keys())
+function HasReachedMasteriesLimit(mastery, playerMasteries)
+	if (playerMasteries.size() >= MAX_MASTERIES)
+		if (mastery.GetRef() in playerMasteries.keys())
 			return false;
 		endif
+
 		return true;
 	endif
+
 	return false;
 endfunction
 
@@ -79,11 +68,28 @@ endfunction
  *       ganho, mas pode ser ajustada no futuro para incluir outros fatores como
  *       acertos, mortes, etc.
  */
-function CalcXPEarned(combatInfo)
+function CalcXPEarned(advanceInfo)
 	// TODO: Implementar lógica de cálculo de XP mais complexa, se necessário.
-	return combatInfo.damage;
+	return CInt(advanceInfo[MasteryCombatAtributes::Damage]);
 endfunction
 
 function MasteryCheckLevel(xp)
+	xp := xp; // Só pra remover o warning
+
 	return 0;
+endfunction
+
+function AdvanceMastery(player, playerMasteries, mastery, advanceInfo)
+	foreach attribute in (advanceInfo.keys())
+		mastery.IncreaseAttribute(attribute, advanceInfo[attribute]);
+	endforeach
+
+	playerMasteries[mastery.GetRef()] := mastery;
+	player.SetMasteries(playerMasteries);
+endfunction
+
+function DebugAdvanced(who, advanceInfo)
+	foreach attribute in (advanceInfo.keys())
+		DebugMsg(who.GetObjRef(), DEBUG_MASTERY, Message($"Avançou {CInt(advanceInfo[attribute])} pontos de {attribute}"));
+	endforeach
 endfunction

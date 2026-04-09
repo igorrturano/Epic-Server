@@ -14,7 +14,7 @@ include ":charactercreation:createchar";
 include ":charactercreation:habilidades";
 include ":gumps:requestGump";
 include ":gumps:epicGumps";
-include ":mastery:Gump";
+// include ":mastery:Gump";
 
 const GUMP_WIDTH := 440;
 const GUMP_HEIGHT := 565;
@@ -66,7 +66,7 @@ program core_skillWin(who)
 
 			3:
 				gump := GFECreateGump("Menu de Maestria", GUMP_WIDTH, GUMP_HEIGHT);
-				ShowMasteryGump(gump, who);
+				// ShowMasteryGump(gump, who);
 				AddNavigationBar(gump, 3);
 		endcase
 

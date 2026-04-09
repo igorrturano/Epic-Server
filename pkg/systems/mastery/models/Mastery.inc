@@ -15,16 +15,16 @@ include "system/exception/FormatException/InvalidFormatException";
  *   var mastery := Mastery(weaponRef);
  *   mastery.SetLevel(10)
  *          .AddXP(500)
- *          .SetAttribute(MASTERY_ATTRIBUTE.HITS, 100)
- *          .SetAttribute(MASTERY_ATTRIBUTE.KILLS, 50);
+ *          .SetAttribute(MasteryCombatAtributes::Hits, 100)
+ *          .SetAttribute(MasteryCombatAtributes::Kills, 50);
  */
  class Mastery(IMastery)
-	var Ref; // Referência ao que pertence a maestria (ex: objType da arma, skillId, etc.) [Não utilizar strings, use alguma referência]
+	var Ref; // Referência ao que pertence a maestria (ex: objType da arma, skillId, etc.) [Não utilizar valores explícitos, use alguma referência]
 	var Description; // Descrição da maestria (opcional)
 	var Type; // Tipo da maestria (ex: COMBAT, WORKING, etc.)
 	var Level;
 	var XP;
-	var Attributes := dictionary{}; // Attributes[MASTERY_ATTRIBUTE] := 0;
+	var Attributes := dictionary{}; // Attributes[MasteryCombatAtributes] := 0;
 
 	function Mastery(this, ref)
 		this.Ref := ref;
@@ -107,8 +107,8 @@ include "system/exception/FormatException/InvalidFormatException";
 	 * @return Esta instância de Mastery para encadeamento de métodos
 	 * 
 	 * @example
-	 *   mastery.SetAttribute(MASTERY_ATTRIBUTE::HITS, 100)
-	 *          .SetAttribute(MASTERY_ATTRIBUTE::KILLS, 50);
+	 *   mastery.SetAttribute(MasteryCombatAtributes::Hits, 100)
+	 *          .SetAttribute(MasteryCombatAtributes::Kills, 50);
 	 */
 	function SetAttribute(this, attribute, value)
 		this.Attributes[attribute] := CInt(value);
@@ -128,13 +128,13 @@ include "system/exception/FormatException/InvalidFormatException";
 
 endclass
 
-enum class MASTERY_TYPE
-	COMBAT,
-	WORKING
+enum class MasteryType
+	Combat,
+	Working
 endenum
 
-enum class MASTERY_ATTRIBUTE
-	HITS,
-	KILLS,
-	DAMAGE
+enum class MasteryCombatAtributes
+	Hits := "hits",
+	Kills := "kills",
+	Damage := "damage"
 endenum
