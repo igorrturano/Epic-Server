@@ -1,0 +1,19 @@
+//PACKETIDS
+const PACKET_ID_GENERIC_COMMANDS := 0xD7;
+const PACKET_ID_GENERIC_COMMANDS_SUBCMD_UPDT_EQUIP := 0x63;
+
+//ENUMS
+enum class PACKET_BYTE_TYPE
+	INT,
+	BYTE,
+	DBL,
+	STR,
+	UNI_STR,
+endenum
+
+enum class PACKET_ENDIAN
+	BIG,
+	LOW
+endenum
+
+
