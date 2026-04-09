@@ -338,6 +338,10 @@ function applyEpicHealing(mobile, amt)
 	endif
 
 	// Aplicar efeitos
+	if (healing <= 0 && entropy < 0 && damage <= 0)
+		Message("Sua corrupção impede a cura.").SetColor(SSM_FAIL).SendSys(mobile);
+	endif
+
 	if (damage > 0)
 		Message("*A cura queima a corrupção!*").SetColor(SSM_FAIL).SendSys(mobile);
 		ApplyRawDamage(mobile, damage);

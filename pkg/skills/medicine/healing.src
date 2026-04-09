@@ -174,7 +174,7 @@ program UseBandage(mobile, bandage)
 		return 0;
 	endif
 	// adicionada verificação de se eu não estou aplicando a bandagem em alguem
-	if (GetObjProperty(targ, "curando") > ReadGameClock() || GetObjProperty(mobile, "#IsWaiting" > ReadGameClock()))
+	if (GetObjProperty(targ, "curando") > ReadGameClock() || GetObjProperty(mobile, "#IsWaiting") > ReadGameClock())
 		SendSysMessageEx(mobile, "O alvo ja esta enfaixado", SSM_INFO);
 		return 0;
 	else
@@ -316,7 +316,7 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 	else
 		PrintTextAbove(mobile, "*tratando o paciente*");
 	endif
-	if (!WaitCura(mobile, 5))
+	if (!WaitCura(mobile, 5, mobile == targ))
 		SendSysMessage(mobile, "Voce interrompeu a cura.");
 		return 0;
 	endif
@@ -456,14 +456,14 @@ function GetHealingAmt(heal_skill, aux_skill)
 	return amt;
 endfunction
 
-function WaitCura(who, segundos)
+function WaitCura(who, segundos, forcarSemDano := 0)
 	var seconds := segundos;
 	if (temHabilidade(who, "Procedimento Veloz"))
 		seconds := seconds - 3;
 	endif
 
 	var stopByDmg := 1;
-	if (temHabilidade(who, "Poder da Empatia"))
+	if (temHabilidade(who, "Poder da Empatia") || forcarSemDano)
 		stopByDmg := 0;
 	endif
 
