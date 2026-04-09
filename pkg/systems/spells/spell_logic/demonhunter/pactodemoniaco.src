@@ -42,7 +42,7 @@ program SpellScript(params)
 	var i := 0;
 	who.frozen := 1;
 	while (i < 4)
-		PerformAction(who, ANIM_CAST_DIR);
+		PerformAction(who, HUMAN_ANIM::CAST_DIR);
 		sleep(1);
 		i += 1;
 	endwhile
@@ -63,10 +63,10 @@ program SpellScript(params)
 	if (dice_roll == 9)
 		PlayObjectCenteredEffect(demon, 0x37CC, 10, 20);
 		sleep(1);
-		PrintText(demon, "*O ar fica denso com a presença demoníaca*");
+		PrintTextAbove(demon, "*O ar fica denso com a presença demoníaca*");
 		duracao := theology;
 	elseif (dice_roll == 1)
-		PrintText(demon, "*Um pequeno diabrete aparece*");
+		PrintTextAbove(demon, "*Um pequeno diabrete aparece*");
 	endif
 
 	SetObjProperty(demon, "anchor", array{ who.x, who.y, who.z + 2 });

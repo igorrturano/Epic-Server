@@ -1,0 +1,70 @@
+// ============================================================================
+// Send Commands Packet (0x59) - Standalone sender script
+// ============================================================================
+// Spawned via Start_Script() to isolate data segment from main handler.
+// Uses command_discovery.inc to auto-discover commands from filesystem.
+// Descriptions sent empty - lazy-loaded via tooltip (0x60/0x61).
+// ============================================================================
+
+use uo;
+use os;
+
+include ":hotbar:include/shared_constants";
+include ":hotbar:include/hotbar_write";
+include ":hotbar:include/command_discovery";
+
+program SendCommands(who)
+    var commands;
+    if (who.cmdlevel > 0)
+        commands := DiscoverGMCommands();
+    else
+        commands := DiscoverPlayerCommands();
+    endif
+
+    if (!commands || commands.size() == 0)
+        return 0;
+    endif
+
+    // Resolve descriptions from cfg (ReadConfigFile is engine-cached, no data segment cost)
+    foreach item in commands
+        sleepms(2);
+        var cmd_name := item.command;
+        if (cmd_name[1] == ".")
+            cmd_name := cmd_name[2, len(cmd_name)];
+        endif
+        item.+desc := GetCommandDescription(cmd_name);
+    endforeach
+
+    // Calculate packet size
+    var data_size := 0;
+    foreach item in commands
+        data_size := data_size + 2 + len(item.command);  // command string
+        data_size := data_size + 2 + len(item.desc);     // description string
+        data_size := data_size + 2;                       // iconid
+        data_size := data_size + 1;                       // index
+        data_size := data_size + 2 + len(item.category);  // category string
+    endforeach
+
+    // Header: PacketID(1) + Length(2) + Subcommand(2) + DataType(1) + Count(2)
+    var packet_size := 8 + data_size;
+    var packet := CreatePacket(PACKET_EXTENDED, packet_size);
+
+    packet.SetInt8(0, PACKET_EXTENDED);
+    packet.SetInt16(1, packet_size);
+    packet.SetInt16(3, SUBCOMMAND_COMMANDS_RESPONSE);
+    packet.SetInt8(5, ACTION_TYPE_COMMAND);
+    var offset := 6;
+
+    offset := SetInt16BE(packet, offset, commands.size());
+
+    foreach item in commands
+        offset := WriteStringBE(packet, offset, item.command);
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := SetInt16BE(packet, offset, item.iconid);
+        packet.SetInt8(offset, item.index); offset += 1;
+        offset := WriteStringBE(packet, offset, item.category);
+    endforeach
+
+    packet.SendPacket(who);
+    return 1;
+endprogram

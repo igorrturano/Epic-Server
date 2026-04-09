@@ -3,11 +3,9 @@ use os;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":fls_magery:spells";
-include ":fls_magery:spellSounds";
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 include "include/say";
 include "include/facings";

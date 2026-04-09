@@ -26,14 +26,17 @@ class RadioButton(Control)
 
 	function SetUnpressedImage(this, unpressedImage)
 		this._unpressedImage := unpressedImage;
+		return this;
 	endfunction
 
 	function SetPressedImage(this, pressedImage)
 		this._pressedImage := pressedImage;
+		return this;
 	endfunction
 
 	function SetValue(this, value)
 		this._value := value;
+		return this;
 	endfunction
 
 	function ToString(this)
@@ -48,7 +51,7 @@ class RadioButton(Control)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFRadioButton(gump, this.GetX(), this.GetY(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetValue(), this.GetGumpId());
+		GFRadioButton(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetValue(), this.GetGumpId());
 		Super::SelfCreate(this, gump);
 	endfunction
 endclass

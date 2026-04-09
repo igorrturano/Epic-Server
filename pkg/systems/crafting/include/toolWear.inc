@@ -1,6 +1,8 @@
 // //$Id: toolWear.inc 386 2005-10-03 00:22:39Z muaddiblsd $
 
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 function CheckToolWear (who, tool, craft_skill)
   var swings := GetObjProperty(tool,"swings");
@@ -14,7 +16,7 @@ function CheckToolWear (who, tool, craft_skill)
       "fortified":      bonus := 40;
       "indestructable": bonus := 50;
     endcase
-    swings := Cint(50 * tool.quality) + bonus;
+    swings := Cint(55 * tool.quality) + bonus;
     SetObjProperty(tool,"swings", swings);
   endif
   if(swings <= 0)
@@ -30,7 +32,7 @@ function CheckToolWear (who, tool, craft_skill)
     if((RandomInt(100)+1) > skill)
       if(tool.isa(POLCLASS_WEAPON))
         if(tool.hp > 1)
-	        if (TemHabilidade(who, "Preservar Ferramentas") || TemHabilidade(who, "Lenhador Eficaz"))
+	        if (MobileWrapper(who).HasAbility(ABILITY_ID::TOOL_PRESERVATION))
 		        if (randomint(2) == 0)
 			        return;
 		        endif

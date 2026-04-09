@@ -1,7 +1,7 @@
 use uo;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -20,7 +20,7 @@ program HitScript(params)
 		dupechance := 20;
 	endif
 	if (RandomInt(100) < dupechance) // 20% de chance sempre
-		PrintText(defender, "*divide-se em dois*");
+		PrintTextAbove(defender, "*divide-se em dois*");
 		CreateNpcFromTemplate(defender.npctemplate, defender.x, defender.y, defender.z, 0, defender.realm);
 	endif
 

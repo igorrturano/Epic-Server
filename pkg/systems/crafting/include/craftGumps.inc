@@ -320,8 +320,8 @@ function GFCraftInfoPage(who, objtype, skill_config)
 		diff      := skillreq + 10;
 		skillreqb := elem.skill2;
 		/* DEBUGS: 
-		PrintText(who, "DEBUG: SKILL ITEM: " +skillreq);
-		PrintText(who, "DEBUG: DIFICULDADE: " +diff);
+		PrintTextAbove(who, "DEBUG: SKILL ITEM: " +skillreq);
+		PrintTextAbove(who, "DEBUG: DIFICULDADE: " +diff);
 		*/
 		if(!skillreqb || skillreqb.errortext)
   			skillreqb  := 0;
@@ -372,7 +372,7 @@ function GFCraftInfoPage(who, objtype, skill_config)
 	endif
 
 	if (TypeOf(elem.skill) == "String")
-		PrintText(who, EL_BUG); //Hehehe
+		PrintTextAbove(who, EL_BUG); //Hehehe
 		schance := EL_BUG;
 		skillreq := 200; //Para nunca fazer
 	endif

@@ -4,11 +4,13 @@ use os;
 use polsys;
 
 include ":attributes:attributes";
-include ":combat:weardown";
+include ":combat:weardown_legacy";
 include ":destroyable:include/destroyItem";
 include "include/epicConstants";
 include "include/facings";
 include ":traps:traps";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 
 program destroyitems(parms)
 
@@ -22,6 +24,7 @@ program destroyitems(parms)
 		if (!isPossivelDestruir(quem, itemAlvo, fonteDano, consumoStamina))
 			break;
 		endif
+		sleepms(2);
 		TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina);
 
 		Sleep(2);
@@ -72,8 +75,11 @@ function isPossivelDestruir(quem, itemAlvo, fonteDano, byref consumoStamina)
 endfunction
 
 function TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina)
-	if (fonteDano.ISA(POLCLASS_WEAPON))
+	if (quem.isA(POLCLASS_CORPSE))
+		return;
+	endif
 
+	if (fonteDano.ISA(POLCLASS_WEAPON))
 		if (quem.concealed || quem.invisible)
 			SendSysMessageEx(quem, "Você foi revelado.", SSM_FAIL);
 			quem.concealed := 0;
@@ -90,19 +96,21 @@ function TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina)
 
 		var danoCalculado := DanificaItem(quem, itemAlvo, fonteDano);
 		if (!danoCalculado.isEficaz)
-			PrintText(itemAlvo, "*golpe ineficaz*");
+			PrintTextAbove(itemAlvo, "*golpe ineficaz*");
 		endif
 	endif
 endfunction
 
 function RodaEfeitosAnim(quem, arma, alvo)
-	PlayAttackAnimation(quem);
-	sleepms(600);
-	var somAtaque := getWeaponFX(WEAPON_FX_SOUND, arma);
-	PlaySoundEffect(quem, somAtaque);
-	PlayObjectCenteredEffect(alvo, FX_SMOKE, 2, 4);
+	var attackInfo := AttackInfo(MobileWrapper(quem), ItemWrapper(alvo));
+	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
+
+	PlayAttackFX(attackInfo);
+	SleepMS(600);
+	PlayAttackSFX(attackInfo);
+	PlayObjectCenteredEffect(attackInfo.GetDefender().GetObjRef(), FX_SMOKE, 2, 4);
 endfunction
 
 function CalculaConsumoStamina(fonteDano, byref consumoStamina)
-	consumoStamina := CInt(fonteDano.weight * 1.5);
+	consumoStamina := CInt(fonteDano.weight);
 endfunction

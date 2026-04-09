@@ -6,33 +6,33 @@ include "include/sysEvent";
 include "include/say";
 include "include/epicUtils";
 
-function TranslateText(text, target_language, original_language)
-  var apiURL := "localhost:5000/epic-brain/translate";
-  var jsonData := PackJSON(struct{
-    "message" := text,
-    "target_language" := Lower(target_language),
-    "original_language" := Lower(original_language)
-  });
+// function TranslateText(text, target_language, original_language)
+//   var apiURL := "localhost:5000/epic-brain/translate";
+//   var jsonData := PackJSON(struct{
+//     "message" := text,
+//     "target_language" := Lower(target_language),
+//     "original_language" := Lower(original_language)
+//   });
 
-  var apiResponse := HTTPRequest(
-        apiURL,
-        "POST",
-        struct{
-          data := jsonData,
-          headers := struct{
-              "Content-Type" := "application/json"
-          }
-        },
-        HTTPREQUEST_EXTENDED_RESPONSE
-    );
+//   var apiResponse := HTTPRequest(
+//         apiURL,
+//         "POST",
+//         struct{
+//           data := jsonData,
+//           headers := struct{
+//               "Content-Type" := "application/json"
+//           }
+//         },
+//         HTTPREQUEST_EXTENDED_RESPONSE
+//     );
 
-  if (apiResponse.status == 200)
-    var unpackedJSON := UnpackJSON(apiResponse.body);
-    return unpackedJSON["message"];
-  else
-    return text; // Return original text if translation fails
-  endif
-endfunction
+//   if (apiResponse.status == 200)
+//     var unpackedJSON := UnpackJSON(apiResponse.body);
+//     return unpackedJSON["message"];
+//   else
+//     return text; // Return original text if translation fails
+//   endif
+// endfunction
 
 function LogPlayerSpeech( who, text )
   if ( text == "..." || text == " . . . " || text == ". . ." )
@@ -85,9 +85,9 @@ function GetPlayersInRange( who, range )
                                             who.realm );
   foreach player in players
     if ( !CheckLineOfSight( who, player ) )
-      if ( temHabilidade( player, "Mestre Espiao" ) )
+      if ( MobileWrapper( player ).HasAbility(ABILITY_ID::STEALTH_RUN) )
         players_in_range.append( player.name );
-      elseif ( temHabilidade( player, "Espionagem" ) )
+      elseif ( MobileWrapper( player ).HasAbility(ABILITY_ID::NINJA_PATH) )
         if ( Distance( who, player ) < 12 && abs( who.z - player.z ) < 19 )
           players_in_range.append( player.name );
         endif

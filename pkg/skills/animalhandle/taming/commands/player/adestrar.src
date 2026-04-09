@@ -58,7 +58,7 @@ function taming(who)
 		SendSysMessage(who, "Você não consegue ver " + targ.name + " claramente.");
 		return;
 	endif
-	if (isBoss(targ))
+	if (isTrueBoss(targ))
 		SendSysMessageEx(who, "Essa criatura nao aceita ser domesticada.", SSM_FAIL);
 		return 0;
 	endif
@@ -84,6 +84,7 @@ function taming(who)
 
 	SetTamingCooldown(who);
 
+	var tamed_success := 0;
 	while (TameLoop(who, targ, info))
 		SetTamingCooldown(who);
 
@@ -103,6 +104,7 @@ function taming(who)
 			tamed.append(targ.serial);
 			SetObjProperty(who, "TamedPets", tamed);
 
+			tamed_success := 1;
 			break;
 		endif
 
@@ -111,7 +113,9 @@ function taming(who)
 		endif
 
 	endwhile
-	PostTameSuccess(who, targ);
+	if (tamed_success)
+		PostTameSuccess(who, targ);
+	endif
 endfunction
 
 function TameLoop(who, targ, byref info)
@@ -119,7 +123,7 @@ function TameLoop(who, targ, byref info)
 		return 0;
 	endif
 
-	PrintText(who, "*tentando adestrar " + targ.name + "*");
+	PrintTextAbove(who, "*tentando adestrar " + targ.name + "*");
 
 	var ownerarray := GetObjProperty(targ, "LastOwners"); // identifica se teve último dono
 	if (!ownerarray)

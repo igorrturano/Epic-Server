@@ -1,0 +1,61 @@
+use uo;
+use os;
+
+include ":thor:include/openai";
+
+// Background script to process AI requests asynchronously
+// This prevents NPCs from freezing during API calls
+
+program ProcessAIResponse(params)
+	var npc := params[1];
+	var context := params[2];
+	var user_input := params[3];
+	var event_id := params[4];
+
+	if (!npc || !context || !user_input)
+		print("ProcessAIResponse: Invalid parameters");
+		return;
+	endif
+
+	print("ProcessAIResponse: Starting async AI request for NPC " + npc.name);
+
+	// Check budget BEFORE calling API
+	if (!CheckAIBudget())
+		print("ProcessAIResponse: Budget exceeded, using fallback");
+		// Return fallback template
+		var fallback := "Tô sem palavras agora...";
+		if (npc)
+			var ev := struct{
+				"type" := event_id,
+				"text" := fallback
+			};
+			SendEvent(npc, ev);
+		endif
+		return;
+	endif
+
+	// Call AI (this blocks, but in background so NPC doesn't freeze)
+	var questions := array{struct{"user" := user_input}};
+	var response := AICompletion(context, questions, 0.7, 1.0, 1);
+
+	if (!response || response == "Failed to get a response after multiple attempts. Please try again later.")
+		print("ProcessAIResponse: AI call failed, using fallback");
+		response := "Hmm... *pensa mas não consegue responder*";
+	else
+		// Track usage only on success
+		IncrementAIUsage();
+		print("ProcessAIResponse: AI call successful");
+	endif
+
+	// Send response back to NPC
+	if (npc)
+		var ev := struct{
+			"type" := event_id,
+			"text" := response
+		};
+		SendEvent(npc, ev);
+		print("ProcessAIResponse: Response sent to NPC");
+	else
+		print("ProcessAIResponse: NPC no longer exists, discarding response");
+	endif
+endprogram

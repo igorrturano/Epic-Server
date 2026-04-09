@@ -16,13 +16,19 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 	var range := cint(AP_GetSkill(who, THEOLOGY) / 10);
+	var amt := cint(AP_GetSkill(who, THEOLOGY) / 20);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::AURA_DIVINA))
+		amt := amt * 2;
+	endif
 	var points := (CInt(AP_GetSkill(who, THEOLOGY)) / 5) + RandomDiceRoll("6d8");
 	var hostiles := ListHostiles(who, range);
 	foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm)
-		if (!(mob in hostiles))
-			PlayObjectCenteredEffect(mob, GFX_BLUE_SPARKLE_SWIRL, 7, 16);
+		var i := 1;
+		if (!(mob in hostiles) && i <= amt)
+			PlayObjectCenteredEffect(mob, FX_BLUE_SPARKLE_SWIRL, 7, 16);
 			PlaySoundEffect(mob, SFX_HEAL);
-			HealDamage(mob, points);
+			ApplyEpicHealing(mob, points);
+			i := i + 1;
 		endif
 	endforeach
 

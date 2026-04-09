@@ -59,7 +59,7 @@ endfunction
 
 function MobileTracking(who)
 	var diff := 1;
-	if (TemHabilidade(who, "Caçador Experiente"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE))
 		diff := -30;
 	endif
 	// SendSysMessage(who, "dif: "+diff);
@@ -70,7 +70,7 @@ function MobileTracking(who)
 		if (range < 25)
 			range := 25;
 		endif
-		if (TemHabilidade(who, "Caçador Experiente"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE))
 			range := range + 15;
 		endif
 		var nmobiles := ListMobilesNearLocationEX(who.x, who.y, LIST_IGNORE_Z, range, 0x03, who.realm);
@@ -89,7 +89,7 @@ function MobileTracking(who)
 			return 0;
 		endif
 
-		PrintText(who, "*Estudando o local a sua volta*");
+		PrintTextAbove(who, "*Estudando o local a sua volta*");
 
 		if (len(mobiles) < 1)
 			SendSysMessage(who, "Nao ha nenhuma criatura ao seu redor para ser seguida", 3, 660);
@@ -114,7 +114,7 @@ function ItemTracking(who)
 		endif
 		var items := listitemsnearlocation(who.x, who.y, LIST_IGNORE_Z, range, who.realm);
 
-		PrintText(who, "*Estudando o local a sua volta*");
+		PrintTextAbove(who, "*Estudando o local a sua volta*");
 
 		if (len(items) < 1)
 			SendSysMessage(who, "Nao ha itens para serem rastreados", 3, 660);
@@ -340,8 +340,8 @@ function CreatureTrack(who, mobontrack, mobname)
 		GFTextLine(gump, 47, 200, 800, "Marcar no mapa");
 		GFAddButton(gump, 30, 204, 2103, 2104, GF_CLOSE_BTN, 6);
 		var char := GetObjProperty(mobontrack, "createdate"); // check se é player
-		if (TemHabilidade(who, "Marca da Caca") && !char)
-			GFTextLine(gump, 47, 220, 32, "Marca da Caça");
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE) && !char)
+			GFTextLine(gump, 47, 220, 32, "Cacador Experiente");
 			GFAddButton(gump, 30, 224, 2103, 2104, GF_CLOSE_BTN, 7);
 		endif
 		var ifres := GFSendGump(who, gump);

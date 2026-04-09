@@ -6,11 +6,12 @@ include "include/say";
 include "include/client";
 include "include/sounds";
 include ":mounts:mounts";
+include ":timedScripts:timedScripts";
 
 program endSummoned(params)
 	var mobile := params[1];
 
-	PrintText(mobile, "*sumindo pouco a pouco*");
+	PrintTextAbove(mobile, "*sumindo pouco a pouco*");
 
 	// Limpa montaria do Dread Lord se necessário
 	if (getObjProperty(mobile, "owner"))
@@ -19,6 +20,7 @@ program endSummoned(params)
 		if (master)
 			if (GetEquipmentByLayer(master, LAYER_MOUNT) && getObjProperty(master, "dread_lord"))
 				MP_Unmount(master);
+				TS_StartTimer(master, "desmontar", 5); // previne montar novamente e impedir a montaria de sumir
 				EraseObjProperty(master, "dread_lord");
 			endif
 

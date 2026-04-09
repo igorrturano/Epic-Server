@@ -38,7 +38,7 @@ function PushBack(who, dist, delay)
 		var err := MoveObjectToLocation(who, finalx, finaly, who.z, who.realm);
 		sleepms(delay);
 		if (err == error)
-			// 	PrintText(who, "*bate no obstaculo*");
+			// 	PrintTextAbove(who, "*bate no obstaculo*");
 			break;
 		endif
 	endfor

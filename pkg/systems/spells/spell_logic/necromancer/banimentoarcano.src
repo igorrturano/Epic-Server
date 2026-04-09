@@ -4,11 +4,9 @@ use vitals;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":fls_magery:spells";
-include ":fls_magery:spellSounds";
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 include "include/say";
 include ":spells:tnmagery";
@@ -35,7 +33,7 @@ program SpellScript(params)
 	handleSilentMagic(who, who, SFX_SPELL_TELEKINESIS);
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
-	if (CheckResist(targ, VONTADE, diff, bonus))
+	if (CheckResist(targ, WILL, diff, bonus))
 		SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 		return;
@@ -44,7 +42,7 @@ program SpellScript(params)
 	var location := { targ.x, targ.y, targ.z };
 
 	PlayMovingEffectXYZEx(targ.x, targ.y, targ.z, targ.x, targ.y, targ.z + 60, targ.realm,
-					   GFX_LARGE_FIREBALL, 1, 10, 2320);
+					   FX_LARGE_FIREBALL, 1, 10, 2320);
 	Corromper(who, 27, targ);
 
 	MoveObjectToLocation(targ, 10, 10, 10, targ.realm, MOVEOBJECT_FORCELOCATION);

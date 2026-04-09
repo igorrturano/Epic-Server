@@ -1,0 +1,123 @@
+// ============================================================================
+// Send Abilities Packet (0x53) - Standalone sender script
+// ============================================================================
+// Spawned via Start_Script() to isolate data segment from main handler.
+// Reads ability data from habilidades.cfg and sends per-type packet.
+// ============================================================================
+
+use uo;
+use os;
+use cfgfile;
+
+include ":hotbar:include/shared_constants";
+include ":hotbar:include/hotbar_write";
+include ":hotbar:include/icon_manager";
+include ":hotbar:hotbar_utils";
+include ":abilities:models/Ability";
+
+program SendAbilities(who)
+    // Get filtered ability IDs (shared logic from hotbar_utils.inc)
+    var filtered_hab_ids := GetFilteredAbilities(who);
+
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+    if (!habcfg)
+        return 0;
+    endif
+
+    var chardata := GetObjProperty(who, "chardata");
+    var char_class := chardata.classe;
+    var myhabs := GetObjProperty(who, "myhabs");
+    if (!myhabs) myhabs := dictionary; endif
+
+    var filtered_habs := array{};
+    var hab_index := 1;
+
+    foreach hab_id in filtered_hab_ids
+        sleepms(2);
+        var habelem := FindConfigElem(habcfg, hab_id);
+        if (!habelem) continue; endif
+
+        var ability_name := GetConfigString(habelem, "nome");
+        var icon_data := GetAbilityIcon(hab_id);
+        var classes := GetConfigStringDictionary(habelem, "classe");
+        var required_level := CInt(classes[char_class]);
+        var uso := GetConfigString(habelem, "uso");
+
+        var has_purchased := 0;
+        foreach key in (myhabs.keys())
+            if (Lower(myhabs[key]) == Lower(ability_name))
+                has_purchased := 1;
+                break;
+            endif
+        endforeach
+
+        filtered_habs.append(struct{
+            "name" := ability_name,
+            "classe" := char_class,
+            "desc" := GetConfigString(habelem, "desc"),
+            "required_level" := required_level,
+            "is_active" := (uso == "Ativa"),
+            "is_purchased" := has_purchased,
+            "iconid" := icon_data.iconid,
+            "hue" := icon_data.hue,
+            "stamina_cost" := CInt(GetConfigString(habelem, "stam")),
+            "mana_cost" := CInt(GetConfigString(habelem, "mana")),
+            "delay" := CInt(GetConfigString(habelem, "delay")),
+            "requisite" := GetConfigString(habelem, "requisito"),
+            "duration" := CInt(GetConfigString(habelem, "duracao")),
+            "script" := GetConfigString(habelem, "script")
+        });
+        hab_index := hab_index + 1;
+    endforeach
+
+    // Calculate packet size
+    var data_size := 0;
+    foreach item in filtered_habs
+        data_size := data_size + 2 + len(item.name);
+        data_size := data_size + 2 + len(item.desc);
+        data_size := data_size + 2 + len(item.classe);
+        data_size := data_size + 2; // required_level
+        data_size := data_size + 1; // is_active
+        data_size := data_size + 1; // is_purchased
+        data_size := data_size + 2; // iconid
+        data_size := data_size + 2; // hue
+        data_size := data_size + 2; // stamina_cost
+        data_size := data_size + 2; // mana_cost
+        data_size := data_size + 2; // delay
+        data_size := data_size + 2 + len(item.requisite);
+        data_size := data_size + 2; // duration
+        data_size := data_size + 2 + len(item.script);
+    endforeach
+
+    // Header: PacketID(1) + Length(2) + Subcommand(2) + DataType(1) + Count(2)
+    var packet_size := 8 + data_size;
+    var packet := CreatePacket(PACKET_EXTENDED, packet_size);
+
+    packet.SetInt8(0, PACKET_EXTENDED);
+    packet.SetInt16(1, packet_size);
+    packet.SetInt16(3, SUBCOMMAND_ABILITIES_RESPONSE);
+    packet.SetInt8(5, ACTION_TYPE_ABILITY);
+    var offset := 6;
+
+    offset := SetInt16BE(packet, offset, filtered_habs.size());
+
+    foreach item in filtered_habs
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := WriteStringBE(packet, offset, item.classe);
+        offset := SetInt16BE(packet, offset, item.required_level);
+        packet.SetInt8(offset, item.is_active ? 1 : 0); offset += 1;
+        packet.SetInt8(offset, item.is_purchased ? 1 : 0); offset += 1;
+        offset := SetInt16BE(packet, offset, item.iconid);
+        offset := SetInt16BE(packet, offset, item.hue);
+        offset := SetInt16BE(packet, offset, item.stamina_cost);
+        offset := SetInt16BE(packet, offset, item.mana_cost);
+        offset := SetInt16BE(packet, offset, item.delay);
+        offset := WriteStringBE(packet, offset, item.requisite);
+        offset := SetInt16BE(packet, offset, item.duration);
+        offset := WriteStringBE(packet, offset, item.script);
+    endforeach
+
+    packet.SendPacket(who);
+    return 1;
+endprogram

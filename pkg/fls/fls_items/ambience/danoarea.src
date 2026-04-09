@@ -2,7 +2,7 @@ use uo;
 use vitals;
 use os;
 include ":attributes:attributes";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program danoarea(rune)
 	while (1)
@@ -59,7 +59,7 @@ function ApplyAreaDamage(mobile, rune)
 	endif
 
 	if (damage_message != "")
-		PrintText(mobile, damage_message, 3, 38);
+		PrintTextAbove(mobile, damage_message, 3, 38);
 	endif
 
 	var mensagem := GetObjProperty(rune, "mensagem");

@@ -5,7 +5,7 @@ include "include/say";
 include "include/client";
 include ":timedScripts:timedScripts";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 
 program fireweapon(who, item)
@@ -54,7 +54,7 @@ program fireweapon(who, item)
 		if (pot.movable && Accessible(who, pot) && valid)
 			if (subtractamount(pot, 1))
 				SetObjProperty(item, "balas", 1);
-				printtext(who, "*recarrega a arma*");
+				PrintTextAbove(who, "*recarrega a arma*");
 				TS_StartTimer(who, "paralysis", 5);
 				return;
 			endif
@@ -79,7 +79,7 @@ program fireweapon(who, item)
 	var cd := 3;
 
 	TurnObjectToward(who, targ.x, targ.y);
-	PrintText(who, "*mirando em *" + targ.name);
+	PrintTextAbove(who, "*mirando em *" + targ.name);
 	who.frozen := 1;
 	sleep(cd);
 	who.frozen := 0;
@@ -126,7 +126,7 @@ program fireweapon(who, item)
 	endif
 
 	TS_StartCooldown(who, "fireweapon", 15);
-	PlayMovingEffect(who, targ, GFX_SMALL_FIREBALL, 5, 1);
+	PlayMovingEffect(who, targ, FX_SMALL_FIREBALL, 5, 1);
 	PlaySoundEffect(who, SFX_MAGIC_ARROW);
 	DamageFLS(targ, finaldmg, DMG_FORCED, who);
 

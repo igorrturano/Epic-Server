@@ -1,0 +1,65 @@
+use uo;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (!targ)
+		SendSysMessageEx(who, "Escolha um alvo para o Escudo de Fe.", SSM_REQUEST);
+		targ := Target(who, TGTOPT_CHECK_LOS);
+	endif
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	// Remove efeito anterior se existir
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	// Calculate resist bonus based on Theology skill / 25
+	var theology := AP_GetSkill(who, THEOLOGY);
+	var bonus := CInt(theology / 25);
+	if (bonus < 1)
+		bonus := 1;
+	endif
+
+	// Calculate duration in seconds based on Theology / 2
+	var duration := CInt(theology / 2);
+	if (duration < 5)
+		duration := 5;
+	endif
+
+	// Build spell opts — all physical resists
+	var opts := struct{};
+	opts.+slash_resist := bonus;
+	opts.+piercing_resist := bonus;
+	opts.+blunt_resist := bonus;
+
+	// Visual and audio feedback
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_BLESS_EFFECT, 2, 2);
+	SC_HandleSound(who, targ, SFX_BLESS);
+
+	// Apply effect via SpellController
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+
+	SendSysMessageEx(who, "Voce concede um Escudo de Fe a " + targ.name + ".", SSM_INFO);
+	SendSysMessageEx(targ, "Voce recebe um Escudo de Fe. (+" + bonus + " resistencia por " + duration + " segundos)", SSM_INFO);
+
+	return 1;
+endprogram

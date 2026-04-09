@@ -22,24 +22,27 @@ class ImageGump(Control)
 		return this._color;
 	endfunction
 
-	function SetImageId(this, imageId)
+	function SetImage(this, imageId)
 		this._imageId := imageId;
+		return this;
 	endfunction
 
 	function SetColor(this, color)
 		this._color := color;
+		return this;
 	endfunction
 
 	function Resize(this, width, height)
 		this._width := width;
 		this._height := height;
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)
 		if (this._width == 0 || this._height == 0)
-			GFGumpPic(gump, this.GetX(), this.GetY(), this.GetImageId(), this.GetColor());
+			GFGumpPic(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetColor());
 		else
-			GFResizePic(gump, this.GetX(), this.GetY(), this.GetImageId(), this.GetWidth(), this.GetHeight());
+			GFResizePic(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetWidth(), this.GetHeight());
 		endif
 
 		Super::SelfCreate(this, gump);

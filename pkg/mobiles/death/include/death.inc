@@ -11,6 +11,8 @@ use util;
 include ":brainAI:npcUtil";
 include ":attributes:attributes";
 include ":timeutils:time";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 /*
  * DP_PlayDeathSound(corpse, ghost:=0)
@@ -159,4 +161,59 @@ function RegenDpStats(who, ratio)
 		bonus := CInt(AP_GetStatMod(who, INTELLIGENCE)*(-1));
 	endif
 	AP_ModifyStatMod(who, INTELLIGENCE, bonus);*/
+endfunction
+
+function ShamanSoulHarvest(mobile)
+	var npc_elem := NPC_GetNPCConfig(mobile);
+	var category := npc_elem.Category;
+	var has_soul := 1;
+
+	// Check if NPC has no soul (undead, animal, giantanimal)
+	if (Lower(category) == "undead")
+		has_soul := 0;
+	endif
+
+	if (mobile.isAnimalBrain())
+		has_soul := 0;
+	endif
+
+	if (mobile.acctname && AP_GetVital(mobile, "DP") >= 20) // Nao tem colheita em desmaios
+		has_soul := 0;
+	endif
+
+	if (has_soul)
+		// Search for shamans with Colheita de Almas ability nearby
+		foreach player in (ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 15, mobile.realm))
+			if (player.npctemplate || !player.acctname)
+				continue; // Skip NPCs, only check players
+			endif
+
+			if (!MobileWrapper(player).HasAbility(ABILITY_ID::SOUL_HARVEST))
+				continue; // Skip players without the ability
+			endif
+
+			var shaman_reap_bonus := Cint(AP_GetSkill(player, THEOLOGY));
+			var shaman_souls := Cint(GetObjProperty(player, "shaman_souls"));
+			if (!shaman_souls)
+				shaman_souls := 0;
+			endif
+
+			if (shaman_souls < Cint(shaman_reap_bonus / 5))
+				shaman_souls := shaman_souls + 1;
+				PerformAction(player, HUMAN_ANIM::SALUTE);
+				sleep(1);
+
+				PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z, mobile.realm, FX_SOUL_LEAVING, 0, 15, 0, 0, 0);
+				// 			// PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z, mobile.realm, , 0, 60, 2676, 5, 0);
+
+				PlaySoundEffect(player, 0x653);
+
+				SendSysMessage(player, "Voce colhe uma alma.");
+				SetObjProperty(player, "shaman_souls", shaman_souls);
+				break; // Only one shaman harvests the soul
+			else
+				SendSysMessage(player, "Voce nao consegue conduzir mais almas.");
+			endif
+		endforeach
+	endif
 endfunction

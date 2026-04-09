@@ -1,0 +1,73 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+include ":hotbar:include/custombuff";
+
+program SpellScript(params)
+	var who := params[1];
+	params := 0; // No longer needed
+
+	// Calculate bonus based on Theology skill / 20
+	var theology := AP_GetSkill(who, THEOLOGY);
+	var bonus := cint(theology / 20);
+	if (bonus < 1)
+		bonus := 1;
+	endif
+
+	// Calculate duration in seconds based on Theology / 2
+	var duration := cint(theology / 2);
+	if (duration < 5)
+		duration := 5;
+	endif
+
+	// Calculate max allies to bless based on Theology / 20
+	var max_allies := cint(theology / 20);
+	if (max_allies < 1)
+		max_allies := 1;
+	endif
+
+	// Get all mobiles in range
+	var nearby := ListMobilesNearLocation(who.x, who.y, who.z, 5, who.realm);
+	var blessed_count := 0;
+
+	foreach mobile in nearby
+		if (blessed_count >= max_allies)
+			break;
+		endif
+
+		// Check if mobile is an ally (not hostile to caster)
+		if (!mobile.IsHostile(who))
+			// Set the attack bonus property on the target
+			SetObjProperty(mobile, "#hit_mod", bonus);
+
+			// Visual and audio feedback
+			PlayStationaryEffect(mobile.x, mobile.y, mobile.z, FX_BLESS_EFFECT, 2, 2);
+			PlaySoundEffect(mobile, SFX_BLESS);
+
+			SendSysMessageEx(mobile, "Voce sente uma bencao divina guiando seus golpes. (+" + bonus + " no ataque por " + duration + " segundos)", SSM_INFO);
+			SendSpellBuff(who, mobile, 507, duration, "+" + bonus + " no ataque");
+
+			blessed_count := blessed_count + 1;
+		endif
+	endforeach
+
+	// Visual effect at caster's location
+	PlayStationaryEffect(who.x, who.y, who.z, FX_BLESS_EFFECT, 3, 3);
+	PlaySoundEffect(who, SFX_BLESS);
+
+	if (blessed_count > 0)
+		SendSysMessageEx(who, "Voce abencoa " + blessed_count + " aliado(s) com orientacao divina.", SSM_INFO);
+		SendSysMessageEx(who, "Bonus: +" + bonus + " no ataque por " + duration + " segundos.", SSM_INFO);
+	else
+		SendSysMessageEx(who, "Nenhum aliado foi abencoado.", SSM_FAIL);
+	endif
+
+	return 1;
+endprogram

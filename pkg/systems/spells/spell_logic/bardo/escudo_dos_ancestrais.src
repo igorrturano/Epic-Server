@@ -1,0 +1,62 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/tileEffects";
+include "include/sounds";
+
+// Escudo dos Ancestrais (1207) - C2
+// +Resist party (Arc/15 a todos os tipos) por Arc/3 segundos
+program SpellScript(params)
+	var who := params[1];
+
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
+	var bonus    := CInt(arcana / 15);
+	if (bonus < 1)  bonus    := 1;  endif
+	if (bonus > 6)  bonus    := 6;  endif
+	var duration := CInt(arcana / 3);
+	if (duration < 5)  duration := 5;  endif
+	if (duration > 33) duration := 33; endif
+
+	var range := 8;
+	var buffed_list := array;
+	var buffed := 0;
+
+	PrintTextAbove(who, "*Os que vieram antes ainda nos protegem, se os lembramos.*", 3, 1152);
+	PlaySoundEffect(who, 0x1ED);
+
+	foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm))
+		if (mobile.isa(POLCLASS_MOBILE) && !mobile.IsHostile(who))
+			mobile.fire_resist   := mobile.fire_resist   + bonus;
+			mobile.cold_resist   := mobile.cold_resist   + bonus;
+			mobile.energy_resist := mobile.energy_resist + bonus;
+			mobile.poison_resist := mobile.poison_resist + bonus;
+			SetObjProperty(mobile, "#cantico_resist_bonus", bonus);
+			PlayStationaryEffect(mobile.x, mobile.y, mobile.z, FX_BLESS_EFFECT, 2, 2);
+			SendSysMessageEx(mobile, $"Escudo dos Ancestrais: +{bonus} a todas as resistencias por {duration}s.", SSM_INFO);
+			buffed_list[buffed + 1] := mobile;
+			buffed += 1;
+		endif
+	endforeach
+
+	if (buffed == 0)
+		SendSysMessageEx(who, "Nenhum aliado por perto.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(who, $"Escudo dos Ancestrais: {buffed} aliado(s) protegido(s).", SSM_INFO);
+
+	sleep(duration);
+
+	foreach mobile in buffed_list
+		if (mobile && !mobile.dead && GetObjProperty(mobile, "#cantico_resist_bonus") == bonus)
+			mobile.fire_resist   := mobile.fire_resist   - bonus;
+			mobile.cold_resist   := mobile.cold_resist   - bonus;
+			mobile.energy_resist := mobile.energy_resist - bonus;
+			mobile.poison_resist := mobile.poison_resist - bonus;
+			EraseObjProperty(mobile, "#cantico_resist_bonus");
+		endif
+	endforeach
+
+	return 1;
+endprogram

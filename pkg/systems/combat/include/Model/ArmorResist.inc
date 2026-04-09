@@ -49,12 +49,102 @@ class ArmorResist(IArmorResist)
 		return this._energy;
 	endfunction
 
+	function SetSlashResist(this, value)
+		this._slash := CInt(value);
+	endfunction
+
+	function SetPiercingResist(this, value)
+		this._piercing := CInt(value);
+	endfunction
+
+	function SetBluntResist(this, value)
+		this._blunt := CInt(value);
+	endfunction
+
+	function SetFireResist(this, value)
+		this._fire := CInt(value);
+	endfunction
+
+	function SetColdResist(this, value)
+		this._cold := CInt(value);
+	endfunction
+
+	function SetPoisonResist(this, value)
+		this._poison := CInt(value);
+	endfunction
+
+	function SetEnergyResist(this, value)
+		this._energy := CInt(value);
+	endfunction
+
+	function IncreaseSlashResist(this, value)
+		this._slash += CInt(value);
+	endfunction
+
+	function IncreasePiercingResist(this, value)
+		this._piercing += CInt(value);
+	endfunction
+
+	function IncreaseBluntResist(this, value)
+		this._blunt += CInt(value);
+	endfunction
+
+	function IncreaseFireResist(this, value)
+		this._fire += CInt(value);
+	endfunction
+
+	function IncreaseColdResist(this, value)
+		this._cold += CInt(value);
+	endfunction
+
+	function IncreasePoisonResist(this, value)
+		this._poison += CInt(value);
+	endfunction
+
+	function IncreaseEnergyResist(this, value)
+		this._energy += CInt(value);
+	endfunction
+
+	function DecreaseSlashResist(this, value)
+		this._slash -= CInt(value);
+	endfunction
+
+	function DecreasePiercingResist(this, value)
+		this._piercing -= CInt(value);
+	endfunction
+
+	function DecreaseBluntResist(this, value)
+		this._blunt -= CInt(value);
+	endfunction
+
+	function DecreaseFireResist(this, value)
+		this._fire -= CInt(value);
+	endfunction
+
+	function DecreaseColdResist(this, value)
+		this._cold -= CInt(value);
+	endfunction
+
+	function DecreasePoisonResist(this, value)
+		this._poison -= CInt(value);
+	endfunction
+
+	function DecreaseEnergyResist(this, value)
+		this._energy -= CInt(value);
+	endfunction
+
 	function ToString(this)
-		return "Slash: " + this._slash + ", Piercing: " + this._piercing + ", Blunt: " + this._blunt + ", Fire: " + this._fire + ", Cold: " + this._cold + ", Poison: " + this._poison + ", Energy: " + this._energy;
+		return $"Slash={this._slash}, " +
+			   $"Piercing={this._piercing}, " +
+			   $"Blunt={this._blunt}, " +
+			   $"Fire={this._fire}, " +
+			   $"Cold={this._cold}, " +
+			   $"Poison={this._poison}, " +
+			   $"Energy={this._energy}";
 	endfunction
 endclass
 
-enum class PROTECTIONTYPE
+enum class PROTECTION_TYPE
 	ARMOR_LOWLOW := "ARMADURA LEVE FRACA",
 	ARMOR_LOWMID := "ARMADURA LEVE MEDIA",
 	ARMOR_LOWHIGH := "ARMADURA LEVE FORTE",

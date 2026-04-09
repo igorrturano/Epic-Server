@@ -1,65 +1,56 @@
 use uo;
 
+include ":wrappers:Objects/Model/WeaponWrapper";
+
 program select(who, item)
-	// Constantes para gráficos de munição
 	const ARROW_GRAPHIC := 3903;
 	const BOLT_GRAPHIC := 7163;
 	const STONE_GRAPHIC := 6584;
+	const AMMO_GRAPHIC := 0xE73;
 
-	// Arrays com tipos de armas
-	var weaponTypes := struct{ "bows" := array{ 0x13B2, 0xe137, 0x2D2B, 0x27A5,
-												0x2D2A, 0xe139, 0x26CC },
-						   	
-						   	"crossbows" := array{ 0x0f4f, 0x13fd, 0x26CD, 0xF983 },
-						   	"slings" := array{ 0xf9ab } };
+	var weapon := WeaponWrapper(item);
+	var category := weapon.GetCategory();
 
-	// Mensagens do sistema
-	var messages := struct{ "select_ammo" := "Escolha o tipo de flecha.",
-							"wrong_ammo" := struct{ "bows" := "Isto não parece uma flecha.",
-							  	"crossbows" := "Isto não parece um virote.",
-							  	"slings" := "Isto não parece uma pedra." },
-							"ammo_selected" := struct{ "bows" := "Você selecionou a munição que vai usar com este arco.",
-							  	"crossbows" := "Você selecionou a munição que vai usar com esta besta.",
-							  	"slings" := "Você selecionou a munição que vai usar com esta funda."
-	},
-							"not_projectile" := "Isto não parece uma arma de projéteis." };
+	var ammoGraphic;
+	var wrongAmmoMsg;
+	var selectedMsg;
 
-	SendSysMessage(who, messages.select_ammo);
+	if (category == WEAPON_CATEGORY::BOW || category == WEAPON_CATEGORY::MAGICBOW)
+		ammoGraphic := ARROW_GRAPHIC;
+		wrongAmmoMsg := "Isto não parece uma flecha.";
+		selectedMsg := "Você selecionou a munição que vai usar com este arco.";
+	elseif (category == WEAPON_CATEGORY::CROSSBOW)
+		ammoGraphic := BOLT_GRAPHIC;
+		wrongAmmoMsg := "Isto não parece um virote.";
+		selectedMsg := "Você selecionou a munição que vai usar com esta besta.";
+	elseif (category == WEAPON_CATEGORY::THROWING)
+		ammoGraphic := STONE_GRAPHIC;
+		wrongAmmoMsg := "Isto não parece uma pedra.";
+		selectedMsg := "Você selecionou a munição que vai usar com esta funda.";
+	elseif (weapon.isFireWeapon())
+		ammoGraphic := AMMO_GRAPHIC;
+		wrongAmmoMsg := "Isto não parece munição para arma de fogo.";
+		selectedMsg := "Você selecionou a munição que vai usar com esta arma de fogo.";
+	else
+		SendSysMessage(who, "Isto não parece uma arma de projéteis.");
+		return 1;
+	endif
+
+	SendSysMessage(who, "Escolha o tipo de munição.");
 	var alvo := Target(who);
 
-	// Identifica o tipo de arma
-	var weaponType := "";
-	if (item.objtype in weaponTypes.bows)
-		weaponType := "bows";
-	elseif (item.objtype in weaponTypes.crossbows)
-		weaponType := "crossbows";
-	elseif (item.objtype in weaponTypes.slings)
-		weaponType := "slings";
-	endif
-
-	if (!weaponType)
-		SendSysMessage(who, messages.not_projectile);
+	if (alvo.graphic != ammoGraphic)
+		SendSysMessage(who, wrongAmmoMsg);
 		return 1;
 	endif
 
-	// Verifica se a munição é compatível
-	var isValidAmmo := ((weaponType == "bows" && alvo.graphic == ARROW_GRAPHIC) ||
-					 (weaponType == "crossbows" && alvo.graphic == BOLT_GRAPHIC) || (weaponType == "slings" &&
-					 alvo.graphic == STONE_GRAPHIC));
-
-	if (!isValidAmmo)
-		SendSysMessage(who, messages.wrong_ammo[weaponType]);
-		return 1;
-	endif
-
-	// Aplica as propriedades da munição
 	SetObjProperty(item, "ammo", alvo.serial);
 	var DmgMods := GetObjProperty(alvo, "dmgmods");
 	if (DmgMods)
 		ApplyDamageModifiers(item, DmgMods);
 	endif
 
-	SendSysMessage(who, messages.ammo_selected[weaponType]);
+	SendSysMessage(who, selectedMsg);
 	return 1;
 endprogram
 

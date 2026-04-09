@@ -4,11 +4,11 @@ use vitals;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":fls_magery:spells";
-include ":fls_magery:spellSounds";
+;
+;
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 include "include/say";
 include ":spells:tnmagery";
@@ -41,7 +41,7 @@ program SpellScript(params)
 		var globo;
 		if (!targ.container)
 
-			PrintText(targ, "*movendo-se*");
+			PrintTextAbove(targ, "*movendo-se*");
 
 			MoveObjectToLocation(targ, targ.x, targ.y, targ.z + 1, targ.realm, MOVEOBJECT_FORCELOCATION);
 			PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
@@ -86,7 +86,7 @@ program SpellScript(params)
 			globo := CreateNpcFromTemplate(":brainai:cimitarra", who.x, who.y, who.z, 0, who.realm);
 		endif
 
-		PrintText(globo, "*rodopia no ar*");
+		PrintTextAbove(globo, "*rodopia no ar*");
 
 		DestroyItem(targ);
 

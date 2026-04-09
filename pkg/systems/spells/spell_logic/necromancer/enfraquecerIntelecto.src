@@ -1,45 +1,55 @@
 use uo;
-use os;
 
 include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
 include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 	var spell := params[3];
 	var spell_school := spell.School;
-	params := 0; // No longer needed
+	params := 0;
 
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
 		return;
 	endif
 
+	// Remove efeito anterior se existir
+	SC_RemoveEffect(targ, CInt(spell.id));
+
 	var amt;
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
-	if (!CheckResist(targ, VONTADE, diff, -bonus))
-		amt := Cint(AP_GetSkill(who, ARCANA) * 0.5);
+	if (!CheckResist(targ, WILL, diff, -bonus))
+		amt := CInt(AP_GetSkill(who, ARCANA) * 0.5);
 	else
-		amt := Cint(AP_GetSkill(who, ARCANA) * 0.25);
+		amt := CInt(AP_GetSkill(who, ARCANA) * 0.25);
 	endif
 
-	if (temHabilidade(who, "Sacrificio da Carne"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SACRIFICIO_DA_CARNE))
 		if (isBloodied(who))
 			amt := CInt(amt * 1.5);
 		endif
 	endif
 
-	TS_StartTimer(targ, "feebleMind", cint(AP_GetSkill(who, ARCANA)), amt, who, 1);
-	PrintTextPrivate(targ, "-" + amt + " Str", who, 3, 38); // vermelho
+	var duration := CInt(AP_GetSkill(who, ARCANA));
 
-	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
+	// Build spell opts — INT debuff
+	var opts := struct{};
+	opts.+int_mod := -amt;
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+	PrintTextPrivate(targ, "-" + amt + " Int", who, 3, 38);
+	SC_HandleSound(who, targ, SFX_SPELL_WEAKEN);
+
 	SendSysMessageEx(who, "Voce deixou o alvo mais burro.", SSM_INFO);
 	Corromper(who, 2, targ);
 

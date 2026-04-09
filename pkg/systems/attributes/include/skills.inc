@@ -1,7 +1,4 @@
-include ":fls_core:fls_characters";
-include ":charactercreation:habilidades";
 include ":attributes:attributes_ex";
-include "include/eventID";
 use uo;
 
 /*
@@ -13,13 +10,7 @@ use uo;
  * Return: an integer.
  */
 function AP_GetSkill(who, skill_name)
-	var bonus_corrucao := 0;
-	if (skill_name == ARCANA)
-		if (TemHabilidade(who, "Corrupcao Constante"))
-			bonus_corrucao := cInt(GetObjProperty(who, "corruption")/1000);
-		endif
-	endif
-	return AP_GetTrueSkill(who, skill_name) + AP_GetSkillMod(who, skill_name) + bonus_corrucao;
+	return AP_GetTrueSkill(who, skill_name) + AP_GetSkillMod(who, skill_name);
 endfunction
 
 /*
@@ -360,23 +351,24 @@ endfunction
  * limiteportempo(who)
  * Purpose: Calculates skill cap based on character age
  * Parameters: who: character reference
- * Return: skill cap (minimum 12, max 100)
+ * Return: skill cap (minimum 6, max 100)
+ * Cap diario / Cap dia / Daily Cap / Total Cap
  */
 function limiteportempo(who)
     if (who.npctemplate)
-        return 100;  // NPCs always have a skill cap of 100
+        return 100;
     endif
 
-    var dias := idadeChar(who);  
-    var lim := 10;  
+    var dias := idadeChar(who);
+    var lim := 6;
 
-    if (dias <= 15)
-        lim := lim + dias*2;  
+    if (dias <= 10)
+        lim := lim + dias * 2;
     else
-        lim := 30 + dias*0.3;  
+        lim := 26 + (dias - 10) * 0.5;
     endif
 
-    return Min(lim, 60);  
+    return Min(lim, 100);
 endfunction
 
 /*

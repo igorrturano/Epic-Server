@@ -1,0 +1,30 @@
+include ":message:model/Message";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program unequipitem(params)
+	var who := params[1];
+	var item := params[2];
+
+	var equip;
+	if (item.IsA(POLCLASS_ARMOR))
+		equip := ArmorWrapper(item);
+	elseif (item.IsA(POLCLASS_WEAPON))
+		equip := WeaponWrapper(item);
+	endif
+
+	who := MobileWrapper(who);
+	if (who.isShaman())
+		equip.SetModifier(AttributeModifier(MAGERY, 0));
+	endif
+
+	if (item.IsA(POLCLASS_ARMOR) && who.HasAbility(ABILITY_ID::CONEXAO_DIVINA))
+		var tipoProtecao := equip.GetTipoProtecao();
+		if (tipoProtecao["Armadura Leve"] || tipoProtecao["Armadura Media"])
+			equip.SetModifier(AttributeModifier(MAGERY, 0));
+		endif
+	endif
+
+	who.RemoveItemModifiers(equip);
+endprogram

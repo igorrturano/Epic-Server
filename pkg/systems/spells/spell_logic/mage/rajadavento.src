@@ -9,14 +9,8 @@ include ":timedscripts:timedScripts";
 
 program SpellScript(params)
 	var who := params[1];
-	var info := params[2];
+	var targ := params[2];
 	params := 0; // No longer needed
-
-	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST + TGTOPT_HARMFUL);
-	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
-	if (!targ)
-		return;
-	endif
 
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Voce so pode alvejar seres vivos com esta magia.", SSM_FAIL);
@@ -27,7 +21,7 @@ program SpellScript(params)
 	var newxloc := (targ.x - kickbackx);
 	var newyloc := (targ.y + kickbacky);
 	PlaySoundEffect(targ, SFX_108);
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 7, 16);
 	PlaySoundEffect(targ, SFX_109);
 
 	// var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, THEOLOGY))*2;

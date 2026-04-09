@@ -30,24 +30,29 @@ class Button(Control)
 		return this._action;
 	endfunction
 
-	function SetImage(this, image)
-		this._image := image;
+	function SetUnpressedImage(this, unpressedImage)
+		this._unpressedImage := unpressedImage;
+		return this;
 	endfunction
 
 	function SetPressedImage(this, pressedImage)
 		this._pressedImage := pressedImage;
+		return this;
 	endfunction
 
 	function SetButtonType(this, buttonType)
 		this._buttonType := buttonType;
+		return this;
 	endfunction
 
 	function AddAction(this, action)
 		this._action.append(action);
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFAddButton(gump, this.GetX(), this.GetY(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetButtonType(), this.GetGumpId());
+		GFAddButton(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetButtonType(), this.GetGumpId());
+		Super::SelfCreate(this, gump);
 	endfunction
 
 	function ToString(this)

@@ -4,6 +4,7 @@ use math;
 use util;
 use cfgfile;
 
+
 include "include/client";
 include "include/say";
 include ":survival:fishingFunctions";
@@ -16,7 +17,13 @@ program clima(who)
 	var solpos;
 	var tempestade := GetGlobalProperty("tempestade");
 
-	// Posicao do Sol
+	if (InDungeon(who))
+		SendSysMessageEx(who, "Esse comando nao pode ser usado dentro de Dungeons ou Cavernas.", SSM_FAIL);
+		return;
+	endif
+
+
+	//Posicao do Sol
 	var config := readconfigfile(":nature:config/daynight");
 	config := config["settings"];
 	var daylength := cint(config.daylength) * 60;
@@ -33,7 +40,7 @@ program clima(who)
 	solpos := getSunPosition(tempestade);
 	// Apply your specified time ranges
 	if (hour >= 6 && hour < 9)
-		solpos := "Parece ter nascido há pouco";
+		solpos := "Parece ter nascido há pouco"; 
 	elseif (hour >= 9 && hour < 12)
 		solpos := "Caminhando ao topo do céu";
 	elseif (hour >= 12 && hour < 15)
@@ -46,19 +53,19 @@ program clima(who)
 		solpos := "A tempestade atrapalha a visão do sol";
 	endif
 
-	// Especificando Faixa de Temperaturas e Sensações
+    //Especificando Faixa de Temperaturas e Sensações
 	var basetemp := getTemperature(who);
-	var temp_sensation := GetTemperatureSensation(basetemp);
-	var temp_color := GetTemperatureColor(basetemp);
+    var temp_sensation := GetTemperatureSensation(basetemp);
+    var temp_color := GetTemperatureColor(basetemp);
 
-	// Mensagens para o Usuario
-	SendSysMessageEx(who, "Estacao do Ano: " + GetSeasonName(getSeason()), colore);
-	if (diaounoite == "noite")
-		SendSysMessageEx(who, "Fase da Lua: " + fase, SSM_INFO);
-	endif
-	if (diaounoite == "dia")
-		SendSysMessageEx(who, "Posicao do Sol: " + solpos, SSM_INFO);
-	endif
-	SendSysMessageEx(who, "A sensacao termica esta em torno de " + basetemp + "°C (" + temp_sensation + ")",
-				  temp_color);
+    //Mensagens para o Usuario
+    SendSysMessageEx(who, "Estacao do Ano: " + GetSeasonName(getSeason()));
+    if(diaounoite == "noite")
+        SendSysMessageEx(who, "Fase da Lua: " + fase, SSM_INFO);
+    endif
+    if(diaounoite == "dia")
+        SendSysMessageEx(who, "Posicao do Sol: " + solpos, SSM_INFO);
+    endif
+    SendSysMessageEx(who, "A sensacao termica esta em torno de " + basetemp + "°C (" + temp_sensation + ")", temp_color);
 endprogram
+

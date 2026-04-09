@@ -11,6 +11,8 @@ include ":crafting:toolWear";
 include ":gathering:mining";
 include "include/say";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 const SCOOP_OF_SAND := 0x6075;
 const MINING_ANIMATION := 0x0B;
@@ -21,6 +23,11 @@ DF_DEBUG_MODE := 0;
 var resources_data_file := DFOpenDataFile("MiscResources", DF_CREATE);
 
 program SandMining(who, scoop)
+
+	if (!FindObjtypeInContainer(who.backpack, scoop.objtype))
+		SendSysMessageEx(who, "Voce precisa ter uma colher de areia na mochila.", SSM_FAIL);
+		return;
+	endif
 
 	SendSysMessageEx(who, "Onde voce quer pegar areia?", SSM_REQUEST);
 	var targ := TargetCoordinates(who);
@@ -40,7 +47,7 @@ program SandMining(who, scoop)
 	var my_facing := who.facing;
 
 	while (MiningLoop(who, scoop, my_x, my_y, my_facing, location_name))
-		if (TemHabilidade(who, "Vigor do Extrator"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
 			if (AP_GetVital(who, "Stamina") < 2)
 				SendSysMessageEx(who, "Voce esta muito cansado para continuar.", SSM_FAIL);
 				break;
@@ -66,7 +73,13 @@ function MiningLoop(who, scoop, my_x, my_y, my_facing, location_name)
 		PerformAction(who, MINING_ANIMATION);
 		PlaySoundEffect(who, MINING_SOUND);
 		sleep(1);
-		if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
+		if (who.hidden || (who.x != my_x) || (who.y != my_y) || (who.facing != my_facing))
+			return 0;
+		elseif (GetEquipmentByLayer(who, LAYER_MOUNT))
+			SendSysMessageEx(who, "Voce nao pode cavar montado.", SSM_FAIL);
+			return 0;
+		elseif (!FindObjtypeInContainer(who.backpack, scoop.objtype))
+			SendSysMessageEx(who, "Voce precisa ter uma colher de areia na mochila.", SSM_FAIL);
 			return 0;
 		endif
 	endfor
@@ -83,13 +96,13 @@ function MiningLoop(who, scoop, my_x, my_y, my_facing, location_name)
 
 	SetResource(resource_type, location_elem, resource_amount - 1);
 
-	var difficulty := 20; // CInt(100 - (resource_amount * 100 / MAX_RESOURCE_AMOUNT));
+	var difficulty := 5; // CInt(100 - (resource_amount * 100 / MAX_RESOURCE_AMOUNT));
 
 	var skill := Cint(AP_GetSkill(who, GATHERING));
 
 	if (SkillCheck(who, GATHERING, difficulty) > 0)
 		var amt := min(CInt(resource_amount), CInt(skill / 20));
-		if (TemHabilidade(who, "Minerador Talentoso"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_MINER))
 			amt := amt + 2;
 		endif
 		if (amt <= 0)

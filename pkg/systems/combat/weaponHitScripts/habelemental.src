@@ -1,13 +1,12 @@
 use uo;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":acid:acid";
 include ":fls_core:packets";
 include ":timedScripts:timedScripts";
-include ":spells:puremage";
 include "include/epicMageryUtils";
 
 program HitScript(params)
@@ -30,12 +29,6 @@ program HitScript(params)
 
 	params := 0; // Not needed anymore.
 
-	// gemas neutras nao podem ficar no if abaixo pq nao podem ser identificadas pelo dmgtype
-	if (GetCooldown(weapon, "romperencantamento"))
-		ApplyChargesCalculation(weapon, 1, 4);
-		dispel(defender);
-		EraseObjProperty(weapon, "#romperencantamento");
-	endif
 	if (GetCooldown(weapon, "ataqueespiritual"))
 		EraseObjProperty(weapon, "#ataqueespiritual");
 		var manadmg := cint(AP_GetSkill(attacker, ARCANA) / 3);
@@ -57,7 +50,7 @@ program HitScript(params)
 			time := ApplyChargesCalculation(weapon, time, 4);
 			TS_StartTimer(defender, "prisaogelida", time);
 		else
-			PlayObjectCenteredEffect(defender, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+			PlayObjectCenteredEffect(defender, FX_BLUE_SPARKLE_GROUND, 7, 16);
 			PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
 			var time := ApplyChargesCalculation(weapon, 6, 4);
 			TS_StartTimer(defender, "paralysis", time);
@@ -65,7 +58,7 @@ program HitScript(params)
 
 	elseif (dmgtype == DMG_FIRE)
 
-		PlayObjectCenteredEffect(defender, GFX_EXPLODE_1, 7, 16);
+		PlayObjectCenteredEffect(defender, FX_EXPLODE_1, 7, 16);
 		PlaySoundEffect(defender, SFX_EXPLOSION_11);
 		var time := ApplyChargesCalculation(weapon, 20, 4);
 		TS_StartTimer(defender, "chamasperpetuas", time);

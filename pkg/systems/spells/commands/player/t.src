@@ -1,68 +1,53 @@
+/*
+ * Cantrip Command (.t)
+ * 
+ * Entry point for cantrip spells. Works with both:
+ * - Text commands: .t fireball (who, spellname as separate args)
+ * - Hotbar/scripts: Start_Script(script, {who, spellname})
+ */
 use uo;
 use os;
 use cfgfile;
 
 include "include/say";
 include ":charactercreation:habilidades";
+include ":spells:include/spell_executor";
 
 const SPELL_BTN := 200;
 const GUMPID_CLERICSPELL := 0x00001C;
-program magia(who, spellname)
-	var cfg := ReadConfigFile(":spells:cantripspells");
 
-	if (GetObjProperty(who, "#Casting"))
-		SendSysMessageEx(who, "Voce nao pode invocar um encanto agora.", SSM_FAIL);
-		return 0;
+// Main program - handles both text commands and Start_Script calls
+program magia(who, spellname := "")
+	// Handle Start_Script array format: {who, spellname}
+	if (TypeOf(who) == "Array")
+		var params := who;
+		who := params[1];
+		spellname := params[2];
 	endif
+	
+	var cfg := ReadConfigFile(":spells:config/cantrips");
+
+	// Validate access
 	var chardata := GetObjProperty(who, "chardata");
 	var magia := chardata.magia;
-	if (magia != "spellcaster" && chardata.trait != "Natureza Arcana" && magia != "Arqueiro Arcano")
+	if (magia != "spellcaster" && chardata.trait != "Natureza Arcana" && magia != "arcane_archer")
 		SendSysMessageEx(who, "Este menu nao e acessivel para voce.", SSM_FAIL);
-		return;
+		return 0;
 	endif
 
-	var id := 1;
-	var elem;
-
-	if (!spellname)
-		var cantrips_list := struct;
-		foreach id in (GetConfigIntKeys(cfg))
-			elem := FindConfigElem(cfg, id);
-			cantrips_list.insert(elem);
-		endforeach
+	// If no spell name provided, show the gump
+	if (!spellname || spellname == "")
 		CantripsGump(who, GetConfigIntKeys(cfg));
-	else
-		id := 1;
-		elem;
-		var achou := 0;
-		foreach spell in (GetConfigIntKeys(cfg))
-			elem := FindConfigElem(cfg, id);
-			if (Lower(GetConfigString(elem, "Name")) == Lower(spellname))
-				achou := 1;
-				break;
-			endif
-			id := id + 1;
-		endforeach
-
-		if (!achou)
-			SendSysMessageEx(who, "A magia " + spellname + " nao existe.", SSM_FAIL);
-			return;
-		endif
-
-		var spellinfo := struct;
-		spellinfo.+id := id;
-		spellinfo.+magic_path := "cantripspells";
-		var script := Start_Script(":spells:cast_spell", { who, spellinfo });
-		if (script.errortext)
-			SendSysMessage(who, "Error - Could not start spell starter ->" + script.errortext);
-			return 0;
-		endif
+		return 1;
 	endif
+	
+	// Execute the spell using the unified executor
+	return ExecuteSpellByName(who, spellname, SPELL_TYPE_CANTRIP);
 endprogram
 
 function CantripsGump(who, shaman_list)
 	var gump := GFCreateGump();
-	var cfg := ReadConfigFile(":spells:cantripspells");
+	var cfg := ReadConfigFile(":spells:config/cantrips");
 
 	var size := shaman_list.Size();
 	if (size >= 1)

@@ -1,0 +1,38 @@
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
+
+program cmd_showequip(who, args)
+	var item, type;
+
+	if (!args)
+		item := target(who);
+	else
+		args := SplitWords(args);
+		type := args[1];
+		item := args[2];
+	endif
+
+	if (!type)
+		if (item.isA(POLCLASS_WEAPON))
+			item := WeaponWrapper(item);
+		elseif (item.isA(POLCLASS_ARMOR))
+			item := ArmorWrapper(item);
+		else
+			SendSysMessage(who, "O item não é uma arma ou armadura.");
+			return;
+		endif
+	else
+		if (type == "weapon")
+			item := WeaponWrapper(item);
+		elseif (type == "armor")
+			item := ArmorWrapper(item);
+		else
+			SendSysMessage(who, "Tipo inválido. Use 'weapon' ou 'armor'.");
+			return;
+		endif
+	endif
+
+	SendSysMessage(who, item.ToString());
+endprogram
+
+// TODO: Criar um Gump que mostre o item

@@ -89,8 +89,8 @@ var cores_haroloth := array{cores_rosa, cores_cinza, cores_azul, cores_neutro};
 //Badûran
 var cores_baduran := array{cores_laranja, cores_amarelo, cores_neutro, cores_cinza};
 
-//Polski
-var cores_polski := array{cores_laranja, cores_amarelo, cores_verde, cores_azul, cores_neutro};
+//Pequilho
+var cores_pequilho := array{cores_laranja, cores_amarelo, cores_verde, cores_azul, cores_neutro};
 
 //Povos do Leste
 var cores_leste := array{cores_amarelo, cores_laranja, cores_rosa, cores_cinza};

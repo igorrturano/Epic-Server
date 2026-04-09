@@ -5,40 +5,40 @@ use cfgfile;
 
 include ":alchemy:alchemy";
 include ":spells:spell_logic/swordmage/include/encantarObjeto";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program drink_blue(who, potion)
-	EraseObjProperty(who, "IsMeditating");
-	EraseObjProperty(who, "HealTimer");
+	who := MobileWrapper(who);
+	who.GetObjRef().EraseProp("IsMeditating");
+	who.GetObjRef().EraseProp("HealTimer");
 
-	if (!Accessible(who, potion))
+	if (!Accessible(who.GetObjRef(), potion))
 		return;
 	endif
 
-	if (potion.movable == 0)
-		SendSysMessage(who, "Voce nao pode usar isto.");
+	if (!potion.movable)
+		Message("Você não pode usar isto.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return;
 	endif
 
-	SendSysMessageEx(who, "Qual item deseja encantar?", SSM_REQUEST);
-	var use_on := Target(who);
+	Message("Qual item deseja encantar?", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+	var use_on := Target(who.GetObjRef());
 
 	if (!use_on)
-		SendSysMessage(who, "Cancelado");
+		Message("Cancelado", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return 0;
 	endif
 
 	if (!use_on.isA(POLCLASS_WEAPON) && !use_on.isA(POLCLASS_ARMOR))
-		SendSysMessageEx(who, "Isto não pode ser banhado por essa poção.", SSM_FAIL);
+		Message("Isto não pode ser banhado por essa poção.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return;
 	endif
 
 	var bonus := Cint(GetObjProperty(potion, "crafterskill"));
 	bonus := bonus * 0.05;
 
-	empty_bottle(who, potion, 1, 0);
+	empty_bottle(who.GetObjRef(), potion, 0);
 
-	SendSysMessageEx(who, "Você encantou o objeto.", SSM_INFO);
-	PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
-	PlaySoundEffect(who, SFX_SPELL_HEAL);
+	Message("Você encantou o objeto.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
 	setBonus(who, use_on, bonus);
 endprogram

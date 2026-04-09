@@ -10,8 +10,9 @@ include ":timedscripts:timedScripts";
 include ":fls_core:packets";
 include ":attributes:attributes";
 include "include/imersao"; // This would be the path to your immersion script
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":medicine:anatomy";
+include ":medicine:util/diseaseConstants";
 
 program disease_effects(params)
 	var mobile := params[1];
@@ -56,15 +57,15 @@ function ScheduleNextDiseaseEffect(subject, disease_grade)
 	var min_minutes, max_minutes;
 
 	case (disease_grade)
-		"Leve":
+		DISEASE_GRADES::LIGHT:
 			min_minutes := 185; // 3 horas ALTERADO PARA TESTES
 			max_minutes := 300; // 5 horas
 			break;
-		"Moderado":
+		DISEASE_GRADES::MODERATE:
 			min_minutes := 60; // 1 hora
 			max_minutes := 180; // 3 horas
 			break;
-		"Grave":
+		DISEASE_GRADES::SERIOUS:
 			min_minutes := 30; // 30 minutos
 			max_minutes := 60; // 1 hora
 			break;
@@ -92,22 +93,22 @@ function DisplaySymptomEffect(mobile, symptom, disease_grade)
 	var damage := 0;
 
 	case (disease_grade)
-		"Leve":     damage := 15; break;
-		"Moderado": damage := 30; break;
-		"Grave":    damage := 45; break;
+		DISEASE_GRADES::LIGHT:     damage := 15; break;
+		DISEASE_GRADES::MODERATE: damage := 30; break;
+		DISEASE_GRADES::SERIOUS:    damage := 45; break;
 		default:    damage := 15;
 	endcase
 
 	case (symptom)
-		"Febre":       DoFeverEffect(mobile, damage); break;
-		"Trombo":      DoThromboEffect(mobile, damage); break;
-		"Pustulas":    DoPustulesEffect(mobile, damage); break;
-		"Laceracao":   DoLacerationEffect(mobile, damage); break;
-		"Prurido":     DoItchingEffect(mobile, damage); break;
-		"Colicas":     DoStomachacheEffect(mobile, damage); break;
-		"Palpitacoes": DoPalpitationsEffect(mobile, damage); break;
-		"Nausea":      DoNauseaEffect(mobile, damage); break;
-		"Cefaleia":    DoHeadacheEffect(mobile, damage); break;
+		DISEASES::FEVER:       DoFeverEffect(mobile, damage); break;
+		DISEASES::THROMBOSIS:      DoThromboEffect(mobile, damage); break;
+		DISEASES::PUSTULES:    DoPustulesEffect(mobile, damage); break;
+		DISEASES::LACERATION:   DoLacerationEffect(mobile, damage); break;
+		DISEASES::ITCHING:     DoItchingEffect(mobile, damage); break;
+		DISEASES::COLIC:     DoStomachacheEffect(mobile, damage); break;
+		DISEASES::PALPITATIONS: DoPalpitationsEffect(mobile, damage); break;
+		DISEASES::NAUSEA:      DoNauseaEffect(mobile, damage); break;
+		DISEASES::HEADACHE:    DoHeadacheEffect(mobile, damage); break;
 		default:       break;
 	endcase
 
@@ -117,7 +118,7 @@ endfunction
 function DoFeverEffect(mobile, damage)
 	// Fever effects: sweating, shivering, etc.
 	Imersao(mobile, "arfar");
-	PrintText(mobile, "*suando*");
+	PrintTextAbove(mobile, "*suando*");
 
 	// Apply life damage
 	damageFLS(mobile, CInt(damage), DMG_FORCED);
@@ -129,7 +130,7 @@ function DoThromboEffect(mobile, damage)
 	// Thrombus effects: limping, sudden pain
 	Imersao(mobile, "gemer"); // Just the animation, no sound or emote
 	PlayerSpeedSlower(mobile, 1);
-	PrintText(mobile, "*manca*");
+	PrintTextAbove(mobile, "*manca*");
 
 	// Apply stamina damage
 	ReduceStamina(mobile, damage);
@@ -142,7 +143,7 @@ endfunction
 
 function DoPustulesEffect(mobile, damage)
 	// Pustules effects: scratching, visible pustules
-	PrintText(mobile, "*coça a pele irritada*");
+	PrintTextAbove(mobile, "*coça a pele irritada*");
 	// Use bow animation for scratching motion
 	sleep(1);
 	Imersao(mobile, "tossir1");
@@ -151,7 +152,7 @@ function DoPustulesEffect(mobile, damage)
 	damageFLS(mobile, CInt(damage), DMG_FORCED);
 
 	sleep(3);
-	PrintText(mobile, "*uma pústula estoura*");
+	PrintTextAbove(mobile, "*uma pústula estoura*");
 
 	var pus := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0x122A, 1); // Small blood pool
 	pus.name := "pus nojento";
@@ -164,7 +165,7 @@ endfunction
 function DoLacerationEffect(mobile, damage)
 	// Laceration effects: bleeding, pain
 	Imersao(mobile, "sentirdor"); // Pain sound
-	PrintText(mobile, "*segura o ferimento*");
+	PrintTextAbove(mobile, "*segura o ferimento*");
 
 	// Apply life damage
 	damageFLS(mobile, CInt(damage), DMG_FORCED);
@@ -186,7 +187,7 @@ function DoItchingEffect(mobile, damage)
 								"*coça as costas contra uma superfície*", "*coça o rosto*" };
 
 	var spot := scratch_spots[RandomInt(scratch_spots.size()) + 1];
-	PrintText(mobile, spot);
+	PrintTextAbove(mobile, spot);
 	Imersao(mobile, "bow"); // Bow animation for scratching
 
 	// Apply stamina damage
@@ -197,7 +198,7 @@ endfunction
 
 function DoStomachacheEffect(mobile, damage)
 	// Colic/Stomachache effects: doubling over, pain
-	PrintText(mobile, "*segura o estômago*");
+	PrintTextAbove(mobile, "*segura o estômago*");
 	Imersao(mobile, "vomitar"); // Sound and emote
 
 	// Apply life damage
@@ -214,14 +215,14 @@ endfunction
 function DoPalpitationsEffect(mobile, damage)
 	// Palpitations effects: heart racing, breathing difficulties
 	// Chest pain
-	PrintText(mobile, "*segura o peito*");
+	PrintTextAbove(mobile, "*segura o peito*");
 	Imersao(mobile, "arfar"); // Pain sound
 
 	// Apply stamina damage
 	ReduceStamina(mobile, damage);
 
 	sleep(2);
-	PrintText(mobile, "*sente o coração acelerado*");
+	PrintTextAbove(mobile, "*sente o coração acelerado*");
 	Imersao(mobile, "tossir2"); // Stagger animation
 	mobile.facing := RandomDiceRoll("1d8");
 
@@ -230,7 +231,7 @@ endfunction
 
 function DoNauseaEffect(mobile, damage)
 	// Nausea effects: discomfort, potential vomiting
-	PrintText(mobile, "*parece enjoado*");
+	PrintTextAbove(mobile, "*parece enjoado*");
 	Imersao(mobile, "vomitar"); // Discomfort sound
 
 	// Apply stamina damage
@@ -243,7 +244,7 @@ endfunction
 
 function DoHeadacheEffect(mobile, damage)
 	// Headache effects: holding head, dizziness
-	PrintText(mobile, "*Você se sente tonto*");
+	PrintTextAbove(mobile, "*Você se sente tonto*");
 	Imersao(mobile, "cair"); // Pain sound
 	PlayCharCair(mobile);
 
@@ -345,7 +346,7 @@ function RemoveDiseaseEffects(mobile)
 	if (regen_mod)
 		var current_stamina_mod := AP_GetVitalRegenRateMod(mobile, "Stamina");
 		var current_mana_mod := AP_GetVitalRegenRateMod(mobile, "Mana");
-		AP_SetVitalRegenRateMod(mobile, "Stamina", current_stamina_mod - (regen_mod));
+		AP_SetVitalRegenRateMod(mobile, "Stamina", current_stamina_mod(regen_mod));
 		AP_SetVitalRegenRateMod(mobile, "Mana", current_mana_mod(regen_mod));
 	// Remover mod de regeneração se implementado
 	// UpdateDiseaseProperty(mobile, "RegenDiseaseMod", 0);

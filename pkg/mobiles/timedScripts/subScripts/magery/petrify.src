@@ -1,0 +1,39 @@
+use uo;
+use os;
+use util;
+
+include "include/client";
+
+program TimedScript_Petrify(params)
+	var mobile := params[1];
+
+	// CHECK FOR MIRRORED EYES PROTECTION - NEW INTEGRATION
+	if (GetObjProperty(mobile, "#mirroredEyesProtection"))
+		// Potion protects against petrification
+		PlaySoundEffect(mobile, 0x1F2);  // Magic protection sound
+		PlayObjectCenteredEffect(mobile, 0x37B9, 10, 15);  // Shimmer effect (mirrors)
+		SendSysMessage(mobile, "Seus olhos espelhados bloqueiam a petrificação!");
+		PrintTextAbove(mobile, "*proteção espelhada ativa*");
+		return 1;
+	endif
+
+	// CONTINUE WITH NORMAL PETRIFICATION IF NOT PROTECTED
+	PlaySoundEffect(mobile, 0x1F8);
+	PlayObjectCenteredEffectEx(mobile, FX_PETRIFY, 10, 30, 0x0835);
+	PrintTextAbove(mobile, "*Petrificado*");
+	SendSysMessage(mobile, "Voce foi transformado em pedra!");
+
+	// Save original color for restoration
+	SetObjProperty(mobile, "#originalcolor", mobile.color);
+
+	// Change to stone color (gray)
+	mobile.color := 0x0835;
+
+	// Paralyze the target
+	mobile.paralyzed := 1;
+
+	// Mark as petrified
+	SetObjProperty(mobile, "#petrified", 1);
+
+	return 1;
+endprogram

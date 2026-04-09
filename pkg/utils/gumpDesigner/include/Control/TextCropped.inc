@@ -22,14 +22,16 @@ class TextCropped(Text)
 
 	function SetWidth(this, width)
 		this._width := width;
+		return this;
 	endfunction
 
 	function SetHeight(this, height)
 		this._height := height;
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFTextCrop(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), this.GetColor(), this.GetValue());
+		GFTextCrop(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), this.GetColor(), this.GetValue());
 		Super::SelfCreate(this, gump);
 	endfunction
 

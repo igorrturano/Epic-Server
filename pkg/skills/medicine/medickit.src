@@ -7,6 +7,7 @@ include ":gathering:mining";
 include ":blood:blood";
 include ":gumps:yesNo";
 include ":medicine:anatomy";
+include ":medicine:disease";
 
 const COLOR_REGULAR := 1153; // Branco
 
@@ -17,41 +18,41 @@ program medical_items_gump(who, item)
 	var gump := GFECreateGump("Procedimentos Médicos", 350, 450, array{ BORDER_BLUE });
 
 	var items := array{ struct{ objtype := 3886, color := 1899, name := "Sangria com sangue-suga",
-								symptom := "Febre" },
+								symptom := DISEASES::FEVER },
 						
 						struct{
 								objtype := 0xD1C2,
 								name := "Injeção de sangue de touro",
 								doseType := "bull",
 								sourceObjtype := 0xE9,
-								symptom := "Trombo",
+								symptom := DISEASES::THROMBOSIS,
 								maxDoses := 25 },
 						struct{ objtype := 0xD1C7,
 								name := "Unguento de húmus de minhoca",
 								doseType := "worm",
 								sourceObjtype := 0x9980,
-								symptom := "Prurido",
+								symptom := DISEASES::ITCHING,
 								maxDoses := 25 },
-						struct{ objtype := 0xD1CB, name := "Alicate retal", symptom := "Colicas" },
+						struct{ objtype := 0xD1CB, name := "Alicate retal", symptom := DISEASES::COLIC },
 						
-						struct{ objtype := 0x102A, name := "Martelada de Compressão", symptom := "Palpitacoes" },
+						struct{ objtype := 0x102A, name := "Martelada de Compressão", symptom := DISEASES::PALPITATIONS },
 						
 						struct{
 								objtype := 0xD1C9,
 								name := "Inalação de vapores de água pantanosa",
 								doseType := "swamp",
-								symptom := "Nausea",
+								symptom :=  DISEASES::NAUSEA,
 								maxDoses := 25 },
-						struct{ objtype := 0xD1BD, name := "Trepanação", symptom := "Cefaleia" },
+						struct{ objtype := 0xD1BD, name := "Trepanação", symptom := DISEASES::HEADACHE },
 						
 						struct{
 								objtype := 0xa3e8,
 								color := 1899,
 								name := "Cataplasma de areia minerável",
 								doseType := "sand",
-								symptom := "Pustulas",
+								symptom := DISEASES::PUSTULES,
 								maxDoses := 25 },
-						struct{ objtype := 0xD1C3, name := "Sutura", symptom := "Laceracao" } };
+						struct{ objtype := 0xD1C3, name := "Sutura", symptom := DISEASES::LACERATION } };
 
 	if (CoordinateDistance(who.x, who.y, patient.x, patient.y) > 2)
 		SendSysMessage(who, "Alvo está muito longe. Aproxime-se mais!", color := 33);
@@ -275,15 +276,15 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 	// Verificar se é uma doença conhecida (datafile)
 	var datafile_disease := GetDiseaseInfoFromDatafile(original_symptoms);
 	var is_known_disease := (datafile_disease != 0);
-	PrintText(who, "Realizando o procedimento: " + name);
+	PrintTextAbove(who, "Realizando o procedimento: " + name);
 
 	// Configurar dificuldade baseada no grau da doença
 	var diff_grade;
-	if (disease_grade == "Leve")
+	if (disease_grade == DISEASE_GRADES::LIGHT)
 		diff_grade := 30;
-	elseif (disease_grade == "Moderado")
+	elseif (disease_grade == DISEASE_GRADES::MODERATE)
 		diff_grade := 45;
-	elseif (disease_grade == "Grave")
+	elseif (disease_grade == DISEASE_GRADES::SERIOUS)
 		diff_grade := 80;
 	endif
 
@@ -375,7 +376,7 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 				// SendSysMessage(patient, "O procedimento " + name + " tratou com sucesso seu sintoma: " + symptom, 3, 73);
 				endif
 
-				PrintText(patient, success_msg, 3, 73);
+				PrintTextAbove(patient, success_msg, 3, 73);
 
 				if (is_known_disease)
 					// Obter histórico de cura em ordem
@@ -424,7 +425,7 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 				MakeBleed(patient);
 				ApplyRawDamage(who, 30);
 
-				PrintText(patient, fail_skill_msg, 3, 33);
+				PrintTextAbove(patient, fail_skill_msg, 3, 33);
 				AgravarDoenca(who, patient, disease_grade);
 				UpdateDiseaseProperty(patient, "diseases", new_diseases);
 
@@ -448,7 +449,7 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 							3, 33);
 		endif
 
-		PrintText(patient, incompatible_msg, 3, 33);
+		PrintTextAbove(patient, incompatible_msg, 3, 33);
 
 		AgravarDoenca(who, patient, disease_grade);
 
@@ -470,7 +471,7 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 
 	// Verificar se todos os sintomas foram curados
 	if (new_diseases.size() == 0)
-		PrintText(patient, "*Curado!*");
+		PrintTextAbove(patient, "*Curado!*");
 		SendSysMessage(who, "Todos os sintomas foram tratados! O paciente está curado.", 3, 73);
 		TS_LowerDuration(patient, "disease", -1);
 
@@ -721,19 +722,19 @@ endfunction
 function AgravarDoenca(who, patient, disease_grade)
 	var diseases_system := GetObjProperty(patient, "Diseases_System");
 	case (disease_grade)
-		"Leve":
-			UpdateDiseaseProperty(patient, "grade", "Moderado");
+		DISEASE_GRADES::LIGHT:
+			UpdateDiseaseProperty(patient, "grade", DISEASE_GRADES::MODERATE);
 			SendSysMessageEX(who, "A doença do paciente progrediu para um grau moderado!", SSM_FAIL);
-			PrintText(patient, "Aparenta estar pior!", 3, 33);
+			PrintTextAbove(patient, "Aparenta estar pior!", 3, 33);
 			// TS_UpdateTimerDuration(patient, "disease", 8600); //Não está funcioanando!!!
 			break;
-		"Moderado":
-			UpdateDiseaseProperty(patient, "grade", "Grave");
+		DISEASE_GRADES::MODERATE:
+			UpdateDiseaseProperty(patient, "grade", DISEASE_GRADES::SERIOUS);
 			SendSysMessageEX(who, "A doença do paciente progrediu para um grau grave!", SSM_FAIL);
-			PrintText(patient, "Aparenta estar muito pior!", 3, 33);
+			PrintTextAbove(patient, "Aparenta estar muito pior!", 3, 33);
 			break;
-		"Grave":
-			UpdateDiseaseProperty(patient, "grade", "Incuravel");
+		DISEASE_GRADES::SERIOUS:
+			UpdateDiseaseProperty(patient, "grade", DISEASE_GRADES::INCURABLE);
 			SendSysMessageEX(who, "A doença se tornou incurável! Não será mais possível tratar os sintomas.",
 							  SSM_FAIL);
 			break;

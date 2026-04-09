@@ -153,13 +153,13 @@ function CriarPergaminho(who, tipo)
 	endif
 
 	if (ConfirmarCriacaoPergaminho(who, tipo, nivel))
-		PrintText(who, "*Juntando as folhas*");
+		PrintTextAbove(who, "*Juntando as folhas*");
 		PlaySoundEffect(who, 0x24A);
 		Sleep(3);
-		PrintText(who, "*Organizando o material*");
+		PrintTextAbove(who, "*Organizando o material*");
 		PlaySoundEffect(who, 0x24A);
 		Sleep(3);
-		PrintText(who, "*Ordenando o texto*");
+		PrintTextAbove(who, "*Ordenando o texto*");
 		PlaySoundEffect(who, 0x24A);
 		Sleep(4);
 
@@ -391,17 +391,25 @@ function SelectRandomRecipe(power)
 endfunction
 
 function SelectRandomSpell(power)
-	var cfg := ReadConfigFile(":spells:spellcaster");
-	if (!cfg)
-		return 0;
-	endif
 	var spells := array{};
-	foreach entry in (GetConfigStringKeys(cfg))
-		var elem := FindConfigElem(cfg, entry);
-		var circle := GetConfigInt(elem, "Circle");
-		if (circle == power)
-			spells.append(GetConfigInt(elem, "SpellId"));
+	var mage_configs := array{
+		":spells:config/evocation",
+		":spells:config/necromancy",
+		":spells:config/illusion",
+		":spells:config/swordmage"
+	};
+	foreach cfg_path in mage_configs
+		var cfg := ReadConfigFile(cfg_path);
+		if (!cfg)
+			continue;
 		endif
+		foreach entry in (GetConfigStringKeys(cfg))
+			var elem := FindConfigElem(cfg, entry);
+			var circle := GetConfigInt(elem, "Circle");
+			if (circle == power)
+				spells.append(GetConfigInt(elem, "SpellId"));
+			endif
+		endforeach
 	endforeach
 	if (spells.size() > 0)
 		var selectedSpell := spells[RandomInt(spells.size()) + 1];

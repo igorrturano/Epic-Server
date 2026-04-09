@@ -10,10 +10,11 @@ include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":tn:npcutil";
 include ":brainAI:npcUtil";
-include ":ghaia:ghaia";
 include ":spells:summon";
 include ":taming:taming";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program summontotem(params)
 
@@ -25,8 +26,8 @@ program summontotem(params)
 
 	// Efeito da magia
 	PlaySoundEffect(who, SFX_SPELL_SUMMON_ELEMENTAL);
-	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLE_GROUND, 0, 5);
-	var cfg := ReadConfigFile(":spells:spellcaster");
+	PlayObjectCenteredEffect(who, FX_BLUE_SPARKLE_GROUND, 0, 5);
+	var cfg := ReadConfigFile(":spells:config/druid");
 	var elem := FindConfigElem(cfg, spellid);
 
 	var template := getConfigString(elem, "npcTemplate");
@@ -86,22 +87,11 @@ program summontotem(params)
 		i := i + 1;
 	endwhile
 	SendSysMessageEx(who, "Voce teve sucesso em invocar a criatura.", SSM_INFO);
-
-	if (temHabilidade(who, "Guardião do Bosque"))
-		espirito.resist_physical_mod := 25;
-		espirito.resist_cold_mod := 25;
-		espirito.resist_poison_mod := 25;
-		espirito.resist_energy_mod := 25;
-		espirito.resist_fire_mod := 25;
-		SetObjProperty(espirito, "#ReflexosMod", 25);
-		SetObjProperty(espirito, "#FortitudeMod", 25);
-		SetObjProperty(espirito, "#VontadeMod", 25);
-	endif
-
+	
 	var duracao := 120 + 180 * AP_GetSkill(who, THEOLOGY) / 100;
 	var fator := (AP_GetSkill(who, THEOLOGY) - 20.0) / 4; // skill 0 -> -5 // Skill 20 -> 0 // Skill 40 -> +5 // Skill 100 -> +20
 
-	if (Temhabilidade(who, "Treinamento Druídico"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		espirito.resist_physical_mod := 25 * 1.2;
 		espirito.resist_cold_mod := 25 * 1.2;
 		espirito.resist_poison_mod := 25 * 1.2;

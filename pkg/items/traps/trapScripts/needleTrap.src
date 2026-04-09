@@ -6,10 +6,10 @@ use util;
 
 include "include/client";
 include "include/say";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:habilidades";
 include ":charactercreation:resists";
-include ":charactercreation:resists";
+include ":timedscripts:timedScripts";
 
 program trapScript(params)
 	var mobile := params[1];
@@ -34,11 +34,11 @@ program trapScript(params)
 										  LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, object.realm);
 
 	foreach mobile in mobiles
-		if (!mobile.npctemplate)
+		if (!mobile.npctemplate && GetCooldown(mobile, "res_trap_protection") == 0)
 			SendSysMessageEx(mobile, "Voce foi atingido por uma armadilha de dardos.", SSM_FAIL);
 
-			if (CheckResist(mobile, REFLEXOS, RESIST_MEDIUM, -1 * dmg))
-				if (temHabilidade(mobile, "Desbravador Nato"))
+			if (CheckResist(mobile, REFLEXES, RESIST_MEDIUM, -1 * dmg))
+				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha de dardos.", SSM_INFO);
 					mobile.hidden := 0;
 					continue;
@@ -46,15 +46,9 @@ program trapScript(params)
 					SendSysMessageEx(mobile, "Voce evitou parte do dano da armadilha de dardos.", SSM_INFO);
 					dmgfinal := CInt(dmgfinal * 0.5);
 				endif
-			else
-				if (temHabilidade(mobile, "Evasao Aprimorada"))
-					SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha de dardos.",
-									  SSM_INFO);
-					dmgfinal := CInt(dmgfinal * 0.5);
-				endif
 			endif
 
-			PerformAction(mobile, ANIM_HIT);
+			PerformAction(mobile, HUMAN_ANIM::HIT);
 			DamageFLS(mobile, dmgfinal);
 			mobile.hidden := 0;
 		endif

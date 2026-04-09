@@ -5,6 +5,8 @@ include ":attributes:attributes";
 include "include/client";
 include "include/say";
 include ":timedScripts:timedScripts";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":treasurehunting:treasuredigging";
 
 
@@ -14,7 +16,7 @@ function Garimpeiro(who)
 	var rand := RandomFloat(200);
 	if(rand < 2)
 		EncontraGema(who);
-	elseif(TemHabilidade(who, "Minerador Talentoso") && rand < 10)
+	elseif(MobileWrapper(who).HasAbility(ABILITY_ID::GEM_MINER) && rand < 10)
 		EncontraGema(who);
 		SendSysMessageEx(who, "Só um minerador talentoso acharia essa pedra preciosa!", SSM_INFO);
 	endif
@@ -30,7 +32,7 @@ function EncontraGema(who)
 	endwhile
 	SendSysMessageEx(who, "Você achou uma pedra preciosa!", SSM_INFO);
 	CreateItemInBackPack(who, gema, 1);
-	PrintText(who, "*encontra algo reluzente*");
+	PrintTextAbove(who, "*encontra algo reluzente*");
 	SkillCheck(who, GATHERING, -1);
 	return;
 endfunction
@@ -324,6 +326,9 @@ function CheckLoop(who, tool, my_x, my_y, my_facing)
 		SendSysMessage(who, "Você não pode minerar montado.");
 		return 0;
 	elseif (!tool)
+		return 0;
+	elseif (!(tool in ListEquippedItems(who)))
+		SendSysMessage(who, "Você precisa estar segurando a picareta.");
 		return 0;
 	else
 		return 1;

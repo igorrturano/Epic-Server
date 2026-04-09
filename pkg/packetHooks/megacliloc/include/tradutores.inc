@@ -3,8 +3,6 @@ function TranslateCritical(crit)
 		return "Dano Triplo";
 	elseif (crit == "damage2")
 		return "Dano Duplo";
-	elseif (crit == "armorignore")
-		return "Ignorar Armadura";
 	elseif ( crit == "stun")
 		return "Ataque Atordoante";
 	elseif (Crit == "bleed")
@@ -45,6 +43,9 @@ function TraduzirProfissao(profissao)
         "Wood_Working": return "Carpinteiro";
         "Gathering": return "Coletor";
         "Handle_Animal": return "Adestrador de Animais";
+        "Theology": return "Teologia";
+        "Science": return "Ciência";
+        "Arcana": return "Arcana";
         default: return profissao;
     endcase
 endfunction

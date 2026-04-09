@@ -170,7 +170,7 @@ function GetMaxPets(who)
 	endif
 
 	//Influência de Habs na quantidade
-	if(TemHabilidade(who, "Espreita Selvagem"))
+	if(MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM))
 		maxpets := maxpets + 1;
 	endif
 
@@ -219,71 +219,10 @@ function LogoutPets(who)
 
 endfunction
 
-//pega os pets da pessoa na area
-function ListPetsNear(who,  range)
 
-	var pets := array;
-	var tamed := GetObjProperty(who, "TamedPets");
-	if ( !tamed )
-		return pets;
-	endif
 
-	foreach serial in tamed
-		var pet := SystemFindObjectBySerial(serial);
-		if ( (pet.master == who)  && (Distance(pet, who) <= range))
-			pets.append(pet);
-		endif
-		sleepms(2);
-	endforeach
 
-	return pets;
 
-endfunction
-
-//pega os Summoned Pets da pessoa na area
-function ListSummonedPetsNear(who,  range)
-
-	var pets := array;
-	var tamed := GetObjProperty(who, "SummonedPets");
-	if ( !tamed )
-		return pets;
-	endif
-
-	foreach serial in tamed
-		var pet := SystemFindObjectBySerial(serial);
-		var owner := GetObjProperty(pet, "owner");
-		if ( (owner == who || owner == who.serial || cstr(owner) == cstr(who.serial))  && (Distance(pet, who) <= range))
-			pets.append(pet);
-		endif
-		sleepms(2);
-	endforeach
-
-	return pets;
-
-endfunction
-
-//pega os pets e summons da pessoa na area
-function ListAllPetsAndSummonedPetsNear(who,  range)
-
-	var pets := array;
-	var tamedPets := ListPetsNear(who,  range);
-	var summonedPets := ListSummonedPetsNear(who,  range);
-
-	if ( !tamedPets && !summonedPets)
-		return pets;
-	endif
-
-	foreach pet in tamedPets
-		pets.append(pet);
-	endforeach
-
-	foreach pet in summonedPets
-		pets.append(pet);
-	endforeach
-
-	return pets;
-
-endfunction
 
 //traz os pets pra proximo do dono.
 function LogonPets(who)
@@ -322,6 +261,7 @@ function destama(serial)
 	EraseObjProperty(me,"countercheck");
 	EraseObjProperty(me, "NeverRelease");
 	EraseObjProperty(me, "Fidelizar?");
+	EraseObjProperty(me, "Cruzar");
 	RestartScript(me);
 	ErasePetMods(me);
 endfunction
@@ -350,7 +290,7 @@ function SetPetMods(pet)
 	var hits := Cint(GetVital(pet, "hits")/100);
 	SetObjProperty(pet, "hitsmod", hits);
 	recalcvitals(pet);
-	healdamage(pet, 255);
+	ApplyEpicHealing(pet, 255);
 
 	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
@@ -390,7 +330,7 @@ function RessuscitarPet(corpse, owner, is_bandage := 0)
 
     // Lógica de contagem de animais fidelizados
     var pets := GetObjProperty(owner, "TamedPets");
-    var habs := TemHabilidade(owner, "Espreita Selvagem");
+    var habs := MobileWrapper(owner).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM);
     var limite_animais := habs ? 2 : 1;
     var animais_fidelizados := 0;
     foreach serial in pets
@@ -477,4 +417,58 @@ function CopyPropsPet(origin, destiny)
     foreach prop in propnames
         SetObjProperty(destiny, prop, GetObjProperty(origin, prop));
     endforeach
+endfunction
+
+function GetDietByTaxonomy(tax)
+
+    tax := Lower(tax);
+
+    if (tax == "canidae")
+        return {"meat"};
+    elseif (tax == "felidae")
+        return {"meat"};
+    elseif (tax == "arachnida")
+        return {"meat"};
+    elseif (tax == "serpentes")
+        return {"meat"};
+
+    elseif (tax == "delphinidae")
+        return {"fish"};
+    elseif (tax == "odobenidae")
+        return {"fish"};
+    elseif (tax == "crustacean")
+        return {"fish"};
+
+    elseif (tax == "reptilia")
+        return {"meat", "fish"};
+    elseif (tax == "draco")
+        return {"meat", "fish"};
+
+    elseif (tax == "ursidae")
+        return {"meat", "fish", "fruit"};
+    elseif (tax == "suidae")
+        return {"meat", "fruit", "vegetable"};
+    elseif (tax == "chiroptera")
+        return {"fruit", "meat"};
+    elseif (tax == "primatomorpha")
+        return {"fruit", "grain", "vegetable"};
+
+    elseif (tax == "bovidae")
+        return {"grain", "vegetable"};
+    elseif (tax == "equus")
+        return {"grain", "vegetable"};
+    elseif (tax == "camelidae")
+        return {"grain", "vegetable"};
+    elseif (tax == "cervidae")
+        return {"grain", "vegetable"};
+    elseif (tax == "rodentia")
+        return {"grain", "vegetable"};
+
+    elseif (tax == "aves")
+        return {"grain", "fish"};
+    elseif (tax == "phasianidae")
+        return {"grain"};
+    endif
+
+    return {"all"};
 endfunction

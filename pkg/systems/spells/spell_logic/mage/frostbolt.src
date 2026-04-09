@@ -7,7 +7,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include "include/epicMageryUtils";
@@ -52,16 +52,16 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school)
 	DamageFLS(targ, cint(dmg), DMG_COLD, caster, "rayfrost");
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
 	var bonus := epicWisdomPathBonus(caster);
-	if (CheckResist(targ, VONTADE, diff, -bonus))
+	if (CheckResist(targ, WILL, diff, -bonus))
 		SendSysMessageEx(caster, "O alvo resistiu a magia.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 
 		return 1;
 	endif
 
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 3, 4);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 3, 4);
 	PlaySoundEffect(targ, SFX_GLASS_BREAK_3);
 	TS_Starttimer(targ, "lentidao", CINT(AP_GetSkill(caster, ARCANA) / 10));
 
-	printText(targ, "*congelado*");
+	PrintTextAbove(targ, "*congelado*");
 endfunction

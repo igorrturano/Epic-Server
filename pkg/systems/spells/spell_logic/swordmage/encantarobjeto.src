@@ -2,30 +2,31 @@ use uo;
 
 include "include/say";
 include ":tn:cooldown";
-include ":combat:damage";
 include ":spells:tnmagery";
 include "include/encantarObjeto";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
-	var who := params[1];
+	var who := MobileWrapper(params[1]);
 	var use_on := params[2];
 	params := 0; // No longer needed
 
-	SendSysMessageEx(who, "Qual item deseja encantar?", SSM_REQUEST);
+	Message("Qual item deseja encantar?", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
 
 	if (!use_on)
 		return;
 	endif
 
-	if (!use_on.isA(POLCLASS_WEAPON) && !use_on.isA(POLCLASS_ARMOR))
-		SendSysMessageEx(who, "Isto não pode ser alvejado por essa magia.", SSM_FAIL);
+	if (use_on.amount > 10 && IsAmmunition(use_on))
+		Message("Você não pode encantar pilhas de munição com mais de 10 unidades.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 		return;
 	endif
 
 	// Bonus
-	var bonus := Cint(AP_GetSkill(who, ARCANA));
+	var bonus := CInt(who.GetSkill(ARCANA));
 
-	if (temHabilidade(who, "Domínio Vital"))
+	if (who.HasAbility(ABILITY_ID::DOMINIO_VITAL))
 		bonus := CInt(bonus * 0.07); // TODO: Rever se esse valor vai ser coerente com a hab. Max = 7
 	else
 		bonus := CInt(bonus * 0.05); // Max = 5

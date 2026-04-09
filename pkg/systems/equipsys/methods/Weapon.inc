@@ -1,4 +1,5 @@
 include ":equipsys:utils/consts";
+include ":combat:Model/Damage";
 include ":attributes:attributeConstants";
 
 print("INSTALLING: Methods for Weapon -> Equipment System... OK!");
@@ -18,11 +19,11 @@ print("INSTALLING: Methods for Weapon -> Equipment System... OK!");
 exported function getMainDamageDice(weapon)
 	var prop := weapon.getAttrBase();
 
-	if (Upper(prop.AttackType) == Upper(SLASHDAMAGE))
+	if (Upper(prop.AttackType) == Upper(DAMAGE_TYPE::SLASH))
 		return prop.SlashMainDamage;
-	elseif (Upper(prop.AttackType) == Upper(PIERCINGDAMAGE))
+	elseif (Upper(prop.AttackType) == Upper(DAMAGE_TYPE::PIERCING))
 		return prop.PiercingMainDamage;
-	elseif (Upper(prop.AttackType) == Upper(BLUNTDAMAGE))
+	elseif (Upper(prop.AttackType) == Upper(DAMAGE_TYPE::BLUNT))
 		return prop.BluntMainDamage;
 	else
 		return error{"errortext" := "No dice damage found!"};
@@ -62,11 +63,11 @@ endfunction
 exported function getOffDamageDice(weapon)
 	var prop := weapon.getAttrBase();
 	
-	if (prop.AttackType.Upper() == SLASHDAMAGE.Upper())
+	if (prop.AttackType.Upper() == DAMAGE_TYPE::SLASH.Upper())
 		return prop.SlashOffDamage;
-	elseif (prop.AttackType.Upper() == PIERCINGDAMAGE.Upper())
+	elseif (prop.AttackType.Upper() == DAMAGE_TYPE::PIERCING.Upper())
 		return prop.PiercingOffDamage;
-	elseif (prop.AttackType.Upper() == BLUNTDAMAGE.Upper())
+	elseif (prop.AttackType.Upper() == DAMAGE_TYPE::BLUNT.Upper())
 		return prop.BluntOffDamage;
 	else
 		return error{"errortext" := "No dice damage found!"};
@@ -204,4 +205,9 @@ endfunction
 exported function isTwoHanded(weapon)
 	weapon := weapon.getCfgElem();
 	return Upper(weapon.Attribute) == Upper(TWOHANDED);
+endfunction
+
+exported function isFireWeapon(weapon)
+	var elem := weapon.getCfgElem();
+	return elem.ProjectileType == 0x9090;
 endfunction

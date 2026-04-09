@@ -4,11 +4,11 @@ use os;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":fls_magery:spells";
-include ":fls_magery:spellSounds";
+;
+;
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 include "include/say";
 include "include/facings";
@@ -43,7 +43,7 @@ program SpellScript(params)
 		// sendsysmessage(who, "mobs " + mobs);
 		foreach mob in (mobs)
 			if (!mob.frozen)
-				PrintText(mob, "*paralisado*");
+				PrintTextAbove(mob, "*paralisado*");
 				TS_StartTimer(mob, "paralysis", time);
 				TS_StartTimer(who, "invul", time);
 				mob.squelched(time);

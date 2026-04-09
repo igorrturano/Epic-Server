@@ -6,7 +6,7 @@ use uo;
 use os;
 use polsys;
 include ":fls_core:fls_characters";
-include ":taming:taming";
+include "include/epicCombatUtils";
 
 program walkOn(mobile, tile)
 	if (JustTeleported(mobile))
@@ -17,17 +17,16 @@ program walkOn(mobile, tile)
 	var hostiles := ListHostiles(mobile, 4);
 	var racesAllowed := GetObjProperty(tile, "Destination").race;
 	if (racesAllowed == "all")
-		racesAllowed := array{ ANAO, DROW, ELFO, ORC, HUMANO, POLSKI };
+		racesAllowed := array{ ANAO, DROW, ELFO, ORC, HUMANO, PEQUILHO };
 	else
 		racesAllowed := splitWords(racesAllowed);
 	endif
 
 	var result;
-	if ( mobile.getRace() in racesAllowed || mobile.cmdlevel > 2)
+	if (mobile.getRace() in racesAllowed || mobile.cmdlevel > 2)
 		result := tile.SendToDestination(mobile);
 	else
-		SendSysMessageEx(mobile, "Seu tamanho é desproporcional!",
-				   SSM_FAIL);
+		SendSysMessageEx(mobile, "Seu tamanho é desproporcional!", SSM_FAIL);
 		return 0;
 	endif
 
@@ -51,19 +50,11 @@ program walkOn(mobile, tile)
 		endforeach
 	endif
 
-	if (HaveReverseVision(mobile))
-		if (mobile.cmdlevel > 1)
-			SendsysMessage(mobile, "GM: Ajustando infravisao.");
-		endif
-		ReverseLight(mobile);
-	endif
 	destroyIllyraOutsideDungeons(mobile);
 	var name := mobile.IsInTheDungeon();
 	if (name)
 		SendSysMessageEx(mobile, "Dungeon: " + name + ". Seu feedback é importante para nós!( .feedback ou no Discord)",
 				   SSM_INFO);
-	else
-		SendSysMessage(mobile, "NAO ENTROU" + name);
 	endif
 	return 1;
 endprogram

@@ -16,6 +16,9 @@ include ":brainAi:npcUtil";
 include ":gumps:yesNo";
 include ":charactercreation:habilidades";
 include ":tn:cooldown";
+include ":entropy:entropy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program skinning(parms)
 	var who := parms[1];
@@ -71,8 +74,8 @@ program skinning(parms)
 				var dpmod := cint(GetObjProperty(who, "dpmod"));
 				dpmod := dpmod - 10;
 				SetObjProperty(who, "dpmod", dpmod);
-				PrintText(who, "*Corta a cabeca*", font := _DEFAULT_TEXT_FONT, color := _DEFAULT_TEXT_COLOR,
-								journal_print := JOURNAL_PRINT_NAME);
+				PrintTextAbove(who, "*Corta a cabeca*", font := _DEFAULT_TEXT_FONT, color := _DEFAULT_TEXT_COLOR,
+						   journal_print := JOURNAL_PRINT_NAME);
 				SetObjProperty(cadaver, "description", "[Decaptado]");
 				SetObjProperty(cadaver, "WeaponKill", blade.desc);
 				SetObjProperty(cadaver, "charname", cadaver.name);
@@ -80,6 +83,15 @@ program skinning(parms)
 				SetName(cadaver, "Corpo Irreconhecivel");
 				SetObjProperty(cadaver, "morto", 1);
 				SetObjProperty(cadaver, "assassinado", 1);
+				if (GetObjProperty(cadaver, "entropy") != error)
+					var wrapper := MobileWrapper(who);
+					var killed_entropy := Cint(GetObjProperty(cadaver, "entropy"));
+					if (killed_entropy <= -12000)
+						UpdateMobileEntropy(who, killed_entropy / 10);
+					elseif(killed_entropy > -12000)
+						UpdateMobileEntropy(who, -killed_entropy / 10);
+					endif
+				endif
 
 				var region := GetRegionName(cadaver);
 				var tipo := "pk";
@@ -99,12 +111,12 @@ program skinning(parms)
 		 (c_type == 1830) || (c_type == 1831) || (c_type == 1832) || (c_type == 1833) || (c_type == 1834) ||
 		 (c_type == 1835)) && (GetObjProperty(cadaver, "morto") != 1))
 		DesmembreCorpse(cadaver);
-		PrintText(who, "*Corta a cabeca*", font := _DEFAULT_TEXT_FONT, color := _DEFAULT_TEXT_COLOR,
-						journal_print := JOURNAL_PRINT_NAME);
+		PrintTextAbove(who, "*Corta a cabeca*", font := _DEFAULT_TEXT_FONT, color := _DEFAULT_TEXT_COLOR,
+				   journal_print := JOURNAL_PRINT_NAME);
 		SetObjProperty(cadaver, "morto", 1);
 	else
 		var qtd;
-		PrintText(who, "*escalpelando " + cadaver.desc + "*");
+		PrintTextAbove(who, "*escalpelando " + cadaver.desc + "*");
 		SetObjProperty(cadaver, "morto", 1);
 		/* Não entendi o motivo desse trecho, portanto comentei *Deiro*
 		if(c_type == 223)
@@ -156,7 +168,7 @@ program skinning(parms)
 						minamt := corpseamt[i];
 					endif
 					qtd := minamt;
-					if (TemHabilidade(who, "Sem Desperdicio"))
+					if (MobileWrapper(who).HasAbility(ABILITY_ID::NO_WASTE))
 						qtd := qtd + CInt(qtd * AP_GetSkill(who, SURVIVAL) / 100);
 					endif
 					var item := CreateItemInContainer(cadaver, cstr(thing), cint(qtd));

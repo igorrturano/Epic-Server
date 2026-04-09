@@ -1,0 +1,39 @@
+include ":attributes:attributes";
+include ":tn:cooldown";
+program SpellScript(params)
+	var who := params[1];
+	// Calculate duration based on Theology skill
+	var theology := AP_GetSkill(who, THEOLOGY);
+	var duration := cint(theology);
+	if (duration < 10)
+		duration := 10;
+	endif
+
+	// Get all mobiles near the target location (18 tile radius)
+	var nearby := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 18, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
+
+	var silenced_count := 0;
+
+	for i := 0 to Cint(duration/10)
+		PlayObjectCenteredEffect(who, FX_MAGIC_IMMUNITY, 10, 255);
+
+		foreach mobile in nearby
+			if (mobile != who)
+				SetCooldown(mobile, "silence", Cint(duration/10));
+				PlaySoundEffect(who, SFX_SPELL_ENERGY_FIELD);
+				PlayObjectCenteredEffect(mobile, FX_MAGIC_IMMUNITY, 10, 255);
+
+				SendSysMessageEx(mobile, "Voce foi silenciado por um campo anti-magia!", SSM_FAIL);
+
+				silenced_count := silenced_count + 1;
+				sleepms(20);
+			endif
+		endforeach
+
+		Sleep(Cint(duration/10));
+	endfor
+
+	SendSysMessageEx(who, "Voce criou um campo anti-magia, silenciando " + silenced_count + " criatura(s) por " + duration + " segundos.", SSM_INFO);
+
+	return 1;
+endprogram

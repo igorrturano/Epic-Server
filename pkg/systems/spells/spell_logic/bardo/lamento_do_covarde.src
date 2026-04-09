@@ -1,0 +1,51 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/tileEffects";
+include "include/sounds";
+
+// O Lamento do Covarde (1205) - C1
+// Fear: congela alvo por Arc/10 segundos (Arc vs Will)
+program SpellScript(params)
+	var who  := params[1];
+	var targ := params[2];
+
+	if (!targ || !targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return 0;
+	endif
+
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
+	var will     := CInt(AP_GetTrueStat(targ, WILL));
+	var roll     := RandomInt(100) + 1;
+
+	var resist_threshold := will + CInt((100 - arcana) / 2);
+	if (roll > resist_threshold)
+		SendSysMessageEx(who, $"{targ.name} resistiu ao Lamento.", SSM_FAIL);
+		PrintTextAbove(targ, "*resiste*", 3, 38);
+		return 0;
+	endif
+
+	var duration := CInt(arcana / 10);
+	if (duration < 2)  duration := 2;  endif
+	if (duration > 10) duration := 10; endif
+
+	PrintTextAbove(who, "*E o heroi correu. Porque ate os bravos temem o que nao compreendem.*", 3, 38);
+	PlaySoundEffect(who, 0x4B4);
+
+	SetObjProperty(targ, "#bard_feared", 1);
+	targ.frozen := 1;
+	PrintTextAbove(targ, "*apavorado!*", 3, 38);
+	SendSysMessageEx(targ, "Voce esta paralisado de medo!", SSM_FAIL);
+
+	sleep(duration);
+
+	if (GetObjProperty(targ, "#bard_feared"))
+		EraseObjProperty(targ, "#bard_feared");
+		targ.frozen := 0;
+		SendSysMessageEx(targ, "Voce supera o medo.", SSM_INFO);
+	endif
+
+	return 1;
+endprogram

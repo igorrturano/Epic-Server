@@ -38,26 +38,31 @@ class TextBox(Control)
 
 	function SetWidth(this, width)
 		this._width := width;
+		return this;
 	endfunction
 
 	function SetLines(this, lines)
 		this._lines := lines;
+		return this;
 	endfunction
 
 	function SetTextColor(this, textColor)
 		this._textColor := textColor;
+		return this;
 	endfunction
 
 	function SetValue(this, value)
 		this._value := value;
+		return this;
 	endfunction
 
 	function SetMaxLength(this, maxLength)
 		this._maxLength := maxLength;
+		return this;
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		this._value := GFEAddTextBox(gump, this.GetX(), this.GetY()-6, this.GetWidth(), this.GetLines()*16, this.GetTextColor(), this.GetValue(), this.GetGumpId(), this.GetMaxLength());
+		this._value := GFEAddTextBox(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset() - 6, this.GetWidth(), this.GetLines()*16, this.GetTextColor(), this.GetValue(), this.GetGumpId(), this.GetMaxLength());
 		Super::SelfCreate(this, gump);
 	endfunction
 

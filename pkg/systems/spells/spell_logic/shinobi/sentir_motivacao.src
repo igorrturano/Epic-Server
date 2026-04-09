@@ -1,0 +1,94 @@
+use uo;
+use os;
+use util;
+
+include "include/say";
+include "include/facings";
+include ":datafile:datafile";
+include ":message:model/Message";
+
+program sentir_motivacao(who, spellinfo)
+	SendSysMessageEx(who, "Escolha uma pessoa para voce fazer uma leitura.", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!targ)
+		return 0;
+	elseif (targ == who)
+		SendSysMessageEx(who, "Voce ja se conhece o suficiente.", SSM_FAIL);
+		return 0;
+	elseif (targ.npctemplate)
+		SendSysMessageEx(who, "Voce so pode usar essa tecnica em jogadores.", SSM_FAIL);
+		return 0;
+	elseif (targ.connected == 0)
+		SendSysMessageEx(who, "Voce nao pode usar essa tecnica em jogadores desconectados.", SSM_FAIL);
+		return 0;
+	elseif (Distance(who, targ) > 5)
+		SendSysMessageEx(who, "O alvo esta muito longe.", SSM_FAIL);
+		return 0;
+	elseif (!IsFacing(who, targ.x, targ.y))
+		SendSysMessageEx(who, "Voce deve estar virado para o alvo.", SSM_FAIL);
+		return 0;
+	elseif (!CheckLineOfSight(who, targ))
+		SendSysMessageEx(who, "Voce deve ser capaz de observar o alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	var ficharp_data_file := DFOpenDataFile(":fls_core:ficharp", DF_CREATE);
+	var ficharp_elem := DFFindElement(ficharp_data_file, Hex(targ.serial), DF_NO_CREATE);
+
+	if (!ficharp_elem)
+		SendSysMessageEx(who, "Voce nao pode descobrir nada sobre um alvo sem ficha de RP.", SSM_FAIL);
+		return 0;
+	endif
+
+	var comportamento := ficharp_elem.GetProp("Comportamento");
+	if (!comportamento || comportamento.size() < 1)
+		SendSysMessageEx(who, "Voce nao consegue perceber nada sobre o alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(who, "Voce precisa agora observar o alvo por algum tempo, para que consiga deduzir seu comportamento.", SSM_INFO);
+
+	Detach();
+
+	var revealed := array{};
+	var total := comportamento.size();
+	if (total > 6)
+		total := 6;
+	endif
+
+	var i, j, r;
+	for (i := 1; i <= total; i := i + 1)
+		for (j := 1; j <= 9; j := j + 1)
+			sleep(10);
+			if (targ.connected == 0)
+				SendSysMessageEx(who, "Voce perdeu a concentracao. O alvo desconectou.", SSM_FAIL);
+				return 0;
+			elseif (Distance(who, targ) > 5)
+				SendSysMessageEx(who, "Voce perdeu a concentracao. O alvo ficou muito longe.", SSM_FAIL);
+				return 0;
+			elseif (!IsFacing(who, targ.x, targ.y))
+				SendSysMessageEx(who, "Voce perdeu a concentracao. Voce nao esta mais olhando diretamente para o alvo.", SSM_FAIL);
+				return 0;
+			elseif (!CheckLineOfSight(who, targ))
+				SendSysMessageEx(who, "Voce perdeu a concentracao. Voce perdeu o alvo de vista por algum obstaculo.", SSM_FAIL);
+				return 0;
+			else
+				SendSysMessageEx(who, $"Progresso da Leitura: {j} de 10.", SSM_INFO);
+			endif
+		endfor
+
+		// Pick a random unrevealed characteristic
+		r := RandomInt(total) + 1;
+		while (r in revealed)
+			r := RandomInt(total) + 1;
+		endwhile
+		revealed.append(r);
+
+		sleep(10);
+		SendSysMessageEx(who, "Voce percebeu uma das caracteristicas comportamentais do alvo:", SSM_INFO);
+		SendSysMessageEx(who, comportamento[r], SSM_INFO);
+	endfor
+
+	SendSysMessageEx(who, "Voce completou sua leitura.", SSM_INFO);
+endprogram

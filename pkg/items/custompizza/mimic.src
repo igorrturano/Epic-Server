@@ -4,7 +4,7 @@
 
 use uo;
 use os;
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program mimic_animation(who, item)
 	// First, determine direction based on current graphic

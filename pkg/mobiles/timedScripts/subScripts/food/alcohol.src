@@ -30,10 +30,10 @@ program TimedScript_Alcohol(params)
 		var roll := RandomInt(10);
 		if (cycle >= 13)
 			mobile.facing := RandomInt(8);
-			PrintText(mobile, "*Hic!*");
+			PrintTextAbove(mobile, "*Hic!*");
 
 			if (roll < 7)
-				PerformAction(mobile, ANIM_BOW);
+				PerformAction(mobile, HUMAN_ANIM::BOW);
 			endif
 		endif
 

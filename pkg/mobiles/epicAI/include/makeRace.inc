@@ -1,7 +1,16 @@
 include "include/client";
+
+function HasHair(mobile)
+    return GetEquipmentByLayer(mobile, LAYER_HAIR);
+endfunction
+
+function HasBeard(mobile)
+    return GetEquipmentByLayer(mobile, LAYER_BEARD);
+endfunction
+
 function makeRace(mobile, race := 0)
    if (!race)
-      var races := array{ANAO, ELFO, DROW, ORC, POLSKI, HUMANO};
+      var races := array{ANAO, ELFO, DROW, ORC, PEQUILHO, HUMANO};
       race := races[RandomInt(races.size()) + 1];
       print("Making race: " + race);
    endif
@@ -11,7 +20,7 @@ function makeRace(mobile, race := 0)
       ELFO:   makeElven(mobile);
       DROW:   makeDrow(mobile);
       ORC:    makeOrc(mobile);
-      POLSKI: makePolski(mobile);
+      PEQUILHO: makePequilho(mobile);
       HUMANO: makeHuman(mobile);
    endcase
 
@@ -27,9 +36,10 @@ function makeDwarven(mobile)
       mobile.graphic := 1829;
    endif
 
-   // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
-   
+   // Get NPC config to check for existing colors - O(1) cache lookup
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
+
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
    var hair_cfg := ReadConfigFile(":hair:config/hairColors");
@@ -53,27 +63,24 @@ function makeDwarven(mobile)
       mobile.truecolor := mobile.color;
    endif
 
-   // Get hair colors from config
    var hair_elem := hair_cfg["Cabelo Anao"];
    var hair_colors := GetConfigStringArray(hair_elem, "Color");
    var hair_color := CInt(hair_colors[RandomInt(hair_colors.size()) + 1]);
 
-   // Get hair styles from config
-   var hair_types := types_cfg["todos"];
-   var hair_styles := GetConfigStringArray(hair_types, "Style");
-   var valid_hair_styles := array{};
-   foreach style in hair_styles
-      style := SplitWords(style);
-      valid_hair_styles.append(CInt(style[2]));
-   endforeach
-   
-   // Create and equip hair
-   var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomInt(valid_hair_styles.size()) + 1], 1);
-   hair.color := hair_color;
-   EquipItem(mobile, hair);
+   if (!HasHair(mobile))
+      var hair_types := types_cfg["todos"];
+      var hair_styles := GetConfigStringArray(hair_types, "Style");
+      var valid_hair_styles := array{};
+      foreach style in hair_styles
+         style := SplitWords(style);
+         valid_hair_styles.append(CInt(style[2]));
+      endforeach
+      var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomInt(valid_hair_styles.size()) + 1], 1);
+      hair.color := hair_color;
+      EquipItem(mobile, hair);
+   endif
 
-   // Get beard styles for males
-   if (isMale(mobile) == 1)
+   if (isMale(mobile) == 1 && !HasBeard(mobile))
       var beard_types := types_cfg["dwarwen_beard"];
       var beard_styles := GetConfigStringArray(beard_types, "Style");
       var valid_beard_styles := array{};
@@ -81,8 +88,6 @@ function makeDwarven(mobile)
          style := SplitWords(style);
          valid_beard_styles.append(CInt(style[2]));
       endforeach
-      
-      // Create and equip beard
       var beard := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_beard_styles[RandomInt(valid_beard_styles.size()) + 1], 1);
       beard.color := hair_color;
       EquipItem(mobile, beard);
@@ -99,9 +104,10 @@ function makeElven(mobile)
       mobile.graphic := 1831; // Female elf graphic
    endif
 
-   // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
-   
+   // Get NPC config to check for existing colors - O(1) cache lookup
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
+
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
    var hair_cfg := ReadConfigFile(":hair:config/hairColors");
@@ -125,24 +131,21 @@ function makeElven(mobile)
       mobile.truecolor := mobile.color;
    endif
 
-   // Get hair colors from config
-   var hair_elem := hair_cfg["Cabelo Elfo"];
-   var hair_colors := GetConfigStringArray(hair_elem, "Color");
-   var hair_color := CInt(hair_colors[RandomInt(hair_colors.size()) + 1]);
-
-   // Get hair styles from config
-   var hair_types := types_cfg["todos"];
-   var hair_styles := GetConfigStringArray(hair_types, "Style");
-   var valid_hair_styles := array{};
-   foreach style in hair_styles
-      style := SplitWords(style);
-      valid_hair_styles.append(CInt(style[2]));
-   endforeach
-   
-   // Create and equip hair
-   var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomInt(valid_hair_styles.size()) + 1], 1);
-   hair.color := hair_color;
-   EquipItem(mobile, hair);
+   if (!HasHair(mobile))
+      var hair_elem := hair_cfg["Cabelo Elfo"];
+      var hair_colors := GetConfigStringArray(hair_elem, "Color");
+      var hair_color := CInt(hair_colors[RandomInt(hair_colors.size()) + 1]);
+      var hair_types := types_cfg["todos"];
+      var hair_styles := GetConfigStringArray(hair_types, "Style");
+      var valid_hair_styles := array{};
+      foreach style in hair_styles
+         style := SplitWords(style);
+         valid_hair_styles.append(CInt(style[2]));
+      endforeach
+      var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomInt(valid_hair_styles.size()) + 1], 1);
+      hair.color := hair_color;
+      EquipItem(mobile, hair);
+   endif
 
    return 1;
 endfunction
@@ -158,7 +161,8 @@ function makeDrow(mobile)
    endif
 
    // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
    
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
@@ -184,23 +188,21 @@ function makeDrow(mobile)
    endif
 
    // Get hair colors from config
-   var hair_elem := hair_cfg["Cabelo Drow"];
-   var hair_colors := GetConfigStringArray(hair_elem, "Color");
-   var hair_color := CInt(hair_colors[RandomIntMinMax(1, hair_colors.size())]);
-
-   // Get hair styles from config
-   var hair_types := types_cfg["todos"];
-   var hair_styles := GetConfigStringArray(hair_types, "Style");
-   var valid_hair_styles := array{};
-   foreach style in hair_styles
-      style := SplitWords(style);
-      valid_hair_styles.append(CInt(style[2]));
-   endforeach
-   
-   // Create and equip hair
-   var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomIntMinMax(1, valid_hair_styles.size())], 1);
-   hair.color := hair_color;
-   EquipItem(mobile, hair);
+   if (!HasHair(mobile))
+      var hair_elem := hair_cfg["Cabelo Drow"];
+      var hair_colors := GetConfigStringArray(hair_elem, "Color");
+      var hair_color := CInt(hair_colors[RandomIntMinMax(1, hair_colors.size())]);
+      var hair_types := types_cfg["todos"];
+      var hair_styles := GetConfigStringArray(hair_types, "Style");
+      var valid_hair_styles := array{};
+      foreach style in hair_styles
+         style := SplitWords(style);
+         valid_hair_styles.append(CInt(style[2]));
+      endforeach
+      var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomIntMinMax(1, valid_hair_styles.size())], 1);
+      hair.color := hair_color;
+      EquipItem(mobile, hair);
+   endif
 
    return 1;
 endfunction
@@ -214,7 +216,8 @@ function makeOrc(mobile)
    endif
 
    // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
    
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
@@ -244,22 +247,21 @@ function makeOrc(mobile)
    var hair_colors := GetConfigStringArray(hair_elem, "Color");
    var hair_color := CInt(hair_colors[RandomIntMinMax(1, hair_colors.size())]);
 
-   // Get hair styles from config
-   var hair_types := types_cfg["todos"];
-   var hair_styles := GetConfigStringArray(hair_types, "Style");
-   var valid_hair_styles := array{};
-   foreach style in hair_styles
-      style := SplitWords(style);
-      valid_hair_styles.append(CInt(style[2]));
-   endforeach
-   
-   // Create and equip hair
-   var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomIntMinMax(1, valid_hair_styles.size())], 1);
-   hair.color := hair_color;
-   EquipItem(mobile, hair);
+   if (!HasHair(mobile))
+      var hair_types := types_cfg["todos"];
+      var hair_styles := GetConfigStringArray(hair_types, "Style");
+      var valid_hair_styles := array{};
+      foreach style in hair_styles
+         style := SplitWords(style);
+         valid_hair_styles.append(CInt(style[2]));
+      endforeach
+      var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomIntMinMax(1, valid_hair_styles.size())], 1);
+      hair.color := hair_color;
+      EquipItem(mobile, hair);
+   endif
 
    // Add beard for male orcs
-   if (isMale(mobile) == 1 && RandomInt(2) == 1)
+   if (isMale(mobile) == 1 && RandomInt(2) == 1 && !HasBeard(mobile))
       var beard_types := types_cfg["beard"];
       var beard_styles := GetConfigStringArray(beard_types, "Style");
       var valid_beard_styles := array{};
@@ -267,8 +269,6 @@ function makeOrc(mobile)
          style := SplitWords(style);
          valid_beard_styles.append(CInt(style[2]));
       endforeach
-      
-      // Create and equip beard
       var beard := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_beard_styles[RandomIntMinMax(1, valid_beard_styles.size())], 1);
       beard.color := hair_color;
       EquipItem(mobile, beard);
@@ -277,7 +277,7 @@ function makeOrc(mobile)
    return 1;
 endfunction
 
-function makePolski(mobile)
+function makePequilho(mobile)
    // Set base graphics by gender
    if (mobile.gender == 0) // Male
       mobile.graphic := 1828;
@@ -286,7 +286,8 @@ function makePolski(mobile)
    endif
 
    // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
    
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
@@ -313,22 +314,20 @@ function makePolski(mobile)
 
    // Get hair colors from config
    var hair_elem := hair_cfg["Index"];
-   var hair_colors := GetConfigStringArray(hair_elem, "Color");
-   var hair_color := CInt(hair_colors[RandomIntMinMax(1, hair_colors.size())]);
-
-   // Get hair styles from config
-   var hair_types := types_cfg["todos"];
-   var hair_styles := GetConfigStringArray(hair_types, "Style");
-   var valid_hair_styles := array{};
-   foreach style in hair_styles
-      style := SplitWords(style);
-      valid_hair_styles.append(CInt(style[2]));
-   endforeach
-   
-   // Create and equip hair
-   var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomIntMinMax(1, valid_hair_styles.size())], 1);
-   hair.color := hair_color;
-   EquipItem(mobile, hair);
+   if (!HasHair(mobile))
+      var hair_colors := GetConfigStringArray(hair_elem, "Color");
+      var hair_color := CInt(hair_colors[RandomIntMinMax(1, hair_colors.size())]);
+      var hair_types := types_cfg["todos"];
+      var hair_styles := GetConfigStringArray(hair_types, "Style");
+      var valid_hair_styles := array{};
+      foreach style in hair_styles
+         style := SplitWords(style);
+         valid_hair_styles.append(CInt(style[2]));
+      endforeach
+      var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomIntMinMax(1, valid_hair_styles.size())], 1);
+      hair.color := hair_color;
+      EquipItem(mobile, hair);
+   endif
 
    return 1;
 endfunction
@@ -342,7 +341,8 @@ function makeHuman(mobile)
    endif
 
    // Get NPC config to check for existing colors
-   var npc_elem := NPC_GetNPCConfig(mobile);
+   var cache := NPC_GetCachedData(mobile);
+   var npc_elem := cache.npc_elem;
    
    // Get configs
    var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
@@ -367,27 +367,24 @@ function makeHuman(mobile)
       mobile.truecolor := mobile.color;
    endif
 
-   // Get hair colors from config
    var hair_elem := hair_cfg["Imperial"];
    var hair_colors := GetConfigStringArray(hair_elem, "Color");
    var hair_color := CInt(hair_colors[RandomIntMinMax(1, hair_colors.size())]);
 
-   // Get hair styles from config
-   var hair_types := types_cfg["todos"];
-   var hair_styles := GetConfigStringArray(hair_types, "Style");
-   var valid_hair_styles := array{};
-   foreach style in hair_styles
-      style := SplitWords(style);
-      valid_hair_styles.append(CInt(style[2]));
-   endforeach
-   
-   // Create and equip hair
-   var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomIntMinMax(1, valid_hair_styles.size())], 1);
-   hair.color := hair_color;
-   EquipItem(mobile, hair);
+   if (!HasHair(mobile))
+      var hair_types := types_cfg["todos"];
+      var hair_styles := GetConfigStringArray(hair_types, "Style");
+      var valid_hair_styles := array{};
+      foreach style in hair_styles
+         style := SplitWords(style);
+         valid_hair_styles.append(CInt(style[2]));
+      endforeach
+      var hair := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_hair_styles[RandomIntMinMax(1, valid_hair_styles.size())], 1);
+      hair.color := hair_color;
+      EquipItem(mobile, hair);
+   endif
 
-   // Add beard for male humans (50% chance)
-   if (isMale(mobile) == 1 && RandomInt(2) == 1)
+   if (isMale(mobile) == 1 && RandomInt(2) == 1 && !HasBeard(mobile))
       var beard_types := types_cfg["beard"];
       var beard_styles := GetConfigStringArray(beard_types, "Style");
       var valid_beard_styles := array{};
@@ -395,8 +392,6 @@ function makeHuman(mobile)
          style := SplitWords(style);
          valid_beard_styles.append(CInt(style[2]));
       endforeach
-      
-      // Create and equip beard
       var beard := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, valid_beard_styles[RandomIntMinMax(1, valid_beard_styles.size())], 1);
       beard.color := hair_color;
       EquipItem(mobile, beard);

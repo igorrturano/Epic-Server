@@ -1,0 +1,95 @@
+{
+  "spawners": [
+    {
+      "spawner_id": "maze_outer",
+      "spawner_name": "Thrain's Maze - Outer Passages",
+      "description": "Lost souls and scavengers in the outer maze",
+      "location": {
+        "x": 997,
+        "y": 1036,
+        "z": 2,
+        "realm": "britannia_alt"
+      },
+      "spawn_area": {
+        "x1": 939,
+        "y1": 1041,
+        "x2": 1058,
+        "y2": 1110
+      },
+      "level1": {
+        "mobs": "skeleton2 skeletonarcher zombie floatingskull Headless giantrat giantbat RatMan",
+        "amount": 25
+      },
+      "level2": {
+        "mobs": "halberd sword",
+        "amount": 6
+      },
+      "respawn": {
+        "min_minutes": 20,
+        "max_minutes": 40
+      }
+    },
+    {
+      "spawner_id": "maze_inner",
+      "spawner_name": "Thrain's Maze - Inner Sanctum Approaches",
+      "description": "Stronger undead and animated guardians near the vault",
+      "location": {
+        "x": 994,
+        "y": 1163,
+        "z": 1,
+        "realm": "britannia_alt"
+      },
+      "spawn_area": {
+        "x1": 939,
+        "y1": 1118,
+        "x2": 1057,
+        "y2": 1157
+      },
+      "level1": {
+        "mobs": "skeleton3 Spectre ghost GiantSpider RatMan2 RatMan3",
+        "amount": 10
+      },
+      "level2": {
+        "mobs": "sword skeleton3 Spectre DreadGiantSpider",
+        "amount": 6
+      },
+      "respawn": {
+        "min_minutes": 30,
+        "max_minutes": 50
+      }
+    },
+    {
+      "spawner_id": "frozen_domain_surface",
+      "spawner_name": "Domínio Congelado - Superfície",
+      "description": "Servos vivos e mortos-vivos de Glacius patrulham as terras nevadas",
+      "location": {
+        "x": 3545,
+        "y": 2829,
+        "z": 0,
+        "realm": "britannia_alt"
+      },
+      "spawn_area": {
+        "x1": 3421,
+        "y1": 2763,
+        "x2": 3669,
+        "y2": 2895
+      },
+      "level1": {
+        "mobs": "wolf2 tundrawolf mamute Jaguar polarbear yeti2 gibberling AranhaDeGelo",
+        "amount": 15
+      },
+      "level2": {
+        "mobs": "trolldogelo trollcave wowgiant3 wendigo2 polarbear2 FrostGiantSpider",
+        "amount": 8
+      },
+      "level3": {
+        "mobs": "skeleton3 Spectre ghost zombie2 skeletonfighter",
+        "amount": 6
+      },
+      "respawn": {
+        "min_minutes": 25,
+        "max_minutes": 45
+      }
+    }
+  ]
+}

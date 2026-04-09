@@ -7,7 +7,7 @@ use os;
 include "include/client";
 include "include/sounds";
 include ":attributes:attributes";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":timedScripts:timedScripts";
 include ":gumps:gumps";
 include ":gumps:yesNo";
@@ -21,7 +21,7 @@ const PERGAMINHO_AMOUNT_EXTENSIVA := 20;
 const PERGAMINHO_AMOUNT_RAPIDA := 5;
 const MIN_SKILL := 40;
 const MIN_MANA := 40;
-const RESEARCH_DURATION_MINUTES := 2; // 3 minutos para testes, 10080 para 7 dias
+const RESEARCH_DURATION_MINUTES := 7200; // 5 dias = 7200 minutos
 const BARRA_BACKGROUND := 83;
 const BARRA_FOREGROUND := 50;
 
@@ -340,7 +340,7 @@ function ShowExtensiveResearchGump(who)
 			GFTextLine(gump, 448, 133, 2517, "+");
 			GFTextLine(gump, 363, 160, 2517, "Consome 40 de mana");
 			GFTextLine(gump, 448, 187, 2517, "+");
-			GFTextLine(gump, 360, 214, 2517, "Duração de 7 dias ou 168 horas");
+			GFTextLine(gump, 360, 214, 2517, "Duração de 5 dias ou 120 horas");
 			GFTextLine(gump, 360, 250, 2517, "* Pode produzir instruções de MetalWorking,");
 			GFTextLine(gump, 360, 270, 2517, "WoodWorking e DomesticWork");
 			GFResizePic(gump, 365, 290, 83, 124, 131);
@@ -444,7 +444,7 @@ function InitiateResearch(who, recipe)
 			PlaySoundEffect(who, 0x43e);
 		endif
 
-		PrintText(who, "*inicia a pesquisa com determinação*");
+		PrintTextAbove(who, "*inicia a pesquisa com determinação*");
 
 		NotifyResearchResult(who, 1);
 		return 1;
@@ -486,7 +486,7 @@ function StartResearch(who, recipe, remainingTime := 0)
 			return 0;
 		endif
 
-		PrintText(who, research_actions[RandomInt(research_actions.size()) + 1]);
+		PrintTextAbove(who, research_actions[RandomInt(research_actions.size()) + 1]);
 		PlaySoundEffect(who, 0x24a); // Som de estudo
 
 		sleep(3);
@@ -718,7 +718,7 @@ function GetResearchSkills(who)
 	return struct{ "ferreiro" := AP_GetSkill(who, METALWORKING),
 			   	"costureiro" := AP_GetSkill(
 			   	who,
-			   	Domestic_Work),
+			   	DOMESTIC_WORK),
 			   	"alquimista" := AP_GetSkill(who, ALCHEMY),
 			   	"mago" := AP_GetSkill(who, MAGERY),
 			   	"carpenter" := AP_GetSkill(who, WOODWORKING) };
@@ -1080,7 +1080,7 @@ function PerformRapidResearch(who, recipe)
 						   			"metalworking" := AP_GetSkill(
 						   			who,
 						   			METALWORKING),
-						   			"domesticwork" := AP_GetSkill(who, Domestic_Work) };
+						   			"domesticwork" := AP_GetSkill(who, DOMESTIC_WORK) };
 			var highestSkill := Max(craftSkills.woodworking,
 									 Max(craftSkills.metalworking, craftSkills.domesticwork));
 			if (highestSkill == craftSkills.woodworking)
@@ -1088,7 +1088,7 @@ function PerformRapidResearch(who, recipe)
 			elseif (highestSkill == craftSkills.metalworking)
 				skillname := METALWORKING;
 			else
-				skillname := Domestic_Work;
+				skillname := DOMESTIC_WORK;
 			endif
 		"Receita Alquimica": skillname := ALCHEMY;
 		"Tinta":             skillname := ALCHEMY;
@@ -1114,7 +1114,7 @@ function PerformRapidResearch(who, recipe)
 			break;
 		endif
 
-		PrintText(who, STUDY_ACTIONS[RandomInt(STUDY_ACTIONS.size()) + 1]);
+		PrintTextAbove(who, STUDY_ACTIONS[RandomInt(STUDY_ACTIONS.size()) + 1]);
 		PlaySoundEffect(who, 0x24a);
 
 		sleep(5);
@@ -1162,17 +1162,25 @@ function CustomFormatRealToString(value, decimal_places := 2)
 endfunction
 
 function SelectRandomSpell(power)
-	var cfg := ReadConfigFile(":spells:spellcaster");
-	if (!cfg)
-		return 0;
-	endif
 	var spells := array{};
-	foreach entry in (GetConfigStringKeys(cfg))
-		var elem := FindConfigElem(cfg, entry);
-		var circle := GetConfigInt(elem, "Circle");
-		if (circle == power)
-			spells.append(GetConfigInt(elem, "SpellId"));
+	var mage_configs := array{
+		":spells:config/evocation",
+		":spells:config/necromancy",
+		":spells:config/illusion",
+		":spells:config/swordmage"
+	};
+	foreach cfg_path in mage_configs
+		var cfg := ReadConfigFile(cfg_path);
+		if (!cfg)
+			continue;
 		endif
+		foreach entry in (GetConfigStringKeys(cfg))
+			var elem := FindConfigElem(cfg, entry);
+			var circle := GetConfigInt(elem, "Circle");
+			if (circle == power)
+				spells.append(GetConfigInt(elem, "SpellId"));
+			endif
+		endforeach
 	endforeach
 	if (spells.size() > 0)
 		var selectedSpell := spells[RandomInt(spells.size()) + 1];

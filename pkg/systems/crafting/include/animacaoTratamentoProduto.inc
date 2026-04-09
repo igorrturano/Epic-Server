@@ -10,67 +10,52 @@ include ":megacliloc:/include/toolTipUtils";
 include ":crafting:/include/fabricacaoUtil";
 include ":attributes:vitals";
 include ":crafting:toolWear";
-
-
-const LIMITE_MARTELADAS := 3;
-const LIMITE_AQUECIMENTO := 4;
-
-enum ITENS_ESTACAO
-	FONTE_CALOR := "fonteCalor",
-	FONTE_AGUA := "fonteAgua",
-	BIGORNA := "bigorna"
-endenum
-
-var CATALOGO_FONTE_CALOR := array{0xe1d,0x197e,0x197f,0x1980,
-								0x1981, 0x1982, 0x1983, 0x1984,
-								0x1985,0x198a, 0x198b, 0x198c,
-								0x198d, 0x198e, 0x198f, 0x1990,
-								0x1991, 0x1996, 0x1997, 0x1998,
-								0x1999, 0x199a, 0x199b, 0x199c,
-								0x199d, 0x19a2, 0x19a3, 0x19a4,
-								0x19a5, 0x19a6, 0x19a7, 0x19a8, 
-								0x19a9};
-
-
-var CATALOGO_FONTE_AGUA := array{0x0B41,0x0B42,0x0B43,0x0B44,
-								0x154D, 0x7623, 0x7624, 0xB31D,
-								0xB31E, 0xB31F, 0xB320};
-
-var CORES_AQUECIMENTO_FORJA := array {1254,1256,1258,1260};
+include ":crafting:include/util/fabricacaoConstants";
 
 function isAnimacaoFerreiroPossivel(quem, estacao, ferramentaNecessaria, posicaoInicial, saudeInicial)
-	if(!Accessible(quem,estacao[FONTE_CALOR],1) || !CheckLineOfSight( quem, estacao[FONTE_CALOR]))
+	if(!CheckCanWork(quem,saudeInicial,posicaoInicial))
+		return  false;
+	endif
+	if(!Accessible(quem,estacao[FONTE_CALOR],2) || !CheckLineOfSight( quem, estacao[FONTE_CALOR]))
 		SendSysMessageEx(quem,"É necessário que haja uma fonte de calor próximo a você.",SSM_FAIL);
 		return false;
 	endif
-	if(!Accessible(quem,estacao[FONTE_AGUA],1) || !CheckLineOfSight( quem, estacao[FONTE_AGUA]))
+	if(!Accessible(quem,estacao[FONTE_AGUA],2) || !CheckLineOfSight( quem, estacao[FONTE_AGUA]))
 		SendSysMessageEx(quem,"É necessário que haja uma fonte de resfriamento próximo a você.",SSM_FAIL);
 		return false;
 	endif
-	if(!Accessible(quem,estacao[BIGORNA],1) || !CheckLineOfSight( quem, estacao[BIGORNA]))
+	if(!Accessible(quem,estacao[BIGORNA],2) || !CheckLineOfSight( quem, estacao[BIGORNA]))
 		SendSysMessageEx(quem,"É necessário que haja uma bigorna próxima a você.",SSM_FAIL);
 		return false;
 	endif
 	if(ferramentaNecessaria.objtype != 0x13e3) //Martelo de ferreiro.
-		SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação.",SSM_FAIL);
+		SendSysMessageEx(quem,"Você não tem um martelo de ferreiro para executar esta ação.",SSM_FAIL);
 		return false;
 	endif
 	
-	return CheckCanWork(quem,saudeInicial,posicaoInicial);
+	return true;
 endfunction
 
 function isAnimacaoPadraoPossivel(quem, estacao, ferramentaNecessaria, posicaoInicial, saudeInicial, profissao)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
-	if(!CoordinateDistanceEuclidean(quem.x, quem.y, estacao.x, estacao.y) || !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm))
+	var profissaoElem :=FindConfigElem( profissaoConfig, profissao );
+	var verificaLos := !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm)  && TypeOfInt(estacao.item) != OT_ITEMREF;
+	if(CoordinateDistance(quem.x, quem.y, estacao.x, estacao.y) > 1 || !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm))
 		SendSysMessageEx(quem,"Você não alcança a estação escolhida",SSM_FAIL);
 		return false;
 	endif
 
-	if(profissaoConfig[profissao].Ferramenta)
-		if(ferramentaNecessaria.objtype != profissaoConfig[profissao].Ferramenta)
-			SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação.",SSM_FAIL);
-			return false;
-		endif
+	if(!ferramentaNecessaria && profissaoElem.Ferramenta)
+		var ferramentas := SplitWords(GetConfigString(profissaoElem,"Ferramenta"));
+		var texto := "";
+		foreach ferramentaPossivel in ferramentas
+			sleepms(2);
+			var item_cfg := ReadConfigFile(":*:itemdesc");
+			var nomeFerramenta := item_cfg[cint(ferramentaPossivel)];
+			texto += "{} ".format(nomeFerramenta.desc? nomeFerramenta.desc : nomeFerramenta.name);
+		endforeach
+		SendSysMessageEx(quem,"Você não tem a ferramenta necessária para executar esta ação. [{}]".format(texto),SSM_FAIL);
+		return false;
 	endif
 	
 	return CheckCanWork(quem,saudeInicial,posicaoInicial);
@@ -83,7 +68,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 	var contadorInterno := 0;
 	var deveMudarEstagio;
 	var ferramentaNecessaria := BuscaFerramenta(quem,"Blacksmithy");
-	var posicaoInicial := CriaObjetoPosicao(quem);
+	var posicaoInicial := BuildPositionStruct(quem);
 	var saudeInicial := AP_GetVital(quem, "Hits");
 	var craftConfig := ReadConfigFile(":crafting:config/craftConfig");
 	var espera := craftConfig["Blacksmithy"].CraftDelay;
@@ -110,10 +95,10 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 					produto.color := corAquecido;
 				endif
 				PlaySoundEffect(quem, SFX_2C);
-				PerformAction( quem, ANIM_CAST_DIR );
+				PerformAction( quem, HUMAN_ANIM::CAST_DIR );
 
 				if(contadorInterno >=  CORES_AQUECIMENTO_FORJA.size())
-					PrintText(produto,"*Item em brasa*");
+					PrintTextAbove(produto,"*Item em brasa*");
 				endif
 
 				if(contadorInterno >= LIMITE_AQUECIMENTO)
@@ -140,7 +125,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 								estacao[BIGORNA].height, 
 								estacao[BIGORNA].realm, 
 								MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE);
-				PerformAction( quem, ANIM_ATTACK_1HAND_DOWN ); 
+				PerformAction( quem, HUMAN_ANIM::ATTACK_1HAND_BLUNT ); 
 				PlaySoundEffect(quem, SFX_2B);
 				
 				if(contadorInterno >= LIMITE_MARTELADAS)
@@ -174,7 +159,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 								estacao[FONTE_AGUA].realm, 
 								MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
 				endif
-				PerformAction( quem, ANIM_ATTACK_1HAND_JAB ); 
+				PerformAction( quem, HUMAN_ANIM::ATTACK_1HAND_PIERCING ); 
 				PlaySoundEffect(quem, SFX_27);
 				PlayObjectCenteredEffectEx(estacao[FONTE_AGUA],FX_SMOKE,1,12);
 				produto.color := 1175;
@@ -198,26 +183,24 @@ endfunction
 function RodaAnimacaoPadrao(quem, produto, estacao, processoGerente, propFabricado)
 	var ferramentaNecessaria := BuscaFerramenta(quem,propFabricado.receita.profissao);
 	var craftConfig := ReadConfigFile(":crafting:config/craftConfig");
-	var posicaoInicial := CriaObjetoPosicao(quem);
+	var posicaoInicial := BuildPositionStruct(quem);
 	var saudeInicial := AP_GetVital(quem, "Hits");
 	var skill := craftConfig[propFabricado.receita.profissao].Attribute;
 	var espera := craftConfig[propFabricado.receita.profissao].CraftDelay;
 
 	while (processoGerente.state && isAnimacaoPadraoPossivel(quem,estacao, ferramentaNecessaria, posicaoInicial, saudeInicial,propFabricado.receita.profissao))
 		
-		var alturaAlvo := estacao.height;
+		var alturaAlvo := estacao.z;
 		if(estacao.mobile)
 			return true;
 		else
 			if(estacao.item)
-				
 				alturaAlvo := estacao.item.height;
-
 			endif
 		endif
 
 		produto.movable := 0;
-		quem.facing := GetFacing(quem.x,quem.y,estacao[FONTE_CALOR].x,estacao[FONTE_CALOR].y);
+		quem.facing := GetFacing(quem.x,quem.y,estacao.x,estacao.y);
 		MoveObjectToLocation( 
 						produto,
 						estacao.x,
@@ -226,13 +209,14 @@ function RodaAnimacaoPadrao(quem, produto, estacao, processoGerente, propFabrica
 						estacao.realm, 
 						MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
 		
-		PrintText(quem,"*Trabalhando*");
-		PerformAction( quem, ANIM_HORSE_ATTACK_XBOW ); 
+		if(RandomInt(10) <= 3 )
+			PrintTextAbove(quem,"*Trabalhando*");
+		endif
+		PerformAction( quem, HUMAN_ANIM::ATTACK_BOW ); 
 		PlaySoundEffect(quem, SFX_56);
 		CheckToolWear(quem,ferramentaNecessaria,skill);
 		Sleep(Cint(espera));
 
-		
 	endwhile
 
 	return true;
@@ -251,11 +235,18 @@ endfunction
 function BuscaFerramenta (quem, profissao)
 	var ferramenta;
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
+	var ferramentas := SplitWords(profissaoConfig[profissao].Ferramenta);
 
-	if(quem.weapon.objtype == cint(profissaoConfig[profissao].Ferramenta))
+	if(cstr(hex(quem.weapon.objtype)) in ferramentas)
 		ferramenta := quem.weapon;
 	else
-		ferramenta := FindObjtypeInContainer(quem.backpack, cint(profissaoConfig[profissao].Ferramenta));
+		foreach ferramentaPossivel in ferramentas
+			var ferramentaEncontrada := FindObjtypeInContainer(quem.backpack, cint(hex(ferramentaPossivel)));
+			if(ferramentaEncontrada)
+				ferramenta := ferramentaEncontrada;
+				break;
+			endif
+		endforeach
 	endif
 
 	return ferramenta;
@@ -268,10 +259,9 @@ function DesequipaArma(quem)
 	endif
 endfunction
 
-
 function PegaEstacaoFerreiro (quem, bigorna)
 
-	if(bigorna.objtype != UOBJ_ANVIL1)
+	if(!(bigorna.objtype  in array{UOBJ_ANVIL1,UOBJ_ANVIL2}))
 		SendSysMessageEX(quem,"A estação escolhida não é uma bigorna.", SSM_FAIL);
 		return 0;
 	endif
@@ -287,7 +277,10 @@ function PegaEstacaoFerreiro (quem, bigorna)
 	endif
 	
 	if(!estacao.exists(FONTE_AGUA) || !estacao.exists(FONTE_CALOR))
-		var itensProximos := ListItemsNearLocation(quem.x,quem.y,quem.z,1,quem.realm);
+		var itensProximos := ListItemsNearLocation(quem.x,quem.y,quem.z,2,quem.realm);
+		var staticosProximos := ListStaticsNearLocation(quem.x,quem.y,quem.z,2,quem.realm);
+		itensProximos := itensProximos + staticosProximos;
+
 		foreach itemProximo in itensProximos
 			Sleepms(2);
 			if(!estacao.exists(FONTE_AGUA))
@@ -295,7 +288,8 @@ function PegaEstacaoFerreiro (quem, bigorna)
 					estacao.insert(FONTE_AGUA, itemProximo);
 					propFoiAlterada := true;
 				endif
-			elseif(!estacao.exists(FONTE_CALOR))
+			endif
+			if(!estacao.exists(FONTE_CALOR))
 				if(itemProximo.objtype in CATALOGO_FONTE_CALOR)
 					estacao.insert(FONTE_CALOR, itemProximo);
 					propFoiAlterada := true;

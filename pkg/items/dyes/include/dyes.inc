@@ -86,7 +86,7 @@ endfunction
  */
 function RandomDyeColor()
 	// Available RP cultures and basic colors
-	var cultures := {"AIGLANA", "HAROLOTH", "LESTE", "BJORSKA", "ALURIEL", "BADURAN", "GULTHRAK", "POLKINEA"};
+	var cultures := {"AIGLANA", "HAROLOTH", "LESTE", "BJORSKA", "ALURIEL", "BADURAN", "GULTHRAK", "COLHESIANA"};
 	var basicColors := {"Rosa", "Vermelho", "Azul", "Verde", "Amarelo", "Laranja", "Neutro", "Cinza"};
 	
 	// Combine all available color options
@@ -163,7 +163,7 @@ function GetRPColorValue(color)
 						RandomIntMinMax(1801, 1908),  // Neutro
 						RandomInt({0, 946, 947})      // Cinza
 					 });
-		"POLKINEA":  return RandomColorFromRanges({
+		"COLHESIANA":  return RandomColorFromRanges({
 						RandomIntMinMax(1501, 1554),  // Laranja
 						RandomIntMinMax(1701, 1754),  // Amarelo
 						RandomIntMinMax(1401, 1454),  // Verde

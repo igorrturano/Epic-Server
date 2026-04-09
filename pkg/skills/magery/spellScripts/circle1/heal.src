@@ -25,9 +25,9 @@ program SpellScript(params)
 	// Stratics reports - ((Magery / 10) + (1 to 3))
 	var points := (CInt(AP_GetSkill(who, MAGERY)) / 10) + RandomDiceRoll("1d3");
 
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_SWIRL, 7, 16);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_SWIRL, 7, 16);
 	PlaySoundEffect(targ, SFX_HEAL);
-	HealDamage(targ, points);
+	ApplyEpicHealing(targ, points);
 
 	SendSysMessage(who, "You healed " + points + " damage.");
 

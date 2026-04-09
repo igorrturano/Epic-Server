@@ -1,0 +1,51 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/tileEffects";
+include "include/sounds";
+
+// O Sonho do Louco (1209) - C2
+// Alucinacao: alvo nao consegue diferenciar aliados de inimigos por Arc/10 segundos
+// Implementado como: congela o alvo e inverte visualmente seu titulo
+program SpellScript(params)
+	var who  := params[1];
+	var targ := params[2];
+
+	if (!targ || !targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return 0;
+	endif
+
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
+	var will     := CInt(AP_GetTrueStat(targ, WILL));
+	var roll     := RandomInt(100) + 1;
+
+	var resist_threshold := will + CInt((100 - arcana) / 2);
+	if (roll > resist_threshold)
+		SendSysMessageEx(who, $"{targ.name} resistiu a alucinacao.", SSM_FAIL);
+		PrintTextAbove(targ, "*resiste*", 3, 38);
+		return 0;
+	endif
+
+	var duration := CInt(arcana / 10);
+	if (duration < 2)  duration := 2;  endif
+	if (duration > 10) duration := 10; endif
+
+	PrintTextAbove(who, "*E o louco sonhou que o mundo era ao contrario, e todos acreditaram...*", 3, 1153);
+	PlaySoundEffect(who, 0x213);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_BLESS_EFFECT, 4, 4);
+
+	SetObjProperty(targ, "#bard_hallucination", 1);
+	PrintTextAbove(targ, "*alucinando!*", 3, 1153);
+	SendSysMessageEx(targ, "A realidade ao seu redor se distorce! Voce nao sabe mais quem e seu aliado.", SSM_FAIL);
+
+	sleep(duration);
+
+	if (GetObjProperty(targ, "#bard_hallucination"))
+		EraseObjProperty(targ, "#bard_hallucination");
+		SendSysMessageEx(targ, "A alucinacao desaparece.", SSM_INFO);
+	endif
+
+	return 1;
+endprogram

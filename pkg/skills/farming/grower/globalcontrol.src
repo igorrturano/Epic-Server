@@ -71,12 +71,12 @@ endfunction
 
 function DestroyPlant(grower, candestroy := 0)
 	var cfgestacao := ReadConfigFile(":farming:itemdesc");
-	if (!cfgestacao)
+	if (!cfgestacao || cfgestacao == error)
 		return 0;
 	endif
 
 	var elemestacao := FindConfigElem(cfgestacao, grower.GetGrowerType());
-	if (!elemestacao)
+	if (!elemestacao || elemestacao == error)
 		return 0;
 	endif
 

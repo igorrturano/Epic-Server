@@ -1,47 +1,89 @@
 use uo;
 use cfgfile;
 include "/include/epicPropNames";
-
-enum COMPONENTES_CARACTERISTICA
-	CARACTERISTICA_FABRICACAO_REDUCAOCRITICO := "reducaoCritico",
-	CARACTERISTICA_FABRICACAO_DEFESA := "defesa",
-	CARACTERISTICA_FABRICACAO_MOBILIDADE := "mobilidade",
-	CARACTERISTICA_FABRICACAO_BONUSAPARAR := "bonusAparar",
-	CARACTERISTICA_FABRICACAO_ATRASOAPARAR := "atrasoAparar",
-	CARACTERISTICA_FABRICACAO_DANO := "dano", //TODO falta aplicar as Subcaracteristicas Corretamente.
-	CARACTERISTICA_FABRICACAO_PRECISAO := "precisao",
-	CARACTERISTICA_FABRICACAO_CRITICO := "critico",
-	CARACTERISTICA_FABRICACAO_PRESTIGIO := "prestigio",
-	CARACTERISTICA_FABRICACAO_RESISTENCIA := "resistencia",
-	CARACTERISTICA_FABRICACAO_DURABILIDADE := "durabilidade",
-	CARACTERISTICA_FABRICACAO_TRANCA := "tranca",
-	CARACTERISTICA_FABRICACAO_RESISTENCIACLIMAFRIO := "resistenciaClimaFrio",
-	CARACTERISTICA_FABRICACAO_RESISTENCIACLIMACALOR := "resistenciaClimaCalor",
-	CARACTERISTICA_FABRICACAO_INTIMIDACAO := "intimidacao",
-endenum
-
-enum COMPONENTES_SUBCARACTERISTICA
-	// dano e defesa * INICIO
-	SUBCARACTERISTICA_FABRICACAO_CORTANTE := "cortante", 
-	SUBCARACTERISTICA_FABRICACAO_PERFURANTE := "perfurante",
-	SUBCARACTERISTICA_FABRICACAO_CONTUSAO := "contusao",
-	// dano e defesa * FIM
-endenum
+include ":crafting:include/util/fabricacaoConstants";
+include ":wrappers:include/Objects/Model/UObjectWrapper";
 
 function PegaValorFabricacao(item, caracteristica)
-	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
-	var retorno := propFabricadoMontado.componentes[caracteristica].propriedades.valorPrincipal; 
-	return TypeOfInt(retorno) != OT_ERROR ? Cint(retorno): 0;
+	var propFabricadoMontado := PegaPropFabricadoMontado(item);
+	var valorRetorno := ExecutaOperadorCaracteristica(
+												caracteristica, 
+												propFabricadoMontado.componentes[caracteristica].propriedades.valorPrincipal
+											);
+	
+	return TypeOfInt(valorRetorno) != OT_ERROR ? Cint(valorRetorno): 0;
 endfunction
 
 function PegaSubValorFabricacao(item, caracteristica, subEfeitoAlvo)
-	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
-	var retorno := propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais[subEfeitoAlvo].valor;
+	var propFabricadoMontado := PegaPropFabricadoMontado(item);
+	var retorno := ExecutaOperadorCaracteristica(
+									caracteristica, 
+									propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais[subEfeitoAlvo].valor
+								);
+	
 	return TypeOfInt(retorno) != OT_ERROR ? Cint(retorno): 0;
 
 endfunction
 
 function PegaSubValoresFabricacao(item, caracteristica)
-	var propFabricadoMontado := GetObjProperty(item, PROPNAME_FABRICADO);
+	var propFabricadoMontado := PegaPropFabricadoMontado(item);
 	return propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais; 
+endfunction
+
+function ExecutaOperadorCaracteristica(caracteristica, valor)
+	var caracteristicasConfig := ReadConfigFile(":crafting:config/caracteristicas");
+	var elementoConfig := caracteristicasConfig[caracteristica];
+	var valorTotal := valor;
+
+	if(elementoConfig)
+		var operador := elementoConfig["operador"];
+		var valorOperacao := cint(elementoConfig["valor"]);
+		
+		case (lower(operador))
+			"soma":
+				valorTotal += valorOperacao;
+			"subtracao":
+				valorTotal -= valorOperacao;
+			"divisao":
+				if(valorOperacao != 0)
+					valorTotal /= valorOperacao;
+				endif
+			"multiplicacao":
+				valorTotal *= valorOperacao;
+		endcase
+	endif
+
+	return valorTotal;
+endfunction
+
+/*
+PegaComponenteFabricacao(item, caracteristica)
+
+Retorno: 
+struct{ 
+	componenteNecessario: struct{ caracteristica , classe , encaixe, encaixeDesc , isPrincipal , itens , qtdNecessaria },
+	item: struct{ nome, objtype}, 
+	material: struct{ chave, nome }, //Chave é o objtype do material.
+	poderAvaliado: struct{ modHp, modPeso, poderContado},
+	propriedades = struct{ caracteristica , modificadorHp , valorPrincipal}, 
+	tier = struct{ desc , valor } //Qualidade do componente
+}
+*/
+function PegaComponenteFabricacao(item, caracteristica)
+	var propFabricadoMontado := PegaPropFabricadoMontado(item);
+	var retorno := propFabricadoMontado.componentes[caracteristica]; 
+	return retorno;
+endfunction
+
+function PegaPropFabricadoMontado(objeto)
+	var propFabricadoMontado;
+	if( objeto.isA(POLCLASS_ITEM))
+		propFabricadoMontado := GetObjProperty(objeto, PROPNAME_FABRICADO);
+	elseif(objeto is @UObjectWrapper)
+		propFabricadoMontado := objeto.GetProperty(PROPNAME_FABRICADO);
+	else
+		propFabricadoMontado := objeto.CProps[PROPNAME_FABRICADO];
+	endif
+
+	return propFabricadoMontado;
 endfunction

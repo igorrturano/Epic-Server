@@ -29,7 +29,7 @@ program skill_armslore(who)
 		whos := array;
 	endif
 	if (!(who.serial in whos))
-		PrintText(who, "*analisando um item*");
+		PrintTextAbove(who, "*analisando um item*");
 		if (SkillCheck(who, ARCANA, -1) > 0)
 			whos.append(who.serial);
 			SetObjProperty(item, "magicwho", whos);
@@ -38,7 +38,7 @@ program skill_armslore(who)
 					ActivateMagicItem(item);
 				endif
 				SendSysMessageEx(who, "Voce identificou encantamentos nesse item.", SSM_INFO);
-				var cfg := ReadConfigFile(":spells:config/allspells");
+				var cfg := ReadConfigFile(":spells:config/swordmage");
 				var elem := FindConfigElem(cfg, whos[1]);
 				var name := GetConfigString(elem, "Name");
 				if (name)

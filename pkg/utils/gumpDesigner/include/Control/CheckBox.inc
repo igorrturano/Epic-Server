@@ -26,14 +26,17 @@ class CheckBox(Control)
 
 	function SetUncheckedImage(this, uncheckedImage)
 		this._uncheckedImage := uncheckedImage;
+		return this;
 	endfunction
 
 	function SetCheckedImage(this, checkedImage)
 		this._checkedImage := checkedImage;
+		return this;
 	endfunction
 
 	function SetValue(this, value)
 		this._value := value;
+		return this;
 	endfunction
 
 	function ToString(this)
@@ -48,7 +51,7 @@ class CheckBox(Control)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFCheckBox(gump, this.GetX(), this.GetY(), this.GetUncheckedImage(), this.GetCheckedImage(), this.GetValue(), this.GetGumpId());
+		GFCheckBox(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUncheckedImage(), this.GetCheckedImage(), this.GetValue(), this.GetGumpId());
 		Super::SelfCreate(this, gump);
 	endfunction
 endclass

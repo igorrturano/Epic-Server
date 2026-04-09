@@ -1,8 +1,7 @@
 use uo;
 include "include/tileEffects";
 include ":attributes:attributes";
-include ":fls_magery:spells";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/shapes";
 include ":timedScripts:timedScripts";
 include "include/sysEvent";
@@ -43,7 +42,7 @@ program spell_fireball(params)
 		return 0;
 	endif
 
-	PlayMovingEffect(caster, cast_on, GFX_LARGE_FIREBALL, 10, 10, 1);
+	PlayMovingEffect(caster, cast_on, FX_LARGE_FIREBALL, 10, 10, 1);
 
 	var coord_list := GetCoordsInLine(caster.x, caster.y, cast_on.x, cast_on.y);
 	foreach coord in coord_list
@@ -62,13 +61,13 @@ program spell_fireball(params)
 		endif
 		case (RandomInt(3))
 			default:
-				PlayStationaryEffect(coord.x, coord.y, caster.z, GFX_EXPLODE_1, 10, 10, 0, caster.realm);
+				PlayStationaryEffect(coord.x, coord.y, caster.z, FX_EXPLODE_1, 10, 10, 0, caster.realm);
 				break;
 			1:
-				PlayStationaryEffect(coord.x, coord.y, caster.z, GFX_EXPLODE_2, 10, 10, 0, caster.realm);
+				PlayStationaryEffect(coord.x, coord.y, caster.z, FX_EXPLODE_2, 10, 10, 0, caster.realm);
 				break;
 			2:
-				PlayStationaryEffect(coord.x, coord.y, caster.z, GFX_EXPLODE_3, 10, 10, 0, caster.realm);
+				PlayStationaryEffect(coord.x, coord.y, caster.z, FX_EXPLODE_3, 10, 10, 0, caster.realm);
 				break;
 		endcase
 		var field;
@@ -90,7 +89,7 @@ program spell_fireball(params)
 	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 	DanificaObjetosProximos(caster, cast_on.x, cast_on.y, cast_on.z, cast_on.realm, struct{ dano := dmg,
 																							desc := "Bola de Fogo." },
-							range, GFX_EXPLODE_1);
+							range, FX_EXPLODE_1);
 
 	foreach mobile in allMobiles
 		var dmg := epicSpellDamageRoll(caster, spell_circle);

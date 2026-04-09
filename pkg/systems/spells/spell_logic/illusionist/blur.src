@@ -2,6 +2,8 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include "include/dungeons";
 include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -11,10 +13,9 @@ program SpellScript(params)
 	endif
 
 	var duration := cint(AP_GetSkill(who, ARCANA) / 2.5);
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := Cint(duration * 1.5);
 	endif
 
-	Setcooldown(who, "shadowdancer_blur", duration);
 	TS_StartTimer(who, "spectralform", duration);
 endprogram

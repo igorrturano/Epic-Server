@@ -1,6 +1,7 @@
 use uo;
 
 include ":attributes:attributes";
+include ":fls_core:fls_characters";
 
 program SkillRequest()
 	Print("Hooking Skill Request...");

@@ -33,7 +33,7 @@ const MAXIMO_VALOR_ITEM := 10000;
 var item_cfg := ReadConfigFile(":*:itemdesc");
 var npc;
 var guild, above_merchant, is_guild_member;
-var imposto := 0.1;
+var imposto := 0; // TODO: restaurar para 0.1 quando quiser reativar o imposto
 var item_types := dictionary{ "Armaduras" -> 7,
 							  "Roupas" -> 8,
 							  "Armas" -> 9,
@@ -139,14 +139,14 @@ function HandleSeeEvent(npc, player)
 		return;
 	endif
 
-	PrintText(npc, "{}, vendi alguns artigos seu!".format(player.name), SSM_INFO);
+	PrintTextAbove(npc, "{}, vendi alguns artigos seu!".format(player.name), SSM_INFO);
 	SetCooldown(npc, "{}_see".format(player.serial), 600);
 endfunction
 
 function HandleItemGiven(npc, player, item)
 	var items_inside := GetSellerAccount(npc, player.serial);
 	if (items_inside.size() >= MAXIMO_ITEM_PESSOA && !player.cmdlevel)
-		PrintText(npc, "Desculpe, mas já estou vendendo muitas mercadorias sua.");
+		PrintTextAbove(npc, "Desculpe, mas já estou vendendo muitas mercadorias sua.");
 		return;
 	endif
 
@@ -169,7 +169,7 @@ function HandleItemGiven(npc, player, item)
 		return;
 	endif
 
-	PrintText(player, "*vendendo item*");
+	PrintTextAbove(player, "*vendendo item*");
 	var result := AddItemToSell(npc, player, item);
 	return result;
 endfunction
@@ -181,8 +181,8 @@ function DoPurchaseCmd(npc, player)
 	filtros.+valor := "";
 
 	if (!player.concealed)
-		PrintText(player, "O que tem a venda?", SSM_FAIL);
-		PrintText(npc, array{ "Olhe só este produto...", "Bem-vindo, vamos ver...",
+		PrintTextAbove(player, "O que tem a venda?", SSM_FAIL);
+		PrintTextAbove(npc, array{ "Olhe só este produto...", "Bem-vindo, vamos ver...",
 					  		"Está procurando algo específico?" }.randomentry(), SSM_INFO);
 	endif
 	while (!canceled)
@@ -196,7 +196,7 @@ function DoPurchaseCmd(npc, player)
 			filtros.valor := GFExtractData(input, 4);
 		elseif (input[0] == 3) // negócio
 			if (!player.concealed)
-				PrintText(npc, "Certo, estou te ouvindo", SSM_INFO);
+				PrintTextAbove(npc, "Certo, estou te ouvindo", SSM_INFO);
 			endif
 			SetupMerchant(npc, player);
 		elseif (input[0] == 4) // 	Reservado Caixa De Texto
@@ -216,7 +216,6 @@ function DoPurchaseCmd(npc, player)
 			RemoveItemMerchant(npc, player, serial);
 		else
 			DoPurchase(npc, player, input[0]);
-			break;
 		endif
 
 	endwhile
@@ -370,19 +369,19 @@ function removeItemMerchant(npc, player, input)
 		endif
 		ItensRevogados.Insert(cost.seller, 1);
 		if (ItensRevogados == error)
-			Printtext(npc, "Error" + ItensRevogados);
+			PrintTextAbove(npc, "Error" + ItensRevogados);
 		else
 			SetObjProperty(npc, "ItensRevogados", itensRevogados);
 		endif
 
 		if (!player.concealed)
-			Printtext(npc, "Aqui esta o objeto confiscado, avisarei o dono assim que ele aparecer por aqui.");
+			PrintTextAbove(npc, "Aqui esta o objeto confiscado, avisarei o dono assim que ele aparecer por aqui.");
 		endif
 	else
 		if (!YesNoUOSE(player, "Você deseja mesmo pegar este item de volta?"))
 			return;
 		endif
-		PrintText(npc, "Certo. Aqui esta seu produto.", SSM_INFO);
+		PrintTextAbove(npc, "Certo. Aqui esta seu produto.", SSM_INFO);
 	endif
 
 	RemoveItemForSale(npc, input, 0, confiscar);
@@ -392,7 +391,7 @@ function removeItemMerchant(npc, player, input)
 		if (purchase == error)
 			SendSysMessageEx(player, "Error - Unable to create item! ->" + purchase.errortext);
 		else
-			Printtext(npc, "Eu não fui capaz de colocar o item na sua bolsa. Coloquei aos seus pés entao.");
+			PrintTextAbove(npc, "Eu não fui capaz de colocar o item na sua bolsa. Coloquei aos seus pés entao.");
 		endif
 	endif
 	EraseObjProperty(purchase, FILTRO_CATEGORIA);
@@ -412,7 +411,7 @@ function DoPurchase(npc, player, input)
 		cost.lote := 1;
 	endif
 
-	if (ContaCapital(player) < CInt(cost.cost_amt))
+	if (ContaCapital(player, GetObjProperty(npc,"City")).valorTotal < CInt(cost.cost_amt)) 
 		SendSysMessageEx(player, "Você não tem moedas o suficiente para comprar isto.");
 		return 0;
 	endif
@@ -432,7 +431,7 @@ function DoPurchase(npc, player, input)
 	var cost_desc := AddArticle(GetName(cost.cost_type));
 	var pay_list := array{};
 
-	if (!player.spendgold(owed))
+	if (!player.spendgold(owed, GetObjProperty(npc,"City")))
 		SendSysMessageEx(player, "Você não tem as {} m.o necessárias.".format(owed), SSM_INFO);
 		return 0;
 	else
@@ -462,7 +461,7 @@ endfunction
 function AddItemToSell(npc, player, item)
 	var items_sold := GetItemsSoldList(npc);
 	if (items_sold.size() >= MAXIMO_ITEMS)
-		PrintText(npc, "Desculpe, não posso vender mais coisas no momento. Venha outra hora.");
+		PrintTextAbove(npc, "Desculpe, não posso vender mais coisas no momento. Venha outra hora.");
 		return 0;
 	endif
 
@@ -505,16 +504,16 @@ function AddItemToSell(npc, player, item)
 		endif
 
 		if (!(itemcategory in item_types))
-			PrintText(npc, "Desculpe, não posso vender este item. Procure uma vendedora de {}".format(itemcategory));
+			PrintTextAbove(npc, "Desculpe, não posso vender este item. Procure uma vendedora de {}".format(itemcategory));
 			return 0;
 		endif
 	endif
 
 	if (onlyguild && player.guildid != guild.guildid)
-		PrintText(npc, "Desculpe, não posso vender itens para membros fora da {}".format(guild.getProp("name")));
+		PrintTextAbove(npc, "Desculpe, não posso vender itens para membros fora da {}".format(guild.getProp("name")));
 		return 0;
 	elseif (norace && player.isRace(norace) && player.guildid != guild.guildid)
-		PrintText(npc, "Desculpe, fui proibido(a) de comercializar com sua raça");
+		PrintTextAbove(npc, "Desculpe, fui proibido(a) de comercializar com sua raça");
 		return 0;
 	endif
 
@@ -555,15 +554,15 @@ function AddItemToSell(npc, player, item)
 		SendSysMessageEx(player, "Com essa quantidade de items por lote, alguns ficarão incompletos e issõ não é permitido.",
 				   SSM_FAIL);
 		return;
-	elseif (player.cmdlevel < 3 && ContaCapital(player) < total_imposto)
+	elseif (player.cmdlevel < 3 && ContaCapital(player, GetObjProperty(npc,"City")).valorTotal < total_imposto)
 		SendSysMessageEx(player, "Você não tem moedas suficiente para pagar o vendedor pelo seu servico.",
 				   SSM_FAIL);
 		return 0;
 	endif
 
-	if (total_imposto < 1)
-		total_imposto := 1;
-	endif
+	// if (total_imposto < 1)
+	// 	total_imposto := 1;
+	// endif
 
 	var desc := RequestGump(player, "Entre com uma pequena descrição do produto.", "Isso é opcional",
 							 "", 1);
@@ -579,9 +578,9 @@ function AddItemToSell(npc, player, item)
 			return;
 		endif
 
-		if (!player.spendgold(total_imposto))
+		if (!player.spendgold(total_imposto, GetObjProperty(npc,"City")))
 			SendSysMessageEx(player, "Você precisa de {} moedas para colocar o item a venda".format(total_imposto),
-							  SSM_INFO);
+							  SSM_INFO_IC);
 			return 0;
 		else
 			SendSysMessageEx(player, "Você pagou {} moedas de imposto.".format(total_imposto), SSM_INFO);
@@ -594,7 +593,7 @@ function AddItemToSell(npc, player, item)
 							  infinite);
 	if (result != error)
 		if (!player.concealed)
-			PrintText(npc, "Tudo certo. Colocarei seu item a venda.");
+			PrintTextAbove(npc, "Tudo certo. Colocarei seu item a venda.");
 		endif
 		SendSysMessageEx(player, "O item foi adicionado com sucesso.", SSM_FAIL);
 		PreparaLojaGump(npc, player, "");
@@ -602,7 +601,7 @@ function AddItemToSell(npc, player, item)
 	endif
 
 	if (!player.concealed)
-		PrintText(npc, "Me desculpe mas não poderei vender isto para você, tome seu dinheiro de volta.",
+		PrintTextAbove(npc, "Me desculpe mas não poderei vender isto para você, tome seu dinheiro de volta.",
 				   SSM_FAIL);
 	endif
 	CreateItemInBackpack(player, MOEDAS, total_imposto);
@@ -618,7 +617,7 @@ function DoWithdraw(npc, player)
 	endif
 
 	if (!player.concealed)
-		PrintText(npc, "Aqui estão os lucros de suas mercadorias.", SSM_INFO);
+		PrintTextAbove(npc, "Aqui estão os lucros de suas mercadorias.", SSM_INFO);
 	endif
 
 	foreach amnt in account
@@ -628,7 +627,7 @@ function DoWithdraw(npc, player)
 			if (withdraw == error)
 				SendSysMessageEx(player, "Error - Unable to create item! ->" + withdraw.errortext);
 			else
-				PrintText(npc, "Eu não fui capaz de colocar o item na sua bolsa. Coloquei aos seus pés entao.");
+				PrintTextAbove(npc, "Eu não fui capaz de colocar o item na sua bolsa. Coloquei aos seus pés entao.");
 			endif
 		endif
 		sleepms(2);

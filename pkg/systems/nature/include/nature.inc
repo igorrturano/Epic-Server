@@ -2,8 +2,9 @@
 use uo;
 use util;
 use cfgfile;
+use datafile;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":debug:Controller/DebugController";
 
 // Calendar constants
@@ -17,7 +18,7 @@ var MONTHS := array{
     struct{ "name" := "Adarae", "days" := 30}, // Mês dedicado à Adar Kor Doom, Gulthrak, orcs
     struct{ "name" := "Crassus", "days" := 31 }, // Mês dedicado ao primeiro imperador, Crassus
     struct{ "name" := "Demiurgus", "days" := 33 }, // Mês dedicado ao Deus da Criação aiglano, Demiurgus. O Mês com mais dias
-    struct{ "name" := "Phrugum", "days" := 30 }, // Mês dedicado aos polski e à colheita
+    struct{ "name" := "Phrugum", "days" := 30 }, // Mês dedicado aos pequilho e à colheita
     struct{ "name" := "Praetorus", "days" := 31 }, // Mês dedicado ao tribunal arcano e a justiça
     struct{ "name" := "Aeternum", "days" := 31 } // Mês dedicado à vitória eterna Aiglana, o recomeço
 };
@@ -171,6 +172,10 @@ function weathereffects(type, duration, severity := 5)
         
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         foreach person in EnumerateOnlineCharacters()
+            if(InDungeon(person))
+                continue;
+            endif
+            
 			if (!person.isUnderRoof())
 				wetPowder(person);
             	SetWeatherForPlayer(person, type, 50);
@@ -196,7 +201,7 @@ function endweather()
 			moveobjecttolocation(player, player.x, player.y, player.z, player.realm);
 		endif
 	endforeach
-	DebugMsgEvent(DEBUG_CLIMA, "Stopping weather effects.");
+	DebugMsgAll(DEBUG_CLIMA, Message("Stopping weather effects."));
 endfunction
 
 function WhatSeason()
@@ -223,21 +228,29 @@ function SeasonRotate()
         SUMMER:
             Broadcast("O sol é mais forte nesta época do ano...");
             SetGlobalProperty("season", SUMMER);
+			sleepms(5);
+			UpdateGlobalEventLevers("Verão");
             break;
 
         AUTUMN:
             Broadcast("As folhas das arvores começam a cair...");
             SetGlobalProperty("season", AUTUMN);
+			sleepms(5);
+			UpdateGlobalEventLevers("Outono");
             break;
 
         WINTER:
             Broadcast("O vento sopra gelado e a neve comeca a cair...");
             SetGlobalProperty("season", WINTER);
+			sleepms(5);
+			UpdateGlobalEventLevers("Inverno");
             break;
 
         SPRING:
             Broadcast("Os pássaros cantam felizes e a vida selvagem é abundante...");
             SetGlobalProperty("season", SPRING);
+			sleepms(5);
+			UpdateGlobalEventLevers("Primavera");
             break;
     endcase
 endfunction
@@ -245,26 +258,9 @@ endfunction
 function MoonFase()
     var currentDate := getCurrentDate();
     SetGlobalProperty("moonfase", currentDate.moonPhase);
+    sleepms(5);
+    UpdateGlobalEventLevers(currentDate.moonPhase);
 endfunction
-
-function GetMoonLightMod()
-    var fase := GetGlobalProperty("moonfase");
-
-    case (fase)
-       "Kalendae":    return 24;
-       "Nonae":       return 21;
-       "Idus":        return 16;
-       "Decrescens":  return 21;
-    endcase
-endfunction
-// function output(msgtext)
-// 	foreach player in enumerateonlinecharacters()
-// 		if (player.cmdlevel)
-// 			SendSysMessageEx(player, "Weather debug:" + msgtext, 3, 87);
-// 		endif
-// 	endforeach
-// 	print("Weather debug:" + msgtext);
-// endfunction
 
 function getDay()
     var day := GetGlobalProperty("daynumber");
@@ -425,7 +421,7 @@ function wetPowder(who)
     var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
     foreach item in items
         if (item.objtype == 0x9092)
-            PrintText(item, "*Molhada*");
+            PrintTextAbove(item, "*Molhada*");
             SubtractAmount(item, RandomInt(5) + 1);
         endif
     endforeach
@@ -676,7 +672,6 @@ function GetTempRegion(diaounoite, who, x, y)
 				tempmod := (tempmod - 20);
 			endif
 			if (InDungeon(who))
-				SendSysMessageEx(who, "Esse comando nao pode ser usado dentro de Dungeons ou Cavernas.", SSM_FAIL);
 				return 999;
 			endif
 			return tempmod;
@@ -794,4 +789,187 @@ function resistPenaltyByClimate(temp)
     else
         return 5;  // Extreme/deadly conditions (-50 to -26°C or 66-80°C)
     endif
+endfunction
+
+function GetEventCategory(event_type)
+   var day_events := {"dia", "noite"};
+   var season_events := {"Primavera", "Verão", "Outono", "Inverno"};
+   var moon_events := {"Kalendae", "Nonae", "Idus", "Decrescens"};
+
+   if (event_type in day_events)
+      return day_events;
+   elseif (event_type in season_events)
+      return season_events;
+   elseif (event_type in moon_events)
+      return moon_events;
+   endif
+
+   return array{};
+endfunction
+
+function UpdateGlobalEventLevers(event_type)
+   var ds := OpenDataFile(":itemutils:lever_events2");
+
+   var keys_ds := ds.Keys();
+
+   if (keys_ds.size() == 0)
+      print("ERRO: DataFile está vazio! Verificar arquivo físico.");
+      return;
+   endif
+
+   var category := GetEventCategory(event_type);
+
+   // Percorre TODOS os eventos do DS
+   foreach event in keys_ds
+      // Só afeta levers da mesma categoria (dia/noite, estação, ou lua)
+      if (category.size() > 0 && !(event in category))
+         continue;
+      endif
+
+      var elem := ds.FindElement(event);
+      if (elem)
+         var lever_string := elem.GetProp("levers");
+         if (lever_string)
+            // Separa a string por espaços para obter os seriais individuais
+            var lever_list := SplitWords(lever_string);
+            var valid_levers := array{};
+            var needs_cleanup := 0;
+
+            foreach serial_str in lever_list
+               var lever_serial := CInt("0x" + serial_str);
+               var lever := SystemFindObjectBySerial(lever_serial);
+
+               if (lever)
+                  // Se é o evento atual, mostra. Se não é, esconde.
+                  if (event == event_type)
+                     lever.invisible := 0;
+                  else
+                     lever.invisible := 1;
+                  endif
+                  valid_levers.append(serial_str);
+               else
+                  //needs_cleanup := 1;
+                  //print("DEBUG: needs_cleanup marcado como 1");
+               endif
+               sleepms(2);
+            endforeach
+                        
+            // Limpeza se necessário
+            if (needs_cleanup)
+               print("DEBUG: EXECUTANDO LIMPEZA!");
+               if (valid_levers.size() > 0)
+                  // Reconstrói a string com os seriais válidos
+                  var new_lever_string := "";
+                  foreach valid_serial in valid_levers
+                     if (new_lever_string != "")
+                        new_lever_string += " ";
+                     endif
+                     new_lever_string += valid_serial;
+                  endforeach
+                  print("DEBUG: Nova string construída: '" + new_lever_string + "'");
+                  elem.SetProp("levers", new_lever_string);
+                  print("DEBUG: Propriedade atualizada no elemento");
+               else
+                  print("DEBUG: Nenhum lever válido restou - removendo propriedade");
+                  elem.EraseProp("levers");
+               endif
+               print("DEBUG: Salvando arquivo DS...");
+               ds.SaveFile();
+               print("DEBUG: Arquivo DS salvo!");
+            else
+               print("DEBUG: Nenhuma limpeza necessária");
+            endif
+         endif
+      endif
+   endforeach
+endfunction
+
+/*
+ * UpdateAllShiftMerchants()
+ *
+ * Purpose
+ * Updates visibility of all registered shift-based merchants
+ * Called at sunrise and sunset to hide/show merchants based on their shift
+ *
+ * Registry Structure:
+ * ShiftMerchantRegistry = { serial: shift_value }
+ * shift_value can be: "night", "noite", "day", "dia"
+ */
+function UpdateAllShiftMerchants()
+	var registry := GetGlobalProperty("ShiftMerchantRegistry");
+	if (!registry || registry == error)
+		// No merchants registered yet
+		return;
+	endif
+
+	var current_time := GetGlobalProperty("dia");
+	var is_daytime := (current_time == "dia");
+	var removed_count := 0;
+	var updated_count := 0;
+	var registry_changed := 0;
+
+	// Create a list of dead serials to remove
+	var dead_serials := array{};
+
+	foreach serial in (registry.keys())
+		var npc := SystemFindObjectBySerial(serial);
+
+		if (!npc)
+			// NPC doesn't exist anymore - mark for removal
+			dead_serials.append(serial);
+			removed_count := removed_count + 1;
+			continue;
+		endif
+
+		// Read shift from NPC property (allows in-game changes)
+		var shift := GetObjProperty(npc, "shift");
+		if (!shift || shift == error)
+			// No property set, use registry value as fallback
+			shift := registry[serial];
+		else
+			// Update registry if property has changed
+			if (shift != registry[serial])
+				registry[serial] := shift;
+				registry_changed := 1;
+			endif
+		endif
+
+		var is_night_shift := (shift == "night" || shift == "noite");
+		var is_day_shift := (shift == "day" || shift == "dia");
+
+		// Apply visibility based on shift
+		if (is_night_shift)
+			// Night shift: hide during day, show at night
+			if (is_daytime)
+				npc.concealed := 1;
+			else
+				npc.concealed := 0;
+			endif
+			updated_count := updated_count + 1;
+		elseif (is_day_shift)
+			// Day shift: show during day, hide at night
+			if (is_daytime)
+				npc.concealed := 0;
+			else
+				npc.concealed := 1;
+			endif
+			updated_count := updated_count + 1;
+		endif
+	endforeach
+
+	// Clean up dead NPCs from registry and save any updated shift values
+	if (dead_serials.size() > 0)
+		foreach serial in dead_serials
+			registry.erase(serial);
+		endforeach
+		registry_changed := 1;
+	endif
+
+	// Save registry if it was modified (dead NPCs removed or shifts updated)
+	if (registry_changed)
+		SetGlobalProperty("ShiftMerchantRegistry", registry);
+	endif
+
+	// Debug output
+	print("[SHIFT] Updated " + updated_count + " merchants, removed " + removed_count + " dead NPCs");
 endfunction

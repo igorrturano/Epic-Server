@@ -3,7 +3,7 @@ use os;
 
 include ":attributes:attributes";
 include ":musicianship:bardmusic";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program TimedScript_Bard_tocando(params)
 	var alvo := params[1];
@@ -27,7 +27,7 @@ program TimedScript_Bard_tocando(params)
 			AP_SetVital(alvo, "Stamina", 0);
 			damageFLS(alvo, cint(custo * 2), DMG_FORCED, 0);
 			PrintTextPrivate(alvo, "Voce esta tocando alem do seu limite fisico.", alvo, BARD_FONT,
-								   BARD_FONT_COLOR_BAD);
+							  BARD_FONT_COLOR_BAD);
 		endif
 		// Efeito visual
 		PlayObjectCenteredEffectEx(alvo, 0xC462, 8, 17, 0, 0, 3, 0);

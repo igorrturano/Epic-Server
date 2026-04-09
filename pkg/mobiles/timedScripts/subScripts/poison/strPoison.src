@@ -7,7 +7,7 @@ program poisonScript(params)
 	var mobile := params[1];
 	var attacker := params[2];
 	var level := (-1) * params[3];
-	if (temHabilidade(attacker, "Veneno Puro"))
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::VENENO_PURO))
 		level := level * 0.4;
 	else
 		level := level * 0.3;

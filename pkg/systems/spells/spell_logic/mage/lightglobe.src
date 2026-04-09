@@ -4,8 +4,8 @@ use cfgfile;
 include ":spells:tnmagery";
 include ":attributes:attributes";
 include ":brainai:npcUtil";
-include ":combat:damage";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController_legacy";
 include ":tn:cooldown";
 include "include/say";
 include "include/client";
@@ -13,6 +13,8 @@ include "include/sounds";
 include ":spells:summon";
 include "include/tileEffects";
 include ":timedScripts:timedScripts";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include "include/sysEvent";
 include "include/eventID";
 include "include/epicMageryUtils";
@@ -28,7 +30,7 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Você não está sendo atacado.", SSM_FAIL);
 		return 0;
 	else
-		var cfg := ReadConfigFile(":spells:config/cantripspells");
+		var cfg := ReadConfigFile(":spells:config/cantrips");
 		var elem := FindConfigElem(cfg, spellid.id);
 		var template := getConfigString(elem, "npcTemplate");
 
@@ -58,7 +60,7 @@ program SpellScript(params)
 		var level := CInt(magiclore_skill / 5) + 5;
 
 		// Bonus de especialização
-		if (Temhabilidade(who, "Evocator"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR))
 			level := Cint(level * 1.2);
 		endif
 

@@ -30,7 +30,7 @@ function MasteryCombat_Advance(attacker, combatInfo)
 	var mastery := attacker.GetMastery(key) ?: MasteryCombat(key);
 
 	if (HasReachedMasteriesLimit(attacker, mastery))
-		DebugMsg(attacker, DEBUG_MASTERY, "Limite de maestrias atingido. Para avançar, remova uma maestria existente.");
+		DebugMsg(attacker, DEBUG_MASTERY, Message("Limite de maestrias atingido. Para avançar, remova uma maestria existente.", Color(SYSTEM_COLOR::FAIL)));
 		return;
 	endif
 
@@ -40,9 +40,9 @@ function MasteryCombat_Advance(attacker, combatInfo)
 	mastery.AddKills(combatInfo.kills);
 	mastery.AddHits(combatInfo.hits);
 	mastery.AddDamage(combatInfo.damage);
-	DebugMsg(attacker, DEBUG_MASTERY, $"Ganho de maestria para a arma: {mastery.GetName()} ({mastery.GetKey()})");
-	DebugMsg(attacker, DEBUG_MASTERY, $"XP: {CInt(earnedXP)} - Hits: {CInt(combatInfo.hits)} - Kills: {CInt(combatInfo.kills)} - Damage: {CInt(combatInfo.damage)}");
-	DebugMsg(attacker, DEBUG_MASTERY, $"Maestria (acumulado) -> XP: {mastery.GetXP()} - Level: {mastery.GetLevel()} - Hits: {mastery.GetHits()} - Kills: {mastery.GetKills()} - Damage: {mastery.GetDamage()}");
+	DebugMsg(attacker, DEBUG_MASTERY, Message($"Ganho de maestria para a arma: {mastery.GetName()} ({mastery.GetKey()})"));
+	DebugMsg(attacker, DEBUG_MASTERY, Message($"XP: {CInt(earnedXP)} - Hits: {CInt(combatInfo.hits)} - Kills: {CInt(combatInfo.kills)} - Damage: {CInt(combatInfo.damage)}"));
+	DebugMsg(attacker, DEBUG_MASTERY, Message($"Maestria (acumulado) -> XP: {mastery.GetXP()} - Level: {mastery.GetLevel()} - Hits: {mastery.GetHits()} - Kills: {mastery.GetKills()} - Damage: {mastery.GetDamage()}"));
 
 	attacker.SetMastery(mastery);
 endfunction

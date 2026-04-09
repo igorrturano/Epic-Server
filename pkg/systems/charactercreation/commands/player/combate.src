@@ -1,0 +1,174 @@
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Container/ContainerGridLayout";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/Text";
+include ":gumpDesigner:Control/Tooltip";
+include ":timedScripts:timedScripts";
+include ":combat:Model/CombatTraits";
+include ":combat:Controller/StanceController";
+include ":tn:cooldown";
+
+const STANCE_COOLDOWN := 30; // seconds
+
+program cmd_combate(who)
+	who := MobileWrapper(who);
+
+	// Check if player has a ranged weapon equipped
+	var weapon := who.GetEquipBySlot(WEAPON);
+	if (weapon.GetAttribute() == RANGED)
+		Message("Você não pode ajustar sua postura de combate com arma de longo alcance!", Color(SYSTEM_COLOR::FAIL))
+			.SendSys(who.GetObjRef());
+		return;
+	endif
+
+	// Check if in war mode
+	if (!who.IsWarMode())
+		Message("Você só pode mudar sua postura de combate no modo de guerra!", Color(SYSTEM_COLOR::FAIL))
+			.SendSys(who.GetObjRef());
+		return;
+	endif
+
+	// Check if in combat
+	var hostiles := ListHostiles(who.GetObjRef());
+
+	if (!hostiles.size())
+		Message("Você só pode mudar sua postura de combate enquanto estiver em combate!", Color(SYSTEM_COLOR::FAIL))
+			.SendSys(who.GetObjRef());
+		return;
+	endif
+
+	// Check cooldown
+	if (GetCooldown(who.GetObjRef(), "combat_stance_change") > 0)
+		var remaining := GetCooldown(who.GetObjRef(), "combat_stance_change");
+		Message("Você precisa esperar " + remaining + " segundos para mudar sua postura novamente.", Color(SYSTEM_COLOR::FAIL))
+			.SendSys(who.GetObjRef());
+		return;
+	endif
+
+	var newStance := ChooseStance(who);
+endprogram
+
+function ChooseStance(who)
+	var eventHandled;
+	var currentStance := who.GetCombatTraits().GetStance();
+	if (!currentStance)
+		currentStance := STANCE_TYPE::NEUTRAL;
+	endif
+
+	var gump := Gump(who.GetObjRef(), "Postura de Combate", 250, 240);
+	var container := ContainerGridLayout("Container", 10, 70, 50, 140, 5, 2);
+
+	// Create buttons and labels for each stance (coordinates relative to grid cell)
+	var btnNeutral := Button("Neutral", 15, 0, 2152, 2153);
+	var txtNeutral := Text("txtNeutral", 20, 5, "Neutra", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var tooltipNeutral := Tooltip("tooltipNeutral", "Postura equilibrada sem bônus ou penalidades.");
+
+	var btnAggressive := Button("Aggressive", 15, 0, 2152, 2153);
+	var txtAggressive := Text("txtAggressive", 20, 5, "Agressiva (+5/+5)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var tooltipAggressive := Tooltip("tooltipAggressive", "Postura focada no ataque, concedendo bônus de acerto, mas reduzindo a esquiva.");
+
+	var btnVeryAggressive := Button("VeryAggressive", 15, 0, 2152, 2153);
+	var txtVeryAggressive := Text("txtVeryAggressive", 20, 5, "Muito Agressiva (+10/+10)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var tooltipVeryAggressive := Tooltip("tooltipVeryAggressive", "Postura extremamente focada no ataque, concedendo maiores bônus de acerto, mas com penalidades significativas na defesa.");
+
+	var btnDefensive := Button("Defensive", 15, 0, 2152, 2153);
+	var txtDefensive := Text("txtDefensive", 20, 5, "Defensiva (-5/-5)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var tooltipDefensive := Tooltip("tooltipDefensive", "Postura focada na defesa, concedendo bônus de esquiva, mas reduzindo o acerto.");
+
+	var btnVeryDefensive := Button("VeryDefensive", 15, 0, 2152, 2153);
+	var txtVeryDefensive := Text("txtVeryDefensive", 20, 5, "Muito Defensiva (-10/-10)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var tooltipVeryDefensive := Tooltip("tooltipVeryDefensive", "Postura extremamente focada na defesa, concedendo maiores bônus de esquiva, mas com penalidades significativas no acerto.");
+
+	// Highlight current stance with green color
+	case (currentStance)
+		STANCE_TYPE::NEUTRAL:
+			txtNeutral.SetColor(GENERAL_COLOR::GREEN);
+		STANCE_TYPE::AGGRESSIVE:
+			txtAggressive.SetColor(GENERAL_COLOR::GREEN);
+		STANCE_TYPE::VERY_AGGRESSIVE:
+			txtVeryAggressive.SetColor(GENERAL_COLOR::GREEN);
+		STANCE_TYPE::DEFENSIVE:
+			txtDefensive.SetColor(GENERAL_COLOR::GREEN);
+		STANCE_TYPE::VERY_DEFENSIVE:
+			txtVeryDefensive.SetColor(GENERAL_COLOR::GREEN);
+	endcase
+
+	// Add controls to grid (button in col 1, text with tooltip in col 2)
+	container.AddControl(btnNeutral, 1, 1);
+	txtNeutral.SetTooltip(tooltipNeutral);
+	container.AddControl(txtNeutral, 1, 2);
+
+	container.AddControl(btnAggressive, 2, 1);
+	txtAggressive.SetTooltip(tooltipAggressive);
+	container.AddControl(txtAggressive, 2, 2);
+
+	container.AddControl(btnVeryAggressive, 3, 1);
+	txtVeryAggressive.SetTooltip(tooltipVeryAggressive);
+	container.AddControl(txtVeryAggressive, 3, 2);
+
+	container.AddControl(btnDefensive, 4, 1);
+	txtDefensive.SetTooltip(tooltipDefensive);
+	container.AddControl(txtDefensive, 4, 2);
+
+	container.AddControl(btnVeryDefensive, 5, 1);
+	txtVeryDefensive.SetTooltip(tooltipVeryDefensive);
+	container.AddControl(txtVeryDefensive, 5, 2);
+
+	gump.AddControl(container);
+
+	eventHandled := gump.Show();
+
+	if (eventHandled.GetControl() == EVENT_ACTION::CLOSED)
+		return gump.Dispose();
+	elseif (eventHandled.GetControl().Equals(btnNeutral))
+		SetStance(who, STANCE_TYPE::NEUTRAL);
+	elseif (eventHandled.GetControl().Equals(btnAggressive))
+		SetStance(who, STANCE_TYPE::AGGRESSIVE);
+	elseif (eventHandled.GetControl().Equals(btnVeryAggressive))
+		SetStance(who, STANCE_TYPE::VERY_AGGRESSIVE);
+	elseif (eventHandled.GetControl().Equals(btnDefensive))
+		SetStance(who, STANCE_TYPE::DEFENSIVE);
+	elseif (eventHandled.GetControl().Equals(btnVeryDefensive))
+		SetStance(who, STANCE_TYPE::VERY_DEFENSIVE);
+	endif
+
+	gump.Dispose();
+endfunction
+
+function SetStance(who, newStance)
+	var oldStance := who.GetCombatTraits().GetStance();
+	if (!oldStance)
+		oldStance := STANCE_TYPE::NEUTRAL;
+	endif
+
+	if (oldStance == newStance)
+		Message("Você já está nesta postura.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+		return;
+	endif
+
+	// Remove old stance modifiers
+	RemoveStanceModifiers(who);
+
+	// Set new stance
+	who.SetCombatTraits(who.GetCombatTraits().SetStance(newStance));
+
+	// Apply new stance modifiers
+	ApplyStanceModifiers(who, newStance);
+
+	// Set cooldown
+	SetCooldown(who.GetObjRef(), "combat_stance_change", STANCE_COOLDOWN);
+
+	// Start auto-reset monitor if not neutral
+	if (newStance != STANCE_TYPE::NEUTRAL)
+		StartStanceMonitor(who);
+	endif
+
+	// Send feedback message
+	var stanceName := GetStanceName(newStance);
+	var stanceEmote := GetStanceEmote(newStance);
+
+	Message("Você mudou sua postura de combate para: " + stanceName, Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+	Message(stanceEmote).SendEmote(who.GetObjRef());
+endfunction

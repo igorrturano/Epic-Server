@@ -10,6 +10,10 @@ include ":equipsys:Controller/WeaponController";
 include ":destroyable:include/destroyItem";
 include ":crafting:/include/fabricacaoUtil";
 include ":equipsys:Controller/ArmorController";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
+
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
 function PegaDescMagica(objeto,xDesc := "")
@@ -55,22 +59,31 @@ endfunction
 
 function PegaDescProdutoMontado(objeto,xDesc := "")
 	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
-	if(prop.estado == ITEM_MONTADO)
+	if(prop)
 		var quantidadeLote := "";
 		if(prop.receita.lote && prop.receita.lote > 1)
 			quantidadeLote := prop.receita.lote  + "x ";
 		endif
 		
-		xDesc := xDesc + WHITE + "Item: "+  quantidadeLote + prop.receita.desc +"<br>";
-		if(prop.esquema.componentesEscolhidos.size() > 0)
-			xDesc := xDesc +"<br>"+ BLUE_ICE + "Componentes<br>";
-			foreach componenteEscolhido in (prop.esquema.componentesEscolhidos)
-				Sleepms(2);
-				var descComponente := " {} [{}] [{}]".format(componenteEscolhido.item.nome,
-															componenteEscolhido.material.nome,
-															componenteEscolhido.tier.desc); 
-				xDesc := xDesc + WHITE + descComponente + " <br>";
-			endforeach
+		var componentes;
+		if(prop.estado == ITEM_MONTADO)
+			xDesc := xDesc + WHITE + "Item: "+  quantidadeLote + prop.receita.desc +"<br>";
+			componentes := prop.esquema.componentesEscolhidos;
+		else
+			componentes := prop.componentes;
+		endif 
+
+		if(componentes)
+			if(componentes.size() > 0)
+				xDesc := xDesc +"<br>"+ BLUE_ICE + "Componentes<br>";
+				foreach componenteEscolhido in (componentes)
+					Sleepms(2);
+					var descComponente := " {} [{}] [{}]".format(componenteEscolhido.item.nome,
+																componenteEscolhido.material.nome,
+																componenteEscolhido.tier.desc); 
+					xDesc := xDesc + WHITE + descComponente + " <br>";
+				endforeach
+			endif
 		endif
 	endif
 	return xDesc;
@@ -81,15 +94,6 @@ function PegaDescDosesVeneno(objeto,xDesc := "")
 		if (objeto.graphic == 0x0F01)
 			xDesc := xDesc + SOFT_GREEN + "Doses de Veneno: " + PegaPropObjItemOrTemplate(objeto,"poisonInfo").dosage +  "<br>";
 		endif
-	endif
-	return xDesc;
-endfunction
-
-function PegaDescMunicao(objeto,xDesc := "")
-	if (!PegaPropObjItemOrTemplate(objeto, "balas"))
-		xDesc := xDesc + WHITE + "Sem Munição<br>";
-	else
-		xDesc := xDesc + WHITE + "Munição: " + PegaPropObjItemOrTemplate(objeto, "balas") + "<br>";
 	endif
 	return xDesc;
 endfunction
@@ -152,28 +156,28 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	if(cfg == error || cfg.size() <= 0)
 		cfg := MontaObjCfgArmaArmadura(objeto);
 	endif
+
+	var weapon := WeaponWrapper(objeto);
+	weapon.SetCprops(objeto.Cprops);
+	var character := MobileWrapper(who);
 	var xDesc := cfg.desc;
 	// Coloca vermelho se a força do usuario for menor, verde se for maior ou igual a força exigida
-	var str_required := GetObjProperty(objeto, "atributos").STRRequired;
-	var who_str := AP_GetStat(who, STRENGTH);
-	var str_mod := AP_GetStatMod(who, STRENGTH);
-	var total_str := who_str + str_mod;
-	if(GetObjProperty(objeto, "atributos").STRRequired > 0)
-		if (total_str < str_required)
+	var str_required := weapon.GetSTRRequired();
+	
+	if(str_required > 0)
+		if (character.GetSTR() < str_required)
 			xDesc := xDesc + RED + "Força exigida: " + str_required + "<br>";
 		else
 			xDesc := xDesc + "Força exigida: " + str_required + "<br>";
 		endif
 	endif
 
-	xDesc := xDesc + "Perícia: " + StrReplace(cfg.elem.Attribute,"_"," ") + "<br>";
+	xDesc := xDesc + "Perícia: " + StrReplace(weapon.GetAttribute(),"_"," ") + "<br>";
 	xDesc := xDesc + "Dano: <br>";
-	xDesc := PegaDescDanoArma(objeto,cfg,xDesc);
-	xDesc := xDesc + "Velocidade: " + GetVelStringDesc2(cfg.elem, objeto) + "<br>";
+	xDesc := PegaDescDanoArma(objeto,cfg,xDesc, weapon);
+	XDesc := PegaDescDanoModArma(objeto,xDesc);
 
-	if (GetObjProperty(objeto, "polida"))
-		xDesc := xDesc + WHITE + "Polimentos: " + GetObjProperty(objeto, "polida") + "<br>";
-	endif
+	xDesc := xDesc + "Velocidade: " + GetVelStringDesc2(weapon.GetSpeedTier()) + "<br>";
 
 	var crits := GetCriticalInfo(cfg.elem);
 	if (crits != "")
@@ -186,19 +190,18 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	endif
 
 	if (objeto.hp_mod > 0)
-		xDesc := xDesc + ROXO + "Bônus Item PVs "+objeto.hp_mod;
+		xDesc := xDesc + ROXO + "Bônus Item PVs "+ objeto.hp_mod;
 	endif
 
-	if (GetObjProperty(objeto, "Aprimoramentos"))
+	if (PegaPropObjItemOrTemplate(objeto, "Aprimoramentos"))
 		xDesc := xDesc + ROXO + "Aprimoramentos: " +  "<br>";
-		foreach key in (GetObjProperty(objeto, "Aprimoramentos").keys())
+		foreach key in (PegaPropObjItemOrTemplate(objeto, "Aprimoramentos").keys())
 				xDesc := xDesc + AMARELO_CLARO + key + "<br>";
 		endforeach
 	endif
 		
-	//XDesc := PegaDescDanoModArma(objeto,xDesc); Comentado até ter sido revisto no novo sistema de dano.
 	xDesc := PegaDescCargasArmElemental(objeto,who,xDesc);
-
+	
 	if (PegaPropObjItemOrTemplate(objeto, "swordmage") != error)
 		xDesc := xDesc + WHITE + PegaPropObjItemOrTemplate(objeto, "swordmage") + "<br>";
 	endif
@@ -216,34 +219,29 @@ function PegaDescArmas(objeto,who,cfg := struct)
 			endif
 		endforeach
 	endif
+	
 	return xDesc;
 endfunction
 
-function PegaDescDanoArma(objeto,cfg,xDesc := "")
+function PegaDescDanoArma(objeto,cfg,xDesc := "", weapon := 0)
 	
-	var atrib := PegaPropObjItemOrTemplate(objeto, "atributos");
-	var bluntMD,slashMD,pircMD :=0;
-	var bluntOD,slashOD,pircOD := "";
-	var elemMainDamage := SplitWords(cfg.elem.EpicMainDamage);
-	
-	if(!atrib)
-		var elemOffDamage := SplitWords(cfg.elem.EpicOffDamage);
-		atrib.+SlashMainDamage := getDamageByTier(elemMainDamage[1]);
-		atrib.+PiercingMainDamage := getDamageByTier(elemMainDamage[2]);
-		atrib.+BluntMainDamage := getDamageByTier(elemMainDamage[3]);
-
-		atrib.+SlashOffDamage := getDamageByTier(elemOffDamage[1]);
-		atrib.+PiercingOffDamage := getDamageByTier(elemOffDamage[2]);
-		atrib.+BluntOffDamage := getDamageByTier(elemOffDamage[3]);
+	if(!weapon)
+		weapon := WeaponWrapper(objeto);
 	endif
 
-	slashMD := atrib.SlashMainDamage;
-	pircMD := atrib.PiercingMainDamage;
-	bluntMD := atrib.BluntMainDamage;
+	var mainDamage := weapon.GetMainDamage();
+	var offDamage := weapon.GetOffDamage();
+	var bluntMD,slashMD,pircMD :=0;
+	var bluntOD,slashOD,pircOD := "";
+	var elemMainDamage := SplitWords(weapon.GetEpicMainDamage());
 
-	slashOD := atrib.SlashOffDamage? FISICO_OFF + " " + atrib.SlashOffDamage + FECHA_BASEFONT_TAG:"";
-	pircOD := atrib.PiercingOffDamage? FISICO_OFF + " " + atrib.PiercingOffDamage + FECHA_BASEFONT_TAG:"";
-	bluntOD := atrib.BluntOffDamage? FISICO_OFF + " " + atrib.BluntOffDamage + FECHA_BASEFONT_TAG:"";
+	slashMD := mainDamage.GetSlashDamage().GetDiceString();
+	pircMD := mainDamage.GetPiercingDamage().GetDiceString();
+	bluntMD := mainDamage.GetBluntDamage().GetDiceString();
+
+	slashOD := offDamage.GetSlashDamage().GetDiceString()? FISICO_OFF + " " +  offDamage.GetSlashDamage().GetDiceString() + FECHA_BASEFONT_TAG:"";
+	pircOD := offDamage.GetPiercingDamage().GetDiceString()? FISICO_OFF + " " + offDamage.GetPiercingDamage().GetDiceString() + FECHA_BASEFONT_TAG:"";
+	bluntOD := offDamage.GetBluntDamage().GetDiceString()? FISICO_OFF + " " + offDamage.GetBluntDamage().GetDiceString() + FECHA_BASEFONT_TAG:"";
 	
 	if(slashMD !=  0)
 		xDesc := xDesc  + " Cort: " + ClassificaDanoCor(elemMainDamage[1])  + (slashMD) + FECHA_BASEFONT_TAG + slashOD + "<br>";
@@ -258,10 +256,35 @@ function PegaDescDanoArma(objeto,cfg,xDesc := "")
 	return xDesc;
 endfunction
 
-function PegaDescDanoModArma(objeto,xDesc := "")
-	//TODO alterar uma vez que o sistema de combate estiver terminado.
+function PegaDescDanoModArma(objeto,xDesc := "", weapon := 0)
+	if(!weapon)
+		weapon := WeaponWrapper(objeto);
+	endif
 
+	var damageMod := weapon.GetDamageMod();
+	var fireDamage := damageMod.GetFireBaseDamage();
+	var coldDamage := damageMod.GetColdBaseDamage();
+	var poisonDamage := damageMod.GetPoisonBaseDamage();
+	var energyDamage := damageMod.GetEnergyBaseDamage();
+
+	if(fireDamage || coldDamage || poisonDamage || energyDamage)
+		xDesc := xDesc + "<br> Dano Mágico Fixo: <br>";
+
+		if(fireDamage)
+			xDesc += "Fogo: {} +{} {} <br>".format( RED_FIRE ,fireDamage,FECHA_BASEFONT_TAG);
+		endif
+		if(coldDamage)
+			xDesc += "Gelo: {} +{} {} <br>".format( BLUE_ICE ,coldDamage,FECHA_BASEFONT_TAG);
+		endif
+		if(poisonDamage)
+			xDesc += "Veneno: {} +{} {} <br>".format( SOFT_GREEN ,poisonDamage,FECHA_BASEFONT_TAG);
+		endif
+		if(energyDamage)
+			xDesc += "Energia: {} +{} {} <br>".format( ROXO ,energyDamage,FECHA_BASEFONT_TAG);
+		endif
+	endif
 	return xDesc;
+
 endfunction
 
 function PegaDescCargasArmElemental(objeto, who, XDesc := "")
@@ -284,53 +307,74 @@ function PegaDescArmaduras(objeto,cfg := struct)
 		cfg := MontaObjCfgArmaArmadura(objeto);
 	endif
 
+	var armadura := ArmorWrapper(objeto); 
+	armadura.SetCprops(objeto.Cprops);
+
 	var xDesc := cfg.desc;
-	var atributosArmadura := PegaPropObjItemOrTemplate(objeto, "atributos");
-	if (atributosArmadura.STRRequired > 0)
-		xDesc := xDesc + "Min Str: " + atributosArmadura.STRRequired + "<br>";
+
+	if (armadura.GetSTRRequired() > 0)
+		xDesc := xDesc + "Min Str: " + armadura.GetSTRRequired() + "<br>";
 	endif
-	if (atributosArmadura.DexPen)
-		xDesc := xDesc + "Redutor Dex : " + atributosArmadura.DexPen + "<br>";
+	if (armadura.GetModifiers()[DEXTERITY].GetValue())
+		xDesc := xDesc + "Redutor Dex : " + armadura.GetModifiers()[DEXTERITY].GetValue() + "<br>";
 	endif
-	if (atributosArmadura.BonusDelay)
-		xDesc := xDesc + "Block Bonus: " + atributosArmadura.BonusDelay  + "<br>";
+	if (armadura.GetModifiers()[DEXTERITY].GetValue())
+		//xDesc := xDesc + "Block Bonus: " + atributosArmadura.BonusDelay  + "<br>";
 	endif
-	if (atributosArmadura.ParryDelay)
-		xDesc := xDesc + "Delay Bonus: " + atributosArmadura.ParryDelay + "<br>";
+	if (armadura)
+		//xDesc := xDesc + "Delay Bonus: " + atributosArmadura.ParryDelay + "<br>";
 	endif
 
-	xDesc := PegaDescResistArmadura(objeto,cfg,atributosArmadura,xDesc);
+	xDesc := PegaDescResistArmadura(objeto,cfg,armadura,xDesc);
 
 	return xDesc;
 endfunction
 
-function PegaDescResistArmadura(objeto,cfg,atributosArmadura, xDesc := "")
+function PegaDescResistArmadura(objeto,cfg,armadura, xDesc := "")
 	
 	var atrib := struct;
-	if(atributosArmadura)
-		atrib := atributosArmadura;
-	else
-		// atrib := getArmorStats(cfg.elem); // Vai bugar após o EqupiSys v3.0 - É intencional, pra poder rastrear os outros bugs.... (Desculpa Deiro... HUAuhahuahu)
+	if(!armadura)
+		armadura := ArmorWrapper(objeto);
 	endif
 
 	var bluntRes,slashRes,pircRes :=0;
-	// if(!atrib)
-	// 	atrib := getResistByProtection(cfg.elem.TipoProtecao);
-	// endif
-	slashRes := atrib.SlashResist;
-	pircRes := atrib.PiercingResist;
-	bluntRes := atrib.BluntResist;
+
+	slashRes := armadura.GetResists().GetSlashResist();
+	pircRes := armadura.GetResists().GetSlashResist();
+	bluntRes := armadura.GetResists().GetSlashResist();
+	var fireResist:= armadura.GetResists().GetFireResist();
+	var coldResist:= armadura.GetResists().GetColdResist();
+	var poisonResist := armadura.GetResists().GetPoisonResist();
+	var energyResist := armadura.GetResists().GetEnergyResist();
 	
 	if((slashRes + pircRes + bluntRes) + 0)
 		xDesc := xDesc + "Defesas: <br>";
 		if(slashRes> 0)
-			xDesc := xDesc  + " Cort:"  + ClassificaResistCor(cfg.elem.TipoProtecao) +  (slashRes) + FECHA_BASEFONT_TAG  + "<br>";
+			xDesc := xDesc  + " Cort: " + ClassificaResistCor(armadura.GetTipoProtecao()) +  (slashRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(pircRes> 0)
-			xDesc := xDesc  + " Perf:" + ClassificaResistCor(cfg.elem.TipoProtecao) +  (pircRes) + FECHA_BASEFONT_TAG  + "<br>";
+			xDesc := xDesc  + " Perf: " + ClassificaResistCor(armadura.GetTipoProtecao()) +  (pircRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(bluntRes> 0)
-			xDesc := xDesc  + " Cont:" + ClassificaResistCor(cfg.elem.TipoProtecao) + (bluntRes) + FECHA_BASEFONT_TAG + "<br>";
+			xDesc := xDesc  + " Cont: " + ClassificaResistCor(armadura.GetTipoProtecao()) + (bluntRes) + FECHA_BASEFONT_TAG + "<br>";
+		endif
+	endif
+
+	
+	if(fireResist || coldResist || poisonResist || energyResist)
+		xDesc := xDesc + "<br> Resistência Mágica: <br>";
+
+		if(fireResist)
+			xDesc += "Fogo: {} +{} {} <br>".format( RED_FIRE ,fireResist,FECHA_BASEFONT_TAG);
+		endif
+		if(coldResist)
+			xDesc += "Gelo: {} +{} {} <br>".format( BLUE_ICE ,coldResist,FECHA_BASEFONT_TAG);
+		endif
+		if(poisonResist)
+			xDesc += "Veneno: {} +{} {} <br>".format( SOFT_GREEN ,poisonResist,FECHA_BASEFONT_TAG);
+		endif
+		if(energyResist)
+			xDesc += "Energia: {} +{} {} <br>".format( ROXO ,energyResist,FECHA_BASEFONT_TAG);
 		endif
 	endif
 	return xDesc;
@@ -398,9 +442,9 @@ function PegaDescMagicLore(objeto, who , xDesc := "")
 	return xDesc;
 endfunction
 
-function PegaDescGoles(objeto, xDesc)
-		if (PegaPropObjItemOrTemplate(objeto, "goles"))
-			xDesc := xDesc + BLUE_ICE + PegaPropObjItemOrTemplate(objeto, "goles") + " doses";
+function PegaDescDoses(objeto, xDesc)
+		if (PegaPropObjItemOrTemplate(objeto, "doses"))
+			xDesc := xDesc + BLUE_ICE + PegaPropObjItemOrTemplate(objeto, "doses") + " doses";
 		endif
 		return xDesc;
 endfunction
@@ -427,7 +471,7 @@ function PegaDescEfeitosComponente(componente, xDesc)
 			descValor := RED_FIRE + propriedades.valorPrincipal + " <br>";
 		endif
 
-		if(componente.tier.valor == 3)
+		if(componente.tier.valor >= PegaComponenteTierDesc(COMPONENTE_TIERS::EXCEPCIONAL).valor)
 			corLinha := AMARELO_CLARO;
 		endif
 
@@ -435,14 +479,42 @@ function PegaDescEfeitosComponente(componente, xDesc)
 	endif
 	
 	if(propriedades.efeitosAdicionais)
+		var descValor, corLinha;
 		foreach efeitoAdicional in (propriedades.efeitosAdicionais)
 			Sleepms(2);
 			if(efeitoAdicional != 0)
-				xDesc := xDesc + BLUE + "*" +  _efeitoAdicional_iter + " " + SOFT_GREEN + "+"+ efeitoAdicional[_efeitoAdicional_iter] + " <br>";
+				if(efeitoAdicional[_efeitoAdicional_iter] > 0)
+					descValor := _efeitoAdicional_iter + " " + SOFT_GREEN + "+"+ efeitoAdicional[_efeitoAdicional_iter] + " <br>";
+					corLinha := BLUE;
+				else
+					corLinha := SOFT_PINK;
+					descValor := _efeitoAdicional_iter + " " + RED_FIRE + efeitoAdicional[_efeitoAdicional_iter] + " <br>";
+				endif
+				xDesc := xDesc + corLinha + "*" + descValor;
 			else
 				continue;
 			endif
 		endforeach
 	endif
+	return xDesc;
+endfunction
+
+function PegaDescCargasRunicas(objeto, who, XDesc := "")
+	if ( GetObjProperty(objeto, "runecharges"))	
+		xDesc := xDesc + AMARELO_CLARO + "Cargas Rúnicas: "+GetObjProperty(objeto, "runecharges")+"<br>";
+	endif
+	return XDesc;
+endfunction
+
+function PegaDescEstudavel(objeto, xDesc := "")
+	var skill_name := GetObjProperty(objeto, "estudavel");
+	if (!skill_name)
+		return xDesc;
+	endif
+
+	var skill_traduzida := TraduzirProfissao(skill_name);
+	xDesc := xDesc + "<BASEFONT COLOR=#a8d8ea>[Item de Estudo]<br>";
+	xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>Área: " + skill_traduzida + "<br>";
+	xDesc := xDesc + "<BASEFONT COLOR=#C0C0C0>Limite de estudo: 52.0<br>";
 	return xDesc;
 endfunction

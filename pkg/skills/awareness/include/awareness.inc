@@ -38,7 +38,7 @@ function ExaminarObjeto(who,targ)
 			if(who.hidden)
 				SendSysMessageEx(who, "Examinando "+targ.name+".", SSM_INFO);
 			else
-				PrintText(who, "*Examinando "+targ.name+"*");
+				PrintTextAbove(who, "*Examinando "+targ.name+"*");
 			endif
 			sleep(1);
 		endif
@@ -52,35 +52,51 @@ function ExaminarObjeto(who,targ)
 			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para você.", SSM_INFO);
 			if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 				who.hidden := 0;
-				PrintText(who, "*Aponta para armadilha em "+targ.name+"*");
-				PrintText(targ, "*!*");
+				PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
+				PrintTextAbove(targ, "*!*");
 				TrapFound(targ, who);
 			endif
 			return 1;
 		elseif(armadilhaRevelada)
 			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para todos.", SSM_INFO);
 			return 1;
-		else
-			var diff;
-			var lvl := Cint(GetObjProperty(targ, "level"));
-			case (lvl)
-				1: diff := 20;
-				2: diff := 40;
-				3: diff := 60;
-				4: diff := 80;
-				5: diff := 100;
-				6: diff := 120;
-				default: diff := 1000; // Telepads e afins
-			endcase
-			sleep(1);
-			if ( SkillCheck(who, AWARENESS, diff) > 0 )
+	else
+		var diff;
+		var lvl := Cint(GetObjProperty(targ, "level"));
+		
+		case (lvl)
+			1: diff := 20;
+			2: diff := 40;
+			3: diff := 60;
+			4: diff := 80;
+			5: diff := 100;
+			6: diff := 120;
+			default: diff := 1000; // Telepads e afins
+		endcase
+		
+		sleep(1);
+		var check_result := SkillCheck(who, AWARENESS, diff);
+		if ( check_result > 0 )
 				acharamArmadilha.Append(who.serial);
 				SetObjProperty(targ, "acharamArmadilha", acharamArmadilha);
-				SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
+
+				// Check how many traps the chest has
+				var traps := GetObjProperty(targ, "TrapList");
+				var trap_count := 0;
+				if (traps)
+					trap_count := traps.size();
+				endif
+
+				if (trap_count > 1)
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+". Você detectou "+trap_count+" armadilhas!", SSM_INFO);
+				else
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
+				endif
+
 				if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 					who.hidden := 0;
-					PrintText(who, "*Aponta para armadilha em "+targ.name+"*");
-					PrintText(targ, "*!*");
+					PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
+					PrintTextAbove(targ, "*!*");
 					TrapFound(targ, who);
 				endif
 				return 1;
@@ -103,7 +119,7 @@ function CalculateDHDiff(who, mobile)
 	var dist := Distance(who, mobile);
 	var difficulty;
 
-	if (TemHabilidade(mobile, "Furtividade Aprimorada") && !TemHabilidade(who, "Sempre Alerta"))
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SMOKE_SCREEN) && !MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA))
 		difficulty := CInt(mobile_skill);
 	else
 		if (dist >=8)
@@ -135,7 +151,7 @@ function ExaminarArea(who)
 
 	var range := CInt( AP_GetSkill(who, AWARENESS) / 10 ) + 1;
 
-	if ( TemHabilidade(who, "Sempre Alerta") )
+	if ( MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA) )
 		range := range + 5;
 	endif
 
@@ -143,6 +159,7 @@ function ExaminarArea(who)
 	var lvl;
 	var found := 0;
 	var difficulty;
+	var itemdescCfg := ReadConfigFile(":*:itemdesc");
 	foreach mobile in ListMobilesNearLocationEX(who.x, who.y, who.z, range, LISTEX_FLAG_HIDDEN, who.realm)
 		if ( CheckLineOfSight(who, mobile) && abs(mobile.z - who.z ) < 19 )
 			difficulty := CalculateDHDiff(who, mobile);
@@ -151,7 +168,7 @@ function ExaminarArea(who)
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
 					found := found+1;
 					mobile.hidden := 0;
-					PrintText(mobile, "*Revelado por "+who.name+"*");
+					PrintTextAbove(mobile, "*Revelado por "+who.name+"*");
 				endif
 	        elseif (who.party && (who.party.leader.name == mobile.party.leader.name)) //procura o colega, mas não revela
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0, ADV_DISABLE) > 0 )  //Não upa
@@ -172,7 +189,7 @@ function ExaminarArea(who)
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
 					found := found+1;
 					mobile.hidden := 0;
-					PrintText(mobile, "*Revelado por "+who.name+"*");
+					PrintTextAbove(mobile, "*Revelado por "+who.name+"*");
 					SendSysMessageEx(who, "Você encontrou "+mobile.name+".", SSM_INFO);
 					SendSysMessageEx(mobile, who.name+" te encontrou!", SSM_FAIL);
 				endif
@@ -182,13 +199,19 @@ function ExaminarArea(who)
 	endforeach
 
 	foreach item in ListItemsNearLocation(who.x, who.y, who.z, range, who.realm)
-		// Ignore spawners and other system items
-		if (item.name["spawnpoint"] || item.name["spawner"] || item.name["altar"] || item.objtype == 0x5000 || item.objtype == 0x5003 || item.objtype == 0x9F16 || item.objtype == 0xA401 || item.objtype == 0xA402 || item.objtype == 0xe807)
+		// Ignore invisible items without a level (ambience/system items that should never be revealed)
+		lvl := Cint(GetObjProperty(item, "level"));
+		if (item.invisible && lvl == error)
 			continue;
 		endif
-		
-		if ( item.invisible )
-			lvl := Cint(GetObjProperty(item, "level"));
+
+		// Process discoverable hidden items (invisible with level)
+		if ( item.invisible && lvl != error)
+			// Items permanently invisible by itemdesc should never be revealed
+			var elemDesc := FindConfigElem(itemdescCfg, item.objtype);
+			if (elemDesc.Invisible)
+				continue;
+			endif
 			case (lvl)
 				1: diff := 20;
 				2: diff := 40;
@@ -207,7 +230,51 @@ function ExaminarArea(who)
 		endif
 		sleepms(2);
 	endforeach
+
+	// Check for secret doors
+	var secret_doors := CheckForSecretDoors(who);
+	found := found + secret_doors;
+
 	return found;
+endfunction
+
+function CheckForSecretDoors(who)
+	// Load secret doors config
+	var secretDoorCfg := ReadConfigFile(":megacliloc:config/secretDoors");
+	if (!secretDoorCfg)
+		return 0;
+	endif
+
+	var awareness_skill := CInt(AP_GetSkill(who, AWARENESS));
+	var range := CInt(awareness_skill / 10) + 1;
+
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA))
+		range := range + 5;
+	endif
+
+	// Reduce range for secret doors (harder to spot)
+	var search_range := CInt(range / 2);
+	if (search_range < 1)
+		search_range := 1;
+	endif
+
+	var doors_found := 0;
+	var nearby_items := ListItemsNearLocation(who.x, who.y, who.z, search_range, who.realm);
+
+	foreach item in nearby_items
+		// Check if this item is a secret door
+		if (FindConfigElem(secretDoorCfg, item.objtype))
+			// Roll against skill to notice it
+			if (RandomInt(100) < awareness_skill)
+				doors_found := doors_found + 1;
+				Message("*!*").SendAbove(item);
+				Message("Voce notou algo estranho...").SetColor(SSM_INFO).SendSys(who);
+				sleepms(50);
+			endif
+		endif
+	endforeach
+
+	return doors_found;
 endfunction
 
 function exibeCharEscondido(who, escondido, cor)

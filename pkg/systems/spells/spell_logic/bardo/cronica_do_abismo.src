@@ -1,0 +1,48 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":voidrift:include/voidrift";
+include "include/client";
+include "include/sounds";
+
+// Cronica do Abismo (1213) - C4
+// Invoca aliado void por 60 segundos. Tier = Arc/20.
+// Entropia negativa gerada pelo spell_executor via BardEntropyController.
+program SpellScript(params)
+	var who := params[1];
+
+	var arcana := CInt(AP_GetSkill(who, ARCANA));
+	var tier   := CInt(arcana / 20);
+	if (tier < 1) tier := 1; endif
+	if (tier > 5) tier := 5; endif
+
+	PrintTextAbove(who, "*O bardo abriu o livro proibido, e dele saiu algo que nao deveria existir...*", 3, 38);
+	PlaySoundEffect(who, 0x211);
+	PlayStationaryEffect(who.x, who.y, who.z, 0x36CB, 5, 5);
+
+	var creatures := GetCreaturesByTier(tier);
+	var npc_template := ":epicAI:" + creatures[RandomInt(len(creatures)) + 1];
+
+	var summon_x := who.x + RandomInt(3) - 1;
+	var summon_y := who.y + RandomInt(3) - 1;
+
+	var npc := CreateNPCFromTemplate(npc_template, summon_x, summon_y, who.z, who.realm);
+	if (npc.errortext)
+		SendSysMessageEx(who, "O ritual falhou ao convocar a entidade.", SSM_FAIL);
+		return 0;
+	endif
+
+	SetObjProperty(npc, "NoCorpse", 1);
+	SetObjProperty(npc, "summon_master", who.serial);
+
+	SendSysMessageEx(who, $"Cronica do Abismo: entidade void tier {tier} convocada por 60s!", SSM_INFO);
+
+	sleep(60);
+
+	if (npc && !npc.dead)
+		npc.Kill();
+	endif
+
+	return 1;
+endprogram

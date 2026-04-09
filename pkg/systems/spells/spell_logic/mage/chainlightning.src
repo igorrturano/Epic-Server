@@ -8,7 +8,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 include ":taming:taming";
 include "include/epicMageryUtils";
@@ -32,7 +32,7 @@ program chainLightning(params)
 
 	SendSysMessageEx(caster, "Voce ve raio saindo de sua mao e passando por seus inimigos.", SSM_INFO);
 
-	var range := cint(AP_GetSkill(caster, ARCANA) / 20);
+	var range := cint(HandleSpellSkill(caster) / 20);
 	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range, targ);
 
 	var casterThenNextMobile := caster;

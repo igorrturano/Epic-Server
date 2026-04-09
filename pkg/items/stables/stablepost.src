@@ -4,6 +4,7 @@ use os;
 include ":containers:storageAreas";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
+include ":merchants:/include/cambio";
 
 const MOEDAS_COBRE := 0xba63;
 const MOEDAS_PRATA := 0xba64;
@@ -66,10 +67,13 @@ function GuardarAnimal(who, post)
 		return 0;
 	endif // <--- Adicionei este endif aqui
 
+	var regiaoBanco := GetObjProperty(post, "City") ? GetObjProperty(post, "City") : CP_DEFAULT_AREA;
 	// 5. Verificar pagamento (agora sem pedir dias)
-	if (!PagarEstadia(who, precoPorDia))
-		SendSysMessage(who, "Pagamento não efetuado.");
+	if (ContaCapital(who, regiaoBanco).valorTotal < precoPorDia) 
+		SendSysMessage(who, "Você não tem moedas o suficiente para efetuar o pagamento.");
 		return 0;
+	else
+		who.spendgold(precoPorDia);
 	endif
 
 	// 6. Guardar animal
@@ -151,6 +155,7 @@ function ConfirmarGuardaPet(who, pet, valor)
 	return input[0];
 endfunction
 
+/*
 function PagarEstadia(who, valor)
 	if (!TemBanco(who))
 		return 0;
@@ -173,6 +178,8 @@ function PagarEstadia(who, valor)
 	Set_Critical(0);
 	return (totalPago >= valor);
 endfunction
+*/
+
 
 function CalculaRecursosDisponiveisBank(bank_box)
 	var total_cobre := 0;

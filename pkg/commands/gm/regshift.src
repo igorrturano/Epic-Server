@@ -1,0 +1,61 @@
+/*
+ * regshift.src
+ *
+ * Register a merchant NPC for the shift system
+ * Usage: .regshift <shift>
+ * Where shift is "day", "night", "dia", "noite", "both", or "ambos"
+ */
+use uo;
+
+program RegisterShiftMerchant(who, text)
+	var shift := Lower(text);
+
+	// Validate shift value
+	if (!shift || shift == "")
+		shift := "day";
+	elseif (!(shift in array{"day", "night", "dia", "noite", "both", "ambos"}))
+		SendSysMessage(who, "Invalid shift. Use: day, night, dia, noite, both, or ambos");
+		return;
+	endif
+
+	SendSysMessage(who, "Target the merchant to register with shift: " + shift);
+	var npc := Target(who);
+
+	if (!npc)
+		SendSysMessage(who, "Cancelled.");
+		return;
+	endif
+
+	if (!npc.npctemplate)
+		SendSysMessage(who, "Target is not an NPC.");
+		return;
+	endif
+
+	// Set the shift property on the NPC
+	SetObjProperty(npc, "shift", shift);
+
+	// Register in the global registry
+	var registry := GetGlobalProperty("ShiftMerchantRegistry");
+	if (!registry || registry == error)
+		registry := dictionary;
+	endif
+	registry[npc.serial] := shift;
+	SetGlobalProperty("ShiftMerchantRegistry", registry);
+
+	// Apply visibility immediately based on current time
+	var current_time := GetGlobalProperty("dia");
+	var is_daytime := (current_time == "dia");
+	var is_night_shift := (shift == "night" || shift == "noite");
+	var is_day_shift := (shift == "day" || shift == "dia");
+	var is_both_shift := (shift == "both" || shift == "ambos");
+
+	if (is_both_shift)
+		npc.concealed := 0;
+	elseif (is_night_shift)
+		npc.concealed := is_daytime ? 1 : 0;
+	elseif (is_day_shift)
+		npc.concealed := is_daytime ? 0 : 1;
+	endif
+
+	SendSysMessage(who, "Registered '" + npc.name + "' (serial: " + npc.serial + ") with shift: " + shift);
+endprogram

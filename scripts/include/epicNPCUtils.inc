@@ -2,6 +2,7 @@ use util;
 
 include ":attributes:attributes";
 include ":equipsys:Controller/WeaponController";
+include ":combat:Model/Damage";
 include ":taming:taming";
 
 function customizeNpc(mob, set_tier := "0")
@@ -93,13 +94,27 @@ function ReturnCharDataPlayerNear(who)
 endfunction
 
 function HasPlayerNear(who)
+    // OPTIMIZATION: Use 1-second cached scan to reduce expensive 30-tile scans
+    var cache_key := "#hasnear_30";
+    var cached := GetObjProperty(who, cache_key);
+    var now := polcore().systime;
+
+    if (cached && (CDbl(now) - CDbl(cached.time)) < 1.0)
+        return cached.result;
+    endif
+
+    // Cache miss - perform scan
     var nearby := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 30, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
+    var has_player := 0;
     foreach mobile in nearby
         if (mobile.acctname)
-            return 1;
+            has_player := 1;
+            break;
         endif
     endforeach
-    return 0;
+
+    SetObjProperty(who, cache_key, struct{"result" := has_player, "time" := now});
+    return has_player;
 endfunction
 
 function HasPlayerNearLocation(x, y, realm := 0)
@@ -136,8 +151,30 @@ enum ELEMDAMAGES
 	DAMAGE_NONE := "DAMAGE_NONE",
 	DAMAGE_LOW := "DAMAGE_LOW",
 	DAMAGE_MID := "DAMAGE_MID",
-	DAMAGE_HIGH := "DAMAGE_HIGH"
+	DAMAGE_HIGH := "DAMAGE_HIGH",
+	DAMAGE_BRUTAL := "DAMAGE_BRUTAL",
+	DAMAGE_DEVASTATING := "DAMAGE_DEVASTATING"
 endenum
+
+function GetResistValueByTier(tier)
+	var resist := 0;
+
+	if (Upper(tier) == Upper(T0))
+		resist := RESIST_TIER0;
+	elseif (Upper(tier) == Upper(T1))
+		resist := RESIST_TIER1;
+	elseif (Upper(tier) == Upper(T2))
+		resist := RESIST_TIER2;
+	elseif (Upper(tier) == Upper(T3))
+		resist := RESIST_TIER3;
+	elseif (Upper(tier) == Upper(T4))
+		resist := RESIST_TIER4;
+	elseif (Upper(tier) == Upper(T5))
+		resist := RESIST_TIER5;
+	endif
+
+	return CInt(resist);
+endfunction
 
 /**
  * getNPCDamages(npc)
@@ -193,12 +230,12 @@ endfunction
 function getNPCMainDamage(npc, type)
 	var damage := struct;
 
-	if (type.Upper() == SLASHDAMAGE.Upper())
-		damage.+AttackType := SLASHDAMAGE;
-	elseif (type.Upper() == PIERCINGDAMAGE.Upper())
-		damage.+AttackType := PIERCINGDAMAGE;
-	elseif (type.Upper() == BLUNTDAMAGE.Upper())
-		damage.+AttackType := BLUNTDAMAGE;
+	if (type.Upper() == DAMAGE_TYPE::SLASH.Upper())
+		damage.+AttackType := DAMAGE_TYPE::SLASH;
+	elseif (type.Upper() == DAMAGE_TYPE::PIERCING.Upper())
+		damage.+AttackType := DAMAGE_TYPE::PIERCING;
+	elseif (type.Upper() == DAMAGE_TYPE::BLUNT.Upper())
+		damage.+AttackType := DAMAGE_TYPE::BLUNT;
 	else
 		damage.+AttackType := error{"errortext" := "No valid attack type!"};
 	endif
@@ -208,11 +245,11 @@ function getNPCMainDamage(npc, type)
 		var npcDamages := getNPCDamages(npc);
 		var damageTier;
 
-		if (type.Upper() == SLASHDAMAGE.Upper())
+		if (type.Upper() == DAMAGE_TYPE::SLASH.Upper())
 			damageTier := npcDamages.SlashDamage;
-		elseif (type.Upper() == PIERCINGDAMAGE.Upper())
+		elseif (type.Upper() == DAMAGE_TYPE::PIERCING.Upper())
 			damageTier := npcDamages.PiercingDamage;
-		elseif (type.Upper() == BLUNTDAMAGE.Upper())
+		elseif (type.Upper() == DAMAGE_TYPE::BLUNT.Upper())
 			damageTier := npcDamages.BluntDamage;
 		else
 			damageTier := error{"errortext" := "No valid damage tier!"};
@@ -304,6 +341,8 @@ function getNPCElemDamages(npc)
 			DAMAGE_LOW: damage := getElementalDamageByTier(DAMAGE_LOW); break;
 			DAMAGE_MID: damage := getElementalDamageByTier(DAMAGE_MID); break;
 			DAMAGE_HIGH: damage := getElementalDamageByTier(DAMAGE_HIGH); break;
+			DAMAGE_BRUTAL: damage := getElementalDamageByTier(DAMAGE_BRUTAL); break;
+			DAMAGE_DEVASTATING: damage := getElementalDamageByTier(DAMAGE_DEVASTATING); break;
 		endcase
 	endforeach
 
@@ -323,6 +362,10 @@ function getElementalDamageByTier(tier)
 			return 3;
 		DAMAGE_HIGH:
 			return 5;
+		DAMAGE_BRUTAL:
+			return 8;
+		DAMAGE_DEVASTATING:
+			return 12;
 
 		default: return error{ "errortext" := "Value not found for this Elemental Tier!"};
 	endcase
@@ -374,13 +417,13 @@ function endControlNPC(who)
 
 	if ( !orig_script )
 
-		PrintText(who, "*doesnt have an original script to use now that taming is done?!*");
+		PrintTextAbove(who, "*doesnt have an original script to use now that taming is done?!*");
 		SysLog(who.name+" doesnt have an original script to use now that taming is done?!");
 		orig_script := ":brainai:brain";
 
 	elseif ( orig_script["tamed"] )
 
-		PrintText(who, "*my original script was tamed.src ?!*");
+		PrintTextAbove(who, "*my original script was tamed.src ?!*");
 		SysLog(who.name+" my original script was tamed.src ?!");
 		orig_script := ":brainai:brain";
 
@@ -500,4 +543,18 @@ function GetRandomNearbyHostile(who)
 	endif
 
 	return chosen_opponent;
+endfunction
+
+function getNPCState(npc)
+    var hp_percent := AP_GetVital(npc, HITS) / AP_GetVitalMaximumValue(npc, HITS) * 100;
+
+    if (hp_percent <= 25)
+        return "dying";
+    elseif (hp_percent <= 50)
+        return "hurt";
+    elseif (hp_percent <= 75)
+        return "injured";
+    else
+        return "healthy";
+    endif
 endfunction

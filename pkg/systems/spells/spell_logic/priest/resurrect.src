@@ -51,8 +51,8 @@ program SpellScript(params)
 	SetCoolDown(plytarget, "hurt", tempo);
 	TS_StartTimer(plytarget, "fraturaexposta", 1);
 
-	MoveObjectToLocation(plytarget, targ.x, targ.y, targ.z, targ.realm, MOVEOBJECT_FORCELOCATION);
-	recalcvitals(targ);
+	MoveObjectToLocation(plytarget, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
+	recalcvitals(plytarget);
 endprogram
 
 function GetPersonBySerial(name_text)
@@ -68,7 +68,7 @@ endfunction
 
 function RessPlayer(targ)
 	PlaySoundEffect(targ, SFX_RESURRECT);
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLES, 10, 10);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLES, 10, 10);
 	Resurrect(targ);
 	EraseObjProperty(targ, "morto");
 endfunction

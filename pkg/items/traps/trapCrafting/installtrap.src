@@ -29,10 +29,6 @@ program installtrap(who, trap)
 	var traptype := "";
 	if (trap.objtype == 0x367a)
 		traptype := "PoisonGas";
-	elseif (trap.objtype == 0xff97)
-		traptype := "Explosion";
-	elseif (trap.objtype == 0xff98)
-		traptype := "Needle";
 	endif
 
 	if (alvo.isA(POLCLASS_CONTAINER))
@@ -41,7 +37,7 @@ program installtrap(who, trap)
 			SendSysMessageEx(who, "Esta armadilha esta quebrada.", SSM_FAIL);
 			return;
 		endif
-		PrintText(who, "*instalando armadilha*");
+		PrintTextAbove(who, "*instalando armadilha*");
 		sleep(4);
 		var dif := level * 20;
 		var check := SkillCheck(who, MECHANICS, dif);
@@ -53,7 +49,7 @@ program installtrap(who, trap)
 			SendSysMessageEx(who, "Voce falhou em instalar a armadilha", SSM_INFO);
 			return;
 		else
-			PrintText(who, "*" + who.name + " disparou a armadilha.");
+			PrintTextAbove(who, "*" + who.name + " disparou a armadilha.");
 			foreach mobile in ListMobilesNearLocation(alvo.x, alvo.y, alvo.z, level, alvo.realm)
 				// SendSysMessageEx(mobile, "A armadilha disparou!", SSM_FAIL);
 				var trap_list := array;

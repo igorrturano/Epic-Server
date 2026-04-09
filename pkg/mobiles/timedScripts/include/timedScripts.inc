@@ -66,6 +66,11 @@ function TS_GetCfgElem(elem_name, byref cfg_file:=0)
 
 	var elem := cfg_file[elem_name];
 
+	// Prefix fallback: "spelleffect_200" → "spelleffect"
+	if (elem.errortext && elem_name[1, 12] == "spelleffect_")
+		elem := cfg_file["spelleffect"];
+	endif
+
 	if ( elem.errortext )
 		print("Error::TS_GetCfgElem - Unable to find elem ["+elem_name+"] ->"+elem.errortext);
 	endif
@@ -280,12 +285,6 @@ function GetMagicTimersSpellName(mobile)
 		endif
 	endforeach
 
-	if (GetObjProperty(mobile, "tirocerteiro") )
-		var t := struct;
-		t.+nome := "tiro certeiro";
-		names.append(t);
-	endif
-
 	if ( GetObjProperty(mobile, "evasao"))
 		var t := struct;
 		t.+nome := "evasao";
@@ -437,6 +436,19 @@ endfunction
 function TS_LowerDuration(mobile, timer_name, amount, cooldown := 0)
 	var event := struct;
 	event.+type := EVENT_LOWER_TIMER;
+	event.+name := CStr(timer_name);
+	event.+amount := CInt(amount);
+	if (cooldown)
+		event.timerType := EVENT_TYPE_COOLDOWN;
+	endif
+
+	var process := TS_GetControllerProcess(mobile);
+	return process.SendEvent(event);
+endfunction
+
+function TS_AddDuration (mobile, timer_name, amount, cooldown := 0)
+	var event := struct;
+	event.+type := EVENT_ADD_TIMER;
 	event.+name := CStr(timer_name);
 	event.+amount := CInt(amount);
 	if (cooldown)

@@ -18,12 +18,12 @@ program taunt(who)
 
 		if (who.hidden)
 			who.hidden := 0;
-			PrintText(who, "*dá o bote*");
+			PrintTextAbove(who, "*dá o bote*");
 			PlaySoundEffect(who, 0x62);
-			PerformAction(who, ANIM_ATTACK_1HAND_WIDE);
+			PerformAction(who, HUMAN_ANIM::ATTACK_1HAND_SLASH);
 			TS_StartTimer(targ, "bleed", AP_GetSkill(who, THEOLOGY) / 3);
 		else
-			PrintText(who, "*faz um corte profundo*");
+			PrintTextAbove(who, "*faz um corte profundo*");
 			TS_StartTimer(targ, "bleed", AP_GetSkill(who, THEOLOGY) / 4);
 		endif
 

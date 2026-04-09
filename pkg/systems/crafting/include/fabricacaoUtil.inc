@@ -12,45 +12,25 @@ include "/include/epicPropNames";
 include "/include/epicConstants";
 include ":keys:key";
 include ":crafting:/include/caracteristicasFabricacao";
+include ":crafting:/include/util/fabricacaoConstants";
+include "include/epicUtils";
 
-
-const CHANCE_FABRICACAO_MAX := 80.0;
+var LISTA_TIPO_MATERIAL := PegaListaTipoMateriais();
 var itemsConfig := ReadConfigFile(":*:itemdesc");
-
-enum ESTADOS_FABRICACAO
-	ITEM_PRONTO,
-	ITEM_MONTADO,
-	ITEM_GERADO
-endenum
-
-enum COMPONENTES_ENCAIXE_ORDEM
-	DESC_ENCAIXE_CLASSE := 1,
-	DESC_ENCAIXE_CARACTERISTICA := 2,
-	DESC_ENCAIXE_ENCAIXE := 3,
-	DESC_ENCAIXE_QTD_NECESSARIA := 4,
-	DESC_ENCAIXE_CONDICIONAL := 5,
-endenum
-
-var CATALOGO_LOG_PRA_TABUA := dictionary {
-        "0xee36" -> 0xee66,
-        "0xee37" -> 0xee67,
-        "0xee38" -> 0xee68,
-        "0xee39" -> 0xee69,
-        "0xee3a" -> 0xee70,
-        "0xee3b" -> 0xff05,
-        "0xee3c" -> 0xee65,
-        "0xee3f" -> 0xee64,
-        "0xee40" -> 0xef2a,
-        "0xee3d" -> 0xee73,
-        "0xee3e" -> 0x615b,
-        "0x1bdd" -> 0x1bd7 //madeira
-        };
 
 function ClassificaNomeReceita(nomeReceita)
 	var dividido := SplitWords(nomeReceita,"-");
+	var classe := CLASSE_PADRAO;
+
+	if(TypeOfInt(dividido[2]) == OT_ERROR || TypeOfInt(dividido[2]) == OT_UNINIT || TypeOfInt(dividido[2]) == OT_UNKNOWN) 
+		classe := CLASSE_PADRAO;
+	else
+		classe := dividido[2];
+	endif
+
 	return dictionary {
 		"nome" -> dividido[1],
-		"classe" -> dividido[2]
+		"classe" -> classe
 	};
 endfunction
 
@@ -71,6 +51,27 @@ function PegaMaterialConfig(materialObjtype)
 	return configRecursos[hex(materialObjtype)];
 endfunction
 
+function PegaListaTipoMateriais()
+	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
+	var materiaisChaves :=  GetConfigStringKeys(configRecursos);
+	var dictRetorno := Dictionary;
+	
+	foreach chave in materiaisChaves
+		Sleepms(2);
+		var elementoCfg := configRecursos[chave];
+		var tipo := elementoCfg.Type;
+		tipo := Upper(tipo);
+		if(!dictRetorno.exists(tipo))
+			dictRetorno.insert(tipo, array);
+		endif
+
+		dictRetorno[tipo].append(struct{chave := chave, name := elementoCfg.Name});
+
+	endforeach
+
+	return dictRetorno;
+endfunction
+
 function PegaSkillNecessaria(objtype, profissao, classeReceita := 1)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
 	var InfoFabricacao := ReadConfigFile(profissaoConfig[profissao].InfoFabricacao);
@@ -87,13 +88,15 @@ function PegaSkillNecessaria(objtype, profissao, classeReceita := 1)
 endfunction
 
 // TODO [futuras versões] pensar em um modo de aplicar uma dificuldade a mais dependendo do componente.
-function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -1) 
+function DistribuiQualidadeComponentes(quantidade,valorPico, deslocamentoPico := -0.7) 
 	
 	if(quantidade == error || quantidade.size() == 0)
 		return error{"errortext":="O parâmetro quantidade é obrigatório."};
 	endif
 
-	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1.4);
+	//quanto menor o declinio, mais espalhado fica o resultado.
+	//o pico é o equivalente a qual valor bate o pico no eixo y.
+	var	chancesPorTier := DistribuicaoGaussianaNormalizada({1,2,3,4,5},valorPico + deslocamentoPico,1); 
 	var retorno := dictionary;
 
 	//Print("Chances: "  + chancesPorTier);
@@ -134,14 +137,24 @@ endfunction
 
 function PegaComponenteTierDesc(tier)
 	case (tier)
-		1 : return struct {desc := "Mediocre" , valor := -1}; break;
-		2 : return struct {desc := "Comum" , valor := 0}; break;
-		3 : return struct {desc := "Notável" , valor := 1}; break;
-		4 : return struct {desc := "Superior" , valor := 2}; break;
-		5 : return struct {desc := "Excepcional" , valor := 3}; break;
+		COMPONENTE_TIERS::MEDIOCRE : return struct {id:= COMPONENTE_TIERS::MEDIOCRE, desc := "Normal" , valor := 0}; break;
+		COMPONENTE_TIERS::COMUM : return struct {id:= COMPONENTE_TIERS::COMUM, desc := "Melhorado" , valor := 1}; break;
+		COMPONENTE_TIERS::NOTAVEL : return struct {id:= COMPONENTE_TIERS::NOTAVEL, desc := "Notável" , valor := 2}; break;
+		COMPONENTE_TIERS::SUPERIOR : return struct {id:= COMPONENTE_TIERS::SUPERIOR, desc := "Superior" , valor := 3}; break;
+		COMPONENTE_TIERS::EXCEPCIONAL : return struct {id:= COMPONENTE_TIERS::EXCEPCIONAL, desc := "Excepcional" , valor := 4}; break;
 		default:
-			return struct {desc := "Erro!" , valor := 0}; break;
+			return struct {id := error, desc := "Erro!" , valor := 0}; break;
 	endcase
+endfunction
+
+function PegaComponenteTiers()
+	return array{
+				COMPONENTE_TIERS::MEDIOCRE,
+				COMPONENTE_TIERS::COMUM,
+				COMPONENTE_TIERS::NOTAVEL,
+				COMPONENTE_TIERS::SUPERIOR,
+				COMPONENTE_TIERS::EXCEPCIONAL
+			};
 endfunction
 
 function CalculaValorPico(quem, pericia)
@@ -208,61 +221,102 @@ function CriaComponenteDescriptor(objtype, chaveMaterial, qualidade, encaixe, co
 		return descriptor;
 endfunction
 
-function CriaItemFabricado(quem, produto, quantidade := 1)
+function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
+	var propFabricadoMontado;
 
-	var propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
+	if(propFabricado)
+		propFabricadoMontado := propFabricado;
+	else
+		propFabricadoMontado := GetObjProperty(produto, PROPNAME_FABRICADO);
+	endif
+
 	if(propFabricadoMontado)
 		var descriptor;
+		var receitaObjtype :=  CInt(propFabricadoMontado.receita.objtype);
 
 		if(propFabricadoMontado.receita.complexoComponente) // Se for item complexo que é considerado componente. [ex: fechadura]
 			var qualidades := DistribuiQualidadeComponentes(1,CalculaValorPico(quem,propFabricadoMontado.receita.pericia));
 			
 			descriptor := CriaComponenteDescriptor(
-											propFabricadoMontado.receita.objtype,
+											receitaObjtype,
 											propFabricadoMontado.esquema.material,
 											qualidades.keys()[1],
 											propFabricadoMontado.receita.complexoComponente.encaixe,
 											ReadConfigFile(RECURSOS_CONFIG_PATH)
 											);
 		else
-			descriptor := GetItemDescriptor(CInt(propFabricadoMontado.receita.objtype));
+			descriptor := GetItemDescriptor(receitaObjtype);
+			if(!descriptor.movable)
+				descriptor.movable := 1;
+			endif
 			descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
 			descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
 		endif
 
 		descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
 		descriptor.maxhp := propFabricadoMontado.esquema.modificadorHpTotal? descriptor.maxhp + propFabricadoMontado.esquema.modificadorHpTotal : descriptor.maxhp;
-		
+
 		if(!propFabricadoMontado.receita.isEmpilhavel)
 			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
 		endif
 
-		descriptor.color := propFabricadoMontado.esquema.cor;
-
+		descriptor.color := propFabricadoMontado.receita.corObrigatoria ? propFabricadoMontado.receita.corObrigatoria : propFabricadoMontado.esquema.cor;
 		var quantidadeFinal := 1;
 		if(propFabricadoMontado.receita.lote && propFabricadoMontado.receita.lote > 1)
 			quantidadeFinal := cint(quantidade * propFabricadoMontado.receita.lote);
 		endif
 			
-		var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
-		if(!item)
-			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
-		endif
+		if(!propFabricadoMontado.receita.isEmpilhavel)
+			for i := 1 to quantidadeFinal
+					Sleepms(2);
+					var item := CreateItemInBackpack(quem,descriptor);
+					if(!item)
+						item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, 1, quem.realm);
+					endif
 
-		if(!item)
-			SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
-			return;
-		endif
+					AplicaAtributosItemFabricado(quem,item, propFabricadoMontado);
+			endfor
+		else
+			var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
+			if(!item)
+				item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
+			endif
 
-		AplicaFechadura(quem, item);
-		item.setAttrBase();
-		item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
+			AplicaAtributosItemFabricado(quem,item, propFabricadoMontado);
+		endif
 	else
 		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
 		Print("Erro: O Item " +  produto.desc + " não é um Produto Montado.");
+		return 0;
 	endif
 	
+	return 1;
+endfunction
 
+function AplicaAtributosItemFabricado(quem, item, propFabricadoMontado)
+	if(!item)
+		SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
+		return 0;
+	endif
+
+	item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
+	item.hp := item.maxhp;
+	item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? CDbl((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 1;
+	
+	var infoPote := MontaInfoPote(quem,  CInt(propFabricadoMontado.receita.objtype));
+	if(infoPote) //Pote Alquimia 
+		var quantidadeDoses := PegaValorFabricacao(item, "doses");
+		if(quantidadeDoses)
+			SetObjProperty(item, "doses", quantidadeDoses);
+		endif
+		SetObjProperty(item, "tier", infoPote.tier);
+		SetObjProperty(item, "crafterskill", infoPote.crafterskill);
+		SetObjProperty(item, "science", infoPote.science);
+		SetObjProperty(item, "bonus", infoPote.bonus);
+	endif
+
+	AplicaFechadura(quem, item);
+	item.setAttrBase();
 endfunction
 
 function ResolveEfeitoCaracteristica(valorEfeito)
@@ -275,6 +329,46 @@ function ResolveEfeitoCaracteristica(valorEfeito)
 		return Cint(valorEfeito);
 	endif
 
+endfunction
+
+function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
+	var retornoEfeitos := struct;
+	if(FIND(UPPER(caracteristica),"VAZIO", 1) > 0)
+		retornoEfeitos.+valorPrincipal := 0;
+		retornoEfeitos.+valorLiteralPrincipal := 0;
+		retornoEfeitos.+valorTotalSubefeitos := 0;
+		return retornoEfeitos;
+	endif
+	
+	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
+	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
+	var efeitosMaterialString := efeitosMaterial[caracteristica];
+	var subEfeitosMaterial;
+	var valorEfeitoMaterial := 0;
+
+	if(efeitosMaterialString)
+		subEfeitosMaterial := SplitWords(efeitosMaterialString);
+		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
+		retornoEfeitos.+valorPrincipal := valorEfeitoMaterial;
+		retornoEfeitos.+valorLiteralPrincipal := subEfeitosMaterial[subEfeitosMaterial.size()];
+		retornoEfeitos.+valorTotalSubefeitos := 0;
+		
+		if(subEfeitosMaterial.size() > 1)
+			subEfeitosMaterial.shrink(subEfeitosMaterial.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
+			var subefeitosDict := dictionary{};
+
+			for indice := 1 to subEfeitosMaterial.size()
+				var valorSubEfeito := ResolveEfeitoCaracteristica(subEfeitosMaterial[indice + 1]);
+				subefeitosDict.insert( subEfeitosMaterial[indice], valorSubEfeito); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
+				retornoEfeitos.valorTotalSubefeitos += valorSubEfeito;
+				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
+				Sleepms(2);
+			endfor
+			retornoEfeitos.+efeitosAdicionais := subefeitosDict;
+		endif 
+	endif
+	
+	return retornoEfeitos;
 endfunction
 
 function AplicaFechadura(quem, item)
@@ -295,24 +389,18 @@ function AplicaFechadura(quem, item)
 endfunction
 
 function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
-
 	var componentesRefatorado := dictionary;
 	if(estado != ITEM_GERADO)
 		//Refatora o dict para usar como indice a caracteristica, assim dá para ir direto ao assunto se quiser pegar o componente que tá dando aquela caracteristica.
 		foreach componente in (propFabricadoMontado.esquema.componentesEscolhidos)
 			Sleepms(2);
-			if(componente.componenteNecessario.caracteristica != "vazio")
-				componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
-			else
-				componentesRefatorado.insert(_componente_iter,componente);
-			endif
+			componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
 		endforeach
 	else
 		componentesRefatorado := propFabricadoMontado.esquema.componentesEscolhidos;
 	endif
 
 	var corFinal :=  propFabricadoMontado.receita.corObrigatoria ? propFabricadoMontado.receita.corObrigatoria : propFabricadoMontado.esquema.cor;
-	
 	return CriaObjetoPropFabricado(
 							estado,
 							propFabricadoMontado.esquema.isCompletamenteComum,
@@ -321,11 +409,24 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 							propFabricadoMontado.esquema.modificadorPesoTotal,
 							corFinal,
 							propFabricadoMontado.esquema.classe,
-							componentesRefatorado
+							componentesRefatorado,
+							propFabricadoMontado.fabricante ? propFabricadoMontado.fabricante : 0,
+							propFabricadoMontado.esquema.material
 							);
 endfunction
 
-function CriaObjetoPropFabricado(estado, isCompletamenteComum,qualidade, modificadorHpTotal,modificadorPesoTotal,cor, classe, componentes)
+function CriaObjetoPropFabricado(
+									estado, 
+									isCompletamenteComum,
+									qualidade, 
+									modificadorHpTotal,
+									modificadorPesoTotal,
+									cor, 
+									classe, 
+									componentes, 
+									fabricante,
+									material
+									)
 	return struct{
 				estado := estado ,
 				isCompletamenteComum := isCompletamenteComum,
@@ -334,32 +435,34 @@ function CriaObjetoPropFabricado(estado, isCompletamenteComum,qualidade, modific
 				modificadorPesoTotal := modificadorPesoTotal,
 				cor := cor,
 				classe := classe,
-				componentes := componentes};
-endfunction
-
-function CriaObjetoPosicao(quem)
-	return struct{x := quem.x, y := quem.y, z := quem.z, realm := quem.realm};
+				componentes := componentes,
+				fabricante := fabricante,
+				materialPrincipal := material};
 endfunction
 
 function isEstacaoValida(quem, estacaoAlvo, profissao)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
-	var estacoesValidas := GetConfigStringArray(profissaoConfig[profissao], "EstacoesValidas");
-
-	if(cstr(estacaoAlvo.item.objtype) in estacoesValidas ||  "superficie" in estacoesValidas )
-		var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
-		
-		if(ocupanteSerial)
-			var ocupante := SystemFindObjectBySerial(ocupanteSerial);
-			if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
-				SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
+	var estacoesValidas := GetConfigString(profissaoConfig[profissao], "EstacoesValidas");
+	estacoesValidas := SplitWords(estacoesValidas);
+	
+	foreach estacaoValida in estacoesValidas
+		Sleepms(2);
+		if(Lower(cstr(hex(estacaoAlvo.item.objtype))) == lower(cstr(hex(estacaoValida))) ||  "superficie" == estacaoValida)
+			var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
+			
+			if(ocupanteSerial)
+				var ocupante := SystemFindObjectBySerial(ocupanteSerial);
+				if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
+					SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
+					return 0;
+				endif
 			endif
+			SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
+			return 1;
 		endif
-	else
-		SendSysMessageEX(quem,"Estação inválida.", SSM_FAIL);
-		return 0;
-	endif
-	SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
-	return 1;
+	endforeach
+	SendSysMessageEX(quem,"Estação inválida.", SSM_FAIL);
+	return 0;
 endfunction
 
 function PegaDescDuracaoFabricacao(qtdSucessos)
@@ -374,11 +477,24 @@ function PegaDescDuracaoFabricacao(qtdSucessos)
 	endcase
 endfunction
 
-function MontaCraftProp(fabricacaoConfig)
+function MontaCraftProp(fabricacaoConfig, prop)
+
+	if(TypeOfInt(prop) == OT_STRUCT)
+		
+		var teste := prop.?deveReciclar;
+		if(!(prop.?deveReciclar))
+			prop.+deveReciclar := false;
+		endif
+
+		if(prop.pericias && prop.pericias.size() > 0)
+			return prop;
+		endif
+	endif
 
 	var propRetorno := struct {
 		pericias  := dictionary,
-		encaixesMemorizados := array
+		encaixesMemorizados := array,
+		deveReciclar := false
 	};
 
 	foreach pericia in GetConfigStringArray(fabricacaoConfig["Skills"], "Skill")
@@ -422,4 +538,23 @@ function PegaTipoMaterialAleatorio(tipoMaterial)
 	endforeach
 
 	return materiais[RandomIntMinMax(1,materiais.size())];
+endfunction
+
+function MontaInfoPote(quem, receitaObjtype)
+	var alchemyRecipes := ReadConfigFile(":alchemy:itemdesc");
+	var science := (alchemyRecipes[receitaObjtype].science);
+	
+	if(science)
+		var crafterskill := Cint((AP_GetSkill(quem, SCIENCE))/10);
+		var crafterInt := AP_GetTrueStat (quem, INTELLIGENCE);
+		var bonus := (((crafterInt-50)/10)+(crafterskill));
+
+		return struct {
+			tier := alchemyRecipes[receitaObjtype].tier,
+			crafterskill := crafterskill * 10,
+			science := alchemyRecipes[receitaObjtype].science,
+			bonus := bonus
+		};
+	endif
+	return 0;
 endfunction

@@ -1,0 +1,21 @@
+use uo;
+use os;
+
+include "include/flash";
+
+program textcmd_flash(who, text)
+    if (!text)
+        SendSysMessage(who, "Usage: .flash <type>");
+        SendSysMessage(who, "0: FadeOut, 1: FadeIn, 2: Light, 3: InOut, 4: Dark, 5: White");
+        return;
+    endif
+
+    var type := CInt(text);
+    if (type < 0 || type > 5)
+        SendSysMessage(who, "Invalid type. Must be 0-5.");
+        return;
+    endif
+
+    SendSysMessage(who, "Sending Flash Type: " + type);
+    SendScreenFlash(who, type);
+endprogram

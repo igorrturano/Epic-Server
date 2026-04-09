@@ -10,16 +10,20 @@ enum VITALS
 	HITS			:= "Hits",
 	MANA			:= "Mana",
 	STAMINA			:= "Stamina",
-	HUNGER			:= "Hunger"
+	HUNGER			:= "Hunger",
+	DEATH_POINTS 	:= "DP",
+	ADDICTION_STR		:= "Viciostr",
+	ADDICTION_DEX		:= "Viciodex",
+	ADDICTION_INT		:= "Vicioint",
 endenum
 
 enum STATS
 	STRENGTH		:= "Strength",
 	DEXTERITY		:= "Dexterity",
-	INTELLIGENCE		:= "Intelligence",
-	//CONSTITUTION		:= "Constitution",
-	//WISDOM			:= "Wisdom",
-	//CHARISMA		:= "Charisma"
+	INTELLIGENCE	:= "Intelligence",
+	FORTITUDE		:= "Fortitude",
+	REFLEXES		:= "Reflexes",
+	WILL			:= "Will"
 endenum
 
 enum SKILLS
@@ -37,18 +41,18 @@ enum SKILLS
 	TACTICS			:= "Tactics",
 
 	SNEAK			:= "Sneak",
-	PICKPOCKETING		:= "Pickpocketing",
+	PICKPOCKETING	:= "Pickpocketing",
 	AWARENESS		:= "Awareness",
-	MECHANICS	:= "Mechanics",
+	MECHANICS		:= "Mechanics",
 
 	MEDICINE		:= "Medicine",
 	SURVIVAL		:= "Survival",
 
-	METALWORKING		:= "Metal_Working",
+	METALWORKING	:= "Metal_Working",
 	WOODWORKING		:= "Wood_Working",
-	Domestic_Work		:= "Domestic_Work",
+	DOMESTIC_WORK	:= "Domestic_Work",
 	GATHERING		:= "Gathering",
-	HANDLEANIMAL		:= "Handle_Animal",
+	HANDLEANIMAL	:= "Handle_Animal",
 
 	//pros npcs
 	WRESTLING		:= "Wrestling"

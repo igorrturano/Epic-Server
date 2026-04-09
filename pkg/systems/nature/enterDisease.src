@@ -3,9 +3,9 @@ use os;
 use vitals;
 
 include ":charactercreation:resists";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program disease_enter(who, regioname)
-	PrintText(who, "entrou");
+	PrintTextAbove(who, "entrou");
 	start_script(":nature:diseaseAreaEffect", { who, regioname });
 endprogram

@@ -4,6 +4,7 @@ use datafile;
 use math;
 
 include "include/say";
+include ":io:CFGFile";
 include ":gumps:epicGumps";
 
 program Install()
@@ -58,7 +59,7 @@ endfunction
  * 					  ou null se não encontrado.
 */
 exported function getCfgElem(item)
-	return FindConfigElem(ReadConfigFile(":*:itemdesc"), item.objtype);
+	return CFGFile("*", "itemdesc").SetElementName(item.objtype).GetElement();
 endfunction
 
 exported function isSpiderEggSac(item)
@@ -102,8 +103,8 @@ exported function IsInTheDungeon(item)
 
 			// Validação melhorada do tamanho do array
 			if (rect_array.size() < 4)
-				PrintText(item, "Erro: Dados de retângulo inválidos para " + dungeon_name
-								+ " (" + rect_prop + ")");
+				PrintTextAbove(item, "Erro: Dados de retângulo inválidos para " + dungeon_name
+						   + " (" + rect_prop + ")");
 				continue;
 			endif
 

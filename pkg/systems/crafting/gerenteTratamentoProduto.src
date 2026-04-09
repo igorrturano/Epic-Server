@@ -8,13 +8,7 @@ include ":crafting:/gumps/fabricacaoGumps";
 include ":crafting:/include/tratamentoProduto";
 include ":crafting:/include/fabricacaoUtil";
 include ":gumps:/include/posicaoGump";
-
-enum ESTADOS_GERENCIAMENTO
-	CICLANDO,
-	SEMELHANTE_ENCONTRADO,
-	CANCELADO,
-	FINALIZADO
-endenum
+include ":crafting:include/util/fabricacaoConstants";
 
 program GerenteTratamentoProduto(parametros)
 	var quem := parametros[1];
@@ -22,6 +16,8 @@ program GerenteTratamentoProduto(parametros)
 	var alvo := parametros[3];
 
 	var evento;
+	var receitaAntigaProp := GetObjProperty(produto, PROPNAME_FABRICADO);
+	var receitaAntigaObjtype := receitaAntigaProp.receita.objtype;
 	var corOriginal := produto.color;
 	var processosGerenciados := IniciaProcessosGerenciados(dictionary, quem, getPid(), produto, alvo);
 
@@ -63,10 +59,9 @@ program GerenteTratamentoProduto(parametros)
 
 				EV_ITEM_QUEBROU:
 					SendSysMessageEx(quem, "O Item se partiu.", SSM_FAIL);
-					PrintText(produto, "*O Item se parte*");
+					PrintTextAbove(produto, "*O Item se parte*");
 					Sleepms(200);
 					CloseGump(quem, processosGerenciados[GUMP_INTERATIVO].pid, 0);
-					DestroyItem(produto);
 					processosGerenciados[CICLO].kill();
 					estadoGerenciamento := FINALIZADO;
 					break;
@@ -83,35 +78,34 @@ program GerenteTratamentoProduto(parametros)
 
 		if (estadoGerenciamento != CANCELADO)
 			if (fazerSemelhantes)
+				
 				var produtoAntigo := produto;
 
-				if (produto.stackable)
-					SubtractAmount(produtoAntigo, 1);
+				ConsomeProduto(produtoAntigo);
+
+				if(produtoAntigo.amount > 0)
+					produto := produtoAntigo;
 				else
-					DestroyItem(produtoAntigo);
+					produto := EncontraNovoProduto(quem, receitaAntigaObjtype, produto);
 				endif
 
-				produto := EncontraNovoProduto(quem, produtoAntigo);
 				if (produto)
+					EraseObjProperty(alvo.item, PROPNAME_ISESTACAO_OCUPADA);
 					processosGerenciados := IniciaProcessosGerenciados(processosGerenciados, quem,
 																		getPid(), produto, alvo);
 					estadoGerenciamento := SEMELHANTE_ENCONTRADO;
 				else
+					DevolveProdutoMontado(quem, produtoAntigo);
 					estadoGerenciamento := FINALIZADO;
 				endif
 			else
-				if (produto.stackable)
-					SubtractAmount(produto, 1);
-				else
-					DestroyItem(produto);
-				endif
+				ConsomeProduto(produto);
 			endif
 		else
 			if (produto)
 				// evento interrompido (EV_CANCELADO).
 				produto.color := corOriginal;
-				produto.movable := 1;
-				MoveItemToContainer(produto, quem.backpack);
+				DevolveProdutoMontado(quem, produto);
 				LimpaProcessosGerenciados(quem, processosGerenciados);
 			endif
 		endif
@@ -121,6 +115,14 @@ program GerenteTratamentoProduto(parametros)
 	EraseObjProperty(alvo.item, PROPNAME_ISESTACAO_OCUPADA);
 	SendSysMessageEX(quem, "Tratamento Finalizado.", SSM_INFO);
 endprogram
+
+function ConsomeProduto(produto)
+	if (produto.stackable)
+		SubtractAmount(produto, 1);
+	else
+		DestroyItem(produto);
+	endif
+endfunction
 
 function DeveFinalizarTratamento(estadoGerenciamento)
 	return estadoGerenciamento == FINALIZADO || estadoGerenciamento == CANCELADO;
@@ -149,6 +151,19 @@ function IniciaProcessosGerenciados(processosAntigos, quem, pidGerente, produto,
 																							 	alvo }) };
 endfunction
 
+function DevolveProdutoMontado(quem, produto)
+	MoveObjectToLocation( 
+								produto,
+								quem.x,
+								quem.y,
+								quem.height, 
+								quem.realm, 
+								MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
+	Sleepms(2);
+	produto.movable := 1;
+	MoveItemToContainer(produto, quem.backpack);
+endfunction
+
 function LimpaProcessosGerenciados(quem, processosGerenciados)
 	foreach processo in processosGerenciados
 		if (_processo_iter == GUMP_INTERATIVO || _processo_iter == GUMP_STATICO)
@@ -160,13 +175,12 @@ function LimpaProcessosGerenciados(quem, processosGerenciados)
 	Clear_Event_Queue();
 endfunction
 
-function EncontraNovoProduto(quem, produtoAntigo)
+function EncontraNovoProduto(quem, receitaAntigaObjtype,produtoAtual)
 	foreach item in EnumerateItemsInContainer(quem.backpack)
 		Sleepms(2);
-		if (item.objtype == produtoAntigo.objtype) // ambos são produtos montados.
+		if (item.objtype == OBJTYPE_ITEM_MONTADO) // ambos são produtos montados.
 			var itemProp := GetObjProperty(item, PROPNAME_FABRICADO);
-			var antigoProp := GetObjProperty(produtoAntigo, PROPNAME_FABRICADO);
-			if (itemProp.receita.objtype == antigoProp.receita.objtype)
+			if (cint(itemProp.receita.objtype) == receitaAntigaObjtype && produtoAtual.serial != item.serial)
 				return item;
 			endif
 		endif

@@ -22,7 +22,7 @@ program TimedScript_bard_hamelin(params)
 	var x;
 	var ratTemplate;
 
-	PrintText(mobile, "*Ratos saem de todas as partes*", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+	PrintTextAbove(mobile, "*Ratos saem de todas as partes*", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
 	SetObjProperty(mobile, "#Bard_hamelin", modificador);
 	while (GetObjProperty(mobile, "#Bard_hamelin"))
 		rand := randomint(5);

@@ -101,8 +101,10 @@ endfunction
  *
  */
 function ApplySkillModifiers(mobile, attrib_name, base_skill)
-    if (TemHabilidade(mobile, "Visao Verdadeira") && attrib_name == AWARENESS)
-        base_skill += AP_GetSkill(mobile, THEOLOGY) / 3;  
+    // Visao Verdadeira: Cleric with Eluithorth religion gets Theology bonus to Awareness
+    var mobileWrapper := MobileWrapper(mobile);
+    if (mobileWrapper.HasAbility(ABILITY_ID::CONEXAO_DIVINA) && mobileWrapper.GetReligion() == "Eluith'orth" && attrib_name == AWARENESS)
+        base_skill += AP_GetSkill(mobile, THEOLOGY) / 3;
     endif
 
     var chardata := GetObjProperty(mobile, "chardata");

@@ -5,6 +5,9 @@ include ":spells:include/swordmage";
 include ":brainAI:npcUtil";
 include ":npcs:thor/handling/thorai";
 include ":megacliloc:/include/gettersTTipUtils";
+include ":brainAI:npcCommands";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 //Constantes de ID de Botões de Gump
 const BOTAO_ITENS_COLOCAR_A_VENDA := 0x1;
@@ -268,7 +271,7 @@ endfunction
 function RemoveItemForSale(merchant, item_num, removeInfinite :=0)
 	var data_elem := GetMerchantDataElem(Hex(merchant.serial)+"-ItemsSelling");
 	var selling_info := data_elem.GetProp(Cstr(item_num));
- 	// printtext(merchant, " " + selling_info);
+ 	// PrintTextAbove(merchant, " " + selling_info);
 	if (selling_info[3] == 1 && !removeInfinite)
 		return 1;
 	else
@@ -489,8 +492,8 @@ function DoPurchase(npc, player, input)
 								npcType := "vendedor";
 							endif
 							
-							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
-							AI_Speak(npc, responseAI);
+							// var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+							// AI_Speak(npc, responseAI);
 							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
 						endif
@@ -519,8 +522,8 @@ function DoPurchase(npc, player, input)
 							else
 								npcType := "vendedor";
 							endif
-							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
-							AI_Speak(npc, responseAI);
+							// var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+							// AI_Speak(npc, responseAI);
 							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
 						endif
@@ -552,8 +555,8 @@ function DoPurchase(npc, player, input)
 							else
 								npcType := "vendedor";
 							endif
-							var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
-							AI_Speak(npc, responseAI);
+							// var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+							// AI_Speak(npc, responseAI);
 							//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 							break;
 						endif
@@ -579,8 +582,8 @@ function DoPurchase(npc, player, input)
 						else
 							npcType := "vendedor";
 						endif
-						var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
-						AI_Speak(npc, responseAI);
+						// var responseAI := handle_npcs_vendors_pos_compra(npcType, DescricaoItem, cost_amt);
+						// AI_Speak(npc, responseAI);
 
 						//AI_Speak(npc, "Aqui esta sua compra. Volte sempre.");
 						break;
@@ -1326,7 +1329,7 @@ function GetTooltipText(item_template, who)
 			var linguagem := item_template.lingua;
 			if (linguagem!=error)
 				var linguas := GetObjProperty(who, "linguas_conhecidas");
-				if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica") || linguagem in linguas)
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO) || linguagem in linguas)
 					xDesc := xDesc + white + "" + desc + "<br>";
 				else
 					xDesc :=  xDesc + "*Inscrições em Língua Desconhecida*<br>";
@@ -1551,8 +1554,6 @@ function TranslateCriticalTemplate(crit)
 		return "Dano Triplo";
 	elseif (crit == "damage2")
 		return "Dano Duplo";
-	elseif (crit == "armorignore")
-		return "Ignorar Armadura";
 	elseif ( crit == "stun")
 		return "Ataque Atordoante";
 	elseif (Crit == "bleed")

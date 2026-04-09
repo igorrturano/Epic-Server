@@ -1,3 +1,10 @@
+/*
+ * Paladin Spell Command (.p)
+ * 
+ * Entry point for paladin divine spells. Works with both:
+ * - Text commands: .p smite (who, spellname as separate args)
+ * - Hotbar/scripts: Start_Script(script, {who, spellname})
+ */
 use uo;
 use os;
 use cfgfile;
@@ -5,79 +12,30 @@ use cfgfile;
 include "include/say";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
+include ":spells:include/spell_executor";
 
-program magia_paladin(who, spellname)
-	var cfg := ReadConfigFile(":spells:config/paladinspells");
+// Main program - handles both text commands and Start_Script calls
+program magia_paladin(who, spellname := "")
+	// Handle Start_Script array format: {who, spellname}
+	if (TypeOf(who) == "Array")
+		var params := who;
+		who := params[1];
+		spellname := params[2];
+	endif
 
-	if (GetObjProperty(who, "#Casting"))
-		SendSysMessageEx(who, "Você não pode invocar uma magia agora.", SSM_FAIL);
+	// Check if player has paladin ability
+	var isPaladin := MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA);
+	if (!isPaladin)
+		SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
 		return 0;
 	endif
 
-	var isPaladin := TemHabilidade(who, "Consagracao Divina");
-	if (!isPaladin)
-		SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
-		return;
+	// If no spell name provided, nothing to do
+	if (!spellname || spellname == "")
+		SendSysMessageEx(who, "Use: .p <nome_da_magia>", SSM_FAIL);
+		return 0;
 	endif
 
-	var theology_skill := CInt(AP_GetSkill(who, "Theology"));
-	var max_circle := theology_skill / 20;
-
-	if (max_circle < 1)
-		max_circle := 1; // Always allow at least circle 1
-	endif
-
-	if (!spellname)
-		// Call the ability script to show the gump
-		Start_Script(":charactercreation:habilidades/paladin/consagracaodivina", who);
-		return;
-	else
-		var id := 1;
-		var elem;
-		var achou := 0;
-
-		foreach spell in (GetConfigIntKeys(cfg))
-			elem := FindConfigElem(cfg, spell);
-			if (Lower(GetConfigString(elem, "Name")) == Lower(spellname))
-				// Check if the player has enough Theology for this spell's circle
-				var spell_circle := CInt(elem.Circle);
-				if (spell_circle > max_circle)
-					SendSysMessageEx(who, "Você não possui conhecimento teológico suficiente para esta magia.",
-									  SSM_FAIL);
-					return;
-				endif
-
-				achou := 1;
-				id := spell;
-				break;
-			endif
-			sleepms(2);
-		endforeach
-
-		if (!achou)
-			SendSysMessageEx(who, "A magia " + spellname + " não existe.", SSM_FAIL);
-			return;
-		endif
-
-		// Build a more complete spellinfo struct
-		var spellinfo := struct{ "id" := elem.SpellId,
-						 		"name" := elem.Name,
-						 		"desc" := elem.Desc,
-						 		"alvo" := elem.Target,
-						 		"powerwords" := elem.PowerWords,
-						 		"script" := elem.SpellScript,
-						 		"type" := elem.Type,
-						 		"circle" := CInt(elem.Circle),
-						 		"difficulty" := CInt(elem.Difficulty),
-						 		"mana" := CInt(elem.Mana),
-						 		"delay" := CInt(elem.Delay),
-						 		"cycles" := CInt(elem.Cycles),
-						 		"range" := elem.Range };
-
-		var script := Start_Script(":spells:cast_spell", { who, spellinfo });
-		if (script.errortext)
-			SendSysMessage(who, "Erro ao iniciar a magia -> " + script.errortext);
-			return 0;
-		endif
-	endif
+	// Execute the spell using the unified executor
+	return ExecuteSpellByName(who, spellname, SPELL_TYPE_PALADIN);
 endprogram

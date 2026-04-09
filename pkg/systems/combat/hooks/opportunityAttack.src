@@ -1,8 +1,9 @@
 use os;
 include "include/say";
 include ":tn:cooldown";
-include ":combat:combat";
-include ":combat:combatFX";
+include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/HitController";
+include ":combat:Model/AttackInfo";
 
 program attackOfOpportunity(params)
 	var attacker := params[1];
@@ -23,16 +24,14 @@ program attackOfOpportunity(params)
 		if ((attacker.x != attacker_x || attacker.y != attacker_y))
 			waitUntilNextAttack(defender);
 			defender.attack_once(attacker);
-			PlayAttackAnimation(defender);
 			disengage(attacker, defender);
-			PrintText(defender, "*Ataque de Oportunidade*");
+			PrintTextAbove(defender, "*Ataque de Oportunidade*");
 			break;
 		elseif ((defender.x != defender_x || defender.y != defender_y))
 			waitUntilNextAttack(attacker);
 			attacker.attack_once(defender);
-			PlayAttackAnimation(attacker);
 			disengage(attacker, defender);
-			PrintText(attacker, "*Ataque de Oportunidade*");
+			PrintTextAbove(attacker, "*Ataque de Oportunidade*");
 			break;
 		endif
 		sleepms(200);
@@ -60,7 +59,7 @@ function canUseOpportunityHit(attacker, defender)
 		return 0;
 	endif
 
-	if (!DistanceChecks(attacker, defender))
+	if (!CheckDistance(attacker, defender))
 		return 0;
 	endif
 

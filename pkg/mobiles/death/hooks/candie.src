@@ -1,14 +1,23 @@
 use uo;
 use os;
+use cfgfile;
 include "include/say";
 include ":merchants:pcconversation";
 include ":epicAI:epicai";
-
+include ":tn:npcutil";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include ":death:death";
+include ":entropy:entropy";
 exported function CanDie(mobile)
 	if (mobile.template == ":merchants:conversation")
 		var pcdata := GetConversationDataFile();
 		pcdata.DeleteElement(mobile.serial);
 	endif
+
+	// Passive Soul Harvest - check for nearby shamans with the ability
+	ShamanSoulHarvest(mobile);
+	handleEntropyGain(mobile);
 
 	// Restore doppelganger appearance before death (while still alive)
 	if (GetObjProperty(mobile, "#doppelganger_transformed"))
@@ -18,10 +27,12 @@ exported function CanDie(mobile)
 	if (GetObjProperty(mobile, "allowdeath") == 1)
 		return 1;
 	endif
+
 	var isBoss := GetObjProperty(mobile, "EpicBossStruct");
 	if (!isBoss)
 		return 1;
 	endif
+
 	var death_events := GetObjProperty(mobile, "DeathEvents");
 	if (death_events.size() > 0)
 		// Check if already processing to avoid duplicate calls
@@ -38,15 +49,11 @@ exported function CanDie(mobile)
 					return 1;
 				endif
 			endif
-
-			print("TRACE: candie - Still processing events, preventing death");
 			return 0;
 		endif
 
-		print("TRACE: candie - Found " + death_events.size() + " death events");
 		var i := 1;
 		foreach event in (death_events)
-			print("TRACE: candie - Event " + i + " Type: " + event.type);
 			i += 1;
 		endforeach
 
@@ -55,15 +62,14 @@ exported function CanDie(mobile)
 		var process := start_script(":epicspawn:scripts/deathEventsControl", array{ mobile });
 
 		if (process.errortext)
-			print("TRACE: candie - Error starting death events controller: " + process.errortext);
 			EraseObjProperty(mobile, "ProcessingDeathEvents");
 			SetObjProperty(mobile, "allowdeath", 1);
 			return 1; // Allow death anyway if script fails to start
 		else
-			print("TRACE: candie - Death events controller started with PID: " + process.pid);
 			return 0; // Prevent death until events are processed
 		endif
 	endif
 
 	return 1;
 endfunction
+

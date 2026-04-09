@@ -1,85 +1,258 @@
 use math;
 use os;
 
+include "IMessage";
 include "include/say";
+include "include/client";
+include ":text:_all";
+include "system/exception/FormatException/InvalidFormatException";
 
-const _SYS_MESSAGE_MAX_SIZE := 200;
-const _ABOVE_MESSAGE_MAX_SIZE := 60;
+class Message(IMessage)
+	var _isAsync := false;
+	var _translate := false; // Boolean indicando se a mensagem deve ser traduzida
+	var _text; // TranslatableText object
+	var _color; // Color object
+	var _font; // Font object
+	var _fromWhom; // Mobile object
+	var _toWhom; // Mobile object
+	var _type; // MSG_TYPE enum
+	
+	function Message(this, text, color := false, font := false, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
+		this._isAsync := false;
+		this._translate := false;
+		this._text := TranslatableText(text, langSource, langTarget);
+		this._color := color ?: Color();
+		this._font := font ?: Font();
+	endfunction
 
-class Message()
-	var _originalMessage := "";
-	var _newMessageFragments := array{ struct{ // Array de structs com as informações de cada fragmento da mensagem: string, cor, fonte
-		str := "",
-		color := _DEFAULT_TEXT_COLOR,
-		font := _DEFAULT_TEXT_FONT
-	}};
-
-	function Message(this, originalMessage, color := _DEFAULT_TEXT_COLOR, font_number := _DEFAULT_TEXT_FONT)
-		this._font := font_number;
-		this._color := color;
-		this._originalMessage := originalMessage;
-		this._newMessageFragments := array{};
-		this.AddMessage(originalMessage, color, font_number);
+	function GetText(this)
+		return this._text;
+	endfunction
+	
+	function GetColor(this)
+		return this._color;
 	endfunction
 
 	function GetFont(this)
 		return this._font;
 	endfunction
 
-	function GetColor(this)
-		return this._color;
+	function GetFromWhom(this)
+		return this._fromWhom;
 	endfunction
 
-	function GetOriginalMessage(this)
-		return this._originalMessage;
+	function GetToWhom(this)
+		return this._toWhom;
 	endfunction
 
-	function GetFragments(this)
-		return this._newMessageFragments;
+	function GetType(this)
+		return this._type;
 	endfunction
 
-	function AddMessage(this, text, color := _DEFAULT_TEXT_COLOR, font := _DEFAULT_TEXT_FONT)
-		var newMsgArray := array{};
-		var msgFragmentsAmt := CInt(text.length() / _SYS_MESSAGE_MAX_SIZE) + 1;
+	function SetText(this, text)
+		if (!(text is @TranslatableText))
+			return InvalidFormatException("Parameter 'text' must be of type TranslatableText.");
+		endif
 		
-		for i := 1 to (msgFragmentsAmt)
-			var start := ((i - 1) * _SYS_MESSAGE_MAX_SIZE) + 1;
-			var length := Min(text.length() - start + 1, _SYS_MESSAGE_MAX_SIZE);
-			newMsgArray.append(struct{
-				text := text[start, length],
-				color := color,
-				font := font
-			});
-		endfor
+		this._text := text;
+
+		return this;
+	endfunction
+
+	function SetColor(this, color)
+		if (!(color is @Color))
+			return InvalidFormatException("Parameter 'color' must be of type Color.");
+		endif
+
+		this._color := color;
+
+		return this;
+	endfunction
+	
+	function SetFont(this, font)
+		if (!(font is @Font))
+			return InvalidFormatException("Parameter 'font' must be of type Font.");
+		endif
+
+		this._font := font;
+
+		return this;
+	endfunction
+
+	function SetSourceLanguage(this, lang)
+		if (!(this._messageTranslatableText is @TranslatableText))
+			return InvalidFormatException("Internal message text is not of type TranslatableText.");
+		endif
 		
-		foreach part in (newMsgArray)
-			this._newMessageFragments.append(part);
-		endforeach
+		this._text.SetSourceLanguage(lang);
+
+		return this;
+	endfunction
+
+	function SetTargetLanguage(this, lang)
+		if (!(this._messageTranslatableText is @TranslatableText))
+			return InvalidFormatException("Internal message text is not of type TranslatableText.");
+		endif
+
+		this._text.SetTargetLanguage(lang);
+
+		return this;
+	endfunction
+
+	function IsAsync(this)
+		return this._isAsync;
+	endfunction
+	
+	/**
+	 * Define se a mensagem será processada de forma assíncrona.
+	 * 
+	 * @param setToAsync Boolean indicando se a mensagem deve ser assíncrona (true) ou não (false)
+	 *
+	 * @return Message Retorna a própria instância para permitir encadeamento de métodos
+	 */
+	function SetAsync(this, setToAsync)
+		this._isAsync := setToAsync;
+		
+		return this;
+	endfunction
+
+	function WantTranslation(this)
+		return this._translate;
 	endfunction
 
 	function SendSys(this, who)
-		foreach part in (this._newMessageFragments)
-			SendSysMessageUNI(who, part.text, part.color, part.font);
-			SleepMS(2);
-		endforeach
+		if (!(who.isA(POLCLASS_MOBILE)))
+			return InvalidFormatException("Parameter 'who' must be of type MobileRef.");
+		endif
+		
+		this._toWhom := who;
+		this._type := MESSAGE_TYPE::SYSTEM;
+		if (this._color.GetValue() == GENERAL_COLOR::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::SYSTEM);
+		endif
+		this._translate := this._WantTranslation(who);
+
+		this._Send();
+
+		return this;
 	endfunction
 
-	function SendAbove(this, above_object)
-		foreach part in (this._newMessageFragments)
-			PrintText(above_object, part.text, part.color, part.font);
-			SleepMS(2);
-		endforeach
+	function SendSysAll(this)
+		this._type := MESSAGE_TYPE::SYSTEM;
+
+		// TODO
+
+		return this;
 	endfunction
 
-	function SendAbovePrivate(this, above_object, whoSee := false)
-		foreach part in (this._newMessageFragments)
-			if (!whoSee)
-				PrintTextPrivate(above_object, part.text, above_object, part.color, part.font);
-			else
-				PrintTextPrivate(above_object, part.text, whoSee, part.color, part.font);
-			endif
-			
-			SleepMS(2);
-		endforeach
+	function SendAbove(this, who)
+		if (!(who.isA(POLCLASS_MOBILE)))
+			return InvalidFormatException("Parameter 'who' must be of type MobileRef.");
+		endif
+		
+		this._toWhom := who;
+		this._type := MESSAGE_TYPE::NORMAL;
+		if (this._color.GetValue() == GENERAL_COLOR::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::NORMAL);
+		endif
+
+		this._translate := this._WantTranslation(who);
+
+		this._Send();
+
+		return this;
+	endfunction
+
+	function SendAbovePrivate(this, who, whoSee := false)
+		if (!(who.isA(POLCLASS_MOBILE)))
+			return InvalidFormatException("Parameter 'who' must be of type MobileRef.");
+		endif
+
+		this._toWhom := who;
+		this._fromWhom := whoSee ?: who;
+		this._type := MESSAGE_TYPE::NORMAL_PRIVATE;
+		if (this._color.GetValue() == GENERAL_COLOR::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::PRIVATE);
+		endif
+		this._translate := this._WantTranslation(who);
+
+		this._Send();
+
+		return this;
+	endfunction
+
+	function SendEmote(this, who)
+		if (!(who.isA(POLCLASS_MOBILE)))
+			return InvalidFormatException("Parameter 'who' must be of type MobileRef.");
+		endif
+
+		this._toWhom := who;
+		this._type := MESSAGE_TYPE::EMOTE;
+		if (this._color.GetValue() == GENERAL_COLOR::_DEFAULT)
+			this._color := Color(MESSAGE_COLOR::EMOTE);
+		endif
+		this._translate := this._WantTranslation(who);
+
+		this._Send();
+
+		return this;
+	endfunction
+
+	function ToString(this)
+		var result := "Message{";
+		result += "text: " + this._text.ToString();
+		result += ", color: " + this._color.ToString();
+		result += ", font: " + this._font.ToString();
+		result += ", type: " + CStr(this._type);
+		result += ", isAsync: " + CStr(this._isAsync);
+		result += ", translate: " + CStr(this._translate);
+		if (this._fromWhom)
+			result += ", fromWhom: " + CStr(this._fromWhom.name);
+		endif
+		if (this._toWhom)
+			result += ", toWhom: " + CStr(this._toWhom.name);
+		endif
+		result += "}";
+		return result;
+	endfunction
+
+	// Private functions
+	function _Send(this)
+		if (this.IsAsync())
+			Start_Script(":message:sender", this);
+		else
+			Run_Script(":message:sender", this);
+		endif
+	endfunction
+
+	function _WantTranslation(this, who)
+		var wantsTranslation := who.GetProp("langdata"); // Ajeitar essa prop aqui, essa é só um PLACEHOLDER
+		
+		if (wantsTranslation.wantsTranslation)
+			this.SetAsync(true); // Se quiser tradução, obriga a ser async por causa do POST na API de tradução
+		else
+			this.SetAsync(false);
+		endif
 	endfunction
 endclass
+
+enum class MESSAGE_TYPE
+	NORMAL := 0x00,
+	BROADCAST := 0x01,
+	EMOTE := 0x02,
+	NORMAL_PRIVATE := 0x03, // CUSTOM do Message()
+	SYSTEM := 0x06, // SysMessage
+	MESSAGE_CORNER := 0x07, // Mensagem no canto da tela, sem aparecer em cima do char
+	WHISPER := 0x08, // Sussurro
+	YELL := 0x09, // Grita
+	SPELL := 0x0A, // PowerWords
+	GUILD := 0x0D,
+	ALLIANCE := 0x0E,
+	COMMAND_PROMPTS := 0x0F,
+endenum
+
+enum class MESSAGE_MAXSIZE
+	SYSTEM := 200,
+	NORMAL := 60,
+	EMOTE := NORMAL
+endenum

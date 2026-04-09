@@ -6,6 +6,7 @@ program seasonaleffects()
 	while (1)
 		var season := cint(getglobalproperty("season"));
 		foreach player in enumerateonlinecharacters()
+			sleepms(2);
 			SendPacket(player, "BC0" + season + "01");
 		endforeach
 		sleep(60);

@@ -2,7 +2,7 @@ include "include/string";
 
 function execgenerichit(attacker, defender, hitopt, rawdamage)
 
-//printtext(attacker, " " + hitopt.vitals);
+//PrintTextAbove(attacker, " " + hitopt.vitals);
 	//slayer entra aqui
 	foreach vital in (hitopt.vitals)
 		var dmg := rawdamage*hitopt.dmg;
@@ -20,19 +20,19 @@ function execgenerichit(attacker, defender, hitopt, rawdamage)
 			endforeach
 		else
 
-   //   printtext(attacker, " " + vital);
+   //   PrintTextAbove(attacker, " " + vital);
 
 			if (vital == "Hits")
 				var hitdmg := dmg;
 				if (defender.npctemplate)
 					var npccfg := NPC_GetNPCConfig(defender.npctemplate);
 					var category := GetConfigString(npccfg, "Category");
-      //    printtext(attacker, " " + " " + hitopt.slayer + " "+ hitdmg);
+      //    PrintTextAbove(attacker, " " + " " + hitopt.slayer + " "+ hitdmg);
 					if (hitopt.slayer ==  category)
 						hitdmg := hitdmg * 2;
 					endif
 				endif
-        //printtext(attacker, " "  + " " + hitopt.slayer + " "+ hitdmg);
+        //PrintTextAbove(attacker, " "  + " " + hitopt.slayer + " "+ hitdmg);
 				DamageFLS(defender, hitdmg, DMG_FORCED, attacker);
 			elseif (vital == "Stam")
 				AP_ConsumeVital(defender, STAMINA, dmg);
@@ -47,11 +47,11 @@ function execgenerichit(attacker, defender, hitopt, rawdamage)
 	endif
 
 	if (hitopt.textatacante != error)
-		PrintText(attacker, hitopt.textatacante);
+		PrintTextAbove(attacker, hitopt.textatacante);
 	endif
 
 	if (hitopt.textdefensor != error)
-		PrintText(defender, hitopt.textdefensor);
+		PrintTextAbove(defender, hitopt.textdefensor);
 	endif
 
 	if (hitopt.fxatacante != error)
@@ -119,7 +119,7 @@ function execonkill(attacker, defender)
 
 
   if (onkill.text != "")
-    printtext(defender, onkill.text);
+    PrintTextAbove(defender, onkill.text);
   endif
   if (onkill.fxmorto != error)
     PlayObjectCenteredEffect(defender, onkill.fxmorto[1], onkill.fxmorto[2], onkill.fxmorto[3]);
@@ -134,7 +134,7 @@ function execonkill(attacker, defender)
     HealStamina(attacker, onkill.stamina);
   endif
   if (onkill.hits != error)
-    HealDamage(attacker, onkill.hits);
+    ApplyEpicHealing(attacker, onkill.hits);
     RecalcVitals(attacker);
   endif
   if (onkill.itemcreate != error)
@@ -143,7 +143,7 @@ function execonkill(attacker, defender)
   if (onkill.lootcreate != error)
     var itm := CreateItemInContainer(defender, onkill.lootcreate, onkill.lootamt);
     if (itm  == error)
-      printText(defender, " " + itm);
+      PrintTextAbove(defender, " " + itm);
     endif
   endif
   if (onkill.destroy != error)

@@ -7,8 +7,7 @@ include ":timedScripts:timedScripts";
 include "include/sysEvent";
 include "include/client";
 include "include/say";
-include ":taming:taming";
-//
+include "include/epicCombatUtils";
 
 program newprogram(who)
 
@@ -18,9 +17,9 @@ program newprogram(who)
 
 	var numLobos := 0;
 	var bonusAtk := AP_GetTrueSkill(who, THEOLOGY) / 10;
-	PrintText(who, "*uiva*");
+	PrintTextAbove(who, "*uiva*");
 	PlaySoundEffect(who, 231);
-	PerformAction(who, ANIM_HIT);
+	PerformAction(who, HUMAN_ANIM::HIT);
 
 	var nearbyPets := ListPetsNear(who, 8);
 	foreach lobo in nearbyPets

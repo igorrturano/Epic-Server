@@ -3,12 +3,14 @@ use os;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":fls_magery:spells";
-include ":fls_magery:spellSounds";
+;
+;
 include "include/client";
 include "include/sounds";
 include ":charactercreation:resists";
 include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -26,25 +28,25 @@ program SpellScript(params)
 
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := -epicWisdomPathBonus(who);
-	if (CheckResist(targ, VONTADE, diff, -bonus))
+	if (CheckResist(targ, WILL, diff, -bonus))
 		SendSysMessageEx(who, "O alvo  resistiu a magia.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 
 		return 1;
 	endif
 
-	printText(targ, "*paralisado*");
+	PrintTextAbove(targ, "*paralisado*");
 
 	var duration := CINT(AP_GetSkill(who, ARCANA) / 5);
 
 	// Bonus de especialização
-	if (Temhabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := duration * 1.2;
 	endif
 
 	TS_StartTimer(targ, "paralysis", duration, who);
 
-	PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);
+	PlayObjectCenteredEffect(targ, FX_RED_SPARKLES, 7, 7);
 	handleSilentMagic(who, targ, SFX_SPELL_REACTIVE_ARMOR);
 
 	SendSysMessageEx(who, "O efeito da magia silenciosa acabou.", SSM_INFO);

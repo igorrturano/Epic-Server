@@ -26,7 +26,7 @@ program SpellScript(params)
 	// Check for reflection here and if need-be, change the target.
 
 	PlaySoundEffect(targ, SFX_FEEBLE_MIND);
-	PlayObjectCenteredEffect(targ, GFX_RED_SPARKLES, 7, 7);
+	PlayObjectCenteredEffect(targ, FX_RED_SPARKLES, 7, 7);
 
 	// Note: Stratics gives no duration formula - i'm assuming 60 seconds.	
 	TS_StartTimer(targ, "feebleMind", 60, who);

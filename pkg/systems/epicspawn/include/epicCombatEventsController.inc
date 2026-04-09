@@ -144,12 +144,12 @@ function ExecuteTeleportAction(npc, targets, action)
         if (move_result)
             success := 1;
         else
-            PrintText(npc, "Falha ao teleportar: " + move_result.errortext);
+            PrintTextAbove(npc, "Falha ao teleportar: " + move_result.errortext);
         endif
     endforeach
     
     if (!targets.size())
-        PrintText(npc, "Teleporte falhou - Nenhum alvo válido encontrado");
+        PrintTextAbove(npc, "Teleporte falhou - Nenhum alvo válido encontrado");
     endif
     
     return success;
@@ -179,10 +179,10 @@ function ExecuteTextAction(npc, action)
     if (action.target)
         var targets := GetActionTargets(npc, action);
         foreach targ in targets
-            PrintText(targ, action.text, color);
+            PrintTextAbove(targ, action.text, color);
         endforeach
     else
-        PrintText(npc, action.text, color);
+        PrintTextAbove(npc, action.text, color);
     endif
 
     return 1;
@@ -212,7 +212,7 @@ function ExecuteHealAction(targets, action)
     var success := 0;
     
     foreach targ in targets
-        HealDamage(targ, heal_amount);
+        ApplyEpicHealing(targ, heal_amount);
         PlayObjectCenteredEffect(targ, 0x376A, 10, 10);
         success := 1;
     endforeach

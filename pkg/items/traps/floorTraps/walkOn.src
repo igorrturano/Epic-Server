@@ -10,7 +10,7 @@ use os;
 use cfgfile;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/say";
 include ":blood:blood";
 include ":charactercreation:habilidades";
@@ -31,6 +31,8 @@ program TrapWalkOn(mobile, trap)
 		return 0;
 	elseif (mobile.npctemplate)
 		return 0;
+	elseif (GetCooldown(mobile, "res_trap_protection") > 0)
+		return 0;
 	endif
 
 	var cfg := ReadConfigFile(":*:itemdesc");
@@ -38,7 +40,7 @@ program TrapWalkOn(mobile, trap)
 	cfg := cfg[trap.objtype];
 
 	// Se for trap atraiinimigo
-	if (trap.objtype == 0xff99)
+	if (trap.objtype == 0xee2)
 		// Check if the trap is on cooldown
 		if (GetObjProperty(trap, "last_triggered"))
 			var last_time := GetObjProperty(trap, "last_triggered");
@@ -72,26 +74,20 @@ program TrapWalkOn(mobile, trap)
 		return 1;
 	endif
 
-	if (cint(trap.objtype) == 0xff9A) // beartrap
+	if (cint(trap.objtype) == 0x4004) // beartrap
 		do
 			if (!GetObjProperty(trap, "trap_ativada"))
 				trap.invisible := 0;
 				var tempo := 15;
 				var dmg := CInt(RandomDiceRoll("1d10")) + 20;
 				SendSysMessageEx(mobile, "Voce ativou uma armadilha!", SSM_FAIL);
-				if (CheckResist(mobile, REFLEXOS, RESIST_HARD))
-					if (temHabilidade(mobile, "Desbravador Nato"))
+				if (CheckResist(mobile, REFLEXES, RESIST_HARD))
+					if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 						SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
 						sleep(10);
 						continue;
 					else
 						SendSysMessageEx(mobile, "Voce evitou ficar totalmente preso na armadilha.", SSM_INFO);
-						tempo := 5;
-						dmg := CInt(dmg * 0.5);
-					endif
-				else
-					if (temHabilidade(mobile, "Evasao Aprimorada"))
-						SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha.", SSM_INFO);
 						tempo := 5;
 						dmg := CInt(dmg * 0.5);
 					endif
@@ -140,18 +136,13 @@ program TrapWalkOn(mobile, trap)
 		PlayStationaryEffect(trap.x, trap.y, trap.z, CInt(cfg.Animation), 100, 11, 0, trap.realm);
 		// TODO colocar level nas traps
 		var dmg := CInt(RandomDiceRoll("1d10")) + 20;
-		if (CheckResist(mobile, REFLEXOS, RESIST_HARD))
-			if (temHabilidade(mobile, "Desbravador Nato"))
+		if (CheckResist(mobile, REFLEXES, RESIST_HARD))
+			if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 				SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
 				sleep(10);
 				continue;
 			else
 				SendSysMessageEx(mobile, "Voce evitou parte do dano da armadilha.", SSM_INFO);
-				dmg := CInt(dmg * 0.5);
-			endif
-		else
-			if (temHabilidade(mobile, "Evasao Aprimorada"))
-				SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha.", SSM_INFO);
 				dmg := CInt(dmg * 0.5);
 			endif
 		endif

@@ -12,7 +12,7 @@ include ":timedScripts:timedScripts";
 program controleclima(who)
 
 	var options := CheckBoxGump(who, 240, 300, "Controle do Clima", { "Chuva", "Neve", "Vento", "Vento Forte",
-																  	"Tempestade", "Tempestade de Raios" });
+																  	"Tempestade", "Tempestade de Raios", "Terremoto" });
 
 	sendsysmessage(who, "op " + options);
 
@@ -43,6 +43,9 @@ program controleclima(who)
 		som := 2;
 		ventoForte := 1;
 	endif
+	if ("Terremoto" in options)
+		type := 10;
+	endif
 
 	var origx := who.x;
 	var origy := who.y;
@@ -63,7 +66,7 @@ program controleclima(who)
 
 	while (i < duration)
 
-		PerformAction(who, ANIM_CAST_AREA);
+		PerformAction(who, HUMAN_ANIM::CAST_AREA);
 		if ((origx != who.x) || (origy != who.y))
 			SendSysMessage(who, "Voce parou de controlar o clima.", SSM_FAIL);
 			break;

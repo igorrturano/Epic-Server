@@ -1,0 +1,77 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/client";
+include "include/sounds";
+
+// Sinfonia do Apocalipse (1215) - C4
+// +ALL party (STR+DEX+INT Arc/5), -ALL enemies (STR+DEX+INT Arc/5) por Arc/3 segundos
+program SpellScript(params)
+	var who := params[1];
+
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
+	var bonus    := CInt(arcana / 5);
+	if (bonus < 1)  bonus    := 1;  endif
+	if (bonus > 20) bonus    := 20; endif
+	var duration := CInt(arcana / 3);
+	if (duration < 5)  duration := 5;  endif
+	if (duration > 33) duration := 33; endif
+
+	PrintTextAbove(who, "*E o bardo contou a ultima historia. A historia do fim...*", 3, 38);
+	PlaySoundEffect(who, 0x211);
+	PlayStationaryEffect(who.x, who.y, who.z, 0x36CB, 6, 6);
+
+	var ally_list  := array;
+	var enemy_list := array;
+	var allies := 0;
+	var enemies := 0;
+
+	foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, 10, who.realm))
+		if (!mobile.isa(POLCLASS_MOBILE)) continue; endif
+		if (mobile == who) continue; endif
+
+		if (mobile.IsHostile(who))
+			AP_ModifyStatMod(mobile, STRENGTH,     -bonus);
+			AP_ModifyStatMod(mobile, DEXTERITY,    -bonus);
+			AP_ModifyStatMod(mobile, INTELLIGENCE, -bonus);
+			SetObjProperty(mobile, "#cantico_apocalipse_debuff", bonus);
+			PrintTextAbove(mobile, $"-{bonus} ALL", 3, 38);
+			enemy_list[enemies + 1] := mobile;
+			enemies += 1;
+		else
+			AP_ModifyStatMod(mobile, STRENGTH,     bonus);
+			AP_ModifyStatMod(mobile, DEXTERITY,    bonus);
+			AP_ModifyStatMod(mobile, INTELLIGENCE, bonus);
+			SetObjProperty(mobile, "#cantico_apocalipse_buff", bonus);
+			PlayStationaryEffect(mobile.x, mobile.y, mobile.z, FX_BLESS_EFFECT, 3, 3);
+			SendSysMessageEx(mobile, $"Sinfonia do Apocalipse: +{bonus} a todos os atributos por {duration}s!", SSM_INFO);
+			ally_list[allies + 1] := mobile;
+			allies += 1;
+		endif
+	endforeach
+
+	SendSysMessageEx(who, $"Sinfonia do Apocalipse: {allies} aliado(s) fortalecidos, {enemies} inimigo(s) enfraquecidos.", SSM_INFO);
+
+	sleep(duration);
+
+	foreach mobile in ally_list
+		if (mobile && !mobile.dead && GetObjProperty(mobile, "#cantico_apocalipse_buff") == bonus)
+			AP_ModifyStatMod(mobile, STRENGTH,     -bonus);
+			AP_ModifyStatMod(mobile, DEXTERITY,    -bonus);
+			AP_ModifyStatMod(mobile, INTELLIGENCE, -bonus);
+			EraseObjProperty(mobile, "#cantico_apocalipse_buff");
+		endif
+	endforeach
+
+	foreach mobile in enemy_list
+		if (mobile && !mobile.dead && GetObjProperty(mobile, "#cantico_apocalipse_debuff") == bonus)
+			AP_ModifyStatMod(mobile, STRENGTH,     bonus);
+			AP_ModifyStatMod(mobile, DEXTERITY,    bonus);
+			AP_ModifyStatMod(mobile, INTELLIGENCE, bonus);
+			EraseObjProperty(mobile, "#cantico_apocalipse_debuff");
+		endif
+	endforeach
+
+	return 1;
+endprogram

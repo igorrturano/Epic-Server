@@ -8,7 +8,7 @@ include "include/utils";
 program drink_blue(who, potion)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
-	var tier := potion.tier;
+	var tier := peganivelpocao(who, potion);
 	if (!Accessible(who, potion))
 		return;
 	endif
@@ -17,10 +17,9 @@ program drink_blue(who, potion)
 		return;
 	endif
 
-	empty_bottle(who, potion);
 
 	SendSysMessage(who, "Voce espalhou o po ao redor.");
-	PrintText(who, "*espalha um fino po ao redor de si*");
+	PrintTextAbove(who, "*espalha um fino po ao redor de si*");
 	PlaySoundEffect(who, 0x0248);
 	sleepms(200);
 	PlaySoundEffect(who, 0x0248);
@@ -41,5 +40,6 @@ program drink_blue(who, potion)
 		endforeach
 		sleepms(2);
 	endforeach
+	empty_bottle(who, potion);
 
 endprogram

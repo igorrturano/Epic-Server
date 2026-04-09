@@ -12,7 +12,7 @@ use util;
 use cfgfile;
 use os;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":tn:equipment";
 include ":spells:tnmagery";
 
@@ -318,7 +318,7 @@ function ActivateMagicItem(item)
 
 			if (key == "PhysicalResistMod")
 				item.resist_physical_mod := item.resist_physical_mod + cint(mods[key]);
-				printtext(item,"yaaaaa");
+				PrintTextAbove(item,"yaaaaa");
 			elseif (key == "ColdResistMod")
 				item.resist_cold_mod := item.resist_cold_mod + cint(mods[key]);
 			elseif (key == "FireResistMod")
@@ -345,7 +345,7 @@ function ActivateMagicItem(item)
 			var cfg := ReadConfigFile(":tn:config/tnspells");
 			var elem := FindConfigElem(cfg, spellinfo.id);
 			var name := GetConfigString(elem, "Name");
-			//printtext(item, " " + name);
+			//PrintTextAbove(item, " " + name);
 			if (name && GetObjProperty(item, "magic") != 2)
 				SetName(item, item.desc+" ["+name+"]");
 			endif

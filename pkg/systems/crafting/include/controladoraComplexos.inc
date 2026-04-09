@@ -4,39 +4,48 @@ include "/include/epicConstants";
 include "/include/epicPropNames";
 include "/include/math";
 include "include/epicUtils";
-include ":crafting:craftingUtil";
-include ":crafting:crafting";
 include ":megacliloc:/include/descricaoObjetoTTip";
 include ":crafting:gumps/fabricacaoGumps";
 include ":gumps:/include/dropDownGump";
+include ":crafting:include/craftGumps";
 include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
+include ":crafting:/include/craftingRepair";
 include "include/epicValidAction";
+include ":crafting:include/util/fabricacaoConstants";
 
-const NR_MAXIMO_ESQUEMAS := 6;
-const NR_MAXIMO_RECEITAS_POR_PAGINA := 8;
-const OBJTYPE_ITEM_MONTADO := 0xe72;
-const FIXO_DIF_ADICIONAL_PERICIA := 0; //Adicional no limite mais baixo da dificuldade, o resultado de um somatório faz aparecer no gump.
-
-function InicializaSessaoComplexos(byref profissaoCraftProp)
+function InicializaSessaoComplexos(byref profissaoCraftProp, modoGm)
 	var sessao := struct;
 
 	sessao.+categoriaSelecionada := "";
 	sessao.+categoriaAnterior := "";
 	NovoObjetoReceitaSelecionada(sessao);
 	sessao.+gumpAtual := COMPLEXOS;
-	sessao.+paginaAtual := 0;
+	sessao.+paginador := struct { complexos := struct {pagina := 0}, esquemas := struct {pagina := 0}};
 	sessao.+acao := ADICIONAR;
 	sessao.+quantidade := 1;
 	sessao.+deveAtrasarAtualizacao := false;
 	sessao.+visualizadas := profissaoCraftProp["visualizadas"];
-	sessao.+gerenciadorDropDown := GerenciadorDropDown(60,
+	sessao.+gerenciadorDropDown := GerenciadorDropDown(100,
 										COMPLEXOS_DROPDOWN_INICIAL,
 										COMPLEXOS_DROPDOWN_OPCOES_INICIAL,
 										COMPLEXOS_DROPDOWN_MAX);
 	sessao.+devePopularDropDown := true;
 
+	if(modoGm)
+		sessao.+modoGm := NovoObjetoModoGm();
+	endif
+
 	return sessao;
+endfunction
+
+function NovoObjetoModoGm()
+	return struct{ 
+					encaixeEscolhido := struct { indice := 0, encaixe := 0 },
+					componenteEscolhido := 0, 
+					qualidadeEscolhida := 0, 
+					materialEscolhido := 0
+			};
 endfunction
 
 
@@ -52,7 +61,13 @@ function NovoObjetoReceitaSelecionada(byref sessao, objetoReceita := "", dictEsq
 	sessao.receitaSelecionada.+esquemaSelecionado := NovoObjetoEsquemaSelecionado();
 endfunction
 
-function NovoObjetoEsquemaSelecionado(nomeEsquema := "", dictComponentesEscolhidos := dictionary, corItem := 0, material := "", classe := 1)
+function NovoObjetoEsquemaSelecionado(
+									nomeEsquema := "", 
+									dictComponentesEscolhidos := dictionary, 
+									corItem := 0, 
+									material := "", 
+									classe := 1
+								)
 	return struct{
 				nome := nomeEsquema,
 				cor := corItem,
@@ -70,37 +85,36 @@ endfunction
 function SelecionaReceita(byref sessao, quem, parametros , indice)
 	var objetoReceita := parametros.visaoReceitas[sessao.categoriaSelecionada][indice];
 	var nomeReceitaClassificado := PegaNomeReceitaClassificada(objetoReceita.receitaClassificada);
+	sessao.paginador.esquemas.pagina := 0;
 	NovoObjetoReceitaSelecionada(sessao,objetoReceita,ListaEsquemas(quem,nomeReceitaClassificado));
 endfunction
 
-function EnviaItensComplexosGump(quem,profissao)
+function EnviaItensComplexosGump(quem,profissao, modoGm)
 	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
-	var parametros := PreparaItensComplexosGump(quem, profissao);
+	var parametros := PreparaItensComplexosGump(quem, profissao, modoGm);
 	var retorno := true;
 	var gump;
-	var sessao := InicializaSessaoComplexos(parametros.propCraft.pericias[parametros.pericia]);
+	var sessao := InicializaSessaoComplexos(parametros.propCraft.pericias[parametros.pericia], modoGm);
 	var gerenciador := sessao.gerenciadorDropDown;
 	
 	while(retorno)
 		Sleepms(2);
 		if(sessao.gumpAtual == COMPLEXOS)
 			MontaItensComplexosGump(gump,parametros,sessao);
-		else
+		elseif(sessao.gumpAtual == ESQUEMAS)
 			if(sessao.devePopularDropDown)
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				PreparaDropDownsEsquemas(quem,sessao,gerenciador,configRecursos);
 				sessao.devePopularDropDown := false;
 			endif
-			MontaEsquemaGump(gump,sessao);
+			MontaEsquemaGump(gump,sessao, parametros);
+		elseif(sessao.gumpAtual == GM_COMPONENTE)
+			GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
+			PreparaDropDownsEsquemas(quem,sessao,gerenciador,configRecursos);
+			MontaEscolhaComponenteModoGmGump(gump, sessao);
 		endif
 
 		retorno := GFSendGump(quem,gump);
-
-		/*
-		if(sessao.deveAtrasarAtualizacao)//booleano para atrasar atualizacao de alguma parte do gump por 1 ciclo. [visualizados, por exemplo]
-			sessao.deveAtrasarAtualizacao := false;
-		endif
-		*/
 
 		if(find(retorno[COMPLEXOS_ESQUEMAS_INPT_NOME],":",1))
 			var entradaNome := GFExtractData(retorno,COMPLEXOS_ESQUEMAS_INPT_NOME);
@@ -119,7 +133,7 @@ function EnviaItensComplexosGump(quem,profissao)
 				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_CATEGORIAS);
 				sessao.categoriaAnterior := sessao.categoriaSelecionada;
 				sessao.categoriaSelecionada := parametros.visaoReceitas.keys()[retornoMapeado.indice];
-				sessao.paginaAtual := 0;
+				sessao.paginador.complexos.pagina := 0;
 				MarcaCategoriaVisualizada(sessao,parametros);// marca a categoria anterior como visualizada.
 				NovoObjetoReceitaSelecionada(sessao);
 				break;
@@ -129,6 +143,7 @@ function EnviaItensComplexosGump(quem,profissao)
 				case (retornoMapeado.indiceBotao)
 					1: //Seleciona receita
 						SelecionaReceita(sessao, quem, parametros, retornoMapeado.indiceItem);
+						
 						break;
 
 					2: // Novo Esquema.
@@ -140,6 +155,7 @@ function EnviaItensComplexosGump(quem,profissao)
 						endif
 
 						NovoObjetoReceitaSelecionada(sessao,objetoReceita,esquemas);
+						sessao.paginador.esquemas.pagina := 0;
 						sessao.gumpAtual := ESQUEMAS;
 						sessao.acao := ADICIONAR;
 						sessao.devePopularDropDown := true;
@@ -149,28 +165,42 @@ function EnviaItensComplexosGump(quem,profissao)
 						SelecionaReceita(sessao, quem, parametros, retornoMapeado.indiceItem);
 						var melhorEsquema := MontaMelhorEsquema(quem, sessao);
 
-						FabricaItens(quem,melhorEsquema ,sessao.receitaSelecionada.receita, sessao.quantidade);
+						FabricaItens(quem,melhorEsquema ,sessao.receitaSelecionada.receita, sessao.quantidade, sessao.modoGm);
 						sessao.receitaSelecionada.esquemaSelecionado := NovoObjetoEsquemaSelecionado();
 						break;
 
 				endcase
 				break;
 
-			RT_ESCOLHA_DROPDOWN_CPX:
-				var retornoMapeado := MapeiaRetornoGump(retorno[0],gerenciador.adicionalIdDropDown);
-				var objetoDropDown := gerenciador.dropDowns[retornoMapeado.indice];
+			RT_ABRE_GM_COMPONENT:
+				var retornoMapeado := MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT);
 
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
-				var process := SendDropDownGump(quem, GetPid(),objetoDropDown);
-				
-				if(process)
-					objetoDropDown.pid := process.pid;
-				endif
+				var componenteEscolhido := sessao.receitaSelecionada.receita.componentesNecessarios[retornoMapeado.indice];
+				var modoGm := NovoObjetoModoGm();
+				modoGm.encaixeEscolhido.encaixe := componenteEscolhido.encaixe;
+				modoGm.encaixeEscolhido.indice := retornoMapeado.indice;
+
+				sessao.modoGm := modoGm;
+				sessao.gumpAtual := GM_COMPONENTE;
+				//TODO criar o gump de escolha de componete pra gm
+				break;
+
+			RT_GM_COMPONENTE_SELECIONADO:
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
+				TrataGMEscolhaComponente(quem, sessao);
+				sessao.gumpAtual := ESQUEMAS;
+				break;
+
+			RT_ESCOLHA_DROPDOWN_CPX:
+				var retornoMapeado := MapeiaRetornoGump(retorno[0],gerenciador.PegaAdicionalIdDropDown());
+				var objetoDropDown := gerenciador.BuscaDropDownPorPosicao(retornoMapeado.indice);
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
+				objetoDropDown.SendGump(quem, GetPid());
 				break;
 
 			RT_ESCOLHA_DD_OPCOES_CPX: 
 				var dropdown := GerenciadorDropDown::DefineValorEscolhido(gerenciador,retorno[0]);
-				TratarEscolhaComponente(quem, dropdown.valorEscolhido, sessao, configRecursos);
+				TratarEscolhaDropDown(quem, dropdown, sessao, configRecursos);
 				break;
 			
 			RT_AJUDA_CPX: 
@@ -208,14 +238,16 @@ function EnviaItensComplexosGump(quem,profissao)
 
 				sessao.receitaSelecionada.esquemaSelecionado := NovoObjetoEsquemaSelecionado();//limpa esquema selecionado.
 				sessao.gumpAtual := COMPLEXOS;
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				break;
 
 			RT_ESQUEMAS:
 				var retornoMapeado :=  MapeiaRetornoGump(retorno[0],COMPLEXOS_ESQUEMAS,3);
 				var chaveEsquema := sessao.receitaSelecionada.esquemas.keys()[retornoMapeado.indiceItem];
 				var esquema := sessao.receitaSelecionada.esquemas[chaveEsquema];
-				var nomeReceitaClassificado := PegaNomeReceitaClassificada(sessao.receitaSelecionada.receita.receitaClassificada);
+				var receitaClassificada := sessao.receitaSelecionada.receita.receitaClassificada;
+				esquema.classe := receitaClassificada.classe ? cint(receitaClassificada.classe) : CLASSE_PADRAO;
+				var nomeReceitaClassificado := PegaNomeReceitaClassificada(receitaClassificada);
 
 				case (retornoMapeado.indiceBotao)
 					1: //Editar
@@ -230,27 +262,48 @@ function EnviaItensComplexosGump(quem,profissao)
 
 					3: //Fabricar
 						//TODO Animações e sons.
-						FabricaItens(quem, esquema, sessao.receitaSelecionada.receita, sessao.quantidade);
+						FabricaItens(quem, esquema, sessao.receitaSelecionada.receita, sessao.quantidade, sessao.modoGm);
 						break;
 
 				endcase
 				break;
 
 			RT_RCT_PROX_PAGINA:
-				if(cint(sessao.paginaAtual) + 1 < (parametros.visaoReceitas[sessao.categoriaSelecionada] / parametros.receitasPorPagina))
-					sessao.paginaAtual += 1;
-				endif
+					sessao.paginador.complexos.pagina += 1;
 				break;
 
 			RT_RCT_ANT_PAGINA:
-				if(cint(sessao.paginaAtual) - 1 >= 0)
-					sessao.paginaAtual -= 1;
-				endif
+					sessao.paginador.complexos.pagina -= 1;
+				break;
+
+			RT_ESQ_PROX_PAGINA:
+					sessao.paginador.esquemas.pagina += 1;
+				break;
+
+			RT_ESQ_ANT_PAGINA:
+					sessao.paginador.esquemas.pagina -= 1;
 				break;
 
 			RT_LIMPAR_MEMORIA:
 				LimparMemoriaEncaixes(quem);
 				SendSysMessageEX(quem,"Os encaixes memorizados foram esquecidos.", SSM_INFO);
+				break;
+
+			RT_REPARAR:
+				var alvo := 1;
+				SendSysMessageEX(quem,"Escolha o item que deseja reparar", SSM_INFO);
+				While(alvo)
+					alvo := Target(quem);
+					sleepms(2);
+
+					if(alvo)
+						repair_item(quem, alvo,parametros.pericia);
+					endif
+				endwhile
+
+				if(!alvo)
+					SendSysMessageEX(quem,"Nenhum item selecionado para reparo.", SSM_FAIL);
+				endif
 				break;
 
 			RT_MEMORIZAR_COMPONENTES:
@@ -273,9 +326,29 @@ function EnviaItensComplexosGump(quem,profissao)
 
 			RT_CANCELADO_ESQUEMA_COMPLX:
 				sessao.gumpAtual := COMPLEXOS;
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				retorno := 1;
 				break;
+			
+			RT_CANCELADO_GUMP_GM_COMPONENTE:
+				sessao.gumpAtual := ESQUEMAS;
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
+				retorno := 1;
+				break;
+
+			RT_GM_ESQUEMA_FABRICAR:
+				FabricaItens(
+								quem, 
+								sessao.receitaSelecionada.esquemaSelecionado, 
+								sessao.receitaSelecionada.receita, 
+								sessao.quantidade, 
+								sessao.modoGm
+							);
+				sessao.gumpAtual := COMPLEXOS;
+				sessao.receitaSelecionada.esquemaSelecionado := NovoObjetoEsquemaSelecionado();
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
+				break;
+
 
 			RT_CANCELADO_COMPLX:
 				sessao.categoriaAnterior := sessao.categoriaSelecionada;
@@ -284,28 +357,63 @@ function EnviaItensComplexosGump(quem,profissao)
 				var propCraft := GetObjProperty(quem, "Craft");
 				propCraft.pericias[parametros.pericia]["visualizadas"] := sessao.visualizadas;
 				SetObjProperty(quem, "Craft", propCraft);
-				FechaTodosDropdowns(quem,gerenciador.dropDowns);
+				GerenciadorDropDown::FechaTodosDropdowns(gerenciador,quem);
 				retorno := 0;
 				break;
 		endcase
 	endwhile
 endfunction
 
+function TrataGMEscolhaComponente(quem, byref sessao)
+	var modoGm := sessao.modoGm;
+
+	var encaixeEscolhido := modoGm.encaixeEscolhido;
+	var componenteEscolhido := modoGm.componenteEscolhido;
+	var qualidadeEscolhida := modoGm.qualidadeEscolhida;
+	var materialEscolhido := modoGm.materialEscolhido;
+
+	if(!componenteEscolhido || !qualidadeEscolhida || !materialEscolhido)
+		SendSysMessageEX(quem, "Todas as opções são obritatórias.", SSM_FAIL);
+		return 0;
+	endif
+
+	var componenteNecessario := sessao.
+									receitaSelecionada.
+									receita.
+									componentesNecessarios[encaixeEscolhido.indice];
+
+
+	var componenteEncontrado := MontaEnvelopeComponenteEncontrado(
+														componenteEscolhido, 
+														materialEscolhido.chave,
+														materialEscolhido,
+														qualidadeEscolhida);
+	
+	var objetoOpcaoEscolhida := MontaObetoOpcaoComponente(componenteEncontrado,encaixeEscolhido.indice);
+	
+	TrataComponenteEncontrado(
+									sessao,
+									objetoOpcaoEscolhida,
+									componenteNecessario,
+									encaixeEscolhido.indice,
+									configRecursos
+								);
+
+	return 1;
+endfunction
+
 function MarcaCategoriaVisualizada(byref sessao,byref parametros)
 	if(sessao.categoriaAnterior != "")
 		if(!(sessao.categoriaAnterior in (sessao.visualizadas.categorias)))
 			sessao.visualizadas.categorias.append(sessao.categoriaAnterior);
-			//if(!sessao.deveAtrasarAtualizacao)	
-				foreach receita in (parametros.visaoReceitas[sessao.categoriaAnterior])
-					Sleepms(2);
-					var nomeClassificado := PegaNomeReceitaClassificada(receita.receitaClassificada);
-					if(!(nomeClassificado in sessao.visualizadas.receitas))
-						receita.isVisualizada := true;
-						sessao.visualizadas.receitas.append(nomeClassificado); //guardo as que foram visualizadas para atualizar a prop no final;
-					endif
-				endforeach
-			//endif
-			//sessao.deveAtrasarAtualizacao := true;
+			foreach receita in (parametros.visaoReceitas[sessao.categoriaAnterior])
+				Sleepms(2);
+				var nomeClassificado := PegaNomeReceitaClassificada(receita.receitaClassificada);
+				if(!(nomeClassificado in sessao.visualizadas.receitas))
+					receita.isVisualizada := true;
+					sessao.visualizadas.receitas.append(nomeClassificado); //guardo as que foram visualizadas para atualizar a prop no final;
+				endif
+			endforeach
 		endif
 	endif
 endfunction
@@ -318,41 +426,44 @@ function MontaMelhorEsquema(quem, sessao)
 		var componenteNecessario := sessao.receitaSelecionada.receita.componentesNecessarios[componenteEncontrado.indiceEncaixe];
 		var quantidadeComponentesNecessaria :=  sessao.receitaSelecionada.receita.componentesNecessarios.size();
 		var opcaoEncontrada := MontaObetoOpcaoComponente(componenteEncontrado.melhor, componenteEncontrado.indiceEncaixe);
-		if(opcaoEncontrada.itemRef)
-			var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
-			
-			AcrescentaComponenteEscolhido(
-					sessao.receitaSelecionada.esquemaSelecionado,
-					componenteNecessario,
-					componenteEscolhido, 
-					opcaoEncontrada.indiceEncaixeComponente, 
-					sessao.receitaSelecionada.receita.receitaClassificada.classe);
-		else
-			//marreta básica pra não ter que ficar contando tudo varias vezes.
-			SendSysMessageEX(quem, "Dificuldades para encontrar melhor componente para {}, componente ignorado. Por favor tente empilhar todos materiais juntos".format(componenteNecessario.encaixe), SSM_INFO_IC);
-		endif
+		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
+
+		AcrescentaComponenteEscolhido(
+				sessao.receitaSelecionada.esquemaSelecionado,
+				componenteNecessario,
+				componenteEscolhido, 
+				opcaoEncontrada.indiceEncaixeComponente);
+
 	endforeach
+
+	var classe := sessao.receitaSelecionada.receita.receitaClassificada.classe;
+	sessao.receitaSelecionada.esquemaSelecionado.classe := classe ? cint(classe) : CLASSE_PADRAO;
 
 	return sessao.receitaSelecionada.esquemaSelecionado;
 endfunction
 
-function FabricaItens(quem, esquema, receita, quantidade := 1)
-	var posicaoInicial := CriaObjetoPosicao(quem);
+function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false)
+	var posicaoInicial := BuildPositionStruct(quem);
 	var vidaInicial := AP_GetVital(quem, "Hits");
 
 	if(receita.isEmpilhavel)
 		Sleep(1);
-		var retorno := FabricaItemMontado(quem,esquema, receita, quantidade);
+		var retorno := FabricaItemMontado(quem,esquema, receita, quantidade, modoGm);
 		if(!retorno)
 			SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
 		endif
 	else
 		for indice := 1 to Cint(quantidade)
-			Sleep(1);
+			if(modoGm)
+				Sleepms(2);
+			else
+				Sleep(1);
+			endif
+			
 			if(!CheckCanWork(quem,vidaInicial, posicaoInicial))
 				break;
 			endif
-			var retorno := FabricaItemMontado(quem,esquema, receita);
+			var retorno := FabricaItemMontado(quem,esquema, receita, 1, modoGm);
 			if(!retorno)
 				SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
 				break;
@@ -361,12 +472,25 @@ function FabricaItens(quem, esquema, receita, quantidade := 1)
 	endif
 endfunction
 
-function FabricaItemMontado(quem,esquema, receita, quantidade := 1)
-	var contagem := ContaQuantidadeRequisitos(quem,esquema, receita);
-	
-	if(isRequisitoSuficiente(quem,contagem, receita, esquema, quantidade))
-		ConsomeRequisitos(contagem, quantidade);
-		CriaItemMontado(quem,esquema,receita, quantidade);
+function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarRequisitos := false)
+	var contagem := ContaQuantidadeRequisitos(quem,esquema, receita, deveIgnorarRequisitos);
+
+	if(isRequisitoSuficiente(quem,contagem, receita, esquema, quantidade, deveIgnorarRequisitos))
+		if(!deveIgnorarRequisitos)
+			ConsomeRequisitos(contagem, quantidade);
+		endif
+
+		if(deveIgnorarRequisitos)
+			var retorno := CriaItemFabricado(quem,0,quantidade, DefinePropFabricado(esquema,receita, quem));
+
+			if(retorno)
+				SendSysMessageEX(quem, "criado com sucesso.", SSM_INFO);
+			else
+				SendSysMessageEX(quem, "Não foi possivel criar o item.", SSM_FAIL);
+			endif
+		else
+			CriaItemMontado(quem,esquema,receita, quantidade);
+		endif
 	else 
 		return 0;
 	endif
@@ -375,7 +499,10 @@ function FabricaItemMontado(quem,esquema, receita, quantidade := 1)
 endfunction
 
 function hasMovido(quem,posicaoInicial)
-	return quem.x != posicaoInicial.x || quem.y != posicaoInicial.y || quem.z != posicaoInicial.z || quem.realm != posicaoInicial.realm;
+	return quem.x != posicaoInicial.x 
+			|| quem.y != posicaoInicial.y 
+			|| quem.z != posicaoInicial.z 
+			|| quem.realm != posicaoInicial.realm;
 endfunction
 
 function CriaItemMontado(quem,esquema,receita, quantidade)
@@ -384,7 +511,7 @@ function CriaItemMontado(quem,esquema,receita, quantidade)
 
 	var pesoFinal := 1;
 
-	var modificador := esquema.modificadorPesoTotal ? pesoFinal + ((esquema.modificadorPesoTotal / 100) + 1) : pesoFinal;
+	var modificador := esquema.modificadorPesoTotal ? (esquema.modificadorPesoTotal / 100) + 1 : pesoFinal;
 	if(definicaoItem.weight)
 		pesoFinal := pesoFinal * (definicaoItem.weight * modificador);
 	else
@@ -394,21 +521,23 @@ function CriaItemMontado(quem,esquema,receita, quantidade)
 	var descriptor := GetItemDescriptor(CInt(OBJTYPE_ITEM_MONTADO));
 	descriptor.color := receita.corObrigatoria ? receita.corObrigatoria : esquema.cor;
 	descriptor.graphic := receita.graphic;
-	descriptor.CProps.insert(PROPNAME_FABRICADO, DefinePropFabricado(esquema,receita));
+	descriptor.CProps.insert(PROPNAME_FABRICADO, DefinePropFabricado(esquema,receita, quem));
 	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG, true);
 
 	var item := CreateItemInBackpack(quem,descriptor, cint(quantidade));
 
 	if(item)
 		item.weight_multiplier_mod := pesoFinal;
-		SendSysMessageEX(quem, "{} criado com sucesso.".format(item.desc), SSM_INFO);
+		SendSysMessageEX(quem, "criado com sucesso.".format(item.desc), SSM_INFO);
 	else
-		SendSysMessageEX(quem, "falha ao criar item.".format(item.desc), SSM_FAIL);
+		SendSysMessageEX(quem, "falha ao criar item. {} " .format(item), SSM_FAIL);
 	endif
+
+	return item;
 
 endfunction
 
-function DefinePropFabricado(esquema,receita)
+function DefinePropFabricado(esquema, receita , quem)
 	//Limpa propriedades desnecessárias ou rendundantes.
 	receita.-componentesNecessarios;
 	receita.-materiaisNecessarios;
@@ -423,18 +552,24 @@ function DefinePropFabricado(esquema,receita)
 		estado := ITEM_MONTADO,
 		receita := receita,
 		esquema := esquema};
+	
+	if(!receita.isEmpilhavel)
+		propFabricado.+fabricante := quem.serial;
+	endif
 
 	return propFabricado;
 endfunction
 
-function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1)
+function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1, deveIgnorarRequisitos := false)
 
 	var encaixesEncontrados := array;
 	var configEncaixes := ReadConfigFile(":*:encaixes");
-
-	foreach elemento in  contagem
+	
+	if(deveIgnorarRequisitos) return true; endif
+	
+	foreach elemento in contagem
 		Sleepms(2);
-		if(elemento.quantidadeEncontrada < elemento.quantidadeNecessaria * quantidade * elemento.lote )
+		if(elemento.quantidadeEncontrada < cint(elemento.quantidadeNecessaria) * cint(quantidade) * cint(elemento.lote))
 			var mensagem; 
 			if (elemento.?encaixe)
 				mensagem := "Você não tem {} [{}] suficiente.".format(elemento.nomeItem,elemento.tierDesc);
@@ -455,6 +590,7 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 		if(!(necessario.encaixe in encaixesEncontrados))
 			if(necessario.isOpcional)
 				foreach componenteEscolhido in (esquema.componentesEscolhidos)
+					Sleepms(2);
 					if((componenteEscolhido.componenteNecessario.encaixe == necessario.encaixe))//o cara selecionou, mas não tinha nenhum componente. Neste caso acaba não caíndo na contagem.
 						SendSysMessageEX(quem,"Você não tem componentes suficientes para o encaixe opcional [{}].".format(configEncaixes[necessario.encaixe].desc),SSM_FAIL);
 						return false;
@@ -465,17 +601,8 @@ function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1
 				return false;
 			endif
 		endif
-
-		if(necessario.isOpcional)
-			
-		endif
 	
 	endforeach
-
-	if(IsMateriaisNaoEncontrados(receita, contagem))
-		SendSysMessageEX(quem,"Você não tem todos materiais necessários.",SSM_FAIL);
-		return false;
-	endif
 
 	return true;
 endfunction
@@ -484,8 +611,10 @@ function IsMateriaisNaoEncontrados(receita, contagem)
 	return receita.materiaisNecessarios.size() - receita.componentesNecessarios.size() > contagem.size();
 endfunction
 
-function ContaQuantidadeRequisitos(quem, esquema, receita)
+function ContaQuantidadeRequisitos(quem, esquema, receita, deveIgnorarRequisitos)
 	var contagemFinal := dictionary;
+
+	if(deveIgnorarRequisitos) return contagemFinal; endif
 
 	foreach item in EnumerateItemsInContainer(quem.backpack)
 		Sleepms(2);
@@ -507,10 +636,25 @@ function ContaQuantidadeRequisitos(quem, esquema, receita)
 
 		foreach ingrediente in (receita.materiaisNecessarios)
 			Sleepms(2);
+			
 			var ingredienteInfo := SplitWords(ingrediente);
+			var materialNecessarioObjType :=  cint(ingredienteInfo[1]);
+			var qtdNecessaria := cint(ingredienteInfo[2]);
 
-			if(isMaterialNecessario(item, ingredienteInfo[1]))
-				var qtdNecessaria := cint(ingredienteInfo[2]);
+			if(!contagemFinal.exists(materialNecessarioObjType))
+				var materialDesc := itemsConfig[materialNecessarioObjType];
+				InsereInformacoesContagem(
+											contagemFinal, 
+											struct {
+														name := materialDesc.desc, 
+														objtype := materialNecessarioObjType
+													},
+											qtdNecessaria,
+											receita.lote);
+			endif
+
+			if(isMaterialNecessario(item, materialNecessarioObjType))
+				
 				RegistraInformacoesContagem(contagemFinal,
 											item,
 											qtdNecessaria,
@@ -526,16 +670,16 @@ endfunction
 function ConsomeRequisitos(contagem, quantidade := 1)
 	foreach contado in contagem
 		Sleepms(2);
-		var quantidadeRestante := contado.quantidadeNecessaria * contado.lote * quantidade;
+		var quantidadeRestante := cint(contado.quantidadeNecessaria) * cint(contado.lote) * cint(quantidade);
 		foreach itemEncontrado in (contado.itemRefArray)
 			Sleepms(2);
 			If(quantidadeRestante <= 0) 
 				break; 
 			endif;
-			
 			if(itemEncontrado.stackable)
+				var quantidadeSubtraida :=  quantidadeRestante - itemEncontrado.amount;
 				SubtractAmount(itemEncontrado, quantidadeRestante);
-				quantidadeRestante -= itemEncontrado.amount;
+				quantidadeRestante :=  quantidadeSubtraida;
 			else
 				quantidadeRestante -= 1;
 				DestroyItem(itemEncontrado);
@@ -547,21 +691,26 @@ endfunction
 function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
 
 	if(!catalogoContagem.exists(item.objtype))
-		var informacoesContagem := struct;
-		informacoesContagem.+quantidadeEncontrada := 0;
-		informacoesContagem.+itemRefArray := array;
-		informacoesContagem.+nomeItem := item.name;
-		informacoesContagem.+tierDesc := tierDesc;
-		informacoesContagem.+lote := lote;
-		informacoesContagem.+quantidadeNecessaria := cint(quantidadeNecessaria);
-		if(encaixe)
-			informacoesContagem.+encaixe := encaixe;
-		endif
-		catalogoContagem.insert(item.objtype, informacoesContagem);
+		InsereInformacoesContagem(catalogoContagem, item, quantidadeNecessaria, lote, encaixe, tierDesc);
 	endif
 
 	catalogoContagem[item.objtype].quantidadeEncontrada += item.amount;
 	catalogoContagem[item.objtype].itemRefArray.append(item);
+endfunction
+
+function InsereInformacoesContagem(byref catalogoContagem, item, quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
+	var informacoesContagem := struct;
+	informacoesContagem.+quantidadeEncontrada := 0;
+	informacoesContagem.+itemRefArray := array;
+	informacoesContagem.+nomeItem := item.name;
+	informacoesContagem.+tierDesc := tierDesc;
+	informacoesContagem.+lote := lote;
+	informacoesContagem.+quantidadeNecessaria := cint(quantidadeNecessaria);
+	if(encaixe)
+		informacoesContagem.+encaixe := encaixe;
+	endif
+	catalogoContagem.insert(item.objtype, informacoesContagem);
+	return informacoesContagem;
 endfunction
 
 function isMaterialNecessario (item, objtypeIngrediente)
@@ -587,38 +736,81 @@ function MapeiaRetornoGump (retorno, indiceInicial, quantidadeBotoes := 0)
 	
 endfunction
 
-function TratarEscolhaComponente(quem, retornoDropDownOpcao,byref sessao, configRecursos)
+function TratarEscolhaDropDown(quem, dropdown,byref sessao, configRecursos)
 
-	var componenteNecessario := sessao.
+	if(sessao.modoGm)
+		var retornoMapeado := MapeiaRetornoGump(
+											dropdown.PegaIdBottao(), 
+											dropdown.PegaGerenciador().PegaAdicionalIdDropDown(), 
+											3
+										);
+		var valorEscolhido := dropdown.PegaValorEscolhido();
+
+		case(retornoMapeado.indiceBotao)
+			1:
+				sessao.modoGm.componenteEscolhido := valorEscolhido;
+				break;
+			2:
+				sessao.modoGm.qualidadeEscolhida := valorEscolhido;
+				break;
+			3:
+				sessao.modoGm.materialEscolhido := valorEscolhido;
+				break;
+		endcase
+	else
+		var retornoDropDownOpcao := dropdown.PegaValorEscolhido();
+		var componenteNecessario := sessao.
 									receitaSelecionada.
 									receita.
 									componentesNecessarios[retornoDropDownOpcao.indiceEncaixeComponente];
 	
-	if(IsAlvoValido(quem,retornoDropDownOpcao.itemRef))
-		var quantidadeComponentesNecessaria := sessao.receitaSelecionada.receita.componentesNecessarios.size();
-		var componenteEscolhido := MontaComponenteEscolhido(retornoDropDownOpcao, componenteNecessario, configRecursos, quantidadeComponentesNecessaria, sessao.receitaSelecionada.receita.quantidadeOpicionais);
-		AcrescentaComponenteEscolhido(
-				sessao.receitaSelecionada.esquemaSelecionado,
-				componenteNecessario,
-				componenteEscolhido, 
-				retornoDropDownOpcao.indiceEncaixeComponente, 
-				sessao.receitaSelecionada.receita.receitaClassificada.classe
-				);
+		if(IsAlvoValido(quem,retornoDropDownOpcao.itemRef))
+			TrataComponenteEncontrado(
+									sessao,
+									retornoDropDownOpcao,
+									componenteNecessario,
+									retornoDropDownOpcao.indiceEncaixeComponente,
+									configRecursos
+								);
+		endif
 	endif
+	
 endfunction
 
-function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNecessario, componenteEscolhido, indiceEncaixe, classe)
+function TrataComponenteEncontrado(
+								byref sessao, 
+								componenteEncontrado, 
+								componenteNecessario, 
+								indiceEncaixeComponente, 
+								configRecursos 
+							)
+	
+	var quantidadeComponentesNecessaria := sessao.receitaSelecionada.receita.componentesNecessarios.size();
+	var componenteEscolhidoMontado := MontaComponenteEscolhido(
+														componenteEncontrado, 
+														componenteNecessario, 
+														configRecursos, 
+														quantidadeComponentesNecessaria, 
+														sessao.receitaSelecionada.receita.quantidadeOpicionais
+													);
+	AcrescentaComponenteEscolhido(
+									sessao.receitaSelecionada.esquemaSelecionado,
+									componenteNecessario,
+									componenteEscolhidoMontado, 
+									indiceEncaixeComponente);
+endfunction
+
+function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNecessario, componenteEscolhido, indiceEncaixe)
 	if(componenteNecessario.isPrincipal)
 			esquemaSelecionado.cor := configRecursos[componenteEscolhido.material.chave].color;
 			esquemaSelecionado.material := componenteEscolhido.material.chave;
-			esquemaSelecionado.classe := classe ? classe: 1;
 	endif
 
 	DefineTagQualidade(
 				esquemaSelecionado,
 				esquemaSelecionado.modificadorCache.qualidade,
 				indiceEncaixe,
-				componenteEscolhido.Tier);
+				componenteEscolhido.tier);
 
 	AtualizaModificadorTotal(
 				componenteEscolhido.propriedades.modificadorHp,
@@ -633,6 +825,7 @@ function AcrescentaComponenteEscolhido (byref esquemaSelecionado, componenteNece
 				esquemaSelecionado.modificadorCache.Peso,
 				indiceEncaixe
 				);
+
 
 	if(esquemaSelecionado.componentesEscolhidos.exists(indiceEncaixe))
 		esquemaSelecionado.componentesEscolhidos[indiceEncaixe] := componenteEscolhido;
@@ -654,15 +847,15 @@ function DefineTagQualidade(byref esquemaSelecionado, byref cache, indice, tier)
 			qualidadeAntiga := cache[indice];
 		endif
 
-		if(tier.valor < 0)
+		if(tier.valor <= PegaComponenteTierDesc(COMPONENTE_TIERS::MEDIOCRE).valor)
 			esquemaSelecionado.qualidade := -1;
 			!hasAntigo ? cache.insert(indice,esquemaSelecionado.qualidade) : cache[indice] := esquemaSelecionado.qualidade;
 		else
-			if(tier.valor == 3  && qualidadeAntiga != 1) // Se não tem nenhum componente mediocre, mas tem algum exepcional. considere o item excepcional.
+			if(tier.valor >= PegaComponenteTierDesc(COMPONENTE_TIERS::EXCEPCIONAL).valor  && qualidadeAntiga != 1) // Se não tem nenhum componente mediocre, mas tem algum exepcional. considere o item excepcional.
 				esquemaSelecionado.qualidade := 1;
 				!hasAntigo ? cache.insert(indice,esquemaSelecionado.qualidade) : cache[indice] := esquemaSelecionado.qualidade;
 			else
-				if(tier.valor < 3  && qualidadeAntiga == 1)
+				if(tier.valor < PegaComponenteTierDesc(COMPONENTE_TIERS::EXCEPCIONAL).valorL  && qualidadeAntiga == -1)
 					esquemaSelecionado.qualidade := 0;
 					!hasAntigo ? cache.insert(indice,esquemaSelecionado.qualidade) : cache[indice] := esquemaSelecionado.qualidade;
 				endif
@@ -710,60 +903,107 @@ function MontaComponenteEscolhido(componenteEncontrado, componenteNecessario, co
 													componenteEscolhido.propriedades
 													);
 
+	
 	return componenteEscolhido;
 endfunction
 
-function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRecursos)
+function CarregaDropDownGmMode(byref sessao,byref gerenciador)
+	var configEncaixes := ReadConfigFile(":*:encaixes");
+	var configComponentes := ReadConfigFile(":*:componentes");
+
+	var quantidadeEscolhasParaAcharComponente := 3;
+	
+	for indice := 1 to quantidadeEscolhasParaAcharComponente
+
+		var dropDown := GerenciadorDropDown::ObtemDropDown(gerenciador,indice);
+
+		case(indice)
+			1: //componentes
+				var elementoEcaixe := configEncaixes[sessao.modoGm.encaixeEscolhido.encaixe];
+				var componentes := GetConfigIntArray(elementoEcaixe,"Item");
+
+				foreach item in componentes
+					Sleepms(2);
+					var infoComponente := configComponentes[item];
+					
+					DropDown::AdicionaOpcao(
+												dropDown,
+												infoComponente.name,
+												_item_iter, 
+												struct{ 
+													objtype := item ,
+													name := infoComponente.name,
+													principalMaterial := infoComponente.principalMaterial
+												}
+											);
+				endforeach
+				break;
+			2: //qualidade
+				var tiers := PegaComponenteTiers();
+				foreach tier in tiers
+					Sleepms(2);
+					var tierInfo := PegaComponenteTierDesc(tier);
+					DropDown::AdicionaOpcao(dropDown,tierInfo.desc,_tier_iter,tierInfo);
+				endforeach
+				break;
+			3: //material
+				var componenteEscolhido := sessao.modoGm.componenteEscolhido;
+				var tipo := componenteEscolhido.principalMaterial;
+
+				var materiais := LISTA_TIPO_MATERIAL[UPPER(tipo)];
+				foreach material in materiais
+					DropDown::AdicionaOpcao(dropDown,material.name,_material_iter,material);
+				endforeach
+				break;
+		endcase
+	endfor
+endfunction
+
+function CarregaDropDownNormal(quem, byref sessao,byref gerenciador, configRecursos)
 	var componentesEncontrados := CarregaComponentesEncontrados(quem, sessao.receitaSelecionada.receita, configRecursos);
 	
 	foreach componenteNecessario in (sessao.receitaSelecionada.receita.componentesNecessarios)
-		var dropDown := GerenciadorDropDown::EncontraDropDown(gerenciador,_componenteNecessario_iter);
-		
-		if(!dropDown) 
-			dropDown := GerenciadorDropDown::RegistraDropDown(gerenciador,_componenteNecessario_iter);
-		else
-			DropDown::ResetaValores(dropDown);
-		endif
+		var dropDown := GerenciadorDropDown::ObtemDropDown(gerenciador,_componenteNecessario_iter, LARGURA_DROPDOWN);
 
 		if(componentesEncontrados[componenteNecessario.encaixe])
-			var isValorEscolhidoPresente := false;
 			var indiceOpcoes := 1;
-
-			foreach componenteEncontrado in (componentesEncontrados[componenteNecessario.encaixe].conjunto)
+			var envelopesEncontrados := componentesEncontrados[componenteNecessario.encaixe].conjunto;
+			foreach chaveEnvelope in (envelopesEncontrados.keys())
 				Sleepms(2);
-				if (dropDown.valorEscolhido.itemRef.objtype == componenteEncontrado.itemRef)
-					isValorEscolhidoPresente := true;
-				endif
-				var quantidadeFormatada :=  componenteEncontrado.quantidade <= 99 ? 
-												cstr(componenteEncontrado.quantidade) :
-												cstr(componenteEncontrado.quantidade)[1,2] + "..";
-				dropDown.largura := 350;
+				var quantidadeFormatada :=  envelopesEncontrados[chaveEnvelope].quantidade <= 99 ? 
+												cstr(envelopesEncontrados[chaveEnvelope].quantidade) :
+												cstr(envelopesEncontrados[chaveEnvelope].quantidade)[1,2] + "..";
 				var nomeOpcao := "{} {} [{}] [{}]".format(
 														quantidadeFormatada,
-														componenteEncontrado.itemRef.name,
-														componenteEncontrado.material.name,
-														componenteEncontrado.tier.desc);
+														envelopesEncontrados[chaveEnvelope].itemRef.name,
+														envelopesEncontrados[chaveEnvelope].material.name,
+														envelopesEncontrados[chaveEnvelope].tier.desc);
 				
-				var retorno := DropDown::AdicionaOpcao(dropDown,
-				nomeOpcao,
-				indiceOpcoes,
-				MontaObetoOpcaoComponente(componenteEncontrado, _componenteNecessario_iter));
-				
+				var retorno := DropDown::AdicionaOpcao(
+														dropDown,
+														nomeOpcao,
+														indiceOpcoes,
+														MontaObetoOpcaoComponente(envelopesEncontrados[chaveEnvelope], 
+														_componenteNecessario_iter)
+													);
+
 				if(!retorno) 
 					continue;
 				endif;
 				indiceOpcoes := indiceOpcoes + 1;
 			endforeach
-
-			if(!isValorEscolhidoPresente)
-				DropDown::LimpaValorEscolhido(dropDown);
-			endif
-		else
-			DropDown::LimpaValorEscolhido(dropDown);
 		endif
 		
 		Sleepms(2);
 	endforeach
+endfunction
+
+function PreparaDropDownsEsquemas(quem, byref sessao,byref gerenciador, configRecursos)
+	if(sessao.modoGm)
+		CarregaDropDownGmMode(sessao, gerenciador);
+	else
+		CarregaDropDownNormal(quem, sessao, gerenciador, configRecursos);
+	endif
 endfunction
 
 function MontaObetoOpcaoComponente(componenteEncontrado, indiceEncaixe)
@@ -784,29 +1024,34 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 			Sleepms(2);
 			if( CStr(item.objtype) in componenteNecessario.itens)
 				if(!retorno.exists(componenteNecessario.encaixe))
-					var envelopeRetorno := struct{ conjunto := array, melhor := 0, indiceEncaixe := _componenteNecessario_iter};
+					var envelopeRetorno := struct{ conjunto := dictionary, melhor := 0, indiceEncaixe := _componenteNecessario_iter};
 					retorno.insert(componenteNecessario.encaixe, envelopeRetorno);
 
 				endif
 
+				if(!GetObjProperty(item,PROPNAME_ENCAIXE_COMPONENTE))
+					continue;
+				endif
 				var chaveMat := GetObjProperty(item,PROPNAME_MATERIAL);
 				var material := configRecursos[chaveMat];
 				var tier := PegaComponenteTierDesc(GetObjProperty(item,PROPNAME_TIER_COMPONENTE));
+				var chaveUnica := "{}{}{}".format(item.objtype, chaveMat, tier.id);
+				var envelope ;
 
-				var envelope := struct {
-					itemRef := item, 
-					chaveMaterial := chaveMat,
-					material := material,
-					tier := tier,
-					quantidade := item.amount};
-				//Print("envelope ------- " + envelope);
+				if(!retorno[componenteNecessario.encaixe].conjunto.exists(chaveUnica))
+					envelope := MontaEnvelopeComponenteEncontrado(item, chaveMat, material, tier);
+					retorno[componenteNecessario.encaixe].conjunto.insert(chaveUnica, envelope);
+				else
+					envelope := retorno[componenteNecessario.encaixe].conjunto[chaveUnica];
+					envelope.quantidade += item.amount;
+				endif
 
 				AtualizaMelhorComponente(retorno[componenteNecessario.encaixe],
 										envelope,
-										componenteNecessario.caracteristica,
+										componenteNecessario.caracteristica, 
 										componenteNecessario.qtdNecessaria);
 
-				retorno[componenteNecessario.encaixe].conjunto.append(envelope);
+				retorno[componenteNecessario.encaixe].conjunto.insert(chaveUnica, envelope);
 			endif
 		endforeach
 	endforeach 
@@ -814,17 +1059,18 @@ function CarregaComponentesEncontrados(quem, receita, configRecursos)
 	return retorno;
 endfunction
 
-function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, caracteristica, quantidadeNecessaria)
+function MontaEnvelopeComponenteEncontrado(item, chaveMat, material, tier, quantidade := 0)
+	return struct {
+					itemRef := item, 
+					chaveMaterial := chaveMat,
+					material := material,
+					tier := tier,
+					quantidade := quantidade ? quantidade : item.amount
+				};
+endfunction
 
-	if(TypeOfInt(envelopeNovo.quantidade) != OT_UNINIT && envelopeNovo.quantidade < CInt(quantidadeNecessaria))
-		return;
-	endif
+function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, caracteristica, qtdNecessaria)
 
-	if(componentesEncontrados.melhor == 0)
-		componentesEncontrados.melhor := envelopeNovo;
-		return;
-	endif
-	
 	//TODO [futuras versoes] Talvez deixar o poder do atual já guardado, pra nao ter que avaliar toda vez.
 	var poderAtual := AvaliaPoderComponente(componentesEncontrados.melhor.tier,
 											componentesEncontrados.melhor.chaveMaterial,
@@ -832,26 +1078,33 @@ function AtualizaMelhorComponente(byref componentesEncontrados, envelopeNovo, ca
 											configRecursos);
 											
 	var poderNovo := AvaliaPoderComponente(envelopeNovo.tier,envelopeNovo.chaveMaterial, caracteristica, configRecursos);
+	
+	var envelopeMelhor := ComparaMelhorComponente(poderAtual, poderNovo, envelopeNovo, componentesEncontrados.melhor);
 
+	if(envelopeMelhor.quantidade >= cint(qtdNecessaria))
+		componentesEncontrados.melhor := envelopeMelhor;
+	endif
+
+endfunction
+
+function ComparaMelhorComponente(poderAtual,poderNovo, envelopeNovo, envelopeVelho)
 	if( poderAtual.poderContado < poderNovo.poderContado)
-		componentesEncontrados.melhor := envelopeNovo;
+		return envelopeNovo;
 	else
 		if(poderAtual.poderContado == poderNovo.poderContado) //Empatou
 			if(poderAtual.modificadorHp < poderNovo.poderContado) //Prioridade do desempate é o bônus no HP
-				componentesEncontrados.melhor := envelopeNovo;
+				return envelopeNovo;
 			else
 				if(poderAtual.modificadorPeso < poderNovo.modificadorPeso) // Depois o bônus no peso
-					componentesEncontrados.melhor := envelopeNovo;
+					return envelopeNovo;
 				endif
 			endif
 		endif
 	endif
-
-
+	return envelopeVelho;
 endfunction
 
 function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecursos, propriedades := 0)
-	var poderContado := 0;
 	var retorno := struct;
 
 	if(!propriedades)
@@ -863,13 +1116,7 @@ function AvaliaPoderComponente(tier, chaveMaterial, caracteristica, configRecurs
 
 	endif
 								
-	poderContado += propriedades.valorPrincipal;
-
-	foreach efeitoSecundario in (propriedades.efeitosAdicionais)
-		poderContado += efeitoSecundario;
-	endforeach
-
-	retorno.+poderContado := poderContado;
+	retorno.+poderContado := propriedades.valorPrincipal + propriedades.valorTotalSubefeitos;
 	retorno.+modPeso := propriedades.modificadorPeso;
 	retorno.+modHp := propriedades.modificadorHp;
 
@@ -884,46 +1131,30 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 
 	var propriedades := struct {};
 	propriedades.+caracteristica := caracteristica;
+	var valorEfeitos := InterpretaMaterialEfeitos(caracteristica,chaveMaterial);
 
-	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
 	var modificadorHp := GetConfigInt(configRecursos[chaveMaterial],"hpmod");
 	var modificadorPeso := GetConfigInt(configRecursos[chaveMaterial],"weightMod");
-	var efeitosMaterialString := efeitosMaterial[propriedades.caracteristica];
-	var subEfeitosMaterial;
-	var valorEfeitoMaterial := 0;
 	
-	if(modificadorHp)
-		propriedades.+modificadorHp := modificadorHp;
-	else
-		propriedades.modificadorHp := 0;
-	endif
+	propriedades.+modificadorHp := modificadorHp ? modificadorHp : 0;
+
 	if(modificadorPeso)
 		propriedades.+modificadorPeso := Round(modificadorPeso / (quantidadeComponentesNecessaria - quantidadeOpicionais));
 	else
 		propriedades.modificadorHp := 0;
 	endif
 
-	
-	if(efeitosMaterialString)
-		subEfeitosMaterial := SplitWords(efeitosMaterialString);
-		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
-
-		if(subEfeitosMaterial.size() > 1)
-			subEfeitosMaterial.shrink(subEfeitosMaterial.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
-			var subefeitosDict := dictionary{};
-
-			for indice := 1 to subEfeitosMaterial.size()
-				subefeitosDict.insert( subEfeitosMaterial[indice], ResolveEfeitoCaracteristica(subEfeitosMaterial[indice + 1])); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
-				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
-				Sleepms(2);
-			endfor
-			propriedades.+efeitosAdicionais := subefeitosDict;
-			
-		endif 
+	if(valorEfeitos.efeitosAdicionais)
+		propriedades.+efeitosAdicionais := valorEfeitos.efeitosAdicionais;
+		propriedades.+valorTotalSubefeitos := valorEfeitos.valorTotalSubefeitos;
 	endif
-	
-	if(Upper(caracteristica) != "VAZIO")
-		propriedades.+valorPrincipal := valorEfeitoMaterial + Cint(tierProduto.valor);
+
+	if(TypeOfInt(valorEfeitos.valorPrincipal) != OT_UNINIT || TypeOfInt(valorEfeitos.valorPrincipal) != OT_ERROR)
+		propriedades.+valorPrincipal := valorEfeitos.valorPrincipal;
+		if(Find(Upper(caracteristica), "VAZIO",1) <= 0)
+			propriedades.valorPrincipal := propriedades.valorPrincipal + Cint(tierProduto.valor);
+		else
+		endif
 	endif
 	
 	return propriedades; 
@@ -939,25 +1170,31 @@ function IsAlvoValido(quem, alvo)
 	return 1;
 endfunction
 
-function PreparaItensComplexosGump(quem, profissao)
+function PreparaItensComplexosGump(quem, profissao, modoGm)
 
 	var parametrosGump := struct;
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
 	var menuFile    := profissaoConfig[profissao].MenuFile;
 	var menuPericiaCfg := ReadConfigFile(menuFile);
 
-	var propCraft := GetObjProperty(quem, "Craft");
-	if( TypeOfInt(propCraft) == OT_ERROR)
-		propCraft := MontaCraftProp(profissaoConfig);
-		SetObjProperty(quem, "Craft", propCraft);
-	endif
+	var propCraft := MontaCraftProp(profissaoConfig,  GetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP));
+	SetObjProperty(quem, PROPNAME_VELHA_CRAFTPROP, propCraft);
 
 	var categorias := GetConfigStringArray(menuPericiaCfg["Index"], "Group");
 	parametrosGump.+receitasPorPagina := NR_MAXIMO_RECEITAS_POR_PAGINA;
-	parametrosGump.+profissao := profissao;
+	parametrosGump.+encaixesPorPagina := NR_MAXIMO_ENCAIXES_POR_PAGINA;
+	parametrosGump.+profissao := profissaoConfig[profissao].MenuFile;
 	parametrosGump.+propCraft := propCraft;
 	parametrosGump.+receitasConfig := ReadConfigFile(profissaoConfig[profissao].InfoFabricacao);
+	parametrosGump.+gumpIdProfissaoPressed := profissaoConfig[profissao].GumpicPressionado 
+													? cint(profissaoConfig[profissao].GumpicPressionado )
+													: 0;
+	parametrosGump.+gumpIdProfissaoUnpressed := profissaoConfig[profissao].GumpicNaoPressionado 
+													? cint(profissaoConfig[profissao].GumpicNaoPressionado)
+													: 0;
 	parametrosGump.+pericia := profissaoConfig[profissao].Attribute;
+	//TODO Por questão de performace, é melhor carregar as receitas de forma "Lazy" ao clicar na categoria 
+	//e não aqui carregando tudo no inicio, alterar isso no futuro. ass: deiro
 	parametrosGump.+visaoReceitas := MontaVisaoReceitas(
 											quem,
 											categorias,
@@ -965,12 +1202,13 @@ function PreparaItensComplexosGump(quem, profissao)
 											parametrosGump.pericia,
 											parametrosGump.receitasConfig, 
 											parametrosGump.propCraft,
-											profissao);
+											profissao,
+											modoGm);
 	
 	return parametrosGump;
 endfunction
 
-function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitasConfig, byref propCraft, nomeProfissao)
+function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitasConfig, byref propCraft, nomeProfissao, modoGm)
 
 	var retornoVisao := Dictionary;
 	
@@ -1028,7 +1266,8 @@ function MontaVisaoReceitas(quem,categorias,menuPericiaCfg,nomePericia, receitas
 							nomePericia,
 							receitasAprendidas,
 							isDuplaOrigem,
-							nomeProfissao))
+							nomeProfissao,
+							modoGm))
 
 				var receitaItem := MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, propCraft, nomeProfissao, receitaClassificada);
 				if(!receitaItem.isVisualizada) //Tenho que apagar a categoria das visualizadas, porque apareceu uma receita nova.
@@ -1060,7 +1299,7 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 
 	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig, receitaClassificada.classe, quantidadeOpicionais);
 	receita.+sucessosNecessarios := PegaDescDuracaoFabricacao(duracao).sucessos;
-	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao);
+	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao, receitaClassificada.classe);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, duracao, definicaoFabricacao.lote);
 	receita.+dificuldade := PegaDificuldadeFrabicarObjeto(quem,objtype,nomeProfissao,nomePericia, receitaClassificada.classe);
 	receita.+objtype := objtype;
@@ -1096,12 +1335,14 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 
 	var desc := struct;
 	var labelQuantidade := "";
-	//TODO Lembrar de lidar com as diferenças de nomenclatura para Alchemy.
+	
 	if(lote > 0)
 		labelQuantidade := lote + "x ";
 	endif
+
+	var nomeReceita := definicaoItem.desc == "pocao" ? definicaoItem.type : TruncatePlural(objtype);// adaptação pro sistema de poções antigo.
 	
-	desc := "<BASEFONT COLOR=#ffe242>" + labelQuantidade + TruncatePlural(objtype) + "</BASEFONT><br>";
+	desc := "<BASEFONT COLOR=#ffe242>" + labelQuantidade + nomeReceita + "</BASEFONT><br>";
 	desc := MontaDescricaoItem(definicaoItem,quem,desc);
 	
 	if(materiaisNecessarios && materiaisNecessarios.size() > 0)
@@ -1109,7 +1350,7 @@ function PegaTextoDescItem(quem,objtype,definicaoItem,componentes, materiaisNece
 		desc +=  "<BASEFONT COLOR=#7bf8fe> Materiais Necessários</BASEFONT><br>";
 		foreach material in materiaisNecessarios
 			var materialInfo := SplitWords(material);
-			desc +=  cint(materialInfo[2]) * lote + " " + GetMaterialName(materialInfo[1])  + "<br>";
+			desc +=  cint(materialInfo[2]) * lote + " " + GetMaterialName( materialInfo[1])  + "<br>";
 			Sleepms(2);
 		endforeach
 	endif
@@ -1144,6 +1385,7 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 	var encaixesItem := GetConfigStringArray(receitaCfgElemento,"ComponenteEncaixe");
 	var configEncaixes := ReadConfigFile(":*:encaixes");
 	classe := classe ? classe : 1;
+	var quantidadePrincipal := 0;
 
 	var componentes := array;
 	foreach encaixe in encaixesItem
@@ -1158,7 +1400,9 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 		componente.+qtdNecessaria := splitEncaixe[DESC_ENCAIXE_QTD_NECESSARIA];
 
 		case (splitEncaixe[DESC_ENCAIXE_CONDICIONAL])
-			"principal": componente.+isPrincipal := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "principal"; break;
+			"principal": componente.+isPrincipal := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "principal"; 
+						quantidadePrincipal += 1;
+						break;
 			"opcional": componente.+isOpcional := splitEncaixe[DESC_ENCAIXE_CONDICIONAL] == "opcional"; 
 						quantidadeOpicionais += 1; 
 						break;
@@ -1169,15 +1413,50 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 		componentes.append(componente);
 	endforeach
 
+	if(quantidadePrincipal == 0 && componentes.size() > 0)
+		return Print("Erro [ " + objtype +  " ] Para receitas com componentes, o componente principal é obrigatório e não foi definido  " + CStr(Hex(objtype)));
+	endif
+
 	return componentes;
 endfunction
 
-function PegaMateriaisNecessarios(descritorFabricacao)
+function PegaMateriaisNecessarios(descritorFabricacao, classe)
 	var materials := GetConfigStringArray(descritorFabricacao, "materials");
-	return materials;
+	var arrayRetorno := array;
+	
+	foreach material in materials
+		Sleepms(2);
+		var splitMaterial := SplitWords(material);
+		var material, quantidade;
+
+		if(splitMaterial.size() > 2)
+			if(cint(splitMaterial[1]) != cint(classe)) continue; endif
+			material :=  splitMaterial[2];
+			quantidade := splitMaterial[3];
+		else
+			if(CLASSE_PADRAO != cint(classe)) continue; endif
+			material :=  splitMaterial[1];
+			quantidade := splitMaterial[2];
+		endif
+
+		arrayRetorno.append(material + " " + quantidade);
+	endforeach
+
+	return arrayRetorno;
 endfunction
 
-function DeveAparecerReceita(quem,povo,itemOrigem,receitaClassificada,objtype,nomePericia,receitasAprendidas,isDuplaOrigem, nomeProfissao)
+function DeveAparecerReceita(
+								quem,
+								povo,
+								itemOrigem,
+								receitaClassificada,
+								objtype,
+								nomePericia,
+								receitasAprendidas,
+								isDuplaOrigem,
+								nomeProfissao,
+								modoGm
+							)
 	
 	var isOrigemValida := false;
 	var isValorPericiaSuficiente := TemValorPericiaNecessaria(quem, objtype, receitaClassificada.classe, nomePericia, nomeProfissao );
@@ -1194,7 +1473,7 @@ function DeveAparecerReceita(quem,povo,itemOrigem,receitaClassificada,objtype,no
 		endif
 	endif
 
-	return isOrigemValida && isValorPericiaSuficiente;
+	return (isOrigemValida && isValorPericiaSuficiente) || modoGm;
 endfunction
 
 function TemValorPericiaNecessaria(quem, objtype, classe, nomePericia, nomeProfissao)
@@ -1205,16 +1484,21 @@ endfunction
 
 function ClassificaRetornoComplexos(retorno,sessao)
 	var valorRetorno := retorno[0];
+	//FAIXAS
 	if(valorRetorno > COMPLEXOS_CATEGORIAS && valorRetorno <= COMPLEXOS_RECEITAS)
 		return RT_CATEGORIAS;
 	elseif(valorRetorno > COMPLEXOS_RECEITAS && valorRetorno <= COMPLEXOS_ESQUEMAS)
 		return RT_RECEITAS;
-	elseif(valorRetorno > COMPLEXOS_ESQUEMAS && valorRetorno <= COMPLEXOS_ESQUEMAS_CPNT)
+	elseif(valorRetorno > COMPLEXOS_ESQUEMAS && valorRetorno <= COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT)
 		return RT_ESQUEMAS;
+	elseif(valorRetorno > COMPLEXOS_ESQUEMAS_ESCOLHA_GM_CPNT && valorRetorno <= COMPLEXOS_DROPDOWN_INICIAL)
+		return RT_ABRE_GM_COMPONENT;
 	elseif(GerenciadorDropDown::IsIdDentroDropDowns(sessao.gerenciadorDropDown,valorRetorno))
 		return RT_ESCOLHA_DROPDOWN_CPX;
 	elseif(GerenciadorDropDown::IsIdDentroOpcoes(sessao.gerenciadorDropDown,valorRetorno))
 		return RT_ESCOLHA_DD_OPCOES_CPX;
+	
+	//BOTOES
 	elseif(valorRetorno == COMPLEXOS_ESQUEMAS_BTN_SALVAR)
 		return RT_ESQUEMAS_SALVAR;
 	elseif(valorRetorno == COMPLEXOS_BTN_AJUDA)
@@ -1223,12 +1507,26 @@ function ClassificaRetornoComplexos(retorno,sessao)
 		return RT_RCT_PROX_PAGINA;
 	elseif(valorRetorno == COMPLEXOS_BTN_RCT_ANT_PAGINA)
 		return RT_RCT_ANT_PAGINA;
+	elseif(valorRetorno == COMPLEXOS_BTN_ESQ_PROX_PAGINA)
+		return RT_ESQ_PROX_PAGINA;
+	elseif(valorRetorno == COMPLEXOS_BTN_ESQ_ANT_PAGINA)
+		return RT_ESQ_ANT_PAGINA;
 	elseif(valorRetorno == COMPLEXOS_BTN_MEMORIZAR_COMPONENTES)
 		return RT_MEMORIZAR_COMPONENTES;
 	elseif(valorRetorno == COMPLEXOS_BTN_LIMPAR_MEMORIA)
 		return RT_LIMPAR_MEMORIA;
+	elseif(valorRetorno == COMPLEXOS_BTN_OKAY_GM_CMPNT)
+		return RT_GM_COMPONENTE_SELECIONADO;
+	elseif(valorRetorno == COMPLEXOS_BTN_FABRICAR_GM_CMPNT)
+		return RT_GM_ESQUEMA_FABRICAR;
+	elseif(valorRetorno == COMPLEXOS_BTN_REPARAR)
+		return RT_REPARAR;
+
+	//CANCELAMENTOS
 	elseif((valorRetorno == 1 || valorRetorno == 0) && sessao.gumpAtual == ESQUEMAS)
 		return RT_CANCELADO_ESQUEMA_COMPLX;
+	elseif((valorRetorno == 1 || valorRetorno == 0) && sessao.gumpAtual == GM_COMPONENTE)
+		return RT_CANCELADO_GUMP_GM_COMPONENTE;
 	elseif(valorRetorno == COMPLEXOS_BTN_CANCELAR)
 		return RT_CANCELADO_COMPLX;
 	elseif(valorRetorno == 1)
@@ -1236,38 +1534,127 @@ function ClassificaRetornoComplexos(retorno,sessao)
 	endif
 endfunction
 
-function CriaPropFabricadoGerada(objtype, material, tier, classe := 1)
+function CriaPropFabricadoGerada(
+									objtype, 
+									tier, 
+									deveGerarComponentesOpcionais,
+									listaDeMateriaisIgnorados, 
+									modoEscolhaMaterial, 
+									classe := 1
+								)
 	var itemDescConfig := ReadConfigFile(":*:itemdesc");
 	var fabricacaoDescConfig := ReadConfigFile(":*:fabricacaoDesc");
 	var componenteDescConfig := ReadConfigFile(":*:componentes");
 	var recursosConfig := ReadConfigFile(":crafting:config/resourceList");
 	var objetoDesc := itemDescConfig[objtype];
+	var janelaTier := SplitWords(tier, ">");
+	tier := cint(tier);
 
 	var receita := MontaReceitaItem(0,objtype,"",fabricacaoDescConfig,0,0, struct{nome := objetoDesc.name, classe := classe});
 	var componentesEscolhidos := dictionary;
-	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0);
+	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0,"", classe);
+	var tierInfo := PegaComponenteTierDesc(tier);
 
+	Sleepms(50);
 	foreach componenteNecessario in (receita.componentesNecessarios)
-		Sleepms(2);
-		var componenteAleatorio := componenteNecessario.itens[RandomIntMinMax(1,componenteNecessario.itens.size())];
-		var materialComponente;
-		
-		if(componenteNecessario.isPrincipal)
-			materialComponente := recursosConfig[material];
+		Sleepms(5);
+		if(janelaTier.size() > 1)
+			tier := RandomIntMinMax(cint(janelaTier[1]), cint(janelaTier[2]) + 1);
+			tierInfo := PegaComponenteTierDesc(tier);
+		endif
+
+		if(componenteNecessario.isOpcional && !deveGerarComponentesOpcionais) continue; endif
+
+		var materialStruct, valorTier, materialNom, materialComponente;
+		var componenteAleatorio := componenteNecessario.itens[RandomIntMinMax(1,componenteNecessario.itens.size() + 1)];
+		var arrayMateriais := array;
+		var tipoMaterial := componenteDescConfig[hex(componenteAleatorio)].principalMaterial;
+		var materiaisPossiveis :=  LISTA_TIPO_MATERIAL[UPPER(tipoMaterial)];
+		var materiaisPossiveisPorTier := dictionary;
+
+		foreach materialPossivel in materiaisPossiveis
+			sleepms(5);
+			if(cint(materialPossivel.chave)  in listaDeMateriaisIgnorados)
+				continue;	
+			endif
+			//Print("Analisando material: " + recursosConfig[hex(materialPossivel.chave)].name + " para componente: " + componenteDescConfig[hex(componenteAleatorio)].name);
+			if(Find(UPPER(componenteNecessario.caracteristica),"VAZIO",1) > 0 )
+				
+				var chaveValorTier := PegaComponenteTierDesc(cint(recursosConfig[materialPossivel.chave].tier)).valor;
+				materiaisPossiveisPorTier.insert(
+													chaveValorTier,
+													struct{
+															materialComponente := materialPossivel.chave,
+															materialNome := recursosConfig[hex(materialPossivel.chave)].name
+														}
+												);
+			else
+				var efeitosmaterial := InterpretaMaterialEfeitos(componenteNecessario.caracteristica, materialPossivel.chave);
+				var valorTierMaterial := efeitosmaterial.valorPrincipal + efeitosmaterial.valorTotalSubefeitos;
+				var tiers :=  PegaComponenteTiers();
+				var chaveValorTier := valorTierMaterial > tiers[tiers.size()] ? tiers[tiers.size()] : valorTierMaterial;
+				//Print("Material: " + recursosConfig[hex(materialPossivel.chave)].name + " valorTierMaterial: " + valorTierMaterial + " chaveValorTier: " + chaveValorTier);
+				if( DeveEscreverMaterial(materiaisPossiveisPorTier,chaveValorTier))
+					materiaisPossiveisPorTier.insert(
+														chaveValorTier,
+														struct{
+																materialComponente := materialPossivel.chave,
+																materialNome := recursosConfig[hex(materialPossivel.chave)].name
+															}
+													);
+			
+				endif
+			endif
+			
+		endforeach
+
+		if(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER)
+			valorTier := tierInfo.valor;
+			materialStruct := materiaisPossiveisPorTier[valorTier];
+		elseif(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR)
+			valorTier := PegaComponenteTierDesc(RandomIntMinMax(1,tier + 1)).valor;
+			materialStruct := materiaisPossiveisPorTier[valorTier];
+		elseif(modoEscolhaMaterial == FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER)
+			var tierValidado := tier > 1 ? tier : 2;// achei melhor só reajustar ao invés de mandar msg de erro.
+			valorTier := PegaComponenteTierDesc(RandomIntMinMax(1,tierValidado)).valor;
+			materialStruct := materiaisPossiveisPorTier[valorTier];
 		else
-			materialComponente := PegaTipoMaterialAleatorio(componenteDescConfig[componenteAleatorio].principalMaterial);
+			return error{"errorText" := "parâmetro modoEscolhaMaterial inválido."};
 		endif
 
 		var opcaoEncontrada := struct{ 
-				itemRef := 0,
-				componenteTier :=  PegaComponenteTierDesc(cint(tier)),
-				nomeMaterial := "",
-				chaveMaterial := materialComponente.principalMaterial,
+				itemRef := struct{ objtype := componenteAleatorio, name := componenteDescConfig[hex(componenteAleatorio)].name},
+				componenteTier :=  tierInfo,
+				nomeMaterial := materialStruct.materialNome,
+				chaveMaterial := hex(materialStruct.materialComponente),
 				indiceEncaixeComponente := componenteNecessario.caracteristica};
+		
+		if(TypeOfInt(opcaoEncontrada.chaveMaterial) == OT_ERROR || TypeOfInt(opcaoEncontrada.chaveMaterial) == OT_UNINIT)
+			return error{"errorText" := "Não foi possível encontrar material para este valor de tier [{}].".format(valorTier) };
+		endif
 
-		var componenteEscolhido := MontaComponenteEscolhido(opcaoEncontrada, componenteNecessario, recursosConfig, receita.componentesNecessarios.size(), receita.quantidadeOpicionais);
-		AcrescentaComponenteEscolhido(objetoEsquema,componenteNecessario,componenteEscolhido, opcaoEncontrada.indiceEncaixeComponente, classe);
+		Sleepms(50);
+		
+		var componenteEscolhido := MontaComponenteEscolhido(
+														opcaoEncontrada, 
+														componenteNecessario, 
+														recursosConfig, 
+														receita.componentesNecessarios.size(), 
+														receita.quantidadeOpicionais);
+
+		AcrescentaComponenteEscolhido(
+										objetoEsquema,
+										componenteNecessario,
+										componenteEscolhido, 
+										opcaoEncontrada.indiceEncaixeComponente);
 	endforeach
+	
 
 	return CriaNovaPropFabricado(struct{esquema := objetoEsquema}, ITEM_GERADO);
+endfunction
+
+function DeveEscreverMaterial(materiaisPossiveisPorTier, tierMaterial)
+	return !materiaisPossiveisPorTier.exists(tierMaterial) 
+						|| ( materiaisPossiveisPorTier.exists(tierMaterial) 
+							&& RandomIntMinMax(1,1) > 0 );
 endfunction

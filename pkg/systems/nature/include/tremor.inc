@@ -4,7 +4,7 @@ use vitals;
 
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 function EfeitosTerremoto(who,danobase,danoale,dif)
      if (who.dead)
@@ -20,15 +20,15 @@ function EfeitosTerremoto(who,danobase,danoale,dif)
      endif
 
      PlaySoundEffectPrivate(who, 0x222, who);
-     PrintText(who, "*Raizes se movem ao redor*");
+     PrintTextAbove(who, "*Raizes se movem ao redor*");
 
      sleep(5);
 
-     if (CheckResist(who,  REFLEXOS, dif))//note: colocar uma variavel de chance de resistir ao terremoto
-        PrintText(who, "*Evitou as raizes*");
+     if (CheckResist(who,  REFLEXES, dif))//note: colocar uma variavel de chance de resistir ao terremoto
+        PrintTextAbove(who, "*Evitou as raizes*");
         PerformAction(who, 20);
      else
-        PrintText(who, "*Preso pelas raizes*");
+        PrintTextAbove(who, "*Preso pelas raizes*");
          TS_StartTimer(who, "paralysis", 5);
          PerformAction(who, 21);
          DamageFLS(who, danobase + (RandomInt(danoale)));

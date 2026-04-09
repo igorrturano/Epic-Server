@@ -1,34 +1,9 @@
-/*
- * $Id: logon.src 87 2006-05-23 19:04:43Z sroyalty $
- *
-*/
 use uo;
-use os;
 
 include "include/say";
-// include ":timedscripts:timedScripts";
-include ":spells:auraControl";
+include ":spells:Controller/SpellController";
 
 program Logon(who)
-	/* var result := TS_StartController(who);
-	if ( result.errortext )
-		SendSysMessage(who, "->"+result.errortext);
-	endif */
-	// SendSysMessage(who, "->"+who.name);
-	// c_START(WHO);
-
-	var e := Start_Script("auraControl", { who });
-	if (e == error)
-		PrintText(who, " " + e);
-	endif
-	var magia := GetObjProperty(who, "chardata").magia;
-	if (magia == "Shaman" && !GetProcess(GetObjProperty(who, "#clericpid")))
-		Start_Script(":spells:powerWords", array{ who });
-	endif
-
-	if (magia == "Sacerdote" && !GetProcess(GetObjProperty(who, "#priestpid")))
-		Start_Script(":spells:powerWords", array{ who });
-	endif
-
+	SC_ResyncOnLogin(who);
 	return 1;
 endprogram

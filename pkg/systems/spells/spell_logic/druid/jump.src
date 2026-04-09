@@ -5,7 +5,8 @@ include "include/client";
 include "include/facings";
 include "include/sounds";
 
-program flyprocess(who)
+program flyprocess(params)
+	var who := params[1];
 	if (!who)
 		return 0;
 	endif
@@ -36,8 +37,8 @@ program flyprocess(who)
 
 	// Usa PushBackEX para mover o personagem na direção em que está olhando
 	// O parâmetro invert=1 faz com que o movimento seja na direção em que o personagem está olhando
-	PlayStationaryEffect(who.x, who.y, who.z, 0x6d57, 1, 0, 0, who.realm);
-	PerformAction(who, ANIM_TWIST_DODGE);
+	PlayStationaryEffect(who.x, who.y, who.z, 0x6d57, 1, 30, 0, who.realm);
+	PerformAction(who, HUMAN_ANIM::TWIST_DODGE);
 	PushBackEX(who, jump_distance, jump_speed, 1);
 
 	sleepms(200);
@@ -91,7 +92,7 @@ function PushBackEX(who, dist, delay, invert := 0)
 
 		var err := MoveObjectToLocation(who, finalx, finaly, who.z, who.realm, force);
 		if (err == error)
-			// PrintText(who, "*bate no obstaculo*");
+			// PrintTextAbove(who, "*bate no obstaculo*");
 			return 0;
 		endif
 

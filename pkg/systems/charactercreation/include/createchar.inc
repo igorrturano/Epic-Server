@@ -146,7 +146,7 @@ function CreateBasicRecipes()
 
 	var spellinfo8 := struct;
 	spellinfo8.+type := "Antidoto medio";
-	spellinfo8.+id := 0xdc15;
+	spellinfo8.+id := 0xfa50;
 	spellinfo8.+description := "Com quatro alhos voce pode fazer um antidoto para venenos moderados. Dificuldade baixa.";
 	x.append(spellinfo8);
 

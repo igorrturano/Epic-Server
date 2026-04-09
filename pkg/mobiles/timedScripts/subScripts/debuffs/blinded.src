@@ -1,0 +1,41 @@
+use uo;
+use os;
+include ":awareness:awareness";
+include ":message:model/Message";
+include "include/client";
+
+program TimedScript_Blinded(params)
+	var mobile := params[1];
+	var attacker := params[2];
+
+	// Prevent double-application
+	if (GetObjProperty(mobile, "#blinded"))
+		return 0;
+	endif
+
+	// Store the penalty value for cleanup
+	var penalty := -20;
+	SetObjProperty(mobile, "#blinded", penalty);
+
+	// Apply the modifier
+	mobile.hitchance_mod := mobile.hitchance_mod + penalty;
+
+	// Debug message
+	if (!mobile.npctemplate)
+		DebugMsg(mobile, DEBUG_HIT, Message($"[BLINDED] Aplicado -20 hit_chance (atacante: {attacker.name})"));
+	endif
+
+	// Visual effect (same as current cegar.src)
+	PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z + 10, mobile.realm,
+						  0x6e0d, 5, 3, 2, 2740);
+	PrintTextAbove(mobile, "*cegueira*");
+
+	// Hide nearby mobiles (blinded effect - same as current implementation)
+	var mobiles := ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16, mobile.realm);
+	foreach nearby_mobile in mobiles
+		DeleteObject(mobile, nearby_mobile);
+		sleepms(20);
+	endforeach
+
+	return 1;
+endprogram

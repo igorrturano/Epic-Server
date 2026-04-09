@@ -12,19 +12,30 @@ include "include/say";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";
 include ":destroyable:include/destroyItem";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program use_Bladed(who, tool)
 
-	if (who.warmode)
+	if (who.warmode && who.weapon == tool)
 		return ComportamentoWarMode(who, tool);
 	endif
 
+	// If weapon is not equipped, equip it
 	if (who.weapon != tool)
-		SendSysMessage(who, "Voce deve estar com a arma em maos.");
-		return 0;
+		if (EquipItem(who, tool))
+			Message("Voce equipa sua arma!").SetColor(SSM_INFO).SendSys(who);
+			Message("Dica: Clique na arma equipada para desarmá-la.").SetColor(SSM_INFO).SendSys(who);
+			return 1;
+		else
+			Message("Nao foi possivel equipar a arma.").SetColor(SSM_FAIL).SendSys(who);
+			return 0;
+		endif
 	endif
 
+	// Weapon is equipped, ask what to cut
 	SendSysMessage(who, "O que voce deseja cortar com esta lamina?");
+	Message("Dica: Clique na arma equipada para desarmá-la.").SetColor(SSM_INFO).SendSys(who);
 	var targ := TargetCoordinates(who);
 
 	if (!targ)
@@ -32,6 +43,18 @@ program use_Bladed(who, tool)
 		return 0;
 	endif
 
+	// If target is the equipped weapon itself, unequip it
+	if (targ.item && targ.item == who.weapon)
+		if (MoveItemToContainer(tool, who.backpack))
+			Message("Voce guardou sua arma!").SetColor(SSM_INFO).SendSys(who);
+			return 1;
+		else
+			Message("Nao foi possivel guardar a arma.").SetColor(SSM_FAIL).SendSys(who);
+			return 0;
+		endif
+	endif
+
+	// Otherwise, proceed with carving
 	if (LJ_IsTree(targ.objtype)) // Alvo é arvore
 		CarveObject(who, tool, targ.objtype, targ);
 	elseif (targ.item)
@@ -47,11 +70,22 @@ endprogram
 function CarveItems(who, tool, item)
 	if (item.IsA(POLCLASS_CORPSE)) // Escalpela e esquarteja corpo
 		if (item.graphic == 0x10DA) // Escalpela
-			PrintText(item, "*Liberta o corpo das teias*");
+			PrintTextAbove(item, "*Liberta o corpo das teias*");
 			SetObjProperty(item, "freed_from_web", 1);
 		else
 			return start_script(":survival:skinning", { who, item, tool });
 		endif
+	elseif (item.objtype == 0x1dae) // Cabeca -> Cranio
+		if ((!Accessible(who, item, 2)) || (!CheckLineOfSight(who, item)))
+			SendSysMessage(who, "Voce nao pode alcancar isso.");
+			return 0;
+		endif
+		PrintTextAbove(who, "*Retira a carne do cranio*");
+		var skull := CreateItemAtLocation(item.x, item.y, item.z, 0x1ae2, 1, item.realm);
+		if (skull)
+			DestroyItem(item);
+		endif
+		return 1;
 	else
 		case (item.objtype)
 			0x97E:  return CortaComida(who, item, 0x97C, 8, "Voce cortou cada queijo em oito partes.");
@@ -218,20 +252,20 @@ function FazPergaminhoEmBranco(who, item)
 
 		var xInicial := who.x;
 		var yInicial := who.y;
-		PrintText(who, "*cortando couro*");
+		PrintTextAbove(who, "*cortando couro*");
 
 		while (item)
 			if (who.x != xInicial || who.y != yInicial)
-				SendSysMessageEx(who, "Voce se moveu do local e parou de fazer os pergaminhos!", SSM_FAIL);
+				Message("Voce se moveu do local e parou de fazer os pergaminhos!").SetColor(SSM_FAIL).SendSys(who);
 				return 0;
 			else
 				if (!SubtractAmount(item, 1))
-					SendSysMessageEx(who, "Nao consegue utilizar o couro.", SSM_FAIL);
+					Message("Nao consegue utilizar o couro.").SetColor(SSM_FAIL).SendSys(who);
 				// return 0;
 				else
 					for i := 1 to 3
 						PlaySoundEffect(who, 0x5A);
-						PerformAction(who, ANIM_SALUTE);
+						PerformAction(who, HUMAN_ANIM::SALUTE);
 						sleep(1);
 					endfor
 					if (SkillCheck(who, SURVIVAL, RequiredSkill))
@@ -242,11 +276,11 @@ function FazPergaminhoEmBranco(who, item)
 							SendSysMessage(who, "Voce fez um pergaminho em branco.");
 						endif
 					else
-						SendSysMessageEx(who, "Voce arruinou os materiais.", SSM_FAIL);
+						Message("Voce arruinou os materiais.").SetColor(SSM_FAIL).SendSys(who);
 					endif
 				endif
 				if (!item)
-					SendSysMessageEx(who, "Voce nao tem mais couros nessa pilha.", SSM_FAIL);
+					Message("Voce nao tem mais couros nessa pilha.").SetColor(SSM_FAIL).SendSys(who);
 				// return 0;
 				endif
 			endif
@@ -266,7 +300,7 @@ function CarveMobiles(who, tool, mobile)
 		else
 			mobile.graphic := 223;
 			var qtd := 2;
-			if (TemHabilidade(who, "Sem Desperdicio"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::NO_WASTE))
 				qtd := qtd + CInt(AP_GetSkill(who, SURVIVAL) / 20);
 			endif
 			CreateItemInContainer(who.backpack, 0xf125, qtd);
@@ -274,7 +308,7 @@ function CarveMobiles(who, tool, mobile)
 			return 1;
 		endif
 	elseif (GetObjProperty(mobile, "corda")) // Desamarra alguem
-		PrintText(who, "*" + mobile.name + " foi solto da corda*");
+		PrintTextAbove(who, "*" + mobile.name + " foi solto da corda*");
 		EraseObjProperty(mobile, "corda");
 		mobile.frozen := 0;
 		return 1;

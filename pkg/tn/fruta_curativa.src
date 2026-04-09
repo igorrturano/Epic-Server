@@ -11,6 +11,13 @@ program drink_blue(who, potion)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
 
+	// Check if the blessed fruit has expired
+	var expires := GetObjProperty(potion, "imbue_expires");
+	if (expires && polcore().systime > expires)
+		SendSysMessageEx(who, "A fruta perdeu sua magia.", SSM_FAIL);
+		return;
+	endif
+
 	if (cint(GetObjProperty(who, "#healingpotion")))
 		SendSysMessageEx(who, "Voce ja esta sob efeito de um item de cura.", SSM_FAIL);
 		return;
@@ -41,7 +48,7 @@ program drink_blue(who, potion)
 	SetObjProperty(who, "#healingpotion", 1);
 	SendSysMessageEx(who, "Seus ferimentos estao cicatrizando...", SSM_INFO);
 	while (i < healed)
-		HealDamage(who, 1);
+		ApplyEpicHealing(who, 1);
 		i := i + 1;
 		sleepms(delay);
 	endwhile

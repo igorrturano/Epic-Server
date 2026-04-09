@@ -63,7 +63,7 @@ exported function StartTreasureDigging(who, targ, map)
     var initial_x := who.x;
     var initial_y := who.y;
     
-    PrintText(who, "*Começa a cavar o tesouro*");
+    PrintTextAbove(who, "*Começa a cavar o tesouro*");
     SendSysMessageEx(who, "Permaneça parado enquanto cava. Se você se mover, precisará recomeçar.", SSM_INFO);
     
     var parts := array{};
@@ -113,14 +113,14 @@ SetGlobalProperty("last_chest_y", targ.y);
         // Primeira parte do case - mensagens e efeitos
         case (i)
             1: 
-                PrintText(who, "*Começa a cavar*");
+                PrintTextAbove(who, "*Começa a cavar*");
             2: 
-                PrintText(who, "*Continua cavando*");
+                PrintTextAbove(who, "*Continua cavando*");
                 var patch1 := CreateItemAtLocation(targ.x, targ.y, current_z, 0x0914, 1, who.realm);
                 SetupDirtPatch(patch1);
                 parts.append(patch1);
             3: 
-                PrintText(who, "*Cavando profundamente*");
+                PrintTextAbove(who, "*Cavando profundamente*");
                 var patch2 := CreateItemAtLocation(targ.x-1, targ.y, current_z, 0x0914, 1, who.realm);
                 var patch3 := CreateItemAtLocation(targ.x+1, targ.y, current_z, 0x0914, 1, who.realm);
                 SetupDirtPatch(patch2);
@@ -128,7 +128,7 @@ SetGlobalProperty("last_chest_y", targ.y);
                 parts.append(patch2);
                 parts.append(patch3);
             4: 
-                PrintText(who, "*A terra cede*");
+                PrintTextAbove(who, "*A terra cede*");
                 var patch4 := CreateItemAtLocation(targ.x, targ.y-1, current_z, 0x0914, 1, who.realm);
                 var patch5 := CreateItemAtLocation(targ.x, targ.y+1, current_z, 0x0914, 1, who.realm);
                 SetupDirtPatch(patch4);
@@ -136,14 +136,14 @@ SetGlobalProperty("last_chest_y", targ.y);
                 parts.append(patch4);
                 parts.append(patch5);
             5: 
-                PrintText(who, "*A terra começa a ceder*");
+                PrintTextAbove(who, "*A terra começa a ceder*");
                 if (!HasPlayerMoved(who, initial_x, initial_y))
                     chest.movable := 1;
                     MoveObjectToLocation(chest, chest.x, chest.y, current_z, who.realm, MOVEOBJECT_FORCELOCATION);
                     chest.movable := 0;
                 endif
             6:
-                PrintText(who, "*O tesouro está surgindo*");
+                PrintTextAbove(who, "*O tesouro está surgindo*");
                 var offsets := array{};
                 offsets.append(array{-1,-1});
                 offsets.append(array{1,-1});
@@ -155,7 +155,7 @@ SetGlobalProperty("last_chest_y", targ.y);
                     parts.append(patch);
                 endforeach
             7:
-                PrintText(who, "*Algo está surgindo*");
+                PrintTextAbove(who, "*Algo está surgindo*");
                 var final_offsets := array{};
                 final_offsets.append(array{-2,0});
                 final_offsets.append(array{2,0});
@@ -167,14 +167,14 @@ SetGlobalProperty("last_chest_y", targ.y);
                     parts.append(patch);
                 endforeach
 8:
-    PrintText(who, "*O tesouro está quase visível*");
+    PrintTextAbove(who, "*O tesouro está quase visível*");
     if (!HasPlayerMoved(who, initial_x, initial_y))
         chest.movable := 1;
         MoveObjectToLocation(chest, chest.x, chest.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
         chest.movable := 0;
     endif
             9:
-                PrintText(who, "*Termina de cavar*");
+                PrintTextAbove(who, "*Termina de cavar*");
         endcase
 
         PerformAction(who, 0x0b);

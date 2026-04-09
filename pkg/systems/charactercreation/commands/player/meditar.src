@@ -17,7 +17,7 @@ program meditar(who, text)
 endprogram
 
 function InitialMeditationCheck(who)
-	if (!EquipmentCheck(who))
+	if (!MeditationEquipmentCheck(who))
 		SendSysMessage(who, "Suas mãos precisam estar livres", SSM_FAIL);
 		return 0;
 	endif
@@ -37,7 +37,7 @@ function MeditationConditionsCheck(who, oldx, oldy, start_hp)
 		SendSysMessage(who, "Você perdeu sua concentração", SSM_FAIL);
 		return 0;
 	endif
-	if (!EquipmentCheck(who)) // Check if hands became occupied during meditation
+	if (!MeditationEquipmentCheck(who)) // Check if hands became occupied during meditation
 		SendSysMessage(who, "Suas mãos precisam estar livres", SSM_FAIL);
 		return 0;
 	endif
@@ -48,7 +48,7 @@ function MeditationConditionsCheck(who, oldx, oldy, start_hp)
 	return 1;
 endfunction
 
-function EquipmentCheck(who)
+function MeditationEquipmentCheck(who)
 	var hand_1 := GetEquipmentByLayer(who, LAYER_HAND1);
 
 	if (hand_1)
@@ -72,12 +72,15 @@ function meditarPrincipal(params)
 	var full_mana := AP_GetVitalMaximumValue(who, MANA);
 	var current_mana := AP_GetVital(who, MANA);
 	var start_hp := AP_GetVital(who, "Hits");
-	var arcane_bows := array{ 0xFA6D, 0XF997 };
-	var amt := Cint(HandleSpellSkill(who) / 20);
-	var delay := 300;
+	var arcana := Cint(AP_GetSkill(who, ARCANA));
+	var theology := Cint(AP_GetSkill(who, THEOLOGY));
+	var skill := (arcana > theology) ? arcana : theology;
+	var amt := Cint(skill / 20);
+
+	var delay := 240;
 	if (GetObjPRoperty(who, "chardata").raca == ELFO)
 		amt *= 2;
-		delay := 240;
+		delay := 180;
 	endif
 
 	// Track initial player position

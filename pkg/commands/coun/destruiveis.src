@@ -22,14 +22,27 @@ program destruiveis(quem, texto)
 
 		if (cfgselecao.tipoAlvo == "cadeiaUnica")
 			while (true)
+
+
+
 				var alvo := Target(quem, TGTOPT_NOCHECK_LOS);
 				if (!alvo)
 					SendSysMessageEx(quem, "Alvo Cancelado.", SSM_FAIL);
 					break;
 				endif
 				ConfiguraAlvo(quem, alvo, cfgselecao);
+
+
+
+
+
+
 				Sleepms(2);
 			endwhile
+
+
+
+
 		elseif (cfgselecao.tipoAlvo == "retanguloSelecao")
 
 			SendSysMessageEx(quem, "Selecione o vertice superior esquerdo.", SSM_INFO);
@@ -49,8 +62,7 @@ program destruiveis(quem, texto)
 													inferiorDireito.x, inferiorDireito.y, 15, quem.realm);
 
 			foreach objeto in objetos
-				if (objeto.invisible == 1)
-					objetos.erase(_objeto_iter);
+				if (objeto.invisible)
 					continue;
 				endif
 				SetObjProperty(objeto, PROPNAME_SEL_AREA_COR_ORIGINAL, objeto.color);
@@ -127,8 +139,7 @@ program destruiveis(quem, texto)
 												inferiorDireito.x, inferiorDireito.y, 15, quem.realm);
 
 		foreach objeto in objetos
-			if (objeto.invisible == 1)
-				objetos.erase(_objeto_iter);
+			if (objeto.invisible)
 				continue;
 			endif
 			var corOriginal := GetObjProperty(objeto, PROPNAME_SEL_AREA_COR_ORIGINAL);

@@ -56,7 +56,7 @@ program select(params)
 	elseif (GetObjProperty(player.weapon, "cold_arrow"))
 		sound := 0x5c8;
 	endif
-	PrintText(player, "*Canalizando Elemento*");
+	PrintTextAbove(player, "*Canalizando Elemento*");
 	PlaySoundEffect(player, sound); // hammer
 	sleep(2);
 	PlaySoundEffect(player, 0x656); // purgeMagic

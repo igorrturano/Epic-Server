@@ -208,7 +208,7 @@ function GetItemTypeByJobType(jobtype)
 				2: return 0x1b7b; // Metal Shield
 				3: return 0x0f51; // Dagger
 				4: return 0x0f43; // Hatchet
-				5: return 0x0f5c; // Mace
+				5: return 0xFFAD; // Mace
 				6: return 0x140a; // Helmet
 				7: return 0x140c; // Bascinet
 				8: return 0x13f2; // Ringmail Gloves
@@ -320,7 +320,7 @@ function GetItemNameByItemType(itemtype)
 		0x1b7b: return "Metal Shields";
 		0x0f51: return "Daggers";
 		0x0f43: return "Hatchets";
-		0x0f5c: return "Maces";
+		0xFFAD: return "Maces";
 		0x140a: return "Helmets";
 		0x140c: return "Bascinets";
 		0x13f2: return "Ringmail Gloves";
@@ -432,7 +432,7 @@ function GetWorkAction(jobtype)
 
 	case (jobtype)
 		44: return 0x0D; // lumberjacking
-		default: return ANIM_SALUTE;
+		default: return HUMAN_ANIM::SALUTE;
 	endcase
 
 endfunction

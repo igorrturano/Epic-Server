@@ -1,6 +1,9 @@
+use os;
+
 include "include/say";
 include ":charactercreation:habilidades";
-include ":achievements:ExplorationController";
+include ":achievements:controllers/ExplorationController";
+include ":abilities:controllers/AbilityMonitor";
 
 program checkeventsonwalk()
 	Print("INSTALLING: checkeventsonwalk...");
@@ -15,7 +18,7 @@ exported function CheckEventsWalk(who, byref packet)
 		endif
 	endif
 
-	IncrementStepCounter(who);
+	// IncrementStepCounter(who);
 
 	// foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, 12, who.realm)
 
@@ -28,61 +31,49 @@ exported function CheckEventsWalk(who, byref packet)
 	// 		endif
 	// 	endif
 	// endforeach
-	var regions := GetObjProperty(who, "neve") || GetObjProperty(who, "calor");
-	if (regions && who.concealed == 0 && !GetObjProperty(who, "noprints") &&
-	 TemHabilidade(who, "Movimento Livre") == 0)
-		if (who.facing == 0 || who.facing == 7)
-			CreateItemAtLocation(who.x, who.y, who.z + 1, 0x1E04, 1, who.realm);
-		elseif (who.facing == 1 || who.facing == 2)
-			CreateItemAtLocation(who.x, who.y, who.z + 1, 0x1E05, 1, who.realm);
-		elseif (who.facing == 3 || who.facing == 4)
-			CreateItemAtLocation(who.x, who.y, who.z + 1, 0x1E06, 1, who.realm);
-		elseif (who.facing == 5 || who.facing == 6)
-			CreateItemAtLocation(who.x, who.y, who.z + 1, 0x1E03, 1, who.realm);
-		endif
-	endif
+	// var regions := GetObjProperty(who, "neve") || GetObjProperty(who, "calor");
+	// if (regions && who.concealed == 0 && !GetObjProperty(who, "noprints") &&
+	//  TemHabilidade(who, "Movimento Livre") == 0)
+	// 	if (who.facing == 0 || who.facing == 7)
+	// 		CreateItemAtLocation(who.x, who.y, who.z + 1, 0x1E04, 1, who.realm);
+	// 	elseif (who.facing == 1 || who.facing == 2)
+	// 		CreateItemAtLocation(who.x, who.y, who.z + 1, 0x1E05, 1, who.realm);
+	// 	elseif (who.facing == 3 || who.facing == 4)
+	// 		CreateItemAtLocation(who.x, who.y, who.z + 1, 0x1E06, 1, who.realm);
+	// 	elseif (who.facing == 5 || who.facing == 6)
+	// 		CreateItemAtLocation(who.x, who.y, who.z + 1, 0x1E03, 1, who.realm);
+	// 	endif
+	// endif
+
+	// Cancel-on-move: abilities/spells set #cancel_on_move_pid to their monitor PID
+	// var cancelPid := GetObjProperty(who, "#cancel_on_move_pid");
+	// if (cancelPid)
+	// 	var proc := GetProcess(cancelPid);
+	// 	if (proc)
+	// 		proc.SendEvent(ABILITY_EVENT_ID::ABORT);
+	// 	endif
+	// 	EraseObjProperty(who, "#cancel_on_move_pid");
+	// endif
 
 	return 0;
 endfunction
 
-function UpdatePlayerGraphic(who, forwho, graphic, color)
+// function UpdatePlayerGraphic(who, forwho, graphic, color)
 
-	if (!graphic)
-		graphic := who.graphic;
-	endif
+// 	if (!graphic)
+// 		graphic := who.graphic;
+// 	endif
 
-	var packetString := "77";
-	packetString := packetString + fixPacketLength(hex(who.serial), 4);
-	packetString := packetString + fixPacketLength(hex(graphic), 2);
-	packetString := packetString + fixPacketLength(hex(who.x), 2);
-	packetString := packetString + fixPacketLength(hex(who.y), 2);
-	packetString := packetString + fixPacketLength(hex(who.z), 1);
-	packetString := packetString + fixPacketLength(hex(who.facing), 1);
-	packetString := packetString + fixPacketLength(hex(who.color), 2); // Colour (doesnt work)
-	packetString := packetString + fixPacketLength(hex(0), 1); // Flag... dunno?
-	packetString := packetString + fixPacketLength(hex(0), 1); // Highlight colour (doesnt work)
-	return SendPacket(forwho, packetString);
-endfunction
+// 	var packetString := "77";
+// 	packetString := packetString + fixPacketLength(hex(who.serial), 4);
+// 	packetString := packetString + fixPacketLength(hex(graphic), 2);
+// 	packetString := packetString + fixPacketLength(hex(who.x), 2);
+// 	packetString := packetString + fixPacketLength(hex(who.y), 2);
+// 	packetString := packetString + fixPacketLength(hex(who.z), 1);
+// 	packetString := packetString + fixPacketLength(hex(who.facing), 1);
+// 	packetString := packetString + fixPacketLength(hex(who.color), 2); // Colour (doesnt work)
+// 	packetString := packetString + fixPacketLength(hex(0), 1); // Flag... dunno?
+// 	packetString := packetString + fixPacketLength(hex(0), 1); // Highlight colour (doesnt work)
+// 	return SendPacket(forwho, packetString);
+// endfunction
 
-function fixPacketLength(packetString, byteLength)
-	if (!packetString || packetString == error)
-		packetString := 0;
-	endif
-	packetString := cStr(packetString);
-
-	if (packetString[1, 2] == "0x")
-		packetString := cStr(packetString[3, len(packetString)]);
-	endif
-
-	if (len(packetString) > byteLength * 2)
-		// 		var extraBytes := (byteLength*2) - len(packetString);
-		var extraBytes := len(packetString) - (byteLength * 2) + 1;
-		return cStr(packetString[extraBytes, len(packetString)]);
-	endif
-
-	while (len(packetString) < byteLength * 2)
-		packetString := "0" + packetString;
-	endwhile
-
-	return packetString;
-endfunction

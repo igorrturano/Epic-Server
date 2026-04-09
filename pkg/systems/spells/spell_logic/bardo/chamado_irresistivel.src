@@ -1,0 +1,58 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/tileEffects";
+include "include/sounds";
+
+// O Chamado Irresistivel (1211) - C3
+// Encanta ate 3 criaturas (NPCs hostis) por Arc/3 segundos (Arc vs Will)
+program SpellScript(params)
+	var who := params[1];
+
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
+	var duration := CInt(arcana / 3);
+	if (duration < 5)  duration := 5;  endif
+	if (duration > 33) duration := 33; endif
+
+	PrintTextAbove(who, "*Nenhuma criatura pode resistir a uma boa historia.*", 3, 43);
+	PlaySoundEffect(who, 0x1F2);
+
+	var charmed_list := array;
+	var charmed := 0;
+
+	foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, 8, who.realm))
+		if (charmed >= 3) break; endif
+		if (!mobile.isa(POLCLASS_NPC)) continue; endif
+		if (!mobile.IsHostile(who)) continue; endif
+
+		var will := CInt(AP_GetTrueStat(mobile, WILL));
+		var roll := RandomInt(100) + 1;
+		var resist_threshold := will + CInt((100 - arcana) / 2);
+		if (roll > resist_threshold) continue; endif
+
+		SetObjProperty(mobile, "#bard_charmed", who.serial);
+		PlayStationaryEffect(mobile.x, mobile.y, mobile.z, FX_BLESS_EFFECT, 3, 3);
+		PrintTextAbove(mobile, "*encantado*", 3, 43);
+		charmed_list[charmed + 1] := mobile;
+		charmed += 1;
+	endforeach
+
+	if (charmed == 0)
+		SendSysMessageEx(who, "Nenhuma criatura foi encantada.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(who, $"Chamado Irresistivel: {charmed} criatura(s) encantada(s) por {duration}s.", SSM_INFO);
+
+	sleep(duration);
+
+	foreach mobile in charmed_list
+		if (mobile && !mobile.dead && GetObjProperty(mobile, "#bard_charmed") == who.serial)
+			EraseObjProperty(mobile, "#bard_charmed");
+			PrintTextAbove(mobile, "*o encanto passou*", 3, 38);
+		endif
+	endforeach
+
+	return 1;
+endprogram

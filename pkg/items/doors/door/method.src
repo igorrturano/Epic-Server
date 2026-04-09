@@ -118,7 +118,7 @@ function ChangeDoor(door)
 	var result := MoveObjectToLocation(door, door.x + CInt(door_info.xmod), door.y + CInt(door_info.ymod),
 										door.z, door.realm, MOVEOBJECT_FORCELOCATION);
 	if (result.errortext)
-		PrintText(door, "Error moving door -" + result.errortext);
+		PrintTextAbove(door, "Error moving door -" + result.errortext);
 	endif
 
 	door.movable := move_state;

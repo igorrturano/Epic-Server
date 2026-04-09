@@ -56,7 +56,8 @@ program SpellScript(params)
 		if (CheckLosAt(who, finalx, finaly, height))
 			globo := CreateNpcFromTemplate(template, finalx, finaly, height, 0, who.realm);
 		endif
-		if (tentativas == 10)
+		tentativas := tentativas + 1;
+		if (tentativas >= 10)
 			SendSysMessageEx(who, "Nao existe nenhuma montaria por perto.", SSM_FAIL);
 			return 1;
 		endif
@@ -85,7 +86,7 @@ program SpellScript(params)
 	SendEvent(globo, ev);
 
 	sleep(3);
-	PerformAction(globo, ANIM_ATTACK_2HAND_WIDE);
+	PerformAction(globo, HUMAN_ANIM::ATTACK_2HAND_SLASH);
 
 	return 1;
 endprogram

@@ -10,6 +10,7 @@ include ":tn:tngumps";
 include ":gumps:yesNo";
 include ":gumps:requestGump";
 include ":attributes:attributes";
+include ":charactercreation:habilidades";
 include ":attributes:stats";
 include ":timedScripts:timedScripts";
 // include ":merchants:item_template";
@@ -33,8 +34,8 @@ program npconversation(params)
 	var i := 1;
 	while (input)
 		if (i % 2 == 1)
-			PrintText(who, "*conversando*");
-			PrintText(npc, "*conversando*");
+			PrintTextAbove(who, "*conversando*");
+			PrintTextAbove(npc, "*conversando*");
 		endif
 		input := ConversationPlayer(who, npc, input);
 		i := i + 1;
