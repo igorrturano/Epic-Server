@@ -387,21 +387,25 @@ function PegaDescMagicLore(objeto, who , xDesc := "")
 				if (PegaPropObjItemOrTemplate(objeto, "pocaoname"))
 					xDesc := xDesc + WHITE + PegaPropObjItemOrTemplate(objeto, "pocaoname") + "<br>";
 					var potencia := PegaPropObjItemOrTemplate(objeto, "crafterskill");
+					var title ;
+					if (potencia == error)
+						potencia := 0;
+					endif
 					case(potencia)
-						0: potencia := "Inábil";
-						10: potencia := "Incompetente";
-						20: potencia := "Inexperiente";
-						30: potencia := "Iniciante";
-						40: potencia := "Aprendiz";
-						50: potencia := "Habilidoso";
-						60: potencia := "Treinado";
-						70: potencia := "Competente";
-						80: potencia := "Experiente";
-						90: potencia := "Mestre";
-						100: potencia := "Grão Mestre";
-						110: potencia := "Lendário";
+						0: title := "Inábil";
+						10: title := "Incompetente";
+						20: title := "Inexperiente";
+						30: title := "Iniciante";
+						40: title := "Aprendiz";
+						50: title := "Habilidoso";
+						60: title := "Treinado";
+						70: title := "Competente";
+						80: title := "Experiente";
+						90: title := "Mestre";
+						100: title := "Grão Mestre";
+						110: title := "Lendário";
 					endcase
-					xDesc := xDesc + ROXO + potencia + "<br>";
+					xDesc := xDesc + ROXO + title + "<br>";
 				endif
 				var mods := PegaPropObjItemOrTemplate(objeto, "equip");
 				if (mods != error)
@@ -504,4 +508,17 @@ function PegaDescCargasRunicas(objeto, who, XDesc := "")
 		xDesc := xDesc + AMARELO_CLARO + "Cargas Rúnicas: "+GetObjProperty(objeto, "runecharges")+"<br>";
 	endif
 	return XDesc;
+endfunction
+
+function PegaDescEstudavel(objeto, xDesc := "")
+	var skill_name := GetObjProperty(objeto, "estudavel");
+	if (!skill_name)
+		return xDesc;
+	endif
+
+	var skill_traduzida := TraduzirProfissao(skill_name);
+	xDesc := xDesc + "<BASEFONT COLOR=#a8d8ea>[Item de Estudo]<br>";
+	xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>Área: " + skill_traduzida + "<br>";
+	xDesc := xDesc + "<BASEFONT COLOR=#C0C0C0>Limite de estudo: 52.0<br>";
+	return xDesc;
 endfunction
