@@ -323,8 +323,7 @@ function RemoveEquipmentMods(who, item)
 		if (GetObjProperty(who, "chardata").magia == "Shaman")
 			skip_magery_pen := 1;
 		elseif (item.isa(POLCLASS_ARMOR) && MobileWrapper(who).HasAbility(ABILITY_ID::CONEXAO_DIVINA))
-			var itemdesc_mag := ReadConfigFile("::itemdesc");
-			var tipoProtecaoMag := CStr(itemdesc_mag[item.objtype].TipoProtecao);
+			var tipoProtecaoMag := CStr(itemdesc[item.objtype].TipoProtecao);
 			if (tipoProtecaoMag["Armadura Leve"] || tipoProtecaoMag["Armadura Media"])
 				skip_magery_pen := 1;
 			endif
