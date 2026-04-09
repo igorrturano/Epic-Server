@@ -55,16 +55,7 @@ function SetEquipmentMods(who, item)
     endif
 	var penaltyBonus := Cint(getObjProperty(item, "penaltybonus"));
 	penalty := penalty - penaltyBonus;
-
-	// Caminho: Armor spec dex penalty reduction
-	if (item.isa(POLCLASS_ARMOR))
-		var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
-		if (tipoProtecao["Armadura Pesada"] && MobileWrapper(who).HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
-			penalty -= 2;
-		elseif (tipoProtecao["Armadura Media"] && MobileWrapper(who).HasAbility(ABILITY_ID::MEDIUM_ARMOR_SPEC))
-			penalty -= 1;
-		endif
-	endif
+	// NOTE: Armor spec dex penalty reduction is handled in equipsys/equipitem.src via ArmorWrapper modifiers
 
 	if (penalty < 0)
 		penalty := 0;
@@ -272,8 +263,7 @@ function RemoveEquipmentMods(who, item)
 
 	// Caminho: Armor spec dex penalty reduction
 	if (item.isa(POLCLASS_ARMOR))
-		var itemdesc_full := ReadConfigFile("::itemdesc");
-		var tipoProtecao := CStr(itemdesc_full[item.objtype].TipoProtecao);
+		var tipoProtecao := CStr(ReadConfigFile(":combat:itemdesc")[item.objtype].TipoProtecao);
 		if (tipoProtecao["Armadura Pesada"] && MobileWrapper(who).HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
 			penalty -= 2;
 		elseif (tipoProtecao["Armadura Media"] && MobileWrapper(who).HasAbility(ABILITY_ID::MEDIUM_ARMOR_SPEC))

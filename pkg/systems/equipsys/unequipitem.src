@@ -2,6 +2,7 @@ include ":message:model/Message";
 include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program unequipitem(params)
 	var who := params[1];
@@ -23,6 +24,15 @@ program unequipitem(params)
 		var tipoProtecao := equip.GetTipoProtecao();
 		if (tipoProtecao["Armadura Leve"] || tipoProtecao["Armadura Media"])
 			equip.SetModifier(AttributeModifier(MAGERY, 0));
+		endif
+	endif
+
+	if (item.IsA(POLCLASS_ARMOR))
+		var tipoProtecao := equip.GetTipoProtecao();
+		if (tipoProtecao["Armadura Media"] && who.HasAbility(ABILITY_ID::MEDIUM_ARMOR_SPEC))
+			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 1));
+		elseif (tipoProtecao["Armadura Pesada"] && who.HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
+			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 2));
 		endif
 	endif
 
