@@ -28,5 +28,5 @@ program drink_blue(who, potion)
 	bonus := PotionSpecialistBonus(who, bonus, BUFF);
 	TS_StartTimer(who, "velocidade", (360 + bonus * 10 * vicio), 20);
 	empty_bottle(who, potion);
-	Aplicavicio(who, potion, DEXTERITY);
+	Aplicavicio(who, potion, DEXTERITY); 
 endprogram

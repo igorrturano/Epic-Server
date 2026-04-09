@@ -387,7 +387,7 @@ function PegaDescMagicLore(objeto, who , xDesc := "")
 				if (PegaPropObjItemOrTemplate(objeto, "pocaoname"))
 					xDesc := xDesc + WHITE + PegaPropObjItemOrTemplate(objeto, "pocaoname") + "<br>";
 					var potencia := PegaPropObjItemOrTemplate(objeto, "crafterskill");
-					var title;
+					var title ;
 					if (potencia == error)
 						potencia := 0;
 					endif
