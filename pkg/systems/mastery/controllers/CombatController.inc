@@ -9,34 +9,22 @@ const MAX_MASTERIES := 3; // Limite máximo de maestrias que um personagem pode 
 	// Reduz -30s por nível.
 // TODO: Definir critérios de progressão de maestria para cada nível.
 
-
-/**
- * MasteryCombat_Advance(attacker, combatInfo)
- *
- * Avança o sistema de maestria em combate para um atacante, atualizando as estatísticas
- * de experiência, acertos, mortes e dano baseadas nas informações de combate fornecidas.
- * A função também registra mensagens de debug com as informações de progresso da maestria.
- *
- * Parameters
- * attacker: MobileWrapper do jogador/personagem que vai avancar a maestria.
- * combatInfo: Dictionary contendo informações do que vai upar (hits, kills, damage, etc).
- * 				Usar o ENUM MasteryCombatAtributes para as chaves do dicionário.
- * 				Exemplo: combatInfo[MasteryCombatAtributes::Damage] := 15;
- */
 function MasteryCombat_Advance(player, advanceInfo)
 	var weapon := player.GetEquipBySlot(WEAPON);
-	var mastery := Mastery(weapon.GetObjRef());
+	var masteryRef := weapon.GetObjType();
 	var playerMasteries := player.GetMasteries();
 
-	if (HasReachedMasteriesLimit(mastery, playerMasteries))
+	if (HasReachedMasteriesLimit(masteryRef, playerMasteries))
 		DebugMsg(player, DEBUG_MASTERY, Message("Limite de maestrias atingido. Para avançar, remova uma maestria existente.", Color(SYSTEM_COLOR::FAIL)));
 		return;
 	endif
 
+	var mastery := playerMasteries[masteryRef] ?: Mastery(masteryRef);
 	var earnedXP := CalcXPEarned(advanceInfo);
 	mastery._SetName(weapon.GetName());
 	mastery.AddXP(earnedXP);
-	AdvanceMastery(player, playerMasteries, mastery, advanceInfo);
+	playerMasteries := AdvanceMastery(playerMasteries, mastery, advanceInfo);
+	player.SetMasteries(playerMasteries);
 
 	DebugMsg(player, DEBUG_MASTERY, Message($"Ganho de maestria para a arma: {mastery.GetName()} ({mastery.GetRef()})"));
 	DebugAdvanced(player, advanceInfo);
@@ -44,9 +32,9 @@ function MasteryCombat_Advance(player, advanceInfo)
 
 endfunction
 
-function HasReachedMasteriesLimit(mastery, playerMasteries)
+function HasReachedMasteriesLimit(masteryRef, playerMasteries)
 	if (playerMasteries.size() >= MAX_MASTERIES)
-		if (mastery.GetRef() in playerMasteries.keys())
+		if (masteryRef in playerMasteries.keys())
 			return false;
 		endif
 
@@ -79,13 +67,14 @@ function MasteryCheckLevel(xp)
 	return 0;
 endfunction
 
-function AdvanceMastery(player, playerMasteries, mastery, advanceInfo)
+function AdvanceMastery(playerMasteries, mastery, advanceInfo)
 	foreach attribute in (advanceInfo.keys())
 		mastery.IncreaseAttribute(attribute, advanceInfo[attribute]);
 	endforeach
 
 	playerMasteries[mastery.GetRef()] := mastery;
-	player.SetMasteries(playerMasteries);
+
+	return playerMasteries;
 endfunction
 
 function DebugAdvanced(who, advanceInfo)
