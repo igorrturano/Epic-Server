@@ -1,0 +1,10 @@
+use uo;
+use os;
+
+include "packets/UpdateEquipmentRequest";
+
+program logon(player)
+	Print("Player logon: " + player.name);
+	Start_Script("packets/AssyncUpdateEquipment", array{player, true});
+	return 1;
+endprogram

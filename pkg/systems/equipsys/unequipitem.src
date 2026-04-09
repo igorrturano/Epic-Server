@@ -7,7 +7,8 @@ include "packets/UpdateEquipmentRequest";
 program unequipitem(params)
 	var who := params[1];
 	var item := params[2];
-	Print("item1: " + item.layer);
+	var layer :=  item.layer;
+	
 	var equip;
 	if (item.IsA(POLCLASS_ARMOR))
 		equip := ArmorWrapper(item);
@@ -21,6 +22,6 @@ program unequipitem(params)
 	endif
 
 	who.RemoveItemModifiers(equip);
-	Print("item2: " + item.layer);
-	Start_Script("packets/AssyncUpdateEquipment", array{who.GetObjRef(), item, false, item.layer});
+	Start_Script("packets/AssyncUpdateEquipment", array{who.GetObjRef(), false, item, layer});
+	return 1;
 endprogram

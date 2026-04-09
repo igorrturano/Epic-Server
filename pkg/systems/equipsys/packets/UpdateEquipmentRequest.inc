@@ -16,10 +16,11 @@ const OACKET := 1;
 var ARMOR_RESISTENCE_PACKET_ARRAY := array{LAYER_SHOES,LAYER_HELM,LAYER_GLOVES,LAYER_NECK,LAYER_CHEST,LAYER_ARMS,LAYER_PANTS};
 
 function SendUpdateEquipmentRequest(quem, equip, isEquipping, layer := 0)
-	if(!quem || !equip || quem.IsNpc() || quem.logged_in)
+	if(!quem || !equip || quem.IsNpc())
 		return 0;
 	endif
-	Print("equip: " + equip + " equip.GetName(): " + equip.desc() + " equip.GetLayer(): " + equip.layer); 
+	quem := MobileWrapper(quem);
+
 	var wrappedEquip;
 	if (equip.IsA(POLCLASS_ARMOR))
 		wrappedEquip := ArmorWrapper(equip);
@@ -37,7 +38,6 @@ function SendUpdateEquipmentRequest(quem, equip, isEquipping, layer := 0)
 		.AppendBytes(PACKET_BYTE_TYPE::INT,PACKET_ID_GENERIC_COMMANDS_SUBCMD_UPDT_EQUIP);
 
 	if(wrappedEquip is @ArmorWrapper)
-		Print("equip.GetLayer(): " + wrappedEquip.GetLayer());
 		packet.AppendBytes(PACKET_BYTE_TYPE::BYTE,ARMOR_UPDATE_FLAG)
 			  .AppendBytes(PACKET_BYTE_TYPE::BYTE,layer);
 

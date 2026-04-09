@@ -6,10 +6,25 @@ include ":wrappers:Objects/Model/MobileWrapper";
 
 program assyncEquipUpdate(args)
 	var who := MobileWrapper(args[1]);
-	var equip := args[2];
+	var isEquiping := args[2];
+	var equip := args[3];
 	var layer := args[4];//marreta, pq o itemref tava vindo sem a layer ao desequipar.fa
+
 	Sleepms(50);
-	Print("args[4] " + args[4] );
-	SendUpdateEquipmentRequest(who, equip, args[3], layer);
+	if( layer)
+		SendUpdateEquipmentRequest(who.GetObjRef(), equip, isEquiping, layer);
+	else
+		//Atualiza todo equipamento.
+		SendUpdateEquipmentRequest(who.GetObjRef(), who.GetObjRef().weapon, isEquiping);//Armas
+		for i := 1 to ARMOR_RESISTENCE_PACKET_ARRAY.Size();
+			Sleepms(50);
+			SendUpdateEquipmentRequest(
+							who.GetObjRef(), 
+							who.GetEquipByLayer(ARMOR_RESISTENCE_PACKET_ARRAY[i]).GetObjRef(), 
+							isEquiping, 
+							ARMOR_RESISTENCE_PACKET_ARRAY[i]
+						); //Armaduras
+		endfor
+	endif
 	return 1;
 endprogram
