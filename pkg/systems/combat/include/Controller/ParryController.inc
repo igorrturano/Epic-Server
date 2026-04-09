@@ -9,18 +9,21 @@ include ":combat:Model/AttackInfo";
 include ":abilities:models/Ability";
 include ":combat:Controller/FXController";
 include ":combat:Controller/CombatAbilityController";
-include ":combat:weardown";
+include ":combat:Controller/WearDownController";
 include ":message:model/Message";
 
 include ":tn:cooldown";
 include "include/facings";
 
 function CheckParry(byRef attackInfo)
-	var attackerPos := attackInfo.GetAttacker().GetPosition();
-	if (attackInfo.GetAttacker().GetObjRef().GetProp("backstab") || // Se for habilidade de ataque pelas costas
-		IsBehind(attackInfo.GetDefender().GetObjRef(), attackerPos.GetX(), attackerPos.GetY()) || // Se o atacante estiver atrás do defensor
-		!attackInfo.GetDefender().IsWarMode() || // Se o defensor não estiver em war mode
-		GetCooldown(attackInfo.GetAttacker().GetObjRef(), "parrydelay") > 0) // Se o atacante estiver em cooldown de parry
+	var attacker := attackInfo.GetAttacker();
+	var defender := attackInfo.GetDefender();
+	var attackerPos := attacker.GetPosition();
+	
+	if (attacker.GetObjRef().GetProp("backstab") || // Se for habilidade de ataque pelas costas
+		IsBehind(defender.GetObjRef(), attackerPos.GetX(), attackerPos.GetY()) || // Se o atacante estiver atrás do defensor
+		!defender.IsWarMode() || // Se o defensor não estiver em war mode
+		GetCooldown(attacker.GetObjRef(), "parrydelay") > 0) // Se o atacante estiver em cooldown de parry
 
 		return false; // Então não bloqueia
 	endif
@@ -69,12 +72,7 @@ function DoParry(byRef attackInfo)
 	endif
 
 	attackInfo.GetDefender().GetObjRef().EraseProp("#tempparrybonus"); // Remove o bônus temporário de parry, se houver
-	WearDownShield(
-		attackInfo.GetDefender().GetObjRef(),
-		attackInfo.GetParryEquip().GetObjRef(),
-		attackInfo.GetDamage().GetTotalBaseDamage(),
-		attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetObjRef()
-	);
+	WearDownEquip(attackInfo.GetParryEquip(), attackInfo.GetWeapon());
 
 	CheckDisarmShield(attackInfo);
 

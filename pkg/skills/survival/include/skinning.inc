@@ -17,7 +17,7 @@ function DesmembreCorpse(cadaver)
  //   endforeach
     var partsarray := {};
     var part;
-    part := CreateItemAtLocation(cadaver.x-1, cadaver.y, cadaver.z, 0x1da0, 1);
+    part := CreateItemAtLocation(cadaver.x-1, cadaver.y, cadaver.z, 0x1dae, 1, cadaver.realm);
     partsarray.append(part);
     SetObjProperty(part, "serial", GetObjProperty(cadaver, "serial"));
     var aname := cadaver.name;
