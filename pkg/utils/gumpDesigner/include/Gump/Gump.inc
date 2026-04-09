@@ -2,6 +2,7 @@ include "IGump";
 include ":gumps:epicGumps";
 include ":gumps:autoClose";
 include ":gumpDesigner:Control/Control";
+include ":gumpDesigner:Control/Button";
 include ":gumpDesigner:Event/EventHandler";
 
 class Gump(IGump)
@@ -162,6 +163,7 @@ class Gump(IGump)
 		var eventHandled, gumpResult;
 		
 		this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
+		this._CreateHelper();
 
 		this._CreateControls();
 		this._CreateCustoms();
@@ -194,6 +196,7 @@ class Gump(IGump)
 		endif
 
 		this._UpdateInputValues();
+		eventHandled.GetControl().ExecuteActions();
 
 		return eventHandled;
 	endfunction
@@ -255,6 +258,18 @@ class Gump(IGump)
 		foreach control in (this._controls[GUMP_CONTROL::RADIOBUTTON])
 			control.SetValue(CInt(GFExtractData(this._gumpResult, control.GetGumpId())));
 		endforeach
+	endfunction
+
+	function _CreateHelper(this)
+		if (this.GetOptions().contains(HIDE_TITLE))
+			return;
+		endif
+		
+		var buttonHelp := Button("Help", this.GetWidth() - 30, 36, 0x5689, 0x568A);
+		buttonHelp.AddAction(@() {
+			SendSysMessage(this.GetParent(), "This is a help message for the gump.");
+		});
+		this.AddControl(buttonHelp);
 	endfunction
 endclass
 
