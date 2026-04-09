@@ -3,13 +3,21 @@ include "system/exception/ParamException/InvalidParameterException";
 include "SysNotificationEvent";
 
 class SysNotificationListener(IEventListener)
-	function Notify(this, event)
-		if (!(event is @SysNotificationEvent))
-			return InvalidParameterException("Parameter 'event' must be of type SysNotificationEvent.");
+	var Type := EventType::SysNotification;
+
+	function SysNotificationListener(this)
+		this.Type := EventType::SysNotification;
+	endfunction
+
+	function GetType(this)
+		return this.Type;
+	endfunction
+	
+	function OnEvent(this, event)
+		if (event is @SysNotificationEvent)
+			foreach target in (event.GetTargets())
+				event.GetMessage().SendSys(target);
+			endforeach
 		endif
-		
-		foreach target in (event.GetTargets())
-			event.GetMessage().SendSys(target);
-		endforeach
 	endfunction
 endclass

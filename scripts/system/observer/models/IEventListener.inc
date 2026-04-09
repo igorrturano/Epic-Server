@@ -1,6 +1,4 @@
 class IEventListener()
-	function IEventListener(this)
-	endfunction
-
-	uninit function Notify(this);
+	uninit function GetType(this);
+	uninit function OnEvent(this, event);
 endclass

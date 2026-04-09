@@ -7,7 +7,16 @@ class SysNotificationEvent(Event)
 	
 	function SysNotificationEvent(this, source, message, targets)
 		Super(source);
+		this.EventType := EventType::SysNotification;
 		this.Message := message;
 		this.Targets := targets;
+	endfunction
+
+	function GetMessage(this)
+		return this.Message;
+	endfunction
+
+	function GetTargets(this)
+		return this.Targets;
 	endfunction
 endclass

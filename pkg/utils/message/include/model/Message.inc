@@ -15,7 +15,7 @@ class Message(IMessage)
 	var _font; // Font object
 	var _fromWhom; // Mobile object
 	var _toWhom; // Mobile object
-	var _type; // MSG_TYPE enum
+	var _type; // MESSAGE_TYPE enum
 	
 	function Message(this, text, color := false, font := false, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._isAsync := false;
