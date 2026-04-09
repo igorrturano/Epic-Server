@@ -174,7 +174,7 @@ program UseBandage(mobile, bandage)
 		return 0;
 	endif
 	// adicionada verificação de se eu não estou aplicando a bandagem em alguem
-	if (GetObjProperty(targ, "curando") > ReadGameClock() || GetObjProperty(mobile, "#IsWaiting" > ReadGameClock()))
+	if (GetObjProperty(targ, "curando") > ReadGameClock() || GetObjProperty(mobile, "#IsWaiting") > ReadGameClock())
 		SendSysMessageEx(mobile, "O alvo ja esta enfaixado", SSM_INFO);
 		return 0;
 	else
