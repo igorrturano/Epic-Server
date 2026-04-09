@@ -39,7 +39,8 @@ function GetResidenciasRegion(who)
   foreach elem in (df.Keys())
     var region := df.FindElement(elem);
     var rect := region.getProp("Rect");
-    if (AT_InRect(who, SplitWords(rect)))
+    var realm := region.getProp("Realm");
+    if (AT_InRect(who, SplitWords(rect), realm))
       return elem;
     endif
   endforeach
@@ -47,14 +48,29 @@ function GetResidenciasRegion(who)
 
 endfunction
 
-function AT_InRect(who, rect)
+function AT_InRect(who, rect, expected_realm := "")
 	var x1 := CInt(rect[1]);
 	var y1 := CInt(rect[2]);
 	var x2 := CInt(rect[3]);
 	var y2 := CInt(rect[4]);
-  var realm := rect[5];
+	
+	var realm := expected_realm;
+	if (!realm && rect.size() >= 5)
+		realm := rect[5];
+	endif
 
-	return ( who.realm == realm && (CInt(who.x) >= x1 && CInt(who.x) <= x2) && (CInt(who.y) >= y1 && CInt(who.y) <= y2) );
+	if (!realm)
+		realm := who.realm; // fallback safety
+	endif
+
+	var in_bounds := (who.realm == realm && (CInt(who.x) >= x1 && CInt(who.x) <= x2) && (CInt(who.y) >= y1 && CInt(who.y) <= y2));
+	
+	// Adicionando um debug pelo cprop '#DebugArchitect' se ativado
+	if (GetObjProperty(who, "#DebugArchitect"))
+		SendSysMessage(who, "[Debug] Verificando XYZ(" + who.x + ", " + who.y + ", " + who.realm + ") contra Rect(" + x1 + "," + y1 + ") ao (" + x2 + "," + y2 + ") no reino " + realm + ". Resultado: " + in_bounds);
+	endif
+
+	return in_bounds;
 endfunction
 
 function OpenAreasDataFile(create := 0)
