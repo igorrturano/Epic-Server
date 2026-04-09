@@ -2,7 +2,6 @@ include ":message:model/Message";
 include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":abilities:models/Ability";
 include "packets/UpdateEquipmentRequest";
 
 program unequipitem(params)
