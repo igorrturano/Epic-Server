@@ -90,5 +90,5 @@ program drink_blue(who, potion)
 	SendSysMessageEx(who, "Terminou o efeito da pocao.", SSM_INFO);
 
 	
-
+ 
 endprogram

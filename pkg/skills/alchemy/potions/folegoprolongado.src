@@ -29,6 +29,6 @@ program drink_blue(who, potion)
 	SendSysMessageEx(who, "Você pode respirar debaixo d'água por mais " + duration + " segundos.",
 				  SSM_INFO);
 	SetCooldown(who, "can_breath", duration);
-	empty_bottle(who, potion);
+	empty_bottle(who, potion) ;
 	Aplicavicio(who, potion, STRENGTH);
 endprogram
