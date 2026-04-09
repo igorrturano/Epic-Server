@@ -85,6 +85,7 @@ function CalculateEstimatedMinMaxDamage(attackInfo)
 
 	var flatBonus := statusDamage.damageMod + skillDamage.damageMod + primordialDamage
 					+ arcaneBowBonus + spiritualBladeBonus + elementalWeaponBonus;
+	
 	finalDamage.max += flatBonus;
 	finalDamage.min += flatBonus;
 	finalDamage.+Damage := attackInfo.GetDamage();
