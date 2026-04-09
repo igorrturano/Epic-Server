@@ -34,6 +34,10 @@ include "system/exception/FormatException/InvalidFormatException";
 		this.Attributes := dictionary{};
 	endfunction
 
+	function GetRef(this)
+		return this.Ref;
+	endfunction
+	
 	function GetType(this)
 		return this.Type;
 	endfunction
@@ -87,7 +91,7 @@ include "system/exception/FormatException/InvalidFormatException";
 	endfunction
 
 	function GetAttribute(this, attribute)
-		if (this.Attributes.ContainsKey(attribute))
+		if (this.Attributes.exists(attribute))
 			return this.Attributes[attribute];
 		else
 			return InvalidMasteryException("Atributo de maestria inválido: " + CStr(attribute));
@@ -117,7 +121,7 @@ include "system/exception/FormatException/InvalidFormatException";
 	endfunction
 
 	function IncreaseAttribute(this, attribute, value)
-		if (this.Attributes.ContainsKey(attribute))
+		if (this.Attributes.exists(attribute))
 			this.Attributes[attribute] += CInt(value);
 		else
 			this.Attributes[attribute] := CInt(value);
