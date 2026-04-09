@@ -1065,8 +1065,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			return this.GetObjRef();
 		endif
 
-		foreach mastery in (masteriesList)
-			masteriesList[mastery] := DictionarySerializer().Serialize(masteriesList[mastery]);
+		foreach masteryRef in (masteriesList.keys())
+			masteriesList[masteryRef] := DictionarySerializer().Serialize(masteriesList[masteryRef]);
 		endforeach
 
 		this.SetProperty(MOBILE_PROPNAME::MASTERY, masteriesList);
