@@ -5,13 +5,13 @@ include "IEvent";
 
 class Event(IEvent)
 	var PID; // PID do processo que gerou o evento, para facilitar acesso sem precisar chamar GetProcess() repetidamente.
-	var Source; // Instancia do processo que gerou o evento.
+	var Source; // Instancia do listener que gerou o evento.
 	var Name;
 	var Timestamp;
 	var Payload; // Qualquer dado adicional que o evento queira carregar. Pode ser acessado pelos listeners para obter mais contexto sobre o evento.
 
 	function Event(this, source)
-		this.PID := source.pid;
+		this.PID := GetProcess().pid;
 		this.Source := source;
 		this.Name := "";
 		this.Timestamp := POLCore().systime;
@@ -26,8 +26,12 @@ class Event(IEvent)
 		this.PID := pid;
 	endfunction
 
-	function GetSource(this)
+	function GetEventProcess(this)
 		return GetProcess(this.PID);
+	endfunction
+
+	function GetSource(this)
+		return this.Source;
 	endfunction
 
 	function SetSource(this, source)
