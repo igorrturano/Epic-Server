@@ -1,0 +1,5 @@
+include ":mastery:Gump/Gump";
+
+program textcmd_Maestria(who)
+	ShowMasteryGump(who);
+endprogram
