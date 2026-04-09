@@ -21,6 +21,7 @@ include ":charactercreation:createchar";
 include ":containers:storageAreas";
 include ":keys:key";
 include ":death:wakeup";
+include ":duel:duel";
 
 program death(params)
 
@@ -43,8 +44,15 @@ program death(params)
 		var killer := 0;
 	if (lastHit != error && lastHit["attacker"])
 		killer := SystemFindObjectBySerial(lastHit["attacker"]);
-	endif			 											
+	endif
 	var dmg := lastHit.amount;
+
+	// Duel death check - read and clean up #duel property
+	var duel_data := GetObjProperty(ghost, "#duel");
+	var is_duel_death := (duel_data != error && killer.acctname && duel_data["partner"] == killer.serial);
+	if (duel_data != error)
+		EraseObjProperty(ghost, "#duel");
+	endif
 
 	if (killer.npctemplate || killer.connected) // Assassino existente
 		if (temhabilidade(ghost, "Ultimo Suspiro") && Distance(killer, corpse) <= 2)
@@ -103,99 +111,75 @@ program death(params)
 	if (getObjProperty(corpse, "oldbodyserial"))
 		KataWakeUp(ghost, corpse);
 	endif
-	if (protecao) // Proteção Contra Morte
+	if (is_duel_death)
+		// Duelo: sem perda de DP
+		SendSysMessage(ghost, "Voce foi derrotado no duelo.");
+	elseif (protecao) // Protecao Contra Morte
 		SendSysMessageEx(ghost, "Sua alma esta protegida");
-	elseif (!killer.acctname || ghost.cmdlevel) // Foi morto por NPC ou é GM
-		if (!protecao)
-			// if (getCoolDown(ghost, "deathtime") == 0 )
-			if (killer.npctemplate && killer.script == ":ghaia:tamed") // se for tamed nao tira dp
-			elseif (lastDamage.spell) // se for spell nao tira dp
-			else
-				EraseObjProperty(ghost, "#Casting");
-				AP_ConsumeVital(ghost, "DP", 10);
-				SendSysMessage(ghost, "Voce perdeu 1 DP e agora tem " + AP_GetVital(ghost, "DP") / 10);
+	elseif (ghost.cmdlevel) // GM
+		// GM nao perde DP
+	else
+		// Perda de DP para TODAS as mortes (NPC e PvP)
+		if (killer.npctemplate && killer.script == ":ghaia:tamed") // se for tamed nao tira dp
+		elseif (lastDamage.spell) // se for spell nao tira dp
+		else
+			EraseObjProperty(ghost, "#Casting");
+			AP_ConsumeVital(ghost, "DP", 10);
+			SendSysMessage(ghost, "Voce perdeu 1 DP e agora tem " + AP_GetVital(ghost, "DP") / 10);
+		endif
+		var tempo := 180;
+		if (AP_GetVital(ghost, "DP") <= 19)
+			if (!CheckResist(ghost, FORTITUDE, RESIST_EXTREMELY_HARD))
+				SendSysMessage(ghost, "Voce esta bastante ferido, e melhor se cuidar");
+				TS_StartTimer(ghost, "fraturaexposta", 1);
 			endif
-			// 	//setcooldown(ghost, "deathtime", 30);
-			// endif
-			var tempo := 180;
-			if (AP_GetVital(ghost, "DP") <= 19)
-				if (!CheckResist(ghost, FORTITUDE, RESIST_EXTREMELY_HARD))
-					SendSysMessage(ghost, "Voce esta bastante ferido, e melhor se cuidar");
-					TS_StartTimer(ghost, "fraturaexposta", 1);
-				endif
-			elseif (AP_GetVital(ghost, "DP") < 30)
-				if (!CheckResist(ghost, FORTITUDE, RESIST_VERY_HARD))
-					tempo := 300;
-					SendSysMessage(ghost, "Voce fraturou um osso!");
-					SetCoolDown(ghost, "hurt", tempo);
-					TS_StartTimer(ghost, "fraturaexposta", 1);
-				endif
-			elseif (AP_GetVital(ghost, "DP") < 40)
-				if (!CheckResist(ghost, FORTITUDE, RESIST_HARD))
-					tempo := 240;
-					SendSysMessage(ghost, "Voce fraturou um osso!");
-					SetCoolDown(ghost, "hurt", tempo);
-					TS_StartTimer(ghost, "fraturaexposta", 1);
-				endif
-			elseif ((AP_GetVital(ghost, "DP") < 50))
-				if (!CheckResist(ghost, FORTITUDE, RESIST_MEDIUM))
-					tempo := 180;
-					SendSysMessage(ghost, "Voce fraturou um osso!");
-					SetCoolDown(ghost, "hurt", tempo);
-					TS_StartTimer(ghost, "fraturaexposta", 1);
-				endif
+		elseif (AP_GetVital(ghost, "DP") < 30)
+			if (!CheckResist(ghost, FORTITUDE, RESIST_VERY_HARD))
+				tempo := 300;
+				SendSysMessage(ghost, "Voce fraturou um osso!");
+				SetCoolDown(ghost, "hurt", tempo);
+				TS_StartTimer(ghost, "fraturaexposta", 1);
 			endif
-			if (AP_GetVital(ghost, "DP") < 10 || CInt(GetObjProperty(ghost, "morto")))
-				SendSysMessage(ghost, "Voce morreu.");
-				var region := GetRegionName(corpse);
-				var tipo := "morreu";
-				var coords := { corpse.x, corpse.y, corpse.z, corpse.realm };
-				var nome := GetObjProperty(ghost, "nome_inicial");
-				var killer_name := "desconhecido";
-				if (lastHit != error && lastHit["source"] == "trap")
-					killer_name := "armadilha";
-				elseif (killer && killer.name && !killer.name.errortext)
-					killer_name := killer.name;
-				endif
-				ProcurarItensQuarto(ghost);
-				if (!CInt(GetObjProperty(ghost, "morto")))
-					Start_script(":DiscordWebhook:discord", { tipo, nome, ghost.acctname, killer_name,
-											  				region, coords, corpse });
-				endif
-				SetCooldown(ghost, "morto_recentemente", 300);
-				SetObjProperty(corpse, "morto", 1);
-				SetObjProperty(ghost, "morto", 1);
-				SetObjProperty(corpse, "deathtimer", polcore().systime);
-				// var dias := GetObjProperty(ghost, "createdate");
-				// var dias := idadeCharInDays(ghost);
-				// if (dias < 2 || dias == error || dias > 1000) // byte hell, char recriado muitas vzes tava vindo com 19k+ dias
-				// 	dias := 2;
-				// endif
-				// SendSysMessage(ghost, "Seu proximo char comecara com " + Cint((dias / 2)) + " dias de cap.");
-				// FindAccount(ghost.acctname).setprop("heir_days", CInt(dias / 2));
-				// SetObjProperty(ghost, "heir_days", CInt(dias / 2)); // 24horas*60minutos*60segundos = 86400 segundos //esse é só pra ver se foi calculado certo
-
-				// var skill_heir := get_heir_skills(ghost);
-
-				// FindAccount(ghost.acctname).setprop("herdeiro", skill_heir);
-				// if (FindAccount(ghost.acctname).getprop("herdado")) // limpa a variavel caso exista
-				// 	FindAccount(ghost.acctname).eraseprop("herdado");
-				// endif
-				// dias := (polcore().systime - dias);
-				// if (dias == error)
-				//    dias := polcore().systime;
-				// endif
-
-				// var logs := FindAccount(ghost).getprop("mortelog");
-				// if (logs == error || logs < dias)
-				// 	logs := dias;
-				// endif
-				// FindAccount(ghost.acctname).setprop("mortelog", logs);
-				EraseObjProperty(ghost, "death_remaining");
-				EraseObjProperty(ghost, "death_corpse_serial");
-				sleep(5);
-				return 1;
+		elseif (AP_GetVital(ghost, "DP") < 40)
+			if (!CheckResist(ghost, FORTITUDE, RESIST_HARD))
+				tempo := 240;
+				SendSysMessage(ghost, "Voce fraturou um osso!");
+				SetCoolDown(ghost, "hurt", tempo);
+				TS_StartTimer(ghost, "fraturaexposta", 1);
 			endif
+		elseif ((AP_GetVital(ghost, "DP") < 50))
+			if (!CheckResist(ghost, FORTITUDE, RESIST_MEDIUM))
+				tempo := 180;
+				SendSysMessage(ghost, "Voce fraturou um osso!");
+				SetCoolDown(ghost, "hurt", tempo);
+				TS_StartTimer(ghost, "fraturaexposta", 1);
+			endif
+		endif
+		if (AP_GetVital(ghost, "DP") < 10 || CInt(GetObjProperty(ghost, "morto")))
+			SendSysMessage(ghost, "Voce morreu.");
+			var region := GetRegionName(corpse);
+			var tipo := "morreu";
+			var coords := { corpse.x, corpse.y, corpse.z, corpse.realm };
+			var nome := GetObjProperty(ghost, "nome_inicial");
+			var killer_name := "desconhecido";
+			if (lastHit != error && lastHit["source"] == "trap")
+				killer_name := "armadilha";
+			elseif (killer && killer.name && !killer.name.errortext)
+				killer_name := killer.name;
+			endif
+			ProcurarItensQuarto(ghost);
+			if (!CInt(GetObjProperty(ghost, "morto")))
+				Start_script(":DiscordWebhook:discord", { tipo, nome, ghost.acctname, killer_name,
+										  				region, coords, corpse });
+			endif
+			SetCooldown(ghost, "morto_recentemente", 300);
+			SetObjProperty(corpse, "morto", 1);
+			SetObjProperty(ghost, "morto", 1);
+			SetObjProperty(corpse, "deathtimer", polcore().systime);
+			EraseObjProperty(ghost, "death_remaining");
+			EraseObjProperty(ghost, "death_corpse_serial");
+			sleep(5);
+			return 1;
 		endif
 	endif
 
@@ -229,6 +213,11 @@ program death(params)
 	endif
 	if (save)
 		tempo := 0;
+	endif
+	if (is_duel_death)
+		tempo := CInt(tempo / 2);
+		var duel_partner := SystemFindObjectBySerial(duel_data["partner"]);
+		EndDuel(ghost, duel_partner, "faint");
 	endif
 	SetObjProperty(ghost, "death_remaining", tempo * 30);
 	SetObjProperty(ghost, "death_corpse_serial", corpse.serial);
@@ -266,6 +255,15 @@ program death(params)
 			SetObjProperty(ghost, "death_remaining", tempo * 30);
 		elseif (CInt(GetObjProperty(corpse, "morto")) || CInt(GetObjProperty(ghost, "morto")))
 			SendSysMessage(ghost, "Algo aconteceu... Voce morreu.");
+			// Penalizar o assassino que matou o jogador desmaiado
+			var finalHit := GetObjProperty(ghost, "lastHit");
+			if (finalHit != error && finalHit["attacker"])
+				var assassino := SystemFindObjectBySerial(finalHit["attacker"]);
+				if (assassino.acctname && !assassino.cmdlevel)
+					AP_ConsumeVital(assassino, "DP", 10);
+					SendSysMessage(assassino, "Voce assassinou um jogador desmaiado e perdeu 1 DP. Agora tem " + AP_GetVital(assassino, "DP") / 10);
+				endif
+			endif
 			SetObjProperty(corpse, "morto", 1);
 			SetObjProperty(ghost, "morto", 1);
 			SetObjProperty(corpse, "deathtimer", polcore().systime);
@@ -307,7 +305,11 @@ program death(params)
 	EraseObjProperty(corpse, "japrolongou");
 
 	// 	RessPlayer(ghost, corpse);
-	KataWakeUp(ghost, corpse);
+	if (is_duel_death)
+		DuelWakeUp(ghost, corpse);
+	else
+		KataWakeUp(ghost, corpse);
+	endif
 	return 1;
 endprogram
 

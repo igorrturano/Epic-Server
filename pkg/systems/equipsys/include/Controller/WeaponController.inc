@@ -97,6 +97,11 @@ function getDamageByTier(tier)
 		DAMAGE_TIER::FIREWEAPON_MID: return "1d8";
 		DAMAGE_TIER::FIREWEAPON_HIGH: return "1d10";
 
+		// NPC-ONLY
+		DAMAGE_TIER::NPC_LOW: return "2d8";
+		DAMAGE_TIER::NPC_MID: return "4d8";
+		DAMAGE_TIER::NPC_HIGH: return "6d8";
+
 		default: return error{ "errortext" := "Value not found for this Weapon Damage Tier!"};
 	endcase
 endfunction

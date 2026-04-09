@@ -25,6 +25,13 @@ program equipitem(params)
 		equip.SetModifier(AttributeModifier(MAGERY, 0));
 	endif
 
+	if (item.IsA(POLCLASS_ARMOR) && who.HasAbility(ABILITY_ID::CONEXAO_DIVINA))
+		var tipoProtecao := equip.GetTipoProtecao();
+		if (tipoProtecao["Armadura Leve"] || tipoProtecao["Armadura Media"])
+			equip.SetModifier(AttributeModifier(MAGERY, 0));
+		endif
+	endif
+
 	who.ApplyItemModifiers(equip);
 	Start_Script("packets/AssyncUpdateEquipment", array{who.GetObjRef(), true, item, item.layer});
 	return 1;
