@@ -2,6 +2,7 @@ include ":message:model/Message";
 include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
+include "packets/UpdateEquipmentRequest";
 include ":debug:Controller/DebugController";
 
 program equipitem(params)
@@ -31,7 +32,18 @@ program equipitem(params)
 		endif
 	endif
 
+	if (item.IsA(POLCLASS_ARMOR))
+		var tipoProtecao := equip.GetTipoProtecao();
+		if (tipoProtecao["Armadura Media"] && who.HasAbility(ABILITY_ID::MEDIUM_ARMOR_SPEC))
+			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 1));
+		elseif (tipoProtecao["Armadura Pesada"] && who.HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
+			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 2));
+		endif
+	endif
+
 	who.ApplyItemModifiers(equip);
+	Start_Script("packets/AssyncUpdateEquipment", array{who.GetObjRef(), true, item, item.layer});
+	return 1;
 endprogram
 
 function debugWeapon(who, equip)

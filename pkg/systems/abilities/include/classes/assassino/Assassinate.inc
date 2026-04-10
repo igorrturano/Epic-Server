@@ -87,6 +87,10 @@ class Assassinate(CombatAbility)
 		var sneak := CInt(AP_GetSkill(who, SNEAK));
 		var bonus := CInt(sneak / 2);
 
+		if(attacker.HasAbility(ABILITY_ID::INSTINTO_ASSASSINO))
+			bonus := CInt(sneak);
+		endif
+
 		if (bonus > 0)
 			attackInfo.GetDamage()
 				.IncreaseSlashRawDamage(bonus)
