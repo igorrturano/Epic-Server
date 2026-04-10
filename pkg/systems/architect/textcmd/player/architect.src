@@ -902,7 +902,7 @@ program architect_gump(who)
 						19: choice[7] := choice[7] - 10;
 					endcase
 
-					if ((choice[7] < 0) || (choice[7] > 120))
+					if ((choice[7] < -128) || (choice[7] > 128))
 						choice[7] := 0;
 					endif
 
@@ -1723,9 +1723,21 @@ function check_coords(who, coords)
 		return 0;
 	endif
 
+	// Verificar se o território pertence a uma facção
+	var faction := elem.GetProp("Faction");
+	if (faction && faction != "Selvagem")
+		// Território tem dono — apenas membros dessa facção podem construir
+		var guild := who.guild;
+		if (!guild || guild.GetProp("name") != faction)
+			SendSysMessage(who, "Este território pertence à facção '" + faction + "'. Apenas seus membros podem construir aqui.");
+			return 0;
+		endif
+	endif
+
 	return 1;
 
 endfunction
+
 
 /* Creates 1 item at passed coords and adds a flag to it
  *
@@ -1771,15 +1783,35 @@ function create_marked(who, x, y, z, type)
 	endif
 
 	SendSysMessageEx(who, "Voce usou o(s) recurso(s).", SSM_INFO);
+	
+	// Trata Z e Faceta
 	var z_real := z;
-	if (who.realm == "britannia_alt") // O mapa novo tem uma diferenca de -60 no Z, por isso tem esse tratamento
-		z_real := z - 60;
+	var target_realm := who.realm;
+	
+	// Removido o hardcode antigo do britannia_alt que jogava o boneco pro z-60
+	// Agora ele segue exatamente a variavel z que veio do menu!
+	
+	var obj_type := CInt(type);
+	
+	// Heavy Debug Logging
+	SendSysMessage(who, "[DEBUG-ARQUITETO] Tentando spawnar: ObjType=" + obj_type + " | X=" + x + " | Y=" + y + " | Z=" + z_real + " | Reino=" + target_realm);
+	LogToFile("log/architect_debug.txt", "DEBUG-ARQUITETO: Jogador=" + who.name + " (" + who.serial + ") -> Type=" + obj_type + " (" + Hex(obj_type) + "), XYZ=(" + x + "," + y + "," + z_real + "), Realm=" + target_realm);
+	
+	var created := CreateItemAtLocation(x, y, z_real, obj_type, 1, target_realm);
+	
+	if (created == error)
+		SendSysMessage(who, "[ERRO FATAL ARQUITETO] CreateItem falhou: " + created.errortext);
+		LogToFile("log/architect_debug.txt", "  -> ERRO FATAL: " + created.errortext);
+		return 0;
 	endif
-	var created := CreateItemAtLocation(x, y, z_real, type, 1, who.realm);
+	
+	SendSysMessage(who, "[DEBUG-ARQUITETO] Item CRIADO com sucesso! Serial: " + created.serial);
+	LogToFile("log/architect_debug.txt", "  -> SUCESSO: Serial " + created.serial + " | Coodernadas finais do item: XYZ=(" + created.x + "," + created.y + "," + created.z + ") Realm=" + created.realm);
+	
 	created.movable := 0;
 
 	SetObjProperty(created, "built_by_architect", who.serial);
-	SetObjProperty(created, "architect_objtype", item_obj_type);
+	SetObjProperty(created, "architect_objtype", obj_type); // Modificado para obj_type correto
 	SetObjProperty(created, PROPNAME_INDESTRUTIVEL, 1);
 
 	SetupNewLockDoor(who, created);

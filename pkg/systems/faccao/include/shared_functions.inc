@@ -7,136 +7,15 @@ use guilds;
 include ":datafile:datafile";
 
 
-// Funções compartilhadas entre o sistema de baú e o sistema de gestão
-
 /* 
- * ContarItensDoadosNoBau(bau)
- * 
- * Purpose: Conta todos os itens doados no baú, classificando-os por tipo
+ * FindGuildByName(name)
+ *
+ * Purpose: Encontra uma guilda pelo nome
  * Parameters: 
- *   bau - Referência ao container do baú
+ *   name - Nome da guilda a procurar
  * Return:
- *   Struct com contagens de cada tipo de recurso
+ *   guildid ou 0 se não encontrar
  */
-function ContarItensDoadosNoBau(bau)
-    var recursos := struct{
-        comida := 0,
-        moedas := 0,
-        couro := 0,
-        metal := 0,
-        madeira := 0,
-        pano := 0,
-        pedras := 0,
-        joias := 0
-    };
-    
-    foreach item in EnumerateItemsInContainer(bau)
-        if (GetObjProperty(item, "IsKingdomDonationComida"))
-            recursos.comida += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationMoedas"))
-            recursos.moedas += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationCouro"))
-            recursos.couro += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationMetal"))
-            recursos.metal += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationMadeira"))
-            recursos.madeira += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationPano"))
-            recursos.pano += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationPedra"))
-            recursos.pedras += item.amount;
-        elseif (GetObjProperty(item, "IsKingdomDonationJoias"))
-            recursos.joias += item.amount;
-        endif
-    endforeach
-
-    return recursos;
-endfunction
-
-/* 
- * AtualizarRecursosNoDataFile(recursos)
- * 
- * Purpose: Atualiza os valores de recursos no datafile do reino
- * Parameters: 
- *   recursos - Struct com contagens de recursos
- * Return:
- *   1 para sucesso, 0 para falha
- */
-function AtualizarRecursosNoDataFile(recursos)
-    var data_file := DFOpenDataFile("kingdom_resources", DF_CREATE);
-    var elem := DFFindElement(data_file, "resources", DF_CREATE);
-    
-    if (!elem)
-        return 0;
-    endif
-    
-    // Atualizar cada recurso no datafile
-    elem.SetProp("comida", recursos.comida);
-    elem.SetProp("moedas", recursos.moedas);
-    elem.SetProp("couro", recursos.couro);
-    elem.SetProp("metal", recursos.metal);
-    elem.SetProp("madeira", recursos.madeira);
-    elem.SetProp("pano", recursos.pano);
-    elem.SetProp("pedras", recursos.pedras);
-    elem.SetProp("joias", recursos.joias);
-    
-    return 1;
-endfunction
-
-/* 
- * ObterRecursosDoReino()
- * 
- * Purpose: Obtém os valores atuais dos recursos do datafile
- * Return:
- *   Struct com os valores dos recursos
- */
-function ObterRecursosDoReino()
-    var data_file := DFOpenDataFile("kingdom_resources", DF_CREATE);
-    var elem := DFFindElement(data_file, "resources", DF_CREATE);
-    
-    var recursos := struct{
-        comida := elem.GetProp("comida") ? elem.GetProp("comida") : 0,
-        moedas := elem.GetProp("moedas") ? elem.GetProp("moedas") : 0,
-        couro := elem.GetProp("couro") ? elem.GetProp("couro") : 0,
-        metal := elem.GetProp("metal") ? elem.GetProp("metal") : 0,
-        madeira := elem.GetProp("madeira") ? elem.GetProp("madeira") : 0,
-        pano := elem.GetProp("pano") ? elem.GetProp("pano") : 0,
-        pedras := elem.GetProp("pedras") ? elem.GetProp("pedras") : 0,
-        joias := elem.GetProp("joias") ? elem.GetProp("joias") : 0
-    };
-    
-    return recursos;
-endfunction
-
-/* 
- * GetFactionOfChest(item)
- * 
- * Purpose: Determina a qual facção o baú pertence
- * Parameters: 
- *   item - Referência ao baú
- * Return:
- *   Nome da facção ou "Reino" se não tiver facção específica
- */
-function GetFactionOfChest(item)
-    // Primeiro tenta obter a facção diretamente do baú
-    var faction := GetObjProperty(item, "faction");
-    if (faction)
-        return faction;
-    endif
-    
-    // Se não encontrar, busca pela facção que tem este baú registrado
-    var guilds := ListGuilds();
-    foreach guild in guilds
-        var chest_serial := guild.GetProp("donation_chest");
-        if (chest_serial && chest_serial == item.serial)
-            return guild.GetProp("name");
-        endif
-        sleepms(2);
-    endforeach
-    
-    return "Reino"; // Valor padrão caso não encontre
-endfunction
-
 function FindGuildByName(name)
     // Primeiro tenta usar ListGuilds (mais completo)
     var guilds := ListGuilds();
@@ -166,7 +45,6 @@ function ForEachInArray(array_to_iterate, callback)
         return;
     endif
     
-    // POL usa índices baseados em 1, não 0
     for i := 1 to array_to_iterate.size()
         callback.call(array_to_iterate[i], i);
         sleepms(2);
