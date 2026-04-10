@@ -14,6 +14,7 @@
 
 include ":datafile:include/datafile";
 include ":merchants:item_template";
+include ":brainAI:include/npcInit";
 
 function AddNpc(guild, npc)
    if (typeof(guild) == "String")
@@ -51,10 +52,22 @@ function listNPC(guild)
       guild := FindGuild(guild);
    endif
 
-   if (!guild) return; endif
+   if (!guild) return array{}; endif
 
    var npcs := guild.GetProp("npcs");
    if (!npcs) npcs := array{}; endif
+
+	var upgraded := 0;
+	foreach template in (npcs)
+		if (template.template == ":merchants:merchant")
+			template.template := ":merchants:uosevendor";
+			upgraded := 1;
+		endif
+	endforeach
+	
+	if (upgraded)
+		guild.SetProp("npcs", npcs);
+	endif
 
    return npcs;
 endfunction
@@ -93,9 +106,14 @@ function DismissNPC(guild, npc_i, npc := 0)
    guild.setProp("npcs_active", npcs);
 
    npc.Disable("invul");
+   RevokePrivilege(npc, "invul");
    SetObjProperty(npc, "GuardKill", 1);
    SetObjProperty(npc, "NoCorpse", 1);
-   ApplyRawDamage(npc, 500);
+   EraseObjProperty(npc, "lastHit");
+
+   // Move o NPC para o limbo antes de remover para evitar ganho de XP/RP por proximidade
+   MoveObjectToLocation(npc, 6084, 1, 1, npc.realm, MOVEOBJECT_FORCELOCATION);
+   ApplyRawDamage(npc, 8000);
 endfunction
 
 
@@ -113,12 +131,32 @@ function ContractNPC(guild, npc_i, who, loc)
 
     var npc_list := listContractedNPC(guild);
     if(len(npc_list) < 15)
-       var agent := CreateNPCFromTemplate(template.template, loc.x, loc.y, loc.z+2, 0, who.realm);
-      if (agent.npctemplaye["merchant"])
+        var agent := CreateNPCFromTemplate(template.template, loc.x, loc.y, loc.z, 0, who.realm);
+        if (!agent || agent == error)
+            SendSysMessageEx(who, "Erro ao criar NPC ("+template.template+"): " + agent.errortext, SSM_FAIL);
+            return 0;
+        else
+            SendSysMessageEx(who, "NPC " + template.template + " criado com sucesso.", SSM_INFO);
+        endif
+
+      if (agent.npctemplate && lower(agent.npctemplate)["merchant"])
          SetObjProperty(agent, "noequip", 1);
       endif
 
-		if (agent.name != "Vendedor")
+      sleepms(500); // Aguarda o script C do NPC rodar e gerar nome, roupa e raça corretamente.
+      
+      if (agent.name["<random>"])
+         var name_template := "Human_Male";
+         if (agent.gender == 1 || agent.graphic == 401 || agent.graphic == 1829 || agent.graphic == 1831 || agent.graphic == 1833)
+             name_template := "Human_Female";
+         endif
+         NPC_SetupName(agent, name_template);
+      endif
+
+		// Corrige o bug critico onde o Vendedor virava Guarda
+		var template_name_lower := lower(template.name);
+		var template_id_lower := lower(template.template);
+		if (template_name_lower["vendedor"] == error && template_name_lower["mercador"] == error && template_name_lower["vendor"] == error && template_id_lower["merchant"] == error && template_id_lower["vendor"] == error)
 
 			agent.script := ":ghaia:guard";
 			SetObjproperty(agent, "script", agent.script);
@@ -128,11 +166,13 @@ function ContractNPC(guild, npc_i, who, loc)
        		SetObjProperty(agent, "contract_by", who.serial);
        		SetObjProperty(agent, "conf_ref",npc_i);
 
-			foreach item_ref in (template.equipment)
-				sleepms(2);
-				var item := CreateIteminBackpackFromTemplate(agent, item_ref);
-				var equipped := EquipItem(agent, item);
-       		endforeach
+			if (template.equipment && template.equipment.size() > 0)
+				foreach item_ref in (template.equipment)
+					sleepms(2);
+					var item := CreateIteminBackpackFromTemplate(agent, item_ref);
+					var equipped := EquipItem(agent, item);
+	       		endforeach
+			endif
 
 			PrintTextAbove(agent, "As suas ordens");
 
@@ -150,11 +190,13 @@ function ContractNPC(guild, npc_i, who, loc)
 			SetObjProperty(agent, "conf_ref",npc_i);
 
 
-			foreach item_ref in (template.equipment)
-				sleepms(2);
-				var item := CreateIteminBackpackFromTemplate(agent, item_ref);
-				var equipped := EquipItem(agent, item);
-			endforeach
+			if (template.equipment && template.equipment.size() > 0)
+				foreach item_ref in (template.equipment)
+					sleepms(2);
+					var item := CreateIteminBackpackFromTemplate(agent, item_ref);
+					var equipped := EquipItem(agent, item);
+				endforeach
+			endif
 /*
        if (template.bossStruct.keys().size() >= 1)
           SetBoss(agent, template.bossStruct);
