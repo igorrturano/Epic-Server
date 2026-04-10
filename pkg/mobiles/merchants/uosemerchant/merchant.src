@@ -3,6 +3,7 @@ use uo;
 use os;
 use cfgfile;
 use math;
+use guilds;
 
 include "include/string";
 include "include/sounds";
@@ -113,6 +114,13 @@ program HandleMerchant(params)
 		imposto := GetObjproperty(npc, "imposto");
 	endif
 
+	var guild_id := GetObjProperty(npc, "guild");
+	if (guild_id)
+		guild := FindGuild(guild_id);
+	endif
+
+	above_merchant := (GetObjProperty(npc, "contract_by") == player.serial || player.cmdlevel >= 3);
+
 	SetObjProperty(npc, "#occupied", GetPid());
 	case (nerve_name)
 		"ItemGiven":
@@ -120,7 +128,16 @@ program HandleMerchant(params)
 				MoveItemToContainer(npc, player.backpack);
 			endif
 		"SeeEvent": HandleSeeEvent(npc, player);
-		"DblClick": DoWithdraw(npc, player); DoPurchaseCmd(npc, player);
+		"DblClick":
+			DoWithdraw(npc, player);
+			var vendor_privs := guild ? guild.GetProp(cstr(player.serial)) : 0;
+			var is_vendor_leader := guild && (guild.GetProp("leader") == player.serial);
+			var is_guild_member := guild && (player.guildid == guild.guildid);
+			if (player.cmdlevel >= 3 || (is_guild_member && (is_vendor_leader || above_merchant || (vendor_privs && vendor_privs.contractnpc))))
+				ProcessVendorDoubleClick(npc, player);
+			else
+				DoPurchaseCmd(npc, player);
+			endif
 	endcase
 
 	EraseObjProperty(npc, "#occupied");
@@ -222,6 +239,7 @@ function DoPurchaseCmd(npc, player)
 endfunction
 
 function SetupMerchant(npc, player)
+	print("DEBUG: Abrindo janela de regra de negocios (Merchant Setup) para " + player.name);
 	var my_setup := struct{ "imposto" := cdbl(GetObjproperty(npc, "imposto")),
 							"item_type" := GetObjproperty(
 							npc,
@@ -234,18 +252,35 @@ function SetupMerchant(npc, player)
 	if (!my_setup.imposto)
 		my_setup.imposto := 0.1;
 	endif
-	if (!my_setup.item_type)
-		my_setup.item_type := item_types.keys();
-	endif
+	var all_categories := item_types.keys();
+	all_categories.sort();
+	
+	var checkbox_options := array{"Todos"};
+	foreach category in all_categories
+		checkbox_options.append(category);
+	endforeach
 
 	var marked_itemtypes := array{};
-	var itemTypeKeys := my_setup.item_type.keys();
-	foreach item in item_types
-		if (item in itemTypeKeys)
-			marked_itemtypes.append(_item_iter);
+	var itemTypeKeys := my_setup.item_type;
+
+	// Se não houver tipos definidos ou for vazio, tica "Todos" e todas as categorias
+	if (typeof(itemTypeKeys) != "Array" || itemTypeKeys.size() == 0)
+		marked_itemtypes.append(1); // "Todos"
+		foreach category in all_categories
+			marked_itemtypes.append(_category_iter + 1);
+		endforeach
+	else
+		// Se já houver tipos definidos, tica os que estão na lista
+		if (itemTypeKeys.size() >= all_categories.size())
+			marked_itemtypes.append(1); // "Todos"
 		endif
-		sleepms(2);
-	endforeach
+		foreach category in all_categories
+			if (category in itemTypeKeys)
+				marked_itemtypes.append(_category_iter + 2); // +2 because index 1 is "Todos"
+			endif
+			sleepms(2);
+		endforeach
+	endif
 
 	var races := array{ "Humano", "Elfo", "Meio-Elfo" };
 	var marked_races := array{};
@@ -262,14 +297,17 @@ function SetupMerchant(npc, player)
 						 	my_setup.imposto * cdbl(100))
 				 	});
 	questions.append(struct{ "title" := "Itens que podem ser vendidos",
-						 	"marked" := marked_itemtypes, "checkbox" := item_types.keys() });
+						 	"marked" := marked_itemtypes, "checkbox" := checkbox_options });
 	questions.append(struct{ "title" := "Vender apenas para membros da facção",
 						 	"marked" := my_setup.onlyguild + 1,
 						 	"radio" := array{ "Não", "Sim" } });
 	questions.append(struct{ "title" := "Proibir Raça", "marked" := marked_races,
 						 	"checkbox" := races });
+	questions.append(struct{ "title" := "Configurar Baú Físico (Coleta de Impostos)", 
+						 	"radio" := array{ "Não", "Mudar Baú", "Remover Baú" }, "marked" := 1 });
 	var output := QuestionsGumpUOSE(player, questions);
 
+	print("DEBUG: Fechando janela de regra de negocios (Merchant Setup) para " + player.name);
 	if (!output)
 		return;
 	endif
@@ -278,9 +316,46 @@ function SetupMerchant(npc, player)
 		SetObjProperty(npc, "imposto", cdbl(output[1]) / cdbl(100));
 	endif
 
-	SetObjProperty(npc, "item_type", output[2]);
+	var selected_categories := output[2];
+	if ("Todos" in selected_categories)
+		selected_categories := all_categories;
+	endif
+	SetObjProperty(npc, "item_type", selected_categories);
 	SetObjProperty(npc, "onlyguild", (output[3] == "Sim"));
 	SetObjProperty(npc, "norace", output[4]);
+
+	if (output[5] == "Mudar Baú")
+		SendSysMessageEx(player, "Escolha o baú da facção para coletar os impostos deste vendedor.", SSM_REQUEST);
+		var cofre := Target(player);
+		if (cofre && cofre.isA(POLCLASS_CONTAINER))
+			var guild_id := GetObjProperty(npc, "guild");
+			var faction_name := "Desconhecida";
+			if (guild_id)
+				var g_ref := FindGuild(guild_id);
+				if (g_ref)
+					faction_name := g_ref.GetProp("name");
+				endif
+			endif
+
+			SetObjProperty(npc, "cofreid", cofre.serial);
+			SetObjProperty(cofre, "tax_collector_for", npc.serial);
+			SetObjProperty(cofre, "faccao", faction_name);
+			SendSysMessageEx(player, "Baú configurado para a facção: " + faction_name, SSM_INFO);
+		else
+			SendSysMessageEx(player, "Alvo inválido.", SSM_FAIL);
+		endif
+	elseif (output[5] == "Remover Baú")
+		var cofreid := GetObjProperty(npc, "cofreid");
+		if (cofreid)
+			var cofre := SystemFindObjectBySerial(cofreid);
+			if (cofre)
+				EraseObjProperty(cofre, "tax_collector_for");
+				EraseObjProperty(cofre, "faccao");
+			endif
+		endif
+		EraseObjProperty(npc, "cofreid");
+		SendSysMessageEx(player, "Interação com baú físico removida. O ouro voltará para a pedra da guilda.", SSM_INFO);
+	endif
 endfunction
 
 function SendItemView(npc, player, filtros)
@@ -540,6 +615,13 @@ function AddItemToSell(npc, player, item)
 
 	var total_imposto := CInt(cdbl(cost_amt * (item.amount / cost_lote)) * cdbl(imposto));
 
+	var cofreid := GetObjProperty(npc, "cofreid");
+	var cofre := 0;
+	if (cofreid)
+		cofre := SystemFindObjectBySerial(cofreid);
+	endif
+	var usando_bau := (cofre && cofre.isA(POLCLASS_CONTAINER));
+
 	if (!cost_amt || cost_amt == 0)
 		SendSysMessageEx(player, "Cancelado", SSM_FAIL);
 		return;
@@ -554,7 +636,7 @@ function AddItemToSell(npc, player, item)
 		SendSysMessageEx(player, "Com essa quantidade de items por lote, alguns ficarão incompletos e issõ não é permitido.",
 				   SSM_FAIL);
 		return;
-	elseif (player.cmdlevel < 3 && ContaCapital(player, GetObjProperty(npc,"City")).valorTotal < total_imposto)
+	elseif (!usando_bau && !guild && player.cmdlevel < 3 && ContaCapital(player, GetObjProperty(npc,"City")).valorTotal < total_imposto)
 		SendSysMessageEx(player, "Você não tem moedas suficiente para pagar o vendedor pelo seu servico.",
 				   SSM_FAIL);
 		return 0;
@@ -578,12 +660,27 @@ function AddItemToSell(npc, player, item)
 			return;
 		endif
 
-		if (!player.spendgold(total_imposto, GetObjProperty(npc,"City")))
-			SendSysMessageEx(player, "Você precisa de {} moedas para colocar o item a venda".format(total_imposto),
-							  SSM_INFO_IC);
-			return 0;
+		if (usando_bau)
+			if (!ConsumeSubstance(player.backpack, MOEDAS, total_imposto))
+				SendSysMessageEx(player, "Você precisa de {} moedas na bolsa para colocar o item a venda.".format(total_imposto), SSM_INFO_IC);
+				return 0;
+			endif
+			CreateItemInContainer(cofre, MOEDAS, total_imposto);
+			SendSysMessageEx(player, "Você pagou {} moedas de imposto para a facção.".format(total_imposto), SSM_INFO);
+		elseif (guild)
+			if (!ConsumeSubstance(player.backpack, MOEDAS, total_imposto))
+				SendSysMessageEx(player, "Você precisa de {} moedas na bolsa para colocar o item a venda.".format(total_imposto), SSM_INFO_IC);
+				return 0;
+			endif
+			guild.SetProp("money", cint(guild.getProp("money")) + total_imposto);
+			SendSysMessageEx(player, "Você pagou {} moedas de imposto para a facção.".format(total_imposto), SSM_INFO);
 		else
-			SendSysMessageEx(player, "Você pagou {} moedas de imposto.".format(total_imposto), SSM_INFO);
+			if (!player.spendgold(total_imposto, GetObjProperty(npc,"City")))
+				SendSysMessageEx(player, "Você precisa de {} moedas para colocar o item a venda.".format(total_imposto), SSM_INFO_IC);
+				return 0;
+			else
+				SendSysMessageEx(player, "Você pagou {} moedas de imposto.".format(total_imposto), SSM_INFO);
+			endif
 		endif
 	endif
 
@@ -604,7 +701,14 @@ function AddItemToSell(npc, player, item)
 		PrintTextAbove(npc, "Me desculpe mas não poderei vender isto para você, tome seu dinheiro de volta.",
 				   SSM_FAIL);
 	endif
-	CreateItemInBackpack(player, MOEDAS, total_imposto);
+	if (total_imposto > 0 && player.cmdlevel < 3)
+		if (usando_bau)
+			ConsumeSubstance(cofre, MOEDAS, total_imposto);
+		elseif (guild)
+			guild.SetProp("money", cint(guild.getProp("money")) - total_imposto);
+		endif
+		CreateItemInBackpack(player, MOEDAS, total_imposto);
+	endif
 	SendSysMessageEx(player, "Error =>" + result.errortext);
 endfunction
 
@@ -634,6 +738,70 @@ function DoWithdraw(npc, player)
 	endforeach
 
 	data_elem.EraseProp(Hex(player.serial));
+endfunction
+
+function ProcessVendorDoubleClick(npc, player)
+	var gump := GFCreateGump(220, 70);
+	GFResizePic(gump, 0, 0, 0x254E, 160, 120);
+
+	GFTextLine(gump, 30, 15, 2100, "Produtos à Venda");
+	GFTooltipText(gump, "Abre a lista de produtos à venda deste vendedor.");
+	GFAddButton(gump, 15, 17, 2117, 2118, 1, 1);
+
+	GFTextLine(gump, 30, 35, 2100, "Seguir");
+	GFTooltipText(gump, "Ordena o vendedor a seguir um alvo.");
+	GFAddButton(gump, 15, 37, 2117, 2118, 1, 2);
+
+	GFTextLine(gump, 30, 55, 2100, "Ir");
+	GFTooltipText(gump, "Ordena o vendedor a ir até um local.");
+	GFAddButton(gump, 15, 57, 2117, 2118, 1, 3);
+
+	GFTextLine(gump, 30, 75, 2100, "Parar");
+	GFTooltipText(gump, "Ordena o vendedor a parar onde está.");
+	GFAddButton(gump, 15, 77, 2117, 2118, 1, 4);
+
+	var input := GFSendGump(player, gump)[0];
+	var ev := struct;
+
+	if (input == 1)
+		DoPurchaseCmd(npc, player);
+	elseif (input == 2)
+		SendSysMessageEx(player, "Em quem o vendedor deve seguir?", SSM_REQUEST);
+		var targ := Target(player);
+		if (!targ || !targ.isA(POLCLASS_MOBILE))
+			return SendSysMessageEx(player, "Cancelado.", SSM_FAIL);
+		endif
+		ev.type      := 0xA00003; // NPCEVENT_MOVE
+		ev.source    := targ;
+		ev.direction := 1;        // NEMOVE_TOWARD
+		ev.speed     := 1;        // NEMOVE_WALK
+		ev.WakeUp    := 0;        // WAKEUP
+		ev.loop      := 500;
+		ev.process   := GetProcess(GetPid());
+		SendEvent(npc, ev);
+		PrintTextAbove(npc, "As suas ordens.");
+	elseif (input == 3)
+		SendSysMessageEx(player, "Para onde o vendedor deve ir?", SSM_REQUEST);
+		var loc := TargetCoordinates(player);
+		if (!loc)
+			return SendSysMessageEx(player, "Cancelado.", SSM_FAIL);
+		endif
+		ev.type      := 0xA0000B; // NPCEVENT_MOVE_XY
+		ev.x         := loc.x;
+		ev.y         := loc.y;
+		ev.direction := 1;        // NEMOVE_TOWARD
+		ev.speed     := 1;        // NEMOVE_WALK
+		ev.WakeUp    := 0;        // WAKEUP
+		ev.loop      := 200;
+		ev.process   := GetProcess(GetPid());
+		SendEvent(npc, ev);
+		PrintTextAbove(npc, "As suas ordens.");
+	elseif (input == 4)
+		ev.type   := 0xA00013; // NPCEVENT_WAKEUP
+		ev.WakeUp := 0;
+		SendEvent(npc, ev);
+		PrintTextAbove(npc, "Sim senhor.");
+	endif
 endfunction
 
 function GetDetails(item, who, desc)

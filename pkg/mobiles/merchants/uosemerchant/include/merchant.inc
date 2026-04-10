@@ -47,8 +47,14 @@ function AddPaymentForSeller(merchant, seller_serial, cost_amnt, guild_prop := 0
    if (guild_prop)
       var guild := guild_prop[1];
       var guild_money := Ceil(cost_amnt * guild_prop[2]);
-
-      guild.SetProp("money", cint(guild.getProp("money")) + guild_money);
+      
+      var cofreid := GetObjProperty(merchant, "cofreid");
+      var cofre := SystemFindObjectBySerial(cofreid);
+      if (cofre && cofre.isA(POLCLASS_CONTAINER))
+         CreateItemInContainer(cofre, 0xba63, guild_money); // 0xba63 = Sestertius
+      else
+         guild.SetProp("money", cint(guild.getProp("money")) + guild_money);
+      endif
    endif
 	
 	cost_amnt := Cint(cost_amnt*0.1);
