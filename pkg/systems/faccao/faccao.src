@@ -865,17 +865,17 @@ function npcHandler(who, input)
 		SendHTMLGump(who, "Historico dos Guardas", historico);
 	elseif (input == BUTTON_CONTRACT_NPC)
 		var npcs_array := guild.getProp("npcs");
-		if (!npcs_array || npcs_array.size() == 0) // Nao tem configurado, cria o padrao automaticamente!
+		if (!npcs_array || npcs_array.size() == 0)
 			npcs_array := array{
 				struct{ "template" := ":epicai:guardafaccaofraco", "price" := 25,  "name" := "Guarda Recruta (Fraco)",  "equipment" := array{} },
 				struct{ "template" := ":epicai:guardafaccaomedio", "price" := 70,  "name" := "Guarda Veterano (Medio)", "equipment" := array{} },
 				struct{ "template" := ":epicai:guardafaccaoforte", "price" := 100, "name" := "Guarda Elite (Forte)",    "equipment" := array{} },
-				struct{ "template" := ":merchants:uosevendor",       "price" := 10, "name" := "Vendedor da Faccao",      "equipment" := array{} }
+				struct{ "template" := ":merchants:merchantfaccao", "price" := 10,  "name" := "Vendedor da Faccao",      "equipment" := array{} }
 			};
 			guild.SetProp("npcs", npcs_array);
 			guild_obj.npcs := npcs_array;
 		endif
-		
+
 		var opts := array{};
 		foreach agent in (guild_obj.npcs)
 			opts[_agent_iter] := "{} [{} mc]".format(agent.name, agent.price);
@@ -906,11 +906,7 @@ function npcHandler(who, input)
 						 				"marked" := npc_list[npc_choice].name });
 				questions.append(struct{ "title" := "Preco do Soldo (em moedas)?",
 						 				"marked" := cstr(npc_list[npc_choice].price) });
-				
-				print("DEBUG: Abrindo janela de regra de negocios (NPC Config) para " + who.name);
 				var output := QuestionsGump(who, questions);
-				print("DEBUG: Fechando janela de regra de negocios (NPC Config) para " + who.name);
-				
 				if (!output)
 					return;
 				endif
@@ -1007,7 +1003,6 @@ function npcHandler(who, input)
 endfunction
 
 function lawHandler(who, input)
-	print("DEBUG: Abrindo janela de regra de negocios (Leis) para " + who.name);
 	if (input == BUTTON_ADD_LAW)
 		var law_opts := array{};
 		foreach opt in (law_list.keys())
@@ -1018,7 +1013,6 @@ function lawHandler(who, input)
 		var output := RadioGump(who, 400, 0, "Escolha qual lei quer adicionar", law_opts, 1,
 								 law_opts.size());
 		if (output == law_opts.size())
-			print("DEBUG: Fechando janela de regra de negocios (Leis) para " + who.name);
 			return;
 		endif
 
@@ -1028,10 +1022,8 @@ function lawHandler(who, input)
 			SendSysMessageEx(who, "Escolha o item que sera proibido (esc para cancelar)", SSM_REQUEST);
 			var targ := Target(who);
 			if (!targ)
-				print("DEBUG: Fechando janela de regra de negocios (Leis) para " + who.name);
 				return SendSysMessageEx(who, "Cancelado");
 			elseif (!targ.isA(POLCLASS_ITEM))
-				print("DEBUG: Fechando janela de regra de negocios (Leis) para " + who.name);
 				return SendSysMessageEx(who, "Cancelado");
 			endif
 			new_law.opt := struct{ "objtype" := targ.objtype, "name" := targ.name };
@@ -1040,7 +1032,6 @@ function lawHandler(who, input)
 			var racenemy := RadioGump(who, 400, 0, "Escolha qual raca sera considerada inimiga", raceopts,
 									   0, raceopts.size());
 			if (racenemy["Cancelar"])
-				print("DEBUG: Fechando janela de regra de negocios (Leis) para " + who.name);
 				return SendSysMessageEx(who, "Cancelado");
 			endif
 			new_law.opt := racenemy;
@@ -1063,10 +1054,8 @@ function lawHandler(who, input)
 			SendSysMessageEx(who, "Escolha o alvo para aplicar esta lei", SSM_FAIL);
 			var targ := Target(who);
 			if (!targ)
-				print("DEBUG: Fechando janela de regra de negocios (Leis) para " + who.name);
 				return;
 			elseif (!targ.isA(POLCLASS_MOBILE) || targ.npctemplate)
-				print("DEBUG: Fechando janela de regra de negocios (Leis) para " + who.name);
 				return SendSysMessageEx(who, "Esta lei so pode ser aplicada em jogadores", SSM_FAIL);
 			endif
 			// ALTEREI AQUI ///
@@ -1083,7 +1072,6 @@ function lawHandler(who, input)
 			var targ1 := TargetCoordinates(who);
 
 			if (!targ1)
-				print("DEBUG: Fechando janela de regra de negocios (Leis) para " + who.name);
 				return;
 			endif
 
@@ -1091,13 +1079,11 @@ function lawHandler(who, input)
 			var targ2 := TargetCoordinates(who);
 
 			if (!targ2)
-				print("DEBUG: Fechando janela de regra de negocios (Leis) para " + who.name);
 				return;
 			endif
 
 			var gname := GetInput(who, who.backpack, "Qual o nome da Area? (aperte esc para cancelar)");
 			if (!gname)
-				print("DEBUG: Fechando janela de regra de negocios (Leis) para " + who.name);
 				return SendSysMessageEx(who, "Cancelado");
 			endif
 
@@ -1122,7 +1108,6 @@ function lawHandler(who, input)
 			ResetAllNpcs();
 		endif
 	endif
-	print("DEBUG: Fechando janela de regra de negocios (Leis) para " + who.name);
 endfunction
 
 function ResetAllNpcs()
@@ -1322,4 +1307,3 @@ function ShowTerritoriesGump(who, guild)
 	// Retornar ao gump principal da facção
 	start_script(":faccao:faccao", array{ who, guild.guildid, "guild" });
 endfunction
-// teste
