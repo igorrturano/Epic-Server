@@ -57,6 +57,7 @@ include ":abilities:classes/caminho/FarmerAbilities";
 // CAMINHO - Cross-Class (3600+)
 //===========================================
 include ":abilities:classes/caminho/CrossClassAbilities";
+include ":abilities:classes/caminho/UnarmoredCombat";
 
 // === ABILITY_CLASSES Registrations ===
 
@@ -141,3 +142,4 @@ ABILITY_CLASSES[ABILITY_ID::WRITE_SCROLLS] := @WriteScrolls;
 ABILITY_CLASSES[ABILITY_ID::HEALING_HERBS] := @HealingHerbs;
 ABILITY_CLASSES[ABILITY_ID::ACADEMIC_TRAINING] := @AcademicTraining;
 ABILITY_CLASSES[ABILITY_ID::PRESTIDIGITATOR] := @Prestidigitator;
+ABILITY_CLASSES[ABILITY_ID::UNARMORED_COMBAT] := @UnarmoredCombat;
