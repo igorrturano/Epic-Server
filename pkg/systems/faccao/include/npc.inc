@@ -57,17 +57,17 @@ function listNPC(guild)
    var npcs := guild.GetProp("npcs");
    if (!npcs) npcs := array{}; endif
 
-	var upgraded := 0;
-	foreach template in (npcs)
-		if (template.template == ":merchants:merchant")
-			template.template := ":merchants:uosevendor";
-			upgraded := 1;
-		endif
-	endforeach
-	
-	if (upgraded)
-		guild.SetProp("npcs", npcs);
-	endif
+   var upgraded := 0;
+   foreach template in (npcs)
+      if (template.template == ":merchants:uosevendor")
+         template.template := ":merchants:merchantfaccao";
+         upgraded := 1;
+      endif
+   endforeach
+
+   if (upgraded)
+      guild.SetProp("npcs", npcs);
+   endif
 
    return npcs;
 endfunction
@@ -135,81 +135,67 @@ function ContractNPC(guild, npc_i, who, loc)
         if (!agent || agent == error)
             SendSysMessageEx(who, "Erro ao criar NPC ("+template.template+"): " + agent.errortext, SSM_FAIL);
             return 0;
-        else
-            SendSysMessageEx(who, "NPC " + template.template + " criado com sucesso.", SSM_INFO);
         endif
 
       if (agent.npctemplate && lower(agent.npctemplate)["merchant"])
          SetObjProperty(agent, "noequip", 1);
       endif
 
-      sleepms(500); // Aguarda o script C do NPC rodar e gerar nome, roupa e raça corretamente.
-      
+      sleepms(500); // Aguarda o script de init gerar nome, roupa e raça
+
       if (agent.name["<random>"])
          var name_template := "Human_Male";
          if (agent.gender == 1 || agent.graphic == 401 || agent.graphic == 1829 || agent.graphic == 1831 || agent.graphic == 1833)
-             name_template := "Human_Female";
+            name_template := "Human_Female";
          endif
          NPC_SetupName(agent, name_template);
       endif
 
-		// Corrige o bug critico onde o Vendedor virava Guarda
-		var template_name_lower := lower(template.name);
-		var template_id_lower := lower(template.template);
-		if (template_name_lower["vendedor"] == error && template_name_lower["mercador"] == error && template_name_lower["vendor"] == error && template_id_lower["merchant"] == error && template_id_lower["vendor"] == error)
+      // Detecta se é vendedor pelo nome ou template para não sobrescrever o script com :ghaia:guard
+      var template_name_lower := lower(template.name);
+      var template_id_lower := lower(template.template);
+      if (template_name_lower["vendedor"] == error && template_name_lower["mercador"] == error && template_name_lower["vendor"] == error && template_id_lower["merchant"] == error && template_id_lower["vendor"] == error)
 
-			agent.script := ":ghaia:guard";
-			SetObjproperty(agent, "script", agent.script);
-			RestartScript(agent);
+         agent.script := ":ghaia:guard";
+         SetObjproperty(agent, "script", agent.script);
+         RestartScript(agent);
 
-			SetObjProperty(agent, "guild", guild.guildid);
-       		SetObjProperty(agent, "contract_by", who.serial);
-       		SetObjProperty(agent, "conf_ref",npc_i);
+         SetObjProperty(agent, "guild", guild.guildid);
+         SetObjProperty(agent, "contract_by", who.serial);
+         SetObjProperty(agent, "conf_ref", npc_i);
 
-			if (template.equipment && template.equipment.size() > 0)
-				foreach item_ref in (template.equipment)
-					sleepms(2);
-					var item := CreateIteminBackpackFromTemplate(agent, item_ref);
-					var equipped := EquipItem(agent, item);
-	       		endforeach
-			endif
+         if (template.equipment && template.equipment.size() > 0)
+            foreach item_ref in (template.equipment)
+               sleepms(2);
+               var item := CreateIteminBackpackFromTemplate(agent, item_ref);
+               var equipped := EquipItem(agent, item);
+            endforeach
+         endif
 
-			PrintTextAbove(agent, "As suas ordens");
+      else
 
-			npc_list.append(struct{
-				"serial" := agent.serial,
-				"price" := template.price,
-				"ref" := npc_i
-			});
-			guild.setProp("npcs_active", npc_list);
-	   		return 1;
-		endif
+         SetObjProperty(agent, "guild", guild.guildid);
+         SetObjProperty(agent, "contract_by", who.serial);
+         SetObjProperty(agent, "conf_ref", npc_i);
 
-			SetObjProperty(agent, "guild", guild.guildid);
-			SetObjProperty(agent, "contract_by", who.serial);
-			SetObjProperty(agent, "conf_ref",npc_i);
+         if (template.equipment && template.equipment.size() > 0)
+            foreach item_ref in (template.equipment)
+               sleepms(2);
+               var item := CreateIteminBackpackFromTemplate(agent, item_ref);
+               var equipped := EquipItem(agent, item);
+            endforeach
+         endif
 
+      endif
 
-			if (template.equipment && template.equipment.size() > 0)
-				foreach item_ref in (template.equipment)
-					sleepms(2);
-					var item := CreateIteminBackpackFromTemplate(agent, item_ref);
-					var equipped := EquipItem(agent, item);
-				endforeach
-			endif
-/*
-       if (template.bossStruct.keys().size() >= 1)
-          SetBoss(agent, template.bossStruct);
-       endif
-*/
-			PrintTextAbove(agent, "As suas ordens");
+      PrintTextAbove(agent, "As suas ordens");
 
-			npc_list.append(struct{
-				"serial" := agent.serial,
-				"price" := template.price,
-				"ref" := npc_i
-			});
-			guild.setProp("npcs_active", npc_list);
+      npc_list.append(struct{
+         "serial" := agent.serial,
+         "price" := template.price,
+         "ref" := npc_i
+      });
+      guild.setProp("npcs_active", npc_list);
     else
         SendSysMessageEx(who, "Quantidade maxima de agentes atingida.");
     endif
