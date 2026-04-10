@@ -26,10 +26,10 @@ class Assassinate(CombatAbility)
 
 	function CanActivate(this, mobile)
 		var who := mobile.GetObjRef();
-		if (!who.hidden)
+/* 		if (!who.hidden)
 			Message("Você precisa estar furtivo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
-		elseif (who.frozen || who.paralyzed)
+		else */if (who.frozen || who.paralyzed)
 			Message("Você não consegue se mover.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
