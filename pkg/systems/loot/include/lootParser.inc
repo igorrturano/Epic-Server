@@ -81,7 +81,7 @@ endfunction
 
 function Loot_CreateItem(container, line)
     var parsed := Loot_ParseString(line);
-    
+
     if(Loot_ChanceCheck(parsed.chance))
         var i;
         for(i := 1; i <= parsed.amount; i := i + 1)
@@ -95,7 +95,7 @@ function Loot_CreateItem(container, line)
                                             objtype,
                                             1,
                                             RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
-                                            1, 
+                                            1,
                                             array {0x630e}, //ouro
                                             FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
                                         );
@@ -103,11 +103,12 @@ function Loot_CreateItem(container, line)
                 item := CreateItemInContainer(container, parsed.name);
             endif
             SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+            Loot_InitBottle(item);
 
             sleepms(2);
         endfor
     endif
-    
+
     return 1;
 endfunction
 
@@ -115,16 +116,25 @@ endfunction
 
 function Loot_CreateStack(container, line)
 	var parsed := Loot_ParseString(line);
-	
+
 	if ( Loot_ChanceCheck(parsed.chance) )
 		var item := CreateItemInContainer(container, parsed.name, parsed.amount);
-        SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+		SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+		Loot_InitBottle(item);
 		if ( item.errortext )
 			return error{"errortext" := "Error - Could not create ["+parsed.name+"] ->"+item.errortext};
 		endif
 	endif
-	
+
 	return 1;
+endfunction
+
+function Loot_InitBottle(item)
+	if (item.objtype == 0x0F0E)
+		SetObjProperty(item, PROPNAME_ENCAIXE_COMPONENTE, "Frasco");
+		SetObjProperty(item, PROPNAME_MATERIAL, 7139);
+		SetObjProperty(item, PROPNAME_TIER_COMPONENTE, 1);
+	endif
 endfunction
 
 function Loot_CreateRandom(container, line)
