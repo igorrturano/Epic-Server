@@ -111,12 +111,13 @@ class Control()
 	endfunction
 
 	function ToString(this)
-		return "Control(gumpId=" + this.GetGumpId()
+		return "(Control) gumpId=" + this.GetGumpId()
 			+ ", name=" + this.GetName()
+			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
 			+ ", y=" + this.GetY()
-			+ ", tooltip=" + this.GetTooltip() ? "true" : "false"
-			+ ")";
+			+ ", xOffset=" + this.GetXOffset()
+			+ ", yOffset=" + this.GetYOffset();
 	endfunction
 endclass
 

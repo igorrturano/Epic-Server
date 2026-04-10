@@ -1,10 +1,10 @@
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
-include ":gumpDesigner:Gump/Gump";
-include ":gumpDesigner:Control/Container/ContainerGridLayout";
-include ":gumpDesigner:Control/Button";
-include ":gumpDesigner:Control/ImageGump";
-include ":gumpDesigner:Control/Tooltip";
+include ":gumpDesigner:gumps/Gump";
+include ":gumpDesigner:controls/containers/ContainerGridLayout";
+include ":gumpDesigner:controls/Button";
+include ":gumpDesigner:controls/ImageGump";
+include ":gumpDesigner:controls/Tooltip";
 include ":equipsys:packets/UpdateEquipmentRequest";
 
 program cmd_golpe(who, text)
@@ -35,7 +35,7 @@ function ChoosePosture(who)
 	var eventHandled;
 	
 	var gump := Gump(who.GetObjRef(), "Postura de Combate", 300, 175);
-	var container := ContainerGridLayout("Container", 25, 70, 260, 90, 1, 3);
+	var container := ContainerGridLayout("Container", 25, 70, 260, 90, 1, 3).SetVisible(true);
 	var imgSelector := ImageGump("Selector", 0, 0, 30062);
 	var selectedOption := ImageGump("SelectedButton", 12, 23, 1009).SetColor(COLOR_RED);
 	var buttonSlash := Button("SlashDamage", 12, 23, 1004, 1004);

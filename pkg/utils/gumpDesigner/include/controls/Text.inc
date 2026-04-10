@@ -1,22 +1,14 @@
-include "Control";
+include "ResizableControl";
 
-class Text(Control)
-	var _width := 0;
+class Text(ResizableControl)
 	var _align := TEXT_ALIGN::ALIGN_LEFT;
 	var _color := TEXT_COLOR::COLOR_DEFAULT;
 	var _value := "";
 
-	function Text(this, name, x, y, value, color := TEXT_COLOR::COLOR_DEFAULT, width := 0, align := TEXT_ALIGN::ALIGN_LEFT)
-		Super(GUMP_CONTROL::TEXT, name, x, y);
+	function Text(this, name, x, y, value)
+		Super(GUMP_CONTROL::TEXT, name, x, y, 0, 0);
 
-		this._width := width;
-		this._align := align;
-		this._color := color;
-		this._value := value;
-	endfunction
-
-	function GetWidth(this)
-		return this._width;	
+		this.SetValue(value);
 	endfunction
 
 	function GetAlign(this)
@@ -29,11 +21,6 @@ class Text(Control)
 
 	function GetValue(this)
 		return this._value;
-	endfunction
-
-	function SetWidth(this, width)
-		this._width := width;
-		return this;
 	endfunction
 
 	function SetAlign(this, align)
@@ -64,14 +51,10 @@ class Text(Control)
 	endfunction
 
 	function ToString(this)
-		return "Text(gumpId=" + this.GetGumpId()
-			+ ", name=" + this.GetName()
-			+ ", type=" + this.GetType()
-			+ ", x=" + this.GetX()
-			+ ", y=" + this.GetY()
+		return "(Text) " + Super::ToString(this)
+			+ ", align=" + this.GetAlign()
 			+ ", color=" + this.GetColor()
-			+ ", value=" + this.GetValue()
-			+ ")";
+			+ ", value=" + this.GetValue();
 	endfunction
 endclass
 

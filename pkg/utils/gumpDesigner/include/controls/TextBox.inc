@@ -1,23 +1,17 @@
-include "Control";
+include "ResizableControl";
 
-class TextBox(Control)
-	var _width := 0;
+class TextBox(ResizableControl)
 	var _lines := 0;
 	var _textColor := 0;
 	var _value := "";
 	var _maxLength := 0;
 
 	function TextBox(this, name, x, y, width, lines := 1, textColor := 0, value := 0, maxLength := 0)
-		Super(GUMP_CONTROL::TEXTBOX, name, x, y);
-		this._width := width;
+		Super(GUMP_CONTROL::TEXTBOX, name, x, y, width, 0);
 		this._lines := lines < 1 ? 1 : lines;
 		this._textColor := textColor;
 		this._value := value;
 		this._maxLength := maxLength;
-	endfunction
-
-	function GetWidth(this)
-		return this._width;
 	endfunction
 
 	function GetLines(this)
@@ -34,11 +28,6 @@ class TextBox(Control)
 
 	function GetMaxLength(this)
 		return this._maxLength;
-	endfunction
-
-	function SetWidth(this, width)
-		this._width := width;
-		return this;
 	endfunction
 
 	function SetLines(this, lines)
