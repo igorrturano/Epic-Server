@@ -1,6 +1,7 @@
 include ":gumps:epicGumps";
+include "IControl";
 
-class Control()
+class Control(IControl)
 	var _gumpId := 0; // ID que é retornado quando o gump fecha
 	var _type := GUMP_CONTROL::NONE; // enum GUMP_CONTROL
 	var _name := ""; // Nome do controle, pra identificar na chamada de eventos ou no script
@@ -11,8 +12,7 @@ class Control()
 	var _xOffset := 0;
 	var _yOffset := 0;
 
-	function Control(this, type, name, x, y, gumpId := 0)
-		this._gumpId := gumpId;
+	function Control(this, type, name, x, y)
 		this._type := type;
 		this._name := name;
 
@@ -26,37 +26,13 @@ class Control()
 		return this._gumpId;
 	endfunction
 
-	function GetType(this)
-		return this._type;
-	endfunction
-
-	function GetName(this)
-		return this._name;
-	endfunction
-
-	function GetTooltip(this)
-		return this._tooltip;
-	endfunction
-
-	function GetX(this)
-		return this._x;
-	endfunction
-
-	function GetY(this)
-		return this._y;
-	endfunction
-
-	function GetXOffset(this)
-		return this._xOffset;
-	endfunction
-
-	function GetYOffset(this)
-		return this._yOffset;
-	endfunction
-
 	function SetGumpId(this, gumpId)
 		this._gumpId := gumpId;
 		return this;
+	endfunction
+
+	function GetType(this)
+		return this._type;
 	endfunction
 
 	function SetType(this, type)
@@ -64,9 +40,17 @@ class Control()
 		return this;
 	endfunction
 
+	function GetName(this)
+		return this._name;
+	endfunction
+
 	function _SetName(this, name)
 		this._name := name;
 		return this;
+	endfunction
+
+	function GetTooltip(this)
+		return this._tooltip;
 	endfunction
 
 	function SetTooltip(this, tooltip)
@@ -74,9 +58,17 @@ class Control()
 		return this;
 	endfunction
 
+	function GetX(this)
+		return this._x;
+	endfunction
+
 	function SetX(this, x)
 		this._x := x;
 		return this;
+	endfunction
+
+	function GetY(this)
+		return this._y;
 	endfunction
 
 	function SetY(this, y)
@@ -84,9 +76,17 @@ class Control()
 		return this;
 	endfunction
 
+	function GetXOffset(this)
+		return this._xOffset;
+	endfunction
+
 	function SetXOffset(this, xOffset)
 		this._xOffset := xOffset;
 		return this;
+	endfunction
+
+	function GetYOffset(this)
+		return this._yOffset;
 	endfunction
 
 	function SetYOffset(this, yOffset)
