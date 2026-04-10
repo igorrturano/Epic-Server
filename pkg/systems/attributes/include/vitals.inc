@@ -325,6 +325,10 @@ function applyEpicHealing(mobile, amt)
 		healing := CInt(amt * (1.0 - penalty));
 	endif
 
+	if (healing < 1 && amt > 0)
+		healing := 1;
+	endif
+
 	if (damage > 0)
 		Message("*A energia sagrada queima a carne corrompida! (-" + damage + " HP)*", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		ApplyRawDamage(mobile, damage);
