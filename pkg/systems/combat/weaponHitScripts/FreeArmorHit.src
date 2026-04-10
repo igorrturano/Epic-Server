@@ -1,29 +1,44 @@
 use uo;
 use util;
 use vitals;
+use cfgfile;
 
 include ":combat:Controller/DamageController_legacy";
+include ":wrappers:Objects/Model/WeaponWrapper";
 include "include/client";
 include "include/sounds";
 include ":attributes:vitals";
 include ":attributes:attributes";
-include "include/client";
-include ":mounts:mounts";
 
 program HitScript(params)
 	var attacker := params[1];
 	var defender := params[2];
-	// var weapon	:= params[3];
+	var weaponObj := params[3];
 	// var armor	:= params[4];
 	// var basedamage	:= params[5];
-	var rawdamage := params[6];
+	// var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
 
-	var penal := AP_GetStatMod(attacker, "Dexterity");
-	if (penal >= 0)
-		var dmg := rawdamage / 4;
-		// ApplyRawDamage(defender, CInt(dmg));
-		DamageFLS(defender, dmg, DMG_FORCED, attacker);
+	var itemdesc := ReadConfigFile(":*:itemdesc");
+	var isLightArmor := true;
+	foreach item in (ListEquippedItems(attacker))
+		if (item.isa(POLCLASS_ARMOR))
+			var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
+			if (tipoProtecao["Armadura"] && !tipoProtecao["Leve"])
+				isLightArmor := false;
+				break;
+			endif
+		endif
+	endforeach
+
+	if (isLightArmor)
+		var weapon := WeaponWrapper(weaponObj);
+		weapon.SetCprops(weaponObj.Cprops);
+		var maxDmg := weapon.GetMainDamage().GetMaximum();
+		var dmg := CInt((maxDmg + 4) / 5); // ceil(20% of max weapon damage)
+		if (dmg > 0)
+			DamageFLS(defender, dmg, DMG_FORCED, attacker);
+		endif
 	endif
 
 	return 1;
