@@ -86,6 +86,8 @@ program textcmd_testdiscordbot(params)
 	elseif (tipo == "npctracker_erro")
 		var message := "**NPCTRACKER ERRO** -> Player *" + name + "* conta [" + acct_name + "] falhou ao iniciar npctracker: " + boss_name;
 		var outbound := PresetDiscordMessage(message);
+	elseif (tipo == "multiacc")
+		var outbound := PresetDiscordMessage(boss_name);
 	endif
 // if(outbound == error)
 
