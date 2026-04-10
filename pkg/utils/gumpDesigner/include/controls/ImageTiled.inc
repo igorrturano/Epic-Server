@@ -4,7 +4,7 @@ class ImageTiled(ResizableControl)
 	var _imageId := 0x0;
 
 	function ImageTiled(this, name, x, y, width, height, imageId)
-		Super(GUMP_CONTROL::IMAGETILED, name, x, y, width, height);
+		Super(GumpControl::ImageTiled, name, x, y, width, height);
 		this._imageId := imageId;
 	endfunction
 
@@ -23,13 +23,7 @@ class ImageTiled(ResizableControl)
 	endfunction
 
 	function ToString(this)
-		return "ImageTiled(gumpId=" + this.GetGumpId()
-			+ ", name=" + this.GetName()
-			+ ", x=" + this.GetX()
-			+ ", y=" + this.GetY()
-			+ ", width=" + this.GetWidth()
-			+ ", height=" + this.GetHeight()
-			+ ", imageId=" + this.GetImageId()
-			+ ")";
+		return "(ImageTiled) " + Super::ToString(this)
+			+ ", imageId=" + this.GetImageId();
 	endfunction
 endclass

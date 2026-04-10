@@ -2,8 +2,8 @@ include ":gumps:epicGumps";
 include "IControl";
 
 class Control(IControl)
-	var _gumpId := 0; // ID que é retornado quando o gump fecha
-	var _type := GUMP_CONTROL::NONE; // enum GUMP_CONTROL
+	var _id := 0; // ID que é retornado quando o gump fecha
+	var _type := GumpControl::None; // enum GumpControl
 	var _name := ""; // Nome do controle, pra identificar na chamada de eventos ou no script
 	var _tooltip; // Tooltip (Control)
 
@@ -22,12 +22,12 @@ class Control(IControl)
 		this._yOffset := 0;
 	endfunction
 
-	function GetGumpId(this)
-		return this._gumpId;
+	function GetId(this)
+		return this._id;
 	endfunction
 
-	function SetGumpId(this, gumpId)
-		this._gumpId := gumpId;
+	function SetId(this, id)
+		this._id := id;
 		return this;
 	endfunction
 
@@ -95,13 +95,15 @@ class Control(IControl)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
+		// print("Creating control: " + this.ToString());
+
 		if (this.GetTooltip())
 			this._tooltip.SelfCreate(gump);
 		endif
 	endfunction
 
 	function Equals(this, byRef other)
-		return this._gumpId == other.GetGumpId()
+		return this._id == other.GetId()
 			&& this._type == other.GetType()
 			&& this._name == other.GetName();
 	endfunction
@@ -111,7 +113,7 @@ class Control(IControl)
 	endfunction
 
 	function ToString(this)
-		return "(Control) gumpId=" + this.GetGumpId()
+		return "(Control) id=" + this.GetId()
 			+ ", name=" + this.GetName()
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
@@ -121,23 +123,19 @@ class Control(IControl)
 	endfunction
 endclass
 
-enum class GUMP_CONTROL
-	NONE := "none",
-
-	TEXT := "text",
-	TEXTCROPPED := "textcropped",
-	IMAGEGUMP := "imagegump",
-	IMAGEGUMPTILED := "imagegumptiled",
-	IMAGETILED := "imagetiled",
-	TOOLTIP := "tooltip",
-
-	BUTTON := "button",
-	RADIOGROUP := "radiogroup",
-	RADIOBUTTON := "radiobutton",
-	CHECKBOX := "checkbox",
-
-	TEXTBOX := "textbox",
-
-	CONTAINER := "container",
-	CONTAINERGRIDLAYOUT := "containergridlayout"
+enum class GumpControl
+	None := "none",
+	Text := "text",
+	TextCropped := "textcropped",
+	ImageGump := "imagegump",
+	ImageGumpTiled := "imagegumptiled",
+	ImageTiled := "imagetiled",
+	Tooltip := "tooltip",
+	Button := "button",
+	RadioGroup := "radiogroup",
+	RadioButton := "radiobutton",
+	CheckBox := "checkbox",
+	TextBox := "textbox",
+	Container := "container",
+	ContainerGridLayout := "containergridlayout"
 endenum

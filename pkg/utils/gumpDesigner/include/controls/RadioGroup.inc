@@ -5,7 +5,7 @@ class RadioGroup(Control)
 	var _buttons := array{};
 
 	function RadioGroup(this, name, x, y)
-		Super(GUMP_CONTROL::RADIOGROUP, name, x, y);
+		Super(GumpControl::RadioGroup, name, x, y);
 	endfunction
 
 	function GetGroupId(this)

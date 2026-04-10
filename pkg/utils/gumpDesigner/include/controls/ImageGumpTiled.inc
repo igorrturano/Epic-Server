@@ -3,7 +3,7 @@ include "ImageGump";
 class ImageGumpTiled(ImageGump)
 	function ImageGumpTiled(this, name, x, y, width, height, imageId, color := 0)
 		Super(name, x, y, imageId, color);
-		this._type := GUMP_CONTROL::IMAGEGUMPTILED;
+		this._type := GumpControl::ImageGumpTiled;
 	endfunction
 
 	function SelfCreate(this, byRef gump)
@@ -12,14 +12,6 @@ class ImageGumpTiled(ImageGump)
 	endfunction
 
 	function ToString(this)
-		return "ImageGump(gumpId=" + this.GetGumpId()
-			+ ", name=" + this.GetName()
-			+ ", x=" + this.GetX()
-			+ ", y=" + this.GetY()
-			+ ", imageId=" + this.GetImageId()
-			+ ", width=" + this.GetWidth()
-			+ ", height=" + this.GetHeight()
-			+ ", color=" + this.GetColor()
-			+ ")";
+		return "(ImageGumpTiled) " + Super::ToString(this);
 	endfunction
 endclass

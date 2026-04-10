@@ -1,12 +1,12 @@
 class IControl()
-	uninit function IControl(this, type, name, x, y);
+	// uninit function IControl(this, type, name, x, y);
 
-	uninit function GetGumpId(this);
-	uninit function SetGumpId(this, gumpId);
+	uninit function GetId(this);
+	uninit function SetId(this, id);
 	uninit function GetType(this);
 	uninit function SetType(this, type);
 	uninit function GetName(this);
-	uninit function SetName(this, name);
+	uninit function _SetName(this, name);
 	uninit function GetTooltip(this);
 	uninit function SetTooltip(this, tooltip);
 	uninit function GetX(this);
@@ -17,7 +17,7 @@ class IControl()
 	uninit function SetXOffset(this, xOffset);
 	uninit function GetYOffset(this);
 	uninit function SetYOffset(this, yOffset);
-	
+
 	uninit function SelfCreate(this, byRef gump);
 	uninit function Equals(this, byRef other);
 endclass

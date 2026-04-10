@@ -5,7 +5,7 @@ class ImageGump(ResizableControl)
 	var _color := 0;
 
 	function ImageGump(this, name, x, y, imageId, width := 0, height := 0, color := 0)
-		Super(GUMP_CONTROL::IMAGEGUMP, name, x, y, width, height);
+		Super(GumpControl::ImageGump, name, x, y, width, height);
 		this._imageId := imageId;
 		this._color := color;
 	endfunction
@@ -45,14 +45,8 @@ class ImageGump(ResizableControl)
 	endfunction
 
 	function ToString(this)
-		return "ImageGump(gumpId=" + this.GetGumpId()
-			+ ", name=" + this.GetName()
-			+ ", x=" + this.GetX()
-			+ ", y=" + this.GetY()
+		return "(ImageGump) " + Super::ToString(this)
 			+ ", imageId=" + this.GetImageId()
-			+ ", width=" + this.GetWidth()
-			+ ", height=" + this.GetHeight()
-			+ ", color=" + this.GetColor()
-			+ ")";
+			+ ", color=" + this.GetColor();
 	endfunction
 endclass

@@ -8,7 +8,7 @@ class Button(Control)
 	var _actions := array{}; // Função lambda a ser executada no clique
 
 	function Button(this, name, x, y, unpressedImage := BUTTON_IMAGE::CLOSE_UNPRESSED, pressedImage := BUTTON_IMAGE::CLOSE_PRESSED, buttonType := BUTTON_TYPE::CLOSE)
-		Super(GUMP_CONTROL::BUTTON, name, x, y);
+		Super(GumpControl::Button, name, x, y);
 		this._unpressedImage := unpressedImage;
 		this._pressedImage := pressedImage;
 		this._buttonType := buttonType;
@@ -58,20 +58,16 @@ class Button(Control)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFAddButton(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetButtonType(), this.GetGumpId());
+		GFAddButton(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetButtonType(), this.GetId());
 		Super::SelfCreate(this, gump);
 	endfunction
 
 	function ToString(this)
-		return "Button(gumpId=" + this.GetGumpId()
-			+ ", name=" + this.GetName()
-			+ ", type=" + this.GetType()
-			+ ", x=" + this.GetX()
-			+ ", y=" + this.GetY()
+		return "(Button) " + Super::ToString(this)
 			+ ", unpressedImage=" + this.GetUnpressedImage()
 			+ ", pressedImage=" + this.GetPressedImage()
-			+ ", actions=" + this.GetActions()
-			+ ")";
+			+ ", buttonType=" + this.GetButtonType()
+			+ ", actionsCount=" + this.GetActions().size();
 	endfunction
 endclass
 

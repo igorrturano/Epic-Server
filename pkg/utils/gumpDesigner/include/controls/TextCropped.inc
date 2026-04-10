@@ -3,7 +3,7 @@ include "Text";
 class TextCropped(Text)
 	function TextCropped(this, name, x, y, width, height, value)
 		Super(name, x, y, value);
-		this._type := GUMP_CONTROL::TEXTCROPPED;
+		this._type := GumpControl::TextCropped;
 
 		this.SetWidth(width);
 		this.SetHeight(height);

@@ -7,7 +7,7 @@ class TextBox(ResizableControl)
 	var _maxLength := 0;
 
 	function TextBox(this, name, x, y, width, lines := 1, textColor := 0, value := 0, maxLength := 0)
-		Super(GUMP_CONTROL::TEXTBOX, name, x, y, width, 0);
+		Super(GumpControl::TextBox, name, x, y, width, 0);
 		this._lines := lines < 1 ? 1 : lines;
 		this._textColor := textColor;
 		this._value := value;

@@ -40,14 +40,10 @@ class RadioButton(Control)
 	endfunction
 
 	function ToString(this)
-		return "RadioButton(gumpId=" + this.GetGumpId()
-			+ ", name=" + this.GetName()
-			+ ", x=" + this.GetX()
-			+ ", y=" + this.GetY()
-			+ ", unpressedImage=" + CStr(this.GetUnpressedImage())
-			+ ", pressedImage=" + CStr(this.GetPressedImage())
-			+ ", value=" + CStr(this.GetValue())
-			+ ")";
+		return "(RadioButton) " + Super::ToString(this)
+			+ ", unpressedImage=" + this.GetUnpressedImage()
+			+ ", pressedImage=" + this.GetPressedImage()
+			+ ", value=" + this.GetValue();
 	endfunction
 
 	function SelfCreate(this, byRef gump)

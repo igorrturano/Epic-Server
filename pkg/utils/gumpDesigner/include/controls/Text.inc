@@ -6,7 +6,7 @@ class Text(ResizableControl)
 	var _value := "";
 
 	function Text(this, name, x, y, value)
-		Super(GUMP_CONTROL::TEXT, name, x, y, 0, 0);
+		Super(GumpControl::Text, name, x, y, 0, 0);
 
 		this.SetValue(value);
 	endfunction
