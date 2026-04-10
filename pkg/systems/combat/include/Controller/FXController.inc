@@ -121,7 +121,8 @@ function GetAttackerFX(byRef attackInfo)
 						attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_BLUNT};
 					endif
 				endif
-			elseif (Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(TWOHANDED))
+			elseif (Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(TWOHANDED)
+					|| Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(WRESTLING))
 				if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
