@@ -325,17 +325,17 @@ function applyEpicHealing(mobile, amt)
 		healing := CInt(amt * (1.0 - penalty));
 	endif
 
-	// Aplicar efeitos
-	if (entropy < 0)
-		Message("A corrupção prejudica a cura. (" + entropy + ")", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
-	endif
-
 	if (damage > 0)
-		Message("*A cura queima a corrupção!*", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		Message("*A energia sagrada queima a carne corrompida! (-" + damage + " HP)*", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		ApplyRawDamage(mobile, damage);
 	endif
 
 	if (healing > 0)
+		if (entropy < 0)
+			var pct := CInt((CDbl(Abs(entropy)) / 40000.0) * 100);
+			if (pct > 50) pct := 50; endif
+			Message("*Curado em " + healing + " HP (-" + pct + "% por corrupção)*", Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
+		endif
 		wrapper.RestoreHP(healing);
 	endif
 
