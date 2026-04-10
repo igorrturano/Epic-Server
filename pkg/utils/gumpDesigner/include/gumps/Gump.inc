@@ -6,6 +6,7 @@ include ":gumpDesigner:controls/Button";
 include ":gumpDesigner:controls/containers/Container";
 include ":gumpDesigner:events/GumpEvent";
 include ":gumpDesigner:events/exceptions/NoEventHandledException";
+include ":message:model/Message";
 
 class Gump(IGump)
 	var _parent;
@@ -19,12 +20,12 @@ class Gump(IGump)
 
 	var _options := array{}; // Array de opções (enum GUMP_OPTION)
 	var _customization := array{}; // Array de funções lambda
-
 	var _controls := struct{
 			idOrder := array{},
 			lastId := dictionary{},
 			position := dictionary{}
 		};
+	var helpAction;
 
 	function Gump(this, parent, title, width, height, options := array{})
 		this._parent := parent;
@@ -39,6 +40,9 @@ class Gump(IGump)
 			idOrder := array{},
 			lastId := dictionary{},
 			position := dictionary{}
+		};
+		this.helpAction := @() {
+			Message("Esta ajuda ainda não foi implementada.").SetColor(Color(SYSTEM_COLOR::ALERT)).SendSys(this.GetParent());
 		};
 	endfunction
 
@@ -119,7 +123,6 @@ class Gump(IGump)
 		control.SetId(this._controls.lastId[control.GetType()]);
 		this._controls.idOrder.append(control.GetId());	
 		this._controls.position[control.GetId()] := control;
-		print ("Added control: " + control.ToString() + " with ID: " + control.GetId());
 		
 		if (control is @Container)
 			foreach childControl in (control.GetControls())
@@ -132,6 +135,13 @@ class Gump(IGump)
 
 	function AddCustomization(this, byRef customFunction)
 		this._customization.append(customFunction);
+		
+		return this;
+	endfunction
+
+	function SetHelpAction(this, byRef helpAction)
+		this.helpAction := helpAction;
+		
 		return this;
 	endfunction
 
@@ -166,7 +176,6 @@ class Gump(IGump)
 
 		this._UpdateInputValues();
 		eventHandled.GetControl().ExecuteActions();
-		print ("Event handled for control: " + eventHandled.GetControl().ToString());
 
 		return eventHandled;
 	endfunction
@@ -231,9 +240,7 @@ class Gump(IGump)
 		endif
 		
 		var buttonHelp := Button("Help", this.GetWidth() - 30, 36, 0x5689, 0x568A);
-		buttonHelp.AddAction(@() {
-			SendSysMessage(this.GetParent(), "This is a help message for the gump.");
-		});
+		buttonHelp.AddAction(this.helpAction);
 
 		this.AddControl(buttonHelp);
 	endfunction
