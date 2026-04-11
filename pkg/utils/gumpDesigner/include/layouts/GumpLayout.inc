@@ -22,8 +22,6 @@ class GumpLayout(Container)
 		Super("Gump Layout", 0, 0, width, height);
 		this.borders := GumpLayout::borders;
 		this.background := GumpLayout::background;
-
-		this._InitializeStructure();
 	endfunction
 
 	function GetBorder_TopLeft(this)
@@ -136,6 +134,13 @@ class GumpLayout(Container)
 		this.bgImg := imageGump;
 
 		return this;
+	endfunction
+
+	function Draw(this, gump)
+		foreach control in (this.GetControls())
+			control.Draw(gump.GetGump());
+			SleepMS(2);
+		endforeach
 	endfunction
 
 	function _InitializeStructure(this)

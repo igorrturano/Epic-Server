@@ -94,11 +94,11 @@ class Control(IControl)
 		return this;
 	endfunction
 
-	function SelfCreate(this, byRef gump)
+	function Draw(this, byRef gump)
 		// print("Creating control: " + this.ToString());
 
 		if (this.GetTooltip())
-			this._tooltip.SelfCreate(gump);
+			this._tooltip.Draw(gump);
 		endif
 	endfunction
 

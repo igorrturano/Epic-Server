@@ -155,6 +155,14 @@ class Gump(IGump)
 			return InvalidParameterException("Page must be of type GumpBody.");
 		endif
 
+		if (!this._pages)
+			this._pages := array{};
+		endif
+
+		if (this._pages.size() >= 10)
+			return InvalidParameterException("A gump cannot have more than 10 pages.");
+		endif
+
 		this._pages.append(page);
 
 		return this;
@@ -212,15 +220,16 @@ class Gump(IGump)
 	endfunction
 
 	function Show(this)
-		var eventHandled, gumpResult;
-		
+		this._pid := GetPid();
+
+		this._DrawDiag();
 		this._CreateHelper();
 		this._CreateControls();
 		this._CreateCustoms();
 
-		this._pid := GetPid();
 		this._gumpResult := GFSendGump(this._parent, this._gump);
 
+		var eventHandled;
 		if (!this._gumpResult[0])
 			return NoEventHandledException("No event was handled for this gump.");
 		else
@@ -248,29 +257,18 @@ class Gump(IGump)
 	endfunction
 
 	// Private functions
-	function _GetIdOffsetByControlType(controlType)
-		case (controlType) // Feito com valores fixos pra poder ter um controle melhor da resposta no input[0]
-			GumpControl::Text: return 0;
-			GumpControl::TextCropped: return 1000;
-			GumpControl::ImageGump: return 2000;
-			GumpControl::ImageGumpTiled: return 3000;
-			GumpControl::ImageTiled: return 4000;
-			GumpControl::Button: return 5000;
-			GumpControl::CheckBox: return 6000;
-			GumpControl::RadioButton: return 7000;
-			GumpControl::TextBox: return 8000;
-			GumpControl::Tooltip: return 9000;
-			GumpControl::RadioGroup: return 10000;
-			GumpControl::Container: return 11000;
-			GumpControl::ContainerGridLayout: return 12000;
-
-			default: return 0;
-		endcase
+	function _DrawDiag(this)
+		this.GetLayout().Draw(this);
+		this.GetTitle().Draw(this);
+		foreach page in (this._pages)
+			page.Draw(this);
+		endforeach
+		
 	endfunction
-
+	
 	function _CreateControls(this)
 		foreach id in (this.GetControls().idOrder)
-			this.GetControls().position[id].SelfCreate(this._gump);
+			this.GetControls().position[id].Draw(this._gump);
 		endforeach
 	endfunction
 
@@ -319,5 +317,25 @@ class Gump(IGump)
 		buttonHelp.AddAction(this.helpAction);
 
 		this.GetLayout().AddControl(buttonHelp);
+	endfunction
+
+	function _GetIdOffsetByControlType(controlType)
+		case (controlType) // Feito com valores fixos pra poder ter um controle melhor da resposta no input[0]
+			GumpControl::Text: return 0;
+			GumpControl::TextCropped: return 1000;
+			GumpControl::ImageGump: return 2000;
+			GumpControl::ImageGumpTiled: return 3000;
+			GumpControl::ImageTiled: return 4000;
+			GumpControl::Button: return 5000;
+			GumpControl::CheckBox: return 6000;
+			GumpControl::RadioButton: return 7000;
+			GumpControl::TextBox: return 8000;
+			GumpControl::Tooltip: return 9000;
+			GumpControl::RadioGroup: return 10000;
+			GumpControl::Container: return 11000;
+			GumpControl::ContainerGridLayout: return 12000;
+
+			default: return 0;
+		endcase
 	endfunction
 endclass

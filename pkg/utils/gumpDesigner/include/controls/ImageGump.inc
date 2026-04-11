@@ -34,14 +34,14 @@ class ImageGump(ResizableControl)
 		return this;
 	endfunction
 
-	function SelfCreate(this, byRef gump)
+	function Draw(this, byRef gump)
 		if (this._width == 0 || this._height == 0)
 			GFGumpPic(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetColor());
 		else
 			GFResizePic(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetWidth(), this.GetHeight());
 		endif
 
-		Super::SelfCreate(this, gump);
+		Super::Draw(this, gump);
 	endfunction
 
 	function ToString(this)

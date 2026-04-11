@@ -17,7 +17,7 @@ class Tooltip(Control)
 		return this;
 	endfunction
 
-	function SelfCreate(this, byRef gump)
+	function Draw(this, byRef gump)
 		GFTooltipText(gump, this.GetText());
 	endfunction
 

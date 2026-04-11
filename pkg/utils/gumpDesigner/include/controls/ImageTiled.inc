@@ -17,9 +17,9 @@ class ImageTiled(ResizableControl)
 		return this;
 	endfunction
 
-	function SelfCreate(this, byRef gump)
+	function Draw(this, byRef gump)
 		GFPicTiled(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), this.GetImageId());
-		Super::SelfCreate(this, gump);
+		Super::Draw(this, gump);
 	endfunction
 
 	function ToString(this)

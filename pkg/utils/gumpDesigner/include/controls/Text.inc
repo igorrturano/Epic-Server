@@ -40,7 +40,7 @@ class Text(ResizableControl)
 		return this;
 	endfunction
 
-	function SelfCreate(this, byRef gump)
+	function Draw(this, byRef gump)
 		if (!this._align)
 			GFTextLine(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
 		elseif (this._align == TEXT_ALIGN::ALIGN_CENTER)
@@ -49,7 +49,7 @@ class Text(ResizableControl)
 			GFTextRight(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
 		endif
 		
-		Super::SelfCreate(this, gump);
+		Super::Draw(this, gump);
 	endfunction
 
 	function ToString(this)

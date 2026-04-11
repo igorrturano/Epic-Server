@@ -9,9 +9,9 @@ class TextCropped(Text)
 		this.SetHeight(height);
 	endfunction
 
-	function SelfCreate(this, byRef gump)
+	function Draw(this, byRef gump)
 		GFTextCrop(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), this.GetColor(), this.GetValue());
-		Super::SelfCreate(this, gump);
+		Super::Draw(this, gump);
 	endfunction
 
 	function ToString(this)

@@ -46,9 +46,9 @@ class RadioButton(Control)
 			+ ", value=" + this.GetValue();
 	endfunction
 
-	function SelfCreate(this, byRef gump)
+	function Draw(this, byRef gump)
 		GFRadioButton(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetValue(), this.GetGumpId());
-		Super::SelfCreate(this, gump);
+		Super::Draw(this, gump);
 	endfunction
 endclass
 

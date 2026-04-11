@@ -18,6 +18,6 @@ class IControl()
 	uninit function GetYOffset(this);
 	uninit function SetYOffset(this, yOffset);
 
-	uninit function SelfCreate(this, byRef gump);
+	uninit function Draw(this, byRef gump);
 	uninit function Equals(this, byRef other);
 endclass

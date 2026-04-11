@@ -41,7 +41,7 @@ class Container(ResizableControl)
 		return this;
 	endfunction
 
-	function SelfCreate(this, byRef gump)
+	function Draw(this, byRef gump)
 		if (this._isVisible)
 			GFGumpPicTiled(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), RandomIntMinMax(0x4657, 0x46CC + 1)); // Desenha um background aleatório para o container, só para visualização
 		endif

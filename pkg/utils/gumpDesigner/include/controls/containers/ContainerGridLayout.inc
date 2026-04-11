@@ -62,10 +62,10 @@ class ContainerGridLayout(Container)
 		return this;
 	endfunction
 
-	function SelfCreate(this, byRef gump)
+	function Draw(this, byRef gump)
 		foreach row in (this._containers)
 			foreach container in (row)
-				container.SelfCreate(gump);
+				container.Draw(gump);
 				SleepMS(2);
 			endforeach
 		endforeach
