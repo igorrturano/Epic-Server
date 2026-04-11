@@ -56,7 +56,7 @@ class ContainerGridLayout(Container)
 	endfunction
 
 	// Override
-	function AddControl(this, byRef control, row, column)
+	function AddControl(this, control, row, column)
 		this._containers[row][column].AddControl(control);
 
 		return this;
