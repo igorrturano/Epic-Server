@@ -1,11 +1,14 @@
 include "IGump";
-include ":gumps:epicGumps";
+// include ":gumps:epicGumps";
 include ":gumps:autoClose";
+include ":gumpDesigner:gumps/DiagFactory";
 include ":gumpDesigner:controls/Control";
 include ":gumpDesigner:controls/Button";
 include ":gumpDesigner:controls/containers/Container";
+include ":gumpDesigner:layouts/GumpLayout";
 include ":gumpDesigner:events/GumpEvent";
 include ":gumpDesigner:events/exceptions/NoEventHandledException";
+
 include ":message:model/Message";
 
 class Gump(IGump)
@@ -13,6 +16,7 @@ class Gump(IGump)
 	var _pid;
 	var _gump;
 	var _gumpResult;
+	var _gumpLayout;
 	
 	var _title := "";
 	var _width := 0;
@@ -29,6 +33,7 @@ class Gump(IGump)
 
 	function Gump(this, parent, title, width, height, options := array{})
 		this._parent := parent;
+		
 
 		this._title := title;
 		this._width := width;
@@ -61,6 +66,11 @@ class Gump(IGump)
 
 	function GetGump(this)
 		return this._gump;
+	endfunction
+
+	function SetGump(this, gumpStr)
+		this._gump := gumpStr;
+		return this;
 	endfunction
 
 	function GetGumpResult(this)
@@ -159,7 +169,14 @@ class Gump(IGump)
 	function Show(this)
 		var eventHandled, gumpResult;
 		
-		this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
+		var gumpFactory := DiagFactory(this)
+			.MountStyle()
+			.MountTitle()
+			.MountBody();
+
+		print(this.ToString());
+
+		// this._gump := GFECreateGump(this._title, this._width, this._height, this._options);
 		this._CreateHelper();
 
 		this._CreateControls();
