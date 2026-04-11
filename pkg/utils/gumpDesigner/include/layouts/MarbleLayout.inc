@@ -1,8 +1,8 @@
 include "GumpLayout";
 
 class MarbleLayout(GumpLayout)
-	function MarbleLayout(this)
-		Super();
+	function MarbleLayout(this, width, height)
+		Super(width, height);
 		this._InitializeLayout();
 	endfunction
 

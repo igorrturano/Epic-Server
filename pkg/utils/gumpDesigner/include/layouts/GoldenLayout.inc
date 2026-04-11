@@ -1,8 +1,8 @@
 include "GumpLayout";
 
 class GoldenLayout(GumpLayout)
-	function GoldenLayout(this)
-		Super();
+	function GoldenLayout(this, width, height)
+		Super(width, height);
 		this._InitializeLayout();
 	endfunction
 

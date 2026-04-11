@@ -18,8 +18,8 @@ class GumpLayout(Container)
 	};
 	var background := 0;
 	
-	function GumpLayout(this)
-		Super("Gump Layout", 0, 0, 0, 0);
+	function GumpLayout(this, width, height)
+		Super("Gump Layout", 0, 0, width, height);
 		this.borders := GumpLayout::borders;
 		this.background := GumpLayout::background;
 
@@ -156,10 +156,3 @@ class GumpLayout(Container)
 	// O filho implementa porque a ordem importa pra sobreposição das imagens de acordo com cada layout.
 	uninit function _AddLayout(this);
 endclass
-
-enum class LayoutType
-	DefaultBorder := "border_default",
-	Golden := "border_golden",
-	Blue := "border_blue",
-	Marble := "border_marble"
-endenum

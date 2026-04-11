@@ -1,8 +1,8 @@
 include "GumpLayout";
 
 class BlueLayout(GumpLayout)
-	function BlueLayout(this)
-		Super();
+	function BlueLayout(this, width, height)
+		Super(width, height);
 		this._InitializeLayout();
 	endfunction
 
