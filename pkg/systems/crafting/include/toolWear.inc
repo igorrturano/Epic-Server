@@ -8,15 +8,8 @@ include ":abilities:models/Ability";
 function CheckToolWear (who, tool, craft_skill)
   var swings := GetObjProperty(tool,"swings");
   if(!swings)
-    var componente := PegaComponenteFabricacao(tool,CARACTERISTICA_FABRICACAO_EFICIENCIA);
-    var bonus := 0;
-    case(componente.tier.id)
-      COMPONENTE_TIERS::MEDIOCRE:       bonus := 0; break;
-      COMPONENTE_TIERS::COMUM:          bonus := 10; break;
-      COMPONENTE_TIERS::NOTAVEL:        bonus := 20; break;
-      COMPONENTE_TIERS::SUPERIOR:       bonus := 30; break;
-      COMPONENTE_TIERS::EXCEPCIONAL:    bonus := 40; break;
-    endcase
+    var modFabricacao := PegaValorFabricacao(tool,CARACTERISTICA_FABRICACAO_EFICIENCIA);
+    var bonus := modFabricacao * 10;
     swings := Cint(55 * tool.quality) + bonus;
     SetObjProperty(tool,"swings", swings);
   endif
