@@ -10,6 +10,19 @@ include "include/sounds";
 include ":attributes:vitals";
 include ":attributes:attributes";
 
+function CanActivate(who)
+	var itemdesc := ReadConfigFile(":*:itemdesc");
+	foreach item in (ListEquippedItems(who))
+		if (item.isa(POLCLASS_ARMOR))
+			var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
+			if (tipoProtecao["Armadura"] && !tipoProtecao["Leve"])
+				return true; // non-light armor found, cannot activate
+			endif
+		endif
+	endforeach
+	return false; // naked, clothes only, or light armor = can activate
+endfunction
+
 program HitScript(params)
 	var attacker := params[1];
 	var defender := params[2];
@@ -19,19 +32,7 @@ program HitScript(params)
 	// var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
 
-	var itemdesc := ReadConfigFile(":*:itemdesc");
-	var isLightArmor := true;
-	foreach item in (ListEquippedItems(attacker))
-		if (item.isa(POLCLASS_ARMOR))
-			var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
-			if (tipoProtecao["Armadura"] && !tipoProtecao["Leve"])
-				isLightArmor := false;
-				break;
-			endif
-		endif
-	endforeach
-
-	if (isLightArmor)
+	if (!CanActivate(attacker))
 		var weapon := WeaponWrapper(weaponObj);
 		weapon.SetCprops(weaponObj.Cprops);
 		var maxDmg := weapon.GetMainDamage().GetMaximum();
