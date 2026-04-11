@@ -3,10 +3,10 @@ include "GumpLayout";
 class GoldenLayout(GumpLayout)
 	function GoldenLayout(this, width, height)
 		Super(width, height);
-		this._InitializeLayout();
+		this._InitializeValues();
 	endfunction
 
-	function _InitializeLayout(this)
+	function _InitializeValues(this)
 		this.GetBorder_TopLeft().SetImageId(39925);
 		this.GetBorder_Top().SetImageId(39926);
 		this.GetBorder_TopRight().SetImageId(39927);
@@ -17,10 +17,10 @@ class GoldenLayout(GumpLayout)
 		this.GetBorder_BottomRight().SetImageId(39933);
 		this.GetBackground().SetImageId(39929);
 
-		this._AddLayout();
+		this._InsertControls();
 	endfunction
 
-	function _AddLayout(this)
+	function _InsertControls(this)
 		this.AddControl(this.GetBackground());
 		this.AddControl(this.GetBorder_Left());
 		this.AddControl(this.GetBorder_Right());

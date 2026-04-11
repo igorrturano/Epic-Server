@@ -3,10 +3,10 @@ include "GumpLayout";
 class MarbleLayout(GumpLayout)
 	function MarbleLayout(this, width, height)
 		Super(width, height);
-		this._InitializeLayout();
+		this._InitializeValues();
 	endfunction
 
-	function _InitializeLayout(this)
+	function _InitializeValues(this)
 		this.GetBorder_TopLeft().SetImageId(40000);
 		this.GetBorder_Top().SetImageId(40001);
 		this.GetBorder_TopRight().SetImageId(40002);
@@ -17,10 +17,10 @@ class MarbleLayout(GumpLayout)
 		this.GetBorder_BottomRight().SetImageId(40008);
 		this.GetBackground().SetImageId(40004);
 
-		this._AddLayout();
+		this._InsertControls();
 	endfunction
 
-	function _AddLayout(this)
+	function _InsertControls(this)
 		this.AddControl(this.GetBackground());
 		this.AddControl(this.GetBorder_Left());
 		this.AddControl(this.GetBorder_Right());
