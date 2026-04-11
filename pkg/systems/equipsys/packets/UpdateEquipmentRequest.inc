@@ -19,7 +19,10 @@ function SendUpdateEquipmentRequest(quem, equip, isEquipping, layer := 0)
 	if(!quem || !equip || quem.IsNpc())
 		return 0;
 	endif
-	quem := MobileWrapper(quem);
+
+	if(quem.IsA(POLCLASS_MOBILE))
+		quem := MobileWrapper(quem);
+	endif
 
 	var wrappedEquip;
 	if (equip.IsA(POLCLASS_ARMOR))
@@ -28,7 +31,7 @@ function SendUpdateEquipmentRequest(quem, equip, isEquipping, layer := 0)
 		wrappedEquip := WeaponWrapper(equip);
 	endif
 
-	if(!(wrappedEquip is @WeaponWrapper || wrappedEquip is @ArmorWrapper))
+	if(!(wrappedEquip is @EquipWrapper))
 		return 0;
 	endif
 
