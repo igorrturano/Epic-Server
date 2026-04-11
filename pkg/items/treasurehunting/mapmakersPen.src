@@ -7,7 +7,6 @@ use os;
 include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
-include ":crafting:crafting";
 include ":crafting:toolWear";
 include ":itemutils:canAccess";
 include "include/say";
@@ -56,7 +55,9 @@ program use_MapmakersPen(who, tool)
 
 		if (TemHabilidade(who, "Mapear Regiao") || who.cmdlevel >= 3)
 			// var rinfo := sendCraftGump(who, "Cartography");
-
+			SendSysMessageEx(who, "Sistema ainda não foi implementado, consulte a staff.",
+								  SSM_FAIL);
+			return 0;
 			// OK was pressed, close it on out
 			// if(rinfo == 0)
 			// 	return 0;
@@ -251,8 +252,12 @@ function makeCartographyMap(who, map_objtype, amount, tool)
 
 		if (GetAmount(blank) >= material)
 			// if( CraftCheckSkill(who, craft_skill, diff, pts) )
-			var theitem := CreateCraftedMap(who, craft_skill, blank, map_objtype, material, itemname, reqd);
-			if (TypeOf(theitem) != "ItemRef")
+			//var theitem := CreateCraftedMap(who, craft_skill, blank, map_objtype, material, itemname, reqd);
+			
+
+			//TODO o sitema de crafting novo não inclui este fluxo, fazer.
+
+			/*if (TypeOf(theitem) != "ItemRef")
 				SubtractAmount(blank, material);
 				SendSysMessageEx(who, "Voce falhou em escrever o mapa e parte do material foi perdido.",
 								  SSM_FAIL);
@@ -270,7 +275,7 @@ function makeCartographyMap(who, map_objtype, amount, tool)
 						encodeMap(props, theitem);
 					0x6502: props := array("world", 0, 0, 5119, 4095, 500, 400); encodeMap(props, theitem);
 				endcase
-			endif
+			endif*/
 		// else
 		// 	if( SubtractAmount(blank, material) )
 		// 		SendSysMessageEx(who, "Voce perdeu parte do material.", SSM_FAIL);
