@@ -24,6 +24,21 @@ class ContainerGridLayout(Container)
 		return this._columns;
 	endfunction
 
+	// Override
+	function SetVisible(this, isVisible)
+		Super::SetVisible(this, isVisible);
+
+		foreach row in (this._containers)
+			foreach container in (row)
+				container.SetVisible(isVisible);
+				SleepMS(2);
+			endforeach
+		endforeach
+
+		return this;
+	endfunction
+
+	// Override
 	function GetControls(this)
 		var controls := array{};
 
@@ -40,6 +55,7 @@ class ContainerGridLayout(Container)
 		return controls;
 	endfunction
 
+	// Override
 	function AddControl(this, byRef control, row, column)
 		this._containers[row][column].AddControl(control);
 
@@ -49,9 +65,8 @@ class ContainerGridLayout(Container)
 	function SelfCreate(this, byRef gump)
 		foreach row in (this._containers)
 			foreach container in (row)
-				container.SetVisible(this._isVisible); // O container interno deve ter a mesma visibilidade que o grid
 				container.SelfCreate(gump);
-				sleepms(2);
+				SleepMS(2);
 			endforeach
 		endforeach
 	endfunction
@@ -60,15 +75,17 @@ class ContainerGridLayout(Container)
 		foreach row in (this._containers)
 			foreach control in (row)
 				control.Dispose();
-				sleepms(2);
+				SleepMS(2);
 			endforeach
 		endforeach
 
 		this._controls := array{};
-		this._AddContainers(); // Recria os containers internos após o descarte
+		this._CreateContainers(); // Recria os containers internos após o descarte
 	endfunction
 
-	function _AddContainers(this)
+	function _CreateContainers(this)
+		this._containers := array{ array{} };
+		
 		for row := 1 to (this._rows)
 			for column := 1 to (this._columns)
 				var cellContainer := Container($"Cell {row}x{column}",
