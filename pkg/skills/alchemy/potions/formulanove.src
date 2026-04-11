@@ -45,7 +45,6 @@ program formula90(who, pocao)
 		CreateItemAtLocation(targ.x, targ.y, targ.z, item, amt, targ.realm);
 
 		empty_bottle(who, pocao, 1); 
-		var book := createiteminbackpack(who, "emptybottle");
 		playsoundeffect(who, 0x1EB);
 		var brilho := CreateItemAtLocation(targ.x, targ.y, (targ.z - 2), 0x375A, 1, targ.realm);
 		sleepms(2000);

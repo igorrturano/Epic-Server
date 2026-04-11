@@ -42,7 +42,7 @@ program equipitem(params)
 	endif
 
 	who.ApplyItemModifiers(equip);
-	Start_Script("packets/AssyncUpdateEquipment", array{who.GetObjRef(), true, item, item.layer});
+	Start_Script("packets/AssyncUpdateEquipment", array{who, true, item, item.layer});
 	return 1;
 endprogram
 

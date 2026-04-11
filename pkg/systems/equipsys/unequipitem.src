@@ -38,6 +38,6 @@ program unequipitem(params)
 	endif
 
 	who.RemoveItemModifiers(equip);
-	Start_Script("packets/AssyncUpdateEquipment", array{who.GetObjRef(), false, item, layer});
+	Start_Script("packets/AssyncUpdateEquipment", array{who, false, item, layer});
 	return 1;
 endprogram
