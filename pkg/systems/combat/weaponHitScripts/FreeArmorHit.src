@@ -34,7 +34,6 @@ program HitScript(params)
 
 	if (!CanActivate(attacker))
 		var weapon := WeaponWrapper(weaponObj);
-		weapon.SetCprops(weaponObj.Cprops);
 		var maxDmg := weapon.GetMainDamage().GetMaximum();
 		var dmg := CInt((maxDmg + 4) / 5); // ceil(20% of max weapon damage)
 		if (dmg > 0)
