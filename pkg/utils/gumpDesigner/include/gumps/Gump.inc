@@ -1,13 +1,15 @@
 include "IGump";
-// include ":gumps:epicGumps";
+
 include ":gumps:autoClose";
+
 include ":gumpDesigner:gumps/DiagFactory";
 include ":gumpDesigner:controls/Control";
 include ":gumpDesigner:controls/Button";
 include ":gumpDesigner:controls/containers/Container";
 include ":gumpDesigner:layouts/GumpLayout";
 include ":gumpDesigner:events/GumpEvent";
-include ":gumpDesigner:events/exceptions/NoEventHandledException";
+include ":gumpDesigner:exceptions/NoEventHandledException";
+include ":gumpDesigner:exceptions/InvalidOptionException";
 
 include ":message:model/Message";
 
@@ -17,6 +19,7 @@ class Gump(IGump)
 	var _gump;
 	var _gumpResult;
 	var _gumpLayout;
+	var _gumpFactory;
 	
 	var _title := "";
 	var _width := 0;
@@ -33,7 +36,8 @@ class Gump(IGump)
 
 	function Gump(this, parent, title, width, height, options := array{})
 		this._parent := parent;
-		
+		this._gumpFactory := DiagFactory(this);
+		this._gumpLayout := this._gumpFactory.GetLayout();
 
 		this._title := title;
 		this._width := width;
@@ -77,12 +81,27 @@ class Gump(IGump)
 		return this._gumpResult;
 	endfunction
 
+	function GetLayout(this)
+		return this._gumpLayout;
+	endfunction
+
+	function SetLayout(this, layout)
+		if (!(layout is @GumpLayout))
+			return InvalidParameterException("Layout must be of type GumpLayout.");
+		endif
+		
+		this._gumpLayout := layout;
+		
+		return this;
+	endfunction
+
 	function GetTitle(this)
 		return this._title;
 	endfunction
 
 	function SetTitle(this, title)
-		this._title := title;
+		this._title := CStr(title);
+
 		return this;
 	endfunction
 
@@ -91,7 +110,8 @@ class Gump(IGump)
 	endfunction
 
 	function SetWidth(this, width)
-		this._width := width;
+		this._width := CInt(width);
+
 		return this;
 	endfunction
 
@@ -100,7 +120,8 @@ class Gump(IGump)
 	endfunction
 
 	function SetHeight(this, height)
-		this._height := height;
+		this._height := CInt(height);
+
 		return this;
 	endfunction
 
@@ -110,11 +131,14 @@ class Gump(IGump)
 
 	function SetOptions(this, options)
 		this._options := options;
+
 		return this;
 	endfunction
 
 	function AddOption(this, option)
-		if (option in this._options) return error { errortext := "Option already set!" }; endif
+		if (option in this._options)
+			return InvalidParameterException("Option already set!");
+		endif
 
 		this._options.append(option);
 		return this;
@@ -259,6 +283,6 @@ class Gump(IGump)
 		var buttonHelp := Button("Help", this.GetWidth() - 30, 36, 0x5689, 0x568A);
 		buttonHelp.AddAction(this.helpAction);
 
-		this.AddControl(buttonHelp);
+		this.GetLayout().AddControl(buttonHelp);
 	endfunction
 endclass
