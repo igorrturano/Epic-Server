@@ -18,7 +18,7 @@ class ImageGump(ResizableControl)
 		return this._color;
 	endfunction
 
-	function SetImage(this, imageId)
+	function SetImageId(this, imageId)
 		this._imageId := imageId;
 		return this;
 	endfunction
