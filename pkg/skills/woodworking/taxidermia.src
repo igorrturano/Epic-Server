@@ -6,7 +6,6 @@ use util;
 include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
-include ":crafting:crafting";
 include ":crafting:craftingRepair";
 include ":crafting:toolWear";
 include ":itemutils:canAccess";
