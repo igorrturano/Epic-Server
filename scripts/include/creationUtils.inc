@@ -1450,25 +1450,25 @@ endfunction
 
 function startAdventureGump(who)
     var textosConfig := ReadConfigFile(":charactercreation:/config/descricoes");
+    var descricao := FindConfigElem(textosConfig, "adventureStart").descricao;
+    var startTime := ReadGameClock();
 
-    var gump := GFCreateGump();
-    GFClosable(gump, 0);
+    var result;
+    do
+        var gump := GFCreateGump();
+        GFClosable(gump, 0);
+        GFResizePic(gump, 0, 0, 9270, 760, 625);
+        GFHTMLArea(gump, 21, 16, 740, 40, "<BASEFONT Size=55 Color=#000000 >Epic! Beta Test - A Ilha", 0, 0);
+        GFHTMLArea(gump, 20, 15, 740, 40, "<BASEFONT Size=55 Color=#ffffff >Epic! Beta Test - A Ilha", 0, 0);
+        GFGumpPic(gump, 20, 50, 0xFFFD);
+        GFHTMLArea(gump, 20, 470, 720, 110, descricao, 1, 1);
+        GFAddButton(gump, 710, 590, 4005, 4007, GF_CLOSE_BTN, 200);
+        result := GFSendGump(who, gump);
+    dowhile (ReadGameClock() - startTime < 10);
 
-    GFResizePic(gump, 0, 0, 9270, 760, 625);
-
-    // Title with shadow (above the image)
-    GFHTMLArea(gump, 21, 16, 740, 40, "<BASEFONT Size=55 Color=#000000 >Epic! Beta Test - A Ilha", 0, 0);
-    GFHTMLArea(gump, 20, 15, 740, 40, "<BASEFONT Size=55 Color=#ffffff >Epic! Beta Test - A Ilha", 0, 0);
-
-    // Adventure main image (below title)
-    GFGumpPic(gump, 20, 50, 0xFFFD);
-
-    // Description and button overlaid on bottom of image
-    GFHTMLArea(gump, 20, 470, 720, 110, FindConfigElem(textosConfig, "adventureStart").descricao, 1, 1);
-
-    GFAddButton(gump, 710, 590, 4005, 4007, GF_CLOSE_BTN, 200);
-    return GFSendGump(who, gump);
+    return result;
 endfunction
+
 
 function languageSelectionGump(who, culture_pic, linguasOpt, known_languages, total_amount)
     var gump := GFCreateGump();

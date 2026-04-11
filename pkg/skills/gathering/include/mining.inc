@@ -208,7 +208,7 @@ function DetermineMiningDifficulty(oretype)
 
 		//minérios
 		0x6450: return 8; //cobre
- 		0x6990: return 28; //estanho
+ 		0x6990: return 35; //estanho
 		0x699c: return 45; //bronze
 		0x6300: return 55;  //iron ore
 		0x6992: return 70; //prata
