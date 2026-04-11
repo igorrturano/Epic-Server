@@ -1,8 +1,8 @@
 include "Text";
 
 class TextCropped(Text)
-	function TextCropped(this, name, x, y, width, height, value)
-		Super(name, x, y, value);
+	function TextCropped(this, name, x, y, width, height, value, align := TEXT_ALIGN::ALIGN_LEFT, color := TEXT_COLOR::COLOR_DEFAULT)
+		Super(name, x, y, value, align, color);
 		this._type := GumpControl::TextCropped;
 
 		this.SetWidth(width);

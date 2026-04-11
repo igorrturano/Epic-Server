@@ -5,10 +5,12 @@ class Text(ResizableControl)
 	var _color := TEXT_COLOR::COLOR_DEFAULT;
 	var _value := "";
 
-	function Text(this, name, x, y, value)
+	function Text(this, name, x, y, value, align := TEXT_ALIGN::ALIGN_LEFT, color := TEXT_COLOR::COLOR_DEFAULT)
 		Super(GumpControl::Text, name, x, y, 0, 0);
 
 		this.SetValue(value);
+		this.SetAlign(align);
+		this.SetColor(color);
 	endfunction
 
 	function GetAlign(this)
