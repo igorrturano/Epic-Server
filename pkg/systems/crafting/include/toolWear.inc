@@ -2,19 +2,20 @@
 
 include ":charactercreation:habilidades";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":crafting:include/caracteristicasFabricacao";
 include ":abilities:models/Ability";
 
 function CheckToolWear (who, tool, craft_skill)
   var swings := GetObjProperty(tool,"swings");
   if(!swings)
-    var mods := GetObjProperty(tool, "durability");
+    var componente := PegaComponenteFabricacao(tool);
     var bonus := 0;
-    case(mods)
-      "durable":        bonus := 10;
-      "substantial":    bonus := 20;
-      "massive":        bonus := 30;
-      "fortified":      bonus := 40;
-      "indestructable": bonus := 50;
+    case(componente.tier.id)
+      COMPONENTE_TIERS::MEDIOCRE:       bonus := 0; break;
+      COMPONENTE_TIERS::COMUM:          bonus := 10; break;
+      COMPONENTE_TIERS::NOTAVEL:        bonus := 20; break;
+      COMPONENTE_TIERS::SUPERIOR:       bonus := 30; break;
+      COMPONENTE_TIERS::EXCEPCIONAL:    bonus := 40; break;
     endcase
     swings := Cint(55 * tool.quality) + bonus;
     SetObjProperty(tool,"swings", swings);
