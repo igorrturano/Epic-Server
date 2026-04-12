@@ -280,9 +280,9 @@ endfunction
 function makePequilho(mobile)
    // Set base graphics by gender
    if (mobile.gender == 0) // Male
-      mobile.graphic := 1828;
+      mobile.graphic := 1834;
    else
-      mobile.graphic := 1829;
+      mobile.graphic := 1835;
    endif
 
    // Get NPC config to check for existing colors

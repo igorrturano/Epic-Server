@@ -1,52 +1,41 @@
 // ============================================================================
 // merchantRaceInit.inc
 // Configuração aleatória de raça, gênero e nome para mercantes.
-// Compartilhado entre pcmerchant/init.src e merchantfaccao/include/init.src
+// REFACTORED: Calls racegump.inc functions (DRY Principle / GRASP Expert)
 // ============================================================================
 
+include ":faccao:include/racegump";
+
 function MerchantSetupRace(npc)
-	var result;
-	case (RandomInt(10))
-		0: // Humano Macho
-			npc.gender := 0;
-			npc.graphic := 400;
-			result := NPC_SetupName(npc, "Human_Male");
-		1: // Humana Fêmea
-			npc.gender := 1;
-			npc.graphic := 401;
-			result := NPC_SetupName(npc, "Human_Female");
-		2: // Anão Macho
-			npc.gender := 2;
-			npc.graphic := 1828;
-			result := NPC_SetupName(npc, "Human_Male");
-		3: // Anã Fêmea
-			npc.gender := 3;
-			npc.graphic := 1829;
-			result := NPC_SetupName(npc, "Human_Female");
-		4: // Elfo Macho
-			npc.gender := 4;
-			npc.graphic := 1830;
-			result := NPC_SetupName(npc, "Human_Male");
-		5: // Elfa Fêmea
-			npc.gender := 5;
-			npc.graphic := 1831;
-			result := NPC_SetupName(npc, "Human_Female");
-		6: // Orc Macho
-			npc.gender := 6;
-			npc.graphic := 1832;
-			result := NPC_SetupName(npc, "Orc");
-		7: // Orc Fêmea
-			npc.gender := 7;
-			npc.graphic := 1833;
-			result := NPC_SetupName(npc, "Orc");
-		8: // Wolfkin Macho
-			npc.gender := 8;
-			npc.graphic := 1834;
-			result := NPC_SetupName(npc, "Human_Male");
-		9: // Wolfkin Fêmea
-			npc.gender := 9;
-			npc.graphic := 1835;
-			result := NPC_SetupName(npc, "Human_Female");
-	endcase
-	return result;
+    // Array of valid race button values (1-12 from racegump.inc)
+    var race_buttons := array{
+        FACCAO_BTN_HUMANO_M,      // 1
+        FACCAO_BTN_HUMANO_F,      // 2
+        FACCAO_BTN_ANAO_M,        // 3
+        FACCAO_BTN_ANAO_F,        // 4
+        FACCAO_BTN_ELFO_M,        // 5
+        FACCAO_BTN_ELFO_F,        // 6
+        FACCAO_BTN_DROW_M,        // 7
+        FACCAO_BTN_DROW_F,        // 8
+        FACCAO_BTN_ORC_M,         // 9
+        FACCAO_BTN_ORC_F,         // 10
+        FACCAO_BTN_PEQUILHO_M,    // 11
+        FACCAO_BTN_PEQUILHO_F     // 12
+    };
+    
+    var chosen_btn := race_buttons[RandomInt(race_buttons.size()) + 1];
+    var namelist := GetRaceNameList(chosen_btn);
+    var graphic := GetRaceGraphic(chosen_btn);
+    
+    // Set gender based on button (odd = male, even = female)
+    npc.gender := (chosen_btn % 2 == 1) ? 0 : 1;
+    npc.graphic := graphic;
+    
+    // Setup name from config
+    var result := NPC_SetupName(npc, namelist);
+    
+    // Apply full race appearance (skin, hair, beard)
+    ApplyRaceToNPC(npc, chosen_btn);
+    
+    return result;
 endfunction
