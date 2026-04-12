@@ -116,13 +116,15 @@ function InitializeMonsterNPC(mobile, npc_elem, elem, sounds)
     SetupNPCEquip(mobile, npc_elem);
 
     // Monstros falam uma língua específica
-    var known_languages := SplitWords(npc_elem.Languages);
-    var chosen_language;
-    if (Len(known_languages) > 0)
-        chosen_language := known_languages[RandomInt(Len(known_languages)) + 1];
+    var lang_str := npc_elem.Languages;
+    var known_languages;
+    if (lang_str)
+        known_languages := SplitWords(lang_str);
     else
-        chosen_language := "Comum";
+        known_languages := {"Comum"};
     endif
+    var chosen_language := known_languages[RandomInt(Len(known_languages)) + 1];
+
     SetObjProperty(mobile, "linguas_conhecidas", known_languages);
     SetObjProperty(mobile, "lingua_escolhida", chosen_language);
 
