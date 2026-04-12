@@ -285,7 +285,7 @@ function ReequipNPC(npc)
     var backpack := npc.backpack;
     if (!backpack) return 0; endif
     
-    Print("--- [LOG] Reequipando itens... ---");
+
     foreach item in (EnumerateItemsInContainer(backpack))
         // Só tenta vestir o que estiver solto na mochila (raiz)
         if (item.container == backpack)
@@ -296,10 +296,9 @@ function ReequipNPC(npc)
 
             var res := EquipItem(npc, item);
             if (res)
-                Print("Sucesso: Vestiu " + item.desc);
+                // Item foi vestido com sucesso
             else
                 // Se o item for proibido para a raca, ele fica na mochila.
-                Print("Info: Item " + item.desc + " guardado na mochila.");
             endif
         endif
         sleepms(2);
