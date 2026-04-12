@@ -115,6 +115,13 @@ function _SC_ApplyOpts(targ, opts)
 	if (opts.speed_mod)
 		targ.run_speed := targ.run_speed + opts.speed_mod;
 	endif
+
+	// Custom ObjProperties
+	if (opts.properties)
+		foreach val in (opts.properties)
+			SetObjProperty(targ, _val_iter, val);
+		endforeach
+	endif
 endfunction
 
 function _SC_RemoveOpts(targ, opts)
@@ -143,6 +150,13 @@ function _SC_RemoveOpts(targ, opts)
 	// Restore speed
 	if (opts.speed_mod)
 		targ.run_speed := targ.run_speed - opts.speed_mod;
+	endif
+
+	// Custom ObjProperties
+	if (opts.properties)
+		foreach val in (opts.properties)
+			EraseObjProperty(targ, _val_iter);
+		endforeach
 	endif
 endfunction
 
@@ -220,6 +234,7 @@ function SC_ResyncOnLogin(mobile)
 		var mw := MobileWrapper(mobile);
 		var opts := mw.GetProperty($"#SpellOpts_{spellId}");
 		if (opts && !opts.errortext)
+			_SC_ApplyOpts(mobile, opts);
 			var desc := _SC_BuildDescription(opts);
 			var totalDur := CInt(opts.totalDuration);
 			SendSpellBuff(mobile, mobile, spellId, remaining, desc, totalDur);
@@ -308,6 +323,10 @@ function _SC_BuildDescription(opts)
 	if (opts.str_mod)         parts.Append($"{opts.str_mod} FOR");               endif
 	if (opts.dex_mod)         parts.Append($"{opts.dex_mod} DES");               endif
 	if (opts.int_mod)         parts.Append($"{opts.int_mod} INT");               endif
+
+	if (opts.desc)
+		parts.Append(opts.desc);
+	endif
 
 	if (parts.size() == 0)
 		return "";
