@@ -174,7 +174,7 @@ program UseBandage(mobile, bandage)
 		return 0;
 	endif
 	// adicionada verificação de se eu não estou aplicando a bandagem em alguem
-	if (GetObjProperty(targ, "curando") > ReadGameClock() || GetObjProperty(mobile, "#IsWaiting" > ReadGameClock()))
+	if (GetObjProperty(targ, "curando") > ReadGameClock() || GetObjProperty(mobile, "#IsWaiting") > ReadGameClock())
 		SendSysMessageEx(mobile, "O alvo ja esta enfaixado", SSM_INFO);
 		return 0;
 	else
@@ -362,10 +362,10 @@ function HealPatient(mobile, targ, heal_skill, aux_skill, bonus, poison)
 			return 1;
 		endif
 		// ApplyEpicHealing(targ, CInt(heal_amt/5));
-		applyEpicHealing(targ, CInt(heal_amt / q));
+		HealHits(targ, CInt(heal_amt / q));
 		r := r + resto;
 		if (r > 1)
-			applyEpicHealing(targ, 1);
+			HealHits(targ, 1);
 			r := r - 1;
 		endif
 		RecalcVitals(targ);
