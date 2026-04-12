@@ -58,7 +58,7 @@ program SpellScript(params)
 		PlayMovingEffectEx(targs, targets[y], 14360, 13, 0, 2444, 0, 0, 0, 0, 0, 0);
 		SetObjProperty(targs, "chainofpain", copmobs);
 		SetObjProperty(targs, "copnumber", len(targets));
-		var duration := GetSpellDuration(AP_GetSkill(who, ARCANA)) / 4;
+		var duration := CInt(GetSpellDuration(AP_GetSkill(who, ARCANA)) / 4);
 		TS_StartTimer(targs, "chainofpain", duration, 0, who, 0);
 		SendSpellBuff(who, targs, CInt(spell.id), duration);
 	endforeach
