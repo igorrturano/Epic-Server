@@ -133,7 +133,6 @@ function _VestirDoGhaia(agent, grupo)
 endfunction
 
 function _ForcaRoupaEmergencia(agent)
-    Print("--- [LOG] Alerta: NPC nasceu pelado. Aplicando Kit de Emergencia ---");
     var kit := array{0x13bf, 0x13c4, 0x13c3, 0x13be, 0x13bb, 0x1415, 0x1711}; 
     foreach id in kit
         _ApplyItem(agent, id);
@@ -179,7 +178,6 @@ function ContractNPC(guild, npc_i, who, loc)
 
     // 4. Fluxo de Equipamento
     if (template.equipment.size() > 0)
-        Print("--- [LOG] Vestindo Uniforme do Menu de Faccao ---");
         foreach item_ref in (template.equipment)
             EquipItem(agent, CreateItemInBackpackFromTemplate(agent, item_ref));
             sleepms(2);
@@ -190,10 +188,7 @@ function ContractNPC(guild, npc_i, who, loc)
         var base_name := parts.size() > 1 ? parts[parts.size()] : template.template;
         var gender_suffix := agent.gender ? "F" : "M";
         var config_group := base_name + gender_suffix;
-        
-        Print("--- [LOG] Buscando em Ghaia: " + config_group + " ---");
         if (!_VestirDoGhaia(agent, config_group))
-            Print("--- [LOG] Ghaia nao encontrado. Usando fallback Villager_1 ---");
             NPC_SetupEquipment(agent, "Villager_1");
         endif
     endif
