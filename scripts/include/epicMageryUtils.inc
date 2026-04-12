@@ -483,16 +483,14 @@ function SummonSpiritualBlade(who)
 	sleep(2);
 
 	var weapon := CreateItemInBackpack(who, 0x090C, 1);
-	if (!weapon)
-		who.frozen := 0;
-		Message("Erro ao criar lamina espiritual.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-		return 0;
-	endif
 
 	weapon.graphic := weaponData.graphic;
 	weapon.color := 30000;
-	EquipItem(who, weapon);
-
+	var equipped := EquipItem(who, weapon);
+	if (!equipped)
+		DestroyItem(weapon);
+		Message("Erro ao equipar lamina espiritual.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+	endif
 	if (weapon.maxhp > 0)
 		weapon.hp := weapon.maxhp;
 	endif
