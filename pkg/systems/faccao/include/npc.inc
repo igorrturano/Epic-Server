@@ -154,7 +154,7 @@ endfunction
 // CONTRATAÇÃO (FLUXO PRINCIPAL)
 // ============================================================================
 
-function ContractNPC(guild, npc_i, who, loc)
+function ContractNPC(guild, npc_i, who, loc, school := 0)
     if (typeof(guild) == "String") guild := FindGuild(guild); endif
     var template := listNpc(guild)[npc_i];
     if (!template) return 0; endif
@@ -167,6 +167,9 @@ function ContractNPC(guild, npc_i, who, loc)
     SetObjProperty(agent, "started", 1);
     SetObjProperty(agent, "ignore_make_race", 1);
     SetObjProperty(agent, "NoRandomAppearance", 1);
+    if (school)
+        SetObjProperty(agent, "SpellSchool", school);
+    endif
 
     // 3. Garanta Mochila
     if (!agent.backpack)
