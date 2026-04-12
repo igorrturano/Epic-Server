@@ -116,6 +116,33 @@ function _SC_ApplyOpts(targ, opts)
 		targ.run_speed := targ.run_speed + opts.speed_mod;
 	endif
 
+	// Hit chance
+	if (opts.hitchance_mod)
+		targ.hitchance_mod := targ.hitchance_mod + opts.hitchance_mod;
+	endif
+
+	// Paralysis
+	if (opts.paralyzed)
+		targ.paralyzed := 1;
+	endif
+
+	// Graphic change
+	if (opts.graphic)
+		targ.graphic := opts.graphic;
+	endif
+
+	// Armor hit scripts (append to array)
+	if (opts.armor_hit_scripts)
+		var armorscript := GetObjProperty(targ, "ArmorHitScripts");
+		if (!armorscript)
+			armorscript := array{};
+		endif
+		foreach script_path in (opts.armor_hit_scripts)
+			armorscript.append(script_path);
+		endforeach
+		SetObjProperty(targ, "ArmorHitScripts", armorscript);
+	endif
+
 	// Custom ObjProperties
 	if (opts.properties)
 		foreach val in (opts.properties)
@@ -150,6 +177,26 @@ function _SC_RemoveOpts(targ, opts)
 	// Restore speed
 	if (opts.speed_mod)
 		targ.run_speed := targ.run_speed - opts.speed_mod;
+	endif
+
+	// Hit chance (reverse)
+	if (opts.hitchance_mod)
+		targ.hitchance_mod := targ.hitchance_mod - opts.hitchance_mod;
+	endif
+
+	// Paralysis (reverse)
+	if (opts.paralyzed)
+		targ.paralyzed := 0;
+	endif
+
+	// Graphic (restore)
+	if (opts.graphic)
+		targ.graphic := targ.trueobjtype;
+	endif
+
+	// Armor hit scripts (remove)
+	if (opts.armor_hit_scripts)
+		EraseObjProperty(targ, "ArmorHitScripts");
 	endif
 
 	// Custom ObjProperties
