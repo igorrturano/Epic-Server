@@ -47,4 +47,9 @@ class GumpTitle(Container)
 
 		return this;
 	endfunction
+
+	function ToString(this)
+		return "(GumpTitle) text=" + this.GetText().ToString()
+			+ ", background=" + this.GetBackground().ToString();
+	endfunction
 endclass

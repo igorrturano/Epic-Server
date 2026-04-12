@@ -47,7 +47,7 @@ class RadioButton(Control)
 	endfunction
 
 	function Draw(this, byRef gump)
-		GFRadioButton(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetValue(), this.GetGumpId());
+		GFRadioButton(gump.GetGump(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetValue(), this.GetGumpId());
 		Super::Draw(this, gump);
 	endfunction
 endclass

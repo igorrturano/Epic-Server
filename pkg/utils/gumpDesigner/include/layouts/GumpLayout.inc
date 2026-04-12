@@ -22,6 +22,7 @@ class GumpLayout(Container)
 		Super("Gump Layout", 0, 0, width, height);
 		this.borders := GumpLayout::borders;
 		this.background := GumpLayout::background;
+		this._InitializeStructure();
 	endfunction
 
 	function GetBorder_TopLeft(this)
@@ -131,19 +132,14 @@ class GumpLayout(Container)
 			return InvalidParameterException("Background must be an ImageGump.");
 		endif
 
-		this.bgImg := imageGump;
+		this.background := imageGump;
 
 		return this;
 	endfunction
 
-	function Draw(this, gump)
-		foreach control in (this.GetControls())
-			control.Draw(gump.GetGump());
-			SleepMS(2);
-		endforeach
-	endfunction
-
 	function _InitializeStructure(this)
+		this.SetBackground(ImageGump("Background", 0, 0, 0, this.GetWidth(), this.GetHeight()));
+
 		this.SetBorder_TopLeft(ImageGump("Top Left Border", 0, 0, 0, 35, 35));
 		this.SetBorder_Top(ImageGump("Top Border", this.GetX() + 25, 0, 0, this.GetWidth() - 41, 35));
 		this.SetBorder_TopRight(ImageGump("Top Right Border", this.GetWidth() - 35, 0, 0, 35, 35));
@@ -154,10 +150,22 @@ class GumpLayout(Container)
 		this.SetBorder_BottomLeft(ImageGump("Bottom Left Border", 0, this.GetHeight() - 35, 0, 35, 35));
 		this.SetBorder_Bottom(ImageGump("Bottom Border", 35, this.GetHeight() - 35, 0, this.GetWidth() - 70, 35));
 		this.SetBorder_BottomRight(ImageGump("Bottom Right Border", this.GetWidth() - 35, this.GetHeight() - 35, 0, 35, 35));
-
-		this.SetBackground(ImageGump("Background", 0, 0, 0, this.GetWidth(), this.GetHeight()));
 	endfunction
 
-	// O filho implementa porque a ordem importa pra sobreposição das imagens de acordo com cada layout.
-	uninit function _AddLayout(this);
+	function ToString(this)
+		return "(GumpLayout) " + Super::ToString(this)
+			+ " width=" + this.GetWidth()
+			+ ", height=" + this.GetHeight()
+			+ ", background=" + this.GetBackground().ToString()
+			+ ", borders={" 
+				+ "topLeft=" + this.GetBorder_TopLeft().ToString() + ", "
+				+ "top=" + this.GetBorder_Top().ToString() + ", "
+				+ "topRight=" + this.GetBorder_TopRight().ToString() + ", "
+				+ "left=" + this.GetBorder_Left().ToString() + ", "
+				+ "right=" + this.GetBorder_Right().ToString() + ", "
+				+ "bottomLeft=" + this.GetBorder_BottomLeft().ToString() + ", "
+				+ "bottom=" + this.GetBorder_Bottom().ToString() + ", "
+				+ "bottomRight=" + this.GetBorder_BottomRight().ToString()
+			+ "}";
+	endfunction
 endclass

@@ -18,13 +18,11 @@ class Tooltip(Control)
 	endfunction
 
 	function Draw(this, byRef gump)
-		GFTooltipText(gump, this.GetText());
+		GFTooltipText(gump.GetGump(), this.GetText());
 	endfunction
 
 	function ToString(this)
-		return "Tooltip(type=" + this.GetType()
-			+ ", name=" + this.GetName()
-			+ ", text=" + this.GetText()
-			+ ")";
+		return "(Tooltip) " + Super::ToString(this)
+			+ ", text=" + this.GetText();
 	endfunction
 endclass

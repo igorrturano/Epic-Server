@@ -18,8 +18,7 @@ include ":message:model/Message";
 class Gump(IGump)
 	var _parent;
 	var _pid;
-	var _gump;
-	var _gumpResult;
+	var _gumpString;
 	var _width := 0;
 	var _height := 0;
 
@@ -29,7 +28,7 @@ class Gump(IGump)
 
 	var _options := array{};
 	var _controls := struct{
-			preStored := array{},
+			added := array{},
 			idOrder := array{},
 			lastId := dictionary{},
 			position := dictionary{}
@@ -66,18 +65,14 @@ class Gump(IGump)
 		return this._pid;
 	endfunction
 
-	function GetGump(this)
-		return this._gump;
+	function GetGumpString(this)
+		return this._gumpString;
 	endfunction
 
-	function SetGump(this, gumpStr)
-		this._gump := gumpStr;
+	function SetGumpString(this, gumpStr)
+		this._gumpString := gumpStr;
 
 		return this;
-	endfunction
-
-	function GetGumpResult(this)
-		return this._gumpResult;
 	endfunction
 
 	function GetWidth(this)
@@ -105,6 +100,7 @@ class Gump(IGump)
 	endfunction
 
 	function SetLayout(this, layout)
+		// print ("Setting layout: " + layout.ToString());
 		if (!(layout is @GumpLayout))
 			return InvalidParameterException("Layout must be of type GumpLayout.");
 		endif
@@ -183,15 +179,15 @@ class Gump(IGump)
 	endfunction
 
 	function GetControls(this)
-		return this._controls.preStored;
+		return this._controls.added;
 	endfunction
 
-	function AddControl(this, control)
+	function AddControl(this, byRef control)
 		if (!(control is @Control))
 			return InvalidParameterException("Only controls of type Control can be added to the gump.");
 		endif
 
-		this._controls.preStored.append(control);
+		this._controls.added.append(control);
 
 		return this;
 	endfunction
@@ -209,31 +205,30 @@ class Gump(IGump)
 	endfunction
 
 	function ToString(this)
-		return "Gump(_parent=" + this._parent
-			+ ", _title=" + this._title
-			+ ", _width=" + this._width
-			+ ", _height=" + this._height
-			+ ", _options=" + this._options
-			+ ", _customization=" + this._customization
-			+ ", _controls=" + this.GetControls()
-			+ ")";
+		return "(Gump) title=" + this.GetTitle().ToString();
+			+ ", layout=" + this.GetLayout().ToString()
+			+ ", parent=" + this.GetParent()
+			+ ", width=" + this.GetWidth()
+			+ ", height=" + this.GetHeight()
+			+ ", options=" + this.GetOptions()
+			+ ", controls=" + this.GetControls().size()
+			+ ", pages=" + this._pages.size();
 	endfunction
 
 	function Show(this)
 		this._pid := GetPid();
 
-		this._DrawDiag();
+		this._CreateDiag();
 		this._CreateHelper();
 		this._CreateControls();
-		this._CreateCustoms();
 
-		this._gumpResult := GFSendGump(this._parent, this._gump);
-
+		var result := GFSendGump(this._parent, this.GetGumpString());
+		
 		var eventHandled;
-		if (!this._gumpResult[0])
+		if (!result[0])
 			return NoEventHandledException("No event was handled for this gump.");
 		else
-			eventHandled := GumpEvent(this.GetControls().position[this._gumpResult[0]]);
+			eventHandled := GumpEvent(this.GetControls().position[result[0]]);
 		endif
 
 		this._UpdateInputValues();
@@ -247,9 +242,8 @@ class Gump(IGump)
 	endfunction
 
 	function Dispose(this)
-		this._gump := Gump::_gump;
-		this._gumpResult := Gump::_gumpResult;
-		foreach control in (this.GetControls().position)
+		this._gumpString := Gump::_gumpString;
+		foreach control in (this._controls.position)
 			control.Dispose();
 			sleepms(2);
 		endforeach
@@ -257,54 +251,20 @@ class Gump(IGump)
 	endfunction
 
 	// Private functions
-	function _DrawDiag(this)
-		this.GetLayout().Draw(this);
-		this.GetTitle().Draw(this);
-		foreach page in (this._pages)
-			page.Draw(this);
-		endforeach
+	function _CreateDiag(this)
+		print("Creating gump: " + this.ToString());
 		
 	endfunction
 	
 	function _CreateControls(this)
-		foreach id in (this.GetControls().idOrder)
-			this.GetControls().position[id].Draw(this._gump);
-		endforeach
 	endfunction
 
-	function _CreateControl(this, byRef control)
-		if (!(control is @Control))
-			return InvalidParameterException("Only controls of type Control can be created in the gump.");
-		endif
-		
-		if (!this._controls.lastId.exists(control.GetType()))
-			this._controls.lastId[control.GetType()] := _GetIdOffsetByControlType(control.GetType());
-		endif
-
-		this._controls.lastId[control.GetType()]++;
-		control.SetId(this._controls.lastId[control.GetType()]);
-		this._controls.idOrder.append(control.GetId());	
-		this._controls.position[control.GetId()] := control;
-		
-		if (control is @Container)
-			foreach childControl in (control.GetControls())
-				this.AddControl(childControl);
-			endforeach
-		endif
-
-		return this;
-	endfunction
-
-	function _CreateCustoms(this)
-		foreach custom in (this._customization)
-			custom(this._gump);
-		endforeach
+	function _InsertControl(this, byRef control)
 	endfunction
 
 	function _UpdateInputValues(this)
-		foreach id in (this.GetControls().idOrder)
-			var control := this.GetControls().position[id];
-			control.SetValue(GFExtractData(this._gump, control.GetId()));
+		foreach control in (this._controls.position)
+			control.SetValue(GFExtractData(this.GetGumpString(), control.GetId()));
 		endforeach
 	endfunction
 
@@ -321,19 +281,17 @@ class Gump(IGump)
 
 	function _GetIdOffsetByControlType(controlType)
 		case (controlType) // Feito com valores fixos pra poder ter um controle melhor da resposta no input[0]
-			GumpControl::Text: return 0;
-			GumpControl::TextCropped: return 1000;
-			GumpControl::ImageGump: return 2000;
-			GumpControl::ImageGumpTiled: return 3000;
-			GumpControl::ImageTiled: return 4000;
-			GumpControl::Button: return 5000;
-			GumpControl::CheckBox: return 6000;
-			GumpControl::RadioButton: return 7000;
-			GumpControl::TextBox: return 8000;
-			GumpControl::Tooltip: return 9000;
-			GumpControl::RadioGroup: return 10000;
-			GumpControl::Container: return 11000;
-			GumpControl::ContainerGridLayout: return 12000;
+			GumpControl::Text: return 1000;
+			GumpControl::TextCropped: return 2000;
+			GumpControl::ImageGump: return 3000;
+			GumpControl::ImageGumpTiled: return 4000;
+			GumpControl::ImageTiled: return 5000;
+			GumpControl::Button: return 6000;
+			GumpControl::CheckBox: return 7000;
+			GumpControl::RadioButton: return 8000;
+			GumpControl::TextBox: return 9000;
+			GumpControl::Tooltip: return 10000;
+			GumpControl::RadioGroup: return 11000;
 
 			default: return 0;
 		endcase

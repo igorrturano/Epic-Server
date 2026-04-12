@@ -10,7 +10,7 @@ class TextCropped(Text)
 	endfunction
 
 	function Draw(this, byRef gump)
-		GFTextCrop(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), this.GetColor(), this.GetValue());
+		GFTextCrop(gump.GetGump(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), this.GetColor(), this.GetValue());
 		Super::Draw(this, gump);
 	endfunction
 

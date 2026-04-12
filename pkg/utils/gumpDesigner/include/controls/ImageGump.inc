@@ -36,9 +36,9 @@ class ImageGump(ResizableControl)
 
 	function Draw(this, byRef gump)
 		if (this._width == 0 || this._height == 0)
-			GFGumpPic(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetColor());
+			GFGumpPic(gump.GetGump(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetColor());
 		else
-			GFResizePic(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetWidth(), this.GetHeight());
+			GFResizePic(gump.GetGump(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetWidth(), this.GetHeight());
 		endif
 
 		Super::Draw(this, gump);

@@ -31,5 +31,4 @@ class GoldenLayout(GumpLayout)
 		this.AddControl(this.GetBorder_BottomLeft());
 		this.AddControl(this.GetBorder_BottomRight());
 	endfunction
-
 endclass
