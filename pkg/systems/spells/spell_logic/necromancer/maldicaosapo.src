@@ -73,6 +73,7 @@ program SpellScript(params)
 	TS_StartTimer(Targ, "desmontar", time, 0, who);
 	TS_StartTimer(targ, "polymorph", time, 81, who);
 	SendSpellBuff(who, targ, CInt(spell.id), time);
+	targ.squelch(time);
 
 	if (targ.acctaname)
 		foreach equip in ListEquippedItems(targ)
