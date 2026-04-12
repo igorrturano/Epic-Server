@@ -43,7 +43,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var globo := CreateNpcFromTemplate(":brainai:globodeluz", targ.x, targ.y, targ.z, 0, who.realm);
+	var globo := CreateNpcFromTemplate(":epicai:globodeluz", targ.x, targ.y, targ.z, 0, who.realm);
 	createIllusion(globo, duration);
 endprogram
 

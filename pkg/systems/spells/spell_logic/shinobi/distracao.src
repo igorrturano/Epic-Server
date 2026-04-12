@@ -28,7 +28,7 @@ program SpellScript(params)
 	endif
 
 	// Create decoy NPC
-	var decoy := CreateNpcFromTemplate(":brainai:globodeluz", who.x, who.y, who.z, 0, who.realm);
+	var decoy := CreateNpcFromTemplate(":epicai:globodeluz", who.x, who.y, who.z, 0, who.realm);
 	if (!decoy)
 		SendSysMessageEx(who, "A distracao falhou.", SSM_FAIL);
 		return 0;
