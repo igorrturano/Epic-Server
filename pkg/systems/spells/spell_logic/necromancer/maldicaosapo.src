@@ -23,6 +23,11 @@ program SpellScript(params)
 		return;
 	endif
 
+	if (TS_GetTimerInfo(targ, "polymorph") != error)
+		SendSysMessageEx(who, "O alvo ja esta sob efeito de transformacao.", SSM_FAIL);
+		return;
+	endif
+
 	var graphic := targ.graphic;
 
 	handleSilentMagic(who, targ, SFX_SPELL_STRENGTH);
