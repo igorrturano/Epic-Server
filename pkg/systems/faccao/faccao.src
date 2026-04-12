@@ -864,6 +864,18 @@ function npcHandler(who, input)
 		historico := "<br> - {}".format("<br> -".join(historico));
 		SendHTMLGump(who, "Historico dos Guardas", historico);
 	elseif (input == BUTTON_CONTRACT_NPC)
+		var npcs_array := guild.getProp("npcs");
+		if (!npcs_array || npcs_array.size() == 0)
+			npcs_array := array{
+				struct{ "template" := ":epicai:guardafaccaofraco", "price" := 25,  "name" := "Guarda Recruta (Fraco)",  "equipment" := array{} },
+				struct{ "template" := ":epicai:guardafaccaomedio", "price" := 70,  "name" := "Guarda Veterano (Medio)", "equipment" := array{} },
+				struct{ "template" := ":epicai:guardafaccaoforte", "price" := 100, "name" := "Guarda Elite (Forte)",    "equipment" := array{} },
+				struct{ "template" := ":merchants:merchantfaccao", "price" := 10,  "name" := "Vendedor da Faccao",      "equipment" := array{} }
+			};
+			guild.SetProp("npcs", npcs_array);
+			guild_obj.npcs := npcs_array;
+		endif
+
 		var opts := array{};
 		foreach agent in (guild_obj.npcs)
 			opts[_agent_iter] := "{} [{} mc]".format(agent.name, agent.price);
@@ -929,12 +941,17 @@ function npcHandler(who, input)
 		/* if (!InGuildRect(guild, who) && !who.cmdlevel)
          return SendSysMessageEx(who, "Voce nao pode contratar agentes estando fora da sua area de influencia.", SSM_FAIL);
       endif */
-		var g_money := cint(guild.getProp("money"));
-		if (g_money < cint(agent.price))
-			return SendSysMessageEx(who, "Moedas de cobre insuficientes", SSM_FAIL);
+		var cost := cint(agent.price);
+		if (ConsumeSubstance(who.backpack, 0xba63, cost))
+			SendSysMessageEx(who, "Voce pagou {} moedas de cobre pelo contrato.".format(cost), SSM_INFO);
+		else
+			var g_money := cint(guild.getProp("money"));
+			if (g_money < cost)
+				return SendSysMessageEx(who, "Moedas de cobre insuficientes na bolsa e no cofre da faccao.", SSM_FAIL);
+			endif
+			guild.setProp("money", g_money - cost);
+			SendSysMessageEx(who, "{} moedas de cobre cobradas do cofre da faccao.".format(cost), SSM_INFO);
 		endif
-
-		guild.setProp("money", g_money - cint(agent.price));
 
 		ContractNPC(guild, npc_choice, who, who);
 	elseif (input == BUTTON_ADD_NPC)
