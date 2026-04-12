@@ -107,6 +107,10 @@ function StartUp(mobile, byref timer_list, byref cooldowns, byref num_poisons)
 	// On reconnect, those properties may be stale or reset — running EndScript first ensures a clean slate.
 	SetObjProperty(mobile, "#reconnecting", 1);
 	foreach timer in (temp_list)
+		// SpellController manages its own reconnect lifecycle via SC_ResyncOnLogin
+		if (_timer_iter[1, 12] == "spelleffect_")
+			continue;
+		endif
 		var elem_info := TS_GetCfgElem(_timer_iter);
 		if (CInt(elem_info.PersistOnLogoff) && elem_info.EndScript)
 			SetObjProperty(mobile, "prop", timer.level);

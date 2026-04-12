@@ -66,7 +66,7 @@ program SpellScript(params)
 			dispelled := 1;
 
 		// Necromancer/debuff effects
-		elseif (timer == "nocure" || timer == "atrasarmagias" || timer == "fugademana" ||
+		elseif (timer == "atrasarmagias" || timer == "fugademana" ||
 		  timer == "apodrecer" || timer == "aparenciacadaverica" || timer == "vinganca" ||
 		  timer == "defaultpoison" || timer == "manapoison")
 			TS_LowerDuration(targ, timer, -1);
@@ -79,6 +79,14 @@ program SpellScript(params)
 	if (barkskin_opts && !barkskin_opts.errortext)
 		SC_RemoveEffect(targ, BARKSKIN_SPELL_ID);
 		TS_LowerDuration(targ, $"spelleffect_{BARKSKIN_SPELL_ID}", -1);
+		dispelled := 1;
+	endif
+
+	// --- Impedir Cura (SC_ApplyEffect, spell ID 219) ---
+	var nocure_opts := MobileWrapper(targ).GetProperty("#SpellOpts_219");
+	if (nocure_opts && !nocure_opts.errortext)
+		SC_RemoveEffect(targ, 219);
+		TS_LowerDuration(targ, "spelleffect_219", -1);
 		dispelled := 1;
 	endif
 
