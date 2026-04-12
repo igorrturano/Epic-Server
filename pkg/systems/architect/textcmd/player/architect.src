@@ -42,17 +42,29 @@ endif
 var staffmode := 0;
 var undo := array{};
 
-program architect_gump(who)
+program architect_gump(params)
 	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); // Adicionado para diminuir a quantidade de logs no arquivo script.log
 
-	if (who.cmdlevel < STAFFMODELEVEL)
-		if (!MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT)) // Habilidade de construcao necessaria para executar o comando
-			SendSysMessageEx(who, "Voce nao tem habilidade de arquiteto.", SSM_INFO);
+	var who, from_item;
+	if (typeof(params) == "Array")
+		who := params[1];
+		from_item := params[2];
+	else
+		who := params;
+		from_item := 0;
+	endif
+
+	if (who.cmdlevel >= STAFFMODELEVEL)
+		staffmode := 1;
+		SendSysMessage(who, "*running in staff mode*");
+	elseif (from_item)
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
+			SendSysMessageEx(who, "Você não tem a habilidade de arquiteto.", SSM_INFO);
 			return 0;
 		endif
 	else
-		staffmode := 1;
-		SendSysMessage(who, "*running in staff mode*");
+		SendSysMessageEx(who, "Apenas GMs podem usar este comando. Use a ferramenta de construção.", SSM_INFO);
+		return 0;
 	endif
 
 	// TODO Comentado, mas nao sei os riscos
