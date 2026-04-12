@@ -89,6 +89,27 @@ program classe(who, text)
 	endfor
 
 	SetObjProperty(who, "myhabs", myhabs);
+
+	// Set chardata.magia for magic subclasses
+	var magia_map := dictionary;
+	magia_map["Magus"]           := "spellcaster";
+	magia_map["Druida"]          := "Druid";
+	magia_map["Shaman"]          := "Shaman";
+	magia_map["Clerigo"]         := "Sacerdote";
+	magia_map["Necromante"]      := "Necromancer";
+	magia_map["Arqueiro Arcano"] := "arcane_archer";
+
+	if (magia_map.Exists(nome))
+		var chardata := GetObjProperty(who, "chardata");
+		if (!chardata)
+			chardata := struct;
+		endif
+		chardata.+magia := 0;
+		chardata.magia := magia_map[nome];
+		SetObjProperty(who, "chardata", chardata);
+		Message($"Magia definida: {magia_map[nome]}.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+	endif
+
 	Message($"Classe definida: {nome}. {myhabs.size()} habilidades atribuidas.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
 
 	return 1;
