@@ -23,7 +23,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	if (TS_GetTimerInfo(targ, "polymorph") != error)
+	if (TS_GetTimerInfo(targ, "polymorph") != error || GetObjProperty(targ, "metamorfose") != error)
 		SendSysMessageEx(who, "O alvo ja esta sob efeito de transformacao.", SSM_FAIL);
 		return;
 	endif
