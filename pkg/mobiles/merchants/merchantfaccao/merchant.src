@@ -503,7 +503,20 @@ function DoPurchase(npc, player, input)
 		SendSysMessageEx(player, "Você pagou {} m.o".format(owed), SSM_INFO);
 	endif
 
-	AddPaymentForSeller(npc, cost.seller, cost_amnt, array{ guild, imposto });
+	AddPaymentForSeller(npc, cost.seller, cost_amnt);
+
+	if (guild && imposto)
+		var guild_money := Ceil(cost_amnt * imposto);
+		var cofreid := GetObjProperty(npc, "cofreid");
+		var cofre := SystemFindObjectBySerial(cofreid);
+		var moeda_objtype := 0x0eed; // Gold Coins padrão UO
+		if (cofre && cofre.isA(POLCLASS_CONTAINER))
+			CreateItemInContainer(cofre, moeda_objtype, guild_money);
+		else
+			guild.SetProp("money", cint(guild.getProp("money")) + guild_money);
+		endif
+	endif
+
 	selling.amount := amount * cost.lote;
 	RemoveItemForSale(npc, input, selling.amount);
 	var purchase := CreateItemInBackpackFromTemplate(player, selling);
