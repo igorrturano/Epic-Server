@@ -483,13 +483,22 @@ function SummonSpiritualBlade(who)
 	sleep(2);
 
 	var weapon := CreateItemInBackpack(who, 0x090C, 1);
+	if (!weapon)
+		who.frozen := 0;
+		Message("Erro ao criar lamina espiritual.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return;
+	endif
 
 	weapon.graphic := weaponData.graphic;
 	weapon.color := 30000;
+
+	who.frozen := 0;
+
 	var equipped := EquipItem(who, weapon);
 	if (!equipped)
 		DestroyItem(weapon);
 		Message("Erro ao equipar lamina espiritual.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return;
 	endif
 	if (weapon.maxhp > 0)
 		weapon.hp := weapon.maxhp;
@@ -497,8 +506,6 @@ function SummonSpiritualBlade(who)
 
 	PlaySoundEffect(who, 0x245);
 	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0xB462, 8, 40, COLOR_ELEMENTAL_ENERGY);
-
-	who.frozen := 0;
 
 	SetCooldown(who, "spiritual_weapon", 99999);
 	Message("Sua lamina espiritual se materializa!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
