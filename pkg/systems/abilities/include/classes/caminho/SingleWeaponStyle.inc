@@ -33,7 +33,7 @@ class SingleWeaponStyle(CombatAbility)
 			return false;
 		endif
 
-		attackInfo.SetCriticalHitChance(CInt(attackInfo.GetCriticalHitChance()) + 5);
+		attackInfo.GetAttacker().SetCriticalChanceMod(CInt(attackInfo.GetAttacker().GetCriticalChanceMod()) + 5);
 
 		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
 			Message("[SINGLE_WEAPON] +5 critico", Color(SYSTEM_COLOR::SUCCESS)));
@@ -47,7 +47,7 @@ class SingleWeaponStyle(CombatAbility)
 			return false;
 		endif
 
-		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - 2);
+		defender.SetProperty("#evasion_mod", CInt(defender.GetProperty("#evasion_mod")) + 2);
 
 		DebugMsg(defender.GetObjRef(), DEBUG_HAB,
 			Message("[SINGLE_WEAPON] -2 acerto inimigo (evasao)", Color(SYSTEM_COLOR::SUCCESS)));
