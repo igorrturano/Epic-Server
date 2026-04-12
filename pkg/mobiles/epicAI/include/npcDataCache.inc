@@ -27,6 +27,14 @@ function NPC_GetCachedData(mobile)
     return cached;
 endfunction
 
+function GetEffectiveTier(mobile, npc_elem)
+    var override := CInt(GetObjProperty(mobile, "NpcTier"));
+    if (override)
+        return override;
+    endif
+    return CInt(npc_elem.Tier);
+endfunction
+
 /*
  * BuildNPCCache(mobile)
  *
@@ -50,7 +58,7 @@ function BuildNPCCache(mobile)
         "category" := npc_elem.Category,
         "category_lower" := Lower(npc_elem.Category),
         "classe" := npc_elem.Classe,
-        "tier" := CInt(npc_elem.Tier),
+        "tier" := GetEffectiveTier(mobile, npc_elem),
         "brain_type" := Lower(npc_elem.BrainType),
         "spell_school" := npc_elem.SpellSchool,
         "attack_speed" := npc_elem.EpicAttackSpeed,
