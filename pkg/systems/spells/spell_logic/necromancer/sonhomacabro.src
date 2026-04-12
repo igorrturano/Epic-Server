@@ -8,6 +8,7 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
@@ -28,13 +29,15 @@ program SpellScript(params)
 		return;
 	endif
 
-	var e := TS_StartTimer(targ, "sleep", cint(AP_GetSkill(who, ARCANA) / 2), 1, who, 0);
+	var duration := cint(AP_GetSkill(who, ARCANA) / 2);
+	var e := TS_StartTimer(targ, "sleep", duration, 1, who, 0);
 	Detach();
 	Attach(targ);
 	if (e == error)
 		PrintTextAbove(who, "sonho " + e);
 	endif
 
+	SendSpellBuff(who, targ, CInt(spell.id), duration);
 	handleSilentMagic(who, targ, 0x658);
 	SendSysMessageEx(who, "O alvo adormeceu.", SSM_INFO);
 
