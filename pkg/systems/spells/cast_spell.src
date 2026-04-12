@@ -353,6 +353,24 @@ function performSpellDelay(mobile, mw, delay, orig_hp)
 endfunction
 
 function checkSpellInterruption(mobile, mw, orig_hp)
+	if (GetCooldown(mobile, "silence") > 0)
+		SendSysMessageEx(mobile, "Voce foi silenciado durante a invocacao.", SSM_FAIL);
+		FailSpell(mobile);
+		return 0;
+	endif
+
+	if (mobile.squelched && !mobile.npctemplate)
+		SendSysMessageEx(mobile, "Voce nao consegue mais falar os componentes verbais da magia.", SSM_FAIL);
+		FailSpell(mobile);
+		return 0;
+	endif
+
+	if (GetObjProperty(mobile, "metamorfose") != error && !mw.HasAbility(ABILITY_ID::ELO_NATURAL))
+		SendSysMessageEx(mobile, "A metamorfose interrompeu sua invocacao.", SSM_FAIL);
+		FailSpell(mobile);
+		return 0;
+	endif
+
 	if (orig_hp > AP_GetVital(mobile, "Hits") && (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL)))
 		SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.",
 				   SSM_FAIL);
