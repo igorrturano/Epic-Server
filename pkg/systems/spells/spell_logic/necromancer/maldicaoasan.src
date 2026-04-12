@@ -7,6 +7,7 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 include "include/epicMageryUtils";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
@@ -28,6 +29,7 @@ program SpellScript(params)
 	var oldy := who.y;
 
 	who.frozen := 1;
+	SendSpellBuff(who, targ, CInt(spell.id), 10);
 
 	Corromper(who, 13, targ);
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
