@@ -6,10 +6,12 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 	var targets := array;
 	var copmobs := array;
@@ -56,7 +58,9 @@ program SpellScript(params)
 		PlayMovingEffectEx(targs, targets[y], 14360, 13, 0, 2444, 0, 0, 0, 0, 0, 0);
 		SetObjProperty(targs, "chainofpain", copmobs);
 		SetObjProperty(targs, "copnumber", len(targets));
-		TS_StartTimer(targs, "chainofpain", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 4, 0, who, 0);
+		var duration := GetSpellDuration(AP_GetSkill(who, ARCANA)) / 4;
+		TS_StartTimer(targs, "chainofpain", duration, 0, who, 0);
+		SendSpellBuff(who, targs, CInt(spell.id), duration);
 	endforeach
 
 	PlaySoundEffect(who, 384);

@@ -10,10 +10,12 @@ include ":attributes:vitals";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/epicMageryUtils";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	if (who.npctemplate)
@@ -50,6 +52,7 @@ program SpellScript(params)
 	Corromper(who, 28, targ);
 	SendSysMessageEx(targ, "Olho por olho...", SSM_INFO);
 	TS_StartTimer(targ, "dmgreturn", time, lvl, who, 1);
+	SendSpellBuff(who, targ, CInt(spell.id), time);
 
 	return 1;
 endprogram
