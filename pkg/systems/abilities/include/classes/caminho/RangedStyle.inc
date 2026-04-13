@@ -25,6 +25,18 @@ class RangedStyle(CombatAbility)
 		return Upper(weapon.GetAttribute()) == Upper(RANGED);
 	endfunction
 
+	// Attacker: +2 hit chance
+	function OnPassiveBeforeHitAttacker(this, attackInfo)
+		var attacker := attackInfo.GetAttacker();
+		if (!this._MatchesContext(attacker))
+			return false;
+		endif
+		attacker.SetProperty("#hit_mod", CInt(attacker.GetProperty("#hit_mod")) + 2);
+		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
+			Message("[RANGED_STYLE] +2 acerto", Color(SYSTEM_COLOR::SUCCESS)));
+		return true;
+	endfunction
+
 	// Attacker: +2 damage
 	function OnPassiveBeforeDamage(this, attackInfo)
 		var attacker := attackInfo.GetAttacker();
@@ -32,7 +44,10 @@ class RangedStyle(CombatAbility)
 			return false;
 		endif
 
-		attacker.SetProperty("#FlatDamageBonus", CInt(attacker.GetProperty("#FlatDamageBonus")) + 2);
+		attackInfo.GetDamage()
+			.IncreaseSlashRawDamage(2)
+			.IncreasePiercingRawDamage(2)
+			.IncreaseBluntRawDamage(2);
 
 		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
 			Message("[RANGED_STYLE] +2 dano", Color(SYSTEM_COLOR::SUCCESS)));

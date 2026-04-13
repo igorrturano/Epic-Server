@@ -26,6 +26,18 @@ class SingleWeaponStyle(CombatAbility)
 		return Upper(weapon.GetAttribute()) == Upper(ONEHANDED) && !mobile.GetObjRef().shield;
 	endfunction
 
+	// Defender: -2 evasion
+	function OnPassiveBeforeHitDefender(this, attackInfo)
+		var defender := attackInfo.GetDefender();
+		if (!this._MatchesContext(defender))
+			return false;
+		endif
+		defender.SetProperty("#evasion_mod", CInt(defender.GetProperty("#evasion_mod")) + 2);
+		DebugMsg(defender.GetObjRef(), DEBUG_HAB,
+			Message("[SINGLE_WEAPON] -2 acerto inimigo (evasao)", Color(SYSTEM_COLOR::SUCCESS)));
+		return true;
+	endfunction
+
 	// Attacker: +5 critical hit chance
 	function OnPassiveBeforeDamage(this, attackInfo)
 		var attacker := attackInfo.GetAttacker();

@@ -294,37 +294,6 @@ function CalculateAbilityHitModifier(byref hit_chance, attackInfo)
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::AURA_DE_FE))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetObjRef().party.members.size());
 	endif
-
-	// Caminho 1 style passives
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::DUAL_WIELD_STYLE))
-		if (Upper(attackInfo.GetAttacker().GetWeapon().GetAttribute()) == Upper(DUALWIELD))
-			hit_chance += 3.0;
-		endif
-	endif
-
-	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::RANGED_STYLE))
-		if (Upper(attackInfo.GetAttacker().GetWeapon().GetAttribute()) == Upper(RANGED))
-			hit_chance += 2.0;
-		endif
-	endif
-
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::SINGLE_WEAPON_STYLE))
-		if (Upper(attackInfo.GetDefender().GetWeapon().GetAttribute()) == Upper(ONEHANDED) && !attackInfo.GetDefender().GetObjRef().shield)
-			hit_chance -= 2.0;
-		endif
-	endif
-
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::SWORD_AND_BOARD))
-		if (Upper(attackInfo.GetDefender().GetWeapon().GetAttribute()) == Upper(ONEHANDED) && attackInfo.GetDefender().GetObjRef().shield)
-			hit_chance -= 2.0;
-		endif
-	endif
-
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::DUAL_WIELD_STYLE))
-		if (Upper(attackInfo.GetDefender().GetWeapon().GetAttribute()) == Upper(DUALWIELD))
-			hit_chance -= 2.0;
-		endif
-	endif
 endfunction
 
 function CalculateEntropyHitModifier(byref hit_chance, attackInfo)

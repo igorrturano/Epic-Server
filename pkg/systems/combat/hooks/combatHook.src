@@ -176,6 +176,16 @@ function TryToAttack(byRef attackInfo)
 	ExecuteCombatAbilitiesBeforeHit(attackInfo);
 	ExecutePassiveAbilitiesAttackerBeforeHit(attackInfo);
 	ExecutePassiveAbilitiesDefenderBeforeHit(attackInfo);
+	var hitModPassive := CInt(attacker.GetObjRef().GetProp("#hit_mod"));
+	if (hitModPassive != 0)
+		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) + hitModPassive);
+		attacker.GetObjRef().EraseProp("#hit_mod");
+	endif
+	var evasionMod := CInt(defender.GetObjRef().GetProp("#evasion_mod"));
+	if (evasionMod != 0)
+		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - evasionMod);
+		defender.GetObjRef().EraseProp("#evasion_mod");
+	endif
 	sleepms(2);
 	if (attackInfo.Succeeded())
 		DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("***ACERTOU!***", Color(SYSTEM_COLOR::SUCCESS)));

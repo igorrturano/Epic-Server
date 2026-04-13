@@ -33,9 +33,9 @@ class TwoHandedStyle(CombatAbility)
 		endif
 
 		attackInfo.GetDamage()
-			.IncreaseSlashBaseDamage(3)
-			.IncreasePiercingBaseDamage(3)
-			.IncreaseBluntBaseDamage(3);
+			.IncreaseSlashRawDamage(3)
+			.IncreasePiercingRawDamage(3)
+			.IncreaseBluntRawDamage(3);
 		attacker.SetCriticalChanceMod(CInt(attacker.GetCriticalChanceMod()) + 5);
 
 		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
