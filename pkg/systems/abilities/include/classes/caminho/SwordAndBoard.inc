@@ -43,18 +43,5 @@ class SwordAndBoard(CombatAbility)
 		return true;
 	endfunction
 
-	// Defender: -2 evasion
-	function OnPassiveBeforeHitDefender(this, attackInfo)
-		var defender := attackInfo.GetDefender();
-		if (!this._MatchesContext(defender))
-			return false;
-		endif
-
-		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - 2);
-
-		DebugMsg(defender.GetObjRef(), DEBUG_HAB,
-			Message("[SWORD_AND_BOARD] -2 acerto inimigo (evasao)", Color(SYSTEM_COLOR::SUCCESS)));
-		return true;
-	endfunction
 
 endclass

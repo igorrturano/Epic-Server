@@ -40,18 +40,5 @@ class SingleWeaponStyle(CombatAbility)
 		return true;
 	endfunction
 
-	// Defender: -2 evasion
-	function OnPassiveBeforeHitDefender(this, attackInfo)
-		var defender := attackInfo.GetDefender();
-		if (!this._MatchesContext(defender))
-			return false;
-		endif
-
-		defender.SetProperty("#evasion_mod", CInt(defender.GetProperty("#evasion_mod")) + 2);
-
-		DebugMsg(defender.GetObjRef(), DEBUG_HAB,
-			Message("[SINGLE_WEAPON] -2 acerto inimigo (evasao)", Color(SYSTEM_COLOR::SUCCESS)));
-		return true;
-	endfunction
 
 endclass

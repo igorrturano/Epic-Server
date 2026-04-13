@@ -32,10 +32,7 @@ class TavernBrawler(CombatAbility)
 			return false;
 		endif
 
-		attackInfo.GetDamage()
-			.IncreaseSlashBaseDamage(4)
-			.IncreasePiercingBaseDamage(4)
-			.IncreaseBluntBaseDamage(4);
+		attacker.SetProperty("#FlatDamageBonus", CInt(attacker.GetProperty("#FlatDamageBonus")) + 4);
 
 		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
 			Message("[TAVERN_BRAWLER] +4 dano", Color(SYSTEM_COLOR::SUCCESS)));
