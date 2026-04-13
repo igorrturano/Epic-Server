@@ -13,14 +13,14 @@ program CheckForPages(who)
 			SendSysMessageEx(who, "Ainda existem pages enviadas, digite '.gmpage' para checa-las.", SSM_INFO);
 		endif
 
-		if (who.acctname == "gha2" || who.acctname == "gmduttonesomg")
+		//if (who.cmdlevel > 3)
 			df := DFOpenDataFile("bugs", DF_CREATE, DF_KEYTYPE_INTEGER);
 			pages := df.Keys();
 			if (pages.size() >= 1)
 				SendSysMessageEx(who, "Ainda existem bugs reportados, digita '.bugreport' para checa-los.",
 								  SSM_INFO);
 			endif
-		endif
+		//endif
 	endif
 
 endprogram
