@@ -33,7 +33,7 @@ program mining(who)
 	foreach thing in ores
 		var dif := DetermineMiningDifficulty(GetResourceId(thing));
 		if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
-			dif := dif - 10;
+			dif := dif - 5;
 		endif
 		if ((skill + 10) >= dif)
 			possiveis[i] := thing;
