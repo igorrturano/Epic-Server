@@ -95,10 +95,12 @@ class Control(IControl)
 	endfunction
 
 	function Draw(this, byRef gump)
-		print("Creating control: " + this.ToString());
-
+		print(gump.GetGumpString());
+		print(gump._gumpString);
+		print("--------------");
+		
 		if (this.GetTooltip())
-			this._tooltip.Draw(gump.GetGump());
+			this.GetTooltip().Draw(gump);
 		endif
 	endfunction
 

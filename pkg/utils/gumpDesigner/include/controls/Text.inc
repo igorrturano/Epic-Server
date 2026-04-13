@@ -42,11 +42,11 @@ class Text(ResizableControl)
 
 	function Draw(this, byRef gump)
 		if (!this._align)
-			GFTextLine(gump.GetGump(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
+			GFTextLine(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
 		elseif (this._align == TEXT_ALIGN::ALIGN_CENTER)
-			GFTextMid(gump.GetGump(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetColor(), this.GetValue());
+			GFTextMid(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetColor(), this.GetValue());
 		elseif (this._align == TEXT_ALIGN::ALIGN_RIGHT)
-			GFTextRight(gump.GetGump(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
+			GFTextRight(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
 		endif
 		
 		Super::Draw(this, gump);

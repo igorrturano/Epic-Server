@@ -4,15 +4,13 @@ include ":gumpDesigner:controls/containers/Container";
 include ":gumpDesigner:controls/ImageGump";
 
 class GumpBody(Container)
-	var _background;
-	
 	function GumpBody(this)
 		Super("Gump Body Area", 0, 0, 0, 0);
-		this.SetBackground(ImageGump("Gump Body Background", 0, 0, 0, 0));
+		this.AddControl(ImageGump("Gump Body Background", 0, 0, 0, 0));
 	endfunction
 
 	function GetBackground(this)
-		return this._background;
+		return this.GetControls()[1];
 	endfunction
 
 	function SetBackground(this, imageGump)
@@ -20,7 +18,7 @@ class GumpBody(Container)
 			return InvalidParameterException("Body background must be of type ImageGump.");
 		endif
 		
-		this._background := imageGump;
+		this.GetControls()[1] := imageGump;
 
 		return this;
 	endfunction

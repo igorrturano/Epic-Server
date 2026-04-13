@@ -30,6 +30,13 @@ class ResizableControl(Control)
 		return this;
 	endfunction
 
+	function Resize(this, width, height)
+		this._width := width;
+		this._height := height;
+		
+		return this;
+	endfunction
+
 	function ToString(this)
 		return "(ResizableControl) " + Super::ToString(this)
 			+ ", width=" + this.GetWidth()

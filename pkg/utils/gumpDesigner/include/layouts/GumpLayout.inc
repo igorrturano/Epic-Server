@@ -5,23 +5,22 @@ include ":gumpDesigner:controls/ImageGump";
 
 class GumpLayout(Container)
 	var borders := struct{
-		topLeft := 0,
-		top := 0,
-		topRight := 0,
+		topLeft,
+		top,
+		topRight,
 		
-		left := 0,
-		right := 0,
+		left,
+		right,
 
-		bottomLeft := 0,
-		bottom := 0,
-		bottomRight := 0
+		bottomLeft,
+		bottom,
+		bottomRight
 	};
-	var background := 0;
+	var background;
 	
 	function GumpLayout(this, width, height)
 		Super("Gump Layout", 0, 0, width, height);
 		this.borders := GumpLayout::borders;
-		this.background := GumpLayout::background;
 		this._InitializeStructure();
 	endfunction
 

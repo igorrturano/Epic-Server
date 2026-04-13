@@ -7,7 +7,7 @@ class ImageGumpTiled(ImageGump)
 	endfunction
 
 	function Draw(this, byRef gump)
-		GFGumpPicTiled(gump.GetGump(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), this.GetImageId());
+		GFGumpPicTiled(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), this.GetImageId());
 		Super::Draw(this, gump);
 	endfunction
 

@@ -14,16 +14,16 @@ class Container(ResizableControl)
 		this._controls := array{};
 	endfunction
 
-	function GetControls(this)
-		return this._controls;
-	endfunction
-
 	function SetVisible(this, isVisible)
 		this._isVisible := isVisible;
 
 		return this;
 	endfunction
 	
+	function GetControls(this)
+		return this._controls;
+	endfunction
+
 	function AddControl(this, byRef control)
 		control.SetXOffset(this.GetX());
 		control.SetYOffset(this.GetY());
@@ -43,7 +43,7 @@ class Container(ResizableControl)
 
 	function Draw(this, byRef gump)
 		if (this._isVisible)
-			GFGumpPicTiled(gump.GetGump(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), RandomIntMinMax(0x4657, 0x46CC + 1)); // Desenha um background aleatório para o container, só para visualização
+			GFGumpPicTiled(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), RandomIntMinMax(0x4657, 0x46CC + 1)); // Desenha um background aleatório para o container, só para visualização
 		endif
 
 		foreach control in (this.GetControls())

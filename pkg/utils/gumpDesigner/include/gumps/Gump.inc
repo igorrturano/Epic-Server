@@ -19,33 +19,31 @@ class Gump(IGump)
 	var _parent;
 	var _pid;
 	var _gumpString;
-	var _width := 0;
-	var _height := 0;
 
 	var _layout; // Objeto GumpLayout (ou algum herdado dele)
 	var _title; // Objeto GumpTitle
 	var _pages := array{}; // Array das páginas, cada página é o Objeto GumpBody
 
 	var _options := array{};
-	var _controls := struct{
-			added := array{},
-			idOrder := array{},
-			lastId := dictionary{},
-			position := dictionary{}
+	var _addedControls := array{};
+	var _createdControls := struct{
+			orderById := array{},
+			countByType := dictionary{},
+			positionById := dictionary{}
 		};
 	var helpAction;
 
 	function Gump(this, parent, title, width, height, options := array{})
 		this._parent := parent;
-		this._width := width;
-		this._height := height;
 
-		this.SetLayout(GoldenLayout(width, height));
-		this.SetTitle(GumpTitle(title));
+		this.SetLayout(GoldenLayout(CInt(width), CInt(height)));
+		this.SetTitle(GumpTitle(CStr(title)));
+		this._pages := Gump::_pages;
 		this.AddPage(GumpBody());
 
-		this._options := options.size() < 1 ? array{BORDER_GOLDEN} : options;
-		this._controls := Gump::_controls;
+		this._options := options;
+		this._addedControls := Gump::_addedControls;
+		this._createdControls := Gump::_createdControls;
 		this.helpAction := @() {
 			Message("Esta ajuda ainda não foi implementada.").SetColor(Color(SYSTEM_COLOR::ALERT)).SendSys(this.GetParent());
 		};
@@ -75,22 +73,42 @@ class Gump(IGump)
 		return this;
 	endfunction
 
+	function GetX(this)
+		return this.GetLayout().GetX();
+	endfunction
+
+	function SetX(this, x)
+		this.GetLayout().SetX(CInt(x));
+
+		return this;
+	endfunction
+
+	function GetY(this)
+		return this.GetLayout().GetY();
+	endfunction
+
+	function SetY(this, y)
+		this.GetLayout().SetY(CInt(y));
+
+		return this;
+	endfunction
+
 	function GetWidth(this)
-		return this._width;
+		return this.GetLayout().GetWidth();
 	endfunction
 
 	function SetWidth(this, width)
-		this._width := CInt(width);
+		this.GetLayout().SetWidth(CInt(width));
 
 		return this;
 	endfunction
 
 	function GetHeight(this)
-		return this._height;
+		return this.GetLayout().GetHeight();
 	endfunction
 
 	function SetHeight(this, height)
-		this._height := CInt(height);
+		this.GetLayout().SetHeight(CInt(height));
 
 		return this;
 	endfunction
@@ -179,7 +197,7 @@ class Gump(IGump)
 	endfunction
 
 	function GetControls(this)
-		return this._controls.added;
+		return this._addedControls;
 	endfunction
 
 	function AddControl(this, byRef control)
@@ -187,7 +205,7 @@ class Gump(IGump)
 			return InvalidParameterException("Only controls of type Control can be added to the gump.");
 		endif
 
-		this._controls.added.append(control);
+		this._addedControls.append(control);
 
 		return this;
 	endfunction
@@ -218,10 +236,12 @@ class Gump(IGump)
 	function Show(this)
 		this._pid := GetPid();
 
-		this._CreateDiag();
-		this._CreateHelper();
-		this._CreateControls();
+		this._CreateHelpButton();
+		this._ConfigureDiag();
+		this._DrawDiag();
 
+
+		print(this.GetGumpString());
 		var result := GFSendGump(this._parent, this.GetGumpString());
 		
 		var eventHandled;
@@ -243,43 +263,80 @@ class Gump(IGump)
 
 	function Dispose(this)
 		this._gumpString := Gump::_gumpString;
-		foreach control in (this._controls.position)
+		foreach control in (this._addedControls)
 			control.Dispose();
 			sleepms(2);
 		endforeach
-		this._controls := Gump::_controls;
+		this._addedControls := Gump::_addedControls;
 	endfunction
 
 	// Private functions
-	function _CreateDiag(this)
-		print("Creating gump: " + this.ToString());
+	function _ConfigureDiag(this)
+		this._IndexControl(this.GetLayout());
+		this._IndexControl(this.GetTitle());
+		foreach page in (this._pages)
+			this._IndexControl(page);
+			SleepMS(2);
+		endforeach
+	endfunction
+
+	function _IndexControls(this, controls)
+		foreach control in (controls)
+			this._IndexControl(control);
+			SleepMS(2);
+		endforeach
+	endfunction
+
+	function _IndexControl(this, control)
+		if (!(control is @Control))
+			return InvalidParameterException("Control  must be of type 'Control'.");
+		endif
+
+		if (!this._createdControls.countByType[control.GetType()])
+			this._createdControls.countByType[control.GetType()] := 0;
+		endif
+
+		this._createdControls.countByType[control.GetType()] += 1;
+
+		var idOffset := this._GetIdOffsetByControlType(control.GetType());
+		var controlId := idOffset + this._createdControls.countByType[control.GetType()];
+		control.SetId(controlId);
+		this._createdControls.orderById.append(controlId);
+		this._createdControls.positionById[controlId] := control;
+
+		if (control is @Container)
+			this._IndexControls(control.GetControls());
+		endif
+	endfunction
+
+	function _DrawDiag(this)
+		this.SetGumpString(GFCreateGump(this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight()));
 		
+		foreach id in (this._createdControls.orderById)
+			var control := this._createdControls.positionById[id];
+			control.Draw(this);
+			SleepMS(2);
+		endforeach
 	endfunction
 	
-	function _CreateControls(this)
-	endfunction
-
-	function _InsertControl(this, byRef control)
-	endfunction
-
 	function _UpdateInputValues(this)
-		foreach control in (this._controls.position)
+		foreach control in (this._createdControls.positionById)
 			control.SetValue(GFExtractData(this.GetGumpString(), control.GetId()));
 		endforeach
 	endfunction
 
-	function _CreateHelper(this)
+	function _CreateHelpButton(this)
 		if (this.GetOptions().contains(HIDE_TITLE))
 			return;
 		endif
 		
-		var buttonHelp := Button("Help", this.GetWidth() - 30, 36, 0x5689, 0x568A);
+		var buttonHelp := Button("Help", this.GetTitle().GetWidth() - 30, 36, 0x5689, 0x568A);
 		buttonHelp.AddAction(this.helpAction);
 
-		this.GetLayout().AddControl(buttonHelp);
+		this.GetTitle().AddControl(buttonHelp);
 	endfunction
 
-	function _GetIdOffsetByControlType(controlType)
+	function _GetIdOffsetByControlType(this, controlType)
 		case (controlType) // Feito com valores fixos pra poder ter um controle melhor da resposta no input[0]
 			GumpControl::Text: return 1000;
 			GumpControl::TextCropped: return 2000;
@@ -290,8 +347,7 @@ class Gump(IGump)
 			GumpControl::CheckBox: return 7000;
 			GumpControl::RadioButton: return 8000;
 			GumpControl::TextBox: return 9000;
-			GumpControl::Tooltip: return 10000;
-			GumpControl::RadioGroup: return 11000;
+			GumpControl::RadioGroup: return 10000;
 
 			default: return 0;
 		endcase

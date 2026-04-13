@@ -28,17 +28,11 @@ class ImageGump(ResizableControl)
 		return this;
 	endfunction
 
-	function Resize(this, width, height)
-		this._width := width;
-		this._height := height;
-		return this;
-	endfunction
-
 	function Draw(this, byRef gump)
-		if (this._width == 0 || this._height == 0)
-			GFGumpPic(gump.GetGump(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetColor());
+		if (this.GetWidth() > 0 || this.GetHeight() > 0)
+			GFResizePic(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetWidth(), this.GetHeight());
 		else
-			GFResizePic(gump.GetGump(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetWidth(), this.GetHeight());
+			GFGumpPic(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetColor());
 		endif
 
 		Super::Draw(this, gump);
