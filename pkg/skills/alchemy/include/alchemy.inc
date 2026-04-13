@@ -97,6 +97,7 @@ function empty_bottle(character, potion, drinkSound:= 1)
     setobjproperty(pot, "encaixeComponente", "frasco");
     setobjproperty(pot, "material", 7139);
     setobjproperty(pot, "tierComponente", props.tier.id ? props.tier.id : 1);
+    pot.color := 1328;
 	  return 1;
 	endif
   IncRevision(potion);
