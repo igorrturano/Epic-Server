@@ -5,10 +5,12 @@ use cfgfile;
 
 include ":combat:Controller/DamageController_legacy";
 include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
 include "include/client";
 include "include/sounds";
 include ":attributes:vitals";
 include ":attributes:attributes";
+include ":equipsys:utils/consts";
 
 function CanActivate(who)
 	var itemdesc := ReadConfigFile(":*:itemdesc");
@@ -23,19 +25,6 @@ function CanActivate(who)
 	return false; // naked, clothes only, or light armor = can activate
 endfunction
 
-function HasShield(who)
-	var itemdesc := ReadConfigFile(":*:itemdesc");
-	foreach item in (ListEquippedItems(who))
-		if (item.isa(POLCLASS_ARMOR))
-			var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
-			if (tipoProtecao["Escudo"])
-				return true;
-			endif
-		endif
-	endforeach
-	return false;
-endfunction
-
 program HitScript(params)
 	var attacker := params[1];
 	var defender := params[2];
@@ -45,8 +34,9 @@ program HitScript(params)
 	// var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
 
+	var leftHand := MobileWrapper(attacker).GetEquipBySlot(SHIELD);
 	var weapon := WeaponWrapper(weaponObj);
-	if (!CanActivate(attacker) && !HasShield(attacker))
+	if (!CanActivate(attacker) && (!leftHand || leftHand is @Exception))
 		var maxDmg := weapon.GetMainDamage().GetMaximum();
 		var dmg := CInt((maxDmg + 4) / 5); // ceil(20% of max weapon damage)
 		if (dmg > 0)
