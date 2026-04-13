@@ -1,5 +1,3 @@
-use polsys;
-
 include ":message:model/Message";
 include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
@@ -16,7 +14,6 @@ program unequipitem(params)
 		equip := ArmorWrapper(item);
 	elseif (item.IsA(POLCLASS_WEAPON))
 		equip := WeaponWrapper(item);
-		RefreshNearbyNPCTooltips(who);
 	endif
 
 	who := MobileWrapper(who);
@@ -44,11 +41,3 @@ program unequipitem(params)
 	Start_Script("packets/AssyncUpdateEquipment", array{who, false, item, layer});
 	return 1;
 endprogram
-
-function RefreshNearbyNPCTooltips(who)
-	foreach npc in ListMobilesNearLocation(who.x, who.y, who.z, 18, who.realm)
-		if (npc.npctemplate)
-			IncRevision(npc);
-		endif
-	endforeach
-endfunction
