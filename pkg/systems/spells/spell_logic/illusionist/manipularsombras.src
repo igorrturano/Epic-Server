@@ -22,6 +22,11 @@ program HitScript(params)
 	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 	sleep(2);
 
+	if (targ.serial == who.serial)
+		SendSysMessage(who, "Voce nao pode usar isso em si mesmo. Para se teleportar, use a magia Teleportar.");
+		return 0;
+	endif
+
 	var dist := Distance(who, targ);
 	var mlore := Cint(AP_GetSkill(who, ARCANA));
 	who.frozen := 1;
@@ -69,6 +74,12 @@ program HitScript(params)
 	targ.hidden := 1;
 
 	var moveTo := TargetCoordinates(who);
+	if (!CheckLosAt(who, moveTo.x, moveTo.y, moveTo.z))
+		SendSysMessageEx(who, "Voce nao ve o local de destino.", SSM_FAIL);
+		targ.hidden := 0;
+		who.frozen := 0;
+		return 0;
+	endif
 	if (CanWalk("L", who.x, who.y, who.z, moveTo.x, moveTo.y, who.realm) == error)
 		SendSysMessage(who, "Local Inacessível");
 		targ.hidden := 0;

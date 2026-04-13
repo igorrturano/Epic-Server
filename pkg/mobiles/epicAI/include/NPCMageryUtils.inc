@@ -415,7 +415,7 @@ function ChooseShamanSpell(me, opponent, spells)
         spell_target_var := me.serial;
     endif
 
-    return struct{ "name" := chosen_spell, "info" := spellInfo };
+    return chosen_spell;
 endfunction
 
 function ChooseIdealShamanSpells(me, opponent, spells)

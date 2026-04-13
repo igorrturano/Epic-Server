@@ -52,7 +52,7 @@ function CheckIsFree(who)
 endFunction
 
 function CheckIsHealthy(who, startingHealth)
-	if(startingHealth >  cint(AP_GetVital(who, "Hits")))
+	if(startingHealth > AP_GetVital(who, "Hits"))
 		SendSysMessageEx(who,"Você esta ferido.",SSM_FAIL);
 		return false;
 	endif

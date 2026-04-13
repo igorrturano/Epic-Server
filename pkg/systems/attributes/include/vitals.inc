@@ -135,6 +135,9 @@ function AP_GetVitalRegenRate(mobile, vital_name)
 endfunction
 
 function HealHits(mobile, amount)
+  if (GetObjProperty(mobile, "nocure"))
+    return 0;
+  endif
   AP_SetVital(mobile, "Hits", cint(AP_GetVital(mobile, "Hits")+amount));
   if (AP_GetVital(mobile, "Hits") >  AP_GetVitalMaximumValue(mobile, "Hits"))
     AP_SetVital(mobile, "Hits", AP_GetVitalMaximumValue(mobile, "Hits"));

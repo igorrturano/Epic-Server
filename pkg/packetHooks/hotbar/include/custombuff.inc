@@ -31,6 +31,7 @@ const ABILITY_BUFF_OFFSET := 10000;
 // @param name      - buff display name
 // @param description - optional description text
 function SendCustomBuff(who, buffId, gumpIcon, durationSecs, name, description := "", totalDurationSecs := 0)
+    RemoveCustomBuff(who, buffId);
     if (!totalDurationSecs)
         totalDurationSecs := durationSecs;
     endif
