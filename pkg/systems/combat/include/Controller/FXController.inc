@@ -24,7 +24,7 @@ function PlayAttackFX(byRef attackInfo)
 	if (defenderAnim) attackInfo.GetDefender().PlayAnimation(defenderAnim); endif
 
 	var hpPercent := (attackInfo.GetDefender().GetCurrentHP() / attackInfo.GetDefender().GetMaxHP()) * 100;
-	if (hpPercent < 20)
+	if (hpPercent < 20 && attackInfo.GetDefender() is @MobileWrapper)
 		MakeBleed(attackInfo.GetDefender().GetObjRef());
 	endif
 
