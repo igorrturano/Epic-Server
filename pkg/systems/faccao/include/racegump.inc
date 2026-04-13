@@ -144,15 +144,21 @@ function _IsMaleBtn(btn_value)
     return (btn_value % 2 == 1) ? 1 : 0;
 endfunction
 
+function _CreateAndEquip(npc, graphic, color)
+    var item := CreateItemAtLocation(npc.x, npc.y, npc.z, graphic, 1);
+    if (item)
+        item.color := color;
+        if (!EquipItem(npc, item))
+            DestroyItem(item);
+        endif
+    endif
+endfunction
+
 function _RemoveHairBeard(npc)
-    var hair := GetEquipmentByLayer(npc, 0x0b); // LAYER_HAIR
-    if (hair)
-        DestroyItem(hair);
-    endif
-    var beard := GetEquipmentByLayer(npc, 0x10); // LAYER_BEARD
-    if (beard)
-        DestroyItem(beard);
-    endif
+    var hair := GetEquipmentByLayer(npc, 0x0b);
+    if (hair) DestroyItem(hair); endif
+    var beard := GetEquipmentByLayer(npc, 0x10);
+    if (beard) DestroyItem(beard); endif
 endfunction
 
 function _GetHairStylesByRace(btn_value)
@@ -217,29 +223,16 @@ function _ApplyRaceAppearance(npc, btn_value)
     
     var hair_styles := _GetHairStylesByRace(btn_value);
     if (hair_styles.size() > 0)
-        var hair_style := _PickRandom(hair_styles);
-        var hair := CreateItemAtLocation(npc.x, npc.y, npc.z, hair_style, 1);
-        if (hair)
-            hair.color := hair_color;
-            if (!EquipItem(npc, hair))
-                DestroyItem(hair);
-            endif
-        endif
+        _CreateAndEquip(npc, _PickRandom(hair_styles), hair_color);
     endif
-    
-    if (_IsMaleBtn(btn_value))
+
+    var can_have_beard := _IsMaleBtn(btn_value) &&
+                          btn_value != FACCAO_BTN_ELFO_M &&
+                          btn_value != FACCAO_BTN_PEQUILHO_M;
+    if (can_have_beard && (btn_value == FACCAO_BTN_ANAO_M || RandomInt(2) == 1))
         var beard_styles := _GetBeardStylesByRace(btn_value);
-        if (btn_value == FACCAO_BTN_ANAO_M || RandomInt(2) == 1)
-            if (beard_styles.size() > 0)
-                var beard_style := _PickRandom(beard_styles);
-                var beard := CreateItemAtLocation(npc.x, npc.y, npc.z, beard_style, 1);
-                if (beard)
-                    beard.color := hair_color;
-                    if (!EquipItem(npc, beard))
-                        DestroyItem(beard);
-                    endif
-                endif
-            endif
+        if (beard_styles.size() > 0)
+            _CreateAndEquip(npc, _PickRandom(beard_styles), hair_color);
         endif
     endif
     return 1;

@@ -1,9 +1,9 @@
 // Script-level cached spell lists (lazy init, built once per brain lifetime)
-var _cached_anti_mage := 0;
-var _cached_anti_melee := 0;
-var _cached_aoe := 0;
-var _cached_non_ideal := 0;
-var _cached_always_good_base := 0;
+var _cached_always_good := 0;
+var _cached_anti_mage   := 0;
+var _cached_anti_melee  := 0;
+var _cached_aoe         := 0;
+var _cached_non_ideal   := 0;
 
 
 
@@ -109,8 +109,8 @@ function ChooseIdealSpell(me, opponent, spells)
 endfunction
 
 function GetAlwaysGoodSpells()
-    if (!_cached_always_good_base)
-        _cached_always_good_base := array{
+    if (!_cached_always_good)
+        _cached_always_good := array{
             "Misseis Magicos", "Ampliar Dor", "Drenar Folego", "Relampago",
             "Incinerar", "Congelar", "Pesadelo", "Impedir Cura",
             "Forma Amaldicoada", "Drenar Vida", "Maldicao de Zhao",
@@ -118,7 +118,7 @@ function GetAlwaysGoodSpells()
             "Hipnotizar", "Cegar", "Escurecer"
         };
     endif
-    return _cached_always_good_base;
+    return _cached_always_good;
 endfunction
 
 function GetAntiMageSpells()
@@ -338,65 +338,14 @@ function ChooseColdSpell()
     return spells[RandomInt(spells.size())+1];
 endfunction
 
-/*
- * GuardaConselhoApplyElementalWeapon()
- *
- * Aplica encantamento elemental diretamente na arma do NPC GuardaConselho,
- * sem passar pelo spell script (que exige SPIRITUALBLADE).
- * Cores: Fire=246, Cold=196, Energy=211 (COLOR_ELEMENTAL_*_LIGHT)
- */
-function GuardaConselhoApplyElementalWeapon()
-    var weapon := me.weapon;
-    if (!weapon || weapon == error)
-        return 0;
-    endif
 
-    var elementos := array{"Fire", "Cold", "Energy"};
-    var elemento := elementos[RandomInt(3) + 1];
-
-    var cargas := 25; // Intelligence 100 -> Arcana ~100 -> Floor(100/4) = 25
-    var originalColor := weapon.color;
-
-    var elementalWeapon := struct;
-    elementalWeapon.+type := elemento;
-    elementalWeapon.+serial := me.serial;
-    elementalWeapon.+bonus := "1d8"; // Arcana >= 90
-    elementalWeapon.+cargas := cargas;
-    elementalWeapon.+cargaMaxima := cargas;
-    elementalWeapon.+originalColor := originalColor;
-    elementalWeapon.+endtime := ReadGameClock() + 1200;
-    elementalWeapon.+decayScriptPid := 0;
-
-    if (elemento == "Fire")
-        weapon.color := 246; // COLOR_ELEMENTAL_FIRE_LIGHT
-    elseif (elemento == "Cold")
-        weapon.color := 196; // COLOR_ELEMENTAL_ICE_LIGHT
-    elseif (elemento == "Energy")
-        weapon.color := 211; // COLOR_ELEMENTAL_ENERGY_LIGHT
-    endif
-
-    IncRevision(weapon);
-    SetObjProperty(weapon, "#elementalweapon", elementalWeapon);
-
-    return elemento;
-endfunction
 
 function HandleSwordMageSpellChoice(opponent)
     var cache := NPC_GetCachedData(me);
-    var isGuardaConselho := (cache.template_lower in array{
-        "guardaconselho1", "guardaconselho2", "guardaconselho3",
-        "guardaconselho4", "guardaconselho5"
-    });
-
     if (!GetCooldown(me, "elemental_weapon"))
         // First ensure weapon is enchanted
         var elementalWeapon := GetObjProperty(me.weapon, "#elementalweapon");
         if (!elementalWeapon)
-            if (isGuardaConselho)
-                GuardaConselhoApplyElementalWeapon();
-                spell_target_var := opponent.serial;
-                return "Misseis Magicos";
-            endif
             var spells := array{"Lamina Flamejante", "Lamina de Gelo", "Lamina Eletrica"};
             var chosen_spell := spells[RandomInt(spells.size())+1];
             spell_target_var := me.weapon.serial;

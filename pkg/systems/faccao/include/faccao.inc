@@ -1,6 +1,17 @@
 use guilds;
 use os;
 
+// Faz o parse de uma string "x1 y1 x2 y2" retornando struct com os campos nomeados.
+// Retorna 0 se a string for inválida.
+function ParseRect(rect_str)
+    var c := SplitWords(rect_str);
+    if (c.size() < 4) return 0; endif
+    return struct{
+        "x1" := CInt(c[1]), "y1" := CInt(c[2]),
+        "x2" := CInt(c[3]), "y2" := CInt(c[4])
+    };
+endfunction
+
 // ###########################################
 // #
 // # CreateFaccao
@@ -126,10 +137,10 @@ function RemFaccao(guild_obj)
                 elem.SetProp("Faction", "Selvagem");
                 
                 // Remover monumentos
-                var coords := SplitWords(elem.GetProp("Rect"));
-                if (coords.size() >= 4)
-                    var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
-                    var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
+                var rect := ParseRect(elem.GetProp("Rect"));
+                if (rect)
+                    var center_x := CInt((rect.x1 + rect.x2) / 2);
+                    var center_y := CInt((rect.y1 + rect.y2) / 2);
                     
                     foreach item in ListItemsNearLocation(center_x, center_y, GetWorldHeight(center_x, center_y, elem.GetProp("Realm")), 3, elem.GetProp("Realm"))
                         if (item.objtype == 0xA104 && GetObjProperty(item, "RectName") == territory)
@@ -247,9 +258,9 @@ function inGuildRect(guild, item := 0)
         foreach territory in territories
             var elem := rect_df.FindElement(territory);
             if (elem && elem.GetProp("Faction") == guild.GetProp("name"))
-                var coords := SplitWords(elem.GetProp("Rect"));
-                if (coords.size() >= 4 && item.realm == elem.GetProp("Realm"))
-                    if (item.x >= cint(coords[1]) && item.x <= cint(coords[3]) && item.y >= cint(coords[2]) && item.y <= cint(coords[4]))
+                var rect := ParseRect(elem.GetProp("Rect"));
+                if (rect && item.realm == elem.GetProp("Realm"))
+                    if (item.x >= rect.x1 && item.x <= rect.x2 && item.y >= rect.y1 && item.y <= rect.y2)
                         return 1;
                     endif
                 endif
