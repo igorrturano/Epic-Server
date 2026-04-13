@@ -14,8 +14,17 @@ const BACKPACK_OBJTYPE := 0xe75;
 // GESTÃO DE FACÇÃO (FUNÇÕES DE BANCO DE DADOS)
 // ============================================================================
 
+function _EnsureGuild(guild)
+    if (typeof(guild) == "String") return FindGuild(guild); endif
+    return guild;
+endfunction
+
+function _IsVendor(template)
+    return (lower(template.name)["vendedor"] != error || lower(template.template)["merchant"] != error);
+endfunction
+
 function AddNpc(guild, npc)
-   if (typeof(guild) == "String") guild := FindGuild(guild); endif
+   guild := _EnsureGuild(guild);
    if (!guild) return; endif
 
    var new_npc := struct{
@@ -35,11 +44,22 @@ function AddNpc(guild, npc)
 endfunction
 
 function listNPC(guild)
-   if (typeof(guild) == "String") guild := FindGuild(guild); endif
+   guild := _EnsureGuild(guild);
    if (!guild) return array{}; endif
 
    var npcs := guild.GetProp("npcs");
    if (!npcs) npcs := array{}; endif
+
+   // Validação: Se houver mais de 4 NPCs, são dados corrompidos
+   if (npcs.size() > 4)
+      npcs := array{
+         struct{ "template" := ":epicai:guardafaccaofraco",   "price" := 25,  "name" := "Guarda Recruta (Fraco)",      "equipment" := array{} },
+         struct{ "template" := ":epicai:guardafaccaomedio",   "price" := 70,  "name" := "Guarda Veterano (Medio)",     "equipment" := array{} },
+         struct{ "template" := ":epicai:guardafaccaoforte",   "price" := 100, "name" := "Guarda Elite (Forte)",         "equipment" := array{} },
+         struct{ "template" := ":merchants:merchantfaccao",   "price" := 10,  "name" := "Vendedor da Faccao",           "equipment" := array{} }
+      };
+      guild.SetProp("npcs", npcs);
+   endif
 
    // Migração/Upgrade de templates antigos
    var upgraded := 0;
@@ -55,7 +75,7 @@ function listNPC(guild)
 endfunction
 
 function remNPC(guild, index)
-   if (typeof(guild) == "String") guild := FindGuild(guild); endif
+   guild := _EnsureGuild(guild);
    if (typeof(index) == "Integer")
       var npc_list := listNPC(guild);
       npc_list.Erase(index);
@@ -64,7 +84,7 @@ function remNPC(guild, index)
 endfunction
 
 function listContractedNPC(guild)
-   if (typeof(guild) == "String") guild := FindGuild(guild); endif
+   guild := _EnsureGuild(guild);
    if (!guild) return array{}; endif
 
    var npcs_active := guild.GetProp("npcs_active");
@@ -72,8 +92,9 @@ function listContractedNPC(guild)
    return npcs_active;
 endfunction
 
-function DismissNPC(guild, npc_i, npc := 0)
+function DismissNPC(guild, npc_i, npc := 0, who := 0)
    var npcs := listContractedNPC(guild);
+
    if (!npc || !npc.isA(POLCLASS_MOBILE))
       npc := SystemFindObjectBySerial(npcs[npc_i].serial);
    endif
@@ -81,18 +102,18 @@ function DismissNPC(guild, npc_i, npc := 0)
    npcs.Erase(npc_i);
    guild.setProp("npcs_active", npcs);
 
-   npc.Disable("invul");
-   RevokePrivilege(npc, "invul");
-   SetObjProperty(npc, "GuardKill", 1);
-   SetObjProperty(npc, "NoCorpse", 1);
-   
-   // Move o NPC para o limbo antes de remover para evitar ganho de XP/RP por proximidade
-   MoveObjectToLocation(npc, 6084, 1, 1, npc.realm, MOVEOBJECT_FORCELOCATION);
-   ApplyRawDamage(npc, 8000);
+   if (npc)
+      npc.Disable("invul");
+      RevokePrivilege(npc, "invul");
+      SetObjProperty(npc, "GuardKill", 1);
+      SetObjProperty(npc, "NoCorpse", 1);
+      MoveObjectToLocation(npc, 6084, 1, 1, npc.realm, MOVEOBJECT_FORCELOCATION);
+      ApplyRawDamage(npc, 8000);
+   endif
 endfunction
 
 // ============================================================================
-// INTERNAL HELPERS (DRY / CLEAN CODE / BUG FIXES)
+// INTERNAL HELPERS
 // ============================================================================
 
 function _ApplyItem(agent, item_id, color := 0)
@@ -100,7 +121,7 @@ function _ApplyItem(agent, item_id, color := 0)
     if (item)
         if (color) item.color := color; endif
         if (!EquipItem(agent, item))
-            return 0; // Item ficou na mochila mas não vestiu
+            return 0;
         endif
         return 1;
     endif
@@ -116,14 +137,13 @@ function _VestirDoGhaia(agent, grupo)
     lista += GetConfigStringArray(elem, "Weapon");
 
     foreach linha in lista
-        var div := splitwords(linha); 
+        var div := splitwords(linha);
         var objname := div[1];
         var cor     := CInt(div[2]);
         var chance  := CInt(div[3]);
 
         if (!chance) chance := 100; endif
 
-        // FIX: Agora respeita a chance real do arquivo do Ghaia
         if (RandomInt(100) < chance)
             _ApplyItem(agent, objname, cor);
         endif
@@ -132,21 +152,9 @@ function _VestirDoGhaia(agent, grupo)
     return 1;
 endfunction
 
-function _ForcaRoupaEmergencia(agent)
-    var kit := array{0x13bf, 0x13c4, 0x13c3, 0x13be, 0x13bb, 0x1415, 0x1711}; 
-    foreach id in kit
-        _ApplyItem(agent, id);
-    endforeach
-endfunction
-
 function _SelectRaceOrFallback(agent, who)
     var race_choice := FaccaoRaceGump(who);
-    if (race_choice)
-        ApplyRaceToNPC(agent, race_choice);
-    else
-        // Se o player deu ESC, força humano para não bugar o nome <random>
-        ApplyRaceToNPC(agent, FACCAO_BTN_HUMANO_M); 
-    endif
+    ApplyRaceToNPC(agent, race_choice ? race_choice : FACCAO_BTN_HUMANO_M);
     return 1;
 endfunction
 
@@ -155,15 +163,15 @@ endfunction
 // ============================================================================
 
 function ContractNPC(guild, npc_i, who, loc, school := 0)
-    if (typeof(guild) == "String") guild := FindGuild(guild); endif
+    guild := _EnsureGuild(guild);
+    if (!guild) return 0; endif
+
     var template := listNpc(guild)[npc_i];
     if (!template) return 0; endif
 
-    // 1. Cria o Mobile
     var agent := CreateNPCFromTemplate(template.template, loc.x, loc.y, loc.z, 0, who.realm);
     if (!agent) return 0; endif
 
-    // 2. Trava IA (started=1 engana o KillPlayers.src/brain.ecl)
     SetObjProperty(agent, "started", 1);
     SetObjProperty(agent, "ignore_make_race", 1);
     SetObjProperty(agent, "NoRandomAppearance", 1);
@@ -171,49 +179,26 @@ function ContractNPC(guild, npc_i, who, loc, school := 0)
         SetObjProperty(agent, "SpellSchool", school);
     endif
 
-    // 3. Garanta Mochila
     if (!agent.backpack)
         var bp := CreateItemAtLocation(agent.x, agent.y, agent.z, BACKPACK_OBJTYPE, 1, agent.realm);
-        EquipItem(agent, bp);
+        if (bp) EquipItem(agent, bp); endif
     endif
 
-    sleepms(1000); // Espera estabilização
+    sleepms(1000);
 
-    // 4. Fluxo de Equipamento
-    if (template.equipment.size() > 0)
-        foreach item_ref in (template.equipment)
-            EquipItem(agent, CreateItemInBackpackFromTemplate(agent, item_ref));
-            sleepms(2);
-        endforeach
-    else
-        // Extrai nome simples do template (KISS: remove leading :package:)
-        var parts := SplitWords(template.template, ":");
-        var base_name := parts.size() > 1 ? parts[parts.size()] : template.template;
-        var gender_suffix := agent.gender ? "F" : "M";
-        var config_group := base_name + gender_suffix;
-        if (!_VestirDoGhaia(agent, config_group))
-            NPC_SetupEquipment(agent, "Villager_1");
-        endif
-    endif
-
-    // 5. Checagem de Nudez (KISS)
-    if (ListEquippedItems(agent).size() < 2)
-        _ForcaRoupaEmergencia(agent);
-    endif
-
-    // 6. Configurações de Raça e IA
     _SelectRaceOrFallback(agent, who);
-    
-    // Se não for vendedor, seta o script de guarda
-    if (lower(template.name)["vendedor"] == error && lower(template.template)["merchant"] == error)
+
+    if (!_IsVendor(template))
+        var template_parts := SplitWords(template.template, ":");
+        var gender_suffix := (agent.gender == 0) ? "M" : "F";
+        _VestirDoGhaia(agent, template_parts[template_parts.size()] + gender_suffix);
+
         agent.script := ":ghaia:guard";
         SetObjProperty(agent, "script", agent.script);
         RestartScript(agent);
     endif
 
-    // 7. Registro na Facção
     _RegisterActiveNPC(agent, template, guild, who, npc_i);
-    
     return 1;
 endfunction
 
@@ -221,10 +206,10 @@ function _RegisterActiveNPC(agent, template, guild, who, npc_i)
     SetObjProperty(agent, "guild", guild.guildid);
     SetObjProperty(agent, "contract_by", who.serial);
     SetObjProperty(agent, "conf_ref", npc_i);
-    
+
     var npc_list := listContractedNPC(guild);
     npc_list.append(struct{ "serial" := agent.serial, "price" := template.price, "ref" := npc_i });
     guild.setProp("npcs_active", npc_list);
-    
+
     PrintTextAbove(agent, "As suas ordens!");
 endfunction
