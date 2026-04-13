@@ -423,7 +423,7 @@ function PegaResistenciaItem(itemAlvo, fonteDano ,materialId, isInflamavel)
 
 	if(!resistenciaFabricacao)
 		var efeito := InterpretaMaterialEfeitos(CARACTERISTICA_FABRICACAO_RESISTENCIA,materialId);
-		resistenciaFabricacao := efeito.valorPrincipal;
+		resistenciaFabricacao := efeito.valorPrincipal * 2;
 	endif
 
 	var resFinal := configDestruiveis[ELEM_CFG_DEST].resistenciaBase;
@@ -462,10 +462,11 @@ function CalculaDanoRecebido(quemDanificou, fonteDano, atributosItem)
 
 	var danoCru := 0;
 	if (fonteDano.ISA(POLCLASS_WEAPON))
-		var attackInfo := AttackInfo(MobileWrapper(quemDanificou), 0);
-		var danoCalculado := CalculateAttackerDamage( attackInfo);
 		var danocausado := 0;
-
+		var attackInfo := AttackInfo(MobileWrapper(quemDanificou), 0);
+		attackInfo.SetWeapon(WeaponWrapper(fonteDano));
+		CalculateAttackerDamage( attackInfo);
+		
 		if (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
 			danocausado += attackInfo.GetDamage().GetSlashRawDamage();
 		elseif (attackInfo.GetAttacker().GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING)
@@ -481,9 +482,16 @@ function CalculaDanoRecebido(quemDanificou, fonteDano, atributosItem)
 	else
 		danoCru := fonteDano;
 	endif
+	
+	if(fonteDano.tipo == "Fire")
+		if(atributosItem.inflamabilidade > 0)
+			danoCru := danoCru * (1 + (atributosItem.inflamabilidade / 2));
+		else
+			danoCru := danoCru / 2;
+		endif
+	endif
 
-	var danoBonusCalor := atributosItem.inflamabilidade ? 1 + (atributosItem.inflamabilidade / 2) : 1;
-	var danoRecebido := cint(danoCru * danoBonusCalor - atributosItem.resistencia);
+	var danoRecebido := cint(danoCru - atributosItem.resistencia);
 	danoCalculado.+dano := danoRecebido < 0 ? 0 : danoRecebido;
 	danoCalculado.+isEficaz := danoRecebido > 0;
 	return danoCalculado;

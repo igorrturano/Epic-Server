@@ -4,13 +4,14 @@ include ":propagacao:include/combustiveis/combustivelIncendio";
 
 class CombustivelTerreno( CombustivelIncendio )
   function CombustivelTerreno(this)
-    var config := ReadConfigFile("config/terrenosInflamaveis");
+    var config := ReadConfigFile(":propagacao:config/terrenosInflamaveis");
     super(0,COMBUSTIVEIS::TERRENO,0,config["geral"]);
   endfunction
 
   function ProcuraCombustivel(this, itemMarcador , tileProspectado)
     if(!this.isExaurido)
       var infoTerreno := tileProspectado.PegaTerrenoInfo();
+
       if(itemMarcador.z != infoTerreno.z)
         return false;
       endif
