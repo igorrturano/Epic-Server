@@ -516,7 +516,6 @@ function IsMaterialTrabalhavel(quem, componente, chaveMaterial)
 	var materialPrincipal := Lower(componente.selecione.materialPrincipal);
 	var pericia := PegaPericiaPeloMaterial(materialPrincipal);
 	
-	Print("Tipo Material: " + tipoMaterial + " Material Principal: " + materialPrincipal + " Pericia: " + pericia + " Skill do jogador: " + AP_GetSkill(quem,pericia) + " Dificuldade do material: " + materialDetalhe.Skill);
 	if(lower(materialPrincipal) == lower(tipoMaterial))
 		return cDbl(materialDetalhe.Skill) <= AP_GetSkill(quem,pericia);
 	else
