@@ -16,6 +16,7 @@ include ":combat:Controller/DamageController_legacy";
 include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
 include ":wrappers:Objects/Model/WeaponWrapper";
+include ":tn:cooldown";
 
 enum arrremesso
 	ARREMESSO_TIPO_ITEM,
@@ -26,6 +27,13 @@ endenum
 program arremesso(params)
 	var who := params[1];
 	params := 0; // No longer needed
+
+	var cd := SetCooldown(who, "arremesso_cd", 10);
+	if (cd)
+		SendSysMessageEx(who, "Voce precisa esperar " + cd + " segundos para arremessar novamente.", SSM_FAIL);
+		return 0;
+	endif
+
 	if (who.hidden && !MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		SendSysMessageEx(who, "Voce nao pode fazer isso escondido.", SSM_FAIL);
 		return 0;

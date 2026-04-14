@@ -272,6 +272,7 @@ class Damage(IDamage)
 
 	function DecreaseSlashRawDamage(this, value)
 		this.SlashRaw -= CInt(value);
+		this.SlashBase -= CInt(value);
 		return this;
 	endfunction
 

@@ -104,7 +104,9 @@ function HumanoidBrain()
             else
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
                 if (SM_GetState() != "FLEEING")
-                    PursueTarget(me.opponent);
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
                 endif
                 // Per-tick casting + abilities — keep offensive pressure
                 UseAbilities(me, me.opponent);

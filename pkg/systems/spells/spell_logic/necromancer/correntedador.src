@@ -5,19 +5,20 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
-	params := 0; // No longer needed
-	var targets := array;
-	var copmobs := array;
+	var spell := params[3];
+	params := 0;
+	var targets := array{};
+	var copmobs := array{};
 	var x := 0;
 	var repetido;
 
 	var skill := AP_GetSkill(who, "Magery");
-	var maxtargets := Cint(skill / 20);
+	var maxtargets := CInt(skill / 20);
 
 	while (x < maxtargets)
 		SendSysMessageEx(who, "Escolha os alvos que estarao na corrente. Digite ESC para nao escolher nenhum.",
@@ -43,10 +44,10 @@ program SpellScript(params)
 		repetido := 0;
 	endwhile
 
-	var sparkles := array;
-
 	var y := 1;
-	foreach targs in targets
+	var duration := CInt(GetSpellDuration(AP_GetSkill(who, ARCANA)) / 4);
+
+	foreach targs in (targets)
 		if (y != len(targets))
 			y := y + 1;
 		else
@@ -54,13 +55,17 @@ program SpellScript(params)
 		endif
 		PlayObjectCenteredEffectEx(targs, 14186, 0, 10, 2444, 0, 0, 0);
 		PlayMovingEffectEx(targs, targets[y], 14360, 13, 0, 2444, 0, 0, 0, 0, 0, 0);
-		SetObjProperty(targs, "chainofpain", copmobs);
-		SetObjProperty(targs, "copnumber", len(targets));
-		TS_StartTimer(targs, "chainofpain", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 4, 0, who, 0);
+
+		SC_RemoveEffect(targs, CInt(spell.id));
+
+		var opts := struct{};
+		opts.+properties := dictionary{ "chainofpain" -> copmobs, "copnumber" -> len(targets) };
+		opts.+desc := "Correntes de Dor";
+
+		SC_ApplyEffect(who, targs, opts, duration, CInt(spell.id));
 	endforeach
 
 	PlaySoundEffect(who, 384);
-
 	SendSysMessageEx(who, "Voce fez um corrente de dor", SSM_INFO);
 
 	return 1;

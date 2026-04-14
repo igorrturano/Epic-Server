@@ -9,6 +9,8 @@ function customizeNpc(mob, set_tier := "0")
 	var npc_elem := NPC_GetNPCConfig(mob);
 	var classe := npc_elem.Classe;
 	var tier := set_tier == "0" ? CInt(mob.getTier()) : CInt(set_tier);
+	SetObjProperty(mob, "NpcTier", tier);
+	EraseObjProperty(mob, "#npc_cache");
 	var tactics := RandomIntMinMax(tier * 20, tier * 30);
 	var skill_combat;
 	var skill_support;

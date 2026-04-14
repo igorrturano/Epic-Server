@@ -40,7 +40,9 @@ function AnimalBrain()
                 HandleAnimalLeftArea(me.opponent);
             else
                 if (SM_GetState() != "FLEEING")
-                    PursueTarget(me.opponent);
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
                 endif
             endif
         endif

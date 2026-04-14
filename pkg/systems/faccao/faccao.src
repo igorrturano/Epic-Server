@@ -342,9 +342,9 @@ function Faccoes(who)
 
 		if (is_gm_or_leader)
 			start_script(":faccao:faccao", array{ who, g.guildid, "guild" });
-		elseif (who.guildid == guild.guildid || who.cmdlevel)
+		elseif (who.guildid == g.guildid || who.cmdlevel)
 			start_script(":faccao:faccao", array{ who, g.guildid, "guild" });
-		elseif (who.guildid != guild.guildid)
+		elseif (who.guildid != g.guildid)
 			SendSysMessage(who, "Voce nao faz parte dessa Faccao");
 			return;
 		endif
@@ -401,7 +401,11 @@ function Faccoes(who)
          endif
       endwhile
 */
-		CreateFaccao(output[1], arearray, cint(output[2]));
+		var new_guild := CreateFaccao(output[1], arearray, cint(output[2]));
+		if (new_guild && !who.cmdlevel)
+			AddMember(new_guild, who);
+			new_guild.SetProp("leader", who.serial);
+		endif
 		Faccoes(who);
 	endif
 endfunction

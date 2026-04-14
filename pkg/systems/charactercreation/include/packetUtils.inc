@@ -1,8 +1,8 @@
 use uo;
-include "include/packetConstants";
 include ":charactercreation:include/RPTraits";
 
 const MAX_TRAIT_VALUE := 200;
+const INT8_SIZE       := 1;
 
 function AppendRacialTraits2Packet(object,byref packet)
 	var lastOffset := packet.GetSize();

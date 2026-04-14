@@ -1,7 +1,10 @@
 include ":attributes:attributes";
 include ":tn:cooldown";
+include ":hotbar:include/custombuff";
+
 program SpellScript(params)
 	var who := params[1];
+	var spell := params[3];
 	// Calculate duration based on Theology skill
 	var theology := AP_GetSkill(who, THEOLOGY);
 	var duration := cint(theology);
@@ -13,6 +16,7 @@ program SpellScript(params)
 	var nearby := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 18, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
 
 	var silenced_count := 0;
+	SendSpellBuff(who, who, CInt(spell.id), duration);
 
 	for i := 0 to Cint(duration/10)
 		PlayObjectCenteredEffect(who, FX_MAGIC_IMMUNITY, 10, 255);
