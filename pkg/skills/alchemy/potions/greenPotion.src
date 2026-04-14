@@ -25,6 +25,5 @@ program drink_blue(who, potion)
 	do_poison(who, potion);
 	empty_bottle(who, potion);
 
-	DestroyItem(potion);
 	Detach();
 endprogram

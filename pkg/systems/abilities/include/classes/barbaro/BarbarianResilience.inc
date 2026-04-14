@@ -61,7 +61,7 @@ class BarbarianResilience(CombatAbility)
 			return false;
 		endif
 
-		var reduction := CInt(defender.GetSkill(TACTICS) / 10);
+		var reduction := CInt(defender.GetSkill(TACTICS) / 20);
 		if (reduction <= 0)
 			return false;
 		endif

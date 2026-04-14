@@ -54,33 +54,48 @@ program SpellScript(params)
 			dispelled := 1;
 
 		// curse effects
-		elseif (timer == "disfarce" || timer == "desviarprojetil" || timer == "dmgreturn" ||
+		elseif (timer == "disfarce" || timer == "desviarprojetil" ||
 		  timer == "desarmar" || timer == "dmgreduction")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 
 		// Control effects
 		elseif (timer == "paralysis" || timer == "blinded" || timer == "lentidao" ||
-		  timer == "sleep" || timer == "bleed" || timer == "spectralform")
+		  timer == "bleed" || timer == "spectralform")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 
-		// Necromancer/debuff effects
-		elseif (timer == "nocure" || timer == "atrasarmagias" || timer == "fugademana" ||
-		  timer == "apodrecer" || timer == "aparenciacadaverica" || timer == "vinganca" ||
-		  timer == "defaultpoison" || timer == "manapoison")
+		// Necromancer/debuff effects (non-SC timers)
+		elseif (timer == "defaultpoison" || timer == "manapoison")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 		endif
 	endforeach
 
-	// --- Barkskin (SC_ApplyEffect, spell ID 715) ---
-	var barkskin_opts := MobileWrapper(targ).GetProperty($"#SpellOpts_{BARKSKIN_SPELL_ID}");
-	if (barkskin_opts && !barkskin_opts.errortext)
-		SC_RemoveEffect(targ, BARKSKIN_SPELL_ID);
-		TS_LowerDuration(targ, $"spelleffect_{BARKSKIN_SPELL_ID}", -1);
-		dispelled := 1;
-	endif
+	// --- SC_ApplyEffect spells ---
+	var sc_spell_ids := array{
+		715,  // Barkskin
+		219,  // Impedir Cura
+		215,  // Fuga de Mana
+		214,  // Atrasar Magias
+		209,  // Aparencia Cadaverica
+		218,  // Vinganca Recorrente
+		211,  // Ampliar Dor
+		206,  // Retribuicao Profana
+		216,  // Sonho Macabro
+		212,  // Correntes de Dor
+		220   // Forma Amaldicoada
+	};
+
+	var mw := MobileWrapper(targ);
+	foreach spell_id in (sc_spell_ids)
+		var sc_opts := mw.GetProperty($"#SpellOpts_{spell_id}");
+		if (sc_opts && !sc_opts.errortext)
+			SC_RemoveEffect(targ, spell_id);
+			TS_LowerDuration(targ, $"spelleffect_{spell_id}", -1);
+			dispelled := 1;
+		endif
+	endforeach
 
 	// --- Cooldown-based debuffs ---
 	if (GetCooldown(targ, "charmed") > 0)

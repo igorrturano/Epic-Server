@@ -18,7 +18,6 @@ program drink_blue(who, potion)
 	if (!checkifcandrink(who, "folegoprolongado"))
 		return;
 	endif
-	empty_bottle(who, potion);
 	var vicio := (AP_getvital(who, "Viciostr"));
 	if (vicio < 30)
 		vicio := 30;
@@ -30,5 +29,6 @@ program drink_blue(who, potion)
 	SendSysMessageEx(who, "Você pode respirar debaixo d'água por mais " + duration + " segundos.",
 				  SSM_INFO);
 	SetCooldown(who, "can_breath", duration);
+	empty_bottle(who, potion) ;
 	Aplicavicio(who, potion, STRENGTH);
 endprogram
