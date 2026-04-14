@@ -2,6 +2,8 @@ use util;
 
 include ":gumpDesigner:controls/ResizableControl";
 
+include "system/exception/ParameterException/InvalidParameterException";
+
 class Container(ResizableControl)
 	var _isVisible := false;
 	var _controls := array{}; // Array de Controls
@@ -25,15 +27,19 @@ class Container(ResizableControl)
 	endfunction
 
 	function AddControl(this, byRef control)
+		if (!(control is @Control))
+			return InvalidParameterException("Control must be of type 'Control'.");
+		endif
+		
 		control.SetXOffset(this.GetX());
 		control.SetYOffset(this.GetY());
 
-		if (control.GetWidth() > this.GetWidth())
-			control.SetWidth(this.GetWidth()); // Ajusta a largura do controle se ela for maior que o container
+		if ((control.GetX() + control.GetWidth()) > this.GetWidth())
+			control.SetWidth(this.GetWidth() - control.GetX()); // Ajusta a largura do controle se ela for maior que o container
 		endif
 
-		if (control.GetHeight() > this.GetHeight())
-			control.SetHeight(this.GetHeight()); // Ajusta a altura do controle se ela for maior que o container
+		if ((control.GetY() + control.GetHeight()) > this.GetHeight())
+			control.SetHeight(this.GetHeight() - control.GetY()); // Ajusta a altura do controle se ela for maior que o container
 		endif
 
 		this._controls.append(control);
@@ -53,11 +59,11 @@ class Container(ResizableControl)
 	endfunction
 
 	function Dispose(this)
-		foreach control in (this._controls)
+		foreach control in (this.GetControls())
 			control.Dispose();
 		endforeach
 		
-		this._controls := array{};
+		this._controls := Container::_controls;
 	endfunction
 
 	function ToString(this)
