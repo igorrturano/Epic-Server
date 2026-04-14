@@ -68,6 +68,7 @@ program do_empty(who)
 		setobjproperty(pot, "encaixeComponente", "frasco");
 		setobjproperty(pot, "material", 7139);
 		setobjproperty(pot, "tierComponente", tierComponente);
+		pot.color := 1328;
 		DestroyItem(the_potion);
 		return;
 	endif
