@@ -12,6 +12,8 @@ include ":timedscripts:timedScripts";
 include ":fls_core:packets";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:model/Message";
+include ":hotbar:include/custombuff";
+include ":abilities:models/Ability";
 
 program cureScript(params)
 	var who := params[1];
@@ -105,6 +107,8 @@ program cureScript(params)
 
 		who.run_speed := Cint(normal_speed);
 	endif
+
+	RemoveAbilityBuff(who, ABILITY_ID::ELO_NATURAL);
 
 	PlaySoundEffect(who, SFX_SPELL_POLYMORPH);
 endprogram
