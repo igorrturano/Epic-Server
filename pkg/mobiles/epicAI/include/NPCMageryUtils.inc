@@ -1,9 +1,9 @@
 // Script-level cached spell lists (lazy init, built once per brain lifetime)
-var _cached_always_good := 0;
-var _cached_anti_mage   := 0;
-var _cached_anti_melee  := 0;
-var _cached_aoe         := 0;
-var _cached_non_ideal   := 0;
+var _cached_anti_mage := 0;
+var _cached_anti_melee := 0;
+var _cached_aoe := 0;
+var _cached_non_ideal := 0;
+var _cached_always_good_base := 0;
 
 
 
@@ -109,8 +109,8 @@ function ChooseIdealSpell(me, opponent, spells)
 endfunction
 
 function GetAlwaysGoodSpells()
-    if (!_cached_always_good)
-        _cached_always_good := array{
+    if (!_cached_always_good_base)
+        _cached_always_good_base := array{
             "Misseis Magicos", "Ampliar Dor", "Drenar Folego", "Relampago",
             "Incinerar", "Congelar", "Pesadelo", "Impedir Cura",
             "Forma Amaldicoada", "Drenar Vida", "Maldicao de Zhao",
@@ -118,7 +118,7 @@ function GetAlwaysGoodSpells()
             "Hipnotizar", "Cegar", "Escurecer"
         };
     endif
-    return _cached_always_good;
+    return _cached_always_good_base;
 endfunction
 
 function GetAntiMageSpells()
@@ -338,10 +338,7 @@ function ChooseColdSpell()
     return spells[RandomInt(spells.size())+1];
 endfunction
 
-
-
 function HandleSwordMageSpellChoice(opponent)
-    var cache := NPC_GetCachedData(me);
     if (!GetCooldown(me, "elemental_weapon"))
         // First ensure weapon is enchanted
         var elementalWeapon := GetObjProperty(me.weapon, "#elementalweapon");
@@ -418,7 +415,7 @@ function ChooseShamanSpell(me, opponent, spells)
         spell_target_var := me.serial;
     endif
 
-    return struct{ "name" := chosen_spell, "info" := spellInfo };
+    return chosen_spell;
 endfunction
 
 function ChooseIdealShamanSpells(me, opponent, spells)
