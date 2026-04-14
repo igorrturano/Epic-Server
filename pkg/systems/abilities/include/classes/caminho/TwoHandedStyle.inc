@@ -33,10 +33,11 @@ class TwoHandedStyle(CombatAbility)
 		endif
 
 		attackInfo.GetDamage()
-			.IncreaseSlashRawDamage(3)
-			.IncreasePiercingRawDamage(3)
-			.IncreaseBluntRawDamage(3);
-		attacker.SetCriticalChanceMod(CInt(attacker.GetCriticalChanceMod()) + 5);
+			.IncreaseSlashBaseDamage(3)
+			.IncreasePiercingBaseDamage(3)
+			.IncreaseBluntBaseDamage(3);
+
+		attackInfo.SetCriticalHitChance(CInt(attackInfo.GetCriticalHitChance()) + 5);
 
 		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
 			Message("[TWO_HANDED] +3 dano, +5 critico", Color(SYSTEM_COLOR::SUCCESS)));
