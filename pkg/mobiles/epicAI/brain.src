@@ -120,7 +120,7 @@ function DetermineBrainType()
     if (!brain_type)
         brain_type := "generic";
     endif
-    if (cache.spell_school)
+    if (cache.spell_school || GetObjProperty(me, "SpellSchool"))
         InitSpellCache();
     endif
 endfunction

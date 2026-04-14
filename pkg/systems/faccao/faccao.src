@@ -227,7 +227,7 @@ program faccao(params)
 		sleepms(2);
 		var mob := SystemFindObjectBySerial(npc.serial);
 		if (!mob)
-			DismissNPC(guild, _npc_iter - i);
+			DismissNPC(guild, _npc_iter - i, 0, who);
 			i += 1;
 			continue;
 		endif
@@ -869,12 +869,12 @@ function npcHandler(who, input)
 		SendHTMLGump(who, "Historico dos Guardas", historico);
 	elseif (input == BUTTON_CONTRACT_NPC)
 		var npcs_array := guild.getProp("npcs");
-		if (!npcs_array || npcs_array.size() == 0)
+		if (!npcs_array || npcs_array.size() == 0 || npcs_array.size() > 4)
 			npcs_array := array{
-				struct{ "template" := ":epicai:guardafaccaofraco", "price" := 25,  "name" := "Guarda Recruta (Fraco)",  "equipment" := array{} },
-				struct{ "template" := ":epicai:guardafaccaomedio", "price" := 70,  "name" := "Guarda Veterano (Medio)", "equipment" := array{} },
-				struct{ "template" := ":epicai:guardafaccaoforte", "price" := 100, "name" := "Guarda Elite (Forte)",    "equipment" := array{} },
-				struct{ "template" := ":merchants:merchantfaccao", "price" := 10,  "name" := "Vendedor da Faccao",      "equipment" := array{} }
+				struct{ "template" := ":epicai:guardafaccaofraco",   "price" := 25,  "name" := "Guarda Recruta (Fraco)",      "equipment" := array{} },
+				struct{ "template" := ":epicai:guardafaccaomedio",   "price" := 70,  "name" := "Guarda Veterano (Medio)",     "equipment" := array{} },
+				struct{ "template" := ":epicai:guardafaccaoforte",   "price" := 100, "name" := "Guarda Elite (Forte)",         "equipment" := array{} },
+				struct{ "template" := ":merchants:merchantfaccao",   "price" := 10,  "name" := "Vendedor da Faccao",           "equipment" := array{} }
 			};
 			guild.SetProp("npcs", npcs_array);
 			guild_obj.npcs := npcs_array;
@@ -887,7 +887,7 @@ function npcHandler(who, input)
 		endforeach
 		opts.append("Cancelar");
 
-		var npc_choice := RadioGump(who, 400, 0, "Qual agente deseja contratar?", opts, 1, 1);
+		var npc_choice := RadioGump(who, 400, 0, " deseja contratar?", opts, 1, 1);
 		if (opts.size() == npc_choice)
 			return SendSysMessageEx(who, "Cancelado");
 		endif
@@ -957,7 +957,7 @@ function npcHandler(who, input)
 			SendSysMessageEx(who, "{} moedas de cobre cobradas do cofre da faccao.".format(cost), SSM_INFO);
 		endif
 
-		ContractNPC(guild, npc_choice, who, who);
+		ContractNPC(guild, npc_choice, who, who, 0);
 	elseif (input == BUTTON_ADD_NPC)
 		var questions := array{};
 		questions.append(struct{ "title" := "Template do agente?", "marked" := ":brainai:" });
@@ -1001,7 +1001,7 @@ function npcHandler(who, input)
 		var npc_obj := npcs[input];
 		var mob := SystemFindObjectBySerial(npc_obj.serial);
 		if (YesNo(who, "Deseja encerrar o contrato com este agente ({})?".format(mob.name)))
-			DismissNPC(guild, input, mob);
+			DismissNPC(guild, input, mob, who);
 		endif
 	endif
 endfunction
@@ -1191,20 +1191,12 @@ function territoryHandler(who, input)
 
 	elseif (output["Ir"])
 		// Teleport to center of territory
-		var rect := elem.GetProp("Rect");
 		var realm := elem.GetProp("Realm");
-		var coords := SplitWords(rect);
-
-		if (coords.size() >= 4)
-			var x1 := CInt(coords[1]);
-			var y1 := CInt(coords[2]);
-			var x2 := CInt(coords[3]);
-			var y2 := CInt(coords[4]);
-
-			var center_x := CInt((x1 + x2) / 2);
-			var center_y := CInt((y1 + y2) / 2);
+		var rect := ParseRect(elem.GetProp("Rect"));
+		if (rect)
+			var center_x := CInt((rect.x1 + rect.x2) / 2);
+			var center_y := CInt((rect.y1 + rect.y2) / 2);
 			var center_z := GetWorldHeight(center_x, center_y, realm);
-
 			MoveObjectToLocation(who, center_x, center_y, center_z, realm, MOVEOBJECT_FORCELOCATION);
 			SendSysMessageEx(who, "Teleportado para o centro do território!", SSM_INFO);
 		else
@@ -1220,10 +1212,10 @@ function territoryHandler(who, input)
 				SendSysMessageEx(who, "Território abandonado com sucesso!", SSM_INFO);
 
 				// Remove monument if exists
-				var coords := SplitWords(elem.GetProp("Rect"));
-				if (coords.size() >= 4)
-					var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
-					var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
+				var rect := ParseRect(elem.GetProp("Rect"));
+				if (rect)
+					var center_x := CInt((rect.x1 + rect.x2) / 2);
+					var center_y := CInt((rect.y1 + rect.y2) / 2);
 					var center_z := GetWorldHeight(center_x, center_y, elem.GetProp("Realm"));
 
 					foreach item in ListItemsNearLocation(center_x, center_y, center_z, 3, elem.GetProp("Realm"))
