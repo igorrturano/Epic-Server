@@ -43,9 +43,8 @@ function CalculateHitChance(byRef attackInfo)
 	var attackerSkill := _GetSkillForCombat(attackInfo.GetAttacker());
 	var defenderSkill := _GetSkillForCombat(attackInfo.GetDefender());
 	var hit_chance := 50.0 + ((attackerSkill - defenderSkill) / 1.5);
-	hit_chance += attackInfo.GetAttacker().GetWeapon().GetAccuracyMod();
+	CalculateWeaponHitModifier(hit_chance, attackInfo);
 	hit_chance += attackInfo.GetAttacker().GetObjRef().hitchance_mod - attackInfo.GetDefender().GetObjRef().evasionchance_mod;
-
 	// They need to be here because they change dynamically
 	CalculateAbilityHitModifier(hit_chance, attackInfo);
 	CalculateEntropyHitModifier(hit_chance, attackInfo);
@@ -254,6 +253,10 @@ function GetPowderAmount(weaponCategory)
 		default:
 			return 1;
 	endcase
+endfunction
+
+function CalculateWeaponHitModifier(byref hit_chance, attackInfo)
+	hit_chance += attackInfo.GetWeapon().GetAccuracyMod() * 2;
 endfunction
 
 function CalculateAbilityHitModifier(byref hit_chance, attackInfo)
