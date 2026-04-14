@@ -31,6 +31,7 @@ class Container(ResizableControl)
 			return InvalidParameterException("Control must be of type 'Control'.");
 		endif
 		
+		control.SetParent(this);
 		control.SetXOffset(this.GetX());
 		control.SetYOffset(this.GetY());
 
@@ -61,6 +62,7 @@ class Container(ResizableControl)
 	function Dispose(this)
 		foreach control in (this.GetControls())
 			control.Dispose();
+			SleepMS(2);
 		endforeach
 		
 		this._controls := Container::_controls;
