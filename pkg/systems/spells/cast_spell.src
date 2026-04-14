@@ -489,13 +489,15 @@ function checkTargetValidity(mobile, targ, spellinfo)
 endfunction
 
 function checkCastingSuccess(mobile, mw, spellinfo, scroll)
+	if (spellinfo.Type == "Ninjutsu")
+		return 1;
+	endif
+
 	var attribute := MAGERY;
 	if (mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
 		attribute := ARCANA;
 	elseif (spellinfo.Type == "Divine")
 		attribute := THEOLOGY;
-	elseif (spellinfo.Type == "Ninjutsu")
-		attribute := SNEAK;
 	endif
 
 	var entropy := mw.GetEntropy();
