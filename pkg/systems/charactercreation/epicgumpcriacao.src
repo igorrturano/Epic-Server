@@ -94,6 +94,7 @@ function culturalSelection(who)
 	var culture_pic := 0x9E7;
 	var btn_value;
 	while (!CreationCompleted(who))
+		sleepms(2);
 		var input := CultureGump(who, culture_pic);
 		if (!IsGumpValid(input))
 			continue;
@@ -127,6 +128,7 @@ function racialSelection(who, culture_pic)
 	var chardata := GetObjProperty(who, "chardata");
 
 	while (!CreationCompleted(who))
+		sleepms(2);
 		var input := EpicRaceGump(who, culture_pic);
 		if (!IsGumpValid(input))
 			continue;
@@ -209,6 +211,7 @@ function RPcharacteristicsSelection(who, culture_pic)
 	var all_requirements_met := 0;
 
 	while (!all_requirements_met && !CreationCompleted(who))
+		sleepms(2);
 		input := CaracteristicasRPGump(who, chardata, culture_pic);
 		if (!IsGumpValid(input))
 			continue;
@@ -261,6 +264,7 @@ function classSelection(who, culture_pic)
 	var btn_value;
 	var chardata := GetObjProperty(who, "chardata");
 	while (!CreationCompleted(who))
+		sleepms(2);
 		var input := ClassGump(who, culture_pic);
 		if (!IsGumpValid(input))
 			continue;
@@ -303,6 +307,7 @@ function backgroundSelection(who, culture_pic)
 	var cultural_btn := 200 + bg_list.size() + 1;
 
 	while (!CreationCompleted(who))
+		sleepms(2);
 		var input := backgroundGump(who, culture_pic);
 		if (!IsGumpValid(input))
 			continue;
@@ -337,6 +342,7 @@ function traitSelection(who, culture_pic)
 	var i := 1;
 
 	while (!CreationCompleted(who))
+		sleepms(2);
 		var input := traitGump(who, culture_pic, traits);
 		if (!IsGumpValid(input))
 			continue;
@@ -372,6 +378,7 @@ function skillSelection(who, culture_pic)
 	var points := chardata.points;
 	var pri_count := 0;
 	while (!CreationCompleted(who))
+		sleepms(2);
 		if (chardata.points < 0)
 			SendSysMessageEX(who, "Compra de habilidade inválida", SSM_FAIL);
 			DisconnectClient(who);
@@ -513,6 +520,7 @@ function attributeSelection(who, culture_pic)
 	var i := 1;
 
 	while (!CreationCompleted(who))
+		sleepms(2);
 		var input := attributeGump(who, culture_pic, chardata);
 		if (!IsGumpValid(input))
 			continue;
@@ -558,6 +566,7 @@ function religionSelection(who)
 	var religion_pic := 0x9F6;
 	var btn_value;
 	while (!CreationCompleted(who))
+		sleepms(2);
 		var input := ReligionGump(who, religion_pic);
 		if (!IsGumpValid(input))
 			continue;
@@ -590,6 +599,7 @@ function gameModeSelection(who)
 	var game_mode_pic := 0x9FB;
 	var btn_value;
 	while (!CreationCompleted(who))
+		sleepms(2);
 		var input := gameModeGump(who, game_mode_pic);
 		if (!IsGumpValid(input))
 			continue;
@@ -629,6 +639,7 @@ function looksSelection(who)
 	resetHairAndBeard(who, chardata);
 
 	while (continue_loop && !CreationCompleted(who))
+		sleepms(2);
 		var input := hairSelectionGump(who, chardata, currentPage);
 		if (!IsGumpValid(input))
 			continue;
@@ -688,6 +699,7 @@ function hairAndBeardColorSelection(who, byref chardata)
 	var continue_loop := 1;
 
 	while (continue_loop && !CreationCompleted(who))
+		sleepms(2);
 		var input := hairAndBeardColorSelectionGump(who, chardata, currentPage);
 		if (!IsGumpValid(input))
 			continue;
@@ -720,6 +732,7 @@ function skinColorSelection(who, byref chardata)
 	var continue_loop := 1;
 
 	while (continue_loop && !CreationCompleted(who))
+		sleepms(2);
 		var input := skinColorSelectionGump(who, chardata, currentPage);
 		if (!IsGumpValid(input))
 			continue;
@@ -749,6 +762,7 @@ function beardSelection(who, byref chardata)
 	var continue_loop := 1;
 
 	while (continue_loop && !CreationCompleted(who))
+		sleepms(2);
 		var input := beardSelectionGump(who, chardata, currentPage);
 		if (!IsGumpValid(input))
 			continue;
@@ -783,6 +797,7 @@ function pathOfWisdom(who, culture_pic)
 		return;
 	endif
 	while (!CreationCompleted(who))
+		sleepms(2);
 		var input := pathOfWisdomGump(who, culture_pic);
 		if (!IsGumpValid(input))
 			continue;
@@ -963,6 +978,7 @@ function languageSelection(who, culture_pic)
 	var btn_value;
 	SetObjProperty(who, "#LastSpeechTime", ReadGameClock());
 	while (!CreationCompleted(who))
+		sleepms(2);
 		var total_amount := 1;
 		known_languages.append(parseLanguageByCulture(who, linguasOpt));
 		if (AP_GetTrueStat(who, INTELLIGENCE) >= 40)
