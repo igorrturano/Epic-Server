@@ -26,6 +26,18 @@ class SingleWeaponStyle(CombatAbility)
 		return Upper(weapon.GetAttribute()) == Upper(ONEHANDED) && !mobile.GetObjRef().shield;
 	endfunction
 
+	// Defender: -2 evasion
+	function OnPassiveBeforeHitDefender(this, attackInfo)
+		var defender := attackInfo.GetDefender();
+		if (!this._MatchesContext(defender))
+			return false;
+		endif
+		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - 2);
+		DebugMsg(defender.GetObjRef(), DEBUG_HAB,
+			Message("[SINGLE_WEAPON] -2 acerto inimigo (evasao)", Color(SYSTEM_COLOR::SUCCESS)));
+		return true;
+	endfunction
+
 	// Attacker: +5 critical hit chance
 	function OnPassiveBeforeDamage(this, attackInfo)
 		var attacker := attackInfo.GetAttacker();
@@ -33,25 +45,12 @@ class SingleWeaponStyle(CombatAbility)
 			return false;
 		endif
 
-		attackInfo.SetCriticalHitChance(CInt(attackInfo.GetCriticalHitChance()) + 5);
+		attackInfo.GetAttacker().SetCriticalChanceMod(CInt(attackInfo.GetAttacker().GetCriticalChanceMod()) + 5);
 
 		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
 			Message("[SINGLE_WEAPON] +5 critico", Color(SYSTEM_COLOR::SUCCESS)));
 		return true;
 	endfunction
 
-	// Defender: -2 evasion
-	function OnPassiveBeforeHitDefender(this, attackInfo)
-		var defender := attackInfo.GetDefender();
-		if (!this._MatchesContext(defender))
-			return false;
-		endif
-
-		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - 2);
-
-		DebugMsg(defender.GetObjRef(), DEBUG_HAB,
-			Message("[SINGLE_WEAPON] -2 acerto inimigo (evasao)", Color(SYSTEM_COLOR::SUCCESS)));
-		return true;
-	endfunction
 
 endclass
