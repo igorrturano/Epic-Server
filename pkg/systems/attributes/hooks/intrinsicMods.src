@@ -15,7 +15,7 @@ endprogram
 
 exported function GetIntrinsicFortitude(mobile)
 	var chardata := GetObjProperty(mobile, "chardata");
-	if (!chardata)
+	if (chardata == error)
 		return 0;
 	endif
 
@@ -60,7 +60,7 @@ endfunction
 
 exported function GetIntrinsicReflexes(mobile)
 	var chardata := GetObjProperty(mobile, "chardata");
-	if (!chardata)
+	if (chardata == error)
 		return 0;
 	endif
 
@@ -93,7 +93,7 @@ endfunction
 
 exported function GetIntrinsicWill(mobile)
 	var chardata := GetObjProperty(mobile, "chardata");
-	if (!chardata)
+	if (chardata == error)
 		return 0;
 	endif
 
@@ -135,7 +135,6 @@ exported function GetIntrinsicWill(mobile)
 	vontade += GetCommonStatsIncrease(mobileWrapper, chardata);
 	vontade += CInt(AP_GetStat(mobile, INTELLIGENCE) / 20);
 	vontade += CInt(GetObjProperty(mobile, "#VontadeMod"));
-
 	return vontade * TENTHS;
 endfunction
 
