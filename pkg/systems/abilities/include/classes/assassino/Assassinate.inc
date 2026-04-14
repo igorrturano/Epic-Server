@@ -26,10 +26,10 @@ class Assassinate(CombatAbility)
 
 	function CanActivate(this, mobile)
 		var who := mobile.GetObjRef();
-		if (!who.hidden)
+/* 		if (!who.hidden)
 			Message("Você precisa estar furtivo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
-		elseif (who.frozen || who.paralyzed)
+		else */if (who.frozen || who.paralyzed)
 			Message("Você não consegue se mover.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
@@ -87,6 +87,10 @@ class Assassinate(CombatAbility)
 		var sneak := CInt(AP_GetSkill(who, SNEAK));
 		var bonus := CInt(sneak / 2);
 
+		if(attacker.HasAbility(ABILITY_ID::INSTINTO_ASSASSINO))
+			bonus := CInt(sneak);
+		endif
+
 		if (bonus > 0)
 			attackInfo.GetDamage()
 				.IncreaseSlashRawDamage(bonus)
@@ -100,7 +104,7 @@ class Assassinate(CombatAbility)
 			);
 		endif
 
-		PlaySoundEffect(who, 0x51b);
+		PlaySoundEffect(who, 0x51D);
 
 		return true;
 	endfunction

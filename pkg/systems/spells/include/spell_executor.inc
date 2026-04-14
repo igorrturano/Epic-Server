@@ -60,15 +60,32 @@ function ExecuteSpellByName(who, spell_name, spell_type)
         return 0;
     endif
     
-    // Get config path for this spell type
-    var cfg_path := GetSpellConfigPathForType(spell_type);
-    if (!cfg_path)
-        SendSysMessageEx(who, "Tipo de magia invalido.", SSM_FAIL);
-        return 0;
+    // Find spell in config - for mage types, search all schools
+    var cfg_path;
+    var spell_data;
+
+    if (spell_type == SPELL_TYPE_MAGE || spell_type == SPELL_TYPE_TRICKSTER)
+        var mage_schools := array{
+            ":spells:config/evocation",
+            ":spells:config/necromancy",
+            ":spells:config/illusion"
+        };
+        foreach school in mage_schools
+            spell_data := FindSpellByName(school, spell_name);
+            if (spell_data)
+                cfg_path := school;
+                break;
+            endif
+        endforeach
+    else
+        cfg_path := GetSpellConfigPathForType(spell_type);
+        if (!cfg_path)
+            SendSysMessageEx(who, "Tipo de magia invalido.", SSM_FAIL);
+            return 0;
+        endif
+        spell_data := FindSpellByName(cfg_path, spell_name);
     endif
-    
-    // Find spell in config
-    var spell_data := FindSpellByName(cfg_path, spell_name);
+
     if (!spell_data)
         SendSysMessageEx(who, "A magia " + spell_name + " nao existe.", SSM_FAIL);
         return 0;

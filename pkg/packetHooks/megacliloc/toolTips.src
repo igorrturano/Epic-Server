@@ -5,6 +5,7 @@
 use uo;
 use basic;
 use cfgfile;
+use polsys;
 
 use os;
 
@@ -49,6 +50,10 @@ exported function MegaCliloc(who, byref packet)
 	endif
 
 	if (item)
+		if (item.npctemplate)
+			IncRevision(item);
+		endif
+
 		packet.SetSize(15); // primeira parte do packet eh tamanho 15
 
 		Object_Name := PreencheNome(item, who);

@@ -1,7 +1,7 @@
 var all_scripts := array{
     "summon", "summon_1", "summon_2", "summon_3", "summon_4", "sumir", "encantar", "events", 
     "defaultPoison", "hallucination", "paralysis", "congelamento", "alcohol", "clumsy", "feebleMind", 
-    "weaken", "nocure", "agility", "strength", "stamina", "berserk", "graspingroots", "intelligence", 
+    "weaken", "spelleffect_219", "agility", "strength", "stamina", "berserk", "graspingroots", "intelligence", 
     "invis", "vinganca", "velocidade", "lentidao", "dominioprofano", "mantogrinwald", "aparenciacadaverica", 
     "metamorfosedruida", "PhysicalResist", "MagicResist", "bless", "curse", "phmod", "auraphmod", "fimod", 
     "comod", "enmod", "aurafimod", "auracomod", "auraenmod", "aurahpregenmod", "aurastamregenmod", 
@@ -13,7 +13,9 @@ var all_scripts := array{
     "prisaogelida", "regensombrio", "temor", "gloria", "desarmar", "desviarprojetil", "recuperacaosalvadora", "martir", 
     "mantorothen", "dmgreduction", "spectralform", "sleep", "dmgreturn", "recuperacaoaligera", "sacrificioflamejante", 
     "queimar", "bladedance", "hamelin", "firedance", "ensurdecer", "florescer", "kill", "delete", "stamconsume", 
-    "narguile", "cooldown", "mortedelay", "capmod", "dedodabesta", "cocarina", "areiaceleste", "fraturaexposta"
+    "narguile", "cooldown", "mortedelay", "capmod", "dedodabesta", "cocarina", "areiaceleste", "fraturaexposta",
+    "spelleffect_206", "spelleffect_209", "spelleffect_211", "spelleffect_212",
+    "spelleffect_214", "spelleffect_215", "spelleffect_216", "spelleffect_218", "spelleffect_220"
 };
 
 function HandleAddCombatEvent(who, input, byref form_data)

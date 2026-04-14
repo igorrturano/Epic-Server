@@ -207,7 +207,7 @@ function DetermineMiningDifficulty(oretype)
 		0xee99: return 0;  //calcario
 
 		//minérios
-		0x6450: return 14; //cobre
+		0x6450: return 8; //cobre
  		0x6990: return 35; //estanho
 		0x699c: return 45; //bronze
 		0x6300: return 55;  //iron ore
@@ -230,12 +230,12 @@ function DetermineMiningDifficulty(oretype)
 		0x6994: return 20; // bronze
 
 
-		0x6075: return 5; //areia
+		0x6075: return 3; //areia
 
 		0x6666: return 0; //id falso de pedra
 		0x8850: return 40; //marmore
 		0x8852: return 30; //arenito
-		0x5001: return 5; //id de stone
+		0x5001: return 3; //id de stone
 
 		0x6305: return 40; //golden <- nao faz nada
 

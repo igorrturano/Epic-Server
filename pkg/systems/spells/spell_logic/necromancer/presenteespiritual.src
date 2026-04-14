@@ -8,14 +8,18 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
-	SetObjProperty(who, "#presenteespiritual", ReadGameClock() + cint(AP_GetSkill(who, ARCANA) * 6));
+	var bonus := cint(AP_GetSkill(who, ARCANA) * 6);
+	SetObjProperty(who, "#presenteespiritual", ReadGameClock() + bonus);
 
+	SendSpellBuff(who, who, CInt(spell.id), bonus);
 	handleSilentMagic(who, who, 385);
 	SendSysMessageEx(who, "Cada morte e um presente.", SSM_INFO);
 	Corromper(who, 29, 0);

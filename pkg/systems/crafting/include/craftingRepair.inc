@@ -30,10 +30,16 @@ include "include/objtype";
 
 function repair_item(character, what, craft_skill)
 
+if(!what || !character || !what.movable || what == character.backpack || !what.ISA(POLCLASS_ITEM))
+    SendSysMessage(character, "Alvo inválido.");
+  return 0;
+endif
+
 var reparos:=0;
 var ver_reparos:=0;
 var repairdelay:=3;
 var fabdesc := ReadConfigFile(":*:fabricacaoDesc");
+
 
 var cfg := ReadConfigFile(":woodworking:itemdesc");
 var elem := FindConfigElem(cfg, Hex(cint(what.objtype)));
@@ -43,6 +49,7 @@ var item_skill:= cdbl(SplitWords(fabdesc[Hex(cint(what.objtype))].Skill)[0]);
 var hisskill := AP_GetSkill(character, craft_skill);
 
 ver_reparos:=(GetObjProperty(what,"reparos"));
+
 
 if (ver_reparos == error)
 	reparos:=(hisskill/2);

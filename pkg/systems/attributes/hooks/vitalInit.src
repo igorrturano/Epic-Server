@@ -28,6 +28,10 @@ exported function GetHitsRegenRate(mobile)
 	endif
 	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "hits");
 
+	if (GetObjProperty(mobile, "nocure"))
+		return 0;
+	endif
+
 	if (isBloodied(mobile) && (!mobile.npctemplate)) // Nao regenera se tiver sangrando
 		return regen / 5; // reduz a regeneração bloodied para 1/5
 	endif

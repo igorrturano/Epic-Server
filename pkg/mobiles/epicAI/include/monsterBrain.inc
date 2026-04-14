@@ -75,7 +75,9 @@ function MonsterBrain()
                     is_ranged := 0;
                 endif
                 if (SM_GetState() != "FLEEING")
-                    PursueTarget(me.opponent);
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
                 endif
                 // Per-tick casting — keep offensive pressure on opponent
                 TickCombatAbilities(me, me.opponent, combat_abilities);
