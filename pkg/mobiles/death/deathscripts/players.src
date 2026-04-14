@@ -75,6 +75,7 @@ program death(params)
 	if (GetObjProperty(ghost, "death_protection"))
 		Message("O Deserto se lembra. Voce esta protegido contra a morte.").SendSys(ghost);
 		protecao := 1;
+		EraseObjProperty(ghost, "death_protection");
 	endif
 
 	// Check no Chain Of Pain, para retirar 1 do copnumber se for o caso.
@@ -120,13 +121,9 @@ program death(params)
 		// GM nao perde DP
 	else
 		// Perda de DP para TODAS as mortes (NPC e PvP)
-		if (killer.npctemplate && killer.script == ":ghaia:tamed") // se for tamed nao tira dp
-		elseif (lastDamage.spell) // se for spell nao tira dp
-		else
-			EraseObjProperty(ghost, "#Casting");
-			AP_ConsumeVital(ghost, "DP", 10);
-			SendSysMessage(ghost, "Voce perdeu 1 DP e agora tem " + AP_GetVital(ghost, "DP") / 10);
-		endif
+		EraseObjProperty(ghost, "#Casting");
+		AP_ConsumeVital(ghost, "DP", 10);
+		SendSysMessage(ghost, "Voce perdeu 1 DP e agora tem " + AP_GetVital(ghost, "DP") / 10);
 		var tempo := 180;
 		if (AP_GetVital(ghost, "DP") <= 19)
 			if (!CheckResist(ghost, FORTITUDE, RESIST_EXTREMELY_HARD))
