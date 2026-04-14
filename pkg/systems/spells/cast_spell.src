@@ -494,6 +494,8 @@ function checkCastingSuccess(mobile, mw, spellinfo, scroll)
 		attribute := ARCANA;
 	elseif (spellinfo.Type == "Divine")
 		attribute := THEOLOGY;
+	elseif (spellinfo.Type == "Ninjutsu")
+		attribute := SNEAK;
 	endif
 
 	var entropy := mw.GetEntropy();

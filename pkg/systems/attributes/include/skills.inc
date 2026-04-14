@@ -370,7 +370,7 @@ function limiteportempo(who)
         lim := 20 + (dias - 10) * 0.5;
     endif
 
-    return Min(lim, 100);
+    return Min(lim, 60);
 endfunction
 
 /*

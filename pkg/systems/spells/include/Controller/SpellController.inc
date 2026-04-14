@@ -5,6 +5,7 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":timedscripts:timedScripts";
 include ":hotbar:include/custombuff";
 include ":attributes:stats";
+include ":fls_core:packets";
 
 /**
  * SpellController — Unified spell effect orchestrator.
@@ -143,6 +144,26 @@ function _SC_ApplyOpts(targ, opts)
 		SetObjProperty(targ, "ArmorHitScripts", armorscript);
 	endif
 
+	// Hidden (invisibility)
+	if (opts.hidden)
+		targ.hidden := 1;
+	endif
+
+	// Evasion chance
+	if (opts.evasionchance_mod)
+		targ.evasionchance_mod := targ.evasionchance_mod + opts.evasionchance_mod;
+	endif
+
+	// Speed boost (PlayerSpeedBoost packet for players, run_speed for NPCs)
+	if (opts.speed_boost)
+		if (targ.npctemplate)
+			SetObjProperty(targ, "#sc_runspeed", targ.run_speed);
+			targ.run_speed := 250;
+		else
+			PlayerSpeedBoost(targ, 1);
+		endif
+	endif
+
 	// Custom ObjProperties
 	if (opts.properties)
 		foreach val in (opts.properties)
@@ -197,6 +218,29 @@ function _SC_RemoveOpts(targ, opts)
 	// Armor hit scripts (remove)
 	if (opts.armor_hit_scripts)
 		EraseObjProperty(targ, "ArmorHitScripts");
+	endif
+
+	// Hidden (reverse)
+	if (opts.hidden)
+		targ.hidden := 0;
+	endif
+
+	// Evasion chance (reverse)
+	if (opts.evasionchance_mod)
+		targ.evasionchance_mod := targ.evasionchance_mod - opts.evasionchance_mod;
+	endif
+
+	// Speed boost (reverse)
+	if (opts.speed_boost)
+		if (targ.npctemplate)
+			var normal_speed := CInt(GetObjProperty(targ, "#sc_runspeed"));
+			if (normal_speed)
+				targ.run_speed := normal_speed;
+			endif
+			EraseObjProperty(targ, "#sc_runspeed");
+		else
+			PlayerSpeedBoost(targ, 0);
+		endif
 	endif
 
 	// Custom ObjProperties
