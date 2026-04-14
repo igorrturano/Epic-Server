@@ -4,6 +4,7 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
+include ":hotbar:custombuff";
 
 /**
  * Execucao Perfeita / Perfect Execution - ABILITY_ID::PERFECT_EXECUTION (802)
@@ -44,6 +45,9 @@ class PerfectExecution(CombatAbility)
 
 		Message("*prepara um golpe perfeito*").SendAbove(who);
 		Message("Voce prepara um golpe perfeito.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+
+		var duration := this.GetDurationFor(mobile);
+		SendAbilityBuff(who, ABILITY_ID::PERFECT_EXECUTION, duration, "Critico garantido");
 	endfunction
 
 	function OnBeforeDamage(this, attackInfo)

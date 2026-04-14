@@ -1,5 +1,6 @@
 include ":abilities:models/CombatAbility";
 include "include/epicUtils";
+include ":hotbar:custombuff";
 
 /**
  * Forma Abissal (Abyssal Form) - ABILITY_ID::FORMA_ABISSAL (1904)
@@ -61,6 +62,8 @@ class AbyssalForm(CombatAbility)
         // Visual and sound effects
         PlaySoundEffect(who, 0x208);
         PlayObjectCenteredEffect(who, 0x376A, 1, 32);
+
+        SendAbilityBuff(who, ABILITY_ID::FORMA_ABISSAL, duration, $"+{stat_bonus} STR/AGI/INT");
     endfunction
 
     function OnBeforeHit(this, attackInfo)

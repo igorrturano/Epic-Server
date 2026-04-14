@@ -5,10 +5,12 @@ use cfgfile;
 
 include ":combat:Controller/DamageController_legacy";
 include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
 include "include/client";
 include "include/sounds";
 include ":attributes:vitals";
 include ":attributes:attributes";
+include ":equipsys:utils/consts";
 
 function CanActivate(who)
 	var itemdesc := ReadConfigFile(":*:itemdesc");
@@ -32,8 +34,9 @@ program HitScript(params)
 	// var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
 
-	if (!CanActivate(attacker))
-		var weapon := WeaponWrapper(weaponObj);
+	var leftHand := MobileWrapper(attacker).GetEquipBySlot(SHIELD);
+	var weapon := WeaponWrapper(weaponObj);
+	if (!CanActivate(attacker) && (!leftHand || leftHand is @Exception))
 		var maxDmg := weapon.GetMainDamage().GetMaximum();
 		var dmg := CInt((maxDmg + 4) / 5); // ceil(20% of max weapon damage)
 		if (dmg > 0)
