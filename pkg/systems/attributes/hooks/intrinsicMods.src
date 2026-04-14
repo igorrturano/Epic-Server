@@ -14,6 +14,10 @@ program Install()
 endprogram
 
 exported function GetIntrinsicFortitude(mobile)
+	if (mobile.npctemplate)
+		return 0;
+	endif
+
 	var chardata := GetObjProperty(mobile, "chardata");
 	if (chardata == error)
 		return 0;
@@ -59,6 +63,10 @@ exported function GetIntrinsicFortitude(mobile)
 endfunction
 
 exported function GetIntrinsicReflexes(mobile)
+	if (mobile.npctemplate)
+		return 0;
+	endif
+
 	var chardata := GetObjProperty(mobile, "chardata");
 	if (chardata == error)
 		return 0;
@@ -92,6 +100,10 @@ exported function GetIntrinsicReflexes(mobile)
 endfunction
 
 exported function GetIntrinsicWill(mobile)
+	if (mobile.npctemplate)
+		return 0;
+	endif
+
 	var chardata := GetObjProperty(mobile, "chardata");
 	if (chardata == error)
 		return 0;
