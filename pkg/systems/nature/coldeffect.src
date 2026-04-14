@@ -44,7 +44,7 @@ program neve(params)
 				return;
 			endif
 
-			var dif := RESIST_ALMOST_IMPOSSIBLE;
+			var dif := RESIST_VERY_HARD;
 
 			if (GetGlobalProperty("dia") == "noite")
 				dif := dif + 1;

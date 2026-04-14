@@ -281,6 +281,9 @@ endfunction
 
 function CheckSmeltDifficulty(who, ore)
 	var diff := DetermineMiningDifficulty(ore.oreObjType);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
+		diff := diff - 5;
+	endif
 	if (SkillCheck(who, GATHERING, diff, ((diff / 2) + 10)) > 0)
 		return 1;
 	endif

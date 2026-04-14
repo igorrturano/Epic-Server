@@ -143,6 +143,9 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 
 	var ore_amount := GetOreAmount(who.realm, targx, targy); // feita
 	var difficulty := DetermineMiningDifficulty(ore_type); // feita
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
+		difficulty := difficulty - 5;
+	endif
 
 	if (who.cmdlevel > 2)
 		SendSysMessage(who, "ore " + ore_type);

@@ -1,0 +1,55 @@
+use uo;
+use datafile;
+
+include ":help:help";
+include ":datafile:datafile";
+include "include/say";
+
+program help(who, text)
+
+    // sem parâmetro → abre index
+    if (!text)
+        Help_OpenIndex(who);
+        return;
+    endif
+
+    var df := DFOpenDataFile(":help:index");
+
+    if (!df)
+        SendSysMessage(who, "Erro ao abrir help.");
+        return;
+    endif
+
+    var keys := DFGetElemNames(df);
+
+    var search := Lower(text);
+
+    foreach k in keys
+
+        var elem := DFFindElement(df, k);
+
+        if (!elem)
+            continue;
+        endif
+
+        var name := elem.GetProp("Name");
+
+        if (name)
+            name := Lower(name);
+
+            // match exato
+            if (name == search)
+var pid := GetPid(); // aqui normalmente funciona (script raiz)
+
+Help_OpenTopic(who, k, pid);
+                return;
+            endif
+        endif
+
+        SleepMS(1);
+
+    endforeach
+
+    SendSysMessage(who, "Help não encontrado: " + text);
+
+endprogram

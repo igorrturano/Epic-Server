@@ -558,7 +558,7 @@ function Follow()
 		following := 0;
 		wait_time := 120;
 
-	elseif (dist > 4)
+	elseif (dist > 3)
 
 		var ma := 200 - me.run_speed;
 		me.run_speed := me.run_speed + ma;

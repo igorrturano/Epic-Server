@@ -6,31 +6,30 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include ":timedscripts:timedScripts";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Voce so pode alvejar seres vivos com esta magia.", SSM_FAIL);
 		return;
 	endif
-	var kickbackx := Cint((RandomInt(10) - 5));
-	var kickbacky := Cint((RandomInt(10) - 5));
-	var newxloc := (targ.x - kickbackx);
-	var newyloc := (targ.y + kickbacky);
+
 	PlaySoundEffect(targ, SFX_108);
 	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 7, 16);
 	PlaySoundEffect(targ, SFX_109);
 
 	// var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, THEOLOGY))*2;
-	TS_StartTimer(targ, "clumsy", GetSpellDuration(AP_GetSkill(who, THEOLOGY)), 0, who);
+	var duration := GetSpellDuration(AP_GetSkill(who, THEOLOGY));
+	TS_StartTimer(targ, "clumsy", duration, 0, who);
 	TS_StartTimer(targ, "lentidao", CInt(AP_GetSkill(who, THEOLOGY) / 4), 0, who);
+	SendSpellBuff(who, targ, CInt(spell.id), duration);
 
-	if (CheckLosAt(targ, newxloc, newyloc, GetWorldHeight(newxloc, newyloc)))
-		MoveObjectToLocation(targ, newxloc, newyloc, GetWorldHeight(newxloc, newyloc), targ.realm);
-	endif
+	pushback(targ, 5, 100);
 
 	SendSysMessageEx(targ, "Uma rajada de vento frio atinge voce.", SSM_FAIL);
 

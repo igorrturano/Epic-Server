@@ -5,6 +5,7 @@ include ":gumpDesigner:Control/Container/ContainerGridLayout";
 include ":gumpDesigner:Control/Button";
 include ":gumpDesigner:Control/ImageGump";
 include ":gumpDesigner:Control/Tooltip";
+include ":equipsys:packets/UpdateEquipmentRequest";
 
 program cmd_golpe(who, text)
 	var newPosture;
@@ -99,6 +100,11 @@ function SetNewPosture(who, newPosture)
 		Message("Armas de fogo não podem mudar postura de combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
 	else
 		who.SetCombatTraits(who.GetCombatTraits().SetPosture(newPosture));
+		Start_Script("packets/AssyncUpdateEquipment", 
+						array{who, 
+						true, 
+						who.GetEquipBySlot(WEAPON)}
+					);
 		Message("Você mudou sua postura de combate.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
 		Message($"adota postura {newPosture}").SendEmote(who.GetObjRef());
 	endif
