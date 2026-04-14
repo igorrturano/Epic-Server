@@ -43,9 +43,7 @@ program KillPlayers()
 
     // Initialize NPC once at spawn
     if (!GetObjProperty(me, "started"))
-        set_critical(1);
-        InitializeEpicNPC(me);
-        set_critical(0);
+        Run_Script_To_Completion(":epicAI:initializeNPC", me);
     endif
 
     EnableMainEvents();
