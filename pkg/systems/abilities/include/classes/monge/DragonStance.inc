@@ -4,6 +4,7 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":tn:cooldown";
+include ":hotbar:custombuff";
 
 /**
  * Ryū no Kamae / Postura do Dragão (Dragon Stance) - ABILITY_ID::DRAGON_STANCE (701)
@@ -30,8 +31,10 @@ class DragonStance(CombatAbility)
 
 	function OnActivate(this, mobile)
 		var who := mobile.GetObjRef();
+		var duration := this.GetDurationFor(mobile);
 		Message("*postura do dragao*").SendAbove(who);
 		PlaySoundEffect(who, 0x50E);
+		SendAbilityBuff(who, ABILITY_ID::DRAGON_STANCE, duration, "Bonus de dano + imunidade a projeteis");
 	endfunction
 
 	function OnBeforeDamage(this, attackInfo)

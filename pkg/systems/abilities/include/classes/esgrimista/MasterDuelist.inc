@@ -3,6 +3,7 @@ use uo;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
+include ":hotbar:custombuff";
 
 /**
  * Mestre Duelista (Master Duelist) - ABILITY_ID::MESTRE_DUELISTA (1504)
@@ -29,7 +30,10 @@ class MasterDuelist(CombatAbility)
     endfunction
 
     function OnActivate(this, mobile)
-        Message("*trabalho de pes*").SendAbove(mobile.GetObjRef());
+        var who := mobile.GetObjRef();
+        var duration := this.GetDurationFor(mobile);
+        Message("*trabalho de pes*").SendAbove(who);
+        SendAbilityBuff(who, ABILITY_ID::MESTRE_DUELISTA, duration, "Re-ataque ao errar");
     endfunction
 
     function OnMiss(this, attackInfo)

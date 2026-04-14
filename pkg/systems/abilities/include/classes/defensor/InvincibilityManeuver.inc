@@ -4,6 +4,7 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
+include ":hotbar:custombuff";
 
 /**
  * Manobra da Invencibilidade (Invincibility Maneuver) - ABILITY_ID::MANOBRA_DA_INVENCIBILIDADE (304)
@@ -45,13 +46,17 @@ class InvincibilityManeuver(CombatAbility)
         var who := mobile.GetObjRef();
         var postura := who.GetProp("Postura");
 
+        var duration := this.GetDurationFor(mobile);
+
         if (postura == "Ofensiva")
             Message("Voce se prepara para contra-atacar.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+            SendAbilityBuff(who, ABILITY_ID::MANOBRA_DA_INVENCIBILIDADE, duration, "Contra-ataque a cada golpe");
         elseif (postura == "Defensiva")
             who.evasionchance_mod := who.evasionchance_mod + 25;
             mobile.SetProperty("#invencibilidade_evasion", 1);
             Message("*defesa total*").SendAbove(who);
             Message("Voce se concentra em uma defesa total.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+            SendAbilityBuff(who, ABILITY_ID::MANOBRA_DA_INVENCIBILIDADE, duration, "+25 evasao");
 
             // Walk packet hook sends ABORT when player moves
             var monitor := mobile.GetAbilityMonitor(this);
