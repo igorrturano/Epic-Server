@@ -32,7 +32,7 @@ class SingleWeaponStyle(CombatAbility)
 		if (!this._MatchesContext(defender))
 			return false;
 		endif
-		defender.SetProperty("#evasion_mod", CInt(defender.GetProperty("#evasion_mod")) + 2);
+		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - 2);
 		DebugMsg(defender.GetObjRef(), DEBUG_HAB,
 			Message("[SINGLE_WEAPON] -2 acerto inimigo (evasao)", Color(SYSTEM_COLOR::SUCCESS)));
 		return true;

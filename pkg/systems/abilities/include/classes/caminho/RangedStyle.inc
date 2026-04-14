@@ -31,7 +31,7 @@ class RangedStyle(CombatAbility)
 		if (!this._MatchesContext(attacker))
 			return false;
 		endif
-		attacker.SetProperty("#hit_mod", CInt(attacker.GetProperty("#hit_mod")) + 2);
+		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) + 2);
 		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
 			Message("[RANGED_STYLE] +2 acerto", Color(SYSTEM_COLOR::SUCCESS)));
 		return true;
