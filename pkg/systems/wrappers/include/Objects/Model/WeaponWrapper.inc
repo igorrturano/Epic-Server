@@ -79,9 +79,8 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this.MinRange := this.Template.MinRange ?: 0;
 			this.MaxRange := this.Template.MaxRange ?: 1;
 			this.IsThrowableVar := Boolean(this.Template.Throwable) ?: false;
-			this.CriticalChanceMod := PegaValorFabricacao(this.ItemOrTemplate,CARACTERISTICA_FABRICACAO_CRITICO);
-			this.AccuracyMod := PegaValorFabricacao(this.ItemOrTemplate,CARACTERISTICA_FABRICACAO_PRECISAO) * 3;
-
+			this.CriticalChanceMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_CRITICO);
+			this.AccuracyMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_PRECISAO);
 			/* TODO ver com o Evil sobre essa forma de guardar o CriticalChanceMod , me pareceu que ficaria dificil executar os calculos.
 			if (this.Prop) // Alguns atributos só estão nas props
 				this.CriticalChanceMod := this.Prop.CriticalChanceMod;
