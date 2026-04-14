@@ -1,0 +1,11 @@
+use os;
+
+var me := Self();
+
+include "include/epicai";
+include "include/humanoidBrain";
+
+program InitializeNPC(mobile)
+	InitializeEpicNPC(mobile);
+	return 1;
+endprogram
