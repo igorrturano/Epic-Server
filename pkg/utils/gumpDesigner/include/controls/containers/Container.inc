@@ -35,13 +35,13 @@ class Container(ResizableControl)
 		control.SetXOffset(this.GetX());
 		control.SetYOffset(this.GetY());
 
-		if ((control.GetX() + control.GetWidth()) > this.GetWidth())
-			control.SetWidth(this.GetWidth() - control.GetX()); // Ajusta a largura do controle se ela for maior que o container
-		endif
+		// if ((control.GetX() + control.GetWidth()) > this.GetWidth())
+		// 	control.SetWidth(this.GetWidth() - control.GetX()); // Ajusta a largura do controle se ela for maior que o container
+		// endif
 
-		if ((control.GetY() + control.GetHeight()) > this.GetHeight())
-			control.SetHeight(this.GetHeight() - control.GetY()); // Ajusta a altura do controle se ela for maior que o container
-		endif
+		// if ((control.GetY() + control.GetHeight()) > this.GetHeight())
+		// 	control.SetHeight(this.GetHeight() - control.GetY()); // Ajusta a altura do controle se ela for maior que o container
+		// endif
 
 		this._controls.append(control);
 

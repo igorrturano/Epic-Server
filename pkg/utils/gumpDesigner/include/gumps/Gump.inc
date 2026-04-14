@@ -2,8 +2,6 @@ include "IGump";
 
 include ":gumps:autoClose";
 
-// include ":gumpDesigner:gumps/DiagFactory";
-include ":gumpDesigner:controls/Control";
 include ":gumpDesigner:controls/Button";
 include ":gumpDesigner:controls/containers/Container";
 include ":gumpDesigner:layouts/GoldenLayout";
@@ -15,8 +13,7 @@ include ":gumpDesigner:exceptions/InvalidOptionException";
 
 include ":message:model/Message";
 
-class Gump(IGump)
-	var _parent;
+class Gump(Container, IGump)
 	var _pid;
 	var _gumpString;
 
@@ -25,7 +22,6 @@ class Gump(IGump)
 	var _pages := array{}; // Array das páginas, cada página é o Objeto GumpBody
 
 	var _options := array{};
-	var _addedControls := array{};
 	var _createdControls := struct{
 			orderById := array{},
 			countByType := dictionary{},
@@ -34,33 +30,28 @@ class Gump(IGump)
 	var helpAction;
 
 	function Gump(this, parent, title, width, height, options := array{})
-		this._parent := parent;
+		this.SetParent(parent);
+		this.SetWidth(width);
+		this.SetHeight(height);
 
-		this.SetLayout(GoldenLayout(CInt(width), CInt(height)));
 		this.SetTitle(GumpTitle(CStr(title)));
-		this._pages := Gump::_pages;
 		this.AddPage(GumpBody());
 
 		this._options := options;
-		this._addedControls := Gump::_addedControls;
 		this._createdControls := Gump::_createdControls;
 		this.helpAction := @() {
 			Message("Esta ajuda ainda não foi implementada.").SetColor(Color(SYSTEM_COLOR::ALERT)).SendSys(this.GetParent());
 		};
 	endfunction
 
-	function GetParent(this)
-		return this._parent;
-	endfunction
-
-	function SetParent(this, parent)
-		this._parent := parent;
-
-		return this;
-	endfunction
-
 	function _GetPid(this)
 		return this._pid;
+	endfunction
+
+	function SetPid(this, pid)
+		this._pid := pid;
+
+		return this;
 	endfunction
 
 	function GetGumpString(this)
@@ -73,52 +64,11 @@ class Gump(IGump)
 		return this;
 	endfunction
 
-	function GetX(this)
-		return this.GetLayout().GetX();
-	endfunction
-
-	function SetX(this, x)
-		this.GetLayout().SetX(CInt(x));
-
-		return this;
-	endfunction
-
-	function GetY(this)
-		return this.GetLayout().GetY();
-	endfunction
-
-	function SetY(this, y)
-		this.GetLayout().SetY(CInt(y));
-
-		return this;
-	endfunction
-
-	function GetWidth(this)
-		return this.GetLayout().GetWidth();
-	endfunction
-
-	function SetWidth(this, width)
-		this.GetLayout().SetWidth(CInt(width));
-
-		return this;
-	endfunction
-
-	function GetHeight(this)
-		return this.GetLayout().GetHeight();
-	endfunction
-
-	function SetHeight(this, height)
-		this.GetLayout().SetHeight(CInt(height));
-
-		return this;
-	endfunction
-
 	function GetLayout(this)
 		return this._gumpLayout;
 	endfunction
 
 	function SetLayout(this, layout)
-		// print ("Setting layout: " + layout.ToString());
 		if (!(layout is @GumpLayout))
 			return InvalidParameterException("Layout must be of type GumpLayout.");
 		endif
@@ -170,7 +120,7 @@ class Gump(IGump)
 		endif
 
 		if (!this._pages)
-			this._pages := array{};
+			this._pages := Gump::_pages;
 		endif
 
 		if (this._pages.size() >= 10)
@@ -193,26 +143,6 @@ class Gump(IGump)
 
 		this._options.append(option);
 
-		return this;
-	endfunction
-
-	function GetControls(this)
-		return this._addedControls;
-	endfunction
-
-	function AddControl(this, byRef control)
-		if (!(control is @Control))
-			return InvalidParameterException("Only controls of type Control can be added to the gump.");
-		endif
-
-		this._addedControls.append(control);
-
-		return this;
-	endfunction
-
-	function AddCustomization(this, byRef customFunction)
-		this._customization.append(customFunction);
-		
 		return this;
 	endfunction
 
@@ -240,7 +170,6 @@ class Gump(IGump)
 		this._ConfigureDiag();
 		this._DrawDiag();
 
-
 		print(this.GetGumpString());
 		var result := GFSendGump(this._parent, this.GetGumpString());
 		
@@ -263,21 +192,24 @@ class Gump(IGump)
 
 	function Dispose(this)
 		this._gumpString := Gump::_gumpString;
-		foreach control in (this._addedControls)
-			control.Dispose();
-			sleepms(2);
-		endforeach
-		this._addedControls := Gump::_addedControls;
+		this._createdControls := Gump::_createdControls;
 	endfunction
 
 	// Private functions
 	function _ConfigureDiag(this)
+		if (!this.GetLayout())
+			print("No layout set for this gump, using default GoldenLayout.");
+			this.SetLayout(GoldenLayout().Resize(this.GetWidth(), this.GetHeight()));
+		else
+			this.GetLayout().Resize(this.GetWidth(), this.GetHeight());
+		endif
+
 		this._IndexControl(this.GetLayout());
-		this._IndexControl(this.GetTitle());
-		foreach page in (this._pages)
-			this._IndexControl(page);
-			SleepMS(2);
-		endforeach
+		// this._IndexControl(this.GetTitle());
+		// foreach page in (this._pages)
+		// 	this._IndexControl(page);
+		// 	SleepMS(2);
+		// endforeach
 	endfunction
 
 	function _IndexControls(this, controls)
@@ -292,6 +224,8 @@ class Gump(IGump)
 			return InvalidParameterException("Control  must be of type 'Control'.");
 		endif
 
+		// print("Indexing control: " + control.ToString());
+
 		if (!this._createdControls.countByType[control.GetType()])
 			this._createdControls.countByType[control.GetType()] := 0;
 		endif
@@ -302,7 +236,7 @@ class Gump(IGump)
 		var controlId := idOffset + this._createdControls.countByType[control.GetType()];
 		control.SetId(controlId);
 		this._createdControls.orderById.append(controlId);
-		this._createdControls.positionById[controlId] := control;
+		// this._createdControls.positionById[controlId] := control;
 
 		if (control is @Container)
 			this._IndexControls(control.GetControls());
@@ -311,12 +245,20 @@ class Gump(IGump)
 
 	function _DrawDiag(this)
 		this.SetGumpString(GFCreateGump(this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight()));
-		
-		foreach id in (this._createdControls.orderById)
-			var control := this._createdControls.positionById[id];
+
+		this.GetLayout().Draw(this);
+		// this.GetTitle().Draw(this);
+		// this.GetPage(1).Draw(this);
+		foreach control in (this.GetControls())
 			control.Draw(this);
 			SleepMS(2);
 		endforeach
+		
+		// foreach id in (this._createdControls.orderById)
+		// 	var control := this._createdControls.positionById[id];
+		// 	control.Draw(this);
+		// 	SleepMS(2);
+		// endforeach
 	endfunction
 	
 	function _UpdateInputValues(this)
@@ -341,13 +283,12 @@ class Gump(IGump)
 			GumpControl::Text: return 1000;
 			GumpControl::TextCropped: return 2000;
 			GumpControl::ImageGump: return 3000;
-			GumpControl::ImageGumpTiled: return 4000;
-			GumpControl::ImageTiled: return 5000;
-			GumpControl::Button: return 6000;
-			GumpControl::CheckBox: return 7000;
-			GumpControl::RadioButton: return 8000;
-			GumpControl::TextBox: return 9000;
-			GumpControl::RadioGroup: return 10000;
+			GumpControl::ImageTiled: return 4000;
+			GumpControl::Button: return 5000;
+			GumpControl::CheckBox: return 6000;
+			GumpControl::RadioButton: return 7000;
+			GumpControl::TextBox: return 8000;
+			GumpControl::RadioGroup: return 9000;
 
 			default: return 0;
 		endcase

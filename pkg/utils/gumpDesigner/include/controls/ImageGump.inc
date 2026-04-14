@@ -6,25 +6,27 @@ class ImageGump(ResizableControl)
 
 	function ImageGump(this, name, x, y, imageId, width := 0, height := 0, color := 0)
 		Super(GumpControl::ImageGump, name, x, y, width, height);
-		this._imageId := imageId;
-		this._color := color;
+		this.SetImageId(imageId);
+		this.SetColor(color);
 	endfunction
 
 	function GetImageId(this)
 		return this._imageId;
 	endfunction
 
+	function SetImageId(this, imageId)
+		this._imageId := imageId;
+
+		return this;
+	endfunction
+
 	function GetColor(this)
 		return this._color;
 	endfunction
 
-	function SetImageId(this, imageId)
-		this._imageId := imageId;
-		return this;
-	endfunction
-
 	function SetColor(this, color)
 		this._color := color;
+
 		return this;
 	endfunction
 

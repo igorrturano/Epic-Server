@@ -1,8 +1,8 @@
 include "GumpLayout";
 
 class BlueLayout(GumpLayout)
-	function BlueLayout(this, width, height)
-		Super(width, height);
+	function BlueLayout(this)
+		Super();
 		this._InitializeValues();
 	endfunction
 
@@ -32,4 +32,43 @@ class BlueLayout(GumpLayout)
 		this.AddControl(this.GetBorder_BottomRight());
 	endfunction
 
+	function PositionBorders(this)
+		var borderSize := 35;
+		
+		this.GetBackground()
+			.SetPosition(this.GetX() + borderSize, this.GetY() + borderSize)
+			.Resize(this.GetWidth() - (2 * borderSize), this.GetHeight() - (2 * borderSize));
+
+		this.GetBorder_TopLeft()
+			.SetPosition(this.GetX(), this.GetY())
+			.Resize(borderSize, borderSize);
+
+		this.GetBorder_Top()
+			.SetPosition(this.GetX() + borderSize, this.GetY())
+			.Resize(this.GetWidth() - (2 * borderSize), borderSize);
+
+		this.GetBorder_TopRight()
+			.SetPosition(this.GetWidth() - borderSize, this.GetY())
+			.Resize(borderSize, borderSize);
+
+		this.GetBorder_Left()
+			.SetPosition(this.GetX(), this.GetY() + borderSize)
+			.Resize(borderSize, this.GetHeight() - (2 * borderSize));
+
+		this.GetBorder_Right()
+			.SetPosition(this.GetX() + this.GetWidth() - borderSize, this.GetY() + borderSize)
+			.Resize(borderSize, this.GetHeight() - (2 * borderSize));
+
+		this.GetBorder_BottomLeft()
+			.SetPosition(this.GetX(), this.GetY() + this.GetHeight() - borderSize)
+			.Resize(borderSize, borderSize);
+
+		this.GetBorder_Bottom()
+			.SetPosition(this.GetX() + borderSize, this.GetY() + this.GetHeight() - borderSize)
+			.Resize(this.GetWidth() - (2 * borderSize), borderSize);
+
+		this.GetBorder_BottomRight()
+			.SetPosition(this.GetX() + this.GetWidth() - borderSize, this.GetY() + this.GetHeight() - borderSize)
+			.Resize(borderSize, borderSize);
+	endfunction
 endclass

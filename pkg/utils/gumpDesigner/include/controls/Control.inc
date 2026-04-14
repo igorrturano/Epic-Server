@@ -2,6 +2,7 @@ include ":gumps:epicGumps";
 include "IControl";
 
 class Control(IControl)
+	var _parent; // Controle pai, no caso do gump final é o player
 	var _id := 0; // ID que é retornado quando o gump fecha
 	var _type := GumpControl::None; // enum GumpControl
 	var _name := ""; // Nome do controle, pra identificar na chamada de eventos ou no script
@@ -12,22 +13,34 @@ class Control(IControl)
 	var _xOffset := 0;
 	var _yOffset := 0;
 
-	function Control(this, type, name, x, y)
-		this._type := type;
-		this._name := name;
+	function Control(this, type, name, x, y, parent := false)
+		this.SetParent(parent);
+		this.SetType(type);
+		this._SetName(name);
 
-		this._x := x;
-		this._y := y;
-		this._xOffset := 0;
-		this._yOffset := 0;
+		this.SetX(x);
+		this.SetY(y);
+		this.SetXOffset(0);
+		this.SetYOffset(0);
 	endfunction
 
+	function GetParent(this)
+		return this._parent;
+	endfunction
+	
+	function SetParent(this, parent)
+		this._parent := parent;
+
+		return this;
+	endfunction
+	
 	function GetId(this)
 		return this._id;
 	endfunction
 
 	function SetId(this, id)
 		this._id := id;
+
 		return this;
 	endfunction
 
@@ -37,6 +50,7 @@ class Control(IControl)
 
 	function SetType(this, type)
 		this._type := type;
+
 		return this;
 	endfunction
 
@@ -45,7 +59,8 @@ class Control(IControl)
 	endfunction
 
 	function _SetName(this, name)
-		this._name := name;
+		this._name := CStr(name);
+
 		return this;
 	endfunction
 
@@ -55,6 +70,7 @@ class Control(IControl)
 
 	function SetTooltip(this, tooltip)
 		this._tooltip := tooltip;
+
 		return this;
 	endfunction
 
@@ -63,7 +79,8 @@ class Control(IControl)
 	endfunction
 
 	function SetX(this, x)
-		this._x := x;
+		this._x := CInt(x);
+
 		return this;
 	endfunction
 
@@ -72,7 +89,15 @@ class Control(IControl)
 	endfunction
 
 	function SetY(this, y)
-		this._y := y;
+		this._y := CInt(y);
+
+		return this;
+	endfunction
+
+	function SetPosition(this, x, y)
+		this.SetX(x);
+		this.SetY(y);
+
 		return this;
 	endfunction
 
@@ -81,7 +106,8 @@ class Control(IControl)
 	endfunction
 
 	function SetXOffset(this, xOffset)
-		this._xOffset := xOffset;
+		this._xOffset := CInt(xOffset);
+
 		return this;
 	endfunction
 
@@ -90,14 +116,20 @@ class Control(IControl)
 	endfunction
 
 	function SetYOffset(this, yOffset)
-		this._yOffset := yOffset;
+		this._yOffset := CInt(yOffset);
+		
+		return this;
+	endfunction
+
+	function SetPositionOffset(this, xOffset, yOffset)
+		this.SetXOffset(xOffset);
+		this.SetYOffset(yOffset);
+
 		return this;
 	endfunction
 
 	function Draw(this, byRef gump)
-		print(gump.GetGumpString());
-		print(gump._gumpString);
-		print("--------------");
+		// print("Drawing Control: " + this.ToString());
 		
 		if (this.GetTooltip())
 			this.GetTooltip().Draw(gump);
@@ -116,6 +148,7 @@ class Control(IControl)
 
 	function ToString(this)
 		return "(Control) id=" + this.GetId()
+			+ ", parent=" + this.GetParent()
 			+ ", name=" + this.GetName()
 			+ ", type=" + this.GetType()
 			+ ", x=" + this.GetX()
@@ -130,7 +163,6 @@ enum class GumpControl
 	Text := "text",
 	TextCropped := "textcropped",
 	ImageGump := "imagegump",
-	ImageGumpTiled := "imagegumptiled",
 	ImageTiled := "imagetiled",
 	Tooltip := "tooltip",
 	Button := "button",

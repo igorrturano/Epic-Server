@@ -6,8 +6,8 @@ class ResizableControl(Control)
 
 	function ResizableControl(this, type, name, x, y, width, height)
 		Super(type, name, x, y);
-		this._width := width;
-		this._height := height;
+		this.SetWidth(width);
+		this.SetHeight(height);
 	endfunction
 
 	function GetWidth(this)
@@ -19,21 +19,21 @@ class ResizableControl(Control)
 	endfunction
 
 	function SetWidth(this, width)
-		this._width := width;
+		this._width := CInt(width);
 
 		return this;
 	endfunction
 
 	function SetHeight(this, height)
-		this._height := height;
+		this._height := CInt(height);
 		
 		return this;
 	endfunction
 
 	function Resize(this, width, height)
-		this._width := width;
-		this._height := height;
-		
+		this.SetWidth(width);
+		this.SetHeight(height);
+
 		return this;
 	endfunction
 

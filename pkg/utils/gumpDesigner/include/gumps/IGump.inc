@@ -1,19 +1,21 @@
 class IGump()
 	uninit function IGump(this, parent, title, width, height, default options);
+	
 	uninit function GetParent(this);
+	uninit function SetParent(this, parent);
 	uninit function _GetPid(this);
+	uninit function SetPid(this, pid);
 	uninit function GetGumpString(this);
 	uninit function GetTitle(this);
-	uninit function GetWidth(this);
-	uninit function GetHeight(this);
-	uninit function GetOptions(this);
-
-	uninit function SetParent(this, parent);
 	uninit function SetTitle(this, title);
+	uninit function GetWidth(this);
 	uninit function SetWidth(this, width);
+	uninit function GetHeight(this);
 	uninit function SetHeight(this, height);
+	uninit function GetOptions(this);
 	uninit function AddOption(this, option);
-	uninit function AddCustomization(this, byRef customization);
+
+	uninit function GetControls(this);
 	uninit function AddControl(this, byRef control);
 
 	uninit function Show(this);

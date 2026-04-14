@@ -1,7 +1,7 @@
 include "system/exception/ParameterException/InvalidParameterException";
 
 include ":gumpDesigner:controls/containers/Container";
-include ":gumpDesigner:controls/ImageGump";
+include ":gumpDesigner:controls/ImageGumpTiled";
 
 class GumpLayout(Container)
 	var borders := struct{
@@ -18,8 +18,8 @@ class GumpLayout(Container)
 	};
 	var background;
 	
-	function GumpLayout(this, width, height)
-		Super("Gump Layout", 0, 0, width, height);
+	function GumpLayout(this)
+		Super("Gump Layout", 0, 0, 0, 0);
 		this.borders := GumpLayout::borders;
 		this._InitializeStructure();
 	endfunction
@@ -137,20 +137,26 @@ class GumpLayout(Container)
 	endfunction
 
 	function _InitializeStructure(this)
-		this.SetBackground(ImageGump("Background", 0, 0, 0, this.GetWidth(), this.GetHeight()));
-
-		this.SetBorder_TopLeft(ImageGump("Top Left Border", 0, 0, 0, 35, 35));
-		this.SetBorder_Top(ImageGump("Top Border", this.GetX() + 25, 0, 0, this.GetWidth() - 41, 35));
-		this.SetBorder_TopRight(ImageGump("Top Right Border", this.GetWidth() - 35, 0, 0, 35, 35));
-
-		this.SetBorder_Left(ImageGump("Left Border", 0, 35, 0, 35, this.GetHeight() - 70));
-		this.SetBorder_Right(ImageGump("Right Border", this.GetWidth() - 35, 35, 0, 35, this.GetHeight() - 70));
-
-		this.SetBorder_BottomLeft(ImageGump("Bottom Left Border", 0, this.GetHeight() - 35, 0, 35, 35));
-		this.SetBorder_Bottom(ImageGump("Bottom Border", 35, this.GetHeight() - 35, 0, this.GetWidth() - 70, 35));
-		this.SetBorder_BottomRight(ImageGump("Bottom Right Border", this.GetWidth() - 35, this.GetHeight() - 35, 0, 35, 35));
+		this.SetBackground(ImageGumpTiled("Background", 0, 0, 0, 0, 0));
+		this.SetBorder_TopLeft(ImageGumpTiled("Top Left Border", 0, 0, 0, 0, 0));
+		this.SetBorder_Top(ImageGumpTiled("Top Border", 0, 0, 0, 0, 0));
+		this.SetBorder_TopRight(ImageGumpTiled("Top Right Border", 0, 0, 0, 0, 0));
+		this.SetBorder_Left(ImageGumpTiled("Left Border", 0, 0, 0, 0, 0));
+		this.SetBorder_Right(ImageGumpTiled("Right Border", 0, 0, 0, 0, 0));
+		this.SetBorder_BottomLeft(ImageGumpTiled("Bottom Left Border", 0, 0, 0, 0, 0));
+		this.SetBorder_Bottom(ImageGumpTiled("Bottom Border", 0, 0, 0, 0, 0));
+		this.SetBorder_BottomRight(ImageGumpTiled("Bottom Right Border", 0, 0, 0, 0, 0));
 	endfunction
 
+	
+	function Draw(this, byRef gump)
+		this.PositionBorders();
+		Super::Draw(this, gump);
+	endfunction
+	
+	// Cada Layout tem uma estrutura diferente, então o filho implementa o posicionamento dos bordas e background
+	// uninit function PositionBorders(this);
+	
 	function ToString(this)
 		return "(GumpLayout) " + Super::ToString(this)
 			+ " width=" + this.GetWidth()
