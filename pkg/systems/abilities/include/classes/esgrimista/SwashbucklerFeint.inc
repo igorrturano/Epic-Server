@@ -3,6 +3,7 @@ use uo;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
+include ":hotbar:custombuff";
 
 /**
  * Finta Esgrimista (Swashbuckler Feint) - ABILITY_ID::FINTA_ESGRIMISTA (1503)
@@ -28,7 +29,10 @@ class SwashbucklerFeint(CombatAbility)
     endfunction
 
     function OnActivate(this, mobile)
-        Message("*postura de contra-ataque*").SendAbove(mobile.GetObjRef());
+        var who := mobile.GetObjRef();
+        var duration := this.GetDurationFor(mobile);
+        Message("*postura de contra-ataque*").SendAbove(who);
+        SendAbilityBuff(who, ABILITY_ID::FINTA_ESGRIMISTA, duration, "Contra-ataque a cada golpe");
     endfunction
 
     function OnBeforeHit(this, attackInfo)

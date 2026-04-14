@@ -5,6 +5,7 @@ include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":tn:cooldown";
 include ":attributes:attributes";
+include ":hotbar:custombuff";
 
 
 /**
@@ -59,6 +60,8 @@ class Fury(CombatAbility)
 		endif
 
 		Message("*RRRAARRRRGHH!!*").SendAbove(who);
+
+		SendAbilityBuff(who, ABILITY_ID::FURIA, duration, "Bonus de dano em posturas fisicas");
 	endfunction
 
 	function OnBeforeDamage(this, attackInfo)

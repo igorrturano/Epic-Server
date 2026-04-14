@@ -5,6 +5,7 @@ include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
+include ":hotbar:custombuff";
 
 /**
  * Shintai to Kokoro / Corpo e Mente (Body and Mind) - ABILITY_ID::BODY_AND_MIND (704)
@@ -30,6 +31,7 @@ class BodyAndMind(CombatAbility)
 
 		TS_StartTimer(who, "recuperacaoaligera", duration);
 		Message($"Corpo e mente em harmonia por {duration}s.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		SendAbilityBuff(who, ABILITY_ID::BODY_AND_MIND, duration, "Recuperacao de HP");
 
 		DebugMsg(
 			who,

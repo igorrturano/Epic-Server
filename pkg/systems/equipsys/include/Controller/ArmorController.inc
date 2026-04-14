@@ -126,14 +126,14 @@ endfunction
 function GetModifiersBySlot(slot)
 	var modifiers := array{};
 	case(slot)
-		HEAD: modifiers := {-1,0,0,-1,0}; break;
-		NECK: modifiers := {-1,0,0,-1,0}; break;
-		BODY: modifiers := {-4,0,0,-12,0}; break;
-		ARMS: modifiers := {-2,0,-2,-6,0}; break;
-		HANDS: modifiers := {-1,0,-4,-3,0}; break;
-		LEGS: modifiers := {-2,0,0,-6,0}; break;
+		HEAD: modifiers := {-1,-1,0,-1,0}; break;
+		NECK: modifiers := {-1,-1,0,-1,0}; break;
+		BODY: modifiers := {-4,-12,0,-12,0}; break;
+		ARMS: modifiers := {-2,-6,-2,-6,0}; break;
+		HANDS: modifiers := {-1,-3,-4,-3,0}; break;
+		LEGS: modifiers := {-2,-6,0,-6,0}; break;
 		FEET: modifiers := {-2,0,0,0,0}; break;
-		SHIELD: modifiers := {0,-1,-10,-5,0}; break;
+		SHIELD: modifiers := {0,-5,-10,-5,0}; break;
 
 		default: modifiers := {0,0,0,0,0}; break;
 	endcase
@@ -156,21 +156,21 @@ function GetModifiersByProtection(protection)
 		ARMOR_LOWHIGH: modifiers := {0,0,0,0,0}; break;
 
 		//TIER 2
-		ARMOR_MIDLOW: modifiers := {0,0,0,-2,0}; break;
-		ARMOR_MIDMID: modifiers := {-1,0,0,-4,0}; break;
-		ARMOR_MIDHIGH: modifiers := {-2,0,0,-5,0}; break;
+		ARMOR_MIDLOW: modifiers := {0,-2,0,-2,0}; break;
+		ARMOR_MIDMID: modifiers := {-1,-4,0,-4,0}; break;
+		ARMOR_MIDHIGH: modifiers := {-2,-5,0,-5,0}; break;
 
 		//TIER 3
-		ARMOR_HIGHLOW: modifiers := {-3,0,0,-8,0}; break;
-		ARMOR_HIGHMID: modifiers := {-4,0,0,-12,0}; break;
-		ARMOR_HIGHHIGH: modifiers := {-5,0,0,-24,0}; break;
+		ARMOR_HIGHLOW: modifiers := {-3,-8,0,-8,0}; break;
+		ARMOR_HIGHMID: modifiers := {-4,-12,0,-12,0}; break;
+		ARMOR_HIGHHIGH: modifiers := {-5,-24,0,-24,0}; break;
 
 		// ESCUDOS
 		SHIELD_BUCKLER: modifiers := {0,0,0,0,0}; break;
 		SHIELD_SMALL: modifiers := {-4,0,0,0,0}; break;
-		SHIELD_MEDIUM: modifiers := {-8,0,0,-6,0}; break;
-		SHIELD_LARGE: modifiers := {-12,0,0,-12,0}; break;
-		SHIELD_TOWER: modifiers := {-16,0,0,-24,0}; break;
+		SHIELD_MEDIUM: modifiers := {-8,-6,0,-6,0}; break;
+		SHIELD_LARGE: modifiers := {-12,-12,0,-12,0}; break;
+		SHIELD_TOWER: modifiers := {-16,-24,0,-24,0}; break;
 
 		default: modifiers := {0,0,0,0,0}; break;
 	endcase
