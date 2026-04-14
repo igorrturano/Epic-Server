@@ -46,6 +46,7 @@ const BUTTON_TERRITORIES := 0x505; // Botão para acessar o gump de territórios
 var guild;
 var privilegies;
 var is_gm_or_leader;
+var use_member_alias; // 1 quando aberto pelo mural de recrutamento
 var priv_list := struct{ "above_guards" := "Controle de Guardas",
 						 "above_merchants" := "Controle de Mercadores",
 						 "above_members" := "Controle de Membros",
@@ -91,7 +92,9 @@ program faccao(params)
 	elseif (cmd)
 		return Faccoes(who);
 	else
+		// Aberto pelo mural de recrutamento (item clicado)
 		guild := targ.guild;
+		use_member_alias := 1;
 	endif
 
 	if (!guild)
@@ -144,7 +147,7 @@ program faccao(params)
 	GFResizePic(gump, 48, 67, 9350, 172, 326); // members background
 	GFTextLine(gump, 100, 70, 0, "Membros");
 
-	var leader_name := guild_leader.name;
+	var leader_name := GetMemberDisplayName(guild_leader, use_member_alias);
 	if (!leader_name)
 		leader_name := "";
 	elseif (who.cmdlevel || aboveguild)
@@ -158,7 +161,7 @@ program faccao(params)
 		if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 			GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 		endif
-		GFTextLine(gump, 67, y - 2, 0, "{}".format(mob.name));
+		GFTextLine(gump, 67, y - 2, 0, "{}".format(GetMemberDisplayName(mob, use_member_alias)));
 		var permissions := guild.GetProp(cstr(mob.serial));
 		var permission_text := "";
 		foreach priv in (permissions.keys())
@@ -1302,4 +1305,21 @@ function ShowTerritoriesGump(who, guild)
 
 	// Retornar ao gump principal da facção
 	start_script(":faccao:faccao", array{ who, guild.guildid, "guild" });
+endfunction
+
+// Retorna o nome personalizado do membro (definido na inscrição) ou o nome real como fallback.
+// use_alias := 1 para mostrar o nome da inscrição (mural), 0 para mostrar mob.name normal.
+function GetMemberDisplayName(mob, use_alias := 0)
+	if (!mob) return ""; endif
+	if (use_alias)
+		var dados := GetObjProperty(mob, "dados_convite");
+		if (dados && dados.nome_personalizado)
+			var display := dados.nome_personalizado;
+			if (dados.cargo_rp)
+				display += " - " + dados.cargo_rp;
+			endif
+			return display;
+		endif
+	endif
+	return mob.name;
 endfunction
