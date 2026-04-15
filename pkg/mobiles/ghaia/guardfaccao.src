@@ -1132,9 +1132,6 @@ function FightADV(opponent := 0)
 		SetOpponent(opponent);
 		SetWarMode(1);
 		wait_time := 0;
-		GuardLog("ATAQUE", "engajando '{}' | inimigo=({},{},{}) | {}".format(
-			opponent.name, opponent.x, opponent.y, opponent.z, GetGuildRectStr()
-		));
 		return;
 	endif
 
@@ -1152,13 +1149,11 @@ function FightADV(opponent := 0)
 		endif
 		var hostiles := ListHostiles(me, 8, LH_FLAG_LOS);
 		if (!hostiles[1])
-			GuardLog("ATAQUE", "desengajando '{}' - sem hosteis no alcance".format(fighting.name));
 			fighting := 0;
 			SetOpponent(0);
 			SetWarMode(0);
 			return;
 		else
-			GuardLog("ATAQUE", "trocando alvo: '{}' -> '{}'".format(fighting.name, hostiles[1].name));
 			fighting := hostiles[1];
 		endif
 	endif
@@ -1202,12 +1197,6 @@ function FightADV(opponent := 0)
 	endif
 
 	var dist := CoordinateDistance(me.x, me.y, fighting.x, fighting.y);
-	if (GUARD_DEBUG && !GetCooldown(me, "debug_chase"))
-		GuardLog("PERSEGUINDO", "'{}' | inimigo=({},{},{}) dist={} | {}".format(
-			fighting.name, fighting.x, fighting.y, fighting.z, dist, GetGuildRectStr()
-		));
-		SetCooldown(me, "debug_chase", 2);
-	endif
 	if (dist > range || !CheckLineOfSight(me, fighting))
 		CalcPathAndMove(me, fighting, 275 - me.run_speed);
 	elseif (dist < minrange)
@@ -1253,17 +1242,9 @@ function PetFollow(character := 0)
 
 	var dist := Distance(me, following);
 
-	if (GUARD_DEBUG && !GetCooldown(me, "debug_follow"))
-		GuardLog("SEGUINDO", "'{}' | alvo=({},{},{}) dist={}".format(
-			following.name, following.x, following.y, following.z, dist
-		));
-		SetCooldown(me, "debug_follow", 2);
-	endif
-
 	if (dist <= 2)
 		wait_time := 1;
 	elseif (dist > 25)
-		GuardLog("SEGUINDO", "alvo '{}' muito longe (dist={}), abandonando".format(following.name, dist));
 		following := 0;
 		wait_time := 120;
 	elseif (dist > 4)
