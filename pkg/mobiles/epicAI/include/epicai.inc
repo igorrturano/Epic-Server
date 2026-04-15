@@ -1341,6 +1341,11 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    // Aparencia Cadaverica: mortos vivos nao atacam quem parece um deles.
+    if (GetObjProperty(defender, "aparenciacadaverica") && attacker_cache.category_lower == "undead")
+        return 0;
+    endif
+
     // Cooldown to avoid ress kill
     if (Cint(GetCooldown(defender, "deathtime" )) > 0)
         // Allow combat if defender initiated it
