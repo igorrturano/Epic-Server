@@ -156,13 +156,23 @@ program death(params)
 			SendSysMessage(ghost, "Voce morreu.");
 			var region := GetRegionName(corpse);
 			var tipo := "morreu";
-			var coords := { corpse.x, corpse.y, corpse.z, corpse.realm };
+			var coords := { corpse.x, corpse.y, corpse.z, CStr(corpse.realm) };
 			var nome := GetObjProperty(ghost, "nome_inicial");
 			var killer_name := "desconhecido";
 			if (lastHit != error && lastHit["source"] == "trap")
 				killer_name := "armadilha";
-			elseif (killer && killer.name && !killer.name.errortext)
-				killer_name := killer.name;
+			elseif (killer)
+				var nome_killer := GetObjProperty(killer, "nome_inicial");
+				if (nome_killer)
+					killer_name := nome_killer;
+				elseif (killer.corpsetype)
+					var desc := killer.desc;
+					desc["A corpse of "] := "";
+					desc["corpo de "] := "";
+					killer_name := desc;
+				elseif (killer.name && !killer.name.errortext)
+					killer_name := killer.name;
+				endif
 			endif
 			ProcurarItensQuarto(ghost);
 			if (!CInt(GetObjProperty(ghost, "morto")))
