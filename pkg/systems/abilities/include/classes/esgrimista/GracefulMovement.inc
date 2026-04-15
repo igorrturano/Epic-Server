@@ -25,7 +25,7 @@ class GracefulMovement(CombatAbility)
     endfunction
 
     function GetDurationFor(this, mobile)
-        var duration := CInt(mobile.GetSkill(TACTICS) / 10);
+        var duration := CInt(mobile.GetSkill(TACTICS) / 5);
         if (duration < 2)
             duration := 2;
         endif
