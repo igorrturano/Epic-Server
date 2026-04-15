@@ -120,7 +120,7 @@ program SpellScript(params)
 	TS_StartTimer(targ, "desmontar", time, 0, who);
 	targ.squelch(time);
 
-	if (targ.acctaname)
+	if (targ.acctname)
 		foreach equip in ListEquippedItems(targ)
 			if ((equip.layer != LAYER_HAIR) && (equip.layer != LAYER_BEARD) && (equip.layer != LAYER_PACK) &&
 	   (equip.layer != LAYER_MOUNT))
