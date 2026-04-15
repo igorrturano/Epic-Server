@@ -44,11 +44,7 @@ const NEW_MASTER_CMD := 0xA003;
 const GO_LOC_CMD := 0xA008;
 const EVID_DISARM := 0x00000013;
 
-// ============================================================
-// DEBUG - defina 0 para desligar todos os logs do console
-// ============================================================
-const GUARD_DEBUG         := 1;
-const PROTECT_SCAN_RANGE  := 12;
+const PROTECT_SCAN_RANGE := 12;
 
 var protect_phrases := array{
 	"Meu trabalho e defender os membros da familia!",
@@ -57,51 +53,6 @@ var protect_phrases := array{
 	"Proteger a faccao e minha honra!",
 	"Recue agora, ou enfrentara as consequencias!"
 };
-
-function GuardLog(tag, msg)
-	if (!GUARD_DEBUG) return; endif
-	syslog("[Guard][{}][{}] {} | pos=({},{},{})@{}".format(
-		me.name, tag, msg, me.x, me.y, me.z, me.realm
-	));
-endfunction
-
-
-function GetGuildRectStr()
-	if (!guild) return "sem-guild"; endif
-	var result := "";
-	var area := guild.getProp("area");
-	if (area)
-		foreach rect in area
-			if (rect && rect.size() >= 4)
-				var r := NormalizeRect(cint(rect[1]), cint(rect[2]), cint(rect[3]), cint(rect[4]));
-				result := result + " area({},{}->{},{})".format(r.x1, r.y1, r.x2, r.y2);
-			endif
-			sleepms(2);
-		endforeach
-	endif
-	var territories := guild.GetProp("territories");
-	if (territories)
-		var rect_df := OpenDataFile(":architect:areas");
-		foreach territory in territories
-			var elem := rect_df.FindElement(territory);
-			if (elem && elem.GetProp("Faction") == guild.GetProp("name"))
-				var parsed := ParseRect(elem.GetProp("Rect"));
-				if (parsed)
-					var tx1 := parsed.x1; var tx2 := parsed.x2;
-					var ty1 := parsed.y1; var ty2 := parsed.y2;
-					if (tx1 > tx2) var t := tx1; tx1 := tx2; tx2 := t; endif
-					if (ty1 > ty2) var t := ty1; ty1 := ty2; ty2 := t; endif
-					result := result + " terr[{}]({},{}->{},{})@{}".format(
-						territory, tx1, ty1, tx2, ty2, elem.GetProp("Realm")
-					);
-				endif
-			endif
-			sleepms(2);
-		endforeach
-	endif
-	if (!result) return "sem-rect"; endif
-	return result;
-endfunction
 
 function EnableGuardMainEvents()
 	EnableEvents(SYSEVENT_SPEECH, 10);
@@ -308,14 +259,9 @@ endfunction
 function CheckGuildMemberThreats()
 	if (fighting || !guild) return; endif
 
-	GuardLog("PROTECT_RUN", "iniciando varredura | guild={} guild_leader={} realm={}".format(
-		guild ? guild.guildid : "nil", guild_leader, me.realm));
-
 	// ── Abordagem 1: varre membros/lider proximos e busca ameacas a eles ──
 	var nearby_players := ListMobilesNearLocationEx(me.x, me.y, me.z, PROTECT_SCAN_RANGE,
 		LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN, me.realm);
-
-	GuardLog("PROTECT_RUN", "jogadores proximos: {}".format(nearby_players.size()));
 
 	foreach player in nearby_players
 		sleepms(2);
@@ -324,26 +270,20 @@ function CheckGuildMemberThreats()
 		var _is_member := (player.guildid == guild.guildid);
 		var _is_leader := (player.serial == guild_leader);
 
-		GuardLog("PROTECT_SCAN", "player='{}' guildid={} my_guild={} is_member={} is_leader={}".format(
-			player.name, player.guildid, guild.guildid, _is_member, _is_leader));
-
 		if (!_is_member && !_is_leader) continue; endif
 
 		// Tenta opponent direto
 		var threat := 0;
 		if (player.opponent && player.opponent.isA(POLCLASS_MOBILE))
 			threat := player.opponent;
-			GuardLog("PROTECT_SCAN", "ameaca via .opponent: '{}'".format(threat.name));
 		endif
 
 		// Fallback: ListHostiles no membro
 		if (!threat)
 			var _hostiles := ListHostiles(player, 10);
-			GuardLog("PROTECT_SCAN", "ListHostiles('{}') retornou {}".format(player.name, _hostiles.size()));
 			foreach _h in _hostiles
 				if (_h && _h.isA(POLCLASS_MOBILE) && _h.guildid != guild.guildid && _h != me)
 					threat := _h;
-					GuardLog("PROTECT_SCAN", "ameaca via ListHostiles: '{}'".format(threat.name));
 					break;
 				endif
 				sleepms(2);
@@ -354,11 +294,7 @@ function CheckGuildMemberThreats()
 		if (threat.guildid == guild.guildid) continue; endif
 		if (threat == me) continue; endif
 
-		var _los := CheckLineOfSight(me, threat);
-		GuardLog("PROTECT_ENGAGE", "ameaca='{}' vitima='{}' dist={} los={}".format(
-			threat.name, player.name, Distance(me, threat), _los));
-
-		if (!_los) continue; endif
+		if (!CheckLineOfSight(me, threat)) continue; endif
 
 		if (!GetCooldown(me, "protect_said"))
 			PrintTextAbove(me, protect_phrases[RandomInt(protect_phrases.size()) + 1]);
@@ -374,28 +310,19 @@ function CheckGuildMemberThreats()
 	var nearby_npcs := ListMobilesNearLocationEx(me.x, me.y, me.z, 10,
 		LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY, me.realm);
 
-	GuardLog("PROTECT_RUN", "npcs proximos: {}".format(nearby_npcs.size()));
-
 	foreach mob in nearby_npcs
 		sleepms(2);
 		if (mob == me) continue; endif
 		if (mob.guildid == guild.guildid) continue; endif
 
 		var _opp := mob.opponent;
-		GuardLog("PROTECT_NPC", "npc='{}' opponent={}".format(
-			mob.name, _opp ? _opp.name : "nil"));
-
 		if (!_opp || !_opp.isA(POLCLASS_MOBILE)) continue; endif
 
 		var _victim_is_member := (_opp.guildid == guild.guildid);
 		var _victim_is_leader := (_opp.serial == guild_leader);
 
-		GuardLog("PROTECT_NPC", "vitima='{}' is_member={} is_leader={}".format(_opp.name, _victim_is_member, _victim_is_leader));
-
 		if (!_victim_is_member && !_victim_is_leader) continue; endif
 		if (!CheckLineOfSight(me, mob)) continue; endif
-
-		GuardLog("PROTEGER", "abordagem2 — engajando '{}' que ataca '{}'".format(mob.name, _opp.name));
 
 		if (!GetCooldown(me, "protect_said"))
 			PrintTextAbove(me, protect_phrases[RandomInt(protect_phrases.size()) + 1]);
@@ -421,17 +348,6 @@ program NPCMonitor()
 		if (GetObjProperty(me, "objloc") != error)
 			// DoObjectiveGuard();
 		endif
-		
-		// Debug periodico: estado geral + posicao + rect
-		if (GUARD_DEBUG && !GetCooldown(me, "debug_idle"))
-			var _estado := "PARADO";
-			if (fighting) _estado := "COMBATE"; endif
-			if (following) _estado := "SEGUINDO"; endif
-			if (warning)   _estado := "ALERTANDO"; endif
-			if (patrolling && !fighting && !following && !warning) _estado := "PATRULHA"; endif
-			GuardLog("ESTADO", _estado + " | " + GetGuildRectStr());
-			SetCooldown(me, "debug_idle", 10);
-		endif
 
 		// Nao permite que os guardas da faccao saiam alem de 4 tiles do territorio
 		if (GetObjProperty(me, "guild"))
@@ -446,23 +362,8 @@ program NPCMonitor()
 				endif
 				var _target_inside := _target ? inGuildRect(guild, _target, 0) : 0;
 
-				if (GUARD_DEBUG && !GetCooldown(me, "debug_outside"))
-					GuardLog("TERRITORIO", "FORA dos limites (+4) | alvo_dentro={} | {}".format(
-						_target_inside, GetGuildRectStr()
-					));
-					SetCooldown(me, "debug_outside", 3);
-				endif
-
 				// Cancela so se o alvo tambem estiver fora (ou se nao houver alvo)
 				if (!_target_inside && (fighting || following || warning || standing || patrolling))
-					if (GUARD_DEBUG)
-						GuardLog("RETIRADA", "cancelando estado | fighting={} following={} warning={} standing={}".format(
-							fighting ? fighting.name : "0",
-							following ? following.name : "0",
-							warning ? warning.name : "0",
-							standing
-						));
-					endif
 					fighting := 0;
 					SetOpponent(0);
 					SetWarMode(0);
@@ -495,10 +396,6 @@ program NPCMonitor()
 						_dest := GetGuildCenter(guild, me.z);
 					endif
 					if (_dest)
-						if (GUARD_DEBUG && !GetCooldown(me, "debug_walk_back"))
-							GuardLog("RETORNO", "sem posto — caminhando para ({},{})".format(_dest.x, _dest.y));
-							SetCooldown(me, "debug_walk_back", 2);
-						endif
 						RunTowardLocation(_dest.x, _dest.y);
 						wait_time := 0;
 					endif
@@ -547,13 +444,6 @@ program NPCMonitor()
 
 		if (!following && !fighting && !warning)
 			if (fix_location && !standing)
-				if (GUARD_DEBUG && CoordinateDistance(me.x, me.y, fix_location.x, fix_location.y) > 1
-				  && !GetCooldown(me, "debug_return"))
-					GuardLog("RETORNO", "caminhando ao posto | destino=({},{},{}) | {}".format(
-						fix_location.x, fix_location.y, fix_location.z, GetGuildRectStr()
-					));
-					SetCooldown(me, "debug_return", 3);
-				endif
 				PetGoTo(fix_location, 2);
 				me.facing := fix_location.facing;
 			endif
@@ -958,13 +848,6 @@ function WarnPlayer()
 		return;
 	endif
 
-	if (GUARD_DEBUG && !GetCooldown(me, "debug_warn"))
-		GuardLog("ALERTA", "alertando {} | alvo=({},{},{}) | {}".format(
-			warning.name, warning.x, warning.y, warning.z, GetGuildRectStr()
-		));
-		SetCooldown(me, "debug_warn", 3);
-	endif
-
 	wait_time := 0;
 	if (Distance(me, warning) <= 3)
 		PetMovement(warning, 1);
@@ -1172,14 +1055,6 @@ function Patrol()
 	var patrol_point := patrolling[1];
 	if (GetObjProperty(me, "patrol_next"))
 		patrol_point := patrolling[2];
-	endif
-
-	if (GUARD_DEBUG && !GetCooldown(me, "debug_patrol"))
-		GuardLog("PATRULHA", "rumo a ({},{},{}) | dist={}".format(
-			patrol_point.x, patrol_point.y, patrol_point.z,
-			CoordinateDistance(me.x, me.y, patrol_point.x, patrol_point.y)
-		));
-		SetCooldown(me, "debug_patrol", 3);
 	endif
 
 	PetMovement(patrol_point, 1);
