@@ -1,5 +1,6 @@
 use os;
 include "include/say";
+include "include/facings";
 include ":tn:cooldown";
 include ":combat:Controller/DamageController_legacy";
 include ":combat:Controller/HitController";
@@ -22,16 +23,20 @@ program attackOfOpportunity(params)
 		SetObjProperty(attacker, "already_fighting", 1);
 		SetObjProperty(defender, "already_fighting", 1);
 		if ((attacker.x != attacker_x || attacker.y != attacker_y))
-			waitUntilNextAttack(defender);
-			defender.attack_once(attacker);
-			disengage(attacker, defender);
-			PrintTextAbove(defender, "*Ataque de Oportunidade*");
+			if (IsBehind(attacker, defender.x, defender.y))
+				waitUntilNextAttack(defender);
+				defender.attack_once(attacker);
+				disengage(attacker, defender);
+				PrintTextAbove(defender, "*Ataque de Oportunidade*");
+			endif
 			break;
 		elseif ((defender.x != defender_x || defender.y != defender_y))
-			waitUntilNextAttack(attacker);
-			attacker.attack_once(defender);
-			disengage(attacker, defender);
-			PrintTextAbove(attacker, "*Ataque de Oportunidade*");
+			if (IsBehind(defender, attacker.x, attacker.y))
+				waitUntilNextAttack(attacker);
+				attacker.attack_once(defender);
+				disengage(attacker, defender);
+				PrintTextAbove(attacker, "*Ataque de Oportunidade*");
+			endif
 			break;
 		endif
 		sleepms(200);
