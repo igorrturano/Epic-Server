@@ -253,12 +253,7 @@ function taming(who)
 
 			Run_Script_To_Completion(":death:npcdeath", { targ });
 
-			var tamed := GetObjProperty(who, "TamedPets");
-			if (!tamed)
-				tamed := array;
-			endif
-			tamed.append(targ.serial);
-			SetObjProperty(who, "TamedPets", tamed);
+			AddPet(who, targ.serial);
 
 			break;
 		endif
