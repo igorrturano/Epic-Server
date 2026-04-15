@@ -6,9 +6,10 @@ include ":attributes:attributes";
 include "include/client";
 include ":itemutils:canAccess";
 include ":itemutils:toolWear";
+include ":gumps:yesNo";
 
 var scissors_cfg := ReadConfigFile("scissors");
-var cfg2 := ReadConfigFile("tailoring");
+var cfg2 := ReadConfigFile(":DomesticWork:fabricacaoDesc");
 var cfg3 := ReadConfigFile("leather");
 
 program use_scissors(who, scissors)
@@ -62,34 +63,54 @@ program use_scissors(who, scissors)
 			return;
 		endif
 	else
-		material := Cint(cfg2[cloth.objtype].material);
-		var leftover := 0x1766;
-		if (!material)
-			if (cloth.objtype == UOBJ_BLANK_SCROLL)
-				makecartoes(who, cloth);
-				return;
+		var clothCfgElem := cfg2[cloth.objtype];
+		if (clothCfgElem)
+			amt := CInt(cloth.weight * 2);
+			if (amt < 1)
+				amt := 1;
 			endif
-			material := Cint(cfg3[cloth.objtype].material);
-			leftover := 0x1067;
 
-			if (!material)
-				SendSysMessage(who, "Voce nao pode usar as tesouras nisso.");
-				return;
+			if (!GetObjProperty(cloth, "broken"))
+				if (!YesNo(who, "Voce deseja cortar essa roupa? Vai gerar " + amt + " bandagens."))
+					SendSysMessage(who, "Cancelado.");
+					return;
+				endif
 			endif
+
+			PlaySoundEffect(who, 0x0249);
+			if (DestroyItem(cloth))
+				newcloth := CreateItemInContainer(who.backpack, UOBJ_BANDAGE, amt);
+				CheckToolWear(who, scissors, DOMESTIC_WORK);
+			else
+				SendSysMessage(who, "Voce nao pode usar as tesouras nisso.");
+			endif
+			return;
 		endif
+
+		if (cloth.objtype == UOBJ_BLANK_SCROLL)
+			makecartoes(who, cloth);
+			return;
+		endif
+
+		material := Cint(cfg3[cloth.objtype].material);
+		if (!material)
+			SendSysMessage(who, "Voce nao pode usar as tesouras nisso.");
+			return;
+		endif
+
 		PlaySoundEffect(who, 0x0249);
 		amt := CInt((material * AP_GetSkill(who, DOMESTIC_WORK) * 75) / 10000);
 		if (amt < 1)
 			amt := 1;
 		endif
 		if (DestroyItem(cloth))
-			newcloth := CreateItemInContainer(who.backpack, leftover, amt);
+			newcloth := CreateItemInContainer(who.backpack, 0x1067, amt);
 			CheckToolWear(who, scissors, DOMESTIC_WORK);
 			if (newcloth)
 				newcloth.color := clr;
 			endif
 		else
-			SendSysMessage(who, "You can't use scissors on that.");
+			SendSysMessage(who, "Voce nao pode usar as tesouras nisso.");
 			return;
 		endif
 	endif
