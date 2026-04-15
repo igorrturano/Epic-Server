@@ -1,0 +1,37 @@
+include "IGumpFactory";
+
+include ":gumpDesigner:controls/Button";
+include ":gumpDesigner:controls/ImageGump";
+include ":gumpDesigner:controls/ImageGumpTiled";
+include ":gumpDesigner:controls/ImageTile";
+include ":gumpDesigner:controls/Text";
+include ":gumpDesigner:controls/Tooltip";
+
+class GumpFactory(IGumpFactory)
+	function GumpFactory(this)
+	endfunction
+	
+	function CreateButton(this)
+		return Button("Button", 0, 0);
+	endfunction
+
+	function CreateImageGump(this)
+		return ImageGump("ImageGump", 0, 0, 0);
+	endfunction
+
+	function CreateImageGumpTiled(this)
+		return ImageGumpTiled("ImageGumpTiled", 0, 0, 0, 0, 0);
+	endfunction
+
+	function CreateImageTile(this)
+		return ImageTile("", 0, 0, 0);
+	endfunction
+
+	function CreateText(this)
+		return Text("Text", 0, 0, "");
+	endfunction
+
+	function CreateTooltip(this)
+		return Tooltip("Tooltip", "");
+	endfunction
+endclass
