@@ -1,6 +1,7 @@
 use uo;
 // use math;
 use os;
+use polsys;
 
 include ":charactercreation:habilidades";
 include "include/epicLoggerUtils";
@@ -36,6 +37,10 @@ exported function handleUCOutgoing(character, byref packet)
 	var messageData := GetPacketData(packet);
 	messageData.+target := MobileWrapper(character);
 	LogPlayerSpeech(messageData.source.GetObjRef(), messageData.message);
+
+	if (messageData.source.GetSerial() == messageData.target.GetSerial())
+		SayMessageSpy(messageData.source.GetObjRef(), messageData.message);
+	endif
 
 	// TODO: Remover o block depois de implementar cada um dos tipos
 		// Bloqueei pra a gente pode entender a necessidade de cada
@@ -278,6 +283,24 @@ endfunction
 
 
 
+
+function SayMessageSpy(who, message_txt)
+	foreach player in GetGlobalProperty("GmsOnlines")
+		player := SystemFindObjectBySerial(CInt(player));
+		if (GetObjProperty(player, "SaySpyOn") && player.cmdlevel >= 3 && player != who)
+			var sayspy := GetObjProperty(player, "SaySpyOn");
+			var acct := who.acctname;
+			var truename := GetObjProperty(who, "nome_inicial");
+
+			if (sayspy == "on")
+				SendSysMessage(player, "[SAY-SPY][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);
+			elseif (TypeOf(sayspy) == "Array" && who.name in sayspy)
+				SendSysMessage(player, "[SAY-SPY][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);
+			endif
+		endif
+		Sleepms(2);
+	endforeach
+endfunction
 
 // Deixa isso aqui pra quando precisar testar.....
 function _debugMe(byRef packet)
