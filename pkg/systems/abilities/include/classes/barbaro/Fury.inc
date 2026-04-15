@@ -58,9 +58,6 @@ class Fury(CombatAbility)
 		else
 			PlaySoundEffect(who, 0x339);
 		endif
-
-		Message("*RRRAARRRRGHH!!*").SendAbove(who);
-
 		SendAbilityBuff(who, ABILITY_ID::FURIA, duration, "Bonus de dano em posturas fisicas");
 	endfunction
 
