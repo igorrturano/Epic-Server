@@ -751,7 +751,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 	// PEnsar numa solucao pra mensagem subir no NPC sem o [Language] como prefixo
 	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
 	if (!attackInfo.GetAttacker().IsNpc())
-		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 4);
+		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 5);
 	endif
 	// Calculate effective raw damage using only active posture's physical damage + elementals
 	// (stat/skill bonuses are added to all 3 physical types, but only the active posture is applied)
