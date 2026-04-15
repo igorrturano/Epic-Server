@@ -6,11 +6,12 @@ include ":gumpDesigner:controls/ImageGumpTiled";
 include ":gumpDesigner:controls/ImageTile";
 include ":gumpDesigner:controls/Text";
 include ":gumpDesigner:controls/Tooltip";
+include ":gumpDesigner:controls/containers/ContainerGridLayout";
 
 class GumpFactory(IGumpFactory)
 	function GumpFactory(this)
 	endfunction
-	
+
 	function CreateButton(this)
 		return Button("Button", 0, 0);
 	endfunction
@@ -33,5 +34,13 @@ class GumpFactory(IGumpFactory)
 
 	function CreateTooltip(this)
 		return Tooltip("Tooltip", "");
+	endfunction
+
+	function CreateContainer(this)
+		return Container("Container", 0, 0, 0, 0);
+	endfunction
+	
+	function CreateContainerGridLayout(this)
+		return ContainerGridLayout("Container Grid Layout", 0, 0, 0, 0);
 	endfunction
 endclass
