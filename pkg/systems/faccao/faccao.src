@@ -135,6 +135,11 @@ program faccao(params)
 
 	GFHtmlShadowed(gump, 232, 36, 165, 20, "#FFC33C", "<center>{}".format(guild_obj.name), 8);
 
+	// Ícone de facção da staff: exibido à direita do nome
+	if (guild_obj.tipo_faccao == "staff")
+		GFTilePic(gump, 552, 31, 0xEAC7, 0);
+	endif
+
 	// Botão para Territórios - Adicionar isso
 	GFAddButton(gump, 67 - 10, 45, 5605, 5605, GF_CLOSE_BTN, BUTTON_TERRITORIES);
 	GFTextLine(gump, 67 + 10, 45 - 2, 49, "Territórios");
@@ -762,7 +767,7 @@ endfunction
 
 function gmHandler(who)
 	var opts := array{ "Alterar Nome", "Alterar Area", "Alterar Prisoes", "Pegar GuildID",
-				   	"Alterar Sub-Guilds", "Remover Guilda", "Cancelar" };
+				   	"Alterar Sub-Guilds", "Tipo de Faccao", "Remover Guilda", "Cancelar" };
 	var output := RadioGump(who, 300, 0, "Escolha uma opcao", opts, 0, opts.size());
 
 	if (output["Nome"])
@@ -855,11 +860,66 @@ function gmHandler(who)
 		guild.SetProp("prision_leave", soltar);
 
 		SendSysMessageEx(who, "Prisoes alteradas");
+	elseif (output["Tipo de Faccao"])
+		_TipoFaccaoHandler(who);
 	elseif (output["Remover Guilda"])
 		RemFaccao(guild.guildid);
 		SendSysMessageEx(who, "Guilda removida");
 		return 99;
 	endif
+endfunction
+
+// -------------------------------------------------------
+// Gump de seleção de tipo de facção (Staff / Player)
+// -------------------------------------------------------
+function _TipoFaccaoHandler(who)
+	var tipo_atual := guild.GetProp("tipo_faccao");
+
+	var cor_staff  := 0;
+	var cor_player := 0;
+	if (tipo_atual == "staff")
+		cor_staff := 63;
+	else
+		cor_player := 63;
+	endif
+
+	var gump := GFCreateGump();
+	GFSetId(gump, 0x12350);
+	GFResizePic(gump, 0, 0, 9200, 300, 190);
+	GFResizePic(gump, 15, 15, 9350, 270, 160);
+
+	GFHtmlShadowed(gump, 20, 25, 200, 20, "#FFC33C", "<center>Tipo de Facção", 8);
+
+	GFHtmlShadowed(gump, 20, 52, 260, 18, "#AAAAAA", "<center>Tipo atual: " + tipo_atual, 6);
+
+	// Botão Staff
+	GFAddButton(gump, 40, 90, 4005, 4006, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 70, 88, cor_staff, "Staff");
+
+	// Botão Player
+	GFAddButton(gump, 160, 90, 4005, 4006, GF_CLOSE_BTN, 2);
+	GFTextLine(gump, 190, 88, cor_player, "Player");
+
+	// Botão Cancelar
+	GFAddButton(gump, 95, 130, 4017, 4018, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 125, 128, 0, "Cancelar");
+
+	var input := GFSendGump(who, gump);
+
+	var novo_tipo := "";
+	if (input[0] == 1)
+		novo_tipo := "staff";
+	elseif (input[0] == 2)
+		novo_tipo := "player";
+	endif
+
+	if (!novo_tipo)
+		return;
+	endif
+
+	guild.SetProp("tipo_faccao", novo_tipo);
+	guild_obj.tipo_faccao := novo_tipo;
+	SendSysMessageEx(who, "Tipo alterado para: {}".format(novo_tipo));
 endfunction
 
 function npcHandler(who, input)

@@ -22,6 +22,7 @@ include ":uose:/gumps/include/vendorGumps";
 include ":tn:cooldown";
 include ":merchants:/include/cambio";
 include ":megacliloc:/include/descricaoObjetoTTip";
+include "include/events";
 
 const GF_STDCOLOR_UOSE := 1890;
 const MOEDAS := SESTERTIUS;
@@ -741,7 +742,7 @@ endfunction
 
 function ProcessVendorDoubleClick(npc, player)
 	var gump := GFCreateGump(220, 70);
-	GFResizePic(gump, 0, 0, 0x254E, 160, 120);
+	GFResizePic(gump, 0, 0, 0x254E, 160, 140);
 
 	GFTextLine(gump, 30, 15, 2100, "Produtos à Venda");
 	GFTooltipText(gump, "Abre a lista de produtos à venda deste vendedor.");
@@ -759,6 +760,10 @@ function ProcessVendorDoubleClick(npc, player)
 	GFTooltipText(gump, "Ordena o vendedor a parar onde está.");
 	GFAddButton(gump, 15, 77, 2117, 2118, 1, 4);
 
+	GFTextLine(gump, 30, 95, 2100, "Facing");
+	GFTooltipText(gump, "Define a direcao para onde o vendedor ficara olhando.");
+	GFAddButton(gump, 15, 97, 2117, 2118, 1, 5);
+
 	var input := GFSendGump(player, gump)[0];
 	var ev := struct;
 
@@ -770,13 +775,8 @@ function ProcessVendorDoubleClick(npc, player)
 		if (!targ || !targ.isA(POLCLASS_MOBILE))
 			return SendSysMessageEx(player, "Cancelado.", SSM_FAIL);
 		endif
-		ev.type      := 0xA00003; // NPCEVENT_MOVE
-		ev.source    := targ;
-		ev.direction := 1;        // NEMOVE_TOWARD
-		ev.speed     := 1;        // NEMOVE_WALK
-		ev.WakeUp    := 0;
-		ev.loop      := 500;
-		ev.process   := GetProcess(GetPid());
+		ev.type := MERCH_FOLLOW_CMD;
+		ev.targ := targ;
 		SendEvent(npc, ev);
 		PrintTextAbove(npc, "As suas ordens.");
 	elseif (input == 3)
@@ -785,21 +785,52 @@ function ProcessVendorDoubleClick(npc, player)
 		if (!loc)
 			return SendSysMessageEx(player, "Cancelado.", SSM_FAIL);
 		endif
-		ev.type      := 0xA0000B; // NPCEVENT_MOVE_XY
-		ev.x         := loc.x;
-		ev.y         := loc.y;
-		ev.direction := 1;
-		ev.speed     := 1;
-		ev.WakeUp    := 0;
-		ev.loop      := 200;
-		ev.process   := GetProcess(GetPid());
+		ev.type := MERCH_GO_CMD;
+		ev.dest := loc;
+		ev.who  := player;
 		SendEvent(npc, ev);
 		PrintTextAbove(npc, "As suas ordens.");
 	elseif (input == 4)
-		ev.type   := 0xA00013; // NPCEVENT_WAKEUP
-		ev.WakeUp := 0;
+		ev.type := MERCH_STOP_CMD;
 		SendEvent(npc, ev);
 		PrintTextAbove(npc, "Sim senhor.");
+	elseif (input == 5)
+		var facing_gump := GFCreateGump(220, 70);
+		GFResizePic(facing_gump, 0, 0, 0x254E, 125, 100);
+
+		GFTextLine(facing_gump, 30, 15, 2100, "Norte");
+		GFTooltipText(facing_gump, "Olhar para o Norte");
+		GFAddButton(facing_gump, 15, 17, 2117, 2118, 1, 10);
+
+		GFTextLine(facing_gump, 30, 35, 2100, "Sul");
+		GFTooltipText(facing_gump, "Olhar para o Sul");
+		GFAddButton(facing_gump, 15, 37, 2117, 2118, 1, 11);
+
+		GFTextLine(facing_gump, 30, 55, 2100, "Leste");
+		GFTooltipText(facing_gump, "Olhar para o Leste");
+		GFAddButton(facing_gump, 15, 57, 2117, 2118, 1, 12);
+
+		GFTextLine(facing_gump, 30, 75, 2100, "Oeste");
+		GFTooltipText(facing_gump, "Olhar para o Oeste");
+		GFAddButton(facing_gump, 15, 77, 2117, 2118, 1, 13);
+
+		var dir_input  := GFSendGump(player, facing_gump)[0];
+		var new_facing := -1;
+		case (dir_input)
+			10: new_facing := 0; break; // Norte
+			11: new_facing := 4; break; // Sul
+			12: new_facing := 2; break; // Leste
+			13: new_facing := 6; break; // Oeste
+		endcase
+
+		if (new_facing >= 0)
+			npc.facing := new_facing;
+			// Notifica main.src para atualizar fix_location.facing em memoria
+			var fev := struct;
+			fev.type   := MERCH_FACING_CMD;
+			fev.facing := new_facing;
+			SendEvent(npc, fev);
+		endif
 	endif
 endfunction
 
