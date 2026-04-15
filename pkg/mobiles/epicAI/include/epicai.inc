@@ -2484,7 +2484,7 @@ function LootItem(npc, item)
         var backpack := CreateItemAtLocation(npc.x, npc.y, npc.z, "Backpack", 1);
         EquipItem(npc, backpack);
     endif
-    SetObjProperty(item, "#LootedBy", npc.serial);
+    SetObjProperty(item, "LootedBy", npc.serial);
 
     PrintTextAbove(npc, "*pega " + item.desc + "*");
     SetCooldown(npc, "already_looted", 300);
