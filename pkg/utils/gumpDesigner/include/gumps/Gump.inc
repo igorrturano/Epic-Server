@@ -18,8 +18,10 @@ class Gump(Container, IGump)
 	var _gumpString;
 
 	var _layout; // Objeto GumpLayout (ou algum herdado dele)
+	var _titleName := "Default Title";
 	var _title; // Objeto GumpTitle
 	var _pages := array{}; // Array das páginas, cada página é o Objeto GumpBody
+	var _currentPage := 1;
 
 	var _options := array{};
 	var _createdControls := struct{
@@ -33,9 +35,7 @@ class Gump(Container, IGump)
 		this.SetParent(parent);
 		this.SetWidth(width);
 		this.SetHeight(height);
-
-		this.SetTitle(GumpTitle(CStr(title)));
-		this.AddPage(GumpBody());
+		this.SetTitleName(title);
 
 		this._options := options;
 		this._createdControls := Gump::_createdControls;
@@ -78,6 +78,16 @@ class Gump(Container, IGump)
 		return this;
 	endfunction
 
+	function GetTitleName(this)
+		return this._titleName;
+	endfunction
+
+	function SetTitleName(this, titleName)
+		this._titleName := CStr(titleName);
+
+		return this;
+	endfunction
+
 	function GetTitle(this)
 		return this._title;
 	endfunction
@@ -90,6 +100,10 @@ class Gump(Container, IGump)
 		this._title := title;
 
 		return this;
+	endfunction
+
+	function GetPages(this)
+		return this._pages;
 	endfunction
 
 	function GetPage(this, pageNumber)
@@ -132,6 +146,32 @@ class Gump(Container, IGump)
 		return this;
 	endfunction
 
+	function GetCurrentPage(this)
+		return this._currentPage;
+	endfunction
+
+	function SetCurrentPage(this, pageNumber)
+		if (pageNumber < 1 || pageNumber > this._pages.size())
+			return InvalidParameterException("Page number out of range.");
+		endif
+
+		this._currentPage := pageNumber;
+
+		return this;
+	endfunction
+
+	function AddControl(this, control)
+		// if (!(control is @Control))
+		// 	return InvalidParameterException("Control must be of type 'Control'.");
+		// endif
+
+		// var page := this.GetPage(this.GetCurrentPage());
+		// control.SetParent(page);
+		// page.AddControl(control);
+
+		return this;
+	endfunction
+
 	function GetOptions(this)
 		return this._options;
 	endfunction
@@ -170,7 +210,6 @@ class Gump(Container, IGump)
 		this._ConfigureDiag();
 		this._DrawDiag();
 
-		print(this.GetGumpString());
 		var result := GFSendGump(this._parent, this.GetGumpString());
 		
 		var eventHandled;
@@ -182,6 +221,7 @@ class Gump(Container, IGump)
 
 		this._UpdateInputValues();
 		eventHandled.GetControl().ExecuteActions();
+		this.Dispose();
 
 		return eventHandled;
 	endfunction
@@ -197,15 +237,12 @@ class Gump(Container, IGump)
 
 	// Private functions
 	function _ConfigureDiag(this)
-		if (!this.GetLayout())
-			print("No layout set for this gump, using default GoldenLayout.");
-			this.SetLayout(GoldenLayout().Resize(this.GetWidth(), this.GetHeight()));
-		else
-			this.GetLayout().Resize(this.GetWidth(), this.GetHeight());
-		endif
-
+		this._AdjustLayout();
+		this._AdjustTitle();
+		this._AdjustPages();
+		
 		this._IndexControl(this.GetLayout());
-		// this._IndexControl(this.GetTitle());
+		this._IndexControl(this.GetTitle());
 		// foreach page in (this._pages)
 		// 	this._IndexControl(page);
 		// 	SleepMS(2);
@@ -224,8 +261,6 @@ class Gump(Container, IGump)
 			return InvalidParameterException("Control  must be of type 'Control'.");
 		endif
 
-		// print("Indexing control: " + control.ToString());
-
 		if (!this._createdControls.countByType[control.GetType()])
 			this._createdControls.countByType[control.GetType()] := 0;
 		endif
@@ -236,23 +271,62 @@ class Gump(Container, IGump)
 		var controlId := idOffset + this._createdControls.countByType[control.GetType()];
 		control.SetId(controlId);
 		this._createdControls.orderById.append(controlId);
-		// this._createdControls.positionById[controlId] := control;
+		this._createdControls.positionById[controlId] := control;
 
 		if (control is @Container)
 			this._IndexControls(control.GetControls());
 		endif
 	endfunction
 
+	function _AdjustLayout(this)
+		if (!this.GetLayout())
+			this.SetLayout(GoldenLayout().Resize(this.GetWidth(), this.GetHeight()));
+		else
+			this.GetLayout().Resize(this.GetWidth(), this.GetHeight());
+		endif
+
+		this.GetLayout().PositionControls();
+		this.GetLayout().PositionTitle();
+		this.GetLayout().PositionBody();
+	endfunction
+
+	function _AdjustTitle(this)
+		if (GumpOption::HideTitle in this.GetOptions())
+			return;
+		endif
+
+		if (!this.GetTitle())
+			this.SetTitle(GumpTitle(this.GetTitleName()));
+		else
+			this.GetTitle().SetText(this.GetTitleName());
+		endif
+
+		this.GetTitle().ResizeToLayout(this.GetLayout());
+	endfunction
+
+	function _AdjustPages(this)
+		// if (this._pages.size() == 0)
+		// 	this.AddPage(GumpBody().Resize(this.GetWidth(), this.GetHeight() - this.GetTitle().GetHeight()));
+		// else
+		// 	foreach page in (this._pages)
+		// 		page.Resize(this.GetWidth(), this.GetHeight() - this.GetTitle().GetHeight());
+		// 		SleepMS(2);
+		// 	endforeach
+		// endif
+	endfunction
+
 	function _DrawDiag(this)
 		this.SetGumpString(GFCreateGump(this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight()));
 
 		this.GetLayout().Draw(this);
-		// this.GetTitle().Draw(this);
-		// this.GetPage(1).Draw(this);
-		foreach control in (this.GetControls())
-			control.Draw(this);
-			SleepMS(2);
-		endforeach
+		if (this.GetTitle())
+			this.GetTitle().Draw(this);
+		endif
+		// this.GetPage(this.GetCurrentPage()).Draw(this);
+		// foreach control in (this.GetControls())
+		// 	control.Draw(this);
+		// 	SleepMS(2);
+		// endforeach
 		
 		// foreach id in (this._createdControls.orderById)
 		// 	var control := this._createdControls.positionById[id];
@@ -283,7 +357,7 @@ class Gump(Container, IGump)
 			GumpControl::Text: return 1000;
 			GumpControl::TextCropped: return 2000;
 			GumpControl::ImageGump: return 3000;
-			GumpControl::ImageTiled: return 4000;
+			GumpControl::ImageTile: return 4000;
 			GumpControl::Button: return 5000;
 			GumpControl::CheckBox: return 6000;
 			GumpControl::RadioButton: return 7000;
@@ -294,3 +368,10 @@ class Gump(Container, IGump)
 		endcase
 	endfunction
 endclass
+
+enum class GumpOption
+	HideTitle := "hide_title",
+	HideBorder := "hide_border",
+	NoMovable := "no_movable",
+	NoClosable := "no_closable",
+endenum

@@ -1,15 +1,14 @@
 include "system/exception/ParameterException/InvalidParameterException";
 
-include ":gumpDesigner:controls/containers/Container";
-include ":gumpDesigner:controls/Text";
-include ":gumpDesigner:controls/ImageGump";
+include ":gumpDesigner:factories/GumpFactory";
+include ":gumpDesigner:layouts/GumpLayout";
 
 class GumpTitle(Container)
 	function GumpTitle(this, title := "")
-		Super("Gump Title Area", 0, 0, 0, 0);
+		Super("Gump Title Container", 0, 0, 0, 0);
 
-		this.AddControl(ImageGump("Gump Title Background", 0, 0, 0, 0));
-		this.AddControl(Text("Gump Title Text", 0, 0, title, TEXT_ALIGN::ALIGN_CENTER));
+		this.AddControl(GumpFactory().CreateImageGump()._SetName("Gump Title Background"));
+		this.AddControl(GumpFactory().CreateText()._SetName("Gump Title Text").SetText(title));
 	endfunction
 
 	function GetBackground(this)
@@ -40,10 +39,37 @@ class GumpTitle(Container)
 		return this;
 	endfunction
 
+	function SetHeight(this, height)
+		this.GetBackground().SetHeight(height);
+		Super::SetHeight(this, height);
+
+		return this;
+	endfunction
+	
 	function SetWidth(this, width)
 		this.GetBackground().SetWidth(width);
 		this.GetText().SetWidth(width);
 		Super::SetWidth(this, width);
+
+		return this;
+	endfunction
+
+	function Resize(this, width, height)
+		this.SetWidth(width);
+		this.SetHeight(height);
+
+		return this;
+	endfunction
+
+	function ResizeToLayout(this, layout)
+		if (!(layout is @GumpLayout))
+			return InvalidParameterException("Layout must be of type 'GumpLayout'.");
+		endif
+
+		this.SetX(layout.GetTitleArea_X());
+		this.SetY(layout.GetTitleArea_Y());
+		this.SetWidth(layout.GetTitleArea_Width());
+		this.SetHeight(layout.GetTitleArea_Height());
 
 		return this;
 	endfunction

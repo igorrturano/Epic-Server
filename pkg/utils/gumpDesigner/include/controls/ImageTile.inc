@@ -1,11 +1,11 @@
 include "Control";
 
-class ImageGump(Control)
+class ImageTile(Control)
 	var _imageId := 0x0;
 	var _color := 0;
 
-	function ImageGump(this, name, x, y, imageId, color := 0)
-		Super(GumpControl::ImageGump, name, x, y);
+	function ImageTile(this, name, x, y, imageId, color := 0)
+		Super(GumpControl::ImageTile, name, x, y);
 		this.SetImageId(imageId);
 		this.SetColor(color);
 	endfunction
@@ -37,7 +37,7 @@ class ImageGump(Control)
 	endfunction
 
 	function ToString(this)
-		return "(ImageGump) " + Super::ToString(this)
+		return "(ImageTile) " + Super::ToString(this)
 			+ ", imageId=" + this.GetImageId()
 			+ ", color=" + this.GetColor();
 	endfunction

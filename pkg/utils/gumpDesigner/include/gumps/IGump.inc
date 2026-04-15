@@ -16,7 +16,7 @@ class IGump()
 	uninit function AddOption(this, option);
 
 	uninit function GetControls(this);
-	uninit function AddControl(this, byRef control);
+	uninit function AddControl(this, control);
 
 	uninit function Show(this);
 endclass

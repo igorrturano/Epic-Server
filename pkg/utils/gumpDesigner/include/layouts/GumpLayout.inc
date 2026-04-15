@@ -1,5 +1,7 @@
 include "system/exception/ParameterException/InvalidParameterException";
 
+include "GumpTitle";
+include "GumpBody";
 include ":gumpDesigner:controls/containers/Container";
 include ":gumpDesigner:controls/ImageGumpTiled";
 
@@ -17,11 +19,16 @@ class GumpLayout(Container)
 		bottomRight
 	};
 	var background;
+	var titleLayout;
+	var pageLayout;
 	
 	function GumpLayout(this)
 		Super("Gump Layout", 0, 0, 0, 0);
 		this.borders := GumpLayout::borders;
-		this._InitializeStructure();
+		this._InitializeTitle();
+		this._InitializeBody();
+
+		// this._InitializeStructure();
 	endfunction
 
 	function GetBorder_TopLeft(this)
@@ -136,27 +143,44 @@ class GumpLayout(Container)
 		return this;
 	endfunction
 
-	function _InitializeStructure(this)
-		this.SetBackground(ImageGumpTiled("Background", 0, 0, 0, 0, 0));
-		this.SetBorder_TopLeft(ImageGumpTiled("Top Left Border", 0, 0, 0, 0, 0));
-		this.SetBorder_Top(ImageGumpTiled("Top Border", 0, 0, 0, 0, 0));
-		this.SetBorder_TopRight(ImageGumpTiled("Top Right Border", 0, 0, 0, 0, 0));
-		this.SetBorder_Left(ImageGumpTiled("Left Border", 0, 0, 0, 0, 0));
-		this.SetBorder_Right(ImageGumpTiled("Right Border", 0, 0, 0, 0, 0));
-		this.SetBorder_BottomLeft(ImageGumpTiled("Bottom Left Border", 0, 0, 0, 0, 0));
-		this.SetBorder_Bottom(ImageGumpTiled("Bottom Border", 0, 0, 0, 0, 0));
-		this.SetBorder_BottomRight(ImageGumpTiled("Bottom Right Border", 0, 0, 0, 0, 0));
+	function GetTitleLayout(this)
+		return this.titleLayout;
 	endfunction
 
-	
-	function Draw(this, byRef gump)
-		this.PositionBorders();
-		Super::Draw(this, gump);
+	function SetTitleLayout(this, gumpTitle)
+		if (!(gumpTitle is @GumpTitle))
+			return InvalidParameterException("Title layout must be an GumpTitle.");
+		endif
+
+		this.titleLayout := gumpTitle;
+
+		return this;
 	endfunction
-	
-	// Cada Layout tem uma estrutura diferente, então o filho implementa o posicionamento dos bordas e background
-	// uninit function PositionBorders(this);
-	
+
+	function GetPageLayout(this)
+		return this.pageLayout;
+	endfunction
+
+	function SetPageLayout(this, gumpBody)
+		if (!(gumpBody is @GumpBody))
+			return InvalidParameterException("Page layout must be an GumpBody.");
+		endif
+
+		this.pageLayout := gumpBody;
+
+		return this;
+	endfunction
+
+	function SetPageBackground(this, imageGump)
+		if (!(imageGump is @ImageGump))
+			return InvalidParameterException("Page background must be an ImageGump.");
+		endif
+
+		this.pageBackground := imageGump;
+
+		return this;
+	endfunction
+
 	function ToString(this)
 		return "(GumpLayout) " + Super::ToString(this)
 			+ " width=" + this.GetWidth()
@@ -173,4 +197,30 @@ class GumpLayout(Container)
 				+ "bottomRight=" + this.GetBorder_BottomRight().ToString()
 			+ "}";
 	endfunction
+
+	function _InitializeStructure(this)
+		this.SetBackground(ImageGumpTiled("Background", 0, 0, 0, 0, 0));
+		this.SetBorder_TopLeft(ImageGumpTiled("Top Left Border", 0, 0, 0, 0, 0));
+		this.SetBorder_Top(ImageGumpTiled("Top Border", 0, 0, 0, 0, 0));
+		this.SetBorder_TopRight(ImageGumpTiled("Top Right Border", 0, 0, 0, 0, 0));
+		this.SetBorder_Left(ImageGumpTiled("Left Border", 0, 0, 0, 0, 0));
+		this.SetBorder_Right(ImageGumpTiled("Right Border", 0, 0, 0, 0, 0));
+		this.SetBorder_BottomLeft(ImageGumpTiled("Bottom Left Border", 0, 0, 0, 0, 0));
+		this.SetBorder_Bottom(ImageGumpTiled("Bottom Border", 0, 0, 0, 0, 0));
+		this.SetBorder_BottomRight(ImageGumpTiled("Bottom Right Border", 0, 0, 0, 0, 0));
+		this.SetTitleBackground(ImageGumpTiled("Title Background", 0, 0, 0, 0, 0));
+		this.SetPageBackground(ImageGumpTiled("Page Background", 0, 0, 0, 0, 0));
+	endfunction
+
+	function _InitializeTitle(this)
+		this.SetTitleLayout(GumpFactory().CreateGumpTitle("Golden Layout Title"));
+	endfunction
+
+	function _InitializeBody(this)
+		this.SetBodyLayout(GumpFactory().CreateGumpBody());
+	endfunction
+
+	// uninit function PositionControls(this);
+	// uninit function PositionTitle(this);
+	// uninit function PositionBody(this);
 endclass

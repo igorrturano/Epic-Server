@@ -46,7 +46,7 @@ class GumpFactory(IGumpFactory)
 		return ContainerGridLayout("Container Grid Layout", 0, 0, 0, 0, rows, columns);
 	endfunction
 
-	function CreateGumpTitle(this, title)
+	function CreateGumpTitle(this, title := "<No text inserted>")
 		return GumpTitle(title);
 	endfunction
 
