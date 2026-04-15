@@ -1,0 +1,28 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program recuperacaostamina(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := CInt(params[3]);
+
+	var tactics_bonus := CInt(AP_GetSkill(who, TACTICS) / 10);
+	var time := CInt(AP_GetSkill(who, TACTICS) / 5);
+
+	while (1 < time)
+		if (who.dead)
+			break;
+		endif
+		HealStamina(who, tactics_bonus);
+
+		sleep(2);
+	endwhile
+	var script := GetProcess(GetPid());
+	script.kill();
+	return;
+endprogram
