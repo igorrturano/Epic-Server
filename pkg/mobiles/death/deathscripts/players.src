@@ -206,7 +206,7 @@ program death(params)
 		return 234;
 	endif
 
-	var tempo := 4; // em minutos
+	var tempo := 6; // 6 ticks * 30s = 3 minutos
 	if (dmg > CInt(AP_GetVitalMaximumValue(ghost, HITS) / 5))
 		tempo := tempo * 2;
 	endif
