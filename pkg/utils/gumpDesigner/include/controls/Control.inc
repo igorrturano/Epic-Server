@@ -13,8 +13,7 @@ class Control(IControl)
 	var _xOffset := 0;
 	var _yOffset := 0;
 
-	function Control(this, type, name, x, y, parent := false)
-		this.SetParent(parent);
+	function Control(this, type, name, x, y)
 		this.SetType(type);
 		this._SetName(name);
 
@@ -129,7 +128,7 @@ class Control(IControl)
 	endfunction
 
 	function Draw(this, byRef gump)
-		// print("Drawing Control: " + this.ToString());
+		print("Drawing Control: " + this.ToString());
 		
 		if (this.GetTooltip())
 			this.GetTooltip().Draw(gump);
@@ -163,7 +162,7 @@ enum class GumpControl
 	Text := "text",
 	TextCropped := "textcropped",
 	ImageGump := "imagegump",
-	ImageTiled := "imagetiled",
+	ImageTile := "imagetile",
 	Tooltip := "tooltip",
 	Button := "button",
 	RadioGroup := "radiogroup",
