@@ -206,9 +206,9 @@ program death(params)
 		return 234;
 	endif
 
-	var tempo := 6; // 6 ticks * 30s = 3 minutos
+	var tempo := 4; // 6 ticks * 30s = 3 minutos
 	if (dmg > CInt(AP_GetVitalMaximumValue(ghost, HITS) / 5))
-		tempo := tempo * 2;
+		tempo := tempo * 1.5;
 	endif
 	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::RECOVERY))
 		tempo := tempo / 2;
