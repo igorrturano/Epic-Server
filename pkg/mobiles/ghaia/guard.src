@@ -67,7 +67,7 @@ endfunction
 
 function HasEnemyNear(what)
 	var mobile_list := ListMobilesNearLocationEx(what.x, what.y, LIST_IGNORE_Z, 8,
-											  LISTEX_FLAG_NORMAL | LISTEX_FLAG_NPC_ONLY);
+											  LISTEX_FLAG_NORMAL | LISTEX_FLAG_NPC_ONLY, what.realm);
 	var enemy_near := 0;
 	foreach mob in mobile_list
 		if (mob.alignment != me.alignment && mob != what && mob != me)
@@ -857,7 +857,7 @@ function WarnPlayer()
 		FightADV(warning);
 		disableWarn();
 		foreach monster in ListMobilesNearLocationEx(me.x, me.y, me.z, 8,
-											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)
+											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY, me.realm)
 			if (GetObjProperty(monster, "guild") == guild.guildid)
 				monster.frozen := 0;
 				SendEvent(monster, struct{ "type" := HELP_CMD, source := me, targ := warning });
@@ -948,7 +948,7 @@ function FightADV(opponent := 0)
 		endif
 
 		foreach monster in ListMobilesNearLocationEx(me.x, me.y, me.z, 8,
-											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)
+											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY, me.realm)
 			if (GetObjProperty(monster, "guild") == guild.guildid)
 				SendEvent(monster, struct{ "type" := HELP_CMD, source := me, targ := opponent });
 			endif
@@ -1304,7 +1304,7 @@ function GetEnemiesNearGuard(loc, range := 5, get_hidden := 0)
 	var myenemies := array{};
 
 	foreach mobile in ListMobilesNearLocationEx(loc.x, loc.y, loc.z, range,
-												 LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN)
+												 LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN, me.realm)
 		if ((mobile.hidden && !get_hidden || mobile == me))
 			continue;
 		elseif (mobile.guildid == guild.guildid)
@@ -1333,7 +1333,7 @@ endfunction
 
 function GetAlliesNearGuard(loc, range := 5)
 	var myallies := CheckifIsNotEnemy(me,
-								   ListMobilesNearLocationEx(loc.x, loc.y, loc.z, range, LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN));
+								   ListMobilesNearLocationEx(loc.x, loc.y, loc.z, range, LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN, me.realm));
 
 	return myallies;
 endfunction
