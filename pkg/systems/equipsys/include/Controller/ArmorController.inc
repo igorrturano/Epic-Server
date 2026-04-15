@@ -156,14 +156,14 @@ function GetModifiersByProtection(protection)
 		ARMOR_LOWHIGH: modifiers := {0,0,0,0,0}; break;
 
 		//TIER 2
-		ARMOR_MIDLOW: modifiers := {0,-2,0,-2,0}; break;
-		ARMOR_MIDMID: modifiers := {-1,-4,0,-4,0}; break;
-		ARMOR_MIDHIGH: modifiers := {-2,-5,0,-5,0}; break;
+		ARMOR_MIDLOW: modifiers := {0,-2,0,-2,-20}; break;
+		ARMOR_MIDMID: modifiers := {-1,-4,0,-4,-25}; break;
+		ARMOR_MIDHIGH: modifiers := {-2,-5,0,-5,-30}; break;
 
 		//TIER 3
-		ARMOR_HIGHLOW: modifiers := {-3,-8,0,-8,0}; break;
-		ARMOR_HIGHMID: modifiers := {-4,-12,0,-12,0}; break;
-		ARMOR_HIGHHIGH: modifiers := {-5,-24,0,-24,0}; break;
+		ARMOR_HIGHLOW: modifiers := {-3,-8,0,-8,-35}; break;
+		ARMOR_HIGHMID: modifiers := {-4,-12,0,-12,-40}; break;
+		ARMOR_HIGHHIGH: modifiers := {-5,-24,0,-24,-45}; break;
 
 		// ESCUDOS
 		SHIELD_BUCKLER: modifiers := {0,0,0,0,0}; break;
