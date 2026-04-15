@@ -42,7 +42,7 @@ program SpellScript(params)
 	endif
 
 	var opts := struct{};
-	opts.+paralyzed := 1;
+	opts.+frozen := 1;
 	opts.+desc := "Paralisar";
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spellinfo.id));

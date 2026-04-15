@@ -26,7 +26,7 @@ program SpellScript(params)
 			SC_RemoveEffect(mobile, CInt(spell.id));
 
 			var opts := struct{};
-			opts.+paralyzed := 1;
+			opts.+frozen := 1;
 			opts.+desc := "Parar o Tempo";
 
 			SC_ApplyEffect(who, mobile, opts, 20, CInt(spell.id));

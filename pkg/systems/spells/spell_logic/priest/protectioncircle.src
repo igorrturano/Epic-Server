@@ -36,7 +36,7 @@ program SpellScript(params)
 	SendSystemReport(who, "'Mova-se para parar a conjuração!'", SSM_INFO);
 
 	SetObjProperty(who, "#Casting", 1);
-	while (who.connected && !who.frozen && !who.paralyzed)
+	while (who.connected && !who.frozen)
 		if (oldx != who.x || oldy != who.y)
 			break;
 		endif

@@ -30,7 +30,7 @@ program SpellScript_AprisionarDemonio(params)
 	SC_RemoveEffect(targ, CInt(spell.id));
 
 	var opts := struct{};
-	opts.+paralyzed := 1;
+	opts.+frozen := 1;
 	opts.+desc := "Aprisionar Demonio";
 
 	SC_ApplyEffect(caster, targ, opts, duration, CInt(spell.id));
