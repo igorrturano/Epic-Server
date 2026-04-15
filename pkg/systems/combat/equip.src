@@ -63,6 +63,18 @@ program equipweapon(who, item)
 		SendSysMessageEx(who, "Ja possui arma equipada.", SSM_FAIL);
 		return 0;
 	endif
+
+	// Block equipping shield with a two-handed melee weapon
+	if (item.isA(POLCLASS_ARMOR) && item.tile_layer == LAYER_HAND2)
+		var weapon := GetEquipmentByLayer(who, LAYER_HAND1);
+		if (weapon && weapon.isA(POLCLASS_WEAPON))
+			var weapCfg := ReadConfigFile(":combat:itemdesc");
+			if (CStr(weapCfg[weapon.objtype].Attribute) == "Two_Handed")
+				SendSysMessageEx(who, "Voce nao pode usar escudo com arma de duas maos.", SSM_FAIL);
+				return 0;
+			endif
+		endif
+	endif
 	if (who.npctemplate)
 		return 1;
 	endif
