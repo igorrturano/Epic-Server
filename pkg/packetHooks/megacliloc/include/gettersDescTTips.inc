@@ -318,11 +318,12 @@ function PegaDescArmaduras(objeto,cfg := struct)
 	if (armadura.GetModifiers()[DEXTERITY].GetValue())
 		xDesc := xDesc + "Redutor Dex : " + armadura.GetModifiers()[DEXTERITY].GetValue() + "<br>";
 	endif
-	if (armadura.GetModifiers()[DEXTERITY].GetValue())
-		//xDesc := xDesc + "Block Bonus: " + atributosArmadura.BonusDelay  + "<br>";
-	endif
-	if (armadura)
-		//xDesc := xDesc + "Delay Bonus: " + atributosArmadura.ParryDelay + "<br>";
+	if (armadura.IsShield())
+		var shieldAttrs := GetShieldModsByProtection(armadura.GetTipoProtecao());
+		if (!(shieldAttrs is @Exception))
+			xDesc := xDesc + "Bonus Bloqueio: " + shieldAttrs.GetParryBonus() + "<br>";
+			xDesc := xDesc + "Delay Bloqueio: " + shieldAttrs.GetParryDelay() + "<br>";
+		endif
 	endif
 
 	xDesc := PegaDescResistArmadura(objeto,cfg,armadura,xDesc);
