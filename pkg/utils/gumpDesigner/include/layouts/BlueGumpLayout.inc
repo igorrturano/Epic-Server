@@ -1,21 +1,21 @@
 include "GumpLayout";
 
-class MarbleLayout(GumpLayout)
-	function MarbleLayout(this)
+class BlueGumpLayout(GumpLayout)
+	function BlueGumpLayout(this)
 		Super();
 		this._InitializeValues();
 	endfunction
 
 	function _InitializeValues(this)
-		this.GetBorder_TopLeft().SetImageId(3500);
-		this.GetBorder_Top().SetImageId(3501);
-		this.GetBorder_TopRight().SetImageId(3502);
-		this.GetBorder_Left().SetImageId(3503);
-		this.GetBorder_Right().SetImageId(3505);
-		this.GetBorder_BottomLeft().SetImageId(3506);
-		this.GetBorder_Bottom().SetImageId(3507);
-		this.GetBorder_BottomRight().SetImageId(3508);
-		this.GetBackground().SetImageId(3504);
+		this.GetBorder_TopLeft().SetImageId(40000);
+		this.GetBorder_Top().SetImageId(40001);
+		this.GetBorder_TopRight().SetImageId(40002);
+		this.GetBorder_Left().SetImageId(40003);
+		this.GetBorder_Right().SetImageId(40005);
+		this.GetBorder_BottomLeft().SetImageId(40006);
+		this.GetBorder_Bottom().SetImageId(40007);
+		this.GetBorder_BottomRight().SetImageId(40008);
+		this.GetBackground().SetImageId(40004);
 
 		this._InsertControls();
 	endfunction
@@ -33,7 +33,7 @@ class MarbleLayout(GumpLayout)
 	endfunction
 
 	function PositionBorders(this)
-		var borderSize := 25;
+		var borderSize := 35;
 		
 		this.GetBackground()
 			.SetPosition(this.GetX() + borderSize, this.GetY() + borderSize)
@@ -70,5 +70,9 @@ class MarbleLayout(GumpLayout)
 		this.GetBorder_BottomRight()
 			.SetPosition(this.GetX() + this.GetWidth() - borderSize, this.GetY() + this.GetHeight() - borderSize)
 			.Resize(borderSize, borderSize);
+	endfunction
+
+	function ToString(this)
+		return "(BlueGumpLayout) " + Super::ToString(this);
 	endfunction
 endclass

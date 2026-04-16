@@ -2,8 +2,8 @@ include "GumpLayout";
 
 include ":gumpDesigner:factories/GumpFactory";
 
-class GoldenLayout(GumpLayout)
-	function GoldenLayout(this)
+class GoldenGumpLayout(GumpLayout)
+	function GoldenGumpLayout(this)
 		Super();
 		this._InitializeElements();
 		this._InsertControls();
@@ -20,6 +20,7 @@ class GoldenLayout(GumpLayout)
 		this.SetBorder_Bottom(factory.CreateImageGumpTiled()._SetName("Bottom Border").SetImageId(39932));
 		this.SetBorder_BottomRight(factory.CreateImageGumpTiled()._SetName("Bottom Right Border").SetImageId(39933));
 		this.SetBackground(factory.CreateImageGumpTiled()._SetName("Background").SetImageId(39929));
+		this.Set
 	endfunction
 
 	function _InsertControls(this)
@@ -116,5 +117,9 @@ class GoldenLayout(GumpLayout)
 		body.SetY(this.GetTitleLayout().GetY() + this.GetTitleLayout().GetHeight() + separator);
 		body.SetWidth(this.GetTitleLayout().GetWidth());
 		body.SetHeight(this.GetHeight() - this.GetTitleLayout().GetY() - this.GetTitleLayout().GetHeight() - (2 * separator));
+	endfunction
+
+	function ToString(this)
+		return "(GoldenGumpLayout) " + Super::ToString(this);
 	endfunction
 endclass

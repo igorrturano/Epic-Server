@@ -212,11 +212,11 @@ class GumpLayout(Layout)
 	endfunction
 
 	function _InitializeTitle(this)
-		this.SetTitleLayout(GumpFactory().CreateGumpTitle("Golden Layout Title"));
+		this.SetTitleLayout(GumpFactory().CreateTitleLayout("Golden Layout Title"));
 	endfunction
 
 	function _InitializeBody(this)
-		this.SetBodyLayout(GumpFactory().CreateGumpBody());
+		this.SetBodyLayout(GumpFactory().CreateBodyLayout());
 	endfunction
 
 	// uninit function PositionControls(this);
