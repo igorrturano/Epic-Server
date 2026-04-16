@@ -7,6 +7,8 @@ include "include/sounds";
 include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 include "include/epicNPCUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program fireweapons(who, item)
 	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
@@ -18,6 +20,14 @@ program fireweapons(who, item)
 			SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
 			return;
 		endif
+
+	// Pistol3 (pistola de duelo) requires Postura de Duelo ability for players
+	if (item.objtype == 0xC5FC)
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::POSTURA_DE_DUELO))
+			SendSysMessageEx(who, "Voce precisa da habilidade Postura de Duelo para usar esta arma.", SSM_FAIL);
+			return;
+		endif
+	endif
 
 		// Check if weapon is properly bound
 		if (!IsWeaponBound(who, item))
@@ -53,6 +63,7 @@ function GetWeaponInfo(item)
 						"shot_sound" := 0x4D0 };
 
 	case (item.objtype)
+		0xC5FC: // Pistol (pistola de duelo)
 		0xC5FD: // Pistol
 		0xC5FE:
 			info.type := "pistol";

@@ -53,7 +53,7 @@ include ":abilities:classes/vivisseccionista/Mummification";
 // ESGRIMISTA (1500-1504)
 //===========================================
 include ":abilities:classes/esgrimista/GracefulMovement";
-include ":abilities:classes/esgrimista/StrategicReflex";
+include ":abilities:classes/esgrimista/DuelStance";
 include ":abilities:classes/esgrimista/Demoralize";
 include ":abilities:classes/esgrimista/SwashbucklerFeint";
 include ":abilities:classes/esgrimista/MasterDuelist";
@@ -133,7 +133,7 @@ ABILITY_CLASSES[ABILITY_ID::MUMIFICACAO] := @Mummification;
 
 // Esgrimista (1500-1504)
 ABILITY_CLASSES[ABILITY_ID::MOVIMENTACAO_GRACIOSA] := @GracefulMovement;
-ABILITY_CLASSES[ABILITY_ID::REFLEXO_ESTRATEGICO] := @StrategicReflex;
+ABILITY_CLASSES[ABILITY_ID::POSTURA_DE_DUELO] := @DuelStance;
 ABILITY_CLASSES[ABILITY_ID::DESMORALIZAR] := @Demoralize;
 ABILITY_CLASSES[ABILITY_ID::FINTA_ESGRIMISTA] := @SwashbucklerFeint;
 ABILITY_CLASSES[ABILITY_ID::MESTRE_DUELISTA] := @MasterDuelist;
