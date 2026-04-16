@@ -83,12 +83,6 @@ function BuildCombatAbilities(who)
         table.append(struct{ "id" := "InfernalBurst", "range_min" := 0, "range_max" := 3 });
     endif
 
-    // Beast abilities
-    if (ab.isBeast)
-        table.append(struct{ "id" := "PackTactics", "range_min" := 0, "range_max" := 4 });
-        table.append(struct{ "id" := "Enrage", "range_min" := 0, "range_max" := 99 });
-    endif
-
     // Gazer abilities
     if (ab.isGazer)
         table.append(struct{ "id" := "GazerRay", "range_min" := 0, "range_max" := 8 });
@@ -340,5 +334,11 @@ function _BuildRaceAbilities(race, byref table)
 			table.append(struct{ "id" := "LifeDrain", "range_min" := 0, "range_max" := 1, "cd" := 12 });
 		"garravalha":
 			table.append(struct{ "id" := "GroundSlam", "range_min" := 0, "range_max" := 3, "cd" := 18 });
+		"vulcanídeo":
+			table.append(struct{ "id" := "BurningRockThrow", "range_min" := 3, "range_max" := 6, "cd" := 15 });
+		"lobo":
+		"warg":
+			table.append(struct{ "id" := "PackTactics", "range_min" := 0, "range_max" := 4, "cd" := 5 });
+			table.append(struct{ "id" := "Enrage", "range_min" := 0, "range_max" := 99, "cd" := 15 });
 	endcase
 endfunction
