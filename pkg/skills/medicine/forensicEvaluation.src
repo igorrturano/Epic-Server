@@ -18,6 +18,7 @@ include ":gumps:yesNo";
 include ":gumps:selectionGump";
 include ":medicine:anatomy";
 include ":charactercreation:createchar";
+include ":timedscripts:timedScripts";
 
 const UOBJ_PROOF := 0x1BE34;
 // Constantes para cores de sintomas
@@ -279,14 +280,19 @@ program forensic(who)
 		print("lastdamage time eh " + time_lastdamage);
 		if (input == 2)
 			HandleFracture(subject, "Cabeca");
+			HealFractureTimer(subject, "fratura_cabeca");
 		elseif (input == 3)
 			HandleFracture(subject, "Maos");
+			HealFractureTimer(subject, "fratura_maos");
 		elseif (input == 4)
 			HandleFracture(subject, "Bracos");
+			HealFractureTimer(subject, "fratura_bracos");
 		elseif (input == 5)
 			HandleFracture(subject, "Torso");
+			HealFractureTimer(subject, "fratura_torso");
 		elseif (input == 6)
 			HandleFracture(subject, "Pernas");
+			HealFractureTimer(subject, "fratura_pernas");
 		elseif (input == 8)
 			Autopsy(who, subject);
 		endif
@@ -833,4 +839,9 @@ function SortArray(symptoms_array)
 	sorted_array.sort();
 
 	return "disease_" + sorted_array.join("_");
+endfunction
+
+function HealFractureTimer(subject, timer_name)
+	TS_LowerDuration(subject, timer_name, -1);
+	EraseObjProperty(subject, "#hurt_" + timer_name);
 endfunction

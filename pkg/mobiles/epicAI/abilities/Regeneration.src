@@ -1,0 +1,26 @@
+use uo;
+use os;
+use vitals;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program Regeneration(params)
+	var me := params[1];
+
+	if (!me || me.dead)
+		return 0;
+	endif
+
+	var lastHit := GetObjProperty(me, "lastHit");
+	if (lastHit != error && lastHit.type == "fire" && polcore().systime - lastHit.time < 25)
+		PrintTextAbove(me, "*a regeneração falha por causa do fogo*");
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+
+	HealDamage(me, tier * 3);
+	PrintTextAbove(me, "*regenera*");
+
+	return 1;
+endprogram

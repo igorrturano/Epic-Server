@@ -1,0 +1,42 @@
+use uo;
+use os;
+use math;
+
+include ":timedScripts:timedScripts";
+include ":charactercreation:resists";
+
+program TidalPull(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*invoca corrente marinha*");
+
+	if (CheckResist(targ, FORTITUDE, RESIST_HARD))
+		SendSysMessageEx(targ, "Você resiste à corrente!", SSM_REQUEST);
+		return 1;
+	endif
+
+	var dx := me.x - targ.x;
+	var dy := me.y - targ.y;
+	var dist := Distance(me, targ);
+	var pull := 3;
+
+	if (pull > dist - 1)
+		pull := dist - 1;
+	endif
+
+	if (pull > 0)
+		var pull_x := targ.x + CInt(dx * pull / dist);
+		var pull_y := targ.y + CInt(dy * pull / dist);
+		MoveObjectToLocation(targ, pull_x, pull_y, GetMapInfo(pull_x, pull_y).z, targ.realm, MOVEOBJECT_FORCELOCATION);
+	endif
+
+	TS_StartTimer(targ, "lentidao", 3);
+	SendSysMessageEx(targ, "A corrente marinha puxa você!", SSM_FAIL);
+
+	return 1;
+endprogram

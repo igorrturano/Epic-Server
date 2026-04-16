@@ -1,0 +1,43 @@
+use uo;
+use os;
+use vitals;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":timedScripts:timedScripts";
+include ":charactercreation:resists";
+
+program FearAura(params)
+	var me := params[1];
+
+	if (!me || me.dead)
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*emana terror*");
+	PlaySoundEffect(me, 0x482);
+
+	var targets := ListMobilesNearLocation(me.x, me.y, me.z, 4, me.realm);
+	foreach mobile in (targets)
+		sleepms(2);
+		if (mobile.serial == me.serial || mobile.dead || mobile.npctemplate)
+			continue;
+		endif
+
+		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::AURA_DIVINA))
+			SendSysMessageEx(mobile, "Sua fé protege você do medo!", SSM_REQUEST);
+			continue;
+		endif
+
+		if (CheckResist(mobile, WILL, RESIST_HARD))
+			SendSysMessageEx(mobile, "Você resiste ao terror.", SSM_REQUEST);
+			continue;
+		endif
+
+		TS_StartTimer(mobile, "blinded", 10, 1, me);
+		TS_StartTimer(mobile, "exposed", 10, 1, me);
+		SendSysMessageEx(mobile, "Um terror sobrenatural invade sua mente!", SSM_FAIL);
+	endforeach
+
+	return 1;
+endprogram

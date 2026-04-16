@@ -1,0 +1,48 @@
+use uo;
+use os;
+use vitals;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program Enrage(params)
+	var me := params[1];
+
+	if (!me || me.dead)
+		return 0;
+	endif
+
+	// Only trigger when HP < 40%
+	var cur_hp := GetVital(me, HITS) / 100;
+	var max_hp := GetVitalMaximumValue(me, HITS) / 100;
+	if (cur_hp > CInt(max_hp * 0.4))
+		return 0;
+	endif
+
+	// One-time per combat
+	if (GetObjProperty(me, "#has_enraged") != error)
+		return 0;
+	endif
+
+	SetObjProperty(me, "#has_enraged", 1);
+
+	PrintTextAbove(me, "*ENFURECIDO!*");
+	PlaySoundEffect(me, 0x16A);
+
+	// +30% STR for 15 seconds
+	var str_bonus := CInt(me.strength * 0.3);
+	me.strength_mod := me.strength_mod + str_bonus;
+	SetObjProperty(me, "#enrage_str_bonus", str_bonus);
+
+	sleep(15);
+
+	// Cleanup
+	if (!me.dead)
+		var bonus := GetObjProperty(me, "#enrage_str_bonus");
+		if (bonus != error)
+			me.strength_mod := me.strength_mod - bonus;
+			EraseObjProperty(me, "#enrage_str_bonus");
+		endif
+	endif
+
+	return 1;
+endprogram

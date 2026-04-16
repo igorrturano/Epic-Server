@@ -92,6 +92,7 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
     var classe := npc_elem.Classe;
     var category_lower := Lower(npc_elem.Category);
     var brain_type := Lower(npc_elem.BrainType);
+    var npc_race := Lower(npc_elem.NPCRace ?: "");
 
     return struct{
         // Template-based (case-insensitive)
@@ -157,6 +158,14 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         "isDemon" := (category_lower == "demons"),
         "isUndead" := (category_lower == "undead"),
         "isBeast" := (category_lower == "animal" || category_lower == "giantanimal"),
+
+        // Template-based: Gazers/Beholders
+        "isGazer" := (template_lower in array{
+            "gazer", "gazer2", "gazer3", "gazer4", "gazer5", "gazer6", "gazer7"
+        }),
+
+        // NPCRace stored as string — checked directly in BuildCombatAbilities
+        "npc_race" := npc_race,
 
         // Brain type
         "isHumanoidBrain" := (brain_type == "humanoid"),

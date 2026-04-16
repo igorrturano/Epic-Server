@@ -910,6 +910,11 @@ function LogLastHit(attackInfo)
 		lastHit["attacker"] := attacker.serial;
 		lastHit["amount"] := attackInfo.GetDamage().GetTotalBaseDamage();
 		lastHit["time"] := polcore().systime;
+		lastHit["type"] := attackInfo.GetDamage().GetFireBaseDamage() > 0 ? "fire" :
+							attackInfo.GetDamage().GetColdBaseDamage() > 0 ? "cold" :
+							attackInfo.GetDamage().GetPoisonBaseDamage() > 0 ? "poison" :
+							attackInfo.GetDamage().GetEnergyBaseDamage() > 0 ? "energy" : "physical";
+		lastHit["bodyregion"] := attackInfo.GetBodyRegion();
 		SetObjProperty(defender, "lastHit", lastHit);
 endfunction
 
