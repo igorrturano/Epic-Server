@@ -21,7 +21,6 @@ include ":spells:include/tnmagery";
 include ":spells:SpellRegistry";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
-include ":hotbar:include/custombuff";
 
 // Spell type constants
 const SPELL_TYPE_CANTRIP      := "cantrip";
@@ -38,7 +37,6 @@ const SPELL_TYPE_DEMONHUNTER  := "demonhunter";
 const SPELL_TYPE_TRICKSTER    := "trickster";
 const SPELL_TYPE_SHINOBI      := "shinobi";
 const SPELL_TYPE_BARD         := "bard";
-const SHINOBI_JUTSU_COOLDOWN  := 20;
 
 /*
  * ExecuteSpellByName - Main entry point for all spell execution
@@ -96,16 +94,12 @@ function ExecuteSpellByName(who, spell_name, spell_type)
         return 0;
     endif
 
-    if (!ValidateSpellCooldown(who, spell_type))
-        return 0;
-    endif
-    
     // Build spellinfo struct
     var spellinfo := BuildSpellInfo(who, spell_data, spell_type, cfg_path);
-    
+
     // Determine booktype for cast_spell
     var booktype := GetBooktypeForSpell(who, spell_data, spell_type);
-    
+
     // Execute the spell
     var script := Start_Script(":spells:cast_spell", {who, spellinfo, booktype});
     if (script.errortext)
@@ -113,8 +107,6 @@ function ExecuteSpellByName(who, spell_name, spell_type)
         return 0;
     endif
 
-    ApplySpellCooldownAndBuff(who, spell_data, spell_type);
-    
     return 1;
 endfunction
 
@@ -168,24 +160,18 @@ function ExecuteSpellById(who, spell_id, spell_type)
         return 0;
     endif
 
-    if (!ValidateSpellCooldown(who, spell_type))
-        return 0;
-    endif
-    
     // Build spellinfo
     var spellinfo := BuildSpellInfo(who, spell_data, spell_type, cfg_path);
-    
+
     // Determine booktype
     var booktype := GetBooktypeForSpell(who, spell_data, spell_type);
-    
+
     // Execute
     var script := Start_Script(":spells:cast_spell", {who, spellinfo, booktype});
     if (script.errortext)
         SendSysMessage(who, "Erro ao conjurar magia: " + script.errortext);
         return 0;
     endif
-
-    ApplySpellCooldownAndBuff(who, spell_data, spell_type);
 
     // Phase 5: Bard cantico entropy award
     if (spell_type == SPELL_TYPE_BARD)
@@ -218,25 +204,6 @@ function _AwardBardCanticoEntropy(who, circle)
     endif
 endfunction
 
-function ValidateSpellCooldown(who, spell_type)
-    if (spell_type == SPELL_TYPE_SHINOBI)
-        if (GetCooldown(who, "jutsu") > 0)
-            SendSysMessageEx(who, "Voce deve esperar um pouco antes de usar outra tecnica shinobi.", SSM_FAIL);
-            return 0;
-        endif
-    endif
-
-    return 1;
-endfunction
-
-function ApplySpellCooldownAndBuff(who, spell_data, spell_type)
-    if (spell_type == SPELL_TYPE_SHINOBI)
-        SetCooldown(who, "jutsu", SHINOBI_JUTSU_COOLDOWN);
-        SendSpellBuff(who, who, spell_data.id, SHINOBI_JUTSU_COOLDOWN, spell_data.name);
-    endif
-
-    return 1;
-endfunction
 
 /*
  * ValidateSpellAccess - Check if player can use this spell type
