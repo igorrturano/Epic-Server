@@ -184,7 +184,16 @@ function ContractNPC(guild, npc_i, who, loc, school := 0)
         if (bp) EquipItem(agent, bp); endif
     endif
 
-    sleepms(1000);
+    // Troca imediatamente para o script correto antes do gump de raça,
+    // para evitar que a brainAI (humanoid) ataque o contratante durante a espera.
+    // Sem a propriedade "guild" definida ainda, o guard não inicia combate.
+    if (!_IsVendor(template))
+        agent.script := ":ghaia:guardfaccao";
+        SetObjProperty(agent, "script", agent.script);
+        RestartScript(agent);
+    endif
+
+    sleepms(500);
 
     _SelectRaceOrFallback(agent, who);
 
@@ -192,13 +201,19 @@ function ContractNPC(guild, npc_i, who, loc, school := 0)
         var template_parts := SplitWords(template.template, ":");
         var gender_suffix := (agent.gender == 0) ? "M" : "F";
         _VestirDoGhaia(agent, template_parts[template_parts.size()] + gender_suffix);
+    endif
 
-        agent.script := ":ghaia:guard";
-        SetObjProperty(agent, "script", agent.script);
+    // Registra o NPC (define guild, contract_by, etc.) ANTES de reiniciar o script,
+    // para que Setup() leia o guild correto.
+    _RegisterActiveNPC(agent, template, guild, who, npc_i);
+
+    // Reinicia o script do guarda para que Setup() leia o guild recem definido.
+    // Vendedores nao reiniciam aqui pois o init.src rodaria duas vezes (sobrescreveria
+    // aparencia escolhida). O main.src do vendedor re-le o guild no primeiro loop.
+    if (!_IsVendor(template))
         RestartScript(agent);
     endif
 
-    _RegisterActiveNPC(agent, template, guild, who, npc_i);
     return 1;
 endfunction
 
