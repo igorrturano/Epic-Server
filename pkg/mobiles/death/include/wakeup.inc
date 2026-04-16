@@ -62,6 +62,21 @@ function KataWakeUp(ghost, corpse)
 	SetVital(ghost, "mana", CInt(GetVitalMaximumValue(ghost, "mana") * 0.5));
 	RecalcVitals(ghost);
 
+	var deferred_fraturas := GetObjProperty(ghost, "#deferred_fratura");
+	if (deferred_fraturas != error)
+		foreach fratura in deferred_fraturas
+			var cooldown_name := "hurt_" + fratura.part;
+			var existing := GetCooldown(ghost, cooldown_name);
+			if (existing > 0)
+				SetCoolDown(ghost, cooldown_name, existing * 2);
+			elseif (CInt(fratura.tempo) > 0)
+				SetCoolDown(ghost, cooldown_name, CInt(fratura.tempo));
+			endif
+			TS_StartTimer(ghost, fratura.part, 1);
+		endforeach
+		EraseObjProperty(ghost, "#deferred_fratura");
+	endif
+
 	DestroyItem(corpse);
 
 	if (GetObjProperty(ghost, "corda"))
@@ -160,6 +175,21 @@ function FallbackResurrect(ghost)
 	SetVital(ghost, "stamina", CInt(GetVitalMaximumValue(ghost, "stamina") * 0.5));
 	SetVital(ghost, "mana", CInt(GetVitalMaximumValue(ghost, "mana") * 0.5));
 	RecalcVitals(ghost);
+
+	var deferred_fraturas := GetObjProperty(ghost, "#deferred_fratura");
+	if (deferred_fraturas != error)
+		foreach fratura in deferred_fraturas
+			var cooldown_name := "hurt_" + fratura.part;
+			var existing := GetCooldown(ghost, cooldown_name);
+			if (existing > 0)
+				SetCoolDown(ghost, cooldown_name, existing * 2);
+			elseif (CInt(fratura.tempo) > 0)
+				SetCoolDown(ghost, cooldown_name, CInt(fratura.tempo));
+			endif
+			TS_StartTimer(ghost, fratura.part, 1);
+		endforeach
+		EraseObjProperty(ghost, "#deferred_fratura");
+	endif
 
 	SendSysMessage(ghost, "Voce acordou, mas seu corpo nao foi encontrado.");
 

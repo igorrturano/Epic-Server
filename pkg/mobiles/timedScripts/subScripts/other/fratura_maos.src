@@ -1,0 +1,43 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+include "include/say";
+
+function StartScript(mobile, attacker := 0, level := 0)
+	SetObjProperty(mobile, "desarmar", 1);
+	while (AP_GetVital(mobile, "DP") <= 19 || GetCooldown(mobile, "hurt_fratura_maos") > 0)
+		SetObjProperty(mobile, "desarmar", 1);
+		sleep(4);
+	endwhile
+
+	EraseObjProperty(mobile, "desarmar");
+	return 1;
+endfunction
+
+function EndScript(mobile)
+	EraseObjProperty(mobile, "desarmar");
+	return 1;
+endfunction
+
+function LogOffScript(mobile)
+	return 1;
+endfunction
+
+program TimedScriptInit(params)
+	var mobile := params[1];
+	var type := params[2];
+	var level := params[3];
+
+	if (typeof(type) == "String")
+		if (type == "End")
+			return EndScript(mobile);
+		elseif (type == "LogOff")
+			return LogOffScript(mobile);
+		endif
+	endif
+
+	return StartScript(mobile, type, level);
+endprogram

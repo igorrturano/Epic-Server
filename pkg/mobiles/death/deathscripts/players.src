@@ -122,34 +122,33 @@ program death(params)
 	else
 		// Perda de DP para TODAS as mortes (NPC e PvP)
 		EraseObjProperty(ghost, "#Casting");
-		AP_ConsumeVital(ghost, "DP", 10);
-		SendSysMessage(ghost, "Voce perdeu 1 DP e agora tem " + AP_GetVital(ghost, "DP") / 10);
+		var dp_loss := 10;
+		var bodyregion := lastHit["bodyregion"];
+		if (bodyregion == "Neck")
+			dp_loss := 20;
+		endif
+		AP_ConsumeVital(ghost, "DP", dp_loss);
+		SendSysMessage(ghost, "Voce perdeu " + (dp_loss / 10) + " DP e agora tem " + AP_GetVital(ghost, "DP") / 10);
 		var tempo := 180;
 		if (AP_GetVital(ghost, "DP") <= 19)
 			if (!CheckResist(ghost, FORTITUDE, RESIST_EXTREMELY_HARD))
 				SendSysMessage(ghost, "Voce esta bastante ferido, e melhor se cuidar");
-				TS_StartTimer(ghost, "fraturaexposta", 1);
+				DeferFracture(ghost, bodyregion, 0);
 			endif
 		elseif (AP_GetVital(ghost, "DP") < 30)
 			if (!CheckResist(ghost, FORTITUDE, RESIST_VERY_HARD))
-				tempo := 300;
 				SendSysMessage(ghost, "Voce fraturou um osso!");
-				SetCoolDown(ghost, "hurt", tempo);
-				TS_StartTimer(ghost, "fraturaexposta", 1);
+				DeferFracture(ghost, bodyregion, 300);
 			endif
 		elseif (AP_GetVital(ghost, "DP") < 40)
 			if (!CheckResist(ghost, FORTITUDE, RESIST_HARD))
-				tempo := 240;
 				SendSysMessage(ghost, "Voce fraturou um osso!");
-				SetCoolDown(ghost, "hurt", tempo);
-				TS_StartTimer(ghost, "fraturaexposta", 1);
+				DeferFracture(ghost, bodyregion, 240);
 			endif
 		elseif ((AP_GetVital(ghost, "DP") < 50))
 			if (!CheckResist(ghost, FORTITUDE, RESIST_MEDIUM))
-				tempo := 180;
 				SendSysMessage(ghost, "Voce fraturou um osso!");
-				SetCoolDown(ghost, "hurt", tempo);
-				TS_StartTimer(ghost, "fraturaexposta", 1);
+				DeferFracture(ghost, bodyregion, 180);
 			endif
 		endif
 		if (AP_GetVital(ghost, "DP") < 10 || CInt(GetObjProperty(ghost, "morto")))
@@ -248,8 +247,7 @@ program death(params)
 		endif
 		if (GetObjProperty(corpse, "curado"))
 			SendSysMessage(ghost, "Voce foi curado e acordara em 5 segundos!");
-			EraseObjProperty(ghost, "hurt");
-			TS_LowerDuration(ghost, "fraturaexposta", -1);
+			EraseObjProperty(ghost, "#deferred_fratura");
 			EraseObjProperty(corpse, "prolongardesmaio");
 			sleep(5);
 			break;
@@ -519,4 +517,49 @@ function ProcurarItensQuarto(who)
 		x := x + 1;
 		sleepms(20);
 	endwhile
+endfunction
+
+function BodyRegionToFracture(bodyregion)
+	case (bodyregion)
+		"Head":    return "fratura_cabeca";
+		"Hands":   return "fratura_maos";
+		"Arms":    return "fratura_bracos";
+		"Body":    return "fratura_torso";
+		"Legs":    return "fratura_pernas";
+		"Feet":    return "fratura_pernas";
+		"Neck":    return "fratura_torso";
+		default:   return "fratura_pernas";
+	endcase
+endfunction
+
+function FractureToGumpName(fracture_name)
+	case (fracture_name)
+		"fratura_cabeca": return "Cabeca";
+		"fratura_maos":   return "Maos";
+		"fratura_bracos": return "Bracos";
+		"fratura_torso":  return "Torso";
+		"fratura_pernas": return "Pernas";
+		default:          return "Torso";
+	endcase
+endfunction
+
+function DeferFracture(ghost, bodyregion, tempo)
+	var fracture_name := BodyRegionToFracture(bodyregion);
+	var fractures := GetObjProperty(ghost, "#deferred_fratura");
+	if (fractures == error)
+		fractures := array{};
+	endif
+	fractures.append(struct{ part := fracture_name, tempo := tempo });
+	SetObjProperty(ghost, "#deferred_fratura", fractures);
+
+	// Add to Fractures array for forensic evaluation gump
+	var gump_name := FractureToGumpName(fracture_name);
+	var visible_fractures := GetObjProperty(ghost, "Fractures");
+	if (visible_fractures == error)
+		visible_fractures := array{};
+	endif
+	if (!(gump_name in visible_fractures))
+		visible_fractures.append(gump_name);
+	endif
+	SetObjProperty(ghost, "Fractures", visible_fractures);
 endfunction
