@@ -12,6 +12,14 @@ function ParseRect(rect_str)
     };
 endfunction
 
+// Normaliza um retangulo garantindo x1<=x2 e y1<=y2.
+// Aceita coordenadas em qualquer ordem (inclusive invertidas).
+function NormalizeRect(x1, y1, x2, y2)
+    if (x1 > x2) var t := x1; x1 := x2; x2 := t; endif
+    if (y1 > y2) var t := y1; y1 := y2; y2 := t; endif
+    return struct{ "x1" := x1, "y1" := y1, "x2" := x2, "y2" := y2 };
+endfunction
+
 // ###########################################
 // #
 // # CreateFaccao
@@ -39,6 +47,7 @@ function CreateFaccao(name, rect, money := 0)
    guild.setprop("money", cint(money));
    guild.setprop("uniforms", array{});
    guild.setprop("link_to", 0);
+   guild.setprop("tipo_faccao", "player"); // "player" ou "staff"
 
    return guild;
 endfunction
@@ -51,15 +60,16 @@ function GetFaccao(guild)
    if (!guild) return; endif
 
    var faccao_obj := struct{
-      "name"     := guild.GetProp("name"),
-      "npcs"     := guild.GetProp("npcs"),
-      "npcs_active"  := guild.GetProp("npcs_active"),
-      "laws"     := guild.GetProp("laws"),
-      "leader"   := guild.GetProp("leader"),
-      "area"     := guild.GetProp("area"),
-      "uniforms" := guild.GetProp("uniforms"),
-      "subguilds" := guild.GetProp("subguilds"),
-      "money" := guild.GetProp("money")
+      "name"        := guild.GetProp("name"),
+      "npcs"        := guild.GetProp("npcs"),
+      "npcs_active" := guild.GetProp("npcs_active"),
+      "laws"        := guild.GetProp("laws"),
+      "leader"      := guild.GetProp("leader"),
+      "area"        := guild.GetProp("area"),
+      "uniforms"    := guild.GetProp("uniforms"),
+      "subguilds"   := guild.GetProp("subguilds"),
+      "money"       := guild.GetProp("money"),
+      "tipo_faccao" := guild.GetProp("tipo_faccao") // "player" ou "staff"
    };
 
    return faccao_obj;
@@ -99,6 +109,10 @@ function EditFaccao(guild, props)
 
    if (props.link_to != null) // fac string
       faccao.link_to := props.link_to;
+   endif
+
+   if (props.tipo_faccao != null) // "player" ou "staff"
+      faccao.tipo_faccao := props.tipo_faccao;
    endif
 
    foreach key in (faccao.keys())
@@ -233,7 +247,7 @@ function isLeader(faccao, mobile)
    return 0;
 endfunction
 
-function inGuildRect(guild, item := 0)
+function inGuildRect(guild, item := 0, padding := 0)
     if (typeof(guild) == "String")
         guild := FindGuild(guild);
     endif
@@ -244,9 +258,12 @@ function inGuildRect(guild, item := 0)
     var area := guild.getProp("area");
     foreach rect in area
         sleepms(2);
-        if (!rect || rect.size() < 4) 
+        if (!rect || rect.size() < 4)
             continue;
-        elseif (item.x >= cint(rect[1]) && item.x <= cint(rect[3]) && item.y >= cint(rect[2]) && item.y <= cint(rect[4]));
+        endif
+        var r := NormalizeRect(cint(rect[1]), cint(rect[2]), cint(rect[3]), cint(rect[4]));
+        if (item.x >= r.x1 - padding && item.x <= r.x2 + padding &&
+          item.y >= r.y1 - padding && item.y <= r.y2 + padding)
             return 1;
         endif
     endforeach
@@ -260,7 +277,9 @@ function inGuildRect(guild, item := 0)
             if (elem && elem.GetProp("Faction") == guild.GetProp("name"))
                 var rect := ParseRect(elem.GetProp("Rect"));
                 if (rect && item.realm == elem.GetProp("Realm"))
-                    if (item.x >= rect.x1 && item.x <= rect.x2 && item.y >= rect.y1 && item.y <= rect.y2)
+                    var r := NormalizeRect(rect.x1, rect.y1, rect.x2, rect.y2);
+                    if (item.x >= r.x1 - padding && item.x <= r.x2 + padding &&
+                      item.y >= r.y1 - padding && item.y <= r.y2 + padding)
                         return 1;
                     endif
                 endif
@@ -269,6 +288,41 @@ function inGuildRect(guild, item := 0)
         endforeach
     endif
 
+    return 0;
+endfunction
+
+// Retorna struct{x,y,z} com o centro do retangulo da guild.
+// Parametro z_ref: coordenada z de referencia (ex: npc.z).
+function GetGuildCenter(guild, z_ref := 0)
+    if (typeof(guild) == "String") guild := FindGuild(guild); endif
+    if (!guild) return 0; endif
+
+    var area := guild.getProp("area");
+    if (area)
+        foreach rect in area
+            if (rect && rect.size() >= 4)
+                var r := NormalizeRect(cint(rect[1]), cint(rect[2]), cint(rect[3]), cint(rect[4]));
+                return struct{ "x" := (r.x1 + r.x2) / 2, "y" := (r.y1 + r.y2) / 2, "z" := z_ref };
+            endif
+            sleepms(2);
+        endforeach
+    endif
+
+    var territories := guild.GetProp("territories");
+    if (territories)
+        var rect_df := OpenDataFile(":architect:areas");
+        foreach territory in territories
+            var elem := rect_df.FindElement(territory);
+            if (elem && elem.GetProp("Faction") == guild.GetProp("name"))
+                var parsed := ParseRect(elem.GetProp("Rect"));
+                if (parsed)
+                    var r := NormalizeRect(parsed.x1, parsed.y1, parsed.x2, parsed.y2);
+                    return struct{ "x" := (r.x1 + r.x2) / 2, "y" := (r.y1 + r.y2) / 2, "z" := z_ref };
+                endif
+            endif
+            sleepms(2);
+        endforeach
+    endif
     return 0;
 endfunction
 

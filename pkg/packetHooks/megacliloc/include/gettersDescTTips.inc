@@ -134,13 +134,13 @@ endfunction
 
 function PegaDescComum(objeto,xDesc := "")
 
-	if (objeto.quality >= 1.1)
+	/*if (objeto.quality >= 1.1)
 		xDesc := xDesc + WHITE + getQuality(objeto.quality) + "<br>"; //exibe apenas dois digitos
-	endif
+	endif*/
 
 	var cond := GetCondition(objeto);
 
-	if(objeto.ISA(POLCLASS_EQUIPMENT))
+	if(objeto.ISA(POLCLASS_EQUIPMENT) || objeto.isVendorTemplate)
 		xDesc := xDesc + "Condição: " + cond + "<br>";
 	else
 		if(cond != "Boa")
