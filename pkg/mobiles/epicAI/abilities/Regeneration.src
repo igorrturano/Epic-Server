@@ -12,7 +12,7 @@ program Regeneration(params)
 	endif
 
 	var lastHit := GetObjProperty(me, "lastHit");
-	if (lastHit != error && lastHit.type == "fire" && polcore().systime - lastHit.time < 25)
+	if (lastHit != error && Lower(lastHit.type) == "fire" && polcore().systime - lastHit.time < 25)
 		PrintTextAbove(me, "*a regeneração falha por causa do fogo*");
 		return 0;
 	endif

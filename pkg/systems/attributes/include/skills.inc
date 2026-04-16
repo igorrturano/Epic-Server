@@ -363,11 +363,15 @@ function limiteportempo(who)
     var lim;
 
     if (dias <= 5)
-        lim := 10;
-    elseif (dias <= 10)
-        lim := 10 + (dias - 5) * 2;
+        lim := (dias + 1) * 2;
+    elseif (dias <= 11)
+        lim := 12 + (dias - 5) * 1;
+    elseif (dias <= 55)
+        lim := 18 + (dias - 11) * 0.5;
+    elseif (dias <= 80)
+        lim := 40 + (dias - 55) * 0.4;
     else
-        lim := 20 + (dias - 10) * 0.5;
+        lim := 50 + (dias - 80) * 0.3;
     endif
 
     return Min(lim, 60);

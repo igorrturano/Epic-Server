@@ -130,24 +130,25 @@ program death(params)
 		AP_ConsumeVital(ghost, "DP", dp_loss);
 		SendSysMessage(ghost, "Voce perdeu " + (dp_loss / 10) + " DP e agora tem " + AP_GetVital(ghost, "DP") / 10);
 		var tempo := 180;
+		var regiao := BodyRegionName(bodyregion);
 		if (AP_GetVital(ghost, "DP") <= 19)
 			if (!CheckResist(ghost, FORTITUDE, RESIST_EXTREMELY_HARD))
-				SendSysMessage(ghost, "Voce esta bastante ferido, e melhor se cuidar");
+				SendSysMessage(ghost, "Voce fraturou sua(s) " + regiao + "! Melhor se cuidar.");
 				DeferFracture(ghost, bodyregion, 0);
 			endif
 		elseif (AP_GetVital(ghost, "DP") < 30)
 			if (!CheckResist(ghost, FORTITUDE, RESIST_VERY_HARD))
-				SendSysMessage(ghost, "Voce fraturou um osso!");
+				SendSysMessage(ghost, "Voce fraturou sua(s) " + regiao + "!");
 				DeferFracture(ghost, bodyregion, 300);
 			endif
 		elseif (AP_GetVital(ghost, "DP") < 40)
 			if (!CheckResist(ghost, FORTITUDE, RESIST_HARD))
-				SendSysMessage(ghost, "Voce fraturou um osso!");
+				SendSysMessage(ghost, "Voce fraturou sua(s) " + regiao + "!");
 				DeferFracture(ghost, bodyregion, 240);
 			endif
 		elseif ((AP_GetVital(ghost, "DP") < 50))
 			if (!CheckResist(ghost, FORTITUDE, RESIST_MEDIUM))
-				SendSysMessage(ghost, "Voce fraturou um osso!");
+				SendSysMessage(ghost, "Voce fraturou sua(s) " + regiao + "!");
 				DeferFracture(ghost, bodyregion, 180);
 			endif
 		endif
@@ -517,6 +518,19 @@ function ProcurarItensQuarto(who)
 		x := x + 1;
 		sleepms(20);
 	endwhile
+endfunction
+
+function BodyRegionName(bodyregion)
+	case (bodyregion)
+		"Head":    return "cabeca";
+		"Hands":   return "maos";
+		"Arms":    return "bracos";
+		"Body":    return "torso";
+		"Legs":    return "pernas";
+		"Feet":    return "pernas";
+		"Neck":    return "pescoco";
+		default:   return "corpo";
+	endcase
 endfunction
 
 function BodyRegionToFracture(bodyregion)
