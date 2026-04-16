@@ -50,6 +50,7 @@ program SpellScript(params)
 		// Keep shared timers that already persist
 		TS_StartTimer(targ, "dmgreduction", time, 4, who);
 		TS_StartTimer(targ, "desmontar", time, 0, who);
+
 		targ.squelch(time);
 
 		SendSysMessageEx(targ, "A energia necromantica corrompe sua conexao natural!", SSM_FAIL);
@@ -118,15 +119,19 @@ program SpellScript(params)
 	// Keep shared timers that already persist
 	TS_StartTimer(targ, "dmgreduction", time, 4, who);
 	TS_StartTimer(targ, "desmontar", time, 0, who);
+	TS_StartTimer(targ, "desarmar", time, 0, who);
+
 	targ.squelch(time);
 
-	if (targ.acctaname)
-		foreach equip in ListEquippedItems(targ)
-			if ((equip.layer != LAYER_HAIR) && (equip.layer != LAYER_BEARD) && (equip.layer != LAYER_PACK) &&
-	   (equip.layer != LAYER_MOUNT))
-				MoveObjectToLocation(equip, targ.x, targ.y, targ.z, targ.realm);
-			endif
-		endforeach
+	if (targ.acctname)
+		var hand1 := GetEquipmentByLayer(targ, LAYER_HAND1);
+		var hand2 := GetEquipmentByLayer(targ, LAYER_HAND2);
+		if (hand1)
+			MoveItemToContainer(hand1, targ.backpack);
+		endif
+		if (hand2)
+			MoveItemToContainer(hand2, targ.backpack);
+		endif
 	endif
 
 	PlaySoundEffect(targ, 616); // som de sapo

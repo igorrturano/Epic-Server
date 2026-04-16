@@ -26,7 +26,7 @@ program TimerControl(mobile)
 	var cooldowns := dictionary;
 	StartUp(mobile, timer_list, cooldowns, num_poisons);
 
-	while (1)
+	while (mobile)
 		mobile.SetPoisoned((num_poisons > 0));
 
 		var event;

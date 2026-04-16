@@ -1851,16 +1851,25 @@ function SetupNewLockDoor(who, created)
 			if (targ)
 				if (targ.objtype == 4001)
 					if (!created.isDoor())
-						var lvl := Cint(GetObjProperty(targ, "level"));
+						var lvl := PegaValorFabricacao(targ, CARACTERISTICA_FABRICACAO_TRANCA);
 						if (!lvl)
 							lvl := 1;
+						else
+							lvl := lvl > 5?  5 : lvl;
 						endif
 						SetObjProperty(created, "level", lvl);
 					endif
-					var lockid := CInt(GetObjProperty(targ, "LockId"));
+					var lockid := AllocLockId();
 					SetObjProperty(created, "LockId", lockid);
-					DestroyItem(targ);
-					SendSysMessageEx(who, "Voce instalou a fechadura com sucesso.", SSM_INFO);
+					var key := CreateItemInBackpack( who, "ironkey", 1 );
+					if(!key)
+						DestroyItem(created);
+						SendSysMessageEx(who, "Não foi possível criar a chave para esta fechadura.", SSM_FAIL);
+					else
+						SetObjProperty( key, "LockId", lockid );
+						DestroyItem(targ);
+						SendSysMessageEx(who, "Voce instalou a fechadura com sucesso.", SSM_INFO);
+					endif
 				else
 					SendSysMessageEx(who, "Isto nao parece uma fechadura.", SSM_FAIL);
 				endif

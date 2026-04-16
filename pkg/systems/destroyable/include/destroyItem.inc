@@ -419,6 +419,9 @@ endfunction
  */
 function PegaResistenciaItem(itemAlvo, fonteDano ,materialId, isInflamavel)
 	var propRes := GetObjProperty(itemAlvo,PROPNAME_RESITEM_MULT);
+	if(!propRes)
+		propRes := itemAlvo.CProps[PROPNAME_RESITEM_MULT];
+	endif
 	var resistenciaFabricacao := PegaValorFabricacao(itemAlvo,CARACTERISTICA_FABRICACAO_RESISTENCIA);
 
 	if(!resistenciaFabricacao)
@@ -591,6 +594,9 @@ endfunction
 function MontaAtributosItem(item, fonteDano := 0)
 
 	var materialId := GetObjProperty(item, PROPNAME_MATERIAL);
+	if(!materialId)
+		materialId := item.CProps[PROPNAME_MATERIAL];
+	endif
 	var config := PegaMaterialConfig(materialId);
 
 	var itemAtrib := struct;

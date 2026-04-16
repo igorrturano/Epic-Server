@@ -5,15 +5,16 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedscripts:timedScripts";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
-	var MagicLore := Cint(AP_GetSkill(who, ARCANA) / 5);
-	params := 0; // No longer needed
+	var spell := params[3];
+	var MagicLore := CInt(AP_GetSkill(who, ARCANA) / 5);
+	params := 0;
 
 	PlaySoundEffect(who, SFX_SPELL_HEAL);
 
@@ -21,7 +22,7 @@ program SpellScript(params)
 	var y := who.y;
 	var delay := 2;
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
-		Magiclore := MagicLore * 2;
+		MagicLore := MagicLore * 2;
 		delay := 1;
 	endif
 	sleep(delay);
@@ -31,8 +32,14 @@ program SpellScript(params)
 	endif
 
 	if (!who.dead)
+		SC_RemoveEffect(who, CInt(spell.id));
+
+		var opts := struct{};
+		opts.+hidden := 1;
+		opts.+desc := "Invisibilidade";
+
+		SC_ApplyEffect(who, who, opts, MagicLore, CInt(spell.id));
 		SendSysMessageEx(who, "Voce esta escondido.", SSM_INFO);
-		TS_StartTimer(who, "invis", MagicLore);
 	endif
 
 	return 1;

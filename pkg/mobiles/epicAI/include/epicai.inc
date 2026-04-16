@@ -49,7 +49,7 @@ function InitializeEpicNPC(mobile)
     SetupAmmo(mobile, npccfgfile, mytemplate);
     var loot := npccfgfile[mytemplate].Loot;
     if (loot)
-        Loot_Generate(mobile.backpack, loot);
+        var ret := Loot_Generate(mobile.backpack, loot);
     endif
 
     var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
@@ -1341,6 +1341,11 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    // Aparencia Cadaverica: mortos vivos nao atacam quem parece um deles.
+    if (GetObjProperty(defender, "aparenciacadaverica") && attacker_cache.category_lower == "undead")
+        return 0;
+    endif
+
     // Cooldown to avoid ress kill
     if (Cint(GetCooldown(defender, "deathtime" )) > 0)
         // Allow combat if defender initiated it
@@ -2484,7 +2489,7 @@ function LootItem(npc, item)
         var backpack := CreateItemAtLocation(npc.x, npc.y, npc.z, "Backpack", 1);
         EquipItem(npc, backpack);
     endif
-    SetObjProperty(item, "#LootedBy", npc.serial);
+    SetObjProperty(item, "LootedBy", npc.serial);
 
     PrintTextAbove(npc, "*pega " + item.desc + "*");
     SetCooldown(npc, "already_looted", 300);

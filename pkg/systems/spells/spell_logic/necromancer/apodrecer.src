@@ -5,12 +5,12 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
-	params := 0; // No longer needed
+	params := 0;
 
 	SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
 	var targ := Spell_Target(who, TGTOPT_CHECK_LOS);
@@ -23,17 +23,17 @@ program SpellScript(params)
 		return;
 	endif
 
-	var targcolor;
-	if (!targ.npctemplate)
-		targcolor := targ.color;
-		SetObjProperty(targ, "#RealColor", targcolor);
-		targ.color := 986;
-	endif
+	SC_RemoveEffect(targ, 0); // No spell ID for standalone apodrecer
 
-	// var time := (AP_GetSkill(who, MAGERY) + AP_GetSkill(who, ARCANA))*2;
-	// sendsysmessage(who, " amt "+ amt);
-	TS_StartTimer(targ, "apodrecer", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2, targ.color, who,
-			   0); // 20 min
+	var duration := CInt(GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2);
+
+	var opts := struct{};
+	opts.+color := 986;
+	opts.+hitchance_mod := -15;
+	opts.+desc := "Apodrecer";
+
+	// Use a fixed internal ID since this spell has no config entry
+	SC_ApplyEffect(who, targ, opts, duration, 2000);
 	PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
 	SendSysMessageEx(who, "O corpo do alvo se torna podre e menos resistente", SSM_INFO);
 

@@ -63,6 +63,18 @@ program equipweapon(who, item)
 		SendSysMessageEx(who, "Ja possui arma equipada.", SSM_FAIL);
 		return 0;
 	endif
+
+	// Block equipping shield with a two-handed melee weapon
+	if (item.isA(POLCLASS_ARMOR) && item.tile_layer == LAYER_HAND2)
+		var weapon := GetEquipmentByLayer(who, LAYER_HAND1);
+		if (weapon && weapon.isA(POLCLASS_WEAPON))
+			var weapCfg := ReadConfigFile(":combat:itemdesc");
+			if (CStr(weapCfg[weapon.objtype].Attribute) == "Two_Handed")
+				SendSysMessageEx(who, "Voce nao pode usar escudo com arma de duas maos.", SSM_FAIL);
+				return 0;
+			endif
+		endif
+	endif
 	if (who.npctemplate)
 		return 1;
 	endif
@@ -90,7 +102,7 @@ program equipweapon(who, item)
 	endif
 
 	// Steam Gadgets: can only be installed via Ombreira Tatica
-	if (item.objtype == 0xFFC6 || item.objtype == 0xFFC7 || item.objtype == 0xFFC8 || item.objtype == 0xFFCA)
+	if (item.objtype == 0xFFC6 || item.objtype == 0xFFC7 || item.objtype == 0xFFC8 )
 		if (GetObjProperty(item, "#steam_install"))
 			EraseObjProperty(item, "#steam_install");
 		else
@@ -216,25 +228,25 @@ program equipweapon(who, item)
 	ApplyEquipObjMods(who, item);
 
 	// SteamGloves: auto-equip companion armor for hands protection
-	if (item.objtype == 0xFFC1)
-		var companion := CreateItemInContainer(who.backpack, 0xFFCA, 1);
-		if (companion)
-			SetObjProperty(companion, "#steam_install", 1);
-			SetObjProperty(companion, "#steamgloves_companion", 1);
-			EquipItem(who, companion);
+	// if (item.objtype == 0xFFC1)
+	// 	var companion := CreateItemInContainer(who.backpack, 0xFFCA, 1);
+	// 	if (companion)
+	// 		SetObjProperty(companion, "#steam_install", 1);
+	// 		SetObjProperty(companion, "#steamgloves_companion", 1);
+	// 		EquipItem(who, companion);
 
-			// Copy defesa component from SteamGloves fabricado to companion
-			// (SteamGloves now have defesa from the crafting recipe)
-			var glove_fabricado := GetObjProperty(item, "fabricado");
-			if (glove_fabricado != error && glove_fabricado.componentes && glove_fabricado.componentes["defesa"])
-				var defesaComp := glove_fabricado.componentes["defesa"];
-				var companionFabricado := struct{};
-				companionFabricado.+componentes := dictionary{};
-				companionFabricado.componentes["defesa"] := defesaComp;
-				SetObjProperty(companion, "fabricado", companionFabricado);
-			endif
-		endif
-	endif
+	// 		// Copy defesa component from SteamGloves fabricado to companion
+	// 		// (SteamGloves now have defesa from the crafting recipe)
+	// 		var glove_fabricado := GetObjProperty(item, "fabricado");
+	// 		if (glove_fabricado != error && glove_fabricado.componentes && glove_fabricado.componentes["defesa"])
+	// 			var defesaComp := glove_fabricado.componentes["defesa"];
+	// 			var companionFabricado := struct{};
+	// 			companionFabricado.+componentes := dictionary{};
+	// 			companionFabricado.componentes["defesa"] := defesaComp;
+	// 			SetObjProperty(companion, "fabricado", companionFabricado);
+	// 		endif
+	// 	endif
+	// endif
 
 	var cfg := readconfigfile(":combat:itemdesc");
 	if (cint(cfg[item.objtype].parrybonus) > 0)

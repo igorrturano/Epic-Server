@@ -2,23 +2,20 @@ use uo;
 use os;
 
 include ":attributes:attributes";
-include ":timedscripts:timedScripts";
-;
-;
 include "include/client";
 include "include/sounds";
 include ":charactercreation:resists";
 include "include/epicMageryUtils";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 	var spellinfo := params[3];
 	var spell_school := spellinfo.School;
-
-	params := 0; // No longer needed
+	params := 0;
 
 	SendSysMessage(who, "Selecione o alvo.");
 	if (!targ.IsA(POLCLASS_MOBILE))
@@ -31,24 +28,27 @@ program SpellScript(params)
 	if (CheckResist(targ, WILL, diff, -bonus))
 		SendSysMessageEx(who, "O alvo  resistiu a magia.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
-
 		return 1;
 	endif
 
+	SC_RemoveEffect(targ, CInt(spellinfo.id));
+
 	PrintTextAbove(targ, "*paralisado*");
 
-	var duration := CINT(AP_GetSkill(who, ARCANA) / 5);
+	var duration := CInt(AP_GetSkill(who, ARCANA) / 5);
 
-	// Bonus de especialização
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
-		duration := duration * 1.2;
+		duration := CInt(duration * 1.2);
 	endif
 
-	TS_StartTimer(targ, "paralysis", duration, who);
+	var opts := struct{};
+	opts.+frozen := 1;
+	opts.+desc := "Paralisar";
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spellinfo.id));
 
 	PlayObjectCenteredEffect(targ, FX_RED_SPARKLES, 7, 7);
-	handleSilentMagic(who, targ, SFX_SPELL_REACTIVE_ARMOR);
+	SC_HandleSound(who, targ, SFX_SPELL_REACTIVE_ARMOR);
 
-	SendSysMessageEx(who, "O efeito da magia silenciosa acabou.", SSM_INFO);
 	return 1;
 endprogram

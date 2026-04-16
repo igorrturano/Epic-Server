@@ -34,7 +34,7 @@ program SpellScript(params)
 
 	var opts := struct{};
 	opts.+properties := dictionary{ "#sleep" -> 1 };
-	opts.+paralyzed := 1;
+	opts.+frozen := 1;
 	opts.+desc := "Sonho Macabro";
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
@@ -52,7 +52,7 @@ program SpellScript(params)
 		sleep(3);
 	endwhile
 	PrintTextAbove(targ, "*desperta*");
-	targ.paralyzed := 0;
+	targ.frozen := 0;
 
 	return 1;
 endprogram

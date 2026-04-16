@@ -3,6 +3,7 @@ use uo;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
+include ":hotbar:custombuff";
 
 /**
  * Contragolpe Cruzado (Cross Cut) - ABILITY_ID::CONTRAGOLPE_CRUZADO (202)
@@ -29,6 +30,9 @@ class CrossCut(CombatAbility)
     // On activation: flag for guaranteed first parry
     function OnActivate(this, mobile)
         mobile.GetObjRef().SetProp("#contragolpe_first_parry", true);
+
+        var duration := this.GetDurationFor(mobile);
+        SendAbilityBuff(mobile.GetObjRef(), ABILITY_ID::CONTRAGOLPE_CRUZADO, duration, "Defesa garantida + contra-ataques");
     endfunction
 
     // Every hit while active: counter-attack + guaranteed parry on first hit

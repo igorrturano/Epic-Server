@@ -75,6 +75,7 @@ program death(params)
 	if (GetObjProperty(ghost, "death_protection"))
 		Message("O Deserto se lembra. Voce esta protegido contra a morte.").SendSys(ghost);
 		protecao := 1;
+		EraseObjProperty(ghost, "death_protection");
 	endif
 
 	// Check no Chain Of Pain, para retirar 1 do copnumber se for o caso.
@@ -120,13 +121,9 @@ program death(params)
 		// GM nao perde DP
 	else
 		// Perda de DP para TODAS as mortes (NPC e PvP)
-		if (killer.npctemplate && killer.script == ":ghaia:tamed") // se for tamed nao tira dp
-		elseif (lastDamage.spell) // se for spell nao tira dp
-		else
-			EraseObjProperty(ghost, "#Casting");
-			AP_ConsumeVital(ghost, "DP", 10);
-			SendSysMessage(ghost, "Voce perdeu 1 DP e agora tem " + AP_GetVital(ghost, "DP") / 10);
-		endif
+		EraseObjProperty(ghost, "#Casting");
+		AP_ConsumeVital(ghost, "DP", 10);
+		SendSysMessage(ghost, "Voce perdeu 1 DP e agora tem " + AP_GetVital(ghost, "DP") / 10);
 		var tempo := 180;
 		if (AP_GetVital(ghost, "DP") <= 19)
 			if (!CheckResist(ghost, FORTITUDE, RESIST_EXTREMELY_HARD))
@@ -159,13 +156,23 @@ program death(params)
 			SendSysMessage(ghost, "Voce morreu.");
 			var region := GetRegionName(corpse);
 			var tipo := "morreu";
-			var coords := { corpse.x, corpse.y, corpse.z, corpse.realm };
+			var coords := { corpse.x, corpse.y, corpse.z, CStr(corpse.realm) };
 			var nome := GetObjProperty(ghost, "nome_inicial");
 			var killer_name := "desconhecido";
 			if (lastHit != error && lastHit["source"] == "trap")
 				killer_name := "armadilha";
-			elseif (killer && killer.name && !killer.name.errortext)
-				killer_name := killer.name;
+			elseif (killer)
+				var nome_killer := GetObjProperty(killer, "nome_inicial");
+				if (nome_killer)
+					killer_name := nome_killer;
+				elseif (killer.corpsetype)
+					var desc := killer.desc;
+					desc["A corpse of "] := "";
+					desc["corpo de "] := "";
+					killer_name := desc;
+				elseif (killer.name && !killer.name.errortext)
+					killer_name := killer.name;
+				endif
 			endif
 			ProcurarItensQuarto(ghost);
 			if (!CInt(GetObjProperty(ghost, "morto")))
@@ -199,9 +206,9 @@ program death(params)
 		return 234;
 	endif
 
-	var tempo := 4; // em minutos
+	var tempo := 4; // 6 ticks * 30s = 3 minutos
 	if (dmg > CInt(AP_GetVitalMaximumValue(ghost, HITS) / 5))
-		tempo := tempo * 2;
+		tempo := tempo * 1.5;
 	endif
 	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::RECOVERY))
 		tempo := tempo / 2;

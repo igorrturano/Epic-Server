@@ -6,6 +6,7 @@ include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":tn:cooldown";
 include ":attributes:attributes";
+include ":hotbar:custombuff";
 
 /**
  * Furia Implacavel (Relentless Fury) - ABILITY_ID::FURIA_IMPLACAVEL (603)
@@ -51,6 +52,9 @@ class RelentlessFury(CombatAbility)
 		HealHits(who, 30);
 
 		Message("Voce esta cego de violencia.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+
+		var duration := this.GetDurationFor(mobile);
+		SendAbilityBuff(who, ABILITY_ID::FURIA_IMPLACAVEL, duration, "+30 HP, contra-ataque");
 
 		DebugMsg(
 			who,
