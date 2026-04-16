@@ -286,12 +286,13 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	function __CalculateArmorResist(this)
 		var templateResists := getResistPhysicalByProtection(this.GetTemplate().tipoProtecao);
-		var slotResists := this.GetTipoProtecao() ? getResistPhysicalBySlot(this.GetCoverage()) : ArmorResist();
+		// var slotResists := this.GetTipoProtecao() ? getResistPhysicalBySlot(this.GetCoverage()) : ArmorResist();
+		// Slot bonus removed — armor tiers + crafting provide sufficient defense
 
 		return ArmorResist(
-			templateResists.GetSlashResist() + slotResists.GetSlashResist(),
-			templateResists.GetPiercingResist() + slotResists.GetPiercingResist(),
-			templateResists.GetBluntResist() + slotResists.GetBluntResist(),
+			templateResists.GetSlashResist(),
+			templateResists.GetPiercingResist(),
+			templateResists.GetBluntResist(),
 			this.GetTemplate().FireResist,
 			this.GetTemplate().ColdResist,
 			this.GetTemplate().PoisonResist,
