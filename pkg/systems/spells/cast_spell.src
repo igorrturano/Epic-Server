@@ -132,7 +132,7 @@ function performPreCastingChecks(mobile, mw, byref spellinfo)
 	endif
 
 	var weapon := mw.GetEquipBySlot(WEAPON);
-	var has_staff := (weapon && WeaponWrapper(weapon).GetCategory() == WEAPON_CATEGORY::STAFF);
+	var has_staff := (weapon && weapon.GetCategory() == WEAPON_CATEGORY::STAFF);
 	var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0" || has_staff;
 	var tem_hab := mw.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
 		|| mw.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO) 

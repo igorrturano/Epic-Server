@@ -8,7 +8,7 @@ include ":attributes:attributes";
 
 program warhorn(who, item)
 	var equipped := GetEquipmentByLayer(who, LAYER_HAND1);
-	if (!equipped || equipped.objtype != 0xFA55)
+	if (!equipped || equipped.objtype != 0xFFBA)
 		SendSysMessageEx(who, "Você não está segurando um berrante!", 2);
 		return;
 	endif
