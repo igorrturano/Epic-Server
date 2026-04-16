@@ -7,8 +7,8 @@ include ":gumpDesigner:controls/ImageTile";
 include ":gumpDesigner:controls/Text";
 include ":gumpDesigner:controls/Tooltip";
 include ":gumpDesigner:controls/containers/ContainerGridLayout";
-include ":gumpDesigner:layouts/GumpTitle";
-include ":gumpDesigner:layouts/GumpBody";
+include ":gumpDesigner:layouts/TitleLayout";
+include ":gumpDesigner:layouts/BodyLayout";
 
 class GumpFactory(IGumpFactory)
 	function GumpFactory(this)
@@ -46,11 +46,11 @@ class GumpFactory(IGumpFactory)
 		return ContainerGridLayout("Container Grid Layout", 0, 0, 0, 0, rows, columns);
 	endfunction
 
-	function CreateGumpTitle(this, title := "<No text inserted>")
-		return GumpTitle(title);
+	function CreateTitleLayout(this, title := "<No text inserted>")
+		return TitleLayout(title);
 	endfunction
 
-	function CreateGumpBody(this)
-		return GumpBody();
+	function CreateBodyLayout(this)
+		return BodyLayout();
 	endfunction
 endclass

@@ -7,6 +7,6 @@ class IGumpFactory()
 	uninit function CreateTooltip(this);
 	uninit function CreateContainer(this);
 	uninit function CreateContainerGridLayout(this, rows, columns);
-	uninit function CreateGumpTitle(this, default title);
-	uninit function CreateGumpBody(this);
+	uninit function CreateTitleLayout(this, default title);
+	uninit function CreateBodyLayout(this);
 endclass
