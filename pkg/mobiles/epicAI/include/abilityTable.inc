@@ -62,6 +62,33 @@ function BuildCombatAbilities(who)
         table.append(struct{ "id" := "frightenOpponent", "range_min" := 0, "range_max" := 6 });
     endif
 
+    // Dragon abilities
+    if (ab.isDragon)
+        table.append(struct{ "id" := "BreathWeapon", "range_min" := 0, "range_max" := 6 });
+        table.append(struct{ "id" := "TailSwipe", "range_min" := 0, "range_max" := 2 });
+        table.append(struct{ "id" := "WingBuffet", "range_min" := 0, "range_max" := 4 });
+    endif
+
+    // Undead abilities
+    if (ab.isUndead)
+        table.append(struct{ "id" := "FearAura", "range_min" := 0, "range_max" := 4 });
+        table.append(struct{ "id" := "UndeadImpedirCura", "range_min" := 0, "range_max" := 3 });
+        table.append(struct{ "id" := "MaldicaoMetamorfose", "range_min" := 0, "range_max" := 4 });
+    endif
+
+    // Demon abilities
+    if (ab.isDemon)
+        table.append(struct{ "id" := "BanishSummon", "range_min" := 0, "range_max" := 6 });
+        table.append(struct{ "id" := "CurseHeal", "range_min" := 0, "range_max" := 6 });
+        table.append(struct{ "id" := "InfernalBurst", "range_min" := 0, "range_max" := 3 });
+    endif
+
+    // Beast abilities
+    if (ab.isBeast)
+        table.append(struct{ "id" := "PackTactics", "range_min" := 0, "range_max" := 4 });
+        table.append(struct{ "id" := "Enrage", "range_min" := 0, "range_max" := 99 });
+    endif
+
     // Caster behaviors - these manage their own cooldowns internally
     if (ab.hasMageConfig)
         table.append(struct{ "id" := "MageBehavior", "range_min" := 0, "range_max" := 99 });
@@ -121,6 +148,21 @@ function ExecuteCombatAbility(id, who, opponent)
         "petrify":            return petrify(who, opponent);
         "frightenOpponent":   return frightenOpponent(who, opponent);
         "MageBehavior":       return MageBehavior(who, opponent);
+        // Dragon
+        "BreathWeapon":       return BreathWeapon(who, opponent);
+        "TailSwipe":          return TailSwipe(who, opponent);
+        "WingBuffet":         return WingBuffet(who, opponent);
+        // Undead
+        "FearAura":           return FearAura(who, opponent);
+        "UndeadImpedirCura":  return UndeadImpedirCura(who, opponent);
+        "MaldicaoMetamorfose": return MaldicaoMetamorfose(who, opponent);
+        // Demon
+        "BanishSummon":       return BanishSummon(who, opponent);
+        "CurseHeal":          return CurseHeal(who, opponent);
+        "InfernalBurst":      return InfernalBurst(who, opponent);
+        // Beast
+        "PackTactics":        return PackTactics(who, opponent);
+        "Enrage":             return Enrage(who, opponent);
     endcase
     return 0;
 endfunction

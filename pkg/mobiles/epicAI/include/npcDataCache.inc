@@ -29,7 +29,7 @@ endfunction
 
 function GetEffectiveTier(mobile, npc_elem)
     var override := CInt(GetObjProperty(mobile, "NpcTier"));
-    if (override)
+    if (override && !mobile.master)
         return override;
     endif
     return CInt(npc_elem.Tier);
@@ -153,6 +153,10 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
 
         // Category-based
         "isBloodless" := (category_lower == "undead"),
+        "isDragon" := (category_lower == "dragon"),
+        "isDemon" := (category_lower == "demons"),
+        "isUndead" := (category_lower == "undead"),
+        "isBeast" := (category_lower == "animal" || category_lower == "giantanimal"),
 
         // Brain type
         "isHumanoidBrain" := (brain_type == "humanoid"),
