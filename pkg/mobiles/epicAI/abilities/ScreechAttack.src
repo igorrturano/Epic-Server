@@ -23,11 +23,6 @@ program ScreechAttack(params)
 			continue;
 		endif
 
-		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::AURA_DIVINA))
-			SendSysMessageEx(mobile, "Sua fé protege você!", SSM_REQUEST);
-			continue;
-		endif
-
 		if (CheckResist(mobile, WILL, RESIST_HARD))
 			SendSysMessageEx(mobile, "Você resiste ao grito!", SSM_REQUEST);
 			continue;
