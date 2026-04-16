@@ -84,9 +84,10 @@ function _AssinarConvite(who, item)
     endif
 
     // Salva as props do item original antes de destruir
-    var saved_guild_id   := GetObjProperty(item, "faccao_guild_id");
-    var saved_guild_name := GetObjProperty(item, "faccao_guild_name");
-    var saved_lider      := GetObjProperty(item, "convite_lider");
+    var saved_guild_id    := GetObjProperty(item, "faccao_guild_id");
+    var saved_guild_name  := GetObjProperty(item, "faccao_guild_name");
+    var saved_lider       := GetObjProperty(item, "convite_lider");
+    var saved_nomefaccao  := GetObjProperty(item, "nomefaccao");
     var item_container   := item.container;
 
     // No POL, objtype é read-only — destruímos o item em branco
@@ -111,6 +112,7 @@ function _AssinarConvite(who, item)
     SetObjProperty(novo_item, "convite_nome_rp",   nome);
     SetObjProperty(novo_item, "convite_cargo_rp",  cargo);
     SetObjProperty(novo_item, "convite_assinado",  1);
+    if (saved_nomefaccao) SetObjProperty(novo_item, "nomefaccao", saved_nomefaccao); endif
     novo_item.name := "Convite de Facção - " + guild_name + " para " + nome;
 
     SendSysMessage(who, "Convite assinado! Entregue-o ao jogador " + nome + ".");
