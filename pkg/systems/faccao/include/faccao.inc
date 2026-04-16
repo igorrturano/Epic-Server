@@ -1,6 +1,55 @@
 use guilds;
 use os;
 
+// ── Facções staff disponíveis (nomefaccao = índice 1..5) ─────────────────────
+var FACCAO_NOMES := array{
+    "Regentes de Valtheris",  // 1
+    "Sinodo",                  // 2
+    "Rufioes",                 // 3
+    "Conselho Sofocratico",    // 4
+    "A Liga do Pacto Comum"   // 5
+};
+
+// ── Rect de movimento de todos os NPCs de facção (guard e merchant) ───────────
+// Defina aqui a área navegável do mapa. Edite os campos x1, y1, x2, y2.
+var FACCAO_WALK_RECT := struct{ "x1":=1117, "y1":=1028, "x2":=1417, "y2":=1105 };
+
+// Retorna 1 se o NPC está dentro do rect de movimento.
+function IsNPCInWalkRect(npc)
+    var r := FACCAO_WALK_RECT;
+    return (npc.x >= r.x1 && npc.x <= r.x2 && npc.y >= r.y1 && npc.y <= r.y2);
+endfunction
+
+// Retorna o centro do rect de movimento.
+function GetWalkRectCenter(z_ref := 0)
+    var r := FACCAO_WALK_RECT;
+    return struct{ "x" := (r.x1 + r.x2) / 2, "y" := (r.y1 + r.y2) / 2, "z" := z_ref };
+endfunction
+
+// Retorna um ponto aleatório dentro do rect de movimento.
+function GetRandomWanderPoint()
+    var r := FACCAO_WALK_RECT;
+    return struct{
+        "x" := r.x1 + RandomInt(r.x2 - r.x1 + 1),
+        "y" := r.y1 + RandomInt(r.y2 - r.y1 + 1)
+    };
+endfunction
+
+// Se o NPC saiu do walk rect, navega de volta ao centro. Retorna 1 se estava fora.
+function HandleWalkRectBreach(me, byref wait_time)
+    if (IsNPCInWalkRect(me)) return 0; endif
+    var _c := GetWalkRectCenter(me.z);
+    RunTowardLocation(_c.x, _c.y);
+    wait_time := 0;
+    return 1;
+endfunction
+
+// Copia a prop nomefaccao da guild para um objeto (NPC, item, monumento, etc.).
+function PropagateNomeFaccao(guild, obj)
+    var n := guild.GetProp("nomefaccao");
+    if (n) SetObjProperty(obj, "nomefaccao", n); endif
+endfunction
+
 // Faz o parse de uma string "x1 y1 x2 y2" retornando struct com os campos nomeados.
 // Retorna 0 se a string for inválida.
 function ParseRect(rect_str)
@@ -185,6 +234,14 @@ function AddMember(faccao, mobile)
       "buyuniforms" := 0 // can buy uniform recipes
    };
    faccao.SetProp(cstr(mobile.serial), member_obj);
+
+   // Se facção staff, concede nomefaccao ao personagem
+   if (faccao.GetProp("tipo_faccao") == "staff")
+      var nomefaccao := faccao.GetProp("nomefaccao");
+      if (nomefaccao)
+         SetObjProperty(mobile, "nomefaccao", nomefaccao);
+      endif
+   endif
 endfunction
 
 
@@ -232,6 +289,9 @@ function RemMember(faccao, mobile)
    endif
    faccao.removemember(mobile);
    faccao.EraseProp(cstr(mobile.serial));
+
+   // Remove nomefaccao do personagem ao sair
+   EraseObjProperty(mobile, "nomefaccao");
 endfunction
 
 function SetLeader(faccao, serial)

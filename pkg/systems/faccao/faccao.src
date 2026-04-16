@@ -875,18 +875,28 @@ function gmHandler(who)
 endfunction
 
 // -------------------------------------------------------
+// Propaga (nome_idx > 0) ou apaga (nome_idx == 0) nomefaccao em todos os membros.
+// -------------------------------------------------------
+function _SyncNomeFaccaoMembers(guild, nome_idx)
+	foreach member in (guild.members)
+		if (nome_idx)
+			SetObjProperty(member, "nomefaccao", nome_idx);
+		else
+			EraseObjProperty(member, "nomefaccao");
+		endif
+		sleepms(2);
+	endforeach
+endfunction
+
+// -------------------------------------------------------
 // Gump de seleção de tipo de facção (Staff / Player)
 // -------------------------------------------------------
 function _TipoFaccaoHandler(who)
-	var tipo_atual := guild.GetProp("tipo_faccao");
+	var tipo_atual      := guild.GetProp("tipo_faccao");
+	var nomefaccao_atual := guild.GetProp("nomefaccao");
 
-	var cor_staff  := 0;
-	var cor_player := 0;
-	if (tipo_atual == "staff")
-		cor_staff := 63;
-	else
-		cor_player := 63;
-	endif
+	var cor_staff  := (tipo_atual == "staff")  ? 63 : 0;
+	var cor_player := (tipo_atual == "player") ? 63 : 0;
 
 	var gump := GFCreateGump();
 	GFSetId(gump, 0x12350);
@@ -894,37 +904,62 @@ function _TipoFaccaoHandler(who)
 	GFResizePic(gump, 15, 15, 9350, 270, 160);
 
 	GFHtmlShadowed(gump, 20, 25, 200, 20, "#FFC33C", "<center>Tipo de Facção", 8);
-
 	GFHtmlShadowed(gump, 20, 52, 260, 18, "#AAAAAA", "<center>Tipo atual: " + tipo_atual, 6);
 
-	// Botão Staff
 	GFAddButton(gump, 40, 90, 4005, 4006, GF_CLOSE_BTN, 1);
 	GFTextLine(gump, 70, 88, cor_staff, "Staff");
 
-	// Botão Player
 	GFAddButton(gump, 160, 90, 4005, 4006, GF_CLOSE_BTN, 2);
 	GFTextLine(gump, 190, 88, cor_player, "Player");
 
-	// Botão Cancelar
 	GFAddButton(gump, 95, 130, 4017, 4018, GF_CLOSE_BTN, 0);
 	GFTextLine(gump, 125, 128, 0, "Cancelar");
 
 	var input := GFSendGump(who, gump);
 
-	var novo_tipo := "";
-	if (input[0] == 1)
-		novo_tipo := "staff";
-	elseif (input[0] == 2)
-		novo_tipo := "player";
+	if (input[0] == 1) // Staff: pede qual das 5 facções
+		var nome_idx := _EscolherNomeFaccao(who, nomefaccao_atual);
+		if (!nome_idx) return; endif
+		guild.SetProp("tipo_faccao", "staff");
+		guild.SetProp("nomefaccao", nome_idx);
+		guild_obj.tipo_faccao := "staff";
+		_SyncNomeFaccaoMembers(guild, nome_idx);
+		SendSysMessageEx(who, "Tipo: staff | Facção: {} ({})".format(FACCAO_NOMES[nome_idx], nome_idx));
+	elseif (input[0] == 2) // Player: limpa nomefaccao
+		guild.SetProp("tipo_faccao", "player");
+		guild.EraseProp("nomefaccao");
+		guild_obj.tipo_faccao := "player";
+		_SyncNomeFaccaoMembers(guild, 0);
+		SendSysMessageEx(who, "Tipo alterado para: player");
 	endif
+endfunction
 
-	if (!novo_tipo)
-		return;
-	endif
+// -------------------------------------------------------
+// Gump para o GM escolher qual das 5 facções staff
+// -------------------------------------------------------
+function _EscolherNomeFaccao(who, atual := 0)
+	var gump := GFCreateGump();
+	GFSetId(gump, 0x12351);
+	GFResizePic(gump, 0, 0, 9200, 300, 240);
+	GFResizePic(gump, 15, 15, 9350, 270, 210);
 
-	guild.SetProp("tipo_faccao", novo_tipo);
-	guild_obj.tipo_faccao := novo_tipo;
-	SendSysMessageEx(who, "Tipo alterado para: {}".format(novo_tipo));
+	GFHtmlShadowed(gump, 20, 25, 260, 20, "#FFC33C", "<center>Qual facção staff?", 8);
+
+	var y := 60;
+	foreach nome in FACCAO_NOMES
+		var cor := (atual == _nome_iter) ? 63 : 0;
+		GFAddButton(gump, 30, y, 4005, 4006, GF_CLOSE_BTN, _nome_iter);
+		GFTextLine(gump, 60, y - 2, cor, nome);
+		y += 28;
+		sleepms(2);
+	endforeach
+
+	GFAddButton(gump, 95, y + 8, 4017, 4018, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 125, y + 6, 0, "Cancelar");
+
+	var input := GFSendGump(who, gump);
+	if (!input[0]) return 0; endif
+	return input[0];
 endfunction
 
 // -------------------------------------------------------
@@ -974,6 +1009,7 @@ function _CriarBauHandler(who)
 
 	SetObjProperty(bau, "guild",       guild.guildid);
 	SetObjProperty(bau, "tipo_faccao", tipo);
+	PropagateNomeFaccao(guild, bau);
 	bau.name := "Bau da Faccao";
 
 	guild.SetProp("bau_serial", bau.serial);

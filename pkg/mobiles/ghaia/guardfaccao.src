@@ -349,12 +349,15 @@ program NPCMonitor()
 			// DoObjectiveGuard();
 		endif
 
-		// Nao permite que os guardas da faccao saiam alem de 4 tiles do territorio
+		// Controle de território: staff usa rect hardcoded, player usa rect da guild.
 		if (GetObjProperty(me, "guild"))
-			if (!inGuildRect(guild, me, 4))
-				// Descobre se o alvo atual (quem estamos seguindo/alertando/combatendo)
-				// tambem saiu do territorio. Se o alvo ainda esta dentro, o guard
-				// apenas ultrapassou a borda ao tentar alcanca-lo — nao cancela.
+			if (GetObjProperty(me, "tipo_faccao") == "staff")
+				if (HandleWalkRectBreach(me, wait_time))
+					if (following) following := 0; PrintTextAbove(me, "Nao posso ir alem do meu territorio!"); endif
+					if (fighting) fighting := 0; SetOpponent(0); SetWarMode(0); endif
+					warning := 0;
+				endif
+			elseif (!inGuildRect(guild, me, 4))
 				var _target := 0;
 				if (fighting) _target := fighting;
 				elseif (warning) _target := warning;
@@ -362,7 +365,6 @@ program NPCMonitor()
 				endif
 				var _target_inside := _target ? inGuildRect(guild, _target, 0) : 0;
 
-				// Cancela so se o alvo tambem estiver fora (ou se nao houver alvo)
 				if (!_target_inside && (fighting || following || warning || standing || patrolling))
 					fighting := 0;
 					SetOpponent(0);
@@ -384,9 +386,6 @@ program NPCMonitor()
 					endif
 				endif
 
-				// Sem posto e sem patrulha: caminha a cada iteracao do loop de volta
-				// para quem deu a ordem (se estiver no territorio) ou para o centro do rect.
-				// Roda independente de haver ou nao estados ativos (apos cancelamento acima).
 				if (!fix_location && !patrolling)
 					var _leader := SystemFindObjectBySerial(GetObjProperty(me, "contract_by"));
 					var _dest := 0;
@@ -402,6 +401,8 @@ program NPCMonitor()
 				endif
 			endif
 		endif
+
+
 
 		if (warning)
 			wait_time := 0;
@@ -451,7 +452,19 @@ program NPCMonitor()
 			if (!GetCooldown(me, "try_reset"))
 				if (!HasPlayerNear(me))
 					if (SendToStartPosition())
-						wait_time := 2000;
+						// Sem fix_location nem patrulha: vagueia pelo territorio
+						if (GetObjProperty(me, "guild") && !GetCooldown(me, "wander_cd"))
+							var _wp := GetRandomWanderPoint();
+							if (_wp)
+								WalkTowardLocation(_wp.x, _wp.y);
+								SetCooldown(me, "wander_cd", RandomInt(8) + 4);
+								wait_time := 0;
+							else
+								wait_time := 5;
+							endif
+						else
+							wait_time := 5;
+						endif
 					endif
 				else
 					SetCooldown(me, "try_reset", 200);
@@ -664,7 +677,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		if (!targ)
 			return SendSysMessageEx(ev.source, "Cancelado");
 		endif
-		if (GetObjProperty(me, "guild") && !inGuildRect(guild, targ, 4))
+		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(targ))
 			return SendSysMessageEx(ev.source, "Ponto de patrulha fora do alcance do territorio. Cancelado.");
 		endif
 		patrolling := array{ targ };
@@ -677,7 +690,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		elseif (CoordinateDistance(patrolling[1].x, patrolling[2].x, targ.x, targ.y) > 20)
 			return SendSysMessageEx(ev.source, "Patrulha muito distante. Cancelado.");
 		endif
-		if (GetObjProperty(me, "guild") && !inGuildRect(guild, targ, 4))
+		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(targ))
 			patrolling := 0;
 			return SendSysMessageEx(ev.source, "Ponto de patrulha fora do alcance do territorio. Cancelado.");
 		endif
@@ -706,7 +719,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		disableWarn();
 	elseif (text["ir"] && text["at"])
 		var where := TargetCoordinates(ev.source);
-		if (GetObjProperty(me, "guild") && !inGuildRect(guild, where, 4))
+		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(where))
 			PrintTextAbove(me, "Nao posso ir alem do territorio da faccao!");
 			SendSysMessage(ev.source, "[Guard] Destino fora do alcance. O guarda pode ir ate 4 tiles alem do territorio.");
 		else

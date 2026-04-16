@@ -218,9 +218,17 @@ function ContractNPC(guild, npc_i, who, loc, school := 0)
 endfunction
 
 function _RegisterActiveNPC(agent, template, guild, who, npc_i)
-    SetObjProperty(agent, "guild", guild.guildid);
-    SetObjProperty(agent, "contract_by", who.serial);
-    SetObjProperty(agent, "conf_ref", npc_i);
+    SetObjProperty(agent, "guild",        guild.guildid);
+    SetObjProperty(agent, "contract_by",  who.serial);
+    SetObjProperty(agent, "conf_ref",     npc_i);
+
+    // Propaga o tipo da facção ao NPC para que sistemas externos
+    // (architect, leis, etc.) não precisem consultar a guild.
+    var tipo := guild.GetProp("tipo_faccao");
+    if (!tipo) tipo := "player"; endif
+    SetObjProperty(agent, "tipo_faccao", tipo);
+
+    PropagateNomeFaccao(guild, agent);
 
     var npc_list := listContractedNPC(guild);
     npc_list.append(struct{ "serial" := agent.serial, "price" := template.price, "ref" := npc_i });
