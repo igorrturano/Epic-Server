@@ -47,10 +47,31 @@ function CalculateCombatDamage(byRef attackInfo)
 	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
 	ExecutePassiveAbilitiesAttackerBeforeDamage(attackInfo);
 	ExecutePassiveAbilitiesDefenderBeforeDamage(attackInfo);
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dano base (após passivas):"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {attackInfo.GetDamage().GetSlashBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {attackInfo.GetDamage().GetPiercingBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {attackInfo.GetDamage().GetBluntBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {attackInfo.GetDamage().GetFireBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {attackInfo.GetDamage().GetColdBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {attackInfo.GetDamage().GetPoisonBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {attackInfo.GetDamage().GetEnergyBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message("Dano base:"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {attackInfo.GetDamage().GetSlashBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {attackInfo.GetDamage().GetPiercingBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {attackInfo.GetDamage().GetBluntBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {attackInfo.GetDamage().GetFireBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {attackInfo.GetDamage().GetColdBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {attackInfo.GetDamage().GetPoisonBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {attackInfo.GetDamage().GetEnergyBaseDamage()}"));
+	//DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Chance crítico (arma: {CInt(attackInfo.GetWeapon().GetCriticalChance())}, char: {CInt(attackInfo.GetAttacker().GetCriticalChance())}, skill: {CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20)}, reducao: {CInt(CalculateDefenderCriticalReduction(attackInfo.GetDefender(), attackInfo.GetBodyRegion()))})"));	
 	sleepms(2);
 	CalculateFlankingDamage(attackInfo);
 	CalculateAttackerCriticalHit(attackInfo);
+	var _totalBeforeDefense := attackInfo.GetDamage().GetTotalBaseDamage();
 	CalculateDefenderResist(attackInfo);
+	var _totalAfterDefense := attackInfo.GetDamage().GetTotalBaseDamage();
 endfunction
 
 function CalculateAttackerDamage(byRef attackInfo)
@@ -61,15 +82,14 @@ function CalculateAttackerDamage(byRef attackInfo)
 	var statusDamageInfo := CalculateStatusDamage(attackInfo);
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(statusDamageInfo.stat)}: {statusDamageInfo.damageMod}"));
 	var skillDamageInfo := CalculateSkillDamage(attackInfo);
-	DebugMsg(skillDamageInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill}: {skillDamageInfo.damageMod}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill}: {skillDamageInfo.damageMod}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill}: {skillDamageInfo.damageMod}"));
 	CalculateWeaponDamage(attackInfo);
 	CalculateEntropyDamage(attackInfo);
 	CalculatePrimordialDamage(attackInfo);
 	CalculateArcaneBowDamage(attackInfo);
 	CalculateSpiritualBladeDamage(attackInfo);
 	CalculateElementalWeaponDamage(attackInfo);
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
 
 function CalculateEstimatedMinMaxDamage(attackInfo)
@@ -85,6 +105,7 @@ function CalculateEstimatedMinMaxDamage(attackInfo)
 
 	var flatBonus := statusDamage.damageMod + skillDamage.damageMod + primordialDamage
 					+ arcaneBowBonus + spiritualBladeBonus + elementalWeaponBonus;
+	
 	finalDamage.max += flatBonus;
 	finalDamage.min += flatBonus;
 	finalDamage.+Damage := attackInfo.GetDamage();
@@ -730,7 +751,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 	// PEnsar numa solucao pra mensagem subir no NPC sem o [Language] como prefixo
 	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
 	if (!attackInfo.GetAttacker().IsNpc())
-		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 4);
+		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 5);
 	endif
 	// Calculate effective raw damage using only active posture's physical damage + elementals
 	// (stat/skill bonuses are added to all 3 physical types, but only the active posture is applied)
@@ -889,6 +910,11 @@ function LogLastHit(attackInfo)
 		lastHit["attacker"] := attacker.serial;
 		lastHit["amount"] := attackInfo.GetDamage().GetTotalBaseDamage();
 		lastHit["time"] := polcore().systime;
+		lastHit["type"] := attackInfo.GetDamage().GetFireBaseDamage() > 0 ? "fire" :
+							attackInfo.GetDamage().GetColdBaseDamage() > 0 ? "cold" :
+							attackInfo.GetDamage().GetPoisonBaseDamage() > 0 ? "poison" :
+							attackInfo.GetDamage().GetEnergyBaseDamage() > 0 ? "energy" : "physical";
+		lastHit["bodyregion"] := attackInfo.GetBodyRegion();
 		SetObjProperty(defender, "lastHit", lastHit);
 endfunction
 

@@ -135,6 +135,9 @@ function AP_GetVitalRegenRate(mobile, vital_name)
 endfunction
 
 function HealHits(mobile, amount)
+  if (GetObjProperty(mobile, "nocure"))
+    return 0;
+  endif
   AP_SetVital(mobile, "Hits", cint(AP_GetVital(mobile, "Hits")+amount));
   if (AP_GetVital(mobile, "Hits") >  AP_GetVitalMaximumValue(mobile, "Hits"))
     AP_SetVital(mobile, "Hits", AP_GetVitalMaximumValue(mobile, "Hits"));
@@ -289,9 +292,26 @@ endfunction
  * @return 1 se aplicou, 0 se bloqueado por nocure
  */
 function applyEpicHealing(mobile, amt)
-	if (GetObjProperty(mobile, "nocure"))
-		PrintTextAbove(mobile, "*Não pode ser curado*");
-		return 0;
+	var nocure := GetObjProperty(mobile, "nocure");
+	if (nocure)
+		// Value > 1 is a timestamp (from undead ability) — auto-expire
+		if (nocure > 1 && polcore().systime >= nocure)
+			EraseObjProperty(mobile, "nocure");
+		else
+			PrintTextAbove(mobile, "*Não pode ser curado*");
+			return 0;
+		endif
+	endif
+
+	// Demon/Undead CurseHeal — healing reduction
+	var healreduction := GetObjProperty(mobile, "#healreduction");
+	if (healreduction != error)
+		if (polcore().systime < healreduction.expires)
+			amt := CInt(amt * (1.0 - healreduction.percent / 100.0));
+			SendSysMessageEx(mobile, $"A maldição reduz sua cura em {healreduction.percent}%!", SSM_FAIL);
+		else
+			EraseObjProperty(mobile, "#healreduction");
+		endif
 	endif
 
 	var wrapper := MobileWrapper(mobile);
@@ -301,49 +321,45 @@ function applyEpicHealing(mobile, amt)
 
 	if (wrapper.IsNPC())
         if (Lower(wrapper.GetCategory()) == "undead" || Lower(wrapper.GetCategory()) == "demons")
-			damage := Cint(amt / 2);
+            damage := CInt(amt / 2);
             ApplyRawDamage(mobile, damage);
 			return true;
 		endif
     endif
 
-	// ENTROPIA POSITIVA: Bônus de cura
+	// ENTROPIA POSITIVA: Bônus de cura (+10% por 4.000, máximo +50%)
 	if (entropy > 0)
-		var bonus := CDbl(entropy) / 40000.0; // 0.0 a 0.5 (0% a 50%)
+		var bonus := CDbl(entropy) / 40000.0; // 0.0 a 0.5
 		if (bonus > 0.5)
 			bonus := 0.5;
 		endif
 		healing := CInt(amt * (1.0 + bonus));
-	
-	// ENTROPIA NEGATIVA: Penalidade e dano
+
+	// ENTROPIA NEGATIVA: Penalidade de cura (-10% por -4.000, máximo -50%)
 	elseif (entropy < 0)
 		var abs_entropy := Abs(entropy);
-		
-		// Fase 1: Redução de cura (0 a -10000)
-		var penalty := abs_entropy / 10000.0; // 0.0 a 1.0+
-		if (penalty > 1.0)
-			penalty := 1.0;
+		var penalty := abs_entropy / 40000.0; // 0.0 a 0.5
+		if (penalty > 0.5)
+			penalty := 0.5;
 		endif
 		healing := CInt(amt * (1.0 - penalty));
-		
-		// Fase 2: Dano (além de -10000)
-		if (abs_entropy > 10000)
-			var excess := abs_entropy - 10000; // 0 a 10000
-			var damage_mult := excess / 10000.0; // 0.0 a 1.0
-			if (damage_mult > 1.0)
-				damage_mult := 1.0;
-			endif
-			damage := CInt(amt * damage_mult);
-		endif
 	endif
 
-	// Aplicar efeitos
+	if (healing < 1 && amt > 0)
+		healing := 1;
+	endif
+
 	if (damage > 0)
-		Message("*A cura queima a corrupção!*").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("*A energia sagrada queima a carne corrompida! (-" + damage + " HP)*", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		ApplyRawDamage(mobile, damage);
 	endif
 
 	if (healing > 0)
+		if (entropy < 0)
+			var pct := CInt((CDbl(Abs(entropy)) / 40000.0) * 100);
+			if (pct > 50) pct := 50; endif
+			Message("*Curado em " + healing + " HP (-" + pct + "% por corrupção)*", Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
+		endif
 		wrapper.RestoreHP(healing);
 	endif
 

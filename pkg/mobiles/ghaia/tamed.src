@@ -382,14 +382,21 @@ function TakeItem(ev)
 	endif
 
 	// relacionado as comidas do pet
-	var npctemplate := me.npctemplate;
-	npctemplate := npctemplate[10, len(npctemplate) - 9];
-	var foodtype := npccfg[npctemplate].food;
-	if (!foodtype)
-		foodtype := "qualquer";
-	endif
-	var elem := FindConfigElem(cfg, foodtype);
-	var foodarray := GetConfigStringArray(elem, "Food");
+var mob := MobileWrapper(me);
+var npctemplate := mob.GetTemplateName();
+var taxonomy := npccfg[npctemplate].Taxonomy;
+var allowed := GetDietByTaxonomy(taxonomy);
+var foodtype := GetObjProperty(ev.item, "FoodType");
+	print("npctempalte eh "+npctemplate+" e foodtype eh "+foodtype+" tax eh "+taxonomy+" allowed eh"+allowed);
+if (!foodtype)
+    SendSysMessage(ev.source, "Isso não parece comida.");
+    return;
+endif
+
+if (!(allowed == "all") && !(foodtype in allowed))
+    SendSysMessage(ev.source, "Esse animal não come isso.");
+    return;
+endif
 
 	// relacionado ao tempo para inicio do bond (tudo em segundos!)
 	var happy := GetObjProperty(me, "happiness");
@@ -404,7 +411,7 @@ function TakeItem(ev)
 	var fidelizar := GetObjProperty(me, "Fidelizar?");
 
 	// if ( cfgeat[(ev.item).objtype].script["eat"]) //evento comida checando tds os itemdesc para ver se são comíveis
-	if (Cstr(ev.item.objtype) in foodarray)
+	if (foodtype)
 		if (happy >= 100)
 			PrintTextPrivate(me, "O animal já está satisfeito", ev.source);
 			return;
@@ -551,7 +558,7 @@ function Follow()
 		following := 0;
 		wait_time := 120;
 
-	elseif (dist > 4)
+	elseif (dist > 3)
 
 		var ma := 200 - me.run_speed;
 		me.run_speed := me.run_speed + ma;

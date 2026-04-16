@@ -1,5 +1,6 @@
 use uo;
 use os;
+use vitals;
 
 include ":attributes:attributes";
 include "include/say";
@@ -11,52 +12,32 @@ include ":timedscripts:timedScripts";
 include ":fls_core:packets";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:model/Message";
+include ":hotbar:include/custombuff";
+include ":abilities:models/Ability";
 
 program cureScript(params)
 	var who := params[1];
 
-	// Check if the player used the voltar command and already reverted manually
-	if (GetObjProperty(who, "voltou"))
-		EraseObjProperty(who, "voltou");
-		return;
-	endif
-
-	// Proceed with reverting the player
-	var metamorfose := GetObjProperty(who, "metamorfose");
-	if (metamorfose == error)
-		Message("Voce nao esta metamorfoseado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-		return;
-	endif
-
-	// Revert appearance to original state
-	who.color := metamorfose.originalcolor;
-	who.graphic := metamorfose.originalgraphic;
-	who.truegraphic := metamorfose.originalgraphic;
-
-	// Restore player name
-	var namechar := GetObjProperty(who, "charname");
-	SetName(who, namechar);
-
-	// Reset polymorph-related modifiers (hitsmod, manamod, stammod)
+	// Always clean up polymorph stat modifiers first, regardless of metamorfose state
 	var hitsmod := CINT(GetObjProperty(who, "polymorph_hitsmod"));
 	var manamod := CINT(GetObjProperty(who, "polymorph_manamod"));
 	var stammod := CINT(GetObjProperty(who, "polymorph_stammod"));
 
-	if (hitsmod != error)
+	if (hitsmod)
 		SetObjProperty(who, "hitsmod", CINT(GetObjProperty(who, "hitsmod")) - hitsmod);
 	endif
 
-	if (manamod != error)
+	if (manamod)
 		SetObjProperty(who, "manamod", CINT(GetObjProperty(who, "manamod")) - manamod);
 	endif
 
-	if (stammod != error)
+	if (stammod)
 		SetObjProperty(who, "stammod", CINT(GetObjProperty(who, "stammod")) - stammod);
 	endif
 
 	// Reset resistances
 	var resist := CINT(GetObjProperty(who, "polymorph_resistmod"));
-	if (resist != error)
+	if (resist)
 		who.resist_physical_mod := who.resist_physical_mod - resist;
 		who.resist_fire_mod := who.resist_fire_mod - resist;
 		who.resist_cold_mod := who.resist_cold_mod - resist;
@@ -76,7 +57,20 @@ program cureScript(params)
 			sr.energy   -= resist;
 			mw.SetProperty("#SpellResist", sr);
 		endif
-		EraseObjProperty(who, "polymorph_resistmod");
+	endif
+
+	RecalcVitals(who);
+	SendStatus(who);
+
+	// Revert appearance if metamorfose data exists
+	var metamorfose := GetObjProperty(who, "metamorfose");
+	if (metamorfose != error)
+		who.color := metamorfose.originalcolor;
+		who.graphic := metamorfose.originalgraphic;
+		who.truegraphic := metamorfose.originalgraphic;
+
+		var namechar := GetObjProperty(who, "charname");
+		SetName(who, namechar);
 	endif
 
 	// Call the new function to handle werewolf buffs removal
@@ -99,12 +93,13 @@ program cureScript(params)
 	EraseObjProperty(who, "polymorph_hitsmod");
 	EraseObjProperty(who, "polymorph_manamod");
 	EraseObjProperty(who, "polymorph_stammod");
+	EraseObjProperty(who, "polymorph_resistmod");
 	EraseObjProperty(who, "namechar");
 	EraseObjProperty(who, "HitScripts");
-	
+
 	// Restore speech on form end
 	who.squelch(0);
-	
+
 	SendPacket(who, "BF0006002600"); // Disable speed boost packet
 
 	if (who.npctemplate)
@@ -112,6 +107,8 @@ program cureScript(params)
 
 		who.run_speed := Cint(normal_speed);
 	endif
+
+	RemoveAbilityBuff(who, ABILITY_ID::ELO_NATURAL);
 
 	PlaySoundEffect(who, SFX_SPELL_POLYMORPH);
 endprogram

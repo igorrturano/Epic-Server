@@ -1,0 +1,39 @@
+use uo;
+use os;
+use vitals;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Controller/DamageController_legacy";
+include ":charactercreation:resists";
+
+program DiveAttack(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	var cur_hp := GetVital(me, HITS) / 100;
+	var max_hp := GetVitalMaximumValue(me, HITS) / 100;
+
+	if (cur_hp < max_hp / 2)
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	var dive_damage := tier * 6;
+
+	PrintTextAbove(me, "*mergulha sobre a presa!*");
+
+	MoveObjectToLocation(me, targ.x, targ.y, targ.z, targ.realm, MOVEOBJECT_FORCELOCATION);
+
+	if (CheckResist(targ, REFLEXES, RESIST_MEDIUM))
+		dive_damage := tier * 3;
+		SendSysMessageEx(targ, "Você se esquiva parcialmente do mergulho!", SSM_REQUEST);
+	endif
+
+	DamageFLS(targ, dive_damage, DMG_PIERCING, me, "diveattack");
+
+	return 1;
+endprogram

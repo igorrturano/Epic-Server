@@ -11,10 +11,12 @@ include "include/dungeons";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 include ":nature:Controller/LightController";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	var race := GetObjProperty(who, "chardata").raca;
@@ -46,6 +48,7 @@ program SpellScript(params)
 	endif
 
 	ApplyMagicalVision(who, duration);
+	SendSpellBuff(who, who, CInt(spell.id), duration);
 
 	return 1;
 endprogram

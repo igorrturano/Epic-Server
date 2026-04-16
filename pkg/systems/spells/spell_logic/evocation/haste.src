@@ -1,0 +1,36 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	var spell := params[3];
+	params := 0;
+
+	SC_RemoveEffect(who, CInt(spell.id));
+
+	var tempo := CInt(HandleSpellSkill(who) / 5);
+
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR))
+		tempo := CInt(tempo * 1.2);
+	endif
+
+	var opts := struct{};
+	opts.+speed_boost := 1;
+	opts.+desc := "Velocidade";
+
+	SC_ApplyEffect(who, who, opts, tempo, CInt(spell.id));
+	PlaySoundEffect(who, SFX_SPELL_AGILITY);
+	SendSysMessageEx(who, "Voce esta muito veloz.", SSM_INFO);
+
+	return 1;
+endprogram

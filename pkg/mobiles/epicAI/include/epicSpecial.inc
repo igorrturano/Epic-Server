@@ -1,13 +1,11 @@
-const CHARGE_MINIMUM_DISTANCE := 5;
 include ":timedScripts:timedScripts";
 include ":awareness:awareness";
 include ":nature:nature";
 include ":acid:acid";
 include "include/epicNPCUtils";
-include ":combat:Model/AttackInfo";
-include ":combat:Controller/FXController";
-include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+
+const CHARGE_MINIMUM_DISTANCE := 5;
 
 function StartCharge(attacker, defender)
    var dist := CoordinateDistance(attacker.x, attacker.y, defender.x, defender.y);
@@ -21,12 +19,14 @@ function StartCharge(attacker, defender)
       "y" := attacker.y,
       "target" := defender.serial
    });
-   ProcessChargeImpact(attacker, defender);
 
    // Grant speed boost during charge
    SetCooldown(attacker, "charge", 120);
    PrintTextAbove(attacker, "*inicia carga*");
    TS_StartTimer(attacker, "velocidade", 10);
+
+   // Impact fires when NPC reaches target (separate script watches distance)
+   start_script(":epicAI:abilities/ChargeImpact", array{ attacker, defender });
 
    return 1;
 endfunction
@@ -37,17 +37,24 @@ function ProcessChargeImpact(attacker, defender)
       return 0;
    endif
 
-   // Only apply charge damage to intended target
    if (charge_start.target != defender.serial)
       return 0;
    endif
 
-   // Calculate distance charged
    var dist := CoordinateDistance(charge_start.x, charge_start.y, defender.x, defender.y);
-   var charge_damage := Cint(dist);
+   var tier := CInt(MobileWrapper(attacker).GetTier());
+   var charge_damage := CInt(dist * tier * 3) + CInt(attacker.strength / 20);
+
+   if (charge_damage < 1)
+      charge_damage := 1;
+   endif
 
    EraseObjProperty(attacker, "#chargestart");
    SetObjProperty(attacker, "charge_damage", charge_damage);
+
+   ApplyRawDamage(defender, charge_damage);
+   DisplayDamage(defender, charge_damage, attacker);
+   PrintTextAbove(attacker, "*impacto da carga*");
 endfunction
 
 function SporeSpecial(attacker, defender)

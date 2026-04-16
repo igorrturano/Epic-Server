@@ -24,6 +24,7 @@ include "include/sounds";
 include "include/say";
 include "include/packets";
 include "include/epicConstants";
+include ":hotbar:include/custombuff";
 
 const _NB_BTN_ESTUDAR   := 1;
 const _NB_BTN_VOLTAR    := 2;
@@ -222,7 +223,13 @@ class NaturalBond(CombatAbility)
         TS_StartTimer(who, "metamorfosedruida", duration);
 
         this._ApplyBoosts(who, elem, duration);
-        this._ApplyModifiers(who, elem, duration, mobile);
+        var effective_duration := this._ApplyModifiers(who, elem, duration, mobile);
+
+        SendBuff(who, 0, 1045); // remove agility buff icon
+        SendBuff(who, 0, 1047); // remove strength buff icon
+        SendBuff(who, 0, 1046); // remove intelligence buff icon
+        SendBuff(who, 0, 1034); // remove metamorfose buff icon
+        SendAbilityBuff(who, ABILITY_ID::ELO_NATURAL, effective_duration, form.name);
 
         Message("Voce se transforma em " + form.name + ".").SendSys(who);
         return true;
@@ -261,8 +268,9 @@ class NaturalBond(CombatAbility)
 
         who.squelch(-1);
 
-        var wildspeech_duration := TS_GetTimerDuration(who, "wildspeech");
-        if (wildspeech_duration != error && wildspeech_duration > 0)
+        var mw := MobileWrapper(who);
+        var wildspeech_opts := mw.GetProperty("#SpellOpts_708");
+        if (wildspeech_opts && wildspeech_opts != error)
             who.squelch(0);
         endif
 
@@ -381,7 +389,8 @@ class NaturalBond(CombatAbility)
             Message("Voce se transforma em um cavalo e sente-se mais rapido!").SendSys(who);
             skill_a_calc := CInt(skill_a_calc - bonusMagicLore);
             hitsmod_calc := CInt(hitsmod_calc - bonusMagicLore);
-            TS_StartTimer(who, "metamorfosedruida", CInt(duration / 2));
+            duration := CInt(duration / 2);
+            TS_StartTimer(who, "metamorfosedruida", duration);
             SendPacket(who, "BF0006002601");
         endif
 
@@ -410,6 +419,8 @@ class NaturalBond(CombatAbility)
         recalcvitals(who);
         applyEpicHealing(who, hitsmod_calc);
         SendStatus(who);
+
+        return duration;
     endfunction
 
     function _ApplyResistMod(this, who, resistmod_calc)

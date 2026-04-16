@@ -67,39 +67,39 @@ program use_explosion(who, potion)
 		endif
 	endif
 	var cast_on := 0;
-	repeat
-		cast_on := TargetCoordinates(who);
-		if (who.npctemplate)
-			cast_on := GetRandomNearbyHostile(who);
-		endif
+	if(mods.gatilho == GATILHO_MINA)
+		detach();
+		PrintTextAbove(who, "*Plantando mina*");
+		Sleep(2);
+		MoveObjectToLocation(potion, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
+		Minaterrestre(who, potion);
+	else
+		repeat
+			cast_on := TargetCoordinates(who);
+			if (who.npctemplate)
+				cast_on := GetRandomNearbyHostile(who);
+			endif
 
-		if (!cast_on)
-			return;
-		endif
+			if (!cast_on)
+				return;
+			endif
 
+
+			if (!potion)
+				return;
+			endif
+
+			if (!CheckLosAt(who, cast_on.x, cast_on.y, cast_on.z))
+				SendSysMessage(who, "Voce nao consegue ver o alvo!");
+				cast_on := 0;
+			endif
+
+		until(cast_on != 0 || !potion);
 
 		if (!potion)
 			return;
 		endif
-
-		if (!CheckLosAt(who, cast_on.x, cast_on.y, cast_on.z))
-			SendSysMessage(who, "Voce nao consegue ver o alvo!");
-			cast_on := 0;
-		endif
-		if(mods.gatilho == GATILHO_MINA)
-			if(distance(who, cast_on > 2));
-				cast_on := 0;
-				SendSysMessage(who, "voce nao alcanca o alvo!");
-			endif
-		endif
-
-	until(cast_on != 0 || !potion);
-
-	if (!potion)
-		return;
-	endif
 	
-	if(mods.gatilho != GATILHO_MINA);
 		PrintTextAbove(who, "*joga um frasco*");
 		Detach();
 		PlayMovingEffectXYZ(who.x, who.y, who.z + 15, cast_on.x, cast_on.y, cast_on.z, 0x0f09, 8, 0, 0);
@@ -108,14 +108,8 @@ program use_explosion(who, potion)
 			return;
 		endif
 		MoveObjectToLocation(potion, cast_on.x, cast_on.y, cast_on.z, cast_on.realm, MOVEOBJECT_FORCELOCATION);
-	else
-		detach();
-		PrintTextAbove(who, "*Plantando mina*");
-		Sleep(2);
-		MoveObjectToLocation(potion, cast_on.x, cast_on.y, cast_on.z, cast_on.realm, MOVEOBJECT_FORCELOCATION);
-		Minaterrestre(who, potion);
 	endif
-	
+		
 	if(mods.gatilho == GATILHO_IMPACTO)
 		Sleepms(400);
 		start_script("potions/exploder", { potion, who });

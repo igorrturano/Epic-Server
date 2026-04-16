@@ -9,6 +9,11 @@ include ":accounts:accounts";
 
 program Logon(who)
 	ACCT_SetLastLogin(who.acct);
+
+	// ── Notificação de soldo pendente (enviada offline) ───────────────────────
+	if (GetObjProperty(who, "notif_soldo") == 1)
+		start_script(":faccao:gump_soldo", array{who});
+	endif
 	// SendSysMessage(who, "Login");
 	// NormaliseGamePlayer(who);
 

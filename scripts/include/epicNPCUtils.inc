@@ -9,6 +9,8 @@ function customizeNpc(mob, set_tier := "0")
 	var npc_elem := NPC_GetNPCConfig(mob);
 	var classe := npc_elem.Classe;
 	var tier := set_tier == "0" ? CInt(mob.getTier()) : CInt(set_tier);
+	SetObjProperty(mob, "NpcTier", tier);
+	EraseObjProperty(mob, "#npc_cache");
 	var tactics := RandomIntMinMax(tier * 20, tier * 30);
 	var skill_combat;
 	var skill_support;
@@ -151,7 +153,9 @@ enum ELEMDAMAGES
 	DAMAGE_NONE := "DAMAGE_NONE",
 	DAMAGE_LOW := "DAMAGE_LOW",
 	DAMAGE_MID := "DAMAGE_MID",
-	DAMAGE_HIGH := "DAMAGE_HIGH"
+	DAMAGE_HIGH := "DAMAGE_HIGH",
+	DAMAGE_BRUTAL := "DAMAGE_BRUTAL",
+	DAMAGE_DEVASTATING := "DAMAGE_DEVASTATING"
 endenum
 
 function GetResistValueByTier(tier)
@@ -339,6 +343,8 @@ function getNPCElemDamages(npc)
 			DAMAGE_LOW: damage := getElementalDamageByTier(DAMAGE_LOW); break;
 			DAMAGE_MID: damage := getElementalDamageByTier(DAMAGE_MID); break;
 			DAMAGE_HIGH: damage := getElementalDamageByTier(DAMAGE_HIGH); break;
+			DAMAGE_BRUTAL: damage := getElementalDamageByTier(DAMAGE_BRUTAL); break;
+			DAMAGE_DEVASTATING: damage := getElementalDamageByTier(DAMAGE_DEVASTATING); break;
 		endcase
 	endforeach
 
@@ -358,6 +364,10 @@ function getElementalDamageByTier(tier)
 			return 3;
 		DAMAGE_HIGH:
 			return 5;
+		DAMAGE_BRUTAL:
+			return 8;
+		DAMAGE_DEVASTATING:
+			return 12;
 
 		default: return error{ "errortext" := "Value not found for this Elemental Tier!"};
 	endcase

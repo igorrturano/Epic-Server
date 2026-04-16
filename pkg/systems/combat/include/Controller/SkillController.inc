@@ -18,24 +18,24 @@ function ProgressAttackSkills(byRef attackInfo)
 	// Testa se é possivel ganhar skill com o NPC alvo
 	// var skillAttacker := AP_GetSkill(attacker, attacker.weapon.attribute);
 	// var skillDefender := AP_GetSkill(defender, defender.weapon.attribute);
-	var skillAttacker := attackInfo.GetAttacker().GetSkill(attackInfo.GetWeapon().GetAttribute());
-	var skillDefender := attackInfo.GetDefender().GetSkill(attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetAttribute()); // TODO: Verificar se isso funciona com NPCs sem arma equipada (se pega WRESTLING)
+	var skillAttacker := attackInfo.GetAttacker().GetSkillBase(attackInfo.GetWeapon().GetAttribute());
+	var skillDefender := attackInfo.GetDefender().GetSkillBase(attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetAttribute()); // TODO: Verificar se isso funciona com NPCs sem arma equipada (se pega WRESTLING)
 
 	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetAttacker().IsConnected())
 		if (attackInfo.GetWeapon().GetObjType() == 0x13b9 && !attackInfo.GetAttacker().GetEquipBySlot(SHIELD)) // bastarda
-			skillAttacker := attackInfo.GetAttacker().GetSkill(TWOHANDED);
+			skillAttacker := attackInfo.GetAttacker().GetSkillBase(TWOHANDED);
 		endif
 
 		if (attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetObjType() == 0x13b9 && !attackInfo.GetDefender().GetEquipBySlot(SHIELD))
-			skillDefender := attackInfo.GetDefender().GetSkill(TWOHANDED);
+			skillDefender := attackInfo.GetDefender().GetSkillBase(TWOHANDED);
 		endif
 
 		if (attackInfo.GetWeapon().GetObjRef().GetProp("swordmage") == attackInfo.GetAttacker().GetSerial())
-			skillAttacker := attackInfo.GetAttacker().GetSkill(ONEHANDED);
+			skillAttacker := attackInfo.GetAttacker().GetSkillBase(ONEHANDED);
 		endif
 
 		if (attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetObjRef().GetProp("swordmage") == attackInfo.GetDefender().GetSerial())
-			skillDefender := attackInfo.GetDefender().GetSkill(ONEHANDED);
+			skillDefender := attackInfo.GetDefender().GetSkillBase(ONEHANDED);
 		endif
 	endif
 

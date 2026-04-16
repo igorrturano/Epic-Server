@@ -81,50 +81,76 @@ endfunction
 
 function Loot_CreateItem(container, line)
     var parsed := Loot_ParseString(line);
-    
+
     if(Loot_ChanceCheck(parsed.chance))
         var i;
         for(i := 1; i <= parsed.amount; i := i + 1)
             var combatDesc := ReadConfigFile(":combat:itemdesc");
-            var objtype := GetObjtypeByName(parsed.name);
-            var combatItem := combatDesc[objtype];
-            var item;
-            if(combatItem)
-                item :=  GeraItemComplexo(
-                                            container,
-                                            objtype,
-                                            1,
-                                            RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
-                                            1, 
-                                            array {0x630e}, //ouro
-                                            FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
-                                        );
-            else
-                item := CreateItemInContainer(container, parsed.name);
-            endif
-            SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
-
+            CreateItemProcess(container, parsed, 1);
             sleepms(2);
         endfor
     endif
-    
+
     return 1;
 endfunction
 
+function CreateItemProcess(container, parsed, qtd)
+    var objtype := GetObjtypeByName(parsed.name);
+    var item;
+    item :=  GeraItemComplexo(
+                                container,
+                                objtype,
+                                qtd,
+                                RandomCraftingPropTier(),
+                                1,
+                                array {0x630e},
+                                FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
+                            );
+    
+    if(!item)
+        item := CreateItemInContainer(container, parsed.name);
+        Loot_InitBottle(item);
+    endif
+
+    SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+    return item;
+endfunction
+
+function RandomCraftingPropTier()
+    var roll := RandomIntMinMax(1,10000) + 1;
+    if(roll <= 5)
+        return "3>5";
+    elseif(roll <= 50)
+        return "3>4";
+    elseif(roll <= 500)
+        return "1>3";
+    elseif(roll <= 1000)
+        return "1>2";
+    else
+        return 1;
+    endif
+endfunction
 
 
 function Loot_CreateStack(container, line)
 	var parsed := Loot_ParseString(line);
 	
-	if ( Loot_ChanceCheck(parsed.chance) )
-		var item := CreateItemInContainer(container, parsed.name, parsed.amount);
-        SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+    if ( Loot_ChanceCheck(parsed.chance) )
+		var item := CreateItemProcess(container, parsed, parsed.amount);
 		if ( item.errortext )
 			return error{"errortext" := "Error - Could not create ["+parsed.name+"] ->"+item.errortext};
 		endif
 	endif
-	
+
 	return 1;
+endfunction
+
+function Loot_InitBottle(item)
+	if (item.objtype == 0x0F0E)
+		SetObjProperty(item, PROPNAME_ENCAIXE_COMPONENTE, "Frasco");
+		SetObjProperty(item, PROPNAME_MATERIAL, 7139);
+		SetObjProperty(item, PROPNAME_TIER_COMPONENTE, 1);
+	endif
 endfunction
 
 function Loot_CreateRandom(container, line)

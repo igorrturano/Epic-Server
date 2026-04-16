@@ -178,7 +178,15 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 								var gfx := custom_graphics[RandomInt(custom_graphics.size()) + 1];
 								chest_info := GetChestInfoByGraphic(gfx);
 							else
-								chest_info := GetRandomChestFromConfig();
+								var default_gfx := 0xe42;
+								if (RandomInt(2) == 0)
+									default_gfx := 0xe43;
+								endif
+								chest_info := struct{
+									"graphic" := default_gfx,
+									"material" := DEFAULT_MATERIAL_WOOD,
+									"maxhp" := DEFAULT_MAXHP_WOOD
+								};
 							endif
 
 							new_chest := CreateItemAtLocation(new_x, new_y, new_z, chest_info.graphic, 1, spawner.realm);
@@ -216,7 +224,15 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 							var gfx := custom_graphics[RandomInt(custom_graphics.size()) + 1];
 							chest_info := GetChestInfoByGraphic(gfx);
 						else
-							chest_info := GetRandomChestFromConfig();
+							var default_gfx := 0xe42;
+							if (RandomInt(2) == 0)
+								default_gfx := 0xe43;
+							endif
+							chest_info := struct{
+								"graphic" := default_gfx,
+								"material" := DEFAULT_MATERIAL_WOOD,
+								"maxhp" := DEFAULT_MAXHP_WOOD
+							};
 						endif
 
 						new_chest := CreateItemAtLocation(new_x, new_y, new_z, chest_info.graphic, 1, spawner.realm);

@@ -2,11 +2,13 @@ include ":message:model/Message";
 include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
+include "packets/UpdateEquipmentRequest";
 
 program unequipitem(params)
 	var who := params[1];
 	var item := params[2];
-
+	var layer :=  item.layer;
+	
 	var equip;
 	if (item.IsA(POLCLASS_ARMOR))
 		equip := ArmorWrapper(item);
@@ -19,5 +21,23 @@ program unequipitem(params)
 		equip.SetModifier(AttributeModifier(MAGERY, 0));
 	endif
 
+	if (item.IsA(POLCLASS_ARMOR) && who.HasAbility(ABILITY_ID::CONEXAO_DIVINA))
+		var tipoProtecao := equip.GetTipoProtecao();
+		if (tipoProtecao["Armadura Leve"] || tipoProtecao["Armadura Media"])
+			equip.SetModifier(AttributeModifier(MAGERY, 0));
+		endif
+	endif
+
+	if (item.IsA(POLCLASS_ARMOR))
+		var tipoProtecao := equip.GetTipoProtecao();
+		if (tipoProtecao["Armadura Media"] && who.HasAbility(ABILITY_ID::MEDIUM_ARMOR_SPEC))
+			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 1));
+		elseif (tipoProtecao["Armadura Pesada"] && who.HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
+			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 2));
+		endif
+	endif
+
 	who.RemoveItemModifiers(equip);
+	Start_Script("packets/AssyncUpdateEquipment", array{who, false, item, layer});
+	return 1;
 endprogram

@@ -28,6 +28,10 @@ exported function GetHitsRegenRate(mobile)
 	endif
 	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "hits");
 
+	if (GetObjProperty(mobile, "nocure"))
+		return 0;
+	endif
+
 	if (isBloodied(mobile) && (!mobile.npctemplate)) // Nao regenera se tiver sangrando
 		return regen / 5; // reduz a regeneração bloodied para 1/5
 	endif
@@ -78,7 +82,7 @@ exported function GetManaRegenRate(mobile)
 		base_regen := CInt(AP_GetSettingsCfgElem("Regen").Mana * 100);
 	endif
 
-	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::QUIET_MIND))
+	if (!mobile.npctemplate && MobileWrapper(mobile).HasAbility(ABILITY_ID::QUIET_MIND))
 		base_regen := base_regen + base_regen;
 	endif
 
@@ -219,7 +223,7 @@ endfunction
 // Note: This vital is to kill all.
 // *****
 exported function GetDPRegenRate(mobile)
-	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::CONEXAO_DIVINA))
+	if (!mobile.npctemplate && MobileWrapper(mobile).HasAbility(ABILITY_ID::CONEXAO_DIVINA))
 		return 34;
 	else
 		return 17; // 1 DP por hora

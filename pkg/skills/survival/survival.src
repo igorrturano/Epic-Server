@@ -147,6 +147,7 @@ function TrackGump(who, mobiles)
 	var colunas := 1;
 	var pages := 1;
 	foreach mobile in mobiles
+		sleepms(2);
 		if ((mobile != who) && (!mobile.dead))
 			mobdesc := GetMobDesc(who, mobile);
 			mobarray.append(mobdesc);
@@ -199,6 +200,7 @@ function ItemTrackGump(who, items)
 	GFTextLine(gump, 200, 45, 600, "Escolha o evento/item a ser rastreado:");
 	var temcoisa := 0;
 	foreach item in items
+		sleepms(2);
 		if (item.objtype == 3555)
 			itemarray.append(item);
 			GFTextLine(gump, (47 + x), (70 + y), 800, "Fogueira/Acampamento");
@@ -307,6 +309,7 @@ function CreatureTrack(who, mobontrack, mobname)
 	var end := 0;
 
 	while (end != 1)
+		sleepms(2);
 		var gump := GFCreateGump(50, 25);
 		// 	GFResizePic(gump, 2, 0, BKGND_SILVERTRIM, 300, 220);
 		GFResizePic(gump, 0, 25, 0x13BE, 300, 250);

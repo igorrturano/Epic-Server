@@ -28,6 +28,7 @@ var anchor_var := 0;
 var spell_target_var := 0;
 var myhabs_var := 0;
 var myhabs_set_var := 0;
+var hazard_cache_var := 0;
 
 /*
  * KillPlayers()
@@ -42,9 +43,7 @@ program KillPlayers()
 
     // Initialize NPC once at spawn
     if (!GetObjProperty(me, "started"))
-        set_critical(1);
         InitializeEpicNPC(me);
-        set_critical(0);
     endif
 
     EnableMainEvents();
@@ -83,6 +82,7 @@ program KillPlayers()
         spell_target_var := 0;
         myhabs_var := 0;
         myhabs_set_var := 0;
+        hazard_cache_var := 0;
         nearby_cache_var := dictionary;
         enemy_last_loc_var := 0;
         initial_allies_var := 0;
@@ -118,7 +118,7 @@ function DetermineBrainType()
     if (!brain_type)
         brain_type := "generic";
     endif
-    if (cache.spell_school)
+    if (cache.spell_school || GetObjProperty(me, "SpellSchool"))
         InitSpellCache();
     endif
 endfunction

@@ -7,7 +7,6 @@ include "include/epicUtils";
 include ":megacliloc:/include/descricaoObjetoTTip";
 include ":crafting:gumps/fabricacaoGumps";
 include ":gumps:/include/dropDownGump";
-include ":crafting:include/craftGumps";
 include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
 include ":crafting:/include/craftingRepair";
@@ -1298,6 +1297,11 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	endif
 
 	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig, receitaClassificada.classe, quantidadeOpicionais);
+	
+	if(!receita.componentesNecessarios)
+		return receita.componentesNecessarios;
+	endif
+
 	receita.+sucessosNecessarios := PegaDescDuracaoFabricacao(duracao).sucessos;
 	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao, receitaClassificada.classe);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, duracao, definicaoFabricacao.lote);
@@ -1379,7 +1383,7 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 	var receitaCfgElemento:= receitasConfig[objtype];
 
 	if(TypeOfInt(receitaCfgElemento) == OT_ERROR)
-		Print("Erro [ " + receitaCfgElemento +  " ] ao buscar configuração de fabricação. A configuracão do objtype " + CStr(Hex(objtype)) + " não foi encontrada.");
+		return  error{errortext := "Fabricação não encontrada para o item: " + CStr(objtype)};
 	endif
 
 	var encaixesItem := GetConfigStringArray(receitaCfgElemento,"ComponenteEncaixe");
@@ -1551,6 +1555,10 @@ function CriaPropFabricadoGerada(
 	tier := cint(tier);
 
 	var receita := MontaReceitaItem(0,objtype,"",fabricacaoDescConfig,0,0, struct{nome := objetoDesc.name, classe := classe});
+	if(!receita)
+		return receita;
+	endif
+	
 	var componentesEscolhidos := dictionary;
 	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0,"", classe);
 	var tierInfo := PegaComponenteTierDesc(tier);

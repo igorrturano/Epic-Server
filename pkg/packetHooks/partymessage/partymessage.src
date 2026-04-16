@@ -22,19 +22,17 @@ exported function PartyMessageSpy(who, byref packet)
 
 		player := SystemFindObjectBySerial(Cint(player));
 		if (GetObjProperty(player, "PartySpyOn") && player.cmdlevel >= 3 && player != who)
-			var sender := who.name;
-			if (sender == "Desconhecido" || sender == "Incognito")
-				sender := GetObjProperty(who, "realname");
-			endif
+			var acct := who.acctname;
+			var truename := GetObjProperty(who, "nome_inicial");
 			var leader := who.party.leader.name;
 
 			if (GetObjProperty(player, "PartySpyOn") == "on")
 				leader := splitwords(leader);
 				leader := leader[1];
-				SendSysMessage(player, "[Party-" + leader + "][" + sender + "]: " + message_txt, _DEFAULT_TEXT_FONT,
+				SendSysMessage(player, "[Party-" + leader + "][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT,
 								0x003e);
 			elseif (GetObjProperty(player, "PartySpyOn") == leader)
-				SendSysMessage(player, "[PT-SPY][" + sender + "]: " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);
+				SendSysMessage(player, "[PT-SPY][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);
 			endif
 
 		endif

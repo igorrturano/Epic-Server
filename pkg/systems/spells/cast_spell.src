@@ -33,19 +33,21 @@ program SpellStarter(params)
 	var scroll := params[3]; // item que usou pra castar o spell (scroll, book, varinha ou nada)
 	var targ := params[4];
 	Set_Priority(50);
-	if (!initializeSpellCasting(mobile, spellinfo, scroll))
+	var mw := MobileWrapper(mobile);
+
+	if (!initializeSpellCasting(mobile, mw, spellinfo, scroll))
 		return 0;
 	endif
 
-	if (!performPreCastingChecks(mobile, spellinfo))
+	if (!performPreCastingChecks(mobile, mw, spellinfo))
 		return 0;
 	endif
 
-	if (!consumeResourcesForSpell(mobile, spellinfo, scroll))
+	if (!consumeResourcesForSpell(mobile, mw, spellinfo, scroll))
 		return 0;
 	endif
 
-	if (!performCastingProcess(mobile, spellinfo))
+	if (!performCastingProcess(mobile, mw, spellinfo))
 		return 0;
 	endif
 
@@ -54,14 +56,14 @@ program SpellStarter(params)
 		return 0;
 	endif
 
-	if (!checkCastingSuccess(mobile, spellinfo, scroll))
+	if (!checkCastingSuccess(mobile, mw, spellinfo, scroll))
 		return 0;
 	endif
 
 	return finalizeCasting(mobile, spellinfo, targ, scroll);
 endprogram
 
-function initializeSpellCasting(mobile, byref spellinfo, scroll)
+function initializeSpellCasting(mobile, mw, byref spellinfo, scroll)
 	if (spellinfo.id != error)
 		if (IsCantrip(spellinfo.id))
 			WriteCantripSpellInfo(mobile, spellinfo);
@@ -74,7 +76,7 @@ function initializeSpellCasting(mobile, byref spellinfo, scroll)
 		EraseObjProperty(mobile, "#magiasilenciosa");
 	endif
 
-	if (GetObjProperty(mobile, "metamorfose") != error && !MobileWrapper(mobile).HasAbility(ABILITY_ID::ELO_NATURAL))
+	if (GetObjProperty(mobile, "metamorfose") != error && !mw.HasAbility(ABILITY_ID::ELO_NATURAL))
 		SendSysMessageEx(mobile, "Voce nao pode usar magias metamorfoseado.");
 		return 0;
 	endif
@@ -94,24 +96,24 @@ function initializeSpellCasting(mobile, byref spellinfo, scroll)
 		return 0;
 	endif
 
-	if (mobile.frozen)
+	if (mobile.frozen && spellinfo.Type != "Ninjutsu")
 		SendSysMessageEx(mobile, "Voce nao pode invocar um encanto paralisado.", SSM_FAIL);
 		EraseObjProperty(mobile, "#Casting");
 		return 0;
 	endif
 
-	if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
+	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) && spellinfo.Type != "Ninjutsu")
 		mobile.frozen := 1;
 	endif
 
 	return 1;
 endfunction
 
-function performPreCastingChecks(mobile, byref spellinfo)
+function performPreCastingChecks(mobile, mw, byref spellinfo)
 	spellinfo.mana += CInt(spellinfo.mana * GetObjProperty(mobile, "#manapenalty") / 100);
 	
 	// Entropia negativa da bonus para reduzir mana de magias necromanticas
-	var entropy := MobileWrapper(mobile).GetEntropy();
+	var entropy := mw.GetEntropy();
 	if (entropy <= -4000 && spellinfo.Type == KAIJIN)
 		spellinfo.mana -= Cint(abs(entropy) / 4000);
 	elseif (entropy >= 4000 && spellinfo.Type == "Divine")
@@ -129,8 +131,9 @@ function performPreCastingChecks(mobile, byref spellinfo)
 		endif
 	endif
 
-	var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0";
-	var mw := MobileWrapper(mobile);
+	var weapon := mw.GetEquipBySlot(WEAPON);
+	var has_staff := (weapon && weapon.GetCategory() == WEAPON_CATEGORY::STAFF);
+	var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0" || has_staff;
 	var tem_hab := mw.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
 		|| mw.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO) 
 		|| mw.HasAbility(ABILITY_ID::NINJA_PATH)
@@ -176,8 +179,8 @@ function performPreCastingChecks(mobile, byref spellinfo)
 	return 1;
 endfunction
 
-function consumeResourcesForSpell(mobile, spellinfo, scroll)
-	var mana_cost := _ApplyFocoArcanoManaDiscount(mobile, spellinfo.mana);
+function consumeResourcesForSpell(mobile, mw, spellinfo, scroll)
+	var mana_cost := _ApplyFocoArcanoManaDiscount(mw, spellinfo.mana);
 	var current_mana := AP_GetVital(mobile, MANA);
 	var current_stamina := AP_GetVital(mobile, STAMINA);
 	if (GetObjProperty(mobile, "#free_cast"))
@@ -190,7 +193,7 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
 
 	// TODO: Decidir se vou consumir mana dos humanoids
 	if (!mobile.npctemplate)
-		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DETERMINACAO_ARCANA))
+		if (mw.HasAbility(ABILITY_ID::DETERMINACAO_ARCANA))
 			if (current_mana >= mana_cost)
 				if (!AP_ConsumeVital(mobile, MANA, mana_cost))
 					SendSysMessageEx(mobile, "Voce nao possui energia arcana suficiente em seu corpo para invocar esta magia!",
@@ -227,10 +230,10 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
 	endif
 
 	if (!TNCheckReagents(mobile, spellinfo, scroll))
-		if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::DETERMINACAO_ARCANA) && !isBloodied(mobile))
+		if (!mw.HasAbility(ABILITY_ID::DETERMINACAO_ARCANA) && !isBloodied(mobile))
 			SendSysMessageEx(mobile, "Voce nao possui os componentes materiais necessarios para invocacao desta magia arcana.",
 							  SSM_FAIL);
-			if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SUPPORT_CASTER))
+			if (mw.HasAbility(ABILITY_ID::SUPPORT_CASTER))
 				HealMana(mobile, CInt(spellinfo.mana * 0.5));
 			endif
 			FailSpell(mobile);
@@ -242,25 +245,24 @@ function consumeResourcesForSpell(mobile, spellinfo, scroll)
 	return 1;
 endfunction
 
-function _ApplyFocoArcanoManaDiscount(mobile, manaCost)
+function _ApplyFocoArcanoManaDiscount(mw, manaCost)
 	if (manaCost <= 0)
 		return manaCost;
 	endif
 
-	if (!_HasFocoArcanoManaDiscount(mobile))
+	if (!_HasFocoArcanoManaDiscount(mw))
 		return manaCost;
 	endif
 
 	return manaCost - CInt(manaCost / 5);
 endfunction
 
-function _HasFocoArcanoManaDiscount(mobile)
-	var mobileWrapper := MobileWrapper(mobile);
-	if (!mobileWrapper.HasAbility(ABILITY_ID::FOCO_ARCANO))
+function _HasFocoArcanoManaDiscount(mw)
+	if (!mw.HasAbility(ABILITY_ID::FOCO_ARCANO))
 		return false;
 	endif
 
-	var weapon := mobileWrapper.GetEquipBySlot(WEAPON);
+	var weapon := mw.GetEquipBySlot(WEAPON);
 	if (!weapon || weapon is @Exception)
 		return false;
 	endif
@@ -271,7 +273,7 @@ function _HasFocoArcanoManaDiscount(mobile)
 	       weaponCategory == WEAPON_CATEGORY::MAGICBOW;
 endfunction
 
-function performCastingProcess(mobile, spellinfo)
+function performCastingProcess(mobile, mw, spellinfo)
 	mobile.hidden := 0;
 	SetObjProperty(mobile, "#Casting", 1);
 	DistribuiEvento(mobile, EV_SPELLCAST);
@@ -283,15 +285,15 @@ function performCastingProcess(mobile, spellinfo)
 	var orig_hp := AP_GetVital(mobile, "Hits");
 	var delay := spellinfo.delay + CInt(GetObjProperty(mobile, "#delayspell"));
 	var moveCheck_script;
-	if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
+	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
 		moveCheck_script := Start_Script(":spells:moveCheck/moveCheck", array{ mobile, GetPid() });
 	endif
 
-	if (!performSpellCycles(mobile, spellinfo, orig_hp))
+	if (!performSpellCycles(mobile, mw, spellinfo, orig_hp))
 		return 0;
 	endif
 
-	if (!performSpellDelay(mobile, delay, orig_hp))
+	if (!performSpellDelay(mobile, mw, delay, orig_hp))
 		return 0;
 	endif
 
@@ -310,7 +312,7 @@ function performSpellVocalization(mobile, spellinfo)
 	endif
 endfunction
 
-function performSpellCycles(mobile, spellinfo, orig_hp)
+function performSpellCycles(mobile, mw, spellinfo, orig_hp)
 	var cycles := CInt(spellinfo.Cycles);
 
 	if (GetObjProperty(mobile, "#free_cast"))
@@ -321,7 +323,7 @@ function performSpellCycles(mobile, spellinfo, orig_hp)
 	endif
 
 	while (cycles)
-		if (!checkSpellInterruption(mobile, orig_hp))
+		if (!checkSpellInterruption(mobile, mw, orig_hp))
 			return 0;
 		endif
 
@@ -336,9 +338,9 @@ function performSpellCycles(mobile, spellinfo, orig_hp)
 	return 1;
 endfunction
 
-function performSpellDelay(mobile, delay, orig_hp)
+function performSpellDelay(mobile, mw, delay, orig_hp)
 	while (delay > 0)
-		if (!checkSpellInterruption(mobile, orig_hp))
+		if (!checkSpellInterruption(mobile, mw, orig_hp))
 			return 0;
 		endif
 
@@ -350,12 +352,30 @@ function performSpellDelay(mobile, delay, orig_hp)
 	return 1;
 endfunction
 
-function checkSpellInterruption(mobile, orig_hp)
-	if (orig_hp > AP_GetVital(mobile, "Hits") && (!MobileWrapper(mobile).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL)))
+function checkSpellInterruption(mobile, mw, orig_hp)
+	if (GetCooldown(mobile, "silence") > 0)
+		SendSysMessageEx(mobile, "Voce foi silenciado durante a invocacao.", SSM_FAIL);
+		FailSpell(mobile);
+		return 0;
+	endif
+
+	if (mobile.squelched && !mobile.npctemplate)
+		SendSysMessageEx(mobile, "Voce nao consegue mais falar os componentes verbais da magia.", SSM_FAIL);
+		FailSpell(mobile);
+		return 0;
+	endif
+
+	if (GetObjProperty(mobile, "metamorfose") != error && !mw.HasAbility(ABILITY_ID::ELO_NATURAL))
+		SendSysMessageEx(mobile, "A metamorfose interrompeu sua invocacao.", SSM_FAIL);
+		FailSpell(mobile);
+		return 0;
+	endif
+
+	if (orig_hp > AP_GetVital(mobile, "Hits") && (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL)))
 		SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.",
 				   SSM_FAIL);
 		FailSpell(mobile);
-		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SUPPORT_CASTER))
+		if (mw.HasAbility(ABILITY_ID::SUPPORT_CASTER))
 			HealMana(mobile, CInt(GetObjProperty(mobile, "#Casting").mana * 0.5));
 		endif
 		if (!GetObjProperty(mobile, "#magiasilenciosa"))
@@ -372,7 +392,7 @@ function checkSpellInterruption(mobile, orig_hp)
 			FailSpell(mobile);
 		endif
 
-		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SUPPORT_CASTER))
+		if (mw.HasAbility(ABILITY_ID::SUPPORT_CASTER))
 			HealMana(mobile, CInt(GetObjProperty(mobile, "#Casting").mana * 0.5));
 		endif
 		return 0;
@@ -468,16 +488,19 @@ function checkTargetValidity(mobile, targ, spellinfo)
 	return 1;
 endfunction
 
-function checkCastingSuccess(mobile, spellinfo, scroll)
+function checkCastingSuccess(mobile, mw, spellinfo, scroll)
+	if (spellinfo.Type == "Ninjutsu")
+		return 1;
+	endif
+
 	var attribute := MAGERY;
-	var mw := MobileWrapper(mobile);
 	if (mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
 		attribute := ARCANA;
 	elseif (spellinfo.Type == "Divine")
 		attribute := THEOLOGY;
 	endif
 
-	var entropy := MobileWrapper(mobile).GetEntropy();
+	var entropy := mw.GetEntropy();
 	if (entropy <= -12000 && spellinfo.Type == "Divine")
 		Message("Você está muito corrompido para lançar magias divinas.").SetColor(SSM_FAIL).SendSys(mobile);
 		return 0;
@@ -487,7 +510,7 @@ function checkCastingSuccess(mobile, spellinfo, scroll)
 
 	// Caminho: School Specialization (-10 difficulty)
 	var schoolSpecId := _GetSchoolSpecForSpell(spellinfo);
-	if (schoolSpecId && MobileWrapper(mobile).HasAbility(schoolSpecId))
+	if (schoolSpecId && mw.HasAbility(schoolSpecId))
 		difficulty := difficulty - 10;
 	endif
 
@@ -495,25 +518,25 @@ function checkCastingSuccess(mobile, spellinfo, scroll)
 
 	// Chance to also up magic lore on cast
 
-	var magic_lore_check := SkillCheck(mobile, getSupportingSkill(mobile), difficulty);
+	var magic_lore_check := SkillCheck(mobile, getSupportingSkill(mobile, mw), difficulty);
 	if (skill_check > 0)
 		if (scroll.isA(POLCLASS_ITEM))
-			consumeScroll(mobile, scroll);
+			consumeScroll(mobile, mw, scroll);
 		endif
 
 		return 1;
 	endif
 
 	CancelTarget(mobile);
-	handleFailedSpell(mobile, spellinfo);
+	handleFailedSpell(mobile, mw, spellinfo);
 
 	return 0;
 endfunction
 
-function getSupportingSkill(mobile)
+function getSupportingSkill(mobile, mw)
 	var chardata := getobjProperty(mobile, "chardata");
 	var attribute := ARCANA;
-	if (chardata != error && chardata.wisdom_path != "Mago" && !(MobileWrapper(mobile).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)))
+	if (chardata != error && chardata.wisdom_path != "Mago" && !(mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)))
 		attribute := THEOLOGY;
 	endif
 	return attribute;
@@ -527,12 +550,12 @@ function finalizeCasting(mobile, spellinfo, targ, scroll)
 	return 1;
 endfunction
 
-function consumeScroll(mobile, scroll)
-	if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::REAPROVEITAR_PERGAMINHO))
+function consumeScroll(mobile, mw, scroll)
+	if (!mw.HasAbility(ABILITY_ID::REAPROVEITAR_PERGAMINHO))
 		SubtractAmount(scroll, 1);
 	else
 		var attrib_value := MAGERY;
-		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
+		if (mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
 			attrib_value := ARCANA;
 		endif
 		var chance := RandomIntMinMax(0, 100);
@@ -542,8 +565,8 @@ function consumeScroll(mobile, scroll)
 	endif
 endfunction
 
-function handleFailedSpell(mobile, spellinfo)
-	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SUPPORT_CASTER))
+function handleFailedSpell(mobile, mw, spellinfo)
+	if (mw.HasAbility(ABILITY_ID::SUPPORT_CASTER))
 		HealMana(mobile, CInt(spellinfo.mana * 0.5));
 	endif
 

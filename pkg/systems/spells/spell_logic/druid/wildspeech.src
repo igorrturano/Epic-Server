@@ -2,22 +2,23 @@ use uo;
 use os;
 include "include/say";
 include ":attributes:attributes";
-include ":timedScripts:timedScripts";
-include ":hotbar:include/custombuff";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
+	var info := params[2];
+	var spell := params[3];
+	params := 0;
 
-	// Validate player is NOT already in metamorfose
 	if (GetObjProperty(who, "metamorfose") != error)
-		SendSysMessageEx(who, "Você deve conjurar antes de se transformar.", SSM_FAIL);
+		SendSysMessageEx(who, "Voce deve conjurar antes de se transformar.", SSM_FAIL);
 		return 0;
 	endif
 
-	// Check if effect is already active
-	var wildspeech_duration := TS_GetTimerDuration(who, "wildspeech");
-	if (wildspeech_duration != error && wildspeech_duration > 0)
-		SendSysMessageEx(who, "Você já está sob o dom da fala selvagem.", SSM_FAIL);
+	// Check if already active
+	var existing := MobileWrapper(who).GetProperty($"#SpellOpts_{CInt(spell.id)}");
+	if (existing && !existing.errortext)
+		SendSysMessageEx(who, "Voce ja esta sob o dom da fala selvagem.", SSM_FAIL);
 		return 0;
 	endif
 
@@ -27,9 +28,13 @@ program SpellScript(params)
 	endif
 
 	var duration_secs := duration_minutes * 60;
-	TS_StartTimer(who, "wildspeech", duration_secs);
-	SendSpellBuff(who, who, 708, duration_secs, $"{duration_minutes} min");
+
+	var opts := struct{};
+	opts.+properties := dictionary{ "wildspeech" -> 1 };
+	opts.+desc := "Fala Selvagem";
+
+	SC_ApplyEffect(who, who, opts, duration_secs, CInt(spell.id));
 	SendSysMessageEx(who, $"Sua fala selvagem foi despertada por {duration_minutes} minutos.", SSM_INFO);
-	
+
 	return 1;
 endprogram

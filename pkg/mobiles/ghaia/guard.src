@@ -17,6 +17,7 @@ include "include/dungeons";
 include "include/utils";
 include "include/epicNPCUtils";
 include "include/eventID";
+include ":architect:include/architect";
 
 set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
 
@@ -66,7 +67,7 @@ endfunction
 
 function HasEnemyNear(what)
 	var mobile_list := ListMobilesNearLocationEx(what.x, what.y, LIST_IGNORE_Z, 8,
-											  LISTEX_FLAG_NORMAL | LISTEX_FLAG_NPC_ONLY);
+											  LISTEX_FLAG_NORMAL | LISTEX_FLAG_NPC_ONLY, what.realm);
 	var enemy_near := 0;
 	foreach mob in mobile_list
 		if (mob.alignment != me.alignment && mob != what && mob != me)
@@ -254,6 +255,39 @@ program NPCMonitor()
 	while (me)
 		if (GetObjProperty(me, "objloc") != error)
 			// DoObjectiveGuard();
+		endif
+		
+		// Verificacao rigorosa: Nao permite que os guardas da faccao saiam do territorio
+		if (GetObjProperty(me, "guild"))
+			var df_areas := OpenDataFile(":architect:areas");
+			var my_region := GetResidenciasRegion(me);
+			var is_outside := 1;
+			
+			if (my_region != "Whole_World" && df_areas)
+				var my_elem := df_areas.FindElement(my_region);
+				if (my_elem && my_elem.GetProp("Faction") == guild.GetProp("name"))
+					is_outside := 0;
+				endif
+			endif
+			
+			if (is_outside)
+				if (fighting || following || warning)
+					fighting := 0;
+					SetOpponent(0);
+					SetWarMode(0);
+					following := 0;
+					warning := 0;
+					PrintTextAbove(me, "Nao devo patrulhar alem de minhas fronteiras.");
+				endif
+				if (fix_location)
+					MoveObjectToLocation(me, fix_location.x, fix_location.y, fix_location.z, me.realm, MOVEOBJECT_FORCELOCATION);
+				elseif (patrolling)
+					MoveObjectToLocation(me, patrolling[1].x, patrolling[1].y, patrolling[1].z, me.realm, MOVEOBJECT_FORCELOCATION);
+				else
+					// Se nao tiver posto, apenas da um passo pra tras como paliativo (ou morre? melhor teleportar pro spawn que tem no objloc mas se nao tiver...)
+				endif
+				sleep(2); // delay pra nao travar o loop de loop infinito teleporte
+			endif
 		endif
 
 		if (warning)
@@ -823,7 +857,7 @@ function WarnPlayer()
 		FightADV(warning);
 		disableWarn();
 		foreach monster in ListMobilesNearLocationEx(me.x, me.y, me.z, 8,
-											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)
+											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY, me.realm)
 			if (GetObjProperty(monster, "guild") == guild.guildid)
 				monster.frozen := 0;
 				SendEvent(monster, struct{ "type" := HELP_CMD, source := me, targ := warning });
@@ -914,7 +948,7 @@ function FightADV(opponent := 0)
 		endif
 
 		foreach monster in ListMobilesNearLocationEx(me.x, me.y, me.z, 8,
-											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)
+											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY, me.realm)
 			if (GetObjProperty(monster, "guild") == guild.guildid)
 				SendEvent(monster, struct{ "type" := HELP_CMD, source := me, targ := opponent });
 			endif
@@ -1270,7 +1304,7 @@ function GetEnemiesNearGuard(loc, range := 5, get_hidden := 0)
 	var myenemies := array{};
 
 	foreach mobile in ListMobilesNearLocationEx(loc.x, loc.y, loc.z, range,
-												 LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN)
+												 LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN, me.realm)
 		if ((mobile.hidden && !get_hidden || mobile == me))
 			continue;
 		elseif (mobile.guildid == guild.guildid)
@@ -1299,7 +1333,7 @@ endfunction
 
 function GetAlliesNearGuard(loc, range := 5)
 	var myallies := CheckifIsNotEnemy(me,
-								   ListMobilesNearLocationEx(loc.x, loc.y, loc.z, range, LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN));
+								   ListMobilesNearLocationEx(loc.x, loc.y, loc.z, range, LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN, me.realm));
 
 	return myallies;
 endfunction

@@ -9,6 +9,7 @@ include ":timedScripts:timedScripts";
 include "include/epicMageryUtils";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
@@ -49,6 +50,7 @@ program SpellScript(params)
 	endif
 
 	SetObjProperty(who, "#Casting", 1);
+	SendSpellBuff(who, targ, CInt(spell.id), 10);
 
 	while (time < 10)
 

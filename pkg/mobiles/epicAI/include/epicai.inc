@@ -14,6 +14,7 @@ include ":fls_core:fls_skillCheck";
 include ":io:CFGFile";
 include ":epicAI:npcDataCache";
 include ":abilities:include/models/Ability";
+include ":propagacao:include/util/propagacaoConstants";
 
 // Script-level caches (replaces ObjProperty serialization for per-tick data)
 var nearby_cache_var := dictionary;
@@ -48,7 +49,7 @@ function InitializeEpicNPC(mobile)
     SetupAmmo(mobile, npccfgfile, mytemplate);
     var loot := npccfgfile[mytemplate].Loot;
     if (loot)
-        Loot_Generate(mobile.backpack, loot);
+        var ret := Loot_Generate(mobile.backpack, loot);
     endif
 
     var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
@@ -116,8 +117,15 @@ function InitializeMonsterNPC(mobile, npc_elem, elem, sounds)
     SetupNPCEquip(mobile, npc_elem);
 
     // Monstros falam uma língua específica
-    var known_languages := SplitWords(npc_elem.Languages);
+    var lang_str := npc_elem.Languages;
+    var known_languages;
+    if (lang_str)
+        known_languages := SplitWords(lang_str);
+    else
+        known_languages := {"Comum"};
+    endif
     var chosen_language := known_languages[RandomInt(Len(known_languages)) + 1];
+
     SetObjProperty(mobile, "linguas_conhecidas", known_languages);
     SetObjProperty(mobile, "lingua_escolhida", chosen_language);
 
@@ -947,13 +955,15 @@ function GetAlternativeLocations(opponent)
         var new_x := me.x + dir.x;
         var new_y := me.y + dir.y;
         
-        // Check if location is away from opponent
+        // Check if location is away from opponent and not hazardous
         if (CoordinateDistance(new_x, new_y, opponent.x, opponent.y) > Distance(me, opponent))
-            locations.append(struct{
-                "x" := new_x,
-                "y" := new_y,
-                "dist" := CoordinateDistance(new_x, new_y, opponent.x, opponent.y)
-            });
+            if (!IsTileHazardous(new_x, new_y))
+                locations.append(struct{
+                    "x" := new_x,
+                    "y" := new_y,
+                    "dist" := CoordinateDistance(new_x, new_y, opponent.x, opponent.y)
+                });
+            endif
         endif
         sleepms(2);
     endforeach
@@ -1331,6 +1341,11 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    // Aparencia Cadaverica: mortos vivos nao atacam quem parece um deles.
+    if (GetObjProperty(defender, "aparenciacadaverica") && attacker_cache.category_lower == "undead")
+        return 0;
+    endif
+
     // Cooldown to avoid ress kill
     if (Cint(GetCooldown(defender, "deathtime" )) > 0)
         // Allow combat if defender initiated it
@@ -1493,6 +1508,104 @@ function GetCachedLOS(opponent)
     return has_los;
 endfunction
 
+// Hazard detection cache (2s TTL, range 3 scan)
+// Returns hazard_cache_var struct with .tiles dictionary and .on_hazard flag
+function GetCachedHazardTiles()
+    var current_time := ReadGameClock();
+
+    if (hazard_cache_var && (current_time - hazard_cache_var.time) < 2)
+        return hazard_cache_var;
+    endif
+
+    var tile_dict := dictionary;
+    var on_hazard := 0;
+    var markers := ListItemsNearLocationOfType(me.x, me.y, me.z, 3, MARCADOR_PROPAGACAO_OBJTYPE, me.realm);
+    var cache := NPC_GetCachedData(me);
+    var is_elemental := (cache.category_lower == "elemental");
+
+    foreach marker in markers
+        if (Abs(me.z - marker.z) > 19)
+            continue;
+        endif
+        var prop := GetObjProperty(marker, "propPropagacao");
+        if (prop && prop.lerEstadoAtual > ESTADO_PROPAGACAO::DORMENTE)
+            // Elementals ignore fire hazards (but still avoid gas)
+            if (is_elemental && prop.tipoPropagacao == PROPAGACAO_TIPO::INCENDIO)
+                continue;
+            endif
+            var key := CStr(marker.x) + "_" + CStr(marker.y);
+            tile_dict[key] := 1;
+            if (marker.x == me.x && marker.y == me.y)
+                on_hazard := 1;
+            endif
+        endif
+        sleepms(2);
+    endforeach
+
+    hazard_cache_var := struct{
+        "tiles" := tile_dict,
+        "on_hazard" := on_hazard,
+        "time" := current_time
+    };
+
+    return hazard_cache_var;
+endfunction
+
+function IsTileHazardous(x, y)
+    if (!hazard_cache_var || !hazard_cache_var.tiles)
+        return 0;
+    endif
+    var key := CStr(x) + "_" + CStr(y);
+    return hazard_cache_var.tiles.exists(key);
+endfunction
+
+// One-tick escape reflex: if standing on a hazard, sidestep to the best adjacent safe tile
+// Returns 1 if the NPC moved this tick (caller should skip normal movement)
+function TickHazardEscape()
+    GetCachedHazardTiles();
+
+    if (!hazard_cache_var || !hazard_cache_var.on_hazard)
+        return 0;
+    endif
+
+    var best_x := me.x, best_y := me.y;
+    var best_score := -9999;
+    var found := 0;
+    var has_target := (me.opponent && !me.opponent.dead);
+
+    // Score 8 adjacent tiles: prefer safe tiles closer to opponent/anchor
+    var offsets := array{ {-1,-1}, {0,-1}, {1,-1}, {-1,0}, {1,0}, {-1,1}, {0,1}, {1,1} };
+    foreach off in offsets
+        var tx := me.x + off[1];
+        var ty := me.y + off[2];
+
+        if (IsTileHazardous(tx, ty))
+            continue;
+        endif
+
+        var score := 0;
+        if (has_target)
+            score := -CoordinateDistance(tx, ty, me.opponent.x, me.opponent.y);
+        elseif (anchor_var)
+            score := -CoordinateDistance(tx, ty, anchor_var[1], anchor_var[2]);
+        endif
+
+        if (score > best_score)
+            best_score := score;
+            best_x := tx;
+            best_y := ty;
+            found := 1;
+        endif
+    endforeach
+
+    if (found)
+        RunTowardLocation(best_x, best_y);
+        return 1;
+    endif
+
+    return 0;
+endfunction
+
 /*
  * PursueMelee(opponent)
  *
@@ -1546,11 +1659,20 @@ function PursueMelee(opponent)
     // Try pathfinding (no caching — use immediately)
     var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES, 20);
     if (path && path.size() > 0)
-        var coord := path[1];
-        if (should_run)
-            RunTowardLocation(coord.x, coord.y);
-        else
-            WalkTowardLocation(coord.x, coord.y);
+        // Find first non-hazardous step in the path
+        var coord := 0;
+        foreach waypoint in path
+            if (!IsTileHazardous(waypoint.x, waypoint.y))
+                coord := waypoint;
+                break;
+            endif
+        endforeach
+        if (coord)
+            if (should_run)
+                RunTowardLocation(coord.x, coord.y);
+            else
+                WalkTowardLocation(coord.x, coord.y);
+            endif
         endif
     else
         // Fallback: try last known position
@@ -1748,6 +1870,12 @@ function PursueTarget(opponent)
                     break;
                 endif
 
+                // Skip hazardous path steps — invalidate cache and break
+                if (IsTileHazardous(coord.x, coord.y))
+                    path_cache_var := 0;
+                    break;
+                endif
+
                 step_count += 1;
                 if (step_count % 3 == 0 && CheckLineOfSight(me, opponent))
                     SetOpponent(opponent);
@@ -1771,6 +1899,9 @@ function PursueTarget(opponent)
                     foreach coord in last_path
                         if (CheckLineOfSight(me, opponent))
                             SendEvent(me, struct{ "type" := SYSEVENT_ENGAGED, "source" := opponent });
+                            break;
+                        endif
+                        if (IsTileHazardous(coord.x, coord.y))
                             break;
                         endif
                         if (should_run)
@@ -2358,7 +2489,7 @@ function LootItem(npc, item)
         var backpack := CreateItemAtLocation(npc.x, npc.y, npc.z, "Backpack", 1);
         EquipItem(npc, backpack);
     endif
-    SetObjProperty(item, "#LootedBy", npc.serial);
+    SetObjProperty(item, "LootedBy", npc.serial);
 
     PrintTextAbove(npc, "*pega " + item.desc + "*");
     SetCooldown(npc, "already_looted", 300);

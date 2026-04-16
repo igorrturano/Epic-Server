@@ -34,8 +34,8 @@ function ShowLoreItemInfo(who, item, item_info)
 	var can_evaluate_skill := (player_skill >= item_info.required_skill_value);
 	var can_evaluate_archaeology := MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO);
 
-	var show_skill_info := 0;
-	var show_archaeology_info := 0;
+	var show_skill_info := evaluated_skill;
+	var show_archaeology_info := evaluated_archaeology;
 
 	while (1)
 		var gump := GFCreateGump();

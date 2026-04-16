@@ -58,7 +58,7 @@ function CalculateWearChance(equip)
 			wearChance -= 15.0;
 		endif
 	elseif (equip is @WeaponWrapper)
-		wearChance := 20.0;
+		wearChance := 2.0;
 	endif
 
 	if (wearChance < 5.0)
@@ -97,7 +97,7 @@ function CalculateWearDamage(equip)
 		damage := 1;
 	elseif (equip is @ArmorWrapper)
 		if (equip.IsShield())
-			damage := 5;
+			damage := 3;
 		else
 			damage := 1;
 		endif

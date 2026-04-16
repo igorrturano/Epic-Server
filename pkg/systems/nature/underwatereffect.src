@@ -7,24 +7,21 @@ include "include/say";
 
 program underwater(params)
 	var who := params[1];
-	var underwaterMessageSent := 0; // Flag to track if the underwater message was sent
+	var underwaterMessageSent := 0;
 
-	// Main loop to check the player's position and apply effects
-	while (1)
+	while (who)
 		var z := who.z;
 		var statics := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
 
 		var is_on_water_tile := 0;
 
-		// Check if player is on water tiles (0x16BA to 0x16CF)
 		foreach static in statics
-			if (Cint(static.objtype) >= 5818 && Cint(static.objtype) <= 5839)
+			if (CInt(static.objtype) >= 5818 && CInt(static.objtype) <= 5839)
 				is_on_water_tile := 1;
 				break;
 			endif
 		endforeach
 
-		// If the player is below -80z, apply stamina/health effects
 		if (is_on_water_tile && z <= -20)
 			if (GetCooldown(who, "can_breath") > 0)
 				return;
@@ -48,9 +45,8 @@ program underwater(params)
 			if (GetObjProperty(who, "underwater"))
 				EraseObjProperty(who, "underwater");
 				SendSysMessageEx(who, "Você consegue respirar novamente!", SSM_INFO);
-				underwaterMessageSent := 0; // Reset the flag when the player leaves underwater
-			// break;
 			endif
+			return;
 		endif
 
 		sleepms(2000);

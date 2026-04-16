@@ -1,0 +1,38 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":spells:Controller/SpellController";
+include ":charactercreation:resists";
+
+program UndeadImpedirCura(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead || targ.npctemplate)
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	var duration := tier * 10;
+
+	if (CheckResist(targ, WILL, RESIST_HARD))
+		SendSysMessageEx(targ, "Você resiste à maldição!", SSM_REQUEST);
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*amaldiçoa*");
+	PlaySoundEffect(me, 0x1ED);
+	PlayStationaryEffectEx(targ.x, targ.y, targ.z + 10, targ.realm, 0x3779, 5, 20);
+
+	// Use SpellController so player sees buff timer (icon 2735, same as necromancer impedircura)
+	SC_RemoveEffect(targ, 2735);
+	var opts := struct{};
+	opts.+properties := dictionary{ "nocure" -> 1 };
+	opts.+desc := "Maldição: Impedir Cura";
+	SC_ApplyEffect(me, targ, opts, duration, 2735);
+
+	SendSysMessageEx(targ, "Uma maldição impede sua cura!", SSM_FAIL);
+
+	return 1;
+endprogram

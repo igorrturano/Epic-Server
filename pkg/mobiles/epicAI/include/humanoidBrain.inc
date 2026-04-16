@@ -104,7 +104,9 @@ function HumanoidBrain()
             else
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
                 if (SM_GetState() != "FLEEING")
-                    PursueTarget(me.opponent);
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
                 endif
                 // Per-tick casting + abilities — keep offensive pressure
                 UseAbilities(me, me.opponent);
@@ -629,7 +631,7 @@ function ChooseRogueAbility(npc, state, habs)
     endif
 
     if (AP_GetVital(npc, STAMINA) < 40)
-        if (myhabs_set_var.exists(ABILITY_ID::REFLEXO_ESTRATEGICO))  return ABILITY_ID::REFLEXO_ESTRATEGICO;  endif
+        if (myhabs_set_var.exists(ABILITY_ID::POSTURA_DE_DUELO))  return ABILITY_ID::POSTURA_DE_DUELO;  endif
     endif
 
     if (npc.hidden)

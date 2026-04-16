@@ -4,6 +4,7 @@ use os;
 include ":attributes:attributes";
 include ":training:training";
 include ":estudar:estudavel";
+include ":tn:cooldown";
 
 // ============================================================================
 // COMANDO PLAYER: Estudar item
@@ -47,7 +48,11 @@ endfunction
 
 function VerificarLimiteSkill(who, skill_name)
     var skill_atual := AP_GetTrueSkill(who, skill_name);
-    if (skill_atual >= SKILL_LIMIT)
+    var cap := AP_GetSkillCap(who, skill_name);
+    if (cap < SKILL_LIMIT)
+        cap := SKILL_LIMIT;
+    endif
+    if (skill_atual >= cap)
         SendSysMessage(who, "Sua habilidade em " + skill_name + " já está no máximo para estudo.");
         return 0;
     endif
@@ -95,7 +100,18 @@ function ExecutarEstudo(who, item)
         return 0;
     endif
 
+    var cd := getCooldown(who, "estudar");
+    if (cd)
+        SendSysMessage(who, "Você precisa esperar " + cd + " segundos para estudar novamente.");
+        return 0;
+    endif
+
     var skill_name := GetObjProperty(item, "estudavel");
+
+    if (AP_GetTrueSkill(who, skill_name) <= 0)
+        SendSysMessage(who, "Você não possui a habilidade " + skill_name + " e não pode estudá-la.");
+        return 0;
+    endif
 
     if (!VerificarLimiteSkill(who, skill_name))
         return 0;
@@ -104,14 +120,16 @@ function ExecutarEstudo(who, item)
     var frases := GetFrasesPorSkill(skill_name);
     ExecutarSequenciaAcoes(who, frases);
 
-    var skill_before := AP_GetTrueSkill(who, skill_name);
-    SendSysMessage(who, "Skill " + skill_name + " antes: " + skill_before + "%");
+    setCooldown(who, "estudar", 60);
 
     // 33% de chance de ganhar skill
     if (RandomInt(100) < 33)
-        AP_SetTrueSkill(who, skill_name, AP_GetTrueSkill(who, skill_name) + GAIN_AMOUNT);
-        var skill_after := AP_GetTrueSkill(who, skill_name);
-        SendSysMessage(who, "Skill depois: " + skill_after + "%");
+        var cap := AP_GetSkillCap(who, skill_name);
+        var new_skill := AP_GetTrueSkill(who, skill_name) + GAIN_AMOUNT;
+        if (new_skill > cap)
+            new_skill := cap;
+        endif
+        AP_SetTrueSkill(who, skill_name, new_skill);
         SendSysMessage(who, "Você ganhou " + GAIN_AMOUNT + " em " + skill_name + "!");
         return 1;
     else

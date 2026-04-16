@@ -153,7 +153,7 @@ function AP_GetSkillCap(mobile, skill_name:=NO_SKILL_NAME)
     // Calculate thecap limit
     var age_limit := limiteportempo(mobile);
     var skill_cap := Min(cap_val, age_limit);
-    var total_skill_cap := CInt(initial_skill_value + skill_cap);
+    var total_skill_cap := CDbl(initial_skill_value + skill_cap);
 
     // Return the lower value between the config-based cap and the age-based cap
     return total_skill_cap;
@@ -360,15 +360,21 @@ function limiteportempo(who)
     endif
 
     var dias := idadeChar(who);
-    var lim := 6;
+    var lim;
 
-    if (dias <= 10)
-        lim := lim + dias * 2;
+    if (dias <= 5)
+        lim := (dias + 1) * 2;
+    elseif (dias <= 11)
+        lim := 12 + (dias - 5) * 1;
+    elseif (dias <= 55)
+        lim := 18 + (dias - 11) * 0.5;
+    elseif (dias <= 80)
+        lim := 40 + (dias - 55) * 0.4;
     else
-        lim := 26 + (dias - 10) * 0.5;
+        lim := 50 + (dias - 80) * 0.3;
     endif
 
-    return Min(lim, 100);
+    return Min(lim, 60);
 endfunction
 
 /*

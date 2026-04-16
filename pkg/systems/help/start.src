@@ -1,0 +1,13 @@
+use os;
+
+program start()
+
+    var script := start_script("checkhelp");
+
+    if (script.errortext)
+        SysLog("Help system error: " + script.errortext);
+    else
+        Print("Help system initialized.");
+    endif
+
+endprogram

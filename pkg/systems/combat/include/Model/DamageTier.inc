@@ -116,5 +116,10 @@ enum class DAMAGE_TIER
 
 	FIREWEAPON_LOW := "FIREWEAPON_LOW",
 	FIREWEAPON_MID := "FIREWEAPON_MID",
-	FIREWEAPON_HIGH := "FIREWEAPON_HIGH"
+	FIREWEAPON_HIGH := "FIREWEAPON_HIGH",
+
+	// NPC-only tiers (not available on player weapons)
+	NPC_LOW := "NPC_LOW",
+	NPC_MID := "NPC_MID",
+	NPC_HIGH := "NPC_HIGH"
 endenum

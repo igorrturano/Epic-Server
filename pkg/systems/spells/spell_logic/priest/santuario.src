@@ -2,12 +2,15 @@ use uo;
 use os;
 include ":attributes:attributes";
 include ":tn:cooldown";
+include ":hotbar:include/custombuff";
 
 program sanctuary(params)
 	var who := params[1];
+	var spell := params[3];
 
 	var duration := Cint(AP_GetSkill(who, THEOLOGY) / 2);
 	var i := 0;
+	SendSpellBuff(who, who, CInt(spell.id), duration);
 	PLaySoundEffect(who, 0x216);
 	while (protected(who) && i < duration)
 		GrantPrivilege(who, "invul");

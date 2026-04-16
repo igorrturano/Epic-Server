@@ -1,0 +1,125 @@
+use uo;
+use os;
+use datafile;
+
+program mapeador_use(who, mapeador)
+    var guild := who.guild;
+    if (!guild)
+        SendSysMessage(who, "Você não pertence a uma facção.");
+        return 0;
+    endif
+
+    var faction_name := guild.GetProp("name");
+    if (!faction_name)
+        SendSysMessage(who, "Sua guilda não parece ser uma facção válida.");
+        return 0;
+    endif
+
+    if (GetObjProperty(who, "#MapeadorActive"))
+        SendSysMessage(who, "O mapeador já está em uso, aguarde desaparecer as bordas.");
+        return 0;
+    endif
+
+    SendSysMessage(who, "Procurando territórios da facção " + faction_name + "...");
+
+    var df := OpenDataFile(":architect:areas");
+    if (!df)
+        SendSysMessage(who, "Erro ao acessar os territórios do servidor.");
+        return 0;
+    endif
+
+    var found := 0;
+    var borders := array{};
+
+    foreach area_name in (df.keys())
+        var elem := df.FindElement(area_name);
+        if (elem.GetProp("Faction") == faction_name)
+            var rects := SplitWords(elem.GetProp("Rect"));
+            var realm := elem.GetProp("Realm");
+            if (!realm) 
+                realm := who.realm; 
+            endif
+            
+            if (rects.size() >= 4)
+                var x1 := CInt(rects[1]);
+                var y1 := CInt(rects[2]);
+                var x2 := CInt(rects[3]);
+                var y2 := CInt(rects[4]);
+                var x, y, z;
+                
+                // Desenhar as bordas horizontais (cima e baixo)
+                for (x := x1; x <= x2; x += 1)
+                    // Borda superior
+                    z := GetWorldHeight(x, y1, realm);
+                    var item1 := CreateItemAtLocation(x, y1, z, 0xF240, 1, realm);
+                    if (item1)
+                        item1.invisible := 0;
+                        item1.color := 39;
+                        item1.saveonexit := 0;
+                        borders.append(item1);
+                    endif
+                    
+                    // Borda inferior
+                    z := GetWorldHeight(x, y2, realm);
+                    var item2 := CreateItemAtLocation(x, y2, z, 0xF240, 1, realm);
+                    if (item2)
+                        item2.invisible := 0;
+                        item2.color := 39;
+                        item2.saveonexit := 0;
+                        borders.append(item2);
+                    endif
+                endfor
+                
+                // Desenhar as bordas verticais (esquerda e direita)
+                for (y := y1 + 1; y < y2; y += 1)
+                    // Borda esquerda
+                    z := GetWorldHeight(x1, y, realm);
+                    var item3 := CreateItemAtLocation(x1, y, z, 0xF240, 1, realm);
+                    if (item3)
+                        item3.invisible := 0;
+                        item3.color := 39;
+                        item3.saveonexit := 0;
+                        borders.append(item3);
+                    endif
+                    
+                    // Borda direita
+                    z := GetWorldHeight(x2, y, realm);
+                    var item4 := CreateItemAtLocation(x2, y, z, 0xF240, 1, realm);
+                    if (item4)
+                        item4.invisible := 0;
+                        item4.color := 39;
+                        item4.saveonexit := 0;
+                        borders.append(item4);
+                    endif
+                endfor
+                
+                found += 1;
+            endif
+        endif
+    endforeach
+
+    if (found > 0)
+        SendSysMessage(who, "As bordas dos territórios foram marcadas! Elas sumirão em 5 minutos.");
+        
+        SetObjProperty(who, "#MapeadorActive", 1);
+        
+        // Detach do script para a thread rodar em background
+        Detach();
+        
+        // Dorme por 5 minutos (300 segundos)
+        Sleep(300); 
+        
+        // Limpa os itens (Usamos um loop seguro que ignora se o item já foi sumido por algum motivo)
+        foreach border in (borders)
+            if (border)
+                DestroyItem(border);
+            endif
+        endforeach
+        
+        EraseObjProperty(who, "#MapeadorActive");
+    else
+        SendSysMessage(who, "A facção " + faction_name + " não tem territórios registrados.");
+    endif
+
+    return 1;
+endprogram

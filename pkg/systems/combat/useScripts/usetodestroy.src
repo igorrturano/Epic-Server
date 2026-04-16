@@ -16,6 +16,10 @@ include ":tn:cooldown";
 include ":destroyable:include/destroyItem";
 
 program use_Break(who, tool)
+	if (who.warmode)
+		return ComportamentoWarMode(who, tool);
+	endif
+	
 	// If weapon is not equipped, equip it
 	if (who.weapon != tool)
 		if (EquipItem(who, tool))
@@ -27,6 +31,7 @@ program use_Break(who, tool)
 			return 0;
 		endif
 	endif
+
 
 	Message("Dica: Clique na arma equipada para desarmá-la.").SetColor(SSM_INFO).SendSys(who);
 	var targ := TargetCoordinates(who);
@@ -41,7 +46,4 @@ program use_Break(who, tool)
 		endif
 	endif
 
-	if (who.warmode)
-		return ComportamentoWarMode(who, tool);
-	endif
 endprogram

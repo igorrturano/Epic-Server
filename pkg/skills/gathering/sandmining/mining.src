@@ -24,6 +24,11 @@ var resources_data_file := DFOpenDataFile("MiscResources", DF_CREATE);
 
 program SandMining(who, scoop)
 
+	if (!FindObjtypeInContainer(who.backpack, scoop.objtype))
+		SendSysMessageEx(who, "Voce precisa ter uma colher de areia na mochila.", SSM_FAIL);
+		return;
+	endif
+
 	SendSysMessageEx(who, "Onde voce quer pegar areia?", SSM_REQUEST);
 	var targ := TargetCoordinates(who);
 
@@ -68,7 +73,13 @@ function MiningLoop(who, scoop, my_x, my_y, my_facing, location_name)
 		PerformAction(who, MINING_ANIMATION);
 		PlaySoundEffect(who, MINING_SOUND);
 		sleep(1);
-		if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
+		if (who.hidden || (who.x != my_x) || (who.y != my_y) || (who.facing != my_facing))
+			return 0;
+		elseif (GetEquipmentByLayer(who, LAYER_MOUNT))
+			SendSysMessageEx(who, "Voce nao pode cavar montado.", SSM_FAIL);
+			return 0;
+		elseif (!FindObjtypeInContainer(who.backpack, scoop.objtype))
+			SendSysMessageEx(who, "Voce precisa ter uma colher de areia na mochila.", SSM_FAIL);
 			return 0;
 		endif
 	endfor
