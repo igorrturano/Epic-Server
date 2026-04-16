@@ -140,7 +140,7 @@ function validateAndResummonMobs(altar, mobsBySerial, totalMobs)
 		// Check existing mobs
 		foreach serial in mobs
 			var mob := SystemFindObjectBySerial(serial);
-			if (mob)
+			if (mob && !mob.dead && !mob.master)
 				currentMobs.append(serial);
 			endif
 		endforeach
