@@ -1,0 +1,29 @@
+use uo;
+use os;
+
+include ":charactercreation:resists";
+include ":timedScripts:timedScripts";
+
+program Sabotage(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	if (Distance(me, targ) > 1)
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*sabota equipamento*");
+
+	if (!CheckResist(targ, REFLEXES, RESIST_HARD))
+		TS_StartTimer(targ, "desarmar", 8);
+		SendSysMessageEx(targ, "Sua arma foi sabotada!", SSM_FAIL);
+	else
+		SendSysMessageEx(targ, "Você protege seu equipamento!", SSM_REQUEST);
+	endif
+
+	return 1;
+endprogram

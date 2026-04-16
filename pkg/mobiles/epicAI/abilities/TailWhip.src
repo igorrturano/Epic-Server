@@ -1,0 +1,41 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Controller/DamageController_legacy";
+include ":charactercreation:resists";
+include ":timedScripts:timedScripts";
+include "include/utils";
+
+program TailWhip(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead)
+		return 0;
+	endif
+
+	if (Distance(me, targ) > 2)
+		return 0;
+	endif
+
+	if (GetCooldown(me, "tailwhip"))
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	var damage := tier * 3;
+
+	PrintTextAbove(me, "*chicoteia com a cauda*");
+	DamageFLS(targ, damage, DMG_BLUNT, me, "tailwhip");
+
+	if (!CheckResist(targ, REFLEXES, RESIST_MEDIUM))
+		TS_StartTimer(targ, "lentidao", 3);
+		PushMobile(me, 2, 50, targ);
+	else
+		SendSysMessageEx(targ, "Voce se firma e resiste ao empurrao!", SSM_REQUEST);
+	endif
+
+	SetCooldown(me, "tailwhip", 12);
+	return 1;
+endprogram

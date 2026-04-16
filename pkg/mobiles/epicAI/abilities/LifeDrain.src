@@ -1,0 +1,35 @@
+use uo;
+use os;
+use vitals;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Controller/DamageController_legacy";
+include ":charactercreation:resists";
+
+program LifeDrain(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead)
+		return 0;
+	endif
+
+	if (Distance(me, targ) > 1)
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	var drain := tier * 5;
+
+	PrintTextAbove(me, "*drena vida*");
+
+	if (!CheckResist(targ, WILL, RESIST_MEDIUM))
+		DamageFLS(targ, drain, DMG_ENERGY, me, "lifedrain");
+		HealDamage(me, drain);
+		SendSysMessageEx(targ, "Sua vida é drenada!", SSM_FAIL);
+	else
+		SendSysMessageEx(targ, "Você resiste à drenagem de vida.", SSM_REQUEST);
+	endif
+
+	return 1;
+endprogram

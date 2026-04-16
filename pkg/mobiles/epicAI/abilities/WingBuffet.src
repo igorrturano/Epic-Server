@@ -1,0 +1,58 @@
+use uo;
+use os;
+use vitals;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":charactercreation:resists";
+include "include/facings";
+include "include/utils";
+
+program WingBuffet(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead)
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	var stamina_drain := tier * 10;
+	var knockback_dist := 3 + tier;
+
+	PrintTextAbove(me, "*bate as asas*");
+	PlaySoundEffect(me, 0x20F);
+
+	var targets := ListMobilesNearLocation(me.x, me.y, me.z, 4, me.realm);
+	foreach mobile in (targets)
+		sleepms(2);
+		if (mobile.serial == me.serial || mobile.dead)
+			continue;
+		endif
+		if (mobile.npctemplate && !mobile.master)
+			continue;
+		endif
+		if (!InPosition(me, mobile.x, mobile.y, FACE_POS_INFRONT))
+			continue;
+		endif
+
+		// Drain stamina — FORTITUDE resist halves the drain
+		var drain := stamina_drain;
+		if (CheckResist(mobile, FORTITUDE, RESIST_HARD))
+			drain := CInt(stamina_drain / 2);
+			SendSysMessageEx(mobile, $"Você resiste parcialmente! O vento drena {drain} de stamina.", SSM_REQUEST);
+		else
+			SendSysMessageEx(mobile, $"O vento das asas drena {drain} de stamina!", SSM_FAIL);
+		endif
+
+		var cur_stam := GetVital(mobile, STAMINA) / 100;
+		var new_stam := cur_stam - drain;
+		if (new_stam < 0)
+			new_stam := 0;
+		endif
+		SetVital(mobile, STAMINA, new_stam * 100);
+
+		PushMobile(me, knockback_dist, 50, mobile);
+	endforeach
+
+	return 1;
+endprogram
