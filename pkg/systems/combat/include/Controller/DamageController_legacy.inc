@@ -445,6 +445,7 @@ if (totaldmg > 0)
 
     lastHit["amount"] := totaldmg;
     lastHit["time"] := polcore().systime;
+    lastHit["type"] := type;
 
     SetObjProperty(defender, "lastHit", lastHit);
 endif
@@ -678,6 +679,7 @@ if (totaldmg > 0)
 
     lastHit["amount"] := totaldmg;
     lastHit["time"] := polcore().systime;
+    lastHit["type"] := type;
 
     SetObjProperty(defender, "lastHit", lastHit);
 endif
