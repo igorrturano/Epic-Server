@@ -62,6 +62,13 @@ program architect_gump(params)
 			SendSysMessageEx(who, "Você não tem a habilidade de arquiteto.", SSM_INFO);
 			return 0;
 		endif
+
+		// Facções do tipo "staff" não podem construir com o architect
+		var _guild := who.guild;
+		if (_guild && _guild.GetProp("tipo_faccao") == "staff")
+			SendSysMessageEx(who, "Membros da facção staff não podem usar o architect.", SSM_INFO);
+			return 0;
+		endif
 	else
 		SendSysMessageEx(who, "Apenas GMs podem usar este comando. Use a ferramenta de construção.", SSM_INFO);
 		return 0;
@@ -1571,6 +1578,7 @@ program architect_gump(params)
 		// sub group chosen
 		elseif (result[0] < -100)
 			choice[3] := subgroups[Abs(result[0] + 100)];
+			DrawResourcesOnGump(choice[3], who);
 			groupparts := GetConfigStringArray(parts[choice[2]], choice[3]);
 			makeArrayNumerical(groupparts);
 			groupparts.sort();
