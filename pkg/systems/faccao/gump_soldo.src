@@ -1,0 +1,29 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+
+// Exibe o ícone 0x7D2 como notificação de soldo.
+// Ao clicar: toca som e envia sysmsg ao jogador.
+// Ao fechar sem clicar: apenas remove a flag pendente.
+// Entrada: params[1] = mobile (passado via start_script)
+
+program gump_soldo(params)
+	var mob := (TypeOf(params) == "Array") ? params[1] : params;
+
+	if (!mob || !mob.isA(POLCLASS_MOBILE) || !mob.connected)
+		return;
+	endif
+
+	var gump := GFCreateGump(10, 30);
+	GFAddButton(gump, 0, 0, 0x7D2, 0x7D2, GF_CLOSE_BTN, 1);
+
+	var input := GFSendGump(mob, gump);
+
+	if (input[0] == 1)
+		PlaySoundEffect(mob, 0x038);
+		SendSysMessage(mob, "Hoje é o dia do pagamento do soldo, fale com seu lider.");
+	endif
+
+	EraseObjProperty(mob, "notif_soldo");
+endprogram
