@@ -267,7 +267,7 @@ function _HasFocoArcanoManaDiscount(mw)
 		return false;
 	endif
 
-	var weaponCategory := WeaponWrapper(weapon).GetCategory();
+	var weaponCategory := weapon.GetCategory();
 	return weaponCategory == WEAPON_CATEGORY::STAFF ||
 	       weaponCategory == WEAPON_CATEGORY::SPIRITUALBLADE ||
 	       weaponCategory == WEAPON_CATEGORY::MAGICBOW;
