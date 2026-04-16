@@ -14,6 +14,7 @@ include ":mounts:mounts";
 include ":tn:characters";
 include ":tn:boss";
 include ":charactercreation:habilidades";
+include "include/epicNPCUtils";
 // include ":damage:damage"; para os criticos talvez?
 
 const START_Y := 91;
@@ -152,6 +153,12 @@ function SetTamingCooldown(who)
 endfunction
 
 function SetTamedProperties(targ, who)
+	EraseObjProperty(targ, "NpcTier");
+	EraseObjProperty(targ, "#npc_cache");
+	SetObjProperty(targ, "hitsmod", 0);
+	var npc_elem := NPC_GetNPCConfig(targ);
+	customizeNpc(targ, npc_elem.Tier);
+
 	SetObjProperty(targ, "owner", who.serial);
 	SetObjProperty(targ, "name", targ.name);
 	SetObjProperty(targ, "script", targ.script);
