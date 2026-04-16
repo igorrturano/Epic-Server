@@ -278,6 +278,20 @@ function CalculateAbilityHitModifier(byref hit_chance, attackInfo)
 		hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(TACTICS) / 10);
 	endif
 
+	// Postura de Duelo: dual wield attacker bonus
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::POSTURA_DE_DUELO))
+		if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(DUALWIELD))
+			hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(TACTICS) / 10);
+		endif
+	endif
+
+	// Postura de Duelo: empty off-hand defender evasion
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::POSTURA_DE_DUELO))
+		if (!GetEquipmentByLayer(attackInfo.GetDefender().GetObjRef(), LAYER_HAND2))
+			hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(TACTICS) / 10);
+		endif
+	endif
+
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::MANCHA_DA_CORRUPCAO))
 		hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(THEOLOGY) / 10);
 	endif
