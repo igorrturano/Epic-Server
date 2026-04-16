@@ -30,6 +30,12 @@ program ChargeImpact(params)
 		timeout := timeout - 0.25;
 	endwhile
 
+	// If never reached melee range, cancel the charge
+	if (Distance(attacker, defender) > 2)
+		EraseObjProperty(attacker, "#chargestart");
+		return 0;
+	endif
+
 	var charge_start := GetObjProperty(attacker, "#chargestart");
 	if (!charge_start)
 		return 0;
