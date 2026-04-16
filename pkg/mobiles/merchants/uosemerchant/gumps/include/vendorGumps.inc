@@ -228,7 +228,7 @@ function PainelProduto(byref gump,session ,x,y,isAdministrador)
 
 		GFAddButton(gump, x + 26,y + 141,4037,4036,GF_CLOSE_BTN, baseIdBotao);//comprar
 		GFTooltipText( gump, "Comprar" );
-		if(isAdministrador || itemNoIndice.item.isVendaJogador)
+		if(isAdministrador || itemNoIndice.isVendaJogador)
 			GFAddButton(gump, x + 66,y + 147,2639,2637,GF_CLOSE_BTN, baseIdBotao + 1);//deletar
 		endif
 		x += PAINELPRODUTO_COLUNA_X;
