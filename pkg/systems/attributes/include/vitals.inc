@@ -292,9 +292,26 @@ endfunction
  * @return 1 se aplicou, 0 se bloqueado por nocure
  */
 function applyEpicHealing(mobile, amt)
-	if (GetObjProperty(mobile, "nocure"))
-		PrintTextAbove(mobile, "*Não pode ser curado*");
-		return 0;
+	var nocure := GetObjProperty(mobile, "nocure");
+	if (nocure)
+		// Value > 1 is a timestamp (from undead ability) — auto-expire
+		if (nocure > 1 && polcore().systime >= nocure)
+			EraseObjProperty(mobile, "nocure");
+		else
+			PrintTextAbove(mobile, "*Não pode ser curado*");
+			return 0;
+		endif
+	endif
+
+	// Demon/Undead CurseHeal — healing reduction
+	var healreduction := GetObjProperty(mobile, "#healreduction");
+	if (healreduction != error)
+		if (polcore().systime < healreduction.expires)
+			amt := CInt(amt * (1.0 - healreduction.percent / 100.0));
+			SendSysMessageEx(mobile, $"A maldição reduz sua cura em {healreduction.percent}%!", SSM_FAIL);
+		else
+			EraseObjProperty(mobile, "#healreduction");
+		endif
 	endif
 
 	var wrapper := MobileWrapper(mobile);

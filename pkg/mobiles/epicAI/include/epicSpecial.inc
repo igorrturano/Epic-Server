@@ -1180,7 +1180,7 @@ function UndeadImpedirCura(me, targ)
 	PlaySoundEffect(me, 0x1ED);
 	PlayStationaryEffectEx(targ.x, targ.y, targ.z + 10, targ.realm, 0x3779, 5, 20);
 
-	SetObjProperty(targ, "#nocure", polcore().systime + duration);
+	SetObjProperty(targ, "nocure", polcore().systime + duration);
 	SendSysMessageEx(targ, "Uma maldição impede sua cura!", SSM_FAIL);
 
 	return 1;
