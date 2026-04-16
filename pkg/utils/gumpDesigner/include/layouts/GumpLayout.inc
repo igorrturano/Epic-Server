@@ -1,11 +1,9 @@
 include "system/exception/ParameterException/InvalidParameterException";
 
-include "GumpTitle";
-include "GumpBody";
-include ":gumpDesigner:controls/containers/Container";
-include ":gumpDesigner:controls/ImageGumpTiled";
+include "Layout";
+include ":gumpDesigner:factories/GumpFactory";
 
-class GumpLayout(Container)
+class GumpLayout(Layout)
 	var borders := struct{
 		topLeft,
 		top,
@@ -23,7 +21,8 @@ class GumpLayout(Container)
 	var pageLayout;
 	
 	function GumpLayout(this)
-		Super("Gump Layout", 0, 0, 0, 0);
+		Super();
+		this._SetName("GumpLayout");
 		this.borders := GumpLayout::borders;
 		this._InitializeTitle();
 		this._InitializeBody();
@@ -147,12 +146,12 @@ class GumpLayout(Container)
 		return this.titleLayout;
 	endfunction
 
-	function SetTitleLayout(this, gumpTitle)
-		if (!(gumpTitle is @GumpTitle))
-			return InvalidParameterException("Title layout must be an GumpTitle.");
+	function SetTitleLayout(this, titleLayout)
+		if (!(titleLayout is @TitleLayout))
+			return InvalidParameterException("Title layout must be an TitleLayout.");
 		endif
 
-		this.titleLayout := gumpTitle;
+		this.titleLayout := titleLayout;
 
 		return this;
 	endfunction
@@ -161,12 +160,12 @@ class GumpLayout(Container)
 		return this.pageLayout;
 	endfunction
 
-	function SetPageLayout(this, gumpBody)
-		if (!(gumpBody is @GumpBody))
-			return InvalidParameterException("Page layout must be an GumpBody.");
+	function SetPageLayout(this, bodyLayout)
+		if (!(bodyLayout is @BodyLayout))
+			return InvalidParameterException("Page layout must be an BodyLayout.");
 		endif
 
-		this.pageLayout := gumpBody;
+		this.pageLayout := bodyLayout;
 
 		return this;
 	endfunction
