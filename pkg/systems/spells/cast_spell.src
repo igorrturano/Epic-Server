@@ -96,13 +96,13 @@ function initializeSpellCasting(mobile, mw, byref spellinfo, scroll)
 		return 0;
 	endif
 
-	if (mobile.frozen)
+	if (mobile.frozen && spellinfo.Type != "Ninjutsu")
 		SendSysMessageEx(mobile, "Voce nao pode invocar um encanto paralisado.", SSM_FAIL);
 		EraseObjProperty(mobile, "#Casting");
 		return 0;
 	endif
 
-	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
+	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) && spellinfo.Type != "Ninjutsu")
 		mobile.frozen := 1;
 	endif
 
