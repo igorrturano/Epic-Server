@@ -5,34 +5,21 @@ include ":gumpDesigner:factories/GumpFactory";
 class GoldenGumpLayout(GumpLayout)
 	function GoldenGumpLayout(this)
 		Super();
-		this._InitializeElements();
-		this._InsertControls();
+		this.ConfigureControls();
+		this.PositionControls();
+		this.InsertControls();
 	endfunction
 
-	function _InitializeElements(this)
-		var factory := GumpFactory();
-		this.SetBorder_TopLeft(factory.CreateImageGumpTiled()._SetName("Top Left Border").SetImageId(39925));
-		this.SetBorder_Top(factory.CreateImageGumpTiled()._SetName("Top Border").SetImageId(39926));
-		this.SetBorder_TopRight(factory.CreateImageGumpTiled()._SetName("Top Right Border").SetImageId(39927));
-		this.SetBorder_Left(factory.CreateImageGumpTiled()._SetName("Left Border").SetImageId(39928));
-		this.SetBorder_Right(factory.CreateImageGumpTiled()._SetName("Right Border").SetImageId(39930));
-		this.SetBorder_BottomLeft(factory.CreateImageGumpTiled()._SetName("Bottom Left Border").SetImageId(39931));
-		this.SetBorder_Bottom(factory.CreateImageGumpTiled()._SetName("Bottom Border").SetImageId(39932));
-		this.SetBorder_BottomRight(factory.CreateImageGumpTiled()._SetName("Bottom Right Border").SetImageId(39933));
-		this.SetBackground(factory.CreateImageGumpTiled()._SetName("Background").SetImageId(39929));
-		this.Set
-	endfunction
-
-	function _InsertControls(this)
-		this.AddControl(this.GetBackground());
-		this.AddControl(this.GetBorder_Left());
-		this.AddControl(this.GetBorder_Right());
-		this.AddControl(this.GetBorder_Top());
-		this.AddControl(this.GetBorder_TopLeft());
-		this.AddControl(this.GetBorder_TopRight());
-		this.AddControl(this.GetBorder_Bottom());
-		this.AddControl(this.GetBorder_BottomLeft());
-		this.AddControl(this.GetBorder_BottomRight());
+	function ConfigureControls(this)
+		this.GetBorder_TopLeft().SetImageId(39925);
+		this.GetBorder_Top().SetImageId(39926);
+		this.GetBorder_TopRight().SetImageId(39927);
+		this.GetBorder_Left().SetImageId(39928);
+		this.GetBorder_Right().SetImageId(39930);
+		this.GetBorder_BottomLeft().SetImageId(39931);
+		this.GetBorder_Bottom().SetImageId(39932);
+		this.GetBorder_BottomRight().SetImageId(39933);
+		this.GetBackground().SetImageId(39929);
 	endfunction
 
 	function PositionControls(this)
@@ -93,10 +80,10 @@ class GoldenGumpLayout(GumpLayout)
 	 */
 	function PositionTitle(this)
 		var title := this.GetTitleLayout();
-		title.SetX(25);
-		title.SetY(15);
+		title.SetXOffset(25);
+		title.SetYOffset(15);
 		title.SetHeight(40);
-		title.SetWidth(this.GetWidth() - (2 * title.GetX()));
+		title.SetWidth(this.GetWidth() - (2 * title.GetXOffset()));
 	endfunction
 
 	/**
@@ -112,11 +99,12 @@ class GoldenGumpLayout(GumpLayout)
 	 */
 	function PositionBody(this)
 		var separator := 5;
+		var title := this.GetTitleLayout();
 		var body := this.GetBodyLayout();
-		body.SetX(this.GetTitleLayout().GetX());
-		body.SetY(this.GetTitleLayout().GetY() + this.GetTitleLayout().GetHeight() + separator);
-		body.SetWidth(this.GetTitleLayout().GetWidth());
-		body.SetHeight(this.GetHeight() - this.GetTitleLayout().GetY() - this.GetTitleLayout().GetHeight() - (2 * separator));
+		body.SetXOffset(title.GetXOffset());
+		body.SetYOffset(title.GetYOffset() + title.GetHeight() + separator);
+		body.SetWidth(title.GetWidth());
+		body.SetHeight(this.GetHeight() - title.GetYOffset() - title.GetHeight() - (2 * separator));
 	endfunction
 
 	function ToString(this)

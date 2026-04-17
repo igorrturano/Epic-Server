@@ -136,6 +136,19 @@ class Layout(Container, ILayout)
 		return this;
 	endfunction
 
+	function InsertControls(this)
+		this.AddControl(this.GetBackground());
+		this.AddControl(this.GetBorder_Left());
+		this.AddControl(this.GetBorder_Right());
+		this.AddControl(this.GetBorder_Top());
+		this.AddControl(this.GetBorder_TopLeft());
+		this.AddControl(this.GetBorder_TopRight());
+		this.AddControl(this.GetBorder_Bottom());
+		this.AddControl(this.GetBorder_BottomLeft());
+		this.AddControl(this.GetBorder_BottomRight());
+	endfunction
+
+
 	function ToString(this)
 		return "(GumpLayout) " + Super::ToString(this)
 			+ ", background=" + this.GetBackground().ToString()
