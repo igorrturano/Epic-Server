@@ -696,7 +696,9 @@ endfunction
 
 function GetColorConfigElement(color_cfg, cultura, raca)
     var index_elem;
-    if (cultura == "Björska")
+    if (raca == "Qualquer")
+        index_elem := color_cfg["Index"];
+    elseif (cultura == "Björska")
         index_elem := color_cfg["Bjorska"];
     elseif (raca == "Orc")
         index_elem := color_cfg["Orc"];
@@ -706,8 +708,6 @@ function GetColorConfigElement(color_cfg, cultura, raca)
         index_elem := color_cfg["Elfo"];
     elseif (raca == "Anão")
         index_elem := color_cfg["Anao"];
-    elseif (raca == "Qualquer")
-        index_elem := color_cfg["Index"];
     else
         index_elem := color_cfg["Imperial"];
     endif
