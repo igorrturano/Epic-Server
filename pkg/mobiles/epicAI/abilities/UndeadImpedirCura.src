@@ -28,9 +28,12 @@ program UndeadImpedirCura(params)
 	// Use SpellController so player sees buff timer (icon 2735, same as necromancer impedircura)
 	SC_RemoveEffect(targ, 2735);
 	var opts := struct{};
-	opts.+properties := dictionary{ "nocure" -> 1 };
 	opts.+desc := "Maldição: Impedir Cura";
 	SC_ApplyEffect(me, targ, opts, duration, 2735);
+
+	// Safety: set nocure as timestamp so applyEpicHealing auto-expires it
+	// even if the SC end-timer fails to fire (avoids permanent lockout)
+	SetObjProperty(targ, "nocure", polcore().systime + duration);
 
 	SendSysMessageEx(targ, "Uma maldição impede sua cura!", SSM_FAIL);
 
