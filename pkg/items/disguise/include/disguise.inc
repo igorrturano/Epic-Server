@@ -9,6 +9,7 @@ include ":charactercreation:habilidades";
 include ":timedscripts:timedScripts";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include "include/epicConstants";
 
 function removeDisguise(who)
 	var original := GetObjProperty(who, "disfarce");
@@ -312,7 +313,7 @@ endfunction
 function escolherBarba(who, byref disfarce, preview := 0)
 	UnloadConfigFile(":fls_core:config/hairtypes");
 	var config := ReadConfigFile(":fls_core:config/hairtypes");
-	var hair := config["beard"];
+	var hair := (who.getRace() == ANAO) ? config["dwarwen_beard"] : config["beard"];
 	var beardStyles := GetConfigStringArray(hair, "style");
 
 	if (preview)
