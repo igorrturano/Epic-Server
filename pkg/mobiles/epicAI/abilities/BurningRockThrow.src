@@ -1,0 +1,43 @@
+use uo;
+use os;
+
+include ":combat:Controller/DamageController_legacy";
+include ":charactercreation:resists";
+
+program BurningRockThrow(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	if (!CheckLineOfSight(me, targ))
+		return 0;
+	endif
+
+	var tier := CInt(GetObjProperty(me, "NpcTier"));
+	if (tier < 1)
+		tier := 1;
+	endif
+
+	PrintTextAbove(me, "*arremessa rocha incandescente*");
+	PlayMovingEffectXYZ(me.x, me.y, me.z + 10, targ.x, targ.y, targ.z + 10, 0x36D4, 7, 0, 0, me.realm);
+	PlaySoundEffect(me, 0x160);
+
+	sleepms(500);
+
+	if (CheckResist(targ, REFLEXES, RESIST_MEDIUM))
+		PrintTextAbove(targ, "*esquiva da rocha*");
+		return 1;
+	endif
+
+	var blunt_dmg := tier * 3;
+	var fire_dmg := tier * 2;
+
+	DamageFLS(targ, blunt_dmg, DMG_BLUNT, me, "burningrock");
+	DamageFLS(targ, fire_dmg, DMG_FIRE, me, "burningrock");
+	SendSysMessageEx(targ, "Uma rocha incandescente atinge você!", SSM_FAIL);
+
+	return 1;
+endprogram

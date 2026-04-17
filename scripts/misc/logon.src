@@ -86,7 +86,7 @@ program Logon(who)
 	RecalcVitals(who);
 
 	// Enforce skill cap when the player logs in
-	EnforceSkillCap(who);
+	// EnforceSkillCap(who);
 
 	// checa se vai subir skill passiva
 	if (CInt(FindAccount(who.acctname).getprop("nota")) == 4)

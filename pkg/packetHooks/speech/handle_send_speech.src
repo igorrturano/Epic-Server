@@ -36,9 +36,8 @@ endenum
 exported function handleUCOutgoing(character, byref packet)
 	var messageData := GetPacketData(packet);
 	messageData.+target := MobileWrapper(character);
-	LogPlayerSpeech(messageData.source.GetObjRef(), messageData.message);
-
 	if (messageData.source.GetSerial() == messageData.target.GetSerial())
+		LogPlayerSpeech(messageData.source.GetObjRef(), messageData.message);
 		SayMessageSpy(messageData.source.GetObjRef(), messageData.message);
 	endif
 

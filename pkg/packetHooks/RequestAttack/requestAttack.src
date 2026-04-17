@@ -18,6 +18,7 @@ use uo;
 use polsys;
 
 include "include/say";
+include "include/epicLoggerUtils";
 include ":mastery:Abilities";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":combat:Model/AttackInfo";
@@ -32,6 +33,10 @@ endprogram
 
 exported function HandleAttackRequest(who, byref packet)
 	var defender := SystemFindObjectBySerial(packet.GetInt32(BYTE_DEFENDER));
+
+	if (defender.master)
+		who.SetMurderer(1);
+	endif
 
 	if (defender.npctemplate && !who.npctemplate) // se o target for npc e quem clicou for player (sempre eh)
 		if (who.weapon.attribute == "Ranged")
@@ -52,6 +57,8 @@ exported function HandleAttackRequest(who, byref packet)
 		Message("Você não enxerga esse inimigo para ameaçá-lo.", Color(SYSTEM_COLOR::BAD)).SendSys(who);
 		return 1;
 	endif
+
+	LogAttackRequest(who, defender);
 
 	ExecuteMasteryAbility(AttackInfo(MobileWrapper(who), MobileWrapper(defender), ATTACK_MOMENT::ENGAGING));
 
