@@ -184,7 +184,7 @@ function DetermineOreType(who, where)
 	if ( chance <= Cint(percent[i]))
 		var oreid := GetResourceId(oreToSearch);
 		//var oreid := GetResourceId("ario");
-		if (oreid == 0x6666)
+		if (oreid == 0x6666 || oreid == 0xBD11)
 			return 0x5001;
 		endif
 		return oreid;
