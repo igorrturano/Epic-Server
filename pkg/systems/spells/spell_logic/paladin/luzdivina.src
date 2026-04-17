@@ -4,16 +4,6 @@ include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
-	var spellid := params[3];
-
-	var cfg := ReadConfigFile(":spells:config/paladin");
-	var elem := FindConfigElem(cfg, spellid.id);
-	var template := getConfigString(elem, "npcTemplate");
-
-	if (template == error)
-		SendSysMessage(who, "Erro ao ler o template" + template);
-		return;
-	endif
 
 	var summons := GetObjProperty(who, "SummonedPets");
 	if (summons)
@@ -26,11 +16,10 @@ program SpellScript(params)
 		endforeach
 	endif
 
-	var theology_skill := AP_GetSkill(who, THEOLOGY);
-
+	var theology := CInt(AP_GetSkill(who, THEOLOGY));
 	var globodeluz := summon(":epicai:globodeluz", who, who);
 
-	var duracao := CInt(theology_skill / 3);
+	var duracao := 60 + (theology * 3);
 
 	PlaySoundEffect(who, SFX_SPELL_STRENGTH);
 	PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
