@@ -97,31 +97,32 @@ endfunction
 function CreateItemProcess(container, parsed, qtd)
     var objtype := GetObjtypeByName(parsed.name);
     var item;
-    var tier := RandomCraftingPropTier();
-    if( tier == 1 || tier == "1>2")
-        item :=  GeraItemComplexo(
+
+    Print("parsed.level: " + parsed.level);
+    if( parsed.level && parsed.level != 1)
+        /*item :=  GeraItemComplexo(
                                     container,
                                     objtype,
                                     qtd,
-                                    tier,
-                                    1,
-                                    array {0x630e},
-                                    FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
-                                );
-    else
-        //Gera como produto montado
-        item :=  GeraItemComplexo(
-                                    container,
-                                    objtype,
-                                    qtd,
-                                    tier,
+                                    parsed.level,
                                     1,
                                     array {0x630e},
                                     FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR,
                                     false,
                                     1,//TODO alterar quando as classes estiverem implementadas nos loots
                                     ITEM_MONTADO
+                                );*/
+    else
+        item :=  GeraItemComplexo(
+                                    container,
+                                    objtype,
+                                    qtd,
+                                    1,
+                                    1,
+                                    array {0x630e},
+                                    FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
                                 );
+        //Gera como produto montado
     endif
     
     if(!item)
@@ -132,22 +133,6 @@ function CreateItemProcess(container, parsed, qtd)
     SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
     return item;
 endfunction
-
-function RandomCraftingPropTier()
-    var roll := RandomIntMinMax(1,10000) + 1;
-    if(roll <= 3)
-        return "3>5";
-    elseif(roll <= 10)
-        return "3>4";
-    elseif(roll <= 100)
-        return "1>3";
-    elseif(roll <= 2000)
-        return "1>2";
-    else
-        return 1;
-    endif
-endfunction
-
 
 function Loot_CreateStack(container, line)
 	var parsed := Loot_ParseString(line);
@@ -306,7 +291,14 @@ function Loot_ParseString(line)
         chance := 100.0;
     endif
     
-    var level := CInt(line[4]);
+    var level := 1;
+    if(Find(line[4],">",1) >= 1)
+        Print("line: " + line + " - " + line[4]);
+        level := line[4];
+    else
+        level := cint(line[4]);
+    endif
+
     if(!level)
         level := 1;
     endif
