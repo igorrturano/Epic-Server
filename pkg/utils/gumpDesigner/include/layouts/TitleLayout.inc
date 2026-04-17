@@ -4,18 +4,29 @@ include "Layout";
 include ":gumpDesigner:factories/GumpFactory";
 
 class TitleLayout(Layout)
+	var titleString;
 	var text;
 	var helpButton;
 	
 	function TitleLayout(this, title := "")
 		Super();
 		this._SetName("TitleLayout");
+		this.SetTitleString(title);
 
-		this.SetBackground(GumpFactory().CreateImageGump()._SetName("Gump Title Background"));
-		this.SetText(GumpFactory().CreateText()._SetName("Gump Title Text").SetText(title));
-		this.SetHelpButton(GumpFactory().CreateButton()._SetName("Gump Title Help Button"));
+		this.InitializeControls();
+		this.InsertControls();
 	endfunction
 
+	function GetTitleString(this)
+		return this.titleString;
+	endfunction
+
+	function SetTitleString(this, title)
+		this.titleString := CStr(title);
+
+		return this;
+	endfunction
+	
 	function GetText(this)
 		return this.text;
 	endfunction
@@ -42,6 +53,20 @@ class TitleLayout(Layout)
 		this.helpButton := helpButton;
 
 		return this;
+	endfunction
+
+	function InsertControls(this)
+		Super::InsertControls(this);
+
+		this.AddControl(this.GetText());
+		this.AddControl(this.GetHelpButton());
+	endfunction
+	
+	function InitializeControls(this)
+		var factory := GumpFactory();
+		this.SetBackground(factory.CreateImageGumpTiled()._SetName("Title Background"));
+		this.SetText(factory.CreateText()._SetName("Gump Title Text").SetText(this.GetTitleString()));
+		this.SetHelpButton(factory.CreateButton()._SetName("Gump Title Help Button"));
 	endfunction
 
 	function ToString(this)

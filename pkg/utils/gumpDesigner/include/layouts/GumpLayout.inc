@@ -12,7 +12,43 @@ class GumpLayout(Layout)
 		this._SetName("GumpLayout");
 	endfunction
 
-	function InitializeElements(this)
+	function GetTitleLayout(this)
+		return this.titleLayout;
+	endfunction
+
+	function SetTitleLayout(this, titleLayout)
+		if (!(titleLayout is @TitleLayout))
+			return InvalidParameterException("Title layout must be of type TitleLayout.");
+		endif
+		
+		this.titleLayout := titleLayout;
+
+		return this;
+	endfunction
+
+	function GetPageLayout(this)
+		return this.pageLayout;
+	endfunction
+
+	function SetPageLayout(this, pageLayout)
+		if (!(pageLayout is @BodyLayout))
+			return InvalidParameterException("Page layout must be of type PageLayout.");
+		endif
+		
+		this.pageLayout := pageLayout;
+
+		return this;
+	endfunction
+
+	function Resize(this, width, height)
+		Super::Resize(this, width, height);
+		this.PositionControls();
+		
+		return this;
+	endfunction
+
+	// Se for modificar a estrutura do gump, dar override na classe filha
+	function InitializeControls(this)
 		var factory := GumpFactory();
 		this.SetBorder_TopLeft(factory.CreateImageGumpTiled()._SetName("Top Left Border"));
 		this.SetBorder_Top(factory.CreateImageGumpTiled()._SetName("Top Border"));
@@ -23,16 +59,18 @@ class GumpLayout(Layout)
 		this.SetBorder_Bottom(factory.CreateImageGumpTiled()._SetName("Bottom Border"));
 		this.SetBorder_BottomRight(factory.CreateImageGumpTiled()._SetName("Bottom Right Border"));
 		this.SetBackground(factory.CreateImageGumpTiled()._SetName("Background"));
-
-		this.SetTitleLayout(factory.CreateTitleLayout("Layout Title"));
-		this.SetPageLayout(factory.CreateBodyLayout());
 	endfunction
 	
 	function InsertControls(this)
 		Super::InsertControls(this);
 
-		this.AddControl(this.GetTitleLayout());
-		this.AddControl(this.GetPageLayout());
+		if (this.GetTitleLayout())
+			this.AddControl(this.GetTitleLayout());
+		endif
+
+		if (this.GetPageLayout())
+			this.AddControl(this.GetPageLayout());
+		endif
 	endfunction
 
 	function ToString(this)
@@ -52,8 +90,6 @@ class GumpLayout(Layout)
 			+ "}";
 	endfunction
 
-	uninit function ConfigureControls(this);
-	uninit function PositionControls(this);
-	uninit function PositionTitle(this);
-	uninit function PositionBody(this);
+	// uninit function PositionTitle(this);
+	// uninit function PositionBody(this);
 endclass

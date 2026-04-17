@@ -137,17 +137,42 @@ class Layout(Container, ILayout)
 	endfunction
 
 	function InsertControls(this)
-		this.AddControl(this.GetBackground());
-		this.AddControl(this.GetBorder_Left());
-		this.AddControl(this.GetBorder_Right());
-		this.AddControl(this.GetBorder_Top());
-		this.AddControl(this.GetBorder_TopLeft());
-		this.AddControl(this.GetBorder_TopRight());
-		this.AddControl(this.GetBorder_Bottom());
-		this.AddControl(this.GetBorder_BottomLeft());
-		this.AddControl(this.GetBorder_BottomRight());
-	endfunction
+		if (this.GetBackground())
+			this.AddControl(this.GetBackground());
+		endif
 
+		if (this.GetBorder_Left())
+			this.AddControl(this.GetBorder_Left());
+		endif
+
+		if (this.GetBorder_Right())
+			this.AddControl(this.GetBorder_Right());
+		endif
+
+		if (this.GetBorder_Top())
+			this.AddControl(this.GetBorder_Top());
+		endif
+
+		if (this.GetBorder_TopLeft())
+			this.AddControl(this.GetBorder_TopLeft());
+		endif
+
+		if (this.GetBorder_TopRight())
+			this.AddControl(this.GetBorder_TopRight());
+		endif
+
+		if (this.GetBorder_Bottom())
+			this.AddControl(this.GetBorder_Bottom());
+		endif
+
+		if (this.GetBorder_BottomLeft())
+			this.AddControl(this.GetBorder_BottomLeft());
+		endif
+
+		if (this.GetBorder_BottomRight())
+			this.AddControl(this.GetBorder_BottomRight());
+		endif
+	endfunction
 
 	function ToString(this)
 		return "(GumpLayout) " + Super::ToString(this)
@@ -163,4 +188,8 @@ class Layout(Container, ILayout)
 				+ "bottomRight=" + this.GetBorder_BottomRight().ToString()
 			+ "}";
 	endfunction
+	
+	// uninit function InitializeControls(this);
+	// uninit function ConfigureControls(this);
+	// uninit function PositionControls(this);
 endclass

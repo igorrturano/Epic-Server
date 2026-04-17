@@ -1,10 +1,13 @@
 include "GumpLayout";
+include "PaperTitleLayout";
+include "PaperBodyLayout";
 
 include ":gumpDesigner:factories/GumpFactory";
 
 class GoldenGumpLayout(GumpLayout)
 	function GoldenGumpLayout(this)
 		Super();
+		this.InitializeControls();
 		this.ConfigureControls();
 		this.PositionControls();
 		this.InsertControls();
@@ -20,6 +23,12 @@ class GoldenGumpLayout(GumpLayout)
 		this.GetBorder_Bottom().SetImageId(39932);
 		this.GetBorder_BottomRight().SetImageId(39933);
 		this.GetBackground().SetImageId(39929);
+	endfunction
+
+	function InitializeControls(this)
+		Super::InitializeControls(this);
+		this.SetTitleLayout(PaperTitleLayout());
+		// this.SetPageLayout(PaperBodyLayout());
 	endfunction
 
 	function PositionControls(this)
@@ -84,6 +93,7 @@ class GoldenGumpLayout(GumpLayout)
 		title.SetYOffset(15);
 		title.SetHeight(40);
 		title.SetWidth(this.GetWidth() - (2 * title.GetXOffset()));
+		print ("Título ficou -> " + title.ToString());
 	endfunction
 
 	/**
