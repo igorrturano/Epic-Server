@@ -1,4 +1,5 @@
 include "Container";
+include ":gumpDesigner:exceptions/WrongSizeException";
 
 // TODO: criar opção pra escolher a proporção em % do tamanho da coluna/linha
 class ContainerGridLayout(Container)
@@ -22,6 +23,58 @@ class ContainerGridLayout(Container)
 
 	function GetColumns(this)
 		return this._columns;
+	endfunction
+
+	// TODO: Revisar essa função depois, deve ter algum erro, fiz nas pressas
+	function SetColumnWidth(this, column, width)
+		if (column < 1 || column > this._columns)
+			return InvalidParameterException("Column number out of range.");
+		endif
+
+		for row := 1 to (this._rows)
+			this._containers[row][column].SetWidth(width);
+			SleepMS(2);
+		endfor
+
+		var remainingWidth := this.GetWidth(); // Largura restante para as outras colunas
+		for col := 1 to (this._columns)
+			remainingWidth -= this._containers[1][col].GetWidth();
+			if (remainingWidth < 0)
+				return WrongSizeException("Total column width exceeds container width.");
+			endif
+		endfor
+
+		this.SetColumnWidth(this._columns, remainingWidth); // Ajusta a última coluna para preencher o espaço restante
+
+		return this;
+	endfunction
+
+	
+	// TODO: Revisar essa função depois, deve ter algum erro, fiz nas pressas
+	function SetRowHeight(this, row, height)
+		if (row < 1 || row > this._rows)
+			return InvalidParameterException("Row number out of range.");
+		endif
+
+		for column := 1 to (this._columns)
+			this._containers[row][column].SetHeight(height);
+			SleepMS(2);
+		endfor
+
+		var remainingHeight := this.GetHeight();
+		for currentRow := 1 to (this._rows)
+			remainingHeight -= this._containers[currentRow][1].GetHeight();
+			if (remainingHeight < 0)
+				return WrongSizeException("Total row height exceeds container height.");
+			endif
+		endfor
+
+		for col := 1 to (this._columns)
+			this._containers[this._rows][col].SetHeight(remainingHeight);
+			SleepMS(2);
+		endfor
+
+		return this;
 	endfunction
 
 	// Override
@@ -62,6 +115,7 @@ class ContainerGridLayout(Container)
 		return this;
 	endfunction
 
+	// Override
 	function Draw(this, byRef gump)
 		foreach row in (this._containers)
 			foreach container in (row)
@@ -71,6 +125,7 @@ class ContainerGridLayout(Container)
 		endforeach
 	endfunction
 
+	// Override
 	function Dispose(this)
 		foreach row in (this._containers)
 			foreach control in (row)
