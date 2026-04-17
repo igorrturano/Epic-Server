@@ -7,7 +7,7 @@ include ":attributes:attributes";
 program TimedScript_Clumsy(params)
 	var mobile := params[1];
 	var attacker := params[2];
-	var level := params[3];
+	var level := cint(params[3]);
 	var teste := GetObjProperty(mobile, "#AgilityMod");
 	if (teste) // verifica se ja esta sob efeito similar
 		if (level > teste) // se o novo efeito é maior, aplica a diferença
