@@ -194,7 +194,7 @@ function BuildSession(npc, player)
 	return session;
 endfunction
 
-function BuildSellingItensList(npc, player, filters)
+function BuildSellingItensList(npc, player,byref filters)
 	var soldItemsData := GetItemsSoldList(npc);
 	var itensVendidos := array;
 
@@ -371,7 +371,7 @@ function SendItemView(npc, player, session)
 	return GFSendGump(player, gump);
 endfunction
 
-function PreparaLojaGump(npc, player, session)
+function PreparaLojaGump(npc, player,byref session)
 
 	session.itensVendidos := BuildSellingItensList(npc, player, session.filtros);
 
@@ -429,7 +429,7 @@ function removeItemMerchant(npc, player, session, input)
 	PreparaLojaGump(npc, player, session);
 endfunction
 
-function DoPurchase(npc, player, session, input)
+function DoPurchase(npc, player,byref session, input)
 	var info := GetItemSoldInfo(npc, input);
 	var cost := info[1];
 	var selling := info[2];
