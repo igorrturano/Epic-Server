@@ -155,6 +155,10 @@ function HandleAnimalCombatEvent(opponent)
         return 0;
     endif
 
+    if (MobileWrapper(opponent).HasAbility(ABILITY_ID::RURAL_LIFE))
+        return 0;
+    endif
+
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
