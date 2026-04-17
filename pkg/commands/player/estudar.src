@@ -11,6 +11,11 @@ include ":tn:cooldown";
 // ============================================================================
 
 program estudar(who)
+    if (who.hidden)
+        SendSysMessage(who, "Você não pode estudar enquanto estiver oculto.");
+        return 0;
+    endif
+    
     SendSysMessage(who, "Selecione o item de estudo para começar.");
     var item := Target(who);
 
