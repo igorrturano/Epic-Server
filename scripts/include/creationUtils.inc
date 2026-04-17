@@ -1128,7 +1128,20 @@ function workingItems(who)
     if (skills[MEDICINE] == 3)
 		CreateItemInBackpack(who, 0xedfe, 1);
 		CreateItemInBackpack(who, 0xed2a, 1);
-
+        CreateItemInBackpack(who, 0xf0c8, 1);
+        case(randomint(3))//bisturi
+            1: CreateItemInBackpack(who, 0xD1CE, 1); 
+            2: CreateItemInBackpack(who, 0XD1D1, 1);
+            3: CreateItemInBackpack(who, 0XD1CF, 1);
+        endcase
+        case(randomint(2))// mascara da praga
+            1: CreateItemInBackpack(who, 0xF0C6, 1); 
+            2: CreateItemInBackpack(who, 0xF0C7, 1);
+        endcase
+        case(randomint(2))//sobretudo
+            1:CreateItemInBackpack(who, 0xD1B9, 1); 
+            2:CreateItemInBackpack(who, 0xD1BA, 1);
+        endcase
 		SendSysMessageEX(who, "Você recebeu itens de medicina por ter Medicine como primária.", SSM_INFO);
 	endif
 
