@@ -38,17 +38,28 @@ function GeraItemComplexo(
 							listaDeMateriaisIgnorados := array,
 							modoEscolhaMaterial := FABRICACAO_MODO_MATERIAL::MESMO_TIER,
 							deveGerarOpcionais := false, 
-							classe := 1
+							classe := 1,
+							estagio := ITEM_GERADO
 						)
-
-	var descriptor :=  GeraDescriptorComplexo(
-							objtype,
-							tier,
-							isDispensavel,
-							listaDeMateriaisIgnorados, 
-							modoEscolhaMaterial,
-							deveGerarOpcionais, 
-							classe);
+	var descriptor;
+	if(estagio == ITEM_GERADO)
+		descriptor :=  GeraDescriptorComplexo(
+								objtype,
+								tier,
+								isDispensavel,
+								listaDeMateriaisIgnorados, 
+								modoEscolhaMaterial,
+								deveGerarOpcionais, 
+								classe);
+	elseif(estagio == ITEM_MONTADO)
+		descriptor := MontaProdutoMontadoAleatorio(
+								objtype,
+								tier,
+								modoEscolhaMaterial,
+								deveGerarOpcionais, 
+								classe
+								);
+	endif
 
 	if(!descriptor) return descriptor; endif
 

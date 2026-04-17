@@ -97,15 +97,32 @@ endfunction
 function CreateItemProcess(container, parsed, qtd)
     var objtype := GetObjtypeByName(parsed.name);
     var item;
-    item :=  GeraItemComplexo(
-                                container,
-                                objtype,
-                                qtd,
-                                RandomCraftingPropTier(),
-                                1,
-                                array {0x630e},
-                                FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
-                            );
+    var tier := RandomCraftingPropTier();
+    if( tier == 1 || tier == "1>2")
+        item :=  GeraItemComplexo(
+                                    container,
+                                    objtype,
+                                    qtd,
+                                    tier,
+                                    1,
+                                    array {0x630e},
+                                    FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
+                                );
+    else
+        //Gera como produto montado
+        item :=  GeraItemComplexo(
+                                    container,
+                                    objtype,
+                                    qtd,
+                                    tier,
+                                    1,
+                                    array {0x630e},
+                                    FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR,
+                                    false,
+                                    1,//TODO alterar quando as classes estiverem implementadas nos loots
+                                    ITEM_MONTADO
+                                );
+    endif
     
     if(!item)
         item := CreateItemInContainer(container, parsed.name);
@@ -118,13 +135,13 @@ endfunction
 
 function RandomCraftingPropTier()
     var roll := RandomIntMinMax(1,10000) + 1;
-    if(roll <= 5)
+    if(roll <= 3)
         return "3>5";
-    elseif(roll <= 50)
+    elseif(roll <= 10)
         return "3>4";
-    elseif(roll <= 500)
+    elseif(roll <= 100)
         return "1>3";
-    elseif(roll <= 1000)
+    elseif(roll <= 2000)
         return "1>2";
     else
         return 1;

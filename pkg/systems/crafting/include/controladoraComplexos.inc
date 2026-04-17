@@ -505,28 +505,13 @@ function hasMovido(quem,posicaoInicial)
 endfunction
 
 function CriaItemMontado(quem,esquema,receita, quantidade)
-	var definicaoItem := itemsConfig[receita.objtype];
-	var definicaoTileItem := IU_GetTileInfo( Hex(receita.graphic));
-
-	var pesoFinal := 1;
-
-	var modificador := esquema.modificadorPesoTotal ? (esquema.modificadorPesoTotal / 100) + 1 : pesoFinal;
-	if(definicaoItem.weight)
-		pesoFinal := pesoFinal * (definicaoItem.weight * modificador);
-	else
-		pesoFinal := pesoFinal * (definicaoTileItem.weight * modificador);
-	endif
-
-	var descriptor := GetItemDescriptor(CInt(OBJTYPE_ITEM_MONTADO));
-	descriptor.color := receita.corObrigatoria ? receita.corObrigatoria : esquema.cor;
-	descriptor.graphic := receita.graphic;
-	descriptor.CProps.insert(PROPNAME_FABRICADO, DefinePropFabricado(esquema,receita, quem));
-	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG, true);
+	var infoAdicional := struct;
+	var descriptor := MontaProdutoMontadoDescriptor(quem,esquema,receita, infoAdicional);
 
 	var item := CreateItemInBackpack(quem,descriptor, cint(quantidade));
 
 	if(item)
-		item.weight_multiplier_mod := pesoFinal;
+		item.weight_multiplier_mod := infoAdicional.pesoFinal;
 		SendSysMessageEX(quem, "criado com sucesso.".format(item.desc), SSM_INFO);
 	else
 		SendSysMessageEX(quem, "falha ao criar item. {} " .format(item), SSM_FAIL);
@@ -534,29 +519,6 @@ function CriaItemMontado(quem,esquema,receita, quantidade)
 
 	return item;
 
-endfunction
-
-function DefinePropFabricado(esquema, receita , quem)
-	//Limpa propriedades desnecessárias ou rendundantes.
-	receita.-componentesNecessarios;
-	receita.-materiaisNecessarios;
-	receita.-textoDescItem;
-	receita.-dificuldade;
-	receita.-isVisualizada;
-	receita.-uso;
-
-	esquema.-modificadorCache;
-
-	var propFabricado := struct{ 
-		estado := ITEM_MONTADO,
-		receita := receita,
-		esquema := esquema};
-	
-	if(!receita.isEmpilhavel)
-		propFabricado.+fabricante := quem.serial;
-	endif
-
-	return propFabricado;
 endfunction
 
 function isRequisitoSuficiente(quem, contagem, receita, esquema, quantidade := 1, deveIgnorarRequisitos := false)
@@ -1546,15 +1508,92 @@ function CriaPropFabricadoGerada(
 									modoEscolhaMaterial, 
 									classe := 1
 								)
+	
+	var esquemaAleatorio := GeraEsquemaAleatorio(objtype, 
+									tier, 
+									deveGerarComponentesOpcionais,
+									listaDeMateriaisIgnorados, 
+									modoEscolhaMaterial, 
+									classe);
+
+	return CriaNovaPropFabricado(struct{esquema := esquemaAleatorio.esquema}, ITEM_GERADO);
+
+endfunction
+
+function MontaProdutoMontadoDescriptor(quem,esquema,receita, byref structRetorno)
+	var definicaoItem := itemsConfig[receita.objtype];
+	var definicaoTileItem := IU_GetTileInfo( Hex(receita.graphic));
+
+	structRetorno.+pesoFinal := 1;
+
+	var modificador := esquema.modificadorPesoTotal ? (esquema.modificadorPesoTotal / 100) + 1 : structRetorno.pesoFinal;
+	if(definicaoItem.weight)
+		structRetorno.pesoFinal := structRetorno.pesoFinal * (definicaoItem.weight * modificador);
+	else
+		structRetorno.pesoFinal := structRetorno.pesoFinal * (definicaoTileItem.weight * modificador);
+	endif
+
+	var descriptor := GetItemDescriptor(CInt(OBJTYPE_ITEM_MONTADO));
+	descriptor.color := receita.corObrigatoria ? receita.corObrigatoria : esquema.cor;
+	descriptor.graphic := receita.graphic;
+	descriptor.CProps.insert(PROPNAME_FABRICADO, DefinePropFabricado(esquema,receita, quem));
+	descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG, true);
+
+	return descriptor;
+endfunction
+
+function MontaProdutoMontadoAleatorio(
+										objtype, 
+										tier, 
+										deveGerarComponentesOpcionais,
+										listaDeMateriaisIgnorados, 
+										modoEscolhaMaterial, 
+										classe := 1
+									)
+
+	var esquemaInfo :=  GeraEsquemaAleatorio(objtype, 
+										tier, 
+										deveGerarComponentesOpcionais,
+										listaDeMateriaisIgnorados, 
+										modoEscolhaMaterial, 
+										classe);
+
+	return MontaProdutoMontadoDescriptor(0,esquemaInfo.esquema, esquemaInfo.receita, struct { serial := "Gerado"});
+endfunction
+
+function EncontraProfissao(objtype)
+	var profissoes := GetConfigStringKeys( ReadConfigFile(PROFISSAO_CONFIG_PATH) );
+	foreach profissaoChave in profissoes
+		Sleepms(2);
+		var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH)[profissaoChave];
+		var fabricacaoDesc := ReadConfigFile(profissaoConfig.InfoFabricacao);
+		if(fabricacaoDesc[objtype])
+			return struct{ nome := profissaoChave, pericia := profissaoConfig.Attribute};
+		endif
+	endforeach
+
+	return 0;
+endfunction
+
+function GeraEsquemaAleatorio(
+									objtype, 
+									tier, 
+									deveGerarComponentesOpcionais,
+									listaDeMateriaisIgnorados, 
+									modoEscolhaMaterial, 
+									classe := 1
+								)
 	var itemDescConfig := ReadConfigFile(":*:itemdesc");
 	var fabricacaoDescConfig := ReadConfigFile(":*:fabricacaoDesc");
 	var componenteDescConfig := ReadConfigFile(":*:componentes");
+	var profissao := EncontraProfissao(objtype);
 	var recursosConfig := ReadConfigFile(":crafting:config/resourceList");
 	var objetoDesc := itemDescConfig[objtype];
 	var janelaTier := SplitWords(tier, ">");
+	var retorno := struct;
 	tier := cint(tier);
 
-	var receita := MontaReceitaItem(0,objtype,"",fabricacaoDescConfig,0,0, struct{nome := objetoDesc.name, classe := classe});
+	var receita := MontaReceitaItem(0,objtype,profissao.pericia,fabricacaoDescConfig,0,profissao.nome, struct{nome := objetoDesc.name, classe := classe});
 	if(!receita)
 		return receita;
 	endif
@@ -1656,9 +1695,11 @@ function CriaPropFabricadoGerada(
 										componenteEscolhido, 
 										opcaoEncontrada.indiceEncaixeComponente);
 	endforeach
-	
 
-	return CriaNovaPropFabricado(struct{esquema := objetoEsquema}, ITEM_GERADO);
+	retorno.+receita := receita;
+	retorno.+esquema := objetoEsquema;
+
+	return retorno;
 endfunction
 
 function DeveEscreverMaterial(materiaisPossiveisPorTier, tierMaterial)
