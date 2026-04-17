@@ -1,6 +1,8 @@
 use guilds;
 use os;
 
+include ":faccao:membership";
+
 // ── Facções staff disponíveis (nomefaccao = índice 1..5) ─────────────────────
 var FACCAO_NOMES := array{
     "Regentes de Valtheris",  // 1
@@ -48,6 +50,36 @@ endfunction
 function PropagateNomeFaccao(guild, obj)
     var n := guild.GetProp("nomefaccao");
     if (n) SetObjProperty(obj, "nomefaccao", n); endif
+endfunction
+
+// Registra um item como pertencente a esta facção (mural, mesa, convite, etc.).
+// Serial armazenado em guild prop "itens_faccao".
+function RegisterFaccaoItem(guild, item)
+    var lista := guild.GetProp("itens_faccao");
+    if (!lista) lista := array{}; endif
+    if (!(item.serial in lista))
+        lista.append(item.serial);
+        guild.SetProp("itens_faccao", lista);
+    endif
+endfunction
+
+// Remove um item do registro da facção (chamar ao destruir o item).
+function UnregisterFaccaoItem(guild, item_serial)
+    var lista := guild.GetProp("itens_faccao");
+    if (!lista) return; endif
+    var nova := array{};
+    foreach s in lista
+        if (s != item_serial) nova.append(s); endif
+        sleepms(2);
+    endforeach
+    guild.SetProp("itens_faccao", nova);
+endfunction
+
+// Retorna "staff" ou "player", normalizando dados legados (inteiro 1 = staff).
+function GetFaccaoTipo(guild)
+    var t := guild.GetProp("tipo_faccao");
+    if (t == "staff" || (t && t != "player")) return "staff"; endif
+    return "player";
 endfunction
 
 // Faz o parse de uma string "x1 y1 x2 y2" retornando struct com os campos nomeados.
@@ -118,7 +150,7 @@ function GetFaccao(guild)
       "uniforms"    := guild.GetProp("uniforms"),
       "subguilds"   := guild.GetProp("subguilds"),
       "money"       := guild.GetProp("money"),
-      "tipo_faccao" := guild.GetProp("tipo_faccao") // "player" ou "staff"
+      "tipo_faccao" := GetFaccaoTipo(guild)
    };
 
    return faccao_obj;
@@ -221,77 +253,163 @@ function RemFaccao(guild_obj)
 endfunction
 
 
-function AddMember(faccao, mobile)
-   faccao.addMember(mobile);
-   var member_obj := struct{
-      "above_guards" := 0, // can control guards
-      "above_merchants" := 0, // can control merchants
-      "above_members" := 0, // can add members
-      "giveprivs" := 0, // can edit privs
-      "contractnpc" := 0, // can contract npc
-      "fixitems" := 0, // can fix items
-      "unlockdoors" := 0, // can unlock doors
-      "buyuniforms" := 0 // can buy uniform recipes
-   };
-   faccao.SetProp(cstr(mobile.serial), member_obj);
-
-   // Se facção staff, concede nomefaccao ao personagem
-   if (faccao.GetProp("tipo_faccao") == "staff")
-      var nomefaccao := faccao.GetProp("nomefaccao");
-      if (nomefaccao)
-         SetObjProperty(mobile, "nomefaccao", nomefaccao);
+// Valida se o mobile pode entrar nesta facção.
+// Retorna 0 se permitido, ou string de erro se bloqueado.
+function CanJoinFaccao(faccao, mobile)
+   if (IsMemberOfFaccao(faccao, mobile))
+      return "Você já é membro desta facção.";
+   endif
+   // Duas vagas já preenchidas — não aceita uma terceira
+   var _hon_check := GetObjProperty(mobile, "honorary_guild_id");
+   if (mobile.guild && _hon_check && FindGuild(_hon_check))
+      return "Você não pode aceitar por já fazer parte de duas facções.";
+   endif
+   var new_tipo := GetFaccaoTipo(faccao);
+   if (mobile.guild)
+      var full_tipo := GetFaccaoTipo(mobile.guild);
+      if (full_tipo == new_tipo)
+         return "Você já é membro full de uma facção do tipo " + new_tipo + ".";
       endif
    endif
+   var hon_id := GetObjProperty(mobile, "honorary_guild_id");
+   if (hon_id)
+      var hon_guild := FindGuild(hon_id);
+      if (!hon_guild)
+         EraseObjProperty(mobile, "honorary_guild_id");
+      else
+         var hon_tipo := GetFaccaoTipo(hon_guild);
+         if (hon_tipo == new_tipo)
+            return "Você já é membro honorário de uma facção do tipo " + new_tipo + ".";
+         endif
+      endif
+   endif
+   return 0;
+endfunction
+
+// ── Entrada na facção ─────────────────────────────────────────────────────────
+
+// Retorna 1 se auto-honorário, 0 se auto-full, -1 se o jogador precisa escolher.
+function GetAutoMemberTipo(mobile)
+   if (mobile.guild)
+      return 1;
+   endif
+   var _hon_id := GetObjProperty(mobile, "honorary_guild_id");
+   if (_hon_id)
+      if (!FindGuild(_hon_id))
+         EraseObjProperty(mobile, "honorary_guild_id");
+      else
+         return 0;
+      endif
+   endif
+   return -1;
+endfunction
+
+// Gump para o jogador escolher como quer entrar.
+// Retorna 0 = full, 1 = honorário, -1 = cancelado.
+function EscolherTipoMembro(mobile, guild_name)
+   var gump := GFCreateGump();
+   GFSetId(gump, 0x12352);
+   GFResizePic(gump, 0, 0, 9200, 360, 220);
+   GFResizePic(gump, 15, 15, 9350, 330, 190);
+   GFHtmlShadowed(gump, 20, 25, 320, 20, "#FFC33C", "<center>Como deseja entrar?", 8);
+   GFHtmlShadowed(gump, 20, 50, 320, 18, "#AAAAAA", "<center>" + guild_name, 6);
+
+   GFAddButton(gump, 30, 90, 4005, 4006, GF_CLOSE_BTN, 1);
+   GFTextLine(gump, 60, 88, 0, "Membro Full");
+   GFHtmlShadowed(gump, 60, 106, 250, 16, "#888888", "Acesso completo: cargos e privilégios", 5);
+
+   GFAddButton(gump, 30, 140, 4005, 4006, GF_CLOSE_BTN, 2);
+   GFTextLine(gump, 60, 138, 0, "Membro Honorário");
+   GFHtmlShadowed(gump, 60, 156, 250, 16, "#888888", "Apenas membro, sem cargos ou privilégios", 5);
+
+   GFAddButton(gump, 260, 175, 4017, 4018, GF_CLOSE_BTN, 0);
+   GFTextLine(gump, 290, 173, 0, "Cancelar");
+
+   var input := GFSendGump(mobile, gump);
+   if (input[0] == 1) return 0; endif
+   if (input[0] == 2) return 1; endif
+   return -1;
+endfunction
+
+// honorario: 0 = full, 1 = honorário.
+function AddMember(faccao, mobile, honorario := 0)
+   if (honorario)
+      _AddHonoraryMember(faccao, mobile);
+   else
+      _AddFullMember(faccao, mobile);
+   endif
+endfunction
+
+function _AddFullMember(faccao, mobile)
+   faccao.addMember(mobile);
+   var member_obj := struct{
+      "above_guards" := 0,
+      "above_merchants" := 0,
+      "above_members" := 0,
+      "giveprivs" := 0,
+      "contractnpc" := 0,
+      "fixitems" := 0,
+      "unlockdoors" := 0,
+      "buyuniforms" := 0
+   };
+   faccao.SetProp(cstr(mobile.serial), member_obj);
+   if (GetFaccaoTipo(faccao) == "staff")
+      PropagateNomeFaccao(faccao, mobile);
+   endif
+endfunction
+
+function _AddHonoraryMember(faccao, mobile)
+   var honorary := faccao.GetProp("honorary_members");
+   if (!honorary) honorary := array{}; endif
+   if (!(mobile.serial in honorary))
+      honorary.append(mobile.serial);
+      faccao.SetProp("honorary_members", honorary);
+   endif
+   SetObjProperty(mobile, "honorary_guild_id", faccao.guildid);
+   if (GetFaccaoTipo(faccao) == "staff")
+      PropagateNomeFaccao(faccao, mobile);
+   endif
 endfunction
 
 
-function EditMember(guild, serial, props)
-   var member := guild.GetProp(serial);
-   if (props.name)
-      faccao.name := props.name;
-   endif
-
-   if (props.npcs)
-      faccao.npcs := props.npcs;
-   endif
-
-   if (props.laws)
-      faccao.laws := props.laws;
-   endif
-
-   if (props.area)
-      faccao.area := props.area;
-   endif
-
-   if (props.leader)
-      faccao.leader := props.leader;
-   endif
-
-   if (props.uniforms)
-      faccao.uniforms := props.uniforms;
-   endif
-
-   foreach key in (faccao.keys())
-      guild.SetProp(key, faccao[key]);
-      sleepms(2);
-   endforeach
-
-   return 1;
-endfunction
+// ── Saída da facção ───────────────────────────────────────────────────────────
 
 function RemMember(faccao, mobile)
    if (!mobile.isA(POLCLASS_MOBILE))
       mobile := SystemFindObjectBySerial(mobile, SYSFIND_SEARCH_OFFLINE_MOBILES);
    endif
+   if (IsHonoraryMember(faccao, mobile))
+      _RemHonoraryMember(faccao, mobile);
+   else
+      _RemFullMember(faccao, mobile);
+   endif
+endfunction
 
+function _RemFullMember(faccao, mobile)
    if (faccao.GetProp("leader") == mobile.serial)
       faccao.SetProp("leader", 0x0);
    endif
    faccao.removemember(mobile);
    faccao.EraseProp(cstr(mobile.serial));
+   if (GetFaccaoTipo(faccao) == "staff")
+      EraseObjProperty(mobile, "nomefaccao");
+   endif
+endfunction
 
-   // Remove nomefaccao do personagem ao sair
-   EraseObjProperty(mobile, "nomefaccao");
+function _RemHonoraryMember(faccao, mobile)
+   var honorary := faccao.GetProp("honorary_members");
+   if (honorary)
+      var nova := array{};
+      foreach s in honorary
+         if (s != mobile.serial) nova.append(s); endif
+         sleepms(2);
+      endforeach
+      faccao.SetProp("honorary_members", nova);
+   endif
+   EraseObjProperty(mobile, "honorary_guild_id");
+   if (GetFaccaoTipo(faccao) == "staff")
+      EraseObjProperty(mobile, "nomefaccao");
+   endif
 endfunction
 
 function SetLeader(faccao, serial)

@@ -83,6 +83,7 @@ program faccao(params)
 		who := params[1];
 		targ := params[2];
 		cmd := params[3];
+		use_member_alias := params[4]; // preserva contexto de mural ao reabrir
 	endif
 
 	if (cmd == "guild")
@@ -115,7 +116,7 @@ program faccao(params)
 		members := RemoveFromArray(members, guild_leader);
 	endif
 	is_gm_or_leader := (who == guild_leader || who.cmdlevel || aboveguild);
-	privilegies := guild.getProp(cstr(who.serial));
+	privilegies := GetMemberPrivs(guild, who);
 	var gump := GFCreateGump();
 	GFPage(gump, 0);
 
@@ -163,7 +164,6 @@ program faccao(params)
 
 	var y := 107;
 	foreach mob in members
-		// mob := SystemFindObjectBySerial(mob.serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
 		if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 			GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 		endif
@@ -176,15 +176,29 @@ program faccao(params)
 			endif
 			sleepms(2);
 		endforeach
-
-		if (!permission_text)
-			permission_text := "Nenhum privilegio";
-		endif
-
+		if (!permission_text) permission_text := "Nenhum privilegio"; endif
 		GFToolTipText(gump, permission_text);
 		sleepms(2);
 		y += 18;
 	endforeach
+
+	// Membros honorários (não estão em guild.members — armazenados separadamente)
+	var hon_serials := guild.GetProp("honorary_members");
+	if (hon_serials)
+		foreach hon_serial in hon_serials
+			var mob := SystemFindObjectBySerial(hon_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+			if (!mob) sleepms(2); continue; endif
+			if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
+				GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
+			endif
+			var hon_name := GetMemberDisplayName(mob, use_member_alias);
+			if (is_gm_or_leader && hon_name) hon_name := hon_name + " [Hon]"; endif
+			GFTextLine(gump, 67, y - 2, 0, "{}".format(hon_name));
+			GFToolTipText(gump, "Membro Honorário");
+			sleepms(2);
+			y += 18;
+		endforeach
+	endif
 	y += 18;
 
 	if (is_gm_or_leader || privilegies.above_members)
@@ -312,34 +326,53 @@ program faccao(params)
 	else
 		return;
 	endif
-	start_script(":faccao:faccao", array{ who, guild.guildid, "guild" });
+	start_script(":faccao:faccao", array{ who, guild.guildid, "guild", use_member_alias });
 endprogram
 
 function Faccoes(who)
 	var gump := GFCreateGump();
-	GFResizePic(gump, 84, 90, 9260, 280, 260);
+	GFSetId(gump, 0x12353);
+	GFResizePic(gump, 84, 90, 9260, 320, 300);
+	GFGumpPicTiled(gump, 100, 100, 30, 275, 10460);
+	GFGumpPicTiled(gump, 320, 100, 30, 275, 10460);
+	GFHtmlShadowed(gump, 130, 105, 200, 18, "#FFC33C", "<center>Facções", 7);
 
-	GFGumpPicTiled(gump, 100, 100, 30, 235, 10460);
-	GFGumpPicTiled(gump, 320, 100, 30, 235, 10460);
+	var y := 135;
+	var my_guilds := array{};
 
-	var y := 120;
+	if (who.cmdlevel)
+		// GMs veem todas as facções
+		foreach g in ListGuilds()
+			my_guilds.append(g);
+			GFTextLine(gump, 170, y, 2100, "{}".format(g.GetProp("name")));
+			GFAddButton(gump, 150, y + 3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO + _g_iter);
+			y += 20;
+			sleepms(2);
+		endforeach
+	else
+		// Jogadores veem apenas as suas facções
+		if (who.guild)
+			my_guilds.append(who.guild);
+			GFTextLine(gump, 170, y, 2100, "{} [Full]".format(who.guild.GetProp("name")));
+			GFAddButton(gump, 150, y + 3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO + my_guilds.size());
+			y += 20;
+		endif
+		var hon_id := GetObjProperty(who, "honorary_guild_id");
+		if (hon_id)
+			var hon_g := FindGuild(hon_id);
+			if (hon_g)
+				my_guilds.append(hon_g);
+				GFTextLine(gump, 170, y, 2100, "{} [Hon.]".format(hon_g.GetProp("name")));
+				GFAddButton(gump, 150, y + 3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO + my_guilds.size());
+				y += 20;
+			endif
+		endif
+		if (!my_guilds.size())
+			GFTextLine(gump, 130, y, 0, "Você não pertence a nenhuma facção.");
+			y += 20;
+		endif
+	endif
 
-	var guilds := ListGuilds();
-	foreach guild in guilds
-		// fix area
-		var name := guild.getprop("name");
-		// if (typeof(name[1]) != "Array")
-		//    name := array{name};
-		//    guild.setProp("name", name);
-		// endif
-		// fix area
-
-		GFTextLine(gump, 170, y, 2100, "{}".format(guild.GetProp("name")));
-		// GFTextLine(gump, 220, y, 2103, "{}".format(chardata.raca));
-		GFAddButton(gump, 150, y + 3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO + _guild_iter);
-		y += 20;
-		sleepms(2);
-	endforeach
 	y += 10;
 	GFAddButton(gump, 172, y, 0x80E, 0x80E, GF_CLOSE_BTN, BTN_NEW_FACCAO);
 	GFHTMLArea(gump, 170, y, 115, 25, "<basefont color=#0555D4><center>Nova Facção", 1);
@@ -347,76 +380,74 @@ function Faccoes(who)
 	var input := GFSendGump(who, gump)[0];
 
 	if (input >= BTN_FACCAO)
-		var g := guilds[input - BTN_FACCAO];
-
-		if (is_gm_or_leader)
+		var g := my_guilds[input - BTN_FACCAO];
+		if (g)
 			start_script(":faccao:faccao", array{ who, g.guildid, "guild" });
-		elseif (who.guildid == g.guildid || who.cmdlevel)
-			start_script(":faccao:faccao", array{ who, g.guildid, "guild" });
-		elseif (who.guildid != g.guildid)
-			SendSysMessage(who, "Voce nao faz parte dessa Faccao");
-			return;
 		endif
 
 	elseif (input == BTN_NEW_FACCAO)
+		var _err := _CanCreateFaccao(who);
+		if (_err)
+			return SendSysMessageEx(who, _err);
+		endif
+
 		var custo := 100;
 		SendSysMessageEx(who, "Voce precisa pagar " + custo + " moedas para criar uma Faccao", SSM_REQUEST);
 		var targ := Target(who, options := TGTOPT_CHECK_LOS + TGTOPT_NEUTRAL);
 		if (!targ)
-			SendSysMessage(who, "Cancelado.", SSM_FAIL);
-			return;
+			return SendSysMessage(who, "Cancelado.", SSM_FAIL);
 		endif
 
-		if (targ.objtype == 47715)
-
-			if (targ.amount < custo)
-				SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
-				return;
-			endif
-
-			if (!SubtractAmount(targ, custo))
-				SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
-				return;
-			else
-				SendSysMessageEx(who, "Voce efetuou o pagamento.", SSM_INFO);
-			endif
-		else
-			SendSysMessageEx(who, "Isto nao sao moedas.", SSM_FAIL);
-			return;
+		if (targ.objtype != 47715)
+			return SendSysMessageEx(who, "Isto nao sao moedas.", SSM_FAIL);
 		endif
+		if (targ.amount < custo || !SubtractAmount(targ, custo))
+			return SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
+		endif
+		SendSysMessageEx(who, "Voce efetuou o pagamento.", SSM_INFO);
 
 		var questions := array{};
-		questions.append(struct{ "title" := "Nome da facçãoo?", "marked" := "" });
-		// questions.append(struct{ "title" := "Dinheiro inicial?", "marked" := "0"} );
+		questions.append(struct{ "title" := "Nome da facção?", "marked" := "" });
 		var output := QuestionsGump(who, questions);
 		if (!output)
 			return SendSysMessageEx(who, "Cancelado");
 		endif
 
-		var arearray := array{};
-		/*
-      while (1)
-         var area := GetInput(who, who.backpack, "Escreva a area em x1 y1 x2 y2 (aperte esc para cancelar)");
-         if (!area)
-            break;
-         endif
-         area := SplitWords(area);
-
-         if (area.size() < 4)
-            SendSysMessageEx(who, "Area invalida");
-         else
-            arearray.append(area);
-            SendSysMessageEx(who, "Area adicionada: {}".format(area));
-         endif
-      endwhile
-*/
-		var new_guild := CreateFaccao(output[1], arearray, cint(output[2]));
+		var new_guild := CreateFaccao(output[1], array{}, 0);
 		if (new_guild && !who.cmdlevel)
 			AddMember(new_guild, who);
 			new_guild.SetProp("leader", who.serial);
 		endif
 		Faccoes(who);
 	endif
+endfunction
+
+// Valida se o jogador pode criar uma nova facção.
+// Retorna 0 se permitido, ou string de erro se bloqueado.
+function _CanCreateFaccao(who)
+	// Limpa honorary_guild_id stale
+	var _hon_id := GetObjProperty(who, "honorary_guild_id");
+	if (_hon_id && !FindGuild(_hon_id))
+		EraseObjProperty(who, "honorary_guild_id");
+	endif
+
+	if (who.cmdlevel)
+		return 0;
+	endif
+	if (who.guild && GetObjProperty(who, "honorary_guild_id"))
+		return "Você já faz parte de duas facções e não pode criar uma nova.";
+	endif
+	if (who.guild)
+		return "Você já é membro full de uma facção. Apenas membros honorários de facções staff podem criar uma nova.";
+	endif
+	var hon_id := GetObjProperty(who, "honorary_guild_id");
+	if (hon_id)
+		var hon_g := FindGuild(hon_id);
+		if (hon_g && GetFaccaoTipo(hon_g) != "staff")
+			return "Você já é membro de uma facção que não é de lore, e por isso não pode criar uma nova facção.";
+		endif
+	endif
+	return 0;
 endfunction
 
 function guildHandler(who, input)
@@ -427,8 +458,10 @@ function guildHandler(who, input)
 			return SendSysMessageEx(who, "Cancelado");
 		elseif (!targ.isA(POLCLASS_MOBILE) || !targ.connected)
 			return SendSysMessageEx(who, "Alvo invalido ou nao esta online");
-		elseif (targ.guild)
-			return SendSysMessageEx(who, "Alvo ja pertence a uma faccao");
+		endif
+		var _join_err := CanJoinFaccao(guild, targ);
+		if (_join_err)
+			return SendSysMessageEx(who, _join_err);
 		endif
 
 		SendSysMessageEx(who, "O alvo foi convidado para se juntar a faccao", SSM_INFO);
@@ -439,8 +472,16 @@ function guildHandler(who, input)
 			return SendSysMessageEx(who, "{} recusou o convite.".format(targ.name), SSM_INFO);
 		endif
 
-		AddMember(guild, targ);
-		SendSysMessageEx(who, "{} se juntou a faccao".format(targ.name), SSM_INFO);
+		var _tipo := GetAutoMemberTipo(targ);
+		if (_tipo == -1)
+			_tipo := EscolherTipoMembro(targ, guild_name);
+			if (_tipo == -1)
+				return SendSysMessageEx(who, "{} cancelou o ingresso.".format(targ.name), SSM_INFO);
+			endif
+		endif
+		AddMember(guild, targ, _tipo);
+		var _tipo_str := _tipo ? "honorário" : "full";
+		SendSysMessageEx(who, "{} ingressou como membro {}.".format(targ.name, _tipo_str), SSM_INFO);
 	elseif (input == BUTTON_MONEY_TRANSFER)
 
 		var opt_choice := array{ "Acrescentar Moedas", "Transferir para outra Faccao" };
@@ -707,12 +748,13 @@ endfunction
 function playerHandler(who, input)
 	input := input - BUTTON_CHANGE_PLAYER;
 	var player := SystemFindObjectBySerial(input, SYSFIND_SEARCH_OFFLINE_MOBILES);
+	var is_honorary := IsHonoraryMember(guild, player);
 	var options := array{};
-	if (is_gm_or_leader || privilegies.giveprivs)
+	if (!is_honorary && (is_gm_or_leader || privilegies.giveprivs))
 		options.append("Alterar Privilegios");
 	endif
 
-	if (is_gm_or_leader || aboveguild)
+	if (!is_honorary && (is_gm_or_leader || aboveguild))
 		options.append("Tornar Lider");
 	endif
 
@@ -724,6 +766,11 @@ function playerHandler(who, input)
 
 	if (is_gm_or_leader || privilegies.above_members || aboveguild)
 		options.append("Remover da Faccao");
+	endif
+
+	// Mudar tipo só disponível se não for o líder atual
+	if ((is_gm_or_leader || aboveguild) && guild_obj.leader != input)
+		options.append("Mudar Tipo de Membro");
 	endif
 
 	options.append("Cancelar");
@@ -762,8 +809,95 @@ function playerHandler(who, input)
 			RemMember(guild, player);
 			SendSysMessageEx(who, "{} removido da faccao".format(player.name), SSM_INFO);
 		endif
+	elseif (output["Mudar Tipo"])
+		_MudarTipoMembroHandler(who, player);
 	endif
 
+endfunction
+
+// -------------------------------------------------------
+// Permite ao líder mudar o tipo de um membro (full ↔ honorário).
+// Regras: sem conflito de tipo em outra facção; cooldown de 7 dias.
+// -------------------------------------------------------
+function _MudarTipoMembroHandler(who, player)
+	const COOLDOWN := 604800; // 7 dias em segundos
+
+	var is_honorary    := IsHonoraryMember(guild, player);
+	var tipo_atual_str := is_honorary ? "Membro Honorário" : "Membro Full";
+	var tipo_novo      := is_honorary ? 0 : 1; // 0=full, 1=honorary
+	var tipo_novo_str  := is_honorary ? "Membro Full" : "Membro Honorário";
+
+	// Cooldown
+	var last_change := GetObjProperty(player, "tipo_change_time");
+	var agora := POLCore().systime;
+	if (last_change)
+		var restante := COOLDOWN - (agora - last_change);
+		if (restante > 0)
+			var dias  := cint(restante / 86400);
+			var horas := cint((restante - dias * 86400) / 3600);
+			return SendSysMessageEx(who,
+				"{} precisa esperar mais {} dia(s) e {} hora(s) para mudar de tipo.".format(
+					player.name, dias, horas), SSM_FAIL);
+		endif
+	endif
+
+	// Conflito de tipo na outra facção
+	if (tipo_novo == 1) // quer virar honorário
+		var hon_id := GetObjProperty(player, "honorary_guild_id");
+		if (hon_id)
+			var hon_g := FindGuild(hon_id);
+			if (hon_g && hon_g.guildid != guild.guildid)
+				return SendSysMessageEx(who,
+					"{} já é membro honorário em outra facção.".format(player.name), SSM_FAIL);
+			endif
+		endif
+	else // quer virar full
+		if (player.guild && player.guild.guildid != guild.guildid)
+			return SendSysMessageEx(who,
+				"{} já é membro full em outra facção.".format(player.name), SSM_FAIL);
+		endif
+	endif
+
+	// Gump de confirmação
+	var gump := GFCreateGump();
+	GFSetId(gump, 0x12355);
+	GFResizePic(gump, 0, 0, 9200, 380, 295);
+	GFResizePic(gump, 15, 15, 9350, 350, 265);
+	GFHtmlShadowed(gump, 20, 25, 340, 20, "#FFC33C", "<center>Mudar Tipo de Membro", 8);
+	GFHtmlShadowed(gump, 20, 50, 340, 18, "#AAAAAA", "<center>" + player.name, 6);
+
+	GFTextLine(gump, 30,  88, 0,  "Tipo atual:");
+	GFTextLine(gump, 140, 88, 33, tipo_atual_str);
+
+	GFTextLine(gump, 30,  118, 0,  "Novo tipo:");
+	GFTextLine(gump, 140, 118, 63, tipo_novo_str);
+
+	GFHTMLArea(gump, 30, 158, 320, 50,
+		"<basefont color=#888888>Obs: ao mudar o tipo, o membro ficará 7 dias sem poder alterar novamente.", 0);
+
+	GFAddButton(gump, 65,  220, 4005, 4006, GF_CLOSE_BTN, 1);
+	GFTextLine(gump,  100, 220, 1153, "Confirmar");
+	GFAddButton(gump, 230, 220, 4017, 4018, GF_CLOSE_BTN, 0);
+	GFTextLine(gump,  265, 220, 1153, "Cancelar");
+
+	var input := GFSendGump(who, gump);
+	if (!input || input[0] != 1)
+		return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+	endif
+
+	// Executa mudança
+	var guild_name := guild.GetProp("name");
+	RemMember(guild, player);
+	AddMember(guild, player, tipo_novo);
+	SetObjProperty(player, "tipo_change_time", agora);
+
+	SendSysMessageEx(who,
+		"{} teve o tipo alterado de {} para {} na facção {}.".format(
+			player.name, tipo_atual_str, tipo_novo_str, guild_name), SSM_INFO);
+	SendSysMessage(player,
+		"Seu tipo de membro na facção " + guild_name +
+		" foi alterado: " + tipo_atual_str + " → " + tipo_novo_str +
+		". Você não pode alterar novamente por 7 dias.");
 endfunction
 
 function gmHandler(who)
@@ -875,9 +1009,14 @@ function gmHandler(who)
 endfunction
 
 // -------------------------------------------------------
-// Propaga (nome_idx > 0) ou apaga (nome_idx == 0) nomefaccao em todos os membros.
+// Propaga (nome_idx > 0) ou apaga (nome_idx == 0) nomefaccao em todos os
+// membros full, membros honorários, NPCs ativos e baú da facção.
+// Também atualiza tipo_faccao no baú.
 // -------------------------------------------------------
 function _SyncNomeFaccaoMembers(guild, nome_idx)
+	var _tipo_faccao := GetFaccaoTipo(guild);
+
+	// Membros full
 	foreach member in (guild.members)
 		if (nome_idx)
 			SetObjProperty(member, "nomefaccao", nome_idx);
@@ -886,6 +1025,76 @@ function _SyncNomeFaccaoMembers(guild, nome_idx)
 		endif
 		sleepms(2);
 	endforeach
+
+	// Membros honorários
+	var hon_serials := guild.GetProp("honorary_members");
+	if (hon_serials)
+		foreach hon_serial in hon_serials
+			var mob := SystemFindObjectBySerial(hon_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+			if (!mob) sleepms(2); continue; endif
+			if (nome_idx)
+				SetObjProperty(mob, "nomefaccao", nome_idx);
+			else
+				EraseObjProperty(mob, "nomefaccao");
+			endif
+			sleepms(2);
+		endforeach
+	endif
+
+	// NPCs ativos
+	var npcs_active := guild.GetProp("npcs_active");
+	if (npcs_active)
+		foreach npc_data in npcs_active
+			var npc := SystemFindObjectBySerial(npc_data.serial);
+			if (!npc) sleepms(2); continue; endif
+			if (nome_idx)
+				SetObjProperty(npc, "nomefaccao", nome_idx);
+			else
+				EraseObjProperty(npc, "nomefaccao");
+			endif
+			sleepms(2);
+		endforeach
+	endif
+
+	// Baú da facção
+	var bau_serial := guild.GetProp("bau_serial");
+	if (bau_serial)
+		var bau := SystemFindObjectBySerial(bau_serial);
+		if (bau)
+			SetObjProperty(bau, "tipo_faccao", _tipo_faccao);
+			if (nome_idx)
+				SetObjProperty(bau, "nomefaccao", nome_idx);
+			else
+				EraseObjProperty(bau, "nomefaccao");
+			endif
+		endif
+	endif
+
+	// Itens registrados (mural, mesa, convite, totem, etc.)
+	var itens := guild.GetProp("itens_faccao");
+	var itens_validos := array{};
+	var _has_stale := 0;
+	if (itens)
+		foreach item_serial in itens
+			var item := SystemFindObjectBySerial(item_serial);
+			if (!item)
+				_has_stale := 1;
+				sleepms(2);
+				continue;
+			endif
+			SetObjProperty(item, "tipo_faccao", _tipo_faccao);
+			if (nome_idx)
+				SetObjProperty(item, "nomefaccao", nome_idx);
+			else
+				EraseObjProperty(item, "nomefaccao");
+			endif
+			itens_validos.append(item_serial);
+			sleepms(2);
+		endforeach
+		if (_has_stale)
+			guild.SetProp("itens_faccao", itens_validos);
+		endif
+	endif
 endfunction
 
 // -------------------------------------------------------
@@ -917,15 +1126,18 @@ function _TipoFaccaoHandler(who)
 
 	var input := GFSendGump(who, gump);
 
-	if (input[0] == 1) // Staff: pede qual das 5 facções
+	if (input[0] == 1) // Staff: pede qual das 5 facções de lore
 		var nome_idx := _EscolherNomeFaccao(who, nomefaccao_atual);
 		if (!nome_idx) return; endif
+		var nome_lore := FACCAO_NOMES[nome_idx];
 		guild.SetProp("tipo_faccao", "staff");
 		guild.SetProp("nomefaccao", nome_idx);
+		guild.SetProp("name", nome_lore);
 		guild_obj.tipo_faccao := "staff";
+		guild_obj.name := nome_lore;
 		_SyncNomeFaccaoMembers(guild, nome_idx);
-		SendSysMessageEx(who, "Tipo: staff | Facção: {} ({})".format(FACCAO_NOMES[nome_idx], nome_idx));
-	elseif (input[0] == 2) // Player: limpa nomefaccao
+		SendSysMessageEx(who, "Tipo: staff | Facção: {} ({})".format(nome_lore, nome_idx));
+	elseif (input[0] == 2) // Player: limpa nomefaccao, preserva nome atual
 		guild.SetProp("tipo_faccao", "player");
 		guild.EraseProp("nomefaccao");
 		guild_obj.tipo_faccao := "player";
