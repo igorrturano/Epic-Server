@@ -120,7 +120,9 @@ function CanHear(byRef messageData)
 	var rangeMod := CheckLineOfSight(messageData.source.GetObjRef(), messageData.target.GetObjRef()) ? 1 : 3;
 
 	if (messageData.type == MESSAGE_TYPE::WHISPER)
-		hearDistance := CInt(MESSAGE_DISTANCE::WHISPER / rangeMod);
+		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
+							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod) :
+							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod) + 4;
 		
 		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > hearDistance)
 			return false;
@@ -128,14 +130,16 @@ function CanHear(byRef messageData)
 	elseif (messageData.type == MESSAGE_TYPE::YELL)
 		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
 							CInt(MESSAGE_DISTANCE::YELL / rangeMod) :
-							CInt(MESSAGE_DISTANCE::YELL + 4 / rangeMod);
+							CInt(MESSAGE_DISTANCE::YELL / rangeMod) + 4;
 
 		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > hearDistance || 
 			Abs(messageData.source.GetObjRef().z - messageData.target.GetObjRef().z) >= hearDistance)
 			return false;
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::NORMAL)
-		hearDistance := CInt(MESSAGE_DISTANCE::NORMAL / rangeMod);
+		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
+							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod) :
+							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod) + 4;
 
 		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > hearDistance)
 			return false;
