@@ -894,7 +894,16 @@ function ApplyCombatDamage(byRef attackInfo)
 		if (owner)
 			MostraDano(owner, attackInfo.GetAttacker().GetObjRef(), totalDamage);
 		endif
-	endif		
+		AccumulateVinganca(attackInfo.GetDefender().GetObjRef(), totalDamage);
+	endif
+endfunction
+
+function AccumulateVinganca(defender, amount)
+	var current := GetObjProperty(defender, "#vinganca");
+	if (current == error)
+		return;
+	endif
+	SetObjProperty(defender, "#vinganca", CInt(current) + CInt(amount));
 endfunction
 
 function AttackLogger(attackInfo)
