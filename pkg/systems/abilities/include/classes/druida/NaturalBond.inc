@@ -220,10 +220,15 @@ class NaturalBond(CombatAbility)
         this._DoTransform(who, form);
 
         var duration := this._CalcDuration(who, mobile);
-        TS_StartTimer(who, "metamorfosedruida", duration);
 
         this._ApplyBoosts(who, elem, duration);
         var effective_duration := this._ApplyModifiers(who, elem, duration, mobile);
+
+        // Start timer with the final (post-modifier) duration, then yield so the
+        // TimerControl process sets endtime before we send the client-side buff.
+        // Without the yield, the buff countdown drifts ahead of the server timer.
+        TS_StartTimer(who, "metamorfosedruida", effective_duration);
+        sleepms(10);
 
         SendBuff(who, 0, 1045); // remove agility buff icon
         SendBuff(who, 0, 1047); // remove strength buff icon
@@ -390,7 +395,6 @@ class NaturalBond(CombatAbility)
             skill_a_calc := CInt(skill_a_calc - bonusMagicLore);
             hitsmod_calc := CInt(hitsmod_calc - bonusMagicLore);
             duration := CInt(duration / 2);
-            TS_StartTimer(who, "metamorfosedruida", duration);
             SendPacket(who, "BF0006002601");
         endif
 
