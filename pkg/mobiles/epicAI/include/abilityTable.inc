@@ -88,8 +88,8 @@ function BuildCombatAbilities(who)
         table.append(struct{ "id" := "GazerRay", "range_min" := 0, "range_max" := 8 });
     endif
 
-    // NPCRace-based abilities (ab.npc_race is a lowercase trimmed string)
-    _BuildRaceAbilities(ab.npc_race, table);
+    // NPCRace-based abilities (cache.npc_race is a lowercase string)
+    _BuildRaceAbilities(cache.npc_race, table);
 
     // Caster behaviors - these manage their own cooldowns internally
     if (ab.hasMageConfig)

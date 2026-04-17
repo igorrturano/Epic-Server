@@ -63,6 +63,7 @@ function BuildNPCCache(mobile)
         "spell_school" := npc_elem.SpellSchool,
         "attack_speed" := npc_elem.EpicAttackSpeed,
         "is_ranged" := (Lower(SplitWords(npc_elem.EpicAttackSpeed, "_")[1]) == "ranged"),
+        "npc_race" := Lower(npc_elem.NPCRace ?: ""),
         "abilities" := abilities,
         "npc_elem" := npc_elem  // Keep reference for any other config lookups
     };
@@ -165,9 +166,6 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         "isGazer" := (template_lower in array{
             "gazer", "gazer2", "gazer3", "gazer4", "gazer5", "gazer6", "gazer7"
         }),
-
-        // NPCRace stored as string — checked directly in _BuildRaceAbilities
-        "npc_race" := npc_race,
 
         // Brain type
         "isHumanoidBrain" := (brain_type == "humanoid"),
