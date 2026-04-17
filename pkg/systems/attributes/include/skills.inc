@@ -362,16 +362,16 @@ function limiteportempo(who)
     var dias := idadeChar(who);
     var lim;
 
-    if (dias <= 5)
-        lim := (dias + 1) * 2;
-    elseif (dias <= 11)
-        lim := 12 + (dias - 5) * 1;
-    elseif (dias <= 55)
-        lim := 18 + (dias - 11) * 0.5;
-    elseif (dias <= 80)
-        lim := 40 + (dias - 55) * 0.4;
+    if (dias <= 3)
+        lim := 6 + dias * 2;
+    elseif (dias <= 12)
+        lim := 12 + (dias - 3);
+    elseif (dias <= 50)
+        lim := 21 + (dias - 12) * 0.5;
+    elseif (dias <= 75)
+        lim := 40 + (dias - 50) * 0.4;
     else
-        lim := 50 + (dias - 80) * 0.3;
+        lim := 50 + (dias - 75) * 0.3;
     endif
 
     return Min(lim, 60);

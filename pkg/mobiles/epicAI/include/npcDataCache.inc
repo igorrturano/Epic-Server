@@ -82,7 +82,8 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
     var isLizardManCache := (template_lower in array{"lizardman1", "lizardman2", "lizardman3"});
     var isReptoideCache := (template_lower in array{"reptoide1", "reptoide2", "reptoide3"});
 
-    // Spider templates are case-SENSITIVE (original code doesn't use Lower())
+    // Spider detection: NPCRace-based (catches all spiders including LavaSpider)
+    // Template list kept for spider-specific abilities (web, egg, climb)
     var isSpiderCache := (template in array{
         "DreadGiantSpider", "BlackGiantSpider", "HugeRedSpider",
         "BlackHugeSpider", "SkullSpider", "Tarantula", "GiantSpider"
@@ -126,8 +127,9 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         "hasTunnelTactics" := (isFormianCache || isAnkhegCache || isUmberHulkCache),
         "canBite" := (isLizardManCache || isReptoideCache),
         "canDoConfusion" := isUmberHulkCache,
-        // Spider abilities (case-SENSITIVE templates)
+        // Spider: NPCRace for Drow check, template list for specific abilities
         "isSpider" := isSpiderCache,
+        "isSpiderRace" := (npc_race == "aranha"),
         "CanDoWebWrap" := (template in array{
             "DreadGiantSpider", "HugeRedSpider", "BlackHugeSpider", "Tarantula"
         }),
@@ -164,7 +166,7 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
             "gazer", "gazer2", "gazer3", "gazer4", "gazer5", "gazer6", "gazer7"
         }),
 
-        // NPCRace stored as string — checked directly in BuildCombatAbilities
+        // NPCRace stored as string — checked directly in _BuildRaceAbilities
         "npc_race" := npc_race,
 
         // Brain type
