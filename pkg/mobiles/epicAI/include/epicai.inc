@@ -1342,8 +1342,14 @@ function CanFight(attacker, defender)
     endif
 
     // Aparencia Cadaverica: mortos vivos nao atacam quem parece um deles.
+    // Se o jogador atacar um morto vivo, a aparencia quebra.
     if (GetObjProperty(defender, "aparenciacadaverica") && attacker_cache.category_lower == "undead")
-        return 0;
+        if (attacker.opponent == defender)
+            EraseObjProperty(defender, "aparenciacadaverica");
+            SendSysMessageEx(defender, "A sua aparencia cadaverica se desfez!", SSM_FAIL);
+        else
+            return 0;
+        endif
     endif
 
     // Cooldown to avoid ress kill
