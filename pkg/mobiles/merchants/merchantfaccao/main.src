@@ -16,7 +16,7 @@ var guild      := 0;
 var following  := 0;
 var fix_location := 0;
 
-const MERCH_DEBUG := 1;
+const MERCH_DEBUG := 0;
 
 // ============================================================
 // DEBUG
@@ -204,7 +204,7 @@ program MerchantMain()
 			if (GetObjProperty(me, "tipo_faccao") == "staff")
 				if (HandleWalkRectBreach(me, wait_time))
 					if (following)
-						if (MERCH_DEBUG) MerchLog("RECT", "saiu do rect seguindo '{}' — parando".format(following.name)); endif
+						MerchLog("RECT", "saiu do rect seguindo '{}' — parando".format(following.name));
 						following := 0;
 						PrintTextAbove(me, "Nao posso ir alem do meu territorio!");
 					endif
@@ -234,7 +234,7 @@ program MerchantMain()
 				following := 0;
 			else
 				var dist := Distance(me, following);
-				if (MERCH_DEBUG && !GetCooldown(me, "debug_follow"))
+				if (!GetCooldown(me, "debug_follow"))
 					MerchLog("SEGUINDO", "'{}' | dist={}".format(following.name, dist));
 					SetCooldown(me, "debug_follow", 2);
 				endif
@@ -259,7 +259,7 @@ program MerchantMain()
 		if (!following && fix_location)
 			var dist_posto := CoordinateDistance(me.x, me.y, fix_location.x, fix_location.y);
 			if (dist_posto > 1)
-				if (MERCH_DEBUG && !GetCooldown(me, "debug_return"))
+				if (!GetCooldown(me, "debug_return"))
 					MerchLog("RETORNO", "voltando ao posto ({},{})".format(fix_location.x, fix_location.y));
 					SetCooldown(me, "debug_return", 3);
 				endif

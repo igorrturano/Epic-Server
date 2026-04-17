@@ -94,8 +94,8 @@ endfunction
 
 function CheckIfHavePlayerGuild(player_array)
 	foreach player in player_array
-		if (guild.guildid == player.guildid)
-			var privs := guild.GetProp(cstr(player.serial));
+		if (IsMemberOfFaccao(guild, player))
+			var privs := GetMemberPrivs(guild, player);
 			if (player.serial == guild_leader || privs.above_guards)
 				return 1;
 			endif
@@ -118,12 +118,10 @@ function CheckPlayer(who)
 		return;
 	endif
 
-	var privs := guild.GetProp(cstr(who.serial));
-	var is_member := guild.guildid == who.guildid;
-	var user_subguilds := who.guild.getProp("subguilds");
-	if (!user_subguilds)
-		user_subguilds := array{};
-	endif
+	var privs := GetMemberPrivs(guild, who);
+	var is_member := IsMemberOfFaccao(guild, who);
+	var user_subguilds := who.guild ? who.guild.getProp("subguilds") : array{};
+	if (!user_subguilds) user_subguilds := array{}; endif
 	var is_leader := (who.serial == guild_leader || guild.guildid in user_subguilds);
 	/*
    if (is_leader || privs.above_guards)
@@ -147,7 +145,7 @@ function CheckPlayer(who)
 */
 	var hostiles := ListHostiles(who, 8);
 	foreach mob in hostiles
-		if (GetObjProperty(mob, "guild") == guild.guildid || mob.guildid == guild.guildid)
+		if (GetObjProperty(mob, "guild") == guild.guildid || IsMemberOfFaccao(guild, mob))
 			return 1;
 		endif
 		sleepms(2);
@@ -214,13 +212,13 @@ function CheckPlayer(who)
 				break;
 			"norace":
 				var chardata := GetObjProperty(who, "chardata");
-				if (chardata.povo == law.opt && who.guildid != guild.guildid)
+				if (chardata.povo == law.opt && !IsMemberOfFaccao(guild, who))
 					warning := who;
 					warn_type := 2;
 				endif
 				break;
 			"nooutsider":
-				if (who.guildid != guild.guildid)
+				if (!IsMemberOfFaccao(guild, who))
 					warning := who;
 					warn_type := 2;
 				endif
@@ -267,7 +265,7 @@ function CheckGuildMemberThreats()
 		sleepms(2);
 		if (player == me) continue; endif
 
-		var _is_member := (player.guildid == guild.guildid);
+		var _is_member := IsMemberOfFaccao(guild, player);
 		var _is_leader := (player.serial == guild_leader);
 
 		if (!_is_member && !_is_leader) continue; endif
@@ -282,7 +280,7 @@ function CheckGuildMemberThreats()
 		if (!threat)
 			var _hostiles := ListHostiles(player, 10);
 			foreach _h in _hostiles
-				if (_h && _h.isA(POLCLASS_MOBILE) && _h.guildid != guild.guildid && _h != me)
+				if (_h && _h.isA(POLCLASS_MOBILE) && !IsMemberOfFaccao(guild, _h) && _h != me)
 					threat := _h;
 					break;
 				endif
@@ -291,7 +289,7 @@ function CheckGuildMemberThreats()
 		endif
 
 		if (!threat || !threat.isA(POLCLASS_MOBILE)) continue; endif
-		if (threat.guildid == guild.guildid) continue; endif
+		if (IsMemberOfFaccao(guild, threat)) continue; endif
 		if (threat == me) continue; endif
 
 		if (!CheckLineOfSight(me, threat)) continue; endif
@@ -313,12 +311,12 @@ function CheckGuildMemberThreats()
 	foreach mob in nearby_npcs
 		sleepms(2);
 		if (mob == me) continue; endif
-		if (mob.guildid == guild.guildid) continue; endif
+		if (IsMemberOfFaccao(guild, mob)) continue; endif
 
 		var _opp := mob.opponent;
 		if (!_opp || !_opp.isA(POLCLASS_MOBILE)) continue; endif
 
-		var _victim_is_member := (_opp.guildid == guild.guildid);
+		var _victim_is_member := IsMemberOfFaccao(guild, _opp);
 		var _victim_is_leader := (_opp.serial == guild_leader);
 
 		if (!_victim_is_member && !_victim_is_leader) continue; endif
@@ -839,7 +837,7 @@ function AllCommand(ev)
 	event.+targ := ev.targ;
 
 	foreach mobile in (ListMobilesNearLocation(me.x, me.y, me.z, 8, me.realm))
-		if (GetObjProperty(mobile, "guild") == guild.guildid && mobile != me)
+		if (IsMemberOfFaccao(guild, mobile) && mobile != me)
 			SendEvent(mobile, event);
 		endif
 
@@ -1043,7 +1041,7 @@ function WarnPlayer()
 		disableWarn();
 		foreach monster in ListMobilesNearLocationEx(me.x, me.y, me.z, 8,
 											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY, me.realm)
-			if (GetObjProperty(monster, "guild") == guild.guildid)
+			if (IsMemberOfFaccao(guild, monster))
 				monster.frozen := 0;
 				SendEvent(monster, struct{ "type" := HELP_CMD, source := me, targ := warning });
 			endif
@@ -1126,7 +1124,7 @@ function FightADV(opponent := 0)
 		if (opponent == me || opponent == fighting || !opponent.IsA(POLCLASS_MOBILE) ||
 	  guild_leader == opponent.serial || Distance(me, opponent) > 18)
 			return;
-		elseif (GetObjProperty(opponent, "guild") == guild.guildid)
+		elseif (IsMemberOfFaccao(guild, opponent))
 			if (opponent.IsA(POLCLASS_NPC))
 				return;
 			endif
@@ -1134,7 +1132,7 @@ function FightADV(opponent := 0)
 
 		foreach monster in ListMobilesNearLocationEx(me.x, me.y, me.z, 8,
 											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY, me.realm)
-			if (GetObjProperty(monster, "guild") == guild.guildid)
+			if (IsMemberOfFaccao(guild, monster))
 				SendEvent(monster, struct{ "type" := HELP_CMD, source := me, targ := opponent });
 			endif
 			sleepms(2);
@@ -1492,7 +1490,7 @@ function GetEnemiesNearGuard(loc, range := 5, get_hidden := 0)
 												 LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN, me.realm)
 		if ((mobile.hidden && !get_hidden || mobile == me))
 			continue;
-		elseif (mobile.guildid == guild.guildid)
+		elseif (IsMemberOfFaccao(guild, mobile))
 			continue;
 		endif
 
