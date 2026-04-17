@@ -76,6 +76,9 @@ endprogram
 
 function NomeNivelPocao(who, pocao)
 	var tier := PegaNivelPocao(who, pocao);
+	if (pocao.objtype == 0xbf0d || pocao.objtype == 0x6073 || pocao.objtype == 0xdce6)
+		tier := 2;
+	endif
 	case (tier)
 		1: return "Menor";
 		2: return ;
