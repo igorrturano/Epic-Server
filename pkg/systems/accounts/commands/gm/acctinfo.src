@@ -222,7 +222,7 @@ function NotesGump(account, byref gump)
 endfunction
 
 function AccountBanner(who, account)
-	if (account.defaultcmdlevel < who.cmdlevel)
+	if (account.defaultcmdlevel >= who.cmdlevel)
 		SendSysMessage(who, "You can't do that.");
 		return 0;
 	endif

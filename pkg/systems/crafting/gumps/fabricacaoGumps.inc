@@ -895,12 +895,3 @@ function MontaEscolhaComponenteModoGmGump(byref gump, sessao)
 	GFAddButton(gump, larguraCelula * 2, alturaBarraMenu + 170,2311,2312,GF_CLOSE_BTN, COMPLEXOS_BTN_OKAY_GM_CMPNT);
 	return gump;
 endfunction
-
-function MontaPaginador(paginaAtual, itensPorPagina)
-
-	return struct {
-					indicePaginaAtual := (paginaAtual * itensPorPagina) + 1,
-					indicePaginaSeguinte := ((1 + paginaAtual) * itensPorPagina) + 1,
-					indicePaginaAnterior := ((1 - paginaAtual) * itensPorPagina) + 1
-				};
-endfunction

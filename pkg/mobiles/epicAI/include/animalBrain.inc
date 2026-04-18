@@ -40,7 +40,9 @@ function AnimalBrain()
                 HandleAnimalLeftArea(me.opponent);
             else
                 if (SM_GetState() != "FLEEING")
-                    PursueTarget(me.opponent);
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
                 endif
             endif
         endif
@@ -153,10 +155,14 @@ function HandleAnimalCombatEvent(opponent)
         return 0;
     endif
 
+    if (MobileWrapper(opponent).HasAbility(ABILITY_ID::RURAL_LIFE))
+        return 0;
+    endif
+
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
-    if (me.isSpider() && opponent.getRace() == DROW)
+    if (NPC_GetCachedData(me).npc_race == "aranha" && opponent.getRace() == DROW)
         var tier := CInt(me.getTier());
         if (tier <= 2)
             return 0;

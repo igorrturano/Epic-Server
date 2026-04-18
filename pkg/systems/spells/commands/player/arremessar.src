@@ -2,6 +2,7 @@ use uo;
 use os;
 use math;
 use vitals;
+use cfgfile;
 
 include ":timedscripts:timedScripts";
 include "include/say";
@@ -16,6 +17,7 @@ include ":combat:Controller/DamageController_legacy";
 include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
 include ":wrappers:Objects/Model/WeaponWrapper";
+include ":tn:cooldown";
 
 enum arrremesso
 	ARREMESSO_TIPO_ITEM,
@@ -26,6 +28,13 @@ endenum
 program arremesso(params)
 	var who := params[1];
 	params := 0; // No longer needed
+
+	var cd := GetCooldown(who, "arremesso_cd");
+	if (cd)
+		SendSysMessageEx(who, "Voce precisa esperar " + cd + " segundos para arremessar novamente.", SSM_FAIL);
+		return 0;
+	endif
+
 	if (who.hidden && !MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		SendSysMessageEx(who, "Voce nao pode fazer isso escondido.", SSM_FAIL);
 		return 0;
@@ -36,6 +45,15 @@ program arremesso(params)
 		SendSysMessageEx(who, "Voce nao pode arremessar enquanto pilota um golem ou esta metamorfoseado.",
 				   SSM_FAIL);
 		return 0;
+	endif
+
+	var _left_hand := GetEquipmentByLayer(who, 0x02);
+	if (who.weapon)
+		var _weapon_attr := Upper(who.weapon.getCfgElem().Attribute);
+		if (_weapon_attr == "TWO_HANDED" || _weapon_attr == "DUAL_WIELD" || _left_hand)
+			SendSysMessageEx(who, "Voce precisa ter pelo menos uma mao livre para arremessar.", SSM_FAIL);
+			return 0;
+		endif
 	endif
 
 	if (AP_GetVital(who, "Stamina") < 20)
@@ -148,6 +166,8 @@ program arremesso(params)
 	else
 		AP_ConsumeVital(who, "Stamina", 20);
 	endif
+
+	SetCooldown(who, "arremesso_cd", 10);
 
 	var to_miss_chance := 50;
 	if (alvo.isA(POLCLASS_MOBILE))

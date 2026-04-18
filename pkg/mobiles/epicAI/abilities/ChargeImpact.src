@@ -1,0 +1,65 @@
+use uo;
+use os;
+use vitals;
+use math;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include "include/packets";
+
+program ChargeImpact(params)
+	var attacker := params[1];
+	var defender := params[2];
+
+	if (!attacker || !defender)
+		return 0;
+	endif
+
+	// Wait until NPC reaches melee range (max 10 seconds)
+	var timeout := 10;
+	while (timeout > 0)
+		if (attacker.dead || defender.dead)
+			EraseObjProperty(attacker, "#chargestart");
+			return 0;
+		endif
+
+		if (Distance(attacker, defender) <= 1)
+			break;
+		endif
+
+		sleepms(250);
+		timeout := timeout - 0.25;
+	endwhile
+
+	// If never reached melee range, cancel the charge
+	if (Distance(attacker, defender) > 2)
+		EraseObjProperty(attacker, "#chargestart");
+		return 0;
+	endif
+
+	var charge_start := GetObjProperty(attacker, "#chargestart");
+	if (!charge_start)
+		return 0;
+	endif
+
+	if (charge_start.target != defender.serial)
+		EraseObjProperty(attacker, "#chargestart");
+		return 0;
+	endif
+
+	var dist := CoordinateDistance(charge_start.x, charge_start.y, defender.x, defender.y);
+	var tier := CInt(MobileWrapper(attacker).GetTier());
+	var charge_damage := CInt(dist * tier * 3) + CInt(attacker.strength / 20);
+
+	if (charge_damage < 1)
+		charge_damage := 1;
+	endif
+
+	EraseObjProperty(attacker, "#chargestart");
+	SetObjProperty(attacker, "charge_damage", charge_damage);
+
+	ApplyRawDamage(defender, charge_damage);
+	DisplayDamage(defender, charge_damage, attacker);
+	PrintTextAbove(attacker, "*impacto da carga*");
+
+	return 1;
+endprogram

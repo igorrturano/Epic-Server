@@ -33,9 +33,9 @@ class TavernBrawler(CombatAbility)
 		endif
 
 		attackInfo.GetDamage()
-			.IncreaseSlashBaseDamage(4)
-			.IncreasePiercingBaseDamage(4)
-			.IncreaseBluntBaseDamage(4);
+			.IncreaseSlashRawDamage(4)
+			.IncreasePiercingRawDamage(4)
+			.IncreaseBluntRawDamage(4);
 
 		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
 			Message("[TAVERN_BRAWLER] +4 dano", Color(SYSTEM_COLOR::SUCCESS)));

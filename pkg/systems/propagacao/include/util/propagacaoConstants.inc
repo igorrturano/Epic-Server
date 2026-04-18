@@ -15,10 +15,10 @@ enum class PROPAGACAO_TIPO
 endenum
 
 enum class TILE_SCANNER
-	ITENS,
-	STATICOS,
-	MOBILES,
-	TERRENO
+	ITENS := 1,
+	STATICOS := 2,
+	MOBILES := 3,
+	TERRENO := 4
 endenum
 
 enum class RESFRIAMENTOS

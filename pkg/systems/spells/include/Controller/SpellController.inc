@@ -5,6 +5,7 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":timedscripts:timedScripts";
 include ":hotbar:include/custombuff";
 include ":attributes:stats";
+include ":fls_core:packets";
 
 /**
  * SpellController — Unified spell effect orchestrator.
@@ -115,6 +116,60 @@ function _SC_ApplyOpts(targ, opts)
 	if (opts.speed_mod)
 		targ.run_speed := targ.run_speed + opts.speed_mod;
 	endif
+
+	// Hit chance
+	if (opts.hitchance_mod)
+		targ.hitchance_mod := targ.hitchance_mod + opts.hitchance_mod;
+	endif
+
+	// Frozen
+	if (opts.frozen)
+		targ.frozen := 1;
+	endif
+
+	// Graphic change
+	if (opts.graphic)
+		targ.graphic := opts.graphic;
+	endif
+
+	// Armor hit scripts (append to array)
+	if (opts.armor_hit_scripts)
+		var armorscript := GetObjProperty(targ, "ArmorHitScripts");
+		if (!armorscript)
+			armorscript := array{};
+		endif
+		foreach script_path in (opts.armor_hit_scripts)
+			armorscript.append(script_path);
+		endforeach
+		SetObjProperty(targ, "ArmorHitScripts", armorscript);
+	endif
+
+	// Hidden (invisibility)
+	if (opts.hidden)
+		targ.hidden := 1;
+	endif
+
+	// Evasion chance
+	if (opts.evasionchance_mod)
+		targ.evasionchance_mod := targ.evasionchance_mod + opts.evasionchance_mod;
+	endif
+
+	// Speed boost (PlayerSpeedBoost packet for players, run_speed for NPCs)
+	if (opts.speed_boost)
+		if (targ.npctemplate)
+			SetObjProperty(targ, "#sc_runspeed", targ.run_speed);
+			targ.run_speed := 250;
+		else
+			PlayerSpeedBoost(targ, 1);
+		endif
+	endif
+
+	// Custom ObjProperties
+	if (opts.properties)
+		foreach val in (opts.properties)
+			SetObjProperty(targ, _val_iter, val);
+		endforeach
+	endif
 endfunction
 
 function _SC_RemoveOpts(targ, opts)
@@ -143,6 +198,56 @@ function _SC_RemoveOpts(targ, opts)
 	// Restore speed
 	if (opts.speed_mod)
 		targ.run_speed := targ.run_speed - opts.speed_mod;
+	endif
+
+	// Hit chance (reverse)
+	if (opts.hitchance_mod)
+		targ.hitchance_mod := targ.hitchance_mod - opts.hitchance_mod;
+	endif
+
+	// Frozen (reverse)
+	if (opts.frozen)
+		targ.frozen := 0;
+	endif
+
+	// Graphic (restore)
+	if (opts.graphic)
+		targ.graphic := targ.trueobjtype;
+	endif
+
+	// Armor hit scripts (remove)
+	if (opts.armor_hit_scripts)
+		EraseObjProperty(targ, "ArmorHitScripts");
+	endif
+
+	// Hidden (reverse)
+	if (opts.hidden)
+		targ.hidden := 0;
+	endif
+
+	// Evasion chance (reverse)
+	if (opts.evasionchance_mod)
+		targ.evasionchance_mod := targ.evasionchance_mod - opts.evasionchance_mod;
+	endif
+
+	// Speed boost (reverse)
+	if (opts.speed_boost)
+		if (targ.npctemplate)
+			var normal_speed := CInt(GetObjProperty(targ, "#sc_runspeed"));
+			if (normal_speed)
+				targ.run_speed := normal_speed;
+			endif
+			EraseObjProperty(targ, "#sc_runspeed");
+		else
+			PlayerSpeedBoost(targ, 0);
+		endif
+	endif
+
+	// Custom ObjProperties
+	if (opts.properties)
+		foreach val in (opts.properties)
+			EraseObjProperty(targ, _val_iter);
+		endforeach
 	endif
 endfunction
 
@@ -220,6 +325,7 @@ function SC_ResyncOnLogin(mobile)
 		var mw := MobileWrapper(mobile);
 		var opts := mw.GetProperty($"#SpellOpts_{spellId}");
 		if (opts && !opts.errortext)
+			_SC_ApplyOpts(mobile, opts);
 			var desc := _SC_BuildDescription(opts);
 			var totalDur := CInt(opts.totalDuration);
 			SendSpellBuff(mobile, mobile, spellId, remaining, desc, totalDur);
@@ -308,6 +414,10 @@ function _SC_BuildDescription(opts)
 	if (opts.str_mod)         parts.Append($"{opts.str_mod} FOR");               endif
 	if (opts.dex_mod)         parts.Append($"{opts.dex_mod} DES");               endif
 	if (opts.int_mod)         parts.Append($"{opts.int_mod} INT");               endif
+
+	if (opts.desc)
+		parts.Append(opts.desc);
+	endif
 
 	if (parts.size() == 0)
 		return "";

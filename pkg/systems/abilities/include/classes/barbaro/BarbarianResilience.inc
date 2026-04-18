@@ -6,6 +6,7 @@ include ":debug:Controller/DebugController";
 include ":tn:cooldown";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
+include ":hotbar:custombuff";
 
 /**
  * Resiliencia Barbara (Barbarian Resilience) - ABILITY_ID::RESILIENCIA_BARBARA (601)
@@ -42,6 +43,7 @@ class BarbarianResilience(CombatAbility)
 		endif
 
 		TS_StartTimer(who, "recuperacaoaligera", duration);
+		SendAbilityBuff(who, ABILITY_ID::RESILIENCIA_BARBARA, duration, "Recuperacao de HP");
 		Message($"Resiliencia Barbara ativada por {duration}s.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 		DebugMsg(
@@ -61,7 +63,7 @@ class BarbarianResilience(CombatAbility)
 			return false;
 		endif
 
-		var reduction := CInt(defender.GetSkill(TACTICS) / 10);
+		var reduction := CInt(defender.GetSkill(TACTICS) / 20);
 		if (reduction <= 0)
 			return false;
 		endif

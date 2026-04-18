@@ -31,7 +31,7 @@ function PegaPericiaPeloMaterial(tipoMaterial)
 		"wood":
 			return "Wood_Working";
 		"catalist":
-		"Oleo":
+		"oleo":
 		"solvente":
 		"alcool":
 			return "Alchemy";

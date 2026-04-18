@@ -1,0 +1,377 @@
+// ARQUIVO: pkg/systems/faccao/mesainscricao.src
+//
+// Mesa de Inscrição da Facção
+// Permite ao líder de uma facção convidar jogadores, atribuindo um nome
+// personalizado e cargo RP visíveis no gump da facção.
+// Também permite ao líder alterar seu próprio nome/cargo RP.
+
+use uo;
+use os;
+use guilds;
+
+include ":faccao:faccao";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+program mesainscricao_use(who, item)
+    return _MesaMain(who);
+endprogram
+
+
+function _MesaMain(who)
+    var guild := who.guild;
+    if (!guild)
+        SendSysMessage(who, "Você precisa fazer parte de uma facção para usar esta mesa.");
+        return 0;
+    endif
+
+    if (!isLeader(guild, who))
+        SendSysMessage(who, "Apenas o líder da facção pode usar esta mesa.");
+        return 0;
+    endif
+
+    return _AbrirMenuPrincipal(who, guild);
+endfunction
+
+
+function _AbrirMenuPrincipal(who, guild)
+    var guild_name := guild.GetProp("name");
+
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x12344);
+    GFResizePic(gump, 0, 0, 9200, 320, 260);
+    GFResizePic(gump, 15, 15, 9350, 290, 230);
+    GFTextMid(gump, 15, 25, 290, 53, "Mesa de Inscrição - " + guild_name);
+
+    GFAddButton(gump, 40, 80, 4005, 4006, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 75, 82, 1153, "Convidar novo membro");
+
+    GFAddButton(gump, 40, 120, 4005, 4006, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, 75, 122, 1153, "Alterar meu nome / cargo");
+
+    GFAddButton(gump, 40, 160, 4005, 4006, GF_CLOSE_BTN, 3);
+    GFTextLine(gump, 75, 162, 1153, "Mudar nome / cargo de membro");
+
+    GFAddButton(gump, 40, 200, 4005, 4006, GF_CLOSE_BTN, 4);
+    GFTextLine(gump, 75, 202, 1153, "Criar um convite");
+    GFToolTipText(gump, "Precisa de 10 pergaminhos em branco para criar um convite.");
+
+    var input := GFSendGump(who, gump);
+
+    if (!input || input[0] == 0)
+        return 0;
+    endif
+
+    if (input[0] == 1)
+        return _AbrirGumpConvite(who, guild);
+    elseif (input[0] == 2)
+        return _AbrirGumpAlterarLider(who, guild);
+    elseif (input[0] == 3)
+        return _AbrirGumpAlterarMembro(who, guild);
+    elseif (input[0] == 4)
+        return _CriarConviteFisico(who, guild);
+    endif
+
+    return 0;
+endfunction
+
+
+function _AbrirGumpConvite(who, guild)
+    var guild_name := guild.GetProp("name");
+
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x12345);
+    GFResizePic(gump, 0, 0, 9200, 380, 230);
+    GFResizePic(gump, 15, 15, 9350, 350, 200);
+    GFTextMid(gump, 15, 25, 350, 53, "Mesa de Inscrição - " + guild_name);
+
+    GFTextLine(gump, 30, 65, 1153, "Nome do Convidado:");
+    GFResizePic(gump, 30, 85, 9350, 220, 25);
+    var entry_nome := GFTextEntry(gump, 35, 90, 210, 20, 1153, "");
+
+    GFTextLine(gump, 30, 125, 1153, "Cargo RP:");
+    GFResizePic(gump, 30, 145, 9350, 220, 25);
+    var entry_cargo := GFTextEntry(gump, 35, 150, 210, 20, 1153, "");
+
+    GFAddButton(gump, 275, 90, 4005, 4006, GF_CLOSE_BTN, 1);
+
+    GFAddButton(gump, 275, 132, 4017, 4018, GF_CLOSE_BTN, 0);
+
+    var input := GFSendGump(who, gump);
+
+    if (!input || input[0] != 1)
+        return 0;
+    endif
+
+    var nome  := GFExtractData(input, entry_nome);
+    var cargo := GFExtractData(input, entry_cargo);
+
+    if (!nome)
+        SendSysMessage(who, "Informe o nome do convidado.");
+        sleep(1);
+        return _AbrirGumpConvite(who, guild);
+    endif
+
+    if (!cargo)
+        SendSysMessage(who, "Informe o cargo RP.");
+        sleep(1);
+        return _AbrirGumpConvite(who, guild);
+    endif
+
+    SendSysMessage(who, "Clique no jogador que deseja convidar.");
+    var targ := Target(who, TGTOPT_CHECK_LOS);
+
+    if (!targ)
+        SendSysMessage(who, "Targeting cancelado.");
+        return 0;
+    endif
+
+    if (!targ.isA(POLCLASS_MOBILE) || targ.npctemplate || !targ.connected)
+        SendSysMessage(who, "Você precisa clicar em um jogador online.");
+        return 0;
+    endif
+
+    return _ConvidarJogador(who, targ, guild, nome, cargo);
+endfunction
+
+
+function _AbrirGumpAlterarLider(who, guild)
+    var guild_name := guild.GetProp("name");
+
+    var dados_atuais := GetObjProperty(who, "dados_convite");
+    var nome_atual   := (dados_atuais && dados_atuais.nome_personalizado) ? dados_atuais.nome_personalizado : "";
+    var cargo_atual  := (dados_atuais && dados_atuais.cargo_rp)           ? dados_atuais.cargo_rp           : "";
+
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x12347);
+    GFResizePic(gump, 0, 0, 9200, 380, 230);
+    GFResizePic(gump, 15, 15, 9350, 350, 200);
+    GFTextMid(gump, 15, 25, 350, 53, "Alterar Dados - " + guild_name);
+
+    GFTextLine(gump, 30, 65, 1153, "Meu nome RP:");
+    GFResizePic(gump, 30, 85, 9350, 220, 25);
+    var entry_nome := GFTextEntry(gump, 35, 90, 210, 20, 1153, nome_atual);
+
+    GFTextLine(gump, 30, 125, 1153, "Meu cargo RP:");
+    GFResizePic(gump, 30, 145, 9350, 220, 25);
+    var entry_cargo := GFTextEntry(gump, 35, 150, 210, 20, 1153, cargo_atual);
+
+    GFAddButton(gump, 275, 90, 4005, 4006, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 310, 92, 1153, "Salvar");
+
+    GFAddButton(gump, 275, 132, 4017, 4018, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 310, 134, 1153, "Cancelar");
+
+    var input := GFSendGump(who, gump);
+
+    if (!input || input[0] != 1)
+        return 0;
+    endif
+
+    var nome  := GFExtractData(input, entry_nome);
+    var cargo := GFExtractData(input, entry_cargo);
+
+    if (!nome)
+        SendSysMessage(who, "Informe seu nome RP.");
+        sleep(1);
+        return _AbrirGumpAlterarLider(who, guild);
+    endif
+
+    if (!cargo)
+        SendSysMessage(who, "Informe seu cargo RP.");
+        sleep(1);
+        return _AbrirGumpAlterarLider(who, guild);
+    endif
+
+    var dados_antigos := GetObjProperty(who, "dados_convite");
+    SetObjProperty(who, "dados_convite", struct{
+        "nome_personalizado" := nome,
+        "cargo_rp"           := cargo,
+        "data_convite"       := (dados_antigos && dados_antigos.data_convite) ? dados_antigos.data_convite : POLCore().systime,
+        "convidado_por"      := (dados_antigos && dados_antigos.convidado_por) ? dados_antigos.convidado_por : who.serial
+    });
+
+    SendSysMessage(who, "Seus dados foram atualizados: " + nome + " (" + cargo + ").");
+    return 1;
+endfunction
+
+
+function _AbrirGumpAlterarMembro(who, guild)
+    var guild_name := guild.GetProp("name");
+
+    SendSysMessage(who, "Clique no membro cuja ficha deseja alterar.");
+    var targ := Target(who, TGTOPT_CHECK_LOS);
+
+    if (!targ)
+        SendSysMessage(who, "Targeting cancelado.");
+        return 0;
+    endif
+
+    if (!targ.isA(POLCLASS_MOBILE) || targ.npctemplate || !targ.connected)
+        SendSysMessage(who, "Você precisa clicar em um jogador online.");
+        return 0;
+    endif
+
+    if (targ == who)
+        SendSysMessage(who, "Para alterar seus próprios dados, use a opção 'Alterar meu nome / cargo'.");
+        return 0;
+    endif
+
+    if (!targ.guild || targ.guild.serial != guild.serial)
+        SendSysMessage(who, targ.name + " não pertence à sua facção.");
+        return 0;
+    endif
+
+    var dados_atuais := GetObjProperty(targ, "dados_convite");
+    var nome_atual   := (dados_atuais && dados_atuais.nome_personalizado) ? dados_atuais.nome_personalizado : "";
+    var cargo_atual  := (dados_atuais && dados_atuais.cargo_rp)           ? dados_atuais.cargo_rp           : "";
+
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x12348);
+    GFResizePic(gump, 0, 0, 9200, 380, 250);
+    GFResizePic(gump, 15, 15, 9350, 350, 220);
+    GFTextMid(gump, 15, 25, 350, 53, "Alterar Membro - " + guild_name);
+
+    GFTextLine(gump, 30, 60, 1153, "Membro: " + targ.name);
+
+    GFTextLine(gump, 30, 90, 1153, "Nome RP:");
+    GFResizePic(gump, 30, 110, 9350, 220, 25);
+    var entry_nome := GFTextEntry(gump, 35, 115, 210, 20, 1153, nome_atual);
+
+    GFTextLine(gump, 30, 150, 1153, "Cargo RP:");
+    GFResizePic(gump, 30, 170, 9350, 220, 25);
+    var entry_cargo := GFTextEntry(gump, 35, 175, 210, 20, 1153, cargo_atual);
+
+    GFAddButton(gump, 275, 115, 4005, 4006, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 310, 117, 1153, "Salvar");
+
+    GFAddButton(gump, 275, 157, 4017, 4018, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 310, 159, 1153, "Cancelar");
+
+    var input := GFSendGump(who, gump);
+
+    if (!input || input[0] != 1)
+        return 0;
+    endif
+
+    var nome  := GFExtractData(input, entry_nome);
+    var cargo := GFExtractData(input, entry_cargo);
+
+    if (!nome)
+        SendSysMessage(who, "Informe o nome RP do membro.");
+        sleep(1);
+        return _AbrirGumpAlterarMembro(who, guild);
+    endif
+
+    if (!cargo)
+        SendSysMessage(who, "Informe o cargo RP do membro.");
+        sleep(1);
+        return _AbrirGumpAlterarMembro(who, guild);
+    endif
+
+    var dados_antigos := GetObjProperty(targ, "dados_convite");
+    SetObjProperty(targ, "dados_convite", struct{
+        "nome_personalizado" := nome,
+        "cargo_rp"           := cargo,
+        "data_convite"       := (dados_antigos && dados_antigos.data_convite) ? dados_antigos.data_convite : POLCore().systime,
+        "convidado_por"      := (dados_antigos && dados_antigos.convidado_por) ? dados_antigos.convidado_por : who.serial
+    });
+
+    SendSysMessage(who,  "Ficha de " + targ.name + " atualizada: " + nome + " (" + cargo + ").");
+    SendSysMessage(targ, "Seu nome e cargo na facção foram atualizados pelo líder.");
+    return 1;
+endfunction
+
+
+function _ConvidarJogador(lider, jogador, guild, nome, cargo)
+    if (jogador == lider)
+        SendSysMessage(lider, "Você não pode convidar a si mesmo.");
+        return 0;
+    endif
+
+    if (jogador.guild)
+        SendSysMessage(lider, jogador.name + " já pertence a uma facção.");
+        return 0;
+    endif
+
+    var guild_name := guild.GetProp("name");
+
+    // Nome que o líder tem no sistema (ou nome real como fallback)
+    var lider_dados := GetObjProperty(lider, "dados_convite");
+    var lider_nome  := (lider_dados && lider_dados.nome_personalizado) ? lider_dados.nome_personalizado : lider.name;
+
+    // Gump de confirmação para o convidado
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x12346);
+    GFResizePic(gump, 0, 0, 9200, 420, 280);
+    GFResizePic(gump, 15, 15, 9350, 390, 250);
+    GFTextMid(gump, 15, 25, 390, 53, "Convite para Facção");
+
+    var y := 65;
+    GFTextLine(gump, 30, y, 1153, "Você foi convidado para: " + guild_name);
+    y += 25;
+    GFTextLine(gump, 30, y, 1153, "Por: " + lider_nome);
+    y += 35;
+    GFTextLine(gump, 30, y, 63, "Você será conhecido como: " + nome);
+    y += 25;
+    GFTextLine(gump, 30, y, 63, "Cargo: " + cargo);
+    y += 45;
+    GFTextLine(gump, 30, y, 1153, "Você aceita este convite?");
+    y += 30;
+
+    GFAddButton(gump, 80,  y, 4005, 4006, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 120,  y + 2, 1153, "Aceitar");
+    GFAddButton(gump, 240, y, 4017, 4018, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 280,  y + 2, 1153, "Recusar");
+
+    var input := GFSendGump(jogador, gump);
+
+    if (!input || input[0] != 1)
+        SendSysMessage(lider,   jogador.name + " recusou o convite.");
+        SendSysMessage(jogador, "Você recusou o convite para " + guild_name + ".");
+        return 0;
+    endif
+
+    AddMember(guild, jogador);
+
+    SetObjProperty(jogador, "dados_convite", struct{
+        "nome_personalizado" := nome,
+        "cargo_rp"           := cargo,
+        "data_convite"       := POLCore().systime,
+        "convidado_por"      := lider.serial
+    });
+
+    SendSysMessage(lider,   nome + " foi inscrito na facção com sucesso!");
+    SendSysMessage(jogador, "Você foi aceito na facção " + guild_name + " como " + cargo + "!");
+
+    return 1;
+endfunction
+
+
+// -------------------------------------------------------
+// Cria um pergaminho-convite físico (0x6BDC) no inventário
+// do líder, consumindo 10 pergaminhos em branco (0xE34).
+// -------------------------------------------------------
+function _CriarConviteFisico(who, guild)
+    var custo := 10;
+
+    if (!ConsumeSubstance(who.backpack, 0xE34, custo))
+        SendSysMessage(who, "Você precisa de " + custo + " pergaminhos em branco.");
+        return 0;
+    endif
+
+    var item := CreateItemInBackpack(who, 0x6BDC, 1);
+    if (!item)
+        SendSysMessage(who, "Erro ao criar o convite.");
+        return 0;
+    endif
+
+    SetObjProperty(item, "faccao_guild_id",   guild.guildid);
+    SetObjProperty(item, "faccao_guild_name", guild.GetProp("name"));
+    SetObjProperty(item, "convite_lider",     who.serial);
+    SetObjProperty(item, "convite_assinado",  0);
+    item.name := "Convite em Branco - " + guild.GetProp("name");
+
+    SendSysMessage(who, "Convite criado! Dê um duplo-clique nele para preencher e assinar.");
+    return 1;
+endfunction

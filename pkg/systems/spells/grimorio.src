@@ -76,7 +76,7 @@ endprogram
 const OBJ_BLANK_SCROLL := 0xE34;
 const OBJ_RECIPE_SLIP := 0x6116;
 const OBJ_RECIPE_SLIP_SANGRIA := 0x2050;
-const OBJ_RECIPE_SLIP_SPELLCASTER := 0x2055;
+const OBJ_RECIPE_SLIP_SPELLCASTER := 0x2060;
 
 function copyrecipe(who, recipe)
 	writeSpellInfo(who, recipe);

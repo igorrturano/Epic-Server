@@ -133,8 +133,13 @@ function CalculateParryChance(byRef attackInfo)
 		parryBonus := parryBonus + tempParryBonus;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::REFLEXO_ESTRATEGICO))
-		skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::POSTURA_DE_DUELO))
+		var offhand := GetEquipmentByLayer(attackInfo.GetDefender().GetObjRef(), LAYER_HAND2);
+		if (offhand && offhand.objtype == 0x1B73)
+			skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
+		else
+			skill := CInt(attackInfo.GetDefender().GetSkill(PARRY));
+		endif
 	else
 		skill := CInt(attackInfo.GetDefender().GetSkill(PARRY));
 	endif

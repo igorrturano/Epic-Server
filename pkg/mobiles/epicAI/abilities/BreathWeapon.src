@@ -1,0 +1,103 @@
+use uo;
+use os;
+use vitals;
+use math;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Controller/DamageController_legacy";
+include "include/epicNPCUtils";
+include "include/shapes";
+include "include/tileEffects";
+include ":propagacao:include/efeitosIncendiarios";
+include ":charactercreation:resists";
+
+program BreathWeapon(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	var wrapper := MobileWrapper(me);
+	var tier := CInt(wrapper.GetTier());
+	var breath_damage := tier * 8;
+
+	var npc_elem := NPC_GetNPCConfig(me.npctemplate);
+	var elem_parts := SplitWords(npc_elem.EpicElemDamage);
+	var dmg_type := DMG_FIRE;
+	var breath_name := "fogo";
+
+	if (Upper(elem_parts[2]) != "DAMAGE_NONE")
+		dmg_type := DMG_COLD;
+		breath_name := "gelo";
+	elseif (Upper(elem_parts[3]) != "DAMAGE_NONE")
+		dmg_type := DMG_POISON;
+		breath_name := "veneno";
+	elseif (Upper(elem_parts[4]) != "DAMAGE_NONE")
+		dmg_type := DMG_ENERGY;
+		breath_name := "energia";
+	endif
+
+	PrintTextAbove(me, $"*sopra {breath_name}*");
+
+	// Projectile from dragon to target (like fireball)
+	PlayMovingEffect(me, targ, FX_LARGE_FIREBALL, 10, 10, 1);
+	PlaySoundEffect(targ, 0x208);
+
+	// Fire fields in a line from dragon to target
+	var coord_list := GetCoordsInLine(me.x, me.y, targ.x, targ.y);
+	foreach coord in coord_list
+		if (_coord_iter < 3)
+			continue;
+		endif
+
+		if (dmg_type == DMG_FIRE)
+			CriaMuralhaFogo(coord.x, coord.y, me.z, me.realm, GRAFICO_FIREWALL_NORTE_SUL, 0, 15, me);
+		else
+			PlayStationaryEffect(coord.x, coord.y, me.z, FX_EXPLODE_1, 10, 10, 0, me.realm);
+		endif
+		sleepms(80);
+	endforeach
+
+	// AoE explosion at target location
+	foreach coord in GetCoordsInSquare(targ.x, targ.y, 3)
+		if (RandomInt(3) != 1)
+			continue;
+		endif
+		case (RandomInt(3))
+			default:
+				PlayStationaryEffect(coord.x, coord.y, targ.z, FX_EXPLODE_1, 10, 10, 0, me.realm);
+			1:
+				PlayStationaryEffect(coord.x, coord.y, targ.z, FX_EXPLODE_2, 10, 10, 0, me.realm);
+			2:
+				PlayStationaryEffect(coord.x, coord.y, targ.z, FX_EXPLODE_3, 10, 10, 0, me.realm);
+		endcase
+
+		if (dmg_type == DMG_FIRE && RandomInt(2))
+			CriaMuralhaFogo(coord.x, coord.y, targ.z, me.realm, GRAFICO_FIREWALL_NORTE_SUL, 0, 8, me, 8);
+		endif
+		sleepms(5);
+	endforeach
+
+	// Damage all hostiles in AoE
+	var targets := ListMobilesNearLocation(targ.x, targ.y, targ.z, 3, targ.realm);
+	foreach mobile in (targets)
+		sleepms(2);
+		if (mobile.serial == me.serial || mobile.dead)
+			continue;
+		endif
+		if (mobile.npctemplate && !mobile.master)
+			continue;
+		endif
+
+		var final_damage := breath_damage;
+		if (CheckResist(mobile, REFLEXES, RESIST_HARD))
+			final_damage := CInt(breath_damage / 2);
+			SendSysMessageEx(mobile, "Você se esquiva parcialmente do sopro!", SSM_REQUEST);
+		endif
+		DamageFLS(mobile, final_damage, dmg_type, me, "breathweapon");
+	endforeach
+
+	return 1;
+endprogram

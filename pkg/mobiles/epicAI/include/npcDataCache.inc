@@ -27,6 +27,14 @@ function NPC_GetCachedData(mobile)
     return cached;
 endfunction
 
+function GetEffectiveTier(mobile, npc_elem)
+    var override := CInt(GetObjProperty(mobile, "NpcTier"));
+    if (override && !mobile.master)
+        return override;
+    endif
+    return CInt(npc_elem.Tier);
+endfunction
+
 /*
  * BuildNPCCache(mobile)
  *
@@ -50,11 +58,12 @@ function BuildNPCCache(mobile)
         "category" := npc_elem.Category,
         "category_lower" := Lower(npc_elem.Category),
         "classe" := npc_elem.Classe,
-        "tier" := CInt(npc_elem.Tier),
+        "tier" := GetEffectiveTier(mobile, npc_elem),
         "brain_type" := Lower(npc_elem.BrainType),
         "spell_school" := npc_elem.SpellSchool,
         "attack_speed" := npc_elem.EpicAttackSpeed,
         "is_ranged" := (Lower(SplitWords(npc_elem.EpicAttackSpeed, "_")[1]) == "ranged"),
+        "npc_race" := Lower(npc_elem.NPCRace ?: ""),
         "abilities" := abilities,
         "npc_elem" := npc_elem  // Keep reference for any other config lookups
     };
@@ -74,7 +83,8 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
     var isLizardManCache := (template_lower in array{"lizardman1", "lizardman2", "lizardman3"});
     var isReptoideCache := (template_lower in array{"reptoide1", "reptoide2", "reptoide3"});
 
-    // Spider templates are case-SENSITIVE (original code doesn't use Lower())
+    // Spider detection: NPCRace-based (catches all spiders including LavaSpider)
+    // Template list kept for spider-specific abilities (web, egg, climb)
     var isSpiderCache := (template in array{
         "DreadGiantSpider", "BlackGiantSpider", "HugeRedSpider",
         "BlackHugeSpider", "SkullSpider", "Tarantula", "GiantSpider"
@@ -84,6 +94,7 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
     var classe := npc_elem.Classe;
     var category_lower := Lower(npc_elem.Category);
     var brain_type := Lower(npc_elem.BrainType);
+    var npc_race := Lower(npc_elem.NPCRace ?: "");
 
     return struct{
         // Template-based (case-insensitive)
@@ -117,8 +128,9 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         "hasTunnelTactics" := (isFormianCache || isAnkhegCache || isUmberHulkCache),
         "canBite" := (isLizardManCache || isReptoideCache),
         "canDoConfusion" := isUmberHulkCache,
-        // Spider abilities (case-SENSITIVE templates)
+        // Spider: NPCRace for Drow check, template list for specific abilities
         "isSpider" := isSpiderCache,
+        "isSpiderRace" := (npc_race == "aranha"),
         "CanDoWebWrap" := (template in array{
             "DreadGiantSpider", "HugeRedSpider", "BlackHugeSpider", "Tarantula"
         }),
@@ -145,6 +157,15 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
 
         // Category-based
         "isBloodless" := (category_lower == "undead"),
+        "isDragon" := (category_lower == "dragon"),
+        "isDemon" := (category_lower == "demons"),
+        "isUndead" := (category_lower == "undead"),
+        "isBeast" := (category_lower == "animal" || category_lower == "giantanimal"),
+
+        // Template-based: Gazers/Beholders
+        "isGazer" := (template_lower in array{
+            "gazer", "gazer2", "gazer3", "gazer4", "gazer5", "gazer6", "gazer7"
+        }),
 
         // Brain type
         "isHumanoidBrain" := (brain_type == "humanoid"),

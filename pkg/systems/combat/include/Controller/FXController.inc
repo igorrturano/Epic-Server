@@ -24,7 +24,7 @@ function PlayAttackFX(byRef attackInfo)
 	if (defenderAnim) attackInfo.GetDefender().PlayAnimation(defenderAnim); endif
 
 	var hpPercent := (attackInfo.GetDefender().GetCurrentHP() / attackInfo.GetDefender().GetMaxHP()) * 100;
-	if (hpPercent < 20)
+	if (hpPercent < 20 && attackInfo.GetDefender() is @MobileWrapper)
 		MakeBleed(attackInfo.GetDefender().GetObjRef());
 	endif
 
@@ -121,7 +121,8 @@ function GetAttackerFX(byRef attackInfo)
 						attackerFX.critical := array{HUMAN_ANIM::ATTACK_1HAND_BLUNT};
 					endif
 				endif
-			elseif (Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(TWOHANDED))
+			elseif (Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(TWOHANDED)
+					|| Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(WRESTLING))
 				if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 					attackerFX.hit := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
 					attackerFX.critical := array{HUMAN_ANIM::ATTACK_2HAND_SLASH};
@@ -312,7 +313,7 @@ function GetWeaponSFX(byRef attackInfo)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetWeapon().isFireWeapon() == WEAPON_CATEGORY::PISTOL)
+	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::PISTOL)
 		weaponSFX.hit := array{0x11C};
 		weaponSFX.miss := array{0x11C};
 		weaponSFX.critical := array{};

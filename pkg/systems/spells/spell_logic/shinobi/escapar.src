@@ -27,12 +27,6 @@ program SpellScript(params)
 		freed := freed + 1;
 	endif
 
-	// Remove paralyzed state
-	if (who.paralyzed)
-		who.paralyzed := 0;
-		freed := freed + 1;
-	endif
-
 	// Remove restringir (druid root)
 	if (TS_GetTimerInfo(who, "restringir"))
 		TS_LowerDuration(who, "restringir", -1);

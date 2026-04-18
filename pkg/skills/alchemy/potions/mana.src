@@ -45,7 +45,7 @@ program drink_blue(who, potion)
 		3: healed := cint(healed * 0.60 * vicio); cd := healed * 0.5;
 		4: healed := cint(healed * 0.80 * vicio); cd := healed * 0.5;
 	endcase
-
+	Aplicavicio(who, potion, INTELLIGENCE);
 	empty_bottle(who, potion);
 	TS_StartCooldown(who, "manapot", cint(healed) * 3);
 	SetObjProperty(who, "#manapotion", 1);
@@ -62,5 +62,5 @@ program drink_blue(who, potion)
 	endwhile
 	EraseObjProperty(who, "#manapotion");
 	SendSysMessageEx(who, "Terminou o efeito da pocao.", SSM_INFO);
-	Aplicavicio(who, potion, INTELLIGENCE);
+	
 endprogram

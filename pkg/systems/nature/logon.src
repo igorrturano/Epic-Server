@@ -4,9 +4,6 @@ use os;
 include ":fls_core:fls_characters";
 
 program logon(who)
-	start_script("seasonaleffects");
-	sleep(1);
-
 	InitPlayerVision(who);
 
 	destroyIllyraOutsideDungeons(who);

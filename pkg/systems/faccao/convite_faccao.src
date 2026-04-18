@@ -1,0 +1,185 @@
+// ARQUIVO: pkg/systems/faccao/convite_faccao.src
+//
+// Trata o duplo-clique nos itens de convite de facção:
+//   0x6BDC  Convite em Branco  — preenchido pelo líder; vira 0x3BC0
+//   0x3BC0  Convite Assinado   — entregue ao convidado; abre tela de aceite
+
+use uo;
+use os;
+use guilds;
+
+include ":faccao:faccao";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+program convite_faccao_use(who, item)
+    if (item.objtype == 0x6BDC)
+        return _AssinarConvite(who, item);
+    elseif (item.objtype == 0x3BC0)
+        return _UsarConviteAssinado(who, item);
+    endif
+endprogram
+
+
+// -------------------------------------------------------
+// Líder preenche o convite em branco (0x6BDC).
+// Após confirmar, o item muda para 0x3BC0.
+// -------------------------------------------------------
+function _AssinarConvite(who, item)
+    var guild_id := GetObjProperty(item, "faccao_guild_id");
+    var guild    := FindGuild(guild_id);
+
+    if (!guild)
+        SendSysMessage(who, "Este convite pertence a uma facção que não existe mais.");
+        return 0;
+    endif
+
+    // Apenas o líder (ou quem criou o convite) pode assinar
+    var lider_serial := GetObjProperty(item, "convite_lider");
+    if (who.serial != lider_serial && !who.cmdlevel)
+        SendSysMessage(who, "Apenas o líder da facção pode preencher este convite.");
+        return 0;
+    endif
+
+    var guild_name := guild.GetProp("name");
+
+    // Gump de preenchimento
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x12349);
+    GFResizePic(gump, 0, 0, 9200, 400, 240);
+    GFResizePic(gump, 15, 15, 9350, 370, 210);
+    GFTextMid(gump, 15, 25, 370, 53, "Assinar Convite - " + guild_name);
+
+    GFTextLine(gump, 30, 65, 1153, "Este convite vai para quem?");
+    GFResizePic(gump, 30, 85, 9350, 240, 25);
+    var entry_nome := GFTextEntry(gump, 35, 90, 230, 20, 1153, "");
+
+    GFTextLine(gump, 30, 125, 1153, "Qual cargo ele terá?");
+    GFResizePic(gump, 30, 145, 9350, 240, 25);
+    var entry_cargo := GFTextEntry(gump, 35, 150, 230, 20, 1153, "");
+
+    GFAddButton(gump, 290, 90, 4005, 4006, GF_CLOSE_BTN, 1);
+
+    GFAddButton(gump, 290, 130, 4017, 4018, GF_CLOSE_BTN, 0);
+
+    var input := GFSendGump(who, gump);
+
+    if (!input || input[0] != 1)
+        return 0;
+    endif
+
+    var nome  := GFExtractData(input, entry_nome);
+    var cargo := GFExtractData(input, entry_cargo);
+
+    if (!nome)
+        SendSysMessage(who, "Informe o nome do convidado.");
+        sleep(1);
+        return _AssinarConvite(who, item);
+    endif
+
+    if (!cargo)
+        SendSysMessage(who, "Informe o cargo do convidado.");
+        sleep(1);
+        return _AssinarConvite(who, item);
+    endif
+
+    // Salva as props do item original antes de destruir
+    var saved_guild_id   := GetObjProperty(item, "faccao_guild_id");
+    var saved_guild_name := GetObjProperty(item, "faccao_guild_name");
+    var saved_lider      := GetObjProperty(item, "convite_lider");
+    var item_container   := item.container;
+
+    // No POL, objtype é read-only — destruímos o item em branco
+    // e criamos um novo assinado (0x3BC0) no mesmo container
+    DestroyItem(item);
+
+    var novo_item;
+    if (item_container)
+        novo_item := CreateItemInContainer(item_container, 0x3BC0, 1);
+    else
+        novo_item := CreateItemAtLocation(who.x, who.y, who.z, 0x3BC0, 1, who.realm);
+    endif
+
+    if (!novo_item)
+        SendSysMessage(who, "Erro ao assinar o convite.");
+        return 0;
+    endif
+
+    SetObjProperty(novo_item, "faccao_guild_id",   saved_guild_id);
+    SetObjProperty(novo_item, "faccao_guild_name", saved_guild_name);
+    SetObjProperty(novo_item, "convite_lider",     saved_lider);
+    SetObjProperty(novo_item, "convite_nome_rp",   nome);
+    SetObjProperty(novo_item, "convite_cargo_rp",  cargo);
+    SetObjProperty(novo_item, "convite_assinado",  1);
+    novo_item.name := "Convite de Facção - " + guild_name + " para " + nome;
+
+    SendSysMessage(who, "Convite assinado! Entregue-o ao jogador " + nome + ".");
+    return 1;
+endfunction
+
+
+// -------------------------------------------------------
+// Convidado usa o convite assinado (0x3BC0).
+// -------------------------------------------------------
+function _UsarConviteAssinado(who, item)
+    // Bloqueia quem já tem facção
+    if (who.guild)
+        SendSysMessage(who, "Você não pode aceitar participar de outra facção.");
+        return 0;
+    endif
+
+    var guild_id   := GetObjProperty(item, "faccao_guild_id");
+    var guild_name := GetObjProperty(item, "faccao_guild_name");
+    var nome       := GetObjProperty(item, "convite_nome_rp");
+    var cargo      := GetObjProperty(item, "convite_cargo_rp");
+    var guild      := FindGuild(guild_id);
+
+    if (!guild)
+        SendSysMessage(who, "Esta facção não existe mais.");
+        DestroyItem(item);
+        return 0;
+    endif
+
+    // Gump de aceite para o convidado
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x1234A);
+    GFResizePic(gump, 0, 0, 9200, 420, 350);
+    GFResizePic(gump, 15, 15, 9350, 390, 320);
+    GFTextMid(gump, 15, 25, 390, 53, "Convite para Facção");
+
+    var y := 65;
+    GFTextLine(gump, 30, y, 1153, "Você recebeu um convite para entrar em:");   y += 25;
+    GFTextLine(gump, 30, y, 63,   guild_name);                                   y += 35;
+    GFTextLine(gump, 30, y, 1153, "Você será registrado como:");                 y += 22;
+    GFTextLine(gump, 30, y, 63,   nome);                                         y += 35;
+    GFTextLine(gump, 30, y, 1153, "Cargo:");                                     y += 22;
+    GFTextLine(gump, 30, y, 63,   cargo);                                        y += 40;
+    GFTextLine(gump, 30, y, 1153, "Deseja aceitar?");                            y += 30;
+
+    GFAddButton(gump, 80,  y, 4005, 4006, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 120,  y + 2, 1153, "Aceitar");
+    GFAddButton(gump, 240, y, 4017, 4018, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 280,  y + 2, 1153, "Recusar");
+
+    var input := GFSendGump(who, gump);
+
+    if (!input || input[0] != 1)
+        SendSysMessage(who, "Você recusou o convite.");
+        return 0;
+    endif
+
+    // Aceito — registra o membro
+    AddMember(guild, who);
+
+    SetObjProperty(who, "dados_convite", struct{
+        "nome_personalizado" := nome,
+        "cargo_rp"           := cargo,
+        "data_convite"       := POLCore().systime,
+        "convidado_por"      := GetObjProperty(item, "convite_lider")
+    });
+
+    DestroyItem(item);
+
+    SendSysMessage(who, "Você entrou na facção " + guild_name + " como " + cargo + "!");
+    return 1;
+endfunction

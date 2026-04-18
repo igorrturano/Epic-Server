@@ -8,7 +8,7 @@ include ":message:model/Message";
  * Medium Armor Specialization - ABILITY_ID::MEDIUM_ARMOR_SPEC (3201)
  *
  * Passive: +1 evasion for each medium armor piece equipped.
- * Also reduces dex penalty by 1 (handled in equipment.inc).
+ * Also reduces dex penalty by 1 (handled in equipsys/equipitem.src and equipsys/unequipitem.src).
  */
 class MediumArmorSpec(CombatAbility)
 

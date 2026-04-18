@@ -176,6 +176,7 @@ function TryToAttack(byRef attackInfo)
 	ExecuteCombatAbilitiesBeforeHit(attackInfo);
 	ExecutePassiveAbilitiesAttackerBeforeHit(attackInfo);
 	ExecutePassiveAbilitiesDefenderBeforeHit(attackInfo);
+	DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message($"HitChanceMod após passivas (acerto: {CInt(attackInfo.GetHitChanceMod())})"));
 	sleepms(2);
 	if (attackInfo.Succeeded())
 		DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("***ACERTOU!***", Color(SYSTEM_COLOR::SUCCESS)));

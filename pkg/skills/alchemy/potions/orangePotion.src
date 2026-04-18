@@ -28,9 +28,10 @@ program drink_orange(who, potion)
 		3: potion_strength := 4; time := 480;
 		4: potion_strength := 5; time := 960;
 	endcase
-	empty_bottle(who, potion);
+	
 
 	var bonus := cint(getobjproperty(potion, "bonus") / 5);
 	TS_CurePoison(who, time + bonus, "P", potion_strength);
+	empty_bottle(who, potion); 
 
 endprogram

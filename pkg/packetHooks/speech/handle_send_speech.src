@@ -1,6 +1,7 @@
 use uo;
 // use math;
 use os;
+use polsys;
 
 include ":charactercreation:habilidades";
 include "include/epicLoggerUtils";
@@ -28,13 +29,17 @@ endenum
 enum class MESSAGE_DISTANCE
 	WHISPER := 2,
 	NORMAL := 12,
+	EMOTE := 12,
 	YELL := 20
 endenum
 
 exported function handleUCOutgoing(character, byref packet)
 	var messageData := GetPacketData(packet);
 	messageData.+target := MobileWrapper(character);
-	LogPlayerSpeech(messageData.source.GetObjRef(), messageData.message);
+	if (messageData.source.GetSerial() == messageData.target.GetSerial())
+		LogPlayerSpeech(messageData.source.GetObjRef(), messageData.message);
+		SayMessageSpy(messageData.source.GetObjRef(), messageData.message);
+	endif
 
 	// TODO: Remover o block depois de implementar cada um dos tipos
 		// Bloqueei pra a gente pode entender a necessidade de cada
@@ -92,15 +97,6 @@ function CheckSaying(byRef messageData)
 	return false;
 endfunction
 
-function CheckEmote(byRef messageData)
-	case (messageData.type)
-		MESSAGE_TYPE::EMOTE:
-			return true;
-	endcase
-
-	return false;
-endfunction
-
 function CanSpeak(byRef messageData)
 	// if (messageData.source.GetProperty("metamorfose") && !messageData.source.HasAbility(ABILITY_ID::ELO_NATURAL))
 	// 	if (messageData.type == MESSAGE_TYPE::NORMAL)
@@ -120,28 +116,41 @@ function CanSpeak(byRef messageData)
 endfunction
 
 function CanHear(byRef messageData)
+	var hearDistance;
+	var playerDistance := Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef());
 	var rangeMod := CheckLineOfSight(messageData.source.GetObjRef(), messageData.target.GetObjRef()) ? 1 : 3;
+	print(messageData);
+	print($"Distância entre fonte e alvo: {playerDistance}. Modificador de alcance: {rangeMod}.");
 
 	if (messageData.type == MESSAGE_TYPE::WHISPER)
-		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > MESSAGE_DISTANCE::WHISPER / rangeMod)
+		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
+							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod);
+		
+		if (playerDistance > hearDistance)
 			return false;
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::YELL)
-		if (messageData.target.HasAbility(ABILITY_ID::NINJA_PATH))
-			if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
-				return false;
-			elseif (Abs(messageData.source.GetObjRef().z - messageData.target.GetObjRef().z) >= (MESSAGE_DISTANCE::YELL + 4) / rangeMod)
-				return false;
-			endif
-		else
-			if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > MESSAGE_DISTANCE::YELL / rangeMod)
-				return false;
-			elseif (Abs(messageData.source.GetObjRef().z - messageData.target.GetObjRef().z) >= MESSAGE_DISTANCE::YELL / rangeMod)
-				return false;
-			endif
+		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
+							CInt(MESSAGE_DISTANCE::YELL / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::YELL / rangeMod);
+
+		if (playerDistance > hearDistance || 
+			Abs(messageData.source.GetObjRef().z - messageData.target.GetObjRef().z) >= hearDistance)
+			return false;
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::NORMAL)
-		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > MESSAGE_DISTANCE::NORMAL / rangeMod)
+		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
+							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod);
+
+		if (playerDistance > hearDistance)
+			return false;
+		endif
+	elseif (messageData.type == MESSAGE_TYPE::EMOTE)
+		hearDistance := CInt(MESSAGE_DISTANCE::EMOTE / rangeMod);
+
+		if (playerDistance > hearDistance)
 			return false;
 		endif
 	endif
@@ -170,34 +179,6 @@ function CheckSourceName(byRef messageData)
 
 	if (targetKnownNames.Exists(ID))
 		messageData.sourceName := targetKnownNames[ID];
-	endif
-endfunction
-
-function _debugMe(byRef packet)
-	var data := GetPacketData(packet);
-
-	if (data.type == MESSAGE_TYPE::NORMAL)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um say: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::BROADCAST)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um broadcast: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::EMOTE)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um emote: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::SYSTEM)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um system: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::MESSAGE_CORNER)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um message corner: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::WHISPER)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um whisper: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::YELL)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um yell: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::SPELL)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um spell: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::GUILD)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um guild: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::ALLIANCE)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um alliance: " + data.message, 1);
-	elseif (data.type == MESSAGE_TYPE::COMMAND_PROMPTS)
-		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um command prompts: " + data.message, 1);
 	endif
 endfunction
 
@@ -264,7 +245,11 @@ function MustContinue(data)
 endfunction
 
 function CheckPrefixAndSuffix(byRef messageData)
-	var typesToPrefix := array{MESSAGE_TYPE::NORMAL, MESSAGE_TYPE::WHISPER, MESSAGE_TYPE::YELL};
+	var typesToPrefix := array{
+		MESSAGE_TYPE::NORMAL,
+		MESSAGE_TYPE::WHISPER,
+		MESSAGE_TYPE::YELL
+	};
 
 	if (messageData.type in typesToPrefix)
 		var chosen_language := messageData.source.GetProperty("lingua_escolhida");
@@ -299,4 +284,55 @@ function CanUnderstand(byRef messageData)
 	endif
 
 	return false;
+endfunction
+
+
+
+
+
+function SayMessageSpy(who, message_txt)
+	foreach player in GetGlobalProperty("GmsOnlines")
+		player := SystemFindObjectBySerial(CInt(player));
+		if (GetObjProperty(player, "SaySpyOn") && player.cmdlevel >= 3 && player != who)
+			var sayspy := GetObjProperty(player, "SaySpyOn");
+			var acct := who.acctname;
+			var truename := GetObjProperty(who, "nome_inicial");
+
+			if (sayspy == "on")
+				SendSysMessage(player, "[SAY-SPY][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);
+			elseif (TypeOf(sayspy) == "Array" && who.name in sayspy)
+				SendSysMessage(player, "[SAY-SPY][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);
+			endif
+		endif
+		Sleepms(2);
+	endforeach
+endfunction
+
+// Deixa isso aqui pra quando precisar testar.....
+function _debugMe(byRef packet)
+	var data := GetPacketData(packet);
+
+	if (data.type == MESSAGE_TYPE::NORMAL)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um say: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::BROADCAST)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um broadcast: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::EMOTE)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um emote: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::SYSTEM)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um system: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::MESSAGE_CORNER)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um message corner: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::WHISPER)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um whisper: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::YELL)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um yell: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::SPELL)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um spell: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::GUILD)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um guild: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::ALLIANCE)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um alliance: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::COMMAND_PROMPTS)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um command prompts: " + data.message, 1);
+	endif
 endfunction

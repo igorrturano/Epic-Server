@@ -70,7 +70,7 @@ program drink_blue(who, potion)
 			delay := 130;
 			cd := cint(healed * 0.13 * 3);
 	endcase
-
+	Aplicavicio(who, potion, STRENGTH);
 	empty_bottle(who, potion);
 	TS_StartCooldown(who, "healingpot", cd + 1);
 
@@ -89,6 +89,6 @@ program drink_blue(who, potion)
 	EraseObjProperty(who, "#healingpotion");
 	SendSysMessageEx(who, "Terminou o efeito da pocao.", SSM_INFO);
 
-	Aplicavicio(who, potion, STRENGTH);
-
+	
+ 
 endprogram

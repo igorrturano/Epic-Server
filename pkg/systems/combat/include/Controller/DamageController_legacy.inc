@@ -432,6 +432,13 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	ApplyRawDamage(defender, totaldmg);
 	SetLastDamageInfo(defender, totaldmg, type, source, spell);
 
+	if (totaldmg > 0)
+		var vingancaCur := GetObjProperty(defender, "#vinganca");
+		if (vingancaCur != error)
+			SetObjProperty(defender, "#vinganca", CInt(vingancaCur) + CInt(totaldmg));
+		endif
+	endif
+
 //FRAJOLAS Adicionado para o discordwebhook detectar dano de trap
 if (totaldmg > 0)
     var lastHit := dictionary;
@@ -445,6 +452,7 @@ if (totaldmg > 0)
 
     lastHit["amount"] := totaldmg;
     lastHit["time"] := polcore().systime;
+    lastHit["type"] := type;
 
     SetObjProperty(defender, "lastHit", lastHit);
 endif
@@ -678,6 +686,7 @@ if (totaldmg > 0)
 
     lastHit["amount"] := totaldmg;
     lastHit["time"] := polcore().systime;
+    lastHit["type"] := type;
 
     SetObjProperty(defender, "lastHit", lastHit);
 endif

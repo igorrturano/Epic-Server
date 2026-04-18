@@ -26,7 +26,7 @@ program TimerControl(mobile)
 	var cooldowns := dictionary;
 	StartUp(mobile, timer_list, cooldowns, num_poisons);
 
-	while (1)
+	while (mobile)
 		mobile.SetPoisoned((num_poisons > 0));
 
 		var event;
@@ -107,6 +107,10 @@ function StartUp(mobile, byref timer_list, byref cooldowns, byref num_poisons)
 	// On reconnect, those properties may be stale or reset — running EndScript first ensures a clean slate.
 	SetObjProperty(mobile, "#reconnecting", 1);
 	foreach timer in (temp_list)
+		// SpellController manages its own reconnect lifecycle via SC_ResyncOnLogin
+		if (_timer_iter[1, 12] == "spelleffect_")
+			continue;
+		endif
 		var elem_info := TS_GetCfgElem(_timer_iter);
 		if (CInt(elem_info.PersistOnLogoff) && elem_info.EndScript)
 			SetObjProperty(mobile, "prop", timer.level);
@@ -362,37 +366,39 @@ function AddExistingTimer(mobile, byref event, byref timer_list, byref num_poiso
 		else
 			event.amount := (duration + amt);
 		endif
-	/* else
-		if ( (event.level) && level )
-			if ( (level == event.level) && (amt > duration) )
-				event.amount := amt;
-			elseif ( event.level > level )
+	else
+		if ((event.level) && level)
+			if (event.level > level)
+				// Higher level: restart with new level and duration
 				KillTimedScript(mobile, timer_list[event.name].pid, timer_list, event.name);
 				event.amount := amt;
-				AddTimer(mobile, event, timer_list, num_poisons);
+				var temp_cooldown := dictionary;
+				AddTimer(mobile, event, timer_list, temp_cooldown, num_poisons);
 				return 1;
+			elseif ((level == event.level) && (amt > duration))
+				// Same level, longer duration: extend
+				event.amount := amt;
+			else
+				// Same/lower level, shorter/equal duration: keep existing
+				return 0;
 			endif
 		else
-			if ( amt > duration )
+			if (amt > duration)
 				event.amount := amt;
+			else
+				return 0;
 			endif
-		endif */
+		endif
 	endif
 
 	var maxdur := CInt(elem_info.MaxDuration);
 	if (maxdur > 0)
-		if ((duration + event.amount) > maxdur)
-			duration := maxdur;
-		else
-			duration := duration + event.amount;
+		if (event.amount > maxdur)
+			event.amount := maxdur;
 		endif
 	endif
 
-	// SendSysMessage(mobile, "duration: "+duration);
-	// SendSysMessage(mobile, "endtime old: "+timer_list[event.name].endtime);
-	// timer_list[event.name].endtime := duration+ReadGameClock();
 	timer_list[event.name].endtime := event.amount + ReadGameClock();
-	// SendSysMessage(mobile, "endtime new: "+timer_list[event.name].endtime);
 
 	return 1;
 endfunction

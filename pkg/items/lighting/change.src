@@ -18,6 +18,9 @@ include ":propagacao:include/propagacao";
 include ":crafting:/include/fabricacaoUtil";
 include "include/epicValidAction";
 include ":propagacao:include/efeitosIncendiarios";
+include ":propagacao:include/combustiveis/impl/combustivelEstaticos";
+include ":propagacao:include/combustiveis/impl/combustivelTerreno";
+include ":propagacao:include/tiles/TileScanner";
 
 program change(who, item)
 	var cfg := ReadConfigFile(":*:itemdesc");
@@ -41,28 +44,52 @@ program change(who, item)
 		endif
 
 		var materialConfig;
+		var inflamabilidade := 0;
 		if (targ.item)
-			var materialChave := GetObjProperty(targ.item, PROPNAME_MATERIAL);
-			materialConfig := PegaMaterialConfig(materialChave);
-
+			
 			if (!CheckLineOfSight(who, item))
 				SendSysMessageEX(who, "Você não exerga este item.", SSM_FAIL);
 				return 0;
 			endif
+
+			var materialChave := GetObjProperty(targ.item, PROPNAME_MATERIAL);
+			materialConfig := PegaMaterialConfig(materialChave);
+			inflamabilidade := cint(materialConfig.inflamavel);
 		else
 			if (!CheckLosAt(who, targ.x, targ.y, targ.z))
 				SendSysMessageEX(who, "Você não exerga este ponto.", SSM_FAIL);
 				return 0;
 			endif
+			var combustiveis := dictionary{
+								COMBUSTIVEIS::ESTATICOS -> CombustivelEstaticos(), 
+								COMBUSTIVEIS::TERRENO -> CombustivelTerreno()
+							};
+			var tileScanner := TileScanner(targ.x, targ.y, targ.z, targ.realm);
+
+			var tileProspectado := tileScanner.AdicionaManipulador(TILE_SCANNER::STATICOS)
+												.AdicionaManipulador(TILE_SCANNER::TERRENO)
+												.Prospectar();
+
+			foreach combustivel in combustiveis
+				if(combustivel.ProcuraCombustivel(targ,tileProspectado))
+					inflamabilidade := cint(combustivel.PegaFatorInflamavel());
+					break;
+				endif
+			endforeach
 		endif
 
 		var momentoInicial := ReadGameClock();
 		var posicaoInicial := struct{ x := who.x, y := who.y, z := who.z, realm := who.realm };
 		while (true)
+			if(!inflamabilidade)
+				SendSysMessageEX(who, "Você não encontrou nada inflamável para atear fogo.", SSM_FAIL);
+				return 0;
+			endif
 			if (CheckHasMoved(who, posicaoInicial) || !CheckIsAlive(who) || !CheckIsFree(who))
 				SendSysMessageEX(who, "Você parou de tentar iniciar um incêndio.", SSM_FAIL);
 				break;
 			endif
+			
 			var tempoDecorrido := ReadGameClock() - momentoInicial;
 			var deveCriarMarcadorIncendio := false;
 			if (tempoDecorrido % 2 == 0)
@@ -71,7 +98,7 @@ program change(who, item)
 			endif
 
 			var limiteTempo;
-			case (materialConfig.inflamavel)
+			case (inflamabilidade)
 				0: limiteTempo := 4; break;
 				1: limiteTempo := 4; break;
 				2: limiteTempo := 3; break;
@@ -87,6 +114,8 @@ program change(who, item)
 			if (tempoDecorrido >= limiteTempo)
 				targ ? targ.item : targ;
 				var marcador := CriaFagulhaIncendiaria(who, targ);
+				SubtractAmount(item, 1);
+				SendSysMessageEX(who, "Você usou sua tocha para iniciar um incêndio.", SSM_HELPFU);
 
 				if (who.hidden)
 					who.hidden := 0;

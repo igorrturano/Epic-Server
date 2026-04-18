@@ -7,7 +7,6 @@ include "include/epicUtils";
 include ":megacliloc:/include/descricaoObjetoTTip";
 include ":crafting:gumps/fabricacaoGumps";
 include ":gumps:/include/dropDownGump";
-include ":crafting:include/craftGumps";
 include ":crafting:/craftingDFEsquemas";
 include ":crafting:/include/fabricacaoUtil";
 include ":crafting:/include/craftingRepair";
@@ -477,7 +476,7 @@ function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarR
 
 	if(isRequisitoSuficiente(quem,contagem, receita, esquema, quantidade, deveIgnorarRequisitos))
 		if(!deveIgnorarRequisitos)
-			ConsomeRequisitos(contagem, quantidade);
+			ConsomeRequisitos(quem, contagem, quantidade);
 		endif
 
 		if(deveIgnorarRequisitos)
@@ -667,25 +666,39 @@ function ContaQuantidadeRequisitos(quem, esquema, receita, deveIgnorarRequisitos
 	return contagemFinal;
 endfunction
 
-function ConsomeRequisitos(contagem, quantidade := 1)
+function ConsomeRequisitos(quem, contagem, quantidade := 1)
 	foreach contado in contagem
 		Sleepms(2);
 		var quantidadeRestante := cint(contado.quantidadeNecessaria) * cint(contado.lote) * cint(quantidade);
 		foreach itemEncontrado in (contado.itemRefArray)
 			Sleepms(2);
-			If(quantidadeRestante <= 0) 
-				break; 
+			If(quantidadeRestante <= 0)
+				break;
 			endif;
+			var objtypeConsumido := itemEncontrado.objtype;
+			var quantidadeConsumida;
 			if(itemEncontrado.stackable)
+				quantidadeConsumida := cint(itemEncontrado.amount) < quantidadeRestante ? cint(itemEncontrado.amount) : quantidadeRestante;
 				var quantidadeSubtraida :=  quantidadeRestante - itemEncontrado.amount;
 				SubtractAmount(itemEncontrado, quantidadeRestante);
 				quantidadeRestante :=  quantidadeSubtraida;
 			else
+				quantidadeConsumida := 1;
 				quantidadeRestante -= 1;
 				DestroyItem(itemEncontrado);
 			endif
-		endforeach	
+			DevolveContainerVazio(quem, objtypeConsumido, quantidadeConsumida);
+		endforeach
 	endforeach
+endfunction
+
+function DevolveContainerVazio(quem, objtypeConsumido, quantidadeConsumida)
+	if(!quem || quantidadeConsumida <= 0) return; endif
+	var descItem := itemsConfig[objtypeConsumido];
+	if(!descItem) return; endif
+	var emptyObjType := cint(GetConfigInt(descItem, "emptyObjType"));
+	if(emptyObjType <= 0) return; endif
+	CreateItemInBackpack(quem, emptyObjType, quantidadeConsumida);
 endfunction
 
 function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
@@ -1298,6 +1311,11 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	endif
 
 	receita.+componentesNecessarios := PegaComponentesNecessarios(objtype, receitasConfig, receitaClassificada.classe, quantidadeOpicionais);
+	
+	if(!receita.componentesNecessarios)
+		return receita.componentesNecessarios;
+	endif
+
 	receita.+sucessosNecessarios := PegaDescDuracaoFabricacao(duracao).sucessos;
 	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao, receitaClassificada.classe);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, duracao, definicaoFabricacao.lote);
@@ -1379,7 +1397,7 @@ function PegaComponentesNecessarios(objtype, receitasConfig, classe, byref quant
 	var receitaCfgElemento:= receitasConfig[objtype];
 
 	if(TypeOfInt(receitaCfgElemento) == OT_ERROR)
-		Print("Erro [ " + receitaCfgElemento +  " ] ao buscar configuração de fabricação. A configuracão do objtype " + CStr(Hex(objtype)) + " não foi encontrada.");
+		return  error{errortext := "Fabricação não encontrada para o item: " + CStr(objtype)};
 	endif
 
 	var encaixesItem := GetConfigStringArray(receitaCfgElemento,"ComponenteEncaixe");
@@ -1551,6 +1569,10 @@ function CriaPropFabricadoGerada(
 	tier := cint(tier);
 
 	var receita := MontaReceitaItem(0,objtype,"",fabricacaoDescConfig,0,0, struct{nome := objetoDesc.name, classe := classe});
+	if(!receita)
+		return receita;
+	endif
+	
 	var componentesEscolhidos := dictionary;
 	var objetoEsquema := NovoObjetoEsquemaSelecionado("",dictionary,0,"", classe);
 	var tierInfo := PegaComponenteTierDesc(tier);
