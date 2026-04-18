@@ -16,7 +16,7 @@ program SpellScript(params)
 	endif
 
 	// Check if already active
-	var existing := MobileWrapper(who).GetProperty($"#SpellOpts_{CInt(spell.id)}");
+	var existing := MobileWrapper(who).GetProperty($"SpellOpts_{CInt(spell.id)}");
 	if (existing && !existing.errortext)
 		SendSysMessageEx(who, "Voce ja esta sob o dom da fala selvagem.", SSM_FAIL);
 		return 0;
