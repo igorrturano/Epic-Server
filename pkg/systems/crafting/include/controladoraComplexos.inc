@@ -476,7 +476,7 @@ function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarR
 
 	if(isRequisitoSuficiente(quem,contagem, receita, esquema, quantidade, deveIgnorarRequisitos))
 		if(!deveIgnorarRequisitos)
-			ConsomeRequisitos(contagem, quantidade);
+			ConsomeRequisitos(quem, contagem, quantidade);
 		endif
 
 		if(deveIgnorarRequisitos)
@@ -666,25 +666,39 @@ function ContaQuantidadeRequisitos(quem, esquema, receita, deveIgnorarRequisitos
 	return contagemFinal;
 endfunction
 
-function ConsomeRequisitos(contagem, quantidade := 1)
+function ConsomeRequisitos(quem, contagem, quantidade := 1)
 	foreach contado in contagem
 		Sleepms(2);
 		var quantidadeRestante := cint(contado.quantidadeNecessaria) * cint(contado.lote) * cint(quantidade);
 		foreach itemEncontrado in (contado.itemRefArray)
 			Sleepms(2);
-			If(quantidadeRestante <= 0) 
-				break; 
+			If(quantidadeRestante <= 0)
+				break;
 			endif;
+			var objtypeConsumido := itemEncontrado.objtype;
+			var quantidadeConsumida;
 			if(itemEncontrado.stackable)
+				quantidadeConsumida := cint(itemEncontrado.amount) < quantidadeRestante ? cint(itemEncontrado.amount) : quantidadeRestante;
 				var quantidadeSubtraida :=  quantidadeRestante - itemEncontrado.amount;
 				SubtractAmount(itemEncontrado, quantidadeRestante);
 				quantidadeRestante :=  quantidadeSubtraida;
 			else
+				quantidadeConsumida := 1;
 				quantidadeRestante -= 1;
 				DestroyItem(itemEncontrado);
 			endif
-		endforeach	
+			DevolveContainerVazio(quem, objtypeConsumido, quantidadeConsumida);
+		endforeach
 	endforeach
+endfunction
+
+function DevolveContainerVazio(quem, objtypeConsumido, quantidadeConsumida)
+	if(!quem || quantidadeConsumida <= 0) return; endif
+	var descItem := itemsConfig[objtypeConsumido];
+	if(!descItem) return; endif
+	var emptyObjType := cint(GetConfigInt(descItem, "emptyObjType"));
+	if(emptyObjType <= 0) return; endif
+	CreateItemInBackpack(quem, emptyObjType, quantidadeConsumida);
 endfunction
 
 function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
