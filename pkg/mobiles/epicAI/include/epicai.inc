@@ -37,7 +37,7 @@ function InitializeEpicNPC(mobile)
     var sounds := GetConfigStringArray(elem, "IdleSound");
 
     // Use cached category_lower for darkness check
-    var isDarknessCreature := GetObjProperty(mobile, "Mobnoturno") || cache.category_lower == "undead";
+    var isDarknessCreature := GetObjProperty(mobile, "Mobnoturno") || cache.environment_lower == "undead";
     if ((isDarknessCreature) && !InDarkness(mobile))
         ApplyRawDamage(mobile, CInt(AP_GetVitalMaximumValue(mobile, "Hits")));
     endif
@@ -1337,13 +1337,13 @@ function CanFight(attacker, defender)
     var attacker_cache := NPC_GetCachedData(attacker);
 
     // Jogadores corrompidos pela entropia nao sao atacados por mortos vivos.
-    if (MobileWrapper(defender).GetEntropy() <= -16000 && attacker_cache.category_lower == "undead")
+    if (MobileWrapper(defender).GetEntropy() <= -16000 && attacker_cache.environment_lower == "undead")
         return 0;
     endif
 
     // Aparencia Cadaverica: mortos vivos nao atacam quem parece um deles.
     // Se o jogador atacar um morto vivo, a aparencia quebra.
-    if (GetObjProperty(defender, "aparenciacadaverica") && attacker_cache.category_lower == "undead")
+    if (GetObjProperty(defender, "aparenciacadaverica") && attacker_cache.environment_lower == "undead")
         if (attacker.opponent == defender)
             EraseObjProperty(defender, "aparenciacadaverica");
             SendSysMessageEx(defender, "A sua aparencia cadaverica se desfez!", SSM_FAIL);
@@ -1360,7 +1360,7 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
-    var category := attacker_cache.category;
+    var category := attacker_cache.environment;
 
     if (category == "Aklats")
         // Usa função dedicada para detectar ameaças
@@ -1405,7 +1405,7 @@ function CanFight(attacker, defender)
         var defender_cache := NPC_GetCachedData(defender);
         var enemy_cats := GetConfigStringArray(attacker_cache.npc_elem, "EnemyCategories");
 
-        if (enemy_cats && defender_cache.category in enemy_cats)
+        if (enemy_cats && defender_cache.environment in enemy_cats)
             return 1;
         endif
 
@@ -1527,7 +1527,7 @@ function GetCachedHazardTiles()
     var on_hazard := 0;
     var markers := ListItemsNearLocationOfType(me.x, me.y, me.z, 3, MARCADOR_PROPAGACAO_OBJTYPE, me.realm);
     var cache := NPC_GetCachedData(me);
-    var is_elemental := (cache.category_lower == "elemental");
+    var is_elemental := (cache.environment_lower == "elemental");
 
     foreach marker in markers
         if (Abs(me.z - marker.z) > 19)
@@ -2222,7 +2222,7 @@ function CheckForWoundedAllies(who)
 	foreach ally in allies
 		if (isHurt(ally))
 			var cache := NPC_GetCachedData(ally);
-			if (cache.category_lower != "undead" && cache.category_lower != "demons")
+			if (cache.environment_lower != "undead" && cache.environment_lower != "demons")
 				wounded_allies.append(ally);
 			endif
 		endif
@@ -3272,7 +3272,7 @@ endfunction
  */
 function CheckDarknessCreatureSurvival(mobile)
     var cache := NPC_GetCachedData(mobile);  // O(1) lookup
-    var isDarknessCreature := GetObjProperty(mobile, "Mobnoturno") || cache.category_lower == "undead";
+    var isDarknessCreature := GetObjProperty(mobile, "Mobnoturno") || cache.environment_lower == "undead";
 
     if (!isDarknessCreature)
         return 0;
