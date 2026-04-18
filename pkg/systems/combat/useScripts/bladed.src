@@ -104,7 +104,7 @@ function CarveItems(who, tool, item)
 			0x977:  return CortaComida(who, item, 0x979, 8, "Voce cortou cada bacon em oito fatias.");
 			0x1728: return CortaComida(who, item, 0x1729, 1, "Voce cortou cada limao ao meio.");
 			0x172a: return CortaComida(who, item, 0x172b, 1, "Voce cortou cada lima ao meio.");
-			0x1078:
+			0x1078: return FazPergaminhoEmBranco(who, item);
 			0x1079:
 				return FazPergaminhoEmBranco(who, item);
 			0xec24:

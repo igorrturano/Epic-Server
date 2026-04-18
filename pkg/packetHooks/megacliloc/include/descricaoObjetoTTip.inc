@@ -35,6 +35,13 @@ function MontaDescPersonagem(objeto, quem, xDesc)
 			xDesc := xDesc + color + entropy_desc + "<br>";
 		endif
 	endif
+
+	// Pet/creature description set via RURAL_LIFE (Campestre) ability
+	var pet_desc := GetObjProperty(objeto, "description");
+	if (pet_desc)
+		xDesc := xDesc + WHITE + pet_desc + "<br>";
+	endif
+
 	return xDesc;
 endfunction
 

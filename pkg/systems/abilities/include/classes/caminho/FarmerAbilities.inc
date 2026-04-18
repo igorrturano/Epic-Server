@@ -1,13 +1,53 @@
 use uo;
 
 include ":abilities:models/CombatAbility";
+include ":message:model/Message";
+include ":tn:tngumps";
 
 // Rural Life - ABILITY_ID::RURAL_LIFE (3580)
-// Active: Animals are passive + customize pets.
-// Effect handled in personalizaranimal script.
+// Passive: animals do not attack bearers (checked in animalBrain.inc).
+// Active: target an owned pet and set a description shown on its tooltip.
 class RuralLife(CombatAbility)
 	function RuralLife(this)
 		Super(ABILITY_ID::RURAL_LIFE);
+	endfunction
+
+	function OnActivate(this, mobile)
+		var who := mobile.GetObjRef();
+
+		Message("Escolha um animal para personalizar.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		var animal := Target(who);
+		if (!animal)
+			Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return;
+		endif
+
+		if (animal.master != who)
+			Message("Esse animal nao e seu!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return;
+		endif
+
+		var original_name := animal.name;
+		SetName(animal, "atualizando descricao");
+
+		var repeating := 3;
+		var str := "";
+		Message("Descreva seu animal em ate 83 caracteres.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		while (repeating)
+			str := SmallRequestGump(who, "Qual a nova descricao?", 1);
+			if (Len(str) < 84)
+				break;
+			endif
+			Message("Voce excedeu o numero maximo de 83 caracteres!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			repeating := repeating - 1;
+			str := "";
+		endwhile
+
+		if (str)
+			SetObjProperty(animal, "description", str);
+		endif
+
+		SetName(animal, original_name);
 	endfunction
 endclass
 
