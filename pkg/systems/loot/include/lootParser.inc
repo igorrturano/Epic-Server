@@ -7,7 +7,7 @@ use basic;
 include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
 include ":sysbook:include/sealedBooks";
-include ":crafting:/include/fabricaComplexos";
+include ":crafting:/include/fabricacaoComplexos";
 
 var itemdesc_cache := dictionary{};
 
@@ -97,15 +97,35 @@ endfunction
 function CreateItemProcess(container, parsed, qtd)
     var objtype := GetObjtypeByName(parsed.name);
     var item;
-    item :=  GeraItemComplexo(
-                                container,
-                                objtype,
-                                qtd,
-                                RandomCraftingPropTier(),
-                                1,
-                                array {0x630e},
-                                FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
-                            );
+
+    if( parsed.level && parsed.level != 1)
+        item :=  GeraItemComplexo(
+                                    container,
+                                    objtype,
+                                    qtd,
+                                    parsed.level,
+                                    1,
+                                    array {0x630e},
+                                    FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR,
+                                    false,
+                                    1,//TODO alterar quando as classes estiverem implementadas nos loots
+                                    ITEM_MONTADO
+                                );
+        if(item)
+            item.name := "Item Danificado";
+        endif
+    else
+        item :=  GeraItemComplexo(
+                                    container,
+                                    objtype,
+                                    qtd,
+                                    1,
+                                    1,
+                                    array {0x630e},
+                                    FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
+                                );
+        //Gera como produto montado
+    endif
     
     if(!item)
         item := CreateItemInContainer(container, parsed.name);
@@ -115,22 +135,6 @@ function CreateItemProcess(container, parsed, qtd)
     SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
     return item;
 endfunction
-
-function RandomCraftingPropTier()
-    var roll := RandomIntMinMax(1,10000) + 1;
-    if(roll <= 5)
-        return "3>5";
-    elseif(roll <= 50)
-        return "3>4";
-    elseif(roll <= 500)
-        return "1>3";
-    elseif(roll <= 1000)
-        return "1>2";
-    else
-        return 1;
-    endif
-endfunction
-
 
 function Loot_CreateStack(container, line)
 	var parsed := Loot_ParseString(line);
@@ -230,15 +234,16 @@ function Loot_CreateRandom(container, line)
         if(all_items.size() > 0)
             idx := RandomInt(all_items.size()) + 1;
             item := all_items[idx];
+            var tier := parsed.level; 
             
             if(item.type == "Stack")
                 qty := RandomDiceRoll(CStr(item.qty));
-                result := Loot_CreateStack(container, item.name + " " + qty + " 100");
+                result := Loot_CreateStack(container, item.name + " " + qty + " 100 " + tier);
                 if(!result.errortext)
                     created += 1;
                 endif
             else
-                result := Loot_CreateItem(container, item.name + " 1 100");
+                result := Loot_CreateItem(container, item.name + " 1 100 " + tier);
                 if(!result.errortext)
                     created += 1;
                 endif
@@ -289,7 +294,13 @@ function Loot_ParseString(line)
         chance := 100.0;
     endif
     
-    var level := CInt(line[4]);
+    var level := 1;
+    if(Find(line[4],">",1) >= 1)
+        level := line[4];
+    else
+        level := cint(line[4]);
+    endif
+
     if(!level)
         level := 1;
     endif
@@ -299,7 +310,6 @@ function Loot_ParseString(line)
     result.+amount := amount;
     result.+chance := chance;
     result.+level := level;
-    
     return result;
 endfunction
 

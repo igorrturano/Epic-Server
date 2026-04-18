@@ -5,7 +5,7 @@ use cfgfile;
 use polsys;
 use util;
 
-include ":crafting:fabricaComplexos";
+include ":crafting:include/fabricacaoComplexosGump";
 
 program use_carptool(who, tool)
 
