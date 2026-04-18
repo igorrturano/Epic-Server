@@ -111,6 +111,9 @@ function CreateItemProcess(container, parsed, qtd)
                                     1,//TODO alterar quando as classes estiverem implementadas nos loots
                                     ITEM_MONTADO
                                 );
+        if(item)
+            item.name := "Item Danificado";
+        endif
     else
         item :=  GeraItemComplexo(
                                     container,
