@@ -91,8 +91,8 @@ class GoldenGumpLayout(GumpLayout)
 		var title := this.GetTitleLayout();
 		title.SetX(20);
 		title.SetY(27);
-		title.Resize(this.GetWidth() - (2 * title.GetX()) - this.GetBorder_TopLeft().GetWidth() - this.GetBorder_TopRight().GetWidth(), 40);
-		print(title.ToString());
+		title.Resize(this.GetWidth() - (2 * title.GetX()), 40);
+		title.PositionControls();
 	endfunction
 
 	/**
@@ -110,10 +110,11 @@ class GoldenGumpLayout(GumpLayout)
 		var separator := 5;
 		var title := this.GetTitleLayout();
 		var body := this.GetBodyLayout();
-		body.SetXOffset(title.GetXOffset());
-		body.SetYOffset(title.GetYOffset() + title.GetHeight() + separator);
-		body.SetWidth(title.GetWidth());
+		body.SetX(title.GetXOffset());
+		body.SetY(title.GetYOffset() + title.GetHeight() + separator);
+		body.SetWidth(this.GetWidth() - (2 * body.GetX()));
 		body.SetHeight(this.GetHeight() - title.GetYOffset() - title.GetHeight() - (2 * separator));
+		body.PositionControls();
 	endfunction
 
 	function ToString(this)

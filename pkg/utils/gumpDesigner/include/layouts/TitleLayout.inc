@@ -66,11 +66,12 @@ class TitleLayout(Layout)
 		var factory := GumpFactory();
 		this.SetBackground(factory.CreateImageGumpTiled()._SetName("Title Background"));
 		this.SetText(factory.CreateText()._SetName("Gump Title Text").SetText(this.GetTitleString()));
-		this.SetHelpButton(factory.CreateButton()._SetName("Gump Title Help Button"));
+		this.SetHelpButton(factory.CreateButton()._SetName("Gump Title Help Button").SetUnpressedImage(0x5689).SetPressedImage(0x568A));
 	endfunction
 
 	function ToString(this)
 		return "(GumpTitle) " + Super::ToString(this)
+			+ ", titleString=" + this.GetTitleString()
 			+ ", text=" + this.GetText().ToString()
 			+ ", helpButton=" + this.GetHelpButton().ToString();
 	endfunction

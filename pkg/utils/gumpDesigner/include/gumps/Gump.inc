@@ -61,16 +61,16 @@ class Gump(Container, IGump)
 		return this;
 	endfunction
 
-	// Override
-	function Resize(this, width, height)
-		Super::Resize(this, width, height);
+	// // Override
+	// function Resize(this, width, height)
+	// 	Super::Resize(this, width, height);
 		
-		if (this.GetLayout())
-			this.GetLayout().Resize(width, height);
-		endif
+	// 	if (this.GetLayout())
+	// 		this.GetLayout().Resize(width, height);
+	// 	endif
 
-		return this;
-	endfunction
+	// 	return this;
+	// endfunction
 
 	function GetLayout(this)
 		return this._gumpLayout;

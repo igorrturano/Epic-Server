@@ -23,11 +23,11 @@ class PaperTitleLayout(TitleLayout)
 			.Resize(this.GetWidth(), this.GetHeight());
 		
 		this.GetText()
-			.SetPosition(this.GetX() + 10, this.GetY() + 10)
-			.SetWidth(this.GetWidth() - 20);
+			.SetPosition(this.GetX() + this.GetOffsetX() + 10, this.GetY() + 10)
+			.SetWidth(this.GetWidth() - (2 * this.GetX()));
 
 		this.GetHelpButton()
-			.SetPosition(this.GetX() + this.GetWidth() - 30, this.GetY() + 10);
+			.SetPosition(CInt(this.GetWidth() - 25), CInt(this.GetHeight() / 2) - 8);
 	endfunction
 
 	function ToString(this)
