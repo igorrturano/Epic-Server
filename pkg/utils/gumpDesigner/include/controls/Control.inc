@@ -128,7 +128,7 @@ class Control(IControl)
 	endfunction
 
 	function Draw(this, byRef gump)
-		print("Drawing Control: " + this.ToString());
+		// print("Drawing Control: " + this.ToString());
 		
 		if (this.GetTooltip())
 			this.GetTooltip().Draw(gump);

@@ -174,6 +174,13 @@ class Layout(Container, ILayout)
 		endif
 	endfunction
 
+	function Resize(this, width, height)
+		Super::Resize(this, width, height);
+		this.PositionControls();
+		
+		return this;
+	endfunction
+
 	function ToString(this)
 		return "(GumpLayout) " + Super::ToString(this)
 			+ ", background=" + this.GetBackground().ToString()

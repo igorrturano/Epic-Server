@@ -81,8 +81,6 @@ class Gump(Container, IGump)
 			return InvalidParameterException("Layout must be of type GumpLayout.");
 		endif
 		
-		layout.Resize(this.GetWidth(), this.GetHeight());
-		
 		this._gumpLayout := layout;
 		
 		return this;
@@ -317,7 +315,6 @@ class Gump(Container, IGump)
 
 		this.GetLayout().Draw(this);
 		if (this.GetTitle())
-			Print("Desenhando título..." + this.GetTitle().ToString());
 			this.GetTitle().Draw(this);
 		endif
 		// this.GetPage(this.GetCurrentPage()).Draw(this);

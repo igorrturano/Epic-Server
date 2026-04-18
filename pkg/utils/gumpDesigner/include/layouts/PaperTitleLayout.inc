@@ -19,6 +19,9 @@ class PaperTitleLayout(TitleLayout)
 	endfunction
 
 	function PositionControls(this)
+		this.GetBackground()
+			.Resize(this.GetWidth(), this.GetHeight());
+		
 		this.GetText()
 			.SetPosition(this.GetX() + 10, this.GetY() + 10)
 			.SetWidth(this.GetWidth() - 20);

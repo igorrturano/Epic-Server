@@ -54,6 +54,8 @@ class Container(ResizableControl)
 		endif
 
 		foreach control in (this.GetControls())
+			control.SetXOffset(this.GetX() + this.GetXOffset());
+			control.SetYOffset(this.GetY() + this.GetYOffset());
 			control.Draw(gump);
 			SleepMS(2);
 		endforeach
@@ -70,11 +72,6 @@ class Container(ResizableControl)
 
 	function ToString(this)
 		return "(Container) " + Super::ToString(this)
-			+ ", name=" + this.GetName()
-			+ ", x=" + this.GetX()
-			+ ", y=" + this.GetY()
-			+ ", width=" + this.GetWidth()
-			+ ", height=" + this.GetHeight()
 			+ ", isVisible=" + CStr(this._isVisible)
 			+ ", controls=" + this.GetControls().size();
 	endfunction

@@ -40,13 +40,6 @@ class GumpLayout(Layout)
 		return this;
 	endfunction
 
-	function Resize(this, width, height)
-		Super::Resize(this, width, height);
-		this.PositionControls();
-		
-		return this;
-	endfunction
-
 	// Se for modificar a estrutura do gump, dar override na classe filha
 	function InitializeControls(this)
 		var factory := GumpFactory();
@@ -75,19 +68,8 @@ class GumpLayout(Layout)
 
 	function ToString(this)
 		return "(GumpLayout) " + Super::ToString(this)
-			+ " width=" + this.GetWidth()
-			+ ", height=" + this.GetHeight()
-			+ ", background=" + this.GetBackground().ToString()
-			+ ", borders={" 
-				+ "topLeft=" + this.GetBorder_TopLeft().ToString() + ", "
-				+ "top=" + this.GetBorder_Top().ToString() + ", "
-				+ "topRight=" + this.GetBorder_TopRight().ToString() + ", "
-				+ "left=" + this.GetBorder_Left().ToString() + ", "
-				+ "right=" + this.GetBorder_Right().ToString() + ", "
-				+ "bottomLeft=" + this.GetBorder_BottomLeft().ToString() + ", "
-				+ "bottom=" + this.GetBorder_Bottom().ToString() + ", "
-				+ "bottomRight=" + this.GetBorder_BottomRight().ToString()
-			+ "}";
+			+ ", titleLayout=" + (this.GetTitleLayout() ? this.GetTitleLayout().ToString() : "null")
+			+ ", pageLayout=" + (this.GetPageLayout() ? this.GetPageLayout().ToString() : "null");
 	endfunction
 
 	// uninit function PositionTitle(this);

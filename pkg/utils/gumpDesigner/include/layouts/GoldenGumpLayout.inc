@@ -9,7 +9,6 @@ class GoldenGumpLayout(GumpLayout)
 		Super();
 		this.InitializeControls();
 		this.ConfigureControls();
-		this.PositionControls();
 		this.InsertControls();
 	endfunction
 
@@ -88,12 +87,12 @@ class GoldenGumpLayout(GumpLayout)
 	 * @return void
 	 */
 	function PositionTitle(this)
+		print("Posicionando título...");
 		var title := this.GetTitleLayout();
-		title.SetXOffset(25);
-		title.SetYOffset(15);
-		title.SetHeight(40);
-		title.SetWidth(this.GetWidth() - (2 * title.GetXOffset()));
-		print ("Título ficou -> " + title.ToString());
+		title.SetX(20);
+		title.SetY(27);
+		title.Resize(this.GetWidth() - (2 * title.GetX()) - this.GetBorder_TopLeft().GetWidth() - this.GetBorder_TopRight().GetWidth(), 40);
+		print(title.ToString());
 	endfunction
 
 	/**
