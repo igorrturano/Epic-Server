@@ -9,15 +9,15 @@ class MarbleGumpLayout(GumpLayout)
 	endfunction
 
 	function ConfigureControls(this)
-		this.GetBorder_TopLeft().SetImageId(39925);
-		this.GetBorder_Top().SetImageId(39926);
-		this.GetBorder_TopRight().SetImageId(39927);
-		this.GetBorder_Left().SetImageId(39928);
-		this.GetBorder_Right().SetImageId(39930);
-		this.GetBorder_BottomLeft().SetImageId(39931);
-		this.GetBorder_Bottom().SetImageId(39932);
-		this.GetBorder_BottomRight().SetImageId(39933);
-		this.GetBackground().SetImageId(39929);
+		this.GetBorder_TopLeft().SetImageId(3500);
+		this.GetBorder_Top().SetImageId(3501);
+		this.GetBorder_TopRight().SetImageId(3502);
+		this.GetBorder_Left().SetImageId(3503);
+		this.GetBorder_Right().SetImageId(3505);
+		this.GetBorder_BottomLeft().SetImageId(3506);
+		this.GetBorder_Bottom().SetImageId(3507);
+		this.GetBorder_BottomRight().SetImageId(3508);
+		this.GetBackground().SetImageId(3504);
 	endfunction
 
 	function InitializeControls(this)
