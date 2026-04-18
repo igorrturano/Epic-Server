@@ -25,6 +25,11 @@ program usar_serra(who, item)
 	SendSysMessage(who, "O que você deseja fazer com isto?");
 	var targetted := Target(who);
 
+	if (targetted.graphic != 0x1bdd)
+		SendSysMessage(who, "Você deve usar a serra nos troncos de madeira!");
+		return;
+	endif
+
 	if (!targetted)
 		SendSysMessage(who, "Cancelado.");
 		return;
