@@ -9,9 +9,8 @@ class PaperBodyLayout(BodyLayout)
 
 	// Override
 	function InitializeControls(this)
-		Super::InitializeControls(this);
-		
-		this.SetBackground(GumpFactory().CreateImageGump()._SetName("Body Background"));
+		var factory := GumpFactory();
+		this.SetBackground(factory.CreateImageGump()._SetName("Body Background"));
 	endfunction
 	
 	function ConfigureControls(this)
