@@ -6,6 +6,7 @@ include ":timedscripts:timedScripts";
 include ":hotbar:include/custombuff";
 include ":attributes:stats";
 include ":fls_core:packets";
+include ":equipsys:packets/UpdateEquipmentRequest";
 
 /**
  * SpellController — Unified spell effect orchestrator.
@@ -274,6 +275,7 @@ function _SC_ApplyResist(targ, opts)
 	if (opts.energy_resist)   sr.energy   += opts.energy_resist;   endif
 
 	mw.SetProperty("#SpellResist", sr);
+	_SC_RefreshArmorPackets(targ);
 endfunction
 
 function _SC_RemoveResist(targ, opts)
@@ -292,6 +294,17 @@ function _SC_RemoveResist(targ, opts)
 	if (opts.energy_resist)   sr.energy   -= opts.energy_resist;   endif
 
 	mw.SetProperty("#SpellResist", sr);
+	_SC_RefreshArmorPackets(targ);
+endfunction
+
+// Re-emit armor packets for all worn armor so the client's resist HUD
+// reflects the updated #SpellResist. Spells are a peer event source
+// alongside equipitem.src's async update on equip/unequip.
+function _SC_RefreshArmorPackets(targ)
+	if (targ.npctemplate)
+		return;
+	endif
+	Start_Script(":equipsys:packets/AssyncUpdateEquipment", array{MobileWrapper(targ), 1, 0, 0});
 endfunction
 
 /**

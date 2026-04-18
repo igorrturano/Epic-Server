@@ -544,7 +544,19 @@ endfunction
 
 function finalizeCasting(mobile, spellinfo, targ, scroll)
 	CastSpell(mobile, spellinfo, targ);
-	UpdateMobileEntropy(mobile, Cint(spellinfo.Circle[1]));
+
+	var entropy_delta := 0;
+	var circle_amt := Cint(spellinfo.Circle[1]);
+	if (spellinfo.School == "Kaijin")
+		entropy_delta := -circle_amt;
+	elseif (spellinfo.Type == "Divine")
+		entropy_delta := circle_amt;
+	endif
+
+	if (entropy_delta != 0)
+		UpdateMobileEntropy(mobile, entropy_delta);
+	endif
+
 	EraseObjProperty(mobile, "#Casting");
 	EraseObjProperty(mobile, "#CustoDeterminacaoArcana");
 	return 1;
