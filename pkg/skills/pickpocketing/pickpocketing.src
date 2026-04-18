@@ -408,15 +408,15 @@ function HandleStealableArtifact(mobile, artifact)
 	// Verifica se o jogador tem skill suficiente
 	if (difficulty > 1.5 * player_skill)
 		var msg1 := Message("Suas mãos tremem ao tocar o artefato...");
-		msg1.SetColor(Color(SYSTEM_COLOR::FAIL));
+		msg1.SetColor(SSM_FAIL);
 		msg1.SendSys(mobile);
-		
+
 		var msg2 := Message("Você não possui a habilidade necessária para tentar isso.");
-		msg2.SetColor(Color(SYSTEM_COLOR::FAIL));
+		msg2.SetColor(SSM_FAIL);
 		msg2.SendSys(mobile);
-		
+
 		var msg3 := Message("Seria loucura tentar, você certamente será pego.");
-		msg3.SetColor(Color(SYSTEM_COLOR::FAIL));
+		msg3.SetColor(SSM_FAIL);
 		msg3.SendSys(mobile);
 		
 		return 0;
