@@ -121,5 +121,7 @@ enum class DAMAGE_TIER
 	// NPC-only tiers (not available on player weapons)
 	NPC_LOW := "NPC_LOW",
 	NPC_MID := "NPC_MID",
-	NPC_HIGH := "NPC_HIGH"
+	NPC_HIGH := "NPC_HIGH",
+	NPC_BRUTAL := "NPC_BRUTAL",
+	NPC_DEVASTATING := "NPC_DEVASTATING"
 endenum
