@@ -166,9 +166,9 @@ function HandleAnimalCombatEvent(opponent)
         var tier := CInt(me.getTier());
         if (tier <= 2)
             return 0;
-        elseif (tier <= 3 && opponent.getCulture == HAROLOTH)
+        elseif (tier <= 3 && opponent.getCulture() == HAROLOTH)
             return 0;
-        elseif (tier <= 4 && opponent.getReligion == ELUITHORTH)
+        elseif (tier <= 4 && opponent.getReligion() == ELUITHORTH)
             return 0;
         endif
         // Tier 5 sempre desafia drows para testar se são oponentes valiosos
