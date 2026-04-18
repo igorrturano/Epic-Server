@@ -12,7 +12,18 @@ endprogram
 
 exported function PartyMessageSpy(who, byref packet)
 
-	var message_txt := packet.GetUnicodeString(6, (packet.GetInt16(1) - 12) / 2);
+	var partyAction := packet.GetInt8(5);
+	var messageOffset;
+
+	if (partyAction == 0x04)         // Tell Whole Party
+		messageOffset := 6;
+	elseif (partyAction == 0x03)     // Tell Party Member (private)
+		messageOffset := 10;          // skip 4-byte target serial
+	else
+		return 0;                     // not a chat sub-action
+	endif
+
+	var message_txt := packet.GetUnicodeString(messageOffset, (packet.GetInt16(1) - messageOffset - 2) / 2);
 
 	if (!message_txt)
 		return 0;
