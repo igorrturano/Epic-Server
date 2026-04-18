@@ -305,9 +305,24 @@ function HandleStealableArtifact(mobile, artifact)
 	endif
 	
 	// Pega a raridade do artefato
-	var rarity := CInt(GetObjProperty(artifact, "StealableRarity"));
-	if (!rarity)
-		rarity := 1; // Default
+	// IMPORTANTE: A raridade está armazenada no SPAWNER, não no item!
+	var spawner_serial := GetObjProperty(artifact, "StealableSpawnerSerial");
+	var rarity := 1; // Default
+	
+	if (spawner_serial)
+		var spawner := SystemFindObjectBySerial(spawner_serial);
+		if (spawner)
+			rarity := CInt(GetObjProperty(spawner, "Rarity"));
+			if (!rarity)
+				rarity := 1;
+			endif
+		endif
+	else
+		// Se não tem spawner, tenta pegar direto do artifact
+		rarity := CInt(GetObjProperty(artifact, "StealableRarity"));
+		if (!rarity)
+			rarity := 1; // Default
+		endif
 	endif
 	
 	// Verifica se o jogador está bloqueado neste artefato específico
@@ -324,21 +339,30 @@ function HandleStealableArtifact(mobile, artifact)
 	// Pega o valor da skill do jogador (sempre Pickpocketing)
 	var player_skill := AP_GetSkill(mobile, PICKPOCKETING);
 	
-	// Verifica se o jogador quer tentar
+	// Verifica se o jogador tem skill suficiente
 	if (difficulty > 1.5 * player_skill)
-		Message("Suas mãos tremem ao tocar o artefato...").SetColor(SSM_FAIL).SendSys(mobile);
-		Message("Você não possui a habilidade necessária para tentar isso.").SetColor(SSM_FAIL).SendSys(mobile);
-		Message("Seria loucura tentar, você certamente será pego.").SetColor(38).SendSys(mobile);
+		var msg1 := Message("Suas mãos tremem ao tocar o artefato...");
+		msg1.SetColor(SSM_FAIL);
+		msg1.SendSys(mobile);
+		
+		var msg2 := Message("Você não possui a habilidade necessária para tentar isso.");
+		msg2.SetColor(SSM_FAIL);
+		msg2.SendSys(mobile);
+		
+		var msg3 := Message("Seria loucura tentar, você certamente será pego.");
+		msg3.SetColor(SSM_FAIL);
+		msg3.SendSys(mobile);
+		
 		return 0;
 	endif
 	
-	// Animação de tentativa de roubo (3 vezes)
+	// Animação e som de tentativa de roubo a cada 5 segundos (total 15 segundos)
 	var i;
 	for (i := 1; i <= 3; i := i + 1)
 		PrintTextAbove(mobile, "*Tenta roubar*");
 		PerformAction(mobile, 0x0020); // ACTION_BOW
 		PlaySoundEffect(mobile, 0x58); // SOUND_SCRUNCH
-		Sleep(2);
+		Sleep(5); // 5 segundos entre cada tentativa
 	endfor
 	
 	// Tenta roubar usando Pickpocketing
