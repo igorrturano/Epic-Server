@@ -206,6 +206,17 @@ function LogAttackRequest( attacker, defender )
     return 0;
   endif
 
+  // Dedup: mesmo atacante → mesmo alvo dentro de 2s = skip (client spam / re-engage)
+  var now := POLCore().systime;
+  var last_target := GetObjProperty( attacker, "#lastAtkSerial" );
+  var last_time := GetObjProperty( attacker, "#lastAtkTime" );
+  if ( last_target == defender.serial && last_time != error && last_time && (now - last_time) < 2 )
+    SetObjProperty( attacker, "#lastAtkTime", now );
+    return 0;
+  endif
+  SetObjProperty( attacker, "#lastAtkSerial", defender.serial );
+  SetObjProperty( attacker, "#lastAtkTime", now );
+
   var atk_char := "";
   if ( GetObjProperty( attacker, "nome_inicial" ) )
     atk_char := GetObjProperty( attacker, "nome_inicial" );
@@ -218,11 +229,13 @@ function LogAttackRequest( attacker, defender )
 
   var atk_coord := "{}:{}:{}".format( attacker.x, attacker.y, attacker.z );
 
-  var tgt_serial := "0x{}".format( Hex( defender.serial ) );
+  var tgt_serial := Hex( defender.serial );
   var tgt_name := defender.name;
   if ( tgt_name == error || !tgt_name )
     tgt_name := "?";
   endif
+  // Sanitiza vírgula no nome pra não quebrar o parse CSV
+  tgt_name := StrReplace( tgt_name, ",", ";" );
 
   var tgt_type := "Player";
   var tgt_master_acct := "";

@@ -313,7 +313,7 @@ function GetWeaponSFX(byRef attackInfo)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
 		weaponSFX.critical := array{};
-	elseif (attackInfo.GetWeapon().isFireWeapon() == WEAPON_CATEGORY::PISTOL)
+	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::PISTOL)
 		weaponSFX.hit := array{0x11C};
 		weaponSFX.miss := array{0x11C};
 		weaponSFX.critical := array{};

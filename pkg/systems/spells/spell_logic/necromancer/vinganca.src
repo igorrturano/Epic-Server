@@ -28,9 +28,9 @@ program SpellScript(params)
 	endif
 
 	var opts := struct{};
-	opts.+properties := dictionary{ "#vinganca" -> 1 };
 	opts.+desc := "Vinganca Recorrente";
 
+	SetObjProperty(targ, "#vinganca", 0);
 	SC_ApplyEffect(who, targ, opts, time, CInt(spell.id));
 	SC_HandleSound(who, targ, SFX_SPELL_WEAKEN);
 

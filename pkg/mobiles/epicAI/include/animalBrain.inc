@@ -155,10 +155,14 @@ function HandleAnimalCombatEvent(opponent)
         return 0;
     endif
 
+    if (MobileWrapper(opponent).HasAbility(ABILITY_ID::RURAL_LIFE))
+        return 0;
+    endif
+
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
-    if (NPC_GetCachedData(me).abilities.isSpiderRace && opponent.getRace() == DROW)
+    if (NPC_GetCachedData(me).npc_race == "aranha" && opponent.getRace() == DROW)
         var tier := CInt(me.getTier());
         if (tier <= 2)
             return 0;
