@@ -23,8 +23,9 @@ class PaperTitleLayout(TitleLayout)
 			.Resize(this.GetWidth(), this.GetHeight());
 		
 		this.GetText()
-			.SetPosition(this.GetX() + this.GetOffsetX() + 10, this.GetY() + 10)
-			.SetWidth(this.GetWidth() - (2 * this.GetX()));
+			.SetAlign(TextAlign::Center)
+			.SetPosition(10, 10)
+			.SetWidth(this.GetWidth() - (2 * this.GetText().GetX()));
 
 		this.GetHelpButton()
 			.SetPosition(CInt(this.GetWidth() - 25), CInt(this.GetHeight() / 2) - 8);
