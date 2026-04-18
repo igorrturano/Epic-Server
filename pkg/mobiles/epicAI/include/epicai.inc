@@ -1,17 +1,14 @@
 use cfgfile;
-use datafile;
+// use datafile;
 use npc;
 
 include ":loot:include/lootParser";
-include ":tn:recipes";
-include ":mounts:mounts";
 include "npcUtils";
-include ":fls_core:fls_characters";
 include "makeRace";
 include ":epicAI:epicSpecial";
 include ":npcs:NPCUtilities";
 include ":fls_core:fls_skillCheck";
-include ":io:CFGFile";
+// include ":io:CFGFile";
 include ":epicAI:npcDataCache";
 include ":abilities:include/models/Ability";
 include ":propagacao:include/util/propagacaoConstants";
@@ -45,7 +42,7 @@ function InitializeEpicNPC(mobile)
     setupAnchorNPC(mobile);
     setupChampspawnNPC(mobile);
     setupNPCBackPack(mobile);
-    GenerateRecipeLoot(mobile);
+    // GenerateRecipeLoot(mobile);  // Temporarily stubbed — :tn:recipes dropped to free brain data segment (2026-04-18). Restore via start_script(":tn:generate_recipe_loot", array{mobile}) if needed.
     SetupAmmo(mobile, npccfgfile, mytemplate);
     var loot := npccfgfile[mytemplate].Loot;
     if (loot)
@@ -1287,7 +1284,7 @@ function NPCHearFootsteps(npc)
 
         SetObjProperty(npc, "#heard_" + mobile.serial, current_pos);
 
-        var difficulty := CalculateDHDiff(npc, mobile);
+        var difficulty := _calculateDHDiffLocal(npc, mobile);
         var cache := NPC_GetCachedData(npc);  // O(1) lookup
         var npc_awareness := cache.tier * 10;
 
@@ -3329,4 +3326,40 @@ function WanderAroundAnchor(mobile)
             WalkTowardLocation(dest_x, dest_y);
         endif
     endif
+endfunction
+
+function _calculateDHDiffLocal(who, mobile)
+    var mobile_skill := CInt(AP_GetSkill(mobile, SNEAK));
+
+    if (GetObjProperty(mobile, "#overridehiding") != error)
+        mobile_skill := CInt(GetObjProperty(mobile, "#overridehiding"));
+    endif
+    var dist := Distance(who, mobile);
+    var difficulty;
+
+    if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SMOKE_SCREEN) && !MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA))
+        difficulty := CInt(mobile_skill);
+    else
+        if (dist >= 8)
+            difficulty := CInt(mobile_skill);
+        elseif (dist >= 7)
+            difficulty := CInt(mobile_skill * 0.95);
+        elseif (dist >= 6)
+            difficulty := CInt(mobile_skill * 0.9);
+        elseif (dist >= 5)
+            difficulty := CInt(mobile_skill * 0.85);
+        elseif (dist >= 4)
+            difficulty := CInt(mobile_skill * 0.8);
+        elseif (dist >= 3)
+            difficulty := CInt(mobile_skill * 0.7);
+        elseif (dist >= 2)
+            difficulty := CInt(mobile_skill * 0.6);
+        elseif (dist >= 1)
+            difficulty := CInt(mobile_skill * 0.5);
+        else
+            difficulty := CInt(mobile_skill * 0.25);
+        endif
+    endif
+
+    return difficulty;
 endfunction
