@@ -61,17 +61,6 @@ class Gump(Container, IGump)
 		return this;
 	endfunction
 
-	// // Override
-	// function Resize(this, width, height)
-	// 	Super::Resize(this, width, height);
-		
-	// 	if (this.GetLayout())
-	// 		this.GetLayout().Resize(width, height);
-	// 	endif
-
-	// 	return this;
-	// endfunction
-
 	function GetLayout(this)
 		return this._gumpLayout;
 	endfunction
@@ -281,12 +270,12 @@ class Gump(Container, IGump)
 	endfunction
 
 	function _AdjustLayout(this)
-		if (!this.GetLayout())
-			this.SetLayout(GoldenGumpLayout());
+		if (this.GetLayout())
+			return;
 		endif
 
+		this.SetLayout(BlueGumpLayout());
 		this.GetLayout().Resize(this.GetWidth(), this.GetHeight());
-		this.GetLayout().PositionControls();
 	endfunction
 
 	function _AdjustTitle(this)
@@ -294,11 +283,12 @@ class Gump(Container, IGump)
 			return;
 		endif
 
-		if (!this.GetTitle())
-			this.SetTitle(this.GetLayout().GetTitleLayout());
+		if (this.GetTitle())
+			return;
 		endif
 
-		this.GetTitle().SetText(this.GetTitleName());
+		this.SetTitle(this.GetLayout().GetTitleLayout());
+		this.GetTitle().GetText().SetValue(this.GetTitleName());
 		this.GetTitle().SetHelpButton(this._CreateHelpButton());
 	endfunction
 
