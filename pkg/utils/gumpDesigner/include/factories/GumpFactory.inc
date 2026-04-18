@@ -1,5 +1,6 @@
 include "IGumpFactory";
 
+include ":gumpDesigner:gumps/Gump";
 include ":gumpDesigner:controls/Button";
 include ":gumpDesigner:controls/ImageGump";
 include ":gumpDesigner:controls/ImageGumpTiled";
@@ -12,6 +13,10 @@ include ":gumpDesigner:layouts/BodyLayout";
 
 class GumpFactory(IGumpFactory)
 	function GumpFactory(this)
+	endfunction
+
+	function CreateGump(this, parent, title, width, height, options := array{})
+		return Gump(parent, title, width, height, options);
 	endfunction
 
 	function CreateButton(this, name := "Button", x := 0, y := 0, unpressedImage := BUTTON_IMAGE::CLOSE_UNPRESSED, pressedImage := BUTTON_IMAGE::CLOSE_PRESSED, buttonType := BUTTON_TYPE::CLOSE)
