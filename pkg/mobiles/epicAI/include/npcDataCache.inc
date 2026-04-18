@@ -12,6 +12,23 @@
 include "include/NPCUtil";
 include "include/epicConstants";
 
+// NPCRace-based umbrella groups for ability inheritance (isDragon, isDemon).
+// Undead kept Environment-based per project architecture ("Environment Undead" umbrella).
+// Add new races here to grant the group's shared abilities.
+function _DragonRaces()
+    return array{"dragão", "drake"};
+endfunction
+
+function _DemonRaces()
+    return array{
+        "demonio", "diabo", "balor", "succubus", "dretch", "goristro",
+        "vrock", "quasit", "barlgura", "cambion", "incubus", "ghour",
+        "moloch", "vor'ghul", "vorthak", "kharneth", "wastrilith",
+        "carnifago abissal", "demônio-fogo", "escaravelho demoníaco",
+        "demoklaus", "ghazneth", "exodus", "gárgula", "oni", "taurok"
+    };
+endfunction
+
 /*
  * NPC_GetCachedData(mobile)
  *
@@ -55,8 +72,8 @@ function BuildNPCCache(mobile)
         "template" := template,
         "template_lower" := template_lower,
         "package" := parsed.package,
-        "category" := npc_elem.Category,
-        "category_lower" := Lower(npc_elem.Category),
+        "environment" := npc_elem.Environment,
+        "environment_lower" := Lower(npc_elem.Environment),
         "classe" := npc_elem.Classe,
         "tier" := GetEffectiveTier(mobile, npc_elem),
         "brain_type" := Lower(npc_elem.BrainType),
@@ -92,7 +109,7 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
 
     // Config-based checks
     var classe := npc_elem.Classe;
-    var category_lower := Lower(npc_elem.Category);
+    var environment_lower := Lower(npc_elem.Environment);
     var brain_type := Lower(npc_elem.BrainType);
     var npc_race := Lower(npc_elem.NPCRace ?: "");
 
@@ -155,12 +172,13 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         "isSage" := (classe == SABIO),
         "isWarrior" := (classe == GUERREIRO),
 
-        // Category-based
-        "isBloodless" := (category_lower == "undead"),
-        "isDragon" := (category_lower == "dragon"),
-        "isDemon" := (category_lower == "demons"),
-        "isUndead" := (category_lower == "undead"),
-        "isBeast" := (category_lower == "animal" || category_lower == "giantanimal"),
+        // Umbrella flags
+        // isUndead + isBloodless: Environment-based (per project: "Environment Undead" is the umbrella)
+        "isBloodless" := (environment_lower == "undead"),
+        "isUndead" := (environment_lower == "undead"),
+        // isDragon + isDemon: NPCRace-based (no Dragon biome; demons span multiple environments)
+        "isDragon" := (npc_race in _DragonRaces()),
+        "isDemon" := (npc_race in _DemonRaces()),
 
         // Template-based: Gazers/Beholders
         "isGazer" := (template_lower in array{

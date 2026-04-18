@@ -57,7 +57,7 @@ program core_npcDeath(params)
 		CreateItemInContainer(corpse, "soulstone", 1);
 	endif
 	var nearbyMobs := array{};
-	if (!GetObjProperty(corpse, "MirrorImage"))
+	if (!GetObjProperty(corpse, "MirrorImage") && !GetObjProperty(corpse, "summoned") && !GetObjProperty(corpse, "owner"))
 		nearbyMobs := HandleExpGain(corpse);
 	endif
 	// handleEntropyGain(corpse);
