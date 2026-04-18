@@ -14,6 +14,7 @@ include ":keys:key";
 include ":crafting:/include/caracteristicasFabricacao";
 include ":crafting:/include/util/fabricacaoConstants";
 include "include/epicUtils";
+include ":itemutils:itemInfo";
 
 var LISTA_TIPO_MATERIAL := PegaListaTipoMateriais();
 var itemsConfig := ReadConfigFile(":*:itemdesc");
@@ -559,6 +560,29 @@ function MontaInfoPote(quem, receitaObjtype)
 	return 0;
 endfunction
 
+function DefinePropFabricado(esquema, receita , quem)
+	//Limpa propriedades desnecessárias ou rendundantes.
+	receita.-componentesNecessarios;
+	receita.-materiaisNecessarios;
+	receita.-textoDescItem;
+	receita.-dificuldade;
+	receita.-isVisualizada;
+	receita.-uso;
+
+	esquema.-modificadorCache;
+
+	var propFabricado := struct{ 
+		estado := ITEM_MONTADO,
+		receita := receita,
+		esquema := esquema};
+	
+	if(!receita.isEmpilhavel)
+		propFabricado.+fabricante := quem.serial;
+	endif
+
+	return propFabricado;
+endfunction
+
 function GetMaterialName(obj);
 
   if ( (obj == "wood") || (obj == "leather") || (obj == "cloth") || (obj == "metal") || (obj == "glass") || (obj == "ossos") || (obj == "stone") || obj == "arrowhead")
@@ -651,3 +675,4 @@ function TruncatePlural(obj_type, add_S := 0)
         return s_first + s_middle + s_last;
 
 endfunction
+

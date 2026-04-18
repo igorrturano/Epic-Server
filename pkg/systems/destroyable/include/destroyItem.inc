@@ -8,12 +8,12 @@ include ":itemutils:itemInfo";
 include "/include/utils";
 include "/include/epicPropNames";
 include ":traps:traps";
-// include "include/packets";
 include ":architect:architect";
 include ":crafting:/include/fabricacaoUtil";
 include "/include/packets";
 include ":combat:Model/AttackInfo";
 include ":combat:Controller/DamageController";
+include ":crafting:include/util/fabricacaoConstants";
 
 const ELEM_CFG_DEST := "Destruiveis";
 const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
@@ -35,7 +35,6 @@ enum TIPO_MATERIAIS
 endenum
 
 var catalogoDestrocos := MontaCatalogoDestrocos();
-var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 var configDestruiveis := ReadConfigFile(":destroyable:config/settings");
 
 /*
