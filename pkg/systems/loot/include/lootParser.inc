@@ -7,7 +7,7 @@ use basic;
 include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
 include ":sysbook:include/sealedBooks";
-include ":crafting:/include/fabricaComplexos";
+include ":crafting:/include/fabricacaoComplexos";
 
 var itemdesc_cache := dictionary{};
 
@@ -98,9 +98,8 @@ function CreateItemProcess(container, parsed, qtd)
     var objtype := GetObjtypeByName(parsed.name);
     var item;
 
-    Print("parsed.level: " + parsed.level);
     if( parsed.level && parsed.level != 1)
-        /*item :=  GeraItemComplexo(
+        item :=  GeraItemComplexo(
                                     container,
                                     objtype,
                                     qtd,
@@ -111,7 +110,7 @@ function CreateItemProcess(container, parsed, qtd)
                                     false,
                                     1,//TODO alterar quando as classes estiverem implementadas nos loots
                                     ITEM_MONTADO
-                                );*/
+                                );
     else
         item :=  GeraItemComplexo(
                                     container,
@@ -232,15 +231,16 @@ function Loot_CreateRandom(container, line)
         if(all_items.size() > 0)
             idx := RandomInt(all_items.size()) + 1;
             item := all_items[idx];
+            var tier := parsed.level; 
             
             if(item.type == "Stack")
                 qty := RandomDiceRoll(CStr(item.qty));
-                result := Loot_CreateStack(container, item.name + " " + qty + " 100");
+                result := Loot_CreateStack(container, item.name + " " + qty + " 100 " + tier);
                 if(!result.errortext)
                     created += 1;
                 endif
             else
-                result := Loot_CreateItem(container, item.name + " 1 100");
+                result := Loot_CreateItem(container, item.name + " 1 100 " + tier);
                 if(!result.errortext)
                     created += 1;
                 endif
@@ -293,7 +293,6 @@ function Loot_ParseString(line)
     
     var level := 1;
     if(Find(line[4],">",1) >= 1)
-        Print("line: " + line + " - " + line[4]);
         level := line[4];
     else
         level := cint(line[4]);
@@ -308,7 +307,6 @@ function Loot_ParseString(line)
     result.+amount := amount;
     result.+chance := chance;
     result.+level := level;
-    
     return result;
 endfunction
 

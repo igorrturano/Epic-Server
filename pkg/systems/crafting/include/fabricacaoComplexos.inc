@@ -1,9 +1,5 @@
-include ":crafting:controladoraComplexos";
+include ":crafting:include/controladoras/controladoraComplexos";
 include ":crafting:include/util/fabricacaoConstants";
-
-function FabricaItensComplexos(quem,profissao, modoGm := false)
-	EnviaItensComplexosGump(quem,profissao, modoGm);
-endfunction
 
 function GeraDescriptorComplexo( 
 							objtype,
@@ -61,7 +57,7 @@ function GeraItemComplexo(
 								);
 	endif
 
-	if(!descriptor) return descriptor; endif
+	if(!descriptor || TypeOfInt(descriptor.color) != OT_LONG || !descriptor.graphic) return error; endif
 
 	var item := CreateItemInContainer( container, descriptor, quantidade );
 	item.hp := item.maxhp;

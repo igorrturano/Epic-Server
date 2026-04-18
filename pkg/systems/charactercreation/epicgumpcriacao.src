@@ -18,7 +18,7 @@ include "include/epicConstants";
 include ":charactercreation:include/RPTraits";
 include ":abilities:include/models/Ability";
 include ":nature:nature";
-include ":crafting:fabricaComplexos";
+include ":crafting:/include/fabricacaoComplexos";
 include ":census:include/CensusController";
 
 function CreationCompleted(who)
