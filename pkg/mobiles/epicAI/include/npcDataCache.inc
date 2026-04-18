@@ -13,21 +13,22 @@ include "include/NPCUtil";
 include "include/epicConstants";
 
 // NPCRace-based umbrella groups for ability inheritance (isDragon, isDemon).
-// Undead kept Environment-based per project architecture ("Environment Undead" umbrella).
-// Add new races here to grant the group's shared abilities.
-function _DragonRaces()
-    return array{"dragão", "drake"};
-endfunction
-
-function _DemonRaces()
-    return array{
-        "demonio", "diabo", "balor", "succubus", "dretch", "goristro",
-        "vrock", "quasit", "barlgura", "cambion", "incubus", "ghour",
-        "moloch", "vor'ghul", "vorthak", "kharneth", "wastrilith",
-        "carnifago abissal", "demônio-fogo", "escaravelho demoníaco",
-        "demoklaus", "ghazneth", "exodus", "gárgula", "oni", "taurok"
-    };
-endfunction
+// TEMPORARILY STUBBED 2026-04-18: the 27 race-name string literals were pushing brain.src over the
+// 64KB data-segment limit. Restore via cfg-driven race list (ReadConfigFile at init) — do NOT
+// re-inline the arrays or brain will overflow again.
+// function _DragonRaces()
+//     return array{"dragão", "drake"};
+// endfunction
+//
+// function _DemonRaces()
+//     return array{
+//         "demonio", "diabo", "balor", "succubus", "dretch", "goristro",
+//         "vrock", "quasit", "barlgura", "cambion", "incubus", "ghour",
+//         "moloch", "vor'ghul", "vorthak", "kharneth", "wastrilith",
+//         "carnifago abissal", "demônio-fogo", "escaravelho demoníaco",
+//         "demoklaus", "ghazneth", "exodus", "gárgula", "oni", "taurok"
+//     };
+// endfunction
 
 /*
  * NPC_GetCachedData(mobile)
@@ -177,8 +178,9 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         "isBloodless" := (environment_lower == "undead"),
         "isUndead" := (environment_lower == "undead"),
         // isDragon + isDemon: NPCRace-based (no Dragon biome; demons span multiple environments)
-        "isDragon" := (npc_race in _DragonRaces()),
-        "isDemon" := (npc_race in _DemonRaces()),
+        // TEMPORARILY STUBBED 2026-04-18: race arrays commented out to free brain data segment. Restore via cfg-driven list.
+        "isDragon" := 0,
+        "isDemon" := 0,
 
         // Template-based: Gazers/Beholders
         "isGazer" := (template_lower in array{
@@ -193,16 +195,6 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         // Mage check — Shaman/Priest/Druid have dedicated behaviors, don't dispatch MageBehavior for them
         "hasMageConfig" := (npc_elem.SpellSchool != error && !(npc_elem.SpellSchool in array{"Shaman", "Druid"}))
     };
-endfunction
-
-/*
- * InvalidateNPCCache(mobile)
- *
- * Purpose: Force cache rebuild (for special cases like transformations)
- * Note: Not normally needed - cache is permanent per user decision
- */
-function InvalidateNPCCache(mobile)
-    EraseObjProperty(mobile, "#npc_cache");
 endfunction
 
 /*
