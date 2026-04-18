@@ -254,7 +254,7 @@ function MP_Mount(mobile, npc)
 
 	var cfg_elem := cfg[npctemplate.template];
 
-	if (cfg[npctemplate.template].Category != "Mount")
+	if (cfg[npctemplate.template].Environment != "Mount")
 		Message("Nao pode montar este animal").SetColor(SSM_FAIL).SendSys(mobile);
 		return 0;
 	endif
