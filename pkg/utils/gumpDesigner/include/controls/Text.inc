@@ -1,11 +1,11 @@
 include "ResizableControl";
 
 class Text(ResizableControl)
-	var _align := TEXT_ALIGN::ALIGN_LEFT;
+	var _align := TextAlign::Left;
 	var _color := TEXT_COLOR::COLOR_DEFAULT;
 	var _value := "";
 
-	function Text(this, name, x, y, value, align := TEXT_ALIGN::ALIGN_LEFT, color := TEXT_COLOR::COLOR_DEFAULT)
+	function Text(this, name, x, y, value, align := TextAlign::Left, color := TEXT_COLOR::COLOR_DEFAULT)
 		Super(GumpControl::Text, name, x, y, 0, 0);
 
 		this.SetValue(value);
@@ -43,9 +43,9 @@ class Text(ResizableControl)
 	function Draw(this, byRef gump)
 		if (!this._align)
 			GFTextLine(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
-		elseif (this._align == TEXT_ALIGN::ALIGN_CENTER)
+		elseif (this._align == TextAlign::Center)
 			GFTextMid(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetColor(), this.GetValue());
-		elseif (this._align == TEXT_ALIGN::ALIGN_RIGHT)
+		elseif (this._align == TextAlign::Right)
 			GFTextRight(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
 		endif
 		
@@ -60,6 +60,7 @@ class Text(ResizableControl)
 	endfunction
 endclass
 
+// TODO: Substituir isso aqui por uso de classe Font()
 enum class TEXT_FONT
 	FONT_UO := 0,
 
@@ -83,6 +84,8 @@ enum class TEXT_FONT
 	FONT_DEFAULT := FONT_UO
 endenum
 
+
+// TODO: Substituir isso aqui por uso de classe Color()
 enum class TEXT_COLOR
 	COLOR_DEFAULT := COLOR_BLUE,
 
@@ -99,8 +102,8 @@ enum class TEXT_COLOR
 	COLOR_ALERT := COLOR_YELLOW
 endenum
 
-enum class TEXT_ALIGN
-	ALIGN_LEFT,
-	ALIGN_CENTER,
-	ALIGN_RIGHT
+enum class TextAlign
+	Left,
+	Center,
+	Right
 endenum
