@@ -3,37 +3,31 @@ include "GumpLayout";
 class MarbleGumpLayout(GumpLayout)
 	function MarbleGumpLayout(this)
 		Super();
-		this._InitializeValues();
+		this.InitializeControls();
+		this.ConfigureControls();
+		this.InsertControls();
 	endfunction
 
-	function _InitializeValues(this)
-		this.GetBorder_TopLeft().SetImageId(3500);
-		this.GetBorder_Top().SetImageId(3501);
-		this.GetBorder_TopRight().SetImageId(3502);
-		this.GetBorder_Left().SetImageId(3503);
-		this.GetBorder_Right().SetImageId(3505);
-		this.GetBorder_BottomLeft().SetImageId(3506);
-		this.GetBorder_Bottom().SetImageId(3507);
-		this.GetBorder_BottomRight().SetImageId(3508);
-		this.GetBackground().SetImageId(3504);
-
-		this._InsertControls();
+	function ConfigureControls(this)
+		this.GetBorder_TopLeft().SetImageId(39925);
+		this.GetBorder_Top().SetImageId(39926);
+		this.GetBorder_TopRight().SetImageId(39927);
+		this.GetBorder_Left().SetImageId(39928);
+		this.GetBorder_Right().SetImageId(39930);
+		this.GetBorder_BottomLeft().SetImageId(39931);
+		this.GetBorder_Bottom().SetImageId(39932);
+		this.GetBorder_BottomRight().SetImageId(39933);
+		this.GetBackground().SetImageId(39929);
 	endfunction
 
-	function _InsertControls(this)
-		this.AddControl(this.GetBackground());
-		this.AddControl(this.GetBorder_Left());
-		this.AddControl(this.GetBorder_Right());
-		this.AddControl(this.GetBorder_Top());
-		this.AddControl(this.GetBorder_TopLeft());
-		this.AddControl(this.GetBorder_TopRight());
-		this.AddControl(this.GetBorder_Bottom());
-		this.AddControl(this.GetBorder_BottomLeft());
-		this.AddControl(this.GetBorder_BottomRight());
+	function InitializeControls(this)
+		Super::InitializeControls(this);
+		this.SetTitleLayout(PaperTitleLayout());
+		this.SetPageLayout(PaperBodyLayout());
 	endfunction
 
-	function PositionBorders(this)
-		var borderSize := 25;
+	function PositionControls(this)
+		var borderSize := 35;
 		
 		this.GetBackground()
 			.SetPosition(this.GetX() + borderSize, this.GetY() + borderSize)
@@ -70,6 +64,52 @@ class MarbleGumpLayout(GumpLayout)
 		this.GetBorder_BottomRight()
 			.SetPosition(this.GetX() + this.GetWidth() - borderSize, this.GetY() + this.GetHeight() - borderSize)
 			.Resize(borderSize, borderSize);
+
+		this.PositionTitle();
+		this.PositionBody();
+	endfunction
+	
+	/**
+	 * Posiciona e redimensiona o título do layout.
+	 * 
+	 * Define a posição e dimensões do layout de título com valores pré-configurados:
+	 * - Posição X: 10 pixels da borda esquerda
+	 * - Posição Y: 10 pixels da borda superior
+	 * - Altura: 40 pixels
+	 * - Largura: calculada automaticamente para manter margens simétricas
+	 * 
+	 * @param this Referência à instância atual da classe
+	 * 
+	 * @return void
+	 */
+	function PositionTitle(this)
+		var title := this.GetTitleLayout();
+
+		title.SetX(10);
+		title.SetY(10);
+		title.Resize(this.GetWidth() - (2 * title.GetX()), 40);
+		title.PositionControls();
+	endfunction
+
+	/**
+	 * Posiciona e redimensiona o corpo do layout em relação ao título.
+	 * 
+	 * Este método calcula automaticamente a posição e dimensões do corpo (body)
+	 * levando em consideração a posição e tamanho do layout de título, com um
+	 * separador visual entre eles.
+	 * 
+	 * @param this Referência à instância atual da classe
+	 * 
+	 * @return void
+	 */
+	function PositionBody(this)
+		var title := this.GetTitleLayout();
+		var body := this.GetBodyLayout();
+		var separator := 5;
+
+		body.SetX(title.GetX());
+		body.SetY(title.GetY() + title.GetHeight() + separator);
+		body.Resize(this.GetWidth() - (2 * body.GetX()), this.GetHeight() - title.GetY() - title.GetHeight() - (2 * separator));
 	endfunction
 
 	function ToString(this)

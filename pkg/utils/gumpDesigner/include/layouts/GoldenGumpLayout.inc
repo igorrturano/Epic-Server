@@ -27,7 +27,7 @@ class GoldenGumpLayout(GumpLayout)
 	function InitializeControls(this)
 		Super::InitializeControls(this);
 		this.SetTitleLayout(PaperTitleLayout());
-		// this.SetPageLayout(PaperBodyLayout());
+		this.SetPageLayout(PaperBodyLayout());
 	endfunction
 
 	function PositionControls(this)
@@ -87,12 +87,11 @@ class GoldenGumpLayout(GumpLayout)
 	 * @return void
 	 */
 	function PositionTitle(this)
-		print("Posicionando título...");
 		var title := this.GetTitleLayout();
+
 		title.SetX(20);
 		title.SetY(27);
 		title.Resize(this.GetWidth() - (2 * title.GetX()), 40);
-		title.PositionControls();
 	endfunction
 
 	/**
@@ -107,14 +106,13 @@ class GoldenGumpLayout(GumpLayout)
 	 * @return void
 	 */
 	function PositionBody(this)
-		var separator := 5;
 		var title := this.GetTitleLayout();
 		var body := this.GetBodyLayout();
-		body.SetX(title.GetXOffset());
-		body.SetY(title.GetYOffset() + title.GetHeight() + separator);
-		body.SetWidth(this.GetWidth() - (2 * body.GetX()));
-		body.SetHeight(this.GetHeight() - title.GetYOffset() - title.GetHeight() - (2 * separator));
-		body.PositionControls();
+		var separator := 5;
+
+		body.SetX(title.GetX());
+		body.SetY(title.GetY() + title.GetHeight() + separator);
+		body.Resize(this.GetWidth() - (2 * body.GetX()), this.GetHeight() - title.GetY() - title.GetHeight() - (2 * separator));
 	endfunction
 
 	function ToString(this)

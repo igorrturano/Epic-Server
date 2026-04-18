@@ -26,7 +26,7 @@ class BlueGumpLayout(GumpLayout)
 	function InitializeControls(this)
 		Super::InitializeControls(this);
 		this.SetTitleLayout(PaperTitleLayout());
-		// this.SetPageLayout(PaperBodyLayout());
+		this.SetPageLayout(PaperBodyLayout());
 	endfunction
 
 	function PositionControls(this)
@@ -87,11 +87,10 @@ class BlueGumpLayout(GumpLayout)
 	 */
 	function PositionTitle(this)
 		var title := this.GetTitleLayout();
-		title.SetXOffset(25);
-		title.SetYOffset(15);
-		title.SetHeight(40);
-		title.SetWidth(this.GetWidth() - (2 * title.GetXOffset()));
-		title.PositionControls();
+
+		title.SetX(10);
+		title.SetY(10);
+		title.Resize(this.GetWidth() - (2 * title.GetX()), 40);
 	endfunction
 
 	/**
@@ -106,13 +105,13 @@ class BlueGumpLayout(GumpLayout)
 	 * @return void
 	 */
 	function PositionBody(this)
-		var separator := 5;
 		var title := this.GetTitleLayout();
 		var body := this.GetBodyLayout();
-		body.SetXOffset(title.GetXOffset());
-		body.SetYOffset(title.GetYOffset() + title.GetHeight() + separator);
-		body.SetWidth(title.GetWidth());
-		body.SetHeight(this.GetHeight() - title.GetYOffset() - title.GetHeight() - (2 * separator));
+		var separator := 5;
+
+		body.SetX(title.GetX());
+		body.SetY(title.GetY() + title.GetHeight() + separator);
+		body.Resize(this.GetWidth() - (2 * body.GetX()), this.GetHeight() - title.GetY() - title.GetHeight() - (2 * separator));
 	endfunction
 
 	function ToString(this)
