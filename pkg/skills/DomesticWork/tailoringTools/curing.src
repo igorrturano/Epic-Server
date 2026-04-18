@@ -5,6 +5,10 @@ use os;
 // include "include/objtype";
 // include "include/canAccess";
 include "include/say";
+include ":attributes:attributeConstants";
+include ":attributes:skills";
+include ":attributes:skillCheck";
+include ":survival:skinning";
 
 program use_curing(who, item)
 
@@ -74,6 +78,61 @@ program use_curing(who, item)
 
 			var obj_type := useon.objtype;
 			var prod_type;
+
+			var intacta_obj := 0;
+			var intacta_name := "";
+			case (obj_type)
+				0xacd6:
+					intacta_obj := 0xC08B;
+					intacta_name := "cabecadelobointacta";
+					break;
+				0x1e37:
+					intacta_obj := 0xa2ef;
+					intacta_name := "cabecadeursopretointacta";
+					break;
+				0xC08C:
+					intacta_obj := 0xC07F;
+					intacta_name := "cabecadeursogrizzlyintacta";
+					break;
+				0xC08D:
+					intacta_obj := 0xC07C;
+					intacta_name := "cabecadeursomarromintacta";
+					break;
+				0x1e4a:
+					intacta_obj := 0xC076;
+					intacta_name := "cabecadeursopolarintacta";
+					break;
+				0xacd5:
+					intacta_obj := 0xC070;
+					intacta_name := "cabecagrandecervointacta";
+					break;
+			endcase
+
+			if (intacta_obj)
+				var dom_skill := AP_GetTrueSkill(who, DOMESTIC_WORK);
+				var sur_skill := AP_GetTrueSkill(who, SURVIVAL);
+				var use_skill := DOMESTIC_WORK;
+				if (sur_skill > dom_skill)
+					use_skill := SURVIVAL;
+				endif
+				var difficulty := GetSkinningDifficulty(intacta_name);
+
+				PrintTextAbove(who, "*curtindo cabeca*");
+				Sleep(3);
+
+				if (SkillCheck(who, use_skill, difficulty) > 0)
+					if (SubtractAmount(useon, 1))
+						CreateItemInBackpack(who, intacta_obj, 1);
+						SendSysMessage(who, "Voce curtiu a cabeca com sucesso.");
+						PlaySoundEffect(who, 0x49);
+					endif
+				else
+					if (SubtractAmount(useon, 1))
+						SendSysMessage(who, "Voce estragou a cabeca ao tentar curti-la.");
+					endif
+				endif
+				return;
+			endif
 
 			case (obj_type)
 				0x1078:
