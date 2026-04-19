@@ -3,6 +3,7 @@ use vitals;
 
 include ":timedScripts:timedScripts";
 include ":mounts:mounts";
+include ":charactercreation:habilidades";
 include "include/NPCUtil";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
@@ -52,10 +53,13 @@ function GetNumPets(who)
 	foreach serial in tamed
 		var pet := SystemFindObjectBySerial(serial);
 		if ( pet.master == who && !GetObjProperty(pet, "summoned")) //se não é summon
+			// Pets no estábulo ou em limbo não ocupam slots, mas continuam pertencendo ao player
+			if ( !GetObjProperty(pet, "EstaNoEstabulo") && !GetObjProperty(pet, "EstaNoLimbo") )
 				if (!Cint(pet.getTier()))
-				num_tamed := num_tamed+1;
-			else
-				num_tamed := num_tamed + Cint(pet.getTier());
+					num_tamed := num_tamed+1;
+				else
+					num_tamed := num_tamed + Cint(pet.getTier());
+				endif
 			endif
 		else
 			tamed.erase(_serial_iter);
