@@ -34,6 +34,7 @@ program SpellScript(params)
 	opts.+buff_category := "wildspeech";
 	opts.+displayname := "Fala Selvagem";
 	opts.+desc := "Fala Selvagem";
+	opts.+maintainable := 1;
 
 	SC_ApplyEffect(who, who, opts, duration_secs, CInt(spell.id));
 	SendSysMessageEx(who, $"Sua fala selvagem foi despertada por {duration_minutes} minutos.", SSM_INFO);

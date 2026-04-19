@@ -45,11 +45,6 @@ program SpellScript(params)
 		armor_bonus += 1;
 	endif
 
-	// Visual effect
-	PlayObjectCenteredEffect(targ, FX_PELE_DE_ARVORE, 10, 10);
-	SC_HandleSound(who, targ, SFX_SPELL_PROTECTION);
-
-	// Build spell opts
 	var opts := struct{};
 	opts.+slash_resist := armor_bonus;
 	opts.+piercing_resist := armor_bonus;
@@ -58,6 +53,8 @@ program SpellScript(params)
 	opts.+buff_category := "armor_protection";
 	opts.+displayname := "Pele de Árvore";
 	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{ fx := FX_PELE_DE_ARVORE, sound := SFX_SPELL_PROTECTION };
 
 	// Apply effect via SpellController (no sleep needed)
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));

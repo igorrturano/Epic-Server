@@ -29,9 +29,11 @@ program SpellScript(params)
 	opts.+buff_category := "haste";
 	opts.+displayname := "Velocidade";
 	opts.+desc := "Velocidade";
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{ sound := SFX_SPELL_AGILITY };
 
 	SC_ApplyEffect(who, who, opts, tempo, CInt(spell.id));
-	PlaySoundEffect(who, SFX_SPELL_AGILITY);
 	SendSysMessageEx(who, "Voce esta muito veloz.", SSM_INFO);
 
 	return 1;

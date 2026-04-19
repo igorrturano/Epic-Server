@@ -46,9 +46,13 @@ program SpellScript(params)
 			opts.+buff_category := "hit_bonus";
 			opts.+displayname := "Abencoar";
 			opts.+desc := $"+{bonus} no proximo ataque";
-
-			PlayStationaryEffect(mobile.x, mobile.y, mobile.z, FX_BLESS_EFFECT, 2, 2);
-			PlaySoundEffect(mobile, SFX_BLESS);
+			opts.+on_apply_script := ":spells:shared/playApplyFX";
+			opts.+on_apply_params := struct{
+				fx := FX_BLESS_EFFECT,
+				fx_speed := 2,
+				fx_duration := 2,
+				sound := SFX_BLESS
+			};
 
 			SC_ApplyEffect(who, mobile, opts, duration, CInt(spell.id));
 

@@ -4,8 +4,10 @@ include ":spells:Controller/SpellController";
 
 // Generic on_apply_script for spells that want their visual/sound to replay
 // on every SC_ApplyEffect call (initial cast + maintain re-apply).
-// Expects on_apply_params as: struct{ fx := <graphic_id>, sound := <sfx_id> }
-// Either field is optional.
+// Expects on_apply_params as:
+//   struct{ fx := <graphic_id>, sound := <sfx_id>,
+//           fx_speed := <int, default 10>, fx_duration := <int, default 10> }
+// All fields optional.
 program playApplyFX(args)
 	var caster := args[1];
 	var targ := args[2];
@@ -21,7 +23,15 @@ program playApplyFX(args)
 	endif
 
 	if (p.fx)
-		PlayObjectCenteredEffect(targ, CInt(p.fx), 10, 10);
+		var speed := CInt(p.fx_speed);
+		if (speed < 1)
+			speed := 10;
+		endif
+		var dur := CInt(p.fx_duration);
+		if (dur < 1)
+			dur := 10;
+		endif
+		PlayObjectCenteredEffect(targ, CInt(p.fx), speed, dur);
 	endif
 
 	if (p.sound)
