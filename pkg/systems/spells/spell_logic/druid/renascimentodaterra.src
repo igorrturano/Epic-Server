@@ -11,21 +11,10 @@ include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
+	var cast_on := params[2];
 	var spell := params[3];
 	params := 0;
 
-	SendSysMessage(who, "Escolha o alvo");
-	var cast_on := TargetCoordinates(who);
-
-	if (!cast_on)
-		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
-		return 0;
-	endif
-
-	if (!CheckLosAt(who, cast_on.x, cast_on.y, cast_on.z))
-		SendSysMessageEx(who, "Você não consegue ver o alvo!", SSM_FAIL);
-		return 0;
-	endif
 
 	var theology := AP_GetSkill(who, THEOLOGY);
 	var forward_tiles := CInt(theology / 20) + 1;

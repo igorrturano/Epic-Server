@@ -26,6 +26,8 @@ program SpellScript(params)
 
 	var opts := struct{};
 	opts.+speed_boost := 1;
+	opts.+buff_category := "haste";
+	opts.+displayname := "Velocidade";
 	opts.+desc := "Velocidade";
 
 	SC_ApplyEffect(who, who, opts, tempo, CInt(spell.id));

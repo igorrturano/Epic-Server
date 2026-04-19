@@ -31,7 +31,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	if (!targ.isHumanoidBrain())
+	if (!targ.acctname && !targ.isHumanoidBrain())
 		Message("Voce so consegue encantar humanoides").SendSys(who);
 		return;
 	endif
@@ -45,7 +45,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var duration := cint(AP_GetSkill(who, ARCANA) / 5);
+	var duration := cint(AP_GetSkill(who, THEOLOGY) / 5);
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		duration := Cint(duration * 1.5);
 	endif
