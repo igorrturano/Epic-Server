@@ -304,13 +304,6 @@ function DoPurchaseCmd(npc, player)
 			var indiceProduto := (indiceNormalizado - sequenciaBotaoEscolhido) / PAINELPRODUTO_QUANTIDADE_BOTOES ;
 			var itemEscolhido := session.itensVendidos[indiceProduto];
 
-			Print("
-			itemEscolhido: " +  itemEscolhido.name 
-			+ " indiceProduto " + indiceProduto 
-			+ " sequenciaBotaoEscolhido " + sequenciaBotaoEscolhido
-			+ " session.paginador.pagina " + session.paginador.pagina
-			+ " input[0] " + input[0]
-			);
 			if(sequenciaBotaoEscolhido == 0)
 				DoPurchase(npc, player,session , itemEscolhido.serial);
 			elseif(sequenciaBotaoEscolhido == 1)
