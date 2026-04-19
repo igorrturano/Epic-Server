@@ -7,7 +7,7 @@ use basic;
 include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
 include ":sysbook:include/sealedBooks";
-include ":crafting:/include/fabricaComplexos";
+include ":crafting:/include/fabricacaoComplexos";
 
 var itemdesc_cache := dictionary{};
 
@@ -112,8 +112,6 @@ function Loot_CreateItem(container, line)
     return 1;
 endfunction
 
-
-
 function Loot_CreateStack(container, line)
 	var parsed := Loot_ParseString(line);
 
@@ -214,15 +212,16 @@ function Loot_CreateRandom(container, line)
         if(all_items.size() > 0)
             idx := RandomInt(all_items.size()) + 1;
             item := all_items[idx];
+            var tier := parsed.level; 
             
             if(item.type == "Stack")
                 qty := RandomDiceRoll(CStr(item.qty));
-                result := Loot_CreateStack(container, item.name + " " + qty + " 100");
+                result := Loot_CreateStack(container, item.name + " " + qty + " 100 " + tier);
                 if(!result.errortext)
                     created += 1;
                 endif
             else
-                result := Loot_CreateItem(container, item.name + " 1 100");
+                result := Loot_CreateItem(container, item.name + " 1 100 " + tier);
                 if(!result.errortext)
                     created += 1;
                 endif
@@ -273,7 +272,13 @@ function Loot_ParseString(line)
         chance := 100.0;
     endif
     
-    var level := CInt(line[4]);
+    var level := 1;
+    if(Find(line[4],">",1) >= 1)
+        level := line[4];
+    else
+        level := cint(line[4]);
+    endif
+
     if(!level)
         level := 1;
     endif
@@ -283,7 +288,6 @@ function Loot_ParseString(line)
     result.+amount := amount;
     result.+chance := chance;
     result.+level := level;
-    
     return result;
 endfunction
 

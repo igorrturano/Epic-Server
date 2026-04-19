@@ -7,7 +7,7 @@ include ":commands:create";
 include ":gumps:gumps_ex";
 include "/include/gms";
 include "/include/epicPropNames";
-include ":crafting:fabricaComplexos";
+include ":crafting:include/fabricacaoComplexos";
 
 program create_textcmd(mobile, search_string)
 
