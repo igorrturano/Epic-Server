@@ -393,6 +393,48 @@ function GetLastDamageInfo(mobile)
 	return GetObjProperty(mobile, "LastDamage");
 endfunction
 
+// Barreira de Mana (spell 114): redirects incoming damage to mana at 2:1.
+// Returns the damage that should still be applied to HP after absorption.
+function _ApplyManaShield(defender, dmg)
+	if (dmg <= 0)
+		return dmg;
+	endif
+
+	var shield := GetObjProperty(defender, "#manashield");
+	if (!shield || shield is @Exception)
+		return dmg;
+	endif
+
+	if (shield.endtime == error || shield.endtime <= ReadGameClock())
+		EraseObjProperty(defender, "#manashield");
+		return dmg;
+	endif
+
+	var current_mana := AP_GetVital(defender, MANA);
+	if (current_mana <= 0)
+		EraseObjProperty(defender, "#manashield");
+		return dmg;
+	endif
+
+	var absorbable := Cint(current_mana / 2);
+	var absorbed := dmg;
+	if (absorbed > absorbable)
+		absorbed := absorbable;
+	endif
+	if (absorbed <= 0)
+		return dmg;
+	endif
+
+	AP_ConsumeVital(defender, MANA, absorbed * 2);
+
+	if (AP_GetVital(defender, MANA) <= 0)
+		EraseObjProperty(defender, "#manashield");
+		PrintTextAbove(defender, "*barreira arcana quebra*");
+	endif
+
+	return dmg - absorbed;
+endfunction
+
 function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 	var totaldmg;
 	var attackInfo := struct{};
@@ -413,6 +455,10 @@ function DamageFLS(defender, dmg, type := DMG_FORCED, source := 0, spell := "")
 		totaldmg := CInt(dmg);
 	else
 		totaldmg := CInt(CalculateDamage(defender, type, dmg));
+	endif
+
+	if (type == DMG_PHYSICAL || type == DMG_SLASH || type == DMG_PIERCING || type == DMG_BLUNT)
+		totaldmg := _ApplyManaShield(defender, totaldmg);
 	endif
 
 	if (source)

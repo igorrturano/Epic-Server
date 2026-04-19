@@ -1,0 +1,75 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include "include/client";
+include "include/sounds";
+include ":combat:Controller/DamageController_legacy";
+include "include/tileEffects";
+include "include/utils";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program SpellScript(params)
+	var caster := params[1];
+	var info := params[2];
+	var spellinfo := params[3];
+	var spell_circle := spellinfo.Circle;
+	var spell_school := spellinfo.School;
+	params := 0;
+
+	SendSysMessageEx(caster, "Uma onda de forca arcana expande ao seu redor.", SSM_INFO);
+
+	PlayObjectCenteredEffect(caster, 0xE477, 10, 20);
+	PlaySoundEffect(caster, 0x211);
+
+	var radius := 4;
+	var arcana := AP_GetSkill(caster, ARCANA);
+	var knockback_tiles := Cint(arcana / 8);
+	if (knockback_tiles < 1)
+		knockback_tiles := 1;
+	endif
+
+	var is_evocator := MobileWrapper(caster).HasAbility(ABILITY_ID::EVOCATOR) && spell_school == EVOCATIUM;
+	if (is_evocator)
+		knockback_tiles := knockback_tiles + 2;
+	endif
+
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+
+	var mobs := ListMobilesNearLocation(caster.x, caster.y, caster.z, radius, caster.realm);
+	foreach mob in mobs
+		if (mob == caster)
+			continue;
+		endif
+
+		var damage := epicSpellDamageRoll(caster, spell_circle, spell_school);
+
+		var push := knockback_tiles;
+		if (CheckResist(mob, REFLEXES, diff, -bonus) > 0)
+			push := Cint(push / 2);
+			if (push < 1)
+				push := 1;
+			endif
+			SendSysMessageEx(mob, "Voce se firma contra a onda.", SSM_INFO);
+		endif
+
+		SendSysMessageEx(mob, "Uma onda arcana te empurra!", SSM_FAIL);
+		DamageFLS(mob, cint(damage), DMG_ENERGY, caster, "repulsaoarcana");
+
+		PlayObjectCenteredEffect(mob, 0xE175, 5, 10);
+
+		// Face the mob toward the caster, then PushBack (default invert=0 pushes opposite of facing).
+		TurnObjectToward(mob, caster.x, caster.y);
+		PushBack(mob, push, 80);
+
+		sleepms(30);
+	endforeach
+
+	return 1;
+endprogram

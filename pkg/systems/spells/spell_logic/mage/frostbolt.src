@@ -18,16 +18,11 @@ program cast_frostbolt(params)
 	var spellinfo := params[3];
 	var spell_circle := spellinfo.Circle;
 	var spell_school := spellinfo.School;
-	params := 0; // No longer needed
+	params := 0;
 
 	SendSysMessage(caster, "Selecione o alvo.");
-	if (!targ.IsA(POLCLASS_MOBILE))
+	if (!targ || !targ.IsA(POLCLASS_MOBILE))
 		SendSysMessage(caster, "Alvo invalido.");
-		return 0;
-	endif
-
-	if (!targ)
-		SendSysMessageEx(caster, "Cancelado", SSM_FAIL);
 		return 0;
 	endif
 
@@ -40,28 +35,39 @@ program cast_frostbolt(params)
 		return 0;
 	endif
 
-	LaunchProjectile(caster, targ, spell_circle, spell_school);
-endprogram
-
-function LaunchProjectile(caster, targ, spell_circle, spell_school)
 	PlaySoundEffect(caster, SFX_AQUARIUM_USE);
-	PlayMovingEffectXYZHued(caster, targ, 0x54AD, 10, 1643, 0);
-	var dmg := epicSpellDamageRoll(caster, spell_circle);
-	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+	PlayObjectCenteredEffect(targ, 0xE184, 0, 30);
 
-	DamageFLS(targ, cint(dmg), DMG_COLD, caster, "rayfrost");
+	// Congelar is pure CC. Direct damage is a token frostbite, scaling comes from the freeze duration.
+	var token_dmg := RandomDiceRoll("1d4");
+	DamageFLS(targ, token_dmg, DMG_COLD, caster, "congelar");
+
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
 	var bonus := epicWisdomPathBonus(caster);
-	if (CheckResist(targ, WILL, diff, -bonus))
-		SendSysMessageEx(caster, "O alvo resistiu a magia.", SSM_FAIL);
-		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+	var arcana := AP_GetSkill(caster, ARCANA);
 
+	if (CheckResist(targ, WILL, diff, -bonus) > 0)
+		// Saved: partial freeze (slow) for Arcana/20 seconds.
+		var slow_duration := Cint(arcana / 20);
+		if (slow_duration < 2)
+			slow_duration := 2;
+		endif
+		TS_Starttimer(targ, "lentidao", slow_duration);
+		PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 3, 4);
+		SendSysMessageEx(caster, "O alvo resistiu parcialmente a magia.", SSM_INFO);
+		SendSysMessageEx(targ, "Suas pernas ficam pesadas.", SSM_FAIL);
+		PrintTextAbove(targ, "*lento*");
 		return 1;
 	endif
 
+	// Failed: hard freeze for Arcana/10 seconds.
+	var freeze_duration := Cint(arcana / 10);
+	if (freeze_duration < 2)
+		freeze_duration := 2;
+	endif
+	TS_Starttimer(targ, "prisaogelida", freeze_duration);
 	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 3, 4);
 	PlaySoundEffect(targ, SFX_GLASS_BREAK_3);
-	TS_Starttimer(targ, "lentidao", CINT(AP_GetSkill(caster, ARCANA) / 10));
 
-	PrintTextAbove(targ, "*congelado*");
-endfunction
+	return 1;
+endprogram

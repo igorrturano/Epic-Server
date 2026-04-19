@@ -27,7 +27,7 @@ program SpellScript(params)
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return 0;
 	endif
-	var mlore := cint(AP_GetSkill(who, ARCANA) / 30);
+	var mlore := cint(AP_GetSkill(who, ARCANA) / 25);
 	mlore := mlore < 1 ? 1 : mlore; // garante ao menos 1.
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR))
@@ -45,12 +45,11 @@ program SpellScript(params)
 	for (i := 1; i <= mlore; i += 1)
 		PlayMovingEffectEx(who, targ, 0x5426, 10, 20, 2290, 2);
 		PlaySoundEffect(who, SFX_AGILITY2);
-		var dmg := epicSpellDamageRoll(who, spell_circle);
+		var dmg := epicSpellDamageRoll(who, spell_circle, spell_school);
 		var reduce_missile_damage := RandomDiceRoll("1d4");
 		dmg := dmg - reduce_missile_damage;
-		var total_dmg := bonusSpellDamageForSpecialists(who, dmg, spell_school);
 
-		DamageFLS(targ, total_dmg, DMG_FORCED, who, "magicmissile");
+		DamageFLS(targ, dmg, DMG_FORCED, who, "magicmissile");
 		SleepMS(500);
 	endfor
 	return 1;

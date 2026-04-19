@@ -4,6 +4,7 @@ use os;
 include "include/client";
 include "include/say";
 include "include/facings";
+include ":attributes:attributes";
 
 program SpellScript(params)
 
@@ -23,12 +24,22 @@ program SpellScript(params)
 		return 0;
 	endif
 
+	// Capped range keeps Teleportar strictly weaker than the Salto Etereo ability (arcana/5).
+	var max_range := Cint(AP_GetSkill(who, ARCANA) / 10);
+	if (max_range < 4)
+		max_range := 4;
+	endif
+	if (Distance(who, loc) > max_range)
+		SendSysMessageEx(who, $"O destino esta muito distante. Alcance maximo: {max_range} tiles.", SSM_FAIL);
+		return 0;
+	endif
+
 	TurnObjectToward(who, loc.x, loc.y);
 
 	PlaySoundEffect(who, SFX_SPELL_TELEKINESIS);
-	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, FX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
+	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, FX_ENERGY_GLOBE, 8, 8, 0, 2);
 	sleepms(400);
-	PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, FX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
+	PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, FX_ENERGY_GLOBE, 8, 8, 0, 2);
 	sleepms(400);
 	if (CanWalk("L", who.x, who.y, who.z, loc.x, loc.y, who.realm) == error)
 		SendSysMessage(who, "Local Inacessível");
