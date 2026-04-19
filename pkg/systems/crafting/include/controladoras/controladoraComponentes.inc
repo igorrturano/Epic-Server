@@ -496,7 +496,7 @@ function CarregaMateriaisEncontrados(quem,configRecursos, componente)
 	var retorno := dictionary;
 	var materiaisComponente;
 
-	foreach item in EnumerateItemsInContainer(quem.backpack)
+	foreach item in (EnumerateItemsInContainer(quem.backpack, ENUMERATE_ROOT_ONLY))
 		Sleepms(2);
 		var materialDetalhe := configRecursos[item.objtype];
 		if(materialDetalhe)
