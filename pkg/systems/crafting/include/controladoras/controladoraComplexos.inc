@@ -276,7 +276,7 @@ function ContaQuantidadeRequisitos(quem, esquema, receita, deveIgnorarRequisitos
 
 	if(deveIgnorarRequisitos) return contagemFinal; endif
 
-	foreach item in EnumerateItemsInContainer(quem.backpack)
+	foreach item in (EnumerateItemsInContainer(quem.backpack, ENUMERATE_ROOT_ONLY))
 		Sleepms(2);
 		foreach componenteEscolhido in (esquema.componentesEscolhidos)
 			Sleepms(2);
@@ -593,7 +593,7 @@ endfunction
 function CarregaComponentesEncontrados(quem, receita, configRecursos)
 	var retorno := dictionary;
 	
-	foreach item in EnumerateItemsInContainer(quem.backpack)
+	foreach item in (EnumerateItemsInContainer(quem.backpack, ENUMERATE_ROOT_ONLY))
 		Sleepms(2);
 		foreach componenteNecessario in (receita.componentesNecessarios)
 			Sleepms(2);
