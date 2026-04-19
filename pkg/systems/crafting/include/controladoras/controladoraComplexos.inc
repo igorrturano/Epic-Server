@@ -10,6 +10,7 @@ include ":crafting:/include/fabricacaoUtil";
 include ":crafting:/include/craftingRepair";
 include "include/epicValidAction";
 include ":crafting:include/util/fabricacaoConstants";
+include ":expbar:expbar";
 
 function NovoObjetoModoGm()
 	return struct{ 
@@ -140,13 +141,13 @@ function MontaMelhorEsquema(quem, sessao)
 	return sessao.receitaSelecionada.esquemaSelecionado;
 endfunction
 
-function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false)
+function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false, skill := "", categoria := "")
 	var posicaoInicial := BuildPositionStruct(quem);
 	var vidaInicial := AP_GetVital(quem, "Hits");
 
 	if(receita.isEmpilhavel)
 		Sleep(1);
-		var retorno := FabricaItemMontado(quem,esquema, receita, quantidade, modoGm);
+		var retorno := FabricaItemMontado(quem,esquema, receita, quantidade, modoGm, skill, categoria);
 		if(!retorno)
 			SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
 		endif
@@ -157,11 +158,11 @@ function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false)
 			else
 				Sleep(1);
 			endif
-			
+
 			if(!CheckCanWork(quem,vidaInicial, posicaoInicial))
 				break;
 			endif
-			var retorno := FabricaItemMontado(quem,esquema, receita, 1, modoGm);
+			var retorno := FabricaItemMontado(quem,esquema, receita, 1, modoGm, skill, categoria);
 			if(!retorno)
 				SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
 				break;
@@ -170,7 +171,7 @@ function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false)
 	endif
 endfunction
 
-function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarRequisitos := false)
+function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarRequisitos := false, skill := "", categoria := "")
 	var contagem := ContaQuantidadeRequisitos(quem,esquema, receita, deveIgnorarRequisitos);
 
 	if(isRequisitoSuficiente(quem,contagem, receita, esquema, quantidade, deveIgnorarRequisitos))
@@ -187,9 +188,12 @@ function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarR
 				SendSysMessageEX(quem, "Não foi possivel criar o item.", SSM_FAIL);
 			endif
 		else
-			CriaItemMontado(quem,esquema,receita, quantidade);
+			var itemCriado := CriaItemMontado(quem,esquema,receita, quantidade);
+			if(itemCriado)
+				AwardXPFromCraft(quem, receita, skill, categoria);
+			endif
 		endif
-	else 
+	else
 		return 0;
 	endif
 

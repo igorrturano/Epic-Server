@@ -110,7 +110,7 @@ function EnviaItensComplexosGump(quem,profissao, modoGm)
 						SelecionaReceita(sessao, quem, parametros, retornoMapeado.indiceItem);
 						var melhorEsquema := MontaMelhorEsquema(quem, sessao);
 
-						FabricaItens(quem,melhorEsquema ,sessao.receitaSelecionada.receita, sessao.quantidade, sessao.modoGm);
+						FabricaItens(quem,melhorEsquema ,sessao.receitaSelecionada.receita, sessao.quantidade, sessao.modoGm, parametros.pericia, sessao.categoriaSelecionada);
 						sessao.receitaSelecionada.esquemaSelecionado := NovoObjetoEsquemaSelecionado();
 						break;
 
@@ -207,7 +207,7 @@ function EnviaItensComplexosGump(quem,profissao, modoGm)
 
 					3: //Fabricar
 						//TODO Animações e sons.
-						FabricaItens(quem, esquema, sessao.receitaSelecionada.receita, sessao.quantidade, sessao.modoGm);
+						FabricaItens(quem, esquema, sessao.receitaSelecionada.receita, sessao.quantidade, sessao.modoGm, parametros.pericia, sessao.categoriaSelecionada);
 						break;
 
 				endcase
@@ -283,11 +283,13 @@ function EnviaItensComplexosGump(quem,profissao, modoGm)
 
 			RT_GM_ESQUEMA_FABRICAR:
 				FabricaItens(
-								quem, 
-								sessao.receitaSelecionada.esquemaSelecionado, 
-								sessao.receitaSelecionada.receita, 
-								sessao.quantidade, 
-								sessao.modoGm
+								quem,
+								sessao.receitaSelecionada.esquemaSelecionado,
+								sessao.receitaSelecionada.receita,
+								sessao.quantidade,
+								sessao.modoGm,
+								parametros.pericia,
+								sessao.categoriaSelecionada
 							);
 				sessao.gumpAtual := COMPLEXOS;
 				sessao.receitaSelecionada.esquemaSelecionado := NovoObjetoEsquemaSelecionado();

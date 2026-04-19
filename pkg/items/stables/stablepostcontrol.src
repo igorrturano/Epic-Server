@@ -3,8 +3,11 @@ use os;
 
 include ":datafile:datafile";
 include ":containers:storageAreas";
+include ":taming:taming";
+include "include/say";
 
-const CYCLE_WAIT := 60 * 60; // Verifica a cada hora
+const CYCLE_WAIT := 60 * 60;
+const SEGUNDOS_POR_DIA := 86400;
 
 program GlobalStablePostControl()
 	while (1)
@@ -22,30 +25,25 @@ function StablePostChecks()
 			var animal := SystemFindObjectBySerial(animal_serial);
 
 			if (animal)
-				var valorDeposito := CInt(GetObjProperty(animal, "ValorDeposito"));
-				var precoPorDia := CInt(GetObjProperty(animal, "PrecoPorDia"));
 				var dataEntrada := CInt(GetObjProperty(animal, "DataEntrada"));
 
-				var diasDecorridos := CInt((polcore().systime - dataEntrada) / 86400);
-				var custoTotal := diasDecorridos * precoPorDia;
-
-				if (custoTotal > valorDeposito)
-					// Valor depositado acabou, libera o animal
-					animal.frozen := 0;
-					animal.invul := 0;
+				if ((polcore().systime - dataEntrada) >= SEGUNDOS_POR_DIA)
+					// Aluguel acabou, libera o animal e rompe o vínculo com o estábulo
+					animal.setParalyzed(0);
+					RevokePrivilege(animal, "invul");
+					animal.disable("invul");
 
 					EraseObjProperty(animal, "EstaNoEstabulo");
 					EraseObjProperty(animal, "StablePostSerial");
 					EraseObjProperty(animal, "DataEntrada");
-					EraseObjProperty(animal, "ValorDeposito");
 					EraseObjProperty(animal, "PrecoPorDia");
 
 					EraseObjProperty(post, "StoredAnimal");
 
-					// Opcional: Notificar o dono
-					var owner := SystemFindObjectBySerial(animal.master);
+					var owner := animal.master;
 					if (owner)
-						SendSysMessage(owner, animal.name + " foi liberado do estábulo por falta de pagamento.");
+						GetNumPets(owner);
+						SendSysMessageEx(owner, "Voce perdeu seu aluguel de estabulo! " + animal.name + " foi liberado.", SSM_FAIL);
 					endif
 				endif
 			endif
