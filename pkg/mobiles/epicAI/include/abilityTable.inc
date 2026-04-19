@@ -311,7 +311,7 @@ endfunction
 function _BuildRaceAbilities(race, byref table)
 	case (race)
 		"goblin":
-			table.append(struct{ "id" := "DirtyTrick", "range_min" := 0, "range_max" := 2, "cd" := 12 });
+			table.append(struct{ "id" := "DirtyTrick", "range_min" := 0, "range_max" := 2, "cd" := 30 });
 		"hobgoblin":
 			table.append(struct{ "id" := "WarCry", "range_min" := 0, "range_max" := 6, "cd" := 25 });
 		"orog":
