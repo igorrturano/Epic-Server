@@ -8,6 +8,7 @@ include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
 include ":sysbook:include/sealedBooks";
 include ":crafting:/include/fabricacaoComplexos";
+include "include/epicEconomyAudit";
 
 var itemdesc_cache := dictionary{};
 
@@ -122,6 +123,7 @@ function Loot_CreateStack(container, line)
 		if ( item.errortext )
 			return error{"errortext" := "Error - Could not create ["+parsed.name+"] ->"+item.errortext};
 		endif
+		EA_Record(EA_MINT_LOOT, item, parsed.amount, 0, container, parsed.name);
 	endif
 
 	return 1;
