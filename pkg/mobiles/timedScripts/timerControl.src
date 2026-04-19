@@ -51,6 +51,13 @@ program TimerControl(mobile)
 		endif
 
 		CheckTimerStatus(mobile, timer_list, cooldowns, num_poisons);
+
+		// Keep %TimerList% fresh so server shutdown (no EVENT_LOGOFF fires)
+		// captures the true remaining duration on the next world save.
+		// SetObjProperty is in-memory; disk cost is deferred to the save.
+		if ((timer_list.Size() > 0) || (cooldowns.Size() > 0))
+			SaveState(mobile, timer_list, cooldowns);
+		endif
 	endwhile
 
 	return 1;
@@ -128,8 +135,16 @@ function StartUp(mobile, byref timer_list, byref cooldowns, byref num_poisons)
 		var event := struct;
 		event.+name := _timer_iter;
 
-		// Use saved endtime to calculate real remaining time (accounts for offline time)
-		var remaining := CInt(timer.endtime - ReadGameClock());
+		// Spell buffs (spelleffect_*) pause while offline — use the saved remaining
+		// snapshot from the last logoff. All other persistent timers keep endtime-based
+		// behavior so poison/debuffs continue to tick during downtime (anti-exploit).
+		var remaining;
+		if (_timer_iter[1, 12] == "spelleffect_")
+			remaining := CInt(timer.duration);
+		else
+			remaining := CInt(timer.endtime - ReadGameClock());
+		endif
+
 		if (remaining <= 0)
 			var elem_info := TS_GetCfgElem(_timer_iter);
 			if (CInt(elem_info.NoEnd))

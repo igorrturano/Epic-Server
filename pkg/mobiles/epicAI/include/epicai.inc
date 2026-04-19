@@ -2,9 +2,9 @@ use cfgfile;
 // use datafile;
 use npc;
 
-include ":loot:include/lootParser";
 include "npcUtils";
 include "makeRace";
+include ":merchants:include/item_template";
 include ":epicAI:epicSpecial";
 include ":npcs:NPCUtilities";
 include ":fls_core:fls_skillCheck";
@@ -46,7 +46,7 @@ function InitializeEpicNPC(mobile)
     SetupAmmo(mobile, npccfgfile, mytemplate);
     var loot := npccfgfile[mytemplate].Loot;
     if (loot)
-        var ret := Loot_Generate(mobile.backpack, loot);
+        start_script(":epicAI:scripts/loot_init", array{mobile.backpack, loot});
     endif
 
     var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
@@ -637,18 +637,13 @@ function SetupNPCEquip(who, npc_elem)
         ApplyBossColors(who, boss.color_ranges);
     endif
     
-  var montaria := Getobjproperty(who, "Montaria");
-  if (boss.mount)
-      // If the boss has a specific mount, use it
-      montaria := boss.mount;
-  endif
-  if (montaria)
-	var graphic := MP_GetMountGraphic(montaria);
-	var item := CreateItemAtLocation(who.x, who.y, who.z, MOUNT_OBJTYPE, 1);
-	item.graphic := graphic;
-	Equipitem (who, item);
-    who.run_speed := 250;
-  endif
+    var montaria := Getobjproperty(who, "Montaria");
+    if (boss.mount)
+        montaria := boss.mount;
+    endif
+    if (montaria)
+        start_script(":epicAI:scripts/setup_mount", array{who, montaria});
+    endif
 endfunction
 
 function SetupAnimalCriticalHit(mobile, npc_elem)

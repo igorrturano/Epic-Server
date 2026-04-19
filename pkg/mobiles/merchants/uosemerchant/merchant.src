@@ -111,6 +111,10 @@ program HandleMerchant(params)
 	var player := parEvStruct.source;
 	var item := parEvStruct.item;
 
+	if (npc == error || !npc || !npc.serial)
+		return;
+	endif
+
 	if (GetObjproperty(npc, "imposto") != error)
 		imposto := GetObjproperty(npc, "imposto");
 	endif
@@ -256,8 +260,16 @@ function DoPurchaseCmd(npc, player)
 					  		"Está procurando algo específico?" }.randomentry(), SSM_INFO);
 	endif
 	while (!canceled)
+		if (npc == error || !npc || !npc.serial)
+			break;
+		endif
+		if (player == error || !player || !player.connected)
+			break;
+		endif
 		var input := SendItemView(npc, player, session);
-		if (!input[0])
+		if (input == error || !input)
+			break;
+		elseif (input[0] == error || !input[0])
 			break;
 		elseif (input[0] == 1)
 			break;
