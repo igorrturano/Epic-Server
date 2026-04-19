@@ -8,6 +8,7 @@ include "NPCMageryUtils";
 include ":abilities:include/models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":charactercreation:include/resists";
+include ":epicAI:include/npcDataCache";    // NPC_GetCachedData (used by GetClassProgression)
 
 function HumanoidBrain()
     var ev;
@@ -498,7 +499,7 @@ function GetHabsByLevel(npc, nivel)
 
   // Get subclass progression regardless of level
   var subclass := GetObjProperty(npc, "subclass");
-  var progression := GetClassProgression(habcfg, subclass);
+  var progression := GetClassProgression(habcfg, subclass, npc);
 
   // Add abilities from progression that match NPC's level
   foreach hab in progression
@@ -516,10 +517,10 @@ function GetHabsByLevel(npc, nivel)
   return valid_habs;
 endfunction
 
-function GetClassProgression(habcfg, subclass)
+function GetClassProgression(habcfg, subclass, npc)
     var progression := array{};
     var class_choice := array{};
-    var cache := NPC_GetCachedData(me);  // O(1) lookup
+    var cache := NPC_GetCachedData(npc);  // O(1) lookup
     var class_tree := struct{};
     var name_to_id := struct{};  // Map ability names to IDs
     var base_hab := 0;
