@@ -3,8 +3,10 @@ use vitals;
 
 include ":timedScripts:timedScripts";
 include ":mounts:mounts";
-include ":charactercreation:habilidades";
 include "include/NPCUtil";
+include ":attributes:attributes";
+include "include/epicConstants";
+include ":wrappers:Objects/Model/MobileWrapper"; //HasAbility()
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 
@@ -236,7 +238,7 @@ function LogoutPets(who)
 			location.append(pet.x);
 			location.append(pet.y);
 			location.append(pet.z);
-			MoveObjectToLocation(pet, 6066, 60, 22, pet.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(pet, 5688, 625, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 			SetObjProperty(pet, "previous_location", location);
 		endif
 		sleepms(2);
@@ -244,11 +246,6 @@ function LogoutPets(who)
 
 
 endfunction
-
-
-
-
-
 
 //traz os pets pra proximo do dono.
 function LogonPets(who)
