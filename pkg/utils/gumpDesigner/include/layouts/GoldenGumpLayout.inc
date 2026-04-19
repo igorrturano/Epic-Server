@@ -1,6 +1,6 @@
 include "GumpLayout";
 include "PaperTitleLayout";
-include "PaperBodyLayout";
+include "PaperPageLayout";
 
 include ":gumpDesigner:factories/GumpFactory";
 
@@ -27,7 +27,7 @@ class GoldenGumpLayout(GumpLayout)
 	function InitializeControls(this)
 		Super::InitializeControls(this);
 		this.SetTitleLayout(PaperTitleLayout());
-		this.SetPageLayout(PaperBodyLayout());
+		this.SetPageLayout(PaperPageLayout());
 	endfunction
 
 	function PositionControls(this)
@@ -70,7 +70,7 @@ class GoldenGumpLayout(GumpLayout)
 			.Resize(borderSize, borderSize);
 
 		this.PositionTitle();
-		this.PositionBody();
+		this.PositionPage();
 	endfunction
 	
 	/**
@@ -97,7 +97,7 @@ class GoldenGumpLayout(GumpLayout)
 	/**
 	 * Posiciona e redimensiona o corpo do layout em relação ao título.
 	 * 
-	 * Este método calcula automaticamente a posição e dimensões do corpo (body)
+	 * Este método calcula automaticamente a posição e dimensões do corpo (page)
 	 * levando em consideração a posição e tamanho do layout de título, com um
 	 * separador visual entre eles.
 	 * 
@@ -105,14 +105,14 @@ class GoldenGumpLayout(GumpLayout)
 	 * 
 	 * @return void
 	 */
-	function PositionBody(this)
+	function PositionPage(this)
 		var title := this.GetTitleLayout();
-		var body := this.GetBodyLayout();
+		var page := this.GetPageLayout();
 		var separator := 5;
 
-		body.SetX(title.GetX());
-		body.SetY(title.GetY() + title.GetHeight() + separator);
-		body.Resize(this.GetWidth() - (2 * body.GetX()), this.GetHeight() - title.GetY() - title.GetHeight() - (2 * separator));
+		page.SetX(title.GetX());
+		page.SetY(title.GetY() + title.GetHeight() + separator);
+		page.Resize(this.GetWidth() - (2 * page.GetX()), this.GetHeight() - page.GetY() - (title.GetY() - 9));
 	endfunction
 
 	function ToString(this)

@@ -33,7 +33,7 @@ class ImageTile(Control)
 	function Draw(this, byRef gump)
 		GFTilePic(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetImageId(), this.GetColor());
 
-		Super::Draw(this, gump);
+		// Super::Draw(this, gump);
 	endfunction
 
 	function ToString(this)

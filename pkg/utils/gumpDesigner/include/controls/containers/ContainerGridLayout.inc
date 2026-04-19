@@ -101,7 +101,7 @@ class ContainerGridLayout(Container)
 			return OutOfRangeException("Row or column number out of range.");
 		endif
 
-		if (this.containers[row][column].size() < 1)
+		if (this.containers[row].size() < 1)
 			this._CreateContainers();
 		endif
 
@@ -111,7 +111,7 @@ class ContainerGridLayout(Container)
 	endfunction
 
 	// Override
-	function Draw(this, byRef gump)
+	function HowToDraw(this, byRef gump)
 		foreach row in (this.containers)
 			foreach container in (row)
 				container.Draw(gump);
@@ -135,15 +135,17 @@ class ContainerGridLayout(Container)
 
 	function _CreateContainers(this)
 		this.containers := ContainerGridLayout::containers; // Reseta a matriz de containers
+		// print(this.ToString());
 		
 		for row := 1 to (this.GetRows())
 			for column := 1 to (this.GetColumns())
 				var cellContainer := Container($"Cell {row}x{column}",
-					CInt((column - 1) * (this.GetWidth() / this.GetColumns())) + this.GetX(),
-					CInt((row - 1) * (this.GetHeight() / this.GetRows())) + this.GetY(),
+					CInt((column - 1) * (this.GetWidth() / this.GetColumns())) + this.GetX() + this.GetXOffset(),
+					CInt((row - 1) * (this.GetHeight() / this.GetRows())) + this.GetY() + this.GetYOffset(),
 					CInt(this.GetWidth() / this.GetColumns()),
 					CInt(this.GetHeight() / this.GetRows())
 				);
+				// print (cellContainer.ToString());
 
 				this.containers[row].append(cellContainer);
 				SleepMS(2);
@@ -155,6 +157,6 @@ class ContainerGridLayout(Container)
 		return "(ContainerGridLayout) " + Super::ToString(this)
 			+ ", rows=" + this.GetRows()
 			+ ", columns=" + this.GetColumns()
-			+ ", controls=" + this.GetControls().size();
+			+ ", containers=" + this.containers.size();
 	endfunction
 endclass

@@ -1,16 +1,16 @@
-include "BodyLayout";
+include "PageLayout";
 
-class PaperBodyLayout(BodyLayout)
-	function PaperBodyLayout(this)
+class PaperPageLayout(PageLayout)
+	function PaperPageLayout(this)
 		Super();
-		this._SetName("PaperBodyLayout");
+		this._SetName("PaperPageLayout");
 		this.ConfigureControls();
 	endfunction
 
 	// Override
 	function InitializeControls(this)
 		var factory := GumpFactory();
-		this.SetBackground(factory.CreateImageGump()._SetName("Body Background"));
+		this.SetBackground(factory.CreateImageGump()._SetName("Page Background"));
 	endfunction
 	
 	function ConfigureControls(this)
@@ -23,6 +23,6 @@ class PaperBodyLayout(BodyLayout)
 	endfunction
 
 	function ToString(this)
-		return "(PaperBodyLayout) " + Super::ToString(this);
+		return "(PaperPageLayout) " + Super::ToString(this);
 	endfunction
 endclass

@@ -31,7 +31,7 @@ class GumpLayout(Layout)
 	endfunction
 
 	function SetPageLayout(this, pageLayout)
-		if (!(pageLayout is @BodyLayout))
+		if (!(pageLayout is @PageLayout))
 			return InvalidParameterException("Page layout must be of type PageLayout.");
 		endif
 		
@@ -54,18 +54,6 @@ class GumpLayout(Layout)
 		this.SetBackground(factory.CreateImageGumpTiled()._SetName("Background"));
 	endfunction
 	
-	function InsertControls(this)
-		Super::InsertControls(this);
-
-		if (this.GetTitleLayout())
-			this.AddControl(this.GetTitleLayout());
-		endif
-
-		if (this.GetPageLayout())
-			this.AddControl(this.GetPageLayout());
-		endif
-	endfunction
-
 	function ToString(this)
 		return "(GumpLayout) " + Super::ToString(this)
 			+ ", titleLayout=" + (this.GetTitleLayout() ? this.GetTitleLayout().ToString() : "null")

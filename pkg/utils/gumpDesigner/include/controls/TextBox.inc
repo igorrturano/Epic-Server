@@ -50,9 +50,9 @@ class TextBox(ResizableControl)
 		return this;
 	endfunction
 
-	function Draw(this, byRef gump)
+	function HowToDraw(this, byRef gump)
 		this._value := GFEAddTextBox(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset() - 6, this.GetWidth(), this.GetLines()*16, this.GetTextColor(), this.GetValue(), this.GetGumpId(), this.GetMaxLength());
-		Super::Draw(this, gump);
+		// Super::Draw(this, gump);
 	endfunction
 
 	function ToString(this)

@@ -57,9 +57,9 @@ class Button(Control)
 		endforeach
 	endfunction
 
-	function Draw(this, byRef gump)
+	function HowToDraw(this, byRef gump)
 		GFAddButton(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetButtonType(), this.GetId());
-		Super::Draw(this, gump);
+		// Super::Draw(this, gump);
 	endfunction
 
 	function ToString(this)

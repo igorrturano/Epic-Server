@@ -32,8 +32,8 @@ class Container(ResizableControl)
 		endif
 		
 		control.SetParent(this);
-		control.SetXOffset(this.GetX() + this.GetXOffset());
-		control.SetYOffset(this.GetY() + this.GetYOffset());
+		// control.SetXOffset(this.GetX() + this.GetXOffset());
+		// control.SetYOffset(this.GetY() + this.GetYOffset());
 
 		// if ((control.GetX() + control.GetWidth()) > this.GetWidth())
 		// 	control.SetWidth(this.GetWidth() - control.GetX()); // Ajusta a largura do controle se ela for maior que o container
@@ -48,7 +48,7 @@ class Container(ResizableControl)
 		return this;
 	endfunction
 
-	function Draw(this, byRef gump)
+	function HowToDraw(this, byRef gump)
 		if (this._isVisible)
 			GFGumpPicTiled(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), RandomIntMinMax(0x4657, 0x46CC + 1)); // Desenha um background aleatório para o container, só para visualização
 		endif

@@ -9,7 +9,7 @@ include ":gumpDesigner:controls/Text";
 include ":gumpDesigner:controls/Tooltip";
 include ":gumpDesigner:controls/containers/ContainerGridLayout";
 include ":gumpDesigner:layouts/TitleLayout";
-include ":gumpDesigner:layouts/BodyLayout";
+include ":gumpDesigner:layouts/PageLayout";
 
 class GumpFactory(IGumpFactory)
 	function GumpFactory(this)

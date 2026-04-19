@@ -5,9 +5,9 @@ class ImageGumpTiled(ImageGump)
 		Super(name, x, y, imageId, width, height, color);
 	endfunction
 
-	function Draw(this, byRef gump)
+	function HowToDraw(this, byRef gump)
 		GFPicTiled(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), this.GetImageId());
-		ResizableControl::Draw(this, gump);
+		// ResizableControl::Draw(this, gump);
 	endfunction
 
 	function ToString(this)

@@ -50,9 +50,9 @@ class CheckBox(Control)
 			+ ")";
 	endfunction
 
-	function Draw(this, byRef gump)
+	function HowToDraw(this, byRef gump)
 		GFCheckBox(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUncheckedImage(), this.GetCheckedImage(), this.GetValue(), this.GetGumpId());
-		Super::Draw(this, gump);
+		// Super::Draw(this, gump);
 	endfunction
 endclass
 

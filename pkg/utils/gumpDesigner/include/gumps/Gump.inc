@@ -17,7 +17,7 @@ class Gump(Container, IGump)
 	var layout; // Objeto herdado de GumpLayout
 	var titleName := "Default Title";
 	var title; // Objeto TitleLayout
-	var pages := array{}; // Array das páginas, cada página é o Objeto BodyLayout
+	var pages := array{}; // Array das páginas, cada página é o Objeto PageLayout
 	var pageNumber := 1;
 
 	var options := array{};
@@ -33,6 +33,8 @@ class Gump(Container, IGump)
 		this.SetWidth(width);
 		this.SetHeight(height);
 		this.SetTitleName(title);
+		this.SetLayout(GoldenGumpLayout());
+		this.AddPage(this.GetLayout().GetPageLayout());
 		this.GoToPage(1);
 
 		this.options := options;
@@ -117,8 +119,8 @@ class Gump(Container, IGump)
 			return OutOfRangeException("Page number out of range.");
 		endif
 
-		if (!(page is @BodyLayout))
-			return InvalidParameterException("Page must be of type BodyLayout.");
+		if (!(page is @PageLayout))
+			return InvalidParameterException("Page must be of type PageLayout.");
 		endif
 
 		this.pages[pageNumber] := page;
@@ -127,8 +129,8 @@ class Gump(Container, IGump)
 	endfunction
 
 	function AddPage(this, page)
-		if (!(page is @BodyLayout))
-			return InvalidParameterException("Page must be of type BodyLayout.");
+		if (!(page is @PageLayout))
+			return InvalidParameterException("Page must be of type PageLayout.");
 		endif
 
 		if (!this.pages)
@@ -226,7 +228,7 @@ class Gump(Container, IGump)
 		this._AdjustTitle();
 		this._AdjustPage();
 		
-		this._IndexControl(this.GetPage(this.GetCurrentPage()));
+		
 	endfunction
 
 	function _IndexControls(this, controls)
@@ -259,11 +261,6 @@ class Gump(Container, IGump)
 	endfunction
 
 	function _AdjustLayout(this)
-		if (this.GetLayout())
-			return;
-		endif
-
-		this.SetLayout(GoldenGumpLayout());
 		this.GetLayout().Resize(this.GetWidth(), this.GetHeight());
 	endfunction
 
@@ -279,6 +276,7 @@ class Gump(Container, IGump)
 		this.SetTitle(this.GetLayout().GetTitleLayout());
 		this.GetTitle().GetText().SetValue(this.GetTitleName());
 		this.GetTitle().SetHelpButton(this._CreateHelpButton());
+		this._IndexControl(this.GetTitle().GetHelpButton());
 	endfunction
 
 	function _AdjustPage(this)
@@ -286,27 +284,21 @@ class Gump(Container, IGump)
 			return;
 		endif
 
-		// TODO
+		if (GumpOption::HideTitle in this.GetOptions())
+			this.GetCurrentPage().SetPosition(this.GetTitle().GetX(), this.GetTitle().GetY());
+		endif
+
+		this._IndexControl(this.GetCurrentPage());
 	endfunction
 
 	function _DrawDiag(this)
 		this.SetGumpString(GFCreateGump(this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight()));
 
 		this.GetLayout().Draw(this);
-		if (this.GetTitle())
+		if (!(GumpOption::HideTitle in this.GetOptions()))
 			this.GetTitle().Draw(this);
 		endif
-		// this.GetPage(this.GetCurrentPage()).Draw(this);
-		// foreach control in (this.GetControls())
-		// 	control.Draw(this);
-		// 	SleepMS(2);
-		// endforeach
-		
-		// foreach id in (this._createdControls.orderById)
-		// 	var control := this._createdControls.positionById[id];
-		// 	control.Draw(this);
-		// 	SleepMS(2);
-		// endforeach
+		this.GetCurrentPage().Draw(this);
 	endfunction
 	
 	function _UpdateInputValues(this)
