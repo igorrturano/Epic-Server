@@ -39,7 +39,7 @@ class ControlUndead(CombatAbility)
         endif
 
         var npctemplate := NPC_ParseTemplateName(targ.npctemplate);
-        if (cfg[npctemplate.template].Category != "Undead")
+        if (cfg[npctemplate.template].Environment != "Undead")
             Message("Este nao e um alvo valido.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
             return false;
         endif

@@ -151,7 +151,7 @@ function AwardEntropyFromKill(killers, corpse)
     var template := GetObjProperty(corpse, "npctemplate"); // Set by the core.
 	var npc_cfg := NPC_GetNPCConfig(template);
 
-	var category := Lower(npc_cfg.Category);
+	var category := Lower(npc_cfg.Environment);
 	var tier := npc_cfg.Tier;
 
 	// Only award entropy for Undead, Demons, and Void creatures

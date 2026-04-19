@@ -1082,7 +1082,7 @@ function CalculateEntropyDamage(byRef attackInfo)
 	if (!attackInfo.GetAttacker().IsNPC() && attackInfo.GetDefender().IsNPC())
 		var attacker_entropy := attackInfo.GetAttacker().GetEntropy();
 		if (attacker_entropy >= 12000)
-			var npc_category := Lower(attackInfo.GetDefender().GetCategory());
+			var npc_category := Lower(attackInfo.GetDefender().GetEnvironment());
 			if (npc_category == "undead" || npc_category == "demon" || npc_category == "void")
 				// +1 per 4k entropy, max +5 at 20k
 				var entropy_bonus := CInt(attacker_entropy / 4000);
@@ -1098,7 +1098,7 @@ function CalculateEntropyDamage(byRef attackInfo)
 	// Global entropy bonus: NPCs (undead/demon/void) get +1 damage per -20k global entropy
 	var globalEntropy := CInt(GetGlobalProperty("GlobalEntropy"));
 	if (globalEntropy <= -20000 && attackInfo.GetAttacker().IsNPC())
-		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetEnvironment());
 		if (npc_category == "undead" || npc_category == "demon" || npc_category == "void")
 			// +1 per -20k global entropy, max +5 at -100k
 			var global_bonus := CInt(Abs(globalEntropy) / 20000);

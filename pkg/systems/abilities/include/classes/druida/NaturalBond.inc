@@ -274,7 +274,7 @@ class NaturalBond(CombatAbility)
         who.squelch(-1);
 
         var mw := MobileWrapper(who);
-        var wildspeech_opts := mw.GetProperty("#SpellOpts_708");
+        var wildspeech_opts := mw.GetProperty("SpellOpts_708");
         if (wildspeech_opts && wildspeech_opts != error)
             who.squelch(0);
         endif

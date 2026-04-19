@@ -527,7 +527,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := array{"Undead"};
 
-		if (cfg[npctemplate.template].Category in inimigo)
+		if (cfg[npctemplate.template].Environment in inimigo)
 			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Consagracao Divina]: " + CInt(damagemod));
@@ -537,7 +537,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := array{"Demon"}; 
 
-		if (cfg[npctemplate.template].Category in inimigo)
+		if (cfg[npctemplate.template].Environment in inimigo)
 			var damagemod := Cint(AP_GetSkill(attacker, THEOLOGY) / 20);
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Sigilo de Protecao]: " + CInt(damagemod));
@@ -546,7 +546,7 @@ function CalcDamageHabs(attacker, defender, damage)
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := GetObjProperty(attacker, "Óleo");
-		if (cfg[npctemplate.template].Category == inimigo)
+		if (cfg[npctemplate.template].Environment == inimigo)
 			var damagemod := Cint(AP_GetSkill(attacker, SCIENCE) / 20);
 			damage := damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Oleo do Cacador]: " + CInt(damagemod));
@@ -1137,7 +1137,7 @@ function CalcDamageSpecial(attacker, defender, damage)
 	// Check for blessed weapon (spell cooldown or priest rune)
 	var hasPriestRune := GetObjProperty(attacker.weapon, "priestrune");
 	if (hasPriestRune)
-		var categoriaDefender := NPC_GetNPCConfig(defender.npctemplate).Category;
+		var categoriaDefender := NPC_GetNPCConfig(defender.npctemplate).Environment;
 		var cursed_creatures := {"undead", "demons"};
 		if (defender.npctemplate)
 			if (lower(categoriaDefender) in cursed_creatures)
