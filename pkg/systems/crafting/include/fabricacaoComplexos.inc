@@ -1,9 +1,5 @@
-include ":crafting:controladoraComplexos";
+include ":crafting:include/controladoras/controladoraComplexos";
 include ":crafting:include/util/fabricacaoConstants";
-
-function FabricaItensComplexos(quem,profissao, modoGm := false)
-	EnviaItensComplexosGump(quem,profissao, modoGm);
-endfunction
 
 function GeraDescriptorComplexo( 
 							objtype,
@@ -38,19 +34,30 @@ function GeraItemComplexo(
 							listaDeMateriaisIgnorados := array,
 							modoEscolhaMaterial := FABRICACAO_MODO_MATERIAL::MESMO_TIER,
 							deveGerarOpcionais := false, 
-							classe := 1
+							classe := 1,
+							estagio := ITEM_GERADO
 						)
+	var descriptor;
+	if(estagio == ITEM_GERADO)
+		descriptor :=  GeraDescriptorComplexo(
+								objtype,
+								tier,
+								isDispensavel,
+								listaDeMateriaisIgnorados, 
+								modoEscolhaMaterial,
+								deveGerarOpcionais, 
+								classe);
+	elseif(estagio == ITEM_MONTADO)
+		descriptor := MontaProdutoMontadoAleatorio(
+								objtype,
+								tier,
+								modoEscolhaMaterial,
+								deveGerarOpcionais, 
+								classe
+								);
+	endif
 
-	var descriptor :=  GeraDescriptorComplexo(
-							objtype,
-							tier,
-							isDispensavel,
-							listaDeMateriaisIgnorados, 
-							modoEscolhaMaterial,
-							deveGerarOpcionais, 
-							classe);
-
-	if(!descriptor) return descriptor; endif
+	if(!descriptor || TypeOfInt(descriptor.color) != OT_LONG || !descriptor.graphic) return error; endif
 
 	var item := CreateItemInContainer( container, descriptor, quantidade );
 	item.hp := item.maxhp;
