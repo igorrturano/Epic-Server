@@ -3,8 +3,10 @@ use vitals;
 
 include ":timedScripts:timedScripts";
 include ":mounts:mounts";
-include ":charactercreation:habilidades";
 include "include/NPCUtil";
+include ":attributes:attributes";
+include "include/epicConstants";
+include ":wrappers:Objects/Model/MobileWrapper"; //HasAbility()
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 
@@ -53,13 +55,10 @@ function GetNumPets(who)
 	foreach serial in tamed
 		var pet := SystemFindObjectBySerial(serial);
 		if ( pet.master == who && !GetObjProperty(pet, "summoned")) //se não é summon
-			// Pets no estábulo ou em limbo não ocupam slots, mas continuam pertencendo ao player
-			if ( !GetObjProperty(pet, "EstaNoEstabulo") && !GetObjProperty(pet, "EstaNoLimbo") )
 				if (!Cint(pet.getTier()))
-					num_tamed := num_tamed+1;
-				else
-					num_tamed := num_tamed + Cint(pet.getTier());
-				endif
+				num_tamed := num_tamed+1;
+			else
+				num_tamed := num_tamed + Cint(pet.getTier());
 			endif
 		else
 			tamed.erase(_serial_iter);
@@ -216,7 +215,7 @@ function LogoutPets(who)
 			location.append(pet.x);
 			location.append(pet.y);
 			location.append(pet.z);
-			MoveObjectToLocation(pet, 6066, 60, 22, pet.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(pet, 5688, 625, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 			SetObjProperty(pet, "previous_location", location);
 		endif
 		sleepms(2);
@@ -224,11 +223,6 @@ function LogoutPets(who)
 
 
 endfunction
-
-
-
-
-
 
 //traz os pets pra proximo do dono.
 function LogonPets(who)
