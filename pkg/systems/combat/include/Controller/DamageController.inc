@@ -19,6 +19,7 @@ include ":io:CFGFile";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":charactercreation:resists";
 include ":charactercreation:habilidades";
+include ":attributes:attributes";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Damage
@@ -592,6 +593,56 @@ function CalculateDefenderResist(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {CInt(attackInfo.GetDamage().GetPoisonRawDamage() - attackInfo.GetDamage().GetPoisonBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {CInt(attackInfo.GetDamage().GetEnergyRawDamage() - attackInfo.GetDamage().GetEnergyBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano a ser aplicado (após defesa): {attackInfo.GetDamage().ToString()}"));
+
+	_ApplyPhysicalManaShield(attackInfo);
+endfunction
+
+// Protecao Arcana (spell 114) — physical-only mana shield. Absorbs slash/piercing/blunt
+// (whichever matches the attacker's posture) at 2 mana per 1 damage. Elemental and forced
+// damage bypass this layer entirely.
+function _ApplyPhysicalManaShield(byRef attackInfo)
+	var defender := attackInfo.GetDefender().GetObjRef();
+	var shield := attackInfo.GetDefender().GetProperty("#manashield");
+	if (!shield || shield.errortext)
+		return;
+	endif
+
+	if (shield.endtime <= ReadGameClock())
+		EraseObjProperty(defender, "#manashield");
+		return;
+	endif
+
+	var dmg := attackInfo.GetDamage();
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
+	var hit;
+	case (posture)
+		DAMAGE_TYPE::SLASH:    hit := dmg.GetSlashBaseDamage();    break;
+		DAMAGE_TYPE::PIERCING: hit := dmg.GetPiercingBaseDamage(); break;
+		DAMAGE_TYPE::BLUNT:    hit := dmg.GetBluntBaseDamage();    break;
+		default:               return;
+	endcase
+	if (hit <= 0)
+		return;
+	endif
+
+	var mana := AP_GetVital(defender, MANA);
+	var absorb := (hit * 2 <= mana) ? hit : Cint(mana / 2);
+	if (absorb <= 0)
+		return;
+	endif
+
+	AP_ConsumeVital(defender, MANA, absorb * 2);
+
+	case (posture)
+		DAMAGE_TYPE::SLASH:    dmg.DecreaseSlashBaseDamage(absorb);    break;
+		DAMAGE_TYPE::PIERCING: dmg.DecreasePiercingBaseDamage(absorb); break;
+		DAMAGE_TYPE::BLUNT:    dmg.DecreaseBluntBaseDamage(absorb);    break;
+	endcase
+
+	if (AP_GetVital(defender, MANA) <= 0)
+		EraseObjProperty(defender, "#manashield");
+		PrintTextAbove(defender, "*barreira arcana quebra*");
+	endif
 endfunction
 
 function GetEquipsByAttackDirection(byRef attackInfo)

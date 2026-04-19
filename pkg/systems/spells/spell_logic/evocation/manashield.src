@@ -1,0 +1,44 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/client";
+include "include/sounds";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var caster := params[1];
+	var info := params[2];
+	var spellinfo := params[3];
+	var spell_school := spellinfo.School;
+	params := 0;
+
+	// Clean up any previous cast before applying — mirrors haste/barkskin.
+	SC_RemoveEffect(caster, CInt(spellinfo.id));
+
+	var duration := Cint(AP_GetSkill(caster, ARCANA) / 5);
+	if (duration < 5)
+		duration := 5;
+	endif
+	duration := bonusSpellDurationForSpecialists(caster, duration, spell_school);
+
+	SendSysMessageEx(caster, "Uma barreira arcana envolve seu corpo.", SSM_INFO);
+
+	var opts := struct{};
+	opts.+buff_category := "mana_shield";
+	opts.+displayname := "Barreira de Mana";
+	opts.+desc := "Dano fisico desviado para mana (2:1)";
+	opts.+maintainable := 1;
+	opts.+tick_script := ":spells:spell_logic/evocation/manashieldTick";
+	opts.+tick_interval := 1;
+	opts.+tick_params := struct{};
+	opts.+on_apply_script := ":spells:spell_logic/evocation/manashield_apply";
+	opts.+on_apply_params := struct{ duration := duration, fx := FX_ESCUDO_PROTETIVO, sound := SFX_SPELL_PROTECTION };
+	opts.+on_expire_script := ":spells:spell_logic/evocation/manashield_end";
+
+	SC_ApplyEffect(caster, caster, opts, duration, CInt(spellinfo.id));
+
+	return 1;
+endprogram
