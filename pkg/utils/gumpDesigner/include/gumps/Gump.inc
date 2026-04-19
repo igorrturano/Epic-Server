@@ -11,17 +11,17 @@ include ":gumpDesigner:exceptions/InvalidOptionException";
 include ":message:model/Message";
 
 class Gump(Container, IGump)
-	var _pid;
-	var _gumpString;
+	var pid;
+	var gumpString;
 
-	var _layout; // Objeto herdado de GumpLayout
-	var _titleName := "Default Title";
-	var _title; // Objeto TitleLayout
-	var _pages := array{}; // Array das páginas, cada página é o Objeto BodyLayout
-	var _currentPage := 1;
+	var layout; // Objeto herdado de GumpLayout
+	var titleName := "Default Title";
+	var title; // Objeto TitleLayout
+	var pages := array{}; // Array das páginas, cada página é o Objeto BodyLayout
+	var pageNumber := 1;
 
-	var _options := array{};
-	var _createdControls := struct{
+	var options := array{};
+	var createdControls := struct{
 			orderById := array{},
 			countByType := dictionary{},
 			positionById := dictionary{}
@@ -33,36 +33,37 @@ class Gump(Container, IGump)
 		this.SetWidth(width);
 		this.SetHeight(height);
 		this.SetTitleName(title);
+		this.GoToPage(1);
 
-		this._options := options;
-		this._createdControls := Gump::_createdControls;
+		this.options := options;
+		this.createdControls := Gump::createdControls;
 		this.helpAction := @() {
 			Message("Esta ajuda ainda não foi implementada.").SetColor(Color(SYSTEM_COLOR::ALERT)).SendSys(this.GetParent());
 		};
 	endfunction
 
 	function _GetPid(this)
-		return this._pid;
+		return this.pid;
 	endfunction
 
 	function SetPid(this, pid)
-		this._pid := pid;
+		this.pid := pid;
 
 		return this;
 	endfunction
 
 	function GetGumpString(this)
-		return this._gumpString;
+		return this.gumpString;
 	endfunction
 
 	function SetGumpString(this, gumpStr)
-		this._gumpString := gumpStr;
+		this.gumpString := gumpStr;
 
 		return this;
 	endfunction
 
 	function GetLayout(this)
-		return this._gumpLayout;
+		return this.layout;
 	endfunction
 
 	function SetLayout(this, layout)
@@ -70,23 +71,23 @@ class Gump(Container, IGump)
 			return InvalidParameterException("Layout must be of type GumpLayout.");
 		endif
 		
-		this._gumpLayout := layout;
+		this.layout := layout;
 		
 		return this;
 	endfunction
 
 	function GetTitleName(this)
-		return this._titleName;
+		return this.titleName;
 	endfunction
 
 	function SetTitleName(this, titleName)
-		this._titleName := CStr(titleName);
+		this.titleName := CStr(titleName);
 
 		return this;
 	endfunction
 
 	function GetTitle(this)
-		return this._title;
+		return this.title;
 	endfunction
 
 	function SetTitle(this, title)
@@ -94,33 +95,33 @@ class Gump(Container, IGump)
 			return InvalidParameterException("Title must be of type TitleLayout.");
 		endif
 
-		this._title := title;
+		this.title := title;
 
 		return this;
 	endfunction
 
 	function GetPages(this)
-		return this._pages;
+		return this.pages;
 	endfunction
 
 	function GetPage(this, pageNumber)
-		if (pageNumber < 1 || pageNumber > this._pages.size())
-			return InvalidParameterException("Page number out of range.");
+		if (pageNumber < 1 || pageNumber > this.pages.size())
+			return OutOfRangeException("Page number out of range.");
 		endif
 
-		return this._pages[pageNumber];
+		return this.pages[pageNumber];
 	endfunction
 
 	function SetPage(this, pageNumber, page)
-		if (pageNumber < 1 || pageNumber > this._pages.size())
-			return InvalidParameterException("Page number out of range.");
+		if (pageNumber < 1 || pageNumber > this.pages.size())
+			return OutOfRangeException("Page number out of range.");
 		endif
 
 		if (!(page is @BodyLayout))
 			return InvalidParameterException("Page must be of type BodyLayout.");
 		endif
 
-		this._pages[pageNumber] := page;
+		this.pages[pageNumber] := page;
 
 		return this;
 	endfunction
@@ -130,55 +131,43 @@ class Gump(Container, IGump)
 			return InvalidParameterException("Page must be of type BodyLayout.");
 		endif
 
-		if (!this._pages)
-			this._pages := Gump::_pages;
+		if (!this.pages)
+			this.pages := Gump::pages;
 		endif
 
-		if (this._pages.size() >= 10)
-			return InvalidParameterException("A gump cannot have more than 10 pages.");
+		if (this.pages.size() >= 10)
+			return OutOfRangeException("A gump cannot have more than 10 pages.");
 		endif
 
-		this._pages.append(page);
+		this.pages.append(page);
 
 		return this;
 	endfunction
 
 	function GetCurrentPage(this)
-		return this._currentPage;
+		return this.GetPage(this.pageNumber);
 	endfunction
 
-	function SetCurrentPage(this, pageNumber)
-		if (pageNumber < 1 || pageNumber > this._pages.size())
-			return InvalidParameterException("Page number out of range.");
+	function GoToPage(this, pageNumber)
+		if (pageNumber < 1 || pageNumber > this.pages.size())
+			return OutOfRangeException("Page number out of range.");
 		endif
 
-		this._currentPage := pageNumber;
-
-		return this;
-	endfunction
-
-	function AddControl(this, control)
-		// if (!(control is @Control))
-		// 	return InvalidParameterException("Control must be of type 'Control'.");
-		// endif
-
-		// var page := this.GetPage(this.GetCurrentPage());
-		// control.SetParent(page);
-		// page.AddControl(control);
+		this.pageNumber := pageNumber;
 
 		return this;
 	endfunction
 
 	function GetOptions(this)
-		return this._options;
+		return this.options;
 	endfunction
 
 	function AddOption(this, option)
-		if (option in this._options)
+		if (option in this.GetOptions())
 			return InvalidOptionException("Option already set!");
 		endif
 
-		this._options.append(option);
+		this.options.append(option);
 
 		return this;
 	endfunction
@@ -197,11 +186,11 @@ class Gump(Container, IGump)
 			+ ", height=" + this.GetHeight()
 			+ ", options=" + this.GetOptions()
 			+ ", controls=" + this.GetControls().size()
-			+ ", pages=" + this._pages.size();
+			+ ", pages=" + this.GetPages().size();
 	endfunction
 
 	function Show(this)
-		this._pid := GetPid();
+		this.SetPid(GetPid());
 
 		this._ConfigureDiag();
 		this._DrawDiag();
@@ -227,17 +216,17 @@ class Gump(Container, IGump)
 	endfunction
 
 	function Dispose(this)
-		this._gumpString := Gump::_gumpString;
-		this._createdControls := Gump::_createdControls;
+		this.gumpString := Gump::gumpString;
+		this.createdControls := Gump::createdControls;
 	endfunction
 
 	// Private functions
 	function _ConfigureDiag(this)
 		this._AdjustLayout();
 		this._AdjustTitle();
-		// this._AdjustPage();
+		this._AdjustPage();
 		
-		this._IndexControl(this.GetCurrentPage());
+		this._IndexControl(this.GetPage(this.GetCurrentPage()));
 	endfunction
 
 	function _IndexControls(this, controls)
@@ -274,7 +263,7 @@ class Gump(Container, IGump)
 			return;
 		endif
 
-		this.SetLayout(BlueGumpLayout());
+		this.SetLayout(GoldenGumpLayout());
 		this.GetLayout().Resize(this.GetWidth(), this.GetHeight());
 	endfunction
 
