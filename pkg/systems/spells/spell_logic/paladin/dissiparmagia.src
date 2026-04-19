@@ -100,12 +100,13 @@ program SpellScript(params)
 		907,  // Disparo Divino
 		905,  // Aprisionar Demonio
 		708,  // Fala Selvagem
+		720,  // Encantar Pessoa (druid)
 		727   // Crescimento Selvagem
 	};
 
 	var mw := MobileWrapper(targ);
 	foreach spell_id in (sc_spell_ids)
-		var sc_opts := mw.GetProperty($"#SpellOpts_{spell_id}");
+		var sc_opts := mw.GetProperty($"SpellOpts_{spell_id}");
 		if (sc_opts && !sc_opts.errortext)
 			SC_RemoveEffect(targ, spell_id);
 			TS_LowerDuration(targ, $"spelleffect_{spell_id}", -1);

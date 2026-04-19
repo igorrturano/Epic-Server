@@ -51,7 +51,7 @@ program SpellScript(params)
 		EraseObjProperty(who, "votovinganca");
 		if (targ.npctemplate)
 			var elem := NPC_GetNPCConfig(targ.npctemplate);
-			var category := lower(GetConfigString(elem, "Category"));
+			var category := lower(GetConfigString(elem, "Environment"));
 
 			if (category == "undead" || category == "demons")
 
