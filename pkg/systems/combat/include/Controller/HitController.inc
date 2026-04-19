@@ -8,6 +8,7 @@ include ":wrappers:Objects/Model/WeaponWrapper";
 include ":abilities:models/Ability";
 include ":tn:cooldown";
 include "include/packets";
+include "include/dungeons";
 
 /**
  * Calcula a chance de acerto de um ataque baseado nos atributos do atacante e defensor,
