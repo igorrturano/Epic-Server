@@ -53,10 +53,6 @@ program SpellScript(params)
 	applyEpicHealing(targ, base_heal);
 	var hp_after := GetVital(targ, HITS);
 	var instant_real_heal := hp_after - hp_before;
-	SendSysMessageEx(who, $"Druid Heal: +{instant_real_heal} HP (instantaneo)", SSM_INFO);
-
-	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
-	PlaySoundEffect(targ, SFX_SPELL_HEAL);
 
 	// HoT via SC tick-callback
 	var hot_total := base_heal;
@@ -70,6 +66,14 @@ program SpellScript(params)
 	opts.+buff_category := "druid_hot";
 	opts.+displayname := "Cura Leve";
 	opts.+desc := $"+{hot_base_tick} HP / tick";
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{
+		fx := FX_SPARK_EFFECT,
+		fx_speed := 2,
+		fx_duration := 2,
+		sound := SFX_SPELL_HEAL
+	};
 	opts.+tick_script := ":spells:spell_logic/druid/druidhealTick";
 	opts.+tick_interval := hot_tick_interval;
 	opts.+tick_params := struct{

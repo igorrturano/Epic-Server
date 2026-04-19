@@ -35,8 +35,9 @@ program SpellScript(params)
 	opts.+buff_category := "poison_ward";
 	opts.+displayname := "Imunidade a Veneno";
 	opts.+desc := "Proximo veneno sera neutralizado";
-
-	SC_HandleSound(who, targ, SFX_SPELL_HEAL);
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{ sound := SFX_SPELL_HEAL };
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
 

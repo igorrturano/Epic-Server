@@ -37,14 +37,19 @@ program SpellScript(params)
 		duration := 15;
 	endif
 
-	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_BLESS_EFFECT, 2, 2);
-	SC_HandleSound(who, targ, SFX_BLESS);
-
 	var opts := struct{};
 	opts.+properties := dictionary{ "#hit_mod" -> bonus };
 	opts.+buff_category := "hit_bonus";
 	opts.+displayname := "Orientar";
 	opts.+desc := $"+{bonus} no proximo ataque";
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{
+		fx := FX_BLESS_EFFECT,
+		fx_speed := 2,
+		fx_duration := 2,
+		sound := SFX_BLESS
+	};
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
 
