@@ -1,50 +1,48 @@
 include "Container";
-include ":gumpDesigner:exceptions/WrongSizeException";
+include "system/exception/ParameterException/OutOfRangeException";
 
 // TODO: criar opção pra escolher a proporção em % do tamanho da coluna/linha
 class ContainerGridLayout(Container)
-	var _rows := 1;
-	var _columns := 1;
-	var _containers := array{ array{} }; // Matriz que armazena os containers internos, organizados por linha e coluna
+	var rows := 1;
+	var columns := 1;
+	var containers := array{ array{} }; // Matriz que armazena os containers internos, organizados por linha e coluna
 
 	function ContainerGridLayout(this, name, x, y, width, height, rows, columns)
 		Super(name, x, y, width, height);
-		this._type := GumpControl::ContainerGridLayout;
-		this._rows := CInt(rows);
-		this._columns := CInt(columns);
-		this._containers := array{ array{} };
-		
-		this._AddContainers();
+		this.SetType(GumpControl::ContainerGridLayout);
+		this.SetRows(rows);
+		this.SetColumns(columns);
+		this.containers := ContainerGridLayout::containers;
 	endfunction
 
 	function GetRows(this)
-		return this._rows;
+		return this.rows;
+	endfunction
+
+	function SetRows(this, rows)
+		this.rows := CInt(rows);
+
+		return this;
 	endfunction
 
 	function GetColumns(this)
-		return this._columns;
+		return this.columns;
+	endfunction
+
+	function SetColumns(this, columns)
+		this.columns := CInt(columns);
+
+		return this;
 	endfunction
 
 	// TODO: Revisar essa função depois, deve ter algum erro, fiz nas pressas
 	function SetColumnWidth(this, column, width)
-		if (column < 1 || column > this._columns)
-			return InvalidParameterException("Column number out of range.");
+		if (column < 1 || column > this.GetColumns())
+			return OutOfRangeException("Column number out of range.");
 		endif
 
-		for row := 1 to (this._rows)
-			this._containers[row][column].SetWidth(width);
-			SleepMS(2);
-		endfor
-
-		var remainingWidth := this.GetWidth(); // Largura restante para as outras colunas
-		for col := 1 to (this._columns)
-			remainingWidth -= this._containers[1][col].GetWidth();
-			if (remainingWidth < 0)
-				return WrongSizeException("Total column width exceeds container width.");
-			endif
-		endfor
-
-		this.SetColumnWidth(this._columns, remainingWidth); // Ajusta a última coluna para preencher o espaço restante
+		// TODO: Ajustar largura da columa informada
+		// TODO: Ajustar coluna da última coluna para preencher o restante do espaço, caso a largura total das colunas seja menor que a largura do container
 
 		return this;
 	endfunction
@@ -52,27 +50,12 @@ class ContainerGridLayout(Container)
 	
 	// TODO: Revisar essa função depois, deve ter algum erro, fiz nas pressas
 	function SetRowHeight(this, row, height)
-		if (row < 1 || row > this._rows)
-			return InvalidParameterException("Row number out of range.");
+		if (row < 1 || row > this.GetRows())
+			return OutOfRangeException("Row number out of range.");
 		endif
 
-		for column := 1 to (this._columns)
-			this._containers[row][column].SetHeight(height);
-			SleepMS(2);
-		endfor
-
-		var remainingHeight := this.GetHeight();
-		for currentRow := 1 to (this._rows)
-			remainingHeight -= this._containers[currentRow][1].GetHeight();
-			if (remainingHeight < 0)
-				return WrongSizeException("Total row height exceeds container height.");
-			endif
-		endfor
-
-		for col := 1 to (this._columns)
-			this._containers[this._rows][col].SetHeight(remainingHeight);
-			SleepMS(2);
-		endfor
+		// TODO: Ajustar altura da linha informada
+		// TODO: Ajustar altura da última linha para preencher o restante do espaço, caso a altura total das linhas seja menor que a altura do container
 
 		return this;
 	endfunction
@@ -81,7 +64,7 @@ class ContainerGridLayout(Container)
 	function SetVisible(this, isVisible)
 		Super::SetVisible(this, isVisible);
 
-		foreach row in (this._containers)
+		foreach row in (this.containers)
 			foreach container in (row)
 				container.SetVisible(isVisible);
 				SleepMS(2);
@@ -95,9 +78,9 @@ class ContainerGridLayout(Container)
 	function GetControls(this)
 		var controls := array{};
 
-		for row := 1 to (this._containers.size())
-			for column := 1 to (this._containers[row].size())
-				var containerControls := this._containers[row][column].GetControls();
+		for row := 1 to (this.containers.size())
+			for column := 1 to (this.containers[row].size())
+				var containerControls := this.containers[row][column].GetControls();
 
 				foreach control in (containerControls)
 					controls.append(control);
@@ -110,14 +93,26 @@ class ContainerGridLayout(Container)
 
 	// Override
 	function AddControl(this, control, row, column)
-		this._containers[row][column].AddControl(control);
+		if (!(control is @Control))
+			return InvalidParameterException("Control must be of type 'Control'.");
+		endif
+		
+		if (row < 1 || row > this.GetRows() || column < 1 || column > this.GetColumns())
+			return OutOfRangeException("Row or column number out of range.");
+		endif
+
+		if (this.containers[row][column].size() < 1)
+			this._CreateContainers();
+		endif
+
+		this.containers[row][column].AddControl(control);
 
 		return this;
 	endfunction
 
 	// Override
 	function Draw(this, byRef gump)
-		foreach row in (this._containers)
+		foreach row in (this.containers)
 			foreach container in (row)
 				container.Draw(gump);
 				SleepMS(2);
@@ -127,7 +122,7 @@ class ContainerGridLayout(Container)
 
 	// Override
 	function Dispose(this)
-		foreach row in (this._containers)
+		foreach row in (this.containers)
 			foreach control in (row)
 				control.Dispose();
 				SleepMS(2);
@@ -139,18 +134,19 @@ class ContainerGridLayout(Container)
 	endfunction
 
 	function _CreateContainers(this)
-		this._containers := array{ array{} };
+		this.containers := ContainerGridLayout::containers; // Reseta a matriz de containers
 		
-		for row := 1 to (this._rows)
-			for column := 1 to (this._columns)
+		for row := 1 to (this.GetRows())
+			for column := 1 to (this.GetColumns())
 				var cellContainer := Container($"Cell {row}x{column}",
-					CInt((column - 1) * (this._width / this._columns)) + this.GetX(),
-					CInt((row - 1) * (this._height / this._rows)) + this.GetY(),
-					CInt(this._width / this._columns),
-					CInt(this._height / this._rows)
+					CInt((column - 1) * (this.GetWidth() / this.GetColumns())) + this.GetX(),
+					CInt((row - 1) * (this.GetHeight() / this.GetRows())) + this.GetY(),
+					CInt(this.GetWidth() / this.GetColumns()),
+					CInt(this.GetHeight() / this.GetRows())
 				);
 
-				this._containers[row].append(cellContainer);
+				this.containers[row].append(cellContainer);
+				SleepMS(2);
 			endfor
 		endfor
 	endfunction
