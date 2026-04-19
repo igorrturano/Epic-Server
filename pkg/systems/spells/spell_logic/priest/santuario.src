@@ -1,5 +1,6 @@
 use uo;
 use os;
+use vitals;
 
 include ":attributes:attributes";
 include ":tn:cooldown";
@@ -29,20 +30,19 @@ program sanctuary(params)
 
 	var duration := CInt(AP_GetSkill(who, THEOLOGY) / 2);
 
-	// Grant invul immediately so there's no gap before the first tick check.
-	GrantPrivilege(who, "invul");
-	who.enable("invul");
+	// Snapshot HP so the tick can detect incoming damage (area/trap/DoT/etc.)
+	// and break sanctuary. `#`-prefixed property is dropped on world save.
+	SetObjProperty(who, "#sanctuary_hp_snapshot", GetVital(who, HITS));
 	PlaySoundEffect(who, 0x216);
 
 	var opts := struct{};
 	opts.+buff_category := "sanctum";
 	opts.+displayname := "Santuario";
-	opts.+desc := "Invulneravel";
+	opts.+desc := "Inalcançavel";
+	opts.+properties := dictionary{ "#sanctuary" -> 1 };
 	opts.+tick_script := ":spells:spell_logic/priest/santuarioTick";
 	opts.+tick_interval := 1;
 	opts.+tick_params := struct{};
-	opts.+on_expire_script := ":spells:spell_logic/priest/santuarioExpire";
-	opts.+on_expire_params := struct{};
 
 	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
 

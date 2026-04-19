@@ -1317,6 +1317,10 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    if (GetObjProperty(defender, "#sanctuary"))
+        return 0;
+    endif
+
     // Only require LoS for NEW targets, not existing opponent
     // This allows pursuit of current target even if LoS is temporarily blocked
     if (attacker.opponent != defender)
