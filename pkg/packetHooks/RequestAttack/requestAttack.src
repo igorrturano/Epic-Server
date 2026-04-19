@@ -34,6 +34,11 @@ endprogram
 exported function HandleAttackRequest(who, byref packet)
 	var defender := SystemFindObjectBySerial(packet.GetInt32(BYTE_DEFENDER));
 
+	if (GetObjProperty(defender, "#sanctuary"))
+		Message("Esse alvo esta sob um santuario divino.", Color(SYSTEM_COLOR::BAD)).SendSys(who);
+		return 1;
+	endif
+
 	if (defender.master)
 		who.SetMurderer(1);
 	endif

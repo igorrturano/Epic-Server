@@ -1,14 +1,16 @@
 use uo;
 use os;
+use vitals;
 
 include ":tn:cooldown";
 include "include/client";
 include "include/say";
 include ":spells:Controller/SpellController";
 
-// Per-tick protection check for Santuario. Cancels the spell (which fires
-// on_expire to revoke invul) if the caster equips armor, enters warmode,
-// or takes the martir path.
+// Per-tick guard for Santuario. Cancels the spell if the caster equips armor,
+// enters warmode, takes the martir path, or takes damage from any source
+// (area, trap, DoT, etc.). Damage-break uses an HP snapshot refreshed each
+// tick — 1-second worst-case latency.
 // Args: { caster, targ, spellId, tick_number, tick_params }
 program SanctuaryTick(args)
 	var targ := args[2];
@@ -26,6 +28,14 @@ program SanctuaryTick(args)
 		broken_reason := "Voce entrou em modo de combate e cancelou o santuario.";
 	elseif (GetCooldown(targ, "martir") > 0)
 		broken_reason := "Voce optou pelo sacrificio pessoal.";
+	else
+		var current_hp := GetVital(targ, HITS);
+		var snapshot := CInt(GetObjProperty(targ, "#sanctuary_hp_snapshot"));
+		if (snapshot && current_hp < snapshot)
+			broken_reason := "Voce foi ferido e perdeu o santuario.";
+		else
+			SetObjProperty(targ, "#sanctuary_hp_snapshot", current_hp);
+		endif
 	endif
 
 	if (broken_reason != "")
