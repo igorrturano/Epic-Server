@@ -375,10 +375,10 @@ function SetupMerchant(npc, player)
 endfunction
 
 function SendItemView(npc, player, session)
-	var gump := GetMerchantGump(npc);
-	if (!gump || session.filtros.tipoFiltro != "")
-		gump := PreparaLojaGump(npc, player, session);
-	endif
+	//var gump := GetMerchantGump(npc);
+	var gump := PreparaLojaGump(npc, player, session);
+	//if (!gump || session.filtros.tipoFiltro != "")
+	//endif
 
 	return GFSendGump(player, gump);
 endfunction
@@ -393,7 +393,7 @@ function PreparaLojaGump(npc, player,byref session)
 	return gump;
 endfunction
 
-function removeItemMerchant(npc, player, session, input)
+function removeItemMerchant(npc, player,byref session, input)
 	var info := GetItemSoldInfo(npc, input);
 	var cost := info[1];
 	var selling := info[2];
@@ -660,6 +660,7 @@ function DoWithdraw(npc, player)
 		PrintTextAbove(npc, "Aqui estão os lucros de suas mercadorias.", SSM_INFO);
 	endif
 
+	var valorAReceber := 0; 
 	foreach amnt in account
 		var withdraw := CreateItemInBackPack(player, MOEDAS, amnt);
 		if (withdraw == error)
@@ -670,9 +671,13 @@ function DoWithdraw(npc, player)
 				PrintTextAbove(npc, "Eu não fui capaz de colocar o item na sua bolsa. Coloquei aos seus pés entao.");
 			endif
 		endif
+		valorAReceber += amnt;
 		sleepms(2);
 	endforeach
 
+	if(valorAReceber > 0)
+		SendSysMessageEx(player, "Você recebeu {} moeda(s).".format(valorAReceber), SSM_INFO);
+	endif
 	data_elem.EraseProp(Hex(player.serial));
 endfunction
 

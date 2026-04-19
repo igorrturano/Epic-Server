@@ -13,12 +13,24 @@ const COLOR_REGULAR := 1153; // Branco
 
 program medical_items_gump(who, item)
 	SendSysMessage(who, "Selecione o paciente para o procedimento médico ou recurso para recarregar suas doses.");
-	var patient := TargetCoordinates(who);
+var patient := TargetCoordinates(who);
+
+if (!patient)
+    return 0;
+endif
+
+var tgt := 0;
+
+if (patient.mobile)
+    tgt := patient.mobile;
+elseif (patient.item)
+    tgt := patient.item;
+endif
 
 	var gump := GFECreateGump("Procedimentos Médicos", 350, 450, array{ BORDER_BLUE });
 
-	var items := array{ struct{ objtype := 3886, color := 1899, name := "Sangria com sangue-suga",
-								symptom := DISEASES::FEVER },
+	var items := array{ struct{ objtype := 0xD1DB, name := "Cautério",
+								symptom := DISEASES::PUSTULES, tooltip := "Ferramenta de ferro em brasa para cauterização." },
 						
 						struct{
 								objtype := 0xD1C2,
@@ -26,112 +38,158 @@ program medical_items_gump(who, item)
 								doseType := "bull",
 								sourceObjtype := 0xE9,
 								symptom := DISEASES::THROMBOSIS,
-								maxDoses := 25 },
+								maxDoses := 25, 
+								tooltip := "Transfusão rústica que estimula a circulação. Recarregar em touros." },
+
 						struct{ objtype := 0xD1C7,
 								name := "Unguento de húmus de minhoca",
 								doseType := "worm",
 								sourceObjtype := 0x9980,
 								symptom := DISEASES::ITCHING,
-								maxDoses := 25 },
-						struct{ objtype := 0xD1CB, name := "Alicate retal", symptom := DISEASES::COLIC },
+								maxDoses := 25, 
+								tooltip := "Para aplicação cutânea para alívio imediato. Recarrega com minhocas." },
+
+						struct{ objtype := 0xD1CB, name := "Alicate retal", symptom := DISEASES::COLIC, tooltip := "Instrumento para desobstrução intestinal." },
 						
-						struct{ objtype := 0x102A, name := "Martelada de Compressão", symptom := DISEASES::PALPITATIONS },
+						struct{ objtype := 0x102A, name := "Martelada de Compressão", symptom := DISEASES::PALPITATIONS, tooltip := "Ferramenta para percussão torácica." },
 						
 						struct{
 								objtype := 0xD1C9,
-								name := "Inalação de vapores de água pantanosa",
+								name := "Vapores de água pantanosa",
 								doseType := "swamp",
 								symptom :=  DISEASES::NAUSEA,
-								maxDoses := 25 },
-						struct{ objtype := 0xD1BD, name := "Trepanação", symptom := DISEASES::HEADACHE },
+								maxDoses := 25, 
+								tooltip := "Tratamento com inalação por vaporização. Recarregar em água pantanosa." },
+
+						struct{ objtype := 0xD1BD, name := "Trépano", symptom := DISEASES::HEADACHE, tooltip := "Ferramenta para trepanação craniana." },
 						
 						struct{
-								objtype := 0xa3e8,
-								color := 1899,
-								name := "Cataplasma de areia minerável",
+								objtype := 0x64EA,
+								name := "Cataplasma térmica de areia",
 								doseType := "sand",
-								symptom := DISEASES::PUSTULES,
-								maxDoses := 25 },
-						struct{ objtype := 0xD1C3, name := "Sutura", symptom := DISEASES::LACERATION } };
+								symptom := DISEASES::FEVER,
+								maxDoses := 25, 
+								tooltip := "Compressa aquecida para indução de sudorese. Recarrega em areia." },
 
-	if (CoordinateDistance(who.x, who.y, patient.x, patient.y) > 2)
-		SendSysMessage(who, "Alvo está muito longe. Aproxime-se mais!", color := 33);
-		return 0;
-	endif
+						struct{ objtype := 0x1879, name := "Fibras de entranhas", symptom := DISEASES::LACERATION, doseType := "tripa", maxDoses := 25, sourceObjtype := 0xee46, tooltip := "Para sutura. Recarrega com entranhas." } };
 
+if (CoordinateDistance(who.x, who.y, patient.x, patient.y) > 2)
+    if (!tgt || tgt.container != who.backpack)
+        SendSysMessage(who, "Alvo está muito longe. Aproxime-se mais!", color := 33);
+        return 0;
+    endif
+endif
+	
 	// Verificar se o alvo selecionado é uma fonte para recarregar algum item
 	var recharged := 0;
-	foreach item_info in items
-		if (item_info.doseType != error && item_info.sourceObjtype != error)
-			if (patient.objtype == item_info.sourceObjtype)
-				// Verificar se o item já está com doses máximas
-				var currentDoses := GetItemDoses(item, item_info.doseType);
-				if (currentDoses >= item_info.maxDoses)
-					SendSysMessage(who, "O item " + item_info.name + " já está com doses máximas!");
-					return 1;
-				endif
+if (!patient.mobile)
+    var objtype := patient.objtype;
 
-				SetItemDoses(item, item_info.doseType, item_info.maxDoses);
-				SendSysMessage(who, "Você encheu " + item_info.name + " (" + item_info.maxDoses + " doses)!");
-				PlaySoundEffect(who, 0x069);
-				recharged := 1;
-				return 1;
-			endif
-		endif
-		Sleepms(2);
-	endforeach
+    if (tgt)
+        objtype := tgt.objtype;
+    endif
 
-	// Verificar se está em área de pântano para recarregar inalação de vapores
-	if (!recharged && IsSwampTarget(patient))
-		foreach item_info in items
-			if (item_info.doseType == "swamp")
-				// Verificar se o item já está com doses máximas
-				var currentDoses := GetItemDoses(item, item_info.doseType);
-				if (currentDoses >= item_info.maxDoses)
-					SendSysMessage(who, "O item " + item_info.name + " já está com doses máximas!");
-					return 1;
-				endif
+    foreach item_info in items
+        if (item_info.doseType != error && item_info.sourceObjtype != error)
+            if (objtype == item_info.sourceObjtype)
 
-				SetItemDoses(item, item_info.doseType, item_info.maxDoses);
-				SendSysMessage(who, "Você coletou líquido do pântano (" + item_info.maxDoses + " doses)!");
+                var currentDoses := GetItemDoses(item, item_info.doseType);
+
+                if (currentDoses >= item_info.maxDoses)
+                    SendSysMessage(who, "O item " + item_info.name + " já está com doses máximas!");
+                    return 1;
+                endif
+
+                SetItemDoses(item, item_info.doseType, item_info.maxDoses);
+
+                SendSysMessage(who, "Você encheu " + item_info.name + " (" + item_info.maxDoses + " doses)!");
+                PlaySoundEffect(who, 0x069);
+
+                return 1;
+            endif
+        endif
+        Sleepms(2);
+    endforeach
+
+    // =========================
+    // PÂNTANO
+    // =========================
+    if (IsSwampTarget(patient))
+        foreach item_info in items
+            if (item_info.doseType == "swamp")
+
+                var currentDoses := GetItemDoses(item, item_info.doseType);
+
+                if (currentDoses >= item_info.maxDoses)
+                    SendSysMessage(who, "O item " + item_info.name + " já está com doses máximas!");
+                    return 1;
+                endif
+
+                SetItemDoses(item, item_info.doseType, item_info.maxDoses);
+
+                SendSysMessage(who, "Você coletou líquido do pântano (" + item_info.maxDoses + " doses)!");
+                PerformAction(who, 0x0B);
 				PlaySoundEffect(who, 0x0026);
-				recharged := 1;
-				return 1;
-			endif
-			Sleepms(2);
-		endforeach
-	endif
 
-	// Verificar se é fonte de areia para cataplasma
-	if (!recharged && CanMine(patient, "Sand"))
-		foreach item_info in items
-			if (item_info.doseType == "sand")
-				// Verificar se o item já está com doses máximas
-				var currentDoses := GetItemDoses(item, item_info.doseType);
-				if (currentDoses >= item_info.maxDoses)
-					SendSysMessage(who, "O item " + item_info.name + " já está com doses máximas!");
-					return 1;
-				endif
+                return 1;
+            endif
+            Sleepms(2);
+        endforeach
+    endif
 
-				SetItemDoses(item, item_info.doseType, item_info.maxDoses);
+    // =========================
+    // AREIA
+    // =========================
+    if (CanMine(patient, "Sand"))
+        foreach item_info in items
+            if (item_info.doseType == "sand")
 
-				SendSysMessage(who, "Você encheu o Cataplasma de areia minerável (" + item_info.maxDoses + " doses)!");
-				PerformAction(who, 0x0B);
-				PlaySoundEffect(who, 0x126);
-				recharged := 1;
-				return 1;
-			endif
-			Sleepms(2);
-		endforeach
-	endif
+                var currentDoses := GetItemDoses(item, item_info.doseType);
+
+                if (currentDoses >= item_info.maxDoses)
+                    SendSysMessage(who, "O item " + item_info.name + " já está com doses máximas!");
+                    return 1;
+                endif
+
+                SetItemDoses(item, item_info.doseType, item_info.maxDoses);
+
+                SendSysMessage(who, "Você encheu o Cataplasma de areia térmica (" + item_info.maxDoses + " doses)!");
+                PerformAction(who, 0x0B);
+                PlaySoundEffect(who, 0x126);
+
+                return 1;
+            endif
+            Sleepms(2);
+        endforeach
+    endif
+
+    SendSysMessage(who, "Nada para recarregar aqui.");
+    return 1;
+elseif (patient.objtype == 0xE9) //touro
+ foreach item_info in items
+            if (item_info.doseType == "bull")
+
+                var currentDoses := GetItemDoses(item, item_info.doseType);
+
+                if (currentDoses >= item_info.maxDoses)
+                    SendSysMessage(who, "O item " + item_info.name + " já está com doses máximas!");
+                    return 1;
+                endif
+
+                SetItemDoses(item, item_info.doseType, item_info.maxDoses);
+
+                SendSysMessage(who, "Você coletou o sangue do touro, (" + item_info.maxDoses + " doses)!");
+                PerformAction(who, 0x0B);
+				PlaySoundEffect(who, 0x0026);
+
+                return 1;
+            endif
+            Sleepms(2);
+        endforeach
+endif
 
 	var diseases_system := GetObjProperty(patient, "Diseases_System");
 	var disease_grade := diseases_system.grade;
-
-	if (!patient.mobile.serial)
-		SendSysMessage(who, "Não é um alvo válido!");
-		return 0;
-	endif
 
 	if (disease_grade == "Incuravel")
 		SendSysMessage(who, "A doença do paciente é intratável!");
@@ -169,6 +227,9 @@ program medical_items_gump(who, item)
 		endif
 		GFTilePic(gump, 60, y_pos - 5, item_info.objtype, hue);
 		GFTextLine(gump, 110, y_pos, 53, item_info.name);
+		//Botão de interrogação com tooltip
+		GFAddButton(gump, 300, y_pos, 22153, 22153, GF_DUMMY_BTN);
+		GFTooltipText(gump, item_info.tooltip);
 
 		// Verificar e exibir doses se aplicável
 		if (item_info.doseType != error)
@@ -209,6 +270,7 @@ program medical_items_gump(who, item)
 		SetItemDoses(item, "worm", 25);
 		SetItemDoses(item, "sand", 25);
 		SetItemDoses(item, "swamp", 25);
+		SetItemDoses(item, "tripa", 25);
 		SendSysMessage(who, "tudo foi recarregado");
 	endif
 
@@ -222,6 +284,7 @@ function GetRechargeInstructions(itemInfo)
 		"worm":  return "uma minhoca";
 		"sand":  return "uma área com areia";
 		"swamp": return "uma área de água no pântano";
+		"tripa": return "uma entranha";
 		default: return "a fonte adequada";
 	endcase
 endfunction
@@ -303,9 +366,9 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 	var success_msg, fail_skill_msg, incompatible_msg, sound_effect;
 
 	case (objtype)
-		3886:   // Sangria
-			success_msg := "A sangria normalizou a temperatura do corpo do paciente.";
-			fail_skill_msg := "O médico não conseguiu posicionar a sangue-suga corretamente.";
+		0xD1DB:   // TROCAR ferro de cauterização
+			success_msg := "O ferro em brasa queima as postúlas, e o paciente sente alívio após a dor intensa.";
+			fail_skill_msg := "O ferro foi aplicado de forma incorreta, agravando e causando sofrimento extremo.";
 			sound_effect := 0x4f;
 			break;
 
@@ -335,18 +398,18 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 
 		0xD1C9: // Inalação de vapores do pântano
 			success_msg := "Os vapores do pântano causam tontura, mas parecem ter propriedades medicinais.";
-			fail_skill_msg := "Você tossiu e não conseguiu inalar corretamente os vapores medicinais.";
+			fail_skill_msg := "O paciente tossiu e não conseguiu inalar corretamente os vapores medicinais.";
 			sound_effect := 0x230;
 			break;
 
 		0xD1BD: // Trepanação
 			success_msg := "O procedimento é extremamente doloroso, mas a mente está livre da dor.";
-			fail_skill_msg := "O instrumento de trepanação deslizou e o procedimento falhou. Você sente uma dor aguda.";
+			fail_skill_msg := "O instrumento de trepanação deslizou e o procedimento falhou. O paciente sente uma dor aguda.";
 			sound_effect := 0x219;
 			break;
 
-		0xa3e8: // Cataplasma de areia queimada
-			success_msg := "O paciente sente uma sensação de aquecimento seguida de alívio.";
+		0xa3e8: // Cataplasma de areia térmica
+			success_msg := "A areia normalizou a temperatura corporal do paciente.";
 			fail_skill_msg := "A cataplasma esfriou demais antes de ser aplicada e perdeu sua eficácia.";
 			sound_effect := 0x2A2;
 			break;
@@ -739,4 +802,13 @@ function AgravarDoenca(who, patient, disease_grade)
 							  SSM_FAIL);
 			break;
 	endcase
+endfunction
+
+function FindItemInContainer(container, objtype)
+    foreach obj in EnumerateItemsInContainer(container)
+        if (obj.objtype == objtype)
+            return obj;
+        endif
+    endforeach
+    return 0;
 endfunction
