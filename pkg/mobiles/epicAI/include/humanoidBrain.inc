@@ -7,6 +7,7 @@ include "epicSpecial";
 include "NPCMageryUtils";
 include ":abilities:include/models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":charactercreation:include/resists";
 
 function HumanoidBrain()
     var ev;
