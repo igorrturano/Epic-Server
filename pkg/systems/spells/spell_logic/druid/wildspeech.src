@@ -31,6 +31,8 @@ program SpellScript(params)
 
 	var opts := struct{};
 	opts.+properties := dictionary{ "wildspeech" -> 1 };
+	opts.+buff_category := "wildspeech";
+	opts.+displayname := "Fala Selvagem";
 	opts.+desc := "Fala Selvagem";
 
 	SC_ApplyEffect(who, who, opts, duration_secs, CInt(spell.id));
