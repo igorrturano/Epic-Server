@@ -30,7 +30,9 @@ program SpellScript(params)
 
 		var opts := struct{};
 		opts.+frozen := 1;
-		opts.+desc := "Crescimento Selvagem";
+		opts.+buff_category := "movement_root";
+		opts.+displayname := "Crescimento Selvagem";
+		opts.+desc := "Enraizado por vinhas";
 
 		SC_ApplyEffect(who, mobile, opts, duration, CInt(spell.id));
 		sleepms(20);
