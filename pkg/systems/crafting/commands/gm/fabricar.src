@@ -1,6 +1,6 @@
 use uo;
 
-include ":crafting:fabricaComplexos";
+include ":crafting:include/fabricacaoComplexosGump";
 
 program fabricarItem(quem, texto)
 	var entrada := SplitWords(texto);
