@@ -6,21 +6,59 @@ include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":merchants:/include/cambio";
 include ":taming:taming";
+include "include/say";
 
 const MOEDAS_COBRE := 0xba63;
 const MOEDAS_PRATA := 0xba64;
 const MOEDAS_OURO := 0xba65;
 const GOLD_COIN := 0xeed;
+const SEGUNDOS_POR_DIA := 86400;
 
 program StablePost(who, post)
+	// Limpa qualquer aluguel vencido antes de decidir o fluxo
+	var existing_serial := GetObjProperty(post, "StoredAnimal");
+	if (existing_serial)
+		var existing := SystemFindObjectBySerial(existing_serial);
+		if (existing && IsStableExpired(existing))
+			ExpireStabledPet(existing, post);
+		endif
+	endif
+
 	if (GetObjProperty(post, "StoredAnimal"))
-		// Se já tem um animal, tenta resgatar
 		return ResgatarAnimal(who, post);
 	else
-		// Se não tem animal, permite guardar
 		return GuardarAnimal(who, post);
 	endif
 endprogram
+
+function IsStableExpired(pet)
+	var dataEntrada := CInt(GetObjProperty(pet, "DataEntrada"));
+	if (!dataEntrada)
+		return 0;
+	endif
+	return (polcore().systime - dataEntrada) >= SEGUNDOS_POR_DIA;
+endfunction
+
+function ExpireStabledPet(pet, post)
+	pet.setParalyzed(0);
+	RevokePrivilege(pet, "invul");
+	pet.disable("invul");
+
+	EraseObjProperty(pet, "EstaNoEstabulo");
+	EraseObjProperty(pet, "StablePostSerial");
+	EraseObjProperty(pet, "DataEntrada");
+	EraseObjProperty(pet, "PrecoPorDia");
+
+	if (post)
+		EraseObjProperty(post, "StoredAnimal");
+	endif
+
+	var owner := pet.master;
+	if (owner)
+		GetNumPets(owner);
+		SendSysMessageEx(owner, "Voce perdeu seu aluguel de estabulo! " + pet.name + " foi liberado.", SSM_FAIL);
+	endif
+endfunction
 
 function GuardarAnimal(who, post)
 	// 1. Verificar se o player tem um animal próximo
@@ -86,15 +124,6 @@ function GuardarAnimal(who, post)
 	SetObjProperty(target_pet, "DataEntrada", polcore().systime);
 	SetObjProperty(target_pet, "PrecoPorDia", precoPorDia);
 	SetObjProperty(post, "StoredAnimal", target_pet.serial);
-
-	var stable_posts := GetGlobalProperty("StablePosts");
-	if (!stable_posts)
-		stable_posts := array{};
-	endif
-	if (!(post.serial in stable_posts))
-		stable_posts.Append(post.serial);
-		SetGlobalProperty("StablePosts", stable_posts);
-	endif
 
 	GetNumPets(who);
 
