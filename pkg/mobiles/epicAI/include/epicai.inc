@@ -368,7 +368,7 @@ endfunction
 
 function SetupAlchemistLoadout(mobile)
     // Create explosive potions
-    var explosive_potions := array{0xbf13, 0xbf14, 0xbf15, 0xef60, 0xef61, 0xef62};
+    var explosive_potions := array{0xbf13, 0xef60};
     foreach potion in explosive_potions
         for i := 1 to 2
             CreateItemInBackpack(mobile, potion, 1);
@@ -377,7 +377,7 @@ function SetupAlchemistLoadout(mobile)
     endforeach
     
     // Create healing potions
-    var heal_potions := array{0xDC01, 0xDC02, 0xDC03};
+    var heal_potions := array{0xDC0};
     foreach potion in heal_potions
         for i := 1 to 2
             CreateItemInBackpack(mobile, potion, 1);
