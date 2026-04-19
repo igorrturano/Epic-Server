@@ -28,6 +28,8 @@ program SpellScript(params)
 
 	var opts := struct{};
 	opts.+dex_mod := -20;
+	opts.+buff_category := "movement_debuff";
+	opts.+displayname := "Ventania Selvagem";
 	opts.+desc := "Ventania Selvagem";
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
