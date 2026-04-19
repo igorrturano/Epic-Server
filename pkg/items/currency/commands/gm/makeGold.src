@@ -1,6 +1,8 @@
 use uo;
 use polsys;
 
+include "include/epicEconomyAudit";
+
 program makegold(mobile, amount)
 
 	if (!amount)
@@ -26,8 +28,11 @@ program makegold(mobile, amount)
 	var orgamount := amount;
 	var created := 0;
 	var stacks := 0;
+	var gm_label := "GM:" + mobile.acctname;
 	while (amount > 60000)
-		if (CreateItemInContainer(cont, "GoldCoin", 60000))
+		var g := CreateItemInContainer(cont, "GoldCoin", 60000);
+		if (g)
+			EA_Record(EA_MINT_GM, g, 60000, gm_label, cont, "");
 			amount := amount - 60000;
 			created := created + 60000;
 			stacks := stacks + 1;
@@ -39,7 +44,9 @@ program makegold(mobile, amount)
 	endwhile
 
 	if (amount > 0)
-		if (CreateItemInContainer(cont, "GoldCoin", amount))
+		var g := CreateItemInContainer(cont, "GoldCoin", amount);
+		if (g)
+			EA_Record(EA_MINT_GM, g, amount, gm_label, cont, "");
 			created := created + amount;
 		else
 			SendSysMessage(mobile, "The container is full!");
