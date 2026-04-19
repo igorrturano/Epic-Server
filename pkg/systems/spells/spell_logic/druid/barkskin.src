@@ -57,6 +57,7 @@ program SpellScript(params)
 	opts.+color := 2826;
 	opts.+buff_category := "armor_protection";
 	opts.+displayname := "Pele de Árvore";
+	opts.+maintainable := 1;
 
 	// Apply effect via SpellController (no sleep needed)
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
