@@ -4,6 +4,8 @@ use cfgfile;
 include ":crafting:gumps/fabricacaoGumps";
 include ":crafting:include/util/fabricacaoConstants";
 
+//TODO remover o gump de ajuda. Criar um gump que mostra as receitas aprendidas no lugar.
+
 function EnviaFabricacaoAjudaGump(quem, profissao, idAba)
 	var retorno := true;
 	var parametros := PreparaFabricacaoAjudaGump(profissao, idAba);

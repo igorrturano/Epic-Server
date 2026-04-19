@@ -449,8 +449,9 @@ function DoPurchase(npc, player,byref session, input)
 		cost.lote := 1;
 	endif
 
-	var cityBank := GetObjProperty(npc,"City");
-	if (ContaCapital(player, cityBank ? cityBank : CP_DEFAULT_AREA).valorTotal < CInt(cost.cost_amt)) 
+	//var cityBank := GetObjProperty(npc,"City");
+	//if (ContaCapital(player, cityBank ? cityBank : CP_DEFAULT_AREA).valorTotal < CInt(cost.cost_amt)) // removido por clamor publico hihihi
+	if (ContaCapital(player, 0).valorTotal < CInt(cost.cost_amt)) 
 		SendSysMessageEx(player, "Você não tem moedas o suficiente para comprar isto.");
 		return 0;
 	endif
@@ -470,7 +471,7 @@ function DoPurchase(npc, player,byref session, input)
 	var cost_desc := AddArticle(GetName(cost.cost_type));
 	var pay_list := array{};
 
-	if (!player.spendgold(owed, cityBank ? cityBank : CP_DEFAULT_AREA ))
+	if (!player.spendgold(owed, 0))
 		SendSysMessageEx(player, "Você não tem as {} m.o necessárias.".format(owed), SSM_FAIL);
 		return 0;
 	else

@@ -1,9 +1,8 @@
 use uo;
 use util;
 use cfgfile;
+include ":alchemy:alchemy";
 // include ":alchemy:drinkPotion";
-
-const UOBJ_EMPTY_BOTTLE := 0x0f0e;
 
 program drink_blue(who, potion)
 	EraseObjProperty(who, "IsMeditating");
@@ -23,8 +22,7 @@ program drink_blue(who, potion)
 	endif
 	if (what.objtype == 0x0FAB)
 		what.color := potion.color;
-		DestroyItem(potion);
-		CreateItemInBackpack(who, UOBJ_EMPTY_BOTTLE, 1);
+		Empty_bottle(who, potion);
 		SetObjProperty(what, "fullness", 10);
 		what.name := "Um balde de tinta cheio";
 	else
