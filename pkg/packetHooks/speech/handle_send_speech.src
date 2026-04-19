@@ -117,37 +117,40 @@ endfunction
 
 function CanHear(byRef messageData)
 	var hearDistance;
+	var playerDistance := Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef());
 	var rangeMod := CheckLineOfSight(messageData.source.GetObjRef(), messageData.target.GetObjRef()) ? 1 : 3;
+	print(messageData);
+	print($"Distância entre fonte e alvo: {playerDistance}. Modificador de alcance: {rangeMod}.");
 
 	if (messageData.type == MESSAGE_TYPE::WHISPER)
 		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
-							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod) :
-							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod) + 4;
+							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod);
 		
-		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > hearDistance)
+		if (playerDistance > hearDistance)
 			return false;
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::YELL)
 		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
-							CInt(MESSAGE_DISTANCE::YELL / rangeMod) :
-							CInt(MESSAGE_DISTANCE::YELL / rangeMod) + 4;
+							CInt(MESSAGE_DISTANCE::YELL / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::YELL / rangeMod);
 
-		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > hearDistance || 
+		if (playerDistance > hearDistance || 
 			Abs(messageData.source.GetObjRef().z - messageData.target.GetObjRef().z) >= hearDistance)
 			return false;
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::NORMAL)
 		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
-							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod) :
-							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod) + 4;
+							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod);
 
-		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > hearDistance)
+		if (playerDistance > hearDistance)
 			return false;
 		endif
 	elseif (messageData.type == MESSAGE_TYPE::EMOTE)
 		hearDistance := CInt(MESSAGE_DISTANCE::EMOTE / rangeMod);
 
-		if (Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef()) > hearDistance)
+		if (playerDistance > hearDistance)
 			return false;
 		endif
 	endif
