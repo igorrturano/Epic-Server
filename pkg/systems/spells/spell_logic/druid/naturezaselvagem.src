@@ -39,7 +39,7 @@ program SpellScript(params)
 	endforeach
 
 	// Bleed after vines release — keep as TS (active damage loop, already has PersistOnLogoff)
-	sleep(5);
+	sleep(duration);
 	foreach mobile in allMobiles
 		SendSysMessageEx(mobile, "As vinhas rasgam sua pele ao te soltar");
 		TS_StartTimer(mobile, "bleed", CInt(AP_GetSkill(who, THEOLOGY) / 4));

@@ -1,0 +1,50 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include ":combat:Controller/DamageController_legacy";
+include "include/tileEffects";
+include ":taming:taming";
+include "include/epicMageryUtils";
+
+program chainLightning(params)
+	var caster := params[1];
+	var targ := params[2];
+	var spellinfo := params[3];
+	var spell_circle := spellinfo.Circle;
+	var spell_school := spellinfo.School;
+	SendSysMessage(caster, "Selecione o alvo.");
+
+	if (!targ)
+		SendSysMessageEx(caster, "Voce cancelou.", SSM_FAIL);
+		return 0;
+	endif
+	if (!CheckLosAt(caster, caster.x, caster.y, caster.z))
+		SendSysMessageEx(caster, "Voce nao enxerga o alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(caster, "Voce ve raio saindo de sua mao e passando por seus inimigos.", SSM_INFO);
+
+	var range := cint(AP_GetSkill(caster, THEOLOGY) / 20);
+	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range, targ);
+
+	var casterThenNextMobile := caster;
+	foreach mobile in allMobiles
+		SetObjProperty(mobile, "LastHit", { caster.name, caster.serial, "chain lightning" });
+		PlayMovingEffect(casterThenNextMobile, mobile, 0x379f, 0, 20);
+		casterThenNextMobile := mobile;
+		PlaySoundEffect(mobile, SFX_SPELL_LIGHTNING);
+		var dmg := epicSpellDamageRoll(caster, spell_circle);
+		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+
+		DamageFLS(mobile, cint(dmg), DMG_ENERGY, caster, "chainLightning");
+		sleepms(600);
+	endforeach
+endprogram
