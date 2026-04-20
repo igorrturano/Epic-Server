@@ -19,11 +19,14 @@ class GumpFactory(IGumpFactory)
 		return Gump(parent, title, width, height, options);
 	endfunction
 
-	function CreateButton(this, name := "Button", x := 0, y := 0, unpressedImage := BUTTON_IMAGE::CLOSE_UNPRESSED, pressedImage := BUTTON_IMAGE::CLOSE_PRESSED, buttonType := BUTTON_TYPE::CLOSE)
-		return Button(name, x, y, unpressedImage, pressedImage, buttonType);
+	function CreateButton(this, name := "Button", x := 0, y := 0, unpressedImage := BUTTON_IMAGE::CLOSE_UNPRESSED, pressedImage := BUTTON_IMAGE::CLOSE_PRESSED)
+		return Button(name, x, y, unpressedImage, pressedImage);
 	endfunction
 
 	function CreateImageGump(this, name := "ImageGump", x := 0, y := 0, imageId := 0)
+		var iamge := ImageGump(name, x, y, imageId);
+		print("criou -> " + iamge.ToString());
+		return iamge;
 		return ImageGump(name, x, y, imageId);
 	endfunction
 
