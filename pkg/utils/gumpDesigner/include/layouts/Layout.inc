@@ -195,6 +195,12 @@ class Layout(Container, ILayout)
 				+ "bottomRight=" + this.GetBorder_BottomRight().ToString()
 			+ "}";
 	endfunction
+
+	// Override
+	function Dispose(this)
+		Super::Dispose(this);
+		this.InsertControls();
+	endfunction
 	
 	// uninit function InitializeControls(this);
 	// uninit function ConfigureControls(this);
