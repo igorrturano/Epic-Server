@@ -275,6 +275,11 @@ function MP_Mount(mobile, npc)
 		return 0;
 	endif
 
+	if ( GetObjProperty(mobile, "metamorfose") )
+		Message("Voce nao pode montar nessa forma", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
 	// Check race/gender restrictions using new system
 	var restriction_check := MP_CheckMountRestriction(mobile, npc);
 	if (!restriction_check)
