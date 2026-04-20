@@ -44,7 +44,16 @@ class Assassinate(CombatAbility)
 		var who := mobile.GetObjRef();
 		var range := CInt(AP_GetSkill(who, SNEAK) / 2);
 
-		var targ := Target(who);
+		var targ;
+		if (who.npctemplate)
+			targ := who.opponent;
+			if (!targ)
+				targ := GetRandomNearbyHostile(who);
+			endif
+		else
+			targ := Target(who);
+		endif
+
 		if (!targ)
 			return false;
 		elseif (!targ.isA(POLCLASS_MOBILE))
