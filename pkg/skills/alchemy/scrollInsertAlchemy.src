@@ -26,7 +26,7 @@ program on_insert(who, book, movetype, inserttype, item, existing_stack, amt)
 		MoveITemToContainer(item, who.backpack);
 		return 0;
 	else
-		if (GetObjProperty(item, "recipe"))
+		if (GetObjProperty(item, "AlchemyRecipe"))
 			return addScroll(who, book, item);
 		else
 			SendSysMessage(who, "Voce nao pode por isto no livro.");
@@ -45,13 +45,14 @@ function addScroll(who, book, rune)
 		rune_list := array;
 	endif
 
-	var newSpell := GetObjProperty(rune, "recipe");
+	var recipeKey := GetObjProperty(rune, "AlchemyRecipe");
+	var newSpell := struct{ "recipe" := recipeKey };
 	WriteAlchInfo(newSpell);
 
 	foreach spell in rune_list
-		if (newspell.recipe == spell.recipe)
+		if (newSpell.recipe == spell.recipe)
 			SendSysMessage(who, "Este livro ja contem esta receita.");
-			MoveItemTocontainer(rune, who.backpack);
+			MoveItemToContainer(rune, who.backpack);
 			return 0;
 		endif
 	endforeach
@@ -74,17 +75,26 @@ function addScroll(who, book, rune)
 		list := array;
 	endif
 
-	var recipe := newspell.name;
+	var recipe;
+	if (Find(newSpell.name, "-", 1) > 0)
+		recipe := newSpell.name;
+	else
+		recipe := newSpell.name + "-1";
+	endif
 	if (recipe in list)
 		SendSysMessage(who, "Voce ja conhece como fazer este item.");
-		return 1;
+		ReleaseItem(rune);
+		MoveItemToContainer(rune, who.backpack);
+		return 0;
 	endif
 
 	Set_Critical(1);
 
-	// Aprende no livro
-	rune_list.Append(GetObjProperty(rune, "recipe"));
+	// Armazena apenas a chave — WriteAlchInfo popula os campos no gump
+	var stored := struct{ "recipe" := recipeKey };
+	rune_list.Append(stored);
 	SetObjProperty(book, "recipes", rune_list);
+
 	ReleaseItem(rune);
 
 	SendSysMessage(who, "Voce adicionou o pergaminho no livro. ");
