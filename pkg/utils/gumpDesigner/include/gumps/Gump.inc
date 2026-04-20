@@ -38,7 +38,7 @@ class Gump(Container, IGump)
 		this.options := options;
 		this.createdControls := Gump::createdControls;
 		this.helpAction := @() {
-			Message("Esta ajuda ainda não foi implementada.").SetColor(Color(SYSTEM_COLOR::ALERT)).SendSys(this.GetParent());
+			Message("Esta ajuda ainda não foi implementada.").SetColor(Color(SYSTEM_COLOR::ALERT)).SendSys(parent);
 		};
 	endfunction
 
@@ -205,10 +205,10 @@ class Gump(Container, IGump)
 		var result := GFSendGump(this._parent, this.GetGumpString());
 		
 		var eventHandled;
-		if (!result[0])
+		if (!(result[0] in this.createdControls.orderById))
 			return NoEventHandledException("No event was handled for this gump.");
 		else
-			eventHandled := GumpEvent(this.GetControls().position[result[0]]);
+			eventHandled := GumpEvent(this.createdControls.positionById[result[0]]);
 		endif
 
 		this._UpdateInputValues();
@@ -225,6 +225,7 @@ class Gump(Container, IGump)
 	function Dispose(this)
 		this.gumpString := Gump::gumpString;
 		this.createdControls := Gump::createdControls;
+		this.GetTitle().GetHelpButton().Dispose();
 		this.GetCurrentPage().Dispose();
 	endfunction
 
@@ -247,17 +248,17 @@ class Gump(Container, IGump)
 			return InvalidParameterException("Control  must be of type 'Control'.");
 		endif
 
-		if (!this._createdControls.countByType[control.GetType()])
-			this._createdControls.countByType[control.GetType()] := 0;
+		if (!this.createdControls.countByType[control.GetType()])
+			this.createdControls.countByType[control.GetType()] := 0;
 		endif
 
-		this._createdControls.countByType[control.GetType()] += 1;
+		this.createdControls.countByType[control.GetType()] += 1;
 
 		var idOffset := this._GetIdOffsetByControlType(control.GetType());
-		var controlId := idOffset + this._createdControls.countByType[control.GetType()];
+		var controlId := idOffset + this.createdControls.countByType[control.GetType()];
 		control.SetId(controlId);
-		this._createdControls.orderById.append(controlId);
-		this._createdControls.positionById[controlId] := control;
+		this.createdControls.orderById.append(controlId);
+		this.createdControls.positionById[controlId] := control;
 
 		if (control is @Container)
 			this._IndexControls(control.GetControls());
@@ -274,7 +275,7 @@ class Gump(Container, IGump)
 		endif
 
 		this.GetTitle().GetText().SetValue(this.GetTitleName());
-		this.GetTitle().SetHelpButton(this._CreateHelpButton());
+		this.GetTitle().GetHelpButton().AddAction(this.helpAction);
 		this._IndexControl(this.GetTitle().GetHelpButton());
 	endfunction
 
@@ -301,28 +302,28 @@ class Gump(Container, IGump)
 	endfunction
 	
 	function _UpdateInputValues(this)
-		foreach control in (this._createdControls.positionById)
+		foreach control in (this.createdControls.positionById)
 			control.SetValue(GFExtractData(this.GetGumpString(), control.GetId()));
 		endforeach
 	endfunction
 
-	function _CreateHelpButton(this)
-		var buttonHelp := Button("Help", this.GetTitle().GetWidth() - 30, 36, 0x5689, 0x568A);
-		buttonHelp.AddAction(this.helpAction);
-		return buttonHelp;
-	endfunction
+	// function _CreateHelpButton(this)
+	// 	var buttonHelp := Button("Help", this.GetTitle().GetWidth() - 30, 36, 0x5689, 0x568A);
+	// 	buttonHelp.AddAction(this.helpAction);
+	// 	return buttonHelp;
+	// endfunction
 
 	function _GetIdOffsetByControlType(this, controlType)
 		case (controlType) // Feito com valores fixos pra poder ter um controle melhor da resposta no input[0]
-			GumpControl::Text: return 1000;
-			GumpControl::TextCropped: return 2000;
-			GumpControl::ImageGump: return 3000;
-			GumpControl::ImageTile: return 4000;
-			GumpControl::Button: return 5000;
-			GumpControl::CheckBox: return 6000;
-			GumpControl::RadioButton: return 7000;
-			GumpControl::TextBox: return 8000;
-			GumpControl::RadioGroup: return 9000;
+			GumpControl::Text:
+			GumpControl::TextCropped: return 1000;
+			GumpControl::ImageGump: return 2000;
+			GumpControl::ImageTile: return 3000;
+			GumpControl::Button: return 4000;
+			GumpControl::CheckBox: return 5000;
+			GumpControl::RadioButton: return 6000;
+			GumpControl::TextBox: return 7000;
+			GumpControl::RadioGroup: return 8000;
 
 			default: return 0;
 		endcase
