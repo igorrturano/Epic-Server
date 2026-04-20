@@ -7,7 +7,6 @@ class BlueGumpLayout(GumpLayout)
 		Super();
 		this.InitializeControls();
 		this.ConfigureControls();
-		this.PositionControls();
 		this.InsertControls();
 	endfunction
 
@@ -111,7 +110,7 @@ class BlueGumpLayout(GumpLayout)
 
 		page.SetX(title.GetX());
 		page.SetY(title.GetY() + title.GetHeight() + separator);
-		page.Resize(this.GetWidth() - (2 * page.GetX()), this.GetHeight() - title.GetY() - title.GetHeight() - (2 * separator));
+		page.Resize(this.GetWidth() - (2 * page.GetX()), this.GetHeight() - (2 * title.GetY()) - title.GetHeight() - separator);
 	endfunction
 
 	function ToString(this)

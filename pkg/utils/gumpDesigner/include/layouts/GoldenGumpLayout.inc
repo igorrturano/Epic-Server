@@ -112,7 +112,7 @@ class GoldenGumpLayout(GumpLayout)
 
 		page.SetX(title.GetX());
 		page.SetY(title.GetY() + title.GetHeight() + separator);
-		page.Resize(this.GetWidth() - (2 * page.GetX()), this.GetHeight() - page.GetY() - (title.GetY() - 9));
+		page.Resize(this.GetWidth() - (2 * page.GetX()), this.GetHeight() - title.GetY() - title.GetHeight() - separator - (title.GetY() - 10));
 	endfunction
 
 	function ToString(this)
