@@ -1,10 +1,10 @@
 include ":gumps:epicGumps";
-include ":gumpDesigner:Gump/Gump";
-include ":gumpDesigner:Control/Text";
-include ":gumpDesigner:Control/Button";
-include ":gumpDesigner:Control/ImageGump";
-include ":gumpDesigner:Control/Container/Container";
-include ":gumpDesigner:Control/Container/ContainerGridLayout";
+include ":gumpDesigner:gumps/Gump";
+include ":gumpDesigner:controls/Text";
+include ":gumpDesigner:controls/Button";
+include ":gumpDesigner:controls/ImageGump";
+include ":gumpDesigner:controls/containers/Container";
+include ":gumpDesigner:controls/containers/ContainerGridLayout";
 include ":achievements:models/Achievement";
 
 function ShowAchievementsGump(who)

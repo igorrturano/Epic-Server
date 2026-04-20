@@ -1,7 +1,7 @@
-include ":gumpDesigner:Gump/Gump";
-include ":gumpDesigner:Control/Button";
-include ":gumpDesigner:Control/Text";
-include ":gumpDesigner:Control/Container/ContainerGridLayout";
+include ":gumpDesigner:gumps/Gump";
+include ":gumpDesigner:controls/Button";
+include ":gumpDesigner:controls/Text";
+include ":gumpDesigner:controls/containers/ContainerGridLayout";
 include ":message:model/Message";
 include ":wrappers:Objects/Model/MobileWrapper";
 
