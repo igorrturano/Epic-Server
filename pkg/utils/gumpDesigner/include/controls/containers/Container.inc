@@ -1,6 +1,6 @@
 use util;
 
-include ":gumpDesigner:controlss/ResizableControl";
+include ":gumpDesigner:controls/ResizableControl";
 
 include "system/exception/ParameterException/InvalidParameterException";
 

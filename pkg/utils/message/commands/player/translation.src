@@ -34,7 +34,7 @@ program cmd_translation(who)
 
 		var result := gump.Show();
 
-		if (result.GetControl() == EVENT_ACTION::CLOSED)
+		if (result.GetControl() is @NoEventHandledException)
 			cont := false;
 		elseif (result.GetControl().Equals(button2))
 			who.SetProperty("translation", 1);

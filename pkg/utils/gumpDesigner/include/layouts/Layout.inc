@@ -1,8 +1,8 @@
 include "system/exception/ParameterException/InvalidParameterException";
 
 include "ILayout";
-include ":gumpDesigner:controlss/containers/Container";
-include ":gumpDesigner:controlss/ImageGump";
+include ":gumpDesigner:controls/containers/Container";
+include ":gumpDesigner:controls/ImageGump";
 
 class Layout(Container, ILayout)
 	var borders := struct{

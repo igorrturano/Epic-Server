@@ -1,13 +1,13 @@
 include "IGumpFactory";
 
-include ":gumpDesigner:gumpss/Gump";
-include ":gumpDesigner:controlss/Button";
-include ":gumpDesigner:controlss/ImageGump";
-include ":gumpDesigner:controlss/ImageGumpTiled";
-include ":gumpDesigner:controlss/ImageTile";
-include ":gumpDesigner:controlss/Text";
-include ":gumpDesigner:controlss/Tooltip";
-include ":gumpDesigner:controlss/containers/ContainerGridLayout";
+include ":gumpDesigner:gumps/Gump";
+include ":gumpDesigner:controls/Button";
+include ":gumpDesigner:controls/ImageGump";
+include ":gumpDesigner:controls/ImageGumpTiled";
+include ":gumpDesigner:controls/ImageTile";
+include ":gumpDesigner:controls/Text";
+include ":gumpDesigner:controls/Tooltip";
+include ":gumpDesigner:controls/containers/ContainerGridLayout";
 include ":gumpDesigner:layouts/TitleLayout";
 include ":gumpDesigner:layouts/PageLayout";
 

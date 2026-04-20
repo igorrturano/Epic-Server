@@ -1,10 +1,10 @@
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:model/Message";
-include ":gumpDesigner:gumpss/Gump";
-include ":gumpDesigner:controlss/containers/ContainerGridLayout";
-include ":gumpDesigner:controlss/Button";
-include ":gumpDesigner:controlss/Text";
-include ":gumpDesigner:controlss/Tooltip";
+include ":gumpDesigner:gumps/Gump";
+include ":gumpDesigner:controls/containers/ContainerGridLayout";
+include ":gumpDesigner:controls/Button";
+include ":gumpDesigner:controls/Text";
+include ":gumpDesigner:controls/Tooltip";
 include ":timedScripts:timedScripts";
 include ":combat:Model/CombatTraits";
 include ":combat:Controller/StanceController";
@@ -62,23 +62,23 @@ function ChooseStance(who)
 
 	// Create buttons and labels for each stance (coordinates relative to grid cell)
 	var btnNeutral := Button("Neutral", 15, 0, 2152, 2153);
-	var txtNeutral := Text("txtNeutral", 20, 5, "Neutra", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtNeutral := Text("txtNeutral", 20, 5, "Neutra", Color(GENERAL_COLOR::_DEFAULT), 180);
 	var tooltipNeutral := Tooltip("tooltipNeutral", "Postura equilibrada sem bônus ou penalidades.");
 
 	var btnAggressive := Button("Aggressive", 15, 0, 2152, 2153);
-	var txtAggressive := Text("txtAggressive", 20, 5, "Agressiva (+5/+5)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtAggressive := Text("txtAggressive", 20, 5, "Agressiva (+5/+5)", Color(GENERAL_COLOR::_DEFAULT), 180);
 	var tooltipAggressive := Tooltip("tooltipAggressive", "Postura focada no ataque, concedendo bônus de acerto, mas reduzindo a esquiva.");
 
 	var btnVeryAggressive := Button("VeryAggressive", 15, 0, 2152, 2153);
-	var txtVeryAggressive := Text("txtVeryAggressive", 20, 5, "Muito Agressiva (+10/+10)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtVeryAggressive := Text("txtVeryAggressive", 20, 5, "Muito Agressiva (+10/+10)", Color(GENERAL_COLOR::_DEFAULT), 180);
 	var tooltipVeryAggressive := Tooltip("tooltipVeryAggressive", "Postura extremamente focada no ataque, concedendo maiores bônus de acerto, mas com penalidades significativas na defesa.");
 
 	var btnDefensive := Button("Defensive", 15, 0, 2152, 2153);
-	var txtDefensive := Text("txtDefensive", 20, 5, "Defensiva (-5/-5)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtDefensive := Text("txtDefensive", 20, 5, "Defensiva (-5/-5)", Color(GENERAL_COLOR::_DEFAULT), 180);
 	var tooltipDefensive := Tooltip("tooltipDefensive", "Postura focada na defesa, concedendo bônus de esquiva, mas reduzindo o acerto.");
 
 	var btnVeryDefensive := Button("VeryDefensive", 15, 0, 2152, 2153);
-	var txtVeryDefensive := Text("txtVeryDefensive", 20, 5, "Muito Defensiva (-10/-10)", Color(GENERAL_COLOR::_DEFAULT), 180, TEXT_ALIGN::ALIGN_LEFT);
+	var txtVeryDefensive := Text("txtVeryDefensive", 20, 5, "Muito Defensiva (-10/-10)", Color(GENERAL_COLOR::_DEFAULT), 180);
 	var tooltipVeryDefensive := Tooltip("tooltipVeryDefensive", "Postura extremamente focada na defesa, concedendo maiores bônus de esquiva, mas com penalidades significativas no acerto.");
 
 	// Highlight current stance with green color
@@ -120,7 +120,7 @@ function ChooseStance(who)
 
 	eventHandled := gump.Show();
 
-	if (eventHandled.GetControl() == EVENT_ACTION::CLOSED)
+	if (eventHandled.GetControl() is @NoEventHandledException)
 		return gump.Dispose();
 	elseif (eventHandled.GetControl().Equals(btnNeutral))
 		SetStance(who, STANCE_TYPE::NEUTRAL);
