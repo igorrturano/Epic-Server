@@ -1,0 +1,20 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+include "include/say";
+
+const FRATURA_HITCHANCE_PENALTY := -10;
+
+program TimedScript_Cabeca(params)
+	var mobile := params[1];
+	var penalty := CInt(AP_GetStat(mobile, INTELLIGENCE) / 2);
+	SetObjProperty(mobile, "#fratura_cabeca_penalty", penalty);
+	AP_ModifyStatMod(mobile, INTELLIGENCE, -penalty);
+	mobile.hitchance_mod := mobile.hitchance_mod + FRATURA_HITCHANCE_PENALTY;
+	SendSysMessage(mobile, "Sua cabeca fraturada reduz sua inteligencia pela metade e sua precisao.");
+	
+	return 1;
+endprogram

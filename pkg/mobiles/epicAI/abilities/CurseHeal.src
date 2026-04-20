@@ -1,0 +1,34 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":charactercreation:resists";
+
+program CurseHeal(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead || targ.npctemplate)
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	var duration := tier * 5;
+
+	if (CheckResist(targ, WILL, RESIST_HARD))
+		duration := CInt(duration / 2);
+	endif
+
+	if (duration < 3)
+		duration := 3;
+	endif
+
+	PrintTextAbove(me, "*maldição da cura*");
+	PlaySoundEffect(me, 0x1ED);
+	PlayStationaryEffectEx(targ.x, targ.y, targ.z + 10, targ.realm, 0x374A, 5, 20);
+
+	SetObjProperty(targ, "#healreduction", struct{ "percent" := 50, "expires" := polcore().systime + duration });
+	SendSysMessageEx(targ, "Uma maldição reduz sua capacidade de cura!", SSM_FAIL);
+
+	return 1;
+endprogram

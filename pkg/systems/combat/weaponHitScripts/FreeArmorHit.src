@@ -1,29 +1,47 @@
 use uo;
 use util;
 use vitals;
+use cfgfile;
 
 include ":combat:Controller/DamageController_legacy";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
 include "include/client";
 include "include/sounds";
 include ":attributes:vitals";
 include ":attributes:attributes";
-include "include/client";
-include ":mounts:mounts";
+include ":equipsys:utils/consts";
+
+function CanActivate(who)
+	var itemdesc := ReadConfigFile(":*:itemdesc");
+	foreach item in (ListEquippedItems(who))
+		if (item.isa(POLCLASS_ARMOR))
+			var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
+			if (tipoProtecao["Armadura"] && !tipoProtecao["Leve"])
+				return true; // non-light armor found, cannot activate
+			endif
+		endif
+	endforeach
+	return false; // naked, clothes only, or light armor = can activate
+endfunction
 
 program HitScript(params)
 	var attacker := params[1];
 	var defender := params[2];
-	// var weapon	:= params[3];
+	var weaponObj := params[3];
 	// var armor	:= params[4];
 	// var basedamage	:= params[5];
-	var rawdamage := params[6];
+	// var rawdamage	:= params[6];
 	params := 0; // Not needed anymore.
 
-	var penal := AP_GetStatMod(attacker, "Dexterity");
-	if (penal >= 0)
-		var dmg := rawdamage / 4;
-		// ApplyRawDamage(defender, CInt(dmg));
-		DamageFLS(defender, dmg, DMG_FORCED, attacker);
+	var leftHand := MobileWrapper(attacker).GetEquipBySlot(SHIELD);
+	var weapon := WeaponWrapper(weaponObj);
+	if (!CanActivate(attacker) && (!leftHand || leftHand is @Exception))
+		var maxDmg := weapon.GetMainDamage().GetMaximum();
+		var dmg := CInt((maxDmg + 4) / 5); // ceil(20% of max weapon damage)
+		if (dmg > 0)
+			DamageFLS(defender, dmg, DMG_FORCED, attacker);
+		endif
 	endif
 
 	return 1;

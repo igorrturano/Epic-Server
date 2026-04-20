@@ -513,3 +513,12 @@ endfunction
 function EnviaGumpPosicao( quem, pid, gumpApelido)
 	return Start_Script( ":gumps:scripts/posicao/posicaoGump", array{quem, pid, gumpApelido} );
 endfunction
+
+function MontaPaginador(paginaAtual, itensPorPagina)
+
+	return struct {
+					indicePaginaAtual := (paginaAtual * itensPorPagina) + 1,
+					indicePaginaSeguinte := ((1 + paginaAtual) * itensPorPagina) + 1,
+					indicePaginaAnterior := ((1 - paginaAtual) * itensPorPagina) + 1
+				};
+endfunction

@@ -40,6 +40,11 @@ class WildSummoning(CombatAbility)
 
     function ExecuteOn(this, mobile)
         var who := mobile.GetObjRef();
+
+        if (who.npctemplate)
+            return false;
+        endif
+
         var bonded_creatures := GetObjProperty(who, "spirit_bonds");
 
         if (!bonded_creatures)

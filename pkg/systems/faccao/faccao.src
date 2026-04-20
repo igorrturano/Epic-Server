@@ -11,6 +11,7 @@ include ":faccao:npc";
 include ":faccao:faccao";
 include ":faccao:laws";
 include ":gumps:gumps";
+include ":gumps:gumps_ex";
 include ":tn:tngumps";
 // include ":yggdrasil:boss";
 include ":gumps:yesNo";
@@ -46,6 +47,7 @@ const BUTTON_TERRITORIES := 0x505; // Botão para acessar o gump de territórios
 var guild;
 var privilegies;
 var is_gm_or_leader;
+var use_member_alias; // 1 quando aberto pelo mural de recrutamento
 var priv_list := struct{ "above_guards" := "Controle de Guardas",
 						 "above_merchants" := "Controle de Mercadores",
 						 "above_members" := "Controle de Membros",
@@ -91,7 +93,9 @@ program faccao(params)
 	elseif (cmd)
 		return Faccoes(who);
 	else
+		// Aberto pelo mural de recrutamento (item clicado)
 		guild := targ.guild;
+		use_member_alias := 1;
 	endif
 
 	if (!guild)
@@ -132,6 +136,11 @@ program faccao(params)
 
 	GFHtmlShadowed(gump, 232, 36, 165, 20, "#FFC33C", "<center>{}".format(guild_obj.name), 8);
 
+	// Ícone de facção da staff: exibido à direita do nome
+	if (guild_obj.tipo_faccao == "staff")
+		GFTilePic(gump, 552, 31, 0xEAC7, 0);
+	endif
+
 	// Botão para Territórios - Adicionar isso
 	GFAddButton(gump, 67 - 10, 45, 5605, 5605, GF_CLOSE_BTN, BUTTON_TERRITORIES);
 	GFTextLine(gump, 67 + 10, 45 - 2, 49, "Territórios");
@@ -144,7 +153,7 @@ program faccao(params)
 	GFResizePic(gump, 48, 67, 9350, 172, 326); // members background
 	GFTextLine(gump, 100, 70, 0, "Membros");
 
-	var leader_name := guild_leader.name;
+	var leader_name := GetMemberDisplayName(guild_leader, use_member_alias);
 	if (!leader_name)
 		leader_name := "";
 	elseif (who.cmdlevel || aboveguild)
@@ -158,7 +167,7 @@ program faccao(params)
 		if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 			GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 		endif
-		GFTextLine(gump, 67, y - 2, 0, "{}".format(mob.name));
+		GFTextLine(gump, 67, y - 2, 0, "{}".format(GetMemberDisplayName(mob, use_member_alias)));
 		var permissions := guild.GetProp(cstr(mob.serial));
 		var permission_text := "";
 		foreach priv in (permissions.keys())
@@ -227,7 +236,7 @@ program faccao(params)
 		sleepms(2);
 		var mob := SystemFindObjectBySerial(npc.serial);
 		if (!mob)
-			DismissNPC(guild, _npc_iter - i);
+			DismissNPC(guild, _npc_iter - i, 0, who);
 			i += 1;
 			continue;
 		endif
@@ -342,9 +351,9 @@ function Faccoes(who)
 
 		if (is_gm_or_leader)
 			start_script(":faccao:faccao", array{ who, g.guildid, "guild" });
-		elseif (who.guildid == guild.guildid || who.cmdlevel)
+		elseif (who.guildid == g.guildid || who.cmdlevel)
 			start_script(":faccao:faccao", array{ who, g.guildid, "guild" });
-		elseif (who.guildid != guild.guildid)
+		elseif (who.guildid != g.guildid)
 			SendSysMessage(who, "Voce nao faz parte dessa Faccao");
 			return;
 		endif
@@ -401,7 +410,11 @@ function Faccoes(who)
          endif
       endwhile
 */
-		CreateFaccao(output[1], arearray, cint(output[2]));
+		var new_guild := CreateFaccao(output[1], arearray, cint(output[2]));
+		if (new_guild && !who.cmdlevel)
+			AddMember(new_guild, who);
+			new_guild.SetProp("leader", who.serial);
+		endif
 		Faccoes(who);
 	endif
 endfunction
@@ -755,7 +768,7 @@ endfunction
 
 function gmHandler(who)
 	var opts := array{ "Alterar Nome", "Alterar Area", "Alterar Prisoes", "Pegar GuildID",
-				   	"Alterar Sub-Guilds", "Remover Guilda", "Cancelar" };
+				   	"Alterar Sub-Guilds", "Tipo de Faccao", "Criar Bau", "Setar Soldo", "Remover Guilda", "Cancelar" };
 	var output := RadioGump(who, 300, 0, "Escolha uma opcao", opts, 0, opts.size());
 
 	if (output["Nome"])
@@ -848,11 +861,195 @@ function gmHandler(who)
 		guild.SetProp("prision_leave", soltar);
 
 		SendSysMessageEx(who, "Prisoes alteradas");
+	elseif (output["Tipo de Faccao"])
+		_TipoFaccaoHandler(who);
+	elseif (output["Criar Bau"])
+		_CriarBauHandler(who);
+	elseif (output["Setar Soldo"])
+		_SetarSoldoHandler(who);
 	elseif (output["Remover Guilda"])
 		RemFaccao(guild.guildid);
 		SendSysMessageEx(who, "Guilda removida");
 		return 99;
 	endif
+endfunction
+
+// -------------------------------------------------------
+// Gump de seleção de tipo de facção (Staff / Player)
+// -------------------------------------------------------
+function _TipoFaccaoHandler(who)
+	var tipo_atual := guild.GetProp("tipo_faccao");
+
+	var cor_staff  := 0;
+	var cor_player := 0;
+	if (tipo_atual == "staff")
+		cor_staff := 63;
+	else
+		cor_player := 63;
+	endif
+
+	var gump := GFCreateGump();
+	GFSetId(gump, 0x12350);
+	GFResizePic(gump, 0, 0, 9200, 300, 190);
+	GFResizePic(gump, 15, 15, 9350, 270, 160);
+
+	GFHtmlShadowed(gump, 20, 25, 200, 20, "#FFC33C", "<center>Tipo de Facção", 8);
+
+	GFHtmlShadowed(gump, 20, 52, 260, 18, "#AAAAAA", "<center>Tipo atual: " + tipo_atual, 6);
+
+	// Botão Staff
+	GFAddButton(gump, 40, 90, 4005, 4006, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 70, 88, cor_staff, "Staff");
+
+	// Botão Player
+	GFAddButton(gump, 160, 90, 4005, 4006, GF_CLOSE_BTN, 2);
+	GFTextLine(gump, 190, 88, cor_player, "Player");
+
+	// Botão Cancelar
+	GFAddButton(gump, 95, 130, 4017, 4018, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 125, 128, 0, "Cancelar");
+
+	var input := GFSendGump(who, gump);
+
+	var novo_tipo := "";
+	if (input[0] == 1)
+		novo_tipo := "staff";
+	elseif (input[0] == 2)
+		novo_tipo := "player";
+	endif
+
+	if (!novo_tipo)
+		return;
+	endif
+
+	guild.SetProp("tipo_faccao", novo_tipo);
+	guild_obj.tipo_faccao := novo_tipo;
+	SendSysMessageEx(who, "Tipo alterado para: {}".format(novo_tipo));
+endfunction
+
+// -------------------------------------------------------
+// Cria um bau de faccao no local indicado pelo GM.
+// Marca o bau com guild e tipo_faccao para que sistemas
+// externos saibam a qual faccao e categoria ele pertence.
+// -------------------------------------------------------
+function _CriarBauHandler(who)
+	if (guild.GetProp("tipo_faccao") != "staff")
+		return SendSysMessageEx(who, "O bau so pode ser criado para faccoes do tipo staff.", SSM_FAIL);
+	endif
+
+	var bau_serial := guild.GetProp("bau_serial");
+	if (bau_serial)
+		var bau_existente := SystemFindObjectBySerial(bau_serial);
+		if (bau_existente)
+			return SendSysMessageEx(who, "Esta faccao ja possui um bau (serial={}).".format(bau_serial), SSM_FAIL);
+		endif
+		// Bau anterior foi destruido — permite criar outro
+		guild.EraseProp("bau_serial");
+	endif
+
+	SendSysMessageEx(who, "Clique no local onde deseja criar o bau.", SSM_INFO);
+	var loc := TargetCoordinates(who);
+	if (!loc)
+		return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+	endif
+
+	var bau := CreateItemAtLocation(loc.x, loc.y, loc.z, 0xE42, 1, who.realm);
+	if (!bau)
+		return SendSysMessageEx(who, "Erro ao criar o bau.", SSM_FAIL);
+	endif
+
+	var lockid := AllocLockId();
+	bau.movable := 0;
+	bau.locked  := 1;
+	SetObjProperty(bau, "LockId", lockid);
+
+	var chave := CreateItemInContainer(bau, "ironkey", 1);
+	if (chave)
+		SetObjProperty(chave, "LockId", lockid);
+		chave.name := "Chave do Bau da Faccao";
+	endif
+
+	var tipo := guild.GetProp("tipo_faccao");
+	if (!tipo) tipo := "player"; endif
+
+	SetObjProperty(bau, "guild",       guild.guildid);
+	SetObjProperty(bau, "tipo_faccao", tipo);
+	bau.name := "Bau da Faccao";
+
+	guild.SetProp("bau_serial", bau.serial);
+
+	SendSysMessageEx(who, "Bau criado | guild={} tipo={} lockid={}".format(guild.guildid, tipo, lockid), SSM_INFO);
+endfunction
+
+// -------------------------------------------------------
+// Configura o soldo periodico da faccao (apenas staff).
+// Salva na guild: soldo_lider, soldo_membro, soldo_intervalo, soldo_proximo.
+// O soldocontrol.src le essas props e deposita no bau periodicamente.
+// -------------------------------------------------------
+function _SetarSoldoHandler(who)
+	if (guild.GetProp("tipo_faccao") != "staff")
+		return SendSysMessageEx(who, "Soldo so pode ser configurado para faccoes do tipo staff.", SSM_FAIL);
+	endif
+	if (!guild.GetProp("bau_serial"))
+		return SendSysMessageEx(who, "Crie o bau da faccao antes de configurar o soldo.", SSM_FAIL);
+	endif
+
+	// Valores atuais para pre-preencher o gump
+	var cur_lider   := cstr(guild.GetProp("soldo_lider")  || "0");
+	var cur_membro  := cstr(guild.GetProp("soldo_membro") || "0");
+	var cur_int     := cint(guild.GetProp("soldo_intervalo")); // 60, 604800 ou 1296000
+
+	var gump := GFCreateGump(150, 150);
+	GFResizePic(gump, 0,   0,   9200, 310, 230);
+	GFResizePic(gump, 10,  10,  9350, 290, 210);
+
+	GFHtmlShadowed(gump, 15, 18, 280, 20, "#FFC33C", "<center>Configurar Soldo", 7);
+
+	// ── Soldo do Lider ────────────────────────────────────
+	GFTextLine(gump,  20,  50, 0, "Soldo do Lider (moedas de cobre):");
+	var id_lider := GFTextEntry(gump, 20, 68, 260, 20, 0, cur_lider, 1, 10);
+
+	// ── Soldo dos Membros ─────────────────────────────────
+	GFTextLine(gump,  20,  95, 0, "Soldo dos Membros (moedas de cobre):");
+	var id_membro := GFTextEntry(gump, 20, 113, 260, 20, 0, cur_membro, 2, 10);
+
+	// ── Intervalo ─────────────────────────────────────────
+	GFTextLine(gump, 20, 142, 0, "Intervalo de pagamento:");
+
+	GFSetRadioGroup(gump, 1);
+	GFRadioButton(gump, 20,  160, 9727, 9730, (cur_int == 60      || !cur_int), 10);
+	GFTextLine(gump,    40,  160, 0, "1 minuto (teste)");
+	GFRadioButton(gump, 20,  178, 9727, 9730, (cur_int == 604800), 11);
+	GFTextLine(gump,    40,  178, 0, "7 dias");
+	GFRadioButton(gump, 130, 178, 9727, 9730, (cur_int == 1296000), 12);
+	GFTextLine(gump,    150, 178, 0, "15 dias");
+
+	// ── Botoes ────────────────────────────────────────────
+	GFAddButton(gump, 60,  202, 4005, 4006, GF_CLOSE_BTN, 1);
+	GFTextLine(gump,  90,  202, 0, "Confirmar");
+	GFAddButton(gump, 185, 202, 4017, 4018, GF_CLOSE_BTN, 0);
+	GFTextLine(gump,  215, 202, 0, "Cancelar");
+
+	var res := GFSendGump(who, gump);
+	if (!res || res[0] != 1)
+		return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+	endif
+
+	var v_lider  := cint(GFExtractData(res, id_lider));
+	var v_membro := cint(GFExtractData(res, id_membro));
+
+	var intervalo := 60; // default: 1 min
+	if    (res[11]) intervalo := 604800;
+	elseif(res[12]) intervalo := 1296000;
+	endif
+
+	guild.SetProp("soldo_lider",     v_lider);
+	guild.SetProp("soldo_membro",    v_membro);
+	guild.SetProp("soldo_intervalo", intervalo);
+	guild.SetProp("soldo_proximo",   polcore().systime + intervalo);
+
+	SendSysMessageEx(who, "Soldo configurado | lider={} membro={} intervalo={}s".format(
+		v_lider, v_membro, intervalo), SSM_INFO);
 endfunction
 
 function npcHandler(who, input)
@@ -864,6 +1061,18 @@ function npcHandler(who, input)
 		historico := "<br> - {}".format("<br> -".join(historico));
 		SendHTMLGump(who, "Historico dos Guardas", historico);
 	elseif (input == BUTTON_CONTRACT_NPC)
+		var npcs_array := guild.getProp("npcs");
+		if (!npcs_array || npcs_array.size() == 0 || npcs_array.size() > 4)
+			npcs_array := array{
+				struct{ "template" := ":epicai:guardafaccaofraco",   "price" := 25,  "name" := "Guarda Recruta (Fraco)",      "equipment" := array{} },
+				struct{ "template" := ":epicai:guardafaccaomedio",   "price" := 70,  "name" := "Guarda Veterano (Medio)",     "equipment" := array{} },
+				struct{ "template" := ":epicai:guardafaccaoforte",   "price" := 100, "name" := "Guarda Elite (Forte)",         "equipment" := array{} },
+				struct{ "template" := ":merchants:merchantfaccao",   "price" := 10,  "name" := "Vendedor da Faccao",           "equipment" := array{} }
+			};
+			guild.SetProp("npcs", npcs_array);
+			guild_obj.npcs := npcs_array;
+		endif
+
 		var opts := array{};
 		foreach agent in (guild_obj.npcs)
 			opts[_agent_iter] := "{} [{} mc]".format(agent.name, agent.price);
@@ -871,7 +1080,7 @@ function npcHandler(who, input)
 		endforeach
 		opts.append("Cancelar");
 
-		var npc_choice := RadioGump(who, 400, 0, "Qual agente deseja contratar?", opts, 1, 1);
+		var npc_choice := RadioGump(who, 400, 0, " deseja contratar?", opts, 1, 1);
 		if (opts.size() == npc_choice)
 			return SendSysMessageEx(who, "Cancelado");
 		endif
@@ -929,14 +1138,19 @@ function npcHandler(who, input)
 		/* if (!InGuildRect(guild, who) && !who.cmdlevel)
          return SendSysMessageEx(who, "Voce nao pode contratar agentes estando fora da sua area de influencia.", SSM_FAIL);
       endif */
-		var g_money := cint(guild.getProp("money"));
-		if (g_money < cint(agent.price))
-			return SendSysMessageEx(who, "Moedas de cobre insuficientes", SSM_FAIL);
+		var cost := cint(agent.price);
+		if (ConsumeSubstance(who.backpack, 0xba63, cost))
+			SendSysMessageEx(who, "Voce pagou {} moedas de cobre pelo contrato.".format(cost), SSM_INFO);
+		else
+			var g_money := cint(guild.getProp("money"));
+			if (g_money < cost)
+				return SendSysMessageEx(who, "Moedas de cobre insuficientes na bolsa e no cofre da faccao.", SSM_FAIL);
+			endif
+			guild.setProp("money", g_money - cost);
+			SendSysMessageEx(who, "{} moedas de cobre cobradas do cofre da faccao.".format(cost), SSM_INFO);
 		endif
 
-		guild.setProp("money", g_money - cint(agent.price));
-
-		ContractNPC(guild, npc_choice, who, who);
+		ContractNPC(guild, npc_choice, who, who, 0);
 	elseif (input == BUTTON_ADD_NPC)
 		var questions := array{};
 		questions.append(struct{ "title" := "Template do agente?", "marked" := ":brainai:" });
@@ -980,7 +1194,7 @@ function npcHandler(who, input)
 		var npc_obj := npcs[input];
 		var mob := SystemFindObjectBySerial(npc_obj.serial);
 		if (YesNo(who, "Deseja encerrar o contrato com este agente ({})?".format(mob.name)))
-			DismissNPC(guild, input, mob);
+			DismissNPC(guild, input, mob, who);
 		endif
 	endif
 endfunction
@@ -1170,20 +1384,12 @@ function territoryHandler(who, input)
 
 	elseif (output["Ir"])
 		// Teleport to center of territory
-		var rect := elem.GetProp("Rect");
 		var realm := elem.GetProp("Realm");
-		var coords := SplitWords(rect);
-
-		if (coords.size() >= 4)
-			var x1 := CInt(coords[1]);
-			var y1 := CInt(coords[2]);
-			var x2 := CInt(coords[3]);
-			var y2 := CInt(coords[4]);
-
-			var center_x := CInt((x1 + x2) / 2);
-			var center_y := CInt((y1 + y2) / 2);
+		var rect := ParseRect(elem.GetProp("Rect"));
+		if (rect)
+			var center_x := CInt((rect.x1 + rect.x2) / 2);
+			var center_y := CInt((rect.y1 + rect.y2) / 2);
 			var center_z := GetWorldHeight(center_x, center_y, realm);
-
 			MoveObjectToLocation(who, center_x, center_y, center_z, realm, MOVEOBJECT_FORCELOCATION);
 			SendSysMessageEx(who, "Teleportado para o centro do território!", SSM_INFO);
 		else
@@ -1199,10 +1405,10 @@ function territoryHandler(who, input)
 				SendSysMessageEx(who, "Território abandonado com sucesso!", SSM_INFO);
 
 				// Remove monument if exists
-				var coords := SplitWords(elem.GetProp("Rect"));
-				if (coords.size() >= 4)
-					var center_x := CInt((CInt(coords[1]) + CInt(coords[3])) / 2);
-					var center_y := CInt((CInt(coords[2]) + CInt(coords[4])) / 2);
+				var rect := ParseRect(elem.GetProp("Rect"));
+				if (rect)
+					var center_x := CInt((rect.x1 + rect.x2) / 2);
+					var center_y := CInt((rect.y1 + rect.y2) / 2);
 					var center_z := GetWorldHeight(center_x, center_y, elem.GetProp("Realm"));
 
 					foreach item in ListItemsNearLocation(center_x, center_y, center_z, 3, elem.GetProp("Realm"))
@@ -1289,4 +1495,21 @@ function ShowTerritoriesGump(who, guild)
 
 	// Retornar ao gump principal da facção
 	start_script(":faccao:faccao", array{ who, guild.guildid, "guild" });
+endfunction
+
+// Retorna o nome personalizado do membro (definido na inscrição) ou o nome real como fallback.
+// use_alias := 1 para mostrar o nome da inscrição (mural), 0 para mostrar mob.name normal.
+function GetMemberDisplayName(mob, use_alias := 0)
+	if (!mob) return ""; endif
+	if (use_alias)
+		var dados := GetObjProperty(mob, "dados_convite");
+		if (dados && dados.nome_personalizado)
+			var display := dados.nome_personalizado;
+			if (dados.cargo_rp)
+				display += " - " + dados.cargo_rp;
+			endif
+			return display;
+		endif
+	endif
+	return mob.name;
 endfunction

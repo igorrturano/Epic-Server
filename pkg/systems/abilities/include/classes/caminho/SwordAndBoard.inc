@@ -34,14 +34,15 @@ class SwordAndBoard(CombatAbility)
 		endif
 
 		attackInfo.GetDamage()
-			.IncreaseSlashBaseDamage(2)
-			.IncreasePiercingBaseDamage(2)
-			.IncreaseBluntBaseDamage(2);
+			.IncreaseSlashRawDamage(2)
+			.IncreasePiercingRawDamage(2)
+			.IncreaseBluntRawDamage(2);
 
 		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
 			Message("[SWORD_AND_BOARD] +2 dano", Color(SYSTEM_COLOR::SUCCESS)));
 		return true;
 	endfunction
+
 
 	// Defender: -2 evasion
 	function OnPassiveBeforeHitDefender(this, attackInfo)
@@ -49,9 +50,7 @@ class SwordAndBoard(CombatAbility)
 		if (!this._MatchesContext(defender))
 			return false;
 		endif
-
 		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - 2);
-
 		DebugMsg(defender.GetObjRef(), DEBUG_HAB,
 			Message("[SWORD_AND_BOARD] -2 acerto inimigo (evasao)", Color(SYSTEM_COLOR::SUCCESS)));
 		return true;

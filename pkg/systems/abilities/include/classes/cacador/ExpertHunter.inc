@@ -4,11 +4,13 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":traps:traps";
+include ":timedScripts:timedScripts";
 
 /**
  * Caçador Experiente (Expert Hunter) - ABILITY_ID::CACADOR_EXPERIENTE (101)
  *
- * OnUse: Install traps (net, container, floor).
+ * OnUse (player): Install traps (net, container, floor).
+ * OnUse (NPC):    Throw net at nearby hostile, paralyze 6s.
  * Passive effects (handled inline elsewhere):
  *   - Tracking: -30 difficulty, +15 range (survival.src)
  *   - Can craft throwable nets from ropes (corda.src)
@@ -35,6 +37,10 @@ class ExpertHunter(CombatAbility)
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
 		SetScriptController(who);
+
+		if (who.npctemplate)
+			return _NpcThrowNet(who);
+		endif
 
 		Message("Qual armadilha deseja instalar?", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 		var trap := Target(who);
@@ -174,4 +180,37 @@ function _InstallOtherTrap(who, trap)
 		armadilhanochao.invisible := 1;
 		return true;
 	endif
+endfunction
+
+function _NpcThrowNet(who)
+	var alvo := who.opponent;
+	if (!alvo)
+		alvo := GetRandomNearbyHostile(who);
+	endif
+	if (!alvo || alvo == who)
+		return false;
+	endif
+	if (Distance(who, alvo) > 6)
+		return false;
+	endif
+	if (!CheckLosAt(who, alvo.x, alvo.y, alvo.z))
+		return false;
+	endif
+	if (GetObjProperty(alvo, "corda"))
+		return false;
+	endif
+
+	Message("*arremessa uma rede em " + alvo.name + "*").SendAbove(who);
+	PlaySoundEffect(who, 0x51C);
+	PlayMovingEffect(who, alvo, 0x1EA3, 10);
+
+	var preso := CreateItemAtLocation(alvo.x, alvo.y, alvo.z + 1, 0x1EA4, 1, alvo.realm);
+	SetObjProperty(alvo, "corda", 1);
+	TS_StartTimer(alvo, "paralysis", 6);
+	sleep(6);
+	if (preso)
+		DestroyItem(preso);
+	endif
+	EraseObjProperty(alvo, "corda");
+	return true;
 endfunction

@@ -1,0 +1,32 @@
+use uo;
+use os;
+use vitals;
+
+include ":tn:cooldown";
+include "include/epicUtils";
+
+program Camouflage(params)
+	var me := params[1];
+
+	if (!me || me.dead)
+		return 0;
+	endif
+
+	// Only when HP > 30%
+	var cur_hp := GetVital(me, HITS) / 100;
+	var max_hp := CInt(GetVitalMaximumValue(me, HITS) / 100);
+	if (cur_hp <= CInt(max_hp * 0.3))
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*camufla-se*");
+
+	me.hidden := 1;
+	me.stealthsteps := 50;
+	SetObjProperty(me, "#nextcritical", 1);
+	GrantPrivilege(me, "hiddenattack");
+	me.enable("hiddenattack");
+
+	SetCooldown(me, "camouflage", 30);
+	return 1;
+endprogram

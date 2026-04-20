@@ -11,28 +11,20 @@ include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include "include/epicMageryUtils";
-include ":destroyable:include/destroyItem";
-include ":propagacao:include/efeitosIncendiarios";
+include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
 
-program cast_firebolt(params)
+program cast_incinerar(params)
 	var caster := params[1];
 	var targ := params[2];
 	var spellinfo := params[3];
 	var spell_circle := spellinfo.Circle;
 	var spell_school := spellinfo.School;
-	params := 0; // No longer needed
+	params := 0;
 
 	SendSysMessage(caster, "Selecione o alvo.");
-	if (!targ.IsA(POLCLASS_MOBILE))
-		var isDisparo := TentaCriarFagulhaIncendiaria(caster, targ);
-		if (!isDisparo)
-			SendSysMessage(caster, "Alvo invalido ou fora de visão.");
-			return 0;
-		endif
-	endif
-
-	if (!targ)
-		SendSysMessageEx(caster, "Cancelado", SSM_FAIL);
+	if (!targ || !targ.IsA(POLCLASS_MOBILE))
+		SendSysMessage(caster, "Alvo invalido.");
 		return 0;
 	endif
 
@@ -45,25 +37,55 @@ program cast_firebolt(params)
 		return 0;
 	endif
 
-	LaunchProjectile(caster, targ, spell_circle, spell_school);
-endprogram
-
-function LaunchProjectile(caster, targ, spell_circle, spell_school)
-	PlaySoundEffect(caster, SFX_MAGIC_ARROW);
-	PlayMovingEffectXYZHued(caster, targ, FX_MAGIC_ARROW, 10, 1643, 0);
-	var dmg := epicSpellDamageRoll(caster, spell_circle);
-	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
-
-	DamageFLS(targ, cint(dmg), DMG_FIRE, caster, "firebolt");
-	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
-	var bonus := epicWisdomPathBonus(caster);
-	if (CheckResist(targ, WILL, diff, -bonus))
-		SendSysMessageEx(caster, "O alvo resistiu a magia.", SSM_FAIL);
-		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
-
-		return 1;
+	// Block recast while Incinerar is still active on the target.
+	var existing := MobileWrapper(targ).GetProperty($"SpellOpts_{CInt(spellinfo.id)}");
+	if (existing && !existing.errortext)
+		SendSysMessageEx(caster, "O alvo ja esta incinerando!", SSM_FAIL);
+		return 0;
 	endif
 
-	PlayObjectCenteredEffect(targ, FX_RED_SPARKLES, 3, 4);
-	TS_Starttimer(targ, "queimar", CINT(AP_GetSkill(caster, ARCANA) / 10));
-endfunction
+	PlayObjectCenteredEffect(targ, 0xDC06, 15, 10);
+	PlaySoundEffect(targ, 0x357);
+	var impact := epicSpellDamageRoll(caster, spell_circle, spell_school);
+	DamageFLS(targ, cint(impact), DMG_FIRE, caster, "incinerar");
+
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+
+	var arcana := AP_GetSkill(caster, ARCANA);
+	var total_ticks := CInt(arcana / 10);
+	if (total_ticks < 6)
+		total_ticks := 6;
+	elseif (total_ticks > 14)
+		total_ticks := 14;
+	endif
+
+	// Will save: success halves the burn duration, fail takes the full DoT.
+	if (CheckResist(targ, WILL, diff, -bonus) > 0)
+		total_ticks := Cint(total_ticks / 2);
+		SendSysMessageEx(targ, "Voce resiste parte das chamas.", SSM_INFO);
+	endif
+
+	// Cada tick rola 1d4+1 fixo. Dano por tick nao escala com skill; a escala
+	// vem do impact (carro-chefe) + numero de ticks (duracao).
+	// Sem double-dip do Evocator: o bump de dado ja foi aplicado no impact.
+	var tick_interval := 2;
+	var duration := total_ticks * tick_interval;
+
+	PrintTextAbove(targ, "*incinerando*");
+	SendSysMessageEx(targ, "Voce esta pegando fogo!", SSM_FAIL);
+
+	var opts := struct{};
+	opts.+buff_category := "fire_dot";
+	opts.+displayname := "Incinerar";
+	opts.+desc := "1d4+1 dano / tick";
+	opts.+tick_script := ":spells:spell_logic/mage/incinerarTick";
+	opts.+tick_interval := tick_interval;
+	opts.+tick_params := struct{
+		total_ticks := total_ticks
+	};
+
+	SC_ApplyEffect(caster, targ, opts, duration, CInt(spellinfo.id));
+
+	return 1;
+endprogram

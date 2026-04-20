@@ -102,7 +102,7 @@ function SetNewPosture(who, newPosture)
 	else
 		who.SetCombatTraits(who.GetCombatTraits().SetPosture(newPosture));
 		Start_Script("packets/AssyncUpdateEquipment", 
-						array{who.GetObjRef(), 
+						array{who, 
 						true, 
 						who.GetEquipBySlot(WEAPON)}
 					);

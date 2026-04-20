@@ -26,6 +26,8 @@ include "include/meusProcessos";
 include "include/epicMageryUtils";
 include "include/sysEvent";
 include ":entropy:entropy";
+include ":charactercreation:resists";
+include "include/epicConstants";
 
 program SpellStarter(params)
 	var mobile := params[1]; // Caster
@@ -96,13 +98,14 @@ function initializeSpellCasting(mobile, mw, byref spellinfo, scroll)
 		return 0;
 	endif
 
-	if (mobile.frozen)
+	if (mobile.frozen && spellinfo.Type != "Ninjutsu")
 		SendSysMessageEx(mobile, "Voce nao pode invocar um encanto paralisado.", SSM_FAIL);
 		EraseObjProperty(mobile, "#Casting");
 		return 0;
 	endif
 
-	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
+	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) && spellinfo.Type != "Ninjutsu"
+		&& !isMobileCastActive(mobile, spellinfo.School))
 		mobile.frozen := 1;
 	endif
 
@@ -132,7 +135,7 @@ function performPreCastingChecks(mobile, mw, byref spellinfo)
 	endif
 
 	var weapon := mw.GetEquipBySlot(WEAPON);
-	var has_staff := (weapon && WeaponWrapper(weapon).GetCategory() == WEAPON_CATEGORY::STAFF);
+	var has_staff := (weapon && weapon.GetCategory() == WEAPON_CATEGORY::STAFF);
 	var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0" || has_staff;
 	var tem_hab := mw.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
 		|| mw.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO) 
@@ -267,7 +270,7 @@ function _HasFocoArcanoManaDiscount(mw)
 		return false;
 	endif
 
-	var weaponCategory := WeaponWrapper(weapon).GetCategory();
+	var weaponCategory := weapon.GetCategory();
 	return weaponCategory == WEAPON_CATEGORY::STAFF ||
 	       weaponCategory == WEAPON_CATEGORY::SPIRITUALBLADE ||
 	       weaponCategory == WEAPON_CATEGORY::MAGICBOW;
@@ -312,7 +315,7 @@ function performSpellVocalization(mobile, spellinfo)
 	endif
 endfunction
 
-function performSpellCycles(mobile, mw, spellinfo, orig_hp)
+function performSpellCycles(mobile, mw, spellinfo, byref orig_hp)
 	var cycles := CInt(spellinfo.Cycles);
 
 	if (GetObjProperty(mobile, "#free_cast"))
@@ -338,7 +341,7 @@ function performSpellCycles(mobile, mw, spellinfo, orig_hp)
 	return 1;
 endfunction
 
-function performSpellDelay(mobile, mw, delay, orig_hp)
+function performSpellDelay(mobile, mw, delay, byref orig_hp)
 	while (delay > 0)
 		if (!checkSpellInterruption(mobile, mw, orig_hp))
 			return 0;
@@ -352,18 +355,43 @@ function performSpellDelay(mobile, mw, delay, orig_hp)
 	return 1;
 endfunction
 
-function checkSpellInterruption(mobile, mw, orig_hp)
-	if (orig_hp > AP_GetVital(mobile, "Hits") && (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL)))
-		SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.",
-				   SSM_FAIL);
+function checkSpellInterruption(mobile, mw, byref orig_hp)
+	if (GetCooldown(mobile, "silence") > 0)
+		SendSysMessageEx(mobile, "Voce foi silenciado durante a invocacao.", SSM_FAIL);
 		FailSpell(mobile);
-		if (mw.HasAbility(ABILITY_ID::SUPPORT_CASTER))
-			HealMana(mobile, CInt(GetObjProperty(mobile, "#Casting").mana * 0.5));
-		endif
-		if (!GetObjProperty(mobile, "#magiasilenciosa"))
-			FailSpell(mobile);
-		endif
 		return 0;
+	endif
+
+	if (mobile.squelched && !mobile.npctemplate)
+		SendSysMessageEx(mobile, "Voce nao consegue mais falar os componentes verbais da magia.", SSM_FAIL);
+		FailSpell(mobile);
+		return 0;
+	endif
+
+	if (GetObjProperty(mobile, "metamorfose") != error && !mw.HasAbility(ABILITY_ID::ELO_NATURAL))
+		SendSysMessageEx(mobile, "A metamorfose interrompeu sua invocacao.", SSM_FAIL);
+		FailSpell(mobile);
+		return 0;
+	endif
+
+	var current_hp := AP_GetVital(mobile, "Hits");
+	if (orig_hp > current_hp && !mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
+		var damage_taken := orig_hp - current_hp;
+		var concentration_dif := RESIST_MEDIUM + Cint(damage_taken / 5);
+
+		if (CheckResist(mobile, WILL, concentration_dif) > 0)
+			// Concentration held — reset the damage baseline so only NEW damage can break it.
+			orig_hp := current_hp;
+			PrintTextAbove(mobile, "*concentrado*");
+		else
+			SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.",
+					   SSM_FAIL);
+			FailSpell(mobile);
+			if (mw.HasAbility(ABILITY_ID::SUPPORT_CASTER))
+				HealMana(mobile, CInt(GetObjProperty(mobile, "#Casting").mana * 0.5));
+			endif
+			return 0;
+		endif
 	endif
 
 	if (Events_Waiting())
@@ -471,6 +499,10 @@ function checkTargetValidity(mobile, targ, spellinfo)
 endfunction
 
 function checkCastingSuccess(mobile, mw, spellinfo, scroll)
+	if (spellinfo.Type == "Ninjutsu")
+		return 1;
+	endif
+
 	var attribute := MAGERY;
 	if (mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
 		attribute := ARCANA;
@@ -522,7 +554,19 @@ endfunction
 
 function finalizeCasting(mobile, spellinfo, targ, scroll)
 	CastSpell(mobile, spellinfo, targ);
-	UpdateMobileEntropy(mobile, Cint(spellinfo.Circle[1]));
+
+	var entropy_delta := 0;
+	var circle_amt := Cint(spellinfo.Circle[1]);
+	if (spellinfo.School == "Kaijin")
+		entropy_delta := -circle_amt;
+	elseif (spellinfo.Type == "Divine")
+		entropy_delta := circle_amt;
+	endif
+
+	if (entropy_delta != 0)
+		UpdateMobileEntropy(mobile, entropy_delta);
+	endif
+
 	EraseObjProperty(mobile, "#Casting");
 	EraseObjProperty(mobile, "#CustoDeterminacaoArcana");
 	return 1;

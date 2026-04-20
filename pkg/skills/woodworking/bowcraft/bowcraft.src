@@ -3,7 +3,7 @@
 use cfgfile;
 use util;
 
-include ":crafting:fabricaComplexos";
+include ":crafting:include/fabricacaoComplexosGump";
 
 program use_FletchTool(who, tool)
 

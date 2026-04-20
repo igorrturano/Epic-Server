@@ -1,7 +1,7 @@
 use uo;
-include "include/packetConstants";
 
 const NORMAL_SCALE := 1000;
+const INT16_SIZE   := 2;
 const MaxScaleValue := 60000;
 
 function AppendScaleProp2Packet(object,byref packet)

@@ -1,4 +1,4 @@
-include "include/epicai";
+include "include/epicNPCCombat";
 include "include/spellCache";
 include "include/stateManager";
 include "include/abilityTable";
@@ -28,6 +28,7 @@ var anchor_var := 0;
 var spell_target_var := 0;
 var myhabs_var := 0;
 var myhabs_set_var := 0;
+var hazard_cache_var := 0;
 
 /*
  * KillPlayers()
@@ -40,11 +41,12 @@ var myhabs_set_var := 0;
 program KillPlayers()
     Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
 
-    // Initialize NPC once at spawn
+    // Initialize NPC once at spawn (extracted to a sub-script so init's
+    // transitive includes - makeRace, item_template, mounts via taming, etc. -
+    // stay out of brain.src's 64KB data segment). Run_Script blocks until
+    // initialize.src returns - the existing "started" guard above still works.
     if (!GetObjProperty(me, "started"))
-        set_critical(1);
-        InitializeEpicNPC(me);
-        set_critical(0);
+        Run_Script(":epicAI:scripts/initialize", me);
     endif
 
     EnableMainEvents();
@@ -83,6 +85,7 @@ program KillPlayers()
         spell_target_var := 0;
         myhabs_var := 0;
         myhabs_set_var := 0;
+        hazard_cache_var := 0;
         nearby_cache_var := dictionary;
         enemy_last_loc_var := 0;
         initial_allies_var := 0;
@@ -118,7 +121,7 @@ function DetermineBrainType()
     if (!brain_type)
         brain_type := "generic";
     endif
-    if (cache.spell_school)
+    if (cache.spell_school || GetObjProperty(me, "SpellSchool"))
         InitSpellCache();
     endif
 endfunction

@@ -69,9 +69,20 @@ struct{
 	tier = struct{ desc , valor } //Qualidade do componente
 }
 */
-function PegaComponenteFabricacao(item, caracteristica)
+function PegaComponenteFabricacao(item, caracteristica := 0)
 	var propFabricadoMontado := PegaPropFabricadoMontado(item);
-	var retorno := propFabricadoMontado.componentes[caracteristica]; 
+	var retorno;
+	if(caracteristica)
+		retorno := propFabricadoMontado.componentes[caracteristica];
+	else
+		foreach chaveCaracteristica in (propFabricadoMontado.componentes.keys())
+			Sleepms(2);
+			if(propFabricadoMontado.componentes[chaveCaracteristica].componenteNecessario.isPrincipal)
+				retorno := propFabricadoMontado.componentes[chaveCaracteristica];
+				break;
+			endif
+		endforeach
+	endif
 	return retorno;
 endfunction
 

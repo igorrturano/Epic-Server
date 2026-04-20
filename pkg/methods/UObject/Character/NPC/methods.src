@@ -39,6 +39,7 @@ include ":charactercreation:habilidades";
 include ":epicAI:npcDataCache";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":mounts:mounts";
 
 program Install()
 	print("INSTALLING: Methods for NPC... OK!");
@@ -56,13 +57,13 @@ exported function GetParsedTemplate(npc)
 endfunction
 
 /*
- * GetCategory(npc)
- * Returns the NPC category from config
+ * GetEnvironment(npc)
+ * Returns the NPC environment from config
  * O(1) via cache lookup
  */
-exported function GetCategory(npc)
+exported function GetEnvironment(npc)
 	var cache := NPC_GetCachedData(npc);
-	return cache.category;
+	return cache.environment;
 endfunction
 
 /*
@@ -492,6 +493,14 @@ exported function getTameDifficulty(who)
 	if (!cache.abilities.isAnimalBrain)
 		return error;
 	endif
+	var diff := CInt(AP_GetSkill(who, WRESTLING));
+
+    // ajuste para montarias
+    if (IsMountable(who))
+        if (diff < 45)
+            diff := 45;
+        endif
+    endif
 	return Cint(AP_GetSkill(who, WRESTLING));
 endfunction
 

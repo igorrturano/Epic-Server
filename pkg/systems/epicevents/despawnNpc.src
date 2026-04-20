@@ -23,6 +23,7 @@ program despawnNpc(params)
 	// Kill NPC cleanly (NoCorpse property ensures no corpse left behind)
 	SetObjProperty(npc, "allowdeath", 1);
 	SetObjProperty(npc, "GuardKill", 1);
+	SetObjProperty(npc, "nocorpse", 1);
 	ApplyRawDamage(npc, CInt(AP_GetVitalMaximumValue(npc, "Hits")));
 
 	return 1;

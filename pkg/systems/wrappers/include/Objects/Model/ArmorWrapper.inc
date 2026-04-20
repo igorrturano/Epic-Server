@@ -286,12 +286,13 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	function __CalculateArmorResist(this)
 		var templateResists := getResistPhysicalByProtection(this.GetTemplate().tipoProtecao);
-		var slotResists := this.GetTipoProtecao() ? getResistPhysicalBySlot(this.GetCoverage()) : ArmorResist();
+		// var slotResists := this.GetTipoProtecao() ? getResistPhysicalBySlot(this.GetCoverage()) : ArmorResist();
+		// Slot bonus removed — armor tiers + crafting provide sufficient defense
 
 		return ArmorResist(
-			templateResists.GetSlashResist() + slotResists.GetSlashResist(),
-			templateResists.GetPiercingResist() + slotResists.GetPiercingResist(),
-			templateResists.GetBluntResist() + slotResists.GetBluntResist(),
+			templateResists.GetSlashResist(),
+			templateResists.GetPiercingResist(),
+			templateResists.GetBluntResist(),
 			this.GetTemplate().FireResist,
 			this.GetTemplate().ColdResist,
 			this.GetTemplate().PoisonResist,
@@ -315,7 +316,8 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 				this.SetModifier(AttributeModifier(SNEAK, modifiersSlot[SNEAK].GetValue() + modifiersProt[SNEAK].GetValue()));
 				this.SetModifier(AttributeModifier(MECHANICS, modifiersSlot[MECHANICS].GetValue() + modifiersProt[MECHANICS].GetValue()));
 				this.SetModifier(AttributeModifier(MAGERY, modifiersSlot[MAGERY].GetValue() + modifiersProt[MAGERY].GetValue()));
-				this.SetModifier(AttributeModifier(AWARENESS, modifiersSlot[AWARENESS].GetValue() + modifiersProt[AWARENESS].GetValue()));
+				var awarenessProtPenalty := (Upper(this.GetCoverage()[1]) == Upper(HEAD)) ? modifiersProt[AWARENESS].GetValue() : 0;
+				this.SetModifier(AttributeModifier(AWARENESS, modifiersSlot[AWARENESS].GetValue() + awarenessProtPenalty));
 			endif
 		endif
 	endfunction

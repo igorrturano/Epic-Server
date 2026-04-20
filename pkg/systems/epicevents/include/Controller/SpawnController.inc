@@ -72,10 +72,6 @@ function ApplyCreatureCustomization(npc, spawnInfo, color, emote)
 		endif
 	endif
 
-	// Set event properties - NPC will leave no corpse
-	SetObjProperty(npc, "GuardKill", 1);
-	SetObjProperty(npc, "NoCorpse", 1);
-
 	// Show emote
 	if (emote && emote != "")
 		PrintTextAbove(npc, emote);

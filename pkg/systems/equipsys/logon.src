@@ -4,6 +4,6 @@ use os;
 include "packets/UpdateEquipmentRequest";
 
 program logon(player)
-	Start_Script("packets/AssyncUpdateEquipment", array{player, true});
+	Start_Script("packets/AssyncUpdateEquipment", array{MobileWrapper(player), true});
 	return 1;
 endprogram

@@ -3,12 +3,13 @@ use os;
 use cfgfile;
 include "include/say";
 include ":merchants:pcconversation";
-include ":epicAI:epicai";
+include ":epicAI:include/epicNPCCombat";   // RestoreDoppelgangerAppearance
 include ":tn:npcutil";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":death:death";
 include ":entropy:entropy";
+include ":timedscripts:timedScripts";
 exported function CanDie(mobile)
 	if (mobile.template == ":merchants:conversation")
 		var pcdata := GetConversationDataFile();
@@ -22,6 +23,23 @@ exported function CanDie(mobile)
 	// Restore doppelganger appearance before death (while still alive)
 	if (GetObjProperty(mobile, "#doppelganger_transformed"))
 		RestoreDoppelgangerAppearance(mobile);
+	endif
+
+	// Revert druid wildshape before corpse is created, otherwise POL creates
+	// an animal-type corpse and equipped items spill to the ground. Graphic
+	// must flip synchronously here; TS_LowerDuration is event-based and the
+	// timer controller won't process the -1 until after corpse creation.
+	// Stats and properties are cleaned up later by endmetamorfose (idempotent).
+	var metamorfose := GetObjProperty(mobile, "metamorfose");
+	if (metamorfose != error)
+		mobile.graphic := metamorfose.originalgraphic;
+		mobile.truegraphic := metamorfose.originalgraphic;
+		mobile.color := metamorfose.originalcolor;
+		var charname := GetObjProperty(mobile, "charname");
+		if (charname != error)
+			SetName(mobile, charname);
+		endif
+		TS_LowerDuration(mobile, "metamorfosedruida", -1);
 	endif
 
 	if (GetObjProperty(mobile, "allowdeath") == 1)

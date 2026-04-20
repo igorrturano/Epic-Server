@@ -14,6 +14,7 @@ include ":keys:key";
 include ":crafting:/include/caracteristicasFabricacao";
 include ":crafting:/include/util/fabricacaoConstants";
 include "include/epicUtils";
+include ":itemutils:itemInfo";
 
 var LISTA_TIPO_MATERIAL := PegaListaTipoMateriais();
 var itemsConfig := ReadConfigFile(":*:itemdesc");
@@ -558,3 +559,120 @@ function MontaInfoPote(quem, receitaObjtype)
 	endif
 	return 0;
 endfunction
+
+function DefinePropFabricado(esquema, receita , quem)
+	//Limpa propriedades desnecessárias ou rendundantes.
+	receita.-componentesNecessarios;
+	receita.-materiaisNecessarios;
+	receita.-textoDescItem;
+	receita.-dificuldade;
+	receita.-isVisualizada;
+	receita.-uso;
+
+	esquema.-modificadorCache;
+
+	var propFabricado := struct{ 
+		estado := ITEM_MONTADO,
+		receita := receita,
+		esquema := esquema};
+	
+	if(!receita.isEmpilhavel)
+		propFabricado.+fabricante := quem.serial;
+	endif
+
+	return propFabricado;
+endfunction
+
+function GetMaterialName(obj);
+
+  if ( (obj == "wood") || (obj == "leather") || (obj == "cloth") || (obj == "metal") || (obj == "glass") || (obj == "ossos") || (obj == "stone") || obj == "arrowhead")
+    return obj;
+  else
+    var items := ReadconfigFile("::itemdesc");
+    if (items[obj])
+      return items[obj].desc;
+    endif
+  endif
+
+endfunction
+
+function TruncatePlural(obj_type, add_S := 0)
+        obj_type := CInt(obj_type);
+
+        var config := ReadConfigFile(":*:itemdesc");
+        config := config[obj_type];
+
+        var name;
+        if (config.desc)
+                name := config.desc;
+        elseif (config.name)
+                name := config.name;
+        else
+                return error{"errortext":="Invalid Objtype : " + hex(obj_type) + "."};
+        endif
+
+        if ( !name["%"] )
+                if ( add_S == 0 )
+                        return name;
+                endif
+                if ( name[len(name)] in array{"s"} )
+                        return name;
+                elseif ( name[len(name)] in array{"h","j","x","z"} )
+                        return name + "es";
+                endif
+                return name + "s";
+        endif
+
+        // Will deal with:
+        //
+        //      Bread Stick%s
+        //      Bread Loa%ves/f%
+        //      Lump%s% of Coal
+        //      Loa%ves/f% of Bread
+        //
+        var first := find(name, "%", 1);
+        var slash := find(name, "/", first);
+        var second := find(name, "%", first + 1);
+        if ( slash && !second )
+                // Force-append a % if a '/' exists!
+                name := name + "%";
+                second := len(name);
+        elseif ( !slash )
+                slash := second;
+        endif
+
+        // wwwww%xx[/yy]%[zzzzz]
+        // 12345678     9 01234
+        // 12345678 901 2 34567
+
+        var s_plur := name[first+1, slash-(first+1)];
+        var s_sing := "";
+        if ( slash != first )
+                s_sing := name[slash+1, second-(slash+1)];
+        endif
+
+        var s_first := name[1, first-1];
+        var s_middle := s_plur;
+        var s_last := "";
+
+        if ( len(name) > second )
+                s_last := name[second+1, len(name)-second];
+        endif
+
+        if ( add_S == 0 )
+                s_middle := s_sing;
+        endif
+
+        if ( !s_first )
+                s_first := "";
+        endif
+        if ( !s_middle )
+                s_middle := "";
+        endif
+        if ( !s_last )
+                s_last := "";
+        endif
+        return s_first + s_middle + s_last;
+
+endfunction
+

@@ -1,0 +1,45 @@
+use uo;
+use os;
+
+program SwarmFrenzy(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead)
+		return 0;
+	endif
+
+	var pack_count := 0;
+	var allies := ListMobilesNearLocation(me.x, me.y, me.z, 4, me.realm);
+	foreach mobile in (allies)
+		sleepms(2);
+		if (mobile.serial == me.serial || !mobile.npctemplate)
+			continue;
+		endif
+		if (mobile.opponent.serial == targ.serial)
+			pack_count += 1;
+		endif
+	endforeach
+
+	// Remove old bonus before applying new
+	var old_bonus := GetObjProperty(me, "#swarm_bonus");
+	if (old_bonus != error)
+		me.hitchance_mod := me.hitchance_mod - old_bonus;
+	endif
+
+	var bonus := pack_count * 3;
+
+	if (bonus < 1)
+		EraseObjProperty(me, "#swarm_bonus");
+		return 0;
+	endif
+
+	me.hitchance_mod := me.hitchance_mod + bonus;
+	SetObjProperty(me, "#swarm_bonus", bonus);
+
+	if (pack_count >= 2)
+		PrintTextAbove(me, "*frenesi de bando*");
+	endif
+
+	return 1;
+endprogram

@@ -4,6 +4,7 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
+include ":hotbar:custombuff";
 
 class TargetingVisor(CombatAbility)
 
@@ -25,6 +26,9 @@ class TargetingVisor(CombatAbility)
 		var who := mobile.GetObjRef();
 		Message("*Visor de mira ativado*").SendAbove(who);
 		PlaySoundEffect(who, 0x5ab);
+
+		var duration := this.GetDurationFor(mobile);
+		SendAbilityBuff(who, ABILITY_ID::TARGETING_VISOR, duration, "Ignora armadura");
 	endfunction
 
 	function OnBeforeDamage(this, attackInfo)

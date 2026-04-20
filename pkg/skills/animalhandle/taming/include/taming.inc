@@ -1,7 +1,10 @@
 use uo;
+use vitals;
 
 include ":timedScripts:timedScripts";
 include ":mounts:mounts";
+include ":charactercreation:habilidades";
+include "include/NPCUtil";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 
@@ -50,10 +53,33 @@ function GetNumPets(who)
 	foreach serial in tamed
 		var pet := SystemFindObjectBySerial(serial);
 		if ( pet.master == who && !GetObjProperty(pet, "summoned")) //se não é summon
+			// Aluguel de estábulo vencido: libera o pet inline e volta a contar o slot
+			if ( GetObjProperty(pet, "EstaNoEstabulo") )
+				var dataEntrada := CInt(GetObjProperty(pet, "DataEntrada"));
+				if ( dataEntrada && (polcore().systime - dataEntrada) >= 86400 )
+					var postSerial := GetObjProperty(pet, "StablePostSerial");
+					pet.setParalyzed(0);
+					RevokePrivilege(pet, "invul");
+					pet.disable("invul");
+					EraseObjProperty(pet, "EstaNoEstabulo");
+					EraseObjProperty(pet, "StablePostSerial");
+					EraseObjProperty(pet, "DataEntrada");
+					EraseObjProperty(pet, "PrecoPorDia");
+					if (postSerial)
+						var expiredPost := SystemFindObjectBySerial(postSerial);
+						if (expiredPost)
+							EraseObjProperty(expiredPost, "StoredAnimal");
+						endif
+					endif
+				endif
+			endif
+			// Pets no estábulo ou em limbo não ocupam slots, mas continuam pertencendo ao player
+			if ( !GetObjProperty(pet, "EstaNoEstabulo") && !GetObjProperty(pet, "EstaNoLimbo") )
 				if (!Cint(pet.getTier()))
-				num_tamed := num_tamed+1;
-			else
-				num_tamed := num_tamed + Cint(pet.getTier());
+					num_tamed := num_tamed+1;
+				else
+					num_tamed := num_tamed + Cint(pet.getTier());
+				endif
 			endif
 		else
 			tamed.erase(_serial_iter);
@@ -210,7 +236,7 @@ function LogoutPets(who)
 			location.append(pet.x);
 			location.append(pet.y);
 			location.append(pet.z);
-			MoveObjectToLocation(pet, 6066, 60, 22, pet.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(pet, 5688, 625, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 			SetObjProperty(pet, "previous_location", location);
 		endif
 		sleepms(2);

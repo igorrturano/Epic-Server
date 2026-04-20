@@ -34,7 +34,7 @@ program SpellScript(params)
 
 	// Calculate resist bonus based on Theology skill / 25
 	var theology := AP_GetSkill(who, THEOLOGY);
-	var bonus := CInt(theology / 25);
+	var bonus := CInt(theology / 30);
 	if (bonus < 1)
 		bonus := 1;
 	endif
@@ -45,17 +45,21 @@ program SpellScript(params)
 		duration := 5;
 	endif
 
-	// Build spell opts — all physical resists
 	var opts := struct{};
 	opts.+slash_resist := bonus;
 	opts.+piercing_resist := bonus;
 	opts.+blunt_resist := bonus;
+	opts.+buff_category := "armor_protection";
+	opts.+displayname := "Escudo de Fé";
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{
+		fx := FX_BLESS_EFFECT,
+		fx_speed := 2,
+		fx_duration := 2,
+		sound := SFX_BLESS
+	};
 
-	// Visual and audio feedback
-	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_BLESS_EFFECT, 2, 2);
-	SC_HandleSound(who, targ, SFX_BLESS);
-
-	// Apply effect via SpellController
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
 
 	SendSysMessageEx(who, "Voce concede um Escudo de Fe a " + targ.name + ".", SSM_INFO);

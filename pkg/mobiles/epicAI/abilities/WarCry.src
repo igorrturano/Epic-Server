@@ -1,0 +1,54 @@
+use uo;
+use os;
+
+program WarCry(params)
+	var me := params[1];
+
+	if (!me || me.dead)
+		return 0;
+	endif
+
+	var allies := ListMobilesNearLocation(me.x, me.y, me.z, 6, me.realm);
+	var npc_allies := array{};
+
+	foreach mobile in (allies)
+		sleepms(2);
+		if (mobile.serial == me.serial || !mobile.npctemplate || mobile.dead)
+			continue;
+		endif
+		npc_allies.append(mobile);
+	endforeach
+
+	if (npc_allies.size() < 2)
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*grito de guerra!*");
+	PlaySoundEffect(me, 0x16A);
+
+	foreach mobile in (npc_allies)
+		sleepms(2);
+		var old_bonus := GetObjProperty(mobile, "#warcry_bonus");
+		if (old_bonus != error)
+			mobile.hitchance_mod := mobile.hitchance_mod - old_bonus;
+		endif
+
+		mobile.hitchance_mod := mobile.hitchance_mod + 5;
+		SetObjProperty(mobile, "#warcry_bonus", 5);
+	endforeach
+
+	sleep(10);
+
+	foreach mobile in (npc_allies)
+		if (mobile.dead)
+			continue;
+		endif
+		var bonus := GetObjProperty(mobile, "#warcry_bonus");
+		if (bonus != error)
+			mobile.hitchance_mod := mobile.hitchance_mod - bonus;
+			EraseObjProperty(mobile, "#warcry_bonus");
+		endif
+	endforeach
+
+	return 1;
+endprogram

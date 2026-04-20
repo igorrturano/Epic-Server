@@ -165,7 +165,7 @@ endfunction
 
 function ShamanSoulHarvest(mobile)
 	var npc_elem := NPC_GetNPCConfig(mobile);
-	var category := npc_elem.Category;
+	var category := npc_elem.Environment;
 	var has_soul := 1;
 
 	// Check if NPC has no soul (undead, animal, giantanimal)

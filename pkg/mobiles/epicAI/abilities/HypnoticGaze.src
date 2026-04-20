@@ -1,0 +1,39 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":charactercreation:resists";
+
+program HypnoticGaze(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	if (Distance(me, targ) > 5)
+		return 0;
+	endif
+
+	if (MobileWrapper(targ).HasAbility(ABILITY_ID::AURA_DIVINA))
+		SendSysMessageEx(targ, "Sua fé dispersa a hipnose da serpente.", SSM_REQUEST);
+		return 1;
+	endif
+
+	PrintTextAbove(me, "*olhar hipnótico*");
+	PlayStationaryEffectEx(targ.x, targ.y, targ.z + 10, targ.realm, 0x6e0d, 5, 45, 2, 2740);
+
+	if (CheckResist(targ, WILL, RESIST_HARD))
+		PrintTextAbove(targ, "*resiste à hipnose*");
+		return 1;
+	endif
+
+	SetObjProperty(targ, "charmed_by", me.serial);
+	SendSysMessageEx(targ, "Os olhos da serpente prendem sua mente!", SSM_FAIL);
+	sleep(6);
+	EraseObjProperty(targ, "charmed_by");
+
+	return 1;
+endprogram

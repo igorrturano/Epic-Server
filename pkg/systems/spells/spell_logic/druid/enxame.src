@@ -7,10 +7,14 @@ include "include/sounds";
 include "include/say";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
+include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program SpellScript(params)
 	var caster := params[1];
 	var targ := params[2];
+	var spell := params[3];
+	params := 0;
 
 	if (!targ)
 		return;
@@ -21,10 +25,15 @@ program SpellScript(params)
 		return;
 	endif
 
-	// Calcula parâmetros baseados em THEOLOGY
+	// Block recast while swarm is still active on the target.
+	var existing := MobileWrapper(targ).GetProperty($"SpellOpts_{CInt(spell.id)}");
+	if (existing && !existing.errortext)
+		SendSysMessageEx(caster, "O alvo já está sendo atacado por um enxame!", SSM_FAIL);
+		return;
+	endif
+
 	var theology := AP_GetSkill(caster, THEOLOGY);
 
-	// Duração: theology/5 segundos (ticks a cada 2 segundos)
 	var total_ticks := CInt(theology / 10);
 	if (total_ticks < 4)
 		total_ticks := 4;
@@ -32,23 +41,27 @@ program SpellScript(params)
 		total_ticks := 10;
 	endif
 
-	// Dano por tick baseado em THEOLOGY
 	var damage_per_tick := CInt(theology / 20) + RandomDiceRoll("1d4");
+	var tick_interval := 2;
+	var duration := total_ticks * tick_interval;
 
 	SendSysMessageEx(caster, "Um enxame de insetos ataca " + targ.name + "!", SSM_INFO);
 	SendSysMessageEx(targ, "Você está sendo atacado por um enxame de insetos!", SSM_FAIL);
 	PrintTextAbove(targ, "*Coberto por insetos*");
-
-	// Inicia o script de damage over time
-	var dot_params := struct{
-		"target" := targ,
-		"caster" := caster,
-		"damage_per_tick" := damage_per_tick,
-		"remaining_ticks" := total_ticks,
-		"theology" := theology
-	};
 	PlayMovingEffect(caster, targ, 0x91B, 20);
-	start_script(":spells:spell_logic/druid/enxame_dot", dot_params);
+
+	var opts := struct{};
+	opts.+buff_category := "insect_swarm";
+	opts.+displayname := "Enxame";
+	opts.+desc := $"{damage_per_tick} dano / tick";
+	opts.+tick_script := ":spells:spell_logic/druid/enxameTick";
+	opts.+tick_interval := tick_interval;
+	opts.+tick_params := struct{
+		damage_per_tick := damage_per_tick,
+		total_ticks := total_ticks
+	};
+
+	SC_ApplyEffect(caster, targ, opts, duration, CInt(spell.id));
 
 	return 1;
 endprogram

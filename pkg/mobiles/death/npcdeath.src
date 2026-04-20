@@ -23,6 +23,7 @@ include ":combat:hitscripts";
 include "include/say";
 include ":combat:Controller/DamageController_legacy";
 include ":tn:npcutil";
+include ":epicAI:include/epicNPCCombat";   // CleanupDoppelgangerEquipment
 include ":taming:taming";
 include "include/epicCombatUtils";
 include ":commands:possess";
@@ -56,7 +57,10 @@ program core_npcDeath(params)
 	if (cint(GetObjProperty(corpse, "soulstone")) == 1)
 		CreateItemInContainer(corpse, "soulstone", 1);
 	endif
-	var nearbyMobs := HandleExpGain(corpse);
+	var nearbyMobs := array{};
+	if (!GetObjProperty(corpse, "MirrorImage") && !GetObjProperty(corpse, "summoned") && !GetObjProperty(corpse, "owner"))
+		nearbyMobs := HandleExpGain(corpse);
+	endif
 	// handleEntropyGain(corpse);
 	foreach item in (EnumerateItemsInContainer(corpse))
 		// Lista de itens que podem dropar do npc, mas ficam com prop de restrito_mob, não deixando o player equipar
@@ -84,7 +88,7 @@ program core_npcDeath(params)
 		endif
 
 		if (item.isA(POLCLASS_ARMOR) || item.isA(POLCLASS_WEAPON))
-			if (!GetObjProperty(item, "itemunico") && !GetObjProperty(item, "#LootedBy"))
+			if (!GetObjProperty(item, "itemunico") && !GetObjProperty(item, "LootedBy"))
 				item.hp -= Cint(item.hp * 0.8);
 			endif
 		endif
@@ -105,10 +109,12 @@ program core_npcDeath(params)
 				nome := GetObjProperty(fin, "nome_inicial");
 			endif
 		endif
-		var coords := GetObjProperty(corpse, "anchor");
+		var coords := { corpse.x, corpse.y, corpse.z, CStr(corpse.realm) };
 		var trueBoss := GetObjProperty(corpse, "true_boss");
 		if (fin && nome)
-			Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, corpse.desc,
+			var pet_name := corpse.desc;
+			pet_name["A corpse of "] := "";
+			Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, pet_name,
 										  			region, coords, 0 });
 		endif
 
@@ -269,6 +275,8 @@ program core_npcDeath(params)
 
 	var corpse_name := corpse.desc;
 	SetObjProperty(corpse, "originalname", corpse_name);
+	var npc_name := corpse_name;
+	npc_name["A corpse of "] := "";
 	corpse_name["A corpse of"] := "corpo de";
 	SetName(corpse, corpse_name);
 
@@ -354,14 +362,13 @@ program core_npcDeath(params)
 					nome := GetObjProperty(fin, "nome_inicial");
 				endif
 			endif
-			var coords := GetObjProperty(corpse, "anchor");
+			var coords := { corpse.x, corpse.y, corpse.z, CStr(corpse.realm) };
 			var trueBoss := GetObjProperty(corpse, "true_boss");
 			if (isBoss(corpse))
-				coords.append(corpse.realm);
 				SetObjProperty(corpse, "coords", coords);
 				if (trueBoss == 1 && fin && nome) // Para acionar o DiscordWebhook
 					var tipo := "boss";
-					Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, corpse_name,
+					Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, npc_name,
 										  					region, coords, corpse });
 				elseif (fin && fin.cmdlevel == 4 && trueBoss == 1)
 					var finOwner := Cint(GetObjProperty(fin, "owner"));
@@ -369,7 +376,7 @@ program core_npcDeath(params)
 						var fin_owner := SystemFindObjectBySerial(finOwner);
 						if (fin_owner)
 							var tipo := "boss";
-							Start_script(":DiscordWebhook:discord", { tipo, nome, fin_owner.acctname, corpse_name,
+							Start_script(":DiscordWebhook:discord", { tipo, nome, fin_owner.acctname, npc_name,
 										  							region, coords, 0 });
 						endif
 					endif

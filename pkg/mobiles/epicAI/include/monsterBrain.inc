@@ -75,7 +75,9 @@ function MonsterBrain()
                     is_ranged := 0;
                 endif
                 if (SM_GetState() != "FLEEING")
-                    PursueTarget(me.opponent);
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
                 endif
                 // Per-tick casting — keep offensive pressure on opponent
                 TickCombatAbilities(me, me.opponent, combat_abilities);
@@ -362,7 +364,7 @@ endfunction
 
 // function handleMonsterInitialReaction(source)
 //     var npc_elem := NPC_GetNPCConfig(me);
-//     var category := GetConfigString(npc_elem, "Category");
+//     var environment := GetConfigString(npc_elem, "Environment");
 
 //     if (category == "Goblin")
 //         var playerRaca := source.getRace();

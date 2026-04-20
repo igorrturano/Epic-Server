@@ -13,7 +13,7 @@ program spell_bloodbath(params)
     var info := params[2];
     SendSysMessageEx(who, "Você invoca um Banho de Sangue!", SSM_INFO);
     if (who.gender == 0)
-        PlaySoundEffect(who, 0x697); // blood laughter
+        // PlaySoundEffect(who, 0x697); // blood laughter
     endif
 
     var shaman_souls := CInt(GetObjProperty(who, "shaman_souls"));

@@ -3,12 +3,13 @@ use util;
 include ":attributes:attributes";
 include ":equipsys:Controller/WeaponController";
 include ":combat:Model/Damage";
-include ":taming:taming";
 
 function customizeNpc(mob, set_tier := "0")
 	var npc_elem := NPC_GetNPCConfig(mob);
 	var classe := npc_elem.Classe;
 	var tier := set_tier == "0" ? CInt(mob.getTier()) : CInt(set_tier);
+	SetObjProperty(mob, "NpcTier", tier);
+	EraseObjProperty(mob, "#npc_cache");
 	var tactics := RandomIntMinMax(tier * 20, tier * 30);
 	var skill_combat;
 	var skill_support;
@@ -407,37 +408,6 @@ function controlNPC(who, targ)
 		
 		Run_Script_To_Completion(":death:npcdeath", {targ});
 	endif
-endfunction
-
-function endControlNPC(who)
-	ErasePet(who.master, who.serial);
-	who.SetMaster(0);
-
-	var orig_script := GetObjProperty(who, "script");
-
-	if ( !orig_script )
-
-		PrintTextAbove(who, "*doesnt have an original script to use now that taming is done?!*");
-		SysLog(who.name+" doesnt have an original script to use now that taming is done?!");
-		orig_script := ":brainai:brain";
-
-	elseif ( orig_script["tamed"] )
-
-		PrintTextAbove(who, "*my original script was tamed.src ?!*");
-		SysLog(who.name+" my original script was tamed.src ?!");
-		orig_script := ":brainai:brain";
-
-	endif
-
-	who.script := orig_script;
-	SetName(who, GetObjProperty(who, "name"));
-	EraseObjProperty(who, "owner");
-	EraseObjProperty(who, "name");
-	EraseObjproperty(who, "script");
-	EraseObjProperty(who, "happiness");
-	RestartScript(who);
-
-	ErasePetMods(who);
 endfunction
 
 function isHurt(mobile)

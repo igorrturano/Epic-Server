@@ -8,6 +8,7 @@ include ":wrappers:Objects/Model/WeaponWrapper";
 include ":abilities:models/Ability";
 include ":tn:cooldown";
 include "include/packets";
+include "include/dungeons";
 
 /**
  * Calcula a chance de acerto de um ataque baseado nos atributos do atacante e defensor,
@@ -43,9 +44,8 @@ function CalculateHitChance(byRef attackInfo)
 	var attackerSkill := _GetSkillForCombat(attackInfo.GetAttacker());
 	var defenderSkill := _GetSkillForCombat(attackInfo.GetDefender());
 	var hit_chance := 50.0 + ((attackerSkill - defenderSkill) / 1.5);
-	hit_chance += attackInfo.GetAttacker().GetWeapon().GetAccuracyMod();
+	CalculateWeaponHitModifier(hit_chance, attackInfo);
 	hit_chance += attackInfo.GetAttacker().GetObjRef().hitchance_mod - attackInfo.GetDefender().GetObjRef().evasionchance_mod;
-
 	// They need to be here because they change dynamically
 	CalculateAbilityHitModifier(hit_chance, attackInfo);
 	CalculateEntropyHitModifier(hit_chance, attackInfo);
@@ -256,6 +256,10 @@ function GetPowderAmount(weaponCategory)
 	endcase
 endfunction
 
+function CalculateWeaponHitModifier(byref hit_chance, attackInfo)
+	hit_chance += attackInfo.GetWeapon().GetAccuracyMod() * 2;
+endfunction
+
 function CalculateAbilityHitModifier(byref hit_chance, attackInfo)
 	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MARTIAL_ARTIST))
 		if (attackInfo.GetDefender().GetWeapon().GetAttribute() == WRESTLING)
@@ -273,6 +277,20 @@ function CalculateAbilityHitModifier(byref hit_chance, attackInfo)
 
 	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::MOVIMENTACAO_GRACIOSA))
 		hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(TACTICS) / 10);
+	endif
+
+	// Postura de Duelo: dual wield attacker bonus
+	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::POSTURA_DE_DUELO))
+		if (Upper(attackInfo.GetAttacker().GetEquipBySlot(WEAPON).GetAttribute()) == Upper(DUALWIELD))
+			hit_chance += CDbl(attackInfo.GetAttacker().GetSkill(TACTICS) / 10);
+		endif
+	endif
+
+	// Postura de Duelo: empty off-hand defender evasion
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::POSTURA_DE_DUELO))
+		if (!GetEquipmentByLayer(attackInfo.GetDefender().GetObjRef(), LAYER_HAND2))
+			hit_chance -= CDbl(attackInfo.GetDefender().GetSkill(TACTICS) / 10);
+		endif
 	endif
 
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::MANCHA_DA_CORRUPCAO))
@@ -314,17 +332,17 @@ function CalculateEntropyHitModifier(byref hit_chance, attackInfo)
 
 	var globalEntropy := Cint(GetGlobalProperty("GlobalEntropy"));
 	if (globalEntropy <= -60000 && attackInfo.GetAttacker().IsNPC())
-		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetEnvironment());
 		if (npc_category == "void")
 			hit_chance += 10.0;
 		endif
 	elseif (globalEntropy <= -40000)
-		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetEnvironment());
 		if (npc_category == "demon")
 			hit_chance += 10.0;
 		endif
 	elseif (globalEntropy <= -20000)
-		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetEnvironment());
 		if (npc_category == "undead")
 			hit_chance += 10.0;
 		endif

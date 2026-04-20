@@ -5,6 +5,7 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include "include/say";
 include "include/dungeons";
+include ":message:model/Message";
 
 program skill_Stealth(who)
 
@@ -86,7 +87,7 @@ program skill_Stealth(who)
 			if (who.hidden)
 				SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
 				who.hidden := 0;
-				PrintTextAbove(who, "*aparece*");
+				Message("*aparece*").SendEmote(who);
 				var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
 				foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12,
 															  LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)
@@ -134,7 +135,7 @@ program skill_Stealth(who)
 			if (who.hidden)
 				SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
 				who.hidden := 0;
-				PrintTextAbove(who, "*aparece*");
+				Message("*aparece*").SendEmote(who);
 				var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
 				foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12,
 															  LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)
@@ -154,21 +155,9 @@ program skill_Stealth(who)
 endprogram
 
 function qtdSteps(who, skill)
-	if (skill >= 100)
-		return 15;
-	elseif (skill >= 90)
-		return 10;
-	elseif (skill >= 80)
-		return 9;
-	elseif (skill >= 70)
-		return 8;
-	elseif (skill >= 50)
-		return 6;
-	elseif (skill >= 40)
-		return 5;
-	elseif (skill >= 30)
-		return 4;
-	else
-		return 3;
+	var steps := CInt(skill / 7);
+	if (steps < 3)
+		steps := 3;
 	endif
+	return steps;
 endfunction

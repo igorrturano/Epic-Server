@@ -1,41 +1,48 @@
-/*
- * $Id$
- *
-*/
 use uo;
 use os;
 
 include ":attributes:attributes";
-include ":timedscripts:timedScripts";
-include ":magery:spells";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":tn:cooldown";
 include ":taming:taming";
-include ":combat:Controller/DamageController_legacy";
 include "include/epicMageryUtils";
+include ":timedScripts:timedScripts";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
-	var duration := (CInt(AP_GetSkill(who, THEOLOGY)) / 10);
-	var range := cint(AP_GetSkill(who, THEOLOGY) / 5);
+	var info := params[2];
+	var spell := params[3];
+	params := 0;
+
+	var duration := CInt(AP_GetSkill(who, THEOLOGY) / 10);
+	var range := CInt(AP_GetSkill(who, THEOLOGY) / 5);
 
 	var allMobiles := listAllMobilesNearbyButPetsAndParty(who, range);
 
 	PerformAction(who, HUMAN_ANIM::CAST_AREA);
 	foreach mobile in allMobiles
 		PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x38C8, 10, 100, 0, mobile.realm);
-		SendSysMessageEx(mobile, "As vinhas enraizam você", SSM_FAIL);
-		TS_StartTimer(mobile, "paralysis", duration);
+		SendSysMessageEx(mobile, "As vinhas enraizam voce", SSM_FAIL);
 
+		SC_RemoveEffect(mobile, CInt(spell.id));
+
+		var opts := struct{};
+		opts.+frozen := 1;
+		opts.+buff_category := "movement_root";
+		opts.+displayname := "Crescimento Selvagem";
+		opts.+desc := "Enraizado por vinhas";
+
+		SC_ApplyEffect(who, mobile, opts, duration, CInt(spell.id));
 		sleepms(20);
 	endforeach
-	// Sleep porque o dano do bleed cancela o snare
-	sleep(5);
+
+	// Bleed after vines release — keep as TS (active damage loop, already has PersistOnLogoff)
+	sleep(duration);
 	foreach mobile in allMobiles
 		SendSysMessageEx(mobile, "As vinhas rasgam sua pele ao te soltar");
-		TS_StartTimer(mobile, "bleed", AP_GetSkill(who, THEOLOGY) / 4);
+		TS_StartTimer(mobile, "bleed", CInt(AP_GetSkill(who, THEOLOGY) / 4));
 		sleepms(20);
 	endforeach
 

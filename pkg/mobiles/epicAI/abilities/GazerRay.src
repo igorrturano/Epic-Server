@@ -1,0 +1,272 @@
+use uo;
+use os;
+use vitals;
+use math;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":timedScripts:timedScripts";
+include ":charactercreation:resists";
+include ":combat:Controller/DamageController_legacy";
+include "include/facings";
+
+program GazerRay(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	if (!CheckLineOfSight(me, targ))
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+
+	// Build available rays based on tier
+	var rays := array{};
+	rays.append("SlowRay");
+	rays.append("FearRay");
+	rays.append("WeakenRay");
+
+	if (tier >= 3)
+		rays.append("ConfusionRay");
+		rays.append("DrainManaRay");
+	endif
+
+	if (tier >= 4)
+		rays.append("PetrifyRay");
+		rays.append("CharmRay");
+		rays.append("TelekinesisRay");
+	endif
+
+	if (tier >= 5)
+		rays.append("DisintegrationRay");
+		rays.append("AntiMagicGaze");
+	endif
+
+	var ray := rays[RandomInt(rays.size()) + 1];
+	PlayMovingEffectXYZ(me.x, me.y, me.z + 10, targ.x, targ.y, targ.z + 10, 0x36E4, 5, 0, 0, me.realm);
+
+	case (ray)
+		"SlowRay":          return DoSlowRay(me, targ, tier);
+		"FearRay":          return DoFearRay(me, targ, tier);
+		"WeakenRay":        return DoWeakenRay(me, targ, tier);
+		"ConfusionRay":     return DoConfusionRay(me, targ);
+		"DrainManaRay":     return DoDrainManaRay(me, targ, tier);
+		"PetrifyRay":       return DoPetrifyRay(me, targ);
+		"CharmRay":         return DoCharmRay(me, targ);
+		"TelekinesisRay":   return DoTelekinesisRay(me, targ);
+		"DisintegrationRay": return DoDisintegrationRay(me, targ, tier);
+		"AntiMagicGaze":    return DoAntiMagicGaze(me, targ, tier);
+	endcase
+
+	return 0;
+endprogram
+
+function DoSlowRay(me, targ, tier)
+	if (CheckResist(targ, REFLEXES, RESIST_MEDIUM))
+		PrintTextAbove(targ, "*esquiva do raio*");
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*raio de lentidão*");
+	TS_StartTimer(targ, "lentidao", 5 + tier);
+	SendSysMessageEx(targ, "Um raio torna seus movimentos lentos!", SSM_FAIL);
+	return 1;
+endfunction
+
+function DoFearRay(me, targ, tier)
+	if (MobileWrapper(targ).HasAbility(ABILITY_ID::AURA_DIVINA))
+		SendSysMessageEx(targ, "Sua fé protege você do medo!", SSM_REQUEST);
+		return 0;
+	endif
+
+	if (CheckResist(targ, WILL, RESIST_HARD))
+		PrintTextAbove(targ, "*resiste ao medo*");
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*raio de medo*");
+	TS_StartTimer(targ, "blinded", 5 + tier, 1, me);
+	TS_StartTimer(targ, "exposed", 5 + tier, 1, me);
+	SendSysMessageEx(targ, "Terror invade sua mente!", SSM_FAIL);
+	return 1;
+endfunction
+
+function DoWeakenRay(me, targ, tier)
+	if (CheckResist(targ, FORTITUDE, RESIST_MEDIUM))
+		PrintTextAbove(targ, "*resiste ao raio*");
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*raio enfraquecedor*");
+	TS_StartTimer(targ, "dmgreduction", 8 + tier, tier * 3, me);
+	SendSysMessageEx(targ, "Seus músculos enfraquecem!", SSM_FAIL);
+	return 1;
+endfunction
+
+function DoConfusionRay(me, targ)
+	if (CheckResist(targ, WILL, RESIST_HARD))
+		PrintTextAbove(targ, "*resiste à confusão*");
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*raio de confusão*");
+
+	// Random effect: paralyze, random walk, or forced attack
+	var confusion_type := RandomInt(3) + 1;
+	case (confusion_type)
+		1:
+			TS_StartTimer(targ, "paralysis", 5);
+			SendSysMessageEx(targ, "Você fica paralisado de confusão!", SSM_FAIL);
+		2:
+			var walk_steps := RandomInt(3) + 2;
+			for idx := 1 to walk_steps
+				var rx := targ.x + RandomInt(3) - 1;
+				var ry := targ.y + RandomInt(3) - 1;
+				MoveObjectToLocation(targ, rx, ry, GetMapInfo(rx, ry).z, targ.realm, MOVEOBJECT_FORCELOCATION);
+				sleepms(300);
+			endfor
+			SendSysMessageEx(targ, "Você caminha desorientado!", SSM_FAIL);
+		3:
+			targ.frozen := 1;
+			SendSysMessageEx(targ, "Sua mente é invadida por confusão!", SSM_FAIL);
+			sleep(3);
+			targ.frozen := 0;
+	endcase
+
+	return 1;
+endfunction
+
+function DoDrainManaRay(me, targ, tier)
+	if (targ.npctemplate)
+		return 0;
+	endif
+
+	if (CheckResist(targ, WILL, RESIST_MEDIUM))
+		PrintTextAbove(targ, "*resiste ao raio*");
+		return 0;
+	endif
+
+	var drain := tier * 10;
+	var cur_mana := GetVital(targ, MANA) / 100;
+	if (drain > cur_mana)
+		drain := cur_mana;
+	endif
+
+	if (drain < 1)
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*raio de drenar mana*");
+	SetVital(targ, MANA, (cur_mana - drain) * 100);
+
+	var gazer_mana := GetVital(me, MANA) / 100;
+	var gazer_max := GetVitalMaximumValue(me, MANA) / 100;
+	var new_mana := gazer_mana + drain;
+	if (new_mana > gazer_max)
+		new_mana := gazer_max;
+	endif
+	SetVital(me, MANA, new_mana * 100);
+
+	SendSysMessageEx(targ, $"O raio drena {drain} de mana!", SSM_FAIL);
+	return 1;
+endfunction
+
+function DoPetrifyRay(me, targ)
+	PrintTextAbove(me, "*raio petrificante*");
+
+	if (CheckResist(targ, WILL, RESIST_HARD))
+		PrintTextAbove(targ, "*resiste à petrificação*");
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*petrifica " + targ.name + "*");
+	TS_StartTimer(targ, "petrify", 18);
+	SetObjProperty(targ, "noattack", 1);
+	SetCooldown(targ, "silence", 18);
+
+	return 1;
+endfunction
+
+function DoCharmRay(me, targ)
+	if (CheckResist(targ, WILL, RESIST_VERY_HARD))
+		PrintTextAbove(targ, "*resiste à hipnose*");
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*raio hipnótico*");
+	PlayStationaryEffectEx(targ.x, targ.y, targ.z + 10, targ.realm, 0x6e0d, 5, 45, 2, 2740);
+
+	SetObjProperty(targ, "charmed_by", me.serial);
+	sleep(15);
+	EraseObjProperty(targ, "charmed_by");
+	SendSysMessageEx(targ, "Você foi hipnotizado!", SSM_INFO);
+
+	return 1;
+endfunction
+
+function DoTelekinesisRay(me, targ)
+	if (CheckResist(targ, FORTITUDE, RESIST_HARD))
+		PrintTextAbove(targ, "*resiste à telecinese*");
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*raio telecinético*");
+
+	var dx := me.x - targ.x;
+	var dy := me.y - targ.y;
+	var dist := Distance(me, targ);
+	if (dist < 1)
+		return 0;
+	endif
+
+	var pull := 3;
+	if (pull > dist - 1)
+		pull := dist - 1;
+	endif
+
+	var pull_x := targ.x + CInt(dx * pull / dist);
+	var pull_y := targ.y + CInt(dy * pull / dist);
+	MoveObjectToLocation(targ, pull_x, pull_y, GetMapInfo(pull_x, pull_y).z, targ.realm, MOVEOBJECT_FORCELOCATION);
+
+	SendSysMessageEx(targ, "Uma força invisível puxa você!", SSM_FAIL);
+	return 1;
+endfunction
+
+function DoDisintegrationRay(me, targ, tier)
+	if (CheckResist(targ, FORTITUDE, RESIST_VERY_HARD))
+		PrintTextAbove(targ, "*resiste à desintegração*");
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*RAIO DESINTEGRADOR*");
+	PlaySoundEffect(me, 0x211);
+
+	var damage := tier * 10;
+	DamageFLS(targ, damage, DMG_ENERGY, me, "disintegration");
+
+	SendSysMessageEx(targ, "O raio desintegrador atinge você!", SSM_FAIL);
+	return 1;
+endfunction
+
+function DoAntiMagicGaze(me, targ, tier)
+	if (targ.npctemplate)
+		return 0;
+	endif
+
+	if (CheckResist(targ, WILL, RESIST_VERY_HARD))
+		PrintTextAbove(targ, "*resiste ao olhar anti-mágico*");
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*olhar anti-mágico*");
+	PlaySoundEffect(me, 0x1F8);
+
+	var duration := 5 + tier;
+	SetCooldown(targ, "silence", duration);
+	SendSysMessageEx(targ, $"O olhar central suprime sua magia por {duration} segundos!", SSM_FAIL);
+	return 1;
+endfunction

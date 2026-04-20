@@ -73,7 +73,7 @@ function createSpawngump(who, type, oldspawns := 0, start := 0, end := 0)
 				var cfg := ReadConfigFile(":*:npcdesc");
 				if (cfg)
 					var elem := FindConfigElem(cfg, template);
-					if (GetConfigString(elem, "Category") == npctype)
+					if (GetConfigString(elem, "Environment") == npctype)
 						spawns.append(spawnpoint);
 					endif
 				endif

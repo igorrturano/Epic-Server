@@ -38,43 +38,30 @@ program rectangle_creator(who, params)
 		SendSysMessage(who, "Cancelado.");
 		return;
 	endif
-
 	SendSysMessage(who, "Selecione o segundo ponto (canto inferior direito)");
 	var second_point := TargetCoordinates(who);
 	if (!second_point)
 		SendSysMessage(who, "Cancelado.");
 		return;
 	endif
-
-	// Organizar coordenadas para que x1,y1 seja o canto superior esquerdo
-	// e x2,y2 seja o canto inferior direito
 	var x1 := first_point.x;
 	var y1 := first_point.y;
 	var x2 := second_point.x;
 	var y2 := second_point.y;
 
-	if (x1 > x2)
-		var temp := x1;
-		x1 := x2;
-		x2 := temp;
-	endif
-
-	if (y1 > y2)
-		var temp := y1;
-		y1 := y2;
-		y2 := temp;
-	endif
-
 	var rect_str := $"{x1} {y1} {x2} {y2}";
 	var realm := first_point.realm;
+	var w := x2 - x1;
+	var h := y2 - y1;
 
-	// Mostrar o retângulo selecionado
-	SendSysMessage(who, $"Retângulo definido: {rect_str} no realm {realm}");
+	SendSysMessage(who, $"Área: {w} x {h} tiles — criando prévia...");
+	var markers := _PreviewRect(x1, y1, x2, y2, realm, who);
 
-	// Pedir o nome do retângulo
-	var rect_name := RequestGump(who, "Digite um nome para este retângulo:");
-	if (!rect_name || rect_name == "")
-		SendSysMessage(who, "Operação cancelada - nome não fornecido.");
+	var confirmed := YesNo(who, $"Confirmar retângulo? ({w}x{h} tiles)");
+	_ClearPreview(markers);
+
+	if (!confirmed)
+		SendSysMessage(who, "Operação cancelada.");
 		return;
 	endif
 
@@ -82,6 +69,13 @@ program rectangle_creator(who, params)
 	if (CheckRectangleOverlap(rect_df, x1, y1, x2, y2, realm, ""))
 		SendSysMessage(who, "Este retângulo se sobrepõe a outro já existente.");
 		SendSysMessage(who, "Operação cancelada.");
+		return;
+	endif
+
+	// Pedir o nome do retângulo
+	var rect_name := RequestGump(who, "Digite um nome para este retângulo:");
+	if (!rect_name || rect_name == "")
+		SendSysMessage(who, "Operação cancelada - nome não fornecido.");
 		return;
 	endif
 
@@ -97,15 +91,13 @@ program rectangle_creator(who, params)
 		elem := rect_df.CreateElement(rect_name);
 	endif
 
-	// Salvar as informações do retângulo
 	elem.SetProp("Name", rect_name);
 	elem.SetProp("Rect", rect_str);
 	elem.SetProp("Realm", realm);
-	elem.SetProp("Faction", "Selvagem"); // Indica qual facção controla o território
+	elem.SetProp("Faction", "Selvagem");
 
 	SendSysMessage(who, $"Retângulo '{rect_name}' salvo com sucesso!");
 
-	// Opção para visualizar os retângulos existentes
 	if (YesNo(who, "Deseja visualizar todos os retângulos salvos?"))
 		ShowRectangles(who, rect_df);
 	endif
@@ -254,35 +246,31 @@ function DisplayRectangleDetails(who, elem)
 		endif
 
 		// Organizar coordenadas
-		var x1 := first_point.x;
-		var y1 := first_point.y;
-		var x2 := second_point.x;
-		var y2 := second_point.y;
-
-		if (x1 > x2)
-			var temp := x1;
-			x1 := x2;
-			x2 := temp;
-		endif
-
-		if (y1 > y2)
-			var temp := y1;
-			y1 := y2;
-			y2 := temp;
-		endif
+		var x1 := (first_point.x < second_point.x) ? first_point.x : second_point.x;
+		var y1 := (first_point.y < second_point.y) ? first_point.y : second_point.y;
+		var x2 := (first_point.x > second_point.x) ? first_point.x : second_point.x;
+		var y2 := (first_point.y > second_point.y) ? first_point.y : second_point.y;
 
 		var rect_str := $"{x1} {y1} {x2} {y2}";
 		var rect_name := elem.GetProp("Name");
 
-		// Verificar se o retângulo se sobrepõe a outro existente (exceto a si mesmo)
-		if (CheckRectangleOverlap(OpenDataFile(":architect:areas"), x1, y1, x2, y2, first_point.realm,
-			                       rect_name))
+		SendSysMessage(who, $"Área: {x2-x1} x {y2-y1} tiles — aguarde a prévia...");
+		var markers := _PreviewRect(x1, y1, x2, y2, first_point.realm, who);
+
+		var confirmed := YesNo(who, $"Confirmar novo retângulo? ({x2-x1}x{y2-y1} tiles)");
+		_ClearPreview(markers);
+
+		if (!confirmed)
+			SendSysMessage(who, "Edição cancelada.");
+			return;
+		endif
+
+		if (CheckRectangleOverlap(OpenDataFile(":architect:areas"), x1, y1, x2, y2, first_point.realm, rect_name))
 			SendSysMessage(who, "Este retângulo se sobrepõe a outro já existente.");
 			SendSysMessage(who, "Edição cancelada.");
 			return;
 		endif
 
-		// Atualizar o elemento existente
 		elem.SetProp("Rect", rect_str);
 		elem.SetProp("Realm", first_point.realm);
 
@@ -309,6 +297,66 @@ function DisplayRectangleDetails(who, elem)
 			SendSysMessage(who, "Erro ao analisar as coordenadas do retângulo!");
 		endif
 	endif
+endfunction
+
+// Marca as 4 bordas do retângulo com marcadores visuais.
+function _PreviewRect(x1, y1, x2, y2, realm, who)
+	var markers := array{};
+	
+	// Normalizar coordenadas (min/max)
+	var x_min := (x1 < x2) ? x1 : x2;
+	var x_max := (x1 > x2) ? x1 : x2;
+	var y_min := (y1 < y2) ? y1 : y2;
+	var y_max := (y1 > y2) ? y1 : y2;
+
+	// Borda SUPERIOR (y_min)
+	var x := x_min;
+	while (x <= x_max)
+		var z := GetWorldHeight(x, y_min, realm);
+		var m := CreateItemAtLocation(x, y_min, z, 0xF240, 1, realm);
+		if (m) markers.append(m); endif
+		x += 1;
+		sleepms(1);
+	endwhile
+
+	// Borda INFERIOR (y_max)
+	x := x_min;
+	while (x <= x_max)
+		var z := GetWorldHeight(x, y_max, realm);
+		var m := CreateItemAtLocation(x, y_max, z, 0xF240, 1, realm);
+		if (m) markers.append(m); endif
+		x += 1;
+		sleepms(1);
+	endwhile
+
+	// Borda ESQUERDA (x_min) - sem repetir cantos
+	var y := y_min + 1;
+	while (y < y_max)
+		var z := GetWorldHeight(x_min, y, realm);
+		var m := CreateItemAtLocation(x_min, y, z, 0xF240, 1, realm);
+		if (m) markers.append(m); endif
+		y += 1;
+		sleepms(1);
+	endwhile
+
+	// Borda DIREITA (x_max) - sem repetir cantos
+	y := y_min + 1;
+	while (y < y_max)
+		var z := GetWorldHeight(x_max, y, realm);
+		var m := CreateItemAtLocation(x_max, y, z, 0xF240, 1, realm);
+		if (m) markers.append(m); endif
+		y += 1;
+		sleepms(1);
+	endwhile
+
+	return markers;
+endfunction
+
+function _ClearPreview(markers)
+	foreach item in markers
+		DestroyItem(item);
+		sleepms(1);
+	endforeach
 endfunction
 
 function CreateTerritoryTotem(who, elem)

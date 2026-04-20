@@ -1,0 +1,15 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+include "include/say";
+
+program TimedScript_Maos(params)
+	var mobile := params[1];
+	SetObjProperty(mobile, "desarmar", 1);
+	SetObjProperty(mobile, "#fratura_maos_penalty", 1);
+	return 1;
+endprogram
+

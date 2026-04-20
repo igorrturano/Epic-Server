@@ -8,29 +8,39 @@ include "include/say";
 include ":attributes:regen";
 include ":attributes:vitals";
 include ":attributes:attributes";
-include ":timedScripts:timedScripts";
 include "include/epicMageryUtils";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
-	params := 0; // No longer needed
+	var spell := params[3];
+	params := 0;
 
 	if (who.npctemplate)
-		var time := cint(AP_GetSkill(who, ARCANA)) * 2;
-		var lvl := cdbl(AP_GetSkill(who, ARCANA) * 0.6 / 100);
+		var time := CInt(AP_GetSkill(who, ARCANA)) * 2;
+		var lvl := CDbl(AP_GetSkill(who, ARCANA) * 0.6 / 100);
 		if (TemHabilidade(targ, "Aura Mortis"))
-			SendSysMessageEx(who, "Você exala corrupção", SSM_INFO);
+			SendSysMessageEx(who, "Voce exala corrupcao", SSM_INFO);
 			lvl *= 1.34;
 		endif
-		TS_StartTimer(who, "dmgreturn", time, lvl, who, 1);
+
+		SC_RemoveEffect(who, CInt(spell.id));
+
+		var opts := struct{};
+		opts.+properties := dictionary{ "dmgreturn" -> lvl };
+		opts.+armor_hit_scripts := array{ ":combat:armorHitScripts/rawdmgreturn" };
+		opts.+desc := "Retribuicao Profana";
+		opts.+maintainable := 1;
+
+		SC_ApplyEffect(who, who, opts, time, CInt(spell.id));
 		return 1;
 	endif
 
 	var chardata := GetObjProperty(who, "chardata");
 	if (chardata.wisdom_path != "Mago" && !TemHabilidade(who, "Aura Mortis") &&
 	 !MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
-		SendSysMessageEx(who, "Você não sabe usar essa magia.", SSM_INFO);
+		SendSysMessageEx(who, "Voce nao sabe usar essa magia.", SSM_INFO);
 		return 1;
 	endif
 
@@ -39,17 +49,25 @@ program SpellScript(params)
 		return;
 	endif
 
-	var lvl := cdbl(AP_GetSkill(who, ARCANA) * 0.6 / 100);
+	var lvl := CDbl(AP_GetSkill(who, ARCANA) * 0.6 / 100);
 
 	if (TemHabilidade(targ, "Aura Mortis"))
-		SendSysMessageEx(who, "Você exala corrupção", SSM_INFO);
+		SendSysMessageEx(who, "Voce exala corrupcao", SSM_INFO);
 		lvl *= 1.34;
 	endif
 
-	var time := cint(AP_GetSkill(who, ARCANA)) * 2;
+	var time := CInt(AP_GetSkill(who, ARCANA)) * 2;
+
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	var opts := struct{};
+	opts.+properties := dictionary{ "dmgreturn" -> lvl };
+	opts.+armor_hit_scripts := array{ ":combat:armorHitScripts/rawdmgreturn" };
+	opts.+desc := "Retribuicao Profana";
+
+	SC_ApplyEffect(who, targ, opts, time, CInt(spell.id));
 	Corromper(who, 28, targ);
 	SendSysMessageEx(targ, "Olho por olho...", SSM_INFO);
-	TS_StartTimer(targ, "dmgreturn", time, lvl, who, 1);
 
 	return 1;
 endprogram

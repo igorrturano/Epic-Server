@@ -135,6 +135,9 @@ function AP_GetVitalRegenRate(mobile, vital_name)
 endfunction
 
 function HealHits(mobile, amount)
+  if (GetObjProperty(mobile, "nocure"))
+    return 0;
+  endif
   AP_SetVital(mobile, "Hits", cint(AP_GetVital(mobile, "Hits")+amount));
   if (AP_GetVital(mobile, "Hits") >  AP_GetVitalMaximumValue(mobile, "Hits"))
     AP_SetVital(mobile, "Hits", AP_GetVitalMaximumValue(mobile, "Hits"));
@@ -153,6 +156,27 @@ function HealStamina(mobile, amount)
   if (AP_GetVital(mobile, "Stamina") >  AP_GetVitalMaximumValue(mobile, "Stamina"))
     AP_SetVital(mobile, "Stamina", AP_GetVitalMaximumValue(mobile, "Stamina"));
   endif
+endfunction
+
+function HealVicio(mobile, vicio_name, amount)
+
+	var cur := AP_GetVital(mobile, vicio_name);
+	var maxi := AP_GetVitalMaximumValue(mobile, vicio_name);
+
+	cur := cur + amount;
+
+	// clamp mínimo
+	if (cur < 0)
+		cur := 0;
+	endif
+
+	// clamp máximo
+	if (cur > maxi)
+		cur := maxi;
+	endif
+
+	AP_SetVital(mobile, vicio_name, cur);
+
 endfunction
 
 /*
@@ -289,9 +313,26 @@ endfunction
  * @return 1 se aplicou, 0 se bloqueado por nocure
  */
 function applyEpicHealing(mobile, amt)
-	if (GetObjProperty(mobile, "nocure"))
-		PrintTextAbove(mobile, "*Não pode ser curado*");
-		return 0;
+	var nocure := GetObjProperty(mobile, "nocure");
+	if (nocure)
+		// Value > 1 is a timestamp (from undead ability) — auto-expire
+		if (nocure > 1 && polcore().systime >= nocure)
+			EraseObjProperty(mobile, "nocure");
+		else
+			PrintTextAbove(mobile, "*Não pode ser curado*");
+			return 0;
+		endif
+	endif
+
+	// Demon/Undead CurseHeal — healing reduction
+	var healreduction := GetObjProperty(mobile, "#healreduction");
+	if (healreduction != error)
+		if (polcore().systime < healreduction.expires)
+			amt := CInt(amt * (1.0 - healreduction.percent / 100.0));
+			SendSysMessageEx(mobile, $"A maldição reduz sua cura em {healreduction.percent}%!", SSM_FAIL);
+		else
+			EraseObjProperty(mobile, "#healreduction");
+		endif
 	endif
 
 	var wrapper := MobileWrapper(mobile);
@@ -300,7 +341,7 @@ function applyEpicHealing(mobile, amt)
 	var damage := 0;
 
 	if (wrapper.IsNPC())
-        if (Lower(wrapper.GetCategory()) == "undead" || Lower(wrapper.GetCategory()) == "demons")
+        if (Lower(wrapper.GetEnvironment()) == "undead" || Lower(wrapper.GetEnvironment()) == "demons")
             damage := CInt(amt / 2);
             ApplyRawDamage(mobile, damage);
 			return true;
@@ -323,6 +364,10 @@ function applyEpicHealing(mobile, amt)
 			penalty := 0.5;
 		endif
 		healing := CInt(amt * (1.0 - penalty));
+	endif
+
+	if (healing < 1 && amt > 0)
+		healing := 1;
 	endif
 
 	if (damage > 0)

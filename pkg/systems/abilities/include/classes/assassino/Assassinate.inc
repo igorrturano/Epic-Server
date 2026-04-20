@@ -26,10 +26,10 @@ class Assassinate(CombatAbility)
 
 	function CanActivate(this, mobile)
 		var who := mobile.GetObjRef();
-		if (!who.hidden)
+/* 		if (!who.hidden)
 			Message("Você precisa estar furtivo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
-		elseif (who.frozen || who.paralyzed)
+		else */if (who.frozen || who.paralyzed)
 			Message("Você não consegue se mover.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
@@ -44,7 +44,16 @@ class Assassinate(CombatAbility)
 		var who := mobile.GetObjRef();
 		var range := CInt(AP_GetSkill(who, SNEAK) / 2);
 
-		var targ := Target(who);
+		var targ;
+		if (mobile.IsNPC())
+			targ := who.opponent;
+			if (!targ)
+				targ := GetRandomNearbyHostile(who);
+			endif
+		else
+			targ := Target(who);
+		endif
+
 		if (!targ)
 			return false;
 		elseif (!targ.isA(POLCLASS_MOBILE))
@@ -104,7 +113,7 @@ class Assassinate(CombatAbility)
 			);
 		endif
 
-		PlaySoundEffect(who, 0x51b);
+		PlaySoundEffect(who, 0x51D);
 
 		return true;
 	endfunction

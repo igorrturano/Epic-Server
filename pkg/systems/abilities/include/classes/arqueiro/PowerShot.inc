@@ -4,6 +4,7 @@ use os;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
+include ":attributes:attributes";
 
 /**
  * Tiro Poderoso (Power Shot) - ABILITY_ID::TIRO_PODEROSO (1)
@@ -59,9 +60,11 @@ class PowerShot(CombatAbility)
 			return false;
 		endif
 
+		var dmg := CInt(mobile.GetSkill(RANGED) / 5);
+
 		foreach target in targetsInLine
 			sleepms(50);
-			who.attack_once(target);
+			ApplyRawDamage(target, dmg);
 		endforeach
 
 		Message($"*tiro poderoso em linha - {targetsInLine.size()} alvos*").SendAbove(who);

@@ -19,6 +19,7 @@ include ":io:CFGFile";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":charactercreation:resists";
 include ":charactercreation:habilidades";
+include ":attributes:attributes";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Damage
@@ -47,10 +48,31 @@ function CalculateCombatDamage(byRef attackInfo)
 	ExecuteCombatAbilitiesBeforeDamage(attackInfo);
 	ExecutePassiveAbilitiesAttackerBeforeDamage(attackInfo);
 	ExecutePassiveAbilitiesDefenderBeforeDamage(attackInfo);
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dano base (após passivas):"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {attackInfo.GetDamage().GetSlashBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {attackInfo.GetDamage().GetPiercingBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {attackInfo.GetDamage().GetBluntBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {attackInfo.GetDamage().GetFireBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {attackInfo.GetDamage().GetColdBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {attackInfo.GetDamage().GetPoisonBaseDamage()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {attackInfo.GetDamage().GetEnergyBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message("Dano base:"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {attackInfo.GetDamage().GetSlashBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {attackInfo.GetDamage().GetPiercingBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {attackInfo.GetDamage().GetBluntBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {attackInfo.GetDamage().GetFireBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {attackInfo.GetDamage().GetColdBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {attackInfo.GetDamage().GetPoisonBaseDamage()}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {attackInfo.GetDamage().GetEnergyBaseDamage()}"));
+	//DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Chance crítico (arma: {CInt(attackInfo.GetWeapon().GetCriticalChance())}, char: {CInt(attackInfo.GetAttacker().GetCriticalChance())}, skill: {CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20)}, reducao: {CInt(CalculateDefenderCriticalReduction(attackInfo.GetDefender(), attackInfo.GetBodyRegion()))})"));	
 	sleepms(2);
 	CalculateFlankingDamage(attackInfo);
 	CalculateAttackerCriticalHit(attackInfo);
+	var _totalBeforeDefense := attackInfo.GetDamage().GetTotalBaseDamage();
 	CalculateDefenderResist(attackInfo);
+	var _totalAfterDefense := attackInfo.GetDamage().GetTotalBaseDamage();
 endfunction
 
 function CalculateAttackerDamage(byRef attackInfo)
@@ -61,15 +83,14 @@ function CalculateAttackerDamage(byRef attackInfo)
 	var statusDamageInfo := CalculateStatusDamage(attackInfo);
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {Upper(statusDamageInfo.stat)}: {statusDamageInfo.damageMod}"));
 	var skillDamageInfo := CalculateSkillDamage(attackInfo);
-	DebugMsg(skillDamageInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill}: {skillDamageInfo.damageMod}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill}: {skillDamageInfo.damageMod}"));
+	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill}: {skillDamageInfo.damageMod}"));
 	CalculateWeaponDamage(attackInfo);
 	CalculateEntropyDamage(attackInfo);
 	CalculatePrimordialDamage(attackInfo);
 	CalculateArcaneBowDamage(attackInfo);
 	CalculateSpiritualBladeDamage(attackInfo);
 	CalculateElementalWeaponDamage(attackInfo);
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, $"Dano a ser aplicar (antes da defesa): {attackInfo.GetDamage().ToString()}");
 endfunction
 
 function CalculateEstimatedMinMaxDamage(attackInfo)
@@ -572,6 +593,56 @@ function CalculateDefenderResist(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {CInt(attackInfo.GetDamage().GetPoisonRawDamage() - attackInfo.GetDamage().GetPoisonBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {CInt(attackInfo.GetDamage().GetEnergyRawDamage() - attackInfo.GetDamage().GetEnergyBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano a ser aplicado (após defesa): {attackInfo.GetDamage().ToString()}"));
+
+	_ApplyPhysicalManaShield(attackInfo);
+endfunction
+
+// Protecao Arcana (spell 114) — physical-only mana shield. Absorbs slash/piercing/blunt
+// (whichever matches the attacker's posture) at 2 mana per 1 damage. Elemental and forced
+// damage bypass this layer entirely.
+function _ApplyPhysicalManaShield(byRef attackInfo)
+	var defender := attackInfo.GetDefender().GetObjRef();
+	var shield := attackInfo.GetDefender().GetProperty("#manashield");
+	if (!shield || shield.errortext)
+		return;
+	endif
+
+	if (shield.endtime <= ReadGameClock())
+		EraseObjProperty(defender, "#manashield");
+		return;
+	endif
+
+	var dmg := attackInfo.GetDamage();
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
+	var hit;
+	case (posture)
+		DAMAGE_TYPE::SLASH:    hit := dmg.GetSlashBaseDamage();    break;
+		DAMAGE_TYPE::PIERCING: hit := dmg.GetPiercingBaseDamage(); break;
+		DAMAGE_TYPE::BLUNT:    hit := dmg.GetBluntBaseDamage();    break;
+		default:               return;
+	endcase
+	if (hit <= 0)
+		return;
+	endif
+
+	var mana := AP_GetVital(defender, MANA);
+	var absorb := (hit * 2 <= mana) ? hit : Cint(mana / 2);
+	if (absorb <= 0)
+		return;
+	endif
+
+	AP_ConsumeVital(defender, MANA, absorb * 2);
+
+	case (posture)
+		DAMAGE_TYPE::SLASH:    dmg.DecreaseSlashBaseDamage(absorb);    break;
+		DAMAGE_TYPE::PIERCING: dmg.DecreasePiercingBaseDamage(absorb); break;
+		DAMAGE_TYPE::BLUNT:    dmg.DecreaseBluntBaseDamage(absorb);    break;
+	endcase
+
+	if (AP_GetVital(defender, MANA) <= 0)
+		EraseObjProperty(defender, "#manashield");
+		PrintTextAbove(defender, "*barreira arcana quebra*");
+	endif
 endfunction
 
 function GetEquipsByAttackDirection(byRef attackInfo)
@@ -731,7 +802,7 @@ function ApplyCriticalDamage(byRef attackInfo)
 	// PEnsar numa solucao pra mensagem subir no NPC sem o [Language] como prefixo
 	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
 	if (!attackInfo.GetAttacker().IsNpc())
-		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 4);
+		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 5);
 	endif
 	// Calculate effective raw damage using only active posture's physical damage + elementals
 	// (stat/skill bonuses are added to all 3 physical types, but only the active posture is applied)
@@ -874,7 +945,16 @@ function ApplyCombatDamage(byRef attackInfo)
 		if (owner)
 			MostraDano(owner, attackInfo.GetAttacker().GetObjRef(), totalDamage);
 		endif
-	endif		
+		AccumulateVinganca(attackInfo.GetDefender().GetObjRef(), totalDamage);
+	endif
+endfunction
+
+function AccumulateVinganca(defender, amount)
+	var current := GetObjProperty(defender, "#vinganca");
+	if (current == error)
+		return;
+	endif
+	SetObjProperty(defender, "#vinganca", CInt(current) + CInt(amount));
 endfunction
 
 function AttackLogger(attackInfo)
@@ -890,6 +970,11 @@ function LogLastHit(attackInfo)
 		lastHit["attacker"] := attacker.serial;
 		lastHit["amount"] := attackInfo.GetDamage().GetTotalBaseDamage();
 		lastHit["time"] := polcore().systime;
+		lastHit["type"] := attackInfo.GetDamage().GetFireBaseDamage() > 0 ? "fire" :
+							attackInfo.GetDamage().GetColdBaseDamage() > 0 ? "cold" :
+							attackInfo.GetDamage().GetPoisonBaseDamage() > 0 ? "poison" :
+							attackInfo.GetDamage().GetEnergyBaseDamage() > 0 ? "energy" : "physical";
+		lastHit["bodyregion"] := attackInfo.GetBodyRegion();
 		SetObjProperty(defender, "lastHit", lastHit);
 endfunction
 
@@ -1048,7 +1133,7 @@ function CalculateEntropyDamage(byRef attackInfo)
 	if (!attackInfo.GetAttacker().IsNPC() && attackInfo.GetDefender().IsNPC())
 		var attacker_entropy := attackInfo.GetAttacker().GetEntropy();
 		if (attacker_entropy >= 12000)
-			var npc_category := Lower(attackInfo.GetDefender().GetCategory());
+			var npc_category := Lower(attackInfo.GetDefender().GetEnvironment());
 			if (npc_category == "undead" || npc_category == "demon" || npc_category == "void")
 				// +1 per 4k entropy, max +5 at 20k
 				var entropy_bonus := CInt(attacker_entropy / 4000);
@@ -1064,7 +1149,7 @@ function CalculateEntropyDamage(byRef attackInfo)
 	// Global entropy bonus: NPCs (undead/demon/void) get +1 damage per -20k global entropy
 	var globalEntropy := CInt(GetGlobalProperty("GlobalEntropy"));
 	if (globalEntropy <= -20000 && attackInfo.GetAttacker().IsNPC())
-		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetEnvironment());
 		if (npc_category == "undead" || npc_category == "demon" || npc_category == "void")
 			// +1 per -20k global entropy, max +5 at -100k
 			var global_bonus := CInt(Abs(globalEntropy) / 20000);

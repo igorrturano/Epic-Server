@@ -7,7 +7,8 @@ use basic;
 include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
 include ":sysbook:include/sealedBooks";
-include ":crafting:/include/fabricaComplexos";
+include ":crafting:/include/fabricacaoComplexos";
+include "include/epicEconomyAudit";
 
 var itemdesc_cache := dictionary{};
 
@@ -81,7 +82,7 @@ endfunction
 
 function Loot_CreateItem(container, line)
     var parsed := Loot_ParseString(line);
-    
+
     if(Loot_ChanceCheck(parsed.chance))
         var i;
         for(i := 1; i <= parsed.amount; i := i + 1)
@@ -95,7 +96,7 @@ function Loot_CreateItem(container, line)
                                             objtype,
                                             1,
                                             RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
-                                            1, 
+                                            1,
                                             array {0x630e}, //ouro
                                             FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
                                         );
@@ -103,28 +104,37 @@ function Loot_CreateItem(container, line)
                 item := CreateItemInContainer(container, parsed.name);
             endif
             SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+            Loot_InitBottle(item);
 
             sleepms(2);
         endfor
     endif
-    
+
     return 1;
 endfunction
 
-
-
 function Loot_CreateStack(container, line)
 	var parsed := Loot_ParseString(line);
-	
+
 	if ( Loot_ChanceCheck(parsed.chance) )
 		var item := CreateItemInContainer(container, parsed.name, parsed.amount);
-        SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+		SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+		Loot_InitBottle(item);
 		if ( item.errortext )
 			return error{"errortext" := "Error - Could not create ["+parsed.name+"] ->"+item.errortext};
 		endif
+		EA_Record(EA_MINT_LOOT, item, parsed.amount, 0, container, parsed.name);
 	endif
-	
+
 	return 1;
+endfunction
+
+function Loot_InitBottle(item)
+	if (item.objtype == 0x0F0E)
+		SetObjProperty(item, PROPNAME_ENCAIXE_COMPONENTE, "Frasco");
+		SetObjProperty(item, PROPNAME_MATERIAL, 7139);
+		SetObjProperty(item, PROPNAME_TIER_COMPONENTE, 1);
+	endif
 endfunction
 
 function Loot_CreateRandom(container, line)
@@ -204,15 +214,16 @@ function Loot_CreateRandom(container, line)
         if(all_items.size() > 0)
             idx := RandomInt(all_items.size()) + 1;
             item := all_items[idx];
+            var tier := parsed.level; 
             
             if(item.type == "Stack")
                 qty := RandomDiceRoll(CStr(item.qty));
-                result := Loot_CreateStack(container, item.name + " " + qty + " 100");
+                result := Loot_CreateStack(container, item.name + " " + qty + " 100 " + tier);
                 if(!result.errortext)
                     created += 1;
                 endif
             else
-                result := Loot_CreateItem(container, item.name + " 1 100");
+                result := Loot_CreateItem(container, item.name + " 1 100 " + tier);
                 if(!result.errortext)
                     created += 1;
                 endif
@@ -263,7 +274,13 @@ function Loot_ParseString(line)
         chance := 100.0;
     endif
     
-    var level := CInt(line[4]);
+    var level := 1;
+    if(Find(line[4],">",1) >= 1)
+        level := line[4];
+    else
+        level := cint(line[4]);
+    endif
+
     if(!level)
         level := 1;
     endif
@@ -273,13 +290,12 @@ function Loot_ParseString(line)
     result.+amount := amount;
     result.+chance := chance;
     result.+level := level;
-    
     return result;
 endfunction
 
 function Loot_TryAddSealedBook(container)
-    // Decide a chance de aparecer um livro lacrado (exemplo: 10%)
-    var chance := 30;
+    // Chance de aparecer um livro lacrado aprovado (5%)
+    var chance := 5;
     if (RandomInt(100) + 1 > chance)
         return 0;
     endif

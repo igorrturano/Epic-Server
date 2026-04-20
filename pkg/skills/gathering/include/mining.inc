@@ -184,7 +184,7 @@ function DetermineOreType(who, where)
 	if ( chance <= Cint(percent[i]))
 		var oreid := GetResourceId(oreToSearch);
 		//var oreid := GetResourceId("ario");
-		if (oreid == 0x6666)
+		if (oreid == 0x6666 || oreid == 0xBD11)
 			return 0x5001;
 		endif
 		return oreid;
@@ -230,12 +230,12 @@ function DetermineMiningDifficulty(oretype)
 		0x6994: return 20; // bronze
 
 
-		0x6075: return 5; //areia
+		0x6075: return 3; //areia
 
 		0x6666: return 0; //id falso de pedra
 		0x8850: return 40; //marmore
 		0x8852: return 30; //arenito
-		0x5001: return 5; //id de stone
+		0x5001: return 3; //id de stone
 
 		0x6305: return 40; //golden <- nao faz nada
 

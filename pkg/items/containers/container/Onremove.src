@@ -4,6 +4,7 @@
 use uo;
 use os;
 include "include/say";
+include "include/epicEconomyAudit";
 
 program onRemove(character, container, item, item_amount, movetype)
 	var aux := container;
@@ -13,6 +14,13 @@ program onRemove(character, container, item, item_amount, movetype)
 	if (aux == character)
 		return 1;
 	endif
+
+	var ea_event := EA_TRANSFER_PICKUP;
+	if (container.objtype == 0x1FF01)
+		ea_event := EA_TRANSFER_TRADE;
+	endif
+	EA_Record(ea_event, item, item_amount, container, character,
+			  "container_serial=" + Hex(container.serial) + ";container_objtype=" + Hex(container.objtype));
 
 	if (character.concealed || character.hidden || aux.objtype == 0xEFFD || movetype == MOVETYPE_COREMOVE)
 	else
