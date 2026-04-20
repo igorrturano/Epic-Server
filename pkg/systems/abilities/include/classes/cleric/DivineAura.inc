@@ -29,10 +29,6 @@ class DivineAura(CombatAbility)
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
 
-		if (who.npctemplate)
-			return false;
-		endif
-
 		var religiao := mobile.GetReligion();
 		var theology_bonus := CInt(mobile.GetSkill(THEOLOGY) / 5);
 
@@ -40,6 +36,9 @@ class DivineAura(CombatAbility)
 
 		case (religiao)
 			ELUITHORTH:
+				if (mobile.IsNPC())
+					return false;
+				endif
 				var targ := Target(who);
 				if (!targ)
 					Message("Voce deve selecionar um local.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
@@ -132,20 +131,30 @@ class DivineAura(CombatAbility)
 				endforeach
 
 			HALLEUAD:
-				var targ := Target(who);
-				if (!targ)
-					Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
+				var targ;
+				if (mobile.IsNPC())
+					targ := who;
+				else
+					targ := Target(who);
+					if (!targ)
+						Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
 				endif
 				PlayObjectCenteredEffectEx(targ, FX_SPEED_BOOTS, 7, 32, 0, 1);
 				PlaySoundEffect(targ, 0x20F);
 				TS_StartTimer(targ, "velocidade", theology_bonus);
 
 			VENERATIO:
-				var targ := Target(who);
-				if (!targ)
-					Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
+				var targ;
+				if (mobile.IsNPC())
+					targ := who;
+				else
+					targ := Target(who);
+					if (!targ)
+						Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
 				endif
 
 				PlayObjectCenteredEffectEx(targ, FX_MORALE_UP, 7, 32);
@@ -177,10 +186,15 @@ class DivineAura(CombatAbility)
 				Message("Seu alvo foi abencoado com forca divina!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			KAI:
-				var targ := Target(who);
-				if (!targ)
-					Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
+				var targ;
+				if (mobile.IsNPC())
+					targ := who;
+				else
+					targ := Target(who);
+					if (!targ)
+						Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
 				endif
 
 				PlayObjectCenteredEffect(targ, 0x373A, 10, 20);

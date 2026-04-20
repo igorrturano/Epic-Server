@@ -28,7 +28,7 @@ class BloodArena(CombatAbility)
 		var who := mobile.GetObjRef();
 
 		var defender;
-		if (who.npctemplate)
+		if (mobile.IsNPC())
 			defender := who.opponent;
 			if (!defender)
 				defender := GetRandomNearbyHostile(who);

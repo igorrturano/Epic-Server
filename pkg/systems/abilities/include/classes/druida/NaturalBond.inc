@@ -27,7 +27,7 @@ class NaturalBond(CombatAbility)
     function ExecuteOn(this, mobile)
         var who := mobile.GetObjRef();
 
-        if (who.npctemplate)
+        if (mobile.IsNPC())
             return this._HandleNPCTransformation(who);
         endif
 
