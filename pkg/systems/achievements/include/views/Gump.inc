@@ -17,15 +17,15 @@ function ShowAchievementsGump(who)
 
 	var combatContainer := Container("CombatContainer", 0, 0, 100, 100);
 	combatContainer.SetVisible();
-	var combatButton := Button("CombatButton", 0, 0, 0x15B9, 0x15BA, BUTTON_TYPE::DUMMY);
+	var combatButton := Button("CombatButton", 0, 0, 0x15B9, 0x15BA).SetClosable(false);
 	var combatText := Text("CombatText", 25, 60, "Combate");
 	combatContainer.AddControl(combatButton);
 	combatContainer.AddControl(combatText);
 
 	var skillsContainer := Container("SkillsContainer", 0, 0, 100, 100);
 	skillsContainer.SetVisible();
-	var skillsButton := Button("SkillsButton", 0, 0, 0x15B3, 0x15B4, BUTTON_TYPE::DUMMY);
-	var skillsText := Text("SkillsText", 25, 60, "Skills", TEXT_COLOR::COLOR_DEFAULT, skillsContainer.GetWidth(), TEXT_ALIGN::ALIGN_CENTER);
+	var skillsButton := Button("SkillsButton", 0, 0, 0x15B3, 0x15B4).SetClosable(false);
+	var skillsText := Text("SkillsText", 25, 60, "Skills", TextAlign::Center).SetWidth(skillsContainer.GetWidth());
 	skillsContainer.AddControl(skillsButton);
 	skillsContainer.AddControl(skillsText);
 
