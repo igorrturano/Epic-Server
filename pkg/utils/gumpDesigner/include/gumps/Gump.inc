@@ -34,8 +34,6 @@ class Gump(Container, IGump)
 		this.SetHeight(height);
 		this.SetTitleName(title);
 		this.SetLayout(GoldenGumpLayout());
-		this.AddPage(this.GetLayout().GetPageLayout());
-		this.GoToPage(1);
 
 		this.options := options;
 		this.createdControls := Gump::createdControls;
@@ -74,6 +72,9 @@ class Gump(Container, IGump)
 		endif
 		
 		this.layout := layout;
+		this.SetTitle(layout.GetTitleLayout());
+		this.SetPage(1, layout.GetPageLayout());
+		this.GoToPage(1);
 		
 		return this;
 	endfunction
@@ -115,12 +116,16 @@ class Gump(Container, IGump)
 	endfunction
 
 	function SetPage(this, pageNumber, page)
-		if (pageNumber < 1 || pageNumber > this.pages.size())
+		if (pageNumber < 1 || pageNumber > 10)
 			return OutOfRangeException("Page number out of range.");
 		endif
 
 		if (!(page is @PageLayout))
 			return InvalidParameterException("Page must be of type PageLayout.");
+		endif
+
+		if (!this.pages)
+			this.pages := Gump::pages;
 		endif
 
 		this.pages[pageNumber] := page;
@@ -220,6 +225,7 @@ class Gump(Container, IGump)
 	function Dispose(this)
 		this.gumpString := Gump::gumpString;
 		this.createdControls := Gump::createdControls;
+		this.GetCurrentPage().Dispose();
 	endfunction
 
 	// Private functions
@@ -227,8 +233,6 @@ class Gump(Container, IGump)
 		this._AdjustLayout();
 		this._AdjustTitle();
 		this._AdjustPage();
-		
-		
 	endfunction
 
 	function _IndexControls(this, controls)
@@ -269,11 +273,6 @@ class Gump(Container, IGump)
 			return;
 		endif
 
-		if (this.GetTitle())
-			return;
-		endif
-
-		this.SetTitle(this.GetLayout().GetTitleLayout());
 		this.GetTitle().GetText().SetValue(this.GetTitleName());
 		this.GetTitle().SetHelpButton(this._CreateHelpButton());
 		this._IndexControl(this.GetTitle().GetHelpButton());
