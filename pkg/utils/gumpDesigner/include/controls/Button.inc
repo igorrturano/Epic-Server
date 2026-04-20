@@ -7,12 +7,12 @@ class Button(Control)
 
 	var actions := array{}; // Função lambda a ser executada no clique
 
-	function Button(this, name, x, y, unpressedImage := BUTTON_IMAGE::CLOSE_UNPRESSED, pressedImage := BUTTON_IMAGE::CLOSE_PRESSED)
+	function Button(this, name, x, y, unpressedImage := ButtonImage::CloseUnpressed, pressedImage := ButtonImage::ClosePressed)
 		Super(GumpControl::Button, name, x, y);
 		this.unpressedImage := unpressedImage;
 		this.pressedImage := pressedImage;
 		this.closableButton := Button::closableButton;
-		this.actions := array{};
+		this.actions := Button::actions;
 	endfunction
 
 	function GetUnpressedImage(this)
@@ -73,11 +73,16 @@ class Button(Control)
 		);
 	endfunction
 
+	function Dispose(this)
+		Super::Dispose(this);
+		this.actions := Button::actions;
+	endfunction
+
 	function ToString(this)
 		return "(Button) " + Super::ToString(this)
 			+ ", unpressedImage=" + this.GetUnpressedImage()
 			+ ", pressedImage=" + this.GetPressedImage()
-			+ ", buttonType=" + this.GetButtonType()
+			+ ", closableButton=" + this.IsClosable()
 			+ ", actionsCount=" + this.GetActions().size();
 	endfunction
 endclass
@@ -87,31 +92,31 @@ enum class ButtonType
 	Close
 endenum
 
-enum class BUTTON_IMAGE
-	CLOSE_UNPRESSED := 2103,
-	CLOSE_PRESSED := 2104,
+enum class ButtonImage
+	CloseUnpressed := 2103,
+	ClosePressed := 2104,
 
-	SKILL1_UNPRESSED := 0x4D8,
-	SKILL1_PRESSED := 0x4D7,
-	SKILL2_UNPRESSED := 0x4DB,
-	SKILL2_PRESSED := 0x4DA,
-	SKILL3_UNPRESSED := 0x4DE,
-	SKILL3_PRESSED := 0x4DD,
+	Skill1Unpressed := 0x4D8,
+	Skill1Pressed := 0x4D7,
+	Skill2Unpressed := 0x4DB,
+	Skill2Pressed := 0x4DA,
+	Skill3Unpressed := 0x4DE,
+	Skill3Pressed := 0x4DD,
 
-	MODERN_EYE_UNPRESSED := 0x5FC,
-	MODERN_EYE_PRESSED := 0x5FB,
-	MODERN_EDIT_UNPRESSED := 0x5FE,
-	MODERN_EDIT_PRESSED := 0x5FD,
-	MODERN_PREVIOUS_UNPRESSED := 0x60A,
-	MODERN_PREVIOUS_PRESSED := 0x609,
-	MODERN_DOUBLEPREVIOUS_UNPRESSED := 0x606,
-	MODERN_DOUBLEPREVIOUS_PRESSED := 0x605,
-	MODERN_NEXT_UNPRESSED := 0x609,
-	MODERN_NEXT_PRESSED := 0x608,
-	MODERN_DOUBLENEXT_UNPRESSED := 0x604,
-	MODERN_DOUBLENEXT_PRESSED := 0x603,
-	MODERN_X_UNPRESSED := 0x600,
-	MODERN_X_PRESSED := 0x5FF,
-	MODERN_V_UNPRESSED := 0x602,
-	MODERN_V_PRESSED := 0x601,
+	ModernEyeUnpressed := 0x5FC,
+	ModernEyePressed := 0x5FB,
+	ModernEditUnpressed := 0x5FE,
+	ModernEditPressed := 0x5FD,
+	ModernPreviousUnpressed := 0x60A,
+	ModernPreviousPressed := 0x609,
+	ModernDoublePreviousUnpressed := 0x606,
+	ModernDoublePreviousPressed := 0x605,
+	ModernNextUnpressed := 0x609,
+	ModernNextPressed := 0x608,
+	ModernDoubleNextUnpressed := 0x604,
+	ModernDoubleNextPressed := 0x603,
+	ModernXUnpressed := 0x600,
+	ModernXPressed := 0x5FF,
+	ModernVUnpressed := 0x602,
+	ModernVPressed := 0x601,
 endenum
