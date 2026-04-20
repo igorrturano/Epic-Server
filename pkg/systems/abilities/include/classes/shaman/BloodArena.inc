@@ -26,7 +26,16 @@ class BloodArena(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
-		var defender := Target(who);
+
+		var defender;
+		if (who.npctemplate)
+			defender := who.opponent;
+			if (!defender)
+				defender := GetRandomNearbyHostile(who);
+			endif
+		else
+			defender := Target(who);
+		endif
 
 		if (!defender || !defender.isA(POLCLASS_MOBILE))
 			Message("Alvo invalido.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);

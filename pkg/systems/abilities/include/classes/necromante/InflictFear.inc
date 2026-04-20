@@ -25,8 +25,16 @@ class InflictFear(CombatAbility)
     function ExecuteOn(this, mobile)
         var who := mobile.GetObjRef();
 
-        Message("Escolha o alvo do toque sombrio", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-        var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_NEUTRAL);
+        var targ;
+        if (who.npctemplate)
+            targ := who.opponent;
+            if (!targ)
+                targ := GetRandomNearbyHostile(who);
+            endif
+        else
+            Message("Escolha o alvo do toque sombrio", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+            targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_NEUTRAL);
+        endif
 
         if (!targ)
             return false;
