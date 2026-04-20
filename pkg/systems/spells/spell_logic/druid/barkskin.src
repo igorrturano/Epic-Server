@@ -37,7 +37,7 @@ program SpellScript(params)
 		armor_bonus := 1; // Minimum 1 AR
 	endif
 
-	var duration := CInt(10 + (magiclore_skill / 5)); // Base 10 + up to 300 seconds
+	var duration := CInt(20 + (magiclore_skill * 2 / 5)); // 20s base + up to 40s at 100 skill (max 60s)
 
 	// Bonus de especialização
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))

@@ -66,11 +66,9 @@ program cast_incinerar(params)
 		SendSysMessageEx(targ, "Voce resiste parte das chamas.", SSM_INFO);
 	endif
 
-	var damage_per_tick := CInt(arcana / 15) + RandomDiceRoll("1d6");
-	if (MobileWrapper(caster).HasAbility(ABILITY_ID::EVOCATOR) && spell_school == EVOCATIUM)
-		damage_per_tick := CInt(damage_per_tick * 1.2);
-	endif
-
+	// Cada tick rola 1d4+1 fixo. Dano por tick nao escala com skill; a escala
+	// vem do impact (carro-chefe) + numero de ticks (duracao).
+	// Sem double-dip do Evocator: o bump de dado ja foi aplicado no impact.
 	var tick_interval := 2;
 	var duration := total_ticks * tick_interval;
 
@@ -80,11 +78,10 @@ program cast_incinerar(params)
 	var opts := struct{};
 	opts.+buff_category := "fire_dot";
 	opts.+displayname := "Incinerar";
-	opts.+desc := $"{damage_per_tick} dano / tick";
+	opts.+desc := "1d4+1 dano / tick";
 	opts.+tick_script := ":spells:spell_logic/mage/incinerarTick";
 	opts.+tick_interval := tick_interval;
 	opts.+tick_params := struct{
-		damage_per_tick := damage_per_tick,
 		total_ticks := total_ticks
 	};
 
