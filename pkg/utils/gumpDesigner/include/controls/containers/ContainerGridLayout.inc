@@ -114,8 +114,6 @@ class ContainerGridLayout(Container)
 	function HowToDraw(this, byRef gump)
 		foreach row in (this.containers)
 			foreach container in (row)
-				container.SetXOffset(this.GetX() + this.GetXOffset());
-				container.SetYOffset(this.GetY() + this.GetYOffset());
 				container.Draw(gump);
 				SleepMS(2);
 			endforeach
@@ -146,6 +144,7 @@ class ContainerGridLayout(Container)
 					CInt(this.GetWidth() / this.GetColumns()),
 					CInt(this.GetHeight() / this.GetRows())
 				);
+				cellContainer.SetParent(this);
 
 				this.containers[row].append(cellContainer);
 				SleepMS(2);
