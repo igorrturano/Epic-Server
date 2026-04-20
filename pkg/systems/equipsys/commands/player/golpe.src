@@ -1,10 +1,6 @@
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
-include ":gumpDesigner:gumps/Gump";
-include ":gumpDesigner:controls/containers/ContainerGridLayout";
-include ":gumpDesigner:controls/Button";
-include ":gumpDesigner:controls/ImageGump";
-include ":gumpDesigner:controls/Tooltip";
+include ":gumpDesigner:factories/GumpFactory";
 include ":equipsys:packets/UpdateEquipmentRequest";
 
 program cmd_golpe(who, text)
@@ -33,52 +29,57 @@ endprogram
 
 function ChoosePosture(who)
 	var eventHandled;
+	var gumpFactory := GumpFactory();
 	
-	var gump := Gump(who.GetObjRef(), "Postura de Combate", 300, 175);
-	var container := ContainerGridLayout("Container", 25, 70, 260, 90, 1, 3).SetVisible(true);
-	var imgSelector := ImageGump("Selector", 0, 0, 30062);
-	var selectedOption := ImageGump("SelectedButton", 12, 23, 1009).SetColor(COLOR_RED);
-	var buttonSlash := Button("SlashDamage", 12, 23, 1004, 1004);
-	var buttonPiercing := Button("PiercingDamage", 12, 23, 1008, 1008);
-	var buttonBlunt := Button("BluntDamage", 12, 23, 1009, 1009);
-	var tooltipSlash := Tooltip("TooltipSlash", "Golpe cortante.");
-	var tooltipPiercing := Tooltip("TooltipPiercing", "Golpe perfurante.");
-	var tooltipBlunt := Tooltip("TooltipBlunt", "Golpe contundente.");
+	var gump := gumpFactory.CreateGump(who.GetObjRef(), "Postura de Combate", 300, 180);
+	// gump.SetLayout(GoldenGumpLayout());
+	var page := gump.GetCurrentPage();
+	var imgSelector := gumpFactory.CreateImageGump("Selector", 0, 0, 30062);
+	var selectedOption := gumpFactory.CreateImageGump("SelectedButton", 12, 23).SetColor(COLOR_RED);
+	var buttonSlash := gumpFactory.CreateButton("SlashDamage", 12, 23, 1004, 1004);
+	var buttonPiercing := gumpFactory.CreateButton("PiercingDamage", 12, 23, 1008, 1008);
+	var buttonBlunt := gumpFactory.CreateButton("BluntDamage", 12, 23, 1009, 1009);
+	var tooltipSlash := gumpFactory.CreateTooltip("TooltipSlash", "Golpe cortante.");
+	var tooltipPiercing := gumpFactory.CreateTooltip("TooltipPiercing", "Golpe perfurante.");
+	var tooltipBlunt := gumpFactory.CreateTooltip("TooltipBlunt", "Golpe contundente.");
+	buttonSlash.SetTooltip(tooltipSlash);
+	buttonPiercing.SetTooltip(tooltipPiercing);
+	buttonBlunt.SetTooltip(tooltipBlunt);
 
 	while (true)
+		var container := gumpFactory.CreateContainerGridLayout("Container", 0, 0, 260, 90, 1, 3);
 		var button1 := buttonSlash;
 		var button2 := buttonPiercing;
 		var button3 := buttonBlunt;
 
 		if (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
 			container.AddControl(imgSelector, 1, 1);
-			button1 := selectedOption.SetImage(buttonSlash.GetPressedImage());
+			button1 := selectedOption.SetImageId(buttonSlash.GetPressedImage()).SetTooltip(tooltipSlash);
 		elseif (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING)
 			container.AddControl(imgSelector, 1, 2);
-			button2 := selectedOption.SetImage(buttonPiercing.GetPressedImage());
+			button2 := selectedOption.SetImageId(buttonPiercing.GetPressedImage()).SetTooltip(tooltipPiercing);
 		elseif (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT)
 			container.AddControl(imgSelector, 1, 3);
-			button3 := selectedOption.SetImage(buttonBlunt.GetPressedImage());
+			button3 := selectedOption.SetImageId(buttonBlunt.GetPressedImage()).SetTooltip(tooltipBlunt);
 		endif
 
-		button1.SetTooltip(tooltipSlash);
-		button2.SetTooltip(tooltipPiercing);
-		button3.SetTooltip(tooltipBlunt);
 		container.AddControl(button1, 1, 1);
 		container.AddControl(button2, 1, 2);
 		container.AddControl(button3, 1, 3);
-		gump.AddControl(container);
+		page.AddControl(container);
 
 		eventHandled := gump.Show();
 
-		if (eventHandled.GetControl() == EVENT_ACTION::CLOSED)
-			return gump.Dispose();
-		elseif (eventHandled.GetControl().Equals(buttonSlash))
-			SetNewPosture(who, DAMAGE_TYPE::SLASH);
-		elseif (eventHandled.GetControl().Equals(buttonPiercing))
-			SetNewPosture(who, DAMAGE_TYPE::PIERCING);
-		elseif (eventHandled.GetControl().Equals(buttonBlunt))
-			SetNewPosture(who, DAMAGE_TYPE::BLUNT);
+		if (eventHandled is @NoEventHandledException)
+			return;
+		else
+			if (eventHandled.GetControl().Equals(buttonSlash))
+				SetNewPosture(who, DAMAGE_TYPE::SLASH);
+			elseif (eventHandled.GetControl().Equals(buttonPiercing))
+				SetNewPosture(who, DAMAGE_TYPE::PIERCING);
+			elseif (eventHandled.GetControl().Equals(buttonBlunt))
+				SetNewPosture(who, DAMAGE_TYPE::BLUNT);
+			endif
 		endif
 
 		gump.Dispose();
