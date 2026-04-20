@@ -29,7 +29,7 @@ class Fluency(CombatAbility)
         var who := mobile.GetObjRef();
 
         var targ := Target(who, TGTOPT_CHECK_LOS + TGTOPT_HARMFUL);
-        if (who.npctemplate)
+        if (mobile.IsNPC())
             targ := GetRandomNearbyHostile(who);
         endif
 

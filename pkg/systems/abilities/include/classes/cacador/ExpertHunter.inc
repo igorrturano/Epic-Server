@@ -38,7 +38,7 @@ class ExpertHunter(CombatAbility)
 		var who := mobile.GetObjRef();
 		SetScriptController(who);
 
-		if (who.npctemplate)
+		if (mobile.IsNPC())
 			return _NpcThrowNet(who);
 		endif
 

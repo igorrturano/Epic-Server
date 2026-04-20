@@ -28,7 +28,7 @@ class AdaptableForm(CombatAbility)
 
 		if (resist == error)
 			var prot;
-			if (who.npctemplate)
+			if (mobile.IsNPC())
 				prot := "Fortitude";
 			else
 				prot := RadioGump(who, 200, 260, "Escolha a resistencia", { "Fortitude", "Reflexos", "Vontade" });
