@@ -613,11 +613,6 @@ function ChooseWarriorAbility(npc, state, habs)
     endif
 
     var chosen_hab := habs[RandomInt(habs.size())+1];
-    if (CInt(chosen_hab) == ABILITY_ID::CACADOR_EXPERIENTE)
-        var net := CreateItemInBackpack(npc, 0x1EA3, 1);
-        UseItem(net, npc);
-    endif
-
     return chosen_hab;
 endfunction
 
