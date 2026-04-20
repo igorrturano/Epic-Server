@@ -16,6 +16,7 @@ program SCTickDriver(args)
 	var tick_script := args[4];
 	var tick_interval := CInt(args[5]);
 	var tick_params := args[6];
+	var my_instance := CInt(args[7]);
 	args := 0;
 
 	if (!targ || tick_interval < 1 || !tick_script)
@@ -36,6 +37,13 @@ program SCTickDriver(args)
 
 		var opts := MobileWrapper(targ).GetProperty($"SpellOpts_{spellId}");
 		if (!opts || opts.errortext)
+			return;
+		endif
+
+		// Opts were replaced by a newer apply (e.g. via maintain re-cast) —
+		// that apply launched its own driver, so this one must exit to avoid
+		// duplicate ticks. Legacy opts without instance_id keep working.
+		if (my_instance && CInt(opts.instance_id) != my_instance)
 			return;
 		endif
 
