@@ -393,7 +393,7 @@ if (!foodtype)
     return;
 endif
 
-if (!("all" in allowed) && !(foodtype in allowed))
+if (!(allowed == "all") && !(foodtype in allowed))
     SendSysMessage(ev.source, "Esse animal não come isso.");
     return;
 endif
