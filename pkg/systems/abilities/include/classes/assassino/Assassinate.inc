@@ -45,7 +45,7 @@ class Assassinate(CombatAbility)
 		var range := CInt(AP_GetSkill(who, SNEAK) / 2);
 
 		var targ;
-		if (who.npctemplate)
+		if (mobile.IsNPC())
 			targ := who.opponent;
 			if (!targ)
 				targ := GetRandomNearbyHostile(who);

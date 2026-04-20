@@ -24,7 +24,7 @@ class Demoralize(CombatAbility)
         var who := mobile.GetObjRef();
 
         var targ;
-        if (who.npctemplate)
+        if (mobile.IsNPC())
             targ := who.opponent;
             if (!targ)
                 targ := GetRandomNearbyHostile(who);
