@@ -68,6 +68,7 @@ class Control(IControl)
 	endfunction
 
 	function SetTooltip(this, tooltip)
+		tooltip.SetParent(this);
 		this._tooltip := tooltip;
 
 		return this;
@@ -128,6 +129,7 @@ class Control(IControl)
 	endfunction
 
 	function Draw(this, byRef gump)
+		this.SetPositionOffset(this.GetParent().GetX() + this.GetParent().GetXOffset(), this.GetParent().GetY() + this.GetParent().GetYOffset());
 		this.HowToDraw(gump);
 		
 		if (this.GetTooltip())
