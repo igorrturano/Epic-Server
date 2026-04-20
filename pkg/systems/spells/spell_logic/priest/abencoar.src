@@ -56,6 +56,8 @@ program SpellScript(params)
 
 			SC_ApplyEffect(who, mobile, opts, duration, CInt(spell.id));
 
+			PlayObjectCenteredEffect(mobile, FX_BLESS_SPELL, 1, 25);
+
 			SendSysMessageEx(mobile, "Voce sente uma bencao divina guiando seus golpes. (+" + bonus + " no ataque por " + duration + " segundos)", SSM_INFO);
 
 			blessed_count := blessed_count + 1;
