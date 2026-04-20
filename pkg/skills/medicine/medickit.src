@@ -685,15 +685,17 @@ function AddDiseaseToDatafile(who, symptoms_array, disease_name, primary_symptom
 
 	// Criar elemento da doença
 	var disease_elem := diseases_data.CreateElement(disease_name);
+	var name_by := GetObjProperty(who, "nome_inicial");
 	disease_elem.SetProp("name", disease_name);
 	disease_elem.SetProp("symptoms", symptoms_array);
 	disease_elem.SetProp("primary", primary_symptom);
 	disease_elem.SetProp("secondary", secondary_symptom);
-	disease_elem.SetProp("discovered_by", who.name);
+	disease_elem.SetProp("discovered_by", Cstr(name_by));
 	disease_elem.SetProp("discovered_time", POLCore().systime);
 	SendSysMessage(who, "Você descobriu e nomeou a doença: " + disease_name, 3, 73);
 	return 1;
 endfunction
+
 
 // Função para obter informações de doença do datafile
 function GetDiseaseInfoFromDatafile(patient_symptoms)
