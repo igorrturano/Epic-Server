@@ -236,7 +236,7 @@ function LogoutPets(who)
 			location.append(pet.x);
 			location.append(pet.y);
 			location.append(pet.z);
-			MoveObjectToLocation(pet, 6066, 60, 22, pet.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(pet, 5688, 625, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 			SetObjProperty(pet, "previous_location", location);
 		endif
 		sleepms(2);
