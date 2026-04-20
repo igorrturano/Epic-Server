@@ -34,6 +34,7 @@ program sanctuary(params)
 	// and break sanctuary. `#`-prefixed property is dropped on world save.
 	SetObjProperty(who, "#sanctuary_hp_snapshot", GetVital(who, HITS));
 	PlaySoundEffect(who, 0x216);
+	PlayObjectCenteredEffect(who, FX_SANTUARIO, 10, 80);
 
 	var opts := struct{};
 	opts.+buff_category := "sanctum";

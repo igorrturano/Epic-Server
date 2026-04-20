@@ -30,7 +30,7 @@ program SpellScript(params)
 
 	// Visual and sound effects
 	PlaySoundEffect(targ, SFX_SPELL_DISPEL);
-	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 7, 7);
+	PlayObjectCenteredEffect(targ, FX_MAOS_ENERGETICAS, 1, 25);
 
 	// Get all active timers on the target
 	var timer_list := TS_GetTimerList(targ);
