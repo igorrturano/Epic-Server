@@ -88,7 +88,12 @@ program spell_singularidade(params)
 			SendSysMessageEx(mob, "Voce se firma contra a atracao arcana.", SSM_INFO);
 		endif
 
-		var dist_to_point := Distance(mob, targ);
+		// Distance(mob, coord_struct) retorna error em POL; calcula chebyshev manualmente.
+		var dx := mob.x - targ.x;
+		if (dx < 0) dx := -dx; endif
+		var dy := mob.y - targ.y;
+		if (dy < 0) dy := -dy; endif
+		var dist_to_point := (dx > dy) ? dx : dy;
 		print("[DEBUG singularidade] dist_to_point=" + dist_to_point + " pull_before_cap=" + pull);
 		if (pull > dist_to_point)
 			pull := dist_to_point;
@@ -100,16 +105,11 @@ program spell_singularidade(params)
 
 		PlayObjectCenteredEffect(mob, 0xE464, 5, 10);
 
-		var away_x := mob.x + (mob.x - targ.x);
-		var away_y := mob.y + (mob.y - targ.y);
-		print("[DEBUG singularidade] away_point=(" + away_x + "," + away_y + ") — TurnObjectToward this, then PushBack default");
-		TurnObjectToward(mob, away_x, away_y);
-		print("[DEBUG singularidade] facing_after_turn=" + mob.facing + " (pushback will use mod[-facing] for dist=" + pull + ")");
-
-		var push_result := PushBack(mob, pull, 80);
-		print("[DEBUG singularidade] PushBack returned=" + push_result + " mob_after=(" + mob.x + "," + mob.y + "," + mob.z + ")");
-
-		sleepms(30);
+		// Dispara o puxao em sub-script para cada mob se mover em paralelo,
+		// ignorando bloqueios de LOS/tile via MOVEOBJECT_FORCELOCATION.
+		print("[DEBUG singularidade] launching pull sub-script pull=" + pull);
+		start_script(":spells:spell_logic/evocation/singularidadePull",
+					 array{ mob, targ, pull });
 	endforeach
 
 	return 1;

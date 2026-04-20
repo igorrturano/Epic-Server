@@ -1,5 +1,6 @@
 use uo;
 use os;
+use util;
 
 include "include/client";
 include "include/say";
@@ -8,8 +9,8 @@ include "include/tileEffects";
 include ":combat:Controller/DamageController_legacy";
 
 // Per-tick damage for mage Incinerar DoT. Driven by SC tick-callback.
-// Args: { caster, targ, spellId, tick_number, tick_params }
-// tick_params: struct{ damage_per_tick, total_ticks }
+// Each tick rolls 1d4+1 fixed (matches the Magic Missile chip pattern).
+// tick_params: struct{ total_ticks }
 program IncinerarTick(args)
 	var caster := args[1];
 	var targ := args[2];
@@ -26,7 +27,8 @@ program IncinerarTick(args)
 		dmg_caster := targ;
 	endif
 
-	DamageFLS(targ, CInt(tp.damage_per_tick), DMG_FIRE, dmg_caster);
+	var chip := RandomDiceRoll("1d4") + 1;
+	DamageFLS(targ, chip, DMG_FIRE, dmg_caster);
 
 	PlayObjectCenteredEffect(targ, 0xDC06, 10, 15);
 	PlaySoundEffect(targ, 0x357);
