@@ -1,65 +1,76 @@
 include "Control";
 
 class Button(Control)
-	var _unpressedImage := 0x0;
-	var _pressedImage := 0x0;
-	var _buttonType := BUTTON_TYPE::CLOSE;
+	var unpressedImage := 0x0;
+	var pressedImage := 0x0;
+	var closableButton := true;
 
-	var _actions := array{}; // Função lambda a ser executada no clique
+	var actions := array{}; // Função lambda a ser executada no clique
 
-	function Button(this, name, x, y, unpressedImage := BUTTON_IMAGE::CLOSE_UNPRESSED, pressedImage := BUTTON_IMAGE::CLOSE_PRESSED, buttonType := BUTTON_TYPE::CLOSE)
+	function Button(this, name, x, y, unpressedImage := BUTTON_IMAGE::CLOSE_UNPRESSED, pressedImage := BUTTON_IMAGE::CLOSE_PRESSED)
 		Super(GumpControl::Button, name, x, y);
-		this._unpressedImage := unpressedImage;
-		this._pressedImage := pressedImage;
-		this._buttonType := buttonType;
-		this._actions := array{};
+		this.unpressedImage := unpressedImage;
+		this.pressedImage := pressedImage;
+		this.closableButton := Button::closableButton;
+		this.actions := array{};
 	endfunction
 
 	function GetUnpressedImage(this)
-		return this._unpressedImage;
-	endfunction
-
-	function GetPressedImage(this)
-		return this._pressedImage;
-	endfunction
-
-	function GetButtonType(this)
-		return this._buttonType;
-	endfunction
-
-	function GetActions(this)
-		return this._actions;
+		return this.unpressedImage;
 	endfunction
 
 	function SetUnpressedImage(this, unpressedImage)
-		this._unpressedImage := unpressedImage;
+		this.unpressedImage := unpressedImage;
+
 		return this;
+	endfunction
+
+	function GetPressedImage(this)
+		return this.pressedImage;
 	endfunction
 
 	function SetPressedImage(this, pressedImage)
-		this._pressedImage := pressedImage;
+		this.pressedImage := pressedImage;
+
 		return this;
 	endfunction
 
-	function SetButtonType(this, buttonType)
-		this._buttonType := buttonType;
+	function SetClosable(this, closable)
+		this.closableButton := closable;
+
 		return this;
+	endfunction
+
+	function IsClosable(this)
+		return this.closableButton == true;
+	endfunction
+	
+	function GetActions(this)
+		return this.actions;
 	endfunction
 
 	function AddAction(this, action)
-		this._actions.append(action);
+		this.actions.append(action);
+
 		return this;
 	endfunction
 
 	function ExecuteActions(this)
-		foreach action in (this._actions)
+		foreach action in (this.actions)
 			action();
 		endforeach
 	endfunction
 
 	function HowToDraw(this, byRef gump)
-		GFAddButton(gump.GetGumpString(), this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetUnpressedImage(), this.GetPressedImage(), this.GetButtonType(), this.GetId());
-		// Super::Draw(this, gump);
+		GFAddButton(
+			gump.GetGumpString(),
+			this.GetX() + this.GetXOffset(),
+			this.GetY() + this.GetYOffset(),
+			this.GetUnpressedImage(),
+			this.GetPressedImage(),
+			this.IsClosable() ? GF_CLOSE_BTN : GF_DUMMY_BTN,
+			this.GetId()
+		);
 	endfunction
 
 	function ToString(this)
@@ -71,10 +82,9 @@ class Button(Control)
 	endfunction
 endclass
 
-enum class BUTTON_TYPE
-	PAGE := GF_PAGE_BTN,
-	CLOSE := GF_CLOSE_BTN,
-	DUMMY := GF_DUMMY_BTN
+enum class ButtonType
+	NoClose,
+	Close
 endenum
 
 enum class BUTTON_IMAGE
