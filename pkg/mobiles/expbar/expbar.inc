@@ -213,7 +213,7 @@ endfunction
 
 // =============================================================================
 // CRAFT XP - Called from controladoraComplexos.inc FabricaItemMontado
-// Formula: tier = diff/20, xp = tier * 25. diff < 20 => no award.
+// Formula: tier = diff/20, xp = tier * 5. diff < 20 => no award.
 // Stackable items and non-whitelisted (skill, category) pairs are skipped.
 // =============================================================================
 function AwardXPFromCraft(who, receita, skill, categoria)
@@ -249,7 +249,7 @@ function AwardXPFromCraft(who, receita, skill, categoria)
         return 0;
     endif
 
-    var xp_gain := tier * 25;
+    var xp_gain := tier * 5;
     AddXP(who, xp_gain);
     return xp_gain;
 endfunction
