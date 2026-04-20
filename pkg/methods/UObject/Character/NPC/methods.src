@@ -39,7 +39,6 @@ include ":charactercreation:habilidades";
 include ":epicAI:npcDataCache";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
-include ":mounts:mounts";
 
 program Install()
 	print("INSTALLING: Methods for NPC... OK!");
@@ -493,14 +492,6 @@ exported function getTameDifficulty(who)
 	if (!cache.abilities.isAnimalBrain)
 		return error;
 	endif
-	var diff := CInt(AP_GetSkill(who, WRESTLING));
-
-    // ajuste para montarias
-    if (IsMountable(who))
-        if (diff < 45)
-            diff := 45;
-        endif
-    endif
 	return Cint(AP_GetSkill(who, WRESTLING));
 endfunction
 
