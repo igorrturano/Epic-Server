@@ -42,10 +42,10 @@ program SpellScript(params)
 			SC_RemoveEffect(mobile, CInt(spell.id));
 
 			var opts := struct{};
-			opts.+properties := dictionary{ "#hit_mod" -> bonus };
+			opts.+hitchance_mod := bonus;
 			opts.+buff_category := "hit_bonus";
 			opts.+displayname := "Abencoar";
-			opts.+desc := $"+{bonus} no proximo ataque";
+			opts.+desc := $"+{bonus} no ataque";
 			opts.+on_apply_script := ":spells:shared/playApplyFX";
 			opts.+on_apply_params := struct{
 				fx := FX_BLESS_EFFECT,
@@ -55,6 +55,8 @@ program SpellScript(params)
 			};
 
 			SC_ApplyEffect(who, mobile, opts, duration, CInt(spell.id));
+
+			PlayObjectCenteredEffect(mobile, FX_BLESS_SPELL, 1, 25);
 
 			SendSysMessageEx(mobile, "Voce sente uma bencao divina guiando seus golpes. (+" + bonus + " no ataque por " + duration + " segundos)", SSM_INFO);
 

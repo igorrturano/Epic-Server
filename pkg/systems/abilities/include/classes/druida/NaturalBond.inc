@@ -1,31 +1,3 @@
-use uo;
-use os;
-use util;
-use cfgfile;
-use vitals;
-
-include ":abilities:models/CombatAbility";
-include ":message:model/Message";
-include ":debug:Controller/DebugController";
-include ":gumps:gumps";
-include ":taming:taming";
-include ":attributes:attributes";
-include ":tn:boss";
-include ":tn:npcutil";
-include ":tn:cooldown";
-include ":timedscripts:timedScripts";
-include ":epicai:epicai";
-include ":datafile:datafile";
-include ":wrappers:Objects/Model/MobileWrapper";
-include ":abilities:models/Ability";
-include "include/epicNPCUtils";
-include "include/client";
-include "include/sounds";
-include "include/say";
-include "include/packets";
-include "include/epicConstants";
-include ":hotbar:include/custombuff";
-
 const _NB_BTN_ESTUDAR   := 1;
 const _NB_BTN_VOLTAR    := 2;
 const _NB_BTN_TRANSFORM := 100;
@@ -699,3 +671,27 @@ class NaturalBond(CombatAbility)
     endfunction
 
 endclass
+
+// Shared utility - used by NaturalBond.inc (ability) and previously by SetupItemsForSpecificClasses.
+// Lives here (not in epicNPCInitialization.inc) so external pkgs that include :epicAI:epicai
+// continue to resolve it without pulling the heavy init chain.
+function GetAnimalTemplateByTier(tier)
+    var epicai_df := OpenDataFile(":epicai:AnimalsByTier");
+    if (!epicai_df || epicai_df.errortext)
+        return 0;
+    endif
+
+    var cache_elem := epicai_df.FindElement("AnimalTiers");
+    if (!cache_elem)
+        return 0;
+    endif
+
+    var tier_key := "tier_" + tier;
+    var animal_list := cache_elem.GetProp(tier_key);
+
+    if (!animal_list || animal_list.size() < 1)
+        return 0;
+    endif
+
+    return animal_list[RandomIntMinMax(1, animal_list.size())];
+endfunction

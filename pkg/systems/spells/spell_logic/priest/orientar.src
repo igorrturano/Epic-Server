@@ -38,10 +38,10 @@ program SpellScript(params)
 	endif
 
 	var opts := struct{};
-	opts.+properties := dictionary{ "#hit_mod" -> bonus };
+	opts.+hitchance_mod := bonus;
 	opts.+buff_category := "hit_bonus";
 	opts.+displayname := "Orientar";
-	opts.+desc := $"+{bonus} no proximo ataque";
+	opts.+desc := $"+{bonus} no ataque";
 	opts.+maintainable := 1;
 	opts.+on_apply_script := ":spells:shared/playApplyFX";
 	opts.+on_apply_params := struct{
@@ -53,8 +53,10 @@ program SpellScript(params)
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
 
+	PlayObjectCenteredEffect(targ, FX_BLESS_SPELL, 1, 25);
+
 	SendSysMessageEx(who, "Voce guia " + targ.name + " com uma bencao divina.", SSM_INFO);
-	SendSysMessageEx(targ, "Voce sente uma orientacao divina guiando seus golpes. (+" + bonus + " no proximo ataque)", SSM_INFO);
+	SendSysMessageEx(targ, "Voce sente uma orientacao divina guiando seus golpes. (+" + bonus + " no ataque por " + duration + " segundos)", SSM_INFO);
 
 	return 1;
 endprogram

@@ -259,21 +259,31 @@ function MP_Mount(mobile, npc)
 		return 0;
 	endif
 
+	if (GetObjProperty(npc, "EstaNoEstabulo"))
+		Message("Este animal está armazenado no estábulo", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
 	if ( Cint(GetObjProperty(mobile, "#desmontar")) == 1)
-		Message("Voce nao pode montar").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Voce nao pode montar").SetColor(SYSTEM_COLOR::FAIL).SendSys(mobile);
 		return 0;
 	endif
 
 	//check de polymorph druid
 	if ( Cint(GetObjProperty(mobile, "metamorfosedruida")) == 1)
-		Message("Voce nao pode montar nessa forma").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Voce nao pode montar nessa forma", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
+	if ( GetObjProperty(mobile, "metamorfose") )
+		Message("Voce nao pode montar nessa forma", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 
 	// Check race/gender restrictions using new system
 	var restriction_check := MP_CheckMountRestriction(mobile, npc);
 	if (!restriction_check)
-		Message(restriction_check.errortext).SetColor(SSM_FAIL).SendSys(mobile);
+		Message(restriction_check.errortext).SetColor(SYSTEM_COLOR::FAIL).SendSys(mobile);
 		return 0;
 	endif
 
@@ -282,7 +292,7 @@ function MP_Mount(mobile, npc)
 	var in_dungeon := InDungeon(coord);
 	if (in_dungeon)
 		if (!IsDungeonApprovedMount(mount_graphic))
-			Message("Você não pode usar essa montaria em masmorras").SetColor(SSM_FAIL).SendSys(mobile);
+			Message("Você não pode usar essa montaria em masmorras").SetColor(SYSTEM_COLOR::FAIL).SendSys(mobile);
 			return 0;
 		endif
 	endif

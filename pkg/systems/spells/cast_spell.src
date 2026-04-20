@@ -26,6 +26,8 @@ include "include/meusProcessos";
 include "include/epicMageryUtils";
 include "include/sysEvent";
 include ":entropy:entropy";
+include ":charactercreation:resists";
+include "include/epicConstants";
 
 program SpellStarter(params)
 	var mobile := params[1]; // Caster
@@ -102,7 +104,8 @@ function initializeSpellCasting(mobile, mw, byref spellinfo, scroll)
 		return 0;
 	endif
 
-	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) && spellinfo.Type != "Ninjutsu")
+	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) && spellinfo.Type != "Ninjutsu"
+		&& !isMobileCastActive(mobile, spellinfo.School))
 		mobile.frozen := 1;
 	endif
 
@@ -312,7 +315,7 @@ function performSpellVocalization(mobile, spellinfo)
 	endif
 endfunction
 
-function performSpellCycles(mobile, mw, spellinfo, orig_hp)
+function performSpellCycles(mobile, mw, spellinfo, byref orig_hp)
 	var cycles := CInt(spellinfo.Cycles);
 
 	if (GetObjProperty(mobile, "#free_cast"))
@@ -338,7 +341,7 @@ function performSpellCycles(mobile, mw, spellinfo, orig_hp)
 	return 1;
 endfunction
 
-function performSpellDelay(mobile, mw, delay, orig_hp)
+function performSpellDelay(mobile, mw, delay, byref orig_hp)
 	while (delay > 0)
 		if (!checkSpellInterruption(mobile, mw, orig_hp))
 			return 0;
@@ -352,7 +355,7 @@ function performSpellDelay(mobile, mw, delay, orig_hp)
 	return 1;
 endfunction
 
-function checkSpellInterruption(mobile, mw, orig_hp)
+function checkSpellInterruption(mobile, mw, byref orig_hp)
 	if (GetCooldown(mobile, "silence") > 0)
 		SendSysMessageEx(mobile, "Voce foi silenciado durante a invocacao.", SSM_FAIL);
 		FailSpell(mobile);
@@ -371,17 +374,24 @@ function checkSpellInterruption(mobile, mw, orig_hp)
 		return 0;
 	endif
 
-	if (orig_hp > AP_GetVital(mobile, "Hits") && (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL)))
-		SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.",
-				   SSM_FAIL);
-		FailSpell(mobile);
-		if (mw.HasAbility(ABILITY_ID::SUPPORT_CASTER))
-			HealMana(mobile, CInt(GetObjProperty(mobile, "#Casting").mana * 0.5));
-		endif
-		if (!GetObjProperty(mobile, "#magiasilenciosa"))
+	var current_hp := AP_GetVital(mobile, "Hits");
+	if (orig_hp > current_hp && !mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
+		var damage_taken := orig_hp - current_hp;
+		var concentration_dif := RESIST_MEDIUM + Cint(damage_taken / 5);
+
+		if (CheckResist(mobile, WILL, concentration_dif) > 0)
+			// Concentration held — reset the damage baseline so only NEW damage can break it.
+			orig_hp := current_hp;
+			PrintTextAbove(mobile, "*concentrado*");
+		else
+			SendSysMessageEx(mobile, "Voce nao conseguiu se concentrar o suficiente para invocar esta magia.",
+					   SSM_FAIL);
 			FailSpell(mobile);
+			if (mw.HasAbility(ABILITY_ID::SUPPORT_CASTER))
+				HealMana(mobile, CInt(GetObjProperty(mobile, "#Casting").mana * 0.5));
+			endif
+			return 0;
 		endif
-		return 0;
 	endif
 
 	if (Events_Waiting())

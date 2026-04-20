@@ -44,5 +44,5 @@ program SanctuaryTick(args)
 		return;
 	endif
 
-	PlayObjectCenteredEffect(targ, 0x375a, 10, 80);
+	PlayObjectCenteredEffect(targ, FX_SANTUARIO, 10, 80);
 endprogram

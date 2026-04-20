@@ -41,8 +41,7 @@ program chainLightning(params)
 		PlayMovingEffect(casterThenNextMobile, mobile, 0x379f, 0, 20);
 		casterThenNextMobile := mobile;
 		PlaySoundEffect(mobile, SFX_SPELL_LIGHTNING);
-		var dmg := epicSpellDamageRoll(caster, spell_circle);
-		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
 
 		DamageFLS(mobile, cint(dmg), DMG_ENERGY, caster, "chainLightning");
 		sleepms(600);

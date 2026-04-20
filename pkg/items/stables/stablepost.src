@@ -5,21 +5,60 @@ include ":containers:storageAreas";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":merchants:/include/cambio";
+include ":taming:taming";
+include "include/say";
 
 const MOEDAS_COBRE := 0xba63;
 const MOEDAS_PRATA := 0xba64;
 const MOEDAS_OURO := 0xba65;
 const GOLD_COIN := 0xeed;
+const SEGUNDOS_POR_DIA := 86400;
 
 program StablePost(who, post)
+	// Limpa qualquer aluguel vencido antes de decidir o fluxo
+	var existing_serial := GetObjProperty(post, "StoredAnimal");
+	if (existing_serial)
+		var existing := SystemFindObjectBySerial(existing_serial);
+		if (existing && IsStableExpired(existing))
+			ExpireStabledPet(existing, post);
+		endif
+	endif
+
 	if (GetObjProperty(post, "StoredAnimal"))
-		// Se já tem um animal, tenta resgatar
 		return ResgatarAnimal(who, post);
 	else
-		// Se não tem animal, permite guardar
 		return GuardarAnimal(who, post);
 	endif
 endprogram
+
+function IsStableExpired(pet)
+	var dataEntrada := CInt(GetObjProperty(pet, "DataEntrada"));
+	if (!dataEntrada)
+		return 0;
+	endif
+	return (polcore().systime - dataEntrada) >= SEGUNDOS_POR_DIA;
+endfunction
+
+function ExpireStabledPet(pet, post)
+	pet.setParalyzed(0);
+	RevokePrivilege(pet, "invul");
+	pet.disable("invul");
+
+	EraseObjProperty(pet, "EstaNoEstabulo");
+	EraseObjProperty(pet, "StablePostSerial");
+	EraseObjProperty(pet, "DataEntrada");
+	EraseObjProperty(pet, "PrecoPorDia");
+
+	if (post)
+		EraseObjProperty(post, "StoredAnimal");
+	endif
+
+	var owner := pet.master;
+	if (owner)
+		GetNumPets(owner);
+		SendSysMessageEx(owner, "Voce perdeu seu aluguel de estabulo! " + pet.name + " foi liberado.", SSM_FAIL);
+	endif
+endfunction
 
 function GuardarAnimal(who, post)
 	// 1. Verificar se o player tem um animal próximo
@@ -67,13 +106,11 @@ function GuardarAnimal(who, post)
 		return 0;
 	endif
 
-	var regiaoBanco := GetObjProperty(post, "City") ? GetObjProperty(post, "City") : CP_DEFAULT_AREA;
-	// 5. Verificar pagamento (agora sem pedir dias)
-	if (ContaCapital(who, regiaoBanco).valorTotal < precoPorDia) 
-		SendSysMessage(who, "Você não tem moedas o suficiente para efetuar o pagamento.");
+	// 5. Cobra o aluguel apenas do backpack (regiao 0 = sem banco)
+	var debito := EfetuaDebito(who, precoPorDia, 0);
+	if (debito == error)
+		SendSysMessage(who, "Você não tem moedas o suficiente no inventário para efetuar o pagamento.");
 		return 0;
-	else
-		who.spendgold(precoPorDia);
 	endif
 
 	// 6. Guardar animal
@@ -88,6 +125,8 @@ function GuardarAnimal(who, post)
 	SetObjProperty(target_pet, "PrecoPorDia", precoPorDia);
 	SetObjProperty(post, "StoredAnimal", target_pet.serial);
 
+	GetNumPets(who);
+
 	SendSysMessage(who, target_pet.name + " guardado com sucesso!");
 	return 1;
 endfunction
@@ -96,8 +135,14 @@ function ResgatarAnimal(who, post)
 	var animal_serial := GetObjProperty(post, "StoredAnimal");
 	var animal := SystemFindObjectBySerial(animal_serial);
 
-	if (!animal || animal.master != who)
-		SendSysMessage(who, "Você não pode resgatar este animal.");
+	if (!animal)
+		SendSysMessage(who, "O animal deste estábulo não existe mais.");
+		EraseObjProperty(post, "StoredAnimal");
+		return 0;
+	endif
+
+	if (animal.master != who)
+		SendSysMessage(who, "Este animal não pertence a você.");
 		return 0;
 	endif
 
@@ -107,15 +152,22 @@ function ResgatarAnimal(who, post)
 		return 0;
 	endif
 
+	// Verifica se o jogador tem slots livres para o pet retornar
+	if ( (GetNumPets(who) + GetPetCost(animal)) > GetMaxPets(who) )
+		SendSysMessage(who, "Voce nao tem slots suficientes para resgatar seu animal.");
+		return 0;
+	endif
+
 	// Restaura estado original
 	animal.setParalyzed(0);
 	RevokePrivilege(animal, "invul");
 	animal.disable("invul");
 
 	EraseObjProperty(animal, "EstaNoEstabulo");
-	EraseObjProperty(animal, "StablePostSerial");
 	EraseObjProperty(animal, "DataEntrada");
 	EraseObjProperty(post, "StoredAnimal");
+
+	GetNumPets(who);
 
 	SendSysMessage(who, animal.name + " resgatado com sucesso!");
 	return 1;

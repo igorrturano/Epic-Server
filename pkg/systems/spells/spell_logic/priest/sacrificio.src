@@ -9,7 +9,7 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include "include/tileEffects";
 include ":charactercreation:habilidades";
-include ":epicAI:epicai";
+include ":epicAI:include/epicNPCCombat";   // CheckForWoundedAllies, FindMostWoundedAlly
 
 program SpellScript(params)
 	var who := params[1];

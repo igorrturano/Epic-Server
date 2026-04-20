@@ -276,6 +276,7 @@ function DoPurchaseCmd(npc, player)
 		elseif (input[0] == 2) // pesquisa Textual
 			session.filtros.tipo := FILTRO_TEXTO;
 			session.filtros.valor := GFExtractData(input, 4);
+			session.paginador.pagina := 0;
 		elseif (input[0] == 3) // negócio
 			if (!player.concealed)
 				PrintTextAbove(npc, "Certo, estou te ouvindo", SSM_INFO);
@@ -284,14 +285,15 @@ function DoPurchaseCmd(npc, player)
 		elseif (input[0] == 4) // 	Reservado Caixa De Texto
 		elseif (input[0] == 5) // 	limpar Filtro
 			session.filtros.tipo := "";
+			session.paginador.pagina := 0;
 		elseif (input[0] == 6) // 	Log
 			var historico := GetMerchantLog(npc);
 			historico := "<br> - {}".format("<br> -".join(historico));
 			SendHTMLGump(player, "Historico de Vendas", historico);
 		elseif (input[0] > 6 && input[0] <= 6 + item_types.size()) // filtra por categoria.
-
 			session.filtros.tipo := FILTRO_CATEGORIA;
 			session.filtros.valor := EncontraChavePorValor(input[0], item_types);
+			session.paginador.pagina := 0;
 		elseif(ID_BOTAO_PROXIMA_PAGINA == input[0])
 			session.paginador.pagina += 1;
 		elseif(ID_BOTAO_PAGINA_ANTERIOR == input[0])
@@ -374,7 +376,7 @@ function SetupMerchant(npc, player)
 	SetObjProperty(npc, "norace", output[4]);
 endfunction
 
-function SendItemView(npc, player, session)
+function SendItemView(npc, player,byref session)
 	//var gump := GetMerchantGump(npc);
 	var gump := PreparaLojaGump(npc, player, session);
 	//if (!gump || session.filtros.tipoFiltro != "")

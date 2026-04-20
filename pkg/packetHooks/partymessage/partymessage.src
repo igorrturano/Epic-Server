@@ -36,11 +36,10 @@ exported function PartyMessageSpy(who, byref packet)
 			var acct := who.acctname;
 			var truename := GetObjProperty(who, "nome_inicial");
 			var leader := who.party.leader.name;
+			var leaderAcct := who.party.leader.acctname;
 
 			if (GetObjProperty(player, "PartySpyOn") == "on")
-				leader := splitwords(leader);
-				leader := leader[1];
-				SendSysMessage(player, "[Party-" + leader + "][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT,
+				SendSysMessage(player, "[Leader-" + leaderAcct + "][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT,
 								0x003e);
 			elseif (GetObjProperty(player, "PartySpyOn") == leader)
 				SendSysMessage(player, "[PT-SPY][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);

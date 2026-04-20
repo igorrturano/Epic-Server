@@ -54,6 +54,10 @@ function SC_ApplyEffect(caster, targ, opts, duration, spellId, timerName := "spe
 
 	opts.+spellId := spellId;
 	opts.+totalDuration := duration;
+	// Unique per-apply token: lets a tick driver detect that its opts were
+	// replaced by a subsequent apply (e.g. via maintain re-cast) and
+	// self-terminate instead of firing against the new effect's state.
+	opts.+instance_id := ReadGameClock();
 	// Store caster serial so resync + tick scripts can recover the caster
 	// after a server restart (the driver's caster arg is lost on shutdown).
 	if (caster)
@@ -84,7 +88,7 @@ endfunction
 
 function _SC_LaunchTickDriver(caster, targ, spellId, opts)
 	start_script(":spells:scTickDriver",
-		array{ caster, targ, spellId, opts.tick_script, CInt(opts.tick_interval), opts.tick_params });
+		array{ caster, targ, spellId, opts.tick_script, CInt(opts.tick_interval), opts.tick_params, CInt(opts.instance_id) });
 endfunction
 
 /**

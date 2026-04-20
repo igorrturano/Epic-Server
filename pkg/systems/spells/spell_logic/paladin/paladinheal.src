@@ -10,6 +10,7 @@ include ":timedScripts:timedScripts";
 include "include/tileEffects";
 include ":charactercreation:habilidades";
 include ":combat:Controller/DamageController_legacy";
+include ":epicAI:include/epicNPCCombat";   // CheckForWoundedAllies, FindMostWoundedAlly
 include ":brainai:npcUtil";
 include ":epicAI:epicai";
 
@@ -59,6 +60,7 @@ program SpellScript(params)
 	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
 
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlayObjectCenteredEffect(targ, FX_ENERGY_GLOBES, 1, 20);
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
 
 	return 1;
