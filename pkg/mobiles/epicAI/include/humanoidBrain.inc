@@ -336,14 +336,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     endif
 
     if (MobileWrapper(me).HasAbility(ABILITY_ID::ALQUIMISTA_EXPERIENTE))
-        var explosive_potions := array{0xbf13, 0xbf14, 0xbf15, 0xef60, 0xef61, 0xef62};
-
-        foreach item in EnumerateItemsInContainer(me.backpack)
-            if (item.objtype in explosive_potions)
-                UseItem(item, me);
-                break;
-            endif
-        endforeach
+        NPC_UseAbilityById(me, ABILITY_ID::ALQUIMISTA_EXPERIENTE);
     endif
 
     return 1;
@@ -686,10 +679,8 @@ function ChooseSageAbility(npc, state, habs)
     endif
 
     if (opponent.master)
-        if (myhabs_set_var.exists(ABILITY_ID::ELO_NATURAL))
-            Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_GetCachedData(npc).template});
-        endif
         if (myhabs_set_var.exists(ABILITY_ID::CORACAO_DA_MATILHA))    return ABILITY_ID::CORACAO_DA_MATILHA;    endif
+        if (myhabs_set_var.exists(ABILITY_ID::ELO_NATURAL))           return ABILITY_ID::ELO_NATURAL;           endif
     endif
 
     return habs[RandomInt(habs.size())+1];
