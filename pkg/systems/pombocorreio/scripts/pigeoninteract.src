@@ -1,0 +1,158 @@
+// =============================================================
+// Sistema de Pombo-Correio - Script de Interacao (bloqueante)
+//
+// Recebe params[1] = who, params[2] = mailbox
+// Gerencia o gump de envio, cria o NPC pombo e debita o custo.
+// =============================================================
+
+use uo;
+use os;
+use basic;
+use math;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":pigeoncorreio:include/pigeoncorreio";
+
+program pigeoninteract(params)
+	var who     := params[1];
+	var mailbox := params[2];
+
+	if (!who || !mailbox)
+		return;
+	endif
+
+	var conhecidos := PigeonGetConhecidos(who);
+
+	if (conhecidos.Size() == 0)
+		SendSysMessage(who, "Você não tem nenhum conhecido online para receber o pombo.", 33);
+		return;
+	endif
+
+	// Monta e exibe o gump
+	var gump := BuildMailGump(conhecidos);
+	var input := GFSendGump(who, gump);
+
+	// Botão 0 = fechou; botão 2 = cancelou
+	var btn := CInt(input[0]);
+	if (btn == 0 || btn == 2)
+		SendSysMessage(who, "Envio cancelado.", 33);
+		return;
+	elseif (btn != 1)
+		return;
+	endif
+
+	// Descobre qual radio foi selecionado (grupo 1, indices 10..10+N-1)
+	var selected_idx := -1;
+	var i := 0;
+	while (i < conhecidos.Size())
+		var radio_input_id := 10 + i;
+		if (CInt(input[radio_input_id]) == 1)
+			selected_idx := i;
+			break;
+		endif
+		i += 1;
+	endwhile
+
+	if (selected_idx < 0)
+		SendSysMessage(who, "Você deve selecionar um destinatário.", 33);
+		return;
+	endif
+
+	// Extrai o texto da mensagem (text entry id 1)
+	var msg := CStr(GFExtractData(input, 1));
+
+	if (Len(msg) == 0)
+		SendSysMessage(who, "A mensagem não pode estar vazia.", 33);
+		return;
+	endif
+
+	if (Len(msg) > PIGEON_MSG_MAX_LEN)
+		SendSysMessage(who, "A mensagem é longa demais (máximo " + CStr(PIGEON_MSG_MAX_LEN) + " caracteres).", 33);
+		return;
+	endif
+
+	var entry     := conhecidos[selected_idx + 1]; // array é 1-indexado
+	var recipient := entry.mob;
+
+	if (!recipient || !recipient.connected)
+		SendSysMessage(who, "Esse jogador saiu do servidor.", 33);
+		return;
+	endif
+
+	// Cria o pombo na posição do jogador antes de cobrar
+	var pigeon := CreateNpcFromTemplate(":pigeoncorreio:DeliveryPigeon",
+	                                    who.x, who.y, who.z, 0, who.realm);
+	if (!pigeon)
+		SendSysMessage(who, "Erro ao criar o pombo. Contate um GM.", 33);
+		return;
+	endif
+
+	// Cobra o custo; se falhar, mata o pombo já criado
+	if (!PigeonConsumeCost(who))
+		SendSysMessage(who, "Você não tem moedas suficientes (custo: " + CStr(PIGEON_COST) + " sestertii).", 33);
+		pigeon.Kill();
+		return;
+	endif
+
+	// Define a direção de partida aleatória
+	var flight_dir := RandomInt(8);
+
+	// Injeta as CProp antes de o script do pombo acordar
+	SetObjProperty(pigeon, "state",            PIGEON_DEPARTING);
+	SetObjProperty(pigeon, "dist_count",       0);
+	SetObjProperty(pigeon, "flight_dir",       flight_dir);
+	SetObjProperty(pigeon, "recipient_serial", CInt(recipient.serial));
+	SetObjProperty(pigeon, "sender_name",      CStr(who.name));
+	SetObjProperty(pigeon, "message",          msg);
+
+	SendSysMessage(who, "Pombo enviado para " + CStr(entry.apelido) + "!", 66);
+endprogram
+
+// =============================================================
+// BuildMailGump - Constrói o gump de seleção e mensagem
+// =============================================================
+function BuildMailGump(conhecidos)
+	var gump := GFCreateGump(100, 80);
+
+	GFPage(gump, 0);
+	GFResizePic(gump, 0,  0,  3600, 350, 480);
+	GFResizePic(gump, 15, 15, 5054, 320, 450);
+
+	GFHTMLArea(gump, 15, 30, 320, 20, "<BASEFONT color=#111111><CENTER><B>Pombo-Correio</B></CENTER>", 0, 0);
+	GFHTMLArea(gump, 35, 60, 300, 20, "<BASEFONT color=#111111><B>Selecione o Destinatario:</B>", 0, 0);
+
+	GFHTMLArea(gump, 35, 335, 300, 20, "<BASEFONT color=#111111><B>Mensagem:</B>", 0, 0);
+	GFResizePic(gump, 30, 355, 3000, 290, 60);
+	GFTextEntry(gump, 35, 360, 280, 50, 0, "", 1, PIGEON_MSG_MAX_LEN);
+
+	GFAddButton(gump, 100, 430, 0xF7, 0xF8, GF_CLOSE_BTN, 1);
+	GFAddButton(gump, 210, 430, 0xF1, 0xF2, GF_CLOSE_BTN, 2);
+
+	var y := 85;
+	var i := 1;
+	var page := 1;
+	var per_page := 12;
+
+	GFPage(gump, 1);
+
+	while (i <= conhecidos.Size())
+		if (i > 1 && (i - 1) % per_page == 0)
+			GFAddButton(gump, 290, 310, 0x15E1, 0x15E5, GF_PAGE_BTN, page + 1);
+			page += 1;
+			GFPage(gump, page);
+			GFAddButton(gump, 260, 310, 0x15E3, 0x15E7, GF_PAGE_BTN, page - 1);
+			y := 85;
+		endif
+
+		var entry      := conhecidos[i];
+		var radio_id   := 10 + (i - 1); // input id do radio
+		GFSetRadioGroup(gump, 1);
+		GFRadioButton(gump, 35, y, 0xD0, 0xD1, 0, radio_id);
+		GFHTMLArea(gump, 60, y, 250, 20, "<BASEFONT color=#111111>" + CStr(entry.apelido), 0, 0);
+		y += 20;
+		i += 1;
+	endwhile
+
+	return gump;
+endfunction

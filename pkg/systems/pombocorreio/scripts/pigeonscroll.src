@@ -1,0 +1,52 @@
+// =============================================================
+// Sistema de Pombo-Correio - Script do Bilhete
+// Ativado quando o jogador dá double-click no bilhete recebido.
+// =============================================================
+
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+program pigeonscroll(who, scroll)
+	// Verifica se o item está no inventário do jogador (direto ou em sub-bag)
+	var cont := scroll.container;
+	var ok := 0;
+	while (cont)
+		if (cont == who || cont == who.backpack)
+			ok := 1;
+			break;
+		endif
+		cont := cont.container;
+	endwhile
+	if (!ok)
+		SendSysMessage(who, "O bilhete precisa estar na sua mochila.", 33);
+		return;
+	endif
+
+	var sender  := GetObjProperty(scroll, "sender_name");
+	var message := GetObjProperty(scroll, "message");
+
+	if (!sender)  sender  := "Desconhecido"; endif
+	if (!message) message := "(mensagem vazia)"; endif
+
+	ShowScrollGump(who, sender, message);
+endprogram
+
+// -------------------------------------------------------------
+// Exibe o conteúdo do bilhete
+// -------------------------------------------------------------
+function ShowScrollGump(who, sender, message)
+	var gump := GFCreateGump(100, 100);
+
+	// Fundo de pergaminho (imagem 7 = rolo de pergaminho limpo)
+	GFGumpPic(gump, 0, 0, 7, 0);
+
+	GFTextLine(gump, 40, 50, 0,      "De: " + sender);
+	GFHTMLArea(gump, 40, 80, 200, 180,
+	           "<BASEFONT color=#111111>" + message,
+	           0, 0);
+
+	GFSendGump(who, gump);
+endfunction
