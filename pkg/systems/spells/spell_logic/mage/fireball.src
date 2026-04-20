@@ -38,10 +38,21 @@ program spell_fireball(params)
 		return 0;
 	endif
 
-	PlayMovingEffect(caster, cast_on, FX_LARGE_FIREBALL, 10, 10, 1);
-	sleepms(150);
+	// PlayMovingEffect com dst = coord struct nao renderiza; usar XYZ pra alvo de area.
+	PlayMovingEffectXYZ(caster.x, caster.y, caster.z, cast_on.x, cast_on.y, cast_on.z,
+						FX_LARGE_FIREBALL, 10, 10, 1, caster.realm);
+	// PlayMovingEffectXYZ(caster.x, caster.y, caster.z, cast_on.x, cast_on.y, cast_on.z,
+	// 					FX_FIREBOLT_2, 7, 20, 1, caster.realm);
 
-	PlayStationaryEffect(cast_on.x, cast_on.y, cast_on.z, FX_EXPLODE_1, 10, 20, 0, cast_on.realm);
+	// Espera o projetil chegar antes de detonar — ~60ms por tile de distancia.
+	var travel_ms := Cint(dist * 120);
+	if (travel_ms < 200)
+		travel_ms := 200;
+	endif
+	sleepms(travel_ms);
+
+	// PlayStationaryEffect(cast_on.x, cast_on.y, cast_on.z, FX_EXPLODE_1, 10, 20, 0, cast_on.realm);
+	PlayStationaryEffect(cast_on.x, cast_on.y, cast_on.z, 0xDDE8, 0, 25, 0, cast_on.realm);
 	PlaySoundEffect(cast_on, 0x208);
 
 	var radius := Cint(AP_GetSkill(caster, ARCANA) / 25);
