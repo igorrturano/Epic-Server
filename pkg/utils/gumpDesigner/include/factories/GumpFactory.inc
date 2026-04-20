@@ -19,7 +19,7 @@ class GumpFactory(IGumpFactory)
 		return Gump(parent, title, width, height, options);
 	endfunction
 
-	function CreateButton(this, name := "Button", x := 0, y := 0, unpressedImage := BUTTON_IMAGE::CLOSE_UNPRESSED, pressedImage := BUTTON_IMAGE::CLOSE_PRESSED)
+	function CreateButton(this, name := "Button", x := 0, y := 0, unpressedImage := ButtonImage::CloseUnpressed, pressedImage := ButtonImage::ClosePressed)
 		return Button(name, x, y, unpressedImage, pressedImage);
 	endfunction
 
