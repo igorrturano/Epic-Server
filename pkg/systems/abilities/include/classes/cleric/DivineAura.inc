@@ -28,6 +28,11 @@ class DivineAura(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
+
+		if (who.npctemplate)
+			return false;
+		endif
+
 		var religiao := mobile.GetReligion();
 		var theology_bonus := CInt(mobile.GetSkill(THEOLOGY) / 5);
 

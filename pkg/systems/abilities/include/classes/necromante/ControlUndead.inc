@@ -24,6 +24,11 @@ class ControlUndead(CombatAbility)
 
     function ExecuteOn(this, mobile)
         var who := mobile.GetObjRef();
+
+        if (who.npctemplate)
+            return false;
+        endif
+
         var cfg := ReadConfigFile(":*:npcdesc");
 
         Message("Escolha o morto para controlar.", Color(SYSTEM_COLOR::INFO)).SendSys(who);

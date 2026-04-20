@@ -17,6 +17,7 @@ include ":epicAI:include/epicai";
 
 // Direct deps for init bodies (formerly leaky-transitive via lootParser/etc.):
 include "makeRace";
+include "makeReligion";
 include ":merchants:include/item_template";
 include ":epicAI:include/humanoidBrain";   // GetHabsByLevel, GetClassProgression
 include ":epicAI:include/npcDataCache";    // NPC_GetCachedData
@@ -159,6 +160,10 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
     else
         makeRace(mobile);
     endif
+
+    // Religion — picks from habs-specific pool (cleric/arqueiro arcano).
+    // No-op for NPCs without religion-gated abilities.
+    makeReligion(mobile);
 
     SetupNPCEquip(mobile, npc_elem);
 

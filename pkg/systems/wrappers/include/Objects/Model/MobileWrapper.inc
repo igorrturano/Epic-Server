@@ -131,6 +131,16 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function GetReligion(this)
 		if (this.Religion is @Exception)
+			// NPC path — lazy-read from "npc_religion" ObjProperty set by makeReligion at init.
+			// Non-cleric / non-arqueiro-arcano NPCs have no religion; property is absent and
+			// the IsNPCException is returned (preserves legacy behavior for those).
+			if (this.IsNPC())
+				var stored := GetObjProperty(this.GetObjRef(), "npc_religion");
+				if (stored)
+					this.Religion := stored;
+					return stored;
+				endif
+			endif
 			return this.Religion;
 		endif
 
