@@ -12,6 +12,7 @@ include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":destroyable:include/destroyItem";
 include ":charactercreation:resists";
+include ":propagacao:include/efeitosIncendiarios";
 
 program spell_fireball(params)
 	var caster := params[1];
@@ -49,6 +50,32 @@ program spell_fireball(params)
 	elseif (radius > 4)
 		radius := 4;
 	endif
+
+	// Propagacao: campos de fogo em linha do caster ate o ponto de impacto
+	// e espalhados na area da explosao.
+	var coord_list := GetCoordsInLine(caster.x, caster.y, cast_on.x, cast_on.y);
+	foreach coord in coord_list
+		if (_coord_iter < 4) // Nao cria no proprio caster
+			continue;
+		endif
+		CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_NORTE_SUL,
+						 0, 20, caster);
+		sleepms(105);
+	endforeach
+
+	foreach coord in GetCoordsInSquare(cast_on.x, cast_on.y, radius)
+		if (RandomInt(2) != 1)
+			continue;
+		endif
+		if (RandomInt(2))
+			CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_NORTE_SUL,
+							 0, 10, caster, 10);
+		else
+			CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_OESTE_LESTE,
+							 0, 10, caster, 10);
+		endif
+		sleepms(5);
+	endforeach
 
 	var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
 	DanificaObjetosProximos(caster, cast_on.x, cast_on.y, cast_on.z, cast_on.realm,

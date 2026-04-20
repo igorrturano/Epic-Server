@@ -244,7 +244,7 @@ function AwardXPFromCraft(who, receita, skill, categoria)
         return 0;
     endif
 
-    var tier := Cint(Cint(receita.dificuldade) / 20);
+    var tier := Cint(Cint(receita.dificuldade.skill) / 20);
     if (tier < 1)
         return 0;
     endif
