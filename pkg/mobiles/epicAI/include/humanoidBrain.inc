@@ -693,9 +693,6 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
     foreach hab in myhabs_var
         case (hab)
             ABILITY_ID::CAMUFLAGEM:
-                if (!me.hidden)
-                    me.hidden := 1;
-                endif
                 NPC_UseAbilityById(me, hab);
             ABILITY_ID::INVOCACAO_DO_CAOS: 
             ABILITY_ID::ARCANE_BOW:
@@ -707,21 +704,6 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
                 NPC_UseAbilityById(me, hab);
         endcase
     endforeach
-endfunction
-
-function HandleAssassinBehavior(opponent)
-    if (!me.hidden && Distance(me, opponent) <= 6)
-        GrantPrivilege(me, "hiddenattack");
-        me.enable("hiddenattack");
-        me.hidden := 1;
-        me.stealthsteps := 30;
-        
-        if (GetCooldown(me, "FaroPorSangue"))
-            SetObjProperty(me, "#GuaranteedHit", 1);
-            SetObjProperty(me, "#nextcritical", 1);
-            me.attack_once(opponent);
-        endif
-    endif
 endfunction
 
 function HandleThiefBehavior(opponent)
