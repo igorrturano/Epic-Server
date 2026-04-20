@@ -12,7 +12,6 @@ class ContainerGridLayout(Container)
 		this.SetType(GumpControl::ContainerGridLayout);
 		this.SetRows(rows);
 		this.SetColumns(columns);
-		this.containers := ContainerGridLayout::containers;
 	endfunction
 
 	function GetRows(this)
@@ -21,6 +20,10 @@ class ContainerGridLayout(Container)
 
 	function SetRows(this, rows)
 		this.rows := CInt(rows);
+
+		if (this.GetRows() > 0 && this.GetColumns() > 0)
+			this._CreateContainers();
+		endif
 
 		return this;
 	endfunction
@@ -31,11 +34,14 @@ class ContainerGridLayout(Container)
 
 	function SetColumns(this, columns)
 		this.columns := CInt(columns);
+		
+		if (this.GetRows() > 0 && this.GetColumns() > 0)
+			this._CreateContainers();
+		endif
 
 		return this;
 	endfunction
 
-	// TODO: Revisar essa função depois, deve ter algum erro, fiz nas pressas
 	function SetColumnWidth(this, column, width)
 		if (column < 1 || column > this.GetColumns())
 			return OutOfRangeException("Column number out of range.");
@@ -47,8 +53,6 @@ class ContainerGridLayout(Container)
 		return this;
 	endfunction
 
-	
-	// TODO: Revisar essa função depois, deve ter algum erro, fiz nas pressas
 	function SetRowHeight(this, row, height)
 		if (row < 1 || row > this.GetRows())
 			return OutOfRangeException("Row number out of range.");
@@ -101,10 +105,6 @@ class ContainerGridLayout(Container)
 			return OutOfRangeException("Row or column number out of range.");
 		endif
 
-		if (this.containers[row].size() < 1)
-			this._CreateContainers();
-		endif
-
 		this.containers[row][column].AddControl(control);
 
 		return this;
@@ -114,6 +114,8 @@ class ContainerGridLayout(Container)
 	function HowToDraw(this, byRef gump)
 		foreach row in (this.containers)
 			foreach container in (row)
+				container.SetXOffset(this.GetX() + this.GetXOffset());
+				container.SetYOffset(this.GetY() + this.GetYOffset());
 				container.Draw(gump);
 				SleepMS(2);
 			endforeach
@@ -130,12 +132,11 @@ class ContainerGridLayout(Container)
 		endforeach
 
 		this._controls := array{};
-		this._CreateContainers(); // Recria os containers internos após o descarte
+		this.containers := ContainerGridLayout::containers;
 	endfunction
 
 	function _CreateContainers(this)
 		this.containers := ContainerGridLayout::containers; // Reseta a matriz de containers
-		// print(this.ToString());
 		
 		for row := 1 to (this.GetRows())
 			for column := 1 to (this.GetColumns())
@@ -145,7 +146,6 @@ class ContainerGridLayout(Container)
 					CInt(this.GetWidth() / this.GetColumns()),
 					CInt(this.GetHeight() / this.GetRows())
 				);
-				// print (cellContainer.ToString());
 
 				this.containers[row].append(cellContainer);
 				SleepMS(2);
@@ -157,6 +157,6 @@ class ContainerGridLayout(Container)
 		return "(ContainerGridLayout) " + Super::ToString(this)
 			+ ", rows=" + this.GetRows()
 			+ ", columns=" + this.GetColumns()
-			+ ", containers=" + this.containers.size();
+			+ ", containers=" + this.containers;
 	endfunction
 endclass
