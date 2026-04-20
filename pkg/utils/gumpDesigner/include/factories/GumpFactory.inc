@@ -24,9 +24,6 @@ class GumpFactory(IGumpFactory)
 	endfunction
 
 	function CreateImageGump(this, name := "ImageGump", x := 0, y := 0, imageId := 0)
-		var iamge := ImageGump(name, x, y, imageId);
-		print("criou -> " + iamge.ToString());
-		return iamge;
 		return ImageGump(name, x, y, imageId);
 	endfunction
 
