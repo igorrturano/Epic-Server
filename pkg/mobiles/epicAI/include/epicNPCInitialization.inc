@@ -199,6 +199,10 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 EquipRandomFromArray(mobile, monk_weapons);
             endif
 
+            if (ABILITY_ID::TIRO_PODEROSO in habs)
+                SetupArcherLoadout(mobile);
+            endif
+
             if (ABILITY_ID::CAMUFLAGEM in habs)
                 var tier := 0;
                 var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
@@ -347,6 +351,21 @@ function SetupEngineerLoadout(mobile)
     CreateItemStacksInContainer(mobile, 0x2808, 3, mobile.backpack);   // Powder traps
     CreateItemStacksInContainer(mobile, 0x1bde, 10, mobile.backpack);  // Coal (rocket jump fuel)
 endfunction
+
+// Ranged loadout for Arqueiro subclass (base hab: TIRO_PODEROSO).
+// Equips a random bow so CanActivate on all arqueiro abilities passes:
+// PowerShot/ChargedShot/FindOpening/MultiShot all require weapon.GetAttribute() == RANGED.
+// Quiver with arrows populates the ammo pool.
+function SetupArcherLoadout(mobile)
+    var bows := array{0x13B2, 0x13B1, 0x0F4F, 0x0F50, 0x13FC, 0x13FD};
+    EquipRandomFromArray(mobile, bows);
+
+    var quiver := _NpcEquipItem(mobile, 0x2FB7);
+    if (quiver)
+        CreateItemInContainer(quiver, 0xF3F, RandomIntMinMax(20, 80));
+    endif
+endfunction
+
 
 // Spiritual blade + elemental enchantment for Lamina Arcana (swordmage) NPCs.
 // Unblocks Fluency/ArcaneArmor/PrismaticVortex, which all read who.weapon.#elementalweapon
