@@ -263,6 +263,25 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 		return str;
 	endfunction
 
+	function ApplyArmorSpecBonus(this, dexBonus)
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		if (dexBonus)
+			this.SetModifier(AttributeModifier(DEXTERITY, this.GetModifier(DEXTERITY).GetValue() + dexBonus));
+		endif
+		this.SetProperty("armor_spec_dex_bonus", dexBonus);
+		return this;
+	endfunction
+
+	function RemoveArmorSpecBonus(this)
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		var dexBonus := CInt(this.GetProperty("armor_spec_dex_bonus"));
+		if (dexBonus)
+			this.SetModifier(AttributeModifier(DEXTERITY, this.GetModifier(DEXTERITY).GetValue() + dexBonus));
+		endif
+		this.EraseProperty("armor_spec_dex_bonus");
+		return this;
+	endfunction
+
 	// Private functions
 	function __CalculateWeight(this)
 		// TODO: Revisar para ver está calculando correto

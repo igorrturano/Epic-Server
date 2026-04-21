@@ -34,11 +34,13 @@ program equipitem(params)
 
 	if (item.IsA(POLCLASS_ARMOR))
 		var tipoProtecao := equip.GetTipoProtecao();
+		var dexBonus := 0;
 		if (tipoProtecao["Armadura Media"] && who.HasAbility(ABILITY_ID::MEDIUM_ARMOR_SPEC))
-			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 1));
+			dexBonus := 1;
 		elseif (tipoProtecao["Armadura Pesada"] && who.HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
-			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 2));
+			dexBonus := 2;
 		endif
+		equip.ApplyArmorSpecBonus(dexBonus);
 	endif
 
 	who.ApplyItemModifiers(equip);
