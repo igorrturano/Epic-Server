@@ -11,6 +11,7 @@ include "include/say";
 include ":keys:key";
 include ":tn:tngumps";
 include ":destroyable:include/destroyItem";
+include "include/epicEconomyAudit";
 
 // Gump Constants
 const BKGND_STONESLAB := 9200; // Gray stone slab background
@@ -242,12 +243,15 @@ program MerchantMenu(params)
 				if (GetObjProperty(npc, "cofreAluguel"))
 					var cofser := getObjProperty(npc, "cofreAluguel");
 					var cofrereal := SystemFindObjectBySerial(cofser);
-					CreateItemInContainer(cofrereal, "moedacobre", valortaxa);
+					var c_aluguel := CreateItemInContainer(cofrereal, "moedacobre", valortaxa);
+					EA_Record(EA_MINT_ESTALAGEM, c_aluguel, valortaxa, "ESTALAGEM:aluguel", cofrereal, npc.name);
 				endif
 				if (GetObjProperty(npc, "cofreImpostos"))
 					var cofser1 := getObjProperty(npc, "cofreImpostos");
 					var cofrereal1 := SystemFindObjectBySerial(cofser1);
-					CreateItemInContainer(cofrereal1, "moedacobre", quartos[i].custo - valortaxa);
+					var c_imposto_qty := quartos[i].custo - valortaxa;
+					var c_imposto := CreateItemInContainer(cofrereal1, "moedacobre", c_imposto_qty);
+					EA_Record(EA_MINT_ESTALAGEM, c_imposto, c_imposto_qty, "ESTALAGEM:imposto", cofrereal1, npc.name);
 				endif
 			endif
 			i := i + 1;
