@@ -12,8 +12,6 @@ use uo;
 use cfgfile;
 
 program flip(me)
-	UnloadConfigFile(":commands:config/flip");
-
 	var furniture := 0;
 
 	if (TypeOf(me) == "Array")
