@@ -80,18 +80,18 @@ program pigeoninteract(params)
 		return;
 	endif
 
+	// Cobra o custo antes de criar o pombo
+	if (!PigeonConsumeCost(who))
+		SendSysMessage(who, "*voce precisa pagar " + CStr(PIGEON_COST) + " moedas para usar o serviço*", 33);
+		return;
+	endif
+
 	// Cria o pombo na posição do jogador antes de cobrar
 	var pigeon := CreateNpcFromTemplate(":pigeoncorreio:DeliveryPigeon",
 	                                    who.x, who.y, who.z, 0, who.realm);
 	if (!pigeon)
 		SendSysMessage(who, "Erro ao criar o pombo. Contate um GM.", 33);
-		return;
-	endif
-
-	// Cobra o custo; se falhar, mata o pombo já criado
-	if (!PigeonConsumeCost(who))
-		SendSysMessage(who, "Você não tem moedas suficientes (custo: " + CStr(PIGEON_COST) + " sestertii).", 33);
-		pigeon.Kill();
+		CreateItemInContainer(who.backpack, PIGEON_COIN_TYPE, PIGEON_COST); // Reembolsa
 		return;
 	endif
 
@@ -104,6 +104,7 @@ program pigeoninteract(params)
 	SetObjProperty(pigeon, "flight_dir",       flight_dir);
 	SetObjProperty(pigeon, "recipient_serial", CInt(recipient.serial));
 	SetObjProperty(pigeon, "sender_name",      CStr(who.name));
+	SetObjProperty(pigeon, "sender_serial",    CInt(who.serial));
 	SetObjProperty(pigeon, "message",          msg);
 
 	SendSysMessage(who, "Pombo enviado para " + CStr(entry.apelido) + "!", 66);
