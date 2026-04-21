@@ -35,10 +35,19 @@ program flip(me)
 	endif
 
 	var flipConfig := ReadConfigFile(":commands:config/flip");
+	if (!flipConfig || flipConfig == error)
+		SendSysMessage(me, "[flip] Erro: nao foi possivel carregar flip.cfg");
+		return 0;
+	endif
+
 	var flipGraphic := flipConfig[CInt(furniture.graphic)].ChangeTo;
 
 	if (!flipGraphic)
-		SendSysMessage(me, "Este objeto nao pode ser girado.");
+		if (me.cmdlevel >= 1)
+			SendSysMessage(me, "Este objeto nao pode ser girado. [Graphic: " + furniture.graphic + " / 0x" + Hex(furniture.graphic) + "]");
+		else
+			SendSysMessage(me, "Este objeto nao pode ser girado.");
+		endif
 		return 0;
 	endif
 
