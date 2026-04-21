@@ -23,6 +23,7 @@ include ":mastery:Abilities";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":combat:Model/AttackInfo";
 include ":message:model/Message";
+include ":faccao:imperium";
 
 const BYTE_DEFENDER := 1;
 
@@ -39,8 +40,8 @@ exported function HandleAttackRequest(who, byref packet)
 		return 1;
 	endif
 
-	if (defender.master)
-		who.SetMurderer(1);
+	if (InValtheris(who) && HasPraetors())
+		Start_Script(":faccao:praetorAlert", array{ who });
 	endif
 
 	if (defender.npctemplate && !who.npctemplate) // se o target for npc e quem clicou for player (sempre eh)
