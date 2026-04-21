@@ -3,6 +3,7 @@ use util;
 use cfgfile;
 use os;
 use basic;
+use datafile;
 
 include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
@@ -12,14 +13,15 @@ include "include/epicEconomyAudit";
 
 var itemdesc_cache := dictionary{};
 
-const DROPPED_LORE_ITEMS_PROP := "dropped_lore_items";
+const LORE_DROPPED_DATAFILE := ":unicos:lore_dropped";
 
-function LoreItems_GetDropped()
-    var dropped := GetGlobalProperty(DROPPED_LORE_ITEMS_PROP);
-    if (!dropped)
-        dropped := array{};
+function LoreItems_GetDataFile()
+    var df := OpenDataFile(LORE_DROPPED_DATAFILE);
+    if (!df)
+        CreateDataFile(LORE_DROPPED_DATAFILE, 0);
+        df := OpenDataFile(LORE_DROPPED_DATAFILE);
     endif
-    return dropped;
+    return df;
 endfunction
 
 function LoreItems_IsDropped(item_name)
@@ -29,8 +31,9 @@ function LoreItems_IsDropped(item_name)
     else
         objtype := CInt(item_name);
     endif
-    var dropped := LoreItems_GetDropped();
-    return (objtype in dropped);
+    var df := LoreItems_GetDataFile();
+    var elem := df.FindElement(Hex(objtype));
+    return (elem && !elem.errortext);
 endfunction
 
 function LoreItems_Register(item_name)
@@ -40,10 +43,9 @@ function LoreItems_Register(item_name)
     else
         objtype := CInt(item_name);
     endif
-    var dropped := LoreItems_GetDropped();
-    if (!(objtype in dropped))
-        dropped.append(objtype);
-        SetGlobalProperty(DROPPED_LORE_ITEMS_PROP, dropped);
+    var df := LoreItems_GetDataFile();
+    if (!df.FindElement(Hex(objtype)))
+        df.CreateElement(Hex(objtype));
     endif
 endfunction
 
