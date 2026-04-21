@@ -386,7 +386,7 @@ var mob := MobileWrapper(me);
 var npctemplate := mob.GetTemplateName();
 var taxonomy := npccfg[npctemplate].Taxonomy;
 var allowed := GetDietByTaxonomy(taxonomy);
-var foodtype := GetObjProperty(ev.item, "FoodType");
+var foodtype := Cstr(GetObjProperty(ev.item, "FoodType"));
 	print("npctempalte eh "+npctemplate+" e foodtype eh "+foodtype+" tax eh "+taxonomy+" allowed eh"+allowed);
 if (!foodtype)
     SendSysMessage(ev.source, "Isso não parece comida.");
