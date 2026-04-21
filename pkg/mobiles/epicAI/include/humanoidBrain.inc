@@ -426,6 +426,8 @@ function UseAbilities(npc, opponent)
     if (GetCooldown(npc, "ability_cooldown"))
         return 0;
     endif
+
+    var myhabs_var := GetObjProperty(npc, "myhabs");
     if (!myhabs_var)
         return 0;
     endif
