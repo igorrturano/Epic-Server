@@ -1175,50 +1175,12 @@ function workingItems(who)
         var dyebook := CreateItemInBackpack(who, "dyebook");
             setobjproperty(dyebook, "serialid", who.serial);
 		    setobjproperty(dyebook, "marked",who.name + " - " + who.acctname);
-        var recipe := struct;
-        var chosenRecipes := AlchChoices(who);
-        var r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.+recipe := chosenRecipes[1];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[2];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[3];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[4];
-        SetObjProperty(r1, "recipe", recipe);
-        var i := 0;
-        while(i != (skills[ALCHEMY])*2)
-            var tinta := randomint(1);
-            if(tinta == 0)
-                var t1 := CreateItemInBackpack(who, "tintasrecipe1");
-            else
-                var t1 := CreateItemInBackpack(who, "tintasrecipe2");
-            endif
-            i := ++i;
-        endwhile
-
-        if (skills[ALCHEMY] >= 2)
-		    r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-            recipe.recipe := chosenRecipes[5];
-            SetObjProperty(r1, "recipe", recipe);
-            r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-            recipe.recipe := chosenRecipes[6];
-            SetObjProperty(r1, "recipe", recipe);
-            
-	        if (skills[ALCHEMY] == 3)
-		        var book2:= CreateItemInBackpack(who, "alchemybook");
-        		setobjproperty(book2, "serialid",who.serial);
-		        setobjproperty(book2, "marked",who.name + " - " + who.acctname);
-                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-                recipe.recipe := chosenRecipes[7];
-                SetObjProperty(r1, "recipe", recipe);
-                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-                recipe.recipe := chosenRecipes[8];
-                SetObjProperty(r1, "recipe", recipe);
-            endif
+        if (skills[ALCHEMY] == 3)
+            var chosenRecipes := AlchChoices(who);
+            foreach chosen in chosenRecipes
+                var r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+                SetObjProperty(r1, "AlchemyRecipe", chosen);
+            endforeach
         endif
 	endif
 endfunction
@@ -2434,18 +2396,25 @@ function AlchChoices(who)
     GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas receitas", 0, 0); //shadow
     GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas receitas", 0, 0);
 
+    var menucfg := ReadConfigFile(":alchemy:AlchMenu");
+    var recipe_names := array;
+    foreach section in GetConfigStringKeys(menucfg)
+        var menuelem := FindConfigElem(menucfg, section);
+        foreach line in GetConfigStringArray(menuelem, "Item")
+            if (Find(line, "Recipe ", 1) == 1)
+                recipe_names.append(line[8, len(line)]);
+            endif
+        endforeach
+    endforeach
+
     var recipecfg := ReadConfigFile(":alchemy:config/recipes");
     var keys := GetConfigIntKeys(recipecfg);
     var recipes := array;
-    var skill := getobjproperty(who, "chardata").skills[ALCHEMY];
     foreach key in keys
         var elem := FindConfigElem(recipecfg, key);
-        var recipelvl := GetConfigInt(elem, "init");
-            if (!recipelvl || recipelvl == error);
-                recipelvl := 4;
-            endif
-        if (recipelvl <= skill)
-            var recipe := dictionary{ 
+        var name := GetConfigString(elem, "Name");
+        if (name in recipe_names && GetConfigInt(elem, "level") == 1)
+            var recipe := dictionary{
                 "id" -> key,
                 "name" -> GetConfigString(elem, "Type"),
                 "desc" -> GetConfigString(elem, "Desc")
@@ -2457,7 +2426,7 @@ function AlchChoices(who)
     var selected_recipes := array;
     var btn_value;
     while (!GetObjProperty(who, "creation_completed") && who.connected)
-        var qtd := (skill*2)+2;
+        var qtd := 2;
         var input := alchSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
         if (!input || input == error)
             sleepms(500);
