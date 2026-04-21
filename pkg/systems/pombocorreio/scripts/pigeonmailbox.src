@@ -70,16 +70,16 @@ program pigeonmailbox(who, mailbox)
 		return;
 	endif
 
+	if (!PigeonConsumeCost(who))
+		SendSysMessage(who, "*voce precisa pagar " + CStr(PIGEON_COST) + " moedas para usar o serviço*", 33);
+		return;
+	endif
+
 	var pigeon := CreateNpcFromTemplate(":pigeoncorreio:DeliveryPigeon",
 	                                    who.x, who.y, who.z, 0, who.realm);
 	if (!pigeon)
 		SendSysMessage(who, "Erro ao criar o pombo. Contate um GM.", 33);
-		return;
-	endif
-
-	if (!PigeonConsumeCost(who))
-		SendSysMessage(who, "Você não tem moedas suficientes (custo: " + CStr(PIGEON_COST) + " sestertii).", 33);
-		pigeon.Kill();
+		CreateItemInContainer(who.backpack, PIGEON_COIN_TYPE, PIGEON_COST); // Reembolsa
 		return;
 	endif
 
@@ -99,6 +99,7 @@ program pigeonmailbox(who, mailbox)
 	SetObjProperty(pigeon, "flight_dir",       flight_dir);
 	SetObjProperty(pigeon, "recipient_serial", CInt(recipient.serial));
 	SetObjProperty(pigeon, "sender_name",      sender_apelido);
+	SetObjProperty(pigeon, "sender_serial",    CInt(who.serial));
 	SetObjProperty(pigeon, "message",          msg);
 
 	SendSysMessage(who, "Pombo enviado para " + CStr(entry.apelido) + "!", 66);

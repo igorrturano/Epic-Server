@@ -20,6 +20,12 @@ program PigeonAI()
 
 	var flight_dir := CInt(GetObjProperty(me, "flight_dir"));
 	var rec_serial := CInt(GetObjProperty(me, "recipient_serial"));
+	var sender_serial := CInt(GetObjProperty(me, "sender_serial"));
+
+	var monitor := start_script(":pigeoncorreio:scripts/pigeon_monitor", {me, sender_serial});
+	if (monitor)
+		SetObjProperty(me, "monitor_pid", monitor.pid);
+	endif
 
 	// ── FASE 1: DEPARTING — voa 50 tiles ignorando terreno ────
 	var steps := 0;
@@ -31,7 +37,17 @@ program PigeonAI()
 
 	// Teleporta proximo ao destinatario
 	var recipient := SystemFindObjectBySerial(rec_serial);
-	if (!recipient || !recipient.connected)
+	if (!recipient || !recipient.connected || CInt(GetObjProperty(recipient, "morto")) == 1)
+		me.kill();
+		return;
+	endif
+
+	while (recipient.dead && recipient.connected && CInt(GetObjProperty(recipient, "morto")) != 1)
+		Sleep(2);
+		recipient := SystemFindObjectBySerial(rec_serial);
+	endwhile
+
+	if (!recipient || !recipient.connected || CInt(GetObjProperty(recipient, "morto")) == 1)
 		me.kill();
 		return;
 	endif
@@ -46,9 +62,14 @@ program PigeonAI()
 	var max_seek := 500; // 10 segundos
 	while (seek < max_seek)
 		var recip := SystemFindObjectBySerial(rec_serial);
-		if (!recip || !recip.connected)
+		if (!recip || !recip.connected || CInt(GetObjProperty(recip, "morto")) == 1)
 			me.kill();
 			return;
+		endif
+
+		if (recip.dead)
+			Sleep(2);
+			continue;
 		endif
 
 		var dist := CoordinateDistance(me.x, me.y, recip.x, recip.y);
@@ -79,14 +100,26 @@ program PigeonAI()
 		var ev := wait_for_event(0);
 		if (ev && ev.type == SYSEVENT_DOUBLECLICKED)
 			if (HandleDoubleClick(ev.source, rec_serial))
+				var monitor_pid := CInt(GetObjProperty(me, "monitor_pid"));
+				if (monitor_pid)
+					var proc := getprocess(monitor_pid);
+					if (proc)
+						proc.sendevent(struct{ type := "delivered" });
+					endif
+				endif
 				break;
 			endif
 		endif
 
 		var recip2 := SystemFindObjectBySerial(rec_serial);
-		if (!recip2 || !recip2.connected)
+		if (!recip2 || !recip2.connected || CInt(GetObjProperty(recip2, "morto")) == 1)
 			me.kill();
 			return;
+		endif
+
+		if (recip2.dead)
+			Sleep(2);
+			continue;
 		endif
 
 		var dist2 := CoordinateDistance(me.x, me.y, recip2.x, recip2.y);
