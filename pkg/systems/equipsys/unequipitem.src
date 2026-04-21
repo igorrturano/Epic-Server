@@ -28,10 +28,7 @@ program unequipitem(params)
 		endif
 	endif
 
-	if (item.IsA(POLCLASS_ARMOR))
-		equip.RemoveArmorSpecBonus();
-	endif
-
+	who.TriggerUnequipPassives(equip);
 	who.RemoveItemModifiers(equip);
 	Start_Script("packets/AssyncUpdateEquipment", array{who, false, item, layer});
 	return 1;
