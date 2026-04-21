@@ -36,8 +36,26 @@ class PowerShot(CombatAbility)
 		var weapon := mobile.GetEquipBySlot(WEAPON);
 
 		SetScriptController(who);
-		Message("Escolha a direcao que ira disparar a flecha", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-		var targ := TargetCoordinates(who);
+
+		var targ;
+		if (mobile.IsNPC())
+			var opponent := who.opponent;
+			if (!opponent)
+				opponent := GetRandomNearbyHostile(who);
+			endif
+			if (!opponent)
+				return false;
+			endif
+			targ := struct{
+				x := opponent.x,
+				y := opponent.y,
+				z := opponent.z,
+				realm := opponent.realm
+			};
+		else
+			Message("Escolha a direcao que ira disparar a flecha", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			targ := TargetCoordinates(who);
+		endif
 
 		if (!targ)
 			Message("Alvo cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
