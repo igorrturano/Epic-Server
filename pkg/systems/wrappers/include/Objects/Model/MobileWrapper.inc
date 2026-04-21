@@ -701,6 +701,24 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this.GetProperty(MOBILE_PROPNAME::ABILITIES) ?: dictionary{};
 	endfunction
 
+	function TriggerEquipPassives(this, byRef equip)
+		var abilities := this.GetAbilities();
+		if (!abilities) return; endif
+		foreach level in (abilities.keys())
+			run_script_to_completion(":abilities:AbilityController", array{"passive", CInt(abilities[level]), equip, ABILITY_ACTIVATION::ON_EQUIP});
+		endforeach
+	endfunction
+
+	function TriggerUnequipPassives(this, byRef equip)
+		var abilities := this.GetAbilities();
+		if (abilities)
+			foreach level in (abilities.keys())
+				run_script_to_completion(":abilities:AbilityController", array{"passive", CInt(abilities[level]), equip, ABILITY_ACTIVATION::ON_UNEQUIP});
+			endforeach
+		endif
+		equip.CleanupOnUnequip();
+	endfunction
+
 	/**
 	 * Adiciona uma habilidade ao objeto móvel.
 	 *
