@@ -18,6 +18,10 @@ const EA_COIN_OURO   := 0xBA65;
 
 const EA_MINT_LOOT             := "MINT_LOOT";
 const EA_MINT_GM               := "MINT_GM";
+const EA_MINT_CHARGEN          := "MINT_CHARGEN";
+const EA_MINT_GUILD_PAYOUT     := "MINT_GUILD_PAYOUT";
+const EA_MINT_GUILD_WITHDRAW   := "MINT_GUILD_WITHDRAW";
+const EA_MINT_ESTALAGEM        := "MINT_ESTALAGEM";
 const EA_TRANSFER_CORPSE_LOOT  := "TRANSFER_CORPSE_LOOT";
 const EA_TRANSFER_PICKUP       := "TRANSFER_PICKUP";
 const EA_TRANSFER_VENDOR_REFUND := "TRANSFER_VENDOR_REFUND";
@@ -105,6 +109,14 @@ function EA_Record(event_type, item, amount, src_actor, dst_actor, extra)
 	amount := CInt(amount);
 	if (!amount)
 		return 0;
+	endif
+
+	// Filter TRANSFER_* events where the recipient is not a player (drops
+	// corpse-decay/mannequin noise). MINT_* bypasses this since mint dsts are containers.
+	if (Find(event_type, "TRANSFER_", 1) == 1)
+		if (!dst_actor || dst_actor == error || dst_actor.acctname == error || !dst_actor.acctname)
+			return 0;
+		endif
 	endif
 
 	var timestamp := StrFormatTime("%d-%m-%Y %H:%M:%S", POLCore().systime);
