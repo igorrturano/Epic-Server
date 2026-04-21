@@ -3,6 +3,7 @@ use util;
 use cfgfile;
 use os;
 use basic;
+use datafile;
 
 include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
@@ -12,14 +13,15 @@ include "include/epicEconomyAudit";
 
 var itemdesc_cache := dictionary{};
 
-const DROPPED_LORE_ITEMS_PROP := "dropped_lore_items";
+const LORE_DROPPED_DATAFILE := ":unicos:lore_dropped";
 
-function LoreItems_GetDropped()
-    var dropped := GetGlobalProperty(DROPPED_LORE_ITEMS_PROP);
-    if (!dropped)
-        dropped := array{};
+function LoreItems_GetDataFile()
+    var df := OpenDataFile(LORE_DROPPED_DATAFILE);
+    if (!df)
+        CreateDataFile(LORE_DROPPED_DATAFILE, 0);
+        df := OpenDataFile(LORE_DROPPED_DATAFILE);
     endif
-    return dropped;
+    return df;
 endfunction
 
 function LoreItems_IsDropped(item_name)
@@ -29,22 +31,42 @@ function LoreItems_IsDropped(item_name)
     else
         objtype := CInt(item_name);
     endif
-    var dropped := LoreItems_GetDropped();
-    return (objtype in dropped);
+    var df := LoreItems_GetDataFile();
+    var elem := df.FindElement(Hex(objtype));
+    return (elem && !elem.errortext);
 endfunction
 
-function LoreItems_Register(item_name)
-    var objtype;
-    if (item_name[1,2] == "0x")
-        objtype := CInt("0x" + item_name[3, len(item_name)]);
-    else
-        objtype := CInt(item_name);
+function LoreItems_Register(item)
+    // Fast lookup: prevent same objtype from dropping again
+    var df := LoreItems_GetDataFile();
+    if (!df.FindElement(Hex(item.objtype)))
+        df.CreateElement(Hex(item.objtype));
     endif
-    var dropped := LoreItems_GetDropped();
-    if (!(objtype in dropped))
-        dropped.append(objtype);
-        SetGlobalProperty(DROPPED_LORE_ITEMS_PROP, dropped);
+
+    // Resolve lore item name from config
+    var lore_cfg := ReadConfigFile(":custompizza:itemrp/lore_items");
+    var lore_elem := FindConfigElem(lore_cfg, item.objtype);
+    var lore_name := lore_elem ? lore_elem.name : item.desc;
+
+    // Unicos lista: register physical item by serial so it shows in .unicos gump
+    var lista := OpenDataFile(":unicos:lista");
+    if (!lista)
+        CreateDataFile(":unicos:lista", 0);
+        lista := OpenDataFile(":unicos:lista");
     endif
+    var elem_name := Hex(item.serial);
+    if (!lista.FindElement(elem_name))
+        lista.CreateElement(elem_name);
+    endif
+    var elem := lista.FindElement(elem_name);
+    SetObjProperty(item, "itemunico", 1);
+    item.decayAt := 0;
+    elem.SetProp("Title", "Lore Item");
+    elem.SetProp("LoreName", lore_name);
+    elem.SetProp("ItemDesc", item.desc);
+    elem.SetProp("ID", item.serial);
+    elem.SetProp("Creator", "Sistema de Loot");
+    elem.SetProp("Time", polcore().systime);
 endfunction
 
 function Loot_Generate(container, loot_index)
@@ -117,6 +139,7 @@ endfunction
 
 function Loot_CreateItem(container, line)
     var parsed := Loot_ParseString(line);
+    var item;
 
     if(Loot_ChanceCheck(parsed.chance))
         var i;
@@ -124,7 +147,6 @@ function Loot_CreateItem(container, line)
             var combatDesc := ReadConfigFile(":combat:itemdesc");
             var objtype := GetObjtypeByName(parsed.name);
             var combatItem := combatDesc[objtype];
-            var item;
             if(combatItem)
                 item :=  GeraItemComplexo(
                                             container,
@@ -143,6 +165,7 @@ function Loot_CreateItem(container, line)
 
             sleepms(2);
         endfor
+        return item;
     endif
 
     return 1;
@@ -274,8 +297,8 @@ function Loot_CreateRandom(container, line)
             else
                 result := Loot_CreateItem(container, item.name + " 1 100 " + tier);
                 if(!result.errortext)
-                    if (parsed.name == "LoreItems")
-                        LoreItems_Register(item.name);
+                    if (parsed.name == "LoreItems" && result.IsA(POLCLASS_ITEM))
+                        LoreItems_Register(result);
                     endif
                     created += 1;
                 endif
