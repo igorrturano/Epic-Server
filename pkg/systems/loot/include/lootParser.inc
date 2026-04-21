@@ -12,6 +12,41 @@ include "include/epicEconomyAudit";
 
 var itemdesc_cache := dictionary{};
 
+const DROPPED_LORE_ITEMS_PROP := "dropped_lore_items";
+
+function LoreItems_GetDropped()
+    var dropped := GetGlobalProperty(DROPPED_LORE_ITEMS_PROP);
+    if (!dropped)
+        dropped := array{};
+    endif
+    return dropped;
+endfunction
+
+function LoreItems_IsDropped(item_name)
+    var objtype;
+    if (item_name[1,2] == "0x")
+        objtype := CInt("0x" + item_name[3, len(item_name)]);
+    else
+        objtype := CInt(item_name);
+    endif
+    var dropped := LoreItems_GetDropped();
+    return (objtype in dropped);
+endfunction
+
+function LoreItems_Register(item_name)
+    var objtype;
+    if (item_name[1,2] == "0x")
+        objtype := CInt("0x" + item_name[3, len(item_name)]);
+    else
+        objtype := CInt(item_name);
+    endif
+    var dropped := LoreItems_GetDropped();
+    if (!(objtype in dropped))
+        dropped.append(objtype);
+        SetGlobalProperty(DROPPED_LORE_ITEMS_PROP, dropped);
+    endif
+endfunction
+
 function Loot_Generate(container, loot_index)
 	if ( !container.IsA(POLCLASS_CONTAINER) )
 		return error{"errortext" := "Object passed was not a container."};
@@ -201,6 +236,20 @@ function Loot_CreateRandom(container, line)
     if(all_items.size() == 0)
         return 0;
     endif
+
+    // Filter out lore items that have already been dropped in the world
+    if (parsed.name == "LoreItems")
+        var filtered := array{};
+        foreach entry in all_items
+            if (!LoreItems_IsDropped(entry.name))
+                filtered.append(entry);
+            endif
+        endforeach
+        all_items := filtered;
+        if (all_items.size() == 0)
+            return 1;
+        endif
+    endif
     
     // Cria os itens
     amount := CInt(parsed.amount);
@@ -225,6 +274,9 @@ function Loot_CreateRandom(container, line)
             else
                 result := Loot_CreateItem(container, item.name + " 1 100 " + tier);
                 if(!result.errortext)
+                    if (parsed.name == "LoreItems")
+                        LoreItems_Register(item.name);
+                    endif
                     created += 1;
                 endif
             endif
