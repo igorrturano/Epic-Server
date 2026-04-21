@@ -1,0 +1,57 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+program tribunal(who, item)
+	if (!who || !item)
+		return 0;
+	endif
+
+	var praetors := GetGlobalProperty("Praetors");
+	if (praetors == error || !praetors)
+		praetors := array{};
+	endif
+
+	var already := who.serial in praetors;
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, 9200, 360, 190);
+	GFResizePic(gump, 15, 15, 9350, 330, 160);
+	GFTextMid(gump, 15, 25, 330, 53, "Imperium Arcano");
+
+	if (already)
+		GFTextLine(gump, 30, 65,  1153, "Voce ja serve ao Imperium como Praetor.");
+		GFTextLine(gump, 30, 90,  1153, "Deseja renunciar a este juramento?");
+	else
+		GFTextLine(gump, 30, 75,  1153, "Voce deseja servir como um Praetor Arcano?");
+	endif
+
+	GFAddButton(gump, 60,  135, 4005, 4006, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 100, 137, 1153, "Sim");
+	GFAddButton(gump, 210, 135, 4017, 4018, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 250, 137, 1153, "Nao");
+
+	var input := GFSendGump(who, gump);
+	if (!input || input[0] != 1)
+		return 0;
+	endif
+
+	if (already)
+		var kept := array{};
+		foreach s in praetors
+			if (s != who.serial)
+				kept.append(s);
+			endif
+		endforeach
+		SetGlobalProperty("Praetors", kept);
+		SendSysMessage(who, "Voce renunciou ao seu juramento como Praetor Arcano.");
+	else
+		praetors.append(who.serial);
+		SetGlobalProperty("Praetors", praetors);
+		SendSysMessage(who, "Voce agora serve ao Imperium como Praetor Arcano.");
+	endif
+
+	return 1;
+endprogram

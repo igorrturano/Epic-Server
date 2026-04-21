@@ -9,7 +9,6 @@
 use cfgfile;
 use uo;
 use os;
-use npc;
 
 // Init code calls per-tick utilities defined in epicai.inc (e.g., ParseTemplateName).
 // Re-include epicai.inc here so init scripts have access to those utilities.
