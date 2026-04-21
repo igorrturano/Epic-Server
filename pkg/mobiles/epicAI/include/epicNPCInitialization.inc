@@ -286,14 +286,12 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
             if ("Visao verdadeira" in habs)
                 mobile.gender := 1;
                 makeRace(mobile, DROW);
-                var whip := CreateItemInBackpack(mobile, 0x166E, 1);
-                EquipItem(mobile, whip);
+                EquipRandomFromArray(mobile, array{0x166E});
             endif
 
             if ("Campeao das Montanhas" in habs)
                 makeRace(mobile, ANAO);
-                var hammer := CreateItemInBackpack(mobile, 0xFA11, 1);
-                EquipItem(mobile, hammer);
+                EquipRandomFromArray(mobile, array{0xFA11});
             endif
 
             if (ABILITY_ID::BLOODTHIRST in habs)
@@ -333,10 +331,10 @@ endfunction
 // pieces are proper tier-1 craftable items — usable and statted correctly when looted
 // by players. Ammo/fuel spawn raw (no tier variants).
 function SetupEngineerLoadout(mobile)
-    _NpcEquipArmor(mobile, 0xFFC1);                   // Luvas de Vapor
-    _NpcEquipArmor(mobile, 0xFFC2);                   // Grevas de Vapor
-    var steam_arms := _NpcEquipArmor(mobile, 0xFFC3); // Bracos a Vapor
-    _NpcEquipArmor(mobile, 0xFFC4);                   // Capacete a Vapor
+    _NpcEquipItem(mobile, 0xFFC1);                   // Luvas de Vapor
+    _NpcEquipItem(mobile, 0xFFC2);                   // Grevas de Vapor
+    var steam_arms := _NpcEquipItem(mobile, 0xFFC3); // Bracos a Vapor
+    _NpcEquipItem(mobile, 0xFFC4);                   // Capacete a Vapor
 
     if (steam_arms)
         var gadgets := array{"handcannon", "harpoon", "powdertrap"};
@@ -380,9 +378,17 @@ function SetupSwordmageLoadout(mobile)
     return weapon;
 endfunction
 
-// Creates a tier-1 armor piece in mobile's backpack, equips it, and returns the objref.
-// Falls back to raw objtype if no tier-1 material config exists. Sets hp := maxhp.
-function _NpcEquipArmor(mobile, objtype)
+// Creates a tier-1 item (armor or weapon) in mobile's backpack, equips it, and
+// returns the objref. Falls back to raw objtype if no tier-1 material config exists.
+// Sets hp := maxhp (guarded against non-durable items).
+//
+// Uses the create.src flow (GeraDescriptorComplexo + CreateItemUnstackableInContainer)
+// so the item is a proper craftable — stats/material/PROPNAME_FABRICADO populated, behaves
+// identically to a crafted item when looted by a player.
+//
+// Does NOT pre-clear the target layer. If replacing an existing weapon, use
+// EquipRandomFromArray or DestroyItem(mobile.weapon) before calling.
+function _NpcEquipItem(mobile, objtype)
     var finalObjtype := GeraDescriptorComplexo(objtype, 1);
     if (!finalObjtype)
         finalObjtype := objtype;
@@ -398,7 +404,9 @@ function _NpcEquipArmor(mobile, objtype)
         return 0;
     endif
 
-    item.hp := item.maxhp;
+    if (item.maxhp > 0)
+        item.hp := item.maxhp;
+    endif
     EquipItem(mobile, item);
     return item;
 endfunction
@@ -429,33 +437,28 @@ endfunction
 
 
 function SetupArcaneTricksterLoadout(mobile, npc_elem)
-    // Create bow and quiver
-    var bow := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0x13B2, 1);
-    var quiver := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0x2FB7, 1);
-    
-    if (bow && quiver)
-        EquipItem(mobile, bow);
-        EquipItem(mobile, quiver);
+    _NpcEquipItem(mobile, 0x13B2);           // Bow (tier 1)
+    var quiver := _NpcEquipItem(mobile, 0x2FB7);  // Quiver
+
+    if (quiver)
+        CreateItemInContainer(quiver, 0xF3F, RandomIntMinMax(20, 80));  // Arrows
     endif
-    
-    // Add arrows
-    CreateItemInContainer(quiver, 0xF3F, RandomIntMinMax(20, 80));
+
     var tier := npc_elem.Tier;
-    // Add scrolls for tiers 1-5
     for i := 1 to tier
         CreateItemInBackpack(mobile, "pergaminhospellcaster"+i, RandomInt(2)+1);
     endfor
 endfunction
 
 
+// Replaces mobile's current weapon with a random item from the array.
+// Goes through _NpcEquipItem so the replacement is a proper tier-1 crafted item
+// (stats, material, correct HP) instead of a raw spawn.
 function EquipRandomFromArray(mobile, items)
-    var weapon := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, items[RandomInt(items.size())+1], 1);
-    if (weapon)
-        if (mobile.weapon)
-            DestroyItem(mobile.weapon);
-        endif
-        EquipItem(mobile, weapon);
+    if (mobile.weapon)
+        DestroyItem(mobile.weapon);
     endif
+    return _NpcEquipItem(mobile, items[RandomInt(items.size()) + 1]);
 endfunction
 
 
