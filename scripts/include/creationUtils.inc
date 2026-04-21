@@ -8,6 +8,7 @@ include "include/epicConstants";
 include ":gumps:epicGumps";
 include ":message:include/model/Message";
 include ":spells:SpellRegistry";
+include "include/epicEconomyAudit";
 //include ":nature:nature";
 //include ":charactercreation:include/RPTraits";
 
@@ -867,7 +868,9 @@ function genericItems(who)
     elseif (chardata.classe == LADINO)
         moedas := "1d12";
     endif
-	CreateItemInBackpack(who, 0xba63, RandomDiceRoll(moedas)); //moedas de cobre
+	var cobre_qty := RandomDiceRoll(moedas);
+	var cobre_stack := CreateItemInBackpack(who, 0xba63, cobre_qty); //moedas de cobre
+	EA_Record(EA_MINT_CHARGEN, cobre_stack, cobre_qty, "CHARGEN:class:" + CStr(chardata.classe), who, "");
     if (chardata.culture == BADURAN)
         CreateItemInicial(who, "boots", 1); 
     else
