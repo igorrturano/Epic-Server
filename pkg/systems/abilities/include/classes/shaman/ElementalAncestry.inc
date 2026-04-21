@@ -96,8 +96,9 @@ class ElementalAncestry(CombatAbility)
 			endforeach
 
 			// Lightning on enemies
+			var party_members := who.party ? who.party.members : array{};
 			foreach mob in enemies
-				if (!(mob in who.party.members) && distance(mob, who) < 20)
+				if (!(mob in party_members) && distance(mob, who) < 20)
 					SetWeatherForPlayer(mob, weatherType, 50);
 
 					if (hasSouls && RandomInt(100) < mlore)

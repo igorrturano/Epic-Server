@@ -27,6 +27,7 @@ use polsys;
 
 include "include/client";
 include ":attributes:attributes";
+include ":attributes:intrinsicStats";
 
 program sendStats()
 	Print("INSTALLING: Outgoing Status PH...");
@@ -136,9 +137,14 @@ exported function HandleSendStats(character, byref packet)
 			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FOLLOWERS, packet.GetInt8(OLD_STATUS_OFFSETS::FOLLOWERS));
 			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FOLLOWERS_MAX, packet.GetInt8(OLD_STATUS_OFFSETS::FOLLOWERS_MAX));
 
-			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FORTITUDE, cint(AP_GetStat(source, FORTITUDE)));
-			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::REFLEXES,  cint(AP_GetStat(source, REFLEXES)));
-			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::WILL, cint(AP_GetStat(source, WILL)));
+			// Bypass AP_GetStat for intrinsic-only stats — these 3 have no
+			// base value nor temp mods registered in attributes.cfg, so
+			// AP_GetStat(FORTITUDE) == GetIntrinsicFortitude(source)/TENTHS.
+			// Batch avoids 3x MobileWrapper + 3x chardata read per paperdoll view.
+			var intrinsics := IntrinsicStatsBatch(source);
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FORTITUDE, cint(intrinsics.fortitude / INTRINSIC_TENTHS));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::REFLEXES,  cint(intrinsics.reflexes / INTRINSIC_TENTHS));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::WILL,      cint(intrinsics.will / INTRINSIC_TENTHS));
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEATH_POINTS, cint(AP_GetVital(source, DEATH_POINTS)));
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEATH_POINTS_MAX,  cint(AP_GetVitalMaximumValue(source, DEATH_POINTS)));
 			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::ADDICTION_STR, VICIO_MAX_POINTS - cint( AP_GetVital(source, ADDICTION_STR)));

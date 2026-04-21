@@ -58,15 +58,15 @@ class NinjaPath(CombatAbility)
 			endif
 			return this._TeleportToMark(who, mark_serial, sneak);
 		else
-			return this._MarkTarget(who, sneak);
+			return this._MarkTarget(mobile, who, sneak);
 		endif
 	endfunction
 
-	function _MarkTarget(this, who, sneak)
+	function _MarkTarget(this, mobile, who, sneak)
 		var item_graphic := 0x1BFE;
 
 		var targ;
-		if (who.npctemplate)
+		if (mobile.IsNPC())
 			targ := who.opponent;
 			if (!targ)
 				targ := GetRandomNearbyHostile(who);

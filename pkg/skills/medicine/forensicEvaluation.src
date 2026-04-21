@@ -88,7 +88,6 @@ program forensic(who)
 	if (stethoscope == 1)
 		skill_check := skill_check + 5;
 	endif
-	print("skill foi " + skill_check);
 	if (skill_check > 0)
 		var yn_gump := GFCreateGump(160, 130);
 		var serial;
@@ -283,7 +282,6 @@ program forensic(who)
 
 		var input := GFSendGump(who, yn_gump);
 		input := input[0];
-		print("lastdamage time eh " + time_lastdamage);
 		if (input == 2)
 			HandleFracture(subject, "Cabeca");
 			HealFractureTimer(who, subject, "fratura_cabeca");
@@ -410,8 +408,6 @@ function info_corpo(who, subject) // Infos do agressor para furtos, corpos morto
 endfunction
 
 function HandleFracture(subject, fractureName)
-	print("entrou na function");
-
 	// Então, cria um novo array com as fraturas que não foram selecionadas
 	var newFracture := array;
 	var fracture := GetObjProperty(subject, "Fractures");

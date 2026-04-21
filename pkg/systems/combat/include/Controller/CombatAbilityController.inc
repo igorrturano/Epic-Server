@@ -118,6 +118,14 @@ function ExecutePassiveAbilitiesDefenderBeforeHit(byRef attackInfo)
 	_ExecutePassiveAbilities(attackInfo.GetDefender(), ABILITY_ACTIVATION::BEFORE_HIT_DEFENDER, attackInfo);
 endfunction
 
+function ExecutePassiveAbilitiesOnEquip(byRef mobile, byRef equip)
+	_ExecutePassiveAbilities(mobile, ABILITY_ACTIVATION::ON_EQUIP, equip);
+endfunction
+
+function ExecutePassiveAbilitiesOnUnequip(byRef mobile, byRef equip)
+	_ExecutePassiveAbilities(mobile, ABILITY_ACTIVATION::ON_UNEQUIP, equip);
+endfunction
+
 function _ExecutePassiveAbilities(byRef mobile, passiveMoment, byRef attackInfo)
 	var abilities := mobile.GetAbilities();
 

@@ -744,7 +744,13 @@ function CalculateCriticalChance(byRef attackInfo)
 		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) -			// Crítico extra da Skill
 		CInt(opponentCriticalReduction) //Redução de crítico do defensor
 	);
-	
+
+	if (attackInfo.GetAttacker().IsNPC())
+		chance := CInt(attackInfo.GetAttacker().GetTemplate().GetTier())
+				+ CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20)
+				- CInt(opponentCriticalReduction);
+	endif
+
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::DESTRUIDOR) && GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia"))
 		chance := chance * 2.0;
 	endif
@@ -798,6 +804,10 @@ function ApplyCriticalDamage(byRef attackInfo)
 		weapon_scripts := weaponCfg.GetPropertyValue("CriticalHitScripts");
 	elseif (attackInfo.GetAttacker().IsNPC())
 		weapon_scripts := npcCfg.GetPropertyValue("CriticalHitScripts");
+	endif
+
+	if (!weapon_scripts || !weapon_scripts.Size())
+		weapon_scripts := array{ ":combat:criticalHitScripts/damage2" };
 	endif
 	// PEnsar numa solucao pra mensagem subir no NPC sem o [Language] como prefixo
 	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());

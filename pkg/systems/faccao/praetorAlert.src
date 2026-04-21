@@ -1,0 +1,38 @@
+use uo;
+use os;
+
+include ":faccao:include/imperium";
+
+program praetorAlert(params)
+	var caster := params[1];
+	if (!caster || caster == error)
+		return 0;
+	endif
+
+	if (!InValtheris(caster))
+		return 0;
+	endif
+
+	var praetors := GetGlobalProperty("Praetors");
+	if (praetors == error || !praetors)
+		return 0;
+	endif
+
+	foreach serial in praetors
+		if (serial == caster.serial)
+			continue;
+		endif
+
+		var praetor := SystemFindObjectBySerial(serial);
+		if (!praetor || praetor == error)
+			continue;
+		endif
+		if (!praetor.connected || praetor.dead)
+			continue;
+		endif
+
+		Start_Script(":faccao:praetorInviteGump", array{ praetor, caster });
+	endforeach
+
+	return 1;
+endprogram

@@ -9,7 +9,6 @@
 use cfgfile;
 use uo;
 use os;
-use npc;
 
 // Init code calls per-tick utilities defined in epicai.inc (e.g., ParseTemplateName).
 // Re-include epicai.inc here so init scripts have access to those utilities.
@@ -17,9 +16,13 @@ include ":epicAI:include/epicai";
 
 // Direct deps for init bodies (formerly leaky-transitive via lootParser/etc.):
 include "makeRace";
+include "makeReligion";
 include ":merchants:include/item_template";
 include ":epicAI:include/humanoidBrain";   // GetHabsByLevel, GetClassProgression
 include ":epicAI:include/npcDataCache";    // NPC_GetCachedData
+include ":commands:create";                // CreateItem*Container, GetItemInfo, GetItemDescriptor
+include ":crafting:include/fabricacaoComplexos"; // GeraDescriptorComplexo (tiered items)
+include "include/epicMageryUtils";         // ApplyElementalWeaponProperties (swordmage loadout)
 
 
 // Color helpers used only by boss-init paths (ApplyBossColors / GetColorValue)
@@ -160,6 +163,10 @@ function InitializeHumanoidNPC(mobile, npc_elem, elem, sounds)
         makeRace(mobile);
     endif
 
+    // Religion — picks from habs-specific pool (cleric/arqueiro arcano).
+    // No-op for NPCs without religion-gated abilities.
+    makeReligion(mobile);
+
     SetupNPCEquip(mobile, npc_elem);
 
     SetupBaseLanguages(mobile);
@@ -189,6 +196,10 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
             if (ABILITY_ID::MARTIAL_ARTIST in habs)
                 var monk_weapons := array{0x0df0, 0x13f9, 0x0e8a, 0x0e81, 0x1F020};
                 EquipRandomFromArray(mobile, monk_weapons);
+            endif
+
+            if (ABILITY_ID::TIRO_PODEROSO in habs)
+                SetupArcherLoadout(mobile);
             endif
 
             if (ABILITY_ID::CAMUFLAGEM in habs)
@@ -243,7 +254,7 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
 
             if (ABILITY_ID::EXPLOSIVE_FIST in habs)
                 makeRace(mobile, ANAO);
-                SetupFireweaponLoadout(mobile);
+                SetupEngineerLoadout(mobile);
             endif
 
             if (ABILITY_ID::GOLEM_ASSEMBLY in habs)
@@ -272,21 +283,18 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
 
             if (ABILITY_ID::VINCULO_ELEMENTAL in habs)
                 makeRace(mobile, ELFO);
-                var elementals := array{0x13fe, 0x26C9, 0x26C5, 0x26CB, 0x26CF, 0xF9E6};
-                EquipRandomFromArray(mobile, elementals);
+                SetupSwordmageLoadout(mobile);
             endif
 
             if ("Visao verdadeira" in habs)
                 mobile.gender := 1;
                 makeRace(mobile, DROW);
-                var whip := CreateItemInBackpack(mobile, 0x166E, 1);
-                EquipItem(mobile, whip);
+                EquipRandomFromArray(mobile, array{0x166E});
             endif
 
             if ("Campeao das Montanhas" in habs)
                 makeRace(mobile, ANAO);
-                var hammer := CreateItemInBackpack(mobile, 0xFA11, 1);
-                EquipItem(mobile, hammer);
+                EquipRandomFromArray(mobile, array{0xFA11});
             endif
 
             if (ABILITY_ID::BLOODTHIRST in habs)
@@ -314,23 +322,111 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
 endfunction
 
 
-function SetupFireweaponLoadout(mobile)
-    // Create and equip random firearm
-    var firearms := array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
-    var weapon := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, firearms[RandomInt(firearms.size())+1], 1);
-    if (weapon)
-        SetObjProperty(weapon, "balas", 1);
-        SetObjProperty(weapon, "serialid", mobile.serial);
-        EquipItem(mobile, weapon);
+// Steam equipment loadout for Engineer-class NPCs (base hab: EXPLOSIVE_FIST).
+// Equips the full steam armor set so the NPC passes CanActivate on engenheiro abilities:
+//   - Luvas de Vapor (0xFFC1)   -> EXPLOSIVE_FIST
+//   - Grevas de Vapor (0xFFC2)  -> STEAM_JUMP
+//   - Bracos a Vapor (0xFFC3)   -> TACTICAL_SHOULDER (with random InstalledGadget)
+//   - Capacete a Vapor (0xFFC4) -> TARGETING_VISOR
+// Plus ammo/fuel in backpack so abilities have resources to consume.
+//
+// Uses the create.src flow (GeraDescriptorComplexo + CreateItem*InContainer) so armor
+// pieces are proper tier-1 craftable items — usable and statted correctly when looted
+// by players. Ammo/fuel spawn raw (no tier variants).
+function SetupEngineerLoadout(mobile)
+    _NpcEquipItem(mobile, 0xFFC1);                   // Luvas de Vapor
+    _NpcEquipItem(mobile, 0xFFC2);                   // Grevas de Vapor
+    var steam_arms := _NpcEquipItem(mobile, 0xFFC3); // Bracos a Vapor
+    _NpcEquipItem(mobile, 0xFFC4);                   // Capacete a Vapor
+
+    if (steam_arms)
+        var gadgets := array{"handcannon", "harpoon", "powdertrap"};
+        SetObjProperty(steam_arms, "InstalledGadget", gadgets[RandomInt(gadgets.size()) + 1]);
     endif
 
-    // Add ammo and supplies
-    var ammo_amount := RandomInt(10) + 10; // 10-20
-    var powder_amount := RandomInt(10) + 10;
+    // Ammo / fuel — stackable, no tier
+    CreateItemStacksInContainer(mobile, 0x9092, 30, mobile.backpack);  // Gunpowder
+    CreateItemStacksInContainer(mobile, 0x4224, 5, mobile.backpack);   // Cannonballs
+    CreateItemStacksInContainer(mobile, 0x2808, 3, mobile.backpack);   // Powder traps
+    CreateItemStacksInContainer(mobile, 0x1bde, 10, mobile.backpack);  // Coal (rocket jump fuel)
+endfunction
 
-    CreateItemInBackpack(mobile, 0x9090, ammo_amount);  // Ammo
-    CreateItemInBackpack(mobile, 0x9092, powder_amount); // Powder
-    CreateItemInBackpack(mobile, 0xC611, 1);            // Powder fixer
+// Ranged loadout for Arqueiro subclass (base hab: TIRO_PODEROSO).
+// Equips a random bow so CanActivate on all arqueiro abilities passes:
+// PowerShot/ChargedShot/FindOpening/MultiShot all require weapon.GetAttribute() == RANGED.
+// Quiver with arrows populates the ammo pool.
+function SetupArcherLoadout(mobile)
+    var bows := array{0x13B2, 0x13B1, 0x0F4F, 0x0F50, 0x13FC, 0x13FD};
+    EquipRandomFromArray(mobile, bows);
+
+    var quiver := _NpcEquipItem(mobile, 0x2FB7);
+    if (quiver)
+        CreateItemInContainer(quiver, 0xF3F, RandomIntMinMax(20, 80));
+    endif
+endfunction
+
+
+// Spiritual blade + elemental enchantment for Lamina Arcana (swordmage) NPCs.
+// Unblocks Fluency/ArcaneArmor/PrismaticVortex, which all read who.weapon.#elementalweapon
+// and silently fail when the NPC has a plain weapon.
+//
+// Spiritual blade = item 0x090C (swordmage weapon class) with a random weapon graphic
+// for visual variety. Cooldown "spiritual_weapon" matches the player flow from
+// SummonSpiritualBlade, so the NPC won't re-summon mid-combat.
+// ApplyElementalWeaponProperties reads mobile.weapon and sets #elementalweapon with
+// type + charges + decay (20min) — matches the player enchant flow from espada*.src.
+function SetupSwordmageLoadout(mobile)
+    var blade_graphics := array{0x13fe, 0x26C9, 0x26C5, 0x26CB, 0x26CF, 0xF9E6};
+    var weapon := CreateItemInBackpack(mobile, 0x090C, 1);
+    if (!weapon)
+        return 0;
+    endif
+
+    weapon.graphic := blade_graphics[RandomInt(blade_graphics.size()) + 1];
+    EquipItem(mobile, weapon);
+    if (weapon.maxhp > 0)
+        weapon.hp := weapon.maxhp;
+    endif
+
+    SetCooldown(mobile, "spiritual_weapon", 99999);
+
+    var elements := array{"Fire", "Cold", "Energy"};
+    ApplyElementalWeaponProperties(mobile, elements[RandomInt(elements.size()) + 1]);
+
+    return weapon;
+endfunction
+
+// Creates a tier-1 item (armor or weapon) in mobile's backpack, equips it, and
+// returns the objref. Falls back to raw objtype if no tier-1 material config exists.
+// Sets hp := maxhp (guarded against non-durable items).
+//
+// Uses the create.src flow (GeraDescriptorComplexo + CreateItemUnstackableInContainer)
+// so the item is a proper craftable — stats/material/PROPNAME_FABRICADO populated, behaves
+// identically to a crafted item when looted by a player.
+//
+// Does NOT pre-clear the target layer. If replacing an existing weapon, use
+// EquipRandomFromArray or DestroyItem(mobile.weapon) before calling.
+function _NpcEquipItem(mobile, objtype)
+    var finalObjtype := GeraDescriptorComplexo(objtype, 1);
+    if (!finalObjtype)
+        finalObjtype := objtype;
+    endif
+
+    var created := CreateItemUnstackableInContainer(mobile, finalObjtype, 1, mobile.backpack);
+    if (!created || created.size() == 0)
+        return 0;
+    endif
+
+    var item := SystemFindObjectBySerial(created[1].Serial);
+    if (!item)
+        return 0;
+    endif
+
+    if (item.maxhp > 0)
+        item.hp := item.maxhp;
+    endif
+    EquipItem(mobile, item);
+    return item;
 endfunction
 
 
@@ -359,33 +455,28 @@ endfunction
 
 
 function SetupArcaneTricksterLoadout(mobile, npc_elem)
-    // Create bow and quiver
-    var bow := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0x13B2, 1);
-    var quiver := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0x2FB7, 1);
-    
-    if (bow && quiver)
-        EquipItem(mobile, bow);
-        EquipItem(mobile, quiver);
+    _NpcEquipItem(mobile, 0x13B2);           // Bow (tier 1)
+    var quiver := _NpcEquipItem(mobile, 0x2FB7);  // Quiver
+
+    if (quiver)
+        CreateItemInContainer(quiver, 0xF3F, RandomIntMinMax(20, 80));  // Arrows
     endif
-    
-    // Add arrows
-    CreateItemInContainer(quiver, 0xF3F, RandomIntMinMax(20, 80));
+
     var tier := npc_elem.Tier;
-    // Add scrolls for tiers 1-5
     for i := 1 to tier
         CreateItemInBackpack(mobile, "pergaminhospellcaster"+i, RandomInt(2)+1);
     endfor
 endfunction
 
 
+// Replaces mobile's current weapon with a random item from the array.
+// Goes through _NpcEquipItem so the replacement is a proper tier-1 crafted item
+// (stats, material, correct HP) instead of a raw spawn.
 function EquipRandomFromArray(mobile, items)
-    var weapon := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, items[RandomInt(items.size())+1], 1);
-    if (weapon)
-        if (mobile.weapon)
-            DestroyItem(mobile.weapon);
-        endif
-        EquipItem(mobile, weapon);
+    if (mobile.weapon)
+        DestroyItem(mobile.weapon);
     endif
+    return _NpcEquipItem(mobile, items[RandomInt(items.size()) + 1]);
 endfunction
 
 

@@ -28,6 +28,7 @@ include "include/sysEvent";
 include ":entropy:entropy";
 include ":charactercreation:resists";
 include "include/epicConstants";
+include ":faccao:include/imperium";
 
 program SpellStarter(params)
 	var mobile := params[1]; // Caster
@@ -554,6 +555,10 @@ endfunction
 
 function finalizeCasting(mobile, spellinfo, targ, scroll)
 	CastSpell(mobile, spellinfo, targ);
+
+	if (InValtheris(mobile) && HasPraetors())
+		Start_Script(":faccao:praetorAlert", array{ mobile });
+	endif
 
 	var entropy_delta := 0;
 	var circle_amt := Cint(spellinfo.Circle[1]);
