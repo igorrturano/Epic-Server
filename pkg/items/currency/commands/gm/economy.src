@@ -1,0 +1,84 @@
+// .economy [acctname]
+// Walks all online characters, counts coins in backpack + bank box,
+// and writes a CSV snapshot to ::data/log/economy/<date>/census_<time>.csv
+// Pass an account name to restrict the census to a single player.
+
+use uo;
+use os;
+use file;
+use util;
+use basic;
+use polsys;
+
+include "include/epicEconomyAudit";
+include ":currency:include/currency";
+include ":containers:storageAreas";
+
+program economy(mobile, acct_filter)
+	var timestamp_fmt := StrFormatTime("%H-%M-%S", POLCore().systime);
+	var today := StrFormatTime("%d-%m-%Y", POLCore().systime);
+	var log_dir := "::data/log/economy/" + today;
+	if (!FileExists(log_dir))
+		CreateDirectory(log_dir);
+	endif
+	var census_file := log_dir + "/census_" + timestamp_fmt + ".csv";
+
+	var header := "acct,char,bag_cobre,bag_prata,bag_ouro,bank_cobre,bank_prata,bank_ouro,total_cobre_equiv";
+	LogToFile(census_file, header, 0);
+
+	var n_players := 0;
+	var total_cobre := 0;
+	var total_prata := 0;
+	var total_ouro := 0;
+	var filter := "";
+	if (acct_filter && acct_filter != error)
+		filter := Lower(CStr(acct_filter));
+	endif
+
+	foreach p in EnumerateOnlineCharacters()
+		if (p.acctname == error || !p.acctname)
+			continue;
+		endif
+		if (filter && Lower(p.acctname) != filter)
+			continue;
+		endif
+
+		var bag := p.backpack;
+		var bc := 0; var bp := 0; var bo := 0;
+		if (bag && bag != error)
+			bc := CountCoins(bag, EA_COIN_COBRE);
+			bp := CountCoins(bag, EA_COIN_PRATA);
+			bo := CountCoins(bag, EA_COIN_OURO);
+		endif
+
+		var bank := CP_GetStorageContainerForMobile(p, CP_DEFAULT_AREA, CP_NOCREATE);
+		var kc := 0; var kp := 0; var ko := 0;
+		if (bank && bank != error)
+			kc := CountCoins(bank, EA_COIN_COBRE);
+			kp := CountCoins(bank, EA_COIN_PRATA);
+			ko := CountCoins(bank, EA_COIN_OURO);
+		endif
+
+		var char_name := GetObjProperty(p, "nome_inicial");
+		if (char_name == error || !char_name)
+			char_name := p.name;
+		endif
+		char_name := StrReplace(CStr(char_name), ",", ";");
+
+		var equiv := (bc + kc) + (bp + kp) * 10 + (bo + ko) * 100;
+		total_cobre += bc + kc;
+		total_prata += bp + kp;
+		total_ouro += bo + ko;
+		n_players += 1;
+
+		var line := "{},{},{},{},{},{},{},{},{}".format(
+			p.acctname, char_name, bc, bp, bo, kc, kp, ko, equiv
+		);
+		LogToFile(census_file, line, 0);
+		sleepms(2);
+	endforeach
+
+	SendSysMessage(mobile, "Census written: " + n_players + " players");
+	SendSysMessage(mobile, "Totals: " + CStr(total_cobre) + " cobre, " + CStr(total_prata) + " prata, " + CStr(total_ouro) + " ouro");
+	SendSysMessage(mobile, "File: " + census_file);
+endprogram
