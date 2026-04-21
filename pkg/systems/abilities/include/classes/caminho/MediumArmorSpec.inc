@@ -16,6 +16,13 @@ class MediumArmorSpec(CombatAbility)
 		Super(ABILITY_ID::MEDIUM_ARMOR_SPEC);
 	endfunction
 
+	function OnPassiveOnEquip(this, equip)
+		if (!(equip is @ArmorWrapper)) return false; endif
+		if (!equip.GetTipoProtecao()["Armadura Media"]) return false; endif
+		equip.ApplyAbilityBonus(DEXTERITY, 1);
+		return true;
+	endfunction
+
 	// Defender: +1 evasion per medium armor piece
 	function OnPassiveBeforeHitDefender(this, attackInfo)
 		var defender := attackInfo.GetDefender();

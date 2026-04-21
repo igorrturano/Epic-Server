@@ -18,7 +18,10 @@ enum class ABILITY_ACTIVATION
 	ON_KILL := "OnKill",
 	ON_PARRY := "OnParry",
 
-	ON_USE := "OnUse"
+	ON_USE := "OnUse",
+
+	ON_EQUIP := "OnEquip",
+	ON_UNEQUIP := "OnUnequip"
 endenum
 
 class Ability(IAbility)
