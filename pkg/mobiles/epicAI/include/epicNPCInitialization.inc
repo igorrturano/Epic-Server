@@ -21,6 +21,8 @@ include "makeReligion";
 include ":merchants:include/item_template";
 include ":epicAI:include/humanoidBrain";   // GetHabsByLevel, GetClassProgression
 include ":epicAI:include/npcDataCache";    // NPC_GetCachedData
+include ":commands:create";                // CreateItem*Container, GetItemInfo, GetItemDescriptor
+include ":crafting:include/fabricacaoComplexos"; // GeraDescriptorComplexo (tiered items)
 
 
 // Color helpers used only by boss-init paths (ApplyBossColors / GetColorValue)
@@ -248,7 +250,7 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
 
             if (ABILITY_ID::EXPLOSIVE_FIST in habs)
                 makeRace(mobile, ANAO);
-                SetupFireweaponLoadout(mobile);
+                SetupEngineerLoadout(mobile);
             endif
 
             if (ABILITY_ID::GOLEM_ASSEMBLY in habs)
@@ -319,23 +321,56 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
 endfunction
 
 
-function SetupFireweaponLoadout(mobile)
-    // Create and equip random firearm
-    var firearms := array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
-    var weapon := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, firearms[RandomInt(firearms.size())+1], 1);
-    if (weapon)
-        SetObjProperty(weapon, "balas", 1);
-        SetObjProperty(weapon, "serialid", mobile.serial);
-        EquipItem(mobile, weapon);
+// Steam equipment loadout for Engineer-class NPCs (base hab: EXPLOSIVE_FIST).
+// Equips the full steam armor set so the NPC passes CanActivate on engenheiro abilities:
+//   - Luvas de Vapor (0xFFC1)   -> EXPLOSIVE_FIST
+//   - Grevas de Vapor (0xFFC2)  -> STEAM_JUMP
+//   - Bracos a Vapor (0xFFC3)   -> TACTICAL_SHOULDER (with random InstalledGadget)
+//   - Capacete a Vapor (0xFFC4) -> TARGETING_VISOR
+// Plus ammo/fuel in backpack so abilities have resources to consume.
+//
+// Uses the create.src flow (GeraDescriptorComplexo + CreateItem*InContainer) so armor
+// pieces are proper tier-1 craftable items — usable and statted correctly when looted
+// by players. Ammo/fuel spawn raw (no tier variants).
+function SetupEngineerLoadout(mobile)
+    _NpcEquipArmor(mobile, 0xFFC1);                   // Luvas de Vapor
+    _NpcEquipArmor(mobile, 0xFFC2);                   // Grevas de Vapor
+    var steam_arms := _NpcEquipArmor(mobile, 0xFFC3); // Bracos a Vapor
+    _NpcEquipArmor(mobile, 0xFFC4);                   // Capacete a Vapor
+
+    if (steam_arms)
+        var gadgets := array{"handcannon", "harpoon", "powdertrap"};
+        SetObjProperty(steam_arms, "InstalledGadget", gadgets[RandomInt(gadgets.size()) + 1]);
     endif
 
-    // Add ammo and supplies
-    var ammo_amount := RandomInt(10) + 10; // 10-20
-    var powder_amount := RandomInt(10) + 10;
+    // Ammo / fuel — stackable, no tier
+    CreateItemStacksInContainer(mobile, 0x9092, 30, mobile.backpack);  // Gunpowder
+    CreateItemStacksInContainer(mobile, 0x4224, 5, mobile.backpack);   // Cannonballs
+    CreateItemStacksInContainer(mobile, 0x2808, 3, mobile.backpack);   // Powder traps
+    CreateItemStacksInContainer(mobile, 0x1bde, 10, mobile.backpack);  // Coal (rocket jump fuel)
+endfunction
 
-    CreateItemInBackpack(mobile, 0x9090, ammo_amount);  // Ammo
-    CreateItemInBackpack(mobile, 0x9092, powder_amount); // Powder
-    CreateItemInBackpack(mobile, 0xC611, 1);            // Powder fixer
+// Creates a tier-1 armor piece in mobile's backpack, equips it, and returns the objref.
+// Falls back to raw objtype if no tier-1 material config exists. Sets hp := maxhp.
+function _NpcEquipArmor(mobile, objtype)
+    var finalObjtype := GeraDescriptorComplexo(objtype, 1);
+    if (!finalObjtype)
+        finalObjtype := objtype;
+    endif
+
+    var created := CreateItemUnstackableInContainer(mobile, finalObjtype, 1, mobile.backpack);
+    if (!created || created.size() == 0)
+        return 0;
+    endif
+
+    var item := SystemFindObjectBySerial(created[1].Serial);
+    if (!item)
+        return 0;
+    endif
+
+    item.hp := item.maxhp;
+    EquipItem(mobile, item);
+    return item;
 endfunction
 
 
