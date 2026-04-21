@@ -46,7 +46,7 @@ program endSummoned(params)
 
 	// Aplica dano até morrer
 	sleep(5);
-	while ((AP_GetVital(mobile, HITS) >= 0))
+	while (mobile && AP_GetVital(mobile, HITS) > 0)
 		ApplyRawDamage(mobile, 200);
 		sleepms(500);
 	endwhile
