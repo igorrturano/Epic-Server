@@ -23,6 +23,7 @@ include ":epicAI:include/humanoidBrain";   // GetHabsByLevel, GetClassProgressio
 include ":epicAI:include/npcDataCache";    // NPC_GetCachedData
 include ":commands:create";                // CreateItem*Container, GetItemInfo, GetItemDescriptor
 include ":crafting:include/fabricacaoComplexos"; // GeraDescriptorComplexo (tiered items)
+include "include/epicMageryUtils";         // ApplyElementalWeaponProperties (swordmage loadout)
 
 
 // Color helpers used only by boss-init paths (ApplyBossColors / GetColorValue)
@@ -279,8 +280,7 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
 
             if (ABILITY_ID::VINCULO_ELEMENTAL in habs)
                 makeRace(mobile, ELFO);
-                var elementals := array{0x13fe, 0x26C9, 0x26C5, 0x26CB, 0x26CF, 0xF9E6};
-                EquipRandomFromArray(mobile, elementals);
+                SetupSwordmageLoadout(mobile);
             endif
 
             if ("Visao verdadeira" in habs)
@@ -348,6 +348,36 @@ function SetupEngineerLoadout(mobile)
     CreateItemStacksInContainer(mobile, 0x4224, 5, mobile.backpack);   // Cannonballs
     CreateItemStacksInContainer(mobile, 0x2808, 3, mobile.backpack);   // Powder traps
     CreateItemStacksInContainer(mobile, 0x1bde, 10, mobile.backpack);  // Coal (rocket jump fuel)
+endfunction
+
+// Spiritual blade + elemental enchantment for Lamina Arcana (swordmage) NPCs.
+// Unblocks Fluency/ArcaneArmor/PrismaticVortex, which all read who.weapon.#elementalweapon
+// and silently fail when the NPC has a plain weapon.
+//
+// Spiritual blade = item 0x090C (swordmage weapon class) with a random weapon graphic
+// for visual variety. Cooldown "spiritual_weapon" matches the player flow from
+// SummonSpiritualBlade, so the NPC won't re-summon mid-combat.
+// ApplyElementalWeaponProperties reads mobile.weapon and sets #elementalweapon with
+// type + charges + decay (20min) — matches the player enchant flow from espada*.src.
+function SetupSwordmageLoadout(mobile)
+    var blade_graphics := array{0x13fe, 0x26C9, 0x26C5, 0x26CB, 0x26CF, 0xF9E6};
+    var weapon := CreateItemInBackpack(mobile, 0x090C, 1);
+    if (!weapon)
+        return 0;
+    endif
+
+    weapon.graphic := blade_graphics[RandomInt(blade_graphics.size()) + 1];
+    EquipItem(mobile, weapon);
+    if (weapon.maxhp > 0)
+        weapon.hp := weapon.maxhp;
+    endif
+
+    SetCooldown(mobile, "spiritual_weapon", 99999);
+
+    var elements := array{"Fire", "Cold", "Energy"};
+    ApplyElementalWeaponProperties(mobile, elements[RandomInt(elements.size()) + 1]);
+
+    return weapon;
 endfunction
 
 // Creates a tier-1 armor piece in mobile's backpack, equips it, and returns the objref.
