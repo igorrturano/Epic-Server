@@ -3,6 +3,7 @@ use util;
 use cfgfile;
 use os;
 use basic;
+use datafile;
 
 include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
@@ -11,6 +12,62 @@ include ":crafting:/include/fabricacaoComplexos";
 include "include/epicEconomyAudit";
 
 var itemdesc_cache := dictionary{};
+
+const LORE_DROPPED_DATAFILE := ":unicos:lore_dropped";
+
+function LoreItems_GetDataFile()
+    var df := OpenDataFile(LORE_DROPPED_DATAFILE);
+    if (!df)
+        CreateDataFile(LORE_DROPPED_DATAFILE, 0);
+        df := OpenDataFile(LORE_DROPPED_DATAFILE);
+    endif
+    return df;
+endfunction
+
+function LoreItems_IsDropped(item_name)
+    var objtype;
+    if (item_name[1,2] == "0x")
+        objtype := CInt("0x" + item_name[3, len(item_name)]);
+    else
+        objtype := CInt(item_name);
+    endif
+    var df := LoreItems_GetDataFile();
+    var elem := df.FindElement(Hex(objtype));
+    return (elem && !elem.errortext);
+endfunction
+
+function LoreItems_Register(item)
+    // Fast lookup: prevent same objtype from dropping again
+    var df := LoreItems_GetDataFile();
+    if (!df.FindElement(Hex(item.objtype)))
+        df.CreateElement(Hex(item.objtype));
+    endif
+
+    // Resolve lore item name from config
+    var lore_cfg := ReadConfigFile(":custompizza:itemrp/lore_items");
+    var lore_elem := FindConfigElem(lore_cfg, item.objtype);
+    var lore_name := lore_elem ? lore_elem.name : item.desc;
+
+    // Unicos lista: register physical item by serial so it shows in .unicos gump
+    var lista := OpenDataFile(":unicos:lista");
+    if (!lista)
+        CreateDataFile(":unicos:lista", 0);
+        lista := OpenDataFile(":unicos:lista");
+    endif
+    var elem_name := Hex(item.serial);
+    if (!lista.FindElement(elem_name))
+        lista.CreateElement(elem_name);
+    endif
+    var elem := lista.FindElement(elem_name);
+    SetObjProperty(item, "itemunico", 1);
+    item.decayAt := 0;
+    elem.SetProp("Title", "Lore Item");
+    elem.SetProp("LoreName", lore_name);
+    elem.SetProp("ItemDesc", item.desc);
+    elem.SetProp("ID", item.serial);
+    elem.SetProp("Creator", "Sistema de Loot");
+    elem.SetProp("Time", polcore().systime);
+endfunction
 
 function Loot_Generate(container, loot_index)
 	if ( !container.IsA(POLCLASS_CONTAINER) )
@@ -82,6 +139,7 @@ endfunction
 
 function Loot_CreateItem(container, line)
     var parsed := Loot_ParseString(line);
+    var item;
 
     if(Loot_ChanceCheck(parsed.chance))
         var i;
@@ -89,7 +147,6 @@ function Loot_CreateItem(container, line)
             var combatDesc := ReadConfigFile(":combat:itemdesc");
             var objtype := GetObjtypeByName(parsed.name);
             var combatItem := combatDesc[objtype];
-            var item;
             if(combatItem)
                 item :=  GeraItemComplexo(
                                             container,
@@ -108,6 +165,7 @@ function Loot_CreateItem(container, line)
 
             sleepms(2);
         endfor
+        return item;
     endif
 
     return 1;
@@ -201,6 +259,20 @@ function Loot_CreateRandom(container, line)
     if(all_items.size() == 0)
         return 0;
     endif
+
+    // Filter out lore items that have already been dropped in the world
+    if (parsed.name == "LoreItems")
+        var filtered := array{};
+        foreach entry in all_items
+            if (!LoreItems_IsDropped(entry.name))
+                filtered.append(entry);
+            endif
+        endforeach
+        all_items := filtered;
+        if (all_items.size() == 0)
+            return 1;
+        endif
+    endif
     
     // Cria os itens
     amount := CInt(parsed.amount);
@@ -225,6 +297,9 @@ function Loot_CreateRandom(container, line)
             else
                 result := Loot_CreateItem(container, item.name + " 1 100 " + tier);
                 if(!result.errortext)
+                    if (parsed.name == "LoreItems" && result.IsA(POLCLASS_ITEM))
+                        LoreItems_Register(result);
+                    endif
                     created += 1;
                 endif
             endif
