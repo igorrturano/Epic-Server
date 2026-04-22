@@ -312,7 +312,14 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			if (this.GetTipoProtecao())
 				var modifiersSlot := GetModifiersBySlot(this.GetCoverage()[1]);
 				var modifiersProt := GetModifiersByProtection(this.GetTipoProtecao());
-				this.SetModifier(AttributeModifier(DEXTERITY, modifiersSlot[DEXTERITY].GetValue() + modifiersProt[DEXTERITY].GetValue()));
+
+				// Armadura Leve não penaliza DEX por slot — couro/tecido deveria ser ágil
+				var slotDex := modifiersSlot[DEXTERITY].GetValue();
+				if (this.GetTipoProtecao()["Armadura Leve"])
+					slotDex := 0;
+				endif
+
+				this.SetModifier(AttributeModifier(DEXTERITY, slotDex + modifiersProt[DEXTERITY].GetValue()));
 				this.SetModifier(AttributeModifier(SNEAK, modifiersSlot[SNEAK].GetValue() + modifiersProt[SNEAK].GetValue()));
 				this.SetModifier(AttributeModifier(MECHANICS, modifiersSlot[MECHANICS].GetValue() + modifiersProt[MECHANICS].GetValue()));
 				this.SetModifier(AttributeModifier(MAGERY, modifiersSlot[MAGERY].GetValue() + modifiersProt[MAGERY].GetValue()));
