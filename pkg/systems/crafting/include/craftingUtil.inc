@@ -16,5 +16,5 @@ include ":tn:tngumps";
 		endif
 		SendSysMessage(who, "Voce excedeu o numero maximo de caracteres! Utilize apenas 3 linhas do gump");
 	endwhile
-	SetObjProperty(item, "description", str);
+	SetObjProperty(item, "descmod", str + "<br>");
 endfunction

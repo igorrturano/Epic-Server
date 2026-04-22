@@ -1,4 +1,5 @@
 use uo;
+include ":attributes:skills";
 
 function VerificaDisfarce(alvo, quem := 0)
 	var ID := cstr(alvo.serial); //Salva o serial do personagem
