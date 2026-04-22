@@ -556,7 +556,7 @@ endfunction
 function finalizeCasting(mobile, spellinfo, targ, scroll)
 	CastSpell(mobile, spellinfo, targ);
 
-	if (InValtheris(mobile) && HasPraetors())
+	if (spellinfo.Type != "Divine" && spellinfo.Type != "Priest" && InValtheris(mobile) && HasPraetors())
 		Start_Script(":faccao:praetorAlert", array{ mobile });
 	endif
 
