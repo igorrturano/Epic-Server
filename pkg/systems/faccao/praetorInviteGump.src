@@ -37,15 +37,20 @@ program praetorInviteGump(params)
 		return 0;
 	endif
 
+
+	PlayStationaryEffect(praetor.x, praetor.y, praetor.z, 0xD11B, 0, 30, 0, praetor.realm);
+	PlaySoundEffect(praetor, 0x1f2);
+
+	PlayStationaryEffect(caster.x, caster.y, caster.z, 0xD11B, 0, 30, 0, caster.realm);
+	PlaySoundEffect(caster, 0x1f2);
+	sleep(2);
+
 	var result := MoveObjectToLocation(praetor, caster.x, caster.y, caster.z,
 	                                   caster.realm, MOVEOBJECT_FORCELOCATION);
 	if (result.errortext)
 		SendSysMessage(praetor, "Nao foi possivel se teleportar agora.");
 		return 0;
 	endif
-
-	PlayStationaryEffect(praetor.x, praetor.y, praetor.z, 0xD11B, 0, 30, 0, praetor.realm);
-	PlaySoundEffect(praetor, 0x1f2);
 
 	return 1;
 endprogram
