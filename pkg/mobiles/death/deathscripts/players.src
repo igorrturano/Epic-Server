@@ -478,6 +478,12 @@ function MoverItensQuartoParaNpc(x, y, z, r, player, npc)
 			endif
 		endif
 		MoveItemToContainer(backpack, npc.backpack);
+		var confiscado := GetObjProperty(npc, "confiscados");
+		if (!confiscado || confiscado == error)
+			confiscado := struct;
+		endif
+		confiscado.insert("" + player.serial, backpack.serial);
+		SetObjProperty(npc, "confiscados", confiscado);
 	endif
 	return 1;
 endfunction
