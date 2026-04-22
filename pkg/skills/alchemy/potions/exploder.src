@@ -239,7 +239,8 @@ function ExplosionEffect(who, potion, dmg)
 		endcase
 	endif
 	diff := CInt(diff * dmg);
-	PlayStationaryEffectEx(potion.x, potion.y, potion.z, potion.realm, 0x36b0, 7, 10, color);
+	// PlayStationaryEffectHuefx( x, y, z, effect, speed, loop := 0, explode := 0, color := 0,translucent := 0)
+	PlayStationaryEffect(potion.x, potion.y, potion.z, 0x36b0, 7, 10, 1, color);
 	PlaySoundEffect(potion, 0x208);
 	potion.graphic := 1;
 
