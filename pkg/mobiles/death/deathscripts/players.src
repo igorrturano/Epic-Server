@@ -454,16 +454,16 @@ function MoverItensQuartoParaNpc(x, y, z, r, player, npc)
 				endif
 
 			elseif (obj.IsA(POLCLASS_CONTAINER))
-				var container := EnumerateItemsInContainer(obj, ENUMERATE_IGNORE_LOCKED);
-				foreach item in container
-					if (player && player != error)
+				if (player && player != error)
+					foreach item in EnumerateItemsInContainer(obj, ENUMERATE_IGNORE_LOCKED)
 						item.movable := 1;
-						MoveItemToContainer(item, backpack);
-					else
-						DestroyItem(item);
-					endif
-					sleepms(20);
-				endforeach
+						sleepms(20);
+					endforeach
+					obj.movable := 1;
+					MoveItemToContainer(obj, backpack);
+				else
+					DestroyItem(obj);
+				endif
 			endif
 		endif
 		sleepms(20);
@@ -501,19 +501,33 @@ function ProcurarItensQuarto(who)
 		if (npc.errortext)
 			innkeepers.erase(x);
 			SetGlobalProperty("InnKeeper", innkeepers);
+			sleepms(20);
+			continue;
 		endif
 
 		var quartos := GetObjProperty(npc, "quartos");
+		if (!quartos || quartos == error)
+			x := x + 1;
+			sleepms(20);
+			continue;
+		endif
 
 		var i := 1;
 		while (i <= quartos.size())
 			if (quartos[i].inquilino == who.serial)
 				var quarto := quartos[i];
 				var cent := quarto.centro;
+				var cent_size := cent.size();
+				var room_realm := npc.realm;
+				if (cent_size == 4)
+					room_realm := cent[4];
+				elseif (cent_size == 7)
+					room_realm := cent[7];
+				endif
 				if (cent[1])
-					MoverItensQuartoParaNpc(cent[1], cent[2], cent[3], npc.realm, who, npc);
-					if (cent[4])
-						MoverItensQuartoParaNpc(cent[4], cent[5], cent[6], npc.realm, who, npc);
+					MoverItensQuartoParaNpc(cent[1], cent[2], cent[3], room_realm, who, npc);
+					if (cent_size == 6 || cent_size == 7)
+						MoverItensQuartoParaNpc(cent[4], cent[5], cent[6], room_realm, who, npc);
 					endif
 				endif
 			endif
