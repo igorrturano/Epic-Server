@@ -218,9 +218,13 @@ class NaturalBond(CombatAbility)
     endfunction
 
     function _DoTransform(this, who, form)
+        // Snapshot the POL-native truecolor/trueobjtype (immutable body values),
+        // not who.color/who.graphic — those reflect any active visual overlays
+        // (e.g. barkskin tints color to 2826). Capturing the overlay would make
+        // endmetamorfose restore the tint permanently even after the spell expires.
         var metamorfose := struct;
-        metamorfose.+originalcolor   := who.color;
-        metamorfose.+originalgraphic := who.graphic;
+        metamorfose.+originalcolor   := who.truecolor;
+        metamorfose.+originalgraphic := who.trueobjtype;
         metamorfose.+originalname    := who.name;
         metamorfose.+newgraphic      := form.graphic;
         SetObjProperty(who, "metamorfose", metamorfose);

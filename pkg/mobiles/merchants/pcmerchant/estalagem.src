@@ -488,6 +488,10 @@ endfunction
 function DestroyRentItens(x, y, z, r)
 	var objects := ListItemsNearLocation(x, y, z, 10, r);
 	foreach obj in objects
+		if (obj.isDoor())
+			sleepms(20);
+			continue;
+		endif
 		if (CheckLosBetween(x, y, z, obj.x, obj.y, obj.z, r))
 			if (GetObjProperty(obj, "crafterserial"))
 				DestroyItem(obj);

@@ -36,6 +36,13 @@ include "include/say";
  * @param timerName   String - timedScript timer name (default: "spelleffect")
  */
 function SC_ApplyEffect(caster, targ, opts, duration, spellId, timerName := "spelleffect")
+	// Fail closed if duration is invalid — TS_StartTimer rejects duration < 1,
+	// so applying opts without a cleanup timer would leave permanent state
+	// (e.g. frozen := 1 with no timer to undo it).
+	if (CInt(duration) < 1)
+		return error{"errortext":=$"SC_ApplyEffect: duration must be > 0 (spellId={spellId})"};
+	endif
+
 	// Mutual exclusion: if this spell has a category, displace any other active
 	// spell in the same category first (e.g. barkskin replaces escudodefe).
 	var replacedName := "";
@@ -379,6 +386,14 @@ function _SC_RemoveResist(targ, opts)
 	if (opts.energy_resist)   sr.energy   -= opts.energy_resist;   endif
 
 	mw.SetProperty("#SpellResist", sr);
+	_SC_RefreshArmorPackets(targ);
+endfunction
+
+// Public wrapper: external systems (transformation revert, etc.) call this
+// to force the client's ArmorResistances dict to re-sync with the current
+// #SpellResist — e.g. after endmetamorfose runs, because the packets that
+// fired while the druid was stripped don't reflect re-equipped gear state.
+function SC_RefreshArmorPackets(targ)
 	_SC_RefreshArmorPackets(targ);
 endfunction
 
