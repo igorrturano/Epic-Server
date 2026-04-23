@@ -12,7 +12,7 @@ include "include/eventID";
 
 var brain_type;
 var me := Self();
-const AREA_SIZE := 15;
+const AREA_SIZE := 18;
 
 // Script-level vars for ephemeral combat state (replaces per-tick SetObjProperty/GetObjProperty)
 var pursuit_tracker := 0;
