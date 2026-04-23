@@ -1,0 +1,343 @@
+use uo;
+use os;
+use npc;
+use util;
+use guilds;
+
+include ":attributes:attributes";
+include "include/sysEvent";
+include ":tn:cooldown";
+include ":faccao:faccao";
+include ":faccao:membership";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include "include/say";
+include "include/arrays";
+
+var fighting     := 0;
+var state        := 0;
+const HELP_CMD   := 0x78458;
+
+include ":faccao:npc_laws_enforce";
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+var me          := self();
+var guild       := 0;
+var following   := 0;
+var fix_location := 0;
+var stolen_money := 0;
+var stolen_gems  := array{};
+var wait_time   := 10;
+
+const MOEDA_COBRE := 0xba63;
+const MOEDA_PRATA := 0xba64;
+const MOEDA_OURO  := 0xba65;
+
+const FOLLOW_CMD := 0xA001;
+const ATTACK_CMD := 0xA002;
+const GO_LOC_CMD := 0xA008;
+
+// ============================================================
+// INICIALIZACAO
+// ============================================================
+
+function Setup()
+	var guildid := GetObjProperty(me, "guild");
+	if (guildid)
+		guild := FindGuild(guildid);
+		if (!guild)
+			ApplyRawDamage(me, 600);
+			return;
+		endif
+	else
+		sleep(5);
+		Setup();
+		return;
+	endif
+
+	guild_leader := guild.getProp("leader");
+	guild_laws   := guild.getProp("laws");
+	if (!guild_laws) guild_laws := array{}; endif
+
+	fix_location := GetObjProperty(me, "fix_loc");
+	if (fix_location == error) fix_location := 0; endif
+
+	if (!me.backpack)
+		var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
+		EquipItem(me, new_pack);
+	endif
+
+	me.cmdlevel := 2;
+	me.stealthsteps := 9999;
+	me.hidden := 1;
+endfunction
+
+// ============================================================
+// AUXILIARES
+// ============================================================
+
+function IsValidTarget(who)
+	if (!who || !who.isA(POLCLASS_MOBILE)) return 0; endif
+	if (who == me || who.dead || who.concealed)  return 0; endif
+	if (who.npctemplate)                          return 0; endif
+	if (guild && IsMemberOfFaccao(guild, who))    return 0; endif
+	return 1;
+endfunction
+
+function GetStealTarget()
+	foreach mob in ListMobilesNearLocationEx(me.x, me.y, me.z, 8,
+		LISTEX_FLAG_NORMAL, me.realm)
+		sleepms(2);
+		if (IsValidTarget(mob)) return mob; endif
+	endforeach
+	return 0;
+endfunction
+
+function FindStealableItem(targ)
+	if (!targ.backpack) return 0; endif
+	foreach item in EnumerateItemsInContainer(targ.backpack)
+		sleepms(2);
+		var ot := item.objtype;
+		if (ot == MOEDA_COBRE || ot == MOEDA_PRATA || ot == MOEDA_OURO)
+			return item;
+		endif
+		if (GetObjProperty(item, "valorgem") != error)
+			return item;
+		endif
+	endforeach
+	return 0;
+endfunction
+
+function TrySteal(targ)
+	var difficulty := 15 + CInt(AP_GetSkill(targ, AWARENESS));
+	if (!SkillCheck(me, PICKPOCKETING, difficulty))
+		// Detectado: avisa alvo e foge
+		PrintTextAbove(me, "*escorrega a mao e recua*");
+		AddReport(guild, "{} falhou ao furtar {}".format(me.name, targ.name));
+		Flee(targ);
+		return 0;
+	endif
+
+	var item := FindStealableItem(targ);
+	if (!item) return 0; endif
+
+	var amount := item.amount;
+	var ot     := item.objtype;
+
+	if (!me.backpack)
+		var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
+		EquipItem(me, new_pack);
+	endif
+
+	if (MoveItemToContainer(item, me.backpack))
+		if (ot == MOEDA_COBRE || ot == MOEDA_PRATA || ot == MOEDA_OURO)
+			stolen_money += CInt(amount);
+		else
+			stolen_gems.append(item);
+		endif
+		AddReport(guild, "{} furtou {} de {}".format(me.name, item.name, targ.name));
+		return 1;
+	endif
+	return 0;
+endfunction
+
+function Flee(threat)
+	SetOpponent(0);
+	SetWarMode(0);
+	me.stealthsteps := 9999;
+	me.hidden := 1;
+	if (threat && threat.isA(POLCLASS_MOBILE))
+		RunAwayFrom(threat);
+		sleepms(300);
+		RunAwayFrom(threat);
+	endif
+endfunction
+
+function DepositToGuild()
+	if (!guild) return; endif
+
+	if (stolen_money > 0)
+		var atual := CInt(guild.GetProp("money"));
+		guild.SetProp("money", atual + stolen_money);
+		AddReport(guild, "{} depositou {} moedas no bau".format(me.name, stolen_money));
+		if (me.backpack)
+			foreach item in EnumerateItemsInContainer(me.backpack)
+				sleepms(2);
+				var ot := item.objtype;
+				if (ot == MOEDA_COBRE || ot == MOEDA_PRATA || ot == MOEDA_OURO)
+					DestroyItem(item);
+				endif
+			endforeach
+		endif
+		stolen_money := 0;
+	endif
+
+	if (stolen_gems.size() > 0)
+		var bau_serial := guild.GetProp("bau_serial");
+		if (bau_serial)
+			var bau := SystemFindObjectBySerial(CInt(bau_serial));
+			if (bau && me.backpack)
+				foreach gem in stolen_gems
+					sleepms(2);
+					if (gem && gem.isA(POLCLASS_ITEM))
+						MoveItemToContainer(gem, bau);
+					endif
+				endforeach
+			endif
+		endif
+		stolen_gems := array{};
+	endif
+endfunction
+
+// ============================================================
+// LOOP PRINCIPAL
+// ============================================================
+
+program LadroMain()
+	EnableEvents(SYSEVENT_ENTEREDAREA, 6);
+	EnableEvents(SYSEVENT_DAMAGED);
+	EnableEvents(SYSEVENT_DOUBLECLICKED, 5);
+	EnableEvents(PICKPOCKET_EVENT);
+	EnableEvents(REVELADO_EVENT);
+	EnableEvents(LOCKPICK_EVENT);
+	EnableEvents(CERCA_EVENT);
+	EnableEvents(RESET_SETUP_EVENT);
+
+	Setup();
+	sleep(1);
+
+	while (me)
+
+		// Re-leitura do guild se nao resolvido no Setup (timing de spawn)
+		if (!guild)
+			var _gid := GetObjProperty(me, "guild");
+			if (_gid)
+				guild        := FindGuild(_gid);
+				guild_leader := guild ? guild.getProp("leader") : 0;
+				guild_laws   := guild ? guild.getProp("laws")   : array{};
+				if (!guild_laws) guild_laws := array{}; endif
+			endif
+		endif
+
+		// Controle de territorio (hunt_mode ignora limites)
+		var _hunt := GetObjProperty(me, "hunt_mode");
+		if (guild && !_hunt)
+			if (GetObjProperty(me, "tipo_faccao") == "staff")
+				HandleWalkRectBreach(me, wait_time);
+			elseif (!inGuildRect(guild, me, 4))
+				var _center := GetGuildCenter(guild, me.z);
+				if (_center)
+					me.stealthsteps := 9999;
+					RunTowardLocation(_center.x, _center.y);
+					wait_time := 0;
+				endif
+			endif
+		endif
+
+		// Manter oculto enquanto ocioso
+		me.stealthsteps := 9999;
+		if (!me.hidden) me.hidden := 1; endif
+
+		// Retornar ao posto
+		if (fix_location && !_hunt)
+			var dist_posto := CoordinateDistance(me.x, me.y, fix_location.x, fix_location.y);
+			if (dist_posto > 1)
+				WalkTowardLocation(fix_location.x, fix_location.y);
+				wait_time := 0;
+			else
+				me.facing := fix_location.facing;
+			endif
+		endif
+
+		// Vaguear: hunt_mode = cidade toda; normal = territorio
+		if (!fix_location || _hunt)
+			if (_hunt && !GetCooldown(me, "wander_cd"))
+				me.stealthsteps := 9999;
+				var _wx := me.x + RandomInt(21) - 10;
+				var _wy := me.y + RandomInt(21) - 10;
+				WalkTowardLocation(_wx, _wy);
+				SetCooldown(me, "wander_cd", RandomInt(6) + 3);
+				wait_time := 0;
+			elseif (!_hunt)
+				WanderNPC();
+			endif
+		endif
+
+		// Verificar leis para players proximos (ladroes tambem enforçam as leis da faccao)
+		if (!warning && !GetCooldown(me, "lawscan_cd"))
+			foreach _mob in ListMobilesNearLocationEx(me.x, me.y, me.z, 6,
+					LISTEX_FLAG_NORMAL, me.realm)
+				sleepms(2);
+				if (!_mob.npctemplate) CheckPlayerLaws(_mob); endif
+				if (warning) break; endif
+			endforeach
+			SetCooldown(me, "lawscan_cd", 3);
+		endif
+
+		// Detectar alvo e tentar furtar
+		if (!GetCooldown(me, "steal_cd"))
+			var _steal_targ := GetStealTarget();
+			if (_steal_targ)
+				var dist := Distance(me, _steal_targ);
+				if (dist <= 2)
+					if (TrySteal(_steal_targ))
+						SetCooldown(me, "steal_cd", 30);
+						// Depositar 10s apos o furto, se ainda oculto
+						sleep(10);
+						if (me.hidden && guild)
+							DepositToGuild();
+						endif
+					else
+						SetCooldown(me, "steal_cd", 15);
+					endif
+				else
+					// Aproximar oculto
+					me.stealthsteps := 9999;
+					WalkTowardLocation(_steal_targ.x, _steal_targ.y);
+					wait_time := 0;
+				endif
+			endif
+		endif
+
+		// Processar aviso de violacao de lei
+		if (guild && warning) WarnViolator(); endif
+
+		var ev := Wait_For_Event(wait_time);
+		wait_time := 3;
+
+		HandleLawEvent(ev);
+
+		case (ev.type)
+			SYSEVENT_DOUBLECLICKED:
+				ShowFaccaoCombatGump(ev);
+				break;
+
+			SYSEVENT_DAMAGED:
+				Flee(ev.source);
+				SetCooldown(me, "steal_cd", 30);
+				break;
+
+			SYSEVENT_ENTEREDAREA:
+				if (IsValidTarget(ev.source))
+					wait_time := 0;
+				endif
+				break;
+
+			FOLLOW_CMD:
+				following    := ev.targ;
+				fix_location := 0;
+				EraseObjProperty(me, "fix_loc");
+				break;
+
+			ATTACK_CMD:
+				// Ladroes nao atacam diretamente: ignorar
+				break;
+
+			default:
+				wait_time := 5;
+		endcase
+
+		sleepms(10);
+	endwhile
+endprogram

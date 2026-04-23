@@ -1,0 +1,570 @@
+use uo;
+use os;
+use npc;
+use util;
+use guilds;
+
+include ":attributes:attributes";
+include "include/sysEvent";
+include ":tn:cooldown";
+include ":faccao:faccao";
+include ":faccao:membership";
+include ":combat:Controller/DamageController_legacy";
+include ":faccao:npc_laws_enforce";
+
+// AssasinoCazador — assassino do Sinodo com pantera companheira.
+// Estados: 0=IDLE, 1=TRACKING, 3=COMBAT
+// A pantera ataca primeiro; apos PANTERA_DELAY segundos o assassino sai das sombras.
+// Se a pantera morrer, respawna apos 10 minutos.
+// Se o assassino morrer, a pantera detecta automaticamente e vira feral.
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+var me           := self();
+var guild        := 0;
+var following    := 0;
+var fighting     := 0;
+var fix_location := 0;
+var wait_time    := 10;
+
+var state        := 0;
+var track_target := 0;
+
+// Estado da pantera: 0=nao existe, 1=viva, 2=morta aguardando respawn
+var pantera_state  := 0;
+var pantera        := 0;
+
+const FOLLOW_CMD   := 0xA001;
+const ATTACK_CMD   := 0xA002;
+const GO_LOC_CMD   := 0xA008;
+const HELP_CMD     := 0x78458;
+
+const AMBUSH_RANGE  := 4;
+const DETECT_RANGE  := 8;
+const FLEE_HP_PCT   := 30;
+const PANTERA_DELAY := 3;
+const RESPAWN_TIME  := 600;  // 10 minutos
+
+// ============================================================
+// GERENCIAMENTO DA PANTERA
+// ============================================================
+
+function GetPanteraTemplate()
+    var tname := lower(cstr(me.npctemplate));
+    if (tname["fort"] != error) return ":epicai:panteracazadorfort"; endif
+    if (tname["med"]  != error) return ":epicai:panteracazadormed";  endif
+    return ":epicai:panteracazadorfr";
+endfunction
+
+function SpawnPantera()
+    var tpl := GetPanteraTemplate();
+    var p := CreateNPCFromTemplate(tpl, me.x, me.y, me.z, 0, me.realm);
+    if (!p || p == error) return 0; endif
+    p.name := "Pantera de " + me.name;
+    p.SetMaster(me);
+    SetObjProperty(p, "cazador_serial", me.serial);
+    SetObjProperty(me, "pantera_serial", p.serial);
+    SetObjProperty(p, "is_shadow_npc", 1);
+    if (guild) SetObjProperty(p, "guild", guild.guildid); endif
+    return p;
+endfunction
+
+function CheckPantera()
+    case (pantera_state)
+
+        0: // Nunca spawnada — criar agora
+            pantera := SpawnPantera();
+            if (pantera)
+                pantera_state := 1;
+            else
+                SetCooldown(me, "pantera_respawn", 30);  // retry em 30s
+            endif
+
+        1: // Deveria estar viva — sincronizar referencia
+            if (!pantera || !pantera.isA(POLCLASS_MOBILE))
+                var ps := CInt(GetObjProperty(me, "pantera_serial"));
+                if (ps > 0)
+                    pantera := SystemFindObjectBySerial(ps);
+                endif
+            endif
+            if (!pantera || !pantera.isA(POLCLASS_MOBILE) || pantera.dead)
+                // Pantera morreu: iniciar cooldown de respawn
+                pantera := 0;
+                pantera_state := 2;
+                EraseObjProperty(me, "pantera_serial");
+                SetCooldown(me, "pantera_respawn", RESPAWN_TIME);
+            endif
+
+        2: // Morta aguardando respawn
+            if (GetCooldown(me, "pantera_respawn") == 0)
+                pantera := SpawnPantera();
+                if (pantera)
+                    pantera_state := 1;
+                    PrintTextAbove(me, "*um rugido distante*");
+                else
+                    SetCooldown(me, "pantera_respawn", 30);
+                endif
+            endif
+
+    endcase
+endfunction
+
+function SendPanteraAttack(targ)
+    if (!pantera || !pantera.isA(POLCLASS_MOBILE) || pantera.dead) return; endif
+    var ev := struct;
+    ev.+type   := ATTACK_CMD;
+    ev.+source := me;
+    ev.+targ   := targ;
+    SendEvent(pantera, ev);
+endfunction
+
+// ============================================================
+// INICIALIZACAO
+// ============================================================
+
+function Setup()
+    var guildid := GetObjProperty(me, "guild");
+    if (guildid)
+        guild := FindGuild(guildid);
+        if (!guild)
+            ApplyRawDamage(me, 600);
+            return;
+        endif
+    else
+        sleep(5);
+        Setup();
+        return;
+    endif
+
+    guild_leader := guild.getProp("leader");
+    guild_laws   := guild.getProp("laws");
+    if (!guild_laws) guild_laws := array{}; endif
+
+    fix_location := GetObjProperty(me, "fix_loc");
+    if (fix_location == error) fix_location := 0; endif
+
+    if (!me.backpack)
+        var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
+        EquipItem(me, new_pack);
+    endif
+
+    me.cmdlevel := 2;
+    GrantPrivilege(me, "hiddenattack");
+    me.enable("hiddenattack");
+    GrantPrivilege(me, "runwhilestealth");
+    me.enable("runwhilestealth");
+    if (GetObjProperty(me, "shadow_mode"))
+        me.stealthsteps := 9999;
+        me.hidden := 1;
+    endif
+    // Recuperar pantera existente (restart de script)
+    var pet_serial := CInt(GetObjProperty(me, "pantera_serial"));
+    if (pet_serial > 0)
+        var old_pet := SystemFindObjectBySerial(pet_serial);
+        if (old_pet && old_pet.isA(POLCLASS_MOBILE) && !old_pet.dead)
+            pantera       := old_pet;
+            pantera_state := 1;
+            return;
+        else
+            EraseObjProperty(me, "pantera_serial");
+        endif
+    endif
+
+    // Nenhuma pantera salva: spawnar nova
+    pantera       := SpawnPantera();
+    pantera_state := pantera ? 1 : 0;
+endfunction
+
+// ============================================================
+// AUXILIARES
+// ============================================================
+
+function IsValidTarget(who)
+    if (who.hidden || who.concealed) return 0; endif
+    return IsValidCombatTarget(who);
+endfunction
+
+function GetHPPercent()
+    if (me.maxhits <= 0) return 100; endif
+    return CInt((me.hits * 100) / me.maxhits);
+endfunction
+
+function GetNearTarget()
+    foreach mob in ListMobilesNearLocationEx(me.x, me.y, me.z, DETECT_RANGE,
+            LISTEX_FLAG_NORMAL, me.realm)
+        sleepms(2);
+        if (IsValidTarget(mob)) return mob; endif
+    endforeach
+    return 0;
+endfunction
+
+function SneakAttack(targ)
+    SetObjProperty(me, "#GuaranteedHit", 1);
+    SetObjProperty(me, "#nextcritical", 1);
+    me.hidden   := 0;
+    me.frozen   := 0;
+    stand_fight := 1;
+    SetOpponent(targ);
+    SetWarMode(1);
+endfunction
+
+function Flee(threat)
+    fighting     := 0;
+    track_target := 0;
+    stand_fight  := 0;
+    SetOpponent(0);
+    SetWarMode(0);
+    me.stealthsteps := 9999;
+    me.hidden := 1;
+    if (pantera && pantera.isA(POLCLASS_MOBILE) && !pantera.dead)
+        pantera.stealthsteps := 9999;
+        pantera.hidden := 1;
+    endif
+    if (threat && threat.isA(POLCLASS_MOBILE))
+        RunAwayFrom(threat);
+        sleepms(300);
+        RunAwayFrom(threat);
+        sleepms(300);
+        RunAwayFrom(threat);
+    endif
+    sleep(8);
+    state := 0;
+endfunction
+
+function CombatTick()
+    CheckKnockedOut();
+    var _gone := (!fighting || !fighting.isA(POLCLASS_MOBILE) || fighting.dead || fighting.hidden || fighting.concealed);
+    if (_gone)
+        SetOpponent(0);
+        SetWarMode(0);
+        var _next := GetNearTarget();
+        if (_next)
+            fighting := _next;
+            SetOpponent(_next);
+            SetWarMode(1);
+            if (pantera && !pantera.dead) SendPanteraAttack(_next); endif
+            return;
+        endif
+        stand_fight := 0;
+        fighting := 0;
+        Flee(0);
+        return;
+    endif
+
+    if (GetHPPercent() < FLEE_HP_PCT && !stand_fight)
+        PrintTextAbove(me, "*recua nas sombras*");
+        if (guild) AddReport(guild, "{} recuou deixando a pantera".format(me.name)); endif
+        Flee(fighting);
+        return;
+    endif
+
+    var dist := Distance(me, fighting);
+    if (dist > 13 || !CheckLineOfSight(me, fighting))
+        var _next2 := GetNearTarget();
+        if (_next2)
+            fighting := _next2;
+            SetOpponent(_next2);
+            SetWarMode(1);
+            if (pantera && !pantera.dead) SendPanteraAttack(_next2); endif
+            return;
+        endif
+        stand_fight := 0;
+        fighting := 0;
+        Flee(0);
+        return;
+    endif
+
+    if (dist > 1)
+        RunTowardLocation(fighting.x, fighting.y);
+    endif
+
+    wait_time := 0;
+endfunction
+
+// ============================================================
+// LOOP PRINCIPAL
+// ============================================================
+
+program AssasinoCazadorMain()
+    EnableEvents(SYSEVENT_ENTEREDAREA, 6);
+    EnableEvents(SYSEVENT_ENGAGED);
+    EnableEvents(SYSEVENT_DAMAGED);
+    EnableEvents(SYSEVENT_DOUBLECLICKED, 5);
+    EnableEvents(SYSEVENT_SPEECH, 8);
+    EnableEvents(PICKPOCKET_EVENT);
+    EnableEvents(REVELADO_EVENT);
+    EnableEvents(LOCKPICK_EVENT);
+    EnableEvents(CERCA_EVENT);
+    EnableEvents(RESET_SETUP_EVENT);
+
+    Setup();
+    sleep(1);
+
+    while (me)
+
+        // Lazy reload de guild
+        if (!guild)
+            var _gid := GetObjProperty(me, "guild");
+            if (_gid)
+                guild        := FindGuild(_gid);
+                guild_leader := guild ? guild.getProp("leader") : 0;
+                guild_laws   := guild ? guild.getProp("laws")   : array{};
+                if (!guild_laws) guild_laws := array{}; endif
+            endif
+        endif
+
+        // Gerenciar pantera (respawn, sync de referencia)
+        if (!GetCooldown(me, "pantera_check_cd"))
+            CheckPantera();
+            SetCooldown(me, "pantera_check_cd", 5);
+        endif
+
+        // Controle de territorio
+        if (guild)
+            if (GetObjProperty(me, "tipo_faccao") == "staff")
+                HandleWalkRectBreach(me, wait_time);
+            elseif (!inGuildRect(guild, me, 4))
+                if (state != 3)
+                    var _center := GetGuildCenter(guild, me.z);
+                    if (_center)
+                        me.stealthsteps := 9999;
+                        RunTowardLocation(_center.x, _center.y);
+                        wait_time := 0;
+                    endif
+                    state        := 0;
+                    track_target := 0;
+                    fighting     := 0;
+                    SetOpponent(0);
+                    SetWarMode(0);
+                endif
+            endif
+        endif
+
+        var _shadow := GetObjProperty(me, "shadow_mode");
+        case (state)
+
+            0: // IDLE — patrulha; só fica oculto se shadow_mode estiver ativo
+                if (_shadow)
+                    me.stealthsteps := 9999;
+                    if (!me.hidden && !stand_fight) me.hidden := 1; endif
+                    // Pantera entra nas sombras junto
+                    if (pantera && pantera.isA(POLCLASS_MOBILE) && !pantera.dead && !pantera.hidden)
+                        pantera.stealthsteps := 9999;
+                        pantera.hidden := 1;
+                    endif
+                else
+                    // Quando visivel, pantera também fica visivel
+                    if (pantera && pantera.isA(POLCLASS_MOBILE) && !pantera.dead && pantera.hidden && !pantera.warmode)
+                        pantera.hidden := 0;
+                    endif
+                endif
+
+                if (following)
+                    if (following.isA(POLCLASS_MOBILE) && !following.dead)
+                        WalkTowardLocation(following.x, following.y);
+                        wait_time := 0;
+                    else
+                        following := 0;
+                    endif
+                endif
+
+                var _patrol := GetObjProperty(me, "patrolling");
+                if (!following && _patrol && _patrol.size() >= 2)
+                    var _pidx := GetObjProperty(me, "#patrol_idx");
+                    if (_pidx == error || !_pidx) _pidx := 1; endif
+                    var _ppt := _patrol[_pidx];
+                    if (CoordinateDistance(me.x, me.y, _ppt.x, _ppt.y) <= 1)
+                        _pidx := (_pidx % 2) + 1;
+                        SetObjProperty(me, "#patrol_idx", _pidx);
+                    else
+                        WalkTowardLocation(_ppt.x, _ppt.y);
+                        wait_time := 0;
+                    endif
+                elseif (!following && fix_location)
+                    var dist_posto := CoordinateDistance(me.x, me.y,
+                                        fix_location.x, fix_location.y);
+                    if (dist_posto > 1)
+                        WalkTowardLocation(fix_location.x, fix_location.y);
+                        wait_time := 0;
+                    else
+                        me.facing := fix_location.facing;
+                    endif
+                endif
+
+                // Verificar leis para players proximos
+                if (!warning && !GetCooldown(me, "lawscan_cd"))
+                    foreach _mob in ListMobilesNearLocationEx(me.x, me.y, me.z, 6,
+                            LISTEX_FLAG_NORMAL, me.realm)
+                        sleepms(2);
+                        if (!_mob.npctemplate) CheckPlayerLaws(_mob); endif
+                        if (warning) break; endif
+                    endforeach
+                    SetCooldown(me, "lawscan_cd", 3);
+                endif
+
+                if (!GetCooldown(me, "detect_cd"))
+                    var targ := GetNearTarget();
+                    if (targ)
+                        track_target := targ;
+                        state := 1;
+                        wait_time := 0;
+                    endif
+                    SetCooldown(me, "detect_cd", 2);
+                endif
+
+                CheckRevealTimeout();
+                break;
+
+            1: // TRACKING — seguir alvo
+                if (!IsValidTarget(track_target))
+                    track_target := 0;
+                    state := 0;
+                    break;
+                endif
+
+                if (_shadow)
+                    me.stealthsteps := 9999;
+                    if (!me.hidden) me.hidden := 1; endif
+                    if (pantera && pantera.isA(POLCLASS_MOBILE) && !pantera.dead && !pantera.hidden)
+                        pantera.stealthsteps := 9999;
+                        pantera.hidden := 1;
+                    endif
+                endif
+
+                var dist_track := Distance(me, track_target);
+
+                if (dist_track > DETECT_RANGE + 2)
+                    track_target := 0;
+                    state := 0;
+                elseif (dist_track <= AMBUSH_RANGE)
+                    // Soltar pantera e atacar imediatamente (sem sleep)
+                    if (pantera && pantera.isA(POLCLASS_MOBILE) && !pantera.dead)
+                        if (me.hidden) PrintTextAbove(me, "*assovia para a pantera*"); endif
+                        pantera.hidden       := 0;
+                        pantera.stealthsteps := 0;
+                        SendPanteraAttack(track_target);
+                    endif
+                    if (me.hidden) PrintTextAbove(me, "*sai das sombras*"); endif
+                    SneakAttack(track_target);
+                    fighting     := track_target;
+                    track_target := 0;
+                    state        := 3;
+                    if (guild) AddReport(guild, "{} e sua pantera emboscaram {}".format(me.name, fighting.name)); endif
+                    wait_time := 0;
+                else
+                    if (_shadow)
+                        WalkTowardLocation(track_target.x, track_target.y);
+                    else
+                        RunTowardLocation(track_target.x, track_target.y);
+                    endif
+                    wait_time := 0;
+                endif
+
+            3: // COMBAT
+                CombatTick();
+
+        endcase
+
+        // Processar aviso de violacao de lei
+        if (guild && warning) WarnViolator(); endif
+
+        var ev := Wait_For_Event(wait_time);
+        wait_time := 3;
+
+        HandleLawEvent(ev);
+
+        case (ev.type)
+            SYSEVENT_DOUBLECLICKED:
+                ShowFaccaoCombatGump(ev);
+                if (fighting) state := 3; endif
+                if (!fighting) state := 0; track_target := 0; endif
+                break;
+
+            SYSEVENT_ENGAGED:
+                if (!ev.source.dead && !ev.source.concealed)
+                    if (IsValidTarget(ev.source) && state != 3)
+                        fighting := ev.source;
+                        state    := 3;
+                        SetOpponent(fighting);
+                        SetWarMode(1);
+                        // Pantera tambem ataca se disponivel
+                        if (pantera && !pantera.dead)
+                            SendPanteraAttack(fighting);
+                        endif
+                    endif
+                endif
+                break;
+
+            SYSEVENT_DAMAGED:
+                if (ev.source && !ev.source.hidden && !ev.source.concealed && IsValidTarget(ev.source))
+                    if (state == 0 || state == 1)
+                        fighting := ev.source;
+                        state    := 3;
+                        me.hidden := 0;
+                        SetOpponent(fighting);
+                        SetWarMode(1);
+                        if (pantera && !pantera.dead)
+                            SendPanteraAttack(fighting);
+                        endif
+                    endif
+                endif
+                if (GetHPPercent() < FLEE_HP_PCT && state == 3)
+                    PrintTextAbove(me, "*recua nas sombras*");
+                    Flee(fighting);
+                endif
+                break;
+
+            SYSEVENT_ENTEREDAREA:
+                if (state == 0 && IsValidTarget(ev.source))
+                    track_target := ev.source;
+                    state := 1;
+                    wait_time := 0;
+                endif
+                if (me.hidden && ev.source.connected && !ev.source.dead)
+                    CheckAwarenessDetection(ev.source);
+                endif
+                break;
+
+            FOLLOW_CMD:
+                fighting     := 0;
+                track_target := 0;
+                state        := 0;
+                following    := ev.targ;
+                SetOpponent(0);
+                SetWarMode(0);
+                fix_location := 0;
+                EraseObjProperty(me, "fix_loc");
+                break;
+
+            ATTACK_CMD:
+                if (ev.targ && IsValidTarget(ev.targ))
+                    track_target := ev.targ;
+                    state := 1;
+                    wait_time := 0;
+                endif
+                break;
+
+            HELP_CMD:
+                if (!fighting && ev.targ && IsValidTarget(ev.targ))
+                    track_target := ev.targ;
+                    state := 1;
+                    wait_time := 0;
+                endif
+                break;
+
+            SYSEVENT_SPEECH:
+                if (HandleRevealSpeech(ev))
+                    if (pantera && pantera.isA(POLCLASS_MOBILE) && !pantera.dead)
+                        pantera.hidden       := 0;
+                        pantera.stealthsteps := 0;
+                    endif
+                endif
+                break;
+
+            default:
+                wait_time := 5;
+        endcase
+
+        sleepms(10);
+    endwhile
+endprogram
