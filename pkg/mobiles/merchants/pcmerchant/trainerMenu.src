@@ -100,7 +100,7 @@ function StatRedistribution(who, npc)
 		if (cur_str > MIN_STAT)
 			GFAddButton(gump, 180, 93, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 201);
 		endif
-		if (cur_str < MAX_STAT && pool >= 5)
+		if (cur_str < MAX_STAT && pool >= 1)
 			GFAddButton(gump, 200, 93, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 200);
 		endif
 
@@ -109,7 +109,7 @@ function StatRedistribution(who, npc)
 		if (cur_dex > MIN_STAT)
 			GFAddButton(gump, 180, 118, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 211);
 		endif
-		if (cur_dex < MAX_STAT && pool >= 5)
+		if (cur_dex < MAX_STAT && pool >= 1)
 			GFAddButton(gump, 200, 118, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 210);
 		endif
 
@@ -118,7 +118,7 @@ function StatRedistribution(who, npc)
 		if (cur_int > MIN_STAT)
 			GFAddButton(gump, 180, 143, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 221);
 		endif
-		if (cur_int < MAX_STAT && pool >= 5)
+		if (cur_int < MAX_STAT && pool >= 1)
 			GFAddButton(gump, 200, 143, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 220);
 		endif
 
@@ -139,34 +139,34 @@ function StatRedistribution(who, npc)
 
 		case (btn)
 			200:
-				if (cur_str < MAX_STAT && pool >= 5)
-					cur_str += 5;
-					pool -= 5;
+				if (cur_str < MAX_STAT && pool >= 1)
+					cur_str += 1;
+					pool -= 1;
 				endif
 			201:
 				if (cur_str > MIN_STAT)
-					cur_str -= 5;
-					pool += 5;
+					cur_str -= 1;
+					pool += 1;
 				endif
 			210:
-				if (cur_dex < MAX_STAT && pool >= 5)
-					cur_dex += 5;
-					pool -= 5;
+				if (cur_dex < MAX_STAT && pool >= 1)
+					cur_dex += 1;
+					pool -= 1;
 				endif
 			211:
 				if (cur_dex > MIN_STAT)
-					cur_dex -= 5;
-					pool += 5;
+					cur_dex -= 1;
+					pool += 1;
 				endif
 			220:
-				if (cur_int < MAX_STAT && pool >= 5)
-					cur_int += 5;
-					pool -= 5;
+				if (cur_int < MAX_STAT && pool >= 1)
+					cur_int += 1;
+					pool -= 1;
 				endif
 			221:
 				if (cur_int > MIN_STAT)
-					cur_int -= 5;
-					pool += 5;
+					cur_int -= 1;
+					pool += 1;
 				endif
 			999:
 				if (pool == 0)
