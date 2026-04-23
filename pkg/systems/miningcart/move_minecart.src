@@ -23,7 +23,7 @@ program move_minecart(params)
     var lineId := CInt(GetObjProperty(startStop, "LineId"));
     if (!lineId) lineId := 1; endif
     
-    var path := ExecuteBFS(struct{ "x" := cart.x, "y" := cart.y }, struct{ "x" := targetStop.x, "y" := targetStop.y }, cart.realm, lineId);
+    var path := ExecuteBFS(struct{ "x" := cart.x, "y" := cart.y, "realm" := cart.realm }, struct{ "x" := targetStop.x, "y" := targetStop.y, "realm" := targetStop.realm }, cart.realm, lineId);
     
     if (path.size() == 0)
         SendSysMessage(who, "Nao consegui tracar um caminho pelos trilhos.", 3, 0x22);
@@ -41,52 +41,44 @@ program move_minecart(params)
         endif
         
         var next_pos := path[i];
-        if (i > 1)
-            var prev_pos := path[i-1];
+        var is_teleport := next_pos.teleport;
+        
+        if (!is_teleport)
+            var prev_pos := cart;
+            if (i > 1 && !path[i-1].teleport)
+                prev_pos := path[i-1];
+            endif
+            
             if ((next_pos.x - prev_pos.x) != 0)
                 cart.graphic := EAST_ID;
-            else
+            elseif ((next_pos.y - prev_pos.y) != 0)
                 cart.graphic := SOUTH_ID;
             endif
         endif
         
         var was_movable := cart.movable;
         cart.movable := 1;
-        MoveObjectToLocation(cart, next_pos.x, next_pos.y, next_pos.z + 1, cart.realm, MOVEOBJECT_FORCELOCATION);
-        cart.movable := was_movable;
         
-        if (RandomFloat(1.0) < 0.25)
-            PlaySoundEffect(cart, 0x022B); // Som de movimento mecanico
-            PlayStationaryEffect(cart.x, cart.y, cart.z, 0x3728, 10, 10, 0, cart.realm);
-        endif
-        
-        sleep(1); // 1.0s = Aprox C# 1.3s timer
-        
-        // Checagem de Teleporter
-        var telepad := FindTelepadAround(cart.x, cart.y, cart.realm);
-        if (telepad)
-            var destX := CInt(GetObjProperty(telepad, "DestX"));
-            var destY := CInt(GetObjProperty(telepad, "DestY"));
-            var destZ := CInt(GetObjProperty(telepad, "DestZ"));
-            var destRealm := GetObjProperty(telepad, "DestRealm");
-            if (!destRealm) destRealm := cart.realm; endif
-            
-            cart.movable := 1;
-            MoveObjectToLocation(cart, destX, destY, destZ, destRealm, MOVEOBJECT_FORCELOCATION);
+        if (is_teleport)
+            MoveObjectToLocation(cart, next_pos.x, next_pos.y, next_pos.z + 1, next_pos.realm, MOVEOBJECT_FORCELOCATION);
             cart.movable := was_movable;
-            PlayStationaryEffect(cart.x, cart.y, cart.z, 0x3728, 10, 10, 0, cart.realm);
-            PlaySoundEffect(cart, 0x1FE);
-            
             sleep(5); // TeleportCooldownTicks
+        else
+            MoveObjectToLocation(cart, next_pos.x, next_pos.y, next_pos.z + 1, next_pos.realm, MOVEOBJECT_FORCELOCATION);
+            cart.movable := was_movable;
             
-            // Refaz BFS pós teleporte
-            path := ExecuteBFS(struct{ "x" := cart.x, "y" := cart.y }, struct{ "x" := targetStop.x, "y" := targetStop.y }, cart.realm, lineId);
-            i := 0; // Vai somar no final do laço para virar 1
+            if (RandomFloat(1.0) < 0.25)
+                PlaySoundEffect(cart, 0x022B); // Som de movimento mecanico
+                PlayStationaryEffect(cart.x, cart.y, cart.z, 0x3728, 10, 10, 0, cart.realm);
+            endif
+            
+            sleep(1); // 1.0s = Aprox C# 1.3s timer
         endif
+        
         i += 1;
     endwhile
     
-    if (Distance(cart, targetStop) <= 1)
+    if (cart.realm == targetStop.realm && Distance(cart, targetStop) <= 1)
         PrintTextAbove(cart, "Cheguei a estacao!");
         PlaySoundEffect(cart, 0x03B7); // Som de Chegada
     endif
@@ -94,9 +86,10 @@ program move_minecart(params)
 endprogram
 
 function ExecuteBFS(start_pos, goal_pos, realm, lineId)
-    // Implementação básica de BFS para encontrar caminhos em malhas
-    var queue := array{start_pos};
-    var visited := dictionary{ CStr(start_pos.x)+"_"+CStr(start_pos.y) -> 1 };
+    // Implementação de BFS para encontrar caminhos em malhas, com suporte a telepads inter-mapas
+    var start_node := struct{ "x" := start_pos.x, "y" := start_pos.y, "realm" := realm };
+    var queue := array{start_node};
+    var visited := dictionary{ CStr(start_pos.x)+"_"+CStr(start_pos.y)+"_"+realm -> 1 };
     var cameFrom := dictionary{};
     var found := 0;
     var goal_node;
@@ -111,27 +104,81 @@ function ExecuteBFS(start_pos, goal_pos, realm, lineId)
     var iterations := 0;
     var path := array{};
     
-    while (queue.size() > 0 && iterations < 1000)
+    while (queue.size() > 0 && iterations < 10000)
         var current := queue[1];
         queue.erase(1);
         iterations += 1;
         
-        if (current.x == goal_pos.x && current.y == goal_pos.y)
+        if (current.x == goal_pos.x && current.y == goal_pos.y && current.realm == goal_pos.realm)
             goal_node := current;
             found := 1;
             break;
         endif
         
+        var telepads := FindTelepadsAround(current.x, current.y, current.realm);
+        foreach telepad in telepads
+            var dest := GetObjProperty(telepad, "Destination");
+            var destX, destY, destRealm;
+            
+            if (dest != error && dest.x != error)
+                destX := CInt(dest.x);
+                destY := CInt(dest.y);
+                destRealm := dest.realm;
+            else
+                var dX := GetObjProperty(telepad, "DestX");
+                if (dX == error) dX := GetObjProperty(telepad, "destx"); endif
+                destX := CInt(dX);
+                
+                var dY := GetObjProperty(telepad, "DestY");
+                if (dY == error) dY := GetObjProperty(telepad, "desty"); endif
+                destY := CInt(dY);
+                
+                destRealm := GetObjProperty(telepad, "DestRealm");
+                if (destRealm == error) destRealm := GetObjProperty(telepad, "destrealm"); endif
+            endif
+            
+            if (!destRealm) destRealm := current.realm; endif
+            
+            var valid_destX := destX;
+            var valid_destY := destY;
+            var trackZ := IsTrackAt(destX, destY, destRealm, lineId);
+            
+            if (trackZ == error)
+                for sx := -2 to 2
+                    for sy := -2 to 2
+                        if (sx == 0 && sy == 0) continue; endif
+                        trackZ := IsTrackAt(destX + sx, destY + sy, destRealm, lineId);
+                        if (trackZ != error)
+                            valid_destX := destX + sx;
+                            valid_destY := destY + sy;
+                            break;
+                        endif
+                    endfor
+                    if (trackZ != error) break; endif
+                endfor
+            endif
+            
+            if (trackZ != error)
+                var tKey := CStr(valid_destX)+"_"+CStr(valid_destY)+"_"+destRealm;
+                if (!visited.exists(tKey))
+                    visited.insert(tKey, 1);
+                    var next_node := struct{ "x" := valid_destX, "y" := valid_destY, "z" := trackZ, "realm" := destRealm, "teleport" := 1 };
+                    cameFrom.insert(tKey, current);
+                    queue.append(next_node);
+                endif
+            endif
+        endforeach
+        
         foreach d in dirs
             var nx := current.x + d.x;
             var ny := current.y + d.y;
-            var key := CStr(nx)+"_"+CStr(ny);
+            var key := CStr(nx)+"_"+CStr(ny)+"_"+current.realm;
             
             if (!visited.exists(key))
-                var trackZ := IsTrackAt(nx, ny, realm, lineId);
+                var trackZ := IsTrackAt(nx, ny, current.realm, lineId);
                 if (trackZ != error)
                     visited.insert(key, 1);
-                    var next_node := struct{ "x" := nx, "y" := ny, "z" := trackZ };
+                    var next_node := struct{ "x" := nx, "y" := ny, "z" := trackZ, "realm" := current.realm };
                     cameFrom.insert(key, current);
                     queue.append(next_node);
                 endif
@@ -142,9 +189,9 @@ function ExecuteBFS(start_pos, goal_pos, realm, lineId)
     
     if (found)
         var curr := goal_node;
-        while (curr.x != start_pos.x || curr.y != start_pos.y)
+        while (curr.x != start_pos.x || curr.y != start_pos.y || curr.realm != start_pos.realm)
             path.insert(1, curr);
-            curr := cameFrom[CStr(curr.x)+"_"+CStr(curr.y)];
+            curr := cameFrom[CStr(curr.x)+"_"+CStr(curr.y)+"_"+curr.realm];
         endwhile
     endif
 

@@ -79,9 +79,11 @@ function FindTargetStop(stop)
             var sTerm := CInt(GetObjProperty(s, "Terminal"));
             
             if (sLine == lineId && sTerm == targetTerminal)
-                var d := 9999999; // Alta penalidade para outros mapas
+                var d := 9999999;
                 if (s.realm == stop.realm)
                     d := Distance(stop, s);
+                else
+                    d := 9999998; // Penalidade, mas menor que a verificacao para achar a estação em outros mapas
                 endif
                 if (d < best_dist)
                     best_dist := d;
@@ -109,14 +111,23 @@ function IsTrackAt(x, y, realm, lineId)
     return error;
 endfunction
 
-function FindTelepadAround(x, y, realm)
-    foreach item in ListItemsNearLocation(x, y, LIST_IGNORE_Z, 1, realm)
+function FindTelepadsAround(x, y, realm)
+    var pads := array{};
+    foreach item in ListItemsNearLocation(x, y, LIST_IGNORE_Z, 2, realm)
         if (item.IsA(POLCLASS_ITEM))
-            // Verifica se o item possui a CProp de destino típica de teleporters
-            if (GetObjProperty(item, "DestX") != error)
-                return item;
+            var dest := GetObjProperty(item, "Destination");
+            if (dest != error && dest.x != error)
+                pads.append(item);
+                continue;
+            endif
+            
+            var dX := GetObjProperty(item, "DestX");
+            if (dX == error) dX := GetObjProperty(item, "destx"); endif
+            
+            if (dX != error)
+                pads.append(item);
             endif
         endif
     endforeach
-    return 0;
+    return pads;
 endfunction
