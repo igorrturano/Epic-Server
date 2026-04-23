@@ -93,6 +93,21 @@ program cureScript(params)
 		SetName(who, namechar);
 	endif
 
+	// Re-equip gear stripped at transformation. POL keeps #EquippedOn set when
+	// MoveItemToContainer unequips an item, so anything currently in the backpack
+	// tagged with this mobile's serial is pre-shift kit. Skip if dead — at that
+	// point items already live on the corpse and wakeup.inc handles re-equip.
+	if (!who.dead && who.backpack)
+		var serialC := who.serial;
+		foreach item in EnumerateItemsInContainer(who.backpack)
+			if (item.container == who.backpack && CInt(GetObjProperty(item, "#EquippedOn")) == serialC)
+				if (!EquipItem(who, item))
+					EraseObjProperty(item, "#EquippedOn");
+				endif
+			endif
+		endforeach
+	endif
+
 	// Call the new function to handle werewolf buffs removal
 	removeWerewolfBuffs(who);
 
