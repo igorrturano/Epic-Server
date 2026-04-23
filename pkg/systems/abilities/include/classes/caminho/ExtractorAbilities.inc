@@ -20,15 +20,6 @@ class GemMiner(CombatAbility)
 	endfunction
 endclass
 
-// Clean Cut - ABILITY_ID::CLEAN_CUT (3562)
-// Passive: 2x wood per tree.
-// Effect handled in lumberjack.src.
-class CleanCut(CombatAbility)
-	function CleanCut(this)
-		Super(ABILITY_ID::CLEAN_CUT);
-	endfunction
-endclass
-
 // Mine Rarities - ABILITY_ID::MINE_RARITIES (3563)
 // Passive: Chance for rare ores in any mine.
 // Effect handled in oremining/mining.src.
