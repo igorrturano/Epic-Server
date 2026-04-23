@@ -1008,10 +1008,28 @@ function DeveAparecerReceita(
 	var isValorPericiaSuficiente := TemValorPericiaNecessaria(quem, objtype, receitaClassificada.classe, nomePericia, nomeProfissao );
 	
 	if(isDuplaOrigem)
-		isOrigemValida := PegaNomeReceitaClassificada(receitaClassificada) in receitasAprendidas || povo == itemOrigem;
+		var nomeReceita1 := PegaNomeReceitaClassificada(receitaClassificada);
+		isOrigemValida := nomeReceita1 in receitasAprendidas || povo == itemOrigem;
+		if (!isOrigemValida && povo != itemOrigem)
+			foreach aprendida1 in receitasAprendidas
+				if (StrReplace(Lower(aprendida1), " ", "") + "-1" == nomeReceita1)
+					isOrigemValida := true;
+					break;
+				endif
+			endforeach
+		endif
 	else
 		if(itemOrigem == "Recipe")
-			isOrigemValida := PegaNomeReceitaClassificada(receitaClassificada) in receitasAprendidas;
+			var nomeReceita2 := PegaNomeReceitaClassificada(receitaClassificada);
+			isOrigemValida := nomeReceita2 in receitasAprendidas;
+			if (!isOrigemValida)
+				foreach aprendida2 in receitasAprendidas
+					if (StrReplace(Lower(aprendida2), " ", "") + "-1" == nomeReceita2)
+						isOrigemValida := true;
+						break;
+					endif
+				endforeach
+			endif
 		elseif(itemOrigem == "itemComum")
 			isOrigemValida := true;
 		else
