@@ -23,26 +23,21 @@ set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
 
 var me := self();
 var custombehaviors, myhabilities;
-var following := 0, fighting := 0, warning := 0, patrolling := 0, standing := 0;
-var warn_type, warn_rect, warn_tries, warn_opt := 0;
+var following := 0, fighting := 0, patrolling := 0, standing := 0;
+var state := 0;
 var wait_time := 10;
 var combatevents := array{};
-var guild, guild_leader, guild_laws, fix_location, guild_prison, guild_prisonl;
-var tools := array{ 0xec4, 0x13e3, 0xFB4, 0xFB5, 0x13f6, 0xe85, 0xf43, 0xec2, 0x1F020 };
+var guild, fix_location, guild_prison, guild_prisonl;
 var npccfgfile := ReadConfigFile(":*:npcdesc");
 
-// Custom events
-const REVELADO_EVENT := 0x78460;
-const PICKPOCKET_EVENT := 0x78459;
-const LOCKPICK_EVENT := 0x78455;
-const CERCA_EVENT := 0x78456;
-const RESET_SETUP_EVENT := 0x78457;
-const HELP_CMD := 0x78458;
-const FOLLOW_CMD := 0xA001;
-const ATTACK_CMD := 0xA002;
+const HELP_CMD       := 0x78458;
+const FOLLOW_CMD     := 0xA001;
+const ATTACK_CMD     := 0xA002;
 const NEW_MASTER_CMD := 0xA003;
-const GO_LOC_CMD := 0xA008;
-const EVID_DISARM := 0x00000013;
+const GO_LOC_CMD     := 0xA008;
+const EVID_DISARM    := 0x00000013;
+
+include ":faccao:include/npc_laws_enforce";
 
 const PROTECT_SCAN_RANGE := 12;
 
@@ -75,184 +70,7 @@ function DisableGuardMainEvents()
 	DisableEvents(SYSEVENT_ENTEREDAREA);
 endfunction
 
-function HasEnemyNear(what)
-	var mobile_list := ListMobilesNearLocationEx(what.x, what.y, LIST_IGNORE_Z, 8,
-											  LISTEX_FLAG_NORMAL | LISTEX_FLAG_NPC_ONLY, what.realm);
-	var enemy_near := 0;
-	foreach mob in mobile_list
-		if (mob.alignment != me.alignment && mob != what && mob != me)
-			enemy_near := 1;
-			break;
-		endif
-		sleepms(2);
-	endforeach
 
-	if (enemy_near)
-		return 1;
-	endif
-endfunction
-
-function CheckIfHavePlayerGuild(player_array)
-	foreach player in player_array
-		if (guild.guildid == player.guildid)
-			var privs := guild.GetProp(cstr(player.serial));
-			if (player.serial == guild_leader || privs.above_guards)
-				return 1;
-			endif
-		endif
-		sleepms(2);
-	endforeach
-endfunction
-
-function CheckPlayer(who)
-
-	if (who.npctemplate && !who.master)
-		if (who.alignment && who.alignment != me.alignment)
-			// if (InGuildRect(guild, who))
-			//    warning   := 0;
-			//    warn_type := 0;
-			FightADV(who);
-		// endif
-		endif
-
-		return;
-	endif
-
-	var privs := guild.GetProp(cstr(who.serial));
-	var is_member := guild.guildid == who.guildid;
-	var user_subguilds := who.guild.getProp("subguilds");
-	if (!user_subguilds)
-		user_subguilds := array{};
-	endif
-	var is_leader := (who.serial == guild_leader || guild.guildid in user_subguilds);
-	/*
-   if (is_leader || privs.above_guards)
-      SetCooldown(me, "recentcheck_{}".format(who.serial), 10);
-      return 0;
-   elseif (GetCooldown(me, "recentcheck_{}".format(who.serial)))
-      SetCooldown(me, "recentcheck_{}".format(who.serial), 10);
-      return 0;
-*/
-	/*
-   elseif (!InGuildRect(guild, who))
-      SetCooldown(me, "recentcheck_{}".format(who.serial), 2);
-      return 0;
-
-   elseif (is_member)
-      if (privs.abovelaws || privs.above_guards)
-         SetCooldown(me, "recentcheck_{}".format(who.serial), 10);
-         return 0;
-      endif
-   endif
-*/
-	var hostiles := ListHostiles(who, 8);
-	foreach mob in hostiles
-		if (GetObjProperty(mob, "guild") == guild.guildid || mob.guildid == guild.guildid)
-			return 1;
-		endif
-		sleepms(2);
-	endforeach
-
-	foreach law in guild_laws
-		case (law.type)
-			"nosneak":
-				if (is_member && law.opt)
-					break;
-				endif
-
-				if (GetProcess(CInt(GetObjProperty(who, "#HidePid"))))
-					warning := who;
-					warn_type := 6;
-				endif
-
-				break;
-			"userban":
-				// PrintTextAbove(me, "O userban ta batendo aqui " + law.opt + " vamo ver");
-				if (who.name == law.opt)
-					warning := who;
-					warn_type := 2;
-				endif
-				break;
-
-			"nofight":
-				if (is_member && law.opt)
-					break;
-				endif
-				if (who.warmode == 1)
-					if (!HasEnemyNear(who))
-						warning := who;
-						warn_type := 1;
-					endif
-				endif
-				break;
-			"nohood":
-				if (is_member && law.opt)
-					break;
-				endif
-				if (who.name == "Desconhecido")
-					warning := who;
-					warn_type := 5;
-				endif
-				break;
-			"noweapon":
-				if (is_member && law.opt)
-					break;
-				endif
-				if (!(who.weapon.objtype in tools))
-					if (!HasEnemyNear(who))
-						warning := who;
-						warn_type := 3;
-					endif
-				endif
-				break;
-			"noitem":
-				if (CheckItem(who, law.opt))
-					warning := who;
-					warn_type := 4;
-					warn_opt := law.opt;
-				endif
-				break;
-			"norace":
-				var chardata := GetObjProperty(who, "chardata");
-				if (chardata.povo == law.opt && who.guildid != guild.guildid)
-					warning := who;
-					warn_type := 2;
-				endif
-				break;
-			"nooutsider":
-				if (who.guildid != guild.guildid)
-					warning := who;
-					warn_type := 2;
-				endif
-				break;
-			"nooutsideron":
-				var rect := law.opt.rect;
-				if (who.x >= cint(rect[1]) && who.x <= cint(rect[3]) && who.y >= cint(rect[2]) &&
-		who.y <= cint(rect[4]) && who.z >= cint(rect[5]) && who.z < cint(rect[5]) + 15)
-					warning := who;
-					warn_rect := law.opt.rect;
-					warn_type := 2;
-				endif
-			"noguild":
-				if (who.guildid == law.opt)
-					warning := who;
-					warn_type := 2;
-				endif
-		endcase
-		sleepms(2);
-	endforeach
-	SetCooldown(me, "recentcheck_{}".format(who.serial), 2);
-endfunction
-
-function Checkitem(what, itemobj)
-	var itemlist := ListEquippedItems(what);
-	foreach item in itemlist
-		if (item.objtype == itemobj.objtype)
-			return itemobj;
-		endif
-		sleepms(2);
-	endforeach
-endfunction
 
 // Escaneia mobiles proximos e engaja qualquer ameaca a um membro/lider da faccao.
 // Nao intervem em conflitos entre membros do proprio cla.
@@ -267,7 +85,7 @@ function CheckGuildMemberThreats()
 		sleepms(2);
 		if (player == me) continue; endif
 
-		var _is_member := (player.guildid == guild.guildid);
+		var _is_member := IsMemberOfFaccao(guild, player);
 		var _is_leader := (player.serial == guild_leader);
 
 		if (!_is_member && !_is_leader) continue; endif
@@ -280,9 +98,8 @@ function CheckGuildMemberThreats()
 
 		// Fallback: ListHostiles no membro
 		if (!threat)
-			var _hostiles := ListHostiles(player, 10);
-			foreach _h in _hostiles
-				if (_h && _h.isA(POLCLASS_MOBILE) && _h.guildid != guild.guildid && _h != me)
+			foreach _h in ListHostiles(player, 10)
+				if (_h && _h.isA(POLCLASS_MOBILE) && !IsMemberOfFaccao(guild, _h) && _h != me)
 					threat := _h;
 					break;
 				endif
@@ -291,9 +108,8 @@ function CheckGuildMemberThreats()
 		endif
 
 		if (!threat || !threat.isA(POLCLASS_MOBILE)) continue; endif
-		if (threat.guildid == guild.guildid) continue; endif
+		if (IsMemberOfFaccao(guild, threat)) continue; endif
 		if (threat == me) continue; endif
-
 		if (!CheckLineOfSight(me, threat)) continue; endif
 
 		if (!GetCooldown(me, "protect_said"))
@@ -313,12 +129,12 @@ function CheckGuildMemberThreats()
 	foreach mob in nearby_npcs
 		sleepms(2);
 		if (mob == me) continue; endif
-		if (mob.guildid == guild.guildid) continue; endif
+		if (IsMemberOfFaccao(guild, mob)) continue; endif
 
 		var _opp := mob.opponent;
 		if (!_opp || !_opp.isA(POLCLASS_MOBILE)) continue; endif
 
-		var _victim_is_member := (_opp.guildid == guild.guildid);
+		var _victim_is_member := IsMemberOfFaccao(guild, _opp);
 		var _victim_is_leader := (_opp.serial == guild_leader);
 
 		if (!_victim_is_member && !_victim_is_leader) continue; endif
@@ -334,6 +150,19 @@ function CheckGuildMemberThreats()
 		return;
 	endforeach
 
+	// ── Abordagem 3: NPC hostil por alinhamento (goblins, monstros inimigos) ──
+	// Restaura comportamento original de CheckPlayer: qualquer NPC com alinhamento
+	// diferente do guarda e engajado diretamente, sem precisar ja estar atacando um membro.
+	foreach mob in nearby_npcs
+		sleepms(2);
+		if (mob == me) continue; endif
+		if (!mob.alignment || mob.alignment == me.alignment) continue; endif
+		if (IsMemberOfFaccao(guild, mob)) continue; endif
+		if (!CheckLineOfSight(me, mob)) continue; endif
+		FightADV(mob);
+		wait_time := 0;
+		return;
+	endforeach
 endfunction
 
 program NPCMonitor()
@@ -349,12 +178,15 @@ program NPCMonitor()
 			// DoObjectiveGuard();
 		endif
 
-		// Nao permite que os guardas da faccao saiam alem de 4 tiles do territorio
+		// Controle de território: staff usa rect hardcoded, player usa rect da guild.
 		if (GetObjProperty(me, "guild"))
-			if (!inGuildRect(guild, me, 4))
-				// Descobre se o alvo atual (quem estamos seguindo/alertando/combatendo)
-				// tambem saiu do territorio. Se o alvo ainda esta dentro, o guard
-				// apenas ultrapassou a borda ao tentar alcanca-lo — nao cancela.
+			if (GetObjProperty(me, "tipo_faccao") == "staff")
+				if (HandleWalkRectBreach(me, wait_time))
+					if (following) following := 0; PrintTextAbove(me, "Nao posso ir alem do meu territorio!"); endif
+					if (fighting) fighting := 0; SetOpponent(0); SetWarMode(0); endif
+					warning := 0;
+				endif
+			elseif (!inGuildRect(guild, me, 4))
 				var _target := 0;
 				if (fighting) _target := fighting;
 				elseif (warning) _target := warning;
@@ -362,8 +194,11 @@ program NPCMonitor()
 				endif
 				var _target_inside := _target ? inGuildRect(guild, _target, 0) : 0;
 
-				// Cancela so se o alvo tambem estiver fora (ou se nao houver alvo)
-				if (!_target_inside && (fighting || following || warning || standing || patrolling))
+				// Cancela seguir/patrulhar se alvo saiu do territorio.
+				// Mas fighting só e cancelado se o ALVO for player seguindo para fora
+				// — NPCs/monstros invasores devem ser combatidos mesmo fora do rect.
+				var _fighting_is_npc := (fighting && fighting.isA(POLCLASS_NPC));
+				if (!_target_inside && !_fighting_is_npc && (fighting || following || warning || standing || patrolling))
 					fighting := 0;
 					SetOpponent(0);
 					SetWarMode(0);
@@ -384,9 +219,6 @@ program NPCMonitor()
 					endif
 				endif
 
-				// Sem posto e sem patrulha: caminha a cada iteracao do loop de volta
-				// para quem deu a ordem (se estiver no territorio) ou para o centro do rect.
-				// Roda independente de haver ou nao estados ativos (apos cancelamento acima).
 				if (!fix_location && !patrolling)
 					var _leader := SystemFindObjectBySerial(GetObjProperty(me, "contract_by"));
 					var _dest := 0;
@@ -403,6 +235,8 @@ program NPCMonitor()
 			endif
 		endif
 
+
+
 		if (warning)
 			wait_time := 0;
 		endif
@@ -412,8 +246,9 @@ program NPCMonitor()
 		endif
 
 		FightADV();
+		if (fighting) CheckKnockedOut(); endif
 		PetFollow();
-		WarnPlayer();
+		WarnViolator();
 		Patrol();
 
 		// Protecao de membros da faccao: roda sempre, inclusive durante patrulha
@@ -422,19 +257,26 @@ program NPCMonitor()
 			SetCooldown(me, "check_protect", 2);
 		endif
 
+		// Varredura de portas trancadas (lei casafechada)
+		if (!fighting && !GetCooldown(me, "casafechada_cd"))
+			ScanLockedDoors();
+			SetCooldown(me, "casafechada_cd", 12);
+		endif
+
 		if (!following && !fighting && !warning)
 			if (CInt(AP_GetSkill(me, AWARENESS)) > 0)
 				procura_em_volta(me);
 			endif
 			var listmobiles := ListMobilesInLineOfSight(me, 8);
-			if (!CheckIfHavePlayerGuild(listmobiles))
+			if (!CheckIfHavePlayerGuild_Law(listmobiles))
 				foreach mob in listmobiles
 					sleepms(2);
 					if (mob == me || GetObjProperty(mob, "guild"))
 						continue;
 					endif
 
-					if (CheckPlayer(mob))
+					CheckPlayerLaws(mob);
+					if (warning)
 						wait_time := 0;
 						break;
 					endif
@@ -451,7 +293,19 @@ program NPCMonitor()
 			if (!GetCooldown(me, "try_reset"))
 				if (!HasPlayerNear(me))
 					if (SendToStartPosition())
-						wait_time := 2000;
+						// Sem fix_location nem patrulha: vagueia pelo territorio
+						if (GetObjProperty(me, "guild") && !GetCooldown(me, "wander_cd"))
+							var _wp := GetRandomWanderPoint();
+							if (_wp)
+								WalkTowardLocation(_wp.x, _wp.y);
+								SetCooldown(me, "wander_cd", RandomInt(8) + 4);
+								wait_time := 0;
+							else
+								wait_time := 5;
+							endif
+						else
+							wait_time := 5;
+						endif
 					endif
 				else
 					SetCooldown(me, "try_reset", 200);
@@ -460,7 +314,6 @@ program NPCMonitor()
 			else
 				wait_time := 3;
 			endif
-			warn_tries := 0;
 		endif
 
 		var ev := Wait_For_Event(wait_time);
@@ -486,43 +339,10 @@ program NPCMonitor()
 					FightADV(ev.targ);
 				endif
 			PICKPOCKET_EVENT:
-				if (!CheckIfHavePlayerGuild(ListMobilesInLineOfSight(me, 8)))
-					AddReport(guild, "{} percebeu {} tentando cometer um furto".format(me.name, ev.source.name));
-					PrintTextAbove(me, "Ei! O que pensa que esta fazendo?");
-					FightADV(ev.source);
-					disableWarn();
-				endif
-				wait_time := 0;
 			REVELADO_EVENT:
-				if (!CheckIfHavePlayerGuild(ListMobilesInLineOfSight(me, 8)))
-					AddReport(guild, "{} encontrou {} tentando se esconder".format(me.name, ev.source.name));
-					PrintTextAbove(me, "Ei! O que pensa que esta fazendo?");
-					FightADV(ev.source);
-					disableWarn();
-				endif
-				wait_time := 0;
 			LOCKPICK_EVENT:
-				if (!CheckIfHavePlayerGuild(ListMobilesInLineOfSight(me, 8)))
-					if (FindInArray(guild_laws, struct{ "type" := "nolockpick" })) // && InGuildRect(guild, ev.source))
-						AddReport(guild, "{} alertou {} sobre arrombar fechaduras".format(me.name, ev.source.name));
-						PrintTextAbove(me, "Ei! O que pensa que esta fazendo?");
-						FightADV(ev.source);
-						disableWarn();
-					endif
-				endif
-				wait_time := 0;
 			CERCA_EVENT:
-				if (!CheckIfHavePlayerGuild(ListMobilesInLineOfSight(me, 8)))
-					if (FindInArray(guild_laws, struct{ "type" := "nocerca" }))
-						AddReport(guild, "{} alertou {} sobre pular cercas".format(me.name, ev.source.name));
-						PrintTextAbove(me, "Ei! O que pensa que esta fazendo?");
-						var storeloc := struct{ "x" := ev.source.x, "z" := ev.source.z, "y" := ev.source.y };
-						PetGoTo(ev.last_loc, 2);
-						MoveObjectToLocation(me, storeloc.x, storeloc.y, storeloc.z, me.realm, MOVEOBJECT_FORCELOCATION);
-						FightADV(ev.source);
-						disableWarn();
-					endif
-				endif
+				HandleLawEvent(ev);
 				wait_time := 0;
 				break;
 			EVID_DISARM:
@@ -540,9 +360,9 @@ program NPCMonitor()
 					CheckGuildMemberThreats();
 				endif
 
-				if (!CheckIfHavePlayerGuild(ListMobilesInLineOfSight(me, 8)))
+				if (!fighting && !CheckIfHavePlayerGuild_Law(ListMobilesInLineOfSight(me, 8)))
 					if (CheckLineOfSight(me, ev.source))
-						CheckPlayer(ev.source);
+						CheckPlayerLaws(ev.source);
 						wait_time := 0;
 					endif
 				endif
@@ -580,9 +400,8 @@ program NPCMonitor()
 			FOLLOW_CMD:      PetFollow(ev.targ); break;
 			ATTACK_CMD:      FightADV(ev.targ); break;
 			RESET_SETUP_EVENT:
-				guild_leader := _ifOr(guild.getProp("leader"), "null");
-				guild_laws := guild.getProp("laws");
-				guild_prison := guild.getProp("prisions");
+				HandleLawEvent(ev);
+				guild_prison  := guild.getProp("prisions");
 				guild_prisonl := guild.getProp("prision_leave");
 				break;
 			default:         wait_time := 5;
@@ -664,7 +483,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		if (!targ)
 			return SendSysMessageEx(ev.source, "Cancelado");
 		endif
-		if (GetObjProperty(me, "guild") && !inGuildRect(guild, targ, 4))
+		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(targ))
 			return SendSysMessageEx(ev.source, "Ponto de patrulha fora do alcance do territorio. Cancelado.");
 		endif
 		patrolling := array{ targ };
@@ -677,7 +496,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		elseif (CoordinateDistance(patrolling[1].x, patrolling[2].x, targ.x, targ.y) > 20)
 			return SendSysMessageEx(ev.source, "Patrulha muito distante. Cancelado.");
 		endif
-		if (GetObjProperty(me, "guild") && !inGuildRect(guild, targ, 4))
+		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(targ))
 			patrolling := 0;
 			return SendSysMessageEx(ev.source, "Ponto de patrulha fora do alcance do territorio. Cancelado.");
 		endif
@@ -686,6 +505,8 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		standing := 0;
 		EraseObjProperty(me, "fix_loc");
 		SetObjProperty(me, "patrolling", patrolling);
+		var _patrol_dist := CoordinateDistance(patrolling[1].x, patrolling[1].y, patrolling[2].x, patrolling[2].y);
+		PrintTextAbove(me, "A rota de patrulha foi escolhida e ela tem {} tiles de distancia entre elas.".format(_patrol_dist));
 		PrintTextAbove(me, "Irei iniciar minha patrulha");
 	elseif (text["mant"] && text["posicao"])
 		PrintTextAbove(me, "Sim senhor.");
@@ -706,7 +527,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		disableWarn();
 	elseif (text["ir"] && text["at"])
 		var where := TargetCoordinates(ev.source);
-		if (GetObjProperty(me, "guild") && !inGuildRect(guild, where, 4))
+		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(where))
 			PrintTextAbove(me, "Nao posso ir alem do territorio da faccao!");
 			SendSysMessage(ev.source, "[Guard] Destino fora do alcance. O guarda pode ir ate 4 tiles alem do territorio.");
 		else
@@ -739,7 +560,7 @@ function ProcessDoubleClick(ev)
 	endif
 
 	var gump := GFCreateGump(220, 70);
-	GFResizePic(gump, 0, 0, 0x254E, 125, 180);
+	GFResizePic(gump, 0, 0, 0x254E, 125, 200);
 
 	GFTextLine(gump, 30, 15, 2100, "Ir");
 	GFTooltipText(gump, "Ordena o guarda ir ate um local");
@@ -765,9 +586,13 @@ function ProcessDoubleClick(ev)
 	GFTooltipText(gump, "Ordena o guarda a assumir a mesma posicao que o seu personagem esta.");
 	GFAddButton(gump, 15, 117, 2117, 2118, 1, 50);
 
-	GFTextLine(gump, 30, 135, 2100, "Facing");
+	GFTextLine(gump, 30, 135, 2100, "Definir Posto");
+	GFTooltipText(gump, "Marca a posicao atual do guarda como posto fixo. Ele voltara aqui apos combate.");
+	GFAddButton(gump, 15, 137, 2117, 2118, 1, 90);
+
+	GFTextLine(gump, 30, 155, 2100, "Facing");
 	GFTooltipText(gump, "Define a direcao para onde o guarda ficara olhando.");
-	GFAddButton(gump, 15, 137, 2117, 2118, 1, 80);
+	GFAddButton(gump, 15, 157, 2117, 2118, 1, 80);
 
 	var input := GFSendGump(ev.source, gump)[0];
 	case (input)
@@ -777,47 +602,12 @@ function ProcessDoubleClick(ev)
 		30: ResolveSpeech(0, ev.source, "Ataque"); break;
 		40: ResolveSpeech(0, ev.source, "Patrulha"); break;
 		50: ResolveSpeech(0, ev.source, "Manter Posicao"); break;
-		80: ShowFacingGump(ev.source); break;
+		90: DefinirPostoFixo(ev.source); break;
+		80: ShowFaccaoFacingGump(ev.source); break;
 	endcase
 endfunction
 
-function ShowFacingGump(who)
-	var gump := GFCreateGump(220, 70);
-	GFResizePic(gump, 0, 0, 0x254E, 125, 100);
 
-	GFTextLine(gump, 30, 15, 2100, "Norte");
-	GFTooltipText(gump, "Olhar para o Norte");
-	GFAddButton(gump, 15, 17, 2117, 2118, 1, 100);
-
-	GFTextLine(gump, 30, 35, 2100, "Sul");
-	GFTooltipText(gump, "Olhar para o Sul");
-	GFAddButton(gump, 15, 37, 2117, 2118, 1, 110);
-
-	GFTextLine(gump, 30, 55, 2100, "Leste");
-	GFTooltipText(gump, "Olhar para o Leste");
-	GFAddButton(gump, 15, 57, 2117, 2118, 1, 120);
-
-	GFTextLine(gump, 30, 75, 2100, "Oeste");
-	GFTooltipText(gump, "Olhar para o Oeste");
-	GFAddButton(gump, 15, 77, 2117, 2118, 1, 130);
-
-	var dir_input := GFSendGump(who, gump)[0];
-	var new_facing := -1;
-	case (dir_input)
-		100: new_facing := 0; break; // Norte
-		110: new_facing := 4; break; // Sul
-		120: new_facing := 2; break; // Leste
-		130: new_facing := 6; break; // Oeste
-	endcase
-
-	if (new_facing >= 0)
-		me.facing := new_facing;
-		if (fix_location)
-			fix_location.facing := new_facing;
-			SetObjProperty(me, "fix_loc", fix_location);
-		endif
-	endif
-endfunction
 
 function AllCommand(ev)
 	var event := struct;
@@ -826,221 +616,12 @@ function AllCommand(ev)
 	event.+targ := ev.targ;
 
 	foreach mobile in (ListMobilesNearLocation(me.x, me.y, me.z, 8, me.realm))
-		if (GetObjProperty(mobile, "guild") == guild.guildid && mobile != me)
+		if (IsMemberOfFaccao(guild, mobile) && mobile != me)
 			SendEvent(mobile, event);
 		endif
 
 		sleepms(2);
 	endforeach
-endfunction
-
-function disableWarn()
-	warn_type := 0;
-	warn_tries := 0;
-	warning := 0;
-endfunction
-
-function WarnPlayer()
-	if (fighting || !warning || following)
-		return;
-	elseif (warning.concealed || warning.hidden || warning.dead)
-		disableWarn();
-		return;
-	endif
-
-	wait_time := 0;
-	if (Distance(me, warning) <= 3)
-		PetMovement(warning, 1);
-		wait_time := 1;
-	else
-		PetMovement(warning, 2);
-	endif
-
-	if (GetCooldown(me, "last_warn_{}".format(warning.serial)))
-		return;
-	endif
-
-	// PrintTextAbove(me, "Looking what to warn");
-	case (warn_type)
-		1: // nofight
-			if (!warning.warmode)
-				PrintTextAbove(me, "Muito bem.");
-				AddReport(guild, "{} alertou {} sobre combate nao permitido".format(me.name, warning.name));
-				disableWarn();
-				return;
-			endif
-			if (warn_tries == 0)
-				PrintTextAbove(me, "Nao e permitido brigar aqui");
-				PrintTextAbove(me, "Pare com esta atitude agora mesmo!");
-			else
-				var rand_msg := RandomInt(4);
-				case (rand_msg)
-					0:
-					1:
-						PrintTextAbove(me, "Vamos la, pare com isso");
-						break;
-					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintTextAbove(me, "Estou falando serio, sem combate aqui!"); break;
-				endcase
-			endif
-
-			break;
-		2: // nooutsider, noguild, norace
-			me.frozen := 1;
-			if (Distance(me, warning) > 5) // (warn_rect)
-				//            if ((warning.x >= cint(warn_rect[1]) && warning.x <= cint(warn_rect[3]) && warning.y >= cint(warn_rect[2]) && warning.y <= cint(warn_rect[4])))
-				me.frozen := 0;
-				PrintTextAbove(me, "Muito bem.");
-				AddReport(guild, "{} alertou {} sobre presenca nao permitida na area".format(me.name,
-			  warning.name));
-				disableWarn();
-				return;
-			//            endif
-			/*
-        elseif (!InGuildRect(guild, warning))
-            PrintTextAbove(me, "Muito bem.");
-            AddReport(guild, "{} alertou {} sobre presenca nao permitida na area".format(me.name, warning.name));
-            disableWarn();
-            return;
-*/
-			endif
-
-			if (warn_tries == 0)
-				PrintTextAbove(me, "Voce nao e bem vindo aqui");
-				PrintTextAbove(me, "Saia desta area agora mesmo!");
-				SendSystemReport(warning, "*{} parece estar falando com voce*".format(me.name), SSM_FAIL);
-			else
-				var rand_msg := RandomInt(4);
-				case (rand_msg)
-					0:
-					1:
-						PrintTextAbove(me, "Vamos la, retire-se ou as coisas ficarao pior");
-						break;
-					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintTextAbove(me, "Estou falando serio, saia daqui!"); break;
-				endcase
-			endif
-			break;
-		3: // noweapon
-			if (warning.weapon.objtype in tools)
-				PrintTextAbove(me, "Muito bem.");
-				AddReport(guild, "{} alertou {} sobre uso de armas".format(me.name, warning.name));
-				disableWarn();
-				return;
-			endif
-
-			if (warn_tries == 0)
-				PrintTextAbove(me, "Nao e permitido usar armas aqui");
-				PrintTextAbove(me, "Guarde-a agora mesmo!");
-			/* if ( warning.isA(POLCLASS_NPC) )
-               return FightADV(warning);
-            endif */
-			else
-				var rand_msg := RandomInt(4);
-				case (rand_msg)
-					0:
-					1:
-						PrintTextAbove(me, "Vamos la, guarde esta arma");
-						break;
-					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintTextAbove(me, "Estou falando serio, guarde esta arma!"); break;
-				endcase
-			endif
-			break;
-		4: // noitem
-			if (!CheckItem(warning, warn_opt))
-				PrintTextAbove(me, "Muito bem.");
-				AddReport(guild, "{} alertou {} sobre item equipavel nao permitido".format(me.name, warning.name));
-				disableWarn();
-				return;
-			endif
-
-			if (warn_tries == 0)
-				PrintTextAbove(me, "Nao e permitido usar {} aqui".format(warn_opt.name));
-				PrintTextAbove(me, "Guarde agora mesmo!");
-			else
-				var rand_msg := RandomInt(4);
-				case (rand_msg)
-					0:
-					1:
-						PrintTextAbove(me, "Vamos la, guarde {}".format(warn_opt.name));
-						break;
-					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintTextAbove(me, "Estou falando serio, guarde isso agora mesmo!"); break;
-				endcase
-			endif
-			break;
-		5: // nohood
-			if (warning.name != "Desconhecido")
-				PrintTextAbove(me, "Muito bem.");
-				AddReport(guild, "{} alertou {} sobre cobrir o rosto".format(me.name, warning.name));
-				disableWarn();
-				return;
-			endif
-
-			if (warn_tries == 0)
-				PrintTextAbove(me, "Nao e permitido cobrir o rosto aqui");
-				PrintTextAbove(me, "Revele-se agora mesmo!");
-			/* if ( warning.isA(POLCLASS_NPC) )
-               return FightADV(warning);
-            endif */
-			else
-				var rand_msg := RandomInt(4);
-				case (rand_msg)
-					0:
-					1:
-						PrintTextAbove(me, "Vamos la, deixe-me ver voce!");
-						break;
-					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintTextAbove(me, "Estou falando serio, me mostre sua verdadeira face agora!"); break;
-				endcase
-			endif
-			break;
-		6: // nosneak
-			if (!GetProcess(CInt(GetObjProperty(warning, "#HidePid"))))
-				PrintTextAbove(me, "Muito bem.");
-				AddReport(guild, "{} flagrou {} tentando se esconder".format(me.name, warning.name));
-				disableWarn();
-				return;
-			endif
-
-			if (warn_tries == 0)
-				PrintTextAbove(me, "Nao e permitido esgueirar aqui");
-				PrintTextAbove(me, "Pare agora mesmo!");
-			/* if ( warning.isA(POLCLASS_NPC) )
-               return FightADV(warning);
-            endif */
-			else
-				var rand_msg := RandomInt(4);
-				case (rand_msg)
-					0:
-					1:
-						PrintTextAbove(me, "Vamos la, pare se ser ridiculo!");
-						break;
-					2: PrintTextAbove(me, "Nao me obrigue a tomar uma atitude"); break;
-					3: PrintTextAbove(me, "Estou falando serio, pare com isso!"); break;
-				endcase
-			endif
-			break;
-	endcase
-
-	if (warn_tries >= 3)
-		me.frozen := 0;
-		FightADV(warning);
-		disableWarn();
-		foreach monster in ListMobilesNearLocationEx(me.x, me.y, me.z, 8,
-											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY, me.realm)
-			if (GetObjProperty(monster, "guild") == guild.guildid)
-				monster.frozen := 0;
-				SendEvent(monster, struct{ "type" := HELP_CMD, source := me, targ := warning });
-			endif
-			sleepms(2);
-		endforeach
-	endif
-
-	// PrintTextAbove(me, "warned");
-	SetCooldown(me, "last_warn_{}".format(warning.serial), 3);
-	warn_tries += 1;
 endfunction
 
 function Patrol()
@@ -1109,11 +690,11 @@ endfunction
 function FightADV(opponent := 0)
 	if (opponent)
 		me.frozen := 0;
-		// PrintTextAbove(me, "I will engage".format(opponent.name));
+		standing := 0;
 		if (opponent == me || opponent == fighting || !opponent.IsA(POLCLASS_MOBILE) ||
 	  guild_leader == opponent.serial || Distance(me, opponent) > 18)
 			return;
-		elseif (GetObjProperty(opponent, "guild") == guild.guildid)
+		elseif (IsMemberOfFaccao(guild, opponent))
 			if (opponent.IsA(POLCLASS_NPC))
 				return;
 			endif
@@ -1121,7 +702,7 @@ function FightADV(opponent := 0)
 
 		foreach monster in ListMobilesNearLocationEx(me.x, me.y, me.z, 8,
 											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY, me.realm)
-			if (GetObjProperty(monster, "guild") == guild.guildid)
+			if (IsMemberOfFaccao(guild, monster))
 				SendEvent(monster, struct{ "type" := HELP_CMD, source := me, targ := opponent });
 			endif
 			sleepms(2);
@@ -1136,6 +717,42 @@ function FightADV(opponent := 0)
 	endif
 
 	if (!fighting)
+		SetOpponent(0);
+		SetWarMode(0);
+		return;
+	endif
+
+	// Desmaiado mas ainda vivo: enviar para prisao SOMENTE se havia violacao de lei pendente
+	// NPCs nao tem mecanica de desmaio nem sao mandados para prisao — pular o bloco inteiro
+	if (fighting.isA(POLCLASS_MOBILE) && !fighting.npctemplate && fighting.hits <= 0 && !fighting.dead && !fighting.concealed)
+		var _ko_tier := CInt(GetObjProperty(fighting, "#pending_tier_{}".format(guild.guildid)));
+		if (!_ko_tier || _ko_tier < 1 || _ko_tier > 3)
+			// Sem violacao de lei pendente: combate normal, nao envia para prisao
+			fighting := 0;
+			SetOpponent(0);
+			SetWarMode(0);
+			return;
+		endif
+		EraseObjProperty(fighting, "#pending_tier_{}".format(guild.guildid));
+		var _ko_pts := guild.getProp("prisions");
+		if (!_ko_pts || !_ko_pts.size())
+			var _ko_tipo := CStr(guild.getProp("staff_tipo"));
+			if (_ko_tipo == "regentes")
+				_ko_pts := array{ struct{ "x":=3431, "y":=65, "z":=0, "realm":="britannia_alt" } };
+			elseif (_ko_tipo["conselho"] != error)
+				_ko_pts := array{ struct{ "x":=3481, "y":=63, "z":=0, "realm":="britannia_alt" } };
+			else
+				_ko_pts := array{ struct{ "x":=3530, "y":=64, "z":=0, "realm":="britannia_alt" } };
+			endif
+		endif
+		var _ko_p := _ko_pts[RandomInt(_ko_pts.size()) + 1];
+		MoveObjectToLocation(fighting, _ko_p.x, _ko_p.y, _ko_p.z, _ko_p.realm, MOVEOBJECT_FORCELOCATION);
+		var _ko_msg := "Voce foi preso pela faccao.";
+		if (_ko_tier == 1) _ko_msg += " Sera solto em 1 hora se sem dinheiro."; endif
+		SendSysMessageEx(fighting, _ko_msg, SSM_HARMFUL);
+		AddReport(guild, "{} foi preso (tier {})".format(fighting.name, _ko_tier));
+		start_script(":faccao:prisaotimer", array{ fighting.serial, guild.guildid, _ko_tier });
+		fighting := 0;
 		SetOpponent(0);
 		SetWarMode(0);
 		return;
@@ -1479,7 +1096,7 @@ function GetEnemiesNearGuard(loc, range := 5, get_hidden := 0)
 												 LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN, me.realm)
 		if ((mobile.hidden && !get_hidden || mobile == me))
 			continue;
-		elseif (mobile.guildid == guild.guildid)
+		elseif (IsMemberOfFaccao(guild, mobile))
 			continue;
 		endif
 
