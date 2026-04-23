@@ -36,6 +36,13 @@ include "include/say";
  * @param timerName   String - timedScript timer name (default: "spelleffect")
  */
 function SC_ApplyEffect(caster, targ, opts, duration, spellId, timerName := "spelleffect")
+	// Fail closed if duration is invalid — TS_StartTimer rejects duration < 1,
+	// so applying opts without a cleanup timer would leave permanent state
+	// (e.g. frozen := 1 with no timer to undo it).
+	if (CInt(duration) < 1)
+		return error{"errortext":=$"SC_ApplyEffect: duration must be > 0 (spellId={spellId})"};
+	endif
+
 	// Mutual exclusion: if this spell has a category, displace any other active
 	// spell in the same category first (e.g. barkskin replaces escudodefe).
 	var replacedName := "";
