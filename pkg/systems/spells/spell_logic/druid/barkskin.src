@@ -37,6 +37,11 @@ program SpellScript(params)
 		armor_bonus := 1; // Minimum 1 AR
 	endif
 
+	// +2 when the target has no real armor equipped — casca grossa sobre pele nua.
+	if (!HasArmorProtection(targ))
+		armor_bonus += 2;
+	endif
+
 	var duration := CInt(20 + (magiclore_skill * 2 / 5)); // 20s base + up to 40s at 100 skill (max 60s)
 
 	// Bonus de especialização
@@ -64,3 +69,17 @@ program SpellScript(params)
 
 	return 1;
 endprogram
+
+function HasArmorProtection(targ)
+	var itemdesc := ReadConfigFile(":*:itemdesc");
+	foreach item in (ListEquippedItems(targ))
+		if (!item.isa(POLCLASS_ARMOR))
+			continue;
+		endif
+		var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
+		if (tipoProtecao["Armadura"])
+			return 1;
+		endif
+	endforeach
+	return 0;
+endfunction
