@@ -397,7 +397,7 @@ function get_heir_skills(who)
 	foreach skill in primarias
 		primarias_sum += Cint(AP_GetTrueSkill(who, skill));
 	endforeach
-	if (chardata.kit == "Sabe-Tudo")
+	if (chardata.trait == "Sabe-Tudo")
 		primarias_sum *= 2;
 	endif
 	var bonus_primarias := (primarias_sum - 80) / 4; // metade da media de pontos upados acima de 40 nas primarias
