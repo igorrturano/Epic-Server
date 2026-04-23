@@ -10,7 +10,6 @@ include "include/arrays";
 include ":faccao:npc";
 include ":faccao:faccao";
 include ":faccao:laws";
-include "include/epicEconomyAudit";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":tn:tngumps";
@@ -65,14 +64,60 @@ var law_list := struct{ "nofight" := "Proibir Combate",
 						"noweapon" := "Proibir Usar Armas",
 						"noitem" := "Proibir Item Especifico",
 						"norace" := "Proibir Raça",           // "noguild"    := "Proibir Facção",
-						
+
 						"nocerca" := "Proibir Pular Cerca",
 						"nooutsider" := "Proibir Forasteiros", // "nooutsideron" := "Proibir Forasteiros em Area",
 // "nolawon" := "Não aplicar leis em",
-						
+
 						"userban" := "Banir usuario",
 						"nohood" := "Proibir Cobrir Rosto",
-						"nosneak" := "Proibir Esconder-se" };
+						"nosneak" := "Proibir Esconder-se",
+
+						"noduel" := "Proibir Duelos PvP",
+						"notransformation" := "Proibir Metamorfose",
+						"noanimals" := "Proibir Animais na Area",
+						"noheavyarmor" := "Proibir Armadura Pesada",
+						"nomagicitems" := "Proibir Itens Magicos",
+						"nocolor" := "Proibir Cores Especificas",
+						"nomount_run" := "Proibir Galope Montado",
+						"nowrestling" := "Proibir Luta Desarmada",
+
+						"nospell" := "Proibir Magias de Combate",
+						"nospellatall" := "Proibir Qualquer Magia",
+						"nospellschool" := "Proibir Escola de Magia",
+						"nospelllist" := "Proibir Magias Especificas",
+
+						"merchanttax" := "Taxa sobre Merchants (+%)",
+						"zerotax" := "Zerar Taxas dos Merchants",
+						"notax_exempt" := "Pedagio de Passagem",
+						"guildtax" := "Taxa sobre Faccoes Rivais",
+
+						"norun" := "Proibir Corrida",
+						"nightsight_ban" := "Proibir Night Sight (Noite)",
+						"nopotions" := "Proibir Uso de Pocoes",
+						"nodrugs" := "Proibir Drogas",
+						"antialcool" := "Proibir Embriaguez",
+						"notaming" := "Proibir Domar Animais",
+						"nomusic" := "Proibir Musica/Bard",
+						"noclotheschange" := "Proibir Troca Rapida de Roupas",
+
+						"toquerecolher" := "Toque de Recolher (Horario)",
+						"leimarcia" := "Lei Marcial (Carteira de ID)",
+
+						"nosearch_cmd" := "Proibir Comando .revistar",
+						"nodrag_cmd" := "Proibir Comando .arrastar",
+						"nothrow_cmd" := "Proibir Comando .arremessar",
+						"noloot_unconscious" := "Proibir Lotear Desmaiados",
+						"noplant" := "Proibir Plantar",
+						"noharvest" := "Proibir Colher Fazendas",
+						"notirefruits" := "Proibir Colher Frutos",
+						"durability_tax" := "Imposto por Durabilidade da Armadura",
+						"lenco" := "Exigir Lenco ao Tossir",
+						"nomadeira" := "Proibir Cortar Madeira",
+						"nomining" := "Proibir Minerar",
+						"nofishing" := "Proibir Pesca",
+						"noalchemy" := "Proibir Alquimia",
+						"noeat" := "Proibir Comer em Via Publica" };
 
 var guild_obj, aboveguild;
 
@@ -84,6 +129,7 @@ program faccao(params)
 		who := params[1];
 		targ := params[2];
 		cmd := params[3];
+		use_member_alias := params[4]; // preserva contexto de mural ao reabrir
 	endif
 
 	if (cmd == "guild")
@@ -116,7 +162,7 @@ program faccao(params)
 		members := RemoveFromArray(members, guild_leader);
 	endif
 	is_gm_or_leader := (who == guild_leader || who.cmdlevel || aboveguild);
-	privilegies := guild.getProp(cstr(who.serial));
+	privilegies := GetMemberPrivs(guild, who);
 	var gump := GFCreateGump();
 	GFPage(gump, 0);
 
@@ -164,7 +210,6 @@ program faccao(params)
 
 	var y := 107;
 	foreach mob in members
-		// mob := SystemFindObjectBySerial(mob.serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
 		if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 			GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 		endif
@@ -177,15 +222,29 @@ program faccao(params)
 			endif
 			sleepms(2);
 		endforeach
-
-		if (!permission_text)
-			permission_text := "Nenhum privilegio";
-		endif
-
+		if (!permission_text) permission_text := "Nenhum privilegio"; endif
 		GFToolTipText(gump, permission_text);
 		sleepms(2);
 		y += 18;
 	endforeach
+
+	// Membros honorários (não estão em guild.members — armazenados separadamente)
+	var hon_serials := guild.GetProp("honorary_members");
+	if (hon_serials)
+		foreach hon_serial in hon_serials
+			var mob := SystemFindObjectBySerial(hon_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+			if (!mob) sleepms(2); continue; endif
+			if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
+				GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
+			endif
+			var hon_name := GetMemberDisplayName(mob, use_member_alias);
+			if (is_gm_or_leader && hon_name) hon_name := hon_name + " [Hon]"; endif
+			GFTextLine(gump, 67, y - 2, 0, "{}".format(hon_name));
+			GFToolTipText(gump, "Membro Honorário");
+			sleepms(2);
+			y += 18;
+		endforeach
+	endif
 	y += 18;
 
 	if (is_gm_or_leader || privilegies.above_members)
@@ -313,34 +372,53 @@ program faccao(params)
 	else
 		return;
 	endif
-	start_script(":faccao:faccao", array{ who, guild.guildid, "guild" });
+	start_script(":faccao:faccao", array{ who, guild.guildid, "guild", use_member_alias });
 endprogram
 
 function Faccoes(who)
 	var gump := GFCreateGump();
-	GFResizePic(gump, 84, 90, 9260, 280, 260);
+	GFSetId(gump, 0x12353);
+	GFResizePic(gump, 84, 90, 9260, 320, 300);
+	GFGumpPicTiled(gump, 100, 100, 30, 275, 10460);
+	GFGumpPicTiled(gump, 320, 100, 30, 275, 10460);
+	GFHtmlShadowed(gump, 130, 105, 200, 18, "#FFC33C", "<center>Facções", 7);
 
-	GFGumpPicTiled(gump, 100, 100, 30, 235, 10460);
-	GFGumpPicTiled(gump, 320, 100, 30, 235, 10460);
+	var y := 135;
+	var my_guilds := array{};
 
-	var y := 120;
+	if (who.cmdlevel)
+		// GMs veem todas as facções
+		foreach g in ListGuilds()
+			my_guilds.append(g);
+			GFTextLine(gump, 170, y, 2100, "{}".format(g.GetProp("name")));
+			GFAddButton(gump, 150, y + 3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO + _g_iter);
+			y += 20;
+			sleepms(2);
+		endforeach
+	else
+		// Jogadores veem apenas as suas facções
+		if (who.guild)
+			my_guilds.append(who.guild);
+			GFTextLine(gump, 170, y, 2100, "{} [Full]".format(who.guild.GetProp("name")));
+			GFAddButton(gump, 150, y + 3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO + my_guilds.size());
+			y += 20;
+		endif
+		var hon_id := GetObjProperty(who, "honorary_guild_id");
+		if (hon_id)
+			var hon_g := FindGuild(hon_id);
+			if (hon_g)
+				my_guilds.append(hon_g);
+				GFTextLine(gump, 170, y, 2100, "{} [Hon.]".format(hon_g.GetProp("name")));
+				GFAddButton(gump, 150, y + 3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO + my_guilds.size());
+				y += 20;
+			endif
+		endif
+		if (!my_guilds.size())
+			GFTextLine(gump, 130, y, 0, "Você não pertence a nenhuma facção.");
+			y += 20;
+		endif
+	endif
 
-	var guilds := ListGuilds();
-	foreach guild in guilds
-		// fix area
-		var name := guild.getprop("name");
-		// if (typeof(name[1]) != "Array")
-		//    name := array{name};
-		//    guild.setProp("name", name);
-		// endif
-		// fix area
-
-		GFTextLine(gump, 170, y, 2100, "{}".format(guild.GetProp("name")));
-		// GFTextLine(gump, 220, y, 2103, "{}".format(chardata.raca));
-		GFAddButton(gump, 150, y + 3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO + _guild_iter);
-		y += 20;
-		sleepms(2);
-	endforeach
 	y += 10;
 	GFAddButton(gump, 172, y, 0x80E, 0x80E, GF_CLOSE_BTN, BTN_NEW_FACCAO);
 	GFHTMLArea(gump, 170, y, 115, 25, "<basefont color=#0555D4><center>Nova Facção", 1);
@@ -348,76 +426,74 @@ function Faccoes(who)
 	var input := GFSendGump(who, gump)[0];
 
 	if (input >= BTN_FACCAO)
-		var g := guilds[input - BTN_FACCAO];
-
-		if (is_gm_or_leader)
+		var g := my_guilds[input - BTN_FACCAO];
+		if (g)
 			start_script(":faccao:faccao", array{ who, g.guildid, "guild" });
-		elseif (who.guildid == g.guildid || who.cmdlevel)
-			start_script(":faccao:faccao", array{ who, g.guildid, "guild" });
-		elseif (who.guildid != g.guildid)
-			SendSysMessage(who, "Voce nao faz parte dessa Faccao");
-			return;
 		endif
 
 	elseif (input == BTN_NEW_FACCAO)
+		var _err := _CanCreateFaccao(who);
+		if (_err)
+			return SendSysMessageEx(who, _err);
+		endif
+
 		var custo := 100;
 		SendSysMessageEx(who, "Voce precisa pagar " + custo + " moedas para criar uma Faccao", SSM_REQUEST);
 		var targ := Target(who, options := TGTOPT_CHECK_LOS + TGTOPT_NEUTRAL);
 		if (!targ)
-			SendSysMessage(who, "Cancelado.", SSM_FAIL);
-			return;
+			return SendSysMessage(who, "Cancelado.", SSM_FAIL);
 		endif
 
-		if (targ.objtype == 47715)
-
-			if (targ.amount < custo)
-				SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
-				return;
-			endif
-
-			if (!SubtractAmount(targ, custo))
-				SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
-				return;
-			else
-				SendSysMessageEx(who, "Voce efetuou o pagamento.", SSM_INFO);
-			endif
-		else
-			SendSysMessageEx(who, "Isto nao sao moedas.", SSM_FAIL);
-			return;
+		if (targ.objtype != 47715)
+			return SendSysMessageEx(who, "Isto nao sao moedas.", SSM_FAIL);
 		endif
+		if (targ.amount < custo || !SubtractAmount(targ, custo))
+			return SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_INFO);
+		endif
+		SendSysMessageEx(who, "Voce efetuou o pagamento.", SSM_INFO);
 
 		var questions := array{};
-		questions.append(struct{ "title" := "Nome da facçãoo?", "marked" := "" });
-		// questions.append(struct{ "title" := "Dinheiro inicial?", "marked" := "0"} );
+		questions.append(struct{ "title" := "Nome da facção?", "marked" := "" });
 		var output := QuestionsGump(who, questions);
 		if (!output)
 			return SendSysMessageEx(who, "Cancelado");
 		endif
 
-		var arearray := array{};
-		/*
-      while (1)
-         var area := GetInput(who, who.backpack, "Escreva a area em x1 y1 x2 y2 (aperte esc para cancelar)");
-         if (!area)
-            break;
-         endif
-         area := SplitWords(area);
-
-         if (area.size() < 4)
-            SendSysMessageEx(who, "Area invalida");
-         else
-            arearray.append(area);
-            SendSysMessageEx(who, "Area adicionada: {}".format(area));
-         endif
-      endwhile
-*/
-		var new_guild := CreateFaccao(output[1], arearray, cint(output[2]));
+		var new_guild := CreateFaccao(output[1], array{}, 0);
 		if (new_guild && !who.cmdlevel)
 			AddMember(new_guild, who);
 			new_guild.SetProp("leader", who.serial);
 		endif
 		Faccoes(who);
 	endif
+endfunction
+
+// Valida se o jogador pode criar uma nova facção.
+// Retorna 0 se permitido, ou string de erro se bloqueado.
+function _CanCreateFaccao(who)
+	// Limpa honorary_guild_id stale
+	var _hon_id := GetObjProperty(who, "honorary_guild_id");
+	if (_hon_id && !FindGuild(_hon_id))
+		EraseObjProperty(who, "honorary_guild_id");
+	endif
+
+	if (who.cmdlevel)
+		return 0;
+	endif
+	if (who.guild && GetObjProperty(who, "honorary_guild_id"))
+		return "Você já faz parte de duas facções e não pode criar uma nova.";
+	endif
+	if (who.guild)
+		return "Você já é membro full de uma facção. Apenas membros honorários de facções staff podem criar uma nova.";
+	endif
+	var hon_id := GetObjProperty(who, "honorary_guild_id");
+	if (hon_id)
+		var hon_g := FindGuild(hon_id);
+		if (hon_g && GetFaccaoTipo(hon_g) != "staff")
+			return "Você já é membro de uma facção que não é de lore, e por isso não pode criar uma nova facção.";
+		endif
+	endif
+	return 0;
 endfunction
 
 function guildHandler(who, input)
@@ -428,8 +504,10 @@ function guildHandler(who, input)
 			return SendSysMessageEx(who, "Cancelado");
 		elseif (!targ.isA(POLCLASS_MOBILE) || !targ.connected)
 			return SendSysMessageEx(who, "Alvo invalido ou nao esta online");
-		elseif (targ.guild)
-			return SendSysMessageEx(who, "Alvo ja pertence a uma faccao");
+		endif
+		var _join_err := CanJoinFaccao(guild, targ);
+		if (_join_err)
+			return SendSysMessageEx(who, _join_err);
 		endif
 
 		SendSysMessageEx(who, "O alvo foi convidado para se juntar a faccao", SSM_INFO);
@@ -440,8 +518,16 @@ function guildHandler(who, input)
 			return SendSysMessageEx(who, "{} recusou o convite.".format(targ.name), SSM_INFO);
 		endif
 
-		AddMember(guild, targ);
-		SendSysMessageEx(who, "{} se juntou a faccao".format(targ.name), SSM_INFO);
+		var _tipo := GetAutoMemberTipo(targ);
+		if (_tipo == -1)
+			_tipo := EscolherTipoMembro(targ, guild_name);
+			if (_tipo == -1)
+				return SendSysMessageEx(who, "{} cancelou o ingresso.".format(targ.name), SSM_INFO);
+			endif
+		endif
+		AddMember(guild, targ, _tipo);
+		var _tipo_str := _tipo ? "honorário" : "full";
+		SendSysMessageEx(who, "{} ingressou como membro {}.".format(targ.name, _tipo_str), SSM_INFO);
 	elseif (input == BUTTON_MONEY_TRANSFER)
 
 		var opt_choice := array{ "Acrescentar Moedas", "Transferir para outra Faccao" };
@@ -460,8 +546,7 @@ function guildHandler(who, input)
 				return SendSysMessageEx(who, "Dinheiro insuficiente");
 			endif
 			guild.setProp("money", guild.getProp("money") - qty);
-			var g_coin := CreateItemInBackpack(who, 0xba63, qty);
-			EA_Record(EA_MINT_GUILD_WITHDRAW, g_coin, qty, "GUILD:withdraw:" + CStr(guild.guildid), who, "");
+			CreateItemInBackpack(who, 0xba63, qty);
 			SendSysMessageEx(who, "Moedas removidas");
 			return;
 		elseif (output["Transferir"])
@@ -709,12 +794,13 @@ endfunction
 function playerHandler(who, input)
 	input := input - BUTTON_CHANGE_PLAYER;
 	var player := SystemFindObjectBySerial(input, SYSFIND_SEARCH_OFFLINE_MOBILES);
+	var is_honorary := IsHonoraryMember(guild, player);
 	var options := array{};
-	if (is_gm_or_leader || privilegies.giveprivs)
+	if (!is_honorary && (is_gm_or_leader || privilegies.giveprivs))
 		options.append("Alterar Privilegios");
 	endif
 
-	if (is_gm_or_leader || aboveguild)
+	if (!is_honorary && (is_gm_or_leader || aboveguild))
 		options.append("Tornar Lider");
 	endif
 
@@ -726,6 +812,11 @@ function playerHandler(who, input)
 
 	if (is_gm_or_leader || privilegies.above_members || aboveguild)
 		options.append("Remover da Faccao");
+	endif
+
+	// Mudar tipo só disponível se não for o líder atual
+	if ((is_gm_or_leader || aboveguild) && guild_obj.leader != input)
+		options.append("Mudar Tipo de Membro");
 	endif
 
 	options.append("Cancelar");
@@ -764,8 +855,95 @@ function playerHandler(who, input)
 			RemMember(guild, player);
 			SendSysMessageEx(who, "{} removido da faccao".format(player.name), SSM_INFO);
 		endif
+	elseif (output["Mudar Tipo"])
+		_MudarTipoMembroHandler(who, player);
 	endif
 
+endfunction
+
+// -------------------------------------------------------
+// Permite ao líder mudar o tipo de um membro (full ↔ honorário).
+// Regras: sem conflito de tipo em outra facção; cooldown de 7 dias.
+// -------------------------------------------------------
+function _MudarTipoMembroHandler(who, player)
+	const COOLDOWN := 604800; // 7 dias em segundos
+
+	var is_honorary    := IsHonoraryMember(guild, player);
+	var tipo_atual_str := is_honorary ? "Membro Honorário" : "Membro Full";
+	var tipo_novo      := is_honorary ? 0 : 1; // 0=full, 1=honorary
+	var tipo_novo_str  := is_honorary ? "Membro Full" : "Membro Honorário";
+
+	// Cooldown
+	var last_change := GetObjProperty(player, "tipo_change_time");
+	var agora := POLCore().systime;
+	if (last_change)
+		var restante := COOLDOWN - (agora - last_change);
+		if (restante > 0)
+			var dias  := cint(restante / 86400);
+			var horas := cint((restante - dias * 86400) / 3600);
+			return SendSysMessageEx(who,
+				"{} precisa esperar mais {} dia(s) e {} hora(s) para mudar de tipo.".format(
+					player.name, dias, horas), SSM_FAIL);
+		endif
+	endif
+
+	// Conflito de tipo na outra facção
+	if (tipo_novo == 1) // quer virar honorário
+		var hon_id := GetObjProperty(player, "honorary_guild_id");
+		if (hon_id)
+			var hon_g := FindGuild(hon_id);
+			if (hon_g && hon_g.guildid != guild.guildid)
+				return SendSysMessageEx(who,
+					"{} já é membro honorário em outra facção.".format(player.name), SSM_FAIL);
+			endif
+		endif
+	else // quer virar full
+		if (player.guild && player.guild.guildid != guild.guildid)
+			return SendSysMessageEx(who,
+				"{} já é membro full em outra facção.".format(player.name), SSM_FAIL);
+		endif
+	endif
+
+	// Gump de confirmação
+	var gump := GFCreateGump();
+	GFSetId(gump, 0x12355);
+	GFResizePic(gump, 0, 0, 9200, 380, 295);
+	GFResizePic(gump, 15, 15, 9350, 350, 265);
+	GFHtmlShadowed(gump, 20, 25, 340, 20, "#FFC33C", "<center>Mudar Tipo de Membro", 8);
+	GFHtmlShadowed(gump, 20, 50, 340, 18, "#AAAAAA", "<center>" + player.name, 6);
+
+	GFTextLine(gump, 30,  88, 0,  "Tipo atual:");
+	GFTextLine(gump, 140, 88, 33, tipo_atual_str);
+
+	GFTextLine(gump, 30,  118, 0,  "Novo tipo:");
+	GFTextLine(gump, 140, 118, 63, tipo_novo_str);
+
+	GFHTMLArea(gump, 30, 158, 320, 50,
+		"<basefont color=#888888>Obs: ao mudar o tipo, o membro ficará 7 dias sem poder alterar novamente.", 0);
+
+	GFAddButton(gump, 65,  220, 4005, 4006, GF_CLOSE_BTN, 1);
+	GFTextLine(gump,  100, 220, 1153, "Confirmar");
+	GFAddButton(gump, 230, 220, 4017, 4018, GF_CLOSE_BTN, 0);
+	GFTextLine(gump,  265, 220, 1153, "Cancelar");
+
+	var input := GFSendGump(who, gump);
+	if (!input || input[0] != 1)
+		return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+	endif
+
+	// Executa mudança
+	var guild_name := guild.GetProp("name");
+	RemMember(guild, player);
+	AddMember(guild, player, tipo_novo);
+	SetObjProperty(player, "tipo_change_time", agora);
+
+	SendSysMessageEx(who,
+		"{} teve o tipo alterado de {} para {} na facção {}.".format(
+			player.name, tipo_atual_str, tipo_novo_str, guild_name), SSM_INFO);
+	SendSysMessage(player,
+		"Seu tipo de membro na facção " + guild_name +
+		" foi alterado: " + tipo_atual_str + " → " + tipo_novo_str +
+		". Você não pode alterar novamente por 7 dias.");
 endfunction
 
 function gmHandler(who)
@@ -877,18 +1055,103 @@ function gmHandler(who)
 endfunction
 
 // -------------------------------------------------------
+// Propaga (nome_idx > 0) ou apaga (nome_idx == 0) nomefaccao em todos os
+// membros full, membros honorários, NPCs ativos e baú da facção.
+// Também atualiza tipo_faccao no baú.
+// -------------------------------------------------------
+function _SyncNomeFaccaoMembers(guild, nome_idx)
+	var _tipo_faccao := GetFaccaoTipo(guild);
+
+	// Membros full
+	foreach member in (guild.members)
+		if (nome_idx)
+			SetObjProperty(member, "nomefaccao", nome_idx);
+		else
+			EraseObjProperty(member, "nomefaccao");
+		endif
+		sleepms(2);
+	endforeach
+
+	// Membros honorários
+	var hon_serials := guild.GetProp("honorary_members");
+	if (hon_serials)
+		foreach hon_serial in hon_serials
+			var mob := SystemFindObjectBySerial(hon_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+			if (!mob) sleepms(2); continue; endif
+			if (nome_idx)
+				SetObjProperty(mob, "nomefaccao", nome_idx);
+			else
+				EraseObjProperty(mob, "nomefaccao");
+			endif
+			sleepms(2);
+		endforeach
+	endif
+
+	// NPCs ativos
+	var npcs_active := guild.GetProp("npcs_active");
+	if (npcs_active)
+		foreach npc_data in npcs_active
+			var npc := SystemFindObjectBySerial(npc_data.serial);
+			if (!npc) sleepms(2); continue; endif
+			if (nome_idx)
+				SetObjProperty(npc, "nomefaccao", nome_idx);
+			else
+				EraseObjProperty(npc, "nomefaccao");
+			endif
+			sleepms(2);
+		endforeach
+	endif
+
+	// Baú da facção
+	var bau_serial := guild.GetProp("bau_serial");
+	if (bau_serial)
+		var bau := SystemFindObjectBySerial(bau_serial);
+		if (bau)
+			SetObjProperty(bau, "tipo_faccao", _tipo_faccao);
+			if (nome_idx)
+				SetObjProperty(bau, "nomefaccao", nome_idx);
+			else
+				EraseObjProperty(bau, "nomefaccao");
+			endif
+		endif
+	endif
+
+	// Itens registrados (mural, mesa, convite, totem, etc.)
+	var itens := guild.GetProp("itens_faccao");
+	var itens_validos := array{};
+	var _has_stale := 0;
+	if (itens)
+		foreach item_serial in itens
+			var item := SystemFindObjectBySerial(item_serial);
+			if (!item)
+				_has_stale := 1;
+				sleepms(2);
+				continue;
+			endif
+			SetObjProperty(item, "tipo_faccao", _tipo_faccao);
+			if (nome_idx)
+				SetObjProperty(item, "nomefaccao", nome_idx);
+			else
+				EraseObjProperty(item, "nomefaccao");
+			endif
+			itens_validos.append(item_serial);
+			sleepms(2);
+		endforeach
+		if (_has_stale)
+			guild.SetProp("itens_faccao", itens_validos);
+		endif
+	endif
+endfunction
+
+// -------------------------------------------------------
 // Gump de seleção de tipo de facção (Staff / Player)
 // -------------------------------------------------------
 function _TipoFaccaoHandler(who)
-	var tipo_atual := guild.GetProp("tipo_faccao");
+	var tipo_atual      := guild.GetProp("tipo_faccao");
+	var nomefaccao_atual := guild.GetProp("nomefaccao");
 
-	var cor_staff  := 0;
-	var cor_player := 0;
-	if (tipo_atual == "staff")
-		cor_staff := 63;
-	else
-		cor_player := 63;
-	endif
+	var cor_staff  := (tipo_atual == "staff")  ? 63 : 0;
+	var cor_player := (tipo_atual == "player") ? 63 : 0;
 
 	var gump := GFCreateGump();
 	GFSetId(gump, 0x12350);
@@ -896,37 +1159,130 @@ function _TipoFaccaoHandler(who)
 	GFResizePic(gump, 15, 15, 9350, 270, 160);
 
 	GFHtmlShadowed(gump, 20, 25, 200, 20, "#FFC33C", "<center>Tipo de Facção", 8);
-
 	GFHtmlShadowed(gump, 20, 52, 260, 18, "#AAAAAA", "<center>Tipo atual: " + tipo_atual, 6);
 
-	// Botão Staff
 	GFAddButton(gump, 40, 90, 4005, 4006, GF_CLOSE_BTN, 1);
 	GFTextLine(gump, 70, 88, cor_staff, "Staff");
 
-	// Botão Player
 	GFAddButton(gump, 160, 90, 4005, 4006, GF_CLOSE_BTN, 2);
 	GFTextLine(gump, 190, 88, cor_player, "Player");
 
-	// Botão Cancelar
 	GFAddButton(gump, 95, 130, 4017, 4018, GF_CLOSE_BTN, 0);
 	GFTextLine(gump, 125, 128, 0, "Cancelar");
 
 	var input := GFSendGump(who, gump);
 
-	var novo_tipo := "";
-	if (input[0] == 1)
-		novo_tipo := "staff";
-	elseif (input[0] == 2)
-		novo_tipo := "player";
-	endif
+	if (input[0] == 1) // Staff: pede qual das 5 facções de lore
+		var nome_idx := _EscolherNomeFaccao(who, nomefaccao_atual);
+		if (!nome_idx) return; endif
+		var nome_lore := FACCAO_NOMES[nome_idx];
+		var staff_tipo := FACCAO_STAFF_TIPOS[nome_idx];
+		guild.SetProp("tipo_faccao", "staff");
+		guild.SetProp("staff_tipo", staff_tipo);
+		guild.SetProp("nomefaccao", nome_idx);
+		guild.SetProp("name", nome_lore);
+		guild_obj.tipo_faccao := "staff";
+		guild_obj.name := nome_lore;
+		_SyncNomeFaccaoMembers(guild, nome_idx);
+		SendSysMessageEx(who, "Tipo: staff | Facção: {} ({}) | staff_tipo: {}".format(nome_lore, nome_idx, staff_tipo));
+	elseif (input[0] == 2) // Player: pede nome, demite NPCs, zera moedas, limpa props
+		// --- Nome da nova faccao player ---
+		var _nome_player := _PedirNomeFaccaoPlayer(who, guild_obj.name);
+		if (!_nome_player || !_nome_player.length()) return; endif
 
-	if (!novo_tipo)
-		return;
-	endif
+		// --- Demitir TODOS os NPCs ativos ---
+		var _npcs_antes := guild.GetProp("npcs_active");
+		var _npcs_count := _npcs_antes ? _npcs_antes.size() : 0;
+		while (guild.GetProp("npcs_active") && guild.GetProp("npcs_active").size() > 0)
+			sleepms(10);
+			DismissNPC(guild, 1);
+		endwhile
+		if (_npcs_count > 0)
+			SendSysMessageEx(who, "{} NPC(s) demitido(s) automaticamente na conversao.".format(_npcs_count), SSM_INFO);
+		endif
 
-	guild.SetProp("tipo_faccao", novo_tipo);
-	guild_obj.tipo_faccao := novo_tipo;
-	SendSysMessageEx(who, "Tipo alterado para: {}".format(novo_tipo));
+		// --- Limpar membros honorarios (o tipo "player" os bloquearia de entrar em outras player factions) ---
+		var _honoraries := guild.GetProp("honorary_members");
+		if (_honoraries && _honoraries.size() > 0)
+			foreach _hs in _honoraries
+				sleepms(2);
+				var _hm := SystemFindObjectBySerial(CInt(_hs), SYSFIND_SEARCH_OFFLINE_MOBILES);
+				if (_hm) EraseObjProperty(_hm, "honorary_guild_id"); endif
+			endforeach
+			guild.EraseProp("honorary_members");
+			SendSysMessageEx(who, "{} membro(s) honorario(s) removido(s) — evita bloqueio de entrada em facções player.".format(_honoraries.size()), SSM_INFO);
+		endif
+
+		// --- Zerar moedas da faccao ---
+		guild.SetProp("money", 0);
+		guild_obj.money := 0;
+
+		guild.SetProp("tipo_faccao", "player");
+		guild.SetProp("name", _nome_player);
+		guild.EraseProp("nomefaccao");
+		guild.EraseProp("staff_tipo");
+		guild_obj.tipo_faccao := "player";
+		guild_obj.name := _nome_player;
+		_SyncNomeFaccaoMembers(guild, 0);
+		SendSysMessageEx(who, "Tipo alterado para: player | Nome: {}.".format(_nome_player), SSM_INFO);
+	endif
+endfunction
+
+// -------------------------------------------------------
+// Gump de texto livre para nomear uma faccao player.
+// Retorna o nome digitado, ou 0 se cancelado.
+// -------------------------------------------------------
+function _PedirNomeFaccaoPlayer(who, nome_atual := "")
+	var gump := GFCreateGump();
+	GFSetId(gump, 0x12352);
+	GFResizePic(gump, 0, 0, 9200, 310, 160);
+	GFResizePic(gump, 15, 15, 9350, 280, 130);
+
+	GFHtmlShadowed(gump, 20, 25, 270, 20, "#FFC33C", "<center>Nome da Facção Player", 8);
+	GFHtmlShadowed(gump, 20, 50, 270, 16, "#AAAAAA", "<center>Digite o nome que a facção vai usar.", 6);
+
+	var id_nome := GFTextEntry(gump, 20, 75, 270, 22, 0, nome_atual, 1, 40);
+
+	GFAddButton(gump, 50,  108, 4005, 4006, GF_CLOSE_BTN, 1);
+	GFTextLine(gump,  80,  106, 0, "Confirmar");
+	GFAddButton(gump, 185, 108, 4017, 4018, GF_CLOSE_BTN, 0);
+	GFTextLine(gump,  215, 106, 0, "Cancelar");
+
+	var res := GFSendGump(who, gump);
+	if (!res || res[0] != 1) return 0; endif
+
+	var nome := GFExtractData(res, id_nome);
+	nome := trim(cstr(nome));
+	if (!nome || !nome.length()) return 0; endif
+	return nome;
+endfunction
+
+// -------------------------------------------------------
+// Gump para o GM escolher qual das 5 facções staff
+// -------------------------------------------------------
+function _EscolherNomeFaccao(who, atual := 0)
+	var gump := GFCreateGump();
+	GFSetId(gump, 0x12351);
+	GFResizePic(gump, 0, 0, 9200, 300, 240);
+	GFResizePic(gump, 15, 15, 9350, 270, 210);
+
+	GFHtmlShadowed(gump, 20, 25, 260, 20, "#FFC33C", "<center>Qual facção staff?", 8);
+
+	var y := 60;
+	foreach nome in FACCAO_NOMES
+		var cor := (atual == _nome_iter) ? 63 : 0;
+		GFAddButton(gump, 30, y, 4005, 4006, GF_CLOSE_BTN, _nome_iter);
+		GFTextLine(gump, 60, y - 2, cor, nome);
+		y += 28;
+		sleepms(2);
+	endforeach
+
+	GFAddButton(gump, 95, y + 8, 4017, 4018, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 125, y + 6, 0, "Cancelar");
+
+	var input := GFSendGump(who, gump);
+	if (!input[0]) return 0; endif
+	return input[0];
 endfunction
 
 // -------------------------------------------------------
@@ -976,6 +1332,7 @@ function _CriarBauHandler(who)
 
 	SetObjProperty(bau, "guild",       guild.guildid);
 	SetObjProperty(bau, "tipo_faccao", tipo);
+	PropagateNomeFaccao(guild, bau);
 	bau.name := "Bau da Faccao";
 
 	guild.SetProp("bau_serial", bau.serial);
@@ -1063,17 +1420,15 @@ function npcHandler(who, input)
 		historico := "<br> - {}".format("<br> -".join(historico));
 		SendHTMLGump(who, "Historico dos Guardas", historico);
 	elseif (input == BUTTON_CONTRACT_NPC)
-		var npcs_array := guild.getProp("npcs");
-		if (!npcs_array || npcs_array.size() == 0 || npcs_array.size() > 4)
-			npcs_array := array{
-				struct{ "template" := ":epicai:guardafaccaofraco",   "price" := 25,  "name" := "Guarda Recruta (Fraco)",      "equipment" := array{} },
-				struct{ "template" := ":epicai:guardafaccaomedio",   "price" := 70,  "name" := "Guarda Veterano (Medio)",     "equipment" := array{} },
-				struct{ "template" := ":epicai:guardafaccaoforte",   "price" := 100, "name" := "Guarda Elite (Forte)",         "equipment" := array{} },
-				struct{ "template" := ":merchants:merchantfaccao",   "price" := 10,  "name" := "Vendedor da Faccao",           "equipment" := array{} }
-			};
-			guild.SetProp("npcs", npcs_array);
-			guild_obj.npcs := npcs_array;
-		endif
+		var _dbg_staff_tipo := guild.GetProp("staff_tipo");
+		var _dbg_guildid    := guild.guildid;
+		var npcs_array      := listNPC(guild);
+		guild_obj.npcs := npcs_array;
+		Print("[CONTRACT] guild={} staff_tipo={} lista_size={}".format(_dbg_guildid, _dbg_staff_tipo, npcs_array.size()));
+		foreach _dbg_npc in npcs_array
+			Print("[CONTRACT]   -> {}".format(_dbg_npc.name));
+			sleepms(2);
+		endforeach
 
 		var opts := array{};
 		foreach agent in (guild_obj.npcs)
@@ -1260,12 +1615,52 @@ function lawHandler(who, input)
 			// ALTEREI AQUI ///
 			new_law.opt := targ.name;
 		// new_law.opt := struct{ "serial" := targ.serial, "name" := targ.name};
-		elseif (new_law.type["nofight"] || new_law.type["noweapon"] || new_law.type["nohood"] ||
-		  new_law.type["nosneak"])
-			var forceonguild := YesNo(who, "Esta lei sera aplicada a membros da faccao?");
-			if (!forceonguild)
-				new_law.opt := "Nao aplicada a membros";
+		elseif (new_law.type["nocolor"])
+			var color_presets := array{ "Cores Neon/Evento", "Purpura Imperial (1645)", "Inserir manualmente", "Cancelar" };
+			var color_choice := RadioGump(who, 300, 0, "Qual grupo de cores sera proibido?", color_presets, 0, color_presets.size());
+			if (color_choice["Cancelar"] || !color_choice) return; endif
+
+			var hues := array{};
+			var nome_display := "";
+
+			if (color_choice["Inserir manualmente"])
+				var raw := GetInput(who, who.backpack, "Insira os hue IDs separados por virgula (ex: 1645,1100,32):");
+				if (!raw) return SendSysMessageEx(who, "Cancelado"); endif
+				foreach part in SplitWords(raw)
+					var h := CInt(part);
+					if (h > 0) hues.append(h); endif
+				endforeach
+				nome_display := GetInput(who, who.backpack, "Nome de exibicao (ex: Cores Neon):");
+				if (!nome_display) nome_display := "Cores Proibidas"; endif
+			elseif (color_choice["Purpura Imperial"])
+				hues := array{ 1645 };
+				nome_display := "Purpura Imperial";
+			else // Neon
+				hues := array{ 32, 33, 34, 35, 36, 37, 38, 39, 40, 1153, 1154, 1161, 1162, 1163, 1164 };
+				nome_display := "Cores Neon";
 			endif
+
+			if (!hues.size())
+				return SendSysMessageEx(who, "Nenhum hue valido informado", SSM_FAIL);
+			endif
+			new_law.opt := struct{ "hues" := hues, "nome_display" := nome_display };
+		elseif (new_law.type["nospellschool"])
+			var school_opts := array{ "evocation", "necromancy", "illusion", "swordmage",
+									  "priest", "shaman", "druid", "paladin", "demonhunter",
+									  "trickster", "shinobi", "bard", "cantrip", "Cancelar" };
+			var school_choice := RadioGump(who, 350, 0, "Qual escola de magia sera proibida?", school_opts, 0, school_opts.size());
+			if (!school_choice || school_choice == "Cancelar") return SendSysMessageEx(who, "Cancelado"); endif
+			new_law.opt := school_choice;
+		elseif (new_law.type["nospelllist"])
+			var raw_ids := GetInput(who, who.backpack, "Insira os IDs das magias separados por virgula:");
+			if (!raw_ids) return SendSysMessageEx(who, "Cancelado"); endif
+			var spell_ids := array{};
+			foreach part in SplitWords(raw_ids)
+				var sid := CInt(part);
+				if (sid > 0) spell_ids.append(sid); endif
+			endforeach
+			if (!spell_ids.size()) return SendSysMessageEx(who, "Nenhum ID valido informado", SSM_FAIL); endif
+			new_law.opt := spell_ids;
 		elseif (new_law.type["nooutsideron"])
 			SendSysMessageEx(who, "Clique no canto superior do retangulo", SSM_FAIL);
 			var targ1 := TargetCoordinates(who);
@@ -1288,7 +1683,85 @@ function lawHandler(who, input)
 
 			new_law.opt.ret := array{ targ1.x, targ1.y, targ2.x, targ2.y, targ1.z };
 			new_law.opt.name := gname;
+		elseif (new_law.type["merchanttax"])
+			var raw_pct := GetInput(who, who.backpack, "Percentual da taxa (ex: 20 = +20% nos precos):");
+			if (!raw_pct) return SendSysMessageEx(who, "Cancelado"); endif
+			var pct := CInt(raw_pct);
+			if (pct <= 0 || pct > 500) return SendSysMessageEx(who, "Valor invalido (1-500)", SSM_FAIL); endif
+			new_law.opt := pct;
+		elseif (new_law.type["notax_exempt"])
+			var raw_toll := GetInput(who, who.backpack, "Valor do pedagio em moedas de cobre:");
+			if (!raw_toll) return SendSysMessageEx(who, "Cancelado"); endif
+			var toll_val := CInt(raw_toll);
+			if (toll_val <= 0) return SendSysMessageEx(who, "Valor invalido", SSM_FAIL); endif
+			new_law.opt := toll_val;
+		elseif (new_law.type["guildtax"])
+			var raw_gpct := GetInput(who, who.backpack, "Percentual extra para rivais (ex: 30 = +30%):");
+			if (!raw_gpct) return SendSysMessageEx(who, "Cancelado"); endif
+			var gpct := CInt(raw_gpct);
+			if (gpct <= 0) return SendSysMessageEx(who, "Valor invalido", SSM_FAIL); endif
+			SendSysMessageEx(who, "Insira os IDs de guild das faccoes rivais separados por virgula:", SSM_REQUEST);
+			var raw_rivals := GetInput(who, who.backpack, "IDs de guild rivais (separados por virgula):");
+			if (!raw_rivals) return SendSysMessageEx(who, "Cancelado"); endif
+			var rival_ids := array{};
+			foreach part in SplitWords(raw_rivals)
+				var rid := CInt(part);
+				if (rid > 0) rival_ids.append(rid); endif
+			endforeach
+			if (!rival_ids.size()) return SendSysMessageEx(who, "Nenhum ID valido", SSM_FAIL); endif
+			new_law.opt := struct{ "rivais" := rival_ids, "pct" := gpct };
+		elseif (new_law.type["nomusic"])
+			var music_horario := YesNo(who, "Restringir a um horario especifico?");
+			if (music_horario)
+				var raw_hi := GetInput(who, who.backpack, "Hora de inicio (0-23):");
+				var raw_hf := GetInput(who, who.backpack, "Hora de fim (0-23):");
+				new_law.opt := struct{
+					"hora_inicio" := CInt(raw_hi),
+					"hora_fim"    := CInt(raw_hf)
+				};
+			endif
+		elseif (new_law.type["toquerecolher"])
+			var raw_tr_hi := GetInput(who, who.backpack, "Hora de inicio do recolher (0-23, ex: 22):");
+			if (!raw_tr_hi) return SendSysMessageEx(who, "Cancelado"); endif
+			var raw_tr_hf := GetInput(who, who.backpack, "Hora de fim do recolher (0-23, ex: 6):");
+			if (!raw_tr_hf) return SendSysMessageEx(who, "Cancelado"); endif
+			new_law.opt := struct{
+				"hora_inicio" := CInt(raw_tr_hi),
+				"hora_fim"    := CInt(raw_tr_hf)
+			};
+		elseif (new_law.type["leimarcia"])
+			SendSysMessageEx(who, "Lei marcial ativa: jogadores sem carteira serao detidos.", SSM_INFO);
 		endif
+
+		// Selecionar quem esta lei vai afetar
+		var _target_opts := array{
+			"Fora da faccao (padrao)",
+			"Todos (incluindo membros e lider)",
+			"Todos exceto o lider",
+			"Apenas membros full",
+			"Apenas membros honorarios",
+			"Exceto membro especifico"
+		};
+		var _target_choice := RadioGump(who, 400, 0, "Quem esta lei vai afetar?", _target_opts, 0,
+		  _target_opts.size());
+		if (!_target_choice) return SendSysMessageEx(who, "Cancelado"); endif
+
+		case (_target_choice)
+			"Todos (incluindo membros e lider)": new_law.target := "todos";            break;
+			"Todos exceto o lider":              new_law.target := "nao_lider";         break;
+			"Apenas membros full":               new_law.target := "apenas_full";       break;
+			"Apenas membros honorarios":         new_law.target := "apenas_honorarios"; break;
+			"Exceto membro especifico":
+				SendSysMessageEx(who, "Mire no membro que sera isento desta lei", SSM_REQUEST);
+				var _exceto_targ := Target(who);
+				if (!_exceto_targ || !_exceto_targ.isA(POLCLASS_MOBILE))
+					return SendSysMessageEx(who, "Cancelado");
+				endif
+				new_law.exceto_serials := array{ _exceto_targ.serial };
+				new_law.target := "nao_membro_x";
+				break;
+			// "Fora da faccao" = padrao — nao precisa setar target
+		endcase
 
 		if (AddLaw(guild, new_law))
 			SendSysMessageEx(who, "Lei adicionada", SSM_INFO);
