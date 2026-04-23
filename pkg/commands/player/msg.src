@@ -75,14 +75,14 @@ function GetNamesList(who)
 	foreach person in EnumerateOnlineCharacters()
 		var msg_settings := GetMessageSettings(person);
 
-		if ((msg_settings.disabled) && (!who.cmdlevel))
+		if ((msg_settings.Exists("disabled")) && (!who.cmdlevel))
 			// If messages are off, and 'who' is a player, dont add the name.
 			// If 'who' has a command level, then he/she can see any name.
 			if (who.acctname == "ghaplayer")
 				the_list.Insert(person.name, person.serial);
 			endif
 			continue;
-		elseif ((!msg_settings.visible) && (person.concealed > who.cmdlevel))
+		elseif ((!msg_settings.Exists("visible")) && (person.concealed > who.cmdlevel))
 			// If the person is not in visible mode, and concealed is
 			// higher than who's command level, don't add that person.
 			if (who.acctname == "ghaplayer")
@@ -186,7 +186,6 @@ function CommandIssued(who, text)
 		return 1;
 	elseif (text == "visible on")
 		msg_settings["visible"] := 1;
-		msg_settings.Erase("visible");
 		SendSysMessage(who, "Players can now message you while concealed.");
 		SetObjProperty(who, ".msg", msg_settings);
 		return 1;
