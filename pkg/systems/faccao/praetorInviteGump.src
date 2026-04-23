@@ -4,6 +4,8 @@ use os;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 
+const PRAETOR_INVITE_TIMEOUT := 15;
+
 program praetorInviteGump(params)
 	var praetor := params[1];
 	var caster := params[2];
@@ -34,8 +36,14 @@ program praetorInviteGump(params)
 	GFAddButton(gump, 240, 160, 4017, 4018, GF_CLOSE_BTN, 0);
 	GFTextLine(gump, 280, 162, 1153, "Nao");
 
+	var sentAt := ReadGameClock();
 	var input := GFSendGump(praetor, gump);
 	if (!input || input[0] != 1)
+		return 0;
+	endif
+
+	if (ReadGameClock() - sentAt > PRAETOR_INVITE_TIMEOUT)
+		SendSysMessage(praetor, "O alerta expirou.");
 		return 0;
 	endif
 
