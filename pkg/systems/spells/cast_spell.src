@@ -350,10 +350,14 @@ function _applyConsecutiveCastPenalty(mobile)
 	endif
 
 	var now := ReadGameClock();
-	var last := CInt(GetObjProperty(mobile, "#lastSpellCastTime"));
-	var bonus := CInt(GetObjProperty(mobile, "#consecutiveCastBonus"));
+	var last := GetObjProperty(mobile, "#lastSpellCastTime");
+	var bonus := GetObjProperty(mobile, "#consecutiveCastBonus");
 
-	if (last > 0 && now - last <= 15)
+	if (bonus == error)
+		bonus := 0;
+	endif
+
+	if (last != error && last > 0 && (now - last) <= 15)
 		bonus := Min(bonus + 1, 2);
 	else
 		bonus := 0;
