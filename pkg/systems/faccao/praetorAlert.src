@@ -8,6 +8,7 @@ const PRAETOR_ALERT_COOLDOWN := 300;
 
 program praetorAlert(params)
 	var caster := params[1];
+	var school := params[2];
 	if (!caster || caster == error)
 		return 0;
 	endif
@@ -53,7 +54,7 @@ program praetorAlert(params)
 		alerted[casterId] := now;
 		SetObjProperty(praetor, "#praetor_alerted", alerted);
 
-		Start_Script(":faccao:praetorInviteGump", array{ praetor, caster });
+		Start_Script(":faccao:praetorInviteGump", array{ praetor, caster, school });
 	endforeach
 
 	return 1;

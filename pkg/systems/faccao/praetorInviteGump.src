@@ -7,6 +7,7 @@ include ":gumps:gumps_ex";
 program praetorInviteGump(params)
 	var praetor := params[1];
 	var caster := params[2];
+	var school := params[3];
 
 	if (!praetor || praetor == error || !praetor.connected || praetor.dead)
 		return 0;
@@ -15,18 +16,23 @@ program praetorInviteGump(params)
 		return 0;
 	endif
 
+	if (!school || school == error)
+		school := "Desconhecida";
+	endif
+
 	var gump := GFCreateGump();
-	GFResizePic(gump, 0, 0, 9200, 400, 190);
-	GFResizePic(gump, 15, 15, 9350, 370, 160);
+	GFResizePic(gump, 0, 0, 9200, 400, 215);
+	GFResizePic(gump, 15, 15, 9350, 370, 185);
 	GFTextMid(gump, 15, 25, 370, 53, "Alerta do Imperium");
 
 	GFTextLine(gump, 30, 65, 1153, "Uso de magia dentro dos limites do");
 	GFTextLine(gump, 30, 85, 1153, "Imperium, deseja se teleportar?");
+	GFTextLine(gump, 30, 115, 53, "Escola: " + CStr(school));
 
-	GFAddButton(gump, 70,  135, 4005, 4006, GF_CLOSE_BTN, 1);
-	GFTextLine(gump, 110, 137, 1153, "Sim");
-	GFAddButton(gump, 240, 135, 4017, 4018, GF_CLOSE_BTN, 0);
-	GFTextLine(gump, 280, 137, 1153, "Nao");
+	GFAddButton(gump, 70,  160, 4005, 4006, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 110, 162, 1153, "Sim");
+	GFAddButton(gump, 240, 160, 4017, 4018, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 280, 162, 1153, "Nao");
 
 	var input := GFSendGump(praetor, gump);
 	if (!input || input[0] != 1)

@@ -579,8 +579,8 @@ endfunction
 function finalizeCasting(mobile, spellinfo, targ, scroll)
 	CastSpell(mobile, spellinfo, targ);
 
-	if (spellinfo.Type != "Divine" && spellinfo.Type != "Priest" && InValtheris(mobile) && HasPraetors())
-		Start_Script(":faccao:praetorAlert", array{ mobile });
+	if (spellinfo.Type != "Divine" && spellinfo.Type != "Priest" && spellinfo.Circle[1] != "0" && InValtheris(mobile) && HasPraetors())
+		Start_Script(":faccao:praetorAlert", array{ mobile, spellinfo.School });
 	endif
 
 	var entropy_delta := 0;
