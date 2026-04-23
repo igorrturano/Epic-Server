@@ -28,6 +28,7 @@ use polsys;
 include "include/client";
 include ":attributes:attributes";
 include ":attributes:intrinsicStats";
+include ":commands:/include/r";
 
 program sendStats()
 	Print("INSTALLING: Outgoing Status PH...");
@@ -178,28 +179,8 @@ function TrataNomeMobile(character, source)
 		if (GetObjProperty(source, "realname"))
 					nomeJogador := "Incognito";
 		else
-			// Verifica se o char já foi reconhecido por who
-			var conhecidos := dictionary;
-			if (GetObjProperty(character, "conhecidos"))
-				var ID := Cstr(source.serial); // Salva o serial do personagem
-				if (GetObjProperty(source, "disfarce"))
-					var now := ReadGameClock();
-					var canSee := CInt(GetObjProperty(character, "#truesight_active")) > now
-					              || AP_GetSkill(character, AWARENESS) >= 70;
-					if (!canSee)
-						ID := Cstr(GetObjProperty(source, "FakeID"));
-					endif
-				endif
-
-				conhecidos := GetObjProperty(character, "conhecidos"); // Lista de pessoas conhecidadas
-				if (conhecidos.Exists(ID))
-					nomeJogador := conhecidos[ID];
-				else
-					nomeJogador := source.name;
-				endif
-			else
-				nomeJogador := source.name;
-			endif
+			var nickname := GetKnownNickname(character, source);
+			nomeJogador := (nickname != "") ? nickname : source.name;
 		endif
 
 		if (character.cmdlevel > 1) // Staff consegue ver mais
