@@ -132,16 +132,31 @@ endfunction
 function ResgatarAnimal(who, post)
 	var animal_serial := GetObjProperty(post, "StoredAnimal");
 	var animal := SystemFindObjectBySerial(animal_serial);
+	var is_contract_owner := CInt(GetObjProperty(who, "CurrentStablePostSerial")) == post.serial;
 
+	// Pet destruido (raro): libera o slot do poste e o contrato do dono.
 	if (!animal)
-		SendSysMessage(who, "O animal deste estabulo nao existe mais.");
+		SendSysMessage(who, "O animal deste estabulo nao existe mais. Contrato encerrado.");
 		EraseObjProperty(post, "StoredAnimal");
+		if (is_contract_owner)
+			EraseObjProperty(who, "CurrentStablePostSerial");
+		endif
 		return 0;
 	endif
 
-	if (animal.master != who)
-		SendSysMessage(who, "Este animal nao pertence a voce.");
-		return 0;
+	// Pet liberado ("todos livres"/transferido) ou morto enquanto contratado:
+	// o slot do poste e o CurrentStablePostSerial do dono ficam travados. So
+	// o dono do contrato (via CurrentStablePostSerial) pode forcar a rescisao.
+	if (animal.master != who || animal.dead)
+		if (!is_contract_owner)
+			SendSysMessage(who, "Este animal nao pertence a voce.");
+			return 0;
+		endif
+		var motivo := animal.dead ? "morto" : "liberado";
+		SendSysMessage(who, animal.name + " foi " + motivo + ". Contrato do estabulo encerrado.");
+		EncerrarContratoEstabulo(animal, post, who);
+		GetNumPets(who);
+		return 1;
 	endif
 
 	if (GetObjProperty(animal, "EstaNoLimbo"))
