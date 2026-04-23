@@ -93,21 +93,6 @@ program cureScript(params)
 		SetName(who, namechar);
 	endif
 
-	// Re-equip gear stripped at transformation. POL keeps #EquippedOn set when
-	// MoveItemToContainer unequips an item, so anything currently in the backpack
-	// tagged with this mobile's serial is pre-shift kit. Skip if dead — at that
-	// point items already live on the corpse and wakeup.inc handles re-equip.
-	if (!who.dead && who.backpack)
-		var serialC := who.serial;
-		foreach item in EnumerateItemsInContainer(who.backpack)
-			if (item.container == who.backpack && CInt(GetObjProperty(item, "#EquippedOn")) == serialC)
-				if (!EquipItem(who, item))
-					EraseObjProperty(item, "#EquippedOn");
-				endif
-			endif
-		endforeach
-	endif
-
 	// Call the new function to handle werewolf buffs removal
 	removeWerewolfBuffs(who);
 
@@ -131,6 +116,23 @@ program cureScript(params)
 	EraseObjProperty(who, "polymorph_resistmod");
 	EraseObjProperty(who, "namechar");
 	EraseObjProperty(who, "HitScripts");
+
+	// Re-equip gear stripped at transformation. Runs AFTER metamorfose is erased
+	// because equip.src rejects any armor/weapon equip while that prop is live
+	// ("Voce nao pode equipar nada nessa forma"). NaturalBond._UnequipWild
+	// snapshots serials into #wildshape_equips before unequipping — we can't
+	// recover them via #EquippedOn because UnequipTest wipes it on unequip.
+	// Skip on dead: items already live on the corpse and wakeup.inc owns that path.
+	var wildshape_equips := GetObjProperty(who, "#wildshape_equips");
+	if (!who.dead && wildshape_equips != error && wildshape_equips.size() > 0)
+		foreach serial in wildshape_equips
+			var item := SystemFindObjectBySerial(CInt(serial));
+			if (item && !item.errortext)
+				EquipItem(who, item);
+			endif
+		endforeach
+	endif
+	EraseObjProperty(who, "#wildshape_equips");
 
 	// Restore speech on form end
 	who.squelch(0);
