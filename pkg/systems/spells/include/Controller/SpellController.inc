@@ -389,6 +389,14 @@ function _SC_RemoveResist(targ, opts)
 	_SC_RefreshArmorPackets(targ);
 endfunction
 
+// Public wrapper: external systems (transformation revert, etc.) call this
+// to force the client's ArmorResistances dict to re-sync with the current
+// #SpellResist — e.g. after endmetamorfose runs, because the packets that
+// fired while the druid was stripped don't reflect re-equipped gear state.
+function SC_RefreshArmorPackets(targ)
+	_SC_RefreshArmorPackets(targ);
+endfunction
+
 // Re-emit armor packets for every region slot so the client's StatusGumpEpic
 // shows the active #SpellResist on all 7 slots — even empty ones. Must pass
 // raw `targ` (not a wrapper): SendUpdateEquipmentRequest's internal
