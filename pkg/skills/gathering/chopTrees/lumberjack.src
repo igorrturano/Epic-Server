@@ -129,7 +129,7 @@ function ChopTree(who, tool, targ, orig_x, orig_y)
 	if (SkillCheck(who, GATHERING, difficulty) > 0 || MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
 		var amt := Cint(AP_GetSkill(who, GATHERING) / 20);
 		if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_LUMBERJACK))
-			amt := amt + 2;
+			amt := amt + 4;
 		endif
 		if (amt <= 0)
 			amt := 1;
