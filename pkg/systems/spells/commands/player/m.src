@@ -29,12 +29,15 @@ program magia(who, spellname := "")
 		return 0;
 	endif
 	
-	// Determine spell type (trickster vs regular mage)
-	var spell_type := SPELL_TYPE_MAGE;
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
-		spell_type := SPELL_TYPE_TRICKSTER;
+	// .m has no spell type of its own — resolve to the actual school the
+	// spell lives in. Trickster bypass (SENSIBILIDADE_ARCANA) is enforced
+	// inside the executor's grimoire check based on player state, so we
+	// don't need a separate code path here.
+	var spell_type := ResolveMageSchoolForSpell(spellname);
+	if (!spell_type)
+		SendSysMessageEx(who, "A magia " + spellname + " nao existe.", SSM_FAIL);
+		return 0;
 	endif
-	
-	// Execute the spell using the unified executor
+
 	return ExecuteSpellByName(who, spellname, spell_type);
 endprogram
