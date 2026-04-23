@@ -325,7 +325,7 @@ function performSpellCycles(mobile, mw, spellinfo, byref orig_hp)
 	elseif (GetCooldown(mobile, "divine_manifestation") > 0)
 		cycles := 1;
 	else
-		cycles += _applyConsecutiveCastPenalty(mobile);
+		cycles += _applyConsecutiveCastPenalty(mobile, spellinfo);
 	endif
 
 	while (cycles)
@@ -344,26 +344,26 @@ function performSpellCycles(mobile, mw, spellinfo, byref orig_hp)
 	return 1;
 endfunction
 
-function _applyConsecutiveCastPenalty(mobile)
+function _applyConsecutiveCastPenalty(mobile, spellinfo)
 	if (mobile.npctemplate)
 		return 0;
 	endif
 
-	var now := ReadGameClock();
-	var last := GetObjProperty(mobile, "#lastSpellCastTime");
-	var bonus := GetObjProperty(mobile, "#consecutiveCastBonus");
+	var spellId := CInt(spellinfo.id);
+	var bonus := 0;
 
-	if (bonus == error)
-		bonus := 0;
+	if (GetCooldown(mobile, "recent_cast") > 0)
+		var lastId := GetObjProperty(mobile, "#lastCastSpellId");
+		if (lastId != error && CInt(lastId) == spellId)
+			var prev := GetObjProperty(mobile, "#consecutiveCastBonus");
+			if (prev != error)
+				bonus := Min(CInt(prev) + 1, 2);
+			endif
+		endif
 	endif
 
-	if (last != error && last > 0 && (now - last) <= 15)
-		bonus := Min(bonus + 1, 2);
-	else
-		bonus := 0;
-	endif
-
-	SetObjProperty(mobile, "#lastSpellCastTime", now);
+	SetCooldown(mobile, "recent_cast", 15);
+	SetObjProperty(mobile, "#lastCastSpellId", spellId);
 	SetObjProperty(mobile, "#consecutiveCastBonus", bonus);
 
 	return bonus;
