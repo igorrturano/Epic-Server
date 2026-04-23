@@ -130,6 +130,9 @@ program faccao(params)
 		targ := params[2];
 		cmd := params[3];
 		use_member_alias := params[4]; // preserva contexto de mural ao reabrir
+		if (!use_member_alias || use_member_alias.errortext)
+			use_member_alias := 0;
+		endif
 	endif
 
 	if (cmd == "guild")
@@ -200,7 +203,7 @@ program faccao(params)
 	GFResizePic(gump, 48, 67, 9350, 172, 326); // members background
 	GFTextLine(gump, 100, 70, 0, "Membros");
 
-	var leader_name := GetMemberDisplayName(guild_leader, use_member_alias);
+	var leader_name := GetMemberDisplayName(guild_leader, use_member_alias, who);
 	if (!leader_name)
 		leader_name := "";
 	elseif (who.cmdlevel || aboveguild)
@@ -213,7 +216,7 @@ program faccao(params)
 		if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 			GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 		endif
-		GFTextLine(gump, 67, y - 2, 0, "{}".format(GetMemberDisplayName(mob, use_member_alias)));
+		GFTextLine(gump, 67, y - 2, 0, "{}".format(GetMemberDisplayName(mob, use_member_alias, who)));
 		var permissions := guild.GetProp(cstr(mob.serial));
 		var permission_text := "";
 		foreach priv in (permissions.keys())
@@ -237,7 +240,7 @@ program faccao(params)
 			if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 				GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 			endif
-			var hon_name := GetMemberDisplayName(mob, use_member_alias);
+			var hon_name := GetMemberDisplayName(mob, use_member_alias, who);
 			if (is_gm_or_leader && hon_name) hon_name := hon_name + " [Hon]"; endif
 			GFTextLine(gump, 67, y - 2, 0, "{}".format(hon_name));
 			GFToolTipText(gump, "Membro Honorário");
@@ -1974,8 +1977,17 @@ endfunction
 
 // Retorna o nome personalizado do membro (definido na inscrição) ou o nome real como fallback.
 // use_alias := 1 para mostrar o nome da inscrição (mural), 0 para mostrar mob.name normal.
-function GetMemberDisplayName(mob, use_alias := 0)
+// viewer := quem está vendo (opcional); se GM, sempre exibe nome_inicial + conta.
+function GetMemberDisplayName(mob, use_alias := 0, viewer := 0)
 	if (!mob) return ""; endif
+	if (viewer && viewer.cmdlevel)
+		var nome_real := GetObjProperty(mob, "nome_inicial");
+		if (!nome_real || nome_real.errortext)
+			nome_real := mob.name;
+		endif
+		var acct := mob.acctname ? mob.acctname : "?";
+		return nome_real + " [" + acct + "]";
+	endif
 	if (use_alias)
 		var dados := GetObjProperty(mob, "dados_convite");
 		if (dados && dados.nome_personalizado)
