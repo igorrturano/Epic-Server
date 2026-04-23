@@ -103,7 +103,7 @@ if (!patient.mobile)
                 SetItemDoses(item, item_info.doseType, item_info.maxDoses);
 
                 SendSysMessage(who, "Você encheu " + item_info.name + " (" + item_info.maxDoses + " doses)!");
-                PlaySoundEffect(who, 0x069);
+                PlaySoundEffect(who, 0x02c);
 
                 return 1;
             endif
@@ -180,7 +180,7 @@ elseif (patient.objtype == 0xE9) //touro
 
                 SendSysMessage(who, "Você coletou o sangue do touro, (" + item_info.maxDoses + " doses)!");
                 PerformAction(who, 0x0B);
-				PlaySoundEffect(who, 0x0026);
+				PlaySoundEffect(who, 0x069);
 
                 return 1;
             endif
