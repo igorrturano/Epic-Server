@@ -14,6 +14,13 @@ program Logon(who)
 	if (GetObjProperty(who, "notif_soldo") == 1)
 		start_script(":faccao:gump_soldo", array{who});
 	endif
+
+	// ── Notificação de contrato de arquitetura encerrado (enviada offline) ────
+	var _notif_contrato := GetObjProperty(who, "notif_contrato_cancelado");
+	Print("[CONTRATO-LOGON] " + who.name + " logou | notif_contrato_cancelado=" + (_notif_contrato ? CStr(_notif_contrato) : "NAO_ENCONTRADA"));
+	if (_notif_contrato)
+		start_script(":faccao:gump_contrato_cancelado", array{who});
+	endif
 	// SendSysMessage(who, "Login");
 	// NormaliseGamePlayer(who);
 

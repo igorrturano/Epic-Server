@@ -1,0 +1,550 @@
+// ARQUIVO: pkg/systems/faccao/contrato_arquitetura.src
+//
+// Contrato de Arquitetura — celebrado entre um líder de facção e um arquiteto.
+//   0xFFD9  Contrato em Branco  — usado pelo arquiteto; ele aponta para o líder
+//   0xFFDB  Contrato Assinado   — cada parte recebe uma cópia após ambos assinarem
+//
+// Fluxo:
+//   1. Arquiteto (HAB ARCHITECT) dá duplo-clique no contrato em branco (0xFFD9)
+//   2. Clica uma vez no líder da facção alvo
+//   3. Gump 0x1FAC1: arquiteto escolhe duração e assina
+//   4. Gump 0x1FAC2: líder vê proposta e assina ou recusa
+//   5. Ambos assinam → cada um recebe um 0xFFDB; cross-reference entre os dois itens
+//
+// Rescisão (qualquer dos dois dá duplo-clique no 0xFFDB ativo):
+//   - Gump 0x1FAC3: mostra detalhes + campo de motivo + botão Finalizar
+//   - AMBOS os exemplares são marcados como encerrados
+//   - A outra parte recebe notificação via ícone 0x7D2 → gump 0x1FAC4
+
+use uo;
+use os;
+use util;
+use guilds;
+
+include ":faccao:faccao";
+include ":faccao:membership";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":abilities:models/Ability";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":commands:/include/r";
+include "include/client";
+
+const CONTRATO_DUR_5D    := 432000;   // 5 dias
+const CONTRATO_DUR_10D   := 864000;   // 10 dias
+const CONTRATO_DUR_15D   := 1296000;  // 15 dias
+const CONTRATO_DUR_INDEF := 0;        // indeterminado
+
+const CONTRATO_TAXA_VALOR  := 25;
+const CONTRATO_TAXA_MOEDA  := 0xBA63; // bronze/cobre
+const CONTRATO_TAXA_GUILD  := "Liga do Pacto Comum";
+
+program contrato_arquitetura_use(who, item)
+    Print("[CONTRATO] duplo-clique | who=" + who.name + " | objtype=" + hex(item.objtype) + " | item.serial=" + item.serial);
+    if (item.objtype == 0xFFD9)
+        return _IniciarContrato(who, item);
+    elseif (item.objtype == 0xFFDB)
+        return _UsarContratoAssinado(who, item);
+    endif
+endprogram
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PASSO 1 — Arquiteto dá duplo-clique no contrato em branco
+// ─────────────────────────────────────────────────────────────────────────────
+function _IniciarContrato(who, item)
+    Print("[CONTRATO][P1] Verificando HAB ARCHITECT | who=" + who.name);
+    if (!MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
+        Print("[CONTRATO][P1] Bloqueado: sem HAB ARCHITECT");
+        SendSysMessage(who, "Apenas um Arquiteto pode iniciar este contrato.");
+        return 0;
+    endif
+
+    SendSysMessage(who, "Clique no líder da facção com quem deseja celebrar o contrato.");
+    var lider := Target(who);
+
+    if (!lider || !lider.isA(POLCLASS_MOBILE) || lider.npc)
+        Print("[CONTRATO][P1] Alvo inválido ou NPC");
+        SendSysMessage(who, "Alvo inválido.");
+        return 0;
+    endif
+
+    if (lider == who)
+        Print("[CONTRATO][P1] Arquiteto tentou contratar a si mesmo");
+        SendSysMessage(who, "Você não pode celebrar um contrato consigo mesmo.");
+        return 0;
+    endif
+
+    var lider_guild := _GetGuildLiderada(lider);
+    if (!lider_guild)
+        Print("[CONTRATO][P1] Alvo não é líder: " + lider.name);
+        SendSysMessage(who, "Este jogador não é líder de nenhuma facção.");
+        return 0;
+    endif
+
+    var guild_name     := lider_guild.GetProp("name");
+    var lider_nome_arq := _NomeVisto(who, lider.serial);
+    Print("[CONTRATO][P1] Líder=" + lider.name + " (visto como: " + lider_nome_arq + ") | facção=" + guild_name);
+
+    // Gump 0x1FAC1 — arquiteto escolhe duração
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x1FAC1);
+    GFResizePic(gump, 0, 0, 9200, 430, 310);
+    GFResizePic(gump, 15, 15, 9350, 400, 280);
+    GFHtmlShadowed(gump, 20, 25, 390, 20, "#FFC33C", "<center>Contrato de Arquitetura", 8);
+    GFTextLine(gump, 20, 50, 0, "Facção: " + guild_name);
+    GFTextLine(gump, 20, 70, 0, "Líder: " + lider_nome_arq);
+    GFTextLine(gump, 20, 105, 0, "Duração do contrato:");
+    GFRadioButton(gump, 30, 128, 9727, 9730, 1, 10);
+    GFTextLine(gump,  60, 130, 0, "5 dias");
+    GFRadioButton(gump, 30, 155, 9727, 9730, 0, 11);
+    GFTextLine(gump,  60, 157, 0, "10 dias");
+    GFRadioButton(gump, 30, 182, 9727, 9730, 0, 12);
+    GFTextLine(gump,  60, 184, 0, "15 dias");
+    GFRadioButton(gump, 30, 209, 9727, 9730, 0, 13);
+    GFTextLine(gump,  60, 211, 0, "Indeterminado");
+    GFTextLine(gump, 20, 240, 0, "Ao clicar em Assinar você concorda com os termos do contrato.");
+    GFAddButton(gump, 60,  265, 4005, 4006, GF_CLOSE_BTN, 1);
+    GFTextLine(gump,  90,  267, 0, "Assinar");
+    GFAddButton(gump, 280, 265, 4017, 4018, GF_CLOSE_BTN, 0);
+    GFTextLine(gump,  310, 267, 0, "Cancelar");
+
+    var input := GFSendGump(who, gump);
+    if (!input || input[0] != 1)
+        Print("[CONTRATO][P1] Arquiteto cancelou o gump 0x1FAC1");
+        SendSysMessage(who, "Você cancelou o contrato.");
+        return 0;
+    endif
+
+    var duracao_seg := CONTRATO_DUR_5D;
+    var duracao_txt := "5 dias";
+    if (CInt(input[11]) == 1)
+        duracao_seg := CONTRATO_DUR_10D;  duracao_txt := "10 dias";
+    elseif (CInt(input[12]) == 1)
+        duracao_seg := CONTRATO_DUR_15D;  duracao_txt := "15 dias";
+    elseif (CInt(input[13]) == 1)
+        duracao_seg := CONTRATO_DUR_INDEF; duracao_txt := "Indeterminado";
+    endif
+
+    Print("[CONTRATO][P1] Duração escolhida: " + duracao_txt + " (" + duracao_seg + "s)");
+    SendSysMessage(who, "O custo de registrar esse contrato é " + CONTRATO_TAXA_VALOR + " moedas para a " + CONTRATO_TAXA_GUILD + ".");
+    _EmoteAssinar(who);
+    return _EnviarPropostaAoLider(who, lider, lider_guild, duracao_seg, duracao_txt, item);
+endfunction
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PASSO 2 — Proposta enviada ao líder
+// ─────────────────────────────────────────────────────────────────────────────
+function _EnviarPropostaAoLider(arquiteto, lider, guild, duracao_seg, duracao_txt, item_branco)
+    var guild_name   := guild.GetProp("name");
+    var arq_nome_lid := _NomeVisto(lider, arquiteto.serial);
+    Print("[CONTRATO][P2] Proposta | arq=" + arquiteto.name + " (visto pelo lider como: " + arq_nome_lid + ") | guild=" + guild_name + " | duracao=" + duracao_txt);
+
+    // Gump 0x1FAC2 — líder vê proposta
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x1FAC2);
+    GFResizePic(gump, 0, 0, 9200, 430, 310);
+    GFResizePic(gump, 15, 15, 9350, 400, 280);
+    GFHtmlShadowed(gump, 20, 25, 390, 20, "#FFC33C", "<center>Contrato de Arquitetura", 8);
+    GFTextLine(gump, 20, 50, 0, "Proposta recebida de: " + arq_nome_lid);
+    var y := 85;
+    GFTextLine(gump, 20, y, 0, "O arquiteto " + arq_nome_lid + " solicita o direito de construir casas"); y += 20;
+    GFTextLine(gump, 20, y, 0, "dentro dos territórios da facção " + guild_name + "."); y += 30;
+    GFHtmlShadowed(gump, 20, y, 390, 16, "#FFC33C", "Duração: " + duracao_txt, 6); y += 30;
+    GFTextLine(gump, 20, y, 0, "Ao assinar, você autoriza este arquiteto a construir em seus"); y += 20;
+    GFTextLine(gump, 20, y, 0, "territórios."); y += 20;
+    GFAddButton(gump, 60,  y + 10, 4005, 4006, GF_CLOSE_BTN, 1);
+    GFTextLine(gump,  90,  y + 12, 0, "Assinar");
+    GFAddButton(gump, 280, y + 10, 4017, 4018, GF_CLOSE_BTN, 0);
+    GFTextLine(gump,  310, y + 12, 0, "Recusar");
+
+    SendSysMessage(lider, arq_nome_lid + " propôs um Contrato de Arquitetura. Veja o gump.");
+    var input := GFSendGump(lider, gump);
+
+    if (!input || input[0] != 1)
+        Print("[CONTRATO][P2] Líder recusou a proposta");
+        SendSysMessage(lider,    "Você recusou o contrato de arquitetura.");
+        SendSysMessage(arquiteto, _NomeVisto(arquiteto, lider.serial) + " recusou o contrato de arquitetura.");
+        return 0;
+    endif
+
+    _EmoteAssinar(lider);
+
+    // Taxa de celebração: 25 moedas de bronze do arquiteto → cofre da Liga do Pacto Comum
+    if (!_CobrarTaxaCelebracao(arquiteto))
+        SendSysMessage(arquiteto, "Você não possui " + CONTRATO_TAXA_VALOR + " moedas de bronze para celebrar o contrato.");
+        SendSysMessage(lider,     "O arquiteto não possui moedas suficientes. Contrato não celebrado.");
+        return 0;
+    endif
+
+    Print("[CONTRATO][P2] Líder assinou — criando exemplares");
+    _CriarContratoAssinado(arquiteto, lider, guild, duracao_seg, duracao_txt, item_branco);
+    return 1;
+endfunction
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cria os dois itens 0xFFDB com cross-reference de seriais entre si
+// ─────────────────────────────────────────────────────────────────────────────
+function _CriarContratoAssinado(arquiteto, lider, guild, duracao_seg, duracao_txt, item_branco)
+    var now        := POLCore().systime;
+    var expira_em  := (duracao_seg > 0) ? (now + duracao_seg) : 0;
+    var guild_id   := guild.guildid;
+    var guild_name := guild.GetProp("name");
+    var label      := "Contrato de Arquitetura - " + guild_name;
+
+    Print("[CONTRATO][CRIAR] guild=" + guild_name + " | expira_em=" + expira_em);
+
+    var container := item_branco.container;
+    DestroyItem(item_branco);
+
+    var item_arq;
+    if (container)
+        item_arq := CreateItemInContainer(container, 0xFFDB, 1);
+    else
+        item_arq := CreateItemAtLocation(arquiteto.x, arquiteto.y, arquiteto.z, 0xFFDB, 1, arquiteto.realm);
+    endif
+
+    var bp_lider := lider.backpack;
+    var item_lid;
+    if (bp_lider)
+        item_lid := CreateItemInContainer(bp_lider, 0xFFDB, 1);
+    else
+        item_lid := CreateItemAtLocation(lider.x, lider.y, lider.z, 0xFFDB, 1, lider.realm);
+    endif
+
+    if (!item_arq || !item_lid)
+        Print("[CONTRATO][CRIAR] ERRO: falha ao criar exemplar | item_arq=" + (item_arq ? item_arq.serial : "FALHOU") + " | item_lid=" + (item_lid ? item_lid.serial : "FALHOU"));
+        return;
+    endif
+
+    Print("[CONTRATO][CRIAR] item_arq.serial=" + item_arq.serial + " | item_lid.serial=" + item_lid.serial);
+
+    foreach i in array{ item_arq, item_lid }
+        i.name := label;
+        SetObjProperty(i, "contrato_guild_id",      guild_id);
+        SetObjProperty(i, "contrato_guild_name",     guild_name);
+        SetObjProperty(i, "contrato_arquiteto",      arquiteto.serial);
+        SetObjProperty(i, "contrato_lider",          lider.serial);
+        SetObjProperty(i, "contrato_arquiteto_nome", arquiteto.name);
+        SetObjProperty(i, "contrato_lider_nome",     lider.name);
+        SetObjProperty(i, "contrato_duracao_txt",    duracao_txt);
+        SetObjProperty(i, "contrato_inicio",         now);
+        SetObjProperty(i, "contrato_expira",         expira_em);
+        SetObjProperty(i, "contrato_ativo",          1);
+        sleepms(2);
+    endforeach
+
+    // Cross-reference: cada exemplar conhece o serial do outro
+    SetObjProperty(item_arq, "contrato_par_serial", item_lid.serial);
+    SetObjProperty(item_lid, "contrato_par_serial", item_arq.serial);
+    Print("[CONTRATO][CRIAR] Cross-ref: arq=" + item_arq.serial + " <-> lid=" + item_lid.serial);
+
+    SetObjProperty(arquiteto, "arquiteto_contrato_guild",  guild_id);
+    SetObjProperty(arquiteto, "arquiteto_contrato_expira", expira_em);
+
+    Print("[CONTRATO][CRIAR] Contrato celebrado com sucesso");
+    SendSysMessage(arquiteto, "Contrato assinado! Você pode construir nos territórios de " + guild_name + ".");
+    SendSysMessage(lider,     "Contrato assinado com o arquiteto " + arquiteto.name + ".");
+endfunction
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PASSO 3 — Qualquer parte usa o contrato assinado (0xFFDB)
+// ─────────────────────────────────────────────────────────────────────────────
+function _UsarContratoAssinado(who, item)
+    var arq_serial := GetObjProperty(item, "contrato_arquiteto");
+    var lid_serial := GetObjProperty(item, "contrato_lider");
+    var ativo      := GetObjProperty(item, "contrato_ativo");
+    Print("[CONTRATO][P3] Abrindo | who=" + who.name + " | item.serial=" + item.serial + " | ativo=" + ativo);
+
+    // Contrato encerrado — só as partes veem o motivo
+    if (!ativo)
+        if (who.serial != arq_serial && who.serial != lid_serial && !who.cmdlevel)
+            Print("[CONTRATO][P3] Bloqueado: não é parte do contrato encerrado");
+            SendSysMessage(who, "Este contrato não é seu.");
+            return 0;
+        endif
+        var enc_serial := GetObjProperty(item, "contrato_cancelado_serial");
+        var enc_por    := enc_serial ? _NomeVisto(who, enc_serial) : GetObjProperty(item, "contrato_cancelado_por");
+        var enc_motivo := GetObjProperty(item, "contrato_motivo");
+        if (!enc_por)    enc_por    := "Desconhecido"; endif
+        if (!enc_motivo) enc_motivo := "Não informado"; endif
+        Print("[CONTRATO][P3] Exibindo gump encerrado | cancelador=" + enc_por + " | motivo=" + enc_motivo);
+        _ExibirGumpEncerrado(who, enc_por, enc_motivo);
+        return 0;
+    endif
+
+    // Contrato ativo — verificar ownership
+    if (who.serial != arq_serial && who.serial != lid_serial && !who.cmdlevel)
+        Print("[CONTRATO][P3] Bloqueado: não é parte do contrato ativo");
+        SendSysMessage(who, "Este contrato não é seu.");
+        return 0;
+    endif
+
+    // Verificar expiração
+    var expira := cint(GetObjProperty(item, "contrato_expira"));
+    if (expira > 0 && POLCore().systime > expira)
+        Print("[CONTRATO][P3] Contrato expirado — encerrando automaticamente");
+        _EncerrarContratoPorExpiracao(item);
+        SendSysMessage(who, "Este contrato expirou e foi encerrado automaticamente.");
+        return 0;
+    endif
+
+    var guild_name  := GetObjProperty(item, "contrato_guild_name");
+    var arq_nome    := _NomeVisto(who, arq_serial);
+    var lid_nome    := _NomeVisto(who, lid_serial);
+    var duracao_txt := GetObjProperty(item, "contrato_duracao_txt");
+
+    var dias_str := "Indeterminado";
+    if (expira > 0)
+        var dias_restantes := cint((expira - POLCore().systime) / 86400);
+        if (dias_restantes < 1) dias_restantes := 1; endif
+        dias_str := CStr(dias_restantes) + " dias";
+    endif
+
+    Print("[CONTRATO][P3] Exibindo gump ativo | guild=" + guild_name + " | arq=" + arq_nome + " | lid=" + lid_nome + " | acaba_em=" + dias_str);
+
+    // Gump 0x1FAC3 — contrato ativo
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x1FAC3);
+    GFResizePic(gump, 0, 0, 9200, 460, 370);
+    GFResizePic(gump, 15, 15, 9350, 430, 340);
+    GFHtmlShadowed(gump, 20, 25, 420, 20, "#FFC33C", "<center>Contrato de Arquitetura", 9);
+    var y := 60;
+    GFTextLine(gump, 20, y, 0, "Facção: " + guild_name);    y += 22;
+    GFTextLine(gump, 20, y, 0, "Líder: " + lid_nome);       y += 22;
+    GFTextLine(gump, 20, y, 0, "Arquiteto: " + arq_nome);   y += 22;
+    GFTextLine(gump, 20, y, 0, "Duração: " + duracao_txt);  y += 22;
+    GFTextLine(gump, 20, y, 0, "Acaba em: " + dias_str);    y += 30;
+    GFTextLine(gump, 20, y, 0, "O arquiteto tem direito de construir casas nos territórios desta"); y += 20;
+    GFTextLine(gump, 20, y, 0, "facção."); y += 10;
+    y += 10;
+    GFTextLine(gump, 20,  y, 0, "Ass. Líder: " + lid_nome);
+    GFTextLine(gump, 230, y, 0, "Ass. Arquiteto: " + arq_nome);
+    y += 30;
+    GFHtmlShadowed(gump, 20, y, 420, 16, "#FF6666", "Motivo do encerramento:", 5); y += 22;
+    GFResizePic(gump, 20, y, 9350, 390, 30);
+    var entry_motivo := GFTextEntry(gump, 25, y + 5, 380, 20, 0, "");
+    y += 40;
+    GFAddButton(gump, 60,  y, 4005, 4006, GF_CLOSE_BTN, 1);
+    GFTextLine(gump,  90,  y + 2, 33, "Finalizar Contrato");
+    GFAddButton(gump, 310, y, 4017, 4018, GF_CLOSE_BTN, 0);
+    GFTextLine(gump,  340, y + 2, 0,  "Fechar");
+
+    var input := GFSendGump(who, gump);
+    if (!input || input[0] != 1)
+        Print("[CONTRATO][P3] Gump fechado sem cancelar");
+        return 0;
+    endif
+
+    var motivo := GFExtractData(input, entry_motivo);
+    if (!motivo)
+        Print("[CONTRATO][P3] Motivo em branco — solicitando novamente");
+        SendSysMessage(who, "Informe o motivo do encerramento.");
+        return _UsarContratoAssinado(who, item);
+    endif
+
+    Print("[CONTRATO][P3] Solicitando encerramento | motivo=" + motivo);
+    _FinalizarContrato(who, item, motivo, arq_serial, lid_serial);
+    return 1;
+endfunction
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Encerra o contrato — inativa AMBOS os exemplares e notifica a outra parte
+// ─────────────────────────────────────────────────────────────────────────────
+function _FinalizarContrato(quem_cancelou, item, motivo, arq_serial, lid_serial)
+    var outro_serial := (quem_cancelou.serial == arq_serial) ? lid_serial : arq_serial;
+    var outro_mob    := SystemFindObjectBySerial(outro_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    var outro        := (outro_mob && outro_mob.connected) ? outro_mob : 0;
+    var guild_name   := GetObjProperty(item, "contrato_guild_name");
+
+    Print("[CONTRATO][FINALIZAR] cancelador=" + quem_cancelou.name + " | outro_serial=" + outro_serial + " | encontrado=" + (outro_mob ? "SIM" : "NAO") + " | conectado=" + (outro ? "SIM" : "NAO") + " | guild=" + guild_name);
+
+    // Revoga permissão do arquiteto
+    var mobile_arq := SystemFindObjectBySerial(arq_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    if (mobile_arq)
+        EraseObjProperty(mobile_arq, "arquiteto_contrato_guild");
+        EraseObjProperty(mobile_arq, "arquiteto_contrato_expira");
+        Print("[CONTRATO][FINALIZAR] Permissão revogada do arquiteto serial=" + arq_serial);
+    else
+        Print("[CONTRATO][FINALIZAR] AVISO: arquiteto não encontrado serial=" + arq_serial);
+    endif
+
+    // Inativa o item clicado
+    _MarcarItemEncerrado(item, motivo, quem_cancelou.name, quem_cancelou.serial, "[ENCERRADO]");
+
+    // Inativa o exemplar par (o que está com a outra parte) — FIX DO BUG CRÍTICO
+    var par_serial := GetObjProperty(item, "contrato_par_serial");
+    var item_par   := par_serial ? SystemFindObjectBySerial(par_serial) : 0;
+    Print("[CONTRATO][FINALIZAR] Buscando exemplar par | par_serial=" + par_serial + " | encontrado=" + (item_par ? "SIM" : "NAO"));
+    if (item_par)
+        _MarcarItemEncerrado(item_par, motivo, quem_cancelou.name, quem_cancelou.serial, "[ENCERRADO]");
+    else
+        Print("[CONTRATO][FINALIZAR] AVISO: exemplar par não encontrado — apenas item clicado foi inativado");
+    endif
+
+    // Notifica a outra parte via ícone 0x7D2
+    if (outro_mob)
+        SetObjProperty(outro_mob, "notif_contrato_cancelado", struct{
+            "cancelador_serial" := quem_cancelou.serial,
+            "cancelador"        := quem_cancelou.name,
+            "guild_name"        := guild_name,
+            "motivo"            := motivo
+        });
+        Print("[CONTRATO][FINALIZAR] Notif salva em " + outro_mob.name + " (serial=" + outro_serial + ")");
+        if (outro)
+            Print("[CONTRATO][FINALIZAR] Outro online — disparando gump_contrato_cancelado");
+            start_script(":faccao:gump_contrato_cancelado", array{outro_mob});
+        else
+            Print("[CONTRATO][FINALIZAR] Outro offline — notif aguardará logon");
+        endif
+    else
+        Print("[CONTRATO][FINALIZAR] AVISO: mobile da outra parte não encontrado serial=" + outro_serial);
+    endif
+
+    SendSysMessage(quem_cancelou, "Contrato com " + guild_name + " encerrado. Motivo: " + motivo);
+    Print("[CONTRATO][FINALIZAR] Concluído");
+endfunction
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Encerramento automático por expiração — inativa AMBOS os exemplares
+// ─────────────────────────────────────────────────────────────────────────────
+function _EncerrarContratoPorExpiracao(item)
+    var arq_serial := GetObjProperty(item, "contrato_arquiteto");
+    Print("[CONTRATO][EXPIRACAO] item.serial=" + item.serial + " | arq_serial=" + arq_serial);
+
+    var off_arq := SystemFindObjectBySerial(arq_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    if (off_arq)
+        EraseObjProperty(off_arq, "arquiteto_contrato_guild");
+        EraseObjProperty(off_arq, "arquiteto_contrato_expira");
+        Print("[CONTRATO][EXPIRACAO] Permissão revogada do arquiteto");
+    else
+        Print("[CONTRATO][EXPIRACAO] AVISO: arquiteto não encontrado serial=" + arq_serial);
+    endif
+
+    _MarcarItemEncerrado(item, "Expiração do prazo contratual", "Sistema", 0, "[EXPIRADO]");
+
+    var par_serial := GetObjProperty(item, "contrato_par_serial");
+    var item_par   := par_serial ? SystemFindObjectBySerial(par_serial) : 0;
+    Print("[CONTRATO][EXPIRACAO] Buscando exemplar par | par_serial=" + par_serial + " | encontrado=" + (item_par ? "SIM" : "NAO"));
+    if (item_par)
+        _MarcarItemEncerrado(item_par, "Expiração do prazo contratual", "Sistema", 0, "[EXPIRADO]");
+    endif
+
+    Print("[CONTRATO][EXPIRACAO] Encerramento por expiração concluído");
+endfunction
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Marca um item como encerrado com motivo e cancelador (DRY — usado em _FinalizarContrato e _EncerrarContratoPorExpiracao)
+function _MarcarItemEncerrado(item, motivo, cancelado_por, cancelado_serial, sufixo)
+    SetObjProperty(item, "contrato_ativo",           0);
+    SetObjProperty(item, "contrato_motivo",           motivo);
+    SetObjProperty(item, "contrato_cancelado_por",    cancelado_por);
+    SetObjProperty(item, "contrato_cancelado_serial", cancelado_serial);
+    item.name := item.name + " " + sufixo;
+    Print("[CONTRATO][MARCAR] item.serial=" + item.serial + " | sufixo=" + sufixo + " | cancelado_por=" + cancelado_por + " | motivo=" + motivo);
+endfunction
+
+// Exibe o gump 0x1FAC6 de contrato encerrado (DRY — usado em _UsarContratoAssinado)
+function _ExibirGumpEncerrado(who, enc_por, enc_motivo)
+    Print("[CONTRATO][GUMP-ENC] Exibindo para " + who.name + " | cancelador=" + enc_por + " | motivo=" + enc_motivo);
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x1FAC6);
+    GFResizePic(gump, 0, 0, 9200, 420, 220);
+    GFResizePic(gump, 15, 15, 9350, 390, 190);
+    GFHtmlShadowed(gump, 20, 25, 390, 20, "#FF6666", "<center>Contrato de Arquitetura Encerrado", 8);
+    GFTextLine(gump, 20, 60, 0, enc_por + " encerrou o contrato.");
+    GFTextLine(gump, 20, 90, 0, "Motivo:");
+    GFTextLine(gump, 20, 110, 0, enc_motivo);
+    GFAddButton(gump, 180, 170, 4017, 4018, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 210, 172, 0, "OK");
+    GFSendGump(who, gump);
+endfunction
+
+// Retorna o nome que `quem` vê para o mobile de serial `serial_alvo`,
+// respeitando reconhecimento (.r) e disfarces.
+function _NomeVisto(quem, serial_alvo)
+    var alvo := SystemFindObjectBySerial(serial_alvo, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    if (!alvo)
+        return "Desconhecido";
+    endif
+    if (GetObjProperty(alvo, "realname"))
+        return "Incógnito";
+    endif
+    var conhecidos := GetObjProperty(quem, "conhecidos");
+    if (conhecidos)
+        var id := VerificaDisfarce(alvo, quem);
+        if (conhecidos.Exists(id))
+            return conhecidos[id];
+        endif
+    endif
+    return alvo.name;
+endfunction
+
+// Exibe animação e emote de assinatura, toca som 0x56 por 3 segundos.
+function _EmoteAssinar(who)
+    PerformAction(who, HUMAN_ANIM::SALUTE);
+    PrintTextAbove(who, "*assina o contrato*", FONT_NORMAL, 55);
+    PlaySoundEffect(who, 0x56);
+    sleep(1);
+    PlaySoundEffect(who, 0x56);
+    sleep(1);
+    PlaySoundEffect(who, 0x56);
+    sleep(1);
+endfunction
+
+// Cobra CONTRATO_TAXA_VALOR moedas de bronze do arquiteto e deposita
+// no cofre da "Liga do Pacto Comum". Se o cofre não existir, as moedas
+// são consumidas e destruídas. Retorna 0 se o arquiteto não tiver saldo.
+function _CobrarTaxaCelebracao(arquiteto)
+    Print("[CONTRATO][TAXA] Verificando " + CONTRATO_TAXA_VALOR + " moedas de bronze em " + arquiteto.name);
+    if (!ConsumeSubstance(arquiteto.backpack, CONTRATO_TAXA_MOEDA, CONTRATO_TAXA_VALOR))
+        Print("[CONTRATO][TAXA] Saldo insuficiente em " + arquiteto.name);
+        return 0;
+    endif
+
+    var cofre := _GetCofrePorNomeGuild(CONTRATO_TAXA_GUILD);
+    if (cofre)
+        var deposito := CreateItemInContainer(cofre, CONTRATO_TAXA_MOEDA, CONTRATO_TAXA_VALOR);
+        if (deposito)
+            Print("[CONTRATO][TAXA] " + CONTRATO_TAXA_VALOR + " bronze depositados no cofre de '" + CONTRATO_TAXA_GUILD + "' (cofre.serial=" + cofre.serial + ")");
+        else
+            Print("[CONTRATO][TAXA] AVISO: falha ao criar item no cofre — moedas consumidas e destruídas");
+        endif
+    else
+        Print("[CONTRATO][TAXA] Cofre de '" + CONTRATO_TAXA_GUILD + "' não encontrado — moedas consumidas e destruídas");
+    endif
+
+    return 1;
+endfunction
+
+// Retorna o item-cofre (baú) da facção com o nome informado, ou 0.
+function _GetCofrePorNomeGuild(nome_guild)
+    foreach g in ListGuilds()
+        sleepms(2);
+        if (g.GetProp("name") == nome_guild)
+            var bau_serial := g.GetProp("bau_serial");
+            if (!bau_serial)
+                Print("[CONTRATO][COFRE] Guild '" + nome_guild + "' encontrada mas sem bau_serial");
+                return 0;
+            endif
+            var cofre := SystemFindObjectBySerial(bau_serial);
+            Print("[CONTRATO][COFRE] Guild '" + nome_guild + "' | bau_serial=" + bau_serial + " | encontrado=" + (cofre ? "SIM" : "NAO"));
+            return cofre;
+        endif
+    endforeach
+    Print("[CONTRATO][COFRE] Guild '" + nome_guild + "' não encontrada");
+    return 0;
+endfunction
+
+// Retorna o guild objeto da facção liderada pelo mobile, ou 0.
+function _GetGuildLiderada(mobile)
+    foreach g in ListGuilds()
+        sleepms(2);
+        if (g.GetProp("leader") == mobile.serial)
+            return g;
+        endif
+    endforeach
+    return 0;
+endfunction
