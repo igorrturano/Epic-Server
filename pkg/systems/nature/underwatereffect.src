@@ -10,6 +10,10 @@ program underwater(params)
 	var underwaterMessageSent := 0;
 
 	while (who)
+		if (who.dead)
+			break;
+		endif
+
 		var z := who.z;
 		var statics := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
 
@@ -24,7 +28,7 @@ program underwater(params)
 
 		if (is_on_water_tile && z <= -20)
 			if (GetCooldown(who, "can_breath") > 0)
-				return;
+				break;
 			endif
 
 			if (GetObjProperty(who, "underwater"))
@@ -42,13 +46,16 @@ program underwater(params)
 				underwaterMessageSent := 1;
 			endif
 		else
-			if (GetObjProperty(who, "underwater"))
-				EraseObjProperty(who, "underwater");
-				SendSysMessageEx(who, "Você consegue respirar novamente!", SSM_INFO);
-			endif
-			return;
+			break;
 		endif
 
 		sleepms(2000);
 	endwhile
+
+	if (who && GetObjProperty(who, "underwater"))
+		EraseObjProperty(who, "underwater");
+		if (!who.dead)
+			SendSysMessageEx(who, "Você consegue respirar novamente!", SSM_INFO);
+		endif
+	endif
 endprogram

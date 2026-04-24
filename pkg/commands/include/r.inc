@@ -23,3 +23,36 @@ function _PodeVerDisfarce(quem)
 	return 0;
 endfunction
 
+// Returns the nickname `observer` has stored for `targ`, or "" if none.
+// Routes between `conhecidos` (real identity, keyed by serial) and
+// `conhecidos_disfarce` (disguise identity, keyed by FakeID) so that a name
+// given to a disguise does not leak to the real identity when the disguise is removed.
+function GetKnownNickname(observer, targ)
+	var isDisguised := (GetObjProperty(targ, "disfarce") != error);
+	if (isDisguised && !_PodeVerDisfarce(observer))
+		var conhecidos_disfarce := GetObjProperty(observer, "conhecidos_disfarce");
+		if (conhecidos_disfarce == error || !conhecidos_disfarce)
+			return "";
+		endif
+		var fakeId := GetObjProperty(targ, "FakeID");
+		if (fakeId == error)
+			return "";
+		endif
+		var disguiseKey := Cstr(fakeId);
+		if (conhecidos_disfarce.Exists(disguiseKey))
+			return conhecidos_disfarce[disguiseKey];
+		endif
+		return "";
+	endif
+
+	var conhecidos := GetObjProperty(observer, "conhecidos");
+	if (conhecidos == error || !conhecidos)
+		return "";
+	endif
+	var realKey := Cstr(targ.serial);
+	if (conhecidos.Exists(realKey))
+		return conhecidos[realKey];
+	endif
+	return "";
+endfunction
+

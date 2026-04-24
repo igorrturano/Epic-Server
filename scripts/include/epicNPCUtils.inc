@@ -32,6 +32,7 @@ function customizeNpc(mob, set_tier := "0")
 	if (classe == SABIO)
 		AP_SetTrueSkill(mob, MAGERY, mob_skill);
 		AP_SetTrueSkill(mob, ARCANA, mob_skill);
+		AP_SetTrueSkill(mob, THEOLOGY, mob_skill);
 		skill_combat := MAGERY;
 		skill_support := ARCANA;
 	elseif(classe == LADINO || mob.isSpider())

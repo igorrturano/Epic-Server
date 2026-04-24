@@ -171,7 +171,7 @@ endfunction
 // =============================================================================
 function handleExpGain(corpse)
     var nearby := ListMobilesNearLocationEx(
-        corpse.x, corpse.y, LIST_IGNORE_Z, 8,
+        corpse.x, corpse.y, LIST_IGNORE_Z, 16,
         LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, corpse.realm
     );
 

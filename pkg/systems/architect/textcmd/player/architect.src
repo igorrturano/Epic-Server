@@ -9,6 +9,7 @@
 use cfgfile;
 use datafile;
 use file;
+use guilds;
 use math;
 use os;
 use uo;
@@ -489,7 +490,7 @@ program architect_gump(params)
 			layout.append("text " + (gpos[1] + 140) + " " + (gpos[2] + 180) + " 40 27"); // Texto Mover
 
 			layout.append("page 10");
-			layout.append("resizepic " + (gpos[1] + 5 + col) + " " + (gpos[2] + row) + " 5100 440 490");
+			layout.append("resizepic " + (gpos[1] + 5 + col) + " " + (gpos[2] + row) + " 5100 700 490");
 			layout.append("button " + (gpos[1] + 8 + col) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
 
 			foreach group in maingroups
@@ -523,7 +524,7 @@ program architect_gump(params)
 			layout.append("button " + (gpos[1] + 8) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
 
 			if (subgroups.size() > 26)
-				layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 440 474");
+				layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 700 474");
 			else
 				layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 360 474");
 			endif
@@ -554,7 +555,7 @@ program architect_gump(params)
 			// page 12: options (save, load...)
 			row := 69;
 			layout.append("page 12");
-			layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 360 456");
+			layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 460 456");
 			layout.append("button " + (gpos[1] + 8) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
 
 			layout.append("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 10) + " 2361 2361 1 0 -320");
@@ -1754,9 +1755,23 @@ function check_coords(who, coords)
 					return 0;
 				endif
 
-				// Verifica se o jogador pertence à facção dona da área.
+				// Verifica se o jogador pertence à facção dona da área (full ou honorário).
 				var player_guild := who.guild;
-				if (!player_guild || player_guild.GetProp("name") != faction_owner)
+				var hon_id := GetObjProperty(who, "honorary_guild_id");
+				var hon_guild := 0;
+				if (hon_id) hon_guild := FindGuild(hon_id); endif
+				var is_member := 0;
+				if (player_guild && player_guild.GetProp("name") == faction_owner)
+					is_member := 1;
+				elseif (hon_guild && hon_guild.GetProp("name") == faction_owner)
+					is_member := 1;
+				endif
+				if (!is_member)
+					// Verifica contrato de arquitetura ativo
+					var contrato_guild := GetObjProperty(who, "arquiteto_contrato_guild");
+					if (contrato_guild && contrato_guild == faction_owner)
+						return 1;
+					endif
 					SendSysMessage(who, "Este território pertence à facção '" + faction_owner + "'. Você não tem permissão para construir aqui.");
 					return 0;
 				endif

@@ -397,7 +397,7 @@ function get_heir_skills(who)
 	foreach skill in primarias
 		primarias_sum += Cint(AP_GetTrueSkill(who, skill));
 	endforeach
-	if (chardata.kit == "Sabe-Tudo")
+	if (chardata.trait == "Sabe-Tudo")
 		primarias_sum *= 2;
 	endif
 	var bonus_primarias := (primarias_sum - 80) / 4; // metade da media de pontos upados acima de 40 nas primarias
@@ -444,6 +444,10 @@ function MoverItensQuartoParaNpc(x, y, z, r, player, npc)
 		backpack.desc := player.name;
 	endif
 	foreach obj in objects
+		if (obj.isDoor())
+			sleepms(20);
+			continue;
+		endif
 		if (CheckLosBetween(x, y, z, obj.x, obj.y, obj.z, r))
 			if (GetObjProperty(obj, "crafterserial"))
 				if (player && player != error)
