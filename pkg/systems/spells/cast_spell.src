@@ -476,7 +476,7 @@ function selectSpellTarget(mobile, spellinfo, targ)
 			SendEvent(mobile, event);
 		endif
 
-		if (spellinfo.alvo != "Self")
+		if (spellinfo.alvo != "Self" && targ.serial != mobile.serial)
 			TurnObjectToward(mobile, targ.x, targ.y);
 		endif
 	endif
