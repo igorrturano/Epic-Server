@@ -3,7 +3,9 @@ use os;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
+include ":timedscripts:fraturaUtil";
 include ":tn:cooldown";
+include ":hotbar:include/custombuff";
 include "include/say";
 
 program TimedScript_Braco(params)
@@ -12,6 +14,12 @@ program TimedScript_Braco(params)
 	SetObjProperty(mobile, "#fratura_bracos_penalty", penalty);
 	AP_ModifyStatMod(mobile, STRENGTH, -penalty);
 	SendSysMessage(mobile, "Seus bracos fraturados reduzem sua forca pela metade.");
+
+	var duration := CInt(TS_GetTimerDuration(mobile, "fratura_bracos"));
+	if (duration > 0)
+		SendCustomBuff(mobile, BUFF_ID_FRATURA_BRACOS, FRATURA_BUFF_ICON, duration,
+					   "Fratura nos Bracos", "Forca reduzida pela metade.");
+	endif
 
 	return 1;
 endprogram

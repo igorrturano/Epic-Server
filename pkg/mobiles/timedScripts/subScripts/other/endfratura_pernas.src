@@ -1,0 +1,17 @@
+use uo;
+
+include ":timedscripts:fraturaUtil";
+include ":fls_core:packets";
+include ":hotbar:include/custombuff";
+
+program EndFraturaPernas(params)
+	var mobile := params[1];
+
+	if (CInt(GetObjProperty(mobile, "#fratura_pernas_penalty")))
+		PlayerSpeedSlower(mobile, 0);
+		EraseObjProperty(mobile, "#fratura_pernas_penalty");
+	endif
+	RemoveCustomBuff(mobile, BUFF_ID_FRATURA_PERNAS);
+
+	EndFratura_Finalize(mobile, "Pernas");
+endprogram
