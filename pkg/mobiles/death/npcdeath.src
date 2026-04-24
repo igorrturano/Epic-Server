@@ -88,7 +88,7 @@ program core_npcDeath(params)
 		endif
 
 		if (item.isA(POLCLASS_ARMOR) || item.isA(POLCLASS_WEAPON))
-			if (!GetObjProperty(item, "itemunico") && !GetObjProperty(item, "LootedBy"))
+			if (GetObjProperty(item, "itemunico") == error && GetObjProperty(item, "LootedBy") == error)
 				item.hp -= Cint(item.hp * 0.8);
 			endif
 		endif

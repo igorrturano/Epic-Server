@@ -16,7 +16,7 @@ program TimedScript_disease(params)
 		UpdateDiseaseProperty(mobile, "end_disease", 1);
 		TS_LowerDuration(mobile, "diseaseeffect", -1);
 
-var corpo_peste_id := diseases_system.serial_peste_corpse;
+/*var corpo_peste_id := diseases_system.serial_peste_corpse;
 
 if (corpo_peste_id)
     var corpo_peste := SystemFindObjectBySerial(corpo_peste_id);
@@ -32,7 +32,7 @@ if (corpo_peste_id)
         DestroyItem(corpo_peste);
     endif
 endif
-		
+*/		
 		return 1;
 	endif
 

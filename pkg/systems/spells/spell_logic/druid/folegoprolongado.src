@@ -7,6 +7,7 @@ include ":combat:Controller/DamageController_legacy";
 include ":spells:tnmagery";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
@@ -29,6 +30,8 @@ program SpellScript(params)
 	endif
 
 	SetCooldown(targ, "can_breath", duration);
+
+	SendSpellBuff(who, targ, 717, duration);
 
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);

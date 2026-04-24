@@ -35,7 +35,7 @@ class DivineSmite(CombatAbility)
         var who := attacker.GetObjRef();
         var targ := defender.GetObjRef();
         var religiao := attacker.GetReligion();
-        var theology_bonus := CInt(attacker.GetSkill(THEOLOGY) / 10);
+        var theology_bonus := CInt(attacker.GetSkill(THEOLOGY) / 2);
 
         if (theology_bonus < 1)
             theology_bonus := 1;

@@ -155,7 +155,9 @@ function HandleAnimalCombatEvent(opponent)
         return 0;
     endif
 
-    if (MobileWrapper(opponent).HasAbility(ABILITY_ID::RURAL_LIFE))
+    // Rural Life is player-only, so on pets we check the master, on players the player itself.
+    var rural_target := opponent.master ?: opponent;
+    if (MobileWrapper(rural_target).HasAbility(ABILITY_ID::RURAL_LIFE))
         return 0;
     endif
 

@@ -1,0 +1,84 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:/include/epicGumps";
+include ":minecart:minecart";
+
+program use_trackStop(who, stop)
+    if (Distance(who, stop) > 2)
+        SendSysMessage(who, "Chegue mais perto da estacao.");
+        return 0;
+    endif
+    
+    if (stop.movable)
+        var flips := GetObjProperty(stop, "Flips");
+        if (flips)
+            var flip_arr := SplitWords(flips, ",");
+            var current_idx := 0;
+            for i := 1 to flip_arr.size()
+                if (CInt(flip_arr[i]) == stop.graphic)
+                    current_idx := i;
+                    break;
+                endif
+            endfor
+            var next_idx := current_idx + 1;
+            if (next_idx > flip_arr.size())
+                next_idx := 1;
+            endif
+            stop.graphic := CInt(flip_arr[next_idx]);
+        endif
+        return 1;
+    endif
+    
+    var lineId := CInt(GetObjProperty(stop, "LineId"));
+    if (!lineId) lineId := 1; endif
+    
+    var terminal := CInt(GetObjProperty(stop, "Terminal"));
+    if (!terminal) terminal := 1; endif
+    
+    var gump := GFECreateGump("Estacao de Trilho", 300, 200, array{BORDER_BLUE, HIDE_PAGE});
+    
+    GFTextLine(gump, 20, 45, 1152, "Linha atual: " + lineId);
+    GFAddButton(gump, 20, 65, 4005, 4007, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 55, 65, 0x34, "Linha = 1");
+    GFAddButton(gump, 140, 65, 4005, 4007, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, 175, 65, 0x34, "Linha = 2");
+    
+    var termStr := "A (1)";
+    if (terminal == 2) termStr := "B (2)"; endif
+    
+    GFTextLine(gump, 20, 95, 1152, "Terminal: " + termStr);
+    GFAddButton(gump, 20, 115, 4005, 4007, GF_CLOSE_BTN, 3);
+    GFTextLine(gump, 55, 115, 0x34, "Setar Terminal A (1)");
+    GFAddButton(gump, 20, 140, 4005, 4007, GF_CLOSE_BTN, 4);
+    GFTextLine(gump, 55, 140, 0x34, "Setar Terminal B (2)");
+    
+    GFAddButton(gump, 20, 165, 4023, 4025, GF_CLOSE_BTN, 10);
+    GFTextLine(gump, 55, 165, 0x44, "Iniciar Carrinho -> Proxima Estacao");
+    
+    var input := GFSendGump(who, gump);
+    var btn := input[0];
+    
+    if (btn == 1)
+        SetObjProperty(stop, "LineId", 1);
+        SendSysMessage(who, "Linha setada para 1.", 3, 0x44);
+    elseif (btn == 2)
+        SetObjProperty(stop, "LineId", 2);
+        SendSysMessage(who, "Linha setada para 2.", 3, 0x44);
+    elseif (btn == 3)
+        SetObjProperty(stop, "Terminal", 1);
+        SendSysMessage(who, "Terminal setado para A (1).", 3, 0x44);
+    elseif (btn == 4)
+        SetObjProperty(stop, "Terminal", 2);
+        SendSysMessage(who, "Terminal setado para B (2).", 3, 0x44);
+    elseif (btn == 10)
+        var nearest := FindNearestMineCart(stop);
+        if (!nearest)
+            SendSysMessage(who, "Nenhum carrinho desta linha foi encontrado por perto.", 3, 0x22);
+            return 0;
+        endif
+        start_script(":minecart:move_minecart", array{who, nearest, stop});
+    endif
+endprogram

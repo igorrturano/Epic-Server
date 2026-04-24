@@ -324,6 +324,8 @@ function performSpellCycles(mobile, mw, spellinfo, byref orig_hp)
 		EraseObjProperty(mobile, "#free_cast");
 	elseif (GetCooldown(mobile, "divine_manifestation") > 0)
 		cycles := 1;
+	else
+		cycles += _applyConsecutiveCastPenalty(mobile, spellinfo);
 	endif
 
 	while (cycles)
@@ -340,6 +342,31 @@ function performSpellCycles(mobile, mw, spellinfo, byref orig_hp)
 	endwhile
 
 	return 1;
+endfunction
+
+function _applyConsecutiveCastPenalty(mobile, spellinfo)
+	if (mobile.npctemplate)
+		return 0;
+	endif
+
+	var spellId := CInt(spellinfo.id);
+	var bonus := 0;
+
+	if (GetCooldown(mobile, "recent_cast") > 0)
+		var lastId := GetObjProperty(mobile, "#lastCastSpellId");
+		if (lastId != error && CInt(lastId) == spellId)
+			var prev := GetObjProperty(mobile, "#consecutiveCastBonus");
+			if (prev != error)
+				bonus := Min(CInt(prev) + 1, 2);
+			endif
+		endif
+	endif
+
+	SetCooldown(mobile, "recent_cast", 15);
+	SetObjProperty(mobile, "#lastCastSpellId", spellId);
+	SetObjProperty(mobile, "#consecutiveCastBonus", bonus);
+
+	return bonus;
 endfunction
 
 function performSpellDelay(mobile, mw, delay, byref orig_hp)
@@ -556,8 +583,8 @@ endfunction
 function finalizeCasting(mobile, spellinfo, targ, scroll)
 	CastSpell(mobile, spellinfo, targ);
 
-	if (spellinfo.Type != "Divine" && spellinfo.Type != "Priest" && InValtheris(mobile) && HasPraetors())
-		Start_Script(":faccao:praetorAlert", array{ mobile });
+	if (spellinfo.Type != "Divine" && spellinfo.Type != "Priest" && spellinfo.Circle[1] != "0" && InValtheris(mobile) && HasPraetors())
+		Start_Script(":faccao:praetorAlert", array{ mobile, spellinfo.School });
 	endif
 
 	var entropy_delta := 0;
