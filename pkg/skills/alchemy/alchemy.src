@@ -6,7 +6,7 @@ include ":attributes:attributes";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":loot:magicLoot";
-// include ":combat:damage";
+// include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:habilidades";
 include "include/epicConstants";
 
@@ -20,7 +20,7 @@ program skill_alchemy(who)
 		return;
 	endif
 
-	if (item.graphic == 3849)
+	if (item.graphic == 3849 && item.objtype != 0xe72) 
 		PrintTextAbove(who, "*analisando um frasco*");
 
 		var identificado := GetObjProperty(item, "magicwho");

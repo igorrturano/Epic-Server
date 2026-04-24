@@ -13,7 +13,7 @@ program spell_bloodbath(params)
     var info := params[2];
     SendSysMessageEx(who, "Você invoca um Banho de Sangue!", SSM_INFO);
     if (who.gender == 0)
-        PlaySoundEffect(who, 0x697); // blood laughter
+        // PlaySoundEffect(who, 0x697); // blood laughter
     endif
 
     var shaman_souls := CInt(GetObjProperty(who, "shaman_souls"));
@@ -57,7 +57,7 @@ program spell_bloodbath(params)
         endif
     endforeach
 
-    PlayStationaryEffectEx(who.x, who.y, who.z-5, who.realm, EPIC_FX_POISON_SKULL_MAGIC, 1, 35, 0, 2117);
+    PlayStationaryEffectEx(who.x, who.y, who.z-5, who.realm, FX_POISON_SKULL_MAGIC, 1, 35, 0, 2117);
     foreach victim_data in victims
         // PlayStationaryEffect(victim_data.x+1, victim_data.y+1, victim_data.z, 0xD139, 10, 35, 0, victim_data.realm);
         // PlayStationaryEffectEx(victim_data.x+1, victim_data.y+1, victim_data.z, victim_data.realm, 0xD139, 125, 35, 0, 2117);

@@ -19,7 +19,7 @@ program drink_potion (who, potion)
 		return;
 	endif
 
-	var tier := CInt(GetObjProperty(potion, "tier"));
+	var tier := peganivelpocao(who, potion);
 	if (!tier)
 		tier := 1;
 	endif

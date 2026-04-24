@@ -20,7 +20,7 @@ program TimedScript_Clumsy(params)
 	hitsmod := hitsmod + 30;
 	SetObjProperty(mobile, "hitsmod", hitsmod);
 	recalcvitals(mobile);
-	HealDamage(mobile, 30);
+	ApplyEpicHealing(mobile, 30);
 
 	return 1;
 endprogram

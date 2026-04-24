@@ -1,0 +1,29 @@
+use uo;
+use util;
+
+include ":attributes:intrinsicStats";
+
+// Exported wrappers for cfg-registered intrinsic hooks.
+// Core POL invokes these natively when AP_GetStatMod is called
+// for FORTITUDE/REFLEXES/WILL (see pkg/systems/attributes/attributes.cfg).
+//
+// Actual calculation lives in :attributes:intrinsicStats so sendStats
+// (and other multi-stat callers) can use the batch without 3x wrapper
+// creation. See IntrinsicStatsBatch() for the fast path.
+
+program Install()
+	print("INSTALLING: Exported Instrinsic Stats Mods - Intrinsic functions ...");
+	return 1;
+endprogram
+
+exported function GetIntrinsicFortitude(mobile)
+	return IntrinsicFortitudeValue(mobile);
+endfunction
+
+exported function GetIntrinsicReflexes(mobile)
+	return IntrinsicReflexesValue(mobile);
+endfunction
+
+exported function GetIntrinsicWill(mobile)
+	return IntrinsicWillValue(mobile);
+endfunction

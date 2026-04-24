@@ -30,10 +30,10 @@ program catarminhoca(who, dirt)
 	var minhoca := cint("0x9980");
 	var randomcritical := RandomInt(200);
 
-	PerformAction(who, ANIM_BOW);
+	PerformAction(who, HUMAN_ANIM::BOW);
 	PrintTextAbove(who, "*revirando a terra*", FONT_NORMAL, 0);
 	sleepms(1000);
-	PerformAction(who, ANIM_BOW);
+	PerformAction(who, HUMAN_ANIM::BOW);
 	sleepms(1000);
 
 	if (randomcritical == 0)

@@ -1,3 +1,10 @@
+/*
+ * Ritual Command (.d)
+ * 
+ * Entry point for druid/priest/shaman ritual spells. Works with both:
+ * - Text commands: .d healing (who, spellname as separate args)
+ * - Hotbar/scripts: Start_Script(script, {who, spellname})
+ */
 use uo;
 use os;
 use cfgfile;
@@ -5,11 +12,15 @@ use cfgfile;
 include "include/say";
 include ":attributes:attributes";
 include ":spells:include/tnmagery";
+include ":spells:include/spell_executor";
 
-program ritual(who, spellname)
-	if (GetObjProperty(who, "#Casting"))
-		SendSysMessageEx(who, "Voce nao pode invocar um ritual agora.", SSM_FAIL);
-		return 0;
+// Main program - handles both text commands and Start_Script calls
+program ritual(who, spellname := "")
+	// Handle Start_Script array format: {who, spellname}
+	if (TypeOf(who) == "Array")
+		var params := who;
+		who := params[1];
+		spellname := params[2];
 	endif
 
 	var chardata := GetObjProperty(who, "chardata");
@@ -28,103 +39,25 @@ program ritual(who, spellname)
 
 	// If no spell name provided, open the ritual gump
 	if (!spellname || spellname == "")
+		if (!GetObjProperty(who, "cantrips_granted"))
+			SendSysMessageEx(who, "Voce primeiro precisa visitar um altar.", SSM_FAIL);
+			return 0;
+		endif
+
 		Start_Script(":spells:viewSpells", who);
 		return 1;
 	endif
 
-	// Determine which spell list and config to use
-	var spell_list_prop;
-	var cfg_file;
-	var class_name;
-
+	// Determine spell type based on class
+	var spell_type;
 	if (magia == "Sacerdote")
-		spell_list_prop := "priest_list";
-		cfg_file := ":spells:config/priestspells";
-		class_name := "ritual";
+		spell_type := SPELL_TYPE_PRIEST;
 	elseif (magia == "Shaman")
-		spell_list_prop := "shaman_list";
-		cfg_file := ":spells:config/shamanspells";
-		class_name := "ritual";
+		spell_type := SPELL_TYPE_SHAMAN;
 	elseif (magia == "Druid")
-		spell_list_prop := "druid_list";
-		cfg_file := ":spells:config/druidspells";
-		class_name := "ritual";
+		spell_type := SPELL_TYPE_DRUID;
 	endif
-
-	// Get memorized spell list (includes cantrips)
-	var ritual_list := GetObjProperty(who, spell_list_prop);
-	if (!ritual_list || ritual_list.size() < 1)
-		SendSysMessageEx(who, "Voce nao memorizou nenhum " + class_name + ".", SSM_FAIL);
-		return 0;
-	endif
-
-	// Find spell in memorized list (cantrips are now in this list)
-	var spell_found := FindMemorizedSpell(ritual_list, spellname);
-	if (!spell_found)
-		SendSysMessageEx(who, "Voce nao memorizou o " + class_name + " " + spellname + ".", SSM_FAIL);
-		return 0;
-	endif
-
-	// REMOVED: Punitive usage tracking - spells can be cast multiple times now
-	// if (spell_found.used)
-	// 	SendSysMessageEx(who, "Voce ja usou este " + class_name + ".", SSM_FAIL);
-	// 	return 0;
-	// endif
-
-	// REMOVED: Spell expiration - memorized spells no longer expire
-	// if (spell_found.time && polcore().systime > spell_found.time)
-	// 	SendSysMessageEx(who, "O " + class_name + " foi esquecido.", SSM_FAIL);
-	// 	return 0;
-	// endif
-
-	// Load full spell info from config
-	// Create a minimal struct with just the spell ID, then let WritespellInfo populate it
-	var spellInfo := struct{ "id" := spell_found.id };
-	WritespellInfo(who, spellInfo);  // FIX: Correct function name and parameters
-
-	if (!spellInfo.name)
-		SendSysMessageEx(who, "Erro: " + class_name + " nao encontrado na configuracao.", SSM_FAIL);
-		return 0;
-	endif
-
-	// Start casting
-	var script := Start_Script(":spells:cast_spell", array{ who, spellInfo, magia });
-	if (script.errortext)
-		SendSysMessage(who, "Error - Could not start spell starter ->" + script.errortext);
-		return 0;
-	endif
-
-	// // Mark spell as used (except cantrips)
-	// if (spell_found.circle && spell_found.circle > 0)
-	// 	MarkSpellAsUsed(who, spell_list_prop, spell_found.id);
-	// endif
-
-	return 1;
+	
+	// Execute the spell using the unified executor
+	return ExecuteSpellByName(who, spellname, spell_type);
 endprogram
-
-function FindMemorizedSpell(spell_list, spellname)
-	foreach spell in spell_list
-		if (Lower(spell.name) == Lower(spellname))
-			return spell;
-		endif
-		sleepms(2);
-	endforeach
-	return 0;
-endfunction
-
-function MarkSpellAsUsed(who, list_property, spell_id)
-	var spell_list := GetObjProperty(who, list_property);
-	if (!spell_list)
-		return 0;
-	endif
-
-	foreach spell in spell_list
-		if (spell.id == spell_id)
-			spell.used := 1;
-			SetObjProperty(who, list_property, spell_list);
-			return 1;
-		endif
-		sleepms(2);
-	endforeach
-	return 0;
-endfunction

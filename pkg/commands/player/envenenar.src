@@ -13,6 +13,8 @@ include "include/say";
 include ":charactercreation:habilidades";
 include ":spells:include/swordmage";
 include ":alchemy:alchemy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program do_poisoning(who)
 	EraseObjProperty(who, "IsMeditating");
@@ -45,6 +47,9 @@ program do_poisoning(who)
 	elseif (Distance(who, the_poison) > 1)
 		SendSysMessageEx(who, " Voce esta muito distante!", SSM_FAIL);
 		return;
+	elseif (the_item.Category == WEAPON_CATEGORY::SPIRITUALBLADE)
+		SendSysMessageEx(who, "Voce nao pode envenenar uma Lâmina Espiritual!", SSM_FAIL);
+		return;
 	endif
 
 	// pega info sobre a poçao
@@ -55,28 +60,42 @@ program do_poisoning(who)
 	var bonus := Cint(GetObjProperty(the_poison, "bonus"));
 	bonus := PotionSpecialistBonus(who, bonus, VENENO);
 	level := skill;
-	var tier := getobjProperty(the_poison, "tier");
+	var tier := PegaNivelPocao(who, the_poison);
 
 	// se for uma poçao que nao a default a formula eh essa:
 	var difficulty_mod := bonus;
 	points := difficulty;
 	case (the_poison.objtype)
 		0xdc04:
-			difficulty := RESIST_EASY;
-			points := 50;
-			poisonType := "alchPoison";
+			case(tier)
+				1:
+					difficulty := RESIST_EASY;
+					points := 50;
+					poisonType := "alchPoison";
+				2:
+					difficulty := RESIST_MEDIUM;
+					points := 40;
+					poisonType := "alchPoison";
+				3:
+					difficulty := RESIST_HARD;
+					points := 60;
+					poisonType := "alchPoison";
+			endcase
 		0xbf01:
 			poisonType := "strPoison";
 			difficulty := RESIST_MEDIUM;
 			points := 70;
+			level := level/(2.5/tier);
 		0xbf20:
 			poisonType := "dexPoison";
 			difficulty := RESIST_MEDIUM;
 			points := 70;
+			level := level/(2.5/tier);
 		0xef54:
 			poisonType := "intPoison";
 			difficulty := RESIST_MEDIUM;
 			points := 70;
+			level := level/(2.5/tier);
 		0xbf02:
 			poisonType := "staminaPoison";
 			difficulty := RESIST_MEDIUM;
@@ -91,18 +110,11 @@ program do_poisoning(who)
 			points := 70;
 			poisonType := "manaPoison";
 			level := level / 20;
-		0xbf04:
-			difficulty := RESIST_HARD;
-			points := 60;
-			poisonType := "alchPoison";
-		0x6072:
-			difficulty := RESIST_MEDIUM;
-			points := 40;
-			poisonType := "alchPoison";
 		0xbf05:
 			difficulty := RESIST_VERY_HARD;
 			points := 100;
 			poisonType := "alchPoison";
+			tier := 4;
 		default:
 			difficulty := 0;
 			points := 0;
@@ -111,10 +123,7 @@ program do_poisoning(who)
 
 	var canBePoisoned := 0;
 	var isFood := 0;
-	if (the_item.objtype IN { 0x0df0, 0x13f9, 0x0e8a, 0x0f5c, 0x1406, 0x1438, 0x143a,
-						  	0x143c, 0x13e4, 0x13b3, 0x13e3, 0x27a6, 0x26C6 }) // Staffs e Maces
-	
-
+	if (the_item.isA(POLCLASS_WEAPON) && the_item.TipoAtaque == "Contusivo")
 		SendSysMessageEx(who, "Voce nao pode envenenar armas impactantes.", SSM_FAIL);
 		return 0;
 	elseif (theitem.Attribute == "Ranged" && !theitem.Throwable)
@@ -144,7 +153,7 @@ program do_poisoning(who)
 	endif
 
 	if (isFood)
-		if (!TemHabilidade(who, "Mestre dos Venenos"))
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DOS_VENENOS))
 			SendSysMessageEx(who, "Voce nao sabe como envenenar isto sem deixar obvio que o item contem veneno.",
 							  SSM_FAIL);
 			return;
@@ -155,7 +164,7 @@ program do_poisoning(who)
 		SendSysMessageEx(who, "Voce aplicou o liquido mas ele nao parece com veneno.", SSM_FAIL);
 		return;
 	endif
-	if (TemHabilidade(who, "Mestre dos Venenos") || tier == 1 || who.cmdlevel > 1)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DOS_VENENOS) || tier == 1 || who.cmdlevel > 1)
 		// if (GetObjProperty(who, "classe") == "ladino")
 		// 	SkillCheck(who, BEGGING, -1);
 		// endif
@@ -170,7 +179,7 @@ program do_poisoning(who)
 		poisonInfo.+difficulty := difficulty;
 		poisonInfo.+difficulty_mod := difficulty_mod;
 		poisonInfo.+tier := tier;
-		if (temHabilidade(who, "Veneno Puro"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::VENENO_PURO))
 			poisonInfo.dosage := CInt(poisonInfo.dosage * 1.5);
 			poisonInfo.time := CInt(poisonInfo.time * 1.25);
 		endif
@@ -180,14 +189,16 @@ program do_poisoning(who)
 		endif
 		SetObjProperty(the_item, "poisonInfo", poisonInfo);
 		if (the_item.isA(POLCLASS_WEAPON))
-			if (!TemHabilidade(who, "Mestre dos Venenos"))
+			if (!MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DOS_VENENOS))
 				if (the_item.hp < 11)
 					MoveObjectToLocation(the_item, 1, 1, 1, who.realm, MOVEOBJECT_FORCELOCATION);
-					SetObjProperty(the_item, "broken", 1);
-					SetObjProperty(the_item, "realdesc", the_item.desc);
+					if (!GetObjProperty(the_item, "broken"))
+						SetObjProperty(the_item, "broken", 1);
+						SetObjProperty(the_item, "realdesc", the_item.desc);
+						SetName(the_item, the_item.desc + " [danificado]");
+					endif
 					releasegems(who, the_item);
 					eraseobjproperty(the_item, "gems");
-					SetName(the_item, the_item.desc + " [danificado]");
 					MoveItemToContainer(the_item, who.backpack);
 					SendSysMessageEx(who, "A arma ja estava muito danificada e se quebrou na aplicacao do veneno.",
 									  SSM_FAIL);
@@ -206,21 +217,13 @@ program do_poisoning(who)
 		TS_StartTimer(who, poisonType, 60, level, who);
 	endif
 
-	if (GetObjProperty(the_poison, "doses") == error)
-		SetObjProperty(the_poison, "doses", 2);
-		SendSysMessageEx(who, "Ainda tem veneno para 2 doses.", SSM_INFO);
+	empty_bottle(who, the_poison);
+	var doses := GetObjProperty(the_poison, "doses");
+	var descdose := "Ainda tem veneno para " + doses + " doses.";
+	if (doses > 0)
+		SendSysMessageEx(who, descdose, SSM_INFO);
 	else
-		var doses := cint(GetObjProperty(the_poison, "doses"));
-		doses := doses - 1;
-		if (doses > 0)
-			SetObjProperty(the_poison, "doses", doses);
-			SendSysMessageEx(who, "Ainda tem veneno para " + doses + " doses.", SSM_INFO);
-		else
-			SendSysMessageEx(who, "Voce usou todas as doses do veneno.", SSM_INFO);
-			SubtractAmount(the_poison, 1);
-			EraseObjProperty(the_poison, "doses");
-			CreateItemInBackpack(who, 0xf0e, 1);
-		endif
+		SendSysMessageEx(who, "Voce usou todas as doses do veneno.", SSM_INFO);
 	endif
 
 	var nome_antigo := the_item.name;

@@ -9,7 +9,7 @@ function CriaMarcadorPatogenico(
 									alcance := 1,
 									ciclosAteExpancao, 
 									duracaoNuvemEmCiclos, 
-									gravidade, 
+									gravidadeInfeccao, 
 									arraySintomas,
 									duracaoPatogenico,
 									nivelInfeccao
@@ -30,11 +30,11 @@ function CriaMarcadorPatogenico(
 																	duracaoCiclos := duracaoNuvemEmCiclos,
 																	duracaoPatogenico := duracaoPatogenico,
 																	arraySintomas := arraySintomas,
-																	gravidadeInfeccao := gravidade,
+																	gravidadeInfeccao := gravidadeInfeccao,
 																	nivelInfeccao := nivelInfeccao,
 																	devePropagarProps := true
 																}
 											}	
 											);
-	marcador.Abastecer(true);
+	//marcador.Abastecer(true);
 endfunction

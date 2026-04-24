@@ -2,7 +2,7 @@ use cfgfile;
 use util;
 
 include ":itemutils:canAccess";
-include ":crafting:fabricaComplexos";
+include ":crafting:include/fabricacaoComplexosGump";
 
 program use_SmithTool(who, tool)
 

@@ -1,0 +1,36 @@
+use uo;
+use os;
+include ":awareness:awareness";
+include ":message:model/Message";
+include "include/client";
+
+program EndBlinded(params)
+	var mobile := params[1];
+
+	// Retrieve the stored penalty value
+	var penalty := CInt(GetObjProperty(mobile, "#blinded"));
+
+	if (!penalty)
+		return 1; // Already cleaned up
+	endif
+
+	// Reverse the modifier (penalty is negative, so subtracting it adds it back)
+	mobile.hitchance_mod := mobile.hitchance_mod - penalty;
+
+	// Debug message
+	if (!mobile.npctemplate)
+		DebugMsg(mobile, DEBUG_HIT, Message($"[BLINDED] Removido {penalty} hit_chance penalty"));
+	endif
+
+	// Clean up property
+	EraseObjProperty(mobile, "#blinded");
+
+	// Restore visibility - redraw nearby mobiles
+	var mobiles := ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16, mobile.realm);
+	foreach nearby_mobile in mobiles
+		DrawObject(mobile, nearby_mobile, nearby_mobile.graphic, nearby_mobile.color);
+		sleepms(20);
+	endforeach
+
+	return 1;
+endprogram

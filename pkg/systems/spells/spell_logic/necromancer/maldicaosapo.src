@@ -8,6 +8,7 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
 include "include/epicMageryUtils";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
@@ -15,16 +16,56 @@ program SpellScript(params)
 	var spell := params[3];
 	var spell_school := spell.School;
 
-	params := 0; // No longer needed
+	params := 0;
 
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
 		return;
 	endif
 
+	// If target is already transformed, force revert + apply debuffs only (no frog polymorph)
+	if (GetObjProperty(targ, "metamorfose") != error)
+		TS_LowerDuration(targ, "metamorfosedruida", -1);
+		sleepms(200);
+
+		SC_HandleSound(who, targ, SFX_SPELL_STRENGTH);
+
+		var amt := CInt(AP_GetSkill(who, ARCANA) * 0.5);
+		var time := CInt(AP_GetSkill(who, ARCANA) / 10) + 10;
+
+		var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+		var bonus := epicWisdomPathBonus(who);
+		if (CheckResist(targ, WILL, diff, -bonus))
+			time := time / 2;
+		endif
+
+		SC_RemoveEffect(targ, CInt(spell.id));
+
+		var opts := struct{};
+		opts.+str_mod := -amt;
+		opts.+properties := dictionary{ "desarmar" -> 1 };
+		opts.+desc := "Forma Amaldicoada";
+
+		SC_ApplyEffect(who, targ, opts, time, CInt(spell.id));
+		// Keep shared timers that already persist
+		TS_StartTimer(targ, "dmgreduction", time, 4, who);
+		TS_StartTimer(targ, "desmontar", time, 0, who);
+
+		targ.squelch(time);
+
+		SendSysMessageEx(targ, "A energia necromantica corrompe sua conexao natural!", SSM_FAIL);
+		Corromper(who, 4, targ);
+		return 1;
+	endif
+
+	if (TS_GetTimerInfo(targ, "polymorph") != error)
+		SendSysMessageEx(who, "O alvo ja esta sob efeito de transformacao.", SSM_FAIL);
+		return;
+	endif
+
 	var graphic := targ.graphic;
 
-	handleSilentMagic(who, targ, SFX_SPELL_STRENGTH);
+	SC_HandleSound(who, targ, SFX_SPELL_STRENGTH);
 
 	PrintTextAbove(targ, "*transformando-se*");
 
@@ -57,33 +98,45 @@ program SpellScript(params)
 	targ.graphic := graphic;
 	sleepms(200);
 
-	var amt := Cint(AP_GetSkill(who, ARCANA) * 0.5);
-	var time := Cint(AP_GetSkill(who, ARCANA) / 10) + 10;
+	var amt := CInt(AP_GetSkill(who, ARCANA) * 0.5);
+	var time := CInt(AP_GetSkill(who, ARCANA) / 10) + 10;
 
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
-	if (CheckResist(targ, VONTADE, diff, -bonus))
+	if (CheckResist(targ, WILL, diff, -bonus))
 		time := time / 2;
 	endif
 
-	TS_StartTimer(targ, "weaken", time, amt, who, 0);
-	TS_StartTimer(targ, "desarmar", time, 0, who);
-	TS_StartTimer(targ, "dmgreduction", time, 4, who);
-	TS_StartTimer(Targ, "desmontar", time, 0, who);
-	TS_StartTimer(targ, "polymorph", time, 81, who);
+	SC_RemoveEffect(targ, CInt(spell.id));
 
-	if (targ.acctaname)
-		foreach equip in ListEquippedItems(targ)
-			if ((equip.layer != LAYER_HAIR) && (equip.layer != LAYER_BEARD) && (equip.layer != LAYER_PACK) &&
-	   (equip.layer != LAYER_MOUNT))
-				MoveObjectToLocation(equip, targ.x, targ.y, targ.z, targ.realm);
-			endif
-		endforeach
+	var opts := struct{};
+	opts.+str_mod := -amt;
+	opts.+properties := dictionary{ "desarmar" -> 1 };
+	opts.+graphic := 81;
+	opts.+desc := "Forma Amaldicoada";
+
+	SC_ApplyEffect(who, targ, opts, time, CInt(spell.id));
+	// Keep shared timers that already persist
+	TS_StartTimer(targ, "dmgreduction", time, 4, who);
+	TS_StartTimer(targ, "desmontar", time, 0, who);
+	TS_StartTimer(targ, "desarmar", time, 0, who);
+
+	targ.squelch(time);
+
+	if (targ.acctname)
+		var hand1 := GetEquipmentByLayer(targ, LAYER_HAND1);
+		var hand2 := GetEquipmentByLayer(targ, LAYER_HAND2);
+		if (hand1)
+			MoveItemToContainer(hand1, targ.backpack);
+		endif
+		if (hand2)
+			MoveItemToContainer(hand2, targ.backpack);
+		endif
 	endif
 
 	PlaySoundEffect(targ, 616); // som de sapo
 
-	SendSysMessageEx(targ, "Você esta com a maldicao do sapo!", SSM_FAIL);
+	SendSysMessageEx(targ, "Voce esta com a maldicao do sapo!", SSM_FAIL);
 	Corromper(who, 4, targ);
 
 	return 1;

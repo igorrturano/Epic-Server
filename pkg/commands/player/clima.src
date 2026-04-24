@@ -17,6 +17,11 @@ program clima(who)
 	var solpos;
 	var tempestade := GetGlobalProperty("tempestade");
 
+	if (InDungeon(who))
+		SendSysMessageEx(who, "Esse comando nao pode ser usado dentro de Dungeons ou Cavernas.", SSM_FAIL);
+		return;
+	endif
+
 
 	//Posicao do Sol
 	var config := readconfigfile(":nature:config/daynight");

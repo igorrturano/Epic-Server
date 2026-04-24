@@ -41,3 +41,7 @@ class EventHandler()
 			+ ")";
 	endfunction
 endclass
+
+enum class EVENT_ACTION
+	CLOSED
+endenum

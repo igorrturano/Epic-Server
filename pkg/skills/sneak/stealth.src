@@ -5,6 +5,7 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include "include/say";
 include "include/dungeons";
+include ":message:model/Message";
 
 program skill_Stealth(who)
 
@@ -17,23 +18,10 @@ program skill_Stealth(who)
 		return 0;
 	endif
 
-	/*
-	Como Stealth agora eh integrado, ele s� roda quando j� estiver em hiding mesmo
-	if ( !who.hidden )
-		var script := start_script(":hiding:hiding", who);
-		while ( script.pid )
-			sleepms(500);
-		endwhile
-		if (!who.hidden)
-			SendSysMessageEx(who, "Voce deve estar escondido para se mover furtivamente.", SSM_FAIL);
-			return;
-		endif
-	endif
-*/
 	var skill := AP_GetSkill(who, SNEAK);
 	var skillTested := SNEAK;
 
-	if (temHabilidade(who, "Camuflagem"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
 		skill := AP_GetSkill(who, SURVIVAL);
 		if (skill < 50)
 			SendSysMessageEx(who, "Voce nao consegue se mover furtivamente!", SSM_FAIL);
@@ -47,21 +35,21 @@ program skill_Stealth(who)
 		baseSteps := Cint(baseSteps * 1.5);
 	endif
 
-	if (TemHabilidade(who, "Espreita Selvagem"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM))
 		baseSteps := Cint(baseSteps * 2.0);
 	endif
 
-	if (temHabilidade(who, "Furtividade Aprimorada"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SMOKE_SCREEN))
 		baseSteps := baseSteps * 2;
 	endif
 
 	var atualStep := CInt(GetObjProperty(who, "#steathsteps"));
 	var diff := 15 + atualStep * 10;
-	if (!temHabilidade(who, "Espionagem") || !temHabilidade(who, "Salto das Sombras"))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH) && !MobileWrapper(who).HasAbility(ABILITY_ID::ASSASSINAR))
 		diff := diff + 50;
 	endif
 
-	if (temHabilidade(who, "Camuflagem"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
 		var region := GetRegionName(who);
 		var towns := { "Kazad", "Nygurath", "Kaijing", "Gulshurr", "Borfjell",
 			   		"Aldorathrim", "Feira", "Colhesol", "Aigla" };
@@ -99,7 +87,7 @@ program skill_Stealth(who)
 			if (who.hidden)
 				SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
 				who.hidden := 0;
-				PrintTextAbove(who, "*aparece*");
+				Message("*aparece*").SendEmote(who);
 				var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
 				foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12,
 															  LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)
@@ -128,14 +116,14 @@ program skill_Stealth(who)
 			SendSysMessageEx(who, "Voce esta se movendo silenciosamente.", SSM_INFO);
 
 			if (who.hidden == 1)
-				while (who.stealthsteps >= 1)
-					SendSysMessage(who, "Voce consegue dar aproximadamente " + who.stealthsteps + " passos escondido.");
-					sleep(3);
+				// while (who.stealthsteps >= 1)
+				// 	SendSysMessage(who, "Voce consegue dar aproximadamente " + who.stealthsteps + " passos escondido.");
+				// 	sleep(3);
 					while (who.stealthsteps == 1)
 						SendSysMessage(who, "Seu proximo passo ira te revelar");
-						sleep(3);
+						sleep(5);
 					endwhile
-				endwhile
+				// endwhile
 			endif
 
 			SetObjProperty(who, "#steathsteps", atualStep + 2);
@@ -147,7 +135,7 @@ program skill_Stealth(who)
 			if (who.hidden)
 				SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
 				who.hidden := 0;
-				PrintTextAbove(who, "*aparece*");
+				Message("*aparece*").SendEmote(who);
 				var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
 				foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12,
 															  LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)
@@ -167,21 +155,9 @@ program skill_Stealth(who)
 endprogram
 
 function qtdSteps(who, skill)
-	if (skill >= 100)
-		return 15;
-	elseif (skill >= 90)
-		return 10;
-	elseif (skill >= 80)
-		return 9;
-	elseif (skill >= 70)
-		return 8;
-	elseif (skill >= 50)
-		return 6;
-	elseif (skill >= 40)
-		return 5;
-	elseif (skill >= 30)
-		return 4;
-	else
-		return 3;
+	var steps := CInt(skill / 7);
+	if (steps < 3)
+		steps := 3;
 	endif
+	return steps;
 endfunction

@@ -1,12 +1,14 @@
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
 include ":timedScripts:timedScripts";
 include ":fls_core:packets";
 include "include/packets";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
+include ":io:CFGFile";
 
 program doubleattack(params)
 	var attacker := params[1];
@@ -17,15 +19,16 @@ program doubleattack(params)
 	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
 
-	PlayAttackAnimation(attacker);
-	PlayHitSounds(attacker, defender);
+	PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
+	PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 
 	PrintTextAbove(attacker, "*tiro multiplo*");
 
 	var ammo := GetObjProperty(attacker.weapon, "ammo");
 
 	if (SubtractAmount(ammo, 3))
-		var elem := GetWpnCfgInfo(attacker, attacker.weapon);
+		// var elem := GetWpnCfgInfo(attacker, attacker.weapon);
+		var elem := CFGFile("*", "itemdesc").SetElementName(weapon.objtype).GetElement();
 		PlayMovingEffectXYZHued(attacker, defender, elem.ProjectileAnim, 10, 10, 0);
 		sleepms(500);
 		PlayMovingEffectXYZHued(attacker, defender, elem.ProjectileAnim, 10, 10, 0);

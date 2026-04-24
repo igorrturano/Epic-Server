@@ -1,0 +1,64 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/tileEffects";
+include "include/sounds";
+
+// Danca das Laminas (1212) - C3
+// +Hit party (Arc/15) por Arc/3 segundos
+// Nota: bonus de velocidade sera implementado quando o sistema de speed estiver disponivel
+program SpellScript(params)
+	var who := params[1];
+
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
+	var hit_bonus := CInt(arcana / 15);
+	if (hit_bonus < 1)  hit_bonus := 1;  endif
+	if (hit_bonus > 6)  hit_bonus := 6;  endif
+	var duration := CInt(arcana / 3);
+	if (duration < 5)  duration := 5;  endif
+	if (duration > 33) duration := 33; endif
+
+	var range := 8;
+	var buffed_list := array;
+	var buffed := 0;
+
+	PrintTextAbove(who, "*E as laminas dancaram, e o inimigo nao conseguia acompanhar o ritmo.*", 3, 43);
+	PlaySoundEffect(who, 0x11C);
+
+	foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm))
+		if (mobile.isa(POLCLASS_MOBILE) && !mobile.IsHostile(who))
+			SetObjProperty(mobile, "#hit_mod",
+				CInt(GetObjProperty(mobile, "#hit_mod")) + hit_bonus);
+			SetObjProperty(mobile, "#cantico_danca_laminas", hit_bonus);
+			PlayStationaryEffect(mobile.x, mobile.y, mobile.z, FX_BLESS_EFFECT, 2, 2);
+			SendSysMessageEx(mobile, $"Danca das Laminas: +{hit_bonus} ao ataque por {duration}s.", SSM_INFO);
+			buffed_list[buffed + 1] := mobile;
+			buffed += 1;
+		endif
+	endforeach
+
+	if (buffed == 0)
+		SendSysMessageEx(who, "Nenhum aliado por perto.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(who, $"Danca das Laminas: {buffed} aliado(s) por {duration}s.", SSM_INFO);
+
+	sleep(duration);
+
+	foreach mobile in buffed_list
+		if (mobile && !mobile.dead && GetObjProperty(mobile, "#cantico_danca_laminas") == hit_bonus)
+			var cur := CInt(GetObjProperty(mobile, "#hit_mod")) - hit_bonus;
+			if (cur < 0) cur := 0; endif
+			if (cur == 0)
+				EraseObjProperty(mobile, "#hit_mod");
+			else
+				SetObjProperty(mobile, "#hit_mod", cur);
+			endif
+			EraseObjProperty(mobile, "#cantico_danca_laminas");
+		endif
+	endforeach
+
+	return 1;
+endprogram

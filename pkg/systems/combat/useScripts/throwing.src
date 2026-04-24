@@ -1,14 +1,5 @@
 use uo;
-
-include ":fls_core:packets";
-include ":combat:combat";
-include ":blood:blood";
-include ":combat:damage";
 include "include/say";
-include ":timedscripts:timedScripts";
-include ":combat:damage";
-include "include/epicCombatUtils";
-include "include/client";
 
 program tironojoelho(who, tool)
 	EquipItem(who, tool);

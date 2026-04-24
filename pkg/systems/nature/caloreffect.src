@@ -3,11 +3,13 @@ use os;
 use vitals;
 
 include ":charactercreation:resists";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":attributes:attributes";
 include "include/epicConstants";
 include ":nature:nature";
 include ":crafting:/include/caracteristicasFabricacao";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 var ironArmors := { 0x1c04,
 					0x1408,
@@ -53,11 +55,15 @@ program calor(params)
 	var who := params[1];
 
 	SetObjProperty(who, "calor", 1);
+
+	if (GetObjProperty(who, "teste_de_calor") != error)
+		return;
+	endif
+
+	SetObjProperty(who, "teste_de_calor", 1);
 	detach();
 
-	if (GetObjProperty(who, "teste_de_calor") == error)
-		while (1)
-			SetObjProperty(who, "teste_de_calor", 1);
+	while (1)
 			sleep(300);
 
 			if (GetObjProperty(who, "calor") == error)
@@ -108,12 +114,16 @@ program calor(params)
 			if (GetObjProperty(who, "chardata").culture == GULTHRAK)
 				dif := dif - 5;
 			endif
+			
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::RESISTENCIA_DO_DESERTO))
+				dif := dif - 5;
+			endif
 
 			if (GetObjProperty(who, "chardata").culture == LESTE)
 				dif := dif - 2;
 			endif
 
-			if (TemHabilidade(who, "Kani no Sutairu"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::CRAB_STYLE))
 				dif := dif - 2;
 			endif
 
@@ -162,7 +172,7 @@ program calor(params)
 					SendSysMessageEX(who, "O Protetor de Gelo lhe protege do calor.", SSM_INFO);
 					dif := dif - 5;
 				endif
-				if ((TemHabilidade(mobile, "Caçador Experiente")) && who.party &&
+				if ((MobileWrapper(mobile).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE)) && who.party &&
 		(who.party.leader == mobile.party.leader))
 					resistchecked := mobile;
 				endif
@@ -187,7 +197,7 @@ program calor(params)
 					RemoveHeatMod(who, 2);
 				endif
 			else
-				SendSysMessageEx(who, "Voce nao resiste aos efeito do calor.", SSM_FAIL);
+				SendSysMessageEx(who, "Voce nao resiste aos efeitos do calor.", SSM_FAIL);
 				if (penalty == 0)
 					penalty := 1;
 					ApplyHeatMod(who, 1);
@@ -198,68 +208,4 @@ program calor(params)
 			endif
 			SetObjProperty(who, "penalidadeclima", penalty);
 		endwhile
-	endif
 endprogram
-
-function RemoveHeatMod(who, mod)
-	Set_Critical(1);
-
-	if (mod == 1)
-		// Remove fortitude penalty
-		if (GetObjProperty(who, "climate_penalty") != error)
-			var fortitudeMod := GetObjProperty(who, "#FortitudeMod");
-			if (fortitudeMod != error)
-				var climatePenalty := GetObjProperty(who, "climate_penalty");
-				SetObjProperty(who, "#FortitudeMod", fortitudeMod - climatePenalty);
-			endif
-			EraseObjProperty(who, "climate_penalty");
-		endif
-	elseif (mod == 2)
-		// Remove stamina/mana penalties
-		if (GetObjProperty(who, "stam_penalty") != error)
-			var stammod := cint(GetObjProperty(who, "stammod"));
-			var manamod := cint(GetObjProperty(who, "manamod"));
-			var stam_penalty := GetObjProperty(who, "stam_penalty");
-			var mana_penalty := GetObjProperty(who, "mana_penalty");
-			SetObjProperty(who, "stammod", stammod - stam_penalty);
-			SetObjProperty(who, "manamod", manamod - mana_penalty);
-			EraseObjProperty(who, "stam_penalty");
-			EraseObjProperty(who, "mana_penalty");
-			RecalcVitals(who);
-		endif
-	endif
-
-	Set_Critical(0);
-endfunction
-
-function ApplyHeatMod(who, mod)
-	Set_Critical(1);
-	if (who.gender == 1)
-		PlaySoundEffect(who, 0x31A);
-	else
-		PlaySoundEffect(who, 0x42A);
-	endif
-
-	if (mod == 1)
-		var temp := getTemperature(who);
-		var fortitudePenalty := resistPenaltyByClimate(temp) * -1; // Invert the penalty for heat
-		var currentFortitudeMod := GetObjProperty(who, "#FortitudeMod");
-		if (currentFortitudeMod == error)
-			currentFortitudeMod := 0;
-		endif
-		SetObjProperty(who, "#FortitudeMod", currentFortitudeMod + fortitudePenalty);
-		SetObjProperty(who, "climate_penalty", fortitudePenalty);
-	// elseif (mod == 2)
-	//     var stammod := cint(GetObjProperty(who, "stammod"));
-	//     var manamod := cint(GetObjProperty(who, "manamod"));
-	//     var stamPenalty := cint(AP_GetVitalMaximumValue(who, STAMINA)/2);
-	//     var manaPenalty := cint(AP_GetVitalMaximumValue(who, MANA)/2);
-	//     SetObjProperty(who, "stammod", stammod - stamPenalty);
-	//     SetObjProperty(who, "manamod", manamod - manaPenalty);
-	//     SetObjProperty(who, "stam_penalty", -stamPenalty);
-	//     SetObjProperty(who, "mana_penalty", -manaPenalty);
-	//     RecalcVitals(who);
-	endif
-
-	Set_Critical(0);
-endfunction

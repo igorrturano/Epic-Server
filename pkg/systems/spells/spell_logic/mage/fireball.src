@@ -1,8 +1,7 @@
 use uo;
 include "include/tileEffects";
 include ":attributes:attributes";
-include ":fls_magery:spells";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/shapes";
 include ":timedScripts:timedScripts";
 include "include/sysEvent";
@@ -12,6 +11,7 @@ include ":taming:taming";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":destroyable:include/destroyItem";
+include ":charactercreation:resists";
 include ":propagacao:include/efeitosIncendiarios";
 
 program spell_fireball(params)
@@ -20,15 +20,10 @@ program spell_fireball(params)
 	var spell := params[3];
 	var spell_circle := spell.Circle;
 	var spell_school := spell.School;
-	// var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
 
-	params := 0; // No longer needed
+	params := 0;
 
 	SendSysMessage(caster, "Selecione o alvo.");
-	// var cast_on := Target(caster);
-	if (!cast_on) // If no cast_on then get cast_on from parms[4]. Used mostly for NPC casting.
-		cast_on := params[4];
-	endif
 	if (!cast_on)
 		SendSysMessage(caster, "cancelado.", color := 33);
 		return 0;
@@ -43,67 +38,79 @@ program spell_fireball(params)
 		return 0;
 	endif
 
-	PlayMovingEffect(caster, cast_on, GFX_LARGE_FIREBALL, 10, 10, 1);
+	// PlayMovingEffect com dst = coord struct nao renderiza; usar XYZ pra alvo de area.
+	PlayMovingEffectXYZ(caster.x, caster.y, caster.z, cast_on.x, cast_on.y, cast_on.z,
+						FX_LARGE_FIREBALL, 10, 10, 1, caster.realm);
+	// PlayMovingEffectXYZ(caster.x, caster.y, caster.z, cast_on.x, cast_on.y, cast_on.z,
+	// 					FX_FIREBOLT_2, 7, 20, 1, caster.realm);
 
+	// Espera o projetil chegar antes de detonar — ~60ms por tile de distancia.
+	var travel_ms := Cint(dist * 120);
+	if (travel_ms < 200)
+		travel_ms := 200;
+	endif
+	sleepms(travel_ms);
+
+	// PlayStationaryEffect(cast_on.x, cast_on.y, cast_on.z, FX_EXPLODE_1, 10, 20, 0, cast_on.realm);
+	PlayStationaryEffect(cast_on.x, cast_on.y, cast_on.z, 0xDDE8, 0, 25, 0, cast_on.realm);
+	PlaySoundEffect(cast_on, 0x208);
+
+	var radius := Cint(AP_GetSkill(caster, ARCANA) / 25);
+	if (radius < 2)
+		radius := 2;
+	elseif (radius > 4)
+		radius := 4;
+	endif
+
+	// Propagacao: campos de fogo em linha do caster ate o ponto de impacto
+	// e espalhados na area da explosao.
 	var coord_list := GetCoordsInLine(caster.x, caster.y, cast_on.x, cast_on.y);
 	foreach coord in coord_list
-		if (_coord_iter < 4) // Dont make one where its standing
+		if (_coord_iter < 4) // Nao cria no proprio caster
 			continue;
 		endif
-
-		var field := CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_NORTE_SUL,
-							   0, 20, caster);
+		CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_NORTE_SUL,
+						 0, 20, caster);
 		sleepms(105);
 	endforeach
 
-	foreach coord in GetCoordsInSquare(cast_on.x, cast_on.y, 5)
-		if (RandomInt(2) != 1) // Don't place a fire field
+	foreach coord in GetCoordsInSquare(cast_on.x, cast_on.y, radius)
+		if (RandomInt(2) != 1)
 			continue;
 		endif
-		case (RandomInt(3))
-			default:
-				PlayStationaryEffect(coord.x, coord.y, caster.z, GFX_EXPLODE_1, 10, 10, 0, caster.realm);
-				break;
-			1:
-				PlayStationaryEffect(coord.x, coord.y, caster.z, GFX_EXPLODE_2, 10, 10, 0, caster.realm);
-				break;
-			2:
-				PlayStationaryEffect(coord.x, coord.y, caster.z, GFX_EXPLODE_3, 10, 10, 0, caster.realm);
-				break;
-		endcase
-		var field;
 		if (RandomInt(2))
-			CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_NORTE_SUL, 0, 10,
-							 caster, 10);
+			CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_NORTE_SUL,
+							 0, 10, caster, 10);
 		else
-			CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_OESTE_LESTE, 0, 10,
-							 caster, 10);
+			CriaMuralhaFogo(coord.x, coord.y, caster.z, caster.realm, GRAFICO_FIREWALL_OESTE_LESTE,
+							 0, 10, caster, 10);
 		endif
 		sleepms(5);
 	endforeach
 
-	PlaySoundEffect(cast_on, 0x208);
+	var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+	DanificaObjetosProximos(caster, cast_on.x, cast_on.y, cast_on.z, cast_on.realm,
+							struct{ dano := dmg, desc := "Bola de Fogo.", tipo := DMG_FIRE },
+							radius, FX_EXPLODE_1);
 
-	var range := cint(AP_GetSkill(caster, ARCANA) / 20);
-	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range, cast_on);
-	var dmg := epicSpellDamageRoll(caster, spell_circle);
-	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
-	DanificaObjetosProximos(caster, cast_on.x, cast_on.y, cast_on.z, cast_on.realm, struct{ dano := dmg,
-																							desc := "Bola de Fogo." },
-							range, GFX_EXPLODE_1);
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
 
+	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, radius, cast_on);
 	foreach mobile in allMobiles
-		var dmg := epicSpellDamageRoll(caster, spell_circle);
+		var target_dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
 
-		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+		if (CheckResist(mobile, REFLEXES, diff, -bonus))
+			target_dmg := Cint(target_dmg / 2);
+			SendSysMessageEx(mobile, "Voce desvia parcialmente da explosao.", SSM_INFO);
+		endif
 
 		if (Getcooldown(mobile, "spellthief"))
-			DamageFLS(caster, cint(dmg), DMG_FIRE, caster, "fireball");
+			DamageFLS(caster, cint(target_dmg), DMG_FIRE, caster, "fireball");
 		else
-			DamageFLS(mobile, cint(dmg), DMG_FIRE, caster, "fireball");
+			DamageFLS(mobile, cint(target_dmg), DMG_FIRE, caster, "fireball");
 		endif
 
 		sleepms(20);
 	endforeach
-// destroycraft(cast_on, caster);
 endprogram

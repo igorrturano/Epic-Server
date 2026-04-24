@@ -39,19 +39,31 @@ function LogPlayerSpeech( who, text )
     return 0;
   endif
 
-  if (who.npctemplate || who.npcdesc)
+  if ( !who || who == error )
     return 0;
   endif
 
   var account_name := who.acctname;
+  if ( account_name == error || !account_name )
+    return 0;
+  endif
+
+  if (who.npctemplate || who.npcdesc)
+    return 0;
+  endif
+
   var character_name := "";
   var position := "{}:{}:{}".format( who.x, who.y, who.z );
   var timestamp := StrFormatTime( "%d-%m-%Y %H:%M:%S", POLCore().systime );
 
-  if ( GetObjProperty( who, "realname" ) )
-    character_name := GetObjProperty( who, "realname" );
+  if ( GetObjProperty( who, "nome_inicial" ) )
+    character_name := GetObjProperty( who, "nome_inicial" );
   else
     character_name := who.name;
+  endif
+
+  if ( character_name == error || !character_name )
+    return 0;
   endif
 
   var listeners_names := GetPlayersInRange( who, 12 );
@@ -85,9 +97,9 @@ function GetPlayersInRange( who, range )
                                             who.realm );
   foreach player in players
     if ( !CheckLineOfSight( who, player ) )
-      if ( temHabilidade( player, "Mestre Espiao" ) )
+      if ( MobileWrapper( player ).HasAbility(ABILITY_ID::STEALTH_RUN) )
         players_in_range.append( player.name );
-      elseif ( temHabilidade( player, "Espionagem" ) )
+      elseif ( MobileWrapper( player ).HasAbility(ABILITY_ID::NINJA_PATH) )
         if ( Distance( who, player ) < 12 && abs( who.z - player.z ) < 19 )
           players_in_range.append( player.name );
         endif
@@ -172,10 +184,89 @@ endfunction
 
 function FormatState(state)
    return "{}|{}|{}|{}|{}".format(
-      state.health,  // "dying", "hurt", "injured", "healthy"  
+      state.health,  // "dying", "hurt", "injured", "healthy"
       state.distance,
       state.stamina,
       CInt(state.opponent_casting),
       CInt(state.has_advantage)
    );
+endfunction
+
+function LogAttackRequest( attacker, defender )
+  if ( !attacker || attacker == error )
+    return 0;
+  endif
+
+  var acctname := attacker.acctname;
+  if ( acctname == error || !acctname )
+    return 0;
+  endif
+
+  if ( !defender || defender == error )
+    return 0;
+  endif
+
+  // Dedup: mesmo atacante → mesmo alvo dentro de 2s = skip (client spam / re-engage)
+  var now := POLCore().systime;
+  var last_target := GetObjProperty( attacker, "#lastAtkSerial" );
+  var last_time := GetObjProperty( attacker, "#lastAtkTime" );
+  if ( last_target == defender.serial && last_time != error && last_time && (now - last_time) < 2 )
+    SetObjProperty( attacker, "#lastAtkTime", now );
+    return 0;
+  endif
+  SetObjProperty( attacker, "#lastAtkSerial", defender.serial );
+  SetObjProperty( attacker, "#lastAtkTime", now );
+
+  var atk_char := "";
+  if ( GetObjProperty( attacker, "nome_inicial" ) )
+    atk_char := GetObjProperty( attacker, "nome_inicial" );
+  else
+    atk_char := attacker.name;
+  endif
+  if ( atk_char == error || !atk_char )
+    atk_char := "?";
+  endif
+
+  var atk_coord := "{}:{}:{}".format( attacker.x, attacker.y, attacker.z );
+
+  var tgt_serial := Hex( defender.serial );
+  var tgt_name := defender.name;
+  if ( tgt_name == error || !tgt_name )
+    tgt_name := "?";
+  endif
+  // Sanitiza vírgula no nome pra não quebrar o parse CSV
+  tgt_name := StrReplace( tgt_name, ",", ";" );
+
+  var tgt_type := "Player";
+  var tgt_master_acct := "";
+  var tgt_template := "";
+  if ( defender.npctemplate )
+    tgt_template := defender.npctemplate;
+    if ( defender.master )
+      tgt_type := "Pet";
+      if ( defender.master.acctname && defender.master.acctname != error )
+        tgt_master_acct := defender.master.acctname;
+      endif
+    else
+      tgt_type := "NPC";
+    endif
+  endif
+
+  var timestamp := StrFormatTime( "%d-%m-%Y %H:%M:%S", POLCore().systime );
+  var today := StrFormatTime( "%d-%m-%Y", POLCore().systime );
+
+  var log_dir := "::data/log/combat/{}".format( today );
+  if ( !FileExists( log_dir ) )
+    CreateDirectory( log_dir );
+  endif
+
+  var log_file := "{}/attacks.log".format( log_dir );
+
+  var log_entry := "{},{},{},{},{},{},\"{}\",{},{},{}\n".format(
+    timestamp, acctname, atk_char, atk_coord, attacker.realm,
+    tgt_serial, tgt_name, tgt_type, tgt_template, tgt_master_acct
+  );
+
+  LogToFile( log_file, log_entry, 0 );
+  return 1;
 endfunction

@@ -5,10 +5,10 @@ use math;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":fls_magery:spellSounds";
+;
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 include "include/shapes";
 include ":magery:fields";
@@ -43,11 +43,11 @@ program use_explosion(who, potion)
 	TurnObjectToward(who, targ.x, targ.y);
 	sleepms(300);
 
-	var range := cint(GetObjProperty(potion, "crafterskill") / 20);
+	var range := cint(3 + GetObjProperty(potion, "crafterskill") / 20);
 	var effect_id := 0x36b0; // ID do efeito que você quer jogar
 	var lines_count := range; // Número de linhas que você quer criar
 	var effect_distance := range * 2; // Distância que o efeito cobre em cada linha
-	var effect_duration := 15; // Duração do efeito
+	var effect_duration := 15; // Duração do efeito 
 
 	PlayEffectLines(who, effect_id, lines_count, effect_distance, effect_duration, who.realm);
 
@@ -58,7 +58,7 @@ program use_explosion(who, potion)
 				continue;
 			endif
 
-			var tier := cint(GetObjProperty(potion, "tier"));
+			var tier := peganivelpocao(who, potion);
 			var bonus := cint(GetObjProperty(potion, "bonus"));
 			var damage := epicPotionDamageRoll(tier, bonus);
 
@@ -73,7 +73,7 @@ program use_explosion(who, potion)
 			sleepms(100);
 		endif
 	endforeach
-	DestroyItem(Potion);
+	empty_bottle(who, potion, 1);
 endprogram
 
 function PlayEffectLines(who, effect_id, lines_count, effect_distance, effect_duration, realm)

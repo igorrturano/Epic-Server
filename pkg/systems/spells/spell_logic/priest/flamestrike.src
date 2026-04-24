@@ -6,7 +6,7 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 
 program SpellScript(params)
@@ -30,7 +30,7 @@ program SpellScript(params)
 	endif
 
 	// Perform casting animation
-	PerformAction(who, ANIM_CAST_DIR);
+	PerformAction(who, HUMAN_ANIM::CAST_DIR);
 
 	// Play visual effect on target (Holy Flame Strike effect)
 	PlayStationaryEffect(targ.x, targ.y, targ.z, 0xAFED, 7, 10);

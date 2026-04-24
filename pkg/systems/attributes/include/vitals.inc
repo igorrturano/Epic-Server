@@ -15,6 +15,8 @@ use os;
 use vitals;
 use cfgfile;
 
+include ":wrappers:Objects/Model/MobileWrapper";
+
 /* AP_GetVitalsCfgFile()
  *
  * Purpose
@@ -133,6 +135,9 @@ function AP_GetVitalRegenRate(mobile, vital_name)
 endfunction
 
 function HealHits(mobile, amount)
+  if (GetObjProperty(mobile, "nocure"))
+    return 0;
+  endif
   AP_SetVital(mobile, "Hits", cint(AP_GetVital(mobile, "Hits")+amount));
   if (AP_GetVital(mobile, "Hits") >  AP_GetVitalMaximumValue(mobile, "Hits"))
     AP_SetVital(mobile, "Hits", AP_GetVitalMaximumValue(mobile, "Hits"));
@@ -151,6 +156,27 @@ function HealStamina(mobile, amount)
   if (AP_GetVital(mobile, "Stamina") >  AP_GetVitalMaximumValue(mobile, "Stamina"))
     AP_SetVital(mobile, "Stamina", AP_GetVitalMaximumValue(mobile, "Stamina"));
   endif
+endfunction
+
+function HealVicio(mobile, vicio_name, amount)
+
+	var cur := AP_GetVital(mobile, vicio_name);
+	var maxi := AP_GetVitalMaximumValue(mobile, vicio_name);
+
+	cur := cur + amount;
+
+	// clamp mínimo
+	if (cur < 0)
+		cur := 0;
+	endif
+
+	// clamp máximo
+	if (cur > maxi)
+		cur := maxi;
+	endif
+
+	AP_SetVital(mobile, vicio_name, cur);
+
 endfunction
 
 /*
@@ -262,4 +288,101 @@ function AP_RefreshVitals(mobile)
 	endforeach
 
 	return 1;
+endfunction
+
+/**
+ * applyEpicHealing(mobile, amt)
+ * 
+ * Sistema central de cura que considera entropia do alvo.
+ * Substitui applyEpicHealing e ApplyEpicHealing em todo o servidor.
+ * 
+ * ENTROPIA POSITIVA (0 a +20000):
+ * - 0: Cura normal (0% bônus)
+ * - +20000: +50% de cura
+ * - Linear: bônus = (entropia / 40000) * amt
+ * 
+ * ENTROPIA NEGATIVA (0 a -20000):
+ * - 0: Cura normal
+ * - -10000: Sem cura (100% bloqueado)
+ * - -20000: Sem cura + toma 100% do valor como dano
+ * - Linear de 0 a -10000: reduz cura
+ * - Linear de -10000 a -20000: adiciona dano
+ * 
+ * @param mobile Mobile alvo
+ * @param amt Quantidade de cura
+ * @return 1 se aplicou, 0 se bloqueado por nocure
+ */
+function applyEpicHealing(mobile, amt)
+	var nocure := GetObjProperty(mobile, "nocure");
+	if (nocure)
+		// Value > 1 is a timestamp (from undead ability) — auto-expire
+		if (nocure > 1 && polcore().systime >= nocure)
+			EraseObjProperty(mobile, "nocure");
+		else
+			PrintTextAbove(mobile, "*Não pode ser curado*");
+			return 0;
+		endif
+	endif
+
+	// Demon/Undead CurseHeal — healing reduction
+	var healreduction := GetObjProperty(mobile, "#healreduction");
+	if (healreduction != error)
+		if (polcore().systime < healreduction.expires)
+			amt := CInt(amt * (1.0 - healreduction.percent / 100.0));
+			SendSysMessageEx(mobile, $"A maldição reduz sua cura em {healreduction.percent}%!", SSM_FAIL);
+		else
+			EraseObjProperty(mobile, "#healreduction");
+		endif
+	endif
+
+	var wrapper := MobileWrapper(mobile);
+	var entropy := wrapper.GetEntropy();
+	var healing := amt;
+	var damage := 0;
+
+	if (wrapper.IsNPC())
+        if (Lower(wrapper.GetEnvironment()) == "undead" || Lower(wrapper.GetEnvironment()) == "demons")
+            damage := CInt(amt / 2);
+            ApplyRawDamage(mobile, damage);
+			return true;
+		endif
+    endif
+
+	// ENTROPIA POSITIVA: Bônus de cura (+10% por 4.000, máximo +50%)
+	if (entropy > 0)
+		var bonus := CDbl(entropy) / 40000.0; // 0.0 a 0.5
+		if (bonus > 0.5)
+			bonus := 0.5;
+		endif
+		healing := CInt(amt * (1.0 + bonus));
+
+	// ENTROPIA NEGATIVA: Penalidade de cura (-10% por -4.000, máximo -50%)
+	elseif (entropy < 0)
+		var abs_entropy := Abs(entropy);
+		var penalty := abs_entropy / 40000.0; // 0.0 a 0.5
+		if (penalty > 0.5)
+			penalty := 0.5;
+		endif
+		healing := CInt(amt * (1.0 - penalty));
+	endif
+
+	if (healing < 1 && amt > 0)
+		healing := 1;
+	endif
+
+	if (damage > 0)
+		Message("*A energia sagrada queima a carne corrompida! (-" + damage + " HP)*", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		ApplyRawDamage(mobile, damage);
+	endif
+
+	if (healing > 0)
+		if (entropy < 0)
+			var pct := CInt((CDbl(Abs(entropy)) / 40000.0) * 100);
+			if (pct > 50) pct := 50; endif
+			Message("*Curado em " + healing + " HP (-" + pct + "% por corrupção)*", Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
+		endif
+		wrapper.RestoreHP(healing);
+	endif
+
+	return true;
 endfunction

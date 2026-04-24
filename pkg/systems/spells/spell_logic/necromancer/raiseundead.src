@@ -62,21 +62,21 @@ program SpellScript(params)
 	var undead;
 
 	if (random < 20)
-		undead := createnpcfromtemplate(":brainai:headless", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:headless", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 40)
-		undead := createnpcfromtemplate(":brainai:skeleton1", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:skeleton1", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 50)
-		undead := createnpcfromtemplate(":brainai:zombie", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:zombie", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 70)
-		undead := createnpcfromtemplate(":brainai:ossadaescarlate", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:ossadaescarlate", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 80)
-		undead := createnpcfromtemplate(":brainai:zombielord", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:zombielord", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 90)
-		undead := createnpcfromtemplate(":brainai:spectre", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:spectre", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 95)
-		undead := createnpcfromtemplate(":brainai:skeletonmage", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:skeletonmage", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 5000)
-		undead := createnpcfromtemplate(":brainai:fleshgolem", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:fleshgolem", targ.x, targ.y, targ.z, 0, who.realm);
 	endif
 	PlaySoundEffect(targ, 383);
 

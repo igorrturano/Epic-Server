@@ -11,6 +11,8 @@ include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
 include ":charactercreation:habilidades";
 include ":gumps:yesNo";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program PlantSeed(who, seed)
 
@@ -44,7 +46,7 @@ program PlantSeed(who, seed)
 	var award_diff := cfg.PlantDifficulty;
 	var difficulty := award_diff;
 
-	if (TemHabilidade(who, "Agricultor Talentoso"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_FARMER))
 		difficulty := difficulty - 20;
 	endif
 
@@ -53,7 +55,7 @@ program PlantSeed(who, seed)
 		grower.SetGrowerType(seed.objtype);
 		SendSysMessage(who, "Voce plantou a semente.");
 		grower.SetWaterAmount(100);
-		if (TemHabilidade(who, "Dedo Verde"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::GREEN_THUMB))
 			grower.SetGrowStep(5);
 		else
 			grower.SetGrowStep(0);

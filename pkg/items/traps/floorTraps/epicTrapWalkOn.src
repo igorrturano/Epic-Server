@@ -27,6 +27,11 @@ program EpicTrapWalkOn(mobile, trap)
         return 0;
     endif
 
+    // Check resurrection protection (10s immunity after respawn)
+    if (GetCooldown(mobile, "res_trap_protection") > 0)
+        return 0;
+    endif
+
     // Check cooldown to prevent spam
     if (GetObjProperty(trap, "last_triggered"))
         var last_time := GetObjProperty(trap, "last_triggered");

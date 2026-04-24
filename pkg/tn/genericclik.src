@@ -2,7 +2,7 @@
 use uo;
 use vitals;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":timedScripts:timedScripts";
@@ -79,14 +79,14 @@ program genericscript(who, item)
 		var amt := Cint(GetObjProperty(item, "heal"));
 		foreach vit in vitals
 			if (vit == "hits")
-				HealDamage(trg, amt);
+				ApplyEpicHealing(trg, amt);
 			elseif (vit == "mana")
 				HEalMana(trg, amt);
 			elseif (vit == "stam")
 				HealStamina(trg, amt);
 			endif
 		endforeach
-		PlayObjectCenteredEffect(trg, GFX_BLUE_SPARKLE_SWIRL, 7, 16);
+		PlayObjectCenteredEffect(trg, FX_BLUE_SPARKLE_SWIRL, 7, 16);
 		PlaySoundEffect(trg, SFX_HEAL);
 	elseif ("dmg" in scripts)
 		var dmgtype := dictionary;
@@ -94,19 +94,19 @@ program genericscript(who, item)
 		var dmg := Cint(GetObjProperty(item, "dmg"));
 		if (itemdmgtype == "fogo")
 			if (othertarg)
-				PlayMovingEffect(who, trg, GFX_LARGE_FIREBALL, 10, 10, 1);
+				PlayMovingEffect(who, trg, FX_LARGE_FIREBALL, 10, 10, 1);
 				PlaySoundEffect(trg, 0x208);
 			else
-				PlayObjectCenteredEffect(trg, GFX_EXPLODE_1, 7, 16);
+				PlayObjectCenteredEffect(trg, FX_EXPLODE_1, 7, 16);
 				PlaySoundEffect(trg, SFX_EXPLOSION_11);
 			endif
 			ApplyDamageEX(trg, dmg, DMG_FIRE);
 		elseif (itemdmgtype == "gelo")
 			if (othertarg)
-				PlayObjectCenteredEffect(trg, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+				PlayObjectCenteredEffect(trg, FX_BLUE_SPARKLE_GROUND, 7, 16);
 				PlaySoundEffect(trg, SFX_GLASS_BREAK_3);
 			else
-				PlayObjectCenteredEffect(trg, GFX_BLUE_SPARKLE_GROUND, 7, 16);
+				PlayObjectCenteredEffect(trg, FX_BLUE_SPARKLE_GROUND, 7, 16);
 				PlaySoundEffect(trg, SFX_GLASS_BREAK_3);
 			endif
 			ApplyDamageEX(trg, dmg, DMG_COLD);
@@ -115,10 +115,10 @@ program genericscript(who, item)
 				PlayLightningBoltEffect(trg);
 				PlaySoundEffect(trg, SFX_LIGHTNING);
 			else
-				PlayMovingEffectXYZ(trg.x, trg.y, trg.z + 15, trg.x - 1, trg.y, trg.z + 15, GFX_ENERGY, 5, 25);
-				PlayMovingEffectXYZ(trg.x, trg.y, trg.z + 15, trg.x + 1, trg.y, trg.z + 15, GFX_ENERGY, 5, 25);
-				PlayMovingEffectXYZ(trg.x, trg.y, trg.z + 15, trg.x, trg.y + 1, trg.z + 15, GFX_ENERGY, 5, 25);
-				PlayMovingEffectXYZ(trg.x, trg.y, trg.z + 15, trg.x, trg.y - 1, trg.z + 15, GFX_ENERGY, 5, 25);
+				PlayMovingEffectXYZ(trg.x, trg.y, trg.z + 15, trg.x - 1, trg.y, trg.z + 15, FX_ENERGY, 5, 25);
+				PlayMovingEffectXYZ(trg.x, trg.y, trg.z + 15, trg.x + 1, trg.y, trg.z + 15, FX_ENERGY, 5, 25);
+				PlayMovingEffectXYZ(trg.x, trg.y, trg.z + 15, trg.x, trg.y + 1, trg.z + 15, FX_ENERGY, 5, 25);
+				PlayMovingEffectXYZ(trg.x, trg.y, trg.z + 15, trg.x, trg.y - 1, trg.z + 15, FX_ENERGY, 5, 25);
 				PlaySoundEffect(trg, SFX_LIGHTNING);
 			endif
 			ApplyDamageEX(trg, dmg, DMG_ENERGY);
@@ -129,7 +129,7 @@ program genericscript(who, item)
 			ApplyDamageEX(trg, dmg, DMG_PHYSICAL);
 		elseif (itemdmgtype == "veneno")
 			ApplyDamageEX(trg, dmg, DMG_POISON);
-			PlayStationaryEffect(trg.x, trg.y, trg.z, GFX_POISON_GAS, 10, 10, 0, trg.realm);
+			PlayStationaryEffect(trg.x, trg.y, trg.z, FX_POISON_GAS, 10, 10, 0, trg.realm);
 		endif
 
 	elseif ("changeform" in scripts)

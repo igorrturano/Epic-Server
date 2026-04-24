@@ -7,7 +7,7 @@ include "include/say";
 include ":attributes:attributes";
 include ":attributes:skills";
 include ":timedscripts:timedScripts";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
 
 program HitScript(params)
@@ -23,7 +23,7 @@ program HitScript(params)
 		lvl := 1;
 	endif
 
-	if (!CheckResist(defender, VONTADE, RESIST_MEDIUM, -CInt(AP_GetStat(attacker, STRENGTH) / 20)))
+	if (!CheckResist(defender, WILL, RESIST_MEDIUM, -CInt(AP_GetStat(attacker, STRENGTH) / 20)))
 		TS_StartTimer(defender, "dmgreduction", Cint(AP_GetStat(attacker, STRENGTH)), lvl, attacker, 1);
 		PlaySoundEffect(attacker, urro_sound);
 		PrintTextAbove(defender, "*Apavorado*");

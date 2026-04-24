@@ -1,7 +1,11 @@
 use uo;
+use vitals;
 
 include ":timedScripts:timedScripts";
 include ":mounts:mounts";
+include ":charactercreation:habilidades";
+include ":stables:include/stable";
+include "include/NPCUtil";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 
@@ -50,10 +54,26 @@ function GetNumPets(who)
 	foreach serial in tamed
 		var pet := SystemFindObjectBySerial(serial);
 		if ( pet.master == who && !GetObjProperty(pet, "summoned")) //se não é summon
+			var petPostSerial := GetObjProperty(pet, "StablePostSerial");
+			if ( petPostSerial && !GetObjProperty(pet, "EstaNoLimbo") )
+				if ( IsStableExpired(pet) )
+					// Contrato de estabulo expirado: cobre tanto pet guardado no post
+					// quanto pet retirado que nunca voltou para renovar.
+					var expiredPost := SystemFindObjectBySerial(petPostSerial);
+					EncerrarContratoEstabulo(pet, expiredPost, who);
+				elseif ( !GetObjProperty(who, "CurrentStablePostSerial") )
+					// Migracao: contrato ativo sem CurrentStablePostSerial no master
+					// (dados legacy). Restaura vinculo para preservar 1-post-por-player.
+					SetObjProperty(who, "CurrentStablePostSerial", petPostSerial);
+				endif
+			endif
+			// Pets no estabulo ou em limbo não ocupam slots, mas continuam pertencendo ao player
+			if ( !GetObjProperty(pet, "EstaNoEstabulo") && !GetObjProperty(pet, "EstaNoLimbo") )
 				if (!Cint(pet.getTier()))
-				num_tamed := num_tamed+1;
-			else
-				num_tamed := num_tamed + Cint(pet.getTier());
+					num_tamed := num_tamed+1;
+				else
+					num_tamed := num_tamed + Cint(pet.getTier());
+				endif
 			endif
 		else
 			tamed.erase(_serial_iter);
@@ -170,7 +190,7 @@ function GetMaxPets(who)
 	endif
 
 	//Influência de Habs na quantidade
-	if(TemHabilidade(who, "Espreita Selvagem"))
+	if(MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM))
 		maxpets := maxpets + 1;
 	endif
 
@@ -210,7 +230,7 @@ function LogoutPets(who)
 			location.append(pet.x);
 			location.append(pet.y);
 			location.append(pet.z);
-			MoveObjectToLocation(pet, 6066, 60, 22, pet.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(pet, 5688, 625, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 			SetObjProperty(pet, "previous_location", location);
 		endif
 		sleepms(2);
@@ -261,6 +281,7 @@ function destama(serial)
 	EraseObjProperty(me,"countercheck");
 	EraseObjProperty(me, "NeverRelease");
 	EraseObjProperty(me, "Fidelizar?");
+	EraseObjProperty(me, "Cruzar");
 	RestartScript(me);
 	ErasePetMods(me);
 endfunction
@@ -289,7 +310,7 @@ function SetPetMods(pet)
 	var hits := Cint(GetVital(pet, "hits")/100);
 	SetObjProperty(pet, "hitsmod", hits);
 	recalcvitals(pet);
-	healdamage(pet, 255);
+	ApplyEpicHealing(pet, 255);
 
 	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
@@ -329,7 +350,7 @@ function RessuscitarPet(corpse, owner, is_bandage := 0)
 
     // Lógica de contagem de animais fidelizados
     var pets := GetObjProperty(owner, "TamedPets");
-    var habs := TemHabilidade(owner, "Espreita Selvagem");
+    var habs := MobileWrapper(owner).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM);
     var limite_animais := habs ? 2 : 1;
     var animais_fidelizados := 0;
     foreach serial in pets
@@ -416,4 +437,58 @@ function CopyPropsPet(origin, destiny)
     foreach prop in propnames
         SetObjProperty(destiny, prop, GetObjProperty(origin, prop));
     endforeach
+endfunction
+
+function GetDietByTaxonomy(tax)
+
+    tax := Lower(tax);
+
+    if (tax == "canidae")
+        return {"meat"};
+    elseif (tax == "felidae")
+        return {"meat"};
+    elseif (tax == "arachnida")
+        return {"meat"};
+    elseif (tax == "serpentes")
+        return {"meat"};
+
+    elseif (tax == "delphinidae")
+        return {"fish"};
+    elseif (tax == "odobenidae")
+        return {"fish"};
+    elseif (tax == "crustacean")
+        return {"fish"};
+
+    elseif (tax == "reptilia")
+        return {"meat", "fish"};
+    elseif (tax == "draco")
+        return {"meat", "fish"};
+
+    elseif (tax == "ursidae")
+        return {"meat", "fish", "fruit"};
+    elseif (tax == "suidae")
+        return {"meat", "fruit", "vegetable"};
+    elseif (tax == "chiroptera")
+        return {"fruit", "meat"};
+    elseif (tax == "primatomorpha")
+        return {"fruit", "grain", "vegetable"};
+
+    elseif (tax == "bovidae")
+        return {"grain", "vegetable"};
+    elseif (tax == "equus")
+        return {"grain", "vegetable"};
+    elseif (tax == "camelidae")
+        return {"grain", "vegetable"};
+    elseif (tax == "cervidae")
+        return {"grain", "vegetable"};
+    elseif (tax == "rodentia")
+        return {"grain", "vegetable"};
+
+    elseif (tax == "aves")
+        return {"grain", "fish"};
+    elseif (tax == "phasianidae")
+        return {"grain"};
+    endif
+
+    return {"all"};
 endfunction

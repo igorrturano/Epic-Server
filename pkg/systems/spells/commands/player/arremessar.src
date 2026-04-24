@@ -2,6 +2,7 @@ use uo;
 use os;
 use math;
 use vitals;
+use cfgfile;
 
 include ":timedscripts:timedScripts";
 include "include/say";
@@ -11,10 +12,12 @@ include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:damage";
-include ":combat:combat";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":tn:cooldown";
 
 enum arrremesso
 	ARREMESSO_TIPO_ITEM,
@@ -25,7 +28,14 @@ endenum
 program arremesso(params)
 	var who := params[1];
 	params := 0; // No longer needed
-	if (who.hidden && !TemHabilidade(who, "Espionagem"))
+
+	var cd := GetCooldown(who, "arremesso_cd");
+	if (cd)
+		SendSysMessageEx(who, "Voce precisa esperar " + cd + " segundos para arremessar novamente.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (who.hidden && !MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		SendSysMessageEx(who, "Voce nao pode fazer isso escondido.", SSM_FAIL);
 		return 0;
 	elseif (GetEquipmentByLayer(who, 0x19) && GetObjProperty(who, "chardata").trait != "Cavalaria de Escaramuça")
@@ -35,6 +45,15 @@ program arremesso(params)
 		SendSysMessageEx(who, "Voce nao pode arremessar enquanto pilota um golem ou esta metamorfoseado.",
 				   SSM_FAIL);
 		return 0;
+	endif
+
+	var _left_hand := GetEquipmentByLayer(who, 0x02);
+	if (who.weapon)
+		var _weapon_attr := Upper(who.weapon.getCfgElem().Attribute);
+		if (_weapon_attr == "TWO_HANDED" || _weapon_attr == "DUAL_WIELD" || _left_hand)
+			SendSysMessageEx(who, "Voce precisa ter pelo menos uma mao livre para arremessar.", SSM_FAIL);
+			return 0;
+		endif
 	endif
 
 	if (AP_GetVital(who, "Stamina") < 20)
@@ -50,14 +69,14 @@ program arremesso(params)
 		SendSysMessageEx(who, "Cancelled.", SSM_FAIL);
 		return 0;
 	elseif (targ.IsA(POLCLASS_MOBILE))
-		if (!TemHabilidade(who, "Brigador de Taverna"))
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::TAVERN_BRAWLER))
 			SendSysMessageEx(who, "Voce nao consegue arremessar essa pessoa.", SSM_FAIL);
 			return 0;
 		elseif (AP_GetStat(who, STRENGTH) <= AP_GetStat(targ, STRENGTH))
 			SendSysMessageEx(who, "Voce nao e forte o suficiente para arremessar essa pessoa.", SSM_FAIL);
 			return 0;
 		endif
-	elseif (targ.npctemplate && !TemHabilidade(who, "Brigador de Taverna"))
+	elseif (targ.npctemplate && !MobileWrapper(who).HasAbility(ABILITY_ID::TAVERN_BRAWLER))
 		SendSysMessageEx(who, "Voce nao consegue arremessar essa pessoa.", SSM_FAIL);
 		return 0;
 	elseif (Distance(who, targ) > 1)
@@ -77,6 +96,9 @@ program arremesso(params)
 		return 0;
 	elseif (targ.objtype in arcane_bows)
 		SendSysMessageEx(who, "Voce nao pode arremessar isso.", SSM_FAIL);
+		return 0;
+	elseif (targ.amount > 1)
+		SendSysMessageEx(who, "Voce so pode arremessar um item por vez.", SSM_FAIL);
 		return 0;
 	endif
 
@@ -127,17 +149,29 @@ program arremesso(params)
 		return 0;
 	endif
 
-	// Não entendi essa parte então não mexi. Ass: Deiro.
-	if (who.weapon.IsThrowingWeapon())
+	// Ninja Path: daggers don't cost stamina
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH) && targ.isA(POLCLASS_ITEM))
+		var _ww := WeaponWrapper(targ);
+		if (!_ww.GetObjRef().errortext && _ww.GetCategory() == WEAPON_CATEGORY::DAGGER || _ww.GetObjRef().objtype == 0x27AC) // Shuriken
+			AP_ConsumeVital(who, "Stamina", 5);
+		else
+			if (who.weapon.IsThrowingWeapon())
+				AP_ConsumeVital(who, "Stamina", 10);
+			else
+				AP_ConsumeVital(who, "Stamina", 20);
+			endif
+		endif
+	elseif (who.weapon.IsThrowingWeapon())
 		AP_ConsumeVital(who, "Stamina", 10);
 	else
 		AP_ConsumeVital(who, "Stamina", 20);
 	endif
-	//
+
+	SetCooldown(who, "arremesso_cd", 10);
 
 	var to_miss_chance := 50;
 	if (alvo.isA(POLCLASS_MOBILE))
-		to_miss_chance := GetResist(alvo, REFLEXOS);
+		to_miss_chance := GetResist(alvo, REFLEXES);
 	endif
 
 	var dmg := RandomDiceRoll("1d6");
@@ -151,7 +185,7 @@ program arremesso(params)
 	var str_bonus := AP_GetStat(who, STRENGTH);
 	var dex_bonus := AP_GetStat(who, DEXTERITY);
 	var dmg_bonus := 0;
-	if (TemHabilidade(who, "Brigador de Taverna"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::TAVERN_BRAWLER))
 		dmg_bonus := Cint((str_bonus + dex_bonus) / 20);
 	endif
 	dmg += dmg_bonus;
@@ -168,7 +202,7 @@ program arremesso(params)
 
 		if (to_hit_chance < (to_miss_chance + parry_chance)) // Erra ou defende
 			if (to_hit_chance > to_miss_chance)
-				PlayHitSounds(who, alvo);
+				// PlayHitSounds(who, alvo);
 				PrintTextAbove(alvo, "*Defendeu!*");
 			endif
 			PrintTextAbove(who, "*Errou!*");
@@ -204,7 +238,7 @@ program arremesso(params)
 			PlaySoundEffect(alvo, 0x521);
 			PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
 			MakeBleed(alvo);
-			PlayHitSounds(who, alvo);
+			// PlayHitSounds(who, alvo);
 			return 1;
 		endif
 	else
@@ -237,7 +271,7 @@ program arremesso(params)
 		endif
 	endif
 
-	if (who.hidden && !TemHabilidade(who, "Furtividade Aprimorada"))
+	if (who.hidden && !MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		who.hidden := 0;
 	else
 		if (AP_GetVital(who, "Stamina") < 50)

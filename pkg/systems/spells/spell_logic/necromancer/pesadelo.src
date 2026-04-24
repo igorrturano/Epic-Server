@@ -5,11 +5,13 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":charactercreation:resists";
 include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -24,15 +26,14 @@ program SpellScript(params)
 		return 1;
 	endif
 
-	var dmg := epicSpellDamageRoll(who, spell_circle);
-	dmg := bonusSpellDamageForSpecialists(who, dmg, spell_school);
+	var dmg := epicSpellDamageRoll(who, spell_circle, spell_school);
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
-	if (CheckResist(targ, VONTADE, diff, -bonus))
+	if (CheckResist(targ, WILL, diff, -bonus))
 		dmg := dmg / 2;
 	endif
 
-	if (temHabilidade(who, "Sacrificio da Carne"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SACRIFICIO_DA_CARNE))
 		if (isBloodied(who))
 			dmg := CInt(dmg * 1.5);
 		endif

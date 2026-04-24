@@ -1,3 +1,5 @@
+use cfgfile;
+
 const LIMITE_MARTELADAS := 3;
 const LIMITE_AQUECIMENTO := 4;
 const NR_MAXIMO_ESQUEMAS := 6;
@@ -8,6 +10,24 @@ const FIXO_DIF_ADICIONAL_PERICIA := 0;
 const FABRICACAO_AJUDA_CONFIG_PATH := ":crafting:config/ajuda";
 const CHANCE_FABRICACAO_MAX := 80.0;
 const LARGURA_DROPDOWN := 350;
+const CLASSE_PADRAO := 1;
+
+var CATALOGO_LOG_PRA_TABUA := dictionary {
+        "0xee36" -> 0xee66,
+        "0xee37" -> 0xee67,
+        "0xee38" -> 0xee68,
+        "0xee39" -> 0xee69,
+        "0xee3a" -> 0xee70,
+        "0xee3b" -> 0xff05,
+        "0xee3c" -> 0xee65,
+        "0xee3f" -> 0xee64,
+        "0xee40" -> 0xef2a,
+        "0xee3d" -> 0xee73,
+        "0xee3e" -> 0x615b,
+        "0x1bdd" -> 0x1bd7 //madeira
+        };
+
+var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 
 enum EV_TRATAMENTO
 	EV_FIM_CICLO,
@@ -52,21 +72,6 @@ enum class FABRICACAO_MODO_MATERIAL
 	MENOR_QUE_TIER,
 endenum
 
-var CATALOGO_LOG_PRA_TABUA := dictionary {
-        "0xee36" -> 0xee66,
-        "0xee37" -> 0xee67,
-        "0xee38" -> 0xee68,
-        "0xee39" -> 0xee69,
-        "0xee3a" -> 0xee70,
-        "0xee3b" -> 0xff05,
-        "0xee3c" -> 0xee65,
-        "0xee3f" -> 0xee64,
-        "0xee40" -> 0xef2a,
-        "0xee3d" -> 0xee73,
-        "0xee3e" -> 0x615b,
-        "0x1bdd" -> 0x1bd7 //madeira
-        };
-
 enum ITENS_ESTACAO
 	FONTE_CALOR := "fonteCalor",
 	FONTE_AGUA := "fonteAgua",
@@ -96,6 +101,9 @@ enum COMPONENTES_CARACTERISTICA
 	CARACTERISTICA_FABRICACAO_RESISTENCIACLIMAFRIO := "resistenciaClimaFrio",
 	CARACTERISTICA_FABRICACAO_RESISTENCIACLIMACALOR := "resistenciaClimaCalor",
 	CARACTERISTICA_FABRICACAO_INTIMIDACAO := "intimidacao",
+	CARACTERISTICA_FABRICACAO_CATALISADOR := "catalisador",
+	CARACTERISTICA_FABRICACAO_DOSES := "doses",
+	CARACTERISTICA_FABRICACAO_EFICIENCIA := "eficiencia",
 endenum
 
 enum COMPONENTES_SUBCARACTERISTICA
@@ -103,10 +111,17 @@ enum COMPONENTES_SUBCARACTERISTICA
 	SUBCARACTERISTICA_FABRICACAO_CORTANTE := "cortante", 
 	SUBCARACTERISTICA_FABRICACAO_PERFURANTE := "perfurante",
 	SUBCARACTERISTICA_FABRICACAO_CONTUSAO := "contusao",
+	SUBCARACTERISTICA_FABRICACAO_FOGO := "fogo",
+	SUBCARACTERISTICA_FABRICACAO_GELO := "gelo",
+	SUBCARACTERISTICA_FABRICACAO_VENENO := "veneno",
+	SUBCARACTERISTICA_FABRICACAO_ENERGIA := "energia",
 	// dano e defesa * FIM
+	// alquimia * INICIO
+	SUBCARACTERISTICA_FABRICACAO_POTENCIA := "potencia",
+	SUBCARACTERISTICA_FABRICACAO_EXTENSAO := "extensao",
 endenum
 
-var CATALOGO_FONTE_CALOR := array{0xe1d,0x197e,0x197f,0x1980,
+var CATALOGO_FONTE_CALOR := array{0xe1d,0xFB1,0x197a, 0x19a9, 0x197e,0x197f,0x1980,
 								0x1981, 0x1982, 0x1983, 0x1984,
 								0x1985,0x198a, 0x198b, 0x198c,
 								0x198d, 0x198e, 0x198f, 0x1990,

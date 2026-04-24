@@ -1,0 +1,63 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/client";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":message:model/Message";
+
+/**
+ * Transformacao (Henge) - Spell 1101
+ * Disguise as another person. Requires a disguise kit on the ground nearby.
+ * Takes 20 seconds of concentration to complete.
+ */
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	// Find disguise kit on the ground nearby
+	var kit := 0;
+	foreach item in (ListItemsNearLocation(who.x, who.y, who.z, 2, who.realm))
+		if (item.objtype == 3592 && !item.container)
+			kit := item;
+			break;
+		endif
+	endforeach
+
+	if (!kit)
+		SendSysMessageEx(who, "Voce precisa de um kit de disfarces no chao proximo a voce.", SSM_FAIL);
+		return 0;
+	endif
+
+	// 20 second preparation
+	Message("*Comeca a preparar um disfarce...*").SendEmote(who);
+	SendSysMessageEx(who, "Voce comeca a se disfarcar. Fique parado por 20 segundos.", SSM_INFO);
+
+	var startX := who.x;
+	var startY := who.y;
+
+	var i;
+	for (i := 1; i <= 20; i := i + 1)
+		sleep(1);
+		if (who.x != startX || who.y != startY)
+			SendSysMessageEx(who, "Voce se moveu e perdeu a concentracao.", SSM_FAIL);
+			return 0;
+		endif
+		if (who.dead)
+			return 0;
+		endif
+	endfor
+
+	// Start the disguise script
+	PlaySoundEffect(who, 0x228);
+	Message("*Realiza uma transformacao*").SendEmote(who);
+
+	var script := Start_Script(":disguise:disguise", array{ who, kit });
+	if (script.errortext)
+		SendSysMessageEx(who, "Erro ao iniciar disfarce: " + script.errortext, SSM_FAIL);
+		return 0;
+	endif
+
+	return 1;
+endprogram

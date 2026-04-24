@@ -145,7 +145,7 @@ program spawnpointcontrol(spawnpoint)
 			var state := spawnqueue[i];
 			if (state != "Empty" && state != "Active")
 				if (state == 0)
-					while (hasplayernearSpawn(spawnpoint.x, spawnpoint.y, spawnpoint.realm))
+					while (HasPlayerNearSpawn(spawnpoint.x, spawnpoint.y, spawnpoint.realm))
 						sleep(60);
 					endwhile
 					childrenSerial[i] := CreateSpawn(spawnpoint, templates, amounts, tiers, names, i);
@@ -163,7 +163,7 @@ program spawnpointcontrol(spawnpoint)
 	endwhile
 endprogram
 
-function hasplayernearSpawn(x, y, realm)
+function HasPlayerNearSpawn(x, y, realm)
 	var num_player := ListMobilesNearLocation(x, y, 19, LISTEX_FLAG_PLAYERS_ONLY && LISTEX_FLAG_NORMAL,
 										   realm).size();
 	return num_player > 0;
@@ -259,55 +259,19 @@ function CreateSpawn(spawnpoint, templates, amounts, tiers, names, index)
 endfunction
 
 function SetupSpawn(spawnpoint, spawn, tier, npcName)
-	var loscheck := GetObjProperty(spawnpoint, "IgnoreLOS");
-	var range := GetObjProperty(spawnpoint, "Range");
-	loscheck := loscheck ? Cint(loscheck) : 0;
-	range := range ? Cint(range) : 0;
-
-	var x, y, z, success := 0;
-	var i := 1;
+	var x := spawnpoint.x;
+	var y := spawnpoint.y;
+	var z := spawnpoint.z;
 	var npc;
 
-	while (success == 0)
-		if (range == 0)
-			x := spawnpoint.x;
-			y := spawnpoint.y;
-			z := spawnpoint.z;
-		elseif (spawnpoint.z >= 0)
-			x := spawnpoint.x + RandomInt(2 * range) - range;
-			y := spawnpoint.y + RandomInt(2 * range) - range;
-			z := GetWorldHeight(x, y, spawnpoint.realm);
-		else
-			x := spawnpoint.x + RandomInt(2 * range) - range;
-			y := spawnpoint.y + RandomInt(2 * range) - range;
-			z := spawnpoint.z;
-		endif
+	npc := CreateNpc(spawn, x, y, z, 0, spawnpoint.realm);
+	if (npc)
+		SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
+		SetupCustomProps(spawnpoint, npc, tier, npcName);
+		return npc.serial;
+	endif
 
-		if (!loscheck)
-			if (CheckLosBetween(spawnpoint.x, spawnpoint.y, spawnpoint.z, x, y, z, spawnpoint.realm))
-				npc := CreateNpc(spawn, x, y, z, 0, spawnpoint.realm);
-				success := 1;
-				SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
-				SetupCustomProps(spawnpoint, npc, tier, npcName);
-				return npc.serial;
-			endif
-		else
-			npc := CreateNpc(spawn, x, y, z, 0, spawnpoint.realm);
-			success := 1;
-			SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
-			SetupCustomProps(spawnpoint, npc, tier, npcName);
-			return npc.serial;
-		endif
-
-		i := i + 1;
-		if (i > 10)
-			npc := CreateNpc(spawn, spawnpoint.x, spawnpoint.y, spawnpoint.z, 0, spawnpoint.realm);
-			success := 1;
-			SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
-			SetupCustomProps(spawnpoint, npc, tier, npcName);
-			return npc.serial;
-		endif
-	endwhile
+	return 0;
 endfunction
 
 function SetupCustomProps(spawnpoint, npc, tier, npcName)

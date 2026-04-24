@@ -14,6 +14,7 @@ include ":mounts:mounts";
 include ":tn:characters";
 include ":tn:boss";
 include ":charactercreation:habilidades";
+include "include/epicNPCUtils";
 // include ":damage:damage"; para os criticos talvez?
 
 const START_Y := 91;
@@ -84,6 +85,7 @@ function taming(who)
 
 	SetTamingCooldown(who);
 
+	var tamed_success := 0;
 	while (TameLoop(who, targ, info))
 		SetTamingCooldown(who);
 
@@ -96,13 +98,9 @@ function taming(who)
 
 			Run_Script_To_Completion(":death:npcdeath", { targ });
 
-			var tamed := GetObjProperty(who, "TamedPets");
-			if (!tamed)
-				tamed := array;
-			endif
-			tamed.append(targ.serial);
-			SetObjProperty(who, "TamedPets", tamed);
+			AddPet(who, targ.serial);
 
+			tamed_success := 1;
 			break;
 		endif
 
@@ -111,7 +109,9 @@ function taming(who)
 		endif
 
 	endwhile
-	PostTameSuccess(who, targ);
+	if (tamed_success)
+		PostTameSuccess(who, targ);
+	endif
 endfunction
 
 function TameLoop(who, targ, byref info)
@@ -153,6 +153,12 @@ function SetTamingCooldown(who)
 endfunction
 
 function SetTamedProperties(targ, who)
+	EraseObjProperty(targ, "NpcTier");
+	EraseObjProperty(targ, "#npc_cache");
+	SetObjProperty(targ, "hitsmod", 0);
+	var npc_elem := NPC_GetNPCConfig(targ);
+	customizeNpc(targ, npc_elem.Tier);
+
 	SetObjProperty(targ, "owner", who.serial);
 	SetObjProperty(targ, "name", targ.name);
 	SetObjProperty(targ, "script", targ.script);

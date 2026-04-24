@@ -9,7 +9,10 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include "include/tileEffects";
 include ":charactercreation:habilidades";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
+include ":epicAI:include/epicNPCCombat";   // CheckForWoundedAllies, FindMostWoundedAlly
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":brainai:npcUtil";
 include ":epicAI:epicai";
 
@@ -42,12 +45,12 @@ program SpellScript(params)
 		healed := 20;
 	endif
 	// sendsysmessage(who, "healed " + healed);
-	// healdamage(targ, healed);
+	// ApplyEpicHealing(targ, healed);
 	if (GetObjProperty(who, "votovinganca") == 1)
 		EraseObjProperty(who, "votovinganca");
 		if (targ.npctemplate)
 			var elem := NPC_GetNPCConfig(targ.npctemplate);
-			var category := lower(GetConfigString(elem, "Category"));
+			var category := lower(GetConfigString(elem, "Environment"));
 
 			if (category == "undead" || category == "demons")
 
@@ -57,17 +60,18 @@ program SpellScript(params)
 			endif
 		endif
 	else
-		if (temHabilidade(who, "Ultimo Milagre"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::AURA_DIVINA))
 			if (isBloodied(targ))
 				healed := healed * 2;
 			endif
 		endif
-		healFLS(targ, healed);
+		applyEpicHealing(targ, healed);
 	endif
 	recalcvitals(targ);
 	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
 
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlayObjectCenteredEffect(targ, FX_ENERGY_GLOBES, 1, 20);
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
 
 	return 1;

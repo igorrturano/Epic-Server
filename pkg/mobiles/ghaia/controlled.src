@@ -4,6 +4,8 @@ use npc;
 use util;
 
 include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include ":gumps:gumps";
 include "include/sysEvent";
 include "include/say";
 include ":mounts:mounts";
@@ -715,7 +717,7 @@ function CastFaerieHeal(me, owner)
 	PlayObjectCenteredEffect(owner, 0x373a, 7, 0x10);
 
 	var amt := RandomDiceRoll("1d10") + 20;
-	HealDamage(owner, amt);
+	ApplyEpicHealing(owner, amt);
 	SetCooldown(me, "heal", 150);
 
 endfunction

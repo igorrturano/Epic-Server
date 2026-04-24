@@ -42,14 +42,14 @@ program SpellScript(params)
 			time := 10;
 		else
 			PlayMovingEffectEx(targ, who, 3982, 255, 1, 2117);
-			PerformAction(who, ANIM_CAST_AREA);
+			PerformAction(who, HUMAN_ANIM::CAST_AREA);
 			ConsumeMana(targ, amt);
 			targ.setAggro(who.serial, 150);
 			if (GetObjProperty(targ, "#sleep"))
 				EraseObjProperty(targ, "#sleep");
 			endif
 			PrintTextPrivate(who, "+" + amt + " Vida", who, 3, 568); // verde
-			HealDamage(who, amt);
+			ApplyEpicHealing(who, amt);
 			DamageMana(targ, amt);
 			PrintTextPrivate(targ, "-" + amt + " Mana", who, 3, 38); // vermelho
 			time := time + 1;

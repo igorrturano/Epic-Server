@@ -20,6 +20,10 @@ program instrumentoMusical(who, item)
 		SendSysMessage(who, "Espere um pouco antes de tocar novamente", BARD_FONT, BARD_FONT_COLOR_BAD);
 		return 0;
 	else // pede um target pra saber se toca partitura ou se toca musicas basicas
+		// V3 Bard: drum opens buff gump directly
+		if (item.graphic == 0x0e9c && MobileWrapper(who).HasAbility(ABILITY_ID::VOX_ARCANA))
+			return TambourBuffGump(who, item);
+		endif
 		SendSysMessage(who, "Clique numa partitura ou no mesmo instrumento para tocar!", BARD_FONT,
 						BARD_FONT_COLOR_BASICA);
 		var opcao := Target(who);
@@ -45,9 +49,11 @@ function DesgastaInstrumento(who, instrumento)
 		instrumentohp := instrumentohp - 1;
 		if (instrumentohp <= 0)
 			SendSysMessage(who, instrumento.desc + " foi destruido.");
-			SetObjProperty(instrumento, "broken", 1);
-			SetObjProperty(instrumento, "realdesc", instrumento.desc);
-			SetName(instrumento, instrumento.desc + " [danificado]");
+			if (!GetObjProperty(instrumento, "broken"))
+				SetObjProperty(instrumento, "broken", 1);
+				SetObjProperty(instrumento, "realdesc", instrumento.desc);
+				SetName(instrumento, instrumento.desc + " [danificado]");
+			endif
 			MoveItemToContainer(instrumento, who.backpack);
 		// DestroyItem(instrumento);
 		elseif (instrumento.hp > instrumento.maxhp)

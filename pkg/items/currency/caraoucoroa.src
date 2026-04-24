@@ -17,7 +17,7 @@ program cara_ou_coroa(who, item)
 
 	EraseObjProperty(who, "IsMeditating");
 	var cara;
-	if (TemHabilidade(who, "Prestidigitador"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PRESTIDIGITATOR))
 		var usarhab := YesNo(who, "Deseja usar sua habilidade de roubar o resultado?", "Sim.", "Não.");
 
 		if (usarhab)
@@ -34,7 +34,7 @@ program cara_ou_coroa(who, item)
 		coin(who); // Random normal
 	endif
 
-	PerformAction(who, ANIM_ATTACK_1HAND_DOWN);
+	PerformAction(who, HUMAN_ANIM::ATTACK_1HAND_BLUNT);
 	PlaySoundEffect(who, SOUND_EFFECT_JOGAR);
 
 	return 1;

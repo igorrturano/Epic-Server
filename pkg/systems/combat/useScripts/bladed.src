@@ -12,6 +12,8 @@ include "include/say";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";
 include ":destroyable:include/destroyItem";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program use_Bladed(who, tool)
 
@@ -71,8 +73,24 @@ function CarveItems(who, tool, item)
 			PrintTextAbove(item, "*Liberta o corpo das teias*");
 			SetObjProperty(item, "freed_from_web", 1);
 		else
+			var lefthand := GetEquipmentByLayer(who, LAYER_HAND2);
+			if (lefthand)
+				SendSysMessage(who, "Voce precisa da mao esquerda livre para escalpelar.");
+				return 0;
+			endif
 			return start_script(":survival:skinning", { who, item, tool });
 		endif
+	elseif (item.objtype == 0x1dae) // Cabeca -> Cranio
+		if ((!Accessible(who, item, 2)) || (!CheckLineOfSight(who, item)))
+			SendSysMessage(who, "Voce nao pode alcancar isso.");
+			return 0;
+		endif
+		PrintTextAbove(who, "*Retira a carne do cranio*");
+		var skull := CreateItemAtLocation(item.x, item.y, item.z, 0x1ae2, 1, item.realm);
+		if (skull)
+			DestroyItem(item);
+		endif
+		return 1;
 	else
 		case (item.objtype)
 			0x97E:  return CortaComida(who, item, 0x97C, 8, "Voce cortou cada queijo em oito partes.");
@@ -86,7 +104,7 @@ function CarveItems(who, tool, item)
 			0x977:  return CortaComida(who, item, 0x979, 8, "Voce cortou cada bacon em oito fatias.");
 			0x1728: return CortaComida(who, item, 0x1729, 1, "Voce cortou cada limao ao meio.");
 			0x172a: return CortaComida(who, item, 0x172b, 1, "Voce cortou cada lima ao meio.");
-			0x1078:
+			0x1078: return FazPergaminhoEmBranco(who, item);
 			0x1079:
 				return FazPergaminhoEmBranco(who, item);
 			0xec24:
@@ -252,7 +270,7 @@ function FazPergaminhoEmBranco(who, item)
 				else
 					for i := 1 to 3
 						PlaySoundEffect(who, 0x5A);
-						PerformAction(who, ANIM_SALUTE);
+						PerformAction(who, HUMAN_ANIM::SALUTE);
 						sleep(1);
 					endfor
 					if (SkillCheck(who, SURVIVAL, RequiredSkill))
@@ -287,7 +305,7 @@ function CarveMobiles(who, tool, mobile)
 		else
 			mobile.graphic := 223;
 			var qtd := 2;
-			if (TemHabilidade(who, "Sem Desperdicio"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::NO_WASTE))
 				qtd := qtd + CInt(AP_GetSkill(who, SURVIVAL) / 20);
 			endif
 			CreateItemInContainer(who.backpack, 0xf125, qtd);

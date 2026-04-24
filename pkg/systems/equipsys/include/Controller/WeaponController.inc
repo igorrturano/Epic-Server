@@ -1,7 +1,8 @@
 include ":equipsys:utils/consts";
+include ":combat:Model/DamageTier";
 
 function getDamageElemental(DMGTYPE, weapon)
-	case(DMGTYPE)
+	case(Upper(DMGTYPE))
 		"FIRE":
 			return CInt(weapon.getAttrBase().FireDamage);
 
@@ -32,7 +33,7 @@ endfunction
  *
  */
 function getSpeedByTier(tier)
-	case (tier.Upper())
+	case (Upper(tier))
 		MELEE_LOW: return 24; // min = 24 + 3 random
 		MELEE_MID: return 30; // min = 30 + 3 random
 		MELEE_HIGH: return 36; // min = 36 + 3 random
@@ -58,35 +59,51 @@ endfunction
  *
  */
 function getDamageByTier(tier)
-	case (tier.Upper())
+	case (Upper(tier))
 		// NO DAMAGE
-		DAMAGE_NONE: return 0;
+		DAMAGE_TIER::DAMAGE_NONE: return 0;
+
+		DAMAGE_TIER::UNARMED_LOW: return "1d2";
+		DAMAGE_TIER::UNARMED_MID: return "2d2";
+		DAMAGE_TIER::UNARMED_HIGH: return "3d2";
 		
 		// ONE HANDED
-		ONEHANDED_LOW: return "1d4";
-		ONEHANDED_MID: return "1d6";
-		ONEHANDED_HIGH: return "1d8";
+		DAMAGE_TIER::ONEHANDED_LOW: return "1d4";
+		DAMAGE_TIER::ONEHANDED_MID: return "1d6";
+		DAMAGE_TIER::ONEHANDED_HIGH: return "1d8";
 			
 		// TWO HANDED
-		TWOHANDED_LOW: return "1d8";
-		TWOHANDED_MID: return "1d10";
-		TWOHANDED_HIGH: return "1d12";
+		DAMAGE_TIER::TWOHANDED_LOW: return "1d8";
+		DAMAGE_TIER::TWOHANDED_MID: return "1d10";
+		DAMAGE_TIER::TWOHANDED_HIGH: return "1d12";
 
 		// BOW
-		BOW_LOW: return "1d4";
-		BOW_MID: return "1d6";
-		BOW_HIGH: return "1d8";
+		DAMAGE_TIER::BOW_LOW: return "1d4";
+		DAMAGE_TIER::BOW_MID: return "1d6";
+		DAMAGE_TIER::BOW_HIGH: return "1d8";
 
 		// CROSSBOW
-		CROSSBOW_LOW: return "1d6";
-		CROSSBOW_MID: return "1d8";
-		CROSSBOW_HIGH: return "1d10";
+		DAMAGE_TIER::CROSSBOW_LOW: return "1d6";
+		DAMAGE_TIER::CROSSBOW_MID: return "1d8";
+		DAMAGE_TIER::CROSSBOW_HIGH: return "1d10";
 
 		// THROWING
-		THROWING_LOW: return "1d4";
-		THROWING_MID: return "1d6";
-		THROWING_HIGH: return "1d8";
-			
+		DAMAGE_TIER::THROWING_LOW: return "1d4";
+		DAMAGE_TIER::THROWING_MID: return "1d6";
+		DAMAGE_TIER::THROWING_HIGH: return "1d8";
+
+		// FIREWEAPON
+		DAMAGE_TIER::FIREWEAPON_LOW: return "1d6";
+		DAMAGE_TIER::FIREWEAPON_MID: return "1d8";
+		DAMAGE_TIER::FIREWEAPON_HIGH: return "1d10";
+
+		// NPC-ONLY
+		DAMAGE_TIER::NPC_LOW: return "2d8";
+		DAMAGE_TIER::NPC_MID: return "4d8";
+		DAMAGE_TIER::NPC_HIGH: return "6d8";
+		DAMAGE_TIER::NPC_BRUTAL: return "10d8";
+		DAMAGE_TIER::NPC_DEVASTATING: return "15d8";
+
 		default: return error{ "errortext" := "Value not found for this Weapon Damage Tier!"};
 	endcase
 endfunction
@@ -103,7 +120,7 @@ endfunction
  *
  */
 function getCriticalChanceByTier(tier)
-	case(tier.upper())
+	case(Upper(tier))
 		CRITICALCHANCE_NOCHANCE: return 0;
 		CRITICALCHANCE_LOW: return 1;
 		CRITICALCHANCE_MID: return 3;

@@ -5,13 +5,15 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
+include ":nature:Controller/LightController";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	if (!targ)
@@ -23,7 +25,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLES, 10, 10);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLES, 10, 10);
 	handleSilentMagic(who, targ, SFX_BLESS);
 
 	SendSysMessageEx(targ, "Voce passa a enxergar melhor", SSM_INFO);
@@ -31,12 +33,8 @@ program SpellScript(params)
 	var magiclore_skill := AP_GetSkill(who, THEOLOGY);
 	var duration := CInt(magiclore_skill * 5);
 
-	targ.setlightlevel(18, duration); // TODO: Voltar pra 15 pro def
-	if (GetObjProperty(targ, "chardata").raca != DROW)
-		SetCooldown(targ, "nightvision", duration);
-	else
-		SetCooldown(targ, "lightvision", duration);
-	endif
+	ApplyMagicalVision(targ, duration);
+	SendSpellBuff(who, targ, CInt(spell.id), duration);
 
 	return 1;
 endprogram

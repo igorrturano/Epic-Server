@@ -1,0 +1,23 @@
+use uo;
+use os;
+include "include/epicConstants";
+
+program ateste (quem, param)
+
+	SendSysMessage(quem,"Desativado em producao");
+	return 0;
+	Print(param);
+	var parametro := cint(param);
+	var gmAcceleration := cint(GetGlobalProperty("daynightAccelaration"));
+	var systemPid := GetProcess(cint(GetGlobalProperty("daynightpid")));
+
+	SendSysMessage(quem,"gmAcceleration era: " + gmAcceleration);
+	Print("parametro: " + parametro);
+	if(parametro)
+		SetGlobalProperty("daynightAccelaration", cint(parametro));
+		var retorno := systemPid.sendEvent(struct { id := DAYNIGHT_EVTS::EV_DAY_ACCELATARION_CHANGE_ID});
+		Print("retorno: " + retorno);
+		SendSysMessage(quem,"Agora é: " + parametro);
+	endif
+
+endprogram

@@ -1,7 +1,6 @@
-use npc;
 include "include/sysEvent";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 include ":npcs:thor/handling/thorai";
 include "epicSpecial";
@@ -21,74 +20,141 @@ function MonsterBrain()
         me.enable("firewhilemoving");
     endif
 
+    // Grant stealth privileges once for Ladino monsters
+    if (me.isThief())
+        GrantPrivilege(me, "hiddenattack");
+        me.enable("hiddenattack");
+        GrantPrivilege(me, "runwhilestealth");
+        me.enable("runwhilestealth");
+    endif
+
+    // Build ability tables ONCE at brain activation (script-level vars in brain.src)
+    combat_abilities := BuildCombatAbilities(me);
+    enter_abilities := BuildEnterAbilities(me);
+
+    SM_TransitionTo("IDLE");
+
     while (me)
         ev := os::wait_for_event(0);
-        
+
         // Check FORCE dormant FIRST - before anything else
-        var current_time := polcore().systime;
-        var time_since_activity := CInt(current_time - last_activity_time);
-        
-        if (time_since_activity >= 120)  // 2 minutes
+        if (ShouldGoDormant(last_activity_time))
             return;
         endif
-           
+
+        // Process active states (non-blocking, ONE step per tick)
+        var state := SM_GetState();
+        if (state == "FLEEING")
+            SM_TickFlee();
+        elseif (state == "AMBUSH")
+            SM_TickAmbush();
+        elseif (state == "STEALING")
+            SM_TickStealing();
+        elseif (state == "SNEAKING")
+            SM_TickSneaking();
+        endif
+
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
-                HandleMonsterLeftArea(me.opponent);
+                // Loot on kill: if opponent died (not just left area), loot their corpse
+                if (me.opponent.dead && !GetCooldown(me, "loot_cooldown"))
+                    foreach item in ListItemsNearLocation(me.x, me.y, me.z, 5, me.realm)
+                        if (item.IsA(POLCLASS_CORPSE))
+                            if (LootCorpse(item))
+                                SetCooldown(me, "loot_cooldown", 300);
+                                break;
+                            endif
+                        endif
+                        sleepms(2);
+                    endforeach
+                endif
+                HandleMonsterLeftArea(is_ranged);
             else
-                if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
-                is_ranged := isMonsterRanged();
-                // PursueTarget now handles ideal distance for both melee and ranged
-                PursueTarget(me.opponent);
+                if (GetObjProperty(me, "metamorfose"))
+                    is_ranged := 0;
+                endif
+                if (SM_GetState() != "FLEEING")
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
+                endif
+                // Per-tick casting — keep offensive pressure on opponent
+                TickCombatAbilities(me, me.opponent, combat_abilities);
+                var tick_cache := NPC_GetCachedData(me);
+                if (tick_cache.spell_school == "Shaman")
+                    ShamanBehavior(me);
+                elseif (tick_cache.spell_school == "Druid")
+                    DruidBehavior(me, me.opponent);
+                endif
             endif
         endif
-        
+
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED:
-                    last_activity_time := polcore().systime;
                     AlertAllies(ev.source, me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
                     AskForHealing(me);
+                    // Break stealth states on damage
+                    var dmg_state := SM_GetState();
+                    if (dmg_state == "AMBUSH" || dmg_state == "STEALING" || dmg_state == "SNEAKING")
+                        me.hidden := 0;
+                        SM_TransitionTo("COMBAT");
+                    endif
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
+                    if (CheckDarknessCreatureSurvival(me))
+                        return;
+                    endif
                     if (!IsAlly(ev.source))
+                        UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
-                        CanFight(me, ev.source) ? HandleMonsterEnteredArea(ev.source, is_ranged) : HandleMonsterLeftArea(is_ranged);
+                        HandleMonsterEnteredArea(ev.source, is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
+                        UpdateThreatList(me, ev);
                         HandleMonsterLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
-                        if (opponent && CanFight(me, opponent))
+                        if (opponent)
                             HandleMonsterCombatEvent(opponent, is_ranged);
                             EraseObjProperty(me, "#taunt_opponent");
                         endif
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    if (CanFight(me, ev.source))
-                        // Taunt forces a target switch - clear current opponent first
-                        SetOpponent(0);
-                        HandleMonsterCombatEvent(ev.source, is_ranged);
-                    endif
+                    SetOpponent(0);
+                    target_lock_var := 0;
+                    HandleMonsterCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
-                    ShamanBehavior(me);
+                    if (!GetCooldown(me, "buddy_heal"))
+                        var hurt_ally := ev.source;
+                        if (hurt_ally && !hurt_ally.dead && isHurt(hurt_ally))
+                            var heal_cache := NPC_GetCachedData(me);
+                            var heal_spell := "Cura Leve";
+                            if (heal_cache.tier >= 3)
+                                heal_spell := "Cura Grave";
+                            endif
+                            spell_target_var := hurt_ally.serial;
+                            NPC_CastSpell(me, heal_spell);
+                            SetCooldown(me, "buddy_heal", 15);
+                        endif
+                    endif
                 EVID_FLEE:
                     last_activity_time := polcore().systime;
-                    FleeFrom(ev.source);
+                    SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
             endcase
         endif
 
         // Idle behavior when no events and no combat
-        if (!me.opponent)
+        if (!me.opponent && SM_GetState() == "IDLE")
             MonsterIdle(wanders, is_ranged);
             if (RandomInt(100) < 30)
                 wanders += 1;
@@ -98,7 +164,12 @@ function MonsterBrain()
             endif
         endif
 
-        sleepms(100);
+        // Dynamic sleep: fast in combat, slow when idle
+        if (me.opponent || SM_GetState() != "IDLE" || (polcore().systime - last_activity_time) < 5)
+            sleepms(100); // Combat mode, active state, or recently active
+        else
+            sleepms(1000); // Idle mode - save CPU
+        endif
     endwhile
 endfunction
 
@@ -121,7 +192,7 @@ function HandleMonsterSpeech(text, source, is_ranged)
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
             PrintTextAbove(me, "*"+me.name+" se acovarda*");
-            FleeFrom(source);
+            SM_TransitionTo("FLEEING", struct{ "target" := source, "steps" := 0 });
             return 1;
         endif
     endif
@@ -138,44 +209,15 @@ function HandleMonsterSpeech(text, source, is_ranged)
 endfunction
 
 function HandleMonsterLeftArea(is_ranged)
-    // Clear current combat state
     ClearCombatState();
-    
-    // Check for nearby threats first
+
     var threat := CheckNearbyThreats();
     if (threat)
         HandleMonsterCombatEvent(threat, is_ranged);
         return 1;
     endif
 
-    // If no opponents found, look for corpses to loot
-    var corpses := array{};
-    foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
-        if (item.IsA(POLCLASS_CORPSE))
-            corpses.append(item);
-        endif
-        sleepms(2);
-    endforeach
-
-    // Try to loot any found corpses
-    if (corpses.size() > 0)
-        foreach corpse in corpses
-            if (LootCorpse(corpse))
-                SetCooldown(me, "loot_cooldown", 300);
-                return 1;
-            endif
-            sleepms(100);
-        endforeach
-    endif
-
-    // Re-check for threats after looting attempt (in case one appeared while looting)
-    threat := CheckNearbyThreats();
-    if (threat)
-        HandleMonsterCombatEvent(threat, is_ranged);
-        return 1;
-    endif
-
-    // If nothing else to do, go idle
+    // Corpse looting moved to MonsterIdle to avoid item scans on every LEFTAREA event
     HandleIdleState();
     return 1;
 endfunction
@@ -186,11 +228,6 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
     endif
     if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
 
-    var z_diff := Abs(me.z - opponent.z);
-    if (z_diff > MAX_Z_DIFF)
-        return 0;
-    endif
-
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
@@ -200,12 +237,19 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         if (taunter_serial)
             var taunter := SystemFindObjectBySerial(taunter_serial);
             if (taunter && CanFight(me, taunter))
-                // Forced to fight the taunter, ignore all other targets
+                // Forced to fight the taunter, ignore all other targets and locks
                 opponent := taunter;
                 SetOpponent(opponent);
+                // Maintain taunt lock - prevent CheckForIdealTarget from overriding
+                target_lock_var := struct{
+                    "serial" := taunter.serial,
+                    "time" := ReadGameClock(),
+                    "taunt" := 1
+                };
             else
                 // Taunter is no longer valid, clear taunt
                 EraseObjProperty(me, "#taunter");
+                target_lock_var := 0;
                 SetCooldown(me, "taunted", 0);
             endif
         endif
@@ -213,7 +257,7 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         // Not taunted - use normal target selection logic
         // Only check for ideal target if we don't have a valid opponent already
         // This prevents constant target switching when receiving multiple SYSEVENT_ENGAGED
-        if (!me.opponent || !CanFight(me, me.opponent))
+        if (!me.opponent)
             SetOpponent(opponent);
             opponent := CheckForIdealTarget();
             SetOpponent(opponent);
@@ -223,45 +267,21 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         endif
     endif
 
-    // Let the combat hook handle the actual attacks
-    // PursueTarget now handles positioning for both melee and ranged
     TurnToward(opponent);
     PursueTarget(opponent);
-    
-    if (me.isMyrkonid())
-        SporeSpecial(me, opponent);
-    endif
 
-    if (me.isMage())
-        MageBehavior(me, opponent);
-    endif
+    // Dispatch abilities from pre-built table (replaces 12+ sequential if-checks)
+    TickCombatAbilities(me, opponent, combat_abilities);
 
-    if (me.isShaman())
+    var mon_cache := NPC_GetCachedData(me);
+    if (mon_cache.spell_school == "Shaman")
         ShamanBehavior(me);
-    endif
-
-    if (me.hasHiveMind())
-        HiveMind(me);
-    endif
-
-    if (me.isUmberHulk())
-        doConfusion(opponent);
-    endif
-
-    if (me.CanBite())
-        Bite(me, opponent);
-    endif
-
-    if (me.CanTongueGrab())
-        TongueGrab(me, opponent);
-    endif
-
-    if (me.CanCharm())
-        CharmOpponent(me, opponent);
+    elseif (mon_cache.spell_school == "Druid")
+        DruidBehavior(me, opponent);
     endif
 
     if (ShouldFlee(me))
-        FleeFrom(opponent);
+        SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
         return 1;
     endif
 
@@ -279,36 +299,8 @@ function MonsterIdle(wanders, is_ranged)
         HealDamage(me, heal_amount);
     endif
 
-    // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleMonsterCombatEvent(mobile, is_ranged);
-            return;
-        endif
-        sleepms(2);
-    endforeach
-
-    // If didn't see anyone, try to hear footsteps (no LoS required)
-    var heard_mobile := NPCHearFootsteps(me);
-    if (heard_mobile)
-        // Check if we can see them now (might have moved into view)
-        if (CheckLineOfSight(me, heard_mobile) && CanFight(me, heard_mobile))
-            HandleMonsterCombatEvent(heard_mobile, is_ranged);
-            return;
-        endif
-
-        // Only show alert and investigate if not on cooldown (prevents spam)
-        if (GetCooldown(me, "heard_sound") == 0)
-            Message("*!*").SetColor(500).SendAbove(me);
-            SetCooldown(me, "heard_sound", 5);  // 5 second cooldown between alerts
-        endif
-
-        // Move toward the sound - NPC will investigate the last known position
-        PursueTarget(heard_mobile);
-    endif
-
     if (me.isLizardMan() && !GetCooldown(me, "throw_cooldown") && me.canThrowSpear()) me.graphic := 0x23; endif // Retorna o gráfico de lizard com lança
-    var anchor := GetObjProperty(me, "anchor");
+    var anchor := anchor_var;
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
       PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
@@ -328,24 +320,11 @@ function MonsterIdle(wanders, is_ranged)
         return; // Skip regular wandering
     endif
     
-    // Random wandering when no targets
-    if (RandomInt(100) < 30)
-        var direction := RandomInt(8);
-        case (direction)
-            0: WalkTowardLocation(me.x, me.y-1);
-            1: WalkTowardLocation(me.x+1, me.y-1);
-            2: WalkTowardLocation(me.x+1, me.y);
-            3: WalkTowardLocation(me.x+1, me.y+1);
-            4: WalkTowardLocation(me.x, me.y+1);
-            5: WalkTowardLocation(me.x-1, me.y+1);
-            6: WalkTowardLocation(me.x-1, me.y);
-            7: WalkTowardLocation(me.x-1, me.y-1);
-        endcase
-    endif
+    WanderAroundAnchor(me);
 endfunction
 
 function HandleMonsterEnteredArea(source, is_ranged)
-    if (!source || !CanFight(me, source))
+    if (!source)
         return 0;
     endif
 
@@ -370,21 +349,12 @@ function HandleMonsterEnteredArea(source, is_ranged)
         me.hidden := 0;
     endif
 
-    // handleMonsterInitialReaction(source);
-    if (me.canCharge())
-        StartCharge(me, source);
-    endif
+    // Dispatch enter-area abilities from pre-built table (Charge, TunnelTactics, Ambush)
+    TickEnterAbilities(me, source, enter_abilities);
 
+    // Thief behavior is monster-specific, not table-dispatched
     if (me.isThief())
         DoThiefCombatBehavior(source);
-    endif
-
-    if (me.hasTunnelTactics())
-        TunnelTactics(me, source);
-    endif
-
-    if (me.CanAmbush())
-        HandleAmbush(me, source);
     endif
 
     HandleMonsterCombatEvent(source, is_ranged);
@@ -394,7 +364,7 @@ endfunction
 
 // function handleMonsterInitialReaction(source)
 //     var npc_elem := NPC_GetNPCConfig(me);
-//     var category := GetConfigString(npc_elem, "Category");
+//     var environment := GetConfigString(npc_elem, "Environment");
 
 //     if (category == "Goblin")
 //         var playerRaca := source.getRace();

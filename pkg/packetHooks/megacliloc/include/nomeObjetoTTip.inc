@@ -1,4 +1,5 @@
 use uo;
+include "/include/epicConstants";
 include ":attributes:attributes";
 include ":commands:/include/r";
 include ":custompizza:/itemrp/include/lore_items";
@@ -43,28 +44,20 @@ function PreencheNomeNpc(quem,objeto, nomeObjeto := "")
 	if (desc_npc) //Adicionado para mostrar descrição do boss
 		nomeObjeto := objeto.name +"<br>"+WHITE+desc_npc;
 	endif
-	if (quem.weapon.attribute != WRESTLING)
-		if ( (AP_GetSkill(objeto, WRESTLING) + 10) > AP_GetSkill(quem, quem.weapon.attribute))
-			nomeObjeto :=  AMARELO_CLARO + nomeObjeto;
-		endif
-	else
-		var sk1 := AP_GetSkill(quem, ONEHANDED);
-		var sk2 := AP_GetSkill(quem, TWOHANDED);
-		var sk3 := AP_GetSkill(quem, RANGED);
-		var sk4 := AP_GetSkill(quem, DUALWIELD);
-
-		var maxsk := sk1;
-		if (sk2 > maxsk)
-			maxsk := sk2;
-		endif
-		if (sk3 > maxsk)
-			maxsk := sk3;
-		endif
-		if (sk4 > maxsk)
-			maxsk := sk4;
-		endif
-		if (AP_GetSkill(objeto, WRESTLING)+10 > maxsk)
-			nomeObjeto :=  AMARELO_CLARO + nomeObjeto;
+	if (objeto.alignment == 1) // only hostile (evil) NPCs show gold/red skill color
+		var npc_wrestling := AP_GetSkill(objeto, WRESTLING);
+		if (quem.weapon.attribute != WRESTLING)
+			var player_skill := AP_GetSkill(quem, quem.weapon.attribute);
+			var is_gold := (npc_wrestling + 10) >= player_skill;
+			if (is_gold)
+				nomeObjeto :=  AMARELO_CLARO + nomeObjeto;
+			endif
+		else
+			var player_wrestling := AP_GetSkill(quem, WRESTLING);
+			var is_gold_wr := (npc_wrestling + 10) >= player_wrestling;
+			if (is_gold_wr)
+				nomeObjeto :=  AMARELO_CLARO + nomeObjeto;
+			endif
 		endif
 	endif
 	
@@ -74,21 +67,13 @@ endfunction
 function PreencheNomePersonagem(quem,objeto, nomeObjeto := "")
 
 	if(!objeto.IsA(POLCLASS_MOBILE)) return error{"errortext":="Object passed was not an POLCLASS_MOBILE."}; endif
-	
+
 	//Caso em que tá desconhecido
 	if(GetObjProperty(objeto, "realname"))
 		nomeObjeto := AMARELO_CLARO + "Incognito";
 	else
-		//Verifica se o char já foi reconhecido por who
-		var conhecidos := dictionary;
-		conhecidos := GetObjProperty(quem, "conhecidos"); //Lista de pessoas conhecidadas
-
-		if(conhecidos)
-			var ID := verificaDisfarce(objeto);
-			nomeObjeto := conhecidos.Exists(ID)? conhecidos[ID] : objeto.name;
-		else
-			nomeObjeto := objeto.name;
-		endif
+		var nickname := GetKnownNickname(quem, objeto);
+		nomeObjeto := (nickname != "") ? nickname : objeto.name;
 	endif
 
 	if (quem.cmdlevel > 1) //Staff consegue ver o nome e raça

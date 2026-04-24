@@ -11,6 +11,8 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
 include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -26,7 +28,7 @@ program SpellScript(params)
 
 	var lvl := cint(AP_GetSkill(who, ARCANA) / 25);
 
-	if (temHabilidade(who, "Sacrificio da Carne"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SACRIFICIO_DA_CARNE))
 		if (isBloodied(who))
 			lvl := lvl + 1;
 		endif
@@ -40,7 +42,7 @@ program SpellScript(params)
 
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
-	if (!CheckResist(targ, VONTADE, diff, -bonus))
+	if (!CheckResist(targ, WILL, diff, -bonus))
 		TS_StartTimer(targ, "defaultPoison", 120, lvl, who);
 		Corromper(who, 22, targ);
 	else

@@ -11,7 +11,7 @@ program rope(who, item)
 	var alvo := Target(who, TGTOPT_CHECK_LOS);
 
 	if (alvo.objtype == 0x14f8)
-		if (temHabilidade(who, "Caçador Experiente"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE))
 			PrintTextAbove(who, "*Amarrando varios pontos da corda*");
 			sleep(4);
 			SendSysMessage(who, "Voce usou a corda para fazer uma rede");
@@ -41,7 +41,7 @@ program rope(who, item)
 		diff := 100;
 	endif
 	var mod := 0;
-	if (TemHabilidade(who, "Prestidigitador"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PRESTIDIGITATOR))
 		mod := 20;
 	endif
 

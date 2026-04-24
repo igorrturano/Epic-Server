@@ -10,16 +10,20 @@ enum VITALS
 	HITS			:= "Hits",
 	MANA			:= "Mana",
 	STAMINA			:= "Stamina",
-	HUNGER			:= "Hunger"
+	HUNGER			:= "Hunger",
+	DEATH_POINTS 	:= "DP",
+	ADDICTION_STR		:= "Viciostr",
+	ADDICTION_DEX		:= "Viciodex",
+	ADDICTION_INT		:= "Vicioint",
 endenum
 
 enum STATS
 	STRENGTH		:= "Strength",
 	DEXTERITY		:= "Dexterity",
 	INTELLIGENCE	:= "Intelligence",
-	//CONSTITUTION	:= "Constitution",
-	//WISDOM		:= "Wisdom",
-	//CHARISMA		:= "Charisma"
+	FORTITUDE		:= "Fortitude",
+	REFLEXES		:= "Reflexes",
+	WILL			:= "Will"
 endenum
 
 enum SKILLS

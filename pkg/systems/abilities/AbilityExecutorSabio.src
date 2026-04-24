@@ -1,0 +1,9 @@
+use uo;
+use os;
+
+include ":abilities:AbilityRegistrySabio";
+include ":abilities:AbilityService";
+
+program AbilityExecutorSabio(params)
+	return RunAbilityExecutor(params);
+endprogram

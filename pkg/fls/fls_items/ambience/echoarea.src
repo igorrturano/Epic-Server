@@ -63,25 +63,37 @@ function CreateEcho(ev, rune, range)
 
 	// Se não for emote, processa como texto normal
 	var speaker_language := GetObjProperty(mobile, "lingua_escolhida");
+	if (!speaker_language)
+		speaker_language := "Comum";
+	endif
 	var nearby_players := ListMobilesNearLocationEx(rune.x, rune.y, rune.z, range, LISTEX_FLAG_NORMAL,
 													 mobile.realm);
+
+	var lang_prefix := "";
+	if (speaker_language != "Comum")
+		lang_prefix := "[" + speaker_language + "] ";
+	endif
 
 	for i := 1 to 3
 		foreach player in nearby_players
 			if (!player.npctemplate)
 				var known_languages := GetObjProperty(player, "linguas_conhecidas");
+				var echo_text;
 
 				if (!known_languages || !(speaker_language in known_languages))
-					PrintTextPrivate(echo_anchor, "*o eco é incompreensível*", player, 33 + i);
-				else
-					var echo_text := text;
 					case (i)
-						1: echo_text := text + " ...";
-						2: echo_text := Lower(text) + "  ...  ...";
-						3: echo_text := Lower(text) + "   ...   ...   ...";
+						1: echo_text := "*Incompreensível*" + " ...";
+						2: echo_text := "*Incompreensível*" + "  ...  ...";
+						3: echo_text := "*Incompreensível*" + "   ...   ...   ...";
 					endcase
-					PrintTextPrivate(echo_anchor, echo_text, player, 33 + i);
+				else
+					case (i)
+						1: echo_text := lang_prefix + text + " ...";
+						2: echo_text := lang_prefix + Lower(text) + "  ...  ...";
+						3: echo_text := lang_prefix + Lower(text) + "   ...   ...   ...";
+					endcase
 				endif
+				PrintTextPrivate(echo_anchor, echo_text, player, 33 + i);
 			endif
 		endforeach
 		Sleep(2);

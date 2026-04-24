@@ -36,9 +36,9 @@ program weathercontrol()
 			var temp1 := randomdiceroll("5d70");
 			if (temp1 < chanceofstorm)
 				depth := abs(depth);
-				DebugMsgAll(DEBUG_CLIMA, "Chance de chuva:" + temp1 + ":" + chanceofstorm);
+				DebugMsgAll(DEBUG_CLIMA, Message("Chance de chuva:" + temp1 + ":" + chanceofstorm));
 				SetGlobalProperty("chance_clima", temp1 + ":" + chanceofstorm);
-				DebugMsgAll(DEBUG_CLIMA, "Estacao é " + season + " depth is " + depth);
+				DebugMsgAll(DEBUG_CLIMA, Message("Estacao é " + season + " depth is " + depth));
 				case (season)
 					2:
 						if (depth > 80)
@@ -57,8 +57,8 @@ program weathercontrol()
 					5: stormtype := 0;
 					default: stormtype := 0;
 				endcase
-				DebugMsgAll(DEBUG_CLIMA, "Enviando clima " + stormtype);
-				DebugMsgAll(DEBUG_CLIMA, "Duracao de: " + cint((duration * 150) / 60) + " minutos");
+				DebugMsgAll(DEBUG_CLIMA, Message("Enviando clima " + stormtype));
+				DebugMsgAll(DEBUG_CLIMA, Message("Duracao de: " + cint((duration * 150) / 60) + " minutos"));
 
 				weathereffects(stormtype, duration);
 				SetGlobalProperty("weather", stormtype);

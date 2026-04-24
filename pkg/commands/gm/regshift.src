@@ -3,7 +3,7 @@
  *
  * Register a merchant NPC for the shift system
  * Usage: .regshift <shift>
- * Where shift is "day", "night", "dia", or "noite"
+ * Where shift is "day", "night", "dia", "noite", "both", or "ambos"
  */
 use uo;
 
@@ -13,8 +13,8 @@ program RegisterShiftMerchant(who, text)
 	// Validate shift value
 	if (!shift || shift == "")
 		shift := "day";
-	elseif (!(shift in array{"day", "night", "dia", "noite"}))
-		SendSysMessage(who, "Invalid shift. Use: day, night, dia, or noite");
+	elseif (!(shift in array{"day", "night", "dia", "noite", "both", "ambos"}))
+		SendSysMessage(who, "Invalid shift. Use: day, night, dia, noite, both, or ambos");
 		return;
 	endif
 
@@ -47,8 +47,11 @@ program RegisterShiftMerchant(who, text)
 	var is_daytime := (current_time == "dia");
 	var is_night_shift := (shift == "night" || shift == "noite");
 	var is_day_shift := (shift == "day" || shift == "dia");
+	var is_both_shift := (shift == "both" || shift == "ambos");
 
-	if (is_night_shift)
+	if (is_both_shift)
+		npc.concealed := 0;
+	elseif (is_night_shift)
 		npc.concealed := is_daytime ? 1 : 0;
 	elseif (is_day_shift)
 		npc.concealed := is_daytime ? 0 : 1;

@@ -1,0 +1,31 @@
+use uo;
+use os;
+use util;
+use math;
+program afastar_mobile(params)
+    var mobile   := params[1];
+    var nx       := params[2];
+    var ny       := params[3];
+    var forca    := params[4];
+    var passos   := params[5];
+    var delay_ms := params[6];
+    var realm    := params[7];
+    var cz       := params[8];
+
+    var passo_x := nx * (forca / passos);
+    var passo_y := ny * (forca / passos);
+
+    for i := 1 to passos
+        if (!mobile) // Mobile pode ter morrido durante o movimento
+            break;
+        endif
+
+        var new_x := CInt(mobile.x + passo_x);
+        var new_y := CInt(mobile.y + passo_y);
+
+        MoveObjectToLocation(mobile, new_x, new_y, cz, realm);
+        Sleepms(delay_ms);
+    endfor
+
+    return 1;
+endprogram

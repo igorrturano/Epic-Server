@@ -13,6 +13,8 @@ include ":crafting:toolWear";
 include ":gathering:mining";
 include "include/say";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":tn:tngumps";
 include ":treasurehunting:treasuremaps"; // Adiciona esta linha
 include ":treasurehunting:treasuredigging";
@@ -32,7 +34,8 @@ program OreMining(who, tool)
 		return;
 	endif
 
-	SendSysMessageEx(who, "Onde você deseja minerar?", SSM_REQUEST);
+	Message("Onde você deseja minerar?").SetColor(SSM_REQUEST).SendSys(who);
+	Message("Digite .skill gathering para selecionar o minerio desejado.").SetColor(SSM_REQUEST).SendSys(who);
 	var targ := TargetCoordinates(who);
 	var quebravel := GetObjProperty(targ.item, "quebrável");
 
@@ -100,7 +103,7 @@ program OreMining(who, tool)
 	while (MiningLoop(who, tool, my_x, my_y, targ.x, targ.y, my_facing))
 		CheckToolWear(who, tool, GATHERING);
 
-		if (TemHabilidade(who, "Vigor do Extrator"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
 			if (!CheckLoop(who, tool, my_x, my_y, my_facing))
 				break;
 			elseif (AP_GetVital(who, "Stamina") < 3)
@@ -140,6 +143,9 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 
 	var ore_amount := GetOreAmount(who.realm, targx, targy); // feita
 	var difficulty := DetermineMiningDifficulty(ore_type); // feita
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
+		difficulty := difficulty - 5;
+	endif
 
 	if (who.cmdlevel > 2)
 		SendSysMessage(who, "ore " + ore_type);
@@ -166,7 +172,7 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 
 			if (SkillCheck(who, GATHERING, difficulty) > 0)
 				var amt := Cint(AP_GetSkill(who, GATHERING) / 20);
-				if (TemHabilidade(who, "Minerador Talentoso") || chardata.trait == "Cavar Buracos")
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_MINER) || chardata.trait == "Cavar Buracos")
 					amt := amt + 2;
 				endif
 				if (amt <= 0)
@@ -184,7 +190,7 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 				if (AP_GetSkill(who, GATHERING) > 40.0)
 					Garimpeiro(who);
 				endif
-				if (TemHabilidade(who, "Minerar Raridades"))
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::MINE_RARITIES))
 					if (mineraRaroAleatorio(who))
 						PrintTextAbove(who, "*encontra algo chamativo*");
 					endif

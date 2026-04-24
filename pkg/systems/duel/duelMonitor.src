@@ -1,0 +1,70 @@
+use uo;
+use os;
+
+include ":duel:duel";
+include ":message:model/Message";
+include "include/say";
+
+program duelMonitor(params)
+
+	var player1 := params[1];
+	var player2 := params[2];
+
+	var elapsed := 0;
+
+	while (elapsed < DUEL_TIMEOUT)
+		sleep(2);
+		elapsed := elapsed + 2;
+
+		// Check duel property still exists
+		var duel1 := GetObjProperty(player1, "#duel");
+		var duel2 := GetObjProperty(player2, "#duel");
+		if (duel1 == error || duel2 == error)
+			return 0; // duel ended externally
+		endif
+
+		// Check both online and alive
+		if (!player1.connected || !player2.connected || player1.dead || player2.dead)
+			EndDuel(player1, player2, "faint");
+			return 0;
+		endif
+
+		// Check distance
+		if (Distance(player1, player2) > DUEL_MAX_DISTANCE)
+			EndDuel(player1, player2, "distance");
+			return 0;
+		endif
+
+		// Check for external damage
+		if (HasExternalDamage(player1, player2.serial) || HasExternalDamage(player2, player1.serial))
+			EndDuel(player1, player2, "external_damage");
+			return 0;
+		endif
+	endwhile
+
+	// Timeout
+	EndDuel(player1, player2, "timeout");
+	return 0;
+
+endprogram
+
+function HasExternalDamage(who, partner_serial)
+
+	var lastHit := GetObjProperty(who, "lastHit");
+	if (lastHit == error || !lastHit["time"])
+		return 0;
+	endif
+
+	// Only care about hits in the last 3 seconds
+	if ((polcore().systime - lastHit["time"]) > 3)
+		return 0;
+	endif
+
+	// If the attacker is not the duel partner, it's external
+	if (lastHit["attacker"] != partner_serial)
+		return 1;
+	endif
+
+	return 0;
+
+endfunction

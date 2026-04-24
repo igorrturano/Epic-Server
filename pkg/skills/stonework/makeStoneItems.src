@@ -6,7 +6,6 @@ use util;
 include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
-include ":crafting:crafting";
 include ":crafting:craftingRepair";
 include ":crafting:toolWear";
 
@@ -14,6 +13,9 @@ var item_config := ReadConfigFile(":*:itemdesc");
 var craft_config := ReadConfigFile(":stonework:stonework");
 
 program use_SmithTool(who, tool)
+
+	SendSysMessage(who, "Sistema não implementado.");
+	return 0;
 
 	if (!ReserveItem(tool))
 		SendSysMessage(who, "That is already in use.");
@@ -31,7 +33,7 @@ program use_SmithTool(who, tool)
 	EraseObjProperty(who, "#IsMeditating");
 	EraseObjProperty(who, "#IsWaiting");
 
-	var rinfo := sendCraftGump(who, "Masonry");
+	var rinfo := 0;//sendCraftGump(who, "Masonry");
 
 	// OK was pressed, close it on out
 	if (rinfo == 0)
@@ -44,10 +46,10 @@ program use_SmithTool(who, tool)
 	var resmeltit := rinfo[4];
 
 	if (repairit)
-		repair_this(who, craft_skill);
+		//repair_this(who, craft_skill);
 		return 0;
 	elseif (resmeltit)
-		resmelt(who, craft_skill);
+		//resmelt(who, craft_skill);
 		return 0;
 	endif
 
@@ -68,9 +70,9 @@ function makeBlacksmithItems(who, what, amt, tool)
 	// 	var ptmod;
 
 	var custo := CInt(craft_config[what].custo);
-	var items := CraftItem(who, "Masonry", tool, what, amt, 0, 0);
+	var items := 0;//CraftItem(who, "Masonry", tool, what, amt, 0, 0);
 	foreach item in items
-		if (item == OUT_OF_MATERIALS) // retornou erro ao inves do item
+		if (item == 0)//OUT_OF_MATERIALS) // retornou erro ao inves do item
 			return 1;
 		endif
 		var pedreiro := CInt(craft_config[what].pedreiro);

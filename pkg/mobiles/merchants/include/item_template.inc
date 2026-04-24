@@ -87,6 +87,22 @@ function CreateItemTemplate(item)
 		template["hitscript"] := item.hitscript;
 	endif
 
+	if (item.name != error && item.name != "")
+		template["name"] := item.name;
+	endif
+
+	if (item.desc != error && item.desc != "")
+		template["desc"] := item.desc;
+	endif
+
+	if (item.color != error)
+		template["color"] := item.color;
+	endif
+
+	if (item.graphic != error)
+		template["graphic"] := item.graphic;
+	endif
+
 	foreach name in GetObjPropertyNames(item);
 		template.CProps.insert(name, GetObjProperty(item, name));
 		sleepms(2);
@@ -103,6 +119,7 @@ function CreateItemTemplate(item)
 		template.Cprops.insert("bookinfo", bookinfo);
 	endif
 
+	/* não mais necessário no novo combat
 	if (item.isA(POLCLASS_WEAPON))
 		template["damage_cold_mod"] := item.damage_cold_mod;
 		template["damage_fire_mod"] := item.damage_fire_mod;
@@ -118,6 +135,8 @@ function CreateItemTemplate(item)
 		template["resist_physical_mod"] := item.resist_physical_mod;
 		template["resist_poison_mod"] := item.resist_poison_mod;
 	endif
+	*/
+	template.+isVendorTemplate := true;
 
 	return template;
 endfunction

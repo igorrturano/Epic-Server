@@ -7,6 +7,9 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
@@ -30,7 +33,7 @@ program SpellScript(params)
 
 	var amt := 10;
 
-	if (temHabilidade(who, "Sacrificio da Carne"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SACRIFICIO_DA_CARNE))
 		if (isBloodied(who))
 			amt := Cint(amt * 1.5);
 		endif
@@ -40,13 +43,14 @@ program SpellScript(params)
 
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
-	if (CheckResist(targ, VONTADE, diff, -bonus))
+	if (CheckResist(targ, WILL, diff, -bonus))
 		SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 		return;
 	endif
 
 	SetObjProperty(who, "#Casting", 1);
+	SendSpellBuff(who, targ, CInt(spell.id), 10);
 
 	while (time < 10)
 
@@ -84,7 +88,7 @@ program SpellScript(params)
 
 		PlayMovingEffect(targ, who, 3982, 255, 1);
 		time := time + 1;
-		PerformAction(who, ANIM_CAST_AREA);
+		PerformAction(who, HUMAN_ANIM::CAST_AREA);
 		sleep(1);
 	endwhile
 

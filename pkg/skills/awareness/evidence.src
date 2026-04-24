@@ -12,6 +12,7 @@ include "include/utils";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":brainAI:include/npcInit";
+include ":charactercreation:include/RPTraits";
 include ":coords:coords";
 include ":dyes:include/dyes";
 
@@ -726,17 +727,37 @@ function GetCharacterAttribute(targ, attribute)
 
 	case (attribute)
 		"Altura":
-			return chardata.caracteristicas_rp.Altura ? chardata.caracteristicas_rp.Altura : "Altura desconhecida";
+			if (chardata.caracteristicas_rp.Altura)
+				var desc := TranslateRacialTrait("Altura", chardata.caracteristicas_rp.Altura, chardata);
+				return desc != error ? desc : "Altura desconhecida";
+			else
+				return "Altura desconhecida";
+			endif
 		"Peso":
-			return chardata.caracteristicas_rp.Peso ? chardata.caracteristicas_rp.Peso : "Peso desconhecido";
+			if (chardata.caracteristicas_rp.Peso)
+				var desc := TranslateRacialTrait("Peso", chardata.caracteristicas_rp.Peso, chardata);
+				return desc != error ? desc : "Peso desconhecido";
+			else
+				return "Peso desconhecido";
+			endif
 		"Idade":
-			return chardata.caracteristicas_rp["Idade Aparente"] ? chardata.caracteristicas_rp["Idade Aparente"] :
-														"Idade aparente desconhecida";
+			if (chardata.caracteristicas_rp["Idade Aparente"]) 
+				var desc := TranslateRacialTrait("Idade Aparente", chardata.caracteristicas_rp["Idade Aparente"], chardata);
+				return desc != error ? desc : "Idade aparente desconhecida";
+			else
+				return "Idade aparente desconhecida";
+			endif
 		"Cor do Olho":
-			return chardata.caracteristicas_rp.Olhos ? chardata.caracteristicas_rp.Olhos : "Desconhecido";
+			if (chardata.caracteristicas_rp.Olhos)
+				var desc := TranslateRacialTrait("Olhos", chardata.caracteristicas_rp.Olhos, chardata);
+				return desc != error ? desc : "Desconhecido";
+			else
+				return "Desconhecido";
+			endif
 		"Voz":
 			if (chardata.caracteristicas_rp.Voz)
-				return chardata.caracteristicas_rp.Voz + " (Eu ouvi ele falando: ";
+				var desc := TranslateRacialTrait("Voz", chardata.caracteristicas_rp.Voz, chardata);
+				return (desc != error ? desc : chardata.caracteristicas_rp.Voz) + " (Eu ouvi ele falando: ";
 			else
 				return "Não tem voz";
 			endif

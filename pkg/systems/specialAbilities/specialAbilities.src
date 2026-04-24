@@ -7,6 +7,7 @@ include "include/say";
 include ":timedscripts:timedScripts";
 include ":charactercreation:habilidades";
 include "include/utils";
+include ":hotbar:include/cooldown_packet";
 
 program specialAbilities(who)
 	if (!who)
@@ -52,6 +53,10 @@ function DoWarriorAbility(who, cooldown)
 	PrintTextAbove(who, "*ataque extra*");
 	who.attack_once();
 	SetCooldown(who, "special_ability", cooldown);
+	
+	// ✅ Send cooldown message to client with gump ID
+	SendCooldownPacket(who, "Ataque Extra", cooldown, 0x7E, COOLDOWN_TYPE_SPECIAL);
+	
 	return 1;
 endfunction
 
@@ -62,18 +67,20 @@ function DoRogueAbility(who, cooldown)
 	PushBack(who, 4, 75, 1);
 	who.hidden := 0;
 	SetCooldown(who, "special_ability", cooldown);
+	
+	// ✅ Send cooldown message to client with gump ID
+	SendCooldownPacket(who, "Evasão", cooldown, 0x7E, COOLDOWN_TYPE_SPECIAL);
+	
 	return 1;
 endfunction
 
 function DoSageAbility(who, chardata, cooldown)
 	case (chardata.wisdom_path)
-		"Engenheiro": return DoEngineerAbility(who, cooldown);
-		default:      // Mago, Xamã, Clérigo
-			if (chardata.magia == "Arqueiro Arcano")
-				return DoArcaneArcherAbility(who, cooldown);
-			else
-				return DoSpellcasterAbility(who, cooldown);
-			endif
+		"Engenheiro":    return DoEngineerAbility(who, cooldown);
+		"arcane_archer": return DoArcaneArcherAbility(who, cooldown);
+		"Alquimista": return DoAlchemistAbility(who, cooldown);
+		default:
+			return DoSpellcasterAbility(who, cooldown);
 	endcase
 endfunction
 
@@ -98,6 +105,10 @@ function FastReload(who, weapon, cooldown)
 	SetObjProperty(weapon, "balas", balas + 1);
 	PrintTextAbove(who, "*recarrega rapidamente*");
 	SetCooldown(who, "special_ability", cooldown);
+	
+	// ✅ Send cooldown message to client with gump ID
+	SendCooldownPacket(who, "Recarga Rápida", cooldown, 0x7E, COOLDOWN_TYPE_SPECIAL);
+	
 	return 1;
 endfunction
 
@@ -106,6 +117,10 @@ function DoSpellcasterAbility(who, cooldown)
 	SetObjProperty(who, "#cast_time", ReadGameClock());
 	PrintTextAbove(who, "*conjuração rápida*");
 	SetCooldown(who, "special_ability", cooldown);
+	
+	// ✅ Send cooldown message to client with gump ID
+	SendCooldownPacket(who, "Conjuração Rápida", cooldown, 0x7E, COOLDOWN_TYPE_SPECIAL);
+	
 	return 1;
 endfunction
 
@@ -113,5 +128,21 @@ function DoArcaneArcherAbility(who, cooldown)
 	TS_StartTimer(who, "velocidade", 4); // 4 seconds of speed boost
 	PrintTextAbove(who, "*velocidade arcana*");
 	SetCooldown(who, "special_ability", cooldown);
+	
+	// ✅ Send cooldown message to client with gump ID
+	SendCooldownPacket(who, "Velocidade Arcana", cooldown, 0x7E, COOLDOWN_TYPE_SPECIAL);
+	
+	return 1;
+endfunction
+
+function DoAlchemistAbility(who, cooldown)
+	SetObjProperty(who, "#powerpot", 1);
+	SetObjProperty(who, "#power_time", ReadGameClock());
+	PrintTextAbove(who, "*potencializar poção*");
+	Setcooldown(who, "special_ability", cooldown);
+
+	// ✅ Send cooldown message to client with gump ID
+	SendSysMessageEx(who, "[SPECIAL_CD] Potencializar Poção|" + cooldown + "|0x7E", SSM_INFO);
+
 	return 1;
 endfunction

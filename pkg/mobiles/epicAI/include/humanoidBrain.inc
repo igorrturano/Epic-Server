@@ -1,12 +1,14 @@
-use npc;
 include "include/sysEvent";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 include ":npcs:thor/handling/thorai";
 include "epicSpecial";
 include "NPCMageryUtils";
-include "include/epicLoggerUtils";
+include ":abilities:include/models/Ability";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":charactercreation:include/resists";
+include ":epicAI:include/npcDataCache";    // NPC_GetCachedData (used by GetClassProgression)
 
 function HumanoidBrain()
     var ev;
@@ -15,99 +17,179 @@ function HumanoidBrain()
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
-    // Get humanoid configuration
-    var npc_elem := NPC_GetNPCConfig(me);
-    var speed_type := SplitWords(GetConfigString(npc_elem, "EpicAttackSpeed"), "_");
+    // Get humanoid configuration - O(1) cache lookup
+    var cache := NPC_GetCachedData(me);
+    var speed_type := SplitWords(cache.attack_speed, "_");
     var is_ranged := me.weapon.attribute == "Ranged" || (me.isSage() && me.weapon.objtype == FIST);
 
     // Enable archer-specific abilities if needed
-    if (TemHabilidade(me, "Tiro em Movimento"))
+    if (MobileWrapper(me).HasAbility(ABILITY_ID::TIRO_EM_MOVIMENTO))
         GrantPrivilege(me, "firewhilemoving");
         me.enable("firewhilemoving");
     endif
 
-    // Load Combat History
-    var npc_template := NPC_ParseTemplateName(me.npctemplate).template;
-    var combat_history := LoadCombatHistory(npc_template);
+    // Grant stealth privileges once for Ladino NPCs (avoids per-steal/sneak GrantPrivilege calls)
+    if (me.isThief())
+        GrantPrivilege(me, "hiddenattack");
+        me.enable("hiddenattack");
+        GrantPrivilege(me, "runwhilestealth");
+        me.enable("runwhilestealth");
+    endif
+
+    // Build ability tables ONCE at brain activation (script-level vars in brain.src)
+    combat_abilities := BuildCombatAbilities(me);
+    enter_abilities := BuildEnterAbilities(me);
+
+    // Cache myhabs as script-level vars (avoids per-tick GetObjProperty disk I/O)
+    myhabs_var := GetObjProperty(me, "myhabs");
+    if (myhabs_var)
+        myhabs_set_var := dictionary;
+        foreach hab in myhabs_var
+            myhabs_set_var[CInt(hab)] := 1;
+        endforeach
+    endif
+
+    SM_TransitionTo("IDLE");
+
+    // Cache myhabs at activation — only active abilities, avoids per-tick disk I/O
+    var raw_habs := GetObjProperty(me, "myhabs");
+    if (raw_habs)
+        myhabs_var := array{};
+        myhabs_set_var := dictionary;
+        var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+        foreach hab in raw_habs
+            var habelem := FindConfigElem(habcfg, CInt(hab));
+            if (habelem && GetConfigString(habelem, "uso") == "Ativa")
+                myhabs_var.append(CInt(hab));
+            endif
+            myhabs_set_var[CInt(hab)] := 1;
+        endforeach
+    endif
 
     while (me)
         ev := os::wait_for_event(0);
-        
+
         // Check FORCE dormant FIRST - before anything else
-        var current_time := polcore().systime;
-        var time_since_activity := CInt(current_time - last_activity_time);
-        
-        if (time_since_activity >= 120)  // 2 minutes
+        if (ShouldGoDormant(last_activity_time))
             return;
         endif
-    
+
+        // Process active states (non-blocking, ONE step per tick)
+        var state := SM_GetState();
+        if (state == "FLEEING")
+            SM_TickFlee();
+        elseif (state == "AMBUSH")
+            SM_TickAmbush();
+        elseif (state == "STEALING")
+            SM_TickStealing();
+        elseif (state == "SNEAKING")
+            SM_TickSneaking();
+        endif
+
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
-                HandleHumanoidLeftArea(me.opponent);
+                // Loot on kill: if opponent died (not just left area), loot their corpse
+                if (me.opponent.dead && !GetCooldown(me, "loot_cooldown"))
+                    foreach item in ListItemsNearLocation(me.x, me.y, me.z, 5, me.realm)
+                        if (item.IsA(POLCLASS_CORPSE))
+                            if (LootCorpse(item))
+                                SetCooldown(me, "loot_cooldown", 300);
+                                break;
+                            endif
+                        endif
+                        sleepms(2);
+                    endforeach
+                endif
+                HandleHumanoidLeftArea(is_ranged);
             else
-                var dist := Distance(me, me.opponent);
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
-
-                // PursueTarget now handles ideal distance calculation internally
-                // Let it decide when to stop based on weapon type
-                PursueTarget(me.opponent);
+                if (SM_GetState() != "FLEEING")
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
+                endif
+                // Per-tick casting + abilities — keep offensive pressure
+                UseAbilities(me, me.opponent);
+                TickCombatAbilities(me, me.opponent, combat_abilities);
+                if (me.isShaman())
+                    HumanoidShamanBehavior(me, me.opponent);
+                endif
+                if (me.isPriest())
+                    HumanoidPriestBehavior(me, me.opponent);
+                endif
             endif
         endif
-        
-        if (ev)            
+
+        if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED:
-                    last_activity_time := polcore().systime;
                     AlertAllies(ev.source, me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
+                    // Break stealth states on damage
+                    var dmg_state := SM_GetState();
+                    if (dmg_state == "AMBUSH" || dmg_state == "STEALING" || dmg_state == "SNEAKING")
+                        me.hidden := 0;
+                        SM_TransitionTo("COMBAT");
+                    endif
                     AskForHealing(me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_ENTEREDAREA:
+                    if (CheckDarknessCreatureSurvival(me))
+                        return;
+                    endif
                     HandleHumanoidSpeech(ev.text, ev.source, is_ranged);
                     HandleEnteredAreaAbilities(ev.source, is_ranged);
                     if (!IsAlly(ev.source))
+                        UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
-                        CanFight(me, ev.source) ? HandleHumanoidEnteredArea(ev.source, is_ranged) : HandleHumanoidLeftArea(is_ranged);
+                        HandleHumanoidEnteredArea(ev.source, is_ranged);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
+                        UpdateThreatList(me, ev);
                         HandleHumanoidLeftArea(is_ranged);
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
-                        if (opponent && CanFight(me, opponent))
+                        if (opponent)
                             HandleHumanoidCombatEvent(opponent, is_ranged);
                             EraseObjProperty(me, "#taunt_opponent");
                         endif
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    if (CanFight(me, ev.source))
-                        // Taunt forces a target switch - clear current opponent first
-                        SetOpponent(0);
-                        HandleHumanoidCombatEvent(ev.source, is_ranged);
-                    endif
+                    SetOpponent(0);
+                    HandleHumanoidCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
-                    if (me.isShaman())
-                        HumanoidShamanBehavior(me, ev.source);
-                    endif
-                    if (me.isPriest())
-                        HumanoidPriestBehavior(me, ev.source);
+                    if (!GetCooldown(me, "buddy_heal"))
+                        var hurt_ally := ev.source;
+                        if (hurt_ally && !hurt_ally.dead && isHurt(hurt_ally))
+                            if (me.isShaman() || me.isPriest())
+                                var heal_cache := NPC_GetCachedData(me);
+                                var heal_spell := "Cura Leve";
+                                if (heal_cache.tier >= 3)
+                                    heal_spell := "Cura Grave";
+                                endif
+                                spell_target_var := hurt_ally.serial;
+                                NPC_CastSpell(me, heal_spell);
+                                SetCooldown(me, "buddy_heal", 15);
+                            endif
+                        endif
                     endif
                 EVID_FLEE:
                     last_activity_time := polcore().systime;
-                    FleeFrom(ev.source);
+                    SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
             endcase
         endif
 
         // Idle behavior when no events and no combat
-        if (!me.opponent)           
+        if (!me.opponent && SM_GetState() == "IDLE")
             HumanoidIdle(wanders, is_ranged);
             if (RandomInt(100) < 30)
                 wanders += 1;
@@ -118,7 +200,12 @@ function HumanoidBrain()
             endif
         endif
 
-        sleepms(100);
+        // Dynamic sleep: fast in combat, slow when idle
+        if (me.opponent || SM_GetState() != "IDLE" || (polcore().systime - last_activity_time) < 5)
+            sleepms(100); // Combat mode, active state, or recently active
+        else
+            sleepms(1000); // Idle mode - save CPU
+        endif
     endwhile
 endfunction
 
@@ -141,7 +228,7 @@ function HandleHumanoidSpeech(text, source, is_ranged)
     if (npcState == "dying")
         if (!CheckResist(me, FORTITUDE, 0, diff))
             PrintTextAbove(me, "*"+me.name+" se acovarda*");
-            FleeFrom(source);
+            SM_TransitionTo("FLEEING", struct{ "target" := source, "steps" := 0 });
             return 1;
         endif
     endif
@@ -158,44 +245,15 @@ function HandleHumanoidSpeech(text, source, is_ranged)
 endfunction
 
 function HandleHumanoidLeftArea(is_ranged)
-    // Clear current combat state
     ClearCombatState();
-    
-    // Check for nearby threats first
+
     var threat := CheckNearbyThreats();
     if (threat)
         HandleHumanoidCombatEvent(threat, is_ranged);
         return 1;
     endif
 
-    // If no opponents found, look for corpses to loot
-    var corpses := array{};
-    foreach item in ListItemsNearLocation(me.x, me.y, me.z, AREA_SIZE, me.realm)
-        if (item.IsA(POLCLASS_CORPSE))
-            corpses.append(item);
-        endif
-        sleepms(2);
-    endforeach
-
-    // Try to loot any found corpses
-    if (corpses.size() > 0)
-        foreach corpse in corpses
-            if (LootCorpse(corpse))
-                SetCooldown(me, "loot_cooldown", 300);
-                return 1;
-            endif
-            sleepms(100);
-        endforeach
-    endif
-
-    // Re-check for threats after looting attempt (in case one appeared while looting)
-    threat := CheckNearbyThreats();
-    if (threat)
-        HandleHumanoidCombatEvent(threat, is_ranged);
-        return 1;
-    endif
-
-    // If nothing else to do, go idle
+    // Corpse looting moved to HumanoidIdle to avoid item scans on every LEFTAREA event
     HandleIdleState();
     return 1;
 endfunction
@@ -208,11 +266,6 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     // Force melee combat when metamorphosed
     if (GetObjProperty(me, "metamorfose"))
         is_ranged := 0;
-    endif
-
-    var z_diff := Abs(me.z - opponent.z);
-    if (z_diff > MAX_Z_DIFF)
-        return 0;
     endif
 
     // Check for health-based teleport
@@ -237,7 +290,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         // Not taunted - use normal target selection logic
         // Only check for ideal target if we don't have a valid opponent already
         // This prevents constant target switching when receiving multiple SYSEVENT_ENGAGED
-        if (!me.opponent || !CanFight(me, me.opponent))
+        if (!me.opponent)
             SetOpponent(opponent);
             opponent := CheckForIdealTarget();
             SetOpponent(opponent);
@@ -248,27 +301,14 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     endif
 
     if (ShouldFlee(me))
-        FleeFrom(opponent);
+        SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
         return 1;
     endif
 
-    // Track initial state before combat
-    var initial_state := GetCombatState(me, opponent);
-    var used_ability := UseAbilities(me, opponent);
-    
-    if (used_ability)
-        Sleep(2);
-        var end_state := GetCombatState(me, opponent);
-        var success := DetermineCombatSuccess(initial_state, end_state);
-        LogCombatAction(me, initial_state, used_ability, success); 
-    endif
+    UseAbilities(me, opponent);
 
     // Let the combat hook handle the actual attacks
     if (is_ranged)
-        if (Distance(me, opponent) < 2 && !TemHabilidade(me, "Tiro em Movimento"))
-            reachForMeleeWeapon(opponent);
-        endif
-
         // PursueTarget now handles positioning for ranged attackers
         // It will maintain ideal distance internally with tolerance
         PursueTarget(opponent);
@@ -283,35 +323,21 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         PursueTarget(opponent);
     endif
 
-    if (me.isMage())
-        PrintTextAbove(me, "Mage Behavior");
-        MageBehavior(me, opponent);
-    endif
+    // Dispatch shared abilities from pre-built table (Bite, MageBehavior, etc.)
+    TickCombatAbilities(me, opponent, combat_abilities);
 
+    // Humanoid-specific caster behaviors (heal allies, not just damage)
     if (me.isShaman())
-        PrintTextAbove(me, "Shaman Behavior");
         HumanoidShamanBehavior(me, opponent);
     endif
 
     if (me.isPriest())
-        PrintTextAbove(me, "Priest Behavior");
         HumanoidPriestBehavior(me, opponent);
     endif
 
-    if (me.CanBite())
-        Bite(me, opponent);
+    if (MobileWrapper(me).HasAbility(ABILITY_ID::ALQUIMISTA_EXPERIENTE))
+        NPC_UseAbilityById(me, ABILITY_ID::ALQUIMISTA_EXPERIENTE);
     endif
-
-    // if (TemHabilidade(me, "Alquimista Experiente"))
-        var explosive_potions := array{0xbf13, 0xbf14, 0xbf15, 0xef60, 0xef61, 0xef62};
-
-        foreach item in EnumerateItemsInContainer(me.backpack)
-            if (item.objtype in explosive_potions)
-                UseItem(item, me);
-                break;
-            endif
-        endforeach
-    // endif
 
     return 1;
 endfunction
@@ -327,35 +353,7 @@ function HumanoidIdle(wanders, is_ranged)
         HealDamage(me, heal_amount);
     endif
 
-    // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleHumanoidCombatEvent(mobile, is_ranged);
-            return;
-        endif
-        sleepms(2);
-    endforeach
-
-    // If didn't see anyone, try to hear footsteps (no LoS required)
-    var heard_mobile := NPCHearFootsteps(me);
-    if (heard_mobile)
-        // Check if we can see them now (might have moved into view)
-        if (CheckLineOfSight(me, heard_mobile) && CanFight(me, heard_mobile))
-            HandleHumanoidCombatEvent(heard_mobile, is_ranged);
-            return;
-        endif
-
-        // Only show alert and investigate if not on cooldown (prevents spam)
-        if (GetCooldown(me, "heard_sound") == 0)
-            Message("*!*").SetColor(500).SendAbove(me);
-            SetCooldown(me, "heard_sound", 5);  // 5 second cooldown between alerts
-        endif
-
-        // Move toward the sound - NPC will investigate the last known position
-        PursueTarget(heard_mobile);
-    endif
-
-    var anchor := GetObjProperty(me, "anchor");
+    var anchor := anchor_var;
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
       PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
@@ -375,41 +373,20 @@ function HumanoidIdle(wanders, is_ranged)
         return; // Skip regular wandering
     endif
     
-    // Random wandering when no targets
-    if (RandomInt(100) < 30)
-        var direction := RandomInt(8);
-        case (direction)
-            0: WalkTowardLocation(me.x, me.y-1);
-            1: WalkTowardLocation(me.x+1, me.y-1);
-            2: WalkTowardLocation(me.x+1, me.y);
-            3: WalkTowardLocation(me.x+1, me.y+1);
-            4: WalkTowardLocation(me.x, me.y+1);
-            5: WalkTowardLocation(me.x-1, me.y+1);
-            6: WalkTowardLocation(me.x-1, me.y);
-            7: WalkTowardLocation(me.x-1, me.y-1);
-        endcase
-    endif
+    WanderAroundAnchor(me);
 endfunction
 
 function HandleHumanoidEnteredArea(source, is_ranged)
-    if (!source || !CanFight(me, source))
+    if (!source)
         return 0;
     endif
-    
-    if (me.canCharge())
-        StartCharge(me, source);
-    endif
 
+    // Dispatch enter-area abilities from pre-built table (Charge, TunnelTactics, Ambush)
+    TickEnterAbilities(me, source, enter_abilities);
+
+    // Thief behavior is humanoid-specific, not table-dispatched
     if (me.isThief())
         DoThiefCombatBehavior(source);
-    endif
-
-    if (me.hasTunnelTactics())
-        TunnelTactics(me, source);
-    endif
-
-    if (me.CanAmbush())
-        HandleAmbush(me, source);
     endif
 
     HandleHumanoidCombatEvent(source, is_ranged);
@@ -417,23 +394,57 @@ function HandleHumanoidEnteredArea(source, is_ranged)
     return 1;
 endfunction
 
-var state_values := dictionary; // Global state-value mapping
+function NPC_UseAbilityById(npc, abilityId)
+    if (!abilityId || abilityId == error)
+        return 0;
+    endif
+    if (npc.dead)
+        return 0;
+    endif
+
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+    var habelem := FindConfigElem(habcfg, abilityId);
+    if (!habelem)
+        return 0;
+    endif
+
+    var uso := GetConfigString(habelem, "uso");
+    if (uso != "Ativa")
+        return 0;
+    endif
+
+    // Delegate ALL validation, resource consumption, and cooldown to AbilityMonitor
+    var ability := Ability(abilityId);
+    var result := AbilityMonitor(ability).ActivateOn(MobileWrapper(npc));
+    if (result.errortext)
+        return 0;
+    endif
+    return 1;
+endfunction
 
 function UseAbilities(npc, opponent)
-   if (GetCooldown(npc, "ability_cooldown"))
-      return 0;
-   endif
+    if (GetCooldown(npc, "ability_cooldown"))
+        return 0;
+    endif
 
-   var state := GetCombatState(npc, opponent);
-   var habs := GetObjProperty(npc, "myhabs");
-   if (!habs) 
-      return 0;
-   endif
+    var myhabs_var := GetObjProperty(npc, "myhabs");
+    if (!myhabs_var)
+        return 0;
+    endif
 
-    var best_hab := ChooseAbility(npc, state, habs);
-    var success := CInt(ProccessHab(npc, best_hab));
-    SetCooldown(npc, "ability_cooldown", 5);
+    var state := GetCombatState(npc, opponent);
+    var best_hab := ChooseAbility(npc, state, myhabs_var);
+    if (!best_hab)
+        return 0;
+    endif
 
+    var success := CInt(NPC_UseAbilityById(npc, best_hab));
+    // Always set cooldown — 5s on success, 2s on failure (prevents 100ms spam)
+    if (success)
+        SetCooldown(npc, "ability_cooldown", 5);
+    else
+        SetCooldown(npc, "ability_cooldown", 2);
+    endif
     return success;
 endfunction
 
@@ -448,9 +459,9 @@ function GetCombatState(npc, opponent)
 endfunction
 
 function ChooseAbility(npc, state, habs)
-    var npc_elem := NPC_GetNPCConfig(npc);
-    var npc_class := npc_elem.Classe;
-    
+    var cache := NPC_GetCachedData(npc);  // O(1) lookup
+    var npc_class := cache.classe;
+
     // First determine class behavior
     case (npc_class)
         GUERREIRO: return ChooseWarriorAbility(npc, state, habs);
@@ -460,379 +471,241 @@ function ChooseAbility(npc, state, habs)
     endcase
 endfunction
 
+// Helper function to parse ability metadata from config
+function ParseAbilityMeta(elem)
+  var classe := GetConfigString(elem, "classe");
+  if (!classe)
+    return error;
+  endif
+
+  var params := SplitWords(classe);
+  return struct{
+    "hab_class" := params[1],
+    "level" := CInt(params[2]) * 2,
+    "requisito" := GetConfigString(elem, "requisito")
+  };
+endfunction
+
 function GetHabsByLevel(npc, nivel)
   if (!npc) return array{}; endif
-  
+
   var valid_habs := array{};
-  var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
-  var npc_elem := NPC_GetNPCConfig(npc);
+  var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 
-  // Before level 4, only get core class abilities
-  if (nivel < 4)
-    foreach hab in (GetConfigStringKeys(habcfg))
-      var elem := FindConfigElem(habcfg, hab);
-      var classe := GetConfigString(elem, "classe");
-      if (!classe) continue; endif
-      
-      var params := SplitWords(classe);
-      var hab_class := params[1];
-      var hab_level := CInt(params[2]) * 2;
-      var my_class := (npc_elem.Classe);
+  // Get subclass progression regardless of level
+  var subclass := GetObjProperty(npc, "subclass");
+  var progression := GetClassProgression(habcfg, subclass, npc);
 
-      if (hab_level <= nivel && hab_class == my_class && !GetConfigString(elem, "requisito"))
-        valid_habs.append(hab);
-      endif
-    endforeach
-  endif
+  // Add abilities from progression that match NPC's level
+  foreach hab in progression
+    var elem := FindConfigElem(habcfg, hab);
+    var meta := ParseAbilityMeta(elem);
+    if (meta == error)
+      continue;
+    endif
 
-  // At level 4+, get subclass-specific abilities respecting prerequisites
-  if (nivel >= 4)
-    var subclass := GetObjProperty(npc, "subclass");
-    var progression := GetClassProgression(habcfg, subclass);
-    foreach hab in progression
-      var elem := FindConfigElem(habcfg, hab);
-      var classe := GetConfigString(elem, "classe"); 
-      if (!classe) continue; endif
-      
-      var hab_level := CInt(SplitWords(classe)[2]) * 2;
-
-      if (hab_level <= nivel)
-        valid_habs.append(hab);
-      endif
-    endforeach
-  endif
+    if (meta.level <= nivel)
+      valid_habs.append(hab);
+    endif
+  endforeach
 
   return valid_habs;
 endfunction
 
-function GetClassProgression(habcfg, subclass)
+function GetClassProgression(habcfg, subclass, npc)
     var progression := array{};
     var class_choice := array{};
-    var npc_elem := NPC_GetNPCConfig(me);
+    var cache := NPC_GetCachedData(npc);  // O(1) lookup
     var class_tree := struct{};
-    var base_hab := "";
+    var name_to_id := struct{};  // Map ability names to IDs
+    var base_hab := 0;
 
-    // Build ability tree ALWAYS, regardless of subclass
-    foreach hab in (GetConfigStringKeys(habcfg))
-        var elem := FindConfigElem(habcfg, hab);
-        var classe := GetConfigString(elem, "classe");
-        if (!classe)
+    // Single pass: build name-to-ID mapping AND prerequisite tree
+    var my_class := cache.classe;
+
+    foreach hab_id in (GetConfigStringKeys(habcfg))
+        var elem := FindConfigElem(habcfg, hab_id);
+        var ability_name := GetConfigString(elem, "nome");
+        if (ability_name)
+            name_to_id[ability_name] := CInt(hab_id);
+        endif
+
+        var meta := ParseAbilityMeta(elem);
+        if (meta == error)
             continue;
         endif
-        
-        var params := SplitWords(classe);
-        var hab_class := params[1];
-        var hab_level := CInt(params[2]) * 2;
-        var my_class := npc_elem.Classe;
-        var req := GetConfigString(elem, "requisito");
 
-        // Only process abilities for this NPC's class
-        if (hab_class == my_class)
-            // Store level 4 abilities without prerequisites as potential base choices
-            if (!req && hab_level == 4)
-                class_choice.append(hab);
+        if (meta.hab_class == my_class)
+            if (!meta.requisito && meta.level == 2)
+                class_choice.append(CInt(hab_id));
             endif
-            
-            // Build the prerequisite tree
-            if (req)
-                if (!class_tree[req])
-                    class_tree[req] := array{};
+
+            if (meta.requisito)
+                var requisito_id := name_to_id[meta.requisito];
+                if (requisito_id)
+                    var key := CStr(requisito_id);
+                    if (!class_tree[key])
+                        class_tree[key] := array{};
+                    endif
+                    class_tree[key].append(CInt(hab_id));
                 endif
-                class_tree[req].append(hab);
             endif
         endif
     endforeach
 
     // AFTER building the tree, handle base_hab selection
     if (subclass)
-        base_hab := subclass;
+        base_hab := CInt(subclass);
     else
         // Randomly select one of the base abilities if no subclass was specified
         if (class_choice.size() > 0)
             base_hab := class_choice[RandomInt(class_choice.size())+1];
         endif
     endif
+
     // Only proceed if we have a valid base ability
     if (base_hab)
         // Start with the base ability
         progression.append(base_hab);
-        
+
         // Follow the prerequisite chain to build full progression
         var current := base_hab;
-        while (current && class_tree[current])
-            foreach next_hab in (class_tree[current])
+        var current_key := CStr(current);
+        while (current && class_tree[current_key])
+            foreach next_hab in (class_tree[current_key])
                 if (!(next_hab in progression))
                     progression.append(next_hab);
                 endif
                 sleepms(2);
             endforeach
             current := progression[progression.size()];
+            current_key := CStr(current);
         endwhile
     endif
     return progression;
 endfunction
 
-function FormatStateKey(state, hab)
-   return state.health + "_" + 
-          CStr(state.distance) + "_" + 
-          CStr(state.stamina) + "_" + 
-          CStr(state.opponent_casting) + "_" + 
-          CStr(state.has_advantage) + "_" + 
-          hab;
-endfunction
-
-function DetermineCombatSuccess(old_state, new_state)
-    if (old_state.health == "dying" && new_state.health != "dying")
-        return 1;
-    elseif (old_state.has_advantage == 0 && new_state.has_advantage == 1)
-        return 1; 
-    endif
-    
-    return new_state.distance >= 1;
-endfunction
-
 function ChooseWarriorAbility(npc, state, habs)
-    // Get count of nearby enemies
-    var enemies := ListHostiles(npc, 3);
     var opponent := npc.opponent;
 
-    if (Distance(me, opponent) > 1)
+    if (Distance(npc, opponent) > 1)
         return 0;
     endif
-    
-    // Emergency abilities when low health
+
     if (state.health == "dying")
-        foreach hab in habs
-            case (hab)
-                "Manobra da Resiliencia":
-                "Shintai to Kokoro": 
-                "Shar Krith":
-                "Nazg Gûl":
-                "Resiliência Bárbara": return hab;
-            endcase
-        endforeach
-    endif
-    
-    // Multiple enemies
-    if (enemies.size() >= 2)
-        foreach hab in habs
-            case (hab)
-                "Golpes Amplos":
-                "Trespassar":
-                "Provocar":
-                "Manobra Desafiadora":
-                "Burz":
-                "Ghâshburz": return hab;
-            endcase
-        endforeach
+        if (myhabs_set_var.exists(ABILITY_ID::MANOBRA_DA_RESILIENCIA))  return ABILITY_ID::MANOBRA_DA_RESILIENCIA;  endif
+        if (myhabs_set_var.exists(ABILITY_ID::RESILIENCIA_BARBARA))     return ABILITY_ID::RESILIENCIA_BARBARA;     endif
     endif
 
-    // Against ranged opponents
-    if (opponent.weapon.isRanged())
-        foreach hab in habs
-            case (hab)
-                "Ryū no Kamae": return hab;
-            endcase
-        endforeach
+    var enemies := NPC_GetPlayersPetsAndSummonsNearby(npc);
+    if (enemies.size() >= 2)
+        if (myhabs_set_var.exists(ABILITY_ID::PROVOCAR))              return ABILITY_ID::PROVOCAR;              endif
+        if (myhabs_set_var.exists(ABILITY_ID::MANOBRA_DESAFIADORA))   return ABILITY_ID::MANOBRA_DESAFIADORA;   endif
     endif
 
     if (opponent.master)
-        foreach hab in habs
-            case (hab)
-                "Caçador Implacável":
-                "Nazg khalug": return hab;
-            endcase
-        endforeach
+        if (myhabs_set_var.exists(ABILITY_ID::CACADOR_IMPLACAVEL))    return ABILITY_ID::CACADOR_IMPLACAVEL;    endif
     endif
 
-    var chosen_hab := habs[RandomInt(habs.size())+1]; // Fallback to random
-    if (chosen_hab == "Caçador Experiente")
-        var net := CreateItemInBackpack(npc, 0x1EA3, 1);
-        UseItem(net, npc);
-    endif
-
+    var chosen_hab := habs[RandomInt(habs.size())+1];
     return chosen_hab;
 endfunction
 
 function ChooseRogueAbility(npc, state, habs)
     var opponent := npc.opponent;
 
-    if (Distance(me, opponent) > 1)
+    if (Distance(npc, opponent) > 1)
         return 0;
     endif
 
-    // Emergency abilities when low health
     if (state.health == "dying")
-        foreach hab in habs
-            case (hab)
-                "Distrair Oponentes": return hab;
-            endcase
-        endforeach
+        if (myhabs_set_var.exists(ABILITY_ID::DISTRAIR_OPONENTES))   return ABILITY_ID::DISTRAIR_OPONENTES;   endif
     endif
 
     if (AP_GetVital(npc, STAMINA) < 40)
-        foreach hab in habs
-            case (hab)
-                "Reflexo Estrategico": return hab;
-            endcase
-        endforeach
+        if (myhabs_set_var.exists(ABILITY_ID::POSTURA_DE_DUELO))  return ABILITY_ID::POSTURA_DE_DUELO;  endif
     endif
-    
-    // If hidden, prioritize surprise attacks
+
     if (npc.hidden)
-        foreach hab in habs
-            case (hab)
-                "Ataque Furtivo":
-                "Salto das Sombras": return hab;
-            endcase
-        endforeach
+        if (myhabs_set_var.exists(ABILITY_ID::ASSASSINAR))            return ABILITY_ID::ASSASSINAR;            endif
     endif
 
     if (opponent.master)
-        foreach hab in habs
-            case (hab)
-                "Fantasma":
-                "Nazg khalug": return hab;
-            endcase
-        endforeach
+        if (myhabs_set_var.exists(ABILITY_ID::FANTASMA))              return ABILITY_ID::FANTASMA;              endif
     endif
 
-    // When behind opponent
     if (state.has_advantage)
-        foreach hab in habs
-            case (hab)
-                "Faro por Sangue":
-                "Golpe Sangrento": return hab;
-            endcase
-        endforeach
+        if (myhabs_set_var.exists(ABILITY_ID::FARO_POR_SANGUE))      return ABILITY_ID::FARO_POR_SANGUE;      endif
+        if (myhabs_set_var.exists(ABILITY_ID::GOLPE_SANGRENTO))       return ABILITY_ID::GOLPE_SANGRENTO;       endif
     endif
-    
-    // Against mages
+
     if (opponent.isSage())
-        foreach hab in habs
-            case (hab)
-                "Ladrao de Magias":
-                "Lamina da Escuridao": return hab;
-            endcase
-        endforeach
+        if (myhabs_set_var.exists(ABILITY_ID::LADRAO_DE_MAGIAS))     return ABILITY_ID::LADRAO_DE_MAGIAS;     endif
+        if (myhabs_set_var.exists(ABILITY_ID::LAMINA_DA_ESCURIDAO))  return ABILITY_ID::LAMINA_DA_ESCURIDAO;  endif
     endif
-      
+
     return habs[RandomInt(habs.size())+1];
 endfunction
 
 function ChooseSageAbility(npc, state, habs)
     var opponent := npc.opponent;
-    
-    // Emergency abilities when low health
+
     if (state.health == "dying")
-        foreach hab in habs
-            case (hab)
-                "Tactus Tenebris":
-                "Guardião do Bosque":
-                "Instinto de Sobrevivência":
-                "Prisão Dimensional":
-                "Aegis Vitalis":
-                "Decretum Venerationis":
-                "Sede de Sangue": 
-                "Salto Etéreo":
-                "Pele de pedra":
-                "Abrir Portais": return hab;
-            endcase
+        if (myhabs_set_var.exists(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA)) return ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA; endif
+        if (myhabs_set_var.exists(ABILITY_ID::PRISAO_DIMENSIONAL))        return ABILITY_ID::PRISAO_DIMENSIONAL;        endif
+        if (myhabs_set_var.exists(ABILITY_ID::BLOODTHIRST))               return ABILITY_ID::BLOODTHIRST;               endif
+        if (myhabs_set_var.exists(ABILITY_ID::SALTO_ETEREO))              return ABILITY_ID::SALTO_ETEREO;              endif
+        if (myhabs_set_var.exists(ABILITY_ID::ABRIR_PORTAIS))             return ABILITY_ID::ABRIR_PORTAIS;             endif
+        if (myhabs_set_var.exists(ABILITY_ID::RESILIENCIA_BARBARA))       return ABILITY_ID::RESILIENCIA_BARBARA;       endif
+    endif
+
+    if (opponent.hidden && npc.getRace() == DROW)
+        if (myhabs_set_var.exists(ABILITY_ID::CONEXAO_DIVINA))            return ABILITY_ID::CONEXAO_DIVINA;            endif
+    endif
+
+    if (myhabs_set_var.exists(ABILITY_ID::CONTROLAR_MORTOS) || myhabs_set_var.exists(ABILITY_ID::SOUL_HARVEST))
+        foreach item in ListItemsNearLocation(npc.x, npc.y, npc.z, 5, npc.realm)
+            if (item.IsA(POLCLASS_CORPSE))
+                if (myhabs_set_var.exists(ABILITY_ID::CONTROLAR_MORTOS)) return ABILITY_ID::CONTROLAR_MORTOS; endif
+                if (myhabs_set_var.exists(ABILITY_ID::SOUL_HARVEST))     return ABILITY_ID::SOUL_HARVEST;     endif
+            endif
         endforeach
     endif
 
-    // Find corpses nearby
-    var nearby_corpses := ListItemsNearLocation(npc.x, npc.y, npc.z, 5, npc.realm);
-    foreach item in nearby_corpses
-        if (item.IsA(POLCLASS_CORPSE))
-            foreach hab in habs
-                case (hab)
-                    "Controlar Mortos":
-                    "Colheita de Almas": return hab;
-                endcase
-            endforeach
-            break;
+    if (myhabs_set_var.exists(ABILITY_ID::PROVOCAR) || myhabs_set_var.exists(ABILITY_ID::ELEMENTAL_ANCESTRY))
+        var enemies := NPC_GetPlayersPetsAndSummonsNearby(npc);
+        if (enemies.size() >= 2)
+            if (myhabs_set_var.exists(ABILITY_ID::PROVOCAR))              return ABILITY_ID::PROVOCAR;              endif
+            if (myhabs_set_var.exists(ABILITY_ID::ELEMENTAL_ANCESTRY))    return ABILITY_ID::ELEMENTAL_ANCESTRY;    endif
         endif
-        sleepms(2);
-    endforeach
-
-    // Multiple enemies
-    var enemies := ListHostiles(npc, 8);
-    if (enemies.size() >= 2)
-        foreach hab in habs
-            case (hab)
-                "Natureza Selvagem":
-                "Tormento de Idrith":
-                "Provocar":
-                "Ancestralidade Elemental": return hab;
-            endcase
-        endforeach
-    endif
-
-    // Against mages
-    if (opponent.isSage())
-        foreach hab in habs
-            case (hab)
-                "Vindicta Sancta": return hab;
-            endcase
-        endforeach
-    endif
-
-    if (opponent.hidden)
-        foreach hab in habs
-            case (hab)
-                "Visao verdadeira": return hab;
-            endcase
-        endforeach
     endif
 
     if (opponent.master)
-        foreach hab in habs
-            case (hab)
-                "Elo Natural": Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_ParseTemplateName(npc.npctemplate).template}); 
-                "Coração da Matilha": return hab; // controlar a besta
-            endcase
-        endforeach
+        if (myhabs_set_var.exists(ABILITY_ID::CORACAO_DA_MATILHA))    return ABILITY_ID::CORACAO_DA_MATILHA;    endif
+        if (myhabs_set_var.exists(ABILITY_ID::ELO_NATURAL))           return ABILITY_ID::ELO_NATURAL;           endif
     endif
-       
+
     return habs[RandomInt(habs.size())+1];
 endfunction
 
-// TODO: Criar uma IA pro Ladrao/Punguista
 function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
-    var habs := GetObjProperty(me, "myhabs");
-    foreach hab in habs
+    if (!myhabs_var)
+        return;
+    endif
+    foreach hab in myhabs_var
         case (hab)
-            "Camuflagem": 
-                if (!me.hidden) 
-                    me.hidden := 1;
-                endif
-                ProccessHab(me, hab);
-            "Invocacao do Caos": 
-            "Gwaenedh":
-            "Forma Adaptavel":
-            "Irmaos de Areia":
-            "Canhoneiro":
-            "Quinquilharias":
-            "Construtor de Golems": 
-                ProccessHab(me, hab);
+            ABILITY_ID::CAMUFLAGEM:
+                NPC_UseAbilityById(me, hab);
+            ABILITY_ID::INVOCACAO_DO_CAOS: 
+            ABILITY_ID::ARCANE_BOW:
+            ABILITY_ID::FORMA_ADAPTAVEL:
+            ABILITY_ID::SAND_BROTHERS:
+            ABILITY_ID::TACTICAL_SHOULDER:
+            ABILITY_ID::TARGETING_VISOR:
+            ABILITY_ID::GOLEM_ASSEMBLY:
+                NPC_UseAbilityById(me, hab);
         endcase
     endforeach
-endfunction
-
-function HandleAssassinBehavior(opponent)
-    if (!me.hidden && Distance(me, opponent) <= 6)
-        GrantPrivilege(me, "hiddenattack");
-        me.enable("hiddenattack");
-        me.hidden := 1;
-        me.stealthsteps := 30;
-        
-        if (GetCooldown(me, "FaroPorSangue"))
-            SetObjProperty(me, "backstab", 1);
-            SetObjProperty(me.weapon, "backstab", 1);
-            me.attack_once(opponent);
-        endif
-    endif
 endfunction
 
 function HandleThiefBehavior(opponent)
@@ -841,8 +714,8 @@ function HandleThiefBehavior(opponent)
             DoThiefSteal(opponent);
         else // In combat 
             var npcState := getNPCState(me);
-            if (npcState == "dying" && TemHabilidade(me, "Fuga de Emergencia"))
-                FleeFrom(opponent);
+            if (npcState == "dying" && MobileWrapper(me).HasAbility(ABILITY_ID::FUGA_DE_EMERGENCIA))
+                SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
                 SetCooldown(me, "thief_abilities", 30);
             endif
         endif

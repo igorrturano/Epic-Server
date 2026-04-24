@@ -13,7 +13,11 @@ include ":tn:tngumps";
 include ":gumps:yesNo";
 include "include/say";
 include ":charactercreation:habilidades";
-include ":treasurehunting:treasuremaps"; // Adiciona esta linha
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":treasurehunting:treasuremaps";
+include ":chestspawn:treasurechest";
+include ":message:model/Message";
 
 const CLAY_BALL := 0x6074;
 const MINING_ANIMATION := 0x0E;
@@ -31,6 +35,12 @@ program SandMining(who, scoop)
 
 	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2)
 		SendSysMessage(who, "Muito longe.");
+		return;
+	endif
+
+	// Baú enterrado - cavar com pá
+	if (targ.item && GetObjProperty(targ.item, "IsBuriedDirt"))
+		DesenterrarBau(who, scoop, targ);
 		return;
 	endif
 
@@ -79,7 +89,7 @@ program SandMining(who, scoop)
 	var my_facing := who.facing;
 
 	while (MiningLoop(who, scoop, my_x, my_y, my_facing, location_name))
-		if (TemHabilidade(who, "Vigor do Extrator"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
 			if (!CheckLoop(who, scoop, my_x, my_y, my_facing))
 				break;
 			elseif (AP_GetVital(who, "Stamina") < 3)
@@ -273,4 +283,143 @@ function IsPlayerCorpse(corpse)
 	else
 		return error{ "errortext" := "Corpse does not have an owner." };
 	endif
+endfunction
+
+function DesenterrarBau(who, scoop, targ)
+	var dirt := targ.item;
+	var spawner_serial := GetObjProperty(dirt, "link");
+	if (!spawner_serial)
+		SendSysMessageEx(who, "Não há nada enterrado aqui.", SSM_FAIL);
+		return;
+	endif
+
+	var spawner := SystemFindObjectBySerial(CInt(spawner_serial));
+	if (!spawner)
+		SendSysMessageEx(who, "Este local parece ter sido abandonado.", SSM_FAIL);
+		DestroyItem(dirt);
+		return;
+	endif
+
+	var initial_x := who.x;
+	var initial_y := who.y;
+
+	Message("*Começa a cavar a terra*").SendEmote(who);
+	SendSysMessageEx(who, "Permaneça parado enquanto cava.", SSM_INFO);
+
+	// Cria o baú enterrado em Z-5
+	var level := CInt(GetObjProperty(spawner, "epic_level"));
+	var chest_type := GetObjProperty(spawner, "epic_chest_type");
+	var is_mimic := GetObjProperty(spawner, "epic_is_mimic");
+	var mimic_chance := CInt(GetObjProperty(spawner, "epic_mimic_chance"));
+	var is_puzzle := GetObjProperty(spawner, "epic_is_puzzle");
+
+	var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
+	var chest_info;
+	if (custom_graphics && custom_graphics.size() > 0)
+		var gfx := custom_graphics[RandomInt(custom_graphics.size()) + 1];
+		chest_info := GetChestInfoByGraphic(gfx);
+	else
+		chest_info := GetRandomChestFromConfig();
+	endif
+
+	var dirt_x := dirt.x;
+	var dirt_y := dirt.y;
+	var dirt_z := dirt.z;
+	var dirt_realm := dirt.realm;
+
+	var new_chest := CreateItemAtLocation(dirt_x, dirt_y, dirt_z - 5, chest_info.graphic, 1, dirt_realm);
+	if (!new_chest)
+		SendSysMessageEx(who, "Algo deu errado ao desenterrar.", SSM_FAIL);
+		return;
+	endif
+
+	new_chest.graphic := chest_info.graphic;
+	new_chest.movable := 0;
+	new_chest.invisible := 1;
+
+	// Animação de escavação: 5 passos, baú sobe Z+1 por iteração
+	var current_z := dirt_z - 5;
+	for i := 1 to 5
+		if (who.x != initial_x || who.y != initial_y)
+			SendSysMessageEx(who, "A escavação foi interrompida porque você se moveu.", SSM_FAIL);
+			DestroyItem(new_chest);
+			return;
+		endif
+
+		PerformAction(who, MINING_ANIMATION);
+		PlaySoundEffect(who, MINING_SOUND);
+
+		case (i)
+			1: Message("*Cavando...*").SendEmote(who);
+			2: Message("*Continuando a cavar...*").SendEmote(who);
+			3: Message("*A terra está cedendo...*").SendEmote(who);
+			4: Message("*Algo está aparecendo...*").SendEmote(who);
+			5: Message("*Quase lá...*").SendEmote(who);
+		endcase
+
+		current_z := current_z + 1;
+		new_chest.movable := 1;
+		MoveObjectToLocation(new_chest, new_chest.x, new_chest.y, current_z, dirt_realm, MOVEOBJECT_FORCELOCATION);
+		new_chest.movable := 0;
+
+		sleep(2);
+	endfor
+
+	// Baú chega na superfície - configura propriedades
+	new_chest.invisible := 0;
+	new_chest.locked := 1;
+	SetObjProperty(new_chest, "material", chest_info.material);
+	SetObjProperty(new_chest, "maxDurabItem", chest_info.maxhp * level);
+	SetObjProperty(new_chest, "link", spawner_serial);
+	SetObjProperty(new_chest, "IsEpicChest", 1);
+	SetObjProperty(new_chest, "level", level);
+	SetObjProperty(new_chest, "chest_type", chest_type);
+	SetObjProperty(new_chest, "isDispensavel", true);
+	SetObjProperty(new_chest, "CreatedOn", ReadGameClock());
+
+	// Mimic check
+	if (is_mimic && RandomInt(100) < mimic_chance)
+		SetObjProperty(new_chest, "IsMimic", 1);
+	endif
+
+	// Puzzle check
+	if (is_puzzle)
+		SetObjProperty(new_chest, "IsPuzzleChest", 1);
+	endif
+
+	// Loot e armadilhas
+	var loot_name_prefix := "";
+	case (chest_type)
+		"Warrior":  loot_name_prefix := "Humano" + "Guerreiro";
+		"Thief":    loot_name_prefix := "Humano" + "Ladino";
+		"Artifice": loot_name_prefix := "Humano" + "Artifice";
+		"Mage":     loot_name_prefix := "Humano" + "Sabio";
+		default:    loot_name_prefix := "Humano" + "Guerreiro";
+	endcase
+	var lootname := loot_name_prefix + "Chest" + level;
+
+	SetObjProperty(new_chest, "IsTreasureChest", 1);
+	AddRandomTraps(new_chest, level);
+	Loot_Generate(new_chest, lootname);
+
+	// Atualiza spawner: troca dirt serial pelo chest serial
+	var chest_serials := GetObjProperty(spawner, "spawned_epic_chests");
+	if (chest_serials)
+		var updated := array{};
+		foreach serial_val in chest_serials
+			if (CInt(serial_val) == dirt.serial)
+				updated.append(new_chest.serial);
+			else
+				updated.append(serial_val);
+			endif
+		endforeach
+		SetObjProperty(spawner, "spawned_epic_chests", updated);
+	endif
+
+	DestroyItem(dirt);
+
+	Message("*Termina de desenterrar o baú*").SendEmote(who);
+	SendSysMessageEx(who, "Você desenterrou um baú!", SSM_INFO);
+
+	CheckToolWear(who, scoop, GATHERING);
 endfunction

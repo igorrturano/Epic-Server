@@ -101,7 +101,7 @@ function SpawnCreatures(portal, amount)
             spawned := spawned + 1;
 
             // Efeito visual de spawn
-            PlayObjectCenteredEffect(portal, EPIC_FX_WARP_SPAWNER, 0, 13);
+            PlayObjectCenteredEffect(portal, FX_WARP_SPAWNER, 0, 13);
             PlaySoundEffect(portal, 0x1F7);
             SetObjProperty(portal, "creatures", creatures);
         endif

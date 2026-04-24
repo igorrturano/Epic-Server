@@ -7,176 +7,10 @@ include ":attributes:attributes";
 include ":fls_core:fls_chargumps_ex";
 include "include/dungeons";
 include "include/epicConstants";
+include "include/flash";
 include ":tn:cooldown";
-function EquipRaceSkin(who)
-
-	var myrace := GetObjProperty(who, "raca");
-
-	if ( myrace == "humano")
-		if (who.gender) // female
-			var paperdoll := CreateItemInBackpack(who, 0x3823);
-			paperdoll.newbie := 1;
-			paperdoll.color := who.color;
-			EquipItem(who, paperdoll);
-		else //male
-			var paperdoll := CreateItemInBackpack(who, 0x3822);
-			paperdoll.newbie := 1;
-			paperdoll.color := who.color;
-			EquipItem(who, paperdoll);
-		endif
-	elseif ( myrace == "elfo")
-		if (who.gender) // female
-			var paperdoll := CreateItemInBackpack(who, 0x3827);
-			paperdoll.newbie := 1;
-			paperdoll.color := who.color;
-			EquipItem(who, paperdoll);
-		else //male
-			var paperdoll := CreateItemInBackpack(who, 0x3826);
-			paperdoll.newbie := 1;
-			paperdoll.color := who.color;
-			EquipItem(who, paperdoll);
-		endif
-	elseif ( myrace == "hobbit")
-		if (who.gender) // female
-			var paperdoll := CreateItemInBackpack(who, 0x382D);
-			paperdoll.newbie := 1;
-			paperdoll.color := who.color;
-			EquipItem(who, paperdoll);
-		else //male
-			var paperdoll := CreateItemInBackpack(who, 0x382C);
-			paperdoll.newbie := 1;
-			paperdoll.color := who.color;
-			EquipItem(who, paperdoll);
-		endif
-	elseif ( myrace == "anao")
-		if (who.gender) // female
-			var paperdoll := CreateItemInBackpack(who, 0x3825);
-			paperdoll.newbie := 1;
-			paperdoll.color := who.color;
-			EquipItem(who, paperdoll);
-		else //male
-			var paperdoll := CreateItemInBackpack(who, 0x3824);
-			paperdoll.newbie := 1;
-			paperdoll.color := who.color;
-			EquipItem(who, paperdoll);
-		endif
-	elseif ( myrace == "drow")
-		if (who.gender) // female
-			var paperdoll := CreateItemInBackpack(who, 0x382B);
-			paperdoll.newbie := 1;
-			paperdoll.color := who.color;
-			EquipItem(who, paperdoll);
-		else //male
-			var paperdoll := CreateItemInBackpack(who, 0x382A);
-			paperdoll.newbie := 1;
-			paperdoll.color := who.color;
-			EquipItem(who, paperdoll);
-		endif
-	endif
-endfunction
-
-function AwardClassSkill(who, diff, chance, classe)
-
-	var myclass := GetObjProperty(who, "classe");
-	if (classe != myclass)
-		return;
-	endif
-
-	CheckSkillAdvance(who, BEGGING, diff, 100 );
-
-endfunction
-
-function HaveReverseVision(who)
-
-	if (GetObjProperty(who, "chardata").raca == DROW)
-		return 1;
-	elseif (cint(GetObjProperty(who, "reversevision")) == 1)
-		return 1;
-	elseif (GetObjProperty(who, "metamorfose")) // TODO: Ajuste paliativo pro Open Beta
-		return 1;
-	else
-		return 0;
-	endif
-
-endfunction
-
-function ApllyLightLevel()
-	foreach player in enumerateonlinecharacters()
-		if (HaveReverseVision(player))
-			ReverseLight(player);
-		endif
-	endforeach
-endfunction
-
-function ReverseLight(player)
-	var config := readconfigfile(":nature:config/daynight");
-	config := config["settings"];
-	var darkness := cint(config.darkness);
-	var chardata := GetObjProperty(player, "chardata");
-	var playerRace := "unknown";
-	if (chardata)
-		playerRace := chardata.raca;
-	endif
-
-	if (InDungeon(player) && !GetCooldown(player, "lightvision"))
-		player.setlightlevel(20, 9000); // Dungeons are moderately lit for drows (20)
-	else
-		var light := cint(getglobalproperty("lightlevel"));
-		var newlight := abs(darkness - light);
-		player.setlightlevel(newlight, 9000); // Reverse surface light (0-28 becomes 28-0)
-	endif
-endfunction
-
-//RETIRADO por estar redundante com methods/char
-//function GetClass(who)
-//	var classe := GetObjProperty(who, "classe");
-//	if (!classe)
-//		return 0;
-//	else
-//		return classe;
-//	endif
-//endfunction
-
-//function GetRace(who)
-//	var raca := GetObjProperty(who, "raca");
-//	if (!raca)
-//		return 0;
-//	else
-//		return raca;
-//	endif
-//endfunction
-
-function GetRaceCfgElem(race_name)
-	var cfg := GetRaceCfg();
-	return cfg[race_name];
-endfunction
-
-function GetRaceCfg()
-	var cfg := ReadConfigFile(":fls_core:config/racas");
-	if ( cfg.errortext )
-		SysLog("Error - Unable to open [:fls_core:racas.cfg] ->"+cfg.errortext);
-	endif
-
-	return cfg;
-endfunction
-
-function GetTitleRace(racename)
-
-	if (racename == "humano")
-		return "Humano";
-	elseif (racename == "orc")
-		return "Uruk";
-	elseif (racename == "hobbit")
-		return "Hobbit";
-	elseif (racename == "elfo")
-		return "Quende";
-	elseif (racename == "anao")
-		return "Khuzd";
-	elseif (racename == "drow")
-		return "Ilythiiri";
-	endif
-
-endfunction
+include ":nature:Controller/LightController";
+include ":hotbar:include/cooldown_packet";
 
 function IsPoisonImune(who, poison)
 
@@ -206,76 +40,6 @@ function IsPoisonImune(who, poison)
 
 endfunction
 
-function FLS_GetSkillCap(who, skillname)
-
-	if (!GetObjProperty(who, "chardata"))
-		return 100.0;
-	endif
-
-	if (skillname == "classskill")
-		return 100;
-	endif
-	if (skillname == "Begging")
-		return 100;
-	endif
-
-	var primarias := GetSkills(who, "primarias");
-	var secundarias := GetSkills(who, "secundarias");
-	var terciarias := GetSkills(who, "terciarias");
-
-	foreach skill in secundarias
-		if (skillname == skill)
-			return 70.0;
-		endif
-	endforeach
-
-	foreach skill in terciarias
-		if (skillname == skill)
-			return 40.0;
-		endif
-	endforeach
-
-	foreach skill in primarias
-		if (skillname == skill)
-			return 100.0;
-		endif
-	endforeach
-
-	return 0.0;
-
-endfunction
-
-function FLS_GetSkills(who, category)
-	var grad := 0;
-	if (category == "primarias")
-		grad := 3;
-	elseif (category == "secundarias")
-		grad := 2;
-	elseif (category == "terciarias")
-		grad := 1;
-	endif
-
-	if (!who.npctemplate)
-
-		var chardata := GetObjProperty(who, "chardata");
-		if ( (!chardata) || (chardata == error))
-			return 0;
-		else
-			var skills := chardata.Skills;
-			var skillsName := skills.keys();
-			var primarias := array;
-			foreach skill in skillsName
-				if (skills[skill] == grad)
-					primarias.append(GetTrueSkillName(skill));
-				endif
-			endforeach
-			return primarias;
-		endif
-	endif
-
-	return 0;
-endfunction
-
 function GetSkillTitle(who, skillname)
 
 	if (skillname == "BowCraft")
@@ -299,7 +63,6 @@ function GetSkillTitle(who, skillname)
 	endif
 
 endfunction
-
 
 function GetSkillNameByID(input)
 
@@ -348,15 +111,25 @@ function destroyIllyraOutsideDungeons(who)
 endfunction
 
 function ProccessHab(who, txt)
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+	if (who.dead)
+		return 0;
+	endif
+
+	if (!temHabilidade(who, txt) && (who.cmdlevel < 2))
+		SendSysMessageEx(who, "Voce nao possui esta habilidade.", SSM_FAIL);
+		return 0;
+	endif
+
 	var found := 0;
     var habelem;
-
+    var abilityId := 0;
     // Itera sobre as habilidades no arquivo de configuração para encontrar uma correspondência
     foreach elem in GetConfigStringKeys(habcfg)
         var normalized_hab := NormalizeString(elem); // Normaliza o nome da habilidade no arquivo de configuração
         if (NormalizeString(txt) == normalized_hab)
             habelem := FindConfigElem(habcfg, elem); // Usa o nome da habilidade original
+            abilityId := CInt(elem);  // V2: Save ability ID for AbilityMonitor
             found := 1;
             break;
         endif
@@ -374,7 +147,6 @@ function ProccessHab(who, txt)
 		SendSysMessageEx(who, "Esta habilidade nao pode ser ativada.");
 		return 0;
 	endif
-
 
 //	sendsysmessage(who, " " + TS_GetCooldown(who, hab) );
 	if ( TS_GetCooldown(who, hab) != error && who.cmdlevel < 3)
@@ -414,34 +186,38 @@ function ProccessHab(who, txt)
 		EraseObjProperty(who, "#mimico");
 	endif
 
-	if (duracao == "1 ataque")
-		if (!script)
-			SendSysMessageEx(who, "Nao foi encontrado o script da habilidade: " + hab, SSM_FAIL);
-			return 0;
-		endif
-        if (hab == "lamina da escuridao")
-            PlayObjectCenteredEffectHuefx(who, 0x5487, 10, 20, 2296, 1);
-            PlaySoundEffect(who, 0x56e);
-        endif
+	// V2: ALL abilities go through AbilityMonitor - single source of truth
+	var ability := Ability(abilityId);
+	AbilityMonitor(ability).ActivateOn(MobileWrapper(who));
 
-		SendSysMessageEx(who, "Se voce acertar o proximo ataque, vai executar o movimento: " + hab, SSM_INFO);
-		SetObjProperty(who, "movement",  script);
-		SetObjProperty(who, "#movtime", ReadGameClock());
-		if (mimic)
-			SendSysMessageEx(mimic, "Se voce acertar o proximo ataque, vai executar o movimento: " + hab, SSM_INFO);
-			SetObjProperty(mimic, "movement",  script);
-			SetObjProperty(mimic, "#movtime", ReadGameClock());
-		endif
-	else
-		var e := start_script(script, who );
-		if (mimic)
-			start_script(script, mimic );
-		endif
-		//sendsysmessage(who, " " + e );
+	// Mimic support
+	if (mimic)
+		AbilityMonitor(ability).ActivateOn(MobileWrapper(mimic));
 	endif
 
 	TS_StartCooldown(who, hab, delay);
+	sendCooldownToClientUpdate(who, delay, habelem);
 
 	return 1;
 endfunction
 
+function sendCooldownToClientUpdate(who, delay, habelem)
+	// ✅ Determine class-specific gump ID
+	var gumpid := 0x87; // Default fallback
+	var classes := GetConfigStringDictionary(habelem, "classe");
+	var hab := GetConfigString(habelem, "nome");
+	
+	// Priority: Sabio > Guerreiro > Ladino > Artifice
+	if (classes["Sabio"] != error)
+		gumpid := 0x9bac; // 39852
+	elseif (classes["Guerreiro"] != error)
+		gumpid := 0x9bad; // 39853
+	elseif (classes["Ladino"] != error)
+		gumpid := 0x9bae; // 39854
+	elseif (classes["Artifice"] != error)
+		gumpid := 0x9baf; // 39855
+	endif
+	
+	// Send cooldown message to client with class-specific gump ID
+	SendCooldownPacket(who, hab, CInt(delay), gumpid, COOLDOWN_TYPE_ABILITY);
+endfunction

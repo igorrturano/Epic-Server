@@ -4,10 +4,13 @@ include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":tn:cooldown";
 include "include/facings";
 include "include/creationUtils";
 include "include/dungeons";
+include ":message:model/Message";
 
 program skill_Hide(who)
 
@@ -33,7 +36,7 @@ program skill_Hide(who)
 
 	SendSysMessageEx(who, "Voce comecou a tentar se esconder...", SSM_INFO);
 
-	if (temHabilidade(who, "Camuflagem"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
 		while (1)
 			if (isPequilho)
 				sleep(2);
@@ -83,7 +86,7 @@ program skill_Hide(who)
 				SendSysMessageEx(who, "Voce falhou ao tentar se esconder.", SSM_FAIL);
 				who.hidden := 0;
 			elseif (semfalha <= 79) // Falha Cr�tica
-				PrintTextAbove(who, "*tentando se esconder*");
+				Message("*tentando se esconder*").SendEmote(who);
 			endif
 		endwhile
 		SetObjProperty(who, "#hidewait", readgameclock() + 5);
@@ -143,7 +146,7 @@ program skill_Hide(who)
 				SendSysMessageEx(who, "Voce falhou ao tentar se esconder.", SSM_FAIL);
 				who.hidden := 0;
 			elseif (semfalha <= 79) // Falha Cr�tica
-				PrintTextAbove(who, "*tentando se esconder*");
+				Message("*tentando se esconder*").SendEmote(who);
 			endif
 		endwhile
 		SetObjProperty(who, "#hidewait", readgameclock() + 5);
@@ -196,7 +199,7 @@ function CanHide(who, orig_x, orig_y, override_hiding := 0)
 
 	var skill := AP_GetSkill(who, SNEAK);
 
-	if (temHabilidade(who, "Camuflagem"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
 		var skill := AP_GetSkill(who, SURVIVAL);
 	endif
 
@@ -212,7 +215,7 @@ function CanHide(who, orig_x, orig_y, override_hiding := 0)
 	endif
 
 	var hostiles := ListHostiles(who, range);
-	if (temHabilidade(who, "Fuga de Emergencia") || temHabilidade(who, "Mestre Espiao"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::FUGA_DE_EMERGENCIA) || MobileWrapper(who).HasAbility(ABILITY_ID::STEALTH_RUN))
 		return 1;
 	elseif (hostiles[1])
 		SendSysMessageEx(who, "Voce nao pode se esconder enquanto " + hostiles[1].name
@@ -239,7 +242,7 @@ function GetWatchingPeople(who)
 	var counter := 0;
 	var counterpt := 0;
 	var range := GetHidingRange(AP_GetSkill(who, SNEAK));
-	if (temHabilidade(who, "Camuflagem"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
 		var range := GetHidingRange(AP_GetSkill(who, SURVIVAL));
 	endif
 	// adicionada exclusão para membros de pt - BORS

@@ -4,9 +4,11 @@ include "include/say";
 include "include/client";
 include ":timedScripts:timedScripts";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 include "include/epicNPCUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program fireweapons(who, item)
 	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
@@ -18,6 +20,14 @@ program fireweapons(who, item)
 			SendSysMessageEx(who, "Voce precisa equipar a arma.", SSM_FAIL);
 			return;
 		endif
+
+	// Pistol3 (pistola de duelo) requires Postura de Duelo ability for players
+	if (item.objtype == 0xC5FC)
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::POSTURA_DE_DUELO))
+			SendSysMessageEx(who, "Voce precisa da habilidade Postura de Duelo para usar esta arma.", SSM_FAIL);
+			return;
+		endif
+	endif
 
 		// Check if weapon is properly bound
 		if (!IsWeaponBound(who, item))
@@ -53,6 +63,7 @@ function GetWeaponInfo(item)
 						"shot_sound" := 0x4D0 };
 
 	case (item.objtype)
+		0xC5FC: // Pistol (pistola de duelo)
 		0xC5FD: // Pistol
 		0xC5FE:
 			info.type := "pistol";
@@ -116,7 +127,7 @@ function ReloadWeapon(who, item, weapon_info)
 		PlaySoundEffect(who, SFX_HIT_11);
 		SetObjProperty(item, "balas", 1);
 		PrintTextAbove(who, "*Arma recarregada*");
-		updateToolTip(item);
+		IncRevision(item);
 
 		return 1;
 	endif
@@ -141,10 +152,6 @@ function ReloadWeapon(who, item, weapon_info)
 			return 0;
 		endif
 
-		if (TemHabilidade(who, "Municiador Experiente") && powder_needed > 2)
-			powder_needed := 2;
-		endif
-
 		if (powder.amount < powder_needed)
 			SendSysMessageEx(who, "Voce nao tem polvora suficiente.", SSM_FAIL);
 			return 0;
@@ -167,9 +174,6 @@ function ReloadWeapon(who, item, weapon_info)
 	PrintTextAbove(who, "*Socando a polvora*");
 
 	var reload_time := weapon_info.reload_time;
-	if (TemHabilidade(who, "Municiador Experiente"))
-		reload_time := CInt(reload_time / 2);
-	endif
 
 	// Animation and sound effects
 	var i := 0;
@@ -199,7 +203,7 @@ function ReloadWeapon(who, item, weapon_info)
 	PlaySoundEffect(who, SFX_HIT_11);
 	SetObjProperty(item, "balas", 1);
 	PrintTextAbove(who, "*Arma recarregada*");
-	updateToolTip(item);
+	IncRevision(item);
 
 	return 1;
 endfunction
@@ -225,7 +229,7 @@ function FireWeapon(who, item, weapon_info)
 	// Update ammo count
 	var balas := CInt(GetObjProperty(item, "balas")) - 1;
 	SetObjProperty(item, "balas", balas);
-	updateToolTip(item);
+	IncRevision(item);
 endfunction
 
 function AimAndShoot(who, item, targ, weapon_info)
@@ -277,7 +281,7 @@ function AimAndShoot(who, item, targ, weapon_info)
 	endif
 
 	// Handle weapon malfunction
-	if (RandomFloat(100) <= 5 && !TemHabilidade(who, "Artilheiro preparado"))
+	if (RandomFloat(100) <= 5)
 		SendSysMessageEx(who, "O tiro saiu pela culatra!", SSM_FAIL);
 		DestroyItem(item);
 		DamageFLS(who, dmg, DMG_FORCED, who);
@@ -285,7 +289,7 @@ function AimAndShoot(who, item, targ, weapon_info)
 	endif
 
 	// Visual and sound effects
-	PlayObjectCenteredEffect(who, GFX_FIZZLE, 5, 50);
+	PlayObjectCenteredEffect(who, FX_FIZZLE, 5, 50);
 	PlayMovingEffect(who, targ, FX_EXPLODE_1, 5, 1, 1);
 	PlaySoundEffect(who, weapon_info.shot_sound);
 
@@ -313,12 +317,7 @@ function CalculateWeaponDamage(who, item, targ, weapon_info, dist)
 		endif
 	endif
 
-	var skill_dmgmod := TACTICS;
-	if (TemHabilidade(who, "Artilheiro Preparado"))
-		skill_dmgmod := METALWORKING;
-	endif
-
-	dmg += CInt(AP_GetStat(who, DEXTERITY) / 10) + CInt(AP_GetSkill(who, skill_dmgmod) / 10);
+	dmg += CInt(AP_GetStat(who, DEXTERITY) / 10) + CInt(AP_GetSkill(who, TACTICS) / 10);
 
 	if (GetObjProperty(item, "Excepcional"))
 		dmg := CInt(dmg * 1.2);

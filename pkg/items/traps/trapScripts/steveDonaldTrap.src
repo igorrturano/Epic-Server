@@ -8,7 +8,7 @@ use uo;
 use util;
 
 include "include/client";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program trapScript(params)
 	var mobile := params[1];
@@ -19,7 +19,7 @@ program trapScript(params)
 
 	SendSysMessage(mobile, "You set off a trap!");
 
-	PlayObjectCenteredEffect(mobile, GFX_BLACK_GLOW, 10, 10);
+	PlayObjectCenteredEffect(mobile, FX_BLACK_GLOW, 10, 10);
 
 	SleepMS(100);
 

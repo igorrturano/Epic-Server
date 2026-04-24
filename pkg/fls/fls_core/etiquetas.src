@@ -39,7 +39,9 @@ program usar_etiqueta(who, the_item)
 	 )
 		// Permite nomear poções, caixas, baús e bags
 		SetName(use_on, itemdesc);
-		use_on.color := the_item.color;
+		if (the_item.color)
+			use_on.color := the_item.color;
+		endif
 	else
 		SendSysMessage(who, "Este item nao pode ser rotulado.");
 	endif

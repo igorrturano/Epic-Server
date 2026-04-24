@@ -1,0 +1,134 @@
+// ============================================================================
+// Send Skills Packet (0x56) - Standalone sender script
+// ============================================================================
+// Spawned via Start_Script() to isolate data segment from main handler.
+// Reads skill data from attributes.cfg and sends per-type packet.
+// ============================================================================
+
+use uo;
+use os;
+use cfgfile;
+use basic;
+
+include ":hotbar:include/shared_constants";
+include ":hotbar:include/hotbar_write";
+include ":attributes:attributes";
+
+program SendSkills(who)
+    var skills := array{};
+
+    var chardata := GetObjProperty(who, "chardata");
+    if (!chardata)
+        return 0;
+    endif
+
+    var is_gm := (who.cmdlevel > 1);
+    var player_skills := chardata.Skills;
+    if (!player_skills)
+        player_skills := dictionary;
+    endif
+
+    var attr_cfg := ReadConfigFile(":attributes:attributes");
+    if (!attr_cfg)
+        return 0;
+    endif
+
+    var all_skill_names := GetConfigStringKeys(attr_cfg);
+
+    foreach skill_name in all_skill_names
+        sleepms(2);
+        var skill_elem := FindConfigElem(attr_cfg, skill_name);
+        if (!skill_elem)
+            continue;
+        endif
+
+        var skill_script := GetConfigString(skill_elem, "Script");
+        if (!skill_script)
+            continue;
+        endif
+
+        var is_eligible := 0;
+        if (is_gm)
+            is_eligible := 1;
+        else
+            if (player_skills[skill_name])
+                is_eligible := 1;
+            endif
+        endif
+
+        if (!is_eligible)
+            continue;
+        endif
+
+        var skill_id := GetConfigInt(skill_elem, "SkillId");
+        var tooltip_desc := GetConfigString(skill_elem, "TooltipDesc");
+        var icon_id := GetConfigInt(skill_elem, "Icon");
+        var icon_hue := GetConfigInt(skill_elem, "Hue");
+
+        if (!icon_id)
+            icon_id := 0x9b90;
+        endif
+        if (!tooltip_desc)
+            tooltip_desc := "";
+        endif
+
+        var skill_value := CInt(AP_GetSkill(who, skill_name));
+        var skill_base := CInt(AP_GetTrueSkill(who, skill_name));
+        var skill_cap := CInt(AP_GetSkillCap(who, skill_name));
+
+        var display_name := StrReplace(skill_name, "_", " ");
+
+        skills.append(struct{
+            "name" := display_name,
+            "desc" := tooltip_desc,
+            "iconid" := icon_id,
+            "hue" := icon_hue,
+            "index" := skill_id,
+            "current_value" := skill_value,
+            "base_value" := skill_base,
+            "cap" := skill_cap,
+            "lock" := 0
+        });
+    endforeach
+
+    // Build packet
+    var data_size := 0;
+    foreach item in skills
+        data_size := data_size + 2 + len(item.name);
+        data_size := data_size + 2 + len(item.desc);
+        data_size := data_size + 2; // hue
+        data_size := data_size + 2; // iconid
+        data_size := data_size + 1; // index
+        data_size := data_size + 2; // current_value
+        data_size := data_size + 2; // base_value
+        data_size := data_size + 2; // cap
+        data_size := data_size + 1; // lock
+    endforeach
+
+    // Header: PacketID(1) + Length(2) + Subcommand(2) + DataType(1) + Count(2)
+    var packet_size := 8 + data_size;
+    var packet := CreatePacket(PACKET_EXTENDED, packet_size);
+
+    packet.SetInt8(0, PACKET_EXTENDED);
+    packet.SetInt16(1, packet_size);
+    packet.SetInt16(3, SUBCOMMAND_SKILLS_RESPONSE);
+    packet.SetInt8(5, ACTION_TYPE_SKILL);
+    var offset := 6;
+
+    offset := SetInt16BE(packet, offset, skills.size());
+
+    foreach item in skills
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := SetInt16BE(packet, offset, item.hue);
+        offset := SetInt16BE(packet, offset, item.iconid);
+        packet.SetInt8(offset, item.index); offset += 1;
+        offset := SetInt16BE(packet, offset, item.current_value);
+        offset := SetInt16BE(packet, offset, item.base_value);
+        offset := SetInt16BE(packet, offset, item.cap);
+        packet.SetInt8(offset, item.lock); offset += 1;
+    endforeach
+
+    packet.SendPacket(who);
+    return 1;
+endprogram

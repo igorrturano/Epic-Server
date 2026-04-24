@@ -36,20 +36,20 @@ program SpellScript(params)
     var diff := handleSpellResistDiffForDivineCasters(who, spell_school);
     var bonus := epicWisdomPathBonus(who);
 
-    if (CheckResist(targ, VONTADE, diff, -bonus) || isTrueBoss(targ))
+    if (CheckResist(targ, WILL, diff, -bonus) || isTrueBoss(targ))
         SendSysMessageEx(who, "Você nota que o alvo não foi afetado.", SSM_FAIL);
         SendSysMessageEx(targ, "Você resistiu a magia.", SSM_INFO);
         return;
     endif
 
     var duration := cint(AP_GetSkill(who, ARCANA) / 5);
-    if (TemHabilidade(who, "Irmaos de Areia"))
+    if (MobileWrapper(who).HasAbility(ABILITY_ID::SAND_BROTHERS))
         duration := Cint(duration * 1.5);
     endif
 
     handleSilentMagic(who, targ, SFX_SPELL_TELEKINESIS);
     sleep(2);
-    PlayObjectCenteredEffect(targ, EPIC_FX_HIPNOSYS, 250, 10);
+    PlayObjectCenteredEffect(targ, FX_HIPNOSYS, 250, 10);
 
     SetObjProperty(targ, "charmed_by", who.serial);
     SetObjProperty(targ, "charmed_cannot_attack", who.serial); // Cannot attack the shaman

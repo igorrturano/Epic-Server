@@ -53,11 +53,11 @@ class Text(Control)
 
 	function SelfCreate(this, byRef gump)
 		if (!this._align)
-			GFTextLine(gump, this.GetX(), this.GetY(), this.GetColor(), this.GetValue());
+			GFTextLine(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
 		elseif (this._align == TEXT_ALIGN::ALIGN_CENTER)
-			GFTextMid(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetColor(), this.GetValue());
+			GFTextMid(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetColor(), this.GetValue());
 		elseif (this._align == TEXT_ALIGN::ALIGN_RIGHT)
-			GFTextRight(gump, this.GetX(), this.GetY(), this.GetColor(), this.GetValue());
+			GFTextRight(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetColor(), this.GetValue());
 		endif
 		
 		Super::SelfCreate(this, gump);
@@ -74,6 +74,29 @@ class Text(Control)
 			+ ")";
 	endfunction
 endclass
+
+enum class TEXT_FONT
+	FONT_UO := 0,
+
+	FONT_ARIAL := 2,
+	FONT_ARIAL_BOLD := 1,
+	
+	FONT_FIXEDSYS := 3,
+	FONT_FIXEDSYS_BIG := 4,
+
+	FONT_THIN := 5,
+	FONT_THIN_BIG := 6,
+	
+	FONT_SYMBOLS := 7,
+	FONT_SYMBOLS_BOLD := 8,
+	FONT_SYMBOLS_BOLD_BIG := 9,
+
+	FONT_RUNE := 10,
+	FONT_RUNE_BOLD := 11,
+	FONT_RUNE_BOLD_BIG := 12,
+
+	FONT_DEFAULT := FONT_UO
+endenum
 
 enum class TEXT_COLOR
 	COLOR_DEFAULT := COLOR_BLUE,

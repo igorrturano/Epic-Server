@@ -1,7 +1,7 @@
 use uo;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":acid:acid";
@@ -16,7 +16,7 @@ program HitScript(params)
 	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
 
-	PlayObjectCenteredEffectEx(defender, GFX_BLUE_SPARKLE_GROUND, 7, 16, GELO);
+	PlayObjectCenteredEffectEx(defender, FX_BLUE_SPARKLE_GROUND, 7, 16, COLOR_ELEMENTAL_ICE);
 	PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
 
 	// ApplyDamageEX(defender, RandomDiceRoll("1d3"), DMG_COLD, attacker);

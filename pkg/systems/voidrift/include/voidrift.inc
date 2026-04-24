@@ -2,11 +2,11 @@ use uo;
 use os;
 use cfgfile;
 include ":damage:damage";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 // Constantes
 const VOIDRIFT_MIN_CORRUPTION := -4000;
-const VOIDRIFT_MAX_ENTROPY := 20000;
-const VOIDRIFT_MIN_ENTROPY := -20000;
+
 const VOIDRIFT_SPAWN_RANGE := 4;
 const VOIDRIFT_CORRUPT_RANGE := 8;
 const VOIDRIFT_PORTAL_OBJTYPE := 0xe33;
@@ -17,39 +17,6 @@ var TIER2_CREATURES := array{ "skeletonarcher", "evilmage", "quasit" };
 var TIER3_CREATURES := array{ "evilmage2", "skeleton3", "skeletonmage" };
 var TIER4_CREATURES := array{ "voidling", "voidling3", "voidspawn2" };
 var TIER5_CREATURES := array{ "voidling4", "voidspawn", "voidspawn3" };
-
-// ============================================================================
-// Funções de Entropia
-// ============================================================================
-
-function GetEntropy(who)
-    var entropy := GetObjProperty(who, "entropy");
-    if (!entropy)
-        return 0;
-    endif
-    return CInt(entropy);
-endfunction
-
-function SetEntropy(who, value)
-    if (value > VOIDRIFT_MAX_ENTROPY)
-        value := VOIDRIFT_MAX_ENTROPY;
-    elseif (value < VOIDRIFT_MIN_ENTROPY)
-        value := VOIDRIFT_MIN_ENTROPY;
-    endif
-    SetObjProperty(who, "entropy", CInt(value));
-endfunction
-
-function UpdateEntropy(who, amt)
-    var current := GetEntropy(who);
-    SetEntropy(who, current + amt);
-
-    // Atualizar entropia global do mundo
-    var global_entropy := GetGlobalProperty("GlobalEntropy");
-    if (!global_entropy)
-        global_entropy := 0;
-    endif
-    SetGlobalProperty("GlobalEntropy", global_entropy + amt);
-endfunction
 
 function GetGlobalEntropy()
     var global_entropy := GetGlobalProperty("GlobalEntropy");
@@ -64,7 +31,8 @@ endfunction
 // ============================================================================
 
 function GetSpawnAmount(who)
-    var entropy := GetEntropy(who);
+    var mobile := MobileWrapper(who);
+    var entropy := mobile.GetEntropy();
     var amount := CInt(Abs(entropy) / 1000);
     if (amount < 4)
         amount := 4;

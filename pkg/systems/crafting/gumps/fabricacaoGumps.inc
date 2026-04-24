@@ -1,7 +1,9 @@
 //Author: Deiro || Rafael Santos
 
 include ":gumps:/include/epicGumps";
+include ":crafting:include/util/fabricacaoConstants";
 include "include/string";
+include "/include/epicConstants";
 
 const G_LARGURA := 800;
 const G_ALTURA := 600;
@@ -54,6 +56,7 @@ enum BTN_IDS // ids, não variaveis, de botões e entradas de cada painel.
 	COMPLEXOS_BTN_FABRICAR_GM_CMPNT := 12,
 	COMPLEXOS_BTN_ESQ_PROX_PAGINA := 13,
 	COMPLEXOS_BTN_ESQ_ANT_PAGINA := 14,
+	COMPLEXOS_BTN_REPARAR := 15,
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do Gump de intes complexos.
@@ -76,7 +79,8 @@ enum CLASSE_RETORNO_GUMP_COMPLX // (RT = RETORNO) Classificação do retorno do 
 	RT_ESQ_ANT_PAGINA,
 	RT_MEMORIZAR_COMPONENTES,
 	RT_LIMPAR_MEMORIA,
-	RT_AJUDA_CPX
+	RT_AJUDA_CPX,
+	RT_REPARAR
 endenum
 
 enum CLASSE_RETORNO_GUMP_COMPNT //(RT = RETORNO) Classificação do retorno do Gump de Componentes.
@@ -118,6 +122,7 @@ var larguraCelula :=  G_LARGURA / G_CELULA_DIVISOR;
 var espacamentoAplicado := G_ESPACAMENTO * 2;
 
 var coresClassesReceitas := array{0,737,727,717,707,797};
+const GUMPIC_ID_PROFISSOES_DEFAULT := 5581;
 var gumpicIdProfissoes := dictionary {
 							"Alchemy" -> 5557,
 							"Blacksmithy" -> 5555,
@@ -169,7 +174,10 @@ function MontaItensComplexosGump(byref gump,parametros,byref sessao)
 		GFTextLine(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO +  cint(larguraCelula * 3),alturaCelula * 11 + 14,149,"*Modo GM*");
 	endif
 
-	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.8),alturaCelula * 11 + 10, 5054, cint(larguraCelula * 0.9), alturaPainelRodape);	
+	GFResizePic(gump, G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.4),alturaCelula * 11 + 10, 5054, cint(larguraCelula * 1.3), alturaPainelRodape);	
+	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.5) - 2, alturaCelula * 11 + 17,1537,1538, GF_CLOSE_BTN, COMPLEXOS_BTN_REPARAR);// Botão reparar
+	GFTooltipText(gump,"Reparar objeto.");
+	
 	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + cint(larguraCelula * 8.9) - 2, alturaCelula * 11 + 17,1533,1534, GF_CLOSE_BTN, COMPLEXOS_BTN_MEMORIZAR_COMPONENTES);// Botão memoriza componentes
 	GFTooltipText(gump,"Memorizar encaixes de componente.");
 	GFAddButton(gump,G_MARGEM_ESQUERDA + G_ESPACAMENTO + 23 + cint(larguraCelula * 8.9),alturaCelula * 11 + 17,1541,1542, GF_CLOSE_BTN, COMPLEXOS_BTN_LIMPAR_MEMORIA);// Botão limpar memória.
@@ -407,7 +415,7 @@ function MontaComponentesGump(byref gump,byref parametros,byref sessao)
 	return gump;
 endfunction
 
-function DefinirMateriais(byref gump,x,y,material, materialPrincipal, quantidade,byref sessao,indice)
+function DefinirMateriais(byref gump,x,y,material, materialPrincipal, infoOpcao,byref sessao,indice)
 	if(indice < 1 || indice > 10 )
 		return 0;
 	endif
@@ -419,13 +427,17 @@ function DefinirMateriais(byref gump,x,y,material, materialPrincipal, quantidade
 	var isPrincipal := material == materialPrincipal;
 	var corTexto := isPrincipal ? "<basefont size=55 color=#FFD336>" : "<basefont size=55 color=#B7B7B8>";
 	var corValor := "<basefont size=55 color=#83C542>";
+	var textoPossiveis := "" ;
+	
+	foreach possivel in (infoOpcao.possiveis)
+		Sleepms(2);
+		textoPossiveis += "<br>{}{}".format(WHITE,possivel.name);
+	endforeach
 	
 	GFAddButton(gump,x,y,2648,2649,GF_CLOSE_BTN, dropDownAtual.PegaIdBottao());
-	GFHTMLArea(gump,x + 25,y,300,20,"{}{}".format(corTexto,quantidade));
+	GFHTMLArea(gump,x + 25,y,300,20,"{}{}".format(corTexto,infoOpcao.quantidade));
 	GFHTMLArea(gump,x + 50,y,300,20,"{}{}: {}{}".format(corTexto,material,corValor,nome));
-	if(isPrincipal)
-		GFTooltipText(gump,"Material principal do componente.");
-	endif
+	GFTooltipText(gump,"{}Possíveis: {}".format(AMARELO_CLARO,textoPossiveis));
 endfunction
 
 function MontaTratamentoGump(x, y, byref sessao)
@@ -477,9 +489,11 @@ function MontaTratamentoGump(x, y, byref sessao)
 		tooltipChance += modificador.origem.format(modificador.valor);
 	endforeach
 	GFTooltipText(gump,tooltipChance);
+	var gumpIdProfissaoPressed := sessao.gumpIdProfissaoPressed ? sessao.gumpIdProfissaoPressed : GUMPIC_ID_PROFISSOES_DEFAULT;
+	var gumpIdProfissaoUnpressed := sessao.gumpIdProfissaoUnpressed ? sessao.gumpIdProfissaoUnpressed : GUMPIC_ID_PROFISSOES_DEFAULT;
 
 	GFHTMLArea(gump,cint(x - 24 + larguraCelula* 10),y + 15 + alturaCelula * 5,40,30,"<basefont size=55 color=#016210><center>{}%</center>".format(cint(sessao.dificuldade.chanceTotal)));
-	GFAddButton(gump,x - 24 + larguraCelula * 2, y - 10 + alturaCelula * 5,gumpicIdProfissoes[sessao.profissao],gumpicIdProfissoes[sessao.profissao] + 1,GF_CLOSE_BTN, 6); // Botao ajuda pericia.
+	GFAddButton(gump,x - 24 + larguraCelula * 2, y - 10 + alturaCelula * 5,gumpIdProfissaoPressed,gumpIdProfissaoUnpressed,GF_CLOSE_BTN, 6); // Botao ajuda pericia.
 	GFAddButton(gump,x + larguraCelula * 4, cint(y - 10 + alturaCelula * 9.9) ,2119,2120,GF_CLOSE_BTN, 3);
 	if(sessao.fazerTodos)
 		GFHTMLArea(gump,x + cint(larguraCelula) * 6, cint(y - 10 + alturaCelula * 9.9),180,30,"<basefont size=55 color=#000000><right>Produzindo Semelhantes.</right>");
@@ -666,7 +680,7 @@ function PreencheReceitas(byref gump,x,deslocamentoX,y,deslocamentoY,largura,alt
 			
 			MontaJanelaReceita(gump , x + deslocamentoX , y + deslocamentoY,linha, (indice - 1) % colunasLinha,receita,indice,sessao);
 
-			if(receitas.size() > paginador.indicePaginaSeguinte)
+			if(receitas.size() >= paginador.indicePaginaSeguinte)
 				GFAddButton(gump,x + largura - 45, y + altura / 2,4005,4006,GF_CLOSE_BTN,COMPLEXOS_BTN_RCT_PROX_PAGINA);
 			endif
 			if(1 >= paginador.indicePaginaAnterior)
@@ -690,14 +704,16 @@ function PreencheCategorias(byref gump,larguraPainelCategoria, parametros, sessa
 	var margemEsquerdaLocal := G_MARGEM_ESQUERDA + G_ESPACAMENTO + 10;
 	var margemSuperiorLocal := G_MARGEM_SUPERIOR + G_ESPACAMENTO + 25;
 	var alturaIniciocategorias := margemSuperiorLocal + 93;
+	var gumpIdProfissaoPressed := parametros.gumpIdProfissaoPressed ? parametros.gumpIdProfissaoPressed : GUMPIC_ID_PROFISSOES_DEFAULT;
+	var gumpIdProfissaoUnpressed := parametros.gumpIdProfissaoUnpressed ? parametros.gumpIdProfissaoUnpressed : GUMPIC_ID_PROFISSOES_DEFAULT;
 
 	GFResizePic(gump, margemEsquerdaLocal, margemSuperiorLocal -14, 9250, larguraPainelCategoria - 18, 130);
 	GFGumpPic(gump,margemEsquerdaLocal + larguraPainelCategoria / 2 - 50,margemSuperiorLocal + 5,1417); // Fundo Imagem Profissão
 	GFAddButton(
 			gump,
 			margemEsquerdaLocal + larguraPainelCategoria / 2 - 50 + 8,
-			margemSuperiorLocal + 15,gumpicIdProfissoes[parametros.profissao],
-			gumpicIdProfissoes[parametros.profissao] + 1,GF_CLOSE_BTN,
+			margemSuperiorLocal + 15,gumpIdProfissaoPressed,
+			gumpIdProfissaoUnpressed,GF_CLOSE_BTN,
 			COMPLEXOS_BTN_AJUDA); // botao ajuda profissão
 
 	GFTooltipText(gump,"Clique aqui para mais informações sobre como o sistema funciona.");
@@ -741,14 +757,11 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 	else
 		deslocamentoGraphicY := 0;
 	endif
-	if(receita.receitaClassificada.nome == "drowsaber")
-		Print("Montando receita: {} na posicao baseIdBotao: {} indice: {}".format(receita.receitaClassificada.nome, baseIdBotao, indice));
-	endif
 
 	GFResizePic(gump, x, y, 1579, 120, 150);//5170, 1755,
 	GFTooltipText(gump,receita.textoDescItem);
 
-	if(receita.receitaClassificada.classe)
+	if(receita.receitaClassificada.classe != CLASSE_PADRAO)
 		GFGumpPic(gump,x + 30 ,y + 10,1592,coresClassesReceitas[cint(receita.receitaClassificada.classe)]); //
 	endif
 	var corPino := 0;
@@ -881,13 +894,4 @@ function MontaEscolhaComponenteModoGmGump(byref gump, sessao)
 
 	GFAddButton(gump, larguraCelula * 2, alturaBarraMenu + 170,2311,2312,GF_CLOSE_BTN, COMPLEXOS_BTN_OKAY_GM_CMPNT);
 	return gump;
-endfunction
-
-function MontaPaginador(paginaAtual, itensPorPagina)
-
-	return struct {
-					indicePaginaAtual := (paginaAtual * itensPorPagina) + 1,
-					indicePaginaSeguinte := ((1 + paginaAtual) * itensPorPagina) + 1,
-					indicePaginaAnterior := ((1 - paginaAtual) * itensPorPagina) + 1
-				};
 endfunction

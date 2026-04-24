@@ -6,7 +6,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/shapes";
 include ":timedScripts:timedScripts";
 include "include/sysEvent";
@@ -16,6 +16,7 @@ include ":taming:taming";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":destroyable:include/destroyItem";
+include ":charactercreation:resists";
 
 program spell_iceStorm(parms)
 	var caster := parms[1];
@@ -25,7 +26,6 @@ program spell_iceStorm(parms)
 	var spell_school := spell.School;
 
 	SendSysMessage(caster, "Selecione o alvo.");
-	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, 5, targ);
 
 	var mlore := cint(AP_GetSkill(caster, ARCANA) / 20);
 	var dist := Distance(caster, targ);
@@ -36,20 +36,50 @@ program spell_iceStorm(parms)
 		return 0;
 	endif
 
-	var dmg := epicSpellDamageRoll(caster, spell_circle);
-	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+	var radius := Cint(AP_GetSkill(caster, ARCANA) / 15);
+	if (radius < 4)
+		radius := 4;
+	elseif (radius > 8)
+		radius := 8;
+	endif
+
+	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, radius, targ);
+
+	var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
 	DanificaObjetosProximos(caster, targ.x, targ.y, targ.z, targ.realm, struct{ dano := dmg,
 																				desc := "Chuva de Gelo." },
-							5, 0x6DFF);
+							radius, 0xDF2F);
+
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+	var slow_duration := Cint(AP_GetSkill(caster, ARCANA) / 10);
 
 	foreach mobile in allMobiles
 		SendSysMessageEx(mobile, "Voce olha para cima e ve uma chuva de gelo em sua direcao.", SSM_FAIL);
 		PlaySoundEffect(mobile, 0x5c7);
-		PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x6DFF, 0, 70, 0, mobile.realm);
-		var dmg := epicSpellDamageRoll(caster, spell_circle);
-		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+		PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0xDF2F, 0, 70, 0, mobile.realm);
+		var target_dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
 
-		DamageFLS(mobile, cint(dmg), DMG_COLD, caster, "icestorm");
+		if (CheckResist(mobile, REFLEXES, diff, -bonus))
+			target_dmg := Cint(target_dmg / 2);
+			SendSysMessageEx(mobile, "Voce se esquiva de parte do gelo.", SSM_INFO);
+		endif
+
+		DamageFLS(mobile, cint(target_dmg), DMG_COLD, caster, "icestorm");
+
+		// AoE slow: everyone hit gets lentidao unless they pass a WILL save.
+		if (!CheckResist(mobile, WILL, diff, -bonus))
+			TS_Starttimer(mobile, "lentidao", slow_duration);
+			PrintTextAbove(mobile, "*congelando*");
+		endif
+
 		sleepms(20);
 	endforeach
+
+	// Centre target takes a WILL-save hard-freeze on top of the AoE slow.
+	if (targ && targ.IsA(POLCLASS_MOBILE))
+		if (!CheckResist(targ, WILL, diff, -bonus))
+			TS_Starttimer(targ, "prisaogelida", Cint(AP_GetSkill(caster, ARCANA) / 20));
+		endif
+	endif
 endprogram

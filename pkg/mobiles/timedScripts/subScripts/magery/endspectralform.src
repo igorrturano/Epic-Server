@@ -9,5 +9,6 @@ program TimedScript_EndParalysis(mobile)
 	var old_color := GetObjProperty(mobile, "#spectralform");
 	mobile.color := old_color;
 	EraseObjProperty(mobile, "#spectralform");
+	mobile.evasionchance_mod := mobile.evasionchance_mod - 20;
 	return 1;
 endprogram

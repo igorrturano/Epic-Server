@@ -10,20 +10,27 @@ include ":fls_core:fls_characters";
 include ":nature:nature";
 include ":death:death";
 include ":debug:Controller/DebugController";
+include "include/epicConstants";
 
 program daynightsystem()
+	Print("Starting Day\Night Cycle...");
 	SetGlobalProperty("daynightpid", getpid());
+	SetGlobalProperty("daynightAccelaration", 1);
+	SetGlobalProperty("daynightStartingTime", ReadGameClock());
+	var gmAcceleration := cint(GetGlobalProperty("daynightAccelaration"));
+	var isAlreadyStarted := false;
+
     var config := readconfigfile(":nature:config/daynight"); // Moved up for clarity
     var settings := config["settings"]; // Use 'settings' to avoid conflict with 'config' var name if it's an element
 
 	var darkness := cint(settings.darkness);
-	var transspeed := cint(settings.transspeed);
+	var nightlength;
+	var clockPid := 0;
 	
 	var i;
 	while(1)
-        var base_day_period_seconds := CInt(settings.daylength) * 60;
-        var base_full_cycle_seconds := base_day_period_seconds * 2; // A full 24-game-hour cycle based on config
-		var nightlength;
+		var base_day_period_seconds := CInt(settings.daylength / gmAcceleration) * 60;
+		var base_full_cycle_seconds := base_day_period_seconds * 2; // A full 24-game-hour cycle based on config
 
 		SeasonRotate();  //muda o dia do ano e estação
 		MoonFase();      // muda a fase da lua
@@ -33,24 +40,24 @@ program daynightsystem()
         var durationDayMod := 1.0; // Initialize as float for precision
 		var date := getCurrentDate();
 
-		DebugMsgAll(DEBUG_CLIMA, "Dia do ano: " + date.dayYear);
-		DebugMsgAll(DEBUG_CLIMA, "Dia: " + date.day);
-		DebugMsgAll(DEBUG_CLIMA, "Mes: " + date.month);
-		DebugMsgAll(DEBUG_CLIMA, "Ano: " + date.year);
-		DebugMsgAll(DEBUG_CLIMA, "Lua: " + date.moonPhase);
-		DebugMsgAll(DEBUG_CLIMA, "Estacao: " + season);
+		DebugMsgAll(DEBUG_CLIMA, Message("Dia do ano: " + date.dayYear));
+		DebugMsgAll(DEBUG_CLIMA, Message("Dia: " + date.day));
+		DebugMsgAll(DEBUG_CLIMA, Message("Mes: " + date.month));
+		DebugMsgAll(DEBUG_CLIMA, Message("Ano: " + date.year));
+		DebugMsgAll(DEBUG_CLIMA, Message("Lua: " + date.moonPhase));
+		DebugMsgAll(DEBUG_CLIMA, Message("Estacao: " + season));
 
 		if (date.month == "Idrithae")
 			durationDayMod -= 0.3;
 		endif
 
 		if (season == SUMMER) //Checa se é solstício de verão ou inverno
-			DebugMsgAll(DEBUG_CLIMA, "Estacao: SUMMER");
-			DebugMsgAll(DEBUG_CLIMA, "Eh Solsticio de: SUMMER");
+			DebugMsgAll(DEBUG_CLIMA, Message($"Estacao: {SUMMER}"));
+			DebugMsgAll(DEBUG_CLIMA, Message($"É Solstício de: {SUMMER}"));
 			durationDayMod += 0.2;
 		elseif (season == WINTER)
-			DebugMsgAll(DEBUG_CLIMA, "Estacao: WINTER");
-			DebugMsgAll(DEBUG_CLIMA, "Eh Solsticio de: WINTER");
+			DebugMsgAll(DEBUG_CLIMA, Message($"Estacao: {WINTER}"));
+			DebugMsgAll(DEBUG_CLIMA, Message($"É Solstício de: {WINTER}"));
 			durationDayMod -= 0.2;
 		endif
 
@@ -63,138 +70,28 @@ program daynightsystem()
 		SetGlobalProperty("CurrentActualDaySeconds", actual_day_period_seconds);
         SetGlobalProperty("CurrentActualNightSeconds", actual_night_period_seconds);
 
-		DebugMsgAll(DEBUG_CLIMA, "Duracao do dia: " + actual_day_period_seconds / 60 + "min");
-		DebugMsgAll(DEBUG_CLIMA, "Duracao da noite: " + actual_night_period_seconds / 60 + "min");
+		DebugMsgAll(DEBUG_CLIMA, Message($"Duração do dia: {actual_day_period_seconds / 60}min"));
+		DebugMsgAll(DEBUG_CLIMA, Message($"Duração da noite: {actual_night_period_seconds / 60}min"));
 
-		Broadcast("O sol esta nascendo.");
-		SetGlobalProperty("halfdaytime", ReadGameClock());
-		SetGlobalProperty("dia", "dia");
-		darkness := GeTMoonLightMod();
-		sleepms(5);
-		UpdateGlobalEventLevers("dia");
-		UpdateAllShiftMerchants(); // Update merchant visibility at sunrise
-		
-		//Aqui vai setando lentamente o lightlevel por região, é necessário passar aqui cada região (tybar, memmar e etc)
-		for (i:=darkness;i>=0;i:=i-1)
-			// setregionlightlevel("Umbraeterna", i);
-			setregionlightlevel("Superficie", i);
-			setglobalproperty("lightlevel", i);
-			ApllyLightLevel();
-			sleepms(transspeed);
-		endfor
-		setregionlightlevel("Umbraeterna", darkness);
+		if(!isAlreadyStarted)
+			SetGlobalProperty("halfdaytime", ReadGameClock());
+			SetGlobalProperty("dia", "dia");
+		endif
 
-        sleep(actual_day_period_seconds);
-  
-		broadcast("O sol esta se pondo.");
-		SetGlobalProperty("halfdaytime", ReadGameClock());
-		SetGlobalProperty("dia", "noite");
-		sleepms(5);
-		UpdateGlobalEventLevers("noite");
-		UpdateAllShiftMerchants(); // Update merchant visibility at sunset
+		if(!clockPid)
+			clockPid := Start_Script("daynightClock", getPid());
+			Print("Day\Night Cycle *STARTED* pid: " + clockPid.pid);
+			isAlreadyStarted := true;
+		endif
 		
-		//Aqui vai setando lentamente o lightlevel por região, é necessário passar aqui cada região (tybar, Superficie e etc)
-		for (i:=0;i<=darkness;i:=i+1)
-			// setregionlightlevel("Umbraeterna", i);
-			setregionlightlevel("Superficie", i);
-			setglobalproperty("lightlevel", i);
-			ApllyLightLevel();
-			sleepms(transspeed);
-		endfor
-		setregionlightlevel("Umbraeterna", darkness);
-        sleep(actual_night_period_seconds);
+		var ev := Wait_For_Event( base_full_cycle_seconds * 2);
+
+		if(ev.id == DAYNIGHT_EVTS::EV_ADVANCE_DAY_ID)
+			advanceDay();
+		elseif(ev.id == DAYNIGHT_EVTS::EV_DAY_ACCELATARION_CHANGE_ID)
+			gmAcceleration := cint(GetGlobalProperty("daynightAccelaration"));
+		endif
 		
-		advanceDay();
 	endwhile
 endprogram
-
-/*
- * UpdateAllShiftMerchants()
- *
- * Purpose
- * Updates visibility of all registered shift-based merchants
- * Called at sunrise and sunset to hide/show merchants based on their shift
- *
- * Registry Structure:
- * ShiftMerchantRegistry = { serial: shift_value }
- * shift_value can be: "night", "noite", "day", "dia"
- */
-function UpdateAllShiftMerchants()
-	var registry := GetGlobalProperty("ShiftMerchantRegistry");
-	if (!registry || registry == error)
-		// No merchants registered yet
-		return;
-	endif
-
-	var current_time := GetGlobalProperty("dia");
-	var is_daytime := (current_time == "dia");
-	var removed_count := 0;
-	var updated_count := 0;
-	var registry_changed := 0;
-
-	// Create a list of dead serials to remove
-	var dead_serials := array{};
-
-	foreach serial in (registry.keys())
-		var npc := SystemFindObjectBySerial(serial);
-
-		if (!npc)
-			// NPC doesn't exist anymore - mark for removal
-			dead_serials.append(serial);
-			removed_count := removed_count + 1;
-			continue;
-		endif
-
-		// Read shift from NPC property (allows in-game changes)
-		var shift := GetObjProperty(npc, "shift");
-		if (!shift || shift == error)
-			// No property set, use registry value as fallback
-			shift := registry[serial];
-		else
-			// Update registry if property has changed
-			if (shift != registry[serial])
-				registry[serial] := shift;
-				registry_changed := 1;
-			endif
-		endif
-
-		var is_night_shift := (shift == "night" || shift == "noite");
-		var is_day_shift := (shift == "day" || shift == "dia");
-
-		// Apply visibility based on shift
-		if (is_night_shift)
-			// Night shift: hide during day, show at night
-			if (is_daytime)
-				npc.concealed := 1;
-			else
-				npc.concealed := 0;
-			endif
-			updated_count := updated_count + 1;
-		elseif (is_day_shift)
-			// Day shift: show during day, hide at night
-			if (is_daytime)
-				npc.concealed := 0;
-			else
-				npc.concealed := 1;
-			endif
-			updated_count := updated_count + 1;
-		endif
-	endforeach
-
-	// Clean up dead NPCs from registry and save any updated shift values
-	if (dead_serials.size() > 0)
-		foreach serial in dead_serials
-			registry.erase(serial);
-		endforeach
-		registry_changed := 1;
-	endif
-
-	// Save registry if it was modified (dead NPCs removed or shifts updated)
-	if (registry_changed)
-		SetGlobalProperty("ShiftMerchantRegistry", registry);
-	endif
-
-	// Debug output
-	print("[SHIFT] Updated " + updated_count + " merchants, removed " + removed_count + " dead NPCs");
-endfunction
 

@@ -62,8 +62,7 @@ program destruiveis(quem, texto)
 													inferiorDireito.x, inferiorDireito.y, 15, quem.realm);
 
 			foreach objeto in objetos
-				if (objeto.invisible == 1)
-					objetos.erase(_objeto_iter);
+				if (objeto.invisible)
 					continue;
 				endif
 				SetObjProperty(objeto, PROPNAME_SEL_AREA_COR_ORIGINAL, objeto.color);
@@ -140,8 +139,7 @@ program destruiveis(quem, texto)
 												inferiorDireito.x, inferiorDireito.y, 15, quem.realm);
 
 		foreach objeto in objetos
-			if (objeto.invisible == 1)
-				objetos.erase(_objeto_iter);
+			if (objeto.invisible)
 				continue;
 			endif
 			var corOriginal := GetObjProperty(objeto, PROPNAME_SEL_AREA_COR_ORIGINAL);

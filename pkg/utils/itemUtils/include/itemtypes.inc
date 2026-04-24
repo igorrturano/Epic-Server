@@ -132,7 +132,7 @@ function IsWeapon (byref weapon)
 		return 1;
 	elseif (weapon.graphic >= 0x0F43 and weapon.graphic <= 0x0F52)
 		return 1;
-	elseif (weapon.graphic >= 0x0F5C and weapon.graphic <= 0x0F63)
+	elseif (weapon.graphic >= 0xFFAD and weapon.graphic <= 0x0F63)
 		return 1;
 	elseif (weapon.graphic >= 0x0FB4 and weapon.graphic <= 0x0FB5)
 		return 1;
@@ -254,7 +254,7 @@ function IsMetalWeapon (byref weapon)
 		return 1;
 	elseif (weapon.graphic >= 0x0F51 and weapon.graphic <= 0x0F52)
 		return 1;
-	elseif (weapon.graphic >= 0x0F5C and weapon.graphic <= 0x0F63)
+	elseif (weapon.graphic >= 0xFFAD and weapon.graphic <= 0x0F63)
 		return 1;
 	elseif (weapon.graphic >= 0x0FB4 and weapon.graphic <= 0x0FB5)
 		return 1;

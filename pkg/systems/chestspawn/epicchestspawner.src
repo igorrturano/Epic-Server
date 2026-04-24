@@ -13,7 +13,8 @@ program EpicChestSpawner(spawner)
 	var is_mimic := GetObjProperty(spawner, "epic_is_mimic");
 	var mimic_chance := GetObjProperty(spawner, "epic_mimic_chance");
 	var is_puzzle := GetObjProperty(spawner, "epic_is_puzzle");
-	var puzzle_limit_count := GetObjProperty(spawner, "epic_puzzle_limit_count"); // Renamed from limit_puzzle
+	var puzzle_limit_count := GetObjProperty(spawner, "epic_puzzle_limit_count");
+	var is_buried := GetObjProperty(spawner, "epic_is_buried");
 	var frq := GetObjProperty(spawner, "duration"); // Duration in seconds
 
 	if (!frq)
@@ -46,7 +47,7 @@ program EpicChestSpawner(spawner)
 				var chest := SystemFindObjectBySerial(CInt(serial));
 				if (chest)
 					valid_chests.append(serial);
-					if (chest.locked) // If chest exists and hasn't been opened
+					if (GetObjProperty(chest, "IsBuriedDirt") || chest.locked)
 						active_chests += 1;
 					else
 						opened_chests += 1;
@@ -75,7 +76,7 @@ program EpicChestSpawner(spawner)
 			endif
 			ClearMySpawnedChests(spawner); // Clear opened chests before spawning new ones
 			MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic, mimic_chance, is_puzzle,
-							puzzle_limit_count);
+							puzzle_limit_count, is_buried);
 		endif
 
 		sleep(frq); // Use the configured frequency for respawn
@@ -83,7 +84,7 @@ program EpicChestSpawner(spawner)
 endprogram
 
 function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic, mimic_chance,
-						 is_puzzle, puzzle_limit_count)
+						 is_puzzle, puzzle_limit_count, is_buried := 0)
 	var current_chests_serials := GetObjProperty(spawner, "spawned_epic_chests");
 	if (!current_chests_serials)
 		current_chests_serials := array;
@@ -134,118 +135,136 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 		while (placement_tries < 30 && !placed)
 			new_x := CInt(spawner.x + RandomInt(range_val) - RandomInt(range_val));
 			new_y := CInt(spawner.y + RandomInt(range_val) - RandomInt(range_val));
-			new_z := GetWorldHeight(new_x, new_y, spawner.realm);
-			if (spawner.z > new_z + 5 || spawner.z < new_z - 5)
-				new_z := spawner.z;
+
+			// Validate location is standable (not inside walls)
+			var standing := GetStandingHeight(new_x, new_y, spawner.z, spawner.realm);
+			if (standing.errortext)
+				placement_tries += 1;
+				sleepms(10);
+				continue;
 			endif
+			new_z := standing.z;
 
 			if (len(ListItemsNearLocation(new_x, new_y, new_z, 0, spawner.realm)) == 0)
-				var new_chest;
-				var chests := array{};
+				// Buried: create only invisible dirt marker, chest is created when dug up
+				if (is_buried)
+					var dirt := CreateItemAtLocation(new_x, new_y, new_z, 0x0914, 1, spawner.realm);
+					if (dirt)
+						placed := 1;
+						dirt.invisible := 1;
+						dirt.movable := 0;
+						SetObjProperty(dirt, "IsBuriedDirt", 1);
+						SetObjProperty(dirt, "link", spawner.serial);
+						SetObjProperty(dirt, "level", level);
+						created_chests_this_cycle.append(dirt.serial);
+					endif
+				else
+					// Normal chest creation flow
+					var new_chest;
+					var chests := array{};
 
-				// Determine what type of chest to create
-				if (is_puzzle)
-					var current_puzzle_count := CInt(GetObjProperty(spawner, "current_puzzle_count"));
-					if (!current_puzzle_count)
-						current_puzzle_count := 0;
+					// Determine what type of chest to create
+					if (is_puzzle)
+						var current_puzzle_count := CInt(GetObjProperty(spawner, "current_puzzle_count"));
+						if (!current_puzzle_count)
+							current_puzzle_count := 0;
+						endif
+
+						if (puzzle_limit_count == -1 || current_puzzle_count < puzzle_limit_count)
+							var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
+							var chest_info;
+
+							if (custom_graphics && custom_graphics.size() > 0)
+								var gfx := custom_graphics[RandomInt(custom_graphics.size()) + 1];
+								chest_info := GetChestInfoByGraphic(gfx);
+							else
+								var default_gfx := 0xe42;
+								if (RandomInt(2) == 0)
+									default_gfx := 0xe43;
+								endif
+								chest_info := struct{
+									"graphic" := default_gfx,
+									"material" := DEFAULT_MATERIAL_WOOD,
+									"maxhp" := DEFAULT_MAXHP_WOOD
+								};
+							endif
+
+							new_chest := CreateItemAtLocation(new_x, new_y, new_z, chest_info.graphic, 1, spawner.realm);
+							if (new_chest)
+								new_chest.graphic := chest_info.graphic;
+								SetObjProperty(new_chest, PROPNAME_MATERIAL, chest_info.material);
+								SetObjProperty(new_chest, PROPNAME_DURABILIDADE_MAX, chest_info.maxhp * level);
+								current_puzzle_count := current_puzzle_count + 1;
+								SetObjProperty(spawner, "current_puzzle_count", current_puzzle_count);
+								SetObjProperty(new_chest, "IsPuzzleChest", 1);
+							endif
+						endif
 					endif
 
-					if (puzzle_limit_count == -1 || current_puzzle_count < puzzle_limit_count)
-						// Check if custom chest graphics were selected
+					if (!new_chest && is_mimic)
+						if (RandomInt(100) < mimic_chance)
+							var objtype := 0xCF89; // MimicEast
+							if (RandomInt(2) == 0)
+								objtype := 0xCF94; // MimicWest
+							endif
+							new_chest := CreateItemAtLocation(new_x, new_y, new_z, objtype, 1, spawner.realm);
+							if (new_chest)
+								var material := 0x1bd7;
+								SetObjProperty(new_chest, PROPNAME_MATERIAL, material);
+								SetObjProperty(new_chest, "IsMimic", 1);
+							endif
+						endif
+					endif
+
+					if (!new_chest)
 						var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
 						var chest_info;
-						
+
 						if (custom_graphics && custom_graphics.size() > 0)
-							// Use custom graphics - pick random from selection
 							var gfx := custom_graphics[RandomInt(custom_graphics.size()) + 1];
 							chest_info := GetChestInfoByGraphic(gfx);
 						else
-							// Use random chest from config
-							chest_info := GetRandomChestFromConfig();
+							var default_gfx := 0xe42;
+							if (RandomInt(2) == 0)
+								default_gfx := 0xe43;
+							endif
+							chest_info := struct{
+								"graphic" := default_gfx,
+								"material" := DEFAULT_MATERIAL_WOOD,
+								"maxhp" := DEFAULT_MAXHP_WOOD
+							};
 						endif
 
 						new_chest := CreateItemAtLocation(new_x, new_y, new_z, chest_info.graphic, 1, spawner.realm);
 						if (new_chest)
 							new_chest.graphic := chest_info.graphic;
 							SetObjProperty(new_chest, PROPNAME_MATERIAL, chest_info.material);
+							SetObjProperty(new_chest, "IsTreasureChest", 1);
+							SetObjProperty(new_chest, "level", level);
 							SetObjProperty(new_chest, PROPNAME_DURABILIDADE_MAX, chest_info.maxhp * level);
-							current_puzzle_count := current_puzzle_count + 1;
-							SetObjProperty(spawner, "current_puzzle_count", current_puzzle_count);
-							SetObjProperty(new_chest, "IsPuzzleChest", 1);
-						endif
-					endif
-				endif
 
-				// If not a puzzle chest (or puzzle limit reached), check for mimic
-				if (!new_chest && is_mimic)
-					if (RandomInt(100) < mimic_chance)
-						// Randomly choose east or west facing mimic
-						var objtype := 0xCF89; // MimicEast
-						if (RandomInt(2) == 0)
-							objtype := 0xCF94; // MimicWest
-						endif
-						new_chest := CreateItemAtLocation(new_x, new_y, new_z, objtype, 1, spawner.realm);
-						if (new_chest)
-							// Mimics also get material property for consistent naming
-							var material := 0x1bd7;
-							SetObjProperty(new_chest, PROPNAME_MATERIAL, material);
-							SetObjProperty(new_chest, "IsMimic", 1);
+							AddRandomTraps(new_chest, level);
+							Loot_Generate(new_chest, lootname);
 						endif
 					endif
-				endif
 
-				// If not puzzle or mimic, create regular epic chest with loot
-				if (!new_chest)
-					// Check if custom graphics were selected
-					var custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
-					var chest_info;
-					
-					if (custom_graphics && custom_graphics.size() > 0)
-						// Use custom graphics - pick random from selection
-						var gfx := custom_graphics[RandomInt(custom_graphics.size()) + 1];
-						chest_info := GetChestInfoByGraphic(gfx);
-					else
-						// Use random chest from config
-						chest_info := GetRandomChestFromConfig();
-					endif
-					
-					// Create chest directly with info from config
-					new_chest := CreateItemAtLocation(new_x, new_y, new_z, chest_info.graphic, 1, spawner.realm);
 					if (new_chest)
-						new_chest.graphic := chest_info.graphic;
-						SetObjProperty(new_chest, PROPNAME_MATERIAL, chest_info.material);
-						SetObjProperty(new_chest, "IsTreasureChest", 1);
+						placed := 1;
+						SetObjProperty(new_chest, "link", spawner.serial);
+						SetObjProperty(new_chest, "IsEpicChest", 1);
 						SetObjProperty(new_chest, "level", level);
-						SetObjProperty(new_chest, PROPNAME_DURABILIDADE_MAX, chest_info.maxhp * level);
-						
-						// Add traps using the same logic from treasurechest.inc
-						AddRandomTraps(new_chest, level);
-						
-						// Generate loot
-						Loot_Generate(new_chest, lootname);
+						SetObjProperty(new_chest, "chest_type", chest_type);
+						SetObjProperty(new_chest, PROPNAME_DISPENSAVEL_FLAG, true);
+						SetObjProperty(new_chest, "CreatedOn", ReadGameClock());
+						new_chest.movable := 0;
+						new_chest.locked := 1;
+
+						if (GetObjProperty(new_chest, "IsPuzzleChest"))
+							Loot_Generate(new_chest, lootname);
+						endif
+
+						created_chests_this_cycle.append(new_chest.serial);
 					endif
-				endif
-
-				if (new_chest)
-					placed := 1;
-					SetObjProperty(new_chest, "link", spawner.serial);
-					SetObjProperty(new_chest, "IsEpicChest", 1);
-					SetObjProperty(new_chest, "level", level);
-					SetObjProperty(new_chest, "chest_type", chest_type);
-					SetObjProperty(new_chest, PROPNAME_DISPENSAVEL_FLAG, true);
-					SetObjProperty(new_chest, "CreatedOn", ReadGameClock());
-					new_chest.movable := 0;
-					new_chest.locked := 1;
-
-				// Traps are already added by CreateTreasureChests() in treasurechest.inc
-				// No need to add traps here for regular chests
-
-				// Generate loot for puzzle chest
-					if (GetObjProperty(new_chest, "IsPuzzleChest"))
-						Loot_Generate(new_chest, lootname);
-					endif
-
-					created_chests_this_cycle.append(new_chest.serial);
 				endif
 			endif
 			placement_tries += 1;
@@ -268,10 +287,12 @@ function ClearMySpawnedChests(spawner)
 		foreach serial_val in chest_serials
 			var chest := SystemFindObjectBySerial(CInt(serial_val));
 			if (chest && GetObjProperty(chest, "link") == spawner.serial)
-				if (!chest.locked) // Only remove if the chest is unlocked (opened)
+				if (GetObjProperty(chest, "IsBuriedDirt"))
+					valid_chests.append(serial_val); // Buried dirt stays until dug up
+				elseif (!chest.locked)
 					DestroyItem(chest);
 				else
-					valid_chests.append(serial_val); // Keep track of locked chests
+					valid_chests.append(serial_val);
 				endif
 			endif
 			sleepms(5);

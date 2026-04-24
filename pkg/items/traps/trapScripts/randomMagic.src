@@ -5,7 +5,7 @@ use uo;
 use util;
 
 include "include/client";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":timedscripts:timedScripts";
 
 program trapScript(params)
@@ -25,9 +25,13 @@ program trapScript(params)
 	endwhile
 	object.color := origcolor;
 
+	if (GetCooldown(mobile, "res_trap_protection") > 0)
+		return 0;
+	endif
+
 	SendSysMessage(mobile, "Voce ativou uma armadilha magica!");
 	PlaySoundEffect(mobile, 0x214);
-	// PlayStationaryEffect(object.x, object.y, object.z, GFX_POISON_GAS, 10,10, 0, object.realm);
+	// PlayStationaryEffect(object.x, object.y, object.z, FX_POISON_GAS, 10,10, 0, object.realm);
 
 	var rand := RandomInt(4) + 1;
 	PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 14154, 10, 10, 0, object.realm);

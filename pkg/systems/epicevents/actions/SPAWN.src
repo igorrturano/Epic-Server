@@ -1,0 +1,14 @@
+use uo;
+
+include ":epicevents:Controller/SpawnController";
+include ":epicevents:Model/EventConfig";
+
+program SPAWN_Action(params)
+	var item := params[1];
+	var action_params := params[3];
+
+	var config := EventConfig();
+	config.FromStruct(action_params);
+
+	return SpawnAllCreatures(item, config);
+endprogram

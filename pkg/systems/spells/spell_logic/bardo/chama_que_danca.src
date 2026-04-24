@@ -1,0 +1,42 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/client";
+include "include/sounds";
+include ":combat:Controller/DamageController_legacy";
+
+// A Chama que Danca (1201) - C0
+// Cria luz + dano fogo (Arc/10 por tick, Arc/5 ticks)
+program SpellScript(params)
+	var who  := params[1];
+	var targ := params[2];
+
+	if (!targ || !targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return 0;
+	endif
+
+	var arcana  := CInt(AP_GetSkill(who, ARCANA));
+	var dmg_tick := CInt(arcana / 10);
+	if (dmg_tick < 1) dmg_tick := 1; endif
+	var ticks   := CInt(arcana / 5);
+	if (ticks < 1)  ticks  := 1;  endif
+	if (ticks > 10) ticks  := 10; endif
+
+	PrintTextAbove(who, "*Uma chama dancanete emerge da melodia...*", 3, 38);
+	PlaySoundEffect(who, 0x15E);
+
+	var t := 1;
+	while (t <= ticks)
+		if (!targ || targ.dead)
+			break;
+		endif
+		PlayStationaryEffect(targ.x, targ.y, targ.z, 0x36CB, 1, 1);
+		DamageFLS(targ, dmg_tick, DMG_FIRE, who, "chama_que_danca");
+		sleepms(1000);
+		t += 1;
+	endwhile
+
+	return 1;
+endprogram

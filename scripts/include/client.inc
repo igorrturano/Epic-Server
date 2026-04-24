@@ -1,30 +1,21 @@
 ////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
 //  CLIENT.INC - defines client releated constants.
 //
-//  This include file is designed to hold all the client lowlevel constants.
-//  Not all constants might be usable as of now, but in the future, they
-//  might be.
+//  Agora isso aqui é do Epic! Shard!!!!!
 //
-//  Author: Ignatius 1999/01/20
+//  Porque nós queremos, e nosso client é custom!!!
 //
-//  Recent Modifications
-//      1999/01/25 Ignatius added animations/actions/sounds.
-//      1999/01/26 Ignatius moved skillids/constants into this file and
-//                 added a lot of more sounds.
-//      1999/01/27 Ignatius found out that I got the sounds all wrong
-//                 it seems, fixed up a lot of things there. Started
-//                 to map out the T2A sounds. Added some creature IDs.
-//      2017/06/25 Yukiko added skill ids for ToL compliance.
 ////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
 
-////
-// Soundeffects
-// The first section is just an enum of existing sounds,
-// the second builds on the first ones, but providing more
-// logical names.
-///
+/////////////////////////////////////////////////////////////
+// Soundeffects											   //
+/////////////////////////////////////////////////////////////
+// The first section is just an enum of existing sounds,   //
+// the second builds on the first ones, but providing more //
+// logical names.										   //
+/////////////////////////////////////////////////////////////
 const SFX_1     :=  0x0001; // forest
 const SFX_2     :=  0x0002; // forest
 const SFX_3     :=  0x0003; // forest
@@ -696,8 +687,8 @@ const SFX_SPELL_SUMMON_DAEMON        :=  SFX_217;
 // * skills *
 const SFX_SKILL_SPIRITSPEAK         :=  SFX_24B;
 const SFX_SKILL_LUMBERJACK          :=  SFX_13F;
-const SFX_TAILORING		              := 0x0249;
-const SFX_CARPENTRY		              := 0x023e;
+const SFX_TAILORING		              := SFX_249;
+const SFX_CARPENTRY		              := SFX_23E;
 
 // * items *
 const SFX_TRAP_NEEDLE               :=  SFX_225;
@@ -725,175 +716,494 @@ const SFX_OPEN_METAL_DOOR           :=  SFX_ED;
 const SFX_CLOSE_METAL_DOOR          :=  SFX_F4;
 
 
-////
-// Animations/Actions
-///
+////////////////////////
+// Animations/Actions //
+////////////////////////
 // * Human animations (all humans have these) (this is not complete, will update later)
-const ANIM_WALK_UNARMED         :=  0x0000; // Walk unarmed.
-const ANIM_WALK_ARMED           :=  0x0001; // Walk armed.
-const ANIM_RUN_UNARMED          :=  0x0002; // Run unarmed.
-const ANIM_RUN_ARMED            :=  0x0003; // Run armed.
-const ANIM_STAND                :=  0x0004; // Stand.
-const ANIM_FIDGET_1             :=  0x0005; // Twist a little (look around?).
-const ANIM_FIDGET_2             :=  0x0006; // Look down.
-const ANIM_STAND_1HAND          :=  0x0007; // Stand 1 handed attack.
-const ANIM_STAND_2HAND          :=  0x0008; // Stand 2 handed attack.
-const ANIM_ATTACK_1HAND_WIDE    :=  0x0009; // Attack 1 handed wide (sword/any).
-const ANIM_ATTACK_1HAND_JAB     :=  0x000A; // Attack 1 handed jab (fencing).
-const ANIM_ATTACK_1HAND_DOWN    :=  0x000B; // Attack 1 handed down (mace).
-const ANIM_ATTACK_2HAND_DOWN    :=  0x000C; // Attack 2 handed jab (mace).
-const ANIM_ATTACK_2HAND_WIDE    :=  0x000D; // Attack 2 handed wide.
-const ANIM_ATTACK_2HAND_JAB     :=  0x000E; // Attack 2 handed jab (spear).
-const ANIM_WALK_WARMODE         :=  0x000F; // Walk in warmode.
-const ANIM_CAST_DIR             :=  0x0010; // Spellcasting direction.
-const ANIM_CAST_AREA            :=  0x0011; // Spellcasting area.
-const ANIM_ATTACK_BOW           :=  0x0012; // Attack bow.
-const ANIM_ATTACK_XBOW          :=  0x0013; // Attack xbow.
-const ANIM_HIT                  :=  0x0014; // Get hit.
-const ANIM_DIE_BACK             :=  0x0015; // Die backward.
-const ANIM_DIE_FOR              :=  0x0016; // Die forward.
-const ANIM_HORSE_RIDE_SLOW      :=  0x0017; // Horseback: Ride - slow
-const ANIM_HORSE_RIDE_FAST      :=  0x0018; // Horseback: Ride - fast
-const ANIM_HORSE_SIT            :=  0x0019; // Horseback: Sit still
-const ANIM_HORSE_ATTACK_MELEE   :=  0x001A; // Horseback: Attack - 1-handed
-const ANIM_HORSE_ATTACK_BOW     :=  0x001B; // Horseback: Attack with a bow
-const ANIM_HORSE_ATTACK_XBOW    :=  0x001C; // Horseback: Attack with a crossbow
-const ANIM_HORSE_SLAP           :=  0x001D; // Horseback: Slap horse
-const ANIM_TWIST_DODGE          :=  0x001E; // Twist (dodge hit?)
-const ANIM_ATTACK_PUNCH         :=  0x001F; // Attack - punch
-const ANIM_BOW                  :=  0x0020; // Bow.
-const ANIM_SALUTE               :=  0x0021; // Salute.
-const ANIM_EAT                  :=  0x0022; // Eat.
+enum class HUMAN_ANIM
+	WALK_UNARMED			:= 0, 	// Walk unarmed.
+	WALK_ARMED				:= 1, 	// Walk armed.
+	RUN_UNARMED				:= 2, 	// Run unarmed.
+	RUN_ARMED				:= 3, 	// Run armed.
+	STAND					:= 4, 	// Stand.
+	FIDGET_1				:= 5, 	// Twist a little (look around?).
+	FIDGET_2				:= 6, 	// Look down.
+	STAND_1HAND				:= 7, 	// Stand 1 handed attack.
+	STAND_2HAND				:= 8, 	// Stand 2 handed attack.
+	ATTACK_1HAND_SLASH		:= 9, 	// Attack 1 handed wide (sword/any).
+	ATTACK_1HAND_PIERCING	:= 10, 	// Attack 1 handed jab (fencing).
+	ATTACK_1HAND_BLUNT		:= 11, 	// Attack 1 handed down (mace).
+	ATTACK_2HAND_SLASH		:= 13, 	// Attack 2 handed wide.
+	ATTACK_2HAND_PIERCING	:= 14, 	// Attack 2 handed jab (spear).
+	ATTACK_2HAND_BLUNT		:= 12, 	// Attack 2 handed jab (mace).
+	WALK_WARMODE			:= 15, 	// Walk in warmode.
+	CAST_DIR				:= 16, 	// Spellcasting direction.
+	CAST_AREA				:= 17, 	// Spellcasting area.
+	ATTACK_BOW				:= 18, 	// Attack bow.
+	ATTACK_XBOW				:= 19, 	// Attack xbow.
+	HIT						:= 20, 	// Get hit.
+	DIE_BACK				:= 21, 	// Die backward.
+	DIE_FOR					:= 22, 	// Die forward.
+	HORSE_RIDE_SLOW			:= 23, 	// Horseback: Ride - slow
+	HORSE_RIDE_FAST			:= 24, 	// Horseback: Ride - fast
+	HORSE_SIT				:= 25, 	// Horseback: Sit still
+	HORSE_ATTACK_MELEE		:= 26, 	// Horseback: Attack - 1-handed
+	HORSE_ATTACK_BOW		:= 27, 	// Horseback: Attack with a bow
+	HORSE_ATTACK_XBOW		:= 28, 	// Horseback: Attack with a crossbow
+	HORSE_SLAP				:= 29, 	// Horseback: Slap horse
+	TWIST_DODGE				:= 30, 	// Twist (dodge hit?)
+	ATTACK_PUNCH			:= 31, 	// Attack - punch
+	BOW						:= 32, 	// Bow.
+	SALUTE					:= 33, 	// Salute.
+	EAT						:= 34  	// Eat.
+endenum
 
+enum class NPC_ANIM
+	WALK 		:= 0,
+	IDLE 		:= 1,
+	DIE1 		:= 2,
+	DIE2 		:= 3,
+	ATTACK1 	:= 4,
+	ATTACK2 	:= 5,
+	ATTACK3 	:= 6,
+	HIT 	 	:= 10,
+	PILLAGE 	:= 11,
+	BLOCK_RIGHT := 15,
+	BLOCK_LEFT  := 16,
+	IDLE2 		:= 17,
+	FIDGET 		:= 18
+endenum
 
-
-////
-// Graphicaleffects (itemIDs)
-///
+////////////////////////////////
+// Graphicaleffects (itemIDs) //
+////////////////////////////////
 // * general *
-const FX_POISON_GAS		  :=  0x113A;
-const FX_MAGICAL_SPARKLES_EW := 0x1153; //
-const FX_MAGICAL_SPARKLES_NS := 0x1159; //
-const FX_SPLASH         :=  0x352d; //
-const FX_EXPLODE_1      :=  0x36ca; //
-const FX_EXPLODE_2      :=  0x36bd; //
-const FX_EXPLODE_3      :=  0x36b0; //
-const FX_EXPLODE_4      :=  0x36CB; //
-const FX_FIREBALL       :=  0x36d4; //
-const FX_MAGIC_ARROW    :=  0x36e4; //
-const FX_FIRE_BOLT      :=  0x36f4; // Firesnake. (pagan?)
-const FX_EXPLODE_BALL   :=  0x36fe; // Not used.
+enum EFFECTS
+	FX_POISON_GAS				:= 0x113A,
+	FX_SPLASH					:= 0x352d, //
+	// FX_EXPLODE_1				:= 0x36ca, // OLD
+	// FX_EXPLODE_2				:= 0x36bd, // OLD
+	// FX_EXPLODE_3				:= 0x36b0, // OLD
+	FX_EXPLODE_4				:= 0x36CB, //
+	FX_FIREBALL					:= 0x36d4, //
+	FX_MAGIC_ARROW				:= 0x36e4, //
+	// FX_FIRE_BOLT				:= 0x36f4, // Firesnake. (pagan?)
+	FX_EXPLODE_BALL				:= 0x36fe, // Not used.
+	FX_FLAMESTRIKE				:= 0x3709, //
+	FX_SMOKE					:= 0x3728,
+	FX_TELE_VANISH				:= 0x372a, // Teleport vanish.
+	FX_SPELL_FAIL				:= 0x3735, //
+	FX_BLESS_EFFECT				:= 0x373a, //
+	FX_CURSE_EFFECT				:= 0x374a, //
+	FX_SPARK_EFFECT				:= 0x375a, //
+	FX_HEAL_EFFECT				:= 0x376a, //
+	FX_MARK_EFFECT				:= 0x3779,
+	FX_BLUEMOONSTART			:= 0x3789, // Deathvortex?
+	FX_ENERGY_BOLT				:= 0x379f, //
+	FX_BLADES_EMERGE			:= 0x37a0, // Not used.
+	FX_GLOW						:= 0x37b9, // Not used.
+	FX_GLOW_SPIKE				:= 0x37c3, // Not used.
+	FX_DEATH_FUNNEL				:= 0x37cc, //
+	FX_BLADES					:= 0x37eb, //
+	FX_STATIC					:= 0x3818, // Not used. (pink static)
+	FX_POISON_F_EW				:= 0x3914, // Poison field.
+	FX_POISON_F_NS				:= 0x3920, // Poison field.
+	FX_ENERGY_F_EW				:= 0x3947, // Energy field.
+	FX_ENERGY_F_NS				:= 0x3956, // Energy field.
+	FX_PARA_F_EW				:= 0x3967, // Paralyze field.
+	FX_PARA_F_NS				:= 0x3979, // Paralyze field.
+	FX_FIRE_F_EW				:= 0x398c, // Fire field.
+	FX_FIRE_F_NS				:= 0x3996, // Fire field.
+	FX_SLEEP_EFFECT				:= 0x3C1F, //Sleeping effect
+	FX_BIRDS_EFFECT				:= 0x3C27, //Birds moving around effect
+	FX_HEALING_EFFECT			:= 0x3C2B, //Healing effect
+	FX_PWINGS_EFFECT			:= 0x3C3B, //Phoenix wing effect
+	FX_PUFF_SMOKE				:= 0x9DAC,
+	FX_HEARTS					:= 0x4AA4,
 
-const FX_FLAMESTRIKE    :=  0x3709; //
-const FX_SMOKE          :=  0x3728;
-const GFX_SMOKE       := 0x3728;
-const FX_TELE_VANISH    :=  0x372a; // Teleport vanish.
-const FX_SPELL_FAIL     :=  0x3735; //
-const FX_BLESS_EFFECT   :=  0x373a; //
-const FX_CURSE_EFFECT   :=  0x374a; //
-const FX_SPARK_EFFECT   :=  0x375a; //
-const FX_HEAL_EFFECT    :=  0x376a; //
-const FX_MARK_EFFECT    :=  0x3779;
-const FX_BLUEMOONSTART  :=  0x3789; // Deathvortex?
-const FX_ENERGY_BOLT    :=  0x379f; //
-const FX_BLADES_EMERGE  :=  0x37a0; // Not used.
-const FX_GLOW           :=  0x37b9; // Not used.
-const FX_GLOW_SPIKE     :=  0x37c3; // Not used.
-const FX_DEATH_FUNNEL   :=  0x37cc; //
-const FX_BLADES         :=  0x37eb; //
-const FX_STATIC         :=  0x3818; // Not used. (pink static)
-const FX_POISON_F_EW    :=  0x3914; // Poison field.
-const FX_POISON_F_NS    :=  0x3920; // Poison field.
-const FX_ENERGY_F_EW    :=  0x3947; // Energy field.
-const FX_ENERGY_F_NS    :=  0x3956; // Energy field.
-const FX_PARA_F_EW      :=  0x3967; // Paralyze field.
-const FX_PARA_F_NS      :=  0x3979; // Paralyze field.
-const FX_FIRE_F_EW      :=  0x398c; // Fire field.
-const FX_FIRE_F_NS      :=  0x3996; // Fire field.
-const FX_SLEEP_EFFECT   :=  0x3C1F; //Sleeping effect
-const FX_BIRDS_EFFECT   :=  0x3C27; //Birds moving around effect
-const FX_HEALING_EFFECT :=  0x3C2B; //Healing effect
-const FX_PWINGS_EFFECT  :=  0x3C3B; //Phoenix wing effect
-const FX_PUFF_SMOKE     := 0x9DAC;
-const FX_HEARTS         := 0x4AA4;
+	FX_DEATH_VORTEX_BIRTH		:= 0x3789,
+	FX_DEATH_VORTEX				:= 0x37CC,
+	FX_FIELD_OF_BLADES			:= 0x37A0,
+	// FX_GLOW					:= 0x37B9,
+	FX_BLACK_GLOW				:= 0x37C3,
+	// FX_SMOKE					:= 0x3728,
+	FX_FIZZLE					:= 0x3735,
 
-////
-//EXTA GRAPHIC_EFFECTS
-////
-const	GFX_DEATH_VORTEX_BIRTH	:= 0x3789;
-const	GFX_DEATH_VORTEX	:= 0x37CC;
-const	GFX_FIELD_OF_BLADES	:= 0x37A0;
-//const	GFX_GLOW		:= 0x37B9;
-const	GFX_BLACK_GLOW		:= 0x37C3;
-//const	GFX_SMOKE		:= 0x3728;
-const	GFX_FIZZLE		:= 0x3735;
-////
-//GRAPHIC_FIELDS
-////
-const	GFX_POISON_GAS		:= 0x113A;
-const	GFX_POISON_FIELD_EW	:= 0x3915;
-const	GFX_POISON_FIELD_NS	:= 0x3920;
-const	GFX_ENERGY_FIELD_EW	:= 0x3946;
-const	GFX_ENERGY_FIELD_NS	:= 0x3956;
-const	GFX_PARALYSIS_FIELD_EW	:= 0x3967;
-const	GFX_PARALYSIS_FIELD_NS	:= 0x3979;
-const	GFX_FIRE_FIELD_EW	:= 0x398C;
-const	GFX_FIRE_FIELD_NS	:= 0x3996;
-const	GFX_ENERGY		:= 0x3818;
+	FX_POISON_FIELD_EW			:= 0x3915,
+	FX_POISON_FIELD_NS			:= 0x3920,
+	FX_ENERGY_FIELD_EW			:= 0x3946,
+	FX_ENERGY_FIELD_NS			:= 0x3956,
+	FX_PARALYSIS_FIELD_EW		:= 0x3967,
+	FX_PARALYSIS_FIELD_NS		:= 0x3979,
+	FX_FIRE_FIELD_EW			:= 0x398C,
+	FX_FIRE_FIELD_NS			:= 0x3996,
+	// FX_ENERGY					:= 0x3818,
 
+	FX_MAGICAL_SPARKLES_EW		:= 0x1153,
+	FX_MAGICAL_SPARKLES_NS		:= 0x1159,
+	FX_BLUE_SPARKLES			:= 0x373A,
+	FX_RED_SPARKLES				:= 0x374A,
+	FX_BLUE_SPARKLE_SWIRL		:= 0x375A,
+	FX_BLUE_SPARKLE_BORDER		:= 0x376A,
+	FX_BLUE_SPARKLE_GROUND		:= 0x3779,
+
+	FX_SMALL_FIREBALL			:= 0x36E4,
+	// FX_LARGE_FIREBALL			:= 0x36D4,
+	FX_WAVY_FIREBALL			:= 0x36F4,
+	FX_EXPLOSION_BALL			:= 0x36FE,
+	FX_FIRE_COLUMN				:= 0x3709,
+	FX_EXPLODE_1				:= 0x36CB,
+	FX_EXPLODE_2				:= 0x36BD,
+	FX_EXPLODE_3				:= 0x36B0,
+
+	////////////////////////
+	// Epic! Shard Custom //
+	////////////////////////
+	FX_TELEPORT					:= 0xD11B,
+	FX_STUN						:= 0xD106,
+	FX_MAZE						:= 0xD0D3,
+	FX_COLOR_SPRAY				:= 0xCC01,
+	FX_WARP_SPAWNER				:= 0xCBD8,
+	FX_SPEED_BOOTS				:= 0xCBAB,
+	FX_DAGGER_THROW				:= 0xCBA2,
+	FX_BAN_HAMMER				:= 0xCB38,
+	FX_SWORD_THROW				:= 0xCB2F,
+	FX_MACE_THROW				:= 0xCB26,
+	FX_FLAIL_THROW				:= 0xCB1D,
+	FX_GOLDEN_ARMOR_SPELL		:= 0xCB03,
+	FX_AMPULHETA				:= 0xCAED,
+	FX_AMPULHETA_ALT			:= 0xC9E0,
+	FX_TORNADO					:= 0xCADD,
+	FX_TORNADO_2				:= 0xDCBE,
+	FX_ILUMINADO				:= 0xCAC8,
+	FX_CURSE_SPELL				:= 0xCAB2,
+	FX_BLESS_SPELL				:= 0xCA9E,
+	FX_PELE_DE_ARVORE			:= 0xCA8B,
+	FX_SET_TRAP					:= 0xCA70,
+	FX_RAISE_UNDEAD				:= 0xCA63,
+	FX_SANTUARIO				:= 0xCA50,
+	FX_MAGIC_IMMUNITY			:= 0xCA43,
+	FX_SOUL_LEAVING				:= 0xCA32,
+	FX_MORALE_DOWN				:= 0xCA28,
+	FX_AXE_THROW				:= 0xCA0E,
+	FX_MORALE_UP				:= 0xCA03,
+	FX_NAO_ENTENDI				:= 0xC9FC,
+	FX_HAMMER_THROW				:= 0xC9F5,
+	FX_HIPNOSYS					:= 0xC9EB,
+	FX_BODY_EXPLOSION			:= 0xC9D5,
+	FX_ABELHAS					:= 0x0922,
+	FX_BOULDER					:= 0x11B6,
+	FX_REFLECT_PHYSICAL			:= 0x22C7,
+	FX_LARGE_FIREBALL			:= 0x36DA,
+	FX_MAGIC_FALHOU				:= 0x3738,
+	FX_ENERGY_VORTEX			:= 0x378A,
+	FX_ROBO_DE_LAMINAS			:= 0x37A0,
+	FX_ENERGIA					:= 0x381A,
+	FX_ENREDAR					:= 0x38c8,
+	FX_RED_SPARKLE				:= 0x42CF,
+	FX_GREEN_FIREBALL			:= 0x36E6,
+	FX_BLUE_FIREBALL			:= 0x36E9,
+	FX_ATAQUE_CANHONEIRO		:= 0x5418,
+	FX_DISPARO_DIVINO			:= 0x5426,
+	FX_ATAQUE_DE_NUVEM_NEGRA	:= 0x5433,
+	FX_NUVEM_TEMPESTADE			:= 0x5440,
+	FX_VINCULO_ELEMENTAL		:= 0x5454,
+	FX_LUZES_ARCANAS			:= 0x5463,
+	FX_BLOOD_LUST				:= 0x546C,
+	FX_WHITE_FIREBALL			:= 0x5476,
+	FX_POCA_DE_SANGUE			:= 0x547F,
+	FX_ARMOUR_DRAIN				:= 0x5487,
+	FX_BOLHAS_EXPLOSIVAS		:= 0x548F,
+	FX_GOTAS_DE_VENENO			:= 0x549B,
+	FX_GOTAS_DE_FOGO			:= 0x54A4,
+	FX_FROSTBOLT				:= 0x54AD,
+	FX_SENTECA_PROFANA			:= 0x54B3,
+	FX_WHIRLWIND_ATTACK			:= 0x54CE,
+	FX_EXPLOSAO_COMPLETA		:= 0x54E3,
+	FX_TORMENTO_DE_IDRITH		:= 0x54F7,
+	FX_BLUE_SPARKLE				:= 0x5683,
+	FX_SOUL_HARVEST				:= 0x6C6F,
+	FX_PELE_DE_PEDRA			:= 0x6C79,
+	FX_VACUO_DE_MANA			:= 0x6C91,
+	FX_GOLPE_DIVINO				:= 0x6C9B,
+	FX_PORTAL_DE_LUZ			:= 0x6CA5,
+	FX_GREASE					:= 0x6CB7,
+	FX_METEORO					:= 0x6CCE,
+	FX_INVULNERAVEL				:= 0x6CE8,
+	FX_ONDAS_DE_ENERGIA			:= 0x6CEC,
+	FX_ARMADURA_ARCANA			:= 0x6CF0,
+	FX_ENRAIZAR					:= 0x6D01,
+	FX_EXPLOSAO_BRANCA			:= 0x6D13,
+	FX_PORTAL_DE_FOGO			:= 0x6D1D,
+	FX_ANKH_MISTICA				:= 0x6D35,
+	FX_AGUA_MISTICA				:= 0x6D4B,
+	FX_ENERGY					:= 0x6D5F,
+	FX_EARTHQUAKE				:= 0x6D67,
+	FX_CHAMA_CRESCENTE			:= 0x6D70,
+	FX_CHAMA_CRESCENTE_ENORME	:= 0x6D77,
+	FX_ICE_SPIKES				:= 0x6D82,
+	FX_FIREWALL_2_WEST			:= 0x6D8D,
+	FX_FROSTBOLT_2_SOUTH		:= 0x6D93,
+	FX_GREEN_STARTS				:= 0x6DB6,
+	FX_EXPLOSAO_DE_AGUA			:= 0x6Dc3,
+	FX_EXPLOSAO_DE_AGUA_2		:= 0xCBBB,
+	FX_VENTANIA					:= 0x6DF1,
+	FX_ICESTORM					:= 0x6DFF,
+	FX_FIRESTORM				:= 0x6E05,
+	FX_SENTENCA_PROFANA			:= 0x6E0d,
+	FX_APRISIONAR				:= 0x6E19,
+	FX_FIREBOLT_2				:= 0x6E1F,
+	FX_QUEIMAR					:= 0x6E26,
+	FX_DIVINE_FLAMESTRIKE		:= 0xAFED,
+	FX_GASES					:= 0xAFDE,
+	FX_SMALL_FIRE				:= 0xB009,
+	FX_SWARM					:= 0xB158,
+	FX_SWARM_2					:= 0xB169,
+	FX_ENERGY_BOLT_2			:= 0xB449,
+	FX_SIPERWEB					:= 0xB452,
+	FX_GOLDEN_STARTS			:= 0xB462,
+	FX_VORTICE_PRISMATICO		:= 0xB468,
+	FX_PROPAGACAO_DE_INCENDIO	:= 0xB46f,
+	FX_SLEEPING					:= 0xB8FB,
+	FX_NOTAS_MUSICAIS			:= 0xC462,
+	FX_ARMADILHA_DE_URSO		:= 0xCA79,
+	FX_PELE_DE_ARVORE_2			:= 0xCA8B,
+	FX_MACA_THROWING			:= 0xCB14,
+	FX_GOLDEN_SPARKLE			:= 0xCB4B,
+	FX_DOR_DE_CABECA			:= 0xCBB5,
+	FX_WATER_COLUMN				:= 0xCBBB,
+	FX_BLACK_SPAWN				:= 0xCC12,
+	FX_CONSTRICAO				:= 0xCC1A,
+	FX_GOTEIRA					:= 0xCC51,
+	FX_BOLHAS					:= 0xCD6E,
+	FX_CONFETE					:= 0xCD95,
+	FX_TEMPESTADE_DE_RAIOS		:= 0xCDAF,
+	FX_SOCO_MISTICO				:= 0xCDB6,
+	FX_METEORO_GRANDE			:= 0xD0FE,
+	FX_SALTO_DIMENSIONAL		:= 0xD11B,
+	FX_ROSTO_DE_LAMA			:= 0xD139,
+	FX_TERREMOTO				:= 0xD167,
+	FX_TEMPESTADE_DE_NEVE		:= 0xD302,
+	FX_CHUVA					:= 0xD30A,
+	FX_CAJADO_DO_XAMA			:= 0xD350,
+	FX_NUVEM_DE_LAMINAS			:= 0xDACB,
+	FX_JACARE					:= 0xDAC8,
+	FX_NUVEM_DE_SANGUE			:= 0xDB02,
+	FX_LANCA_MISTICA			:= 0xDB1C,
+	FX_FIRE_RING				:= 0xDB39,
+	FX_FUMACA					:= 0xF8AF,
+	FX_FIRE_ENGULF				:= 0xD06F, // Monge
+	FX_FIRE_ENGULF_A			:= 0xD05E,
+	FX_FIRE_PROTECT				:= 0xD059,
+	FX_FIRE_FLAME				:= 0xD054,
+	FX_FIRE_FLAME_A				:= 0xD04F,
+	FX_FIRE_FLAME_MEDIUM_B		:= 0xD04A,
+	FX_FIRE_FLAME_MEDIUM		:= 0xD045,
+	FX_FIRE_FLAME_SMALL			:= 0xD040,
+	FX_RAIO_PROTECTOR			:= 0xD035,
+	FX_RAIO_CONTUNDENTE			:= 0xD02A,
+	FX_ARMADURA_ELETRICA		:= 0xD01F,
+	FX_RAIO_PEQUENO				:= 0xD014,
+	FX_RAIO						:= 0xD009,
+	FX_SMOKE_DAGGER				:= 0xCF36,
+	FX_SMOKE_CIRCLE				:= 0xCF2C,
+	FX_ILUSORY_LIGHTS			:= 0xCF22,
+	FX_PORTAL					:= 0xCF1E,
+	FX_PURPLE_EXPLOSION			:= 0xCF10,
+	FX_RED_EXPLOSION			:= 0xCF05,
+	FX_FIRE_PETALS				:= 0xCEEA,
+	FX_FIRE_CYCLONE				:= 0xCEDF,
+	FX_TOTEM					:= 0xCEDB,
+	FX_DEATH_PORTAL_S			:= 0xCECE,
+	FX_DEATH_PORTAL_W			:= 0xCEC1,
+	FX_POISON_DROPS				:= 0xCEAE,
+	FX_ICE_BALL					:= 0xCEA7,
+	FX_TOTEM_ON_FIRE			:= 0xCE9B,
+	FX_FIRE_POISON_DROPS		:= 0xCE91,
+	FX_SPARKLES_ORANGE			:= 0xCE81,
+	FX_GREEN_SPARKLES			:= 0xCE72,
+	FX_PURPLE_SPARKLES			:= 0xCE61,
+	FX_VORTEX_SUGADOR			:= 0xCE58,
+	FX_ESCUDO_PROTETIVO			:= 0xCE43,
+	FX_EXPLOSAO_PURPURA_ELE		:= 0xCE28,
+	FX_DROW_LORD				:= 0xCE1B,
+	FX_IMPLOSAO_PURPURA			:= 0xCE14,
+	FX_CATACLISMA_ELETRICO		:= 0xCE09,
+	FX_BOMBA_ESTELAR			:= 0xCDEE,
+	FX_RAIO_FULMINANTE			:= 0xCDE5,
+	FX_YELLOW_SPARKLE			:= 0xCB4B,
+	FX_OUTONO_LEAVES			:= 0xCB6F,
+	FX_SHIT_SPARKLES			:= 0xCB74,
+	FX_DANO_NECROTICO			:= 0xCDDA,
+	FX_ELETRIC_BOLT				:= 0xCDD2,
+	FX_CONTADOR_DE_TEMPO		:= 0xCD83,
+	FX_EXPLOSAO					:= 0xCD4D,
+	FX_BLACK_ENERGY				:= 0xCC12,
+	FX_EXPLOSAO_ENORME			:= 0xCBE4,
+	FX_RAIO_NA_CABECA			:= 0xCBB5,
+	FX_PLANTA_MORTAL			:= 0xCC64,
+	FX_MACHADO_DE_ARREMESSO		:= 0xD215,
+	FX_FLAMA					:= 0xCC89,
+	FX_FUMACA_NOVA				:= 0xD29E,
+	FX_EXPLOSAO_DE_ENERGIA		:= 0xDB47,
+	FX_EXPLOSAO_DE_ENERGIA_2	:= 0xDC70,
+	FX_ELETRICIDADE				:= 0xDB66,
+	FX_PEQUENA_EXPLOSAO			:= 0xDB6F,
+	FX_VOID_ATTACK				:= 0xDB7A,
+	FX_STAR_MAGIC				:= 0xDB82,
+	FX_VOID_BALL				:= 0xDB95,
+	FX_GOSMA_EXPLOSION			:= 0xDB9E,
+	FX_ATAQUE_DE_GELO			:= 0xDBB2,
+	FX_PEDRA_FLUTUANTE			:= 0xDBBE,
+	FX_GREEN_ENERGY_RING		:= 0xDBD9,
+	FX_YELLOW_ENERGY			:= 0xDBEA,
+	FX_YELLOW_PORTAL			:= 0xDBEC,
+	FX_GREEN_PORTAL				:= 0xDBF9,
+	FX_FIRE_STRANGE				:= 0xDC06,
+	FX_SKULL_MAGIC				:= 0xDC15,
+	FX_ELETRIC_PORTAL			:= 0xDC1C,
+	FX_PORTAL_SUGADOR			:= 0xDC24,
+	FX_PASSAROS					:= 0xDC3E,
+	FX_BLUE_EXPLOSION_A			:= 0xDC43,
+	FX_BLUE_EXPLOSION_B			:= 0xDC50,
+	FX_BLUE_EXPLOSION_C			:= 0xDC5D,
+	FX_FUMACA_DE_CHAMINE		:= 0xDC66,
+	FX_MAOS_ENERGETICAS			:= 0xDC8C,
+	FX_CORVO					:= 0xDC93,
+	FX_CIRCULO_DE_FOGO			:= 0x3C9A,
+	FX_ATAQUE_ESQUELETICO		:= 0x3C99,
+	FX_ADAGA_MISTICA			:= 0xDC9E,
+	FX_POISON_SKULL				:= 0xDCA3,
+	FX_RAIO_PUTRIDO				:= 0xDCB6,
+	FX_GLOBO_MISTICO			:= 0xDCC5,
+	FX_GEISER_DE_FOGO			:= 0xDCD4,
+	FX_PENTEGRAMA_ANGELICAL		:= 0xDCE5,
+	FX_PORTAL_DIMENSIONAL		:= 0xDCF6,
+	FX_ATTACK_UP				:= 0xDD03,
+	FX_MUD_MAGIC				:= 0xDD13,
+	FX_DEFENSE_BREAK			:= 0xDD28,
+	FX_VAMPIRIC_KISS			:= 0xDE03,
+	FX_HEAVEN_SHIELD			:= 0xDD3B,
+	FX_CICLONE_MAGIC			:= 0xDD4B,
+	FX_PROTECTIVE_WEB			:= 0xDD5B,
+	FX_DEATH_POISON_GAS			:= 0xDD72,
+	FX_POISON_SPHERE			:= 0xDD87,
+	FX_RUNIC_SPHERE				:= 0xDD9A,
+	FX_DEATH_POISON_CONJURA		:= 0xDDA5,
+	FX_WATER_SPHERE_MAGIC		:= 0xDDBA,
+	FX_DIVINATION_EYES			:= 0xDDCD,
+	FX_DARDOS_CONGELANTES		:= 0xDDE1,
+	FX_EXPLOSION_MAGIC_4		:= 0xDDE8,
+	FX_ENERGY_GLOBE				:= 0xDE0A,
+	FX_DIVINE_INTERVENTION		:= 0xDE1B,
+	FX_DIVINE_BLESS				:= 0xDE2D,
+	FX_ICE_FLOOR_SPIKE			:= 0xDE4E,
+	FX_ICE_SPIKE_RAIN			:= 0xDE54,
+	FX_DEATH_EARTHQUAKE			:= 0xDE80,
+	FX_HEAVEN_HAMMER			:= 0xDE8A,
+	FX_FIRE_DEATH_SKULL			:= 0xDEA0,
+	FX_ENERGY_PROTECTION_CI		:= 0xDEAD,
+	FX_ICE_SPIKE_GIANT			:= 0xDEC1,
+	FX_FIRE_SKULL_EXPLOSION		:= 0xDECB,
+	FX_ICE_SPIKE_LEFT			:= 0xDED3,
+	FX_ICE_SPIKE_RIGHT			:= 0xDEDC,
+	FX_WATER_SPRAY_MAGIC		:= 0xDEE5,
+	FX_HEAVEN_DOWN_BOLT			:= 0xDEF4,
+	FX_PURPLE_CLAWS				:= 0xDEFB,
+	FX_KNIGHTLY_GLOVE_MAGIC		:= 0xDF08,
+	FX_ICE_SPIKE_DART_MAGIC		:= 0xDF0F,
+	FX_FIRE_DRAGON_PUNCH		:= 0xDF14,
+	FX_FIRE_ENGULF_2			:= 0xDF22,
+	FX_ICE_TEMPEST_RIGHT		:= 0xDF2F,
+	FX_FIRE_ARROW				:= 0xDF44,
+	FX_ENERGY_BOLT_HEAVEN		:= 0xDF4B,
+	FX_HELL_EYE_MAGIC			:= 0xDF59,
+	FX_WATER_POOL_MAGIC			:= 0xDF62,
+	FX_GREEN_THUNDERSTORM		:= 0xDF6D,
+	FX_YELLOW_WALL_OF_FIRE		:= 0xDF74,
+	FX_GREEN_PROTECTION			:= 0xDF81,
+	FX_LAVA_POOL				:= 0xDF8E,
+	FX_DEATH_TREE				:= 0xDFA6,
+	FX_FIRE_BOLT				:= 0xDFAE,
+	FX_RAGE_MAGIC				:= 0xDFB1,
+	FX_TEMPEST_MAGIC			:= 0xDFB8,
+	FX_POISON_DEATH				:= 0xDFD8,
+	FX_LIGHTING_MAGIC			:= 0xDFE3,
+	FX_LEITURA_DE_GLOBO			:= 0xE007,
+	FX_TORNADO_AQUATICO_MAG		:= 0xE01F,
+	FX_POISON_GAS_MAG_2			:= 0xE028,
+	FX_ARMADURA_DA_NATUREZA		:= 0x3047,
+	FX_ENERGY_TELEPORT			:= 0xE05C,
+	FX_DOOR_BUST				:= 0xE078,
+	FX_ENERGY_CIRCLE			:= 0xE083,
+	FX_RAIO_MAGIC				:= 0xE088,
+	FX_UPPER_CLAW_MAGIC			:= 0xE095,
+	FX_STRENGH_MAGIC			:= 0xE0AE,
+	FX_DIVINE_GODDESS			:= 0xE0BC,
+	FX_SMALL_FIRE_MAGIC			:= 0xE0C5,
+	FX_GASES_MAGIC				:= 0xE0CE,
+	FX_GASES_2_MAGIC			:= 0xE0D5,
+	FX_ENERGY_BEAM_MAGIC		:= 0xE0DD,
+	FX_DEATH_SKULL_ENERGY		:= 0xE0EA,
+	FX_FLOATING_TORCH_MAGIC		:= 0xE0FA,
+	FX_POISON_SKULL_MAGIC		:= 0xE101,
+	FX_SPEED_BEAM_MAGIC			:= 0xE126,
+	FX_BLACKSMITH_MAGIC			:= 0xE13A,
+	FX_EXPLOSION_4_MAGIC		:= 0xE14C,
+	FX_SWAMPO_BLOP_MAGIC		:= 0xE15B,
+	FX_SWARM_3_MAGIC			:= 0xE164,
+	FX_WATER_BALL_2_MAGIC		:= 0xE16E,
+	FX_ELETRIC_ENERGY			:= 0xE175,
+	FX_ICE_RAIN_DIREITA			:= 0xE17B,
+	FX_ICE_SPIKE_4_MAGIC		:= 0xE184,
+	FX_BLUE_ENERGY_SPHERE		:= 0xE1A3,
+	FX_ENERGY_GLOBES			:= 0xE1AE,
+	FX_DESPETRIFICAR			:= 0xDBCA,
+	FX_PETRIFICAR				:= 0xDBD7,
+    FX_BLOOD_DROP 				:= 0xC9FC,
+    FX_SUMMON_BEAST 			:= 0xDAD8,
+    FX_ARREMESSO_DE_PORRETE 	:= 0xCB14,
+    FX_FURACAO 					:= 0xDCBE,
+    FX_WATER_WALL_EXPLOSION 	:= 0xCBBB,
+    FX_PETRIFY 					:= 0xDBD7,
+    FX_DEPETRIFY 				:= 0xDBCA
+endenum
 
 
 ////
 // Layers
 ///
-const LAYER_NONE        :=  0x00;   // Not used?
-const LAYER_HAND1       :=  0x01;   // One handed weapon.
-const LAYER_HAND2       :=  0x02;   // Two handed weapon, shield or misc.
-const LAYER_SHOES       :=  0x03;   // Shoes.
-const LAYER_PANTS       :=  0x04;   // Pants.
-const LAYER_SHIRT       :=  0x05;   // Shirt.
-const LAYER_HELM        :=  0x06;   // Helm or Hat.
-const LAYER_GLOVES      :=  0x07;   // Gloves.
-const LAYER_RING        :=  0x08;   // Ring.
-const LAYER_UNUSED9     :=  0x09;   // Unused.
-const LAYER_NECK        :=  0x0a;   // Neck.
-const LAYER_HAIR        :=  0x0b;   // Hair
-const LAYER_WAIST       :=  0x0c;   // Waist (half apron).
-const LAYER_CHEST       :=  0x0d;   // Torso (inner) (chest armor).
-const LAYER_WRIST       :=  0x0e;   // Bracelet.
-const LAYER_PACK2       :=  0x0f;   // Unused (backpack, but ord. bp is 0x15).
-const LAYER_BEARD       :=  0x10;   // Facial hair.
-const LAYER_TUNIC       :=  0x11;   // Torso (middle) (tunic, sash etc.).
-const LAYER_EARS        :=  0x12;   // Earrings.
-const LAYER_ARMS        :=  0x13;   // Arms.
-const LAYER_CAPE        :=  0x14;   // Back (cloak).
-const LAYER_PACK        :=  0x15;   // Backpack
-const LAYER_ROBE        :=  0x16;   // Torso (outer) (robe)
-const LAYER_SKIRT       :=  0x17;   // Legs (outer) (skirt/robe).
-const LAYER_LEGS        :=  0x18;   // Legs (inner) (leg armor).
-const LAYER_MOUNT       :=  0x19;   // Mount (horse, ostard etc.).
-const LAYER_VENDORSTOCK :=  0x1a;   // This vendor will sell and restock.
-const LAYER_VENDOREXTRA :=  0x1b;   // This vendor will resell to players but not restock.
-const LAYER_VENDORBUY   :=  0x1c;   // This vendor can buy from players but does not stock.
-const LAYER_BANKBOX     :=  0x1d;   // Contents of bankbox
-const LAYER_TRADE       :=  0x1e;   // Can be multiple of these, do not use directly.
-
-////
-// Fonts
-///
-const FONT_MAX          :=  0x09;   // Highest font.
-const FONT_MIN          :=  0x00;   // Lowest font.
-
-const FONT_BOLD         :=  0x00;   // Bold text.
-const FONT_SHADOW       :=  0x01;   // Text with shadow.
-const FONT_BOLD_SHAD    :=  0x02;   // Bold text with shadow.
-const FONT_NORMAL       :=  0x03;   // Normal (default).
-const FONT_GOTHIC       :=  0x04;   // Gothic.
-const FONT_ITALIC       :=  0x05;   // Italic
-const FONT_SMALL_DARK   :=  0x06;   // Small dark letters.
-const FONT_COLOR        :=  0x07;   // Colorful font.
-const FONT_RUNE         :=  0x08;   // Rune font (only capitals).
-const FONT_SMALL_LIGHT  :=  0x09;   // Small light letters.
+const LAYER_NONE		:= 0x00; // Not used?
+const LAYER_HAND1		:= 0x01; // One handed weapon.
+const LAYER_HAND2		:= 0x02; // Two handed weapon, shield or misc.
+const LAYER_SHOES		:= 0x03; // Shoes.
+const LAYER_PANTS		:= 0x04; // Pants.
+const LAYER_SHIRT		:= 0x05; // Shirt.
+const LAYER_HELM		:= 0x06; // Helm or Hat.
+const LAYER_GLOVES		:= 0x07; // Gloves.
+const LAYER_RING		:= 0x08; // Ring.
+const LAYER_UNUSED9		:= 0x09; // Unused.
+const LAYER_NECK		:= 0x0a; // Neck.
+const LAYER_HAIR		:= 0x0b; // Hair
+const LAYER_WAIST		:= 0x0c; // Waist (half apron).
+const LAYER_CHEST		:= 0x0d; // Torso (inner) (chest armor).
+const LAYER_WRIST		:= 0x0e; // Bracelet.
+const LAYER_PACK2		:= 0x0f; // Unused (backpack, but ord. bp is 0x15).
+const LAYER_BEARD		:= 0x10; // Facial hair.
+const LAYER_TUNIC		:= 0x11; // Torso (middle) (tunic, sash etc.).
+const LAYER_EARS		:= 0x12; // Earrings.
+const LAYER_ARMS		:= 0x13; // Arms.
+const LAYER_CAPE		:= 0x14; // Back (cloak).
+const LAYER_PACK		:= 0x15; // Backpack
+const LAYER_ROBE		:= 0x16; // Torso (outer) (robe)
+const LAYER_SKIRT		:= 0x17; // Legs (outer) (skirt/robe).
+const LAYER_LEGS		:= 0x18; // Legs (inner) (leg armor).
+const LAYER_MOUNT		:= 0x19; // Mount (horse, ostard etc.).
+const LAYER_VENDORSTOCK	:= 0x1a; // This vendor will sell and restock.
+const LAYER_VENDOREXTRA	:= 0x1b; // This vendor will resell to players but not restock.
+const LAYER_VENDORBUY	:= 0x1c; // This vendor can buy from players but does not stock.
+const LAYER_BANKBOX		:= 0x1d; // Contents of bankbox
+const LAYER_TRADE		:= 0x1e; // Can be multiple of these, do not use directly.
 
 //////////////////////////////
 //htmlgumpcolor Color-values
@@ -961,267 +1271,316 @@ const GUMPID_TNGUMPS     := 0x000015;
 ////
 // Creature IDs ( hardcoded graphic IDs )
 ///
-const CID_ZERO				:= 0x000;  // Not used.
-const CID_OGRE				:= 0x001;
-const CID_ETTIN			:= 0x002;
-const CID_ZOMBIE			:= 0x003;
-const CID_GARGOYLE			:= 0x004;
-const CID_EAGLE			:= 0x005;
-const CID_BIRD				:= 0x006;
-const CID_ORC_LORD			:= 0x007;
-const CID_CORPSER			:= 0x008;
-const CID_DAEMON			:= 0x009;
-const CID_DAEMON_SWORD		:= 0x00a;
-const CID_DRAGON_GREY		:= 0x00c;
-const CID_AIR_ELEMENTAL		:= 0x00d;
-const CID_EARTH_ELEMENTAL	:= 0x00e;
+const CID_ZERO					:= 0x000; // Not used.
+const CID_OGRE					:= 0x001;
+const CID_ETTIN					:= 0x002;
+const CID_ZOMBIE				:= 0x003;
+const CID_GARGOYLE				:= 0x004;
+const CID_EAGLE					:= 0x005;
+const CID_BIRD					:= 0x006;
+const CID_ORC_LORD				:= 0x007;
+const CID_CORPSER				:= 0x008;
+const CID_DAEMON				:= 0x009;
+const CID_DAEMON_SWORD			:= 0x00a;
+const CID_DRAGON_GREY			:= 0x00c;
+const CID_AIR_ELEMENTAL			:= 0x00d;
+const CID_EARTH_ELEMENTAL		:= 0x00e;
 const CID_FIRE_ELEMENTAL		:= 0x00f;
-const CID_WATER_ELEMENTAL	:= 0x010;
-const CID_ORC				:= 0x011;
-const CID_ETTIN_AXE			:= 0x012;
-const CID_SHADE			:= 0x014;
-const CID_GIANT_SNAKE		:= 0x015;
-const CID_GAZER			:= 0x016;
-const CID_LICH				:= 0x018;
-const CID_GIANT_SPIDER		:= 0x01c;
-const CID_APE				:= 0x01d;
-const CID_HARPY			:= 0x01e;
-const CID_HEADLESS			:= 0x01f;
-const CID_LIZARDMAN			:= 0x021;
-const CID_LIZARDMAN_W_SPEAR	:= 0x023;
-const CID_LIZARDMAN_W_MACE	:= 0x024;
-const CID_MONGBAT			:= 0x027;
-const CID_ORC_W_CLUB		:= 0x029;
-const CID_RATMAN			:= 0x02a;
-const CID_RATMAN_W_AXE		:= 0x02c;
+const CID_WATER_ELEMENTAL		:= 0x010;
+const CID_ORC					:= 0x011;
+const CID_ETTIN_AXE				:= 0x012;
+const CID_SHADE					:= 0x014;
+const CID_GIANT_SNAKE			:= 0x015;
+const CID_GAZER					:= 0x016;
+const CID_LICH					:= 0x018;
+const CID_GIANT_SPIDER			:= 0x01c;
+const CID_APE					:= 0x01d;
+const CID_HARPY					:= 0x01e;
+const CID_HEADLESS				:= 0x01f;
+const CID_LIZARDMAN				:= 0x021;
+const CID_LIZARDMAN_W_SPEAR		:= 0x023;
+const CID_LIZARDMAN_W_MACE		:= 0x024;
+const CID_MONGBAT				:= 0x027;
+const CID_ORC_W_CLUB			:= 0x029;
+const CID_RATMAN				:= 0x02a;
+const CID_RATMAN_W_AXE			:= 0x02c;
 const CID_RATMAN_W_SWORD		:= 0x02d;
-const CID_REAPER			:= 0x02f;
-const CID_SCORPION			:= 0x030;
-const CID_SKELETON			:= 0x032;
-const CID_SLIME			:= 0x033;
-const CID_SNAKE			:= 0x034;
-const CID_TROLL_W_AXE		:= 0x035;
-const CID_TROLL			:= 0x036;
-const CID_TROLL_W_MAUL		:= 0x037;
+const CID_REAPER				:= 0x02f;
+const CID_SCORPION				:= 0x030;
+const CID_SKELETON				:= 0x032;
+const CID_SLIME					:= 0x033;
+const CID_SNAKE					:= 0x034;
+const CID_TROLL_W_AXE			:= 0x035;
+const CID_TROLL					:= 0x036;
+const CID_TROLL_W_MAUL			:= 0x037;
 const CID_SKELETON_W_AXE		:= 0x038;
 const CID_SKELETON_W_SCIMITAR	:= 0x039;
-const CID_WISP				:= 0x03a;
-const CID_DRAGON_RED		:= 0x03b;
-const CID_DRAKE_GREY		:= 0x03c;
-const CID_DRAKE_RED			:= 0x03d;
-const CID_TERATHEN_WARRIOR	:= 0x046;
+const CID_WISP					:= 0x03a;
+const CID_DRAGON_RED			:= 0x03b;
+const CID_DRAKE_GREY			:= 0x03c;
+const CID_DRAKE_RED				:= 0x03d;
+const CID_TERATHEN_WARRIOR		:= 0x046;
 const CID_TERATHEN_DRONE		:= 0x047;
 const CID_TERATHEN_MATRIARCH	:= 0x048;
-const CID_TITAN			:= 0x04b;
-const CID_CYCLOPS			:= 0x04c;
-const CID_GIANT_TOAD		:= 0x050;
-const CID_BULLFROG			:= 0x051;
-const CID_WOLF				:= 0x053;
-const CID_OPHIDIAN_MAGE		:= 0x055;
-const CID_OPHIDIAN_WARRIOR	:= 0x056;
+const CID_TITAN					:= 0x04b;
+const CID_CYCLOPS				:= 0x04c;
+const CID_GIANT_TOAD			:= 0x050;
+const CID_BULLFROG				:= 0x051;
+const CID_WOLF					:= 0x053;
+const CID_OPHIDIAN_MAGE			:= 0x055;
+const CID_OPHIDIAN_WARRIOR		:= 0x056;
 const CID_OPHIDIAN_QUEEN		:= 0x057;
-const CID_SEA_CREATURE		:= 0x05f;
-const CID_SEA_SERPENT		:= 0x096;
-const CID_DOLPHIN			:= 0x097;
+const CID_SEA_CREATURE			:= 0x05f;
+const CID_SEA_SERPENT			:= 0x096;
+const CID_DOLPHIN				:= 0x097;
 
-const CID_TAN_HORSE			:= 0x0c8;
-const CID_CAT				:= 0x0c9;
-const CID_ALLIGATOR			:= 0x0ca;
-const CID_PIG				:= 0x0cb;
-const CID_BROWN_HORSE		:= 0x0cc;
-const CID_BUNNY			:= 0x0cd;
-const CID_LAVA_LIZARD		:= 0x0ce;
-const CID_SHEEP			:= 0x0cf;
-const CID_CHICKEN			:= 0x0d0;
-const CID_GOAT				:= 0x0d1;
-const CID_DESERT_OSTARD		:= 0x0d2;
-const CID_BROWN_BEAR		:= 0x0d3;
-const CID_GRIZZLY_BEAR		:= 0x0d4;
-const CID_POLAR_BEAR		:= 0x0d5;
-const CID_PANTHER			:= 0x0d6;
-const CID_GIANT_RAT			:= 0x0d7;
-const CID_COW				:= 0x0d8;
-const CID_DOG				:= 0x0d9;
-const CID_FRENZIED_OSTARD	:= 0x0da;
-const CID_FOREST_OSTARD		:= 0x0db;
-const CID_LLAMA			:= 0x0dc;
-const CID_WALRUS			:= 0x0dd;
-const CID_SHEERED_SHEEP		:= 0x0df;
-const CID_LIGHT_HORSE		:= 0x0e2;
-const CID_GREY_HORSE		:= 0x0e4;
-const CID_COW2				:= 0x0e7;
-const CID_BULL				:= 0x0e8;
-const CID_BULL2			:= 0x0e9;
-const CID_GREAT_HART		:= 0x0ea;
-const CID_DEER				:= 0x0ed;
-const CID_RAT				:= 0x0ee;
-const CID_BOAR				:= 0x122;
-const CID_PACK_HORSE		:= 0x123;
-const CID_PACK_LLAMA		:= 0x124;
+const CID_TAN_HORSE				:= 0x0c8;
+const CID_CAT					:= 0x0c9;
+const CID_ALLIGATOR				:= 0x0ca;
+const CID_PIG					:= 0x0cb;
+const CID_BROWN_HORSE			:= 0x0cc;
+const CID_BUNNY					:= 0x0cd;
+const CID_LAVA_LIZARD			:= 0x0ce;
+const CID_SHEEP					:= 0x0cf;
+const CID_CHICKEN				:= 0x0d0;
+const CID_GOAT					:= 0x0d1;
+const CID_DESERT_OSTARD			:= 0x0d2;
+const CID_BROWN_BEAR			:= 0x0d3;
+const CID_GRIZZLY_BEAR			:= 0x0d4;
+const CID_POLAR_BEAR			:= 0x0d5;
+const CID_PANTHER				:= 0x0d6;
+const CID_GIANT_RAT				:= 0x0d7;
+const CID_COW					:= 0x0d8;
+const CID_DOG					:= 0x0d9;
+const CID_FRENZIED_OSTARD		:= 0x0da;
+const CID_FOREST_OSTARD			:= 0x0db;
+const CID_LLAMA					:= 0x0dc;
+const CID_WALRUS				:= 0x0dd;
+const CID_SHEERED_SHEEP			:= 0x0df;
+const CID_LIGHT_HORSE			:= 0x0e2;
+const CID_GREY_HORSE			:= 0x0e4;
+const CID_COW2					:= 0x0e7;
+const CID_BULL					:= 0x0e8;
+const CID_BULL2					:= 0x0e9;
+const CID_GREAT_HART			:= 0x0ea;
+const CID_DEER					:= 0x0ed;
+const CID_RAT					:= 0x0ee;
+const CID_BOAR					:= 0x122;
+const CID_PACK_HORSE			:= 0x123;
+const CID_PACK_LLAMA			:= 0x124;
 
-const CID_HUMAN_MALE            :=  0x190;
-const CID_HUMAN_FEMALE          :=  0x191;
-const CID_GM                    :=  0x3db;
+const CID_HUMAN_MALE			:= 0x190;
+const CID_HUMAN_FEMALE			:= 0x191;
+const CID_GM					:= 0x3db;
 
 
 ////
 // Directions
 ///
-const DIR_N             :=  0x00;   // North.
-const DIR_NE            :=  0x01;   // Northeast.
-const DIR_E             :=  0x02;   // East.
-const DIR_SE            :=  0x03;   // Southeast.
-const DIR_S             :=  0x04;   // South.
-const DIR_SW            :=  0x05;   // Southwest.
-const DIR_W             :=  0x06;   // West.
-const DIR_NW            :=  0x07;   // Northwest.
+enum DIRECTIONS
+	DIR_N,	// North.
+	DIR_NE,	// Northeast.
+	DIR_E,	// East.
+	DIR_SE,	// Southeast.
+	DIR_S,	// South.
+	DIR_SW,	// Southwest.
+	DIR_W,	// West.
+	DIR_NW	// Northwest.
+endenum
 
-// * Colors *
-// This is not supposed to be a "complete" colorchart, but a
-// quick way to access normal colors.
-const COLOR_DEFAULT         := 0x0000;
-const COLOR_BLACK           := 0x0001;
-const COLOR_INDIGO_DARK     := 0x0007;
-const COLOR_INDIGO          := 0x0008;
-const COLOR_INDIGO_LIGHT    := 0x0009;
+///////////////////////////////////////////
+// Colors (For more color see in Fiddle) //
+///////////////////////////////////////////
+enum COLORS
+	COLOR_DEFAULT					:= 0x0000,
+	COLOR_BLACK						:= 0x0001,
+	COLOR_INDIGO_DARK				:= 0x0007,
+	COLOR_INDIGO					:= 0x0008,
+	COLOR_INDIGO_LIGHT				:= 0x0009,
 
-const COLOR_VIOLET_DARK     := 0x000c;
-const COLOR_VIOLET          := 0x000d;
-const COLOR_VIOLET_LIGHT    := 0x000e;
-const COLOR_MAGENTA_DARK    := 0x0011;
-const COLOR_MAGENTA         := 0x0012;
-const COLOR_MAGENTA_LIGHT   := 0x0013;
-const COLOR_RED_DARK        := 0x0020;
-const COLOR_RED             := 0x0022;
-const COLOR_RED_LIGHT       := 0x0023;
-const COLOR_ORANGE_DARK     := 0x002a;
-const COLOR_ORANGE          := 0x002b;
-const COLOR_ORANGE_LIGHT    := 0x002c;
-const COLOR_YELLOW_DARK     := 0x0034;
-const COLOR_YELLOW          := 0x0035;
-const COLOR_YELLOW_LIGHT    := 0x0036;
-const COLOR_GREEN_DARK      := 0x003e;
-const COLOR_GREEN           := 0x003f;
-const COLOR_GREEN_LIGHT     := 0x0040;
-const COLOR_CYAN_DARK       := 0x0057;
-const COLOR_CYAN            := 0x0058;
-const COLOR_CYAN_LIGHT      := 0x0059;
-const COLOR_BLUE_DARK       := 0x0061;
-const COLOR_BLUE            := 0x0062;
-const COLOR_BLUE_LIGHT      := 0x0063;
-const COLOR_GRAY_DARK       := 0x0386;
-const COLOR_GRAY            := 0x0387;
-const COLOR_GRAY_LIGHT      := 0x0388;
-const COLOR_BLACKMETAL      := 0x044e;
-const COLOR_GOLDMETAL       := 0x046e;
-const COLOR_BSHIMMER        := 0x0480;	// T2A Only : Waterelemental color.
-const COLOR_WHITE           := 0x0481;	// T2A Only : True white.
-const COLOR_STONE           := 0x0482;	// T2A Only : Rock ( stoneharpy?)
-const COLOR_SPECTRAL        := 0x4631;  // Spectral
-const COLOR_TRANSLUCENT     := 0x7cf8;  // Translucent
+	COLOR_VIOLET_DARK				:= 0x000c,
+	COLOR_VIOLET					:= 0x000d,
+	COLOR_VIOLET_LIGHT				:= 0x000e,
+	COLOR_MAGENTA_DARK				:= 0x0011,
+	COLOR_MAGENTA					:= 0x0012,
+	COLOR_MAGENTA_LIGHT				:= 0x0013,
+	COLOR_RED_DARK					:= 0x0020,
+	COLOR_RED						:= 0x0022,
+	COLOR_RED_LIGHT					:= 0x0023,
+	COLOR_ORANGE_DARK				:= 0x002a,
+	COLOR_ORANGE					:= 0x002b,
+	COLOR_ORANGE_LIGHT				:= 0x002c,
+	COLOR_YELLOW_DARK				:= 0x0034,
+	COLOR_YELLOW					:= 0x0035,
+	COLOR_YELLOW_LIGHT				:= 0x0036,
+	COLOR_GREEN_DARK				:= 0x003e,
+	COLOR_GREEN						:= 0x003f,
+	COLOR_GREEN_LIGHT				:= 0x0040,
+	COLOR_CYAN_DARK					:= 0x0057,
+	COLOR_CYAN						:= 0x0058,
+	COLOR_CYAN_LIGHT				:= 0x0059,
+	COLOR_BLUE_DARK					:= 0x0061,
+	COLOR_BLUE						:= 0x0062,
+	COLOR_BLUE_LIGHT				:= 0x0063,
+	COLOR_GRAY_DARK					:= 0x0386,
+	COLOR_GRAY						:= 0x0387,
+	COLOR_GRAY_LIGHT				:= 0x0388,
+	COLOR_BLACKMETAL				:= 0x044e,
+	COLOR_GOLDMETAL					:= 0x046e,
+	COLOR_BSHIMMER					:= 0x0480,	// T2A Only : Waterelemental color.
+	COLOR_WHITE						:= 0x0481,	// T2A Only : True white.
+	COLOR_STONE						:= 0x0482,	// T2A Only : Rock ( stoneharpy?)
+	COLOR_SPECTRAL					:= 0x4631,	// Spectral
+	COLOR_TRANSLUCENT				:= 0x7cf8,	// Translucent
+
+	COLOR_ELEMENTAL_FIRE			:= 2480,
+	COLOR_ELEMENTAL_FIRE_LIGHT		:= 246,
+	COLOR_ELEMENTAL_ICE				:= 2891,
+	COLOR_ELEMENTAL_ICE_LIGHT		:= 196,
+	COLOR_ELEMENTAL_ENERGY			:= 2342,
+	COLOR_ELEMENTAL_ENERGY_LIGHT	:= 211
+endenum
 
 
 ////
 // SPEECH_TYPES
 ////
-const SPEECH_REGULAR      := 0x0;
-const SPEECH_BROADCAST    := 0x1;
-const SPEECH_EMOTE        := 0x2;
-const SPEECH_LABEL        := 0x6;
-const SPEECH_EMPHASIS     := 0x7;
-const SPEECH_WHISPER      := 0x8;
-const SPEECH_YELL         := 0x9;
-const SPEECH_SPELL        := 0xA;
+enum SPEECH_TYPES
+	SPEECH_TYPE_REGULAR,	// Regular speech.
+	SPEECH_TYPE_BROADCAST,	// Broadcast speech.
+	SPEECH_TYPE_EMOTE,		// Emote speech.
+	SPEECH_TYPE_LABEL,		// Label speech.
+	SPEECH_TYPE_EMPHASIS,	// Emphasis speech.
+	SPEECH_TYPE_WHISPER,	// Whisper speech.
+	SPEECH_TYPE_YELL,		// Yell speech.
+	SPEECH_TYPE_SPELL		// Spell speech.
+endenum
 
+/////////////////
+// Fonts ASCII //
+/////////////////
+enum FONT_ASCII
+	FONT_BOLD,				// Bold text.
+	FONT_SHADOW,			// Text with shadow.
+	FONT_BOLD_SHAD,			// Bold text with shadow.
+	FONT_NORMAL,			// Normal (default).
+	FONT_GOTHIC,			// Gothic.
+	FONT_ITALIC,			// Italic
+	FONT_SMALL_DARK,		// Small dark letters.
+	FONT_COLOR,				// Colorful font.
+	FONT_RUNE,				// Rune font (only capitals).
+	FONT_SMALL_LIGHT,		// Small light letters.
 
+	FONT_MIN		:= 0,	// Lowest font.
+	FONT_MAX		:= 9,	// Highest font.
+	FONT_DEFAULT	:= FONT_NORMAL
+endenum
 
-////
-// Font Colours.
-////
-const FONTCOLOR_RED := 38;
-const FONTCOLOR_GREEN :=68;
-const FONTCOLOR_BLUE := 90;
-const FONTCOLOR_MAUVE := 30;
-const FONTCOLOR_LAVENDER := 20;
-const FONTCOLOR_BLACK := 1;
-const FONTCOLOR_BROWN := 46;
-const FONTCOLOR_YELLOW := 53;
-const MSG_ERROR         := 33;
-const MSG_FAIL          := MSG_ERROR;
-const MSG_SUCCESS       := 66;
-const MSG_GOOD          := MSG_SUCCESS;
-const MSG_NEUTRAL       := 88;
+///////////////////
+// Fonts UNICODE //
+///////////////////
+enum FONT_UNICODE
+	FONT_UNICODE_UO,
+	FONT_UNICODE_ARIAL_BOLD,
+	FONT_UNICODE_ARIAL,
+	FONT_UNICODE_FIXEDSYS,
+	FONT_UNICODE_FIXEDSYS_BIG,
+	FONT_UNICODE_THIN,
+	FONT_UNICODE_THIN_BIG,
+	FONT_UNICODE_RUNE,
+	FONT_UNICODE_RUNE_BOLD,
+	FONT_UNICODE_RUNE_BOLD_BIG,
+	FONT_UNICODE_RUNE_WITHNUMBER,
+	FONT_UNICODE_RUNE_WITHNUMBER_BOLD,
+	FONT_UNICODE_RUNE_WITHNUMBER_BOLD_BIG2,
+
+	FONT_UNICODE_DEFAULT := FONT_UNICODE_UO
+endenum
+
+//////////////////
+// Font Colours //
+//////////////////
+enum FONTCOLOR
+	// DEPRECATED - use COLOR()* class instead
+	MSG_ERROR				:= 33,
+	MSG_FAIL				:= MSG_ERROR,
+	MSG_SUCCESS				:= 66,
+	MSG_GOOD				:= MSG_SUCCESS,
+	MSG_NEUTRAL				:= 88,
+endenum
 
 //////////////////////////////////////
 // Canned colours
 //////////////////////////////////////
-const MESSAGE_COLOR_GOOD    := 268;
-const MESSAGE_COLOR_WARNING := 54;
-const MESSAGE_COLOR_BAD     := 34;
-const MESSAGE_COLOR_MESSAGE := 1320;
+const MESSAGE_COLOR_GOOD	:= 268;
+const MESSAGE_COLOR_WARNING	:= 54;
+const MESSAGE_COLOR_BAD		:= 34;
+const MESSAGE_COLOR_MESSAGE	:= 1320;
 
 ////
 // SkillIDs
 ///
-const SKILLID_ALCHEMY           := 0;
-const SKILLID_ANATOMY           := 1;
-const SKILLID_ANIMALLORE        := 2;
-const SKILLID_ITEM_IDENTIFICATION            := 3;
-const SKILLID_ARMSLORE          := 4;
-const SKILLID_PARRYING		          := 5;
-const SKILLID_BEGGING           := 6;
-const SKILLID_BLACKSMITHY       := 7;
-const SKILLID_BOWCRAFT          := 8;
-const SKILLID_PEACEMAKING       := 9;
-const SKILLID_CAMPING           := 10;
-const SKILLID_CARPENTRY         := 11;
-const SKILLID_CARTOGRAPHY       := 12;
-const SKILLID_COOKING           := 13;
-const SKILLID_DETECTING_HIDDEN   := 14;
-const SKILLID_DISCORDANCE        := 15;
-const SKILLID_EVALUATING_INTELLIGENCE           := 16;
-const SKILLID_HEALING           := 17;
-const SKILLID_FISHING           := 18;
-const SKILLID_FORENSIC_EVALUATION         := 19;
-const SKILLID_HERDING           := 20;
-const SKILLID_HIDING            := 21;
-const SKILLID_PROVOCATION       := 22;
-const SKILLID_INSCRIPTION       := 23;
-const SKILLID_LOCKPICKING       := 24;
-const SKILLID_MAGERY            := 25;
-const SKILLID_RESISTING_SPELLS   := 26;
-const SKILLID_TACTICS           := 27;
-const SKILLID_SNOOPING          := 28;
-const SKILLID_MUSICIANSHIP      := 29;
-const SKILLID_POISONING         := 30;
-const SKILLID_ARCHERY           := 31;
-const SKILLID_SPIRITSPEAK       := 32;
-const SKILLID_STEALING          := 33;
-const SKILLID_TAILORING         := 34;
-const SKILLID_TAMING            := 35;
-const SKILLID_TASTE_IDENTIFICATION           := 36;
-const SKILLID_TINKERING         := 37;
-const SKILLID_TRACKING          := 38;
-const SKILLID_VETERINARY        := 39;
-const SKILLID_SWORDSMANSHIP     := 40;
-const SKILLID_MACEFIGHTING      := 41;
-const SKILLID_FENCING           := 42;
-const SKILLID_WRESTLING         := 43;
-const SKILLID_LUMBERJACKING     := 44;
-const SKILLID_MINING            := 45;
-const SKILLID_MEDITATION        := 46;
-const SKILLID_STEALTH           := 47;
-const SKILLID_REMOVETRAP        := 48;
-const SKILLID_NECROMANCY        := 49;
-const SKILLID_FOCUS             := 50;
-const SKILLID_CHIVALRY          := 51;
-const SKILLID_BUSHIDO           := 52;
-const SKILLID_NINJITSU          := 53;
-const SKILLID_SPELLWEAVING      := 54;
-const SKILLID_MYSTICISM         := 55;
-const SKILLID_IMBUING           := 56;
-const SKILLID_THROWING          := 57;
-const SKILLID__HIGHEST          := 57;
+enum SKILLIDS
+	SKILLID_ALCHEMY,
+	SKILLID_ANATOMY,
+	SKILLID_ANIMALLORE,
+	SKILLID_ITEM_IDENTIFICATION,
+	SKILLID_ARMSLORE,
+	SKILLID_PARRYING,
+	SKILLID_BEGGING,
+	SKILLID_BLACKSMITHY,
+	SKILLID_BOWCRAFT,
+	SKILLID_PEACEMAKING,
+	SKILLID_CAMPING,
+	SKILLID_CARPENTRY,
+	SKILLID_CARTOGRAPHY,
+	SKILLID_COOKING,
+	SKILLID_DETECTING_HIDDEN,
+	SKILLID_DISCORDANCE,
+	SKILLID_EVALUATING_INTELLIGENCE,
+	SKILLID_HEALING,
+	SKILLID_FISHING,
+	SKILLID_FORENSIC_EVALUATION,
+	SKILLID_HERDING,
+	SKILLID_HIDING,
+	SKILLID_PROVOCATION,
+	SKILLID_INSCRIPTION,
+	SKILLID_LOCKPICKING,
+	SKILLID_MAGERY,
+	SKILLID_RESISTING_SPELLS,
+	SKILLID_TACTICS,
+	SKILLID_SNOOPING,
+	SKILLID_MUSICIANSHIP,
+	SKILLID_POISONING,
+	SKILLID_ARCHERY,
+	SKILLID_SPIRITSPEAK,
+	SKILLID_STEALING,
+	SKILLID_TAILORING,
+	SKILLID_TAMING,
+	SKILLID_TASTE_IDENTIFICATION,
+	SKILLID_TINKERING,
+	SKILLID_TRACKING,
+	SKILLID_VETERINARY,
+	SKILLID_SWORDSMANSHIP,
+	SKILLID_MACEFIGHTING,
+	SKILLID_FENCING,
+	SKILLID_WRESTLING,
+	SKILLID_LUMBERJACKING,
+	SKILLID_MINING,
+	SKILLID_MEDITATION,
+	SKILLID_STEALTH,
+	SKILLID_REMOVETRAP,
+	SKILLID_NECROMANCY,
+	SKILLID_FOCUS,
+	SKILLID_CHIVALRY,
+	SKILLID_BUSHIDO,
+	SKILLID_NINJITSU,
+	SKILLID_SPELLWEAVING,
+	SKILLID_MYSTICISM,
+	SKILLID_IMBUING,
+	SKILLID_THROWING,
+	SKILLID__HIGHEST := SKILLID_THROWING // Sempre alterar para o último antes desse, para informar o maior valor
+endenum
 
 //////////////////////////////////////
 // Realm constants                  //
@@ -1232,30 +1591,3 @@ const ILSHENAR_REALM            := "ilshenar";
 const MALAS_REALM               := "malas";
 const TOKUNO_REALM              := "tokuno";
 const TERMUR_REALM              := "termur";
-
-/////////////////////////////////////////////
-// Added from 098 Distro for compatibility
-// with pkgs added from it. There will be
-// duplication of values.
-////////////////////////////////////////////
-const	GFX_MAGICAL_SPARKLES_EW	:= 0x1153;
-const	GFX_MAGICAL_SPARKLES_NS	:= 0x1159;
-const	GFX_BLUE_SPARKLES	:= 0x373A;
-const	GFX_RED_SPARKLES	:= 0x374A;
-const	GFX_BLUE_SPARKLE_SWIRL	:= 0x375A;
-const	GFX_BLUE_SPARKLE_BORDER	:= 0x376A;
-const	GFX_BLUE_SPARKLE_GROUND	:= 0x3779;
-
-
-
-////
-//GRAPHIC_FIRE
-////
-const	GFX_SMALL_FIREBALL	:= 0x36E4;
-const	GFX_LARGE_FIREBALL	:= 0x36D4;
-const	GFX_WAVY_FIREBALL	:= 0x36F4;
-const	GFX_EXPLOSION_BALL	:= 0x36FE;
-const	GFX_FIRE_COLUMN		:= 0x3709;
-const	GFX_EXPLODE_1		:= 0x36CB;
-const	GFX_EXPLODE_2		:= 0x36BD;
-const	GFX_EXPLODE_3		:= 0x36B0;

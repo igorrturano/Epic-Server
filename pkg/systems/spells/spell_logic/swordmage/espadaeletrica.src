@@ -8,7 +8,7 @@ include "include/sounds";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
-include ":combat:damage";
+include ":message:model/Message";
 include "include/epicMageryUtils";
 
 program SpellScript(params)
@@ -16,22 +16,28 @@ program SpellScript(params)
 	var info := params[2];
 
 	var targ := who.weapon;
-	if (!targ)
-		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
-		return;
+
+	if (!targ || targ.objtype == FIST)
+		targ := SummonSpiritualBlade(who);
+		if (!targ)
+			return 0;
+		endif
+	elseif (WeaponWrapper(targ).Category != WEAPON_CATEGORY::SPIRITUALBLADE)
+		Message("Voce nao pode encantar uma arma nao espiritual!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
 	endif
 
 	if (targ.isA(POLCLASS_WEAPON))
 		if (checkForElementalWeapons(who, targ))
 			return 0;
 		endif
-		ApplyElementalWeaponProperties(who, DMG_ENERGY);
+		ApplyElementalWeaponProperties(who, "Energy");
 		PlaySoundEffect(targ, SFX_BLESS);
-		SendSysMessageEx(who, "A arma esta eletrificada.", SSM_INFO);
+		Message("A arma esta eletrificada.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 		return 1;
 	endif
 
-	SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
+	Message("Alvo invalido.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 endprogram

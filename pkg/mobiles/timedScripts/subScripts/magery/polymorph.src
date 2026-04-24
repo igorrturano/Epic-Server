@@ -3,14 +3,11 @@ use os;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program default_poison(params)
 	var who := params[1];
-	var attacker := params[2];
 	var level := CInt(params[3]);
-
-	SetObjProperty(who, "originalgraphic", who.graphic);
 
 	who.graphic := level;
 

@@ -10,6 +10,8 @@ include "include/epicMageryUtils";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":message:model/Message";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -52,7 +54,7 @@ program SpellScript(params)
 	endif
 
 	// Bonus de especialização
-	if (Temhabilidade(who, "Coração da Matilha"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		healing_bonus := Cint(healing_bonus * 1.2);
 	endif
 
@@ -67,7 +69,7 @@ program SpellScript(params)
 	targ.usescript := ":tn:fruta_curativa";
 
 	// Visual effects
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLES, 10, 10);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLES, 10, 10);
 	handleSilentMagic(who, targ, SFX_SPELL_HEAL);
 
 	Message("Voce abencoa o alimento com energia curativa.").SetColor(SSM_INFO).SendSys(who);

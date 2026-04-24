@@ -1,5 +1,5 @@
 use uo;
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program jogar(who, dano)
 

@@ -1,0 +1,182 @@
+use uo;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:/include/epicGumps";
+include ":census:include/CensusController";
+
+const GUMP_WIDTH  := 500;
+const GUMP_HEIGHT := 500;
+
+var page_titles := array{
+	"Habilidades Mais Compradas",
+	"Culturas Escolhidas",
+	"Classes Escolhidas",
+	"Racas Escolhidas",
+	"Backgrounds Escolhidos",
+	"Religioes Escolhidas",
+	"Caminhos de Sabedoria",
+	"Caracteristicas (Traits)"
+};
+
+var page_categories := array{
+	"abilities",
+	"creation_culture",
+	"creation_classe",
+	"creation_race",
+	"creation_background",
+	"creation_religion",
+	"creation_path",
+	"creation_trait"
+};
+
+program censo(who, param)
+	var current_page := 1;
+	var total_pages := page_titles.size();
+
+	while (1)
+		var gump := BuildCensusGump(current_page, total_pages);
+		var input := GFSendGump(who, gump);
+
+		if (!input || input[0] == 0)
+			break;
+		endif
+
+		if (input[0] == 100)
+			current_page := current_page + 1;
+			if (current_page > total_pages)
+				current_page := 1;
+			endif
+		elseif (input[0] == 101)
+			current_page := current_page - 1;
+			if (current_page < 1)
+				current_page := total_pages;
+			endif
+		else
+			break;
+		endif
+	endwhile
+endprogram
+
+function BuildCensusGump(page, total_pages)
+	var title := "Censo - " + page_titles[page];
+	var gump := GFECreateGump(title, GUMP_WIDTH, GUMP_HEIGHT);
+
+	var category := page_categories[page];
+	var y := 75;
+
+	if (category == "abilities")
+		RenderAbilitiesList(gump, y);
+	else
+		RenderGenericList(gump, y, category);
+	endif
+
+	// Navigation bar
+	var nav_y := GUMP_HEIGHT - 35;
+	GFAddButton(gump, 30, nav_y, 0x15E3, 0x15E7, GF_CLOSE_BTN, 101);
+	GFTextMid(gump, 30, nav_y + 3, GUMP_WIDTH - 60, 53, "Pagina " + page + " de " + total_pages);
+	GFAddButton(gump, GUMP_WIDTH - 50, nav_y, 0x15E1, 0x15E5, GF_CLOSE_BTN, 100);
+
+	return gump;
+endfunction
+
+function RenderAbilitiesList(byref gump, byref y)
+	var counters := CensusGetCounters("abilities");
+	var hab_cfg := ReadConfigFile(":abilities:configs/habilidades");
+
+	var entries := array;
+	foreach ability_id in (counters.keys())
+		var entry := struct;
+		entry.+name := "Habilidade #" + ability_id;
+		entry.+count := counters[ability_id];
+
+		if (hab_cfg)
+			var elem := FindConfigElem(hab_cfg, ability_id);
+			if (elem && elem != error)
+				var nome := GetConfigString(elem, "nome");
+				if (nome && nome != error)
+					entry.name := nome;
+				endif
+			endif
+		endif
+
+		entries.append(entry);
+	endforeach
+
+	SortByCount(entries);
+	RenderEntries(gump, y, entries);
+endfunction
+
+function RenderGenericList(byref gump, byref y, category)
+	var counters := CensusGetCounters(category);
+
+	var entries := array;
+	foreach key in (counters.keys())
+		var entry := struct;
+		entry.+name := key;
+		entry.+count := counters[key];
+		entries.append(entry);
+	endforeach
+
+	SortByCount(entries);
+	RenderEntries(gump, y, entries);
+endfunction
+
+function RenderEntries(byref gump, byref y, byref entries)
+	if (entries.size() == 0)
+		GFTextMid(gump, 30, y + 40, GUMP_WIDTH - 60, 946, "Sem dados registrados");
+		return;
+	endif
+
+	// Total
+	var total := 0;
+	foreach entry in (entries)
+		total := total + entry.count;
+	endforeach
+
+	// Build HTML content
+	var html := "<BASEFONT Color=#FFFFFF Size=5>";
+	html := html + "<b>Total: " + total + "</b><BR>";
+	html := html + "<BR>";
+
+	var i := 1;
+	foreach entry in (entries)
+		var pct := CInt((entry.count * 100) / total);
+		var color := "#333333";
+
+		if (i == 1)
+			color := "#B8860B";
+		elseif (i == 2)
+			color := "#4A4A8A";
+		elseif (i == 3)
+			color := "#8B4513";
+		endif
+
+		html := html + "<BASEFONT Color=" + color + ">";
+		html := html + CStr(i) + ". " + entry.name;
+		html := html + " - " + CStr(entry.count) + " (" + CStr(pct) + "%)";
+		html := html + "<BR>";
+		i := i + 1;
+	endforeach
+
+	var scroll_height := GUMP_HEIGHT - y - 45;
+	GFHTMLArea(gump, 25, y, GUMP_WIDTH - 45, scroll_height, html, 1, 1);
+endfunction
+
+function SortByCount(byref arr)
+	var n := arr.size();
+	var i := 1;
+	while (i <= n)
+		var j := i + 1;
+		while (j <= n)
+			if (arr[j].count > arr[i].count)
+				var temp := arr[i];
+				arr[i] := arr[j];
+				arr[j] := temp;
+			endif
+			j := j + 1;
+		endwhile
+		i := i + 1;
+	endwhile
+endfunction

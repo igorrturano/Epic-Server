@@ -5,17 +5,20 @@ use math;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":fls_magery:spells";
-include ":fls_magery:spellSounds";
+;
+;
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":taming:taming";
 include "include/facings";
 include "include/shapes";
 include ":magery:fields";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":charactercreation:resists";
+include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program SpellScript(params)
 	var caster := params[1];
@@ -46,26 +49,55 @@ program SpellScript(params)
 
 	PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, caster.realm);
 
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+	var arcana := AP_GetSkill(caster, ARCANA);
+	var dot_total_ticks := Cint(arcana / 15);
+	if (dot_total_ticks < 4)
+		dot_total_ticks := 4;
+	elseif (dot_total_ticks > 10)
+		dot_total_ticks := 10;
+	endif
+
 	var mobs := ListMobilesNearLocation(caster.x, caster.y, caster.z, range, caster.realm);
 	foreach mob in mobs
-		if (InPosition(caster, mob.x, mob.y, FACE_POS_INFRONT))
-			if (mob == caster)
-				continue;
-			endif
-
-			var damage := epicSpellDamageRoll(caster, spell_circle);
-			damage := bonusSpellDamageForSpecialists(caster, damage, spell_school);
-
-			PlaySoundEffect(mob, SFX_226);
-			sleepms(100);
-			PlaySoundEffect(mob, SFX_227);
-			sleepms(100);
-			PlaySoundEffect(mob, SFX_228);
-			sleepms(100);
-			SendSysMessageEx(mob, "As chamas queimam voce.", SSM_FAIL);
-			DamageFLS(mob, cint(damage), DMG_FIRE, caster, "burninghands");
-			sleepms(100);
+		if (!InPosition(caster, mob.x, mob.y, FACE_POS_INFRONT))
+			continue;
 		endif
+		if (mob == caster)
+			continue;
+		endif
+
+		var damage := epicSpellDamageRoll(caster, spell_circle, spell_school);
+
+		// Reflex save halves the initial blast damage but does NOT prevent the burn DoT.
+		if (CheckResist(mob, REFLEXES, diff, -bonus) > 0)
+			damage := Cint(damage / 2);
+			SendSysMessageEx(mob, "Voce se esquiva de parte das chamas.", SSM_INFO);
+		endif
+
+		SendSysMessageEx(mob, "As chamas queimam voce.", SSM_FAIL);
+		DamageFLS(mob, cint(damage), DMG_FIRE, caster, "burninghands");
+
+		// Apply SC-based burn DoT on top of the initial blast.
+		// Chip fixo de 1d4+1 por tick (sem escalar com Arcana). A escala vem
+		// do impact (via epicSpellDamageRoll com bump do Evocator) + duracao.
+		var existing := MobileWrapper(mob).GetProperty($"SpellOpts_{CInt(spellinfo.id)}");
+		if (!existing || existing.errortext)
+			var tick_interval := 2;
+			var opts := struct{};
+			opts.+buff_category := "fire_dot";
+			opts.+displayname := "Maos Flamejantes";
+			opts.+desc := "1d4+1 dano / tick";
+			opts.+tick_script := ":spells:spell_logic/mage/burninghandsTick";
+			opts.+tick_interval := tick_interval;
+			opts.+tick_params := struct{
+				total_ticks := dot_total_ticks
+			};
+			SC_ApplyEffect(caster, mob, opts, dot_total_ticks * tick_interval, CInt(spellinfo.id));
+		endif
+
+		sleepms(50);
 	endforeach
 endprogram
 

@@ -5,13 +5,15 @@ use cfgfile;
 
 include "include/say";
 include ":timedScripts:timedScripts";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":attributes:attributes";
 include ":mounts:mounts";
+include ":alchemy:alchemy";
 
 program use_explosion(who, potion)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
+	var mods := GetObjProperty(who, "ExplosivoConfig");
 	if (!Accessible(who, potion))
 		return;
 	endif
@@ -36,14 +38,16 @@ program use_explosion(who, potion)
 		subtractamount(potion, 1);
 		potion := pot;
 	endif
-	if (!Cint(GetObjProperty(potion, "#bomb")))
-		var parms := {};
-		parms[1] := potion;
-		parms[2] := who;
-		var t := start_script("potions/explosionTimer", parms);
-	endif
 
-	SetObjProperty(potion, "#bomb", 1);
+	if(mods.gatilho == GATILHO_PAVIO || mods == ERROR) 
+		if (!Cint(GetObjProperty(potion, "#bomb")))
+			var parms := {};
+			parms[1] := potion;
+			parms[2] := who;
+			var t := start_script("potions/explosionTimer", parms);
+			SetObjProperty(potion, "#bomb", 1);
+		endif
+	endif
 
 	if (GetEquipmentByLayer(who, LAYER_MOUNT))
 		var chance := GetAttribute(who, "Dexterity");
@@ -62,39 +66,93 @@ program use_explosion(who, potion)
 			return 1;
 		endif
 	endif
-
-	var cast_on := TargetCoordinates(who);
-	if (who.npctemplate)
-		cast_on := GetRandomNearbyHostile(who);
-	endif
-
-	if (!cast_on)
+	var cast_on := 0;
+	if(mods.gatilho == GATILHO_MINA)
+		detach();
+		PrintTextAbove(who, "*Plantando mina*");
+		Sleep(2);
 		MoveObjectToLocation(potion, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
-		return;
+		Minaterrestre(who, potion);
+	else
+		repeat
+			cast_on := TargetCoordinates(who);
+			if (who.npctemplate)
+				cast_on := GetRandomNearbyHostile(who);
+			endif
+
+			if (!cast_on)
+				return;
+			endif
+
+
+			if (!potion)
+				return;
+			endif
+
+			if (!CheckLosAt(who, cast_on.x, cast_on.y, cast_on.z))
+				SendSysMessage(who, "Voce nao consegue ver o alvo!");
+				cast_on := 0;
+			endif
+
+		until(cast_on != 0 || !potion);
+
+		if (!potion)
+			return;
+		endif
+	
+		PrintTextAbove(who, "*joga um frasco*");
+		Detach();
+		PlayMovingEffectXYZ(who.x, who.y, who.z + 15, cast_on.x, cast_on.y, cast_on.z, 0x0f09, 8, 0, 0);
+
+		if (!potion)
+			return;
+		endif
+		MoveObjectToLocation(potion, cast_on.x, cast_on.y, cast_on.z, cast_on.realm, MOVEOBJECT_FORCELOCATION);
 	endif
-
-	if (!potion)
-		return;
+		
+	if(mods.gatilho == GATILHO_IMPACTO)
+		Sleepms(400);
+		start_script("potions/exploder", { potion, who });
 	endif
-
-	PrintTextAbove(who, "*joga um frasco*");
-	if (!CheckLosAt(who, cast_on.x, cast_on.y, cast_on.z))
-		MoveObjectToLocation(potion, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
-		SendSysMessage(who, "Voce nao consegue ver o alvo!");
-		return;
-	endif
-
-	if (!potion)
-		return;
-	endif
-
-	Detach();
-	PlayMovingEffectXYZ(who.x, who.y, who.z + 15, cast_on.x, cast_on.y, cast_on.z, 0x0f09, 8, 0, 0);
-
-	if (!potion)
-		return;
-	endif
-
-	MoveObjectToLocation(potion, cast_on.x, cast_on.y, cast_on.z, cast_on.realm, MOVEOBJECT_FORCELOCATION);
 
 endprogram
+
+function Minaterrestre(who, potion)
+	var df := OpenDataFile(":tn:traps");
+	if (!df)
+		df := CreateDataFile(":tn:traps", DF_KEYTYPE_INTEGER);
+	endif
+
+	var elem := df.FindElement(potion.serial);
+	if (!elem)
+		elem := df.CreateElement(potion.serial);
+	endif
+
+	var lvl := CInt(AP_GetSkill(who, SCIENCE) / 10);
+	lvl := lvl / 2;
+	var mods := GetObjProperty(who, "ExplosivoConfig");
+	var habs := GetObjProperty(who, "myhabs");
+
+	SetObjProperty(potion, "level", lvl);
+	SetObjProperty(potion, "pottrap", 1);
+	SetObjProperty(potion, "ExplosivoConfig", mods);
+	SetObjProperty(potion, "myhabs", habs);
+
+	potion.invisible := 1;
+	potion.movable := 0;
+
+	while (1)
+		sleep(3600);
+
+		if (!potion.invisible)
+			potion.invisible := 1;
+		endif
+
+		if (GetObjProperty(potion, "trap_inativa"))
+			EraseObjProperty(potion, "trap_inativa");
+			DestroyITem(potion);
+		endif
+
+	endwhile
+
+endfunction

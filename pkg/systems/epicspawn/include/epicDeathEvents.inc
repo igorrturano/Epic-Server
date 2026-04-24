@@ -9,6 +9,28 @@ var event_types := array{
     "Tocar Som"
 };
 
+function GetDeathEventItemDisplayName(item_info)
+    if (item_info.template)
+        if (item_info.template.name && item_info.template.name != "")
+            return item_info.template.name;
+        endif
+
+        if (item_info.template.desc && item_info.template.desc != "")
+            return item_info.template.desc;
+        endif
+
+        if (item_info.template.objtype)
+            return Hex(CInt(item_info.template.objtype));
+        endif
+    endif
+
+    if (item_info.item)
+        return Hex(CInt(item_info.item));
+    endif
+
+    return "Item desconhecido";
+endfunction
+
 function HandleAddDeathEvent(who, input, byref form_data)
     // Initialize the death events array if it doesn't exist
     if (!form_data.deathevents)
@@ -128,7 +150,8 @@ function ShowDeathEventsList(who, byref death_event)
                         
                         var i := 1;
                         foreach iteminfo in (death_event.items)
-                            GFTextLine(gump, 60, list_y, 2100, i + ". " + iteminfo.item + " em " + 
+                            var item_name := GetDeathEventItemDisplayName(iteminfo);
+                            GFTextLine(gump, 60, list_y, 2100, i + ". " + item_name + " em " + 
                                       iteminfo.x + "," + iteminfo.y + "," + iteminfo.z);
                             
                             // Add remove button
@@ -374,20 +397,29 @@ function ShowDeathEventsList(who, byref death_event)
         elseif (input[0] == 101)
             // Add Item button
             SendSysMessage(who, "Selecione um template de item:");
-            var template := Target(who);
-            if (template)
-                SendSysMessage(who, "Agora selecione o local para criar o item:");
-                var loc := TargetCoordinates(who);
-                if (loc)
-                    var item_info := struct{
-                        item := template.objtype,
-                        x := loc.x,
-                        y := loc.y,
-                        z := loc.z
-                    };
-                    death_event.items.append(item_info);
-                    SendSysMessage(who, "Item adicionado em " + loc.x + ", " + loc.y + ", " + loc.z);
+            var target_item := Target(who);
+            if (target_item && target_item.IsA(POLCLASS_ITEM))
+                var template := CreateItemTemplate(target_item);
+                if (template == error)
+                    SendSysMessage(who, "Erro ao criar template do item: " + template.errortext);
+                else
+                    SendSysMessage(who, "Agora selecione o local para criar o item:");
+                    var loc := TargetCoordinates(who);
+                    if (loc)
+                        var item_info := struct{
+                            template := template,
+                            item := template.objtype,
+                            x := loc.x,
+                            y := loc.y,
+                            z := loc.z,
+                            realm := loc.realm
+                        };
+                        death_event.items.append(item_info);
+                        SendSysMessage(who, "Item adicionado: " + GetDeathEventItemDisplayName(item_info) + " em " + loc.x + ", " + loc.y + ", " + loc.z);
+                    endif
                 endif
+            else
+                SendSysMessage(who, "Item invalido ou selecao cancelada.");
             endif
         elseif (input[0] == 102)
             // Target Door/Passage button

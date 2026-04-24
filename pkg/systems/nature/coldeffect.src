@@ -3,10 +3,12 @@ use os;
 use vitals;
 
 include ":charactercreation:resists";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":attributes:attributes";
 include "include/epicConstants";
 include ":nature:nature";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 var leatherArmors := { 0x13C7, 0x13CD, 0x13C6, 0x1DB9, 0x13CB, 0x13CC, 0x13D3, 0x13D6,
 					   0x13D5, 0x13D4, 0x13DA, 0x13DB, 0x170B, 0x1711 };
@@ -16,11 +18,15 @@ program neve(params)
 	var who := params[1];
 
 	SetObjProperty(who, "neve", 1);
+
+	if (GetObjProperty(who, "teste_de_frio") != error)
+		return;
+	endif
+
+	SetObjProperty(who, "teste_de_frio", 1);
 	detach();
 
-	if (GetObjProperty(who, "teste_de_frio") == error)
-		while (1)
-			SetObjProperty(who, "teste_de_frio", 1);
+	while (1)
 			sleep(300);
 
 			if (GetObjProperty(who, "neve") == error)
@@ -38,7 +44,7 @@ program neve(params)
 				return;
 			endif
 
-			var dif := RESIST_ALMOST_IMPOSSIBLE;
+			var dif := RESIST_VERY_HARD;
 
 			if (GetGlobalProperty("dia") == "noite")
 				dif := dif + 1;
@@ -64,7 +70,7 @@ program neve(params)
 				dif := dif - 2;
 			endif
 
-			if (TemHabilidade(who, "Kani no Sutairu"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::CRAB_STYLE))
 				dif := dif - 2;
 			endif
 
@@ -136,7 +142,7 @@ program neve(params)
 					SendSysMessageEX(who, "O Protetor de Fogo lhe protege do frio.", SSM_INFO);
 					dif := dif - 4;
 				endif
-				if ((TemHabilidade(mobile, "Caçador Experiente")) && who.party &&
+				if ((MobileWrapper(mobile).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE)) && who.party &&
 		(who.party.leader == mobile.party.leader))
 					resistchecked := mobile;
 				endif
@@ -173,60 +179,4 @@ program neve(params)
 
 			SetObjProperty(who, "penalidadeclima", penalty);
 		endwhile
-	endif
 endprogram
-
-function RemoveColdMod(who, mod)
-	Set_Critical(1);
-
-	if (mod == 1)
-		// Remove fortitude penalty
-		if (GetObjProperty(who, "climate_penalty") != error)
-			var fortitudeMod := GetObjProperty(who, "#FortitudeMod");
-			if (fortitudeMod != error)
-				var climatePenalty := GetObjProperty(who, "climate_penalty");
-				SetObjProperty(who, "#FortitudeMod", fortitudeMod - climatePenalty);
-			endif
-			EraseObjProperty(who, "climate_penalty");
-		endif
-	elseif (mod == 2)
-		// Remove stamina penalty
-		if (GetObjProperty(who, "penalidadetaiga") != error)
-			var stammod := cint(GetObjProperty(who, "stammod"));
-			var penalidade := GetObjProperty(who, "penalidadetaiga");
-			SetObjProperty(who, "stammod", stammod - penalidade);
-			EraseObjProperty(who, "penalidadetaiga");
-			RecalcVitals(who);
-		endif
-	endif
-
-	Set_Critical(0);
-endfunction
-
-function ApplyColdMod(who, mod)
-	Set_Critical(1);
-	if (who.gender == 1)
-		PlaySoundEffect(who, 0x31A);
-	else
-		PlaySoundEffect(who, 0x42A);
-	endif
-
-	if (mod == 1)
-		var temp := getTemperature(who);
-		var fortitudePenalty := resistPenaltyByClimate(temp) * -1; // Invert the penalty for cold
-		var currentFortitudeMod := GetObjProperty(who, "#FortitudeMod");
-		if (currentFortitudeMod == error)
-			currentFortitudeMod := 0;
-		endif
-		SetObjProperty(who, "#FortitudeMod", currentFortitudeMod + fortitudePenalty);
-		SetObjProperty(who, "climate_penalty", fortitudePenalty);
-	// elseif (mod == 2)
-	// var stammod := cint(GetObjProperty(who, "stammod"));
-	// var stamPenalty := cint(AP_GetVitalMaximumValue(who, STAMINA)/2);
-	// SetObjProperty(who, "stammod", stammod - stamPenalty);
-	// SetObjProperty(who, "penalidadetaiga", -stamPenalty);
-	// RecalcVitals(who);
-	endif
-
-	Set_Critical(0);
-endfunction

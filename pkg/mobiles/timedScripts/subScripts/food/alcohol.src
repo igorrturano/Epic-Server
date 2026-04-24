@@ -33,7 +33,7 @@ program TimedScript_Alcohol(params)
 			PrintTextAbove(mobile, "*Hic!*");
 
 			if (roll < 7)
-				PerformAction(mobile, ANIM_BOW);
+				PerformAction(mobile, HUMAN_ANIM::BOW);
 			endif
 		endif
 

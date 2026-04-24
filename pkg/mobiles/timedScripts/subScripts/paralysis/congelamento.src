@@ -7,6 +7,8 @@ use os;
 use util;
 include ":charactercreation:habilidades";
 include ":tn:cooldown";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program TimedScript_Paralysis(params)
 	var mobile := params[1];
@@ -16,7 +18,7 @@ program TimedScript_Paralysis(params)
 	endif
 
 	if (temhabilidade(mobile, "Movimento Livre") || GetCooldown(mobile, "vitalidadeinabalavel") ||
-	 GetCooldown(mobile, "VontadeIndomavel") || (TemHabilidade(mobile, "Fúria Indomável") &&
+	 GetCooldown(mobile, "VontadeIndomavel") || (MobileWrapper(mobile).HasAbility(ABILITY_ID::FURIA_INDOMAVEL) &&
 	 GetCooldown(mobile, "furia")))
 		return;
 	endif

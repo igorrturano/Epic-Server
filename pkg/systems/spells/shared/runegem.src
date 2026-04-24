@@ -109,12 +109,12 @@ program runegem(who, rune)
 
 	// Visual effects based on item type
 	if (targ.isA(POLCLASS_ARMOR))
-		PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, EPIC_FX_GOLDEN_ARMOR_SPELL, 255, 15, 0, 0);
+		PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, FX_GOLDEN_ARMOR_SPELL, 255, 15, 0, 0);
 	else
 		PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0x6DF1, 255, 15, 0, 0);
 	endif
 
-	PerformAction(who, ANIM_CAST_DIR);
+	PerformAction(who, HUMAN_ANIM::CAST_DIR);
 	PlaySoundEffect(who, getRuneSound(runeType));
 
 	// Destroy the carved rune

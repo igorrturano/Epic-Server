@@ -5,6 +5,8 @@ include ":attributes:attributes";
 include "include/client";
 include "include/say";
 include ":timedScripts:timedScripts";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":treasurehunting:treasuredigging";
 
 
@@ -14,7 +16,7 @@ function Garimpeiro(who)
 	var rand := RandomFloat(200);
 	if(rand < 2)
 		EncontraGema(who);
-	elseif(TemHabilidade(who, "Minerador Talentoso") && rand < 10)
+	elseif(MobileWrapper(who).HasAbility(ABILITY_ID::GEM_MINER) && rand < 10)
 		EncontraGema(who);
 		SendSysMessageEx(who, "Só um minerador talentoso acharia essa pedra preciosa!", SSM_INFO);
 	endif
@@ -182,7 +184,7 @@ function DetermineOreType(who, where)
 	if ( chance <= Cint(percent[i]))
 		var oreid := GetResourceId(oreToSearch);
 		//var oreid := GetResourceId("ario");
-		if (oreid == 0x6666)
+		if (oreid == 0x6666 || oreid == 0xBD11)
 			return 0x5001;
 		endif
 		return oreid;
@@ -205,7 +207,7 @@ function DetermineMiningDifficulty(oretype)
 		0xee99: return 0;  //calcario
 
 		//minérios
-		0x6450: return 14; //cobre
+		0x6450: return 8; //cobre
  		0x6990: return 35; //estanho
 		0x699c: return 45; //bronze
 		0x6300: return 55;  //iron ore
@@ -228,12 +230,12 @@ function DetermineMiningDifficulty(oretype)
 		0x6994: return 20; // bronze
 
 
-		0x6075: return 5; //areia
+		0x6075: return 3; //areia
 
 		0x6666: return 0; //id falso de pedra
 		0x8850: return 40; //marmore
 		0x8852: return 30; //arenito
-		0x5001: return 5; //id de stone
+		0x5001: return 3; //id de stone
 
 		0x6305: return 40; //golden <- nao faz nada
 
@@ -324,6 +326,9 @@ function CheckLoop(who, tool, my_x, my_y, my_facing)
 		SendSysMessage(who, "Você não pode minerar montado.");
 		return 0;
 	elseif (!tool)
+		return 0;
+	elseif (!(tool in ListEquippedItems(who)))
+		SendSysMessage(who, "Você precisa estar segurando a picareta.");
 		return 0;
 	else
 		return 1;

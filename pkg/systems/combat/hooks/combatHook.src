@@ -1,64 +1,26 @@
-/////////////////////////////////////////////
-//
-// combathook.src
-//
-// Combat System Hooks
-//
-// Created: 2/26/2004 1:13AM
-// Updated: 06/03/2007 1:13AM
-//
-// Responsavel por:
-// Fazer os testes pra checar se eh possivel atacar
-// Calcular chance de acerto
-// Testar se acertou ou errou
-// Fazer animacao de ataque
-// Tocar sons de Miss ou Hit da arma e som de Damaged do defender
-//
-// NOTE: Precisa mexer no mainHitScript pra adicionar as linhas que removem Props do Arco
-//       Precisa mexer no BowCraft pra adicionar o craft de flechas especiais.
-//       Precisa mexer no itemdesc.cfg das armas pra colocar anim certa dos arcos e bestas
-//
-//       Variaveis com _d (defensor) e _a (atacante)
-////////////////////////////////////////////
-
 use uo;
 use cfgfile;
 
 // Internos
+include ":combat:Model/AttackInfo";
+include ":combat:Controller/HitController";
+include ":combat:Controller/FXController";
+include ":combat:Controller/CombatAbilityController";
 include ":combat:armorZones";
-include ":combat:combat";
-include ":combat:habilidades";
-include ":combat:hitchance";
-include ":combat:damage";
-include ":combat:mainHitScript";
-include ":combat:combatFX";
+include ":combat:settings";
 
 // Externos
-include "include/packets";
-include "include/facings";
-include "include/epicConstants";
-include "include/epicMageryUtils";
-include "include/epicCombatUtils";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":debug:Controller/DebugController";
-include ":fls_magery:spellSounds";
 include ":mastery:Abilities";
+include ":abilities:helpers/shinobiHelpers";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include "include/facings";
 
-var item_cfg := ReadConfigFile(":combat:itemdesc");
-var strat_cfg := ReadConfigFile("combatlevel");
-var npc_cfg := ReadConfigFile(":*:npcdesc");
-
-// Global because they're important, and it keeps the function
-// prototypes shorter and easier to read.
-var wpn_a, wpn_d;
-var wpn_a_elem, wpn_d_elem;
-
-enum DAMAGEHAND
-	DAMAGE_MAINHAND,
-	DAMAGE_OFFHAND
-endenum
-const OFFHAND_DELAY := 500; // Delay da offhand weapon em ms
+// include ":message:Model/Message";
 
 program Install()
 	print("INSTALLING: AttackHook ... OK!");
@@ -66,298 +28,337 @@ program Install()
 endprogram
 
 exported function Attack(attacker, defender)
-	var attackInfo := struct{};
-	wpn_a := attacker.weapon;
-	wpn_d := defender.weapon;
-	wpn_a_elem := GetWpnCfgInfo(attacker, wpn_a);
-	wpn_d_elem := GetWpnCfgInfo(defender, wpn_d);
+	attacker := MobileWrapper(attacker);
+	defender := MobileWrapper(defender);
+	var attackInfo := AttackInfo(attacker, defender);
+	attackInfo.SetWeapon(attacker.GetEquipBySlot(WEAPON));
 
-	if (!CanAttack(attacker, defender))
+	DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("================="));
+	DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("ATAQUE INICIADO!"));
+	DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("================="));
+
+	if (!CanAttack(attackInfo))
+		DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("***NÃO PODE ATACAR***", Color(SYSTEM_COLOR::FAIL)));
 		return 1;
 	endif
 
-	start_script(":combat:hooks/opportunityAttack", { attacker, defender });
-	Start_Script(":combat:weaponHitScripts/AttackAnimation", { attacker });
+	attackInfo.SetAttackType(attacker.GetCombatTraits().GetPosture());
+	DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message($"Postura adotada no golpe: {attackInfo.GetAttackType()}"));
 
-	attackInfo.+hitchance := CInt(CalculateHitChance(attacker, defender));
-	attackInfo.+dice := RandomDiceRoll("1d100");
-	DebugMsg(attacker, DEBUG_HIT, "=================");
-	DebugMsg(attacker, DEBUG_HIT, "ATAQUE INICIADO!");
-	DebugMsg(attacker, DEBUG_HIT, "=================");
-	DebugMsg(attacker, DEBUG_HIT, "Mão -> MainHand");
-	DebugMsg(attacker, DEBUG_HIT, "Chance de acerto: " + attackInfo.hitchance);
-	DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: " + attackInfo.dice);
+	TryToAttack(attackInfo);
 
-	if (attackInfo.dice < attackInfo.hitchance)
-		DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
-		SkillChecks(attacker, defender, attacker.weapon, 1);
-
-		CheckAttackerHabsOnHit(attacker, defender, attackInfo);
-		CheckDefenderHabsOnHit(attacker, defender, attackInfo);
-
-		ExecuteMasteryAbility(attacker, defender, attackInfo);
-		EpicAttack(attacker, defender, DAMAGE_MAINHAND);
-
-		if (attacker.acctname)
-			updateTooltip(attacker.weapon);
-		endif
-	else
-		DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
-
-		CheckAttackerHabsOnMiss(attacker, defender, attackInfo);
-		CheckDefenderHabsOnMiss(attacker, defender, attackInfo);
-
-		PlayMissSound(attacker, defender);
+	if (attackInfo.GetWeapon().GetAttribute() == DUALWIELD) // Se é DualWield tenta atacar de novo
+		attackInfo.SetDamageHand(DAMAGE_HAND::OFFHAND); // Troca a mão para a secundária
+		TryToAttack(attackInfo);
 	endif
 
-	if (attacker.weapon.isDualWield() && !defender.dead) // Se é DualWield e o alvo está vivo ataca novamente com a penalidade de acerto
-		Start_Script(":combat:weaponHitScripts/AttackAnimation", { attacker, OFFHAND_DELAY });
-		DebugMsg(attacker, DEBUG_HIT, "Mão -> OffHand");
-
-		var hitchancePenalty := DualWieldPenalty(attacker);
-		attackInfo.hitchance -= hitchancePenalty;
-		attackInfo.dice := RandomDiceRoll("1d100");
-		DebugMsg(attacker, DEBUG_HIT, $"Chance de acerto (PENALIDADE): {attackInfo.hitchance}(-{hitchancePenalty})");
-		DebugMsg(attacker, DEBUG_HIT, "Rolagem de acerto: " + attackInfo.dice);
-
-		// No segundo hit só checa novamente as habilidades do defensor
-		if (attackInfo.dice < attackInfo.hitchance)
-			DebugMsg(attacker, DEBUG_HIT, "***ACERTOU!***");
-			SkillChecks(attacker, defender, attacker.weapon, 1);
-
-			CheckDefenderHabsOnHit(attacker, defender, attackInfo);
-
-			EpicAttack(attacker, defender, DAMAGE_OFFHAND);
-		else
-			DebugMsg(attacker, DEBUG_HIT, "***ERROU!***");
-
-			CheckDefenderHabsOnMiss(attacker, defender, attackInfo);
-
-			PlayMissSound(attacker, defender);
-		endif
-	endif
-
-	playSoundAndEffectForThroiwingWeapons(attacker, defender);
 	return 1;
-
 endfunction
 
-function CanAttack(attacker, defender)
-	if (attacker == defender)
-		ApplyRawDamage(attacker, 5000);
-		return 0;
-	elseif (!CheckLineOfSight(attacker, defender))
-		return 0;
+function CanAttack(byRef attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var defender := attackInfo.GetDefender();
+
+	if (attacker.Equals(defender)) // Impede de atacar-se
+		Message("Você não pode atacar você mesmo.\nMas, só pelo atrevimento... Tome...", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+		ApplyRawDamage(attacker.GetObjRef(), 5000);
+		return false;
+	endif
+	
+	if (!CheckLineOfSight(attacker.GetObjRef(), defender.GetObjRef()))
+		Message("Você não enxerga o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+		return false;
 	endif
 
-	if (attacker.acctname)
-		if (!attacker.warmode)
-			if (GetObjProperty(attacker, "attackmsg") <= polcore().systime)
-				SendSysMessageEx(attacker, "Você precisa estar em modo de combate para ameaçar alguem.",
-								  SSM_FAIL);
-				SetObjProperty(attacker, "attackmsg", polcore().systime + 15);
+	if (defender.GetObjRef().hidden) // Impede de atacar gente escondida
+		return false;
+	endif
+
+	if (!attacker.IsNPC())
+		if (!attacker.IsWarMode())
+			if (attacker.GetObjRef().GetProp("attackmsg") <= polcore().systime)
+				Message("Você precisa estar em modo de combate para ameaçar alguem.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+				attacker.GetObjRef().SetProp("attackmsg", polcore().systime + 15);
 			endif
-			return 0;
+			return false;
 		endif
 	endif
 
-	if ((attacker.paralyzed) || (attacker.frozen))
-		SendSysMessageEx(attacker, "Você não consegue atacar.");
-		return 0;
-	elseif ((attacker.concealed) && (attacker.cmdlevel == 0))
-		attacker.concealed := 0;
-	elseif (!DistanceChecks(attacker, defender))
-		return 0;
-	elseif (!FacingChecks(attacker, defender))
-		return 0;
-	elseif (!AmmoCheckCombatHook(attacker, defender))
-		return 0;
-	elseif (GetCooldown(attacker, "defesatotal") > 0)
-		return 0;
-	elseif (!arcane_shooting(attacker, defender))
-		return 0;
-	elseif (attacker.npctemplate == ":brainai:GolemMartelo")
-		return 0;
-	elseif (Cint(GetObjProperty(attacker, "charmed_by")) == defender.serial)
-		PrintTextAbove(attacker, "*hipnotizado*");
-		return 0;
+	if ((attacker.GetObjRef().paralyzed) || (attacker.GetObjRef().frozen))
+		Message("Você não consegue se mover.").SendSys(attacker.GetObjRef());
+		return false;
 	endif
 
-	return 1;
-endfunction
-
-function EpicAttack(attacker, defender, weaponHand)
-	if (defender.frozen)
-		defender.frozen := 0;
+	if (!CheckDistance(attacker, defender))
+		Message("O alvo está fora do alcance.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+		return false;
 	endif
 
-	var armor := GetArmorToHit(defender);
-	var dmg := CalculateRawDamage(attacker, attacker.weapon, weaponHand);
-
-	if (weaponHand != DAMAGE_OFFHAND)
-		dmg := Run_Script_To_Completion(":combat:mainHitScript", array{ attacker, defender, attacker.weapon,
-																		armor, dmg, dmg });
-	else // Se for ataque da segunda arma, tem delay
-		dmg := Start_Script(":combat:mainHitScript", array{ attacker, defender, attacker.weapon,
-															armor, dmg, dmg, OFFHAND_DELAY });
-	endif
-	updateTooltip(armor);
-endfunction
-
-// Arqueiros
-function AmmoCheckCombatHook(attacker, defender)
-	const STONE_OBJTYPE := 20481;
-	var arcane_bows := array{ 0xFA6D, 0XF997 };
-
-	if (!wpn_a_elem.ProjectileType)
-		return 1;
+	if (!CheckFacing(attackInfo))
+		Message("Você precisa estar de frente para o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+		return false;
 	endif
 
-	if (GetCooldown(attacker, "arcane_bow") && attacker.weapon.objtype in arcane_bows)
-		return 1;
-	endif
-
-	if (attacker.npctemplate)
-		ArqueiroNPC(attacker, defender);
-		return 1;
-	endif
-
-	// Get saved ammo reference
-	var ammo := GetObjProperty(attacker.weapon, "ammo");
-	if (!ammo)
-		SendSysMessage(attacker, "Você não definiu o tipo de flecha que vai usar. [clique 2x no arco e na flecha]");
-		return 0;
-	endif
-	var obj := SystemFindObjectBySerial(ammo);
-	// Handle stones differently - they don't need aljava check
-	var needs_aljava := (obj.objtype != STONE_OBJTYPE);
-
-	if (needs_aljava)
-		var aljavas := array{ 0x791c, 0x2fb7 };
-		var aljava := GetEquipmentByLayer(attacker, LAYER_CAPE);
-
-		if (!(aljava.objtype in aljavas))
-			aljava := GetEquipmentByLayer(attacker, LAYER_WAIST);
-		endif
-
-		// Check if ammo is in aljava
-		var found_in_aljava := 0;
-		foreach arrow in (EnumerateItemsInContainer(aljava))
-			if (arrow.serial == ammo)
-				found_in_aljava := 1;
-				break;
-			endif
-		endforeach
-
-		if (!found_in_aljava)
-			return 0;
+	
+	if (!attacker.IsNPC())
+		if (!CheckAmmo(attackInfo))
+			return false;
 		endif
 	endif
-
-	// Handle the ammunition consumption and effect
-	if (SubtractAmount(ammo, 1))
-		var cfg := ReadConfigFile(":woodworking:itemdesc");
-		var elem := FindConfigElem(cfg, GetObjType(ammo));
-		var ammo_color := elem.color;
-		PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, ammo_color);
-		return 1;
+	
+	if (GetCooldown(attacker.GetObjRef(), "defesatotal") > 0)
+		Message("Você está totalmente concentrado na defesa.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+		return false;
 	endif
-
-	return 0;
-endfunction
-
-function playSoundAndEffectForThroiwingWeapons(attacker, byref defender)
-	if (attacker.npctemplate)
-		ThrowerNPC(attacker, defender);
-		return;
+	
+	if (!arcane_shooting(attackInfo))
+		return false;
 	endif
-
-	if (!wpn_a_elem.Throwable)
-		return;
-	endif
-
-	if (!AP_ConsumeVital(attacker, STAMINA, 10))
-		SendSysMessageEx(attacker, "Você está exausto!");
-		return;
-	endif
-
-	PlayMovingEffectXYZHued(attacker, defender, wpn_a_elem.ProjectileAnim, 10, 10, 0, wpn_a_elem.color);
-
-	PlayAttackAnimation(attacker); // 0x9
-	// PlayHitSounds(attacker, defender); // sounds {0x5D3, 0x5D4}
-
-	MoveObjectToLocation(attacker.weapon, defender.x, defender.y, defender.z, defender.realm,
-					  MOVEOBJECT_FORCELOCATION);
-
-endfunction
-
-function arcane_shooting(attacker, defender)
-	if (!wpn_a_elem.ProjectileType)
-		return 1;
-	endif
-
-	var arcane_bows := array{ 0xFA6D, 0XF997 };
-	if (!GetCooldown(attacker, "arcane_bow") && !(attacker.weapon.objtype in arcane_bows))
-		return 1;
-	endif
-
-	if (!DamageMANA(attacker, 4))
-		SendSysMessage(attacker, "Você está sem mana!");
-		return 0;
-	endif
-	var ammo_color := 0;
-	if (GetObjProperty(attacker.weapon, "fire_arrow"))
-		ammo_color := FOGO;
-	elseif (GetObjProperty(attacker.weapon, "energy_arrow"))
-		ammo_color := RAIO;
-	elseif (GetObjProperty(attacker.weapon, "cold_arrow"))
-		ammo_color := GELO;
-	endif
-
-	PlayMovingEffectXYZHued(attacker, defender, 0xf42, 10, 10, 0, ammo_color);
-	return 1;
-endfunction
-
-function ArqueiroNPC(attacker, defender)
-	var anim := wpn_a_elem.ProjectileAnim;
-	if (!anim)
-		anim := 0xF79;
-	endif
-	PlayMovingEffectXYZHued(attacker, defender, anim, 10, 10, 0, 0); // ammo_color);
-
-	return 1;
-endfunction
-
-function ThrowerNPC(attacker, defender)
-	var throwItem := GetObjProperty(attacker, "throwItem");
-	if (!throwItem)
-		return 0;
-	endif
-
-	PerformAction(attacker, 4);
-
-	// Play the throw effect
-	PlayMovingEffectXYZHued(attacker, defender, throwItem, 10, 10, 0, 0);
-
-	return 1;
-endfunction
-
-function FacingChecks(attacker, defender)
-	var retval := 1;
-	if (!IsFacing(attacker, defender.x, defender.y))
-		if (attacker.npctemplate)
-			TurnObjectToward(attacker, defender.x, defender.y);
-		else
-			if (IsBehind(attacker, defender.x, defender.y) && !(getcooldown(attacker, "deathdance")))
-				SendSysMessage(attacker, "Voce esta de costas para o inimigo!");
-				retval := 0;
-			endif
-		endif
-	elseif (!IsFacing(defender, attacker.x, attacker.y))
-	// if ( defender.npctemplate )
-	// 	TurnObjectToward(defender, attacker.x, attacker.y);
+	
+	// if (attacker.GetProperty("pilotando"))
+	// 	Message("Utilize a habilidade Montagem do Golem para atacar enquanto pilota.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+	// 	return false;
 	// endif
+
+	if (CInt(attacker.GetObjRef().GetProp("charmed_by")) == defender.GetSerial())
+		Message("*hipnotizado*").SendAbove(attacker.GetObjRef());
+		return false;
 	endif
 
-	return retval;
+	if (defender.GetObjRef().GetProp("#PrisaoGelida"))
+		Message("Você não pode atacar o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+		return false;
+	endif
+
+	if (defender.GetObjRef().GetProp("#sanctuary"))
+		Message("Esse alvo esta sob um santuario divino.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+		return false;
+	endif
+
+	if (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::SPIRITUALBLADE)
+		var elemental := attackInfo.GetWeapon().GetObjRef().GetProp("#elementalweapon");
+		if (elemental == error)
+			Message("Sua lâmina espiritual não consegue transpassar o oponente.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+			return false;
+		endif
+	endif
+
+	return true;
+endfunction
+
+function TryToAttack(byRef attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var defender := attackInfo.GetDefender();
+	attackInfo.SetHitChance(CalculateHitChance(attackInfo));
+
+	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
+		Start_Script(":combat:hooks/opportunityAttack", array{attacker.GetObjRef(), defender.GetObjRef()});
+		DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("Mão -> MainHand"));
+		DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message($"Chance de acerto: {attackInfo.GetHitChance()}"));
+	elseif (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
+		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - CalculateDualWieldPenalty(attackInfo));
+		DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("Mão -> OffHand"));
+		DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message($"Chance de acerto (PENALIDADE): {attackInfo.GetHitChance()}({attackInfo.GetHitChanceMod()})"));
+	endif
+
+	if (Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(RANGED) &&
+		!attackInfo.GetWeapon().IsThrowable() &&
+		attackInfo.GetWeapon().GetCategory() != WEAPON_CATEGORY::MAGICBOW)
+		if (!attacker.IsNPC())
+			if (ConsumeAmmo(attackInfo)) // Consome munição
+				TryToRecoverAmmo(attackInfo); // Se consumiu, tenta recuperar
+			else
+				Message("Não foi possível encontrar a munição escolhida.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+				return 1;
+			endif
+		endif
+	endif
+
+	attackInfo.RollHitChance();
+	DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("Rolagem de acerto: " + attackInfo.GetHitChanceResult()));
+	sleepms(2);
+
+	ExecuteCombatAbilitiesBeforeHit(attackInfo);
+	ExecutePassiveAbilitiesAttackerBeforeHit(attackInfo);
+	ExecutePassiveAbilitiesDefenderBeforeHit(attackInfo);
+	DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message($"HitChanceMod após passivas (acerto: {CInt(attackInfo.GetHitChanceMod())})"));
+	sleepms(2);
+	if (attackInfo.Succeeded())
+		DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("***ACERTOU!***", Color(SYSTEM_COLOR::SUCCESS)));
+		
+		if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
+			ExecuteMasteryAbility(attackInfo);
+		endif
+
+		DoAttack(attackInfo);
+	else
+		DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message("***ERROU!***", Color(SYSTEM_COLOR::FAIL)));
+		// Se errou, chama os efeitos aqui
+		PlayAttackFX(attackInfo);
+		PlayAttackSFX(attackInfo);
+		ExecuteCombatAbilitiesOnMiss(attackInfo);
+		ExecuteCombatAbilitiesOnMissAttacker(attackInfo);
+		ExecutePassiveAbilitiesOnMissAttacker(attackInfo);
+	endif
+
+	// Counter-attack (crosscut) - triggers on any attack attempt
+	if (attackInfo.ShouldCounterAttack() && !defender.IsDead())
+		defender.Attack(attacker);
+	endif
+endfunction
+
+function DoAttack(byRef attackInfo)
+	attackInfo.GetDefender().GetObjRef().frozen := 0;
+
+	var _atkRef := attackInfo.GetAttacker().GetObjRef();
+	var _inSmoke := IsInShinobiSmokeZone(_atkRef);
+
+	if (_atkRef.cmdlevel == 0 && !attackInfo.GetAttacker().HasAbility(ABILITY_ID::FORMA_UMBRAL) && !_inSmoke)
+		_atkRef.concealed := 0;
+	endif
+	
+	if (!attackInfo.GetAttacker().IsNPC() &&
+		attackInfo.GetAttacker().IsWarMode() &&
+		attackInfo.GetDefender().IsNPC() &&
+		attackInfo.GetDefender().GetObjRef().master) // Cria log de quem ataca Pet (É Personagem Jogador, está em warmode, atacou NPC e o NPC é domado)
+			LogToFile(
+				":fls_core:pets.log",
+				attackInfo.GetDefender().GetObjRef().acctname + " atacou " + attackInfo.GetDefender().GetObjRef().name + " (" + attackInfo.GetDefender().GetTemplate() + ")",
+				LOG_DATETIME
+			);
+	endif
+
+	if (attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND)
+		Run_Script_To_Completion(":combat:mainHitScript", attackInfo);
+	else // Se for ataque da mão secundária, executa async por causa do delay
+		Start_Script(":combat:mainHitScript", attackInfo);
+	endif
+endfunction
+
+function CheckAmmo(byRef attackInfo)
+	var weapon := attackInfo.GetWeapon();
+	
+	if (!weapon.GetTemplate().ProjectileType)
+		return true;
+	endif
+
+	if (weapon.GetCategory() == WEAPON_CATEGORY::MAGICBOW)
+		return true;
+	endif
+
+	var ammoSerial := weapon.GetObjRef().GetProp("ammo");
+	if (!ammoSerial)
+		Message($"Você não definiu o tipo de munição que vai usar. [clique 2x na arma e na munição]", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+		return false;
+	endif
+
+	var ammoObj := SystemFindObjectBySerial(ammoSerial);
+	if (!ammoObj)
+		weapon.GetObjRef().EraseProp("ammo");
+		Message("Sua munição acabou.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+		return false;
+	endif
+
+	var ammo := Ammo(ammoObj);
+	attackInfo.SetAmmo(ammo);
+
+	if (ammo.NeedsQuiver())
+		var aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_CAPE);
+		if (aljava.GetCategory() != ITEM_CATEGORY::QUIVER)
+			aljava := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST);
+		endif
+
+		if (!aljava.Contains(ammo.GetItem()))
+			Message("A munição não está na aljava.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			return false;
+		endif
+	elseif (ammo.NeedsBandolier())
+		var bandolier := attackInfo.GetAttacker().GetEquipByLayer(LAYER_WAIST);
+		if (bandolier.GetCategory() != ITEM_CATEGORY::BANDOLIER)
+			Message("Você precisa equipar uma Bandoleira de Artilharia.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			return false;
+		endif
+
+		if (!bandolier.Contains(ammo.GetItem()))
+			Message("A munição não está na bandoleira.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			return false;
+		endif
+	endif
+
+	return true;
+endfunction
+
+function arcane_shooting(byRef attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var defender := attackInfo.GetDefender();
+	var attackerWeapon := attackInfo.GetWeapon();
+	
+	if (!attackerWeapon.GetTemplate().ProjectileType)
+		return 1;
+	endif
+
+	if (attackerWeapon.GetCategory() != WEAPON_CATEGORY::MAGICBOW)
+		return 1;
+	endif
+
+	var manaCost := 4;
+	if (attacker.HasAbility(ABILITY_ID::FOCO_ARCANO))
+		manaCost := manaCost - CInt(manaCost / 5);
+	endif
+
+	if (!DamageMANA(attacker.GetObjRef(), manaCost))
+		Message("Você está sem mana!", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+		return 0;
+	endif
+	
+	var ammo_effect := 0xf42;
+	if (attackerWeapon.GetObjRef().GetProp("fire_arrow"))
+		ammo_effect := FX_FIRE_ARROW;
+	elseif (attackerWeapon.GetObjRef().GetProp("energy_arrow"))
+		ammo_effect := FX_ELETRIC_BOLT;
+	elseif (attackerWeapon.GetObjRef().GetProp("cold_arrow"))
+		ammo_effect := 0xe3e5;
+	endif
+
+	PlayMovingEffect(attacker.GetObjRef(), defender.GetObjRef(), ammo_effect, 10);
+	return 1;
+endfunction
+
+function CheckFacing(byRef attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var defender := attackInfo.GetDefender();
+	
+	if (!IsFacing(attacker.GetObjRef(), defender.GetPosition().GetX(), defender.GetPosition().GetY()))
+		if (attacker.IsNPC())
+			// TurnObjectToward(attacker.GetObjRef(), defender.GetObjRef().x, defender.GetObjRef().y);
+		else
+			if (IsBehind(attacker.GetObjRef(), defender.GetPosition().GetX(), defender.GetPosition().GetY()) && !(GetCooldown(attacker.GetObjRef(), "deathdance")))
+				return false;
+			endif
+		endif
+	endif
+
+	var attackDirection;
+	if (IsBehind(defender.GetObjRef(), attacker.GetPosition().GetX(), attacker.GetPosition().GetY()))
+		attackDirection := ATTACK_DIRECTION::BACK;
+	else
+		attackDirection := ATTACK_DIRECTION::FRONT;
+	endif
+	attackInfo.SetDirection(attackDirection);
+	DebugMsg(attacker.GetObjRef(), DEBUG_HIT, $"Direção do golpe: {(attackInfo.GetDirection() == ATTACK_DIRECTION::FRONT ? "Frente" : "Costas")}");
+
+	return true;
+endfunction
+
+function TryToRecoverAmmo(byRef attackInfo)
+	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetDefender().GetObjRef().backpack)
+		var chance := CInt(CS_GetSettingsCfgElem("Archery").RecoverChance);
+
+		if (RandomInt(100 + 1) <= chance)
+			var ammo := attackInfo.GetAmmo().GetItem().GetObjRef();
+			if (ammo)
+				CreateItemInBackPack(attackInfo.GetDefender().GetObjRef(), ammo, attackInfo.GetAmmoAmount());
+			endif
+		endif
+	endif
 endfunction

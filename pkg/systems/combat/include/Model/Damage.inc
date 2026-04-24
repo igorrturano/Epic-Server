@@ -1,188 +1,383 @@
 include "IDamage";
 
 class Damage(IDamage)
-	var _slash := 0;
-	var _piercing := 0;
-	var _blunt := 0;
-	var _fire := 0;
-	var _cold := 0;
-	var _poison := 0;
-	var _energy := 0;
+	var CriticalDamage := false;
+
+	var SlashRaw := 0;
+	var SlashBase := 0;
+	var PiercingRaw := 0;
+	var PiercingBase := 0;
+	var BluntRaw := 0;
+	var BluntBase := 0;
+	var FireRaw := 0;
+	var FireBase := 0;
+	var ColdRaw := 0;
+	var ColdBase := 0;
+	var PoisonRaw := 0;
+	var PoisonBase := 0;
+	var EnergyRaw := 0;
+	var EnergyBase := 0;
 
 	function Damage(this, slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0)
-		this._slash := CInt(slash);
-		this._piercing := CInt(piercing);
-		this._blunt := CInt(blunt);
-		this._fire := CInt(fire);
-		this._cold := CInt(cold);
-		this._poison := CInt(poison);
-		this._energy := CInt(energy);
+		this.CriticalDamage := false;
+
+		this.SetSlashRawDamage(slash);
+		this.SetPiercingRawDamage(piercing);
+		this.SetBluntRawDamage(blunt);
+
+		this.SetFireRawDamage(fire);
+		this.SetColdRawDamage(cold);
+		this.SetPoisonRawDamage(poison);
+		this.SetEnergyRawDamage(energy);
 	endfunction
 
-	function GetSlashDamage(this)
-		return this._slash;
+	function GetSlashRawDamage(this)
+		return CInt(this.SlashRaw);
 	endfunction
 
-	function GetPiercingDamage(this)
-		return this._piercing;
+	function GetPiercingRawDamage(this)
+		return CInt(this.PiercingRaw);
 	endfunction
 
-	function GetBluntDamage(this)
-		return this._blunt;
+	function GetBluntRawDamage(this)
+		return CInt(this.BluntRaw);
 	endfunction
 
-	function GetFireDamage(this)
-		return this._fire;
+	function GetFireRawDamage(this)
+		return CInt(this.FireRaw);
 	endfunction
 
-	function GetColdDamage(this)
-		return this._cold;
+	function GetColdRawDamage(this)
+		return CInt(this.ColdRaw);
 	endfunction
 
-	function GetPoisonDamage(this)
-		return this._poison;
+	function GetPoisonRawDamage(this)
+		return CInt(this.PoisonRaw);
 	endfunction
 
-	function GetEnergyDamage(this)
-		return this._energy;
+	function GetEnergyRawDamage(this)
+		return CInt(this.EnergyRaw);
 	endfunction
 
-	function SetSlashDamage(this, value)
-		this._slash := CInt(value);
+	function GetSlashBaseDamage(this)
+		return CInt(this.SlashBase);
+	endfunction
+
+	function GetPiercingBaseDamage(this)
+		return CInt(this.PiercingBase);
+	endfunction
+
+	function GetBluntBaseDamage(this)
+		return CInt(this.BluntBase);
+	endfunction
+
+	function GetFireBaseDamage(this)
+		return CInt(this.FireBase);
+	endfunction
+
+	function GetColdBaseDamage(this)
+		return CInt(this.ColdBase);
+	endfunction
+
+	function GetPoisonBaseDamage(this)
+		return CInt(this.PoisonBase);
+	endfunction
+
+	function GetEnergyBaseDamage(this)
+		return CInt(this.EnergyBase);
+	endfunction
+
+	function GetTotalRawDamage(this)
+		return CInt(
+			CInt(this.GetSlashRawDamage()) +
+			CInt(this.GetPiercingRawDamage()) +
+			CInt(this.GetBluntRawDamage()) +
+			CInt(this.GetFireRawDamage()) +
+			CInt(this.GetColdRawDamage()) +
+			CInt(this.GetPoisonRawDamage()) +
+			CInt(this.GetEnergyRawDamage())
+		);
+	endfunction
+
+	function GetTotalBaseDamage(this)
+		return CInt(
+			CInt(this.GetSlashBaseDamage()) +
+			CInt(this.GetPiercingBaseDamage()) +
+			CInt(this.GetBluntBaseDamage()) +
+			CInt(this.GetFireBaseDamage()) +
+			CInt(this.GetColdBaseDamage()) +
+			CInt(this.GetPoisonBaseDamage()) +
+			CInt(this.GetEnergyBaseDamage())
+		);
+	endfunction
+
+	function SetSlashRawDamage(this, value)
+		this.SlashRaw := CInt(value);
+		this.SlashBase := this.SlashRaw;
 		return this;
 	endfunction
 
-	function SetPiercingDamage(this, value)
-		this._piercing := CInt(value);
+	function SetPiercingRawDamage(this, value)
+		this.PiercingRaw := CInt(value);
+		this.PiercingBase := this.PiercingRaw;
 		return this;
 	endfunction
 
-	function SetBluntDamage(this, value)
-		this._blunt := CInt(value);
+	function SetBluntRawDamage(this, value)
+		this.BluntRaw := CInt(value);
+		this.BluntBase := this.BluntRaw;
 		return this;
 	endfunction
 
-	function SetFireDamage(this, value)
-		this._fire := CInt(value);
+	function SetFireRawDamage(this, value)
+		this.FireRaw := CInt(value);
+		this.FireBase := this.FireRaw;
 		return this;
 	endfunction
 
-	function SetColdDamage(this, value)
-		this._cold := CInt(value);
+	function SetColdRawDamage(this, value)
+		this.ColdRaw := CInt(value);
+		this.ColdBase := this.ColdRaw;
 		return this;
 	endfunction
 
-	function SetPoisonDamage(this, value)
-		this._poison := CInt(value);
+	function SetPoisonRawDamage(this, value)
+		this.PoisonRaw := CInt(value);
+		this.PoisonBase := this.PoisonRaw;
 		return this;
 	endfunction
 
-	function SetEnergyDamage(this, value)
-		this._energy := CInt(value);
+	function SetEnergyRawDamage(this, value)
+		this.EnergyRaw := CInt(value);
+		this.EnergyBase := this.EnergyRaw;
 		return this;
 	endfunction
 
-	function DecreaseSlashDamage(this, value)
-		this._slash -= CInt(value);
+	function SetSlashBaseDamage(this, value)
+		this.SlashBase := CInt(value);
 		return this;
 	endfunction
 
-	function DecreasePiercingDamage(this, value)
-		this._piercing -= CInt(value);
+	function SetPiercingBaseDamage(this, value)
+		this.PiercingBase := CInt(value);
 		return this;
 	endfunction
 
-	function DecreaseBluntDamage(this, value)
-		this._blunt -= CInt(value);
+	function SetBluntBaseDamage(this, value)
+		this.BluntBase := CInt(value);
 		return this;
 	endfunction
 
-	function DecreaseFireDamage(this, value)
-		this._fire -= CInt(value);
+	function SetFireBaseDamage(this, value)
+		this.FireBase := CInt(value);
 		return this;
 	endfunction
 
-	function DecreaseColdDamage(this, value)
-		this._cold -= CInt(value);
+	function SetColdBaseDamage(this, value)
+		this.ColdBase := CInt(value);
 		return this;
 	endfunction
 
-	function DecreasePoisonDamage(this, value)
-		this._poison -= CInt(value);
+	function SetPoisonBaseDamage(this, value)
+		this.PoisonBase := CInt(value);
 		return this;
 	endfunction
 
-	function DecreaseEnergyDamage(this, value)
-		this._energy -= CInt(value);
+	function SetEnergyBaseDamage(this, value)
+		this.EnergyBase := CInt(value);
 		return this;
 	endfunction
 
-	function IncreaseSlashDamage(this, value)
-		this._slash += CInt(value);
+	function SetCritical(this, isCriticalDamage)
+		this.CriticalDamage := isCriticalDamage;
 		return this;
 	endfunction
 
-	function IncreasePiercingDamage(this, value)
-		this._piercing += CInt(value);
+	function IncreaseSlashRawDamage(this, value)
+		this.SlashRaw += CInt(value);
+		this.SlashBase += CInt(value);
 		return this;
 	endfunction
 
-	function IncreaseBluntDamage(this, value)
-		this._blunt += CInt(value);
+	function IncreasePiercingRawDamage(this, value)
+		this.PiercingRaw += CInt(value);
+		this.PiercingBase += CInt(value);
 		return this;
 	endfunction
 
-	function IncreaseFireDamage(this, value)
-		this._fire += CInt(value);
+	function IncreaseBluntRawDamage(this, value)
+		this.BluntRaw += CInt(value);
+		this.BluntBase += CInt(value);
 		return this;
 	endfunction
 
-	function IncreaseColdDamage(this, value)
-		this._cold += CInt(value);
+	function IncreaseFireRawDamage(this, value)
+		this.FireRaw += CInt(value);
+		this.FireBase += CInt(value);
 		return this;
 	endfunction
 
-	function IncreasePoisonDamage(this, value)
-		this._poison += CInt(value);
+	function IncreaseColdRawDamage(this, value)
+		this.ColdRaw += CInt(value);
+		this.ColdBase += CInt(value);
 		return this;
 	endfunction
 
-	function IncreaseEnergyDamage(this, value)
-		this._energy += CInt(value);
+	function IncreasePoisonRawDamage(this, value)
+		this.PoisonRaw += CInt(value);
+		this.PoisonBase += CInt(value);
 		return this;
+	endfunction
+
+	function IncreaseEnergyRawDamage(this, value)
+		this.EnergyRaw += CInt(value);
+		this.EnergyBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseSlashBaseDamage(this, value)
+		this.SlashBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreasePiercingBaseDamage(this, value)
+		this.PiercingBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseBluntBaseDamage(this, value)
+		this.BluntBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseFireBaseDamage(this, value)
+		this.FireBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseColdBaseDamage(this, value)
+		this.ColdBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreasePoisonBaseDamage(this, value)
+		this.PoisonBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseEnergyBaseDamage(this, value)
+		this.EnergyBase += CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseSlashRawDamage(this, value)
+		this.SlashRaw -= CInt(value);
+		this.SlashBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreasePiercingRawDamage(this, value)
+		this.PiercingRaw -= CInt(value);
+		this.PiercingBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseBluntRawDamage(this, value)
+		this.BluntRaw -= CInt(value);
+		this.BluntBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseFireRawDamage(this, value)
+		this.FireRaw -= CInt(value);
+		this.FireBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseColdRawDamage(this, value)
+		this.ColdRaw -= CInt(value);
+		this.ColdBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreasePoisonRawDamage(this, value)
+		this.PoisonRaw -= CInt(value);
+		this.PoisonBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseEnergyRawDamage(this, value)
+		this.EnergyRaw -= CInt(value);
+		this.EnergyBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseSlashBaseDamage(this, value)
+		this.SlashBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreasePiercingBaseDamage(this, value)
+		this.PiercingBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseBluntBaseDamage(this, value)
+		this.BluntBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseFireBaseDamage(this, value)
+		this.FireBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseColdBaseDamage(this, value)
+		this.ColdBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreasePoisonBaseDamage(this, value)
+		this.PoisonBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseEnergyBaseDamage(this, value)
+		this.EnergyBase -= CInt(value);
+		return this;
+	endfunction
+
+	function IsCritical(this)
+		return this.CriticalDamage;
 	endfunction
 
 	function ToString(this)
-		return $"Damage: Slash={this._slash}, Piercing={this._piercing}, Blunt={this._blunt}, Fire={this._fire}, Cold={this._cold}, Poison={this._poison}, Energy={this._energy}";
+		return "Damage" + (this.IsCritical() ? " (CRITICAL)" : "") + ": " +
+			$"Slash: [Raw={this.GetSlashRawDamage()}, Base={this.GetSlashBaseDamage()}], " +
+			$"Piercing: [Raw={this.GetPiercingRawDamage()}, Base={this.GetPiercingBaseDamage()}], " +
+			$"Blunt: [Raw={this.GetBluntRawDamage()}, Base={this.GetBluntBaseDamage()}], " +
+			$"Fire: [Raw={this.GetFireRawDamage()}, Base={this.GetFireBaseDamage()}], " +
+			$"Cold: [Raw={this.GetColdRawDamage()}, Base={this.GetColdBaseDamage()}], " +
+			$"Poison: [Raw={this.GetPoisonRawDamage()}, Base={this.GetPoisonBaseDamage()}], " +
+			$"Energy: [Raw={this.GetEnergyRawDamage()}, Base={this.GetEnergyBaseDamage()}]";
 	endfunction
 endclass
 
-enum class DAMAGE_TIER
-	DAMAGE_NONE := "DAMAGE_NONE",
+enum class DAMAGE_TYPE
+	SLASH := "Cortante",
+	PIERCING := "Perfurante",
+	BLUNT := "Contusivo",
 
-	ONEHANDED_LOW := "ONEHANDED_LOW",
-	ONEHANDED_MID := "ONEHANDED_MID",
-	ONEHANDED_HIGH := "ONEHANDED_HIGH",
-
-	TWOHANDED_LOW := "TWOHANDED_LOW",
-	TWOHANDED_MID := "TWOHANDED_MID",
-	TWOHANDED_HIGH := "TWOHANDED_HIGH",
-
-	BOW_LOW := "BOW_LOW",
-	BOW_MID := "BOW_MID",
-	BOW_HIGH := "BOW_HIGH",
-
-	CROSSBOW_LOW := "CROSSBOW_LOW",
-	CROSSBOW_MID := "CROSSBOW_MID",
-	CROSSBOW_HIGH := "CROSSBOW_HIGH",
-
-	THROWING_LOW := "THROWING_LOW",
-	THROWING_MID := "THROWING_MID",
-	THROWING_HIGH := "THROWING_HIGH"
+	FIRE := "Fogo",
+	COLD := "Gelo",
+	POISON := "Veneno",
+	ENERGY := "Energia"
 endenum
 
-enum class DAMAGE_TYPE
-	SLASHDAMAGE := "Cortante",
-	PIERCINGDAMAGE := "Perfurante",
-	BLUNTDAMAGE := "Contusivo"
+enum class STANCE_TYPE
+	NEUTRAL := "Neutra",
+	AGGRESSIVE := "Agressiva",
+	VERY_AGGRESSIVE := "Muito Agressiva",
+	DEFENSIVE := "Defensiva",
+	VERY_DEFENSIVE := "Muito Defensiva"
 endenum

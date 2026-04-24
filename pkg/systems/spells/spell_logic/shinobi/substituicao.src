@@ -1,0 +1,52 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/client";
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+
+/**
+ * Substituicao (Kawarimi) - Spell 1100
+ * The next hit against you stuns the enemy and makes you invisible,
+ * leaving a log in your place.
+ */
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	if (GetObjProperty(who, "#substituicao_active"))
+		SendSysMessageEx(who, "Substituicao ja esta ativa.", SSM_FAIL);
+		return 0;
+	endif
+
+	SetObjProperty(who, "#substituicao_active", 1);
+	PlaySoundEffect(who, 0x228);
+	PrintTextAbove(who, "*Prepara uma substituicao*");
+	SendSysMessageEx(who, "Substituicao ativada. O proximo golpe contra voce ativara o efeito.", SSM_INFO);
+
+	// Wait for hit or timeout (30 seconds max)
+	var timeout := 30;
+	var start := ReadGameClock();
+
+	while (ReadGameClock() - start < timeout)
+		if (!GetObjProperty(who, "#substituicao_active"))
+			// Was consumed by combat hook or similar
+			return 1;
+		endif
+
+		// Check if was hit (HP decreased)
+		if (who.dead)
+			EraseObjProperty(who, "#substituicao_active");
+			return 0;
+		endif
+
+		sleepms(500);
+	endwhile
+
+	// Timeout - remove
+	EraseObjProperty(who, "#substituicao_active");
+	SendSysMessageEx(who, "A substituicao expirou.", SSM_INFO);
+
+	return 1;
+endprogram

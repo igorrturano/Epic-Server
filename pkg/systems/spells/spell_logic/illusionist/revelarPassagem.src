@@ -30,11 +30,11 @@ program SpellScript(params)
 	handleSilentMagic(who, targ, SFX_SPELL_CLUMSY);
 
 	// Visual effect - divination eyes on the secret door
-	PlayStationaryEffect(targ.x, targ.y, targ.z, EPIC_FX_DIVINATION_EYES, 10, 30, 0, targ.realm);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_DIVINATION_EYES, 10, 30, 0, targ.realm);
 	sleepms(100);
 
 	// Sparkle effect around the door
-	PlayStationaryEffect(targ.x, targ.y, targ.z + 5, EPIC_FX_YELLOW_SPARKLE, 7, 20, 0, targ.realm);
+	PlayStationaryEffect(targ.x, targ.y, targ.z + 5, FX_YELLOW_SPARKLE, 7, 20, 0, targ.realm);
 
 	// Start script to animate the secret passage
 	start_script(":epicspawn:scripts/animatePassage", array{ targ, 20, 60 });

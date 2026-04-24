@@ -3,7 +3,8 @@ use util;
 use os;
 use cfgfile;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
+include ":fls_core:fls_characters";
 include "include/client";
 include "include/sounds";
 include ":timedScripts:timedScripts";

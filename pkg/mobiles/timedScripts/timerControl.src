@@ -10,7 +10,8 @@ use cfgfile;
 include ":timedscripts:timedScripts";
 include ":fls_core:packets";
 include "include/say";
-include ":spells:tnmagery";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program TimerControl(mobile)
 	if (!mobile.IsA(POLCLASS_MOBILE))
@@ -25,7 +26,7 @@ program TimerControl(mobile)
 	var cooldowns := dictionary;
 	StartUp(mobile, timer_list, cooldowns, num_poisons);
 
-	while (1)
+	while (mobile)
 		mobile.SetPoisoned((num_poisons > 0));
 
 		var event;
@@ -50,6 +51,13 @@ program TimerControl(mobile)
 		endif
 
 		CheckTimerStatus(mobile, timer_list, cooldowns, num_poisons);
+
+		// Keep %TimerList% fresh so server shutdown (no EVENT_LOGOFF fires)
+		// captures the true remaining duration on the next world save.
+		// SetObjProperty is in-memory; disk cost is deferred to the save.
+		if ((timer_list.Size() > 0) || (cooldowns.Size() > 0))
+			SaveState(mobile, timer_list, cooldowns);
+		endif
 	endwhile
 
 	return 1;
@@ -101,10 +109,55 @@ function StartUp(mobile, byref timer_list, byref cooldowns, byref num_poisons)
 	var temp_list := TS_GetTimerList(mobile); // Will initialize dictionary.
 	var temp_cooldowns := TS_GetCooldownList(mobile);
 
+	// Clean up stale state from persistent timers before restarting them.
+	// SubScripts store state in ObjProperties and modify mobile properties (hitchance_mod, stat mods, etc).
+	// On reconnect, those properties may be stale or reset — running EndScript first ensures a clean slate.
+	SetObjProperty(mobile, "#reconnecting", 1);
+	foreach timer in (temp_list)
+		// SpellController manages its own reconnect lifecycle via SC_ResyncOnLogin
+		if (_timer_iter[1, 12] == "spelleffect_")
+			continue;
+		endif
+		var elem_info := TS_GetCfgElem(_timer_iter);
+		if (CInt(elem_info.PersistOnLogoff) && elem_info.EndScript)
+			SetObjProperty(mobile, "prop", timer.level);
+			var cleanup := Start_Script(elem_info.EndScript, mobile);
+			if (cleanup)
+				while (cleanup.pid && GetProcess(cleanup.pid))
+					SleepMS(5);
+				endwhile
+			endif
+		endif
+	endforeach
+	EraseObjProperty(mobile, "#reconnecting");
+
 	foreach timer in (temp_list)
 		var event := struct;
 		event.+name := _timer_iter;
-		event.+amount := timer.duration;
+
+		// Spell buffs (spelleffect_*) pause while offline — use the saved remaining
+		// snapshot from the last logoff. All other persistent timers keep endtime-based
+		// behavior so poison/debuffs continue to tick during downtime (anti-exploit).
+		var remaining;
+		if (_timer_iter[1, 12] == "spelleffect_")
+			remaining := CInt(timer.duration);
+		else
+			remaining := CInt(timer.endtime - ReadGameClock());
+		endif
+
+		if (remaining <= 0)
+			var elem_info := TS_GetCfgElem(_timer_iter);
+			if (CInt(elem_info.NoEnd))
+				remaining := CInt(elem_info.MaxDuration);
+				if (remaining <= 0)
+					remaining := 9999;
+				endif
+			else
+				remaining := 1; // Expired during offline — let it expire immediately on restore
+			endif
+		endif
+		event.+amount := remaining;
+
 		event.+level := timer.level;
 		event.+mobserial := mobile.serial;
 
@@ -133,22 +186,29 @@ function LogOff(mobile, byref timer_list, byref cooldowns)
 
 	foreach timer in (timer_list)
 		timer := timer; // So the compiler doesn't warn.
-		KillTimedScript(mobile, timer_list.pid, timer_list, _timer_iter);
-
 		var elem_info := TS_GetCfgElem(_timer_iter);
 		if (elem_info.errortext)
 			print("Error::LogOff() - Unable to find elem [" + _timer_iter + "] " + elem_info.errortext);
 			continue;
-		elseif (elem_info.LogOffScript)
+		endif
+
+		// Timers with PersistOnLogoff skip cleanup — they survive logoff/login
+		if (CInt(elem_info.PersistOnLogoff))
+			continue;
+		endif
+
+		KillTimedScript(mobile, timer.pid, timer_list, _timer_iter);
+
+		if (elem_info.LogOffScript)
 			var script := Start_Script(elem_info.LogOffScript, array{ mobile, "LogOff" });
 			if (script.errortext)
 				print("Error::LogOff() - [" + elem_info.LogOffScript + "] " + script.errortext);
 			endif
 		elseif (elem_info.EndScript)
-			SetObjProperty(mobile, "prop", timer);
+			SetObjProperty(mobile, "prop", timer.level);
 			var script := Start_Script(elem_info.EndScript, mobile);
 			if (script.errortext)
-				print("Error::LogOff() - [" + elem_info.LogOffScript + "] " + script.errortext);
+				print("Error::LogOff() - [" + elem_info.EndScript + "] " + script.errortext);
 			endif
 		endif
 	endforeach
@@ -209,11 +269,7 @@ function AddTimer(mobile, byref event, byref timer_list, byref cooldowns, byref 
 			SendSysMessageEx(mobile, "O veneno nao faz efeito em voce.", SSM_INFO);
 			return 0;
 		endif
-		if (TemHabilidade(mobile, "Resistencia a Venenos"))
-			SendSysMessageEx(mobile, "O veneno nao faz efeito em voce.", SSM_INFO);
-			return 0;
-		endif
-		if (TemHabilidade(mobile, "Mumificacao"))
+		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::MUMIFICACAO))
 			SendSysMessageEx(mobile, "O veneno nao faz efeito em voce.", SSM_INFO);
 			return 0;
 		endif
@@ -325,37 +381,39 @@ function AddExistingTimer(mobile, byref event, byref timer_list, byref num_poiso
 		else
 			event.amount := (duration + amt);
 		endif
-	/* else
-		if ( (event.level) && level )
-			if ( (level == event.level) && (amt > duration) )
-				event.amount := amt;
-			elseif ( event.level > level )
+	else
+		if ((event.level) && level)
+			if (event.level > level)
+				// Higher level: restart with new level and duration
 				KillTimedScript(mobile, timer_list[event.name].pid, timer_list, event.name);
 				event.amount := amt;
-				AddTimer(mobile, event, timer_list, num_poisons);
+				var temp_cooldown := dictionary;
+				AddTimer(mobile, event, timer_list, temp_cooldown, num_poisons);
 				return 1;
+			elseif ((level == event.level) && (amt > duration))
+				// Same level, longer duration: extend
+				event.amount := amt;
+			else
+				// Same/lower level, shorter/equal duration: keep existing
+				return 0;
 			endif
 		else
-			if ( amt > duration )
+			if (amt > duration)
 				event.amount := amt;
+			else
+				return 0;
 			endif
-		endif */
+		endif
 	endif
 
 	var maxdur := CInt(elem_info.MaxDuration);
 	if (maxdur > 0)
-		if ((duration + event.amount) > maxdur)
-			duration := maxdur;
-		else
-			duration := duration + event.amount;
+		if (event.amount > maxdur)
+			event.amount := maxdur;
 		endif
 	endif
 
-	// SendSysMessage(mobile, "duration: "+duration);
-	// SendSysMessage(mobile, "endtime old: "+timer_list[event.name].endtime);
-	// timer_list[event.name].endtime := duration+ReadGameClock();
 	timer_list[event.name].endtime := event.amount + ReadGameClock();
-	// SendSysMessage(mobile, "endtime new: "+timer_list[event.name].endtime);
 
 	return 1;
 endfunction
@@ -447,7 +505,6 @@ function LowerDuration(mobile, byref event, byref timer_list, byref cooldowns, b
 	if (event.amount == -1)
 		EndTimedScript(mobile, event.name, num_poisons);
 		KillTimedScript(mobile, timer_info.pid, timer_list, event.name);
-		// sendsysmessage(mobile, "mantain "+ timer_info.mantain);
 		if (timer_info.mantain)
 			MantainSpell(timer_info);
 		endif
@@ -463,7 +520,6 @@ function LowerDuration(mobile, byref event, byref timer_list, byref cooldowns, b
 		if (elem_info.Icon)
 			SendBuff(mobile, 0, elem_info.Icon);
 		endif
-		// sendsysmessage(mobile, "mantain "+ timer_info.mantain);
 		if (timer_info.mantain)
 			MantainSpell(timer_info);
 		endif
@@ -548,4 +604,10 @@ function KillTimedScript(mobile, byref pid, byref timer_list, byref timer_name)
 	SaveState(mobile, timer_list, NO_COOLDOWNS);
 
 	return 1;
+endfunction
+
+function MantainSpell(byref info)
+	if (info.mage.connected)
+		Start_Script(":spells:shared/mantainSpell", {info.mage, info.mobserial, info.name, info.duration, info.level});
+	endif
 endfunction

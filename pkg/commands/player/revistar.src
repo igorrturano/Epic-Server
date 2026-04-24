@@ -34,7 +34,7 @@ program textcmd_openPack(who)
 		SendSysMessageEx(who, targ.name + " nao permitiu que voce o revistasse.", SSM_INFO);
 	else
 		var item;
-		if (TemHabilidade(targ, "Prestidigitador") && !GetObjProperty(targ, "ocultando"))
+		if (MobileWrapper(targ).HasAbility(ABILITY_ID::PRESTIDIGITATOR) && !GetObjProperty(targ, "ocultando"))
 			var esconde := YesNo(targ, "Voce deseja esconder algum objeto?", "Sim.", "Não.");
 			if (esconde)
 				item := Target(targ);
@@ -64,6 +64,7 @@ program textcmd_openPack(who)
 				SendSysMessageEx(who, "O alvo se afastou demais.", SSM_FAIL);
 				break;
 			endif
+			sleepms(500);
 		endwhile
 
 		who.facing := who.facing;

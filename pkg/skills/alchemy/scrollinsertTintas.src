@@ -58,11 +58,11 @@ function addScroll(who, book, rune)
 		endif
 	endforeach
 
-	if (rune_list.Size() > 15)
-		SendSysMessage(who, "Este livro ja esta cheio.");
-		MoveItemToContainer(rune, who.backpack);
-		return 0;
-	endif
+//	if (rune_list.Size() > 15)
+//		SendSysMessage(who, "Este livro ja esta cheio.");
+//		MoveItemToContainer(rune, who.backpack);
+//		return 0;
+//	endif
 
 	if (!ReserveItem(rune))
 		SendSysMessage(who, "Cancelado");
@@ -76,7 +76,14 @@ function addScroll(who, book, rune)
 		list := array;
 	endif
 
-	var recipe := newspell.name;
+	var recipeName := StrReplace(Lower(newspell.name), " ", "");
+	var recipe;
+	if (Find(recipeName, "-", 1) > 0)
+		recipe := recipeName;
+	else
+		recipe := recipeName + "-1";
+	endif
+
 	if (recipe in list)
 		MoveItemToContainer(rune, who.backpack);
 		SendSysMessage(who, "Voce ja conhece como fazer este item, procure uma mesa de alquimia.");

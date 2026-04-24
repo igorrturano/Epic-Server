@@ -3,6 +3,8 @@ use uo;
 use util;
 use cfgfile;
 include ":alchemy:alchemy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":timedScripts:timedScripts";
 
 program drink_blue(who, potion)
@@ -25,9 +27,9 @@ program drink_blue(who, potion)
 	endif
 	vicio := vicio / 100;
 	var bonus := GetObjProperty(potion, "bonus");
-	var tier := getObjProperty(potion, "tier");
+	var tier := peganivelpocao(who, potion);
 	var stat := AP_GetTrueStat(who, DEXTERITY);
-	if (temHabilidade(who, "Impulso Metabolico"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
 		tier := (tier + 2);
 	endif
 	var buff := 0.05 * tier;
@@ -36,5 +38,5 @@ program drink_blue(who, potion)
 	TS_StartTimer(who, "agility", (180 * tier), buff);
 	empty_bottle(who, potion);
 
-	VicioDex(who, potion);
+	AplicaVicio(who, potion, DEXTERITY);
 endprogram

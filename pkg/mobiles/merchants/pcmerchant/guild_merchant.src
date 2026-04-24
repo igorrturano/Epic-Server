@@ -8,7 +8,7 @@ use guilds;
 include ":merchants:merchant";
 include "include/string";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":merchants:crafthelp";
 include ":gumps:gumps";
 include ":recipes:recipes";

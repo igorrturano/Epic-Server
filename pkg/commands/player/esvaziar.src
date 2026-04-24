@@ -33,9 +33,42 @@ program do_empty(who)
 		return;
 
 	else
+		var tierComponente := 1;
+		var fabricado := GetObjProperty(the_potion, "fabricado");
+		if (fabricado)
+			var comp := 0;
+			if (fabricado.componentes)
+				comp := fabricado.componentes["doses"];
+				if (!comp)
+					comp := fabricado.componentes["vazio"];
+				endif
+			elseif (fabricado.esquema && fabricado.esquema.componentesEscolhidos)
+				foreach c in (fabricado.esquema.componentesEscolhidos)
+					Sleepms(2);
+					var car := c.componenteNecessario.caracteristica;
+					if (Lower(car) == "doses" || Lower(car) == "vazio")
+						comp := c;
+						break;
+					endif
+				endforeach
+			endif
+			if (comp && comp.tier)
+				var tierId := comp.tier.id;
+				if (!tierId)
+					tierId := cint(comp.tier);
+				endif
+				if (tierId > 0)
+					tierComponente := tierId;
+				endif
+			endif
+		endif
 		SendSysMessageEx(who, "Voce esvaziou a pocao.", SSM_REQUEST);
 		PlaySoundEffect(who, 0x241);
-		CreateItemInBackpack(who, 0xf0e, the_potion.amount);
+		var pot := CreateItemInBackpack(who, 0x0F0E, the_potion.amount);
+		setobjproperty(pot, "encaixeComponente", "frasco");
+		setobjproperty(pot, "material", 7139);
+		setobjproperty(pot, "tierComponente", tierComponente);
+		pot.color := 1328;
 		DestroyItem(the_potion);
 		return;
 	endif

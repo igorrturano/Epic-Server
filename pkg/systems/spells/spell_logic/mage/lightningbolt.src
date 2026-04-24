@@ -7,9 +7,10 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":charactercreation:resists";
 
 program cast_lightningbolt(params)
 	var caster := params[1];
@@ -18,16 +19,11 @@ program cast_lightningbolt(params)
 	var spell_circle := spellinfo.Circle;
 	var spell_school := spellinfo.School;
 
-	params := 0; // No longer needed
+	params := 0;
 
 	SendSysMessage(caster, "Selecione o alvo.");
-	if (!targ.IsA(POLCLASS_MOBILE))
+	if (!targ || !targ.IsA(POLCLASS_MOBILE))
 		SendSysMessage(caster, "Alvo invalido.");
-		return 0;
-	endif
-
-	if (!targ)
-		SendSysMessageEx(caster, "Cancelado", SSM_FAIL);
 		return 0;
 	endif
 
@@ -40,14 +36,23 @@ program cast_lightningbolt(params)
 		return 0;
 	endif
 
-	LaunchProjectile(caster, targ, spell_circle, spell_school);
-endprogram
-
-function LaunchProjectile(caster, targ, spell_circle, spell_school)
 	PlaySoundEffect(caster, SFX_SPELL_ENERGY_BOLT);
-	PlayMovingEffectXYZHued(caster, targ, 0x379f, 10, 1643, 0);
-	var dmg := epicSpellDamageRoll(caster, spell_circle);
-	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+	// PlayMovingEffectXYZHued(caster, targ, 0xCDE5, 10, 1643, 0);
+	PlayObjectCenteredEffect(targ, 0xCDE5, 15, 10);
+	// C5 single-target ultimate: circle dice + flat Arcana/5. Evocator bump
+	// is absorbed into the dice tier by epicSpellDamageRoll.
+	var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+	dmg := dmg + Cint(AP_GetSkill(caster, ARCANA) / 5);
+
+	// Failed REFLEX save = critical strike = double damage.
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+	if (CheckResist(targ, REFLEXES, diff, -bonus) <= 0)
+		dmg := dmg * 2;
+		SendSysMessageEx(caster, "Critico! O raio atinge em cheio.", SSM_INFO);
+		SendSysMessageEx(targ, "Voce nao consegue desviar!", SSM_FAIL);
+		PlaySoundEffect(targ, SFX_SPELL_LIGHTNING);
+	endif
 
 	DamageFLS(targ, cint(dmg), DMG_ENERGY, caster, "lightningbolt");
-endfunction
+endprogram

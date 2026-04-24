@@ -6,7 +6,7 @@ use uo;
 use os;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":destroyable:include/destroyItem";
 
 program controlScript(field)

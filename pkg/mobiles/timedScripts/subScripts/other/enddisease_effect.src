@@ -10,7 +10,7 @@ include ":timedscripts:timedScripts";
 include ":fls_core:packets";
 include ":attributes:attributes";
 include "include/imersao"; // This would be the path to your immersion script
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":medicine:anatomy";
 include ":medicine:util/diseaseConstants";
 
@@ -201,11 +201,9 @@ function DoStomachacheEffect(mobile, damage)
 	PrintTextAbove(mobile, "*segura o estômago*");
 	Imersao(mobile, "vomitar"); // Sound and emote
 
-	// Apply life damage
-	damageFLS(mobile, CInt(damage / 2), DMG_FORCED);
-
-	// Apply stamina damage
-	ReduceStamina(mobile, damage / 2);
+var half := CInt(damage / 2);
+damageFLS(mobile, half, DMG_FORCED);
+ReduceStamina(mobile, half);
 
 	DoVomit(mobile);
 
@@ -346,7 +344,7 @@ function RemoveDiseaseEffects(mobile)
 	if (regen_mod)
 		var current_stamina_mod := AP_GetVitalRegenRateMod(mobile, "Stamina");
 		var current_mana_mod := AP_GetVitalRegenRateMod(mobile, "Mana");
-		AP_SetVitalRegenRateMod(mobile, "Stamina", current_stamina_mod - (regen_mod));
+		AP_SetVitalRegenRateMod(mobile, "Stamina", current_stamina_mod(regen_mod));
 		AP_SetVitalRegenRateMod(mobile, "Mana", current_mana_mod(regen_mod));
 	// Remover mod de regeneração se implementado
 	// UpdateDiseaseProperty(mobile, "RegenDiseaseMod", 0);

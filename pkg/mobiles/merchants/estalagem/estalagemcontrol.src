@@ -87,11 +87,18 @@ function InnKeeperChecks()
 							endif
 						endif
 						var cent := quartos[i].centro;
+						var cent_size := cent.size();
+						var room_realm := npc.realm;
+						if (cent_size == 4)
+							room_realm := cent[4];
+						elseif (cent_size == 7)
+							room_realm := cent[7];
+						endif
 						if (cent[1])
-							DestroyRentItens(cent[1], cent[2], cent[3], npc.realm, player2, npc);
+							DestroyRentItens(cent[1], cent[2], cent[3], room_realm, player2, npc);
 							ChecarMobileQuarto(player2, cent[1], cent[2], cent[3], npc);
-							if (cent[4])
-								DestroyRentItens(cent[4], cent[5], cent[6], npc.realm, player2, npc);
+							if (cent_size == 6 || cent_size == 7)
+								DestroyRentItens(cent[4], cent[5], cent[6], room_realm, player2, npc);
 								ChecarMobileQuarto(player2, cent[4], cent[5], cent[6], npc);
 							endif
 						endif
@@ -118,6 +125,10 @@ function DestroyRentItens(x, y, z, r, player, npc)
 		backpack.desc := player.name;
 	endif
 	foreach obj in objects
+		if (obj.isDoor())
+			sleepms(20);
+			continue;
+		endif
 		if (CheckLosBetween(x, y, z, obj.x, obj.y, obj.z, r))
 			if (GetObjProperty(obj, "crafterserial"))
 				if (player && player != error)
@@ -128,16 +139,16 @@ function DestroyRentItens(x, y, z, r, player, npc)
 				endif
 
 			elseif (obj.IsA(POLCLASS_CONTAINER))
-				var container := EnumerateItemsInContainer(obj, ENUMERATE_IGNORE_LOCKED);
-				foreach item in container
-					if (player && player != error)
+				if (player && player != error)
+					foreach item in EnumerateItemsInContainer(obj, ENUMERATE_IGNORE_LOCKED)
 						item.movable := 1;
-						MoveItemToContainer(item, backpack);
-					else
-						DestroyItem(item);
-					endif
-					sleepms(20);
-				endforeach
+						sleepms(20);
+					endforeach
+					obj.movable := 1;
+					MoveItemToContainer(obj, backpack);
+				else
+					DestroyItem(obj);
+				endif
 			endif
 		endif
 		sleepms(20);

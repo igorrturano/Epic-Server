@@ -7,22 +7,15 @@ include "include/shapes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":traps:traps";
 include ":tn:tngumps";
 include ":itemutils:canAccess";
 
 program Make_Trap(who, trap)
 
-	if ((temHabilidade(who, "Instalar Armadilha")) || (temHabilidade(who, "Caçador Experiente")))
-
-	else
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE))
 		SendSysMessageEx(who, "Voce nao tem a menor ideia de como usar isso.", SSM_FAIL);
-		return 0;
-	endif
-
-	if (trap.objtype == 0xff97)
-		SendSysMessageEx(who, "Esta armadilha ja esta pronta para uso.", SSM_FAIL);
 		return 0;
 	endif
 

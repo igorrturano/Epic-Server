@@ -39,7 +39,7 @@ program point(who)
 		targettedesc := "aquele lugar";
 	endif
 
-	PerformAction(who, ANIM_SALUTE);
+	PerformAction(who, HUMAN_ANIM::SALUTE);
 	PrintTextAbove(who, "*aponta para " + targettedesc + "*", FONT_NORMAL, 55);
 	sleepms(500);
 	if (!targetted.container)

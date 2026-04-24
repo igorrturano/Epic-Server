@@ -1,6 +1,7 @@
 # IDE files
 .idea/
 .vscode/launch.json
+.claude
 
 # Logs
 log
@@ -17,7 +18,6 @@ data
 *.bak
 
 # POL Server
-config/animxlate.cfg
 config/boats.cfg
 config/extobj.cfg
 config/servers.cfg
@@ -31,6 +31,7 @@ uoconvert
 uoconvert.txt
 uotool
 ecompile.cfg
+ecompile
 scripts/ecompile
 scripts/ecompile.cfg
 scripts/ecompile.cfg.example
@@ -59,13 +60,12 @@ realm/
 objtypes.txt
 pcs.txt
 
-# Ignore .dll files in fiddler and plugins directories
+# DLL files
+*.dll
 fiddler/**/*.dll
 plugins/**/*.dll
 
-# Others
-*.dll
-ecompile
-
 # Web WWW Accounts
 /pkg/systems/accounts/config/settings.cfg
+
+/.claude

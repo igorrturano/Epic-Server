@@ -25,8 +25,8 @@ program SpellScript(params)
 
 	// Visual effects
 	PlaySoundEffect(who, SFX_SPELL_BLESS);
-	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLE_GROUND, 7, 7);
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 7, 7);
+	PlayObjectCenteredEffect(who, FX_BLUE_SPARKLE_GROUND, 7, 7);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 7, 7);
 
 	// Get caster's vitals
 	var hp := AP_GetVital(who, "Hits") - 1;

@@ -3,9 +3,9 @@ use os;
 use math;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/say";
 
 program doubleattack(params)

@@ -12,6 +12,8 @@ include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:htmlGump";
 include ":fls_core:fls_characters";
+include ":commands:/include/r";
+include "profile_packets";
 
 const PROFILE_MSGTYPE := 0xB8;
 const PROFILE_TITLE := "Profile for ";
@@ -37,6 +39,15 @@ const INTERNAL_BACKGROUND := 9350;
 const GUMP_WIDTH := 395;
 const GUMP_HEIGHT := 340;
 const TEXT_ENTRY_BACKGROUND := 2620;
+
+const PROFILE_GUMP_WIDTH := 232;
+const PROFILE_GUMP_HEIGHT := 510;
+const PROFILE_IMAGE_WIDTH := 210;
+const PROFILE_IMAGE_HEIGHT := 330;
+const PROFILE_IMAGE_Y := 41;
+const PROFILE_RACE_Y := 375;
+const PROFILE_DESC_Y := 400;
+const PROFILE_DESC_HEIGHT := 100;
 
 program runScript_CharProfileRequest(params)
 	var who := params[1];
@@ -94,34 +105,21 @@ program runScript_CharProfileRequest(params)
 			SetObjProperty(who, "url", url);
 			SetObjProperty(who, "descricao", descricao);
 
-			var Object_Name;
-			var conhecidos := dictionary;
-			if (GetObjProperty(who, "conhecidos"))
-				var ID := Cstr(chr.serial);
-				if (GetObjProperty(chr, "disfarce"))
-					ID := Cstr(GetObjProperty(chr, "FakeID"));
-				endif
+			// Broadcast profile update to self and party members
+			UpdateProfileClient(who, who.serial, url);
+			BroadcastProfileToParty(who);
 
-				conhecidos := GetObjProperty(who, "conhecidos");
-				if (conhecidos.Exists(ID))
-					Object_Name := conhecidos[ID];
-				else
-					Object_Name := chr.name;
-				endif
-			else
-				Object_Name := chr.name;
-			endif
+			var nickname := GetKnownNickname(who, chr);
+			var Object_Name := (nickname != "") ? nickname : chr.name;
 
-			var gump := GFCreateGump();
-			GFPage(gump, 0);
-			GFResizePic(gump, 4, 3, 9270, 267, 383);
-			GFHTMLArea(gump, 37, 41, 200, 200, "<img src=\"" + url + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">");
-			GFHTMLArea(gump, 20, 273, 236, 100, descricao, 1, 1);
-			GFHTMLArea(gump, 16, 14, 239, 24, Object_Name, 1, 0);
-
-			var raca := who.getRace();
-
-			GFHTMLArea(gump, 19, 245, 239, 24, raca, 1, 0);
+            var gump := GFCreateGump();
+            var raca := who.title_race;
+            GFPage(gump, 0);
+            GFResizePic(gump, 4, 3, 9270, PROFILE_GUMP_WIDTH, PROFILE_GUMP_HEIGHT);
+            GFHTMLArea(gump, 15, 14, PROFILE_IMAGE_WIDTH, 24, Object_Name, 1, 0);
+            GFHTMLArea(gump, 15, PROFILE_IMAGE_Y, PROFILE_IMAGE_WIDTH, PROFILE_IMAGE_HEIGHT, "<img src=\"" + url + "\" width=\"" + PROFILE_IMAGE_WIDTH + "\" height=\"" + PROFILE_IMAGE_HEIGHT + "\" x=\"0\" y=\"0\">");
+            GFHTMLArea(gump, 15, PROFILE_RACE_Y, PROFILE_IMAGE_WIDTH, 24, raca, 1, 0);
+            GFHTMLArea(gump, 15, PROFILE_DESC_Y, PROFILE_IMAGE_WIDTH, PROFILE_DESC_HEIGHT, descricao, 1, 1);
 
 			GFSendGump(who, gump);
 		endif
@@ -131,50 +129,34 @@ program runScript_CharProfileRequest(params)
 			var incognito_url := "https://th.bing.com/th/id/OIG.0XmfkJZCmPd.wGE6C9x_?pid=ImgGn&w=1024&h=1024&rs=1";
 			var incognito_descricao := "A fisionomia desse indvíduo é difícil de discernir.";
 
-			var gump2 := GFCreateGump();
-			GFPage(gump2, 0);
-			GFResizePic(gump2, 4, 3, 9270, 267, 383);
-			GFHTMLArea(gump2, 37, 41, 200, 200,
-						"<img src=\"" + incognito_url + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">");
-			GFHTMLArea(gump2, 20, 273, 236, 100, incognito_descricao, 1, 1);
-			GFHTMLArea(gump2, 16, 14, 239, 24, "Incognito", 1, 0);
-			GFHTMLArea(gump2, 19, 245, 239, 24, "Desconhecido", 1, 0);
+            var gump2 := GFCreateGump();
+            GFPage(gump2, 0);
+            GFResizePic(gump2, 4, 3, 9270, PROFILE_GUMP_WIDTH, PROFILE_GUMP_HEIGHT);
+            GFHTMLArea(gump2, 15, 14, PROFILE_IMAGE_WIDTH, 24, "Incognito", 1, 0);
+            GFHTMLArea(gump2, 15, PROFILE_IMAGE_Y, PROFILE_IMAGE_WIDTH, PROFILE_IMAGE_HEIGHT, "<img src=\"" + incognito_url + "\" width=\"" + PROFILE_IMAGE_WIDTH + "\" height=\"" + PROFILE_IMAGE_HEIGHT + "\" x=\"0\" y=\"0\">");
+            GFHTMLArea(gump2, 15, PROFILE_RACE_Y, PROFILE_IMAGE_WIDTH, 24, "Desconhecido", 1, 0);
+            GFHTMLArea(gump2, 15, PROFILE_DESC_Y, PROFILE_IMAGE_WIDTH, PROFILE_DESC_HEIGHT, incognito_descricao, 1, 1);
 
 			GFSendGump(who, gump2);
 		else
-			var Object_Name;
-			var conhecidos := dictionary;
-			if (GetObjProperty(who, "conhecidos"))
-				var ID := Cstr(chr.serial);
-				if (GetObjProperty(chr, "disfarce"))
-					ID := Cstr(GetObjProperty(chr, "FakeID"));
-				endif
-
-				conhecidos := GetObjProperty(who, "conhecidos");
-				if (conhecidos.Exists(ID))
-					Object_Name := conhecidos[ID];
-				else
-					Object_Name := chr.name;
-				endif
-			else
-				Object_Name := chr.name;
-			endif
+			var nickname := GetKnownNickname(who, chr);
+			var Object_Name := (nickname != "") ? nickname : chr.name;
 
 			var gump2 := GFCreateGump();
 			GFPage(gump2, 0);
-			GFResizePic(gump2, 4, 3, 9270, 267, 383);
-			GFHTMLArea(gump2, 37, 41, 200, 200, "<img src=\"" + GetObjProperty(chr, "url")
-						+ "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">");
-			GFHTMLArea(gump2, 20, 273, 236, 100, GetObjProperty(chr, "descricao"), 1, 1);
-			GFHTMLArea(gump2, 16, 14, 239, 24, Object_Name, 1, 0);
-
+			GFResizePic(gump2, 4, 3, 9270, PROFILE_GUMP_WIDTH, PROFILE_GUMP_HEIGHT);
+			GFHTMLArea(gump2, 15, 14, PROFILE_IMAGE_WIDTH, 24, Object_Name, 1, 0);
+			GFHTMLArea(gump2, 15, PROFILE_IMAGE_Y, PROFILE_IMAGE_WIDTH, PROFILE_IMAGE_HEIGHT, "<img src=\"" + GetObjProperty(chr, "url") + "\" width=\"" + PROFILE_IMAGE_WIDTH + "\" height=\"" + PROFILE_IMAGE_HEIGHT + "\" x=\"0\" y=\"0\">");
+			
 			var raca := GetObjProperty(chr, "raca");
 			if (raca == error)
 				raca := "Desconhecida";
 			endif
-			GFHTMLArea(gump2, 19, 245, 239, 24, raca, 1, 0);
+			GFHTMLArea(gump2, 15, PROFILE_RACE_Y, PROFILE_IMAGE_WIDTH, 24, raca, 1, 0);
+			GFHTMLArea(gump2, 15, PROFILE_DESC_Y, PROFILE_IMAGE_WIDTH, PROFILE_DESC_HEIGHT, GetObjProperty(chr, "descricao"), 1, 1);
 
 			GFSendGump(who, gump2);
+
 
 			if (who.hidden || who.concealed)
 				return;

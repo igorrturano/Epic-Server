@@ -1,0 +1,182 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+include "include/say";
+include "include/client";
+
+program incensario(player, incensario)
+    var preenchido := GetObjProperty(incensario, "preenchido");
+    
+    if (!preenchido)
+        SendSysMessage(player, "Selecione o fumo para o incensário:");
+        var targ := target(player);
+        if (PodeFumar(targ))
+            SetObjProperty(incensario, "preenchido", 1);
+            SendSysMessage(player, "Você colocou o fumo no incensário");
+            SubtractAmount(targ, 1);
+            return;
+        endif
+    endif
+    
+    if (preenchido)
+        // Verifica se já está ativo
+        if (GetObjProperty(incensario, "ativo"));
+            SendSysMessage(player, "O incensario já está aceso.");
+            return;
+        endif
+        
+        PrintTextAbove(player, "*Acendendo o incensário*");
+        Sleep(1);
+		incensario.graphic := 0xC620;
+        PrintTextAbove(player, "*Um aroma pungente se espalha, fortalecendo os próximos contra doenças*");
+        
+        // Marca como ativo antes de detachar
+        SetObjProperty(incensario, "ativo", 1);
+        SetObjProperty(incensario, "tempo_inicio", ReadGameClock());
+        SetObjProperty(incensario, "dono_serial", player.serial);
+        
+		// Mostra a fumaça logo ao acender
+var posicao := GetPosicaoIncensario(incensario);
+if (posicao)
+    MostrarFumacaRange(posicao.x, posicao.y, posicao.z, posicao.realm);
+endif
+		
+        // Detach do player para não travá-lo
+        detach();
+        
+        // Agora roda o loop do incensário
+        ManterIncensario(incensario, player);
+    endif
+endprogram
+
+function ManterIncensario(incensario, player)
+    // Duração: 10 minutos = 600 segundos
+    var duracao := 600;
+    var tempo_decorrido := 0;
+    var ultimo_aviso := 0;
+    
+    while (tempo_decorrido < duracao)
+        // Verifica se o incensário ainda existe
+        if (!incensario)
+            return;
+        endif
+        
+        // Verifica se foi apagado manualmente
+        if (!GetObjProperty(incensario, "ativo"))
+            return;
+        endif
+        
+        // Pega a posição atual do incensário (pode estar equipado ou na backpack)
+        var posicao := GetPosicaoIncensario(incensario);
+        
+        // A cada 2 minutos (120 segundos), mostra a fumaça no range
+        if (tempo_decorrido - ultimo_aviso >= 120)
+            if (posicao)
+                MostrarFumacaRange(posicao.x, posicao.y, posicao.z, posicao.realm);
+            endif
+            ultimo_aviso := tempo_decorrido;
+        endif
+        
+        Sleep(10); // Verifica a cada 10 segundos
+        tempo_decorrido := tempo_decorrido + 10;
+    endwhile
+    
+    PrintTextAbove(player, "*O incensário se apagou!*");
+    
+    EraseObjProperty(incensario, "preenchido");
+    EraseObjProperty(incensario, "ativo");
+    EraseObjProperty(incensario, "tempo_inicio");
+    EraseObjProperty(incensario, "dono_serial");
+	incensario.graphic := 0xC61F;
+endfunction
+
+function GetPosicaoIncensario(incensario)
+    // Se está equipado em alguém
+    var container := incensario.container;
+    if (container && container.isA(POLCLASS_MOBILE))
+        return struct{
+            "x" := container.x,
+            "y" := container.y,
+            "z" := container.z,
+            "realm" := container.realm
+        };
+    endif
+    
+    // Se está em container (backpack, etc) - pega o container principal
+    while (container)
+        var parent := container.container;
+        if (!parent)
+            break;
+        endif
+        container := parent;
+    endwhile
+    
+    // Se o container final é um mobile (player)
+    if (container && container.isA(POLCLASS_MOBILE))
+        return struct{
+            "x" := container.x,
+            "y" := container.y,
+            "z" := container.z,
+            "realm" := container.realm
+        };
+    endif
+    
+    // Se está no chão
+    if (incensario.x && incensario.y)
+        return struct{
+            "x" := incensario.x,
+            "y" := incensario.y,
+            "z" := incensario.z,
+            "realm" := incensario.realm
+        };
+    endif
+    
+    return 0;
+endfunction
+
+function MostrarFumacaRange(center_x, center_y, center_z, realm)
+    var range := 5;
+    
+    // Forma uma cruz mostrando o alcance do incensário
+    // Braço Norte (cima)
+    PlayStationaryEffectEx(center_x, center_y - range, center_z + 5, realm, FX_FIZZLE, 20, 35, 77, 3);
+    sleepms(200);
+    
+    // Braço Sul (baixo)
+    PlayStationaryEffectEx(center_x, center_y + range, center_z + 5, realm, FX_FIZZLE, 20, 35, 77, 3);
+    sleepms(200);
+    
+    // Braço Leste (direita)
+    PlayStationaryEffectEx(center_x + range, center_y, center_z + 5, realm, FX_FIZZLE, 20, 35, 77, 3);
+    sleepms(200);
+    
+    // Braço Oeste (esquerda)
+    PlayStationaryEffectEx(center_x - range, center_y, center_z + 5, realm, FX_FIZZLE, 20, 35, 77, 3);
+    sleepms(200);
+    
+    // Opcionalmente, adiciona pontos intermediários na cruz
+    // Diagonal Nordeste
+    PlayStationaryEffectEx(center_x + 3, center_y - 3, center_z + 5, realm, FX_FIZZLE, 20, 35, 77, 3);
+    sleepms(200);
+    
+    // Diagonal Noroeste
+    PlayStationaryEffectEx(center_x - 3, center_y - 3, center_z + 5, realm, FX_FIZZLE, 20, 35, 77, 3);
+    sleepms(200);
+    
+    // Diagonal Sudeste
+    PlayStationaryEffectEx(center_x + 3, center_y + 3, center_z + 5, realm, FX_FIZZLE, 20, 35, 77, 3);
+    sleepms(200);
+    
+    // Diagonal Sudoeste
+    PlayStationaryEffectEx(center_x - 3, center_y + 3, center_z + 5, realm, FX_FIZZLE, 20, 35, 77, 3);
+endfunction
+
+function PodeFumar(item)
+    var config := ReadConfigFile(":*:itemdesc");
+    config := config[item.objtype];
+    if (config.PodeFumar)
+        return 1;
+    endif
+    return 0;
+endfunction

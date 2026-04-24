@@ -1,7 +1,8 @@
 use uo;
 use os;
 use util;
-include "include/epicConstants";
+
+include "include/client";
 
 program TimedScript_Petrify(params)
 	var mobile := params[1];
@@ -18,7 +19,7 @@ program TimedScript_Petrify(params)
 
 	// CONTINUE WITH NORMAL PETRIFICATION IF NOT PROTECTED
 	PlaySoundEffect(mobile, 0x1F8);
-	PlayObjectCenteredEffectEx(mobile, EPIC_FX_PETRIFY, 10, 30, 0x0835);
+	PlayObjectCenteredEffectEx(mobile, FX_PETRIFY, 10, 30, 0x0835);
 	PrintTextAbove(mobile, "*Petrificado*");
 	SendSysMessage(mobile, "Voce foi transformado em pedra!");
 

@@ -6,33 +6,30 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
 include "include/tileEffects";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
-	params := 0; // No longer needed
+	var spell := params[3];
+	params := 0;
 
-	// Calculate bonus based on Theology skill / 20
 	var theology := AP_GetSkill(who, THEOLOGY);
-	var bonus := cint(theology / 20);
+	var bonus := CInt(theology / 20);
 	if (bonus < 1)
 		bonus := 1;
 	endif
 
-	// Calculate duration in seconds based on Theology / 2
-	var duration := cint(theology / 2);
+	var duration := CInt(theology / 2);
 	if (duration < 5)
 		duration := 5;
 	endif
 
-	// Calculate max allies to bless based on Theology / 20
-	var max_allies := cint(theology / 20);
+	var max_allies := CInt(theology / 20);
 	if (max_allies < 1)
 		max_allies := 1;
 	endif
 
-	// Get all mobiles in range
 	var nearby := ListMobilesNearLocation(who.x, who.y, who.z, 5, who.realm);
 	var blessed_count := 0;
 
@@ -41,27 +38,32 @@ program SpellScript(params)
 			break;
 		endif
 
-		// Check if mobile is an ally (not hostile to caster)
-		if (mobile == who || !mobile.IsHostile(who))
-			// Set the attack bonus property on the target
-			SetObjProperty(mobile, "#attackbonus", bonus);
+		if (!mobile.IsHostile(who))
+			SC_RemoveEffect(mobile, CInt(spell.id));
 
-			// Set a timed script to remove the bonus after duration
-			TS_StartTimer(mobile, "blessbonus", duration);
+			var opts := struct{};
+			opts.+hitchance_mod := bonus;
+			opts.+buff_category := "hit_bonus";
+			opts.+displayname := "Abencoar";
+			opts.+desc := $"+{bonus} no ataque";
+			opts.+on_apply_script := ":spells:shared/playApplyFX";
+			opts.+on_apply_params := struct{
+				fx := FX_BLESS_EFFECT,
+				fx_speed := 2,
+				fx_duration := 2,
+				sound := SFX_BLESS
+			};
 
-			// Visual and audio feedback
-			PlayStationaryEffect(mobile.x, mobile.y, mobile.z, FX_BLESS_EFFECT, 2, 2);
-			PlaySoundEffect(mobile, SFX_BLESS);
+			SC_ApplyEffect(who, mobile, opts, duration, CInt(spell.id));
 
-			if (mobile != who)
-				SendSysMessageEx(mobile, "Voce sente uma bencao divina guiando seus golpes. (+" + bonus + " no ataque por " + duration + " segundos)", SSM_INFO);
-			endif
+			PlayObjectCenteredEffect(mobile, FX_BLESS_SPELL, 1, 25);
+
+			SendSysMessageEx(mobile, "Voce sente uma bencao divina guiando seus golpes. (+" + bonus + " no ataque por " + duration + " segundos)", SSM_INFO);
 
 			blessed_count := blessed_count + 1;
 		endif
 	endforeach
 
-	// Visual effect at caster's location
 	PlayStationaryEffect(who.x, who.y, who.z, FX_BLESS_EFFECT, 3, 3);
 	PlaySoundEffect(who, SFX_BLESS);
 

@@ -10,6 +10,7 @@ include ":tn:tngumps";
 include ":gumps:yesNo";
 include ":gumps:requestGump";
 include ":attributes:attributes";
+include ":charactercreation:habilidades";
 include ":attributes:stats";
 include ":timedScripts:timedScripts";
 // include ":merchants:item_template";

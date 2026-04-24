@@ -3,12 +3,71 @@ use util;
 use cfgfile;
 use os;
 use basic;
+use datafile;
 
 include ":loot:magicLoot";
 include ":destroyable:include/destroyItem";
 include ":sysbook:include/sealedBooks";
+include ":crafting:/include/fabricacaoComplexos";
+include "include/epicEconomyAudit";
 
 var itemdesc_cache := dictionary{};
+
+const LORE_DROPPED_DATAFILE := ":unicos:lore_dropped";
+
+function LoreItems_GetDataFile()
+    var df := OpenDataFile(LORE_DROPPED_DATAFILE);
+    if (!df)
+        CreateDataFile(LORE_DROPPED_DATAFILE, 0);
+        df := OpenDataFile(LORE_DROPPED_DATAFILE);
+    endif
+    return df;
+endfunction
+
+function LoreItems_IsDropped(item_name)
+    var objtype;
+    if (item_name[1,2] == "0x")
+        objtype := CInt("0x" + item_name[3, len(item_name)]);
+    else
+        objtype := CInt(item_name);
+    endif
+    var df := LoreItems_GetDataFile();
+    var elem := df.FindElement(Hex(objtype));
+    return (elem && !elem.errortext);
+endfunction
+
+function LoreItems_Register(item)
+    // Fast lookup: prevent same objtype from dropping again
+    var df := LoreItems_GetDataFile();
+    if (!df.FindElement(Hex(item.objtype)))
+        df.CreateElement(Hex(item.objtype));
+    endif
+
+    // Resolve lore item name from config
+    var lore_cfg := ReadConfigFile(":custompizza:itemrp/lore_items");
+    var lore_elem := FindConfigElem(lore_cfg, item.objtype);
+    var lore_name := lore_elem ? lore_elem.name : item.desc;
+
+    // Unicos lista: register physical item by serial so it shows in .unicos gump
+    var lista := OpenDataFile(":unicos:lista");
+    if (!lista)
+        CreateDataFile(":unicos:lista", 0);
+        lista := OpenDataFile(":unicos:lista");
+    endif
+    var elem_name := Hex(item.serial);
+    if (!lista.FindElement(elem_name))
+        lista.CreateElement(elem_name);
+    endif
+    var elem := lista.FindElement(elem_name);
+    SetObjProperty(item, "itemunico", 1);
+    item.decayAt := 0;
+    elem.SetProp("Title", "Lore Item");
+    elem.SetProp("LoreName", lore_name);
+    elem.SetProp("ItemDesc", item.desc);
+    elem.SetProp("ID", item.serial);
+    elem.SetProp("Creator", "Sistema de Loot");
+    elem.SetProp("Time", polcore().systime);
+endfunction
 
 function Loot_Generate(container, loot_index)
 	if ( !container.IsA(POLCLASS_CONTAINER) )
@@ -80,35 +139,60 @@ endfunction
 
 function Loot_CreateItem(container, line)
     var parsed := Loot_ParseString(line);
-    
+    var item;
+
     if(Loot_ChanceCheck(parsed.chance))
         var i;
         for(i := 1; i <= parsed.amount; i := i + 1)
-            var item := CreateItemInContainer(container, parsed.name);
-            
+            var combatDesc := ReadConfigFile(":combat:itemdesc");
+            var objtype := GetObjtypeByName(parsed.name);
+            var combatItem := combatDesc[objtype];
+            if(combatItem)
+                item :=  GeraItemComplexo(
+                                            container,
+                                            objtype,
+                                            1,
+                                            RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
+                                            1,
+                                            array {0x630e}, //ouro
+                                            FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
+                                        );
+            else
+                item := CreateItemInContainer(container, parsed.name);
+            endif
             SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+            Loot_InitBottle(item);
 
             sleepms(2);
         endfor
+        return item;
     endif
-    
+
     return 1;
 endfunction
 
-
-
 function Loot_CreateStack(container, line)
 	var parsed := Loot_ParseString(line);
-	
+
 	if ( Loot_ChanceCheck(parsed.chance) )
 		var item := CreateItemInContainer(container, parsed.name, parsed.amount);
-        SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+		SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+		Loot_InitBottle(item);
 		if ( item.errortext )
 			return error{"errortext" := "Error - Could not create ["+parsed.name+"] ->"+item.errortext};
 		endif
+		EA_Record(EA_MINT_LOOT, item, parsed.amount, 0, container, parsed.name);
 	endif
-	
+
 	return 1;
+endfunction
+
+function Loot_InitBottle(item)
+	if (item.objtype == 0x0F0E)
+		SetObjProperty(item, PROPNAME_ENCAIXE_COMPONENTE, "Frasco");
+		SetObjProperty(item, PROPNAME_MATERIAL, 7139);
+		SetObjProperty(item, PROPNAME_TIER_COMPONENTE, 1);
+	endif
 endfunction
 
 function Loot_CreateRandom(container, line)
@@ -175,6 +259,20 @@ function Loot_CreateRandom(container, line)
     if(all_items.size() == 0)
         return 0;
     endif
+
+    // Filter out lore items that have already been dropped in the world
+    if (parsed.name == "LoreItems")
+        var filtered := array{};
+        foreach entry in all_items
+            if (!LoreItems_IsDropped(entry.name))
+                filtered.append(entry);
+            endif
+        endforeach
+        all_items := filtered;
+        if (all_items.size() == 0)
+            return 1;
+        endif
+    endif
     
     // Cria os itens
     amount := CInt(parsed.amount);
@@ -188,16 +286,20 @@ function Loot_CreateRandom(container, line)
         if(all_items.size() > 0)
             idx := RandomInt(all_items.size()) + 1;
             item := all_items[idx];
+            var tier := parsed.level; 
             
             if(item.type == "Stack")
                 qty := RandomDiceRoll(CStr(item.qty));
-                result := Loot_CreateStack(container, item.name + " " + qty + " 100");
+                result := Loot_CreateStack(container, item.name + " " + qty + " 100 " + tier);
                 if(!result.errortext)
                     created += 1;
                 endif
             else
-                result := Loot_CreateItem(container, item.name + " 1 100");
+                result := Loot_CreateItem(container, item.name + " 1 100 " + tier);
                 if(!result.errortext)
+                    if (parsed.name == "LoreItems" && result.IsA(POLCLASS_ITEM))
+                        LoreItems_Register(result);
+                    endif
                     created += 1;
                 endif
             endif
@@ -247,7 +349,13 @@ function Loot_ParseString(line)
         chance := 100.0;
     endif
     
-    var level := CInt(line[4]);
+    var level := 1;
+    if(Find(line[4],">",1) >= 1)
+        level := line[4];
+    else
+        level := cint(line[4]);
+    endif
+
     if(!level)
         level := 1;
     endif
@@ -257,13 +365,12 @@ function Loot_ParseString(line)
     result.+amount := amount;
     result.+chance := chance;
     result.+level := level;
-    
     return result;
 endfunction
 
 function Loot_TryAddSealedBook(container)
-    // Decide a chance de aparecer um livro lacrado (exemplo: 10%)
-    var chance := 30;
+    // Chance de aparecer um livro lacrado aprovado (5%)
+    var chance := 5;
     if (RandomInt(100) + 1 > chance)
         return 0;
     endif

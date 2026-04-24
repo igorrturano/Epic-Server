@@ -1,87 +1,111 @@
-include "include/client";
-include "include/say";
-include ":equipsys:utils/consts";
-include ":gumps:epicGumps";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Container/ContainerGridLayout";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/ImageGump";
+include ":gumpDesigner:Control/Tooltip";
+include ":equipsys:packets/UpdateEquipmentRequest";
 
-program cmd_golpe(who)
-	if (!canChangePostura(who, who.weapon))
-		return 0;
+program cmd_golpe(who, text)
+	var newPosture;
+	who := MobileWrapper(who);
+	
+	// Se passou argumento (slash, piercing, blunt), muda direto
+	if (text && text != "")
+		var posture_arg := Lower(text);
+		
+		if (posture_arg == "slash")
+			SetNewPosture(who, DAMAGE_TYPE::SLASH);
+			return;
+		elseif (posture_arg == "piercing")
+			SetNewPosture(who, DAMAGE_TYPE::PIERCING);
+			return;
+		elseif (posture_arg == "blunt")
+			SetNewPosture(who, DAMAGE_TYPE::BLUNT);
+			return;
+		endif
 	endif
-
-	OpenGump(who);
+	
+	// Sem argumento ou argumento inválido: abre o gump de seleção
+	newPosture := ChoosePosture(who);
 endprogram
 
-function OpenGump(who)
-	while (1)
-		var weapon := who.weapon;
-		var weaponAttr := weapon.getAttrBase();
+function ChoosePosture(who)
+	var eventHandled;
+	
+	var gump := Gump(who.GetObjRef(), "Postura de Combate", 300, 175);
+	var container := ContainerGridLayout("Container", 25, 70, 260, 90, 1, 3);
+	var imgSelector := ImageGump("Selector", 0, 0, 30062);
+	var selectedOption := ImageGump("SelectedButton", 12, 23, 1009).SetColor(COLOR_RED);
+	var buttonSlash := Button("SlashDamage", 12, 23, 1004, 1004);
+	var buttonPiercing := Button("PiercingDamage", 12, 23, 1008, 1008);
+	var buttonBlunt := Button("BluntDamage", 12, 23, 1009, 1009);
+	var tooltipSlash := Tooltip("TooltipSlash", "Golpe cortante.");
+	var tooltipPiercing := Tooltip("TooltipPiercing", "Golpe perfurante.");
+	var tooltipBlunt := Tooltip("TooltipBlunt", "Golpe contundente.");
 
-		var gump := GFECreateGump("Postura de Combate", 225, 115, { HIDE_TITLE, HIDE_PAGE, BORDER_BLUE });
-		var x := 15;
-		var y := 40;
+	while (true)
+		var button1 := buttonSlash;
+		var button2 := buttonPiercing;
+		var button3 := buttonBlunt;
 
-		if (weaponAttr.AttackType.Upper() == SLASHDAMAGE.Upper())
-			GFGumpPic(gump, x - 13, y - 23, 30062);
-			GFGumpPic(gump, x, y, 1004, COLOR_RED);
-			x += 70;
-			GFAddButton(gump, x, y, 1008, 1008, GF_CLOSE_BTN, 11);
-			x += 70;
-			GFAddButton(gump, x, y, 1009, 1009, GF_CLOSE_BTN, 12);
-		elseif (weaponAttr.AttackType.Upper() == PIERCINGDAMAGE.Upper())
-			GFAddButton(gump, x, y, 1004, 1004, GF_CLOSE_BTN, 10);
-			x += 70;
-			GFGumpPic(gump, x - 13, y - 23, 30062);
-			GFGumpPic(gump, x, y, 1008, COLOR_RED);
-			x += 70;
-			GFAddButton(gump, x, y, 1009, 1009, GF_CLOSE_BTN, 12);
-		elseif (weaponAttr.AttackType.Upper() == BLUNTDAMAGE.Upper())
-			GFAddButton(gump, x, y, 1004, 1004, GF_CLOSE_BTN, 10);
-			x += 70;
-			GFAddButton(gump, x, y, 1008, 1008, GF_CLOSE_BTN, 11);
-			x += 70;
-			GFGumpPic(gump, x - 13, y - 23, 30062);
-			GFGumpPic(gump, x, y, 1009, COLOR_RED);
+		if (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
+			container.AddControl(imgSelector, 1, 1);
+			button1 := selectedOption.SetImage(buttonSlash.GetPressedImage());
+		elseif (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING)
+			container.AddControl(imgSelector, 1, 2);
+			button2 := selectedOption.SetImage(buttonPiercing.GetPressedImage());
+		elseif (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT)
+			container.AddControl(imgSelector, 1, 3);
+			button3 := selectedOption.SetImage(buttonBlunt.GetPressedImage());
 		endif
 
-		var input := GFSendGump(who, gump);
+		button1.SetTooltip(tooltipSlash);
+		button2.SetTooltip(tooltipPiercing);
+		button3.SetTooltip(tooltipBlunt);
+		container.AddControl(button1, 1, 1);
+		container.AddControl(button2, 1, 2);
+		container.AddControl(button3, 1, 3);
+		gump.AddControl(container);
 
-		if (weapon != who.weapon) // Atualiza caso tenha trocado de arma com o gump aberto
-			weapon := who.weapon;
-			weaponAttr := weapon.getAttrBase();
+		eventHandled := gump.Show();
+
+		if (eventHandled.GetControl() == EVENT_ACTION::CLOSED)
+			return gump.Dispose();
+		elseif (eventHandled.GetControl().Equals(buttonSlash))
+			SetNewPosture(who, DAMAGE_TYPE::SLASH);
+		elseif (eventHandled.GetControl().Equals(buttonPiercing))
+			SetNewPosture(who, DAMAGE_TYPE::PIERCING);
+		elseif (eventHandled.GetControl().Equals(buttonBlunt))
+			SetNewPosture(who, DAMAGE_TYPE::BLUNT);
 		endif
 
-		if (!canChangePostura(who, weapon)) // Verifica novamente, pra caso tenha tirado a arma com o gump aberto. Caso contrário, vai alterar a INTRISIC WEAPON
-			return 0;
-		endif
-
-		if (input[0] == 0)
-			return;
-		elseif (input[0] == 10)
-			weaponAttr.AttackType := SLASHDAMAGE;
-		elseif (input[0] == 11)
-			weaponAttr.AttackType := PIERCINGDAMAGE;
-		elseif (input[0] == 12)
-			weaponAttr.AttackType := BLUNTDAMAGE;
-		endif
-
-		weapon.setAttrBase(weaponAttr);
-		PrintTextAbove(who, $"*muda postura de ataque para golpe {weaponAttr.AttackType}*");
-		SendSysMessageEx(who, $"Você muda sua postura de ataque para golpe {weaponAttr.AttackType}",
-				   SSM_INFO);
+		gump.Dispose();
 	endwhile
 endfunction
 
-function canChangePostura(who, weapon)
-	if ((!GetEquipmentByLayer(who, LAYER_HAND1) && !GetEquipmentByLayer(who, LAYER_HAND2)) ||
-	 (!GetEquipmentByLayer(who, LAYER_HAND1) && GetEquipmentByLayer(who, LAYER_HAND2).isShield()))
-		SendSysMessageEx(who, "Você precisar estar com sua arma empunhada.", SSM_FAIL);
-		return 0;
+function SetNewPosture(who, newPosture)
+	if (Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::UNARMED))
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+		Message("Você deve estar empunhando uma arma para mudar sua postura de combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+	elseif (Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::BOW))
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
+		Message("Arcos não podem mudar postura de combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+	elseif(Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW))
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
+		Message("Bestas não podem mudar postura de combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+	elseif(who.GetEquipBySlot(WEAPON).isFireWeapon())
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+		Message("Armas de fogo não podem mudar postura de combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+	else
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(newPosture));
+		Start_Script("packets/AssyncUpdateEquipment", 
+						array{who, 
+						true, 
+						who.GetEquipBySlot(WEAPON)}
+					);
+		Message("Você mudou sua postura de combate.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+		Message($"adota postura {newPosture}").SendEmote(who.GetObjRef());
 	endif
-
-	if (weapon.isRanged())
-		SendSysMessageEx(who, "Não é possível alterar postura de arma à distância.", SSM_FAIL);
-		return 0;
-	endif
-
-	return 1;
 endfunction

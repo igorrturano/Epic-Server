@@ -9,7 +9,7 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include "include/tileEffects";
 include ":charactercreation:habilidades";
-include ":epicAI:epicai";
+include ":epicAI:include/epicNPCCombat";   // CheckForWoundedAllies, FindMostWoundedAlly
 
 program SpellScript(params)
 	var who := params[1];
@@ -48,8 +48,8 @@ program SpellScript(params)
 	var healed := cint((AP_GetVitalMaximumValue(who, HITS) - GetHP(who)) / 2);
 	DamageFLS(who, healed);
 
-	// healdamage( targ, healed );
-	healFLS(targ, healed);
+	// ApplyEpicHealing( targ, healed );
+	applyEpicHealing(targ, healed);
 	recalcVitals(targ);
 
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);

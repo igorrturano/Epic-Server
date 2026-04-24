@@ -26,7 +26,7 @@ function execgenerichit(attacker, defender, hitopt, rawdamage)
 				var hitdmg := dmg;
 				if (defender.npctemplate)
 					var npccfg := NPC_GetNPCConfig(defender.npctemplate);
-					var category := GetConfigString(npccfg, "Category");
+					var category := GetConfigString(npccfg, "Environment");
       //    PrintTextAbove(attacker, " " + " " + hitopt.slayer + " "+ hitdmg);
 					if (hitopt.slayer ==  category)
 						hitdmg := hitdmg * 2;
@@ -134,7 +134,7 @@ function execonkill(attacker, defender)
     HealStamina(attacker, onkill.stamina);
   endif
   if (onkill.hits != error)
-    HealDamage(attacker, onkill.hits);
+    ApplyEpicHealing(attacker, onkill.hits);
     RecalcVitals(attacker);
   endif
   if (onkill.itemcreate != error)

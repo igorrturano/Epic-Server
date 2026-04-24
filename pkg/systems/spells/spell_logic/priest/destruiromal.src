@@ -25,16 +25,16 @@ program SpellScript(params)
 	endif
 
 	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
-
+	var amt := Cint(AP_GetSkill(who, THEOLOGY) / 10);
 	foreach mobile in (ListMobilesNearLocation(targ.x, targ.y, targ.z, 6, targ.realm))
-
-		if (mobile.npctemplate)
+		var i := 1;
+		if (mobile.npctemplate && i <= amt)
 			var elem := NPC_GetNPCConfig(mobile.npctemplate);
-			var category := lower(GetConfigString(elem, "Category"));
+			var category := lower(GetConfigString(elem, "Environment"));
 
 			if (category == "undead" || category == "demons")
 				PlayMovingEffectXYZEx(mobile.x, mobile.y, mobile.z, mobile.x, mobile.y, mobile.z + 60,
-									   mobile.realm, GFX_LARGE_FIREBALL, 1, 10, 2320);
+									   mobile.realm, FX_LARGE_FIREBALL, 1, 10, 2320);
 
 				MoveObjectToLocation(mobile, 10, 10, 10, mobile.realm, MOVEOBJECT_FORCELOCATION);
 
@@ -43,7 +43,7 @@ program SpellScript(params)
 				ApplyRawDamage(mobile, 200);
 				ApplyRawDamage(mobile, 200);
 				ApplyRawDamage(mobile, 200);
-
+				i++;
 			endif
 
 		endif

@@ -8,7 +8,7 @@ include "include/sounds";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/shapes";
 include ":nature:nature";
 include ":spells:include/swordmage";
@@ -43,10 +43,12 @@ program SpellScript(params)
 		targ.hp := 0;
 		SendSysMessage(who, targ.desc + " quebrou.");
 		MoveObjectToLocation(targ, 1, 1, 1, who.realm, MOVEOBJECT_FORCELOCATION);
-		SetObjProperty(targ, "broken", 1);
-		SetObjProperty(targ, "realdesc", targ.desc);
+		if (!GetObjProperty(targ, "broken"))
+			SetObjProperty(targ, "broken", 1);
+			SetObjProperty(targ, "realdesc", targ.desc);
+			SetName(targ, targ.desc + " [danificado]");
+		endif
 		eraseobjproperty(targ, "gems");
-		SetName(targ, targ.desc + " [danificado]");
 		MoveItemToContainer(targ, who.backpack);
 		ApplyChargesCalculation(targ, 1, 5);
 

@@ -10,6 +10,8 @@ include ":tn:tngumps";
 include "include/client";
 include ":charactercreation:habilidades";
 include ":timedscripts:timedScripts";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 // TODO: Criar constantes para os ID dos botões
 
@@ -17,10 +19,23 @@ const CANCEL_BTN := 0xA00001;
 
 program disguise(who, kit)
 
-	if (!TemHabilidade(who, "Dissimulacao") && !TemHabilidade(who, "Disfarce Simplorio"))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		SendSysMessageEx(who, "Voce nao sabe usar isto.", SSM_FAIL);
 		return 1;
-	elseif (GetObjProperty(who, "disfarce"))
+	endif
+
+	// Kit must be on the ground, not in backpack
+	if (kit.container)
+		SendSysMessageEx(who, "O kit de disfarce precisa estar no chao para ser usado.", SSM_FAIL);
+		return 1;
+	endif
+
+	if (Distance(who, kit) > 2)
+		SendSysMessageEx(who, "Voce esta muito longe do kit de disfarce.", SSM_FAIL);
+		return 1;
+	endif
+
+	if (GetObjProperty(who, "disfarce"))
 		SendSysMessageEx(who, "Caso deseje remover o disfarce digite .removerdisfarce", SSM_INFO);
 	endif
 
@@ -48,12 +63,12 @@ program disguise(who, kit)
 
 	GfTextLine(gump, 35, 80, 1153, "Remover disfarce");
 	GfTextLine(gump, 35, 100, 1153, "Criar disfarce");
-	if (TemHabilidade(who, "Dissimulacao"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		GfTextLine(gump, 35, 120, 1153, "Disfarcar-se de alguem");
 	endif
 	GfAddButton(gump, 20, 82, 2117, 2118, 1, 1);
 	GfAddButton(gump, 20, 102, 2117, 2118, 1, 2);
-	if (TemHabilidade(who, "Dissimulacao"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		GfAddButton(gump, 20, 122, 2117, 2118, 1, 3);
 	endif
 	GfTextLine(gump, 35, 160, 1153, "Disfarces:");
@@ -99,15 +114,15 @@ function criaDisfarceTarget(who, kit)
 	endif
 
 	if (who.trueobjtype != targ.trueobjtype)
-		if (!temHabilidade(who, "Dissimulacao"))
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 			SendSysMessageEx(who, "Voce nao pode se disfarcar de pessoas de outro sexo.", SSM_FAIL);
 			return;
 		endif
 	endif
 
-	if (GetObjProperty(who, "raca") != GetObjProperty(targ, "raca"))
-		if (!temHabilidade(who, "Dissimulacao"))
-			SendSysMessageEx(who, "Voce nao pode se disfarcar de pessoas de outra raca.", SSM_FAIL);
+	if (GetObjProperty(who, "chardata").raca != GetObjProperty(targ, "chardata").raca)
+		if (AP_GetSkill(who, SNEAK) < 70)
+			SendSysMessageEx(who, "Voce nao pode se disfarcar de pessoas de outra raca antes de atingir 70 de skill em SNEAK.", SSM_FAIL);
 			return;
 		endif
 	endif
@@ -140,7 +155,7 @@ endfunction
 
 function usarDisfarce(who, disfarce)
 
-	if (TemHabilidade(who, "Dissimulacao"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		SendSysMessageEx(who, "Quem voce deseja disfarcar?", SSM_REQUEST);
 		var targ := target(who);
 		if (!targ)
@@ -258,7 +273,9 @@ function usarDisfarce(who, disfarce)
 		SetName(who, who.name);
 	endif
 */
-	if (!temHabilidade(who, "Dissimulacao"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
+		TS_StartTimer(who, "kitdisfarce", AP_GetSkill(who, SNEAK) * 60);
+	else
 		TS_StartTimer(who, "kitdisfarce", 600);
 	endif
 
@@ -286,12 +303,12 @@ function disguiseSelf(who, kit, byref disfarce)
 	GfAddButton(gump, 20, 142, 2117, 2118, 1, 13);
 	GfAddButton(gump, 20, 162, 2117, 2118, 1, 14);
 
-	if (TemHabilidade(who, "Dissimulacao"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		GfTextLine(gump, 35, 180, 1153, "Alterar aparencia");
 		GfAddButton(gump, 20, 182, 2117, 2118, 1, 15);
 	endif
 
-	if (TemHabilidade(who, "Dissimulacao"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
 		GfTextLine(gump, 35, 200, 1153, "Alterar sexo");
 		GfAddButton(gump, 20, 202, 2117, 2118, 1, 16);
 		GfTextLine(gump, 35, 220, 1153, "Alterar raca");
@@ -440,6 +457,8 @@ function disguiseSelf(who, kit, byref disfarce)
 		var myraca := GetObjProperty(who, "raca");
 		if (myraca == "Anao")
 			SendSysMessageEx(who, "Voce nao pode criar disfarce de outras racas.", SSM_FAIL);
+		elseif (AP_GetSkill(who, SNEAK) < 70)
+			SendSysMessageEx(who, "Voce precisa de 70 de Sneak para alterar a raca.", SSM_FAIL);
 		else
 			var raca := RadioGump(who, 250, 330, "Escolha a raca do disfarce.", { "Humano", "Elfo" });
 			SendSysMessageEx(who, "Voce escolheu a raca para o disfarce.", SSM_INFO);

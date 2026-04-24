@@ -1,0 +1,31 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":tn:cooldown";
+include ":message:model/Message";
+
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	var arcana := AP_GetSkill(who, ARCANA);
+	var duration := CInt(arcana / 10);
+	if (duration < 30)
+		duration := 30;
+	endif
+
+	if (getCooldown(who, "decifrar"))
+		Message("Você já está sob o efeito de Decifrar.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	SetCooldown(who, "decifrar", duration);
+
+	PlaySoundEffect(who, 0x1ED);
+	PlayObjectCenteredEffect(who, 0x375A, 1, 16);
+
+	Message($"Seus olhos brilham com conhecimento arcano por {duration} segundos.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+
+	return 1;
+endprogram

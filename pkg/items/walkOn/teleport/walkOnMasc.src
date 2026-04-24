@@ -12,7 +12,7 @@ program walkOn(mobile, tile)
 	if (JustTeleported(mobile))
 		return 0;
 	endif
-	if (GetObjProperty(mobile, "faccao") == "Mascaras Cinzentas")
+	if (GetObjProperty(mobile, "faccao") == "Rufioes")
 		var pets := ListPetsNear(mobile, 4);
 		var hostiles := ListHostiles(mobile, 4);
 
@@ -36,12 +36,6 @@ program walkOn(mobile, tile)
 				sleepms(10);
 			endforeach
 		endif */
-		if (HaveReverseVision(mobile))
-			if (mobile.cmdlevel > 1)
-				SendsysMessage(mobile, "GM: Ajustando infravisao.");
-			endif
-			ReverseLight(mobile);
-		endif
 	endif
 	destroyIllyraOutsideDungeons(mobile);
 	return 1;

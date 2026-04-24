@@ -12,6 +12,7 @@ program corpsecontrol(corpse)
 	endif
 	if (GetObjProperty(corpse, "npctemplate"))
 		foreach thing in EnumerateItemsInContainer(corpse)
+			sleepms(2);
 			if ((thing.objtype in beardlist) || (thing.objtype in hairlist))
 				DestroyItem(thing);
 			elseif (thing.movable == 0)
@@ -29,6 +30,7 @@ program corpsecontrol(corpse)
 		var newname := corpse.name["A corpse of "] := "";
 		bones.name := "remains of " + newname;
 		foreach thing in EnumerateItemsInContainer(corpse)
+			sleepms(2);
 			if ((thing.objtype in beardlist) || (thing.objtype in hairlist))
 				DestroyItem(thing);
 			elseif (thing.movable == 0)

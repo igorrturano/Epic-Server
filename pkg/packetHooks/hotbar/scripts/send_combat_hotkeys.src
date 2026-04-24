@@ -1,0 +1,59 @@
+// ============================================================================
+// Send Combat Hotkeys Packet (0x54) - Standalone sender script
+// ============================================================================
+// Spawned via Start_Script() to isolate data segment from main handler.
+// Builds class-specific combat hotkeys (special ability + .golpe + .combate).
+// ============================================================================
+
+use uo;
+use os;
+
+include ":hotbar:include/shared_constants";
+include ":hotbar:include/hotbar_write";
+include ":hotbar:include/hotbar_exec_helpers";
+
+program SendCombatHotkeys(who)
+    var combat_hotkeys := GetCombatHotkeys(who);
+    if (!combat_hotkeys.size())
+        return 0;
+    endif
+
+    // Build packet
+    var data_size := 0;
+    foreach item in combat_hotkeys
+        data_size := data_size + 2 + len(item.name);
+        data_size := data_size + 2 + len(item.classe);
+        data_size := data_size + 2 + len(item.desc);
+        data_size := data_size + 2; // iconid
+        data_size := data_size + 2; // hue
+        data_size := data_size + 1; // index
+        data_size := data_size + 2; // delay
+        data_size := data_size + 2; // remaining
+    endforeach
+
+    // Header: PacketID(1) + Length(2) + Subcommand(2) + DataType(1) + Count(2)
+    var packet_size := 8 + data_size;
+    var packet := CreatePacket(PACKET_EXTENDED, packet_size);
+
+    packet.SetInt8(0, PACKET_EXTENDED);
+    packet.SetInt16(1, packet_size);
+    packet.SetInt16(3, SUBCOMMAND_SPECIALS_RESPONSE);
+    packet.SetInt8(5, ACTION_TYPE_SPECIAL);
+    var offset := 6;
+
+    offset := SetInt16BE(packet, offset, combat_hotkeys.size());
+
+    foreach item in combat_hotkeys
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, item.classe);
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := SetInt16BE(packet, offset, item.iconid);
+        offset := SetInt16BE(packet, offset, item.hue);
+        packet.SetInt8(offset, item.index); offset += 1;
+        offset := SetInt16BE(packet, offset, CInt(item.delay));
+        offset := SetInt16BE(packet, offset, CInt(item.remaining));
+    endforeach
+
+    packet.SendPacket(who);
+    return 1;
+endprogram

@@ -191,15 +191,15 @@ function addDrink(who, item)
 	endif
 
 	// so pode por garrafas ou potions no keg
-	if ((targ.graphic == 3849) || (targ.graphic == 0xC878) || (targ.graphic == 0xC876) ||
+	if ((targ.graphic == 0xC878) || (targ.graphic == 0xC876) ||
 	 (targ.graphic == 0xC877) || (targ.graphic == 0xC879) || (targ.graphic == 0xC960) ||
 	 (targ.graphic == 0xC961) || (targ.graphic == 0xC962) || (targ.graphic == 0xC964) ||
 	 (targ.graphic == 0x1f9e))
 		if (getobjproperty(targ, "fullness") != error)
 			SendSysMEssageEx(who, "Voce so pode armazenar garrafas cheias.", SSM_FAIL);
 			return 1;
-		elseif (getobjproperty(targ, "goles") != error &&
-		  (getobjproperty(targ, "goles") != getobjproperty(targ, "crafterskill") / 20))
+		elseif (getobjproperty(targ, "doses") != error &&
+		  (getobjproperty(targ, "doses") != getobjproperty(targ, "crafterskill") / 20))
 			SendSysMEssageEx(who, "Voce so pode armazenar garrafas cheias.", SSM_FAIL);
 			return 1;
 		endif

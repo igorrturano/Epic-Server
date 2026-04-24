@@ -4,7 +4,7 @@ use vitals;
 
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 function EfeitosTerremoto(who,danobase,danoale,dif)
      if (who.dead)
@@ -24,7 +24,7 @@ function EfeitosTerremoto(who,danobase,danoale,dif)
 
      sleep(5);
 
-     if (CheckResist(who,  REFLEXOS, dif))//note: colocar uma variavel de chance de resistir ao terremoto
+     if (CheckResist(who,  REFLEXES, dif))//note: colocar uma variavel de chance de resistir ao terremoto
         PrintTextAbove(who, "*Evitou as raizes*");
         PerformAction(who, 20);
      else

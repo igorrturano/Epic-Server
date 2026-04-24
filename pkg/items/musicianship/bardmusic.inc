@@ -5,10 +5,17 @@ include ":gumps:gumps";
 include ":gumps:requestGump";
 include ":gumps:yesNo";
 include ":charactercreation:habilidades"; //Contem as funcoes de testar habilidades
+include ":abilities:include/models/Ability"; //ABILITY_ID enum
+include ":wrappers:Objects/Model/MobileWrapper"; //HasAbility()
 include ":attributes:attributes";//AP_GetSkill()
 include ":timedScripts:timedScripts"; //TS_StartTimer()
 include "include/say"; //Precisei incluir porque o arquivo resists.inc usa mas nao tem declarado
 include ":charactercreation:resists"; //Contem as funcoes de testar resistencias
+
+// Bard Rework Phase 3-5 - Composition + Entropy system
+include "include/CompositionAnalyzer";
+include "include/CompositionEffect";
+include "include/BardEntropyController";
 
 CONST BARD_ENCERRA := 999;
 CONST BARD_TOTAL_LENDARIAS := 22; //NUMERO DE PARTITURAS LENDARI
@@ -373,12 +380,10 @@ function preenchePartituraMagica(byref item, mag:=0) //mag é um parametro a ser
 	return 1;
 endfunction
 
-
-
 //funcao pra tocar as musicas simples de bardo
 function tocarBasico(byref who, byref item) //Habilita os efeitos magicos da musica e manda tocar o som da musica
 	var can_play := ((RandomInt(120) + 1) < AP_GetTrueStat(who, DEXTERITY));
-	if (!can_play && !TemHabilidade(who, "Talento Musical") && !TemHabilidade(who, "Compositor Talentoso"))
+	if (!can_play && !MobileWrapper(who).HasAbility(ABILITY_ID::VOX_ARCANA))
 		return basicoSom(who,item,0);//Efeito de som errado
 	elseif(Cint(GetObjProperty(who, "#MagicaMusic")) > ReadGameClock()) //verifica se pode voltar a tocar
 		SendSysMessage(who, "Voce deve esperar um momento antes de tocar novamente.",BARD_FONT,BARD_FONT_COLOR_BAD);
@@ -390,7 +395,7 @@ endfunction
 
 //funcao para tocar as partituras
 function tocarPartitura(byref who, byref instrumento, byref partitura) //Habilita os efeitos magicos da partitura e manda tocar o som da musica
-	if (!TemHabilidade(who, "Talento Musical") && !TemHabilidade(who, "Compositor Talentoso"))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::VOX_ARCANA))
 		SendSysMessage(who, "Voce nao entende essa partitura.",BARD_FONT,BARD_FONT_COLOR_BAD);
 		return 0;
 	elseif(Cint(GetObjProperty(who, "#MagicaMusic")) > ReadGameClock()) //verifica se pode voltar a tocar
@@ -723,10 +728,16 @@ function partituraSom(byref who,byref instrumento,byref partitura)
 		duration += delay;
 	endforeach
 
-	//se for um instrumento valido ele tenta executar o efeito magico da partitura
-	if(musicaEfeitos(who, magica, duration, instrumento) == BARD_ENCERRA) //executa os efeitos das partituras e trata erros de target
-		SendSysMessage(who, "Cancelado.",BARD_FONT,BARD_FONT_COLOR_BAD);
-		return 0;
+	// V3: if this partitura has scale_type and player has VoxArcana, use composition effects
+	var _scale_type := GetObjProperty(partitura, "scale_type");
+	if (_scale_type && MobileWrapper(who).HasAbility(ABILITY_ID::VOX_ARCANA))
+		CE_ApplyCompositionEffect(who, partitura, instrumento);
+	else
+		// V1 path: legacy magic effects
+		if(musicaEfeitos(who, magica, duration, instrumento) == BARD_ENCERRA) //executa os efeitos das partituras e trata erros de target
+			SendSysMessage(who, "Cancelado.",BARD_FONT,BARD_FONT_COLOR_BAD);
+			return 0;
+		endif
 	endif
 
 	//Toca os efeitos sonoros da partitura
@@ -830,7 +841,7 @@ function escrevePartitura(byref who, byref partitura)
 	// var intteligence := AP_GetTrueStat(who, INTELLIGENCE);
 		//Verifica se o personagem tem a habilidade de escrever partituras
 
-	if (can_write || TemHabilidade(who, "Compositor Talentoso"))
+	if (can_write || MobileWrapper(who).HasAbility(ABILITY_ID::VOX_ARCANA))
 		PrintTextAbove(who, "*Escrevendo a partitura*",BARD_FONT,0);
 		PlaySoundEffect(who, 0x24a); //Toca som de escrita
 		sleepms(2000);
@@ -839,11 +850,7 @@ function escrevePartitura(byref who, byref partitura)
 		var nomedamusica := Requestgump(who,"Qual o nome da Musica?","","",0);
 		var magica;
 
-		if (TemHabilidade(who, "Compositor Talentoso")) //muitas vezes mais chance que um bardo comum de conseguir escrever uma partitura lendária
-			magica := 1 + RandomInt(60);
-		else
-			magica := 1 + RandomInt(1000);
-		endif
+		magica := 1 + RandomInt(4); // V3: scale power comes from CA_AnalyzeComposition
 
 		Set_Critical(1); //Força o codigo a rodar sem parar da criação da partitura escrita até a exclusão da partitura em branco
 		var partituraNova := CreateItemInBackPack(who, "partitura", 1); //Cria uma partitura comum na backpack de "who"
@@ -854,6 +861,12 @@ function escrevePartitura(byref who, byref partitura)
 		Setobjproperty(partituraNova, "notas2", GetObjProperty(partitura,"notas2"));
 		Setobjproperty(partituraNova, "tempo", GetObjProperty(partitura,"tempo"));
 		Setobjproperty(partituraNova, "letra", GetObjProperty(partitura,"letra"));
+		// Store V3 scale analysis
+		var _comp_arcana  := CInt(AP_GetSkill(who, ARCANA) / 10);
+		var _comp_notas   := GetObjProperty(partitura, "notas");
+		var _comp_analysis := CA_AnalyzeComposition(_comp_notas, _comp_arcana);
+		SetObjProperty(partituraNova, "scale_type", _comp_analysis.scale_type);
+		SetObjProperty(partituraNova, "comp_power", _comp_analysis.power);
 		partituraNova.name := nomedamusica;
 		if (magica <= (BARD_TOTAL_LENDARIAS+5))
 			Setobjproperty(partituraNova, "magica", magica);
@@ -1009,9 +1022,15 @@ function comporPartitura(byref who,byref item)
 	endif
 	GFTextEntry(bardgump, 675, 80, 255, 35, BARD_FONT_COLOR_GOOD,tempo_anterior);
 
+	// Scale indicator (V3 Bard Rework)
+	var _arcana_real := CInt(AP_GetSkill(who, ARCANA) / 10);
+	var _analysis    := CA_AnalyzeComposition(notas, _arcana_real);
+	GFTextLine(bardgump, 80, 167, CA_GetScaleColor(_analysis.scale_type),
+	           "Escala: " + CA_GetScaleLabel(_analysis));
+
 	//Campo para exibicao das combinacoes de notas
 	GFTextLine(bardgump, 80, 182, BARD_FONT_COLOR_NEUTRA, "Rascunho:" );
-	GFHTMLArea(bardgump, 80, 202, 580, 360, CStr(partituraTxt),1,1);
+	GFHTMLArea(bardgump, 80, 202, 580, 355, CStr(partituraTxt),1,1);
 
 	//Apagar ultima nota da combinacao
 	GFTextLine(bardgump, 673, 134, BARD_FONT_COLOR_NEUTRA, "Backspace" );
@@ -1439,7 +1458,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 		ALVO_DEBUFF_TODOS:
 			foreach mobile in mobiles
 				if ((mobile.connected) && (mobile != who)) //Afeta alvos logados ou NPCs. Não afeta o próprio bardo
-					resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+					resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 					if(!resistiu)
 						TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 						PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1453,7 +1472,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 			foreach mobile in mobiles
 				if ((mobile.connected) && (mobile != who))
 					if (mobile.acctname)
-						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+						resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 							PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1461,7 +1480,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 							PrintTextPrivate(mobile, "resistiu", who, BARD_FONT, BARD_FONT_COLOR_NEUTRA); //avisa ao bardo que o alvo resistiu
 						endif
 					elseif (GetObjProperty(mobile,"owner"))
-						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+						resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 							PrintTextPrivate(mobile, mensagemSucesso, SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner"))), BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1477,7 +1496,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 				if ((mobile.connected) && (mobile != who))
 					if (!mobile.acctname)
 						if (!GetObjProperty(mobile,"owner"))
-							resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+							resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 							if(!resistiu)
 								TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 								PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1493,7 +1512,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 			if (!who.Party) //trata em caso de nao estar em party, aplicando para todos os alvos
 				foreach mobile in mobiles
 					if ((mobile.connected) && (mobile != who))
-						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+						resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 							PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1508,7 +1527,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 					if ((mobile.connected) && (mobile != who))
 						if (mobile.acctname)
 							if (who.Party == mobile.Party)
-								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+								resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 									PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1519,7 +1538,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 						elseif (GetObjProperty(mobile,"owner"))
 							dono := SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner")));
 							if (who.Party == dono.Party)
-								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+								resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 									PrintTextPrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1536,7 +1555,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 			if (!who.Party) //trata em caso de nao estar em party, aplicando para todos os alvos
 				foreach mobile in mobiles
 					if ((mobile.connected) && (mobile != who))
-						resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+						resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 						if(!resistiu)
 							TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 							PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1551,7 +1570,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 					if ((mobile.connected) && (mobile != who))
 						if (mobile.acctname)
 							if (who.Party != mobile.Party)
-								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+								resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 									PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1562,7 +1581,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 						elseif (GetObjProperty(mobile,"owner"))
 							dono := SystemFindObjectBySerial(CInt(GetObjProperty(mobile,"owner")));
 							if (who.Party != dono.Party)
-								resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+								resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 								if(!resistiu)
 									TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 									PrintTextPrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1571,7 +1590,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 								endif
 							endif
 						else
-							resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+							resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 							if(!resistiu)
 								TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 								PrintTextPrivate(mobile, mensagemSucesso, dono, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1587,7 +1606,7 @@ function AplicaEfeito(byref who, nomedoefeito, byref duration, byref modifier, b
 			foreach mobile in mobiles
 				print (mobile.name + ":" +mobile.alignment);
 				if ((mobile.connected) && (mobile != who) && (mobile.alignment == 1)) //Alvo Evil
-					resistiu := CheckResist(mobile, VONTADE, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
+					resistiu := CheckResist(mobile, WILL, RESIST_MEDIUM, resistencia_mod); //Alvo passou no teste de resistencia
 					if(!resistiu)
 						TS_StartTimer(mobile, nomedoefeito, duration, modifier, who, 0);
 						PrintTextPrivate(mobile, mensagemSucesso, mobile, BARD_FONT, BARD_FONT_COLOR_BAD);
@@ -1607,7 +1626,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 
 	//Verifica os tipos de alvo selecionados pelo comando .bardo para Buffs e Debuffs
 	var alvos;
-	if (TemHabilidade(who, "Compositor Talentoso"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VOX_ARCANA))
 		alvos := GetObjProperty(who, "BardTargets");
 	endif
 	if(!alvos)	//caso nao esteja definico o tipo de algo, inicializa com o padrao
@@ -1647,44 +1666,10 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 
 	//Aplica os efeitos de várias habilidades de nível
 
-	if (TemHabilidade(who, "Musica Persistente"))
-		duration := duration * 1.5; //dobra a duração base das cancoes
-	endif
-	if (TemHabilidade(who, "Musica Alta"))
-		range := range + 5; //aumenta a area de efeito das cancoes
-	endif
-
-	BuffModifier := modifier;  //poder base dos Buffs
-	DebuffModifier := modifier; //poder base do Debuffs
-
-	//Habilita eficacia extra nos buffs e debuffs
-	if (TemHabilidade(who, "Musica Contagiante"))
-		BuffModifier := BuffModifier + (modifier * 0.2);  //aumenta o porder dos Buffs
-	endif
-
-	if (TemHabilidade(who, "Musica da Alma"))
-		DebuffModifier := DebuffModifier + (modifier * 0.2);  //aumenta o porder dos Debuffs
-		resistencia_mod := resistencia_mod - 5; //torna os Debuffs mais dificies de resistir
-	endif
-
-	if (TemHabilidade(who, "Mestre do Improviso"))
-		BuffModifier := BuffModifier + (modifier * 0.2);
-		DebuffModifier := DebuffModifier + (modifier * 0.2);  //aumenta o porder dos Debuffs
-		resistencia_mod := resistencia_mod - 5; //torna os Debuffs muito mais dificies de resistir
-	endif
-
-	//Habilita efeitos extras nos buffs OU debuffs, nunca os dois
-
+	BuffModifier := modifier;
+	DebuffModifier := modifier;
 	HarmoniaPerfeita := 0;
 	Vituperio := 0;
-
-	if (TemHabilidade(who, "Harmonia Perfeita"))
-		HarmoniaPerfeita := 1;
-	endif
-	if (TemHabilidade(who, "Vituperio"))
-		HarmoniaPerfeita := 0;
-		Vituperio := 1;
-	endif
 
 	//Aplica efeitos dos materiais
 	var material := GetObjProperty(instrumento, "material");
@@ -2076,7 +2061,7 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 			TS_StartTimer(who, "bard_segurando_instrumento", sound_duration, 1, who, 0);
 			foreach mobile in mobiles
 				if ((mobile.graphic == 52) || (mobile.graphic == 21)) //Graficos de cobras
-					resistiu := CheckResist(mobile, VONTADE, RESIST_VERY_HARD, resistencia_mod); //Mais difícil de resistir pela especificidade do alvo
+					resistiu := CheckResist(mobile, WILL, RESIST_VERY_HARD, resistencia_mod); //Mais difícil de resistir pela especificidade do alvo
 					if(!resistiu)
 						if ((mobile.connected) && (mobile != who)) //Verificar se esta funcionando nos MOB
 							TS_StartTimer(mobile, "bard_fascinar", duration, DebuffModifier, who, 0);
@@ -2249,4 +2234,129 @@ function musicaEfeitos(byref who, byref magica, byref tempo, byref instrumento) 
 	SkillCheck(who, ARCANA, AP_GetSkill(who, ARCANA)); //Linha para upar Magic lore sempre que tocar
 
 	return 0;
+endfunction
+
+// ============================================================================
+// TambourBuffGump - Phase 4 Bard Rework
+// V3 Bard drum buff selection. Called when a VoxArcana holder uses a drum.
+// ============================================================================
+
+const TAMBOR_RITMO_GUERRA      := 101;
+const TAMBOR_BATIDA_RESSONANTE := 102;
+const TAMBOR_CADENCIA_MARCHA   := 103;
+const TAMBOR_RUFAR_TROVOES     := 104;
+const TAMBOR_CANCELAR          := 105;
+const TAMBOR_MANA_COST         := 5;
+
+function TambourBuffGump(byref who, byref item)
+    if (CInt(GetObjProperty(who, "#MagicaMusic")) > ReadGameClock())
+        SendSysMessage(who, "Espere um pouco antes de tocar novamente.", BARD_FONT, BARD_FONT_COLOR_BAD);
+        return 0;
+    endif
+
+    var has_resonance  := MobileWrapper(who).HasAbility(ABILITY_ID::RESONANCE);
+    var has_tear       := MobileWrapper(who).HasAbility(ABILITY_ID::REALITY_TEAR);
+    var arcana         := CInt(AP_GetSkill(who, ARCANA));
+    var gump := GFCreateGump();
+    GFResizePic(gump, 50, 50, 302, 420, 280);
+    GFTextLine(gump, 70, 60, BARD_FONT_COLOR_LENDARIA, "Ritmo de Batalha");
+    GFTextLine(gump, 70, 80, BARD_FONT_COLOR_NEUTRA, $"Mana: {TAMBOR_MANA_COST} por buff | Arcana: {arcana}");
+
+    // Buff 1: Ritmo de Guerra (VoxArcana - always available here)
+    GFAddButton(gump, 65, 110, 2103, 2104, 1, TAMBOR_RITMO_GUERRA);
+    GFTextLine(gump, 85, 113, BARD_FONT_COLOR_GOOD, "Ritmo de Guerra (+Skills de Batalha, 30s)");
+
+    // Buff 2: Batida Ressonante (Resonance)
+    GFAddButton(gump, 65, 140, 2103, 2104, 1, TAMBOR_BATIDA_RESSONANTE);
+    if (has_resonance)
+        GFTextLine(gump, 85, 143, BARD_FONT_COLOR_GOOD, "Batida Ressonante (+STR/Resistencia, 30s)");
+    else
+        GFTextLine(gump, 85, 143, BARD_FONT_COLOR_BAD, "Batida Ressonante (+STR/Resistencia, 30s) [Req: Ressonancia]");
+    endif
+
+    // Buff 3: Cadencia da Marcha (Resonance)
+    GFAddButton(gump, 65, 170, 2103, 2104, 1, TAMBOR_CADENCIA_MARCHA);
+    if (has_resonance)
+        GFTextLine(gump, 85, 173, BARD_FONT_COLOR_GOOD, "Cadencia da Marcha (+DEX/Velocidade, 20s)");
+    else
+        GFTextLine(gump, 85, 173, BARD_FONT_COLOR_BAD, "Cadencia da Marcha (+DEX/Velocidade, 20s) [Req: Ressonancia]");
+    endif
+
+    // Buff 4: Rufar dos Trovoes (RealityTear) — debuffs enemies
+    GFAddButton(gump, 65, 200, 2103, 2104, 1, TAMBOR_RUFAR_TROVOES);
+    if (has_tear)
+        GFTextLine(gump, 85, 203, BARD_FONT_COLOR_GOOD, "Rufar dos Trovoes (-DEX inimigos, 20s)");
+    else
+        GFTextLine(gump, 85, 203, BARD_FONT_COLOR_BAD, "Rufar dos Trovoes (-DEX inimigos, 20s) [Req: Tear da Realidade]");
+    endif
+
+    // Cancel
+    GFAddButton(gump, 65, 235, 1535, 1536, 1, TAMBOR_CANCELAR);
+    GFTextLine(gump, 85, 238, BARD_FONT_COLOR_NEUTRA, "Cancelar");
+
+    var entrada := GFSendGump(who, gump);
+    if (!entrada[0])
+        return 0;
+    endif
+
+    case (entrada[0])
+        TAMBOR_RITMO_GUERRA:
+            return _TambourApplyBuff(who, item, "ritmo_de_guerra",
+                "bard_inspirar_heroismo", CInt(arcana / 3), 30,
+                ALVO_BUFF_PARTY, "*O ritmo de guerra fortalece seus aliados!*");
+        TAMBOR_BATIDA_RESSONANTE:
+            if (!has_resonance)
+                SendSysMessage(who, "Voce precisa de Ressonancia para isso.", BARD_FONT, BARD_FONT_COLOR_BAD);
+                return 0;
+            endif
+            return _TambourApplyBuff(who, item, "batida_ressonante",
+                "bard_str_up", CInt(arcana / 20), 30,
+                ALVO_BUFF_PARTY, "*A batida ressonante fortalece sua resistencia!*");
+        TAMBOR_CADENCIA_MARCHA:
+            if (!has_resonance)
+                SendSysMessage(who, "Voce precisa de Ressonancia para isso.", BARD_FONT, BARD_FONT_COLOR_BAD);
+                return 0;
+            endif
+            return _TambourApplyBuff(who, item, "cadencia_da_marcha",
+                "bard_dex_up", CInt(arcana / 20), 20,
+                ALVO_BUFF_PARTY, "*A cadencia da marcha agiliza seus passos!*");
+        TAMBOR_RUFAR_TROVOES:
+            if (!has_tear)
+                SendSysMessage(who, "Voce precisa de Tear da Realidade para isso.", BARD_FONT, BARD_FONT_COLOR_BAD);
+                return 0;
+            endif
+            return _TambourApplyBuff(who, item, "rufar_dos_trovoes",
+                "bard_dex_down", CInt(arcana / 15), 20,
+                ALVO_DEBUFF_TODOS, "*O rufar dos trovoes aterroriza seus inimigos!*");
+        default:
+            return 0;
+    endcase
+endfunction
+
+function _TambourApplyBuff(byref who, byref item, buff_id, timed_script, modifier, duration, alvo_tipo, msg_sucesso)
+    if (!DamageMANA(who, TAMBOR_MANA_COST))
+        SendSysMessage(who, "Mana insuficiente.", BARD_FONT, BARD_FONT_COLOR_BAD);
+        return 0;
+    endif
+
+    var arcana_skill := CInt(AP_GetSkill(who, ARCANA));
+    if (!SkillCheck(who, ARCANA, arcana_skill))
+        SendSysMessage(who, "Voce nao consegue manter o ritmo.", BARD_FONT, BARD_FONT_COLOR_BAD);
+        PlaySoundEffect(who, 0x03A); // drum fail
+        return 0;
+    endif
+
+    var range := CInt(arcana_skill / 10 / 20);
+    if (range < 2) range := 2; endif
+    if (range > 6) range := 6; endif
+
+    SendSysMessage(who, msg_sucesso, BARD_FONT, BARD_FONT_COLOR_GOOD);
+    PrintTextAbove(who, msg_sucesso, BARD_FONT, BARD_FONT_COLOR_LENDARIA);
+    PlaySoundEffect(who, 0x2E8); // drum battle sound
+    AplicaEfeito(who, timed_script, duration, modifier, range, alvo_tipo, msg_sucesso, 0);
+    DesgastaInstrumento(who, item);
+
+    var cooldown := CInt(duration / 2);
+    SetObjProperty(who, "#MagicaMusic", ReadGameClock() + cooldown);
+    return 1;
 endfunction

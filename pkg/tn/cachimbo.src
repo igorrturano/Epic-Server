@@ -80,7 +80,7 @@ function fumaca(player)
 			y := -1;
 			z := 2;
 	endcase
-	PlayStationaryEffect(player.x + x, player.y + y, player.z + z, GFX_FIZZLE, 5, 50, 0, player.realm);
+	PlayStationaryEffect(player.x + x, player.y + y, player.z + z, FX_FIZZLE, 5, 50, 0, player.realm);
 	x := 0;
 	y := 0;
 	z := 0;

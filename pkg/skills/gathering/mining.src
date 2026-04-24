@@ -6,6 +6,8 @@ include ":attributes:attributes";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program mining(who)
 
@@ -30,8 +32,8 @@ program mining(who)
 
 	foreach thing in ores
 		var dif := DetermineMiningDifficulty(GetResourceId(thing));
-		if (TemHabilidade(who, "Prospector"))
-			dif := 0;
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
+			dif := dif - 5;
 		endif
 		if ((skill + 10) >= dif)
 			possiveis[i] := thing;

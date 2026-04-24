@@ -6,6 +6,8 @@ use os;
 include "include/client";
 include "include/say";
 include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 /*
 
@@ -31,7 +33,7 @@ program textcmd_openPack(who, item)
 		endforeach
 	endif
 	var canMakePowder := 0;
-	if (AP_GetSkill(who, ALCHEMY) >= 50 || TemHabilidade(who, "Artilheiro Preparado"))
+	if (AP_GetSkill(who, ALCHEMY) >= 50 || MobileWrapper(who).HasAbility(ABILITY_ID::EXPLOSIVE_FIST))
 		canMakePowder := 1;
 	else
 		SendSysMessageEx(who, "Voce nao sabe o que fazer com isso", SSM_FAIL);

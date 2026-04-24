@@ -3,50 +3,45 @@ use os;
 use vitals;
 use cfgfile;
 
-include ":timedScripts:timedScripts";
 include ":attributes:attributes";
+include ":spells:Controller/SpellController";
 
 program SpellScript_AprisionarDemonio(params)
 	var caster := params[1];
 	var targ := params[2];
+	var spell := params[3];
 	params := 0;
 
 	if (!targ.isa(POLCLASS_MOBILE))
-		SendSysMessage(caster, "Você precisa selecionar uma criatura!");
+		SendSysMessage(caster, "Voce precisa selecionar uma criatura!");
 		return 0;
 	endif
 
-	// Check if target is a demon using the correct method
 	if (!IsDemon(targ))
-		SendSysMessage(caster, "Esta magia só funciona em demônios!");
+		SendSysMessage(caster, "Esta magia so funciona em demonios!");
 		return 0;
 	endif
 
-	// Visual and sound effects
-	PlaySoundEffect(targ, 0x202); // Magical sound
-	PlayStationaryEffectEx(targ.x, targ.y, targ.z, targ.realm, EPIC_FX_MAZE, 10, 10);
+	PlaySoundEffect(targ, 0x202);
+	PlayStationaryEffectEx(targ.x, targ.y, targ.z, targ.realm, FX_MAZE, 10, 10);
 
-	// Duration based on Theology skill
 	var duration := 5 + CInt(AP_GetSkill(caster, THEOLOGY) / 10);
 
-	// Apply paralysis effect
-	TS_StartTimer(targ, "paralysis", duration);
+	SC_RemoveEffect(targ, CInt(spell.id));
 
-	// Create visual prison effect (circle of magical effects)
+	var opts := struct{};
+	opts.+frozen := 1;
+	opts.+desc := "Aprisionar Demonio";
+
+	SC_ApplyEffect(caster, targ, opts, duration, CInt(spell.id));
+
 	var effects := array{ { targ.x - 1, targ.y - 1 },
-					  	
 					  	{ targ.x, targ.y - 1 },
-					  	
 					  	{ targ.x + 1, targ.y - 1 },
-					  	
 					  	{ targ.x - 1, targ.y },
-					  	
 					  	{ targ.x + 1, targ.y },
-					  	
 					  	{ targ.x - 1, targ.y + 1 },
-					  	
 					  	{ targ.x, targ.y + 1 },
-					  	
 					  	{ targ.x + 1, targ.y + 1 } };
 
 	foreach position in effects
@@ -64,7 +59,7 @@ function IsDemon(mobile)
 	var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
 
-	if (cfg[npctemplate.template].Category == "Demons")
+	if (cfg[npctemplate.template].Environment == "Demons")
 		return 1;
 	endif
 

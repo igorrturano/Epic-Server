@@ -1,0 +1,65 @@
+use uo;
+use util;
+
+include ":medicine:disease";
+include ":medicine:util/diseaseConstants";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program HitScript(params)
+	var attacker := params[1];
+	var defender := params[2];
+	params := 0;
+
+	// 40% chance to trigger (matches spitacid pattern)
+	if (RandomInt(100) > 40)
+		return 1;
+	endif
+
+	// Get boss tier
+	var tier := 1; // Default
+	var boss_struct := GetObjProperty(attacker, "EpicBossStruct");
+
+	if (boss_struct && boss_struct.tier)
+		tier := CInt(boss_struct.tier);
+	else
+		// Fallback: use MobileWrapper
+		var mobile := MobileWrapper(attacker);
+		if (!mobile.GetObjRef().errortext)
+			tier := mobile.GetTier();
+		endif
+	endif
+
+	// Clamp tier to 1-5
+	if (tier < 1)
+		tier := 1;
+	elseif (tier > 5)
+		tier := 5;
+	endif
+
+	// Map tier to disease grade
+	var disease_grade;
+	case (tier)
+		1:
+		2:
+			disease_grade := DISEASE_GRADES::LIGHT;
+			break;
+		3:
+			disease_grade := DISEASE_GRADES::MODERATE;
+			break;
+		4:
+		5:
+			disease_grade := DISEASE_GRADES::SERIOUS;
+			break;
+		default:
+			disease_grade := DISEASE_GRADES::LIGHT;
+	endcase
+
+	// Infect with random diseases
+	// duration: 0 (auto = tier * 1000 seconds)
+	// level: tier (affects symptom count & resist DC)
+	// diseases: "random"
+	// deveIgnorarResistencia: 0 (respect resistance)
+	InfectMobile(defender, 0, attacker, tier, "random", disease_grade, 0);
+
+	return 1;
+endprogram

@@ -5,13 +5,15 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include "include/tileEffects";
-include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
-	params := 0; // No longer needed
+	var spell := params[3];
+	params := 0;
 
 	if (!targ)
 		return;
@@ -22,48 +24,36 @@ program SpellScript(params)
 		return;
 	endif
 
-	if (GetObjProperty(targ, "#descansotranquilo"))
+	// Block recast while aura is still active on the target.
+	var existing := MobileWrapper(targ).GetProperty($"SpellOpts_{CInt(spell.id)}");
+	if (existing && !existing.errortext)
 		SendSysMessageEx(who, "Voce so pode orar uma magia ao mesmo tempo.", SSM_FAIL);
 		return;
 	endif
 
 	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
 
-	var x := targ.x;
-	var y := targ.y;
-	var i := 0;
-	var heal := AP_GetSkill(who, THEOLOGY) / 20;
-	SetObjProperty(targ, "#descansotranquilo", 1);
+	var theology := CInt(AP_GetSkill(who, THEOLOGY));
+	var duration := theology;
+	var heal := CInt(theology / 20);
+	if (heal < 1)
+		heal := 1;
+	endif
 
-	while (i < AP_GetSkill(who, THEOLOGY))
+	var opts := struct{};
+	opts.+buff_category := "regen_aura";
+	opts.+displayname := "Prece Curativa";
+	opts.+desc := $"+{heal} HP / 2s na area";
+	opts.+tick_script := ":spells:spell_logic/priest/descansotranquiloTick";
+	opts.+tick_interval := 2;
+	opts.+tick_params := struct{
+		origin_x := targ.x,
+		origin_y := targ.y,
+		heal := heal,
+		caster_serial := who.serial
+	};
 
-		if (targ.x != x || targ.y != y)
-			SendSysMessageEx(who, "Voce cancelou a magia.", SSM_FAIL);
-			break;
-		endif
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
 
-		var nearbypeople := ListMobilesNearLocation(targ.x, targ.y, targ.z, 6);
-		var continuehealing := 1;
-		foreach char in (nearbypeople)
-			if (char.warmode)
-				continuehealing := 0;
-				SendSysMessageEx(who, "A magia foi interrompida por um conflito.", SSM_FAIL);
-				break;
-			endif
-		endforeach
-
-		if (!continuehealing)
-			break;
-		endif
-
-		foreach char in (nearbypeople)
-			if (char != who)
-				healDamage(char, heal);
-			endif
-		endforeach
-
-		sleep(2);
-	endwhile
-	EraseObjProperty(targ, "#descansotranquilo");
 	return 1;
 endprogram

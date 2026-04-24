@@ -4,10 +4,13 @@ include ":attributes:attributes";
 include "include/epicConstants";
 include "include/epicUtils";
 include ":tn:equipment";
+include ":abilities:include/models/Ability";
+include ":census:include/CensusController";
+include "/include/math";
 
 function NivelHabilidade(habilidade, classe)
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var elem := FindConfigElem( habcfg, habilidade );
 
 	var nivel := GetConfigStringDictionary( elem, "classe" );
@@ -18,7 +21,7 @@ endfunction
 
 function TemRequisito(who, habilidade, msg := 1)
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var elem := FindConfigElem( habcfg, habilidade );
 
 	var requisitos := GetConfigStringArray(elem, "requisito");
@@ -57,7 +60,7 @@ endfunction
 
 function retornaRequisitos( habilidade)
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var elem := FindConfigElem( habcfg, habilidade );
 
 	var requisitos := GetConfigStringArray(elem, "requisito");
@@ -67,19 +70,48 @@ function retornaRequisitos( habilidade)
 endfunction
 
 function TemHabilidade(who, habilidade)
-
 	var habs := GetObjProperty(who, "myhabs");
+	if (!habs)
+		return 0;
+	endif
 
-	foreach key in (habs.keys())
-		if (RemoveAcentos(Lower(habs[key])) == RemoveAcentos(Lower(habilidade)))
-			return 1;
+	// myhabs now stores IDs - check if habilidade is in the values
+	var hab_id := CInt(habilidade);
+	if (hab_id)
+		// habilidade is an ID (number)
+		foreach key in (habs.keys())
+			if (CInt(habs[key]) == hab_id)
+				return 1;
+			endif
+		endforeach
+	else
+		// habilidade is a name (string) - need to find the ID first
+		var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+		if (!habcfg)
+			return 0;
 		endif
 
-	endforeach
+		// Find ability ID by name
+		foreach cfg_key in (GetConfigStringKeys(habcfg))
+			var elem := FindConfigElem(habcfg, cfg_key);
+			var nome := GetConfigString(elem, "nome");
+			if (RemoveAcentos(Lower(nome)) == RemoveAcentos(Lower(habilidade)))
+				hab_id := CInt(cfg_key);
+				break;
+			endif
+		endforeach
 
+		// Now check if that ID is in myhabs
+		if (hab_id)
+			foreach key in (habs.keys())
+				if (CInt(habs[key]) == hab_id)
+					return 1;
+				endif
+			endforeach
+		endif
+	endif
 
 	return 0;
-
 endfunction
 
 function IsBloodied(mobile)
@@ -87,7 +119,7 @@ function IsBloodied(mobile)
 		if (AP_GetVital(mobile, HITS) < CInt(AP_GetVitalMaximumValue(mobile, HITS)/4))
 			return 1;
 		endif
-	elseif (AP_GetVital(mobile, HITS) < GetHP(mobile))
+	elseif (AP_GetVital(mobile, HITS) < (GetHP(mobile) * 0.25))
 		return 1;
 	endif
 	return 0;
@@ -118,7 +150,7 @@ function HabilidadesPorNivel(who, classe, lvl)
 
 	var possiveis := array;
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var keys := getConfigStringKeys( habcfg );
 
 	foreach key in keys
@@ -138,9 +170,8 @@ function HabilidadesPorNivelPossiveis(who, classe, povo, lvl)
 	//sendsysmessage(who, "Procurando Habs!");
 	var possiveis := array;
 
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var keys := getConfigStringKeys( habcfg );
-
 
 	foreach key in keys
 		var elem := FindConfigElem( habcfg, key );
@@ -160,80 +191,84 @@ function HabilidadesPorNivelPossiveis(who, classe, povo, lvl)
 			else
 				possiveis.append(key);
 			endif
+		elseif (c.Exists("Caminho"))
+			// Caminho abilities available to all classes at levels 4,8,12,16,18 (nivel 2,4,6,8,9)
+			var caminhoLevels := array{2, 4, 6, 8, 9};
+			if (lvl in caminhoLevels)
+				var isPool := CInt(GetConfigInt(elem, "pool"));
+				if (isPool || !TemHabilidade(who, key))
+					possiveis.append(key);
+				endif
+			endif
 		endif
 	endforeach
 	return possiveis;
 
 endfunction
 
-function HabilidadesPorNivelFaccao(who, faccao, lvl)
-
-	var possiveis := array;
-
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
-	var keys := getConfigStringKeys( habcfg );
-
-	foreach key in keys
-		var elem := FindConfigElem( habcfg, key );
-		var d := GetConfigStringDictionary( elem, "faccao" );
-		if ( cint(d[faccao]) == lvl && d[faccao] != error)
-			possiveis.append(key);
-		endif
-	endforeach
-
-	return possiveis;
-
-endfunction
 
 
-function ComprarHabGump(who, habs, habsfac)
+function ComprarHabGump(who, habs)
 
-	UnloadConfigFile(":charactercreation:config/habilidades");
+	UnloadConfigFile(":abilities:configs/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+
+	var ITEMS_PER_PAGE := 4;
+	var totalPages := CInt((habs.size() + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE);
+	if (totalPages < 1)
+		totalPages := 1;
+	endif
+
+	var GUMP_W := 460;
+	var GUMP_H := 570;
+	var CARD_H := 115;
+	var CARD_START_Y := 60;
+	var NAV_Y := GUMP_H - 45;
 
 	var gump := GFCreateGump();
+	GFDisposable(gump, 0);
 
-	var habsize := habs.size();
-	var sizey := (habsize*100) + 120;
-	var newsizey := (habsfac.size()*100) + 120; //facção
-	if (newsizey > sizey)//facção
-		sizey := newsizey;
-	endif
+	// Page 0 - static background (always visible)
+	GFPage(gump, 0);
+	GFResizePic(gump, 0, 0, 3600, GUMP_W, GUMP_H);
+	GFResizePic(gump, 15, 15, 0x13BE, GUMP_W - 30, GUMP_H - 30);
+	GFTextMid(gump, 15, 25, GUMP_W - 30, 1153, "Habilidades Disponíveis");
 
-	var newsizex := 0;
-	if (habsfac.size() >= 1) //facção
-		newsizex := 320;
-	endif
-
-	if (habsize > 10)
-		newsizex := newsizex + 600;
-		sizey := 620;
-	elseif (habsize > 5)
-		newsizex := newsizex + 300;
-		sizey := 620;
-	endif
-
-    GFDisposable(gump, 0);
-	GFResizePic(gump, 0, 25, 3600, 380+newsizex, sizey+30);
-	GFResizePic(gump, 15, 40, 0x13BE, 350+newsizex, sizey);
-	GFTextMid(gump, 80, 50, 250, 1153, "Habilidades de Classe");
-	if (habsfac.size() >= 1) //facção
-		GFTextMid(gump, 80+newsizex, 50, 250, 1153, "Habilidades de Faccao");
-	endif
-
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
-
-	var x := 40;
-	var y := 80;
+	// Build paginated content
+	var pageNum := 1;
+	var itemOnPage := 0;
+	GFPage(gump, pageNum);
 
 	var i := 1;
 	foreach hab in habs
+		if (itemOnPage >= ITEMS_PER_PAGE)
+			// Next arrow on current page
+			GFAddButton(gump, GUMP_W - 70, NAV_Y, 5601, 5605, GF_PAGE_BTN, pageNum + 1);
+			GFTextLine(gump, GUMP_W - 115, NAV_Y + 2, 1153, "Próxima");
+			GFTextMid(gump, 15, NAV_Y + 2, GUMP_W - 30, 1153, $"Pág. {pageNum}/{totalPages}");
+
+			pageNum := pageNum + 1;
+			GFPage(gump, pageNum);
+
+			// Prev arrow on new page
+			GFAddButton(gump, 30, NAV_Y, 5603, 5607, GF_PAGE_BTN, pageNum - 1);
+			GFTextLine(gump, 60, NAV_Y + 2, 1153, "Anterior");
+
+			itemOnPage := 0;
+		endif
+
 		var habelem := FindConfigElem(habcfg, hab);
 		var desc := GetConfigString(habelem, "desc");
 		var uso := GetConfigString(habelem, "uso");
 		var nome := GetConfigString(habelem, "nome");
+		var icon := GetConfigInt(habelem, "icon");
+		if (!icon || uso == "Passiva")
+			icon := 2973;
+		endif
+
 		if (uso == "Ativa")
 			var delay := GetConfigInt(habelem, "delay");
-			nome := nome + " ["+delay+" s]";
+			nome := nome + " [" + delay + "s]";
 			var stam := GetConfigInt(habelem, "stam");
 			if (!stam)
 				stam := GetConfigInt(habelem, "mana");
@@ -242,87 +277,51 @@ function ComprarHabGump(who, habs, habsfac)
 				nome := nome + " [" + stam + " stam]";
 			endif
 		endif
-		var nivel := GetConfigInt(habelem, nivel);
-		var requisitos := getConfigstringArray(habelem, "requisito");
-		//var gumpid :=  Hex(GetConfigInt(habelem, "gump"));
 
-		GFAddButton(gump, x-20, y+4, 2103, 2104, 1, i );
-		//GFGumpPic(gump, x, y+20, gumpid) ;
-		GFTextLine(gump, x, y, 1153, nome + " [" + uso + "]" );
-		if (requisitos.size() )
-			desc := desc + "<cr> Pre-Requisitos: ";
+		var requisitos := GetConfigStringArray(habelem, "requisito");
+		if (requisitos.size())
+			desc := desc + "<cr>Requisitos: ";
 			foreach req in requisitos
 				desc := desc + req + " ";
 			endforeach
 		endif
-		GFHTMLArea( gump, x, y+20, 300, 90, desc, 1150, 0);
 
-		i := i + 1;
-		y := y + 110;
-		if (i == 6)
-			x := 355;
-			y := 80;
-		elseif (i == 11)
-			x := 670;
-			y := 80;
+		var y := CARD_START_Y + (itemOnPage * CARD_H);
+		var textX := 35;
+
+		// Icon (if available)
+		if (icon)
+			GFGumpPic(gump, 30, y + 8, icon);
+			textX := 85;
 		endif
+
+		// Name + type
+		GFTextLine(gump, textX, y, 1153, nome + " [" + uso + "]");
+
+		// Description
+		GFHTMLArea(gump, textX, y + 20, GUMP_W - textX - 80, 75, desc, 1150, 0);
+
+		// Buy button
+		GFAddButton(gump, GUMP_W - 60, y + 30, 4005, 4007, 1, i);
+		GFTextLine(gump, GUMP_W - 62, y + 12, 1153, "Obter");
+
+		itemOnPage := itemOnPage + 1;
+		i := i + 1;
 	endforeach
 
-	y := 80;
-	x := 355;
-	if (habsize > 10)
-		x := 985;
-		y := 80;
-	elseif (habsize > 5)
-		x := 670;
-		y := 80;
+	// Navigation for last page
+	if (totalPages > 1)
+		GFTextMid(gump, 15, NAV_Y + 2, GUMP_W - 30, 1153, $"Pág. {pageNum}/{totalPages}");
+		if (pageNum > 1)
+			GFAddButton(gump, 30, NAV_Y, 5603, 5607, GF_PAGE_BTN, pageNum - 1);
+			GFTextLine(gump, 60, NAV_Y + 2, 1153, "Anterior");
+		endif
 	endif
-	i := 1;
-
-	foreach hab in habsfac
-		var habelem := FindConfigElem(habcfg, hab);
-		var desc := GetConfigString(habelem, "desc");
-		var uso := GetConfigString(habelem, "uso");
-		var nome := GetConfigString(habelem, "nome");
-		if (uso == "Ativa")
-			var delay := GetConfigInt(habelem, "delay");
-			nome := nome + " ["+delay+" s]";
-			var stam := GetConfigInt(habelem, "stam");
-			if (!stam)
-				stam := GetConfigInt(habelem, "mana");
-				nome := nome + " [" + stam + " mana]";
-			else
-				nome := nome + " [" + stam + " stam]";
-			endif
-		endif
-		var nivel := GetConfigInt(habelem, nivel);
-		var requisitos := getConfigstringArray(habelem, "requisito");
-		//var gumpid :=  Hex(GetConfigInt(habelem, "gump"));
-
-		GFAddButton(gump, x-20, y+4, 2103, 2104, 1, 20+i );
-		//GFGumpPic(gump, x, y+20, gumpid) ;
-		GFTextLine(gump, x, y, 1153, nome + " [" + uso + "]" );
-		if (requisitos.size() )
-			desc := desc + "<cr> Pre-Requisitos: ";
-			foreach req in requisitos
-				desc := desc + req + " ";
-			endforeach
-		endif
-		GFHTMLArea( gump, x, y+20, 300, 90, desc, 1150, 0);
-
-		i := i + 1;
-		y := y + 110;
-	endforeach
 
 	var input := GFSendGump(who, gump);
 	input := input[0];
 
-
 	if (input > 0)
-		if (input >= 20)
-			input := input-20;
-			return habsfac[input];
-		endif
 		return habs[input];
 	else
 		return 0;
@@ -331,7 +330,6 @@ function ComprarHabGump(who, habs, habsfac)
 endfunction
 
 function comprarHabilidade(who, item, nv:=-1)
-	var itemdesc := ReadConfigFile("::itemdesc");
 	var nivel;
 
 	if (nv != -1)
@@ -342,11 +340,8 @@ function comprarHabilidade(who, item, nv:=-1)
 		SendSysMessage(who,"Chamada inválida da função");
 		return;
 	endif
-	var classe := GetObjProperty(who, "classe");
-	var faccao := GetObjProperty(who, "faccao"); //facção
 	var chardata := GetObjProperty(who, "chardata");
 	var cultura := chardata.culture;
-	var raca := chardata.raca;
 	var religiao := chardata.religion;
 	var magia := chardata.magia;
 	var habs := GetObjProperty(who, "buyhab");
@@ -358,139 +353,110 @@ function comprarHabilidade(who, item, nv:=-1)
 	if ( (myhabs == error)  )
 		myhabs := dictionary;
 	endif
-	//SendSysMessage(who, GetObjProperty(who, "chardata").classe +" "+ GetObjProperty(who, "chardata").povo + " " + nivel);
 	var possiveis := HabilidadesPorNivelPossiveis(who, chardata.classe, chardata.culture, nivel);
 
-	//var possiveis := HabilidadesPorNivel(who, classe, nivel);
-	var possiveisfaccao := HabilidadesPorNivelFaccao(who, faccao, nivel); //facção
-
-	//sendsysmessage(who, "Procurando Habs possiveis!");
-
 	nivel := nivel*2;
-
-	if (habs[nivel] != 1)
-		SendSysMessageEx(who, "Voce nao pode comprar habilidade desse nivel " + nivel , SSM_FAIL);
+	var diference := Trunc(GetBuyHabDiference(who, nivel),1);
+	
+	if (diference > 0)
+		SendSysMessageEx(who, "Você não pode comprar habilidade desse nivel, faltam {} pontos de skill distribuídas nas suas primárias. ".format(diference), SSM_FAIL);
 		return 0;
 	endif
 
-	if ( possiveis.size() > 0 || possiveisfaccao.size() > 0)
-		//sendsysmessage(who, "Tem alguma hab!");
-
+	if ( possiveis.size() > 0 )
 		SendSysMessageEx(who, "Escolha sua habilidade.", SSM_REQUEST);
-		var escolhida := ComprarHabGump(who, possiveis, possiveisfaccao);
+		var escolhida := ComprarHabGump(who, possiveis);
 		if (!escolhida)
 			SendSysMessageEx(who, "Voce cancelou a compra da habilidade.", SSM_FAIL);
 			return 0;
 		endif
-		//var escolhida := RadioGump(who, 300, 380, "Escolha a habilidade que quer aprender", possiveis);
 		if (!temRequisito(who, escolhida))
 			return 0;
 		endif
 
-        if (escolhida == "Visao verdadeira" && who.gender != 1 && cultura != HAROLOTH && religiao != ELUITHORTH)
-            SendSysMessageEx(who, "Apenas drows femeas podem comprar essa habilidade.", SSM_FAIL);			
-            return 0;
-        endif
+		// escolhida is now an ability ID - convert to int for comparisons
+		var escolhida_id := CInt(escolhida);
 
-		if (escolhida == "Aura Mortis" && religiao != VENERATIO && cultura != AIGLANA)
-			SendSysMessageEx(who, "Apenas aiglanos Veneratio podem comprar essa habilidade.", SSM_FAIL);
+		if (escolhida_id == ABILITY_ID::ELO_NATURAL && cultura == HAROLOTH)
+			SendSysMessageEx(who, "Drows Har'oloth não podem ser druidas.", SSM_FAIL);
 			return 0;
 		endif
 
-		if(escolhida == "Elo Natural" && cultura == HAROLOTH)
-            SendSysMessageEx(who, "Drows Har'oloth não podem ser druidas.", SSM_FAIL);
-            return 0;
-		endif
-
-		if(escolhida == "Danca das Sombras" && cultura != HAROLOTH && religiao != ELUITHORTH)
+		if (escolhida_id == ABILITY_ID::DANCA_DAS_SOMBRAS && cultura != HAROLOTH && religiao != ELUITHORTH)
 			SendSysMessageEx(who, "Apenas drows machos Har'oloth e devotos de Idrith podem comprar essa habilidade.", SSM_FAIL);
 			return 0;
 		endif
 
-		if(escolhida == "Gwaenedh" && magia != "Arqueiro Arcano")
+		if (escolhida_id == ABILITY_ID::ARCANE_BOW && magia != "arcane_archer")
 			SendSysMessageEx(who, "Apenas arqueiros arcanos podem comprar essa habilidade.", SSM_FAIL);
 			return 0;
 		endif
 
-		SendSysMessageEx(who, "Voce comprou a habilidade: " + escolhida, SSM_INFO);
-		if (escolhida == "Caçador Implacável")
+		// Get ability name from config for display message
+		var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+		var habelem_display := FindConfigElem(habcfg, escolhida);
+		var ability_name := GetConfigString(habelem_display, "nome");
+		SendSysMessageEx(who, "Voce comprou a habilidade: " + ability_name, SSM_INFO);
+
+		if (escolhida_id == ABILITY_ID::CACADOR_IMPLACAVEL || escolhida_id == ABILITY_ID::RESISTENCIA_DO_DESERTO)
 			var hitsmod := cint(GetObjProperty(who, "hitsmod"));
 			hitsmod := hitsmod + 20;
 			setObjProperty(who, "hitsmod", hitsmod);
 			recalcvitals(who);
-		elseif (escolhida == "Acuidade com Arma")
-			SendSysMessageEx(who, "Escolha qual vai ser sua arma preferida.", SSM_REQUEST);
-			var targ := Target(who);
-			while(!targ.isA(POLCLASS_WEAPON))
-				targ := Target(who);
-			endwhile
-			SetObjProperty(who, "armapreferida", targ.objtype);
-			SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
-		elseif (escolhida == "Arma Predileta")
-			SendSysMessageEx(who, "Escolha qual vai ser sua arma predileta.", SSM_REQUEST);
-			var targ := Target(who);
-			while(!targ.isA(POLCLASS_WEAPON))
-				targ := Target(who);
-			endwhile
-			SetObjProperty(who, "armapredileta", targ.objtype);
-			SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
-		elseif (escolhida == "Foco com Arma")
-			SendSysMessageEx(who, "Escolha qual vai ser sua arma para a habilidade foco com arma.", SSM_REQUEST);
-			var targ := Target(who);
-			while(!targ.isA(POLCLASS_WEAPON))
-				targ := Target(who);
-			endwhile
-			SetObjProperty(who, "fococomarma", targ.objtype);
-			SendSysMessageEx(who, "Arma escolhida.", SSM_INFO);
-		elseif (escolhida == "Inimigo Predileto")
-			var inimigo := RadioGump(who, 300, 380, "Escolha seu Inimigo Predileto", array{"Dragon","Undead","Giants","GiantAnimal","EvilHuman","Goblin", "Underdark"});
-			SetObjProperty(who, "InimigoPredileto", inimigo);
-		elseif (escolhida == "Inventario Ferreiro")
-			var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Armas","Escudos","Armaduras"});
-			Start_Script(":charactercreation:habilidades/inventario", {who, "ferreiro", inventario});
-		elseif (escolhida == "Inventario Carpinteiro")
-			var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Equipamentos","Mobilia"});
-			Start_Script(":charactercreation:habilidades/inventario", {who, "carpinteiro", inventario});
-		elseif (escolhida == "Inventario Costureiro")
-			var inventario := RadioGump(who, 300, 380, "Selecione a especialidade", array{"Couro","Tecido"});
-			Start_Script(":charactercreation:habilidades/inventario", {who, "costureiro", inventario});
-		elseif (escolhida == "Elo Natural")
+		elseif (escolhida_id == ABILITY_ID::ELO_NATURAL)
 			setObjProperty(who, "empatiacomanimais", 1);
-		elseif(escolhida == "Protecao Elemental Kitahne")
-			who.resist_fire_mod  := who.resist_fire_mod + 25;
-			who.resist_cold_mod  := who.resist_cold_mod + 25;
-			who.resist_poison_mod  := who.resist_poison_mod + 25;
-			who.resist_energy_mod  := who.resist_energy_mod + 25;
-        elseif(escolhida == "Artilheiro Preparado")
+		elseif (escolhida_id == ABILITY_ID::EXPLOSIVE_FIST)
 			if (chardata.wisdom_path != "Engenheiro")
 				SendSysMessageEx(who, "Apenas engenheiros podem comprar essa habilidade.", SSM_FAIL);
 				return 0;
 			endif
-            who.carrying_capacity_mod := 50;
-        elseif(escolhida == "Bolsa Infinita")
-            who.carrying_capacity_mod := 120;
-		elseif(escolhida == "Ainalaith")
+		elseif (escolhida_id == ABILITY_ID::BOLSA_INFINITA)
+			who.carrying_capacity_mod := 120;
+		elseif (escolhida_id == ABILITY_ID::ELEMENTAL_AFFINITY)
 			var damage_effect := struct{};
 			damage_effect.+fire_arrow := 0;
 			damage_effect.+cold_arrow := 0;
 			damage_effect.+energy_arrow := 0;
 			SetObjProperty(who, "#shooting_effects", damage_effect);
-		elseif (escolhida == "Tiro em Movimento")
+		elseif (escolhida_id == ABILITY_ID::TIRO_EM_MOVIMENTO)
 			GrantPrivilege(who, "firewhilemoving");
-			who.enable("firewhilemoving");	
+			who.enable("firewhilemoving");
+		elseif (escolhida_id == ABILITY_ID::NINJA_PATH)
+			CreateItemInBackPack(who, 3592, 1);
+		elseif (escolhida_id == ABILITY_ID::CAMPEAO_DIVINO || escolhida_id == ABILITY_ID::FORMA_ABISSAL)
+			var wing_type := ChooseWings(who);
+			if (wing_type)
+				SetObjProperty(who, "chosen_wings", wing_type);
+			endif
+		elseif (escolhida_id == ABILITY_ID::PACK_MULE)
+			who.carrying_capacity_mod := who.carrying_capacity_mod + 60;
+		elseif(escolhida_id == ABILITY_ID::AURA_DE_FE)
+			ChooseFlag(who);
 		endif
-		myhabs[nivel] := escolhida;
+		myhabs[nivel] := escolhida_id;
 		habs[nivel] := 2;
 		SetObjProperty(who, "buyhab", habs);
 		SetObjProperty(who, "myhabs", myhabs);
-		//return 1;
+		if (who.cmdlevel == 0)
+			CensusTrackAbility(escolhida_id);
+		endif
+
+		// Update pool counter for pool abilities (e.g., weapon specializations)
+		if (CInt(GetConfigInt(habelem_display, "pool")))
+			var poolCounts := GetObjProperty(who, "myhabs_pool") ?: dictionary;
+			poolCounts[escolhida_id] := CInt(poolCounts[escolhida_id]) + 1;
+			SetObjProperty(who, "myhabs_pool", poolCounts);
+		endif
+
+		if(item)
+			DestroyItem(item);
+		endif
 	else
 		SendSysMessageEx(who, "Falta comprar a habilidade level 4 ou esse nivel ainda nao tem habilidades.", SSM_FAIL);
+		return 0;
 	endif
     RecalcVitals(who);
-    if(item)
-		DestroyItem(item);
-	endif
+
 endfunction
 
 
@@ -552,12 +518,12 @@ function ShowHabilidadesPage(byref gump, who)
     endif
     
     var myhabs := GetObjProperty(who, "myhabs");
-    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 
 	var x := 30;
 	var y := 120;
     var i;
-    for(i := 0; i <= 20; i := i + 1)
+    for(i := 1; i <= 20; i := i + 1)
         if (Cint(habs[i]) == 1)
             if (i%2 == 0)
                 GFTextLine(gump, x + 20, y, 1150, "Habilidade: ");
@@ -585,16 +551,19 @@ function ShowHabilidadesPage(byref gump, who)
             if (i%2 == 1)
                 GFTextLine(gump, x + 90, y, 300, "Status Comprado");
             else
-                if (habcfg[myhabs[i]].uso == "Ativa")
-                    var texto := myhabs[i] + " ["+habcfg[myhabs[i]].uso + "] " + "["+habcfg[myhabs[i]].duracao + "] " + "["+habcfg[myhabs[i]].delay + " s] ";
-                    if (habcfg[myhabs[i]].stam != error)
-                        texto := texto + "["+habcfg[myhabs[i]].stam + " stam] ";
+                var hab_id := myhabs[i];
+                var hab_elem := habcfg[hab_id];
+                var hab_nome := hab_elem.nome;
+                if (hab_elem.uso == "Ativa")
+                    var texto := hab_nome + " ["+hab_elem.uso + "] " + "["+hab_elem.delay + " s] ";
+                    if (hab_elem.stam != error)
+                        texto := texto + "["+hab_elem.stam + " stam] ";
                     else
-                        texto := texto + "["+habcfg[myhabs[i]].mana + " mana] ";
+                        texto := texto + "["+hab_elem.mana + " mana] ";
                     endif
                     GFTextLine(gump, x + 90, y, 300, texto);
                 else
-                    GFTextLine(gump, x + 90, y, 300, myhabs[i] + " ["+habcfg[myhabs[i]].uso + "]");
+                    GFTextLine(gump, x + 90, y, 300, hab_nome + " ["+hab_elem.uso + "]");
                 endif
             endif
         endif
@@ -677,7 +646,7 @@ function Habilidades(who, nivel)
 		return;
 	endif
 	var myhabs := GetObjProperty(who, "myhabs");
-	var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var habs := GetObjProperty(who, "buyhab");
 	var chardata := GetObjProperty(who, "chardata");
 
@@ -714,39 +683,61 @@ function Habilidades(who, nivel)
 	return 1;
 endfunction
 
-function CheckPlayerLevel(who)
-	var chardata := GetObjProperty(who, "chardata");
+function SetPlayerSkillLevel(who)
+
 	var habs := GetObjProperty(who, "buyhab");
-	var myhabs := GetObjProperty(who, "myhabs");
-	var primSum := 0;
-	var primarias := 0;
-
-	if (!myhabs)
-		myhabs := dictionary;
-	endif
-
-	if (!habs[0])
+	if(!habs)
 		habs[0] := 1;
 	endif
 
-	foreach skill in (chardata.Skills.keys())
-		if (chardata.Skills[skill]  == 3)
-			primarias := primarias + 1;
-			primSum := primSum + AP_GetTrueSkill(who, skill); //Sobe de nivel com base apenas no valor base da skill
-		endif
-	endforeach
-	primSum := primSum - primarias*40; //so conta os pontos que subiu a partir de 40
-	primarias := primarias*3;
-	primSum := cint(primSum/primarias);
+	var levelInfo := GetSkillLevelInfo(who);
 
-	var i;
-	for(i := 1; i <= primSum; i := i + 1)
-		if (!habs[i])
-			habs[i] := 1;
+	for level := 1 to levelInfo.currentLevel
+		if (!habs[level])
+			habs[level] := 1;
 		endif
 	endfor
+
 	SetObjProperty(who, "buyhab", habs);
 endfunction
+
+function GetSkillLevelInfo(who)
+	var characterPrimarySkills := GetCharacterSkills(who, SKILL_PRIORITY::PRIMARY);
+	var periciaCombinadaAcima := characterPrimarySkills.combinedSkillsValue - characterPrimarySkills.skills.Size() * 40; //so conta os pontos que subiu a partir de 40
+
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata != error && chardata.trait == "Sabe-Tudo")
+		periciaCombinadaAcima += 3; // Sabe-Tudo sobe de nivel com 43 (em vez de 46) na sua unica primaria
+	endif
+
+	var divisor := characterPrimarySkills.skills.Size() * 3;
+	var levelAtual := cint(periciaCombinadaAcima/divisor);
+
+	return struct { primaryDivisor := divisor, currentLevel := levelAtual , relevantCombinedSkills := periciaCombinadaAcima};
+endfunction
+
+function GetBuyHabDiference(who, desiredLevel)
+	var skillLevelInfo := GetSkillLevelInfo(who);
+	return (skillLevelInfo.relevantCombinedSkills - (desiredLevel * skillLevelInfo.primaryDivisor)) * -1;
+endfunction
+
+function GetCharacterSkills(who, prioridadePericia)
+	var chardata := GetObjProperty(who, "chardata");
+	var retorno := struct { skills := array, combinedSkillsValue := 0 };
+	var returnList := array;
+
+	foreach pericia in (chardata.Skills.keys())
+		Sleepms(2);
+		if (cint(chardata.Skills[pericia])  == prioridadePericia || prioridadePericia == 0)
+			var valor := AP_GetTrueSkill(who, pericia);
+			retorno.skills.append(struct {name := pericia, value := valor});
+			retorno.combinedSkillsValue := retorno.combinedSkillsValue + valor;
+		endif
+	endforeach
+
+	return retorno;
+endfunction
+
 
 function GetSkillColor(skill)
     var temp := cint(skill/10);

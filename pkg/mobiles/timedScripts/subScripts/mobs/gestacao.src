@@ -1,0 +1,93 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/eventID";
+include "include/epicNPCUtils";
+
+program TimedScript_Gestacao(params)
+
+	var mobile := params[1]; // fêmea
+
+	if (!mobile)
+		return 1;
+	endif
+
+	if (GetObjProperty(mobile, "Ajuste_counter") == 1)
+		return 1;
+	endif
+
+	// Segurança: se não estiver grávida, aborta
+	if (!GetObjProperty(mobile, "Gravida"))
+		return 1;
+	endif
+
+	var female_template := mobile.npctemplate;
+	var cows := array(":epicai:cow", ":epicai:cow2");
+
+	PrintTextAbove(mobile, "*" + mobile.name + " entrou em trabalho de parto!*");
+	sleep(3);
+
+	var filhote := 0;
+	var sexo := RandomDiceRoll("1d2"); // 1 = macho | 2 = femea
+
+	// =========================================
+	// BOVINOS
+	// =========================================
+	if (female_template in cows)
+
+		if (sexo == 1) // macho → boi
+			filhote := CreateNpcFromTemplate(":epicai:bull",
+				mobile.x, mobile.y, mobile.z, struct{}, mobile.realm);
+		else           // femea → vaca
+			filhote := CreateNpcFromTemplate(female_template,
+				mobile.x, mobile.y, mobile.z, struct{}, mobile.realm);
+		endif
+
+	// =========================================
+	// CAPRINOS
+	// =========================================
+	elseif (female_template == ":epicai:cabra")
+
+		if (sexo == 1) // macho → bode
+			filhote := CreateNpcFromTemplate(":epicai:goat",
+				mobile.x, mobile.y, mobile.z, struct{}, mobile.realm);
+		else           // femea → cabra
+			filhote := CreateNpcFromTemplate(female_template,
+				mobile.x, mobile.y, mobile.z, struct{}, mobile.realm);
+		endif
+
+	// =========================================
+	// OUTRAS ESPÉCIES
+	// =========================================
+	else
+
+		filhote := CreateNpcFromTemplate(female_template,
+			mobile.x, mobile.y, mobile.z, struct{}, mobile.realm);
+
+	endif
+
+	sleepms(3);
+
+	if (filhote)
+
+		SetObjProperty(filhote, "Sexo", sexo);
+
+		if (female_template in cows)
+			SetObjProperty(filhote, "descmodboss", "*Bezerro*");
+		elseif (female_template == ":epicai:cabra")
+			SetObjProperty(filhote, "descmodboss", "*Cabrito*");
+		else
+			SetObjProperty(filhote, "descmodboss", "*Filhote*");
+		endif
+		var tier := RandomDiceRoll("1d5");
+		customizeNpc(filhote);
+	endif
+
+	// Limpeza de estados
+	EraseObjProperty(mobile, "alvo");
+	EraseObjProperty(mobile, "Gravida");
+	EraseObjProperty(mobile, "descmodboss");
+	return 1;
+
+endprogram

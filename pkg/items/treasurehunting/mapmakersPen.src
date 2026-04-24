@@ -7,13 +7,14 @@ use os;
 include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
-include ":crafting:crafting";
 include ":crafting:toolWear";
 include ":itemutils:canAccess";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":tn:tngumps";
 include ":treasurehunting:treasuremaps";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 var item_config := ReadConfigFile(":treasurehunting:itemdesc");
 var craft_config := ReadConfigFile(":treasurehunting:cartography");
@@ -54,7 +55,9 @@ program use_MapmakersPen(who, tool)
 
 		if (TemHabilidade(who, "Mapear Regiao") || who.cmdlevel >= 3)
 			// var rinfo := sendCraftGump(who, "Cartography");
-
+			SendSysMessageEx(who, "Sistema ainda não foi implementado, consulte a staff.",
+								  SSM_FAIL);
+			return 0;
 			// OK was pressed, close it on out
 			// if(rinfo == 0)
 			// 	return 0;
@@ -98,7 +101,7 @@ program use_MapmakersPen(who, tool)
 					SendSysMessageEx(who, "Voce nao pode escrever neste livro.", SSM_FAIL);
 					return;
 				elseif (linguagem != error)
-					if (!(temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica") ||
+					if (!(MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO) ||
 		 (linguas != error && linguagem in linguas)))
 						SendSysMessageEx(who, "Voce nao conhece essa lingua para copiar o livro.");
 						return;
@@ -106,7 +109,7 @@ program use_MapmakersPen(who, tool)
 						var traduzir := YesNo(who, "Traduzir pra idioma comum ou copiar o livro?", "Traduzir",
 											   "Copiar");
 						if (traduzir)
-							if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica"))
+							if (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 								linguas := array{ "Antigo vanirio", "Antigo aquilrano", "Antigo thuriao", "Antigo Asanita",
 				  								"Antigo Zharkiano", "Draconiano", "Abissal", "Silvestre", "Lingua dos Mortos" };
 								linguas.append("Antigo Esquecido");
@@ -141,7 +144,7 @@ program use_MapmakersPen(who, tool)
 			var yes;
 			var idiomaEscrita;
 
-			if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 				linguas := array{ "Imperialis", "Aglâb", "Ahruwën", "Haiei",
 				  				"Phalk", "Grumnak", "Björ", "Idrith'har" };
 			endif
@@ -249,8 +252,12 @@ function makeCartographyMap(who, map_objtype, amount, tool)
 
 		if (GetAmount(blank) >= material)
 			// if( CraftCheckSkill(who, craft_skill, diff, pts) )
-			var theitem := CreateCraftedMap(who, craft_skill, blank, map_objtype, material, itemname, reqd);
-			if (TypeOf(theitem) != "ItemRef")
+			//var theitem := CreateCraftedMap(who, craft_skill, blank, map_objtype, material, itemname, reqd);
+			
+
+			//TODO o sitema de crafting novo não inclui este fluxo, fazer.
+
+			/*if (TypeOf(theitem) != "ItemRef")
 				SubtractAmount(blank, material);
 				SendSysMessageEx(who, "Voce falhou em escrever o mapa e parte do material foi perdido.",
 								  SSM_FAIL);
@@ -268,7 +275,7 @@ function makeCartographyMap(who, map_objtype, amount, tool)
 						encodeMap(props, theitem);
 					0x6502: props := array("world", 0, 0, 5119, 4095, 500, 400); encodeMap(props, theitem);
 				endcase
-			endif
+			endif*/
 		// else
 		// 	if( SubtractAmount(blank, material) )
 		// 		SendSysMessageEx(who, "Voce perdeu parte do material.", SSM_FAIL);

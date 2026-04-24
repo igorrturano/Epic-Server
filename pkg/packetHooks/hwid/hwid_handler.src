@@ -1,0 +1,38 @@
+use uo;
+use os;
+use basic;
+
+program install_hwid_hook()
+	Print("INSTALLING: HWID Packet Hook...");
+	return 1;
+endprogram
+
+exported function HandleHWID(who, byref packet)
+	var hwid := "";
+	var i;
+	for (i := 3; i <= 66; i := i + 1)
+		var byte := packet.GetInt8(i);
+		if (byte > 0)
+			hwid += CChr(byte);
+		endif
+	endfor
+
+	if (hwid == "" || Len(hwid) < 16)
+		return 1;
+	endif
+
+	var acc := who.acct;
+	var hwids := acc.GetProp("HWID");
+	if (!hwids)
+		hwids := array;
+		hwids.Append(hwid);
+		acc.SetProp("HWID", hwids);
+	else
+		if (!(hwid in hwids))
+			hwids.Append(hwid);
+			acc.SetProp("HWID", hwids);
+		endif
+	endif
+
+	return 1;
+endfunction

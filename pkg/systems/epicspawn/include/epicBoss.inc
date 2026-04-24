@@ -38,7 +38,7 @@ function CreateEpicBoss(boss, x, y, z, realm)
 
     if (boss.description)
         SetObjProperty(npc, "descmodboss", boss.description + "<br>");
-        updateToolTip(npc);
+        IncRevision(npc);
     endif
     
     if (boss.trueboss)
@@ -114,6 +114,10 @@ function CreateEpicBoss(boss, x, y, z, realm)
 
     if (boss.skills_mod.parry)
         AP_SetSkillMod(npc, PARRY, CInt(boss.skills_mod.parry));
+    endif
+
+    if (boss.skills_mod.arcana)
+        AP_SetSkillMod(npc, ARCANA, CInt(boss.skills_mod.arcana));
     endif
 
     if (boss.skills_mod.one_handed)
@@ -443,6 +447,7 @@ function GetWeaponHitScripts()
         "Life Drain",
         "Bleeding Strike",
         "Concussion Hit",
+        "Disease Hit",
         "Unmount Hit",
         "Anti Mounted Hit",
         "Charge Hit",
@@ -683,7 +688,7 @@ endfunction
 
 function GetClassAbilities(class_name)
     var abilities := array{};
-    var habcfg := ReadConfigFile(":charactercreation:config/habilidades");
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
         
     foreach hab in (GetConfigStringKeys(habcfg))
         var elem := FindConfigElem(habcfg, hab);
@@ -695,7 +700,7 @@ function GetClassAbilities(class_name)
             var hab_level := CInt(params[2]);
                       
             // Only get level 4 abilities for the selected class
-            if (hab_class == class_name && hab_level == 2)
+            if (hab_class == class_name && hab_level == 1)
                 var ability := struct{
                     "name" := GetConfigString(elem, "nome"),
                     "desc" := GetConfigString(elem, "desc")

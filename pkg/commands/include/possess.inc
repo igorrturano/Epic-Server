@@ -18,17 +18,14 @@ function possess (me, npc)
 		endif
 	endif
 
-	var oldbody := CreateNpcFromTemplate(":brainai:humanmale", npc.x, npc.y, npc.z, 0, npc.realm);
+	var oldbody := CreateNpcFromTemplate(":epicai:mannequin", npc.x, npc.y, npc.z, 0, npc.realm);
 	MoveObjectToLocation (oldbody, 5385, 923, 0, me.realm, MOVEOBJECT_FORCELOCATION);
 	SetObjProperty(me, "oldmeserial", oldbody.serial);
 	SetObjProperty(me, "lastpossessedserial", npc.serial);
 
 	clonar(oldbody, me);
-	var itemsinbag := EnumerateItemsInContainer( me.backpack );
-	foreach iteminbag in itemsinbag
-     	var copyitem := CreateItemCopyAtLocation(5384, 923, 0, iteminbag);
-		MoveItemToContainer( copyitem, oldbody.backpack);
-		destroyitem ( iteminbag );
+	foreach iteminbag in EnumerateItemsInContainer(me.backpack, ENUMERATE_ROOT_ONLY)
+		MoveItemToContainer(iteminbag, oldbody.backpack);
 		sleepms(10);
 	endforeach
 
@@ -36,11 +33,8 @@ function possess (me, npc)
 	DestroyItem(me.backpack);
 	var bolsa := CreateItemAtLocation(5384, 923, 0, 0x9B2);
 	EquipItem(me, bolsa);
-	var itemsinbag2 := EnumerateItemsInContainer( npc.backpack );
-	foreach iteminbag in itemsinbag2
-     	var copyitem := CreateItemCopyAtLocation(5384, 923, 0, iteminbag);
-		MoveItemToContainer( copyitem, me.backpack );
-		destroyitem ( iteminbag );
+	foreach iteminbag in EnumerateItemsInContainer(npc.backpack, ENUMERATE_ROOT_ONLY)
+		MoveItemToContainer(iteminbag, me.backpack);
 		sleepms(10);
 	endforeach
 
@@ -61,40 +55,68 @@ function possess (me, npc)
 	return 1;
 endfunction
 
-function unpossess(me, freeze :=1)
+function unpossess(me, freeze :=1, allowMissingPossessed := 0)
 	var oldnpcserial := getObjProperty(me, "lastpossessedserial");
 	var oldnpc := SystemFindObjectBySerial(oldnpcserial);
-	oldnpc.frozen := 0;
 	var oldbodyserial := getObjProperty(me, "oldmeserial");
 	var oldbody := SystemFindObjectBySerial(oldbodyserial);
+	var isGolemPilot := 0;
 
-	var container := CreateItemAtLocation(5384, 923, 0, "backpack", 1, oldnpc.realm);
-	container.invi := 1;
-	foreach item in ( EnumeratePhysicalItems(oldnpc) )
-		MoveItemToContainer(item, container);
-		SleepMS(2);
-	endforeach
-	DestroyItem(container);
+	if (!oldbody)
+		return 0;
+	endif
 
-	clonar(oldnpc, me);
+	if (!oldnpc && !allowMissingPossessed)
+		return 0;
+	endif
 
-	DestroyItem(oldnpc.backpack);
-	var bolsa := CreateItemAtLocation(5383, 923, 0, 0x9B2);
-	EquipItem(oldnpc, bolsa);
-	var itemsinbag := EnumerateItemsInContainer( me.backpack );
-	foreach iteminbag in itemsinbag
-     	var copyitem := CreateItemCopyAtLocation(5383, 923, 0, iteminbag);
-		MoveItemToContainer( copyitem, oldnpc.backpack);
-		destroyitem ( iteminbag );
-	endforeach
-	oldnpc.facing := me.facing;
-	MoveObjectToLocation (oldnpc, me.x, me.y, me.z, me.realm, MOVEOBJECT_FORCELOCATION);
-	oldnpc.frozen := 1;
-	oldnpc.concealed := 0;
-	me.concealed := 1;
+	if (oldnpc)
+		oldnpc.frozen := 0;
+		if (GetObjProperty(me, "pilotando") != error && oldnpc.npctemplate == ":epicai:PowerArmor")
+			isGolemPilot := 1;
+		endif
+	endif
 
-	container := CreateItemAtLocation(5383, 923, 0, "backpack", 1, me.realm);
-	container.invi := 1;
+	// Erase pilotando early — canInsert.src blocks MoveItemToContainer while it's set
+	EraseObjProperty(me, "pilotando");
+
+	// Restore possessed NPC (skip for golem pilots — golem stays as-is)
+	if (oldnpc)
+		if (isGolemPilot)
+			oldnpc.facing := me.facing;
+			MoveObjectToLocation(oldnpc, me.x, me.y, me.z, me.realm, MOVEOBJECT_FORCELOCATION);
+			oldnpc.concealed := 0;
+			oldnpc.frozen := 0;
+			me.concealed := 1;
+		else
+			var container := CreateItemAtLocation(5384, 923, 0, "backpack", 1, oldnpc.realm);
+			container.invisible := 1;
+			foreach item in ( EnumeratePhysicalItems(oldnpc) )
+				MoveItemToContainer(item, container);
+				SleepMS(2);
+			endforeach
+			DestroyItem(container);
+
+			clonar(oldnpc, me);
+
+			DestroyItem(oldnpc.backpack);
+			var bolsa := CreateItemAtLocation(5383, 923, 0, 0x9B2);
+			EquipItem(oldnpc, bolsa);
+			foreach iteminbag in EnumerateItemsInContainer(me.backpack, ENUMERATE_ROOT_ONLY)
+				MoveItemToContainer(iteminbag, oldnpc.backpack);
+				sleepms(10);
+			endforeach
+			oldnpc.facing := me.facing;
+			MoveObjectToLocation (oldnpc, me.x, me.y, me.z, me.realm, MOVEOBJECT_FORCELOCATION);
+			oldnpc.frozen := 1;
+			oldnpc.concealed := 0;
+			me.concealed := 1;
+		endif
+	endif
+
+	// Restore player from oldbody backup
+	var container := CreateItemAtLocation(5383, 923, 0, "backpack", 1, me.realm);
+	container.invisible := 1;
 	foreach item in ( EnumeratePhysicalItems(me) )
 		MoveItemToContainer(item, container);
 		SleepMS(2);
@@ -103,13 +125,10 @@ function unpossess(me, freeze :=1)
 
 	clonar(me, oldbody);
 	DestroyItem(me.backpack);
-	bolsa := CreateItemAtLocation(5383, 923, 0, 0x9B2);
+	var bolsa := CreateItemAtLocation(5383, 923, 0, 0x9B2);
 	EquipItem(me, bolsa);
-	var itemsinbag2 := EnumerateItemsInContainer( oldbody.backpack );
-	foreach iteminbag in itemsinbag2
-     	var copyitem := CreateItemCopyAtLocation(5383, 923, 0, iteminbag);
-		MoveItemToContainer( copyitem, me.backpack );
-		destroyitem ( iteminbag );
+	foreach iteminbag in EnumerateItemsInContainer(oldbody.backpack, ENUMERATE_ROOT_ONLY)
+		MoveItemToContainer(iteminbag, me.backpack);
 		sleepms(10);
 	endforeach
 
@@ -120,9 +139,7 @@ function unpossess(me, freeze :=1)
 	me.enable("invul");
 	me.enable("losany");
 
-	if (freeze)
-		oldnpc.frozen := 0;
-	else
+	if (oldnpc)
 		oldnpc.frozen := 0;
 	endif
 

@@ -153,7 +153,7 @@ function AP_GetSkillCap(mobile, skill_name:=NO_SKILL_NAME)
     // Calculate thecap limit
     var age_limit := limiteportempo(mobile);
     var skill_cap := Min(cap_val, age_limit);
-    var total_skill_cap := CInt(initial_skill_value + skill_cap);
+    var total_skill_cap := CDbl(initial_skill_value + skill_cap);
 
     // Return the lower value between the config-based cap and the age-based cap
     return total_skill_cap;
@@ -351,23 +351,30 @@ endfunction
  * limiteportempo(who)
  * Purpose: Calculates skill cap based on character age
  * Parameters: who: character reference
- * Return: skill cap (minimum 12, max 100)
+ * Return: skill cap (minimum 6, max 100)
+ * Cap diario / Cap dia / Daily Cap / Total Cap
  */
 function limiteportempo(who)
     if (who.npctemplate)
-        return 100;  // NPCs always have a skill cap of 100
+        return 100;
     endif
 
-    var dias := idadeChar(who);  
-    var lim := 10;  
+    var dias := idadeChar(who);
+    var lim;
 
-    if (dias <= 15)
-        lim := lim + dias*2;  
+    if (dias <= 3)
+        lim := 6 + dias * 2;
+    elseif (dias <= 12)
+        lim := 12 + (dias - 3);
+    elseif (dias <= 50)
+        lim := 21 + (dias - 12) * 0.5;
+    elseif (dias <= 75)
+        lim := 40 + (dias - 50) * 0.4;
     else
-        lim := 30 + dias*0.3;  
+        lim := 50 + (dias - 75) * 0.3;
     endif
 
-    return Min(lim, 60);  
+    return Min(lim, 60);
 endfunction
 
 /*

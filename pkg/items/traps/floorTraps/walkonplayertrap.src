@@ -10,7 +10,7 @@ use os;
 use cfgfile;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/say";
 include ":blood:blood";
 include ":charactercreation:habilidades";
@@ -27,6 +27,8 @@ program TrapWalkOn(mobile, trap)
 		return 0;
 	elseif (cint(GetObjProperty(trap, "trap_inativa")) == 1)
 		return 0;
+	elseif (GetCooldown(mobile, "res_trap_protection") > 0)
+		return 0;
 	endif
 
 	var cfg := ReadConfigFile(":*:itemdesc");
@@ -34,26 +36,20 @@ program TrapWalkOn(mobile, trap)
 	cfg := cfg[trap.objtype];
 	var trapcheck := GetObjProperty(trap, "traptype");
 
-	if (trap.objtype == 0xff98) // beartrap
+	if (trap.objtype == 0x4004) // beartrap
 		do
 			if (!GetObjProperty(trap, "trap_ativada"))
 				trap.invisible := 0;
 				var tempo := 15;
 				var dmg := CInt(RandomDiceRoll("1d10")) + 20;
 				SendSysMessageEx(mobile, "Voce pisou em uma armadilha de urso!", SSM_FAIL);
-				if (CheckResist(mobile, REFLEXOS, RESIST_ALMOST_IMPOSSIBLE))
-					if (temHabilidade(mobile, "Desbravador Nato"))
+				if (CheckResist(mobile, REFLEXES, RESIST_ALMOST_IMPOSSIBLE))
+					if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 						SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
 						sleep(10);
 						continue;
 					else
 						SendSysMessageEx(mobile, "Voce evitou ficar totalmente preso na armadilha.", SSM_INFO);
-						tempo := 5;
-						dmg := CInt(dmg * 0.5);
-					endif
-				else
-					if (temHabilidade(mobile, "Evasao Aprimorada"))
-						SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha.", SSM_INFO);
 						tempo := 5;
 						dmg := CInt(dmg * 0.5);
 					endif
@@ -63,7 +59,7 @@ program TrapWalkOn(mobile, trap)
 				PlaySoundEffect(mobile, 0x3BA);
 				SetObjProperty(trap, "trap_ativada", 1);
 				sleep(2);
-				DamageFLS(mobile, dmg);
+				DamageFLS(mobile, dmg, DMG_FORCED, "trap");
 				performaction(mobile, 0x14);
 				if (mobile.graphic == 401)
 					PlaySoundEffect(mobile, 0x32F);
@@ -87,7 +83,7 @@ program TrapWalkOn(mobile, trap)
 					PlaySoundEffect(mobile, 0x32F);
 				endif
 				sleep(5);
-				CreateItemAtLocation(trap.x, trap.y, trap.z, 0xff97, 1, trap.realm);
+				CreateItemAtLocation(trap.x, trap.y, trap.z, 0x4140, 1, trap.realm);
 				DestroyItem(trap);
 			endif
 			sleep(10);
@@ -105,8 +101,8 @@ program TrapWalkOn(mobile, trap)
 			var level := GetObjProperty(trap, "traplevel");
 			var dmg := CInt(RandomDiceRoll("1d10")) + 15;
 			dmg := dmg * level;
-			if (CheckResist(mobile, REFLEXOS, RESIST_ALMOST_IMPOSSIBLE))
-				if (temHabilidade(mobile, "Desbravador Nato"))
+			if (CheckResist(mobile, REFLEXES, RESIST_ALMOST_IMPOSSIBLE))
+				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
 					sleep(10);
 					continue;
@@ -114,13 +110,8 @@ program TrapWalkOn(mobile, trap)
 					SendSysMessageEx(mobile, "Voce evitou parte do dano da armadilha.", SSM_INFO);
 					dmg := CInt(dmg * 0.5);
 				endif
-			else
-				if (temHabilidade(mobile, "Evasao Aprimorada"))
-					SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha.", SSM_INFO);
-					dmg := CInt(dmg * 0.5);
-				endif
 			endif
-			DamageFLS(mobile, dmg, DMG_FIRE);
+			DamageFLS(mobile, dmg, DMG_FIRE, "trap");
 			performaction(mobile, 0x14);
 			if (mobile.graphic == 401)
 				PlaySoundEffect(mobile, 0x32F);
@@ -174,8 +165,8 @@ program TrapWalkOn(mobile, trap)
 
 			var dmg := CInt(RandomDiceRoll("1d10")) + 8;
 			dmg := dmg * level;
-			if (CheckResist(mobile, REFLEXOS, RESIST_ALMOST_IMPOSSIBLE))
-				if (temHabilidade(mobile, "Desbravador Nato"))
+			if (CheckResist(mobile, REFLEXES, RESIST_ALMOST_IMPOSSIBLE))
+				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha.", SSM_INFO);
 					sleep(10);
 					continue;
@@ -183,16 +174,11 @@ program TrapWalkOn(mobile, trap)
 					SendSysMessageEx(mobile, "Voce evitou parte do dano da armadilha.", SSM_INFO);
 					dmg := CInt(dmg * 0.5);
 				endif
-			else
-				if (temHabilidade(mobile, "Evasao Aprimorada"))
-					SendSysMessageEx(mobile, "Por instinto voce se livrou um pouco da armadilha.", SSM_INFO);
-					dmg := CInt(dmg * 0.5);
-				endif
 			endif
 
 			foreach mob in hostiles
 
-				DamageFLS(mob, dmg, DMG_PHYSICAL);
+				DamageFLS(mob, dmg, DMG_PHYSICAL, "trap");
 				performaction(mob, 0x14);
 				SendSysMessageEx(mob, "Voce foi atingido por uma armadilha de dardos!", SSM_INFO);
 				if (mob.graphic == 401)

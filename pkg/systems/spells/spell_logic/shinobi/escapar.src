@@ -1,0 +1,52 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/client";
+include ":timedscripts:timedScripts";
+
+/**
+ * Escapar - Spell 1105
+ * Break free from paralysis, roots, and other movement-impairing effects.
+ */
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	var freed := 0;
+
+	// Remove paralysis timer
+	if (TS_GetTimerInfo(who, "paralysis"))
+		TS_LowerDuration(who, "paralysis", -1);
+		freed := freed + 1;
+	endif
+
+	// Remove frozen state
+	if (who.frozen)
+		who.frozen := 0;
+		freed := freed + 1;
+	endif
+
+	// Remove restringir (druid root)
+	if (TS_GetTimerInfo(who, "restringir"))
+		TS_LowerDuration(who, "restringir", -1);
+		freed := freed + 1;
+	endif
+
+	// Remove tombar
+	if (TS_GetTimerInfo(who, "tombar"))
+		TS_LowerDuration(who, "tombar", -1);
+		freed := freed + 1;
+	endif
+
+	if (freed > 0)
+		PlaySoundEffect(who, 0x228);
+		PrintTextAbove(who, "*Se liberta!*");
+		SendSysMessageEx(who, "Voce se libertou de todos os efeitos de aprisionamento.", SSM_INFO);
+	else
+		SendSysMessageEx(who, "Voce nao esta preso ou imobilizado.", SSM_FAIL);
+		return 0;
+	endif
+
+	return 1;
+endprogram

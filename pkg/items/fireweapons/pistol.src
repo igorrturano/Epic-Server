@@ -5,7 +5,7 @@ include "include/say";
 include "include/client";
 include ":timedScripts:timedScripts";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 
 program fireweapon(who, item)
@@ -126,7 +126,7 @@ program fireweapon(who, item)
 	endif
 
 	TS_StartCooldown(who, "fireweapon", 15);
-	PlayMovingEffect(who, targ, GFX_SMALL_FIREBALL, 5, 1);
+	PlayMovingEffect(who, targ, FX_SMALL_FIREBALL, 5, 1);
 	PlaySoundEffect(who, SFX_MAGIC_ARROW);
 	DamageFLS(targ, finaldmg, DMG_FORCED, who);
 

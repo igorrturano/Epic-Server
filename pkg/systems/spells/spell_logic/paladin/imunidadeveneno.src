@@ -13,7 +13,7 @@ program SpellScript(params)
 
 	// Visual and sound effects
 	PlaySoundEffect(who, SFX_SPELL_BLESS);
-	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLE_GROUND, 7, 7);
+	PlayObjectCenteredEffect(who, FX_BLUE_SPARKLE_GROUND, 7, 7);
 
 	var theology := AP_GetSkill(who, "Theology");
 

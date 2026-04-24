@@ -2,7 +2,6 @@ include "IAttributeModifier";
 
 include ":attributes:attributeConstants";
 include ":attributes:skills";
-include ":message:model/Message";
 
 class AttributeModifier(IAttributeModifier)
 	var _attribute := ""; // attribute constant in attributeConstants.inc

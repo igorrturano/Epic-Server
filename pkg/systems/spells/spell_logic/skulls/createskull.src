@@ -15,7 +15,7 @@ program cria(item)
 	endif
 
 	// pega todas magias do cfg com esse level e armazena no array
-	var spellcfg := ReadConfigFile(":spells:config/allspells");
+	var spellcfg := ReadConfigFile(":spells:config/necromancy");
 	var keys := GetConfigIntKeys(spellcfg);
 	var randomspells := array;
 	foreach key in keys

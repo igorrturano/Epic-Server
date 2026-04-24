@@ -15,7 +15,7 @@ program dblClickMarcadorIncendio(quem, item)
 			if (tentativas % 8 == 0)
 				TurnObjectToward(quem, item.x, item.y);
 				PrintTextAbove(quem, "*Tentando apagar incêndio*");
-				PerformAction(quem, ANIM_BOW);
+				PerformAction(quem, HUMAN_ANIM::BOW);
 				PlaySoundEffect(quem, SFX_12A);
 			endif
 			item.Estimular(RESFRIAMENTOS::BASICO, true);

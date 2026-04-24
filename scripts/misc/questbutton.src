@@ -149,7 +149,9 @@ function MostrarInformacoesBasicas(byref gump, targ, chardata, byref y_pos)
 	endif
 	AddInfoLine(gump, y_pos, "Nome", nome_real);
 
-	var display_text := targ.title_race;
+	var display_text := "";
+
+	display_text += targ.title_race;
 	if (chardata.culture)
 		display_text += ", " + chardata.culture;
 	endif
@@ -379,7 +381,27 @@ function ShowTracosRaciaisGump(who, targ)
 			var value := "Não selecionado";
 			if (chardata.caracteristicas_rp && chardata.caracteristicas_rp.exists(category) &&
 	   chardata.caracteristicas_rp[category] != 0)
-				value := racial_traits[category].opcoes[chardata.caracteristicas_rp[category]];
+				// chardata now stores enum ids; use TranslateRacialTrait to resolve description
+				value := TranslateRacialTrait(category, chardata.caracteristicas_rp[category], chardata);
+				if (value == error)
+					// Try to resolve by searching option_ids for the stored enum
+					var option_ids_fb := racial_traits[category].opcoes_ids;
+					var found_idx := 0;
+					var j;
+					for (j := 1; j <= option_ids_fb.size(); j := j + 1)
+						if (option_ids_fb[j] == chardata.caracteristicas_rp[category])
+							found_idx := j;
+							break;
+						endif
+					endfor
+					if (found_idx > 0)
+						value := racial_traits[category].opcoes[found_idx];
+					elseif (typeof(chardata.caracteristicas_rp[category]) == "number" && chardata.caracteristicas_rp[category] >= 1 && chardata.caracteristicas_rp[category] <= racial_traits[category].opcoes.size())
+						value := racial_traits[category].opcoes[chardata.caracteristicas_rp[category]];
+					else
+						value := "Não selecionado";
+					endif
+				endif
 			endif
 
 			var category_name := racial_traits[category].nome;

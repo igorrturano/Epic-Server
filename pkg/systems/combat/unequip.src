@@ -47,6 +47,42 @@ program unequipweapon(who, item)
 		EraseObjProperty(who, "twohanded");
 	endif
 
+	// Steam Legs: remove carry capacity bonus
+	if (item.objtype == 0xFFC2)
+		who.carrying_capacity_mod := who.carrying_capacity_mod - 50;
+	endif
+
+	// Steam Armor: remove dex penalty
+	var steam_dex_penalty := CInt(GetObjProperty(item, "#steam_dex_penalty"));
+	if (steam_dex_penalty > 0)
+		AP_ModifyStatMod(who, DEXTERITY, steam_dex_penalty);
+		EraseObjProperty(item, "#steam_dex_penalty");
+	endif
+
+	// Reverte penalidade de esquiva de armadura não-leve aplicada no equip
+	var evasion_penalty := CInt(GetObjProperty(item, "#armor_evasion_penalty"));
+	if (evasion_penalty > 0)
+		who.evasionchance_mod := who.evasionchance_mod + evasion_penalty;
+		EraseObjProperty(item, "#armor_evasion_penalty");
+	endif
+
+	// Block SteamArms removal if a gadget is installed
+	if (item.objtype == 0xFFC3)
+		if (GetObjProperty(item, "InstalledGadget"))
+			SendSysMessageEx(who, "Remova o gadget instalado antes de desequipar os Bracos a Vapor.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	// Destroy SteamGloves companion armor on unequip
+	if (item.objtype == 0xFFC1)
+		var companion := GetEquipmentByLayer(who, LAYER_GLOVES);
+		if (companion && GetObjProperty(companion, "#steamgloves_companion"))
+			DestroyItem(companion);
+		endif
+	endif
+
 	Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
+	RemoveEquipObjMods(who, item);
 
 endprogram

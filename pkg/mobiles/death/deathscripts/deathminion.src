@@ -10,7 +10,7 @@ use vitals;
 include "include/client";
 include "include/sysEvent";
 include ":attributes:attributes";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":attributes:vitals";
 include ":epicAI:epicai";
 

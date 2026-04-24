@@ -38,7 +38,7 @@ program manobra(mobile)
 	Corromper(mobile, 9, targ);
 	var diff := handleSpellResistDiffForSpecialists(mobile, KAIJIN);
 	var bonus := epicWisdomPathBonus(mobile);
-	if (CheckResist(mobile, VONTADE, diff, -bonus))
+	if (CheckResist(mobile, WILL, diff, -bonus))
 		SendSysMessageEx(mobile, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 		mobile.frozen := 0;
@@ -63,14 +63,14 @@ program manobra(mobile)
 
 		// ApplyRawDamage( targ, 10, 0, DAMAGE_SHOW );
 		ApplyRawDamage(targ, amt);
-		HealDamage(who, amt);
+		ApplyEpicHealing(who, amt);
 
 		if (targ.dead)
 			break;
 		endif
 
 		PlayMovingEffectEx(targ, who, 3982, 255, 1, 2117);
-		PerformAction(mobile, ANIM_CAST_AREA);
+		PerformAction(mobile, HUMAN_ANIM::CAST_AREA);
 		time := time + 1;
 		sleep(1);
 	endwhile

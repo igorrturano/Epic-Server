@@ -8,6 +8,10 @@ include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
+include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+const BARKSKIN_SPELL_ID := 715;
 
 program SpellScript(params)
 	var who := params[1];
@@ -26,42 +30,132 @@ program SpellScript(params)
 
 	// Visual and sound effects
 	PlaySoundEffect(targ, SFX_SPELL_DISPEL);
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLE_GROUND, 7, 7);
+	PlayObjectCenteredEffect(targ, FX_MAOS_ENERGETICAS, 1, 25);
 
 	// Get all active timers on the target
 	var timer_list := TS_GetTimerList(targ);
 	var dispelled := 0;
 
-	// Remove all buff and debuff timers
+	// Remove all buff and debuff timers (TS-based)
 	foreach timer in (timer_list.keys())
 		timer := lower(timer);
-		// Attribute buffs
-		if (timer == "agility" || timer == "strength" || timer == "intelligence" || timer == "velocidade" ||
-	  timer == "bless")
+
+		// Stat buffs/debuffs
+		if (timer == "agility" || timer == "strength" || timer == "intelligence" ||
+		  timer == "velocidade" || timer == "bless" || timer == "gloria" ||
+		  timer == "weaken" || timer == "clumsy" || timer == "feeblemind")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 
 		// Resistance buffs
-		elseif (timer == "physicalresist" || timer == "phmod" || timer == "fimod" || timer == "comod" ||
+		elseif (timer == "phmod" || timer == "fimod" || timer == "comod" ||
 		  timer == "enmod" || timer == "pomod")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 
-		// Special effects
-		elseif (timer == "disfarce" || timer == "gloria" || timer == "desviarprojetil" || timer == "weaken" ||
-		  timer == "clumsy" || timer == "feeblemind")
+		// curse effects (non-SC shared timers)
+		elseif (timer == "desarmar" || timer == "dmgreduction")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 
-		// Combat effects
-		elseif (timer == "paralyze" || timer == "bleed" || timer == "poison" || timer == "blind" ||
-		  timer == "sleep" || timer == "silence")
+		// Control effects (non-SC shared timers)
+		elseif (timer == "paralysis" || timer == "bleed")
+			TS_LowerDuration(targ, timer, -1);
+			dispelled := 1;
+
+		// Poison effects
+		elseif (timer == "defaultpoison" || timer == "manapoison")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 		endif
 	endforeach
 
-	// Attempt to banish summons
+	// --- SC_ApplyEffect spells ---
+	var sc_spell_ids := array{
+		715,  // Barkskin
+		219,  // Impedir Cura
+		215,  // Fuga de Mana
+		214,  // Atrasar Magias
+		209,  // Aparencia Cadaverica
+		218,  // Vinganca Recorrente
+		211,  // Ampliar Dor
+		206,  // Retribuicao Profana
+		216,  // Sonho Macabro
+		212,  // Correntes de Dor
+		220,  // Forma Amaldicoada
+		301,  // Medo
+		2000, // Apodrecer (necro standalone)
+		311,  // Forma Espectral
+		314,  // Cegar
+		310,  // Parar o Tempo
+		108,  // Velocidade (evocation)
+		725,  // Caminhada do Vento (druid)
+		302,  // Invisibilidade
+		303,  // Paralisar
+		618,  // Intimidar (shaman)
+		619,  // Rajada de Vento (shaman)
+		723,  // Ventania Selvagem (druid)
+		716,  // Enraizar (druid)
+		614,  // Enraizar (shaman)
+		907,  // Disparo Divino
+		905,  // Aprisionar Demonio
+		708,  // Fala Selvagem
+		720,  // Encantar Pessoa (druid)
+		727   // Crescimento Selvagem
+	};
+
+	var mw := MobileWrapper(targ);
+	foreach spell_id in (sc_spell_ids)
+		var sc_opts := mw.GetProperty($"SpellOpts_{spell_id}");
+		if (sc_opts && !sc_opts.errortext)
+			SC_RemoveEffect(targ, spell_id);
+			TS_LowerDuration(targ, $"spelleffect_{spell_id}", -1);
+			dispelled := 1;
+		endif
+	endforeach
+
+	// --- Cooldown-based debuffs ---
+	if (GetCooldown(targ, "charmed") > 0)
+		SetCooldown(targ, "charmed", 0);
+		EraseObjProperty(targ, "charmed_by");
+		EraseObjProperty(targ, "charmed_cannot_attack");
+		dispelled := 1;
+	endif
+
+	if (GetCooldown(targ, "silence") > 0)
+		SetCooldown(targ, "silence", 0);
+		dispelled := 1;
+	endif
+
+	if (GetCooldown(targ, "darkness") > 0)
+		SetCooldown(targ, "darkness", 1);
+		dispelled := 1;
+	endif
+
+	// --- Bard property-based effects ---
+	var bard_props := array{ "#bard_sleeping", "#bard_feared", "#bard_silenced",
+	                          "#bard_hallucination", "#bard_charmed" };
+	foreach prop in (bard_props)
+		if (GetObjProperty(targ, prop) != error)
+			EraseObjProperty(targ, prop);
+			dispelled := 1;
+		endif
+	endforeach
+
+	// --- Chain of pain (property-based) ---
+	if (GetObjProperty(targ, "#chainofpain") != error)
+		EraseObjProperty(targ, "#chainofpain");
+		EraseObjProperty(targ, "#mageserial");
+		dispelled := 1;
+	endif
+
+	// --- Aparência cadavérica (property companion) ---
+	if (GetObjProperty(targ, "aparenciacadaverica") != error)
+		EraseObjProperty(targ, "aparenciacadaverica");
+		// TS timer "aparenciacadaverica" already handled in the loop above
+	endif
+
+	// --- Attempt to banish summons ---
 	if (targ.npctemplate)
 		var summoned := GetObjProperty(targ, "summoned");
 		if (summoned)
@@ -79,7 +173,7 @@ program SpellScript(params)
 				if (RandomInt(100) < theology)
 					SendSysMessageEx(who, "Você baniu a criatura invocada!", SSM_INFO);
 					PlaySoundEffect(targ, SFX_SPELL_DISPEL);
-					PlayObjectCenteredEffect(targ, GFX_EXPLODE_3, 10, 10);
+					PlayObjectCenteredEffect(targ, FX_EXPLODE_3, 10, 10);
 					ApplyRawDamage(targ, 1500);
 					return 1;
 				else

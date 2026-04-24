@@ -5,7 +5,7 @@ function Hallucinate(who)
   var graphic := graphicarray[RandomInt(len(graphicarray)) + 1];
   var color := RandomInt(99) + 2;
   DrawGamePlayer(who, graphic, color);
-  foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, 30)
+  foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, 16)
     graphic := graphicarray[RandomInt(len(graphicarray)) + 1];
     color := RandomInt(99) + 2;
     if (mobile.serial != who.serial)
@@ -13,7 +13,7 @@ function Hallucinate(who)
       DrawObject(who, mobile, graphic, color, 1);
     endif
   endforeach
-  foreach item in ListItemsNearLocation(who.x, who.y, who.z, 30)
+  foreach item in ListItemsNearLocation(who.x, who.y, who.z, 16)
     color := RandomInt(99) + 2;
     if ((item.amount == 1) and (!item.isa(POLCLASS_CORPSE)) and (!item.invisible))
       DeleteObject(who, item);

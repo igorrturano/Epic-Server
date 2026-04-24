@@ -50,13 +50,14 @@ endfunction
  */
 function GetMapCoordinates(map)
     if (!map)
-        return struct{"x" := 0, "y" := 0, "z" := 0};
+        return struct{"x" := 0, "y" := 0, "z" := 0, "realm" := "britannia_alt"};
     endif
     
     return struct{
         "x" := CInt(GetObjProperty(map, "chestx")),
         "y" := CInt(GetObjProperty(map, "chesty")),
-        "z" := CInt(GetObjProperty(map, "chestz"))
+        "z" := CInt(GetObjProperty(map, "chestz")),
+        "realm" := GetObjProperty(map, "realm")
     };
 endfunction
 
@@ -70,7 +71,7 @@ function CanDecodeMap(who, map)
     endif
     
     // Verifica habilidade de Desbravador Nato
-    return TemHabilidade(who, "Desbravador Nato");
+    return MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO);
 endfunction
 
 /*
@@ -130,6 +131,7 @@ function SetTreasureLocation(map)
     SetObjProperty(map, "chestx", GetConfigInt(location, "X"));
     SetObjProperty(map, "chesty", GetConfigInt(location, "Y"));
     SetObjProperty(map, "chestz", GetConfigInt(location, "Z"));
+    SetObjProperty(map, "realm", GetConfigStr(location, "Realm"));
     
     return 1;
 endfunction

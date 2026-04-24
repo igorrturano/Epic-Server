@@ -55,6 +55,8 @@ function SetEquipmentMods(who, item)
     endif
 	var penaltyBonus := Cint(getObjProperty(item, "penaltybonus"));
 	penalty := penalty - penaltyBonus;
+	// NOTE: Armor spec dex penalty reduction is handled in equipsys/equipitem.src via ArmorWrapper modifiers
+
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -62,9 +64,6 @@ function SetEquipmentMods(who, item)
 
 	//sneak
 	penalty := GetObjProperty(item, "atributos").SneakPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -74,9 +73,6 @@ function SetEquipmentMods(who, item)
 
 	//mechanical apitude
 	penalty := GetObjProperty(item, "atributos").MAPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -86,9 +82,6 @@ function SetEquipmentMods(who, item)
 
 	//awareness
 	penalty := GetObjProperty(item, "atributos").AwarenessPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -102,7 +95,16 @@ function SetEquipmentMods(who, item)
 		penalty := 0;
 	endif
 	if (penalty > 0)
-		if (!(GetObjProperty(who, "chardata").magia == "Shaman"))
+		var skip_magery_pen := 0;
+		if (GetObjProperty(who, "chardata").magia == "Shaman")
+			skip_magery_pen := 1;
+		elseif (item.isa(POLCLASS_ARMOR) && MobileWrapper(who).HasAbility(ABILITY_ID::CONEXAO_DIVINA))
+			var tipoProtecaoMag := CStr(itemdesc[item.objtype].TipoProtecao);
+			if (tipoProtecaoMag["Armadura Leve"] || tipoProtecaoMag["Armadura Media"])
+				skip_magery_pen := 1;
+			endif
+		endif
+		if (!skip_magery_pen)
 			AP_ModifySkillMod(who, MAGERY, (-1)*penalty);
 		endif
 	endif
@@ -228,7 +230,6 @@ function SetEquipMod(item, modname, value)
 endfunction
 
 function RemoveEquipmentMods(who, item)
-	var itemdesc := ReadConfigFile("itemdesc");
 	var penalty := GetObjProperty(item, "atributos").DexPen;
 	var penaltyBonus := Cint(getObjProperty(item, "penaltybonus"));
 	penalty := penalty - penaltyBonus;
@@ -258,13 +259,16 @@ function RemoveEquipmentMods(who, item)
 	if (chardata.trait == "Força da Legião" && (item.objtype in isScutum))
         penalty /= 2;
     endif
+
+	if (penalty < 0)
+		penalty := 0;
+	endif
+
 	AP_ModifyStatMod(who, DEXTERITY, penalty);
 
 	//sneak
   	penalty := GetObjProperty(item, "atributos").SneakPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
+
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -274,9 +278,6 @@ function RemoveEquipmentMods(who, item)
 
 	//mechanical  apitude
   	penalty := GetObjProperty(item, "atributos").MAPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -286,9 +287,6 @@ function RemoveEquipmentMods(who, item)
 
 	//awareness
   	penalty := GetObjProperty(item, "atributos").AwarenessPen;
-	if (TemHabilidade(who, "Ignorar Armadura"))
-		penalty := cint(penalty*0.5);
-	endif
 	if (penalty < 0)
 		penalty := 0;
 	endif
@@ -301,7 +299,16 @@ function RemoveEquipmentMods(who, item)
 		penalty := 0;
 	endif
 	if (penalty > 0)
-		if (!(GetObjProperty(who, "chardata").magia == "Shaman"))
+		var skip_magery_pen := 0;
+		if (GetObjProperty(who, "chardata").magia == "Shaman")
+			skip_magery_pen := 1;
+		elseif (item.isa(POLCLASS_ARMOR) && MobileWrapper(who).HasAbility(ABILITY_ID::CONEXAO_DIVINA))
+			var tipoProtecaoMag := CStr(itemdesc[item.objtype].TipoProtecao);
+			if (tipoProtecaoMag["Armadura Leve"] || tipoProtecaoMag["Armadura Media"])
+				skip_magery_pen := 1;
+			endif
+		endif
+		if (!skip_magery_pen)
 			AP_ModifySkillMod(who, MAGERY, penalty);
 		endif
 	endif
@@ -407,5 +414,104 @@ function UnequipWeapons(who)
 		if ((equip.isa(POLCLASS_WEAPON)))
 			MoveItemToContainer(equip, who.backpack);
 		endif
+	endforeach
+endfunction
+
+function ApplyEquipObjMods(who, item)
+	var mods := GetObjProperty(item, "equip");
+	if (!mods)
+		return;
+	endif
+	if (mods.keys().size() < 1)
+		return;
+	endif
+
+	foreach mod in (mods.keys())
+		if (GetObjProperty(item, "magic") == 1)
+			continue;
+		endif
+
+		case (mod)
+			"strmod":
+				AP_ModifyStatMod(who, STRENGTH, CInt(mods["strmod"]));
+			"dexmod":
+				AP_ModifyStatMod(who, DEXTERITY, CInt(mods["dexmod"]));
+			"intmod":
+				AP_ModifyStatMod(who, INTELLIGENCE, CInt(mods["intmod"]));
+			"manamod":
+				SetObjProperty(who, "#manamod", CInt(GetObjProperty(who, "#manamod")) + CInt(mods["manamod"]));
+				RecalcVitals(who);
+			"hitsmod":
+				SetObjProperty(who, "#hitsmod", CInt(GetObjProperty(who, "#hitsmod")) + CInt(mods["hitsmod"]));
+				RecalcVitals(who);
+			"stammod":
+				SetObjProperty(who, "#stammod", CInt(GetObjProperty(who, "#stammod")) + CInt(mods["stammod"]));
+				RecalcVitals(who);
+			"ColdResistMod":
+			"FireResistMod":
+			"PhysicalResistMod":
+			"EnergyResistMod":
+			"PoisonResistMod":
+				RecalcVitals(who);
+			"setprop":
+				SetObjProperty(who, "#" + GetObjProperty(item, "propname"), GetObjProperty(item, "propvalue"));
+			"sacred":
+			"cursed":
+				// Flags de categoria, nao sao mods
+			default:
+				AP_ModifySkillMod(who, mod, CInt(mods[mod]));
+		endcase
+	endforeach
+endfunction
+
+function RemoveEquipObjMods(who, item)
+	var mods := GetObjProperty(item, "equip");
+	if (!mods)
+		return;
+	endif
+	if (mods.keys().size() < 1)
+		return;
+	endif
+
+	foreach mod in (mods.keys())
+		if (GetObjProperty(item, "magic") == 1)
+			continue;
+		endif
+
+		case (mod)
+			"strmod":
+				AP_ModifyStatMod(who, STRENGTH, -CInt(mods["strmod"]));
+			"dexmod":
+				AP_ModifyStatMod(who, DEXTERITY, -CInt(mods["dexmod"]));
+			"intmod":
+				AP_ModifyStatMod(who, INTELLIGENCE, -CInt(mods["intmod"]));
+			"manamod":
+				SetObjProperty(who, "#manamod", CInt(GetObjProperty(who, "#manamod")) - CInt(mods["manamod"]));
+				RecalcVitals(who);
+			"hitsmod":
+				var final := CInt(GetObjProperty(who, "#hitsmod")) - CInt(mods["hitsmod"]);
+				if (final <= 0)
+					EraseObjProperty(who, "#hitsmod");
+				else
+					SetObjProperty(who, "#hitsmod", final);
+				endif
+				RecalcVitals(who);
+			"stammod":
+				SetObjProperty(who, "#stammod", CInt(GetObjProperty(who, "#stammod")) - CInt(mods["stammod"]));
+				RecalcVitals(who);
+			"ColdResistMod":
+			"FireResistMod":
+			"PhysicalResistMod":
+			"EnergyResistMod":
+			"PoisonResistMod":
+				RecalcVitals(who);
+			"setprop":
+				EraseObjProperty(who, "#" + GetObjProperty(item, "propname"));
+			"sacred":
+			"cursed":
+				// Flags de categoria, nao sao mods
+			default:
+				AP_ModifySkillMod(who, mod, -CInt(mods[mod]));
+		endcase
 	endforeach
 endfunction

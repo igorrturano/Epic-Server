@@ -1,9 +1,30 @@
 use uo;
 use os;
+include ":message:include/model/Message";
 program createChar(who)
-    var has_created_character := GetObjProperty(who, "creation_completed");
-
-    if (!has_created_character)
-        Start_Script(":charactercreation:epicgumpcriacao", who);
+    var creation_completed := GetObjProperty(who, "creation_completed");
+    
+    // If already completed, never run again
+    if (creation_completed)
+        return;
     endif
+    
+    // Check if there's incomplete creation data
+    var chardata := GetObjProperty(who, "chardata");
+    
+    if (chardata)
+        // Character creation is broken/incomplete
+        Message("Criação de personagem incompleta ou corrompida. Por favor, delete este personagem e crie um novo. Contate um GM se precisar de assistência.")
+            .SetColor(SSM_FAIL)
+            .SendSys(who);
+
+            SetObjProperty(who, "Delete", 1); // Insta logoff
+            
+            sleep(1);
+            DisconnectClient(who);
+        return;
+    endif
+    
+    // Start the creation process (only once)
+    Start_Script(":charactercreation:epicgumpcriacao", who);
 endprogram

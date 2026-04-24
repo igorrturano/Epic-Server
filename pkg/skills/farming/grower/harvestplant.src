@@ -5,6 +5,9 @@ include "include/client";
 include ":attributes:skillCheck";
 include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
+include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program UseGrower(who, grower)
 	if (!ReserveItem(grower))
@@ -18,7 +21,7 @@ program UseGrower(who, grower)
 
 	var farm_bonus := CInt(AP_GetSkill(who, DOMESTIC_WORK));
 
-	if (TemHabilidade(who, "Agricultor Talentoso"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_FARMER))
 		farm_bonus := farm_bonus + 20;
 	endif
 
@@ -37,7 +40,7 @@ program UseGrower(who, grower)
 			break;
 		endif
 
-		PerformAction(who, ANIM_BOW);
+		PerformAction(who, HUMAN_ANIM::BOW);
 		sleepms(sleep_time);
 	endfor
 
@@ -50,12 +53,12 @@ function HarvestPlant(who, grower)
 	var difficulty := award_diff;
 	SendSysMessage(who, "dificuldade para colheita: " + difficulty);
 
-	if (TemHabilidade(who, "Agricultor Talentoso"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_FARMER))
 		difficulty := difficulty - 20;
 	endif
 
 	if (SkillCheck(who, DOMESTIC_WORK, difficulty, award_diff) > 0)
-		if (TemHabilidade(who, "Sorte na Coleta"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::HARVEST_LUCK))
 			CreateItemInBackPack(who, grower.GetProduceType(), 2);
 		else
 			CreateItemInBackPack(who, grower.GetProduceType(), 1);
@@ -63,7 +66,7 @@ function HarvestPlant(who, grower)
 		SendSysMessage(who, "Voce guardou os frutos na sua mochila.");
 		var seed_chance := grower.GetSeedDice();
 		var roll := RandomInt(100) + 1;
-		if (TemHabilidade(who, "Replantio Garantido"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::GUARANTEED_REPLANT))
 			SendSysMessage(who, "Voce sempre pega sementes.");
 			CreateItemInBackPack(who, grower.GetGrowerType(), 1);
 		elseif (roll <= seed_chance)
@@ -77,7 +80,7 @@ function HarvestPlant(who, grower)
 		PlaySoundEffect(who, 0x0050);
 		return 1;
 	else
-		if (TemHabilidade(who, "Replantio Garantido"))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::GUARANTEED_REPLANT))
 			SendSysMessage(who, "Voce nao colheu nada utilizavel, mas voce sempre pega sementes.");
 			CreateItemInBackPack(who, grower.GetGrowerType(), 1);
 		else

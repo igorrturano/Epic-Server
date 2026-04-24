@@ -1,6 +1,7 @@
 use os;
 
-include ":combat:combatFX";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 
 program WhirlwindAttack(combatInfo)
 	var attacker := combatInfo.attacker;
@@ -12,7 +13,7 @@ program WhirlwindAttack(combatInfo)
 	var original_facing := attacker.facing;
 	for i := 0 to 7
 		attacker.facing := i;
-		PlayAttackAnimation(attacker);
+		PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 		SleepMS(100);
 	endfor
 	// MoveObjectToLocation(attacker, attacker.x, attacker.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);

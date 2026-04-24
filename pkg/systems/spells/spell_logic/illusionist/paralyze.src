@@ -1,0 +1,54 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/client";
+include "include/sounds";
+include ":charactercreation:resists";
+include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spellinfo := params[3];
+	var spell_school := spellinfo.School;
+	params := 0;
+
+	SendSysMessage(who, "Selecione o alvo.");
+	if (!targ.IsA(POLCLASS_MOBILE))
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var bonus := -epicWisdomPathBonus(who);
+	if (CheckResist(targ, WILL, diff, -bonus))
+		SendSysMessageEx(who, "O alvo  resistiu a magia.", SSM_FAIL);
+		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+		return 1;
+	endif
+
+	SC_RemoveEffect(targ, CInt(spellinfo.id));
+
+	PrintTextAbove(targ, "*paralisado*");
+
+	var duration := CInt(AP_GetSkill(who, ARCANA) / 5);
+
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
+		duration := CInt(duration * 1.2);
+	endif
+
+	var opts := struct{};
+	opts.+frozen := 1;
+	opts.+desc := "Paralisar";
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spellinfo.id));
+
+	PlayObjectCenteredEffect(targ, FX_RED_SPARKLES, 7, 7);
+	SC_HandleSound(who, targ, SFX_SPELL_REACTIVE_ARMOR);
+
+	return 1;
+endprogram

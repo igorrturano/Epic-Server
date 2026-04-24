@@ -1,8 +1,6 @@
 use uo;
 
 include "include/say";
-include ":equipsys:ViewModel/EquipWrapperArmor";
-include ":equipsys:ViewModel/EquipWrapperWeapon";
 
 // Gem objtype constants
 const GEM_DIAMOND := 0xF30;
@@ -69,125 +67,39 @@ function getRuneObjtype(runeType)
 endfunction
 
 /*
- * Applies the rune bonus to an item
+ * Applies the rune bonus to an item.
+ * Bonus properties are read by ResistModRuna inside ArmorWrapper constructor.
  */
 function applyRuneBonus(item, runeType, bonus, charges)
-	// Mark item as having a priest rune
 	SetObjProperty(item, "priestrune", runeType);
 	SetObjProperty(item, "runecharges", charges);
 
-	// Apply the appropriate bonus based on rune type
 	case (runeType)
 		RuneType::PROTECTION:
-			// Physical resist boost for armor
-			var wrapper := EquipWrapperArmor(item);
-			var resistsMod := wrapper.GetResistsMod();
-			resistsMod.SetSlashResist(resistsMod.GetSlashResist() + bonus);
-			resistsMod.SetPiercingResist(resistsMod.GetPiercingResist() + bonus);
-			resistsMod.SetBluntResist(resistsMod.GetBluntResist() + bonus);
-			wrapper.SetResistsMod(resistsMod);
-			wrapper.Update();
 			SetObjProperty(item, "runePhysBonus", bonus);
-
 		RuneType::FIRE_RESIST:
-			var wrapper := EquipWrapperArmor(item);
-			var resistsMod := wrapper.GetResistsMod();
-			resistsMod.SetFireResist(resistsMod.GetFireResist() + bonus);
-			wrapper.SetResistsMod(resistsMod);
-			wrapper.Update();
 			SetObjProperty(item, "runeFireBonus", bonus);
-
 		RuneType::COLD_RESIST:
-			var wrapper := EquipWrapperArmor(item);
-			var resistsMod := wrapper.GetResistsMod();
-			resistsMod.SetColdResist(resistsMod.GetColdResist() + bonus);
-			wrapper.SetResistsMod(resistsMod);
-			wrapper.Update();
 			SetObjProperty(item, "runeColdBonus", bonus);
-
 		RuneType::ENERGY_RESIST:
-			var wrapper := EquipWrapperArmor(item);
-			var resistsMod := wrapper.GetResistsMod();
-			resistsMod.SetEnergyResist(resistsMod.GetEnergyResist() + bonus);
-			wrapper.SetResistsMod(resistsMod);
-			wrapper.Update();
 			SetObjProperty(item, "runeEnergyBonus", bonus);
-
 		RuneType::POISON_RESIST:
-			var wrapper := EquipWrapperArmor(item);
-			var resistsMod := wrapper.GetResistsMod();
-			resistsMod.SetPoisonResist(resistsMod.GetPoisonResist() + bonus);
-			wrapper.SetResistsMod(resistsMod);
-			wrapper.Update();
 			SetObjProperty(item, "runePoisonBonus", bonus);
-
 		RuneType::HOLY_WEAPON:
-			// Holy weapon - store bonus in object property (same as bless weapon spell)
 			SetObjProperty(item, "blessedbonus", bonus);
 	endcase
 
+	IncRevision(item);
 	return 1;
 endfunction
 
 /*
- * Removes the rune bonus from an item when charges are depleted
+ * Called when rune charges are depleted.
+ * Preserves priestrune and bonus properties so Imbuir Protecao can recharge them.
+ * weardown.inc already sets runecharges to 0; ResistModRuna checks > 0 before applying.
  */
 function removeRuneBonus(item, runeType)
-	case (runeType)
-		RuneType::PROTECTION:
-			var bonus := CInt(GetObjProperty(item, "runePhysBonus"));
-			var wrapper := EquipWrapperArmor(item);
-			var resistsMod := wrapper.GetResistsMod();
-			resistsMod.SetSlashResist(resistsMod.GetSlashResist() - bonus);
-			resistsMod.SetPiercingResist(resistsMod.GetPiercingResist() - bonus);
-			resistsMod.SetBluntResist(resistsMod.GetBluntResist() - bonus);
-			wrapper.SetResistsMod(resistsMod);
-			wrapper.Update();
-			EraseObjProperty(item, "runePhysBonus");
-
-		RuneType::FIRE_RESIST:
-			var bonus := CInt(GetObjProperty(item, "runeFireBonus"));
-			var wrapper := EquipWrapperArmor(item);
-			var resistsMod := wrapper.GetResistsMod();
-			resistsMod.SetFireResist(resistsMod.GetFireResist() - bonus);
-			wrapper.SetResistsMod(resistsMod);
-			wrapper.Update();
-			EraseObjProperty(item, "runeFireBonus");
-
-		RuneType::COLD_RESIST:
-			var bonus := CInt(GetObjProperty(item, "runeColdBonus"));
-			var wrapper := EquipWrapperArmor(item);
-			var resistsMod := wrapper.GetResistsMod();
-			resistsMod.SetColdResist(resistsMod.GetColdResist() - bonus);
-			wrapper.SetResistsMod(resistsMod);
-			wrapper.Update();
-			EraseObjProperty(item, "runeColdBonus");
-
-		RuneType::ENERGY_RESIST:
-			var bonus := CInt(GetObjProperty(item, "runeEnergyBonus"));
-			var wrapper := EquipWrapperArmor(item);
-			var resistsMod := wrapper.GetResistsMod();
-			resistsMod.SetEnergyResist(resistsMod.GetEnergyResist() - bonus);
-			wrapper.SetResistsMod(resistsMod);
-			wrapper.Update();
-			EraseObjProperty(item, "runeEnergyBonus");
-
-		RuneType::POISON_RESIST:
-			var bonus := CInt(GetObjProperty(item, "runePoisonBonus"));
-			var wrapper := EquipWrapperArmor(item);
-			var resistsMod := wrapper.GetResistsMod();
-			resistsMod.SetPoisonResist(resistsMod.GetPoisonResist() - bonus);
-			wrapper.SetResistsMod(resistsMod);
-			wrapper.Update();
-			EraseObjProperty(item, "runePoisonBonus");
-
-		RuneType::HOLY_WEAPON:
-			EraseObjProperty(item, "blessedbonus");
-	endcase
-
-	EraseObjProperty(item, "priestrune");
-	EraseObjProperty(item, "runecharges");
-
+	IncRevision(item);
 	return 1;
 endfunction
 

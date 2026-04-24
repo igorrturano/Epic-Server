@@ -6,6 +6,9 @@ include ":brainAI:npcUtil";
 include ":npcs:thor/handling/thorai";
 include ":megacliloc:/include/gettersTTipUtils";
 include ":brainAI:npcCommands";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include "include/epicEconomyAudit";
 
 //Constantes de ID de Botões de Gump
 const BOTAO_ITENS_COLOCAR_A_VENDA := 0x1;
@@ -1237,7 +1240,8 @@ function DarTroco(player, npc , ValorTroco)
 	Set_Critical(1);
 	var ouro := CInt(faltaPagar/100);
 	if(ouro > 0)
-		CreateItemInBackpack(player, MOEDAS_OURO, ouro);
+		var g := CreateItemInBackpack(player, MOEDAS_OURO, ouro);
+		EA_Record(EA_TRANSFER_VENDOR_REFUND, g, ouro, npc, player, "");
 		SendSysMessage(player, ouro + " moedas de ouro");
 	endif
 	faltaPagar -= CInt(ouro*100);
@@ -1245,7 +1249,8 @@ function DarTroco(player, npc , ValorTroco)
 
 	var prata := CInt(faltaPagar/10);
 	if(prata > 0)
-		CreateItemInBackpack(player, MOEDAS_PRATA, prata);
+		var s := CreateItemInBackpack(player, MOEDAS_PRATA, prata);
+		EA_Record(EA_TRANSFER_VENDOR_REFUND, s, prata, npc, player, "");
 		SendSysMessage(player, prata + " moedas de prata");
 	endif
 	faltaPagar -= CInt(prata*10);
@@ -1253,7 +1258,8 @@ function DarTroco(player, npc , ValorTroco)
 
 	var cobre := CInt(faltaPagar);
 	if(cobre > 0)
-		CreateItemInBackpack(player, MOEDAS_COBRE, cobre);
+		var c := CreateItemInBackpack(player, MOEDAS_COBRE, cobre);
+		EA_Record(EA_TRANSFER_VENDOR_REFUND, c, cobre, npc, player, "");
 		SendSysMessage(player, cobre + " moedas de cobre");
 	endif
 	Set_Critical(0);
@@ -1327,7 +1333,7 @@ function GetTooltipText(item_template, who)
 			var linguagem := item_template.lingua;
 			if (linguagem!=error)
 				var linguas := GetObjProperty(who, "linguas_conhecidas");
-				if (temHabilidade(who, "Arqueologo") || temHabilidade(who, "Formacao Academica") || linguagem in linguas)
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO) || linguagem in linguas)
 					xDesc := xDesc + white + "" + desc + "<br>";
 				else
 					xDesc :=  xDesc + "*Inscrições em Língua Desconhecida*<br>";
@@ -1552,8 +1558,6 @@ function TranslateCriticalTemplate(crit)
 		return "Dano Triplo";
 	elseif (crit == "damage2")
 		return "Dano Duplo";
-	elseif (crit == "armorignore")
-		return "Ignorar Armadura";
 	elseif ( crit == "stun")
 		return "Ataque Atordoante";
 	elseif (Crit == "bleed")

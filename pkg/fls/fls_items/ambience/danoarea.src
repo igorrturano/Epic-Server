@@ -2,7 +2,7 @@ use uo;
 use vitals;
 use os;
 include ":attributes:attributes";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program danoarea(rune)
 	while (1)

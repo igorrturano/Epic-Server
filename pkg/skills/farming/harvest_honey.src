@@ -51,24 +51,24 @@ program harvest_honey(character, beehive)
 						SetObjProperty(beehive, "#harvested", already_harvested_amount + 1);
 					endif
 					// Coloca os recursos coletados na bolsa
-					if (TemHabilidade(character, "Sorte na Coleta"))
-						CreateItemInBackpack(character, UOBJ_HONEY, 2);
-						CreateItemInBackpack(character, UOBJ_WAX, 2);
-						SendSysMessage(character, "Coletou bastante de mel e cera de abelha.", FONT_NORMAL,
-										COLMEIA_FONT_COLOR_GOOD);
-					else
+					// if (TemHabilidade(character, "Sorte na Coleta"))
+					// 	CreateItemInBackpack(character, UOBJ_HONEY, 2);
+					// 	CreateItemInBackpack(character, UOBJ_WAX, 2);
+					// 	SendSysMessage(character, "Coletou bastante de mel e cera de abelha.", FONT_NORMAL,
+					// 					COLMEIA_FONT_COLOR_GOOD);
+					// else
 						CreateItemInBackpack(character, UOBJ_HONEY, 1);
 						CreateItemInBackpack(character, UOBJ_WAX, 1);
 						SendSysMessage(character, "Coletou um pouco de mel e cera de abelha.", FONT_NORMAL,
 										COLMEIA_FONT_COLOR_GOOD);
-					endif
+					// endif
 				else
 					SendSysMessage(character, "Falhou em coletar mel e cera de abelha.", FONT_NORMAL,
 									COLMEIA_FONT_COLOR_BAD);
 				endif
 				// Testa se as abelhas ficaram furiosas
 				if (!(SkillCheck(character, HANDLEANIMAL, 15, 0) > 0))
-					if (!TemHabilidade(character, "Sorte na Coleta"))
+					// if (!TemHabilidade(character, "Sorte na Coleta"))
 						if (RandomInt(4) == 1)
 							CreateItemAtLocation(beehive.x, beehive.y, beehive.z, ITEM_SWARM, 1, character.realm);
 							SendSysMessage(character, "Voce enfureceu as abelhas!", FONT_NORMAL, COLMEIA_FONT_COLOR_BAD);
@@ -80,7 +80,7 @@ program harvest_honey(character, beehive)
 								PrintTextAbove(character, "*Gritando*");
 							endif
 							return 0;
-						endif
+						// endif
 					endif
 				endif
 			else

@@ -18,7 +18,7 @@ program drink_blue(who, potion)
 	if (!checkifcandrink(who, "velocidade"))
 		return;
 	endif
-	empty_bottle(who, potion);
+	
 	var vicio := (AP_getvital(who, "Viciodex"));
 	if (vicio < 30)
 		vicio := 30;
@@ -27,5 +27,6 @@ program drink_blue(who, potion)
 	var bonus := GetObjProperty(potion, "bonus");
 	bonus := PotionSpecialistBonus(who, bonus, BUFF);
 	TS_StartTimer(who, "velocidade", (360 + bonus * 10 * vicio), 20);
-	VicioDEX(who, potion);
+	empty_bottle(who, potion);
+	Aplicavicio(who, potion, DEXTERITY); 
 endprogram

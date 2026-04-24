@@ -51,12 +51,12 @@ program SpellScript(params)
 			TS_LowerDuration(targ, timer, -1);
 		elseif (timer == "desviarprojetil")
 			TS_LowerDuration(targ, timer, -1);
+		elseif (timer == "evasao")
+			TS_LowerDuration(targ, timer, -1);
 		endif
 
 	endforeach
 
-	EraseObjProperty(targ, "tirocerteiro");
-	EraseObjProperty(targ, "evasao");
 	SendSysMessageEx(targ, "Seus encantamentos nao funcionam mais.", SSM_INFO);
 
 	return 1;

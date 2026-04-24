@@ -1,0 +1,53 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/tileEffects";
+include "include/sounds";
+include ":charactercreation:resists";
+
+// Cancao de Ninar (1202) - C0
+// Adormece alvo (Arc vs Will). Dura ate receber dano.
+program SpellScript(params)
+	var who  := params[1];
+	var targ := params[2];
+
+	if (!targ || !targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return 0;
+	endif
+
+	var arcana  := CInt(AP_GetSkill(who, ARCANA));
+	var will    := CInt(AP_GetTrueStat(targ, WILL));
+	var roll    := RandomInt(100) + 1;
+
+	// Resists: roll > will + (100 - arcana)/2
+	var resist_threshold := will + CInt((100 - arcana) / 2);
+	if (roll > resist_threshold)
+		SendSysMessageEx(who, $"{targ.name} resistiu a Cancao de Ninar.", SSM_FAIL);
+		PrintTextAbove(targ, "*resiste*", 3, 38);
+		return 0;
+	endif
+
+	var duration := CInt(arcana / 10);
+	if (duration < 2)  duration := 2;  endif
+	if (duration > 15) duration := 15; endif
+
+	PrintTextAbove(who, "*Uma melodia suave ecoa pela area...*", 3, 191);
+	PlaySoundEffect(who, 0x3D);
+
+	SetObjProperty(targ, "#bard_sleeping", 1);
+	targ.frozen := 1;
+	PrintTextAbove(targ, "*adormecido*", 3, 1153);
+	SendSysMessageEx(targ, "Voce adormece ao som da Cancao de Ninar...", SSM_INFO);
+
+	sleep(duration);
+
+	if (GetObjProperty(targ, "#bard_sleeping"))
+		EraseObjProperty(targ, "#bard_sleeping");
+		targ.frozen := 0;
+		SendSysMessageEx(targ, "Voce acorda do sono encantado.", SSM_INFO);
+	endif
+
+	return 1;
+endprogram

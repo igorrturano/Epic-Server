@@ -5,9 +5,11 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
+include ":nature:Controller/LightController";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -15,7 +17,7 @@ program SpellScript(params)
 	params := 0; // No longer needed
 
 	handleSilentMagic(who, who, SFX_BLESS);
-	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);
+	PlayObjectCenteredEffect(who, FX_BLUE_SPARKLES, 10, 10);
 
 	SendSysMessageEx(who, "Voce passa a enxergar melhor de dia", SSM_INFO);
 
@@ -23,12 +25,11 @@ program SpellScript(params)
 	var duration := CInt(magiclore_skill * 5);
 
 	// Bonus de especialização
-	if (Temhabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := Cint(duration * 1.2);
 	endif
 
-	who.setlightlevel(15, duration);
-	SetCooldown(who, "lightvision", duration);
+	ApplyMagicalVision(who, duration);
 
 	return 1;
 endprogram

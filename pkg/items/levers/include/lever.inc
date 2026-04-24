@@ -10,6 +10,9 @@ include ":levers:efeitos";
 include ":tn:cooldown";
 include "include/say";
 include ":destroyable:include/destroyItem";
+include ":epicspawn:epicBoss";
+include ":message:include/model/Message";
+include ":propagacao:include/efeitosPatogenicos";
 
 function ChangeLeverStatus(la, only_on_levers := 0)
    if (typeof(la) != "Array")
@@ -114,26 +117,19 @@ function CheckAllLevers(lever, lever_list, opts)
             return 0;
          endif
       else
-	    // Para desativação com ordem: apenas verificar se a primeira alavanca da ordem está sendo desativada
+         // Desativação: qualquer alavanca desativada reseta TODAS e não executa efeitos
          if (GetObjProperty(lever, "status") == "off")
-            var first_lever_serial := order[1];
-            if (lever.serial == first_lever_serial)
-               // Se a primeira alavanca da ordem foi desativada, reseta todas
-               foreach serial in order
-                  var item := SystemFindObjectBySerial(serial);
-                  if (GetObjProperty(item, "status") == "on")
-                     ChangeLeverStatus(serial);
-                  endif
-                  sleepms(2);
-               endforeach
-               return 1; // Permite que os efeitos sejam executados para reset
-            else
-               // Se não é a primeira alavanca, apenas desativa ela sem executar efeitos
-               return 0;
-            endif
+            foreach serial in order
+               var item := SystemFindObjectBySerial(serial);
+               if (item && GetObjProperty(item, "status") == "on")
+                  ChangeLeverStatus(serial);
+               endif
+               sleepms(2);
+            endforeach
+            return 0;
          endif
 
-         // Verificar ordem específica
+         // Verificar ordem específica (ativação)
          foreach serial in order
             var item := SystemFindObjectBySerial(serial);
             if (item.serial == lever.serial)
@@ -144,7 +140,15 @@ function CheckAllLevers(lever, lever_list, opts)
             endif
 
             if (GetObjProperty(item, "status") != "on")
+               // Ordem errada! Desativar TODAS as alavancas ativadas
                ChangeLeverStatus(lever.serial);
+               foreach reset_serial in order
+                  var reset_item := SystemFindObjectBySerial(reset_serial);
+                  if (reset_item && GetObjProperty(reset_item, "status") == "on")
+                     ChangeLeverStatus(reset_serial);
+                  endif
+                  sleepms(2);
+               endforeach
                PrintTextAbove(lever, "*desativa*");
                return 0;
             endif
@@ -175,6 +179,15 @@ endfunction
 function normalusage(who, item)
    if (GetObjProperty(item, "#inuse"))
       return;
+   endif
+
+   // Check boss respawn cooldown (GMs with cmdlevel > 1 can bypass)
+   if (who.cmdlevel <= 1)
+      var cooldown_remaining := getCooldown(item, "boss_respawn");
+      if (cooldown_remaining > 0)
+         Message("Voce nao consegue mover a alavanca").SetColor(SSM_FAIL).SendSys(who);
+         return;
+      endif
    endif
 
    var status := GetObjProperty(item, "status");
@@ -221,12 +234,43 @@ function normalusage(who, item)
       lever_list.append(origin.serial);
    endif
 
-   if (opts.all_levers)
-      if (!CheckAllLevers(item, lever_list, opts)) 
+   // Handle sync_toggle mode - all levers act as one switch
+   if (opts.sync_toggle)
+      // Get the master lever to check current state
+      var master := item;
+      if (opts.is_linked)
+         master := SystemFindObjectBySerial(CInt(opts.is_linked));
+         opts := master.GetLeverOpts();
+      endif
+
+      var master_status := GetObjProperty(master, "status");
+
+      // Toggle ALL levers in the group to the opposite state
+      foreach lever_serial in lever_list
+         var lever_item := SystemFindObjectBySerial(lever_serial);
+         if (lever_item)
+            // Set all to same state based on master
+            if (!master_status || master_status == "off")
+               SetObjProperty(lever_item, "status", "on");
+            else
+               SetObjProperty(lever_item, "status", "off");
+            endif
+         endif
+         sleepms(2);
+      endforeach
+
+      // Change graphic of the activated lever
+      ChangeLeverStatus(item.serial);
+
+      // Use master's opts for effects
+      opts := master.GetLeverOpts();
+
+   elseif (opts.all_levers)
+      if (!CheckAllLevers(item, lever_list, opts))
          SendSysMessageEx(who, "Você não percebe nada de diferente", SSM_FAIL);
          if (RunTraps(item, who)) //se estiver errado, vai cair no outro runtraps
             SetObjProperty(item, "trapSpoted", 1);
-            PrintTextAbove(who, "*dispara armadilha*"); 
+            PrintTextAbove(who, "*dispara armadilha*");
          endif
          return;
       endif
@@ -242,6 +286,38 @@ function normalusage(who, item)
       return;
    endif
 
+// =====================================================
+// EFEITO: NUVEM PATOGÊNICA (PROPAGAÇÃO)
+// =====================================================
+if (GetObjProperty(item, "LEVER_PATOGENICO") && status == "off")
+
+   // parâmetros mínimos e seguros
+   var alcance := GetObjProperty(item, "patog_alcance");
+   var ciclosAteExpancao := GetObjProperty(item, "patog_ciclos");
+   var duracaoNuvem := GetObjProperty(item, "patog_duracao_nuvem");
+   var gravidadeInfeccao := GetObjProperty(item, "patog_gravidade");
+   var arraySintomas := GetObjProperty(item, "patog_sintomas");
+   var duracaoPatogenico := GetObjProperty(item, "patog_duracao");
+   var nivelInfeccao := GetObjProperty(item, "patog_nivel");
+
+   CriaMarcadorPatogenico(
+      item.x,
+      item.y,
+      item.z,
+      item.realm,
+      who.serial,
+      alcance,
+      ciclosAteExpancao,
+      duracaoNuvem,
+      gravidadeInfeccao,
+      arraySintomas,
+      duracaoPatogenico,
+      nivelInfeccao
+   );
+endif
+// =====================================================
+
+
    var msg := opts.ontext;
    if(!msg)
       msg := "Você ouve algo se movendo...";
@@ -251,6 +327,12 @@ function normalusage(who, item)
 		sleepms(2);
 		SendSysMessageEx(char, msg, SSM_INFO);
 	endforeach
+
+   // Para levers linkadas com all_levers, usar a alavanca mestre para efeitos
+   // (as configurações de efeitos ficam na mestre, não nas escravas)
+   if (opts.item_ref)
+      item := opts.item_ref;
+   endif
 
    if (opts.lights)
       lightswitch(item, opts);
@@ -341,31 +423,88 @@ endfunction
 function spawnBoss(item, opts)
    SetObjProperty(item, "#inuse", 1);
    Detach();
- var cfg := GetObjProperty(item, "configboss");
- var text_above := GetObjProperty(item, "txtabove");
- var creature;
-		if (GetObjProperty(item, "loc") ==1 )
-			creature := Createboss(cfg.boss, item.x, item.y, item.z, item.realm);
-			SetObjProperty(creature, "anchor", array{item.x, item.y, item.z});
-			sleepms(20);
-			if (!text_above)
-			else
-			PrintTextAbove(creature,""+text_above);
-			endif
-		else
-			var x := GetObjProperty(item, "x");
-			var y := GetObjProperty(item, "y");
-			var z := GetObjProperty(item, "z");
-			creature := Createboss(cfg.boss, cint(x), cint(y), cint(z), item.realm);
-			SetObjProperty(creature, "anchor", array{item.x, item.y, item.z});
-			sleepms(20);
-			if (!text_above)
-			else
-				PrintTextAbove(creature,""+text_above);
-			endif
-		endif
- SetObjProperty(item, "champ", creature.serial);
- EraseObjProperty(item, "#inuse");
+
+   // Get the boss configuration saved by epicboss command
+   var form_data := GetObjProperty(item, "form_data");
+   if (!form_data)
+      // Fallback to old config if no form_data exists
+      var cfg := GetObjProperty(item, "configboss");
+      if (cfg && cfg.boss)
+         // Use old system as fallback
+         var text_above := GetObjProperty(item, "txtabove");
+         var creature;
+         if (GetObjProperty(item, "loc") == 1)
+            creature := Createboss(cfg.boss, item.x, item.y, item.z, item.realm);
+         else
+            var x := GetObjProperty(item, "x");
+            var y := GetObjProperty(item, "y");
+            var z := GetObjProperty(item, "z");
+            creature := Createboss(cfg.boss, CInt(x), CInt(y), CInt(z), item.realm);
+         endif
+
+         if (creature && creature != error)
+            SetObjProperty(creature, "anchor", array{item.x, item.y, item.z});
+            SetObjProperty(creature, "spawned_by_lever", item.serial);
+            if (text_above)
+               Message(""+text_above).SendAbove(creature);
+            endif
+            SetObjProperty(item, "champ", creature.serial);
+            // Keep #inuse - don't erase it
+         else
+            // Spawn failed, unlock
+            EraseObjProperty(item, "#inuse");
+         endif
+      else
+         // No config at all, unlock
+         EraseObjProperty(item, "#inuse");
+      endif
+      return;
+   endif
+
+   // Determine spawn location
+   var spawn_x, spawn_y, spawn_z;
+   if (GetObjProperty(item, "spawn_at_lever"))
+      spawn_x := item.x;
+      spawn_y := item.y;
+      spawn_z := item.z;
+   else
+      spawn_x := CInt(GetObjProperty(item, "spawn_x"));
+      spawn_y := CInt(GetObjProperty(item, "spawn_y"));
+      spawn_z := CInt(GetObjProperty(item, "spawn_z"));
+
+      // Fallback to lever position if no spawn coordinates
+      if (!spawn_x || !spawn_y)
+         spawn_x := item.x;
+         spawn_y := item.y;
+         spawn_z := item.z;
+      endif
+   endif
+
+   // Create the epic boss using the modern system
+   var creature := CreateEpicBoss(form_data, spawn_x, spawn_y, spawn_z, item.realm);
+
+   if (creature && creature != error)
+      // Set anchor to lever location
+      SetObjProperty(creature, "anchor", array{item.x, item.y, item.z});
+
+      // Link boss to lever for death cleanup
+      SetObjProperty(creature, "spawned_by_lever", item.serial);
+
+      // Show text above if configured
+      var text_above := GetObjProperty(item, "spawn_textabove");
+      if (text_above && text_above != "")
+         Message(""+text_above).SendAbove(creature);
+      endif
+
+      // Save creature serial for reset/deactivation
+      SetObjProperty(item, "champ", creature.serial);
+
+      // Keep #inuse set - lever stays locked until boss dies
+      // This prevents spam spawning and instant kill via lever toggle
+   else
+      // Spawn failed, unlock the lever
+      EraseObjProperty(item, "#inuse");
+   endif
 endfunction
 
 function changegraphiclever(item, opts)
@@ -516,26 +655,48 @@ endfunction
 function CheckItemDelivery(who, item)
    var required_items := GetObjProperty(item, "required_items");
    if (!required_items || !required_items.size())
-      return 0; // Não tem itens configurados
+      return 0;
    endif
-   
-   // MUDANÇA 1: Verificar se tem todos os itens ANTES de iniciar o processo
+
+   // Mapear itens encontrados na bag para consumir depois
+   var items_to_consume := array{};  // {item, amount}
    var missing_items := array{};
+
    foreach req_item in required_items
-      var found_amount := 0;
+      sleepms(2);
+      var amount_needed := req_item.amount;
+      var items_for_this_req := array{};
+
+      // Procurar todos os itens desse tipo na bag
       foreach backpack_item in EnumerateItemsInContainer(who.backpack)
-         if (backpack_item.objtype == req_item.objtype)
-            found_amount += backpack_item.amount;
+         if (backpack_item.objtype == req_item.objtype && amount_needed > 0)
+            var amount_from_this := backpack_item.amount;
+            if (amount_from_this > amount_needed)
+               amount_from_this := amount_needed;
+            endif
+
+            items_for_this_req.append(struct{
+               "item" := backpack_item,
+               "amount" := amount_from_this
+            });
+            amount_needed -= amount_from_this;
          endif
          sleepms(2);
       endforeach
-      
-      if (found_amount < req_item.amount)
+
+      if (amount_needed > 0)
+         var found_amount := req_item.amount - amount_needed;
          missing_items.append("" + req_item.amount + "x " + req_item.desc + " (você tem " + found_amount + ")");
+      else
+         // Adicionar todos os itens encontrados para esse requisito
+         foreach item_entry in items_for_this_req
+            items_to_consume.append(item_entry);
+            sleepms(2);
+         endforeach
       endif
    endforeach
-   
-   // Se faltam itens, para aqui
+
+   // Se faltam itens, mostra o que falta
    if (missing_items.size() > 0)
       SendSysMessageEx(who, "Você não possui todos os itens necessários:", SSM_FAIL);
       foreach missing in missing_items
@@ -544,98 +705,28 @@ function CheckItemDelivery(who, item)
       endforeach
       return 0;
    endif
-   
-   var selected_items := array{}; // MUDANÇA 2: Guarda itens selecionados SEM consumir
-   var required_copy := array{};
-   
-   // Criar uma cópia dos itens necessários para controle
+
+   // Mostrar lista de itens que serão consumidos e pedir confirmação
+   var item_list_text := "Itens que serão entregues:\n";
    foreach req_item in required_items
-      required_copy.append(struct{
-         "objtype" := req_item.objtype,
-         "amount" := req_item.amount,
-         "desc" := req_item.desc,
-         "delivered" := 0
-      });
+      item_list_text += "- " + req_item.amount + "x " + req_item.desc + "\n";
+      sleepms(2);
    endforeach
-   
-   var continue_delivery := 1;
-   while (continue_delivery)
-      SendSysMessage(who, "Selecione um item para entregar ou ESC para cancelar:");
-      var target_item := Target(who);
-      
-      if (!target_item)
-         SendSysMessage(who, "Entrega cancelada.");
-         return 0;
-      endif
-      
-      if (target_item.container != who.backpack)
-         SendSysMessage(who, "O item deve estar no seu inventário.");
-         continue;
-      endif
-      
-      // Verificar se o item é um dos necessários
-      var item_found := 0;
-      foreach req_item in required_copy
-         if (req_item.objtype == target_item.objtype && req_item.delivered < req_item.amount)
-            var amount_needed := req_item.amount - req_item.delivered;
-            var amount_to_take := target_item.amount;
-            
-            if (amount_to_take > amount_needed)
-               amount_to_take := amount_needed;
-            endif
-            
-            // Verificar se o jogador tem quantidade suficiente
-            if (target_item.amount >= amount_to_take)
-               // MUDANÇA 3: NÃO consome ainda, apenas guarda para consumir depois
-               selected_items.append(struct{
-                  "item" := target_item,
-                  "amount" := amount_to_take
-               });
-               
-               req_item.delivered += amount_to_take;
-               SendSysMessage(who, "Selecionou " + amount_to_take + "x " + target_item.desc);
-               item_found := 1;
-               break;
-            else
-               SendSysMessage(who, "Quantidade insuficiente.");
-               item_found := 1;
-               break;
-            endif
-         endif
-      endforeach
-      
-      if (!item_found)
-         SendSysMessageEx(who, "Este item não parece funcionar aqui", SSM_FAIL);
-         continue;
-      endif
-      
-      // Verificar se todos os itens foram selecionados
-      var all_selected := 1;
-      foreach req_item in required_copy
-         if (req_item.delivered < req_item.amount)
-            all_selected := 0;
-            SendSysMessage(who, "Ainda falta: " + (req_item.amount - req_item.delivered) + "x de determinado item");
-         endif
-      endforeach
-      
-      if (all_selected)
-         // MUDANÇA 4: Confirma ANTES de consumir
-         var confirm := YesNo(who, "Confirma a entrega de todos os itens selecionados?");
-         if (confirm)
-            // Só agora consome os itens
-            foreach selected in selected_items
-               SubtractAmount(selected.item, selected.amount);
-            endforeach
-            SendSysMessage(who, "Todos os itens foram usados com sucesso!");
-            return 1;
-         else
-            SendSysMessage(who, "Entrega cancelada.");
-            return 0;
-         endif
-      endif
-   endwhile
-   
-   return 0; // Não deveria chegar aqui
+
+   var confirm := YesNo(who, item_list_text + "\nDeseja entregar esses itens?");
+   if (!confirm)
+      SendSysMessageEx(who, "Entrega cancelada.", SSM_FAIL);
+      return 0;
+   endif
+
+   // Consumir os itens automaticamente
+   foreach consume_entry in items_to_consume
+      SubtractAmount(consume_entry.item, consume_entry.amount);
+      sleepms(2);
+   endforeach
+
+   SendSysMessageEx(who, "Itens entregues com sucesso!", SSM_INFO);
+   return 1;
 endfunction
 
 function reset(item, force_reset := 0)
@@ -701,6 +792,10 @@ function reset(item, force_reset := 0)
   foreach serial in  (opts.graphicarraysitem)
      serial := SystemFindObjectBySerial(CInt(serial));
          serial.graphic := GetObjProperty(serial, "originalgraphic");
+         var name_antigo := GetObjProperty(serial, "old_name");
+         if (name_antigo)
+            serial.name := name_antigo;
+         endif
 endforeach
 	endif
    if (opts.moveitems)

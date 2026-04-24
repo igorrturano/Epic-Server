@@ -127,11 +127,11 @@ function GetSoundEffect(who, input)
 	1833:
 	  resultado[1] := 0x30B;
 	  resultado[2] := "*Ah*";
-	1834:
+	1835:
 	  resultado[1] := 0x41A;
 	  resultado[2] := "*Ah*";
 
-	1835:
+	1834:
 	  resultado[1] := 0x30B;
 	  resultado[2] := "*Ah*";
 	225:
@@ -181,11 +181,11 @@ function GetSoundEffect(who, input)
 	  resultado[1] := 0x30C ;
 	  resultado[2] := "*Ahha*";
 
-	1834:
+	1835:
 	  resultado[1] := 0x41B ;
 	  resultado[2] := "*Ahha*";
 
-	1835:
+	1834:
 	  resultado[1] := 0x30C ;
 	  resultado[2] := "*Ahha*";
 	225:
@@ -235,11 +235,11 @@ function GetSoundEffect(who, input)
 	  resultado[1] := 0x30D ;
 	  resultado[2] := "*Aplausos*";
 
-	1834:
+	1835:
 	  resultado[1] := 0x41C ;
 	  resultado[2] := "*Aplausos*";
 
-	1835:
+	1834:
 	  resultado[1] := 0x30D ;
 	  resultado[2] := "*Aplausos*";
 
@@ -291,11 +291,11 @@ function GetSoundEffect(who, input)
 	  resultado[1] := 0x30E ;
 	  resultado[2] := "*Assoando o nariz*";
 
-	1834:
+	1835:
 	  resultado[1] := 0x41D ;
 	  resultado[2] := "*Assoando o nariz*";
 
-	1835:
+	1834:
 	  resultado[1] := 0x30E ;
 	  resultado[2] := "*Assoando o nariz*";
 
@@ -346,11 +346,11 @@ function GetSoundEffect(who, input)
 	  resultado[1] := 0x310 ;
 	  resultado[2] := "*Comemorando*";
 
-	1834:
+	1835:
 	  resultado[1] := 0x41F ;
 	  resultado[2] := "*Comemorando*";
 
-	1835:
+	1834:
 	  resultado[1] := 0x310 ;
 	  resultado[2] := "*Comemorando*";
 
@@ -394,10 +394,10 @@ function GetSoundEffect(who, input)
 	1833:
 	  resultado[1] := 0x311 ;
 	  resultado[2] := "*Limpa a garganta*";
-	1834:
+	1835:
 	  resultado[1] := 0x420 ;
 	  resultado[2] := "*Limpa a garganta*";
-	1835:
+	1834:
 	  resultado[1] := 0x311 ;
 	  resultado[2] := "*Limpa a garganta*";
 
@@ -429,10 +429,10 @@ function GetSoundEffect(who, input)
 	1833:
 	  resultado[1] := 0x312 ;
 	  resultado[2] := "*Tossindo*";
-	1834:
+	1835:
 	  resultado[1] := 0x421 ;
 	  resultado[2] := "*Tossindo*";
-	1835:
+	1834:
 	  resultado[1] := 0x312 ;
 	  resultado[2] := "*Tossindo*";
 
@@ -466,10 +466,10 @@ function GetSoundEffect(who, input)
 	1833:
 	  resultado[1] := 0x313 ;
 	  resultado[2] := "*Tossindo*";
-	1834:
+	1835:
 	  resultado[1] := 0x422 ;
 	  resultado[2] := "*Tossindo*";
-	1835:
+	1834:
 	  resultado[1] := 0x313 ;
 	  resultado[2] := "*Tossindo*";
 
@@ -503,10 +503,10 @@ function GetSoundEffect(who, input)
 	1833:
 	  resultado[1] := 0x314 ;
 	  resultado[2] := "*Chorando*";
-	1834:
+	1835:
 	  resultado[1] := 0x423 ;
 	  resultado[2] := "*Chorando*";
-	1835:
+	1834:
 	  resultado[1] := 0x314 ;
 	  resultado[2] := "*Chorando*";
 
@@ -538,10 +538,10 @@ function GetSoundEffect(who, input)
 	1833:
 	  resultado[1] := 0x31A ;
 	  resultado[2] := "*Arfando*";
-	1834:
+	1835:
 	  resultado[1] := 0x42A ;
 	  resultado[2] := "*Arfando*";
-	1835:
+	1834:
 	  resultado[1] := 0x31A ;
 	  resultado[2] := "*Arfando*";
 
@@ -573,10 +573,10 @@ function GetSoundEffect(who, input)
 	1833:
 	  resultado[1] := 0x31B ;
 	  resultado[2] := "*Rindo*";
-	1834:
+	1835:
 	  resultado[1] := 0x42B ;
 	  resultado[2] := "*Rindo*";
-	1835:
+	1834:
 	  resultado[1] := 0x31B ;
 	  resultado[2] := "*Rindo*";
 
@@ -608,10 +608,10 @@ endcase
 	1833:
 	  resultado[1] := 0x31C ;
 	  resultado[2] := "*Gemendo*";
-	1834:
+	1835:
 	  resultado[1] := 0x42C ;
 	  resultado[2] := "*Gemendo*";
-	1835:
+	1834:
 	  resultado[1] := 0x31C ;
 	  resultado[2] := "*Gemendo*";
 
@@ -643,10 +643,10 @@ endcase
 	1833:
 	  resultado[1] := 0x31D ;
 	  resultado[2] := "*Rosnando*";
-	1834:
+	1835:
 	  resultado[1] := 0x42D ;
 	  resultado[2] := "*Rosnando*";
-	1835:
+	1834:
 	  resultado[1] := 0x31D ;
 	  resultado[2] := "*Rosnando*";
 
@@ -680,10 +680,10 @@ endcase
 	1833:
 	  resultado[1] := 0x31E ;
 	  resultado[2] := "*Hey*";
-	1834:
+	1835:
 	  resultado[1] := 0x42E ;
 	  resultado[2] := "*Hey*";
-	1835:
+	1834:
 	  resultado[1] := 0x31E ;
 	  resultado[2] := "*Hey*";
 
@@ -715,10 +715,10 @@ endcase
 	1833:
 	  resultado[1] := 0x31F ;
 	  resultado[2] := "*Solucando*";
-	1834:
+	1835:
 	  resultado[1] := 0x42F ;
 	  resultado[2] := "*Solucando*";
-	1835:
+	1834:
 	  resultado[1] := 0x31F ;
 	  resultado[2] := "*Solucando*";
 
@@ -750,10 +750,10 @@ endcase
 	1833:
 	  resultado[1] := 0x320 ;
 	  resultado[2] := "*Huh?*";
-	1834:
+	1835:
 	  resultado[1] := 0x430 ;
 	  resultado[2] := "*Huh?*";
-	1835:
+	1834:
 	  resultado[1] := 0x320 ;
 	  resultado[2] := "*Huh?*";
 
@@ -786,10 +786,10 @@ endcase
 	1833:
 	  resultado[1] := 0x321 ;
 	  resultado[2] := "*Beijando*";
-	1834:
+	1835:
 	  resultado[1] := 0x431 ;
 	  resultado[2] := "*Beijando*";
-	1835:
+	1834:
 	  resultado[1] := 0x321 ;
 	  resultado[2] := "*Beijando*";
 
@@ -821,10 +821,10 @@ endcase
 	1833:
 	  resultado[1] := 0x322 ;
 	  resultado[2] := "*Rindo*";
-	1834:
+	1835:
 	  resultado[1] := 0x432 ;
 	  resultado[2] := "*Rindo*";
-	1835:
+	1834:
 	  resultado[1] := 0x322 ;
 	  resultado[2] := "*Rindo*";
 
@@ -857,10 +857,10 @@ endcase
 	1833:
 	  resultado[1] := 0x323 ;
 	  resultado[2] := "*Negando*";
-	1834:
+	1835:
 	  resultado[1] := 0x433 ;
 	  resultado[2] := "*Negando*";
-	1835:
+	1834:
 	  resultado[1] := 0x323 ;
 	  resultado[2] := "*Negando*";
 
@@ -895,10 +895,10 @@ endcase
 	1833:
 	  resultado[1] := 0x324 ;
 	  resultado[2] := "*Oh*";
-	1834:
+	1835:
 	  resultado[1] := 0x434 ;
 	  resultado[2] := "*Oh*";
-	1835:
+	1834:
 	  resultado[1] := 0x324 ;
 	  resultado[2] := "*Oh*";
 endcase
@@ -929,10 +929,10 @@ endcase
 	1833:
 	  resultado[1] := 0x32C ;
 	  resultado[2] := "*Oooh*";
-	1834:
+	1835:
 	  resultado[1] := 0x43E ;
 	  resultado[2] := "*Oooh*";
-	1835:
+	1834:
 	  resultado[1] := 0x32C ;
 	  resultado[2] := "*Oooh*";
 endcase
@@ -963,10 +963,10 @@ endcase
 	1833:
 	  resultado[1] := 0x32D ;
 	  resultado[2] := "*Oops*";
-	1834:
+	1835:
 	  resultado[1] := 0x43F ;
 	  resultado[2] := "*Oops*";
-	1835:
+	1834:
 	  resultado[1] := 0x32D ;
 	  resultado[2] := "*Oops*";
 endcase
@@ -997,10 +997,10 @@ endcase
 	1833:
 	  resultado[1] := 0x32F ;
 	  resultado[2] := "*Gritando*";
-	1834:
+	1835:
 	  resultado[1] := 0x441 ;
 	  resultado[2] := "*Gritando*";
-	1835:
+	1834:
 	  resultado[1] := 0x32F ;
 	  resultado[2] := "*Gritando*";
 endcase
@@ -1031,10 +1031,10 @@ endcase
 	1833:
 	  resultado[1] := 0x330 ;
 	  resultado[2] := "*SHHH*";
-	1834:
+	1835:
 	  resultado[1] := 0x442 ;
 	  resultado[2] := "*SHHH*";
-	1835:
+	1834:
 	  resultado[1] := 0x330 ;
 	  resultado[2] := "*SHHH*";
 endcase
@@ -1065,10 +1065,10 @@ endcase
 	1833:
 	  resultado[1] := 0x331 ;
 	  resultado[2] := "*Suspirando*";
-	1834:
+	1835:
 	  resultado[1] := 0x443 ;
 	  resultado[2] := "*Suspirando*";
-	1835:
+	1834:
 	  resultado[1] := 0x331 ;
 	  resultado[2] := "*Suspirando*";
 
@@ -1101,10 +1101,10 @@ endcase
 	1833:
 	  resultado[1] := 0x332 ;
 	  resultado[2] := "*Espirrando*";
-	1834:
+	1835:
 	  resultado[1] := 0x444 ;
 	  resultado[2] := "*Espirrando*";
-	1835:
+	1834:
 	  resultado[1] := 0x332 ;
 	  resultado[2] := "*Espirrando*";
 
@@ -1136,10 +1136,10 @@ endcase
 	1833:
 	  resultado[1] := 0x333 ;
 	  resultado[2] := "*Sniff*";
-	1834:
+	1835:
 	  resultado[1] := 0x445 ;
 	  resultado[2] := "*Sniff*";
-	1835:
+	1834:
 	  resultado[1] := 0x333 ;
 	  resultado[2] := "*Sniff*";
 endcase
@@ -1170,10 +1170,10 @@ endcase
 	1833:
 	  resultado[1] := 0x334 ;
 	  resultado[2] := "*Roncando*";
-	1834:
+	1835:
 	  resultado[1] := 0x446 ;
 	  resultado[2] := "*Roncando*";
-	1835:
+	1834:
 	  resultado[1] := 0x334 ;
 	  resultado[2] := "*Roncando*";
 endcase
@@ -1204,10 +1204,10 @@ endcase
 	1833:
 	  resultado[1] := 0x335 ;
 	  resultado[2] := "*Cuspindo*";
-	1834:
+	1835:
 	  resultado[1] := 0x447 ;
 	  resultado[2] := "*Cuspindo*";
-	1835:
+	1834:
 	  resultado[1] := 0x335 ;
 	  resultado[2] := "*Cuspindo*";
 
@@ -1239,10 +1239,10 @@ endcase
 	1833:
 	  resultado[1] := 0x336 ;
 	  resultado[2] := "*Assobiando*";
-	1834:
+	1835:
 	  resultado[1] := 0x448 ;
 	  resultado[2] := "*Assobiando*";
-	1835:
+	1834:
 	  resultado[1] := 0x336 ;
 	  resultado[2] := "*Assobiando*";
 
@@ -1274,10 +1274,10 @@ endcase
 	1833:
 	  resultado[1] := 0x337 ;
 	  resultado[2] := "*Bocejando*";
-	1834:
+	1835:
 	  resultado[1] := 0x449 ;
 	  resultado[2] := "*Bocejando*";
-	1835:
+	1834:
 	  resultado[1] := 0x337 ;
 	  resultado[2] := "*Bocejando*";
 endcase
@@ -1308,10 +1308,10 @@ endcase
 	1833:
 	  resultado[1] := 0x338 ;
 	  resultado[2] := "*Yeah*";
-	1834:
+	1835:
 	  resultado[1] := 0x44A ;
 	  resultado[2] := "*Yeah*";
-	1835:
+	1834:
 	  resultado[1] := 0x338 ;
 	  resultado[2] := "*Yeah*";
 
@@ -1343,10 +1343,10 @@ endcase
 	1833:
 	  resultado[1] := 0x339 ;
 	  resultado[2] := "*Gritando*";
-	1834:
+	1835:
 	  resultado[1] := 0x44B ;
 	  resultado[2] := "*Gritando*";
-	1835:
+	1834:
 	  resultado[1] := 0x339 ;
 	  resultado[2] := "*Gritando*";
 

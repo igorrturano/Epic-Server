@@ -2,7 +2,7 @@ use uo;
 use util;
 use vitals;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":attributes:vitals";
@@ -40,7 +40,7 @@ program HitScript(params)
 		var npctemplate := NPC_ParseTemplateName(defender.npctemplate);
 		var cfg := ReadConfigFile(":*:npcdesc");
 		var inimigo := GetObjProperty(weapon, "slayer");
-		if (cfg[npctemplate.template].Category == inimigo)
+		if (cfg[npctemplate.template].Environment == inimigo)
 			var dmg := rawdamage / 2;
 			DamageFLS(defender, dmg, DMG_FORCED, attacker);
 		endif

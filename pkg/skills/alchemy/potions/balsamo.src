@@ -7,7 +7,7 @@ use attributes;
 include ":alchemy:alchemy";
 include "include/say";
 include ":timedScripts:timedScripts";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program drink_blue(who, potion)
 	EraseObjProperty(who, "IsMeditating");
@@ -48,29 +48,30 @@ program drink_blue(who, potion)
 	healed := skill / 5;
 	var delay := 1000;
 	var cd := 5;
+	var tier := peganivelpocao(who, potion);
 
 	healed := AP_GetVitalMaximumValue(who, HITS);
 
-	case (potion.objtype)
-		56321:
+	case (tier)
+		1:
 			healed := cint(healed * 0.20 * vicio);
 			delay := 750;
 			cd := cint(healed * 0.75 * 3);
-		56322:
+		2:
 			healed := cint(healed * 0.40 * vicio);
 			delay := 500;
 			cd := cint(healed * 0.5 * 3);
-		56323:
+		3:
 			healed := cint(healed * 0.60 * vicio);
 			delay := 250;
 			cd := cint(healed * 0.25 * 3);
-		48914:
+		4:
 			healed := cint(healed * 0.80 * vicio);
 			delay := 130;
 			cd := cint(healed * 0.13 * 3);
 	endcase
-
-	empty_bottle(who, potion, 1);
+	Aplicavicio(who, potion, STRENGTH);
+	empty_bottle(who, potion);
 	TS_StartCooldown(who, "healingpot", cd + 1);
 
 	Detach();
@@ -79,8 +80,8 @@ program drink_blue(who, potion)
 	SetObjProperty(who, "#healingpotion", 1);
 	SendSysMessageEx(who, "Seus ferimentos estao cicatrizando...", SSM_INFO);
 	while (i < healed)
-		HealFLS(who, 1);
-		// HealDamage(who,  1 );
+		applyEpicHealing(who, 1);
+		// ApplyEpicHealing(who,  1 );
 		RecalcVitals(who);
 		i := i + 1;
 		sleepms(delay);
@@ -88,6 +89,6 @@ program drink_blue(who, potion)
 	EraseObjProperty(who, "#healingpotion");
 	SendSysMessageEx(who, "Terminou o efeito da pocao.", SSM_INFO);
 
-	VicioSTR(who, potion);
-
+	
+ 
 endprogram

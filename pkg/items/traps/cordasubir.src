@@ -5,7 +5,7 @@ use util;
 include ":moongates:moongate";
 include "include/say";
 include ":attributes:attributes";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
 include ":taming:taming";
 include "include/epicConstants";
@@ -44,7 +44,7 @@ program cordasubir(who, item)
 				MoveObjectToLocation(who, who.x, who.y, who.z + 1, who.realm, MOVEOBJECT_FORCELOCATION);
 
 				if (!Wait(who, 1))
-					if (CheckResist(who, REFLEXOS, RESIST_MEDIUM))
+					if (CheckResist(who, REFLEXES, RESIST_MEDIUM))
 						SendSysMessageEx(who, "Voce solta a corda e aterriza com leveza", SSM_FAIL);
 						return 0;
 					else
@@ -59,7 +59,7 @@ program cordasubir(who, item)
 				MoveObjectToLocation(who, who.x, who.y, who.z - 1, who.realm, MOVEOBJECT_FORCELOCATION);
 
 				if (!Wait(who, 1))
-					if (CheckResist(who, REFLEXOS, RESIST_MEDIUM))
+					if (CheckResist(who, REFLEXES, RESIST_MEDIUM))
 						SendSysMessageEx(who, "Voce solta a corda e aterriza com leveza", SSM_FAIL);
 						MoveObjectToLocation(who, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
 						foreach pet in pets

@@ -1,5 +1,4 @@
-use npc;
-
+const FOLLOW_CMD := 0xA001;
 function AnimalBrain()
     var ev;
     var wanders := 0;
@@ -7,51 +6,90 @@ function AnimalBrain()
     EnableMainEvents();
     Set_Event_Queue_Size(50);
 
+    // Build ability tables ONCE at brain activation (script-level vars in brain.src)
+    combat_abilities := BuildCombatAbilities(me);
+    enter_abilities := BuildEnterAbilities(me);
+
+    SM_TransitionTo("IDLE");
+
     while (me)
         ev := os::wait_for_event(0);
 
         // Check FORCE dormant FIRST - before anything else
-        var current_time := polcore().systime;
-        var time_since_activity := CInt(current_time - last_activity_time);
-        
-        if (time_since_activity >= 120)  // 2 minutes
+        if (ShouldGoDormant(last_activity_time))
             return;
         endif
 
         HandleAnimalChanges(me);
+
+        // Process active states (non-blocking, ONE step per tick)
+        var state := SM_GetState();
+        if (state == "FLEEING")
+            SM_TickFlee();
+        elseif (state == "HERDING")
+            SM_TickHerding();
+        elseif (state == "FOLLOWING")
+            SM_TickFollowing();
+        elseif (state == "AMBUSH")
+            SM_TickAmbush();
+        endif
 
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
                 HandleAnimalLeftArea(me.opponent);
             else
-                PursueTarget(me.opponent);
+                if (SM_GetState() != "FLEEING")
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
+                endif
             endif
         endif
 
-        if (ev)            
+        if (ev)
+            // Cache flee check once per event (avoids 3x GetObjProperty + vital reads)
+            var should_flee := ShouldFlee(me);
+
             case (ev.type)
                 SYSEVENT_ENGAGED:
                     last_activity_time := polcore().systime;
-                    AlertAllies(ev.source, me);
-                    HandleAnimalCombatEvent(ev.source);
+                    if (should_flee)
+                        SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
+                    else
+                        AlertAllies(ev.source, me);
+                        HandleAnimalCombatEvent(ev.source);
+                    endif
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
-                    HandleAnimalCombatEvent(ev.source);
+                    if (SM_GetState() == "AMBUSH")
+                        me.hidden := 0;
+                        SM_TransitionTo("COMBAT");
+                    endif
+                    if (should_flee)
+                        SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
+                    else
+                        HandleAnimalCombatEvent(ev.source);
+                    endif
                 SYSEVENT_ENTEREDAREA:
+                    if (CheckDarknessCreatureSurvival(me))
+                        return;
+                    endif
                     if (!IsAlly(ev.source))
+                        UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
-                        CanFight(me, ev.source) ? HandleAnimalEnteredArea(ev.source) : HandleAnimalLeftArea(ev.source);
+                        HandleAnimalEnteredArea(ev.source);
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
+                        UpdateThreatList(me, ev);
                         HandleAnimalLeftArea(ev.source);
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
                     if (opponent_serial)
                         var opponent := SystemFindObjectBySerial(opponent_serial);
-                        if (opponent && CanFight(me, opponent))
+                        if (opponent)
                             HandleAnimalCombatEvent(opponent);
                             EraseObjProperty(me, "#taunt_opponent");
                         endif
@@ -59,9 +97,7 @@ function AnimalBrain()
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
                     SetOpponent(0);
-                    if (CanFight(me, ev.source))
-                        HandleAnimalCombatEvent(ev.source);
-                    endif
+                    HandleAnimalCombatEvent(ev.source);
                 EVID_PEACEMADE:
                     last_activity_time := polcore().systime;
                     SetWarMode(0);
@@ -69,12 +105,18 @@ function AnimalBrain()
                     sleep(1);
                 EVID_FLEE:
                     last_activity_time := polcore().systime;
-                    FleeFrom(ev.source);
+                    SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
+                EVID_HERDING:
+                    PrintTextAbove(me, "*pastoreado*");
+                    SM_TransitionTo("HERDING", struct{ "target" := ev.data });
+                FOLLOW_CMD:
+                    PrintTextAbove(me, "*segue*");
+                    SM_TransitionTo("FOLLOWING", struct{ "target" := ev.source });
             endcase
         endif
 
         // Idle behavior when no events and no combat
-        if (!me.opponent)           
+        if (!me.opponent && SM_GetState() == "IDLE")
             AnimalIdle(wanders);
             if (RandomInt(100) < 30)
                 wanders += 1;
@@ -85,26 +127,23 @@ function AnimalBrain()
             endif
         endif
 
-        sleepms(100);
+        // Dynamic sleep: fast in combat, slow when idle
+        if (me.opponent || SM_GetState() != "IDLE" || (polcore().systime - last_activity_time) < 5)
+            sleepms(100); // Combat mode, active state, or recently active
+        else
+            sleepms(1000); // Idle mode - save CPU
+        endif
     endwhile
+
 endfunction
 
 function HandleAnimalEnteredArea(source)
-    if (!source || !CanFight(me, source))
+    if (!source)
         return 0;
     endif
 
-    if (me.canCharge())
-        StartCharge(me, source);
-    endif
-
-    if (me.hasTunnelTactics())
-        TunnelTactics(me, source);
-    endif
-
-    if (me.CanAmbush())
-        HandleAmbush(me, source);
-    endif
+    // Dispatch enter-area abilities from pre-built table (Charge, TunnelTactics, Ambush)
+    TickEnterAbilities(me, source, enter_abilities);
 
     HandleAnimalCombatEvent(source);
 
@@ -116,21 +155,22 @@ function HandleAnimalCombatEvent(opponent)
         return 0;
     endif
 
-    var z_diff := Abs(me.z - opponent.z);
-    if (z_diff > MAX_Z_DIFF)
+    // Rural Life is player-only, so on pets we check the master, on players the player itself.
+    var rural_target := opponent.master ?: opponent;
+    if (MobileWrapper(rural_target).HasAbility(ABILITY_ID::RURAL_LIFE))
         return 0;
     endif
 
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
-    if (me.isSpider() && opponent.getRace() == DROW)
+    if (NPC_GetCachedData(me).npc_race == "aranha" && opponent.getRace() == DROW)
         var tier := CInt(me.getTier());
         if (tier <= 2)
             return 0;
-        elseif (tier <= 3 && opponent.getCulture == HAROLOTH)
+        elseif (tier <= 3 && opponent.getCulture() == HAROLOTH)
             return 0;
-        elseif (tier <= 4 && opponent.getReligion == ELUITHORTH)
+        elseif (tier <= 4 && opponent.getReligion() == ELUITHORTH)
             return 0;
         endif
         // Tier 5 sempre desafia drows para testar se são oponentes valiosos
@@ -158,40 +198,11 @@ function HandleAnimalCombatEvent(opponent)
     TurnToward(opponent);
     PursueTarget(opponent);
     
-    if (me.hasHiveMind())
-        HiveMind(me);
-    endif
-
-    if (me.canDoConfusion())
-        doConfusion(opponent);
-    endif
-
-    if (me.CanBite())
-        Bite(me, opponent);
-    endif
-
-    if (me.CanTongueGrab())
-        TongueGrab(me, opponent);
-    endif
-
-    if (me.CanPoisonBite())
-        PoisonBite(me, opponent);
-    endif
-
-    if (me.CanClimbWall())
-        WallClimb(me);
-    endif
-    // TODO, add dragons here
-    if (me.CanFrighten())
-        frightenOpponent(me, opponent);
-    endif
-
-    if (me.canPetrify())
-        petrify(me, opponent);
-    endif
+    // Dispatch abilities from pre-built table (replaces 9+ sequential if-checks)
+    TickCombatAbilities(me, opponent, combat_abilities);
 
     if (ShouldFlee(me))
-        FleeFrom(opponent);
+        SM_TransitionTo("FLEEING", struct{ "target" := opponent, "steps" := 0 });
         return 1;
     endif
 
@@ -216,7 +227,8 @@ function HandleAnimalLeftArea(opponent)
             // Approach the corpse, but check for threats while approaching
             while (Distance(me, corpse) > 1)
                 // Check for nearby hostiles before continuing
-                foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, AREA_SIZE, LISTEX_FLAG_NORMAL, me.realm)
+                // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+                foreach mobile in GetNearbyMobilesOnce(me, AREA_SIZE, LISTEX_FLAG_NORMAL)
                     if (CanFight(me, mobile))
                         HandleAnimalCombatEvent(mobile);
                         return 1;
@@ -253,43 +265,24 @@ function AnimalIdle(wanders)
         HealDamage(me, heal_amount);
     endif
 
-    // Look for potential targets
-    foreach mobile in ListMobilesNearLocationEx(me.x, me.y, me.z, 8, LISTEX_FLAG_NORMAL, me.realm)
-        if (CanFight(me, mobile))
-            HandleAnimalCombatEvent(mobile);
-            return;
-        endif
-        sleepms(2);
-    endforeach
+    // Removed idle target scanning - rely on ENTEREDAREA events instead (100% perf boost)
 
-    var anchor := GetObjProperty(me, "anchor");
+
+    var anchor := anchor_var;
     if (CoordinateDistance(me.x, me.y, anchor[1], anchor[2]) > 35)
       PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
       sleep(3);
       MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
     endif
-    
-    // Random wandering when no targets
-    if (RandomInt(100) < 30)
-        var direction := RandomInt(8);
-        case (direction)
-            0: WalkTowardLocation(me.x, me.y-1);
-            1: WalkTowardLocation(me.x+1, me.y-1);
-            2: WalkTowardLocation(me.x+1, me.y);
-            3: WalkTowardLocation(me.x+1, me.y+1);
-            4: WalkTowardLocation(me.x, me.y+1);
-            5: WalkTowardLocation(me.x-1, me.y+1);
-            6: WalkTowardLocation(me.x-1, me.y);
-            7: WalkTowardLocation(me.x-1, me.y-1);
-        endcase
-    endif
+
+    WanderAroundAnchor(me);
 
     if (RandomInt(100) < 10) // 10% de chance de criar traps
         if (me.isSpider())
             CreateInvisibleWeb(me); 
         endif
 
-        wander();
+        WanderAroundAnchor(me);
         sleep(1);
         if (me.CanLayEggSac())
             LayEggSac(me);

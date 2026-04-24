@@ -17,6 +17,11 @@ program skill_theology(who)
 		return;
 	endif
 
+	if (!item.IsA(POLCLASS_ITEM))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return;
+	endif
+
 	PrintTextAbove(who, "*analisando o item*");
 
 	var identificado := GetObjProperty(item, "theologywho");

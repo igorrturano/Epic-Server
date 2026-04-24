@@ -57,7 +57,7 @@ program use_FishNets(who, fishnet)
 			CreateItemInContainer(who.backpack, 0x9984, 2); // pega camarao
 		else
 			SendSysMessage(who, "Nada ficou preso na rede.");
-			if (rand < 20) // Marcknight: 20% de chance de perder a rede se a skill for muito baixa
+			if (rand < 2) // Marcknight: 2% de chance de perder a rede se a skill for muito baixa
 				DestroyItem(fishnet);
 			endif
 			return 1;

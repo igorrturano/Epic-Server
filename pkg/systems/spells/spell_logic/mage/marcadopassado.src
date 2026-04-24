@@ -3,11 +3,11 @@ use os;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":fls_magery:spells";
-include ":fls_magery:spellSounds";
+;
+;
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 include "include/say";
 include "include/facings";
@@ -35,8 +35,8 @@ program SpellScript(params)
 	var rune := CreateItemAtLocation(who.x, who.y, who.z, 3682, 1, who.realm);
 
 	sleep(10);
-	PlayStationaryEffectEx(rune.x, rune.y, rune.z, rune.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
-	PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, GFX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
+	PlayStationaryEffectEx(rune.x, rune.y, rune.z, rune.realm, FX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
+	PlayStationaryEffectEx(loc.x, loc.y, loc.z, who.realm, FX_BLUE_SPARKLE_BORDER, 8, 8, 0, 2);
 	MoveObjectToLocation(loc, rune.x, rune.y, rune.z, who.realm, MOVEOBJECT_FORCELOCATION);
 	DestroyITem(rune);
 

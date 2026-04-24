@@ -14,5 +14,11 @@ enum class DISEASES
 	COLIC := "Colicas",
 	PALPITATIONS := "Palpitacoes", 
 	NAUSEA := "Nausea", 
-	HEADACHE := "Cefaleia"
+	HEADACHE := "Cefaleia",
+endenum
+
+enum class PROTECTION_ITEMS
+    PLAGUE_MASK_1 := 0xF0C6,
+    PLAGUE_MASK_2 := 0xF0C7,
+    CENSER := 0xC620,
 endenum

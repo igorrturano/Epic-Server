@@ -19,7 +19,7 @@ program newprogram(who)
 	var bonusAtk := AP_GetTrueSkill(who, THEOLOGY) / 10;
 	PrintTextAbove(who, "*uiva*");
 	PlaySoundEffect(who, 231);
-	PerformAction(who, ANIM_HIT);
+	PerformAction(who, HUMAN_ANIM::HIT);
 
 	var nearbyPets := ListPetsNear(who, 8);
 	foreach lobo in nearbyPets

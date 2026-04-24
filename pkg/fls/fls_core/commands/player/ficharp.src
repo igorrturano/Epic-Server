@@ -3,115 +3,243 @@ use os;
 use cfgfile;
 use math;
 use util;
+use vitals;
 
 include "include/client";
 include "/include/utils";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
 include ":datafile:datafile";
+include ":fls_core:fls_characters";
+include ":charactercreation:resists";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":charactercreation:RPTraits";
 
-const BOTAO_CRIAR := 1;
-const BOTAO_EDITAR := 2;
-const BOTAO_VISUALIZAR := 3;
-const BOTAO_AVALIACOES := 4;
+// Player Mode
+const BOTAO_CRIAR := 10;
+const BOTAO_EDITAR := 11;
+const BOTAO_VISUALIZAR := 12;
+const BOTAO_AVALIACOES := 13;
+const BOTAO_CONQUISTAS := 14;
 
 const MENU_CRIAR := 1;
 const MENU_EDITAR := 2;
 const MENU_VISUALIZAR := 3;
 const MENU_AVALIACOES := 4;
+const MENU_CONQUISTAS := 5;
 
-const GUMP_WIDTH := 520;
-const GUMP_HEIGHT := 570;
-const GUMP_BACKGROUND := 39929;
-const INTERNAL_BACKGROUND := 9350;
-const BACKGROUND_WIDTH := 465;
+// GM Mode
+const GM_BOTAO_INFO := 20;
+const GM_BOTAO_FICHARP := 21;
+const GM_BOTAO_AVALIAR := 22;
+const GM_BOTAO_TRACOS := 23;
+const GM_BOTAO_CONQUISTAS := 24;
+
+const GM_MENU_INFO := 10;
+const GM_MENU_FICHARP := 11;
+const GM_MENU_AVALIAR := 12;
+const GM_MENU_TRACOS := 13;
+const GM_MENU_CONQUISTAS := 14;
+
+// Layout
+const GUMP_WIDTH := 720;
+const GUMP_HEIGHT := 600;
+const GUMP_BG := 39929;
+const INNER_BG := 9350;
+const RIGHT_X := 260;
+const RIGHT_W := 425;
+const DEFAULT_URL := "https://media.discordapp.net/attachments/621351501511524353/1186245051953725450/image.png";
 
 var button_states := array{ 1, 0, 0, 0 };
 var last_clicked_button := BOTAO_CRIAR;
-var _txt_comportamentos_id := 1000;
-var _txt_objetivos_id := 2000;
+
+// ===================================================================
+// Entry Point
+// ===================================================================
 
 program fichaRP(who, text)
-	var input := ShowCriarGump(who);
+	text := Lower(Trim(text));
+
+	// GM mode: always targets a player
+	if (who.cmdlevel >= 3)
+		SendSysMessage(who, "Selecione o jogador para visualizar a ficha RP.");
+		var targ := Target(who);
+		if (!targ || !targ.acctname)
+			SendSysMessage(who, "Alvo inválido.");
+			return 0;
+		endif
+		button_states := array{ 1, 0, 0, 0 };
+		ShowGMInfoGump(who, targ);
+		return 1;
+	endif
+
+	// Player mode
+	var has_ficha := GetObjProperty(who, "fichaRP");
+	var input;
+
+	case (text)
+		"criar":
+			if (has_ficha)
+				input := ShowConquistasGump(who);
+			else
+				input := ShowCriarGump(who);
+			endif
+		"editar":     input := ShowEditarGump(who);
+		"visualizar": input := ShowVisualizarGump(who, who);
+		"avaliacoes": input := ShowAvaliacoesGump(who);
+		"conquistas": input := ShowConquistasGump(who);
+		default:
+			if (has_ficha)
+				input := ShowConquistasGump(who);
+			else
+				input := ShowCriarGump(who);
+			endif
+	endcase
 
 	while (input != 0)
 		var new_menu := AtualizarEstadoMenu(input[0]);
 		case (new_menu)
-			MENU_CRIAR:      input := ShowCriarGump(who);
-			MENU_EDITAR:     input := ShowEditarGump(who);
-			MENU_VISUALIZAR: input := ShowVisualizarGump(who);
-			MENU_AVALIACOES: input := ShowAvaliacoesGump(who);
-			default:         input := 0;
+			MENU_CRIAR:       input := ShowCriarGump(who);
+			MENU_EDITAR:      input := ShowEditarGump(who);
+			MENU_VISUALIZAR:  input := ShowVisualizarGump(who, who);
+			MENU_AVALIACOES:  input := ShowAvaliacoesGump(who);
+			MENU_CONQUISTAS:  input := ShowConquistasGump(who);
+			default:          input := 0;
 		endcase
 	endwhile
 
 	return 1;
 endprogram
 
+// ===================================================================
+// Shared Layout
+// ===================================================================
+
+function AdicionarPainelEsquerdo(byref gump, targ)
+	GFResizePic(gump, 25, 85, INNER_BG, 220, 340);
+
+	var url := GetObjProperty(targ, "url");
+	if (!url || url == error)
+		url := DEFAULT_URL;
+	endif
+	GFHTMLArea(gump, 30, 90, 210, 330,
+		"<img src=\"" + url + "\" width=\"210\" height=\"330\" x=\"0\" y=\"0\">", 0, 0);
+
+	GFTextMid(gump, 25, 428, 220, 230, targ.name);
+endfunction
+
+function AdicionarInfoPessoal(byref gump, targ)
+	var chardata := GetObjProperty(targ, "chardata");
+	if (!chardata)
+		chardata := struct{};
+	endif
+
+	GFTextMid(gump, RIGHT_X, 80, RIGHT_W, 53, "Informações Pessoais");
+	GFResizePic(gump, RIGHT_X, 100, INNER_BG, RIGHT_W, 150);
+
+	var lx1 := RIGHT_X + 10;
+	var vx1 := RIGHT_X + 90;
+	var lx2 := RIGHT_X + 215;
+	var vx2 := RIGHT_X + 275;
+	var y := 108;
+
+	GFTextLine(gump, lx1, y, 53, "Raça:");
+	GFTextLine(gump, vx1, y, 230, CStr(targ.title_race));
+	GFTextLine(gump, lx2, y, 53, "Cultura:");
+	GFTextLine(gump, vx2, y, 230, GetChardataField(chardata, "culture"));
+	y += 32;
+
+	GFTextLine(gump, lx1, y, 53, "Classe:");
+	GFTextLine(gump, vx1, y, 230, GetChardataField(chardata, "classe"));
+	GFTextLine(gump, lx2, y, 53, "Religião:");
+	GFTextLine(gump, vx2, y, 230, GetChardataField(chardata, "religion"));
+	y += 32;
+
+	GFTextLine(gump, lx1, y, 53, "Background:");
+	GFTextLine(gump, vx1, y, 230, GetChardataField(chardata, "background"));
+	GFTextLine(gump, lx2, y, 53, "Traço:");
+	GFTextLine(gump, vx2, y, 230, GetChardataField(chardata, "trait"));
+	y += 32;
+
+	GFTextLine(gump, lx1, y, 53, "Idade:");
+	GFTextLine(gump, vx1, y, 230, GetIdadeString(chardata));
+	GFTextLine(gump, lx2, y, 53, "Signo:");
+	GFTextLine(gump, vx2, y, 230, GetChardataField(chardata, "sign"));
+endfunction
+
+function AdicionarMoldura(byref gump)
+	var molduras := array{
+		struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+		struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
+		struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
+		struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25, height := 35, gump := 39932 },
+		struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
+		struct{ x := GUMP_WIDTH - 25, y := 25, width := 35, height := GUMP_HEIGHT - 50, gump := 39930 },
+		struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39933 },
+		struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 }
+	};
+	foreach moldura in molduras
+		GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+	endforeach
+endfunction
+
+// ===================================================================
+// Player Mode Gumps
+// ===================================================================
+
 function ShowCriarGump(who)
 	var gump := GFCreateGump();
-	GFClosable(gump, 1); // Permite fechar com o botão direito
+	GFClosable(gump, 1);
 	GFDisposable(gump, 0);
 
-	GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+	GFGumpPicTiled(gump, 10, 10, 700, 580, GUMP_BG);
 	AdicionarMoldura(gump);
+	GFTextMid(gump, 45, 22, GUMP_WIDTH - 90, 53, "Criar Ficha RP");
+	AdicionarBotoesNavegacao(gump, who);
+	AdicionarPainelEsquerdo(gump, who);
+	AdicionarInfoPessoal(gump, who);
 
-	GFTextMid(gump, 45, 22, GUMP_WIDTH - 50, 53, "Criar Ficha RP");
+	var y := 260;
+	GFTextMid(gump, RIGHT_X, y, RIGHT_W, 53, "Características Comportamentais");
+	y += 20;
+	GFResizePic(gump, RIGHT_X, y, INNER_BG, RIGHT_W, 160);
 
-	AdicionarBotoesNavegacao(gump);
-
-	var y_pos := 95; // Abaixado em 35 pixels
-
-	GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Características Comportamentais");
-	y_pos += 25;
-	GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 205); // Altura reduzida
-
-	var txt_comportamentos := array{};
+	var txt_comp := array{};
 	for i := 1 to 6
-		txt_comportamentos.append(GFTextEntry(gump, 50, y_pos + 5 + (i - 1) * 30, BACKGROUND_WIDTH - 10,
-											   25, 0, "- ")); // Já está em preto (0)
+		txt_comp.append(GFTextEntry(gump, RIGHT_X + 5, y + 3 + (i - 1) * 25, RIGHT_W - 15, 22, 0, "- "));
 	endfor
 
-	y_pos += 215; // Ajustado para manter a distância
-	GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Objetivos Atuais");
-	y_pos += 25;
-	GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 120);
+	y += 168;
+	GFTextMid(gump, RIGHT_X, y, RIGHT_W, 53, "Objetivos Atuais");
+	y += 20;
+	GFResizePic(gump, RIGHT_X, y, INNER_BG, RIGHT_W, 82);
 
-	var txt_objetivos := array{};
+	var txt_obj := array{};
 	for i := 1 to 3
-		txt_objetivos.append(GFTextEntry(gump, 50, y_pos + 5 + (i - 1) * 35, BACKGROUND_WIDTH - 10, 30,
-										  0, "- ")); // Mudado para preto (0)
+		txt_obj.append(GFTextEntry(gump, RIGHT_X + 5, y + 3 + (i - 1) * 25, RIGHT_W - 15, 22, 0, "- "));
 	endfor
 
-	y_pos += 130;
-	GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Aviso: Existe um limite de caracteres para cada campo.");
-
-	GFAddButton(gump, 200, GUMP_HEIGHT - 45, 2128, 2129, 1, 100); // Confirmar
-	GFAddButton(gump, 280, GUMP_HEIGHT - 45, 2119, 2120, 1, 1); // Cancelar
+	GFAddButton(gump, 350, GUMP_HEIGHT - 45, 2128, 2129, 1, 100);
+	GFAddButton(gump, 430, GUMP_HEIGHT - 45, 2119, 2120, 1, 1);
 
 	var input := GFSendGump(who, gump);
 
-	if (input[0] == 0) // Botão direito ou Cancelar
-		return 0;
-	elseif (input[0] == 100)
+	if (input[0] == 100)
 		var comportamentos := array{};
 		var objetivos := array{};
-
 		for i := 1 to 6
-			comportamentos.append(GFExtractData(input, txt_comportamentos[i]));
+			comportamentos.append(GFExtractData(input, txt_comp[i]));
 		endfor
-
 		for i := 1 to 3
-			objetivos.append(GFExtractData(input, txt_objetivos[i]));
+			objetivos.append(GFExtractData(input, txt_obj[i]));
 		endfor
-
 		SalvarFichaRP(who, comportamentos, objetivos);
 		SendSysMessage(who, "Ficha RP criada com sucesso!");
-		SetObjProperty(who, "fichaRP", 1);
-
-		return 0; // retorna zero como sucesso
-
-	elseif (input[0] == 1) // Cancel button
+		return 0;
+	elseif (input[0] == 0 || input[0] == 1)
 		return 0;
 	endif
 
@@ -120,115 +248,111 @@ endfunction
 
 function ShowEditarGump(who)
 	var gump := GFCreateGump();
-	GFClosable(gump, 1); // Permite fechar com o botão direito
+	GFClosable(gump, 1);
 	GFDisposable(gump, 0);
 
-	GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+	GFGumpPicTiled(gump, 10, 10, 700, 580, GUMP_BG);
 	AdicionarMoldura(gump);
-
-	GFTextMid(gump, 45, 22, GUMP_WIDTH - 50, 53, "Editar Ficha RP");
-
-	AdicionarBotoesNavegacao(gump);
-
-	var y_pos := 95; // Abaixado em 35 pixels
+	GFTextMid(gump, 45, 22, GUMP_WIDTH - 90, 53, "Editar Ficha RP");
+	AdicionarBotoesNavegacao(gump, who);
+	AdicionarPainelEsquerdo(gump, who);
+	AdicionarInfoPessoal(gump, who);
 
 	var ficha := CarregarFichaRP(who);
 
-	GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Características Comportamentais");
-	y_pos += 25;
-	GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 205); // Altura reduzida
+	var y := 260;
+	GFTextMid(gump, RIGHT_X, y, RIGHT_W, 53, "Características Comportamentais");
+	y += 20;
+	GFResizePic(gump, RIGHT_X, y, INNER_BG, RIGHT_W, 160);
 
-	var txt_comportamentos := array{};
+	var txt_comp := array{};
 	for i := 1 to 6
-		txt_comportamentos.append(GFTextEntry(gump, 50, y_pos + 5 + (i - 1) * 30, BACKGROUND_WIDTH - 10,
-											   25, 0, ficha.comportamentos[i])); // Já está em preto (0)
+		txt_comp.append(GFTextEntry(gump, RIGHT_X + 5, y + 3 + (i - 1) * 25, RIGHT_W - 15, 22, 0, ficha.comportamentos[i]));
 	endfor
 
-	y_pos += 215; // Ajustado para manter a distância
-	GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Objetivos Atuais");
-	y_pos += 25;
-	GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 120);
+	y += 168;
+	GFTextMid(gump, RIGHT_X, y, RIGHT_W, 53, "Objetivos Atuais");
+	y += 20;
+	GFResizePic(gump, RIGHT_X, y, INNER_BG, RIGHT_W, 82);
 
-	var txt_objetivos := array{};
+	var txt_obj := array{};
 	for i := 1 to 3
-		txt_objetivos.append(GFTextEntry(gump, 50, y_pos + 5 + (i - 1) * 35, BACKGROUND_WIDTH - 10, 30,
-										  0, ficha.objetivos[i])); // Mudado para preto (0)
+		txt_obj.append(GFTextEntry(gump, RIGHT_X + 5, y + 3 + (i - 1) * 25, RIGHT_W - 15, 22, 0, ficha.objetivos[i]));
 	endfor
 
-	GFAddButton(gump, 200, GUMP_HEIGHT - 45, 2128, 2129, 1, 100); // Confirmar
-	GFAddButton(gump, 280, GUMP_HEIGHT - 45, 2119, 2120, 1, 1); // Cancelar
+	GFAddButton(gump, 350, GUMP_HEIGHT - 45, 2128, 2129, 1, 100);
+	GFAddButton(gump, 430, GUMP_HEIGHT - 45, 2119, 2120, 1, 1);
 
 	var input := GFSendGump(who, gump);
 
-	if (input[0] == 0) // Botão direito ou Cancelar
-		return 0;
-	elseif (input[0] == 100)
+	if (input[0] == 100)
 		var comportamentos := array{};
 		var objetivos := array{};
-
 		for i := 1 to 6
-			comportamentos.append(GFExtractData(input, txt_comportamentos[i]));
+			comportamentos.append(GFExtractData(input, txt_comp[i]));
 		endfor
-
 		for i := 1 to 3
-			objetivos.append(GFExtractData(input, txt_objetivos[i]));
+			objetivos.append(GFExtractData(input, txt_obj[i]));
 		endfor
-
 		SalvarFichaRP(who, comportamentos, objetivos);
 		SendSysMessage(who, "Ficha RP atualizada com sucesso!");
-
-		return 0; // retorna zero como sucesso
-
-	elseif (input[0] == 1) // Cancel button
+		return 0;
+	elseif (input[0] == 0 || input[0] == 1)
 		return 0;
 	endif
 
 	return input[0];
 endfunction
 
-function ShowVisualizarGump(who)
+function ShowVisualizarGump(who, targ := 0)
+	if (!targ)
+		targ := who;
+	endif
+
 	var gump := GFCreateGump();
 	GFClosable(gump, 1);
 	GFDisposable(gump, 0);
 
-	GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+	GFGumpPicTiled(gump, 10, 10, 700, 580, GUMP_BG);
 	AdicionarMoldura(gump);
+	GFTextMid(gump, 45, 22, GUMP_WIDTH - 90, 53, "Ficha RP de " + targ.name);
+	AdicionarBotoesNavegacao(gump, who);
+	AdicionarPainelEsquerdo(gump, targ);
+	AdicionarInfoPessoal(gump, targ);
 
-	GFTextMid(gump, 45, 22, GUMP_WIDTH - 50, 53, "Visualizar Ficha RP de " + who.name);
+	var ficha := CarregarFichaRP(targ);
 
-	AdicionarBotoesNavegacao(gump);
+	var y := 260;
+	GFTextMid(gump, RIGHT_X, y, RIGHT_W, 53, "Características Comportamentais");
+	y += 20;
+	GFResizePic(gump, RIGHT_X, y, INNER_BG, RIGHT_W, 160);
 
-	var y_pos := 95; // Abaixado em 35 pixels
-
-	var ficha := CarregarFichaRP(who);
-
-	GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Características Comportamentais");
-	y_pos += 25;
-	GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 205); // Altura reduzida
-
-	var txt_comportamentos := "";
-	foreach comportamento in (ficha.comportamentos)
-		txt_comportamentos += "<BASEFONT COLOR=#000000>- " + comportamento + "</BASEFONT><BR>"; // Já está em preto
+	var txt_comp := "";
+	foreach comp in (ficha.comportamentos)
+		if (comp && comp != "")
+			txt_comp += "<BASEFONT COLOR=#000000>- " + comp + "</BASEFONT><BR>";
+		endif
 	endforeach
-	GFHTMLArea(gump, 50, y_pos + 5, BACKGROUND_WIDTH - 10, 195, txt_comportamentos, 0, 1);
+	GFHTMLArea(gump, RIGHT_X + 5, y + 3, RIGHT_W - 15, 152, txt_comp, 0, 1);
 
-	y_pos += 215; // Ajustado para manter a distância
-	GFTextMid(gump, 25, y_pos, GUMP_WIDTH - 50, 53, "Objetivos Atuais");
-	y_pos += 25;
-	GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 120);
+	y += 168;
+	GFTextMid(gump, RIGHT_X, y, RIGHT_W, 53, "Objetivos Atuais");
+	y += 20;
+	GFResizePic(gump, RIGHT_X, y, INNER_BG, RIGHT_W, 82);
 
-	var txt_objetivos := "";
-	foreach objetivo in (ficha.objetivos)
-		txt_objetivos += "<BASEFONT COLOR=#000000>- " + objetivo + "</BASEFONT><BR>"; // Mudado para preto
+	var txt_obj := "";
+	foreach obj in (ficha.objetivos)
+		if (obj && obj != "")
+			txt_obj += "<BASEFONT COLOR=#000000>- " + obj + "</BASEFONT><BR>";
+		endif
 	endforeach
-	GFHTMLArea(gump, 50, y_pos + 5, BACKGROUND_WIDTH - 10, 110, txt_objetivos, 0, 1);
+	GFHTMLArea(gump, RIGHT_X + 5, y + 3, RIGHT_W - 15, 74, txt_obj, 0, 1);
 
 	var input := GFSendGump(who, gump);
 
-	if (input[0] == 0) // Botão direito ou Cancelar
+	if (input[0] == 0)
 		return 0;
 	endif
-
 	return input[0];
 endfunction
 
@@ -237,138 +361,517 @@ function ShowAvaliacoesGump(who)
 	GFClosable(gump, 1);
 	GFDisposable(gump, 0);
 
-	GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+	GFGumpPicTiled(gump, 10, 10, 700, 580, GUMP_BG);
 	AdicionarMoldura(gump);
-
-	GFTextMid(gump, 45, 22, GUMP_WIDTH - 50, 53, "Avaliações da Ficha RP de " + who.name);
-
-	AdicionarBotoesNavegacao(gump);
-
-	var y_pos := 60;
+	GFTextMid(gump, 45, 22, GUMP_WIDTH - 90, 53, "Avaliações - " + who.name);
+	AdicionarBotoesNavegacao(gump, who);
+	AdicionarPainelEsquerdo(gump, who);
+	AdicionarInfoPessoal(gump, who);
 
 	var ficha := CarregarFichaRP(who);
 
-	GFResizePic(gump, 45, 100, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 400); // Reduzido de 450 para 350
+	var y := 260;
+	GFTextMid(gump, RIGHT_X, y, RIGHT_W, 53, "Avaliações Recebidas");
+	y += 20;
+	GFResizePic(gump, RIGHT_X, y, INNER_BG, RIGHT_W, 250);
 
-	var txt_avaliacoes := "";
+	var txt_aval := "";
 	if (ficha.avaliacoes.size() > 0)
 		foreach avaliacao in (ficha.avaliacoes)
-			txt_avaliacoes += "<BASEFONT COLOR=#000000>" + avaliacao.texto + "<BR>";
-			txt_avaliacoes += "Por: " + avaliacao.avaliador + " em " + FormatarData(avaliacao.data) + "</BASEFONT><BR><BR>";
+			txt_aval += "<BASEFONT COLOR=#000000>" + avaliacao.texto + "<BR>";
+			txt_aval += "Por: " + avaliacao.avaliador + " em " + FormatarData(avaliacao.data) + "</BASEFONT><BR><BR>";
 		endforeach
 	else
-		txt_avaliacoes := "<BASEFONT COLOR=#000000>Nenhuma avaliação disponível.</BASEFONT>";
+		txt_aval := "<BASEFONT COLOR=#000000>Nenhuma avaliação disponível.</BASEFONT>";
 	endif
-	GFHTMLArea(gump, 50, 100 + 5, BACKGROUND_WIDTH - 10, 340, txt_avaliacoes, 0, 1);
+	GFHTMLArea(gump, RIGHT_X + 5, y + 3, RIGHT_W - 15, 242, txt_aval, 0, 1);
 
-	if (who.cmdlevel >= 3)
-		GFAddButton(gump, 200, GUMP_HEIGHT - 45, 2128, 2129, 1, 200); // Adicionar Avaliação
+	if (who.cmdlevel > 0)
+		GFAddButton(gump, 350, GUMP_HEIGHT - 45, 2128, 2129, 1, 200);
 	endif
 
 	var input := GFSendGump(who, gump);
 
-	if (input[0] == 0) // Botão direito ou Cancelar
+	if (input[0] == 0)
 		return 0;
-	elseif (input[0] == 200 && who.cmdlevel >= 3)
-		AdicionarAvaliacao(who);
+	elseif (input[0] == 200 && who.cmdlevel > 0)
+		SendSysMessage(who, "Selecione o jogador para avaliar.");
+		var eval_targ := Target(who);
+		if (eval_targ && eval_targ.acctname)
+			AdicionarAvaliacao(who, eval_targ);
+		else
+			SendSysMessage(who, "Alvo inválido.");
+		endif
 	endif
 
 	return input[0];
 endfunction
 
-function AdicionarAvaliacao(who)
+function AdicionarAvaliacao(who, targ)
 	var gump := GFCreateGump();
 	GFClosable(gump, 1);
 	GFDisposable(gump, 0);
 
-	GFGumpPicTiled(gump, 10, 10, 495, 565, GUMP_BACKGROUND);
+	GFGumpPicTiled(gump, 10, 10, 700, 580, GUMP_BG);
 	AdicionarMoldura(gump);
+	GFTextMid(gump, 45, 22, GUMP_WIDTH - 90, 53, "Avaliar Ficha de " + targ.name);
 
-	GFTextMid(gump, 45, 22, GUMP_WIDTH - 50, 53, "Adicionar Avaliação");
+	GFResizePic(gump, 45, 60, INNER_BG, 630, 440);
+	var txt_avaliacao := GFTextEntry(gump, 55, 70, 610, 420, 0, "");
 
-	var y_pos := 60;
-
-	GFResizePic(gump, 45, y_pos, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 400);
-	var txt_avaliacao := GFTextEntry(gump, 50, y_pos + 5, BACKGROUND_WIDTH - 40, 390, 0, ""); // Mudado para preto (0)
-
-	// GFAddButton(gump, BACKGROUND_WIDTH + 20, y_pos, SCROLL_UP, SCROLL_UP, GF_CLOSE_BTN, 1000);
-	// GFAddButton(gump, BACKGROUND_WIDTH + 20, y_pos + 380, SCROLL_DOWN, SCROLL_DOWN, GF_CLOSE_BTN, 1001);
-
-	GFAddButton(gump, 200, GUMP_HEIGHT - 45, 2128, 2129, 1, 100); // Confirmar
-	GFAddButton(gump, 280, GUMP_HEIGHT - 45, 2119, 2120, 1, 1); // Cancelar
+	GFAddButton(gump, 300, GUMP_HEIGHT - 45, 2128, 2129, 1, 100);
+	GFAddButton(gump, 380, GUMP_HEIGHT - 45, 2119, 2120, 1, 1);
 
 	var input := GFSendGump(who, gump);
 
 	if (input[0] == 100)
 		var avaliacao := GFExtractData(input, txt_avaliacao);
 		if (avaliacao != "")
-			AdicionarAvaliacaoFichaRP(who, who.name, avaliacao);
-			SendSysMessage(who, "Avaliação adicionada com sucesso!");
+			AdicionarAvaliacaoFichaRP(targ, who.name, avaliacao);
+			SendSysMessage(who, "Avaliação adicionada na ficha de " + targ.name + "!");
+			SendSysMessage(targ, "Voce recebeu uma avaliacao! Leia atraves do comando .ficharp");
 		else
 			SendSysMessage(who, "A avaliação não pode estar vazia.");
 		endif
-	elseif (input[0] >= 1000 && input[0] <= 1001)
-		// Implementar lógica de scroll para o campo de avaliação, se necessário
-		return AdicionarAvaliacao(who);
 	endif
 endfunction
 
-function AdicionarBotoesNavegacao(byref gump)
-	var textos := array{ "Criar", "Editar", "Visualizar", "Avaliações" };
-	var x_positions := array{ 80, 200, 320, 440 };
-	var botoes := array{ BOTAO_CRIAR, BOTAO_EDITAR, BOTAO_VISUALIZAR, BOTAO_AVALIACOES };
+function ShowConquistasGump(who)
+	var gump := GFCreateGump();
+	GFClosable(gump, 1);
+	GFDisposable(gump, 0);
 
-	GFResizePic(gump, 45, 42, INTERNAL_BACKGROUND, BACKGROUND_WIDTH, 35);
+	GFGumpPicTiled(gump, 10, 10, 700, 580, GUMP_BG);
+	AdicionarMoldura(gump);
+	GFTextMid(gump, 45, 22, GUMP_WIDTH - 90, 53, "Objetivos Alcançados - " + who.name);
+	AdicionarBotoesNavegacao(gump, who);
+	AdicionarPainelEsquerdo(gump, who);
+	AdicionarInfoPessoal(gump, who);
+
+	var ficha := CarregarFichaRP(who);
+
+	var y := 260;
+	GFTextMid(gump, RIGHT_X, y, RIGHT_W, 53, "Conquistas Registradas");
+	y += 20;
+	GFResizePic(gump, RIGHT_X, y, INNER_BG, RIGHT_W, 170);
+
+	var txt_conq := "";
+	if (ficha.conquistas.size() > 0)
+		foreach conq in (ficha.conquistas)
+			if (conq && conq != "")
+				txt_conq += "<BASEFONT COLOR=#000000>- " + conq + "</BASEFONT><BR>";
+			endif
+		endforeach
+	else
+		txt_conq := "<BASEFONT COLOR=#000000>Nenhuma conquista registrada.</BASEFONT>";
+	endif
+	GFHTMLArea(gump, RIGHT_X + 5, y + 3, RIGHT_W - 15, 162, txt_conq, 0, 1);
+
+	y += 178;
+	GFTextMid(gump, RIGHT_X, y, RIGHT_W, 53, "Nova Conquista");
+	y += 20;
+	GFResizePic(gump, RIGHT_X, y, INNER_BG, RIGHT_W, 30);
+	var txt_nova := GFTextEntry(gump, RIGHT_X + 5, y + 3, RIGHT_W - 15, 22, 0, "");
+
+	GFAddButton(gump, 350, GUMP_HEIGHT - 45, 2128, 2129, 1, 100);
+	GFAddButton(gump, 430, GUMP_HEIGHT - 45, 2119, 2120, 1, 1);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 100)
+		var nova_conquista := GFExtractData(input, txt_nova);
+		if (nova_conquista != "" && nova_conquista != error)
+			SalvarConquista(who, nova_conquista);
+			SendSysMessage(who, "Conquista registrada!");
+		endif
+		return ShowConquistasGump(who);
+	elseif (input[0] == 0 || input[0] == 1)
+		return 0;
+	endif
+
+	return input[0];
+endfunction
+
+// ===================================================================
+// Player Navigation
+// ===================================================================
+
+function AdicionarBotoesNavegacao(byref gump, who)
+	var has_ficha := GetObjProperty(who, "fichaRP");
+	var textos, botoes, descs;
+
+	if (has_ficha)
+		textos := array{ "Conquistas", "Editar", "Visualizar", "Avaliações" };
+		botoes := array{ BOTAO_CONQUISTAS, BOTAO_EDITAR, BOTAO_VISUALIZAR, BOTAO_AVALIACOES };
+		descs := array{ "Registre seus feitos roleplay", "Altere comportamentos e objetivos", "Visualize sua ficha completa", "Veja as notas do Staff" };
+	else
+		textos := array{ "Criar", "Editar", "Visualizar", "Avaliações" };
+		botoes := array{ BOTAO_CRIAR, BOTAO_EDITAR, BOTAO_VISUALIZAR, BOTAO_AVALIACOES };
+		descs := array{ "Crie sua ficha de RP", "Altere comportamentos e objetivos", "Visualize sua ficha completa", "Veja as notas do Staff" };
+	endif
+
+	var x_positions := array{ 130, 270, 410, 560 };
+
+	GFResizePic(gump, 45, 42, INNER_BG, GUMP_WIDTH - 70, 35);
 
 	for i := 1 to textos.size()
 		var gump_button := 2151;
 		var text_color := 53;
-
 		if (botoes[i] == last_clicked_button)
 			gump_button := 2153;
 			text_color := 230;
 		endif
-
 		GFTextLine(gump, x_positions[i], 50, text_color, textos[i]);
+		GFToolTipText(gump, descs[i]);
 		GFAddButton(gump, x_positions[i] - 35, 45, gump_button, gump_button, 1, botoes[i]);
+		GFToolTipText(gump, descs[i]);
 	endfor
-endfunction
-
-function AdicionarMoldura(byref gump)
-	var molduras := array{ struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
-					   	
-					   	struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
-					   	
-					   	struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
-					   	
-					   	struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25,
-							   	height := 35, gump := 39932 },
-					   	
-					   	struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
-					   	
-					   	struct{ x := GUMP_WIDTH - 25, y := 25, width := 35,
-							   	height := GUMP_HEIGHT - 50, gump := 39930 },
-					   	
-					   	struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25,
-							   	width := 35, height := 35, gump := 39933 },
-					   	
-					   	struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 } };
-
-	foreach moldura in molduras
-		GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
-	endforeach
 endfunction
 
 function AtualizarEstadoMenu(input)
 	last_clicked_button := input;
 	case (input)
-		BOTAO_CRIAR:      button_states := array{ 1, 0, 0, 0 }; return MENU_CRIAR;
-		BOTAO_EDITAR:     button_states := array{ 0, 1, 0, 0 }; return MENU_EDITAR;
-		BOTAO_VISUALIZAR: button_states := array{ 0, 0, 1, 0 }; return MENU_VISUALIZAR;
-		BOTAO_AVALIACOES: button_states := array{ 0, 0, 0, 1 }; return MENU_AVALIACOES;
-		default:          button_states := array{ 1, 0, 0, 0 }; return MENU_CRIAR;
+		BOTAO_CRIAR:       button_states := array{ 1, 0, 0, 0 }; return MENU_CRIAR;
+		BOTAO_CONQUISTAS:  button_states := array{ 1, 0, 0, 0 }; return MENU_CONQUISTAS;
+		BOTAO_EDITAR:      button_states := array{ 0, 1, 0, 0 }; return MENU_EDITAR;
+		BOTAO_VISUALIZAR:  button_states := array{ 0, 0, 1, 0 }; return MENU_VISUALIZAR;
+		BOTAO_AVALIACOES:  button_states := array{ 0, 0, 0, 1 }; return MENU_AVALIACOES;
+		default:           button_states := array{ 1, 0, 0, 0 }; return MENU_CRIAR;
 	endcase
 endfunction
+
+// ===================================================================
+// GM Mode Gumps
+// ===================================================================
+
+function ShowGMInfoGump(who, targ)
+	var gump := GFCreateGump();
+	GFClosable(gump, 1);
+	GFDisposable(gump, 0);
+
+	GFGumpPicTiled(gump, 10, 10, 700, 580, GUMP_BG);
+	AdicionarMoldura(gump);
+
+	GFTextLine(gump, 25, 22, 53, "Informações de ");
+	GFTextLine(gump, 25 + GFTextWidth("Informações de "), 22, 230, targ.name);
+
+	AdicionarBotoesNavegacaoGM(gump);
+
+	var chardata := GetObjProperty(targ, "chardata");
+	if (!chardata)
+		chardata := struct{};
+	endif
+
+	var y := 90;
+
+	GFTextMid(gump, 23, y, GUMP_WIDTH - 50, 53, "Básico");
+	y += 25;
+	GFResizePic(gump, 45, y, INNER_BG, 630, 230);
+	y += 10;
+
+	var nome_real := GetObjProperty(targ, "nome_inicial");
+	if (!nome_real)
+		nome_real := targ.name;
+	endif
+	AddInfoLine(gump, y, "Nome", nome_real);
+	AddInfoLine(gump, y, "Raça", CStr(targ.title_race));
+	AddInfoLine(gump, y, "Sexo", GetGenderString(targ.gender));
+	AddInfoLine(gump, y, "Classe", GetChardataField(chardata, "classe"));
+	AddInfoLine(gump, y, "Background", GetChardataField(chardata, "background"));
+	AddInfoLine(gump, y, "Característica", GetChardataField(chardata, "trait"));
+
+	var birthdate := GetChardataField(chardata, "birthdate");
+	var birth_string := "Não definida";
+	if (birthdate != "Nenhum" && TypeOf(birthdate) == "Struct" && birthdate.day && birthdate.month && birthdate.year)
+		birth_string := birthdate.day + " de " + birthdate.month + ", Ano " + birthdate.year + " E.A.";
+	endif
+	AddInfoLine(gump, y, "Data de Nascimento", birth_string);
+
+	AddInfoLine(gump, y, "Idade", GetIdadeString(chardata));
+
+	var signo := GetChardataField(chardata, "sign", "Não definido");
+	AddInfoLine(gump, y, "Signo", signo);
+
+	y += 10;
+	GFTextMid(gump, 25, y, GUMP_WIDTH - 50, 53, "Jogo");
+	y += 25;
+	GFResizePic(gump, 45, y, INNER_BG, 630, 55);
+	y += 10;
+	AddInfoLine(gump, y, "Modo de Jogo", GetChardataField(chardata, "game_mode"));
+	AddInfoLine(gump, y, "DPs Restantes", GetDPsDescription(targ));
+
+	y += 10;
+	GFTextMid(gump, 38, y, GUMP_WIDTH - 50, 53, "Sistema de Nobreza");
+	y += 25;
+	GFResizePic(gump, 45, y, INNER_BG, 630, 80);
+	y += 10;
+	AddInfoLine(gump, y, "Status de Cidadania", GetChardataField(chardata, "citizenship_title"));
+	AddInfoLine(gump, y, "Titulo de Nobreza", GetChardataField(chardata, "current_nobility_title"));
+	AddInfoLine(gump, y, "Cargo Ocupado", GetChardataField(chardata, "current_professional_position"));
+
+	var input := GFSendGump(who, gump);
+	return HandleGMGumpInput(who, targ, input);
+endfunction
+
+function ShowGMFichaRPGump(who, targ)
+	var gump := GFCreateGump();
+	GFClosable(gump, 1);
+	GFDisposable(gump, 0);
+
+	GFGumpPicTiled(gump, 10, 10, 700, 580, GUMP_BG);
+	AdicionarMoldura(gump);
+
+	GFTextLine(gump, 25, 22, 53, "Ficha RP de ");
+	GFTextLine(gump, 25 + GFTextWidth("Ficha RP de "), 22, 230, targ.name);
+
+	AdicionarBotoesNavegacaoGM(gump);
+
+	var ficharp_data_file := DFOpenDataFile(":fls_core:ficharp", DF_CREATE);
+	var ficharp_elem := DFFindElement(ficharp_data_file, Hex(targ.serial), DF_NO_CREATE);
+
+	if (!ficharp_elem)
+		GFTextMid(gump, 100, 280, 500, 2100, "Nenhuma ficha RP encontrada para este personagem.");
+		var input := GFSendGump(who, gump);
+		return HandleGMGumpInput(who, targ, input);
+	endif
+
+	var comportamento := ficharp_elem.GetProp("Comportamento");
+	var objetivos := ficharp_elem.GetProp("Objetivos");
+	var anotacoes := ficharp_elem.GetProp("Anotacoes");
+
+	if (!comportamento) comportamento := array{}; endif
+	if (!objetivos)     objetivos := array{};     endif
+	if (!anotacoes)     anotacoes := array{ "Não foram feitas anotações nessa ficha de RP" }; endif
+
+	var y := 100;
+
+	GFTextMid(gump, 35, y, 640, 53, "Comportamento");
+	y += 22;
+	GFResizePic(gump, 45, y, INNER_BG, 630, 150);
+	GFHTMLArea(gump, 50, y + 5, 620, 140, FormatarConteudo(comportamento), 1, 1);
+
+	y += 158;
+	GFTextMid(gump, 25, y, 665, 53, "Objetivos");
+	y += 22;
+	GFResizePic(gump, 45, y, INNER_BG, 630, 100);
+	GFHTMLArea(gump, 50, y + 5, 620, 90, FormatarConteudo(objetivos), 1, 1);
+
+	y += 108;
+	GFTextMid(gump, 25, y, 665, 53, "Anotações");
+	y += 22;
+	GFResizePic(gump, 45, y, INNER_BG, 630, 130);
+	GFHTMLArea(gump, 50, y + 5, 620, 120, FormatarConteudo(anotacoes), 1, 1);
+
+	var input := GFSendGump(who, gump);
+	return HandleGMGumpInput(who, targ, input);
+endfunction
+
+function GMEvaluateFichaRP(who, targ)
+	var gump := GFCreateGump();
+	GFClosable(gump, 1);
+	GFDisposable(gump, 0);
+
+	GFGumpPicTiled(gump, 10, 10, 700, 580, GUMP_BG);
+	AdicionarMoldura(gump);
+
+	GFTextLine(gump, 25, 22, 53, "Avaliar Ficha RP de ");
+	GFTextLine(gump, 25 + GFTextWidth("Avaliar Ficha RP de "), 22, 230, targ.name);
+
+	AdicionarBotoesNavegacaoGM(gump);
+
+	var ficharp_data_file := DFOpenDataFile(":fls_core:ficharp", DF_CREATE);
+	var ficharp_elem := DFFindElement(ficharp_data_file, Hex(targ.serial), DF_CREATE);
+
+	var anotacoes := ficharp_elem.GetProp("Anotacoes");
+	if (!anotacoes)
+		anotacoes := array{};
+	endif
+
+	var y := 90;
+	GFTextMid(gump, 25, y, 650, 53, "Nova Avaliação");
+	y += 25;
+	GFResizePic(gump, 50, y, INNER_BG, 620, 80);
+	var txt_avaliacao := GFTextEntry(gump, 55, y + 5, 610, 70, 1153, "");
+
+	y += 100;
+	GFAddButton(gump, 320, y - 15, 2128, 2129, 1, 100);
+
+	y += 35;
+	GFTextMid(gump, 35, y, 650, 53, "Avaliações Existentes");
+	y += 25;
+	GFResizePic(gump, 50, y, INNER_BG, 620, 280);
+	GFHTMLArea(gump, 55, y + 5, 610, 270, FormatarConteudoAvaliacoes(anotacoes), 1, 1);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 100)
+		var nova_avaliacao := GFExtractData(input, txt_avaliacao);
+		if (nova_avaliacao != error && nova_avaliacao != "")
+			AdicionarAvaliacaoFichaRP(targ, who.acctname, nova_avaliacao);
+			SendSysMessage(who, "Avaliação adicionada com sucesso.");
+			SendSysMessage(targ, "Você recebeu uma nova avaliação em sua Ficha RP.");
+			return GMEvaluateFichaRP(who, targ);
+		else
+			SendSysMessage(who, "Nenhuma avaliação foi adicionada.");
+		endif
+	endif
+
+	return HandleGMGumpInput(who, targ, input);
+endfunction
+
+function ShowGMTracosRaciaisGump(who, targ)
+	var gump := GFCreateGump();
+	GFClosable(gump, 1);
+	GFDisposable(gump, 0);
+
+	GFGumpPicTiled(gump, 10, 10, 700, 580, GUMP_BG);
+	AdicionarMoldura(gump);
+
+	GFTextLine(gump, 25, 22, 53, "Traços Raciais de ");
+	GFTextLine(gump, 25 + GFTextWidth("Traços Raciais de "), 22, 230, targ.name);
+
+	AdicionarBotoesNavegacaoGM(gump);
+
+	var chardata := GetObjProperty(targ, "chardata");
+	if (!chardata)
+		GFTextMid(gump, 100, 280, 500, 2100, "Nenhum dado de personagem encontrado.");
+		var input := GFSendGump(who, gump);
+		return HandleGMGumpInput(who, targ, input);
+	endif
+
+	var racial_traits := GetRacialTraits(chardata.culture);
+	if (!racial_traits)
+		GFTextMid(gump, 100, 280, 500, 2100, "Nenhum traço racial encontrado para esta raça.");
+		var input := GFSendGump(who, gump);
+		return HandleGMGumpInput(who, targ, input);
+	endif
+
+	var categories := array{ "Altura", "Peso", "Olhos", "Idade Aparente", "Voz" };
+	var y := 90;
+
+	GFResizePic(gump, 45, y, INNER_BG, 630, 460);
+	y += 10;
+
+	foreach category in categories
+		if (racial_traits.exists(category))
+			var value := "Não selecionado";
+			if (chardata.caracteristicas_rp && chardata.caracteristicas_rp.exists(category) && chardata.caracteristicas_rp[category] != 0)
+				value := TranslateRacialTrait(category, chardata.caracteristicas_rp[category], chardata);
+				if (value == error)
+					var option_ids := racial_traits[category].opcoes_ids;
+					var found_idx := 0;
+					var j;
+					for (j := 1; j <= option_ids.size(); j := j + 1)
+						if (option_ids[j] == chardata.caracteristicas_rp[category])
+							found_idx := j;
+							break;
+						endif
+					endfor
+					if (found_idx > 0)
+						value := racial_traits[category].opcoes[found_idx];
+					elseif (typeof(chardata.caracteristicas_rp[category]) == "number" && chardata.caracteristicas_rp[category] >= 1 && chardata.caracteristicas_rp[category] <= racial_traits[category].opcoes.size())
+						value := racial_traits[category].opcoes[chardata.caracteristicas_rp[category]];
+					else
+						value := "Não selecionado";
+					endif
+				endif
+			endif
+
+			AddInfoLineTracos(gump, y, racial_traits[category].nome, value);
+		endif
+	endforeach
+
+	var input := GFSendGump(who, gump);
+	return HandleGMGumpInput(who, targ, input);
+endfunction
+
+function ShowGMConquistasGump(who, targ)
+	var gump := GFCreateGump();
+	GFClosable(gump, 1);
+	GFDisposable(gump, 0);
+
+	GFGumpPicTiled(gump, 10, 10, 700, 580, GUMP_BG);
+	AdicionarMoldura(gump);
+
+	GFTextLine(gump, 25, 22, 53, "Conquistas de ");
+	GFTextLine(gump, 25 + GFTextWidth("Conquistas de "), 22, 230, targ.name);
+
+	AdicionarBotoesNavegacaoGM(gump);
+
+	var ficha := CarregarFichaRP(targ);
+
+	var y := 90;
+	GFTextMid(gump, 25, y, 665, 53, "Objetivos Alcançados");
+	y += 25;
+	GFResizePic(gump, 45, y, INNER_BG, 630, 430);
+
+	var txt_conq := "";
+	if (ficha.conquistas.size() > 0)
+		foreach conq in (ficha.conquistas)
+			if (conq && conq != "")
+				txt_conq += "- " + conq + "<br>";
+			endif
+		endforeach
+	else
+		txt_conq := "Nenhuma conquista registrada.";
+	endif
+	GFHTMLArea(gump, 50, y + 5, 620, 420, txt_conq, 1, 1);
+
+	var input := GFSendGump(who, gump);
+	return HandleGMGumpInput(who, targ, input);
+endfunction
+
+// ===================================================================
+// GM Navigation
+// ===================================================================
+
+function HandleGMGumpInput(who, targ, input)
+	if (input[0] != 0)
+		var new_menu := AtualizarEstadoMenuGM(input[0]);
+		case (new_menu)
+			GM_MENU_INFO:        return ShowGMInfoGump(who, targ);
+			GM_MENU_FICHARP:     return ShowGMFichaRPGump(who, targ);
+			GM_MENU_AVALIAR:     return GMEvaluateFichaRP(who, targ);
+			GM_MENU_TRACOS:      return ShowGMTracosRaciaisGump(who, targ);
+			GM_MENU_CONQUISTAS:  return ShowGMConquistasGump(who, targ);
+		endcase
+	endif
+	return input;
+endfunction
+
+function AdicionarBotoesNavegacaoGM(byref gump)
+	var textos := array{ "Informações", "Ficha RP", "Avaliar", "Traços", "Conquistas" };
+	var x_positions := array{ 90, 230, 355, 470, 590 };
+	var botoes := array{ GM_BOTAO_INFO, GM_BOTAO_FICHARP, GM_BOTAO_AVALIAR, GM_BOTAO_TRACOS, GM_BOTAO_CONQUISTAS };
+
+	GFResizePic(gump, 25, 42, INNER_BG, GUMP_WIDTH - 50, 35);
+
+	for i := 1 to 5
+		var gump_button := 2151;
+		var text_color := 53;
+		if (button_states[i])
+			gump_button := 2153;
+			text_color := 230;
+		endif
+		GFTextLine(gump, x_positions[i], 50, text_color, textos[i]);
+		GFAddButton(gump, x_positions[i] - 35, 45, gump_button, gump_button, 1, botoes[i]);
+	endfor
+endfunction
+
+function AtualizarEstadoMenuGM(input)
+	case (input)
+		GM_BOTAO_INFO:        button_states := array{ 1, 0, 0, 0, 0 }; return GM_MENU_INFO;
+		GM_BOTAO_FICHARP:     button_states := array{ 0, 1, 0, 0, 0 }; return GM_MENU_FICHARP;
+		GM_BOTAO_AVALIAR:     button_states := array{ 0, 0, 1, 0, 0 }; return GM_MENU_AVALIAR;
+		GM_BOTAO_TRACOS:      button_states := array{ 0, 0, 0, 1, 0 }; return GM_MENU_TRACOS;
+		GM_BOTAO_CONQUISTAS:  button_states := array{ 0, 0, 0, 0, 1 }; return GM_MENU_CONQUISTAS;
+		default:              return GM_MENU_INFO;
+	endcase
+endfunction
+
+// ===================================================================
+// Data Functions
+// ===================================================================
 
 function SalvarFichaRP(who, comportamentos, objetivos)
 	var ficharp_data_file := DFOpenDataFile(":fls_core:ficharp", DF_CREATE);
@@ -376,6 +879,7 @@ function SalvarFichaRP(who, comportamentos, objetivos)
 
 	ficharp_elem.SetProp("Comportamento", comportamentos);
 	ficharp_elem.SetProp("Objetivos", objetivos);
+	SetObjProperty(who, "fichaRP", 1);
 
 	if (!ficharp_elem.GetProp("Avaliacoes"))
 		ficharp_elem.SetProp("Avaliacoes", array{});
@@ -388,17 +892,15 @@ function CarregarFichaRP(who)
 
 	if (!ficharp_elem)
 		return struct{ "comportamentos" := array{ "", "", "", "", "", "" },
-			   		
-			   		"objetivos" := array{ "", "", "" },
-			   		"avaliacoes" := array{} };
+		               "objetivos" := array{ "", "", "" },
+		               "avaliacoes" := array{},
+		               "conquistas" := array{} };
 	endif
 
-	var ficha := struct{ "comportamentos" := ficharp_elem.GetProp(
-					 	"Comportamento"),
-					 	"objetivos" := ficharp_elem.GetProp(
-					 	"Objetivos"),
-					 	"avaliacoes" := ficharp_elem.GetProp(
-					 	"Avaliacoes") };
+	var ficha := struct{ "comportamentos" := ficharp_elem.GetProp("Comportamento"),
+	                     "objetivos" := ficharp_elem.GetProp("Objetivos"),
+	                     "avaliacoes" := ficharp_elem.GetProp("Avaliacoes"),
+	                     "conquistas" := ficharp_elem.GetProp("Conquistas") };
 
 	if (!ficha.comportamentos)
 		ficha.comportamentos := array{ "", "", "", "", "", "" };
@@ -409,6 +911,9 @@ function CarregarFichaRP(who)
 	if (!ficha.avaliacoes)
 		ficha.avaliacoes := array{};
 	endif
+	if (!ficha.conquistas)
+		ficha.conquistas := array{};
+	endif
 
 	return ficha;
 endfunction
@@ -417,26 +922,103 @@ function AdicionarAvaliacaoFichaRP(targ, avaliador, texto)
 	var ficharp_data_file := DFOpenDataFile(":fls_core:ficharp", DF_CREATE);
 	var ficharp_elem := DFFindElement(ficharp_data_file, Hex(targ.serial), DF_CREATE);
 
-	// Adicionar à lista de avaliações
 	var avaliacoes := ficharp_elem.GetProp("Avaliacoes");
 	if (!avaliacoes)
 		avaliacoes := array{};
 	endif
-
-	avaliacoes.append(struct{ "avaliador" := avaliador, "texto" := texto, "data" := POLCore().systime
-				  	
-				  	});
-
+	avaliacoes.append(struct{ "avaliador" := avaliador, "texto" := texto, "data" := POLCore().systime });
 	ficharp_elem.SetProp("Avaliacoes", avaliacoes);
 
-	// Adicionar às anotações
 	var anotacoes := ficharp_elem.GetProp("Anotacoes");
 	if (!anotacoes)
 		anotacoes := array{};
 	endif
-
-	var nova_anotacao := "[Avaliação] " + texto + " - Por: " + avaliador + " em " + FormatarData(POLCore().systime);
-	anotacoes.append(nova_anotacao);
-
+	anotacoes.append("[Avaliação] " + texto + " - Por: " + avaliador + " em " + FormatarData(POLCore().systime));
 	ficharp_elem.SetProp("Anotacoes", anotacoes);
+endfunction
+
+function SalvarConquista(who, texto)
+	var ficharp_data_file := DFOpenDataFile(":fls_core:ficharp", DF_CREATE);
+	var ficharp_elem := DFFindElement(ficharp_data_file, Hex(who.serial), DF_CREATE);
+
+	var conquistas := ficharp_elem.GetProp("Conquistas");
+	if (!conquistas)
+		conquistas := array{};
+	endif
+	conquistas.append(texto);
+	ficharp_elem.SetProp("Conquistas", conquistas);
+endfunction
+
+// ===================================================================
+// Helpers
+// ===================================================================
+
+function AddInfoLine(byref gump, byref y_pos, title, value)
+	GFTextLine(gump, 55, y_pos, 53, title + ":");
+	GFTextLine(gump, 350, y_pos, 230, CStr(value));
+	y_pos := y_pos + 25;
+endfunction
+
+function AddInfoLineTracos(byref gump, byref y_pos, title, value)
+	GFTextLine(gump, 55, y_pos, 53, title + ":");
+	GFTextLine(gump, 300, y_pos, 230, CStr(value));
+	y_pos := y_pos + 25;
+endfunction
+
+function GetChardataField(chardata, key, default_value := "Nenhum")
+	if (chardata && chardata.exists(key))
+		if (key == "religion" && chardata[key] == 0)
+			return "Nenhuma";
+		endif
+		return chardata[key];
+	endif
+	return default_value;
+endfunction
+
+function GetIdadeString(chardata)
+	if (chardata.current_age)
+		return CStr(chardata.current_age) + " anos";
+	else
+		var current_year := CInt(GetGlobalProperty("current_year"));
+		if (chardata.birthdate && current_year)
+			var age := current_year - chardata.birthdate.year;
+			return CStr(age) + " anos";
+		endif
+	endif
+	return "Não definida";
+endfunction
+
+function GetDPsDescription(who)
+	var DPs := CInt(AP_GetVital(who, "DP") / 10);
+	case (DPs)
+		0: return "0 (Morto)";
+		default: return CStr(DPs);
+	endcase
+endfunction
+
+function GetGenderString(gender)
+	if (gender)
+		return "Feminino";
+	else
+		return "Masculino";
+	endif
+endfunction
+
+function FormatarConteudo(array_conteudo)
+	var html := "";
+	foreach item in array_conteudo
+		html += "- " + item + "<br>";
+	endforeach
+	return html;
+endfunction
+
+function FormatarConteudoAvaliacoes(anotacoes)
+	var html := "";
+	foreach anotacao in anotacoes
+		html += "- " + anotacao + "<br><br>";
+	endforeach
+	if (html == "")
+		html := "Nenhuma avaliação foi feita ainda.";
+	endif
+	return html;
 endfunction

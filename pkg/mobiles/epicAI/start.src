@@ -1,0 +1,10 @@
+use os;
+
+program start_EpicAI_Cache()
+	var script := Start_Script(":epicai:startup/epicAICache");
+	if (script.errortext)
+		SysLog(script.errortext);
+	else
+		Print("Starting EpicAI Animal Cache setup...");
+	endif
+endprogram

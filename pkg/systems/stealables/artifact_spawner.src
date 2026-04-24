@@ -21,9 +21,7 @@ include ":traps:traps";
 // Constantes
 const CHECK_INTERVAL := 60; // Intervalo de verificação em segundos
 
-program artifact_spawner(params)
-	var spawner := params[1];
-	
+program artifact_spawner(spawner)	
 	if (!spawner)
 		return 0;
 	endif
@@ -87,19 +85,28 @@ endfunction
  */
 function GetCurrentArtifact(spawner)
 	var artifact_serial := GetObjProperty(spawner, "CurrentArtifactSerial");
-	
+
 	if (!artifact_serial)
 		return 0;
 	endif
-	
+
 	var artifact := SystemFindObjectBySerial(artifact_serial);
-	
-	// Se o artefato não existe mais, limpa a propriedade
+
+	// Item não existe mais
 	if (!artifact)
 		EraseObjProperty(spawner, "CurrentArtifactSerial");
 		return 0;
 	endif
-	
+
+	// Item não está mais exatamente no ponto do spawner
+	if (artifact.x != spawner.x ||
+	    artifact.y != spawner.y ||
+	    artifact.z != spawner.z ||
+	    artifact.realm != spawner.realm)
+		EraseObjProperty(spawner, "CurrentArtifactSerial");
+		return 0;
+	endif
+
 	return artifact;
 endfunction
 

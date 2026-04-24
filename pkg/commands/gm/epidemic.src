@@ -1,0 +1,1037 @@
+use cfgfile;
+use uo;
+use os;
+use util;
+
+include "include/say";
+include ":medicine:disease";
+include ":gumps:include/gumps";
+include ":gumps:include/epicGumps";
+include ":gumps:include/requestGump";
+
+const COLOR_REGULAR := 1153;
+
+// ============================================================
+// ENTRY POINT
+// ============================================================
+
+program GM_Disease_Gump(mob)
+
+    while (mob)
+
+        var g := GM_Disease_MainGump(mob);
+        var input := GFSendGump(mob, g);
+
+        if (!input || !input[0])
+            break;
+        endif
+
+        ProcessarAcaoGM(mob, input[0]);
+
+    endwhile
+
+endprogram
+
+// ============================================================
+// MAIN MENU
+// ============================================================
+
+function GM_Disease_MainGump(mob)
+
+    var g := GFECreateGump("GM - Disease Control", 420, 420);
+
+    var y := 77;
+
+    GM_Button(g, 40, y, 1, "Infectar / Curar Disease"); y += 28;
+    GM_Button(g, 40, y, 2, "Ver Regions Disease"); y += 28;
+    GM_Button(g, 40, y, 3, "Ver / Gerenciar Lista de Doenças"); y += 28;
+	GM_Button(g, 40, y, 7, "Zerar / Iniciar Efeitos da doença(alvo)"); y += 28;
+	GM_Button(g, 40, y, 8, "Alterar grade da doença(alvo)"); y += 28;
+	GM_Button(g, 40, y, 9, "Alterar duration da Doença(alvo)"); y += 28;
+    GM_Button(g, 40, y, 10, "Alterar sintomas da Doença(alvo)"); y += 28;
+	GM_Button(g, 40, y, 4, "Criar Bolsa Medica"); y += 28;
+    GM_Button(g, 40, y, 5, "Colocar Curandeiro"); y += 28;
+	GM_Button(g, 40, y, 6, "Debug Disease (alvo)"); y += 28;
+	GM_Button(g, 40, y, 11, "Debug Vicios (alvo)"); y += 28;
+	GM_Button(g, 40, y, 12, "Debug Fraturas (alvo)"); y += 28;
+	
+
+    return g;
+
+endfunction
+
+// ============================================================
+// DISPATCHER
+// ============================================================
+
+function ProcessarAcaoGM(mob, btn)
+
+    case(btn)
+
+        1:
+            start_script(":commands:gm/infectar", mob);
+
+        2:
+            GM_Disease_RegionsFlow(mob);
+
+        3:
+            GM_Disease_DiscoveredFlow(mob);
+
+        4:
+            
+			var materiais := array{ 0xedfe, 0xed2a, 0xf0c8, 0xD1CE, 0xF0C6, 0xD1D0,
+							0xF0C7};
+			var bolsa := CreateItemInBackpack(mob, "backpack", 1);
+			bolsa.color := 2555;
+			bolsa.name := "Bolsa Médica";
+			SendSysMessage(mob, "Bolsa medica criada.");
+			var quantidade := 100;
+			var bandagem_ginseng := CreateItemInContainer(Bolsa, "bandages",
+													   quantidade); // cria as bandagens especiais
+			SetObjProperty(bandagem_ginseng, "ginseng", 1);
+			bandagem_ginseng.color := 2007;
+			sleepms(2);
+			var bandagem_garlic := CreateItemInContainer(Bolsa, "bandages",
+													   quantidade); // cria as bandagens especiais
+			SetObjProperty(bandagem_ginseng, "garlic", 1);
+			bandagem_garlic.color := 2001;
+			sleepms(2);
+			var bandagem_mushr := CreateItemInContainer(Bolsa, "bandages",
+													   quantidade); // cria as bandagens especiais
+			SetObjProperty(bandagem_mushr, "cogumelo", 1);
+			bandagem_mushr.color := 2220;
+			sleepms(2);
+			var bandagem_cap := CreateItemInContainer(Bolsa, "bandages",
+													   quantidade); // cria as bandagens especiais
+			SetObjProperty(bandagem_cap, "cap", 1);
+			bandagem_cap.color := 972;
+			sleepms(2);
+			var bandagem_musg := CreateItemInContainer(Bolsa, "bandages",
+													   quantidade); // cria as bandagens especiais
+			SetObjProperty(bandagem_musg, "blood", 1);
+			bandagem_musg.color := 1229;
+			foreach coisa in materiais
+				CreateItemInContainer(bolsa, coisa, 1);
+			endforeach
+			CreateItemInContainer(bolsa, 0xe21, quantidade);
+			CreateItemInContainer(bolsa, 0x995a, quantidade);
+
+        5:
+            var loc := TargetCoordinates(mob);
+			if (!loc)
+				SendSysMessage(mob, "Cancelled.", color := 33);
+				return 0;
+			endif
+			CreateNpcFromTemplate(":merchants:curandeiro", loc.x, loc.y, loc.z, 0, loc.realm);
+			SendSysMessage(mob, "Curandeiro posicionado.");
+
+		6:
+			var trgt := Target(mob);
+			GM_Disease_DebugTarget(mob, trgt);
+			return;
+		
+		7:
+			var trgt := Target(mob);
+			var efeitos_doenca := TS_GetTimerInfo(trgt, "diseaseeffect");
+			if (efeitos_doenca != 0)
+				TS_LowerDuration(trgt, "diseaseeffect", -1);
+			else
+				var diseases_system := GetObjProperty(trgt, "Diseases_System");
+				var sintomas := diseases_system.diseases;
+				ApplyDiseaseEffects(trgt, sintomas, diseases_system.grade);
+				ScheduleNextDiseaseEffect(trgt, sintomas);
+			endif
+			return;
+		8:
+			var trgt := Target(mob);
+			var diseases_system := GetObjProperty(trgt, "Diseases_System");
+			var grade := diseases_system.grade;
+			if (grade != 0)
+				var val := RequestGump(mob, "Digite o novo valor (Leve, Moderado, Grave):");
+					if (!val || val == error)
+						return;
+					endif
+					val := Cstr(val);
+					
+			        if (val != "Leve" && val != "Moderado" && val != "Grave")
+						SendSysMessage(mob, "Valor invalido. Use: Leve, Moderado ou Grave.");
+						return;
+					endif
+				SendSysMessage(mob, "Valor alterado para "+val);
+				UpdateDiseaseProperty(trgt, "grade", val);
+			endif
+		9:
+			var trgt := Target(mob);
+			    if (!trgt)
+					return;
+				endif
+			var efeitos_doenca := TS_GetTimerInfo(trgt, "disease");
+			if (efeitos_doenca != 0)
+			    GM_Disease_TimerAdjustGump(mob, trgt);
+			endif
+			
+		10:
+			var trgt := Target(mob);
+			var diseases_system := GetObjProperty(trgt, "Diseases_System");
+			var grade := diseases_system.diseases;
+			var symptoms := GM_Disease_SelectSymptoms(trgt,2);
+			if (symptoms)
+				UpdateDiseaseProperty(trgt, "diseases", symptoms);
+			endif
+		11:
+			var trgt := Target(mob);
+			GM_Debug_Vicios(mob, trgt);
+			return;
+		12:
+			var trgt := Target(mob);
+			GM_Debug_Fraturas(mob, trgt);
+			return;
+		endcase
+
+endfunction
+
+// ============================================================
+// DOENCAS DESCOBERTAS - LISTAGEM + GERENCIAMENTO
+// ============================================================
+
+function GM_Disease_DiscoveredFlow(mob)
+
+    var df := OpenDataFile(":tn:diseases");
+
+    if (!df)
+        SendSysMessage(mob, "Nenhuma doenca descoberta.");
+        return;
+    endif
+
+    var diseases := DFGetElemNames(df);
+
+    const PER_PAGE := 7;
+    var page := 0;
+
+    while (mob)
+
+        var g := GFECreateGump("Doencas Descobertas", 560, 420);
+
+        var start := page * PER_PAGE + 1;
+        var end   := start + PER_PAGE - 1;
+
+        if (end > diseases.size())
+            end := diseases.size();
+        endif
+
+        var y := 85;
+
+        for i := start to end
+
+            var name := diseases[i];
+            var elem := DFFindElement(df, name);
+            if (!elem)
+                continue;
+            endif
+
+            var primary   := DFGetProp(elem, "primary");
+            var secondary := DFGetProp(elem, "secondary");
+            var symptoms  := DFGetProp(elem, "symptoms");
+			var author := DFGetProp(elem, "discovered_by");
+
+
+            GFTextLine(g, 30, y, 53, name + " [ 1 " + primary + " / 2 " + secondary + "]");
+			GFTextLine(g, 330, y, 0, " by " + author);
+            y += 16;
+
+            var txt := "";
+            foreach s in symptoms
+                txt += s + ", ";
+            endforeach
+
+            if (txt.len() > 2)
+                txt := txt.substr(1, txt.len() - 2);
+            endif
+
+            GFTextLine(g, 50, y, 63, txt);
+
+            GFAddButton(g, 500, y - 16, 0x845, 0x846, GF_CLOSE_BTN, i);
+
+            y += 30;
+
+        endfor
+
+        if (page > 0)
+            GM_Button(g, 320, 390, 9001, "<< Anterior");
+        endif
+
+        if (end < diseases.size())
+            GM_Button(g, 440, 390, 9002, "Proxima >>");
+        endif
+
+        GM_Button(g, 360, 370, 200, "Nova Doenca");
+
+        var input := GFSendGump(mob, g);
+
+        if (!input || !input[0])
+            return;
+        endif
+
+        case(input[0])
+            9001:
+                page -= 1;
+                continue;
+
+            9002:
+                page += 1;
+                continue;
+
+            200:
+                GM_Disease_InsertNewManual(mob);
+                return;
+
+            default:
+                GM_Disease_DeleteManual(mob, diseases[input[0]]);
+                return;
+        endcase
+
+    endwhile
+
+endfunction
+
+// ============================================================
+// INSERIR NOVA DOENCA (SELECAO VISUAL)
+// ============================================================
+
+function GM_Disease_InsertNewManual(who)
+    GM_Disease_SelectSymptoms(who,1);
+endfunction
+
+
+function GM_Disease_SelectSymptoms(who, number)
+
+    var gump := GFCreateGump();
+
+    GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 400, 420);
+    GFResizePic(gump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 380, 400);
+
+    GFTextMid(gump, 10, 20, 380, 2100, "Criar Nova Doenca");
+
+    GFTextLine(gump, 30, 60, 2100, "Selecione os sintomas:");
+
+    GFCheckBox(gump, 30, 100, 2361, 2362, 0, 101);  GFTextLine(gump, 60, 100, 2100, "Febre");
+    GFCheckBox(gump, 30, 130, 2361, 2362, 0, 2);  GFTextLine(gump, 60, 130, 2100, "Trombo");
+    GFCheckBox(gump, 30, 160, 2361, 2362, 0, 3);  GFTextLine(gump, 60, 160, 2100, "Pustulas");
+    GFCheckBox(gump, 30, 190, 2361, 2362, 0, 4);  GFTextLine(gump, 60, 190, 2100, "Laceracao");
+
+    GFCheckBox(gump, 200, 100, 2361, 2362, 0, 5); GFTextLine(gump, 230, 100, 2100, "Prurido");
+    GFCheckBox(gump, 200, 130, 2361, 2362, 0, 6); GFTextLine(gump, 230, 130, 2100, "Colicas");
+    GFCheckBox(gump, 200, 160, 2361, 2362, 0, 7); GFTextLine(gump, 230, 160, 2100, "Palpitacoes");
+    GFCheckBox(gump, 200, 190, 2361, 2362, 0, 8); GFTextLine(gump, 230, 190, 2100, "Nausea");
+
+    GFCheckBox(gump, 30, 220, 2361, 2362, 0, 9);  GFTextLine(gump, 60, 220, 2100, "Cefaleia");
+
+    GFAddButton(gump, 120, 320, 2130, 2129, GF_CLOSE_BTN, 1);
+    GFAddButton(gump, 220, 320, 2119, 2120, GF_CLOSE_BTN, 0);
+
+    var input := GFSendGump(who, gump);
+
+    if (!input || input[0] != 1)
+        return;
+    endif
+
+    var symptoms := array{};
+
+    if (input[101]) symptoms.append(DISEASES::FEVER); endif
+    if (input[2]) symptoms.append(DISEASES::THROMBOSIS); endif
+    if (input[3]) symptoms.append(DISEASES::PUSTULES); endif
+    if (input[4]) symptoms.append(DISEASES::LACERATION); endif
+    if (input[5]) symptoms.append(DISEASES::ITCHING); endif
+    if (input[6]) symptoms.append(DISEASES::COLIC); endif
+    if (input[7]) symptoms.append(DISEASES::PALPITATIONS); endif
+    if (input[8]) symptoms.append(DISEASES::NAUSEA); endif
+    if (input[9]) symptoms.append(DISEASES::HEADACHE); endif
+
+    if (symptoms.size() < 2)
+        SendSysMessage(who, "Selecione pelo menos dois sintomas.");
+        if (number == 1)
+			GM_Disease_SelectSymptoms(who, 1);
+		else
+			GM_Disease_SelectSymptoms(who, 2);
+		endif
+	endif
+
+  if (number == 1)
+    if (symptoms.size() < 2)
+        SendSysMessage(who, "Selecione pelo menos dois sintomas.");
+       	GM_Disease_SelectSymptoms(who, 1);
+	endif
+	var dup := CheckDuplicateDiseaseBySymptoms(symptoms);
+		if (dup)
+			SendSysMessage(who, "Ja existe uma doenca com esses sintomas: " + dup);
+			return;
+		endif
+		GM_Disease_SelectPrimarySecondary(who, symptoms);
+  else
+		if (symptoms.size() < 2)
+			SendSysMessage(who, "Selecione pelo menos dois sintomas.");
+			GM_Disease_SelectSymptoms(who, 2);
+		endif
+		return symptoms;
+	endif
+	
+endfunction
+
+
+function GM_Disease_SelectPrimarySecondary(who, symptoms)
+
+    var g := GFECreateGump("Configurar Doenca", 420, 420);
+
+    GFTextLine(g, 40, 50, 53, "Nome da doenca:");
+    GFResizePic(g, 40, 70, 3500, 300, 30);
+    GFTextEntry(g, 45, 75, 280, 20, 2100, "", 1);
+
+    GFTextLine(g, 40, 110, 53, "Sintomas:");
+    GFTextLine(g, 220, 110, 53, "Primario");
+    GFTextLine(g, 300, 110, 53, "Secundario");
+
+    var y := 140;
+    var idx := 1;
+
+    GFSetRadioGroup(g, 1);
+    foreach s in symptoms
+        GFTextLine(g, 40, y, 53, s);
+        GFRadioButton(g, 240, y, 210, 211, 0, 100 + idx);
+        y += 25;
+        idx += 1;
+    endforeach
+
+    y := 140;
+    idx := 1;
+
+    GFSetRadioGroup(g, 2);
+    foreach s in symptoms
+        GFRadioButton(g, 320, y, 210, 211, 0, 200 + idx);
+        y += 25;
+        idx += 1;
+    endforeach
+
+    GFAddButton(g, 140, y + 20, 2130, 2129, GF_CLOSE_BTN, 1);
+    GFAddButton(g, 240, y + 20, 2119, 2120, GF_CLOSE_BTN, 0);
+
+    var input := GFSendGump(who, g);
+
+    if (!input || input[0] != 1)
+        return;
+    endif
+
+    var disease_name := GFExtractData(input, 1);
+
+    if (!disease_name)
+        SendSysMessage(who, "Informe o nome da doenca.");
+        return GM_Disease_SelectPrimarySecondary(who, symptoms);
+    endif
+
+    var primary := "";
+    var secondary := "";
+
+    for i := 1 to symptoms.size()
+        if (input[100 + i])
+            primary := symptoms[i];
+        endif
+        if (input[200 + i])
+            secondary := symptoms[i];
+        endif
+    endfor
+
+    if (!primary || !secondary || primary == secondary)
+        SendSysMessage(who, "Selecione primario e secundario corretamente.");
+        return GM_Disease_SelectPrimarySecondary(who, symptoms);
+    endif
+
+
+    GM_Disease_SaveToDatafile(who, disease_name, symptoms, primary, secondary);
+
+endfunction
+
+
+function GM_Disease_SaveToDatafile(who, disease_name, symptoms, primary, secondary)
+
+    var df := OpenDataFile(":tn:diseases");
+
+    if (!df)
+        CreateDataFile(":tn:diseases");
+        df := OpenDataFile(":tn:diseases");
+    endif
+
+    var elem := DFFindElement(df, disease_name);
+    if (elem)
+        SendSysMessage(who, "Essa doenca ja existe.");
+        return;
+    endif
+
+    var e := df.CreateElement(disease_name);
+
+    e.SetProp("name", disease_name);
+    e.SetProp("symptoms", symptoms);
+    e.SetProp("primary", primary);
+    e.SetProp("secondary", secondary);
+    e.SetProp("discovered_by", who.name);
+    e.SetProp("discovered_time", POLCore().systime);
+
+    SendSysMessage(who, "Doenca '" + disease_name + "' criada com sucesso.");
+
+endfunction
+
+
+function GM_Disease_DeleteManual(who, disease_name)
+
+    var confirm := YesNo(who, "Deseja realmente deletar a doenca '" + disease_name + "'?");
+
+    if (!confirm)
+        return;
+    endif
+
+    var df := OpenDataFile(":tn:diseases");
+    if (!df)
+        return;
+    endif
+
+    var elem := DFFindElement(df, disease_name);
+    if (elem)
+        df.DeleteElement(disease_name);
+        SendSysMessage(who, "Doenca removida.");
+    endif
+
+endfunction
+
+// ============================================================
+// HELPER
+// ============================================================
+
+function GM_Button(byref g, x, y, id, text)
+    GFAddButton(g, x, y, 0x845, 0x846, GF_CLOSE_BTN, id);
+    GFTextLine(g, x + 40, y, 53, text);
+endfunction
+
+function CheckDuplicateDiseaseBySymptoms(symptoms)
+
+    var df := OpenDataFile(":tn:diseases");
+    if (!df)
+        return 0;
+    endif
+
+    var names := DFGetElemNames(df);
+
+    var temp_input := array{};
+    foreach s in symptoms
+        temp_input.append(Lower(s));
+    endforeach
+    temp_input.sort();
+
+    foreach name in names
+
+        var elem := DFFindElement(df, name);
+        if (!elem)
+            continue;
+        endif
+
+        var df_symptoms := DFGetProp(elem, "symptoms");
+        if (!df_symptoms || typeof(df_symptoms) != "Array")
+            continue;
+        endif
+
+        if (df_symptoms.size() != temp_input.size())
+            continue;
+        endif
+
+        var temp_df := array{};
+        foreach s in df_symptoms
+            temp_df.append(Lower(s));
+        endforeach
+        temp_df.sort();
+
+        var match := 1;
+
+        for i := 1 to temp_input.size()
+            if (temp_input[i] != temp_df[i])
+                match := 0;
+                break;
+            endif
+        endfor
+
+        if (match)
+            return name; // nome da doença duplicada
+        endif
+
+    endforeach
+
+    return 0;
+
+endfunction
+
+function GetDiseaseRegions()
+
+    var cfg := ReadConfigFile("::regions/regions");
+    if (!cfg)
+        return array{};
+    endif
+
+    var keys := GetConfigStringKeys(cfg);
+    var list := array{};
+
+    foreach name in keys
+
+        var s := CStr(name);
+        var clean := Lower(Trim(s, TRIM_BOTH));
+	
+        if (clean[1,7] == "disease")
+          list.append(s);
+        endif
+
+    endforeach
+
+    return list;
+
+endfunction
+
+
+
+function GM_Disease_RegionsFlow(mob)
+
+    var regions := GetDiseaseRegions();
+
+    if (!regions || !regions.size())
+        SendSysMessage(mob, "Nenhuma region disease encontrada.");
+        return;
+    endif
+
+    var page := 0;
+
+    while (mob)
+
+        var g := GFECreateGump("Regions Disease", 560, 420);
+
+        var start := page * PER_PAGE + 1;
+        var end := start + PER_PAGE - 1;
+
+        if (end > regions.size())
+            end := regions.size();
+        endif
+
+        var y := 90;
+
+var cfg := ReadConfigFile("::regions/regions");
+
+var i := start;
+while (i <= end)
+
+    var name := regions[i];
+    var elem := FindConfigElem(cfg, name);
+
+    var rect := "";
+    if (elem)
+        rect := GetConfigString(elem, "Range");
+    endif
+
+    GFTextLine(g, 30, y, 53, name + " (" + rect + ")");
+
+    GFAddButton(g, 470, y, 0x845, 0x846, GF_CLOSE_BTN, 100 + i);
+
+    y += 30;
+    i += 1;
+
+endwhile
+
+
+        if (page > 0)
+            GM_Button(g, 40, 370, 9001, "<< Anterior");
+        endif
+
+        if (end < regions.size())
+            GM_Button(g, 180, 370, 9002, "Proxima >>");
+        endif
+
+        GM_Button(g, 360, 370, 200, "Inserir Item ON/OFF");
+
+        var input := GFSendGump(mob, g);
+
+        if (!input || !input[0])
+            return;
+        endif
+
+        case(input[0])
+            9001:
+                page -= 1;
+                continue;
+
+            9002:
+                page += 1;
+                continue;
+
+            200:
+				
+               
+var tgt := TargetCoordinates(mob);
+    if (!tgt)
+        return;
+    endif
+
+    CreateItemAtLocation(tgt.x, tgt.y, tgt.z, 0xd1b8, 1);
+    //SetObjProperty(item, "graphic", 0x9F4F);
+
+    SendSysMessage(mob, "Item ON/OFF de disease inserido.");
+
+
+
+            default:
+                if (input[0] >= 100)
+                    GM_Disease_TeleportToRegion(mob, regions[input[0] - 100]);
+                endif
+                return;
+        endcase
+
+    endwhile
+
+endfunction
+
+function GM_Disease_TeleportToRegion(mob, regname)
+
+    var cfg := ReadConfigFile("::regions/regions");
+    if (!cfg)
+        return;
+    endif
+
+    var elem := FindConfigElem(cfg, regname);
+    if (!elem)
+        SendSysMessage(mob, "Region não encontrada: " + regname);
+        return;
+    endif
+
+    var range := GetConfigString(elem, "Range");
+    if (!range)
+        SendSysMessage(mob, "Range inválido na region: " + regname);
+        return;
+    endif
+
+    var coords := SplitWords(range);
+    if (coords.size() < 4)
+        SendSysMessage(mob, "Range malformado: " + range);
+        return;
+    endif
+
+    var x1 := CInt(coords[1]);
+    var y1 := CInt(coords[2]);
+    var x2 := CInt(coords[3]);
+    var y2 := CInt(coords[4]);
+
+    var cx := (x1 + x2) / 2;
+    var cy := (y1 + y2) / 2;
+
+    MoveObjectToLocation(mob, cx, cy, mob.z, mob.realm, MOVEOBJECT_FORCELOCATION);
+
+    SendSysMessage(mob, "Teleportado para " + regname);
+
+endfunction
+
+function GM_Disease_DebugTarget(mob, tgt)
+
+    if (!tgt)
+        return;
+    endif
+
+    var ds := GetObjProperty(tgt, "Diseases_System");
+
+    if (ds == error)
+        SendSysMessage(mob, "Diseases_System nao existe no alvo.");
+        return;
+    endif
+
+    if (TypeOf(ds) != "Struct")
+        SendSysMessage(mob, "Diseases_System nao eh Struct. Tipo: " + TypeOf(ds));
+        return;
+    endif
+
+    SendSysMessage(mob, "===== DISEASE DEBUG =====");
+    SendSysMessage(mob, "Alvo: " + tgt.name + " [" + tgt.serial + "]");
+
+	SendSysMessage(mob, "KnownDiseases: " + GetObjProperty(tgt,"KnownDiseases"));
+    // ---------- CAMPOS CONHECIDOS DO SISTEMA ----------
+
+    GM_Disease_DebugStructField(mob, ds, "diseases", 1);
+    GM_Disease_DebugStructField(mob, ds, "grade");
+    GM_Disease_DebugStructField(mob, ds, "StrDiseaseMod");
+    GM_Disease_DebugStructField(mob, ds, "serial_peste_corpse");
+    GM_Disease_DebugStructField(mob, ds, "falhou_cura");
+    GM_Disease_DebugStructField(mob, ds, "DexDiseaseMod");
+    GM_Disease_DebugStructField(mob, ds, "IntDiseaseMod");
+    GM_Disease_DebugStructField(mob, ds, "RegenDiseaseMod");
+
+    SendSysMessage(mob, "------TIMERS INFO------");
+
+	SendSysMessage(mob, "Disease_timerInfo: " + TS_GetTimerInfo(tgt, "disease"));
+	SendSysMessage(mob, "Disease Effect_timerInfo: " + TS_GetTimerInfo(tgt, "diseaseeffect"));
+
+    SendSysMessage(mob, "========================");
+
+endfunction
+
+function GM_Disease_DebugStructField(mob, ds, field, is_symptoms := 0)
+
+    if (!ds[field])
+        SendSysMessage(mob, field + " = <nao existe>");
+        return;
+    endif
+
+    var val := ds[field];
+
+    // Symptoms podem aparecer juntos
+    if (is_symptoms && TypeOf(val) == "Array")
+        var txt := "";
+        foreach s in val
+            txt += s + ", ";
+        endforeach
+        if (txt.len() > 2)
+            txt := txt.substr(1, txt.len() - 2);
+        endif
+        SendSysMessage(mob, field + " = [" + txt + "]");
+        return;
+    endif
+
+    // Outros arrays: UM SendSysMessage por item
+    if (TypeOf(val) == "Array")
+        SendSysMessage(mob, field + ":");
+        var i := 1;
+        foreach v in val
+            SendSysMessage(mob, "  [" + i + "] = " + v);
+            i += 1;
+        endforeach
+        return;
+    endif
+
+    // Valor simples
+    SendSysMessage(mob, field + " = " + val);
+
+endfunction
+
+function GM_Disease_TimerAdjustGump(mob, trgt)
+
+    var info := TS_GetTimerInfo(trgt, "disease");
+
+    if (!info)
+        SendSysMessage(mob, "O alvo nao possui timer de disease ativo.");
+        return;
+    endif
+
+    var g := GFECreateGump("Ajustar Disease Timer", 360, 220);
+
+    GFTextLine(g, 40, 40, 53, "Timer atual (segundos): " + info.duration);
+
+    GFTextLine(g, 40, 80, 53, "Valor para ajuste:");
+    GFResizePic(g, 40, 100, 3500, 120, 30);
+    GFTextEntry(g, 45, 105, 110, 20, 2100, "0", 1);
+
+    // Botões
+    GFAddButton(g, 40, 150, 2130, 2129, GF_CLOSE_BTN, 1); // aumentar
+    GFTextLine(g, 75, 150, 53, "Aumentar");
+
+    GFAddButton(g, 160, 150, 2130, 2129, GF_CLOSE_BTN, 2); // diminuir
+    GFTextLine(g, 195, 150, 53, "Diminuir");
+
+    GFAddButton(g, 260, 150, 2119, 2120, GF_CLOSE_BTN, 3); // cancelar
+    GFTextLine(g, 295, 150, 53, "Cancelar");
+
+    var input := GFSendGump(mob, g);
+
+    if (!input || input[0] == 0)
+        return;
+    endif
+
+    var txt := GFExtractData(input, 1);
+    var val := CInt(txt);
+
+    if (!val || val <= 0)
+        SendSysMessage(mob, "Valor invalido.");
+        return;
+    endif
+
+        var duration_atual := TS_GetTimerDuration(trgt, "disease");
+	
+    if (input[0] == 1)
+			if ((val + duration_atual) > 8000)
+				SendSysMessageEx(mob, "Timer de disease não pode ser maior que 8000 segundos!", SSM_FAIL);
+				return;
+			endif
+		TS_AddDuration(trgt, "disease", val);
+        SendSysMessage(mob, "Timer de disease aumentado em " + val + " segundos.");
+    elseif (input[0] == 2)
+			if ((val + duration_atual) > 8000)
+				SendSysMessageEx(mob, "Timer de disease não pode ser maior que 8000 segundos!", SSM_FAIL);
+				return;
+			endif
+		TS_LowerDuration(trgt, "disease", val);
+        SendSysMessage(mob, "Timer de disease reduzido em " + val + " segundos.");
+	elseif (input[0] == 3)
+		SendSysMessage(mob, "Cancelado");
+		return;
+	endif
+
+endfunction
+
+function GM_Debug_Vicios(mob, tgt)
+
+	if (!tgt)
+		return;
+	endif
+
+	var v_str := AP_GetVital(tgt, "Viciostr");
+	var v_dex := AP_GetVital(tgt, "Viciodex");
+	var v_int := AP_GetVital(tgt, "Vicioint");
+
+	SendSysMessage(mob, "===== DEBUG VÍCIOS =====");
+	SendSysMessage(mob, "Alvo: " + tgt.name);
+
+	SendSysMessage(mob, "Viciostr: " + v_str);
+	SendSysMessage(mob, "Viciodex: " + v_dex);
+	SendSysMessage(mob, "Vicioint: " + v_int);
+
+	SendSysMessage(mob, "------------------------");
+
+	// GUMP COM OPÇÃO DE RESET
+	var confirm := YesNo(
+		mob,
+		"Deseja resetar todos os vícios deste alvo para 100?",
+		"Resetar",
+		"Cancelar"
+	);
+
+	if (confirm)
+
+		AP_SetVital(tgt, "Viciostr", 100);
+		AP_SetVital(tgt, "Viciodex", 100);
+		AP_SetVital(tgt, "Vicioint", 100);
+
+		SendSysMessage(mob, "Vícios resetados para 100.");
+		SendSysMessage(tgt, "Seus vícios foram restaurados.");
+
+	endif
+
+endfunction
+
+function GM_Debug_Fraturas(mob, tgt)
+
+	if (!tgt)
+		return;
+	endif
+
+	SendSysMessage(mob, "===== DEBUG FRATURAS =====");
+	SendSysMessage(mob, "Alvo: " + tgt.name);
+
+	var fractures := GetObjProperty(tgt, "Fractures");
+
+	if (fractures == error || !fractures.size())
+		SendSysMessage(mob, "Nenhuma fratura registrada.");
+	else
+		foreach f in fractures
+			SendSysMessage(mob, "- " + f);
+		endforeach
+	endif
+
+	// Gump de ações
+	var g := GFECreateGump("Fraturas - Debug", 300, 220);
+
+	GM_Button(g, 40, 60, 1, "Resetar Fraturas");
+	GM_Button(g, 40, 100, 2, "Aplicar Fratura");
+
+	var input := GFSendGump(mob, g);
+
+	if (!input || !input[0])
+		return;
+	endif
+
+	if (input[0] == 1)
+
+		EraseObjProperty(tgt, "Fractures");
+		EraseObjProperty(tgt, "#deferred_fratura");
+		TS_LowerDuration(tgt, "fratura_bracos", -1);
+		TS_LowerDuration(tgt, "fratura_pernas", -1);
+		TS_LowerDuration(tgt, "fratura_torso", -1);
+		TS_LowerDuration(tgt, "fratura_cabeca", -1);
+		TS_LowerDuration(tgt, "fratura_maos", -1);
+		SendSysMessage(mob, "Fraturas removidas.");
+		SendSysMessage(tgt, "Suas fraturas foram tratadas.");
+
+	elseif (input[0] == 2)
+
+		GM_Apply_Fracture_Gump(mob, tgt);
+
+	endif
+
+endfunction
+
+function GM_Apply_Fracture_Gump(mob, tgt)
+
+	var g := GFECreateGump("Aplicar Fratura", 360, 260);
+
+	GFTextLine(g, 40, 40, 53, "Selecione a fratura:");
+
+	GM_Button(g, 40, 80, 1, "Braços");
+	GM_Button(g, 40, 110, 2, "Pernas");
+	GM_Button(g, 40, 140, 3, "Torso");
+	GM_Button(g, 40, 170, 4, "Cabeça");
+	GM_Button(g, 40, 200, 5, "Mãos");
+
+	var input := GFSendGump(mob, g);
+
+	if (!input || !input[0])
+		return;
+	endif
+
+	var fracture_name := "";
+	var gump_name := "";
+
+	case (input[0])
+
+		1:
+			fracture_name := "fratura_bracos";
+			gump_name := "Bracos";
+
+		2:
+			fracture_name := "fratura_pernas";
+			gump_name := "Pernas";
+
+		3:
+			fracture_name := "fratura_torso";
+			gump_name := "Torso";
+
+		4:
+			fracture_name := "fratura_cabeca";
+			gump_name := "Cabeca";
+
+		5:
+			fracture_name := "fratura_maos";
+			gump_name := "Maos";
+
+		default:
+			return;
+
+	endcase
+
+	DeferFractureDebug(tgt, fracture_name, 300, gump_name);
+
+	SendSysMessage(mob, "Fratura aplicada: " + gump_name);
+	SendSysMessage(tgt, "Você sofreu uma fratura!");
+
+endfunction
+
+function DeferFractureDebug(ghost, fracture_name, tempo, gump_name)
+
+	// salva estrutura interna
+	var fractures := array{};
+	fractures.append(struct{ part := fracture_name, tempo := tempo });
+	SetObjProperty(ghost, "#deferred_fratura", fractures);
+
+	// 🔥 substitui visual (não acumula bugado)
+	var visible := array{};
+	visible.append(gump_name);
+
+	SetObjProperty(ghost, "Fractures", visible);
+	EraseObjProperty(ghost, "#deferred_fratura");
+	TS_StartTimer(ghost, fracture_name, tempo); 
+
+endfunction

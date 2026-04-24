@@ -14,7 +14,7 @@ program OnDestroy(item)
 
 	var mobile := SystemFindObjectBySerial(equipped);
 
-	RemoveEquipmentMods(mobile, item);
+	RemoveEquipObjMods(mobile, item);
 
 	if (coverFace(item))
 		mobile.name := GetObjProperty(mobile, "realname");

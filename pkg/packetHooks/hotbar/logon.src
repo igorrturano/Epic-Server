@@ -1,0 +1,6 @@
+include ":expbar:expbar";
+
+program expbar_logon(who)
+    run_script(":expbar:expbar_logon", who);
+    return 1;
+endprogram

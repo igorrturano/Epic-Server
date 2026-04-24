@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+program ferramentas_construcao_use(who, item)
+    if (!who)
+        return 0;
+    endif
+
+    if (!item || item.container != who.backpack)
+        SendSysMessage(who, "As ferramentas de construção devem estar em sua mochila para serem usadas.");
+        return 0;
+    endif
+
+    // Passa array{who, 1} para sinalizar que veio do item — architect.src verifica a habilidade
+    var script := start_script(":architect:textcmd/player/architect", array{who, 1});
+
+    if (script.errortext)
+        SendSysMessage(who, "Erro ao iniciar as ferramentas: " + script.errortext);
+    endif
+
+    return 1;
+endprogram

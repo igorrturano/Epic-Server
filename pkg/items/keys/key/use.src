@@ -7,6 +7,8 @@ include "include/string";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program UseKey(who, key)
 	SendSysMessageEx(who, "Onde voce deseja usar a chave?", SSM_REQUEST);
@@ -76,7 +78,7 @@ function CopyKey(who, key, targ)
 		return 0;
 	endif
 
-	if (TemHabilidade(who, "Truque Sujo") || SkillCheck(who, "Metal_Working", 25) > 0)
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::TRUQUE_SUJO) || SkillCheck(who, "Metal_Working", 25) > 0)
 		targ.SetLockId(key_id);
 		SendSysMessageEx(who, "Voce copiou a chave.", SSM_INFO);
 		PrintTextAbove(who, "*copia uma chave*");

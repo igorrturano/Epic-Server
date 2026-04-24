@@ -34,7 +34,7 @@ function DoVomit(who)
 	if (players.Size() > 0)
 		var vomiter := players[RandomInt(players.size()) + 1];
 		SendSysMessage(vomiter, "The stench from " + who.name + " makes you feel extremely sick.");
-		PerformAction(vomiter, ANIM_BOW);
+		PerformAction(vomiter, HUMAN_ANIM::BOW);
 		SleepMS(60);
 		CreateItemAtLocation(vomiter.x, vomiter.y, vomiter.z, "vomit", 1, vomiter.realm);
 	endif

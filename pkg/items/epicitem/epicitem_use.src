@@ -1,0 +1,122 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":tn:cooldown";
+include ":timedscripts:timedScripts";
+include ":spells:SpellRegistry";
+
+program epicitem_use(who, item)
+	var effect := GetObjProperty(item, "epiceffect");
+	if (!effect)
+		return;
+	endif
+
+	if (effect.charges_left != error && effect.charges_left <= 0)
+		SendSysMessageEx(who, "Este item perdeu sua magia.", SSM_FAIL);
+		return;
+	endif
+
+	var cd_name := "epicitem_" + CStr(item.serial);
+	var remaining := getCooldown(who, cd_name);
+	if (remaining)
+		SendSysMessageEx(who, "Voce precisa esperar " + remaining + " segundos para usar novamente.", SSM_FAIL);
+		return;
+	endif
+
+	var success := 0;
+
+	case (effect.effect_type)
+		"spell":
+			success := HandleSpellEffect(who, item, effect);
+		"timedscript":
+			success := HandleTimedScriptEffect(who, item, effect);
+		default:
+			return;
+	endcase
+
+	if (success)
+		if (CInt(effect.cooldown) > 0)
+			setCooldown(who, cd_name, CInt(effect.cooldown));
+		endif
+
+		if (effect.charges_left != error)
+			effect.charges_left := effect.charges_left - 1;
+			SetObjProperty(item, "epiceffect", effect);
+
+			if (effect.charges_left <= 0)
+				SendSysMessageEx(who, "O item perde seu brilho magico...", SSM_INFO);
+			endif
+		endif
+	endif
+endprogram
+
+function HandleSpellEffect(who, item, effect)
+	var targ;
+
+	case (effect.target)
+		"Self":
+			targ := who;
+		"Unico":
+			SendSysMessageEx(who, "Escolha o alvo.", SSM_REQUEST);
+			targ := Target(who, TGTOPT_CHECK_LOS);
+			if (!targ)
+				SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+				return 0;
+			endif
+			if (Distance(who, targ) > 8)
+				SendSysMessageEx(who, "O alvo esta muito distante.", SSM_FAIL);
+				return 0;
+			endif
+		"Area":
+			targ := who;
+		default:
+			targ := who;
+	endcase
+
+	var spell_id := CInt(effect.effect_id);
+	var cfg_path := GetConfigFromId(spell_id);
+	if (!cfg_path)
+		SendSysMessageEx(who, "Erro: magia invalida.", SSM_FAIL);
+		return 0;
+	endif
+
+	var cfg := ReadConfigFile(cfg_path);
+	var elem := FindConfigElem(cfg, spell_id);
+	if (!elem)
+		SendSysMessageEx(who, "Erro: magia nao encontrada.", SSM_FAIL);
+		return 0;
+	endif
+
+	var spellinfo := struct{};
+	spellinfo.+id := spell_id;
+	spellinfo.+script := GetConfigString(elem, "SpellScript");
+	spellinfo.+Name := GetConfigString(elem, "Name");
+	spellinfo.+Circle := GetConfigString(elem, "Circle");
+	spellinfo.+School := GetConfigString(elem, "School");
+	spellinfo.+targ := GetConfigString(elem, "Target");
+	spellinfo.+power := 100;
+
+	PrintTextAbove(who, "*usa " + item.desc + "*");
+	Start_Script(spellinfo.script, {who, targ, spellinfo});
+
+	return 1;
+endfunction
+
+function HandleTimedScriptEffect(who, item, effect)
+	var timer_name := effect.effect_id;
+	var duration := CInt(effect.duration);
+	if (duration <= 0)
+		duration := 60;
+	endif
+
+	PrintTextAbove(who, "*usa " + item.desc + "*");
+	var result := TS_StartTimer(who, timer_name, duration);
+	if (result == error)
+		SendSysMessageEx(who, "Erro ao aplicar efeito: " + result.errortext, SSM_FAIL);
+		return 0;
+	endif
+
+	return 1;
+endfunction

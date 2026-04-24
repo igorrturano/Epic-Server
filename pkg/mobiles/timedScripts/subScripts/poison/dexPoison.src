@@ -7,10 +7,10 @@ program poisonScript(params)
 	var mobile := params[1];
 	var attacker := params[2];
 	var level := (-1) * params[3];
-	if (temHabilidade(attacker, "Veneno Puro"))
-		level := level * 0.4;
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::VENENO_PURO))
+		level := Cint(level * 0.4);
 	else
-		level := level * 0.3;
+		level := Cint(level * 0.3);
 	endif
 	var teste := GetObjProperty(mobile, "#DexPoisonMod");
 	if (teste) // verifica se ja esta sob efeito similar

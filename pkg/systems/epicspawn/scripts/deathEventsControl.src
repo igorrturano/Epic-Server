@@ -5,6 +5,7 @@ include "include/say";
 include ":tn:boss";
 include ":timedscripts:timedScripts";
 include ":merchants:pcconversation";
+include ":merchants:include/item_template";
 
 program DeathEventsControl(params)
 	var npc := params[1];
@@ -100,8 +101,16 @@ function ProcessCreateItemsEvent(npc, event)
 	var i := 1;
 
 	foreach iteminfo in (event.items)
-		var item := CreateItemAtLocation(CInt(iteminfo.x), CInt(iteminfo.y), CInt(iteminfo.z),
-								   CInt(iteminfo.item), 1, CStr(npc.realm));
+		var item := 0;
+		var item_realm := iteminfo.realm ? CStr(iteminfo.realm) : CStr(npc.realm);
+
+		if (iteminfo.template)
+			item := CreateItemAtLocationFromTemplate(CInt(iteminfo.x), CInt(iteminfo.y), CInt(iteminfo.z),
+										 item_realm, iteminfo.template);
+		elseif (iteminfo.item)
+			item := CreateItemAtLocation(CInt(iteminfo.x), CInt(iteminfo.y), CInt(iteminfo.z),
+								   CInt(iteminfo.item), 1, item_realm);
+		endif
 
 		if (item != error)
 			success_count += 1;

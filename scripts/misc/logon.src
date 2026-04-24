@@ -42,9 +42,6 @@ program Logon(who)
 
 	var createdat := getobjproperty(who, "createdate");
 
-	if (HaveReverseVision(who))
-		ReverseLight(who);
-	endif
 	destroyIllyraOutsideDungeons(who);
 	var recorde := GetGlobalProperty("maxonline");
 	if (!recorde)
@@ -52,11 +49,36 @@ program Logon(who)
 	endif
 
 	var players := EnumerateOnlineCharacters();
-	var total := players.size();
+	var total := 0;
+	foreach player in players
+		if (player.cmdlevel == 0)
+			total += 1;
+		endif
+	endforeach
 	if (total > recorde)
 		BroadCast("Novo recorde do shard de players online batido! Total: " + total + "!", FONT_BOLD,
 				   SSM_INFO);
 		SetGlobalPRoperty("maxonline", total);
+	endif
+
+	var milestoneBase := 20;
+	var milestoneStep := 5;
+	var milestoneWindow := 7200;
+	var now := polcore().systime;
+	var windowStart := CInt(GetGlobalProperty("milestone_window_start"));
+	var lastAnnounced := CInt(GetGlobalProperty("milestone_last_announced"));
+	if (now - windowStart >= milestoneWindow)
+		windowStart := now;
+		lastAnnounced := 0;
+		SetGlobalProperty("milestone_window_start", windowStart);
+		SetGlobalProperty("milestone_last_announced", 0);
+	endif
+	if (total >= milestoneBase)
+		var milestone := milestoneBase + CInt((total - milestoneBase) / milestoneStep) * milestoneStep;
+		if (milestone > lastAnnounced)
+			BroadCast(milestone + " jogadores online!!", FONT_BOLD, SSM_INFO);
+			SetGlobalProperty("milestone_last_announced", milestone);
+		endif
 	endif
 
 	var acc := who.acct;
@@ -81,12 +103,10 @@ program Logon(who)
 	endif
 
 	LogonPets(who);
-	GetResist(who, FORTITUDE);
-	GetResist(who, VONTADE);
-	GetResist(who, REFLEXOS);
+	RecalcVitals(who);
 
 	// Enforce skill cap when the player logs in
-	EnforceSkillCap(who);
+	// EnforceSkillCap(who);
 
 	// checa se vai subir skill passiva
 	if (CInt(FindAccount(who.acctname).getprop("nota")) == 4)

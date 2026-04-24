@@ -5,14 +5,18 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
 include "include/dungeons";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":nature:Controller/LightController";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	var race := GetObjProperty(who, "chardata").raca;
@@ -30,7 +34,7 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	PlayObjectCenteredEffect(who, GFX_BLUE_SPARKLES, 10, 10);
+	PlayObjectCenteredEffect(who, FX_BLUE_SPARKLES, 10, 10);
 	handleSilentMagic(who, who, SFX_BLESS);
 
 	SendSysMessageEx(who, "Voce passa a enxergar melhor", SSM_INFO);
@@ -39,16 +43,12 @@ program SpellScript(params)
 	var duration := CInt(120 + (magiclore_skill * 5));
 
 	// Bonus de especialização
-	if (Temhabilidade(who, "Coração da Matilha"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		duration := Cint(duration * 1.2);
 	endif
 
-	who.setlightlevel(15, duration);
-	if (race != DROW)
-		SetCooldown(who, "nightvision", duration);
-	else
-		SetCooldown(who, "lightvision", duration);
-	endif
+	ApplyMagicalVision(who, duration);
+	SendSpellBuff(who, who, CInt(spell.id), duration);
 
 	return 1;
 endprogram

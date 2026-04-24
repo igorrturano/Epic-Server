@@ -63,11 +63,17 @@ function InicializaSessao(quem, produto, estacao)
 	var sessao := struct;
 	var propFabricado := GetObjProperty(produto, PROPNAME_FABRICADO);
 	var propTratamento := GetObjProperty(produto, PROPNAME_FABRICADO_TRATAMENTO);
-	var craft_config := ReadConfigFile(":metalworking:blacksmithy"); // TODO alterar para a solução definitiva de como ler as configs de craft;
+	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
 
 	sessao.+nomeItem := propFabricado.receita.desc;
 	sessao.+profissao := propFabricado.receita.profissao;
 	sessao.+sucessosNecessarios := propFabricado.receita.sucessosNecessarios;
+	sessao.+gumpIdProfissaoPressed := profissaoConfig[sessao.profissao].GumpicPressionado 
+													? cint(profissaoConfig[sessao.profissao].GumpicPressionado )
+													: 0;
+	sessao.+gumpIdProfissaoUnpressed := profissaoConfig[sessao.profissao].GumpicNaoPressionado 
+													? cint(profissaoConfig[sessao.profissao].GumpicNaoPressionado)
+													: 0;
 	sessao.+maximoFalhas := PegaMaximoFalhas(produto);
 	sessao.+dificuldade := PegaDificuldadeFrabicarObjeto(quem, propFabricado.receita.objtype,
 													  propFabricado.receita.profissao, propFabricado.receita.pericia,

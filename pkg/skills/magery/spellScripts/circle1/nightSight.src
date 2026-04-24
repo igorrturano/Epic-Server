@@ -23,7 +23,7 @@ program SpellScript(params)
 	endif
 
 	PlaySoundEffect(targ, SFX_BLESS);
-	PlayObjectCenteredEffect(targ, GFX_BLUE_SPARKLES, 10, 10);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLES, 10, 10);
 
 	// Stratics reports that if the TARGET has less than 10.0 skill, the spell will have no effect.
 	if (AP_GetSkill(targ, MAGERY) > 10.0)

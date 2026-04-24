@@ -43,7 +43,7 @@ program TamingSkill(who)
 	// checar se já tem animal fidelizado
 	var check_bond := 0;
 	var petsi := GetObjProperty(who, "TamedPets");
-	var habs := TemHabilidade(who, "Espreita Selvagem");
+	var habs := MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM);
 	foreach serial in petsi
 		var pety := SystemFindObjectBySerial(serial);
 		if (GetObjProperty(pety, "bond") == "fiel")
@@ -55,7 +55,7 @@ program TamingSkill(who)
 		endif
 	endforeach
 
-	var yn_gump := GFECreateGump("Menu de Trato de Animais", 275, 290);
+	var yn_gump := GFECreateGump("Menu de Trato de Animais", 275, 305);
 
 	GFAddButton(yn_gump, 20, (73), 2117, 2118, GF_CLOSE_BTN, 1);
 	GFTextLine(yn_gump, 40, 70, 1153, "Adestrar Animal.");
@@ -63,17 +63,20 @@ program TamingSkill(who)
 	GFAddButton(yn_gump, 20, (93), 2117, 2118, GF_CLOSE_BTN, 2);
 	GFTextLine(yn_gump, 40, 90, 1153, "Informações sobre o animal.");
 
-	if (TemHabilidade(who, "Mestre de Feras"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS))
 		GFAddButton(yn_gump, 20, (113), 2117, 2118, GF_CLOSE_BTN, 3);
 		GFTextLine(yn_gump, 40, 110, 1153, "Despertar");
 	endif
 
 	GFTextLine(yn_gump, 25, 133, 1153, "Libertar Animal:");
 
-	if ((check_bond == 0 || check_bond == 2) && (AP_GetSkill(who, HANDLEANIMAL) >= 1))
+	if ((check_bond == 0 || check_bond == 2))
 		GFAddButton(yn_gump, 190, (253), 2117, 2118, GF_CLOSE_BTN, 4);
 		GFTextLine(yn_gump, 210, 250, 1153, "Fidelizar?");
 	endif
+
+	GFAddButton(yn_gump, 190, (273), 2117, 2118, GF_CLOSE_BTN, 5);
+	GFTextLine(yn_gump, 210, 270, 1153, "Cruzar?");
 
 	var y := 150;
 	var i := 1;
@@ -88,9 +91,19 @@ program TamingSkill(who)
 			GFTextLine(yn_gump, 40, y, 1153, "" + pet.name);
 			if (GetObjProperty(pet, "Fidelizar?") == "nao")
 				GFGumpPic(yn_gump, 190, y + 4, 2437);
+				GFToolTipText(yn_gump, "NÃO para fidelizar");
 			elseif (GetObjProperty(pet, "Fidelizar?") == "sim")
 				GFGumpPic(yn_gump, 190, y + 4, 2436);
+				GFToolTipText(yn_gump, "SIM para fidelizar");
 			endif
+		endif
+		// Cruzar
+		//GFResizePic(byref gump, x, y, gump_id, width:=0, height:=0)
+		if (GetObjProperty(pet, "Cruzar") == "nao")
+			GFGumpPic(yn_gump, 215, y + 4, 5019);
+			GFToolTipText(yn_gump, "NÃO permitido para cruzar");
+		elseif (GetObjProperty(pet, "Cruzar") == "sim")
+
 		endif
 		if (!GetObjProperty(pet, "summoned"))
 			GFAddButton(yn_gump, 20, y + 4, 2103, 2104, GF_CLOSE_BTN, (100 + i));
@@ -122,7 +135,7 @@ program TamingSkill(who)
 		endif
 		// resetar os demais para "nao" e deixa só o selecionado como "sim"
 		var pets_all := GetObjProperty(who, "TamedPets");
-		var habs := TemHabilidade(who, "Espreita Selvagem");
+		var habs := MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM);
 		foreach serial in pets_all
 			var pet_each := SystemFindObjectBySerial(serial);
 			if (habs && GetObjProperty(pet_each, "bond") == "fiel")
@@ -133,6 +146,25 @@ program TamingSkill(who)
 		endforeach
 		SetObjProperty(targx, "Fidelizar?", "sim");
 		SendSysmessage(who, "" + targx.name + " pode ser fidelizado, todos os demais agora não");
+elseif (input == 5) // botão cruzar (toggle livre)
+	SendSysMessageEx(who, "Selecione o pet para ativar/desativar cruzamento.", SSM_INFO);
+
+	var targx := target(who);
+
+	if (GetObjProperty(targx, "owner") != who.serial)
+		SendSysMessageEx(who, "Esse animal não lhe pertence!", SSM_FAIL);
+		return;
+	endif
+
+	var estado := GetObjProperty(targx, "Cruzar");
+
+	if (estado == "sim")
+		SetObjProperty(targx, "Cruzar", "nao");
+		SendSysMessage(who, "" + targx.name + " agora NÃO pode cruzar.");
+	else
+		SetObjProperty(targx, "Cruzar", "sim");
+		SendSysMessage(who, "" + targx.name + " agora pode cruzar.");
+	endif
 
 	endif
 
@@ -178,7 +210,7 @@ function taming(who)
 
 	var tameDifficulty := targ.getTameDifficulty();
 	if (!tameDifficulty)
-		SendSysMessageEx(who, "Voce não pode adestrar " + targ.name + ".", SSM_FAIL);
+		SendSysMessageEx(who, "Você não pode adestrar " + targ.name + ".", SSM_FAIL);
 		return;
 	endif
 
@@ -208,7 +240,11 @@ function taming(who)
 			SetObjProperty(targ, "happiness", 50);
 			SetObjProperty(targ, "AntigoTreinadorID", who.serial);
 			SetObjProperty(targ, "Fidelizar?", "nao");
-
+			SetObjproperty(targ, "Cruzar", "nao");
+			if (GetObjProperty(targ, "descmodboss"))
+				EraseObjProperty(targ, "descmodboss");
+				SetObjProperty(targ, "Sexo", 0);
+			endif
 			var time := ReadGameClock();
 			SetObjProperty(targ, "countercheck", time);
 			if (erase_selvagem == 1)
@@ -220,12 +256,7 @@ function taming(who)
 
 			Run_Script_To_Completion(":death:npcdeath", { targ });
 
-			var tamed := GetObjProperty(who, "TamedPets");
-			if (!tamed)
-				tamed := array;
-			endif
-			tamed.append(targ.serial);
-			SetObjProperty(who, "TamedPets", tamed);
+			AddPet(who, targ.serial);
 
 			break;
 		endif
@@ -290,7 +321,7 @@ function TameLoop(who, targ, byref info)
 endfunction
 
 function Teach(who)
-	if (!TemHabilidade(who, "Mestre de Feras"))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS))
 		SendSysMessageEx(who, "Você não tem a habilidade para treinar animais domesticados.", SSM_FAIL);
 		return;
 	endif
@@ -416,7 +447,7 @@ function BuildInstincts(who, creature, byref gump, ins_elem, byref y_pos)
 	var pet_instinct := GetConfigStringArray(ins_elem, "Taxonomy"); // LISTA TODOS do cfg
 	var equal_taxonomy := (creature_taxonomy in pet_instinct); // identifica a taxonomy do cfg de acordo com o alvo
 	// print("A criatura eh "+creature_who+" Os taxonomys sao "+creature_taxonomy+" e os iguais sao "+equal_taxonomy); DEBUG
-	if ((ins_elem.Type == 0) && TemHabilidade(who, "Mestre de Feras")) // listagem dos instintos naturais
+	if ((ins_elem.Type == 0) && MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS)) // listagem dos instintos naturais
 
 		GFTextLine(gump, 190, y_pos + 30, 1890, ins_elem.Nome); // tive que listar individualmente pra não dar bode, a lista do cfg de acordo com o CONST inicial começa no 10
 		if (ins_elem.Nome == "Ferocidade")
@@ -434,24 +465,24 @@ function BuildInstincts(who, creature, byref gump, ins_elem, byref y_pos)
 		endif
 
 	elseif ((ins_elem.Type == 2 && sense_ones) &&
-		 TemHabilidade(who, "Mestre de Feras")) // Aqui inseri o senso aguçado, type 2 no cfg
+		 MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS)) // Aqui inseri o senso aguçado, type 2 no cfg
 		GFTextLine(gump, 170, y_pos + 20, 1890, ins_elem.Nome);
 		GFAddButton(gump, 290, y_pos + 23, 1209, 1210, GF_PAGE_BTN, 13);
 
 		y_pos := y_pos + 20;
 	elseif ((ins_elem.Type == 1) && (equal_taxonomy) &&
-		 TemHabilidade(who, "Mestre de Feras")) // instintos selvagens listados de acordo com o alvo e cfg
+		 MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS)) // instintos selvagens listados de acordo com o alvo e cfg
 		GFTextLine(gump, 47, y_pos + 160, 1890, ins_elem.Nome);
 		var det_pagex := ins_elem.Number; // inseri um valor number no cfg pra ficar mais facil para listar, lá começa no 15
 		GFAddButton(gump, 27, y_pos + 163, 1209, 1210, GF_PAGE_BTN, det_pagex);
 
 		y_pos := y_pos + 20;
 	else
-		if (!TemHabilidade(who, "Mestre de Feras"))
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS))
 			GFTextLine(gump, 170, 154, 1890, "Você não tem a ");
 			GFTextLine(gump, 170, 166, 1890, "habilidade necessária.");
 			y_pos := y_pos + 10;
-		elseif (!TemHabilidade(who, "Mestre de Feras"))
+		elseif (!MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS))
 			GFTextLine(gump, 27, 334, 1890, "Você não tem a ");
 			GFTextLine(gump, 27, 346, 1890, "habilidade necessária.");
 		endif

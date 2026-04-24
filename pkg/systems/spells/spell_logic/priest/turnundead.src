@@ -32,9 +32,9 @@ program SpellScript(params)
 	foreach mobile in (ListMobilesNearLocation(targ.x, targ.y, targ.z, 6))
 		if (mobile.npctemplate)
 			var elem := NPC_GetNPCConfig(mobile.npctemplate);
-			var category := lower(GetConfigString(elem, "Category"));
+			var category := lower(GetConfigString(elem, "Environment"));
 			if (category == "undead")
-				if (CheckResist(mobile, VONTADE, 30, -CInt(AP_GetSkill(who, THEOLOGY) / 2.5)))
+				if (CheckResist(mobile, WILL, 30, -CInt(AP_GetSkill(who, THEOLOGY) / 2.5)))
 					var ev := struct;
 					ev.+source := who;
 					ev.+type := EVID_FLEE;

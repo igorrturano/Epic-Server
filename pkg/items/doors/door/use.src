@@ -55,18 +55,23 @@ program useScript(mobile, door)
 endprogram
 
 function DoorIsLocked(mobile, door)
+    var isDungeonDoor := Cint(GetObjProperty(door, "time"));
     if (!door.locked)
         return 0;
     elseif (door.IsOpen())
         return 0;
     elseif (door.IsInside(mobile))
         SendSysMessage(mobile, "You open the door from the inside.");
-        door.locked := 0;
+        if(isDungeonDoor)
+            door.locked := 0;
+        endif
         KP_SetDungeonDoorRelockTimer(door);
         return 0;
    elseif (KP_HasKeyForLock(mobile, door))
         SendSysMessage(mobile, "You use your key to open the door.");
-        door.locked := 0;
+        if(isDungeonDoor)
+            door.locked := 0;
+        endif
         KP_SetDungeonDoorRelockTimer(door);
         return 0;
     else

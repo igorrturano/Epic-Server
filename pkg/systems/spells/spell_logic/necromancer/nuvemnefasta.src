@@ -9,6 +9,8 @@ include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var who := params[1];
@@ -56,7 +58,7 @@ program SpellScript(params)
 	Corromper(who, 21, 0);
 	var duration := cint(AP_GetSkill(who, ARCANA) / 20);
 
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := Cint(duration * 1.2);
 	endif
 

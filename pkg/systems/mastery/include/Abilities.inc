@@ -3,35 +3,23 @@ use os;
 include ":debug:Controller/DebugController";
 include ":equipsys:utils/consts";
 include ":tn:cooldown";
-include ":attributes:attributes";
+include ":attributes:attributeConstants";
+include ":combat:Model/AttackInfo";
 
-// Verificador de armas para situações especiais
-var compatibleWeapons := struct{
-	montante := array{0x26CF, 0xF9EA, 0xF9F7}
-};
-
-function ExecuteMasteryAbility(attacker, defender, attackInfo)
-	var cooldown := GetCooldown(attacker, "MasteryAbilityCooldown");
+function ExecuteMasteryAbility(attackInfo)
+	var cooldown := GetCooldown(attackInfo.GetAttacker(), "MasteryAbilityCooldown");
 	if (cooldown > 0)
-		DebugMsg(attacker, DEBUG_MASTERY, $"Habilidade de maestria está em cooldown por mais {cooldown} segundos.");
+		DebugMsg(attackInfo.GetAttacker(), DEBUG_MASTERY, Message($"Habilidade de maestria está em cooldown por mais {cooldown} segundos."));
 		return false;
 	endif
 
-	if (!attackInfo) // Se não tem attackInfo, é um ataque anormal (especial, de engaging, etc.) [pré-combate]
-		var combatInfo := struct{};
-		combatInfo.+attacker := attacker;
-		combatInfo.+defender := defender;
-		
-		ExecuteBeforeEngage(combatInfo);
-	else // Aqui o combate já começou, então é um ataque normal
-		var combatInfo := attackInfo;
-		combatInfo.+attacker := attacker;
-		combatInfo.+defender := defender;
-
-		ExecuteAfterEngage(combatInfo);
+	if (attackInfo.GetMoment() == ATTACK_MOMENT::ENGAGING) // Algumas habilidades são aplicadas no engaging
+		ExecuteBeforeEngage(attackInfo);
+	else
+		ExecuteAfterEngage(attackInfo);
 	endif
 
-	SetCooldown(attacker, "MasteryAbilityCooldown", CalculateCooldown(attackInfo));
+	SetCooldown(attackInfo.GetAttacker(), "MasteryAbilityCooldown", CalculateCooldown(attackInfo.GetAttacker()));
 	return true;
 endfunction
 
@@ -45,138 +33,130 @@ endfunction
  * @param attacker Referência ao personagem atacante que possui a arma
  * @param defender Referência ao personagem defensor que receberá o ataque
  */
-function ExecuteBeforeEngage(byRef combatInfo)
-	var weapon := combatInfo.attacker.weapon;
-	var weaponCfg := weapon.getCfgElem();
-
-	if (weapon.objtype in compatibleWeapons.montante)
-		Run_Script(":combat:specialAttackScripts/downwardcut", combatInfo);
-	endif
-	if (!weapon.isRanged())
-		if (Upper(weaponCfg.Type) == Upper(SWORD))
-			if (weapon.isDualWield())
-				ExecuteMasteryAbility_Charge(combatInfo);
-			endif
+function ExecuteBeforeEngage(byRef attackInfo)
+	if (attackInfo.GetAttackerWeapon().GetAttribute() != RANGED) // Armas melee
+		if (attackInfo.GetAttackerWeapon().GetCategory() == WEAPON_CATEGORY::GREATSWORD)
+			ExecuteMasteryAbility_DownwardCut(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SWORD))
+			ExecuteMasteryAbility_Charge(attackInfo);
 		endif
+	else // Armas ranged
+		// TODO
 	endif
-
 endfunction
 
-function ExecuteAfterEngage(byRef combatInfo)
-	var weapon := combatInfo.attacker.weapon;
-	var weaponCfg := weapon.getCfgElem();
-
-	if (weapon.isRanged())
-		if (weapon.isBow())
-			ExecuteMasteryAbility_DoubleShot(combatInfo);
-		elseif (weapon.isCrossbow())
-			ExecuteMasteryAbility_Lame(combatInfo);
+function ExecuteAfterEngage(byRef attackInfo)
+	if (Upper(attackInfo.GetAttackerWeapon().GetAttribute()) == Upper(RANGED))
+		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::BOW))
+			ExecuteMasteryAbility_DoubleShot(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW))
+			ExecuteMasteryAbility_Lame(attackInfo);
 		endif
-	else
-		if (Upper(weaponCfg.Type) == Upper(UNARMED))
-		elseif (weapon.objtype in compatibleWeapons.montante)
-			ExecuteMasteryAbility_DownwardCut(combatInfo);
-		elseif (Upper(weaponCfg.Type) == Upper(DAGGER))
-			ExecuteMasteryAbility_Cutthroat(combatInfo);
-		elseif (Upper(weaponCfg.Type) == Upper(SWORD))
-			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_SwordBlock(combatInfo); // TODO: Implementar
-			else
-				ExecuteMasteryAbility_CounterAttack(combatInfo); // TODO: Implementar
-			endif
-		elseif (Upper(weaponCfg.Type) == Upper(AXE))
-			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_Cleave(combatInfo);
-			elseif (weapon.isDualWield())
-				
-			else
-				ExecuteMasteryAbility_KneeBreaker(combatInfo);
-			endif
-		elseif (Upper(weaponCfg.Type) == Upper(SPEAR))
-			ExecuteMasteryAbility_SpearPush(combatInfo);
-		elseif (Upper(weaponCfg.Type) == Upper(MACE))
-			if (weapon.isTwoHanded())
-				ExecuteMasteryAbility_Knockdown(combatInfo);
-			else
-				ExecuteMasteryAbility_BoneBreaker(combatInfo);
-			endif
-		elseif (Upper(weaponCfg.Type) == Upper(POLEARM))
-			ExecuteMasteryAbility_Whirlwind(combatInfo);
-		elseif (Upper(weaponCfg.Type) == Upper(THROWING))
-			ExecuteMasteryAbility_Pillum(combatInfo);
+	elseif (Upper(attackInfo.GetAttackerWeapon().GetAttribute()) == Upper(TWOHANDED))
+		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::GREATSWORD))
+			ExecuteMasteryAbility_DownwardCut(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SWORD))
+			ExecuteMasteryAbility_SwordBlock(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::AXE))
+			ExecuteMasteryAbility_Cleave(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SPEAR))
+			ExecuteMasteryAbility_SpearPush(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::MACE))
+			ExecuteMasteryAbility_Knockdown(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::POLEARM))
+			ExecuteMasteryAbility_Whirlwind(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::THROWING))
+			ExecuteMasteryAbility_Pillum(attackInfo);
+		endif
+	elseif (Upper(attackInfo.GetAttackerWeapon().GetAttribute()) == Upper(ONEHANDED))
+		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::DAGGER))
+			ExecuteMasteryAbility_Cutthroat(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SWORD))
+			ExecuteMasteryAbility_CounterAttack(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::AXE))
+			ExecuteMasteryAbility_KneeBreaker(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SPEAR))
+			ExecuteMasteryAbility_SpearPush(attackInfo);
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::MACE))
+			ExecuteMasteryAbility_BoneBreaker(attackInfo);
+		endif
+	elseif (Upper(attackInfo.GetAttackerWeapon().GetAttribute()) == Upper(DUALWIELD))
+		if (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::AXE))
+			// TODO: Habilidade de maestria para MACHADOS em dual wield
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::DAGGER))
+			// TODO: Habilidade de maestria para ADAGAS em dual wield
+		elseif (Upper(attackInfo.GetAttackerWeapon().GetCategory()) == Upper(WEAPON_CATEGORY::SWORD))
+			// TODO: Habilidade de maestria para ESPADA em dual wield
 		endif
 	endif
 endfunction
 
-function CalculateCooldown(byRef combatInfo)
-	var weaponSkill := AP_GetSkill(combatInfo.attacker, combatInfo.attacker.weapon.attribute);
-	var cooldown := CInt(160) - (weaponSkill / 1); // TODO: Ajustar a fórmula de cooldown
-	return cooldown;
+function CalculateCooldown(byRef attackInfo)
+	var maxTime := 160;
+	var weaponSkill := attackInfo.GetAttacker().GetSkill(attackInfo.GetAttackerWeapon().GetAttribute());
+	var mod := 1; // TODO: Balancear o modificador
+	
+	return (maxTime) - (weaponSkill / mod);
 endfunction
 
-function CalculateEffectTime(attacker)
-	// var effectTime := CInt(5);
-	var effectTime := CInt(AP_GetSkill(attacker, TACTICS) / 20);
-	return effectTime;
+function CalculateEffectTime(byRef attackInfo)
+	return CInt(attackInfo.GetAttacker().GetAttribute(TACTICS) / 20);
 endfunction
 
-function ExecuteMasteryAbility_DownwardCut(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/downwardcut", combatInfo);
+function ExecuteMasteryAbility_DownwardCut(byRef attackInfo)
+	return Run_Script(":combat:specialAttackScripts/downwardcut", attackInfo);
 endfunction
 
-function ExecuteMasteryAbility_Whirlwind(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/whirlwind", combatInfo);
+function ExecuteMasteryAbility_Whirlwind(byRef attackInfo)
+	return Run_Script(":combat:specialAttackScripts/whirlwind", attackInfo);
 endfunction
 
-function ExecuteMasteryAbility_Cutthroat(byRef combatInfo)
-	if (AP_GetVital(combatInfo.defender, "Hits") < (AP_GetVitalMaximumValue(combatInfo.defender, "Hits") * 0.05))
-		return Run_Script(":combat:specialAttackScripts/cutthroat", combatInfo);
+function ExecuteMasteryAbility_Cutthroat(byRef attackInfo)
+	if (attackInfo.GetDefender().GetCurrentHP() < (attackInfo.GetDefender().GetMaxHP() * 0.05))
+		return Run_Script(":combat:specialAttackScripts/cutthroat", attackInfo);
 	endif
 endfunction
 
-function ExecuteMasteryAbility_CounterAttack(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/counterattack", combatInfo);
+function ExecuteMasteryAbility_CounterAttack(byRef attackInfo)
+	return Run_Script(":combat:specialAttackScripts/counterattack", attackInfo);
 endfunction
 
-function ExecuteMasteryAbility_Cleave(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/cleave", combatInfo);
+function ExecuteMasteryAbility_Cleave(byRef attackInfo)
+	return Run_Script(":combat:specialAttackScripts/cleave", attackInfo);
 endfunction
 
-function ExecuteMasteryAbility_KneeBreaker(byRef combatInfo)
-	combatInfo.+effectTime := CalculateEffectTime(combatInfo.attacker);
-	return Run_Script(":combat:specialAttackScripts/kneebreaker", combatInfo);
+function ExecuteMasteryAbility_KneeBreaker(byRef attackInfo)
+	return Run_Script(":combat:specialAttackScripts/kneebreaker", array{attackInfo, CalculateEffectTime(attackInfo)});
 endfunction
 
-function ExecuteMasteryAbility_BoneBreaker(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/bonebreaker", combatInfo);
+function ExecuteMasteryAbility_BoneBreaker(byRef attackInfo)
+	return Run_Script(":combat:specialAttackScripts/bonebreaker", attackInfo);
 endfunction
 
-function ExecuteMasteryAbility_SpearPush(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/spearpush", combatInfo);
+function ExecuteMasteryAbility_SpearPush(byRef attackInfo)
+	return Run_Script(":combat:specialAttackScripts/spearpush", attackInfo);
 endfunction
 
-function ExecuteMasteryAbility_Knockdown(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/knockdown", combatInfo);
+function ExecuteMasteryAbility_Knockdown(byRef attackInfo)
+	return Run_Script(":combat:specialAttackScripts/knockdown", attackInfo);
 endfunction
 
-function ExecuteMasteryAbility_SwordBlock(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/swordblock", combatInfo);
+function ExecuteMasteryAbility_SwordBlock(byRef attackInfo)
+	return Run_Script(":combat:specialAttackScripts/swordblock", attackInfo);
 endfunction
 
-function ExecuteMasteryAbility_DoubleShot(byRef combatInfo)
-	return Start_Script(":combat:specialAttackScripts/doubleshot", combatInfo);
+function ExecuteMasteryAbility_DoubleShot(byRef attackInfo)
+	return Start_Script(":combat:specialAttackScripts/doubleshot", attackInfo);
 endfunction
 
-function ExecuteMasteryAbility_Lame(byRef combatInfo)
-	combatInfo.+effectTime := CalculateEffectTime(combatInfo.attacker);
-	return Run_Script(":combat:specialAttackScripts/lame", combatInfo);
+function ExecuteMasteryAbility_Lame(byRef attackInfo)
+	return Run_Script(":combat:specialAttackScripts/lame", array{attackInfo, CalculateEffectTime(attackInfo)});
 endfunction
 
-function ExecuteMasteryAbility_Pillum(byRef combatInfo)
-	combatInfo.+effectTime := CalculateEffectTime(combatInfo.attacker);
-	return Start_Script(":combat:specialAttackScripts/pillum", combatInfo);
+function ExecuteMasteryAbility_Pillum(byRef attackInfo)
+	return Start_Script(":combat:specialAttackScripts/pillum", array{attackInfo, CalculateEffectTime(attackInfo)});
 endfunction
 
-function ExecuteMasteryAbility_Charge(byRef combatInfo)
-	return Run_Script(":combat:specialAttackScripts/charge", combatInfo);
+function ExecuteMasteryAbility_Charge(byRef attackInfo)
+	return Run_Script(":combat:specialAttackScripts/charge", attackInfo);
 endfunction

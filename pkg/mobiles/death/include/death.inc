@@ -11,6 +11,8 @@ use util;
 include ":brainAI:npcUtil";
 include ":attributes:attributes";
 include ":timeutils:time";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 /*
  * DP_PlayDeathSound(corpse, ghost:=0)
@@ -163,7 +165,7 @@ endfunction
 
 function ShamanSoulHarvest(mobile)
 	var npc_elem := NPC_GetNPCConfig(mobile);
-	var category := npc_elem.Category;
+	var category := npc_elem.Environment;
 	var has_soul := 1;
 
 	// Check if NPC has no soul (undead, animal, giantanimal)
@@ -186,7 +188,7 @@ function ShamanSoulHarvest(mobile)
 				continue; // Skip NPCs, only check players
 			endif
 
-			if (!TemHabilidade(player, "Colheita de Almas"))
+			if (!MobileWrapper(player).HasAbility(ABILITY_ID::SOUL_HARVEST))
 				continue; // Skip players without the ability
 			endif
 
@@ -198,10 +200,10 @@ function ShamanSoulHarvest(mobile)
 
 			if (shaman_souls < Cint(shaman_reap_bonus / 5))
 				shaman_souls := shaman_souls + 1;
-				PerformAction(player, ANIM_SALUTE);
+				PerformAction(player, HUMAN_ANIM::SALUTE);
 				sleep(1);
 
-				PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z, mobile.realm, EPIC_FX_SOUL_LEAVING, 0, 15, 0, 0, 0);
+				PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z, mobile.realm, FX_SOUL_LEAVING, 0, 15, 0, 0, 0);
 				// 			// PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z, mobile.realm, , 0, 60, 2676, 5, 0);
 
 				PlaySoundEffect(player, 0x653);

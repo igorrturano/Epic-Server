@@ -2,11 +2,14 @@
 use uo;
 
 include ":fls_core:packets";
-include ":combat:combat";
+include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
-include ":combat:damage";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
 include ":timedScripts:timedScripts";
 include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program doubleattack(params)
 	var attacker := params[1];
@@ -29,15 +32,15 @@ program doubleattack(params)
 		return;
 	endif
 
-	if (TemHabilidade(defender, "Vínculo Elemental"))
+	if (MobileWrapper(defender).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
 		if (GetObjProperty(defender.weapon, "#elementalweapon")) // seta com a arma
 			SendSysMessageEx(attacker, "O alvo tem uma ligacao magica com a arma.", SSM_FAIL);
 			return 1;
 		endif
 	endif
 
-	PlayAttackAnimation(attacker);
-	PlayHitSounds(attacker, defender);
+	PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
+	PlayAttackSFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
 
 	PrintTextAbove(attacker, "*desarmar*");
 

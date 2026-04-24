@@ -1,62 +1,9 @@
-/*
- * $Id: logon.src 87 2006-05-23 19:04:43Z sroyalty $
- *
-*/
 use uo;
-use os;
 
 include "include/say";
-// include ":timedscripts:timedScripts";
-include ":spells:auraControl";
+include ":spells:Controller/SpellController";
 
 program Logon(who)
-	/* var result := TS_StartController(who);
-	if ( result.errortext )
-		SendSysMessage(who, "->"+result.errortext);
-	endif */
-	// SendSysMessage(who, "->"+who.name);
-	// c_START(WHO);
-
-	var e := Start_Script("auraControl", { who });
-	if (e == error)
-		PrintTextAbove(who, " " + e);
-	endif
-
-	// DEPRECATED: powerWords listener system removed in favor of .r command
-	// Priests, Shamans, and Druids now use `.r <spellname>` to cast memorized rituals
-	// var magia := GetObjProperty(who, "chardata").magia;
-	// if (magia == "Shaman" && !GetProcess(GetObjProperty(who, "#clericpid")))
-	// 	Start_Script(":spells:powerWords", array{ who });
-	// endif
-	// if (magia == "Sacerdote" && !GetProcess(GetObjProperty(who, "#priestpid")))
-	// 	Start_Script(":spells:powerWords", array{ who });
-	// endif
-
-	// Start NPC tracker with error checking and retry logic
-	var tracker_pid := Start_Script(":epicai:scripts/npctracker", who);
-	if (!tracker_pid || tracker_pid == error)
-		// Retry once after a short delay
-		sleepms(100);
-		tracker_pid := Start_Script(":epicai:scripts/npctracker", who);
-
-		if (!tracker_pid || tracker_pid == error)
-			// Send Discord alert about the failure
-			var error_text := tracker_pid.errortext;
-			if (!error_text)
-				error_text := "unknown error";
-			endif
-			Start_Script(":DiscordWebhook:discord", { "npctracker_erro", who.name, who.acctname, error_text, "", "", "" });
-
-			// Also log it
-			syslog("npctracker failed to start for player " + who.name + " (acct: " + who.acctname + "): " + error_text);
-		else
-			// Success on retry
-			SetObjProperty(who, "#npctracker_pid", tracker_pid);
-		endif
-	else
-		// Store the PID for verification later
-		SetObjProperty(who, "#npctracker_pid", tracker_pid);
-	endif
-
+	SC_ResyncOnLogin(who);
 	return 1;
 endprogram

@@ -1,0 +1,12 @@
+// Hotbar PacketHook Handler
+// Handles incoming packet 0xD7 subcommand 0x50 (Hotbar Request)
+
+use uo;
+use os;
+
+include "hotbar_packets";
+
+// Export Hotbar Request handler (0xD7)
+exported function HandleHotbar(who, byref packet)
+    return HandleHotbarPacket(who, packet);
+endfunction

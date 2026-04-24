@@ -76,7 +76,7 @@ program SpellScript(params)
 			// Visual effect on the item
 			PlayObjectCenteredEffect(item, FX_BLESS_EFFECT, 7, 16);
 			sleepms(200);
-			updateTooltip(item);
+			IncRevision(item);
 		endforeach
 
 		if (itemsRecharged > 0)
@@ -123,7 +123,7 @@ program SpellScript(params)
 		PlaySoundEffect(targ, SFX_SPELL_BLESS);
 		PlayObjectCenteredEffect(targ, FX_BLESS_EFFECT, 7, 16);
 		SendSysMessageEx(who, "Você recarregou a runa sagrada.", SSM_INFO);
-		updateTooltip(targ);
+		IncRevision(targ);
 	endif
 
 	return 1;

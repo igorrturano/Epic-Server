@@ -1,0 +1,1011 @@
+use uo;
+use os;
+use polsys;
+use util;
+
+include "include/client";
+include "include/say";
+include ":gumps:include/epicGumps";
+include "include/creationUtils";
+
+program npc(who)
+	SendSysMessage(who, "Target um NPC para editar.");
+	var targ := Target(who);
+
+	if (!targ)
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	if (!targ.IsA(POLCLASS_MOBILE))
+		SendSysMessage(who, "Alvo inválido. Target um NPC.");
+		return 0;
+	endif
+
+	var continue_editing := 1;
+	while (continue_editing)
+		var gump := GFCreateGump();
+		GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 460);
+
+		GFTextMid(gump, 0, 25, 500, 1153, "NPC Customizer");
+		GFTextMid(gump, 0, 50, 500, 66, targ.name);
+
+		var y_pos := 90;
+		GFResizePic(gump, 30, y_pos, 3000, 440, 2);
+		y_pos += 15;
+
+		GFAddButton(gump, 40, y_pos, 2117, 2118, GF_CLOSE_BTN, 92);
+		GFTextLine(gump, 70, y_pos, 1153, "Aparência (cabelo, barba, pele)");
+		y_pos += 35;
+
+		GFAddButton(gump, 40, y_pos, 2117, 2118, GF_CLOSE_BTN, 93);
+		GFTextLine(gump, 70, y_pos, 1153, "Raça & Gênero");
+		y_pos += 35;
+
+		GFAddButton(gump, 40, y_pos, 2117, 2118, GF_CLOSE_BTN, 94);
+		GFTextLine(gump, 70, y_pos, 1153, "Armaduras & Equipamentos");
+		y_pos += 35;
+
+		GFAddButton(gump, 40, y_pos, 2117, 2118, GF_CLOSE_BTN, 95);
+		GFTextLine(gump, 70, y_pos, 1153, "Montaria");
+		y_pos += 35;
+
+		GFAddButton(gump, 40, y_pos, 2117, 2118, GF_CLOSE_BTN, 96);
+		GFTextLine(gump, 70, y_pos, 1153, "Cores");
+		y_pos += 50;
+
+		GFResizePic(gump, 30, y_pos - 10, 3000, 440, 2);
+
+		GFAddButton(gump, 270, y_pos, 2119, 2120, GF_CLOSE_BTN, 0);
+
+		var input := GFSendGump(who, gump);
+
+		if (input[0] == 0)
+			continue_editing := 0;
+		elseif (input[0] == 92)
+			EditAppearance(who, targ);
+		elseif (input[0] == 93)
+			EditRace(who, targ);
+		elseif (input[0] == 94)
+			EditEquipments(who, targ);
+		elseif (input[0] == 95)
+			EditMount(who, targ);
+		elseif (input[0] == 96)
+			EditColors(who, targ);
+		endif
+	endwhile
+endprogram
+
+// ============================================================
+// APARÊNCIA (cabelo, barba, cor de pele)
+// ============================================================
+
+function EditAppearance(who, npc)
+	var continue_editing := 1;
+	while (continue_editing)
+		var gump := GFCreateGump();
+		GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 500);
+		GFTextMid(gump, 0, 25, 500, 1153, "Aparência");
+
+		var y_pos := 70;
+
+		// Current hair
+		var cur_hair := GetEquipmentByLayer(npc, LAYER_HAIR);
+		var cur_beard := GetEquipmentByLayer(npc, LAYER_BEARD);
+
+		if (cur_hair)
+			GFTextLine(gump, 40, y_pos, 2100, "Cabelo: ID " + Hex(cur_hair.objtype) + "  Cor: " + cur_hair.color);
+		else
+			GFTextLine(gump, 40, y_pos, 2100, "Cabelo: nenhum");
+		endif
+		y_pos += 20;
+
+		if (cur_beard)
+			GFTextLine(gump, 40, y_pos, 2100, "Barba: ID " + Hex(cur_beard.objtype) + "  Cor: " + cur_beard.color);
+		else
+			GFTextLine(gump, 40, y_pos, 2100, "Barba: nenhuma");
+		endif
+		y_pos += 20;
+
+		var cur_skin_color := npc.truecolor ? npc.truecolor : npc.color;
+		GFTextLine(gump, 40, y_pos, 2100, "Cor de pele: " + cur_skin_color);
+		y_pos += 35;
+
+		GFResizePic(gump, 30, y_pos - 5, 3000, 440, 2);
+		y_pos += 15;
+
+		GFAddButton(gump, 40, y_pos, 2117, 2118, GF_CLOSE_BTN, 101);
+		GFTextLine(gump, 70, y_pos, 1153, "Estilo de Cabelo");
+		y_pos += 30;
+
+		GFAddButton(gump, 40, y_pos, 2117, 2118, GF_CLOSE_BTN, 102);
+		GFTextLine(gump, 70, y_pos, 1153, "Cor do Cabelo");
+		y_pos += 30;
+
+		GFAddButton(gump, 40, y_pos, 2117, 2118, GF_CLOSE_BTN, 103);
+		GFTextLine(gump, 70, y_pos, 1153, "Estilo de Barba");
+		y_pos += 30;
+
+		GFAddButton(gump, 40, y_pos, 2117, 2118, GF_CLOSE_BTN, 104);
+		GFTextLine(gump, 70, y_pos, 1153, "Cor da Barba");
+		y_pos += 30;
+
+		GFAddButton(gump, 40, y_pos, 2117, 2118, GF_CLOSE_BTN, 105);
+		GFTextLine(gump, 70, y_pos, 1153, "Cor de Pele");
+		y_pos += 40;
+
+		GFAddButton(gump, 40, y_pos, 2128, 2129, GF_CLOSE_BTN, 999);
+
+		var input := GFSendGump(who, gump);
+
+		if (input[0] == 999 || input[0] == 0)
+			continue_editing := 0;
+		elseif (input[0] == 101)
+			EditHairStyle(who, npc);
+		elseif (input[0] == 102)
+			EditHairColor(who, npc);
+		elseif (input[0] == 103)
+			EditBeardStyle(who, npc);
+		elseif (input[0] == 104)
+			EditBeardColor(who, npc);
+		elseif (input[0] == 105)
+			EditSkinColor(who, npc);
+		endif
+	endwhile
+endfunction
+
+function EditHairStyle(who, npc, page := 1)
+	var config := ReadConfigFile(":fls_core:config/hairtypes");
+	if (!config)
+		SendSysMessage(who, "Erro: configuração de cabelos não encontrada.");
+		return;
+	endif
+
+	var hair_styles := GetConfigStringArray(config["todos"], "Style");
+
+	var grid_width := 4;
+	var grid_height := 3;
+	var items_per_page := grid_width * grid_height;
+	var total_items := hair_styles.size();
+	var total_pages := Ceil(total_items / items_per_page);
+	var start_index := (page - 1) * items_per_page;
+	var end_index := Min(start_index + items_per_page, total_items);
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+	GFTextMid(gump, 0, 25, 600, 1153, "Estilo de Cabelo");
+
+	var current_item := 0;
+	var style_index := 0;
+	var cell_width := 120;
+	var cell_height := 100;
+	var start_x := 30;
+	var start_y := 60;
+
+	foreach style_line in hair_styles
+		style_index += 1;
+		if (style_index < start_index || style_index >= end_index)
+			continue;
+		endif
+
+		var style_parts := SplitWords(style_line);
+		if (style_parts.size() >= 2)
+			var style_id := CInt(style_parts[2]);
+			var col := current_item % grid_width;
+			var row := current_item / grid_width;
+			var item_x := start_x + (col * cell_width);
+			var item_y := start_y + (row * cell_height);
+
+			GFGumpPic(gump, item_x, item_y, GetHairGumpGraphic(style_id));
+			GFAddButton(gump, item_x + 40, item_y + 70, 2117, 2118, GF_CLOSE_BTN, style_id);
+			current_item += 1;
+		endif
+	endforeach
+
+	var pagination_y := 600;
+	GFResizePic(gump, 100, pagination_y - 10, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 400, 40);
+	if (page > 1)
+		GFAddButton(gump, 140, pagination_y, 2117, 2118, GF_CLOSE_BTN, 900);
+		GFTextLine(gump, 170, pagination_y, 1153, "Anterior");
+	endif
+	GFTextMid(gump, 250, pagination_y, 100, 1153, "Pág " + page + "/" + total_pages);
+	if (page < total_pages)
+		GFAddButton(gump, 360, pagination_y, 2117, 2118, GF_CLOSE_BTN, 901);
+		GFTextLine(gump, 390, pagination_y, 1153, "Próxima");
+	endif
+	GFAddButton(gump, 30, 650, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 900)
+		return EditHairStyle(who, npc, page - 1);
+	elseif (input[0] == 901)
+		return EditHairStyle(who, npc, page + 1);
+	elseif (input[0] != 999 && input[0] != 0)
+		var existing := GetEquipmentByLayer(npc, LAYER_HAIR);
+		var old_color := existing ? existing.color : 0;
+		if (existing) DestroyItem(existing); endif
+
+		var hair_item := CreateItemAtLocation(npc.x, npc.y, npc.z, CInt(input[0]), 1, npc.realm);
+		if (hair_item)
+			if (old_color) hair_item.color := old_color; endif
+			if (!EquipItem(npc, hair_item)) DestroyItem(hair_item); endif
+		endif
+		SendSysMessage(who, "Cabelo aplicado.");
+	endif
+endfunction
+
+function EditHairColor(who, npc)
+	var color_cfg := ReadConfigFile(":hair:config/hairColors");
+	if (!color_cfg)
+		SendSysMessage(who, "Erro: configuração de cores não encontrada.");
+		return;
+	endif
+
+	// Pick color list based on NPC's current race (stored as prop or default human)
+	var race := GetObjProperty(npc, "raca");
+	var color_elem;
+	case (race)
+		ANAO: color_elem := color_cfg["Cabelo Anao"];
+		ELFO: color_elem := color_cfg["Cabelo Elfo"];
+		DROW: color_elem := color_cfg["Cabelo Drow"];
+		ORC:  color_elem := color_cfg["Cabelo Orc"];
+		default:
+			color_elem := color_cfg["Cabelo Imperial"];
+	endcase
+
+	var colors := GetConfigStringArray(color_elem, "Color");
+	var cur_hair := GetEquipmentByLayer(npc, LAYER_HAIR);
+	var cur_color := cur_hair ? cur_hair.color : 0;
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 700, 600);
+	GFTextMid(gump, 0, 25, 700, 1153, "Cor do Cabelo");
+
+	var y_pos := 60;
+	var x_pos := 30;
+	var color_count := 0;
+	var colors_per_row := 8;
+
+	GFSetRadioGroup(gump, 1);
+	foreach color in colors
+		var color_val := CInt(color);
+		GFRadioButton(gump, x_pos, y_pos, 210, 211, (cur_color == color_val), color_val);
+		GFTextLine(gump, x_pos + 25, y_pos, color_val, "Cor");
+		color_count += 1;
+		if (color_count % colors_per_row == 0)
+			y_pos += 25;
+			x_pos := 30;
+		else
+			x_pos += 80;
+		endif
+		if (y_pos > 500) break; endif
+	endforeach
+
+	GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
+	GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 998)
+		foreach key in (input.keys)
+			if (key > 1000 && key != 998 && key != 999)
+				if (cur_hair)
+					cur_hair.color := key;
+					SendSysMessage(who, "Cor do cabelo aplicada.");
+				else
+					SendSysMessage(who, "Nenhum cabelo equipado para colorir.");
+				endif
+				break;
+			endif
+		endforeach
+	endif
+endfunction
+
+function EditBeardStyle(who, npc, page := 1)
+	if (npc.gender == 1)
+		SendSysMessage(who, "NPC feminino não pode ter barba.");
+		return 0;
+	endif
+
+	var config := ReadConfigFile(":fls_core:config/hairtypes");
+	if (!config)
+		SendSysMessage(who, "Erro: configuração de barba não encontrada.");
+		return;
+	endif
+
+	var race := GetObjProperty(npc, "raca");
+	var beard_config := (race == ANAO) ? config["dwarwen_beard"] : config["beard"];
+	if (!beard_config)
+		beard_config := config["beard"];
+	endif
+
+	var beard_styles := GetConfigStringArray(beard_config, "Style");
+
+	var grid_width := 4;
+	var grid_height := 3;
+	var items_per_page := grid_width * grid_height;
+	var total_items := beard_styles.size();
+	var total_pages := Ceil(total_items / items_per_page);
+	var start_index := (page - 1) * items_per_page;
+	var end_index := Min(start_index + items_per_page, total_items);
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+	GFTextMid(gump, 0, 25, 600, 1153, "Estilo de Barba");
+
+	var current_item := 0;
+	var style_index := 0;
+	var cell_width := 120;
+	var cell_height := 100;
+	var start_x := 30;
+	var start_y := 60;
+
+	foreach style_line in beard_styles
+		style_index += 1;
+		if (style_index < start_index || style_index >= end_index)
+			continue;
+		endif
+
+		var style_parts := SplitWords(style_line);
+		if (style_parts.size() >= 2)
+			var style_id := CInt(style_parts[2]);
+			var col := current_item % grid_width;
+			var row := current_item / grid_width;
+			var item_x := start_x + (col * cell_width);
+			var item_y := start_y + (row * cell_height);
+
+			GFGumpPic(gump, item_x + 30, item_y, GetBeardGumpGraphic(style_id));
+			GFAddButton(gump, item_x + 40, item_y + 70, 2117, 2118, GF_CLOSE_BTN, style_id);
+			current_item += 1;
+		endif
+	endforeach
+
+	var pagination_y := 600;
+	GFResizePic(gump, 100, pagination_y - 10, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 400, 40);
+	if (page > 1)
+		GFAddButton(gump, 140, pagination_y, 2117, 2118, GF_CLOSE_BTN, 900);
+		GFTextLine(gump, 170, pagination_y, 1153, "Anterior");
+	endif
+	GFTextMid(gump, 250, pagination_y, 100, 1153, "Pág " + page + "/" + total_pages);
+	if (page < total_pages)
+		GFAddButton(gump, 360, pagination_y, 2117, 2118, GF_CLOSE_BTN, 901);
+		GFTextLine(gump, 390, pagination_y, 1153, "Próxima");
+	endif
+	GFAddButton(gump, 30, 650, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 900)
+		return EditBeardStyle(who, npc, page - 1);
+	elseif (input[0] == 901)
+		return EditBeardStyle(who, npc, page + 1);
+	elseif (input[0] != 999 && input[0] != 0)
+		var existing := GetEquipmentByLayer(npc, LAYER_BEARD);
+		var old_color := existing ? existing.color : 0;
+		if (existing) DestroyItem(existing); endif
+
+		var beard_item := CreateItemAtLocation(npc.x, npc.y, npc.z, CInt(input[0]), 1, npc.realm);
+		if (beard_item)
+			if (old_color) beard_item.color := old_color; endif
+			if (!EquipItem(npc, beard_item)) DestroyItem(beard_item); endif
+		endif
+		SendSysMessage(who, "Barba aplicada.");
+	endif
+endfunction
+
+function EditBeardColor(who, npc)
+	if (npc.gender == 1)
+		SendSysMessage(who, "NPC feminino não pode ter barba.");
+		return 0;
+	endif
+
+	var cur_beard := GetEquipmentByLayer(npc, LAYER_BEARD);
+	if (!cur_beard)
+		SendSysMessage(who, "Nenhuma barba equipada para colorir.");
+		return 0;
+	endif
+
+	var color_cfg := ReadConfigFile(":hair:config/hairColors");
+	if (!color_cfg)
+		SendSysMessage(who, "Erro: configuração de cores não encontrada.");
+		return;
+	endif
+
+	var race := GetObjProperty(npc, "raca");
+	var hair_elem;
+	case (race)
+		ANAO: hair_elem := color_cfg["Cabelo Anao"];
+		ELFO: hair_elem := color_cfg["Cabelo Elfo"];
+		DROW: hair_elem := color_cfg["Cabelo Drow"];
+		ORC:  hair_elem := color_cfg["Cabelo Orc"];
+		default:
+			hair_elem := color_cfg["Cabelo Imperial"];
+	endcase
+
+	var colors := GetConfigStringArray(hair_elem, "Color");
+	var cur_color := cur_beard.color;
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 700, 600);
+	GFTextMid(gump, 0, 25, 700, 1153, "Cor da Barba");
+
+	var y_pos := 60;
+	var x_pos := 30;
+	var color_count := 0;
+	var colors_per_row := 8;
+
+	GFSetRadioGroup(gump, 1);
+	foreach color in colors
+		var color_val := CInt(color);
+		GFRadioButton(gump, x_pos, y_pos, 210, 211, (cur_color == color_val), color_val);
+		GFTextLine(gump, x_pos + 25, y_pos, color_val, "Cor");
+		color_count += 1;
+		if (color_count % colors_per_row == 0)
+			y_pos += 25;
+			x_pos := 30;
+		else
+			x_pos += 80;
+		endif
+	endforeach
+
+	GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
+	GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 998)
+		foreach key in (input.keys)
+			if (key > 1000 && key != 998 && key != 999)
+				cur_beard.color := key;
+				SendSysMessage(who, "Cor da barba aplicada.");
+				break;
+			endif
+		endforeach
+	endif
+endfunction
+
+function EditSkinColor(who, npc)
+	var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
+	if (!skin_cfg)
+		SendSysMessage(who, "Erro: configuração de cores de pele não encontrada.");
+		return;
+	endif
+
+	var race := GetObjProperty(npc, "raca");
+	var skin_config;
+	case (race)
+		ELFO: skin_config := skin_cfg["elfo"];
+		DROW: skin_config := skin_cfg["drow"];
+		ORC:  skin_config := skin_cfg["orc"];
+		default:
+			skin_config := skin_cfg["list"];
+	endcase
+
+	var skin_colors := GetConfigStringArray(skin_config, "color");
+	var cur_color := npc.truecolor ? npc.truecolor : npc.color;
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 600);
+	GFTextMid(gump, 0, 25, 600, 1153, "Cor de Pele");
+
+	var y_pos := 60;
+	var x_pos := 30;
+	var color_count := 0;
+	var colors_per_row := 6;
+
+	GFSetRadioGroup(gump, 1);
+	foreach color in skin_colors
+		var color_val := CInt(color);
+		GFRadioButton(gump, x_pos, y_pos, 210, 211, (cur_color == color_val), color_val);
+		GFTextLine(gump, x_pos + 25, y_pos, color_val, "Pele");
+		color_count += 1;
+		if (color_count % colors_per_row == 0)
+			y_pos += 30;
+			x_pos := 30;
+		else
+			x_pos += 90;
+		endif
+		if (y_pos > 500) break; endif
+	endforeach
+
+	GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
+	GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 998)
+		foreach key in (input.keys)
+			if (key > 1000 && key != 998 && key != 999)
+				npc.color := key;
+				npc.truecolor := key;
+				SendSysMessage(who, "Cor de pele aplicada.");
+				break;
+			endif
+		endforeach
+	endif
+endfunction
+
+// ============================================================
+// RAÇA & GÊNERO
+// ============================================================
+
+function EditRace(who, npc)
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 600);
+	GFResizePic(gump, 15, 15, 9350, 470, 570);
+	GFTextMid(gump, 0, 25, 500, 1153, "Raça & Gênero");
+
+	var races := array{ HUMANO, ELFO, DROW, ORC, ANAO, PEQUILHO };
+	var cur_race := GetObjProperty(npc, "raca");
+	var cur_gender := npc.gender;
+
+	var y_pos := 90;
+	GFSetRadioGroup(gump, 1);
+	for i := 1 to races.size()
+		GFRadioButton(gump, 100, y_pos, 210, 211, (cur_race == races[i]), 100 + i);
+		GFTextLine(gump, 130, y_pos, 1153, races[i]);
+		y_pos += 30;
+	endfor
+
+	GFTextMid(gump, 0, 280, 500, 1153, "Gênero");
+	y_pos := 310;
+	GFSetRadioGroup(gump, 2);
+	GFRadioButton(gump, 100, y_pos, 210, 211, (cur_gender == 0), 200);
+	GFTextLine(gump, 130, y_pos, 1153, "Masculino");
+	y_pos += 30;
+	GFRadioButton(gump, 100, y_pos, 210, 211, (cur_gender == 1), 201);
+	GFTextLine(gump, 130, y_pos, 1153, "Feminino");
+
+	GFAddButton(gump, 150, 530, 2128, 2129, GF_CLOSE_BTN, 1);
+	GFAddButton(gump, 300, 530, 2119, 2120, GF_CLOSE_BTN, 0);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 0)
+		return 0;
+	endif
+
+	var selected_race := "";
+	for i := 1 to races.size()
+		if (input[100 + i])
+			selected_race := races[i];
+			break;
+		endif
+	endfor
+
+	var selected_gender := cur_gender;
+	if (input[200])
+		selected_gender := 0;
+	elseif (input[201])
+		selected_gender := 1;
+	endif
+
+	if (!selected_race)
+		SendSysMessage(who, "Selecione raça e gênero.");
+		return EditRace(who, npc);
+	endif
+
+	// Apply graphic based on race/gender
+	var base_graphic := (selected_gender == 1) ? 401 : 400;
+	if (selected_race == ELFO || selected_race == DROW)
+		base_graphic := (selected_gender == 1) ? 1831 : 1830;
+	elseif (selected_race == ORC)
+		base_graphic := (selected_gender == 1) ? 1833 : 1832;
+	elseif (selected_race == ANAO || selected_race == PEQUILHO)
+		base_graphic := (selected_gender == 1) ? 1829 : 1828;
+	endif
+
+	npc.graphic := base_graphic;
+	npc.gender := selected_gender;
+	SetObjProperty(npc, "raca", selected_race);
+
+	// Remove beard if now female
+	if (selected_gender == 1)
+		var beard := GetEquipmentByLayer(npc, LAYER_BEARD);
+		if (beard) DestroyItem(beard); endif
+	endif
+
+	SendSysMessage(who, "Raça: " + selected_race + " (" + (selected_gender ? "Feminino" : "Masculino") + ") aplicada.");
+	return 1;
+endfunction
+
+// ============================================================
+// EQUIPAMENTOS
+// ============================================================
+
+function EditEquipments(who, npc)
+	var continue_adding := 1;
+	while (continue_adding)
+		var gump := GFCreateGump();
+		GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+		GFResizePic(gump, 15, 15, 9350, 570, 670);
+		GFTextMid(gump, 0, 25, 600, 1153, "Equipamentos do NPC");
+
+		var y_pos := 60;
+		GFTextLine(gump, 30, y_pos, 1153, "Equipamentos atuais:");
+		y_pos += 25;
+
+		var equipped := ListEquippedItems(npc);
+		var eq_count := 0;
+		foreach item in equipped
+			if (item.layer == LAYER_HAIR || item.layer == LAYER_BEARD)
+				continue;
+			endif
+			GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 100 + eq_count);
+			GFTextLine(gump, 60, y_pos, 66, item.desc + " (layer " + item.layer + ")");
+			y_pos += 20;
+			eq_count += 1;
+			if (y_pos > 480) break; endif
+		endforeach
+
+		if (eq_count == 0)
+			GFTextLine(gump, 60, y_pos, 2100, "Nenhum equipamento.");
+		endif
+
+		y_pos := 510;
+		GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 1);
+		GFTextLine(gump, 60, y_pos, 1153, "Adicionar item (target)");
+
+		y_pos += 30;
+		GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 2);
+		GFTextLine(gump, 60, y_pos, 1153, "Adicionar de container (target)");
+
+		y_pos += 30;
+		GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 3);
+		GFTextLine(gump, 60, y_pos, 1153, "Remover tudo");
+
+		y_pos += 50;
+		GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 999);
+
+		var input := GFSendGump(who, gump);
+
+		case (input[0])
+			1:
+				AddEquipmentByTarget(who, npc);
+			2:
+				AddEquipmentFromContainer(who, npc);
+			3:
+				RemoveAllEquipment(npc);
+				SendSysMessage(who, "Equipamentos removidos.");
+			999:
+				continue_adding := 0;
+			default:
+				if (input[0] >= 100)
+					RemoveEquipmentByIndex(npc, input[0] - 100);
+				endif
+		endcase
+	endwhile
+endfunction
+
+function AddEquipmentByTarget(who, npc)
+	SendSysMessage(who, "Target o item para equipar. ESC para parar.", color := 66);
+	while (1)
+		var targ := Target(who);
+		if (!targ) break; endif
+
+		if (!targ.IsA(POLCLASS_ITEM))
+			SendSysMessage(who, "Target um item.", color := 33);
+			continue;
+		endif
+
+		var item := CreateItemAtLocation(npc.x, npc.y, npc.z, targ.objtype, 1);
+		if (item)
+			item.color := targ.color;
+			if (!EquipItemOnNpc(npc, item))
+				DestroyItem(item);
+				SendSysMessage(who, "Não foi possível equipar " + targ.desc + ".", color := 33);
+			else
+				SendSysMessage(who, "Equipado: " + targ.desc, color := 66);
+			endif
+		endif
+		SendSysMessage(who, "Target outro item ou ESC para parar.", color := 66);
+	endwhile
+endfunction
+
+function AddEquipmentFromContainer(who, npc)
+	SendSysMessage(who, "Target um container.", color := 66);
+	var targ := Target(who);
+	if (!targ) return 0; endif
+	if (!targ.IsA(POLCLASS_CONTAINER))
+		SendSysMessage(who, "Target um container.", color := 33);
+		return 0;
+	endif
+
+	foreach item in (EnumerateItemsInContainer(targ))
+		var new_item := CreateItemAtLocation(npc.x, npc.y, npc.z, item.objtype, 1);
+		if (new_item)
+			new_item.color := item.color;
+			if (!EquipItemOnNpc(npc, new_item))
+				DestroyItem(new_item);
+			endif
+		endif
+		sleepms(2);
+	endforeach
+	SendSysMessage(who, "Itens do container processados.");
+endfunction
+
+function RemoveAllEquipment(npc)
+	var equipped := ListEquippedItems(npc);
+	foreach item in equipped
+		if (item.layer == LAYER_HAIR || item.layer == LAYER_BEARD)
+			continue;
+		endif
+		DestroyItem(item);
+	endforeach
+endfunction
+
+function RemoveEquipmentByIndex(npc, idx)
+	var equipped := ListEquippedItems(npc);
+	var count := 0;
+	foreach item in equipped
+		if (item.layer == LAYER_HAIR || item.layer == LAYER_BEARD)
+			continue;
+		endif
+		if (count == idx)
+			DestroyItem(item);
+			return;
+		endif
+		count += 1;
+	endforeach
+endfunction
+
+// Equip item, removing conflicting layer if needed
+function EquipItemOnNpc(npc, item)
+	if (EquipItem(npc, item))
+		return 1;
+	endif
+
+	var equipped := ListEquippedItems(npc);
+	foreach equipped_item in equipped
+		MoveItemToContainer(equipped_item, npc.backpack);
+		if (EquipItem(npc, item))
+			DestroyItem(equipped_item);
+			return 1;
+		else
+			EquipItem(npc, equipped_item);
+		endif
+		sleepms(2);
+	endforeach
+	return 0;
+endfunction
+
+// ============================================================
+// MONTARIA
+// ============================================================
+
+function EditMount(who, npc)
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 400);
+	GFTextMid(gump, 0, 25, 500, 1153, "Montaria");
+
+	var cur_mount := GetObjProperty(npc, "mount_graphic");
+
+	var y_pos := 60;
+	if (cur_mount)
+		GFTextLine(gump, 30, y_pos, 2100, "Montaria atual: " + Hex(cur_mount));
+		y_pos += 20;
+		GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 3);
+		GFTextLine(gump, 60, y_pos, 33, "Remover montaria");
+		y_pos += 35;
+	else
+		GFTextLine(gump, 30, y_pos, 2100, "Sem montaria");
+		y_pos += 35;
+	endif
+
+	GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 60, y_pos, 1153, "Target montaria existente");
+	y_pos += 30;
+
+	GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 2);
+	GFTextLine(gump, 60, y_pos, 1153, "Escolher da lista");
+	y_pos += 50;
+
+	GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	case (input[0])
+		1:
+			TargetMount(who, npc);
+		2:
+			SelectMountFromList(who, npc);
+		3:
+			SetObjProperty(npc, "mount_graphic", 0);
+			SendSysMessage(who, "Montaria removida.");
+			return EditMount(who, npc);
+		999:
+			return 1;
+	endcase
+	return 0;
+endfunction
+
+function TargetMount(who, npc)
+	SendSysMessage(who, "Target a montaria para copiar.", color := 66);
+	var targ := Target(who);
+	if (!targ) return EditMount(who, npc); endif
+
+	if (targ.IsA(POLCLASS_MOBILE))
+		SetObjProperty(npc, "mount_graphic", targ.graphic);
+		SendSysMessage(who, "Montaria selecionada: " + Hex(targ.graphic), color := 66);
+	else
+		SendSysMessage(who, "Target inválido. Target um mobile.", color := 33);
+	endif
+	return EditMount(who, npc);
+endfunction
+
+function SelectMountFromList(who, npc, page := 1)
+	var cfg := ReadConfigFile(":*:npcdesc");
+	if (!cfg)
+		SendSysMessage(who, "Erro ao carregar npcdesc.", color := 33);
+		return EditMount(who, npc);
+	endif
+
+	var available_mounts := array{};
+	foreach template in GetConfigStringKeys(cfg)
+		var elem := cfg[template];
+		if (elem.Environment == "Mount")
+			available_mounts.append(struct{ "name" := elem.Name, "graphic" := elem.Objtype });
+		endif
+	endforeach
+
+	if (available_mounts.size() == 0)
+		SendSysMessage(who, "Nenhuma montaria encontrada.", color := 33);
+		return EditMount(who, npc);
+	endif
+
+	available_mounts.sortby("name");
+
+	var items_per_page := 15;
+	var total_pages := CInt(Ceil(CDbl(available_mounts.size()) / items_per_page));
+	var start_index := (page - 1) * items_per_page;
+	var end_index := Min(start_index + items_per_page, available_mounts.size());
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 600);
+	GFTextMid(gump, 0, 25, 500, 1153, "Montarias (Pág " + page + "/" + total_pages + ")");
+
+	var y_pos := 60;
+	for i := start_index to end_index - 1
+		var mount := available_mounts[i + 1];
+		GFAddButton(gump, 30, y_pos, 2103, 2104, GF_CLOSE_BTN, i + 1);
+		GFTextLine(gump, 60, y_pos, 1153, mount.name + " (" + Hex(mount.graphic) + ")");
+		y_pos += 25;
+	endfor
+
+	if (page > 1)
+		GFAddButton(gump, 30, 550, 2117, 2118, GF_CLOSE_BTN, 998);
+		GFTextLine(gump, 60, 550, 33, "Anterior");
+	endif
+	if (page < total_pages)
+		GFAddButton(gump, 200, 550, 2117, 2118, GF_CLOSE_BTN, 997);
+		GFTextLine(gump, 230, 550, 33, "Próxima");
+	endif
+	GFAddButton(gump, 370, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	case (input[0])
+		998: return SelectMountFromList(who, npc, page - 1);
+		997: return SelectMountFromList(who, npc, page + 1);
+		999:
+			return EditMount(who, npc);
+		default:
+			if (input[0] >= 1 && input[0] <= available_mounts.size())
+				var selected := available_mounts[input[0]];
+				SetObjProperty(npc, "mount_graphic", selected.graphic);
+				SendSysMessage(who, "Montaria: " + selected.name + " selecionada.", color := 66);
+			endif
+	endcase
+	return EditMount(who, npc);
+endfunction
+
+// ============================================================
+// CORES (hue do NPC)
+// ============================================================
+
+function EditColors(who, npc)
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 500);
+	GFTextMid(gump, 0, 25, 600, 1153, "Cor do NPC");
+
+	GFTextLine(gump, 30, 60, 2100, "Cor atual: " + npc.color);
+
+	var y_pos := 90;
+	GFResizePic(gump, 30, y_pos, 3000, 540, 2);
+	y_pos += 15;
+
+	// Basic colors
+	GFTextLine(gump, 30, y_pos, 1153, "Cores básicas:");
+	y_pos += 25;
+
+	var basic_colors := array{ "Rosa", "Vermelho", "Azul", "Verde", "Amarelo",
+							   "Laranja", "Neutro", "Cinza" };
+	var colors_per_row := 4;
+	var col := 0;
+	var x_start := 30;
+	var x_spacing := 130;
+
+	foreach color in basic_colors
+		var x_pos := x_start + (col * x_spacing);
+		GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, 100 + _color_iter);
+		GFTextLine(gump, x_pos + 30, y_pos, 1153, color);
+		col += 1;
+		if (col >= colors_per_row)
+			col := 0;
+			y_pos += 30;
+		endif
+	endforeach
+
+	if (col > 0) y_pos += 30; endif
+	y_pos += 15;
+
+	// Cultural themes
+	GFTextLine(gump, 30, y_pos, 1153, "Temas culturais:");
+	y_pos += 25;
+
+	var regional_colors := array{ AIGLANA, HAROLOTH, LESTE, BJORSKA, ALURIEL,
+								  BADURAN, GULTHRAK, COLHESIANA };
+	col := 0;
+	colors_per_row := 2;
+	x_spacing := 250;
+
+	foreach region in regional_colors
+		var x_pos := x_start + (col * x_spacing);
+		GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, 120 + _region_iter);
+		GFTextLine(gump, x_pos + 30, y_pos, 1153, region);
+		col += 1;
+		if (col >= colors_per_row)
+			col := 0;
+			y_pos += 30;
+		endif
+	endforeach
+
+	y_pos := 440;
+	GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 99);
+	GFTextLine(gump, 60, y_pos, 33, "Remover cor (0)");
+
+	GFAddButton(gump, 250, y_pos, 2128, 2129, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 999 || input[0] == 0)
+		return 1;
+	elseif (input[0] == 99)
+		npc.color := 0;
+		SendSysMessage(who, "Cor removida.");
+		return EditColors(who, npc);
+	else
+		ApplyColorByButton(who, npc, input[0]);
+		return EditColors(who, npc);
+	endif
+endfunction
+
+function ApplyColorByButton(who, npc, btn_id)
+	var color_cfg := ReadConfigFile(":*:colors");
+	if (!color_cfg) return; endif
+
+	var color_names := array{ "Rosa", "Vermelho", "Azul", "Verde", "Amarelo",
+							  "Laranja", "Neutro", "Cinza" };
+	var regional := array{ AIGLANA, HAROLOTH, LESTE, BJORSKA, ALURIEL,
+						   BADURAN, GULTHRAK, COLHESIANA };
+
+	var color_key := "";
+	if (btn_id >= 101 && btn_id <= 108)
+		color_key := color_names[btn_id - 100];
+	elseif (btn_id >= 121 && btn_id <= 128)
+		color_key := regional[btn_id - 120];
+	endif
+
+	if (!color_key) return; endif
+
+	var color_elem := color_cfg[color_key];
+	if (!color_elem) return; endif
+
+	var color_vals := GetConfigStringArray(color_elem, "Color");
+	if (color_vals.size() == 0) return; endif
+
+	var chosen := CInt(color_vals[RandomInt(color_vals.size()) + 1]);
+	npc.color := chosen;
+	SendSysMessage(who, "Cor aplicada: " + color_key + " (" + chosen + ")");
+endfunction

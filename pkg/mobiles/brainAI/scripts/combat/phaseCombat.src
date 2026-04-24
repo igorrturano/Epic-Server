@@ -11,7 +11,7 @@ include "include/shapes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program BrainNerve(params)
 	var npc := params[1];
@@ -90,7 +90,7 @@ function PhaseWarp(npc, opponent)
 	PlaySoundEffect(npc, SFX_TELEPORT);
 
 	foreach coord in phase_coords
-		PlayStationaryEffect(npc.x, npc.y, npc.z, GFX_SMOKE, 5, 5, 0);
+		PlayStationaryEffect(npc.x, npc.y, npc.z, FX_SMOKE, 5, 5, 0);
 		var z := GetWorldHeight(coord.x, coord.y, npc.realm);
 		MoveObjectToLocation(npc, coord.x, coord.y, z, npc.realm, MOVEOBJECT_NORMAL);
 		sleepms(20);

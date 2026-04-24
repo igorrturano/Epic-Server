@@ -1,0 +1,26 @@
+use uo;
+
+program create_items_range(who)
+    var start_id := 0xFF76;
+    var end_id := 0xFFBE;
+    
+    var backpack := CreateItemInBackpack(who, "backpack", 1);
+    if (!backpack)
+        SendSysMessage(who, "Erro ao criar a mochila.");
+        return;
+    endif
+    
+    backpack.color := 1161; // A nice color
+    SetName(backpack, "Itens 0xFF76 - 0xFFBE");
+    
+    var i;
+    var count := 0;
+    for (i := start_id; i <= end_id; i := i + 1)
+        var item := CreateItemInContainer(backpack, i, 1);
+        if (item)
+            count := count + 1;
+        endif
+    endfor
+    
+    SendSysMessage(who, "Criados " + count + " itens na mochila.");
+endprogram

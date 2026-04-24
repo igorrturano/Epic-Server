@@ -6,6 +6,7 @@ use cfgfile;
 include ":attributes:attributes";
 include ":timedScripts:poisonUtil";
 include ":tn:cooldown";
+include ":fls_core:fls_characters";
 include "include/say";
 
 program use_drug(who, drug)

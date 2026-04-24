@@ -27,22 +27,21 @@ program CMD_debug(who, debugName)
 	debugName.Lower();
 
 	if (!debugName || Lower(debugName) == "list")
-		SendSysMessageEx(who, "Lista de debugs disponíveis: ");
+		Message("Lista de debugs disponíveis:").SendSys(who);
 		foreach debug in (listDebugs)
-			SendSysMessageEx(who, $"Tag: {_debug_iter} - PLevel: {debug.level}");
+			Message($"Tag: {_debug_iter} - PLevel: {debug.level}").SendSys(who);
 		endforeach
 		return;
 	endif
 
 	if (!listDebugs[Lower(debugName)])
-		SendSysMessageEx(who, $"DEBUG {debugName}: inexistente. Confira se a tag está correta.",
-				   SSM_FAIL);
-		SendSysMessageEx(who, "Para ver os debug disponíveis digite: .debug ou .debug list", SSM_FAIL);
+		Message($"DEBUG {debugName}: inexistente. Confira se a tag está correta.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		Message("Para ver os debug disponíveis digite: .debug ou .debug list", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 	else
 		if (who.cmdlevel >= listDebugs[Lower(debugName)].level)
 			who.setDebugProp(debugName);
 		else
-			SendSysMessageEx(who, $"DEBUG {debugName}: Nível insuficiente.", SSM_FAIL);
+			Message($"DEBUG {debugName}: Nível insuficiente.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		endif
 	endif
 endprogram

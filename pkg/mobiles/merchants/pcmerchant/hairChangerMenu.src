@@ -1,11 +1,3 @@
-/*
-1- so quem tem tag pode por coisa pra vender OK
-2- cada coisa q vc colocou la tem seu id OK
-3- voce pode setar o preço das coisas OK
-4- voce pode remover coisas  OK
-5- quando o npc vende o dinheiro vai pro seu id (uma prop) e 10% vai pro npc  OK
-6- player comuns (sem tag)so podem comprar e nao vende OK
-*/
 use uo;
 use os;
 
@@ -13,7 +5,6 @@ include ":gumps:requestGump";
 include "include/string";
 include ":gumps:gumps";
 include ":merchants:merchant";
-include ":merchants:crafthelp";
 include ":brainAI:npcCommands";
 include ":gumps:yesNo";
 include "include/say";
@@ -21,59 +12,23 @@ include ":charactercreation:habilidades";
 include "include/client";
 include ":disguise:disguise";
 
-// const ADD_ITEM_SELL_BTN		:= 0x1;
-// const MY_SELLS_BTN		:= 0x2;
-// const MY_ACCOUNT_BTN		:= 0x3;
-// const WITHDRAW_BTN		:= 0x4;
-
-// const SHOW_ITEMS_SOLD_BTN	:= 0x5;
-// const SHOW_ITEMS_BOUGHT_BTN	:= 0x6;
-
-// const MERCHANT_SELLER		:= 0xA;
-// const MERCHANT_GM		:= 0xB;
-
-// Menu Position Constants
-const MAX_ITEM_PAG := 19;
-// const MENU_INTRO		:= 0x0;
-// const MENU_ITEMS_SOLD		:= 0x1;
-// const MENU_ITEM_SOLD_INFO	:= 0x2;
-// const MENU_MY_SELLS		:= 0x3;
-// const MENU_MY_SELLS_INFO	:= 0x4;
-// const MENU_MY_ACCOUNT		:= 0x5;
-
-// const END_Y			:= 405;	  // nextpage
-
-// Gump Constants
-// const BKGND_STONESLAB		:= 9200;  // Gray stone slab background
-// const BKGND_BLUESLAB		:= 3600;  // Raised edge (blocky)
-// const GF_STDCOLOR		:= 1890;
-
-// const MOEDAS			:= 47715;
-
-// var item_cfg := ReadConfigFile(":*:itemdesc");
-
 program MerchantMenu(params)
 	var npc := params[1];
 	var player := params[2];
-	// 	var cur_menu := MENU_INTRO;
-	// 	var gump := MENU_INTRO;
-	// 	var input := MENU_INTRO;
 	var escondido := player.hidden;
-	var listaprodutos := dictionary;
-	var dicindex := " ";
-	var pagina := 1;
 
 	if (escondido)
 		player.hidden := 0;
 		SendSysMessageEx(player, "Voce se revelou ao mercador.", SSM_FAIL);
 	endif
 
-	PrintTextAbove(npc, "Meu custo para barba e cabelo sao 100 moedas de cobre.");
+	PrintTextAbove(npc, "Meu custo para barba e cabelo e 1 moeda de cobre.");
 	var moedas := target(player);
 	if (moedas.objtype == 47715)
-		if (moedas.amount >= 100)
-			if (!SubtractAmount(moedas, 100))
+		if (moedas.amount >= 1)
+			if (!SubtractAmount(moedas, 1))
 				PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+				return;
 			endif
 		else
 			PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
@@ -83,29 +38,62 @@ program MerchantMenu(params)
 		return;
 	endif
 
-	Destroyitem(GetEquipmentByLayer(player, LAYER_HAIR));
-	DestroyItem(GetEquipmentByLayer(player, LAYER_BEARD));
 	var chardata := GetObjProperty(player, "chardata");
+
+	// Salvar estado original
+	var origHair := GetEquipmentByLayer(player, LAYER_HAIR);
+	var origHairType := 0;
+	var origHairColor := 0;
+	if (origHair)
+		origHairType := origHair.objtype;
+		origHairColor := origHair.color;
+	endif
+
+	var origBeard := GetEquipmentByLayer(player, LAYER_BEARD);
+	var origBeardType := 0;
+	var origBeardColor := 0;
+	if (origBeard)
+		origBeardType := origBeard.objtype;
+		origBeardColor := origBeard.color;
+	endif
+
 	var disfarce := struct;
 	disfarce.+barba := "";
 	disfarce.+cabelo := "";
-	disfarce.+corcabelo := 1109;
-	disfarce.+corbarba := 1109;
+	disfarce.+corcabelo := origHairColor;
+	disfarce.+corbarba := origBeardColor;
 
-	escolherCabelo(player, disfarce, "Qualquer");
-	escolheCorCabelo(player, disfarce, 0, "Qualquer", 1);
+	// Escolher cabelo (aplica ao vivo via preview)
+	escolherCabelo(player, disfarce, "Qualquer", 1);
+
+	// Escolher cor do cabelo (aplica ao vivo via preview)
+	escolheCorCabelo(player, disfarce, origHairColor, "Qualquer", 1, 1);
+
+	// Escolher barba (aplica ao vivo via preview)
 	if (chardata.raca != "Elfo")
-		escolherBarba(player, disfarce);
+		escolherBarba(player, disfarce, 1);
 	endif
-	var newbarba := CreateItemAtLocation(player.x, player.y, player.z, disfarce.barba, 1, player.realm);
-	newbarba.color := disfarce.corcabelo;
 
-	var newhair := CreateItemAtLocation(player.x, player.y, player.z, disfarce.cabelo, 1, player.realm);
-	newhair.color := disfarce.corcabelo;
+	// Confirmar ou reverter
+	var confirmar := YesNo(player, "Deseja manter o novo visual?");
+	if (!confirmar)
+		// Reverter ao estado original
+		DestroyItem(GetEquipmentByLayer(player, LAYER_HAIR));
+		DestroyItem(GetEquipmentByLayer(player, LAYER_BEARD));
+		if (origHairType)
+			var restoredHair := CreateItemAtLocation(player.x, player.y, player.z, origHairType, 1, player.realm);
+			restoredHair.color := origHairColor;
+			EquipItem(player, restoredHair);
+		endif
+		if (origBeardType)
+			var restoredBeard := CreateItemAtLocation(player.x, player.y, player.z, origBeardType, 1, player.realm);
+			restoredBeard.color := origBeardColor;
+			EquipItem(player, restoredBeard);
+		endif
+		SendSysMessageEx(player, "Visual revertido ao original.", SSM_INFO);
+	else
+		SendSysMessageEx(player, "Voce trocou seu cabelo e cor.", SSM_INFO);
+	endif
 
-	EquipItem(player, newbarba);
-	EquipItem(player, newhair);
-
-	SendSysMessageEx(player, "Voce trocou seu cabelo e cor.", SSM_INFO);
 	return 1;
 endprogram

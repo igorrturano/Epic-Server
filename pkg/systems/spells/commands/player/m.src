@@ -1,3 +1,10 @@
+/*
+ * Mage Spell Command (.m)
+ * 
+ * Entry point for mage/trickster spells. Works with both:
+ * - Text commands: .m fireball (who, spellname as separate args)
+ * - Hotbar/scripts: Start_Script(script, {who, spellname})
+ */
 use uo;
 use os;
 use cfgfile;
@@ -5,87 +12,32 @@ use cfgfile;
 include "include/say";
 include ":spells:spellbooks";
 include ":charactercreation:habilidades";
+include ":spells:include/spell_executor";
 
-program magia(who, spellname)
-	if (GetObjProperty(who, "#Casting"))
-		SendSysMessageEx(who, "Voce nao pode invocar um encanto agora.", SSM_FAIL);
+// Main program - handles both text commands and Start_Script calls
+program magia(who, spellname := "")
+	// Handle Start_Script array format: {who, spellname}
+	if (TypeOf(who) == "Array")
+		var params := who;
+		who := params[1];
+		spellname := params[2];
+	endif
+	
+	// If no spell name provided, show grimoire or error
+	if (!spellname || spellname == "")
+		SendSysMessageEx(who, "Uso: .m <nome da magia>", SSM_INFO);
 		return 0;
 	endif
-
-	var chardata := GetObjProperty(who, "chardata");
-	var cfgFile := GetSpellConfigFilePath(chardata, who);
-	var spellInfo := FindSpellInConfig(spellname, cfgFile);
-
-	if (!spellInfo)
+	
+	// .m has no spell type of its own — resolve to the actual school the
+	// spell lives in. Trickster bypass (SENSIBILIDADE_ARCANA) is enforced
+	// inside the executor's grimoire check based on player state, so we
+	// don't need a separate code path here.
+	var spell_type := ResolveMageSchoolForSpell(spellname);
+	if (!spell_type)
 		SendSysMessageEx(who, "A magia " + spellname + " nao existe.", SSM_FAIL);
-		return;
-	endif
-
-	var spellBookInfo := FindSpellInSpellBooks(who, spellInfo.id);
-	if (!who.cmdlevel)
-		if (!spellBookInfo.found && spellInfo.circle != 0 && !(TemHabilidade(who, "Sensibilidade Arcana")))
-			SendSysMessageEx(who, "Voce nao possui a magia " + spellname + " nos seu grimorio.", SSM_FAIL);
-			return;
-		endif
-	endif
-	var script := Start_Script(":spells:cast_spell", { who, spellInfo, spellBookInfo.booktype });
-	if (script.errortext)
-		SendSysMessage(who, "Error - Could not start spell starter ->" + script.errortext);
 		return 0;
 	endif
+
+	return ExecuteSpellByName(who, spellname, spell_type);
 endprogram
-
-function GetSpellConfigFilePath(chardata, who)
-	if (TemHabilidade(who, "Sensibilidade Arcana"))
-		return ":spells:config/tricksterspells";
-	endif
-
-	return ":spells:config/spellcaster";
-endfunction
-
-function FindSpellInConfig(spellname, cfgFile)
-	var cfg := ReadConfigFile(cfgFile);
-	foreach spellId in (GetConfigIntKeys(cfg))
-		var elem := FindConfigElem(cfg, spellId);
-		if (Lower(GetConfigString(elem, "Name")) == Lower(spellname))
-			var dict := dictionary{ "id" -> spellId,
-									"circle" -> GetConfigInt(elem, "Circle"),
-									"name" -> GetConfigString(elem, "Name"),
-									"Difficulty" -> GetConfigInt(elem, "Difficulty") };
-			return dict;
-		endif
-	endforeach
-	return 0;
-endfunction
-
-function FindSpellInSpellBooks(who, spellId)
-	foreach item in (ListEquippedItems(who))
-		if (item.objtype == 0x9E80)
-			var donoGrimorio := GetObjProperty(item, "serialDono");
-			if (donoGrimorio == who.serial)
-				var spells := GetObjProperty(item, "spells");
-				foreach s in spells
-					if (s.id == spellId)
-						return dictionary{ "found" -> 1, "booktype" -> GetBookType(item) };
-					endif
-				endforeach
-			endif
-		else
-			foreach item in (EnumerateItemsInContainer(who.backpack))
-				if (item.objtype == 0x9E80)
-					var donoGrimorio := GetObjProperty(item, "serialDono");
-					if (donoGrimorio == who.serial)
-						var spells := GetObjProperty(item, "spells");
-						foreach s in spells
-							if (s.id == spellId)
-								return dictionary{ "found" -> 1, "booktype" -> GetBookType(item) };
-							endif
-						endforeach
-					endif
-				endif
-			endforeach
-		endif
-	endforeach
-
-	return dictionary{ "found" -> 0, "booktype" -> 0 };
-endfunction

@@ -32,6 +32,7 @@ class CombustivelIncendio()
   function ExtraiInfoTile(this, tile)
       if(tile)
         var splited := SplitWords(tile);
+
         return struct {
                       combustivel := this.PegaTier(splited[1]), 
                       fator := this.PegaTier(splited[2])
@@ -49,7 +50,6 @@ class CombustivelIncendio()
 
 
   function EncheCombustivelTile(this,infoTile)
-    
     if(infoTile)
       this.EncheCombustivel(infoTile.combustivel,infoTile.fator);
       return true;
@@ -61,6 +61,10 @@ class CombustivelIncendio()
    function EncheCombustivel(this,combustivel, fator)
     this.combustivel := cint(combustivel);
     this.fatorInflamavel := cint(fator ? fator : 1);
+  endfunction
+
+  function PegaFatorInflamavel(this)
+    return this.fatorInflamavel;
   endfunction
 
 endclass

@@ -1,0 +1,35 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/client";
+include "include/sounds";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	var spell := params[3];
+	params := 0;
+
+	var duration := CInt(AP_GetSkill(who, THEOLOGY) / 10);
+
+	PlayStationaryEffect(info.x, info.y, info.z, 0x38C8, 7, 100, 0, info.realm);
+
+	// Apply to each mobile at the location
+	foreach mobile in (ListMobilesNearLocation(info.x, info.y, info.z, 2, info.realm))
+		if (mobile != who && mobile.isa(POLCLASS_MOBILE))
+			SC_RemoveEffect(mobile, CInt(spell.id));
+
+			var opts := struct{};
+			opts.+frozen := 1;
+			opts.+buff_category := "movement_root";
+			opts.+displayname := "Enraizar";
+			opts.+desc := "Preso por raizes";
+
+			SC_ApplyEffect(who, mobile, opts, duration, CInt(spell.id));
+		endif
+	endforeach
+
+	return 1;
+endprogram

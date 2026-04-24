@@ -8,7 +8,7 @@ include "include/sounds";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
-include ":combat:damage";
+include ":message:model/Message";
 include "include/epicMageryUtils";
 
 program SpellScript(params)
@@ -17,9 +17,9 @@ program SpellScript(params)
 	params := 0; // No longer needed
 
 	// SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
-	var targ := who.weapon; // Spell_Target(who, TGTOPT_CHECK_LOS);
+	var targ := who.weapon;
 	if (!targ)
-		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		Message("Cancelado", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return;
 	endif
 
@@ -28,8 +28,8 @@ program SpellScript(params)
 	if (targ.isA(POLCLASS_WEAPON))
 
 		var elemental := GetObjProperty(targ, "#elementalweapon");
-		if (elemental.type != DMG_ENERGY)
-			SendSysMessageEx(who, "Esta arma precisa estar encantada com Lamina Eletrificada.", SSM_FAIL);
+		if (elemental.type != "Energy")
+			Message("Esta arma precisa estar encantada com Lamina Eletrificada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return 1;
 		endif
 
@@ -41,11 +41,11 @@ program SpellScript(params)
 		SetCooldown(targ, "circulodevas", duration);
 
 		PlaySoundEffect(targ, SFX_BLESS);
-		SendSysMessageEx(who, "Os espiritos do relampago estao inquietos na sua arma.", SSM_INFO);
+		Message("Os espiritos do relampago estao inquietos na sua arma.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 		return 1;
 	endif
 
-	SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
+	Message("Alvo invalido.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 endprogram

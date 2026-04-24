@@ -1,0 +1,61 @@
+use uo;
+use os;
+
+include ":faccao:include/imperium";
+include ":commands:/include/r";
+
+const PRAETOR_ALERT_COOLDOWN := 300;
+
+program praetorAlert(params)
+	var caster := params[1];
+	var school := params[2];
+	if (!caster || caster == error)
+		return 0;
+	endif
+
+	if (!InValtheris(caster))
+		return 0;
+	endif
+
+	var praetors := GetGlobalProperty("Praetors");
+	if (praetors == error || !praetors)
+		return 0;
+	endif
+
+	if (caster.serial in praetors)
+		return 0;
+	endif
+
+	var now := ReadGameClock();
+
+	foreach serial in praetors
+		if (serial == caster.serial)
+			continue;
+		endif
+
+		var praetor := SystemFindObjectBySerial(serial);
+		if (!praetor || praetor == error)
+			continue;
+		endif
+		if (!praetor.connected || praetor.dead)
+			continue;
+		endif
+
+		var casterId := VerificaDisfarce(caster, praetor);
+		var alerted := GetObjProperty(praetor, "#praetor_alerted");
+		if (alerted == error || !alerted)
+			alerted := dictionary;
+		endif
+
+		if (alerted.Exists(casterId) && CInt(alerted[casterId]) + PRAETOR_ALERT_COOLDOWN > now)
+			continue;
+		endif
+
+		alerted[casterId] := now;
+		SetObjProperty(praetor, "#praetor_alerted", alerted);
+
+		Start_Script(":faccao:praetorInviteGump", array{ praetor, caster, school });
+	endforeach
+
+	return 1;
+endprogram

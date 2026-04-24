@@ -73,6 +73,11 @@ endfunction
 
 function CriarMarcadorPropagacao(x,y,z,realm,structPropagacao, isAdjacente := false)
 	
+	if(structPropagacao.origem == 0 || TypeOfInt(structPropagacao.origem) == OT_UNINIT || TypeOfInt(structPropagacao.origem) == OT_ERROR  )
+		Print("[Erro - Propagação] Tentativa de criar marcador de propagação sem origem válida.");
+		return error { error_text := "Origem inválida. A Origem é obrigatória." };
+	endif
+
 	var marcadorExistente;
 
 	if(!isAdjacente)
@@ -86,6 +91,10 @@ function CriarMarcadorPropagacao(x,y,z,realm,structPropagacao, isAdjacente := fa
 		marcadorDescriptor.CProps.insert(PROPNAME_INDESTRUTIVEL,true);
 
 		var marcador := CreateItemAtLocation(x,y,z,marcadorDescriptor,1,realm);
+		if(marcador)
+			MarcaLimitadoraGlobal(propPropagacao.origem, 1);
+		endif
+
 		return marcador;
 	else 
 		ConfiguraExistente(marcadorExistente, structPropagacao);
@@ -141,6 +150,51 @@ function NovaPropPropagacao()
 				geracaoMaxima := 0
 			};
 	return prop;
+endfunction
+
+function MarcaLimitadoraGlobal(origem, valor)
+	if(origem)
+		origem := CStr(origem);
+		
+		Set_Critical(1);
+		var global := GetGlobalProperty(PROPNAME_LIMITADORA_GLOBAL);
+
+		if(!global)
+			global := dictionary;
+		endif
+
+		var valorAtual := global[origem];
+		var valorResultante := cint(valorAtual) + valor;
+
+		if(global.exists(origem))
+
+			if(valorResultante <= 0)
+				global.erase(origem);
+			else
+				global[origem] := valorAtual + valor;
+		endif	
+		else
+			global.insert(origem, valor);
+		endif
+
+		SetGlobalProperty(PROPNAME_LIMITADORA_GLOBAL, global);
+		Set_Critical(0);
+		return 1;
+	else
+		Print("[Erro - Propagação] Tentativa de marcar limitadora global sem marcador origem.");
+		return 0;
+	endif
+endfunction
+
+function LerLimitadoraGlobal(origem)
+	Set_Critical(1);
+	var global := GetGlobalProperty(PROPNAME_LIMITADORA_GLOBAL);
+	if(global && origem)
+		origem := CStr(origem);
+		return global[origem] ? global[origem] : 0;
+	endif
+	Set_Critical(0);
+	return 0;
 endfunction
 
 function IsLimiteGeracaoAlcancado( geracaoAtual)

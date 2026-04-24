@@ -1,0 +1,52 @@
+use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+include "include/tileEffects";
+include "include/sounds";
+include ":combat:Controller/DamageController_legacy";
+
+// Balada do Heroi Ferido (1203) - C1
+// HoT: Arc/10 por tick x 5 ticks
+program SpellScript(params)
+	var who  := params[1];
+	var targ := params[2];
+
+	if (!targ || !targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return 0;
+	endif
+
+	var active_until := CInt(GetObjProperty(targ, "balada_heroi_hot"));
+	if (active_until > ReadGameClock())
+		SendSysMessageEx(who, "O alvo ja esta sob efeito da Balada do Heroi Ferido.", SSM_FAIL);
+		return 0;
+	endif
+
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
+	var heal_tick := CInt(arcana / 10);
+	if (heal_tick < 1) heal_tick := 1; endif
+
+	var total_ticks := 5;
+	var tick_seconds := 3;
+
+	PrintTextAbove(who, "*O heroi caiu, mas sua historia nao terminou...*", 3, 568);
+	PlaySoundEffect(who, 0x1F2);
+
+	SetObjProperty(targ, "balada_heroi_hot", ReadGameClock() + (total_ticks * tick_seconds));
+
+	var t := 1;
+	while (t <= total_ticks)
+		if (!targ || targ.dead) break; endif
+		applyEpicHealing(targ, heal_tick);
+		PrintTextAbove(targ, $"+{heal_tick}");
+		PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+		SendSysMessageEx(who, $"Balada: +{heal_tick} HP ({t}/{total_ticks})", SSM_INFO);
+		sleepms(tick_seconds * 1000);
+		t += 1;
+	endwhile
+
+	EraseObjProperty(targ, "balada_heroi_hot");
+	return 1;
+endprogram

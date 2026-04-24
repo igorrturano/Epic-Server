@@ -13,14 +13,25 @@ include "/include/epicConstants";
 include ":keys:key";
 include ":crafting:/include/caracteristicasFabricacao";
 include ":crafting:/include/util/fabricacaoConstants";
+include "include/epicUtils";
+include ":itemutils:itemInfo";
 
+var LISTA_TIPO_MATERIAL := PegaListaTipoMateriais();
 var itemsConfig := ReadConfigFile(":*:itemdesc");
 
 function ClassificaNomeReceita(nomeReceita)
 	var dividido := SplitWords(nomeReceita,"-");
+	var classe := CLASSE_PADRAO;
+
+	if(TypeOfInt(dividido[2]) == OT_ERROR || TypeOfInt(dividido[2]) == OT_UNINIT || TypeOfInt(dividido[2]) == OT_UNKNOWN) 
+		classe := CLASSE_PADRAO;
+	else
+		classe := dividido[2];
+	endif
+
 	return dictionary {
 		"nome" -> dividido[1],
-		"classe" -> dividido[2]
+		"classe" -> classe
 	};
 endfunction
 
@@ -127,13 +138,13 @@ endfunction
 
 function PegaComponenteTierDesc(tier)
 	case (tier)
-		COMPONENTE_TIERS::MEDIOCRE : return struct {desc := "Normal" , valor := 0}; break;
-		COMPONENTE_TIERS::COMUM : return struct {desc := "Melhorado" , valor := 1}; break;
-		COMPONENTE_TIERS::NOTAVEL : return struct {desc := "Notável" , valor := 2}; break;
-		COMPONENTE_TIERS::SUPERIOR : return struct {desc := "Superior" , valor := 3}; break;
-		COMPONENTE_TIERS::EXCEPCIONAL : return struct {desc := "Excepcional" , valor := 4}; break;
+		COMPONENTE_TIERS::MEDIOCRE : return struct {id:= COMPONENTE_TIERS::MEDIOCRE, desc := "Normal" , valor := 0}; break;
+		COMPONENTE_TIERS::COMUM : return struct {id:= COMPONENTE_TIERS::COMUM, desc := "Melhorado" , valor := 1}; break;
+		COMPONENTE_TIERS::NOTAVEL : return struct {id:= COMPONENTE_TIERS::NOTAVEL, desc := "Notável" , valor := 2}; break;
+		COMPONENTE_TIERS::SUPERIOR : return struct {id:= COMPONENTE_TIERS::SUPERIOR, desc := "Superior" , valor := 3}; break;
+		COMPONENTE_TIERS::EXCEPCIONAL : return struct {id:= COMPONENTE_TIERS::EXCEPCIONAL, desc := "Excepcional" , valor := 4}; break;
 		default:
-			return struct {desc := "Erro!" , valor := 0}; break;
+			return struct {id := error, desc := "Erro!" , valor := 0}; break;
 	endcase
 endfunction
 
@@ -236,54 +247,44 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 											);
 		else
 			descriptor := GetItemDescriptor(receitaObjtype);
+			if(!descriptor.movable)
+				descriptor.movable := 1;
+			endif
 			descriptor.CProps.insert(PROPNAME_MATERIAL,propFabricadoMontado.esquema.material);
 			descriptor.CProps.insert(PROPNAME_DISPENSAVEL_FLAG,true);
 		endif
 
 		descriptor.CProps.insert(PROPNAME_FABRICADO, CriaNovaPropFabricado(propFabricadoMontado));
 		descriptor.maxhp := propFabricadoMontado.esquema.modificadorHpTotal? descriptor.maxhp + propFabricadoMontado.esquema.modificadorHpTotal : descriptor.maxhp;
-		//TODO trecho a seguir foi trazido do antigo sistema de Alchemy. remover uma vez que o novo sistema estiver UP.
-		var alchemyRecipes := ReadConfigFile(":alchemy:itemdesc");
-		var science := (alchemyRecipes[receitaObjtype].science);
-		if(science)
-			var tier := (alchemyRecipes[receitaObjtype].tier);
-			var crafterskill := Cint((AP_GetSkill(quem, SCIENCE))/10);
-			var crafterInt := AP_GetTrueStat (quem, INTELLIGENCE);
-			var bonus := (((crafterInt-50)/10)+(crafterskill));
-			descriptor.CProps.insert("bonus",bonus);
-			descriptor.CProps.insert("tier",tier);
-			descriptor.CProps.insert("crafterskill",crafterskill*10);
-			descriptor.CProps.insert("science",science);
-		endif
 
 		if(!propFabricadoMontado.receita.isEmpilhavel)
 			descriptor.CProps.insert(PROPNAME_ARTIFICE_SERIAL,quem.serial);
 		endif
 
-		descriptor.color := propFabricadoMontado.esquema.cor;
-
+		descriptor.color := propFabricadoMontado.receita.corObrigatoria ? propFabricadoMontado.receita.corObrigatoria : propFabricadoMontado.esquema.cor;
 		var quantidadeFinal := 1;
 		if(propFabricadoMontado.receita.lote && propFabricadoMontado.receita.lote > 1)
 			quantidadeFinal := cint(quantidade * propFabricadoMontado.receita.lote);
 		endif
 			
-		var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
-		if(!item)
-			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
-		endif
+		if(!propFabricadoMontado.receita.isEmpilhavel)
+			for i := 1 to quantidadeFinal
+					Sleepms(2);
+					var item := CreateItemInBackpack(quem,descriptor);
+					if(!item)
+						item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, 1, quem.realm);
+					endif
 
-		item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
-		item.hp := item.maxhp;
-		
-		if(!item)
-			SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
-			return 0;
-		endif
+					AplicaAtributosItemFabricado(quem,item, propFabricadoMontado);
+			endfor
+		else
+			var item := CreateItemInBackpack(quem,descriptor, quantidadeFinal);
+			if(!item)
+				item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(quantidadeFinal), quem.realm);
+			endif
 
-		AplicaFechadura(quem, item);
-		item.setAttrBase();
-		item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? ((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 0;
-	
+			AplicaAtributosItemFabricado(quem,item, propFabricadoMontado);
+		endif
 	else
 		SendSysMessageEX(quem, "O Item " +  produto.desc + " não é um Produto Montado.",SSM_FAIL);
 		Print("Erro: O Item " +  produto.desc + " não é um Produto Montado.");
@@ -291,6 +292,32 @@ function CriaItemFabricado(quem, produto, quantidade := 1, propFabricado := 0)
 	endif
 	
 	return 1;
+endfunction
+
+function AplicaAtributosItemFabricado(quem, item, propFabricadoMontado)
+	if(!item)
+		SendSysMessageEX(quem, "Erro [" + item + "] ao criar objeto.",SSM_FAIL);
+		return 0;
+	endif
+
+	item.maxhp_mod := propFabricadoMontado.esquema.modificadorHpTotal? propFabricadoMontado.esquema.modificadorHpTotal : 0;
+	item.hp := item.maxhp;
+	item.weight_multiplier_mod := propFabricadoMontado.esquema.modificadorPesoTotal ? CDbl((propFabricadoMontado.esquema.modificadorPesoTotal / 100) + 1) : 1;
+	
+	var infoPote := MontaInfoPote(quem,  CInt(propFabricadoMontado.receita.objtype));
+	if(infoPote) //Pote Alquimia 
+		var quantidadeDoses := PegaValorFabricacao(item, "doses");
+		if(quantidadeDoses)
+			SetObjProperty(item, "doses", quantidadeDoses);
+		endif
+		SetObjProperty(item, "tier", infoPote.tier);
+		SetObjProperty(item, "crafterskill", infoPote.crafterskill);
+		SetObjProperty(item, "science", infoPote.science);
+		SetObjProperty(item, "bonus", infoPote.bonus);
+	endif
+
+	AplicaFechadura(quem, item);
+	item.setAttrBase();
 endfunction
 
 function ResolveEfeitoCaracteristica(valorEfeito)
@@ -305,10 +332,16 @@ function ResolveEfeitoCaracteristica(valorEfeito)
 
 endfunction
 
-
 function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
-	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
 	var retornoEfeitos := struct;
+	if(FIND(UPPER(caracteristica),"VAZIO", 1) > 0)
+		retornoEfeitos.+valorPrincipal := 0;
+		retornoEfeitos.+valorLiteralPrincipal := 0;
+		retornoEfeitos.+valorTotalSubefeitos := 0;
+		return retornoEfeitos;
+	endif
+	
+	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
 	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
 	var efeitosMaterialString := efeitosMaterial[caracteristica];
 	var subEfeitosMaterial;
@@ -319,13 +352,16 @@ function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
 		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
 		retornoEfeitos.+valorPrincipal := valorEfeitoMaterial;
 		retornoEfeitos.+valorLiteralPrincipal := subEfeitosMaterial[subEfeitosMaterial.size()];
+		retornoEfeitos.+valorTotalSubefeitos := 0;
 		
 		if(subEfeitosMaterial.size() > 1)
 			subEfeitosMaterial.shrink(subEfeitosMaterial.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
 			var subefeitosDict := dictionary{};
 
 			for indice := 1 to subEfeitosMaterial.size()
-				subefeitosDict.insert( subEfeitosMaterial[indice], ResolveEfeitoCaracteristica(subEfeitosMaterial[indice + 1])); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
+				var valorSubEfeito := ResolveEfeitoCaracteristica(subEfeitosMaterial[indice + 1]);
+				subefeitosDict.insert( subEfeitosMaterial[indice], valorSubEfeito); // indice 1 = nomeSubEfeito, indice 2 = valorSubEfeito
+				retornoEfeitos.valorTotalSubefeitos += valorSubEfeito;
 				++indice;// dessa forma o indice sobe de 2 em dois, pois o for já adiciona +1.
 				Sleepms(2);
 			endfor
@@ -359,11 +395,7 @@ function CriaNovaPropFabricado ( propFabricadoMontado, estado := ITEM_PRONTO)
 		//Refatora o dict para usar como indice a caracteristica, assim dá para ir direto ao assunto se quiser pegar o componente que tá dando aquela caracteristica.
 		foreach componente in (propFabricadoMontado.esquema.componentesEscolhidos)
 			Sleepms(2);
-			if(componente.componenteNecessario.caracteristica != "vazio")
-				componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
-			else
-				componentesRefatorado.insert(_componente_iter,componente);
-			endif
+			componentesRefatorado.insert(componente.componenteNecessario.caracteristica,componente);
 		endforeach
 	else
 		componentesRefatorado := propFabricadoMontado.esquema.componentesEscolhidos;
@@ -411,24 +443,27 @@ endfunction
 
 function isEstacaoValida(quem, estacaoAlvo, profissao)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
-	var estacoesValidas := GetConfigStringArray(profissaoConfig[profissao], "EstacoesValidas");
-
-	if(cstr(estacaoAlvo.item.objtype) in estacoesValidas ||  "superficie" in estacoesValidas )
-		var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
-		
-		if(ocupanteSerial)
-			var ocupante := SystemFindObjectBySerial(ocupanteSerial);
-			if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
-				SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
-				return 0;
+	var estacoesValidas := GetConfigString(profissaoConfig[profissao], "EstacoesValidas");
+	estacoesValidas := SplitWords(estacoesValidas);
+	
+	foreach estacaoValida in estacoesValidas
+		Sleepms(2);
+		if(Lower(cstr(hex(estacaoAlvo.item.objtype))) == lower(cstr(hex(estacaoValida))) ||  "superficie" == estacaoValida)
+			var ocupanteSerial := GetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA);
+			
+			if(ocupanteSerial)
+				var ocupante := SystemFindObjectBySerial(ocupanteSerial);
+				if(ocupante && Distance(ocupante,estacaoAlvo) <= 2)
+					SendSysMessageEX(quem,"A estação está em uso.", SSM_FAIL);
+					return 0;
+				endif
 			endif
+			SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
+			return 1;
 		endif
-	else
-		SendSysMessageEX(quem,"Estação inválida.", SSM_FAIL);
-		return 0;
-	endif
-	SetObjProperty(estacaoAlvo.item,PROPNAME_ISESTACAO_OCUPADA, quem.serial);
-	return 1;
+	endforeach
+	SendSysMessageEX(quem,"Estação inválida.", SSM_FAIL);
+	return 0;
 endfunction
 
 function PegaDescDuracaoFabricacao(qtdSucessos)
@@ -505,3 +540,139 @@ function PegaTipoMaterialAleatorio(tipoMaterial)
 
 	return materiais[RandomIntMinMax(1,materiais.size())];
 endfunction
+
+function MontaInfoPote(quem, receitaObjtype)
+	var alchemyRecipes := ReadConfigFile(":alchemy:itemdesc");
+	var science := (alchemyRecipes[receitaObjtype].science);
+	
+	if(science)
+		var crafterskill := Cint((AP_GetSkill(quem, SCIENCE))/10);
+		var crafterInt := AP_GetTrueStat (quem, INTELLIGENCE);
+		var bonus := (((crafterInt-50)/10)+(crafterskill));
+
+		return struct {
+			tier := alchemyRecipes[receitaObjtype].tier,
+			crafterskill := crafterskill * 10,
+			science := alchemyRecipes[receitaObjtype].science,
+			bonus := bonus
+		};
+	endif
+	return 0;
+endfunction
+
+function DefinePropFabricado(esquema, receita , quem)
+	//Limpa propriedades desnecessárias ou rendundantes.
+	receita.-componentesNecessarios;
+	receita.-materiaisNecessarios;
+	receita.-textoDescItem;
+	receita.-dificuldade;
+	receita.-isVisualizada;
+	receita.-uso;
+
+	esquema.-modificadorCache;
+
+	var propFabricado := struct{ 
+		estado := ITEM_MONTADO,
+		receita := receita,
+		esquema := esquema};
+	
+	if(!receita.isEmpilhavel)
+		propFabricado.+fabricante := quem.serial;
+	endif
+
+	return propFabricado;
+endfunction
+
+function GetMaterialName(obj);
+
+  if ( (obj == "wood") || (obj == "leather") || (obj == "cloth") || (obj == "metal") || (obj == "glass") || (obj == "ossos") || (obj == "stone") || obj == "arrowhead")
+    return obj;
+  else
+    var items := ReadconfigFile("::itemdesc");
+    if (items[obj])
+      return items[obj].desc;
+    endif
+  endif
+
+endfunction
+
+function TruncatePlural(obj_type, add_S := 0)
+        obj_type := CInt(obj_type);
+
+        var config := ReadConfigFile(":*:itemdesc");
+        config := config[obj_type];
+
+        var name;
+        if (config.desc)
+                name := config.desc;
+        elseif (config.name)
+                name := config.name;
+        else
+                return error{"errortext":="Invalid Objtype : " + hex(obj_type) + "."};
+        endif
+
+        if ( !name["%"] )
+                if ( add_S == 0 )
+                        return name;
+                endif
+                if ( name[len(name)] in array{"s"} )
+                        return name;
+                elseif ( name[len(name)] in array{"h","j","x","z"} )
+                        return name + "es";
+                endif
+                return name + "s";
+        endif
+
+        // Will deal with:
+        //
+        //      Bread Stick%s
+        //      Bread Loa%ves/f%
+        //      Lump%s% of Coal
+        //      Loa%ves/f% of Bread
+        //
+        var first := find(name, "%", 1);
+        var slash := find(name, "/", first);
+        var second := find(name, "%", first + 1);
+        if ( slash && !second )
+                // Force-append a % if a '/' exists!
+                name := name + "%";
+                second := len(name);
+        elseif ( !slash )
+                slash := second;
+        endif
+
+        // wwwww%xx[/yy]%[zzzzz]
+        // 12345678     9 01234
+        // 12345678 901 2 34567
+
+        var s_plur := name[first+1, slash-(first+1)];
+        var s_sing := "";
+        if ( slash != first )
+                s_sing := name[slash+1, second-(slash+1)];
+        endif
+
+        var s_first := name[1, first-1];
+        var s_middle := s_plur;
+        var s_last := "";
+
+        if ( len(name) > second )
+                s_last := name[second+1, len(name)-second];
+        endif
+
+        if ( add_S == 0 )
+                s_middle := s_sing;
+        endif
+
+        if ( !s_first )
+                s_first := "";
+        endif
+        if ( !s_middle )
+                s_middle := "";
+        endif
+        if ( !s_last )
+                s_last := "";
+        endif
+        return s_first + s_middle + s_last;
+
+endfunction
+

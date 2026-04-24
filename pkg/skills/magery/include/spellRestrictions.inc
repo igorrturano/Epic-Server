@@ -351,7 +351,7 @@ function spellcast(me, circle, scroll, id)
   endif
   if (umana > AP_GetVital(me, VITALID_MANA))
     me.frozen :=1;
-    PerformAction(me,ANIM_CAST_DIR);
+    PerformAction(me,HUMAN_ANIM::CAST_DIR);
     sleepms(1200);
     me.frozen :=0;
     SendSysMessage(me,"You do not have enough mana to cast that.", 3, 40);
@@ -369,7 +369,7 @@ function spellcast(me, circle, scroll, id)
         me.frozen :=0;
         return 0;
       endif
-      PerformAction(me,ANIM_CAST_DIR);
+      PerformAction(me,HUMAN_ANIM::CAST_DIR);
       sleepms(900);
     endfor
     if(slp)

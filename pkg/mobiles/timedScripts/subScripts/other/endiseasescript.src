@@ -12,13 +12,27 @@ program TimedScript_disease(params)
 	var falhou := diseases_system.falhou_cura;
 
 	if (!falhou)
-
+//print("NETROU NO END DISEASE");
 		UpdateDiseaseProperty(mobile, "end_disease", 1);
 		TS_LowerDuration(mobile, "diseaseeffect", -1);
 
-		var corpo_peste_id := diseases_system.serial_peste_corpse;
-		var corpo_peste := SystemFindObjectBySerial(corpo_peste_id);
-		DestroyItem(corpo_peste);
+/*var corpo_peste_id := diseases_system.serial_peste_corpse;
+
+if (corpo_peste_id)
+    var corpo_peste := SystemFindObjectBySerial(corpo_peste_id);
+
+    if (corpo_peste)
+        corpo_peste.movable := 1;
+
+        // 🔥 força sair do corpo (ESSENCIAL)
+        MoveObjectToLocation(corpo_peste, 1, 1, 1, mobile.realm, MOVEOBJECT_FORCELOCATION);
+
+        sleepms(10); // dá tempo do servidor processar
+
+        DestroyItem(corpo_peste);
+    endif
+endif
+*/		
 		return 1;
 	endif
 

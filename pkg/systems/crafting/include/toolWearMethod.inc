@@ -2,6 +2,8 @@
 
 include ":attributes:attributeConstants";
 include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 exported function CheckToolWear (tool, who, craft_skill)
 
@@ -32,7 +34,7 @@ exported function CheckToolWear (tool, who, craft_skill)
 		if((RandomInt(100)+1) > skill)
 			if(tool.isa(POLCLASS_WEAPON))
 				if(tool.hp > 1)
-					if (TemHabilidade(who, "Preservar Ferramentas") || TemHabilidade(who, "Lenhador Eficaz"))
+					if (MobileWrapper(who).HasAbility(ABILITY_ID::TOOL_PRESERVATION))
 						if (randomint(2) == 0)
 							return;
 						endif

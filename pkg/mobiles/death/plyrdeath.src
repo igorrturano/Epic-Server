@@ -63,7 +63,9 @@ program core_chrDeath(params)
 
 	CheckForAutoRes(ghost, corpse);
 
-	MoveObjectToLocation(ghost, 4216, 1849, 1);
+	if (!GetObjProperty(ghost, "forjoumorte"))
+		MoveObjectToLocation(ghost, 4216, 1849, 1);
+	endif
 	Start_Script("deathscripts/players", params);
 
 	return 1;
@@ -73,6 +75,7 @@ function CheckForAutoRes(who, corpse)
 	var auto_res := CInt(GetObjProperty(who, "AutoRes"));
 	if (auto_res)
 		Resurrect(who);
+		SetCooldown(who, "res_trap_protection", 10);
 		AP_RefreshVitals(who);
 
 		if (!who.backpack)
@@ -117,6 +120,7 @@ function WakeUp(ghost, corpse)
 	endfor
 
 	Resurrect(ghost);
+	SetCooldown(ghost, "res_trap_protection", 10);
 	var ressrobe := GetEquipmentByLayer(ghost, 0x16);
 	DestroyItem(ressrobe);
 

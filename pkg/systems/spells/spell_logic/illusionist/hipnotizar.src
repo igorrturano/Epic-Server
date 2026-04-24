@@ -2,6 +2,8 @@ include "include/say";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
 include "include/epicNPCUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 include ":charactercreation:resists";
 include ":tn:boss";
 include "include/sysEvent";
@@ -15,23 +17,23 @@ program SpellScript(params)
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
 
-	if (CheckResist(targ, VONTADE, diff, -bonus) || isTrueBoss(targ))
+	if (CheckResist(targ, WILL, diff, -bonus) || isTrueBoss(targ))
 		SendSysMessageEx(who, "Você nota que o alvo não foi afetado.", SSM_FAIL);
 		SendSysMessageEx(targ, "Você resistiu a magia.", SSM_INFO);
 		return;
 	endif
 
 	var duration := cint(AP_GetSkill(who, ARCANA) / 5);
-	if (TemHabilidade(who, "Valdruk"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := Cint(duration * 2);
 		controlNPC(who, targ);
 	endif
 
 	handleSilentMagic(who, targ, SFX_SPELL_TELEKINESIS);
-	// PlayObjectCenteredEffectEx(targ, EPIC_FX_HIPNOSYS, 255, 60);
-	// PlayObjectCenteredEffect(targ, EPIC_FX_HIPNOSYS, 150, 50);
+	// PlayObjectCenteredEffectEx(targ, FX_HIPNOSYS, 255, 60);
+	// PlayObjectCenteredEffect(targ, FX_HIPNOSYS, 150, 50);
 
-	var fx := CreateItemAtLocation(targ.x, targ.y, targ.z + 10, EPIC_FX_HIPNOSYS, 1, targ.realm);
+	var fx := CreateItemAtLocation(targ.x, targ.y, targ.z + 10, FX_HIPNOSYS, 1, targ.realm);
 	sleepms(2000);
 	DestroyItem(fx);
 
@@ -44,8 +46,8 @@ program SpellScript(params)
 	sleep(duration);
 	EraseObjProperty(targ, "charmed_by");
 
-	if (TemHabilidade(who, "Valdruk"))
-		endControlNPC(targ);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
+		start_script(":epicAI:scripts/end_control_npc", array{targ});
 		var event := struct{ "type" := SYSEVENT_ENGAGED, "source" := who };
 		SendEvent(targ, event);
 	endif

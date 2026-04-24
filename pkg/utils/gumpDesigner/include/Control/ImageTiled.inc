@@ -40,7 +40,7 @@ class ImageTiled(Control)
 	endfunction
 
 	function SelfCreate(this, byRef gump)
-		GFPicTiled(gump, this.GetX(), this.GetY(), this.GetWidth(), this.GetHeight(), this.GetImageId());
+		GFPicTiled(gump, this.GetX() + this.GetXOffset(), this.GetY() + this.GetYOffset(), this.GetWidth(), this.GetHeight(), this.GetImageId());
 		Super::SelfCreate(this, gump);
 	endfunction
 

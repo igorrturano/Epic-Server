@@ -1,0 +1,43 @@
+use uo;
+use os;
+include "include/say";
+include ":attributes:attributes";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (GetObjProperty(who, "metamorfose") != error)
+		SendSysMessageEx(who, "Voce deve conjurar antes de se transformar.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Check if already active
+	var existing := MobileWrapper(who).GetProperty($"SpellOpts_{CInt(spell.id)}");
+	if (existing && !existing.errortext)
+		SendSysMessageEx(who, "Voce ja esta sob o dom da fala selvagem.", SSM_FAIL);
+		return 0;
+	endif
+
+	var duration_minutes := CInt(AP_GetSkill(who, THEOLOGY));
+	if (duration_minutes < 1)
+		duration_minutes := 1;
+	endif
+
+	var duration_secs := duration_minutes * 60;
+
+	var opts := struct{};
+	opts.+properties := dictionary{ "wildspeech" -> 1 };
+	opts.+buff_category := "wildspeech";
+	opts.+displayname := "Fala Selvagem";
+	opts.+desc := "Fala Selvagem";
+	opts.+maintainable := 1;
+
+	SC_ApplyEffect(who, who, opts, duration_secs, CInt(spell.id));
+	SendSysMessageEx(who, $"Sua fala selvagem foi despertada por {duration_minutes} minutos.", SSM_INFO);
+
+	return 1;
+endprogram

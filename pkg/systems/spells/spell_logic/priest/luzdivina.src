@@ -1,20 +1,16 @@
 use uo;
 use os;
-use cfgfile;
 include ":spells:tnmagery";
 include ":attributes:attributes";
-include ":brainai:npcUtil";
-include ":combat:damage";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":tn:cooldown";
 include "include/say";
 include "include/client";
 include "include/sounds";
 include ":spells:summon";
 include "include/tileEffects";
-include ":timedScripts:timedScripts";
-include "include/sysEvent";
 include "include/eventID";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program SpellScript(params)
 
@@ -22,34 +18,60 @@ program SpellScript(params)
 	var targ := params[2];
 	var spellid := params[3];
 
-	var hostiles := ListHostiles(who, range := 20, flags := 0);
-
-	if (Len(hostiles) == 0)
-		SendSysMessageEx(who, "Voce nao esta sendo atacado.", SSM_FAIL);
+	var globodeluz := summon(":epicai:globodeluz", who, who);
+	if (!globodeluz)
+		SendSysMessageEx(who, "A invocacao falhou.", SSM_FAIL);
 		return 0;
-	else
-
-		// TS_StartTimer(targ, "luzdivina", AP_GetSkill(who, THEOLOGY), level, who, 1); //5 min
-
-		// var globodeluz:=CreateNpcFromTemplate( ":brainai:globodeluz", who.x, who.y, who.z);
-		var globodeluz := summon(":epicai:globodeluz", who, who);
-		SetObjProperty(globodeluz, "hitsmod", 1000);
-
-		var duracao := 10;
-		// var duracao := GetSpellDuration(AP_GetSkill(who, THEOLOGY))/3;
-
-		foreach hostile in hostiles
-			SetObjProperty(hostile, "#ForcedTarget", globodeluz.serial);
-			Sleepms(10);
-			var event := struct{ "type" := EVID_TAUNT, "source" := globodeluz };
-			SendEvent(hostile, event);
-		endforeach
-
-		PlaySoundEffect(who, SFX_SPELL_STRENGTH);
-		PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
-		SendSysMessageEx(targ, "A luz ofuscou a visao dos seus inimigos.", SSM_INFO);
-		var level := (CInt(AP_GetSkill(who, THEOLOGY)) / 5) + 5;
-		TS_StartTimer(globodeluz, "summon", duracao, level);
-
 	endif
+
+	var theology_skill := CInt(AP_GetSkill(who, THEOLOGY));
+	var level := (theology_skill / 5) + 5;
+	SetObjProperty(globodeluz, "hitsmod", level * 50);
+	SetObjProperty(globodeluz, "NoCorpse", 1);
+
+	var taunt_duration := 5;
+
+	var nearby := ListMobilesNearLocation(who.x, who.y, who.z, 8, who.realm);
+	var taunted := array{};
+
+	foreach char in nearby
+		if (char == who || char == globodeluz)
+			continue;
+		endif
+		if (char.acctname)
+			continue;
+		endif
+		if (char.dead || char.hidden || char.concealed)
+			continue;
+		endif
+		if (MobileWrapper(char).GetProperty("noattack"))
+			continue;
+		endif
+		if (!CheckLineOfSight(who, char))
+			continue;
+		endif
+		if (GetCooldown(char, "taunted"))
+			continue;
+		endif
+		taunted.append(char);
+	endforeach
+
+	foreach char in taunted
+		SendEvent(char, struct{ "type" := EVID_TAUNT, "source" := globodeluz });
+		SetCooldown(char, "taunted", taunt_duration);
+		MobileWrapper(char).SetProperty("#taunter", globodeluz.serial);
+	endforeach
+
+	PlaySoundEffect(who, SFX_SPELL_STRENGTH);
+	PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
+	SendSysMessageEx(who, "A luz ofuscou a visao dos seus inimigos.", SSM_INFO);
+
+	sleep(taunt_duration);
+
+	if (globodeluz)
+		SetObjProperty(globodeluz, "guardkill", 1);
+		ApplyDamage(globodeluz, 9999);
+	endif
+
+	return 1;
 endprogram

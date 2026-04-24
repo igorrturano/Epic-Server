@@ -10,13 +10,15 @@ include ":attributes:attributes";
 include ":gumps:requestGump";
 include ":gumps:gumps";
 include ":tn:tngumps";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":timedscripts:timedScripts";
 include ":traps:traps";
 include ":levers:lever";
 include ":tn:boss";
 include ":combat:hitscripts";
 include ":itemUtils:itemInfo";
+include ":message:include/model/Message";
+include ":medicine:disease";
 
 CONST SOUND_PLAY_BTN := 0xF112; // Botão para tocar som
 CONST SOUND_OK_BTN   := 0xF113; // Botão para confirmar som
@@ -35,7 +37,7 @@ function ConstructGump(item)
    GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 99);
    if (!opts.is_linked)
       y += 20;
-      GFTextLine(gump, 45, y, _ifElse(opts.lights, 520, 500), "Conectar Luzes");
+      GFTextLine(gump, 45, y, _ifElse(opts.lights, 520, 500), "ON/OFF Luzes/item");
       GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 4);
       y += 20;
       GFTextLine(gump, 45, y, _ifElse(opts.opendoors, 520, 500), "Abrir/Destrancar porta");
@@ -54,6 +56,21 @@ function ConstructGump(item)
    y += 20;
    GFTextLine(gump, 45, y, _ifElse(GetObjProperty(item, "HaveTrap"), 520, 500), "Adicionar armadilhas");
    GFAddButton(gump, 25, y+2, 2117, 2118, GF_PAGE_BTN, 4);
+   
+   // =====================================================
+// NUVEM PATOGÊNICA (PROPAGAÇÃO)
+// =====================================================
+/*y += 20;
+GFTextLine(
+   gump,
+   45,
+   y,
+   _ifElse(GetObjProperty(item, "LEVER_PATOGENICO"), 520, 500),
+   "Nuvem Patogênica (Propagação)"
+);
+GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 131);
+// =====================================================
+  */ 
    y += 20;
    GFTextLine(gump, 45, y, _ifElse(GetObjProperty(item, "level"), 520, 500), "Esconder Alavanca");
    GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 100);
@@ -72,6 +89,11 @@ function ConstructGump(item)
       y += 20;
       GFTextLine(gump, 45, y, _ifElse(opts.linked_to, 520, 500), "Linkar outras alavancas");
       GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 3);
+      if (opts.linked_to)
+         y += 20;
+         GFTextLine(gump, 45, y, _ifElse(opts.sync_toggle, 520, 500), "Sincronizar toggle (interruptores)");
+         GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 108);
+      endif
    endif
    y += 20;
    GFTextLine(gump, 45, y, _ifElse(opts.linked_to || opts.is_linked, 520, 500), "Unlink alavancas");
@@ -241,7 +263,7 @@ program lever(who, item)
 			else
 			item.graphic := graphic_lev;
 			endif
-		 55: spawn_boss (who, item, cfg);
+		 55: spawn_boss(who, item);
 		 56: efeitos (who, item);
 		 //98: setprp(who, item, res);           // setobjproperty()
 		 98: changegraphic(who, item);
@@ -252,7 +274,9 @@ program lever(who, item)
          102: setOpenDoor(who, item);
 		 103: ConfigureRequiredItems(who, item);
 		 130: SetGlobalEventGump(who, item);
+		// 131: SetPatogenico (who, item);
 		 104: RemoveActivationModes(who, item);  // Nova função para remover todos os modos
+		 108: toggleSyncToggle(who, item);  // Toggle sync mode for linked levers
 		 105: 	  foreach key in (res.keys) sleepms(2);
    case (key)
       106: // Mover primeiro
@@ -269,6 +293,206 @@ endforeach
 
    normalusage(who, item);
 endprogram
+
+function CreatePatogenicoGump(item)
+
+   var alcance := GetObjProperty(item, "patog_alcance");
+   if (!alcance) alcance := 3; endif
+
+   var ciclos := GetObjProperty(item, "patog_ciclos");
+   if (!ciclos && ciclos != 0) ciclos := 1; endif
+
+   var duracao_nuvem := GetObjProperty(item, "patog_duracao_nuvem");
+   if (!duracao_nuvem) duracao_nuvem := 2; endif
+
+   var duracao_pat := GetObjProperty(item, "patog_duracao");
+   if (!duracao_pat) duracao_pat := 0; endif
+
+   var nivel := GetObjProperty(item, "patog_nivel");
+   if (!nivel) nivel := 1; endif
+
+   var gravidade := GetObjProperty(item, "patog_gravidade");
+   if (!gravidade) gravidade := "MODERADO"; endif
+
+   var gump := GFCreateGump();
+
+   GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 420, 620);
+   GFResizePic(gump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 400, 600);
+
+   GFTextMid(gump, 10, 20, 400, 2100, "Configuração – Nuvem Patogênica");
+
+   // =========================
+   // Campos numéricos
+   // =========================
+   GFTextLine(gump, 30, 60, 2100, "Alcance:");
+   GFTextEntry(gump, 220, 60, 80, 20, 2100, ""+alcance, 10);
+
+   GFTextLine(gump, 30, 90, 2100, "Ciclos até expansão:");
+   GFTextEntry(gump, 220, 90, 80, 20, 2100, ""+ciclos, 11);
+
+   GFTextLine(gump, 30, 120, 2100, "Duração da nuvem (ciclos):");
+   GFTextEntry(gump, 220, 120, 80, 20, 2100, ""+duracao_nuvem, 12);
+
+   GFTextLine(gump, 30, 150, 2100, "Duração do patógeno:");
+   GFTextEntry(gump, 220, 150, 80, 20, 2100, ""+duracao_pat, 13);
+
+   GFTextLine(gump, 30, 180, 2100, "Nível de infecção:");
+   GFTextEntry(gump, 220, 180, 80, 20, 2100, ""+nivel, 14);
+
+   // =========================
+   // Sintomas (IGUAL infectar)
+   // =========================
+   GFTextLine(gump, 30, 220, 2100, "Sintomas:");
+
+   GFCheckBox(gump, 30, 250, 2361, 2362, 0, 1);
+   GFTextLine(gump, 60, 250, 2100, "Febre");
+
+   GFCheckBox(gump, 30, 280, 2361, 2362, 0, 2);
+   GFTextLine(gump, 60, 280, 2100, "Trombo");
+
+   GFCheckBox(gump, 30, 310, 2361, 2362, 0, 3);
+   GFTextLine(gump, 60, 310, 2100, "Pústulas");
+
+   GFCheckBox(gump, 200, 250, 2361, 2362, 0, 4);
+   GFTextLine(gump, 230, 250, 2100, "Laceração");
+
+   GFCheckBox(gump, 200, 280, 2361, 2362, 0, 5);
+   GFTextLine(gump, 230, 280, 2100, "Prurido");
+
+   GFCheckBox(gump, 200, 310, 2361, 2362, 0, 6);
+   GFTextLine(gump, 230, 310, 2100, "Cólicas");
+
+   GFCheckBox(gump, 30, 340, 2361, 2362, 0, 7);
+   GFTextLine(gump, 60, 340, 2100, "Palpitações");
+
+   GFCheckBox(gump, 200, 340, 2361, 2362, 0, 8);
+   GFTextLine(gump, 230, 340, 2100, "Náusea");
+
+   GFCheckBox(gump, 30, 370, 2361, 2362, 0, 9);
+   GFTextLine(gump, 60, 370, 2100, "Cefaleia");
+
+   GFCheckBox(gump, 200, 370, 210, 211, 0, 50);
+   GFTextLine(gump, 230, 370, 3700, "Random (Selecione só ele!)");
+
+   // =========================
+   // Gravidade
+   // =========================
+   GFTextLine(gump, 30, 410, 2100, "Gravidade:");
+
+   GFRadioButton(gump, 30, 440, 210, 211, gravidade=="LEVE", 20);
+   GFTextLine(gump, 60, 440, 2100, "Leve");
+
+   GFRadioButton(gump, 30, 470, 210, 211, gravidade=="MODERADO", 21);
+   GFTextLine(gump, 60, 470, 2100, "Moderado");
+
+   GFRadioButton(gump, 30, 500, 210, 211, gravidade=="GRAVE", 22);
+   GFTextLine(gump, 60, 500, 2100, "Grave");
+
+   // =========================
+   // Botões
+   // =========================
+   GFAddButton(gump, 140, 540, 2128, 2129, GF_CLOSE_BTN, 100);
+   GFAddButton(gump, 230, 540, 2119, 2120, GF_CLOSE_BTN, 0);
+
+   return gump;
+endfunction
+
+function SetPatogenico(who, item)
+
+   SetObjProperty(item, "LEVER_PATOGENICO", 1);
+
+   var gump := CreatePatogenicoGump(item);
+   var input := GFSendGump(who, gump);
+
+   if (!input || input[0] == 0)
+      SendSysMessage(who, "Configuração da nuvem patogênica cancelada.");
+      return;
+   endif
+
+   // Ler campos de texto
+   var alcance := CInt(GFExtractData(input, 10));
+   var ciclos := CInt(GFExtractData(input, 11));
+   var duracao_nuvem := CInt(GFExtractData(input, 12));
+   var duracao_pat := CInt(GFExtractData(input, 13));
+   var nivel := CInt(GFExtractData(input, 14));
+
+   if (!alcance) alcance := 3; endif
+   if (!ciclos && ciclos != 0) ciclos := 1; endif
+   if (!duracao_nuvem) duracao_nuvem := 2; endif
+   if (!duracao_pat) duracao_pat := 0; endif
+   if (duracao_pat >= 5001)
+		SendSysMessageEx(who, "Duração do patogênico redefinida para o máximo permitido (5000 segundos)!", SSM_FAIL);
+		duracao_pat := 5000;
+	endif
+
+   if (!nivel) nivel := 1; endif
+
+   // Gravidade (radio buttons)
+   var gravidade := "";
+
+   if (input[20] && input[20] == 1)
+      gravidade := "Leve";
+   elseif (input[21] && input[21] == 1)
+      gravidade := "Moderado";
+   elseif (input[22] && input[22] == 1)
+      gravidade := "Grave";
+   endif
+
+   if (gravidade == "")
+      SendSysMessageEx(who, "Você precisa selecionar a gravidade da infecção.", SSM_FAIL);
+      return;
+   endif
+
+// =========================
+// Sintomas
+// =========================
+var sintomas := array{};
+
+if (input[1] && input[1] == 1)
+   sintomas.append(DISEASES::FEVER);
+endif
+if (input[2] && input[2] == 1)
+   sintomas.append(DISEASES::THROMBOSIS);
+endif
+if (input[3] && input[3] == 1)
+   sintomas.append(DISEASES::PUSTULES);
+endif
+if (input[4] && input[4] == 1)
+   sintomas.append(DISEASES::LACERATION);
+endif
+if (input[5] && input[5] == 1)
+   sintomas.append(DISEASES::ITCHING);
+endif
+if (input[6] && input[6] == 1)
+   sintomas.append(DISEASES::COLIC);
+endif
+if (input[7] && input[7] == 1)
+   sintomas.append(DISEASES::PALPITATIONS);
+endif
+if (input[8] && input[8] == 1)
+   sintomas.append(DISEASES::NAUSEA);
+endif
+if (input[9] && input[9] == 1)
+   sintomas.append(DISEASES::HEADACHE);
+endif
+
+if (input[50] && input[50] == 1)
+   sintomas := "random";
+endif
+
+   // Salvar propriedades
+   SetObjProperty(item, "patog_alcance", alcance);
+   SetObjProperty(item, "patog_ciclos", ciclos);
+   SetObjProperty(item, "patog_duracao_nuvem", duracao_nuvem);
+   SetObjProperty(item, "patog_duracao", duracao_pat);
+   SetObjProperty(item, "patog_nivel", nivel);
+   SetObjProperty(item, "patog_gravidade", gravidade);
+   SetObjProperty(item, "patog_sintomas", sintomas);
+
+   SendSysMessageEx(who, "Configuração da nuvem patogênica salva.", SSM_INFO);
+
+endfunction
+
 
 function RemoveActivationModes(who, item)
    var opts := item.GetLeverOpts();
@@ -641,51 +865,101 @@ function togglewalkon(who, item)
    item.setLeverOpts(opts);
 endfunction
 
-function spawn_boss(who, item, cfg)
+function toggleSyncToggle(who, item)
    var opts := item.GetLeverOpts();
-   var first_quest := SendSysMessageEx(who,"Selecione o Local onde deseja que o boss apareça (CUIDADO o local tem que ser passable!)", SSM_INFO);
-   var trg_boss := TargetCoordinates(who);
-	if(!trg_boss)
-		SendSysMessageEx(who, "cancelado", SSM_FAIL);
-		return;
-   endif   
-if (CheckImpassable(trg_boss.objtype) == 1)
-	SendSysMessageEx(who, "Essa não é uma localização válida", SSM_FAIL);
-	return;
-endif
-   var loc := RequestGump(who, "Você quer definir como essa localização mesmo ou deseja alterar algum valor?", "", ""+Cint(trg_boss.x) +" "+Cint(trg_boss.y)+" "+Cint(trg_boss.z), 1);
- if (loc == error)
-		SendSysMessageEx(who, "cancelado", SSM_FAIL);
-		return;
-   endif 
-	loc := splitwords(loc);
-   if (loc[1] == "nada")
-		SetObjProperty(item, "loc", 1);
-	else
-		var x := SetObjProperty(item, "x", loc[1]);
-		var y := SetObjProperty(item, "y", loc[2]);
-		var z := SetObjProperty(item, "z", loc[3]);
+   if (opts.sync_toggle)
+      SendSysMessageEx(who, "Modo sincronizado desativado. As alavancas funcionarão de forma independente.", SSM_FAIL);
+      opts.-"sync_toggle";
+   else
+      SendSysMessageEx(who, "Modo sincronizado ativado. Qualquer alavanca pode ligar/desligar o mecanismo.", SSM_INFO);
+      opts.sync_toggle := 1;
+      // Disable all_levers when sync_toggle is enabled (they are mutually exclusive)
+      if (opts.all_levers)
+         opts.-"all_levers";
+         opts.-"all_levers_order";
+         EraseObjProperty(item, "leverorder");
+         SendSysMessageEx(who, "Nota: Modo 'todas as alavancas' foi desativado automaticamente.", SSM_INFO);
+      endif
    endif
- 
-  var loc2 := RequestGump(who, "Escreva o que deseja que apareça em textabove na criatura, se nao quer deixe em branco");
-  if (loc2 == "")
-  else
-  SetObjProperty(item, "txtabove", loc2);
-  endif
-CreateBossStructGump(who, cfg.boss);
-	var erro := setobjproperty(item, "configboss", cfg);
-	
-	
-	SendSysmessage(who, "Configurado." + erro);
-
-opts.spawn_boss := 1;
    item.setLeverOpts(opts);
+endfunction
+
+function spawn_boss(who, item)
+   var opts := item.GetLeverOpts();
+
+   // Ask where the boss should spawn
+   Message("Selecione o local onde deseja que o boss apareça (CUIDADO: o local tem que ser passable!)").SetColor(SSM_INFO).SendSys(who);
+   var trg_boss := TargetCoordinates(who);
+   if (!trg_boss)
+      Message("Cancelado").SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   if (CheckImpassable(trg_boss.objtype) == 1)
+      Message("Essa não é uma localização válida").SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   var loc := RequestGump(who, "Você quer definir como essa localização mesmo ou deseja alterar algum valor?", "", ""+Cint(trg_boss.x)+" "+Cint(trg_boss.y)+" "+Cint(trg_boss.z)+ " " +Cstr(trg_boss.realm), 1);
+   if (loc == error)
+      Message("Cancelado").SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   loc := SplitWords(loc);
+   if (loc[1] == "nada")
+      SetObjProperty(item, "spawn_at_lever", 1);
+   else
+      SetObjProperty(item, "spawn_x", CInt(loc[1]));
+      SetObjProperty(item, "spawn_y", CInt(loc[2]));
+      SetObjProperty(item, "spawn_z", CInt(loc[3]));
+      EraseObjProperty(item, "spawn_at_lever");
+   endif
+
+   var text_above := RequestGump(who, "Escreva o que deseja que apareça em textabove na criatura, se não quer deixe em branco");
+   if (text_above && text_above != "")
+      SetObjProperty(item, "spawn_textabove", text_above);
+   else
+      EraseObjProperty(item, "spawn_textabove");
+   endif
+
+   // Configure respawn cooldown time
+   var respawn_min := RequestGump(who, "Tempo mínimo de respawn em MINUTOS (deixe em branco para usar padrão de 120 min)", "", "120");
+   if (respawn_min && respawn_min != "")
+      SetObjProperty(item, "respawn_min", CInt(respawn_min));
+   else
+      SetObjProperty(item, "respawn_min", 120);
+   endif
+
+   var respawn_max := RequestGump(who, "Tempo máximo de respawn em MINUTOS (deixe em branco para usar padrão de 150 min)", "", "150");
+   if (respawn_max && respawn_max != "")
+      SetObjProperty(item, "respawn_max", CInt(respawn_max));
+   else
+      SetObjProperty(item, "respawn_max", 150);
+   endif
+
+   // Call the epicboss command to configure the boss
+   Message("Agora configure o boss usando o sistema Epic Boss...").SetColor(SSM_INFO).SendSys(who);
+   var result := start_script(":epicspawn:commands/gm/epicboss", array{who, item});
+   if (result == error)
+      Message("Erro ao iniciar o configurador de boss: " + result.errortext).SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   // The epicboss command will save the form_data to the item
+   // Wait a bit to ensure the script has started
+   sleepms(100);
+
+   opts.spawn_boss := 1;
+   item.setLeverOpts(opts);
+
+   Message("Configuração da alavanca com boss concluída!").SetColor(SSM_INFO).SendSys(who);
 endfunction
 
 function efeitos(who, item)
    var opts := item.GetLeverOpts();
    
-   var result := CheckBoxGump(who, 150, 200, "Opções de Efeito", {"Tremor","Clima","Sons","Apagar"});
+   var result := CheckBoxGump(who, 150, 200, "Opções de Efeito", {"Tremor","Clima","Nuvem Patogênica","Sons","Apagar"});
    foreach r in result
 	  sleepms(2);
       if (r == "Tremor")
@@ -700,6 +974,10 @@ function efeitos(who, item)
          SetObjProperty(item,  "tremor_cfg", tremor_config);
          SendSysMessageEx(who, "O efeito area (tremor) estah ativo", SSM_INFO);
          opts.efeitos := 1;
+	elseif (r == "Nuvem Patogênica")
+		opts.nuvem := 1;
+		SetPatogenico (who, item);
+		opts.efeitos := 1;
       elseif (r ==  "Clima")
          opts.clima := 1;
 
@@ -745,6 +1023,15 @@ function efeitos(who, item)
 		opts.-"somfim";
          opts.-"clima";
          opts.-"tremor";
+		 opts.-"nuvem";
+		 EraseObjProperty(item, "LEVER_PATOGENICO");
+		 EraseObjProperty(item, "patog_alcance");
+		 EraseObjProperty(item, "patog_ciclos");
+		 EraseObjProperty(item, "patog_duracao");
+		 EraseObjProperty(item, "patog_duracao_nuvem");
+		 EraseObjProperty(item, "patog_gravidade");
+		 EraseObjProperty(item, "patog_nivel");
+		 EraseObjProperty(item, "patog_sintomas");
          opts.efeitos := 0;
          SendSysMessageEx(who, "Os efeitos foram deletados", SSM_FAIL);
       endif

@@ -1,298 +1,324 @@
 use uo;
 // use math;
 use os;
+use polsys;
 
-// include "include/say";
 include ":charactercreation:habilidades";
 include "include/epicLoggerUtils";
-// include ":message:model/Message";
-include ":message:model/TranslatableText";
-// include ":message:Translator";
+// include ":message:model/TranslatableText";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:Controller/Translator";
+include ":attributes:attributes";
+include ":commands:/include/r";
 
 program speech_hooks()
 	Print("Hooking Unicode Outgoing...");
 	return 1;
 endprogram
 
-const ITEM_ID := 3;
-const TEXT_TYPE := 9;
-const NAME_ID := 18; // posição do Name de quem fala
-const SYS_MSG := 0x06;
+enum class PACKET_POSITION
+	SERIAL := 3, // Quem enviou a mensagem
+	MODEL := 7, // Não sei para o que serve
+	TYPE := 9, // Tipo da mensagem
+	COLOR := 10, // Cor da mensagem
+	FONT := 12, // Fonte da mensagem
+	LANGUAGE := 14, // Lingua da mensagem
+	NAME_ID := 18, // Nome de quem fala
+	MESSAGE := 48 // Mensagem
+endenum
 
-var msgTranslator := Translator();
+enum class MESSAGE_DISTANCE
+	WHISPER := 2,
+	NORMAL := 12,
+	EMOTE := 12,
+	YELL := 20
+endenum
 
 exported function handleUCOutgoing(character, byref packet)
-	var type := packet.GetInt8(TEXT_TYPE);
-	var serial := packet.GetInt32(ITEM_ID);
-	var source := SystemFindObjectBySerial(serial);
-	var length_of_text := (packet.GetInt16(1) - 49) / 2;
-	var message_txt := packet.GetUnicodeString(48, length_of_text);
-	var original_message := message_txt;
+	var messageData := GetPacketData(packet);
+	messageData.+target := MobileWrapper(character);
+	if (messageData.source.GetSerial() == messageData.target.GetSerial())
+		LogPlayerSpeech(messageData.source.GetObjRef(), messageData.message);
+		SayMessageSpy(messageData.source.GetObjRef(), messageData.message);
+	endif
 
-	if (message_txt[1] == " ") return 0; endif // Para de aporrinhar com essa merda desse .......... nas traduções
-	
-	var params := struct{
-		who := source,
-		message := message_txt
+	// TODO: Remover o block depois de implementar cada um dos tipos
+		// Bloqueei pra a gente pode entender a necessidade de cada
+	var blockPorEnquanto := array{
+		MESSAGE_TYPE::ALLIANCE,
+		MESSAGE_TYPE::GUILD,
+		MESSAGE_TYPE::COMMAND_PROMPTS
 	};
-	if (Translate(params)) return 1; endif
 
-	var Object_Name;
-	if (source.IsA(POLCLASS_MOBILE))
-		// PREENCHE NOME DO MOBILE
-		Object_Name := source.name;
-
-		// Cor do nome dos NPC conforme skill de combate
-		if (!source.npctemplate)
-			// Caso em que tá desconhecido
-			if (GetObjProperty(source, "realname"))
-				Object_Name := "Incognito";
-			else
-
-				// Verifica se o char já foi reconhecido por who
-				var conhecidos := dictionary;
-				if (GetObjProperty(character, "conhecidos"))
-					var ID := Cstr(source.serial); // Salva o serial do personagem
-					if (GetObjProperty(source, "disfarce"))
-						ID := Cstr(GetObjProperty(source, "FakeID")); // Substitui o serial pelo falso quando o personagem observado está disfarçado
-					endif
-
-					conhecidos := GetObjProperty(character, "conhecidos"); // Lista de pessoas conhecidadas
-					if (conhecidos.Exists(ID))
-						Object_Name := conhecidos[ID];
-					else
-						Object_Name := source.name;
-					endif
-				else
-					Object_Name := source.name;
-				endif
-			endif
-			packet.SetString(NAME_ID, Object_Name, 1);
-		endif
-	endif
-
-	// Loga tudo que é falado pelo personagem e aqueles que podem ouvir o personagem
-	LogPlayerSpeech(source, message_txt);
-
-	// SendSysMessage(source,"cmd "+ packet.GetInt8(0));
-	// SendSysMessage(source,"length "+ packet.GetInt16(1));
-	// SendSysMessage(source,"ID "+ packet.GetInt32(3));
-	// SendSysMessage(source,"model "+ packet.GetInt16(7));
-	// SendSysMessage(source,"type "+ packet.GetInt8(8));
-	// SendSysMessage(source,"color "+ packet.GetInt16(10));
-	// SendSysMessage(source,"font "+ packet.GetInt16(12));
-	// SendSysMessage(source,"Language "+ packet.GetString(14,4));
-	// SendSysMessage(source,"Name "+ packet.GetString(18, 30));
-	// SendSysMessage(source,"msg "+ packet.GetUnicodeString(48,length_of_text));
-
-	////var tamanho := packet.GetInt16(1)-30+nome.size();
-
-	////SendSysMessage(source,tamanho);
-	////packet.SetInt16(1,tamanho);
-
-	// packet.SetString(18, "Teste",1);
-
-	// SendSysMessage(source,"ZZZZZZZZZZZZZZZZZZZZZZZ");
-
-	// SendSysMessage(source,"cmd "+ packet.GetInt8(0));
-	// SendSysMessage(source,"length "+ packet.GetInt16(1));
-	// SendSysMessage(source,"ID "+ packet.GetInt32(3));
-	// SendSysMessage(source,"model "+ packet.GetInt16(7));
-	// SendSysMessage(source,"type "+ type);
-	// SendSysMessage(source,"color "+ packet.GetInt16(10));
-	// SendSysMessage(source,"font "+ packet.GetInt16(12));
-	// SendSysMessage(source,"Language "+ packet.GetString(14,4));
-	// SendSysMessage(source,"Name "+ packet.GetString(18,30));
-	// SendSysMessage(source,"msg "+ packet.GetUnicodeString(48,length_of_text));
-
-	if ((getObjProperty(source, "metamorfose") != error && !TemHabilidade(source, "Elo Natural")) ||
-	 (getObjProperty(source, "mudo") != error) || (getObjProperty(source, "#sleep") != error))
-		if (type != 0x02)
-			return 1;
-		endif
-	endif
-
-	if (type == 0x0E)
-		if (source.cmdlevel >= 1 && GetObjProperty(source, "LastMSG") != message_txt)
-			SetObjProperty(source, "LastMSG", message_txt);
-			foreach player in GetGlobalProperty("GmsOnlines")
-				var sender := source.name;
-				if (GetObjProperty(source, "realname"))
-					sender := GetObjProperty(source, "realname");
-				endif
-				if (GetGlobalProperty("onlyuni"))
-					SendSysMessageUNI(player, "[GMBcast][" + sender + "]: " + message_txt, 0x0063, 0x02);
-				else
-					SendSysMessage(player, "[GMBcast][" + sender + "]: " + message_txt, 0x03, 0x0063);
-				endif
-
-			endforeach
-		endif
+	if (messageData.type in blockPorEnquanto)
+		// Print($"Player {messageData.source.GetName()} tentou usar um tipo de mensagem bloqueada: {Hex(messageData.type)}");
 		return 1;
 	endif
 
-	var unvalid := { message_txt[1, 7], message_txt[1, 9], message_txt[1, 9], message_txt[1,
-				 	14], message_txt[1, 13], message_txt[1, 7] };
-	if (source.acctname && GetObjProperty(source, "LastMSG") != message_txt && unvalid[1] != "*Tirou " &&
-	 unvalid[2] != "*Guardou " && unvalid[3] != "*Colocou " && unvalid[4] != "*escalpelando " &&
-	 unvalid[5] != "*Acrescentou " && unvalid[6] != "*Pegou " && message_txt != "*defende o golpe*" &&
-	 message_txt != "*usando ataduras em si mesmo*" && message_txt != "*parou de aplicar bandagens*" &&
-	 message_txt != "*arrombando a fechadura*" && message_txt != "*desarmando armadilha*" &&
-	 message_txt != "*preparando um extrato*")
-		foreach player in GetGlobalProperty("GmsOnlines")
-			player := SystemFindObjectBySerial(Cint(player));
-			if (GetObjProperty(player, "SaySpyOn") && player.cmdlevel >= 3 && player != source)
-				var sender := source.name;
-				if (GetObjProperty(source, "realname")) // Se está com rosto coberto
-					sender := GetObjProperty(source, "realname");
-				endif
-				if (GetObjProperty(player, "SaySpyOn") == "on")
-					if (GetGlobalProperty("onlyuni"))
-						SendSysMessageUNI(player, "[" + sender + "]: " + message_txt);
-					else
-						SendSysMessage(player, "[" + sender + "]: " + message_txt);
-					endif
-				elseif (sender in GetObjProperty(player, "SaySpyOn"))
-					if (GetGlobalProperty("onlyuni"))
-						SendSysMessageUNI(player, "[" + sender + "]: " + message_txt);
-					else
-						SendSysMessage(player, "[" + sender + "]: " + message_txt);
-					endif
-				endif
-			endif
-			Sleepms(2);
-		endforeach
-		SetObjProperty(source, "LastMSG", message_txt);
-	endif
+	CheckSourceName(messageData);
 
-	if (!CheckLineOfSight(source, character))
-		if (type == 0x09)
-			return 0;
-		elseif (temHabilidade(character, "Mestre Espiao"))
-			return 0;
+	if (CheckSaying(messageData))
+		if (!CanUnderstand(messageData))
+			messageData.message := "*Incompreensível*";
 		else
-			if (temHabilidade(character, "Espionagem"))
-				if (Distance(character, source) < 12 &&
-		abs(character.z - source.z) < 19) // A hab só serve pra ouvir até 8 tile e 19 z
-					return 0;
-				else
-					return 1;
-				endif
-			else
-				// if (type == 0)
-				//    return 0;
-				// endif
-				return 0;
-			endif
+			CheckPrefixAndSuffix(messageData);
 		endif
 	endif
 
-	var isGeneralAction := array{ "*Tirou", "*Guardou", "*Colocou", "*escalpelando",
-							  	"*Acrescentou", "*Pegou", "*Abriu", "*Arremessa" };
-	var isSkillAction := array{ "*defende o golpe*",
-								"*tratando a si mesmo*",
-								"*arrombando a fechadura*",
-								"*desarmando armadilha*",
-								"*preparando um extrato*",
-								"*tentando se esconder*",
-								"*CRÍTICO*",
-								"*aparece*",
-								"*Abre a escotilha*",
-								"*Fecha a escotilha*",
-								"*veste o capuz*",
-								"*remove o capuz*",
-								"*Golpeia com o escudo*",
-								"*morde um pedaço de comida*",
-								"*Kaze no Ichigeki*",
-								"*Acende o fusível do canhão*",
-								"*Dispara*",
-								"*Desmonta o equipamento*",
-								"*Lento*",
-								"*tentando estabilizar o paciente*",
-								"Você interrompeu a cura." };
-
-	if (!source.npctemplate && type != 0x02)
-		var chosen_language := GetObjProperty(source, "lingua_escolhida");
-		var playerKnownLanguages := GetObjProperty(character, "linguas_conhecidas");
-		var firstActionWord := (splitwords(message_txt)[1]);
-
-		if (firstActionWord in (isGeneralAction))
-			return 0;
-		endif
-
-		if ((message_txt in isSkillAction))
-			return 0;
-		endif
-
-		if (GetObjProperty(source, "ghostvoice"))
-			return handleGhostVoice(source, message_txt, packet);
-		endif
-
-		if ((playerKnownLanguages != error && chosen_language in playerKnownLanguages) ||
-	  message_txt == "*Incompreensível*" || character.cmdlevel >= 1)
-			if (message_txt != "..." && message_txt != "" && chosen_language && chosen_language != "Comum")
-				var full_message := "[" + chosen_language + "] " + message_txt;
-				packet.SetUnicodeString(48, full_message, 1);
-			endif
-			return 0;
-		endif
-
-		if (source != character)
-			PrintTextPrivate(source, "*Incompreensível*", character);
-			return 1;
-		endif
+	if (!CanSpeak(messageData))
+		return 1;
 	endif
+
+	if (!CanHear(messageData))
+		return 1;
+	endif
+
+	ReassemblePacket(packet, messageData);
+	
 	return 0;
 endfunction
 
-exported function handleUCOrequest(character, byref packet)
+function CheckSaying(byRef messageData)
+	case (messageData.type)
+		MESSAGE_TYPE::NORMAL:
+		MESSAGE_TYPE::YELL:
+		MESSAGE_TYPE::WHISPER:
+			return true;
 
-	var serial := packet.GetInt32(ITEM_ID);
-	var source := SystemFindObjectBySerial(serial);
-	var length_of_text := (packet.GetInt16(1) - 49) / 2;
-	var message_txt := packet.GetUnicodeString(48, length_of_text);
+		default:
+			return false;
+	endcase
 
-	if (GetObjProperty(source, "original_language"))
-		// message_txt := TranslateText(message_txt, "pt_BR", "en_US");
-	endif
-
-	var type := packet.GetInt8(4);
-
-	// 	sendsysmessage(character, "type" + type);
-
-	if (getObjProperty(character, "metamorfose") != error)
-		if (type == 0x00)
-			return 1;
-		else
-			return 0;
-		endif
-	endif
-
-	return 0;
-endfunction
-
-function handleGhostVoice(source, message_txt, byref packet)
-	packet.SetUnicodeString(48, message_txt, 1);
-
-	EraseObjProperty(source, "ghostvoice");
-	return 0;
-endfunction
-
-function Translate(byRef params)
-	var who := params.who;
-	var message := params.message;
-
-	var wantTranslation := CInt(GetObjProperty(who, "translation"));
-	if (wantTranslation > 0)
-		var dubbed := CInt(wantTranslation) == 2 ? true : false; // Temporário, depois fazer verificação se o char quer legenda ou não
-
-		if (message[1] != "[" && message[message.length()] != "]") // Evita loop de tradução
-			Message("[" + message + "]").SetAsync().SendAbove(who);
-			if (dubbed)
-				return true; // Impede o envio da mensagem original
-			endif
-		endif
+	// Ê packet nativo do POL cagado, hein.....
+	if (messageData.source == 0 ||
+		messageData.sourceName == "System")
+		return false;
 	endif
 
 	return false;
+endfunction
+
+function CanSpeak(byRef messageData)
+	// if (messageData.source.GetProperty("metamorfose") && !messageData.source.HasAbility(ABILITY_ID::ELO_NATURAL))
+	// 	if (messageData.type == MESSAGE_TYPE::NORMAL)
+	// 		return false;
+	// 	endif
+	// endif
+
+	// if (messageData.source.GetProperty("mudo"))
+	// 	return false;
+	// endif
+
+	if (messageData.source.GetProperty("#sleep"))
+		return false;
+	endif
+
+	return true;
+endfunction
+
+function CanHear(byRef messageData)
+	var hearDistance;
+	var playerDistance := Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef());
+	var rangeMod := CheckLineOfSight(messageData.source.GetObjRef(), messageData.target.GetObjRef()) ? 1 : 3;
+	// print(messageData);
+	// print($"Distância entre fonte e alvo: {playerDistance}. Modificador de alcance: {rangeMod}.");
+
+	if (messageData.type == MESSAGE_TYPE::WHISPER)
+		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
+							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod);
+		
+		if (playerDistance > hearDistance)
+			return false;
+		endif
+	elseif (messageData.type == MESSAGE_TYPE::YELL)
+		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
+							CInt(MESSAGE_DISTANCE::YELL / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::YELL / rangeMod);
+
+		if (playerDistance > hearDistance || 
+			Abs(messageData.source.GetObjRef().z - messageData.target.GetObjRef().z) >= hearDistance)
+			return false;
+		endif
+	elseif (messageData.type == MESSAGE_TYPE::NORMAL)
+		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
+							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod);
+
+		if (playerDistance > hearDistance)
+			return false;
+		endif
+	elseif (messageData.type == MESSAGE_TYPE::EMOTE)
+		hearDistance := CInt(MESSAGE_DISTANCE::EMOTE / rangeMod);
+
+		if (playerDistance > hearDistance)
+			return false;
+		endif
+	endif
+
+	return true;
+endfunction
+
+function CheckSourceName(byRef messageData)
+	var targetObj := messageData.target.GetObjRef();
+	var sourceObj := messageData.source.GetObjRef();
+	var nickname := GetKnownNickname(targetObj, sourceObj);
+	if (nickname != "")
+		messageData.sourceName := nickname;
+	endif
+endfunction
+
+function GetPacketData(packet)
+	var serial := packet.GetInt32(PACKET_POSITION::SERIAL);
+	var model := packet.GetInt16(PACKET_POSITION::MODEL);
+	var source := CreateObjectWrapper(SystemFindObjectBySerial(serial));
+	var type := packet.GetInt8(PACKET_POSITION::TYPE);
+	var color := packet.GetInt16(PACKET_POSITION::COLOR);
+	var font := packet.GetInt16(PACKET_POSITION::FONT);
+	var language := packet.GetString(PACKET_POSITION::LANGUAGE, 4);
+	var sourceName := packet.GetString(PACKET_POSITION::NAME_ID, 30);
+	var message_length := (packet.GetInt16(1) - 49) / 2;
+	var message := packet.GetUnicodeString(PACKET_POSITION::MESSAGE, message_length);
+
+	return struct{
+		source := source,
+		model := model,
+		type := type,
+		color := color,
+		font := font,
+		language := language,
+		sourceName := sourceName,
+		message := message
+	};
+endfunction
+
+function CreateObjectWrapper(obj)
+	if (obj.IsA(POLCLASS_MOBILE))
+		return MobileWrapper(obj);
+	elseif (obj.IsA(POLCLASS_CONTAINER))
+		return ContainerWrapper(obj);
+	elseif (obj.IsA(POLCLASS_ARMOR))
+		return ArmorWrapper(obj);
+	elseif (obj.IsA(POLCLASS_WEAPON))
+		return WeaponWrapper(obj);
+	elseif (obj.IsA(POLCLASS_ITEM))
+		return ItemWrapper(obj);
+	endif
+endfunction
+
+function ReassemblePacket(byRef packet, byRef messageData);
+	packet.SetInt32(PACKET_POSITION::SERIAL, messageData.source.GetSerial());
+	packet.SetInt16(PACKET_POSITION::MODEL, messageData.model);
+	packet.SetInt8(PACKET_POSITION::TYPE, messageData.type);
+	packet.SetInt16(PACKET_POSITION::COLOR, messageData.color);
+	packet.SetInt16(PACKET_POSITION::FONT, messageData.font);
+	packet.SetString(PACKET_POSITION::LANGUAGE, messageData.language, 0);
+	packet.SetString(PACKET_POSITION::NAME_ID, messageData.sourceName, 1);
+	packet.SetUnicodeString(PACKET_POSITION::MESSAGE, messageData.message, 1);
+endfunction
+
+function MustContinue(data)
+	var typesToIgnore := array{
+		MESSAGE_TYPE::BROADCAST,
+		MESSAGE_COLOR::SYSTEM
+	};
+	
+	if (data.type in typesToIgnore)
+		return false; // Mensagens que não precisam de tratamento, apenas de tradução (se o receptor quiser)
+	endif
+
+	return true;
+endfunction
+
+function CheckPrefixAndSuffix(byRef messageData)
+	var typesToPrefix := array{
+		MESSAGE_TYPE::NORMAL,
+		MESSAGE_TYPE::WHISPER,
+		MESSAGE_TYPE::YELL
+	};
+
+	if (messageData.type in typesToPrefix)
+		var chosen_language := messageData.source.GetProperty("lingua_escolhida");
+		if (chosen_language && chosen_language != error && chosen_language != "Comum")
+			messageData.message := $"[{chosen_language}] " + messageData.message;
+		endif
+	endif
+endfunction
+
+function CanUnderstand(byRef messageData)
+	if (messageData.target.GetObjRef().cmdlevel >= 1)
+		return true;
+	endif
+
+	if (messageData.source == messageData.target)
+		return true;
+	endif
+
+	if (!messageData.source.GetObjRef().IsA(POLCLASS_MOBILE))
+		return true;
+	endif
+
+	if (messageData.source.IsNPC())
+		return true;
+	endif
+
+	var sourceLanguage := messageData.source.GetProperty("lingua_escolhida");
+	var targetKnownLanguages := messageData.target.GetProperty("linguas_conhecidas");
+
+	if (sourceLanguage in targetKnownLanguages)
+		return true;
+	endif
+
+	return false;
+endfunction
+
+
+
+
+
+function SayMessageSpy(who, message_txt)
+	foreach player in GetGlobalProperty("GmsOnlines")
+		player := SystemFindObjectBySerial(CInt(player));
+		if (GetObjProperty(player, "SaySpyOn") && player.cmdlevel >= 3 && player != who)
+			var sayspy := GetObjProperty(player, "SaySpyOn");
+			var acct := who.acctname;
+			var truename := GetObjProperty(who, "nome_inicial");
+
+			if (sayspy == "on")
+				SendSysMessage(player, "[SAY-SPY][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);
+			elseif (TypeOf(sayspy) == "Array" && who.name in sayspy)
+				SendSysMessage(player, "[SAY-SPY][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);
+			endif
+		endif
+		Sleepms(2);
+	endforeach
+endfunction
+
+// Deixa isso aqui pra quando precisar testar.....
+function _debugMe(byRef packet)
+	var data := GetPacketData(packet);
+
+	if (data.type == MESSAGE_TYPE::NORMAL)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um say: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::BROADCAST)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um broadcast: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::EMOTE)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um emote: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::SYSTEM)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um system: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::MESSAGE_CORNER)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um message corner: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::WHISPER)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um whisper: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::YELL)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um yell: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::SPELL)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um spell: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::GUILD)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um guild: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::ALLIANCE)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um alliance: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::COMMAND_PROMPTS)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um command prompts: " + data.message, 1);
+	endif
 endfunction

@@ -1,0 +1,10 @@
+use uo;
+include ":propagacao:include/propagacao";
+
+program destruidoraPropagacao(esteItemMarcador)
+	var propPropagacao := GetObjProperty(esteItemMarcador, PROPNAME_PROP_PROPAGACAO);
+
+	MarcaLimitadoraGlobal(propPropagacao.origem, -1); 
+
+	return 1;
+endprogram

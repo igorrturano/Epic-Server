@@ -329,7 +329,7 @@ function FishFight(who, fishingpole, pretfish, targetsquare, molinete)
 		if (acao == 1)
 			PrintTextAbove(who, "*puxando a linha*");
 			PlaySoundEffect(who, cInt(0x5A5));
-			PerformAction(who, ANIM_ATTACK_2HAND_WIDE);
+			PerformAction(who, HUMAN_ANIM::ATTACK_2HAND_SLASH);
 			tensao := Cint(tensao + (peso * (RandomInt(2) + 1)) - (GetAttribute(who,
 				  STRENGTH) / 10) - (GetAttribute(who, DEXTERITY) / 10) - (AP_GetSkill(who, SURVIVAL) / 4));
 			tensao := Cint(tensao - (tensao * molinete * 0.2));
@@ -344,7 +344,7 @@ function FishFight(who, fishingpole, pretfish, targetsquare, molinete)
 		endif
 		if (acao == 2)
 			PrintTextAbove(who, "*soltando a linha*");
-			PerformAction(who, ANIM_ATTACK_2HAND_JAB);
+			PerformAction(who, HUMAN_ANIM::ATTACK_2HAND_PIERCING);
 			tensao := Cint(tensao - (GetAttribute(who, DEXTERITY) / 10) - (AP_GetSkill(who, SURVIVAL) / 2));
 			distancia := distancia + 1;
 			if (tensao <= 0)

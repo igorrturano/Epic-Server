@@ -324,6 +324,78 @@ function ConsumirPedacos(who, tipo, quantidade)
 	endforeach
 endfunction
 
+function BuildAlchemyScrollWhitelist()
+	var menuCfg := ReadConfigFile(":alchemy:AlchMenu");
+	if (menuCfg.errortext)
+		Print("ERROR: Não foi possível ler AlchMenu.cfg: " + menuCfg.errortext);
+		return array{};
+	endif
+
+	// 1° passo: coleta nomes base das receitas automáticas (plain Item, sem "Recipe ")
+	var automaticas := array{};
+	foreach groupKey in (GetConfigStringKeys(menuCfg))
+		if (groupKey != "Index")
+			var elem := FindConfigElem(menuCfg, groupKey);
+			if (elem)
+				foreach itemStr in (GetConfigStringArray(elem, "Item"))
+					if (SubStr(itemStr, 1, 7) != "Recipe ")
+						var dashPos := Find(itemStr, "-", 1);
+						var baseName;
+						if (dashPos > 0)
+							baseName := SubStr(itemStr, 1, dashPos - 1);
+						else
+							baseName := itemStr;
+						endif
+						var found := 0;
+						foreach a in automaticas
+							if (a == baseName)
+								found := 1;
+							endif
+						endforeach
+						if (!found)
+							automaticas.append(baseName);
+						endif
+					endif
+				endforeach
+			endif
+		endif
+	endforeach
+
+	// 2° passo: coleta Item Recipe sem sufixo de classe cujo nome base não é automático
+	var whitelist := array{};
+	foreach groupKey in (GetConfigStringKeys(menuCfg))
+		if (groupKey != "Index")
+			var elem := FindConfigElem(menuCfg, groupKey);
+			if (elem)
+				foreach itemStr in (GetConfigStringArray(elem, "Item"))
+					if (SubStr(itemStr, 1, 7) == "Recipe ")
+						var name := SubStr(itemStr, 8, Len(itemStr) - 7);
+						var isAuto := 0;
+						foreach a in automaticas
+							if (a == name)
+								isAuto := 1;
+							endif
+						endforeach
+						if (!isAuto)
+							var found := 0;
+							foreach existing in whitelist
+								if (existing == name)
+									found := 1;
+								endif
+							endforeach
+							if (!found)
+								whitelist.append(name);
+							endif
+						endif
+					endif
+				endforeach
+			endif
+		endif
+	endforeach
+
+	return whitelist;
+endfunction
+
 function SelectRandomAlchemyRecipe(nivel)
 	var cfg := ReadConfigFile(":alchemy:recipes");
 	if (cfg.errortext)
@@ -331,12 +403,21 @@ function SelectRandomAlchemyRecipe(nivel)
 		return 0;
 	endif
 
+	var whitelist := BuildAlchemyScrollWhitelist();
+
 	var levelRecipes := array{};
 	foreach key in (GetConfigStringKeys(cfg))
 		var elem := FindConfigElem(cfg, key);
-		if (elem && GetConfigInt(elem, "level") == nivel)
-			levelRecipes.append(key);
+		if (!elem || GetConfigInt(elem, "level") != nivel)
+			continue;
 		endif
+		var name := GetConfigString(elem, "Name");
+		foreach scrollName in whitelist
+			if (scrollName == name)
+				levelRecipes.append(key);
+				break;
+			endif
+		endforeach
 	endforeach
 
 	if (levelRecipes.size() > 0)
@@ -391,17 +472,25 @@ function SelectRandomRecipe(power)
 endfunction
 
 function SelectRandomSpell(power)
-	var cfg := ReadConfigFile(":spells:spellcaster");
-	if (!cfg)
-		return 0;
-	endif
 	var spells := array{};
-	foreach entry in (GetConfigStringKeys(cfg))
-		var elem := FindConfigElem(cfg, entry);
-		var circle := GetConfigInt(elem, "Circle");
-		if (circle == power)
-			spells.append(GetConfigInt(elem, "SpellId"));
+	var mage_configs := array{
+		":spells:config/evocation",
+		":spells:config/necromancy",
+		":spells:config/illusion",
+		":spells:config/swordmage"
+	};
+	foreach cfg_path in mage_configs
+		var cfg := ReadConfigFile(cfg_path);
+		if (!cfg)
+			continue;
 		endif
+		foreach entry in (GetConfigStringKeys(cfg))
+			var elem := FindConfigElem(cfg, entry);
+			var circle := GetConfigInt(elem, "Circle");
+			if (circle == power)
+				spells.append(GetConfigInt(elem, "SpellId"));
+			endif
+		endforeach
 	endforeach
 	if (spells.size() > 0)
 		var selectedSpell := spells[RandomInt(spells.size()) + 1];

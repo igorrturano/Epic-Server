@@ -11,17 +11,20 @@ include "include/say";
 include ":charactercreation:habilidades";
 include ":timedScripts:timedScripts";
 include "include/eventID";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 var cfg := ReadConfigFile(":*:npcdesc");
 const FOLLOW_CMD := 0xA001;
 var following := 0;
+
 program herd(who)
 
-	if (!TemHabilidade(who, "Pastor"))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::SHEPHERD))
 		return;
 	endif
 
-	SendSysMessageEx(who, "Onde voce deseja usar isto?", SSM_REQUEST);
+	SendSysMessageEx(who, "Onde você deseja usar isto?", SSM_REQUEST);
 	var npc := Target(who);
 	if (!npc)
 		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
@@ -31,233 +34,287 @@ program herd(who)
 		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 		return;
 	endif
-	/* if(who.cmdlevel >= 2)
-                var location := TargetCoordinates(who);
-                if(!CheckLosAt(npc, location.x, location.y, location.z))
-                        SendSysMessageEx(who, npc.name + " nao ve o alvo!", SSM_FAIL);
-                        return;
-                endif
-                IrNpc(npc, location);
-                return;
-        endif */
+
 	if (!CheckLineOfSight(who, npc))
-		SendSysMessageEx(who, "Voce nao ve o alvo!", SSM_FAIL);
+		SendSysMessageEx(who, "Voce não vê o alvo!", SSM_FAIL);
 	endif
 
 	var npctemplate := npc.npctemplate;
-	npctemplate := npctemplate[10, len(npctemplate) - 9];
-	cfg := cfg[npctemplate];
+	npctemplate := npctemplate[9, len(npctemplate) - 8];
+	var elem := FindConfigElem(cfg, npctemplate);
+    var align := GetConfigString(elem, "Alignment");
+	var cruzar_alvo := GetObjProperty(npc, "Cruzar");
 	var chk := 0;
 	case (npc.script)
-		"tamed":    chk := 1;
-		"worker":   chk := 1;
-		"employed": chk := 1;
+		":ghaia:tamed":    
+		if (cruzar_alvo != "nao")
+			SendSysMessageEx(who, npc.name + " só pode acasalar!", SSM_FAIL);
+		else
+			chk := 1;
+		endif
+		":ghaia:worker":   chk := 1;
+		":ghaia:employed": chk := 1;
 	endcase
+
 	if ((chk == 1) or (!npc.getTameDifficulty()))
-		SendSysMessageEx(who, "Esta criatura nao pode ser pastoreada!", SSM_FAIL);
+		SendSysMessageEx(who, "Esta criatura não pode ser pastoreada e/ou não está habiliata a acasalar!", SSM_FAIL);
 		return;
 	endif
 
 	var gender_alvo := GetObjProperty(npc, "Sexo");
-	if (gender_alvo == 1) // resposta dependendo do sexo do 1target
-		SendSysMessageEx(who, "Para onde voce deseja mover " + npc.name + " ? Para acasalar selecione uma femea como destino ou Selecione a si mesmo para segui-lo",
-				   SSM_REQUEST);
-	elseif (gender_alvo == 2)
-		SendSysMessageEx(who, "Para onde voce quer mover " + npc.name + " (femea) ? ou Selecione a si mesmo para segui-lo",
-				   SSM_REQUEST);
-	endif
 
-	var location := TargetCoordinates(who);
-	var female_template := (location.mobile.npctemplate); // para checar o template do alvo-destino
-	var male_template := (npc.npctemplate);
-	var compatibles := (female_template == male_template);
-	var cows := array(":brainai:cow", ":brainai:cow2");
-	if ((female_template == ":brainai:cabra") && (male_template == ":brainai:goat"))
-		compatibles := 1;
-	elseif ((female_template in cows) && (male_template == ":brainai:bull"))
-		compatibles := 1;
-	endif
-	var partos := (Getobjproperty(location.mobile, "Gravida")); // para ver quantas vezes engravidou
-	var distancia := (Distance(npc, location.mobile) < 5); // para checar a distancia entre o macho e a femea
-	var gemer := CInt(cfg[npc.npctemplate].damagedsound); // para identificar o som de sequiçu do 1target (macho)	
-
-	if (!CheckLosAt(npc, location.x, location.y, location.z))
-		SendSysMessageEx(who, npc.name + " nao ve o alvo!", SSM_FAIL);
-		return;
-	elseif (location.mobile && !(location.mobile == who))
-		var newborn := splitwords(location.mobile.name)[1] == "Filhote";
-		var gender_destino := GetObjProperty(location.mobile, "Sexo");
-		var timedes := TS_GetTimerNames(npc);
-		if ("encantar" in timedes)
-			TS_LowerDuration(npc, "encantar", -1);
-		endif
-		if ((gender_destino == 2) && (gender_alvo == 1) && (!newborn) &&
-	  (compatibles)) // O 1target tem q ser macho, o alvo femea e ambos mesmo template
-			PrintTextAbove(npc, "*" + npc.name + " corre com o membro ereto*"); // mensagem do bicho arrastando a peromba pra femea
-			Setobjproperty(location.mobile, "alvo", 1); // seta a femea como alvo para acasalar			
-			IrNpc(npc, location);
-		elseif ((gender_destino == 1) && (gender_alvo == 2))
-			PrintTextAbove(npc, "*A femea se nega a correr atras de macho!*"); // especie diferente ou outro macho não rola
-			return;
+	if ((gender_alvo == 1) && (align != "evil"))
+		SendSysMessageEx(who, "Para onde deseja mover " + npc.name + "? Para acasalar selecione uma fêmea ou a si mesmo para segui-lo", SSM_REQUEST);
+	elseif ((gender_alvo == 2) && (align != "evil"))
+		SendSysMessageEx(who, "Para onde deseja mover " + npc.name + " (fêmea)?", SSM_REQUEST);
+	elseif ((gender_alvo == 1) && (align == "evil"))
+		var peace := getCooldown(npc, "peacemade") != 0;
+		if (peace)
+			SendSysMessageEx(who, npc.name+"(macho) só pode acasalar, selecione a fêmea", SSM_REQUEST);
 		else
-			SendSysMessage(who, npc.name + " nao se sente atraido por " + location.mobile.name); // especie diferente ou outro macho não rola
+			SendSysMessageEx(who, "O macho precisa ser acalmado!", SSM_FAIL);
+			return;
+		endif	
+	elseif (gender_alvo == 0) 
+		if (cruzar_alvo)
+			SendSysMessageEx(who, "Esse animal é estéril e não pode acasalar!", SSM_FAIL);
 			return;
 		endif
 	else
-		if (SkillCheck(who, HANDLEANIMAL, CInt(npc.getTameDifficulty())) > 0)
-			if (GetObjProperty(npc, "owner") && (who.cmdlevel < 1))
-				SendSysMessageEx(who, "Este animal nao pode ser pastoreado", SSM_FAIL);
-				return;
-			elseif (location.mobile == who)
-				SendSysMessage(who, "deu xero");
-				var time := AP_GetTrueSkill(who, HANDLEANIMAL) / 15;
-				var time2 := time * 60;
-				SendSysMessage(who, "O animal te seguira por " + time + " minutos");
-				TS_StartTimer(npc, "encantar", time2);
-				sleepms(10);
-				var event := struct{ "type" := FOLLOW_CMD, "source" := who };
-				SendEvent(npc, event);
-
-				return;
-
-			else
-				var timedes := TS_GetTimerNames(npc);
-				if ("encantar" in timedes)
-					TS_LowerDuration(npc, "encantar", -1);
-				endif
-				IrNpc(npc, location);
-				return;
-			endif
-		else
-			SendSysMessage(who, npc.name + " nao obedece ao seu comando."); // Falha no skillcheck
-			return;
-		endif
-	endif
-
-	var alvo := (Getobjproperty(location.mobile, "alvo")); // identica a femea como alvo de acasalamento
-	var pariu := (Getobjproperty(location.mobile, "Pariu")); // identifica se já pariu para setar 5 minutos para cada
-	var TS_running := (location.mobile.frozen == 1); // AQUIIIII
-
-	detach();
-	sleep(1);
-	if ((alvo == 1) && (!TS_running)) // checa se o destino é uma femea e se está pronta para parir
-		var location_mobile := location.mobile;
-		if (distancia) // checa a distancia dos dois para nheco nheco e então parir
-			Engravidar(who, location_mobile, npc, partos, female_template);
-			return;
-		else // se não estiverem perto falha
-			detach();
-			sleep(2);
-			SendSysMessageEx(who, "" + npc.name + " brochou no caminho, tente novamente mais perto da femea!",
-							  SSM_FAIL);
-			Eraseobjproperty(location.mobile, "alvo"); // apagar o prop de alvo (acasalar)
-			return;
-		endif
-	elseif ((alvo == 1) && (TS_running))
-		SendSysMessageEx(who, "Ela acabou de parir, de um tempo para coitada!", SSM_FAIL);
-		PrintTextAbove(location.mobile, "*Nao aceita a investida*");
-		Eraseobjproperty(location.mobile, "alvo"); // apagar o prop de alvo (acasalar)
+		SendSysMessageEx(who, "Não é possível pastorear fêmeas agressivas ", SSM_FAIL);
 		return;
 	endif
 
-// Eraseobjproperty(location.mobile, "alvo"); // apagar o prop de alvo (acasalar)
+	var location := TargetCoordinates(who);
+	if (cruzar_alvo) 
+		if(!location.mobile)
+			SendSysMessageEx(who, "A criatura já tem dono, não pode pastorear, só acasalar!", SSM_FAIL);
+			return;
+		else
+			var cruzar_destino := GetObjProperty(location.mobile, "Cruzar");
+			if (cruzar_destino == "nao")
+				SendSysMessageEx(who, "A criatura destino não está habilitada pelo dono a acasalar!", SSM_FAIL);
+				return;
+			endif
+		endif
+	endif
+	
+	var female_template := (location.mobile.npctemplate);
+	var male_template := (npc.npctemplate);
+
+	var compatibles := (female_template == male_template);
+
+	var cows := array(":epicai:cow", ":epicai:cow2");
+
+	if ((female_template == ":epicai:goat") && (male_template == ":epicai:goat2"))
+		compatibles := 1;
+	elseif ((female_template in cows) && (male_template == ":epicai:bull"))
+		compatibles := 1;
+	endif
+
+	var partos := GetObjProperty(location.mobile, "Gravida");
+	var distancia := (Distance(npc, location.mobile) < 5);
+
+	if (!CheckLosAt(npc, location.x, location.y, location.z))
+		SendSysMessageEx(who, npc.name + " não vê o alvo!", SSM_FAIL);
+		return;
+
+	elseif (location.mobile && !(location.mobile == who))
+
+		var desc := Lower(GetObjProperty(location.mobile, "descmodboss"));
+		var newborn := 0;
+
+		if (desc)
+			if (("filhote" in desc) || ("cabrito" in desc) || ("bezerro" in desc))
+				newborn := 1;
+			endif
+		endif
+
+		var gender_destino := GetObjProperty(location.mobile, "Sexo");
+
+		if ((gender_destino == 0))
+			SendSysMessageEx(who, location.mobile.name + " é estéril!", SSM_FAIL);
+			return;
+		endif
+
+		if ((gender_alvo == 0))
+			SendSysMessageEx(who, npc.name + " é estéril!", SSM_FAIL);
+			return;
+		endif
+
+		if ((gender_destino == 2) && (gender_alvo == 1) && (!newborn) &&
+		    (compatibles) && (location.mobile.script == ":ghaia:tamed"))
+
+			PrintTextAbove(npc, "*" + npc.name + " corre com o membro ereto*");
+			SetObjProperty(location.mobile, "alvo", 1);
+			IrNpc(npc, location);
+			sleepms(3);
+
+		elseif ((gender_destino == 1) && (gender_alvo == 2))
+			PrintTextAbove(npc, "*A femea se nega a correr atras de macho!*");
+			return;
+
+		elseif ((gender_destino == 2) && (gender_alvo == 1) && (!newborn) && (compatibles))
+			SendSysMessage(who, "A fêmea precisa estar domada para poder engravidar.");
+			return;
+
+		else
+			SendSysMessage(who, npc.name + " não se sente atraído por " + location.mobile.name);
+			return;
+		endif
+
+	else
+		if (align == "evil")
+			SendSysMessageEx(who, "Criaturas agressivas não podem ser pastoreadas!", SSM_FAIL);
+			return;
+		endif
+		if (SkillCheck(who, HANDLEANIMAL, CInt(npc.getTameDifficulty())) > 0)
+
+			if (location.mobile == who)
+
+				var time := AP_GetTrueSkill(who, HANDLEANIMAL) / 15;
+				var time2 := time * 60;
+
+				SendSysMessage(who, "O animal te seguirá por " + time + " minutos");
+
+				TS_StartTimer(npc, "encantar", time2);
+
+				var event := struct{ "type" := 0xA001, "source" := who };
+				SendEvent(npc, event);
+
+				return;
+			else
+				IrNpc(npc, location);
+				return;
+			endif
+
+		else
+			SendSysMessage(who, npc.name + " não obedece ao seu comando.");
+			return;
+		endif
+	endif
+
+	var alvo := GetObjProperty(location.mobile, "alvo");
+	var TS_running := TS_GetTimerInfo(location.mobile, "Gestacao");
+
+	detach();
+	sleep(1);
+
+	if ((alvo == 1) && (!TS_running))
+
+		var location_mobile := location.mobile;
+
+		if (distancia)
+			Engravidar(who, location_mobile, npc, partos, female_template);
+			return;
+		else
+			SendSysMessageEx(who, npc.name + " broxou no caminho, tente novamente mais perto da fêmea!", SSM_FAIL);
+			EraseObjProperty(location.mobile, "alvo");
+			return;
+		endif
+
+	elseif ((alvo == 1) && (TS_running))
+		SendSysMessageEx(who, "Ela acabou de parir, dê um tempo para coitada!", SSM_FAIL);
+		PrintTextAbove(location.mobile, "*Nao aceita a investida*");
+		EraseObjProperty(location.mobile, "alvo");
+		return;
+	endif
 
 endprogram
 
 function IrNpc(npc, location)
-	var holder := {};
-	holder.append(location.x);
-	holder.append(location.y);
+
+        TS_LowerDuration(npc, "encantar", -1);
+
 	var ev := struct;
 	ev.+type := EVID_HERDING;
-	ev.+data := holder;
+	ev.+data := struct;
+	ev.data.+x := location.x;
+	ev.data.+y := location.y;
+
 	SendEvent(npc, ev);
+
 endfunction
 
+// =====================================================
+// REGRA NOVA: SEMPRE tameDifficulty + 10
+// =====================================================
+
 function Engravidar(who, location_mobile, npc, partos, female_template)
-	var npctemplate := npc.npctemplate;
-	npctemplate := npctemplate[10, len(npctemplate) - 9];
-	cfg := cfg[npctemplate];
-	var skill_check := (SkillCheck(who, HANDLEANIMAL, CInt(npc.getTameDifficulty())) > 0);
-	var skill_check2 := (SkillCheck(who, HANDLEANIMAL, CInt(npc.getTameDifficulty() + 10)) > 0);
-	var gemer := CInt(cfg.damagedsound); // para identificar o som de sequiçu do 1target (macho)
-	var cows := array(":brainai:cow", ":brainai:cow2");
+
+	var dificuldade := CInt(npc.getTameDifficulty() + 10);
+	var skill_check := (SkillCheck(who, HANDLEANIMAL, dificuldade) > 0);
+
 	if (!partos)
 		if (skill_check)
-			Setobjproperty(location_mobile, "Gravida",
-							CInt(Getobjproperty(location_mobile, "Gravida")) + 1); // Adiciona o valor +1 pra qtas x engravidou
-			TS_StartTimer(location_mobile, "Paralysis", 300); // para definir o tempo de um parto pro outro
-			PrintTextAbove(location_mobile, "*" + location_mobile.name + " está parindo!!!*");
-			PerformAction(npc, ANIM_FIDGET_1); // roda a animação de ataque default para npcs
-			PlaySoundEffect(npc, gemer); // tocar som na hora do acasalamento
-			detach();
-			sleep(5);
-			if (female_template in cows)
-				CreateNpcFromTemplate(female_template, location_mobile.x, location_mobile.y, location_mobile.z,
-																												struct{
-																												"name" := "Bezerro" }, location_mobile.realm);
-			// "pari" o npc com nome de filhote de +acordo com name da mãe
-			elseif (female_template == ":brainai:cabra")
-				CreateNpcFromTemplate(female_template, location_mobile.x, location_mobile.y, location_mobile.z,
-																												struct{
-																												"name" := "Cabrito" }, location_mobile.realm);
-			// "pari" o npc com nome de filhote de +acordo com name da mãe
-			else
-				CreateNpcFromTemplate(female_template, location_mobile.x, location_mobile.y, location_mobile.z,
-																												struct{
-																												"name" := "Filhote de " + location_mobile.name },
-																												location_mobile.realm); // "pari" o npc com nome de filhote de +acordo com name da mãe
-			endif
-			Eraseobjproperty(location_mobile, "alvo"); // apagar o prop de alvo (acasalar)
+
+			PrintTextAbove(location_mobile, "*" + location_mobile.name + " engravidou!*");
+
+			SetObjProperty(location_mobile, "Gravida", 1);
+			SetObjProperty(location_mobile, "descmodboss", "*Gravida*");
+
+			var tempo := CalcularTempoGestacao(who, npc);
+			TS_StartTimer(location_mobile, "Gestacao", tempo);
+
+			EraseObjProperty(location_mobile, "alvo");
 			return;
 		else
-			detach();
-			sleep(2);
 			PrintTextAbove(location_mobile, "A femea nao ficou gravida");
 			return;
 		endif
-	elseif (partos == 1)
-		if (skill_check2)
-			Setobjproperty(location_mobile, "Gravida",
-							CInt(Getobjproperty(location_mobile, "Gravida")) + 1); // Adiciona o valor +1 pra qtas x engravidou
-			PrintTextAbove(location_mobile, "A femea da a luz com muita dificuldade");
-			detach();
-			sleep(5);
-			CreateNpcFromTemplate(female_template, location_mobile.x, location_mobile.y, location_mobile.z,
-																											struct{
-																											"name" := "Filhote de " + location_mobile.name },
-																											location_mobile.realm); // "pari" o npc com nome de filhote de +acordo com name da mãe
-			TS_StartTimer(location_mobile, "Paralysis", 300); // para definir o tempo de um parto pro outro
-			Eraseobjproperty(location_mobile, "alvo"); // apagar o prop de alvo (acasalar)
+
+	elseif (partos >= 1)
+		if (skill_check)
+
+			PrintTextAbove(location_mobile, "A femea engravidou com dificuldade");
+
+			SetObjProperty(location_mobile, "Gravida", partos + 1);
+
+			var tempo := CalcularTempoGestacao(who, npc);
+			TS_StartTimer(location_mobile, "Gestacao", tempo);
+
+			EraseObjProperty(location_mobile, "alvo");
 			return;
+
 		else
-			detach();
-			sleep(2);
-			Setobjproperty(location_mobile, "Gravida",
-							CInt(Getobjproperty(location_mobile, "Gravida")) + 1); // Adiciona o valor +1 pra qtas x engravidou
-			PrintTextAbove(location_mobile, "A femea teve uma gravidez interrompida");
-			return;
-		endif
-	elseif (partos >= 2)
-		if (skill_check2)
-			CreateNpcFromTemplate(female_template, location_mobile.x, location_mobile.y, location_mobile.z,
-																											struct{
-																											"name" := "Filhote de " + location_mobile.name },
-																											location_mobile.realm); // "pari" o npc com nome de filhote de +acordo com name da mãe
-			detach();
-			sleep(5);
-			SendSysMessage(who, "*" + location_mobile.name + " morre de exaustao!*", SSM_FAIL);
-			Eraseobjproperty(location_mobile, "alvo"); // apagar o prop de alvo (acasalar)
-			ApplyRawDamage(location_mobile, CInt(AP_GetVitalMaximumValue(location_mobile, "Hits")));
-			return;
-		else
-			detach();
-			sleep(2);
-			PrintTextAbove(location_mobile, "A femea teve uma gravidez interrompida e morre de exaustao");
-			sleep(1);
-			Eraseobjproperty(location_mobile, "alvo"); // apagar o prop de alvo (acasalar)
+			PrintTextAbove(location_mobile, "A femea morre por exaustao reprodutiva");
 			ApplyRawDamage(location_mobile, CInt(AP_GetVitalMaximumValue(location_mobile, "Hits")));
 			return;
 		endif
 	endif
+
+endfunction
+
+function CalcularTempoGestacao(who, npc)
+
+    var npctemplate := npc.npctemplate;
+    npctemplate := npctemplate[10, len(npctemplate) - 9];
+
+    var cfg_local := cfg[npctemplate];
+
+    var gestacao_base := 0;
+
+    if (cfg_local.alignment == "neutral")
+        gestacao_base := 24 * 60 * 60;
+    elseif (cfg_local.alignment == "evil")
+        gestacao_base := 48 * 60 * 60;
+    else
+        gestacao_base := 24 * 60 * 60;
+    endif
+
+    var skill := AP_GetTrueSkill(who, HANDLEANIMAL);
+    var diff := CInt(npc.getTameDifficulty());
+
+    var bonus := skill - (diff + 15);
+
+    if (bonus < 0)
+        bonus := 0;
+    elseif (bonus > 30)
+        bonus := 30;
+    endif
+
+    var fator := 1.0 - (bonus / 100.0);
+
+    return CInt(gestacao_base * fator);
+
 endfunction

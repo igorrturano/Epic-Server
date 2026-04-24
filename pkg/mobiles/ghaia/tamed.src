@@ -4,6 +4,8 @@ use npc;
 use util;
 
 include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include ":gumps:gumps";
 include "include/sysEvent";
 include "include/say";
 include ":mounts:mounts";
@@ -136,7 +138,6 @@ program TamedAI()
 						OpenPack(ev);
 
 					elseif (!GetEquipmentByLayer(ev.source, LAYER_MOUNT))
-
 						if (IsMountable(me.graphic))
 							if (MoveObjectToLocation(ev.source, me.x, me.y, me.z, ev.source.realm))
 								if (me.npctemplate == ":brainai:Unicorn")
@@ -381,14 +382,21 @@ function TakeItem(ev)
 	endif
 
 	// relacionado as comidas do pet
-	var npctemplate := me.npctemplate;
-	npctemplate := npctemplate[10, len(npctemplate) - 9];
-	var foodtype := npccfg[npctemplate].food;
-	if (!foodtype)
-		foodtype := "qualquer";
-	endif
-	var elem := FindConfigElem(cfg, foodtype);
-	var foodarray := GetConfigStringArray(elem, "Food");
+var mob := MobileWrapper(me);
+var npctemplate := mob.GetTemplateName();
+var taxonomy := npccfg[npctemplate].Taxonomy;
+var allowed := GetDietByTaxonomy(taxonomy);
+var foodtype := Cstr(GetObjProperty(ev.item, "FoodType"));
+	print("npctempalte eh "+npctemplate+" e foodtype eh "+foodtype+" tax eh "+taxonomy+" allowed eh"+allowed);
+if (!foodtype)
+    SendSysMessage(ev.source, "Isso não parece comida.");
+    return;
+endif
+
+if (!("all" in allowed) && !(foodtype in allowed))
+    SendSysMessage(ev.source, "Esse animal não come isso.");
+    return;
+endif
 
 	// relacionado ao tempo para inicio do bond (tudo em segundos!)
 	var happy := GetObjProperty(me, "happiness");
@@ -403,14 +411,14 @@ function TakeItem(ev)
 	var fidelizar := GetObjProperty(me, "Fidelizar?");
 
 	// if ( cfgeat[(ev.item).objtype].script["eat"]) //evento comida checando tds os itemdesc para ver se são comíveis
-	if (Cstr(ev.item.objtype) in foodarray)
+	if (foodtype)
 		if (happy >= 100)
 			PrintTextPrivate(me, "O animal já está satisfeito", ev.source);
 			return;
 		endif
 		// checkbond para ver se já tem animal fidelizado e quantos pode ter
 		var pets := GetObjProperty(owner, "TamedPets");
-		var habs := TemHabilidade(owner, "Espreita Selvagem");
+		var habs := MobileWrapper(owner).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM);
 		var limite_animais := habs ? 2 : 1;
 		var animais_fidelizados := 0;
 
@@ -550,7 +558,7 @@ function Follow()
 		following := 0;
 		wait_time := 120;
 
-	elseif (dist > 4)
+	elseif (dist > 3)
 
 		var ma := 200 - me.run_speed;
 		me.run_speed := me.run_speed + ma;
@@ -915,7 +923,7 @@ function CastFaerieHeal(me, owner)
 	PlayObjectCenteredEffect(owner, 0x373a, 7, 0x10);
 
 	var amt := RandomDiceRoll("1d10") + 20;
-	HealDamage(owner, amt);
+	ApplyEpicHealing(owner, amt);
 	SetCooldown(me, "heal", 150);
 
 endfunction

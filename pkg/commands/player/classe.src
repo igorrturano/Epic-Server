@@ -1,0 +1,177 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":message:model/Message";
+
+// Subclass definitions: { name, startId, endId }
+// Guerreiro subclasses
+var SUBCLASS_ARQUEIRO        := array{ "Arqueiro",              1, 5 };
+var SUBCLASS_CACADOR         := array{ "Cacador",             100, 104 };
+var SUBCLASS_COMBATENTE      := array{ "Combatente",          200, 204 };
+var SUBCLASS_DEFENSOR        := array{ "Defensor",            300, 304 };
+var SUBCLASS_PALADINO        := array{ "Paladino",            400, 404 };
+var SUBCLASS_AKLAT_TUR       := array{ "Aklat'tur",           500, 504 };
+var SUBCLASS_BARBARO         := array{ "Barbaro",             600, 604 };
+var SUBCLASS_MONGE           := array{ "Monge",               700, 704 };
+var SUBCLASS_SAMURAI         := array{ "Samurai",             800, 804 };
+var SUBCLASS_MUTANTE         := array{ "Mutante",             900, 904 };
+
+// Ladino subclasses
+var SUBCLASS_MALANDRO_ARCANO := array{ "Malandro Arcano",    1000, 1004 };
+var SUBCLASS_CAC_TESOUROS    := array{ "Cacador de Tesouros", 1100, 1104 };
+var SUBCLASS_ASSASSINO       := array{ "Assassino",          1200, 1204 };
+var SUBCLASS_SHINOBI         := array{ "Shinobi",            1300, 1304 };
+var SUBCLASS_VIVISSECCIONISTA := array{ "Vivisseccionista",   1400, 1404 };
+var SUBCLASS_ESGRIMISTA      := array{ "Esgrimista",         1500, 1504 };
+var SUBCLASS_LADRAO          := array{ "Ladrao",             1600, 1604 };
+var SUBCLASS_BARDO           := array{ "Bardo",              1708, 1712 };
+var SUBCLASS_DANC_SOMBRAS    := array{ "Dancarino das Sombras", 1800, 1804 };
+var SUBCLASS_CAC_DEMONIOS    := array{ "Cacador de Demonios", 1900, 1904 };
+
+// Sabio subclasses
+var SUBCLASS_NECROMANTE      := array{ "Necromante",         2000, 2004 };
+var SUBCLASS_DRUIDA          := array{ "Druida",             2100, 2104 };
+var SUBCLASS_MAGUS           := array{ "Magus",              2200, 2204 };
+var SUBCLASS_LAMINA_ARCANA   := array{ "Lamina Arcana",      2300, 2304 };
+var SUBCLASS_ARQ_ARCANO      := array{ "Arqueiro Arcano",    2400, 2404 };
+var SUBCLASS_ALQUIMISTA      := array{ "Alquimista",         2500, 2504 };
+var SUBCLASS_CLERIGO         := array{ "Clerigo",            2800, 2804 };
+var SUBCLASS_ENGENHEIRO      := array{ "Engenheiro",         2700, 2704 };
+var SUBCLASS_SHAMAN          := array{ "Shaman",             2600, 2604 };
+var SUBCLASS_Desloc_SOMBRAS    := array{ "Deslocador das Sombras", 1800, 1804 };
+
+program classe(who, text)
+	if (who.cmdlevel == 0)
+		var acct := who.acct.name;
+		if (acct != "hermann21" && acct != "epicplayer")
+			Message("Voce nao tem permissao para usar este comando.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return 0;
+		endif
+	endif
+
+	var all_subclasses := array{
+		SUBCLASS_ARQUEIRO, SUBCLASS_CACADOR, SUBCLASS_COMBATENTE, SUBCLASS_DEFENSOR,
+		SUBCLASS_PALADINO, SUBCLASS_AKLAT_TUR, SUBCLASS_BARBARO, SUBCLASS_MONGE,
+		SUBCLASS_SAMURAI, SUBCLASS_MUTANTE,
+		SUBCLASS_MALANDRO_ARCANO, SUBCLASS_CAC_TESOUROS, SUBCLASS_ASSASSINO, SUBCLASS_SHINOBI,
+		SUBCLASS_VIVISSECCIONISTA, SUBCLASS_ESGRIMISTA, SUBCLASS_LADRAO, SUBCLASS_BARDO,
+		SUBCLASS_DANC_SOMBRAS, SUBCLASS_CAC_DEMONIOS,
+		SUBCLASS_NECROMANTE, SUBCLASS_DRUIDA, SUBCLASS_MAGUS, SUBCLASS_LAMINA_ARCANA,
+		SUBCLASS_ARQ_ARCANO, SUBCLASS_ALQUIMISTA, SUBCLASS_CLERIGO, SUBCLASS_ENGENHEIRO,
+		SUBCLASS_SHAMAN
+	};
+
+	var escolha := _ShowSubclassGump(who, all_subclasses);
+	if (!escolha)
+		Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	var subclass := all_subclasses[escolha];
+	var nome := subclass[1];
+	var startId := subclass[2];
+	var endId := subclass[3];
+
+	// Load config to get all valid ability IDs in range
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+	var myhabs := dictionary;
+	var slot := 2; // Start at slot 2 (slot 0 = buyhab init, slot 1 = odd = status)
+
+	for id := startId to endId
+		var elem := FindConfigElem(habcfg, id);
+		if (elem)
+			myhabs[slot] := id;
+			slot := slot + 2;
+		endif
+	endfor
+
+	SetObjProperty(who, "myhabs", myhabs);
+
+	// Set chardata.magia for magic subclasses
+	var magia_map := dictionary;
+	magia_map["Magus"]           := "spellcaster";
+	magia_map["Druida"]          := "Druid";
+	magia_map["Shaman"]          := "Shaman";
+	magia_map["Clerigo"]         := "Sacerdote";
+	magia_map["Necromante"]      := "Necromancer";
+	magia_map["Arqueiro Arcano"] := "arcane_archer";
+
+	if (magia_map.Exists(nome))
+		var chardata := GetObjProperty(who, "chardata");
+		if (!chardata)
+			chardata := struct;
+		endif
+		chardata.+magia := 0;
+		chardata.magia := magia_map[nome];
+		SetObjProperty(who, "chardata", chardata);
+		Message($"Magia definida: {magia_map[nome]}.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+	endif
+
+	Message($"Classe definida: {nome}. {myhabs.size()} habilidades atribuidas.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+	return 1;
+endprogram
+
+function _ShowSubclassGump(who, subclasses)
+	var GUMP_W := 500;
+	var GUMP_H := 620;
+	var ITEMS_PER_PAGE := 12;
+	var totalPages := CInt((subclasses.size() + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE);
+
+	var gump := GFCreateGump();
+	GFDisposable(gump, 0);
+
+	// Page 0 - background
+	GFPage(gump, 0);
+	GFResizePic(gump, 0, 0, 3600, GUMP_W, GUMP_H);
+	GFResizePic(gump, 15, 15, 0x13BE, GUMP_W - 30, GUMP_H - 30);
+	GFTextMid(gump, 15, 25, GUMP_W - 30, 1153, "Selecione sua Classe");
+
+	var NAV_Y := GUMP_H - 45;
+	var pageNum := 1;
+	var itemOnPage := 0;
+	GFPage(gump, pageNum);
+
+	var i := 1;
+	foreach sub in subclasses
+		if (itemOnPage >= ITEMS_PER_PAGE)
+			GFAddButton(gump, GUMP_W - 70, NAV_Y, 5601, 5605, GF_PAGE_BTN, pageNum + 1);
+			GFTextLine(gump, GUMP_W - 115, NAV_Y + 2, 1153, "Proxima");
+			GFTextMid(gump, 15, NAV_Y + 2, GUMP_W - 30, 1153, $"Pag. {pageNum}/{totalPages}");
+
+			pageNum := pageNum + 1;
+			GFPage(gump, pageNum);
+
+			GFAddButton(gump, 30, NAV_Y, 5603, 5607, GF_PAGE_BTN, pageNum - 1);
+			GFTextLine(gump, 60, NAV_Y + 2, 1153, "Anterior");
+
+			itemOnPage := 0;
+		endif
+
+		var y := 60 + (itemOnPage * 40);
+		var nome := sub[1];
+		var rangeText := $"IDs: {sub[2]} - {sub[3]}";
+
+		GFAddButton(gump, 30, y + 5, 4005, 4007, GF_CLOSE_BTN, i);
+		GFTextLine(gump, 70, y, 1153, nome);
+		GFTextLine(gump, 280, y, 992, rangeText);
+
+		itemOnPage := itemOnPage + 1;
+		i := i + 1;
+	endforeach
+
+	// Last page nav
+	if (totalPages > 1)
+		GFTextMid(gump, 15, NAV_Y + 2, GUMP_W - 30, 1153, $"Pag. {pageNum}/{totalPages}");
+		if (pageNum > 1)
+			GFAddButton(gump, 30, NAV_Y, 5603, 5607, GF_PAGE_BTN, pageNum - 1);
+			GFTextLine(gump, 60, NAV_Y + 2, 1153, "Anterior");
+		endif
+	endif
+
+	var input := GFSendGump(who, gump);
+	return input[0];
+endfunction

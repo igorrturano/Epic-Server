@@ -11,22 +11,10 @@ program Install()
 endprogram
 
 exported function UpdatePlayer(who, byref packet)
-	var mobile := SystemFindObjectBySerial(packet.GetInt32(1));
-
-	// if(who.cmdlevel < 1)
-	foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, 18, who.realm)
-		if (mobile.serial != who.serial && !who.npctemplate)
-			// Who não está vendo mobile
-			if (!CheckLineOfSight(who, mobile))
-				UpdatePlayerGraphic(mobile, who, 16000, mobile.color);
-			// Who está vendo mobile
-			else
-				UpdatePlayerGraphic(mobile, who, mobile.graphic, mobile.color);
-			endif
-		endif
-	endforeach
-// endif
-
+	// Disabled: LOS-based visibility system was causing extreme CPU usage
+	// (ListMobilesNearLocation radius 18 + CheckLineOfSight per mobile on every update packet)
+	// Same system was already disabled in checkevents.src walk hook
+	return 1;
 endfunction
 
 function UpdatePlayerGraphic(who, forwho, graphic, color)
@@ -46,20 +34,6 @@ function UpdatePlayerGraphic(who, forwho, graphic, color)
 	packetString := packetString + fixPacketLength(hex(0), 1); // Flag... dunno?
 	packetString := packetString + fixPacketLength(hex(0), 1); // Highlight colour (doesnt work)
 	return SendPacket(forwho, packetString);
-endfunction
-
-function DrawGamePlayer(who, jgraphic, jcolor)
-	var PacketHexString := "20" + ConvertIntToHex(who.serial, 4);
-	PacketHexString := PacketHexString + ConvertIntToHex(jgraphic, 2);
-	PacketHexString := PacketHexString + "00";
-	PacketHexString := PacketHexString + ConvertIntToHex(jcolor, 2);
-	PacketHexString := PacketHexString + "00";
-	PacketHexString := PacketHexString + ConvertIntToHex(who.x, 2);
-	PacketHexString := PacketHexString + ConvertIntToHex(who.y, 2);
-	PacketHexString := PacketHexString + "0000";
-	PacketHexString := PacketHexString + ConvertIntToHex(who.facing, 1);
-	PacketHexString := PacketHexString + ConvertIntToHex(who.z, 1);
-	SendPacket(who, PacketHexString);
 endfunction
 
 function ConvertIntToHex(astring, alength)

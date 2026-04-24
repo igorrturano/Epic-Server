@@ -13,13 +13,15 @@ include ":attributes:attributes";
 include ":containers:containers";
 include ":itemutils:itemdesc";
 include "include/client";
-include ":fls_magery:basicMagery";
-include ":fls_magery:spells";
+;
+;
 include "include/sounds";
 include ":charactercreation:habilidades";
 include ":spells:swordmage";
 include "include/facings";
 include ":tn:cooldown";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program book(who, book)
 	var donoGrimorio := GetObjProperty(book, "serialDono");
@@ -74,7 +76,7 @@ endprogram
 const OBJ_BLANK_SCROLL := 0xE34;
 const OBJ_RECIPE_SLIP := 0x6116;
 const OBJ_RECIPE_SLIP_SANGRIA := 0x2050;
-const OBJ_RECIPE_SLIP_SPELLCASTER := 0x2055;
+const OBJ_RECIPE_SLIP_SPELLCASTER := 0x2060;
 
 function copyrecipe(who, recipe)
 	writeSpellInfo(who, recipe);
@@ -334,7 +336,7 @@ function CreateBookGump(book, who)
 
 				// Para as páginas de detalhes, mantemos o HTMLArea para permitir quebra
 				GFHTMLArea(book_gump, 160, 15, 100, 34, "<BASEFONT COLOR=#000066>" + rune_entry.name);
-				if (TemHabilidade(who, "Escrever Pergaminhos"))
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::WRITE_SCROLLS))
 					GFTextCrop(book_gump, 180, 35, 100, 18, 995, "Copiar");
 					GFAddButton(book_gump, 160, 38, 2103, 2104, GF_CLOSE_BTN, 900 + rune_pos);
 				endif
@@ -375,7 +377,7 @@ function CreateBookGump(book, who)
 
 				// GFHTMLArea(book_gump, 300, 15, 115, 17, rune_entry.name);
 				GFHTMLArea(book_gump, 300, 15, 115, 34, "<BASEFONT COLOR=#000066>" + rune_entry.name);
-				if (TemHabilidade(who, "Escrever Pergaminhos"))
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::WRITE_SCROLLS))
 					GFTextCrop(book_gump, 320, 35, 150, 17, 995, "Copiar");
 					GFAddButton(book_gump, 300, 38, 2103, 2104, GF_CLOSE_BTN, 900 + rune_pos);
 				endif

@@ -1,9 +1,9 @@
 include "Control";
 
-class TooltipText(Control)
+class Tooltip(Control)
 	var _text := "";
 
-	function TooltipText(this, name, text)
+	function Tooltip(this, name, text)
 		Super(GUMP_CONTROL::TOOLTIP, name, 0, 0);
 		this._text := text;
 	endfunction

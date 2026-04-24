@@ -4,6 +4,8 @@ use os;
 include "include/say";
 include ":tn:cooldown";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program usavarinha(params)
 
@@ -27,7 +29,7 @@ program usavarinha(params)
 		var cargas := GetObjProperty(wand, "cargas");
 		if (cargas == error)
 			cargas := 20;
-			if (temHabilidade(who, "Fluxo Divino"))
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::CONEXAO_DIVINA))
 				cargas := 30;
 			endif
 		endif

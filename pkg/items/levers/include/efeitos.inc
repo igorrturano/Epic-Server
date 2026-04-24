@@ -4,7 +4,8 @@ use vitals;
 
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
+include ":attributes:attributeConstants";
 include ":nature:nature";
 
 function EfeitosTremor(item, danobase, danoale, dif, range)
@@ -22,7 +23,7 @@ function EfeitosTremor(item, danobase, danoale, dif, range)
         if (char.npctemplate == "Zombie")
             DamageFLS(char, 1000);
         endif
-        if (CheckResist(char, REFLEXOS, dif)) //note: colocar uma variavel de chance de resistir ao terremoto
+        if (CheckResist(char, REFLEXES, dif)) //note: colocar uma variavel de chance de resistir ao terremoto
             PrintTextAbove(char, "*Atraves de movimentos acrobaticos habeis, resiste ao tremor*");
             PerformAction(char, 20);
         else

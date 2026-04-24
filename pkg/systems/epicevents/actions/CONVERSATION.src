@@ -1,0 +1,137 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":epicevents:Controller/ConversationController";
+include ":epicevents:Controller/ConditionController";
+include ":epicevents:Controller/ActionController";
+include ":epicevents:Controller/EventEditorController";
+include ":epicevents:View/ConversationGumpBuilder";
+include ":message:model/Message";
+
+program CONVERSATION_Action(params)
+	var npc := params[1];
+	var event := params[2];
+	var action_params := params[3];
+
+	var player := event.source;
+	if (!player || !player.acctname)
+		return 0;
+	endif
+
+	var conversation_id := action_params.conversation_id;
+	if (!conversation_id)
+		return 0;
+	endif
+
+	var root_id := GetRootNodeId(conversation_id);
+	if (!root_id)
+		return 0;
+	endif
+
+	// GM: choose between editing or testing the conversation
+	if (player.cmdlevel > 1)
+		var open_editor := YesNo(player, "Abrir o Editor de Conversa?", "Editor", "Testar");
+		if (open_editor)
+			ConversationEditorLoop(player, conversation_id, root_id, npc);
+			return 1;
+		endif
+		// else: fall through to player dialogue for testing
+	endif
+
+	// Busy check: NPC already talking to someone else
+	var busy_serial := GetObjProperty(npc, "#conversation_busy");
+	if (busy_serial)
+		var busy_player := SystemFindObjectBySerial(busy_serial);
+		if (busy_player && busy_player.acctname && Distance(npc, busy_player) <= 15 && !busy_player.dead)
+			Message("Desculpe, mas estou conversando com outra pessoa.", Color(SYSTEM_COLOR::INFO)).SendSys(player);
+			return 0;
+		endif
+	endif
+
+	// Mark NPC as busy with this player
+	SetObjProperty(npc, "#conversation_busy", player.serial);
+
+	var current_node_id := root_id;
+
+	while (current_node_id && current_node_id != "")
+		// Check player is still nearby and alive
+		if (!player || player.dead || Distance(npc, player) > 15)
+			break;
+		endif
+
+		var node := LoadConversationNode(conversation_id, current_node_id);
+		if (!node)
+			break;
+		endif
+
+		// Filter answers by conditions
+		var visible_answers := FilterAnswersByConditions(node.answers, player, event);
+
+		// Build and show dialogue gump
+		var gump := BuildPlayerDialogueGump(npc, node.text, visible_answers);
+		var input := GFSendGump(player, gump);
+
+		// Parse player selection
+		var selected := ParsePlayerDialogueInput(input, visible_answers);
+		if (!selected)
+			break;
+		endif
+
+		// Consume items if answer condition requires it (now that player selected it)
+		if (selected.conditions)
+			var consume_state := struct{};
+			EvaluateCondition(selected.conditions, consume_state, event);
+		endif
+
+		// Execute answer's actions (if any)
+		if (selected.actions && selected.actions.size() > 0)
+			ExecuteAnswerActions(npc, event, selected.actions);
+		endif
+
+		// Navigate to next node
+		current_node_id := selected.next_node;
+	endwhile
+
+	// Clear busy status
+	EraseObjProperty(npc, "#conversation_busy");
+
+	return 1;
+endprogram
+
+function FilterAnswersByConditions(answers, player, event)
+	var visible := array{};
+
+	foreach answer in (answers)
+		if (!answer.conditions)
+			visible.append(answer);
+			continue;
+		endif
+
+		// Evaluate without consuming items (consume_items=0) - consumption happens on selection
+		var action_state := struct{};
+		if (EvaluateCondition(answer.conditions, action_state, event, 0))
+			visible.append(answer);
+		endif
+	endforeach
+
+	return visible;
+endfunction
+
+function ExecuteAnswerActions(npc, event, actions)
+	foreach action in (actions)
+		if (action.delay && action.delay > 0)
+			sleepms(action.delay * 1000);
+		endif
+
+		var script_path := ":epicevents:actions/" + action.type;
+		var action_state := struct{};
+		var script_params := array{npc, event, action.params, action_state};
+
+		var script := start_script(script_path, script_params);
+		if (script && !script.errortext)
+			script.wait();
+		endif
+	endforeach
+endfunction

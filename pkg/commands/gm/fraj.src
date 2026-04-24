@@ -1,0 +1,150 @@
+use uo;
+use os;
+use util;
+
+include ":gumps:include/epicGumps";
+include "include/say";
+
+// ============================================================
+// ENTRY
+// ============================================================
+
+program MENUS_GM_Frajolas(mob)
+
+    if (!mob || !mob.IsA(POLCLASS_MOBILE))
+        return;
+    endif
+
+    var g := GM_Frajolas_BuildGump(mob);
+    var input := GFSendGump(mob, g);
+
+    if (!input || !input[0])
+        return;
+    endif
+
+    GM_Frajolas_Process(mob, input[0]);
+
+endprogram
+
+// ============================================================
+// GUMP
+// ============================================================
+
+function GM_Frajolas_BuildGump(mob)
+
+    var g := GFECreateGump("MENUS DE SISTEMAS DEBUG/GM DO Frajolas", 500, 420);
+
+    // =========================
+    // FUNDO / IMAGEM CENTRAL
+    // =========================
+
+
+    GFGumpPic(g, 380, 80, 40149); // imagem grande central 
+
+    // =========================
+    // BOTÕES ESQUERDA
+    // =========================
+
+    var y_left := 90;
+
+    GM_Frajolas_Button(g, 20, y_left, 1, "Sistema de Doenças (.epidemic)");
+    y_left += 35;
+
+    GM_Frajolas_Button(g, 20, y_left, 2, "Pastoreio & Reprodução (.pastor)");
+    y_left += 35;
+
+    GM_Frajolas_Button(g, 20, y_left, 3, "Fidelização de Pets (.petfiel)");
+    y_left += 35;
+
+    GM_Frajolas_Button(g, 20, y_left, 4, "Info de Dungeons (.dungeons)");
+    y_left += 35;
+
+    GM_Frajolas_Button(g, 20, y_left, 5, "Summon de NPC (.summon)");
+    y_left += 35;
+
+    GM_Frajolas_Button(g, 20, y_left, 6, "Investigação (em desenvolvimento)");
+    y_left += 35;
+
+    GFTextLine(g, 220, 330, 13, "Frase do dia:");
+var random_frases := RandomDiceRoll("1d12");
+case (random_frases)
+1:
+    GFTextLine(g, 80, 360, 0, "Se funfou, foi sorte. Se quebrou, foi o Igor.");
+2:
+    GFTextLine(g, 80, 360, 0, "Script bugado, dev cansado. Culpa? Evil e Igor.");
+3:
+    GFTextLine(g, 80, 360, 0, "Script estranho detectado, responsável técnico: Pizza.");
+4:
+    GFTextLine(g, 80, 360, 0, "Erro desconhecido, suspeito conhecido: Desconhecido.");
+5:
+    GFTextLine(g, 30, 360, 0, "Script bugado, café fraco e o Deiros claramente mexeu em algo.");
+
+6:
+    GFTextLine(g, 20, 360, 0, "Se vc está lendo isso, algum desses script claramente bugou e o Evil sabe pq.");
+7:
+    GFTextLine(g, 20, 360, 0, "Qualquer semelhança com código funcional é mera coincidência, Igor que lute.");
+8:
+    GFTextLine(g, 80, 360, 0, "Se achou ruim, Igor que fez.");
+9:
+    GFTextLine(g, 80, 360, 0, "Se achou bizarro, culpa do pizza.");
+10:
+    GFTextLine(g, 80, 360, 0, "Tá perfeito demais?! Autor: Evil");
+11:
+    GFTextLine(g, 20, 360, 0, "QQr reclamação procure alguém paciente, uma dica: Deiros, jamais o Frajolas.");
+12:
+    GFTextLine(g, 30, 360, 0, "Antes de me procurar, saiba sempre que não foi bug, é feature.");
+endcase
+    return g;
+
+endfunction
+
+// ============================================================
+// PROCESSAMENTO
+// ============================================================
+
+function GM_Frajolas_Process(mob, btn)
+
+    case(btn)
+
+        1: // Doenças
+            Start_Script(":commands:gm/epidemic", mob);
+            return;
+
+        2: // Pastoreio
+            Start_Script(":commands:gm/pastor", mob);
+            return;
+
+        3: // Fidelização Pet
+            Start_Script(":commands:gm/petfiel", mob);
+            return;
+
+        4: // Dungeons
+            Start_Script(":commands:gm/dungeons", mob);
+            return;
+
+        5: // Summon NPC
+            Start_Script(":commands:gm/summon", mob);
+            return;
+
+        6: // Investigação
+            SendSysMessage(mob, "Sistema de Investigação ainda em desenvolvimento.");
+            return;
+
+        0:
+            return;
+
+    endcase
+
+endfunction
+
+// ============================================================
+// HELPER
+// ============================================================
+
+function GM_Frajolas_Button(byref g, x, y, id, text)
+
+    GFAddButton(g, x, y, 0x845, 0x846, GF_CLOSE_BTN, id);
+    GFTextLine(g, x + 40, y + 2, 53, text);
+
+endfunction
+

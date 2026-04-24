@@ -610,9 +610,10 @@ function GetFormattedBossInfo(dungeon_elem, realm)
 					// Se for trueboss, adiciona na lista de truebosses também
 					if (bossStruct.trueboss)
 						info.truebosses.append(epicboss_info);
+					else
+					// EpicBoss normal deve aparecer como boss normal no gump
+						info.bosses.append(epicboss_info);
 					endif
-
-					info.epicbosses.append(epicboss_info);
 				endif
 				sleepms(2);
 			endforeach
@@ -1540,7 +1541,9 @@ function commands_dg(who)
 	GFTextLine(gump, 15, y_pos, 2100, ".quebravel - definir destroyable para qqr item");
 	y_pos += 25;
 	GFTextLine(gump, 15, y_pos, 2100, ".architect - para decorar a dg");
-
+	y_pos += 25;
+	GFTextLine(gump, 15, y_pos, 2100, ".roubavel - adiciona spawn para itens");
+	
 	GFSendGump(who, gump);
 
 	return 1;

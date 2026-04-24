@@ -1,5 +1,7 @@
 use uo;
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 enum FONTE_CONHECIMENTO_LINGUA
     CONHECE_LINGUA := "Você sabe ler essa língua",
@@ -22,10 +24,10 @@ function SabeLerLinguagem(who, lingua)
 	if (lingua in linguas_conhecidas)
 		retorno.sabeLer := true;
 		retorno.fonte := CONHECE_LINGUA;
-	elseif (lingua == "Antiga" && temHabilidade(who, "Arqueologo"))
+	elseif (lingua == "Antiga" && (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO)))
 		retorno.sabeLer := true;
 		retorno.fonte := ANTIGO_ARQUEOLOGO;
-	elseif (temHabilidade(who, "Arqueologo"))
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 		retorno.sabeLer := true;
 		retorno.fonte :=  ARQUEOLOGO;
 	endif

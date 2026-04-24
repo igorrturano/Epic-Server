@@ -7,11 +7,12 @@ include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
 include ":gumps:include/gumps";
 include ":brainAI:npcUtil";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":tn:cooldown";
 include "include/eventID";
 include ":epicAI:epicai";
 include ":tn:boss";
+include ":taming:taming";
 
 program skill_animal_lore(who)
 
@@ -146,15 +147,13 @@ function AL_LoadGump(who, creature)
 		thepacktype := instintos.keys();
 	endif
 
-	var foodtype := cTemplate.food;
-	if (TypeOf(foodtype) != "String")
+var taxonomy := cTemplate.Taxonomy;
+var foodtype := GetDietByTaxonomy(taxonomy);
+	if (foodtype == "all")
 		foodtype := "qualquer";
 	endif
 
 	var petSlot := creature.getTier();
-	if (TypeOf(foodtype) != "Int")
-		petSlot := 1;
-	endif
 
 	var dono := GetObjProperty(creature, "owner");
 	if (!dono)
@@ -189,6 +188,8 @@ function AL_LoadGump(who, creature)
 		thesex := "Macho";
 	elseif (thegender == 2)
 		thesex := "Fêmea";
+	elseif (thegender == 0)
+		thesex := "Estéril";
 	else
 		thesex := "sem info";
 	endif
@@ -225,22 +226,22 @@ function AL_LoadGump(who, creature)
 	GFHTMLArea(gump, 280, 186, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(stamina) + "</div>");
 
 	// Strength (Força)
-	GFHTMLArea(gump, 153, 222, 160, 18, "<basefont color=#4A3929>Força");
-	GFHTMLArea(gump, 280, 222, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(str) + "</div>");
+	GFHTMLArea(gump, 153, 204, 160, 18, "<basefont color=#4A3929>Força");
+	GFHTMLArea(gump, 280, 204, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(str) + "</div>");
 
 	// Dexterity (Destreza)
-	GFHTMLArea(gump, 153, 240, 160, 18, "<basefont color=#4A3929>Destreza");
-	GFHTMLArea(gump, 280, 240, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(dex) + "</div>");
+	GFHTMLArea(gump, 153, 222, 160, 18, "<basefont color=#4A3929>Destreza");
+	GFHTMLArea(gump, 280, 222, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(dex) + "</div>");
 
 	// Slot (Adjusted Y-coordinate to avoid overlap)
-	GFHTMLArea(gump, 153, 258, 160, 18, "<basefont color=#4A3929>Slot");
-	GFHTMLArea(gump, 280, 258, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(petSlot) + "</div>");
+	GFHTMLArea(gump, 153, 240, 160, 18, "<basefont color=#4A3929>Slot");
+	GFHTMLArea(gump, 280, 240, 75, 18, "<basefont color=#4A3929><div align=right>" + CStr(petSlot) + "</div>");
 
 	// Loyalty section (Lealdade)
-	GFGumpPic(gump, 128, 276, 2086);
-	GFHTMLArea(gump, 147, 276, 160, 18, "<basefont color=#A52A2A>Lealdade");
-	GFHTMLArea(gump, 135, 294, 360, 18, "<basefont color=#4A3929>" + loyalty);
-	GFHTMLArea(gump, 135, 312, 360, 18, "<basefont color=#4A3929>" + dono);
+	GFGumpPic(gump, 128, 258, 2086);
+	GFHTMLArea(gump, 147, 258, 160, 18, "<basefont color=#A52A2A>Lealdade");
+	GFHTMLArea(gump, 135, 276, 360, 18, "<basefont color=#4A3929>" + loyalty);
+	GFHTMLArea(gump, 135, 294, 360, 18, "<basefont color=#4A3929>" + dono);
 
 	if (who.serial == GetObjProperty(creature, "owner")) // apenas se quem tá analisando é dono aparece o tempo que falta para fidelizar
 		GFHTMLArea(gump, 135, 312, 360, 18, "<basefont color=#4A3929>" + tempo_fidelizar);
@@ -295,7 +296,7 @@ function AL_LoadGump(who, creature)
 	GFGumpPic(gump, 128, 152, 2086);
 	GFHTMLArea(gump, 147, 150, 160, 18, "<basefont color=#A52A2A>Magias");
 	if (TemHabilidade(who, "Magia Natural"))
-		var cfg := ReadConfigFile(":spells:config/druidspells");
+		var cfg := ReadConfigFile(":spells:config/druid");
 		var npcdesc := ReadConfigFile(":*:npcdesc");
 		var npctemplate := NPC_ParseTemplateName(creature.npctemplate);
 		npctemplate := npctemplate.template;
@@ -318,6 +319,16 @@ function AL_LoadGump(who, creature)
 	GFHTMLArea(gump, 135, 204, 260, 18, "<basefont color=#4A3929>" + thesex);
 	if (GetObjProperty(creature, "Sexo") == 2)
 		GFHTMLArea(gump, 135, 222, 260, 18, "<basefont color=#4A3929>Ja pariu " + num_partos + " vezes");
+		var total := TS_GetTimerDuration(creature, "Gestacao");
+		if (total > 0)
+			var horas := CInt(total / 3600);
+			var resto := total % 3600;
+			var minutos := CInt(resto / 60);
+			var segundos := resto % 60;
+			GFHTMLArea(gump, 135, 240, 260, 18,
+			"<basefont color=#4A3929>Está grávida e vai parir em " +
+			horas + "h " + minutos + "m " + segundos + "s");
+		endif
 	endif
 
 	GFAddButton(gump, 317, 358, 5603, 5607, GF_PAGE_BTN, 3);

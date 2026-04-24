@@ -1,0 +1,8 @@
+use uo;
+include ":fls_core:packets";
+
+program EndFraturaExposta(params)
+	var mobile := params[1];
+	PlayerSpeedSlower(mobile, 0);
+	return 1;
+endprogram

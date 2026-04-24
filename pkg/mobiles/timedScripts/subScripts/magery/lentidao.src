@@ -38,11 +38,11 @@ function Slowdown(who, byref info)
 	PrintTextAbove(who, "*Lento*");
 	SendSysMessage(who, "Voce se move devagar.");
 
+	var penalty := 20;
 	info.status := 1;
-	info.dexmod := AP_GetStatMod(who, DEXTERITY);
+	info.dexmod := penalty;
 
-	AP_ModifyStatMod(who, DEXTERITY, 0 - info.dexmod);
-	// who.paralyzed := 1;
+	AP_ModifyStatMod(who, DEXTERITY, 0 - penalty);
 
 	SetObjProperty(who, "#Slowness", info);
 endfunction

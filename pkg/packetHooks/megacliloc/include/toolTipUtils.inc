@@ -2,6 +2,7 @@ use uo;
 use cfgfile;
 
 include ":equipsys:utils/consts";
+include ":combat:Model/DamageTier";
 
 enum TT_CLASSE_PARAM
 	DESCONHECIDO := 1,
@@ -73,35 +74,35 @@ endfunction
 
 function ClassificaDanoCor(tipo)
 	case(tipo)
-		ONEHANDED_LOW:
+		DAMAGE_TIER::ONEHANDED_LOW:
 			return "<BASEFONT COLOR=#c2185b>"; //Tons de vermelho inicio
-		TWOHANDED_LOW:
+		DAMAGE_TIER::TWOHANDED_LOW:
 			return "<BASEFONT COLOR=#e91e63>"; 
-		BOW_LOW:
+		DAMAGE_TIER::BOW_LOW:
 			return "<BASEFONT COLOR=#c2185b>"; 
-		CROSSBOW_LOW:
+		DAMAGE_TIER::CROSSBOW_LOW:
 			return "<BASEFONT COLOR=#f06292>"; //Tons de vermelho fim
-		ONEHANDED_MID:
+		DAMAGE_TIER::ONEHANDED_MID:
 			return "<BASEFONT COLOR=#afb42b>"; //Tons de beje inicio.
-		TWOHANDED_MID:
+		DAMAGE_TIER::TWOHANDED_MID:
 			return "<BASEFONT COLOR=#cddc39>";
-		BOW_MID:
+		DAMAGE_TIER::BOW_MID:
 			return "<BASEFONT COLOR=#afb42b>";
-		CROSSBOW_MID:
+		DAMAGE_TIER::CROSSBOW_MID:
 			return "<BASEFONT COLOR=#dce775>"; //Tons de beje inicio.
-		ONEHANDED_HIGH:
+		DAMAGE_TIER::ONEHANDED_HIGH:
 			return "<BASEFONT COLOR=#1976d2>"; //Tons de Azul inicio.
-		TWOHANDED_HIGH:
+		DAMAGE_TIER::TWOHANDED_HIGH:
 			return "<BASEFONT COLOR=#03a9f4>";
-		BOW_HIGH:
+		DAMAGE_TIER::BOW_HIGH:
 			return "<BASEFONT COLOR=#1976d2>";
-		CROSSBOW_HIGH:
+		DAMAGE_TIER::CROSSBOW_HIGH:
 			return "<BASEFONT COLOR=#4fc3f7>";
 	endcase
 endfunction
 
 function ClassificaResistCor(tipo)
-	case(Upper(tipo))
+	case(tipo)
 		ARMOR_LOWLOW:
 			return "<BASEFONT COLOR=#c2185b>"; //Tons de vermelho inicio
 		ARMOR_LOWMID:

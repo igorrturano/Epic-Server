@@ -29,5 +29,6 @@ program controlScript(field)
 			DestroyItem(field);
 			return 1;
 		endif
+		sleepms(500);
 	endwhile
 endprogram

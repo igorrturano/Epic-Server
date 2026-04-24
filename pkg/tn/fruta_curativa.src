@@ -14,7 +14,8 @@ program drink_blue(who, potion)
 	// Check if the blessed fruit has expired
 	var expires := GetObjProperty(potion, "imbue_expires");
 	if (expires && polcore().systime > expires)
-		SendSysMessageEx(who, "A fruta perdeu sua magia.", SSM_FAIL);
+		potion.usescript := ":food:eat";
+		SendSysMessageEx(who, "A fruta perdeu sua magia, mas voce ainda pode come-la normalmente.", SSM_FAIL);
 		return;
 	endif
 
@@ -31,7 +32,7 @@ program drink_blue(who, potion)
 		return;
 	endif
 
-	if (GetObjProperty(who, "CannotHeal"))
+	if (GetObjProperty(who, "nocure"))
 		SendSysMessageEx(who, "Essa fruta nao fara efeito nas atuais circunstacias", SSM_FAIL);
 		return;
 	endif
@@ -48,7 +49,7 @@ program drink_blue(who, potion)
 	SetObjProperty(who, "#healingpotion", 1);
 	SendSysMessageEx(who, "Seus ferimentos estao cicatrizando...", SSM_INFO);
 	while (i < healed)
-		HealDamage(who, 1);
+		ApplyEpicHealing(who, 1);
 		i := i + 1;
 		sleepms(delay);
 	endwhile

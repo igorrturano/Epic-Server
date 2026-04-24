@@ -31,6 +31,8 @@ use polsys;
 //PlayMidiMusic( who, musicID )                    Plays some MIDI.
 //SetWeatherForAll( type, num )                    Sets weather conditions for all online clients.
 //SetWeatherForPlayer( who, type, num )            Sets a players weather conditions.
+//ScreenShake( who, duration, magnitude )          Triggers an earthquake/screen shake effect for a player.
+//ScreenShakeForAll( duration, magnitude )         Triggers screen shake for all online players.
 //DrawGamePlayer( who, body, colour )              Draws the clients character with whatever body graphic you want, without showing other clients.
 //NormaliseGamePlayer( who )                       Return what the client sees of themselves to normal.
 //SetOverallLightForAll( lightlevel )		   Sets the 'overall' lightlevel for all online characters.
@@ -55,6 +57,7 @@ Const WEATHER_FIERCE_STORM   := 1;
 Const WEATHER_BEGINS_SNOW    := 2;
 Const WEATHER_STORM_BREWING  := 3;
 Const WEATHER_DISABLE        := 0xFF;
+Const WEATHER_EARTHQUAKE     := 10;
 
 Const ANIM_DIR_FORWARDS  := 0; //The animation will run the frames in normal order.
 Const ANIM_DIR_BACKWARDS := 1; //The animation will run the frames in reverse.
@@ -286,6 +289,77 @@ function SetWeatherForPlayer( who, type, num, temp := 0 )
     packetString := packetString + fixPacketLength(hex(num),1);
     packetString := packetString + fixPacketLength(hex(temp),1);
     return SendPacket(who,packetString);
+endfunction
+
+///////////////////////////////////////////////////////
+//Triggers an earthquake/screen shake effect for a player
+//  who         Player who will see the screen shake
+//  duration    Duration in seconds (0.1 to 25.5, precision: 0.1s)
+//  magnitude   Shake intensity in pixels (0 to 255)
+//
+//  Recommended presets:
+//    Light earthquake:        ScreenShake(who, 0.3, 5)
+//    Moderate earthquake:     ScreenShake(who, 0.5, 10)
+//    Strong earthquake:       ScreenShake(who, 0.8, 15)
+//    Catastrophic earthquake: ScreenShake(who, 1.0, 20)
+//    Very long shake:         ScreenShake(who, 5.0, 50)
+//
+//  WARNING: Magnitude values above 25 may cause visual artifacts (black edges)
+///////////////////////////////////////////////////////
+function ScreenShake( who, duration, magnitude )
+    // Encode duration in deciseconds (0.1 second units)
+    // Range: 0.1s (byte=1) to 25.5s (byte=255)
+    var duration_byte := CInt(duration * 10.0);
+    if( duration_byte > 255 )
+        duration_byte := 255;
+    elseif( duration_byte < 0 )
+        duration_byte := 0;
+    endif
+
+    // Magnitude is used directly as pixel displacement
+    // Max magnitude: 255 pixels (not recommended to go above 25)
+    var magnitude_byte := CInt(magnitude);
+    if( magnitude_byte > 255 )
+        magnitude_byte := 255;
+    elseif( magnitude_byte < 0 )
+        magnitude_byte := 0;
+    endif
+
+    var packetString := "65";
+    packetString := packetString + fixPacketLength(hex(WEATHER_EARTHQUAKE),1);
+    packetString := packetString + fixPacketLength(hex(duration_byte),1);
+    packetString := packetString + fixPacketLength(hex(magnitude_byte),1);
+    return SendPacket(who,packetString);
+endfunction
+
+///////////////////////////////////////////////////////
+//Triggers screen shake for all online players
+//  duration    Duration in seconds (0.1 to 25.5, precision: 0.1s)
+//  magnitude   Shake intensity in pixels (0 to 255)
+///////////////////////////////////////////////////////
+function ScreenShakeForAll( duration, magnitude )
+    var duration_byte := CInt(duration * 10.0);
+    if( duration_byte > 255 )
+        duration_byte := 255;
+    elseif( duration_byte < 0 )
+        duration_byte := 0;
+    endif
+
+    var magnitude_byte := CInt(magnitude);
+    if( magnitude_byte > 255 )
+        magnitude_byte := 255;
+    elseif( magnitude_byte < 0 )
+        magnitude_byte := 0;
+    endif
+
+    var packetString := "65";
+    packetString := packetString + fixPacketLength(hex(WEATHER_EARTHQUAKE),1);
+    packetString := packetString + fixPacketLength(hex(duration_byte),1);
+    packetString := packetString + fixPacketLength(hex(magnitude_byte),1);
+
+    foreach chr in EnumerateOnlineCharacters()
+        SendPacket( chr, packetString );
+    endforeach
 endfunction
 
 ////////////////////////////////////////////////////
@@ -570,7 +644,6 @@ function SendBuff(mobile, show,  icon, duration := 0, cliloc1 := 0, cliloc2 := 0
    if (str)
     str := " " + str;
    endif
-   sendsysmessage(mobile, "s" + show +  " " + icon + " " + duration + " " + cliloc1 +  " " + cliloc2) ;
    // define the offsets to make it easier
    var   OFFSET_SERIAL := 3;
    var   OFFSET_ICONNUMBER1 := 7;

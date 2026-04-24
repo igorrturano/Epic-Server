@@ -1,0 +1,11 @@
+use uo;
+use os;
+include ":tn:cooldown";
+include ":message:model/Message";
+
+program unequipweapon(who, item)
+	SetCooldown(who, "spiritual_weapon", 0);
+	Start_Script("destroythis", item);
+	Message("Sua lamina espiritual se dissipou!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+	return 1;
+endprogram

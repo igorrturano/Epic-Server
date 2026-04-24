@@ -7,97 +7,10 @@ include ":tn:tngumps";
 include "include/epicConstants";
 include ":gumps:epicGumps";
 include ":message:include/model/Message";
+include ":spells:SpellRegistry";
+include "include/epicEconomyAudit";
 //include ":nature:nature";
 //include ":charactercreation:include/RPTraits";
-
-const aiglaText := "Os Aiglanos são um povo astuto e inclusivo, conhecido por sua capital Aquileia. Sua bandeira apresenta uma águia dourada em um fundo vermelho, simbolizando a seleção dos capazes. Eles são um povo mestiço, com variação de tom de pele, altura e tipo de cabelo. São disciplinados, valorizam a história e fazem do exercício físico um hábito.
-Historicamente, os Aiglanos prosperaram apesar dos desafios, aprendendo com suas fraquezas e remodelando-se. Passaram de um pequeno vilarejo para uma República, com um sistema político fechado. A ascensão do Imperador Crassus trouxe um período de bonança, com reformas militares e de governo que expandiram o poder do império.
-A religião Aiglana é flexível, absorvendo divindades dos povos conquistados através do ritual de evocatio. Os costumes incluem uma nobreza intocável, lealdade à legião e pagamento dos legionários durante campanhas.
-Em resumo, os Aiglanos são um povo resiliente e adaptável, com uma história marcada por conquistas militares e uma cultura diversificada.";
-
-const lesteText := "Os Povos do Leste são caracterizados por sua extensa terra, liderada pela Dinastia Huang, com uma cultura diversificada apesar da unificação sob uma única dinastia. O gentílico varia de acordo com a classe social, com destaque para os kamis, heimins e heinins. A pele clara a amarelada e olhos com palpebras puxadas são características comuns.
-A história remonta à unificação sob a Dinastia Huang, que governa há milênios, marcada por conflitos e unificações. A religião central é o culto ao Deus-dragão, que permeia todas as camadas da sociedade, especialmente através dos monges e samurais, que seguem uma rígida disciplina e código de honra.
-A ascensão do atual Imperador, Fan Huang, marcou uma mudança drástica na dinastia, com a extinção do culto ao dragão e a ampliação da Grande Muralha, levando ao surgimento da 'Fúria do Dragão' e uma onda de refugiados.
-A religião Kai é central na vida dos povos do Leste, baseada na lealdade absoluta ao Imperador como mensageiro do Deus-dragão. A história mitológica envolve a transformação do primeiro imperador em um dragão dourado.
-Curiosidades incluem a simplicidade dos monges, a saga dos ronins, a importância do peixe na dieta e a cremação como ritual funerário. Rumores sobre uma ordem assassina chamada sicários ainda pairam sobre a região.
-A fisionomia varia, mas os povos do Leste são geralmente de estatura média, com pele clara a amarelada e cabelos escuros. Suas vantagens raciais incluem habilidades de combate e a habilidade de se tornarem monges e samurais. A língua comum é Haiei.";
-
-const harolothText := "Os Drows são uma raça de elfos negros com pele escura e olhos variados, mas com íris claras, muitas vezes brilhantes na escuridão. São de estatura média, com as fêmeas geralmente mais baixas do que os machos. Seu estilo de combate privilegia emboscadas e ataques sorrateiros, evitando confrontos diretos.
-A origem dos Drows é envolta em mistério, mas acredita-se que tenham surgido nos subterrâneos do continente. Sua sociedade é marcada pelo conflito interno e pela busca pelo raro minério Illyra, fonte de poder e riqueza para suas casas.
-A religião dos Drows gira em torno de Idrith, uma deusa sacrificada pelo bem-estar de todos. Sua sociedade é baseada no medo, com o Clero de Idrith, a Liga de Comerciantes e o Braço Armado sendo as principais instituições. A nobreza drow é dividida em castas, onde o poder e a influência são os principais critérios de avaliação.
-Curiosidades sobre os Drows incluem sua falta de afeto infantil, a importância das fêmeas na sociedade, sua apreciação por arte e música, orgulho racial e conhecimento da língua comum. Embora possam agir de forma imprevisível individualmente, os Drows são impiedosos e implacáveis em sua busca por poder quando em sociedade.";
-
-const bjorskaText := "Os Björske são um povo tradicional do norte do continente de Eora, conhecidos por sua pele alva e cabelos que variam do preto ao loiro e ruivo. São orgulhosos, valentes e generosos, transmitindo suas tradições oralmente, reunindo-se em torno de fogueiras para cultuar seus deuses com danças, carne de caça e hidromel.
-Sua história remonta a tribos antigas que enfrentaram grande fome e ataques dos Aiglanos, sendo lideradas por Brago, um líder astuto e forte. Ele uniu as tribos, lutou contra os invasores e estabeleceu o reinado dos Björske, sendo adorado mesmo após sua morte.
-A religião dos Björske, chamada Haulleuad, é centrada no culto ao Sol e à Lua, representando força, proteção e fertilidade. O pai, Duw, o Deus Sol, e a mãe, Lleuad, a Lua, são adorados em festivais e rituais que celebram a natureza e os ciclos da vida.
-Os Björske são guerreiros habilidosos, especialmente montados, utilizando cavalaria e formação de escudos em combate. São conhecidos por sua fúria e tradição, valorizando a força e a fertilidade. Sua cultura valoriza a oralidade e a música, enquanto sua língua nativa é o Björ e também falam o Comum.";
-
-const alurielText := "Os elfos são uma raça antiga e majestosa, abençoados por Alora Larethian, a Luz Eterna. Com vida longa, chegando até 300 anos e ocasionalmente ultrapassando 700 anos, os elfos possuem uma perspectiva única e contemplativa sobre a vida e o mundo ao seu redor. Eles são esbeltos e ágeis, com pele clara, cabelos e olhos predominantemente claros, refletindo sua conexão com a natureza e a magia.
-A sociedade élfica é profundamente ligada à natureza e às tradições. Eles veem a terra como uma extensão de si mesmos e se dedicam a protegê-la. Mestres na criação de artefatos sustentáveis, os elfos utilizam técnicas que não prejudicam o meio ambiente. Suas histórias e conhecimentos são preservados através da poesia e celebrações sazonais, destacando a reverência pelas tradições.
-Elfos são contemplativos, meditando e refletindo antes de tomar decisões importantes. Essa característica os torna resistentes a mudanças, especialmente aquelas que perturbam a natureza. A religião dos elfos gira em torno de Alora Larethian, deusa da beleza e da magia, cuja presença é celebrada com festas e canções. A bênção de Alora confere aos elfos grande habilidade em magia, facilitando seu uso e tornando-os excelentes magos.
-Os elfos mantêm uma rivalidade histórica com os anões devido à sua aversão à tecnologia. Acreditam que a pureza de suas obras, inspiradas pela natureza, supera qualquer criação tecnológica. Essa rivalidade se reflete em sua atitude reservada e, por vezes, hostil em relação aos avanços tecnológicos e aos estrangeiros.";
-
-const polkineaText := "Os Pequilho são um povo diverso e tranquilo, com uma estatura média de 90 centímetros e um corpo rechonchudo que varia de 20 a 30 quilogramas. Sua pele bronzeada pode variar de tons mais escuros a mais claros, e traços distintos podem indicar a linhagem familiar. Eles valorizam o conforto e a simplicidade em suas vestimentas e casas, mas têm orgulho de se vestirem bem.
-Os Pequilho cultivam as terras de Colhesol há centenas de anos, preferindo manter-se à parte dos problemas dos povos maiores. São conhecidos por seu amor pela comida, fumo e bebidas, bem como pela paz e tranquilidade da vida no campo. Suas habilidades em cultivo e culinária são notáveis, e eles desenvolveram um comércio de especiarias e condimentos.
-Divididos em três grupos principais - Pérvalhos, Cascalvas e Encostarvores - os Pequilho têm laços familiares fortes e um sistema político baseado em decisões comunitárias. São conhecidos por sua capacidade de passar despercebidos e por conquistar a amizade dos outros.
-Os Pequilho não se preocupam muito com posses materiais e valorizam a hospitalidade e a simplicidade. Seus costumes incluem compartilhar ferramentas e lidar com limites e privacidade de maneira única. São habilidosos em fala e canto, apreciando a arte do improviso.
-Em resumo, os Pequilho são criaturas simples que valorizam o conforto, a boa comida e a calmaria da vida no campo, além de serem ótimos agricultores e, em alguns casos, aventureiros.";
-
-const baduranText := "Os Anões são uma raça distintiva, reconhecível por suas longas barbas adornadas e estatura baixa, mas robusta. Com uma cultura profundamente enraizada na forja e na tecnologia, eles habitam regiões montanhosas e possuem uma sociedade organizada, com líderes como o 'Pai' e a 'Mãe'. Sua relação com outras raças é marcada por um misto de hospitalidade e irritabilidade, especialmente com os elfos, com os quais têm uma rivalidade histórica.
-Vestidos com suas melhores armaduras e tecidos, os Anões buscam demonstrar sua destreza e riqueza por meio de suas vestimentas. São inventivos em suas forjas e valorizam o trabalho árduo, considerando a terra como uma arte insuperável. A forja desempenha um papel crucial em sua identidade, transmitindo tradições e ensinamentos aos mais jovens.
-Na esfera religiosa, os Anões adoram um poderoso deus criador e reverenciam seus antepassados, como Galgrumir, Killi e Thorgrim, conhecidos por suas grandes realizações. Além disso, possuem um conjunto de vantagens raciais, como resistência a magias e bônus em HP e stamina, refletindo sua constituição robusta e vontade inabalável.
-Sua fortaleza, Khron Kaz'ad, é uma grandiosa construção subterrânea repleta de tesouros e minas profundas, refletindo sua habilidade em trabalhar com o ambiente montanhoso. Os Anões são tradicionalistas, leais e valorizam o trabalho árduo, características que permeiam sua cultura e comportamento.";
-
-const gulthrakText := "Os Orcs são uma raça de humanoides guerreiros, mais altos e fortes que os humanos, com pele calejada variando do vermelho ao verde. Sua história remonta ao Deserto da Perdição, onde enfrentaram desafios extremos para sobreviver, incluindo batalhas contra criaturas perigosas chamadas Aklats. Seu modo de vida nômade foi marcado por um culto à força e à sobrevivência.
-A religião dos Orcs gira em torno de Adar Kor Doom, representando os elementos areia, água e sangue, que sustentam o ciclo de vida e fertilidade. Os Xamãs são responsáveis por preservar esses ensinamentos e tradições.
-Curiosidades sobre os Orcs incluem seu uso de armaduras feitas de couro, ossos e materiais encontrados, sua reverência pelas chuvas sagradas do deserto e a igualdade de gênero em sua sociedade, onde tanto machos quanto fêmeas guerreiam e lideram tribos.
-Na adolescência, os Orcs são submetidos a ritos de passagem no deserto e enfrentam os perigos das dunas. A presença de forasteiros no deserto era comum, mas os Orcs geralmente não forneciam ajuda, exceto em situações de perigo contra os Aklats.
-Alguns Orcs vivem sem tribo, considerados perigosos por não seguirem as tradições. Eles se esforçam para resolver conflitos na Arena de Sangue, mesmo fora do deserto, mantendo um código de honra entre eles.";
-
-const veneratioText := "A Veneratio é a religião dos Aiglanos, caracterizada pela adoração a uma variedade de divindades, incluindo o Demiurgo, o criador do universo. Os Aiglanos praticam rituais de adoração, fazem oferendas e honram os templos das divindades para garantir proteção e prosperidade. Eles valorizam a tradição, a história e o serviço à comunidade, 'enquanto mantêm uma atitude inclusiva em relação às crenças dos outros povos. Para ser fiel à sua religião, os personagens devem demonstrar devoção às divindades, respeitar as tradições, servir à comunidade e aceitar a diversidade religiosa.";
-const loreText := "Os elfos, conhecidos como Quendi, são um povo antigo e sábio, intrinsecamente ligado à natureza e à magia. Sua sociedade é marcada pela reverência à deusa Alora Larethian, a Luz Eterna, que os abençoou com a magia e os uniu em tempos de discórdia. Os elfos vivem em harmonia com a natureza, preservando-a e celebrando suas tradições ancestrais. São reservados em relação a estranhos, valorizando a sabedoria, a contemplação e a harmonia. Apesar de serem hábeis guerreiros, sua verdadeira força reside na magia, sendo dotados de uma conexão única com a energia cósmica. A rixa histórica com os anões é alimentada pela diferença de visão em relação à tecnologia, sendo os elfos avessos a qualquer interferência que perturbe a natureza.";
-const bokk_bharazText := "A religião dos Anões é centrada na adoração de um poderoso deus criador e no culto aos seus antepassados ilustres, que são reverenciados como figuras dignas de orgulho e louvor. Entre esses ancestrais estão Galgrumir, o primeiro anão, Killi, conhecida como a mãe da agricultura e da cerveja, Thorgrim, famoso por suas habilidades na marcenaria, e outros.
-No jogo, os jogadores devem adotar uma postura respeitosa em relação à religião Anã, mostrando devoção ao deus criador e reconhecendo a importância dos antepassados em suas vidas. Isso pode se refletir em ações como oferecer orações aos deuses antes de empreender aventuras ou buscar a orientação dos ancestrais em momentos de dificuldade.
-Além disso, os jogadores podem incorporar aspectos da cultura Anã em seus comportamentos in-game, como valorizar o trabalho árduo e a habilidade na forja, respeitar as tradições e costumes ancestrais, e demonstrar lealdade aos seus companheiros de equipe. Cantarolar antigas músicas Anãs ou entoar cânticos em honra aos deuses também pode contribuir para a imersão na religião e cultura Anãs dentro do jogo.";
-const eluithorthText := "Respeito ao sacrifício: Demonstre valorizar a ideia de sacrificar interesses pessoais pelo bem da comunidade.
-Foco no bem coletivo: Busque soluções que beneficiem não só você, mas também seu grupo ou comunidade.
-Entendimento da dualidade: Reconheça que a alegria está intrinsecamente ligada à tristeza, e explore como os momentos difíceis podem levar ao crescimento.
-Aceitação do destino: Encare os desafios com resignação, confiando que seus sacrifícios contribuirão para um propósito maior.
-Devoção à deusa Idrith: Mostre reverência pela deusa através de orações, rituais ou seguindo os princípios éticos associados a ela.
-Ao adotar esses princípios em sua interpretação, você mergulhará mais profundamente na cultura e religião dos Drows, tornando sua experiência de jogo mais rica e imersiva.";
-const halleuadText := "Os Björske são um povo tradicional do norte do continente de Eora, conhecidos por sua pele alva e cabelos que variam do preto ao loiro e ruivo. São orgulhosos, valentes e generosos, transmitindo suas tradições oralmente, reunindo-se em torno de fogueiras para cultuar seus deuses com danças, carne de caça e hidromel.";	
-const kaiText := "A religião dos povos do Leste, conhecida como Kai, está profundamente ligada à história e à cultura desses povos. Ela gira em torno do culto ao Deus Dragão, Huangxu, que é visto como o mensageiro divino no plano terreno através do Imperador.
-Para preservar a imersão in-game e compreender melhor essa religião, sugira ao jogador que siga estas diretrizes:
-Lealdade absoluta ao Imperador: Enfatize a importância da lealdade ao Imperador, visto como o portador do Mandato dos Céus concedido pelo Deus Dragão. Isso pode se manifestar através do respeito às ordens e decretos imperiais.
-Respeito aos ensinamentos do Kai: Valorize os ensinamentos do Kai, que enfatizam a lealdade, a sabedoria e o conhecimento. O jogador pode demonstrar isso através de sua conduta, buscando sempre agir de acordo com os princípios éticos e morais da religião.
-Honra e tradição: Destaque a importância da honra e da tradição na religião Kai. Os jogadores podem incorporar isso em seus personagens através de seus códigos de ética e conduta, como o respeito aos mais velhos e a valorização da palavra dada.
-Participação nas práticas religiosas: Encoraje o jogador a participar das práticas religiosas do Kai, como cerimônias de adoração ao Deus Dragão ou rituais de passagem, como a confecção da tatuagem do dragão para os monges.";
-const ushkrarText := "Em um mundo árido e implacável, os orcs se erguem como guerreiros de uma fé singular, moldada pelas vastas extensões do Deserto da Perdição. No coração dessas terras hostis, onde a areia dança ao ritmo dos ventos e a água é tão escassa quanto a esperança, os orcs encontraram sua fé no Grunntam, o Único Caminho.
-No centro dessa crença está Adar Kor Doom, uma entidade mítica que personifica o deserto e seus elementos fundamentais: areia, água e sangue. Para os orcs, o deserto não é apenas um lugar, mas uma divindade que dita suas vidas e desafios.
-Imagine-se diante de um altar rudimentar erguido nas dunas, onde crânios de criaturas aberrantes são ofertados como sacrifício. Sob o sol escaldante, um xamã entoa cânticos ancestrais, evocando a benção de Adar Kor Doom sobre sua tribo. Cada palavra ressoa como um eco das antigas tradições, uma reverência à natureza brutal e indomável do deserto.
-E assim, os orcs caçam as temíveis Aklats, não apenas como uma questão de sobrevivência, mas como um ato sagrado de purificação. Cada criatura abatida é um tributo ao ciclo eterno de vida e morte, uma contribuição para a fertilidade das areias estéreis.
-Nos períodos de chuva, quando o deserto se transforma em um oásis temporário, os orcs celebram com rituais de êxtase e indulgência. Longe das batalhas e caçadas, eles se entregam ao prazer e à comunhão, honrando a dádiva da água que sustenta sua existência.
-Porém, mesmo em meio à brutalidade de sua fé, os orcs têm seus guardiões espirituais. Os Xamãs, sábios e misteriosos, são os intérpretes dos desígnios de Adar Kor Doom. Eles conduzem seus seguidores através dos caminhos áridos do deserto, guiando-os na busca pela força e sabedoria necessárias para enfrentar os desafios do Grunntam.
-Neste mundo implacável e repleto de perigos, a fé dos orcs é uma luz que brilha no horizonte, uma âncora em meio à tempestade de areia. E enquanto as dunas se movem e os ventos uivam, os filhos do Deserto da Perdição permanecem firmes em sua devoção ao Grunntam, prontos para enfrentar qualquer desafio que o destino lhes reserve.";
-const ceticosText := "A visão cética sobre a influência dos deuses propõe que, se existirem, eles estão imersos em suas próprias questões, distantes das preocupações humanas. Para os céticos, muitos fenômenos naturais são explicações racionais para eventos aleatórios, e a adoração a divindades é vista como um mecanismo de enfrentamento em tempos de crise. 
-Essa perspectiva sugere que a religião é uma construção cultural que reflete os medos e aspirações humanas, oferecendo conforto e um senso de comunidade. Apesar da descrença, a liberdade de crença é essencial, promovendo o respeito às diferentes convicções e abrindo espaço para diálogos enriquecedores sobre a experiência humana.";
-
-const storyModeText := "No modo estória, o personagem não pode ser morto e nem matar outros jogadore, ou seja, cortar a cabeça.
-- Ao tentar furtar outro jogador, caso tenha sucesso, receberá moedas aleatórias baseado no PP. As falhas continuam normal.
-- Caso outro jogador, mesmo que seja modo verdadeiro, tente furtar você, ele receberá moedas aleatórias baseado no PP. As falhas continuam normal.
-- Você ainda pode perder seu personagem caso reduza seus DPs para menos que 1
-- Seu rate de UP é normal";
-
-const trueModeText := "No modo verdadeiro, o personagem pode ser morto e pode matar outros jogadores, ou seja, cortar a cabeça.
-- Poderá furtar e ser furtado normalmente.
-- Não pode reclamar que foi morto por outro jogador caso tenha sido dentro do RP. Se você escolheu conflito, você aceitou as consequências.
-- Seu rate de UP é maior";
-
-const adventureStartText := "Por muito pouco você não escapa do desmoronamento da caverna.
-Você se encontra em um lugar desconhecido, com um ar diferente, uma sensação estranha toma conta de você.
-A poeira torna difícil respirar, você olha para frente e vê que houveram mais alguns sobreviventes.
-Porém não há muito mais o que ser feito, a comida não ia durar caso minerassem o caminho de volta, explodir pode ser uma má idéia
-Você decide seguir em frente, em busca de uma saída, ou de algo que possa te ajudar a sobreviver.";
 
 const AIGLA_ID := 0x9E7;
 const ALURIEL_ID := 0x9E8;
@@ -105,7 +18,7 @@ const BADURAN_ID := 0x9E9;
 const BJORSKA_ID := 0x9EA;
 const GULTHRAK_ID := 0x9EB;
 const HAROLOTH_ID := 0x9EC;
-const POLKINEA_ID := 0x9ED;
+const COLHESIANA_ID := 0x9ED;
 const LESTE_ID := 0x9EE;
 
 const BOKK_BHARAZ_ID := 0x9EF;
@@ -129,8 +42,8 @@ const FORADALEI_ID := 0x15B;
 const INOCENTE_ID := 0x15C;
 const SABIO_ID := 0x15D;
 
-var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", MECHANICAL_APITUDE := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
-var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Véu de Idrith", "Polkinea" := "Pés Leves", "Alüriel" := "Precisão Élfica", "Björska" := "Cavalaria Nórdica", "Gulthrak" := "Brutamontes", "Badûran" := "Filho do progresso", "Povos do Leste" := "Andarilho"};
+var BACKGROUNDS := struct{DOMESTIC_WORK := "Mestre do Lar", METAL_WORK := "Ferreiro aprendiz", GATHERING := "Coletor", PICK_POCKETING := "Rato de rua", SNEAK := "Aventureiro", SURVIVAL := "Caçador", MEDICINE := "Curandeiro", WOOD_WORK := "Marceneiro"};
+var CULTURAL_BACKGROUNDS := struct{ "Aiglana" := "Legionário", "Har'oloth" := "Prole Abissal", "Colhesiana" := "Armadilheiro", "Alüriel" := "Guardião", "Björska" := "Cavalaria Nórdica", "Gulthrak" := "Flagelo das Areias", "Badûran" := "Filho do progresso", "Povos do Leste" := "Discípulo das Lâminas"};
 
 function getCultureByPictureId(culture_id)
     case (culture_id)
@@ -146,8 +59,8 @@ function getCultureByPictureId(culture_id)
             return GULTHRAK;
         HAROLOTH_ID:
             return HAROLOTH;
-        POLKINEA_ID:
-            return POLKINEA;
+        COLHESIANA_ID:
+            return COLHESIANA;
         LESTE_ID:
             return LESTE;
     endcase
@@ -167,8 +80,8 @@ function getCraftCultureByPictureId(culture_id)
             return "Gulthrak";
         HAROLOTH_ID:
             return "Haroloth";
-        POLKINEA_ID:
-            return "Polkinea";
+        COLHESIANA_ID:
+            return "Colhesiana";
         LESTE_ID:
             return "Leste";
     endcase
@@ -197,23 +110,24 @@ function CultureGump(who, culture_pic)
 endfunction
 
 function getCulturalDescriptionByPictureId(culture_id)
+    var textosConfig := ReadConfigFile(":charactercreation:/config/descricoes");
     case (culture_id)
         AIGLA_ID:
-            return aiglaText;
+            return FindConfigElem(textosConfig, "aigla").descricao;
         ALURIEL_ID:
-            return alurielText;
+            return FindConfigElem(textosConfig, "aluriel").descricao;
         BADURAN_ID:
-            return baduranText;
+            return FindConfigElem(textosConfig, "baduran").descricao;
         BJORSKA_ID:
-            return bjorskaText;
+            return FindConfigElem(textosConfig, "bjorska").descricao;
         GULTHRAK_ID:
-            return gulthrakText;
+            return FindConfigElem(textosConfig, "gulthrak").descricao;
         HAROLOTH_ID:
-            return harolothText;
-        POLKINEA_ID:
-            return polkineaText;
+            return FindConfigElem(textosConfig, "haroloth").descricao;
+        COLHESIANA_ID:
+            return FindConfigElem(textosConfig, "colhesiana").descricao;
         LESTE_ID:
-            return lesteText;
+            return FindConfigElem(textosConfig, "leste").descricao;
     endcase
 endfunction
 
@@ -237,6 +151,7 @@ function EpicRaceGump(who, culture_pic)
     foreach race in races
         var color := "#000000";
         GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, race), 1, 0);
+        GFTooltipText(gump, "{}".format(displayRacialBonus(race)));
         if (races.size() > 1)
             GFRadioButton(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 200+i);
         endif
@@ -271,12 +186,13 @@ endfunction
 
 function getRaceByCulturalId(culture_pic)
     var races;
+    var prefix := "Meio-";
     case (culture_pic)
         HAROLOTH_ID:
             races := {DROW};
         ALURIEL_ID:
             races := {ELFO};
-        POLKINEA_ID:
+        COLHESIANA_ID:
             races := {PEQUILHO};
         GULTHRAK_ID:
             races := {ORC};
@@ -285,12 +201,17 @@ function getRaceByCulturalId(culture_pic)
         BJORSKA_ID:
             races := {HUMANO};
         default:
-            races := array{ANAO, DROW, ELFO, HUMANO, ORC, PEQUILHO};
+            races := array{ANAO, prefix+DROW, prefix+ELFO, HUMANO, prefix+ORC, PEQUILHO};
     endcase
     return races;
 endfunction
 
 function CaracteristicasRPGump(who, byref chardata, culture_pic)
+    var display_race := "";
+    if (chardata.culture == AIGLANA || chardata.culture == LESTE)
+        display_race += "Meio-";
+    endif
+    display_race += chardata.raca;
     var racial_traits := GetRacialTraits(chardata.raca);
     var gump := GFCreateGump();
     GFClosable(gump, 0);
@@ -305,7 +226,7 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     GFHTMLArea(gump, 149, 76, 192, 40, "<BASEFONT Size=55 Color=#999999>Raça", 0, 0);
     GFHTMLArea(gump, 148, 75, 192, 40, "<BASEFONT Size=55 Color=#ffffff>Raça", 0, 0);
     
-    GFHTMLArea(gump, 79, 100, 192, 24, "<BASEFONT color=#000000>{}".format(chardata.raca), 1, 0);
+    GFHTMLArea(gump, 79, 100, 192, 24, "<BASEFONT color=#000000>{}".format(display_race), 1, 0);
 
     // Exibir imagem da cultura
     GFGumpPic(gump, 298, 100, culture_pic);
@@ -333,10 +254,14 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
         
         var options := racial_traits[category].opcoes;
         current_y := current_y + 30;
+        // option_ids maps each displayed option to a stable enum id
+        var option_ids := racial_traits[category].opcoes_ids;
         for (i := 1; i <= options.size(); i := i + 1)
             option_y := current_y + ((i-1) * 25);
             button_id := 100 + (category_iter * 5) + (i - 1);
-            is_selected := (chardata.caracteristicas_rp[category] == i);
+            // now compare stored enum id (or 0) against the option's enum id
+            var caracteristica := chardata.caracteristicas_rp[category];
+            is_selected := (caracteristica == option_ids[i] && OT_UNINIT != TypeOfInt(caracteristica));
             GFHTMLArea(gump, x, option_y, 192, 24, "<BASEFONT color=#000000>{}".format(options[i]), 1, 0);
             
             if (category != "Idade Aparente")
@@ -360,37 +285,6 @@ function CaracteristicasRPGump(who, byref chardata, culture_pic)
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 222);
 
     var input := GFSendGump(who, gump);
-    
-    if (input[0] == 222)
-        var age_input := GFExtractData(input, age_textbox);
-        var all_required_selected := true;
-        
-        foreach category in required_categories
-            if (!chardata.caracteristicas_rp[category])
-                all_required_selected := false;
-                break;
-            endif
-        endforeach
-
-        var idade_maxima := GetRaceMaximumAge(chardata.raca);
-
-        if (!all_required_selected)
-            SendSysMessageEX(who, "Por favor, selecione uma opção para Altura, Peso, Olhos e Voz.", SSM_FAIL);
-            return CaracteristicasRPGump(who, chardata, culture_pic);
-        elseif (age_input == "" || typeof(age_input) == "Error")
-            SendSysMessageEX(who, "Por favor, insira sua idade.", SSM_FAIL);
-            return CaracteristicasRPGump(who, chardata, culture_pic);
-        elseif (CInt(age_input) > idade_maxima)
-            SendSysMessageEX(who, "A idade limite permitida pra sua raça é " + CStr(idade_maxima) + ".", SSM_FAIL);
-            return CaracteristicasRPGump(who, chardata, culture_pic);
-        else
-            chardata.idade_escolhida := CInt(age_input);
-            var final_age := ConvertAge(chardata.raca, chardata.idade_escolhida);
-            chardata.idade_aparente := final_age[1];
-            chardata.idade_real := final_age[2];
-            return input;
-        endif
-    endif
 
     return input;
 endfunction
@@ -427,7 +321,12 @@ function ProcessSelection(byref chardata, input)
         
         if (category_index < categories.size())
             var category := categories[category_index + 1];
-            chardata.caracteristicas_rp[category] := option;
+            // Map the 1-based option index to the enum id for this race/category
+            var racial_traits := GetRacialTraits(chardata.raca);
+            var option_ids := racial_traits[category].opcoes_ids;
+            if (option >= 1 && option <= option_ids.size())
+                chardata.caracteristicas_rp[category] := option_ids[option];
+            endif
         endif
 endfunction
 
@@ -604,6 +503,7 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
         GFHTMLArea(gump, x+86, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Raça", 0, 0); //shadow
         GFHTMLArea(gump, x+85, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Raça", 0, 0);
         GFHTMLArea(gump, x+16, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, race), 1, 0);
+        GFTooltipText(gump, "{}".format(displayRacialBonus(race)));
     endif
 
     if (culture_pic)
@@ -811,7 +711,7 @@ function skillGump(who, culture_pic, byref chardata)
     SetObjProperty(who, "chardata", chardata);
     GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Pontos restantes", 0, 0);
     GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Pontos restantes", 0, 0); //shadow
-    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color=#FFE700 >{}".format(chardata.points), 1, 0);
+    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color={} >{}".format(Color(GENERAL_COLOR::BLACK).GetHtmlValue(), chardata.points), 1, 0);
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Botão de fechar
 
@@ -827,24 +727,9 @@ function howManyPrimarias(chardata)
 endfunction
 
 function culturalTraitBonus(who, byref chardata)
+    var cfg := ReadConfigFile(":charactercreation:config/backgrounds");
     var culturalBg := chardata.background;
-    if (culturalBg == "Legionário")
-        return chardata.+bgBonus := PARRY;
-    elseif (culturalBg == "Véu de Idrith")
-        return chardata.+bgBonus := AWARENESS;
-    elseif (culturalBg == "Pés Leves")
-        return chardata.+bgBonus := SNEAK;
-    elseif (culturalBg == "Cavalaria Nórdica")
-        return chardata.+bgBonus := HANDLEANIMAL;
-    elseif (culturalBg == "Precisão Élfica")
-        return chardata.+bgBonus := RANGED;
-    elseif (culturalBg == "Brutamontes")
-        return chardata.+bgBonus := TWOHANDED;
-    elseif (culturalBg == "Filho do progresso")
-        return chardata.+bgBonus := ALCHEMY;
-    elseif (culturalBg == "Andarilho")
-        return chardata.+bgBonus := ONEHANDED;
-    endif
+    return chardata.+bgBonus := cfg[culturalBg].Bonus;
 endfunction
 
 function attributeGump(who, culture_pic, byref chardata)
@@ -861,6 +746,7 @@ function attributeGump(who, culture_pic, byref chardata)
     GFHTMLArea(gump, 556, y, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha seus atributos", 0, 0);
 
     GFHTMLArea(gump, 555, y+20, 120, 25, "<BASEFONT color=#FFFFFF >Forca:    {}".format(chardata.str), 1, 0);
+    GFTooltipText(gump, displayAttributeDescription(chardata, "Forca"));
     if (chardata.str > 40)
         GFAddButton(gump, 675, y+25, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 201);
     endif
@@ -869,6 +755,7 @@ function attributeGump(who, culture_pic, byref chardata)
     endif
 
     GFHTMLArea(gump, 555, y+40, 120, 25, "<BASEFONT color=#FFFFFF >Destreza:  {}".format(chardata.dex), 1, 0);
+    GFTooltipText(gump, displayAttributeDescription(chardata, "Destreza"));
     if (chardata.dex > 40)
         GFAddButton(gump, 675, y+45, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 211);
     endif
@@ -877,6 +764,7 @@ function attributeGump(who, culture_pic, byref chardata)
     endif
 
     GFHTMLArea(gump, 555, y+60, 120, 25, "<BASEFONT color=#FFFFFF >Inteligencia: {}".format(chardata.int), 1, 0);
+    GFTooltipText(gump, displayAttributeDescription(chardata, "Inteligencia"));
     if (chardata.int > 40)
         GFAddButton(gump, 675, y+65, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 221);
     endif
@@ -886,8 +774,7 @@ function attributeGump(who, culture_pic, byref chardata)
 
     GFHTMLArea(gump, 345, 515, 192, 40, "<BASEFONT Size=55 Color=#999999 > Pontos restantes", 0, 0);
     GFHTMLArea(gump, 346, 516, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Pontos restantes", 0, 0); //shadow
-    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color=#FFE700 >{}".format(chardata.attribute_points), 1, 0);
-
+    GFHTMLArea(gump, 400, 536, 35, 20, "<BASEFONT color={} >{}".format(Color(GENERAL_COLOR::BLACK).GetHtmlValue(), chardata.attribute_points), 1, 0);
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 500); // Botão de fechar
 
     return GFSendGump(who, gump);
@@ -939,23 +826,24 @@ function getReligionByPictureId(religion_id)
 endfunction
 
 function getReligionDescriptionByPictureId(culture_id)
+    var textosConfig := ReadConfigFile(":charactercreation:/config/descricoes");
     case (culture_id)
         VENERATIO_ID:
-            return veneratioText;
+            return FindConfigElem(textosConfig, "veneratio").descricao;
         LORE_ID:
-            return loreText;
+            return FindConfigElem(textosConfig, "lore").descricao; 
         BOKK_BHARAZ_ID:
-            return bokk_bharazText;
+            return FindConfigElem(textosConfig, "bokk_bharaz").descricao;
         HALLEUAD_ID:
-            return halleuadText;
+            return FindConfigElem(textosConfig, "halleuad").descricao;
         KAI_ID:
-            return kaiText;
+            return FindConfigElem(textosConfig, "kai").descricao;
         ELUITHORTH_ID:
-            return eluithorthText;
+            return FindConfigElem(textosConfig, "eluithorth").descricao;
         USHKRAR_ID:
-            return ushkrarText;
+            return FindConfigElem(textosConfig, "ushkrar").descricao;
         default:
-            return ceticosText;
+            return FindConfigElem(textosConfig, "ceticos").descricao;
     endcase
 endfunction
 
@@ -980,7 +868,9 @@ function genericItems(who)
     elseif (chardata.classe == LADINO)
         moedas := "1d12";
     endif
-	CreateItemInBackpack(who, 0xba63, RandomDiceRoll(moedas)); //moedas de cobre
+	var cobre_qty := RandomDiceRoll(moedas);
+	var cobre_stack := CreateItemInBackpack(who, 0xba63, cobre_qty); //moedas de cobre
+	EA_Record(EA_MINT_CHARGEN, cobre_stack, cobre_qty, "CHARGEN:class:" + CStr(chardata.classe), who, "");
     if (chardata.culture == BADURAN)
         CreateItemInicial(who, "boots", 1); 
     else
@@ -989,8 +879,9 @@ function genericItems(who)
     CreateItemInicial(who, 0x152e, 1); // short pants
     CreateItemInicial(who, 0x1517, 1); // shirt
     CreateItemInBackpack(who, 3940, 1); // torch
-    var oleo := CreateItemInBackpack(who, 0x606f, 2); // Oleo de Polir Armaduras
-    SetObjProperty(oleo, "descmod", "Óleo de polir armaduras" + "<br>");
+    CreateItemInBackpack(who, 0xC61F, 1); // laterna cintura
+    var oleo := CreateItemInicial(who, 0x606f, 2); // Oleo de Polir Equipamentos
+    SetObjProperty(oleo, "descmod", "Óleo de polir equipamentos" + "<br>");
 endfunction
 
 function weaponsByClassAndCulture(who)
@@ -1010,7 +901,7 @@ function weaponsByClassAndCulture(who)
             if( chardata.magia == "Shaman")
                 CreateItemInicial(who, 0x26C4, 1); // scythe
             else
-                CreateItemInicial(who, 0x0F4E, 1); // bardiche
+                CreateItemInicial(who, 0x0f45, 1); // Grishnak
             endif
         endif
         if (skills[DUALWIELD] >= 1)
@@ -1052,7 +943,7 @@ function weaponsByClassAndCulture(who)
         endif
     endif
 
-    if (chardata.culture == POLKINEA)
+    if (chardata.culture == COLHESIANA)
         CreateItemInicial(who, 0xF998, 1); // Adaga
 
     
@@ -1140,7 +1031,7 @@ function weaponsByClassAndCulture(who)
 
     if (skills[RANGED] >= 1)
         var ammo_amount := skills[RANGED] * 80;
-        CreateItemInBackpack(who, 0x13B2, 1); // bow
+        CreateItemInicial(who, 0x13B2, 1); // bow
         CreateItemInBackpack(who, 0xf3f, ammo_amount); // arrows
 
         CreateItemInicial(who, 0x2fb7, 1); // aljava
@@ -1182,7 +1073,7 @@ function armorsByCulture(who)
         CreateItemInicial(who, 0x13DB, 1); // Studded Leather
     endif
 
-    if (chardata.culture == POLKINEA)
+    if (chardata.culture == COLHESIANA)
         CreateItemInicial(who, 0x13C7, 1); // Armadura de couro simples
         CreateItemInicial(who, 0x13CD, 1); // Armadura de couro simples
         CreateItemInicial(who, 0x1DB9, 1); // Armadura de couro simples
@@ -1217,7 +1108,7 @@ function workingItems(who)
     var skills := chardata.Skills;
 
     if (skills[WOODWORKING] >= 1)
-        CreateItemInicial(who, 0x1035, 1); // saw
+        CreateItemInicial(who, 0x1034, 1); // saw
         CreateItemInicial(who, 0x1022, 1);
     endif
     if (skills[METALWORKING] >= 1)
@@ -1237,9 +1128,31 @@ function workingItems(who)
         CreateItemInBackpack(who, 0xe21, (skills[MEDICINE] * 40)); // Bandages
     endif
 
+    if (skills[MEDICINE] == 3)
+		CreateItemInBackpack(who, 0xedfe, 1);
+		CreateItemInBackpack(who, 0xed2a, 1);
+        CreateItemInBackpack(who, 0xf0c8, 1);
+        case(randomint(3))//bisturi
+            1: CreateItemInBackpack(who, 0xD1CE, 1); 
+            2: CreateItemInBackpack(who, 0XD1D1, 1);
+            3: CreateItemInBackpack(who, 0XD1CF, 1);
+        endcase
+        case(randomint(2))// mascara da praga
+            1: CreateItemInBackpack(who, 0xF0C6, 1); 
+            2: CreateItemInBackpack(who, 0xF0C7, 1);
+        endcase
+        case(randomint(2))//sobretudo
+            1:CreateItemInBackpack(who, 0xD1B9, 1); 
+            2:CreateItemInBackpack(who, 0xD1BA, 1);
+        endcase
+		SendSysMessageEX(who, "Você recebeu itens de medicina por ter Medicine como primária.", SSM_INFO);
+	endif
+
     if (skills[MECHANICS] >= 1)
         CreateItemInicial(who, 0x14FB, (skills[MECHANICS] * 8)); // lockpick
     endif
+
+    
 
     if (skills[DOMESTIC_WORK] >= 1)
         CreateItemInicial(who, 0x0f9d, 1); // sewingkit
@@ -1254,7 +1167,7 @@ function workingItems(who)
         CreateItemInBackpack(who, 0x1832, 1); // balao
         CreateItemInBackpack(who, 0x1830, 1); // beker
         CreateItemInBackpack(who, 0x1849, 1); // aparato
-        CreateItemInBackpack(who, 0x0F0E, skills[ALCHEMY] * 5); // frascos
+        CreateItemInBackpack(who, 0x1BE3, skills[ALCHEMY] * 10); // vidro pros frascos, porque precisa do material
         var book1 := CreateItemInBackpack(who, "alchemybook");
             book1.newbie := 1;
 		    setobjproperty(book1, "serialid", who.serial);
@@ -1262,50 +1175,12 @@ function workingItems(who)
         var dyebook := CreateItemInBackpack(who, "dyebook");
             setobjproperty(dyebook, "serialid", who.serial);
 		    setobjproperty(dyebook, "marked",who.name + " - " + who.acctname);
-        var recipe := struct;
-        var chosenRecipes := AlchChoices(who);
-        var r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.+recipe := chosenRecipes[1];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[2];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[3];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[4];
-        SetObjProperty(r1, "recipe", recipe);
-        var i := 0;
-        while(i != (skills[ALCHEMY])*2)
-            var tinta := randomint(1);
-            if(tinta == 0)
-                var t1 := CreateItemInBackpack(who, "tintasrecipe1");
-            else
-                var t1 := CreateItemInBackpack(who, "tintasrecipe2");
-            endif
-            i := ++i;
-        endwhile
-
-        if (skills[ALCHEMY] >= 2)
-		    r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-            recipe.recipe := chosenRecipes[5];
-            SetObjProperty(r1, "recipe", recipe);
-            r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-            recipe.recipe := chosenRecipes[6];
-            SetObjProperty(r1, "recipe", recipe);
-            
-	        if (skills[ALCHEMY] == 3)
-		        var book2:= CreateItemInBackpack(who, "alchemybook");
-        		setobjproperty(book2, "serialid",who.serial);
-		        setobjproperty(book2, "marked",who.name + " - " + who.acctname);
-                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-                recipe.recipe := chosenRecipes[7];
-                SetObjProperty(r1, "recipe", recipe);
-                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-                recipe.recipe := chosenRecipes[8];
-                SetObjProperty(r1, "recipe", recipe);
-            endif
+        if (skills[ALCHEMY] == 3)
+            var chosenRecipes := AlchChoices(who);
+            foreach chosen in chosenRecipes
+                var r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+                SetObjProperty(r1, "AlchemyRecipe", chosen);
+            endforeach
         endif
 	endif
 endfunction
@@ -1401,9 +1276,9 @@ function resetCharacter(who)
 endfunction
 
 function resetGender(who)
-    if (who.graphic == 1828 || who.graphic == 1830 || who.graphic == 1832 || who.graphic == 1834)
+    if (who.graphic == 1828 || who.graphic == 1830 || who.graphic == 1832 || who.graphic == 1835)
         who.graphic := 400;
-    elseif (who.graphic == 1829 || who.graphic == 1831 || who.graphic == 1833 || who.graphic == 1835)
+    elseif (who.graphic == 1829 || who.graphic == 1831 || who.graphic == 1833 || who.graphic == 1834)
         who.graphic := 401;
     endif
 endfunction
@@ -1489,11 +1364,12 @@ function gameModeByPictureId(gameModeId)
 endfunction
 
 function gameModeDescriptionByPictureId(gameModeId)
+    var textosConfig := ReadConfigFile(":charactercreation:/config/descricoes");
     case (gameModeId)
         0x9FC:
-            return trueModeText;
+            return FindConfigElem(textosConfig, "trueMode").descricao;
         0x9FB:
-            return storyModeText;
+            return FindConfigElem(textosConfig, "storyMode").descricao;
     endcase
 endfunction
 
@@ -1512,6 +1388,8 @@ function getWisdomPathsByCulture(who)
         wisdomPaths.append("Clériga de Idrith");
     elseif (culture == BJORSKA || culture == LESTE)
         wisdomPaths.append("Clérigo");
+    elseif (culture == ALURIEL)
+        wisdomPaths.append("Arqueiro Arcano");
     endif
     
     if (culture != HAROLOTH && culture != GULTHRAK)
@@ -1549,29 +1427,26 @@ function pathOfWisdomGump(who, culture_pic)
 endfunction
 
 function startAdventureGump(who)
-    var gump := GFCreateGump();
-    GFClosable(gump, 0);
+    var textosConfig := ReadConfigFile(":charactercreation:/config/descricoes");
+    var descricao := FindConfigElem(textosConfig, "adventureStart").descricao;
+    var startTime := ReadGameClock();
 
-    var x := 63;
-    var y := 100;
-    var i := 1;
-    x := 255;
-    y := 90;
-    // Background
-    GFGumpPic(gump, 17, 31, 0x9E6); 
-    //Header
-    GFHTMLArea(gump, x+1, y-24, 292, 40, "<BASEFONT Size=55 Color=#999999 > Epic! Prólogo - Uma jornada inesperada", 0, 0); //shadow
-    GFHTMLArea(gump, x, y-25, 292, 400, "<BASEFONT Size=55 Color=#ffffff > Epic! Prólogo - Uma jornada inesperada", 0, 0);
+    var result;
+    do
+        var gump := GFCreateGump();
+        GFClosable(gump, 0);
+        GFResizePic(gump, 0, 0, 9270, 760, 625);
+        GFHTMLArea(gump, 21, 16, 740, 40, "<BASEFONT Size=55 Color=#000000 >Epic! Beta Test - A Ilha", 0, 0);
+        GFHTMLArea(gump, 20, 15, 740, 40, "<BASEFONT Size=55 Color=#ffffff >Epic! Beta Test - A Ilha", 0, 0);
+        GFGumpPic(gump, 20, 50, 0xFFFD);
+        GFHTMLArea(gump, 20, 470, 720, 110, descricao, 1, 1);
+        GFAddButton(gump, 710, 590, 4005, 4007, GF_CLOSE_BTN, 200);
+        result := GFSendGump(who, gump);
+    dowhile (ReadGameClock() - startTime < 10);
 
-    // Adventure main image
-    GFGumpPic(gump, 50, 100, 0xFFFD);
-
-    // Adventure Description
-    GFHTMLArea(gump, 100, 550, 650, 120, adventureStartText, 1, 1);
-
-    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200); // Botão de fechar
-    return GFSendGump(who, gump);
+    return result;
 endfunction
+
 
 function languageSelectionGump(who, culture_pic, linguasOpt, known_languages, total_amount)
     var gump := GFCreateGump();
@@ -1617,7 +1492,7 @@ function parseLanguageByCulture(who, linguasOpt)
             return linguasOpt[3];
         elseif (culture == LESTE)
             return linguasOpt[4];
-        elseif (culture == POLKINEA)
+        elseif (culture == COLHESIANA)
             return linguasOpt[5];
         elseif (culture == GULTHRAK)
             return linguasOpt[6];
@@ -1661,13 +1536,17 @@ function signSelection(who)
     var chardata := GetObjProperty(who, "chardata");
     var sign_pic := CUIDADOR_ID;
     var btn_value;
-    while (1)
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
         var input := SignGump(who, sign_pic);
-        btn_value := input[0]; 
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
+        btn_value := input[0];
 
         if (btn_value == 201)
             sign_pic++;
-        elseif (btn_value == 210) 
+        elseif (btn_value == 210)
             sign_pic--;
         elseif (btn_value == 666)
             break;
@@ -1776,9 +1655,13 @@ function birthDaySelection(who)
     var selected_day := 0;
     var month_index := getMonthBySign(chardata.sign);
     var btn_value;
-    while (1)
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
         var input := BirthDayGump(who, selected_day);
-        btn_value := input[0]; 
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
+        btn_value := input[0];
         if (btn_value == 666 && selected_day != 0)
             break;
         elseif (btn_value >= 1 && btn_value <= MONTHS[month_index].days)
@@ -2084,8 +1967,8 @@ function GetPaperdollBackground(graphic)
         1831: result := 0xF; // Elfo F
         1832: result := 54596; // Orc M
         1833: result := 54595; // Orc F
-        1834: result := 54534; // Pequilho M
-        1835: result := 54533; // Pequilho F
+        1834: result := 54533; // Pequilho F
+        1835: result := 54534; // Pequilho M
     endcase
     return result;
 endfunction
@@ -2377,48 +2260,43 @@ function UpdateCharacterSkin(who, chardata)
 endfunction
 
 function spellChoices(who)
-    var spellcfg := ReadConfigFile(":spells:config/spellcaster");
-    var keys := GetConfigIntKeys(spellcfg);
-    var mageryLevel := CInt(GetObjProperty(who, "chardata").Skills[MAGERY]);
-
-    // Get spells by circle
+    // Get spells by circle from all 4 mage school configs
     var spellsByCircle := dictionary;
     spellsByCircle[1] := array;
     spellsByCircle[2] := array;
 
-    foreach key in keys
-        var elem := FindConfigElem(spellcfg, key);
-        var spelllvl := GetConfigInt(elem, "Circle");
-        var spelltype := GetConfigString(elem, "Type");
-        
-        if (spelltype == "spellcaster" && (spelllvl == 1 || spelllvl == 2))
-            var spell := dictionary;
-            spell["id"] := key;
-            spell["circle"] := spelllvl;
-            spell["name"] := GetConfigString(elem, "Name");
-            spell["desc"] := GetConfigString(elem, "Desc");
-            spell["school"] := GetConfigString(elem, "School");
-            spellsByCircle[spelllvl].append(spell);
+    foreach cfg_path in (GetMageSchoolConfigPaths())
+        var spellcfg := ReadConfigFile(cfg_path);
+        if (!spellcfg)
+            continue;
         endif
+        var keys := GetConfigIntKeys(spellcfg);
+        foreach key in keys
+            var elem := FindConfigElem(spellcfg, key);
+            var spelllvl := GetConfigInt(elem, "Circle");
+
+            if (spelllvl == 1 || spelllvl == 2)
+                var spell := dictionary;
+                spell["id"] := key;
+                spell["circle"] := spelllvl;
+                spell["name"] := GetConfigString(elem, "Name");
+                spell["desc"] := GetConfigString(elem, "Desc");
+                spell["school"] := GetConfigString(elem, "School");
+                spellsByCircle[spelllvl].append(spell);
+            endif
+        endforeach
     endforeach
 
     var selected_spells := array;
     var btn_value;
-    var total_amount := 0;
+    var total_amount := 3;
     
-    // Calculate how many spells they can choose
-    if (mageryLevel >= 1)
-        total_amount := 1;
-    endif
-    if (mageryLevel >= 2)
-        total_amount := 2;
-    endif
-    if (mageryLevel >= 3)
-        total_amount := 3; // 2 from circle 1 + 1 from circle 2
-    endif
-    
-    while (1)
-        var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel);
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
+        var input := spellSelectionGump(who, spellsByCircle, selected_spells, total_amount);
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
 
         foreach key in (input.keys)
             btn_value := key;
@@ -2431,33 +2309,20 @@ function spellChoices(who)
             endif
         endforeach
 
-        // Validate selection
-        if (mageryLevel < 3 && selected_spells.size() != total_amount)
-            selected_spells := array;
-            SendSysMessageEx(who, "Você deve escolher exatamente " + total_amount + " magia(s) do círculo 1.", SSM_FAIL);
-        elseif (mageryLevel >= 3)
-            // Count circle 1 and 2 spells
-            var circle1_count := 0;
-            var circle2_count := 0;
-            foreach chosen_spell in (selected_spells)
-                foreach spell in (spellsByCircle[1])
-                    if (spell.id == chosen_spell.id)
-                        circle1_count += 1;
-                    endif
-                endforeach
-                foreach spell in (spellsByCircle[2])
-                    if (spell.id == chosen_spell.id)
-                        circle2_count += 1;
-                    endif
-                endforeach
-            endforeach
-            
-            if (circle1_count != 2 || circle2_count != 1)
-                selected_spells := array;
-                SendSysMessageEx(who, "Você deve escolher 2 magias do círculo 1 e 1 magia do círculo 2.", SSM_FAIL);
-            else
-                break;
+        // Validate selection: always 3 spells, max 1 from circle 2
+        var circle2_count := 0;
+        foreach chosen_spell in (selected_spells)
+            if (chosen_spell.circle == 2)
+                circle2_count += 1;
             endif
+        endforeach
+
+        if (selected_spells.size() != total_amount)
+            selected_spells := array;
+            SendSysMessageEx(who, "Você deve escolher exatamente " + total_amount + " magias.", SSM_FAIL);
+        elseif (circle2_count > 1)
+            selected_spells := array;
+            SendSysMessageEx(who, "Você pode escolher no máximo 1 magia do círculo 2.", SSM_FAIL);
         else
             break;
         endif
@@ -2467,7 +2332,7 @@ function spellChoices(who)
     return selected_spells;
 endfunction
 
-function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, mageryLevel)
+function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount)
     var gump := GFCreateGump();
     GFClosable(gump, 0);
     
@@ -2493,27 +2358,27 @@ function spellSelectionGump(who, spellsByCircle, selected_spells, total_amount, 
         i += 1;
     endforeach
     
-    // Circle 2 spells if magery level 3
-    if (mageryLevel >= 3)
-        x += 300;
-        y := 50;
-        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 2:", 1, 0);
-        y += 26;
+    // Circle 2 spells
+    x += 300;
+    y := 50;
+    GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=#6666FF>Magias do Círculo 2:", 1, 0);
+    y += 26;
 
-        i := 1;
-        foreach spell in (spellsByCircle[2])
-            var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
-            GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=" + color + ">" + spell.name, 1, 0);
-            GFTooltipText(gump, spell.desc);
-            if (!(spell.id in selected_spells) && (selected_spells.size() < total_amount))
-                GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 300+i);
-            endif
-            y += 26;
-            i += 1;
-        endforeach
-    endif
+    i := 1;
+    foreach spell in (spellsByCircle[2])
+        var color := spell.id in (selected_spells) ? "#00FF00" : "#000000";
+        GFHTMLArea(gump, x, y, 192, 24, "<BASEFONT color=" + color + ">" + spell.name, 1, 0);
+        GFTooltipText(gump, spell.desc);
+        if (!(spell.id in selected_spells) && (selected_spells.size() < total_amount))
+            GFCheckBox(gump, x+201, y, 0x9C4E, 0x9C4F, 0, 300+i);
+        endif
+        y += 26;
+        i += 1;
+    endforeach
     
     var remaining := total_amount - selected_spells.size();
+    GFHTMLArea(gump, 115, 645, 380, 20, "<BASEFONT Size=3 Color=#999999>Total: 3 magias (máx. 1 do círculo 2)", 0, 0);
+    GFHTMLArea(gump, 116, 646, 380, 20, "<BASEFONT Size=3 Color=#ffffff>Total: 3 magias (máx. 1 do círculo 2)", 0, 0);
     GFHTMLArea(gump, 115, 665, 192, 40, "<BASEFONT Size=5 Color=#999999>Escolha " + remaining + " magia(s)", 0, 0);
     GFHTMLArea(gump, 116, 666, 192, 40, "<BASEFONT Size=5 Color=#ffffff>Escolha " + remaining + " magia(s)", 0, 0);
     
@@ -2531,18 +2396,25 @@ function AlchChoices(who)
     GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas receitas", 0, 0); //shadow
     GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas receitas", 0, 0);
 
+    var menucfg := ReadConfigFile(":alchemy:AlchMenu");
+    var recipe_names := array;
+    foreach section in GetConfigStringKeys(menucfg)
+        var menuelem := FindConfigElem(menucfg, section);
+        foreach line in GetConfigStringArray(menuelem, "Item")
+            if (Find(line, "Recipe ", 1) == 1)
+                recipe_names.append(line[8, len(line)]);
+            endif
+        endforeach
+    endforeach
+
     var recipecfg := ReadConfigFile(":alchemy:config/recipes");
     var keys := GetConfigIntKeys(recipecfg);
     var recipes := array;
-    var skill := getobjproperty(who, "chardata").skills[ALCHEMY];
     foreach key in keys
         var elem := FindConfigElem(recipecfg, key);
-        var recipelvl := GetConfigInt(elem, "init");
-            if (!recipelvl || recipelvl == error);
-                recipelvl := 4;
-            endif
-        if (recipelvl <= skill)
-            var recipe := dictionary{ 
+        var name := GetConfigString(elem, "Name");
+        if (name in recipe_names && GetConfigInt(elem, "level") == 1)
+            var recipe := dictionary{
                 "id" -> key,
                 "name" -> GetConfigString(elem, "Type"),
                 "desc" -> GetConfigString(elem, "Desc")
@@ -2553,9 +2425,13 @@ function AlchChoices(who)
 
     var selected_recipes := array;
     var btn_value;
-    while (1)
-        var qtd := (skill*2)+2;
+    while (!GetObjProperty(who, "creation_completed") && who.connected)
+        var qtd := 2;
         var input := alchSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
+        if (!input || input == error)
+            sleepms(500);
+            continue;
+        endif
 
         foreach key in (input.keys)
             btn_value := key;
@@ -2616,17 +2492,73 @@ endfunction
 
 function CreateItemInicial(who, objtype, qtd)
     var item :=  GeraItemComplexo(
-                                    who,
+                                    who.backpack,
                                     objtype,
                                     qtd,
                                     RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
                                     1, 
-                                    array {0x630e}, //ouro
+                                    array {0x630e}, //exclui ouro
                                     FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
                                 );
 
     if(!item)
-        Print("Erro ao criar item incial {}".format(objtype));
-        Message("Erro ao criar item incial {}".format(objtype), SSM_FAIL).SendSys(who);
+        SendSysMessageEX(who, "Erro ao criar item inicial {} - {}".format(Hex(objtype), item), SSM_FAIL);
+    endif
+endfunction
+
+function displayRacialBonus(raca)
+    var final_str := 0;
+    var final_dex := 0;
+    var final_int := 0;
+    var meio := "Meio-";
+    var desc := "";
+
+    if (raca == ANAO)
+        final_str += 10;
+    elseif (raca == ELFO || raca == meio+ELFO)
+        final_int += 10;
+    elseif (raca == DROW || raca == meio+DROW)
+        final_dex += 5;
+        final_int += 5;
+    elseif (raca == ORC || raca == meio+ORC)
+        final_str += 5;
+        final_int += 5;
+    elseif (raca == PEQUILHO)
+        final_dex += 10;
+    else // Humanos
+        desc := "Humanos recebem +2 pontos adicionais para comprar skills.";
+    endif
+
+    var bonus_str := "";
+    if (final_str > 0)
+        bonus_str += "+STR: " + final_str + " ";
+    endif
+    if (final_dex > 0)
+        bonus_str += "+DEX: " + final_dex + " ";
+    endif
+    if (final_int > 0)
+        bonus_str += "+INT: " + final_int + " ";
+    endif
+
+    if (desc != "")
+        return desc;
+    elseif (bonus_str != "")
+        return "Bônus racial: " + bonus_str;
+    else
+        return "Sem bônus racial.";
+    endif
+endfunction
+
+function displayAttributeDescription(chardata, attribute)
+    // calcula o valor e divide por /20 pra dar o dano. e.g. : attribute / 20 a mais de dano
+    if (attribute == "Forca")
+        attribute := chardata.str;
+        return "Aumenta o dano corpo-a-corpo em " + Cint(attribute / 20) + " pontos. Também aumenta a capacidade de carga. E vida";
+    elseif (attribute == "Destreza")
+        attribute := chardata.dex;
+        return "Aumenta a velocidade e dano para armas de longo alcance em " + Cint(attribute / 20) + " pontos. Também aumenta a stamina.";
+    elseif (attribute == "Inteligencia")
+        attribute := chardata.int;
+        return "Aumenta o dano e alcance de magias em " + Cint(attribute / 20) + " pontos. Também aumenta o mana.";
     endif
 endfunction

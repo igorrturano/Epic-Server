@@ -36,7 +36,7 @@ program SpellScript(params)
 	SendSystemReport(who, "'Mova-se para parar a conjuração!'", SSM_INFO);
 
 	SetObjProperty(who, "#Casting", 1);
-	while (who.connected && !who.frozen && !who.paralyzed)
+	while (who.connected && !who.frozen)
 		if (oldx != who.x || oldy != who.y)
 			break;
 		endif
@@ -45,8 +45,8 @@ program SpellScript(params)
 
 		foreach mobile in newmobiles
 			var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
-			if (cfg[npctemplate.template].Category == "Undead" || cfg[npctemplate.template].Category == "Demons")
-				ForceDirection(mobile, 0);
+			if (cfg[npctemplate.template].Environment == "Undead" || cfg[npctemplate.template].Environment == "Demons")
+				ForceDirection(mobile);
 			endif
 			sleepms(2);
 		endforeach
@@ -82,8 +82,9 @@ program SpellScript(params)
 
 			sleepms(5);
 		endforeach
-		PerformAction(who, ANIM_CAST_AREA);
-		sleepms(800);
+		PerformAction(who, HUMAN_ANIM::CAST_AREA);
+		ConsumeMana(who, 1);
+		sleepms(400);
 	endwhile
 	EraseObjProperty(who, "#Casting");
 
@@ -95,8 +96,8 @@ program SpellScript(params)
 	return 1;
 endprogram
 
-function ForceDirection(mobile, back := 0)
-	PushBack(mobile, 8, 100, back);
+function ForceDirection(mobile)
+	PushBack(mobile, 8, 100);
 	var ev := struct{ type := EVID_PEACEMADE };
 	SendEvent(mobile, ev);
 endfunction

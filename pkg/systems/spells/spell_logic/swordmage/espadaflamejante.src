@@ -8,7 +8,7 @@ include "include/sounds";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
-include ":combat:damage";
+include ":message:model/Message";
 include "include/epicMageryUtils";
 
 program SpellScript(params)
@@ -16,9 +16,15 @@ program SpellScript(params)
 	var info := params[2];
 
 	var targ := who.weapon;
-	if (!targ)
-		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
-		return;
+
+	if (!targ || targ.objtype == FIST)
+		targ := SummonSpiritualBlade(who);
+		if (!targ)
+			return 0;
+		endif
+	elseif (WeaponWrapper(targ).Category != WEAPON_CATEGORY::SPIRITUALBLADE)
+		Message("Voce nao pode encantar uma arma nao espiritual!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
 	endif
 
 	var time := AP_GetSkill(who, ARCANA) * 10 + 180;
@@ -28,13 +34,13 @@ program SpellScript(params)
 		if (checkForElementalWeapons(who, targ))
 			return 0;
 		endif
-		ApplyElementalWeaponProperties(who, DMG_FIRE);
+		ApplyElementalWeaponProperties(who, "Fire");
 		PlaySoundEffect(targ, SFX_BLESS);
-		SendSysMessageEx(who, "Sua arma ficou coberta de chamas.", SSM_INFO);
+		Message("Sua arma ficou coberta de chamas.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 		return 1;
 	endif
 
-	SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
+	Message("Alvo invalido.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 endprogram

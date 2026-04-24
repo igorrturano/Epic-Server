@@ -18,10 +18,10 @@ program taunt(who)
 
 	PrintTextAbove(who, "*urra*");
 	PlaySoundEffect(who, 96);
-	PerformAction(who, ANIM_ATTACK_1HAND_WIDE);
+	PerformAction(who, HUMAN_ANIM::ATTACK_1HAND_SLASH);
 	// Voltar aqui depois, parece que é magia de druida. usar o outro lá de VONTADe para magos do epicmagerytutils
 	var targ := Target(who);
-	if (!CheckResist(targ, VONTADE, who))
+	if (!CheckResist(targ, WILL, who))
 		var event := struct{ "type" := EVID_FLEE, "source" := who };
 		SendEvent(targ, event);
 		PrintTextAbove(targ, "*Em panico*");

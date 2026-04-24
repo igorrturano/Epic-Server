@@ -16,7 +16,7 @@ program webTrap(mobile)
 endprogram
 
 function TrapMobile(mobile)
-	if (!CheckResist(mobile, REFLEXOS, RESIST_MEDIUM))
+	if (!CheckResist(mobile, REFLEXES, RESIST_MEDIUM))
 		SendSysMessageEx(mobile, "Você ficou preso na teia de aranha!", SSM_FAIL);
 		TS_StartTimer(mobile, "paralysis", 5);
 		SetObjProperty(mobile, "spiderWebArea", 1);

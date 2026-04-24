@@ -17,6 +17,7 @@ const DEFAULT_MATERIAL_WOOD     := 0x1bd7;
 const DEFAULT_MATERIAL_METAL    := 0x6995;
 const DEFAULT_MAXHP_WOOD        := 30;
 const DEFAULT_MAXHP_METAL       := 45;
+const DEFAULT_ADDITIONAL_HP     := 5;
 const DEFAULT_NAME_GENERIC      := "Container";
 const MATERIAL_LEATHER          := "leather";  // Para bags
 
@@ -421,7 +422,7 @@ function CreateTreasureChests(lvl, amt, rng, x, y, z, realm, lootname)
                     SetObjProperty(chest, "IsTreasureChest", 1);
                     SetObjProperty(chest, "CreatedOn", ReadGameClock());
                     SetObjProperty(chest, PROPNAME_DISPENSAVEL_FLAG, true);
-                    SetObjProperty(chest, PROPNAME_DURABILIDADE_MAX, chestStruct.maxHp * lvl);
+                    SetObjProperty(chest, PROPNAME_DURABILIDADE_MAX, chestStruct.maxHp + DEFAULT_ADDITIONAL_HP* lvl);
                     SetObjProperty(chest, PROPNAME_MATERIAL, chestStruct.material);
                     SetObjProperty(chest, "level", lvl);
 

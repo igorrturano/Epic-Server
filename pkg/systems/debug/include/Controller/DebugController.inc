@@ -1,28 +1,28 @@
 /*
  * debusystem.inc - Sistema de Depuração (Debug)
- * 
+ *
  * Este arquivo implementa um sistema de debug personalizável para o servidor POL,
- * permitindo que diferentes tipos de mensagens de depuração sejam exibidas 
+ * permitindo que diferentes tipos de mensagens de depuração sejam exibidas
  * apenas para jogadores ou usuários que ativaram os debugs correspondentes.
- * 
+ *
  * Cada tipo de debug é associado a um nome e a um nível de comando (cmdlevel).
- * O sistema permite ativar e desativar debugs dinamicamente, ajudando os 
+ * O sistema permite ativar e desativar debugs dinamicamente, ajudando os
  * desenvolvedores e administradores a monitorar eventos específicos no servidor,
  * como mudanças de clima, dano recebido, aumento de habilidades, etc.
- * 
+ *
  * Exemplo de uso:
  * - O jogador pode ativar o debug digitando ".debug up" para monitorar o aumento
  *   de habilidades.
  * - As mensagens de debug aparecerão no formato: "DEBUG <nome>: <mensagem>".
- * 
+ *
  * Para adicionar novos tipos de debug:
  * 1. Adicione um novo nome à enumeração DEBUGNAMES.
  * 2. Inclua o novo debug na lista "listDebugs" com o nível de acesso desejado.
  * 3. Utilize a função `DebugMsg` ou `DebugMsgAll` para enviar mensagens
  *    de depuração relacionadas ao novo debug.
- * 
+ *
  * Documentação adicional pode ser encontrada em: debug.src
- * 
+ *
  * Autor: [Seu Nome]
  * Data: [Data de criação]
  */
@@ -30,16 +30,15 @@
 use uo;
 
 include ":message:model/Message";
-include ":message:Translator";
 
 const PROPTAG := "#debug_";
 
 /**
  * Enumeração DEBUGNAMES
- * 
+ *
  * Lista os nomes de debug disponíveis que podem ser ativados pelos jogadores utilizando o comando `.debug <nome>`.
  * Cada valor representa uma categoria específica de debug para facilitar o diagnóstico e desenvolvimento do sistema.
- * 
+ *
  * Valores:
  * - DEBUG_ALL: Ativa todos os debugs.
  * - DEBUG_CLIMA: Debug relacionado ao sistema de clima.
@@ -70,7 +69,7 @@ endenum
  * Cada item contém:
  *   - name: Enum que identifica o tipo de debug.
  *   - "level": Nível mínimo de permissão necessário para ativar o debug.
- * 
+ *
  * Novos tipos de debug devem ser adicionados nesta lista, utilizando o enum correspondente
  * e especificando o nível de permissão adequado.
  */
@@ -91,20 +90,21 @@ var listDebugs := dictionary {
  * DebugMsg(who, debugName, msg)
  *
  * Envia uma mensagem de debug para um jogador se ele tiver a propriedade de debug habilitada.
- * 
+ *
  * A função verifica se o jogador possui a propriedade de debug específica ou a propriedade
  * DEBUG_ALL habilitada. Se alguma das condições for verdadeira, envia uma mensagem formatada
  * do sistema para o jogador.
- * 
+ *
  * @param who O jogador que receberá a mensagem de debug
  * @param debugName O nome da categoria de debug a ser verificada
  * @param msg A mensagem de debug a ser enviada
- * 
+ *
  * @returns Nenhum valor de retorno
  */
 function DebugMsg(who, debugName, msg)
 	if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
-		Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
+		msg.GetText().SetTextSource($"DEBUG {debugName}: {msg.GetText().GetTextSource()}");
+		msg.SendSys(who);
 	endif
 endfunction
 
@@ -123,9 +123,10 @@ endfunction
  * mensagem do sistema com nível de informação.
  */
 function DebugMsgAll(debugName, msg)
+	msg.GetText().SetTextSource($"DEBUG {debugName}: {msg.GetText().GetTextSource()}");
 	foreach who in EnumerateOnlineCharacters()
 		if (who.getDebugProp(debugName) || who.getDebugProp(DEBUG_ALL))
-			Message($"DEBUG {debugName}: {msg}", SSM_INFO).SendSys(who);
+			msg.SendSys(who);
 		endif
 	endforeach
 endfunction

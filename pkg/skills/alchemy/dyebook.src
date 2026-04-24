@@ -9,6 +9,8 @@ include ":spells:tnmagery";
 include "include/say";
 include ":containers:containers";
 include ":alchemy:alchemy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program book(who, book)
 
@@ -88,7 +90,7 @@ function MakeDye(pot, who)
 
 	foreach reag in (reagent_costs.keys())
 		amount := CInt(reagent_costs[reag]);
-		if (temHabilidade(who, "Alquimista Experiente") && (amount > 1))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::ALQUIMISTA_EXPERIENTE) && (amount > 1))
 			amount := CInt(amount / 2);
 		endif
 		if (!amount)

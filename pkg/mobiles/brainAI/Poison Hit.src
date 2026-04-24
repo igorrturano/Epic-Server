@@ -1,7 +1,7 @@
 use uo;
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 
@@ -14,7 +14,7 @@ program HitScript(params)
 	var rawdamage := params[6];
 	params := 0; // Not needed anymore.
 
-	PlayObjectCenteredEffect(defender, GFX_EXPLODE_1, 7, 16);
+	PlayObjectCenteredEffect(defender, FX_EXPLODE_1, 7, 16);
 	PlaySoundEffect(defender, SFX_EXPLOSION_11);
 
 	// ApplyDamageEX(defender, RandomDiceRoll("1d3"), DMG_FIRE, attacker);

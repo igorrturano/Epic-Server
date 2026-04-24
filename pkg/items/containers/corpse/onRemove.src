@@ -4,6 +4,7 @@
 use uo;
 use os;
 include "include/say";
+include "include/epicEconomyAudit";
 include ":timedScripts:timedScripts";
 include ":tn:cooldown";
 
@@ -51,4 +52,7 @@ program onRemove(character, container, item, item_amount, move_type)
 			SetObjProperty(container, "looteado", 1);
 		endif
 	endif
+
+	EA_Record(EA_TRANSFER_CORPSE_LOOT, item, item_amount, container, character,
+			  "ownerserial=" + (container.ownerserial ? Hex(container.ownerserial) : "0"));
 endprogram

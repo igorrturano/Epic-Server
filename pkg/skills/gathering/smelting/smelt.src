@@ -80,8 +80,8 @@ function OpenGump(who, pot)
 				toSmeltItems := ableToSmelt[option.oreObjType].items.toSmelt;
 
 				foreach item in toSmeltItems
-					DebugMsg(who, DEBUG_SMELTING, "Item: " + item.desc);
-					DebugMsg(who, DEBUG_SMELTING, "Quantidade: " + toSmeltAmount);
+					DebugMsg(who, DEBUG_SMELTING, Message("Item: " + item.desc));
+					DebugMsg(who, DEBUG_SMELTING, Message("Quantidade: " + toSmeltAmount));
 				endforeach
 				break;
 			endif
@@ -214,9 +214,9 @@ endfunction
 function SmeltOres(who, pot, mainOre, itemsToSmelt, amt)
 	if (CheckSmeltDifficulty(who, mainOre))
 		if (Len(itemsToSmelt) > 1)
-			SendSysMessageEx(who, "Você fez a fusão entre os metais.", FONT_NORMAL, 90);
+			SendSysMessageEx(who, "Você fez a fusão entre os metais.", COLOR_CYAN_LIGHT , FONT_NORMAL);
 		else
-			SendSysMessageEx(who, "Você derreteu o minério e retirou as impurezas", FONT_NORMAL, 90);
+			SendSysMessageEx(who, "Você derreteu o minério e retirou as impurezas", COLOR_CYAN_LIGHT , FONT_NORMAL);
 		endif
 
 		var prop := struct{ "ingot" := mainOre.ingotObjType, "amount" := amt };
@@ -245,6 +245,9 @@ function CoolPot(who, pot)
 		CreateItemInBackpack(who, inPot.ingot, Cint(inPot.amount) * 12);
 	else
 		CreateItemInBackpack(who, inPot.ingot, CInt(inPot.amount));
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH))
+			smeltaImpurezasRaras(who, CInt(inPot.amount));
+		endif
 	endif
 endfunction
 
@@ -265,10 +268,10 @@ function SmeltFail(who, ores, amt)
 		amtLost := amt;
 	endif
 
-	DebugMsg(who, DEBUG_SMELTING, "***ERROU***");
-	DebugMsg(who, DEBUG_SMELTING, $"Rolagem de erro (0-5): {roll}");
-	DebugMsg(who, DEBUG_SMELTING, $"Fator de perda pelo {GATHERING}: {lostBySkill}");
-	DebugMsg(who, DEBUG_SMELTING, $"Perdeu: {amtLost}");
+	DebugMsg(who, DEBUG_SMELTING, Message("***ERROU***"));
+	DebugMsg(who, DEBUG_SMELTING, Message($"Rolagem de erro (0-5): {roll}"));
+	DebugMsg(who, DEBUG_SMELTING, Message($"Fator de perda pelo {GATHERING}: {lostBySkill}"));
+	DebugMsg(who, DEBUG_SMELTING, Message($"Perdeu: {amtLost}"));
 
 	SendSysMessageEx(who, "Você errou o processo e perdeu parte dos minérios.", FONT_NORMAL,
 				  SSM_FAIL);
@@ -281,6 +284,9 @@ endfunction
 
 function CheckSmeltDifficulty(who, ore)
 	var diff := DetermineMiningDifficulty(ore.oreObjType);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
+		diff := diff - 5;
+	endif
 	if (SkillCheck(who, GATHERING, diff, ((diff / 2) + 10)) > 0)
 		return 1;
 	endif

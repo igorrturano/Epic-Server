@@ -5,6 +5,7 @@ use os;
 include ":food:drink";
 include ":timedScripts:poisonUtil";
 include "include/client";
+include ":fls_core:fls_characters";
 
 const SOUND_DRINK_LIQUID := 0x31;
 const SOUND_DRINK_ALCOHOL := 0x32;

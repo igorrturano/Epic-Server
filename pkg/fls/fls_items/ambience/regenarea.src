@@ -27,7 +27,7 @@ program regenarea(rune)
 
 			if (GetObjProperty(rune, "hits"))
 				var hits_amount := CInt(GetObjProperty(rune, "hits"));
-				HealDamage(people, hits_amount);
+				ApplyEpicHealing(people, hits_amount);
 				healed += hits_amount;
 			endif
 

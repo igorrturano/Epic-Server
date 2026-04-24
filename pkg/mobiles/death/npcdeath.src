@@ -21,17 +21,15 @@ include ":tn:questevent";
 include ":attributes:vitals";
 include ":combat:hitscripts";
 include "include/say";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":tn:npcutil";
+include ":epicAI:include/epicNPCCombat";   // CleanupDoppelgangerEquipment
 include ":taming:taming";
 include "include/epicCombatUtils";
 include ":commands:possess";
 include ":expbar:expbar";
-include ":achievements:CombatController";
 include ":epicAI:epicai";
-// include ":kingdom:conquest";
-// include ":spawnnet:spawnnet";
-// include ":spawnregion:spawn";
+// include ":entropy:entropy";
 
 program core_npcDeath(params)
 	var corpse := params[1];
@@ -59,8 +57,11 @@ program core_npcDeath(params)
 	if (cint(GetObjProperty(corpse, "soulstone")) == 1)
 		CreateItemInContainer(corpse, "soulstone", 1);
 	endif
-	handleExpGain(corpse);
-
+	var nearbyMobs := array{};
+	if (!GetObjProperty(corpse, "MirrorImage") && !GetObjProperty(corpse, "summoned") && !GetObjProperty(corpse, "owner"))
+		nearbyMobs := HandleExpGain(corpse);
+	endif
+	// handleEntropyGain(corpse);
 	foreach item in (EnumerateItemsInContainer(corpse))
 		// Lista de itens que podem dropar do npc, mas ficam com prop de restrito_mob, não deixando o player equipar
 		// var lista_itens := {
@@ -87,13 +88,14 @@ program core_npcDeath(params)
 		endif
 
 		if (item.isA(POLCLASS_ARMOR) || item.isA(POLCLASS_WEAPON))
-			if (!GetObjProperty(item, "itemunico") && !GetObjProperty(item, "#LootedBy"))
+			if (GetObjProperty(item, "itemunico") == error && GetObjProperty(item, "LootedBy") == error)
 				item.hp -= Cint(item.hp * 0.8);
 			endif
 		endif
 	endforeach
 
 	HandleEpicBossLoot(corpse);
+	HandleLeverSpawnedBoss(corpse);
 
 	if (getObjProperty(corpse, "owner")) // se for tamed, atualiza a prop tamedpets do master
 		var lastDamage := GetObjProperty(corpse, "LastDamage");
@@ -107,10 +109,12 @@ program core_npcDeath(params)
 				nome := GetObjProperty(fin, "nome_inicial");
 			endif
 		endif
-		var coords := GetObjProperty(corpse, "anchor");
+		var coords := { corpse.x, corpse.y, corpse.z, CStr(corpse.realm) };
 		var trueBoss := GetObjProperty(corpse, "true_boss");
 		if (fin && nome)
-			Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, corpse.desc,
+			var pet_name := corpse.desc;
+			pet_name["A corpse of "] := "";
+			Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, pet_name,
 										  			region, coords, 0 });
 		endif
 
@@ -135,6 +139,7 @@ program core_npcDeath(params)
 			elseif (!getobjproperty(corpse, "Necro"))
 				GetNumPets(master);
 				var teste := GetObjProperty(corpse, "LastDP");
+				SetObjProperty(master, "LastPetCorpse", corpse.serial);
 				if (GetObjProperty(corpse, "NeverRelease")) // &&
 					// if (GetObjProperty(corpse, "LastDP") >= 10 ) ) // PARA TESTAR VOLTAR DPS
 					SendSysMessageEx(master, "Seu pet fiel irá acordar em 3 minutos", SSM_INFO);
@@ -174,11 +179,11 @@ program core_npcDeath(params)
 					MoveObjectToLocation(who, corpse.x, corpse.y, corpse.z, corpse.realm, MOVEOBJECT_FORCELOCATION);
 				else
 					leaveGolem(who);
+					unpossess(who, 1, 1);
+					who.concealed := 0;
 				endif
 
 				EraseObjProperty(who, "golem_maker");
-				EraseObjProperty(who, "pilotando");
-				who.concealed := 0;
 				PrintTextAbove(corpse, "*EJETAR*");
 				sleep(1);
 				PushBackEX(who, 3, 300);
@@ -197,7 +202,7 @@ program core_npcDeath(params)
 		endif
 	endif
 
-	foreach mob in (ListMobilesNearLocation(corpse.x, corpse.y, corpse.z, 5, corpse.realm))
+	foreach mob in nearbyMobs
 		// PrintTextAbove(corpse, "procurando mobs " + mob.name);
 		if (cint(GetObjProperty(mob, "#satisfacaosadica")))
 			// 	PrintTextAbove(corpse, "tem satisfacao " + cint(GetObjProperty(mob, "#satisfacaosadica")) + " " + readgameclock() );
@@ -208,7 +213,7 @@ program core_npcDeath(params)
 				// 		SetobjProperty(mob, "souls", souls);
 				PlayMovingEffect(corpse, mob, 14202, 5, 1, 0);
 				PlaySoundEffect(mob, 383);
-				HealFLS(mob, 5);
+				applyEpicHealing(mob, 5);
 				recalcvitals(mob);
 			endif
 		endif
@@ -216,9 +221,8 @@ program core_npcDeath(params)
 		var shaman_reap_bonus := Cint(AP_GetSkill(mob, THEOLOGY) / 10);
 
 		// HABILIDADES SHAMAN
-		if (TemHabilidade(mob, "Sede de Sangue"))
-			HealFLS(mob, shaman_reap_bonus);
-		// colocar o efeito roxinho
+		if (MobileWrapper(mob).HasAbility(ABILITY_ID::BLOODTHIRST))
+			applyEpicHealing(mob, shaman_reap_bonus);
 		endif
 		// FIM HABILIDADES SHAMAN
 
@@ -271,6 +275,8 @@ program core_npcDeath(params)
 
 	var corpse_name := corpse.desc;
 	SetObjProperty(corpse, "originalname", corpse_name);
+	var npc_name := corpse_name;
+	npc_name["A corpse of "] := "";
 	corpse_name["A corpse of"] := "corpo de";
 	SetName(corpse, corpse_name);
 
@@ -356,14 +362,13 @@ program core_npcDeath(params)
 					nome := GetObjProperty(fin, "nome_inicial");
 				endif
 			endif
-			var coords := GetObjProperty(corpse, "anchor");
+			var coords := { corpse.x, corpse.y, corpse.z, CStr(corpse.realm) };
 			var trueBoss := GetObjProperty(corpse, "true_boss");
 			if (isBoss(corpse))
-				coords.append(corpse.realm);
 				SetObjProperty(corpse, "coords", coords);
 				if (trueBoss == 1 && fin && nome) // Para acionar o DiscordWebhook
 					var tipo := "boss";
-					Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, corpse_name,
+					Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, npc_name,
 										  					region, coords, corpse });
 				elseif (fin && fin.cmdlevel == 4 && trueBoss == 1)
 					var finOwner := Cint(GetObjProperty(fin, "owner"));
@@ -371,7 +376,7 @@ program core_npcDeath(params)
 						var fin_owner := SystemFindObjectBySerial(finOwner);
 						if (fin_owner)
 							var tipo := "boss";
-							Start_script(":DiscordWebhook:discord", { tipo, nome, fin_owner.acctname, corpse_name,
+							Start_script(":DiscordWebhook:discord", { tipo, nome, fin_owner.acctname, npc_name,
 										  							region, coords, 0 });
 						endif
 					endif
@@ -511,6 +516,41 @@ function HandleEpicBossLoot(corpse)
 
 		item.movable := 1;
 	endforeach
+
+	return 1;
+endfunction
+
+function HandleLeverSpawnedBoss(corpse)
+	// Check if this boss was spawned by a lever
+	var lever_serial := GetObjProperty(corpse, "spawned_by_lever");
+	if (!lever_serial)
+		return 0;
+	endif
+
+	// Find the lever
+	var lever := SystemFindObjectBySerial(lever_serial);
+	if (!lever || lever == error)
+		return 0;
+	endif
+
+	// Get respawn configuration (default 120-150 minutes)
+	var respawn_min := GetObjProperty(lever, "respawn_min");
+	var respawn_max := GetObjProperty(lever, "respawn_max");
+	if (!respawn_min) respawn_min := 120; endif
+	if (!respawn_max) respawn_max := 150; endif
+
+	// Calculate random respawn time in seconds
+	var respawn_minutes := RandomInt(respawn_max - respawn_min + 1) + respawn_min;
+	var respawn_seconds := respawn_minutes * 60;
+
+	// Set cooldown on lever (cooldown.inc uses "#" prefix internally)
+	SetObjProperty(lever, "#boss_respawn", Cint(ReadGameClock() + respawn_seconds));
+
+	// Unlock the lever
+	EraseObjProperty(lever, "#inuse");
+
+	// Clean up boss reference
+	EraseObjProperty(lever, "champ");
 
 	return 1;
 endfunction

@@ -19,16 +19,19 @@ program drink_orange(who, potion)
 	if (!checkifcandrink(who, "orange"))
 		return;
 	endif
+	var tier := peganivelpocao(who, potion);
 	var potion_strength := 1;
 	var time := 120;
-	case (potion.objtype)
-		0xdc14: potion_strength := 2; time := 120;
-		0xfa50: potion_strength := 3; time := 240;
-		0xdc16: potion_strength := 5; time := 480;
+	case (tier)
+		1: potion_strength := 2; time := 120;
+		2: potion_strength := 3; time := 240;
+		3: potion_strength := 4; time := 480;
+		4: potion_strength := 5; time := 960;
 	endcase
-	empty_bottle(who, potion);
+	
 
 	var bonus := cint(getobjproperty(potion, "bonus") / 5);
 	TS_CurePoison(who, time + bonus, "P", potion_strength);
+	empty_bottle(who, potion); 
 
 endprogram

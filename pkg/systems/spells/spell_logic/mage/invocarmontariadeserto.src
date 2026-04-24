@@ -24,7 +24,7 @@ program summonSkeletaSteed(params)
 	var i := 0;
 	who.frozen := 1;
 	while (i < 4)
-		PerformAction(who, ANIM_CAST_DIR);
+		PerformAction(who, HUMAN_ANIM::CAST_DIR);
 		sleep(1);
 		i++;
 	endwhile

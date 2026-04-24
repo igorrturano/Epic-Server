@@ -1,10 +1,12 @@
 
 use uo;
+use os;
 use util;
 use cfgfile;
 use datafile;
+use vitals;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":debug:Controller/DebugController";
 
 // Calendar constants
@@ -172,6 +174,10 @@ function weathereffects(type, duration, severity := 5)
         
         var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
         foreach person in EnumerateOnlineCharacters()
+            if(InDungeon(person))
+                continue;
+            endif
+            
 			if (!person.isUnderRoof())
 				wetPowder(person);
             	SetWeatherForPlayer(person, type, 50);
@@ -197,7 +203,7 @@ function endweather()
 			moveobjecttolocation(player, player.x, player.y, player.z, player.realm);
 		endif
 	endforeach
-	DebugMsgAll(DEBUG_CLIMA, "Stopping weather effects.");
+	DebugMsgAll(DEBUG_CLIMA, Message("Stopping weather effects."));
 endfunction
 
 function WhatSeason()
@@ -254,26 +260,9 @@ endfunction
 function MoonFase()
     var currentDate := getCurrentDate();
     SetGlobalProperty("moonfase", currentDate.moonPhase);
+    sleepms(5);
+    UpdateGlobalEventLevers(currentDate.moonPhase);
 endfunction
-
-function GetMoonLightMod()
-    var fase := GetGlobalProperty("moonfase");
-
-    case (fase)
-       "Kalendae":    return 24; sleepms(5); UpdateGlobalEventLevers("Kalendae");
-       "Nonae":       return 21; sleepms(5); UpdateGlobalEventLevers("Nonae");
-       "Idus":        return 16; sleepms(5); UpdateGlobalEventLevers("Idus");
-       "Decrescens":  return 21; sleepms(5); UpdateGlobalEventLevers("Decrescens");
-    endcase
-endfunction
-// function output(msgtext)
-// 	foreach player in enumerateonlinecharacters()
-// 		if (player.cmdlevel)
-// 			SendSysMessageEx(player, "Weather debug:" + msgtext, 3, 87);
-// 		endif
-// 	endforeach
-// 	print("Weather debug:" + msgtext);
-// endfunction
 
 function getDay()
     var day := GetGlobalProperty("daynumber");
@@ -685,7 +674,6 @@ function GetTempRegion(diaounoite, who, x, y)
 				tempmod := (tempmod - 20);
 			endif
 			if (InDungeon(who))
-				SendSysMessageEx(who, "Esse comando nao pode ser usado dentro de Dungeons ou Cavernas.", SSM_FAIL);
 				return 999;
 			endif
 			return tempmod;
@@ -805,18 +793,41 @@ function resistPenaltyByClimate(temp)
     endif
 endfunction
 
+function GetEventCategory(event_type)
+   var day_events := {"dia", "noite"};
+   var season_events := {"Primavera", "Verão", "Outono", "Inverno"};
+   var moon_events := {"Kalendae", "Nonae", "Idus", "Decrescens"};
+
+   if (event_type in day_events)
+      return day_events;
+   elseif (event_type in season_events)
+      return season_events;
+   elseif (event_type in moon_events)
+      return moon_events;
+   endif
+
+   return array{};
+endfunction
+
 function UpdateGlobalEventLevers(event_type)
    var ds := OpenDataFile(":itemutils:lever_events2");
-   
+
    var keys_ds := ds.Keys();
-   
+
    if (keys_ds.size() == 0)
       print("ERRO: DataFile está vazio! Verificar arquivo físico.");
       return;
    endif
-   
+
+   var category := GetEventCategory(event_type);
+
    // Percorre TODOS os eventos do DS
    foreach event in keys_ds
+      // Só afeta levers da mesma categoria (dia/noite, estação, ou lua)
+      if (category.size() > 0 && !(event in category))
+         continue;
+      endif
+
       var elem := ds.FindElement(event);
       if (elem)
          var lever_string := elem.GetProp("levers");
@@ -825,11 +836,11 @@ function UpdateGlobalEventLevers(event_type)
             var lever_list := SplitWords(lever_string);
             var valid_levers := array{};
             var needs_cleanup := 0;
-            
+
             foreach serial_str in lever_list
                var lever_serial := CInt("0x" + serial_str);
                var lever := SystemFindObjectBySerial(lever_serial);
-               
+
                if (lever)
                   // Se é o evento atual, mostra. Se não é, esconde.
                   if (event == event_type)
@@ -838,7 +849,7 @@ function UpdateGlobalEventLevers(event_type)
                      lever.invisible := 1;
                   endif
                   valid_levers.append(serial_str);
-               else 
+               else
                   //needs_cleanup := 1;
                   //print("DEBUG: needs_cleanup marcado como 1");
                endif
@@ -873,4 +884,192 @@ function UpdateGlobalEventLevers(event_type)
          endif
       endif
    endforeach
+endfunction
+
+/*
+ * UpdateAllShiftMerchants()
+ *
+ * Purpose
+ * Updates visibility of all registered shift-based merchants
+ * Called at sunrise and sunset to hide/show merchants based on their shift
+ *
+ * Registry Structure:
+ * ShiftMerchantRegistry = { serial: shift_value }
+ * shift_value can be: "night", "noite", "day", "dia"
+ */
+function UpdateAllShiftMerchants()
+	var registry := GetGlobalProperty("ShiftMerchantRegistry");
+	if (!registry || registry == error)
+		// No merchants registered yet
+		return;
+	endif
+
+	var current_time := GetGlobalProperty("dia");
+	var is_daytime := (current_time == "dia");
+	var removed_count := 0;
+	var updated_count := 0;
+	var registry_changed := 0;
+
+	// Create a list of dead serials to remove
+	var dead_serials := array{};
+
+	foreach serial in (registry.keys())
+		var npc := SystemFindObjectBySerial(serial);
+
+		if (!npc)
+			// NPC doesn't exist anymore - mark for removal
+			dead_serials.append(serial);
+			removed_count := removed_count + 1;
+			continue;
+		endif
+
+		// Read shift from NPC property (allows in-game changes)
+		var shift := GetObjProperty(npc, "shift");
+		if (!shift || shift == error)
+			// No property set, use registry value as fallback
+			shift := registry[serial];
+		else
+			// Update registry if property has changed
+			if (shift != registry[serial])
+				registry[serial] := shift;
+				registry_changed := 1;
+			endif
+		endif
+
+		var is_night_shift := (shift == "night" || shift == "noite");
+		var is_day_shift := (shift == "day" || shift == "dia");
+
+		// Apply visibility based on shift
+		if (is_night_shift)
+			// Night shift: hide during day, show at night
+			if (is_daytime)
+				npc.concealed := 1;
+			else
+				npc.concealed := 0;
+			endif
+			updated_count := updated_count + 1;
+		elseif (is_day_shift)
+			// Day shift: show during day, hide at night
+			if (is_daytime)
+				npc.concealed := 0;
+			else
+				npc.concealed := 1;
+			endif
+			updated_count := updated_count + 1;
+		endif
+	endforeach
+
+	// Clean up dead NPCs from registry and save any updated shift values
+	if (dead_serials.size() > 0)
+		foreach serial in dead_serials
+			registry.erase(serial);
+		endforeach
+		registry_changed := 1;
+	endif
+
+	// Save registry if it was modified (dead NPCs removed or shifts updated)
+	if (registry_changed)
+		SetGlobalProperty("ShiftMerchantRegistry", registry);
+	endif
+
+	// Debug output
+	print("[SHIFT] Updated " + updated_count + " merchants, removed " + removed_count + " dead NPCs");
+endfunction
+
+function RemoveHeatMod(who, mod)
+	Set_Critical(1);
+
+	if (mod == 1)
+		if (GetObjProperty(who, "climate_penalty") != error)
+			var fortitudeMod := GetObjProperty(who, "#FortitudeMod");
+			if (fortitudeMod != error)
+				var climatePenalty := GetObjProperty(who, "climate_penalty");
+				SetObjProperty(who, "#FortitudeMod", fortitudeMod - climatePenalty);
+			endif
+			EraseObjProperty(who, "climate_penalty");
+		endif
+	elseif (mod == 2)
+		if (GetObjProperty(who, "stam_penalty") != error)
+			var stammod := cint(GetObjProperty(who, "stammod"));
+			var manamod := cint(GetObjProperty(who, "manamod"));
+			var stam_penalty := GetObjProperty(who, "stam_penalty");
+			var mana_penalty := GetObjProperty(who, "mana_penalty");
+			SetObjProperty(who, "stammod", stammod - stam_penalty);
+			SetObjProperty(who, "manamod", manamod - mana_penalty);
+			EraseObjProperty(who, "stam_penalty");
+			EraseObjProperty(who, "mana_penalty");
+			RecalcVitals(who);
+		endif
+	endif
+
+	Set_Critical(0);
+endfunction
+
+function ApplyHeatMod(who, mod)
+	Set_Critical(1);
+	if (who.gender == 1)
+		PlaySoundEffect(who, 0x31A);
+	else
+		PlaySoundEffect(who, 0x42A);
+	endif
+
+	if (mod == 1)
+		var temp := getTemperature(who);
+		var fortitudePenalty := resistPenaltyByClimate(temp) * -1;
+		var currentFortitudeMod := GetObjProperty(who, "#FortitudeMod");
+		if (currentFortitudeMod == error)
+			currentFortitudeMod := 0;
+		endif
+		SetObjProperty(who, "#FortitudeMod", currentFortitudeMod + fortitudePenalty);
+		SetObjProperty(who, "climate_penalty", fortitudePenalty);
+	endif
+
+	Set_Critical(0);
+endfunction
+
+function RemoveColdMod(who, mod)
+	Set_Critical(1);
+
+	if (mod == 1)
+		if (GetObjProperty(who, "climate_penalty") != error)
+			var fortitudeMod := GetObjProperty(who, "#FortitudeMod");
+			if (fortitudeMod != error)
+				var climatePenalty := GetObjProperty(who, "climate_penalty");
+				SetObjProperty(who, "#FortitudeMod", fortitudeMod - climatePenalty);
+			endif
+			EraseObjProperty(who, "climate_penalty");
+		endif
+	elseif (mod == 2)
+		if (GetObjProperty(who, "penalidadetaiga") != error)
+			var stammod := cint(GetObjProperty(who, "stammod"));
+			var penalidade := GetObjProperty(who, "penalidadetaiga");
+			SetObjProperty(who, "stammod", stammod - penalidade);
+			EraseObjProperty(who, "penalidadetaiga");
+			RecalcVitals(who);
+		endif
+	endif
+
+	Set_Critical(0);
+endfunction
+
+function ApplyColdMod(who, mod)
+	Set_Critical(1);
+	if (who.gender == 1)
+		PlaySoundEffect(who, 0x31A);
+	else
+		PlaySoundEffect(who, 0x42A);
+	endif
+
+	if (mod == 1)
+		var temp := getTemperature(who);
+		var fortitudePenalty := resistPenaltyByClimate(temp) * -1;
+		var currentFortitudeMod := GetObjProperty(who, "#FortitudeMod");
+		if (currentFortitudeMod == error)
+			currentFortitudeMod := 0;
+		endif
+		SetObjProperty(who, "#FortitudeMod", currentFortitudeMod + fortitudePenalty);
+		SetObjProperty(who, "climate_penalty", fortitudePenalty);
+	endif
+
+	Set_Critical(0);
 endfunction

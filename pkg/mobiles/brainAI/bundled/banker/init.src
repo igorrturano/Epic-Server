@@ -24,5 +24,10 @@ program BrainCriticalScript(params)
 		sleepms(2);
 	endforeach
 
+	// Set default language to Common (no prefix)
+	if (!GetObjProperty(npc, "lingua_escolhida"))
+		SetObjProperty(npc, "lingua_escolhida", "Comum");
+	endif
+
 	return 1;
 endprogram

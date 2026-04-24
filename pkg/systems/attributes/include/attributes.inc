@@ -25,7 +25,7 @@ include ":attributes:attributeConstants";
 include ":attributes:skillCheck";
 include ":attributes:advanceCheck";
 include ":datafile:datafile";
-include ":charactercreation:habilidades";
+// V3: TemHabilidade removed - use MobileWrapper.HasAbility(ABILITY_ID::X) instead
 
 function GetSkillIdFromName(name)
 	var cfg := AP_GetAttributesCfgFile();
@@ -225,10 +225,10 @@ function maolivre(who, qtd, checkmount := 1)
 endfunction
 
 function GetHP(who)
-	var hp := CInt(AP_GetTrueStat(who, "Strength"))/4;
+	var hp := CInt(AP_GetTrueStat(who, "Strength"));
 
-	if (TemHabilidade(who, "Nazg Gûl"))
-		hp := hp + 25;
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::RESISTENCIA_DO_DESERTO))
+		hp := hp + 30;
 	endif
 
 	hp := hp + Cint(GetObjProperty(who, "hitsmod")) + Cint(GetObjProperty(who, "#hitsmod"));
@@ -250,11 +250,11 @@ function GetPH(who)
 		ph := 15; // 15 + 60; 
 	endif
 
-	if (TemHabilidade(who, "Caçador Implacável"))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_IMPLACAVEL))
 		ph := ph + 25;
 	endif
 
-	ph := ph + Cint(GetObjProperty(who, "phmod")) + Cint(GetObjProperty(who, "#phmod")) +  CInt(AP_GetTrueStat(who, "Strength"))/2;
+	ph := ph + Cint(GetObjProperty(who, "phmod")) + Cint(GetObjProperty(who, "#phmod"));
 
 	return ph;
 endfunction

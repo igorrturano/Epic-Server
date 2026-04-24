@@ -34,25 +34,25 @@ function NPC_HasSummonedCreaturesNearby(opponent)
 endfunction
 
 function NPC_GetNearbyAllies(mobile)
+    // Use GetNearbyMobilesOnce (already script-level cached) and filter
+    var mobiles := GetNearbyMobilesOnce(mobile, 8, LISTEX_FLAG_NORMAL);
     var allies := array{};
-    foreach mobile in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 8)
-        if (isAlly(mobile))
-            allies.append(mobile);
+    foreach mob in mobiles
+        if (isAlly(mob))
+            allies.append(mob);
         endif
-        sleepms(2);
     endforeach
-    
     return allies;
 endfunction
 
 function NPC_GetPlayersPetsAndSummonsNearby(mobile)
+    // Use GetNearbyMobilesOnce (already script-level cached) and filter
+    var mobiles := GetNearbyMobilesOnce(mobile, 8, LISTEX_FLAG_NORMAL);
     var enemies := array{};
-    foreach mobile in ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 8)
-        if (!isAlly(mobile))
-            enemies.append(mobile);
+    foreach mob in mobiles
+        if (!isAlly(mob))
+            enemies.append(mob);
         endif
-        sleepms(2);
     endforeach
-    
     return enemies;
 endfunction

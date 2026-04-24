@@ -7,7 +7,7 @@ include "include/say";
 include ":tn:tngumps";
 
 program textcmd_attack(who, txt)
-	var colors := { AIGLANA, HAROLOTH, LESTE, BJORSKA, ALURIEL, BADURAN, GULTHRAK, POLKINEA, "Rosa",
+	var colors := { AIGLANA, HAROLOTH, LESTE, BJORSKA, ALURIEL, BADURAN, GULTHRAK, COLHESIANA, "Rosa",
 					"Vermelho", "Azul", "Verde", "Amarelo", "Laranja", "Neutro", "Cinza" };
 
 	var color := txt ? txt : RadioGump(who, 250, 400, "Escolha a cor para pintar", colors);
@@ -106,7 +106,7 @@ function GetColorValue(color)
 							   			RandomInt({ 0, 946, 947 })                        // Cinza
 			
 							 			});
-		POLKINEA:
+		COLHESIANA:
 			return RandomColorFromRanges({ RandomIntMinMax(1501, 1554), // Laranja
 							   			
 							   			RandomIntMinMax(1701, 1754),                      // Amarelo

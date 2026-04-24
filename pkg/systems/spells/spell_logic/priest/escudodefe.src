@@ -1,18 +1,18 @@
 use uo;
-use os;
 
 include ":attributes:attributes";
 include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
 include "include/tileEffects";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
-	params := 0; // No longer needed
+	var spell := params[3];
+	params := 0;
 
 	if (!targ)
 		SendSysMessageEx(who, "Escolha um alvo para o Escudo de Fe.", SSM_REQUEST);
@@ -29,35 +29,41 @@ program SpellScript(params)
 		return;
 	endif
 
-	// Calculate damage reduction bonus based on Theology skill / 25
+	// Remove efeito anterior se existir
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	// Calculate resist bonus based on Theology skill / 25
 	var theology := AP_GetSkill(who, THEOLOGY);
-	var bonus := cint(theology / 25);
+	var bonus := CInt(theology / 30);
 	if (bonus < 1)
 		bonus := 1;
 	endif
 
 	// Calculate duration in seconds based on Theology / 2
-	var duration := cint(theology / 2);
+	var duration := CInt(theology / 2);
 	if (duration < 5)
 		duration := 5;
 	endif
 
-	// Set the damage reduction bonus property on the target
-	SetObjProperty(targ, "#damagereduction", bonus);
+	var opts := struct{};
+	opts.+slash_resist := bonus;
+	opts.+piercing_resist := bonus;
+	opts.+blunt_resist := bonus;
+	opts.+buff_category := "armor_protection";
+	opts.+displayname := "Escudo de Fé";
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{
+		fx := FX_BLESS_EFFECT,
+		fx_speed := 2,
+		fx_duration := 2,
+		sound := SFX_BLESS
+	};
 
-	// Set a cooldown for ShieldOfFaith
-	SetCooldown(targ, "ShieldOfFaith", duration);
-
-	// Visual and audio feedback
-	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_BLESS_EFFECT, 2, 2);
-	PlaySoundEffect(targ, SFX_BLESS);
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
 
 	SendSysMessageEx(who, "Voce concede um Escudo de Fe a " + targ.name + ".", SSM_INFO);
-	if (targ != who)
-		SendSysMessageEx(targ, "Voce recebe um Escudo de Fe. (-" + bonus + " de dano recebido por " + duration + " segundos)", SSM_INFO);
-	else
-		SendSysMessageEx(targ, "Voce recebe um Escudo de Fe. (-" + bonus + " de dano recebido por " + duration + " segundos)", SSM_INFO);
-	endif
+	SendSysMessageEx(targ, "Voce recebe um Escudo de Fe. (+" + bonus + " resistencia por " + duration + " segundos)", SSM_INFO);
 
 	return 1;
 endprogram

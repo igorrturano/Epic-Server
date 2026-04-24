@@ -10,6 +10,8 @@ include ":attributes:attributes";
 include ":attributes:skillCheck";
 include ":crafting:toolWear";
 include ":gathering:mining";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 const BLOCK_OF_STONE := 0x5001;
 const MINING_ANIMATION := 0x0B;
@@ -76,12 +78,12 @@ function MiningLoop(who, tool, my_x, my_y, my_facing, location_name)
 
 	var difficulty := CInt(100 - (resource_amount * 100 / MAX_RESOURCE_AMOUNT));
 
-	if (SkillCheck(who, GATHERING, difficulty) > 0 || TemHabilidade(who, "Arquiteto"))
+	if (SkillCheck(who, GATHERING, difficulty) > 0 || MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
 		CreateItemInBackPack(who, BLOCK_OF_STONE, 1);
 		SendSysMessage(who, "Voce minerou um bloco de pedra.");
 		return 1;
 	else
-		if (!TemHabilidade(who, "Arquiteto")) // Habilidade de construcao necessaria para extrair pedras
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT)) // Habilidade de construcao necessaria para extrair pedras
 			SendSysMessageEx(who, "Voce nao tem habilidade de arquiteto.", SSM_INFO);
 			return;
 		endif

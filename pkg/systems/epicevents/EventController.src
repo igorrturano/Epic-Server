@@ -1,0 +1,108 @@
+use uo;
+use os;
+
+include ":epicevents:Controller/SpawnController";
+include ":epicevents:Controller/TriggerController";
+include ":epicevents:Controller/ActionController";
+include ":epicevents:Model/EventConfig";
+include ":epicevents:Model/TriggerConfig";
+include ":epicevents:Model/ActionConfig";
+include "include/sysEvent";
+
+const EVENT_LOOP_THROTTLE_MS := 100;
+
+program eventController(item)
+	var ev;
+	Set_Event_Queue_Size(50);
+
+	var config := LoadEventConfig(item);
+	if (!config)
+		return;
+	endif
+
+	var trigger_config := SetupTriggerEvents(item, config);
+
+	while (true)
+		ev := os::wait_for_event(1);
+		if (ev)
+			if (ProcessTriggerEvent(item, ev, trigger_config))
+
+				// Set cooldown IMMEDIATELY after trigger validation
+				var min_minutes := CInt(config.min_delay);
+				var max_minutes := CInt(config.max_delay);
+
+				if (min_minutes < 1)
+					min_minutes := 1;
+				endif
+				if (max_minutes < min_minutes)
+					max_minutes := min_minutes;
+				endif
+
+				// Randomize delay between min and max
+				var delay_minutes := RandomInt(max_minutes - min_minutes + 1) + min_minutes;
+				var cooldown_seconds := delay_minutes * 60;
+
+				UpdateTriggerCooldown(item, cooldown_seconds);
+
+				// Execute configured actions (success/failure doesn't affect cooldown)
+				if (config.actions && config.actions.size() > 0)
+					ExecuteActions(item, ev, config.actions, config.condition);
+				endif
+
+				// Destroy event item if one-time only
+				if (config.one_time_only)
+					DestroyItem(item);
+					return;
+				endif
+			endif
+		endif
+		sleepms(EVENT_LOOP_THROTTLE_MS);
+	endwhile
+endprogram
+
+function LoadEventConfig(item)
+	var config_struct := GetObjProperty(item, "config");
+	if (!config_struct)
+		return 0;
+	endif
+
+	var config := EventConfig();
+	config.FromStruct(config_struct);
+	return config;
+endfunction
+
+function SetupTriggerEvents(item, config)
+	// Get trigger type
+	var trigger_type := config.trigger_type;
+
+	// Get radius from trigger_params if available
+	var radius := DEFAULT_TRIGGER_RADIUS;
+	if (config.trigger_params && config.trigger_params.radius)
+		radius := CInt(config.trigger_params.radius);
+		if (radius < 1)
+			radius := DEFAULT_TRIGGER_RADIUS;
+		endif
+	endif
+
+	// Only enable the specific event type needed
+	case (trigger_type)
+		"SPEECH":
+			RegisterForSpeechEvents(item, radius);
+		"ENTEREDAREA":
+			EnableEvents(SYSEVENT_ENTEREDAREA, radius);
+		"LEFTAREA":
+			EnableEvents(SYSEVENT_LEFTAREA, radius);
+		"ITEM_GIVEN":
+			EnableEvents(SYSEVENT_ITEM_GIVEN);
+		"DOUBLECLICKED":
+			EnableEvents(SYSEVENT_DOUBLECLICKED);
+	endcase
+
+	// Create TriggerConfig from stored params
+	var trigger_config := TriggerConfig(trigger_type);
+	if (config.trigger_params)
+		trigger_config.params := config.trigger_params;
+	endif
+
+	return trigger_config;
+endfunction

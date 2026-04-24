@@ -7,6 +7,8 @@ include ":charactercreation:habilidades";
 include ":timedscripts:timedScripts";
 include ":food:include/hunger";
 include ":attributes:skills";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program Install()
 	print("INSTALLING: Exported Vital - RegenRate and MaxValue functions ...");
@@ -25,6 +27,10 @@ exported function GetHitsRegenRate(mobile)
 		base_regen := CInt(AP_GetSettingsCfgElem("Regen").Hits * 100);
 	endif
 	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "hits");
+
+	if (GetObjProperty(mobile, "nocure"))
+		return 0;
+	endif
 
 	if (isBloodied(mobile) && (!mobile.npctemplate)) // Nao regenera se tiver sangrando
 		return regen / 5; // reduz a regeneração bloodied para 1/5
@@ -76,13 +82,13 @@ exported function GetManaRegenRate(mobile)
 		base_regen := CInt(AP_GetSettingsCfgElem("Regen").Mana * 100);
 	endif
 
-	if (TemHabilidade(mobile, "Mente Tranquila"))
+	if (!mobile.npctemplate && MobileWrapper(mobile).HasAbility(ABILITY_ID::QUIET_MIND))
 		base_regen := base_regen + base_regen;
 	endif
 
-	if (TemHabilidade(mobile, "Fluxo Divino"))
-		base_regen := base_regen + base_regen;
-	endif
+	// if (TemHabilidade(mobile, "Fluxo Divino"))
+	// 	base_regen := base_regen + base_regen;
+	// endif
 
 	return base_regen + AP_GetVitalRegenRateMod(mobile, "mana");
 endfunction
@@ -143,9 +149,6 @@ exported function GetStaminaMaximumValue(mobile)
 																									"#stammod"))) * 100);
 
 	if (!mobile.npctemplate)
-		if (TemHabilidade(mobile, "Carregador"))
-			mobile.carrying_capacity_mod := (mobile.carrying_capacity - mobile.carrying_capacity_mod) * 2;
-		endif
 		var hunger := CInt(AP_GetVital(mobile, "Hunger") / 60);
 		if (hunger >= FomeGetLimiar())
 			vital_points := vital_points - (FomeCalcDebuff(hunger) * 50);
@@ -220,7 +223,7 @@ endfunction
 // Note: This vital is to kill all.
 // *****
 exported function GetDPRegenRate(mobile)
-	if (temHabilidade(mobile, "Dominatio Animae"))
+	if (!mobile.npctemplate && MobileWrapper(mobile).HasAbility(ABILITY_ID::CONEXAO_DIVINA))
 		return 34;
 	else
 		return 17; // 1 DP por hora

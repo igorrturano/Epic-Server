@@ -183,6 +183,10 @@ function MontaStruturaInfo(elemento)
 	itemInfo.+movable := elemento.GetProp("movable");
 	itemInfo.+realm := elemento.GetProp("realm");
 	itemInfo.+momento := elemento.GetProp("momento");
+	if(!itemInfo.templ)
+		itemInfo.+nome := elemento.GetProp("nome");
+		itemInfo.+cProps := elemento.GetProp("props");
+	endif
 	return itemInfo;
 endfunction
 
@@ -218,6 +222,18 @@ function MarcarRecriarItem(item)
 			data_elem.SetProp("movable",item.movable);
 			data_elem.SetProp("realm",item.realm);
 			data_elem.SetProp("momento", polcore().systime);
+
+			if(!template)
+					data_elem.SetProp("nome", item.desc);
+					var cProps := dictionary;
+					
+					foreach name in GetObjPropertyNames(item);
+						cProps.insert(name, GetObjProperty(item, name));
+						sleepms(2);
+					endforeach
+
+					data_elem.SetProp("props",cProps);
+			endif
 		endif
 	endif
 endfunction

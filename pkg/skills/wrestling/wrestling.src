@@ -1,0 +1,142 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":gumps:yesNo";
+include ":message:model/Message";
+include ":duel:duel";
+include "include/say";
+
+program skill_Wrestling(who)
+
+	if (CInt(GetObjProperty(who, "#wrestlewait")) > ReadGameClock())
+		Message("Voce deve aguardar um pouco para usar essa pericia novamente.").SetColor(SSM_INFO).SendSys(who);
+		return 0;
+	endif
+
+	Message("Selecione um jogador para desafiar.").SetColor(SSM_REQUEST).SendSys(who);
+	var targ := Target(who);
+
+	if (!targ)
+		Message("Cancelado.").SetColor(SSM_FAIL).SendSys(who);
+		return 0;
+	elseif (!targ.IsA(POLCLASS_MOBILE))
+		Message("Alvo invalido.").SetColor(SSM_FAIL).SendSys(who);
+		return 0;
+	elseif (targ.npctemplate)
+		Message("Voce so pode desafiar jogadores.").SetColor(SSM_FAIL).SendSys(who);
+		return 0;
+	elseif (targ == who)
+		Message("Voce nao pode desafiar a si mesmo.").SetColor(SSM_FAIL).SendSys(who);
+		return 0;
+	elseif (!targ.connected)
+		Message("O jogador esta desconectado.").SetColor(SSM_FAIL).SendSys(who);
+		return 0;
+	elseif (Distance(who, targ) > 10)
+		Message("O alvo esta muito longe.").SetColor(SSM_FAIL).SendSys(who);
+		return 0;
+	endif
+
+	var choice := YesNo(who, "O que deseja fazer?", "Queda de Braco", "Duelo");
+
+	if (!choice) // Duelo
+		ChallengeDuelWithTarget(who, targ, WRESTLING);
+		return 1;
+	endif
+
+	// Queda de braco - requires closer range
+	if (Distance(who, targ) > 2)
+		Message("O alvo esta muito longe para uma queda de braco.").SetColor(SSM_FAIL).SendSys(who);
+		return 0;
+	endif
+
+	var hostiles := ListHostiles(who, 10);
+	if (hostiles[1])
+		Message("Voce nao pode fazer isso enquanto esta em combate.").SetColor(SSM_FAIL).SendSys(who);
+		return 0;
+	endif
+
+	var perm := YesNo(targ, "Voce quer participar da queda de braco com " + who.name + "?", "Sim", "Nao");
+
+	if (!perm)
+		Message(targ.name + " recusou o desafio.").SetColor(SSM_INFO).SendSys(who);
+		return 0;
+	endif
+
+	SetObjProperty(who, "#wrestlewait", ReadGameClock() + 30);
+	SetObjProperty(targ, "#wrestlewait", ReadGameClock() + 30);
+
+	PrintTextAbove(who, "*prepara o braco para a queda de braco*");
+	PrintTextAbove(targ, "*prepara o braco para a queda de braco*");
+	sleep(1);
+
+	var score_who := 0;
+	var score_targ := 0;
+	var round;
+
+	var emotes_winner := array{
+		"*forca o braco com intensidade*",
+		"*empurra com toda a forca*",
+		"*domina o oponente*"
+	};
+	var emotes_loser := array{
+		"*resiste com dificuldade*",
+		"*tenta segurar firme*",
+		"*vacila sob a pressao*"
+	};
+
+	for (round := 1; round <= 3; round := round + 1)
+		if (score_who >= 2 || score_targ >= 2)
+			break;
+		endif
+
+		Message($"--- Round {round} ---").SetColor(SSM_INFO).SendSys(who);
+		Message($"--- Round {round} ---").SetColor(SSM_INFO).SendSys(targ);
+
+		// Clutch bonus: +10 when facing match point against you
+		var clutch_who := 0;
+		var clutch_targ := 0;
+		if (score_targ >= 1 && score_who == 0)
+			clutch_who := 10;
+		endif
+		if (score_who >= 1 && score_targ == 0)
+			clutch_targ := 10;
+		endif
+
+		var roll_who := CInt(AP_GetTrueSkill(who, WRESTLING)) + CInt(AP_GetTrueStat(who, STRENGTH)) + RandomInt(60) + clutch_who;
+		var roll_targ := CInt(AP_GetTrueSkill(targ, WRESTLING)) + CInt(AP_GetTrueStat(targ, STRENGTH)) + RandomInt(60) + clutch_targ;
+
+		if (roll_who >= roll_targ)
+			score_who := score_who + 1;
+			PrintTextAbove(who, emotes_winner[round]);
+			PrintTextAbove(targ, emotes_loser[round]);
+			Message($"{who.name} venceu o round! ({score_who} x {score_targ})").SetColor(SSM_INFO).SendSys(who);
+			Message($"{who.name} venceu o round! ({score_who} x {score_targ})").SetColor(SSM_INFO).SendSys(targ);
+		else
+			score_targ := score_targ + 1;
+			PrintTextAbove(targ, emotes_winner[round]);
+			PrintTextAbove(who, emotes_loser[round]);
+			Message($"{targ.name} venceu o round! ({score_who} x {score_targ})").SetColor(SSM_INFO).SendSys(who);
+			Message($"{targ.name} venceu o round! ({score_who} x {score_targ})").SetColor(SSM_INFO).SendSys(targ);
+		endif
+
+		sleep(2);
+	endfor
+
+	if (score_who > score_targ)
+		PrintTextAbove(who, "*vence a queda de braco!*");
+		PrintTextAbove(targ, "*perde a queda de braco*");
+		Message($"{who.name} venceu a queda de braco! ({score_who} x {score_targ})").SetColor(SSM_INFO).SendSys(who);
+		Message($"{who.name} venceu a queda de braco! ({score_who} x {score_targ})").SetColor(SSM_INFO).SendSys(targ);
+	else
+		PrintTextAbove(targ, "*vence a queda de braco!*");
+		PrintTextAbove(who, "*perde a queda de braco*");
+		Message($"{targ.name} venceu a queda de braco! ({score_who} x {score_targ})").SetColor(SSM_INFO).SendSys(who);
+		Message($"{targ.name} venceu a queda de braco! ({score_who} x {score_targ})").SetColor(SSM_INFO).SendSys(targ);
+	endif
+
+	SkillCheck(who, WRESTLING, -1);
+	SkillCheck(targ, WRESTLING, -1);
+
+	return 1;
+endprogram

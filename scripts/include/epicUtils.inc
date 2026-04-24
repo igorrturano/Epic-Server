@@ -2,6 +2,11 @@ use uo;
 use util;
 use math;
 
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
 function RemoveAcentos(text)
     var acentos := "áàãâäéèêëíìîïóòõôöúùûüũçÁÀÃÂÄÉÈÊËÍÌÎÏÓÒÕÔÖÚÙÛÜŨÇ";
     var semAcentos := "aaaaaeeeeiiiiooooouuuuucAAAAAEEEEIIIIOOOOOUUUUUC";
@@ -28,10 +33,6 @@ function NormalizeString(text)
     text := StrReplace(text, "_", " ");
     text := StrReplace(text, "  ", " ");
     return Trim(text);
-endfunction
-
-function updateToolTip(obj_reference)
-   IncRevision(obj_reference);
 endfunction
 
 function isMaleGraphic(who)
@@ -74,7 +75,7 @@ function ChooseWings(who)
     
     var wing_types := array{0xF050, 0xF051, 0xF052, 0xF053, 0xF054, 0xF055};
     var wing_gumps:= array{0xD0A1, 0xD0A2, 0xD0A3, 0xD0A4, 0xD0A5, 0xD0A6};
-    if (TemHabilidade(who, "Sigilo de Protecao"))
+    if (MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
         wing_types := array{0xF054, 0xF055, 0xF056, 0xF057, 0xF058, 0xF059};
         wing_gumps := array{0xD0A5, 0xD0A6, 0xD0A7, 0xD0A8, 0xD0A9, 0xD0AA};
     endif
@@ -101,6 +102,32 @@ function ChooseWings(who)
     endif
     
     return 0;
+endfunction
+
+function ChooseFlag(who)
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9380, 400, 300);
+    GFTextMid(gump, 10, 30, 380, 2100, "Escolha Sua Bandeira");
+    GFTextMid(gump, 10, 60, 380, 2100, "Esta escolha é permanente");
+
+    var flag_types := array{0xECE9, 0xECEA, 0xECEB};
+    var flag_gumps := array{0xD179, 0xD17A, 0xD17B};
+
+    var x_pos := 50;
+    var y_pos := 100;
+
+    foreach graphic in flag_gumps
+        GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, _graphic_iter);
+        GFResizePic(gump, x_pos + 40, y_pos, 9350, 100, 100);
+        GFGumpPic(gump, x_pos, y_pos - 40, graphic);
+        x_pos += 120;
+        sleepms(2);
+    endforeach
+
+    var input := GFSendGump(who, gump);
+    if (input[0])
+        CreateItemInBackpack(who, flag_types[input[0]], 1);
+    endif
 endfunction
 
 function DistribuicaoGaussianaNormalizada(valoresEixoX,pico,declinio,eixoYMaximo := 100)

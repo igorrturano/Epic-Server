@@ -45,7 +45,11 @@ program textcmd_acalmar(who)
 	if (!isAnimal)
 		SendSysMessage(who, "Esse não pode ser um alvo válido.");
 		return 0;
+	elseif (creature.script[":ghaia:tamed"])
+		SendSysMessageEx(who, creature.name + " não pode ser acalmado.", SSM_FAIL);
+		return 0;
 	endif
+	
 
 	PrintTextAbove(who, "*Tenta acalmar " + creature.name + "*");
 	Sleep(1);

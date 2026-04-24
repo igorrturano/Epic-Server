@@ -2,7 +2,7 @@ use uo;
 use util;
 use vitals;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":attributes:vitals";
@@ -10,24 +10,24 @@ include ":attributes:attributes";
 include "include/client";
 include ":mounts:mounts";
 
-program HitScript(params)
-	var attacker := params[1];
-	var defender := params[2];
-	// var weapon	:= params[3];
-	// var armor	:= params[4];
-	// var basedamage	:= params[5];
-	var rawdamage := params[6];
-	params := 0; // Not needed anymore.
+program HitScript(attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var defender := attackInfo.GetDefender();
 
-	var mount := GetEquipmentByLayer(defender, LAYER_MOUNT);
-
+	var mount := defender.IsMounted();
 	if (mount)
-		var dmg := rawdamage * 0.2;
+		var dmg := attacker.GetMainDamageModifier(STRENGTH);
 		if (dmg < 2)
 			dmg := 2;
 		endif
-		DamageFLS(defender, cint(dmg), DMG_FORCED, attacker);
-	// ApplyRawDamage(defender, CInt(dmg));
+
+		attackInfo.GetDamage()
+			.IncreaseSlashRawDamage(dmg)
+			.IncreasePiercingRawDamage(dmg)
+			.IncreaseBluntRawDamage(dmg);
+
+		TS_StartTimer(defender.GetObjRef(), "desmontar", cint(attacker.GetSkill(TACTICS) / 5));
 	endif
-	return 1;
+
+	return true;
 endprogram

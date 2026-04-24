@@ -1,6 +1,6 @@
 use util;
 
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 include ":medicine:disease";
 include ":tn:cooldown";
 include "include/imersao";
@@ -16,7 +16,7 @@ function AfetaMobileIncendiado(quem,estado,propPropagacao,rolagemDano := 0)
 endfunction
 
 function AfetaMobileInfectado(quem,propPropagacao, resfriamento)
-	
+
 	if(!(getCooldown(quem, PROPNAME_GAS_PATOGENICO_COOLDOWN) > 0))
 		
 		var duracaoPatogenico := propPropagacao.marcadorProps.duracaoPatogenico;
@@ -24,6 +24,14 @@ function AfetaMobileInfectado(quem,propPropagacao, resfriamento)
 		var gravidadeInfeccao := propPropagacao.marcadorProps.gravidadeInfeccao;
 		var arraySintomas := propPropagacao.marcadorProps.arraySintomas;
 
+
+		Imersao(quem,"tossir1");
+		setCooldown(quem, PROPNAME_GAS_PATOGENICO_COOLDOWN,resfriamento);
+		
+		var diseases_system := GetObjProperty(quem, "Diseases_System");
+		if (diseases_system)
+		return;
+		endif
 
 		InfectMobile(
 			quem,
@@ -34,8 +42,7 @@ function AfetaMobileInfectado(quem,propPropagacao, resfriamento)
 			gravidadeInfeccao
 		);
 
-		Imersao(quem,"tossir1");
-		setCooldown(quem, PROPNAME_GAS_PATOGENICO_COOLDOWN,resfriamento);
+
 	endif
 
 endfunction

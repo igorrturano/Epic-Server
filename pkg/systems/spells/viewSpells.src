@@ -21,25 +21,14 @@ program clericPowerWords(who)
 	endif
 	CloseGump(who, GUMPID_CLERICSPELL);
 
-	var mlore := cint(AP_GetSkill(who, THEOLOGY));
-	var cleric_slots := Cint(mlore / 5);
-
 	if (magia == "Shaman")
 		var shaman_list := GetObjProperty(who, "shaman_list");
 		if (!shaman_list)
 			shaman_list := array{};
 		endif
-
-		var slots_used := 0;
-		foreach spell in shaman_list
-			if (spell.circle > 0)
-				slots_used += cint(spell.circle);
-			endif
-		endforeach
-		var available_slots := cleric_slots - slots_used;
 		var canceled := 0;
 		while (!canceled)
-			var input := CreateClericGump(who, shaman_list, available_slots);
+			var input := CreateClericGump(who, shaman_list);
 
 			if (!input[0])
 				canceled := 1;
@@ -79,17 +68,9 @@ program clericPowerWords(who)
 		if (!priest_list)
 			priest_list := array{};
 		endif
-
-		var slots_used := 0;
-		foreach spell in priest_list
-			if (spell.circle > 0)
-				slots_used += cint(spell.circle);
-			endif
-		endforeach
-		var available_slots := cleric_slots - slots_used;
 		var canceled := 0;
 		while (!canceled)
-			var input := CreateClericGump(who, priest_list, available_slots);
+			var input := CreateClericGump(who, priest_list);
 
 			if (!input[0])
 				canceled := 1;
@@ -129,17 +110,9 @@ program clericPowerWords(who)
 		if (!druid_list)
 			druid_list := array{};
 		endif
-
-		var slots_used := 0;
-		foreach spell in druid_list
-			if (spell.circle > 0)
-				slots_used += cint(spell.circle);
-			endif
-		endforeach
-		var available_slots := cleric_slots - slots_used;
 		var canceled := 0;
 		while (!canceled)
-			var input := CreateClericGump(who, druid_list, available_slots);
+			var input := CreateClericGump(who, druid_list);
 
 			if (!input[0])
 				canceled := 1;
@@ -177,7 +150,7 @@ program clericPowerWords(who)
 	endif
 endprogram
 
-function CreateClericGump(who, shaman_list, available_slots)
+function CreateClericGump(who, shaman_list)
 	// Get saved gump position
 	var gump_x := GetObjProperty(who, "#spell_gump_x");
 	var gump_y := GetObjProperty(who, "#spell_gump_y");

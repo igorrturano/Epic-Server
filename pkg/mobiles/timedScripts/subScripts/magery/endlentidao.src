@@ -6,7 +6,9 @@ include ":attributes:attributes";
 program cureScript(params)
 	var who := params[1];
 
-	SendSysMessage(who, "Os efeitos da lentidao passaram.");
+	if (!GetObjProperty(who, "#reconnecting"))
+		SendSysMessage(who, "Os efeitos da lentidao passaram.");
+	endif
 
 	var info := GetObjProperty(who, "#Slowness");
 	AP_ModifyStatMod(who, DEXTERITY, info.dexmod);

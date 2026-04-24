@@ -1,0 +1,74 @@
+/*
+ * Bard Cantico Command (.b)
+ *
+ * .b test            - plays musical scales (Maior, Menor, Cromatica) for sound validation
+ * .b <nome>          - casts a bard cantico by name
+ */
+use uo;
+use os;
+include "include/say";
+include ":spells:include/spell_executor";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program bardoCantico(who, arg := "")
+	if (TypeOf(who) == "Array")
+		var params := who;
+		who := params[1];
+		arg := params[2];
+	endif
+
+	if (!arg || arg == "")
+		SendSysMessageEx(who, "Uso: .b <nome_do_cantico>", SSM_INFO);
+		return 0;
+	endif
+
+	if (arg == "test")
+		return _PlayScaleTest(who);
+	endif
+
+	return ExecuteSpellByName(who, arg, SPELL_TYPE_BARD);
+endprogram
+
+// =====================================================================
+// Alaude (0xEB3) sound IDs - 1a oitava (used by .b test)
+// =====================================================================
+const _B_C   := 0x405;
+const _B_CS  := 0x408;
+const _B_D   := 0x40A;
+const _B_DS  := 0x40D;
+const _B_E   := 0x40F;
+const _B_F   := 0x411;
+const _B_FS  := 0x413;
+const _B_G   := 0x415;
+const _B_GS  := 0x417;
+const _B_A   := 0x3FE;
+const _B_AS  := 0x400;
+const _B_B   := 0x402;
+
+function _PlayScale(byref who, notes, delay_ms)
+	Set_Critical(1);
+	foreach note in notes
+		PlaySoundEffect(who, note);
+		sleepms(delay_ms);
+	endforeach
+	Set_Critical(0);
+endfunction
+
+function _PlayScaleTest(byref who)
+	SendSysMessageEx(who, ">> Escala MAIOR (buff)", SSM_INFO);
+	var maior := {_B_C, _B_D, _B_E, _B_F, _B_G, _B_A, _B_B};
+	_PlayScale(who, maior, 450);
+	sleepms(800);
+
+	SendSysMessageEx(who, ">> Escala MENOR (debuff)", SSM_INFO);
+	var menor := {_B_C, _B_D, _B_DS, _B_F, _B_G, _B_GS, _B_AS};
+	_PlayScale(who, menor, 450);
+	sleepms(800);
+
+	SendSysMessageEx(who, ">> Escala CROMATICA (caos)", SSM_INFO);
+	var cromatica := {_B_C, _B_CS, _B_D, _B_DS, _B_E, _B_F, _B_FS, _B_G, _B_GS, _B_A, _B_AS, _B_B};
+	_PlayScale(who, cromatica, 300);
+
+	return 1;
+endfunction

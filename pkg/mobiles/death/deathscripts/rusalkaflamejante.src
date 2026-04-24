@@ -6,7 +6,7 @@ use util;
 include ":death:death";
 include "include/client";
 include "include/sounds";
-include ":combat:damage";
+include ":combat:Controller/DamageController_legacy";
 
 program DeathScript(params)
 	var corpse := params[1];
@@ -18,7 +18,7 @@ program DeathScript(params)
 
 	// explode em chamas
 	foreach defender in (ListMobilesNearLocation(corpse.x, corpse.y, corpse.z, 6, corpse.realm))
-		PlayObjectCenteredEffect(defender, GFX_EXPLODE_1, 7, 16);
+		PlayObjectCenteredEffect(defender, FX_EXPLODE_1, 7, 16);
 		PlaySoundEffect(defender, SFX_EXPLOSION_11);
 		ApplyDamageEX(defender, 15, DMG_FIRE);
 	endforeach
