@@ -15,13 +15,13 @@ program InitScript(params)
 
 	var result := MerchantSetupRace(npc);
 
-	SetObjProperty(npc, "shift", "day");
+	SetObjProperty(npc, "shift", "ambos");
 
 	var registry := GetGlobalProperty("ShiftMerchantRegistry");
 	if (!registry || registry == error)
 		registry := dictionary;
 	endif
-	registry[npc.serial] := "day";
+	registry[npc.serial] := "ambos";
 	SetGlobalProperty("ShiftMerchantRegistry", registry);
 
 	if (result.errortext)

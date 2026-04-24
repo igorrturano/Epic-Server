@@ -29,8 +29,8 @@ class Fury(CombatAbility)
 		foreach item in (ListEquippedItems(who))
 			if (item.isa(POLCLASS_ARMOR))
 				var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
-				if (tipoProtecao["Armadura Pesada"])
-					Message("Voce nao pode usar Furia com armadura pesada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				if (tipoProtecao["Armadura"])
+					Message("Voce nao pode usar Furia com armadura.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 					return false;
 				endif
 			endif

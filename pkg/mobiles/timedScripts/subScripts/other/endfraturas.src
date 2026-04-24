@@ -1,0 +1,36 @@
+use uo;
+include ":fls_core:packets";
+include ":attributes:attributes";
+
+program EndFratura(params)
+	var mobile := params[1];
+	
+	var penalty_bracos := CInt(GetObjProperty(mobile, "#fratura_bracos_penalty"));
+	var penalty_cabeca := CInt(GetObjProperty(mobile, "#fratura_cabeca_penalty"));
+	var penalty_mao := CInt(GetObjProperty(mobile, "#fratura_maos_penalty"));
+	var penalty_torso := CInt(GetObjProperty(mobile, "#fratura_torso_penalty"));
+	var penalty_pernas := CInt(GetObjProperty(mobile, "#fratura_pernas_penalty"));
+	
+	if (penalty_bracos)
+		AP_ModifyStatMod(mobile, STRENGTH, penalty_bracos);
+		EraseObjProperty(mobile, "#fratura_bracos_penalty");	
+	elseif (penalty_cabeca)
+		AP_ModifyStatMod(mobile, INTELLIGENCE, penalty_cabeca);
+		mobile.hitchance_mod := mobile.hitchance_mod + 10;
+		EraseObjProperty(mobile, "#fratura_cabeca_penalty");
+	elseif (penalty_mao)
+		EraseObjProperty(mobile, "desarmar");
+		EraseObjProperty(mobile, "#fratura_maos_penalty");
+	elseif(penalty_pernas)
+		PlayerSpeedSlower(mobile, 0);
+		EraseObjProperty(mobile, "#fratura_pernas_penalty");
+	elseif (penalty_torso)
+		AP_SetVitalRegenRateMod(mobile, "Stamina", AP_GetVitalRegenRateMod(mobile, "Stamina") + 60);
+		RecalcVitals(mobile);
+		EraseObjProperty(mobile, "#fratura_torso_penalty");
+	endif
+
+EraseObjProperty(mobile, "Fractures");
+EraseObjProperty(mobile, "#deferred_fratura");	
+SendsysmessageEx(mobile,"Suas fraturas cicatrizaram."); 
+endprogram

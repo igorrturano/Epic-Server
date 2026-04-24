@@ -67,21 +67,13 @@ endfunction
 function PreencheNomePersonagem(quem,objeto, nomeObjeto := "")
 
 	if(!objeto.IsA(POLCLASS_MOBILE)) return error{"errortext":="Object passed was not an POLCLASS_MOBILE."}; endif
-	
+
 	//Caso em que tá desconhecido
 	if(GetObjProperty(objeto, "realname"))
 		nomeObjeto := AMARELO_CLARO + "Incognito";
 	else
-		//Verifica se o char já foi reconhecido por who
-		var conhecidos := dictionary;
-		conhecidos := GetObjProperty(quem, "conhecidos"); //Lista de pessoas conhecidadas
-
-		if(conhecidos)
-			var ID := verificaDisfarce(objeto, quem);
-			nomeObjeto := conhecidos.Exists(ID)? conhecidos[ID] : objeto.name;
-		else
-			nomeObjeto := objeto.name;
-		endif
+		var nickname := GetKnownNickname(quem, objeto);
+		nomeObjeto := (nickname != "") ? nickname : objeto.name;
 	endif
 
 	if (quem.cmdlevel > 1) //Staff consegue ver o nome e raça
@@ -154,9 +146,19 @@ endfunction
 
 function AddSpecialBookshelfDescription(item, xDesc)
     case (item.objtype)
-        0xA9D:
-        0xA9E:
+        0x6F97:
+        0x6F98:
             xDesc += "<BASEFONT COLOR=#FFFFFF>Estante de Pesquisa com Livros Comuns<BR>";
+            break;
+        0x63FE:
+        0x63FD:
+        0x63FF:
+        0x6400:
+        0x6A9E:
+        0x6A9F:
+        0x6AA0:
+        0x6AA1:
+            xDesc += "<BASEFONT COLOR=#87CEEB>Estante de Pesquisa com Manuscritos Antigos<BR>";
             break;
         0xEA08:
         0xEA07:

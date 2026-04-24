@@ -8,6 +8,9 @@ include "include/say";
 include ":food:include/hunger";
 
 program Hunger(chr)
+	if (!chr)
+		return 1;
+	endif
 	if (chr.cmdlevel >= 2)
 		return 0;
 	endif
@@ -18,12 +21,11 @@ program Hunger(chr)
 	if (debuff) // recolocar debuff caso ele saia por algum motivo com reset do shard ou algo do tipo
 		if (AP_GetStatMod(chr, STRENGTH) == 0 || AP_GetStatMod(chr, DEXTERITY) == 0 ||
 	  AP_GetStatMod(chr, INTELLIGENCE) == 0)
-			SendSysMessageEx(chr, "DEBUG: DEBUFF DE FOME SETADO DE NOVO APOS RESET SERVER!", SSM_FAIL);
 			FomeApplyDebuff(chr, -(debuff."valdebuff"));
 		endif
 	endif
 
-	while (chr)
+	while (chr && chr.connected)
 		hunger := CInt(AP_GetVital(chr, "Hunger") / 60);
 		debuff := GetObjProperty(chr, "#fome");
 

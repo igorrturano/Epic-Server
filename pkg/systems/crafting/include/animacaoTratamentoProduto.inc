@@ -173,6 +173,7 @@ function RodaAnimacaoFerreiro(quem, produto, estacao, processoGerente, classific
 		if(deveMudarEstagio)
 			++contadorEstagio;
 		endif
+		Sleepms(10);
 		ferramentaNecessaria := BuscaFerramenta(quem,"Blacksmithy");
 		Sleep(Cint(espera));
 	endwhile
@@ -236,19 +237,21 @@ function BuscaFerramenta (quem, profissao)
 	var ferramenta;
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
 	var ferramentas := SplitWords(profissaoConfig[profissao].Ferramenta);
-
-	if(cstr(hex(quem.weapon.objtype)) in ferramentas)
-		ferramenta := quem.weapon;
-	else
-		foreach ferramentaPossivel in ferramentas
+	
+	foreach ferramentaPossivel in ferramentas
+		Sleepms(2);
+		if(cstr(hex(quem.weapon.objtype)) == cstr(hex(ferramentaPossivel)))
+			ferramenta := quem.weapon;
+			break;
+		else
 			var ferramentaEncontrada := FindObjtypeInContainer(quem.backpack, cint(hex(ferramentaPossivel)));
 			if(ferramentaEncontrada)
 				ferramenta := ferramentaEncontrada;
 				break;
 			endif
-		endforeach
-	endif
-
+		endif
+	endforeach
+	
 	return ferramenta;
 endfunction
 

@@ -27,11 +27,15 @@ class RadiantSmite(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
+
 		var religiao := mobile.GetReligion();
 		var theology_bonus := CInt(mobile.GetSkill(THEOLOGY) / 10);
 
 		case (religiao)
 			ELUITHORTH:
+				if (mobile.IsNPC())
+					return false;
+				endif
 				var dm_targ := Target(who);
 				if (!dm_targ || !dm_targ.isA(POLCLASS_MOBILE))
 					Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
@@ -57,6 +61,9 @@ class RadiantSmite(CombatAbility)
 				Message("*chicotada dominante*").SendAbove(who);
 
 			BOKK_BHARAZ:
+				if (mobile.IsNPC())
+					return false;
+				endif
 				var mt_targ := Target(who);
 				if (!mt_targ || !mt_targ.isA(POLCLASS_MOBILE))
 					Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
@@ -86,7 +93,7 @@ class RadiantSmite(CombatAbility)
 				PlaySoundEffect(mt_targ, mt_lightning[RandomInt(3) + 1]);
 
 			HALLEUAD:
-				var targ := GetValidTarget(who);
+				var targ := GetValidTarget(mobile, who);
 				if (!targ)
 					return false;
 				endif
@@ -95,7 +102,7 @@ class RadiantSmite(CombatAbility)
 				Message("*cegado pela luz divina*").SendAbove(targ);
 
 			VENERATIO:
-				var targ := GetValidTarget(who);
+				var targ := GetValidTarget(mobile, who);
 				if (!targ)
 					return false;
 				endif
@@ -129,7 +136,7 @@ class RadiantSmite(CombatAbility)
 				Message("Seu alvo foi enfraquecido pela ira sagrada!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			KAI:
-				var targ := GetValidTarget(who);
+				var targ := GetValidTarget(mobile, who);
 				if (!targ)
 					return false;
 				endif
@@ -144,8 +151,17 @@ class RadiantSmite(CombatAbility)
 
 endclass
 
-function GetValidTarget(who)
-	var targ := Target(who);
+function GetValidTarget(mobile, who)
+	var targ;
+	if (mobile.IsNPC())
+		targ := who.opponent;
+		if (!targ)
+			targ := GetRandomNearbyHostile(who);
+		endif
+	else
+		targ := Target(who);
+	endif
+
 	if (!targ)
 		Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return 0;

@@ -1,7 +1,6 @@
 use uo;
 use os;
 
-include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -24,10 +23,12 @@ program SpellScript(params)
 	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 7, 16);
 	PlaySoundEffect(targ, SFX_109);
 
-	var duration := CInt(GetSpellDuration(AP_GetSkill(who, THEOLOGY)));
+	var duration := CInt(10 + (AP_GetSkill(who, THEOLOGY) / 2));
 
 	var opts := struct{};
 	opts.+dex_mod := -20;
+	opts.+buff_category := "movement_debuff";
+	opts.+displayname := "Ventania Selvagem";
 	opts.+desc := "Ventania Selvagem";
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));

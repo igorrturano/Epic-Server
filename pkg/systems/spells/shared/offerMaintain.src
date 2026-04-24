@@ -1,0 +1,76 @@
+use uo;
+use os;
+
+include ":spells:SpellRegistry";
+include ":spells:Controller/SpellController";
+include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":gumps:gumps";
+include "include/say";
+
+function MaintainGump(who, spell_name, target_name, mana_cost)
+	var gump := GfCreateGump(140, 100);
+	GfResizePic(gump, 0, 0, 0x53, 240, 170);
+	GfAddAlphaRegion(gump, 0, 0, 240, 170);
+	GfTextLine(gump, 20, 10, 1153, "Manter Encantamento");
+	GfTextLine(gump, 20, 35, 1153, "" + spell_name);
+	GfTextLine(gump, 20, 55, 1153, "Alvo: " + target_name);
+	GfTextLine(gump, 20, 75, 1153, "Custo: " + mana_cost + " mana");
+	GfTextLine(gump, 45, 100, 1153, "Sim");
+	GfTextLine(gump, 45, 125, 1153, "Nao");
+
+	GfAddButton(gump, 20, 103, 2117, 2118, GF_CLOSE_BTN, 10);
+	GfAddButton(gump, 20, 128, 2117, 2118, GF_CLOSE_BTN, 11);
+
+	var input := GFSendGump(who, gump);
+	return (input[0] == 10);
+endfunction
+
+program offerMaintain(params)
+	var caster_serial := CInt(params[1]);
+	var target_serial := CInt(params[2]);
+	var spellId := CInt(params[3]);
+	var opts := params[4];
+	var duration := CInt(params[5]);
+	params := 0;
+
+	var caster := SystemFindObjectBySerial(caster_serial);
+	if (!caster || caster is @Exception || !caster.connected || caster.dead)
+		return;
+	endif
+
+	var targ := SystemFindObjectBySerial(target_serial);
+	if (!targ || targ is @Exception || targ.dead)
+		return;
+	endif
+
+	var elem := ResolveSpell(spellId);
+	if (!elem || elem is @Exception)
+		return;
+	endif
+
+	var spell_name := GetConfigString(elem, "Name");
+	var mana_cost := CInt(GetConfigInt(elem, "Mana"));
+
+	if (MobileWrapper(caster).HasAbility(ABILITY_ID::SUPPORT_CASTER))
+		mana_cost := CInt(mana_cost / 2);
+	endif
+
+	if (mana_cost < 1)
+		mana_cost := 1;
+	endif
+
+	if (!MaintainGump(caster, spell_name, targ.name, mana_cost))
+		SendSysMessageEx(caster, "Voce desistiu de manter o encantamento.", SSM_INFO);
+		return;
+	endif
+
+	if (!AP_ConsumeVital(caster, MANA, mana_cost))
+		SendSysMessageEx(caster, "Voce nao possui mana suficiente para manter esse encantamento.", SSM_FAIL);
+		return;
+	endif
+
+	SC_ApplyEffect(caster, targ, opts, duration, spellId);
+	SendSysMessageEx(caster, "Voce manteve o encantamento em " + targ.name + ".", SSM_INFO);
+endprogram

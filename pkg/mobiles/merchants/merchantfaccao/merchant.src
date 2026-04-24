@@ -23,6 +23,7 @@ include ":tn:cooldown";
 include ":merchants:/include/cambio";
 include ":megacliloc:/include/descricaoObjetoTTip";
 include "include/events";
+include ":faccao:membership";
 
 const GF_STDCOLOR_UOSE := 1890;
 const MOEDAS := SESTERTIUS;
@@ -111,6 +112,10 @@ program HandleMerchant(params)
 	var player := parEvStruct.source;
 	var item := parEvStruct.item;
 
+	if (npc == error || !npc || !npc.serial)
+		return;
+	endif
+
 	if (GetObjproperty(npc, "imposto") != error)
 		imposto := GetObjproperty(npc, "imposto");
 	endif
@@ -131,9 +136,9 @@ program HandleMerchant(params)
 		"SeeEvent": HandleSeeEvent(npc, player);
 		"DblClick":
 			DoWithdraw(npc, player);
-			var vendor_privs := guild ? guild.GetProp(cstr(player.serial)) : 0;
+			var vendor_privs := guild ? GetMemberPrivs(guild, player) : 0;
 			var is_vendor_leader := guild && (guild.GetProp("leader") == player.serial);
-			var is_guild_member := guild && (player.guildid == guild.guildid);
+			var is_guild_member := guild && IsMemberOfFaccao(guild, player);
 			if (player.cmdlevel >= 3 || (is_guild_member && (is_vendor_leader || above_merchant || (vendor_privs && vendor_privs.contractnpc))))
 				ProcessVendorDoubleClick(npc, player);
 			else
@@ -204,8 +209,16 @@ function DoPurchaseCmd(npc, player)
 					  		"Está procurando algo específico?" }.randomentry(), SSM_INFO);
 	endif
 	while (!canceled)
+		if (npc == error || !npc || !npc.serial)
+			break;
+		endif
+		if (player == error || !player || !player.connected)
+			break;
+		endif
 		var input := SendItemView(npc, player, filtros);
-		if (!input[0])
+		if (input == error || !input)
+			break;
+		elseif (input[0] == error || !input[0])
 			break;
 		elseif (input[0] == 1)
 			break;
@@ -588,10 +601,10 @@ function AddItemToSell(npc, player, item)
 		endif
 	endif
 
-	if (onlyguild && player.guildid != guild.guildid)
+	if (onlyguild && !IsMemberOfFaccao(guild, player))
 		PrintTextAbove(npc, "Desculpe, não posso vender itens para membros fora da {}".format(guild.getProp("name")));
 		return 0;
-	elseif (norace && player.isRace(norace) && player.guildid != guild.guildid)
+	elseif (norace && player.isRace(norace) && !IsMemberOfFaccao(guild, player))
 		PrintTextAbove(npc, "Desculpe, fui proibido(a) de comercializar com sua raça");
 		return 0;
 	endif

@@ -19,6 +19,7 @@ include ":io:CFGFile";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":charactercreation:resists";
 include ":charactercreation:habilidades";
+include ":attributes:attributes";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Damage
@@ -592,6 +593,56 @@ function CalculateDefenderResist(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {CInt(attackInfo.GetDamage().GetPoisonRawDamage() - attackInfo.GetDamage().GetPoisonBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {CInt(attackInfo.GetDamage().GetEnergyRawDamage() - attackInfo.GetDamage().GetEnergyBaseDamage())}"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano a ser aplicado (após defesa): {attackInfo.GetDamage().ToString()}"));
+
+	_ApplyPhysicalManaShield(attackInfo);
+endfunction
+
+// Protecao Arcana (spell 114) — physical-only mana shield. Absorbs slash/piercing/blunt
+// (whichever matches the attacker's posture) at 2 mana per 1 damage. Elemental and forced
+// damage bypass this layer entirely.
+function _ApplyPhysicalManaShield(byRef attackInfo)
+	var defender := attackInfo.GetDefender().GetObjRef();
+	var shield := attackInfo.GetDefender().GetProperty("#manashield");
+	if (!shield || shield.errortext)
+		return;
+	endif
+
+	if (shield.endtime <= ReadGameClock())
+		EraseObjProperty(defender, "#manashield");
+		return;
+	endif
+
+	var dmg := attackInfo.GetDamage();
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
+	var hit;
+	case (posture)
+		DAMAGE_TYPE::SLASH:    hit := dmg.GetSlashBaseDamage();    break;
+		DAMAGE_TYPE::PIERCING: hit := dmg.GetPiercingBaseDamage(); break;
+		DAMAGE_TYPE::BLUNT:    hit := dmg.GetBluntBaseDamage();    break;
+		default:               return;
+	endcase
+	if (hit <= 0)
+		return;
+	endif
+
+	var mana := AP_GetVital(defender, MANA);
+	var absorb := (hit * 2 <= mana) ? hit : Cint(mana / 2);
+	if (absorb <= 0)
+		return;
+	endif
+
+	AP_ConsumeVital(defender, MANA, absorb * 2);
+
+	case (posture)
+		DAMAGE_TYPE::SLASH:    dmg.DecreaseSlashBaseDamage(absorb);    break;
+		DAMAGE_TYPE::PIERCING: dmg.DecreasePiercingBaseDamage(absorb); break;
+		DAMAGE_TYPE::BLUNT:    dmg.DecreaseBluntBaseDamage(absorb);    break;
+	endcase
+
+	if (AP_GetVital(defender, MANA) <= 0)
+		EraseObjProperty(defender, "#manashield");
+		PrintTextAbove(defender, "*barreira arcana quebra*");
+	endif
 endfunction
 
 function GetEquipsByAttackDirection(byRef attackInfo)
@@ -693,7 +744,13 @@ function CalculateCriticalChance(byRef attackInfo)
 		CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20) -			// Crítico extra da Skill
 		CInt(opponentCriticalReduction) //Redução de crítico do defensor
 	);
-	
+
+	if (attackInfo.GetAttacker().IsNPC())
+		chance := CInt(attackInfo.GetAttacker().GetTemplate().GetTier())
+				+ CInt(attackInfo.GetAttacker().GetSkill(skillUsedForCritical) / 20)
+				- CInt(opponentCriticalReduction);
+	endif
+
 	if (attackInfo.GetAttacker().HasAbility(ABILITY_ID::DESTRUIDOR) && GetCooldown(attackInfo.GetAttacker().GetObjRef(), "furia"))
 		chance := chance * 2.0;
 	endif
@@ -747,6 +804,10 @@ function ApplyCriticalDamage(byRef attackInfo)
 		weapon_scripts := weaponCfg.GetPropertyValue("CriticalHitScripts");
 	elseif (attackInfo.GetAttacker().IsNPC())
 		weapon_scripts := npcCfg.GetPropertyValue("CriticalHitScripts");
+	endif
+
+	if (!weapon_scripts || !weapon_scripts.Size())
+		weapon_scripts := array{ ":combat:criticalHitScripts/damage2" };
 	endif
 	// PEnsar numa solucao pra mensagem subir no NPC sem o [Language] como prefixo
 	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
@@ -1082,7 +1143,7 @@ function CalculateEntropyDamage(byRef attackInfo)
 	if (!attackInfo.GetAttacker().IsNPC() && attackInfo.GetDefender().IsNPC())
 		var attacker_entropy := attackInfo.GetAttacker().GetEntropy();
 		if (attacker_entropy >= 12000)
-			var npc_category := Lower(attackInfo.GetDefender().GetCategory());
+			var npc_category := Lower(attackInfo.GetDefender().GetEnvironment());
 			if (npc_category == "undead" || npc_category == "demon" || npc_category == "void")
 				// +1 per 4k entropy, max +5 at 20k
 				var entropy_bonus := CInt(attacker_entropy / 4000);
@@ -1098,7 +1159,7 @@ function CalculateEntropyDamage(byRef attackInfo)
 	// Global entropy bonus: NPCs (undead/demon/void) get +1 damage per -20k global entropy
 	var globalEntropy := CInt(GetGlobalProperty("GlobalEntropy"));
 	if (globalEntropy <= -20000 && attackInfo.GetAttacker().IsNPC())
-		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetEnvironment());
 		if (npc_category == "undead" || npc_category == "demon" || npc_category == "void")
 			// +1 per -20k global entropy, max +5 at -100k
 			var global_bonus := CInt(Abs(globalEntropy) / 20000);

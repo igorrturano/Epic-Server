@@ -30,6 +30,7 @@ include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include "include/client";
 include ":combat:Controller/DamageController_legacy";
+include ":commands:/include/r";
 
 program sendStats()
 	Print("INSTALLING: Outgoing Paperdoll PH...");
@@ -53,23 +54,8 @@ exported function HandleOpenPaperdoll(character, byref packet)
 			if (GetObjProperty(source, "realname"))
 				Object_Name := "Incognito";
 			else
-				// Verifica se o char já foi reconhecido por who
-				var conhecidos := dictionary;
-				if (GetObjProperty(character, "conhecidos"))
-					var ID := Cstr(source.serial); // Salva o serial do personagem
-					if (GetObjProperty(source, "disfarce"))
-						ID := Cstr(GetObjProperty(source, "FakeID")); // Substitui o serial pelo falso quando o personagem observado está disfarçado
-					endif
-
-					conhecidos := GetObjProperty(character, "conhecidos"); // Lista de pessoas conhecidadas
-					if (conhecidos.Exists(ID))
-						Object_Name := conhecidos[ID];
-					else
-						Object_Name := source.name;
-					endif
-				else
-					Object_Name := source.name;
-				endif
+				var nickname := GetKnownNickname(character, source);
+				Object_Name := (nickname != "") ? nickname : source.name;
 			endif
 			packet.SetString(TEXT_ID, Object_Name, 1);
 		endif

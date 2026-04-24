@@ -136,6 +136,10 @@ function _RunControllerPassive(params)
 			triggered := ability.OnPassiveBeforeHitAttacker(attackInfo);
 		ABILITY_ACTIVATION::BEFORE_HIT_DEFENDER:
 			triggered := ability.OnPassiveBeforeHitDefender(attackInfo);
+		ABILITY_ACTIVATION::ON_EQUIP:
+			triggered := ability.OnPassiveOnEquip(attackInfo);
+		ABILITY_ACTIVATION::ON_UNEQUIP:
+			triggered := ability.OnPassiveOnUnequip(attackInfo);
 	endcase
 
 	if (triggered)

@@ -47,7 +47,7 @@ program SpellScript(params)
 	EraseObjProperty(targ, "charmed_by");
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
-		endControlNPC(targ);
+		start_script(":epicAI:scripts/end_control_npc", array{targ});
 		var event := struct{ "type" := SYSEVENT_ENGAGED, "source" := who };
 		SendEvent(targ, event);
 	endif
