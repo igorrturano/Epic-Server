@@ -1,7 +1,0 @@
-use uo;
-include ":minecart:minecart";
-
-program control_trackStop(stop)
-    RegisterTrackStop(stop);
-    return 1;
-endprogram
