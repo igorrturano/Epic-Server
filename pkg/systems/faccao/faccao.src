@@ -146,6 +146,10 @@ program faccao(params)
 		// Aberto pelo mural de recrutamento (item clicado)
 		guild := targ.guild;
 		use_member_alias := 1;
+		if (!who.cmdlevel && !IsMemberOfFaccao(guild, who))
+			SendSysMessage(who, "Você não é membro desta facção.");
+			return 0;
+		endif
 	endif
 
 	if (!guild)
