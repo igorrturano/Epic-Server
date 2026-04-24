@@ -147,7 +147,13 @@ function SalvarDesejo(who, desejo)
 		lista_desejos := array{};
 	endif
 
-	lista_desejos.append(struct{ "personagem" := who.name, "account" := who.acctname,
+	// Usar nome_inicial se disponível, senão usar who.name
+	var nome_personagem := GetObjProperty(who, "nome_inicial");
+	if (!nome_personagem)
+		nome_personagem := who.name;
+	endif
+
+	lista_desejos.append(struct{ "personagem" := nome_personagem, "account" := who.acctname,
 							 	"desejo" := desejo, "data" := POLCore().systime });
 
 	desejos_elem.SetProp("desejos", lista_desejos);

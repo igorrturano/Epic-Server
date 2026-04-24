@@ -1,7 +1,11 @@
 use uo;
+use vitals;
 
 include ":timedScripts:timedScripts";
 include ":mounts:mounts";
+include ":charactercreation:habilidades";
+include ":stables:include/stable";
+include "include/NPCUtil";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 
@@ -50,10 +54,26 @@ function GetNumPets(who)
 	foreach serial in tamed
 		var pet := SystemFindObjectBySerial(serial);
 		if ( pet.master == who && !GetObjProperty(pet, "summoned")) //se não é summon
+			var petPostSerial := GetObjProperty(pet, "StablePostSerial");
+			if ( petPostSerial && !GetObjProperty(pet, "EstaNoLimbo") )
+				if ( IsStableExpired(pet) )
+					// Contrato de estabulo expirado: cobre tanto pet guardado no post
+					// quanto pet retirado que nunca voltou para renovar.
+					var expiredPost := SystemFindObjectBySerial(petPostSerial);
+					EncerrarContratoEstabulo(pet, expiredPost, who);
+				elseif ( !GetObjProperty(who, "CurrentStablePostSerial") )
+					// Migracao: contrato ativo sem CurrentStablePostSerial no master
+					// (dados legacy). Restaura vinculo para preservar 1-post-por-player.
+					SetObjProperty(who, "CurrentStablePostSerial", petPostSerial);
+				endif
+			endif
+			// Pets no estabulo ou em limbo não ocupam slots, mas continuam pertencendo ao player
+			if ( !GetObjProperty(pet, "EstaNoEstabulo") && !GetObjProperty(pet, "EstaNoLimbo") )
 				if (!Cint(pet.getTier()))
-				num_tamed := num_tamed+1;
-			else
-				num_tamed := num_tamed + Cint(pet.getTier());
+					num_tamed := num_tamed+1;
+				else
+					num_tamed := num_tamed + Cint(pet.getTier());
+				endif
 			endif
 		else
 			tamed.erase(_serial_iter);
@@ -210,7 +230,7 @@ function LogoutPets(who)
 			location.append(pet.x);
 			location.append(pet.y);
 			location.append(pet.z);
-			MoveObjectToLocation(pet, 6066, 60, 22, pet.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(pet, 5688, 625, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 			SetObjProperty(pet, "previous_location", location);
 		endif
 		sleepms(2);

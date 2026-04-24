@@ -30,7 +30,7 @@ program SpellScript(params)
 		var i := 1;
 		if (mobile.npctemplate && i <= amt)
 			var elem := NPC_GetNPCConfig(mobile.npctemplate);
-			var category := lower(GetConfigString(elem, "Category"));
+			var category := lower(GetConfigString(elem, "Environment"));
 
 			if (category == "undead" || category == "demons")
 				PlayMovingEffectXYZEx(mobile.x, mobile.y, mobile.z, mobile.x, mobile.y, mobile.z + 60,

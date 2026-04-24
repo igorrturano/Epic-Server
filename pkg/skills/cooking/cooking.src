@@ -96,7 +96,6 @@ function cookit(who, item)
 	if (ingredients)
 		theIngredients := GetIngredients(who, ingredients);
 		ingredientsno := theIngredients.size;
-		print("Numero de ingredientes: " + ingredientsno);
 		if (theIngredients == error)
 			SendSysMessage(who, "Voce nao tem os igredientes necessarios.");
 			return;

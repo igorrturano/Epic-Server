@@ -171,7 +171,7 @@ endfunction
 // =============================================================================
 function handleExpGain(corpse)
     var nearby := ListMobilesNearLocationEx(
-        corpse.x, corpse.y, LIST_IGNORE_Z, 8,
+        corpse.x, corpse.y, LIST_IGNORE_Z, 16,
         LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, corpse.realm
     );
 
@@ -209,6 +209,49 @@ function AwardXPFromKill(killers, corpse)
     endforeach
 
     return 1;
+endfunction
+
+// =============================================================================
+// CRAFT XP - Called from controladoraComplexos.inc FabricaItemMontado
+// Formula: tier = diff/20, xp = tier * 5. diff < 20 => no award.
+// Stackable items and non-whitelisted (skill, category) pairs are skipped.
+// =============================================================================
+function AwardXPFromCraft(who, receita, skill, categoria)
+    if (!who || !receita)
+        return 0;
+    endif
+    if (receita.isEmpilhavel)
+        return 0;
+    endif
+
+    var allowed := dictionary{
+        "Tailoring"         -> array{"Armas", "LeatherArmor", "StuddedArmor",
+                                      "Gibao de Peles", "Armaduras de Ossos",
+                                      "Armaduras Especiais"},
+        "Blacksmithy"       -> array{"Axes", "Blades", "Blunt", "Polearms",
+                                      "Shields", "RingMail", "ChainMail",
+                                      "Platemail", "Helmets", "SteamArmor"},
+        "Carpentry"         -> array{"Armas e Escudos"},
+        "BowcraftFletching" -> array{"Armas"},
+        "Alchemy"           -> array{"Elixires", "Tonicos", "Toxinas",
+                                      "Explosivos", "Diversos"}
+    };
+
+    if (!allowed.Exists(skill))
+        return 0;
+    endif
+    if (!(categoria in allowed[skill]))
+        return 0;
+    endif
+
+    var tier := Cint(Cint(receita.dificuldade.skill) / 20);
+    if (tier < 1)
+        return 0;
+    endif
+
+    var xp_gain := tier * 5;
+    AddXP(who, xp_gain);
+    return xp_gain;
 endfunction
 
 // =============================================================================

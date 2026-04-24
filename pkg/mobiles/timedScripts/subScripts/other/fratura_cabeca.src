@@ -8,49 +8,13 @@ include "include/say";
 
 const FRATURA_HITCHANCE_PENALTY := -10;
 
-function StartScript(mobile, attacker := 0, level := 0)
+program TimedScript_Cabeca(params)
+	var mobile := params[1];
 	var penalty := CInt(AP_GetStat(mobile, INTELLIGENCE) / 2);
 	SetObjProperty(mobile, "#fratura_cabeca_penalty", penalty);
 	AP_ModifyStatMod(mobile, INTELLIGENCE, -penalty);
 	mobile.hitchance_mod := mobile.hitchance_mod + FRATURA_HITCHANCE_PENALTY;
 	SendSysMessage(mobile, "Sua cabeca fraturada reduz sua inteligencia pela metade e sua precisao.");
-
-	while (AP_GetVital(mobile, "DP") <= 19 || GetCooldown(mobile, "hurt_fratura_cabeca") > 0)
-		sleep(4);
-	endwhile
-
-	AP_ModifyStatMod(mobile, INTELLIGENCE, penalty);
-	mobile.hitchance_mod := mobile.hitchance_mod - FRATURA_HITCHANCE_PENALTY;
-	EraseObjProperty(mobile, "#fratura_cabeca_penalty");
+	
 	return 1;
-endfunction
-
-function EndScript(mobile)
-	var penalty := CInt(GetObjProperty(mobile, "#fratura_cabeca_penalty"));
-	if (penalty)
-		AP_ModifyStatMod(mobile, INTELLIGENCE, penalty);
-	endif
-	mobile.hitchance_mod := mobile.hitchance_mod - FRATURA_HITCHANCE_PENALTY;
-	EraseObjProperty(mobile, "#fratura_cabeca_penalty");
-	return 1;
-endfunction
-
-function LogOffScript(mobile)
-	return 1;
-endfunction
-
-program TimedScriptInit(params)
-	var mobile := params[1];
-	var type := params[2];
-	var level := params[3];
-
-	if (typeof(type) == "String")
-		if (type == "End")
-			return EndScript(mobile);
-		elseif (type == "LogOff")
-			return LogOffScript(mobile);
-		endif
-	endif
-
-	return StartScript(mobile, type, level);
 endprogram

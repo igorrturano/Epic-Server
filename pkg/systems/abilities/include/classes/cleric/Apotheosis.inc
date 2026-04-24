@@ -88,7 +88,7 @@ class Apotheosis(CombatAbility)
 						Message("Voce e curado pela luz divina!", Color(SYSTEM_COLOR::INFO)).SendSys(mob);
 					else
 						var npc_elem := NPC_GetNPCConfig(mob.npctemplate);
-						var isDarknessCreature := GetObjProperty(mob, "Mobnoturno") || Lower(npc_elem.Category) == "undead";
+						var isDarknessCreature := GetObjProperty(mob, "Mobnoturno") || Lower(npc_elem.Environment) == "undead";
 
 						// Darkness check: night time or in dungeon
 						var isInDarkness := (GetGlobalProperty("dia") != "dia") || (mob.realm != "britannia");

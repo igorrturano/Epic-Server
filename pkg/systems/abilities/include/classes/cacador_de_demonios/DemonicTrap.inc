@@ -98,7 +98,7 @@ class DemonicTrap(CombatAbility)
                     // Paralyze demons/undead
                     if (mob.npctemplate)
                         var npctemplate := NPC_ParseTemplateName(mob.npctemplate);
-                        if (cfg[npctemplate.template].Category in inimigo)
+                        if (cfg[npctemplate.template].Environment in inimigo)
                             TS_StartTimer(mob, "paralysis", duration);
                             ApplyRawDamage(mob, 1);
                         endif

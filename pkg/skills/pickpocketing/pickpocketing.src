@@ -22,17 +22,30 @@ include ":message:model/Message";
 include ":tn:cooldown";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":debug:Controller/DebugController";
+
+function DifficultyTier(diff)
+	if (diff < 20)
+		return "Fácil";
+	elseif (diff < 40)
+		return "Médio";
+	elseif (diff < 60)
+		return "Difícil";
+	else
+		return "Perigoso";
+	endif
+endfunction
 
 program skill_Stealing(mobile)
 	if (GetProcess(CInt(GetObjProperty(mobile, "#PickPid"))))
-		Message("Voce ja esta roubando alguem.").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Voce ja esta roubando alguem.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return;
 	else
 		SetObjProperty(mobile, "#PickPid", GetPid());
 	endif
 
 	if (CInt(GetObjProperty(mobile, "#StealWait")) > ReadGameClock())
-		Message("Voce deve aguardar um pouco para usar essa pericia novamente.").SetColor(SSM_INFO).SendSys(mobile);
+		Message("Voce deve aguardar um pouco para usar essa pericia novamente.").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 		return 0;
 	else
 		SetObjProperty(mobile, "#StealWait", ReadGameClock() + 5);
@@ -44,11 +57,11 @@ program skill_Stealing(mobile)
 
 	var metamorfose := GetObjProperty(mobile, "metamorfose");
 	if (metamorfose != error)
-		Message("Voce nao pode roubar enquanto estiver metamorfoseado.").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Voce nao pode roubar enquanto estiver metamorfoseado.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 
-	Message("Selecione que pessoa ou item voce deseja roubar.").SetColor(SSM_REQUEST).SendSys(mobile);
+	Message("Selecione que pessoa ou item voce deseja roubar.").SetColor(Color(SYSTEM_COLOR::ALERT)).SendSys(mobile);
 	var targ := Target(mobile);
 	
 	// Verifica se é um artefato roubável
@@ -58,10 +71,10 @@ program skill_Stealing(mobile)
 	
 	var difbonus := 0;
 	if (targ == mobile)
-		Message("Espertao voce hein..?").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Espertao voce hein..?").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	elseif (targ.connected == 0)
-		Message("Voce nao pode roubar jogadores desconectados.").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Voce nao pode roubar jogadores desconectados.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	// elseif ( targ.npctemplate )
 	// 	Message("Voce so pode roubar jogadores.", SSM_FAIL).SendSys(mobile);
@@ -70,20 +83,20 @@ program skill_Stealing(mobile)
 	// 	Message("O alvo esta se movimentando demais lutando.", SSM_FAIL).SendSys(mobile);
 	// 	return 0;
 	elseif (!targ.IsA(POLCLASS_MOBILE))
-		Message("Voce so pode roubar jogadores.").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Voce so pode roubar jogadores.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	elseif (targ.npctemplate == ":merchants:estalagem")
-		Message("Voce nao pode roubar este tipo de NPC.").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Voce nao pode roubar este tipo de NPC.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	elseif (isBoss(targ))
-		Message("Voce nao pode roubar este tipo de NPC.").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Voce nao pode roubar este tipo de NPC.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	elseif (Distance(mobile, targ) > 2)
-		Message("O alvo esta muito longe.").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("O alvo esta muito longe.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	elseif (!IsBehind(targ, mobile.x, mobile.y))
 		if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
-			Message("Voce precisa estar nas costas do alvo.").SetColor(SSM_FAIL).SendSys(mobile);
+			Message("Voce precisa estar nas costas do alvo.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 			return 0;
 		else
 			difbonus := 10;
@@ -96,11 +109,23 @@ program skill_Stealing(mobile)
 		if (multidao > 4)
 			var bonus := 5 * (multidao - 4);
 			diff := diff - bonus;
-			Message("Bonus de Ladrão de Multidões: +" + bonus + ".").SetColor(SSM_INFO).SendSys(mobile);
+			Message("Bonus de Ladrão de Multidões: +" + bonus + ".").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 		endif
 	endif
 
+	Message("Você avalia " + targ.name + "... " + DifficultyTier(diff) + ".", Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
+
 	var check := SkillCheck(mobile, PICKPOCKETING, diff);
+	DebugMsg(
+		mobile,
+		DEBUG_HAB,
+		Message(
+			"[PICKPOCKET] bag-open skill=" + AP_GetSkill(mobile, PICKPOCKETING) +
+			" awar=" + AP_GetSkill(targ, AWARENESS) +
+			" diff=" + diff + " check=" + check,
+			Color(SYSTEM_COLOR::INFO)
+		)
+	);
 	if (check > 0)
 
 		if (!mobile.hidden)
@@ -111,16 +136,16 @@ program skill_Stealing(mobile)
 				elseif (player == mobile)
 				elseif (player == targ)
 				elseif (!IsBehind(player, targ.x, targ.y) && (SkillCheck(player, AWARENESS, diff_awar) > 0))
-					Message("Voce nota que " + player.name + " percebeu algo.").SetColor(SSM_FAIL).SendSys(mobile);
-					Message("Voce nota " + mobile.name + " tentando roubar de " + targ.name + ".").SetColor(SSM_INFO).SendSys(player);
+					Message("Voce nota que " + player.name + " percebeu algo.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+					Message("Voce nota " + mobile.name + " tentando roubar de " + targ.name + ".").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(player);
 				endif
 				SleepMS(2);
 			endforeach
 		endif
 
-		Message("Voce conseguiu abrir a mochila de " + targ.name + ".").SetColor(SSM_INFO).SendSys(mobile);
+		Message("Voce conseguiu abrir a mochila de " + targ.name + ".").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 	SendOpenSpecialContainer(mobile, targ.backpack);
-	Message("Se desejar parar de roubar, pressione Esc no momento da escolha do item.").SetColor(SSM_INFO).SendSys(mobile);
+	Message("Se desejar parar de roubar, pressione Esc no momento da escolha do item.").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 
 	var steal_attempts := 0;
 	var max_steal_attempts := 50;  // Proteção: máximo 50 tentativas por sessão
@@ -128,21 +153,21 @@ program skill_Stealing(mobile)
 	while (steal_attempts < max_steal_attempts)
 		steal_attempts := steal_attempts + 1;
 		
-		Message("Escolha um item para roubar.").SetColor(SSM_REQUEST).SendSys(mobile);
+		Message("Escolha um item para roubar.").SetColor(Color(SYSTEM_COLOR::ALERT)).SendSys(mobile);
 		var steal := Target(mobile); // , TGTOPT_NOCHECK_LOS);
 			if (!steal)
-				Message("Voce parou de roubar.").SetColor(SSM_INFO).SendSys(mobile);
+				Message("Voce parou de roubar.").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 				break;
 			elseif (Distance(mobile, targ) > 2)
-				Message("O alvo se afastou demais.").SetColor(SSM_FAIL).SendSys(mobile);
+				Message("O alvo se afastou demais.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 				break;
 			elseif (!IsBehind(targ, mobile.x, mobile.y))
 				if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
-					Message("O alvo nao esta mais de costas para voce.").SetColor(SSM_FAIL).SendSys(mobile);
+					Message("O alvo nao esta mais de costas para voce.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 					break;
 				endif
 			elseif (steal == targ)
-				Message("Alvo invalido.").SetColor(SSM_FAIL).SendSys(mobile);
+				Message("Alvo invalido.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 				continue;
 			endif
 			var aux := steal;
@@ -150,35 +175,37 @@ program skill_Stealing(mobile)
 				aux := aux.container;
 			endwhile
 			if (aux != targ)
-				Message("Voce so pode roubar da bolsa que abriu.").SetColor(SSM_FAIL).SendSys(mobile);
+				Message("Voce so pode roubar da bolsa que abriu.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 				continue;
 			elseif (steal.IsA(POLCLASS_CONTAINER) && steal.objtype != 0x1011)
 				if (steal.locked)
-					Message(steal.desc + " esta trancado.").SetColor(SSM_FAIL).SendSys(mobile);
+					Message(steal.desc + " esta trancado.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 				else
 					SendViewContainer(mobile, steal);
-					Message("Voce abriu " + steal.desc + ".").SetColor(SSM_INFO).SendSys(mobile);
+					Message("Voce abriu " + steal.desc + ".").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 				endif
 				continue;
 			endif
 
+			var batedor := MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA);
 			if (steal.objtype IN { 0xba63, 0xba64, 0xba65 }) // moeda
 				diff := CInt(steal.amount / 5);
-				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
+				if (batedor)
 					diff := 0;
+					DebugMsg(mobile, DEBUG_HAB, Message("[PICKPOCKET] Batedor override: auto-success para moedas", Color(SYSTEM_COLOR::INFO)));
 				endif
 			elseif (steal.objtype IN { 0x1085, 0x1086, 0x1087, 0x1088, 0xA349, 0x1089, 0x108a,
 						   			0x2b6e, 0x2b6f, 0x2b70, 0xCE3D, 0xCE3E, 0xCE3F }) // joias
-			
-
 				diff := CInt(steal.weight * 10);
-				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
+				if (batedor)
 					diff := 0;
+					DebugMsg(mobile, DEBUG_HAB, Message("[PICKPOCKET] Batedor override: auto-success para joias", Color(SYSTEM_COLOR::INFO)));
 				endif
 			elseif (steal.objtype IN { 0x1011, 0x100E, 0x100F, 0x1010, 0x1012, 0x1013 }) // chaves
 				diff := 35;
-				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
+				if (batedor)
 					diff := 0;
+					DebugMsg(mobile, DEBUG_HAB, Message("[PICKPOCKET] Batedor override: auto-success para chaves", Color(SYSTEM_COLOR::INFO)));
 				endif
 			else
 				diff := CInt(steal.weight * 10);
@@ -187,21 +214,43 @@ program skill_Stealing(mobile)
 			diff := diff + difbonus;
 
 			if (diff > 1.5 * AP_GetSkill(mobile, PICKPOCKETING))
-				Message("Voce nao tentara roubar isso, pois tem certeza que falhara.").SetColor(SSM_INFO).SendSys(mobile);
+				Message(steal.desc + " (peso " + steal.weight + "): Voce nao tentara roubar isso, pois tem certeza que falhara.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 				continue;
 			endif
 
-			var check := SkillCheck(mobile, PICKPOCKETING, diff);
-			if (check > 0)
+			if (batedor && diff == 0)
+				Message("Seus dedos deslizam sobre " + steal.desc + "...", Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
+			else
+				Message("Voce estima " + steal.desc + " (peso " + steal.weight + ")... " + DifficultyTier(diff) + ".", Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
+			endif
+
+			var item_check := SkillCheck(mobile, PICKPOCKETING, diff);
+			DebugMsg(
+				mobile,
+				DEBUG_HAB,
+				Message(
+					"[PICKPOCKET] item=" + steal.desc + " objtype=" + steal.objtype +
+					" weight=" + steal.weight + " amount=" + steal.amount +
+					" diff=" + diff + " check=" + item_check +
+					" skill=" + AP_GetSkill(mobile, PICKPOCKETING),
+					Color(SYSTEM_COLOR::INFO)
+				)
+			);
+			if (item_check > 0)
 				if (MobileWrapper(targ).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
 					if (GetObjProperty(steal, "#elementalweapon"))
-						Message("O alvo tem uma ligacao magica com a arma.").SetColor(SSM_FAIL).SendSys(mobile);
+						Message("O alvo tem uma ligacao magica com a arma.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 						return 1;
 					endif
 				endif
 				MoveObjectToLocation(steal, 0, 0, 0, mobile.realm);
 				MoveItemToContainer(steal, mobile.backpack);
-				Message("Voce roubou " + steal.desc + ".").SetColor(SSM_INFO).SendSys(mobile);
+				Message("Voce roubou " + steal.desc + ".", Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
+				if (item_check > 25)
+					Message("*mão leve como uma pluma*", Color(SYSTEM_COLOR::SUCCESS)).SendAbovePrivate(mobile, mobile);
+				elseif (item_check <= 5)
+					Message("Por um triz! " + targ.name + " quase te pegou...", Color(SYSTEM_COLOR::ALERT)).SendSys(mobile);
+				endif
 				SkillCheck(mobile, PICKPOCKETING, -1);
 
 				var region := GetRegionName(mobile);
@@ -231,16 +280,21 @@ program skill_Stealing(mobile)
 										  					region, coords, steal.desc });
 				endif
 			else
-				Message("Voce nao conseguiu roubar " + steal.desc + ".").SetColor(SSM_FAIL).SendSys(mobile);
+				Message("Voce nao conseguiu roubar " + steal.desc + ".").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 				if (TS_GetTimerInfo(targ, "sleep"))
-					Message("Voce acelerou o despertar do alvo!").SetColor(SSM_FAIL).SendSys(mobile);
+					Message("Voce acelerou o despertar do alvo!").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 					var tempo_faltante := TS_GetTimerDuration(targ, "sleep");
 					var tempo_metade := tempo_faltante / 2;
 					TS_LowerDuration(targ, "sleep", -1);
 					TS_StartTimer(targ, "sleep", tempo_metade, 1, 0, 0);
 					Detach();
 				endif
-				if (check < -25)
+				if (item_check < -25)
+					DebugMsg(
+						mobile,
+						DEBUG_HAB,
+						Message("[PICKPOCKET] critical failure on item (check=" + item_check + ")", Color(SYSTEM_COLOR::FAIL))
+					);
 					StealCriticalFailure(mobile, targ);
 				endif
 				break;
@@ -249,13 +303,13 @@ program skill_Stealing(mobile)
 		
 		// Aviso se atingiu o limite de tentativas
 		if (steal_attempts >= max_steal_attempts)
-			Message("Voce atingiu o limite de tentativas de roubo. Tente novamente.").SetColor(SSM_FAIL).SendSys(mobile);
+			Message("Voce atingiu o limite de tentativas de roubo. Tente novamente.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		endif
 		
 		mobile.facing := mobile.facing; // Pra fechar o container! ;D
 	else
-		Message("Voce nota que o alvo percebeu algo.").SetColor(SSM_FAIL).SendSys(mobile);
-		Message("Voce sentiu algo na sua bolsa.").SetColor(SSM_INFO).SendSys(targ);
+		Message("Voce nota que o alvo percebeu algo.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		Message("Voce sentiu algo na sua bolsa.").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(targ);
 
 		if (!mobile.hidden)
 			var range := 13 - CInt(AP_GetSkill(mobile, PICKPOCKETING) / 7);
@@ -265,14 +319,19 @@ program skill_Stealing(mobile)
 				elseif (player == mobile)
 				elseif (player == targ)
 				elseif (!IsBehind(player, targ.x, targ.y) && (SkillCheck(player, AWARENESS, diff_awar) > 0))
-					Message("Voce nota que " + player.name + " percebeu algo.").SetColor(SSM_FAIL).SendSys(mobile);
-					Message("Voce nota " + mobile.name + " tentando roubar de " + targ.name + ".").SetColor(SSM_INFO).SendSys(player);
+					Message("Voce nota que " + player.name + " percebeu algo.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+					Message("Voce nota " + mobile.name + " tentando roubar de " + targ.name + ".").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(player);
 				endif
 				SleepMS(2);
 			endforeach
 		endif
 
 		if (check < -10) // Falha Crítica
+			DebugMsg(
+				mobile,
+				DEBUG_HAB,
+				Message("[PICKPOCKET] outer critical failure (check=" + check + ")", Color(SYSTEM_COLOR::FAIL))
+			);
 			StealCriticalFailure(mobile, targ);
 		endif
 	endif
@@ -293,14 +352,14 @@ endprogram
 function HandleStealableArtifact(mobile, artifact)
 	// Verifica distância
 	if (Distance(mobile, artifact) > 2)
-		Message("O artefato está muito longe.").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("O artefato está muito longe.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 	
 	// Verifica cooldown global de tentativas (10 segundos)
 	var cooldown := setCooldown(mobile, "StealableLastAttempt", 10);
 	if (cooldown)
-		Message("Você precisa esperar " + cooldown + " segundos antes de tentar roubar novamente.").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Você precisa esperar " + cooldown + " segundos antes de tentar roubar novamente.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 	
@@ -394,12 +453,12 @@ function HandleStealableArtifact(mobile, artifact)
 					// Executa as armadilhas usando o sistema existente
 					RunTraps(artifact, mobile);
 					
-					Message("Você roubou o artefato, mas ativou uma armadilha!").SetColor(SSM_FAIL).SendSys(mobile);
+					Message("Você roubou o artefato, mas ativou uma armadilha!").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 					PrintTextAbove(mobile, "*Ativa uma armadilha ao roubar*");
 				else
 					var time_remaining := 21600 - time_since_trigger;
 					var hours := CInt(time_remaining / 3600);
-					Message("A armadilha está recarregando (" + hours + " horas).").SetColor(SSM_INFO).SendSys(mobile);
+					Message("A armadilha está recarregando (" + hours + " horas).").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 				endif
 				
 				// Continua com o roubo mesmo após a armadilha
@@ -412,7 +471,7 @@ function HandleStealableArtifact(mobile, artifact)
 		EraseObjProperty(mobile, fail_key);
 		EraseObjProperty(mobile, attempts_key);
 		
-		Message("Você conseguiu roubar " + artifact.desc + "!").SetColor(SSM_INFO).SendSys(mobile);
+		Message("Você conseguiu roubar " + artifact.desc + "!").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 		
 		// Mensagem overhead visível para todos
 		PrintTextAbove(mobile, "Você roubou um item sem ser pego, ele agora é seu.");
@@ -458,7 +517,7 @@ function HandleStealableArtifact(mobile, artifact)
 		return 1;
 	else
 		// Falha
-		Message("Você falhou ao tentar roubar " + artifact.desc + ".").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Você falhou ao tentar roubar " + artifact.desc + ".").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		
 		// Treina Pickpocketing mesmo em falha (você aprende tentando!)
 		SkillCheck(mobile, PICKPOCKETING, -1);
@@ -481,12 +540,12 @@ function HandleStealableArtifact(mobile, artifact)
 			EraseObjProperty(mobile, "StealableFails_" + artifact.serial);
 			SetObjProperty(mobile, attempts_key, 1);
 			total_attempts := 1;
-			Message("Você sente que pode tentar novamente com mais cuidado.").SetColor(SSM_INFO).SendSys(mobile);
+			Message("Você sente que pode tentar novamente com mais cuidado.").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 		endif
 		
 		// Falha crítica
 		if (check < -25)
-			Message("Suas mãos escorregam desajeitadamente no artefato!").SetColor(SSM_FAIL).SendSys(mobile);
+			Message("Suas mãos escorregam desajeitadamente no artefato!").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 			PrintTextAbove(mobile, "*Movimento brusco*");
 			
 			// Verifica se tem armadilha configurada
@@ -504,11 +563,11 @@ function HandleStealableArtifact(mobile, artifact)
 					// Executa as armadilhas usando o sistema existente
 					RunTraps(artifact, mobile);
 					
-					Message("Você ativou uma armadilha!").SetColor(SSM_FAIL).SendSys(mobile);
+					Message("Você ativou uma armadilha!").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 				else
 					var time_remaining := 21600 - time_since_trigger;
 					var hours := CInt(time_remaining / 3600);
-					Message("A armadilha ainda está recarregando (" + hours + " horas restantes).").SetColor(SSM_INFO).SendSys(mobile);
+					Message("A armadilha ainda está recarregando (" + hours + " horas restantes).").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(mobile);
 				endif
 			endif
 			

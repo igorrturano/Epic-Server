@@ -8,6 +8,7 @@ include ":wrappers:Objects/Model/WeaponWrapper";
 include ":abilities:models/Ability";
 include ":tn:cooldown";
 include "include/packets";
+include "include/dungeons";
 
 /**
  * Calcula a chance de acerto de um ataque baseado nos atributos do atacante e defensor,
@@ -331,17 +332,17 @@ function CalculateEntropyHitModifier(byref hit_chance, attackInfo)
 
 	var globalEntropy := Cint(GetGlobalProperty("GlobalEntropy"));
 	if (globalEntropy <= -60000 && attackInfo.GetAttacker().IsNPC())
-		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetEnvironment());
 		if (npc_category == "void")
 			hit_chance += 10.0;
 		endif
 	elseif (globalEntropy <= -40000)
-		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetEnvironment());
 		if (npc_category == "demon")
 			hit_chance += 10.0;
 		endif
 	elseif (globalEntropy <= -20000)
-		var npc_category := Lower(attackInfo.GetAttacker().GetCategory());
+		var npc_category := Lower(attackInfo.GetAttacker().GetEnvironment());
 		if (npc_category == "undead")
 			hit_chance += 10.0;
 		endif

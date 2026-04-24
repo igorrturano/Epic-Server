@@ -38,7 +38,7 @@ endprogram
 
 function GM_Disease_MainGump(mob)
 
-    var g := GFECreateGump("GM - Disease Control", 420, 360);
+    var g := GFECreateGump("GM - Disease Control", 420, 420);
 
     var y := 77;
 
@@ -52,6 +52,8 @@ function GM_Disease_MainGump(mob)
 	GM_Button(g, 40, y, 4, "Criar Bolsa Medica"); y += 28;
     GM_Button(g, 40, y, 5, "Colocar Curandeiro"); y += 28;
 	GM_Button(g, 40, y, 6, "Debug Disease (alvo)"); y += 28;
+	GM_Button(g, 40, y, 11, "Debug Vicios (alvo)"); y += 28;
+	GM_Button(g, 40, y, 12, "Debug Fraturas (alvo)"); y += 28;
 	
 
     return g;
@@ -176,6 +178,14 @@ function ProcessarAcaoGM(mob, btn)
 			if (symptoms)
 				UpdateDiseaseProperty(trgt, "diseases", symptoms);
 			endif
+		11:
+			var trgt := Target(mob);
+			GM_Debug_Vicios(mob, trgt);
+			return;
+		12:
+			var trgt := Target(mob);
+			GM_Debug_Fraturas(mob, trgt);
+			return;
 		endcase
 
 endfunction
@@ -860,5 +870,168 @@ function GM_Disease_TimerAdjustGump(mob, trgt)
 		SendSysMessage(mob, "Cancelado");
 		return;
 	endif
+
+endfunction
+
+function GM_Debug_Vicios(mob, tgt)
+
+	if (!tgt)
+		return;
+	endif
+
+	var v_str := AP_GetVital(tgt, "Viciostr");
+	var v_dex := AP_GetVital(tgt, "Viciodex");
+	var v_int := AP_GetVital(tgt, "Vicioint");
+
+	SendSysMessage(mob, "===== DEBUG VÍCIOS =====");
+	SendSysMessage(mob, "Alvo: " + tgt.name);
+
+	SendSysMessage(mob, "Viciostr: " + v_str);
+	SendSysMessage(mob, "Viciodex: " + v_dex);
+	SendSysMessage(mob, "Vicioint: " + v_int);
+
+	SendSysMessage(mob, "------------------------");
+
+	// GUMP COM OPÇÃO DE RESET
+	var confirm := YesNo(
+		mob,
+		"Deseja resetar todos os vícios deste alvo para 100?",
+		"Resetar",
+		"Cancelar"
+	);
+
+	if (confirm)
+
+		AP_SetVital(tgt, "Viciostr", 100);
+		AP_SetVital(tgt, "Viciodex", 100);
+		AP_SetVital(tgt, "Vicioint", 100);
+
+		SendSysMessage(mob, "Vícios resetados para 100.");
+		SendSysMessage(tgt, "Seus vícios foram restaurados.");
+
+	endif
+
+endfunction
+
+function GM_Debug_Fraturas(mob, tgt)
+
+	if (!tgt)
+		return;
+	endif
+
+	SendSysMessage(mob, "===== DEBUG FRATURAS =====");
+	SendSysMessage(mob, "Alvo: " + tgt.name);
+
+	var fractures := GetObjProperty(tgt, "Fractures");
+
+	if (fractures == error || !fractures.size())
+		SendSysMessage(mob, "Nenhuma fratura registrada.");
+	else
+		foreach f in fractures
+			SendSysMessage(mob, "- " + f);
+		endforeach
+	endif
+
+	// Gump de ações
+	var g := GFECreateGump("Fraturas - Debug", 300, 220);
+
+	GM_Button(g, 40, 60, 1, "Resetar Fraturas");
+	GM_Button(g, 40, 100, 2, "Aplicar Fratura");
+
+	var input := GFSendGump(mob, g);
+
+	if (!input || !input[0])
+		return;
+	endif
+
+	if (input[0] == 1)
+
+		EraseObjProperty(tgt, "Fractures");
+		EraseObjProperty(tgt, "#deferred_fratura");
+		TS_LowerDuration(tgt, "fratura_bracos", -1);
+		TS_LowerDuration(tgt, "fratura_pernas", -1);
+		TS_LowerDuration(tgt, "fratura_torso", -1);
+		TS_LowerDuration(tgt, "fratura_cabeca", -1);
+		TS_LowerDuration(tgt, "fratura_maos", -1);
+		SendSysMessage(mob, "Fraturas removidas.");
+		SendSysMessage(tgt, "Suas fraturas foram tratadas.");
+
+	elseif (input[0] == 2)
+
+		GM_Apply_Fracture_Gump(mob, tgt);
+
+	endif
+
+endfunction
+
+function GM_Apply_Fracture_Gump(mob, tgt)
+
+	var g := GFECreateGump("Aplicar Fratura", 360, 260);
+
+	GFTextLine(g, 40, 40, 53, "Selecione a fratura:");
+
+	GM_Button(g, 40, 80, 1, "Braços");
+	GM_Button(g, 40, 110, 2, "Pernas");
+	GM_Button(g, 40, 140, 3, "Torso");
+	GM_Button(g, 40, 170, 4, "Cabeça");
+	GM_Button(g, 40, 200, 5, "Mãos");
+
+	var input := GFSendGump(mob, g);
+
+	if (!input || !input[0])
+		return;
+	endif
+
+	var fracture_name := "";
+	var gump_name := "";
+
+	case (input[0])
+
+		1:
+			fracture_name := "fratura_bracos";
+			gump_name := "Bracos";
+
+		2:
+			fracture_name := "fratura_pernas";
+			gump_name := "Pernas";
+
+		3:
+			fracture_name := "fratura_torso";
+			gump_name := "Torso";
+
+		4:
+			fracture_name := "fratura_cabeca";
+			gump_name := "Cabeca";
+
+		5:
+			fracture_name := "fratura_maos";
+			gump_name := "Maos";
+
+		default:
+			return;
+
+	endcase
+
+	DeferFractureDebug(tgt, fracture_name, 300, gump_name);
+
+	SendSysMessage(mob, "Fratura aplicada: " + gump_name);
+	SendSysMessage(tgt, "Você sofreu uma fratura!");
+
+endfunction
+
+function DeferFractureDebug(ghost, fracture_name, tempo, gump_name)
+
+	// salva estrutura interna
+	var fractures := array{};
+	fractures.append(struct{ part := fracture_name, tempo := tempo });
+	SetObjProperty(ghost, "#deferred_fratura", fractures);
+
+	// 🔥 substitui visual (não acumula bugado)
+	var visible := array{};
+	visible.append(gump_name);
+
+	SetObjProperty(ghost, "Fractures", visible);
+	EraseObjProperty(ghost, "#deferred_fratura");
+	TS_StartTimer(ghost, fracture_name, tempo); 
 
 endfunction

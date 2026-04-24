@@ -1,0 +1,21 @@
+use uo;
+use os;
+
+program pigeon_monitor(params)
+	var pigeon := params[1];
+	var sender_serial := CInt(params[2]);
+
+	while (pigeon)
+		var ev := wait_for_event(1);
+		if (ev)
+			if (ev.type == "delivered")
+				return;
+			endif
+		endif
+	endwhile
+
+	var sender := SystemFindObjectBySerial(sender_serial);
+	if (sender)
+		SendSysMessage(sender, "A mensagem nao pode ser entregue, o pombo nao retornou.", 33);
+	endif
+endprogram

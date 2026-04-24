@@ -8,8 +8,8 @@ include "include/sounds";
 include "include/say";
 include ":attributes:attributes";
 include "include/facings";
-include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:habilidades";
+include ":spells:Controller/SpellController";
 
 const SOUND_EFFECT_FIRE := 0x1de;
 const UOBJ_FIREFIELD_NS := 0x398c;
@@ -18,176 +18,92 @@ const EFFECT_FIRE := 0x3709;
 
 program SpellScript(params)
 	var caster := params[1];
-	params := 0; // No longer needed
+	var targ := params[2];
+	var spell := params[3];
+	params := 0;
 
-	SendSysMessage(caster, "Escolha a direção da pira purificadora");
-	var targ := TargetCoordinates(caster);
-
-	if (!targ)
-		SendSysMessageEx(caster, "Cancelado.", SSM_FAIL);
-		return 0;
-	endif
-
-	if (!CheckLosAt(caster, targ.x, targ.y, targ.z))
-		SendSysMessageEx(caster, "Você não consegue ver o alvo!", SSM_FAIL);
-		return 0;
-	endif
-
-	// Calcula parâmetros baseados em THEOLOGY
 	var theology := AP_GetSkill(caster, THEOLOGY);
-	var range := CInt(theology / 20) + 2; // Profundidade do cone
-	var duration := CInt(theology/10); // Duração em segundos
+	var range := CInt(theology / 20) + 2;
+	var duration := CInt(theology / 10);
 
 	if (duration < 4)
 		duration := 4;
 	endif
 
-	// Vira o caster na direção do alvo
 	TurnObjectToward(caster, targ.x, targ.y);
 	sleepms(300);
 
 	SendSysMessageEx(caster, "Uma pira purificadora emerge de sua vontade!", SSM_INFO);
 	PrintTextAbove(caster, "*Chamas sagradas brotam*");
 
-	// Som de fogo intenso
 	PlaySoundEffect(caster, SOUND_EFFECT_FIRE);
-	PlaySoundEffect(caster, 0x208); // Som de chamas crescendo
+	PlaySoundEffect(caster, 0x208);
 
-	// Cria o cone de fogo expandindo do caster
-	var fires := array;
 	var facing := caster.facing;
 	var start_x := caster.x;
 	var start_y := caster.y;
-	var start_z := caster.z;
+	var fire_serials := array{};
 
-	// Cria cone de fogo similar ao burning hands, mas com campos de fogo
 	for line := 1 to range
-		var width := line * 2 + 1; // Expande em largura
-
 		for i := -line to line
 			var pos_x, pos_y;
 
 			case (facing)
-				0: // North
-					pos_x := start_x + i;
-					pos_y := start_y - line;
-				1: // Northeast
-					pos_x := start_x + line;
-					pos_y := start_y - line + i;
-				2: // East
-					pos_x := start_x + line;
-					pos_y := start_y + i;
-				3: // Southeast
-					pos_x := start_x + line;
-					pos_y := start_y + line - i;
-				4: // South
-					pos_x := start_x + i;
-					pos_y := start_y + line;
-				5: // Southwest
-					pos_x := start_x - line;
-					pos_y := start_y + line - i;
-				6: // West
-					pos_x := start_x - line;
-					pos_y := start_y + i;
-				7: // Northwest
-					pos_x := start_x - line;
-					pos_y := start_y - line + i;
+				0: pos_x := start_x + i;    pos_y := start_y - line;
+				1: pos_x := start_x + line; pos_y := start_y - line + i;
+				2: pos_x := start_x + line; pos_y := start_y + i;
+				3: pos_x := start_x + line; pos_y := start_y + line - i;
+				4: pos_x := start_x + i;    pos_y := start_y + line;
+				5: pos_x := start_x - line; pos_y := start_y + line - i;
+				6: pos_x := start_x - line; pos_y := start_y + i;
+				7: pos_x := start_x - line; pos_y := start_y - line + i;
 			endcase
 
-			// Não coloca fogo na posição do caster
 			if (pos_x == start_x && pos_y == start_y)
 				continue;
 			endif
 
 			var z := GetWorldHeight(pos_x, pos_y, caster.realm);
 
-			// Escolhe o tipo de campo de fogo baseado na orientação
 			var fire_type := UOBJ_FIREFIELD_NS;
-			if (facing == 2 || facing == 6) // East/West
+			if (facing == 2 || facing == 6)
 				fire_type := UOBJ_FIREFIELD_EW;
 			endif
 
 			var fire := CreateItemAtLocation(pos_x, pos_y, z, fire_type, 1, caster.realm);
 
 			if (fire)
-				fires.append(fire);
+				fire_serials.append(fire.serial);
 				SetObjProperty(fire, "summoner", caster.serial);
-
-				// Efeito visual adicional de fogo purificador
 				PlayStationaryEffect(pos_x, pos_y, z, EFFECT_FIRE, 7, 10, 0, caster.realm);
 			endif
 
-			sleepms(30);
+			sleepms(5);
 		endfor
 
-		// Som ao expandir cada linha
 		PlaySoundEffect(caster, SOUND_EFFECT_FIRE);
-		sleepms(10);
 	endfor
 
-	// Causa dano inicial em quem está na área
-	CauseDamageInArea(caster, fires, theology);
+	// SC timer runs on the caster (icon + duration). Tick fires area damage.
+	// on_expire tears down the fire items — also fires if dispelled.
+	var tick_interval := 2;
 
-	// Detach para manter o fogo por um tempo
-	detach();
+	var opts := struct{};
+	opts.+buff_category := "pira_purificadora";
+	opts.+displayname := "Pira Purificadora";
+	opts.+desc := "Chamas queimam em area";
+	opts.+tick_script := ":spells:spell_logic/druid/pirapurificadoraTick";
+	opts.+tick_interval := tick_interval;
+	opts.+tick_params := struct{
+		fire_serials := fire_serials,
+		theology := CInt(theology)
+	};
+	opts.+on_expire_script := ":spells:spell_logic/druid/pirapurificadoraExpire";
+	opts.+on_expire_params := struct{
+		fire_serials := fire_serials
+	};
 
-	// Loop de duração - causa dano periódico
-	var counter := 0;
-	for (counter := 1; counter <= duration; counter := counter + 1)
-		// Som periódico de chamas
-		if (counter % 3 == 0)
-			foreach fire in fires
-				if (fire)
-					PlaySoundEffect(fire, SOUND_EFFECT_FIRE);
-				endif
-			endforeach
-		endif
-
-		// Dano a cada 2 segundos
-		if (counter % 2 == 0)
-			CauseDamageInArea(caster, fires, theology);
-		endif
-
-		sleep(1);
-	endfor
-
-	// Remove os campos de fogo
-	foreach fire in fires
-		DestroyItem(fire);
-	endforeach
+	SC_ApplyEffect(caster, caster, opts, duration, CInt(spell.id));
 
 	return 1;
 endprogram
-
-function CauseDamageInArea(caster, fires, theology)
-	// Coleta todas as posições de fogo
-	var fire_positions := array;
-	foreach fire in fires
-		if (fire)
-			fire_positions.append(struct{ "x" := fire.x, "y" := fire.y, "z" := fire.z });
-		endif
-	endforeach
-
-	// Lista mobiles próximos
-	var mobs := ListMobilesNearLocation(caster.x, caster.y, caster.z, 15, caster.realm);
-
-	foreach mob in mobs
-		if (mob == caster)
-			continue;
-		endif
-
-		// Verifica se o mobile está em cima de algum fogo
-		foreach fire_pos in fire_positions
-			if (mob.x == fire_pos.x && mob.y == fire_pos.y)
-				// Calcula dano baseado em THEOLOGY
-				var damage := CInt(theology / 10) + RandomDiceRoll("2d6");
-
-				// Efeito visual no alvo
-				PlayObjectCenteredEffect(mob, 0x3709, 7, 10);
-
-				DamageFLS(mob, damage, DMG_FIRE, caster);
-				break; // Não precisa checar outras posições
-			endif
-		endforeach
-	endforeach
-endfunction

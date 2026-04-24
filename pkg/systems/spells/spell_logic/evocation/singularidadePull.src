@@ -1,0 +1,42 @@
+use uo;
+use os;
+
+include "include/facings";
+
+// Puxa um mob tile por tile em direcao a um ponto alvo, ignorando bloqueios
+// de LOS/tile. Rodado em sub-script para permitir que varios mobs sejam
+// puxados simultaneamente pela Singularidade.
+// Args: { mob, targ_struct, pull_tiles }
+program SingularidadePull(args)
+	var mob := args[1];
+	var targ := args[2];
+	var pull := CInt(args[3]);
+	args := 0;
+
+	if (!mob || mob.errortext)
+		return;
+	endif
+	if (pull <= 0)
+		return;
+	endif
+
+	var mod := GetModByFacing(GetFacing(mob.x, mob.y, targ.x, targ.y));
+	if (mod.errortext)
+		return;
+	endif
+
+	var sx := mod[1];
+	var sy := mod[2];
+
+	var i;
+	for (i := 1; i <= pull; i := i + 1)
+		if (!mob || mob.dead)
+			return;
+		endif
+		if (mob.x == targ.x && mob.y == targ.y)
+			return;
+		endif
+		MoveObjectToLocation(mob, mob.x + sx, mob.y + sy, mob.z, mob.realm, MOVEOBJECT_FORCELOCATION);
+		sleepms(40);
+	endfor
+endprogram

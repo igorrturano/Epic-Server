@@ -59,7 +59,7 @@ function IsDemon(mobile)
 	var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
 	var cfg := ReadConfigFile(":*:npcdesc");
 
-	if (cfg[npctemplate.template].Category == "Demons")
+	if (cfg[npctemplate.template].Environment == "Demons")
 		return 1;
 	endif
 

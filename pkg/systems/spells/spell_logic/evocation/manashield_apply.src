@@ -1,0 +1,35 @@
+use uo;
+use os;
+
+include "include/client";
+
+// on_apply for Protecao Arcana. Runs on the initial SC_ApplyEffect AND on every
+// maintain re-apply. Stamps the "#manashield" property with a fresh endtime so
+// the damage pipeline sees the shield as active, then plays the cast FX/sound.
+// on_apply_params: struct{ duration, fx, sound }
+program ProtecaoArcanaApply(args)
+	var targ := args[2];
+	var p := args[4];
+	args := 0;
+
+	if (!targ || targ.errortext)
+		return;
+	endif
+
+	var duration := CInt(p.duration);
+	if (duration < 1)
+		duration := 1;
+	endif
+
+	SetObjProperty(targ, "#manashield", struct{
+		endtime := ReadGameClock() + duration
+	});
+
+	if (p.fx)
+		PlayObjectCenteredEffect(targ, CInt(p.fx), 0, 30);
+	endif
+
+	if (p.sound)
+		PlaySoundEffect(targ, CInt(p.sound));
+	endif
+endprogram

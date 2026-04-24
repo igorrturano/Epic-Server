@@ -11,6 +11,7 @@ include ":combat:Model/AttributeModifier";
 include ":equipsys:Controller/EquipmentController";
 
 CONST PROPNAME_ITEMINFO := "itemInfo";
+CONST PROPNAME_ABILITY_BONUSES := "ability_bonuses";
 
 class EquipWrapper(ItemWrapper, IEquipWrapper)
 	var EquipProp;
@@ -146,6 +147,31 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 		this.GetObjRef().weight := this.GetWeight();
 		this.GetObjRef().maxHP := this.GetMaxHP();
 		this.GetObjRef().max_weight_mod := this.GetWeight() - this.GetObjRef().weight;
+	endfunction
+
+	function ApplyAbilityBonus(this, attribute, bonusValue)
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		if (!bonusValue) return this; endif
+		this.SetModifier(AttributeModifier(attribute, this.GetModifier(attribute).GetValue() + bonusValue));
+		var bonuses := this.GetProperty(PROPNAME_ABILITY_BONUSES) ?: dictionary{};
+		if (bonuses.errortext) bonuses := dictionary{}; endif
+		bonuses[attribute] := CInt(bonuses[attribute]) + bonusValue;
+		this.SetProperty(PROPNAME_ABILITY_BONUSES, bonuses);
+		return this;
+	endfunction
+
+	function CleanupOnUnequip(this)
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		var bonuses := this.GetProperty(PROPNAME_ABILITY_BONUSES);
+		if (!bonuses || bonuses.errortext) return this; endif
+		foreach attr in (bonuses.keys())
+			var bonus := CInt(bonuses[attr]);
+			if (bonus)
+				this.SetModifier(AttributeModifier(attr, this.GetModifier(attr).GetValue() + bonus));
+			endif
+		endforeach
+		this.EraseProperty(PROPNAME_ABILITY_BONUSES);
+		return this;
 	endfunction
 
 	function Equals(this, otherEquipWrapper)

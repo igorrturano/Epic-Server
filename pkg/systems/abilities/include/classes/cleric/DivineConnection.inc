@@ -25,6 +25,7 @@ class DivineConnection(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
+
 		var religiao := mobile.GetReligion();
 		var theology_bonus := CInt(mobile.GetSkill(THEOLOGY) / 5);
 		var diaounoite := GetGlobalProperty("dia");
@@ -34,10 +35,15 @@ class DivineConnection(CombatAbility)
 
 		case (religiao)
 			KAI:
-				var targ := Target(who);
-				if (!targ)
-					Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
+				var targ;
+				if (mobile.IsNPC())
+					targ := who;
+				else
+					targ := Target(who);
+					if (!targ)
+						Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
 				endif
 				PlayObjectCenteredEffect(targ, 0x37B9, 0x0A, 0x1E);
 				PlaySoundEffect(targ, 0x51D);
@@ -73,10 +79,21 @@ class DivineConnection(CombatAbility)
 				Message("Sua visao verdadeira se ativa!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			VENERATIO:
-				var targ := Target(who);
-				if (!targ)
-					Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
+				var targ;
+				if (mobile.IsNPC())
+					targ := who.opponent;
+					if (!targ)
+						targ := GetRandomNearbyHostile(who);
+					endif
+					if (!targ)
+						return false;
+					endif
+				else
+					targ := Target(who);
+					if (!targ)
+						Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
 				endif
 				PlaySoundEffect(who, SFX_MAGIC_ARROW);
 				PlayMovingEffectXYZHued(who, targ, FX_MAGIC_ARROW, 10, 1643, 0);
@@ -91,7 +108,7 @@ class DivineConnection(CombatAbility)
 				ApplyRawDamage(targ, CInt(dmg));
 
 			BOKK_BHARAZ:
-				if (!who.party)
+				if (mobile.IsNPC() || !who.party)
 					Message("Voce nao tem aliados!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 					return false;
 				endif
@@ -107,10 +124,15 @@ class DivineConnection(CombatAbility)
 				Message("*Parede de Escudos*").SendAbove(who);
 
 			HALLEUAD:
-				var targ := Target(who);
-				if (!targ)
-					Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
+				var targ;
+				if (mobile.IsNPC())
+					targ := who;
+				else
+					targ := Target(who);
+					if (!targ)
+						Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
 				endif
 
 				var skill := TACTICS;

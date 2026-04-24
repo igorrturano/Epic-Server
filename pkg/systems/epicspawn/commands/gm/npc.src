@@ -844,7 +844,7 @@ function SelectMountFromList(who, npc, page := 1)
 	var available_mounts := array{};
 	foreach template in GetConfigStringKeys(cfg)
 		var elem := cfg[template];
-		if (elem.Category == "Mount")
+		if (elem.Environment == "Mount")
 			available_mounts.append(struct{ "name" := elem.Name, "graphic" := elem.Objtype });
 		endif
 	endforeach

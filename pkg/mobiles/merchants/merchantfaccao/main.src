@@ -16,7 +16,7 @@ var guild      := 0;
 var following  := 0;
 var fix_location := 0;
 
-const MERCH_DEBUG := 1;
+const MERCH_DEBUG := 0;
 
 // ============================================================
 // DEBUG
@@ -120,7 +120,7 @@ function ResolveSpeech(ev)
 			return SendSysMessage(ev.source, "Cancelado.");
 		endif
 		MerchLog("IR", "alvo=({},{},{}) | guild={}".format(where.x, where.y, where.z, guild ? guild.guildid : "nenhum"));
-		if (guild && !inGuildRect(guild, where, 0))
+		if (guild && !IsNPCInWalkRect(where))
 			PrintTextAbove(me, "Nao posso ir alem do territorio da faccao!");
 			SendSysMessage(ev.source, "[Mercador] Destino fora do territorio.");
 			MerchLog("IR", "destino fora do territorio — recusado");
@@ -199,32 +199,31 @@ program MerchantMain()
 			endif
 		endif
 
-		// --- Verificacao de territorio (mesmo logica do guard) ---
-		if (guild && !inGuildRect(guild, me, 4))
-			var _target := following ? following : 0;
-			var _target_inside := _target ? inGuildRect(guild, _target, 0) : 0;
-
-			if (MERCH_DEBUG && !GetCooldown(me, "debug_outside"))
-				MerchLog("TERRITORIO", "FORA dos limites (+4) | alvo_dentro={}".format(_target_inside));
-				SetCooldown(me, "debug_outside", 3);
-			endif
-
-			if (!_target_inside && following)
-				following := 0;
-				PrintTextAbove(me, "Nao posso ir alem do territorio!");
-				MerchLog("RETIRADA", "cancelando seguir — alvo fora do territorio");
-			endif
-
-			// Sem posto: caminhar de volta para o centro do rect
-			if (!fix_location && !_target_inside)
-				var _center := GetGuildCenter(guild);
-				if (_center)
-					if (MERCH_DEBUG && !GetCooldown(me, "debug_walk_back"))
-						MerchLog("RETORNO", "sem posto — caminhando para ({},{})".format(_center.x, _center.y));
-						SetCooldown(me, "debug_walk_back", 2);
+		// Controle de território: staff usa rect hardcoded, player usa rect da guild.
+		if (guild)
+			if (GetObjProperty(me, "tipo_faccao") == "staff")
+				if (HandleWalkRectBreach(me, wait_time))
+					if (following)
+						MerchLog("RECT", "saiu do rect seguindo '{}' — parando".format(following.name));
+						following := 0;
+						PrintTextAbove(me, "Nao posso ir alem do meu territorio!");
 					endif
-					RunTowardLocation(_center.x, _center.y);
-					wait_time := 0;
+				endif
+			elseif (!inGuildRect(guild, me, 4))
+				var _target := following ? following : 0;
+				var _target_inside := _target ? inGuildRect(guild, _target, 0) : 0;
+
+				if (!_target_inside && following)
+					following := 0;
+					PrintTextAbove(me, "Nao posso ir alem do territorio!");
+				endif
+
+				if (!fix_location && !_target_inside)
+					var _center := GetGuildCenter(guild);
+					if (_center)
+						RunTowardLocation(_center.x, _center.y);
+						wait_time := 0;
+					endif
 				endif
 			endif
 		endif
@@ -235,7 +234,7 @@ program MerchantMain()
 				following := 0;
 			else
 				var dist := Distance(me, following);
-				if (MERCH_DEBUG && !GetCooldown(me, "debug_follow"))
+				if (!GetCooldown(me, "debug_follow"))
 					MerchLog("SEGUINDO", "'{}' | dist={}".format(following.name, dist));
 					SetCooldown(me, "debug_follow", 2);
 				endif
@@ -260,7 +259,7 @@ program MerchantMain()
 		if (!following && fix_location)
 			var dist_posto := CoordinateDistance(me.x, me.y, fix_location.x, fix_location.y);
 			if (dist_posto > 1)
-				if (MERCH_DEBUG && !GetCooldown(me, "debug_return"))
+				if (!GetCooldown(me, "debug_return"))
 					MerchLog("RETORNO", "voltando ao posto ({},{})".format(fix_location.x, fix_location.y));
 					SetCooldown(me, "debug_return", 3);
 				endif
@@ -268,6 +267,18 @@ program MerchantMain()
 				wait_time := 0;
 			else
 				me.facing := fix_location.facing;
+			endif
+		endif
+
+		// --- Vaguear pelo territorio quando ocioso ---
+		if (!following && !fix_location && guild && !GetCooldown(me, "wander_cd"))
+			var _is_staff_m := (GetObjProperty(me, "tipo_faccao") == "staff");
+			var _in_bounds_m := _is_staff_m ? IsNPCInWalkRect(me) : inGuildRect(guild, me, 0);
+			if (_in_bounds_m)
+				var _wp := GetRandomWanderPoint();
+				WalkTowardLocation(_wp.x, _wp.y);
+				SetCooldown(me, "wander_cd", RandomInt(8) + 4);
+				wait_time := 0;
 			endif
 		endif
 
@@ -311,7 +322,7 @@ program MerchantMain()
 				break;
 
 			MERCH_GO_CMD:
-				if (guild && !inGuildRect(guild, ev.dest, 4))
+				if (guild && !IsNPCInWalkRect(ev.dest))
 					PrintTextAbove(me, "Nao posso ir alem do territorio da faccao!");
 					if (ev.who) SendSysMessage(ev.who, "[Mercador] Destino fora do alcance do territorio."); endif
 					break;

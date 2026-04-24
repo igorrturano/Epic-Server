@@ -45,8 +45,7 @@ program earthquake(parms)
 		PlaySoundEffect(mobile, SFX_223);
 		sleepms(200);
 		SendSysMessageEx(mobile, "Voce sente o chao tremer com extrema violencia.", SSM_FAIL);
-		var dmg := epicSpellDamageRoll(caster, spell_circle);
-		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
 
 		DamageFLS(mobile, cint(dmg), DMG_FORCED, caster, "earthquake");
 		sleepms(600);

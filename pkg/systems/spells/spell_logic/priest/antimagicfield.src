@@ -1,43 +1,43 @@
+use uo;
+use os;
+
 include ":attributes:attributes";
-include ":tn:cooldown";
-include ":hotbar:include/custombuff";
+include "include/client";
+include "include/say";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var spell := params[3];
-	// Calculate duration based on Theology skill
+	params := 0;
+
 	var theology := AP_GetSkill(who, THEOLOGY);
 	var duration := cint(theology);
 	if (duration < 10)
 		duration := 10;
 	endif
 
-	// Get all mobiles near the target location (18 tile radius)
-	var nearby := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 18, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
+	// Original loop cadence: one outer pass every duration/10 seconds,
+	// silencing in-range mobiles for the same window each time.
+	var tick_interval := CInt(duration / 10);
+	if (tick_interval < 1)
+		tick_interval := 1;
+	endif
 
-	var silenced_count := 0;
-	SendSpellBuff(who, who, CInt(spell.id), duration);
+	var opts := struct{};
+	opts.+buff_category := "antimagic_field";
+	opts.+displayname := "Campo Anti-Magia";
+	opts.+desc := "Area silenciada";
+	opts.+tick_script := ":spells:spell_logic/priest/antimagicfieldTick";
+	opts.+tick_interval := tick_interval;
+	opts.+tick_params := struct{
+		silence_duration := tick_interval,
+		caster_serial := who.serial
+	};
 
-	for i := 0 to Cint(duration/10)
-		PlayObjectCenteredEffect(who, FX_MAGIC_IMMUNITY, 10, 255);
+	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
 
-		foreach mobile in nearby
-			if (mobile != who)
-				SetCooldown(mobile, "silence", Cint(duration/10));
-				PlaySoundEffect(who, SFX_SPELL_ENERGY_FIELD);
-				PlayObjectCenteredEffect(mobile, FX_MAGIC_IMMUNITY, 10, 255);
-
-				SendSysMessageEx(mobile, "Voce foi silenciado por um campo anti-magia!", SSM_FAIL);
-
-				silenced_count := silenced_count + 1;
-				sleepms(20);
-			endif
-		endforeach
-
-		Sleep(Cint(duration/10));
-	endfor
-
-	SendSysMessageEx(who, "Voce criou um campo anti-magia, silenciando " + silenced_count + " criatura(s) por " + duration + " segundos.", SSM_INFO);
+	SendSysMessageEx(who, "Voce criou um campo anti-magia por " + duration + " segundos.", SSM_INFO);
 
 	return 1;
 endprogram
