@@ -363,6 +363,12 @@ function HandleStealableArtifact(mobile, artifact)
 		PerformAction(mobile, 0x0020); // ACTION_BOW
 		PlaySoundEffect(mobile, 0x58); // SOUND_SCRUNCH
 		Sleep(5); // 5 segundos entre cada tentativa
+
+		// Cancela se o jogador se afastou do artefato durante a tentativa
+		if (Distance(mobile, artifact) > 2)
+			SendSysMessage(mobile, "Você se moveu e por isso não poderá continuar o seu roubo.", SSM_FAIL);
+			return 0;
+		endif
 	endfor
 	
 	// Tenta roubar usando Pickpocketing
