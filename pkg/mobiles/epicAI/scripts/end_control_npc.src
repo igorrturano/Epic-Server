@@ -1,0 +1,49 @@
+// ============================================================================
+// End Control NPC — release a hypnotized/controlled NPC back to its brain
+// ============================================================================
+// Spawned via start_script() to keep :taming:taming (and its :mounts:mounts
+// transitive) out of brain.src's compile unit. Called by spell scripts when
+// a charm/control effect ends. Pattern mirrors loot_init.src / setup_mount.src.
+// ============================================================================
+
+use uo;
+use os;
+
+include ":taming:taming";
+
+program EndControlNPC(params)
+    if (params.size() < 1)
+        return 0;
+    endif
+
+    var who := params[1];
+    if (!who)
+        return 0;
+    endif
+
+    ErasePet(who.master, who.serial);
+    who.SetMaster(0);
+
+    var orig_script := GetObjProperty(who, "script");
+
+    if (!orig_script)
+        PrintTextAbove(who, "*doesnt have an original script to use now that taming is done?!*");
+        SysLog(who.name + " doesnt have an original script to use now that taming is done?!");
+        orig_script := ":brainai:brain";
+    elseif (orig_script["tamed"])
+        PrintTextAbove(who, "*my original script was tamed.src ?!*");
+        SysLog(who.name + " my original script was tamed.src ?!");
+        orig_script := ":brainai:brain";
+    endif
+
+    who.script := orig_script;
+    SetName(who, GetObjProperty(who, "name"));
+    EraseObjProperty(who, "owner");
+    EraseObjProperty(who, "name");
+    EraseObjproperty(who, "script");
+    EraseObjProperty(who, "happiness");
+    RestartScript(who);
+
+    ErasePetMods(who);
+    return 1;
+endprogram

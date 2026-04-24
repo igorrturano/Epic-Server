@@ -1,0 +1,41 @@
+// ============================================================================
+// Setup Mount — one-shot mount-equip for NPC spawn
+// ============================================================================
+// Spawned via start_script() to keep :mounts:mounts (485 LOC + transitives:
+// dungeons, message wrappers, mount cfg dispatch) out of brain.src's compile
+// unit. Cold-init only — runs at boss/mounted-NPC spawn during equipment setup.
+// Pattern mirrors pkg/mobiles/epicAI/scripts/loot_init.src.
+// ============================================================================
+
+use uo;
+use os;
+
+include ":mounts:mounts";
+
+program SetupMount(params)
+    if (params.size() < 2)
+        return 0;
+    endif
+
+    var who := params[1];
+    var montaria := params[2];
+
+    if (!who || !montaria)
+        return 0;
+    endif
+
+    var graphic := MP_GetMountGraphic(montaria);
+    if (graphic.errortext)
+        return 0;
+    endif
+
+    var item := CreateItemAtLocation(who.x, who.y, who.z, MOUNT_OBJTYPE, 1);
+    if (!item)
+        return 0;
+    endif
+
+    item.graphic := graphic;
+    EquipItem(who, item);
+    who.run_speed := 250;
+    return 1;
+endprogram

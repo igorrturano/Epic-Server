@@ -1,0 +1,18 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/say";
+
+// SC on_expire hook for Barreira de Mana. Clears the absorb property.
+program SpellScript(args)
+	var targ := args[2];
+	args := 0;
+
+	if (!targ || targ.errortext)
+		return;
+	endif
+
+	EraseObjProperty(targ, "#manashield");
+	PrintTextAbove(targ, "*barreira arcana se dissipa*");
+endprogram

@@ -2,7 +2,6 @@ use uo;
 
 include "include/sysEvent";
 include ":gumps:gumps";
-include ":message:model/Message";
 
 const COAL_OBJTYPE := 0x1bde;
 const POWDER_OBJTYPE := 0x9092;

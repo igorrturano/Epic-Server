@@ -8,30 +8,24 @@ include ":magery:spells";
 include "include/client";
 include "include/sounds";
 include ":combat:Controller/DamageController_legacy";
+include "include/epicMageryUtils";
 
 program cast_thornstorm(params)
 	var caster := params[1];
-	var info := params[2];
-	params := 0; // No longer needed
+	var targ := params[2];
+	var spellinfo := params[3];
+	params := 0;
 
-	LaunchProjectile(caster, info);
+	LaunchProjectile(caster, targ, spellinfo);
 endprogram
 
-function LaunchProjectile(caster, info)
-	// Efeito sonoro de tempestade/natureza
-	PlaySoundEffect(caster, 0x231); // Som de galhos/vento
+function LaunchProjectile(caster, targ, spellinfo)
+	PlaySoundEffect(caster, 0x231);
+	PlayObjectCenteredEffect(targ, 0xCADD, 10, 15);
 
-	// Efeito visual de espinhos girando
-	// PlayMovingEffect(caster, info, 0x5433, 10, 1, 0); // Projétil verde
-	PlayObjectCenteredEffect(info, 0xCADD, 10, 15); // Explosão de espinhos no alvo
-
-	// Som de impacto
 	sleepms(500);
-	PlaySoundEffect(info, 0x22F);
+	PlaySoundEffect(targ, 0x22F);
 
-	// Dano baseado em THEOLOGY + dado
-	var dmg := cint(AP_GetSkill(caster, THEOLOGY)/10) + RandomDiceRoll("1d4");
-
-	// Dano físico (espinhos são perfurantes/cortantes)
-	DamageFLS(info, cint(dmg), DMG_PHYSICAL, caster);
+	var dmg := cint(AP_GetSkill(caster, THEOLOGY) / 10) + epicSpellDamageRoll(caster, spellinfo.Circle);
+	DamageFLS(targ, cint(dmg), DMG_PHYSICAL, caster);
 endfunction

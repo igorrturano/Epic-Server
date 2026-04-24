@@ -1,7 +1,0 @@
-use uo;
-
-program EndFraturaMaos(params)
-	var mobile := params[1];
-	EraseObjProperty(mobile, "desarmar");
-	return 1;
-endprogram

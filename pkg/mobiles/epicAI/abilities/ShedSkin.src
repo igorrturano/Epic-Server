@@ -1,0 +1,42 @@
+use uo;
+use os;
+use vitals;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+
+program ShedSkin(params)
+	var me := params[1];
+
+	if (!me || me.dead)
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	if (!tier) tier := 1; endif
+
+	PrintTextAbove(me, "*troca de pele*");
+	PlaySoundEffect(me, 0x204);
+	PlayStationaryEffect(me.x, me.y, me.z, FX_SMOKE, 10, 15);
+
+	var debuffs := array{
+		"paralysis", "lentidao", "blinded", "exposed", "desarmar",
+		"weaken", "curse",
+		"defaultPoison", "strPoison", "dexPoison", "intPoison",
+		"staminaPoison", "manaPoison"
+	};
+
+	foreach timer in (debuffs)
+		if (TS_GetTimerInfo(me, timer))
+			TS_LowerDuration(me, timer, -1);
+		endif
+	endforeach
+
+	var mod := 10 + tier * 3;
+	TS_StartTimer(me, "phmod", 10, mod, me, 1);
+
+	HealDamage(me, tier * 2);
+
+	return 1;
+endprogram

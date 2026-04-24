@@ -59,6 +59,13 @@ program unequipweapon(who, item)
 		EraseObjProperty(item, "#steam_dex_penalty");
 	endif
 
+	// Reverte penalidade de esquiva de armadura não-leve aplicada no equip
+	var evasion_penalty := CInt(GetObjProperty(item, "#armor_evasion_penalty"));
+	if (evasion_penalty > 0)
+		who.evasionchance_mod := who.evasionchance_mod + evasion_penalty;
+		EraseObjProperty(item, "#armor_evasion_penalty");
+	endif
+
 	// Block SteamArms removal if a gadget is installed
 	if (item.objtype == 0xFFC3)
 		if (GetObjProperty(item, "InstalledGadget"))

@@ -26,8 +26,7 @@ program SpellScript(params)
 		return 1;
 	endif
 
-	var dmg := epicSpellDamageRoll(who, spell_circle);
-	dmg := bonusSpellDamageForSpecialists(who, dmg, spell_school);
+	var dmg := epicSpellDamageRoll(who, spell_circle, spell_school);
 	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
 	var bonus := epicWisdomPathBonus(who);
 	if (CheckResist(targ, WILL, diff, -bonus))

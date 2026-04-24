@@ -30,6 +30,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var ActiveAbilities; // Dictionary<ACTIVATION_MOMENT, Dictionary<ABILITY_ID, INTEGER>> // O valor dentro do 2º é quantas cargas ativas existem dessa habilidade
 	var _cachedWeapon;       // WeaponWrapper cacheado pra evitar recriação a cada GetEquipBySlot(WEAPON)
 	var _cachedWeaponSerial; // Serial da arma que gerou o cache
+	var Environment;      // NPC-only: spawn environment (ex-Category for NPCs)
 
 	function MobileWrapper(this, byRef mobile)
 		Super(mobile);
@@ -38,7 +39,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			if (mobile.isA(POLCLASS_NPC))
 				this.CfgFile := CFGFile("epicAI", "npcdesc");
 				this.Template := this.GetCfgFile().SetElementName(NPC_ParseTemplateName(mobile.npctemplate).template).GetElement();
-				this.Category := this.GetTemplate().Category;
+				this.Environment := this.GetTemplate().Environment;
 
 				// Variáveis que indicarão que é um NPC ou não encontrou template
 				var err := IsNPCException();
@@ -76,7 +77,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this.Name := this.GetTemplate().desc;
 				this.Graphic := this.GetTemplate().graphic;
 				this.Color := this.GetTemplate().color;
-				this.Category := this.GetTemplate().Category;
+				this.Environment := this.GetTemplate().Environment;
 			endif
 
 			this.ObjRef := err;
@@ -116,6 +117,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		return this.Race;
 	endfunction
 
+	function GetEnvironment(this)
+		return this.Environment;
+	endfunction
+
 	function GetCulture(this)
 		if (this.Culture is @Exception)
 			return this.Culture;
@@ -126,6 +131,16 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	function GetReligion(this)
 		if (this.Religion is @Exception)
+			// NPC path — lazy-read from "npc_religion" ObjProperty set by makeReligion at init.
+			// Non-cleric / non-arqueiro-arcano NPCs have no religion; property is absent and
+			// the IsNPCException is returned (preserves legacy behavior for those).
+			if (this.IsNPC())
+				var stored := GetObjProperty(this.GetObjRef(), "npc_religion");
+				if (stored)
+					this.Religion := stored;
+					return stored;
+				endif
+			endif
 			return this.Religion;
 		endif
 
@@ -684,6 +699,24 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		return this.GetProperty(MOBILE_PROPNAME::ABILITIES) ?: dictionary{};
+	endfunction
+
+	function TriggerEquipPassives(this, byRef equip)
+		var abilities := this.GetAbilities();
+		if (!abilities) return; endif
+		foreach level in (abilities.keys())
+			run_script_to_completion(":abilities:AbilityController", array{"passive", CInt(abilities[level]), equip, ABILITY_ACTIVATION::ON_EQUIP});
+		endforeach
+	endfunction
+
+	function TriggerUnequipPassives(this, byRef equip)
+		var abilities := this.GetAbilities();
+		if (abilities)
+			foreach level in (abilities.keys())
+				run_script_to_completion(":abilities:AbilityController", array{"passive", CInt(abilities[level]), equip, ABILITY_ACTIVATION::ON_UNEQUIP});
+			endforeach
+		endif
+		equip.CleanupOnUnequip();
 	endfunction
 
 	/**

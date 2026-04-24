@@ -24,6 +24,11 @@ class ControlUndead(CombatAbility)
 
     function ExecuteOn(this, mobile)
         var who := mobile.GetObjRef();
+
+        if (mobile.IsNPC())
+            return false;
+        endif
+
         var cfg := ReadConfigFile(":*:npcdesc");
 
         Message("Escolha o morto para controlar.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
@@ -39,7 +44,7 @@ class ControlUndead(CombatAbility)
         endif
 
         var npctemplate := NPC_ParseTemplateName(targ.npctemplate);
-        if (cfg[npctemplate.template].Category != "Undead")
+        if (cfg[npctemplate.template].Environment != "Undead")
             Message("Este nao e um alvo valido.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
             return false;
         endif

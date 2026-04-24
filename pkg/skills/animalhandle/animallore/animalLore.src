@@ -12,6 +12,7 @@ include ":tn:cooldown";
 include "include/eventID";
 include ":epicAI:epicai";
 include ":tn:boss";
+include ":taming:taming";
 
 program skill_animal_lore(who)
 

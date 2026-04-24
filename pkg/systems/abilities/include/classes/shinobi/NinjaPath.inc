@@ -58,15 +58,24 @@ class NinjaPath(CombatAbility)
 			endif
 			return this._TeleportToMark(who, mark_serial, sneak);
 		else
-			return this._MarkTarget(who, sneak);
+			return this._MarkTarget(mobile, who, sneak);
 		endif
 	endfunction
 
-	function _MarkTarget(this, who, sneak)
+	function _MarkTarget(this, mobile, who, sneak)
 		var item_graphic := 0x1BFE;
 
-		Message("Selecione o alvo para marcar.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-		var targ := Target(who);
+		var targ;
+		if (mobile.IsNPC())
+			targ := who.opponent;
+			if (!targ)
+				targ := GetRandomNearbyHostile(who);
+			endif
+		else
+			Message("Selecione o alvo para marcar.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			targ := Target(who);
+		endif
+
 		if (!targ)
 			return false;
 		elseif (!targ.isA(POLCLASS_MOBILE))

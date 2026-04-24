@@ -1,31 +1,3 @@
-use uo;
-use os;
-use util;
-use cfgfile;
-use vitals;
-
-include ":abilities:models/CombatAbility";
-include ":message:model/Message";
-include ":debug:Controller/DebugController";
-include ":gumps:gumps";
-include ":taming:taming";
-include ":attributes:attributes";
-include ":tn:boss";
-include ":tn:npcutil";
-include ":tn:cooldown";
-include ":timedscripts:timedScripts";
-include ":epicai:epicai";
-include ":datafile:datafile";
-include ":wrappers:Objects/Model/MobileWrapper";
-include ":abilities:models/Ability";
-include "include/epicNPCUtils";
-include "include/client";
-include "include/sounds";
-include "include/say";
-include "include/packets";
-include "include/epicConstants";
-include ":hotbar:include/custombuff";
-
 const _NB_BTN_ESTUDAR   := 1;
 const _NB_BTN_VOLTAR    := 2;
 const _NB_BTN_TRANSFORM := 100;
@@ -55,7 +27,7 @@ class NaturalBond(CombatAbility)
     function ExecuteOn(this, mobile)
         var who := mobile.GetObjRef();
 
-        if (who.npctemplate)
+        if (mobile.IsNPC())
             return this._HandleNPCTransformation(who);
         endif
 
@@ -246,9 +218,13 @@ class NaturalBond(CombatAbility)
     endfunction
 
     function _DoTransform(this, who, form)
+        // Snapshot the POL-native truecolor/trueobjtype (immutable body values),
+        // not who.color/who.graphic — those reflect any active visual overlays
+        // (e.g. barkskin tints color to 2826). Capturing the overlay would make
+        // endmetamorfose restore the tint permanently even after the spell expires.
         var metamorfose := struct;
-        metamorfose.+originalcolor   := who.color;
-        metamorfose.+originalgraphic := who.graphic;
+        metamorfose.+originalcolor   := who.truecolor;
+        metamorfose.+originalgraphic := who.trueobjtype;
         metamorfose.+originalname    := who.name;
         metamorfose.+newgraphic      := form.graphic;
         SetObjProperty(who, "metamorfose", metamorfose);
@@ -260,7 +236,7 @@ class NaturalBond(CombatAbility)
         who.frozen := 1;
         sleepms(500);
 
-        PlayObjectCenteredEffect(who, 0x6D01, 10, 30);
+        PlayObjectCenteredEffect(who, 0xDF81, 10, 30); // FX_GREEN_PROTECTION
         who.hidden := 1;
         sleepms(1200);
 
@@ -274,31 +250,42 @@ class NaturalBond(CombatAbility)
         who.squelch(-1);
 
         var mw := MobileWrapper(who);
-        var wildspeech_opts := mw.GetProperty("#SpellOpts_708");
+        var wildspeech_opts := mw.GetProperty("SpellOpts_708");
         if (wildspeech_opts && wildspeech_opts != error)
             who.squelch(0);
         endif
 
         who.hidden := 0;
-        PlayObjectCenteredEffect(who, 0xCE72, 10, 20);
         sleepms(500);
         who.frozen := 0;
     endfunction
 
     function _UnequipWild(this, who, mobile)
         var equips := EnumeratePhysicalItems(who);
+        var snapshot := array{};
+
+        // Snapshot serials before moving — UnequipTest erases #EquippedOn during
+        // the engine unequip that MoveItemToContainer triggers, so we can't rely
+        // on the property like death/wakeup does. endmetamorfose consumes this.
         if (mobile.HasAbility(ABILITY_ID::ELO_NATURAL))
             foreach equip in equips
                 if (equip.isa(POLCLASS_ARMOR) && equip.objtype != 0x1F022)
+                    snapshot.append(equip.serial);
                     MoveItemToContainer(equip, who.backpack);
                 elseif (equip.isa(POLCLASS_WEAPON))
+                    snapshot.append(equip.serial);
                     MoveItemToContainer(equip, who.backpack);
                 endif
             endforeach
         else
             foreach equip in equips
+                snapshot.append(equip.serial);
                 MoveItemToContainer(equip, who.backpack);
             endforeach
+        endif
+
+        if (snapshot.size() > 0)
+            SetObjProperty(who, "#wildshape_equips", snapshot);
         endif
     endfunction
 
@@ -498,7 +485,7 @@ class NaturalBond(CombatAbility)
         sleepms(400);
         PerformAction(who, HUMAN_ANIM::CAST_AREA);
 
-        PlayObjectCenteredEffect(who, 0x3728, 10, 20);
+        PlayObjectCenteredEffect(who, 0xDF81, 10, 20); // FX_GREEN_PROTECTION
         PlaySoundEffect(who, 0x0015);
 
         TS_StartCoolDown(who, "voltarcd", 30);
@@ -699,3 +686,27 @@ class NaturalBond(CombatAbility)
     endfunction
 
 endclass
+
+// Shared utility - used by NaturalBond.inc (ability) and previously by SetupItemsForSpecificClasses.
+// Lives here (not in epicNPCInitialization.inc) so external pkgs that include :epicAI:epicai
+// continue to resolve it without pulling the heavy init chain.
+function GetAnimalTemplateByTier(tier)
+    var epicai_df := OpenDataFile(":epicai:AnimalsByTier");
+    if (!epicai_df || epicai_df.errortext)
+        return 0;
+    endif
+
+    var cache_elem := epicai_df.FindElement("AnimalTiers");
+    if (!cache_elem)
+        return 0;
+    endif
+
+    var tier_key := "tier_" + tier;
+    var animal_list := cache_elem.GetProp(tier_key);
+
+    if (!animal_list || animal_list.size() < 1)
+        return 0;
+    endif
+
+    return animal_list[RandomIntMinMax(1, animal_list.size())];
+endfunction

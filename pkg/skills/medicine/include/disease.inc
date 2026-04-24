@@ -81,7 +81,8 @@ function InfectMobile(subject,duration,attacker,level,diseases,disease_grade, de
 		
 		var timer_disease := TS_GetTimerInfo(subject, "disease");
 		if (timer_disease)//SE JÁ ESTÁ INFECTADO
-			var duration_part := duration/3;
+			var duration_part := duration / 3;
+			duration_part := CInt(duration_part);
 			var level_infection := timer_disease.level;
 			var diseases_system := GetObjProperty(subject, "Diseases_System");
 			var falhou_cura := diseases_system.falhou_cura;

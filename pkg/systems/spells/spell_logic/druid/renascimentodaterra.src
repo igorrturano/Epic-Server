@@ -7,49 +7,32 @@ include "include/sounds";
 include "include/say";
 include ":attributes:attributes";
 include "include/shapes";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
-	params := 0; // No longer needed
+	var cast_on := params[2];
+	var spell := params[3];
+	params := 0;
 
-	SendSysMessage(who, "Escolha o alvo");
-	var cast_on := TargetCoordinates(who);
 
-	if (!cast_on)
-		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
-		return 0;
-	endif
-
-	if (!CheckLosAt(who, cast_on.x, cast_on.y, cast_on.z))
-		SendSysMessageEx(who, "Você não consegue ver o alvo!", SSM_FAIL);
-		return 0;
-	endif
-
-	// Calcula distância e direção
 	var theology := AP_GetSkill(who, THEOLOGY);
 	var forward_tiles := CInt(theology / 20) + 1;
 	var side_tiles := CInt(theology / 10) + 2;
-	var duration := CInt(theology); // Duração em segundos
-
+	var duration := CInt(theology);
 	if (duration < 30)
 		duration := 30;
 	endif
 
-	// Som de tremor de terra
-	PlaySoundEffect(who, 0x220); // Som de pedras/terra
+	PlaySoundEffect(who, 0x220);
 
-	var parts := array;
-
-	// Pega as coordenadas em linha do druida até o alvo
+	var parts := array{};
 	var coord_list := GetCoordsInLine(who.x, who.y, cast_on.x, cast_on.y);
-
-	// Limita a quantidade de tiles forward baseado em theology
 	var tiles_placed := 0;
 	var last_coord := struct{ "x" := who.x, "y" := who.y };
 
-	// Coloca pedras em linha reta até o alvo (limitado por forward_tiles)
 	foreach coord in coord_list
-		if (tiles_placed == 0) // Pula a primeira posição (onde está o druida)
+		if (tiles_placed == 0)
 			tiles_placed++;
 			continue;
 		endif
@@ -71,16 +54,11 @@ program SpellScript(params)
 		sleepms(50);
 	endforeach
 
-	// Agora cria o T - pedras perpendiculares a partir do último ponto
-	// Determina a direção perpendicular baseado na direção da linha
 	var dx := cast_on.x - who.x;
 	var dy := cast_on.y - who.y;
-
-	// Calcula o vetor perpendicular (rotaciona 90 graus)
 	var perp_dx := -dy;
 	var perp_dy := dx;
 
-	// Normaliza para ter apenas -1, 0 ou 1
 	if (perp_dx != 0)
 		perp_dx := CInt(perp_dx / Abs(perp_dx));
 	endif
@@ -88,7 +66,6 @@ program SpellScript(params)
 		perp_dy := CInt(perp_dy / Abs(perp_dy));
 	endif
 
-	// Coloca pedras para a direita
 	var i;
 	for (i := 1; i <= side_tiles; i++)
 		var new_x := last_coord.x + (perp_dx * i);
@@ -102,7 +79,6 @@ program SpellScript(params)
 		sleepms(50);
 	endfor
 
-	// Coloca pedras para a esquerda
 	for (i := 1; i <= side_tiles; i++)
 		var new_x := last_coord.x - (perp_dx * i);
 		var new_y := last_coord.y - (perp_dy * i);
@@ -115,14 +91,12 @@ program SpellScript(params)
 		sleepms(50);
 	endfor
 
-	// Anima as pedras subindo do chão
 	var rise_count := 1;
 	while (rise_count <= 20)
 		foreach part in parts
 			MoveObjectToLocation(part, part.x, part.y, part.z + 1, part.realm,
 								MOVEOBJECT_FORCELOCATION | MOVEITEM_IGNOREMOVABLE);
 		endforeach
-
 		rise_count := rise_count + 1;
 		sleepms(100);
 	endwhile
@@ -131,31 +105,23 @@ program SpellScript(params)
 	SendSysMessageEx(who, "A terra responde ao seu chamado!", SSM_INFO);
 	PrintTextAbove(who, "*Pedras emergem da terra*");
 
-	// Detach para manter as pedras por um tempo
-	detach();
-
-	// Aguarda a duração
-	sleep(duration);
-
-	// Som de pedras afundando
-	PlaySoundEffect(who, 0x220);
-
-	// Anima as pedras descendo
-	var fall_count := 1;
-	while (fall_count <= 20)
-		foreach part in parts
-			MoveObjectToLocation(part, part.x, part.y, part.z - 1, part.realm,
-								MOVEOBJECT_FORCELOCATION | MOVEITEM_IGNOREMOVABLE);
-		endforeach
-
-		fall_count := fall_count + 1;
-		sleepms(100);
-	endwhile
-
-	// Destrói as pedras
+	// Hand off lifecycle to SC: duration timer + on_expire teardown.
+	// If dispelled, the wall collapses early — same teardown script fires.
+	var stone_serials := array{};
 	foreach part in parts
-		DestroyItem(part);
+		stone_serials.append(part.serial);
 	endforeach
+
+	var opts := struct{};
+	opts.+buff_category := "earth_wall";
+	opts.+displayname := "Renascimento da Terra";
+	opts.+desc := "Parede de pedra erguida";
+	opts.+on_expire_script := ":spells:spell_logic/druid/renascimentodaterraExpire";
+	opts.+on_expire_params := struct{
+		stone_serials := stone_serials
+	};
+
+	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
 
 	return 1;
 endprogram

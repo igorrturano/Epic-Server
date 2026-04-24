@@ -10,6 +10,7 @@ include ":attributes:attributes";
 include ":gumps:yesNo";
 include ":tn:characters";
 include "include/say";
+include "include/epicEconomyAudit";
 
   var skilllistGump := array{"Anatomy", "Alchemy", "Magic_Lore", "Meditation",   "AnimalLore", "ItemLore", "Survival", "AnimalTaming", "Cartography", "DetectingHidden", "Healing", "ResistingSpells", "Cooking", "Musicianship",
 "Hiding", "Stealth", "Lockpicking", "RemoveTrap", "Poisoning", "Stealing",  "Carpentry", "Blacksmithy", "Tailoring", "Tinkering", "Skinning",
@@ -512,7 +513,9 @@ function KitGump(who)
         AP_SetTrueStat(who, INTELLIGENCE, AP_GetTrueStat(who, INTELLIGENCE)-10);
         var coin := CreateItemInBackpack(who, 0xba64, 200);
 	SetObjProperty(coin, "marked", who.name+" - "+who.acctname);
-        CreateItemInBackpack(who, 0xba63, 1000);
+        EA_Record(EA_MINT_CHARGEN, coin, 200, "CHARGEN:heranca", who, "");
+        var cobre110 := CreateItemInBackpack(who, 0xba63, 1000);
+        EA_Record(EA_MINT_CHARGEN, cobre110, 1000, "CHARGEN:heranca", who, "");
         return 500;
       elseif ( key == 111 )
         SetObjProperty(who, "kit", "criado por monges");
@@ -560,9 +563,12 @@ function KitGump(who)
         AP_SetTrueStat(who, INTELLIGENCE, AP_GetTrueStat(who, INTELLIGENCE)-10);
         var coin := CreateItemInBackpack(who, 0xba65, 120);
 	SetObjProperty(coin, "marked", who.name+" - "+who.acctname);
+        EA_Record(EA_MINT_CHARGEN, coin, 120, "CHARGEN:nobre", who, "");
         coin := CreateItemInBackpack(who, 0xba64, 200);
 	SetObjProperty(coin, "marked", who.name+" - "+who.acctname);
-        CreateItemInBackpack(who, 0xba63, 1000);
+        EA_Record(EA_MINT_CHARGEN, coin, 200, "CHARGEN:nobre", who, "");
+        var cobre120 := CreateItemInBackpack(who, 0xba63, 1000);
+        EA_Record(EA_MINT_CHARGEN, cobre120, 1000, "CHARGEN:nobre", who, "");
         return 500;
       elseif ( key == 121 )
         SetObjProperty(who, "kit", "filho de heroi");
