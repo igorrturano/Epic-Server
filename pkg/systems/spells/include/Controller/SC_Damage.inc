@@ -1,17 +1,19 @@
 use uo;
 
-include ":damage:damage";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":combat:Model/AttackInfo";
 include ":combat:Controller/CombatAbilityController";
+include ":combat:Controller/DamageController_legacy";
 
 /**
  * SC_DealDamage — canonical entry point for spell damage.
  *
- * Applies resist-aware damage and fires the after-damage ability hooks
- * (CombatAbility AFTER_DAMAGE / ON_KILL and PassiveAbility AFTER_DAMAGE)
- * via a spell-flagged AttackInfo. Spells that migrate to this call stop
- * using the legacy DamageFLS / ApplyRawDamage path directly.
+ * Delegates the actual damage application to DamageFLS (resist calc,
+ * DisplayDamage, ApplyRawDamage, last-damage-info + autopsy), then fires
+ * the post-damage ability hooks (CombatAbility AFTER_DAMAGE / ON_KILL
+ * and PassiveAbility AFTER_DAMAGE) via a spell-flagged AttackInfo.
+ * Spells that migrate to this call stop using DamageFLS directly so all
+ * spell damage consistently triggers ability hooks.
  *
  * @param caster       Mobile - the attacker
  * @param targ         Mobile - the victim
@@ -19,7 +21,7 @@ include ":combat:Controller/CombatAbilityController";
  * @param amount       Integer - base damage amount, before resist
  * @param damageType   String  - DMG_FIRE / DMG_COLD / DMG_ENERGY / DMG_POISON
  *                               / DMG_PHYSICAL; DMG_FORCED to bypass resist
- * @return Integer - final damage applied after resist (0 if no damage landed)
+ * @return Integer - the base amount passed in (resist is handled internally)
  */
 function SC_DealDamage(caster, targ, spellId, amount, damageType := DMG_FORCED)
 	amount := CInt(amount);
@@ -27,18 +29,8 @@ function SC_DealDamage(caster, targ, spellId, amount, damageType := DMG_FORCED)
 		return 0;
 	endif
 
-	if (damageType != DMG_FORCED)
-		amount := CInt(CalcDamageAmount(targ, amount, damageType, caster));
-	endif
-	if (amount <= 0)
-		return 0;
-	endif
-
-	SetLastDamageInfo(targ, amount, damageType, caster, 1, $"spell_{spellId}");
-	SetScriptController(caster);
-
-	DisplayDamage(targ, amount, caster);
-	ApplyRawDamage(targ, amount);
+	// DamageFLS: resist calc + DisplayDamage + ApplyRawDamage + last-damage info.
+	DamageFLS(targ, amount, damageType, caster, $"spell_{spellId}");
 
 	// Build a spell-origin AttackInfo and fire post-damage hooks so abilities
 	// like ON_KILL / AFTER_DAMAGE effects work for spell damage, not just melee.
@@ -58,8 +50,7 @@ function SC_DealDamage(caster, targ, spellId, amount, damageType := DMG_FORCED)
 endfunction
 
 // Stamp the landed damage onto the AttackInfo's Damage object in the right
-// type slot so ability hooks that read Damage see a non-zero value. We mirror
-// the base-damage pattern DC uses after resist.
+// type slot so ability hooks that read Damage see a non-zero value.
 function _SC_StampSpellDamage(byref attInfo, damageType, amount)
 	var dmg := attInfo.GetDamage();
 	case (damageType)

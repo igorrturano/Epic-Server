@@ -8,7 +8,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/tileEffects";
 include ":taming:taming";
 include "include/epicMageryUtils";
@@ -55,7 +55,7 @@ program chainLightning(params)
 			dmg := Cint(dmg * falloff);
 		endif
 
-		DamageFLS(mobile, cint(dmg), DMG_ENERGY, caster, "chainLightning");
+		SC_DealDamage(caster, mobile, CInt(spellinfo.id), cint(dmg), DMG_ENERGY);
 		jump := jump + 1;
 		sleepms(600);
 	endforeach

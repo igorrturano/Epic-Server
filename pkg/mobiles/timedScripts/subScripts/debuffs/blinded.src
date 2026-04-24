@@ -1,6 +1,6 @@
 use uo;
 use os;
-include ":awareness:awareness";
+include ":debug:Controller/DebugController";
 include ":message:model/Message";
 include "include/client";
 

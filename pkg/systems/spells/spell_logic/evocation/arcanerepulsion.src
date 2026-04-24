@@ -6,7 +6,7 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/tileEffects";
 include "include/utils";
 include "include/epicConstants";
@@ -60,7 +60,7 @@ program SpellScript(params)
 		endif
 
 		SendSysMessageEx(mob, "Uma onda arcana te empurra!", SSM_FAIL);
-		DamageFLS(mob, cint(damage), DMG_ENERGY, caster, "repulsaoarcana");
+		SC_DealDamage(caster, mob, CInt(spellinfo.id), cint(damage), DMG_ENERGY);
 
 		PlayObjectCenteredEffect(mob, 0xE175, 5, 10);
 
