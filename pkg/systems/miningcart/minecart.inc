@@ -38,16 +38,23 @@ function UnregisterTrackStop(stop)
 endfunction
 
 function FindNearestMineCart(stop)
+    var lineId := CInt(GetObjProperty(stop, "LineId"));
+    if (!lineId) lineId := 1; endif
+    
     var nearest := 0;
     var best_dist := 9999;
     
-    // Busca qualquer carrinho a até 2 tiles de distância, ignorando de qual linha ele "veio"
-    foreach item in ListItemsNearLocation(stop.x, stop.y, stop.z, 2, stop.realm)
+    foreach item in ListItemsNearLocation(stop.x, stop.y, stop.z, 8, stop.realm)
         if (item.objtype == SOUTH_ID || item.objtype == EAST_ID)
-            var d := Distance(stop, item);
-            if (d < best_dist)
-                best_dist := d;
-                nearest := item;
+            var cartLine := CInt(GetObjProperty(item, "LineId"));
+            if (!cartLine) cartLine := 1; endif
+            
+            if (cartLine == lineId)
+                var d := Distance(stop, item);
+                if (d < best_dist)
+                    best_dist := d;
+                    nearest := item;
+                endif
             endif
         endif
         sleepms(2);
@@ -55,42 +62,50 @@ function FindNearestMineCart(stop)
     return nearest;
 endfunction
 
-function FindTargetStops(stop)
-    var lineId := GetObjProperty(stop, "LineId");
-    if (!lineId) lineId := "1"; endif
-    lineId := CStr(lineId); // Garante que seja tratado como string para permitir textos
-
+function FindTargetStop(stop)
+    var lineId := CInt(GetObjProperty(stop, "LineId"));
     var terminal := CInt(GetObjProperty(stop, "Terminal"));
     var targetTerminal := 1;
     if (terminal == 1) targetTerminal := 2; endif
     
     var stops := GetGlobalTrackStops();
-    var valid_stops := array{};
+    var best_stop := 0;
+    var best_dist := 9999999;
     
     foreach s_serial in stops
         var s := SystemFindObjectBySerial(s_serial);
         if (s && s != stop)
-            var sLine := GetObjProperty(s, "LineId");
-            if (!sLine) sLine := "1"; endif
-            sLine := CStr(sLine);
-
+            var sLine := CInt(GetObjProperty(s, "LineId"));
             var sTerm := CInt(GetObjProperty(s, "Terminal"));
             
             if (sLine == lineId && sTerm == targetTerminal)
-                valid_stops.append(s);
+                var d := 9999999;
+                if (s.realm == stop.realm)
+                    d := Distance(stop, s);
+                else
+                    d := 9999998; // Penalidade, mas menor que a verificacao para achar a estação em outros mapas
+                endif
+                if (d < best_dist)
+                    best_dist := d;
+                    best_stop := s;
+                endif
             endif
         endif
         sleepms(2);
     endforeach
-    return valid_stops;
+    return best_stop;
 endfunction
 
-function IsTrackAt(x, y, realm)
+function IsTrackAt(x, y, realm, lineId)
     var items := ListItemsNearLocation(x, y, LIST_IGNORE_Z, 0, realm);
     foreach item in items
         var isTrack := GetObjProperty(item, "IsTrackTile") || GetObjProperty(item, "IsTrackStop");
         if (isTrack)
-            return item.z; // Não verifica mais a linha do trilho, trilhos conectados formam o caminho.
+            var tLine := CInt(GetObjProperty(item, "LineId"));
+            if (!tLine) tLine := 1; endif
+            if (tLine == lineId)
+                return item.z;
+            endif
         endif
     endforeach
     return error;
@@ -98,8 +113,7 @@ endfunction
 
 function FindTelepadsAround(x, y, realm)
     var pads := array{};
-    // O raio foi reduzido de 2 para 0 para evitar que o carrinho "puxe" telepads próximos (como teleporters de casa) acidentalmente.
-    foreach item in ListItemsNearLocation(x, y, LIST_IGNORE_Z, 0, realm)
+    foreach item in ListItemsNearLocation(x, y, LIST_IGNORE_Z, 2, realm)
         if (item.IsA(POLCLASS_ITEM))
             var dest := GetObjProperty(item, "Destination");
             if (dest != error && dest.x != error)

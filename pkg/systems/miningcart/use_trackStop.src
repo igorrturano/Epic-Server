@@ -32,21 +32,19 @@ program use_trackStop(who, stop)
         return 1;
     endif
     
-    var lineId := GetObjProperty(stop, "LineId");
-    if (!lineId) lineId := "1"; endif
-    lineId := CStr(lineId);
+    var lineId := CInt(GetObjProperty(stop, "LineId"));
+    if (!lineId) lineId := 1; endif
     
     var terminal := CInt(GetObjProperty(stop, "Terminal"));
     if (!terminal) terminal := 1; endif
     
-    var gump := GFECreateGump("Estacao de Trilho", 300, 220, array{BORDER_BLUE, HIDE_PAGE});
+    var gump := GFECreateGump("Estacao de Trilho", 300, 200, array{BORDER_BLUE, HIDE_PAGE});
     
     GFTextLine(gump, 20, 45, 1152, "Linha atual: " + lineId);
-    GFTextLine(gump, 20, 65, 0x34, "Nova Linha:");
-    // Campo para digitar textos ou numeros complexos, identificando o ID da entrada
-    var txt_lineId := GFTextEntry(gump, 100, 65, 100, 20, 1152, lineId);
-    GFAddButton(gump, 210, 65, 4005, 4007, GF_CLOSE_BTN, 1);
-    GFTextLine(gump, 245, 65, 0x34, "Salvar");
+    GFAddButton(gump, 20, 65, 4005, 4007, GF_CLOSE_BTN, 1);
+    GFTextLine(gump, 55, 65, 0x34, "Linha = 1");
+    GFAddButton(gump, 140, 65, 4005, 4007, GF_CLOSE_BTN, 2);
+    GFTextLine(gump, 175, 65, 0x34, "Linha = 2");
     
     var termStr := "A (1)";
     if (terminal == 2) termStr := "B (2)"; endif
@@ -57,20 +55,18 @@ program use_trackStop(who, stop)
     GFAddButton(gump, 20, 140, 4005, 4007, GF_CLOSE_BTN, 4);
     GFTextLine(gump, 55, 140, 0x34, "Setar Terminal B (2)");
     
-    GFAddButton(gump, 20, 175, 4023, 4025, GF_CLOSE_BTN, 10);
-    GFTextLine(gump, 55, 175, 0x44, "Iniciar Carrinho -> Proxima Estacao");
+    GFAddButton(gump, 20, 165, 4023, 4025, GF_CLOSE_BTN, 10);
+    GFTextLine(gump, 55, 165, 0x44, "Iniciar Carrinho -> Proxima Estacao");
     
     var input := GFSendGump(who, gump);
     var btn := input[0];
     
     if (btn == 1)
-        var newLine := GFExtractData(input, txt_lineId); // Extrai o texto digitado
-        if (newLine != error && newLine != "")
-            SetObjProperty(stop, "LineId", CStr(newLine));
-            SendSysMessage(who, "Linha setada para " + CStr(newLine) + ".", 3, 0x44);
-        else
-            SendSysMessage(who, "Nome da linha invalido.", 3, 0x22);
-        endif
+        SetObjProperty(stop, "LineId", 1);
+        SendSysMessage(who, "Linha setada para 1.", 3, 0x44);
+    elseif (btn == 2)
+        SetObjProperty(stop, "LineId", 2);
+        SendSysMessage(who, "Linha setada para 2.", 3, 0x44);
     elseif (btn == 3)
         SetObjProperty(stop, "Terminal", 1);
         SendSysMessage(who, "Terminal setado para A (1).", 3, 0x44);
