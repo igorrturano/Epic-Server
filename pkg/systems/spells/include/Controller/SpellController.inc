@@ -83,7 +83,7 @@ function SC_ApplyEffect(caster, targ, opts, duration, spellId, timerName := "spe
 		start_script(opts.on_apply_script, array{ caster, targ, spellId, opts.on_apply_params });
 	endif
 
-	if (opts.tick_script && opts.tick_interval)
+	if ((opts.tick_script || opts.tick_damage) && opts.tick_interval)
 		_SC_LaunchTickDriver(caster, targ, spellId, opts);
 	endif
 
@@ -469,9 +469,9 @@ function SC_ResyncOnLogin(mobile)
 			endif
 
 			// Relaunch tick driver — detached scripts die on server shutdown,
-			// so any effect with a tick_script needs a fresh driver to resume
-			// ticking from the saved remaining duration.
-			if (opts.tick_script && opts.tick_interval)
+			// so any effect with a tick_script or tick_damage needs a fresh
+			// driver to resume ticking from the saved remaining duration.
+			if ((opts.tick_script || opts.tick_damage) && opts.tick_interval)
 				var caster := 0;
 				if (opts.caster_serial)
 					caster := SystemFindObjectBySerial(CInt(opts.caster_serial), SYSFIND_SEARCH_OFFLINE_MOBILES);

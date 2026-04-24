@@ -16,10 +16,15 @@ include ":tn:cooldown";
 include "include/facings";
 
 function CheckParry(byRef attackInfo)
+	// Spells default to skipping parry — there's nothing to parry a fireball with.
+	if (attackInfo.ShouldSkipParry())
+		return false;
+	endif
+
 	var attacker := attackInfo.GetAttacker();
 	var defender := attackInfo.GetDefender();
 	var attackerPos := attacker.GetPosition();
-	
+
 	if (attacker.GetObjRef().GetProp("backstab") || // Se for habilidade de ataque pelas costas
 		IsBehind(defender.GetObjRef(), attackerPos.GetX(), attackerPos.GetY()) || // Se o atacante estiver atrás do defensor
 		!defender.IsWarMode() || // Se o defensor não estiver em war mode
