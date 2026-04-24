@@ -3,21 +3,13 @@ use os;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":timedscripts:fraturaUtil";
 include ":tn:cooldown";
-include ":hotbar:include/custombuff";
 include "include/say";
 
 program TimedScript_Maos(params)
 	var mobile := params[1];
 	SetObjProperty(mobile, "desarmar", 1);
 	SetObjProperty(mobile, "#fratura_maos_penalty", 1);
-
-	var duration := CInt(TS_GetTimerDuration(mobile, "fratura_maos"));
-	if (duration > 0)
-		SendCustomBuff(mobile, BUFF_ID_FRATURA_MAOS, FRATURA_BUFF_ICON, duration,
-					   "Fratura nas Maos", "Nao consegue empunhar armas.");
-	endif
-
 	return 1;
 endprogram
+

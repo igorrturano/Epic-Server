@@ -4,9 +4,7 @@ use vitals;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":timedscripts:fraturaUtil";
 include ":tn:cooldown";
-include ":hotbar:include/custombuff";
 include "include/say";
 
 program TimedScript_Torse(params)
@@ -15,12 +13,5 @@ program TimedScript_Torse(params)
 	AP_SetVitalRegenRateMod(mobile, "Stamina", AP_GetVitalRegenRateMod(mobile, "Stamina") - 60);
 	SetObjProperty(mobile, "#fratura_torso_penalty", 1);
 	RecalcVitals(mobile);
-
-	var duration := CInt(TS_GetTimerDuration(mobile, "fratura_torso"));
-	if (duration > 0)
-		SendCustomBuff(mobile, BUFF_ID_FRATURA_TORSO, FRATURA_BUFF_ICON, duration,
-					   "Fratura no Torso", "Stamina drena mais rapido.");
-	endif
-
 	return 1;
 endprogram

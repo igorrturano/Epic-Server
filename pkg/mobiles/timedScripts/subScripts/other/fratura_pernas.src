@@ -1,21 +1,25 @@
 use uo;
 use os;
+use util;
 
+include ":attributes:attributes";
+include "include/client";
 include ":timedscripts:timedScripts";
-include ":timedscripts:fraturaUtil";
 include ":fls_core:packets";
-include ":hotbar:include/custombuff";
+include ":tn:cooldown";
 
 program TimedScript_Pernas(params)
 	var mobile := params[1];
-	SetObjProperty(mobile, "#fratura_pernas_penalty", 1);
-	PlayerSpeedSlower(mobile, 1);
-
-	var duration := CInt(TS_GetTimerDuration(mobile, "fratura_pernas"));
-	if (duration > 0)
-		SendCustomBuff(mobile, BUFF_ID_FRATURA_PERNAS, FRATURA_BUFF_ICON, duration,
-					   "Fratura nas Pernas", "Nao consegue correr.");
-	endif
+	SetObjProperty(mobile, "#fratura_pernas_penalty",1);
+	while (mobile)
+		PlayerSpeedSlower(mobile, 1);
+		sleep(4);
+	endwhile
 
 	return 1;
 endprogram
+
+function LogOffScript(mobile)
+	return 1;
+endfunction
+
