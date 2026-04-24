@@ -13,10 +13,8 @@ include ":commands:/include/r";
 
 program gump_contrato_cancelado(params)
     var mob := (TypeOf(params) == "Array") ? params[1] : params;
-    Print("[NOTIF-CONTRATO] Script iniciado | mob=" + (mob ? mob.name : "INVALIDO"));
 
     if (!mob || !mob.isA(POLCLASS_MOBILE))
-        Print("[NOTIF-CONTRATO] Mobile inválido — abortando");
         return;
     endif
 
@@ -24,46 +22,35 @@ program gump_contrato_cancelado(params)
     // Primeiro espera a conexão existir, depois adiciona margem para o cliente estabilizar.
     var tentativas := 0;
     while (!mob.connected && tentativas < 15)
-        Print("[NOTIF-CONTRATO] Aguardando conexão | tentativa=" + tentativas + " | connected=" + mob.connected);
         sleep(1);
         tentativas := tentativas + 1;
     endwhile
 
     if (!mob.connected)
-        Print("[NOTIF-CONTRATO] Mobile não conectou em 15s — abortando. Notif permanece para próximo logon.");
         return;
     endif
 
     // Margem extra para o cliente Razor estabilizar após o handshake
-    Print("[NOTIF-CONTRATO] Conectado após " + tentativas + "s — aguardando estabilização do cliente (5s)");
     sleep(5);
 
     if (!mob.connected)
-        Print("[NOTIF-CONTRATO] Mobile desconectou durante estabilização — notif permanece para próximo logon.");
         return;
     endif
-
-    Print("[NOTIF-CONTRATO] Cliente estabilizado | prosseguindo");
 
     var notif := GetObjProperty(mob, "notif_contrato_cancelado");
     if (!notif || notif.errortext)
-        Print("[NOTIF-CONTRATO] Prop notif_contrato_cancelado ausente ou inválida em " + mob.name);
         return;
     endif
-
-    Print("[NOTIF-CONTRATO] Notif encontrada | cancelador=" + notif.cancelador + " | guild=" + notif.guild_name + " | motivo=" + notif.motivo);
 
     // Passo 1: ícone clicável (mesma posição e botão do gump_soldo)
     var gump1 := GFCreateGump(10, 30);
     GFAddButton(gump1, 0, 0, 0x7D2, 0x7D2, GF_CLOSE_BTN, 1);
 
-    Print("[NOTIF-CONTRATO] Exibindo ícone 0x7D2 para " + mob.name);
     var input1 := GFSendGump(mob, gump1);
 
     if (input1[0] == 1)
         // Passo 2: gump 0x1FAC4 com detalhes do encerramento
         var cancelador := _NomeVistoPorMob(mob, notif.cancelador_serial, notif.cancelador);
-        Print("[NOTIF-CONTRATO] Ícone clicado | cancelador resolvido=" + cancelador + " | exibindo gump 0x1FAC4");
 
         var gump2 := GFCreateGump();
         GFSetId(gump2, 0x1FAC4);
@@ -77,26 +64,21 @@ program gump_contrato_cancelado(params)
         GFAddButton(gump2, 180, 170, 4017, 4018, GF_CLOSE_BTN, 0);
         GFTextLine(gump2, 210, 172, 0, "OK");
         GFSendGump(mob, gump2);
-        Print("[NOTIF-CONTRATO] Gump 0x1FAC4 confirmado — apagando notif de " + mob.name);
 
         // Só apaga a prop após o player ter visto e confirmado o gump
         EraseObjProperty(mob, "notif_contrato_cancelado");
-    else
-        // Gump fechado sem clicar (pode ser Razor ou player ignorando) — mantém prop para próximo logon
-        Print("[NOTIF-CONTRATO] Ícone fechado sem clicar — notif mantida para próximo logon de " + mob.name);
     endif
+    // Gump fechado sem clicar — mantém prop para próximo logon
 endprogram
 
 // Resolve o nome que `mob` vê para `serial_alvo`.
 // Fallback: `nome_guardado` (salvo no momento do encerramento, caso o mobile não exista mais).
 function _NomeVistoPorMob(mob, serial_alvo, nome_guardado)
     if (!serial_alvo)
-        Print("[NOTIF-CONTRATO][NOME] serial_alvo ausente — usando nome_guardado=" + nome_guardado);
         return nome_guardado ? nome_guardado : "Desconhecido";
     endif
     var alvo := SystemFindObjectBySerial(serial_alvo, SYSFIND_SEARCH_OFFLINE_MOBILES);
     if (!alvo)
-        Print("[NOTIF-CONTRATO][NOME] Mobile serial=" + serial_alvo + " não encontrado — usando nome_guardado=" + nome_guardado);
         return nome_guardado ? nome_guardado : "Desconhecido";
     endif
     if (GetObjProperty(alvo, "realname"))
@@ -106,11 +88,8 @@ function _NomeVistoPorMob(mob, serial_alvo, nome_guardado)
     if (conhecidos)
         var id := VerificaDisfarce(alvo, mob);
         if (conhecidos.Exists(id))
-            var nome_r := conhecidos[id];
-            Print("[NOTIF-CONTRATO][NOME] Nome via .r: " + nome_r);
-            return nome_r;
+            return conhecidos[id];
         endif
     endif
-    Print("[NOTIF-CONTRATO][NOME] Sem entrada .r — usando alvo.name=" + alvo.name);
     return alvo.name;
 endfunction
