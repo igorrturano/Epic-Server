@@ -37,6 +37,7 @@ program SpellScript(params)
 	opts.+str_mod := -amt;
 	opts.+displayname := "Enfraquecer";
 	opts.+maintainable := 1;
+	opts.+is_debuff := 1;
 
 	SC_ApplyEffect(who, targ, opts, duration, spellId);
 

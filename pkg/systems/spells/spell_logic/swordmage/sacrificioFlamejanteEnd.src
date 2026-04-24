@@ -1,0 +1,19 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+
+program sacrificioFlamejanteEnd(params)
+	// SC on_expire signature: { caster_or_0, targ, spellId, on_expire_params }
+	var who := params[2];
+	if (!who || who is @Exception)
+		return;
+	endif
+
+	var bonus := cdbl(CInt(GetObjProperty(who, "#xsac")) * 0.2);
+	SetObjProperty(who, "#dmgbonus", GetObjProperty(who, "#dmgbonus") - bonus);
+	SendSysMessageEx(who, "As chamas estao quietas.", SSM_INFO);
+	EraseObjProperty(who, "#xsac");
+	return 1;
+endprogram

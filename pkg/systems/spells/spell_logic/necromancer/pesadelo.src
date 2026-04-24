@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -41,7 +42,7 @@ program SpellScript(params)
 	DamageFLS(targ, dmg, DMG_FORCED, who);
 	PrintTextPrivate(targ, "-" + dmg + " Vida", who, 3, 38); // vermelho
 
-	handleSilentMagic(who, who, 385);
+	SC_HandleSound(who, who, 385);
 
 	SendSysMessageEx(who, "O alvo esta tendo sonhos terriveis.", SSM_INFO);
 	Corromper(who, 31, targ);

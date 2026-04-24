@@ -44,6 +44,7 @@ program SpellScript(params)
 	var opts := struct{};
 	opts.+properties := dictionary{ "desarmar" -> 1 };
 	opts.+displayname := "Desarmar";
+	opts.+is_debuff := 1;
 
 	SC_ApplyEffect(who, targ, opts, duration, spellId);
 
