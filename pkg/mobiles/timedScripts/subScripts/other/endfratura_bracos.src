@@ -1,0 +1,18 @@
+use uo;
+
+include ":attributes:attributes";
+include ":timedscripts:fraturaUtil";
+include ":hotbar:include/custombuff";
+
+program EndFraturaBracos(params)
+	var mobile := params[1];
+
+	var penalty := CInt(GetObjProperty(mobile, "#fratura_bracos_penalty"));
+	if (penalty)
+		AP_ModifyStatMod(mobile, STRENGTH, penalty);
+		EraseObjProperty(mobile, "#fratura_bracos_penalty");
+	endif
+	RemoveCustomBuff(mobile, BUFF_ID_FRATURA_BRACOS);
+
+	EndFratura_Finalize(mobile, "Bracos");
+endprogram

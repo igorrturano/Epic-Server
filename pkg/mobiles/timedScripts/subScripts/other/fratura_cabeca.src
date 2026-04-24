@@ -3,7 +3,9 @@ use os;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
+include ":timedscripts:fraturaUtil";
 include ":tn:cooldown";
+include ":hotbar:include/custombuff";
 include "include/say";
 
 const FRATURA_HITCHANCE_PENALTY := -10;
@@ -15,6 +17,12 @@ program TimedScript_Cabeca(params)
 	AP_ModifyStatMod(mobile, INTELLIGENCE, -penalty);
 	mobile.hitchance_mod := mobile.hitchance_mod + FRATURA_HITCHANCE_PENALTY;
 	SendSysMessage(mobile, "Sua cabeca fraturada reduz sua inteligencia pela metade e sua precisao.");
-	
+
+	var duration := CInt(TS_GetTimerDuration(mobile, "fratura_cabeca"));
+	if (duration > 0)
+		SendCustomBuff(mobile, BUFF_ID_FRATURA_CABECA, FRATURA_BUFF_ICON, duration,
+					   "Fratura na Cabeca", "Inteligencia e precisao reduzidas.");
+	endif
+
 	return 1;
 endprogram

@@ -1,0 +1,16 @@
+use uo;
+
+include ":timedscripts:fraturaUtil";
+include ":hotbar:include/custombuff";
+
+program EndFraturaMaos(params)
+	var mobile := params[1];
+
+	if (CInt(GetObjProperty(mobile, "#fratura_maos_penalty")))
+		EraseObjProperty(mobile, "desarmar");
+		EraseObjProperty(mobile, "#fratura_maos_penalty");
+	endif
+	RemoveCustomBuff(mobile, BUFF_ID_FRATURA_MAOS);
+
+	EndFratura_Finalize(mobile, "Maos");
+endprogram
