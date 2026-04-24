@@ -9,6 +9,7 @@
 use cfgfile;
 use datafile;
 use file;
+use guilds;
 use math;
 use os;
 use uo;
@@ -1754,9 +1755,18 @@ function check_coords(who, coords)
 					return 0;
 				endif
 
-				// Verifica se o jogador pertence à facção dona da área.
+				// Verifica se o jogador pertence à facção dona da área (full ou honorário).
 				var player_guild := who.guild;
-				if (!player_guild || player_guild.GetProp("name") != faction_owner)
+				var hon_id := GetObjProperty(who, "honorary_guild_id");
+				var hon_guild := 0;
+				if (hon_id) hon_guild := FindGuild(hon_id); endif
+				var is_member := 0;
+				if (player_guild && player_guild.GetProp("name") == faction_owner)
+					is_member := 1;
+				elseif (hon_guild && hon_guild.GetProp("name") == faction_owner)
+					is_member := 1;
+				endif
+				if (!is_member)
 					// Verifica contrato de arquitetura ativo
 					var contrato_guild := GetObjProperty(who, "arquiteto_contrato_guild");
 					if (contrato_guild && contrato_guild == faction_owner)

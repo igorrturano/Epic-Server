@@ -122,12 +122,6 @@ endfunction
 // Convidado usa o convite assinado (0x3BC0).
 // -------------------------------------------------------
 function _UsarConviteAssinado(who, item)
-    // Bloqueia quem já tem facção
-    if (who.guild)
-        SendSysMessage(who, "Você não pode aceitar participar de outra facção.");
-        return 0;
-    endif
-
     var guild_id   := GetObjProperty(item, "faccao_guild_id");
     var guild_name := GetObjProperty(item, "faccao_guild_name");
     var nome       := GetObjProperty(item, "convite_nome_rp");
@@ -137,6 +131,13 @@ function _UsarConviteAssinado(who, item)
     if (!guild)
         SendSysMessage(who, "Esta facção não existe mais.");
         DestroyItem(item);
+        return 0;
+    endif
+
+    // Valida se pode entrar (bloqueia 3ª facção ou mesmo tipo duplicado)
+    var can_join := CanJoinFaccao(guild, who);
+    if (can_join)
+        SendSysMessage(who, can_join);
         return 0;
     endif
 
@@ -168,8 +169,18 @@ function _UsarConviteAssinado(who, item)
         return 0;
     endif
 
-    // Aceito — registra o membro
-    AddMember(guild, who);
+    // Aceito — determina tipo de membro
+    var honorario;
+    if (who.guild)
+        honorario := 1; // já tem guild principal, entra como honorário
+    else
+        honorario := EscolherTipoMembro(who, guild_name);
+        if (honorario == -1)
+            SendSysMessage(who, "Entrada cancelada.");
+            return 0;
+        endif
+    endif
+    AddMember(guild, who, honorario);
 
     SetObjProperty(who, "dados_convite", struct{
         "nome_personalizado" := nome,
