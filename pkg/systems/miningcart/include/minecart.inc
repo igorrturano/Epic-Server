@@ -120,3 +120,15 @@ function FindTelepadAround(x, y, realm)
     endforeach
     return 0;
 endfunction
+
+function FindTelepadsAround(x, y, realm)
+    var result := array{};
+    foreach item in ListItemsNearLocation(x, y, LIST_IGNORE_Z, 1, realm)
+        if (item.IsA(POLCLASS_ITEM))
+            if (GetObjProperty(item, "DestX") != error || GetObjProperty(item, "Destination") != error)
+                result.append(item);
+            endif
+        endif
+    endforeach
+    return result;
+endfunction
