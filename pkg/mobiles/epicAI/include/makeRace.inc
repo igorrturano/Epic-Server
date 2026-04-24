@@ -1,4 +1,5 @@
 include "include/client";
+include ":epicAI:include/npcDataCache";    // NPC_GetCachedData
 
 function HasHair(mobile)
     return GetEquipmentByLayer(mobile, LAYER_HAIR);

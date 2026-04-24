@@ -217,21 +217,13 @@ program do_poisoning(who)
 		TS_StartTimer(who, poisonType, 60, level, who);
 	endif
 
-	if (GetObjProperty(the_poison, "doses") == error)
-		SetObjProperty(the_poison, "doses", 2);
-		SendSysMessageEx(who, "Ainda tem veneno para 2 doses.", SSM_INFO);
+	empty_bottle(who, the_poison);
+	var doses := GetObjProperty(the_poison, "doses");
+	var descdose := "Ainda tem veneno para " + doses + " doses.";
+	if (doses > 0)
+		SendSysMessageEx(who, descdose, SSM_INFO);
 	else
-		var doses := cint(GetObjProperty(the_poison, "doses"));
-		doses := doses - 1;
-		if (doses > 0)
-			SetObjProperty(the_poison, "doses", doses);
-			SendSysMessageEx(who, "Ainda tem veneno para " + doses + " doses.", SSM_INFO);
-		else
-			SendSysMessageEx(who, "Voce usou todas as doses do veneno.", SSM_INFO);
-			SubtractAmount(the_poison, 1);
-			EraseObjProperty(the_poison, "doses");
-			CreateItemInBackpack(who, 0xf0e, 1);
-		endif
+		SendSysMessageEx(who, "Voce usou todas as doses do veneno.", SSM_INFO);
 	endif
 
 	var nome_antigo := the_item.name;

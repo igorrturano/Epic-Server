@@ -1,13 +1,37 @@
 use uo;
 
 include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program endspelleffect(params)
 	var mobile := params[1];
 	var spellId := CInt(GetObjProperty(mobile, "prop"));
 
+	// Capture maintain intent before SC_RemoveEffect wipes the opts blob.
+	var mw := MobileWrapper(mobile);
+	var opts := mw.GetProperty($"SpellOpts_{spellId}");
+	var offer := 0;
+	var caster_serial := 0;
+	var saved_opts := 0;
+	var saved_duration := 0;
+
+	if (opts && !(opts is @Exception) && CInt(opts.maintainable) && opts.caster_serial)
+		var caster := SystemFindObjectBySerial(CInt(opts.caster_serial));
+		if (caster && !(caster is @Exception) && caster.connected && !caster.dead)
+			offer := 1;
+			caster_serial := CInt(opts.caster_serial);
+			saved_opts := opts;
+			saved_duration := CInt(opts.totalDuration);
+		endif
+	endif
+
 	SC_RemoveEffect(mobile, spellId);
 	EraseObjProperty(mobile, "prop");
+
+	if (offer)
+		start_script(":spells:shared/offerMaintain",
+			array{ caster_serial, mobile.serial, spellId, saved_opts, saved_duration });
+	endif
 
 	return 1;
 endprogram

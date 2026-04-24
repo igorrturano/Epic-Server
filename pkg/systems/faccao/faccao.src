@@ -10,6 +10,7 @@ include "include/arrays";
 include ":faccao:npc";
 include ":faccao:faccao";
 include ":faccao:laws";
+include "include/epicEconomyAudit";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":tn:tngumps";
@@ -459,7 +460,8 @@ function guildHandler(who, input)
 				return SendSysMessageEx(who, "Dinheiro insuficiente");
 			endif
 			guild.setProp("money", guild.getProp("money") - qty);
-			CreateItemInBackpack(who, 0xba63, qty);
+			var g_coin := CreateItemInBackpack(who, 0xba63, qty);
+			EA_Record(EA_MINT_GUILD_WITHDRAW, g_coin, qty, "GUILD:withdraw:" + CStr(guild.guildid), who, "");
 			SendSysMessageEx(who, "Moedas removidas");
 			return;
 		elseif (output["Transferir"])

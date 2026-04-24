@@ -67,21 +67,13 @@ endfunction
 function PreencheNomePersonagem(quem,objeto, nomeObjeto := "")
 
 	if(!objeto.IsA(POLCLASS_MOBILE)) return error{"errortext":="Object passed was not an POLCLASS_MOBILE."}; endif
-	
+
 	//Caso em que tá desconhecido
 	if(GetObjProperty(objeto, "realname"))
 		nomeObjeto := AMARELO_CLARO + "Incognito";
 	else
-		//Verifica se o char já foi reconhecido por who
-		var conhecidos := dictionary;
-		conhecidos := GetObjProperty(quem, "conhecidos"); //Lista de pessoas conhecidadas
-
-		if(conhecidos)
-			var ID := verificaDisfarce(objeto, quem);
-			nomeObjeto := conhecidos.Exists(ID)? conhecidos[ID] : objeto.name;
-		else
-			nomeObjeto := objeto.name;
-		endif
+		var nickname := GetKnownNickname(quem, objeto);
+		nomeObjeto := (nickname != "") ? nickname : objeto.name;
 	endif
 
 	if (quem.cmdlevel > 1) //Staff consegue ver o nome e raça

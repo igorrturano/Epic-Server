@@ -397,7 +397,7 @@ function get_heir_skills(who)
 	foreach skill in primarias
 		primarias_sum += Cint(AP_GetTrueSkill(who, skill));
 	endforeach
-	if (chardata.kit == "Sabe-Tudo")
+	if (chardata.trait == "Sabe-Tudo")
 		primarias_sum *= 2;
 	endif
 	var bonus_primarias := (primarias_sum - 80) / 4; // metade da media de pontos upados acima de 40 nas primarias
@@ -444,6 +444,10 @@ function MoverItensQuartoParaNpc(x, y, z, r, player, npc)
 		backpack.desc := player.name;
 	endif
 	foreach obj in objects
+		if (obj.isDoor())
+			sleepms(20);
+			continue;
+		endif
 		if (CheckLosBetween(x, y, z, obj.x, obj.y, obj.z, r))
 			if (GetObjProperty(obj, "crafterserial"))
 				if (player && player != error)
@@ -454,16 +458,16 @@ function MoverItensQuartoParaNpc(x, y, z, r, player, npc)
 				endif
 
 			elseif (obj.IsA(POLCLASS_CONTAINER))
-				var container := EnumerateItemsInContainer(obj, ENUMERATE_IGNORE_LOCKED);
-				foreach item in container
-					if (player && player != error)
+				if (player && player != error)
+					foreach item in EnumerateItemsInContainer(obj, ENUMERATE_IGNORE_LOCKED)
 						item.movable := 1;
-						MoveItemToContainer(item, backpack);
-					else
-						DestroyItem(item);
-					endif
-					sleepms(20);
-				endforeach
+						sleepms(20);
+					endforeach
+					obj.movable := 1;
+					MoveItemToContainer(obj, backpack);
+				else
+					DestroyItem(obj);
+				endif
 			endif
 		endif
 		sleepms(20);
@@ -478,6 +482,12 @@ function MoverItensQuartoParaNpc(x, y, z, r, player, npc)
 			endif
 		endif
 		MoveItemToContainer(backpack, npc.backpack);
+		var confiscado := GetObjProperty(npc, "confiscados");
+		if (!confiscado || confiscado == error)
+			confiscado := struct;
+		endif
+		confiscado.insert("" + player.serial, backpack.serial);
+		SetObjProperty(npc, "confiscados", confiscado);
 	endif
 	return 1;
 endfunction
@@ -495,19 +505,33 @@ function ProcurarItensQuarto(who)
 		if (npc.errortext)
 			innkeepers.erase(x);
 			SetGlobalProperty("InnKeeper", innkeepers);
+			sleepms(20);
+			continue;
 		endif
 
 		var quartos := GetObjProperty(npc, "quartos");
+		if (!quartos || quartos == error)
+			x := x + 1;
+			sleepms(20);
+			continue;
+		endif
 
 		var i := 1;
 		while (i <= quartos.size())
 			if (quartos[i].inquilino == who.serial)
 				var quarto := quartos[i];
 				var cent := quarto.centro;
+				var cent_size := cent.size();
+				var room_realm := npc.realm;
+				if (cent_size == 4)
+					room_realm := cent[4];
+				elseif (cent_size == 7)
+					room_realm := cent[7];
+				endif
 				if (cent[1])
-					MoverItensQuartoParaNpc(cent[1], cent[2], cent[3], npc.realm, who, npc);
-					if (cent[4])
-						MoverItensQuartoParaNpc(cent[4], cent[5], cent[6], npc.realm, who, npc);
+					MoverItensQuartoParaNpc(cent[1], cent[2], cent[3], room_realm, who, npc);
+					if (cent_size == 6 || cent_size == 7)
+						MoverItensQuartoParaNpc(cent[4], cent[5], cent[6], room_realm, who, npc);
 					endif
 				endif
 			endif

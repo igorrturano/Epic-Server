@@ -44,6 +44,12 @@ program use_scissors(who, scissors)
 	var amt, newcloth;
 
 	if (material)
+		if (newitem == UOBJ_BANDAGE)
+			if (!YesNo(who, "Cortar isso vai gerar bandagens. Deseja continuar?"))
+				SendSysMessage(who, "Cancelado.");
+				return;
+			endif
+		endif
 		amt := (material * cloth.amount);
 		// 		SendSysMessage(who, "amt: "+ amt);
 		if (SubtractAmount(cloth, amt))

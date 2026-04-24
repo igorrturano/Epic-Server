@@ -137,6 +137,7 @@ function CalculateParryChance(byRef attackInfo)
 		var offhand := GetEquipmentByLayer(attackInfo.GetDefender().GetObjRef(), LAYER_HAND2);
 		if (offhand && offhand.objtype == 0x1B73)
 			skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Postura de Duelo ativa: usando Tactics para calcular parry chance ({skill})", Color(SYSTEM_COLOR::INFO)));
 		else
 			skill := CInt(attackInfo.GetDefender().GetSkill(PARRY));
 		endif

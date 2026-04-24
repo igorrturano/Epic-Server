@@ -28,15 +28,7 @@ program unequipitem(params)
 		endif
 	endif
 
-	if (item.IsA(POLCLASS_ARMOR))
-		var tipoProtecao := equip.GetTipoProtecao();
-		if (tipoProtecao["Armadura Media"] && who.HasAbility(ABILITY_ID::MEDIUM_ARMOR_SPEC))
-			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 1));
-		elseif (tipoProtecao["Armadura Pesada"] && who.HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
-			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 2));
-		endif
-	endif
-
+	who.TriggerUnequipPassives(equip);
 	who.RemoveItemModifiers(equip);
 	Start_Script("packets/AssyncUpdateEquipment", array{who, false, item, layer});
 	return 1;

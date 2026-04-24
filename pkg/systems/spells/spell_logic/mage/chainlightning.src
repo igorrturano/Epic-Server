@@ -32,21 +32,31 @@ program chainLightning(params)
 
 	SendSysMessageEx(caster, "Voce ve raio saindo de sua mao e passando por seus inimigos.", SSM_INFO);
 
+	PlayObjectCenteredEffect(caster, 0xE088, 10, 15);
+
 	var range := cint(HandleSpellSkill(caster) / 20);
 	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range, targ);
 
 	var casterThenNextMobile := caster;
+	var jump := 0;
 	foreach mobile in allMobiles
 		SetObjProperty(mobile, "LastHit", { caster.name, caster.serial, "chain lightning" });
-		// PlayLightningBoltEffect( mobile );
-		PlayMovingEffect(casterThenNextMobile, mobile, 0x379f, 0, 20);
-		// ChainEffect(casterThenNextMobile, mobile);
+		PlayMovingEffect(casterThenNextMobile, mobile, 0xE088, 0, 20);
 		casterThenNextMobile := mobile;
-		PlaySoundEffect(mobile, SFX_SPELL_LIGHTNING);
-		var dmg := epicSpellDamageRoll(caster, spell_circle);
-		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+		PlaySoundEffect(mobile, 0x457);
+		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+
+		// 20% falloff per additional jump after the first target.
+		if (jump > 0)
+			var falloff := 1.0 - (jump * 0.2);
+			if (falloff < 0.2)
+				falloff := 0.2;
+			endif
+			dmg := Cint(dmg * falloff);
+		endif
 
 		DamageFLS(mobile, cint(dmg), DMG_ENERGY, caster, "chainLightning");
+		jump := jump + 1;
 		sleepms(600);
 	endforeach
 endprogram

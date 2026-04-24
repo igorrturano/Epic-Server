@@ -45,12 +45,12 @@ program diseaseScript(params)
 		diseases_system.falhou_cura := 0;
 
 		SendSysMessageEx(mobile, "Você começa a se sentir doente!", SSM_FAIL);
-		var corpo_peste := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0xd1bc, 1);
+		/*var corpo_peste := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0xd1bc, 1);
 		//print ("NÃO TEM");
 		corpo_peste.movable := 1;
 		EquipItem(mobile, corpo_peste);
 		corpo_peste.movable := 0;
-		diseases_system.serial_peste_corpse := corpo_peste.serial;
+		diseases_system.serial_peste_corpse := corpo_peste.serial;*/
 		
 		diseases_system.RegenDiseaseMod := -50;
 		AP_SetVitalRegenRateMod(mobile, "Stamina", -50);

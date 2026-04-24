@@ -245,6 +245,9 @@ function CoolPot(who, pot)
 		CreateItemInBackpack(who, inPot.ingot, Cint(inPot.amount) * 12);
 	else
 		CreateItemInBackpack(who, inPot.ingot, CInt(inPot.amount));
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH))
+			smeltaImpurezasRaras(who, CInt(inPot.amount));
+		endif
 	endif
 endfunction
 
