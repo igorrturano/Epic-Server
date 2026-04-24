@@ -1019,6 +1019,9 @@ function UnTame()
 
 	PrintTextPrivate(me, "*" + me.name + " pode viver livre denovo.*", me.master);
 
+	ClearPetStableAndLimboState(me);
+	ClearMasterLimboRef(me.master, me.serial);
+	ErasePet(me.master, me.serial);
 	me.SetMaster(0);
 
 	var orig_script := GetObjProperty(me, "script");
@@ -1055,8 +1058,20 @@ function Transfer(targ)
 		return;
 	endif
 
+	if ((GetNumPets(targ) + GetPetCost(me)) > GetMaxPets(targ))
+		Say("*" + me.name + " nao aceita " + targ.name + " como dono.*");
+		return;
+	endif
+
+	// Limpa qualquer estado de estabulo/limbo antes de trocar de dono
+	ClearPetStableAndLimboState(me);
+	ClearMasterLimboRef(me.master, me.serial);
+
 	Say("*" + me.name + " aceitou " + targ.name + " como seu novo dono*");
 	SetObjProperty(me, "owner", targ.serial);
+	ErasePet(me.master, me.serial);
+	AddPet(targ, me.serial);
+
 	me.SetMaster(targ);
 
 	RestartScript(me);
