@@ -5,11 +5,16 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
+include ":charactercreation:habilidades";
+include ":tn:cooldown";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	var targets := array;
@@ -21,12 +26,35 @@ program SpellScript(params)
 
 	PlaySoundEffect(who, SFX_SPELL_STRENGTH);
 
+	var spellId := CInt(spell.id);
 	foreach mobile in targets
-		if (mobile != who)
-			TS_StartTimer(mobile, "paralysis", 30);
-			SendSysMessageEx(mobile, "Voce esta completamente paralisado.", SSM_INFO);
-			PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z + 15, mobile.realm, 6161, 200, 200);
+		if (mobile == who)
+			continue;
 		endif
+
+		// Preserve legacy paralysis immunities (was enforced inside
+		// subScripts/paralysis/paralysis.src before migration to SC).
+		if (GetObjProperty(mobile, "chardata").trait == "Defensor Anão")
+			continue;
+		endif
+		if (temhabilidade(mobile, "Movimento Livre") || GetCooldown(mobile, "vitalidadeinabalavel") ||
+		    GetCooldown(mobile, "VontadeIndomavel") ||
+		    (MobileWrapper(mobile).HasAbility(ABILITY_ID::FURIA_INDOMAVEL) && GetCooldown(mobile, "furia")))
+			continue;
+		endif
+
+		SC_RemoveEffect(mobile, spellId);
+
+		var opts := struct{};
+		opts.+frozen := 1;
+		opts.+displayname := "Parar o Tempo";
+		opts.+buff_category := "movement_root";
+
+		SC_ApplyEffect(who, mobile, opts, 30, spellId);
+
+		PlaySoundEffect(mobile, 0x205);
+		SendSysMessageEx(mobile, "Voce esta completamente paralisado.", SSM_INFO);
+		PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z + 15, mobile.realm, 6161, 200, 200);
 	endforeach
 
 	return 1;

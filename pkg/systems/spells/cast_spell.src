@@ -500,6 +500,7 @@ function checkTargetValidity(mobile, targ, spellinfo)
 				   SSM_FAIL);
 		var vont := GetResist(targ, WILL);
 		DamageMANA(mobile, vont / 3);
+		EraseObjProperty(mobile, "#Casting");
 		return 0;
 	endif
 
@@ -520,6 +521,7 @@ function checkTargetValidity(mobile, targ, spellinfo)
 
 	if (Cint(GetObjProperty(mobile, "charmed_by")) == targ.serial)
 		PrintTextAbove(mobile, "*hipnotizado*");
+		EraseObjProperty(mobile, "#Casting");
 		return 0;
 	endif
 
@@ -541,6 +543,7 @@ function checkCastingSuccess(mobile, mw, spellinfo, scroll)
 	var entropy := mw.GetEntropy();
 	if (entropy <= -12000 && spellinfo.Type == "Divine")
 		Message("Você está muito corrompido para lançar magias divinas.").SetColor(SSM_FAIL).SendSys(mobile);
+		EraseObjProperty(mobile, "#Casting");
 		return 0;
 	endif
 
@@ -626,6 +629,12 @@ function handleFailedSpell(mobile, mw, spellinfo)
 
 	if (!GetObjProperty(mobile, "#magiasilenciosa"))
 		FailSpell(mobile);
+	else
+		// Silent casting skips the fizzle FX in FailSpell, but we still must
+		// release the casting lock or the caster gets stuck until relog.
+		mobile.frozen := 0;
+		EraseObjProperty(mobile, "#medding");
+		EraseObjProperty(mobile, "#Casting");
 	endif
 
 	SendSysMessageEx(mobile, "Voce falhou em invocar a magia.", SSM_FAIL);
