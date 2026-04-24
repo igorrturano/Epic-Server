@@ -167,7 +167,7 @@ endfunction
  * @param targ    Mobile - the targ (for sound playback location)
  * @param sound   Integer - sound effect ID (0 = no sound)
  */
-function SC_HandleSound(caster, targ, sound := 0)
+function SC_HandleSound(caster, targ := 0, sound := 0)
 	if (GetObjProperty(caster, "#magiasilenciosa"))
 		SendSysMessageEx(caster, "O efeito da magia silenciosa acabou.", SSM_INFO);
 		EraseObjProperty(caster, "#magiasilenciosa");

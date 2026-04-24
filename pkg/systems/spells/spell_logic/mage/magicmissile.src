@@ -6,7 +6,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 
@@ -55,7 +55,7 @@ program SpellScript(params)
 			dmg := RandomDiceRoll("1d4") + 1;
 		endif
 
-		DamageFLS(targ, cint(dmg), DMG_FORCED, who, "magicmissile");
+		SC_DealDamage(who, targ, CInt(spellinfo.id), cint(dmg), DMG_FORCED);
 		SleepMS(500);
 	endfor
 	return 1;
