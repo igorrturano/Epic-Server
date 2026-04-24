@@ -23,6 +23,7 @@ include ":tn:cooldown";
 include ":merchants:/include/cambio";
 include ":megacliloc:/include/descricaoObjetoTTip";
 include "include/events";
+include ":faccao:membership";
 
 const GF_STDCOLOR_UOSE := 1890;
 const MOEDAS := SESTERTIUS;
@@ -135,9 +136,9 @@ program HandleMerchant(params)
 		"SeeEvent": HandleSeeEvent(npc, player);
 		"DblClick":
 			DoWithdraw(npc, player);
-			var vendor_privs := guild ? guild.GetProp(cstr(player.serial)) : 0;
+			var vendor_privs := guild ? GetMemberPrivs(guild, player) : 0;
 			var is_vendor_leader := guild && (guild.GetProp("leader") == player.serial);
-			var is_guild_member := guild && (player.guildid == guild.guildid);
+			var is_guild_member := guild && IsMemberOfFaccao(guild, player);
 			if (player.cmdlevel >= 3 || (is_guild_member && (is_vendor_leader || above_merchant || (vendor_privs && vendor_privs.contractnpc))))
 				ProcessVendorDoubleClick(npc, player);
 			else
@@ -600,10 +601,10 @@ function AddItemToSell(npc, player, item)
 		endif
 	endif
 
-	if (onlyguild && player.guildid != guild.guildid)
+	if (onlyguild && !IsMemberOfFaccao(guild, player))
 		PrintTextAbove(npc, "Desculpe, não posso vender itens para membros fora da {}".format(guild.getProp("name")));
 		return 0;
-	elseif (norace && player.isRace(norace) && player.guildid != guild.guildid)
+	elseif (norace && player.isRace(norace) && !IsMemberOfFaccao(guild, player))
 		PrintTextAbove(npc, "Desculpe, fui proibido(a) de comercializar com sua raça");
 		return 0;
 	endif

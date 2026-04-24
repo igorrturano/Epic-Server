@@ -22,13 +22,11 @@ endfunction
 function GetMemberPrivs(faccao, mobile)
    if (IsHonoraryMember(faccao, mobile))
       return struct{
-         "above_guards"        := 0, "above_merchants" := 0,
-         "above_members"       := 0, "giveprivs"       := 0,
-         "contractnpc"         := 0, "fixitems"        := 0,
-         "unlockdoors"         := 0, "buyuniforms"     := 0,
-         "acompanhar_sombras"  := 0
+         "above_guards" := 0, "above_merchants" := 0,
+         "above_members" := 0, "giveprivs" := 0,
+         "contractnpc" := 0,  "fixitems" := 0,
+         "unlockdoors" := 0,  "buyuniforms" := 0
       };
    endif
    return faccao.GetProp(cstr(mobile.serial));
 endfunction
-

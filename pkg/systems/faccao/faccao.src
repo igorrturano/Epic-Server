@@ -130,9 +130,6 @@ program faccao(params)
 		targ := params[2];
 		cmd := params[3];
 		use_member_alias := params[4]; // preserva contexto de mural ao reabrir
-		if (!use_member_alias || use_member_alias.errortext)
-			use_member_alias := 0;
-		endif
 	endif
 
 	if (cmd == "guild")
@@ -146,10 +143,6 @@ program faccao(params)
 		// Aberto pelo mural de recrutamento (item clicado)
 		guild := targ.guild;
 		use_member_alias := 1;
-		if (!who.cmdlevel && !IsMemberOfFaccao(guild, who))
-			SendSysMessage(who, "Você não é membro desta facção.");
-			return 0;
-		endif
 	endif
 
 	if (!guild)
@@ -207,7 +200,7 @@ program faccao(params)
 	GFResizePic(gump, 48, 67, 9350, 172, 326); // members background
 	GFTextLine(gump, 100, 70, 0, "Membros");
 
-	var leader_name := GetMemberDisplayName(guild_leader, use_member_alias, who);
+	var leader_name := GetMemberDisplayName(guild_leader, use_member_alias);
 	if (!leader_name)
 		leader_name := "";
 	elseif (who.cmdlevel || aboveguild)
@@ -220,7 +213,7 @@ program faccao(params)
 		if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 			GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 		endif
-		GFTextLine(gump, 67, y - 2, 0, "{}".format(GetMemberDisplayName(mob, use_member_alias, who)));
+		GFTextLine(gump, 67, y - 2, 0, "{}".format(GetMemberDisplayName(mob, use_member_alias)));
 		var permissions := guild.GetProp(cstr(mob.serial));
 		var permission_text := "";
 		foreach priv in (permissions.keys())
@@ -244,7 +237,7 @@ program faccao(params)
 			if (is_gm_or_leader || privilegies.above_members || privilegies.giveprivs)
 				GFAddButton(gump, 49, y, 5605, 5605, GF_CLOSE_BTN, BUTTON_CHANGE_PLAYER + mob.serial);
 			endif
-			var hon_name := GetMemberDisplayName(mob, use_member_alias, who);
+			var hon_name := GetMemberDisplayName(mob, use_member_alias);
 			if (is_gm_or_leader && hon_name) hon_name := hon_name + " [Hon]"; endif
 			GFTextLine(gump, 67, y - 2, 0, "{}".format(hon_name));
 			GFToolTipText(gump, "Membro Honorário");
@@ -602,11 +595,8 @@ function guildHandler(who, input)
 		if (who.cmdlevel)
 			SendSysMessageEx(who, "" + guild_obj.area);
 		endif
-		var area := guild_obj.area;
 		SendSysMessageEx(who, "Qual porta deseja modificar?", SSM_REQUEST);
 		var targ := Target(who);
-
-		var guildid := GetObjProperty(who, "guild");
 
 		if (!targ)
 			return SendSysMessageEx(who, "Cancelado");
@@ -614,14 +604,28 @@ function guildHandler(who, input)
 			return SendSysMessageEx(who, "Isso nao e uma porta");
 		elseif (GetObjProperty(targ, "estalagem"))
 			return SendSysMessageEx(who, "Voce nao pode mexer em portas de estalagem");
-		// elseif (!InGuildRect(guild, targ))
 		elseif (GetObjProperty(targ, "time") /* || GetObjProperty(targ, "level") */)
 			return SendSysMessageEx(who, "Voce nao pode adicionar trancas nessa porta");
 		endif
 
-		if ((GetObjProperty(targ, "guild") == who.guildid) || (GetObjProperty(targ, "guild") == error))
+		var door_guild_id := GetObjProperty(targ, "guild");
+		var faccao_tipo   := GetFaccaoTipo(guild);
 
-			var options := array{};
+		if (faccao_tipo == "player")
+			if (!InGuildRect(guild, targ))
+				return SendSysMessageEx(who, "Esta porta nao esta no territorio da sua faccao");
+			endif
+			if (door_guild_id != error && door_guild_id != who.guildid)
+				return SendSysMessageEx(who, "Este local ja pertence a outra faccao");
+			endif
+		elseif (faccao_tipo == "staff")
+			var portas_reg := guild.GetProp("portas_serials");
+			if (!portas_reg || !(targ.serial in portas_reg))
+				return SendSysMessageEx(who, "Esta porta nao foi configurada para esta faccao.");
+			endif
+		endif
+
+		var options := array{};
 			var ref_key := GetObjProperty(targ, "LockId");
 			if (ref_key)
 				options.append("Copiar chave");
@@ -686,9 +690,6 @@ function guildHandler(who, input)
 			elseif (output["Desfazer"])
 				EraseObjProperty(targ, "Alugavel");
 			endif
-		else
-			return SendSysMessageEx(who, "Este local ja pertence a outra faccao");
-		endif
 	endif
 /* elseif (input == BUTTON_BUY_UNIFORM)
       var options := array{};
@@ -955,7 +956,7 @@ endfunction
 
 function gmHandler(who)
 	var opts := array{ "Alterar Nome", "Alterar Area", "Alterar Prisoes", "Pegar GuildID",
-				   	"Alterar Sub-Guilds", "Tipo de Faccao", "Criar Bau", "Setar Soldo", "Remover Guilda", "Cancelar" };
+				   	"Alterar Sub-Guilds", "Tipo de Faccao", "Criar Bau", "Setar Soldo", "Setar Porta", "Remover Guilda", "Cancelar" };
 	var output := RadioGump(who, 300, 0, "Escolha uma opcao", opts, 0, opts.size());
 
 	if (output["Nome"])
@@ -1054,6 +1055,8 @@ function gmHandler(who)
 		_CriarBauHandler(who);
 	elseif (output["Setar Soldo"])
 		_SetarSoldoHandler(who);
+	elseif (output["Setar Porta"])
+		_SetarPortaHandler(who);
 	elseif (output["Remover Guilda"])
 		RemFaccao(guild.guildid);
 		SendSysMessageEx(who, "Guilda removida");
@@ -1183,85 +1186,20 @@ function _TipoFaccaoHandler(who)
 		var nome_idx := _EscolherNomeFaccao(who, nomefaccao_atual);
 		if (!nome_idx) return; endif
 		var nome_lore := FACCAO_NOMES[nome_idx];
-		var staff_tipo := FACCAO_STAFF_TIPOS[nome_idx];
 		guild.SetProp("tipo_faccao", "staff");
-		guild.SetProp("staff_tipo", staff_tipo);
 		guild.SetProp("nomefaccao", nome_idx);
 		guild.SetProp("name", nome_lore);
 		guild_obj.tipo_faccao := "staff";
 		guild_obj.name := nome_lore;
 		_SyncNomeFaccaoMembers(guild, nome_idx);
-		SendSysMessageEx(who, "Tipo: staff | Facção: {} ({}) | staff_tipo: {}".format(nome_lore, nome_idx, staff_tipo));
-	elseif (input[0] == 2) // Player: pede nome, demite NPCs, zera moedas, limpa props
-		// --- Nome da nova faccao player ---
-		var _nome_player := _PedirNomeFaccaoPlayer(who, guild_obj.name);
-		if (!_nome_player || !_nome_player.length()) return; endif
-
-		// --- Demitir TODOS os NPCs ativos ---
-		var _npcs_antes := guild.GetProp("npcs_active");
-		var _npcs_count := _npcs_antes ? _npcs_antes.size() : 0;
-		while (guild.GetProp("npcs_active") && guild.GetProp("npcs_active").size() > 0)
-			sleepms(10);
-			DismissNPC(guild, 1);
-		endwhile
-		if (_npcs_count > 0)
-			SendSysMessageEx(who, "{} NPC(s) demitido(s) automaticamente na conversao.".format(_npcs_count), SSM_INFO);
-		endif
-
-		// --- Limpar membros honorarios (o tipo "player" os bloquearia de entrar em outras player factions) ---
-		var _honoraries := guild.GetProp("honorary_members");
-		if (_honoraries && _honoraries.size() > 0)
-			foreach _hs in _honoraries
-				sleepms(2);
-				var _hm := SystemFindObjectBySerial(CInt(_hs), SYSFIND_SEARCH_OFFLINE_MOBILES);
-				if (_hm) EraseObjProperty(_hm, "honorary_guild_id"); endif
-			endforeach
-			guild.EraseProp("honorary_members");
-			SendSysMessageEx(who, "{} membro(s) honorario(s) removido(s) — evita bloqueio de entrada em facções player.".format(_honoraries.size()), SSM_INFO);
-		endif
-
-		// --- Zerar moedas da faccao ---
-		guild.SetProp("money", 0);
-		guild_obj.money := 0;
-
+		SendSysMessageEx(who, "Tipo: staff | Facção: {} ({})".format(nome_lore, nome_idx));
+	elseif (input[0] == 2) // Player: limpa nomefaccao, preserva nome atual
 		guild.SetProp("tipo_faccao", "player");
-		guild.SetProp("name", _nome_player);
 		guild.EraseProp("nomefaccao");
-		guild.EraseProp("staff_tipo");
 		guild_obj.tipo_faccao := "player";
-		guild_obj.name := _nome_player;
 		_SyncNomeFaccaoMembers(guild, 0);
-		SendSysMessageEx(who, "Tipo alterado para: player | Nome: {}.".format(_nome_player), SSM_INFO);
+		SendSysMessageEx(who, "Tipo alterado para: player");
 	endif
-endfunction
-
-// -------------------------------------------------------
-// Gump de texto livre para nomear uma faccao player.
-// Retorna o nome digitado, ou 0 se cancelado.
-// -------------------------------------------------------
-function _PedirNomeFaccaoPlayer(who, nome_atual := "")
-	var gump := GFCreateGump();
-	GFSetId(gump, 0x12352);
-	GFResizePic(gump, 0, 0, 9200, 310, 160);
-	GFResizePic(gump, 15, 15, 9350, 280, 130);
-
-	GFHtmlShadowed(gump, 20, 25, 270, 20, "#FFC33C", "<center>Nome da Facção Player", 8);
-	GFHtmlShadowed(gump, 20, 50, 270, 16, "#AAAAAA", "<center>Digite o nome que a facção vai usar.", 6);
-
-	var id_nome := GFTextEntry(gump, 20, 75, 270, 22, 0, nome_atual, 1, 40);
-
-	GFAddButton(gump, 50,  108, 4005, 4006, GF_CLOSE_BTN, 1);
-	GFTextLine(gump,  80,  106, 0, "Confirmar");
-	GFAddButton(gump, 185, 108, 4017, 4018, GF_CLOSE_BTN, 0);
-	GFTextLine(gump,  215, 106, 0, "Cancelar");
-
-	var res := GFSendGump(who, gump);
-	if (!res || res[0] != 1) return 0; endif
-
-	var nome := GFExtractData(res, id_nome);
-	nome := trim(cstr(nome));
-	if (!nome || !nome.length()) return 0; endif
-	return nome;
 endfunction
 
 // -------------------------------------------------------
@@ -1348,6 +1286,44 @@ function _CriarBauHandler(who)
 endfunction
 
 // -------------------------------------------------------
+// Registra uma porta como pertencente a esta faccao de lore (staff).
+// Apenas GMs podem registrar. Membros com unlockdoors podem trocar a tranca depois.
+// Seriais das portas ficam em guild prop "portas_serials".
+// -------------------------------------------------------
+function _SetarPortaHandler(who)
+	if (GetFaccaoTipo(guild) != "staff")
+		return SendSysMessageEx(who, "Setar porta so pode ser feito para faccoes do tipo staff.", SSM_FAIL);
+	endif
+
+	SendSysMessageEx(who, "Clique na porta que deseja configurar para esta faccao.", SSM_INFO);
+	var targ := Target(who);
+	if (!targ)
+		return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+	endif
+	if (!targ.IsDoor())
+		return SendSysMessageEx(who, "Isso nao e uma porta.", SSM_FAIL);
+	endif
+
+	var door_guild_id := GetObjProperty(targ, "guild");
+	if (door_guild_id != error && door_guild_id != guild.guildid)
+		return SendSysMessageEx(who, "Esta porta ja pertence a outra faccao.", SSM_FAIL);
+	endif
+
+	var portas := guild.GetProp("portas_serials");
+	if (!portas) portas := array{}; endif
+
+	if (targ.serial in portas)
+		return SendSysMessageEx(who, "Esta porta ja esta registrada nesta faccao.", SSM_FAIL);
+	endif
+
+	portas.append(targ.serial);
+	guild.SetProp("portas_serials", portas);
+	SetObjProperty(targ, "guild", guild.guildid);
+
+	SendSysMessageEx(who, "Porta registrada | serial={} guild={}".format(targ.serial, guild.guildid), SSM_INFO);
+endfunction
+
+// -------------------------------------------------------
 // Configura o soldo periodico da faccao (apenas staff).
 // Salva na guild: soldo_lider, soldo_membro, soldo_intervalo, soldo_proximo.
 // O soldocontrol.src le essas props e deposita no bau periodicamente.
@@ -1427,15 +1403,17 @@ function npcHandler(who, input)
 		historico := "<br> - {}".format("<br> -".join(historico));
 		SendHTMLGump(who, "Historico dos Guardas", historico);
 	elseif (input == BUTTON_CONTRACT_NPC)
-		var _dbg_staff_tipo := guild.GetProp("staff_tipo");
-		var _dbg_guildid    := guild.guildid;
-		var npcs_array      := listNPC(guild);
-		guild_obj.npcs := npcs_array;
-		Print("[CONTRACT] guild={} staff_tipo={} lista_size={}".format(_dbg_guildid, _dbg_staff_tipo, npcs_array.size()));
-		foreach _dbg_npc in npcs_array
-			Print("[CONTRACT]   -> {}".format(_dbg_npc.name));
-			sleepms(2);
-		endforeach
+		var npcs_array := guild.getProp("npcs");
+		if (!npcs_array || npcs_array.size() == 0 || npcs_array.size() > 4)
+			npcs_array := array{
+				struct{ "template" := ":epicai:guardafaccaofraco",   "price" := 25,  "name" := "Guarda Recruta (Fraco)",      "equipment" := array{} },
+				struct{ "template" := ":epicai:guardafaccaomedio",   "price" := 70,  "name" := "Guarda Veterano (Medio)",     "equipment" := array{} },
+				struct{ "template" := ":epicai:guardafaccaoforte",   "price" := 100, "name" := "Guarda Elite (Forte)",         "equipment" := array{} },
+				struct{ "template" := ":merchants:merchantfaccao",   "price" := 10,  "name" := "Vendedor da Faccao",           "equipment" := array{} }
+			};
+			guild.SetProp("npcs", npcs_array);
+			guild_obj.npcs := npcs_array;
+		endif
 
 		var opts := array{};
 		foreach agent in (guild_obj.npcs)
@@ -1981,17 +1959,8 @@ endfunction
 
 // Retorna o nome personalizado do membro (definido na inscrição) ou o nome real como fallback.
 // use_alias := 1 para mostrar o nome da inscrição (mural), 0 para mostrar mob.name normal.
-// viewer := quem está vendo (opcional); se GM, sempre exibe nome_inicial + conta.
-function GetMemberDisplayName(mob, use_alias := 0, viewer := 0)
+function GetMemberDisplayName(mob, use_alias := 0)
 	if (!mob) return ""; endif
-	if (viewer && viewer.cmdlevel)
-		var nome_real := GetObjProperty(mob, "nome_inicial");
-		if (!nome_real || nome_real.errortext)
-			nome_real := mob.name;
-		endif
-		var acct := mob.acctname ? mob.acctname : "?";
-		return nome_real + " [" + acct + "]";
-	endif
 	if (use_alias)
 		var dados := GetObjProperty(mob, "dados_convite");
 		if (dados && dados.nome_personalizado)
