@@ -21,10 +21,9 @@ var fighting     := 0;
 var fix_location := 0;
 var wait_time    := 10;
 
-// Estado: IDLE (0), TRACKING (1), SNIPE (2), COMBAT (3)
+// Estado: IDLE (0), TRACKING (1), COMBAT (3)
 var state        := 0;
 var track_target := 0;
-var pursuit_tracker := 0;  // struct para stuck detection (portado do EpicAI)
 var hidden_since := 0;     // timestamp quando alvo ficou invisivel
 // stand_fight declarado em npc_laws_enforce.inc
 
@@ -37,48 +36,14 @@ const SNIPE_RANGE       := 6;   // distancia ideal de combate ranged
 const DETECT_RANGE      := 8;   // tiles para comecar a rastrear
 const MIN_RANGE         := 3;   // distancia minima a manter do alvo
 const HIDDEN_TOLERANCE  := 4;   // segundos ate desistir de alvo invisivel
-const FLEE_HP_PCT   := 40;  // percentual de HP para re-esconder
+const FLEE_HP_PCT       := 40;  // percentual de HP para re-esconder
 
 // ============================================================
 // INICIALIZACAO
 // ============================================================
 
 function Setup()
-	var guildid := GetObjProperty(me, "guild");
-	if (guildid)
-		guild := FindGuild(guildid);
-		if (!guild)
-			ApplyRawDamage(me, 600);
-			return;
-		endif
-	else
-		sleep(5);
-		Setup();
-		return;
-	endif
-
-	guild_leader := guild.getProp("leader");
-	guild_laws   := guild.getProp("laws");
-	if (!guild_laws) guild_laws := array{}; endif
-
-	fix_location := GetObjProperty(me, "fix_loc");
-	if (fix_location == error) fix_location := 0; endif
-
-	if (!me.backpack)
-		var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
-		EquipItem(me, new_pack);
-	endif
-
-	me.cmdlevel := 2;
-	GrantPrivilege(me, "hiddenattack");
-	me.enable("hiddenattack");
-	GrantPrivilege(me, "runwhilestealth");
-	me.enable("runwhilestealth");
-	if (GetObjProperty(me, "shadow_mode"))
-		me.stealthsteps := 9999;
-		me.hidden := 1;
-	endif
-
+	SetupFaccaoNPCBase(1);
 endfunction
 
 // ============================================================
@@ -86,22 +51,8 @@ endfunction
 // ============================================================
 
 function IsValidTarget(who)
-    if (who.hidden || who.concealed) return 0; endif
-    return IsValidCombatTarget(who);
-endfunction
-
-function GetHPPercent()
-	if (me.maxhits <= 0) return 100; endif
-	return CInt((me.hits * 100) / me.maxhits);
-endfunction
-
-function GetNearTarget()
-	foreach mob in ListMobilesNearLocationEx(me.x, me.y, me.z, DETECT_RANGE,
-		LISTEX_FLAG_NORMAL, me.realm)
-		sleepms(2);
-		if (IsValidTarget(mob)) return mob; endif
-	endforeach
-	return 0;
+	if (who.hidden || who.concealed) return 0; endif
+	return IsValidCombatTarget(who);
 endfunction
 
 function SneakShot(targ)
@@ -118,7 +69,7 @@ endfunction
 function MaintainDistance(targ)
 	var stam     := AP_GetVital(me, STAMINA);
 	var max_stam := AP_GetVitalMaximumValue(me, STAMINA);
-	var can_run  := (stam > max_stam * 0.25);  // corre acima de 25% de stamina
+	var can_run  := (stam > max_stam * 0.25);
 
 	if (!me.weapon || !me.weapon.isRanged())
 		if (Distance(me, targ) > 1)
@@ -185,8 +136,6 @@ function Reposition(threat)
 endfunction
 
 function CombatTick()
-	// Assassinos nao prendem: CheckKnockedOut() removido.
-	// Quando o alvo morrer, fighting.dead=1 → _gone=1 cobre o cleanup.
 	var _gone := (!fighting || !fighting.isA(POLCLASS_MOBILE) || fighting.dead);
 
 	// Tolerancia de invisibilidade: desiste apos HIDDEN_TOLERANCE segundos
@@ -204,7 +153,6 @@ function CombatTick()
 	endif
 
 	if (_gone)
-		pursuit_tracker := 0;
 		SetOpponent(0);
 		SetWarMode(0);
 		var _next := GetNearTarget();
@@ -231,7 +179,6 @@ function CombatTick()
 
 	// Alvo alem de 13 tiles: desistir e reposicionar
 	if (Distance(me, fighting) > 13)
-		pursuit_tracker := 0;
 		var _next2 := GetNearTarget();
 		if (_next2)
 			fighting := _next2;
@@ -269,37 +216,8 @@ program AssassinoArqueiroMain()
 
 	while (me)
 
-		// Re-leitura do guild se necessario
-		if (!guild)
-			var _gid := GetObjProperty(me, "guild");
-			if (_gid)
-				guild        := FindGuild(_gid);
-				guild_leader := guild ? guild.getProp("leader") : 0;
-				guild_laws   := guild ? guild.getProp("laws")   : array{};
-				if (!guild_laws) guild_laws := array{}; endif
-			endif
-		endif
-
-		// Controle de territorio
-		if (guild)
-			if (GetObjProperty(me, "tipo_faccao") == "staff")
-				HandleWalkRectBreach(me, wait_time);
-			elseif (!inGuildRect(guild, me, 4))
-				if (state != 3)
-					var _center := GetGuildCenter(guild, me.z);
-					if (_center)
-						me.stealthsteps := 9999;
-						RunTowardLocation(_center.x, _center.y);
-						wait_time := 0;
-					endif
-					state := 0;
-					track_target := 0;
-					fighting := 0;
-					SetOpponent(0);
-					SetWarMode(0);
-				endif
-			endif
-		endif
+		LazyReloadGuild();
+		if (EnforceTerritoryBounds()) track_target := 0; endif
 
 		var _shadow := GetObjProperty(me, "shadow_mode");
 		case (state)
@@ -319,40 +237,24 @@ program AssassinoArqueiroMain()
 					endif
 				endif
 
-				var _patrol := GetObjProperty(me, "patrolling");
-				if (!following && _patrol && _patrol.size() >= 2)
-					var _pidx := GetObjProperty(me, "#patrol_idx");
-					if (_pidx == error || !_pidx) _pidx := 1; endif
-					var _ppt := _patrol[_pidx];
-					if (CoordinateDistance(me.x, me.y, _ppt.x, _ppt.y) <= 1)
-						_pidx := (_pidx % 2) + 1;
-						SetObjProperty(me, "#patrol_idx", _pidx);
-					else
-						WalkTowardLocation(_ppt.x, _ppt.y);
-						wait_time := 0;
+				// Patrulhar / posto fixo / vaguear
+				if (!following)
+					if (!UpdatePatrolState())
+						if (fix_location)
+							var dist_posto := CoordinateDistance(me.x, me.y, fix_location.x, fix_location.y);
+							if (dist_posto > 1)
+								WalkTowardLocation(fix_location.x, fix_location.y);
+								wait_time := 0;
+							else
+								me.facing := fix_location.facing;
+							endif
+						else
+							WanderNPC();
+						endif
 					endif
-				elseif (!following && fix_location)
-					var dist_posto := CoordinateDistance(me.x, me.y, fix_location.x, fix_location.y);
-					if (dist_posto > 1)
-						WalkTowardLocation(fix_location.x, fix_location.y);
-						wait_time := 0;
-					else
-						me.facing := fix_location.facing;
-					endif
-				elseif (!following)
-					WanderNPC();
 				endif
 
-				// Verificar leis para players proximos
-				if (!warning && !GetCooldown(me, "lawscan_cd"))
-					foreach _mob in ListMobilesNearLocationEx(me.x, me.y, me.z, 6,
-							LISTEX_FLAG_NORMAL, me.realm)
-						sleepms(2);
-						if (!_mob.npctemplate) CheckPlayerLaws(_mob); endif
-						if (warning) break; endif
-					endforeach
-					SetCooldown(me, "lawscan_cd", 3);
-				endif
+				ScanNearbyLaws();
 
 				// Detectar alvo
 				if (!GetCooldown(me, "detect_cd"))
@@ -386,7 +288,6 @@ program AssassinoArqueiroMain()
 					track_target := 0;
 					state := 0;
 				elseif (dist_track <= SNIPE_RANGE && CheckLineOfSight(me, track_target))
-					// Posicao de tiro alcancada: atirar
 					if (me.hidden) PrintTextAbove(me, "*dispara das sombras*"); endif
 					SneakShot(track_target);
 					fighting     := track_target;

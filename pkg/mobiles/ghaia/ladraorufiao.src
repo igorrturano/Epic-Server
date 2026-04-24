@@ -43,34 +43,7 @@ const GO_LOC_CMD := 0xA008;
 // ============================================================
 
 function Setup()
-	var guildid := GetObjProperty(me, "guild");
-	if (guildid)
-		guild := FindGuild(guildid);
-		if (!guild)
-			ApplyRawDamage(me, 600);
-			return;
-		endif
-	else
-		sleep(5);
-		Setup();
-		return;
-	endif
-
-	guild_leader := guild.getProp("leader");
-	guild_laws   := guild.getProp("laws");
-	if (!guild_laws) guild_laws := array{}; endif
-
-	fix_location := GetObjProperty(me, "fix_loc");
-	if (fix_location == error) fix_location := 0; endif
-
-	if (!me.backpack)
-		var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
-		EquipItem(me, new_pack);
-	endif
-
-	me.cmdlevel := 2;
-	me.stealthsteps := 9999;
-	me.hidden := 1;
+	SetupFaccaoNPCBase(0);
 endfunction
 
 // ============================================================
@@ -209,16 +182,7 @@ program LadroMain()
 
 	while (me)
 
-		// Re-leitura do guild se nao resolvido no Setup (timing de spawn)
-		if (!guild)
-			var _gid := GetObjProperty(me, "guild");
-			if (_gid)
-				guild        := FindGuild(_gid);
-				guild_leader := guild ? guild.getProp("leader") : 0;
-				guild_laws   := guild ? guild.getProp("laws")   : array{};
-				if (!guild_laws) guild_laws := array{}; endif
-			endif
-		endif
+		LazyReloadGuild();
 
 		// Controle de territorio (hunt_mode ignora limites)
 		var _hunt := GetObjProperty(me, "hunt_mode");
@@ -264,16 +228,8 @@ program LadroMain()
 			endif
 		endif
 
-		// Verificar leis para players proximos (ladroes tambem enforçam as leis da faccao)
-		if (!warning && !GetCooldown(me, "lawscan_cd"))
-			foreach _mob in ListMobilesNearLocationEx(me.x, me.y, me.z, 6,
-					LISTEX_FLAG_NORMAL, me.realm)
-				sleepms(2);
-				if (!_mob.npctemplate) CheckPlayerLaws(_mob); endif
-				if (warning) break; endif
-			endforeach
-			SetCooldown(me, "lawscan_cd", 3);
-		endif
+		// Ladroes tambem enforçam as leis da faccao
+		ScanNearbyLaws();
 
 		// Detectar alvo e tentar furtar
 		if (!GetCooldown(me, "steal_cd"))
