@@ -39,41 +39,7 @@ const CLEAR_RANGE   := 20;  // tiles para considerar area limpa e voltar as somb
 // ============================================================
 
 function Setup()
-	var guildid := GetObjProperty(me, "guild");
-	if (guildid)
-		guild := FindGuild(guildid);
-		if (!guild)
-			ApplyRawDamage(me, 600);
-			return;
-		endif
-	else
-		sleep(5);
-		Setup();
-		return;
-	endif
-
-	guild_leader := guild.getProp("leader");
-	guild_laws   := guild.getProp("laws");
-	if (!guild_laws) guild_laws := array{}; endif
-
-	fix_location := GetObjProperty(me, "fix_loc");
-	if (fix_location == error) fix_location := 0; endif
-
-	if (!me.backpack)
-		var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
-		EquipItem(me, new_pack);
-	endif
-
-	me.cmdlevel := 2;
-	GrantPrivilege(me, "hiddenattack");
-	me.enable("hiddenattack");
-	GrantPrivilege(me, "runwhilestealth");
-	me.enable("runwhilestealth");
-	// NPC sempre nasce visivel; shadow_mode prop controla quando vai para as sombras
-	if (GetObjProperty(me, "shadow_mode"))
-		me.stealthsteps := 9999;
-		me.hidden := 1;
-	endif
+	SetupFaccaoNPCBase(1);
 endfunction
 
 // ============================================================
@@ -81,22 +47,8 @@ endfunction
 // ============================================================
 
 function IsValidTarget(who)
-	if (who.hidden) return 0; endif
+	if (who.hidden || who.concealed) return 0; endif
 	return IsValidCombatTarget(who);
-endfunction
-
-function GetHPPercent()
-	if (me.maxhits <= 0) return 100; endif
-	return CInt((me.hits * 100) / me.maxhits);
-endfunction
-
-function GetNearTarget()
-	foreach mob in ListMobilesNearLocationEx(me.x, me.y, me.z, DETECT_RANGE,
-		LISTEX_FLAG_NORMAL, me.realm)
-		sleepms(2);
-		if (IsValidTarget(mob)) return mob; endif
-	endforeach
-	return 0;
 endfunction
 
 function SneakAttack(targ)
@@ -126,15 +78,6 @@ function ReturnToShadow()
 	endif
 endfunction
 
-// Busca alvo em raio maior (usado pos-combate)
-function GetTargetInRange(range)
-	foreach mob in ListMobilesNearLocationEx(me.x, me.y, me.z, range, LISTEX_FLAG_NORMAL, me.realm)
-		sleepms(2);
-		if (IsValidTarget(mob)) return mob; endif
-	endforeach
-	return 0;
-endfunction
-
 function CombatTick()
 	// Revelar no primeiro tick de combate (apos o primeiro golpe invisivel)
 	if (me.hidden)
@@ -148,7 +91,7 @@ function CombatTick()
 	if (_targ_gone)
 		SetOpponent(0);
 		SetWarMode(0);
-		var _next := GetTargetInRange(13);
+		var _next := GetNearTarget(13);
 		if (_next)
 			fighting := _next;
 			SetOpponent(_next);
@@ -162,7 +105,7 @@ function CombatTick()
 	// Verificar distancia e linha de visao
 	var dist := Distance(me, fighting);
 	if (dist > 13 || !CheckLineOfSight(me, fighting))
-		var _next2 := GetTargetInRange(13);
+		var _next2 := GetNearTarget(13);
 		if (_next2)
 			fighting := _next2;
 			SetOpponent(_next2);
@@ -202,38 +145,8 @@ program AssassinoSinodoMain()
 
 	while (me)
 
-		// Re-leitura do guild se necessario
-		if (!guild)
-			var _gid := GetObjProperty(me, "guild");
-			if (_gid)
-				guild        := FindGuild(_gid);
-				guild_leader := guild ? guild.getProp("leader") : 0;
-				guild_laws   := guild ? guild.getProp("laws")   : array{};
-				if (!guild_laws) guild_laws := array{}; endif
-			endif
-		endif
-
-		// Controle de territorio (hunt_mode ignora limites)
-		if (guild && !GetObjProperty(me, "hunt_mode"))
-			if (GetObjProperty(me, "tipo_faccao") == "staff")
-				HandleWalkRectBreach(me, wait_time);
-			elseif (!inGuildRect(guild, me, 4))
-				// Retornar ao territorio sem interromper estado de combate
-				if (state != 3)
-					var _center := GetGuildCenter(guild, me.z);
-					if (_center)
-						me.stealthsteps := 9999;
-						RunTowardLocation(_center.x, _center.y);
-						wait_time := 0;
-					endif
-					state := 0;
-					track_target := 0;
-					fighting := 0;
-					SetOpponent(0);
-					SetWarMode(0);
-				endif
-			endif
-		endif
+		LazyReloadGuild();
+		if (EnforceTerritoryBounds()) track_target := 0; endif
 
 		var _shadow := GetObjProperty(me, "shadow_mode");
 		case (state)
@@ -254,20 +167,8 @@ program AssassinoSinodoMain()
 					endif
 				endif
 
-				// Patrulhar entre dois pontos
-				var _patrol := GetObjProperty(me, "patrolling");
-				if (!following && _patrol && _patrol.size() >= 2)
-					var _pidx := GetObjProperty(me, "#patrol_idx");
-					if (_pidx == error || !_pidx) _pidx := 1; endif
-					var _ppt := _patrol[_pidx];
-					if (CoordinateDistance(me.x, me.y, _ppt.x, _ppt.y) <= 1)
-						_pidx := (_pidx % 2) + 1;
-						SetObjProperty(me, "#patrol_idx", _pidx);
-					else
-						WalkTowardLocation(_ppt.x, _ppt.y);
-						wait_time := 0;
-					endif
-				elseif (!following && fix_location)
+				// Patrulhar / posto fixo / vaguear
+				if (!following && !UpdatePatrolState() && fix_location)
 					var dist_posto := CoordinateDistance(me.x, me.y, fix_location.x, fix_location.y);
 					if (dist_posto > 1)
 						WalkTowardLocation(fix_location.x, fix_location.y);
@@ -277,23 +178,11 @@ program AssassinoSinodoMain()
 					endif
 				endif
 
-				// Verificar leis para players proximos
-				if (!warning && !GetCooldown(me, "lawscan_cd"))
-					foreach _mob in ListMobilesNearLocationEx(me.x, me.y, me.z, 6,
-							LISTEX_FLAG_NORMAL, me.realm)
-						sleepms(2);
-						if (!_mob.npctemplate) CheckPlayerLaws(_mob); endif
-						if (warning) break; endif
-					endforeach
-					SetCooldown(me, "lawscan_cd", 3);
-				endif
-
 				// Vaguear: hunt_mode = cidade toda; shadow_mode normal = so territorio
 				if (!following && !fix_location && !GetObjProperty(me, "patrolling") &&
 						!GetCooldown(me, "wander_cd"))
 					var _in_hunt := GetObjProperty(me, "hunt_mode");
 					if (_in_hunt)
-						// Wander livre — ignora limites do territorio
 						me.stealthsteps := 9999;
 						me.hidden := 1;
 						var _wx := me.x + RandomInt(21) - 10;
@@ -311,6 +200,8 @@ program AssassinoSinodoMain()
 						endif
 					endif
 				endif
+
+				ScanNearbyLaws();
 
 				// Detectar alvo
 				if (!GetCooldown(me, "detect_cd"))
@@ -348,7 +239,7 @@ program AssassinoSinodoMain()
 
 				if (dist_track > DETECT_RANGE + 2)
 					track_target := 0;
-					fighting     := 0;  // limpar fighting orfao se houver
+					fighting     := 0;
 					state        := 0;
 				elseif (dist_track <= AMBUSH_RANGE)
 					SneakAttack(track_target);
