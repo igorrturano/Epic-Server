@@ -7,7 +7,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/epicMageryUtils";
 
 program cast_thornstorm(params)
@@ -27,5 +27,5 @@ function LaunchProjectile(caster, targ, spellinfo)
 	PlaySoundEffect(targ, 0x22F);
 
 	var dmg := cint(AP_GetSkill(caster, THEOLOGY) / 10) + epicSpellDamageRoll(caster, spellinfo.Circle);
-	DamageFLS(targ, cint(dmg), DMG_PHYSICAL, caster);
+	SC_DealDamage(caster, targ, CInt(spellinfo.id), cint(dmg), DMG_PHYSICAL);
 endfunction
