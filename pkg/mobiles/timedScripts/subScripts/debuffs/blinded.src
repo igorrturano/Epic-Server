@@ -3,6 +3,7 @@ use os;
 include ":debug:Controller/DebugController";
 include ":message:model/Message";
 include "include/client";
+include ":awareness:awareness";
 
 program TimedScript_Blinded(params)
 	var mobile := params[1];
