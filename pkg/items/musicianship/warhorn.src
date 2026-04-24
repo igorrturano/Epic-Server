@@ -5,17 +5,19 @@ include "include/epicConstants";
 include "include/say";
 include "include/facings";
 include ":attributes:attributes";
+include ":message:model/Message";
 
 program warhorn(who, item)
+	Attach(who);
 	var equipped := GetEquipmentByLayer(who, LAYER_HAND1);
-	if (!equipped || equipped.objtype != 0xFA55)
-		SendSysMessageEx(who, "Você não está segurando um berrante!", 2);
+	if (!equipped || equipped.objtype != 0xFFBA)
+		Message("Você não está segurando um berrante!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return;
 	endif
 
 	var chardata := GetObjProperty(who, "chardata");
 	if (!chardata || !chardata.culture)
-		SendSysMessageEx(who, "Você não possui uma cultura definida para usar o berrante!", 2);
+		Message("Você não possui uma cultura definida para usar o berrante!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return;
 	endif
 
@@ -32,19 +34,22 @@ program warhorn(who, item)
 		default:  sound_id := 0x68F;
 	endcase
 
+	PrintTextAbove(who,"*Assopra uma Corneta de Guerra*",3,GENERAL_COLOR::RED_LIGHT);
+	PrintTextAbove(who,"*FFFFFUUUUEEEEEOOOONNNNNNNNNNN*",3,GENERAL_COLOR::RED_LIGHT);
 	PerformAction(who, 0x22);
 	PlaySoundEffect(who, sound_id);
+
 	for i := 0 to 50
 		PerformAction(who, 0x22);
 		sleepms(100); // Pequeno delay para evitar sobrecarga de sons
 	endfor
-	SendSysMessageEx(who, "Você toca o berrante de sua cultura!", 1);
-
+	
+	Message("Você toca a corneta da sua cultura!").SetColor(Color(SYSTEM_COLOR::GOOD)).SendSys(who);
 	// Notificar pessoas próximas
 	var range := 30;
 	var listeners := ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm);
 	foreach mob in listeners
-		if (mob == who)
+		if (mob.serial == who.serial)
 			continue;
 		endif
 
@@ -52,7 +57,7 @@ program warhorn(who, item)
 		var facing := GetFacing(mob.x, mob.y, who.x, who.y);
 		var direction := GetCardinalDirection(facing);
 
-		SendSysMessageEx(mob, "Você ouve um berrante vindo " + direction + ".", 1);
+		Message("Você escuta o som de uma corneta de guerra vindo " + direction + ".").SetColor(Color(SYSTEM_COLOR::ALERT)).SendSys(mob);
 		PlaySoundEffect(mob, sound_id);
 		sleepms(20); // Pequeno delay para evitar sobrecarga de sons
 	endforeach

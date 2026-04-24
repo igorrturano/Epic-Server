@@ -2,20 +2,24 @@ var all_scripts := array{
     "summon", "summon_1", "summon_2", "summon_3", "summon_4", "sumir", "encantar", "events", 
     "defaultPoison", "hallucination", "paralysis", "congelamento", "alcohol", "clumsy", "feebleMind", 
     "weaken", "spelleffect_219", "agility", "strength", "stamina", "berserk", "graspingroots", "intelligence", 
-    "invis", "vinganca", "velocidade", "lentidao", "dominioprofano", "mantogrinwald", "aparenciacadaverica", 
+    "invis", "vinganca", "velocidade", "lentidao", "dominioprofano", "aparenciacadaverica", 
     "metamorfosedruida", "PhysicalResist", "MagicResist", "bless", "curse", "phmod", "auraphmod", "fimod", 
     "comod", "enmod", "aurafimod", "auracomod", "auraenmod", "aurahpregenmod", "aurastamregenmod", 
     "auramanaregenmod", "aurahpsapmod", "aurastamsapmod", "auramanasapmod", "pomod", "coldward", "polymorph", 
-    "mantodaBesta", "apodrecer", "disfarce", "desmontar", "atrasarmagias", "fugademana", "strPoison", "dexPoison", 
+    "apodrecer", "desmontar", "strPoison", "dexPoison", 
     "intPoison", "paralyzePoison", "staminaPoison", "manaPoison", "alchPoison", "ataquecerteiro", "heroismo", 
     "ataquepoderoso", "precisao", "kitdisfarce", "finta", "conceal", "irrefreavel", "ghost", "controlarbestas", 
     "controlarmortovivo", "tiroemmovimento", "provocar", "bleedingstrike", "bleed", "chamasperpetuas", "invulnerabilidade", 
     "prisaogelida", "regensombrio", "temor", "gloria", "desarmar", "desviarprojetil", "recuperacaosalvadora", "martir", 
-    "mantorothen", "dmgreduction", "spectralform", "sleep", "dmgreturn", "recuperacaoaligera", "sacrificioflamejante", 
+    "dmgreduction", "spectralform", "sleep", "dmgreturn", "recuperacaoaligera", "sacrificioflamejante", 
     "queimar", "bladedance", "hamelin", "firedance", "ensurdecer", "florescer", "kill", "delete", "stamconsume", 
     "narguile", "cooldown", "mortedelay", "capmod", "dedodabesta", "cocarina", "areiaceleste", "fraturaexposta",
     "spelleffect_206", "spelleffect_209", "spelleffect_211", "spelleffect_212",
-    "spelleffect_214", "spelleffect_215", "spelleffect_216", "spelleffect_218", "spelleffect_220"
+    "spelleffect_214", "spelleffect_215", "spelleffect_216", "spelleffect_218", "spelleffect_220",
+    "spelleffect_301", "spelleffect_2000", "spelleffect_311", "spelleffect_314", "spelleffect_310",
+    "spelleffect_108", "spelleffect_725", "spelleffect_302", "spelleffect_303", "spelleffect_618",
+    "spelleffect_619", "spelleffect_723", "spelleffect_716", "spelleffect_614",
+    "spelleffect_907", "spelleffect_905", "spelleffect_708", "spelleffect_727"
 };
 
 function HandleAddCombatEvent(who, input, byref form_data)

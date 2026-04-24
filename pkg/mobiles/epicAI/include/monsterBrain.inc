@@ -364,7 +364,7 @@ endfunction
 
 // function handleMonsterInitialReaction(source)
 //     var npc_elem := NPC_GetNPCConfig(me);
-//     var category := GetConfigString(npc_elem, "Category");
+//     var environment := GetConfigString(npc_elem, "Environment");
 
 //     if (category == "Goblin")
 //         var playerRaca := source.getRace();

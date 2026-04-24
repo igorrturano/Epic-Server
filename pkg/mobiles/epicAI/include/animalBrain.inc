@@ -155,16 +155,22 @@ function HandleAnimalCombatEvent(opponent)
         return 0;
     endif
 
+    // Rural Life is player-only, so on pets we check the master, on players the player itself.
+    var rural_target := opponent.master ?: opponent;
+    if (MobileWrapper(rural_target).HasAbility(ABILITY_ID::RURAL_LIFE))
+        return 0;
+    endif
+
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
-    if (me.isSpider() && opponent.getRace() == DROW)
+    if (NPC_GetCachedData(me).npc_race == "aranha" && opponent.getRace() == DROW)
         var tier := CInt(me.getTier());
         if (tier <= 2)
             return 0;
-        elseif (tier <= 3 && opponent.getCulture == HAROLOTH)
+        elseif (tier <= 3 && opponent.getCulture() == HAROLOTH)
             return 0;
-        elseif (tier <= 4 && opponent.getReligion == ELUITHORTH)
+        elseif (tier <= 4 && opponent.getReligion() == ELUITHORTH)
             return 0;
         endif
         // Tier 5 sempre desafia drows para testar se são oponentes valiosos

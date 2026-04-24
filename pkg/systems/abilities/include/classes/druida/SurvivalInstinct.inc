@@ -37,7 +37,7 @@ class SurvivalInstinct(CombatAbility)
 
         foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm)
             if (!(mob in hostiles))
-                if (who.npctemplate && mob.acctname)
+                if (mobile.IsNPC() && mob.acctname)
                     continue;
                 endif
                 PlayObjectCenteredEffect(mob, FX_BLUE_SPARKLE_SWIRL, 7, 16);

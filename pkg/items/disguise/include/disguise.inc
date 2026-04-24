@@ -9,6 +9,7 @@ include ":charactercreation:habilidades";
 include ":timedscripts:timedScripts";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include "include/epicConstants";
 
 function removeDisguise(who)
 	var original := GetObjProperty(who, "disfarce");
@@ -312,7 +313,7 @@ endfunction
 function escolherBarba(who, byref disfarce, preview := 0)
 	UnloadConfigFile(":fls_core:config/hairtypes");
 	var config := ReadConfigFile(":fls_core:config/hairtypes");
-	var hair := config["beard"];
+	var hair := (who.getRace() == ANAO) ? config["dwarwen_beard"] : config["beard"];
 	var beardStyles := GetConfigStringArray(hair, "style");
 
 	if (preview)
@@ -695,7 +696,9 @@ endfunction
 
 function GetColorConfigElement(color_cfg, cultura, raca)
     var index_elem;
-    if (cultura == "Björska")
+    if (raca == "Qualquer")
+        index_elem := color_cfg["Index"];
+    elseif (cultura == "Björska")
         index_elem := color_cfg["Bjorska"];
     elseif (raca == "Orc")
         index_elem := color_cfg["Orc"];
@@ -705,8 +708,6 @@ function GetColorConfigElement(color_cfg, cultura, raca)
         index_elem := color_cfg["Elfo"];
     elseif (raca == "Anão")
         index_elem := color_cfg["Anao"];
-    elseif (raca == "Qualquer")
-        index_elem := color_cfg["Index"];
     else
         index_elem := color_cfg["Imperial"];
     endif

@@ -1,0 +1,41 @@
+use uo;
+use os;
+use vitals;
+
+program BanishSummon(params)
+	var me := params[1];
+
+	if (!me || me.dead)
+		return 0;
+	endif
+
+	var targets := ListMobilesNearLocation(me.x, me.y, me.z, 6, me.realm);
+	var summoned := 0;
+	foreach mobile in (targets)
+		sleepms(2);
+		if (GetObjProperty(mobile, "summoned") == error || mobile.dead)
+			continue;
+		endif
+		summoned := mobile;
+		break;
+	endforeach
+
+	if (!summoned)
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*banimento!*");
+	PlayMovingEffectXYZ(me.x, me.y, me.z + 10, summoned.x, summoned.y, summoned.z + 10, 0x36D4, 7, 0, 0, me.realm);
+	PlaySoundEffect(summoned, 0x1FE);
+
+	sleepms(500);
+	MoveObjectToLocation(summoned, 10, 10, 10, summoned.realm, MOVEOBJECT_FORCELOCATION);
+	var kill_count := 10;
+	while (kill_count > 0 && !summoned.dead)
+		ApplyRawDamage(summoned, 200);
+		kill_count -= 1;
+		sleepms(2);
+	endwhile
+
+	return 1;
+endprogram

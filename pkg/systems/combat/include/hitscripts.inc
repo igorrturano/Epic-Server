@@ -26,7 +26,7 @@ function execgenerichit(attacker, defender, hitopt, rawdamage)
 				var hitdmg := dmg;
 				if (defender.npctemplate)
 					var npccfg := NPC_GetNPCConfig(defender.npctemplate);
-					var category := GetConfigString(npccfg, "Category");
+					var category := GetConfigString(npccfg, "Environment");
       //    PrintTextAbove(attacker, " " + " " + hitopt.slayer + " "+ hitdmg);
 					if (hitopt.slayer ==  category)
 						hitdmg := hitdmg * 2;

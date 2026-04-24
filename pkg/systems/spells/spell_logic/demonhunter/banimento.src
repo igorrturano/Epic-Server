@@ -28,12 +28,12 @@ program SpellScript(params)
 			var tier := CInt(GetConfigString(elem, "Tier"));
 			var is_boss := GetObjProperty(mobile, "true_boss");
 
-			if ((cfg[npctemplate.template].Category in inimigo) && tier <= max_tier && !is_boss)
+			if ((cfg[npctemplate.template].Environment in inimigo) && tier <= max_tier && !is_boss)
 				affected += 1;
 				PlayObjectCenteredEffect(mobile, 0x37CC, 10, 10);
 				PrintTextAbove(mobile, "*Banido*", who);
 				ApplyRawDamage(mobile, 9999);
-			elseif ((cfg[npctemplate.template].Category in inimigo) && (tier > max_tier || is_boss))
+			elseif ((cfg[npctemplate.template].Environment in inimigo) && (tier > max_tier || is_boss))
 				PrintTextAbove(mobile, "*Resiste ao Banimento*");
 				SendSysMessageEx(who, "A criatura é poderosa demais para ser banida!", SSM_FAIL);
 			endif

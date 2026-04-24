@@ -1,0 +1,17 @@
+use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+include "include/say";
+
+program TimedScript_Torse(params)
+	var mobile := params[1];
+	SendSysMessage(mobile, "Suas costelas fraturadas drenam a regeneração de sua stamina.");
+	AP_SetVitalRegenRateMod(mobile, "Stamina", AP_GetVitalRegenRateMod(mobile, "Stamina") - 60);
+	SetObjProperty(mobile, "#fratura_torso_penalty", 1);
+	RecalcVitals(mobile);
+	return 1;
+endprogram

@@ -14,7 +14,7 @@ program incensario(player, incensario)
         if (PodeFumar(targ))
             SetObjProperty(incensario, "preenchido", 1);
             SendSysMessage(player, "Você colocou o fumo no incensário");
-            DestroyItem(targ);
+            SubtractAmount(targ, 1);
             return;
         endif
     endif

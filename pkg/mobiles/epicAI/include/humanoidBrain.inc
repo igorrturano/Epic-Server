@@ -7,6 +7,8 @@ include "epicSpecial";
 include "NPCMageryUtils";
 include ":abilities:include/models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":charactercreation:include/resists";
+include ":epicAI:include/npcDataCache";    // NPC_GetCachedData (used by GetClassProgression)
 
 function HumanoidBrain()
     var ev;
@@ -334,14 +336,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     endif
 
     if (MobileWrapper(me).HasAbility(ABILITY_ID::ALQUIMISTA_EXPERIENTE))
-        var explosive_potions := array{0xbf13, 0xbf14, 0xbf15, 0xef60, 0xef61, 0xef62};
-
-        foreach item in EnumerateItemsInContainer(me.backpack)
-            if (item.objtype in explosive_potions)
-                UseItem(item, me);
-                break;
-            endif
-        endforeach
+        NPC_UseAbilityById(me, ABILITY_ID::ALQUIMISTA_EXPERIENTE);
     endif
 
     return 1;
@@ -431,6 +426,8 @@ function UseAbilities(npc, opponent)
     if (GetCooldown(npc, "ability_cooldown"))
         return 0;
     endif
+
+    var myhabs_var := GetObjProperty(npc, "myhabs");
     if (!myhabs_var)
         return 0;
     endif
@@ -497,7 +494,7 @@ function GetHabsByLevel(npc, nivel)
 
   // Get subclass progression regardless of level
   var subclass := GetObjProperty(npc, "subclass");
-  var progression := GetClassProgression(habcfg, subclass);
+  var progression := GetClassProgression(habcfg, subclass, npc);
 
   // Add abilities from progression that match NPC's level
   foreach hab in progression
@@ -515,10 +512,10 @@ function GetHabsByLevel(npc, nivel)
   return valid_habs;
 endfunction
 
-function GetClassProgression(habcfg, subclass)
+function GetClassProgression(habcfg, subclass, npc)
     var progression := array{};
     var class_choice := array{};
-    var cache := NPC_GetCachedData(me);  // O(1) lookup
+    var cache := NPC_GetCachedData(npc);  // O(1) lookup
     var class_tree := struct{};
     var name_to_id := struct{};  // Map ability names to IDs
     var base_hab := 0;
@@ -611,11 +608,6 @@ function ChooseWarriorAbility(npc, state, habs)
     endif
 
     var chosen_hab := habs[RandomInt(habs.size())+1];
-    if (CInt(chosen_hab) == ABILITY_ID::CACADOR_EXPERIENTE)
-        var net := CreateItemInBackpack(npc, 0x1EA3, 1);
-        UseItem(net, npc);
-    endif
-
     return chosen_hab;
 endfunction
 
@@ -631,7 +623,7 @@ function ChooseRogueAbility(npc, state, habs)
     endif
 
     if (AP_GetVital(npc, STAMINA) < 40)
-        if (myhabs_set_var.exists(ABILITY_ID::REFLEXO_ESTRATEGICO))  return ABILITY_ID::REFLEXO_ESTRATEGICO;  endif
+        if (myhabs_set_var.exists(ABILITY_ID::POSTURA_DE_DUELO))  return ABILITY_ID::POSTURA_DE_DUELO;  endif
     endif
 
     if (npc.hidden)
@@ -689,10 +681,8 @@ function ChooseSageAbility(npc, state, habs)
     endif
 
     if (opponent.master)
-        if (myhabs_set_var.exists(ABILITY_ID::ELO_NATURAL))
-            Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_GetCachedData(npc).template});
-        endif
         if (myhabs_set_var.exists(ABILITY_ID::CORACAO_DA_MATILHA))    return ABILITY_ID::CORACAO_DA_MATILHA;    endif
+        if (myhabs_set_var.exists(ABILITY_ID::ELO_NATURAL))           return ABILITY_ID::ELO_NATURAL;           endif
     endif
 
     return habs[RandomInt(habs.size())+1];
@@ -705,9 +695,6 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
     foreach hab in myhabs_var
         case (hab)
             ABILITY_ID::CAMUFLAGEM:
-                if (!me.hidden)
-                    me.hidden := 1;
-                endif
                 NPC_UseAbilityById(me, hab);
             ABILITY_ID::INVOCACAO_DO_CAOS: 
             ABILITY_ID::ARCANE_BOW:
@@ -719,21 +706,6 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
                 NPC_UseAbilityById(me, hab);
         endcase
     endforeach
-endfunction
-
-function HandleAssassinBehavior(opponent)
-    if (!me.hidden && Distance(me, opponent) <= 6)
-        GrantPrivilege(me, "hiddenattack");
-        me.enable("hiddenattack");
-        me.hidden := 1;
-        me.stealthsteps := 30;
-        
-        if (GetCooldown(me, "FaroPorSangue"))
-            SetObjProperty(me, "#GuaranteedHit", 1);
-            SetObjProperty(me, "#nextcritical", 1);
-            me.attack_once(opponent);
-        endif
-    endif
 endfunction
 
 function HandleThiefBehavior(opponent)

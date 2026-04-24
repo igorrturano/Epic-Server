@@ -1,0 +1,124 @@
+use uo;
+use os;
+use util;
+use math;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include "include/client";
+include "include/sounds";
+include ":combat:Controller/DamageController_legacy";
+include ":taming:taming";
+include "include/facings";
+include "include/shapes";
+include ":magery:fields";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
+
+program SpellScript(params)
+	var caster := params[1];
+	var info := params[2];
+	var spellinfo := params[3];
+	var spell_circle := spellinfo.Circle;
+	var spell_school := spellinfo.School;
+	var range := cint(AP_GetSkill(caster, ARCANA) / 20);
+
+	SendSysMessage(caster, "Escolha a direcao para onde expandira a magia");
+	var targ := TargetCoordinates(caster);
+	if (!targ)
+		SendSysMessageEx(caster, "Voce cancelou.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(caster, "Um cone de gelo brota de suas maos.", SSM_INFO);
+
+	TurnObjectToward(caster, targ.x, targ.y);
+	sleepms(300);
+
+	var effect_id := 0xDE4E;
+	var lines_count := range;
+	var effect_distance := range * 2;
+	var effect_duration := 30;
+
+	PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, caster.realm);
+	PlaySoundEffect(caster, 0x5c7);
+
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+	var arcana := AP_GetSkill(caster, ARCANA);
+	var freeze_duration := Cint(arcana / 10);
+	if (freeze_duration < 2)
+		freeze_duration := 2;
+	endif
+
+	var mobs := ListMobilesNearLocation(caster.x, caster.y, caster.z, range, caster.realm);
+	foreach mob in mobs
+		if (!InPosition(caster, mob.x, mob.y, FACE_POS_INFRONT))
+			continue;
+		endif
+		if (mob == caster)
+			continue;
+		endif
+
+		// Light cold damage always, halved dice to keep CC identity.
+		var damage := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		damage := Cint(damage / 2);
+
+		SendSysMessageEx(mob, "Voce e atingido por lascas de gelo.", SSM_FAIL);
+		DamageFLS(mob, cint(damage), DMG_COLD, caster, "conedegelo");
+
+		// Will save gates the hard freeze.
+		if (!CheckResist(mob, WILL, diff, -bonus))
+			TS_Starttimer(mob, "prisaogelida", freeze_duration);
+			PlayObjectCenteredEffect(mob, 0xDE4E, 3, 8);
+		else
+			SendSysMessageEx(mob, "Voce resiste ao congelamento.", SSM_INFO);
+		endif
+
+		sleepms(50);
+	endforeach
+endprogram
+
+function PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, realm)
+	var facing := caster.facing;
+	var start_x := caster.x;
+	var start_y := caster.y;
+
+	for line := 0 to lines_count
+		for i := -line to line
+			var pos_x, pos_y;
+			case (facing)
+				0:
+					pos_x := start_x + i;
+					pos_y := start_y - line;
+				1:
+					pos_x := start_x + line;
+					pos_y := start_y - line + i;
+				2:
+					pos_x := start_x + line;
+					pos_y := start_y + i;
+				3:
+					pos_x := start_x + line;
+					pos_y := start_y + line - i;
+				4:
+					pos_x := start_x + i;
+					pos_y := start_y + line;
+				5:
+					pos_x := start_x - line;
+					pos_y := start_y + line - i;
+				6:
+					pos_x := start_x - line;
+					pos_y := start_y + i;
+				7:
+					pos_x := start_x - line;
+					pos_y := start_y - line + i;
+			endcase
+
+			if (pos_x != start_x || pos_y != start_y)
+				PlayStationaryEffect(pos_x, pos_y, caster.z, effect_id, 10, effect_duration, 0, realm);
+			endif
+		endfor
+		sleepms(50);
+	endfor
+endfunction

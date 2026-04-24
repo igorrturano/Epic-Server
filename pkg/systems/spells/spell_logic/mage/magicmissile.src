@@ -45,10 +45,17 @@ program SpellScript(params)
 	for (i := 1; i <= mlore; i += 1)
 		PlayMovingEffectEx(who, targ, 0x5426, 10, 20, 2290, 2);
 		PlaySoundEffect(who, SFX_AGILITY2);
-		var dmg := epicSpellDamageRoll(who, spell_circle);
-		var total_dmg := bonusSpellDamageForSpecialists(who, dmg, spell_school);
 
-		DamageFLS(targ, total_dmg, DMG_FORCED, who, "magicmissile");
+		var dmg;
+		if (i == mlore)
+			// Carro-chefe: ultimo dardo rola o dado completo do circulo (com bump do Evocator).
+			dmg := epicSpellDamageRoll(who, spell_circle, spell_school);
+		else
+			// Dardos regulares: dano pequeno e confiavel, sem escalar.
+			dmg := RandomDiceRoll("1d4") + 1;
+		endif
+
+		DamageFLS(targ, cint(dmg), DMG_FORCED, who, "magicmissile");
 		SleepMS(500);
 	endfor
 	return 1;

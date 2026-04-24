@@ -64,14 +64,60 @@ var law_list := struct{ "nofight" := "Proibir Combate",
 						"noweapon" := "Proibir Usar Armas",
 						"noitem" := "Proibir Item Especifico",
 						"norace" := "Proibir Raça",           // "noguild"    := "Proibir Facção",
-						
+
 						"nocerca" := "Proibir Pular Cerca",
 						"nooutsider" := "Proibir Forasteiros", // "nooutsideron" := "Proibir Forasteiros em Area",
 // "nolawon" := "Não aplicar leis em",
-						
+
 						"userban" := "Banir usuario",
 						"nohood" := "Proibir Cobrir Rosto",
-						"nosneak" := "Proibir Esconder-se" };
+						"nosneak" := "Proibir Esconder-se",
+
+						"noduel" := "Proibir Duelos PvP",
+						"notransformation" := "Proibir Metamorfose",
+						"noanimals" := "Proibir Animais na Area",
+						"noheavyarmor" := "Proibir Armadura Pesada",
+						"nomagicitems" := "Proibir Itens Magicos",
+						"nocolor" := "Proibir Cores Especificas",
+						"nomount_run" := "Proibir Galope Montado",
+						"nowrestling" := "Proibir Luta Desarmada",
+
+						"nospell" := "Proibir Magias de Combate",
+						"nospellatall" := "Proibir Qualquer Magia",
+						"nospellschool" := "Proibir Escola de Magia",
+						"nospelllist" := "Proibir Magias Especificas",
+
+						"merchanttax" := "Taxa sobre Merchants (+%)",
+						"zerotax" := "Zerar Taxas dos Merchants",
+						"notax_exempt" := "Pedagio de Passagem",
+						"guildtax" := "Taxa sobre Faccoes Rivais",
+
+						"norun" := "Proibir Corrida",
+						"nightsight_ban" := "Proibir Night Sight (Noite)",
+						"nopotions" := "Proibir Uso de Pocoes",
+						"nodrugs" := "Proibir Drogas",
+						"antialcool" := "Proibir Embriaguez",
+						"notaming" := "Proibir Domar Animais",
+						"nomusic" := "Proibir Musica/Bard",
+						"noclotheschange" := "Proibir Troca Rapida de Roupas",
+
+						"toquerecolher" := "Toque de Recolher (Horario)",
+						"leimarcia" := "Lei Marcial (Carteira de ID)",
+
+						"nosearch_cmd" := "Proibir Comando .revistar",
+						"nodrag_cmd" := "Proibir Comando .arrastar",
+						"nothrow_cmd" := "Proibir Comando .arremessar",
+						"noloot_unconscious" := "Proibir Lotear Desmaiados",
+						"noplant" := "Proibir Plantar",
+						"noharvest" := "Proibir Colher Fazendas",
+						"notirefruits" := "Proibir Colher Frutos",
+						"durability_tax" := "Imposto por Durabilidade da Armadura",
+						"lenco" := "Exigir Lenco ao Tossir",
+						"nomadeira" := "Proibir Cortar Madeira",
+						"nomining" := "Proibir Minerar",
+						"nofishing" := "Proibir Pesca",
+						"noalchemy" := "Proibir Alquimia",
+						"noeat" := "Proibir Comer em Via Publica" };
 
 var guild_obj, aboveguild;
 
@@ -1554,12 +1600,52 @@ function lawHandler(who, input)
 			// ALTEREI AQUI ///
 			new_law.opt := targ.name;
 		// new_law.opt := struct{ "serial" := targ.serial, "name" := targ.name};
-		elseif (new_law.type["nofight"] || new_law.type["noweapon"] || new_law.type["nohood"] ||
-		  new_law.type["nosneak"])
-			var forceonguild := YesNo(who, "Esta lei sera aplicada a membros da faccao?");
-			if (!forceonguild)
-				new_law.opt := "Nao aplicada a membros";
+		elseif (new_law.type["nocolor"])
+			var color_presets := array{ "Cores Neon/Evento", "Purpura Imperial (1645)", "Inserir manualmente", "Cancelar" };
+			var color_choice := RadioGump(who, 300, 0, "Qual grupo de cores sera proibido?", color_presets, 0, color_presets.size());
+			if (color_choice["Cancelar"] || !color_choice) return; endif
+
+			var hues := array{};
+			var nome_display := "";
+
+			if (color_choice["Inserir manualmente"])
+				var raw := GetInput(who, who.backpack, "Insira os hue IDs separados por virgula (ex: 1645,1100,32):");
+				if (!raw) return SendSysMessageEx(who, "Cancelado"); endif
+				foreach part in SplitWords(raw)
+					var h := CInt(part);
+					if (h > 0) hues.append(h); endif
+				endforeach
+				nome_display := GetInput(who, who.backpack, "Nome de exibicao (ex: Cores Neon):");
+				if (!nome_display) nome_display := "Cores Proibidas"; endif
+			elseif (color_choice["Purpura Imperial"])
+				hues := array{ 1645 };
+				nome_display := "Purpura Imperial";
+			else // Neon
+				hues := array{ 32, 33, 34, 35, 36, 37, 38, 39, 40, 1153, 1154, 1161, 1162, 1163, 1164 };
+				nome_display := "Cores Neon";
 			endif
+
+			if (!hues.size())
+				return SendSysMessageEx(who, "Nenhum hue valido informado", SSM_FAIL);
+			endif
+			new_law.opt := struct{ "hues" := hues, "nome_display" := nome_display };
+		elseif (new_law.type["nospellschool"])
+			var school_opts := array{ "evocation", "necromancy", "illusion", "swordmage",
+									  "priest", "shaman", "druid", "paladin", "demonhunter",
+									  "trickster", "shinobi", "bard", "cantrip", "Cancelar" };
+			var school_choice := RadioGump(who, 350, 0, "Qual escola de magia sera proibida?", school_opts, 0, school_opts.size());
+			if (!school_choice || school_choice == "Cancelar") return SendSysMessageEx(who, "Cancelado"); endif
+			new_law.opt := school_choice;
+		elseif (new_law.type["nospelllist"])
+			var raw_ids := GetInput(who, who.backpack, "Insira os IDs das magias separados por virgula:");
+			if (!raw_ids) return SendSysMessageEx(who, "Cancelado"); endif
+			var spell_ids := array{};
+			foreach part in SplitWords(raw_ids)
+				var sid := CInt(part);
+				if (sid > 0) spell_ids.append(sid); endif
+			endforeach
+			if (!spell_ids.size()) return SendSysMessageEx(who, "Nenhum ID valido informado", SSM_FAIL); endif
+			new_law.opt := spell_ids;
 		elseif (new_law.type["nooutsideron"])
 			SendSysMessageEx(who, "Clique no canto superior do retangulo", SSM_FAIL);
 			var targ1 := TargetCoordinates(who);
@@ -1582,7 +1668,85 @@ function lawHandler(who, input)
 
 			new_law.opt.ret := array{ targ1.x, targ1.y, targ2.x, targ2.y, targ1.z };
 			new_law.opt.name := gname;
+		elseif (new_law.type["merchanttax"])
+			var raw_pct := GetInput(who, who.backpack, "Percentual da taxa (ex: 20 = +20% nos precos):");
+			if (!raw_pct) return SendSysMessageEx(who, "Cancelado"); endif
+			var pct := CInt(raw_pct);
+			if (pct <= 0 || pct > 500) return SendSysMessageEx(who, "Valor invalido (1-500)", SSM_FAIL); endif
+			new_law.opt := pct;
+		elseif (new_law.type["notax_exempt"])
+			var raw_toll := GetInput(who, who.backpack, "Valor do pedagio em moedas de cobre:");
+			if (!raw_toll) return SendSysMessageEx(who, "Cancelado"); endif
+			var toll_val := CInt(raw_toll);
+			if (toll_val <= 0) return SendSysMessageEx(who, "Valor invalido", SSM_FAIL); endif
+			new_law.opt := toll_val;
+		elseif (new_law.type["guildtax"])
+			var raw_gpct := GetInput(who, who.backpack, "Percentual extra para rivais (ex: 30 = +30%):");
+			if (!raw_gpct) return SendSysMessageEx(who, "Cancelado"); endif
+			var gpct := CInt(raw_gpct);
+			if (gpct <= 0) return SendSysMessageEx(who, "Valor invalido", SSM_FAIL); endif
+			SendSysMessageEx(who, "Insira os IDs de guild das faccoes rivais separados por virgula:", SSM_REQUEST);
+			var raw_rivals := GetInput(who, who.backpack, "IDs de guild rivais (separados por virgula):");
+			if (!raw_rivals) return SendSysMessageEx(who, "Cancelado"); endif
+			var rival_ids := array{};
+			foreach part in SplitWords(raw_rivals)
+				var rid := CInt(part);
+				if (rid > 0) rival_ids.append(rid); endif
+			endforeach
+			if (!rival_ids.size()) return SendSysMessageEx(who, "Nenhum ID valido", SSM_FAIL); endif
+			new_law.opt := struct{ "rivais" := rival_ids, "pct" := gpct };
+		elseif (new_law.type["nomusic"])
+			var music_horario := YesNo(who, "Restringir a um horario especifico?");
+			if (music_horario)
+				var raw_hi := GetInput(who, who.backpack, "Hora de inicio (0-23):");
+				var raw_hf := GetInput(who, who.backpack, "Hora de fim (0-23):");
+				new_law.opt := struct{
+					"hora_inicio" := CInt(raw_hi),
+					"hora_fim"    := CInt(raw_hf)
+				};
+			endif
+		elseif (new_law.type["toquerecolher"])
+			var raw_tr_hi := GetInput(who, who.backpack, "Hora de inicio do recolher (0-23, ex: 22):");
+			if (!raw_tr_hi) return SendSysMessageEx(who, "Cancelado"); endif
+			var raw_tr_hf := GetInput(who, who.backpack, "Hora de fim do recolher (0-23, ex: 6):");
+			if (!raw_tr_hf) return SendSysMessageEx(who, "Cancelado"); endif
+			new_law.opt := struct{
+				"hora_inicio" := CInt(raw_tr_hi),
+				"hora_fim"    := CInt(raw_tr_hf)
+			};
+		elseif (new_law.type["leimarcia"])
+			SendSysMessageEx(who, "Lei marcial ativa: jogadores sem carteira serao detidos.", SSM_INFO);
 		endif
+
+		// Selecionar quem esta lei vai afetar
+		var _target_opts := array{
+			"Fora da faccao (padrao)",
+			"Todos (incluindo membros e lider)",
+			"Todos exceto o lider",
+			"Apenas membros full",
+			"Apenas membros honorarios",
+			"Exceto membro especifico"
+		};
+		var _target_choice := RadioGump(who, 400, 0, "Quem esta lei vai afetar?", _target_opts, 0,
+		  _target_opts.size());
+		if (!_target_choice) return SendSysMessageEx(who, "Cancelado"); endif
+
+		case (_target_choice)
+			"Todos (incluindo membros e lider)": new_law.target := "todos";            break;
+			"Todos exceto o lider":              new_law.target := "nao_lider";         break;
+			"Apenas membros full":               new_law.target := "apenas_full";       break;
+			"Apenas membros honorarios":         new_law.target := "apenas_honorarios"; break;
+			"Exceto membro especifico":
+				SendSysMessageEx(who, "Mire no membro que sera isento desta lei", SSM_REQUEST);
+				var _exceto_targ := Target(who);
+				if (!_exceto_targ || !_exceto_targ.isA(POLCLASS_MOBILE))
+					return SendSysMessageEx(who, "Cancelado");
+				endif
+				new_law.exceto_serials := array{ _exceto_targ.serial };
+				new_law.target := "nao_membro_x";
+				break;
+			// "Fora da faccao" = padrao — nao precisa setar target
+		endcase
 
 		if (AddLaw(guild, new_law))
 			SendSysMessageEx(who, "Lei adicionada", SSM_INFO);

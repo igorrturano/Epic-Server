@@ -131,8 +131,27 @@ endclass
 
 function _FireHandcannon(mobile, who)
 	SetScriptController(who);
-	Message("Escolha o alvo do disparo.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-	var targ := TargetCoordinates(who);
+
+	var targ;
+	if (mobile.IsNPC())
+		var opponent := who.opponent;
+		if (!opponent)
+			opponent := GetRandomNearbyHostile(who);
+		endif
+		if (!opponent)
+			return false;
+		endif
+		targ := struct{
+			x := opponent.x,
+			y := opponent.y,
+			z := opponent.z,
+			realm := opponent.realm
+		};
+	else
+		Message("Escolha o alvo do disparo.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		targ := TargetCoordinates(who);
+	endif
+
 	if (!targ)
 		Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return false;
@@ -234,8 +253,18 @@ endfunction
 
 function _FireHarpoon(mobile, who)
 	SetScriptController(who);
-	Message("Escolha o alvo do gancho.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-	var targ := Target(who);
+
+	var targ;
+	if (mobile.IsNPC())
+		targ := who.opponent;
+		if (!targ)
+			targ := GetRandomNearbyHostile(who);
+		endif
+	else
+		Message("Escolha o alvo do gancho.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		targ := Target(who);
+	endif
+
 	if (!targ)
 		Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return false;
@@ -320,8 +349,21 @@ endfunction
 
 function _DeployPowderTrap(mobile, who)
 	SetScriptController(who);
-	Message("Escolha o local para colocar a armadilha.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-	var targ := TargetCoordinates(who);
+
+	var targ;
+	if (mobile.IsNPC())
+		// Drop at own position — pursuers stepping in range trigger the trap.
+		targ := struct{
+			x := who.x,
+			y := who.y,
+			z := who.z,
+			realm := who.realm
+		};
+	else
+		Message("Escolha o local para colocar a armadilha.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		targ := TargetCoordinates(who);
+	endif
+
 	if (!targ)
 		Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		return false;

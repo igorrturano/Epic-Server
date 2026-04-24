@@ -30,7 +30,7 @@ program SpellScript(params)
 
 	// Visual and sound effects
 	PlaySoundEffect(targ, SFX_SPELL_DISPEL);
-	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 7, 7);
+	PlayObjectCenteredEffect(targ, FX_MAOS_ENERGETICAS, 1, 25);
 
 	// Get all active timers on the target
 	var timer_list := TS_GetTimerList(targ);
@@ -53,19 +53,17 @@ program SpellScript(params)
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 
-		// curse effects
-		elseif (timer == "disfarce" || timer == "desviarprojetil" ||
-		  timer == "desarmar" || timer == "dmgreduction")
+		// curse effects (non-SC shared timers)
+		elseif (timer == "desarmar" || timer == "dmgreduction")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 
-		// Control effects
-		elseif (timer == "paralysis" || timer == "blinded" || timer == "lentidao" ||
-		  timer == "bleed" || timer == "spectralform")
+		// Control effects (non-SC shared timers)
+		elseif (timer == "paralysis" || timer == "bleed")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
 
-		// Necromancer/debuff effects (non-SC timers)
+		// Poison effects
 		elseif (timer == "defaultpoison" || timer == "manapoison")
 			TS_LowerDuration(targ, timer, -1);
 			dispelled := 1;
@@ -84,12 +82,31 @@ program SpellScript(params)
 		206,  // Retribuicao Profana
 		216,  // Sonho Macabro
 		212,  // Correntes de Dor
-		220   // Forma Amaldicoada
+		220,  // Forma Amaldicoada
+		301,  // Medo
+		2000, // Apodrecer (necro standalone)
+		311,  // Forma Espectral
+		314,  // Cegar
+		310,  // Parar o Tempo
+		108,  // Velocidade (evocation)
+		725,  // Caminhada do Vento (druid)
+		302,  // Invisibilidade
+		303,  // Paralisar
+		618,  // Intimidar (shaman)
+		619,  // Rajada de Vento (shaman)
+		723,  // Ventania Selvagem (druid)
+		716,  // Enraizar (druid)
+		614,  // Enraizar (shaman)
+		907,  // Disparo Divino
+		905,  // Aprisionar Demonio
+		708,  // Fala Selvagem
+		720,  // Encantar Pessoa (druid)
+		727   // Crescimento Selvagem
 	};
 
 	var mw := MobileWrapper(targ);
 	foreach spell_id in (sc_spell_ids)
-		var sc_opts := mw.GetProperty($"#SpellOpts_{spell_id}");
+		var sc_opts := mw.GetProperty($"SpellOpts_{spell_id}");
 		if (sc_opts && !sc_opts.errortext)
 			SC_RemoveEffect(targ, spell_id);
 			TS_LowerDuration(targ, $"spelleffect_{spell_id}", -1);

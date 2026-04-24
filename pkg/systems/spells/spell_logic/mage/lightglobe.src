@@ -4,22 +4,17 @@ include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
-	var spellid := params[3];
 
-	var cfg := ReadConfigFile(":spells:config/cantrips");
-	var elem := FindConfigElem(cfg, spellid.id);
-	var template := getConfigString(elem, "npcTemplate");
-
-	if (template == error)
-		SendSysMessage(who, "Erro ao ler o template" + template);
-		return;
+	var arcana := CInt(AP_GetSkill(who, ARCANA));
+	var theology := CInt(AP_GetSkill(who, THEOLOGY));
+	var skill := arcana;
+	if (theology > arcana)
+		skill := theology;
 	endif
-
-	var magiclore_skill := HandleSpellSkill(who);
 
 	var globodeluz := summon(":epicai:globodeluz", who, who);
 
-	var duracao := CInt(magiclore_skill / 3);
+	var duracao := 60 + (skill * 3);
 
 	PlaySoundEffect(who, SFX_SPELL_STRENGTH);
 	PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);

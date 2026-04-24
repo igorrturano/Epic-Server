@@ -1,0 +1,40 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Controller/DamageController_legacy";
+include ":charactercreation:resists";
+
+program DoubleStrike(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	if (Distance(me, targ) > 1)
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	var hit_damage := tier * 3;
+
+	PrintTextAbove(me, "*ataque duplo!*");
+
+	DamageFLS(targ, hit_damage, DMG_BLUNT, me, "doublestrike");
+	sleepms(400);
+
+	if (targ.dead)
+		return 1;
+	endif
+
+	if (!CheckResist(targ, REFLEXES, RESIST_MEDIUM))
+		DamageFLS(targ, hit_damage, DMG_BLUNT, me, "doublestrike");
+		SendSysMessageEx(targ, "O segundo golpe acerta em cheio!", SSM_FAIL);
+	else
+		SendSysMessageEx(targ, "Você esquiva do segundo golpe!", SSM_REQUEST);
+	endif
+
+	return 1;
+endprogram

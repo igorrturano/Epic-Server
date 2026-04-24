@@ -12,7 +12,7 @@ program sacrifice(params)
     endif
     var msg := "Sacrificio aceito.";
     var npc_elem := NPC_GetNPCConfig(targ);
-    if (npc_elem.Category == "Aklats")
+    if (npc_elem.Environment == "Aklats")
         SetObjProperty(targ, "aklat_sacrifice", who.serial);
         msg := "Guntramm sorri para você.";
     endif

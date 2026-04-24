@@ -1,4 +1,8 @@
 use uo;
+use os;
+use polsys;
+
+include "include/epicCombatUtils";
 
 program TELEPORT_Action(params)
 	var event := params[2];
@@ -22,6 +26,16 @@ program TELEPORT_Action(params)
 		return 0;
 	endif
 
+	var pets := ListPetsNear(mobile, 4);
+
+	SetObjProperty(mobile, "#Teleported", ReadMillisecondClock());
 	MoveObjectToLocation(mobile, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
+
+	foreach pet in pets
+		SetObjProperty(pet, "#Teleported", ReadMillisecondClock());
+		MoveObjectToLocation(pet, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
+		sleepms(10);
+	endforeach
+
 	return 1;
 endprogram

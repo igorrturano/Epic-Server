@@ -1,0 +1,151 @@
+// Script do item caixa de correio.
+
+use uo;
+use os;
+use basic;
+use math;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":pigeoncorreio:include/pigeoncorreio";
+
+program pigeonmailbox(who, mailbox)
+	if (CoordinateDistance(who.x, who.y, mailbox.x, mailbox.y) > 2)
+		SendSysMessage(who, "Aquilo está longe demais.", 33);
+		return;
+	endif
+
+	var conhecidos := PigeonGetConhecidos(who);
+
+	if (conhecidos.Size() == 0)
+		SendSysMessage(who, "Você não tem nenhum conhecido online.", 33);
+		return;
+	endif
+
+	var gump := BuildMailGump(conhecidos);
+	var input := GFSendGump(who, gump);
+
+	var btn := CInt(input[0]);
+	if (btn == 0 || btn == 2)
+		SendSysMessage(who, "Envio cancelado.", 33);
+		return;
+	elseif (btn != 1)
+		return;
+	endif
+
+	// Descobre qual radio foi selecionado
+	var selected_idx := -1;
+	var i := 0;
+	while (i < conhecidos.Size())
+		var radio_id := 10 + i;
+		if (CInt(input[radio_id]) == 1)
+			selected_idx := i;
+			break;
+		endif
+		i += 1;
+	endwhile
+
+	if (selected_idx < 0)
+		SendSysMessage(who, "Você deve selecionar um destinatário.", 33);
+		return;
+	endif
+
+	var msg := CStr(GFExtractData(input, 1));
+
+	if (Len(msg) == 0)
+		SendSysMessage(who, "A mensagem não pode estar vazia.", 33);
+		return;
+	endif
+
+	if (Len(msg) > PIGEON_MSG_MAX_LEN)
+		SendSysMessage(who, "A mensagem é longa demais (máximo " + CStr(PIGEON_MSG_MAX_LEN) + " caracteres).", 33);
+		return;
+	endif
+
+	var entry     := conhecidos[selected_idx + 1];
+	var recipient := entry.mob;
+
+	if (!recipient || !recipient.connected)
+		SendSysMessage(who, "Esse jogador saiu do servidor.", 33);
+		return;
+	endif
+
+	if (!PigeonConsumeCost(who))
+		SendSysMessage(who, "*voce precisa pagar " + CStr(PIGEON_COST) + " moedas para usar o serviço*", 33);
+		return;
+	endif
+
+	var pigeon := CreateNpcFromTemplate(":pigeoncorreio:DeliveryPigeon",
+	                                    who.x, who.y, who.z, 0, who.realm);
+	if (!pigeon)
+		SendSysMessage(who, "Erro ao criar o pombo. Contate um GM.", 33);
+		CreateItemInContainer(who.backpack, PIGEON_COIN_TYPE, PIGEON_COST); // Reembolsa
+		return;
+	endif
+
+	var flight_dir := RandomInt(8);
+
+	var rec_conhecidos := GetObjProperty(recipient, "conhecidos");
+	var sender_apelido := CStr(who.name);
+	if (rec_conhecidos)
+		var chave := CStr(who.serial);
+		if (rec_conhecidos.Exists(chave))
+			sender_apelido := CStr(rec_conhecidos[chave]);
+		endif
+	endif
+
+	SetObjProperty(pigeon, "state",            PIGEON_DEPARTING);
+	SetObjProperty(pigeon, "dist_count",       0);
+	SetObjProperty(pigeon, "flight_dir",       flight_dir);
+	SetObjProperty(pigeon, "recipient_serial", CInt(recipient.serial));
+	SetObjProperty(pigeon, "sender_name",      sender_apelido);
+	SetObjProperty(pigeon, "sender_serial",    CInt(who.serial));
+	SetObjProperty(pigeon, "message",          msg);
+
+	SendSysMessage(who, "Pombo enviado para " + CStr(entry.apelido) + "!", 66);
+endprogram
+
+function BuildMailGump(conhecidos)
+	var gump := GFCreateGump(100, 80);
+
+	GFPage(gump, 0); // Elementos da Página 0 aparecem em TODAS as abas
+	GFResizePic(gump, 0,  0,  3600, 350, 480);
+	GFResizePic(gump, 15, 15, 5054, 320, 450);
+
+	GFHTMLArea(gump, 15, 30, 320, 20, "<BASEFONT color=#111111><CENTER><B>Pombo-Correio</B></CENTER>", 0, 0);
+	GFHTMLArea(gump, 35, 60, 300, 20, "<BASEFONT color=#111111><B>Selecione o Destinatario:</B>", 0, 0);
+
+	GFHTMLArea(gump, 35, 335, 300, 20, "<BASEFONT color=#111111><B>Mensagem:</B>", 0, 0);
+	GFResizePic(gump, 30, 355, 3000, 290, 60);
+	GFTextEntry(gump, 35, 360, 280, 50, 0, "", 1, PIGEON_MSG_MAX_LEN);
+
+	GFAddButton(gump, 100, 430, 0xF7, 0xF8, GF_CLOSE_BTN, 1);
+	GFAddButton(gump, 210, 430, 0xF1, 0xF2, GF_CLOSE_BTN, 2);
+
+	var y := 85;
+	var i := 1;
+	var page := 1;
+	var per_page := 12;
+
+	GFPage(gump, 1);
+
+	while (i <= conhecidos.Size())
+		if (i > 1 && (i - 1) % per_page == 0)
+			GFAddButton(gump, 290, 310, 0x15E1, 0x15E5, GF_PAGE_BTN, page + 1);
+			page += 1;
+			GFPage(gump, page);
+			GFAddButton(gump, 260, 310, 0x15E3, 0x15E7, GF_PAGE_BTN, page - 1);
+			y := 85; // Reseta Y para o topo da nova página
+		endif
+
+		var entry    := conhecidos[i];
+		var radio_id := 10 + (i - 1);
+		GFSetRadioGroup(gump, 1);
+		GFRadioButton(gump, 35, y, 0xD0, 0xD1, 0, radio_id);
+		GFHTMLArea(gump, 60, y, 250, 20, "<BASEFONT color=#111111>" + CStr(entry.apelido), 0, 0);
+		y += 20;
+		i += 1;
+	endwhile
+
+	return gump;
+endfunction

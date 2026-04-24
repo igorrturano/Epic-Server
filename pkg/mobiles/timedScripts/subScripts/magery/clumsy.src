@@ -11,7 +11,7 @@ include "include/epicMageryUtils";
 program TimedScript_Clumsy(params)
 	var mobile := params[1];
 	var attacker := params[2];
-	var level := (-1) * params[3];
+	var level := Cint((-1) * params[3]);
 	var teste := GetObjProperty(mobile, "#ClumsyMod");
 	if (teste) // verifica se ja esta sob efeito similar
 		if (level < teste) // se o novo efeito é maior, aplica a diferença

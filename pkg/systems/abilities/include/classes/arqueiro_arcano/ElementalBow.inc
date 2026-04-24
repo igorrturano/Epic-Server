@@ -30,8 +30,7 @@ class ElementalBow(CombatAbility)
 	function CanActivate(this, mobile)
 		var who := mobile.GetObjRef();
 
-		var chardata := GetObjProperty(who, "chardata");
-		if (chardata.religion != LORE)
+		if (mobile.GetReligion() != LORE)
 			Message("Voce precisa ser devoto de Lore para conjurar o arco elemental.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif

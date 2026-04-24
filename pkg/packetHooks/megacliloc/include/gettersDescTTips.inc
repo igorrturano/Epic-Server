@@ -134,13 +134,13 @@ endfunction
 
 function PegaDescComum(objeto,xDesc := "")
 
-	if (objeto.quality >= 1.1)
+	/*if (objeto.quality >= 1.1)
 		xDesc := xDesc + WHITE + getQuality(objeto.quality) + "<br>"; //exibe apenas dois digitos
-	endif
+	endif*/
 
 	var cond := GetCondition(objeto);
 
-	if(objeto.ISA(POLCLASS_EQUIPMENT))
+	if(objeto.ISA(POLCLASS_EQUIPMENT) || objeto.isVendorTemplate)
 		xDesc := xDesc + "Condição: " + cond + "<br>";
 	else
 		if(cond != "Boa")
@@ -175,7 +175,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	xDesc := xDesc + "Perícia: " + StrReplace(weapon.GetAttribute(),"_"," ") + "<br>";
 	xDesc := xDesc + "Dano: <br>";
 	xDesc := PegaDescDanoArma(objeto,cfg,xDesc, weapon);
-	XDesc := PegaDescDanoModArma(objeto,xDesc);
+	XDesc := PegaDescDanoModArma(objeto,xDesc, weapon);
 
 	xDesc := xDesc + "Velocidade: " + GetVelStringDesc2(weapon.GetSpeedTier()) + "<br>";
 
@@ -193,17 +193,19 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		xDesc := xDesc + ROXO + "Bônus Item PVs "+ objeto.hp_mod;
 	endif
 
-	if (PegaPropObjItemOrTemplate(objeto, "Aprimoramentos"))
+	var aprimoramentos := PegaPropObjItemOrTemplate(objeto, "Aprimoramentos");
+	if (aprimoramentos)
 		xDesc := xDesc + ROXO + "Aprimoramentos: " +  "<br>";
-		foreach key in (PegaPropObjItemOrTemplate(objeto, "Aprimoramentos").keys())
+		foreach key in (aprimoramentos.keys())
 				xDesc := xDesc + AMARELO_CLARO + key + "<br>";
 		endforeach
 	endif
-		
+
 	xDesc := PegaDescCargasArmElemental(objeto,who,xDesc);
-	
-	if (PegaPropObjItemOrTemplate(objeto, "swordmage") != error)
-		xDesc := xDesc + WHITE + PegaPropObjItemOrTemplate(objeto, "swordmage") + "<br>";
+
+	var swordmage := PegaPropObjItemOrTemplate(objeto, "swordmage");
+	if (swordmage != error)
+		xDesc := xDesc + WHITE + swordmage + "<br>";
 	endif
 
 	var hitsscripts := PegaPropObjItemOrTemplate(objeto, "HitScripts");
@@ -318,11 +320,12 @@ function PegaDescArmaduras(objeto,cfg := struct)
 	if (armadura.GetModifiers()[DEXTERITY].GetValue())
 		xDesc := xDesc + "Redutor Dex : " + armadura.GetModifiers()[DEXTERITY].GetValue() + "<br>";
 	endif
-	if (armadura.GetModifiers()[DEXTERITY].GetValue())
-		//xDesc := xDesc + "Block Bonus: " + atributosArmadura.BonusDelay  + "<br>";
-	endif
-	if (armadura)
-		//xDesc := xDesc + "Delay Bonus: " + atributosArmadura.ParryDelay + "<br>";
+	if (armadura.IsShield())
+		var shieldAttrs := GetShieldModsByProtection(armadura.GetTipoProtecao());
+		if (!(shieldAttrs is @Exception))
+			xDesc := xDesc + "Bonus Bloqueio: " + shieldAttrs.GetParryBonus() + "<br>";
+			xDesc := xDesc + "Delay Bloqueio: " + shieldAttrs.GetParryDelay() + "<br>";
+		endif
 	endif
 
 	xDesc := PegaDescResistArmadura(objeto,cfg,armadura,xDesc);
@@ -331,32 +334,32 @@ function PegaDescArmaduras(objeto,cfg := struct)
 endfunction
 
 function PegaDescResistArmadura(objeto,cfg,armadura, xDesc := "")
-	
+
 	var atrib := struct;
 	if(!armadura)
 		armadura := ArmorWrapper(objeto);
 	endif
 
-	var bluntRes,slashRes,pircRes :=0;
+	var resists := armadura.GetResists();
+	var slashRes := resists.GetSlashResist();
+	var pircRes := resists.GetPiercingResist();
+	var bluntRes := resists.GetBluntResist();
+	var fireResist := resists.GetFireResist();
+	var coldResist := resists.GetColdResist();
+	var poisonResist := resists.GetPoisonResist();
+	var energyResist := resists.GetEnergyResist();
 
-	slashRes := armadura.GetResists().GetSlashResist();
-	pircRes := armadura.GetResists().GetSlashResist();
-	bluntRes := armadura.GetResists().GetSlashResist();
-	var fireResist:= armadura.GetResists().GetFireResist();
-	var coldResist:= armadura.GetResists().GetColdResist();
-	var poisonResist := armadura.GetResists().GetPoisonResist();
-	var energyResist := armadura.GetResists().GetEnergyResist();
-	
 	if((slashRes + pircRes + bluntRes) + 0)
+		var resistColor := ClassificaResistCor(armadura.GetTipoProtecao());
 		xDesc := xDesc + "Defesas: <br>";
 		if(slashRes> 0)
-			xDesc := xDesc  + " Cort: " + ClassificaResistCor(armadura.GetTipoProtecao()) +  (slashRes) + FECHA_BASEFONT_TAG  + "<br>";
+			xDesc := xDesc  + " Cort: " + resistColor +  (slashRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(pircRes> 0)
-			xDesc := xDesc  + " Perf: " + ClassificaResistCor(armadura.GetTipoProtecao()) +  (pircRes) + FECHA_BASEFONT_TAG  + "<br>";
+			xDesc := xDesc  + " Perf: " + resistColor +  (pircRes) + FECHA_BASEFONT_TAG  + "<br>";
 		endif
 		if(bluntRes> 0)
-			xDesc := xDesc  + " Cont: " + ClassificaResistCor(armadura.GetTipoProtecao()) + (bluntRes) + FECHA_BASEFONT_TAG + "<br>";
+			xDesc := xDesc  + " Cont: " + resistColor + (bluntRes) + FECHA_BASEFONT_TAG + "<br>";
 		endif
 	endif
 

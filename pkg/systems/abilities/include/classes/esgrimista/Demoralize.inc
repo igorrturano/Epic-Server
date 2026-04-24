@@ -23,8 +23,16 @@ class Demoralize(CombatAbility)
     function ExecuteOn(this, mobile)
         var who := mobile.GetObjRef();
 
-        SendSysMessageEx(who, "Selecione o alvo para desmoralizar.", SSM_INFO);
-        var targ := Target(who);
+        var targ;
+        if (mobile.IsNPC())
+            targ := who.opponent;
+            if (!targ)
+                targ := GetRandomNearbyHostile(who);
+            endif
+        else
+            SendSysMessageEx(who, "Selecione o alvo para desmoralizar.", SSM_INFO);
+            targ := Target(who);
+        endif
 
         if (!targ)
             return false;

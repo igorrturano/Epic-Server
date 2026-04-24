@@ -1,0 +1,17 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":tn:cooldown";
+include "include/say";
+
+program TimedScript_Braco(params)
+	var mobile := params[1];
+	var penalty := CInt(AP_GetStat(mobile, STRENGTH) / 2);
+	SetObjProperty(mobile, "#fratura_bracos_penalty", penalty);
+	AP_ModifyStatMod(mobile, STRENGTH, -penalty);
+	SendSysMessage(mobile, "Seus bracos fraturados reduzem sua forca pela metade.");
+
+	return 1;
+endprogram

@@ -4,6 +4,7 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
+include ":hotbar:custombuff";
 
 /**
  * Golpe do Vento / Wind Strike - ABILITY_ID::WIND_STRIKE (803)
@@ -39,6 +40,9 @@ class WindStrike(CombatAbility)
 		var who := mobile.GetObjRef();
 		Message("*prepara um golpe duplo*").SendAbove(who);
 		Message("Voce prepara um golpe duplo.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+
+		var duration := this.GetDurationFor(mobile);
+		SendAbilityBuff(who, ABILITY_ID::WIND_STRIKE, duration, "Golpe duplo");
 	endfunction
 
 	function OnAfterDamage(this, attackInfo)

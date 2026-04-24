@@ -395,13 +395,14 @@ endfunction
 function ApplyProgressCurve(pass_chance, true_skill, max_skillcap_class)
     var skill_ratio := CInt((true_skill * 100) / max_skillcap_class);
     var skill_decrease_point := 50;
+    var boost_divisor := 75;
     if (skill_ratio <= 20)
-        pass_chance := CInt(pass_chance + (skill_ratio * (100 - pass_chance)) / skill_decrease_point);
+        pass_chance := CInt(pass_chance + (skill_ratio * (100 - pass_chance)) / boost_divisor);
         if (pass_chance < 50)
             pass_chance := 50;
         endif
     elseif (skill_ratio <= skill_decrease_point)
-        pass_chance := CInt(pass_chance + (skill_ratio * (100 - pass_chance)) / skill_decrease_point); // Progressive increase
+        pass_chance := CInt(pass_chance + (skill_ratio * (100 - pass_chance)) / boost_divisor); // Progressive increase
     elseif (skill_ratio > 50 && skill_ratio <= 65)
         pass_chance := CInt(pass_chance - ((skill_ratio - skill_decrease_point) * (pass_chance - 50)) / 40); 
     elseif (skill_ratio > 65 && skill_ratio <= 70)

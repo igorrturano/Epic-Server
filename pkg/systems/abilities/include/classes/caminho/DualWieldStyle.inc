@@ -32,9 +32,7 @@ class DualWieldStyle(CombatAbility)
 		if (!this._MatchesContext(attacker))
 			return false;
 		endif
-
 		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) + 3);
-
 		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
 			Message("[DUAL_WIELD] +3 acerto", Color(SYSTEM_COLOR::SUCCESS)));
 		return true;
@@ -46,9 +44,7 @@ class DualWieldStyle(CombatAbility)
 		if (!this._MatchesContext(defender))
 			return false;
 		endif
-
 		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - 2);
-
 		DebugMsg(defender.GetObjRef(), DEBUG_HAB,
 			Message("[DUAL_WIELD] -2 acerto inimigo (evasao)", Color(SYSTEM_COLOR::SUCCESS)));
 		return true;

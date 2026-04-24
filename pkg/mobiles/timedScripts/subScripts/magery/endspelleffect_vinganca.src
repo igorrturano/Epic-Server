@@ -7,8 +7,8 @@ program endspelleffect_vinganca(params)
 	var mobile := params[1];
 	var spellId := CInt(GetObjProperty(mobile, "prop"));
 
-	// Apply accumulated damage before removing the effect
 	var points := CInt(GetObjProperty(mobile, "#vinganca"));
+	EraseObjProperty(mobile, "#vinganca");
 	if (points > 0)
 		ApplyRawDamage(mobile, points);
 	endif

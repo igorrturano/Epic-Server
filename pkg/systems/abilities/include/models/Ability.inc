@@ -18,7 +18,10 @@ enum class ABILITY_ACTIVATION
 	ON_KILL := "OnKill",
 	ON_PARRY := "OnParry",
 
-	ON_USE := "OnUse"
+	ON_USE := "OnUse",
+
+	ON_EQUIP := "OnEquip",
+	ON_UNEQUIP := "OnUnequip"
 endenum
 
 class Ability(IAbility)
@@ -269,7 +272,7 @@ enum class ABILITY_ID
 
 	// ESGRIMISTA
 	MOVIMENTACAO_GRACIOSA := 1500,
-	REFLEXO_ESTRATEGICO := 1501,
+	POSTURA_DE_DUELO := 1501,
 	DESMORALIZAR := 1502,
 	FINTA_ESGRIMISTA := 1503,
 	MESTRE_DUELISTA := 1504,
@@ -433,7 +436,6 @@ enum class ABILITY_ID
 	// CAMINHO - Extrator / Extractor (3560-3569)
 	EXTRACTOR_VIGOR := 3560,
 	GEM_MINER := 3561,
-	CLEAN_CUT := 3562,
 	MINE_RARITIES := 3563,
 	TREASURE_FROM_TRASH := 3565,
 	PACK_MULE := 3566,

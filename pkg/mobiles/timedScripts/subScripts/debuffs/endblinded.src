@@ -26,7 +26,7 @@ program EndBlinded(params)
 	EraseObjProperty(mobile, "#blinded");
 
 	// Restore visibility - redraw nearby mobiles
-	var mobiles := ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16);
+	var mobiles := ListMobilesNearLocation(mobile.x, mobile.y, mobile.z, 16, mobile.realm);
 	foreach nearby_mobile in mobiles
 		DrawObject(mobile, nearby_mobile, nearby_mobile.graphic, nearby_mobile.color);
 		sleepms(20);

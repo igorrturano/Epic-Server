@@ -21,15 +21,15 @@ include ":spells:include/tnmagery";
 include ":spells:SpellRegistry";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
-include ":hotbar:include/custombuff";
 
-// Spell type constants
+// Spell type constants — every value here matches a real config file. There is
+// no aggregate "mage" type: a spellcaster's repertoire is the union of the
+// types returned by GetMageSpellTypes() below.
 const SPELL_TYPE_CANTRIP      := "cantrip";
-const SPELL_TYPE_MAGE         := "mage";
 const SPELL_TYPE_EVOCATION    := "evocation";
 const SPELL_TYPE_NECROMANCY   := "necromancy";
 const SPELL_TYPE_ILLUSION     := "illusion";
-const SPELL_TYPE_SWORDMAGE   := "swordmage";
+const SPELL_TYPE_SWORDMAGE    := "swordmage";
 const SPELL_TYPE_PRIEST       := "priest";
 const SPELL_TYPE_SHAMAN       := "shaman";
 const SPELL_TYPE_DRUID        := "druid";
@@ -38,7 +38,20 @@ const SPELL_TYPE_DEMONHUNTER  := "demonhunter";
 const SPELL_TYPE_TRICKSTER    := "trickster";
 const SPELL_TYPE_SHINOBI      := "shinobi";
 const SPELL_TYPE_BARD         := "bard";
-const SHINOBI_JUTSU_COOLDOWN  := 20;
+
+// Spellcaster repertoire — the schools a mage character can ever cast from.
+// There is no single "mage" spell type: any check for "is this a mage spell?"
+// goes through GetMageSpellTypes() below. Used by .m to resolve a spell name
+// to its real school before reaching the executor.
+function GetMageSpellTypes()
+    return array{
+        SPELL_TYPE_CANTRIP,
+        SPELL_TYPE_EVOCATION,
+        SPELL_TYPE_NECROMANCY,
+        SPELL_TYPE_ILLUSION,
+        SPELL_TYPE_SWORDMAGE
+    };
+endfunction
 
 /*
  * ExecuteSpellByName - Main entry point for all spell execution
@@ -60,31 +73,14 @@ function ExecuteSpellByName(who, spell_name, spell_type)
         return 0;
     endif
     
-    // Find spell in config - for mage types, search all schools
-    var cfg_path;
-    var spell_data;
-
-    if (spell_type == SPELL_TYPE_MAGE || spell_type == SPELL_TYPE_TRICKSTER)
-        var mage_schools := array{
-            ":spells:config/evocation",
-            ":spells:config/necromancy",
-            ":spells:config/illusion"
-        };
-        foreach school in mage_schools
-            spell_data := FindSpellByName(school, spell_name);
-            if (spell_data)
-                cfg_path := school;
-                break;
-            endif
-        endforeach
-    else
-        cfg_path := GetSpellConfigPathForType(spell_type);
-        if (!cfg_path)
-            SendSysMessageEx(who, "Tipo de magia invalido.", SSM_FAIL);
-            return 0;
-        endif
-        spell_data := FindSpellByName(cfg_path, spell_name);
+    // Every caller passes a concrete spell type — mage callers (.m) resolve the
+    // school via ResolveMageSchoolForSpell before getting here.
+    var cfg_path := GetSpellConfigPathForType(spell_type);
+    if (!cfg_path)
+        SendSysMessageEx(who, "Tipo de magia invalido.", SSM_FAIL);
+        return 0;
     endif
+    var spell_data := FindSpellByName(cfg_path, spell_name);
 
     if (!spell_data)
         SendSysMessageEx(who, "A magia " + spell_name + " nao existe.", SSM_FAIL);
@@ -96,16 +92,12 @@ function ExecuteSpellByName(who, spell_name, spell_type)
         return 0;
     endif
 
-    if (!ValidateSpellCooldown(who, spell_type))
-        return 0;
-    endif
-    
     // Build spellinfo struct
     var spellinfo := BuildSpellInfo(who, spell_data, spell_type, cfg_path);
-    
+
     // Determine booktype for cast_spell
     var booktype := GetBooktypeForSpell(who, spell_data, spell_type);
-    
+
     // Execute the spell
     var script := Start_Script(":spells:cast_spell", {who, spellinfo, booktype});
     if (script.errortext)
@@ -113,8 +105,6 @@ function ExecuteSpellByName(who, spell_name, spell_type)
         return 0;
     endif
 
-    ApplySpellCooldownAndBuff(who, spell_data, spell_type);
-    
     return 1;
 endfunction
 
@@ -168,24 +158,18 @@ function ExecuteSpellById(who, spell_id, spell_type)
         return 0;
     endif
 
-    if (!ValidateSpellCooldown(who, spell_type))
-        return 0;
-    endif
-    
     // Build spellinfo
     var spellinfo := BuildSpellInfo(who, spell_data, spell_type, cfg_path);
-    
+
     // Determine booktype
     var booktype := GetBooktypeForSpell(who, spell_data, spell_type);
-    
+
     // Execute
     var script := Start_Script(":spells:cast_spell", {who, spellinfo, booktype});
     if (script.errortext)
         SendSysMessage(who, "Erro ao conjurar magia: " + script.errortext);
         return 0;
     endif
-
-    ApplySpellCooldownAndBuff(who, spell_data, spell_type);
 
     // Phase 5: Bard cantico entropy award
     if (spell_type == SPELL_TYPE_BARD)
@@ -218,25 +202,6 @@ function _AwardBardCanticoEntropy(who, circle)
     endif
 endfunction
 
-function ValidateSpellCooldown(who, spell_type)
-    if (spell_type == SPELL_TYPE_SHINOBI)
-        if (GetCooldown(who, "jutsu") > 0)
-            SendSysMessageEx(who, "Voce deve esperar um pouco antes de usar outra tecnica shinobi.", SSM_FAIL);
-            return 0;
-        endif
-    endif
-
-    return 1;
-endfunction
-
-function ApplySpellCooldownAndBuff(who, spell_data, spell_type)
-    if (spell_type == SPELL_TYPE_SHINOBI)
-        SetCooldown(who, "jutsu", SHINOBI_JUTSU_COOLDOWN);
-        SendSpellBuff(who, who, spell_data.id, SHINOBI_JUTSU_COOLDOWN, spell_data.name);
-    endif
-
-    return 1;
-endfunction
 
 /*
  * ValidateSpellAccess - Check if player can use this spell type
@@ -257,12 +222,6 @@ function ValidateSpellAccess(who, spell_type)
                 SendSysMessageEx(who, "Voce nao possui acesso a truques.", SSM_FAIL);
                 return 0;
             endif
-            
-        SPELL_TYPE_MAGE:
-        SPELL_TYPE_TRICKSTER:
-            // Mage spells - check grimoire or trickster ability
-            // Validation done in requirements check
-            return 1;
             
         SPELL_TYPE_PRIEST:
             if (magia != "Sacerdote")
@@ -400,8 +359,12 @@ function ValidateSpellRequirements(who, spell_data, spell_type)
                 endif
             endif
 
-        SPELL_TYPE_MAGE:
-            // Check grimoire for non-GMs, unless they have Sensibilidade Arcana
+        SPELL_TYPE_EVOCATION:
+        SPELL_TYPE_NECROMANCY:
+        SPELL_TYPE_ILLUSION:
+        SPELL_TYPE_SWORDMAGE:
+            // Every spellcaster school requires the spell to be in the
+            // grimoire. Trickster (SENSIBILIDADE_ARCANA) and GMs bypass.
             if (!who.cmdlevel && spell_data.circle != 0)
                 if (!MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
                     var spellBookInfo := FindSpellInSpellBooks(who, spell_data.id);
@@ -423,7 +386,6 @@ endfunction
 function GetSpellConfigPathForType(spell_type)
     case (spell_type)
         SPELL_TYPE_CANTRIP:     return ":spells:config/cantrips";
-        SPELL_TYPE_MAGE:        return ":spells:config/evocation";  // Default mage school; use GetConfigFromId() for specific spells
         SPELL_TYPE_EVOCATION:   return ":spells:config/evocation";
         SPELL_TYPE_NECROMANCY:  return ":spells:config/necromancy";
         SPELL_TYPE_ILLUSION:    return ":spells:config/illusion";
@@ -478,6 +440,25 @@ function FindSpellByName(cfg_path, spell_name)
 endfunction
 
 /*
+ * ResolveMageSchoolForSpell - Find which mage school owns a spell name.
+ * Returns the SPELL_TYPE_* constant of the school containing the spell, or 0
+ * if the name is not in any mage repertoire. Cantrips are excluded — they go
+ * through .t, not .m.
+ */
+function ResolveMageSchoolForSpell(spell_name)
+    foreach spell_type in GetMageSpellTypes()
+        if (spell_type == SPELL_TYPE_CANTRIP)
+            continue;
+        endif
+        var cfg_path := GetSpellConfigPathForType(spell_type);
+        if (cfg_path && FindSpellByName(cfg_path, spell_name))
+            return spell_type;
+        endif
+    endforeach
+    return 0;
+endfunction
+
+/*
  * BuildSpellInfo - Create spellinfo struct for cast_spell
  */
 function BuildSpellInfo(who, spell_data, spell_type, cfg_path)
@@ -503,9 +484,11 @@ function GetBooktypeForSpell(who, spell_data, spell_type)
         SPELL_TYPE_CANTRIP:
             return 0;  // Cantrips don't need booktype
             
-        SPELL_TYPE_MAGE:
+        SPELL_TYPE_EVOCATION:
+        SPELL_TYPE_NECROMANCY:
+        SPELL_TYPE_ILLUSION:
+        SPELL_TYPE_SWORDMAGE:
         SPELL_TYPE_TRICKSTER:
-            // Find in spellbook
             var spellBookInfo := FindSpellInSpellBooks(who, spell_data.id);
             if (spellBookInfo.found)
                 return spellBookInfo.booktype;

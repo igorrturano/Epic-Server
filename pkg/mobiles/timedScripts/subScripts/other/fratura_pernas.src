@@ -1,0 +1,25 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include "include/client";
+include ":timedscripts:timedScripts";
+include ":fls_core:packets";
+include ":tn:cooldown";
+
+program TimedScript_Pernas(params)
+	var mobile := params[1];
+	SetObjProperty(mobile, "#fratura_pernas_penalty",1);
+	while (mobile)
+		PlayerSpeedSlower(mobile, 1);
+		sleep(4);
+	endwhile
+
+	return 1;
+endprogram
+
+function LogOffScript(mobile)
+	return 1;
+endfunction
+

@@ -5,24 +5,66 @@ include ":containers:storageAreas";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":merchants:/include/cambio";
-
-const MOEDAS_COBRE := 0xba63;
-const MOEDAS_PRATA := 0xba64;
-const MOEDAS_OURO := 0xba65;
-const GOLD_COIN := 0xeed;
+include ":taming:taming";
+include ":stables:include/stable";
+include "include/say";
 
 program StablePost(who, post)
+	// Migração: pets antigos com DataEntrada mas sem DataExpiracao
+	var existing_serial := GetObjProperty(post, "StoredAnimal");
+	if (existing_serial)
+		var existing := SystemFindObjectBySerial(existing_serial);
+		if (existing)
+			MigrarContratoAntigo(existing);
+			if (IsStableExpired(existing))
+				ExpireStabledPet(existing, post);
+			endif
+		endif
+	endif
+
 	if (GetObjProperty(post, "StoredAnimal"))
-		// Se já tem um animal, tenta resgatar
 		return ResgatarAnimal(who, post);
 	else
-		// Se não tem animal, permite guardar
 		return GuardarAnimal(who, post);
 	endif
 endprogram
 
+function MigrarContratoAntigo(pet)
+	// Migra DataEntrada -> DataExpiracao
+	if (!GetObjProperty(pet, "DataExpiracao"))
+		var dataEnt := CInt(GetObjProperty(pet, "DataEntrada"));
+		if (dataEnt)
+			SetObjProperty(pet, "DataExpiracao", dataEnt + SEGUNDOS_POR_DIA);
+			EraseObjProperty(pet, "DataEntrada");
+		endif
+	endif
+
+	// Garante que o master tem CurrentStablePostSerial apontando para este post
+	// (contratos antigos nao tinham essa property, impediria o bloqueio de 1-post-por-player)
+	var owner := pet.master;
+	var postSerial := GetObjProperty(pet, "StablePostSerial");
+	if (owner && postSerial && !GetObjProperty(owner, "CurrentStablePostSerial"))
+		SetObjProperty(owner, "CurrentStablePostSerial", postSerial);
+	endif
+endfunction
+
+function ExpireStabledPet(pet, post)
+	var owner := pet.master;
+	EncerrarContratoEstabulo(pet, post, owner);
+
+	if (owner)
+		GetNumPets(owner);
+		SendSysMessageEx(owner, "Voce perdeu seu aluguel de estabulo! " + pet.name + " foi liberado.", SSM_FAIL);
+	endif
+endfunction
+
 function GuardarAnimal(who, post)
-	// 1. Verificar se o player tem um animal próximo
+	var current_post_serial := GetObjProperty(who, "CurrentStablePostSerial");
+	if (current_post_serial && CInt(current_post_serial) != post.serial)
+		SendSysMessage(who, "Voce ja esta usando outro poste de estabulo!");
+		return 0;
+	endif
+
 	var animals := ListMobilesNearLocation(who.x, who.y, who.z, 3, who.realm);
 	var controllable_pets := array{};
 
@@ -37,98 +79,154 @@ function GuardarAnimal(who, post)
 		return 0;
 	endif
 
-	// 2. Target para selecionar animal
 	SendSysMessage(who, "Selecione o pet para guardar.");
 	var target_pet := Target(who);
 
 	if (!target_pet || !target_pet.IsA(POLCLASS_NPC) || target_pet.master != who || target_pet.dead)
-		SendSysMessage(who, "Pet inválido.");
+		SendSysMessage(who, "Pet invalido.");
 		return 0;
 	endif
 
-	// 3. Calcular preço baseado em TameDifficulty
+	// Se o pet ja tem contrato ativo neste post, so re-estaciona (sem cobrar).
+	var target_post_serial := GetObjProperty(target_pet, "StablePostSerial");
+	if (target_post_serial && CInt(target_post_serial) == post.serial && !IsStableExpired(target_pet))
+		ParalisarPetNoEstabulo(target_pet, post);
+		GetNumPets(who);
+		SendSysMessage(who, target_pet.name + " voltou ao estabulo. Restam " + FormatTempoRestante(target_pet) + " de contrato.");
+		return 1;
+	endif
+
+	// Player ja tem contrato neste post com outro pet — nao deixa abrir segundo.
+	if (current_post_serial && CInt(current_post_serial) == post.serial)
+		SendSysMessage(who, "Voce ja tem outro pet contratado neste poste. Resgate ou rescinda antes.");
+		return 0;
+	endif
+
+	// Novo contrato
 	var precoPorDia := ObterPrecoPorDia(target_pet);
 
-	// 4. Confirmar guarda via Gump simples
-	var gump := GFCreateGump();
-	GFResizePic(gump, 0, 0, 9270, 300, 200);
-	GFTextMid(gump, 10, 20, 280, 2100, "Deseja guardar " + target_pet.name + " no estábulo?");
-	GFTextMid(gump, 10, 50, 280, 2100, "Valor do estábulo por dia: " + precoPorDia + " moedas");
-
-	GFAddButton(gump, 50, 100, 2117, 2118, 1, 1);
-	GFTextLine(gump, 80, 100, 2100, "Sim");
-
-	GFAddButton(gump, 170, 100, 2117, 2118, 1, 0);
-	GFTextLine(gump, 200, 100, 2100, "Não");
-
-	var input := GFSendGump(who, gump);
-
-	if (!input[0])
+	var dias := RequestQuantidadeDias(who, precoPorDia);
+	if (!dias)
 		return 0;
-	endif // <--- Adicionei este endif aqui
-
-	var regiaoBanco := GetObjProperty(post, "City") ? GetObjProperty(post, "City") : CP_DEFAULT_AREA;
-	// 5. Verificar pagamento (agora sem pedir dias)
-	if (ContaCapital(who, regiaoBanco).valorTotal < precoPorDia) 
-		SendSysMessage(who, "Você não tem moedas o suficiente para efetuar o pagamento.");
-		return 0;
-	else
-		who.spendgold(precoPorDia);
 	endif
 
-	// 6. Guardar animal
-	target_pet.hidden := 0;
-	target_pet.setParalyzed(1);
-	GrantPrivilege(target_pet, "invul");
-	target_pet.enable("invul");
+	var total := dias * precoPorDia;
+	var debito := EfetuaDebito(who, total, 0);
+	if (debito == error)
+		SendSysMessage(who, "Voce nao tem moedas o suficiente no inventario para efetuar o pagamento.");
+		return 0;
+	endif
 
-	SetObjProperty(target_pet, "EstaNoEstabulo", 1);
+	ParalisarPetNoEstabulo(target_pet, post);
 	SetObjProperty(target_pet, "StablePostSerial", post.serial);
-	SetObjProperty(target_pet, "DataEntrada", polcore().systime);
+	SetObjProperty(target_pet, "DataExpiracao", polcore().systime + dias * SEGUNDOS_POR_DIA);
 	SetObjProperty(target_pet, "PrecoPorDia", precoPorDia);
-	SetObjProperty(post, "StoredAnimal", target_pet.serial);
+	SetObjProperty(who, "CurrentStablePostSerial", post.serial);
 
-	SendSysMessage(who, target_pet.name + " guardado com sucesso!");
+	GetNumPets(who);
+
+	SendSysMessage(who, target_pet.name + " guardado por " + dias + " dias!");
 	return 1;
 endfunction
 
 function ResgatarAnimal(who, post)
 	var animal_serial := GetObjProperty(post, "StoredAnimal");
 	var animal := SystemFindObjectBySerial(animal_serial);
+	var is_contract_owner := CInt(GetObjProperty(who, "CurrentStablePostSerial")) == post.serial;
 
-	if (!animal || animal.master != who)
-		SendSysMessage(who, "Você não pode resgatar este animal.");
+	// Pet destruido (raro): libera o slot do poste e o contrato do dono.
+	if (!animal)
+		SendSysMessage(who, "O animal deste estabulo nao existe mais. Contrato encerrado.");
+		EraseObjProperty(post, "StoredAnimal");
+		if (is_contract_owner)
+			EraseObjProperty(who, "CurrentStablePostSerial");
+		endif
 		return 0;
 	endif
 
-	// Verifica se o pet está em limbo
+	// Pet liberado ("todos livres"/transferido) ou morto enquanto contratado:
+	// o slot do poste e o CurrentStablePostSerial do dono ficam travados. So
+	// o dono do contrato (via CurrentStablePostSerial) pode forcar a rescisao.
+	if (animal.master != who || animal.dead)
+		if (!is_contract_owner)
+			SendSysMessage(who, "Este animal nao pertence a voce.");
+			return 0;
+		endif
+		var motivo := animal.dead ? "morto" : "liberado";
+		SendSysMessage(who, animal.name + " foi " + motivo + ". Contrato do estabulo encerrado.");
+		EncerrarContratoEstabulo(animal, post, who);
+		GetNumPets(who);
+		return 1;
+	endif
+
 	if (GetObjProperty(animal, "EstaNoLimbo"))
-		SendSysMessage(who, "Seu pet está em limbo. Use o comando .assoviar para chamá-lo de volta primeiro.");
+		SendSysMessage(who, "Seu pet esta em limbo. Use o comando .assoviar para chama-lo de volta primeiro.");
 		return 0;
 	endif
 
-	// Restaura estado original
-	animal.setParalyzed(0);
-	RevokePrivilege(animal, "invul");
-	animal.disable("invul");
+	if ( (GetNumPets(who) + GetPetCost(animal)) > GetMaxPets(who) )
+		SendSysMessage(who, "Voce nao tem slots suficientes para resgatar seu animal.");
+		return 0;
+	endif
 
-	EraseObjProperty(animal, "EstaNoEstabulo");
-	EraseObjProperty(animal, "StablePostSerial");
-	EraseObjProperty(animal, "DataEntrada");
-	EraseObjProperty(post, "StoredAnimal");
+	if (IsStableExpired(animal))
+		EncerrarContratoEstabulo(animal, post, who);
+		GetNumPets(who);
+		SendSysMessage(who, "Contrato expirado. " + animal.name + " foi liberado do estabulo.");
+		return 1;
+	endif
 
-	SendSysMessage(who, animal.name + " resgatado com sucesso!");
-	return 1;
+	var tempoRestante := FormatTempoRestante(animal);
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, 9270, 400, 260);
+	GFTextMid(gump, 10, 20, 380, 2100, "O que deseja fazer com " + animal.name + "?");
+	GFTextMid(gump, 10, 50, 380, 2100, "Contrato ativo: restam " + tempoRestante + ".");
+
+	GFTextLine(gump, 20, 90, 2100, "Resgatar: pet sai do estabulo e volta com voce.");
+	GFTextLine(gump, 20, 108, 2100, "Contrato continua ativo (.assoviar funciona).");
+
+	GFTextLine(gump, 20, 145, 2100, "Rescindir: encerra o contrato, libera o poste.");
+	GFTextLine(gump, 20, 163, 33, "Sem reembolso das moedas.");
+
+	GFAddButton(gump, 20, 210, 2117, 2118, 1, 1);
+	GFTextLine(gump, 50, 210, 2100, "Resgatar");
+
+	GFAddButton(gump, 200, 210, 2117, 2118, 1, 2);
+	GFTextLine(gump, 230, 210, 33, "Rescindir");
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 1)
+		RetirarPetFisicamente(animal, post);
+		TeleportarPetPerto(animal, who);
+		GetNumPets(who);
+		SendSysMessage(who, animal.name + " foi resgatado. O contrato continua ativo.");
+		return 1;
+	elseif (input[0] == 2)
+		EncerrarContratoEstabulo(animal, post, who);
+		TeleportarPetPerto(animal, who);
+		GetNumPets(who);
+		SendSysMessage(who, "Contrato rescindido. " + animal.name + " foi liberado.");
+		return 1;
+	endif
+
+	return 0;
+endfunction
+
+function TeleportarPetPerto(pet, owner)
+	var loc := FindSpawnLocationNearby(owner);
+	MoveObjectToLocation(pet, loc.x, loc.y, loc.z, owner.realm, MOVEOBJECT_FORCELOCATION);
 endfunction
 
 function RequestQuantidadeDias(who, precoPorDia)
 	var gump := GFCreateGump();
-	GFResizePic(gump, 0, 0, 9270, 300, 200);
+	GFResizePic(gump, 0, 0, 9270, 300, 240);
 	GFTextMid(gump, 10, 20, 280, 2100, "Quantos dias deseja guardar?");
-	GFTextMid(gump, 10, 50, 280, 2100, "Preço por dia: " + precoPorDia + " moedas");
+	GFTextMid(gump, 10, 50, 280, 2100, "Preco por dia: " + precoPorDia + " moedas");
 
 	var botoes := array{ 1, 3, 7, 15, 30 };
-	var y := 80;
+	var y := 85;
 	foreach dias in botoes
 		GFAddButton(gump, 50, y, 2117, 2118, 1, dias);
 		GFTextLine(gump, 80, y, 2100, dias + " dias [" + (dias * precoPorDia) + " moedas]");
@@ -139,104 +237,7 @@ function RequestQuantidadeDias(who, precoPorDia)
 	return input[0];
 endfunction
 
-function ConfirmarGuardaPet(who, pet, valor)
-	var gump := GFCreateGump();
-	GFResizePic(gump, 0, 0, 9270, 300, 200);
-	GFTextMid(gump, 10, 20, 280, 2100, "Confirma guardar " + pet.name + "?");
-	GFTextMid(gump, 10, 50, 280, 2100, "Valor: " + valor + " moedas");
-
-	GFAddButton(gump, 50, 100, 2117, 2118, 1, 1);
-	GFTextLine(gump, 80, 100, 2100, "Sim");
-
-	GFAddButton(gump, 170, 100, 2117, 2118, 1, 0);
-	GFTextLine(gump, 200, 100, 2100, "Não");
-
-	var input := GFSendGump(who, gump);
-	return input[0];
-endfunction
-
-/*
-function PagarEstadia(who, valor)
-	if (!TemBanco(who))
-		return 0;
-	endif
-
-	var bank_region := CP_DEFAULT_AREA;
-	var bank_box := CP_GetStorageContainerForMobile(who, bank_region, CP_NOCREATE);
-
-	Set_Critical(1);
-	var recursosDisponiveis := CalculaRecursosDisponiveisBank(bank_box);
-
-	if (recursosDisponiveis < valor)
-		SendSysMessage(who, "Você não tem moedas suficientes no banco.");
-		Set_Critical(0);
-		return 0;
-	endif
-
-	var totalPago := PagarComMoedasCobre(who, bank_box, valor);
-
-	Set_Critical(0);
-	return (totalPago >= valor);
-endfunction
-*/
-
-
-function CalculaRecursosDisponiveisBank(bank_box)
-	var total_cobre := 0;
-
-	foreach item in EnumerateItemsInContainer(bank_box)
-		if (item.objtype == 0xba63) // Moeda de cobre
-			total_cobre += item.amount;
-		endif
-	endforeach
-
-	return total_cobre;
-endfunction
-
-function PagarComMoedasCobre(who, bank_box, valor)
-	var totalPago := 0;
-	var faltaPagar := valor;
-
-	foreach moeda in EnumerateItemsInContainer(bank_box)
-		if (moeda.objtype == 0xba63) // Moeda de cobre
-			var diferenca := faltaPagar - moeda.amount;
-			if (diferenca > 0)
-				totalPago += moeda.amount;
-				faltaPagar -= moeda.amount;
-				DestroyItem(moeda);
-			else
-				totalPago += faltaPagar;
-				SubtractAmount(moeda, faltaPagar);
-				faltaPagar := 0;
-				break;
-			endif
-		endif
-	endforeach
-
-	return totalPago;
-endfunction
-
 function ObterPrecoPorDia(animal)
-	var npc_cfg := ReadConfigFile(":npcs:npcdesc");
-	var template := GetObjProperty(animal, "npctemplate");
-
-	var tame_difficulty := npc_cfg[template].TameDifficulty;
-	if (!tame_difficulty)
-		tame_difficulty := 4; // Valor padrão mínimo
-	endif
-
-	var preco_por_dia := CInt(tame_difficulty / 4);
-
-	// Garantir no mínimo 1 moeda de cobre por dia
-	return (preco_por_dia < 1) ? 1 : preco_por_dia;
-endfunction
-
-function TemBanco(who)
-	var bank_region := CP_DEFAULT_AREA;
-	var bank_box := CP_GetStorageContainerForMobile(who, bank_region, CP_NOCREATE);
-	if (!bank_box)
-		SendSysMessage(who, "Você não tem banco");
-		return 0;
-	endif
-	return 1;
+	var tier := CInt(animal.getTier());
+	return (tier < 1) ? 1 : tier;
 endfunction

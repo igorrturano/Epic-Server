@@ -711,3 +711,38 @@ function SetHitscript(who, hitscript, remove := 0);
    endif
    SetObjProperty(who, "HitScripts", hitscripts);
 endfunction
+
+// Retorna a cor (hue) associada ao staff_tipo da faccao.
+// Pacto=2909, Regentes=1645, Conselho=96, Rufioes=0 (sem cor), Sinodo=2797
+function GetFaccaoColor(guild)
+    if (!guild) return 0; endif
+    var tipo := lower(CStr(guild.getProp("staff_tipo")));
+    if (!tipo) return 0; endif
+
+    if (tipo["pacto"])    return 2909; endif
+    if (tipo["regentes"]) return 1645; endif
+    if (tipo["conselho"]) return 96;   endif
+    if (tipo["sinodo"])   return 2797; endif
+    // rufioes e outros: sem cor
+    return 0;
+endfunction
+
+// Verifica se o player esta em territorio de uma faccao com a lei especificada ativa.
+// Retorna o objeto guild se proibido, 0 caso contrario.
+// Membros da faccao sao sempre isentos.
+function CheckTerritoryCommandBan(who, law_type)
+    if (!who || !who.isA(POLCLASS_MOBILE)) return 0; endif
+    foreach g in ListGuilds()
+        sleepms(2);
+        if (!inGuildRect(g, who, 0)) continue; endif
+        var laws := g.getProp("laws");
+        if (!laws) continue; endif
+        foreach law in laws
+            sleepms(2);
+            if (!law.on || law.type != law_type) continue; endif
+            if (IsMemberOfFaccao(g, who)) continue; endif
+            return g;
+        endforeach
+    endforeach
+    return 0;
+endfunction

@@ -9,6 +9,7 @@
 use cfgfile;
 use datafile;
 use file;
+use guilds;
 use math;
 use os;
 use uo;
@@ -496,7 +497,7 @@ program architect_gump(params)
 			layout.append("text " + (gpos[1] + 140) + " " + (gpos[2] + 180) + " 40 27"); // Texto Mover
 
 			layout.append("page 10");
-			layout.append("resizepic " + (gpos[1] + 5 + col) + " " + (gpos[2] + row) + " 5100 320 490");
+			layout.append("resizepic " + (gpos[1] + 5 + col) + " " + (gpos[2] + row) + " 5100 700 490");
 			layout.append("button " + (gpos[1] + 8 + col) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
 
 			foreach group in maingroups
@@ -530,9 +531,9 @@ program architect_gump(params)
 			layout.append("button " + (gpos[1] + 8) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
 
 			if (subgroups.size() > 26)
-				layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 320 474");
+				layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 700 474");
 			else
-				layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 240 474");
+				layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 360 474");
 			endif
 
 			foreach subgroup in subgroups
@@ -561,7 +562,7 @@ program architect_gump(params)
 			// page 12: options (save, load...)
 			row := 69;
 			layout.append("page 12");
-			layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 240 456");
+			layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 460 456");
 			layout.append("button " + (gpos[1] + 8) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
 
 			layout.append("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 10) + " 2361 2361 1 0 -320");
@@ -1859,16 +1860,25 @@ function SetupNewLockDoor(who, created)
 			if (targ)
 				if (targ.objtype == 4001)
 					if (!created.isDoor())
-						var lvl := Cint(GetObjProperty(targ, "level"));
+						var lvl := PegaValorFabricacao(targ, CARACTERISTICA_FABRICACAO_TRANCA);
 						if (!lvl)
 							lvl := 1;
+						else
+							lvl := lvl > 5?  5 : lvl;
 						endif
 						SetObjProperty(created, "level", lvl);
 					endif
-					var lockid := CInt(GetObjProperty(targ, "LockId"));
+					var lockid := AllocLockId();
 					SetObjProperty(created, "LockId", lockid);
-					DestroyItem(targ);
-					SendSysMessageEx(who, "Voce instalou a fechadura com sucesso.", SSM_INFO);
+					var key := CreateItemInBackpack( who, "ironkey", 1 );
+					if(!key)
+						DestroyItem(created);
+						SendSysMessageEx(who, "Não foi possível criar a chave para esta fechadura.", SSM_FAIL);
+					else
+						SetObjProperty( key, "LockId", lockid );
+						DestroyItem(targ);
+						SendSysMessageEx(who, "Voce instalou a fechadura com sucesso.", SSM_INFO);
+					endif
 				else
 					SendSysMessageEx(who, "Isto nao parece uma fechadura.", SSM_FAIL);
 				endif

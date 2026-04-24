@@ -1,4 +1,5 @@
 use uo;
+use basic;
 
 include "/include/epicConstants";
 include ":megacliloc:/include/gettersDescTTips";
@@ -35,6 +36,28 @@ function MontaDescPersonagem(objeto, quem, xDesc)
 			xDesc := xDesc + color + entropy_desc + "<br>";
 		endif
 	endif
+
+	// Pet/creature description set via RURAL_LIFE (Campestre) ability
+	var pet_desc := GetObjProperty(objeto, "description");
+	if (pet_desc)
+		xDesc := xDesc + WHITE + pet_desc + "<br>";
+	endif
+
+	// Descrições agregadas dos itens equipados (montado por equip/unequip.src)
+	// Cada entrada já vem com "<br>" embutido pelo /setdescmod / /setdesc.
+	var equip_descs := GetObjProperty(objeto, "descmod");
+	if (equip_descs != error)
+		if (TypeOf(equip_descs) == "Array")
+			foreach entry in equip_descs
+				if (entry)
+					xDesc := xDesc + WHITE + entry;
+				endif
+			endforeach
+		elseif (TypeOf(equip_descs) == "String")
+			xDesc := xDesc + WHITE + equip_descs;
+		endif
+	endif
+
 	return xDesc;
 endfunction
 

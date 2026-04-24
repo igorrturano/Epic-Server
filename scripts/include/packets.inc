@@ -644,7 +644,6 @@ function SendBuff(mobile, show,  icon, duration := 0, cliloc1 := 0, cliloc2 := 0
    if (str)
     str := " " + str;
    endif
-   sendsysmessage(mobile, "s" + show +  " " + icon + " " + duration + " " + cliloc1 +  " " + cliloc2) ;
    // define the offsets to make it easier
    var   OFFSET_SERIAL := 3;
    var   OFFSET_ICONNUMBER1 := 7;

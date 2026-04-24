@@ -142,12 +142,7 @@ function ChopTree(who, tool, targ, orig_x, orig_y)
 		if (wood_amount < 0)
 			wood_amount := 0;
 		endif
-		var item;
-		if (MobileWrapper(who).HasAbility(ABILITY_ID::CLEAN_CUT))
-			item := CreateItemInBackPack(who, wood_type, amt * 2);
-		else
-			item := CreateItemInBackPack(who, wood_type, amt);
-		endif
+		var item := CreateItemInBackPack(who, wood_type, amt);
 		if (item.errortext)
 			SendSysMessage(who, "Nao foi possivel criar: " + wood_type + " ->" + item.errortext);
 			return 0;

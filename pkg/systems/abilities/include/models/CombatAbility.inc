@@ -112,6 +112,14 @@ class CombatAbility(Ability)
         return false;
     endfunction
 
+    function OnPassiveOnEquip(this, equip)
+        return false;
+    endfunction
+
+    function OnPassiveOnUnequip(this, equip)
+        return false;
+    endfunction
+
     //===========================================
     // EXECUTION ROUTER (called by AbilitiesController)
     //===========================================
