@@ -22,6 +22,7 @@ use storage;
 include ":attributes:attributes";
 include "include/sysEvent";
 include ":mounts:mounts";
+include ":taming:taming";
 include "include/client";
 include ":gumps:yesNo";
 include "include/npcUtil";
