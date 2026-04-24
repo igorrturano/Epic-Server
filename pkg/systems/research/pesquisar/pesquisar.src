@@ -17,6 +17,15 @@ include ":fls_core:fls_crafting";
 include ":recipes:recipes";
 
 // ============================================
+// ALTERAÇÕES NESTE ARQUIVO (feat/ea-pesquisar3)
+// ============================================
+// - Pesquisa extensiva agora exige pena e tinteiro (CheckForPen).
+//   O check existia na pesquisa rápida via CheckResearchRequirements,
+//   mas o fluxo extensivo (ShowExtensiveResearchGump) o ignorava.
+//   Corrigido adicionando o check antes de ValidateResearchParameters.
+// ============================================
+
+// ============================================
 // CONFIGURAÇÕES DO SISTEMA DE PESQUISA
 // ============================================
 
@@ -543,7 +552,12 @@ function ShowExtensiveResearchGump(who, byref gump)
                 SendSysMessageEx(who, "Você não está em uma biblioteca apropriada para este nível de pesquisa.", SSM_FAIL);
                 continue;
             endif
-            
+
+            if (!CheckForPen(who.backpack, 0))
+                SendSysMessageEx(who, "Você precisa de uma pena e tinteiro para iniciar a pesquisa.", SSM_FAIL);
+                continue;
+            endif
+
             if (ValidateResearchParameters(who, recipe) && ConsumeResearchResources(who, recipe))
                 if (InitiateResearch(who, recipe))
                     SendSysMessageEx(who, "Pesquisa extensiva iniciada com sucesso!", SSM_INFO);
