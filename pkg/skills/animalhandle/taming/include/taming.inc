@@ -175,6 +175,53 @@ function AddPet(who, serial)
 	who.followers := who.followers + GetPetCost(pet);
 endfunction
 
+// Libera estado de estábulo/limbo de um pet e desassocia o post.
+// Chame antes de transferir o pet ou logo após libertá-lo/matá-lo.
+function ClearPetStableAndLimboState(pet)
+	if (!pet)
+		return 0;
+	endif
+
+	if (GetObjProperty(pet, "EstaNoEstabulo") || GetObjProperty(pet, "EstaNoLimbo"))
+		pet.setParalyzed(0);
+		RevokePrivilege(pet, "invul");
+		pet.disable("invul");
+		pet.hidden := 0;
+		pet.frozen := 0;
+	endif
+
+	var postSerial := GetObjProperty(pet, "StablePostSerial");
+	if (postSerial)
+		var post := SystemFindObjectBySerial(postSerial);
+		if (post && GetObjProperty(post, "StoredAnimal") == pet.serial)
+			EraseObjProperty(post, "StoredAnimal");
+		endif
+	endif
+
+	EraseObjProperty(pet, "EstaNoEstabulo");
+	EraseObjProperty(pet, "EstaNoLimbo");
+	EraseObjProperty(pet, "StablePostSerial");
+	EraseObjProperty(pet, "DataEntrada");
+	EraseObjProperty(pet, "DataExpiracao");
+	EraseObjProperty(pet, "PrecoPorDia");
+	EraseObjProperty(pet, "OriginalLocation");
+
+	return 1;
+endfunction
+
+// Limpa refs do master para este pet (PlayerPetInLimboSerial, CurrentStablePostSerial).
+function ClearMasterLimboRef(master, pet_serial)
+	if (!master)
+		return 0;
+	endif
+	var ref := GetObjProperty(master, "PlayerPetInLimboSerial");
+	if (ref && CInt(ref) == CInt(pet_serial))
+		EraseObjProperty(master, "PlayerPetInLimboSerial");
+		EraseObjProperty(master, "CurrentStablePostSerial");
+	endif
+	return 1;
+endfunction
+
 //numero maximo de pets que alguem pode ter
 function GetMaxPets(who)
 	var maxpets := 1;

@@ -71,8 +71,19 @@ function CallPetBack(character, pet_serial)
 		return 0;
 	endif
 
-	if (pet.master != character || !GetObjProperty(pet, "EstaNoLimbo"))
+	if (pet.master != character)
+		// Pet foi transferido ou libertado enquanto estava em limbo.
+		// Libera o pet do estado de limbo e limpa a ref do player.
+		ClearPetStableAndLimboState(pet);
+		ClearMasterLimboRef(character, pet_serial);
+		EraseObjProperty(character, "CurrentStablePostSerial");
+		SendSysMessage(character, "Seu pet nao esta mais com voce.");
+		return 0;
+	endif
+
+	if (!GetObjProperty(pet, "EstaNoLimbo"))
 		SendSysMessage(character, "Nao foi possivel chamar o pet.");
+		EraseObjProperty(character, "PlayerPetInLimboSerial");
 		return 0;
 	endif
 
