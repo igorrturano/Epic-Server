@@ -549,11 +549,8 @@ function guildHandler(who, input)
 		if (who.cmdlevel)
 			SendSysMessageEx(who, "" + guild_obj.area);
 		endif
-		var area := guild_obj.area;
 		SendSysMessageEx(who, "Qual porta deseja modificar?", SSM_REQUEST);
 		var targ := Target(who);
-
-		var guildid := GetObjProperty(who, "guild");
 
 		if (!targ)
 			return SendSysMessageEx(who, "Cancelado");
@@ -561,14 +558,28 @@ function guildHandler(who, input)
 			return SendSysMessageEx(who, "Isso nao e uma porta");
 		elseif (GetObjProperty(targ, "estalagem"))
 			return SendSysMessageEx(who, "Voce nao pode mexer em portas de estalagem");
-		// elseif (!InGuildRect(guild, targ))
 		elseif (GetObjProperty(targ, "time") /* || GetObjProperty(targ, "level") */)
 			return SendSysMessageEx(who, "Voce nao pode adicionar trancas nessa porta");
 		endif
 
-		if ((GetObjProperty(targ, "guild") == who.guildid) || (GetObjProperty(targ, "guild") == error))
+		var door_guild_id := GetObjProperty(targ, "guild");
+		var faccao_tipo   := GetFaccaoTipo(guild);
 
-			var options := array{};
+		if (faccao_tipo == "player")
+			if (!InGuildRect(guild, targ))
+				return SendSysMessageEx(who, "Esta porta nao esta no territorio da sua faccao");
+			endif
+			if (door_guild_id != error && door_guild_id != who.guildid)
+				return SendSysMessageEx(who, "Este local ja pertence a outra faccao");
+			endif
+		elseif (faccao_tipo == "staff")
+			var portas_reg := guild.GetProp("portas_serials");
+			if (!portas_reg || !(targ.serial in portas_reg))
+				return SendSysMessageEx(who, "Esta porta nao foi configurada para esta faccao.");
+			endif
+		endif
+
+		var options := array{};
 			var ref_key := GetObjProperty(targ, "LockId");
 			if (ref_key)
 				options.append("Copiar chave");
@@ -633,9 +644,6 @@ function guildHandler(who, input)
 			elseif (output["Desfazer"])
 				EraseObjProperty(targ, "Alugavel");
 			endif
-		else
-			return SendSysMessageEx(who, "Este local ja pertence a outra faccao");
-		endif
 	endif
 /* elseif (input == BUTTON_BUY_UNIFORM)
       var options := array{};
@@ -902,7 +910,7 @@ endfunction
 
 function gmHandler(who)
 	var opts := array{ "Alterar Nome", "Alterar Area", "Alterar Prisoes", "Pegar GuildID",
-				   	"Alterar Sub-Guilds", "Tipo de Faccao", "Criar Bau", "Setar Soldo", "Remover Guilda", "Cancelar" };
+				   	"Alterar Sub-Guilds", "Tipo de Faccao", "Criar Bau", "Setar Soldo", "Setar Porta", "Remover Guilda", "Cancelar" };
 	var output := RadioGump(who, 300, 0, "Escolha uma opcao", opts, 0, opts.size());
 
 	if (output["Nome"])
@@ -1001,6 +1009,8 @@ function gmHandler(who)
 		_CriarBauHandler(who);
 	elseif (output["Setar Soldo"])
 		_SetarSoldoHandler(who);
+	elseif (output["Setar Porta"])
+		_SetarPortaHandler(who);
 	elseif (output["Remover Guilda"])
 		RemFaccao(guild.guildid);
 		SendSysMessageEx(who, "Guilda removida");
@@ -1227,6 +1237,44 @@ function _CriarBauHandler(who)
 	guild.SetProp("bau_serial", bau.serial);
 
 	SendSysMessageEx(who, "Bau criado | guild={} tipo={} lockid={}".format(guild.guildid, tipo, lockid), SSM_INFO);
+endfunction
+
+// -------------------------------------------------------
+// Registra uma porta como pertencente a esta faccao de lore (staff).
+// Apenas GMs podem registrar. Membros com unlockdoors podem trocar a tranca depois.
+// Seriais das portas ficam em guild prop "portas_serials".
+// -------------------------------------------------------
+function _SetarPortaHandler(who)
+	if (GetFaccaoTipo(guild) != "staff")
+		return SendSysMessageEx(who, "Setar porta so pode ser feito para faccoes do tipo staff.", SSM_FAIL);
+	endif
+
+	SendSysMessageEx(who, "Clique na porta que deseja configurar para esta faccao.", SSM_INFO);
+	var targ := Target(who);
+	if (!targ)
+		return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+	endif
+	if (!targ.IsDoor())
+		return SendSysMessageEx(who, "Isso nao e uma porta.", SSM_FAIL);
+	endif
+
+	var door_guild_id := GetObjProperty(targ, "guild");
+	if (door_guild_id != error && door_guild_id != guild.guildid)
+		return SendSysMessageEx(who, "Esta porta ja pertence a outra faccao.", SSM_FAIL);
+	endif
+
+	var portas := guild.GetProp("portas_serials");
+	if (!portas) portas := array{}; endif
+
+	if (targ.serial in portas)
+		return SendSysMessageEx(who, "Esta porta ja esta registrada nesta faccao.", SSM_FAIL);
+	endif
+
+	portas.append(targ.serial);
+	guild.SetProp("portas_serials", portas);
+	SetObjProperty(targ, "guild", guild.guildid);
+
+	SendSysMessageEx(who, "Porta registrada | serial={} guild={}".format(targ.serial, guild.guildid), SSM_INFO);
 endfunction
 
 // -------------------------------------------------------
