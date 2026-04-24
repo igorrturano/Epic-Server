@@ -6,7 +6,6 @@ include ":faccao:faccao";
 include ":timeUtils:time";
 include ":attributes:attributes";
 include ":nature:nature";
-include "include/epicEconomyAudit";
 
 const SOLDO_CICLO_SEGUNDOS  := 60;
 const SOLDO_INTERVALO_DIAS  := 7;
@@ -117,7 +116,6 @@ function _CriarBagPagamento(bau, total)
 		Print("[Soldo] ERRO: não foi possível criar moedas na bag.");
 		return error{"errortext":="moedas_falhou"};
 	endif
-	EA_Record(EA_MINT_GUILD_PAYOUT, moedas, total, "GUILD:soldo", bag, bau.name);
 
 	return bag;
 endfunction
