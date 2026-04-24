@@ -1945,3 +1945,141 @@ function ShowFaccaoCombatGump(ev)
             break;
     endcase
 endfunction
+
+// ── Helpers compartilhados de loop — todos os NPCs de combate de faccao ─────
+// Requer pre-declaracao no script pai: me, guild, guild_leader, guild_laws,
+// fighting, following, fix_location, wait_time, state, track_target
+
+// Recarrega guild, guild_leader e guild_laws se guild for 0.
+function LazyReloadGuild()
+    if (guild) return; endif
+    var _gid := GetObjProperty(me, "guild");
+    if (!_gid) return; endif
+    guild        := FindGuild(_gid);
+    guild_leader := guild ? guild.getProp("leader") : 0;
+    guild_laws   := guild ? guild.getProp("laws")   : array{};
+    if (!guild_laws) guild_laws := array{}; endif
+endfunction
+
+// Base compartilhada do Setup() de NPCs de faccao.
+// is_stealth=1: hiddenattack, runwhilestealth e shadow_mode.
+// is_stealth=0: apenas oculta o NPC (ladroes).
+// Retorna 0 se o NPC foi eliminado (guild ausente/invalida), 1 em sucesso.
+function SetupFaccaoNPCBase(is_stealth := 0)
+    var guildid := GetObjProperty(me, "guild");
+    if (!guildid)
+        sleep(5);
+        SetupFaccaoNPCBase(is_stealth);
+        return 0;
+    endif
+    guild := FindGuild(guildid);
+    if (!guild)
+        ApplyRawDamage(me, 600);
+        return 0;
+    endif
+
+    guild_leader := guild.getProp("leader");
+    guild_laws   := guild.getProp("laws");
+    if (!guild_laws) guild_laws := array{}; endif
+
+    fix_location := GetObjProperty(me, "fix_loc");
+    if (fix_location == error) fix_location := 0; endif
+
+    if (!me.backpack)
+        var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
+        EquipItem(me, new_pack);
+    endif
+
+    me.cmdlevel := 2;
+
+    if (is_stealth)
+        GrantPrivilege(me, "hiddenattack");
+        me.enable("hiddenattack");
+        GrantPrivilege(me, "runwhilestealth");
+        me.enable("runwhilestealth");
+        if (GetObjProperty(me, "shadow_mode"))
+            me.stealthsteps := 9999;
+            me.hidden := 1;
+        endif
+    else
+        me.stealthsteps := 9999;
+        me.hidden := 1;
+    endif
+
+    return 1;
+endfunction
+
+// Escaneia players proximos para violacoes de lei (cooldown de 3s).
+function ScanNearbyLaws()
+    if (warning || GetCooldown(me, "lawscan_cd")) return; endif
+    foreach _mob in ListMobilesNearLocationEx(me.x, me.y, me.z, 6,
+            LISTEX_FLAG_NORMAL, me.realm)
+        sleepms(2);
+        if (!_mob.npctemplate) CheckPlayerLaws(_mob); endif
+        if (warning) break; endif
+    endforeach
+    SetCooldown(me, "lawscan_cd", 3);
+endfunction
+
+// Controle de territorio: retorna ao centro do rect da guild se fora dele.
+// hunt_mode desativa o controle. Reseta estado de combate ao sair do territorio.
+// Retorna 1 se o NPC foi redirecionado ao centro.
+function EnforceTerritoryBounds()
+    if (!guild || GetObjProperty(me, "hunt_mode")) return 0; endif
+    if (GetObjProperty(me, "tipo_faccao") == "staff")
+        HandleWalkRectBreach(me, wait_time);
+        return 0;
+    endif
+    // Faccao player sem territorio configurado (nenhum totem consumido): sem restricao
+    var _area := guild.GetProp("area");
+    var _terr  := guild.GetProp("territories");
+    if ((!_area || !_area.size()) && (!_terr || !_terr.size())) return 0; endif
+    if (inGuildRect(guild, me, 4)) return 0; endif
+    if (state == 3) return 0; endif
+    var _center := GetGuildCenter(guild, me.z);
+    if (_center)
+        me.stealthsteps := 9999;
+        RunTowardLocation(_center.x, _center.y);
+        wait_time := 0;
+    endif
+    state    := 0;
+    fighting := 0;
+    SetOpponent(0);
+    SetWarMode(0);
+    return 1;
+endfunction
+
+// Retorna o primeiro mobile valido para combate dentro de 'range' tiles.
+// IsValidTarget() deve estar definida no script que inclui este arquivo.
+function GetNearTarget(range := 8)
+    foreach mob in ListMobilesNearLocationEx(me.x, me.y, me.z, range,
+            LISTEX_FLAG_NORMAL, me.realm)
+        sleepms(2);
+        if (IsValidTarget(mob)) return mob; endif
+    endforeach
+    return 0;
+endfunction
+
+// Retorna o percentual de HP do NPC (0-100).
+function GetHPPercent()
+    if (me.maxhits <= 0) return 100; endif
+    return CInt((me.hits * 100) / me.maxhits);
+endfunction
+
+// Executa um passo de patrulha entre dois pontos ("patrolling" prop).
+// Retorna 1 se a patrulha esta ativa e foi executada, 0 se nao ha rota.
+function UpdatePatrolState()
+    var _patrol := GetObjProperty(me, "patrolling");
+    if (!_patrol || _patrol.size() < 2) return 0; endif
+    var _pidx := GetObjProperty(me, "#patrol_idx");
+    if (_pidx == error || !_pidx) _pidx := 1; endif
+    var _ppt := _patrol[_pidx];
+    if (CoordinateDistance(me.x, me.y, _ppt.x, _ppt.y) <= 1)
+        _pidx := (_pidx % 2) + 1;
+        SetObjProperty(me, "#patrol_idx", _pidx);
+    else
+        WalkTowardLocation(_ppt.x, _ppt.y);
+        wait_time := 0;
+    endif
+    return 1;
+endfunction
