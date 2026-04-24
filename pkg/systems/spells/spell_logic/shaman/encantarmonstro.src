@@ -5,6 +5,7 @@ include "include/epicNPCUtils";
 include ":charactercreation:resists";
 include ":tn:boss";
 include "include/sysEvent";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
     var who := params[1];
@@ -47,7 +48,7 @@ program SpellScript(params)
         duration := Cint(duration * 1.5);
     endif
 
-    handleSilentMagic(who, targ, SFX_SPELL_TELEKINESIS);
+    SC_HandleSound(who, targ, SFX_SPELL_TELEKINESIS);
     sleep(2);
     PlayObjectCenteredEffect(targ, FX_HIPNOSYS, 250, 10);
 

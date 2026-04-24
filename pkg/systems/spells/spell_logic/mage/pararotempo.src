@@ -49,6 +49,7 @@ program SpellScript(params)
 		opts.+frozen := 1;
 		opts.+displayname := "Parar o Tempo";
 		opts.+buff_category := "movement_root";
+		opts.+is_debuff := 1;
 
 		SC_ApplyEffect(who, mobile, opts, 30, spellId);
 

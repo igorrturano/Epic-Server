@@ -3,6 +3,7 @@ use os;
 use cfgfile;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -70,7 +71,7 @@ program SpellScript(params)
 
 	// Visual effects
 	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLES, 10, 10);
-	handleSilentMagic(who, targ, SFX_SPELL_HEAL);
+	SC_HandleSound(who, targ, SFX_SPELL_HEAL);
 
 	Message("Voce abencoa o alimento com energia curativa.").SetColor(SSM_INFO).SendSys(who);
 

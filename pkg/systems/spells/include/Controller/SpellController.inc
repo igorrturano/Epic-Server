@@ -169,6 +169,7 @@ endfunction
  */
 function SC_HandleSound(caster, targ, sound := 0)
 	if (GetObjProperty(caster, "#magiasilenciosa"))
+		SendSysMessageEx(caster, "O efeito da magia silenciosa acabou.", SSM_INFO);
 		EraseObjProperty(caster, "#magiasilenciosa");
 		return;
 	endif
