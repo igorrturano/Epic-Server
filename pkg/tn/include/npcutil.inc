@@ -5,7 +5,7 @@ function getnpccategory(template)
 
 	var npccfgfile := ReadConfigFile(":*:npcdesc");
 	
-	var category := npccfgfile[template].Category;	
+	var category := npccfgfile[template].Environment;	
 	
 	if (!category)
 		return "sem categoria";

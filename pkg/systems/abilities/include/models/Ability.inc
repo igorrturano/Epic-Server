@@ -18,7 +18,10 @@ enum class ABILITY_ACTIVATION
 	ON_KILL := "OnKill",
 	ON_PARRY := "OnParry",
 
-	ON_USE := "OnUse"
+	ON_USE := "OnUse",
+
+	ON_EQUIP := "OnEquip",
+	ON_UNEQUIP := "OnUnequip"
 endenum
 
 class Ability(IAbility)
@@ -433,7 +436,6 @@ enum class ABILITY_ID
 	// CAMINHO - Extrator / Extractor (3560-3569)
 	EXTRACTOR_VIGOR := 3560,
 	GEM_MINER := 3561,
-	CLEAN_CUT := 3562,
 	MINE_RARITIES := 3563,
 	TREASURE_FROM_TRASH := 3565,
 	PACK_MULE := 3566,

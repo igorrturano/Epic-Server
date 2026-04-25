@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -29,7 +30,7 @@ program SpellScript(params)
 	endif
 	AP_SetVital(who, MANA, mana);
 
-	handleSilentMagic(who, who, 385);
+	SC_HandleSound(who, who, 385);
 	SendSysMessageEx(who, "Voce converteu sua energia vital em mana", SSM_INFO);
 
 	return 1;

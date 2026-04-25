@@ -3,6 +3,7 @@ use os;
 use cfgfile;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -21,7 +22,7 @@ program SummonMagicCreature(params)
 	var spellid := params[3];
 	params := 0; // No longer needed
 
-	handleSilentMagic(who, targ, SFX_SPELL_HEAL);
+	SC_HandleSound(who, targ, SFX_SPELL_HEAL);
 
 	var undead := summon(":brainai:simulacro", targ, who);
 

@@ -45,7 +45,7 @@ program SpellScript(params)
 
 		foreach mobile in newmobiles
 			var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
-			if (cfg[npctemplate.template].Category == "Undead" || cfg[npctemplate.template].Category == "Demons")
+			if (cfg[npctemplate.template].Environment == "Undead" || cfg[npctemplate.template].Environment == "Demons")
 				ForceDirection(mobile);
 			endif
 			sleepms(2);

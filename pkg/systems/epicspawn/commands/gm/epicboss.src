@@ -3613,7 +3613,7 @@ function SelectMountFromList(who, byref form_data, page := 1)
 	// Collect all mounts
 	foreach template in elem_names
 		var elem := cfg[template];
-		if (elem.Category == "Mount")
+		if (elem.Environment == "Mount")
 			var mount_struct := struct{ "name" := elem.Name, "graphic" := elem.Objtype,
 										"template" := template };
 			available_mounts.append(mount_struct);

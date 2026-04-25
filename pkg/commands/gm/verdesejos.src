@@ -1,0 +1,195 @@
+use uo;
+use os;
+use datafile;
+use polsys;
+
+include ":datafile:datafile";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:epicGumps";
+
+const GUMP_WIDTH := 520;
+const GUMP_HEIGHT := 570;
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const BACKGROUND_WIDTH := 465;
+const DESEJOS_POR_PAGINA := 8;
+
+program VerDesejos(who, texto)
+	if (who.cmdlevel < 3)
+		SendSysMessage(who, "Acesso negado!");
+		return 0;
+	endif
+
+	var parametros := SplitWords(texto);
+	var pagina := 1;
+	if (parametros[1])
+		pagina := CInt(parametros[1]);
+		if (pagina < 1)
+			pagina := 1;
+		endif
+	endif
+
+	// Abre o datafile com os desejos
+	var desejos_data := DFOpenDataFile(":fontedosdesejos:data/wishes", DF_NO_CREATE);
+	if (!desejos_data)
+		SendSysMessage(who, "Nenhum desejo foi feito ainda!");
+		return 0;
+	endif
+
+	var desejos_elem := DFFindElement(desejos_data, "ListaDesejos", DF_NO_CREATE);
+	if (!desejos_elem)
+		SendSysMessage(who, "Nenhum desejo foi feito ainda!");
+		return 0;
+	endif
+
+	var lista_desejos := desejos_elem.GetProp("desejos");
+	if (!lista_desejos || !lista_desejos.size())
+		SendSysMessage(who, "Nenhum desejo foi feito ainda!");
+		return 0;
+	endif
+
+	var input := MostrarGumpDesejos(who, lista_desejos, pagina);
+	
+	while (input && input[0] != 0)
+		case (input[0])
+			1:  // Próxima página
+				pagina := pagina + 1;
+				input := MostrarGumpDesejos(who, lista_desejos, pagina);
+			2:  // Página anterior
+				if (pagina > 1)
+					pagina := pagina - 1;
+					input := MostrarGumpDesejos(who, lista_desejos, pagina);
+				else
+					input := MostrarGumpDesejos(who, lista_desejos, pagina);
+				endif
+			default:
+				// Verificar se é um botão de deletar (300+)
+				if (input[0] >= 300)
+					var desejo_index := input[0] - 300;
+					if (desejo_index > 0 && desejo_index <= lista_desejos.size())
+						lista_desejos.erase(desejo_index);
+						desejos_elem.SetProp("desejos", lista_desejos);
+						SendSysMessage(who, "Desejo #" + desejo_index + " apagado com sucesso!");
+						input := MostrarGumpDesejos(who, lista_desejos, pagina);
+					else
+						input := MostrarGumpDesejos(who, lista_desejos, pagina);
+					endif
+				else
+					input := 0;
+				endif
+		endcase
+	endwhile
+
+	return 1;
+endprogram
+
+function MostrarGumpDesejos(who, lista_desejos, pagina)
+	var total_desejos := lista_desejos.size();
+	var total_paginas := CInt((total_desejos + DESEJOS_POR_PAGINA - 1) / DESEJOS_POR_PAGINA);
+	
+	if (pagina > total_paginas)
+		pagina := total_paginas;
+	endif
+	
+	var inicio := (pagina - 1) * DESEJOS_POR_PAGINA + 1;
+	var fim := pagina * DESEJOS_POR_PAGINA;
+	if (fim > total_desejos)
+		fim := total_desejos;
+	endif
+
+	var gump := GFCreateGump();
+	GFClosable(gump, 1);
+	GFDisposable(gump, 0);
+
+	// Fundo principal
+	GFGumpPicTiled(gump, 10, 10, 495, GUMP_HEIGHT, GUMP_BACKGROUND);
+	
+	// Moldura decorativa
+	AdicionarMoldura(gump, GUMP_WIDTH, GUMP_HEIGHT);
+	
+	// Título com nome do GM
+	GFTextMid(gump, 25, 22, GUMP_WIDTH - 50, 53, "Desejos da Fonte - " + who.name);
+	
+	// Info de páginas
+	GFTextMid(gump, 25, 42, GUMP_WIDTH - 50, 2100, "Página " + pagina + " de " + total_paginas + " | Total: " + total_desejos + " desejos");
+
+	var y_pos := 70;
+
+	// Lista de desejos desta página
+	for i := inicio to fim
+		var desejo_struct := lista_desejos[i];
+		
+		// Fundo alternado
+		if ((i - inicio) % 2 == 0)
+			GFResizePic(gump, 45, y_pos, 9270, BACKGROUND_WIDTH, 65);
+		else
+			GFResizePic(gump, 45, y_pos, 9350, BACKGROUND_WIDTH, 65);
+		endif
+
+		// Personagem e Account
+		GFTextLine(gump, 55, y_pos + 5, 53, desejo_struct.personagem + " [" + desejo_struct.account + "]");
+
+		// Desejo (truncado se muito longo)
+		var desejo_text := desejo_struct.desejo;
+		if (desejo_text.length() > 65)
+			desejo_text := desejo_text[1, 62] + "...";
+		endif
+		GFTextLine(gump, 55, y_pos + 20, 1258, desejo_text);
+
+		// Data
+		var data_str := FormatarData(desejo_struct.data);
+		GFTextLine(gump, 55, y_pos + 35, 2100, "Data: " + data_str);
+		
+		// Botão apagar
+		GFAddButton(gump, 445, y_pos + 20, 4017, 4017, 1, 300 + i);
+		GFTextLine(gump, 425, y_pos + 20, 33, "X");
+
+		y_pos += 70;
+	endfor
+
+	// Separador
+	GFResizePic(gump, 45, y_pos, 9350, BACKGROUND_WIDTH, 2);
+	y_pos += 15;
+
+	// Botões de navegação
+	if (pagina > 1)
+		GFAddButton(gump, 100, y_pos, 4014, 4015, 1, 2);
+		GFTextLine(gump, 135, y_pos + 5, 53, "Anterior");
+	endif
+
+	if (pagina < total_paginas)
+		GFAddButton(gump, 350, y_pos, 4011, 4012, 1, 1);
+		GFTextLine(gump, 320, y_pos + 5, 53, "Próxima");
+	endif
+
+	return GFSendGump(who, gump);
+endfunction
+
+function AdicionarMoldura(byref gump, gump_width, gump_height)
+	var molduras := array{
+		struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+		struct{ x := gump_width - 25, y := 0, width := 35, height := 25, gump := 39927 },
+		struct{ x := 25, y := 0, width := gump_width - 41, height := 25, gump := 39926 },
+		struct{ x := 25, y := gump_height - 25, width := gump_width - 25, height := 35, gump := 39932 },
+		struct{ x := 0, y := 25, width := 10, height := gump_height - 50, gump := 39928 },
+		struct{ x := gump_width - 25, y := 25, width := 35, height := gump_height - 50, gump := 39930 },
+		struct{ x := gump_width - 25, y := gump_height - 25, width := 35, height := 35, gump := 39933 },
+		struct{ x := 0, y := gump_height - 25, width := 35, height := 35, gump := 39931 }
+	};
+	
+	foreach moldura in molduras
+		GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+	endforeach
+endfunction
+
+function FormatarData(timestamp)
+	// Converte timestamp em formato legível
+	var dias := CInt(timestamp / 86400);
+	var resto := timestamp % 86400;
+	var horas := CInt(resto / 3600);
+	var minutos := CInt((resto % 3600) / 60);
+
+	return horas + "h " + minutos + "min (Dia " + dias + ")";
+endfunction
+

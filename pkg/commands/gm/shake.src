@@ -93,6 +93,13 @@ program ShakeCommand(who, text)
         return;
     endif
 
-    Message("Screen shake: " + duration + "s, " + magnitude + "px").SendSys(who);
-    ScreenShake(who, duration, magnitude);
+    var affected := 0;
+    foreach mob in (ListMobilesNearLocation(who.x, who.y, who.z, 18, who.realm))
+        if (!mob.npctemplate)
+            ScreenShake(mob, duration, magnitude);
+            affected += 1;
+        endif
+    endforeach
+
+    Message("Screen shake: " + duration + "s, " + magnitude + "px (" + affected + " players in 18 tiles)").SendSys(who);
 endprogram

@@ -217,7 +217,7 @@ function _AbrirGumpAlterarMembro(who, guild)
         return 0;
     endif
 
-    if (!targ.guild || targ.guild.serial != guild.serial)
+    if (!IsMemberOfFaccao(guild, targ))
         SendSysMessage(who, targ.name + " não pertence à sua facção.");
         return 0;
     endif
@@ -289,8 +289,9 @@ function _ConvidarJogador(lider, jogador, guild, nome, cargo)
         return 0;
     endif
 
-    if (jogador.guild)
-        SendSysMessage(lider, jogador.name + " já pertence a uma facção.");
+    var _join_err := CanJoinFaccao(guild, jogador);
+    if (_join_err)
+        SendSysMessage(lider, jogador.name + ": " + _join_err);
         return 0;
     endif
 
@@ -332,7 +333,16 @@ function _ConvidarJogador(lider, jogador, guild, nome, cargo)
         return 0;
     endif
 
-    AddMember(guild, jogador);
+    var _tipo := GetAutoMemberTipo(jogador);
+    if (_tipo == -1)
+        _tipo := EscolherTipoMembro(jogador, guild_name);
+        if (_tipo == -1)
+            SendSysMessage(lider,   jogador.name + " cancelou o ingresso.");
+            SendSysMessage(jogador, "Você cancelou o ingresso na facção.");
+            return 0;
+        endif
+    endif
+    AddMember(guild, jogador, _tipo);
 
     SetObjProperty(jogador, "dados_convite", struct{
         "nome_personalizado" := nome,
@@ -341,8 +351,9 @@ function _ConvidarJogador(lider, jogador, guild, nome, cargo)
         "convidado_por"      := lider.serial
     });
 
-    SendSysMessage(lider,   nome + " foi inscrito na facção com sucesso!");
-    SendSysMessage(jogador, "Você foi aceito na facção " + guild_name + " como " + cargo + "!");
+    var _tipo_str := _tipo ? "honorário" : "full";
+    SendSysMessage(lider,   nome + " ingressou como membro " + _tipo_str + "!");
+    SendSysMessage(jogador, "Você entrou na facção " + guild_name + " como membro " + _tipo_str + "!");
 
     return 1;
 endfunction
@@ -370,6 +381,8 @@ function _CriarConviteFisico(who, guild)
     SetObjProperty(item, "faccao_guild_name", guild.GetProp("name"));
     SetObjProperty(item, "convite_lider",     who.serial);
     SetObjProperty(item, "convite_assinado",  0);
+    PropagateNomeFaccao(guild, item);
+    RegisterFaccaoItem(guild, item);
     item.name := "Convite em Branco - " + guild.GetProp("name");
 
     SendSysMessage(who, "Convite criado! Dê um duplo-clique nele para preencher e assinar.");

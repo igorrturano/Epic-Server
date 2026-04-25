@@ -7,6 +7,7 @@ include ":tn:boss";
 include "include/sysEvent";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
@@ -14,7 +15,7 @@ program SpellScript(params)
 	var spell := params[3];
 	var spell_school := spell.School;
 
-	params := 0; // No longer needed
+	params := 0;
 
 	if (!targ)
 		return;
@@ -30,7 +31,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	if (!targ.isHumanoidBrain())
+	if (!targ.acctname && !targ.isHumanoidBrain())
 		Message("Voce so consegue encantar humanoides").SendSys(who);
 		return;
 	endif
@@ -44,26 +45,29 @@ program SpellScript(params)
 		return;
 	endif
 
-	var duration := cint(AP_GetSkill(who, ARCANA) / 5);
+	var duration := cint(AP_GetSkill(who, THEOLOGY) / 5);
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		duration := Cint(duration * 1.5);
 	endif
 
-	handleSilentMagic(who, targ, SFX_SPELL_TELEKINESIS);
+	SC_HandleSound(who, targ, SFX_SPELL_TELEKINESIS);
 	PlayObjectCenteredEffect(targ, FX_HIPNOSYS, 10, 10);
 
-	SetObjProperty(targ, "charmed_by", who.serial);
-	SetObjProperty(targ, "charmed_cannot_attack", who.serial); // Cannot attack the druid
-	SetCooldown(targ, "charmed", duration);
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	var opts := struct{};
+	opts.+properties := dictionary{
+		"charmed_by" -> who.serial,
+		"charmed_cannot_attack" -> who.serial
+	};
+	opts.+buff_category := "mind_control";
+	opts.+displayname := "Encantar Pessoa";
+	opts.+desc := $"Encantado por {who.name}";
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
 
 	SendSysMessageEx(targ, "Você foi encantado por " + who.name + " e não consegue atacá-lo.", SSM_INFO);
 	SendSysMessageEx(who, "Você encantou " + targ.name + ".", SSM_INFO);
-
-	sleep(duration);
-	EraseObjProperty(targ, "charmed_by");
-	EraseObjProperty(targ, "charmed_cannot_attack");
-
-	SendSysMessageEx(targ, "O encantamento se desfez.", SSM_INFO);
 
 	return 1;
 endprogram

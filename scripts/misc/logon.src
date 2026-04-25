@@ -61,6 +61,26 @@ program Logon(who)
 		SetGlobalPRoperty("maxonline", total);
 	endif
 
+	var milestoneBase := 20;
+	var milestoneStep := 5;
+	var milestoneWindow := 7200;
+	var now := polcore().systime;
+	var windowStart := CInt(GetGlobalProperty("milestone_window_start"));
+	var lastAnnounced := CInt(GetGlobalProperty("milestone_last_announced"));
+	if (now - windowStart >= milestoneWindow)
+		windowStart := now;
+		lastAnnounced := 0;
+		SetGlobalProperty("milestone_window_start", windowStart);
+		SetGlobalProperty("milestone_last_announced", 0);
+	endif
+	if (total >= milestoneBase)
+		var milestone := milestoneBase + CInt((total - milestoneBase) / milestoneStep) * milestoneStep;
+		if (milestone > lastAnnounced)
+			BroadCast(milestone + " jogadores online!!", FONT_BOLD, SSM_INFO);
+			SetGlobalProperty("milestone_last_announced", milestone);
+		endif
+	endif
+
 	var acc := who.acct;
 	var ips := acc.GetProp("IP");
 	if (!ips)

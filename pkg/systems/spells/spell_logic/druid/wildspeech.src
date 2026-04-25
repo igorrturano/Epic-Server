@@ -16,7 +16,7 @@ program SpellScript(params)
 	endif
 
 	// Check if already active
-	var existing := MobileWrapper(who).GetProperty($"#SpellOpts_{CInt(spell.id)}");
+	var existing := MobileWrapper(who).GetProperty($"SpellOpts_{CInt(spell.id)}");
 	if (existing && !existing.errortext)
 		SendSysMessageEx(who, "Voce ja esta sob o dom da fala selvagem.", SSM_FAIL);
 		return 0;
@@ -31,7 +31,10 @@ program SpellScript(params)
 
 	var opts := struct{};
 	opts.+properties := dictionary{ "wildspeech" -> 1 };
+	opts.+buff_category := "wildspeech";
+	opts.+displayname := "Fala Selvagem";
 	opts.+desc := "Fala Selvagem";
+	opts.+maintainable := 1;
 
 	SC_ApplyEffect(who, who, opts, duration_secs, CInt(spell.id));
 	SendSysMessageEx(who, $"Sua fala selvagem foi despertada por {duration_minutes} minutos.", SSM_INFO);

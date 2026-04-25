@@ -23,6 +23,7 @@ include ":mastery:Abilities";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":combat:Model/AttackInfo";
 include ":message:model/Message";
+include ":faccao:imperium";
 
 const BYTE_DEFENDER := 1;
 
@@ -34,9 +35,14 @@ endprogram
 exported function HandleAttackRequest(who, byref packet)
 	var defender := SystemFindObjectBySerial(packet.GetInt32(BYTE_DEFENDER));
 
-	if (defender.master)
-		who.SetMurderer(1);
+	if (GetObjProperty(defender, "#sanctuary"))
+		Message("Esse alvo esta sob um santuario divino.", Color(SYSTEM_COLOR::BAD)).SendSys(who);
+		return 1;
 	endif
+
+	// if (InValtheris(who) && HasPraetors())
+	// 	Start_Script(":faccao:praetorAlert", array{ who });
+	// endif
 
 	if (defender.npctemplate && !who.npctemplate) // se o target for npc e quem clicou for player (sempre eh)
 		if (who.weapon.attribute == "Ranged")

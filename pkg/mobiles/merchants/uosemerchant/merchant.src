@@ -111,6 +111,10 @@ program HandleMerchant(params)
 	var player := parEvStruct.source;
 	var item := parEvStruct.item;
 
+	if (npc == error || !npc || !npc.serial)
+		return;
+	endif
+
 	if (GetObjproperty(npc, "imposto") != error)
 		imposto := GetObjproperty(npc, "imposto");
 	endif
@@ -256,14 +260,23 @@ function DoPurchaseCmd(npc, player)
 					  		"Está procurando algo específico?" }.randomentry(), SSM_INFO);
 	endif
 	while (!canceled)
+		if (npc == error || !npc || !npc.serial)
+			break;
+		endif
+		if (player == error || !player || !player.connected)
+			break;
+		endif
 		var input := SendItemView(npc, player, session);
-		if (!input[0])
+		if (input == error || !input)
+			break;
+		elseif (input[0] == error || !input[0])
 			break;
 		elseif (input[0] == 1)
 			break;
 		elseif (input[0] == 2) // pesquisa Textual
 			session.filtros.tipo := FILTRO_TEXTO;
 			session.filtros.valor := GFExtractData(input, 4);
+			session.paginador.pagina := 0;
 		elseif (input[0] == 3) // negócio
 			if (!player.concealed)
 				PrintTextAbove(npc, "Certo, estou te ouvindo", SSM_INFO);
@@ -272,14 +285,15 @@ function DoPurchaseCmd(npc, player)
 		elseif (input[0] == 4) // 	Reservado Caixa De Texto
 		elseif (input[0] == 5) // 	limpar Filtro
 			session.filtros.tipo := "";
+			session.paginador.pagina := 0;
 		elseif (input[0] == 6) // 	Log
 			var historico := GetMerchantLog(npc);
 			historico := "<br> - {}".format("<br> -".join(historico));
 			SendHTMLGump(player, "Historico de Vendas", historico);
 		elseif (input[0] > 6 && input[0] <= 6 + item_types.size()) // filtra por categoria.
-
 			session.filtros.tipo := FILTRO_CATEGORIA;
 			session.filtros.valor := EncontraChavePorValor(input[0], item_types);
+			session.paginador.pagina := 0;
 		elseif(ID_BOTAO_PROXIMA_PAGINA == input[0])
 			session.paginador.pagina += 1;
 		elseif(ID_BOTAO_PAGINA_ANTERIOR == input[0])
@@ -362,11 +376,11 @@ function SetupMerchant(npc, player)
 	SetObjProperty(npc, "norace", output[4]);
 endfunction
 
-function SendItemView(npc, player, session)
-	var gump := GetMerchantGump(npc);
-	if (!gump || session.filtros.tipoFiltro != "")
-		gump := PreparaLojaGump(npc, player, session);
-	endif
+function SendItemView(npc, player,byref session)
+	//var gump := GetMerchantGump(npc);
+	var gump := PreparaLojaGump(npc, player, session);
+	//if (!gump || session.filtros.tipoFiltro != "")
+	//endif
 
 	return GFSendGump(player, gump);
 endfunction
@@ -381,7 +395,7 @@ function PreparaLojaGump(npc, player,byref session)
 	return gump;
 endfunction
 
-function removeItemMerchant(npc, player, session, input)
+function removeItemMerchant(npc, player,byref session, input)
 	var info := GetItemSoldInfo(npc, input);
 	var cost := info[1];
 	var selling := info[2];
@@ -437,8 +451,9 @@ function DoPurchase(npc, player,byref session, input)
 		cost.lote := 1;
 	endif
 
-	var cityBank := GetObjProperty(npc,"City");
-	if (ContaCapital(player, cityBank ? cityBank : CP_DEFAULT_AREA).valorTotal < CInt(cost.cost_amt)) 
+	//var cityBank := GetObjProperty(npc,"City");
+	//if (ContaCapital(player, cityBank ? cityBank : CP_DEFAULT_AREA).valorTotal < CInt(cost.cost_amt)) // removido por clamor publico hihihi
+	if (ContaCapital(player, 0).valorTotal < CInt(cost.cost_amt)) 
 		SendSysMessageEx(player, "Você não tem moedas o suficiente para comprar isto.");
 		return 0;
 	endif
@@ -458,7 +473,7 @@ function DoPurchase(npc, player,byref session, input)
 	var cost_desc := AddArticle(GetName(cost.cost_type));
 	var pay_list := array{};
 
-	if (!player.spendgold(owed, cityBank ? cityBank : CP_DEFAULT_AREA ))
+	if (!player.spendgold(owed, 0))
 		SendSysMessageEx(player, "Você não tem as {} m.o necessárias.".format(owed), SSM_FAIL);
 		return 0;
 	else
@@ -647,6 +662,7 @@ function DoWithdraw(npc, player)
 		PrintTextAbove(npc, "Aqui estão os lucros de suas mercadorias.", SSM_INFO);
 	endif
 
+	var valorAReceber := 0; 
 	foreach amnt in account
 		var withdraw := CreateItemInBackPack(player, MOEDAS, amnt);
 		if (withdraw == error)
@@ -657,9 +673,13 @@ function DoWithdraw(npc, player)
 				PrintTextAbove(npc, "Eu não fui capaz de colocar o item na sua bolsa. Coloquei aos seus pés entao.");
 			endif
 		endif
+		valorAReceber += amnt;
 		sleepms(2);
 	endforeach
 
+	if(valorAReceber > 0)
+		SendSysMessageEx(player, "Você recebeu {} moeda(s).".format(valorAReceber), SSM_INFO);
+	endif
 	data_elem.EraseProp(Hex(player.serial));
 endfunction
 

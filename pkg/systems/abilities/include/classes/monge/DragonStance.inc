@@ -4,6 +4,7 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":tn:cooldown";
+include ":attributes:attributes";
 include ":hotbar:custombuff";
 
 /**
@@ -12,6 +13,10 @@ include ":hotbar:custombuff";
  * SingleUse BEFORE_DAMAGE: Next attack deals bonus Tactics/10 damage.
  * After the hit, grants projectile immunity via "Desviar Disparos" cooldown
  * for Tactics/5 seconds.
+ *
+ * Passive DefenderBeforeDamage: Enquanto a janela "Desviar Disparos" está
+ * ativa, reduz dano físico recebido por max(Wrestling, Tactics)/20 — espelho
+ * defensivo da BarbarianResilience, com driver temático do monge.
  */
 class DragonStance(CombatAbility)
 
@@ -68,6 +73,40 @@ class DragonStance(CombatAbility)
 			who,
 			DEBUG_HAB,
 			Message($"[DRAGON_STANCE] Dano bonus: +{damageBonus}, Desviar Disparos: {immunityDuration}s", Color(SYSTEM_COLOR::SUCCESS))
+		);
+
+		return true;
+	endfunction
+
+	function OnPassiveBeforeDamage(this, attackInfo)
+		var defender := attackInfo.GetDefender();
+		var who := defender.GetObjRef();
+
+		if (!GetCooldown(who, "Desviar Disparos"))
+			return false;
+		endif
+
+		var wrestling := CInt(defender.GetSkill(WRESTLING));
+		var tactics := CInt(defender.GetSkill(TACTICS));
+		var skill := wrestling;
+		if (tactics > wrestling)
+			skill := tactics;
+		endif
+
+		var reduction := CInt(skill / 20);
+		if (reduction <= 0)
+			return false;
+		endif
+
+		attackInfo.GetDamage()
+			.DecreaseSlashBaseDamage(reduction)
+			.DecreasePiercingBaseDamage(reduction)
+			.DecreaseBluntBaseDamage(reduction);
+
+		DebugMsg(
+			who,
+			DEBUG_HAB,
+			Message($"[DRAGON_STANCE] Reducao passiva: -{reduction}", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;

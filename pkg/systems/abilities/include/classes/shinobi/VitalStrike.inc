@@ -55,6 +55,12 @@ class VitalStrike(CombatAbility)
 
 		// Drain stamina
 		AP_ConsumeVital(targ, "Stamina", stamina_drain);
+		
+		// Add divine damage to all damage types
+        attackInfo.GetDamage()
+            .IncreaseBluntRawDamage(stamina_drain)
+            .IncreasePiercingRawDamage(stamina_drain)
+            .IncreaseSlashRawDamage(stamina_drain);
 
 		DebugMsg(
 			who,

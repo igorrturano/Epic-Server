@@ -6,6 +6,8 @@ include ":timedscripts:timedScripts";
 include ":hotbar:include/custombuff";
 include ":attributes:stats";
 include ":fls_core:packets";
+include ":equipsys:packets/UpdateEquipmentRequest";
+include "include/say";
 
 /**
  * SpellController — Unified spell effect orchestrator.
@@ -34,11 +36,41 @@ include ":fls_core:packets";
  * @param timerName   String - timedScript timer name (default: "spelleffect")
  */
 function SC_ApplyEffect(caster, targ, opts, duration, spellId, timerName := "spelleffect")
+	// Fail closed if duration is invalid — TS_StartTimer rejects duration < 1,
+	// so applying opts without a cleanup timer would leave permanent state
+	// (e.g. frozen := 1 with no timer to undo it).
+	if (CInt(duration) < 1)
+		return error{"errortext":=$"SC_ApplyEffect: duration must be > 0 (spellId={spellId})"};
+	endif
+
+	// Mutual exclusion: if this spell has a category, displace any other active
+	// spell in the same category first (e.g. barkskin replaces escudodefe).
+	var replacedName := "";
+	if (opts.buff_category)
+		replacedName := _SC_RemoveConflictingBuffs(targ, opts.buff_category, spellId);
+		var mwIdx := MobileWrapper(targ);
+		var idx := mwIdx.GetProperty("BuffCategoryIndex");
+		if (!idx || idx.errortext)
+			idx := dictionary;
+		endif
+		idx[opts.buff_category] := spellId;
+		mwIdx.SetProperty("BuffCategoryIndex", idx);
+	endif
+
 	_SC_ApplyOpts(targ, opts);
 
 	opts.+spellId := spellId;
 	opts.+totalDuration := duration;
-	MobileWrapper(targ).SetProperty($"#SpellOpts_{spellId}", opts);
+	// Unique per-apply token: lets a tick driver detect that its opts were
+	// replaced by a subsequent apply (e.g. via maintain re-cast) and
+	// self-terminate instead of firing against the new effect's state.
+	opts.+instance_id := ReadGameClock();
+	// Store caster serial so resync + tick scripts can recover the caster
+	// after a server restart (the driver's caster arg is lost on shutdown).
+	if (caster)
+		opts.+caster_serial := caster.serial;
+	endif
+	MobileWrapper(targ).SetProperty($"SpellOpts_{spellId}", opts);
 
 	if (spellId)
 		var desc := _SC_BuildDescription(opts);
@@ -46,6 +78,24 @@ function SC_ApplyEffect(caster, targ, opts, duration, spellId, timerName := "spe
 	endif
 
 	TS_StartTimer(targ, $"{timerName}_{spellId}", duration, spellId, caster, 0);
+
+	if (opts.on_apply_script)
+		start_script(opts.on_apply_script, array{ caster, targ, spellId, opts.on_apply_params });
+	endif
+
+	if ((opts.tick_script || opts.tick_damage) && opts.tick_interval)
+		_SC_LaunchTickDriver(caster, targ, spellId, opts);
+	endif
+
+	// Tell the target when one buff replaced another in the same category.
+	if (replacedName != "" && opts.displayname)
+		SendSysMessageEx(targ, $"{replacedName} foi substituído por {opts.displayname}.", SSM_INFO);
+	endif
+endfunction
+
+function _SC_LaunchTickDriver(caster, targ, spellId, opts)
+	start_script(":spells:scTickDriver",
+		array{ caster, targ, spellId, opts.tick_script, CInt(opts.tick_interval), opts.tick_params, CInt(opts.instance_id) });
 endfunction
 
 /**
@@ -56,14 +106,57 @@ endfunction
  */
 function SC_RemoveEffect(targ, spellId)
 	var mw := MobileWrapper(targ);
-	var opts := mw.GetProperty($"#SpellOpts_{spellId}");
+	var opts := mw.GetProperty($"SpellOpts_{spellId}");
 	if (!opts || opts.errortext)
 		return;
 	endif
 
+	// Fire on_expire *before* restoring state so the script can still read the
+	// pre-removal opts if it needs them (e.g. to clean up spawned items).
+	if (opts.on_expire_script)
+		start_script(opts.on_expire_script, array{ 0, targ, spellId, opts.on_expire_params });
+	endif
+
 	_SC_RemoveOpts(targ, opts);
-	mw.EraseProperty($"#SpellOpts_{spellId}");
+
+	// Clean the category index only if *this* spell still owns the slot.
+	// The ownership guard matters during replacement: the new spell has already
+	// overwritten the index entry before we get here, and we must not clobber it.
+	if (opts.buff_category)
+		var idx := mw.GetProperty("BuffCategoryIndex");
+		if (idx && !idx.errortext && CInt(idx[opts.buff_category]) == spellId)
+			idx.erase(opts.buff_category);
+			mw.SetProperty("BuffCategoryIndex", idx);
+		endif
+	endif
+
+	mw.EraseProperty($"SpellOpts_{spellId}");
 	RemoveSpellBuff(targ, spellId);
+endfunction
+
+// Displaces the active spell in a given category, if any. Returns the
+// displayname of the removed spell (empty string if nothing displaced or
+// the old spell didn't advertise a name).
+function _SC_RemoveConflictingBuffs(targ, category, exceptSpellId)
+	if (!category)
+		return "";
+	endif
+	var mw := MobileWrapper(targ);
+	var idx := mw.GetProperty("BuffCategoryIndex");
+	if (!idx || idx.errortext)
+		return "";
+	endif
+	var existingId := CInt(idx[category]);
+	if (!existingId || existingId == exceptSpellId)
+		return "";
+	endif
+	var oldName := "";
+	var existingOpts := mw.GetProperty($"SpellOpts_{existingId}");
+	if (existingOpts && !existingOpts.errortext && existingOpts.displayname)
+		oldName := existingOpts.displayname;
+	endif
+	SC_RemoveEffect(targ, existingId);
+	return oldName;
 endfunction
 
 /**
@@ -74,8 +167,9 @@ endfunction
  * @param targ    Mobile - the targ (for sound playback location)
  * @param sound   Integer - sound effect ID (0 = no sound)
  */
-function SC_HandleSound(caster, targ, sound := 0)
+function SC_HandleSound(caster, targ := 0, sound := 0)
 	if (GetObjProperty(caster, "#magiasilenciosa"))
+		SendSysMessageEx(caster, "O efeito da magia silenciosa acabou.", SSM_INFO);
 		EraseObjProperty(caster, "#magiasilenciosa");
 		return;
 	endif
@@ -274,6 +368,7 @@ function _SC_ApplyResist(targ, opts)
 	if (opts.energy_resist)   sr.energy   += opts.energy_resist;   endif
 
 	mw.SetProperty("#SpellResist", sr);
+	_SC_RefreshArmorPackets(targ);
 endfunction
 
 function _SC_RemoveResist(targ, opts)
@@ -292,18 +387,58 @@ function _SC_RemoveResist(targ, opts)
 	if (opts.energy_resist)   sr.energy   -= opts.energy_resist;   endif
 
 	mw.SetProperty("#SpellResist", sr);
+	_SC_RefreshArmorPackets(targ);
+endfunction
+
+// Public wrapper: external systems (transformation revert, etc.) call this
+// to force the client's ArmorResistances dict to re-sync with the current
+// #SpellResist — e.g. after endmetamorfose runs, because the packets that
+// fired while the druid was stripped don't reflect re-equipped gear state.
+function SC_RefreshArmorPackets(targ)
+	_SC_RefreshArmorPackets(targ);
+endfunction
+
+// Re-emit armor packets for every region slot so the client's StatusGumpEpic
+// shows the active #SpellResist on all 7 slots — even empty ones. Must pass
+// raw `targ` (not a wrapper): SendUpdateEquipmentRequest's internal
+// MobileWrapper(quem) relies on the OT_MOBILEREF constructor branch, and a
+// wrapper argument would fall through to the template-string branch and
+// zero out the resulting ObjRef.
+function _SC_RefreshArmorPackets(targ)
+	if (targ.npctemplate)
+		return;
+	endif
+	for i := 1 to ARMOR_RESISTENCE_PACKET_ARRAY.Size()
+		var layer := ARMOR_RESISTENCE_PACKET_ARRAY[i];
+		// Pass whatever GetEquipmentByLayer returns — SendUpdateEquipmentRequest
+		// tolerates null/error equip and emits a 0+spellResist packet for empty slots.
+		SendUpdateEquipmentRequest(targ, GetEquipmentByLayer(targ, layer), 1, layer);
+	endfor
 endfunction
 
 /**
- * Re-syncs spell effects on login.
- * Re-sends buff icons for active spell timers, or cleans up
- * orphaned properties if the timer expired during offline.
+ * Re-syncs spell effects on login / server restart.
+ *
+ * _SC_ApplyOpts is additive — calling it on top of already-applied state
+ * doubles stat_mod, run_speed, hitchance_mod, etc. So we deliberately do
+ * NOT call it here. Instead we:
+ *   - Rebuild #SpellResist only if it was dropped (server restart — `#`
+ *     props are ephemeral). Same-session reconnect keeps the property
+ *     intact, so we skip the rebuild and avoid doubling.
+ *   - Re-push client-session-only state: PlayerSpeedBoost, buff icons,
+ *     and armor packets (client's ArmorResistances dict resets on
+ *     disconnect).
+ *   - Native server-side fields (color, stat_mod, run_speed, hitchance,
+ *     graphic, armor_hit_scripts array) all persist across restart — no
+ *     reapply needed.
  *
  * @param mobile Mobile - the player logging in
  */
 function SC_ResyncOnLogin(mobile)
 	var timer_list := TS_GetTimerList(mobile);
+	var mw := MobileWrapper(mobile);
 	var found := 0;
+	var active_opts := array{};
 
 	foreach timer in (timer_list)
 		if (_timer_iter[1, 12] != "spelleffect_")
@@ -316,27 +451,72 @@ function SC_ResyncOnLogin(mobile)
 			continue;
 		endif
 
-		var remaining := CInt(timer.endtime - ReadGameClock());
+		// Use saved `duration` (remaining at last logoff), not endtime-based
+		// math — spell buffs pause while offline/server-down (Phase 3).
+		var remaining := CInt(timer.duration);
 		if (remaining <= 0)
 			SC_RemoveEffect(mobile, spellId);
 			continue;
 		endif
 
-		var mw := MobileWrapper(mobile);
-		var opts := mw.GetProperty($"#SpellOpts_{spellId}");
+		var opts := mw.GetProperty($"SpellOpts_{spellId}");
 		if (opts && !opts.errortext)
-			_SC_ApplyOpts(mobile, opts);
+			active_opts.Append(opts);
+
+			// Client-session-only state — lost on disconnect, must re-push.
+			if (opts.speed_boost && !mobile.npctemplate)
+				PlayerSpeedBoost(mobile, 1);
+			endif
+
+			// Relaunch tick driver — detached scripts die on server shutdown,
+			// so any effect with a tick_script or tick_damage needs a fresh
+			// driver to resume ticking from the saved remaining duration.
+			if ((opts.tick_script || opts.tick_damage) && opts.tick_interval)
+				var caster := 0;
+				if (opts.caster_serial)
+					caster := SystemFindObjectBySerial(CInt(opts.caster_serial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+					if (!caster || caster is @Exception)
+						caster := 0;
+					endif
+				endif
+				_SC_LaunchTickDriver(caster, mobile, spellId, opts);
+			endif
+
 			var desc := _SC_BuildDescription(opts);
 			var totalDur := CInt(opts.totalDuration);
 			SendSpellBuff(mobile, mobile, spellId, remaining, desc, totalDur);
 		endif
 	endforeach
 
+	// Rebuild #SpellResist only if missing — the `#` prefix makes it ephemeral
+	// (dropped on world save). Presence means same-session reconnect, so the
+	// existing struct is the source of truth; rebuilding would double-count.
+	if (active_opts.Size() > 0)
+		var existing_sr := mw.GetProperty("#SpellResist");
+		if (!existing_sr || existing_sr.errortext)
+			var sr := struct{ slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0 };
+			foreach op in (active_opts)
+				if (op.slash_resist)    sr.slash    += CInt(op.slash_resist);    endif
+				if (op.piercing_resist) sr.piercing += CInt(op.piercing_resist); endif
+				if (op.blunt_resist)    sr.blunt    += CInt(op.blunt_resist);    endif
+				if (op.fire_resist)     sr.fire     += CInt(op.fire_resist);     endif
+				if (op.cold_resist)     sr.cold     += CInt(op.cold_resist);     endif
+				if (op.poison_resist)   sr.poison   += CInt(op.poison_resist);   endif
+				if (op.energy_resist)   sr.energy   += CInt(op.energy_resist);   endif
+			endforeach
+			mw.SetProperty("#SpellResist", sr);
+		endif
+	endif
+
 	if (!found)
 		_SC_CleanupOrphans(mobile);
 	endif
 
 	_SC_ResyncMetamorphosisResist(mobile);
+
+	// Client's ArmorResistances dict is session-only — push updated values so
+	// StatusGumpEpic reflects current #SpellResist after login.
+	_SC_RefreshArmorPackets(mobile);
 endfunction
 
 function _SC_ResyncMetamorphosisResist(mobile)

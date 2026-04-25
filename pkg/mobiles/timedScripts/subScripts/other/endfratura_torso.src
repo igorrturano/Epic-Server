@@ -1,5 +1,0 @@
-use uo;
-
-program EndFraturaTorso(params)
-	return 1;
-endprogram

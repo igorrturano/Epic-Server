@@ -47,8 +47,11 @@ program ChargeImpact(params)
 	endif
 
 	var dist := CoordinateDistance(charge_start.x, charge_start.y, defender.x, defender.y);
+	if (dist > 12)
+		dist := 12; // Cap the distance for damage calculation
+	endif
 	var tier := CInt(MobileWrapper(attacker).GetTier());
-	var charge_damage := CInt(dist * tier * 3) + CInt(attacker.strength / 20);
+	var charge_damage := CInt(dist * tier * 2) + CInt(attacker.strength / 20);
 
 	if (charge_damage < 1)
 		charge_damage := 1;

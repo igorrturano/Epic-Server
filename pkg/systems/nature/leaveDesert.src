@@ -2,25 +2,19 @@ use uo;
 use os;
 use vitals;
 
+include ":nature:nature";
+
 program removecalor(who, textarea)
 	EraseObjProperty(who, "calor");
-	EraseObjProperty(who, "teste_de_calor");
 
-	var stam_penalty := GetObjProperty(who, "stam_penalty");
-	if (stam_penalty != error)
-		var stammod := CInt(GetObjProperty(who, "stammod"));
-		SetObjProperty(who, "stammod", stammod - stam_penalty);
-		EraseObjProperty(who, "stam_penalty");
+	var p := cint(GetObjProperty(who, "penalidadeclima"));
+	if (p > 0)
+		if (p == 1)
+			RemoveHeatMod(who, 1);
+		elseif (p >= 2)
+			RemoveHeatMod(who, 1);
+			RemoveHeatMod(who, 2);
+		endif
 	endif
-
-	var mana_penalty := GetObjProperty(who, "mana_penalty");
-	if (mana_penalty != error)
-		var manamod := CInt(GetObjProperty(who, "manamod"));
-		SetObjProperty(who, "manamod", manamod - mana_penalty);
-		EraseObjProperty(who, "mana_penalty");
-	endif
-
-	EraseObjProperty(who, "penalidadedeserto");
-	EraseObjProperty(who, "penalidadedeserto2");
-	RecalcVitals(who);
+	EraseObjProperty(who, "penalidadeclima");
 endprogram

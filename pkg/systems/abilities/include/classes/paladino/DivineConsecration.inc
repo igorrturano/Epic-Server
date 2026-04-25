@@ -20,7 +20,7 @@ class DivineConsecration(CombatAbility)
             return false;
         endif
 
-        if (Lower(defender.Category) != "undead")
+        if (Lower(defender.Environment) != "undead")
             return false;
         endif
 

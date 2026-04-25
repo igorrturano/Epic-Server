@@ -10,6 +10,7 @@ include ":timedScripts:timedScripts";
 include "include/tileEffects";
 include ":charactercreation:habilidades";
 include ":combat:Controller/DamageController_legacy";
+include ":epicAI:include/epicNPCCombat";   // CheckForWoundedAllies, FindMostWoundedAlly
 include ":brainai:npcUtil";
 include ":epicAI:epicai";
 
@@ -24,16 +25,19 @@ program SpellScript(params)
 	endif
 
 	if (!targ)
+		EraseObjProperty(who, "#Casting");
 		return;
 	endif
 
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		EraseObjProperty(who, "#Casting");
 		return;
 	endif
 
 	if (GetVital(targ, HITS) == GetVitalMaximumValue(targ, HITS))
 		SendSysMessageEx(who, "O alvo nao parece ferido.", SSM_FAIL);
+		EraseObjProperty(who, "#Casting");
 		return;
 	endif
 
@@ -44,13 +48,16 @@ program SpellScript(params)
 
     if (targ.npctemplate)
         var elem := NPC_GetNPCConfig(targ.npctemplate);
-        var category := lower(GetConfigString(elem, "Category"));
+        var category := lower(GetConfigString(elem, "Environment"));
 
         if (category == "undead" || category == "demons")
-
             DamageFLS(targ, healed, DMG_FORCED, who);
+            EraseObjProperty(who, "#Casting");
+            return 1;
         else
             Sendsysmessage(who, "Alvo invalido.");
+            EraseObjProperty(who, "#Casting");
+            return;
         endif
     endif
 
@@ -59,6 +66,7 @@ program SpellScript(params)
 	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
 
 	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlayObjectCenteredEffect(targ, FX_ENERGY_GLOBES, 1, 20);
 	PlaySoundEffect(targ, SFX_SPELL_HEAL);
 
 	return 1;

@@ -29,7 +29,7 @@ class Mutagenic(CombatAbility)
 		if (mutante == error)
 			var opts := array{ "Forca", "Destreza", "Inteligencia" };
 			var prot;
-			if (who.npctemplate)
+			if (mobile.IsNPC())
 				prot := opts[RandomIntMinMax(1, opts.size())];
 			else
 				prot := RadioGump(who, 200, 260, "Escolha o mutagenico", opts);

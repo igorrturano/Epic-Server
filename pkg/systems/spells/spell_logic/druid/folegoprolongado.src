@@ -1,0 +1,41 @@
+use uo;
+
+include "include/say";
+include ":attributes:attributes";
+include ":tn:cooldown";
+include ":combat:Controller/DamageController_legacy";
+include ":spells:tnmagery";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":hotbar:include/custombuff";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0;
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	var duration := 120 * Cint((AP_GetSkill(who, THEOLOGY) / 20));
+
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
+		duration := Cint(duration * 1.2);
+	endif
+
+	SetCooldown(targ, "can_breath", duration);
+
+	SendSpellBuff(who, targ, 717, duration);
+
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+	Message("Voce consegue segurar sua respiracao por muito mais tempo").SendSys(targ);
+
+	return 1;
+endprogram

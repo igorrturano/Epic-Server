@@ -1,0 +1,95 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":commands:/include/r";
+
+// Notificação de encerramento de Contrato de Arquitetura.
+// Passo 1: ícone 0x7D2 clicável no canto superior direito (GFCreateGump(10,30)).
+// Passo 2: ao clicar, abre gump 0x1FAC4 com cancelador e motivo.
+// Fechar sem clicar: apenas apaga a prop pendente.
+// Entrada: params[1] = mobile (via start_script — logon ou encerramento online)
+
+program gump_contrato_cancelado(params)
+    var mob := (TypeOf(params) == "Array") ? params[1] : params;
+
+    if (!mob || !mob.isA(POLCLASS_MOBILE))
+        return;
+    endif
+
+    // Aguarda o Razor completar o handshake (disconnect/reconnect logo após logon.src).
+    // Primeiro espera a conexão existir, depois adiciona margem para o cliente estabilizar.
+    var tentativas := 0;
+    while (!mob.connected && tentativas < 15)
+        sleep(1);
+        tentativas := tentativas + 1;
+    endwhile
+
+    if (!mob.connected)
+        return;
+    endif
+
+    // Margem extra para o cliente Razor estabilizar após o handshake
+    sleep(5);
+
+    if (!mob.connected)
+        return;
+    endif
+
+    var notif := GetObjProperty(mob, "notif_contrato_cancelado");
+    if (!notif || notif.errortext)
+        return;
+    endif
+
+    // Passo 1: ícone clicável (mesma posição e botão do gump_soldo)
+    var gump1 := GFCreateGump(10, 30);
+    GFAddButton(gump1, 0, 0, 0x7D2, 0x7D2, GF_CLOSE_BTN, 1);
+
+    var input1 := GFSendGump(mob, gump1);
+
+    if (input1[0] == 1)
+        // Passo 2: gump 0x1FAC4 com detalhes do encerramento
+        var cancelador := _NomeVistoPorMob(mob, notif.cancelador_serial, notif.cancelador);
+
+        var gump2 := GFCreateGump();
+        GFSetId(gump2, 0x1FAC4);
+        GFResizePic(gump2, 0, 0, 9200, 420, 220);
+        GFResizePic(gump2, 15, 15, 9350, 390, 190);
+        GFHtmlShadowed(gump2, 20, 25, 390, 20, "#FF6666",
+            "<center>Contrato de Arquitetura Encerrado", 8);
+        GFTextLine(gump2, 20, 60,  0, cancelador + " encerrou o contrato.");
+        GFTextLine(gump2, 20, 90,  0, "Motivo:");
+        GFTextLine(gump2, 20, 110, 0, notif.motivo);
+        GFAddButton(gump2, 180, 170, 4017, 4018, GF_CLOSE_BTN, 0);
+        GFTextLine(gump2, 210, 172, 0, "OK");
+        GFSendGump(mob, gump2);
+
+        // Só apaga a prop após o player ter visto e confirmado o gump
+        EraseObjProperty(mob, "notif_contrato_cancelado");
+    endif
+    // Gump fechado sem clicar — mantém prop para próximo logon
+endprogram
+
+// Resolve o nome que `mob` vê para `serial_alvo`.
+// Fallback: `nome_guardado` (salvo no momento do encerramento, caso o mobile não exista mais).
+function _NomeVistoPorMob(mob, serial_alvo, nome_guardado)
+    if (!serial_alvo)
+        return nome_guardado ? nome_guardado : "Desconhecido";
+    endif
+    var alvo := SystemFindObjectBySerial(serial_alvo, SYSFIND_SEARCH_OFFLINE_MOBILES);
+    if (!alvo)
+        return nome_guardado ? nome_guardado : "Desconhecido";
+    endif
+    if (GetObjProperty(alvo, "realname"))
+        return "Incógnito";
+    endif
+    var conhecidos := GetObjProperty(mob, "conhecidos");
+    if (conhecidos)
+        var id := VerificaDisfarce(alvo, mob);
+        if (conhecidos.Exists(id))
+            return conhecidos[id];
+        endif
+    endif
+    return alvo.name;
+endfunction

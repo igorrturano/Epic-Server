@@ -5,6 +5,7 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include "include/say";
 include "include/dungeons";
+include ":message:model/Message";
 
 program skill_Stealth(who)
 
@@ -86,7 +87,7 @@ program skill_Stealth(who)
 			if (who.hidden)
 				SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
 				who.hidden := 0;
-				PrintTextAbove(who, "*aparece*");
+				Message("*aparece*").SendEmote(who);
 				var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
 				foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12,
 															  LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)
@@ -134,7 +135,7 @@ program skill_Stealth(who)
 			if (who.hidden)
 				SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
 				who.hidden := 0;
-				PrintTextAbove(who, "*aparece*");
+				Message("*aparece*").SendEmote(who);
 				var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
 				foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12,
 															  LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)

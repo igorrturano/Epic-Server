@@ -94,8 +94,8 @@ endfunction
 
 function CheckIfHavePlayerGuild(player_array)
 	foreach player in player_array
-		if (guild.guildid == player.guildid)
-			var privs := guild.GetProp(cstr(player.serial));
+		if (IsMemberOfFaccao(guild, player))
+			var privs := GetMemberPrivs(guild, player);
 			if (player.serial == guild_leader || privs.above_guards)
 				return 1;
 			endif
@@ -118,12 +118,10 @@ function CheckPlayer(who)
 		return;
 	endif
 
-	var privs := guild.GetProp(cstr(who.serial));
-	var is_member := guild.guildid == who.guildid;
-	var user_subguilds := who.guild.getProp("subguilds");
-	if (!user_subguilds)
-		user_subguilds := array{};
-	endif
+	var privs := GetMemberPrivs(guild, who);
+	var is_member := IsMemberOfFaccao(guild, who);
+	var user_subguilds := who.guild ? who.guild.getProp("subguilds") : array{};
+	if (!user_subguilds) user_subguilds := array{}; endif
 	var is_leader := (who.serial == guild_leader || guild.guildid in user_subguilds);
 	/*
    if (is_leader || privs.above_guards)
@@ -147,7 +145,7 @@ function CheckPlayer(who)
 */
 	var hostiles := ListHostiles(who, 8);
 	foreach mob in hostiles
-		if (GetObjProperty(mob, "guild") == guild.guildid || mob.guildid == guild.guildid)
+		if (GetObjProperty(mob, "guild") == guild.guildid || IsMemberOfFaccao(guild, mob))
 			return 1;
 		endif
 		sleepms(2);
@@ -214,13 +212,13 @@ function CheckPlayer(who)
 				break;
 			"norace":
 				var chardata := GetObjProperty(who, "chardata");
-				if (chardata.povo == law.opt && who.guildid != guild.guildid)
+				if (chardata.povo == law.opt && !IsMemberOfFaccao(guild, who))
 					warning := who;
 					warn_type := 2;
 				endif
 				break;
 			"nooutsider":
-				if (who.guildid != guild.guildid)
+				if (!IsMemberOfFaccao(guild, who))
 					warning := who;
 					warn_type := 2;
 				endif
@@ -267,7 +265,7 @@ function CheckGuildMemberThreats()
 		sleepms(2);
 		if (player == me) continue; endif
 
-		var _is_member := (player.guildid == guild.guildid);
+		var _is_member := IsMemberOfFaccao(guild, player);
 		var _is_leader := (player.serial == guild_leader);
 
 		if (!_is_member && !_is_leader) continue; endif
@@ -282,7 +280,7 @@ function CheckGuildMemberThreats()
 		if (!threat)
 			var _hostiles := ListHostiles(player, 10);
 			foreach _h in _hostiles
-				if (_h && _h.isA(POLCLASS_MOBILE) && _h.guildid != guild.guildid && _h != me)
+				if (_h && _h.isA(POLCLASS_MOBILE) && !IsMemberOfFaccao(guild, _h) && _h != me)
 					threat := _h;
 					break;
 				endif
@@ -291,7 +289,7 @@ function CheckGuildMemberThreats()
 		endif
 
 		if (!threat || !threat.isA(POLCLASS_MOBILE)) continue; endif
-		if (threat.guildid == guild.guildid) continue; endif
+		if (IsMemberOfFaccao(guild, threat)) continue; endif
 		if (threat == me) continue; endif
 
 		if (!CheckLineOfSight(me, threat)) continue; endif
@@ -313,12 +311,12 @@ function CheckGuildMemberThreats()
 	foreach mob in nearby_npcs
 		sleepms(2);
 		if (mob == me) continue; endif
-		if (mob.guildid == guild.guildid) continue; endif
+		if (IsMemberOfFaccao(guild, mob)) continue; endif
 
 		var _opp := mob.opponent;
 		if (!_opp || !_opp.isA(POLCLASS_MOBILE)) continue; endif
 
-		var _victim_is_member := (_opp.guildid == guild.guildid);
+		var _victim_is_member := IsMemberOfFaccao(guild, _opp);
 		var _victim_is_leader := (_opp.serial == guild_leader);
 
 		if (!_victim_is_member && !_victim_is_leader) continue; endif
@@ -349,12 +347,15 @@ program NPCMonitor()
 			// DoObjectiveGuard();
 		endif
 
-		// Nao permite que os guardas da faccao saiam alem de 4 tiles do territorio
+		// Controle de território: staff usa rect hardcoded, player usa rect da guild.
 		if (GetObjProperty(me, "guild"))
-			if (!inGuildRect(guild, me, 4))
-				// Descobre se o alvo atual (quem estamos seguindo/alertando/combatendo)
-				// tambem saiu do territorio. Se o alvo ainda esta dentro, o guard
-				// apenas ultrapassou a borda ao tentar alcanca-lo — nao cancela.
+			if (GetObjProperty(me, "tipo_faccao") == "staff")
+				if (HandleWalkRectBreach(me, wait_time))
+					if (following) following := 0; PrintTextAbove(me, "Nao posso ir alem do meu territorio!"); endif
+					if (fighting) fighting := 0; SetOpponent(0); SetWarMode(0); endif
+					warning := 0;
+				endif
+			elseif (!inGuildRect(guild, me, 4))
 				var _target := 0;
 				if (fighting) _target := fighting;
 				elseif (warning) _target := warning;
@@ -362,7 +363,6 @@ program NPCMonitor()
 				endif
 				var _target_inside := _target ? inGuildRect(guild, _target, 0) : 0;
 
-				// Cancela so se o alvo tambem estiver fora (ou se nao houver alvo)
 				if (!_target_inside && (fighting || following || warning || standing || patrolling))
 					fighting := 0;
 					SetOpponent(0);
@@ -384,9 +384,6 @@ program NPCMonitor()
 					endif
 				endif
 
-				// Sem posto e sem patrulha: caminha a cada iteracao do loop de volta
-				// para quem deu a ordem (se estiver no territorio) ou para o centro do rect.
-				// Roda independente de haver ou nao estados ativos (apos cancelamento acima).
 				if (!fix_location && !patrolling)
 					var _leader := SystemFindObjectBySerial(GetObjProperty(me, "contract_by"));
 					var _dest := 0;
@@ -402,6 +399,8 @@ program NPCMonitor()
 				endif
 			endif
 		endif
+
+
 
 		if (warning)
 			wait_time := 0;
@@ -451,7 +450,19 @@ program NPCMonitor()
 			if (!GetCooldown(me, "try_reset"))
 				if (!HasPlayerNear(me))
 					if (SendToStartPosition())
-						wait_time := 2000;
+						// Sem fix_location nem patrulha: vagueia pelo territorio
+						if (GetObjProperty(me, "guild") && !GetCooldown(me, "wander_cd"))
+							var _wp := GetRandomWanderPoint();
+							if (_wp)
+								WalkTowardLocation(_wp.x, _wp.y);
+								SetCooldown(me, "wander_cd", RandomInt(8) + 4);
+								wait_time := 0;
+							else
+								wait_time := 5;
+							endif
+						else
+							wait_time := 5;
+						endif
 					endif
 				else
 					SetCooldown(me, "try_reset", 200);
@@ -664,7 +675,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		if (!targ)
 			return SendSysMessageEx(ev.source, "Cancelado");
 		endif
-		if (GetObjProperty(me, "guild") && !inGuildRect(guild, targ, 4))
+		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(targ))
 			return SendSysMessageEx(ev.source, "Ponto de patrulha fora do alcance do territorio. Cancelado.");
 		endif
 		patrolling := array{ targ };
@@ -677,7 +688,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		elseif (CoordinateDistance(patrolling[1].x, patrolling[2].x, targ.x, targ.y) > 20)
 			return SendSysMessageEx(ev.source, "Patrulha muito distante. Cancelado.");
 		endif
-		if (GetObjProperty(me, "guild") && !inGuildRect(guild, targ, 4))
+		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(targ))
 			patrolling := 0;
 			return SendSysMessageEx(ev.source, "Ponto de patrulha fora do alcance do territorio. Cancelado.");
 		endif
@@ -706,7 +717,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		disableWarn();
 	elseif (text["ir"] && text["at"])
 		var where := TargetCoordinates(ev.source);
-		if (GetObjProperty(me, "guild") && !inGuildRect(guild, where, 4))
+		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(where))
 			PrintTextAbove(me, "Nao posso ir alem do territorio da faccao!");
 			SendSysMessage(ev.source, "[Guard] Destino fora do alcance. O guarda pode ir ate 4 tiles alem do territorio.");
 		else
@@ -826,7 +837,7 @@ function AllCommand(ev)
 	event.+targ := ev.targ;
 
 	foreach mobile in (ListMobilesNearLocation(me.x, me.y, me.z, 8, me.realm))
-		if (GetObjProperty(mobile, "guild") == guild.guildid && mobile != me)
+		if (IsMemberOfFaccao(guild, mobile) && mobile != me)
 			SendEvent(mobile, event);
 		endif
 
@@ -1030,7 +1041,7 @@ function WarnPlayer()
 		disableWarn();
 		foreach monster in ListMobilesNearLocationEx(me.x, me.y, me.z, 8,
 											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY, me.realm)
-			if (GetObjProperty(monster, "guild") == guild.guildid)
+			if (IsMemberOfFaccao(guild, monster))
 				monster.frozen := 0;
 				SendEvent(monster, struct{ "type" := HELP_CMD, source := me, targ := warning });
 			endif
@@ -1113,7 +1124,7 @@ function FightADV(opponent := 0)
 		if (opponent == me || opponent == fighting || !opponent.IsA(POLCLASS_MOBILE) ||
 	  guild_leader == opponent.serial || Distance(me, opponent) > 18)
 			return;
-		elseif (GetObjProperty(opponent, "guild") == guild.guildid)
+		elseif (IsMemberOfFaccao(guild, opponent))
 			if (opponent.IsA(POLCLASS_NPC))
 				return;
 			endif
@@ -1121,7 +1132,7 @@ function FightADV(opponent := 0)
 
 		foreach monster in ListMobilesNearLocationEx(me.x, me.y, me.z, 8,
 											   LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY, me.realm)
-			if (GetObjProperty(monster, "guild") == guild.guildid)
+			if (IsMemberOfFaccao(guild, monster))
 				SendEvent(monster, struct{ "type" := HELP_CMD, source := me, targ := opponent });
 			endif
 			sleepms(2);
@@ -1479,7 +1490,7 @@ function GetEnemiesNearGuard(loc, range := 5, get_hidden := 0)
 												 LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN, me.realm)
 		if ((mobile.hidden && !get_hidden || mobile == me))
 			continue;
-		elseif (mobile.guildid == guild.guildid)
+		elseif (IsMemberOfFaccao(guild, mobile))
 			continue;
 		endif
 
