@@ -8,7 +8,6 @@ program TimedScript_Clumsy(params)
 	var who := params[1];
 
 	SendSysMessage(who, "Voce assume uma forma espectral.");
-	SetObjProperty(who, "#spectralform", who.color);
 	who.color := 30000;
 
 	who.evasionchance_mod := who.evasionchance_mod + 20;
