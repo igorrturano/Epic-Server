@@ -5,7 +5,7 @@ include ":abilities:models/CombatAbility";
 include ":abilities:helpers/aklatturHelpers";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
-
+include "include/epicCombatUtils";
 /**
  * Furia do Deserto (Desert Fury) - ABILITY_ID::FURIA_DO_DESERTO (500)
  *
@@ -50,7 +50,7 @@ class DesertFury(CombatAbility)
 
 		SetObjProperty(who, "#furiadodeserto_cleaving", 1);
 
-		var hostileList := ListHostiles(who, 2, LH_FLAG_LOS);
+		var hostileList := listAllMobilesNearbyButPetsAndParty(who, 2);
 
 		foreach mobile in (hostileList)
 			if (mobile.serial != who.serial &&
