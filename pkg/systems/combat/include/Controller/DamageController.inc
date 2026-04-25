@@ -135,6 +135,13 @@ function CalculateStatusDamage(byRef attackInfo)
 						 attackInfo.GetAttacker().GetMainDamageModifierBy(DEXTERITY) :
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(DEXTERITY);
 		endif
+	elseif (attackInfo.GetWeapon().IsFinesse())
+		statusDamage.stat := $"{STRENGTH}/{DEXTERITY}";
+		var _finesseStat := Max(attackInfo.GetAttacker().GetStr(), attackInfo.GetAttacker().GetDex());
+		var _finesseMain := CInt(_finesseStat / 20);
+		statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+					 _finesseMain :
+					 CInt(_finesseMain / 2);
 	else
 		statusDamage.stat := STRENGTH;
 
@@ -146,9 +153,10 @@ function CalculateStatusDamage(byRef attackInfo)
 	attackInfo.GetDamage().IncreaseSlashRawDamage(statusDamage.damageMod)
 						  .IncreasePiercingRawDamage(statusDamage.damageMod)
 						  .IncreaseBluntRawDamage(statusDamage.damageMod);
-						
+
 	return statusDamage;
 endfunction
+
 
 function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
