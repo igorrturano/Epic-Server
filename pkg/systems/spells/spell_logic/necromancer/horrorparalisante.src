@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -21,7 +22,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
+	SC_HandleSound(who, targ, SFX_SPELL_WEAKEN);
 
 	var time := 0;
 	var oldx := who.x;
@@ -37,7 +38,7 @@ program SpellScript(params)
 	if (CheckResist(targ, WILL, diff, -bonus))
 		SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
-		handleSilentMagic(who);
+		SC_HandleSound(who);
 
 		who.frozen := 0;
 		return;

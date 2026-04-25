@@ -39,6 +39,7 @@ const TXT_POISONRES  := 211;
 const TXT_CHARGES    := 212;
 const TXT_COOLDOWN   := 213;
 const TXT_DURATION   := 214;
+const CHK_DESTROY_ON_USE := 215;
 
 // Effect list buttons start at 300
 const BTN_EFFECT_BASE := 300;
@@ -81,6 +82,7 @@ function CreateEpicItemState()
 	state.+charges := 0;
 	state.+cooldown := 0;
 	state.+duration := 60;
+	state.+destroy_on_use := 0;
 
 	state.+current_page := 1;
 	state.+effect_list_page := 0;
@@ -156,6 +158,9 @@ function LoadExistingProperties(item)
 		state.cooldown := CInt(effect.cooldown);
 		if (effect.duration != error)
 			state.duration := CInt(effect.duration);
+		endif
+		if (effect.destroy_on_use != error)
+			state.destroy_on_use := CInt(effect.destroy_on_use);
 		endif
 	endif
 
@@ -291,6 +296,11 @@ function ExtractStateFromInput(input, state)
 		state.charges := ExtractIntField(input, TXT_CHARGES);
 		state.cooldown := ExtractIntField(input, TXT_COOLDOWN);
 		state.duration := ExtractIntField(input, TXT_DURATION);
+		if (input[CHK_DESTROY_ON_USE])
+			state.destroy_on_use := 1;
+		else
+			state.destroy_on_use := 0;
+		endif
 	endif
 
 	return state;
@@ -489,7 +499,11 @@ function BuildPageEffect(byref gump, state, spell_list, ts_list, y)
 
 	GFTextLine(gump, x + 380, y, CLR_LABEL, "Duracao (seg):");
 	GFEAddTextBox(gump, x + 500, y - 3, 50, 16, CLR_VALUE, CStr(state.duration), TXT_DURATION);
-	y += 35;
+	y += 30;
+
+	GFCheckBox(gump, x, y, 2361, 2362, state.destroy_on_use, CHK_DESTROY_ON_USE);
+	GFTextLine(gump, x + 30, y + 3, CLR_LABEL, "Destruir o item apos o uso");
+	y += 30;
 
 	// Divider
 	GFResizePic(gump, 25, y, 3000, GUMP_W - 60, 2);
@@ -649,6 +663,10 @@ function BuildPageConfirm(byref gump, item, state, y)
 		y += 22;
 		GFTextLine(gump, x, y, CLR_LABEL, "Cargas: " + CStr(state.charges) + "  |  Cooldown: " + CStr(state.cooldown) + "s  |  Duracao: " + CStr(state.duration) + "s");
 		y += 22;
+		if (state.destroy_on_use)
+			GFTextLine(gump, x, y, CLR_WARN, "Destruir apos o uso: SIM");
+			y += 22;
+		endif
 	else
 		GFTextLine(gump, x, y, CLR_LABEL, "Nenhum efeito configurado.");
 		y += 22;
@@ -722,6 +740,7 @@ function ApplyEpicProperties(item, state)
 		epiceffect.+charges_left := CInt(state.charges);
 		epiceffect.+cooldown := CInt(state.cooldown);
 		epiceffect.+duration := CInt(state.duration);
+		epiceffect.+destroy_on_use := CInt(state.destroy_on_use);
 
 		SetObjProperty(item, "epiceffect", epiceffect);
 		item.usescript := ":epicitem:epicitem_use";

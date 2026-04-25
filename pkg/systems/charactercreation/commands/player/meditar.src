@@ -12,16 +12,23 @@ include "include/epicConstants";
 include "include/meusProcessos";
 include "include/epicMageryUtils";
 
+const PROP_QUICK_RESEARCHING := "#QuickResearching";
+const PROP_APRENDER_RECIPE   := "aprenderrecipe";
+
 program meditar(who, text)
 	return IniciaMeuProcesso(who, @meditarPrincipal, { who });
 endprogram
 
 function InitialMeditationCheck(who)
-	if (!MeditationEquipmentCheck(who))
+	if (GetObjProperty(who, PROP_QUICK_RESEARCHING) || GetObjProperty(who, PROP_APRENDER_RECIPE))
+		SendSysMessage(who, "Você não pode meditar enquanto realiza uma pesquisa.", SSM_FAIL);
+		return 0;
+	endif
+	if (!EquipmentCheck(who))
 		SendSysMessage(who, "Suas mãos precisam estar livres", SSM_FAIL);
 		return 0;
 	endif
-	if (who.hidden || who.concealed) // Check if player is hidden
+	if (who.hidden || who.concealed)
 		SendSysMessage(who, "Você não pode fazer isso escondido", SSM_FAIL);
 		return 0;
 	endif
@@ -29,19 +36,23 @@ function InitialMeditationCheck(who)
 endfunction
 
 function MeditationConditionsCheck(who, oldx, oldy, start_hp)
-	if (oldx != who.x || oldy != who.y) // Player moved
+	if (oldx != who.x || oldy != who.y)
 		SendSysMessage(who, "Você se movimentou e cancelou sua meditação", SSM_FAIL);
 		return 0;
 	endif
-	if (start_hp > AP_GetVital(who, "Hits")) // Player lost health
+	if (start_hp > AP_GetVital(who, "Hits"))
 		SendSysMessage(who, "Você perdeu sua concentração", SSM_FAIL);
 		return 0;
 	endif
-	if (!MeditationEquipmentCheck(who)) // Check if hands became occupied during meditation
+	if (GetObjProperty(who, PROP_QUICK_RESEARCHING) || GetObjProperty(who, PROP_APRENDER_RECIPE))
+		SendSysMessage(who, "Você iniciou uma pesquisa e interrompeu sua meditação", SSM_FAIL);
+		return 0;
+	endif
+	if (!EquipmentCheck(who))
 		SendSysMessage(who, "Suas mãos precisam estar livres", SSM_FAIL);
 		return 0;
 	endif
-	if (who.hidden || who.concealed) // Player is hidden
+	if (who.hidden || who.concealed)
 		SendSysMessage(who, "Você não pode fazer isso escondido", SSM_FAIL);
 		return 0;
 	endif
@@ -50,21 +61,21 @@ endfunction
 
 function MeditationEquipmentCheck(who)
 	var hand_1 := GetEquipmentByLayer(who, LAYER_HAND1);
-
-	if (hand_1)
-		if ((cint(GetObjProperty(hand_1, "cancast")) != 1))
-			return 0;
-		endif
+	if (hand_1 && cint(GetObjProperty(hand_1, "cancast")) != 1)
+		return 0;
 	endif
 
 	var hand_2 := GetEquipmentByLayer(who, LAYER_HAND2);
-	if (hand_2)
-		if ((cint(GetObjProperty(hand_2, "cancast")) != 1))
-			return 0;
-		endif
+	if (hand_2 && cint(GetObjProperty(hand_2, "cancast")) != 1)
+		return 0;
 	endif
 
 	return 1;
+endfunction
+
+function CancelarMeditacao(who, msg)
+	SendSysMessage(who, msg, SSM_FAIL);
+	EraseObjProperty(who, "IsMeditating");
 endfunction
 
 function meditarPrincipal(params)
@@ -72,18 +83,14 @@ function meditarPrincipal(params)
 	var full_mana := AP_GetVitalMaximumValue(who, MANA);
 	var current_mana := AP_GetVital(who, MANA);
 	var start_hp := AP_GetVital(who, "Hits");
-	var arcana := Cint(AP_GetSkill(who, ARCANA));
-	var theology := Cint(AP_GetSkill(who, THEOLOGY));
-	var skill := (arcana > theology) ? arcana : theology;
-	var amt := Cint(skill / 20);
+	var amt := Cint(HandleSpellSkill(who) / 20);
+	var delay := 300;
 
-	var delay := 240;
-	if (GetObjPRoperty(who, "chardata").raca == ELFO)
+	if (GetObjProperty(who, "chardata").raca == ELFO)
 		amt *= 2;
 		delay := 180;
 	endif
 
-	// Track initial player position
 	var oldx := who.x;
 	var oldy := who.y;
 
@@ -93,27 +100,33 @@ function meditarPrincipal(params)
 	endif
 
 	if (!InitialMeditationCheck(who))
-		return 0; // Fail without applying cooldown
+		return 0;
 	endif
 
 	setCooldown(who, "meditation", delay);
+	SetObjProperty(who, "IsMeditating", 1);
 
 	while (current_mana < full_mana)
 		if (!MeditationConditionsCheck(who, oldx, oldy, start_hp))
-			return 0; // Meditation canceled due to mid-process condition failure
+			EraseObjProperty(who, "IsMeditating");
+			return 0;
 		endif
 		PlaySoundEffect(who, 0x20C);
 		HealMana(who, amt);
 		PlayObjectCenteredEffect(who, 0x375a, 10, 80);
-		var evento := Wait_For_Event(5);
 
+		var evento := Wait_For_Event(5);
 		if (evento == EV_SPELLCAST)
-			SendSysMessage(who, "Voce perdeu sua concentração", SSM_FAIL);
+			CancelarMeditacao(who, "Você perdeu sua concentração");
 			return 0;
 		endif
+
+		current_mana := AP_GetVital(who, MANA);
 	endwhile
 
+	EraseObjProperty(who, "IsMeditating");
+
 	if (current_mana == full_mana)
-		SendSysMessage(who, "Voce completou sua meditação", SSM_INFO);
+		SendSysMessage(who, "Você completou sua meditação", SSM_INFO);
 	endif
 endfunction

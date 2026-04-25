@@ -7,7 +7,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":charactercreation:resists";
@@ -54,5 +54,5 @@ program cast_lightningbolt(params)
 		PlaySoundEffect(targ, SFX_SPELL_LIGHTNING);
 	endif
 
-	DamageFLS(targ, cint(dmg), DMG_ENERGY, caster, "lightningbolt");
+	SC_DealDamage(caster, targ, CInt(spellinfo.id), cint(dmg), DMG_ENERGY);
 endprogram
