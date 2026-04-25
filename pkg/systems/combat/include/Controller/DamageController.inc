@@ -993,6 +993,15 @@ function LogLastHit(attackInfo)
 							attackInfo.GetDamage().GetEnergyBaseDamage() > 0 ? "energy" : "physical";
 		lastHit["bodyregion"] := attackInfo.GetBodyRegion();
 		SetObjProperty(defender, "lastHit", lastHit);
+
+		// Feed the NPC threat model. Players don't run brains, so guard on npctemplate.
+		if (defender.npctemplate && attacker && attacker != defender)
+			SendEvent(defender, struct{
+				"type"   := EVID_THREAT_UPDATE,
+				"source" := attacker,
+				"amount" := lastHit["amount"]
+			});
+		endif
 endfunction
 
 function ResolvePetOwner(attacker)

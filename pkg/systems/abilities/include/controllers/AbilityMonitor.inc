@@ -88,11 +88,13 @@ class AbilityMonitor()
 			return error{"errortext" := "Insufficient HP"};
 		endif
 
-		// Validate cooldown
+		// Validate cooldown — uses ReadGameClock() (wall-clock seconds) so cooldowns
+		// survive server restarts. polcore().systime resets on boot which leaves
+		// every saved cooldown stuck in a phantom "future" until uptime catches up.
 		var cooldownProp := $"AbilityCooldown_{ability.GetId()}";
 		var cooldownEnd := mobile.GetProperty(cooldownProp);
-		if (cooldownEnd && POLCore().systime < cooldownEnd)
-			var remaining := cooldownEnd - POLCore().systime;
+		if (cooldownEnd && ReadGameClock() < cooldownEnd)
+			var remaining := cooldownEnd - ReadGameClock();
 			Message($"Aguarde {remaining}s para usar novamente.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
 			return error{"errortext" := "Ability on cooldown"};
 		endif
@@ -112,7 +114,7 @@ class AbilityMonitor()
 
 			// === SET COOLDOWN ===
 			if (ability.GetAbilityCooldown() > 0)
-				SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetAbilityCooldown());
+				SetObjProperty(mobileRef, cooldownProp, ReadGameClock() + ability.GetAbilityCooldown());
 			endif
 		endif
 

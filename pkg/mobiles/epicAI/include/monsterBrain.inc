@@ -54,6 +54,16 @@ function MonsterBrain()
             SM_TickSneaking();
         endif
 
+        // Damage-weighted threat: decay table + reevaluate target if hysteresis
+        // margin is exceeded. DecayThreat self-throttles to 1Hz.
+        DecayThreat();
+        if (ShouldReevaluateTarget())
+            var threat_top := GetTopThreat();
+            if (threat_top && threat_top != me.opponent)
+                SetOpponent(threat_top);
+            endif
+        endif
+
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
@@ -93,10 +103,13 @@ function MonsterBrain()
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED:
+                    AddThreat(ev.source, 0);
                     AlertAllies(ev.source, me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
+                    // Safety net for damage paths that bypass AttackLogger.
+                    AddThreat(ev.source, 0);
                     AskForHealing(me);
                     // Break stealth states on damage
                     var dmg_state := SM_GetState();
@@ -105,6 +118,8 @@ function MonsterBrain()
                         SM_TransitionTo("COMBAT");
                     endif
                     HandleMonsterCombatEvent(ev.source, is_ranged);
+                EVID_THREAT_UPDATE:
+                    AddThreat(ev.source, ev.amount);
                 SYSEVENT_ENTEREDAREA:
                     if (CheckDarknessCreatureSurvival(me))
                         return;
@@ -130,8 +145,7 @@ function MonsterBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    SetOpponent(0);
-                    target_lock_var := 0;
+                    InjectTauntThreat(ev.source);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
                     if (!GetCooldown(me, "buddy_heal"))
@@ -237,19 +251,13 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         if (taunter_serial)
             var taunter := SystemFindObjectBySerial(taunter_serial);
             if (taunter && CanFight(me, taunter))
-                // Forced to fight the taunter, ignore all other targets and locks
+                // Forced to fight the taunter; threat injection from EVID_TAUNT
+                // already biases selection in favor of the taunter via hysteresis.
                 opponent := taunter;
                 SetOpponent(opponent);
-                // Maintain taunt lock - prevent CheckForIdealTarget from overriding
-                target_lock_var := struct{
-                    "serial" := taunter.serial,
-                    "time" := ReadGameClock(),
-                    "taunt" := 1
-                };
             else
                 // Taunter is no longer valid, clear taunt
                 EraseObjProperty(me, "#taunter");
-                target_lock_var := 0;
                 SetCooldown(me, "taunted", 0);
             endif
         endif
