@@ -8,6 +8,12 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":spells:Controller/SC_Damage";
+
+// Spell 909 (Transferência Vital). Hardcoded because this program uses the legacy
+// single-arg manobra(mobile) dispatch signature and does not receive the spell elem.
+const SPELL_ID_TRANSFERENCIA_VITAL := 909;
+
 program manobra(mobile)
 	SendSysMessageEx(mobile, "Escolha o receptor da energia vital.", SSM_FAIL);
 	var who := Target(mobile);
@@ -61,8 +67,7 @@ program manobra(mobile)
 			break;
 		endif
 
-		// ApplyRawDamage( targ, 10, 0, DAMAGE_SHOW );
-		ApplyRawDamage(targ, amt);
+		SC_DealDamage(mobile, targ, SPELL_ID_TRANSFERENCIA_VITAL, amt, DMG_FORCED);
 		ApplyEpicHealing(who, amt);
 
 		if (targ.dead)
