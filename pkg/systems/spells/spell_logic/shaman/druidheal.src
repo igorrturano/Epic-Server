@@ -1,0 +1,88 @@
+use uo;
+use os;
+use vitals;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":attributes:attributes";
+include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+
+	if (who.npctemplate)
+		targ := who;
+	endif
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	if (GetVital(targ, HITS) == GetVitalMaximumValue(targ, HITS))
+		SendSysMessageEx(who, "O alvo nao parece ferido.", SSM_FAIL);
+		return;
+	endif
+
+	// Block recast while HoT is still ticking on the target.
+	var existing := MobileWrapper(targ).GetProperty($"SpellOpts_{CInt(spell.id)}");
+	if (existing && !existing.errortext)
+		SendSysMessageEx(who, "O alvo ja esta sob efeito de uma cura.", SSM_FAIL);
+		return;
+	endif
+
+	// Rule: 70 Theology => 17 instant + 17 over 4 ticks.
+	var base_heal := cint(AP_GetSkill(who, THEOLOGY) / 3);
+	if (base_heal < 1)
+		base_heal := 1;
+	endif
+
+	// Instant heal
+	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
+	var hp_before := GetVital(targ, HITS);
+	applyEpicHealing(targ, base_heal);
+	var hp_after := GetVital(targ, HITS);
+	var instant_real_heal := hp_after - hp_before;
+
+	// HoT via SC tick-callback
+	var hot_total := base_heal;
+	var hot_ticks := 4;
+	var hot_tick_interval := 5;
+	var hot_base_tick := cint(hot_total / hot_ticks);
+	var hot_remainder := hot_total - (hot_base_tick * hot_ticks);
+	var duration := hot_ticks * hot_tick_interval;
+
+	var opts := struct{};
+	opts.+buff_category := "druid_hot";
+	opts.+displayname := "Cura Leve";
+	opts.+desc := $"+{hot_base_tick} HP / tick";
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{
+		fx := FX_SPARK_EFFECT,
+		fx_speed := 2,
+		fx_duration := 2,
+		sound := SFX_SPELL_HEAL
+	};
+	opts.+tick_script := ":spells:spell_logic/druid/druidhealTick";
+	opts.+tick_interval := hot_tick_interval;
+	opts.+tick_params := struct{
+		base_tick := hot_base_tick,
+		remainder := hot_remainder,
+		total_ticks := hot_ticks
+	};
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+
+	return 1;
+endprogram

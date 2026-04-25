@@ -4,7 +4,7 @@ use os;
 include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":spells:Controller/SpellController";
@@ -27,7 +27,7 @@ program SpellScript(params)
 	PlayMovingEffectEx(who, targ, 0x5426, 10, 20, 0x0845, 2);
 	PlaySoundEffect(who, 0x235);
 
-	DamageFLS(targ, damage, DMG_FORCED, who);
+	SC_DealDamage(who, targ, CInt(spellinfo.id), damage, DMG_FORCED);
 
 	SC_RemoveEffect(targ, CInt(spellinfo.id));
 
