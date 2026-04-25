@@ -20,6 +20,7 @@ include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":charactercreation:resists";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
+include "include/eventID";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Damage
