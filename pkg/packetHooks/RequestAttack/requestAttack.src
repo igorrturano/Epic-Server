@@ -40,9 +40,9 @@ exported function HandleAttackRequest(who, byref packet)
 		return 1;
 	endif
 
-	if (InValtheris(who) && HasPraetors())
-		Start_Script(":faccao:praetorAlert", array{ who });
-	endif
+	// if (InValtheris(who) && HasPraetors())
+	// 	Start_Script(":faccao:praetorAlert", array{ who });
+	// endif
 
 	if (defender.npctemplate && !who.npctemplate) // se o target for npc e quem clicou for player (sempre eh)
 		if (who.weapon.attribute == "Ranged")
