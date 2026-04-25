@@ -40,7 +40,6 @@ program chainLightning(params)
 	var casterThenNextMobile := caster;
 	var jump := 0;
 	foreach mobile in allMobiles
-		SetObjProperty(mobile, "LastHit", { caster.name, caster.serial, "chain lightning" });
 		PlayMovingEffect(casterThenNextMobile, mobile, 0xE088, 0, 20);
 		casterThenNextMobile := mobile;
 		PlaySoundEffect(mobile, 0x457);
