@@ -21,6 +21,7 @@ include "include/client";
 include "include/epicConstants";
 include "include/dungeons";
 include ":message:include/model/Message";
+include ":stables:include/stable";
 
 /*
  * MP_GetMountsCfgFile()
@@ -259,7 +260,7 @@ function MP_Mount(mobile, npc)
 		return 0;
 	endif
 
-	if (GetObjProperty(npc, "EstaNoEstabulo"))
+	if (IsStabled(npc))
 		Message("Este animal está armazenado no estábulo", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
