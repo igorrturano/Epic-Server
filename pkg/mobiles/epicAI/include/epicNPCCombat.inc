@@ -24,6 +24,7 @@ include ":fls_core:fls_skillCheck";
 include ":epicAI:npcDataCache";
 include ":abilities:include/models/Ability";
 include ":propagacao:include/util/propagacaoConstants";
+include ":epicAI:include/threatModel";
 
 // Script-level caches (per-tick state, brain compile unit owns these)
 var nearby_cache_var := dictionary;
@@ -333,35 +334,17 @@ endfunction
 
 
 function CheckForIdealTarget()
-   // Check if we're locked onto a target (20 second lock)
-   if (target_lock_var)
-      var locked_target := SystemFindObjectBySerial(target_lock_var.serial);
-      var time_locked := ReadGameClock() - target_lock_var.time;
-
-      if (time_locked < 20 && locked_target && CanFight(me, locked_target))
-         return locked_target;
-      else
-         target_lock_var := 0;
-      endif
+   // Threat-first: if the threat table has a valid candidate, use it. The
+   // threat model owns target stickiness via hysteresis (THREAT_SWITCH_MARGIN),
+   // so the legacy 20s target_lock_var and 90% keep_target_chance are gone.
+   var top := GetTopThreat();
+   if (top)
+      return top;
    endif
 
-   // Get the target priority
-   var target_priority := GetObjProperty(me, "target_priority");
-   var keep_target_chance := 90; // Default 90% chance to keep current target (10% to switch)
-   case (target_priority)
-      "Aggressive": keep_target_chance := 85;  // 85% chance to keep (15% to switch)
-      "Defensive":  keep_target_chance := 95;  // 95% chance to keep (5% to switch)
-      "Focus":      keep_target_chance := 98;  // 98% chance to keep (2% to switch)
-   endcase
-   
-   // If we already have an opponent, check if we should stick with them
-   if (me.opponent && CanFight(me, me.opponent))
-      if (RandomInt(100) < keep_target_chance)
-         return me.opponent;
-      endif
-   endif
-
-   // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+   // Opening-engagement fallback: nobody has dealt damage yet (NPC just
+   // engaged, first tick of combat). Score nearby mobiles to seed an initial
+   // target; subsequent damage events populate the threat table.
    var potential_opponents := GetNearbyMobilesOnce(me, AREA_SIZE, LISTEX_FLAG_NORMAL);
    if (potential_opponents.size() < 1)
       return 0;
@@ -435,14 +418,6 @@ function CheckForIdealTarget()
    // and triggering SetOpponent(0) upstream.
    if (!best_opponent.mobile && me.opponent && CanFight(me, me.opponent))
       return me.opponent;
-   endif
-
-   // Lock onto the best opponent for 20 seconds
-   if (best_opponent.mobile)
-      target_lock_var := struct{
-         "serial" := best_opponent.mobile.serial,
-         "time" := ReadGameClock()
-      };
    endif
 
    return best_opponent.mobile;
@@ -1799,6 +1774,7 @@ endfunction
 function ClearCombatState()
     SetWarMode(0);
     SetOpponent(0);
+    ClearThreatTable();
 endfunction
 
 

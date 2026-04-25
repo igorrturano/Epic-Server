@@ -40,15 +40,6 @@ function HumanoidBrain()
     combat_abilities := BuildCombatAbilities(me);
     enter_abilities := BuildEnterAbilities(me);
 
-    // Cache myhabs as script-level vars (avoids per-tick GetObjProperty disk I/O)
-    myhabs_var := GetObjProperty(me, "myhabs");
-    if (myhabs_var)
-        myhabs_set_var := dictionary;
-        foreach hab in myhabs_var
-            myhabs_set_var[CInt(hab)] := 1;
-        endforeach
-    endif
-
     SM_TransitionTo("IDLE");
 
     // Cache myhabs at activation — only active abilities, avoids per-tick disk I/O
@@ -84,6 +75,16 @@ function HumanoidBrain()
             SM_TickStealing();
         elseif (state == "SNEAKING")
             SM_TickSneaking();
+        endif
+
+        // Damage-weighted threat: decay table + reevaluate target if hysteresis
+        // margin is exceeded. DecayThreat self-throttles to 1Hz.
+        DecayThreat();
+        if (ShouldReevaluateTarget())
+            var threat_top := GetTopThreat();
+            if (threat_top && threat_top != me.opponent)
+                SetOpponent(threat_top);
+            endif
         endif
 
         // If we have an opponent, maintain combat position regardless of events
@@ -125,10 +126,15 @@ function HumanoidBrain()
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED:
+                    AddThreat(ev.source, 0);
                     AlertAllies(ev.source, me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
+                    // Safety net for damage paths that bypass AttackLogger (DoTs,
+                    // environmental). Registers source at zero; EVID_THREAT_UPDATE
+                    // delivers the actual amount when AttackLogger fires.
+                    AddThreat(ev.source, 0);
                     // Break stealth states on damage
                     var dmg_state := SM_GetState();
                     if (dmg_state == "AMBUSH" || dmg_state == "STEALING" || dmg_state == "SNEAKING")
@@ -137,13 +143,15 @@ function HumanoidBrain()
                     endif
                     AskForHealing(me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
+                EVID_THREAT_UPDATE:
+                    AddThreat(ev.source, ev.amount);
                 SYSEVENT_ENTEREDAREA:
                     if (CheckDarknessCreatureSurvival(me))
                         return;
                     endif
                     HandleHumanoidSpeech(ev.text, ev.source, is_ranged);
-                    HandleEnteredAreaAbilities(ev.source, is_ranged);
                     if (!IsAlly(ev.source))
+                        HandleEnteredAreaAbilities(ev.source, is_ranged);
                         UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
                         HandleHumanoidEnteredArea(ev.source, is_ranged);
@@ -164,7 +172,7 @@ function HumanoidBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    SetOpponent(0);
+                    InjectTauntThreat(ev.source);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 EVID_BUDDYATTACKED:
                     if (!GetCooldown(me, "buddy_heal"))
@@ -454,7 +462,8 @@ function GetCombatState(npc, opponent)
       "distance" := Distance(npc, opponent),
       "stamina" := AP_GetVital(npc, "Stamina"),
       "opponent_casting" := opponent.isSage(),
-      "has_advantage" := IsBehind(npc, opponent.x, opponent.y)
+      "has_advantage" := IsBehind(npc, opponent.x, opponent.y),
+      "is_ranged" := npc.weapon && npc.weapon.attribute == "Ranged"
    };
 endfunction
 
