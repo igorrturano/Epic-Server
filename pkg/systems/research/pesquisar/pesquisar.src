@@ -21,17 +21,79 @@ const PERGAMINHO_AMOUNT_EXTENSIVA := 20;
 const PERGAMINHO_AMOUNT_RAPIDA := 5;
 const MIN_SKILL := 40;
 const MIN_MANA := 40;
-const RESEARCH_DURATION_MINUTES := 7200; // 5 dias = 7200 minutos
+
+// Tempo de Pesquisa
+const RESEARCH_DURATION_MINUTES := 10080; // 7 dias (7 * 24 * 60)
+
+// UI - Cores das Barras
 const BARRA_BACKGROUND := 83;
 const BARRA_FOREGROUND := 50;
 
 var STUDY_ACTIONS;
 var BOOK_OBJTYPES;
+var SKILL_THRESHOLDS;
+var RECIPE_CACHE;
+var SPELL_CACHE;
 
 function InitializeGlobals()
 	STUDY_ACTIONS := array{ "*estudando*", "*escrevendo*", "*tomando notas*",
 							"*conferindo as páginas*", "*lendo um livro*" };
-	BOOK_OBJTYPES := array{ 0xA9D, 0xA9E };
+	BOOK_OBJTYPES := array{ 0xA9D, 0xA9E, 0x0A97, 0x0A98, 0x0A99, 0x0A9A, 0x0A9B, 0x0A9C, 0x63FE };
+	SKILL_THRESHOLDS := struct{
+		"default" := array{80, 70, 60, 50, 40},
+		"magic"   := array{100, 90, 80, 70, 0}
+	};
+	RECIPE_CACHE := BuildRecipeCache();
+	SPELL_CACHE  := BuildSpellCache();
+endfunction
+
+function BuildRecipeCache()
+	var cfg := ReadConfigFile(":recipes:recipes");
+	if (!cfg)
+		return error;
+	endif
+
+	var cache := struct{};
+	for power := 1 to 5
+		cache[CStr(power)] := array{};
+	endfor
+
+	foreach key in (GetConfigStringKeys(cfg))
+		var elem := FindConfigElem(cfg, key);
+		if (elem)
+			var level := GetConfigInt(elem, "level");
+			if (level >= 1 && level <= 5)
+				cache[CStr(level)].append(key);
+			endif
+		endif
+	endforeach
+
+	return cache;
+endfunction
+
+function BuildSpellCache()
+	var cfg := ReadConfigFile(":spells:spellcaster");
+	if (!cfg)
+		return error;
+	endif
+
+	var cache := struct{};
+	for circle := 1 to 5
+		cache[CStr(circle)] := array{};
+	endfor
+
+	foreach entry in (GetConfigStringKeys(cfg))
+		var elem := FindConfigElem(cfg, entry);
+		if (elem)
+			var circle := GetConfigInt(elem, "Circle");
+			if (circle >= 1 && circle <= 5)
+				var spellId := GetConfigInt(elem, "SpellId");
+				cache[CStr(circle)].append(spellId);
+			endif
+		endif
+	endforeach
+
+	return cache;
 endfunction
 
 program use_research_book(params)
@@ -694,15 +756,18 @@ endfunction
 function CheckforBooks(who, power := 0)
 	var items := ListItemsNearLocation(who.x, who.y, who.z, 5, who.realm);
 
+	var specialBooks3 := { 0x6F0D };
 	var specialBooks4 := { 0xEA08, 0xEA07, 0x2DEF, 0x2DF0 };
 	var specialBooks5 := { 0x6A94, 0x6A95, 0x6A96, 0x6A97, 0x0C15, 0x0C14 };
 
 	foreach item in items
-		if (power == 4 && item.objtype in specialBooks4)
+		if (item.objtype in specialBooks5)
 			return 1;
-		elseif (power == 5 && item.objtype in specialBooks5)
+		elseif (power <= 4 && item.objtype in specialBooks4)
 			return 1;
-		elseif (power < 4)
+		elseif (power <= 3 && item.objtype in specialBooks3)
+			return 1;
+		elseif (power <= 2)
 			if (item.objtype in BOOK_OBJTYPES)
 				return 1;
 			endif
@@ -1022,8 +1087,424 @@ function GetAvailableRapidResearchTypes(skills)
 endfunction
 
 function GetMaxPowerForCrafting(skills)
-	var maxSkill := Max(skills.ferreiro, Max(skills.costureiro, skills.carpenter));
-	return GetMaxPowerForSkill(maxSkill);
+    var maxSkill := Max(skills.ferreiro, Max(skills.costureiro, skills.carpenter));
+    return GetMaxPowerForSkill(maxSkill);
+endfunction
+
+function GetMaxPowerForSkill(skill, kind := "default")
+    var thresholds := SKILL_THRESHOLDS[kind];
+    if (!thresholds)
+        return 0;
+    endif
+
+    for i := 1 to thresholds.size()
+        if (skill >= thresholds[i])
+            // thresholds[1] corresponde ao nível 5, thresholds[5] ao nível 1
+            return (6 - i);
+        endif
+    endfor
+
+    // Para magia, o mínimo é 1; para o resto, 0
+    return (kind == "magic" ? 1 : 0);
+endfunction
+
+function GetMaxPowerForMagic(skill)
+    return GetMaxPowerForSkill(skill, "magic");
+endfunction
+
+function PerformRapidResearch(who, recipe, byref gump)
+    if (!CheckforBooks(who, recipe.power))
+        SendSysMessageEx(who, "Você está distante demais de um local de estudo apropriado para este nível de pesquisa.", SSM_FAIL);
+        return 0;
+    endif
+
+    // Adicionar verificação e consumo de mana aqui
+    if (!CheckAndConsumeMana(who, 1, recipe.power))
+        return 0; // Retorna se não tiver mana suficiente ou falhar no consumo
+    endif
+
+    var my_x := who.x;
+    var my_y := who.y;
+    var my_facing := who.facing;
+
+    if (!ConsumeSubstance(who.backpack, PERGAMINHO_OBJTYPE, PERGAMINHO_AMOUNT_RAPIDA))
+        SendSysMessageEx(who, "Você não tem pergaminhos suficientes para realizar a pesquisa.", SSM_FAIL);
+        return 0; 
+    endif
+
+    var success := 0;
+    var skillname;
+    case (recipe.type)
+        "Instrução de Fabricação":
+            var craftSkills := struct{
+                "woodworking" := AP_GetSkill(who, WOODWORKING),
+                "metalworking" := AP_GetSkill(who, METALWORKING),
+                "domesticwork" := AP_GetSkill(who, "Domestic_Work")
+            };
+            var highestSkill := Max(craftSkills.woodworking, Max(craftSkills.metalworking, craftSkills.domesticwork));
+            if (highestSkill == craftSkills.woodworking)
+                skillname := WOODWORKING;
+            elseif (highestSkill == craftSkills.metalworking)
+                skillname := METALWORKING;
+            else
+                skillname := "Domestic_Work";
+            endif
+        "Receita Alquimica": skillname := ALCHEMY;
+        "Tinta": skillname := ALCHEMY;
+        "Magia": 
+            skillname := MAGERY;
+            var spellId := SelectRandomSpell(recipe.power);
+            recipe.spellId := spellId;
+        default: skillname := ALCHEMY;  
+    endcase
+
+    var powerBonus := 0;
+    case (CInt(recipe.power))
+        1: powerBonus := 1;
+        2: powerBonus := 0.7;
+        3: powerBonus := 0.5;
+        4: powerBonus := 0.2;
+        5: powerBonus := 0;
+    endcase
+
+    ResetFailuresIfDifferentResearch(who, recipe);
+    
+    SetObjProperty(who, "#QuickResearching", 1);
+    for i := 1 to 5
+        if (!CheckStudyConditions(who, my_x, my_y, my_facing))
+            SendSysMessageEx(who, "Condições de estudo não atendidas.", SSM_FAIL);
+            break;
+        endif
+        
+        SetObjProperty(who, "#QuickResearching", 1);
+        
+        PrintTextAbove(who, STUDY_ACTIONS[RandomInt(STUDY_ACTIONS.size()) + 1]);
+        PlaySoundEffect(who, 0x24a);
+
+        sleep(5); 
+
+        EraseObjProperty(who, "#QuickResearching");
+
+        if (i == 3) // Na última iteração, faça a verificação de sucesso
+            // Calcular chance normalmente usando a função central (CalculateResearchChance)
+            var chance := CalculateResearchChance(who, recipe);
+            var rollResult := RandomInt(10000);
+            var chanceThreshold := CInt(chance * 100);
+
+            if (rollResult <= chanceThreshold)
+                success := 1;
+                SendSysMessageEx(who, "Pesquisa bem-sucedida!", SSM_INFO);
+                EraseObjProperty(who, "#ResearchFailures");
+            else
+                UpdateFailureCount(who);
+            endif
+        endif
+    endfor
+
+    if (success)
+        if (who.gender == 1) 
+            PlaySoundEffect(who, 0x30c);
+        else
+            PlaySoundEffect(who, 0x41b); 
+        endif
+        return FinishQuickResearch(who, recipe); 
+    else
+        return 0;  
+    endif
+endfunction
+
+function CustomFormatRealToString(value, decimal_places := 2)
+    var integer_part := Floor(value);
+    var fractional_part := value - integer_part;
+    var fractional_string := "";
+
+    if (fractional_part > 0)
+        fractional_string := "." + CStr(Floor(fractional_part * CDbl(10^decimal_places)));
+        while (len(fractional_string) <= decimal_places)
+            fractional_string := fractional_string + "0";
+        endwhile
+    endif
+
+    return CStr(integer_part) + fractional_string;
+endfunction
+
+function SelectRandomSpell(power)
+    // ============================================
+    // SELECIONA UMA MAGIA ALEATÓRIA DO CACHE
+    // ============================================
+    // Usa o cache pré-carregado para acesso O(1) em vez de ler
+    // o arquivo de configuração a cada chamada, melhorando performance.
+    // ============================================
+    if (!SPELL_CACHE || SPELL_CACHE == error)
+        return 0;
+    endif
+
+    var circleSpells := SPELL_CACHE[CStr(power)];
+    if (!circleSpells || circleSpells.size() == 0)
+        return 0;
+    endif
+
+    return circleSpells[RandomInt(circleSpells.size()) + 1];
+endfunction
+
+function CheckStudyConditions(who, my_x, my_y, my_facing)
+    if (who.hidden || who.x != my_x || who.y != my_y || who.facing != my_facing || GetEquipmentByLayer(who, LAYER_MOUNT))
+        SendSysMessageEx(who, "Você interrompeu sua pesquisa.", SSM_FAIL);
+        return 0;
+    endif
+    
+    // Manter essa verificação pois é específica para o estudo contínuo
+if (AP_GetVital(who, "Mana") < 3)
+    SendSysMessageEx(who, "Você está muito cansado para continuar.", SSM_FAIL);
+    return 0;
+endif
+    return 1;
+endfunction
+
+
+
+function CalculateProgress(recipe)
+    if (!recipe || !recipe.start)
+        return 0;
+    endif
+
+    var current_timestamp := ReadGameClock();
+    var segundosPassados := Max(0, current_timestamp - recipe.start);
+    
+    var duracaoTotal := RESEARCH_DURATION_MINUTES * 60;
+    
+    var progresso := Min((CDbl(segundosPassados) / duracaoTotal) * 100, 100);
+    
+    return progresso;
+endfunction
+
+function CalculateRemainingTime(recipe)
+    var current_timestamp := ReadGameClock();
+    var segundosPassados := Max(0, current_timestamp - recipe.start);
+    var segundosTotal := RESEARCH_DURATION_MINUTES * 60;
+    var segundosRestantes := Max(0, segundosTotal - segundosPassados);
+    var progresso := (CDbl(segundosPassados) / segundosTotal) * 100;
+    
+    var horasRestantes := CInt(segundosRestantes / 3600);
+    var minutosRestantes := CInt((segundosRestantes % 3600) / 60);
+    var segundosRestantesFinal := segundosRestantes % 60;
+
+    return struct{
+        "horas" := horasRestantes,
+        "minutos" := minutosRestantes,
+        "segundos" := segundosRestantesFinal,
+        "progresso" := progresso
+    };
+endfunction
+
+function FormatResearchTime(totalSeconds)
+    var hours := Floor(totalSeconds / 3600);
+    var minutes := Floor((totalSeconds % 3600) / 60);
+    var seconds := totalSeconds % 60;
+    
+    var parts := array{};
+    
+    if (hours > 0)
+        parts.append(hours + " hora" + (hours != 1 ? "s" : ""));
+    endif
+    
+    if (minutes > 0)
+        parts.append(minutes + " minuto" + (minutes != 1 ? "s" : ""));
+    endif
+    
+    if (seconds > 0 || parts.size() == 0)
+        parts.append(seconds + " segundo" + (seconds != 1 ? "s" : ""));
+    endif
+    
+    // Juntar com espaços
+    var result := "";
+    for i := 1 to parts.size()
+        result += parts[i];
+        if (i < parts.size())
+            result += " ";
+        endif
+    endfor
+    
+    return result;
+endfunction
+
+function CompleteResearch(who, recipe, byref gump)
+    // ============================================
+    // FINALIZA A PESQUISA E CRIA O ITEM RESULTANTE
+    // ============================================
+    // Cria o item de pesquisa no inventário do jogador baseado no tipo
+    // e nível da pesquisa completada, configura suas propriedades específicas
+    // e fornece feedback sonoro e visual sobre o sucesso.
+    // ============================================  
+    if (!who || who == error || TypeOf(who) != "MobileRef")
+        return;
+    endif
+
+    var itemID := DetermineResearchItem(recipe);
+    if (itemID == 0)
+        SendSysMessageEx(who, "Erro ao determinar o item da pesquisa. Contate um GM.", SSM_FAIL);
+        return 0;
+    endif
+
+    var item := CreateItemInBackpack(who, itemID, 1);
+    if (item)
+        var success := 0;
+        case (recipe.type)
+            "Instrução de Fabricação":
+                var recipeKey := SelectRandomRecipe(recipe.power);
+                if (recipeKey)
+                    SetObjProperty(item, "recipe", recipeKey);
+                    SendSysMessageEx(who, "Você criou uma nova instrução de fabricação: " + recipeKey, SSM_INFO);
+                    success := 1;
+                else
+                    SendSysMessageEx(who, "Erro ao selecionar a receita. Contate um GM.", SSM_FAIL);
+                endif
+            "Magia":
+                if (recipe.spellId)
+                    SetObjProperty(item, "SpellId", recipe.spellId);
+                    SendSysMessageEx(who, "Você criou um novo pergaminho de magia!", SSM_INFO);
+                    success := 1;
+                else
+                    SendSysMessageEx(who, "Erro ao definir a magia. Contate um GM.", SSM_FAIL);
+                endif
+            default:
+                SendSysMessageEx(who, "Você concluiu sua pesquisa com sucesso!", SSM_INFO);
+                success := 1;
+        endcase
+
+        if (!success)
+            DestroyItem(item);
+            return 0;
+        endif
+
+        if (who.gender == 1)
+            PlaySoundEffect(who, 0x30c); 
+        else
+            PlaySoundEffect(who, 0x41b); 
+        endif
+
+        NotifyResearchCompletion(who, recipe);
+        EraseObjProperty(who, "aprenderrecipe");
+        return 1;
+    else
+        SendSysMessageEx(who, "Erro ao criar o item da pesquisa: " + item.errortext, SSM_FAIL);
+        return 0;
+    endif
+endfunction
+
+function SelectRandomRecipe(power)
+    // ============================================
+    // SELECIONA UMA RECEITA ALEATÓRIA DO CACHE
+    // ============================================
+    // Usa o cache pré-carregado para acesso O(1) em vez de ler
+    // o arquivo de configuração a cada chamada, melhorando performance.
+    // ============================================
+    if (!RECIPE_CACHE || RECIPE_CACHE == error)
+        return 0;
+    endif
+
+    var levelRecipes := RECIPE_CACHE[CStr(power)];
+    if (!levelRecipes || levelRecipes.size() == 0)
+        return 0;
+    endif
+
+    return levelRecipes[RandomInt(levelRecipes.size()) + 1];
+endfunction
+
+function CheckAndConsumeMana(who, isQuickResearch := 0, power := 0)
+    // Define o requisito de mana baseado no power
+    var requiredMana := GetManaRequirement(power);
+
+    var currentMana := AP_GetVital(who, "Mana");
+    var maxMana := AP_GetVitalMaximumValue(who, "Mana");
+    
+    // Para pesquisa rápida, precisa estar com a mana cheia
+    if (isQuickResearch)
+        if (currentMana < requiredMana)
+            SendSysMessageEx(who, "Você precisa ter no mínimo " + requiredMana + " de mana para esta pesquisa.", SSM_FAIL);
+            return 0;
+        endif
+        
+        // Consome a mana baseada no power
+        return AP_ConsumeVital(who, "Mana", requiredMana);
+    else
+        // Para pesquisa extensiva
+        if (currentMana < requiredMana)
+            SendSysMessageEx(who, "Você precisa ter no mínimo " + requiredMana + " de mana para esta pesquisa.", SSM_FAIL);
+            return 0;
+        endif
+        return AP_ConsumeVital(who, "Mana", requiredMana);
+    endif
+endfunction
+
+
+
+
+function CalculateResearchChance(who, recipe)
+    var relevantSkill := 0;
+    case (recipe.type)
+        "Instrução de Fabricação":
+            relevantSkill := Max(AP_GetSkill(who, METALWORKING),
+                             Max(AP_GetSkill(who, WOODWORKING),
+                                 AP_GetSkill(who, "Domestic_Work")));
+        "Receita Alquimica":
+        "Tinta":
+            relevantSkill := AP_GetSkill(who, ALCHEMY);
+        "Magia":
+            relevantSkill := AP_GetSkill(who, MAGERY);
+    endcase
+
+    var baseChance := CDbl(relevantSkill) * 0.08 + RandomInt(4);
+
+    var baseInt := AP_GetTrueStat(who, "Intelligence");
+    var intBonus := 0.0;
+    if (baseInt > 40)
+        intBonus := Min(3.0, (baseInt - 40) * 0.04);
+    endif
+
+    var levelBonus := 0.0;
+    case (CInt(recipe.power))
+        1: levelBonus := 3.0;
+        2: levelBonus := 2.0;
+        3: levelBonus := 1.0;
+        default: levelBonus := 0.0;
+    endcase
+
+    var failureAttempts := CInt(GetObjProperty(who, "#ResearchFailures")) ? CInt(GetObjProperty(who, "#ResearchFailures")) : 0;
+    var maxFailureBonus := 12.0 - (intBonus + levelBonus);
+    var failureBonus := Min(failureAttempts, Floor(maxFailureBonus));
+
+    var totalChance := baseChance + intBonus + levelBonus + failureBonus;
+
+    return totalChance;
+endfunction
+
+function UpdateFailureCount(who)
+    var currentFailures := CInt(GetObjProperty(who, "#ResearchFailures")) ? CInt(GetObjProperty(who, "#ResearchFailures")) : 0;
+    SetObjProperty(who, "#ResearchFailures", currentFailures + 1);
+    SendSysMessageEx(who, "Você não encontrou a resposta que buscava, mas entendeu um pouco mais da lógica da sua pesquisa", SSM_INFO);
+endfunction
+
+function ResetFailuresIfDifferentResearch(who, newRecipe)
+    var lastRecipe := GetObjProperty(who, "#LastResearchType");
+    if (lastRecipe)
+        if (lastRecipe.type != newRecipe.type || lastRecipe.power != newRecipe.power)
+            EraseObjProperty(who, "#ResearchFailures");
+        endif
+    endif
+    SetObjProperty(who, "#LastResearchType", newRecipe);
+endfunction
+
+function CheckIntelligenceForLevel(who, power)
+    var minInt := GetIntelligenceRequirement(power);
+
+    var playerInt := AP_GetStat(who, "Intelligence");
+    if (playerInt < minInt)
+        SendSysMessageEx(who, "Você precisa ter no mínimo " + minInt + " de Inteligência para pesquisa nível " + power + ".", SSM_FAIL);
+        return 0;
+    endif
+
+    return 1;
 endfunction
 
 function GetMaxPowerForInk(skill)
