@@ -1,3 +1,7 @@
+// Intentionally bypasses SpellController: the defaultPoison cfg entry needs
+// IndicatePoison=1 (green health-bar) and the Type=P immunity gating that
+// subScripts/poison/defaultPoison performs (protecaoveneno, mumificacao,
+// kit-encantadores). SC has no equivalent.
 use uo;
 use os;
 

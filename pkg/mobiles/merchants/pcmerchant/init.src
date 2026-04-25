@@ -89,11 +89,7 @@ program InitScript(params)
 	endif
 
 	// Set default shift for certain merchant types
-	var shift := "day"; // Default shift
-	if (npc.npctemplate == ":merchants:estalagem")
-		// Innkeepers/taverneers work at night by default
-		shift := "night";
-	endif
+	var shift := "ambos"; // Default shift
 
 	SetObjProperty(npc, "shift", shift);
 

@@ -70,7 +70,6 @@ endfunction
 
 //Conta a quantidade de pilhas e moedas que tem na mochila e as guarda. retorno struct.quantidade,struct.[array]items
 function ContaMoedas(arrayItens, tiposAProcurar, color:=0)
-	var quantidade := 0;
 	var envelopeMoedas := struct {totalMoedaMenorValor := 0, moedas := dictionary, container := 0};
 
 	foreach obj_type in tiposAProcurar//varre os tipos
@@ -86,7 +85,7 @@ function ContaMoedas(arrayItens, tiposAProcurar, color:=0)
 					if(!envelopeMoedas.container)
 						envelopeMoedas.container := item.container;
 					endif
-					props.quantidade := quantidade + item.amount; // soma tudo.
+					props.quantidade += item.amount; // soma tudo.
 					props.items.append(item); // guarda todas as pilhas de moedas
 				endif
 			endif

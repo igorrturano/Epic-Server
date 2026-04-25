@@ -29,10 +29,6 @@ function SM_TransitionTo(new_state, data := struct{})
     _sm_enter_time := ReadGameClock();
 endfunction
 
-function SM_GetData()
-    return _sm_data;
-endfunction
-
 function SM_ElapsedInState()
     return ReadGameClock() - _sm_enter_time;
 endfunction

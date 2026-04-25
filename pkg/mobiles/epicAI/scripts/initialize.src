@@ -1,0 +1,21 @@
+// ============================================================================
+// initialize.src - one-shot NPC init orchestrator
+// ============================================================================
+// Spawned via Run_Script() from brain.src to keep the cold-init code chain
+// (Setup*, Initialize*NPC, makeRace, equip, mounts via taming, etc.) out of
+// brain.src's compile unit. Pattern mirrors loot_init.src and setup_mount.src.
+// ============================================================================
+
+use uo;
+use os;
+
+include ":epicAI:include/epicNPCInitialization";
+
+program Initialize(npc)
+    if (!npc)
+        return 0;
+    endif
+
+    InitializeEpicNPC(npc);
+    return 1;
+endprogram

@@ -65,9 +65,6 @@ function MostrarGumpGerenciamento(who)
 			// Adicionar DEPOIS de definir os botões
 			dados_tabela.append(livro_struct);
 			serials_mapeados.append(CStr(serial_key)); // Mapear posição -> serial
-
-			// DEBUG: Adicionar log para verificar mapeamento
-			Print("[DEBUG_MAP] Index: " + current_index + " -> Serial: " + CStr(serial_key));
 		endif
 		SleepMS(2);
 	endforeach
@@ -217,16 +214,11 @@ function MostrarGumpGerenciamento(who)
 	elseif (clicked_button_id >= 2000)
 		var acao_item_index := clicked_button_id - 2000; // Remove o offset
 
-		Print("[DEBUG_PUBLISH] Button ID: " + clicked_button_id + " -> Index: " + acao_item_index);
-		Print("[DEBUG_PUBLISH] Array size: " + dados_tabela.size() + " | Serials size: " + serials_mapeados.size());
-
 		// Verificar se o índice é válido (POL usa 1-based arrays)
 		if (acao_item_index >= 1 && acao_item_index <= dados_tabela.size())
 			var livro_info_struct := dados_tabela[acao_item_index]; // POL usa 1-based
 			var serial_to_publish := serials_mapeados[acao_item_index]; // POL usa 1-based
 			var status_atual := CStr(livro_info_struct.col_status);
-
-			Print("[DEBUG_PUBLISH] Serial to publish: '" + serial_to_publish + "' Type: " + TypeOf(serial_to_publish));
 
 			if (status_atual == "publicado")
 				SendSysMessage(who, "Este livro já está publicado!", color := 33);

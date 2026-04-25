@@ -23,7 +23,7 @@ program SpellScript(params)
 	foreach mobile in nearby
 		if (mobile.npctemplate)
 			var elem := NPC_GetNPCConfig(mobile.npctemplate);
-			var category := lower(GetConfigString(elem, "Category"));
+			var category := lower(GetConfigString(elem, "Environment"));
 			var tier := CInt(GetConfigString(elem, "Tier"));
 			var is_boss := GetObjProperty(mobile, "true_boss");
 

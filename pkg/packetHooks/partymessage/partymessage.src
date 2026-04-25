@@ -12,7 +12,18 @@ endprogram
 
 exported function PartyMessageSpy(who, byref packet)
 
-	var message_txt := packet.GetUnicodeString(6, (packet.GetInt16(1) - 12) / 2);
+	var partyAction := packet.GetInt8(5);
+	var messageOffset;
+
+	if (partyAction == 0x04)         // Tell Whole Party
+		messageOffset := 6;
+	elseif (partyAction == 0x03)     // Tell Party Member (private)
+		messageOffset := 10;          // skip 4-byte target serial
+	else
+		return 0;                     // not a chat sub-action
+	endif
+
+	var message_txt := packet.GetUnicodeString(messageOffset, (packet.GetInt16(1) - messageOffset - 2) / 2);
 
 	if (!message_txt)
 		return 0;
@@ -25,11 +36,10 @@ exported function PartyMessageSpy(who, byref packet)
 			var acct := who.acctname;
 			var truename := GetObjProperty(who, "nome_inicial");
 			var leader := who.party.leader.name;
+			var leaderAcct := who.party.leader.acctname;
 
 			if (GetObjProperty(player, "PartySpyOn") == "on")
-				leader := splitwords(leader);
-				leader := leader[1];
-				SendSysMessage(player, "[Party-" + leader + "][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT,
+				SendSysMessage(player, "[Leader-" + leaderAcct + "][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT,
 								0x003e);
 			elseif (GetObjProperty(player, "PartySpyOn") == leader)
 				SendSysMessage(player, "[PT-SPY][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);

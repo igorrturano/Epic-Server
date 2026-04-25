@@ -19,7 +19,7 @@ program attackOfOpportunity(params)
 		return 0;
 	endif
 
-	while (!attacker.dead || !defender.dead)
+	while (!attacker.dead && !defender.dead)
 		SetObjProperty(attacker, "already_fighting", 1);
 		SetObjProperty(defender, "already_fighting", 1);
 		if ((attacker.x != attacker_x || attacker.y != attacker_y))

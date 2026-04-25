@@ -111,6 +111,8 @@ function ExecutarEstudo(who, item)
         return 0;
     endif
 
+    setCooldown(who, "estudar", 60);
+    
     var skill_name := GetObjProperty(item, "estudavel");
 
     if (AP_GetTrueSkill(who, skill_name) <= 0)
@@ -124,8 +126,6 @@ function ExecutarEstudo(who, item)
 
     var frases := GetFrasesPorSkill(skill_name);
     ExecutarSequenciaAcoes(who, frases);
-
-    setCooldown(who, "estudar", 60);
 
     // 33% de chance de ganhar skill
     if (RandomInt(100) < 33)

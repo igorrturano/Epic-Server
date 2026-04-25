@@ -10,6 +10,7 @@ include ":timedscripts:poisonUtil";
 include ":attributes:stats";
 include ":charactercreation:habilidades";
 include ":gumps:include/requestGump";
+include ":taming:taming";
 
 const START_Y := 91;
 const END_Y := 311;

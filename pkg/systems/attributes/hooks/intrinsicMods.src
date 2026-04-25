@@ -1,12 +1,15 @@
 use uo;
 use util;
 
-include ":attributes:attributes";
-include ":charactercreation:habilidades";
-include ":wrappers:Objects/Model/MobileWrapper";
-include ":abilities:models/Ability";
+include ":attributes:intrinsicStats";
 
-const TENTHS := 10;
+// Exported wrappers for cfg-registered intrinsic hooks.
+// Core POL invokes these natively when AP_GetStatMod is called
+// for FORTITUDE/REFLEXES/WILL (see pkg/systems/attributes/attributes.cfg).
+//
+// Actual calculation lives in :attributes:intrinsicStats so sendStats
+// (and other multi-stat callers) can use the batch without 3x wrapper
+// creation. See IntrinsicStatsBatch() for the fast path.
 
 program Install()
 	print("INSTALLING: Exported Instrinsic Stats Mods - Intrinsic functions ...");
@@ -14,152 +17,13 @@ program Install()
 endprogram
 
 exported function GetIntrinsicFortitude(mobile)
-	if (mobile.npctemplate)
-		return 0;
-	endif
-
-	var chardata := GetObjProperty(mobile, "chardata");
-	if (chardata == error)
-		return 0;
-	endif
-
-	var fortitude := 0;
-	var mobileWrapper := MobileWrapper(mobile);
-
-	if (chardata.trait == "Fortitude do Urso")
-		fortitude += 5;
-	endif
-
-	if (mobileWrapper.HasAbility(ABILITY_ID::CACADOR_IMPLACAVEL))
-		fortitude += 2;
-	endif
-
-	if (GetObjProperty(mobile, "corruption"))
-		fortitude -= CInt(GetObjProperty(mobile, "corruption_penalty"));
-	endif
-
-	if (chardata.classe == "Guerreiro")
-		fortitude += 5;
-	else
-		fortitude += 2;
-	endif
-
-	if (chardata.raca == HUMANO)
-		fortitude += 2;
-	endif
-
-	var entropy := mobileWrapper.GetEntropy();
-	if (entropy > 4000)
-		fortitude += CInt(entropy / 4000);
-	endif
-	if (entropy <= -4000)
-		fortitude -= CInt(abs(entropy) / 4000);
-	endif
-
-	fortitude += GetCommonStatsIncrease(mobileWrapper, chardata);
-	fortitude += CInt(AP_GetStat(mobile, STRENGTH) / 20);
-	fortitude += CInt(GetObjProperty(mobile, "#FortitudeMod"));
-	return fortitude * TENTHS;
+	return IntrinsicFortitudeValue(mobile);
 endfunction
 
 exported function GetIntrinsicReflexes(mobile)
-	if (mobile.npctemplate)
-		return 0;
-	endif
-
-	var chardata := GetObjProperty(mobile, "chardata");
-	if (chardata == error)
-		return 0;
-	endif
-
-	var reflexos := 0;
-	var mobileWrapper := MobileWrapper(mobile);
-
-	if (chardata.trait == "Reflexos de Pantera")
-		reflexos += 5;
-	endif
-
-	if (mobileWrapper.HasAbility(ABILITY_ID::REAPROVEITAR_PERGAMINHO))
-		reflexos += 5;
-	endif
-
-	if (chardata.classe == "Ladino")
-		reflexos += 5;
-	else
-		reflexos += 2;
-	endif
-
-	if (chardata.raca == HUMANO)
-		reflexos += 2;
-	endif
-
-	reflexos += GetCommonStatsIncrease(mobileWrapper, chardata);
-	reflexos += CInt(AP_GetStat(mobile, DEXTERITY) / 20);
-	reflexos += CInt(GetObjProperty(mobile, "#ReflexosMod"));
-	return reflexos * TENTHS;
+	return IntrinsicReflexesValue(mobile);
 endfunction
 
 exported function GetIntrinsicWill(mobile)
-	if (mobile.npctemplate)
-		return 0;
-	endif
-
-	var chardata := GetObjProperty(mobile, "chardata");
-	if (chardata == error)
-		return 0;
-	endif
-
-	var vontade := 0;
-	var mobileWrapper := MobileWrapper(mobile);
-
-	if (chardata.trait == "Vontade da Aguia")
-		vontade += 5;
-	endif
-
-	if (chardata.classe == "Sabio")
-		vontade += 5;
-	else
-		vontade += 2;
-	endif
-
-	if (chardata.culture == ALURIEL)
-		vontade += 2;
-	endif
-
-	if (GetCooldown(mobile, "VontadeIndomavel"))
-		vontade += 5;
-	elseif (mobileWrapper.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
-		vontade += 5;
-	elseif (mobileWrapper.HasAbility(ABILITY_ID::CONEXAO_DIVINA))
-		vontade += 8;
-	elseif (mobileWrapper.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
-		vontade += CInt(AP_GetSkill(mobile, THEOLOGY) / 20);
-	endif
-
-	var entropy := mobileWrapper.GetEntropy();
-	if (entropy > 4000)
-		vontade += CInt(entropy / 4000);
-	endif
-	if (entropy <= -4000)
-		vontade -= CInt(abs(entropy) / 4000);
-	endif
-
-	vontade += GetCommonStatsIncrease(mobileWrapper, chardata);
-	vontade += CInt(AP_GetStat(mobile, INTELLIGENCE) / 20);
-	vontade += CInt(GetObjProperty(mobile, "#VontadeMod"));
-	return vontade * TENTHS;
-endfunction
-
-function GetCommonStatsIncrease(mobileWrapper, chardata)
-	var valor := 0;
-
-	if (chardata.raca == HUMANO)
-		valor += 2;
-	endif
-
-	if (mobileWrapper.HasAbility(ABILITY_ID::BODY_AND_MIND))
-		valor += 5;
-	endif
-
-	return valor;
+	return IntrinsicWillValue(mobile);
 endfunction

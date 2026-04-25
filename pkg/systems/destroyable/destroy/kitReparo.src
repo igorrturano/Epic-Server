@@ -14,6 +14,11 @@ program kitReparo(quem, kit)
 		return false;
 	endif
 
+	if (alvo.isA(POLCLASS_EQUIPMENT))
+		SendSysMessageEx(quem, "Este kit só pode ser usado em estruturas e moveis.", SSM_FAIL);
+		return false;
+	endif
+
 	var atributos := MontaAtributosItem(alvo);
 	if (atributos.durabilidade < atributos.durabTotal)
 

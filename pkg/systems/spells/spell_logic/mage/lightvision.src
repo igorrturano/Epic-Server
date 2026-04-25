@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -16,7 +17,7 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-	handleSilentMagic(who, who, SFX_BLESS);
+	SC_HandleSound(who, who, SFX_BLESS);
 	PlayObjectCenteredEffect(who, FX_BLUE_SPARKLES, 10, 10);
 
 	SendSysMessageEx(who, "Voce passa a enxergar melhor de dia", SSM_INFO);

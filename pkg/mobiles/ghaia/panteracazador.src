@@ -1,0 +1,268 @@
+use uo;
+use os;
+use npc;
+use guilds;
+
+include "include/sysEvent";
+include ":faccao:membership";
+include ":attributes:attributes";
+
+// PanteraCazador — companheira do Assassino Cazador.
+// Segue o assassino (master = o NPC assassino).
+// Ao receber ATTACK_CMD ataca o alvo indicado.
+// Se o master (assassino) morrer, vira feral: ataca qualquer player.
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+var me            := self();
+var state         := 0;     // 0=follow, 1=fight, 2=feral
+var master_serial := 0;
+var opponent      := 0;
+var wait_time     := 3;
+
+const ATTACK_CMD  := 0xA002;
+const FERAL_RANGE := 12;
+
+// ============================================================
+function Setup()
+    // Retry: prop cazador_serial pode nao estar setada ainda (race com CreateNPCFromTemplate)
+    var _tries := 0;
+    while (master_serial <= 0 && _tries < 10)
+        sleepms(300);
+        master_serial := CInt(GetObjProperty(me, "cazador_serial"));
+        _tries := _tries + 1;
+    endwhile
+    EnableEvents(SYSEVENT_ENGAGED);
+    EnableEvents(SYSEVENT_DAMAGED);
+    EnableEvents(SYSEVENT_ENTEREDAREA, FERAL_RANGE);
+endfunction
+
+function GetMaster()
+    if (master_serial <= 0) return 0; endif
+    return SystemFindObjectBySerial(master_serial);
+endfunction
+
+function IsMasterDead()
+    if (master_serial <= 0) return 1; endif
+    var m := GetMaster();
+    return (!m || m.dead);
+endfunction
+
+function GoFeral()
+    state         := 2;
+    master_serial := 0;
+    me.SetMaster(0);
+    me.SetCriminal(99999);
+    opponent := 0;
+    SetOpponent(0);
+    SetWarMode(0);
+    PrintTextAbove(me, "*ruge selvagemente*");
+endfunction
+
+function IsAttackable(who)
+    if (!who || !who.isA(POLCLASS_MOBILE)) return 0; endif
+    if (who == me || who.dead || who.concealed) return 0; endif
+    return 1;
+endfunction
+
+// Retorna a guild do assassino (dono da pantera), para checar membros.
+function GetCazadorGuild()
+    var m := GetMaster();
+    if (!m || !m.isA(POLCLASS_MOBILE)) return 0; endif
+    var gid := GetObjProperty(m, "guild");
+    if (!gid) return 0; endif
+    return FindGuild(gid);
+endfunction
+
+// No modo feral ataca players e animais de players que nao sejam da faccao.
+function IsFeralTarget(who)
+    if (!IsAttackable(who)) return 0; endif
+    var cazador_guild := GetCazadorGuild();
+    if (who.npctemplate)
+        // Aceitar animal tamado de player inimigo
+        var owner := who.master;
+        if (!owner || !owner.isA(POLCLASS_MOBILE)) return 0; endif
+        if (owner == me || owner.dead)             return 0; endif
+        if (cazador_guild && IsMemberOfFaccao(cazador_guild, owner)) return 0; endif
+        return 1;
+    endif
+    // Player: rejeitar membros da faccao
+    if (cazador_guild && IsMemberOfFaccao(cazador_guild, who)) return 0; endif
+    return 1;
+endfunction
+
+function GetFeralTarget()
+    foreach mob in ListMobilesNearLocationEx(me.x, me.y, me.z, FERAL_RANGE,
+            LISTEX_FLAG_NORMAL, me.realm)
+        sleepms(2);
+        if (IsFeralTarget(mob)) return mob; endif
+    endforeach
+    return 0;
+endfunction
+
+// ============================================================
+program PanteraCazadorMain()
+    Setup();
+    sleep(2);
+
+    while (me)
+
+        // Detectar morte do master → feral
+        if (state != 2 && IsMasterDead())
+            GoFeral();
+        endif
+
+        case (state)
+
+            0: // FOLLOW — seguir master
+                var master := GetMaster();
+                if (master && !master.dead)
+                    var dist := Distance(me, master);
+                    if (dist > 3)
+                        RunTowardLocation(master.x, master.y);
+                        wait_time := 0;
+                    else
+                        wait_time := 3;
+                    endif
+                else
+                    wait_time := 5;
+                endif
+
+            1: // FIGHT — combate com alvo designado
+                if (!opponent || !opponent.isA(POLCLASS_MOBILE) || opponent.dead)
+                    opponent := 0;
+                    SetOpponent(0);
+                    SetWarMode(0);
+                    state := 0;
+                    wait_time := 3;
+                    break;
+                endif
+                var dist_f := Distance(me, opponent);
+                if (dist_f > 14)
+                    opponent := 0;
+                    SetOpponent(0);
+                    SetWarMode(0);
+                    state := 0;
+                    wait_time := 3;
+                    break;
+                endif
+                if (dist_f > 1)
+                    RunTowardLocation(opponent.x, opponent.y);
+                    wait_time := 0;
+                else
+                    wait_time := 2;
+                endif
+
+            2: // FERAL — atacar qualquer player proximo
+                if (!opponent || !opponent.isA(POLCLASS_MOBILE) || opponent.dead)
+                    SetOpponent(0);
+                    SetWarMode(0);
+                    var t := GetFeralTarget();
+                    if (t)
+                        opponent := t;
+                        SetOpponent(opponent);
+                        SetWarMode(1);
+                        wait_time := 0;
+                    else
+                        wait_time := 5;
+                        break;
+                    endif
+                else
+                    var dist_fer := Distance(me, opponent);
+                    if (dist_fer > 14)
+                        opponent := 0;
+                        break;
+                    endif
+                    if (dist_fer > 1)
+                        RunTowardLocation(opponent.x, opponent.y);
+                        wait_time := 0;
+                    else
+                        wait_time := 2;
+                    endif
+                endif
+
+        endcase
+
+        var ev := Wait_For_Event(wait_time);
+        wait_time := 3;
+
+        case (ev.type)
+
+            ATTACK_CMD:
+                if (state != 2 && ev.targ && IsAttackable(ev.targ))
+                    opponent := ev.targ;
+                    SetOpponent(opponent);
+                    SetWarMode(1);
+                    state    := 1;
+                    wait_time := 0;
+                endif
+                break;
+
+            SYSEVENT_ENGAGED:
+                if (state == 2 && IsFeralTarget(ev.source))
+                    if (!opponent || opponent.dead)
+                        opponent := ev.source;
+                        SetOpponent(opponent);
+                        SetWarMode(1);
+                    endif
+                endif
+                break;
+
+            SYSEVENT_DAMAGED:
+                if (ev.source && IsAttackable(ev.source))
+                    if (state == 2 && IsFeralTarget(ev.source))
+                        if (!opponent || opponent.dead)
+                            opponent := ev.source;
+                            SetOpponent(opponent);
+                            SetWarMode(1);
+                        endif
+                    elseif (state == 0 || state == 1)
+                        if (!ev.source.npctemplate && (!opponent || opponent.dead))
+                            var _cg := GetCazadorGuild();
+                            if (!_cg || !IsMemberOfFaccao(_cg, ev.source))
+                                opponent := ev.source;
+                                SetOpponent(opponent);
+                                SetWarMode(1);
+                                if (state == 0) state := 1; endif
+                            endif
+                        endif
+                    endif
+                endif
+                break;
+
+            SYSEVENT_ENTEREDAREA:
+                if (state == 2 && IsFeralTarget(ev.source) && (!opponent || opponent.dead))
+                    opponent := ev.source;
+                    SetOpponent(opponent);
+                    SetWarMode(1);
+                    wait_time := 0;
+                endif
+                // Awareness detection: player pode revelar a pantera escondida
+                if (me.hidden && ev.source.connected && !ev.source.dead &&
+                        CheckLineOfSight(ev.source, me))
+                    var _sneak := CInt(AP_GetSkill(me, SNEAK));
+                    var _dist  := Distance(ev.source, me);
+                    var _diff;
+                    if (_dist >= 8)      _diff := _sneak;
+                    elseif (_dist >= 7)  _diff := CInt(_sneak * 0.95);
+                    elseif (_dist >= 6)  _diff := CInt(_sneak * 0.9);
+                    elseif (_dist >= 5)  _diff := CInt(_sneak * 0.85);
+                    elseif (_dist >= 4)  _diff := CInt(_sneak * 0.8);
+                    elseif (_dist >= 3)  _diff := CInt(_sneak * 0.7);
+                    elseif (_dist >= 2)  _diff := CInt(_sneak * 0.6);
+                    elseif (_dist >= 1)  _diff := CInt(_sneak * 0.5);
+                    else                 _diff := CInt(_sneak * 0.25);
+                    endif
+                    if (SkillCheck(ev.source, AWARENESS, _diff) > 0)
+                        me.hidden := 0;
+                        PrintTextAbove(me, "*revelada*");
+                        SendSysMessage(ev.source, "Você encontrou " + me.name + ".");
+                    endif
+                endif
+                break;
+
+        endcase
+
+        sleepms(10);
+    endwhile
+endprogram

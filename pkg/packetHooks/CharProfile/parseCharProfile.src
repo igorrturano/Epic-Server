@@ -12,6 +12,7 @@ include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:htmlGump";
 include ":fls_core:fls_characters";
+include ":commands:/include/r";
 include "profile_packets";
 
 const PROFILE_MSGTYPE := 0xB8;
@@ -108,23 +109,8 @@ program runScript_CharProfileRequest(params)
 			UpdateProfileClient(who, who.serial, url);
 			BroadcastProfileToParty(who);
 
-			var Object_Name;
-			var conhecidos := dictionary;
-			if (GetObjProperty(who, "conhecidos"))
-				var ID := Cstr(chr.serial);
-				if (GetObjProperty(chr, "disfarce"))
-					ID := Cstr(GetObjProperty(chr, "FakeID"));
-				endif
-
-				conhecidos := GetObjProperty(who, "conhecidos");
-				if (conhecidos.Exists(ID))
-					Object_Name := conhecidos[ID];
-				else
-					Object_Name := chr.name;
-				endif
-			else
-				Object_Name := chr.name;
-			endif
+			var nickname := GetKnownNickname(who, chr);
+			var Object_Name := (nickname != "") ? nickname : chr.name;
 
             var gump := GFCreateGump();
             var raca := who.title_race;
@@ -153,23 +139,8 @@ program runScript_CharProfileRequest(params)
 
 			GFSendGump(who, gump2);
 		else
-			var Object_Name;
-			var conhecidos := dictionary;
-			if (GetObjProperty(who, "conhecidos"))
-				var ID := Cstr(chr.serial);
-				if (GetObjProperty(chr, "disfarce"))
-					ID := Cstr(GetObjProperty(chr, "FakeID"));
-				endif
-
-				conhecidos := GetObjProperty(who, "conhecidos");
-				if (conhecidos.Exists(ID))
-					Object_Name := conhecidos[ID];
-				else
-					Object_Name := chr.name;
-				endif
-			else
-				Object_Name := chr.name;
-			endif
+			var nickname := GetKnownNickname(who, chr);
+			var Object_Name := (nickname != "") ? nickname : chr.name;
 
 			var gump2 := GFCreateGump();
 			GFPage(gump2, 0);

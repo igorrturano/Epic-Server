@@ -37,7 +37,7 @@ class EtherealJump(CombatAbility)
         var targ := TargetCoordinates(who);
 
         // NPC behavior - jump to random direction from opponent
-        if (who.npctemplate)
+        if (mobile.IsNPC())
             var directions := array{ array{ 1, 0 }, array{ 0, 1 }, array{ -1, 0 }, array{ 0, -1 } };
             var random_direction := directions[RandomInt(4) + 1];
             targ := struct{

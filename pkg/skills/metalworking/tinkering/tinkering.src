@@ -4,7 +4,7 @@ use util;
 include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
-include ":crafting:fabricaComplexos";
+include ":crafting:include/fabricacaoComplexosGump";
 include ":crafting:craftingRepair";
 include ":crafting:toolWear";
 include ":itemutils:canAccess";

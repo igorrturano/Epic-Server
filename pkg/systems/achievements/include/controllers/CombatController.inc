@@ -48,7 +48,7 @@ endfunction
 
 function AchievementCombat_Advance_NPCCategory(attacker, defender, combatInfo)
 	// var achiev;
-	// var key := defender.GetCategory() ?: NPC_GetNPCConfig(defender.npctemplate).Category;
+	// var key := defender.GetEnvironment() ?: NPC_GetNPCConfig(defender.npctemplate).Environment;
 	// if (!key) // Se ainda não tem categoria, não é um npc válido.
 	// 	DebugMsg(attacker, DEBUG_ACHIEVEMENT, Message($"Defensor não é um NPC válido ({key}). Ignorando avanço de achievement para CATEGORIA."));
 	// 	return;

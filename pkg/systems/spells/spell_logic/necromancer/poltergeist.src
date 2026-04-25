@@ -9,6 +9,7 @@ include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 include "include/say";
 include "include/epicMageryUtils";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 
@@ -28,7 +29,7 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	handleSilentMagic(who, who, SFX_SPELL_TELEKINESIS);
+	SC_HandleSound(who, who, SFX_SPELL_TELEKINESIS);
 
 	if (targ.Telekinesis(who))
 		sleepms(20);

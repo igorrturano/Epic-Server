@@ -158,6 +158,27 @@ function HealStamina(mobile, amount)
   endif
 endfunction
 
+function HealVicio(mobile, vicio_name, amount)
+
+	var cur := AP_GetVital(mobile, vicio_name);
+	var maxi := AP_GetVitalMaximumValue(mobile, vicio_name);
+
+	cur := cur + amount;
+
+	// clamp mínimo
+	if (cur < 0)
+		cur := 0;
+	endif
+
+	// clamp máximo
+	if (cur > maxi)
+		cur := maxi;
+	endif
+
+	AP_SetVital(mobile, vicio_name, cur);
+
+endfunction
+
 /*
  * AP_SetVital(mobile, vital_name, points)
  *
@@ -320,7 +341,7 @@ function applyEpicHealing(mobile, amt)
 	var damage := 0;
 
 	if (wrapper.IsNPC())
-        if (Lower(wrapper.GetCategory()) == "undead" || Lower(wrapper.GetCategory()) == "demons")
+        if (Lower(wrapper.GetEnvironment()) == "undead" || Lower(wrapper.GetEnvironment()) == "demons")
             damage := CInt(amt / 2);
             ApplyRawDamage(mobile, damage);
 			return true;

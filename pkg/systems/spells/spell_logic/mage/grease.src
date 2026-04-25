@@ -2,6 +2,10 @@
  * $Id$
  *
 */
+// Intentionally bypasses SpellController: fraturaexposta uses NoEnd=1 +
+// ContinueOnDeath=1 via the legacy cfg timer + Script tick loop. SC has no
+// self-renewing / survives-death opts, and adding them for one spell isn't
+// worth it.
 use uo;
 use os;
 

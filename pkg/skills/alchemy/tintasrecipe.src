@@ -29,15 +29,15 @@ program cria(item)
 
 	var sorteado;
 	if (item.objtype == 0xef2b)
-		sorteado := level1[RandomIntMinMax(1, level1.size() + 1)];
+		sorteado := level1[RandomIntMinMax(1, level1.size())];
 	elseif (item.objtype == 0xef3c)
-		sorteado := level2[RandomIntMinMax(1, level2.size() + 1)];
+		sorteado := level2[RandomIntMinMax(1, level2.size())];
 	elseif (item.objtype == 0xef3d)
-		sorteado := level3[RandomIntMinMax(1, level3.size() + 1)];
+		sorteado := level3[RandomIntMinMax(1, level3.size())];
 	elseif (item.objtype == 0xef3e)
-		sorteado := level4[RandomIntMinMax(1, level4.size() + 1)];
+		sorteado := level4[RandomIntMinMax(1, level4.size())];
 	elseif (item.objtype == 0xef3f)
-		sorteado := level5[RandomIntMinMax(1, level5.size() + 1)];
+		sorteado := level5[RandomIntMinMax(1, level5.size())];
 	endif
 	recipe.+recipe := cint(cfg[sorteado]."recipe");
 

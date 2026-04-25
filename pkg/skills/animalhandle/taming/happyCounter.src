@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":attributes:attributes";
+include ":stables:include/stable";
 
 program happyCounter(parms)
 	var me := parms[1];
@@ -11,8 +12,8 @@ program happyCounter(parms)
 		if (GetObjProperty(me, "countercheck") != timer)
 			break;
 		endif
-		if (GetObjProperty(me, "stabled"))
-			while (GetObjProperty(me, "stabled"))
+		if (IsStabled(me) || IsInLimbo(me))
+			while (IsStabled(me) || IsInLimbo(me))
 				if (GetObjProperty(me, "countercheck") != timer)
 					break;
 				endif
@@ -26,12 +27,14 @@ program happyCounter(parms)
 				sleep(120);
 			endwhile
 		else
-			while ((!GetObjProperty(me, "stabled")) && (!GetObjProperty(me, "onhold")))
+			while (!IsStabled(me) && !IsInLimbo(me) && !GetObjProperty(me, "onhold"))
 				if (GetObjProperty(me, "countercheck") != timer)
 					break;
 				endif
-				happiness := GetObjProperty(me, "happiness");
+				// previous_location marcado pelo LogoutPets — se o pet esta
+				// offline, nao decai happiness.
 				if (!GetObjProperty(me, "previous_location"))
+					happiness := GetObjProperty(me, "happiness");
 					happiness := happiness - 1;
 					if (happiness < 0)
 						happiness := 0;

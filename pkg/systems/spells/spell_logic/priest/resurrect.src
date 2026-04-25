@@ -1,3 +1,6 @@
+// Intentionally bypasses SpellController: the 1-second fraturaexposta starter
+// uses the legacy cfg timer (NoEnd + ContinueOnDeath). See grease.src for the
+// same rationale.
 use uo;
 use file;
 

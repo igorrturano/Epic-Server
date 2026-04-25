@@ -130,6 +130,11 @@ function CanAttack(byRef attackInfo)
 		return false;
 	endif
 
+	if (defender.GetObjRef().GetProp("#sanctuary"))
+		Message("Esse alvo esta sob um santuario divino.", Color(SYSTEM_COLOR::FAIL)).SendSys(attacker.GetObjRef());
+		return false;
+	endif
+
 	if (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::SPIRITUALBLADE)
 		var elemental := attackInfo.GetWeapon().GetObjRef().GetProp("#elementalweapon");
 		if (elemental == error)

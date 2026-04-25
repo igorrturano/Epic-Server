@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -26,7 +27,7 @@ program SpellScript(params)
 	 targ.npctemplate == ":brainai:ArcaneDaemon" || targ.npctemplate == "ChaosDaemon" ||
 	 targ.npctemplate == ":brainai:pitfiend" || targ.npctemplate == ":brainai:Moloch")
 		SetObjProperty(targ, "soulstone", 1);
-		handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
+		SC_HandleSound(who, targ, SFX_SPELL_WEAKEN);
 
 		SendSysMessageEx(who, "Voce aprisionara a alma do alvo.", SSM_INFO);
 		Corromper(who, 88, targ);

@@ -6,44 +6,60 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedscripts:timedScripts";
 include ":tn:cooldown";
 include ":combat:Controller/DamageController_legacy";
 include "include/epicMageryUtils";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
-	// SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
-	var targ := who.weapon; // Spell_Target(who, TGTOPT_CHECK_LOS);
+	var targ := who.weapon;
 	if (!targ)
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return;
 	endif
 
-	var time := cint(AP_GetSkill(who, ARCANA) / 2);
-
-	if (targ.isA(POLCLASS_WEAPON))
-
-		var elemental := GetObjProperty(targ, "#elementalweapon");
-		if (elemental.type != DMG_FIRE)
-			SendSysMEssageEx(who, "Esta arma precisa estar encantada com Lamina Flamejante.", SSM_FAIL);
-			return 1;
-		endif
-
-		if (checkForElementalWeapons(who, targ))
-			return 0;
-		endif
-
-		SendSysMessageEx(who, "As chamas da sua arma estao incontrolaveis.", SSM_INFO);
-
-		ApplyChargesCalculation(targ, 1, 3);
-		TS_StartTimer(who, "sacrificioflamejante", time);
-
+	if (!targ.isA(POLCLASS_WEAPON))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
+		return;
 	endif
 
-	SendSysMessageEx(who, "Alvo invalido.", SSM_INFO);
+	var elemental := GetObjProperty(targ, "#elementalweapon");
+	if (elemental.type != DMG_FIRE)
+		SendSysMEssageEx(who, "Esta arma precisa estar encantada com Lamina Flamejante.", SSM_FAIL);
+		return 1;
+	endif
 
+	if (checkForElementalWeapons(who, targ))
+		return 0;
+	endif
+
+	SendSysMessageEx(who, "As chamas da sua arma estao incontrolaveis.", SSM_INFO);
+
+	ApplyChargesCalculation(targ, 1, 3);
+	var cargasRetorno := ConsumeItemArcaneCharges(targ, 5);
+	var divisor := 1;
+	if (cargasRetorno && !(cargasRetorno is @Exception) && cargasRetorno.divisor)
+		divisor := CInt(cargasRetorno.divisor);
+		if (divisor < 1)
+			divisor := 1;
+		endif
+	endif
+
+	var time := cint(AP_GetSkill(who, ARCANA) / 2);
+
+	var opts := struct{};
+	opts.+displayname := "Sacrificio Flamejante";
+	opts.+tick_script := ":spells:spell_logic/swordmage/sacrificioFlamejanteTick";
+	opts.+tick_interval := 5;
+	opts.+tick_params := struct{ weapon_serial := targ.serial, divisor := divisor };
+	opts.+on_expire_script := ":spells:spell_logic/swordmage/sacrificioFlamejanteEnd";
+
+	SC_ApplyEffect(who, who, opts, time, CInt(spell.id));
+
+	return 1;
 endprogram

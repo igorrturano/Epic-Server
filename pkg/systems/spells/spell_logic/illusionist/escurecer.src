@@ -3,6 +3,7 @@ include "include/epicMageryUtils";
 include ":charactercreation:resists";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
@@ -60,7 +61,7 @@ program SpellScript(params)
 		var bonus := epicWisdomPathBonus(who);
 		if (CheckResist(targ, WILL, diff, -bonus))
 			SendSysMessageEx(who, "Você nota que o alvo nao foi afetado.", SSM_FAIL);
-			handleSilentMagic(who, targ, 0x3BE);
+			SC_HandleSound(who, targ, 0x3BE);
 			return;
 		endif
 		// Read darken level from config - single source of truth

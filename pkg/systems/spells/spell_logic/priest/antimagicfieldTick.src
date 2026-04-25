@@ -1,0 +1,45 @@
+use uo;
+use os;
+
+include ":tn:cooldown";
+include "include/client";
+include "include/say";
+include "include/sounds";
+include "include/tileEffects";
+
+// Per-tick silence refresh for Campo Anti-Magia. Re-applies the "silence"
+// cooldown to every mobile in 18-tile radius around the caster; any mobile
+// leaving the area stays silenced up to tick_interval seconds.
+// Args: { caster, targ (caster), spellId, tick_number, tick_params }
+// tick_params: struct{ silence_duration, caster_serial }
+program AntimagicFieldTick(args)
+	var targ := args[2];
+	var tp := args[5];
+	args := 0;
+
+	if (!targ)
+		return;
+	endif
+
+	var silence_cd := CInt(tp.silence_duration);
+	if (silence_cd < 1)
+		silence_cd := 1;
+	endif
+
+	PlayObjectCenteredEffect(targ, FX_MAGIC_IMMUNITY, 10, 255);
+
+	var nearby := ListMobilesNearLocationEx(targ.x, targ.y, LIST_IGNORE_Z, 18,
+		LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, targ.realm);
+
+	foreach mobile in (nearby)
+		if (mobile == targ)
+			continue;
+		endif
+
+		SetCooldown(mobile, "silence", silence_cd);
+		PlayObjectCenteredEffect(mobile, FX_MAGIC_IMMUNITY, 10, 255);
+		PlaySoundEffect(mobile, SFX_SPELL_ENERGY_FIELD);
+		SendSysMessageEx(mobile, "Voce foi silenciado por um campo anti-magia!", SSM_FAIL);
+		sleepms(20);
+	endforeach
+endprogram
