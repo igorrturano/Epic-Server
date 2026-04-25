@@ -6,8 +6,7 @@ use uo;
 use os;
 
 program TimedScript_EndParalysis(mobile)
-	var old_color := GetObjProperty(mobile, "#spectralform");
-	mobile.color := old_color;
+	mobile.color := mobile.truecolor;
 	EraseObjProperty(mobile, "#spectralform");
 	mobile.evasionchance_mod := mobile.evasionchance_mod - 20;
 	return 1;
