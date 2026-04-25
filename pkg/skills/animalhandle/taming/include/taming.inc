@@ -53,30 +53,26 @@ function GetNumPets(who)
 
 	foreach serial in tamed
 		var pet := SystemFindObjectBySerial(serial);
-		if ( pet.master == who && !GetObjProperty(pet, "summoned")) //se não é summon
-			var petPostSerial := GetObjProperty(pet, "StablePostSerial");
-			if ( petPostSerial && !GetObjProperty(pet, "EstaNoLimbo") )
-				if ( IsStableExpired(pet) )
-					// Contrato de estabulo expirado: cobre tanto pet guardado no post
-					// quanto pet retirado que nunca voltou para renovar.
-					var expiredPost := SystemFindObjectBySerial(petPostSerial);
-					EncerrarContratoEstabulo(pet, expiredPost, who);
-				elseif ( !GetObjProperty(who, "CurrentStablePostSerial") )
-					// Migracao: contrato ativo sem CurrentStablePostSerial no master
-					// (dados legacy). Restaura vinculo para preservar 1-post-por-player.
-					SetObjProperty(who, "CurrentStablePostSerial", petPostSerial);
-				endif
-			endif
-			// Pets no estabulo ou em limbo não ocupam slots, mas continuam pertencendo ao player
-			if ( !GetObjProperty(pet, "EstaNoEstabulo") && !GetObjProperty(pet, "EstaNoLimbo") )
-				if (!Cint(pet.getTier()))
-					num_tamed := num_tamed+1;
-				else
-					num_tamed := num_tamed + Cint(pet.getTier());
-				endif
-			endif
-		else
+		if (!pet)
+			// Miss transiente (pet fora do cache, etc). Nao podar a entrada —
+			// ondelete.src cuida de exclusoes reais.
+			sleepms(2);
+			continue;
+		endif
+		if ( pet.master != who || GetObjProperty(pet, "summoned") )
 			tamed.erase(_serial_iter);
+			sleepms(2);
+			continue;
+		endif
+		// Pets no estabulo ou em limbo nao ocupam slots, mas continuam pertencendo
+		// ao player. Contratos expirados nao sao limpos aqui — o gump do post
+		// cuida disso no momento do resgate.
+		if ( !IsStabled(pet) && !IsInLimbo(pet) )
+			if (!Cint(pet.getTier()))
+				num_tamed := num_tamed+1;
+			else
+				num_tamed := num_tamed + Cint(pet.getTier());
+			endif
 		endif
 		sleepms(2);
 	endforeach
@@ -153,12 +149,13 @@ function ErasePet(who, myserial)
 				SetObjProperty(who, "SummonedPets", tamed);
 				var timer_num := GetObjProperty(pet, "slot");
 				var timer := "summon_"+timer_num;
-				TS_LowerDuration(who, timer, -1);				
+				TS_LowerDuration(who, timer, -1);
 				break;
 			endif
 			sleepms(2);
 		endforeach
 	endif
+	OwnerClearPetRef(who, myserial);
 	return;
 endfunction
 
@@ -175,14 +172,14 @@ function AddPet(who, serial)
 	who.followers := who.followers + GetPetCost(pet);
 endfunction
 
-// Libera estado de estábulo/limbo de um pet e desassocia o post.
-// Chame antes de transferir o pet ou logo após libertá-lo/matá-lo.
+// Libera estado de estabulo/limbo de um pet e desassocia o post.
+// Chame antes de transferir o pet ou logo apos libertá-lo/matá-lo.
 function ClearPetStableAndLimboState(pet)
 	if (!pet)
 		return 0;
 	endif
 
-	if (GetObjProperty(pet, "EstaNoEstabulo") || GetObjProperty(pet, "EstaNoLimbo"))
+	if (IsStabled(pet) || IsInLimbo(pet))
 		pet.setParalyzed(0);
 		RevokePrivilege(pet, "invul");
 		pet.disable("invul");
@@ -190,35 +187,24 @@ function ClearPetStableAndLimboState(pet)
 		pet.frozen := 0;
 	endif
 
-	var postSerial := GetObjProperty(pet, "StablePostSerial");
-	if (postSerial)
-		var post := SystemFindObjectBySerial(postSerial);
+	var data := GetPetStable(pet);
+	if (data != error && CInt(data["post"]))
+		var post := SystemFindObjectBySerial(CInt(data["post"]));
 		if (post && GetObjProperty(post, "StoredAnimal") == pet.serial)
 			EraseObjProperty(post, "StoredAnimal");
 		endif
 	endif
 
-	EraseObjProperty(pet, "EstaNoEstabulo");
-	EraseObjProperty(pet, "EstaNoLimbo");
-	EraseObjProperty(pet, "StablePostSerial");
-	EraseObjProperty(pet, "DataEntrada");
-	EraseObjProperty(pet, "DataExpiracao");
-	EraseObjProperty(pet, "PrecoPorDia");
-	EraseObjProperty(pet, "OriginalLocation");
-
+	ClearPetStable(pet);
 	return 1;
 endfunction
 
-// Limpa refs do master para este pet (PlayerPetInLimboSerial, CurrentStablePostSerial).
+// Limpa refs do master para este pet (limbo_pet, post, stabled_pets).
 function ClearMasterLimboRef(master, pet_serial)
 	if (!master)
 		return 0;
 	endif
-	var ref := GetObjProperty(master, "PlayerPetInLimboSerial");
-	if (ref && CInt(ref) == CInt(pet_serial))
-		EraseObjProperty(master, "PlayerPetInLimboSerial");
-		EraseObjProperty(master, "CurrentStablePostSerial");
-	endif
+	OwnerClearPetRef(master, pet_serial);
 	return 1;
 endfunction
 

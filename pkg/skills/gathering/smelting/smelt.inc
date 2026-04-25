@@ -180,7 +180,7 @@ function smeltaImpurezasRaras(who, amt)
   var drops := dictionary;
   var i;
   for (i := 1; i <= chunks; i := i + 1)
-    var rand := RandomFloat(200);
+    var rand := RandomFloat(20);
     var metal := 0;
     if (rand < 0.1)
       metal := 0x6311; // Mithril
