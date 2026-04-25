@@ -58,5 +58,5 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school)
 	var dmg := RandomDiceRoll("1d4"); /* epicSpellDamageRoll(caster, spell_circle);
     dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school); */
 
-	DamageFLS(targ, cint(dmg), DMG_FORCED, caster, "firebolt");
+	DamageFLS(targ, cint(dmg), DMG_FIRE, caster, "firebolt");
 endfunction
