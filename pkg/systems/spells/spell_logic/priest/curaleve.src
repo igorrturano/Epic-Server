@@ -9,7 +9,7 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include "include/tileEffects";
 include ":charactercreation:habilidades";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include ":epicAI:include/epicNPCCombat";   // CheckForWoundedAllies, FindMostWoundedAlly
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
@@ -19,6 +19,7 @@ include ":epicAI:epicai";
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	if (who.npctemplate)
@@ -54,7 +55,7 @@ program SpellScript(params)
 
 			if (category == "undead" || category == "demons")
 
-				DamageFLS(targ, healed, DMG_FORCED, who);
+				SC_DealDamage(who, targ, CInt(spell.id), healed, DMG_FORCED);
 			else
 				Sendsysmessage(who, "Alvo invalido.");
 			endif

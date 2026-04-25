@@ -17,7 +17,8 @@ program SpellScript(params)
 
 	MakeBleed(who);
 
-	// 	ApplyRawDamage( who, 10, 0, DAMAGE_SHOW );
+	// Self-damage as a casting cost — intentionally NOT routed through SC_DealDamage,
+	// which would fire AFTER_DAMAGE/ON_KILL hooks against the caster for damaging themselves.
 	ApplyRawDamage(who, 10);
 	var mana := AP_GetVital(who, MANA);
 	var maxmana := AP_GetVitalMaximumValue(who, MANA);
