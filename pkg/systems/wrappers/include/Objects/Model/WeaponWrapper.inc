@@ -402,6 +402,19 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		       this.GetCategory() == WEAPON_CATEGORY::HANDCANNON;
 	endfunction
 
+	function IsFinesse(this)
+		if (Upper(this.GetSpeedTier()) != MELEE_HIGH)
+			return false;
+		endif
+		var _cat := this.GetCategory();
+		return _cat == WEAPON_CATEGORY::SWORD      ||
+		       _cat == WEAPON_CATEGORY::GREATSWORD ||
+		       _cat == WEAPON_CATEGORY::DAGGER     ||
+		       _cat == WEAPON_CATEGORY::POLEARM    ||
+		       _cat == WEAPON_CATEGORY::SPEAR      ||
+		       _cat == WEAPON_CATEGORY::STAFF;
+	endfunction
+
 	// Private functions
 	function _CalculateWeight(this)
 		var weight := 1;
