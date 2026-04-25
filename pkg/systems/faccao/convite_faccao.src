@@ -144,6 +144,13 @@ function _UsarConviteAssinado(who, item)
     var nome       := GetObjProperty(item, "convite_nome_rp");
     var cargo      := GetObjProperty(item, "convite_cargo_rp");
 
+    // Valida se pode entrar (bloqueia 3ª facção ou mesmo tipo duplicado)
+    var can_join := CanJoinFaccao(guild, who);
+    if (can_join)
+        SendSysMessage(who, can_join);
+        return 0;
+    endif
+
     // Gump de aceite para o convidado
     var gump := GFCreateGump();
     GFSetId(gump, 0x1234A);

@@ -1763,7 +1763,7 @@ function check_coords(who, coords)
 					return 0;
 				endif
 
-				// Verifica se o jogador pertence à facção dona da área.
+				// Verifica se o jogador pertence à facção dona da área (full ou honorário).
 				var player_guild := who.guild;
 				if (!player_guild || player_guild.GetProp("name") != faction_owner)
 					SendSysMessage(who, "Este território pertence à facção '" + faction_owner + "'. Você não tem permissão para construir aqui.");
