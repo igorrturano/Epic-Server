@@ -701,6 +701,12 @@ function GetEquipsByAttackDirection(byRef attackInfo)
 endfunction
 
 function CalculateAttackerCriticalHit(byRef attackInfo)
+	// Spells default to skipping crit — CalculateCriticalChance reads body region
+	// (via CalculateDefenderCriticalReduction) which spells don't set.
+	if (attackInfo.ShouldSkipCrit())
+		return true;
+	endif
+
 	// Only calculate if not already forced by ability
 	if (!attackInfo.GetDamage().IsCritical())
 		attackInfo.SetCriticalHitChance(CalculateCriticalChance(attackInfo));

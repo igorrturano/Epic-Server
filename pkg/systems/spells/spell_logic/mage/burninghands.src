@@ -9,7 +9,7 @@ include ":timedscripts:timedScripts";
 ;
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include ":taming:taming";
 include "include/facings";
 include "include/shapes";
@@ -77,7 +77,7 @@ program SpellScript(params)
 		endif
 
 		SendSysMessageEx(mob, "As chamas queimam voce.", SSM_FAIL);
-		DamageFLS(mob, cint(damage), DMG_FIRE, caster, "burninghands");
+		SC_DealDamage(caster, mob, CInt(spellinfo.id), cint(damage), DMG_FIRE);
 
 		// Apply SC-based burn DoT on top of the initial blast.
 		// Chip fixo de 1d4+1 por tick (sem escalar com Arcana). A escala vem

@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -21,7 +22,7 @@ program SpellScript(params)
 	SetObjProperty(who, "#satisfacaosadica", duration);
 
 	SendSpellBuff(who, who, CInt(spell.id), bonus);
-	handleSilentMagic(who, who, 385);
+	SC_HandleSound(who, who, 385);
 	SendSysMessageEx(who, "Cada morte e um presente.", SSM_INFO);
 	Corromper(who, 20, 0);
 

@@ -380,17 +380,17 @@ program faccao_fix(who, argv)
 
     if (single_target)
         SendSysMessage(who, "[FaccaoFix] Clique no personagem alvo...");
-        var target := Target(who);
-        if (!target || target == error)
+        var targ := Target(who);
+        if (!targ || targ == error)
             SendSysMessage(who, "[FaccaoFix] Cancelado.");
             return;
         endif
-        if (!target.IsA(POLCLASS_CHARACTER))
+        if (!targ.IsA(POLCLASS_MOBILE))
             SendSysMessage(who, "[FaccaoFix] Alvo deve ser um personagem.");
             return;
         endif
-        SendSysMessage(who, "[FaccaoFix] Auditando: " + target.name);
-        _FixPlayer(who, target, dry_run, counters);
+        SendSysMessage(who, "[FaccaoFix] Auditando: " + targ.name);
+        _FixPlayer(who, targ, dry_run, counters);
     else
         _FixAllGuilds(who, dry_run, counters);
         _FixAllPlayers(who, dry_run, counters);

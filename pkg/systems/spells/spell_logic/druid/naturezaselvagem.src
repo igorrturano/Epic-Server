@@ -1,3 +1,7 @@
+// Partially bypasses SpellController: the trailing `bleed` timer is a
+// damage-ticking poison-typed cfg script (Type=P, AllOrNothingCure) that
+// belongs to the poison subsystem, not to SC's caster-buff model. The rest
+// of this spell is already SC-native.
 use uo;
 use os;
 

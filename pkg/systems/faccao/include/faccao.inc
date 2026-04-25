@@ -12,15 +12,6 @@ var FACCAO_NOMES := array{
     "A Liga do Pacto Comum"   // 5
 };
 
-// staff_tipo correspondente a cada índice de FACCAO_NOMES (1..5)
-var FACCAO_STAFF_TIPOS := array{
-    "regentes",  // 1
-    "sinodo",    // 2
-    "rufioes",   // 3
-    "conselho",  // 4
-    "liga"       // 5
-};
-
 // ── Rect de movimento de todos os NPCs de facção (guard e merchant) ───────────
 // Defina aqui a área navegável do mapa. Edite os campos x1, y1, x2, y2.
 var FACCAO_WALK_RECT := struct{ "x1":=1117, "y1":=1028, "x2":=1417, "y2":=1105 };

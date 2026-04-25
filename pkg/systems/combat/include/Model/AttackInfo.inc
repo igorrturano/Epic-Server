@@ -52,6 +52,16 @@ class AttackInfo(IAttackInfo)
 	var _attackerAbilities := dictionary{}; // Dictionary of attacker's abilities (myhabs)
 	var _defenderAbilities := dictionary{}; // Dictionary of defender's abilities (myhabs)
 
+	// Spell-origin fields — populated when damage comes from a spell via SC_DealDamage.
+	// Spells default to skipping parry, crit, and body-region rolls since those are
+	// combat-specific mechanics; individual spells can opt into them if needed.
+	var _isSpell := false;
+	var _spellId := 0;
+	var _damageType := ""; // e.g. DMG_FIRE / DMG_COLD / DMG_ENERGY
+	var _skipParry := false;
+	var _skipCrit := false;
+	var _skipBodyRegion := false;
+
 	function AttackInfo(this, attacker, defender, moment := ATTACK_MOMENT::COMBATING) // attacker: MobileWrapper, defender: MobileWrapper
 		this._moment := moment;
 		this._attacker := attacker;
@@ -278,6 +288,30 @@ class AttackInfo(IAttackInfo)
 	 */
 	function ShouldCounterAttack(this)
 		return this._counterAttack;
+	endfunction
+
+	function IsSpell(this)
+		return this._isSpell;
+	endfunction
+
+	function GetSpellId(this)
+		return this._spellId;
+	endfunction
+
+	function GetDamageType(this)
+		return this._damageType;
+	endfunction
+
+	function ShouldSkipParry(this)
+		return this._skipParry;
+	endfunction
+
+	function ShouldSkipCrit(this)
+		return this._skipCrit;
+	endfunction
+
+	function ShouldSkipBodyRegion(this)
+		return this._skipBodyRegion;
 	endfunction
 
 	/**
@@ -552,6 +586,33 @@ class AttackInfo(IAttackInfo)
 	function SetCounterAttack(this, value := true)
 		this._counterAttack := value;
 
+		return this;
+	endfunction
+
+	// Mark this AttackInfo as originating from a spell. Auto-enables skipParry/Crit/BodyRegion
+	// since those rolls are combat-specific; callers can re-enable them individually if desired.
+	function SetSpellOrigin(this, spellId, damageType := "")
+		this._isSpell := true;
+		this._spellId := CInt(spellId);
+		this._damageType := damageType;
+		this._skipParry := true;
+		this._skipCrit := true;
+		this._skipBodyRegion := true;
+		return this;
+	endfunction
+
+	function SetSkipParry(this, value := true)
+		this._skipParry := value;
+		return this;
+	endfunction
+
+	function SetSkipCrit(this, value := true)
+		this._skipCrit := value;
+		return this;
+	endfunction
+
+	function SetSkipBodyRegion(this, value := true)
+		this._skipBodyRegion := value;
 		return this;
 	endfunction
 

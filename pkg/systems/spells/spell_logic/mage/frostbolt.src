@@ -7,7 +7,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include "include/epicMageryUtils";
@@ -40,7 +40,7 @@ program cast_frostbolt(params)
 
 	// Congelar is pure CC. Direct damage is a token frostbite, scaling comes from the freeze duration.
 	var token_dmg := RandomDiceRoll("1d4");
-	DamageFLS(targ, token_dmg, DMG_COLD, caster, "congelar");
+	SC_DealDamage(caster, targ, CInt(spellinfo.id), token_dmg, DMG_COLD);
 
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
 	var bonus := epicWisdomPathBonus(caster);

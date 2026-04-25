@@ -6,12 +6,13 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/tileEffects";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	if (!targ)
@@ -41,8 +42,8 @@ program SpellScript(params)
 	// Calculate damage: 8d6 holy fire damage
 	var dmg := RandomDiceRoll("8d6");
 
-	// Apply damage with fire type
-	DamageFLS(targ, cint(dmg), DMG_FIRE, who, "flamestrike");
+	// Apply damage with fire type via SC (routes through after-damage ability hooks)
+	SC_DealDamage(who, targ, CInt(spell.id), cint(dmg), DMG_FIRE);
 
 	SendSysMessageEx(who, "Voce invoca chamas sagradas sobre " + targ.name + "!", SSM_INFO);
 

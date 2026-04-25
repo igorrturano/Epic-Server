@@ -37,6 +37,11 @@ program epicitem_use(who, item)
 	endcase
 
 	if (success)
+		if (effect.destroy_on_use != error && CInt(effect.destroy_on_use) == 1)
+			DestroyItem(item);
+			return;
+		endif
+
 		if (CInt(effect.cooldown) > 0)
 			setCooldown(who, cd_name, CInt(effect.cooldown));
 		endif
