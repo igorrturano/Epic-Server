@@ -3,6 +3,7 @@ use os;
 
 include ":spells:tnmagery";
 include ":spells:Controller/SpellController";
+include ":spells:Controller/SC_Damage";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -68,7 +69,7 @@ program SpellScript(params)
 		else
 			PlayMovingEffectEx(targ, who, 3982, 255, 1, 2117);
 			PerformAction(who, HUMAN_ANIM::CAST_AREA);
-			ApplyRawDamage(targ, amt);
+			SC_DealDamage(who, targ, CInt(spell.id), amt, DMG_FORCED);
 			targ.setAggro(who.serial, 150);
 			if (GetObjProperty(targ, "#sleep"))
 				EraseObjProperty(targ, "#sleep");

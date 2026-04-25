@@ -7,7 +7,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":destroyable:include/destroyItem";
@@ -45,10 +45,10 @@ program cast_firebolt(params)
 		return 0;
 	endif
 
-	LaunchProjectile(caster, targ, spell_circle, spell_school);
+	LaunchProjectile(caster, targ, spell_circle, spell_school, CInt(spell.id));
 endprogram
 
-function LaunchProjectile(caster, targ, spell_circle, spell_school)
+function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
 	PlaySoundEffect(caster, SFX_MAGIC_ARROW);
 	if (GetObjProperty(caster, "chardata").magia == "Druid")
 		PlayObjectCenteredEffect(targ, 0x548F, 10, 30);
@@ -58,5 +58,5 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school)
 	var dmg := RandomDiceRoll("1d4"); /* epicSpellDamageRoll(caster, spell_circle);
     dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school); */
 
-	DamageFLS(targ, cint(dmg), DMG_FIRE, caster, "firebolt");
+	SC_DealDamage(caster, targ, spellId, cint(dmg), DMG_FIRE);
 endfunction
