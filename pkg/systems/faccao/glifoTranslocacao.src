@@ -297,6 +297,7 @@ function _RunRitual(who, durationSeconds, label)
         endif
         if (ReadGameClock() >= nextAnimAt)
             PerformAction(who, HUMAN_ANIM::CAST_AREA);
+            PlaySoundEffect(who, 0x64D);
             nextAnimAt := ReadGameClock() + RITUAL_ANIM_INTERVAL;
         endif
         sleepms(200);
