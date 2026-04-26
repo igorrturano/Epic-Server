@@ -1,3 +1,37 @@
+// =============================================================================
+// npc.inc — Sistema de NPCs de faccao
+// =============================================================================
+//
+// Gerencia todo o ciclo de vida dos NPCs contratados pelas faccoes: deteccao
+// de tipo/tier, listagem por faccao, contratacao, registro e demissao.
+//
+// DETECCAO DE TIPO E TIER
+//   _GetNPCScript(template)  — mapeia nome do template para o script correto
+//                              (ex: "cazador" -> panteracazador, "ladrao" -> ladrao)
+//   _GetNPCTier(name)        — detecta tier pelo sufixo do nome do NPC:
+//                              sem sufixo=1 (fraco), "II"=2 (medio), "III"=3 (forte)
+//
+// LISTAGEM POR FACCAO
+//   ListNPCs_Liga, ListNPCs_Regentes, ListNPCs_Sinodo, ListNPCs_Conselho
+//   — retornam arrays com os templates disponiveis para contratacao por cada faccao.
+//
+// GERENCIAMENTO DE NPCs DA GUILD
+//   AddNpc(guild, npc_serial)       — registra NPC na lista da guild
+//   listNPC(guild)                  — lista NPCs ativos da guild
+//   remNPC(guild, npc_serial)       — remove NPC da lista da guild
+//   listContractedNPC(guild)        — lista NPCs com contrato ativo
+//   DismissNPC(npc)                 — demite e remove o NPC do mundo
+//
+// CONTRATACAO
+//   ContractNPC(guild, template, x, y, z, realm)
+//   — cria o NPC na localizacao, aplica equipamentos (_VestirDoGhaia),
+//     define raca, registra na guild (_RegisterActiveNPC) e retorna o serial.
+//
+// REGISTRO
+//   _RegisterActiveNPC(guild, npc, contract_duration)
+//   — define props de guild, contrato, tipo de faccao e inicia o script do NPC.
+// =============================================================================
+
 // ###########################################
 // # npc.inc - Sistema de Facção
 // ###########################################
@@ -40,108 +74,7 @@ function _GetNPCTier(tname)
     return 3;
 endfunction
 
-// Configura skills que nao podem ser definidas no npcdesc.cfg via AP_SetTrueSkill.
-// Chamado apos o NPC ser registrado na faccao.
-function _SetupNPCSkills(agent, tname)
-    var t    := lower(tname);
-    var tier := _GetNPCTier(tname);
-
-    // ----- CONSELHO SOFOCRATICO (guardamago, guardakaijin, guardashaman, etc.) -----
-    if (t["guarda"] != error && (t["kaijin"] != error || t["shaman"] != error ||
-        t["aradal"] != error || t["velkyn"] != error || t["evocatium"] != error))
-        var mgr  := array{ 0, 40, 65, 90 }[tier];
-        var tact := array{ 0, 30, 50, 70 }[tier];
-        var wres := array{ 0, 25, 40, 55 }[tier];
-        var oh   := array{ 0, 20, 30, 40 }[tier];
-        var theo := array{ 0, 10, 20, 30 }[tier];
-        AP_SetTrueSkill(agent, MAGERY,    mgr);
-        AP_SetTrueSkill(agent, ARCANA,    mgr);
-        AP_SetTrueSkill(agent, TACTICS,   tact);
-        AP_SetTrueSkill(agent, WRESTLING, wres);
-        AP_SetTrueSkill(agent, THEOLOGY,  theo);
-        AP_SetTrueSkill(agent, ONEHANDED, oh);
-        return;
-    endif
-
-    // ----- REGENTES (guardafaccao) -----
-    if (t["guardafaccao"] != error)
-        var t_val  := array{ 0, 40, 60, 80 }[tier];
-        var oh_val := array{ 0, 50, 65, 80 }[tier];
-        var tw_val := array{ 0, 30, 50, 70 }[tier];
-        var dw_val := array{ 0, 15, 35, 55 }[tier];
-        var wr_val := array{ 0, 25, 45, 65 }[tier];
-        var rn_val := array{ 0,  0, 15, 30 }[tier];
-        AP_SetTrueSkill(agent, TACTICS,    t_val);
-        AP_SetTrueSkill(agent, ONEHANDED,  oh_val);
-        AP_SetTrueSkill(agent, TWOHANDED,  tw_val);
-        AP_SetTrueSkill(agent, DUALWIELD,  dw_val);
-        AP_SetTrueSkill(agent, WRESTLING,  wr_val);
-        AP_SetTrueSkill(agent, RANGED,     rn_val);
-        return;
-    endif
-
-    // ----- RUFIOES (ladraorufiao) -----
-    if (t["ladraoruf"] != error)
-        var pp_val := array{ 0, 50, 70, 90 }[tier];
-        var t2_val := array{ 0, 40, 55, 70 }[tier];
-        var oh2    := array{ 0, 50, 65, 80 }[tier];
-        var dw2    := array{ 0, 20, 40, 60 }[tier];
-        var wr2    := array{ 0, 20, 30, 40 }[tier];
-        AP_SetTrueSkill(agent, PICKPOCKETING, pp_val);
-        AP_SetTrueSkill(agent, TACTICS,       t2_val);
-        AP_SetTrueSkill(agent, ONEHANDED,     oh2);
-        AP_SetTrueSkill(agent, DUALWIELD,     dw2);
-        AP_SetTrueSkill(agent, WRESTLING,     wr2);
-        return;
-    endif
-
-    // ----- SINODO MELEE (assassinosinodo) -----
-    if (t["assassinosinodo"] != error)
-        var ta3 := array{ 0, 50, 65, 80 }[tier];
-        var oh3 := array{ 0, 55, 70, 85 }[tier];
-        var dw3 := array{ 0, 30, 45, 60 }[tier];
-        var wr3 := array{ 0, 20, 35, 50 }[tier];
-        var tw3 := array{ 0, 20, 30, 40 }[tier];
-        AP_SetTrueSkill(agent, TACTICS,   ta3);
-        AP_SetTrueSkill(agent, ONEHANDED, oh3);
-        AP_SetTrueSkill(agent, DUALWIELD, dw3);
-        AP_SetTrueSkill(agent, WRESTLING, wr3);
-        AP_SetTrueSkill(agent, TWOHANDED, tw3);
-        return;
-    endif
-
-    // ----- SINODO ARQUEIRO (assassinoarqueiro) -----
-    if (t["assassinoarqueiro"] != error)
-        var rn4 := array{ 0, 55, 70, 85 }[tier];
-        var ta4 := array{ 0, 45, 60, 75 }[tier];
-        var dw4 := array{ 0, 20, 35, 50 }[tier];
-        var oh4 := array{ 0, 20, 30, 40 }[tier];
-        var wr4 := array{ 0, 15, 25, 35 }[tier];
-        var tw4 := array{ 0, 15, 25, 35 }[tier];
-        AP_SetTrueSkill(agent, RANGED,    rn4);
-        AP_SetTrueSkill(agent, TACTICS,   ta4);
-        AP_SetTrueSkill(agent, DUALWIELD, dw4);
-        AP_SetTrueSkill(agent, ONEHANDED, oh4);
-        AP_SetTrueSkill(agent, WRESTLING, wr4);
-        AP_SetTrueSkill(agent, TWOHANDED, tw4);
-        return;
-    endif
-
-    // ----- SINODO CAZADOR (assassinocazador — melee + pantera) -----
-    if (t["assassinocazador"] != error)
-        var ta5 := array{ 0, 50, 65, 80 }[tier];
-        var oh5 := array{ 0, 55, 70, 85 }[tier];
-        var dw5 := array{ 0, 25, 40, 55 }[tier];
-        var wr5 := array{ 0, 20, 30, 45 }[tier];
-        var tw5 := array{ 0, 15, 25, 35 }[tier];
-        AP_SetTrueSkill(agent, TACTICS,   ta5);
-        AP_SetTrueSkill(agent, ONEHANDED, oh5);
-        AP_SetTrueSkill(agent, DUALWIELD, dw5);
-        AP_SetTrueSkill(agent, WRESTLING, wr5);
-        AP_SetTrueSkill(agent, TWOHANDED, tw5);
-        return;
-    endif
-endfunction
+// _SetupNPCSkills foi movida para npc_laws_enforce.inc e integrada a SetupFaccaoNPCBase.
 
 // ============================================================================
 // LISTAGEM DE NPCs DISPONIVEIS POR TIPO DE FACCAO

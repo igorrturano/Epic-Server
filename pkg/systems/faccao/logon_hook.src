@@ -1,0 +1,68 @@
+// =============================================================================
+// logon_hook.src — Hook de logon do modulo de faccao
+// =============================================================================
+//
+// Chamado por pkg/systems/accounts/logon.src a cada login de qualquer player.
+// Centraliza todas as verificacoes e restauracoes do sistema de faccao no logon,
+// mantendo logon.src desacoplado dos detalhes internos do modulo.
+//
+// VERIFICACOES (em ordem)
+//
+//   1. Soldo pendente (notif_soldo == 1)
+//      Dispara gump_soldo para notificar o player que ha soldo a receber.
+//
+//   2. Lider com notificacao de preso pendente
+//      Se o player e lider de uma guild que tem "notif_contato_preso_pendente",
+//      dispara gump_contato_preso para exibir a notificacao ao lider.
+//      A notificacao e salva na guild (nao no mobile) para sobreviver ao logout.
+//
+//   3. Preso recebendo confirmacao do lider (notif_lider_recebeu)
+//      Se o lider confirmou a mensagem enquanto o preso estava offline,
+//      entrega a mensagem via SendSysMessage e apaga a prop.
+//
+//   4. Prisao pendente apos restart do servidor (#prisao_pendente)
+//      Se o servidor reiniciou com o player ainda preso, reinicia prisaotimer
+//      com is_restart=1 (sem espera inicial, apenas aguarda cliente carregar).
+//      A prop e apagada antes do start_script para evitar dupla execucao.
+// =============================================================================
+
+use uo;
+use os;
+use guilds;
+
+// Hook de logon do modulo de faccao.
+// Chamado por pkg/systems/accounts/logon.src a cada login de player.
+// Centraliza todas as notificacoes e restauracoes relacionadas a faccao.
+
+program logon_hook(params)
+	var who := params[1];
+	if (!who || !who.isA(POLCLASS_MOBILE)) return; endif
+
+	// ── Soldo pendente ────────────────────────────────────────────────────────
+	if (GetObjProperty(who, "notif_soldo") == 1)
+		start_script(":faccao:gump_soldo", array{who});
+	endif
+
+	// ── Lider: notificacao de preso pendente (salva na guild) ────────────────
+	var _guild := who.guild;
+	if (_guild)
+		var _notif_preso := _guild.getProp("notif_contato_preso_pendente");
+		if (_notif_preso != error && _notif_preso && CInt(_guild.getProp("leader")) == who.serial)
+			start_script(":faccao:gump_contato_preso", array{ who, _notif_preso.preso, _notif_preso.gname, _notif_preso.preso_serial, _guild });
+		endif
+	endif
+
+	// ── Preso: aviso de que o lider leu a mensagem ───────────────────────────
+	var _notif_lider := GetObjProperty(who, "notif_lider_recebeu");
+	if (_notif_lider != error && _notif_lider)
+		EraseObjProperty(who, "notif_lider_recebeu");
+		SendSysMessage(who, "O lider da faccao recebeu sua mensagem.");
+	endif
+
+	// ── Preso: reinicia prisaotimer se servidor reiniciou com player preso ───
+	var _prisao_p := GetObjProperty(who, "#prisao_pendente");
+	if (_prisao_p != error && _prisao_p)
+		EraseObjProperty(who, "#prisao_pendente");
+		start_script(":faccao:prisaotimer", array{ who.serial, _prisao_p.guildid, _prisao_p.tier, 1 });
+	endif
+endprogram
