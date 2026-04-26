@@ -186,8 +186,7 @@ function _ListNPCRegentes()
     return array{
         struct{ "template" := ":epicai:guardafaccaofraco",  "price" := 25,  "name" := "Guarda Recruta" },
         struct{ "template" := ":epicai:guardafaccaomedio",  "price" := 70,  "name" := "Guarda Veterano" },
-        struct{ "template" := ":epicai:guardafaccaoforte",  "price" := 100, "name" := "Guarda Elite" },
-        struct{ "template" := ":merchants:merchantfaccao",  "price" := 10,  "name" := "Vendedor da Faccao" }
+        struct{ "template" := ":epicai:guardafaccaoforte",  "price" := 100, "name" := "Guarda Elite" }
     };
 endfunction
 
@@ -211,8 +210,7 @@ function _ListNPCConselho(escola := "kaijin")
     return array{
         struct{ "template" := ":epicai:guarda{}{}".format(e, fr_sfx),   "price" := 25,  "name" := "Mago Iniciante ({})".format(escola) },
         struct{ "template" := ":epicai:guarda{}{}".format(e, med_sfx),  "price" := 70,  "name" := "Mago Arcano ({})".format(escola) },
-        struct{ "template" := ":epicai:guarda{}{}".format(e, fort_sfx), "price" := 100, "name" := "Mago Mestre ({})".format(escola) },
-        struct{ "template" := ":merchants:merchantfaccao",               "price" := 10,  "name" := "Vendedor da Faccao" }
+        struct{ "template" := ":epicai:guarda{}{}".format(e, fort_sfx), "price" := 100, "name" := "Mago Mestre ({})".format(escola) }
     };
 endfunction
 
@@ -222,7 +220,6 @@ function _ListNPCRufioes()
         struct{ "template" := ":epicai:ladraorufiaofr",    "price" := 25,  "name" := "Ladrao Recruta" },
         struct{ "template" := ":epicai:ladraorufiaomed",   "price" := 70,  "name" := "Ladrao Furtivo" },
         struct{ "template" := ":epicai:ladraorufiafort",   "price" := 100, "name" := "Ladrao Sombrio" },
-        struct{ "template" := ":merchants:merchantfaccao", "price" := 10,  "name" := "Vendedor da Faccao" },
         struct{ "template" := ":ligafaccao:mercadonegrofaccao", "price" := 50, "name" := "Mercado Negro" }
     };
 endfunction
@@ -279,11 +276,18 @@ function listNPC(guild)
    guild := _EnsureGuild(guild);
    if (!guild) return array{}; endif
 
+   var staff_tipo  := guild.GetProp("staff_tipo");
+   var tipo_faccao := GetFaccaoTipo(guild);
+
    // Faccoes de staff retornam lista canonica por tipo (imutavel, nao salva no guild)
-   var staff_tipo := guild.GetProp("staff_tipo");
-   if (staff_tipo)
+   if (staff_tipo && staff_tipo != error)
       var lista := _ListNPCByStaffTipo(staff_tipo);
       if (lista.size() > 0) return lista; endif
+   endif
+
+   // Faccao de staff sem staff_tipo reconhecido nao tem NPCs contratáveis
+   if (tipo_faccao == "staff")
+      return array{};
    endif
 
    var npcs := guild.GetProp("npcs");

@@ -1186,16 +1186,21 @@ function _TipoFaccaoHandler(who)
 		var nome_idx := _EscolherNomeFaccao(who, nomefaccao_atual);
 		if (!nome_idx) return; endif
 		var nome_lore := FACCAO_NOMES[nome_idx];
+		// FACCAO_NOMES: 1=Regentes, 2=Sinodo, 3=Rufioes, 4=Conselho, 5=Liga
+		var staff_tipo_map := array{ "regentes", "sinodo", "rufioes", "conselho", "liga" };
+		var novo_staff_tipo := staff_tipo_map[nome_idx];
 		guild.SetProp("tipo_faccao", "staff");
 		guild.SetProp("nomefaccao", nome_idx);
+		guild.SetProp("staff_tipo", novo_staff_tipo);
 		guild.SetProp("name", nome_lore);
 		guild_obj.tipo_faccao := "staff";
 		guild_obj.name := nome_lore;
 		_SyncNomeFaccaoMembers(guild, nome_idx);
-		SendSysMessageEx(who, "Tipo: staff | Facção: {} ({})".format(nome_lore, nome_idx));
-	elseif (input[0] == 2) // Player: limpa nomefaccao, preserva nome atual
+		SendSysMessageEx(who, "Tipo: staff | Facção: {} ({}) | staff_tipo: {}".format(nome_lore, nome_idx, novo_staff_tipo));
+	elseif (input[0] == 2) // Player: limpa nomefaccao e staff_tipo, preserva nome atual
 		guild.SetProp("tipo_faccao", "player");
 		guild.EraseProp("nomefaccao");
+		guild.EraseProp("staff_tipo");
 		guild_obj.tipo_faccao := "player";
 		_SyncNomeFaccaoMembers(guild, 0);
 		SendSysMessageEx(who, "Tipo alterado para: player");
@@ -1403,17 +1408,22 @@ function npcHandler(who, input)
 		historico := "<br> - {}".format("<br> -".join(historico));
 		SendHTMLGump(who, "Historico dos Guardas", historico);
 	elseif (input == BUTTON_CONTRACT_NPC)
-		var npcs_array := guild.getProp("npcs");
-		if (!npcs_array || npcs_array.size() == 0 || npcs_array.size() > 4)
+		var _tipo_faccao := GetFaccaoTipo(guild);
+
+		var npcs_array := listNPC(guild);
+
+		if (!npcs_array || npcs_array.size() == 0)
+			if (_tipo_faccao == "staff")
+				return SendSysMessageEx(who, "Esta facção não possui agentes disponíveis para contratar.", SSM_FAIL);
+			endif
 			npcs_array := array{
 				struct{ "template" := ":epicai:guardafaccaofraco",   "price" := 25,  "name" := "Guarda Recruta (Fraco)",      "equipment" := array{} },
 				struct{ "template" := ":epicai:guardafaccaomedio",   "price" := 70,  "name" := "Guarda Veterano (Medio)",     "equipment" := array{} },
 				struct{ "template" := ":epicai:guardafaccaoforte",   "price" := 100, "name" := "Guarda Elite (Forte)",         "equipment" := array{} },
 				struct{ "template" := ":merchants:merchantfaccao",   "price" := 10,  "name" := "Vendedor da Faccao",           "equipment" := array{} }
 			};
-			guild.SetProp("npcs", npcs_array);
-			guild_obj.npcs := npcs_array;
 		endif
+		guild_obj.npcs := npcs_array;
 
 		var opts := array{};
 		foreach agent in (guild_obj.npcs)
