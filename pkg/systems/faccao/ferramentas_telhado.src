@@ -1,0 +1,21 @@
+use uo;
+use os;
+
+program ferramentas_telhado_use(who, item)
+	if (!who)
+		return 0;
+	endif
+
+	if (!item || item.container != who.backpack)
+		SendSysMessage(who, "As ferramentas de telhado devem estar em sua mochila para serem usadas.");
+		return 0;
+	endif
+
+	var script := start_script(":tn:commands/coun/createroof", array{who, 1});
+
+	if (script.errortext)
+		SendSysMessage(who, "Erro ao iniciar as ferramentas: " + script.errortext);
+	endif
+
+	return 1;
+endprogram
