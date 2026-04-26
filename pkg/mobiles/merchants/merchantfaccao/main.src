@@ -156,6 +156,8 @@ endfunction
 // ============================================================
 
 function Setup()
+	SetObjProperty(me, "lingua_escolhida", "Comum");
+
 	var guild_id := GetObjProperty(me, "guild");
 	if (guild_id)
 		guild := FindGuild(guild_id);
@@ -295,6 +297,8 @@ program MerchantMain()
 						array{ me, "DblClick",
 							   struct{ "source" := ev.source, "item" := 0 },
 							   0 });
+				else
+					SendSysMessage(ev.source, "Já estou falando com alguém, aguarde um momento!");
 				endif
 
 			SYSEVENT_ITEM_GIVEN:
@@ -303,6 +307,9 @@ program MerchantMain()
 						array{ me, "ItemGiven",
 							   struct{ "source" := ev.source, "item" := ev.item },
 							   0 });
+				else
+					SendSysMessage(ev.source, "Já estou falando com alguém, aguarde um momento!");
+					MoveItemToContainer(ev.item, ev.source.backpack);
 				endif
 
 			MERCH_FACING_CMD:
