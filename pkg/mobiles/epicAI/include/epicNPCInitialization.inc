@@ -233,6 +233,15 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
             if ("Nazg khalug" in habs)
                 makeRace(mobile, ORC);
             endif
+
+            // Defensor maneuvers (301-304) all gate on the "Postura" prop, which
+            // players normally set via .postura. Pick a stance at spawn so
+            // MANOBRA_DE_DEFESA / DESAFIADORA / RESILIENCIA / INVENCIBILIDADE
+            // pass CanActivate. PROVOCAR (300) is the defensor base ability.
+            if (ABILITY_ID::PROVOCAR in habs)
+                var posturas := array{"Ofensiva", "Defensiva"};
+                SetObjProperty(mobile, "Postura", posturas[RandomInt(posturas.size()) + 1]);
+            endif
         LADINO:
             if ("Mestre dos Venenos" in habs)
                 var bleed_weapons := array{0x1401, 0x13f6, 0x0ec2, 0x26C5, 11565, 0x27af, 0x27ab};
