@@ -18,7 +18,7 @@ program drink_blue(who, potion)
 		return;
 	endif
 
-	if (!checkifcandrink(who, "int"))
+	if (!checkifcandrink(who, potion))
 		return;
 	endif
 
@@ -33,10 +33,11 @@ program drink_blue(who, potion)
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
 		tier := (tier + 2);
 	endif
-	var buff := 0.05 * tier;
-	buff := (stat * buff + bonus) * vicio;
+	var duration := 180 * tier * vicio;
+	var buff := 0.10 * tier;
+	buff := (stat * buff + bonus);
 
-	TS_StartTimer(who, "intelligence", (180 * tier), buff);
+	TS_StartTimer(who, "intelligence", duration, buff);
 	empty_bottle(who, potion);
 	Aplicavicio(who, potion, INTELLIGENCE);
 endprogram
