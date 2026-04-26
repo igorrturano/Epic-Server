@@ -2,10 +2,10 @@ use uo;
 
 // Limites da regiao do Imperium (Valtheris).
 // Ajuste estes valores caso as coordenadas mudem no mapa.
-const VALTHERIS_X1 := 1133;
-const VALTHERIS_Y1 := 1040;
-const VALTHERIS_X2 := 1322;
-const VALTHERIS_Y2 := 1110;
+const VALTHERIS_X1 := 1135;
+const VALTHERIS_Y1 := 1020;
+const VALTHERIS_X2 := 1201;
+const VALTHERIS_Y2 := 1098;
 const VALTHERIS_REALM := "britannia_alt";
 
 function InValtheris(who)
