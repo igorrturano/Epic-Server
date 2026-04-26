@@ -15,7 +15,7 @@ program drink_blue(who, potion)
 		return;
 	endif
 
-	if (!checkifcandrink(who, "velocidade"))
+	if (!checkifcandrink(who, potion))
 		return;
 	endif
 	
