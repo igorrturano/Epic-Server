@@ -96,6 +96,12 @@ function HumanoidBrain()
                         PursueTarget(me.opponent);
                     endif
                 endif
+                // Re-stealth before the chooser runs so ASSASSINAR's hidden-gate
+                // priority lands its #GuaranteedHit bonus. No-op for archetypes
+                // without ASSASSINAR; SkillCheck + 3s cooldown self-throttle.
+                if (me.isThief())
+                    _AttemptCombatStealth(me, MobileWrapper(me));
+                endif
                 // Per-tick casting + abilities — keep offensive pressure
                 UseAbilities(me, me.opponent);
                 TickCombatAbilities(me, me.opponent, combat_abilities);
@@ -438,6 +444,35 @@ function _IsNPCBlacklistedAbility(id)
         ABILITY_ID::CONTROLAR_MORTOS:     return 1;
         ABILITY_ID::CONVOCACAO_SELVAGEM:  return 1;
     endcase
+    return 0;
+endfunction
+
+// Re-stealth between attacks for Assassino-subclass NPCs so the next
+// ASSASSINAR call lands the #GuaranteedHit bonus (the chooser already
+// prioritizes ASSASSINAR when npc.hidden). Ladino NPCs receive
+// runwhilestealth at brain init, so positioning preserves the hidden
+// state.
+//
+// Cooldown-throttled: a failed SkillCheck still eats the cooldown so we
+// don't spam SNEAK every 100ms tick. Successful re-stealth is consumed
+// almost immediately by the next ASSASSINAR attack.
+function _AttemptCombatStealth(npc, wrapper)
+    if (npc.hidden)
+        return 0;
+    endif
+    if (GetCooldown(npc, "combat_stealth"))
+        return 0;
+    endif
+    if (!wrapper.HasAbility(ABILITY_ID::ASSASSINAR))
+        return 0;
+    endif
+
+    SetCooldown(npc, "combat_stealth", 3);
+    if (SkillCheck(npc, SNEAK, -1) > 0)
+        npc.hidden := 1;
+        npc.stealthsteps := 30;
+        return 1;
+    endif
     return 0;
 endfunction
 
