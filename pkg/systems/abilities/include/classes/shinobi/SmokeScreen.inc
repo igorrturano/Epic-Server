@@ -80,24 +80,9 @@ class SmokeScreen(CombatAbility)
 			Message($"[SMOKE_SCREEN] Area: {area}, Duracao: {duration}s", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
-		// Smoke visual loop - replay stationary effects each tick
-		var cx := who.x;
-		var cy := who.y;
-		while (ReadGameClock() <= smoke_expires)
-			if (!IsInShinobiSmokeZone(who))
-				return true;
-			endif
-			for dx := -area to area
-				for dy := -area to area
-					if ((dx * dx + dy * dy) <= (area * area))
-						PlayStationaryEffect(cx + dx, cy + dy, who.z, 0x3728, 10, 10, 0, who.realm);
-					endif
-				endfor
-			endfor
-			sleep(1);
-		endwhile
-
-		ClearSmokeProtection(who);
+		// Visual loop runs in a separate process so ExecuteOn returns immediately
+		// (NPC brains can't afford to block here for `duration` seconds).
+		Start_Script(":abilities:scripts/Ativa/OnUse/smokescreen_visual", {who, area, smoke_expires});
 
 		return true;
 	endfunction

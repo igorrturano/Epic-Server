@@ -423,9 +423,28 @@ function NPC_UseAbilityById(npc, abilityId)
     return 1;
 endfunction
 
+// Abilities the chooser must never select for an NPC. Two reasons land here:
+//   1. Hard player-only gates (party/UI) where CanActivate always returns false
+//      for NPCs (AURA_DE_FE, PRESENCA_DIVINA).
+//   2. Per-file IsNPC fail-fast guards (CONTROLAR_MORTOS, CONVOCACAO_SELVAGEM,
+//      TRANSMUTAR, TRUQUE_SUJO) — selecting them just burns the 2s ability
+//      cooldown on a guaranteed-false ExecuteOn.
+function _IsNPCBlacklistedAbility(id)
+    case (id)
+        ABILITY_ID::AURA_DE_FE:           return 1;
+        ABILITY_ID::PRESENCA_DIVINA:      return 1;
+        ABILITY_ID::TRANSMUTAR:           return 1;
+        ABILITY_ID::TRUQUE_SUJO:          return 1;
+        ABILITY_ID::CONTROLAR_MORTOS:     return 1;
+        ABILITY_ID::CONVOCACAO_SELVAGEM:  return 1;
+    endcase
+    return 0;
+endfunction
+
 // Reads the NPC's myhabs live (same data shape as players) and returns only
 // the abilities tagged uso=Ativa in config — passives fire automatically via
 // the combat damage pipeline, so the chooser never needs to see them.
+// Blacklisted IDs (see _IsNPCBlacklistedAbility) are also excluded.
 function GetActiveHabs(npc)
     var abilities := MobileWrapper(npc).GetAbilities();
     if (!abilities)
@@ -436,6 +455,10 @@ function GetActiveHabs(npc)
     var actives := array{};
     foreach slot in (abilities.keys())
         var id := CInt(abilities[slot]);
+        if (_IsNPCBlacklistedAbility(id))
+            sleepms(2);
+            continue;
+        endif
         var elem := FindConfigElem(habcfg, id);
         if (elem && GetConfigString(elem, "uso") == "Ativa")
             actives.append(id);
@@ -627,6 +650,13 @@ function ChooseWarriorAbility(npc, state, habs)
         return ABILITY_ID::FURIA;
     endif
 
+    // Mutante self-buff — fire FORMA_ADAPTAVEL once so the resist mod is in
+    // place before random combat picks. AdaptableForm.ExecuteOn writes the
+    // "Mutacao" ObjProperty and erases it on toggle-off.
+    if (wrapper.HasAbility(ABILITY_ID::FORMA_ADAPTAVEL) && !GetObjProperty(npc, "Mutacao"))
+        return ABILITY_ID::FORMA_ADAPTAVEL;
+    endif
+
     if (state.health == "dying")
         if (wrapper.HasAbility(ABILITY_ID::MANOBRA_DA_RESILIENCIA))  return ABILITY_ID::MANOBRA_DA_RESILIENCIA;  endif
         // RESILIENCIA_BARBARA.CanActivate requires the furia cooldown to be live.
@@ -653,6 +683,13 @@ function ChooseRogueAbility(npc, state, habs)
     // Melee rogues gate on adjacency; ranged rogues (e.g. crossbow Caçadores) skip it.
     if (!state.is_ranged && state.distance > 1)
         return 0;
+    endif
+
+    // Shinobi foundation — NINJA_PATH writes "#ninja_mark" + "#ninja_mark_expires"
+    // which VITAL_STRIKE/PHANTOM_STRIKE damage-amplify off. Without the mark,
+    // dependents fire as plain hits. Re-fire when the mark window has lapsed.
+    if (wrapper.HasAbility(ABILITY_ID::NINJA_PATH) && !GetObjProperty(npc, "#ninja_mark_expires"))
+        return ABILITY_ID::NINJA_PATH;
     endif
 
     if (state.health == "dying")
@@ -687,11 +724,32 @@ endfunction
 function ChooseSageAbility(npc, state, habs)
     var opponent := npc.opponent;
     var wrapper := MobileWrapper(npc);
+    var has_souls := CInt(GetObjProperty(npc, "shaman_souls")) > 0;
+
+    // Engenheiro foundations — fire GOLEM_ASSEMBLY before any siblings if not
+    // already piloting (sets the "pilotando" prop that SALTO_A_VAPOR /
+    // OMBREIRA_TATICA / EXPLOSIVE_FIST ammo path read). Then EXPLOSIVE_FIST
+    // toggles the "#explosive_fist" damage bonus.
+    if (wrapper.HasAbility(ABILITY_ID::GOLEM_ASSEMBLY) && !GetObjProperty(npc, "pilotando"))
+        return ABILITY_ID::GOLEM_ASSEMBLY;
+    endif
+    if (wrapper.HasAbility(ABILITY_ID::EXPLOSIVE_FIST) && !GetObjProperty(npc, "#explosive_fist"))
+        return ABILITY_ID::EXPLOSIVE_FIST;
+    endif
+
+    // Arqueiro Arcano foundation — ARCANE_BOW sets the "arcane_bow" cooldown
+    // that CHANNELED_SHOT / PRISMATIC_SHOT need to fire. Without it the
+    // dependents fail CanActivate. (Religion=LORE is set at NPC spawn — until
+    // then this gate fails harmlessly and falls through.)
+    if (wrapper.HasAbility(ABILITY_ID::ARCANE_BOW) && !GetCooldown(npc, "arcane_bow"))
+        return ABILITY_ID::ARCANE_BOW;
+    endif
 
     if (state.health == "dying")
         if (wrapper.HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA)) return ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA; endif
         if (wrapper.HasAbility(ABILITY_ID::PRISAO_DIMENSIONAL))        return ABILITY_ID::PRISAO_DIMENSIONAL;        endif
-        if (wrapper.HasAbility(ABILITY_ID::BLOODTHIRST))               return ABILITY_ID::BLOODTHIRST;               endif
+        // Bloodthirst heals Theology/25 per soul — without souls it heals trivially.
+        if (has_souls && wrapper.HasAbility(ABILITY_ID::BLOODTHIRST))  return ABILITY_ID::BLOODTHIRST;               endif
         if (wrapper.HasAbility(ABILITY_ID::SALTO_ETEREO))              return ABILITY_ID::SALTO_ETEREO;              endif
         if (wrapper.HasAbility(ABILITY_ID::ABRIR_PORTAIS))             return ABILITY_ID::ABRIR_PORTAIS;             endif
         // RESILIENCIA_BARBARA also requires Furia (gate same as the warrior chooser).
@@ -715,13 +773,38 @@ function ChooseSageAbility(npc, state, habs)
         var enemies := NPC_GetPlayersPetsAndSummonsNearby(npc);
         if (enemies.size() >= 2)
             if (wrapper.HasAbility(ABILITY_ID::PROVOCAR))              return ABILITY_ID::PROVOCAR;              endif
-            if (wrapper.HasAbility(ABILITY_ID::ELEMENTAL_ANCESTRY))    return ABILITY_ID::ELEMENTAL_ANCESTRY;    endif
+            // Elemental Ancestry consumes shaman_souls — same heal-per-soul math.
+            if (has_souls && wrapper.HasAbility(ABILITY_ID::ELEMENTAL_ANCESTRY)) return ABILITY_ID::ELEMENTAL_ANCESTRY; endif
         endif
     endif
 
     if (opponent.master)
         if (wrapper.HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))    return ABILITY_ID::CORACAO_DA_MATILHA;    endif
         if (wrapper.HasAbility(ABILITY_ID::ELO_NATURAL))           return ABILITY_ID::ELO_NATURAL;           endif
+    endif
+
+    // Filter shaman soul-consumers from the random fallback when no souls are
+    // banked (SOUL_HARVEST is a passive on-kill hook, so souls only land via
+    // combat — until then these abilities have nothing to spend).
+    if (!has_souls)
+        var filtered := array{};
+        foreach hab in habs
+            var skip := 0;
+            case (hab)
+                ABILITY_ID::BLOODTHIRST:
+                ABILITY_ID::SAND_BROTHERS:
+                ABILITY_ID::ELEMENTAL_ANCESTRY:
+                ABILITY_ID::BLOOD_ARENA:
+                    skip := 1;
+            endcase
+            if (!skip)
+                filtered.append(hab);
+            endif
+            sleepms(2);
+        endforeach
+        if (filtered.size() > 0)
+            return filtered[RandomInt(filtered.size())+1];
+        endif
     endif
 
     return habs[RandomInt(habs.size())+1];
