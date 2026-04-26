@@ -25,8 +25,6 @@ var combat_abilities := array{};
 var enter_abilities := array{};
 var anchor_var := 0;
 var spell_target_var := 0;
-var myhabs_var := 0;
-var myhabs_set_var := 0;
 var hazard_cache_var := 0;
 
 /*
@@ -83,8 +81,6 @@ program KillPlayers()
         enter_abilities := array{};
         anchor_var := 0;
         spell_target_var := 0;
-        myhabs_var := 0;
-        myhabs_set_var := 0;
         hazard_cache_var := 0;
         nearby_cache_var := dictionary;
         enemy_last_loc_var := 0;

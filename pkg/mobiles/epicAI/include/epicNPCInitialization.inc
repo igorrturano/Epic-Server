@@ -18,8 +18,9 @@ include ":epicAI:include/epicai";
 include "makeRace";
 include "makeReligion";
 include ":merchants:include/item_template";
-include ":epicAI:include/humanoidBrain";   // GetHabsByLevel, GetClassProgression
+include ":epicAI:include/humanoidBrain";   // GetHabsByLevel, GetClassProgression, ParseAbilityMeta
 include ":epicAI:include/npcDataCache";    // NPC_GetCachedData
+include ":wrappers:Objects/Model/MobileWrapper"; // MobileWrapper.HasAbility
 include ":commands:create";                // CreateItem*Container, GetItemInfo, GetItemDescriptor
 include ":crafting:include/fabricacaoComplexos"; // GeraDescriptorComplexo (tiered items)
 include "include/epicMageryUtils";         // ApplyElementalWeaponProperties (swordmage loadout)
@@ -480,16 +481,35 @@ function EquipRandomFromArray(mobile, items)
 endfunction
 
 
+// Mirrors comprarHabilidade's data shape: dict keyed by slot level (meta.level)
+// so MobileWrapper.HasAbility / GetAbilities and the combat passive dispatcher
+// see NPCs and players the same way.
+function BuildMyhabsDict(habs_array)
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+    var habs_dict := dictionary{};
+    foreach hab in habs_array
+        var elem := FindConfigElem(habcfg, CInt(hab));
+        if (elem)
+            var meta := ParseAbilityMeta(elem);
+            if (meta != error)
+                habs_dict[meta.level] := CInt(hab);
+            endif
+        endif
+        sleepms(2);
+    endforeach
+    return habs_dict;
+endfunction
+
 function SetupHumanoidHabs(mobile)
     var wrestling := AP_GetSkill(mobile, WRESTLING);
     var tactics := AP_GetSkill(mobile, TACTICS);
     var calculate_level_hp := CInt(wrestling + tactics) - 80;
-    
+
     // Add safety cap to prevent overflow
     if (calculate_level_hp > 100)
         calculate_level_hp := 100;
     endif
-    
+
     var npc_level := (calculate_level_hp / 6);
     // Ensure npc_level is within reasonable bounds
     if (npc_level < 0)
@@ -497,14 +517,9 @@ function SetupHumanoidHabs(mobile)
     elseif (npc_level > 20)
         npc_level := 20;
     endif
-    
-    var habs_by_level := GetHabsByLevel(mobile, npc_level);
-    var habs := array{};
-    foreach hab in habs_by_level
-        habs.append(hab);
-    endforeach
 
-    SetObjProperty(mobile, "myhabs", habs);
+    var habs_by_level := GetHabsByLevel(mobile, npc_level);
+    SetObjProperty(mobile, "myhabs", BuildMyhabsDict(habs_by_level));
 endfunction
 
 
@@ -513,21 +528,20 @@ function SetupWizardClass(mobile, npc_elem)
     var spellschool := GetConfigString(npc_elem, "SpellSchool") ? GetConfigString(npc_elem, "SpellSchool") : GetObjProperty(mobile, "SpellSchool");
     var base_ability := 0;
 
-    // If no school defined in config, check habs (now stores IDs)
+    // If no school defined in config, infer from existing habs.
+    // myhabs is now dict-shape (slot -> id), so use HasAbility instead of `in`.
     if (!spellschool)
-        var habs := GetObjProperty(mobile, "myhabs");
-        if (habs)
-            if (ABILITY_ID::VINCULO_ELEMENTAL in habs)
-                spellschool := "Ahtaleloreth";
-            elseif (ABILITY_ID::ELO_NATURAL in habs)
-                spellschool := "Aradalore";
-            elseif (ABILITY_ID::SACRIFICIO_DA_CARNE in habs)
-                spellschool := "Kaijin";
-            elseif (ABILITY_ID::DANCA_DAS_SOMBRAS in habs)
-                spellschool := "Velkyn";
-            elseif (ABILITY_ID::DETERMINACAO_ARCANA in habs)
-                spellschool := "Evocatium";
-            endif
+        var wrapper := MobileWrapper(mobile);
+        if (wrapper.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
+            spellschool := "Ahtaleloreth";
+        elseif (wrapper.HasAbility(ABILITY_ID::ELO_NATURAL))
+            spellschool := "Aradalore";
+        elseif (wrapper.HasAbility(ABILITY_ID::SACRIFICIO_DA_CARNE))
+            spellschool := "Kaijin";
+        elseif (wrapper.HasAbility(ABILITY_ID::DANCA_DAS_SOMBRAS))
+            spellschool := "Velkyn";
+        elseif (wrapper.HasAbility(ABILITY_ID::DETERMINACAO_ARCANA))
+            spellschool := "Evocatium";
         endif
     endif
 
@@ -550,7 +564,7 @@ function SetupWizardClass(mobile, npc_elem)
     // Build progression based on base ability
     var habcfg := ReadConfigFile(":abilities:configs/habilidades");
     var progression := GetClassProgression(habcfg, base_ability, mobile);
-    SetObjProperty(mobile, "myhabs", progression);
+    SetObjProperty(mobile, "myhabs", BuildMyhabsDict(progression));
 
     return 1;
 endfunction
