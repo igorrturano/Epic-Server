@@ -57,7 +57,12 @@ const RUFIAO_DUMP_Z := 0;
 
 // ============================================================
 function disableWarn()
+    if (warning && warning.isA(POLCLASS_MOBILE) && guild)
+        EraseObjProperty(warning, "#guardando_{}".format(guild.guildid));
+    endif
     warn_tries := 0;
+    warn_type  := 0;
+    warn_opt   := 0;
     warning    := 0;
     warn_tier  := 3;
 endfunction
@@ -129,7 +134,11 @@ function GetPrisonPoints(g)
     var pts := g.getProp("prisions");
     if (pts && pts.size() > 0) return pts; endif
 
-    var tipo := CStr(g.getProp("staff_tipo"));
+    var _raw_tipo := g.getProp("staff_tipo");
+    // Faccao player nao tem prisao hardcoded — sem teleporte
+    if (_raw_tipo == error || !_raw_tipo) return array{}; endif
+    var tipo := CStr(_raw_tipo);
+
     case (tipo)
         "conselho_kaijin":
         "conselho_shaman":
@@ -177,22 +186,37 @@ function _GetLawTier(wt)
     return 3;
 endfunction
 
-// Teleporta o CORPO do player para a prisao e inicia o temporizador
+// Marca o player para acordar na prisao ao voltar do desmaio
 function TeleportToJail(who, g, tier := 3)
     var pts := GetPrisonPoints(g);
     if (!pts || !pts.size()) return; endif
     var p := pts[RandomInt(pts.size()) + 1];
-    MoveObjectToLocation(who, p.x, p.y, p.z, p.realm, MOVEOBJECT_FORCELOCATION);
-    PrintTextAbovePrivate(who, "*levado para a prisao*", who);
 
-    var msg := "Voce foi preso pela faccao. Aguarde o temporizador para pagar a multa.";
-    if (tier == 1)
-        msg += " Infracao leve — sera solto em 1 hora se sem dinheiro.";
+    // Salva o destino da prisao no player — KataWakeUp vai usar ao ressuscitar
+    SetObjProperty(who, "#prisao_destino", struct{
+        "x"       := p.x,
+        "y"       := p.y,
+        "z"       := p.z,
+        "realm"   := p.realm,
+        "tier"    := tier,
+        "guildid" := g.guildid
+    });
+
+    // Salva #prisao_pendente aqui ja — garante persistencia mesmo se servidor crashar
+    // antes do prisaotimer rodar (que tambem seta essa prop, mas mais tarde)
+    SetObjProperty(who, "#prisao_pendente", struct{
+        "guildid" := g.guildid,
+        "tier"    := tier
+    });
+
+    var msg := "Voce foi derrotado pelos guardas.";
+    if (tier == 1) msg += " Infracao leve.";
+    elseif (tier == 2) msg += " Infracao moderada.";
+    else msg += " Infracao grave.";
     endif
-    SendSysMessageEx(who, msg, SSM_HARMFUL);
-    AddReport(g, "{} foi preso (tier {})".format(who.name, tier));
+    SendSysMessageEx(who, msg + " Voce acordara na prisao da faccao.", SSM_HARMFUL);
 
-    start_script(":faccao:prisaotimer", array{ who.serial, g.guildid, tier });
+    AddReport(g, "{} foi derrotado e acordara na prisao (tier {})".format(who.name, tier));
 endfunction
 
 // ============================================================
@@ -248,8 +272,12 @@ function _WitnessCheck(who, loc_prop, range := 8)
 endfunction
 
 function _CheckLawTarget(law, who, is_member, is_full, is_honorary, is_leader)
+    // Trata target nao definido (leis antigas sem target) como "foramembros"
+    if (!law.target || typeof(law.target) == "Uninit")
+        return !is_member;
+    endif
     var _tgt := CStr(law.target);
-    if (!_tgt || _tgt == "" || _tgt == "foramembros")
+    if (!_tgt || _tgt == "" || _tgt == "foramembros" || _tgt == "0")
         return !is_member;
     endif
     case (_tgt)
@@ -265,6 +293,16 @@ function _CheckLawTarget(law, who, is_member, is_full, is_honorary, is_leader)
             var exceto := law.exceto_serials;
             if (!exceto || !exceto.size()) return 1; endif
             return !(who.serial in exceto);
+        "exceto_faccoes":
+            // Aplica a lei a todos, EXCETO membros das guilds listadas em law.exceto_guilds
+            var _egids := law.exceto_guilds;
+            if (!_egids || !_egids.size()) return !is_member; endif
+            foreach _egid in _egids
+                sleepms(2);
+                var _eg := FindGuild(CInt(_egid));
+                if (_eg && IsMemberOfFaccao(_eg, who)) return 0; endif
+            endforeach
+            return 1;
         default:
             return !is_member;
     endcase
@@ -344,7 +382,21 @@ endfunction
 function CheckPlayerLaws(who)
     if (who.npctemplate && !who.master) return; endif
     if (!who || !who.isA(POLCLASS_MOBILE) || who.dead || who.concealed) return; endif
-    if (GetCooldown(me, "recentcheck_{}".format(who.serial))) return; endif
+
+    if (GetCooldown(me, "recentcheck_{}".format(who.serial)))
+        return;
+    endif
+
+    // Lock: apenas 1 guarda por vez pode advertir este player nesta guild
+    var _lock_key    := "#guardando_{}".format(guild.guildid);
+    var _lock_serial := CInt(GetObjProperty(who, _lock_key));
+    if (_lock_serial && _lock_serial != me.serial)
+        var _lock_holder := SystemFindObjectBySerial(_lock_serial);
+        if (_lock_holder && _lock_holder.isA(POLCLASS_MOBILE) && !_lock_holder.dead)
+                return;
+        endif
+        EraseObjProperty(who, _lock_key);  // guarda anterior sumiu, liberar
+    endif
 
     var is_member   := IsMemberOfFaccao(guild, who);
     var is_full     := IsFullMember(guild, who);
@@ -355,23 +407,30 @@ function CheckPlayerLaws(who)
 
     if (is_member)
         var privs := GetMemberPrivs(guild, who);
-        if (privs && (privs.abovelaws || privs.above_guards)) return; endif
+        if (privs && (privs.abovelaws || privs.above_guards))
+            return;
+        endif
     endif
 
-    // Imunidade pos-multa (5 min)
-    if (CInt(GetObjProperty(who, "#multa_paga_{}".format(guild.guildid))) > polcore().systime) return; endif
+    // Imunidade pos-multa (1 min)
+    var _multa_exp := CInt(GetObjProperty(who, "#multa_paga_{}".format(guild.guildid)));
+    if (_multa_exp > polcore().systime)
+        return;
+    endif
 
     var has_enemy := HasEnemyNearLaw(who);
 
     foreach law in guild_laws
         sleepms(2);
-        if (!law.on) continue; endif
-        if (!_CheckLawTarget(law, who, is_member, is_full, is_honorary, is_leader)) continue; endif
+        var _law_target_ok := _CheckLawTarget(law, who, is_member, is_full, is_honorary, is_leader);
+        if (!law.on)     continue; endif
+        if (!_law_target_ok) continue; endif
 
         case (law.type)
 
             "nosneak":
-                if (GetProcess(CInt(GetObjProperty(who, "#HidePid"))))
+                var _hiding := GetProcess(CInt(GetObjProperty(who, "#HidePid")));
+                if (_hiding)
                     warning := who; warn_type := 6; warn_tier := 2;
                 endif
                 break;
@@ -395,7 +454,8 @@ function CheckPlayerLaws(who)
                 break;
 
             "noweapon":
-                if (who.weapon && !(who.weapon.objtype in law_tools) && !has_enemy)
+                var _is_tool := who.weapon ? (who.weapon.objtype in law_tools) : 0;
+                if (who.weapon && !_is_tool && !has_enemy)
                     warning := who; warn_type := 3; warn_tier := 2;
                 endif
                 break;
@@ -407,8 +467,8 @@ function CheckPlayerLaws(who)
                 break;
 
             "norace":
-                var chardata := GetObjProperty(who, "chardata");
-                if (chardata && chardata.povo == law.opt)
+                var _raca := cstr(GetObjProperty(who, "raca"));
+                if (_raca && _raca == cstr(law.opt))
                     warning := who; warn_type := 2; warn_tier := 3; warn_opt := law.opt;
                 endif
                 break;
@@ -754,7 +814,13 @@ function CheckPlayerLaws(who)
         endcase
     endforeach
 
+    // Adquirir lock se detectou violacao
+    if (warning)
+        SetObjProperty(who, "#guardando_{}".format(guild.guildid), me.serial);
+    endif
+
     SetCooldown(me, "recentcheck_{}".format(who.serial), 2);
+    return warning ? 1 : 0;
 endfunction
 
 // ============================================================
@@ -942,10 +1008,12 @@ function _FineGump(who, amount, tier, wt)
     GFAddButton(gump, 265, 192, 4017, 4019, GF_CLOSE_BTN, 2);
     GFTextLine(gump, 300, 194, 33, "Recusar");
 
-    me.frozen := 1;
     PrintTextAbove(me, "Pague a multa ou prepare-se para o combate!");
+    me.frozen  := 1;
+    who.frozen := 1;
     var result := GFSendGump(who, gump);
-    me.frozen := 0;
+    me.frozen  := 0;
+    who.frozen := 0;
 
     if (!result || result[0] != 1)
         PrintTextAbove(me, "Recusou a multa! Guardas, a postos!");
@@ -959,8 +1027,8 @@ function _FineGump(who, amount, tier, wt)
     var atual := CInt(guild.GetProp("money"));
     guild.SetProp("money", atual + amount);
     AddReport(guild, "{} pagou multa de {} moedas".format(who.name, amount));
-    SetObjProperty(who, "#multa_paga_{}".format(guild.guildid), polcore().systime + 300);
-    PrintTextAbove(me, "Multa paga. Pode seguir por 5 minutos sem ser abordado.");
+    SetObjProperty(who, "#multa_paga_{}".format(guild.guildid), polcore().systime + 60);
+    PrintTextAbove(me, "Multa paga. Pode seguir por 1 minuto sem ser abordado.");
     SendSysMessageEx(who, "Voce pagou {} moedas de multa ao bau da faccao.".format(amount), SSM_INFO);
     disableWarn();
     return 1;
@@ -1038,9 +1106,7 @@ function _HandleToll()
         GFAddButton(gump, 230, 153, 4017, 4019, GF_CLOSE_BTN, 2);
         GFTextLine(gump, 265, 155, 33, "Recusar");
 
-        me.frozen := 1;
         var result := GFSendGump(warning, gump);
-        me.frozen := 0;
 
         if (result && result[0] == 1)
             _TakeCoins(warning, toll);
@@ -1107,9 +1173,7 @@ function _HandleLootViolation()
     GFAddButton(gump, 300, 195, 4017, 4019, GF_CLOSE_BTN, 2);
     GFTextLine(gump, 335, 197, 33, "Recusar");
 
-    me.frozen := 1;
     var result := GFSendGump(warning, gump);
-    me.frozen := 0;
 
     if (result && result[0] == 1)
         var coins := _CountCoins(warning);
@@ -1119,7 +1183,7 @@ function _HandleLootViolation()
             guild.SetProp("money", atual + FINE_AMOUNT);
             AddReport(guild, "{} pagou multa por saque de desmaiado".format(warning.name));
             EraseObjProperty(warning, "#loot_unconscious");
-            SetObjProperty(warning, "#multa_paga_{}".format(guild.guildid), polcore().systime + 300);
+            SetObjProperty(warning, "#multa_paga_{}".format(guild.guildid), polcore().systime + 60);
             PrintTextAbove(me, "Multa paga. Voce se comprometeu a devolver o que levou.");
             SendSysMessageEx(warning, "Devolva os itens do desmaiado. Voce esta sendo observado.", SSM_HARMFUL);
         else
@@ -1162,9 +1226,7 @@ function _HandleSearchViolation()
     GFAddButton(gump, 270, 168, 4017, 4019, GF_CLOSE_BTN, 2);
     GFTextLine(gump, 305, 170, 33, "Recusar");
 
-    me.frozen := 1;
     var result := GFSendGump(warning, gump);
-    me.frozen := 0;
 
     EraseObjProperty(warning, "#equip_changes");
     EraseObjProperty(warning, "#equip_change_time");
@@ -1219,23 +1281,21 @@ function _HandleEscortFlow()
         GFHtmlArea(gump, 20, 42, 410, 120,
             "<basefont color=#FFFFFF>Infracao: <b>{}</b>.<br>".format(reason) +
             "Multa: <b>{} moedas de cobre</b>.<br>".format(FINE_AMOUNT) +
-            "Ao pagar, ficara 5 minutos sem ser abordado novamente.<br>" +
+            "Ao pagar, ficara 1 minuto sem ser abordado novamente.<br>" +
             "Ao recusar, podera escolher ser escoltado ou resistir.", 0);
         GFAddButton(gump, 60, 205, 4005, 4007, GF_CLOSE_BTN, 1);
         GFTextLine(gump, 95, 207, 2100, "Aceitar e pagar");
         GFAddButton(gump, 280, 205, 4017, 4019, GF_CLOSE_BTN, 2);
         GFTextLine(gump, 315, 207, 33, "Recusar");
 
-        me.frozen := 1;
         var result := GFSendGump(warning, gump);
-        me.frozen := 0;
 
         if (result && result[0] == 1)
             _TakeCoins(warning, FINE_AMOUNT);
             var atual := CInt(guild.GetProp("money"));
             guild.SetProp("money", atual + FINE_AMOUNT);
             AddReport(guild, "{} pagou multa por {} ({} cobre)".format(warning.name, reason, FINE_AMOUNT));
-            SetObjProperty(warning, "#multa_paga_{}".format(guild.guildid), polcore().systime + 300);
+            SetObjProperty(warning, "#multa_paga_{}".format(guild.guildid), polcore().systime + 60);
             PrintTextAbove(me, "Multa paga. Pode seguir.");
             disableWarn();
             return;
@@ -1258,9 +1318,7 @@ function _HandleEscortFlow()
     GFAddButton(escort_gump, 270, 168, 4017, 4019, GF_CLOSE_BTN, 2);
     GFTextLine(escort_gump, 305, 170, 33, "Resistir");
 
-    me.frozen := 1;
     var escort_result := GFSendGump(warning, escort_gump);
-    me.frozen := 0;
 
     if (escort_result && escort_result[0] == 1)
         PrintTextAbove(me, "Escoltando para a prisao pacificamente.");
@@ -1403,13 +1461,18 @@ function CheckKnockedOut()
     if (!fighting || !fighting.isA(POLCLASS_MOBILE)) return; endif
     if (fighting.npctemplate) return; endif  // NPCs nao tem KO nem sao mandados para prisao
     if (fighting.hits > 0) return; endif
+    // Exige que o player esteja de fato morto/desmaiado — evita falso positivo quando hits=uninitialized
+    if (!fighting.dead) return; endif
 
     var targ := fighting;
+    syslog("[KO] guarda={} detectou KO de alvo={} (serial={}) hits={} dead={}".format(
+        me.name, targ.name, targ.serial, targ.hits, targ.dead));
 
     var tipo := CStr(guild.getProp("staff_tipo"));
 
     if (tipo == "rufioes" &&
             GetObjProperty(targ, "#rufiao_robbery_{}".format(guild.guildid)) != error)
+        syslog("[KO]   -> rufioes robbery, nao vai para prisao");
         fighting := 0;
         state    := 1;
         SetWarMode(0);
@@ -1418,8 +1481,11 @@ function CheckKnockedOut()
     endif
 
     var tier := CInt(GetObjProperty(targ, "#pending_tier_{}".format(guild.guildid)));
+    syslog("[KO]   staff_tipo={} | pending_tier={} | guild={}".format(
+        tipo, tier, guild ? guild.guildid : "SEM_GUILD"));
+
     if (!tier || tier < 1 || tier > 3)
-        // Combate normal sem violacao de lei: apenas encerra o combate, sem prisao
+        syslog("[KO]   -> sem violacao de lei pendente, apenas encerra combate");
         fighting := 0;
         state    := 0;
         SetOpponent(0);
@@ -1427,6 +1493,7 @@ function CheckKnockedOut()
         return;
     endif
 
+    syslog("[KO]   -> ENVIANDO PARA PRISAO (tier={})".format(tier));
     fighting := 0;
     state    := 1;
     SetWarMode(0);
@@ -1464,9 +1531,7 @@ function _HandleLitter()
     GFAddButton(gump, 220, 172, 4017, 4019, GF_CLOSE_BTN, 2);
     GFTextLine(gump, 255, 174, 33, "Recusar");
 
-    me.frozen := 1;
     var result := GFSendGump(warning, gump);
-    me.frozen := 0;
 
     if (result && result[0] == 1)
         if (_TakeCoins(warning, FINE_AMOUNT))
@@ -1474,7 +1539,7 @@ function _HandleLitter()
             guild.SetProp("money", atual + FINE_AMOUNT);
             AddReport(guild, "{} pagou multa de lixo ({} cobre)".format(warning.name, FINE_AMOUNT));
             EraseObjProperty(item, "dropped_by");
-            SetObjProperty(warning, "#multa_paga_{}".format(guild.guildid), polcore().systime + 300);
+            SetObjProperty(warning, "#multa_paga_{}".format(guild.guildid), polcore().systime + 60);
             PrintTextAbove(me, "Multa paga. Mantenha a cidade limpa.");
         else
             PrintTextAbove(me, "Sem moedas! Para a prisao!");
@@ -1961,6 +2026,97 @@ function LazyReloadGuild()
     if (!guild_laws) guild_laws := array{}; endif
 endfunction
 
+// ============================================================
+// Configura skills por tier (fraco/medio/forte) para cada tipo de NPC de faccao.
+// tier: 1=fraco, 2=medio, 3=forte — detectado automaticamente pelo sufixo do template.
+// ============================================================
+function _SetupNPCSkills(agent)
+    var tname := lower(cstr(agent.npctemplate));
+    var tier  := 3;
+    if (tname["fraco"] != error) tier := 1;
+    elseif (tname["fr"] != error && tname["forte"] == error && tname["medio"] == error) tier := 1;
+    elseif (tname["medio"] != error || tname["med"] != error) tier := 2;
+    endif
+
+    // ----- CONSELHO SOFOCRATICO -----
+    if (tname["guarda"] != error && (tname["kaijin"] != error || tname["shaman"] != error ||
+            tname["aradal"] != error || tname["velkyn"] != error || tname["evocatium"] != error))
+        AP_SetTrueSkill(agent, MAGERY,    array{ 40, 65, 90 }[tier]);
+        AP_SetTrueSkill(agent, ARCANA,    array{ 40, 65, 90 }[tier]);
+        AP_SetTrueSkill(agent, TACTICS,   array{ 30, 50, 70 }[tier]);
+        AP_SetTrueSkill(agent, WRESTLING, array{ 25, 40, 55 }[tier]);
+        AP_SetTrueSkill(agent, ONEHANDED, array{ 20, 30, 40 }[tier]);
+        AP_SetTrueSkill(agent, THEOLOGY,  array{ 10, 20, 30 }[tier]);
+        return;
+    endif
+
+    // ----- REGENTES (guardafaccao) -----
+    if (tname["guardafaccao"] != error)
+        AP_SetTrueSkill(agent, TACTICS,   array{ 20, 50, 80 }[tier]);
+        AP_SetTrueSkill(agent, ONEHANDED, array{ 30, 55, 80 }[tier]);
+        AP_SetTrueSkill(agent, TWOHANDED, array{ 20, 45, 70 }[tier]);
+        AP_SetTrueSkill(agent, DUALWIELD, array{ 20, 37, 55 }[tier]);
+        AP_SetTrueSkill(agent, WRESTLING, array{ 25, 45, 65 }[tier]);
+        AP_SetTrueSkill(agent, RANGED,    array{  0, 15, 30 }[tier]);
+        AP_SetTrueSkill(agent, PARRY,     array{  0, 40, 85 }[tier]);
+        syslog("[SKILL] guardafaccao template={} tier={} | TAC={} OH={} TH={} DW={} WR={} RNG={} PARRY={}".format(
+            agent.npctemplate, tier,
+            CInt(AP_GetSkill(agent, TACTICS)),
+            CInt(AP_GetSkill(agent, ONEHANDED)),
+            CInt(AP_GetSkill(agent, TWOHANDED)),
+            CInt(AP_GetSkill(agent, DUALWIELD)),
+            CInt(AP_GetSkill(agent, WRESTLING)),
+            CInt(AP_GetSkill(agent, RANGED)),
+            CInt(AP_GetSkill(agent, PARRY))));
+        return;
+    endif
+
+    // ----- RUFIOES (ladraorufiao) -----
+    if (tname["ladraoruf"] != error)
+        AP_SetTrueSkill(agent, PICKPOCKETING, array{ 50, 70, 90 }[tier]);
+        AP_SetTrueSkill(agent, TACTICS,       array{ 40, 55, 70 }[tier]);
+        AP_SetTrueSkill(agent, ONEHANDED,     array{ 50, 65, 80 }[tier]);
+        AP_SetTrueSkill(agent, DUALWIELD,     array{ 20, 40, 60 }[tier]);
+        AP_SetTrueSkill(agent, WRESTLING,     array{ 20, 30, 40 }[tier]);
+        AP_SetTrueSkill(agent, SNEAK,         array{ 50, 70, 90 }[tier]);
+        return;
+    endif
+
+    // ----- SINODO MELEE (assassinosinodo) -----
+    if (tname["assassinosinodo"] != error)
+        AP_SetTrueSkill(agent, TACTICS,   array{ 50, 65, 80 }[tier]);
+        AP_SetTrueSkill(agent, ONEHANDED, array{ 55, 70, 85 }[tier]);
+        AP_SetTrueSkill(agent, DUALWIELD, array{ 30, 45, 60 }[tier]);
+        AP_SetTrueSkill(agent, WRESTLING, array{ 20, 35, 50 }[tier]);
+        AP_SetTrueSkill(agent, TWOHANDED, array{ 20, 30, 40 }[tier]);
+        AP_SetTrueSkill(agent, SNEAK,     array{ 55, 70, 85 }[tier]);
+        return;
+    endif
+
+    // ----- SINODO ARQUEIRO (assassinoarqueiro) -----
+    if (tname["assassinoarqueiro"] != error)
+        AP_SetTrueSkill(agent, RANGED,    array{ 55, 70, 85 }[tier]);
+        AP_SetTrueSkill(agent, TACTICS,   array{ 45, 60, 75 }[tier]);
+        AP_SetTrueSkill(agent, DUALWIELD, array{ 20, 35, 50 }[tier]);
+        AP_SetTrueSkill(agent, ONEHANDED, array{ 20, 30, 40 }[tier]);
+        AP_SetTrueSkill(agent, WRESTLING, array{ 15, 25, 35 }[tier]);
+        AP_SetTrueSkill(agent, TWOHANDED, array{ 15, 25, 35 }[tier]);
+        AP_SetTrueSkill(agent, SNEAK,     array{ 55, 70, 85 }[tier]);
+        return;
+    endif
+
+    // ----- SINODO CAZADOR (assassinocazador) -----
+    if (tname["assassinocazador"] != error)
+        AP_SetTrueSkill(agent, TACTICS,   array{ 50, 65, 80 }[tier]);
+        AP_SetTrueSkill(agent, ONEHANDED, array{ 55, 70, 85 }[tier]);
+        AP_SetTrueSkill(agent, DUALWIELD, array{ 25, 40, 55 }[tier]);
+        AP_SetTrueSkill(agent, WRESTLING, array{ 20, 30, 45 }[tier]);
+        AP_SetTrueSkill(agent, TWOHANDED, array{ 15, 25, 35 }[tier]);
+        AP_SetTrueSkill(agent, SNEAK,     array{ 50, 65, 80 }[tier]);
+        return;
+    endif
+endfunction
+
 // Base compartilhada do Setup() de NPCs de faccao.
 // is_stealth=1: hiddenattack, runwhilestealth e shadow_mode.
 // is_stealth=0: apenas oculta o NPC (ladroes).
@@ -1991,6 +2147,8 @@ function SetupFaccaoNPCBase(is_stealth := 0)
     endif
 
     me.cmdlevel := 2;
+
+    _SetupNPCSkills(me);
 
     if (is_stealth)
         GrantPrivilege(me, "hiddenattack");
