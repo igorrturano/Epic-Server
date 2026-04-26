@@ -1,0 +1,351 @@
+use uo;
+use os;
+use util;
+use guilds;
+
+include ":faccao:faccao";
+include ":faccao:imperium";
+include ":faccao:shared_functions";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":message:model/Message";
+include ":tn:cooldown";
+
+// Constantes do sistema
+const FACCAO_CONSELHO            := "Conselho Sofocratico";
+const GLYPH_OBJTYPE              := 0xA34B;
+
+const GLYPH_LIFETIME             := 1800;    // 30 min em segundos
+const MARK_RITUAL_DURATION       := 10;
+const RECALL_RITUAL_DURATION     := 10;
+const RITUAL_ANIM_INTERVAL       := 2;
+const POST_RECALL_COOLDOWN       := 7200;    // 2h
+const REDIRECT_CHANCE_PERCENT    := 1;
+
+// Rect destino do redirect aleatório
+const REDIRECT_X1 := 1036;
+const REDIRECT_Y1 := 757;
+const REDIRECT_X2 := 1414;
+const REDIRECT_Y2 := 1317;
+
+// Rect onde a marcação produz mensagem de "energia fraca"
+const WEAK_X1 := 1608;
+const WEAK_Y1 := 1199;
+const WEAK_X2 := 1820;
+const WEAK_Y2 := 1371;
+
+const ARCANE_REALM := "britannia_alt";
+
+const BTN_MARCAR := 1;
+const BTN_VOLTAR := 2;
+
+
+program glifoTranslocacao_use(who, item)
+    if (!who || !item)
+        return 0;
+    endif
+
+    // if (item.container != who.backpack && !item.equipped)
+    //     Message("O Amuleto de Translocacao precisa estar na sua mochila ou equipado.",
+    //             Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+    //     return 0;
+    // endif
+
+    // var conselho := _GetConselhoGuild();
+    // if (!conselho)
+    //     Message("A faccao do Conselho Sofocratico nao foi localizada.",
+    //             Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+    //     return 0;
+    // endif
+
+    // if (!IsMemberOfFaccao(conselho, who))
+    //     Message("Apenas membros do Conselho Sofocratico podem usar este amuleto.",
+    //             Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+    //     return 0;
+    // endif
+
+    var input := _ShowMainMenu(who);
+    if (!input)
+        return 0;
+    endif
+
+    if (input[0] == BTN_MARCAR)
+        return _MarkGlyph(who);
+    elseif (input[0] == BTN_VOLTAR)
+        return _RecallToGlyph(who);
+    endif
+
+    return 0;
+endprogram
+
+
+function _GetConselhoGuild()
+    var guildid := FindGuildByName(FACCAO_CONSELHO);
+    if (!guildid)
+        return 0;
+    endif
+    return FindGuild(guildid);
+endfunction
+
+
+function _ShowMainMenu(who)
+    var gump := GFCreateGump();
+    GFSetId(gump, 0x12390);
+    GFResizePic(gump, 0, 0, 9200, 360, 200);
+    GFResizePic(gump, 15, 15, 9350, 330, 170);
+    GFTextMid(gump, 15, 25, 330, 53, "Amuleto de Translocacao");
+
+    GFTextLine(gump, 30, 60, 1153, "O que deseja fazer, conselheiro?");
+
+    GFAddButton(gump, 30, 100, 4005, 4006, GF_CLOSE_BTN, BTN_MARCAR);
+    GFTextLine(gump, 65, 100, 1153, "Marcar um glifo de pesquisa");
+
+    GFAddButton(gump, 30, 130, 4005, 4006, GF_CLOSE_BTN, BTN_VOLTAR);
+    GFTextLine(gump, 65, 130, 1153, "Voltar ao glifo marcado");
+
+    GFAddButton(gump, 250, 160, 4017, 4018, GF_CLOSE_BTN, 0);
+    GFTextLine(gump, 285, 160, 1153, "Sair");
+
+    return GFSendGump(who, gump);
+endfunction
+
+
+function _MarkGlyph(who)
+    var cd := getCooldown(who, "glifo_remark_cd");
+    if (cd > 0)
+        var minutos := CInt(cd / 60);
+        Message($"A energia arcana ainda nao se restabeleceu. Aguarde {minutos} minutos.",
+                Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 0;
+    endif
+
+    if (who.warmode || who.opponent)
+        Message("Voce nao pode marcar um glifo em combate.",
+                Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 0;
+    endif
+
+    Message("Escolha o local para tracar seu glifo de pesquisa.",
+            Color(SYSTEM_COLOR::INFO)).SendSys(who);
+    var targ := TargetCoordinates(who);
+    if (!targ)
+        Message("Marcacao cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 0;
+    endif
+
+    if (!CheckLosAt(who, targ.x, targ.y, targ.z))
+        Message("Voce nao consegue ver esse local.",
+                Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 0;
+    endif
+
+    var targRealm := who.realm;
+
+    if (_PointInRect(targ.x, targ.y, targRealm,
+                     VALTHERIS_X1, VALTHERIS_Y1, VALTHERIS_X2, VALTHERIS_Y2, VALTHERIS_REALM))
+        Message("O eco arcano de Valtheris e forte demais — sua marca nao se fixa. As fissuras parecem estar onde a energia e fraca.",
+                Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 0;
+    endif
+
+    _CleanupExistingGlyph(who);
+
+    var ritualResult := _RunRitual(who, MARK_RITUAL_DURATION, "marcacao");
+    if (ritualResult == error)
+        Message(ritualResult.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 0;
+    endif
+
+    var glyph := CreateItemAtLocation(targ.x, targ.y, targ.z, GLYPH_OBJTYPE, 1, targRealm);
+    if (!glyph || glyph == error)
+        Message("Nao foi possivel tracar o glifo nesse local.",
+                Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 0;
+    endif
+
+    var now := ReadGameClock();
+    SetObjProperty(glyph, "owner", who.serial);
+    SetObjProperty(glyph, "created", now);
+
+    SetObjProperty(who, "#glifo_ativo", struct{
+        "serial"  := glyph.serial,
+        "x"       := targ.x,
+        "y"       := targ.y,
+        "z"       := targ.z,
+        "realm"   := targRealm,
+        "created" := now
+    });
+
+    PlayStationaryEffect(targ.x, targ.y, targ.z, 0xD11B, 0, 30, 0, targRealm);
+    PlaySoundEffect(who, 0x1f0);
+
+    if (_PointInRect(targ.x, targ.y, targRealm,
+                     WEAK_X1, WEAK_Y1, WEAK_X2, WEAK_Y2, ARCANE_REALM))
+        Message("Voce sente que a energia aqui e mais fraca... talvez algo se mova alem das suas marcacoes.",
+                Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+    else
+        Message("Glifo de pesquisa tracado. Voce sente o eco da marca.",
+                Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+    endif
+
+    Start_Script(":faccao:glifoExpiry", array{glyph.serial, who.serial});
+
+    return 1;
+endfunction
+
+
+function _RecallToGlyph(who)
+    var glyphState := GetObjProperty(who, "#glifo_ativo");
+    if (glyphState == error || !glyphState)
+        Message("Voce nao tem nenhum glifo de pesquisa ativo.",
+                Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 0;
+    endif
+
+    var now := ReadGameClock();
+    if (now - CInt(glyphState.created) > GLYPH_LIFETIME)
+        Message("Seu glifo expirou. A energia se dispersou.",
+                Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        _CleanupExistingGlyph(who);
+        return 0;
+    endif
+
+    var glyph := SystemFindObjectBySerial(CInt(glyphState.serial));
+    if (!glyph || glyph == error)
+        Message("Seu glifo desapareceu antes que voce pudesse retornar.",
+                Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        EraseObjProperty(who, "#glifo_ativo");
+        return 0;
+    endif
+
+    if (who.warmode || who.opponent)
+        Message("Voce nao pode realizar o ritual em combate.",
+                Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 0;
+    endif
+
+    var ritualResult := _RunRitual(who, RECALL_RITUAL_DURATION, "retorno");
+    if (ritualResult == error)
+        Message(ritualResult.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 0;
+    endif
+
+    var dest;
+    var redirected := 0;
+    if (RandomIntMinMax(1, 100) <= REDIRECT_CHANCE_PERCENT)
+        dest := _GetRandomDestination();
+        redirected := 1;
+        Message("A ilha se intromete. Voce sente algo te puxando para outro lugar...",
+                Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        sleep(1);
+    else
+        dest := struct{
+            "x"     := CInt(glyphState.x),
+            "y"     := CInt(glyphState.y),
+            "z"     := CInt(glyphState.z),
+            "realm" := CStr(glyphState.realm)
+        };
+    endif
+
+    PlayStationaryEffect(who.x, who.y, who.z, 0xD11B, 0, 30, 0, who.realm);
+    PlayStationaryEffect(dest.x, dest.y, dest.z, 0xD11B, 0, 30, 0, dest.realm);
+    PlaySoundEffect(who, 0x1f2);
+    sleep(1);
+
+    var moveResult := MoveObjectToLocation(who, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+    if (moveResult == error)
+        Message($"Nao foi possivel se teleportar: {moveResult.errortext}",
+                Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+        return 0;
+    endif
+
+    DestroyItem(glyph);
+    EraseObjProperty(who, "#glifo_ativo");
+    setCooldown(who, "glifo_remark_cd", POST_RECALL_COOLDOWN);
+
+    if (redirected)
+        Message("Voce se ve em outro lugar. A ilha sussurra.",
+                Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+    else
+        Message("Voce retorna ao seu glifo de pesquisa.",
+                Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+    endif
+
+    return 1;
+endfunction
+
+
+function _RunRitual(who, durationSeconds, label)
+    var startTime := ReadGameClock();
+    var deadline := startTime + durationSeconds;
+    var nextAnimAt := startTime;
+    var startX := who.x;
+    var startY := who.y;
+
+    Message($"Iniciando ritual de {label}... ({durationSeconds}s)",
+            Color(SYSTEM_COLOR::INFO)).SendSys(who);
+
+    while (ReadGameClock() < deadline)
+        if (!who || !who.connected || who.dead)
+            return error{ "errortext" := "Voce foi interrompido." };
+        endif
+        if (who.warmode || who.opponent)
+            return error{ "errortext" := "Combate quebrou sua concentracao." };
+        endif
+        if (who.x != startX || who.y != startY)
+            return error{ "errortext" := "Voce se moveu e perdeu a concentracao." };
+        endif
+        if (ReadGameClock() >= nextAnimAt)
+            PerformAction(who, HUMAN_ANIM::CAST_AREA);
+            nextAnimAt := ReadGameClock() + RITUAL_ANIM_INTERVAL;
+        endif
+        sleepms(200);
+    endwhile
+
+    return 1;
+endfunction
+
+
+function _CleanupExistingGlyph(who)
+    var existing := GetObjProperty(who, "#glifo_ativo");
+    if (existing == error || !existing)
+        return;
+    endif
+    var oldGlyph := SystemFindObjectBySerial(CInt(existing.serial));
+    if (oldGlyph && oldGlyph != error)
+        DestroyItem(oldGlyph);
+    endif
+    EraseObjProperty(who, "#glifo_ativo");
+endfunction
+
+
+function _PointInRect(x, y, realm, x1, y1, x2, y2, rectRealm)
+    if (realm != rectRealm)
+        return 0;
+    endif
+    return (x >= x1 && x <= x2 && y >= y1 && y <= y2);
+endfunction
+
+
+function _GetRandomDestination()
+    var attempts := 0;
+    while (attempts < 5)
+        var x := RandomIntMinMax(REDIRECT_X1, REDIRECT_X2);
+        var y := RandomIntMinMax(REDIRECT_Y1, REDIRECT_Y2);
+        var z := GetWorldHeight(x, y, ARCANE_REALM);
+        if (z > -120)
+            return struct{ "x" := x, "y" := y, "z" := z, "realm" := ARCANE_REALM };
+        endif
+        attempts := attempts + 1;
+        sleepms(20);
+    endwhile
+
+    var cx := CInt((REDIRECT_X1 + REDIRECT_X2) / 2);
+    var cy := CInt((REDIRECT_Y1 + REDIRECT_Y2) / 2);
+    return struct{
+        "x"     := cx,
+        "y"     := cy,
+        "z"     := GetWorldHeight(cx, cy, ARCANE_REALM),
+        "realm" := ARCANE_REALM
+    };
+endfunction

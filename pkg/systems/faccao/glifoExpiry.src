@@ -1,0 +1,33 @@
+use uo;
+use os;
+
+const GLYPH_LIFETIME := 1800;
+
+program glifoExpiry(params)
+    var glyphSerial := CInt(params[1]);
+    var ownerSerial := CInt(params[2]);
+
+    if (!glyphSerial)
+        return 0;
+    endif
+
+    sleep(GLYPH_LIFETIME);
+
+    var glyph := SystemFindObjectBySerial(glyphSerial);
+    if (!glyph || glyph == error)
+        return 0;
+    endif
+
+    if (ownerSerial)
+        var owner := SystemFindObjectBySerial(ownerSerial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+        if (owner && owner != error)
+            var state := GetObjProperty(owner, "#glifo_ativo");
+            if (state != error && state && CInt(state.serial) == glyphSerial)
+                EraseObjProperty(owner, "#glifo_ativo");
+            endif
+        endif
+    endif
+
+    DestroyItem(glyph);
+    return 1;
+endprogram
