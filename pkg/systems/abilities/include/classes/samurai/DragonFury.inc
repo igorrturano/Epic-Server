@@ -54,9 +54,9 @@ class DragonFury(CombatAbility)
 		var alreadyDamaged := array{};
 		var hostiles := ListHostiles(who, 20, LH_FLAG_LOS);
 
-		// KAI religion visual hue
+		// KAI religion visual hue (GetReligion is NPC-safe; returns IsNPCException when absent)
 		var hue := 0;
-		if (who.GetProp("chardata").religion == KAI)
+		if (mobile.GetReligion() == KAI)
 			hue := 2597;
 		endif
 
