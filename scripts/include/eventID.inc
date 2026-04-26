@@ -15,6 +15,7 @@ const EVID_TAUNT			:= 0x2222;
 const EVID_FLEE				:= 0x3333;
 const EVID_COMBAT_MOVE		:= 0x4444;
 const EVID_BUDDYATTACKED     := 0x5555;
+const EVID_THREAT_UPDATE    := 0x6666;
 
 //PADRAO
 const EVID_SPEECH           := 0x0001;
