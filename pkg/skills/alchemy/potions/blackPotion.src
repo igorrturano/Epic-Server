@@ -16,7 +16,7 @@ program drink_blue(who, potion)
 		SendSysMessage(who, "Voce nao pode beber isto.");
 		return;
 	endif
-	if (!checkifcandrink(who, "black"))
+	if (!checkifcandrink(who, potion))
 		return;
 	endif
 
