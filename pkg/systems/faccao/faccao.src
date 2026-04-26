@@ -12,6 +12,7 @@ include ":faccao:faccao";
 include ":faccao:laws";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
+include ":gumps:selectionGump";
 include ":tn:tngumps";
 // include ":yggdrasil:boss";
 include ":gumps:yesNo";
@@ -71,53 +72,49 @@ var law_list := struct{ "nofight" := "Proibir Combate",
 
 						"userban" := "Banir usuario",
 						"nohood" := "Proibir Cobrir Rosto",
-						"nosneak" := "Proibir Esconder-se",
+						"nosneak" := "Proibir Esconder-se" };
 
-						"noduel" := "Proibir Duelos PvP",
-						"notransformation" := "Proibir Metamorfose",
-						"noanimals" := "Proibir Animais na Area",
-						"noheavyarmor" := "Proibir Armadura Pesada",
-						"nomagicitems" := "Proibir Itens Magicos",
-						"nocolor" := "Proibir Cores Especificas",
-						"nomount_run" := "Proibir Galope Montado",
-						"nowrestling" := "Proibir Luta Desarmada",
-
-						"nospell" := "Proibir Magias de Combate",
-						"nospellatall" := "Proibir Qualquer Magia",
-						"nospellschool" := "Proibir Escola de Magia",
-						"nospelllist" := "Proibir Magias Especificas",
-
-						"merchanttax" := "Taxa sobre Merchants (+%)",
-						"zerotax" := "Zerar Taxas dos Merchants",
-						"notax_exempt" := "Pedagio de Passagem",
-						"guildtax" := "Taxa sobre Faccoes Rivais",
-
-						"norun" := "Proibir Corrida",
-						"nightsight_ban" := "Proibir Night Sight (Noite)",
-						"nopotions" := "Proibir Uso de Pocoes",
-						"nodrugs" := "Proibir Drogas",
-						"antialcool" := "Proibir Embriaguez",
-						"notaming" := "Proibir Domar Animais",
-						"nomusic" := "Proibir Musica/Bard",
-						"noclotheschange" := "Proibir Troca Rapida de Roupas",
-
-						"toquerecolher" := "Toque de Recolher (Horario)",
-						"leimarcia" := "Lei Marcial (Carteira de ID)",
-
-						"nosearch_cmd" := "Proibir Comando .revistar",
-						"nodrag_cmd" := "Proibir Comando .arrastar",
-						"nothrow_cmd" := "Proibir Comando .arremessar",
-						"noloot_unconscious" := "Proibir Lotear Desmaiados",
-						"noplant" := "Proibir Plantar",
-						"noharvest" := "Proibir Colher Fazendas",
-						"notirefruits" := "Proibir Colher Frutos",
-						"durability_tax" := "Imposto por Durabilidade da Armadura",
-						"lenco" := "Exigir Lenco ao Tossir",
-						"nomadeira" := "Proibir Cortar Madeira",
-						"nomining" := "Proibir Minerar",
-						"nofishing" := "Proibir Pesca",
-						"noalchemy" := "Proibir Alquimia",
-						"noeat" := "Proibir Comer em Via Publica" };
+// Leis desativadas (sem implementacao):
+// "noduel" := "Proibir Duelos PvP",
+// "notransformation" := "Proibir Metamorfose",
+// "noanimals" := "Proibir Animais na Area",
+// "noheavyarmor" := "Proibir Armadura Pesada",
+// "nomagicitems" := "Proibir Itens Magicos",
+// "nocolor" := "Proibir Cores Especificas",
+// "nomount_run" := "Proibir Galope Montado",
+// "nowrestling" := "Proibir Luta Desarmada",
+// "nospell" := "Proibir Magias de Combate",
+// "nospellatall" := "Proibir Qualquer Magia",
+// "nospellschool" := "Proibir Escola de Magia",
+// "nospelllist" := "Proibir Magias Especificas",
+// "merchanttax" := "Taxa sobre Merchants (+%)",
+// "zerotax" := "Zerar Taxas dos Merchants",
+// "notax_exempt" := "Pedagio de Passagem",
+// "guildtax" := "Taxa sobre Faccoes Rivais",
+// "norun" := "Proibir Corrida",
+// "nightsight_ban" := "Proibir Night Sight (Noite)",
+// "nopotions" := "Proibir Uso de Pocoes",
+// "nodrugs" := "Proibir Drogas",
+// "antialcool" := "Proibir Embriaguez",
+// "notaming" := "Proibir Domar Animais",
+// "nomusic" := "Proibir Musica/Bard",
+// "noclotheschange" := "Proibir Troca Rapida de Roupas",
+// "toquerecolher" := "Toque de Recolher (Horario)",
+// "leimarcia" := "Lei Marcial (Carteira de ID)",
+// "nosearch_cmd" := "Proibir Comando .revistar",
+// "nodrag_cmd" := "Proibir Comando .arrastar",
+// "nothrow_cmd" := "Proibir Comando .arremessar",
+// "noloot_unconscious" := "Proibir Lotear Desmaiados",
+// "noplant" := "Proibir Plantar",
+// "noharvest" := "Proibir Colher Fazendas",
+// "notirefruits" := "Proibir Colher Frutos",
+// "durability_tax" := "Imposto por Durabilidade da Armadura",
+// "lenco" := "Exigir Lenco ao Tossir",
+// "nomadeira" := "Proibir Cortar Madeira",
+// "nomining" := "Proibir Minerar",
+// "nofishing" := "Proibir Pesca",
+// "noalchemy" := "Proibir Alquimia",
+// "noeat" := "Proibir Comer em Via Publica"
 
 var guild_obj, aboveguild;
 
@@ -1577,7 +1574,7 @@ function lawHandler(who, input)
 			endif
 			new_law.opt := struct{ "objtype" := targ.objtype, "name" := targ.name };
 		elseif (new_law.type["norace"])
-			var raceopts := array{ "Ferune", "Bariyano", "Norde", "Balmute", "Picto", "Cazar", "Cancelar" };
+			var raceopts := array{ "humano", "elfo", "anao", "orc", "hobbit", "drow", "Cancelar" };
 			var racenemy := RadioGump(who, 400, 0, "Escolha qual raca sera considerada inimiga", raceopts,
 									   0, raceopts.size());
 			if (racenemy["Cancelar"])
@@ -1735,7 +1732,8 @@ function lawHandler(who, input)
 			"Todos exceto o lider",
 			"Apenas membros full",
 			"Apenas membros honorarios",
-			"Exceto membro especifico"
+			"Exceto membro especifico",
+			"Todos menos membros de outra faccao"
 		};
 		var _target_choice := RadioGump(who, 400, 0, "Quem esta lei vai afetar?", _target_opts, 0,
 		  _target_opts.size());
@@ -1754,6 +1752,66 @@ function lawHandler(who, input)
 				endif
 				new_law.exceto_serials := array{ _exceto_targ.serial };
 				new_law.target := "nao_membro_x";
+				break;
+			"Todos menos membros de outra faccao":
+				// Listar todas as faccoes (exceto a propria)
+				var _efac_guilds := array{};  // guildids
+				var _efac_names  := array{};  // nomes para exibir
+				foreach _g in ListGuilds()
+					sleepms(2);
+					if (_g.guildid == guild.guildid) continue; endif
+					var _gn := _g.getProp("name");
+					if (!_gn || _gn == error) _gn := "Faccao #{}".format(_g.guildid); endif
+					_efac_guilds.append(_g.guildid);
+					_efac_names.append(cstr(_gn));
+				endforeach
+
+				if (!_efac_guilds.size())
+					SendSysMessageEx(who, "Nenhuma outra faccao encontrada.", SSM_FAIL);
+					return;
+				endif
+
+				var _sel := SelectionGump(who,
+					"Selecione as faccoes isentas (pode marcar multiplas)",
+					_efac_names, BTN_TYPE_CHECKBOX);
+
+				if (_sel == error || !_sel || !_sel.size())
+					return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+				endif
+
+				// Mapear nomes selecionados → guild IDs
+				var _exceto_guilds := array{};
+				foreach _sname in _sel
+					sleepms(2);
+					var _idx := 1;
+					foreach _n in _efac_names
+						sleepms(2);
+						if (cstr(_n) == cstr(_sname))
+							_exceto_guilds.append(_efac_guilds[_idx]);
+							break;
+						endif
+						_idx := _idx + 1;
+					endforeach
+				endforeach
+
+				if (!_exceto_guilds.size())
+					return SendSysMessageEx(who, "Nenhuma faccao selecionada.", SSM_FAIL);
+				endif
+
+				new_law.exceto_guilds := _exceto_guilds;
+				new_law.target := "exceto_faccoes";
+
+				// Debug: mostrar o que foi configurado
+				syslog("[LEI-TARGET] exceto_faccoes configurado: lei={} exceto_guilds={}".format(
+					new_law.type, _exceto_guilds));
+				var _names_str := "";
+				foreach _eid in _exceto_guilds
+					sleepms(2);
+					var _eg := FindGuild(CInt(_eid));
+					var _en := _eg ? cstr(_eg.getProp("name")) : "?";
+					_names_str := _names_str + "[{}:{}] ".format(_eid, _en);
+				endforeach
+				SendSysMessageEx(who, "Faccoes isentas: {}".format(_names_str), SSM_INFO);
 				break;
 			// "Fora da faccao" = padrao — nao precisa setar target
 		endcase
