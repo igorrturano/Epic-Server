@@ -49,15 +49,17 @@ program drink_blue(who, potion)
 	var delay := 1000;
 	var cd := 5;
 	var tier := peganivelpocao(who, potion);
-
+	
 	healed := AP_GetVitalMaximumValue(who, HITS);
 
 	case (tier)
 		1:
+			skill := Cint(skill/3);
 			healed := cint(healed * 0.20 * vicio);
 			delay := 750;
 			cd := cint(healed * 0.75 * 3);
 		2:
+			skill := Cint(skill/2);
 			healed := cint(healed * 0.40 * vicio);
 			delay := 500;
 			cd := cint(healed * 0.5 * 3);
@@ -66,6 +68,7 @@ program drink_blue(who, potion)
 			delay := 250;
 			cd := cint(healed * 0.25 * 3);
 		4:
+			skill := Cint(skill*1.5);
 			healed := cint(healed * 0.80 * vicio);
 			delay := 130;
 			cd := cint(healed * 0.13 * 3);
@@ -73,7 +76,7 @@ program drink_blue(who, potion)
 	Aplicavicio(who, potion, STRENGTH);
 	empty_bottle(who, potion);
 	TS_StartCooldown(who, "healingpot", cd + 1);
-
+	applyEpicHealing(who, skill);
 	Detach();
 	var i := 0;
 
