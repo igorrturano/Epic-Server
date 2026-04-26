@@ -158,6 +158,18 @@ function _RunMonitorActivate(params)
 	var who := params[3];
 	var monitor := params[4];
 
+	// Re-wrap the mobile in this script's context. The wrapper passed via
+	// run_script_to_completion has its fields intact but method dispatch is
+	// broken on the receiver side, so any subsequent ability.CanActivate(who)
+	// or who.ActivateAbility(...) call would crash silently. Building a fresh
+	// MobileWrapper here gives us a wrapper whose methods dispatch correctly
+	// for the rest of this function.
+	if (who.ObjRef)
+		who := MobileWrapper(who.ObjRef);
+	else
+		return _ActivationError("Mobile not found.");
+	endif
+
 	if (!ABILITY_CLASSES.exists(abilityId))
 		return _ActivationError("Habilidade não implementada.");
 	endif
@@ -176,7 +188,9 @@ function _RunMonitorActivate(params)
 	who.ActivateAbility(ability, monitor);
 	ability.OnActivate(who);
 
-	var duration := monitor.GetDuration();
+	// Field access — monitor is the stale param instance; method dispatch on
+	// it would crash the script the same way wrapper methods do.
+	var duration := monitor.Duration;
 	if (duration <= 0)
 		duration := ability.GetDurationFor(who);
 	endif
@@ -211,6 +225,11 @@ function _RunMonitorActivateAsync(params)
 	var abilityId := CInt(params[2]);
 	var who := params[3];
 
+	// Re-wrap so any field-access fallbacks below have a working wrapper.
+	if (who.ObjRef)
+		who := MobileWrapper(who.ObjRef);
+	endif
+
 	var result := _RunMonitorActivate(params);
 	if (result.hasError)
 		Message(result.errorMsg, Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
@@ -229,6 +248,11 @@ endfunction
 function _RunMonitorDeactivate(params)
 	var abilityId := CInt(params[2]);
 	var who := params[3];
+
+	// Re-wrap so method dispatch works in this script context.
+	if (who.ObjRef)
+		who := MobileWrapper(who.ObjRef);
+	endif
 
 	if (!ABILITY_CLASSES.exists(abilityId))
 		return 0;
