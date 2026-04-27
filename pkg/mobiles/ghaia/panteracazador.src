@@ -1,11 +1,51 @@
+// =============================================================================
+// panteracazador.src — IA da pantera companion do NPC Cazador
+// =============================================================================
+//
+// Script de comportamento da pantera que acompanha o NPC assassino "Cazador".
+// A pantera opera em 3 estados que mudam conforme o contexto de combate:
+//
+// ESTADOS
+//   0 — Follow (seguir mestre)
+//       Pantera acompanha o Cazador. Mantem distancia proxima e reage ao
+//       comando HELP_CMD (0x78458) para entrar em modo de combate.
+//
+//   1 — Fight (combate direcionado)
+//       Ataca o alvo designado pelo mestre via ATTACK_CMD (0xA002).
+//       Usa stealth/deteccao de area para revelar players escondidos.
+//       Volta ao estado Follow se o alvo morrer ou sumir.
+//
+//   2 — Feral (ataque autonomo no territorio)
+//       Ataca players da faccao inimiga ou sem faccao dentro de FERAL_RANGE.
+//       Prioriza alvos que nao sao membros da guild do Cazador.
+//       IsFeralTarget() verifica guild, cmdlevel e raca para decidir o alvo.
+//
+// FUNCOES PRINCIPAIS
+//   GetMaster()         — localiza o Cazador pelo serial salvo em prop
+//   IsMasterDead()      — verifica se o mestre morreu (volta ao estado 0)
+//   GoFeral()           — transiciona para estado 2 (ataque autonomo)
+//   IsAttackable(mob)   — filtra alvos invalidos (GMs, NPCs, aliados)
+//   IsFeralTarget(mob)  — logica de alvo em modo feral (guild/faccao)
+//   GetCazadorGuild()   — retorna a guild do Cazador para verificacoes de alianca
+//
+// CONSTANTES
+//   ATTACK_CMD   (0xA002) — comando de ataque enviado pelo mestre
+//   HELP_CMD     (0x78458) — comando de auxilio/combate
+//   FERAL_RANGE  (12)     — range de deteccao em modo feral
+// =============================================================================
+
 use uo;
 use os;
 use npc;
+use util;
 use guilds;
 
 include "include/sysEvent";
+include ":tn:cooldown";
+include ":faccao:faccao";
 include ":faccao:membership";
 include ":attributes:attributes";
+include ":faccao:npc_laws_enforce";
 
 // PanteraCazador — companheira do Assassino Cazador.
 // Segue o assassino (master = o NPC assassino).
@@ -20,7 +60,14 @@ var master_serial := 0;
 var opponent      := 0;
 var wait_time     := 3;
 
+// Requeridos por npc_laws_enforce.inc
+var guild        := 0;
+var fighting     := 0;  // espelhado de opponent quando state==1 ou 2
+var following    := 0;
+var fix_location := 0;
+
 const ATTACK_CMD  := 0xA002;
+const HELP_CMD    := 0x78458;
 const FERAL_RANGE := 12;
 
 // ============================================================
@@ -32,6 +79,10 @@ function Setup()
         master_serial := CInt(GetObjProperty(me, "cazador_serial"));
         _tries := _tries + 1;
     endwhile
+    guild        := GetCazadorGuild();
+    guild_leader := guild ? guild.getProp("leader") : 0;
+    guild_laws   := guild ? guild.getProp("laws") : array{};
+    if (!guild_laws) guild_laws := array{}; endif
     EnableEvents(SYSEVENT_ENGAGED);
     EnableEvents(SYSEVENT_DAMAGED);
     EnableEvents(SYSEVENT_ENTEREDAREA, FERAL_RANGE);
@@ -112,6 +163,9 @@ program PanteraCazadorMain()
             GoFeral();
         endif
 
+        // Sincronizar fighting com opponent para npc_laws_enforce
+        fighting := (state == 1 || state == 2) ? opponent : 0;
+
         case (state)
 
             0: // FOLLOW — seguir master
@@ -153,7 +207,16 @@ program PanteraCazadorMain()
                     wait_time := 2;
                 endif
 
-            2: // FERAL — atacar qualquer player proximo
+            2: // FERAL — atacar qualquer player proximo dentro do territorio
+                if (guild && !inGuildRect(guild, me, 4))
+                    // Saiu do territorio: resetar para seguir master (se houver) ou aguardar
+                    opponent := 0;
+                    SetOpponent(0);
+                    SetWarMode(0);
+                    state := IsMasterDead() ? 2 : 0;
+                    wait_time := 3;
+                    break;
+                endif
                 if (!opponent || !opponent.isA(POLCLASS_MOBILE) || opponent.dead)
                     SetOpponent(0);
                     SetWarMode(0);
@@ -189,6 +252,7 @@ program PanteraCazadorMain()
         case (ev.type)
 
             ATTACK_CMD:
+            HELP_CMD:
                 if (state != 2 && ev.targ && IsAttackable(ev.targ))
                     opponent := ev.targ;
                     SetOpponent(opponent);
@@ -196,6 +260,13 @@ program PanteraCazadorMain()
                     state    := 1;
                     wait_time := 0;
                 endif
+                break;
+
+            RESET_SETUP_EVENT:
+                guild        := GetCazadorGuild();
+                guild_leader := guild ? guild.getProp("leader") : 0;
+                guild_laws   := guild ? guild.getProp("laws") : array{};
+                if (!guild_laws) guild_laws := array{}; endif
                 break;
 
             SYSEVENT_ENGAGED:

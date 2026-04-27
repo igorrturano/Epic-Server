@@ -1,6 +1,34 @@
+// =============================================================================
+// start.src — Script de inicializacao do sistema de faccao (boot)
+// =============================================================================
+//
+// Executado automaticamente pelo servidor ao iniciar (boot script).
+// Responsavel por preparar o ambiente do modulo de faccao antes de qualquer
+// player conectar.
+//
+// RESPONSABILIDADES
+//
+//   1. Inicia soldocontrol — script que controla o pagamento periodico de
+//      soldo aos membros ativos de faccao.
+//
+//   2. _LogLeisBootstrap — itera todas as guilds de faccao e registra no
+//      syslog as leis ativas de cada uma (tipo, on/off, target, opt).
+//      Util para confirmar o estado das leis apos restart.
+//
+//   3. _LogPrisaoBootstrap — registra no syslog os pontos de prisao
+//      configurados por tipo de faccao (regentes, conselhos, etc.) usando
+//      a funcao _GetPrisonPontos que mapeia staff_tipo para coordenadas.
+//      Permite verificar rapidamente se as prisoes estao configuradas.
+//
+// OBSERVACAO
+//   As coordenadas de prisao estao definidas aqui em _GetPrisonPontos como
+//   fallback. Cada guild pode sobrescrever com a prop "prison_points".
+// =============================================================================
+
 use os;
 use datafile;
 use uo;
+use guilds;
 
 // Inicia o controle de soldo
 var script := start_script("soldocontrol");
@@ -9,3 +37,34 @@ if (script.errortext)
 else
 	Print("Starting guild npc check script... ok.");
 endif
+
+function _GetPrisonPontos(g)
+	var pts := g.getProp("prisions");
+	if (pts && pts.size() > 0) return pts; endif
+	var _raw := g.getProp("staff_tipo");
+	if (_raw == error || !_raw) return array{}; endif
+	var tipo := CStr(_raw);
+	case (tipo)
+		"conselho_kaijin":
+		"conselho_shaman":
+		"conselho_aradal":
+		"conselho_velkyn":
+		"conselho_evocatium":
+			return array{
+				struct{ "x" := 3481, "y" := 63, "z" := 0, "realm" := "britannia_alt" }
+			};
+		"regentes":
+			return array{
+				struct{ "x" := 3431, "y" := 65, "z" := 0, "realm" := "britannia_alt" },
+				struct{ "x" := 3435, "y" := 64, "z" := 0, "realm" := "britannia_alt" },
+				struct{ "x" := 3439, "y" := 63, "z" := 0, "realm" := "britannia_alt" },
+				struct{ "x" := 3443, "y" := 63, "z" := 0, "realm" := "britannia_alt" }
+			};
+		default:
+			return array{
+				struct{ "x" := 3530, "y" := 64, "z" := 0, "realm" := "britannia_alt" },
+				struct{ "x" := 3535, "y" := 63, "z" := 0, "realm" := "britannia_alt" }
+			};
+	endcase
+endfunction
+
