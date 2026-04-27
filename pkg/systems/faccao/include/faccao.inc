@@ -1,3 +1,39 @@
+// =============================================================================
+// faccao.inc — Core do sistema de faccao
+// =============================================================================
+//
+// Biblioteca central do modulo de faccao. Define constantes, helpers de
+// movimento de NPC, CRUD de faccoes e funcoes de membership.
+//
+// CONSTANTES E CONFIGURACAO
+//   FACCAO_NOMES      — array com os 5 nomes canonicos das faccoes staff
+//   FACCAO_WALK_RECT  — retangulo de movimento dos NPCs (x1,y1,x2,y2)
+//
+// HELPERS DE RECT/MOVIMENTO
+//   IsNPCInWalkRect(npc)       — verifica se NPC esta dentro do rect
+//   GetWalkRectCenter(z)       — retorna centro do rect para reposicionamento
+//   GetRandomWanderPoint()     — ponto aleatorio dentro do rect para patrulha
+//   HandleWalkRectBreach(npc)  — reposiciona NPC que saiu do rect
+//
+// PROPAGACAO E REGISTRO
+//   PropagateNomeFaccao(guild) — copia nome da faccao para todos NPCs/itens
+//   RegisterFaccaoItem(item)   — marca item como pertencente a faccao
+//   UnregisterFaccaoItem(item) — remove marca de item de faccao
+//
+// TIPO DE FACCAO
+//   GetFaccaoTipo(guild)       — retorna "staff" ou "player"
+//
+// CRUD DE FACCAO
+//   CreateFaccao(props)  — cria nova guild com props de faccao (nome, tipo, etc.)
+//   GetFaccao(guildid)   — retorna struct com todos os dados da guild
+//   EditFaccao(guild, props) — edita props da guild (nome, lider, territorio, etc.)
+//   RemFaccao(guild)     — remove a guild e todos os seus dados
+//
+// MEMBERSHIP
+//   CanJoinFaccao(guild, who)      — verifica se player pode entrar na faccao
+//   GetAutoMemberTipo(guild, who)  — determina tipo automatico (full/honorary)
+// =============================================================================
+
 use guilds;
 use os;
 
