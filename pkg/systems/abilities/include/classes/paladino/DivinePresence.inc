@@ -1,5 +1,4 @@
 include ":abilities:models/CombatAbility";
-include ":abilities:helpers/paladinoHelpers";
 
 /**
  * Presenca Divina (Divine Presence) - ABILITY_ID::PRESENCA_DIVINA (403)
@@ -35,9 +34,8 @@ class DivinePresence(CombatAbility)
         var festa := paladin.party;
         var paladin_religion := mobile.GetReligion();
 
-        var bannerInfo := CheckReligiousBanner(mobile);
-        var range := bannerInfo.range;
-        var has_banner := bannerInfo.has_banner;
+        var has_banner := mobile.HasReligiousBannerEquipped();
+        var range := has_banner ? 6 : 2;
 
         // Show menu
         Message("Escolha seu comando:", Color(SYSTEM_COLOR::INFO)).SendSys(paladin);
@@ -91,7 +89,7 @@ class DivinePresence(CombatAbility)
 
             2: // Reviravolta! (Turnaround)
                 Message("*ordena reviravolta*").SendAbove(paladin);
-                var inimigos := ListHostiles(paladin, range);
+                var inimigos := mobile.GetNearbyHostiles(range);
 
                 if (len(inimigos) < CInt(festa.members.size()) / 2)
                     Message("Voce nao esta em desvantagem.", Color(SYSTEM_COLOR::FAIL)).SendSys(paladin);

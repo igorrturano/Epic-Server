@@ -33,9 +33,10 @@ class SurvivalInstinct(CombatAbility)
 
         var range := CInt(AP_GetSkill(who, THEOLOGY) / 10);
         var points := CInt(AP_GetSkill(who, THEOLOGY) / 5) + RandomDiceRoll("6d8");
-        var hostiles := ListHostiles(who, range);
+        var hostiles := mobile.GetNearbyHostiles(range);
+        var nearby := mobile.GetNearbyMobiles(range);
 
-        foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm)
+        foreach mob in nearby
             if (!(mob in hostiles))
                 if (mobile.IsNPC() && mob.acctname)
                     continue;

@@ -62,8 +62,7 @@ class DivineConnection(CombatAbility)
 					ts_duration := 1;
 				endif
 				PlaySoundEffect(who, 0x687);
-				var nearby := ListMobilesNearLocationEx(who.x, who.y, who.z, ts_range,
-				                                        LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED, who.realm);
+				var nearby := mobile.GetNearbyMobiles(ts_range, LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED);
 				foreach char in nearby
 					if (char == who || char.cmdlevel > 0)
 						continue;

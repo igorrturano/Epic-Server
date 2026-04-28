@@ -628,8 +628,8 @@ class NaturalBond(CombatAbility)
     endfunction
 
     function _StudyLoop(this, who, targ, byref info)
-        var my_hostiles   := ListHostiles(who, 15);
-        var targ_hostiles := ListHostiles(targ, 15);
+        var my_hostiles   := MobileWrapper(who).GetNearbyHostiles(15);
+        var targ_hostiles := MobileWrapper(targ).GetNearbyHostiles(15);
 
         if (targ.master)
             Message("Voce so pode estudar criaturas selvagens.").SendSys(who);

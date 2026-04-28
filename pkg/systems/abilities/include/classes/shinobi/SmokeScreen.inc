@@ -4,7 +4,6 @@ use os;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":attributes:attributes";
-include ":abilities:helpers/shinobiHelpers";
 include "include/client";
 
 /**

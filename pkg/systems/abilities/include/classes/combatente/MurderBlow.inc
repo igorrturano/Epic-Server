@@ -72,7 +72,7 @@ class MurderBlow(CombatAbility)
         var defender := attackInfo.GetDefender();
 
         // Find nearby hostile targets within 2 tiles with line of sight
-        var nearbyHostiles := ListHostiles(attacker.GetObjRef(), 2, LH_FLAG_LOS);
+        var nearbyHostiles := attacker.GetNearbyHostiles(2, LH_FLAG_LOS);
         var validTargets := array{};
 
         foreach mobile in (nearbyHostiles)

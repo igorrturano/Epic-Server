@@ -369,12 +369,7 @@ function SkillRedistribution(who, npc)
 				SendSysMessageEx(who, "Distribua todos os pontos antes de confirmar.", SSM_FAIL);
 				continue;
 			endif
-			var pri_count := 0;
-			foreach v in (respec_data.Skills.values())
-				if (CInt(v) == 3)
-					pri_count += 1;
-				endif
-			endforeach
+			var pri_count := CountPrimaries(respec_data);
 			if (pri_count > pri_allowed)
 				SendSysMessageEx(who, "Voce ultrapassou o limite de primarias (" + pri_allowed + ").", SSM_FAIL);
 				continue;
@@ -481,6 +476,20 @@ function ApplyRespecButton(who, byref respec_data, btn, pri_allowed)
 	endif
 endfunction
 
+// .values() on a dictionary stored in a struct field returns nothing in this
+// codebase's eScript runtime — the creation flow uses .keys() + index access
+// for the same reason (see epicgumpcriacao.src:476-480). This helper is the
+// single canonical way to count primaries (tier-3 skills) in respec_data.
+function CountPrimaries(respec_data)
+	var count := 0;
+	foreach skill_name in (respec_data.Skills.keys())
+		if (CInt(respec_data.Skills[skill_name]) == 3)
+			count += 1;
+		endif
+	endforeach
+	return count;
+endfunction
+
 function AdjustSkillTier(who, byref respec_data, skill, delta, cost, pri_allowed)
 	if (!skill || skill == "" || skill == error)
 		return;
@@ -497,13 +506,7 @@ function AdjustSkillTier(who, byref respec_data, skill, delta, cost, pri_allowed
 		// if the player is already at their primary limit (2 normally, 1 for
 		// the Sabe-Tudo trait).
 		if (current == 2)
-			var pri_count := 0;
-			foreach v in (respec_data.Skills.values())
-				if (CInt(v) == 3)
-					pri_count += 1;
-				endif
-			endforeach
-			if (pri_count >= pri_allowed)
+			if (CountPrimaries(respec_data) >= pri_allowed)
 				SendSysMessageEx(who, "Voce ja atingiu o limite de primarias (" + pri_allowed + ").", SSM_FAIL);
 				return;
 			endif
@@ -592,12 +595,7 @@ function SkillRespecGump(who, byref respec_data, pri_allowed)
 	var quaternarias := GetConfigStringArray(elem, "Q");
 
 	// Recompute primary count from current selection.
-	var pri_count := 0;
-	foreach v in (respec_data.Skills.values())
-		if (CInt(v) == 3)
-			pri_count += 1;
-		endif
-	endforeach
+	var pri_count := CountPrimaries(respec_data);
 	respec_data.Primarias := pri_count;
 
 	var minus_btn := {0x9F7, 0x9F8};
