@@ -948,3 +948,9 @@ function IsPrime( byref n )
     return 1;
 endfunction
 
+function Comb(n, k)
+    if (k < 0 || k > n)
+        return 0;
+    endif
+    return factorial(n) / (factorial(k) * factorial(n - k));
+endfunction
