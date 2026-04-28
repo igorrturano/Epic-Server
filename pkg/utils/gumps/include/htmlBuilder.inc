@@ -172,7 +172,6 @@ function HtmlTable(rows, headers := array{})
         html := html + "<thead><tr>";
         foreach h in headers
             html := html + $"<th>{h}</th>";
-            SleepMs(1);
         endforeach
         html := html + "</tr></thead>";
     endif
@@ -182,10 +181,8 @@ function HtmlTable(rows, headers := array{})
         html := html + "<tr>";
         foreach cell in row
             html := html + $"<td>{cell}</td>";
-            SleepMs(1);
         endforeach
         html := html + "</tr>";
-        SleepMs(1);
     endforeach
     html := html + "</tbody></table>";
 
@@ -206,7 +203,6 @@ function HtmlList(items, ordered := false)
     var html := $"<{tag}>";
     foreach item in items
         html := html + $"<li>{item}</li>";
-        SleepMs(1);
     endforeach
     html := html + $"</{tag}>";
     return html;
@@ -269,7 +265,6 @@ function HtmlJoin(parts)
     var result := "";
     foreach part in parts
         result := result + CStr(part);
-        SleepMs(1);
     endforeach
     return result;
 endfunction
