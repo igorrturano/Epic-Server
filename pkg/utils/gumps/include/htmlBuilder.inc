@@ -310,8 +310,8 @@ class HtmlBuilder()
         return this;
     endfunction
 
-    function Styled(this, text, hexColor, sizePx := 14, bold := false, italic := false)
-        this._buffer := this._buffer + HtmlStyled(text, hexColor, sizePx, bold, italic);
+    function Styled(this, text, hexColor, sizePx := 14, isBold := false, isItalic := false)
+        this._buffer := this._buffer + HtmlStyled(text, hexColor, sizePx, isBold, isItalic);
         return this;
     endfunction
 
