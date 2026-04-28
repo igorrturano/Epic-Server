@@ -60,8 +60,6 @@ function JornalTemplate(titulo, artigos, rodape := "")
         html.Append(HtmlParagraph(artigo.corpo));
         html.Append(HtmlSeparator());
         html.Append("</div>");
-
-        SleepMs(1);
     endforeach
 
     html.Append("</div>");
@@ -144,7 +142,6 @@ function DialogoNarratorTemplate(nomeNpc, texto, opcoes := array{})
             var id := CStr(opcao.id);
             var label := CStr(opcao.label);
             html.Append($"<button style=\"padding:6px 18px;background:#2a1f0a;color:#C8A040;border:1px solid #5a4010;font-family:inherit;cursor:pointer\" onclick=\"window.chrome.webview.postMessage('click:{id}')\">{label}</button>");
-            SleepMs(1);
         endforeach
         html.Append("</div>");
     endif
@@ -173,11 +170,9 @@ endfunction
 function ItemInfoTemplate(nome, descricao, atributos := array{}, raridade := "")
     var html := HtmlBuilder();
 
-    // Cor da raridade
     var rarColor := CSS_HEX_WHITE;
     case (Lower(CStr(raridade)))
         "raro":     rarColor := "#4499FF";
-        "épico":    rarColor := "#AA44FF";
         "épico":    rarColor := "#AA44FF";
         "epico":    rarColor := "#AA44FF";
         "lendário": rarColor := "#FF8C00";
@@ -198,7 +193,6 @@ function ItemInfoTemplate(nome, descricao, atributos := array{}, raridade := "")
         html.Append("<table style=\"margin-top:8px\">");
         foreach attr in atributos
             html.Append($"<tr><td style=\"color:#AAAAAA;width:50%\">{attr.nome}</td><td style=\"color:#EEEEEE;font-weight:bold\">{attr.valor}</td></tr>");
-            SleepMs(1);
         endforeach
         html.Append("</table>");
     endif
@@ -240,19 +234,27 @@ endfunction
 //  Perfil de personagem
 // ─────────────────────────────────────────────
 
+const PERFIL_BAR_SIZE := 20;
+
+// Pré-construído para evitar concat em loop ao montar a barra cheia/vazia.
+const PERFIL_BAR_FULL  := "████████████████████";
+const PERFIL_BAR_EMPTY := "░░░░░░░░░░░░░░░░░░░░";
+
+function _PerfilBar(valor, maximo)
+    var pct := 0;
+    if (CDbl(maximo) > 0)
+        pct := CInt((CDbl(valor) / CDbl(maximo)) * 100);
+    endif
+    var filled := CInt(pct * PERFIL_BAR_SIZE / 100);
+    if (filled < 0) filled := 0; endif
+    if (filled > PERFIL_BAR_SIZE) filled := PERFIL_BAR_SIZE; endif
+
+    return PERFIL_BAR_FULL[1, filled] + PERFIL_BAR_EMPTY[1, PERFIL_BAR_SIZE - filled];
+endfunction
+
 /*
  * PerfilJogadorTemplate(nome, raca, classe, atributos, historico)
- *
- * Painel de ficha de personagem com foto, atributos e histórico.
- *
- * Parâmetros:
- *   nome:       Nome do personagem
- *   raca:       Raça
- *   classe:     Classe/profissão
- *   atributos:  Array de structs { .nome, .valor, .max } para barra de progresso
- *   historico:  Texto livre de história do personagem
- *
- * Retorno: string HTML do corpo.
+ * atributos: array de structs { .nome, .valor, .max }
  */
 function PerfilJogadorTemplate(nome, raca, classe, atributos := array{}, historico := "")
     var html := HtmlBuilder();
@@ -262,30 +264,12 @@ function PerfilJogadorTemplate(nome, raca, classe, atributos := array{}, histori
     html.Append("<div style=\"flex:1\">");
     html.Append($"<p style=\"color:#AAAAAA;font-size:12px\">{raca} · {classe}</p>");
 
-    // Atributos com barras visuais ASCII
     if (atributos.size() > 0)
         html.Append("<table style=\"margin-top:10px;font-size:12px\">");
         foreach attr in atributos
-            var pct := 0;
-            if (attr.max > 0)
-                pct := CInt((CDbl(attr.valor) / CDbl(attr.max)) * 100);
-            endif
-            var barFilled := CInt(pct / 5);   // barra de 20 blocos
-            var barEmpty  := 20 - barFilled;
-            var bar := "";
-            var i := 0;
-            while (i < barFilled)
-                bar := bar + "█";
-                i += 1;
-            endwhile
-            while (i < 20)
-                bar := bar + "░";
-                i += 1;
-            endwhile
             html.Append($"<tr><td style=\"color:#AAAAAA;width:80px\">{attr.nome}</td>");
-            html.Append($"<td style=\"color:#5a8a5a;font-family:monospace;font-size:10px\">{bar}</td>");
+            html.Append($"<td style=\"color:#5a8a5a;font-family:monospace;font-size:10px\">{_PerfilBar(attr.valor, attr.max)}</td>");
             html.Append($"<td style=\"color:#EEEEEE;padding-left:6px\">{attr.valor}/{attr.max}</td></tr>");
-            SleepMs(1);
         endforeach
         html.Append("</table>");
     endif
