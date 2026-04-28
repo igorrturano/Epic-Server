@@ -306,7 +306,7 @@ program skill_Stealing(mobile)
 			Message("Voce atingiu o limite de tentativas de roubo. Tente novamente.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		endif
 		
-		mobile.facing := mobile.facing; // Pra fechar o container! ;D
+		MoveObjectToLocation(mobile, mobile.x, mobile.y, mobile.z, mobile.realm, MOVEOBJECT_FORCELOCATION);
 	else
 		Message("Voce nota que o alvo percebeu algo.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		Message("Voce sentiu algo na sua bolsa.").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(targ);

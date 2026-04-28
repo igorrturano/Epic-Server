@@ -63,6 +63,13 @@ program architect_gump(params)
 			SendSysMessageEx(who, "Você não tem a habilidade de arquiteto.", SSM_INFO);
 			return 0;
 		endif
+
+		// Facções do tipo "staff" não podem construir com o architect
+		var _guild := who.guild;
+		if (_guild && _guild.GetProp("tipo_faccao") == "staff")
+			SendSysMessageEx(who, "Membros da facção staff não podem usar o architect.", SSM_INFO);
+			return 0;
+		endif
 	else
 		SendSysMessageEx(who, "Apenas GMs podem usar este comando. Use a ferramenta de construção.", SSM_INFO);
 		return 0;
@@ -1572,6 +1579,7 @@ program architect_gump(params)
 		// sub group chosen
 		elseif (result[0] < -100)
 			choice[3] := subgroups[Abs(result[0] + 100)];
+			DrawResourcesOnGump(choice[3], who);
 			groupparts := GetConfigStringArray(parts[choice[2]], choice[3]);
 			makeArrayNumerical(groupparts);
 			groupparts.sort();
@@ -1757,21 +1765,7 @@ function check_coords(who, coords)
 
 				// Verifica se o jogador pertence à facção dona da área (full ou honorário).
 				var player_guild := who.guild;
-				var hon_id := GetObjProperty(who, "honorary_guild_id");
-				var hon_guild := 0;
-				if (hon_id) hon_guild := FindGuild(hon_id); endif
-				var is_member := 0;
-				if (player_guild && player_guild.GetProp("name") == faction_owner)
-					is_member := 1;
-				elseif (hon_guild && hon_guild.GetProp("name") == faction_owner)
-					is_member := 1;
-				endif
-				if (!is_member)
-					// Verifica contrato de arquitetura ativo
-					var contrato_guild := GetObjProperty(who, "arquiteto_contrato_guild");
-					if (contrato_guild && contrato_guild == faction_owner)
-						return 1;
-					endif
+				if (!player_guild || player_guild.GetProp("name") != faction_owner)
 					SendSysMessage(who, "Este território pertence à facção '" + faction_owner + "'. Você não tem permissão para construir aqui.");
 					return 0;
 				endif

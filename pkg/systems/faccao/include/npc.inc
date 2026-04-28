@@ -252,15 +252,7 @@ function _EnsureGuild(guild)
 endfunction
 
 function _IsVendor(template)
-    var t := lower(template.template);
-    var n := lower(template.name);
-    // Vendedores clássicos
-    if (n["vendedor"] != error || t["merchant"] != error) return 1; endif
-    // NPCs de serviço da Liga (ligafaccao package)
-    if (t["curandeiro"] != error || t["gemvendor"] != error || t["talker"] != error)  return 1; endif
-    if (t["rumor"] != error || t["bibliotecario"] != error)                           return 1; endif
-    if (t["stablemaster"] != error)                                                   return 1; endif
-    return 0;
+    return (lower(template.name)["vendedor"] != error || lower(template.template)["merchant"] != error);
 endfunction
 
 function AddNpc(guild, npc)
@@ -297,9 +289,8 @@ function listNPC(guild)
    var npcs := guild.GetProp("npcs");
    if (!npcs) npcs := array{}; endif
 
-   // Validação: lista com 0 entradas é dados corrompidos; reinicializa com defaults.
-   // Limite generoso (30) para suportar todos os tipos de NPC das faccoes.
-   if (npcs.size() == 0 || npcs.size() > 30)
+   // Validação: Se houver mais de 4 NPCs, são dados corrompidos
+   if (npcs.size() > 4)
       npcs := array{
          struct{ "template" := ":epicai:guardafaccaofraco",   "price" := 25,  "name" := "Guarda Recruta (Fraco)",      "equipment" := array{} },
          struct{ "template" := ":epicai:guardafaccaomedio",   "price" := 70,  "name" := "Guarda Veterano (Medio)",     "equipment" := array{} },
@@ -400,38 +391,6 @@ function _VestirDoGhaia(agent, grupo)
     return 1;
 endfunction
 
-// Retorna o grupo de equip do equip2.cfg para o tipo de NPC dado.
-// Mapeia templates novos para grupos existentes (evita duplicar entries no cfg).
-function _GetEquipGroup(tname, gender)
-    var t   := lower(tname);
-    var sfx := (gender == 0) ? "M" : "F";
-
-    // Conselho Sofocratico: usa Vampiro_MagoM (so existe M por ora)
-    if (t["guarda"] != error && (t["kaijin"] != error || t["shaman"] != error ||
-        t["aradal"] != error || t["velkyn"] != error || t["evocatium"] != error))
-        return "Vampiro_MagoM";
-    endif
-
-    // Ladroes e Assassinos Sinodo: Vampiro_ladino
-    if (t["ladraoruf"] != error || t["assassinosinodo"] != error || t["assassinocazador"] != error)
-        return "Vampiro_ladino{}".format(sfx);
-    endif
-
-    // Assassino Arqueiro: grupo proprio (definido no equip2.cfg) ou fallback Vampiro_ladino
-    if (t["assassinoarqueiro"] != error)
-        return "assassinoarqueiro{}".format(sfx);
-    endif
-
-    // Guardas Regentes: grupo proprio por tier
-    if (t["guardafaccaofraco"] != error)  return "guardafaccaofraco{}".format(sfx); endif
-    if (t["guardafaccaomedio"] != error)  return "guardafaccaomedio{}".format(sfx); endif
-    if (t["guardafaccaoforte"] != error)  return "guardafaccaoforte{}".format(sfx); endif
-
-    // Fallback: monta grupo pelo nome do template (comportamento original)
-    var parts := SplitWords(tname, ":");
-    return parts[parts.size()] + sfx;
-endfunction
-
 function _SelectRaceOrFallback(agent, who)
     var race_choice := FaccaoRaceGump(who);
     ApplyRaceToNPC(agent, race_choice ? race_choice : FACCAO_BTN_HUMANO_M);
@@ -469,9 +428,8 @@ function ContractNPC(guild, npc_i, who, loc, school := 0)
     // Troca imediatamente para o script correto antes do gump de raça,
     // para evitar que a brainAI (humanoid) ataque o contratante durante a espera.
     // Sem a propriedade "guild" definida ainda, o guard não inicia combate.
-    var npc_script := _GetNPCScript(template.template);
     if (!_IsVendor(template))
-        agent.script := npc_script;
+        agent.script := ":ghaia:guardfaccao";
         SetObjProperty(agent, "script", agent.script);
         RestartScript(agent);
     endif
@@ -481,22 +439,19 @@ function ContractNPC(guild, npc_i, who, loc, school := 0)
     _SelectRaceOrFallback(agent, who);
 
     if (!_IsVendor(template))
-        var equip_group := _GetEquipGroup(template.template, agent.gender);
-        _VestirDoGhaia(agent, equip_group);
+        var template_parts := SplitWords(template.template, ":");
+        var gender_suffix := (agent.gender == 0) ? "M" : "F";
+        _VestirDoGhaia(agent, template_parts[template_parts.size()] + gender_suffix);
     endif
 
     // Registra o NPC (define guild, contract_by, etc.) ANTES de reiniciar o script,
     // para que Setup() leia o guild correto.
     _RegisterActiveNPC(agent, template, guild, who, npc_i);
 
-    // Configura skills que nao podem ser definidas no npcdesc.cfg
-    _SetupNPCSkills(agent, template.template);
-
-    // Reinicia o script do NPC para que Setup() leia o guild recem definido.
+    // Reinicia o script do guarda para que Setup() leia o guild recem definido.
     // Vendedores nao reiniciam aqui pois o init.src rodaria duas vezes (sobrescreveria
     // aparencia escolhida). O main.src do vendedor re-le o guild no primeiro loop.
     if (!_IsVendor(template))
-        agent.script := npc_script;
         RestartScript(agent);
     endif
 
@@ -515,12 +470,6 @@ function _RegisterActiveNPC(agent, template, guild, who, npc_i)
     SetObjProperty(agent, "tipo_faccao", tipo);
 
     PropagateNomeFaccao(guild, agent);
-
-    // NPCs de sombra (assassinos) têm o botão "Sombras" no gump; nascem visíveis
-    var _tpl_name := lower(cstr(template.template));
-    if (_tpl_name["assassino"] != error || _tpl_name["ladrao"] != error)
-        SetObjProperty(agent, "is_shadow_npc", 1);
-    endif
 
     var npc_list := listContractedNPC(guild);
     npc_list.append(struct{ "serial" := agent.serial, "price" := template.price, "ref" := npc_i });

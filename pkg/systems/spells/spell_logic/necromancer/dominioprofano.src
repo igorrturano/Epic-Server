@@ -5,16 +5,17 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":attributes:vitals";
 include ":tn:npcutil";
 include ":brainAI:npcUtil";
 include ":epicAI:epicai";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	SendSysMessageEx(who, "Escolha o morto que deseja dominar", SSM_REQUEST);
@@ -48,7 +49,14 @@ program SpellScript(params)
 	MoveObjectToLocation(targ, 5950, 3486, 0, targ.realm);
 	SetObjProperty(targ, "GuardKill", 1);
 	ApplyDamage(targ, 9999);
-	TS_StartTimer(who, "dominioprofano", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 3);
+
+	var duration := GetSpellDuration(AP_GetSkill(who, ARCANA)) / 3;
+
+	var opts := struct{};
+	opts.+displayname := "Dominio Profano";
+	opts.+on_expire_script := ":spells:spell_logic/necromancer/endDominioProfano";
+
+	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
 
 	return 1;
 endprogram

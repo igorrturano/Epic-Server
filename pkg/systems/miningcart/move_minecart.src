@@ -14,19 +14,26 @@ program move_minecart(params)
         return 0;
     endif
     
-    var targetStop := FindTargetStop(startStop);
-    if (!targetStop)
-        SendSysMessage(who, "Nao encontrei a estacao de destino (terminal oposto) nesta linha.", 3, 0x22);
+    var targetStops := FindTargetStops(startStop);
+    if (targetStops.size() == 0)
+        SendSysMessage(who, "Nao encontrei nenhuma estacao de destino (terminal oposto) nesta linha.", 3, 0x22);
         return 0;
     endif
     
-    var lineId := CInt(GetObjProperty(startStop, "LineId"));
-    if (!lineId) lineId := 1; endif
+    var path := array{};
+    var targetStop := 0;
     
-    var path := ExecuteBFS(struct{ "x" := cart.x, "y" := cart.y, "realm" := cart.realm }, struct{ "x" := targetStop.x, "y" := targetStop.y, "realm" := targetStop.realm }, cart.realm, lineId);
+    // Testa a conectividade física para cada estação alvo da mesma linha encontrada no mundo
+    foreach tStop in targetStops
+        path := ExecuteBFS(struct{ "x" := cart.x, "y" := cart.y, "realm" := cart.realm }, struct{ "x" := tStop.x, "y" := tStop.y, "realm" := tStop.realm }, cart.realm);
+        if (path.size() > 0)
+            targetStop := tStop;
+            break;
+        endif
+    endforeach
     
     if (path.size() == 0)
-        SendSysMessage(who, "Nao consegui tracar um caminho pelos trilhos.", 3, 0x22);
+        SendSysMessage(who, "Nao consegui tracar um caminho pelos trilhos ate o destino.", 3, 0x22);
         return 0;
     endif
     
@@ -85,7 +92,7 @@ program move_minecart(params)
     EraseObjProperty(cart, "#Moving");
 endprogram
 
-function ExecuteBFS(start_pos, goal_pos, realm, lineId)
+function ExecuteBFS(start_pos, goal_pos, realm)
     // Implementação de BFS para encontrar caminhos em malhas, com suporte a telepads inter-mapas
     var start_node := struct{ "x" := start_pos.x, "y" := start_pos.y, "realm" := realm };
     var queue := array{start_node};
@@ -141,13 +148,13 @@ function ExecuteBFS(start_pos, goal_pos, realm, lineId)
             
             var valid_destX := destX;
             var valid_destY := destY;
-            var trackZ := IsTrackAt(destX, destY, destRealm, lineId);
+            var trackZ := IsTrackAt(destX, destY, destRealm);
             
             if (trackZ == error)
                 for sx := -2 to 2
                     for sy := -2 to 2
                         if (sx == 0 && sy == 0) continue; endif
-                        trackZ := IsTrackAt(destX + sx, destY + sy, destRealm, lineId);
+                        trackZ := IsTrackAt(destX + sx, destY + sy, destRealm);
                         if (trackZ != error)
                             valid_destX := destX + sx;
                             valid_destY := destY + sy;
@@ -175,7 +182,7 @@ function ExecuteBFS(start_pos, goal_pos, realm, lineId)
             var key := CStr(nx)+"_"+CStr(ny)+"_"+current.realm;
             
             if (!visited.exists(key))
-                var trackZ := IsTrackAt(nx, ny, current.realm, lineId);
+                var trackZ := IsTrackAt(nx, ny, current.realm);
                 if (trackZ != error)
                     visited.insert(key, 1);
                     var next_node := struct{ "x" := nx, "y" := ny, "z" := trackZ, "realm" := current.realm };

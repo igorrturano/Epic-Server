@@ -29,7 +29,6 @@ program Install()
 endprogram
 
 exported function MegaCliloc(who, byref packet)
-
 	var Object_Name;
 
 	var xDesc := ""; // Será utilizado para juntar as informações do tooltip do item
@@ -64,13 +63,8 @@ exported function MegaCliloc(who, byref packet)
 		// for some reason. Maybe a core/client issue?
 
 		xDesc := "";
-		xDesc := AddSpecialBookshelfDescription(item, xDesc); // Adicione esta linha
-		xDesc := MontaDescPersonagem(item, who, xDesc);
-
-		// LIMITA O TAMANHO DAS DESCRIÇÕES
-		if (len(desc) > 85)
-			desc := desc[1, 85];
-		endif
+		xDesc := AddSpecialBookshelfDescription(item, xDesc);
+		xDesc := MontaDescPersonagem(item,who,xDesc);
 
 		// MONTA DEscrição commum a qualquer item. [Colocar as novas descs dentro deste metodo]
 		xDesc := MontaDescricaoItem(item, who, xDesc);

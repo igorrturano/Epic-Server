@@ -7,6 +7,7 @@ include ":abilities:models/Ability";
 include ":charactercreation:resists";
 include ":tn:boss";
 include "include/sysEvent";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
@@ -29,7 +30,7 @@ program SpellScript(params)
 		controlNPC(who, targ);
 	endif
 
-	handleSilentMagic(who, targ, SFX_SPELL_TELEKINESIS);
+	SC_HandleSound(who, targ, SFX_SPELL_TELEKINESIS);
 	// PlayObjectCenteredEffectEx(targ, FX_HIPNOSYS, 255, 60);
 	// PlayObjectCenteredEffect(targ, FX_HIPNOSYS, 150, 50);
 

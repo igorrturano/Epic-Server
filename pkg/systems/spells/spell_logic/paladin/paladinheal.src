@@ -25,16 +25,19 @@ program SpellScript(params)
 	endif
 
 	if (!targ)
+		EraseObjProperty(who, "#Casting");
 		return;
 	endif
 
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		EraseObjProperty(who, "#Casting");
 		return;
 	endif
 
 	if (GetVital(targ, HITS) == GetVitalMaximumValue(targ, HITS))
 		SendSysMessageEx(who, "O alvo nao parece ferido.", SSM_FAIL);
+		EraseObjProperty(who, "#Casting");
 		return;
 	endif
 
@@ -48,10 +51,13 @@ program SpellScript(params)
         var category := lower(GetConfigString(elem, "Environment"));
 
         if (category == "undead" || category == "demons")
-
             DamageFLS(targ, healed, DMG_FORCED, who);
+            EraseObjProperty(who, "#Casting");
+            return 1;
         else
             Sendsysmessage(who, "Alvo invalido.");
+            EraseObjProperty(who, "#Casting");
+            return;
         endif
     endif
 

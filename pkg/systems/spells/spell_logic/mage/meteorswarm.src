@@ -6,7 +6,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/shapes";
 include ":timedScripts:timedScripts";
 include "include/sysEvent";
@@ -64,7 +64,7 @@ program spell_meteorSwarm(parms)
 			SendSysMessageEx(mobile, "Voce consegue desviar de alguns meteoros.", SSM_INFO);
 		endif
 
-		DamageFLS(mobile, cint(target_dmg), DMG_FIRE, caster, "meteorSwarm");
+		SC_DealDamage(caster, mobile, CInt(spell.id), cint(target_dmg), DMG_FIRE);
 		sleepms(20);
 	endforeach
 endprogram
