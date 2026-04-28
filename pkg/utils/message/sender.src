@@ -1,3 +1,4 @@
+use uo;
 use polsys;
 
 include ":message:model/Message";
@@ -12,9 +13,9 @@ program Sender(message)
 	if (message.GetType() == MESSAGE_TYPE::SYSTEM)
 		SendSysTo(message.GetToWhom(), SplitMessage(message));
 	elseif (message.GetType() == MESSAGE_TYPE::NORMAL)
-		SendAboveTo(message.GetToWhom(), SplitMessage(message));
+		SendAboveTo(message.GetToWhom(), SplitMessage(message), message.GetPacketLanguage());
 	elseif (message.GetType() == MESSAGE_TYPE::NORMAL_PRIVATE)
-		SendAbovePrivateTo(message.GetFromWhom(), SplitMessage(message), message.GetToWhom());
+		SendAbovePrivateTo(message.GetFromWhom(), SplitMessage(message), message.GetToWhom(), message.GetPacketLanguage());
 	elseif (message.GetType() == MESSAGE_TYPE::EMOTE)
 		SendEmoteTo(message.GetToWhom(), SplitMessage(message));
 	endif
@@ -53,15 +54,15 @@ function CountFragments(text, maxSize)
 	return CInt(text.length() / maxSize) + 1;
 endfunction
 
-function SendAboveTo(who, splitedMessage)
+function SendAboveTo(who, splitedMessage, langcode := "ENG")
 	foreach part in (splitedMessage)
-		PrintText(who, part.textTarget, part.color.GetValue(), part.font.GetValue());
+		PrintText(who, part.textTarget, part.color.GetValue(), part.font.GetValue(), langcode);
 	endforeach
 endfunction
 
-function SendAbovePrivateTo(who, splitedMessage, whoSee)
+function SendAbovePrivateTo(who, splitedMessage, whoSee, langcode := "ENG")
 	foreach part in (splitedMessage)
-		PrintTextPrivate(who, part.textTarget, whoSee, part.color.GetValue(), part.font.GetValue());
+		PrintTextPrivate(who, part.textTarget, whoSee, part.color.GetValue(), part.font.GetValue(), JOURNAL_UC_PRINT_NAME, langcode);
 	endforeach
 endfunction
 

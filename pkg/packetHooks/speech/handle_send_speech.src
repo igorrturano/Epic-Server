@@ -5,7 +5,8 @@ use polsys;
 
 include ":charactercreation:habilidades";
 include "include/epicLoggerUtils";
-// include ":message:model/TranslatableText";
+include ":message:model/Message";
+include ":text:_all";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:Controller/Translator";
 include ":attributes:attributes";
@@ -73,9 +74,65 @@ exported function handleUCOutgoing(character, byref packet)
 		return 1;
 	endif
 
+	if (DispatchTranslation(messageData))
+		return 1; // Dublagem: bloqueia o pacote original; o ouvinte verá apenas a fala traduzida
+	endif
+
 	ReassemblePacket(packet, messageData);
-	
+
 	return 0;
+endfunction
+
+function DispatchTranslation(byRef messageData)
+	// Pacotes que nós mesmos geramos para entregar tradução vêm marcados com "TXL"
+	// no campo language. Sem essa checagem, o hook re-dispara e cria loop infinito.
+	if (messageData.language[1, 3] == "TXL")
+		return false;
+	endif
+
+	if (messageData.source.GetSerial() == messageData.target.GetSerial())
+		return false;
+	endif
+
+	if (messageData.source.IsNPC())
+		return false;
+	endif
+
+	if (messageData.message == "*Incompreensível*")
+		return false;
+	endif
+
+	var mode := messageData.target.GetObjRef().GetProp("translation");
+	if (mode == error || !mode || mode == 0)
+		return false;
+	endif
+
+	var sourceAcct := FindAccount(messageData.source.GetObjRef().acctname);
+	var targetAcct := FindAccount(messageData.target.GetObjRef().acctname);
+	if (sourceAcct == error || targetAcct == error || !sourceAcct || !targetAcct)
+		return false;
+	endif
+
+	var sourceLang := sourceAcct.GetProp("original_language");
+	if (sourceLang == error || !sourceLang)
+		sourceLang := LANGUAGE::PORTUGUESE;
+	endif
+
+	var targetLang := targetAcct.GetProp("original_language");
+	if (targetLang == error || !targetLang)
+		targetLang := LANGUAGE::PORTUGUESE;
+	endif
+
+	if (sourceLang == targetLang)
+		return false;
+	endif
+
+	Message(messageData.message, Color(messageData.color), Font(messageData.font))
+		.RequestTranslation(sourceLang, targetLang)
+		.SetPacketLanguage("TXL")
+		.SendAbovePrivate(messageData.target.GetObjRef(), messageData.source.GetObjRef());
+
+	return mode == 2;
 endfunction
 
 function CheckSaying(byRef messageData)
