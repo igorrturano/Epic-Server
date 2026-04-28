@@ -102,7 +102,7 @@ class DivineAura(CombatAbility)
 				PlayStationaryEffect(who.x + 2, who.y + 2, who.z, 0x6C9B, 0, 10, 0, who.realm);
 				PlaySoundEffect(who, 0x221);
 				sleepms(500);
-				var sb_nearby := ListMobilesNearLocation(who.x, who.y, who.z, 2, who.realm);
+				var sb_nearby := mobile.GetNearbyMobiles(2);
 				var sb_party := who.party ? who.party.members : array{};
 				var sb_pets := array{};
 				foreach sb_member in sb_party

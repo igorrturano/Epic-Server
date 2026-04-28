@@ -397,13 +397,13 @@ endfunction
 function EquipmentCheck(who)
 	var hand_1 := GetEquipmentByLayer(who, LAYER_HAND1);
 	if (hand_1)
-		if (!hand_1.IsA(POLCLASS_SPELLBOOK))
+		if (!hand_1.IsA(POLCLASS_SPELLBOOK) && !GetObjProperty(hand_1, "cancast"))
 			return 0;
 		endif
 	endif
 	var hand_2 := GetEquipmentByLayer(who, LAYER_HAND2);
 	if (hand_2)
-		if (!hand_2.IsA(POLCLASS_SPELLBOOK))
+		if (!hand_2.IsA(POLCLASS_SPELLBOOK) && !GetObjProperty(hand_2, "cancast"))
 			return 0;
 		endif
 	endif

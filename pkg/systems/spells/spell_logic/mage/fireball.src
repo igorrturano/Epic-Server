@@ -1,7 +1,7 @@
 use uo;
 include "include/tileEffects";
 include ":attributes:attributes";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/shapes";
 include ":timedScripts:timedScripts";
 include "include/sysEvent";
@@ -106,9 +106,9 @@ program spell_fireball(params)
 		endif
 
 		if (Getcooldown(mobile, "spellthief"))
-			DamageFLS(caster, cint(target_dmg), DMG_FIRE, caster, "fireball");
+			SC_DealDamage(caster, caster, CInt(spell.id), cint(target_dmg), DMG_FIRE);
 		else
-			DamageFLS(mobile, cint(target_dmg), DMG_FIRE, caster, "fireball");
+			SC_DealDamage(caster, mobile, CInt(spell.id), cint(target_dmg), DMG_FIRE);
 		endif
 
 		sleepms(20);

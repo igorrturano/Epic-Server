@@ -107,6 +107,18 @@ endif
 
 	EraseObjProperty(ghost, "death_remaining");
 	EraseObjProperty(ghost, "death_corpse_serial");
+
+	// Redirecionamento de prisao da faccao: se o player foi derrubado por um guarda,
+	// acorda na prisao em vez do local do corpo.
+	var _prisao := GetObjProperty(ghost, "#prisao_destino");
+	if (_prisao != error)
+		EraseObjProperty(ghost, "#prisao_destino");
+		syslog("[PRISAO] KataWakeUp: {} acordando na prisao x={} y={} z={} realm={}".format(
+			ghost.name, _prisao.x, _prisao.y, _prisao.z, _prisao.realm));
+		MoveObjectToLocation(ghost, _prisao.x, _prisao.y, _prisao.z, _prisao.realm, MOVEOBJECT_FORCELOCATION);
+		SendSysMessage(ghost, "Voce acorda na prisao da faccao. Em 5 minutos sera apresentada a opcao de pagar a multa.");
+		start_script(":faccao:prisaotimer", array{ ghost.serial, _prisao.guildid, _prisao.tier });
+	endif
 endfunction
 
 function DuelWakeUp(ghost, corpse)

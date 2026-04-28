@@ -21,6 +21,7 @@ include "include/client";
 include "include/epicConstants";
 include "include/dungeons";
 include ":message:include/model/Message";
+include ":stables:include/stable";
 
 /*
  * MP_GetMountsCfgFile()
@@ -215,15 +216,12 @@ function MP_CheckMountRestriction(mobile, npc)
 
 	var chardata := GetObjProperty(mobile, "chardata");
 
-	// Check race restriction
-	if (chardata.raca != restriction.race)
-		var msg := "Apenas " + restriction.race_name + " podem montar essa criatura";
-		return error{"errortext" := msg};
-	endif
+	// Check race and gender restrictions
+	var race_mismatch := chardata.raca != restriction.race;
+	var gender_mismatch := restriction.gender > 0 && mobile.gender != restriction.gender;
 
-	// Check gender restriction (if specified)
-	if (restriction.gender > 0 && mobile.gender != restriction.gender)
-		var msg := "Apenas femeas " + restriction.race_name + " podem montar essa criatura";
+	if (race_mismatch || gender_mismatch)
+		var msg := "Apenas " + restriction.race_name + " podem montar essa criatura";
 		return error{"errortext" := msg};
 	endif
 
@@ -259,7 +257,7 @@ function MP_Mount(mobile, npc)
 		return 0;
 	endif
 
-	if (GetObjProperty(npc, "EstaNoEstabulo"))
+	if (IsStabled(npc))
 		Message("Este animal está armazenado no estábulo", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
@@ -282,8 +280,8 @@ function MP_Mount(mobile, npc)
 
 	// Check race/gender restrictions using new system
 	var restriction_check := MP_CheckMountRestriction(mobile, npc);
-	if (!restriction_check)
-		Message(restriction_check.errortext).SetColor(SYSTEM_COLOR::FAIL).SendSys(mobile);
+	if (restriction_check == error)
+		Message(restriction_check.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 

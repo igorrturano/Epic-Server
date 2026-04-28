@@ -24,6 +24,7 @@ include ":fls_core:fls_skillCheck";
 include ":epicAI:npcDataCache";
 include ":abilities:include/models/Ability";
 include ":propagacao:include/util/propagacaoConstants";
+include ":epicAI:include/threatModel";
 
 // Script-level caches (per-tick state, brain compile unit owns these)
 var nearby_cache_var := dictionary;
@@ -271,36 +272,79 @@ function GetNearbyMobilesOnce(mobile, range, flags := LISTEX_FLAG_NORMAL)
 endfunction
 
 
+// Safe class lookup. opponent.getClass() reads chardata.classe which doesn't
+// exist on NPCs; the chained access then returns error. Normalize to "" so
+// downstream comparisons (== SABIO etc.) behave like a clean string compare.
+function GetOpponentClass(opponent)
+    if (!opponent)
+        return "";
+    endif
+    var klass := opponent.getClass();
+    if (klass == error || !klass)
+        return "";
+    endif
+    return klass;
+endfunction
+
+
+// Canonical ranged check. opponent.weapon is 0 when bare-handed (the common
+// SABIO case), so calling .isRanged() directly errors out and poisons the
+// caller's expression. SABIO is force-classified as ranged regardless of
+// equipped weapon.
+function IsOpponentRanged(opponent)
+    if (!opponent)
+        return 0;
+    endif
+    if (GetOpponentClass(opponent) == SABIO)
+        return 1;
+    endif
+    var w := opponent.weapon;
+    if (!w)
+        return 0;
+    endif
+    var ranged := w.isRanged();
+    if (ranged == error)
+        return 0;
+    endif
+    return ranged;
+endfunction
+
+
+// Shared tracker shape for PursueTarget and PursueMelee. Includes both the
+// pursue-side fields (target_serial, progress counters) and the retreat-side
+// fields so the two paths can transition into each other without struct-field
+// drift.
+function BuildPursuitTracker(opp_serial, x, y, dist, current_time)
+    return struct{
+        "start_time" := current_time,
+        "start_pos_x" := x,
+        "start_pos_y" := y,
+        "start_distance" := dist,
+        "target_serial" := opp_serial,
+        "failed_moves" := 0,
+        "total_moves" := 0,
+        "last_pos_x" := x,
+        "last_pos_y" := y,
+        "last_progress_check" := current_time,
+        "no_progress_count" := 0,
+        "retreat_dist" := 0,
+        "retreat_ticks" := 0
+    };
+endfunction
+
+
 function CheckForIdealTarget()
-   // Check if we're locked onto a target (20 second lock)
-   if (target_lock_var)
-      var locked_target := SystemFindObjectBySerial(target_lock_var.serial);
-      var time_locked := ReadGameClock() - target_lock_var.time;
-
-      if (time_locked < 20 && locked_target && CanFight(me, locked_target))
-         return locked_target;
-      else
-         target_lock_var := 0;
-      endif
+   // Threat-first: if the threat table has a valid candidate, use it. The
+   // threat model owns target stickiness via hysteresis (THREAT_SWITCH_MARGIN),
+   // so the legacy 20s target_lock_var and 90% keep_target_chance are gone.
+   var top := GetTopThreat();
+   if (top)
+      return top;
    endif
 
-   // Get the target priority
-   var target_priority := GetObjProperty(me, "target_priority");
-   var keep_target_chance := 90; // Default 90% chance to keep current target (10% to switch)
-   case (target_priority)
-      "Aggressive": keep_target_chance := 85;  // 85% chance to keep (15% to switch)
-      "Defensive":  keep_target_chance := 95;  // 95% chance to keep (5% to switch)
-      "Focus":      keep_target_chance := 98;  // 98% chance to keep (2% to switch)
-   endcase
-   
-   // If we already have an opponent, check if we should stick with them
-   if (me.opponent && CanFight(me, me.opponent))
-      if (RandomInt(100) < keep_target_chance)
-         return me.opponent;
-      endif
-   endif
-
-   // Phase 4: Use cached scan instead of direct ListMobilesNearLocationEx
+   // Opening-engagement fallback: nobody has dealt damage yet (NPC just
+   // engaged, first tick of combat). Score nearby mobiles to seed an initial
+   // target; subsequent damage events populate the threat table.
    var potential_opponents := GetNearbyMobilesOnce(me, AREA_SIZE, LISTEX_FLAG_NORMAL);
    if (potential_opponents.size() < 1)
       return 0;
@@ -317,8 +361,8 @@ function CheckForIdealTarget()
          continue;
       endif
 
-      var opponent_class := opponent.getClass();
-      var opponent_is_ranged := opponent.weapon.isRanged() || opponent_class == SABIO;
+      var opponent_class := GetOpponentClass(opponent);
+      var opponent_is_ranged := IsOpponentRanged(opponent);
       var priority := 0;
 
       if (opponent == me.opponent)
@@ -369,12 +413,11 @@ function CheckForIdealTarget()
       endif
    endforeach
 
-   // Lock onto the best opponent for 20 seconds
-   if (best_opponent.mobile)
-      target_lock_var := struct{
-         "serial" := best_opponent.mobile.serial,
-         "time" := ReadGameClock()
-      };
+   // Stickiness: if no candidate scored higher than the current opponent
+   // (or the loop bailed early), keep what we have rather than returning 0
+   // and triggering SetOpponent(0) upstream.
+   if (!best_opponent.mobile && me.opponent && CanFight(me, me.opponent))
+      return me.opponent;
    endif
 
    return best_opponent.mobile;
@@ -835,14 +878,7 @@ function PursueMelee(opponent)
     // No LOS — stuck detection using script-level var
     var current_time := ReadGameClock();
     if (!pursuit_tracker || pursuit_tracker.target_serial != opponent.serial)
-        pursuit_tracker := struct{
-            "start_time" := current_time,
-            "start_pos_x" := me.x,
-            "start_pos_y" := me.y,
-            "target_serial" := opponent.serial,
-            "failed_moves" := 0,
-            "total_moves" := 0
-        };
+        pursuit_tracker := BuildPursuitTracker(opponent.serial, me.x, me.y, dist, current_time);
     endif
 
     var old_x := me.x;
@@ -911,6 +947,11 @@ endfunction
 
 
 function PursueTarget(opponent)
+    if (!opponent || opponent.dead)
+        pursuit_tracker := 0;
+        return 0;
+    endif
+
     var ideal_distance := CalculateIdealPursuitDistance();
 
     // Fast path for melee NPCs — no internal sleep loops, one action per call
@@ -927,6 +968,9 @@ function PursueTarget(opponent)
     var my_x := me.x;
     var my_y := me.y;
     var opp_serial := opponent.serial;
+    var opp_x := opponent.x;
+    var opp_y := opponent.y;
+    var opp_z := opponent.z;
 
     if (dist > AREA_SIZE + 6)
         return 0;
@@ -938,11 +982,14 @@ function PursueTarget(opponent)
 
     if (has_los)
         enemy_last_loc_var := struct{
-            "x" := opponent.x, "y" := opponent.y, "z" := opponent.z, "time" := current_time
+            "x" := opp_x, "y" := opp_y, "z" := opp_z, "time" := current_time
         };
     endif
 
-    // Ranged retreat logic (too close) - one attempt per tick, non-blocking
+    // Ranged retreat logic (too close) - one attempt per tick, non-blocking.
+    // Mutates pursuit_tracker in place; do NOT refactor to a local `tracker`
+    // var (the pursue branch below uses that pattern but only after this
+    // early-return path has settled).
     if (dist < ideal_distance)
         if (should_run)
             RunAwayFrom(opponent);
@@ -950,10 +997,12 @@ function PursueTarget(opponent)
             WalkAwayFrom(opponent);
         endif
 
-        // Track if retreat is actually gaining distance
-        if (!pursuit_tracker)
-            pursuit_tracker := struct{ "retreat_dist" := dist, "retreat_ticks" := 0 };
-        elseif (!pursuit_tracker.retreat_dist)
+        // Ensure tracker has the unified shape so a retreat→pursue transition
+        // doesn't trip the `target_serial` comparison below.
+        if (!pursuit_tracker || pursuit_tracker.target_serial != opp_serial)
+            pursuit_tracker := BuildPursuitTracker(opp_serial, my_x, my_y, dist, current_time);
+        endif
+        if (!pursuit_tracker.retreat_dist)
             pursuit_tracker.retreat_dist := dist;
             pursuit_tracker.retreat_ticks := 0;
         endif
@@ -980,19 +1029,7 @@ function PursueTarget(opponent)
     var tracker_needs_reset := (!tracker || tracker.target_serial != opp_serial);
 
     if (tracker_needs_reset)
-        tracker := struct{
-            "start_time" := current_time,
-            "start_pos_x" := my_x,
-            "start_pos_y" := my_y,
-            "start_distance" := dist,
-            "target_serial" := opp_serial,
-            "failed_moves" := 0,
-            "total_moves" := 0,
-            "last_pos_x" := my_x,
-            "last_pos_y" := my_y,
-            "last_progress_check" := current_time,
-            "no_progress_count" := 0
-        };
+        tracker := BuildPursuitTracker(opp_serial, my_x, my_y, dist, current_time);
     endif
 
     // Direct movement with LOS - one step per tick, non-blocking
@@ -1107,7 +1144,7 @@ function PursueTarget(opponent)
                 endif
             endif
 
-            if (Abs(me.z - opponent.z) >= 19)
+            if (Abs(me.z - opp_z) >= 19)
                 var attempts := 0;
                 while (attempts < 5 && !CheckLineOfSight(me, opponent))
                     if (should_run)
@@ -1737,6 +1774,7 @@ endfunction
 function ClearCombatState()
     SetWarMode(0);
     SetOpponent(0);
+    ClearThreatTable();
 endfunction
 
 

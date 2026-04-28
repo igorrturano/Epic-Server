@@ -16,10 +16,13 @@ function ProgressAttackSkills(byRef attackInfo)
 	endif
 
 	// Testa se é possivel ganhar skill com o NPC alvo
-	// var skillAttacker := AP_GetSkill(attacker, attacker.weapon.attribute);
-	// var skillDefender := AP_GetSkill(defender, defender.weapon.attribute);
 	var skillAttacker := attackInfo.GetAttacker().GetSkillBase(attackInfo.GetWeapon().GetAttribute());
-	var skillDefender := attackInfo.GetDefender().GetSkillBase(attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetAttribute()); // TODO: Verificar se isso funciona com NPCs sem arma equipada (se pega WRESTLING)
+	var skillDefender;
+	if (attackInfo.GetDefender().IsNPC())
+		skillDefender := attackInfo.GetDefender().GetSkillBase(WRESTLING);
+	else
+		skillDefender := attackInfo.GetDefender().GetSkillBase(attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetAttribute());
+	endif
 
 	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetAttacker().IsConnected())
 		if (attackInfo.GetWeapon().GetObjType() == 0x13b9 && !attackInfo.GetAttacker().GetEquipBySlot(SHIELD)) // bastarda

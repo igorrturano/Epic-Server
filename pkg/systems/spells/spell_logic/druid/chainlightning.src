@@ -8,7 +8,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/tileEffects";
 include ":taming:taming";
 include "include/epicMageryUtils";
@@ -37,13 +37,12 @@ program chainLightning(params)
 
 	var casterThenNextMobile := caster;
 	foreach mobile in allMobiles
-		SetObjProperty(mobile, "LastHit", { caster.name, caster.serial, "chain lightning" });
 		PlayMovingEffect(casterThenNextMobile, mobile, 0x379f, 0, 20);
 		casterThenNextMobile := mobile;
 		PlaySoundEffect(mobile, SFX_SPELL_LIGHTNING);
 		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
 
-		DamageFLS(mobile, cint(dmg), DMG_ENERGY, caster, "chainLightning");
+		SC_DealDamage(caster, mobile, CInt(spellinfo.id), cint(dmg), DMG_ENERGY);
 		sleepms(600);
 	endforeach
 endprogram

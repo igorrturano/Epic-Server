@@ -60,7 +60,7 @@ class PrismaticVortex(CombatAbility)
             struct{ dano := total_dmg, desc := "Vortice Prismatico." }, range);
 
         // Elemental damage to nearby hostiles
-        var nearby := ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm);
+        var nearby := mobile.GetNearbyMobiles(range);
         var party_members := array{};
         if (who.party)
             party_members := who.party.members;

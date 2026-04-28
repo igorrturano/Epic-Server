@@ -8,7 +8,7 @@ include ":magery:spells";
 include "include/client";
 include "include/sounds";
 include "include/utils";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":charactercreation:resists";
@@ -101,7 +101,7 @@ program spell_singularidade(params)
 		print("[DEBUG singularidade] pull_after_cap=" + pull);
 
 		SendSysMessageEx(mob, "Voce e sugado para a singularidade!", SSM_FAIL);
-		DamageFLS(mob, cint(dmg), DMG_ENERGY, caster, "singularidade");
+		SC_DealDamage(caster, mob, CInt(spellinfo.id), cint(dmg), DMG_ENERGY);
 
 		PlayObjectCenteredEffect(mob, 0xE464, 5, 10);
 

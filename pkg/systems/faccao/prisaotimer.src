@@ -1,0 +1,133 @@
+// =============================================================================
+// prisaotimer.src — Timer de prisao e gump de multa
+// =============================================================================
+//
+// Iniciado por KataWakeUp (death/players) quando o player acorda na prisao,
+// ou por logon_hook quando o servidor reinicia com o player ainda preso.
+//
+// FLUXO
+//   1. Valida mobile e guild; persiste #prisao_pendente no player (sobrevive restart).
+//   2. Se primeiro start: confisca itens e aguarda PRISON_WAIT_MINUTES antes do gump.
+//      Se restart (is_restart=1): aguarda apenas 3s para o cliente carregar.
+//   3. Loop principal — exibe gump com 3 opcoes:
+//        [1] Pagar multa  — cobra moedas, libera player, apaga #prisao_pendente.
+//        [2] Aguardar     — espera PRISON_WAIT_MINUTES e repete o gump.
+//        [3] Falar c/ Lider — salva notif na guild (cooldown 4h); se lider online,
+//                             dispara gump_contato_preso imediatamente.
+//   4. Desconexao entre gumps: AguardarProximoGump detecta e espera reconexao,
+//      enviando mensagem com o tempo restante ao voltar.
+//
+// PARAMETROS
+//   params[1] = serial do player
+//   params[2] = guildid da faccao
+//   params[3] = tier da infracao (1=leve, 2=moderada, 3=grave)
+//   params[4] = is_restart (1 = iniciado pelo logon_hook, pula espera inicial)
+//
+// DEPENDENCIAS
+//   include/prisao.inc — helpers: GetCrimeDesc, GetReleasePoint, ContarMoedas,
+//                        CobrarMoedas, ConfiscarItens, AguardarProximoGump
+// =============================================================================
+
+use uo;
+use os;
+use guilds;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include "include/say";
+include "include/prisao";
+
+program prisaotimer(params)
+    set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+    var who_serial := CInt(params[1]);
+    var guildid    := CInt(params[2]);
+    var tier       := CInt(params[3]);
+    var is_restart := CInt(params[4]);
+
+    var who := SystemFindObjectBySerial(who_serial);
+    if (!who || !who.isA(POLCLASS_MOBILE)) return; endif
+
+    var g := FindGuild(guildid);
+    if (!g) return; endif
+
+    SetObjProperty(who, "#prisao_pendente", struct{ "guildid" := guildid, "tier" := tier });
+
+    var gname      := g.getProp("name");
+    if (!gname || gname == error) gname := "Faccao #{}".format(guildid); endif
+    var crime_desc := GetCrimeDesc(tier);
+    var multa      := FINE_PRISON * tier;
+
+    if (!is_restart)
+        ConfiscarItens(who, g);
+    endif
+
+    if (is_restart)
+        Sleep(3);
+        _EsperarConexao(who);
+    else
+        AguardarProximoGump(who, "Voce ainda esta preso. Em aproximadamente {} minuto(s) sera apresentada a opcao de pagamento.");
+    endif
+
+    while (1)
+        var gump := GFCreateGump(180, 170);
+        GFResizePic(gump, 0, 0, 9270, 420, 300);
+        GFTextMid(gump, 0, 12, 420, 1153, "Prisao - {}".format(gname));
+
+        var html :=
+            "<basefont color=#FFFFFF>Voce foi preso pela faccao <b>{}</b>.<br>".format(gname) +
+            "Motivo: <basefont color=#FFD700><b>{}</b><basefont color=#FFFFFF><br><br>".format(crime_desc) +
+            "Pague <b>{} moedas de cobre</b> para ser libertado imediatamente.<br>".format(multa) +
+            "Sem moedas? Aguarde o guarda decidir o que fazer com voce.";
+
+        GFHtmlArea(gump, 20, 45, 380, 145, html, 0);
+        GFAddButton(gump, 55,  225, 4005, 4007, GF_CLOSE_BTN, 1);
+        GFTextLine(gump,  90,  227, 2100, "Pagar {} moedas e sair".format(multa));
+        GFAddButton(gump, 300, 225, 4017, 4019, GF_CLOSE_BTN, 2);
+        GFTextLine(gump,  335, 227, 33,   "Aguardar");
+        GFAddButton(gump, 140, 260, 4005, 4007, GF_CLOSE_BTN, 3);
+        GFTextLine(gump,  175, 262, 2100, "Falar com o Lider");
+
+        who.frozen := 1;
+        var result := GFSendGump(who, gump);
+        who.frozen := 0;
+
+        if (result && result[0] == 1)
+            var coins := ContarMoedas(who);
+            if (coins >= multa)
+                CobrarMoedas(who, multa);
+                g.setProp("money", CInt(g.getProp("money")) + multa);
+                EraseObjProperty(who, "#prisao_pendente");
+                var saida := GetReleasePoint(g);
+                MoveObjectToLocation(who, saida.x, saida.y, saida.z, saida.realm, MOVEOBJECT_FORCELOCATION);
+                SendSysMessageEx(who, "Multa paga. Voce esta livre - nao reincida!", SSM_INFO);
+                return;
+            else
+                SendSysMessageEx(who, "Voce nao tem moedas suficientes. Aguarde.", SSM_HARMFUL);
+            endif
+
+        elseif (result && result[0] == 3)
+            var _cd_key   := "#contato_lider_cd_{}".format(guildid);
+            var _cd_until := CInt(GetObjProperty(who, _cd_key));
+            if (_cd_until > 0 && ReadGameClock() < _cd_until)
+                var _cd_min := CInt((_cd_until - ReadGameClock()) / 60);
+                SendSysMessageEx(who, "Aguarde {} minuto(s) para solicitar novamente.".format(_cd_min), SSM_HARMFUL);
+            else
+                var lider_serial := CInt(g.getProp("leader"));
+                g.setProp("notif_contato_preso_pendente", struct{
+                    "preso"        := who.name,
+                    "gname"        := gname,
+                    "preso_serial" := who.serial
+                });
+                var lider := lider_serial ? SystemFindObjectBySerial(lider_serial) : 0;
+                if (lider && lider.isA(POLCLASS_MOBILE) && lider.connected)
+                    start_script(":faccao:gump_contato_preso", array{ lider, who.name, gname, who.serial, g });
+                endif
+                SendSysMessageEx(who, "Mensagem enviada ao lider da faccao.", SSM_INFO);
+                SetObjProperty(who, _cd_key, ReadGameClock() + 14400);
+            endif
+        endif
+
+        AguardarProximoGump(who, "Voce ainda esta preso. Em aproximadamente {} minuto(s) sera apresentada novamente a opcao de pagamento.");
+    endwhile
+endprogram

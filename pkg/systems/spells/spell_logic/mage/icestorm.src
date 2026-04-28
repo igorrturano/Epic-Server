@@ -6,7 +6,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/shapes";
 include ":timedScripts:timedScripts";
 include "include/sysEvent";
@@ -65,7 +65,7 @@ program spell_iceStorm(parms)
 			SendSysMessageEx(mobile, "Voce se esquiva de parte do gelo.", SSM_INFO);
 		endif
 
-		DamageFLS(mobile, cint(target_dmg), DMG_COLD, caster, "icestorm");
+		SC_DealDamage(caster, mobile, CInt(spell.id), cint(target_dmg), DMG_COLD);
 
 		// AoE slow: everyone hit gets lentidao unless they pass a WILL save.
 		if (!CheckResist(mobile, WILL, diff, -bonus))

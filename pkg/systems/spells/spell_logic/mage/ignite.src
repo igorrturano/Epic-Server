@@ -7,7 +7,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include "include/epicMageryUtils";
@@ -47,7 +47,7 @@ program cast_incinerar(params)
 	PlayObjectCenteredEffect(targ, 0xDC06, 15, 10);
 	PlaySoundEffect(targ, 0x357);
 	var impact := epicSpellDamageRoll(caster, spell_circle, spell_school);
-	DamageFLS(targ, cint(impact), DMG_FIRE, caster, "incinerar");
+	SC_DealDamage(caster, targ, CInt(spellinfo.id), cint(impact), DMG_FIRE);
 
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
 	var bonus := epicWisdomPathBonus(caster);

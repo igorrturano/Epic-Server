@@ -19,15 +19,12 @@ var pursuit_tracker := 0;
 var los_cache_var := 0;
 var path_cache_var := 0;
 var runaway_progress_var := 0;
-var target_lock_var := 0;
 var threat_list_var := array{};
 var cached_weapon_range := 0;
 var combat_abilities := array{};
 var enter_abilities := array{};
 var anchor_var := 0;
 var spell_target_var := 0;
-var myhabs_var := 0;
-var myhabs_set_var := 0;
 var hazard_cache_var := 0;
 
 /*
@@ -76,15 +73,14 @@ program KillPlayers()
         los_cache_var := 0;
         path_cache_var := 0;
         runaway_progress_var := 0;
-        target_lock_var := 0;
         threat_list_var := array{};
+        threat_table_var := dictionary;
+        last_threat_decay_var := 0;
         cached_weapon_range := 0;
         combat_abilities := array{};
         enter_abilities := array{};
         anchor_var := 0;
         spell_target_var := 0;
-        myhabs_var := 0;
-        myhabs_set_var := 0;
         hazard_cache_var := 0;
         nearby_cache_var := dictionary;
         enemy_last_loc_var := 0;

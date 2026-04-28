@@ -36,7 +36,7 @@ program on_insert(who, bainha, movetype, inserttype, item, existing_stack, amt)
 		endif
 	// bainha.graphic := 0xa40d; // TODO adicionar o grafico correto depois
 	elseif (bainha.objtype == 0xa40d) // bainha de espada
-		var espadas := array{ 0x13b9, 0x13b5, 0x13fe, 0x1440, 0x0f5f,
+		var espadas := array{ 0x13b9, 0x13b5, 0x13fe, 0x1440, 0xFFCB,
 					  		0x0F60, 0x27EF, 0x27a9, 11570, 0x26C5 };
 		if (item.objtype in espadas)
 			if (bainha.item_count > 2)

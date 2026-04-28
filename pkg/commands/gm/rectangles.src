@@ -174,7 +174,7 @@ endfunction
 
 function DisplayRectangleDetails(who, elem)
 	var detail_gump_width := 300;
-	var detail_gump_height := 280;
+	var detail_gump_height := 310;
 
 	var gump := GFECreateGump("Detalhes do Retângulo", detail_gump_width, detail_gump_height, array{
 																							   	BORDER_GOLDEN });
@@ -208,6 +208,10 @@ function DisplayRectangleDetails(who, elem)
 	GFTextLine(gump, 50, y - 4, 40, "Deletar Retângulo");
 	y += 25;
 
+	GFAddButton(gump, 30, y, 2361, 2361, 1, 500);
+	GFTextLine(gump, 50, y - 4, 40, "Desvincular Facção");
+	y += 25;
+
 	GFAddButton(gump, 30, y, 2361, 2361, 1, 200);
 	GFTextLine(gump, 50, y - 4, 40, "Editar Retângulo");
 	y += 25;
@@ -226,6 +230,22 @@ function DisplayRectangleDetails(who, elem)
 			var rect_df := OpenDataFile(":architect:areas");
 			rect_df.DeleteElement(elem.GetProp("Name"));
 			SendSysMessage(who, "Retângulo deletado com sucesso!");
+		endif
+	elseif (input == 500)
+		// Desvincular facção
+		var faccao_atual := elem.GetProp("Faction");
+		SendSysMessage(who, "[DEBUG] Retângulo: " + elem.GetProp("Name"));
+		SendSysMessage(who, "[DEBUG] Facção atual: " + faccao_atual);
+		if (!faccao_atual || faccao_atual == "Selvagem")
+			SendSysMessage(who, "[DEBUG] Já desvinculado — nenhuma alteração feita.");
+			SendSysMessage(who, "Este retângulo já está desvinculado (Selvagem).");
+		elseif (YesNo(who, "Desvincular o retângulo '" + elem.GetProp("Name") + "' da facção '" + faccao_atual + "'?"))
+			elem.SetProp("Faction", "Selvagem");
+			SendSysMessage(who, "[DEBUG] SetProp Faction = Selvagem executado.");
+			SendSysMessage(who, "[DEBUG] Verificando valor salvo: " + elem.GetProp("Faction"));
+			SendSysMessage(who, "Retângulo desvinculado da facção. Agora pertence a: Selvagem.");
+		else
+			SendSysMessage(who, "[DEBUG] Operação cancelada pelo usuário.");
 		endif
 	elseif (input == 200)
 		// Editar retângulo

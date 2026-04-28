@@ -1,0 +1,37 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program shinobi_smoke_visual(params)
+	var who := params[1];
+	var area := CInt(params[2]);
+	var smoke_expires := CInt(params[3]);
+
+	if (!who || who == error)
+		return 0;
+	endif
+
+	var cx := CInt(who.x);
+	var cy := CInt(who.y);
+	var z := CInt(who.z);
+	var realm := who.realm;
+
+	var whoWrapped := MobileWrapper(who);
+	while (ReadGameClock() <= smoke_expires)
+		if (!whoWrapped.IsInSmokeZone())
+			return 1;
+		endif
+		for dx := -area to area
+			for dy := -area to area
+				if ((dx * dx + dy * dy) <= (area * area))
+					PlayStationaryEffect(cx + dx, cy + dy, z, 0x3728, 10, 10, 0, realm);
+				endif
+			endfor
+		endfor
+		sleep(1);
+	endwhile
+
+	whoWrapped.ClearSmokeProtection();
+	return 1;
+endprogram

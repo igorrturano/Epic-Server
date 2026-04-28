@@ -25,6 +25,11 @@ class Transmute(CombatAbility)
 	endfunction
 
 	function ExecuteOn(this, mobile)
+		// Crafting flavor — RadioGump + Target chain has no NPC path.
+		if (mobile.IsNPC())
+			return false;
+		endif
+
 		var who := mobile.GetObjRef();
 		var custo := 10;
 

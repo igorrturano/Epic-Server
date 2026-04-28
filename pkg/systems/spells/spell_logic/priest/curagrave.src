@@ -9,7 +9,6 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include "include/tileEffects";
 include ":charactercreation:habilidades";
-include ":combat:Controller/DamageController_legacy";
 include ":epicAI:include/epicNPCCombat";   // CheckForWoundedAllies, FindMostWoundedAlly
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
@@ -46,29 +45,13 @@ program SpellScript(params)
 	endif
 
 	var healed := cint(AP_GetSkill(who, THEOLOGY));
-	// sendsysmessage(who, "healed " + healed);
-	// ApplyEpicHealing(targ, healed);
-	if (GetObjProperty(who, "votovinganca") == 1)
-		EraseObjProperty(who, "votovinganca");
-		if (targ.npctemplate)
-			var elem := NPC_GetNPCConfig(targ.npctemplate);
-			var category := lower(GetConfigString(elem, "Environment"));
 
-			if (category == "undead" || category == "demons")
-
-				DamageFLS(targ, healed, DMG_FORCED, who);
-			else
-				Sendsysmessage(who, "Alvo invalido.");
-			endif
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::AURA_DIVINA))
+		if (isBloodied(targ))
+			healed := healed * 2;
 		endif
-	else
-		if (MobileWrapper(who).HasAbility(ABILITY_ID::AURA_DIVINA))
-			if (isBloodied(targ))
-				healed := healed * 2;
-			endif
-		endif
-		applyEpicHealing(targ, healed);
 	endif
+	applyEpicHealing(targ, healed);
 
 	recalcvitals(targ);
 

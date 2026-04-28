@@ -21,7 +21,17 @@ function GenericBrain()
         if (CheckDarknessCreatureSurvival(me))
             return;
         endif
-    
+
+        // Damage-weighted threat: decay table + reevaluate target if hysteresis
+        // margin is exceeded. DecayThreat self-throttles to 1Hz.
+        DecayThreat();
+        if (ShouldReevaluateTarget())
+            var threat_top := GetTopThreat();
+            if (threat_top && threat_top != me.opponent)
+                SetOpponent(threat_top);
+            endif
+        endif
+
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
             last_activity_time := polcore().systime;
@@ -38,15 +48,19 @@ function GenericBrain()
             endif
         endif
         
-        if (ev)           
+        if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED:
+                    AddThreat(ev.source, 0);
                     SetOpponent(ev.source);
                     HandleGenericCombatEvent(ev.source);
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
+                    AddThreat(ev.source, 0);
                     SetOpponent(ev.source);
                     HandleGenericCombatEvent(ev.source);
+                EVID_THREAT_UPDATE:
+                    AddThreat(ev.source, ev.amount);
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source))
                         // Phase 3: Update threat list cache

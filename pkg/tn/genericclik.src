@@ -148,9 +148,9 @@ program genericscript(who, item)
 			endforeach
 		endif
 	elseif ("combinacao" in scripts)
-		var comb := GetObjproperty(item, "combinacao");
+		var combinacao := GetObjproperty(item, "combinacao");
 		var todestroy := array;
-		foreach m in (comb.materials)
+		foreach m in (combinacao.materials)
 			SendSysMessageEx(who, "Escolha o item " + m.template.desc);
 			var mtarg := Target(who);
 			if (mtarg.objtype == m.template.objtype && mtarg.graphic == m.template.graphic &&
@@ -164,14 +164,14 @@ program genericscript(who, item)
 
 		var i := 1;
 		foreach d in todestroy
-			if (!SubtractAmount(d, comb.materials[i].qte))
+			if (!SubtractAmount(d, combinacao.materials[i].qte))
 				SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
 				return 1;
 			endif
 			i := i + 1;
 		endforeach
 
-		foreach it in (comb.tocreate)
+		foreach it in (combinacao.tocreate)
 			CreateItemInBAckpack(who, it.template, 1);
 		endforeach
 	endif

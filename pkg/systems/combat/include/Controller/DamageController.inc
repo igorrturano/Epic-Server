@@ -20,6 +20,7 @@ include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":charactercreation:resists";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
+include "include/eventID";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Damage
@@ -135,6 +136,13 @@ function CalculateStatusDamage(byRef attackInfo)
 						 attackInfo.GetAttacker().GetMainDamageModifierBy(DEXTERITY) :
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(DEXTERITY);
 		endif
+	elseif (attackInfo.GetWeapon().IsFinesse())
+		statusDamage.stat := $"{STRENGTH}/{DEXTERITY}";
+		var _finesseStat := Max(attackInfo.GetAttacker().GetStr(), attackInfo.GetAttacker().GetDex());
+		var _finesseMain := CInt(_finesseStat / 20);
+		statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
+					 _finesseMain :
+					 CInt(_finesseMain / 2);
 	else
 		statusDamage.stat := STRENGTH;
 
@@ -146,9 +154,10 @@ function CalculateStatusDamage(byRef attackInfo)
 	attackInfo.GetDamage().IncreaseSlashRawDamage(statusDamage.damageMod)
 						  .IncreasePiercingRawDamage(statusDamage.damageMod)
 						  .IncreaseBluntRawDamage(statusDamage.damageMod);
-						
+
 	return statusDamage;
 endfunction
+
 
 function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
@@ -701,6 +710,12 @@ function GetEquipsByAttackDirection(byRef attackInfo)
 endfunction
 
 function CalculateAttackerCriticalHit(byRef attackInfo)
+	// Spells default to skipping crit — CalculateCriticalChance reads body region
+	// (via CalculateDefenderCriticalReduction) which spells don't set.
+	if (attackInfo.ShouldSkipCrit())
+		return true;
+	endif
+
 	// Only calculate if not already forced by ability
 	if (!attackInfo.GetDamage().IsCritical())
 		attackInfo.SetCriticalHitChance(CalculateCriticalChance(attackInfo));
@@ -986,6 +1001,15 @@ function LogLastHit(attackInfo)
 							attackInfo.GetDamage().GetEnergyBaseDamage() > 0 ? "energy" : "physical";
 		lastHit["bodyregion"] := attackInfo.GetBodyRegion();
 		SetObjProperty(defender, "lastHit", lastHit);
+
+		// Feed the NPC threat model. Players don't run brains, so guard on npctemplate.
+		if (defender.npctemplate && attacker && attacker != defender)
+			SendEvent(defender, struct{
+				"type"   := EVID_THREAT_UPDATE,
+				"source" := attacker,
+				"amount" := lastHit["amount"]
+			});
+		endif
 endfunction
 
 function ResolvePetOwner(attacker)

@@ -140,7 +140,7 @@ function LogCombatAction(npc, state, ability, success)
      AP_GetVitalMaximumValue(npc, HITS),
      AP_GetVital(opponent, HITS),
      AP_GetVitalMaximumValue(opponent, HITS),
-     opponent.weapon.isRanged(),
+     (opponent.weapon && opponent.weapon.isRanged()) ? 1 : 0,
      state.distance
   );
 
