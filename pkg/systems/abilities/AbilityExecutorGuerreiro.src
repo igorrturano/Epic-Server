@@ -5,5 +5,5 @@ include ":abilities:AbilityRegistryGuerreiro";
 include ":abilities:AbilityService";
 
 program AbilityExecutorGuerreiro(params)
-	return RunAbilityExecutor(params);
+	return AbilityExecutionController().Run(params);
 endprogram
