@@ -34,11 +34,20 @@ program SpellScript(params)
 		return;
 	endif
 
-	// Block recast while HoT is still ticking on the target.
-	var existing := MobileWrapper(targ).GetProperty($"SpellOpts_{CInt(spell.id)}");
+	// Block recast while HoT is still ticking on the target. If SpellOpts
+	// is present without a matching timer, treat it as an orphan (race in
+	// endspelleffect's shared "prop" channel can leave SpellOpts behind
+	// without a timer, jamming recast forever) and clear it before casting.
+	var spell_id := CInt(spell.id);
+	var existing := MobileWrapper(targ).GetProperty($"SpellOpts_{spell_id}");
 	if (existing && !existing.errortext)
-		SendSysMessageEx(who, "O alvo ja esta sob efeito de uma cura.", SSM_FAIL);
-		return;
+		var timer_list := TS_GetTimerList(targ);
+		if (!timer_list.Exists($"spelleffect_{spell_id}"))
+			SC_RemoveEffect(targ, spell_id);
+		else
+			SendSysMessageEx(who, "O alvo ja esta sob efeito de uma cura.", SSM_FAIL);
+			return;
+		endif
 	endif
 
 	// Rule: 70 Theology => 17 instant + 17 over 4 ticks.

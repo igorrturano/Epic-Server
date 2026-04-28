@@ -3,6 +3,7 @@ use os;
 
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":spells:Controller/SC_Damage";
+include ":spells:Controller/SpellController";
 
 // Periodic driver for SC tick-callback effects.
 // Sleeps `tick_interval` seconds, verifies the effect is still active by
@@ -51,6 +52,23 @@ program SCTickDriver(args)
 		// duplicate ticks. Legacy opts without instance_id keep working.
 		if (my_instance && CInt(opts.instance_id) != my_instance)
 			return;
+		endif
+
+		// Safety net for orphaned SpellOpts. The expiration timer (currently
+		// owned by TimerControl via "spelleffect_{id}") is supposed to call
+		// endspelleffect -> SC_RemoveEffect long before we hit this point. If
+		// it didn't (race on the shared "prop" ObjProperty between concurrent
+		// endscripts is a known offender), the driver would tick forever and
+		// any spell that gates recast on SpellOpts existence stays jammed.
+		// Force the cleanup ourselves and exit. +2 grace ticks because the
+		// expiration handler races with this loop and may need a beat.
+		var total_duration := CInt(opts.totalDuration);
+		if (total_duration > 0)
+			var expected_max_ticks := CInt(total_duration / tick_interval);
+			if (tick_number > expected_max_ticks + 2)
+				SC_RemoveEffect(targ, spellId);
+				return;
+			endif
 		endif
 
 		if (opts.tick_damage)
