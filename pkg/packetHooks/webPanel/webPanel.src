@@ -1,0 +1,134 @@
+/*
+ * WEBPANEL.SRC — PacketHook Handler
+ *
+ * Recebe eventos do painel WebView2 do cliente EpicUO.
+ * Ativado quando o jogador interage com um painel aberto via SendWebPanel().
+ *
+ * Packet esperado: 0xD7 / SubCmd 0x00FB
+ *   [0xD7:1][size:2][serial:4][0x00FB:2][action:1][data_len:2][data:utf8]
+ *
+ * Ações:
+ *   WP_ACTION_CLOSE (0x00) — jogador fechou o painel (botão "Fechar" ou X)
+ *   WP_ACTION_CLICK (0x01) — jogador clicou em botão customizado (data = id)
+ *   WP_ACTION_DATA  (0x02) — formulário enviado (data = conteúdo)
+ *
+ * Para scripts que aguardam resposta, use o mecanismo de storage:
+ *   SetStorageArea / GetStorageArea (via :webPanel:GetPendingEvent)
+ */
+
+use uo;
+use os;
+use basic;
+
+include ":gumps:webPanel";
+
+// Prefixo de storage para eventos pendentes por serial de jogador
+const WP_STORAGE_PREFIX := "webpanel_event_";
+
+/*
+ * HandleWebPanelEvent(who, packet)
+ * Função exportada — chamada pelo packetHook quando chega 0xD7/0x00FB.
+ */
+exported function HandleWebPanelEvent(who, packet)
+    var action   := packet.GetInt8(9);
+    var dataLen  := packet.GetInt16(10);
+    var data     := "";
+
+    if (dataLen > 0)
+        data := packet.GetString(12, dataLen);
+    endif
+
+    case (action)
+        WP_ACTION_CLOSE: return _HandleClose(who, data);
+        WP_ACTION_CLICK: return _HandleClick(who, data);
+        WP_ACTION_DATA:  return _HandleData(who, data);
+        default:
+            return 0;
+    endcase
+endfunction
+
+// ─────────────────────────────────────────────
+//  Handlers internos
+// ─────────────────────────────────────────────
+
+function _HandleClose(who, data)
+    _StoreEvent(who, WP_ACTION_CLOSE, "");
+    return 1;
+endfunction
+
+function _HandleClick(who, data)
+    // data formato: "click:<id>" ou apenas "<id>"
+    var clickId := data;
+    if (data[1, 6] == "click:")
+        clickId := data[7, Len(data)];
+    endif
+    _StoreEvent(who, WP_ACTION_CLICK, clickId);
+    return 1;
+endfunction
+
+function _HandleData(who, data)
+    _StoreEvent(who, WP_ACTION_DATA, data);
+    return 1;
+endfunction
+
+// ─────────────────────────────────────────────
+//  Storage de eventos para scripts aguardarem
+// ─────────────────────────────────────────────
+
+/*
+ * _StoreEvent(who, action, data)
+ * Armazena o evento no storage para ser lido por WaitForWebPanelEvent().
+ * O script que enviou o painel pode chamar WaitForWebPanelEvent() em loop.
+ */
+function _StoreEvent(who, action, data)
+    var key := WP_STORAGE_PREFIX + CStr(who.serial);
+    var evt  := struct;
+    evt.+action := action;
+    evt.+data   := data;
+    evt.+time   := ReadGameClock();
+
+    SetGlobalProperty(key, evt);
+endfunction
+
+/*
+ * WaitForWebPanelEvent(who, timeoutMs)
+ *
+ * Bloqueia o script atual até o jogador interagir com o painel WebView2
+ * ou até o timeout expirar.
+ *
+ * Parâmetros:
+ *   who:       O mobile que tem o painel aberto
+ *   timeoutMs: Timeout em milissegundos (padrão: 60000 = 1 minuto)
+ *
+ * Retorno:
+ *   struct{ action, data } — ação e dado do evento
+ *   error { errortext := "timeout" } se expirar
+ *
+ * Exemplo:
+ *   SendWebPanel(who, "Jornal", corpo.Build());
+ *   var evt := WaitForWebPanelEvent(who);
+ *   if (evt.action == WP_ACTION_CLICK)
+ *       // processa evt.data (id do botão)
+ *   endif
+ */
+exported function WaitForWebPanelEvent(who, timeoutMs := 60000)
+    var key       := WP_STORAGE_PREFIX + CStr(who.serial);
+    var elapsed   := 0;
+    var interval  := 100;
+
+    // Limpa evento anterior antes de aguardar
+    EraseGlobalProperty(key);
+
+    while (elapsed < timeoutMs)
+        SleepMs(interval);
+        elapsed := elapsed + interval;
+
+        var evt := GetGlobalProperty(key);
+        if (evt && !evt.errortext)
+            EraseGlobalProperty(key);
+            return evt;
+        endif
+    endwhile
+
+    return error{ errortext := "timeout" };
+endfunction
