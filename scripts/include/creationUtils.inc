@@ -1016,7 +1016,7 @@ function weaponsByClassAndCulture(who)
         CreateItemInicial(who, 0xF99D, 1); // Adaga
 
         if (skills[ONEHANDED] >= 1)
-            CreateItemInicial(who, 0x0f5f, 1); // rapiera
+            CreateItemInicial(who, 0xFFCB, 1); // rapiera
         endif
         if (skills[PARRY] >= 1)
             CreateItemInicial(who, 0x1B73, 1); // buckler

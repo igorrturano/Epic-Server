@@ -6,7 +6,6 @@ include "/include/epicPropNames";
 include "/include/epicConstants";
 include ":crafting:/include/animacaoTratamentoProduto";
 include ":megacliloc:/include/toolTipUtils";
-include ":crafting:/include/tratamentoProduto";
 
 program AnimacaoTratamentoProduto(parametros)
 	var quem := parametros[1];
