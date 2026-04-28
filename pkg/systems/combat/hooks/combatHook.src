@@ -14,7 +14,6 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":debug:Controller/DebugController";
 include ":mastery:Abilities";
-include ":abilities:helpers/shinobiHelpers";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/ArmorWrapper";
@@ -211,7 +210,7 @@ function DoAttack(byRef attackInfo)
 	attackInfo.GetDefender().GetObjRef().frozen := 0;
 
 	var _atkRef := attackInfo.GetAttacker().GetObjRef();
-	var _inSmoke := IsInShinobiSmokeZone(_atkRef);
+	var _inSmoke := attackInfo.GetAttacker().IsInSmokeZone();
 
 	if (_atkRef.cmdlevel == 0 && !attackInfo.GetAttacker().HasAbility(ABILITY_ID::FORMA_UMBRAL) && !_inSmoke)
 		_atkRef.concealed := 0;

@@ -1,0 +1,52 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+
+program ferramentas_construcao_gump(params)
+	var who := params[1];
+
+	if (!who)
+		return 0;
+	endif
+
+	var tem_undo := GetObjProperty(who, "#last_roof_tiles");
+	var gump_height := tem_undo ? 110 : 85;
+
+	var gump := GFCreateGump(370, 70);
+	GFResizePic(gump, 0, 0, 0x254E, 230, gump_height);
+	GFClosable(gump, 1);
+	GFDisposable(gump, 1);
+	GFMovable(gump, 1);
+
+	GFTextLine(gump, 35, 10, 2100, "Ferramentas de Construção");
+
+	GFAddButton(gump, 15, 32, 2117, 2118, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 35, 30, 2100, "Fundação");
+	GFTooltipText(gump, "Abre o sistema de arquitetura para construir paredes, pisos e estruturas.");
+
+	GFAddButton(gump, 15, 57, 2117, 2118, GF_CLOSE_BTN, 2);
+	GFTextLine(gump, 35, 55, 2100, "Telhado");
+	GFTooltipText(gump, "Abre o sistema de telhado para construir coberturas.");
+
+	if (tem_undo)
+		var last_cost := CInt(GetObjProperty(who, "#last_roof_cost"));
+		var refund := CInt(last_cost / 2);
+		GFAddButton(gump, 15, 82, 2117, 2118, GF_CLOSE_BTN, 3);
+		GFTextLine(gump, 35, 80, 38, "Desfazer Último Telhado");
+		GFTooltipText(gump, "Destrói o último telhado criado e devolve " + refund + " madeiras.");
+	endif
+
+	var result := GFSendGump(who, gump);
+	var choice := result[0];
+
+	if (choice == 1)
+		start_script(":architect:textcmd/player/architect", array{who, 1});
+	elseif (choice == 2)
+		start_script(":tn:commands/coun/createroof", array{who, 1});
+	elseif (choice == 3)
+		start_script(":faccao:ferramentas_undo_telhado", array{who});
+	endif
+
+	return 1;
+endprogram

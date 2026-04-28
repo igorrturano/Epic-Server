@@ -24,7 +24,8 @@ class DistractOpponents(CombatAbility)
 
 		Message("*distraindo os inimigos*").SendAbove(who);
 
-		foreach mob in (ListMobilesNearLocation(who.x, who.y, who.z, 1, who.realm))
+		var nearby := mobile.GetNearbyMobiles(1);
+		foreach mob in nearby
 			if (mob.npctemplate || !(mob in who.party.members))
 				PlayAttackFX(AttackInfo(mobile, MobileWrapper(mob)));
 				PlayAttackSFX(AttackInfo(mobile, MobileWrapper(mob)));

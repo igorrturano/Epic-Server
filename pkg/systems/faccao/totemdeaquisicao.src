@@ -101,6 +101,9 @@ function CreateTerritoryMonument(who, elem, rect_name)
 			SetObjProperty(monument, "CreatedBy", who.serial);
 			SetObjProperty(monument, "CreationDate", polcore().systime);
 			monument.movable := 0;
+			SetObjProperty(monument, "guild", who.guild.guildid);
+			SetObjProperty(monument, "tipo_faccao", who.guild.GetProp("tipo_faccao") || "player");
+			PropagateNomeFaccao(who.guild, monument);
 
 			SendSysMessage(who, "Monumento de território criado com sucesso.");
 			return monument;

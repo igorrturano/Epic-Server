@@ -5,7 +5,6 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":abilities:helpers/shinobiHelpers";
 include "include/client";
 
 /**
@@ -41,7 +40,7 @@ class PhantomStrike(CombatAbility)
 		endif
 
 		// Get hostile targets in range
-		var hostiles := ListHostiles(who, range, LH_FLAG_LOS);
+		var hostiles := mobile.GetNearbyHostiles(range, LH_FLAG_LOS);
 		if (!hostiles || len(hostiles) == 0)
 			Message("Nenhum inimigo proximo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
@@ -67,7 +66,7 @@ class PhantomStrike(CombatAbility)
 			if (targ && !targ.dead)
 				// Teleport behind target
 				PlaySoundEffect(who, 0x513);
-				TeleportBehindTarget(who, targ);
+				mobile.TeleportBehind(MobileWrapper(targ));
 
 				// Guaranteed hit + attack
 				SetObjProperty(who, "#GuaranteedHit", 1);

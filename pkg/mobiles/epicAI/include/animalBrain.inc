@@ -34,6 +34,16 @@ function AnimalBrain()
             SM_TickAmbush();
         endif
 
+        // Damage-weighted threat: decay table + reevaluate target if hysteresis
+        // margin is exceeded. DecayThreat self-throttles to 1Hz.
+        DecayThreat();
+        if (ShouldReevaluateTarget())
+            var threat_top := GetTopThreat();
+            if (threat_top && threat_top != me.opponent)
+                SetOpponent(threat_top);
+            endif
+        endif
+
         if (me.opponent)
             last_activity_time := polcore().systime;
             if (!CanFight(me, me.opponent))
@@ -54,6 +64,7 @@ function AnimalBrain()
             case (ev.type)
                 SYSEVENT_ENGAGED:
                     last_activity_time := polcore().systime;
+                    AddThreat(ev.source, 0);
                     if (should_flee)
                         SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
                     else
@@ -62,6 +73,7 @@ function AnimalBrain()
                     endif
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
+                    AddThreat(ev.source, 0);
                     if (SM_GetState() == "AMBUSH")
                         me.hidden := 0;
                         SM_TransitionTo("COMBAT");
@@ -71,6 +83,8 @@ function AnimalBrain()
                     else
                         HandleAnimalCombatEvent(ev.source);
                     endif
+                EVID_THREAT_UPDATE:
+                    AddThreat(ev.source, ev.amount);
                 SYSEVENT_ENTEREDAREA:
                     if (CheckDarknessCreatureSurvival(me))
                         return;
@@ -96,7 +110,7 @@ function AnimalBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    SetOpponent(0);
+                    InjectTauntThreat(ev.source);
                     HandleAnimalCombatEvent(ev.source);
                 EVID_PEACEMADE:
                     last_activity_time := polcore().systime;

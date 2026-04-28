@@ -1,7 +1,11 @@
+// Intentionally bypasses SpellController: manaPoison is a Type=P poison entry
+// driven by subScripts/poison, with AllOrNothingCure + IndicatePoison that SC
+// cannot express. See envenenar.src for the same rationale.
 use uo;
 use os;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -35,6 +39,6 @@ program SpellScript(params)
 		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
 	endif
 
-	handleSilentMagic(who);
+	SC_HandleSound(who);
 	return 1;
 endprogram

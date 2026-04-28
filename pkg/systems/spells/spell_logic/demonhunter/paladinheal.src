@@ -1,0 +1,70 @@
+use uo;
+use os;
+use vitals;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+include ":charactercreation:habilidades";
+include ":spells:Controller/SC_Damage";
+include ":epicAI:include/epicNPCCombat";   // CheckForWoundedAllies, FindMostWoundedAlly
+include ":brainai:npcUtil";
+include ":epicAI:epicai";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0; // No longer needed
+
+	if (who.npctemplate)
+		var wounded_allies := CheckForWoundedAllies(who);
+		targ := FindMostWoundedAlly(wounded_allies);
+	endif
+
+	if (!targ)
+		EraseObjProperty(who, "#Casting");
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		EraseObjProperty(who, "#Casting");
+		return;
+	endif
+
+	if (GetVital(targ, HITS) == GetVitalMaximumValue(targ, HITS))
+		SendSysMessageEx(who, "O alvo nao parece ferido.", SSM_FAIL);
+		EraseObjProperty(who, "#Casting");
+		return;
+	endif
+
+	var healed := cint(AP_GetSkill(who, THEOLOGY) / 4);
+	if (healed < 15)
+		healed := 15;
+	endif
+
+    if (targ.npctemplate)
+        var elem := NPC_GetNPCConfig(targ.npctemplate);
+        var category := lower(GetConfigString(elem, "Environment"));
+
+        if (category == "undead" || category == "demons")
+            SC_DealDamage(who, targ, CInt(spell.id), healed, DMG_FORCED);
+            EraseObjProperty(who, "#Casting");
+            return 1;
+        endif
+    endif
+
+    applyEpicHealing(targ, healed);
+	recalcvitals(targ);
+	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
+
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlayObjectCenteredEffect(targ, FX_ENERGY_GLOBES, 1, 20);
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+
+	return 1;
+endprogram

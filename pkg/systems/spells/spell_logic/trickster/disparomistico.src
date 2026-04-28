@@ -6,13 +6,14 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/facings";
 include "include/epicMageryUtils";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	SendSysMessage(who, "Selecione o alvo.");
@@ -31,7 +32,7 @@ program SpellScript(params)
 	PlayMovingEffectEx(who, targ, 0xCDD2, 10, 20, 2442, 2);
 	PlaySoundEffect(who, SFX_AGILITY2);
 	var dmg := epicSpellDamageRoll(who, 1);
-	DamageFLS(targ, dmg, DMG_FORCED, who, "disparomistico");
+	SC_DealDamage(who, targ, CInt(spell.id), dmg, DMG_FORCED);
 	SleepMS(500);
 	SetCooldown(who, "disparomistico", mlore);
 

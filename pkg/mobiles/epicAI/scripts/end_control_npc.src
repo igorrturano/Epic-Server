@@ -21,6 +21,8 @@ program EndControlNPC(params)
         return 0;
     endif
 
+    ClearPetStableAndLimboState(who);
+    ClearMasterLimboRef(who.master, who.serial);
     ErasePet(who.master, who.serial);
     who.SetMaster(0);
 

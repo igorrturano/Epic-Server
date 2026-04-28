@@ -8,7 +8,7 @@ include "include/sounds";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/shapes";
 include ":nature:nature";
 include ":spells:include/swordmage";
@@ -17,6 +17,7 @@ include "include/epicMageryUtils";
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	// SendSysMessageEx(who, "Escolha sua arma.", SSM_REQUEST);
@@ -87,7 +88,7 @@ program SpellScript(params)
 		foreach defender in mobs
 			var dmg := cint(AP_GetSkill(who, ARCANA)) / 2;
 			dmg := Floor(dmg / cargasRetorno.divisor);
-			DamageFLS(defender, cint(dmg), DMG_COLD, who);
+			SC_DealDamage(who, defender, CInt(spell.id), cint(dmg), DMG_COLD);
 			defender.frozen := 0;
 		endforeach
 

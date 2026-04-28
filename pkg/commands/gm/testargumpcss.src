@@ -1,0 +1,471 @@
+/*
+ * .testargumpcss — Demonstração das ferramentas HTML/CSS para gumps EpicUO.
+ *
+ * Cobre, em um único comando:
+ *   - htmlBuilder.inc:    HtmlBold/Italic/Underline/Color/Size/Styled,
+ *                         HtmlCenter/Left/Right, HtmlHeading/Paragraph/Br,
+ *                         HtmlLink/Table/List/Image, HtmlDiv/Span/Shadow,
+ *                         HtmlSeparator/Join + classe HtmlBuilder (fluent)
+ *   - cssStyles.inc:      CssApply (CSS_TITLE, CSS_HEADING_*, CSS_BODY,
+ *                         CSS_LABEL, CSS_CAPTION, CSS_ALERT, CSS_ERROR,
+ *                         CSS_SUCCESS, CSS_INFO, CSS_NARRATOR, CSS_WHISPER,
+ *                         CSS_EMOTE), CssCreateStyle/CssApplyCustom,
+ *                         CssBlock, CssToCssString, CssHeading
+ *   - htmlTemplates.inc:  Jornal, Relatorio, DialogoNarrator, ItemInfo,
+ *                         Anuncio, PerfilJogador
+ *   - webPanel.inc:       SendWebPanel, SendWebPanelRaw, BuildWebDocument,
+ *                         WaitForWebPanelEvent
+ *   - htmlGump.inc:       SendHTMLGump, SendStyledHTMLGump
+ *   - gumpDesigner:       Gump + HtmlText control
+ *
+ * Uso: .testargumpcss
+ */
+
+use uo;
+use os;
+use basic;
+use polsys;
+
+include ":gumps:webPanel";
+include ":gumps:htmlBuilder";
+include ":gumps:cssStyles";
+include ":gumps:htmlTemplates";
+include ":gumps:htmlGump";
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/HtmlText";
+
+// ─────────────────────────────────────────────
+//  Entry point
+// ─────────────────────────────────────────────
+
+program testargumpcss(who)
+    SendSysMessage(who, "Demo HTML/CSS — clique em um cartão do menu.");
+
+    while (1)
+        SendWebPanel(who, "EpicUO — Demo HTML/CSS", _BuildMenu(), 760, 640);
+        var evt := WaitForWebPanelEvent(who, 300000);
+
+        if (evt.errortext)               return; endif
+        if (evt.action == WP_ACTION_CLOSE) return; endif
+        if (evt.action != WP_ACTION_CLICK) return; endif
+
+        var data := CStr(evt.data);
+        if (data == "primitivas")    _DemoPrimitivas(who);
+        elseif (data == "jornal")    _DemoJornal(who);
+        elseif (data == "relatorio") _DemoRelatorio(who);
+        elseif (data == "dialogo")   _DemoDialogo(who);
+        elseif (data == "iteminfo")  _DemoItemInfo(who);
+        elseif (data == "anuncio")   _DemoAnuncio(who);
+        elseif (data == "perfil")    _DemoPerfil(who);
+        elseif (data == "classico")  _DemoGumpClassico(who);
+        elseif (data == "designer")  _DemoGumpDesigner(who);
+        elseif (data == "raw")       _DemoRaw(who);
+        elseif (data == "fechar")    return;
+        endif
+    endwhile
+endprogram
+
+// ─────────────────────────────────────────────
+//  Helpers
+// ─────────────────────────────────────────────
+
+function _ShowAndWait(who, title, body, width := 760, height := 640)
+    SendWebPanel(who, title, body, width, height);
+    while (1)
+        var evt := WaitForWebPanelEvent(who, 240000);
+        if (evt.errortext)                    return evt; endif
+        if (evt.action == WP_ACTION_CLOSE)    return evt; endif
+        if (evt.action == WP_ACTION_CLICK
+            && CStr(evt.data) == "voltar")    return evt; endif
+        // outros cliques caem aqui — caller deve usar laço próprio se quiser tratar
+    endwhile
+endfunction
+
+function _BackLink()
+    return HtmlSeparator() + HtmlCenter(HtmlLink("← Voltar ao menu", "wp:click:voltar"));
+endfunction
+
+// ─────────────────────────────────────────────
+//  Menu
+// ─────────────────────────────────────────────
+
+function _MenuItem(label, descricao, action)
+    return $"<a href=\"wp:click:{action}\" style=\"display:block;border:1px solid #5a4010;padding:10px 14px;margin:6px 0;background:#1f1708;color:#C8A040;text-decoration:none\"><b>{label}</b><br><span style=\"color:#AAAAAA;font-size:12px\">{descricao}</span></a>";
+endfunction
+
+function _BuildMenu()
+    var b := HtmlBuilder();
+    b.Append(CssApply(CSS_CAPTION, "Cada cartão abre uma demonstração das funções HTML/CSS."));
+    b.Br().Br();
+
+    b.Append(_MenuItem("1. Primitivas HTML &amp; CSS",
+        "Cobre todas as funções de htmlBuilder.inc e cssStyles.inc.", "primitivas"));
+    b.Append(_MenuItem("2. Jornal",
+        "JornalTemplate — colunas, artigos, imagens, separadores.", "jornal"));
+    b.Append(_MenuItem("3. Relatório",
+        "RelatorioTemplate — tabela tabulada com cabeçalho.", "relatorio"));
+    b.Append(_MenuItem("4. Diálogo de NPC",
+        "DialogoNarratorTemplate — fala + opções de resposta.", "dialogo"));
+    b.Append(_MenuItem("5. Info de Item",
+        "ItemInfoTemplate — atributos, raridade, descrição.", "iteminfo"));
+    b.Append(_MenuItem("6. Anúncio do Sistema",
+        "AnuncioTemplate — info / alerta / erro / sucesso.", "anuncio"));
+    b.Append(_MenuItem("7. Perfil de Jogador",
+        "PerfilJogadorTemplate — atributos com barras visuais.", "perfil"));
+    b.Append(_MenuItem("8. Gumps clássicos",
+        "SendHTMLGump + SendStyledHTMLGump (compatível com qualquer cliente).", "classico"));
+    b.Append(_MenuItem("9. gumpDesigner + HtmlText",
+        "Gump OOP do gumpDesigner com controle HtmlText.", "designer"));
+    b.Append(_MenuItem("10. WebPanel cru (BuildWebDocument)",
+        "SendWebPanelRaw com BuildWebDocument + CSS extra.", "raw"));
+
+    b.Br();
+    b.Append(HtmlCenter(HtmlLink("Fechar", "wp:click:fechar")));
+    return b.Build();
+endfunction
+
+// ─────────────────────────────────────────────
+//  1. Primitivas HTML/CSS
+// ─────────────────────────────────────────────
+
+function _DemoPrimitivas(who)
+    var b := HtmlBuilder();
+
+    b.Heading(2, "Inline tags");
+    b.Append(HtmlBold("negrito"));      b.Append(" · ");
+    b.Append(HtmlItalic("itálico"));    b.Append(" · ");
+    b.Append(HtmlUnderline("sublinhado"));
+    b.Br();
+    b.Append(HtmlColor("verde", "#44CC77"));   b.Append(" · ");
+    b.Append(HtmlSize("18px", 18));            b.Append(" · ");
+    b.Append(HtmlStyled("misto", "#FFD700", 16, true, true));
+    b.Br().Br();
+
+    b.Heading(2, "Alinhamento (HtmlCenter / HtmlLeft / HtmlRight)");
+    b.Append(HtmlCenter("centro"));
+    b.Append(HtmlLeft("esquerda"));
+    b.Append(HtmlRight("direita"));
+    b.Br();
+
+    b.Heading(2, "Headings + parágrafos");
+    var h := 1;
+    while (h <= 6)
+        b.Append(HtmlHeading(h, "Heading nível " + CStr(h)));
+        h := h + 1;
+    endwhile
+    b.Append(HtmlParagraph("Parágrafo construído com HtmlParagraph()."));
+
+    b.Heading(2, "Listas");
+    b.Append("Não-ordenada:");
+    b.Append(HtmlList(array{ "espada", "escudo", "poção" }, 0));
+    b.Append("Ordenada:");
+    b.Append(HtmlList(array{ "primeiro", "segundo", "terceiro" }, 1));
+
+    b.Heading(2, "Tabela");
+    b.Append(HtmlTable(
+        array{
+            array{ "Espada Longa", "20-35", "Aço" },
+            array{ "Machado de Guerra", "25-40", "Aço" },
+            array{ "Adaga", "8-14", "Ferro" }
+        },
+        array{ "Item", "Dano", "Material" }
+    ));
+
+    b.Heading(2, "Containers (HtmlDiv / HtmlSpan)");
+    b.Append(HtmlDiv("Div com borda dourada", "border:1px solid #C8A040;padding:8px"));
+    b.Append(HtmlBr());
+    b.Append("inline ");
+    b.Append(HtmlSpan("[span destacado]", "color:#FFD700;font-weight:bold"));
+
+    b.Heading(2, "Sombra e separador");
+    b.Append(HtmlShadow("Texto com sombra", "#FFD700", 22));
+    b.Append(HtmlSeparator());
+
+    b.Heading(2, "Hyperlinks (interativos)");
+    b.Append("Clique para enviar evento ao servidor: ");
+    b.Append(HtmlLink("[ping]", "wp:click:primitivas-ping"));
+    b.Append(" · ");
+    b.Append(HtmlLink("[abrir externo]", "https://www.uo.com"));
+    b.Br().Br();
+
+    b.Heading(2, "cssStyles — CssApply em todos os estilos");
+    b.Append(CssApply(CSS_TITLE,     "CSS_TITLE"));        b.Br();
+    b.Append(CssApply(CSS_HEADING_1, "CSS_HEADING_1"));    b.Br();
+    b.Append(CssApply(CSS_HEADING_2, "CSS_HEADING_2"));    b.Br();
+    b.Append(CssApply(CSS_HEADING_3, "CSS_HEADING_3"));    b.Br();
+    b.Append(CssApply(CSS_BODY,      "CSS_BODY"));         b.Br();
+    b.Append(CssApply(CSS_LABEL,     "CSS_LABEL"));        b.Br();
+    b.Append(CssApply(CSS_CAPTION,   "CSS_CAPTION"));      b.Br();
+    b.Append(CssApply(CSS_ALERT,     "CSS_ALERT"));        b.Br();
+    b.Append(CssApply(CSS_ERROR,     "CSS_ERROR"));        b.Br();
+    b.Append(CssApply(CSS_SUCCESS,   "CSS_SUCCESS"));      b.Br();
+    b.Append(CssApply(CSS_INFO,      "CSS_INFO"));         b.Br();
+    b.Append(CssApply(CSS_LINK,      "CSS_LINK"));         b.Br();
+    b.Append(CssApply(CSS_NARRATOR,  "CSS_NARRATOR"));     b.Br();
+    b.Append(CssApply(CSS_WHISPER,   "CSS_WHISPER"));      b.Br();
+    b.Append(CssApply(CSS_EMOTE,     "CSS_EMOTE"));        b.Br();
+
+    b.Heading(2, "Estilo customizado (CssCreateStyle / CssApplyCustom / CssToCssString)");
+    var meu := CssCreateStyle("#FF66CC", 17, 1, 1, "center");
+    b.Append(CssApplyCustom(meu, "Texto com estilo customizado"));
+    b.Append(HtmlBr());
+    b.Append(CssApply(CSS_CAPTION, "CssToCssString → " + CssToCssString(meu)));
+
+    b.Heading(2, "CssBlock + CssHeading");
+    b.Append(CssBlock(CSS_TITLE, CssHeading(2, "Bloco com alinhamento de CSS_TITLE", CSS_HEADING_1)));
+
+    b.Heading(2, "HtmlJoin");
+    b.Append(HtmlJoin(array{
+        HtmlBold("juntar "),
+        HtmlItalic("partes "),
+        HtmlColor("sem ", "#4499FF"),
+        HtmlUnderline("separador")
+    }));
+
+    b.Append(_BackLink());
+    _ShowAndWait(who, "1. Primitivas HTML & CSS", b.Build());
+endfunction
+
+// ─────────────────────────────────────────────
+//  2. Jornal
+// ─────────────────────────────────────────────
+
+function _DemoJornal(who)
+    var artigos := array{
+        struct{
+            titulo := "Torneio em Britain",
+            corpo  := "O torneio anual abre suas portas no próximo " + HtmlBold("sábado") +
+                      ". Inscrições no Jornal da Guilda dos Bardos.",
+            imagem := ""
+        },
+        struct{
+            titulo := "Caravana Atacada",
+            corpo  := "Mercadores relatam emboscada na estrada para Trinsic — recompensa para quem trouxer cabeças dos bandidos.",
+            imagem := ""
+        },
+        struct{
+            titulo := "Nova Lei dos Magos",
+            corpo  := HtmlItalic("Edital real:") + " toda magia de invocação acima do círculo 6 deverá ser registrada no Conselho de Magos.",
+            imagem := ""
+        },
+        struct{
+            titulo := "Festa do Solstício",
+            corpo  := "Comemorações começam ao pôr-do-sol. Vinhos, dança e queima de fogos. " + HtmlColor("Trajes a rigor.", "#FFD700"),
+            imagem := ""
+        }
+    };
+
+    var corpo := JornalTemplate("O Arauto de Britain", artigos, "Edição nº 42 — Ultima Online");
+    _ShowAndWait(who, "2. Jornal", corpo + _BackLink());
+endfunction
+
+// ─────────────────────────────────────────────
+//  3. Relatório
+// ─────────────────────────────────────────────
+
+function _DemoRelatorio(who)
+    var dados := array{
+        array{ "Thorin",    "Guerreiro", "42", "Britain"  },
+        array{ "Aelinor",   "Maga",      "38", "Moonglow" },
+        array{ "Garruk",    "Bardo",     "29", "Trinsic"  },
+        array{ "Lyandra",   "Druida",    "47", "Yew"      },
+        array{ "Borin",     "Ferreiro",  "55", "Minoc"    }
+    };
+    var headers := array{ "Nome", "Classe", "Nível", "Cidade" };
+
+    var corpo := RelatorioTemplate("Top 5 jogadores", dados, headers,
+        "Snapshot de " + HtmlBold(CStr(dados.size())) + " personagens.");
+
+    _ShowAndWait(who, "3. Relatório", corpo + _BackLink());
+endfunction
+
+// ─────────────────────────────────────────────
+//  4. Diálogo de NPC (com sub-fluxo)
+// ─────────────────────────────────────────────
+
+function _DemoDialogo(who)
+    var opcoes := array{
+        struct{ label := "Aceitar a quest",        id := "aceitar"  },
+        struct{ label := "Recusar com cortesia",   id := "recusar"  },
+        struct{ label := "Pedir mais informações", id := "info"     }
+    };
+    var fala := "Caro aventureiro, a guilda precisa de alguém com sua coragem para investigar as ruínas a leste. " +
+                HtmlBold("Recompensa") + ": 500 moedas e um item raro.";
+    var corpo := DialogoNarratorTemplate("Mestre Aldwin", fala, opcoes);
+
+    SendWebPanel(who, "4. Diálogo de NPC", corpo + _BackLink());
+
+    while (1)
+        var evt := WaitForWebPanelEvent(who, 240000);
+        if (evt.errortext)                  return; endif
+        if (evt.action == WP_ACTION_CLOSE)  return; endif
+        if (evt.action != WP_ACTION_CLICK)  return; endif
+
+        var d := CStr(evt.data);
+        if (d == "voltar")  return; endif
+
+        var resposta := "";
+        if (d == "aceitar")
+            resposta := CssApply(CSS_SUCCESS, "Excelente! A guilda agradece sua disposição.");
+        elseif (d == "recusar")
+            resposta := CssApply(CSS_INFO, "Compreendo. Boa sorte em suas viagens.");
+        elseif (d == "info")
+            resposta := CssApply(CSS_NARRATOR, "As ruínas datam do reinado de Lord British II. Dizem haver criaturas das trevas e tesouros antigos.");
+        endif
+
+        SendWebPanel(who, "4. Diálogo de NPC",
+            DialogoNarratorTemplate("Mestre Aldwin", resposta, array{}) + _BackLink());
+    endwhile
+endfunction
+
+// ─────────────────────────────────────────────
+//  5. Item Info
+// ─────────────────────────────────────────────
+
+function _DemoItemInfo(who)
+    var atributos := array{
+        struct{ nome := "Dano",       valor := "20-35"     },
+        struct{ nome := "Velocidade", valor := "Rápido"    },
+        struct{ nome := "Durabilidade", valor := "150/150" },
+        struct{ nome := "Encantamento", valor := "+2 Fogo" },
+        struct{ nome := "Requer",     valor := "Força 80"  }
+    };
+    var descricao := "Forjada nas montanhas geladas do norte, esta lâmina " +
+                     HtmlItalic("canta") + " quando próxima de criaturas das trevas. " +
+                     HtmlColor("Dizem que tem vontade própria.", "#AA44FF");
+
+    var corpo := HtmlHeading(2, "Espada do Crepúsculo") +
+                 ItemInfoTemplate("Espada do Crepúsculo", descricao, atributos, "Lendário");
+
+    _ShowAndWait(who, "5. Info de Item", corpo + _BackLink());
+endfunction
+
+// ─────────────────────────────────────────────
+//  6. Anúncio (4 tipos)
+// ─────────────────────────────────────────────
+
+function _DemoAnuncio(who)
+    var corpo := HtmlBuilder();
+    corpo.Append(AnuncioTemplate("Servidor reiniciará em 10 minutos.", "info"));
+    corpo.Append(AnuncioTemplate("Nova quest disponível: investigue as ruínas a leste.", "alerta"));
+    corpo.Append(AnuncioTemplate("Erro ao salvar inventário — contate um GM.", "erro"));
+    corpo.Append(AnuncioTemplate("Personagem promovido a " + HtmlBold("Cavaleiro") + "!", "sucesso"));
+
+    _ShowAndWait(who, "6. Anúncios do Sistema", corpo.Build() + _BackLink());
+endfunction
+
+// ─────────────────────────────────────────────
+//  7. Perfil de Jogador
+// ─────────────────────────────────────────────
+
+function _DemoPerfil(who)
+    var atributos := array{
+        struct{ nome := "Força",       valor := 18, max := 20 },
+        struct{ nome := "Destreza",    valor := 14, max := 20 },
+        struct{ nome := "Constituição", valor := 16, max := 20 },
+        struct{ nome := "Inteligência", valor := 11, max := 20 },
+        struct{ nome := "Sabedoria",   valor := 13, max := 20 },
+        struct{ nome := "Carisma",     valor := 9,  max := 20 }
+    };
+    var historico := "Filho de uma família de ferreiros de Minoc, " + HtmlBold("Thorin") +
+                     " trocou o martelo pela espada após o ataque dos orcs ao seu vilarejo. " +
+                     "Hoje viaja em busca dos responsáveis.";
+
+    var corpo := PerfilJogadorTemplate("Thorin Ironbeard", "Anão", "Guerreiro", atributos, historico);
+    _ShowAndWait(who, "7. Perfil", corpo + _BackLink());
+endfunction
+
+// ─────────────────────────────────────────────
+//  8. Gumps clássicos (SendHTMLGump + SendStyledHTMLGump)
+// ─────────────────────────────────────────────
+
+function _DemoGumpClassico(who)
+    SendSysMessage(who, "Abrindo SendHTMLGump (gump clássico simples)...");
+    var simples := HtmlBold("Aviso da Guilda") + HtmlBr() + HtmlBr() +
+                   "Reunião marcada para sábado à noite no salão principal. " +
+                   HtmlItalic("Compareçam.");
+    SendHTMLGump(who, "Aviso", simples);
+
+    SendSysMessage(who, "Abrindo SendStyledHTMLGump (gump configurável)...");
+    var partes := array{
+        CssApply(CSS_HEADING_1, "Relatório de Batalha"),
+        HtmlBr(),
+        HtmlTable(
+            array{
+                array{ "Goblin Patrulheiro", "x12", "+240 XP" },
+                array{ "Orc Guerreiro",      "x4",  "+320 XP" },
+                array{ "Troll do Pântano",   "x1",  "+500 XP" }
+            },
+            array{ "Inimigo", "Mortes", "Recompensa" }
+        ),
+        HtmlBr(),
+        CssApply(CSS_SUCCESS, "Ganho total: 1.060 XP"),
+        HtmlBr(),
+        CssApply(CSS_CAPTION, "Sessão de 32 minutos.")
+    };
+    SendStyledHTMLGump(who, "Relatório", partes, 480, 380);
+endfunction
+
+// ─────────────────────────────────────────────
+//  9. gumpDesigner + HtmlText
+// ─────────────────────────────────────────────
+
+function _DemoGumpDesigner(who)
+    var titulo := "gumpDesigner + HtmlText";
+    var conteudo := HtmlHeading(2, "Controle HtmlText") +
+                    HtmlParagraph("Este gump foi montado com a classe " + HtmlBold("Gump") +
+                                  " e usa o controle " + HtmlBold("HtmlText") +
+                                  " para renderizar HTML formatado dentro da área de scroll.") +
+                    HtmlList(array{
+                        "Suporta " + HtmlBold("negrito") + ", " + HtmlItalic("itálico") + " e <a> links.",
+                        "Pode ter scroll e fundo configuráveis.",
+                        "Integra-se ao sistema de eventos do gumpDesigner."
+                    }, 0) +
+                    HtmlSeparator() +
+                    HtmlCenter(HtmlColor("Feche o gump quando terminar.", "#C8A040"));
+
+    var gump := Gump(who, titulo, 420, 320);
+    var html := HtmlText("conteudo", 15, 15, 390, 270, conteudo, 1, 1);
+    gump.AddControl(html);
+    gump.Show();
+endfunction
+
+// ─────────────────────────────────────────────
+//  10. WebPanel cru (BuildWebDocument + SendWebPanelRaw)
+// ─────────────────────────────────────────────
+
+function _DemoRaw(who)
+    var extraCss := "
+        .destaque {
+            background: linear-gradient(180deg, #3a2508 0%, #1a1208 100%);
+            border: 1px solid #C8A040;
+            padding: 14px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    ";
+
+    var body := HtmlParagraph("Este painel foi montado com " + HtmlBold("BuildWebDocument") +
+                              " e enviado via " + HtmlBold("SendWebPanelRaw") + ", o que dá controle total sobre o documento.") +
+                "<div class=\"destaque\">" +
+                    HtmlHeading(3, "Bloco destaque") +
+                    "Visível apenas quando aberto no navegador (botão " + HtmlBold("Abrir no navegador") + " do gump)." +
+                "</div>" +
+                "<div class=\"grid-2\">" +
+                    HtmlDiv("Coluna esquerda — flexbox/grid funcionam no WebView2.", "background:#2a1f0a;padding:10px") +
+                    HtmlDiv("Coluna direita — note o gap entre as colunas.",        "background:#2a1f0a;padding:10px") +
+                "</div>" +
+                _BackLink();
+
+    var doc := BuildWebDocument("WebPanel cru", body, extraCss);
+    SendWebPanelRaw(who, doc, 760, 560);
+
+    while (1)
+        var evt := WaitForWebPanelEvent(who, 240000);
+        if (evt.errortext)                    return; endif
+        if (evt.action == WP_ACTION_CLOSE)    return; endif
+        if (evt.action == WP_ACTION_CLICK
+            && CStr(evt.data) == "voltar")    return; endif
+    endwhile
+endfunction

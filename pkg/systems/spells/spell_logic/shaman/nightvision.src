@@ -1,0 +1,55 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+include "include/dungeons";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":nature:Controller/LightController";
+include ":hotbar:include/custombuff";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	var spell := params[3];
+	params := 0; // No longer needed
+
+	var race := GetObjProperty(who, "chardata").raca;
+	var in_darkness := InDarkness(who);
+
+	// Non-drows casting during daylight (not in darkness)
+	if (!in_darkness && race != DROW)
+		SendSysMessageEx(who, "A magia não tem efeito sob a luz do dia.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Drows casting during darkness
+	if (in_darkness && race == DROW)
+		SendSysMessageEx(who, "A magia não tem efeito na escuridão.", SSM_FAIL);
+		return 0;
+	endif
+
+	PlayObjectCenteredEffect(who, FX_BLUE_SPARKLES, 10, 10);
+	SC_HandleSound(who, who, SFX_BLESS);
+
+	SendSysMessageEx(who, "Voce passa a enxergar melhor", SSM_INFO);
+
+	var magiclore_skill := HandleSpellSkill(who);
+	var duration := CInt(120 + (magiclore_skill * 5));
+
+	// Bonus de especialização
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
+		duration := Cint(duration * 1.2);
+	endif
+
+	ApplyMagicalVision(who, duration);
+	SendSpellBuff(who, who, CInt(spell.id), duration);
+
+	return 1;
+endprogram

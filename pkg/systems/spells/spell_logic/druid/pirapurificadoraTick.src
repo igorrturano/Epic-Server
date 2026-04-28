@@ -4,7 +4,7 @@ use util;
 
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 
 const SOUND_EFFECT_FIRE := 0x1de;
 
@@ -14,6 +14,7 @@ const SOUND_EFFECT_FIRE := 0x1de;
 // tick_params: struct{ fire_serials, theology }
 program PirapurificadoraTick(args)
 	var caster := args[1];
+	var spellId := CInt(args[3]);
 	var tp := args[5];
 	args := 0;
 
@@ -51,7 +52,13 @@ program PirapurificadoraTick(args)
 			if (mob.x == fire_pos.x && mob.y == fire_pos.y)
 				var damage := CInt(theology / 10) + RandomDiceRoll("2d6");
 				PlayObjectCenteredEffect(mob, 0x3709, 7, 10);
-				DamageFLS(mob, damage, DMG_FIRE, dmg_caster);
+				SC_DealDamage(dmg_caster, mob, spellId, damage, DMG_FIRE);
+				// Pira creates fire tiles in the world; the caster never directly targets
+				// the mobs that walk into the fire, so AI brains have no aggro relationship
+				// to the caster. Set it explicitly so NPCs react to being burned.
+				if (dmg_caster)
+					mob.setAggro(dmg_caster.serial, 150);
+				endif
 				break;
 			endif
 		endforeach

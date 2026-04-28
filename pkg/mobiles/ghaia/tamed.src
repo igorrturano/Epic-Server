@@ -381,22 +381,45 @@ function TakeItem(ev)
 		return;
 	endif
 
-	// relacionado as comidas do pet
-var mob := MobileWrapper(me);
-var npctemplate := mob.GetTemplateName();
-var taxonomy := npccfg[npctemplate].Taxonomy;
-var allowed := GetDietByTaxonomy(taxonomy);
-var foodtype := Cstr(GetObjProperty(ev.item, "FoodType"));
-	print("npctempalte eh "+npctemplate+" e foodtype eh "+foodtype+" tax eh "+taxonomy+" allowed eh"+allowed);
-if (!foodtype)
-    SendSysMessage(ev.source, "Isso não parece comida.");
-    return;
-endif
+	// Mochila de carga: tratar antes da validacao de comida
+	if (ev.item.objtype IN { 2482, 3701 } && !(me.graphic in pack_animals))
+		if ((EnumerateItemsInContainer(ev.item)).size() > 0)
+			SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de coloca-la na montaria.");
+			return;
+		endif
+		if (me.npctemplate == ":epicai:Horse3" || me.npctemplate == "Horse3")
+			SetObjProperty(me, "beforepack", me.graphic);
+			me.graphic := 291;
+			DestroyItem(ev.item);
+			PrintTextAbove(ev.source, "*prende uma mochila no cavalo*");
+		elseif (me.npctemplate == ":epicai:Llama" || me.npctemplate == "Llama")
+			SetObjProperty(me, "beforepack", me.graphic);
+			me.graphic := 292;
+			DestroyItem(ev.item);
+			PrintTextAbove(ev.source, "*prende uma mochila na llama*");
+		endif
+		return;
+	endif
 
-if (!("all" in allowed) && !(foodtype in allowed))
-    SendSysMessage(ev.source, "Esse animal não come isso.");
-    return;
-endif
+	// relacionado as comidas do pet
+	var mob := MobileWrapper(me);
+	var npctemplate := mob.GetTemplateName();
+	var taxonomy := npccfg[npctemplate].Taxonomy;
+	var allowed := GetDietByTaxonomy(taxonomy);
+	var foodtype := GetObjProperty(ev.item, "FoodType");
+	if (foodtype == error)
+		foodtype := "";
+	endif
+
+	if (!foodtype)
+		SendSysMessage(ev.source, "Isso nao parece comida.");
+		return;
+	endif
+
+	if (!("all" in allowed) && !(foodtype in allowed))
+		SendSysMessage(ev.source, "Esse animal nao come isso.");
+		return;
+	endif
 
 	// relacionado ao tempo para inicio do bond (tudo em segundos!)
 	var happy := GetObjProperty(me, "happiness");
@@ -468,28 +491,10 @@ endif
 		tameinfo := "* " + me.name + " " + GetHappy(happy) + "*";
 		PrintTextAbove(me, tameinfo);
 		return;
-	elseif (ev.item.graphic == 3701 || ev.item.graphic == 2482)
-		if ((EnumerateItemsInContainer(ev.item)).size() > 0)
-			SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de coloca-la na montaria.");
-			return;
-		endif
-		if (me.graphic == 228)
-			SetObjProperty(me, "beforepack", me.graphic);
-			me.graphic := 291;
-			DestroyItem(ev.item);
-			PrintTextAbove(ev.source, "*prende uma mochila no cavalo*");
-		elseif (me.graphic == 220)
-			SetObjProperty(me, "beforepack", me.graphic);
-			me.graphic := 292;
-			DestroyItem(ev.item);
-			PrintTextAbove(ev.source, "*prende uma mochila na llama*");
-		endif
 	else
 		SendSysMessage(ev.source, "Nao pode comer isso!");
 		return;
 	endif
-
-// endif
 
 endfunction
 
@@ -644,6 +649,10 @@ function Transfer(targ)
 		return;
 	endif
 
+	// Limpa qualquer estado de estabulo/limbo antes de trocar de dono
+	ClearPetStableAndLimboState(me);
+	ClearMasterLimboRef(me.master, me.serial);
+
 	Say("*" + me.name + " aceita " + targ.name + " como novo dono*");
 
 	SetObjProperty(me, "owner", targ.serial);
@@ -662,6 +671,8 @@ endfunction
 function UnTame()
 
 	PrintTextPrivate(me, "*" + me.name + " pode viver livre novamente.*", me.master);
+	ClearPetStableAndLimboState(me);
+	ClearMasterLimboRef(me.master, me.serial);
 	ErasePet(me.master, me.serial);
 	me.SetMaster(0);
 	if (GetObjProperty(me, "summoned"))
