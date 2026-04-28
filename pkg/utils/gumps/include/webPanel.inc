@@ -20,6 +20,9 @@
  *   SendWebPanelRaw(who, fullHtml, width, height)
  *   BuildWebDocument(title, htmlBody, extraCss)
  *   CloseWebPanel(who)
+ *   WaitForWebPanelEvent(who, timeoutMs) — bloqueia até o cliente
+ *                                          devolver close/click/data
+ *   _WpStoreEvent(who, action, data)     — usado pelo packetHook
  *
  * Constantes de ação (retorno do cliente):
  *   WP_ACTION_CLOSE  (0x00)
@@ -32,7 +35,9 @@
  */
 
 use uo;
+use os;
 use basic;
+use polsys;
 
 include ":gumps:htmlBuilder";
 include ":gumps:cssStyles";
@@ -60,13 +65,9 @@ const WP_DEFAULT_HEIGHT := 520;
 //  CSS base do documento EpicUO
 // ─────────────────────────────────────────────
 
-/*
- * _WpBaseCss()
- * CSS base aplicado a todos os documentos enviados via WebPanel.
- * Imita a estética medieval/escura do EpicUO.
- */
-function _WpBaseCss()
-    return "
+// CSS base aplicado a todos os documentos WebPanel — definido como constante
+// para evitar reconstruir uma string de ~2KB a cada BuildWebDocument().
+const WP_BASE_CSS := "
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background-color: #1a1208;
@@ -131,7 +132,6 @@ function _WpBaseCss()
         .narrator { color: #DDBB88; font-style: italic; text-align: center; }
         .two-cols { columns: 2; column-gap: 20px; }
     ";
-endfunction
 
 // ─────────────────────────────────────────────
 //  Construção do documento HTML completo
@@ -140,16 +140,9 @@ endfunction
 /*
  * BuildWebDocument(title, htmlBody, extraCss)
  * Monta o documento HTML5 completo com o template EpicUO.
- *
- * Parâmetros:
- *   title:    Título do painel (aparece como <h1> no topo)
- *   htmlBody: Conteúdo HTML do corpo (gerado via htmlBuilder/cssStyles)
- *   extraCss: CSS adicional específico do painel (opcional)
- *
- * Retorno: string HTML completa pronta para envio.
  */
 function BuildWebDocument(title, htmlBody, extraCss := "")
-    var css := _WpBaseCss();
+    var css := WP_BASE_CSS;
     if (extraCss)
         css := css + extraCss;
     endif
@@ -228,4 +221,70 @@ function CloseWebPanel(who)
     pkt.SetInt16(1, 5);
     pkt.SetInt16(3, WP_SUB_CLOSE);
     pkt.SendPacket(who);
+endfunction
+
+// ─────────────────────────────────────────────
+//  Storage de eventos / espera bloqueante
+// ─────────────────────────────────────────────
+
+// Prefixo de storage por serial — compartilhado entre webPanel.inc e o
+// packetHook em pkg/packetHooks/webPanel/webPanel.src.
+const WP_STORAGE_PREFIX := "webpanel_event_";
+
+/*
+ * _WpStoreEvent(who, action, data)
+ * Armazena o evento mais recente no storage global, indexado por serial.
+ * Chamado pelo packetHook (webPanel.src) ao receber 0xD7/0x00FB.
+ */
+function _WpStoreEvent(who, action, data)
+    var key  := WP_STORAGE_PREFIX + CStr(who.serial);
+    var evt  := struct;
+    evt.+action := action;
+    evt.+data   := data;
+    evt.+time   := ReadGameClock();
+
+    SetGlobalProperty(key, evt);
+endfunction
+
+/*
+ * WaitForWebPanelEvent(who, timeoutMs)
+ *
+ * Bloqueia o script atual até o jogador interagir com o painel WebView2
+ * ou até o timeout expirar.
+ *
+ * Parâmetros:
+ *   who:       O mobile que tem o painel aberto
+ *   timeoutMs: Timeout em milissegundos (padrão: 60000 = 1 minuto)
+ *
+ * Retorno:
+ *   struct{ action, data, time } — ação e dado do evento
+ *   error { errortext := "timeout" } se expirar
+ *
+ * Exemplo:
+ *   SendWebPanel(who, "Jornal", corpo);
+ *   var evt := WaitForWebPanelEvent(who);
+ *   if (evt.action == WP_ACTION_CLICK)
+ *       // processa evt.data (id do botão)
+ *   endif
+ */
+function WaitForWebPanelEvent(who, timeoutMs := 60000)
+    var key      := WP_STORAGE_PREFIX + CStr(who.serial);
+    var elapsed  := 0;
+    var interval := 100;
+
+    // Limpa qualquer evento antigo antes de aguardar.
+    EraseGlobalProperty(key);
+
+    while (elapsed < timeoutMs)
+        SleepMs(interval);
+        elapsed := elapsed + interval;
+
+        var evt := GetGlobalProperty(key);
+        if (evt && !evt.errortext)
+            EraseGlobalProperty(key);
+            return evt;
+        endif
+    endwhile
+
+    return error{ errortext := "timeout" };
 endfunction
