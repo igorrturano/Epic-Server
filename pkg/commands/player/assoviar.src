@@ -177,7 +177,9 @@ function SendPetAway(character)
 	                      owner_serial := character.serial,
 	                      run_away := 1 };
 
-	if (!start_script("ai/sendpetlimbo", params))
+	var script := start_script("ai/sendpetlimbo", params);
+	if (script == error)
+		syslog("[assoviar] start_script ai/sendpetlimbo falhou para " + character.name + " (" + character.serial + "): " + script.errortext);
 		SendSysMessage(character, "Erro ao enviar pet.");
 		ExitLimbo(character, target_pet);
 		return 0;
