@@ -50,7 +50,7 @@ program PirapurificadoraTick(args)
 
 		foreach fire_pos in fire_positions
 			if (mob.x == fire_pos.x && mob.y == fire_pos.y)
-				var damage := CInt(theology / 10) + RandomDiceRoll("2d6");
+				var damage := CInt(theology / 10) + RandomDiceRoll("1d4");
 				PlayObjectCenteredEffect(mob, 0x3709, 7, 10);
 				SC_DealDamage(dmg_caster, mob, spellId, damage, DMG_FIRE);
 				// Pira creates fire tiles in the world; the caster never directly targets
