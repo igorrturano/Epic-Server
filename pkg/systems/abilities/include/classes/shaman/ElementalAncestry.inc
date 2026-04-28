@@ -44,7 +44,7 @@ class ElementalAncestry(CombatAbility)
 		var origx := who.x;
 		var origy := who.y;
 
-		var mobs := ListMobilesNearLocation(who.x, who.y, who.z, 20, who.realm);
+		var mobs := mobile.GetNearbyMobiles(20);
 		var enemies := array{};
 
 		Message("Voce deve permanecer parado para manter sua ancestralidade elemental.").SendSys(who);

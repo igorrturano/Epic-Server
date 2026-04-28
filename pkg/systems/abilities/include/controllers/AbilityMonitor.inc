@@ -89,14 +89,11 @@ class AbilityMonitor()
 		endif
 
 		// Validate cooldown
-		var cooldownProp := $"AbilityCooldown_{ability.GetId()}";
-		var cooldownEnd := mobile.GetProperty(cooldownProp);
-		if (cooldownEnd && POLCore().systime < cooldownEnd)
-			var remaining := cooldownEnd - POLCore().systime;
+		if (mobile.IsAbilityOnCooldown(ability.GetId()))
+			var remaining := mobile.GetAbilityCooldownRemaining(ability.GetId());
 			Message($"Aguarde {remaining}s para usar novamente.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobileRef);
 			return error{"errortext" := "Ability on cooldown"};
 		endif
-
 
 		if (!mobile.GetObjRef().cmdlevel)
 			// === CONSUME COSTS ===
@@ -112,7 +109,7 @@ class AbilityMonitor()
 
 			// === SET COOLDOWN ===
 			if (ability.GetAbilityCooldown() > 0)
-				SetObjProperty(mobileRef, cooldownProp, POLCore().systime + ability.GetAbilityCooldown());
+				mobile.SetAbilityCooldown(ability.GetId(), ability.GetAbilityCooldown());
 			endif
 		endif
 

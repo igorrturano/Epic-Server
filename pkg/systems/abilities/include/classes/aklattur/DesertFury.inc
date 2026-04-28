@@ -2,7 +2,6 @@ use uo;
 use os;
 
 include ":abilities:models/CombatAbility";
-include ":abilities:helpers/aklatturHelpers";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include "include/epicCombatUtils";
@@ -77,7 +76,7 @@ class DesertFury(CombatAbility)
 	function OnPassiveBeforeDamage(this, attackInfo)
 		var attacker := attackInfo.GetAttacker();
 
-		if (!_IsRaging(attacker.GetObjRef()))
+		if (!attacker.IsRaging())
 			return false;
 		endif
 

@@ -1,7 +1,7 @@
 use uo;
 use os;
 
-include ":abilities:helpers/shinobiHelpers";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program shinobi_smoke_visual(params)
 	var who := params[1];
@@ -17,8 +17,9 @@ program shinobi_smoke_visual(params)
 	var z := CInt(who.z);
 	var realm := who.realm;
 
+	var whoWrapped := MobileWrapper(who);
 	while (ReadGameClock() <= smoke_expires)
-		if (!IsInShinobiSmokeZone(who))
+		if (!whoWrapped.IsInSmokeZone())
 			return 1;
 		endif
 		for dx := -area to area
@@ -31,6 +32,6 @@ program shinobi_smoke_visual(params)
 		sleep(1);
 	endwhile
 
-	ClearSmokeProtection(who);
+	whoWrapped.ClearSmokeProtection();
 	return 1;
 endprogram

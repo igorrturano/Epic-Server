@@ -2,7 +2,6 @@ use os;
 use uo;
 
 include ":abilities:models/CombatAbility";
-include ":abilities:helpers/shinobiHelpers";
 include ":message:model/Message";
 include ":attributes:attributes";
 include ":combat:Controller/HitController";
@@ -68,7 +67,7 @@ class Assassinate(CombatAbility)
 		endif
 
 		who.setwarmode(1);
-		TeleportBehindTarget(who, targ);
+		mobile.TeleportBehind(MobileWrapper(targ));
 
 		if (mobile.IsHidden())
 			mobile.SetProperty("#GuaranteedHit", 1);

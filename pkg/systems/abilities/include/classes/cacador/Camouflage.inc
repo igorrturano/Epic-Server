@@ -31,7 +31,7 @@ class Camouflage(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
-		var nearby := ListMobilesNearLocationEx(who.x, who.y, LIST_IGNORE_Z, 5, LISTEX_FLAG_NORMAL, who.realm);
+		var nearby := mobile.GetNearbyMobiles(5, LISTEX_FLAG_NORMAL, 1);
 		var skill_bonus := CInt(mobile.GetSkill(SURVIVAL) / 5);
 
 		foreach mob in nearby
