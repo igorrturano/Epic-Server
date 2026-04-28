@@ -11,6 +11,7 @@ const FABRICACAO_AJUDA_CONFIG_PATH := ":crafting:config/ajuda";
 const CHANCE_FABRICACAO_MAX := 80.0;
 const LARGURA_DROPDOWN := 350;
 const CLASSE_PADRAO := 1;
+const MULTIPLICADOR_FALHAS := 2;
 
 var CATALOGO_LOG_PRA_TABUA := dictionary {
         "0xee36" -> 0xee66,

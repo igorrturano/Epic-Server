@@ -847,7 +847,7 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	receita.+sucessosNecessarios := PegaDescDuracaoFabricacao(duracao).sucessos;
 	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao, receitaClassificada.classe);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, duracao, definicaoFabricacao.lote);
-	receita.+dificuldade := PegaDificuldadeFrabicarObjeto(quem,objtype,nomeProfissao,nomePericia, receitaClassificada.classe);
+	receita.+dificuldade := PegaDificuldadeFrabicarObjeto(quem,objtype,nomeProfissao,nomePericia, receitaClassificada.classe, receita.sucessosNecessarios);
 	receita.+objtype := objtype;
 	receita.+pericia := nomePericia;
 	receita.+profissao := nomeProfissao;
