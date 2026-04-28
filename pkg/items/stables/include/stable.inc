@@ -34,11 +34,7 @@ function NewPetStableData(post_serial, days, price_per_day)
 endfunction
 
 function GetPetStable(pet)
-	var data := GetObjProperty(pet, "StableData");
-	if (data == error)
-		data := MigratePetStableLegacy(pet);
-	endif
-	return data;
+	return GetObjProperty(pet, "StableData");
 endfunction
 
 function SetPetStable(pet, data)
@@ -95,15 +91,6 @@ function FormatContractTimeLeft(pet)
 	return dias + "d " + horas + "h";
 endfunction
 
-// Aliases legados — remover apos varredura completa dos callers.
-function IsStableExpired(pet)
-	return IsContractExpired(pet);
-endfunction
-
-function FormatTempoRestante(pet)
-	return FormatContractTimeLeft(pet);
-endfunction
-
 // -----------------------------------------------------------------------------
 // Owner StableData
 // -----------------------------------------------------------------------------
@@ -124,9 +111,6 @@ endfunction
 
 function GetOwnerStable(owner)
 	var data := GetObjProperty(owner, "StableData");
-	if (data == error)
-		data := MigrateOwnerStableLegacy(owner);
-	endif
 	if (data == error)
 		return error;
 	endif
@@ -451,166 +435,3 @@ function FindSpawnLocationNearby(character)
 	return struct{ x := character.x, y := character.y, z := character.z };
 endfunction
 
-// -----------------------------------------------------------------------------
-// Migracao de dados legados
-// -----------------------------------------------------------------------------
-
-// Converte propriedades escalares antigas em StableData dict. Chamado uma
-// vez por pet, na primeira leitura pos-deploy.
-function MigratePetStableLegacy(pet)
-	var post_serial  := GetObjProperty(pet, "StablePostSerial");
-	var in_stable    := GetObjProperty(pet, "EstaNoEstabulo");
-	var in_limbo     := GetObjProperty(pet, "EstaNoLimbo");
-	var legacy_exp   := GetObjProperty(pet, "DataExpiracao");
-	var legacy_price := GetObjProperty(pet, "PrecoPorDia");
-	var legacy_orig  := GetObjProperty(pet, "OriginalLocation");
-
-	var has_any := (post_serial != error && post_serial) ||
-	               (in_stable != error && in_stable) ||
-	               (in_limbo != error && in_limbo);
-	if (!has_any)
-		return error;
-	endif
-
-	var expires_at := CInt(legacy_exp);
-	if (!expires_at)
-		var legacy_entry := GetObjProperty(pet, "DataEntrada");
-		if (legacy_entry != error && legacy_entry)
-			expires_at := CInt(legacy_entry) + SEGUNDOS_POR_DIA;
-		endif
-	endif
-
-	var state := STABLE_STATE_ACTIVE;
-	if (in_stable != error && in_stable)
-		state := STABLE_STATE_STABLED;
-	elseif (in_limbo != error && in_limbo)
-		state := STABLE_STATE_LIMBO;
-	endif
-
-	var data := dictionary;
-	data["post"] := CInt(post_serial);
-	data["expires_at"] := expires_at;
-	data["rental_days"] := 0;
-	data["price_per_day"] := CInt(legacy_price);
-	data["state"] := state;
-	if (state == STABLE_STATE_LIMBO && legacy_orig != error && legacy_orig)
-		data["limbo_origin"] := legacy_orig;
-	endif
-
-	SetObjProperty(pet, "StableData", data);
-
-	EraseObjProperty(pet, "StablePostSerial");
-	EraseObjProperty(pet, "DataExpiracao");
-	EraseObjProperty(pet, "DataEntrada");
-	EraseObjProperty(pet, "PrecoPorDia");
-	EraseObjProperty(pet, "EstaNoEstabulo");
-	EraseObjProperty(pet, "EstaNoLimbo");
-	EraseObjProperty(pet, "OriginalLocation");
-	EraseObjProperty(pet, "previous_location");
-	EraseObjProperty(pet, "RentalDays");
-
-	return data;
-endfunction
-
-function MigrateOwnerStableLegacy(owner)
-	var cur_post       := GetObjProperty(owner, "CurrentStablePostSerial");
-	var limbo_pet      := GetObjProperty(owner, "PlayerPetInLimboSerial");
-	var cooldown       := GetObjProperty(owner, "AssoviarCooldown");
-	var legacy_stabled := GetObjProperty(owner, "StabledPets");
-
-	// Escaneia TamedPets procurando pets ja estabulados/em limbo. Cobre o
-	// caso comum em que o owner legacy nunca teve StabledPets (que era uma
-	// tentativa anterior), mas tem pets com EstaNoEstabulo=1 na lista.
-	var found_stabled := array;
-	var found_limbo := 0;
-	var found_post := 0;
-	var tamed := GetObjProperty(owner, "TamedPets");
-	if (tamed)
-		foreach serial in tamed
-			var pet := SystemFindObjectBySerial(serial);
-			if (!pet || pet.master != owner)
-				sleepms(2);
-				continue;
-			endif
-			var pet_data := GetPetStable(pet);
-			if (pet_data == error)
-				sleepms(2);
-				continue;
-			endif
-			if (IsStabled(pet))
-				found_stabled.append(pet.serial);
-				if (!found_post)
-					found_post := CInt(pet_data["post"]);
-				endif
-			elseif (IsInLimbo(pet))
-				if (!found_limbo)
-					found_limbo := pet.serial;
-					if (!found_post)
-						found_post := CInt(pet_data["post"]);
-					endif
-				endif
-			endif
-			sleepms(2);
-		endforeach
-	endif
-
-	// Fallback: CurrentStablePostSerial aponta para um post. Verifica se o
-	// StoredAnimal desse post pertence a nos e ainda nao foi detectado.
-	if (CInt(cur_post) && found_stabled.size() == 0 && !found_limbo)
-		var post_obj := SystemFindObjectBySerial(CInt(cur_post));
-		if (post_obj)
-			var stored_serial := GetObjProperty(post_obj, "StoredAnimal");
-			if (stored_serial)
-				var stored_pet := SystemFindObjectBySerial(stored_serial);
-				if (stored_pet && stored_pet.master == owner)
-					GetPetStable(stored_pet);
-					if (IsStabled(stored_pet))
-						found_stabled.append(stored_pet.serial);
-						if (!found_post)
-							found_post := CInt(cur_post);
-						endif
-					endif
-				endif
-			endif
-		endif
-	endif
-
-	var has_scalar := (cur_post != error && cur_post) ||
-	                  (limbo_pet != error && limbo_pet) ||
-	                  (cooldown != error && cooldown) ||
-	                  (legacy_stabled != error && legacy_stabled);
-	var has_pets := found_stabled.size() > 0 || found_limbo;
-	if (!has_scalar && !has_pets)
-		return error;
-	endif
-
-	var data := NewOwnerStableData();
-	data["last_whistle"] := CInt(cooldown);
-
-	if (CInt(cur_post))
-		data["post"] := CInt(cur_post);
-	elseif (found_post)
-		data["post"] := found_post;
-	endif
-
-	if (CInt(limbo_pet))
-		data["limbo_pet"] := CInt(limbo_pet);
-	elseif (found_limbo)
-		data["limbo_pet"] := found_limbo;
-	endif
-
-	if (legacy_stabled != error && legacy_stabled && legacy_stabled.size() > 0)
-		data["stabled_pets"] := legacy_stabled;
-	elseif (found_stabled.size() > 0)
-		data["stabled_pets"] := found_stabled;
-	endif
-
-	SetObjProperty(owner, "StableData", data);
-
-	EraseObjProperty(owner, "CurrentStablePostSerial");
-	EraseObjProperty(owner, "PlayerPetInLimboSerial");
-	EraseObjProperty(owner, "AssoviarCooldown");
-	EraseObjProperty(owner, "StabledPets");
-
-	return data;
-endfunction

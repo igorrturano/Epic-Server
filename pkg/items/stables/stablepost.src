@@ -10,74 +10,12 @@ include ":stables:include/stable";
 include "include/say";
 
 program StablePost(who, post)
-	// Primeira interacao pos-deploy: converte propriedades legadas do dono
-	// e backfill de stabled_pets se necessario.
-	MigrateLegacyOwner(who);
-
-	var existing_serial := GetObjProperty(post, "StoredAnimal");
-	if (existing_serial)
-		var existing := SystemFindObjectBySerial(existing_serial);
-		if (existing && existing.master)
-			// Garante que o pet armazenado tem StableData migrado e que o
-			// dono dele esta indexado em stabled_pets — cobre dados orfaos
-			// onde o owner perdeu a referencia ao pet.
-			GetPetStable(existing);
-			if (IsStabled(existing))
-				AddOwnerStabledPet(existing.master, existing.serial, post.serial);
-			endif
-		endif
-	endif
-
 	if (GetObjProperty(post, "StoredAnimal"))
 		return ResgatarAnimal(who, post);
 	else
 		return GuardarAnimal(who, post);
 	endif
 endprogram
-
-function MigrateLegacyOwner(who)
-	GetOwnerStable(who);
-	var tamed := GetObjProperty(who, "TamedPets");
-	if (!tamed)
-		return;
-	endif
-	var data := EnsureOwnerStable(who);
-	var stabled := data["stabled_pets"];
-	var dirty := 0;
-	foreach serial in tamed
-		var pet := SystemFindObjectBySerial(serial);
-		if (!pet)
-			sleepms(2);
-			continue;
-		endif
-		// Dispara migracao do dict por pet.
-		GetPetStable(pet);
-		if (IsStabled(pet))
-			var already := 0;
-			foreach sp in stabled
-				if (CInt(sp) == CInt(pet.serial))
-					already := 1;
-					break;
-				endif
-				sleepms(2);
-			endforeach
-			if (!already)
-				stabled.append(pet.serial);
-				dirty := 1;
-			endif
-		elseif (IsInLimbo(pet))
-			if (!CInt(data["limbo_pet"]))
-				data["limbo_pet"] := pet.serial;
-				dirty := 1;
-			endif
-		endif
-		sleepms(2);
-	endforeach
-	if (dirty)
-		data["stabled_pets"] := stabled;
-		SetOwnerStable(who, data);
-	endif
-endfunction
 
 function GuardarAnimal(who, post)
 	var current_post := OwnerPostSerial(who);
