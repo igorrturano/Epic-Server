@@ -145,23 +145,7 @@ function Loot_CreateItem(container, line)
         var i;
         for(i := 1; i <= parsed.amount; i := i + 1)
             var combatDesc := ReadConfigFile(":combat:itemdesc");
-            var objtype := GetObjtypeByName(parsed.name);
-            var combatItem := combatDesc[objtype];
-            if(combatItem)
-                item :=  GeraItemComplexo(
-                                            container,
-                                            objtype,
-                                            1,
-                                            RandomIntMinMax(1,10) > 7 ? "1>2" : 1,
-                                            1,
-                                            array {0x630e}, //ouro
-                                            FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
-                                        );
-            else
-                item := CreateItemInContainer(container, parsed.name);
-            endif
-            SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
-            Loot_InitBottle(item);
+                        CreateItemProcess(container, parsed, 1);
 
             sleepms(2);
         endfor
@@ -171,13 +155,53 @@ function Loot_CreateItem(container, line)
     return 1;
 endfunction
 
+function CreateItemProcess(container, parsed, qtd)
+    var objtype := GetObjtypeByName(parsed.name);
+    var item;
+
+    if( parsed.level && parsed.level != 1)
+        item :=  GeraItemComplexo(
+                                    container,
+                                    objtype,
+                                    qtd,
+                                    parsed.level,
+                                    1,
+                                    array {0x630e},
+                                    FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR,
+                                    false,
+                                    1,//TODO alterar quando as classes estiverem implementadas nos loots
+                                    ITEM_MONTADO
+                                );
+        if(item)
+            item.name := "Item Danificado";
+        endif
+    else
+        item :=  GeraItemComplexo(
+                                    container,
+                                    objtype,
+                                    qtd,
+                                    1,
+                                    1,
+                                    array {0x630e},
+                                    FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
+                                );
+        //Gera como produto montado
+    endif
+    
+    if(!item)
+        item := CreateItemInContainer(container, parsed.name);
+        Loot_InitBottle(item);
+    endif
+
+    SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+    return item;
+endfunction
+
 function Loot_CreateStack(container, line)
 	var parsed := Loot_ParseString(line);
 
 	if ( Loot_ChanceCheck(parsed.chance) )
-		var item := CreateItemInContainer(container, parsed.name, parsed.amount);
-		SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
-		Loot_InitBottle(item);
+		var item := CreateItemProcess(container, parsed, parsed.amount);
 		if ( item.errortext )
 			return error{"errortext" := "Error - Could not create ["+parsed.name+"] ->"+item.errortext};
 		endif
