@@ -283,8 +283,8 @@ function MP_Mount(mobile, npc)
 
 	// Check race/gender restrictions using new system
 	var restriction_check := MP_CheckMountRestriction(mobile, npc);
-	if (!restriction_check)
-		Message(restriction_check.errortext).SetColor(SYSTEM_COLOR::FAIL).SendSys(mobile);
+	if (restriction_check == error)
+		Message(restriction_check.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 
