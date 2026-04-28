@@ -35,6 +35,8 @@ program sacrificioFlamejanteTick(params)
 
 	var dano := RandomIntMinMax(5, 15);
 	dano := Floor(dano / divisor);
+	// Self-damage as a casting cost — intentionally NOT routed through SC_DealDamage,
+	// which would fire AFTER_DAMAGE/ON_KILL hooks against the swordmage for damaging themselves.
 	ApplyRawDamage(who, dano);
 
 	var dmgbonus := Cint(GetObjProperty(who, "#dmgbonus"));
