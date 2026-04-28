@@ -189,6 +189,10 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		xDesc := xDesc + AMARELO_CLARO + hits;
 	endif
 
+	if (weapon.IsFinesse())
+		xDesc := xDesc + AMARELO_CLARO + "Arma Ágil<br>";
+	endif
+
 	if (objeto.hp_mod > 0)
 		xDesc := xDesc + ROXO + "Bônus Item PVs "+ objeto.hp_mod;
 	endif
