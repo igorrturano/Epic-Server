@@ -6,13 +6,14 @@ include "include/client";
 include "include/say";
 include "include/sounds";
 include "include/tileEffects";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 
 // Per-tick burn damage for Maos Flamejantes DoT. Chip fixo de 1d4+1 por tick.
 // tick_params: struct{ total_ticks }
 program BurningHandsTick(args)
 	var caster := args[1];
 	var targ := args[2];
+	var spellId := CInt(args[3]);
 	var tick_number := CInt(args[4]);
 	var tp := args[5];
 	args := 0;
@@ -27,7 +28,7 @@ program BurningHandsTick(args)
 	endif
 
 	var chip := RandomDiceRoll("1d4") + 1;
-	DamageFLS(targ, chip, DMG_FIRE, dmg_caster);
+	SC_DealDamage(dmg_caster, targ, spellId, chip, DMG_FIRE);
 	PlayObjectCenteredEffect(targ, FX_FIRE_COLUMN, 5, 10);
 
 	if (tick_number >= CInt(tp.total_ticks))
