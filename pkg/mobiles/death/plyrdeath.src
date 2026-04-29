@@ -19,6 +19,7 @@ include ":combat:hitscripts";
 include "include/say";
 include ":commands:possess";
 include ":death:resurrection";
+include ":tn:cooldown";
 
 program core_chrDeath(params)
 	var corpse := params[1];

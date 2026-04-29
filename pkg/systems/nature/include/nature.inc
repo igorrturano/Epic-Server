@@ -8,7 +8,7 @@ use vitals;
 
 include ":combat:Controller/DamageController_legacy";
 include ":debug:Controller/DebugController";
-
+include "include/dungeons";
 // Calendar constants
 var MONTHS := array{
     struct{ "name" := "Duwus", "days" := 30 }, // Mês dedicado ao Deus Sol - Björska

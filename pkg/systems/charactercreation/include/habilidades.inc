@@ -7,7 +7,7 @@ include ":tn:equipment";
 include ":abilities:include/models/Ability";
 include ":census:include/CensusController";
 include "/include/math";
-
+include ":fls_core:fls_characters";
 function NivelHabilidade(habilidade, classe)
 
 	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
