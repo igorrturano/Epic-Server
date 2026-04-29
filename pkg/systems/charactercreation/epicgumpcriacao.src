@@ -904,13 +904,10 @@ function pathOfWisdom(who, culture_pic)
 			chardata.+magia := "Sacerdote";
 			CreateItemInBackPack(who, "chisels", 1);
 			var gems := array{
-				"rawstarsapphire",
 				"rawemerald",
 				"rawsapphire",
 				"rawruby",
-				"rawcitrine",
 				"rawamethyst",
-				"rawtourmaline",
 				"rawamber",
 				"rawdiamond"
 			};
