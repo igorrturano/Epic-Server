@@ -51,11 +51,11 @@ function CalculateWearChance(equip)
 		if (equip.IsShield())
 			wearChance := 80.0;
 		else
-			wearChance := 30.0;
+			wearChance := 20.0;
 		endif
 
 		if (equip.GetProperty("encerada"))
-			wearChance -= 15.0;
+			wearChance -= 10.0;
 		endif
 	elseif (equip is @WeaponWrapper)
 		wearChance := 2.0;

@@ -834,7 +834,7 @@ function BuildNpcProfileEditorGump(npc)
 	if (!current_url)
 		current_url := "";
 	endif
-	GFTextLine(gump, x, y, GUMP_COLOR::HIGHLIGHT, "URL DA IMAGEM (200x200)");
+	GFTextLine(gump, x, y, GUMP_COLOR::HIGHLIGHT, "URL DA IMAGEM (210x330)");
 	y := y + 20;
 	GFResizePic(gump, x, y, CONV_INTERNAL_BG, 440, 25);
 	GFTextEntry(gump, x + 5, y + 3, 430, 20, GUMP_COLOR::TEXT_ENTRY, current_url, ID_NPC_PROFILE_URL);

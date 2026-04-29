@@ -623,7 +623,7 @@ function SetupNPCEquip(who, npc_elem)
     categ := categ;
     if(isMaleGraphic(who))
         categ := categ + "M";
-    elseif (who.graphic == 0x191)
+    elseif (isFemaleGraphic(who))
         categ := categ + "F";
     endif
     var template := ReadConfigFile(":ghaia:config/equip2");

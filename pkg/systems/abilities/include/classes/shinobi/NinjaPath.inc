@@ -5,7 +5,6 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":abilities:helpers/shinobiHelpers";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include "include/client";
 
@@ -104,7 +103,7 @@ class NinjaPath(CombatAbility)
 		Message($"Alvo marcado por {mark_duration} segundos. Use novamente para teleportar.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
 
 		// Reset cooldown so player can use the ability again to teleport
-		EraseObjProperty(who, $"AbilityCooldown_{ABILITY_ID::NINJA_PATH}");
+		mobile.ClearAbilityCooldown(ABILITY_ID::NINJA_PATH);
 
 		DebugMsg(
 			who,
@@ -191,7 +190,7 @@ class NinjaPath(CombatAbility)
 
 		// Teleport behind target
 		PlaySoundEffect(who, 0x511);
-		TeleportBehindTarget(who, targ);
+		MobileWrapper(who).TeleportBehind(MobileWrapper(targ));
 
 		// Guaranteed attack
 		SetObjProperty(who, "#GuaranteedHit", 1);

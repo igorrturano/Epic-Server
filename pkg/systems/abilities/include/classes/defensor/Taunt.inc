@@ -27,7 +27,7 @@ class Taunt(CombatAbility)
         who.gender ? PlaySoundEffect(who, 0x339) : PlaySoundEffect(who, 0x44B);
         PerformAction(who, HUMAN_ANIM::HIT);
 
-        var nearby := ListMobilesNearLocation(who.x, who.y, who.z, 8, who.realm);
+        var nearby := mobile.GetNearbyMobiles(8);
         var taunt_duration := CInt(mobile.GetSkill(PARRY) / 2);
         if (taunt_duration < 1)
             taunt_duration := 1;

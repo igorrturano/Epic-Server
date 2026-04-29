@@ -308,13 +308,16 @@ function SkillRedistribution(who, npc)
 		return;
 	endif
 
-	// Total budget = sum of (tier * class_cost) over current rebuyable skills.
-	var total_budget := 0;
-	foreach skill_name in (original_tiers.keys())
-		var tier := CInt(original_tiers[skill_name]);
-		var per_level := CInt(skill_costs[skill_name]);
-		total_budget += tier * per_level;
-	endforeach
+	// Budget mirrors creation (epicgumpcriacao.src:370-376): 20 base, +5 for the
+	// Sabe-Tudo trait, +2 for the Humano race. Race and trait are immutable
+	// after creation, so the formula is authoritative for respec.
+	var total_budget := 20;
+	if (chardata.trait == "Sabe-Tudo")
+		total_budget += 5;
+	endif
+	if (chardata.raca == "Humano")
+		total_budget += 2;
+	endif
 
 	var pri_allowed := howManyPrimarias(chardata);
 
@@ -366,12 +369,7 @@ function SkillRedistribution(who, npc)
 				SendSysMessageEx(who, "Distribua todos os pontos antes de confirmar.", SSM_FAIL);
 				continue;
 			endif
-			var pri_count := 0;
-			foreach v in (respec_data.Skills.values())
-				if (CInt(v) == 3)
-					pri_count += 1;
-				endif
-			endforeach
+			var pri_count := CountPrimaries(respec_data);
 			if (pri_count > pri_allowed)
 				SendSysMessageEx(who, "Voce ultrapassou o limite de primarias (" + pri_allowed + ").", SSM_FAIL);
 				continue;
@@ -393,7 +391,7 @@ function SkillRedistribution(who, npc)
 		endif
 
 		// Tier up/down button — mutate respec_data and redraw.
-		ApplyRespecButton(respec_data, btn);
+		ApplyRespecButton(who, respec_data, btn, pri_allowed);
 	endwhile
 endfunction
 
@@ -450,35 +448,49 @@ endfunction
 // Same button-id convention as skillSelection in epicgumpcriacao.src:393-466.
 // Ranges 100/130/200/230/300/330/400/430 are -/+ for tiers 1/2/3/4 respectively
 // (refund value / point cost = 1, 2, 3, 4). The +N is GetSkillIdFromName.
-function ApplyRespecButton(byref respec_data, btn)
+function ApplyRespecButton(who, byref respec_data, btn, pri_allowed)
 	if (btn >= 100 && btn < 130)
 		var skill := GetSkillNameFromId(btn - 100);
-		AdjustSkillTier(respec_data, skill, -1, 1);
+		AdjustSkillTier(who, respec_data, skill, -1, 1, pri_allowed);
 	elseif (btn >= 130 && btn < 200)
 		var skill := GetSkillNameFromId(btn - 130);
-		AdjustSkillTier(respec_data, skill, 1, 1);
+		AdjustSkillTier(who, respec_data, skill, 1, 1, pri_allowed);
 	elseif (btn >= 200 && btn < 230)
 		var skill := GetSkillNameFromId(btn - 200);
-		AdjustSkillTier(respec_data, skill, -1, 2);
+		AdjustSkillTier(who, respec_data, skill, -1, 2, pri_allowed);
 	elseif (btn >= 230 && btn < 300)
 		var skill := GetSkillNameFromId(btn - 230);
-		AdjustSkillTier(respec_data, skill, 1, 2);
+		AdjustSkillTier(who, respec_data, skill, 1, 2, pri_allowed);
 	elseif (btn >= 300 && btn < 330)
 		var skill := GetSkillNameFromId(btn - 300);
-		AdjustSkillTier(respec_data, skill, -1, 3);
+		AdjustSkillTier(who, respec_data, skill, -1, 3, pri_allowed);
 	elseif (btn >= 330 && btn < 400)
 		var skill := GetSkillNameFromId(btn - 330);
-		AdjustSkillTier(respec_data, skill, 1, 3);
+		AdjustSkillTier(who, respec_data, skill, 1, 3, pri_allowed);
 	elseif (btn >= 400 && btn < 430)
 		var skill := GetSkillNameFromId(btn - 400);
-		AdjustSkillTier(respec_data, skill, -1, 4);
+		AdjustSkillTier(who, respec_data, skill, -1, 4, pri_allowed);
 	elseif (btn >= 430 && btn < 500)
 		var skill := GetSkillNameFromId(btn - 430);
-		AdjustSkillTier(respec_data, skill, 1, 4);
+		AdjustSkillTier(who, respec_data, skill, 1, 4, pri_allowed);
 	endif
 endfunction
 
-function AdjustSkillTier(byref respec_data, skill, delta, cost)
+// .values() on a dictionary stored in a struct field returns nothing in this
+// codebase's eScript runtime — the creation flow uses .keys() + index access
+// for the same reason (see epicgumpcriacao.src:476-480). This helper is the
+// single canonical way to count primaries (tier-3 skills) in respec_data.
+function CountPrimaries(respec_data)
+	var count := 0;
+	foreach skill_name in (respec_data.Skills.keys())
+		if (CInt(respec_data.Skills[skill_name]) == 3)
+			count += 1;
+		endif
+	endforeach
+	return count;
+endfunction
+
+function AdjustSkillTier(who, byref respec_data, skill, delta, cost, pri_allowed)
 	if (!skill || skill == "" || skill == error)
 		return;
 	endif
@@ -489,6 +501,15 @@ function AdjustSkillTier(byref respec_data, skill, delta, cost)
 		endif
 		if (respec_data.points - cost < 0)
 			return;
+		endif
+		// Hard cap on primaries: when promoting from tier 2 to tier 3, refuse
+		// if the player is already at their primary limit (2 normally, 1 for
+		// the Sabe-Tudo trait).
+		if (current == 2)
+			if (CountPrimaries(respec_data) >= pri_allowed)
+				SendSysMessageEx(who, "Voce ja atingiu o limite de primarias (" + pri_allowed + ").", SSM_FAIL);
+				return;
+			endif
 		endif
 		respec_data.Skills[skill] := current + 1;
 		respec_data.points -= cost;
@@ -574,12 +595,7 @@ function SkillRespecGump(who, byref respec_data, pri_allowed)
 	var quaternarias := GetConfigStringArray(elem, "Q");
 
 	// Recompute primary count from current selection.
-	var pri_count := 0;
-	foreach v in (respec_data.Skills.values())
-		if (CInt(v) == 3)
-			pri_count += 1;
-		endif
-	endforeach
+	var pri_count := CountPrimaries(respec_data);
 	respec_data.Primarias := pri_count;
 
 	var minus_btn := {0x9F7, 0x9F8};
