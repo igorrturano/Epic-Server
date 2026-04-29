@@ -15,6 +15,7 @@ include ":tn:tngumps";
 include ":treasurehunting:treasuremaps";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":gumps:yesNo";
 
 var item_config := ReadConfigFile(":treasurehunting:itemdesc");
 var craft_config := ReadConfigFile(":treasurehunting:cartography");

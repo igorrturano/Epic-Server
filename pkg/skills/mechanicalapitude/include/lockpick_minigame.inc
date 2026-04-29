@@ -7,6 +7,7 @@ use util;
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":gumps:/include/epicGumps";
+include ":gumps:yesNo";
 //1640
 // Constantes de mensagem
 const SSM_SUCCESS := 64;
