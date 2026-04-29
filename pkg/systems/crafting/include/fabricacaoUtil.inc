@@ -355,7 +355,6 @@ function AplicaAtributosItemFabricado(quem, item, propFabricadoMontado)
 	endif
 
 	AplicaFechadura(quem, item);
-	item.setAttrBase();
 endfunction
 
 function ResolveEfeitoCaracteristica(valorEfeito)
