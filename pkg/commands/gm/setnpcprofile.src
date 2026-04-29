@@ -33,7 +33,7 @@ program GMSetNPCProfile(who)
 	GFTextMid(gump, 60, 20, 300, 53, "Editar Perfil de NPC: " + targ.name);
 
 	// URL da Imagem
-	GFTextLine(gump, 40, 60, 1153, "URL da Imagem (imagem = 200x200):");
+	GFTextLine(gump, 40, 60, 1153, "URL da Imagem (imagem = 210x330):");
 	GFResizePic(gump, 40, 80, TEXT_ENTRY_BACKGROUND, 320, 25);
 	var url_txt := GFTextEntry(gump, 45, 82, 310, 20, 2100, GetObjProperty(targ, "url"));
 
