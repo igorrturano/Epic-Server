@@ -136,7 +136,6 @@ enum class GUMP_CONTROL
 	CHECKBOX := "checkbox",
 
 	TEXTBOX := "textbox",
-	HTMLTEXT := "htmltext",
 
 	CONTAINER := "container",
 	CONTAINERGRIDLAYOUT := "containergridlayout"
