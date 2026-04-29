@@ -32,7 +32,7 @@ program SlipperyGrasp(params)
 	if (pull > 0)
 		var pull_x := targ.x + CInt(dx * pull / dist);
 		var pull_y := targ.y + CInt(dy * pull / dist);
-		MoveObjectToLocation(targ, pull_x, pull_y, GetMapInfo(pull_x, pull_y).z, targ.realm, MOVEOBJECT_FORCELOCATION);
+		MoveObjectToLocation(targ, pull_x, pull_y, GetMapInfo(pull_x, pull_y).z, targ.realm);
 	endif
 
 	TS_StartTimer(targ, "lentidao", 4);
