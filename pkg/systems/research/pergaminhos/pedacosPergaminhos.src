@@ -1,5 +1,6 @@
 use uo;
 use os;
+use basic;
 use cfgfile;
 use math;
 
@@ -9,21 +10,25 @@ include ":attributes:attributes";
 include ":recipes:recipes";
 include ":gumps:epicGumps";
 
-const PERGAMINHO_FABRICACAO := 0xFD3B;
-const PERGAMINHO_ALQUIMIA := 0xFD3C;
-const PERGAMINHO_TINTA := 0xFD3D;
-const PERGAMINHO_MAGIA := 0xFD3E;
+const PERGAMINHO_METALWORK    := 0xFD2F;
+const PERGAMINHO_WOODWORK     := 0xFD3B;
+const PERGAMINHO_DOMESTICWORK := 0xFD3A;
+const PERGAMINHO_ALQUIMIA     := 0xFD3C;
+const PERGAMINHO_TINTA        := 0xFD3D;
+const PERGAMINHO_MAGIA        := 0xFD3E;
 
-const GRAFICO_PERGAMINHO_FABRICACAO := 0xE9E8;
-const GRAFICO_PERGAMINHO_ALQUIMIA := 0xE9EC;
-const GRAFICO_PERGAMINHO_TINTA := 0x6BDC;
-const GRAFICO_PERGAMINHO_MAGIA := 0xE9E5;
+const GRAFICO_PERGAMINHO_FABRICACAO   := 0xE9E8;
+const GRAFICO_PERGAMINHO_ALQUIMIA     := 0xE9EC;
+const GRAFICO_PERGAMINHO_TINTA        := 0x6BDC;
+const GRAFICO_PERGAMINHO_MAGIA        := 0xE9E5;
 
 enum TIPO_PERGAMINHO
-	TIPO_PERGAMINHO_FABRICACAO := 1,
-	TIPO_PERGAMINHO_ALQUIMIA := 2,
-	TIPO_PERGAMINHO_TINTA := 3,
-	TIPO_PERGAMINHO_MAGIA := 4
+	TIPO_PERGAMINHO_METALWORK    := 1,
+	TIPO_PERGAMINHO_ALQUIMIA     := 2,
+	TIPO_PERGAMINHO_TINTA        := 3,
+	TIPO_PERGAMINHO_MAGIA        := 4,
+	TIPO_PERGAMINHO_WOODWORK     := 5,
+	TIPO_PERGAMINHO_DOMESTICWORK := 6
 endenum
 
 var QUANTIDADES := array{ 3, 5, 8, 10, 12 };
@@ -106,16 +111,25 @@ function ConfirmarCriacaoPergaminho(who, tipo, nivel)
 endfunction
 
 function CountAllPedacos(who)
-	var pedacos := struct{ "FABRICACAO" := 0, "ALQUIMIA" := 0, "TINTA" := 0, "MAGIA" := 0 };
+	var pedacos := struct{
+		"METALWORK"    := 0,
+		"WOODWORK"     := 0,
+		"DOMESTICWORK" := 0,
+		"ALQUIMIA"     := 0,
+		"TINTA"        := 0,
+		"MAGIA"        := 0
+	};
 
 	foreach item in EnumerateItemsInContainer(who.backpack)
 		var tipo := DeterminarTipoPorObjtype(item.objtype);
 		if (tipo)
 			case (tipo)
-				PERGAMINHO_FABRICACAO: pedacos.FABRICACAO += 1;
-				PERGAMINHO_ALQUIMIA:   pedacos.ALQUIMIA += 1;
-				PERGAMINHO_TINTA:      pedacos.TINTA += 1;
-				PERGAMINHO_MAGIA:      pedacos.MAGIA += 1;
+				TIPO_PERGAMINHO_METALWORK:    pedacos.METALWORK += 1;
+				TIPO_PERGAMINHO_WOODWORK:     pedacos.WOODWORK += 1;
+				TIPO_PERGAMINHO_DOMESTICWORK: pedacos.DOMESTICWORK += 1;
+				TIPO_PERGAMINHO_ALQUIMIA:     pedacos.ALQUIMIA += 1;
+				TIPO_PERGAMINHO_TINTA:        pedacos.TINTA += 1;
+				TIPO_PERGAMINHO_MAGIA:        pedacos.MAGIA += 1;
 			endcase
 		endif
 	endforeach
@@ -124,19 +138,27 @@ function CountAllPedacos(who)
 endfunction
 
 function GetMaiorTipo(pedacos)
-	var maiorTipo := PERGAMINHO_FABRICACAO;
-	var maiorQuantidade := pedacos.FABRICACAO;
+	var maiorTipo := TIPO_PERGAMINHO_METALWORK;
+	var maiorQuantidade := pedacos.METALWORK;
 
+	if (pedacos.WOODWORK > maiorQuantidade)
+		maiorTipo := TIPO_PERGAMINHO_WOODWORK;
+		maiorQuantidade := pedacos.WOODWORK;
+	endif
+	if (pedacos.DOMESTICWORK > maiorQuantidade)
+		maiorTipo := TIPO_PERGAMINHO_DOMESTICWORK;
+		maiorQuantidade := pedacos.DOMESTICWORK;
+	endif
 	if (pedacos.ALQUIMIA > maiorQuantidade)
-		maiorTipo := PERGAMINHO_ALQUIMIA;
+		maiorTipo := TIPO_PERGAMINHO_ALQUIMIA;
 		maiorQuantidade := pedacos.ALQUIMIA;
 	endif
 	if (pedacos.TINTA > maiorQuantidade)
-		maiorTipo := PERGAMINHO_TINTA;
+		maiorTipo := TIPO_PERGAMINHO_TINTA;
 		maiorQuantidade := pedacos.TINTA;
 	endif
 	if (pedacos.MAGIA > maiorQuantidade)
-		maiorTipo := PERGAMINHO_MAGIA;
+		maiorTipo := TIPO_PERGAMINHO_MAGIA;
 		maiorQuantidade := pedacos.MAGIA;
 	endif
 
@@ -189,11 +211,13 @@ endfunction
 
 function GetObjtypePorTipo(tipo)
 	case (tipo)
-		TIPO_PERGAMINHO_FABRICACAO: return PERGAMINHO_FABRICACAO;
-		TIPO_PERGAMINHO_ALQUIMIA:   return PERGAMINHO_ALQUIMIA;
-		TIPO_PERGAMINHO_TINTA:      return PERGAMINHO_TINTA;
-		TIPO_PERGAMINHO_MAGIA:      return PERGAMINHO_MAGIA;
-		default:                    return 0;
+		TIPO_PERGAMINHO_METALWORK:    return PERGAMINHO_METALWORK;
+		TIPO_PERGAMINHO_WOODWORK:     return PERGAMINHO_WOODWORK;
+		TIPO_PERGAMINHO_DOMESTICWORK: return PERGAMINHO_DOMESTICWORK;
+		TIPO_PERGAMINHO_ALQUIMIA:     return PERGAMINHO_ALQUIMIA;
+		TIPO_PERGAMINHO_TINTA:        return PERGAMINHO_TINTA;
+		TIPO_PERGAMINHO_MAGIA:        return PERGAMINHO_MAGIA;
+		default:                      return 0;
 	endcase
 endfunction
 function DeterminarNivel(quantidade)
@@ -214,21 +238,25 @@ endfunction
 
 function DeterminarTipoPorObjtype(objtype)
 	case (objtype)
-		PERGAMINHO_FABRICACAO: return TIPO_PERGAMINHO_FABRICACAO;
-		PERGAMINHO_ALQUIMIA:   return TIPO_PERGAMINHO_ALQUIMIA;
-		PERGAMINHO_TINTA:      return TIPO_PERGAMINHO_TINTA;
-		PERGAMINHO_MAGIA:      return TIPO_PERGAMINHO_MAGIA;
-		default:               return 0;
+		PERGAMINHO_METALWORK:    return TIPO_PERGAMINHO_METALWORK;
+		PERGAMINHO_WOODWORK:     return TIPO_PERGAMINHO_WOODWORK;
+		PERGAMINHO_DOMESTICWORK: return TIPO_PERGAMINHO_DOMESTICWORK;
+		PERGAMINHO_ALQUIMIA:     return TIPO_PERGAMINHO_ALQUIMIA;
+		PERGAMINHO_TINTA:        return TIPO_PERGAMINHO_TINTA;
+		PERGAMINHO_MAGIA:        return TIPO_PERGAMINHO_MAGIA;
+		default:                 return 0;
 	endcase
 endfunction
 
 function GetTipoNome(tipo)
 	case (tipo)
-		TIPO_PERGAMINHO_FABRICACAO: return "Fabricação";
-		TIPO_PERGAMINHO_ALQUIMIA:   return "Alquimia";
-		TIPO_PERGAMINHO_TINTA:      return "Tinta";
-		TIPO_PERGAMINHO_MAGIA:      return "Magia";
-		default:                    return "Desconhecido";
+		TIPO_PERGAMINHO_METALWORK:    return "Metalurgia";
+		TIPO_PERGAMINHO_WOODWORK:     return "Marcenaria";
+		TIPO_PERGAMINHO_DOMESTICWORK: return "Trabalho Doméstico";
+		TIPO_PERGAMINHO_ALQUIMIA:     return "Alquimia";
+		TIPO_PERGAMINHO_TINTA:        return "Tinta";
+		TIPO_PERGAMINHO_MAGIA:        return "Magia";
+		default:                      return "Desconhecido";
 	endcase
 endfunction
 
@@ -239,6 +267,17 @@ function CreatePergaminhoItem(who, tipo, nivel)
 	recipe.+power := nivel;
 
 	case (tipo)
+		TIPO_PERGAMINHO_METALWORK:
+		TIPO_PERGAMINHO_WOODWORK:
+		TIPO_PERGAMINHO_DOMESTICWORK:
+			case (nivel)
+				1: itemID := 0xff990;
+				2: itemID := 0xfe995;
+				3: itemID := 0xfe996;
+				4: itemID := 0xfe997;
+				5: itemID := 0xfe998;
+				default: itemID := 0xff990;
+			endcase
 		TIPO_PERGAMINHO_ALQUIMIA:
 			case (nivel)
 				1: itemID := 0xef1f;
@@ -248,15 +287,8 @@ function CreatePergaminhoItem(who, tipo, nivel)
 				5: itemID := 0xef2f;
 				default: itemID := 0xef1f;
 			endcase
-			TIPO_PERGAMINHO_FABRICACAO: case (nivel)
-				1: itemID := 0xff990;
-				2: itemID := 0xfe995;
-				3: itemID := 0xfe996;
-				4: itemID := 0xfe997;
-				5: itemID := 0xfe998;
-				default: itemID := 0xff990;
-			endcase
-			TIPO_PERGAMINHO_TINTA: case (nivel)
+		TIPO_PERGAMINHO_TINTA:
+			case (nivel)
 				1: itemID := 0xef2b;
 				2: itemID := 0xef3c;
 				3: itemID := 0xef3d;
@@ -264,7 +296,8 @@ function CreatePergaminhoItem(who, tipo, nivel)
 				5: itemID := 0xef3f;
 				default: itemID := 0xef2b;
 			endcase
-			TIPO_PERGAMINHO_MAGIA: case (nivel)
+		TIPO_PERGAMINHO_MAGIA:
+			case (nivel)
 				1: itemID := 0x2060;
 				2: itemID := 0x2064;
 				3: itemID := 0x2066;
@@ -281,15 +314,28 @@ function CreatePergaminhoItem(who, tipo, nivel)
 		SetObjProperty(pergaminho, "Nivel", nivel);
 
 		case (tipo)
+			TIPO_PERGAMINHO_METALWORK:
+				pergaminho.name := "instrucoes de fabricacao de metal";
+				var recipeKeyMW := SelectRandomRecipe(nivel, "MW");
+				if (recipeKeyMW)
+					SetObjProperty(pergaminho, "recipe", recipeKeyMW);
+				endif
+			TIPO_PERGAMINHO_WOODWORK:
+				pergaminho.name := "instrucoes de fabricacao de madeira";
+				var recipeKeyWW := SelectRandomRecipe(nivel, "WW");
+				if (recipeKeyWW)
+					SetObjProperty(pergaminho, "recipe", recipeKeyWW);
+				endif
+			TIPO_PERGAMINHO_DOMESTICWORK:
+				pergaminho.name := "instrucoes de fabricacao domestica";
+				var recipeKeyDW := SelectRandomRecipe(nivel, "DW");
+				if (recipeKeyDW)
+					SetObjProperty(pergaminho, "recipe", recipeKeyDW);
+				endif
 			TIPO_PERGAMINHO_ALQUIMIA:
 				var receitaAlquimica := SelectRandomAlchemyRecipe(nivel);
 				if (receitaAlquimica)
 					SetObjProperty(pergaminho, "AlchemyRecipe", receitaAlquimica);
-				endif
-			TIPO_PERGAMINHO_FABRICACAO:
-				var recipeKey := SelectRandomRecipe(nivel);
-				if (recipeKey)
-					SetObjProperty(pergaminho, "recipe", recipeKey);
 				endif
 			TIPO_PERGAMINHO_TINTA:
 				var tintaRecipe := SelectRandomInkRecipe(nivel);
@@ -449,17 +495,22 @@ function SelectRandomInkRecipe(nivel)
 	return 0;
 endfunction
 
-function SelectRandomRecipe(power)
+function SelectRandomRecipe(power, skill)
 	var cfg := ReadConfigFile(":recipes:recipes");
 	if (cfg.errortext)
-		Print("ERROR: Não foi possível ler o arquivo de configuração de receitas: " + cfg.errortext);
+		Print("ERROR: Não foi possível ler receitas: " + cfg.errortext);
 		return 0;
 	endif
+
+	var menuKeys := BuildMenuRecipeKeys(skill);
 
 	var levelRecipes := array{};
 	foreach key in (GetConfigStringKeys(cfg))
 		var elem := FindConfigElem(cfg, key);
-		if (elem && GetConfigInt(elem, "level") == power)
+		if (!elem || GetConfigInt(elem, "level") != power)
+			continue;
+		endif
+		if (key in menuKeys)
 			levelRecipes.append(key);
 		endif
 	endforeach
@@ -469,6 +520,45 @@ function SelectRandomRecipe(power)
 	endif
 
 	return 0;
+endfunction
+
+function BuildMenuRecipeKeys(skill)
+	var menuPaths := array{};
+	case (skill)
+		"MW":
+			menuPaths.append(":metalworking:blacksmith/config/SmithMenu");
+			menuPaths.append(":metalworking:tinkering/config/TinkerMenu");
+		"WW":
+			menuPaths.append(":woodworking:carpentry/config/CarpMenu");
+			menuPaths.append(":woodworking:bowcraft/config/FletchMenu");
+		"DW":
+			menuPaths.append(":DomesticWork:TailorMenu");
+	endcase
+
+	var keys := array{};
+	foreach path in menuPaths
+		var menuCfg := ReadConfigFile(path);
+		if (menuCfg.errortext)
+			continue;
+		endif
+		foreach groupKey in (GetConfigStringKeys(menuCfg))
+			if (groupKey == "Index")
+				continue;
+			endif
+			var elem := FindConfigElem(menuCfg, groupKey);
+			if (!elem)
+				continue;
+			endif
+			foreach itemStr in (GetConfigStringArray(elem, "Item"))
+				var words := SplitWords(itemStr);
+				if (words.size() >= 2 && words[1] == "Recipe")
+					keys.append(words[words.size()]);
+				endif
+			endforeach
+		endforeach
+	endforeach
+
+	return keys;
 endfunction
 
 function SelectRandomSpell(power)
@@ -501,10 +591,12 @@ endfunction
 
 function GetGraficoPorTipo(tipo)
 	case (tipo)
-		TIPO_PERGAMINHO_FABRICACAO: return GRAFICO_PERGAMINHO_FABRICACAO;
-		TIPO_PERGAMINHO_ALQUIMIA:   return GRAFICO_PERGAMINHO_ALQUIMIA;
-		TIPO_PERGAMINHO_TINTA:      return GRAFICO_PERGAMINHO_TINTA;
-		TIPO_PERGAMINHO_MAGIA:      return GRAFICO_PERGAMINHO_MAGIA;
-		default:                    return 0;
+		TIPO_PERGAMINHO_METALWORK:    return GRAFICO_PERGAMINHO_FABRICACAO;
+		TIPO_PERGAMINHO_WOODWORK:     return GRAFICO_PERGAMINHO_FABRICACAO;
+		TIPO_PERGAMINHO_DOMESTICWORK: return GRAFICO_PERGAMINHO_FABRICACAO;
+		TIPO_PERGAMINHO_ALQUIMIA:     return GRAFICO_PERGAMINHO_ALQUIMIA;
+		TIPO_PERGAMINHO_TINTA:        return GRAFICO_PERGAMINHO_TINTA;
+		TIPO_PERGAMINHO_MAGIA:        return GRAFICO_PERGAMINHO_MAGIA;
+		default:                      return 0;
 	endcase
 endfunction
