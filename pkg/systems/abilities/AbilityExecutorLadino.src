@@ -5,5 +5,5 @@ include ":abilities:AbilityRegistryLadino";
 include ":abilities:AbilityService";
 
 program AbilityExecutorLadino(params)
-	return RunAbilityExecutor(params);
+	return AbilityExecutionController().Run(params);
 endprogram

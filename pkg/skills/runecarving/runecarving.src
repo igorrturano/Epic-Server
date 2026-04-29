@@ -131,6 +131,10 @@ program runecarving(who, chisel)
 	SetObjProperty(carvedRune, "charges", CInt(theology)); // Charges based on theology
 	SetObjProperty(carvedRune, "carvedby", who.serial);
 
+	var equip := dictionary;
+	equip.sacred := 1;
+	SetObjProperty(carvedRune, "equip", equip);
+
 	// Set the name to include the gem type
 	SetName(carvedRune, "Runa de " + runeType + " (" + gem.name + ")");
 

@@ -21,6 +21,7 @@ include ":charactercreation:resists";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
 include "include/eventID";
+include ":fls_core:fls_characters";
 
 function ProccessCombatDamage(byRef attackInfo)
 	// Pre Damage

@@ -8,6 +8,7 @@ include "ArmorWrapper";
 include "WeaponWrapper";
 
 // External
+include ":attributes:attributes";
 include ":attributes:skills";
 include ":merchants:cambio";
 include ":attributes:vitals";
@@ -16,9 +17,12 @@ include ":combat:armorZones";
 include ":combat:Model/CombatTraits";
 include "include/epicNPCUtils";
 include "include/NPCUtil";
+include "include/utils";
+include "include/facings";
 include ":achievements:utils/datafile";
 include ":serialization:StructSerializer";
 include ":abilities:controllers/AbilityMonitor";
+include ":hotbar:include/cooldown_packet";
 
 class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var BackpackSerial := 0x0; 
@@ -1147,6 +1151,348 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		endif
 
 		return Distance(this.GetObjRef(), otherObj.GetObjRef());
+	endfunction
+
+	/*
+	 * Lista mobiles próximos a este mobile usando ListMobilesNearLocationEx.
+	 *
+	 * @param range    Raio em tiles
+	 * @param flags    Flags do ListMobilesNearLocationEx (default LISTEX_FLAG_NORMAL)
+	 * @param ignoreZ  Se 1, ignora a coordenada Z na busca
+	 * @return array<MobileRef>  Inclui o próprio mobile; cabe ao chamador filtrar
+	 * @return Exception         Se o objeto de referência for inválido
+	 */
+	function GetNearbyMobiles(this, range, flags := LISTEX_FLAG_NORMAL, ignoreZ := 0)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var ref := this.GetObjRef();
+		var z := ref.z;
+		if (ignoreZ)
+			z := LIST_IGNORE_Z;
+		endif
+
+		return ListMobilesNearLocationEx(ref.x, ref.y, z, range, flags, ref.realm);
+	endfunction
+
+	/*
+	 * Lista mobiles hostis a este mobile via ListHostiles.
+	 *
+	 * @param range  Raio em tiles
+	 * @param flags  Flags do ListHostiles (ex: LH_FLAG_LOS). Default 0.
+	 * @return array<MobileRef>
+	 * @return Exception  Se o objeto de referência for inválido
+	 */
+	function GetNearbyHostiles(this, range, flags := 0)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		return ListHostiles(this.GetObjRef(), range, flags);
+	endfunction
+
+	/*
+	 * Aliado se: mesma party, mesma guild, ou other é pet/summon deste mobile.
+	 *
+	 * @param other  MobileWrapper
+	 * @return 1 se aliado, 0 caso contrário
+	 * @return Exception  Se ref inválido ou param não-wrapper
+	 */
+	function IsAllyOf(this, other)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!(other is @MobileWrapper))
+			return InvalidFormatException("The param must be a MobileWrapper object!");
+		endif
+
+		var me := this.GetObjRef();
+		var them := other.GetObjRef();
+
+		if (me.party && them.party && me.party == them.party)
+			return 1;
+		endif
+		if (me.guild && them.guild && me.guild == them.guild)
+			return 1;
+		endif
+		if (other.GetProperty("owner") == me.serial)
+			return 1;
+		endif
+
+		return 0;
+	endfunction
+
+	/*
+	 * Inimigos próximos: GetNearbyMobiles filtrado por !IsAllyOf, exclui self.
+	 *
+	 * @param range  Raio em tiles
+	 * @return array<MobileRef>
+	 */
+	function GetNearbyEnemies(this, range)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var enemies := array{};
+		var meRef := this.GetObjRef();
+		var nearby := this.GetNearbyMobiles(range);
+
+		foreach mob in nearby
+			if (mob == meRef)
+				continue;
+			endif
+			if (!this.IsAllyOf(MobileWrapper(mob)))
+				enemies.append(mob);
+			endif
+		endforeach
+
+		return enemies;
+	endfunction
+
+	/*
+	 * Aliados próximos: GetNearbyMobiles filtrado por IsAllyOf, inclui self.
+	 *
+	 * @param range  Raio em tiles
+	 * @return array<MobileRef>
+	 */
+	function GetNearbyAllies(this, range)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var allies := array{};
+		var meRef := this.GetObjRef();
+		var nearby := this.GetNearbyMobiles(range);
+
+		foreach mob in nearby
+			if (mob == meRef)
+				allies.append(mob);
+				continue;
+			endif
+			if (this.IsAllyOf(MobileWrapper(mob)))
+				allies.append(mob);
+			endif
+		endforeach
+
+		return allies;
+	endfunction
+
+	/*
+	 * NPC: HP < max/2. Player: HP <= GetHP() (STR/4 + hitsmod threshold).
+	 *
+	 * @return 1 se em fúria (HP baixo), 0 caso contrário
+	 */
+	function IsRaging(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var current := this.GetCurrentHP();
+		if (this.IsNPC())
+			return current < CInt(this.GetMaxHP() / 2);
+		endif
+
+		return current <= GetHP(this.GetObjRef());
+	endfunction
+
+	/*
+	 * Verifica se mobile tem um estandarte religioso equipado em LAYER_HAND1 ou LAYER_HAND2.
+	 *
+	 * @return 1 se equipado, 0 caso contrário
+	 */
+	function HasReligiousBannerEquipped(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var banners := { 0xF091, 0xF092, 0xF090, 0xECEB, 0xECEA, 0xECE9 };
+		var hand1 := this.GetEquipByLayer(LAYER_HAND1);
+		var hand2 := this.GetEquipByLayer(LAYER_HAND2);
+
+		return (hand1 && hand1.objtype in banners) || (hand2 && hand2.objtype in banners);
+	endfunction
+
+	/*
+	 * Teleporta este mobile para a coordenada atrás do alvo, encarando o alvo.
+	 * Bloqueia (sleeps) durante o movimento em linha. Fallback para tile aleatório
+	 * em raio 1 do alvo se a posição direta não for caminhável.
+	 *
+	 * @param target  MobileWrapper
+	 * @return 1 em sucesso
+	 * @return Exception  Se ref inválido ou param não-wrapper
+	 */
+	function TeleportBehind(this, target)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		if (!(target is @MobileWrapper))
+			return InvalidFormatException("The param must be a MobileWrapper object!");
+		endif
+
+		var me := this.GetObjRef();
+		var targ := target.GetObjRef();
+
+		var coords := GetCoordsInLine(me.x, me.y, targ.x, targ.y);
+		coords.Erase(coords.size());
+		foreach coord in coords
+			MoveObjectToLocation(me, coord.x, coord.y, targ.z, me.realm, MOVEOBJECT_FORCELOCATION);
+			sleepms(50);
+		endforeach
+
+		var behind := InverseFacing(targ.facing);
+		behind := GetModByFacing(behind);
+		if (CanWalk("L", me.x, me.y, me.z, targ.x + behind[1], targ.y + behind[2]))
+			MoveObjectToLocation(me, targ.x + behind[1], targ.y + behind[2], targ.z, me.realm, MOVEOBJECT_FORCELOCATION);
+		else
+			var radius := GetPointsInRadius(targ.x, targ.y, 1);
+			var random := radius.randomentry();
+			while (!MoveObjectToLocation(me, random.x, random.y, targ.z, me.realm))
+				random := radius.randomentry();
+				sleep(2);
+			endwhile
+		endif
+
+		me.SetFacing(GetFacing(me.x, me.y, targ.x, targ.y));
+		return 1;
+	endfunction
+
+	/*
+	 * Verifica se mobile está dentro de uma zona de fumaça shinobi ativa
+	 * (#smoke_state ObjProperty). Limpa automaticamente o estado se expirado
+	 * ou inválido.
+	 *
+	 * @return 1 se dentro de zona ativa, 0 caso contrário
+	 */
+	function IsInSmokeZone(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var meRef := this.GetObjRef();
+		var smoke := this.GetProperty("#smoke_state");
+		if (!smoke || smoke == error)
+			return 0;
+		endif
+
+		var expires := smoke.expires;
+		if (!expires || ReadGameClock() > expires)
+			this.ClearSmokeProtection();
+			return 0;
+		endif
+
+		var sx := smoke.x;
+		var sy := smoke.y;
+		var sr := smoke.radius;
+		if (sx == error || sy == error || sr == error)
+			this.ClearSmokeProtection();
+			return 0;
+		endif
+
+		var dx := CInt(meRef.x) - CInt(sx);
+		var dy := CInt(meRef.y) - CInt(sy);
+		var radius := CInt(sr);
+
+		if ((dx * dx + dy * dy) > (radius * radius))
+			this.ClearSmokeProtection();
+			return 0;
+		endif
+
+		return 1;
+	endfunction
+
+	/*
+	 * Limpa proteção da zona de fumaça shinobi: erase #smoke_state, concealed := 0,
+	 * revoga "hiddenattack".
+	 */
+	function ClearSmokeProtection(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var meRef := this.GetObjRef();
+		EraseObjProperty(meRef, "#smoke_state");
+		meRef.concealed := 0;
+		RevokePrivilege(meRef, "hiddenattack");
+	endfunction
+
+	// ============================================================================
+	// Ability Cooldown Methods
+	// Cooldown stored as absolute end-time (POLCore().systime + duration).
+	// ObjProperty key: "AbilityCooldown_{abilityId}".
+	// ============================================================================
+
+	function IsAbilityOnCooldown(this, abilityId)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var cooldownEnd := this.GetProperty($"AbilityCooldown_{abilityId}");
+		return cooldownEnd && POLCore().systime < cooldownEnd;
+	endfunction
+
+	/*
+	 * Segundos restantes no cooldown da habilidade. 0 se sem cooldown ou expirado.
+	 */
+	function GetAbilityCooldownRemaining(this, abilityId)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var cooldownEnd := this.GetProperty($"AbilityCooldown_{abilityId}");
+		if (!cooldownEnd)
+			return 0;
+		endif
+		var remaining := cooldownEnd - POLCore().systime;
+		if (remaining > 0)
+			return remaining;
+		endif
+		return 0;
+	endfunction
+
+	function SetAbilityCooldown(this, abilityId, seconds)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		this.SetProperty($"AbilityCooldown_{abilityId}", POLCore().systime + seconds);
+		return this;
+	endfunction
+
+	function ClearAbilityCooldown(this, abilityId)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		EraseObjProperty(this.GetObjRef(), $"AbilityCooldown_{abilityId}");
+		return this;
+	endfunction
+
+	/*
+	 * Reverte ativação de habilidade: limpa cooldown, envia packet zerado,
+	 * restaura HP/STAM/MANA consumidos. Usado quando CanActivate falha após
+	 * já ter cobrado custos.
+	 */
+	function RollbackAbilityActivation(this, abilityId)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var ability := Ability(abilityId);
+		this.ClearAbilityCooldown(abilityId);
+		SendCooldownPacket(this.GetObjRef(), ability.GetName(), 0, ability.GetIcon(), COOLDOWN_TYPE_ABILITY);
+
+		if (ability.GetCostSTAM() > 0)
+			this.RestoreStamina(ability.GetCostSTAM());
+		endif
+		if (ability.GetCostMANA() > 0)
+			this.RestoreMana(ability.GetCostMANA());
+		endif
+		if (ability.GetCostHP() > 0)
+			this.RestoreHP(ability.GetCostHP());
+		endif
 	endfunction
 
 	/**

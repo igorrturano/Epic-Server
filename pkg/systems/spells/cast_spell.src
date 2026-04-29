@@ -495,7 +495,7 @@ function checkTargetValidity(mobile, targ, spellinfo)
 		return 0;
 	endif
 
-	if (GetCooldown(targ, "corpofechado") > 0)
+	if (GetCooldown(targ, "corpofechado") > 0 && spellinfo.Type != "Divine" && spellinfo.Type != "Priest")
 		SendSysMessageEx(mobile, "A magia nao funcionou no alvo, alem disso voce sente suas energias sendo esgotadas.",
 				   SSM_FAIL);
 		var vont := GetResist(targ, WILL);

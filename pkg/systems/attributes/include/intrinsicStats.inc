@@ -5,7 +5,7 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
-
+include ":tn:cooldown";
 // Intrinsic stat calculation core.
 // Shared by intrinsicMods.src (exports cfg-registered hooks) and
 // sendStats.src (packet hook that needs all 3 stats per paperdoll view).

@@ -94,7 +94,7 @@ class TigerStance(CombatAbility)
 
 		// AoE: damage hostiles along the knockback path
 		var alreadyDamaged := array{};
-		var hostiles := ListHostiles(who, 20, LH_FLAG_LOS);
+		var hostiles := mobile.GetNearbyHostiles(20, LH_FLAG_LOS);
 
 		foreach pos in (pathPositions)
 			foreach mob in (hostiles)

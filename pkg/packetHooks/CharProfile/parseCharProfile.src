@@ -69,7 +69,7 @@ program runScript_CharProfileRequest(params)
 
 		GFTextMid(gump, 60, 20, 300, 53, "Editar Perfil: " + who.name);
 
-		GFTextLine(gump, 40, 60, 1153, "URL da Imagem (imagem = 200x200):");
+		GFTextLine(gump, 40, 60, 1153, "URL da Imagem (imagem = 210x330):");
 		GFResizePic(gump, 40, 80, TEXT_ENTRY_BACKGROUND, 320, 25);
 		var url_txt := GetObjProperty(who, "url");
 		if (url_txt == error || url_txt == "")

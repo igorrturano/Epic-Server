@@ -87,7 +87,8 @@ class DemonicTrap(CombatAbility)
 
         // Find and affect targets
         var targets := array{};
-        foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm)
+        var nearby := mobile.GetNearbyMobiles(range);
+        foreach mob in nearby
             if (mob.serial != who.serial)
                 if (!(mob in who.party.members))
                     targets.append(mob.serial);

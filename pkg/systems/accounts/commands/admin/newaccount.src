@@ -18,6 +18,7 @@ const PASS_TEXT_POS := 0xD02;
 const EMAIL_TEXT_POS := 0xD03;
 const CMD_TEXT_POS := 0xD04;
 const EXPANSION_START := 0xE00;
+const LANGUAGE_START := 0xF00;
 
 program command_newAccount(who)
 	var gump := GFCreateGump(who);
@@ -48,6 +49,9 @@ program command_newAccount(who)
 	GFTextLine(gump, 20, 200, 2100, "Expansion:");
 	GFAddButton(gump, 80, 200, 2710, 2711, GF_PAGE_BTN, 2);
 
+	GFTextLine(gump, 20, 225, 2100, "Language:");
+	GFAddButton(gump, 80, 225, 2710, 2711, GF_PAGE_BTN, 3);
+
 	GFPage(gump, 2);
 	GFTextLine(gump, 20, 200, 2100, "Expansion:");
 	GFAddButton(gump, 80, 200, 2711, 2710, GF_PAGE_BTN, 1);
@@ -63,6 +67,23 @@ program command_newAccount(who)
 		SleepMS(2);
 	endforeach
 
+	GFPage(gump, 3);
+	GFTextLine(gump, 20, 225, 2100, "Language:");
+	GFAddButton(gump, 80, 225, 2711, 2710, GF_PAGE_BTN, 1);
+
+	var languages := dictionary;
+	languages["pt-BR"] := "Portugues (Brasil)";
+	languages["en"] := "English";
+	languages["es"] := "Espanol";
+
+	var lang_y_pos := 50;
+	foreach lang_key in (languages.keys())
+		GFRadioButton(gump, 20, lang_y_pos, 210, 211, (lang_key == "pt-BR"), LANGUAGE_START + _lang_key_iter);
+		GFTextLine(gump, 45, lang_y_pos, 2100, languages[lang_key]);
+		lang_y_pos := lang_y_pos + 20;
+		SleepMS(2);
+	endforeach
+
 	var input := GFSendGump(who, gump);
 	if (input[OKAY_BTN])
 		var acct_name := GFExtractData(input, ACCT_TEXT_POS);
@@ -71,15 +92,17 @@ program command_newAccount(who)
 		var email := GFExtractData(input, EMAIL_TEXT_POS);
 
 		var expansion;
+		var language := "pt-BR";
 		foreach key in (input.keys)
-			if (key >= EXPANSION_START)
+			if (key >= LANGUAGE_START)
+				language := languages.Keys()[key - LANGUAGE_START];
+			elseif (key >= EXPANSION_START && key < LANGUAGE_START)
 				expansion := expansions.Keys()[key - EXPANSION_START];
-				break;
 			endif
 			SleepMS(2);
 		endforeach
 
-		var account := CreateNewAccount(acct_name, password, cmd_lvl, expansion, email);
+		var account := CreateNewAccount(acct_name, password, cmd_lvl, expansion, email, language);
 		if (account.errortext)
 			GumpPrompt(who, "Error Creating Account [P] " + account.errortext);
 			return 0;

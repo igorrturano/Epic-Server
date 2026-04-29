@@ -201,7 +201,7 @@ function PegaDificuldade( quem, skillNecessaria, nomePericia, sucessosNecessario
 	endif
 
 	retorno.+chanceTotal := retorno.chanceBase + retorno.chanceModificadaTotal;
-	retorno.chanceTotal := retorno.chanceTotal < 0 ? 0: retorno.chanceTotal;
+	retorno.chanceTotal := cdbl(retorno.chanceTotal) < 0.0  ? 0.0 : cdbl(retorno.chanceTotal);
 	retorno.+chanceTratamentoFinal := PegaChanceTratamentoFinal(retorno.chanceTotal / 100, sucessosNecessarios);
 	return retorno;
 endfunction
