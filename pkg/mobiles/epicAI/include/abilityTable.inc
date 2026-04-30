@@ -362,5 +362,9 @@ function _BuildRaceAbilities(race, byref table)
 			table.append(struct{ "id" := "HypnoticGaze", "range_min" := 2, "range_max" := 5, "cd" := 25 });
 			table.append(struct{ "id" := "VenomousFangs", "range_min" := 0, "range_max" := 1, "cd" := 12 });
 			table.append(struct{ "id" := "ShedSkin", "range_min" := 0, "range_max" := 99, "cd" := 40 });
+		"ciclope":
+			table.append(struct{ "id" := "HammerSlam", "range_min" := 0, "range_max" := 1, "cd" := 20 });
+		"gigante das neves":
+			table.append(struct{ "id" := "FrozenBreath", "range_min" := 3, "range_max" := 5, "cd" := 20 });
 	endcase
 endfunction
