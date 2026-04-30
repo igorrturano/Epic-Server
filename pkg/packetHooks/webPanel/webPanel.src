@@ -1,0 +1,70 @@
+/*
+ * WEBPANEL.SRC — PacketHook Handler
+ *
+ * Recebe eventos do painel WebView2 do cliente EpicUO.
+ * Ativado quando o jogador interage com um painel aberto via SendWebPanel().
+ *
+ * Packet esperado: 0xD7 / SubCmd 0x00FB
+ *   [0xD7:1][size:2][serial:4][0x00FB:2][action:1][data_len:2][data:utf8]
+ *
+ * Ações:
+ *   WP_ACTION_CLOSE (0x00) — jogador fechou o painel (botão "Fechar" ou X)
+ *   WP_ACTION_CLICK (0x01) — jogador clicou em botão customizado (data = id)
+ *   WP_ACTION_DATA  (0x02) — formulário enviado (data = conteúdo)
+ *
+ * O storage e a função WaitForWebPanelEvent vivem em :gumps:webPanel
+ * para serem chamados via include normal por scripts cliente.
+ */
+
+use uo;
+use os;
+use basic;
+use polsys;
+
+include ":gumps:webPanel";
+
+/*
+ * HandleWebPanelEvent(who, packet)
+ * Função exportada — chamada pelo packetHook quando chega 0xD7/0x00FB.
+ */
+exported function HandleWebPanelEvent(who, packet)
+    var action  := packet.GetInt8(9);
+    var dataLen := packet.GetInt16(10);
+    var data    := "";
+
+    if (dataLen > 0)
+        data := packet.GetString(12, dataLen);
+    endif
+
+    case (action)
+        WP_ACTION_CLOSE: return _HandleClose(who, data);
+        WP_ACTION_CLICK: return _HandleClick(who, data);
+        WP_ACTION_DATA:  return _HandleData(who, data);
+        default:
+            return 0;
+    endcase
+endfunction
+
+// ─────────────────────────────────────────────
+//  Handlers internos
+// ─────────────────────────────────────────────
+
+function _HandleClose(who, data)
+    _WpStoreEvent(who, WP_ACTION_CLOSE, "");
+    return 1;
+endfunction
+
+function _HandleClick(who, data)
+    // data formato: "click:<id>" ou apenas "<id>"
+    var clickId := data;
+    if (Len(data) >= 6 && data[1, 6] == "click:")
+        clickId := data[7, Len(data) - 6];
+    endif
+    _WpStoreEvent(who, WP_ACTION_CLICK, clickId);
+    return 1;
+endfunction
+
+function _HandleData(who, data)
+    _WpStoreEvent(who, WP_ACTION_DATA, data);
+    return 1;
+endfunction
