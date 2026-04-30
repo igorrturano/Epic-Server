@@ -39,7 +39,7 @@ const MIN_SKILL := 40;
 const MIN_MANA := 40;
 
 // Tempo de Pesquisa
-const RESEARCH_DURATION_MINUTES := 2; // Mudar para 10080 em produção (7 dias)
+const RESEARCH_DURATION_MINUTES := 10080; // 7 dias
 
 // UI - Cores das Barras
 const BARRA_BACKGROUND := 83;
@@ -1674,19 +1674,19 @@ function CalculateResearchChance(who, recipe)
     // Corrigindo a sintaxe do case
     var levelBonus := 0.0;
     case (CInt(recipe.power))
-        1: levelBonus := 8.0; 
-        2: levelBonus := 6.0;
-        3: levelBonus := 4.0;
-        4: levelBonus := 2.0;
-        default: levelBonus := 0.0;
+        1: levelBonus := 10.0;
+        2: levelBonus := 8.0;
+        3: levelBonus := 6.0;
+        4: levelBonus := 4.0;
+        default: levelBonus := 2.0;
     endcase
-    
-    
+
+
     var failureAttempts := CInt(GetObjProperty(who, "#ResearchFailures")) ? CInt(GetObjProperty(who, "#ResearchFailures")) : 0;
     var maxFailureBonus := 30.0 - (4.0 + intBonus + levelBonus);
     var failureBonus := Min(failureAttempts, Floor(maxFailureBonus));
-    
-    var totalChance := 90.0 + intBonus + levelBonus + failureBonus;
+
+    var totalChance := 5.0 + intBonus + levelBonus + failureBonus;
     
     return totalChance;
 endfunction
