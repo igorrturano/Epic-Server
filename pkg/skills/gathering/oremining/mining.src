@@ -44,7 +44,7 @@ program OreMining(who, tool)
 		return;
 	elseif (!CanMine(targ, "Stone"))
 		var maps := GetMapsInBackpack(who);
-		SendSysMessage(who, "DEBUG: Mapas encontrados: " + maps.size());
+		print("DEBUG: Mapas encontrados: " + maps.size());
 
 		if (maps.size() > 0)
 			var map := maps[1];
@@ -52,13 +52,13 @@ program OreMining(who, tool)
 				SendSysMessageEx(who, "Escolha o mapa que quer procurar.", SSM_REQUEST);
 				map := target(who);
 				if (!(IsTreasureMap(map)))
-					SendSysMessage(who, "DEBUG: Mapa inválido selecionado");
+					print("DEBUG: Mapa inválido selecionado");
 					return;
 				endif
 			endif
 
 			// Verificações adicionais de debug
-			SendSysMessage(who, "DEBUG: Verificando mapa...");
+			print("DEBUG: Verificando mapa...");
 			if (!IsTreasureMap(map))
 				SendSysMessageEx(who, "Este mapa não parece ser um mapa do tesouro válido.", SSM_FAIL);
 				return;
@@ -75,7 +75,7 @@ program OreMining(who, tool)
 			endif
 
 			var coords := GetMapCoordinates(map);
-			SendSysMessage(who, "DEBUG: Coordenadas do mapa - X: " + coords.x + " Y: "
+			print("DEBUG: Coordenadas do mapa - X: " + coords.x + " Y: "
 							+ coords.y + " Z: " + coords.z);
 
 			// Tenta iniciar a escavação
