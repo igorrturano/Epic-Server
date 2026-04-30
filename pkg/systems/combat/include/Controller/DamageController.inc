@@ -73,9 +73,21 @@ endfunction
 function ConcealDoomedDefender(byRef attackInfo)
 	if (!attackInfo.GetDamage().IsCritical()) return; endif
 	if (attackInfo.GetAttacker().IsNpc()) return; endif
+	if (!ShouldExplodeBody(attackInfo)) return; endif
 	var ref := attackInfo.GetDefender().GetObjRef();
 	if (attackInfo.GetDamage().GetTotalBaseDamage() < ref.hits) return; endif
 	ref.concealed := 1;
+endfunction
+
+// NPCs always gib on a crit-kill. Players only gib on a permadeath-worthy
+// kill (DP exhausted or already flagged morto) — regular deaths just go to
+// ghost normally.
+function ShouldExplodeBody(byRef attackInfo)
+	if (attackInfo.GetDefender().IsNpc()) return 1; endif
+	var ref := attackInfo.GetDefender().GetObjRef();
+	if (AP_GetVital(ref, "DP") < 10) return 1; endif
+	if (CInt(GetObjProperty(ref, "morto"))) return 1; endif
+	return 0;
 endfunction
 
 // Non-killing crit: light attacker shake.
@@ -87,6 +99,8 @@ endfunction
 // Killing crit: heavy shake + body-explosion FX + sound, then locks the
 // corpse to the gore graphic once the 10-frame animation finishes.
 function TriggerCriticalKillExplosion(byRef attackInfo, byRef corpseLoc)
+	if (!ShouldExplodeBody(attackInfo)) return; endif
+
 	if (!attackInfo.GetAttacker().IsNpc())
 		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.8, 10);
 	endif
