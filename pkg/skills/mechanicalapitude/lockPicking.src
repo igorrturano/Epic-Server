@@ -153,6 +153,19 @@ function PickTreasureChest(me, lockpick, chest)
 		diff := 5;
 	endif
 
+	// Minigame sorteado no momento de criação do baú
+	if (GetObjProperty(chest, "minigame_lock"))
+		SendSysMessageEx(me, "Esta fechadura é diferente... Algo a torna mais difícil de abrir.", SSM_INFO);
+		if (mini_game(me, diff, AP_GetSkill(me, MECHANICS), chest))
+			EraseObjProperty(chest, "minigame_lock");
+			_UnlockChest(me, chest);
+			return 1;
+		else
+			_MarkChestFailed(me, chest);
+			return 0;
+		endif
+	endif
+
 	var check := SkillCheck(me, MECHANICS, diff);
 	var mec_skill := AP_GetSkill(me, MECHANICS);
 	var magic_chest := (GetObjProperty(chest, "level") == 6);
@@ -163,14 +176,7 @@ function PickTreasureChest(me, lockpick, chest)
 		if (magic_chest || (diff > mec_skill + 15 && diff < mec_skill + 40))
 			if (mini_game(me, diff, mec_skill, chest))
 				if (chest.isDoor())
-					set_critical(1);
-					PrintTextAbove(me, "*Destrancou " + chest.desc + "*");
-					chest.locked := 0;
-					SetObjProperty(chest, "arrombado", "" + me.name);
-					KP_SetDungeonDoorRelockTimer(chest);
-					PlaySoundEffect(chest, 0x0200);
-					PlayObjectCenteredEffect(chest, 0x3763, 1, 16);
-					set_critical(0);
+					_UnlockChest(me, chest);
 				else
 					set_critical(1);
 					SetObjProperty(chest, "arrombado", "" + me.name);
@@ -181,19 +187,13 @@ function PickTreasureChest(me, lockpick, chest)
 					SendSysMessageEx(me, "Você forçou a abertura disparando a armadilha!", SSM_FAIL);
 					RunTraps(chest, me);
 					SendViewContainer(me, chest);
+					var skill := AP_GetTrueSkill(me, "MECHANICS");
+					AP_SetTrueSkill(me, "MECHANICS", skill + 0.1);
 				endif
-				var current_skill := AP_GetTrueSkill(me, "MECHANICS");
-				AP_SetTrueSkill(me, "MECHANICS", current_skill + 0.1); // Como não tem checkskill e a falha quebra a tranca, 0.1 up de skill garantido sempre ao abrir
 				return 1;
 			else
-				SendSysMessageEx("Voce falhou!", SSM_FAIL);
-				if (chest.isDoor())
-					SetObjProperty(chest, "arrombado", "" + me.name);
-					KP_SetDungeonDoorRelockTimer(chest);
-				else
-					SetObjProperty(chest, "arrombado", "" + me.name);
-					SetObjProperty(chest, "locktime", ReadGameClock());
-				endif
+				SendSysMessageEx(me, "Voce falhou!", SSM_FAIL);
+				_MarkChestFailed(me, chest);
 				return;
 			endif
 		endif
@@ -242,4 +242,31 @@ function PickTreasureChest(me, lockpick, chest)
 		return 0;
 	endif
 
+endfunction
+
+function _UnlockChest(me, chest)
+	set_critical(1);
+	SetObjProperty(chest, "arrombado", "" + me.name);
+	if (chest.isDoor())
+		PrintTextAbove(me, "*Destrancou " + chest.desc + "*");
+		KP_SetDungeonDoorRelockTimer(chest);
+		PlaySoundEffect(chest, 0x0200);
+		PlayObjectCenteredEffect(chest, 0x3763, 1, 16);
+	else
+		SetObjProperty(chest, "locktime", ReadGameClock());
+		SendViewContainer(me, chest);
+	endif
+	chest.locked := 0;
+	set_critical(0);
+	var skill := AP_GetTrueSkill(me, "MECHANICS");
+	AP_SetTrueSkill(me, "MECHANICS", skill + 0.1);
+endfunction
+
+function _MarkChestFailed(me, chest)
+	SetObjProperty(chest, "arrombado", "" + me.name);
+	if (chest.isDoor())
+		KP_SetDungeonDoorRelockTimer(chest);
+	else
+		SetObjProperty(chest, "locktime", ReadGameClock());
+	endif
 endfunction
