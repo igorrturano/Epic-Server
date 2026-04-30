@@ -25,11 +25,31 @@ function ExaminarMobile(who,targ)
 	return 0;
 endfunction
 
+function GetTrapTypesDescription(trap_list)
+	var description := "";
+	foreach trap in trap_list
+		var info := GetTrapInfo(trap.name);
+		var label;
+		if (info.errortext)
+			label := trap.name;
+		else
+			label := info.Name;
+		endif
+		if (description == "")
+			description := label;
+		else
+			description := description + ", " + label;
+		endif
+	endforeach
+	return description;
+endfunction
+
 function ExaminarObjeto(who,targ)
 
 	var armadilhaRevelada := 0;
 	var acharamArmadilha := array;
-	if ( GetObjProperty(targ, "TrapList") )
+	var trap_list := GetObjProperty(targ, "TrapList");
+	if ( trap_list )
 		sleep(1);
 		if(!ReserveItem(targ)) //Apenas um personagem examina o bau por vez.
 			SendSysMessageEx(who, "Alguém já esta examinando "+targ.name+".", SSM_FAIL);
@@ -48,8 +68,9 @@ function ExaminarObjeto(who,targ)
 		if(GetObjProperty(targ, "acharamArmadilha"))
 			acharamArmadilha := GetObjProperty(targ, "acharamArmadilha"); //Lista de pessoas que revelaram a armadilha só para si
 		endif
+		var trap_types_desc := GetTrapTypesDescription(trap_list);
 		if ((!armadilhaRevelada) && (who.serial in acharamArmadilha)) //Quando você achou ela mas não revelou pra todos
-			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para você.", SSM_INFO);
+			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para você. Tipo: "+trap_types_desc+".", SSM_INFO);
 			if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
 				who.hidden := 0;
 				PrintTextAbove(who, "*Aponta para armadilha em "+targ.name+"*");
@@ -58,12 +79,12 @@ function ExaminarObjeto(who,targ)
 			endif
 			return 1;
 		elseif(armadilhaRevelada)
-			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para todos.", SSM_INFO);
+			SendSysMessageEx(who, "Armadilha já foi encontrada e está óbvia para todos. Tipo: "+trap_types_desc+".", SSM_INFO);
 			return 1;
 	else
 		var diff;
 		var lvl := Cint(GetObjProperty(targ, "level"));
-		
+
 		case (lvl)
 			1: diff := 20;
 			2: diff := 40;
@@ -73,24 +94,19 @@ function ExaminarObjeto(who,targ)
 			6: diff := 120;
 			default: diff := 1000; // Telepads e afins
 		endcase
-		
+
 		sleep(1);
 		var check_result := SkillCheck(who, AWARENESS, diff);
 		if ( check_result > 0 )
 				acharamArmadilha.Append(who.serial);
 				SetObjProperty(targ, "acharamArmadilha", acharamArmadilha);
 
-				// Check how many traps the chest has
-				var traps := GetObjProperty(targ, "TrapList");
-				var trap_count := 0;
-				if (traps)
-					trap_count := traps.size();
-				endif
+				var trap_count := trap_list.size();
 
 				if (trap_count > 1)
-					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+". Você detectou "+trap_count+" armadilhas!", SSM_INFO);
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+". Você detectou "+trap_count+" armadilhas: "+trap_types_desc+".", SSM_INFO);
 				else
-					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+".", SSM_INFO);
+					SendSysMessageEx(who, "Armadilha encontrada em "+targ.name+". Tipo: "+trap_types_desc+".", SSM_INFO);
 				endif
 
 				if (YesNo(who, "Revelar a armadilha para todos? (", "Sim.", "Não, deixar só para mim."))
