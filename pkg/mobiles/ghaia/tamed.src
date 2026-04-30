@@ -169,7 +169,7 @@ program TamedAI()
 				SendSysMessageEX(owner, me.name + " esta infeliz e o proximo comando sera o ultimo!",
 								  SSM_INFO_IC);
 			endif
-			SetCooldown(me, "aviso", 4);
+			SetCooldown(me, "aviso", 300);
 		endif
 
 		if (opponent && !IsDead(opponent) && !opponent.concealed && !opponent.hidden)
