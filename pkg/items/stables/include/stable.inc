@@ -368,7 +368,7 @@ endfunction
 // -----------------------------------------------------------------------------
 
 // Marca o pet como em limbo e salva a origem. Caller faz o movimento fisico
-// (teleport + hidden + frozen + invul) via ai/sendpetlimbo.
+// (teleport + hidden + frozen + invul) via :stables:sendpetlimbo.
 function EnterLimbo(owner, pet)
 	if (!owner || !pet)
 		return 0;
