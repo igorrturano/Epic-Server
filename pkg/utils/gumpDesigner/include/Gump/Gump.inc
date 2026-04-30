@@ -2,7 +2,6 @@ include "IGump";
 include ":gumps:epicGumps";
 include ":gumps:autoClose";
 include ":gumpDesigner:Control/Control";
-include ":gumpDesigner:Control/HtmlText";
 include ":gumpDesigner:Event/EventHandler";
 
 class Gump(IGump)
@@ -123,8 +122,6 @@ class Gump(IGump)
 			id := GUMP_ID_REFERENCE::RADIOBUTTON + id + this._controls[GUMP_CONTROL::RADIOBUTTON].size();
 		elseif (control.GetType() == GUMP_CONTROL::TEXTBOX)
 			id := GUMP_ID_REFERENCE::TEXTBOX + id + this._controls[GUMP_CONTROL::TEXTBOX].size();
-		elseif (control.GetType() == GUMP_CONTROL::HTMLTEXT)
-			id := GUMP_ID_REFERENCE::HTMLTEXT + id + this._controls[GUMP_CONTROL::HTMLTEXT].size();
 		elseif (control.GetType() == GUMP_CONTROL::CONTAINER) // Container precisa pegar os controles internos e adicionar aqui no gump
 			foreach containerControl in (control.GetControls())
 				this.AddControl(containerControl); // Adiciona os controles encapsulados ao gump
@@ -272,6 +269,5 @@ enum class GUMP_ID_REFERENCE
 	BUTTON := 5000,
 	CHECKBOX := 6000,
 	RADIOBUTTON := 7000,
-	TEXTBOX  := 8000,
-	HTMLTEXT := 9000
+	TEXTBOX := 8000
 endenum
