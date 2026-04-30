@@ -21,12 +21,16 @@ include ":charactercreation:resists";
 include ":charactercreation:habilidades";
 include ":attributes:attributes";
 include "include/eventID";
+include "include/client";
 include ":fls_core:fls_characters";
 
 function ProccessCombatDamage(byRef attackInfo)
+	var corpseLoc := SnapshotDefenderLocation(attackInfo);
+
 	// Pre Damage
 	CalculateCombatDamage(attackInfo);
 	CheckParry(attackInfo);
+	ConcealDoomedDefender(attackInfo);
 
 	// Damage
 	ApplyCombatDamage(attackInfo);
@@ -41,8 +45,77 @@ function ProccessCombatDamage(byRef attackInfo)
 	if (attackInfo.GetDefender().IsDead())
 		ExecuteCombatAbilitiesOnKill(attackInfo);
 		ExecutePassiveAbilitiesOnKill(attackInfo);
+		if (attackInfo.GetDamage().IsCritical())
+			TriggerCriticalKillExplosion(attackInfo, corpseLoc);
+		endif
+	elseif (attackInfo.GetDamage().IsCritical())
+		TriggerCriticalHitFeedback(attackInfo);
 	endif
 
+endfunction
+
+// Capture the defender's coords up front — once ApplyCombatDamage runs the
+// death pipeline invalidates the mobile ref and .x/.y/.z return uninitialized.
+function SnapshotDefenderLocation(byRef attackInfo)
+	var ref := attackInfo.GetDefender().GetObjRef();
+	return struct{
+		x := ref.x,
+		y := ref.y,
+		z := ref.z,
+		realm := ref.realm
+	};
+endfunction
+
+// Pre-damage hook. If a player's crit is going to kill the defender, hide
+// the mobile from the client now so the falling-death animation never
+// renders — only the body-explosion fired from the on-kill branch does.
+// Damage is final here (post-resist, post-parry).
+function ConcealDoomedDefender(byRef attackInfo)
+	if (!attackInfo.GetDamage().IsCritical()) return; endif
+	if (attackInfo.GetAttacker().IsNpc()) return; endif
+	var ref := attackInfo.GetDefender().GetObjRef();
+	if (attackInfo.GetDamage().GetTotalBaseDamage() < ref.hits) return; endif
+	ref.concealed := 1;
+endfunction
+
+// Non-killing crit: light attacker shake.
+function TriggerCriticalHitFeedback(byRef attackInfo)
+	if (attackInfo.GetAttacker().IsNpc()) return; endif
+	ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 5);
+endfunction
+
+// Killing crit: heavy shake + body-explosion FX + sound, then locks the
+// corpse to the gore graphic once the 10-frame animation finishes.
+function TriggerCriticalKillExplosion(byRef attackInfo, byRef corpseLoc)
+	if (!attackInfo.GetAttacker().IsNpc())
+		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.8, 10);
+	endif
+
+	// Location-based variants — defender ref is already invalidated, so
+	// object-centered effects would silently no-op on it.
+	PlayStationaryEffect(corpseLoc.x, corpseLoc.y, corpseLoc.z, FX_BODY_EXPLOSION, 50, 10, 0, corpseLoc.realm);
+	PlaySoundEffectXYZ(corpseLoc.x, corpseLoc.y, corpseLoc.z, 0x54F, corpseLoc.realm);
+
+	sleepms(500); // let POL finalize the corpse
+
+	var corpse := 0;
+	foreach candidate in (ListItemsNearLocation(corpseLoc.x, corpseLoc.y, corpseLoc.z, 2, corpseLoc.realm))
+		Sleepms(2);
+		if (candidate.IsA(POLCLASS_CORPSE))
+			corpse := candidate;
+			break;
+		endif
+	endforeach
+
+	if (!corpse) return; endif
+
+	// Wait for the 10-frame animation to finish, then lock in its last frame
+	// as the persistent gore graphic so the swap is visually seamless.
+	sleepms(4500);
+	corpse.graphic := 0xC9DE;
+	if (corpse.color != 0)
+		corpse.color := 0;
+	endif
 endfunction
 
 function CalculateCombatDamage(byRef attackInfo)
@@ -827,9 +900,6 @@ function ApplyCriticalDamage(byRef attackInfo)
 	endif
 	// PEnsar numa solucao pra mensagem subir no NPC sem o [Language] como prefixo
 	Message("CRÍTICO", Color(GENERAL_COLOR::RED)).SendEmote(attackInfo.GetAttacker().GetObjRef());
-	if (!attackInfo.GetAttacker().IsNpc())
-		ScreenShake(attackInfo.GetAttacker().GetObjRef(), 0.4, 5);
-	endif
 	// Calculate effective raw damage using only active posture's physical damage + elementals
 	// (stat/skill bonuses are added to all 3 physical types, but only the active posture is applied)
 	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
