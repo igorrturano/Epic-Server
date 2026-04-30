@@ -1,44 +1,29 @@
-
+use uo;
+use os;
 
 function CreateGuardian(template, x, y, z, realm, who := 0)
-    print("DEBUG: Tentando criar NPC: " + template);
-    
-    var template_name := template;
-    if (template_name[":"])
-        template_name := template_name[Find(template_name, ":", 2)+1, len(template_name)];
-    endif
-    
-    var pkg_list := array{
-        ":brainAI:",
-        "" 
-    };
-    
     var npc := 0;
-    foreach pkg in pkg_list
-        var full_template := pkg + template_name;
-        print("DEBUG: Tentando criar com template: " + full_template);
-        
-        var spawn_x := x + RandomInt(3) - 1;
-        var spawn_y := y + RandomInt(3) - 1;
-        
-        npc := CreateNPCFromTemplate(full_template, spawn_x, spawn_y, z, 0, realm);
-        if (!npc.errortext)
-            break;
-        else 
-            print("DEBUG: Falha com " + full_template + " - " + npc.errortext);
+    var tries := 0;
+    while (!npc && tries < 5)
+        var spawn_x := x + RandomInt(7) - 3;
+        var spawn_y := y + RandomInt(7) - 3;
+        npc := CreateNPCFromTemplate(template, spawn_x, spawn_y, z, 0, realm);
+        if (npc.errortext)
+            print("[Guardian] FALHA (exception) '" + template + "': " + npc.errortext);
+            return 0;
         endif
-        sleepms(2);
-    endforeach
-    
-    if (!npc.errortext)
-        SetObjProperty(npc, "GuardianCreated", ReadGameClock());
-        SetObjProperty(npc, "TreasureGuardian", 1);
-        print("DEBUG: NPC criado com sucesso usando " + npc.npctemplate);
-        return npc;
+        tries := tries + 1;
+    endwhile
+
+    if (!npc)
+        print("[Guardian] FALHA: '" + template + "' nao criado apos " + tries + " tentativas");
+        return 0;
     endif
-    
-    print("DEBUG: Falha ao criar NPC após todas as tentativas");
-    return 0;
+
+    print("[Guardian] OK: '" + template + "' serial=" + npc.serial + " name='" + npc.name + "'");
+    SetObjProperty(npc, "GuardianCreated", ReadGameClock());
+    SetObjProperty(npc, "TreasureGuardian", 1);
+    return npc;
 endfunction
 
 /*
@@ -46,23 +31,13 @@ endfunction
  * Spawna os guardiões apropriados baseado no nível do mapa
  */
 function SpawnTreasureGuardians(who, level, x, y, z, realm)
-   print("DEBUG: SpawnTreasureGuardians - Nível: " + level);
-   
    case (level)
-       1:  // BANDITS
-           print("DEBUG: Spawnando grupo de bandidos");
-           return SpawnBanditGroup(who, x, y, z, realm);
-       2:  // MERCENARIES
-           return SpawnMercenaryGroup(who, x, y, z, realm);
-       3:  // GHOSTS
-           return SpawnGhostGroup(who, x, y, z, realm);
-       4:  // DRAGONS
-           return SpawnDragonGroup(who, x, y, z, realm);
-       5:  // DRACOLICH
-           return SpawnDracolich(who, x, y, z, realm);
-       default: 
-           print("DEBUG: Nível inválido: " + level);
-           return 0;
+       1: return SpawnBanditGroup(who, x, y, z, realm);
+       2: return SpawnMercenaryGroup(who, x, y, z, realm);
+       3: return SpawnGhostGroup(who, x, y, z, realm);
+       4: return SpawnDragonGroup(who, x, y, z, realm);
+       5: return SpawnDracolich(who, x, y, z, realm);
+       default: return 0;
    endcase
 endfunction
 
@@ -72,41 +47,27 @@ endfunction
 function SpawnBanditGroup(who, x, y, z, realm)
     PrintTextAbove(who, "*Gritos nos arredores* Atacar rapazes! A pior parte ja fizeram!");
     Sleep(2);
-    
-    // Primeira onda com templates simplificados
-    var npcs := array{};
-    var templates := array{
-        "bandoleiro",
-        "roguearcher",
-        "bandoleiro",
-        "assassin",
-        "roguearcher"
-    };
-    
-    foreach template in templates
-        var npc := CreateGuardian(template, x, y, z, realm, who);
-        if (npc)
-            npcs.append(npc);
-        endif
-        sleepms(2);
-    endforeach
-    
-    if (npcs.size() == 0)
-        SendSysMessage(who, "DEBUG: Falha ao criar qualquer NPC do grupo de bandidos");
+
+    var npcs := SpawnGuardianWave(array{
+        ":epicAI:bandoleiro",
+        ":epicAI:Roguearcher",
+        ":epicAI:bandoleiro",
+        ":epicAI:Rogue",
+        ":epicAI:Roguearcher"
+    }, x, y, z, realm, who);
+
+    if (!npcs.size())
         return 0;
     endif
-    
-    Sleep(15);
-    
-    // Segunda onda com líder
-    if (npcs.size() > 0)
-        PrintTextAbove(who, "*O ataque continua e o lider se aproxima*");
-        var leader := CreateGuardian("MercenarioLider", x, y, z, realm, who);
-        if (leader)
-            npcs.append(leader);
-        endif
+
+    Sleep(60);
+
+    PrintTextAbove(who, "*O ataque continua e o lider se aproxima*");
+    var leader := CreateGuardian(":epicAI:Mercenario4", x, y, z, realm, who);
+    if (leader)
+        npcs.append(leader);
     endif
-    
+
     return npcs;
 endfunction
 
@@ -116,44 +77,53 @@ endfunction
 function SpawnMercenaryGroup(who, x, y, z, realm)
     PrintTextAbove(who, "*Gritos nos arredores* Atacar rapazes! A pior parte ja fizeram!");
     Sleep(2);
-    
-    var npcs := array{
-        CreateGuardian(":brainai:assassin", x, y, z, realm, who),
-        CreateGuardian(":brainai:roguearcher", x, y, z, realm, who),
-        CreateGuardian(":brainai:Rogue", x, y, z, realm, who),
-        CreateGuardian(":brainai:roguearcher", x, y, z, realm, who),
-        CreateGuardian(":brainai:assassin", x, y, z, realm, who),
-        CreateGuardian(":brainai:assassin", x, y, z, realm, who)
-    };
-    
-    return npcs;
+
+    return SpawnGuardianWave(array{
+        ":epicAI:bandido_aiglano_ladino",
+        ":epicAI:Roguearcher",
+        ":epicAI:Rogue",
+        ":epicAI:Roguearcher",
+        ":epicAI:bandido_aiglano_ladino",
+        ":epicAI:Mercenario4"
+    }, x, y, z, realm, who);
 endfunction
 
 /*
- * Level 3: Fantasmas
+ * Level 3: Fantasmas (noite) ou Criaturas (dia)
  */
 function SpawnGhostGroup(who, x, y, z, realm)
+    if (GetGlobalProperty("dia") == "dia")
+        PrintTextAbove(who, "*A terra treme ao redor do tesouro*");
+        Sleep(2);
+        return SpawnGuardianWave(array{
+            ":epicAI:BlackGiantSpider",
+            ":epicAI:ankheg",
+            ":epicAI:BlackGiantSpider",
+            ":epicAI:AranhaForte",
+            ":epicAI:ankheg",
+            ":epicAI:orog2"
+        }, x, y, z, realm, who);
+    endif
+
     PrintTextAbove(who, "*Gritos e lamurias de almas atormendas* Juntem-se a nos...");
     Sleep(5);
-    
-    // Primeira onda
-    var npcs := array{
-        CreateGuardian(":brainai:Ghost", x, y, z, realm, who),
-        CreateGuardian(":brainai:Ghost", x, y, z, realm, who),
-        CreateGuardian(":brainai:Ghost", x, y, z, realm, who),
-        CreateGuardian(":brainai:Spectre", x, y, z, realm, who),
-        CreateGuardian(":brainai:Spectre", x, y, z, realm, who),
-        CreateGuardian(":brainai:Spectre", x, y, z, realm, who)
-    };
-    
-    Sleep(15);
-    
-    // Segunda onda
+
+    var npcs := SpawnGuardianWave(array{
+        ":epicAI:ghost",
+        ":epicAI:ghost",
+        ":epicAI:ghost",
+        ":epicAI:Spectre",
+        ":epicAI:Spectre",
+        ":epicAI:Spectre"
+    }, x, y, z, realm, who);
+
+    Sleep(60);
+
     PrintTextAbove(who, "*Vozes Fantasmagoricas* Deliciosa ganancia...");
-    npcs.append(CreateGuardian(":brainai:espectroanciao", x, y, z, realm, who));
-    npcs.append(CreateGuardian(":brainai:espectroanciao", x, y, z, realm, who));
-    npcs.append(CreateGuardian(":brainai:espectroanciao", x, y, z, realm, who));
-    
+    npcs.append(CreateGuardian(":epicAI:ghost5", x, y, z, realm, who));
+    npcs.append(CreateGuardian(":epicAI:ghost5", x, y, z, realm, who));
+    npcs.append(CreateGuardian(":epicAI:ghost5", x, y, z, realm, who));
+
     return npcs;
 endfunction
 
@@ -163,30 +133,62 @@ endfunction
 function SpawnDragonGroup(who, x, y, z, realm)
     PrintTextAbove(who, "*Criaturas gigantescas guardam o local*");
     Sleep(5);
-    
-    // Wyverns primeiro
-    var npcs := array{
-        CreateGuardian(":brainai:Wyvern", x, y, z, realm, who),
-        CreateGuardian(":brainai:Wyvern", x, y, z, realm, who),
-        CreateGuardian(":brainai:Wyvern", x, y, z, realm, who)
-    };
-    
-    Sleep(15);
-    
-    // Dragão Vermelho por último
-    npcs.append(CreateGuardian(":brainai:RedDragon", x, y, z, realm, who));
-    
+
+    var npcs := SpawnGuardianWave(array{
+        ":epicAI:Wyvern",
+        ":epicAI:Wyvern",
+        ":epicAI:Wyvern"
+    }, x, y, z, realm, who);
+
+    Sleep(60);
+
+    var dragon := CreateGuardian(":epicAI:RedDragon", x, y, z, realm, who);
+    if (dragon)
+        npcs.append(dragon);
+    endif
+
     return npcs;
 endfunction
 
 /*
- * Level 5: Dracolich
+ * Level 5: Dracolich (noite) ou Dragões/Demônios (dia)
  */
 function SpawnDracolich(who, x, y, z, realm)
-    var npcs := array{
-        CreateGuardian(":brainai:Dracolich", x, y, z, realm, who)
-    };
-    
+    if (GetGlobalProperty("dia") == "dia")
+        PrintTextAbove(who, "*O ar envenena ao redor do tesouro*");
+        Sleep(3);
+
+        var npcs := SpawnGuardianWave(array{
+            ":epicAI:balor",
+            ":epicAI:Moloch",
+            ":epicAI:orog"
+        }, x, y, z, realm, who);
+
+        Sleep(60);
+
+        PrintTextAbove(who, "*O Dragão das Sombras desperta!*");
+        var boss := CreateGuardian(":epicAI:blackdragon", x, y, z, realm, who);
+        if (boss) npcs.append(boss); endif
+
+        return npcs;
+    endif
+
+    PrintTextAbove(who, "*Algo terrível desperta das profundezas*");
+    Sleep(3);
+
+    var npcs := SpawnGuardianWave(array{
+        ":epicAI:banshee2",
+        ":epicAI:banshee2",
+        ":epicAI:skeleton9",
+        ":epicAI:skeleton9"
+    }, x, y, z, realm, who);
+
+    Sleep(60);
+
+    PrintTextAbove(who, "*O Dracolich desperta!*");
+    var boss := CreateGuardian(":epicAI:Dracolich", x, y, z, realm, who);
+    if (boss) npcs.append(boss); endif
+
     return npcs;
 endfunction
 
