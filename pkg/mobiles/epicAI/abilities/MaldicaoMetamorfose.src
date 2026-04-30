@@ -17,6 +17,14 @@ program MaldicaoMetamorfose(params)
 		return 0;
 	endif
 
+	// Per-target dispel guard. Two undead casting in the same tick used to
+	// queue two endmetamorfose runs and double-subtract polymorph_* deltas.
+	var dispelled_until := GetObjProperty(targ, "#metamorfose_dispelled");
+	if (dispelled_until != error && polcore().systime < dispelled_until)
+		return 0;
+	endif
+	SetObjProperty(targ, "#metamorfose_dispelled", polcore().systime + 3);
+
 	var tier := CInt(MobileWrapper(me).GetTier());
 	var duration := tier * 5;
 
