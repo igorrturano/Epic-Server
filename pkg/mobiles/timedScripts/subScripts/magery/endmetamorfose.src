@@ -19,10 +19,20 @@ include ":spells:Controller/SpellController";
 program cureScript(params)
 	var who := params[1];
 
-	// Always clean up polymorph stat modifiers first, regardless of metamorfose state
+	// Atomically read+erase the polymorph deltas. Without this, two concurrent
+	// endmetamorfose runs (e.g. MaldicaoMetamorfose stacking from two undead in
+	// the same tick) both read the same polymorph_* before either erases it,
+	// double-subtracting and leaving the player with negative *mod values.
+	Set_Critical(1);
 	var hitsmod := CINT(GetObjProperty(who, "polymorph_hitsmod"));
 	var manamod := CINT(GetObjProperty(who, "polymorph_manamod"));
 	var stammod := CINT(GetObjProperty(who, "polymorph_stammod"));
+	var resist  := CINT(GetObjProperty(who, "polymorph_resistmod"));
+	EraseObjProperty(who, "polymorph_hitsmod");
+	EraseObjProperty(who, "polymorph_manamod");
+	EraseObjProperty(who, "polymorph_stammod");
+	EraseObjProperty(who, "polymorph_resistmod");
+	Set_Critical(0);
 
 	if (hitsmod)
 		SetObjProperty(who, "hitsmod", CINT(GetObjProperty(who, "hitsmod")) - hitsmod);
@@ -37,7 +47,6 @@ program cureScript(params)
 	endif
 
 	// Reset resistances
-	var resist := CINT(GetObjProperty(who, "polymorph_resistmod"));
 	if (resist)
 		who.resist_physical_mod := who.resist_physical_mod - resist;
 		who.resist_fire_mod := who.resist_fire_mod - resist;
@@ -110,10 +119,6 @@ program cureScript(params)
 	EraseObjProperty(who, "dicedmg");
 	EraseObjProperty(who, "polymorphbonus");
 	EraseObjProperty(who, "metamorfose");
-	EraseObjProperty(who, "polymorph_hitsmod");
-	EraseObjProperty(who, "polymorph_manamod");
-	EraseObjProperty(who, "polymorph_stammod");
-	EraseObjProperty(who, "polymorph_resistmod");
 	EraseObjProperty(who, "namechar");
 	EraseObjProperty(who, "HitScripts");
 
