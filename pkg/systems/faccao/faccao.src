@@ -1265,7 +1265,6 @@ function _CriarBauHandler(who)
 
 	var lockid := AllocLockId();
 	bau.movable := 0;
-	bau.locked  := 1;
 	SetObjProperty(bau, "LockId", lockid);
 
 	var chave := CreateItemInContainer(bau, "ironkey", 1);
@@ -1285,6 +1284,14 @@ function _CriarBauHandler(who)
 	guild.SetProp("bau_serial", bau.serial);
 
 	SendSysMessageEx(who, "Bau criado | guild={} tipo={} lockid={}".format(guild.guildid, tipo, lockid), SSM_INFO);
+
+	Print("[Bau-DEBUG] Bau criado com sucesso:");
+	Print("[Bau-DEBUG]   guild      = " + guild.GetProp("name") + " (id=" + guild.guildid + ")");
+	Print("[Bau-DEBUG]   serial     = " + bau.serial);
+	Print("[Bau-DEBUG]   posicao    = " + bau.x + "," + bau.y + "," + bau.z + " realm=" + bau.realm);
+	Print("[Bau-DEBUG]   lockid     = " + lockid);
+	Print("[Bau-DEBUG]   chave      = " + (chave ? "serial=" + chave.serial : "FALHOU - chave nao criada"));
+	Print("[Bau-DEBUG]   tipo_faccao= " + tipo);
 endfunction
 
 // -------------------------------------------------------
@@ -1394,6 +1401,14 @@ function _SetarSoldoHandler(who)
 
 	SendSysMessageEx(who, "Soldo configurado | lider={} membro={} intervalo={}s".format(
 		v_lider, v_membro, intervalo), SSM_INFO);
+
+	Print("[Soldo-DEBUG] Soldo configurado:");
+	Print("[Soldo-DEBUG]   guild         = " + guild.GetProp("name") + " (id=" + guild.guildid + ")");
+	Print("[Soldo-DEBUG]   bau_serial    = " + guild.GetProp("bau_serial"));
+	Print("[Soldo-DEBUG]   soldo_lider   = " + v_lider + " moedas");
+	Print("[Soldo-DEBUG]   soldo_membro  = " + v_membro + " moedas");
+	Print("[Soldo-DEBUG]   intervalo     = " + intervalo + "s (" + cint(intervalo / 86400) + " dias)");
+	Print("[Soldo-DEBUG]   proximo_em    = systime+" + intervalo + " (agora=" + polcore().systime + ")");
 endfunction
 
 function npcHandler(who, input)
