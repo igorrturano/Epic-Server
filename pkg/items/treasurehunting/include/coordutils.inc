@@ -61,16 +61,20 @@ endfunction
  * Verifica se as coordenadas são válidas para o realm
  */
 function ValidateCoordinates(x, y, realm := "britannia")
+    if (x < 0 || y < 0)
+        return 0;
+    endif
+
     case (realm)
         "britannia":
             if (x > 5120 && y < 2304)
-                return 0; // Coordenadas inválidas
-            endif
-            if (x < 0 || y < 0 || x > 6144 || y > 4096)
                 return 0;
             endif
-            return 1;
-            
+            return (x <= 6144 && y <= 4096);
+
+        "britannia_alt":
+            return (x <= 6144 && y <= 4096);
+
         default:
             return 0;
     endcase

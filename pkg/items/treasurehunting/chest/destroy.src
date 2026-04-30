@@ -39,8 +39,16 @@ function CheckChestStatus(chest)
 	if (!chest || !chest.serial || !chest.graphic)
 		return 0;
 	endif
-
-	return (GetObjProperty(chest, "CreatedOn") && GetObjProperty(chest, "DestroyAt"));
+	if (GetObjProperty(chest, "ChestAborted") == 1)
+		return 0;
+	endif
+	if (GetObjProperty(chest, "CreatedOn") == error)
+		return 0;
+	endif
+	if (GetObjProperty(chest, "DestroyAt") == error)
+		return 0;
+	endif
+	return 1;
 endfunction
 
 function DestroyTreasureChest(chest)
@@ -51,21 +59,25 @@ function DestroyTreasureChest(chest)
 	var cleaned_items := CleanupChestDirt(chest);
 	var items_count := EnumerateItemsInContainer(chest).size();
 
-	var level := GetObjProperty(chest, "level") ? GetObjProperty(chest, "level") :
-							 GetObjProperty(chest, "MapLevel");
+	var level := GetObjProperty(chest, "level");
+	if (level == error)
+		level := GetObjProperty(chest, "MapLevel");
+	endif
+	if (level == error)
+		level := "Desconhecido";
+	endif
+
 	var found_by := GetObjProperty(chest, "FoundBy");
-	if (found_by)
+	if (found_by != error)
 		var finder := SystemFindObjectBySerial(found_by, SYSFIND_SEARCH_OFFLINE_MOBILES);
-		found_by := finder ? finder.name : "Desconhecido";
+		if (finder)
+			found_by := finder.name;
+		else
+			found_by := "Desconhecido";
+		endif
 	else
 		found_by := "Desconhecido";
 	endif
-
-	var info := struct{ "serial" := chest.serial,
-						"location" := struct{ "x" := chest.x, "y" := chest.y, "z" := chest.z,
-						   	"realm" := chest.realm },
-						"created_on" := GetObjProperty(chest, "CreatedOn"), "destroyed_on" := ReadGameClock(), "map_level" := level ?
-						level : "Desconhecido", "found_by" := found_by, "items_destroyed" := items_count, "dirt_items_cleaned" := cleaned_items };
 
 	DestroyItem(chest);
 endfunction

@@ -16,6 +16,7 @@ include ":charactercreation:habilidades";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 include ":treasurehunting:treasuremaps";
+include ":treasurehunting:treasuredigging";
 include ":chestspawn:treasurechest";
 include ":message:model/Message";
 
@@ -44,6 +45,9 @@ program SandMining(who, scoop)
 		return;
 	endif
 
+	print("[DEBUG] Pá no chão: x=" + targ.x + " y=" + targ.y + " z=" + targ.z + " realm=" + who.realm);
+	print("[DEBUG] Mapas na mochila: " + maps.size());
+
 	if (maps.size() > 0)
 		var question := "Voce deseja procurar seu tesouro?";
 		var yes := "SIM";
@@ -60,6 +64,9 @@ program SandMining(who, scoop)
 						return;
 					endif
 				endif
+				var coords := GetMapCoordinates(map);
+				print("[DEBUG] Mapa nivel=" + GetMapLevel(map) + " coords: x=" + coords.x + " y=" + coords.y + " z=" + coords.z + " realm=" + coords.realm);
+				print("[DEBUG] Chamando DigForMap...");
 				DigForMap(who, targ, map);
 				return;
 			else
