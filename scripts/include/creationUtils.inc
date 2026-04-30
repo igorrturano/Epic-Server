@@ -1156,6 +1156,7 @@ function workingItems(who)
 
     if (skills[DOMESTIC_WORK] >= 1)
         CreateItemInicial(who, 0x0f9d, 1); // sewingkit
+		CreateItemInicial(who, 0x702C, 1); // recipebook
     endif
 
     if (skills[DOMESTIC_WORK] >= 1 || skills[MEDICINE] >= 1)
