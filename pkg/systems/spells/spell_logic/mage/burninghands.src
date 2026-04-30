@@ -11,7 +11,6 @@ include "include/client";
 include "include/sounds";
 include ":spells:Controller/SC_Damage";
 include ":taming:taming";
-include "include/facings";
 include "include/shapes";
 include ":magery:fields";
 include "include/epicConstants";
@@ -42,12 +41,18 @@ program SpellScript(params)
 	TurnObjectToward(caster, targ.x, targ.y);
 	sleepms(300);
 
-	var effect_id := 0x6d70; // ID do efeito que você quer jogar
-	var lines_count := range; // Número de linhas que você quer criar
-	var effect_distance := range * 2; // Distância que o efeito cobre em cada linha
-	var effect_duration := 30; // Duração do efeito
+	var effect_id := 0x6d70;
+	var effect_duration := 30;
 
-	PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, caster.realm);
+	var rings := BuildConeRings(caster, range);
+	PlayConeEffect(rings, caster.z, caster.realm, effect_id, effect_duration);
+
+	var cone_tiles := dictionary{};
+	foreach ring in rings
+		foreach tile in ring
+			cone_tiles[$"{tile.x},{tile.y}"] := 1;
+		endforeach
+	endforeach
 
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
 	var bonus := epicWisdomPathBonus(caster);
@@ -61,10 +66,10 @@ program SpellScript(params)
 
 	var mobs := ListMobilesNearLocation(caster.x, caster.y, caster.z, range, caster.realm);
 	foreach mob in mobs
-		if (!InPosition(caster, mob.x, mob.y, FACE_POS_INFRONT))
+		if (mob == caster)
 			continue;
 		endif
-		if (mob == caster)
+		if (!cone_tiles.Exists($"{mob.x},{mob.y}"))
 			continue;
 		endif
 
@@ -101,13 +106,14 @@ program SpellScript(params)
 	endforeach
 endprogram
 
-function PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, realm)
+function BuildConeRings(caster, lines_count)
+	var rings := array{};
 	var facing := caster.facing;
 	var start_x := caster.x;
 	var start_y := caster.y;
 
 	for line := 0 to lines_count
-		var width := line * 2 + 1;
+		var ring := array{};
 		for i := -line to line
 			var pos_x, pos_y;
 			case (facing)
@@ -137,10 +143,20 @@ function PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect
 					pos_y := start_y - line + i;
 			endcase
 
-			if (pos_x != start_x || pos_y != start_y) // Don't place effect on caster
-				PlayStationaryEffect(pos_x, pos_y, caster.z, effect_id, 10, effect_duration, 0, realm);
+			if (pos_x != start_x || pos_y != start_y)
+				ring.Append(struct{ x := pos_x, y := pos_y });
 			endif
 		endfor
-		sleepms(50);
+		rings.Append(ring);
 	endfor
+	return rings;
+endfunction
+
+function PlayConeEffect(rings, z, realm, effect_id, effect_duration)
+	foreach ring in rings
+		foreach tile in ring
+			PlayStationaryEffect(tile.x, tile.y, z, effect_id, 10, effect_duration, 0, realm);
+		endforeach
+		sleepms(50);
+	endforeach
 endfunction
