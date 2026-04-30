@@ -93,7 +93,7 @@ function InfectMobile(subject,duration,attacker,level,diseases,disease_grade, de
 					return;
 				elseif (level <= level_infection && limit_duration <= 6000)
 					TS_AddDuration(subject, "disease", duration_part);
-					SendSysMessageEx(subject, "AO TEMPO FOI ADICIONADO "+duration_part+" SEGUNDOS, LEMBRE OS SCRIPTERS QUE PRECISA CORRIGIR PARA ATUALIZAR NA BARRA BUFF/DEBUFF", SSM_FAIL);
+					//SendSysMessageEx(subject, "AO TEMPO FOI ADICIONADO "+duration_part+" SEGUNDOS, LEMBRE OS SCRIPTERS QUE PRECISA CORRIGIR PARA ATUALIZAR NA BARRA BUFF/DEBUFF", SSM_FAIL);
 					return;
 				elseif (level > level_infection)
 					TS_LowerDuration(subject, "disease", -1);
