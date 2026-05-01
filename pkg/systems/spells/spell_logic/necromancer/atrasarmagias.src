@@ -15,17 +15,17 @@ program SpellScript(params)
 	var spell := params[3];
 	params := 0;
 
-	SC_RemoveEffect(who, CInt(spell.id));
+	SC_RemoveEffect(targ, CInt(spell.id));
 
 	var duration := CInt(AP_GetSkill(who, ARCANA)) / 2;
-	var delay_amount := CInt(AP_GetSkill(who, ARCANA) * 20);
+	var extra_cycles := CInt(AP_GetSkill(who, ARCANA) / 20);
 
 	var opts := struct{};
-	opts.+properties := dictionary{ "#delayspell" -> delay_amount };
+	opts.+properties := dictionary{ "#delaycycles" -> extra_cycles };
 	opts.+desc := "Atrasar Magias";
 
-	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
-	SC_HandleSound(who, who, 385);
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+	SC_HandleSound(who, targ, 385);
 
 	SendSysMessageEx(targ, "Voce se sente mais fraco.", SSM_INFO);
 	Corromper(who, 17, targ);
