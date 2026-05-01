@@ -88,14 +88,8 @@ function _PagarSoldoPlayers(guild)
 
 	var total := v_lider + (num_membros * v_membro);
 
-	Print("[Soldo-DEBUG] Ciclo disparado para guild '" + guild.GetProp("name") + "':");
-	Print("[Soldo-DEBUG]   bau_serial   = " + guild.GetProp("bau_serial") + " | bau.locked=" + bau.locked);
-	Print("[Soldo-DEBUG]   membros      = " + (num_membros + 1) + " (lider + " + num_membros + " membros)");
-	Print("[Soldo-DEBUG]   v_lider      = " + v_lider + " | v_membro=" + v_membro + " | total=" + total);
-	Print("[Soldo-DEBUG]   intervalo    = " + intervalo + "s | proximo=" + proximo);
-
 	if (total <= 0)
-		Print("[Soldo-DEBUG]   SKIP: total=0, nada a pagar.");
+		Print("[Soldo] SKIP: total=0, nada a pagar para guild '" + guild.GetProp("name") + "'.");
 		guild.SetProp("soldo_proximo", polcore().systime + intervalo);
 		return;
 	endif
@@ -109,19 +103,15 @@ function _PagarSoldoPlayers(guild)
 
 	if (bag.errortext)
 		if (estava_travado) bau.locked := 1; endif
-		Print("[Soldo-DEBUG]   ERRO: bag nao criada (" + bag.errortext + ")");
+		Print("[Soldo] ERRO: bag nao criada para guild '" + guild.GetProp("name") + "' (" + bag.errortext + ")");
 		return;
 	endif
-
-	Print("[Soldo-DEBUG]   bag criada   = serial=" + bag.serial + " nome='" + bag.name + "'");
 
 	_CriarLivroSoldo(bag, guild, v_lider, membros, v_membro);
 
 	if (estava_travado) bau.locked := 1; endif
 
 	_NotificarMembros(membros);
-
-	Print("[Soldo-DEBUG]   Pagamento concluido. Proximo em " + intervalo + "s.");
 
 	guild.SetProp("soldo_proximo", polcore().systime + intervalo);
 endfunction
@@ -143,7 +133,6 @@ function _CriarBagPagamento(bau, total)
 		bag.Destroy();
 		return error{"errortext":="moedas_falhou"};
 	endif
-	Print("[Soldo-DEBUG]   moedas criadas = serial=" + moedas.serial + " amount=" + moedas.amount);
 	EA_Record(EA_MINT_GUILD_PAYOUT, moedas, total, "GUILD:soldo", bag, bau.name);
 
 	return bag;
@@ -153,10 +142,8 @@ endfunction
 function _CriarLivroSoldo(bag, guild, v_lider, membros, v_membro)
 	var livro := CreateItemInContainer(bag, 0xFEF, 1);
 	if (!livro)
-		Print("[Soldo-DEBUG]   AVISO: livro de recibo nao criado na bag serial=" + bag.serial);
 		return;
 	endif
-	Print("[Soldo-DEBUG]   livro criado   = serial=" + livro.serial);
 
 	var lider_serial := guild.GetProp("leader");
 	var titulo       := "Recibo - " + getDayOfMonth() + "/" + getMonth() + "/" + getYear();
@@ -195,10 +182,10 @@ function _NomeRP(mob_ou_serial)
 	if (!mob) return "Desconhecido"; endif
 
 	var dados := GetObjProperty(mob, "dados_convite");
-	if (dados && dados.nome_personalizado)
-		return dados.nome_personalizado;
-	endif
-	return mob.name;
+	if (!dados || dados.errortext) return mob.name; endif
+	var nome := dados.nome_personalizado;
+	if (!nome || nome.errortext) return mob.name; endif
+	return nome;
 endfunction
 
 // ── Notifica membros: gump se online, flag se offline ────────────────────────
