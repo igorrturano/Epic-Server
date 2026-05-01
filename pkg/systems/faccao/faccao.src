@@ -975,16 +975,31 @@ function gmHandler(who)
 			endif
 			sleepms(2);
 		endforeach
-		var outputguilds := CheckBoxGump(who, 400, 0, "Escolha as fac��es subalternas",
+		guild_opts["[ Remover Todas ]"] := 0;
+
+		var outputguilds := CheckBoxGump(who, 400, 0, "Escolha as facoes subalternas (marque [ Remover Todas ] para limpar)",
 								   guild_opts.keys());
 
 		var selected_guilds := array{};
-		foreach guild_name in outputguilds
-			selected_guilds.append(guild_opts[guild_name]);
-			sleepms(2);
-		endforeach
+		if (outputguilds)
+			if ("[ Remover Todas ]" in outputguilds)
+				selected_guilds := array{};
+			else
+				foreach guild_name in outputguilds
+					if (guild_opts[guild_name])
+						selected_guilds.append(guild_opts[guild_name]);
+					endif
+					sleepms(2);
+				endforeach
+			endif
+		endif
 
 		guild.SetProp("subguilds", selected_guilds);
+		if (selected_guilds.size() == 0)
+			SendSysMessageEx(who, "Sub-guilds removidas.", SSM_INFO);
+		else
+			SendSysMessageEx(who, "{} sub-guild(s) configurada(s).".format(selected_guilds.size()), SSM_INFO);
+		endif
 	elseif (output["Area"])
 		var arearray := array{};
 		while (1)
