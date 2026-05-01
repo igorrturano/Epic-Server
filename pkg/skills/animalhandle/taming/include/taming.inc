@@ -480,7 +480,7 @@ function GetDietByTaxonomy(tax)
     if (tax == "canidae")
         return {"meat"};
     elseif (tax == "felidae")
-        return {"meat"};
+        return {"meat", "fish"};
     elseif (tax == "arachnida")
         return {"meat"};
     elseif (tax == "serpentes")
