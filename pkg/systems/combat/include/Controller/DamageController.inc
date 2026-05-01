@@ -30,7 +30,6 @@ function ProccessCombatDamage(byRef attackInfo)
 	// Pre Damage
 	CalculateCombatDamage(attackInfo);
 	CheckParry(attackInfo);
-	ConcealDoomedDefender(attackInfo);
 
 	// Damage
 	ApplyCombatDamage(attackInfo);
@@ -64,19 +63,6 @@ function SnapshotDefenderLocation(byRef attackInfo)
 		z := ref.z,
 		realm := ref.realm
 	};
-endfunction
-
-// Pre-damage hook. If a player's crit is going to kill the defender, hide
-// the mobile from the client now so the falling-death animation never
-// renders — only the body-explosion fired from the on-kill branch does.
-// Damage is final here (post-resist, post-parry).
-function ConcealDoomedDefender(byRef attackInfo)
-	if (!attackInfo.GetDamage().IsCritical()) return; endif
-	if (attackInfo.GetAttacker().IsNpc()) return; endif
-	if (!ShouldExplodeBody(attackInfo)) return; endif
-	var ref := attackInfo.GetDefender().GetObjRef();
-	if (attackInfo.GetDamage().GetTotalBaseDamage() < ref.hits) return; endif
-	ref.concealed := 1;
 endfunction
 
 // NPCs always gib on a crit-kill. Players only gib on a permadeath-worthy
