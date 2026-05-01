@@ -95,7 +95,10 @@ function TriggerCriticalKillExplosion(byRef attackInfo, byRef corpseLoc)
 	// Location-based variants — defender ref is already invalidated, so
 	// object-centered effects would silently no-op on it.
 	PlayStationaryEffect(corpseLoc.x, corpseLoc.y, corpseLoc.z, FX_BODY_EXPLOSION, 50, 10, 0, corpseLoc.realm);
-	if (attackInfo.GetAttacker().GetCulture() == GULTHRAK)
+	PlaySoundEffectXYZ(corpseLoc.x, corpseLoc.y, corpseLoc.z, 0x51D, corpseLoc.realm);
+
+	// Religion-specific kill cue on the attacker.
+	if (attackInfo.GetAttacker().GetReligion() == USHKRAR)
 		PlaySoundEffect(attackInfo.GetAttacker().GetObjRef(), 0x5AF);
 	elseif (attackInfo.GetAttacker().GetReligion() == KAI)
 		PlaySoundEffect(attackInfo.GetAttacker().GetObjRef(), 0x569);
