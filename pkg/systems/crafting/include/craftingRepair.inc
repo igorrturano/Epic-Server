@@ -50,6 +50,10 @@ var hisskill := AP_GetSkill(character, craft_skill);
 
 ver_reparos:=(GetObjProperty(what,"reparos"));
 
+If(what.hp == 0)
+  SendSysMessage(character, "este item não pode ser reparado");
+  return 0;
+endif
 
 if (ver_reparos == error)
 	reparos:=(hisskill/2);
@@ -60,74 +64,74 @@ ver_reparos:=(GetObjProperty(what,"reparos"));
 
 if (ver_reparos >= (11 - (hisskill / 11)));
 
-if (cint(hisskill)>=cint(item_skill))
-  var maxhp;
-  maxhp := what.maxhp;
-  SetObjProperty(what, "broken", 0);
-  SetName(what, GetObjProperty(what, "realdesc"));
-  maxhp := cint(maxhp * what.quality);
-  var thehp := what.hp;
-  var damaged := maxhp - thehp;
-  var damageamount := 0.0;
-  damageamount := (125 -  hisskill)/3000.0;
+  if (cint(hisskill)>=cint(item_skill))
+    var maxhp;
+    maxhp := what.maxhp;
+    SetObjProperty(what, "broken", 0);
+    SetName(what, GetObjProperty(what, "realdesc"));
+    maxhp := cint(maxhp * what.quality);
+    var thehp := what.hp;
+    var damaged := maxhp - thehp;
+    var damageamount := 0.0;
+    damageamount := (125 -  hisskill)/3000.0;
 
-  if(what.hp == what.maxhp)
-    SendSysMessage(character, "O item nao esta danificado.");
-    return;
-  endif
-
-  if((what.hp <= 0) || (what.quality <= 0.1) || (!what.quality))
-    SendSysMessage(character, "O fragil material quebrou quando voce manipulou ele.");
-    Imersao(character, "susto");
-    Imersao(what, "vidro");
-    DestroyItem(what);
-    return;
-  endif
-
-  if(what.quality <= damageamount)
-    SendSysMessage(character, "O fragil material quebrou quando voce manipulou ele.");
-    Imersao(character, "susto");
-    Imersao(what, "vidro");
-    DestroyItem(what);
-    return;
-  endif
-  what.quality := what.quality - damageamount;
-
-  if((what.hp <= 0) || (what.quality <= 0.1) || (!what.quality))
-    SendSysMessage(character, "O fragil material quebrou quando voce manipulou ele.");
-    Imersao(character, "susto");
-    Imersao(what, "vidro");
-    DestroyItem(what);
-    return;
-  endif
-
- if (SkillCheck(character, craft_skill, cint(damaged / 3), 0) > 0 )
-    var repaired_amount := cint((hisskill + 1)/2);
-    //SendSysMessage(character, "rep"+repaired_amount);
-    //SendSysMessage(character, "hisskill: "+((randomint(hisskill) + 1))/2);
-
-    if (damaged == 1)
-      repaired_amount := 1;
+    if(what.hp == what.maxhp)
+      SendSysMessage(character, "O item nao esta danificado.");
+      return;
     endif
 
-    if (thehp + repaired_amount > what.maxhp)
-      what.hp := what.maxhp;
-      EraseObjProperty(what, "swings");
-      AnimRepair(character, craft_skill, repairdelay);
-      SendSysMessage(character, "Voce consertou o item completamente.");
-    else
-      what.hp := thehp + repaired_amount;
-      AnimRepair(character, craft_skill, repairdelay);
-      SendSysMessage(character, "Voce consertou o item.");
-    endif
-
-    if ((what.hp <= 0) || (what.quality <= 0.1) || (!what.quality))
+    if((what.hp <= 0) || (what.quality <= 0.1) || (!what.quality))
       SendSysMessage(character, "O fragil material quebrou quando voce manipulou ele.");
+      Imersao(character, "susto");
+      Imersao(what, "vidro");
       DestroyItem(what);
-      Imersao(character, "susto", 1,0,1);
-      Imersao(character, "vidro");
-    return;
+      return;
     endif
+
+    if(what.quality <= damageamount)
+      SendSysMessage(character, "O fragil material quebrou quando voce manipulou ele.");
+      Imersao(character, "susto");
+      Imersao(what, "vidro");
+      DestroyItem(what);
+      return;
+    endif
+    what.quality := what.quality - damageamount;
+
+    if((what.hp <= 0) || (what.quality <= 0.1) || (!what.quality))
+      SendSysMessage(character, "O fragil material quebrou quando voce manipulou ele.");
+      Imersao(character, "susto");
+      Imersao(what, "vidro");
+      DestroyItem(what);
+      return;
+    endif
+
+    if (SkillCheck(character, craft_skill, cint(damaged / 3), 0) > 0 )
+      var repaired_amount := cint((hisskill + 1)/2);
+      //SendSysMessage(character, "rep"+repaired_amount);
+      //SendSysMessage(character, "hisskill: "+((randomint(hisskill) + 1))/2);
+
+      if (damaged == 1)
+        repaired_amount := 1;
+      endif
+
+      if (thehp + repaired_amount > what.maxhp)
+        what.hp := what.maxhp;
+        EraseObjProperty(what, "swings");
+        AnimRepair(character, craft_skill, repairdelay);
+        SendSysMessage(character, "Voce consertou o item completamente.");
+      else
+        what.hp := thehp + repaired_amount;
+        AnimRepair(character, craft_skill, repairdelay);
+        SendSysMessage(character, "Voce consertou o item.");
+      endif
+
+      if ((what.hp <= 0) || (what.quality <= 0.1) || (!what.quality))
+        SendSysMessage(character, "O fragil material quebrou quando voce manipulou ele.");
+        DestroyItem(what);
+        Imersao(character, "susto", 1,0,1);
+        Imersao(character, "vidro");
+        return;
+      endif
 
   else
     var damage_amount := randomint(10);
@@ -162,17 +166,17 @@ if (cint(hisskill)>=cint(item_skill))
       Imersao(character, "vidro");
       return;
     endif
-endif
+  endif
 
-if (GetObjProperty(what, "reparos") == error)
-	reparos:=hisskill/2;
-	reparos:= (reparos  -(11 - (hisskill / 11)));
-	SetObjProperty(what,"reparos",reparos);
-else
-	reparos:=GetObjProperty(what, "reparos");
-	reparos:= (reparos  -(11 - (hisskill / 11)));
-	SetObjProperty(what,"reparos",reparos);
-endif
+  if (GetObjProperty(what, "reparos") == error)
+	  reparos:=hisskill/2;
+  	reparos:= (reparos  -(11 - (hisskill / 11)));
+	  SetObjProperty(what,"reparos",reparos);
+  else
+	  reparos:=GetObjProperty(what, "reparos");
+  	reparos:= (reparos  -(11 - (hisskill / 11)));
+	  SetObjProperty(what,"reparos",reparos);
+  endif
 
 else
 	SendSysMessage(character, "Voce nao possui habilidades para isto.");
