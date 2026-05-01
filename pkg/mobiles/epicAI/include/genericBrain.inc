@@ -57,6 +57,7 @@ function GenericBrain()
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
                     AddThreat(ev.source, 0);
+                    UpdateThreatList(me, ev);
                     SetOpponent(ev.source);
                     HandleGenericCombatEvent(ev.source);
                 EVID_THREAT_UPDATE:
@@ -72,7 +73,12 @@ function GenericBrain()
                     if (!IsAlly(ev.source))
                         // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
-                        ClearCombatState();
+                        // Only drop combat state if the leaver was our actual opponent.
+                        // Otherwise nearby movement (other players, pets, ally deaths)
+                        // would wipe opponent + threat table mid-fight and strand the NPC.
+                        if (me.opponent && ev.source.serial == me.opponent.serial)
+                            ClearCombatState();
+                        endif
                     endif
                 default:
                     // Ignore other events

@@ -126,6 +126,7 @@ function HumanoidBrain()
                     // environmental). Registers source at zero; EVID_THREAT_UPDATE
                     // delivers the actual amount when AttackLogger fires.
                     AddThreat(ev.source, 0);
+                    UpdateThreatList(me, ev);
                     // Break stealth states on damage
                     var dmg_state := SM_GetState();
                     if (dmg_state == "AMBUSH" || dmg_state == "STEALING" || dmg_state == "SNEAKING")
@@ -150,7 +151,12 @@ function HumanoidBrain()
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
                         UpdateThreatList(me, ev);
-                        HandleHumanoidLeftArea(is_ranged);
+                        // Only drop combat state if the leaver was our actual opponent.
+                        // Otherwise nearby movement (other players, pets, ally deaths)
+                        // would wipe opponent + threat table mid-fight and strand the NPC.
+                        if (me.opponent && ev.source.serial == me.opponent.serial)
+                            HandleHumanoidLeftArea(is_ranged);
+                        endif
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
