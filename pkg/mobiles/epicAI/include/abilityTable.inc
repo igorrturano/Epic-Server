@@ -67,6 +67,7 @@ function BuildCombatAbilities(who)
         table.append(struct{ "id" := "BreathWeapon", "range_min" := 3, "range_max" := 8 });
         table.append(struct{ "id" := "WingBuffet", "range_min" := 1, "range_max" := 4 });
         table.append(struct{ "id" := "TailSwipe", "range_min" := 0, "range_max" := 2 });
+        table.append(struct{ "id" := "DiveAttack", "range_min" := 3, "range_max" := 6, "cd" := 15 });
     endif
 
     // Undead abilities

@@ -1,0 +1,177 @@
+// =============================================================================
+// witness.src — Citizen denunciation pipeline runner.
+//
+// Started by NotifyCitizenWitnesses (citizenWitness.inc) once per witnessing
+// citizen NPC. Owns the per-perp denunciation cooldown, builds the witness
+// entry, runs all four denunciation layers, and (for self-targeted attacks)
+// flees the attacker before denouncing.
+// =============================================================================
+
+use uo;
+use os;
+use polsys;
+
+include ":tn:cooldown";
+include ":brainAI:npcCommands";
+include ":charactercreation:include/RPTraits";
+include ":merchants:citizen/include/citizenStore";
+include ":merchants:citizen/include/citizenAuthority";
+include ":merchants:citizen/include/citizenDenounce";
+
+const DENOUNCE_COOLDOWN_SEC := 300;
+
+program WitnessScript(params)
+    var citizen := params[1];
+    var perp := params[2];
+    var crime_type := params[3];
+    var payload := params[4];
+
+    if (!citizen || !perp)
+        return;
+    endif
+
+    var cooldown_key := "denounced_" + perp.serial;
+    if (GetCooldown(citizen, cooldown_key) > 0)
+        return;
+    endif
+    SetCooldown(citizen, cooldown_key, DENOUNCE_COOLDOWN_SEC);
+
+    var entry := _BuildWitnessEntry(citizen, perp, crime_type, payload);
+    AppendWitness(citizen, entry);
+
+    // Self-flee: if the citizen itself is the defender, run away before
+    // denouncing. The four layers still execute — denouncement is the point.
+    if (crime_type == "attack" && payload && payload.defenderSerial == citizen.serial)
+        AI_Move(citizen, perp, NEMOVE_AWAY, NEMOVE_RUN, WAKEUP, 0);
+    endif
+
+    DoLayer1Yell(citizen, perp, crime_type);
+    DoLayer3Record(citizen, perp, entry);
+    DoLayer4SetCriminal(citizen, perp);
+    DoLayer2WalkAndSpeak(citizen, perp, crime_type);
+endprogram
+
+function _BuildWitnessEntry(citizen, perp, crime_type, payload)
+    var chardata := GetObjProperty(perp, "chardata");
+    var race := "";
+    var trait_value := "";
+    if (chardata != error)
+        if (chardata.raca != error)
+            race := CStr(chardata.raca);
+        endif
+        if (chardata.trait != error)
+            trait_value := CStr(chardata.trait);
+        endif
+    endif
+
+    var was_incognito := 0;
+    if (GetObjProperty(perp, "Incognito"))
+        was_incognito := 1;
+    endif
+
+    var descricao := GetObjProperty(perp, "descricao");
+    if (descricao == error || !descricao)
+        descricao := "";
+    endif
+
+    var url := GetObjProperty(perp, "url");
+    if (url == error || !url)
+        url := "";
+    endif
+
+    return struct{
+        "type" := crime_type,
+        "ts" := ReadGameClock(),
+        "whoSerial" := perp.serial,
+        "whoName" := perp.name,
+        "faction" := GetMobileFactionName(perp),
+        "race" := race,
+        "trait" := trait_value,
+        "tier" := _CrimeTier(crime_type),
+        "details" := _BuildDetails(crime_type, payload),
+        "wasIncognito" := was_incognito,
+        "descricao" := descricao,
+        "url" := url,
+        "rpTraits" := _BuildRpTraitsString(chardata)
+    };
+endfunction
+
+function _BuildRpTraitsString(chardata)
+    if (!chardata || chardata == error)
+        return "";
+    endif
+    var c := chardata.caracteristicas_rp;
+    if (!c || c == error)
+        return "";
+    endif
+
+    var parts := array{};
+    _AppendTrait(parts, "altura ",      _SafeTranslate("Altura",         c.Altura,                chardata));
+    _AppendTrait(parts, "compleicao ",  _SafeTranslate("Peso",           c.Peso,                  chardata));
+    _AppendTrait(parts, "olhos ",       _SafeTranslate("Olhos",          c.Olhos,                 chardata));
+    _AppendTrait(parts, "idade aparente ", _SafeTranslate("Idade Aparente", c["Idade Aparente"], chardata));
+    _AppendTrait(parts, "voz ",         _SafeTranslate("Voz",            c.Voz,                   chardata));
+
+    if (!parts.size())
+        return "";
+    endif
+
+    var result := "";
+    var i := 1;
+    while (i <= parts.size())
+        if (i > 1)
+            result := result + ", ";
+        endif
+        result := result + parts[i];
+        i := i + 1;
+    endwhile
+    return result;
+endfunction
+
+function _SafeTranslate(category, value, chardata)
+    if (value == error || CInt(value) < 0)
+        return "";
+    endif
+    var t := TranslateRacialTrait(category, value, chardata);
+    if (!t || t == error)
+        return "";
+    endif
+    return CStr(t);
+endfunction
+
+function _AppendTrait(byref parts, prefix, value)
+    if (value == "")
+        return;
+    endif
+    parts.append(prefix + value);
+endfunction
+
+function _CrimeTier(crime_type)
+    case (crime_type)
+        "hide":     return 1;
+        "lockpick": return 2;
+        "cast":     return 2;
+        "attack":   return 3;
+        default:    return 1;
+    endcase
+endfunction
+
+function _BuildDetails(crime_type, payload)
+    if (!payload)
+        return "";
+    endif
+    case (crime_type)
+        "cast":
+            if (payload.school != error)
+                return "Escola: " + CStr(payload.school);
+            endif
+            return "";
+        "attack":
+            if (payload.defenderName != error)
+                return "vs " + CStr(payload.defenderName);
+            endif
+            return "";
+        default:
+            return "";
+    endcase
+endfunction

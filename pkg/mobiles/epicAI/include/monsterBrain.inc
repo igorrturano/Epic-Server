@@ -52,6 +52,8 @@ function MonsterBrain()
             SM_TickStealing();
         elseif (state == "SNEAKING")
             SM_TickSneaking();
+        elseif (state == "INVESTIGATING")
+            SM_TickInvestigate();
         endif
 
         // Damage-weighted threat: decay table + reevaluate target if hysteresis
@@ -155,9 +157,12 @@ function MonsterBrain()
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 EVID_NOISE:
                     last_activity_time := polcore().systime;
-                    if (NoiseIsNearAnchor(ev.noise_x, ev.noise_y))
-                        InjectTauntThreat(ev.source);
-                        HandleMonsterCombatEvent(ev.source, is_ranged);
+                    if (!me.opponent && SM_GetState() == "IDLE" && me.alignment != 0)
+                        print("[noise rx] " + me.name + " investigating noise from " + ev.source.name);
+                        SM_TransitionTo("INVESTIGATING", struct{
+                            "noise_x" := ev.noise_x,
+                            "noise_y" := ev.noise_y
+                        });
                     endif
                 EVID_BUDDYATTACKED:
                     if (!GetCooldown(me, "buddy_heal"))
@@ -380,24 +385,6 @@ function HandleMonsterEnteredArea(source, is_ranged)
     HandleMonsterCombatEvent(source, is_ranged);
 
     return 1;
-endfunction
-
-// Returns 1 if (x, y) is within (anchor.range + NOISE_ANCHOR_BUFFER) tiles of
-// this NPC's anchor. NPCs without an anchor never react. Used by EVID_NOISE
-// to gate "hoard guardian" behavior — only intruders near the dragon's hoard
-// override the current target, so kiters can't drag the dragon farther away.
-function NoiseIsNearAnchor(noise_x, noise_y)
-    const NOISE_ANCHOR_BUFFER := 8;
-
-    if (!anchor_var || !anchor_var[1])
-        return 0;
-    endif
-    var anchor_range := CInt(anchor_var[4]);
-    if (anchor_range < 1)
-        anchor_range := 6;
-    endif
-    return CoordinateDistance(noise_x, noise_y, anchor_var[1], anchor_var[2])
-           <= (anchor_range + NOISE_ANCHOR_BUFFER);
 endfunction
 
 // function handleMonsterInitialReaction(source)

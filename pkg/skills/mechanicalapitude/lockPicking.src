@@ -14,6 +14,8 @@ include ":mechanicalapitude:lockpick_minigame";
 include ":keys:key";
 include ":traps:include/traps";
 include "include/string";
+include "include/noiseAlert";
+include ":merchants:citizen/include/citizenWitness";
 
 program skill_lockpicking(me, lockpick)
 	EraseObjProperty(me, "IsMeditating");
@@ -77,6 +79,7 @@ program skill_lockpicking(me, lockpick)
 			PrintTextAbove(me, "*Tenta arrombar a fechadura [barulhento]*");
 			me.hidden := 0;
 			PlaySoundEffect(chest, 0x242);
+			EmitNoise(me);
 		endif
 
 		// Verifica mãos livres durante o processo
@@ -126,6 +129,7 @@ function PickTreasureChest(me, lockpick, chest)
 		PrintTextAbove(me, "*Arrombando a fechadura. [barulhento]*");
 		me.hidden := 0;
 		PlaySoundEffect(chest, 0x0242);
+		EmitNoise(me);
 	endif
 
 	Sleep(1);
@@ -187,6 +191,7 @@ function PickTreasureChest(me, lockpick, chest)
 					SendSysMessageEx(me, "Você forçou a abertura disparando a armadilha!", SSM_FAIL);
 					RunTraps(chest, me);
 					SendViewContainer(me, chest);
+					NotifyCitizenWitnesses(me, "lockpick", struct);
 					var skill := AP_GetTrueSkill(me, "MECHANICS");
 					AP_SetTrueSkill(me, "MECHANICS", skill + 0.1);
 				endif
@@ -212,6 +217,7 @@ function PickTreasureChest(me, lockpick, chest)
 			me.hidden := 0;
 			PlaySoundEffect(chest, 0x200);
 			SendSysMessageEx(me, "*Destrancou [barulhento]*", SSM_INFO);
+			EmitNoise(me);
 		endif
 
 		set_critical(1);
@@ -224,6 +230,7 @@ function PickTreasureChest(me, lockpick, chest)
 		endif
 		chest.locked := 0;
 		set_critical(0);
+		NotifyCitizenWitnesses(me, "lockpick", struct);
 		return 1;
 	else
 		if (me.hidden)
@@ -258,6 +265,7 @@ function _UnlockChest(me, chest)
 	endif
 	chest.locked := 0;
 	set_critical(0);
+	NotifyCitizenWitnesses(me, "lockpick", struct);
 	var skill := AP_GetTrueSkill(me, "MECHANICS");
 	AP_SetTrueSkill(me, "MECHANICS", skill + 0.1);
 endfunction

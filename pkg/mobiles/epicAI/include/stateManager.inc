@@ -83,6 +83,42 @@ function SM_TickFlee()
     return 0;
 endfunction
 
+// Walks the NPC one tile per tick toward (_sm_data.noise_x, _sm_data.noise_y).
+// Exits to IDLE on arrival, timeout, or stuck. ENTEREDAREA fires naturally as
+// the NPC moves into perception range of the noisemaker, handing off to the
+// normal combat path.
+function SM_TickInvestigate()
+    if (!_sm_data.noise_x || !_sm_data.noise_y)
+        SM_TransitionTo("IDLE");
+        return 1;
+    endif
+
+    if (SM_ElapsedInState() >= 15)
+        SM_TransitionTo("IDLE");
+        return 1;
+    endif
+
+    if (CoordinateDistance(me.x, me.y, _sm_data.noise_x, _sm_data.noise_y) <= 1)
+        SM_TransitionTo("IDLE");
+        return 1;
+    endif
+
+    RunTowardLocation(_sm_data.noise_x, _sm_data.noise_y);
+
+    if (me.x == me.lastcoord.lastx && me.y == me.lastcoord.lasty)
+        if (!_sm_data.stuck_count) _sm_data.stuck_count := 0; endif
+        _sm_data.stuck_count += 1;
+        if (_sm_data.stuck_count >= 4)
+            SM_TransitionTo("IDLE");
+            return 1;
+        endif
+    else
+        _sm_data.stuck_count := 0;
+    endif
+
+    return 0;
+endfunction
+
 // Returns 1 when ambush is complete (should transition out)
 function SM_TickAmbush()
     if (!_sm_data.target || _sm_data.target.dead)

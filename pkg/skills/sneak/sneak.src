@@ -11,6 +11,7 @@ include "include/facings";
 include "include/creationUtils";
 include "include/dungeons";
 include ":message:model/Message";
+include ":merchants:citizen/include/citizenWitness";
 
 program skill_Hide(who)
 
@@ -75,6 +76,7 @@ program skill_Hide(who)
 			if (check > diff)
 				SendSysMessageEx(who, "Voce se escondeu.", SSM_INFO);
 				who.hidden := 1;
+				NotifyCitizenWitnesses(who, "hide", struct);
 				var a := start_script(":sneak:stealthmode", array{ who });
 				// sendsysmessage(who, " "+ a);
 				EraseObjProperty(who, "#steathsteps");
@@ -135,6 +137,7 @@ program skill_Hide(who)
 			if (check > diff)
 				SendSysMessageEx(who, "Voce se escondeu.", SSM_INFO);
 				who.hidden := 1;
+				NotifyCitizenWitnesses(who, "hide", struct);
 				var a := start_script(":sneak:stealthmode", array{ who });
 				// sendsysmessage(who, " "+ a);
 				EraseObjProperty(who, "#steathsteps");
