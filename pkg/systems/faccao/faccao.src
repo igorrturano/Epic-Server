@@ -953,7 +953,7 @@ endfunction
 
 function gmHandler(who)
 	var opts := array{ "Alterar Nome", "Alterar Area", "Alterar Prisoes", "Pegar GuildID",
-				   	"Alterar Sub-Guilds", "Tipo de Faccao", "Criar Bau", "Setar Soldo", "Setar Porta", "Remover Guilda", "Cancelar" };
+				   	"Alterar Sub-Guilds", "Tipo de Faccao", "Criar Bau", "Setar Bau", "Setar Soldo", "Setar Porta", "Remover Guilda", "Cancelar" };
 	var output := RadioGump(who, 300, 0, "Escolha uma opcao", opts, 0, opts.size());
 
 	if (output["Nome"])
@@ -1050,6 +1050,8 @@ function gmHandler(who)
 		_TipoFaccaoHandler(who);
 	elseif (output["Criar Bau"])
 		_CriarBauHandler(who);
+	elseif (output["Setar Bau"])
+		_SetarBauHandler(who);
 	elseif (output["Setar Soldo"])
 		_SetarSoldoHandler(who);
 	elseif (output["Setar Porta"])
@@ -1295,6 +1297,53 @@ function _CriarBauHandler(who)
 endfunction
 
 // -------------------------------------------------------
+// Aponta o bau_serial da faccao para um container ja existente no mundo.
+// Util para trocar o bau ativo sem destruir o anterior.
+// -------------------------------------------------------
+function _SetarBauHandler(who)
+	if (guild.GetProp("tipo_faccao") != "staff")
+		return SendSysMessageEx(who, "O bau so pode ser setado para faccoes do tipo staff.", SSM_FAIL);
+	endif
+
+	var bau_serial_antigo := guild.GetProp("bau_serial");
+	if (bau_serial_antigo)
+		var bau_antigo := SystemFindObjectBySerial(bau_serial_antigo);
+		if (bau_antigo)
+			SendSysMessageEx(who, "Bau atual: serial={} — ele NAO sera destruido.".format(bau_serial_antigo), SSM_INFO);
+		endif
+	endif
+
+	SendSysMessageEx(who, "Clique no container que deseja setar como novo bau desta faccao.", SSM_INFO);
+	var targ := Target(who);
+	if (!targ)
+		return SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+	endif
+
+	if (!targ.IsContainer())
+		return SendSysMessageEx(who, "O alvo precisa ser um container.", SSM_FAIL);
+	endif
+
+	var outro_guild := GetObjProperty(targ, "guild");
+	if (outro_guild != error && outro_guild != guild.guildid)
+		return SendSysMessageEx(who, "Este container ja pertence a outra faccao (guild={}).".format(outro_guild), SSM_FAIL);
+	endif
+
+	var tipo := guild.GetProp("tipo_faccao");
+	if (!tipo) tipo := "staff"; endif
+
+	targ.movable := 0;
+	targ.locked  := 1;
+	SetObjProperty(targ, "guild",       guild.guildid);
+	SetObjProperty(targ, "tipo_faccao", tipo);
+	PropagateNomeFaccao(guild, targ);
+	targ.name := "Bau da Faccao";
+
+	guild.SetProp("bau_serial", targ.serial);
+
+	SendSysMessageEx(who, "Bau setado | serial={} guild={} tipo={}".format(targ.serial, guild.guildid, tipo), SSM_INFO);
+endfunction
+
+// -------------------------------------------------------
 // Registra uma porta como pertencente a esta faccao de lore (staff).
 // Apenas GMs podem registrar. Membros com unlockdoors podem trocar a tranca depois.
 // Seriais das portas ficam em guild prop "portas_serials".
@@ -1397,7 +1446,14 @@ function _SetarSoldoHandler(who)
 	guild.SetProp("soldo_lider",     v_lider);
 	guild.SetProp("soldo_membro",    v_membro);
 	guild.SetProp("soldo_intervalo", intervalo);
-	guild.SetProp("soldo_proximo",   polcore().systime + intervalo);
+
+	// Para 7 ou 15 dias: primeiro pagamento dispara no proximo ciclo do soldocontrol (< 60s).
+	// Para modo teste (1 min): comportamento normal, aguarda o intervalo.
+	if (intervalo == 604800 || intervalo == 1296000)
+		guild.SetProp("soldo_proximo", polcore().systime - 1);
+	else
+		guild.SetProp("soldo_proximo", polcore().systime + intervalo);
+	endif
 
 	SendSysMessageEx(who, "Soldo configurado | lider={} membro={} intervalo={}s".format(
 		v_lider, v_membro, intervalo), SSM_INFO);
