@@ -8,6 +8,7 @@ include "include/sounds";
 include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 include "include/say";
+include ":furniture:chairfall";
 
 program SpellScript(params)
 
@@ -69,6 +70,9 @@ program SpellScript(params)
 endprogram
 
 function FloatItem(who, targ)
+	if (IsChairGraphic(targ.graphic))
+		TriggerChairFall(targ.x, targ.y, targ.z, targ.realm);
+	endif
 	var point_array := GetCoordsInLine(targ.x, targ.y, who.x, who.y);
 	LiftItem(who, targ);
 	var sway := 2;

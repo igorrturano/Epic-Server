@@ -14,6 +14,7 @@ include "/include/packets";
 include ":combat:Model/AttackInfo";
 include ":combat:Controller/DamageController";
 include ":crafting:include/util/fabricacaoConstants";
+include ":furniture:chairfall";
 
 const ELEM_CFG_DEST := "Destruiveis";
 const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
@@ -197,6 +198,10 @@ function Destruir(quem, itemAlvo, fonteDano)
 			InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano,deveMarcar);
 			DisparaAvisoDiscord(quem,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano);
 		endif
+	endif
+
+	if (IsChairGraphic(itemAlvo.graphic))
+		TriggerChairFall(itemAlvo.x, itemAlvo.y, itemAlvo.z, itemAlvo.realm);
 	endif
 
 	if (!envelopeDeed.isDeed)

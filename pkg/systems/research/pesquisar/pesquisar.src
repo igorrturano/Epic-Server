@@ -14,7 +14,7 @@ include ":gumps:yesNo";
 include ":gumps:requestGump";
 include ":tn:tngumps";
 include ":fls_core:fls_crafting";
-include ":recipes:recipes";
+include ":recipes:include/scrollRecipes";
 
 // ============================================
 // ALTERAÇÕES NESTE ARQUIVO (feat/ea-pesquisar3)
@@ -38,8 +38,7 @@ const PERGAMINHO_AMOUNT_EXTENSIVA := 20;
 const MIN_SKILL := 40;
 const MIN_MANA := 40;
 
-// Tempo de Pesquisa
-const RESEARCH_DURATION_MINUTES := 10080; // 7 dias
+// Tempo de Pesquisa — proporcional ao nível (ver GetResearchDuration)
 
 // UI - Cores das Barras
 const BARRA_BACKGROUND := 83;
@@ -57,78 +56,11 @@ var SKILL_THRESHOLDS := struct{
 
 var STUDY_ACTIONS;
 var BOOK_OBJTYPES;
-var RECIPE_CACHE;    // Cache para receitas indexadas por nível
-var SPELL_CACHE;     // Cache para spells indexados por círculo
-
 function InitializeGlobals()
     STUDY_ACTIONS := array{"*estudando*", "*escrevendo*", "*tomando notas*", "*conferindo as páginas*", "*lendo um livro*"};
     BOOK_OBJTYPES := array{0xA9D, 0xA9E};
-    
-    // Inicializar caches para performance
-    RECIPE_CACHE := BuildRecipeCache();
-    SPELL_CACHE := BuildSpellCache();
 endfunction
 
-function BuildRecipeCache()
-    // ============================================
-    // CONSTRÓI CACHE DE RECEITAS PARA PERFORMANCE
-    // ============================================
-    // Carrega todas as receitas do arquivo de configuração uma vez
-    // e organiza por nível de poder (1-5) para acesso O(1).
-    // ============================================
-    var cfg := ReadConfigFile(":recipes:recipes");
-    if (!cfg)
-        return error;
-    endif
-
-    var cache := struct{};
-    for power := 1 to 5
-        cache[CStr(power)] := array{};
-    endfor
-
-    foreach key in (GetConfigStringKeys(cfg))
-        var elem := FindConfigElem(cfg, key);
-        if (elem)
-            var level := GetConfigInt(elem, "level");
-            if (level >= 1 && level <= 5)
-                cache[CStr(level)].append(key);
-            endif
-        endif
-    endforeach
-
-    return cache;
-endfunction
-
-function BuildSpellCache()
-    // ============================================
-    // CONSTRÓI CACHE DE MAGIAS PARA PERFORMANCE
-    // ============================================
-    // Carrega todas as magias do arquivo de configuração uma vez
-    // e organiza por círculo (1-5) para acesso O(1).
-    // ============================================
-    var cfg := ReadConfigFile(":spells:spellcaster");
-    if (!cfg)
-        return error;
-    endif
-
-    var cache := struct{};
-    for circle := 1 to 5
-        cache[CStr(circle)] := array{};
-    endfor
-
-    foreach entry in (GetConfigStringKeys(cfg))
-        var elem := FindConfigElem(cfg, entry);
-        if (elem)
-            var circle := GetConfigInt(elem, "Circle");
-            if (circle >= 1 && circle <= 5)
-                var spellId := GetConfigInt(elem, "SpellId");
-                cache[CStr(circle)].append(spellId);
-            endif
-        endif
-    endforeach
-
-    return cache;
-endfunction
 
 program use_research_book(params)
     var who, book;
@@ -214,6 +146,18 @@ function GetSkillRequirement(power)
         default: return 40;
     endcase
 endfunction
+
+function GetResearchDuration(power)
+    case (power)
+        1: return 2880;
+        2: return 4320;
+        3: return 5760;
+        4: return 8640;
+        5: return 10080;
+        default: return 1; //10080;
+    endcase
+endfunction
+
 
 function ShowMainResearchGump(who, byref gump)
     // ============================================
@@ -372,8 +316,12 @@ function ShowQuickResearchGump(who, byref gump)
                 "Receita Alquimica":
                 "Tinta":
                     maxPower := Min(GetMaxPowerForInk(skills.alquimista), 5);
-                "Instrução de Fabricação":
-                    maxPower := Min(GetMaxPowerForCrafting(skills), 5);
+                "Instrução de Metalurgia":
+                    maxPower := Min(GetMaxPowerForSkill(skills.ferreiro), 5);
+                "Instrução de Marcenaria":
+                    maxPower := Min(GetMaxPowerForSkill(skills.carpenter), 2);
+                "Instrução de Trabalho Doméstico":
+                    maxPower := Min(GetMaxPowerForSkill(skills.costureiro), 2);
                 "Magia":
                     maxPower := Min(GetMaxPowerForMagic(skills.mago), 5);
                 default:
@@ -391,18 +339,20 @@ function ShowQuickResearchGump(who, byref gump)
             GFTextLine(gump, 363, 97, 2517, "Consome 5 pergaminhos em branco");
             GFTextLine(gump, 363, 180, 2517, "Consome 20 de mana");
             GFTextLine(gump, 448, 143, 2517, "+");
-            GFTextLine(gump, 360, 220, 2517, "* Pode produzir instrucções de MetalWorking,");
-            GFTextLine(gump, 360, 240, 2517, "WoodWorking e DomesticWork");
-            GFResizePic(gump, 365, 290, 83, 124, 131);
-            GFResizePic(gump, 522, 290, 83, 124, 131);
-            GFTextLine(gump, 395, 424, 2505, "Pergaminhos");
-            GFTextLine(gump, 390, 444, 2505, "Level 1, 2, 3 ");
-            GFTextLine(gump, 553, 424, 2505, "Pergaminhos");
-            GFTextLine(gump, 550, 444, 2505, "Level 4 e 5");
+            GFResizePic(gump, 363, 290, 83, 80, 131);
+            GFResizePic(gump, 449, 290, 83, 80, 131);
+            GFResizePic(gump, 535, 290, 83, 80, 131);
+            GFTextMid(gump, 363, 424, 80, 2505, "Comuns");
+            GFTextMid(gump, 363, 444, 80, 2505, "Lv 1-2");
+            GFTextMid(gump, 449, 424, 80, 2505, "Antigos");
+            GFTextMid(gump, 449, 444, 80, 2505, "Lv 3");
+            GFTextMid(gump, 535, 424, 80, 2505, "Raros");
+            GFTextMid(gump, 535, 444, 80, 2505, "Lv 4-5");
 
-            GFTilePic(gump, 560 + 20, 70 + 25, 0xE34);  
-            GFTilePic(gump, 365 + 48, 290 + 15, 0x0A99);  
-            GFTilePic(gump, 522 + 48, 290 + 15, 0x0C15); 
+            GFTilePic(gump, 560 + 20, 70 + 25, 0xE34);
+            GFTilePic(gump, 363 + 30, 290 + 15, 0x0A99);
+            GFTilePic(gump, 449 + 30, 290 + 15, 0x63FE);
+            GFTilePic(gump, 535 + 30, 290 + 15, 0x0C15);
         endif
 
         AddBackButton(gump, left_margin, bottom_margin);
@@ -481,8 +431,12 @@ function ShowExtensiveResearchGump(who, byref gump)
                 "Receita Alquimica":
                 "Tinta":
                     maxPower := Min(GetMaxPowerForInk(skills.alquimista), 5);
-                "Instrução de Fabricação":
-                    maxPower := Min(GetMaxPowerForCrafting(skills), 5);
+                "Instrução de Metalurgia":
+                    maxPower := Min(GetMaxPowerForSkill(skills.ferreiro), 5);
+                "Instrução de Marcenaria":
+                    maxPower := Min(GetMaxPowerForSkill(skills.carpenter), 2);
+                "Instrução de Trabalho Doméstico":
+                    maxPower := Min(GetMaxPowerForSkill(skills.costureiro), 2);
                 "Magia":
                     maxPower := Min(GetMaxPowerForMagic(skills.mago), 5);
                 default:
@@ -497,7 +451,7 @@ function ShowExtensiveResearchGump(who, byref gump)
             endfor
 
             if (selectedPower > 0)
-                var researchTimeSeconds := RESEARCH_DURATION_MINUTES * 60;
+                var researchTimeSeconds := GetResearchDuration(selectedPower) * 60;
                 var formattedTime := FormatResearchTime(researchTimeSeconds);
 
                 GFPicTiled(gump, right_margin / 2 + 50, y_pos + 20, 280, 5, 96);
@@ -515,20 +469,21 @@ function ShowExtensiveResearchGump(who, byref gump)
             GFTextLine(gump, 448, 133, 2517, "+");
             GFTextLine(gump, 363, 160, 2517, "Consome 40 de mana");
             GFTextLine(gump, 448, 187, 2517, "+");
-            GFTextLine(gump, 360, 214, 2517, "Duração de 7 dias ou 168 horas");    
-            GFTextLine(gump, 360, 250, 2517, "* Pode produzir instruções de MetalWorking,");
-            GFTextLine(gump, 360, 270, 2517, "WoodWorking e DomesticWork");
-            GFResizePic(gump, 365, 290, 83, 124, 131);
-            GFResizePic(gump, 522, 290, 83, 124, 131);
-            GFTextLine(gump, 395, 424, 2505, "Pergaminhos");
-            GFTextLine(gump, 390, 444, 2505, "Level 1, 2, 3 ");
-            GFTextLine(gump, 553, 424, 2505, "Pergaminhos");
-            GFTextLine(gump, 550, 444, 2505, "Level 4 e 5");
+            GFTextLine(gump, 360, 214, 2517, "Duração: 2 dias (Lv1) a 7 dias (Lv5)");
+            GFResizePic(gump, 363, 290, 83, 80, 131);
+            GFResizePic(gump, 449, 290, 83, 80, 131);
+            GFResizePic(gump, 535, 290, 83, 80, 131);
+            GFTextMid(gump, 363, 424, 80, 2505, "Comum");
+            GFTextMid(gump, 363, 444, 80, 2505, "Lv 1-2");
+            GFTextMid(gump, 449, 424, 80, 2505, "Velha");
+            GFTextMid(gump, 449, 444, 80, 2505, "Lv 3");
+            GFTextMid(gump, 535, 424, 80, 2505, "Rara");
+            GFTextMid(gump, 535, 444, 80, 2505, "Lv 4-5");
 
-
-            GFTilePic(gump, 570 + 20, 70 + 25, 0xE34);  
-            GFTilePic(gump, 365 + 48, 290 + 15, 0x0A99);  
-            GFTilePic(gump, 522 + 48, 290 + 15, 0x0C15);   
+            GFTilePic(gump, 570 + 20, 70 + 25, 0xE34);
+            GFTilePic(gump, 363 + 30, 290 + 15, 0x0A99);
+            GFTilePic(gump, 449 + 30, 290 + 15, 0x63FE);
+            GFTilePic(gump, 535 + 30, 290 + 15, 0x0C15);
         endif
 
         GFAddButton(gump, left_margin, bottom_margin - 40, 4005, 4006, GF_CLOSE_BTN, 0);
@@ -547,6 +502,11 @@ function ShowExtensiveResearchGump(who, byref gump)
             selectedPower := input[0];
         elseif (input[0] == 1001)
             var recipe := struct{"type" := selectedType, "power" := selectedPower, "extensiveResearch" := 1};
+            case (selectedType)
+                "Instrução de Metalurgia":            recipe.+craftSkillType := "MW";
+                "Instrução de Marcenaria":            recipe.+craftSkillType := "WW";
+                "Instrução de Trabalho Doméstico":    recipe.+craftSkillType := "DW";
+            endcase
 
             if (!CheckforBooks(who, selectedPower))
                 SendSysMessageEx(who, "Você não está em uma biblioteca apropriada para este nível de pesquisa.", SSM_FAIL);
@@ -640,7 +600,7 @@ function InitiateResearch(who, recipe)
     // sobre o sucesso ou falha do início da pesquisa.
     // ============================================
     recipe.start := ReadGameClock();
-    recipe.end := recipe.start + (RESEARCH_DURATION_MINUTES * 60);
+    recipe.end := recipe.start + (GetResearchDuration(recipe.power) * 60);
     
     var startResult := StartResearch(who, recipe);
 
@@ -674,7 +634,7 @@ function StartResearch(who, recipe, remainingTime := 0)
     endif
 
     if (remainingTime)
-        recipe.start := ReadGameClock() - (RESEARCH_DURATION_MINUTES * 60 - remainingTime);
+        recipe.start := ReadGameClock() - (GetResearchDuration(recipe.power) * 60 - remainingTime);
     else
         recipe.start := ReadGameClock();
     endif
@@ -711,7 +671,7 @@ function StartResearch(who, recipe, remainingTime := 0)
         sleep(3);
     endfor
 
-    var duration := remainingTime ? remainingTime : (RESEARCH_DURATION_MINUTES * 60);
+    var duration := remainingTime ? remainingTime : (GetResearchDuration(recipe.power) * 60);
     var timerName := "CompleteResearch";
     var level := 0;
     var timerInfo := struct{
@@ -719,6 +679,7 @@ function StartResearch(who, recipe, remainingTime := 0)
         "playerSerial" := who.serial,
         "recipeType" := recipe.type,
         "recipePower" := recipe.power,
+        "craftSkillType" := recipe.craftSkillType,
         "startTime" := recipe.start,
         "spellId" := recipe.spellId
     };
@@ -875,10 +836,12 @@ function CheckResearchRequirements(who, isQuickResearch := 0, power := 0, recipe
     var skillLevel := 0;
     if (recipe)
         case (recipe.type)
-            "Instrução de Fabricação":
-                skillLevel := Max(AP_GetSkill(who, METALWORKING), 
-                                Max(AP_GetSkill(who, WOODWORKING), 
-                                    AP_GetSkill(who, "Domestic_Work")));
+            "Instrução de Metalurgia":
+                skillLevel := AP_GetSkill(who, METALWORKING);
+            "Instrução de Marcenaria":
+                skillLevel := AP_GetSkill(who, WOODWORKING);
+            "Instrução de Trabalho Doméstico":
+                skillLevel := AP_GetSkill(who, "Domestic_Work");
             "Receita Alquimica":
             "Tinta":
                 skillLevel := AP_GetSkill(who, ALCHEMY);
@@ -957,29 +920,18 @@ function CheckforBooks(who, power := 0)
 
     var items := ListItemsNearLocation(who.x, who.y, who.z, 5, who.realm);
 
-    var basicBooks := {0x6F97, 0x6F98};  // power 1-2
-    var specialBooks3 := {0x63FE, 0x63FD, 0x63FF, 0x6400, 0x6A9E, 0x6A9F, 0x6AA0, 0x6AA1};  // power 3
-    var specialBooks4 := {0xEA08, 0xEA07, 0x2DEF, 0x2DF0};  // power 4
-    var specialBooks5 := {0xEA08, 0xEA07, 0x2DEF, 0x2DF0, 0x6A94, 0x6A95, 0x6A96, 0x6A97,0x0C14, 0x0C15};  // power 5
+    var commonBooks := {0x6F97, 0x6F98};  // comum — power 1-2
+    var oldBooks    := {0x63FE, 0x63FD, 0x63FF, 0x6400, 0x6A9E, 0x6A9F, 0x6AA0, 0x6AA1};  // velha — power 3
+    var rareBooks   := {0xEA08, 0xEA07, 0x2DEF, 0x2DF0, 0x6A94, 0x6A95, 0x6A96, 0x6A97, 0x0C14, 0x0C15};  // rara — power 4-5
 
     foreach item in items
-        // Primeiro verifica estantes de poder 5 - podem fazer tudo
-        if (item.objtype in specialBooks5)
+        if (item.objtype in rareBooks)
             return 1;
         endif
-
-        // Depois estantes de poder 4 - podem fazer até nível 4
-        if (item.objtype in specialBooks4 && power <= 4)
+        if (item.objtype in oldBooks && power <= 3)
             return 1;
         endif
-
-        // Depois estantes de poder 3 - podem fazer até nível 3
-        if (item.objtype in specialBooks3 && power <= 3)
-            return 1;
-        endif
-
-        // Por fim, estantes básicas - só podem fazer níveis 1 e 2
-        if (item.objtype in basicBooks && power <= 2)
+        if (item.objtype in commonBooks && power <= 2)
             return 1;
         endif
     endforeach
@@ -1105,42 +1057,13 @@ endfunction
 
 function DetermineResearchItem(recipe)
     case (recipe.type)
-        "Instrução de Fabricação":
-            case (recipe.power)
-                1: return 0xff990;
-                2: return 0xfe995;
-                3: return 0xfe996;
-                4: return 0xfe997;
-                5: return 0xfe998;
-                default: return 0xff990;
-            endcase
-        "Receita Alquimica":
-            case (recipe.power)
-                1: return 0xef1f;
-                2: return 0xef2c;
-                3: return 0xef2d;
-                4: return 0xef2e;
-                5: return 0xef2f;
-                default: return 0xef1f;
-            endcase
-        "Tinta":
-            case (recipe.power)
-                1: return 0xef2b;
-                2: return 0xef3c;
-                3: return 0xef3d;
-                4: return 0xef3e;
-                5: return 0xef3f;
-                default: return 0xef2b;
-            endcase
-        "Magia":
-            case (recipe.power)
-                1: return 0x2060;
-                2: return 0x2064;
-                3: return 0x2066;
-                4: return 0x2063;
-                5: return 0x2065;
-                default: return 0x2060;
-            endcase
+        "Instrução de Metalurgia":
+        "Instrução de Marcenaria":
+        "Instrução de Trabalho Doméstico":
+            return GetScrollObjtype(recipe.craftSkillType, recipe.power);
+        "Receita Alquimica": return GetScrollObjtype("alchemy", recipe.power);
+        "Tinta":             return GetScrollObjtype("dye", recipe.power);
+        "Magia":             return GetMagicScrollObjtype(recipe.power);
     endcase
     return 0;
 endfunction
@@ -1206,92 +1129,40 @@ function NotifyResearchCompletion(who, recipe)
 endfunction
 
 function FinishQuickResearch(who, recipe)
-    var itemID;
-    var cfg := ReadConfigFile(":recipes:recipes");
-    var recipeKey;
-
-    case (recipe.type)
-        "Instrução de Fabricação":
-            case (recipe.power)
-                1: itemID := 0xff990;
-                2: itemID := 0xfe995;
-                3: itemID := 0xfe996;
-                4: itemID := 0xfe997;
-                5: itemID := 0xfe998;
-                default: itemID := 0xff990;
-            endcase
-           
-            var levelRecipes := array{};
-            foreach key in (GetConfigStringKeys(cfg))
-                var elem := FindConfigElem(cfg, key);
-                if (elem && GetConfigInt(elem, "level") == recipe.power)
-                    levelRecipes.append(key);
-                endif
-            endforeach
-            if (levelRecipes.size() > 0)
-                recipeKey := levelRecipes[RandomInt(levelRecipes.size()) + 1];
-            endif
-        "Receita Alquimica":
-            case (recipe.power)
-                1: itemID := 0xef1f;
-                2: itemID := 0xef2c;
-                3: itemID := 0xef2d;
-                4: itemID := 0xef2e;
-                5: itemID := 0xef2f;
-                default: itemID := 0xef1f;
-            endcase
-        "Tinta":
-            case (recipe.power)
-                1: itemID := 0xef2b;
-                2: itemID := 0xef3c;
-                3: itemID := 0xef3d;
-                4: itemID := 0xef3e;
-                5: itemID := 0xef3f;
-                default: itemID := 0xef2b;
-            endcase
-        "Magia":
-            case (recipe.power)
-                1: itemID := 0x2060;
-                2: itemID := 0x2064;
-                3: itemID := 0x2066;
-                4: itemID := 0x2063;
-                5: itemID := 0x2065;
-                default: itemID := 0x2060;
-            endcase
-        default:
-            SendSysMessageEx(who, "Erro ao determinar o tipo de pesquisa.", SSM_FAIL);
-            return 0;
-    endcase
-
-     if (itemID)
-        var item := CreateItemInBackpack(who, itemID, 1);
-        if (item)
-            if (recipe.type == "Instrução de Fabricação" && recipeKey)
-                SetObjProperty(item, "recipe", recipeKey);
-                SendSysMessageEx(who, "Voce criou uma nova instrucao de fabricacao: " + recipeKey, SSM_INFO);
-            elseif (recipe.type == "Magia")
-                SetObjProperty(item, "SpellId", recipe.spellId);
-                SendSysMessageEx(who, "Voce criou um novo pergaminho de magia!", SSM_INFO);
-            else
-                SendSysMessageEx(who, "Voce concluiu sua pesquisa rapida com sucesso!", SSM_INFO);
-            endif
-
-       return 1; 
-        else
-            SendSysMessageEx(who, "Erro ao criar o item da pesquisa: " + item.errortext, SSM_FAIL);
-            return 0; 
-        endif
-    else
+    var itemID := DetermineResearchItem(recipe);
+    if (!itemID)
         SendSysMessageEx(who, "Erro ao determinar o item da pesquisa. Contate um GM.", SSM_FAIL);
-        return 0; 
+        return 0;
     endif
+
+    // CreateItemInBackpack fires the CreateScript which assigns the recipe via scrollRecipes.inc
+    var item := CreateItemInBackpack(who, itemID, 1);
+    if (!item)
+        SendSysMessageEx(who, "Erro ao criar o item da pesquisa: " + item.errortext, SSM_FAIL);
+        return 0;
+    endif
+
+    if (recipe.type == "Magia")
+        SetObjProperty(item, "SpellId", recipe.spellId);
+        SendSysMessageEx(who, "Voce criou um novo pergaminho de magia!", SSM_INFO);
+    else
+        SendSysMessageEx(who, "Voce concluiu sua pesquisa rapida com sucesso!", SSM_INFO);
+    endif
+
+    return 1;
 endfunction
 
 
 function GetAvailableResearchTypes(skills, isRapid := 0)
     var types := array{};
-    if (skills.ferreiro >= MIN_SKILL || skills.costureiro >= MIN_SKILL || skills.carpenter >= MIN_SKILL)
-        types.append("Instrução de Fabricação");
+    if (skills.ferreiro >= MIN_SKILL)
+        types.append("Instrução de Metalurgia");
+    endif
+    if (skills.carpenter >= MIN_SKILL)
+        types.append("Instrução de Marcenaria");
+    endif
+    if (skills.costureiro >= MIN_SKILL)
+        types.append("Instrução de Trabalho Doméstico");
     endif
     if (skills.alquimista >= MIN_SKILL)
         types.append("Receita Alquimica");
@@ -1358,20 +1229,15 @@ function PerformRapidResearch(who, recipe, byref gump)
     var success := 0;
     var skillname;
     case (recipe.type)
-        "Instrução de Fabricação":
-            var craftSkills := struct{
-                "woodworking" := AP_GetSkill(who, WOODWORKING),
-                "metalworking" := AP_GetSkill(who, METALWORKING),
-                "domesticwork" := AP_GetSkill(who, "Domestic_Work")
-            };
-            var highestSkill := Max(craftSkills.woodworking, Max(craftSkills.metalworking, craftSkills.domesticwork));
-            if (highestSkill == craftSkills.woodworking)
-                skillname := WOODWORKING;
-            elseif (highestSkill == craftSkills.metalworking)
-                skillname := METALWORKING;
-            else
-                skillname := "Domestic_Work";
-            endif
+        "Instrução de Metalurgia":
+            skillname := METALWORKING;
+            recipe.craftSkillType := "MW";
+        "Instrução de Marcenaria":
+            skillname := WOODWORKING;
+            recipe.craftSkillType := "WW";
+        "Instrução de Trabalho Doméstico":
+            skillname := "Domestic_Work";
+            recipe.craftSkillType := "DW";
         "Receita Alquimica": skillname := ALCHEMY;
         "Tinta": skillname := ALCHEMY;
         "Magia": 
@@ -1451,24 +1317,6 @@ function CustomFormatRealToString(value, decimal_places := 2)
     return CStr(integer_part) + fractional_string;
 endfunction
 
-function SelectRandomSpell(power)
-    // ============================================
-    // SELECIONA UMA MAGIA ALEATÓRIA DO CACHE
-    // ============================================
-    // Usa o cache pré-carregado para acesso O(1) em vez de ler
-    // o arquivo de configuração a cada chamada, melhorando performance.
-    // ============================================
-    if (!SPELL_CACHE || SPELL_CACHE == error)
-        return 0;
-    endif
-
-    var circleSpells := SPELL_CACHE[CStr(power)];
-    if (!circleSpells || circleSpells.size() == 0)
-        return 0;
-    endif
-
-    return circleSpells[RandomInt(circleSpells.size()) + 1];
-endfunction
 
 function CheckStudyConditions(who, my_x, my_y, my_facing)
     if (who.hidden || who.x != my_x || who.y != my_y || who.facing != my_facing || GetEquipmentByLayer(who, LAYER_MOUNT))
@@ -1494,7 +1342,7 @@ function CalculateProgress(recipe)
     var current_timestamp := ReadGameClock();
     var segundosPassados := Max(0, current_timestamp - recipe.start);
     
-    var duracaoTotal := RESEARCH_DURATION_MINUTES * 60;
+    var duracaoTotal := recipe.duration ? recipe.duration : (GetResearchDuration(recipe.power) * 60);
     
     var progresso := Min((CDbl(segundosPassados) / duracaoTotal) * 100, 100);
     
@@ -1504,7 +1352,7 @@ endfunction
 function CalculateRemainingTime(recipe)
     var current_timestamp := ReadGameClock();
     var segundosPassados := Max(0, current_timestamp - recipe.start);
-    var segundosTotal := RESEARCH_DURATION_MINUTES * 60;
+    var segundosTotal := recipe.duration ? recipe.duration : (GetResearchDuration(recipe.power) * 60);
     var segundosRestantes := Max(0, segundosTotal - segundosPassados);
     var progresso := (CDbl(segundosPassados) / segundosTotal) * 100;
     
@@ -1569,35 +1417,19 @@ function CompleteResearch(who, recipe, byref gump)
         return 0;
     endif
 
+    // CreateItemInBackpack fires the CreateScript which assigns the recipe via scrollRecipes.inc
     var item := CreateItemInBackpack(who, itemID, 1);
     if (item)
-        var success := 0;
-        case (recipe.type)
-            "Instrução de Fabricação":
-                var recipeKey := SelectRandomRecipe(recipe.power);
-                if (recipeKey)
-                    SetObjProperty(item, "recipe", recipeKey);
-                    SendSysMessageEx(who, "Você criou uma nova instrução de fabricação: " + recipeKey, SSM_INFO);
-                    success := 1;
-                else
-                    SendSysMessageEx(who, "Erro ao selecionar a receita. Contate um GM.", SSM_FAIL);
-                endif
-            "Magia":
-                if (recipe.spellId)
-                    SetObjProperty(item, "SpellId", recipe.spellId);
-                    SendSysMessageEx(who, "Você criou um novo pergaminho de magia!", SSM_INFO);
-                    success := 1;
-                else
-                    SendSysMessageEx(who, "Erro ao definir a magia. Contate um GM.", SSM_FAIL);
-                endif
-            default:
-                SendSysMessageEx(who, "Você concluiu sua pesquisa com sucesso!", SSM_INFO);
-                success := 1;
-        endcase
-
-        if (!success)
-            DestroyItem(item);
-            return 0;
+        if (recipe.type == "Magia")
+            if (!recipe.spellId)
+                SendSysMessageEx(who, "Erro ao definir a magia. Contate um GM.", SSM_FAIL);
+                DestroyItem(item);
+                return 0;
+            endif
+            SetObjProperty(item, "SpellId", recipe.spellId);
+            SendSysMessageEx(who, "Você criou um novo pergaminho de magia!", SSM_INFO);
+        else
+            SendSysMessageEx(who, "Você concluiu sua pesquisa com sucesso!", SSM_INFO);
         endif
 
         if (who.gender == 1)
@@ -1615,24 +1447,6 @@ function CompleteResearch(who, recipe, byref gump)
     endif
 endfunction
 
-function SelectRandomRecipe(power)
-    // ============================================
-    // SELECIONA UMA RECEITA ALEATÓRIA DO CACHE
-    // ============================================
-    // Usa o cache pré-carregado para acesso O(1) em vez de ler
-    // o arquivo de configuração a cada chamada, melhorando performance.
-    // ============================================
-    if (!RECIPE_CACHE || RECIPE_CACHE == error)
-        return 0;
-    endif
-
-    var levelRecipes := RECIPE_CACHE[CStr(power)];
-    if (!levelRecipes || levelRecipes.size() == 0)
-        return 0;
-    endif
-
-    return levelRecipes[RandomInt(levelRecipes.size()) + 1];
-endfunction
 
 function CheckAndConsumeMana(who, isQuickResearch := 0, power := 0)
     // Define o requisito de mana baseado no power

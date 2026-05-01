@@ -1,0 +1,11 @@
+// WoodWork recipe scroll create script.
+// Delegates all recipe assignment logic to scrollRecipes.inc.
+use uo;
+use cfgfile;
+use util;
+
+include ":recipes:include/scrollRecipes";
+
+program create(item)
+    AssignCraftRecipe(item, "WW");
+endprogram
