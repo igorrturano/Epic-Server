@@ -7,6 +7,8 @@ include "include/sounds";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program SpellScript(params)
 	var caster := params[1];
@@ -18,24 +20,50 @@ program SpellScript(params)
 	// Clean up any previous cast before applying — mirrors haste/barkskin.
 	SC_RemoveEffect(caster, CInt(spellinfo.id));
 
-	var duration := Cint(AP_GetSkill(caster, ARCANA) / 5);
+	var arcana := AP_GetSkill(caster, ARCANA);
+
+	var duration := Cint(arcana / 5);
 	if (duration < 5)
 		duration := 5;
 	endif
 	duration := bonusSpellDurationForSpecialists(caster, duration, spell_school);
 
+	// Mana absorb ratio: 2 mana per 1 damage by default; 1:1 if Arcana is primary.
+	var mana_ratio := 2;
+	var chardata := GetObjProperty(caster, "chardata");
+	if (chardata != error)
+		var skills := chardata.Skills;
+		if (skills != error && skills[ARCANA] == 3)
+			mana_ratio := 1;
+		endif
+	endif
+
+	// Evocator specialists also gain Arcana/10 Vontade while the shield holds.
+	var vontade_bonus := 0;
+	if (MobileWrapper(caster).HasAbility(ABILITY_ID::EVOCATOR))
+		vontade_bonus := CInt(arcana / 10);
+	endif
+
 	SendSysMessageEx(caster, "Uma barreira arcana envolve seu corpo.", SSM_INFO);
+
+	var desc := (mana_ratio == 1) ? "Dano fisico desviado para mana (1:1)" : "Dano fisico desviado para mana (2:1)";
 
 	var opts := struct{};
 	opts.+buff_category := "mana_shield";
 	opts.+displayname := "Barreira de Mana";
-	opts.+desc := "Dano fisico desviado para mana (2:1)";
+	opts.+desc := desc;
 	opts.+maintainable := 1;
 	opts.+tick_script := ":spells:spell_logic/evocation/manashieldTick";
 	opts.+tick_interval := 1;
 	opts.+tick_params := struct{};
 	opts.+on_apply_script := ":spells:spell_logic/evocation/manashield_apply";
-	opts.+on_apply_params := struct{ duration := duration, fx := FX_ESCUDO_PROTETIVO, sound := SFX_SPELL_PROTECTION };
+	opts.+on_apply_params := struct{
+		duration := duration,
+		fx := FX_ESCUDO_PROTETIVO,
+		sound := SFX_SPELL_PROTECTION,
+		mana_ratio := mana_ratio,
+		vontade_bonus := vontade_bonus
+	};
 	opts.+on_expire_script := ":spells:spell_logic/evocation/manashield_end";
 
 	SC_ApplyEffect(caster, caster, opts, duration, CInt(spellinfo.id));
