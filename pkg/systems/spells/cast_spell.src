@@ -29,6 +29,7 @@ include ":entropy:entropy";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include ":faccao:include/imperium";
+include ":merchants:citizen/include/citizenWitness";
 
 program SpellStarter(params)
 	var mobile := params[1]; // Caster
@@ -588,8 +589,11 @@ endfunction
 function finalizeCasting(mobile, spellinfo, targ, scroll)
 	CastSpell(mobile, spellinfo, targ);
 
-	if (spellinfo.Type != "Divine" && spellinfo.Type != "Priest" && spellinfo.Circle[1] != "0" && InValtheris(mobile) && HasPraetors())
-		Start_Script(":faccao:praetorAlert", array{ mobile, spellinfo.School });
+	if (spellinfo.Type != "Divine" && spellinfo.Type != "Priest" && spellinfo.Circle[1] != "0")
+		NotifyCitizenWitnesses(mobile, "cast", struct{ "school" := spellinfo.School });
+		if (InValtheris(mobile) && HasPraetors())
+			Start_Script(":faccao:praetorAlert", array{ mobile, spellinfo.School });
+		endif
 	endif
 
 	var entropy_delta := 0;

@@ -1,0 +1,226 @@
+// =============================================================================
+// citizenInterrogate.src — Player-facing interrogation gump.
+//
+// Started by dblclick.src for non-GM players. Four pre-set buttons; each goes
+// through an AWARENESS skill check (per-question difficulty). Players with
+// chardata.Skills[AWARENESS] == 3 (primary tier) get one free answer per
+// citizen per IRL day before the skill check kicks in.
+//
+// The citizen answers via AI_Speak, reading from its DataStore witnessLog
+// (most recent matching entry).
+// =============================================================================
+
+use uo;
+use os;
+use util;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":attributes:attributes";
+include ":attributes:attributeConstants";
+include ":brainAI:npcCommands";
+include ":merchants:citizen/include/citizenStore";
+
+const Q_SUSPICIOUS := 1;
+const Q_MAGIC      := 2;
+const Q_HIDING     := 3;
+const Q_LOCKPICK   := 4;
+const Q_TARGET     := 5;
+const Q_DESCRIBE   := 6;
+
+program citizenInterrogate(params)
+    var npc := params[1];
+    var player := params[2];
+
+    if (!npc || !player)
+        return;
+    endif
+
+    while (1)
+        var gump := GFCreateGump();
+        GFResizePic(gump, 0, 0, 9200, 380, 270);
+        GFResizePic(gump, 15, 15, 9350, 350, 240);
+        GFTextMid(gump, 15, 25, 350, 53, "Conversar com " + npc.name);
+
+        GFAddButton(gump, 30, 60, 4005, 4006, GF_CLOSE_BTN, Q_SUSPICIOUS);
+        GFTextLine(gump, 70, 62, 1153, "Voce viu algo suspeito?");
+
+        GFAddButton(gump, 30, 90, 4005, 4006, GF_CLOSE_BTN, Q_MAGIC);
+        GFTextLine(gump, 70, 92, 1153, "Alguem invocando magia?");
+
+        GFAddButton(gump, 30, 120, 4005, 4006, GF_CLOSE_BTN, Q_HIDING);
+        GFTextLine(gump, 70, 122, 1153, "Alguem se escondendo?");
+
+        GFAddButton(gump, 30, 150, 4005, 4006, GF_CLOSE_BTN, Q_LOCKPICK);
+        GFTextLine(gump, 70, 152, 1153, "Voce viu alguem cometendo arrombamentos?");
+
+        GFAddButton(gump, 30, 180, 4005, 4006, GF_CLOSE_BTN, Q_TARGET);
+        GFTextLine(gump, 70, 182, 1153, "Voce viu alguem em particular?");
+
+        GFAddButton(gump, 30, 210, 4005, 4006, GF_CLOSE_BTN, Q_DESCRIBE);
+        GFTextLine(gump, 70, 212, 1153, "Pode descrever a ultima pessoa que viu?");
+
+        var input := GFSendGump(player, gump);
+        if (!input)
+            return;
+        endif
+
+        var fn := input[0];
+        if (fn != Q_SUSPICIOUS && fn != Q_MAGIC && fn != Q_HIDING && fn != Q_LOCKPICK && fn != Q_TARGET && fn != Q_DESCRIBE)
+            return;
+        endif
+        var difficulty := 0;
+        case (fn)
+            Q_SUSPICIOUS: difficulty := 0;
+            Q_MAGIC:      difficulty := 15;
+            Q_HIDING:     difficulty := 15;
+            Q_LOCKPICK:   difficulty := 15;
+            Q_TARGET:     difficulty := 30;
+            Q_DESCRIBE:   difficulty := 20;
+        endcase
+
+        if (!_PerformInterrogationCheck(npc, player, difficulty))
+            sleep(1);
+            continue;
+        endif
+
+        var answer := "";
+        case (fn)
+            Q_SUSPICIOUS: answer := _AnswerSuspicious(npc);
+            Q_MAGIC:      answer := _AnswerByType(npc, "cast", "invocando magia");
+            Q_HIDING:     answer := _AnswerByType(npc, "hide", "se escondendo");
+            Q_LOCKPICK:   answer := _AnswerByType(npc, "lockpick", "arrombando ou mexendo em armadilhas");
+            Q_TARGET:     answer := _AnswerAboutTarget(npc, player);
+            Q_DESCRIBE:   answer := _AnswerDescribe(npc, player);
+        endcase
+
+        if (answer != "")
+            AI_Speak(npc, answer);
+        endif
+        sleep(2);
+    endwhile
+endprogram
+
+function _PerformInterrogationCheck(npc, player, difficulty)
+    var chardata := GetObjProperty(player, "chardata");
+    var has_primary_aware := 0;
+    if (chardata != error && chardata.Skills != error)
+        if (chardata.Skills.Exists(AWARENESS) && chardata.Skills[AWARENESS] == 3)
+            has_primary_aware := 1;
+        endif
+    endif
+
+    if (has_primary_aware && IsAwarenessFreeAvailable(npc, player))
+        MarkAwarenessFreeUsed(npc, player);
+        SendSysMessage(player, "Sua percepcao apurada lhe rendeu uma resposta gratuita hoje.");
+        return 1;
+    endif
+
+    if (SkillCheck(player, AWARENESS, difficulty) > 0)
+        return 1;
+    endif
+
+    AI_Speak(npc, "Hmm, nao tenho certeza sobre isso...");
+    return 0;
+endfunction
+
+function _AnswerSuspicious(npc)
+    var log := GetWitnessLog(npc);
+    if (!log.size())
+        return "Nao vi nada estranho ultimamente.";
+    endif
+    return _DescribeEntry(log[log.size()]);
+endfunction
+
+function _AnswerByType(npc, target_type, label)
+    var log := GetWitnessLog(npc);
+    var match := 0;
+    var i := log.size();
+    while (i >= 1)
+        if (log[i].type == target_type)
+            match := log[i];
+            i := 0;
+        else
+            i := i - 1;
+        endif
+    endwhile
+    if (!match)
+        return "Nao, nao vi ninguem " + label + " por aqui.";
+    endif
+    return _DescribeEntry(match);
+endfunction
+
+function _AnswerAboutTarget(npc, player)
+    SendSysMessage(player, "Sobre quem voce quer perguntar?");
+    var targ := Target(player);
+    if (!targ)
+        return "Hmm, esquece.";
+    endif
+    var log := GetWitnessLog(npc);
+    var match := 0;
+    var i := log.size();
+    while (i >= 1)
+        if (log[i].whoSerial == targ.serial)
+            match := log[i];
+            i := 0;
+        else
+            i := i - 1;
+        endif
+    endwhile
+    if (!match)
+        return "Nao vi " + targ.name + " fazendo nada por aqui.";
+    endif
+    return _DescribeEntry(match);
+endfunction
+
+function _AnswerDescribe(npc, player)
+    var log := GetWitnessLog(npc);
+    if (!log.size())
+        return "Nao vi ninguem suspeito ultimamente.";
+    endif
+    var entry := log[log.size()];
+    AI_Speak(npc, "Deixa eu te mostrar...");
+    Start_Script(":merchants:citizen/gumps/citizenReport", { npc, player, entry });
+    return "";
+endfunction
+
+function _DescribeEntry(entry)
+    var action := "agindo de forma suspeita";
+    case (entry.type)
+        "hide":     action := "tentando se esconder";
+        "lockpick": action := "mexendo em uma fechadura";
+        "cast":     action := "invocando uma magia";
+        "attack":   action := "atacando alguem";
+    endcase
+
+    var was_incognito := 0;
+    if (entry.wasIncognito != error && entry.wasIncognito)
+        was_incognito := 1;
+    endif
+
+    var traits := "";
+    if (entry.rpTraits != error)
+        traits := CStr(entry.rpTraits);
+    endif
+
+    var descricao := "";
+    if (entry.descricao != error)
+        descricao := CStr(entry.descricao);
+    endif
+
+    if (was_incognito)
+        var msg := "Vi alguem encapuzado " + action + ".";
+        if (traits != "")
+            msg := msg + " Mas notei: " + traits + ".";
+        endif
+        return msg;
+    endif
+
+    var msg := "Vi " + entry.whoName + " " + action + ".";
+    if (descricao != "")
+        msg := msg + " Sobre sua aparencia: " + descricao;
+    elseif (traits != "")
+        msg := msg + " Notei: " + traits + ".";
+    endif
+    return msg;
+endfunction

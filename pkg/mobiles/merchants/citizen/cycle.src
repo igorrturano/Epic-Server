@@ -1,0 +1,46 @@
+// =============================================================================
+// cycle.src — Citizen LookAround/cycle nerve.
+//
+// Lightweight idle nerve: prunes the witness log periodically and emits
+// occasional ambient flavor speech when a player is nearby. Real crime
+// detection is push-based via NotifyCitizenWitnesses (see citizenWitness.inc).
+// =============================================================================
+
+use uo;
+use os;
+use util;
+
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include "include/epicNPCUtils";
+include ":merchants:citizen/include/citizenStore";
+
+program BrainNerve(params)
+    var npc := params[1];
+    params := 0;
+
+    // Citizens speak the common tongue so players can understand them.
+    SetObjProperty(npc, "lingua_escolhida", "Comum");
+
+    while (npc)
+        PruneWitnessLog(npc);
+
+        if (RandomInt(10) == 0 && HasPlayerNear(npc))
+            AI_Speak(npc, _PickAmbientLine());
+        endif
+
+        AI_ClearThoughts(npc, CLR_NERVE);
+        Sleep(60);
+    endwhile
+endprogram
+
+function _PickAmbientLine()
+    var lines := array{
+        "Que dia tranquilo...",
+        "Espero que os guardas estejam atentos hoje.",
+        "Vi muita gente estranha por ai ultimamente.",
+        "Esses tempos andam perigosos.",
+        "Bom dia, viajante."
+    };
+    return lines[RandomInt(lines.size()) + 1];
+endfunction

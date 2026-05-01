@@ -60,6 +60,8 @@ function HumanoidBrain()
             SM_TickStealing();
         elseif (state == "SNEAKING")
             SM_TickSneaking();
+        elseif (state == "INVESTIGATING")
+            SM_TickInvestigate();
         endif
 
         // Damage-weighted threat: decay table + reevaluate target if hysteresis
@@ -171,6 +173,15 @@ function HumanoidBrain()
                     last_activity_time := polcore().systime;
                     InjectTauntThreat(ev.source);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
+                EVID_NOISE:
+                    last_activity_time := polcore().systime;
+                    if (!me.opponent && SM_GetState() == "IDLE" && me.alignment != 0)
+                        print("[noise rx] " + me.name + " investigating noise from " + ev.source.name);
+                        SM_TransitionTo("INVESTIGATING", struct{
+                            "noise_x" := ev.noise_x,
+                            "noise_y" := ev.noise_y
+                        });
+                    endif
                 EVID_BUDDYATTACKED:
                     if (!GetCooldown(me, "buddy_heal"))
                         var hurt_ally := ev.source;

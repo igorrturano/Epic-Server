@@ -3,6 +3,7 @@ use os;
 
 include "include/client";
 include "include/say";
+include "include/epicConstants";
 
 enum class ALTURA_RACIAL
     MUITO_BAIXO,

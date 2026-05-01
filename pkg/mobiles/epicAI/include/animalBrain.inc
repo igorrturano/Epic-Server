@@ -32,6 +32,8 @@ function AnimalBrain()
             SM_TickFollowing();
         elseif (state == "AMBUSH")
             SM_TickAmbush();
+        elseif (state == "INVESTIGATING")
+            SM_TickInvestigate();
         endif
 
         // Damage-weighted threat: decay table + reevaluate target if hysteresis
@@ -118,6 +120,15 @@ function AnimalBrain()
                     last_activity_time := polcore().systime;
                     InjectTauntThreat(ev.source);
                     HandleAnimalCombatEvent(ev.source);
+                EVID_NOISE:
+                    last_activity_time := polcore().systime;
+                    if (!me.opponent && SM_GetState() == "IDLE" && me.alignment != 0)
+                        print("[noise rx] " + me.name + " investigating noise from " + ev.source.name);
+                        SM_TransitionTo("INVESTIGATING", struct{
+                            "noise_x" := ev.noise_x,
+                            "noise_y" := ev.noise_y
+                        });
+                    endif
                 EVID_PEACEMADE:
                     last_activity_time := polcore().systime;
                     SetWarMode(0);

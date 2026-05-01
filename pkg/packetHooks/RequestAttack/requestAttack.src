@@ -24,6 +24,7 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":combat:Model/AttackInfo";
 include ":message:model/Message";
 include ":faccao:imperium";
+include ":merchants:citizen/include/citizenWitness";
 
 const BYTE_DEFENDER := 1;
 
@@ -66,7 +67,41 @@ exported function HandleAttackRequest(who, byref packet)
 
 	LogAttackRequest(who, defender);
 
+	if (_IsAttackACitizenCrime(who, defender))
+		NotifyCitizenWitnesses(who, "attack", struct{
+			"defenderSerial" := defender.serial,
+			"defenderName" := defender.name
+		});
+	endif
+
 	ExecuteMasteryAbility(AttackInfo(MobileWrapper(who), MobileWrapper(defender), ATTACK_MOMENT::ENGAGING));
+
+	return 0;
+endfunction
+
+function _IsAttackACitizenCrime(attacker, defender)
+	var attacker_is_player := !attacker.npctemplate;
+	var defender_is_player := !defender.npctemplate;
+
+	// Player vs Player
+	if (attacker_is_player && defender_is_player)
+		return 1;
+	endif
+
+	// Anything attacking a citizen NPC
+	if (defender.npctemplate == ":merchants:citizen")
+		return 1;
+	endif
+
+	// Player attacking a non-red NPC, or any pet
+	if (attacker_is_player && defender.npctemplate)
+		if (defender.alignment != 1)
+			return 1;
+		endif
+		if (defender.ownerserial)
+			return 1;
+		endif
+	endif
 
 	return 0;
 endfunction

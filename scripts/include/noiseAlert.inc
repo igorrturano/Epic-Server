@@ -3,7 +3,7 @@ use os;
 
 include "include/sysEvent";
 
-const NOISE_DEFAULT_RADIUS := 16;
+const NOISE_DEFAULT_RADIUS := 40;
 const NOISE_PER_SOURCE_COOLDOWN := 1;
 
 function EmitNoise(source, radius := NOISE_DEFAULT_RADIUS)
