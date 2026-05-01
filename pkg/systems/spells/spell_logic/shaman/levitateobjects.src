@@ -8,6 +8,7 @@ include "include/sounds";
 include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 include "include/say";
+include ":furniture:chairfall";
 
 program SpellScript(params)
 
@@ -47,7 +48,7 @@ program SpellScript(params)
 	if (targ.Telekinesis(who))
 		sleepms(20);
 		foreach coord in GetCoordsInLine(loc.x, loc.y, targ.x, targ.y)
-			PlayStationaryEffect(coord.x, coord.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+			PlayStationaryEffect(coord.x, coord.y, targ.z, FX_SPARK_EFFECT, 2, 2, 0, targ.realm);
 			sleepms(20);
 		endforeach
 	else
@@ -69,6 +70,9 @@ program SpellScript(params)
 endprogram
 
 function FloatItem(who, targ)
+	if (IsChairGraphic(targ.graphic))
+		TriggerChairFall(targ.x, targ.y, targ.z, targ.realm);
+	endif
 	var point_array := GetCoordsInLine(targ.x, targ.y, who.x, who.y);
 	LiftItem(who, targ);
 	var sway := 2;
@@ -90,7 +94,7 @@ function FloatItem(who, targ)
 			break;
 		endif
 
-		PlayStationaryEffect(targ.x, targ.y, targ.z - 10, FX_SPARK_EFFECT, 10, 10);
+		PlayStationaryEffect(targ.x, targ.y, targ.z - 10, FX_SPARK_EFFECT, 10, 10, 0, targ.realm);
 		sleepms(400);
 
 		run_away := run_away + 1;
@@ -114,7 +118,7 @@ function LiftItem(who, item)
 			break;
 		endif
 
-		PlayStationaryEffect(item.x, item.y, item.z - 10, FX_SPARK_EFFECT, 2, 2);
+		PlayStationaryEffect(item.x, item.y, item.z - 10, FX_SPARK_EFFECT, 2, 2, 0, item.realm);
 		sleepms(200);
 	endfor
 endfunction
@@ -134,7 +138,7 @@ function LowerItem(who, item, sway)
 			break;
 		endif
 
-		PlayStationaryEffect(item.x, item.y, item.z - 10, FX_SPARK_EFFECT, 2, 2);
+		PlayStationaryEffect(item.x, item.y, item.z - 10, FX_SPARK_EFFECT, 2, 2, 0, item.realm);
 		sleepms(200);
 		if (item.z <= GetWorldHeight(item.x, item.y))
 			break;
