@@ -38,9 +38,11 @@ function MontaDescPersonagem(objeto, quem, xDesc)
 	endif
 
 	// Pet/creature description set via RURAL_LIFE (Campestre) ability
-	var pet_desc := GetObjProperty(objeto, "description");
-	if (pet_desc)
-		xDesc := xDesc + WHITE + pet_desc + "<br>";
+	if (objeto.npctemplate)
+		var pet_desc := GetObjProperty(objeto, "description");
+		if (pet_desc)
+			xDesc := xDesc + WHITE + pet_desc + "<br>";
+		endif
 	endif
 
 	// Descrições agregadas dos itens equipados (montado por equip/unequip.src)
