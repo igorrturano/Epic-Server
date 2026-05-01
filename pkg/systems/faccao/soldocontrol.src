@@ -6,6 +6,7 @@ include ":faccao:faccao";
 include ":timeUtils:time";
 include ":attributes:attributes";
 include ":nature:nature";
+include "include/epicEconomyAudit";
 
 const SOLDO_CICLO_SEGUNDOS  := 60;
 const SOLDO_INTERVALO_DIAS  := 7;
@@ -86,16 +87,41 @@ function _PagarSoldoPlayers(guild)
 	if (num_membros > 0) num_membros -= 1; endif // desconta o lider
 
 	var total := v_lider + (num_membros * v_membro);
+
+	Print("[Soldo-DEBUG] Ciclo disparado para guild '" + guild.GetProp("name") + "':");
+	Print("[Soldo-DEBUG]   bau_serial   = " + guild.GetProp("bau_serial") + " | bau.locked=" + bau.locked);
+	Print("[Soldo-DEBUG]   membros      = " + (num_membros + 1) + " (lider + " + num_membros + " membros)");
+	Print("[Soldo-DEBUG]   v_lider      = " + v_lider + " | v_membro=" + v_membro + " | total=" + total);
+	Print("[Soldo-DEBUG]   intervalo    = " + intervalo + "s | proximo=" + proximo);
+
 	if (total <= 0)
+		Print("[Soldo-DEBUG]   SKIP: total=0, nada a pagar.");
 		guild.SetProp("soldo_proximo", polcore().systime + intervalo);
 		return;
 	endif
 
+	// Desbloqueia o baú para toda a criação (bag + moedas + livro ficam dentro dele)
+	// canInsert verifica CP_RootContainerLocked — precisa estar aberto até o fim
+	var estava_travado := bau.locked;
+	if (estava_travado) bau.locked := 0; endif
+
 	var bag := _CriarBagPagamento(bau, total);
-	if (!bag) return; endif
+
+	if (bag.errortext)
+		if (estava_travado) bau.locked := 1; endif
+		Print("[Soldo-DEBUG]   ERRO: bag nao criada (" + bag.errortext + ")");
+		return;
+	endif
+
+	Print("[Soldo-DEBUG]   bag criada   = serial=" + bag.serial + " nome='" + bag.name + "'");
 
 	_CriarLivroSoldo(bag, guild, v_lider, membros, v_membro);
+
+	if (estava_travado) bau.locked := 1; endif
+
 	_NotificarMembros(membros);
+
+	Print("[Soldo-DEBUG]   Pagamento concluido. Proximo em " + intervalo + "s.");
 
 	guild.SetProp("soldo_proximo", polcore().systime + intervalo);
 endfunction
@@ -106,7 +132,7 @@ function _CriarBagPagamento(bau, total)
 
 	var bag := CreateItemInContainer(bau, 0xE75, 1);
 	if (!bag)
-		Print("[Soldo] ERRO: não foi possível criar bag no baú.");
+		Print("[Soldo] ERRO: não foi possível criar bag no baú. serial=" + bau.serial);
 		return error{"errortext":="bag_falhou"};
 	endif
 	bag.name := nome;
@@ -114,8 +140,11 @@ function _CriarBagPagamento(bau, total)
 	var moedas := CreateItemInContainer(bag, 0xba63, total);
 	if (!moedas)
 		Print("[Soldo] ERRO: não foi possível criar moedas na bag.");
+		bag.Destroy();
 		return error{"errortext":="moedas_falhou"};
 	endif
+	Print("[Soldo-DEBUG]   moedas criadas = serial=" + moedas.serial + " amount=" + moedas.amount);
+	EA_Record(EA_MINT_GUILD_PAYOUT, moedas, total, "GUILD:soldo", bag, bau.name);
 
 	return bag;
 endfunction
@@ -123,7 +152,11 @@ endfunction
 // ── Cria o livro de recibo dentro da bag ─────────────────────────────────────
 function _CriarLivroSoldo(bag, guild, v_lider, membros, v_membro)
 	var livro := CreateItemInContainer(bag, 0xFEF, 1);
-	if (!livro) return; endif
+	if (!livro)
+		Print("[Soldo-DEBUG]   AVISO: livro de recibo nao criado na bag serial=" + bag.serial);
+		return;
+	endif
+	Print("[Soldo-DEBUG]   livro criado   = serial=" + livro.serial);
 
 	var lider_serial := guild.GetProp("leader");
 	var titulo       := "Recibo - " + getDayOfMonth() + "/" + getMonth() + "/" + getYear();
