@@ -713,7 +713,7 @@ function GetOrCreatePursuitPath(opponent)
         endif
     endif
 
-    var new_path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES, 20);
+    var new_path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES, 50);
 
     if (new_path)
         path_cache_var := struct{
@@ -869,34 +869,74 @@ function PursueMelee(opponent)
     endif
 
     var should_run := !(me.hidden || me.concealed);
+    var current_time := ReadGameClock();
 
-    // Direct movement when we have line of sight
-    if (CheckLineOfSight(me, opponent))
+    // Init tracker on first call or target switch. Distance-window fields are
+    // melee-specific; the legacy fields stay for PursueTarget's retreat path.
+    if (!pursuit_tracker || pursuit_tracker.target_serial != opponent.serial)
+        pursuit_tracker := BuildPursuitTracker(opponent.serial, me.x, me.y, dist, current_time);
+        pursuit_tracker.+window_start_dist := dist;
+        pursuit_tracker.+window_start_time := current_time;
+        pursuit_tracker.+windows_stalled := 0;
+        pursuit_tracker.+path_mode := 0;
+        pursuit_tracker.+best_distance := dist;
+        pursuit_tracker.+last_progress_time := current_time;
+    endif
+
+    // Real progress: any tick that closes opponent distance below the best
+    // ever resets the give-up timer.
+    if (dist < pursuit_tracker.best_distance)
+        pursuit_tracker.best_distance := dist;
+        pursuit_tracker.last_progress_time := current_time;
+    endif
+
+    // 2s window: count consecutive windows where distance didn't decrease.
+    // Catches oscillation (alternating tiles around a blocked direct path)
+    // that movement-based detection can't see.
+    if (current_time - pursuit_tracker.window_start_time >= 2)
+        if (dist >= pursuit_tracker.window_start_dist)
+            pursuit_tracker.windows_stalled += 1;
+        else
+            pursuit_tracker.windows_stalled := 0;
+        endif
+        pursuit_tracker.window_start_dist := dist;
+        pursuit_tracker.window_start_time := current_time;
+    endif
+
+    // ~4s of no distance progress → commit to pathfinding (sticky). LOS is
+    // unreliable as a "walkable" signal: lava, water, and elevation gaps pass
+    // LOS but block movement, leaving RunToward to oscillate forever.
+    if (pursuit_tracker.windows_stalled >= 2)
+        pursuit_tracker.path_mode := 1;
+    endif
+    // Drop path_mode for the final approach: cheap direct movement is enough
+    // once we're close and have clear LOS.
+    if (pursuit_tracker.path_mode && dist <= 3 && CheckLineOfSight(me, opponent))
+        pursuit_tracker.path_mode := 0;
+        pursuit_tracker.windows_stalled := 0;
+    endif
+
+    var has_los := CheckLineOfSight(me, opponent);
+
+    if (has_los)
         enemy_last_loc_var := struct{
-            "x" := opponent.x, "y" := opponent.y, "z" := opponent.z, "time" := ReadGameClock()
+            "x" := opponent.x, "y" := opponent.y, "z" := opponent.z, "time" := current_time
         };
+    endif
+
+    // Direct movement: LOS + not in path_mode
+    if (has_los && !pursuit_tracker.path_mode)
         if (should_run)
             RunToward(opponent);
         else
             WalkToward(opponent);
         endif
-        pursuit_tracker := 0; // Reset stuck detection on successful LOS movement
         return 1;
     endif
 
-    // No LOS — stuck detection using script-level var
-    var current_time := ReadGameClock();
-    if (!pursuit_tracker || pursuit_tracker.target_serial != opponent.serial)
-        pursuit_tracker := BuildPursuitTracker(opponent.serial, me.x, me.y, dist, current_time);
-    endif
-
-    var old_x := me.x;
-    var old_y := me.y;
-
-    // Try pathfinding (no caching — use immediately)
-    var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES, 20);
+    // Pathfind: no LOS, or stuck on the LOS approach (path_mode active)
+    var path := FindPath(me.x, me.y, me.z, opponent.x, opponent.y, opponent.z, me.realm, FP_IGNORE_MOBILES, 50);
     if (path && path.size() > 0)
-        // Find first non-hazardous step in the path
         var coord := 0;
         foreach waypoint in path
             if (!IsTileHazardous(waypoint.x, waypoint.y))
@@ -912,7 +952,6 @@ function PursueMelee(opponent)
             endif
         endif
     else
-        // Fallback: try last known position
         var last_loc := enemy_last_loc_var;
         if (last_loc && (current_time - last_loc.time) < 30)
             if (should_run)
@@ -926,28 +965,6 @@ function PursueMelee(opponent)
             else
                 WalkToward(opponent);
             endif
-        endif
-    endif
-
-    // Update stuck tracking using native lastcoord for instant wall detection
-    pursuit_tracker.total_moves += 1;
-    if (me.x == me.lastcoord.lastx && me.y == me.lastcoord.lasty)
-        pursuit_tracker.failed_moves += 1;
-    endif
-
-    // Flee if stuck for 10+ seconds with <30% movement success
-    var time_elapsed := current_time - pursuit_tracker.start_time;
-    if (time_elapsed >= 10 && pursuit_tracker.total_moves > 0)
-        var success_rate := CInt((CDbl(pursuit_tracker.total_moves - pursuit_tracker.failed_moves) / CDbl(pursuit_tracker.total_moves)) * 100);
-        if (success_rate < 30)
-            pursuit_tracker := 0;
-            // Teleport to anchor as anti-exploit instead of blocking Flee loop
-            var anchor := GetObjProperty(me, "anchor");
-            if (anchor)
-                PrintTextAbove(me, "*Retorna correndo* [Sistema Anti-Exploits]");
-                MoveObjectToLocation(me, anchor[1], anchor[2], anchor[3], me.realm, MOVEOBJECT_FORCELOCATION);
-            endif
-            return 0;
         endif
     endif
 
@@ -1133,7 +1150,7 @@ function PursueTarget(opponent)
         else
             var last_loc := enemy_last_loc_var;
             if (last_loc && (current_time - last_loc.time) < 30)
-                var last_path := FindPath(me.x, me.y, me.z, last_loc.x, last_loc.y, last_loc.z, me.realm, FP_IGNORE_MOBILES, 20);
+                var last_path := FindPath(me.x, me.y, me.z, last_loc.x, last_loc.y, last_loc.z, me.realm, FP_IGNORE_MOBILES, 50);
                 if (last_path)
                     foreach coord in last_path
                         if (CheckLineOfSight(me, opponent))

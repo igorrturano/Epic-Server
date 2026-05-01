@@ -52,22 +52,28 @@ function GenericBrain()
             case (ev.type)
                 SYSEVENT_ENGAGED:
                     AddThreat(ev.source, 0);
-                    SetOpponent(ev.source);
-                    HandleGenericCombatEvent(ev.source);
+                    if (CanFight(me, ev.source))
+                        SetOpponent(ev.source);
+                        HandleGenericCombatEvent(ev.source);
+                    endif
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
                     AddThreat(ev.source, 0);
                     UpdateThreatList(me, ev);
-                    SetOpponent(ev.source);
-                    HandleGenericCombatEvent(ev.source);
+                    if (CanFight(me, ev.source))
+                        SetOpponent(ev.source);
+                        HandleGenericCombatEvent(ev.source);
+                    endif
                 EVID_THREAT_UPDATE:
                     AddThreat(ev.source, ev.amount);
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source))
                         // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
-                        SetOpponent(ev.source);
-                        HandleGenericCombatEvent(ev.source);
+                        if (CanFight(me, ev.source))
+                            SetOpponent(ev.source);
+                            HandleGenericCombatEvent(ev.source);
+                        endif
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))

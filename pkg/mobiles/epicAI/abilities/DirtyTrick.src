@@ -16,8 +16,8 @@ program DirtyTrick(params)
 		return 0;
 	endif
 
-	// Don't refresh an already-active blind — prevents multi-goblin lockdown
-	if (GetObjProperty(targ, "#blinded"))
+	// Active blind OR recent successful blind locks out further attempts on this target
+	if (GetObjProperty(targ, "#blinded") || GetObjProperty(targ, "#dirty_trick_cd"))
 		return 0;
 	endif
 
@@ -25,6 +25,7 @@ program DirtyTrick(params)
 
 	if (!CheckResist(targ, REFLEXES, RESIST_MEDIUM))
 		TS_StartTimer(targ, "blinded", 5, 0, me);
+		TS_StartTimer(targ, "dirty_trick_cd", 20, 0, me);
 		SendSysMessageEx(targ, "Sujeira nos seus olhos! Você não enxerga!", SSM_FAIL);
 	else
 		SendSysMessageEx(targ, "Você desvia da sujeira!", SSM_REQUEST);

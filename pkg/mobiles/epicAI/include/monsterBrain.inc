@@ -6,6 +6,20 @@ include ":npcs:thor/handling/thorai";
 include "epicSpecial";
 include "NPCMageryUtils";
 
+// Only players and player-controlled mobiles (pets, summons) should pull a
+// monster into engagement on ENTEREDAREA. Plain NPC-vs-NPC sightings are
+// noise — damage and taunt events still drive NPC-vs-NPC combat through
+// their own handlers.
+function IsPlayerControlled(mobile)
+    if (mobile.acctname)
+        return 1;
+    endif
+    if (mobile.master && mobile.master.acctname)
+        return 1;
+    endif
+    return 0;
+endfunction
+
 function MonsterBrain()
     var ev;
     var wanders := 0;
@@ -124,13 +138,17 @@ function MonsterBrain()
                 EVID_THREAT_UPDATE:
                     AddThreat(ev.source, ev.amount);
                 SYSEVENT_ENTEREDAREA:
-                    if (CheckDarknessCreatureSurvival(me))
-                        return;
-                    endif
-                    if (!IsAlly(ev.source))
-                        UpdateThreatList(me, ev);
-                        AlertAllies(ev.source, me);
-                        HandleMonsterEnteredArea(ev.source, is_ranged);
+                    if (!IsPlayerControlled(ev.source))
+                        // ignore non-player-controlled mobiles (other NPCs, wildlife)
+                    else
+                        if (CheckDarknessCreatureSurvival(me))
+                            return;
+                        endif
+                        if (!IsAlly(ev.source))
+                            UpdateThreatList(me, ev);
+                            AlertAllies(ev.source, me);
+                            HandleMonsterEnteredArea(ev.source, is_ranged);
+                        endif
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
