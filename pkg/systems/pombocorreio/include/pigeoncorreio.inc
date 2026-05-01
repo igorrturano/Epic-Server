@@ -121,14 +121,15 @@ function PigeonBuildPlayerList(who, dict)
 		endif
 
 		var chave := CStr(chr.serial);
+		var apelido;
 		if (dict)
 			if (!dict.Exists(chave))
 				SleepMS(2);
 				continue;
 			endif
-			var apelido := CStr(dict[chave]);
+			apelido := CStr(dict[chave]);
 		else
-			var apelido := CStr(GetObjProperty(chr, "nome_inicial"));
+			apelido := CStr(GetObjProperty(chr, "nome_inicial"));
 			if (!apelido || apelido == "0")
 				apelido := CStr(chr.name);
 			endif
