@@ -7,7 +7,7 @@ use math;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":attributes:attributes";
-include ":recipes:recipes";
+include ":recipes:include/scrollRecipes";
 include ":gumps:epicGumps";
 
 const PERGAMINHO_METALWORK    := 0xFD2F;
@@ -50,12 +50,21 @@ program use_pergaminho_pedaco(who, item)
 	endif
 endprogram
 
+function GetMaxNivel(tipo)
+	if (tipo == TIPO_PERGAMINHO_WOODWORK || tipo == TIPO_PERGAMINHO_DOMESTICWORK)
+		return 2;
+	endif
+	return 5;
+endfunction
+
 function CreatePergaminhoGump(who, tipo)
+	var maxNivel   := GetMaxNivel(tipo);
+	var maxPedacos := QUANTIDADES[maxNivel];
 	var gump := GFECreateGump("Folhas Soltas de " + GetTipoNome(tipo), 505, 460);
 
 	var pedacos := CountPedacos(who, tipo);
 	var x, y;
-	for j := 1 to 12
+	for j := 1 to maxPedacos
 		x := 35 + ((j - 1) % 6) * 75;
 		y := 80 + (Cint((j - 1) / 6) * 118);
 
@@ -74,17 +83,21 @@ function CreatePergaminhoGump(who, tipo)
 	endfor
 
 	var nivel := DeterminarNivel(pedacos);
+	if (nivel > maxNivel)
+		nivel := maxNivel;
+	endif
 	GFTextLine(gump, 35, 355, 53, "Quantidade: " + pedacos);
 	GFTextLine(gump, 35, 375, 53,
-				"Nível do Pergaminho: " + (nivel > 0 ? CStr(nivel) : "Insuficiente")); // Removed trailing slash
+				"Nível do Pergaminho: " + (nivel > 0 ? CStr(nivel) : "Insuficiente"));
 
-	GFPicTiled(gump, 250, 315, 230, 120, 87);
+	var panelHeight := maxNivel * 20 + 30;
+	GFPicTiled(gump, 250, 315, 230, panelHeight, 87);
 
-	GFTextLine(gump, 260, 325, 53, "3 folhas soltas = pergaminho lvl 1");
-	GFTextLine(gump, 260, 345, 53, "5 folhas soltas = pergaminho lvl 2");
-	GFTextLine(gump, 260, 365, 53, "8 folhas soltas = pergaminho lvl 3");
-	GFTextLine(gump, 260, 385, 53, "10 folhas soltas = pergaminho lvl 4");
-	GFTextLine(gump, 260, 405, 53, "12 folhas soltas = pergaminho lvl 5");
+	var infoY := 325;
+	for i := 1 to maxNivel
+		GFTextLine(gump, 260, infoY, 53, QUANTIDADES[i] + " folhas soltas = pergaminho lvl " + i);
+		infoY += 20;
+	endfor
 
 	if (nivel > 0)
 		GFAddButton(gump, 35, 395, 2130, 2129, GF_CLOSE_BTN, 1);
@@ -168,6 +181,10 @@ endfunction
 function CriarPergaminho(who, tipo)
 	var pedacos := CountPedacos(who, tipo);
 	var nivel := DeterminarNivel(pedacos);
+	var maxNivel := GetMaxNivel(tipo);
+	if (nivel > maxNivel)
+		nivel := maxNivel;
+	endif
 
 	if (nivel == 0)
 		SendSysMessage(who, "Você não tem pedaços suficientes para criar um pergaminho.");
@@ -262,98 +279,34 @@ endfunction
 
 function CreatePergaminhoItem(who, tipo, nivel)
 	var itemID;
-	var recipe := struct;
-	recipe.+type := GetTipoNome(tipo);
-	recipe.+power := nivel;
-
 	case (tipo)
-		TIPO_PERGAMINHO_METALWORK:
-		TIPO_PERGAMINHO_WOODWORK:
-		TIPO_PERGAMINHO_DOMESTICWORK:
-			case (nivel)
-				1: itemID := 0xff990;
-				2: itemID := 0xfe995;
-				3: itemID := 0xfe996;
-				4: itemID := 0xfe997;
-				5: itemID := 0xfe998;
-				default: itemID := 0xff990;
-			endcase
-		TIPO_PERGAMINHO_ALQUIMIA:
-			case (nivel)
-				1: itemID := 0xef1f;
-				2: itemID := 0xef2c;
-				3: itemID := 0xef2d;
-				4: itemID := 0xef2e;
-				5: itemID := 0xef2f;
-				default: itemID := 0xef1f;
-			endcase
-		TIPO_PERGAMINHO_TINTA:
-			case (nivel)
-				1: itemID := 0xef2b;
-				2: itemID := 0xef3c;
-				3: itemID := 0xef3d;
-				4: itemID := 0xef3e;
-				5: itemID := 0xef3f;
-				default: itemID := 0xef2b;
-			endcase
-		TIPO_PERGAMINHO_MAGIA:
-			case (nivel)
-				1: itemID := 0x2060;
-				2: itemID := 0x2064;
-				3: itemID := 0x2066;
-				4: itemID := 0x2063;
-				5: itemID := 0x2065;
-				default: itemID := 0x2060;
-			endcase
+		TIPO_PERGAMINHO_METALWORK:    itemID := GetScrollObjtype("MW",      nivel);
+		TIPO_PERGAMINHO_WOODWORK:     itemID := GetScrollObjtype("WW",      nivel);
+		TIPO_PERGAMINHO_DOMESTICWORK: itemID := GetScrollObjtype("DW",      nivel);
+		TIPO_PERGAMINHO_ALQUIMIA:     itemID := GetScrollObjtype("alchemy", nivel);
+		TIPO_PERGAMINHO_TINTA:        itemID := GetScrollObjtype("dye",     nivel);
+		TIPO_PERGAMINHO_MAGIA:        itemID := GetMagicScrollObjtype(nivel);
 		default: return 0;
 	endcase
+	if (!itemID) return 0; endif
 
+	// CreateItemInBackpack fires the CreateScript which assigns the recipe via scrollRecipes.inc
 	var pergaminho := CreateItemInBackpack(who, itemID, 1);
-	if (pergaminho)
-		SetObjProperty(pergaminho, "Tipo", tipo);
-		SetObjProperty(pergaminho, "Nivel", nivel);
-
-		case (tipo)
-			TIPO_PERGAMINHO_METALWORK:
-				pergaminho.name := "instrucoes de fabricacao de metal";
-				var recipeKeyMW := SelectRandomRecipe(nivel, "MW");
-				if (recipeKeyMW)
-					SetObjProperty(pergaminho, "recipe", recipeKeyMW);
-				endif
-			TIPO_PERGAMINHO_WOODWORK:
-				pergaminho.name := "instrucoes de fabricacao de madeira";
-				var recipeKeyWW := SelectRandomRecipe(nivel, "WW");
-				if (recipeKeyWW)
-					SetObjProperty(pergaminho, "recipe", recipeKeyWW);
-				endif
-			TIPO_PERGAMINHO_DOMESTICWORK:
-				pergaminho.name := "instrucoes de fabricacao domestica";
-				var recipeKeyDW := SelectRandomRecipe(nivel, "DW");
-				if (recipeKeyDW)
-					SetObjProperty(pergaminho, "recipe", recipeKeyDW);
-				endif
-			TIPO_PERGAMINHO_ALQUIMIA:
-				var receitaAlquimica := SelectRandomAlchemyRecipe(nivel);
-				if (receitaAlquimica)
-					SetObjProperty(pergaminho, "AlchemyRecipe", receitaAlquimica);
-				endif
-			TIPO_PERGAMINHO_TINTA:
-				var tintaRecipe := SelectRandomInkRecipe(nivel);
-				if (tintaRecipe)
-					SetObjProperty(pergaminho, "InkRecipe", tintaRecipe);
-				endif
-			TIPO_PERGAMINHO_MAGIA:
-				var spellId := SelectRandomSpell(nivel);
-				if (spellId)
-					SetObjProperty(pergaminho, "SpellId", spellId);
-				endif
-		endcase
-
-		return pergaminho;
+	if (!pergaminho)
+		SendSysMessage(who, "Erro ao criar o item da pesquisa.");
+		return 0;
 	endif
 
-	SendSysMessage(who, "Erro ao criar o item da pesquisa.");
-	return 0;
+	SetObjProperty(pergaminho, "Tipo", tipo);
+	SetObjProperty(pergaminho, "Nivel", nivel);
+
+	case (tipo)
+		TIPO_PERGAMINHO_METALWORK:    pergaminho.name := "instrucoes de fabricacao de metal";
+		TIPO_PERGAMINHO_WOODWORK:     pergaminho.name := "instrucoes de fabricacao de madeira";
+		TIPO_PERGAMINHO_DOMESTICWORK: pergaminho.name := "instrucoes de fabricacao domestica";
+	endcase
+
+	return pergaminho;
 endfunction
 
 function ConsumirPedacos(who, tipo, quantidade)
@@ -368,225 +321,6 @@ function ConsumirPedacos(who, tipo, quantidade)
 			endif
 		endif
 	endforeach
-endfunction
-
-function BuildAlchemyScrollWhitelist()
-	var menuCfg := ReadConfigFile(":alchemy:AlchMenu");
-	if (menuCfg.errortext)
-		Print("ERROR: Não foi possível ler AlchMenu.cfg: " + menuCfg.errortext);
-		return array{};
-	endif
-
-	// 1° passo: coleta nomes base das receitas automáticas (plain Item, sem "Recipe ")
-	var automaticas := array{};
-	foreach groupKey in (GetConfigStringKeys(menuCfg))
-		if (groupKey != "Index")
-			var elem := FindConfigElem(menuCfg, groupKey);
-			if (elem)
-				foreach itemStr in (GetConfigStringArray(elem, "Item"))
-					if (SubStr(itemStr, 1, 7) != "Recipe ")
-						var dashPos := Find(itemStr, "-", 1);
-						var baseName;
-						if (dashPos > 0)
-							baseName := SubStr(itemStr, 1, dashPos - 1);
-						else
-							baseName := itemStr;
-						endif
-						var found := 0;
-						foreach a in automaticas
-							if (a == baseName)
-								found := 1;
-							endif
-						endforeach
-						if (!found)
-							automaticas.append(baseName);
-						endif
-					endif
-				endforeach
-			endif
-		endif
-	endforeach
-
-	// 2° passo: coleta Item Recipe sem sufixo de classe cujo nome base não é automático
-	var whitelist := array{};
-	foreach groupKey in (GetConfigStringKeys(menuCfg))
-		if (groupKey != "Index")
-			var elem := FindConfigElem(menuCfg, groupKey);
-			if (elem)
-				foreach itemStr in (GetConfigStringArray(elem, "Item"))
-					if (SubStr(itemStr, 1, 7) == "Recipe ")
-						var name := SubStr(itemStr, 8, Len(itemStr) - 7);
-						var isAuto := 0;
-						foreach a in automaticas
-							if (a == name)
-								isAuto := 1;
-							endif
-						endforeach
-						if (!isAuto)
-							var found := 0;
-							foreach existing in whitelist
-								if (existing == name)
-									found := 1;
-								endif
-							endforeach
-							if (!found)
-								whitelist.append(name);
-							endif
-						endif
-					endif
-				endforeach
-			endif
-		endif
-	endforeach
-
-	return whitelist;
-endfunction
-
-function SelectRandomAlchemyRecipe(nivel)
-	var cfg := ReadConfigFile(":alchemy:recipes");
-	if (cfg.errortext)
-		Print("ERROR: Não foi possível ler o arquivo de configuração de receitas de alquimia: " + cfg.errortext);
-		return 0;
-	endif
-
-	var whitelist := BuildAlchemyScrollWhitelist();
-
-	var levelRecipes := array{};
-	foreach key in (GetConfigStringKeys(cfg))
-		var elem := FindConfigElem(cfg, key);
-		if (!elem || GetConfigInt(elem, "level") != nivel)
-			continue;
-		endif
-		var name := GetConfigString(elem, "Name");
-		foreach scrollName in whitelist
-			if (scrollName == name)
-				levelRecipes.append(key);
-				break;
-			endif
-		endforeach
-	endforeach
-
-	if (levelRecipes.size() > 0)
-		return levelRecipes[RandomInt(levelRecipes.size()) + 1];
-	endif
-
-	return 0;
-endfunction
-
-function SelectRandomInkRecipe(nivel)
-	var cfg := ReadConfigFile(":dyeing:recipes");
-	if (cfg.errortext)
-		Print("ERROR: Não foi possível ler o arquivo de configuração de receitas de tinta: " + cfg.errortext);
-		return 0;
-	endif
-
-	var levelRecipes := array{};
-	foreach key in (GetConfigStringKeys(cfg))
-		var elem := FindConfigElem(cfg, key);
-		if (elem && GetConfigInt(elem, "level") == nivel)
-			levelRecipes.append(key);
-		endif
-	endforeach
-
-	if (levelRecipes.size() > 0)
-		return levelRecipes[RandomInt(levelRecipes.size()) + 1];
-	endif
-
-	return 0;
-endfunction
-
-function SelectRandomRecipe(power, skill)
-	var cfg := ReadConfigFile(":recipes:recipes");
-	if (cfg.errortext)
-		Print("ERROR: Não foi possível ler receitas: " + cfg.errortext);
-		return 0;
-	endif
-
-	var menuKeys := BuildMenuRecipeKeys(skill);
-
-	var levelRecipes := array{};
-	foreach key in (GetConfigStringKeys(cfg))
-		var elem := FindConfigElem(cfg, key);
-		if (!elem || GetConfigInt(elem, "level") != power)
-			continue;
-		endif
-		if (key in menuKeys)
-			levelRecipes.append(key);
-		endif
-	endforeach
-
-	if (levelRecipes.size() > 0)
-		return levelRecipes[RandomInt(levelRecipes.size()) + 1];
-	endif
-
-	return 0;
-endfunction
-
-function BuildMenuRecipeKeys(skill)
-	var menuPaths := array{};
-	case (skill)
-		"MW":
-			menuPaths.append(":metalworking:blacksmith/config/SmithMenu");
-			menuPaths.append(":metalworking:tinkering/config/TinkerMenu");
-		"WW":
-			menuPaths.append(":woodworking:carpentry/config/CarpMenu");
-			menuPaths.append(":woodworking:bowcraft/config/FletchMenu");
-		"DW":
-			menuPaths.append(":DomesticWork:TailorMenu");
-	endcase
-
-	var keys := array{};
-	foreach path in menuPaths
-		var menuCfg := ReadConfigFile(path);
-		if (menuCfg.errortext)
-			continue;
-		endif
-		foreach groupKey in (GetConfigStringKeys(menuCfg))
-			if (groupKey == "Index")
-				continue;
-			endif
-			var elem := FindConfigElem(menuCfg, groupKey);
-			if (!elem)
-				continue;
-			endif
-			foreach itemStr in (GetConfigStringArray(elem, "Item"))
-				var words := SplitWords(itemStr);
-				if (words.size() >= 2 && words[1] == "Recipe")
-					keys.append(words[words.size()]);
-				endif
-			endforeach
-		endforeach
-	endforeach
-
-	return keys;
-endfunction
-
-function SelectRandomSpell(power)
-	var spells := array{};
-	var mage_configs := array{
-		":spells:config/evocation",
-		":spells:config/necromancy",
-		":spells:config/illusion",
-		":spells:config/swordmage"
-	};
-	foreach cfg_path in mage_configs
-		var cfg := ReadConfigFile(cfg_path);
-		if (!cfg)
-			continue;
-		endif
-		foreach entry in (GetConfigStringKeys(cfg))
-			var elem := FindConfigElem(cfg, entry);
-			var circle := GetConfigInt(elem, "Circle");
-			if (circle == power)
-				spells.append(GetConfigInt(elem, "SpellId"));
-			endif
-		endforeach
-	endforeach
-	if (spells.size() > 0)
-		var selectedSpell := spells[RandomInt(spells.size()) + 1];
-		return selectedSpell;
-	endif
-	return 0;
 endfunction
 
 function GetGraficoPorTipo(tipo)
