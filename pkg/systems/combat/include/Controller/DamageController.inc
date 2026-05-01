@@ -22,6 +22,7 @@ include ":charactercreation:habilidades";
 include ":attributes:attributes";
 include "include/eventID";
 include "include/client";
+include "include/epicConstants";
 include ":fls_core:fls_characters";
 
 function ProccessCombatDamage(byRef attackInfo)
@@ -94,7 +95,11 @@ function TriggerCriticalKillExplosion(byRef attackInfo, byRef corpseLoc)
 	// Location-based variants — defender ref is already invalidated, so
 	// object-centered effects would silently no-op on it.
 	PlayStationaryEffect(corpseLoc.x, corpseLoc.y, corpseLoc.z, FX_BODY_EXPLOSION, 50, 10, 0, corpseLoc.realm);
-	PlaySoundEffectXYZ(corpseLoc.x, corpseLoc.y, corpseLoc.z, 0x54F, corpseLoc.realm);
+	if (attackInfo.GetAttacker().GetCulture() == GULTHRAK)
+		PlaySoundEffect(attackInfo.GetAttacker().GetObjRef(), 0x5AF);
+	elseif (attackInfo.GetAttacker().GetReligion() == KAI)
+		PlaySoundEffect(attackInfo.GetAttacker().GetObjRef(), 0x569);
+	endif
 
 	sleepms(500); // let POL finalize the corpse
 
