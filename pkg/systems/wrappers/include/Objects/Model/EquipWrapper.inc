@@ -149,14 +149,37 @@ class EquipWrapper(ItemWrapper, IEquipWrapper)
 		this.GetObjRef().max_weight_mod := this.GetWeight() - this.GetObjRef().weight;
 	endfunction
 
+	// Registra o bonus de uma habilidade na property do item. NÃO mexe no
+	// modifier em memória — quem aplica isso no modifier é SetupOnEquip,
+	// rodado em equipitem.src antes de ApplyItemModifiers. A separação
+	// evita que mutações do modifier feitas dentro de OnPassiveOnEquip
+	// (que roda via run_script_to_completion) precisem propagar de volta
+	// pelo limite de script.
+	// Idempotente: chamar duas vezes com o mesmo valor não acumula.
 	function ApplyAbilityBonus(this, attribute, bonusValue)
 		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
 		if (!bonusValue) return this; endif
-		this.SetModifier(AttributeModifier(attribute, this.GetModifier(attribute).GetValue() + bonusValue));
-		var bonuses := this.GetProperty(PROPNAME_ABILITY_BONUSES) ?: dictionary{};
-		if (bonuses.errortext) bonuses := dictionary{}; endif
-		bonuses[attribute] := CInt(bonuses[attribute]) + bonusValue;
+		var bonuses := this.GetProperty(PROPNAME_ABILITY_BONUSES);
+		if (!bonuses || bonuses.errortext) bonuses := dictionary{}; endif
+		bonuses[attribute] := CInt(bonusValue);
 		this.SetProperty(PROPNAME_ABILITY_BONUSES, bonuses);
+		return this;
+	endfunction
+
+	// Espelha CleanupOnUnequip: lê a property ability_bonuses e aplica os
+	// valores no modifier em memória. Chamado por TriggerEquipPassives
+	// depois de todos os OnPassiveOnEquip rodarem, antes do
+	// ApplyItemModifiers ler o modifier.
+	function SetupOnEquip(this)
+		if (this.GetObjRef() is @Exception) return this.GetObjRef(); endif
+		var bonuses := this.GetProperty(PROPNAME_ABILITY_BONUSES);
+		if (!bonuses || bonuses.errortext) return this; endif
+		foreach attr in (bonuses.keys())
+			var bonus := CInt(bonuses[attr]);
+			if (bonus)
+				this.SetModifier(AttributeModifier(attr, this.GetModifier(attr).GetValue() + bonus));
+			endif
+		endforeach
 		return this;
 	endfunction
 
