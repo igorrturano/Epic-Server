@@ -393,7 +393,8 @@ function GetLastDamageInfo(mobile)
 	return GetObjProperty(mobile, "LastDamage");
 endfunction
 
-// Barreira de Mana (spell 114): redirects incoming damage to mana at 2:1.
+// Barreira de Mana (spell 114): redirects incoming damage to mana at shield.ratio:1
+// (default 2:1, 1:1 when caster has Arcana primary).
 // Returns the damage that should still be applied to HP after absorption.
 function _ApplyManaShield(defender, dmg)
 	if (dmg <= 0)
@@ -416,7 +417,12 @@ function _ApplyManaShield(defender, dmg)
 		return dmg;
 	endif
 
-	var absorbable := Cint(current_mana / 2);
+	var ratio := CInt(shield.ratio);
+	if (ratio < 1)
+		ratio := 2;
+	endif
+
+	var absorbable := Cint(current_mana / ratio);
 	var absorbed := dmg;
 	if (absorbed > absorbable)
 		absorbed := absorbable;
@@ -425,7 +431,7 @@ function _ApplyManaShield(defender, dmg)
 		return dmg;
 	endif
 
-	AP_ConsumeVital(defender, MANA, absorbed * 2);
+	AP_ConsumeVital(defender, MANA, absorbed * ratio);
 
 	if (AP_GetVital(defender, MANA) <= 0)
 		EraseObjProperty(defender, "#manashield");
