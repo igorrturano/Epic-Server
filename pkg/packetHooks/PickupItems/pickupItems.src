@@ -58,9 +58,15 @@ exported function HandleItemPickup(who, byref packet)
 					PrintTextAbove(who, "*Pegou " + item.desc + "*");
 				endif
 			endif
+
+			if (IsChairGraphic(item.graphic))
+				TriggerChairFall(item.x, item.y, item.z, item.realm);
+			endif
 		endif
 	endif
 
 	// o packet vai ser enviado pro core pra ser tratado
 	return 0;
 endfunction
+
+include ":furniture:chairfall";
