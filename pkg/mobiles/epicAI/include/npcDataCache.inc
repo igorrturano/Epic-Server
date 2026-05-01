@@ -13,22 +13,28 @@ include "include/NPCUtil";
 include "include/epicConstants";
 
 // NPCRace-based umbrella groups for ability inheritance (isDragon, isDemon).
-// TEMPORARILY STUBBED 2026-04-18: the 27 race-name string literals were pushing brain.src over the
-// 64KB data-segment limit. Restore via cfg-driven race list (ReadConfigFile at init) — do NOT
-// re-inline the arrays or brain will overflow again.
-// function _DragonRaces()
-//     return array{"dragão", "drake"};
-// endfunction
-//
-// function _DemonRaces()
-//     return array{
-//         "demonio", "diabo", "balor", "succubus", "dretch", "goristro",
-//         "vrock", "quasit", "barlgura", "cambion", "incubus", "ghour",
-//         "moloch", "vor'ghul", "vorthak", "kharneth", "wastrilith",
-//         "carnifago abissal", "demônio-fogo", "escaravelho demoníaco",
-//         "demoklaus", "ghazneth", "exodus", "gárgula", "oni", "taurok"
-//     };
-// endfunction
+// Race lists live in :epicAI:config/raceCategories.cfg — keeping the literals
+// out of the brain data segment (inlining the arrays here pushed brain.src
+// past the 64KB limit on 2026-04-18).
+function _IsRaceInCategory(npc_race, category)
+    if (!npc_race)
+        return 0;
+    endif
+    var cfg := ReadConfigFile(":epicAI:config/raceCategories");
+    if (!cfg)
+        return 0;
+    endif
+    var elem := cfg[category];
+    if (!elem)
+        return 0;
+    endif
+    foreach r in GetConfigStringArray(elem, "NPCRace")
+        if (npc_race == Lower(r))
+            return 1;
+        endif
+    endforeach
+    return 0;
+endfunction
 
 /*
  * NPC_GetCachedData(mobile)
@@ -177,10 +183,9 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         // isUndead + isBloodless: Environment-based (per project: "Environment Undead" is the umbrella)
         "isBloodless" := (environment_lower == "undead"),
         "isUndead" := (environment_lower == "undead"),
-        // isDragon + isDemon: NPCRace-based (no Dragon biome; demons span multiple environments)
-        // TEMPORARILY STUBBED 2026-04-18: race arrays commented out to free brain data segment. Restore via cfg-driven list.
-        "isDragon" := 0,
-        "isDemon" := 0,
+        // isDragon + isDemon: NPCRace-based, lookup driven by raceCategories.cfg.
+        "isDragon" := _IsRaceInCategory(npc_race, "dragon"),
+        "isDemon" := _IsRaceInCategory(npc_race, "demon"),
 
         // Template-based: Gazers/Beholders
         "isGazer" := (template_lower in array{

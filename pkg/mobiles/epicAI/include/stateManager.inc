@@ -84,10 +84,15 @@ function SM_TickFlee()
 endfunction
 
 // Walks the NPC one tile per tick toward (_sm_data.noise_x, _sm_data.noise_y).
-// Exits to IDLE on arrival, timeout, or stuck. ENTEREDAREA fires naturally as
-// the NPC moves into perception range of the noisemaker, handing off to the
-// normal combat path.
+// Exits to IDLE when the NPC spots a hostile (combat takes over via ENTEREDAREA),
+// arrives at the noise, times out, or gets stuck.
 function SM_TickInvestigate()
+    // Combat already engaged — let the normal pursuit loop drive movement
+    if (me.opponent)
+        SM_TransitionTo("IDLE");
+        return 1;
+    endif
+
     if (!_sm_data.noise_x || !_sm_data.noise_y)
         SM_TransitionTo("IDLE");
         return 1;
@@ -97,6 +102,19 @@ function SM_TickInvestigate()
         SM_TransitionTo("IDLE");
         return 1;
     endif
+
+    // POL doesn't reliably auto-fire ENTEREDAREA when *we* move into a
+    // stationary mobile's vicinity, so scan and self-fire so the existing
+    // ENTEREDAREA handler engages.
+    var nearby := ListMobilesNearLocationEx(me.x, me.y, LIST_IGNORE_Z, 12,
+        LISTEX_FLAG_NORMAL + LISTEX_FLAG_PLAYERS_ONLY, me.realm);
+    foreach mob in nearby
+        if (mob && !mob.dead && !IsAlly(mob))
+            SendEvent(me, struct{ "type" := SYSEVENT_ENTEREDAREA, "source" := mob });
+            SM_TransitionTo("IDLE");
+            return 1;
+        endif
+    endforeach
 
     if (CoordinateDistance(me.x, me.y, _sm_data.noise_x, _sm_data.noise_y) <= 1)
         SM_TransitionTo("IDLE");
