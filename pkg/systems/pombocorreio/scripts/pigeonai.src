@@ -32,8 +32,10 @@ program PigeonAI()
 	while (steps < PIGEON_FLIGHT_DIST)
 		MoveForced(flight_dir);
 		steps += 1;
-		SleepMS(20);
+		SleepMS(50);
 	endwhile
+
+	me.hidden := 1;
 
 	// Teleporta proximo ao destinatario
 	var recipient := SystemFindObjectBySerial(rec_serial);
@@ -41,6 +43,27 @@ program PigeonAI()
 		me.kill();
 		return;
 	endif
+
+	var sender_name := GetObjProperty(me, "sender_name");
+	start_script(":pigeoncorreio:scripts/ask_recipient", {me, recipient, sender_name, GetPid()});
+
+	var accepted := 0;
+	var wait_time := 0;
+	while (wait_time < 60) // 60 segundos de timeout
+		var ev := wait_for_event(1);
+		if (ev && ev.type == "recipient_answer")
+			accepted := ev.accepted;
+			break;
+		endif
+		wait_time += 1;
+	endwhile
+
+	if (!accepted)
+		me.kill();
+		return;
+	endif
+
+	me.hidden := 0;
 
 	while (recipient.dead && recipient.connected && CInt(GetObjProperty(recipient, "morto")) != 1)
 		Sleep(2);
@@ -86,7 +109,7 @@ program PigeonAI()
 
 		MoveForced(GetDirTo(recip.x, recip.y));
 		seek += 1;
-		SleepMS(20);
+		SleepMS(50);
 	endwhile
 
 	// ── FASE 3: FOLLOWING — segue e aguarda duplo clique ──────
@@ -144,7 +167,7 @@ program PigeonAI()
 			emote_tick := 0;
 		endif
 
-		SleepMS(20);
+		SleepMS(50);
 	endwhile
 
 	// ── FASE 4: LEAVING — voa embora ignorando terreno ────────
@@ -154,7 +177,7 @@ program PigeonAI()
 	while (ls < PIGEON_FLIGHT_DIST)
 		MoveForced(leave_dir);
 		ls += 1;
-		SleepMS(20);
+		SleepMS(50);
 	endwhile
 
 	me.kill();
