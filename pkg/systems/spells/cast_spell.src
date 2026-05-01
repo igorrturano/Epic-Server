@@ -287,7 +287,7 @@ function performCastingProcess(mobile, mw, spellinfo)
 	// endif
 
 	var orig_hp := AP_GetVital(mobile, "Hits");
-	var delay := spellinfo.delay + CInt(GetObjProperty(mobile, "#delayspell"));
+	var delay := spellinfo.delay;
 	var moveCheck_script;
 	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
 		moveCheck_script := Start_Script(":spells:moveCheck/moveCheck", array{ mobile, GetPid() });
@@ -327,6 +327,8 @@ function performSpellCycles(mobile, mw, spellinfo, byref orig_hp)
 	else
 		cycles += _applyConsecutiveCastPenalty(mobile, spellinfo);
 	endif
+
+	cycles += CInt(GetObjProperty(mobile, "#delaycycles"));
 
 	while (cycles)
 		if (!checkSpellInterruption(mobile, mw, orig_hp))
