@@ -689,8 +689,8 @@ function CalculateDefenderResist(byRef attackInfo)
 endfunction
 
 // Protecao Arcana (spell 114) — physical-only mana shield. Absorbs slash/piercing/blunt
-// (whichever matches the attacker's posture) at 2 mana per 1 damage. Elemental and forced
-// damage bypass this layer entirely.
+// (whichever matches the attacker's posture) at shield.ratio mana per 1 damage (default 2:1,
+// 1:1 when caster has Arcana primary). Elemental and forced damage bypass this layer entirely.
 function _ApplyPhysicalManaShield(byRef attackInfo)
 	var defender := attackInfo.GetDefender().GetObjRef();
 	var shield := attackInfo.GetDefender().GetProperty("#manashield");
@@ -716,13 +716,18 @@ function _ApplyPhysicalManaShield(byRef attackInfo)
 		return;
 	endif
 
+	var ratio := CInt(shield.ratio);
+	if (ratio < 1)
+		ratio := 2;
+	endif
+
 	var mana := AP_GetVital(defender, MANA);
-	var absorb := (hit * 2 <= mana) ? hit : Cint(mana / 2);
+	var absorb := (hit * ratio <= mana) ? hit : Cint(mana / ratio);
 	if (absorb <= 0)
 		return;
 	endif
 
-	AP_ConsumeVital(defender, MANA, absorb * 2);
+	AP_ConsumeVital(defender, MANA, absorb * ratio);
 
 	case (posture)
 		DAMAGE_TYPE::SLASH:    dmg.DecreaseSlashBaseDamage(absorb);    break;
