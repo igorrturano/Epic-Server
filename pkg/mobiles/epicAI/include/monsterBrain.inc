@@ -110,6 +110,7 @@ function MonsterBrain()
                     last_activity_time := polcore().systime;
                     // Safety net for damage paths that bypass AttackLogger.
                     AddThreat(ev.source, 0);
+                    UpdateThreatList(me, ev);
                     AskForHealing(me);
                     // Break stealth states on damage
                     var dmg_state := SM_GetState();
@@ -132,7 +133,12 @@ function MonsterBrain()
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
                         UpdateThreatList(me, ev);
-                        HandleMonsterLeftArea(is_ranged);
+                        // Only drop combat state if the leaver was our actual opponent.
+                        // Otherwise nearby movement (other players, pets, ally deaths)
+                        // would wipe opponent + threat table mid-fight and strand the NPC.
+                        if (me.opponent && ev.source.serial == me.opponent.serial)
+                            HandleMonsterLeftArea(is_ranged);
+                        endif
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));

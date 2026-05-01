@@ -74,6 +74,7 @@ function AnimalBrain()
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
                     AddThreat(ev.source, 0);
+                    UpdateThreatList(me, ev);
                     if (SM_GetState() == "AMBUSH")
                         me.hidden := 0;
                         SM_TransitionTo("COMBAT");
@@ -97,7 +98,12 @@ function AnimalBrain()
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
                         UpdateThreatList(me, ev);
-                        HandleAnimalLeftArea(ev.source);
+                        // Only drop combat state if the leaver was our actual opponent.
+                        // Otherwise nearby movement (other players, pets, ally deaths)
+                        // would wipe opponent + threat table mid-fight and strand the NPC.
+                        if (me.opponent && ev.source.serial == me.opponent.serial)
+                            HandleAnimalLeftArea(ev.source);
+                        endif
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));

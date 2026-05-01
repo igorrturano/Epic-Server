@@ -176,6 +176,15 @@ function UpdateThreatList(mobile, ev)
                     threat_list_var.append(ev.source.serial);
                 endif
             endif
+        SYSEVENT_DAMAGED:
+            // Attackers that hit from outside AREA_SIZE (AoE/ranged/spells)
+            // never fire ENTEREDAREA, so without this they'd live only in the
+            // damage table and disappear from the cache fallback path.
+            if (CanFight(mobile, ev.source))
+                if (!(ev.source.serial in threat_list_var))
+                    threat_list_var.append(ev.source.serial);
+                endif
+            endif
         SYSEVENT_LEFTAREA:
             var idx := 1;
             foreach serial in threat_list_var
@@ -1774,7 +1783,9 @@ endfunction
 function ClearCombatState()
     SetWarMode(0);
     SetOpponent(0);
-    ClearThreatTable();
+    // Intentionally NOT clearing threat_table_var: keeps damage history of other
+    // attackers so ShouldReevaluateTarget can auto-pick the next-best target on
+    // the following tick. DecayThreat self-evicts stale entries (~10s half-life).
 endfunction
 
 
