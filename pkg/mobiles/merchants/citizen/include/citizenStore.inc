@@ -60,9 +60,9 @@ function GetCitizenJurisdiction(npc)
     return j;
 endfunction
 
-function _PruneArray(log, now)
+function _PruneArray(entries, now)
     var pruned := array{};
-    foreach e in log
+    foreach e in entries
         if (now - CInt(e.ts) < CITIZEN_WITNESS_TTL)
             pruned.append(e);
         endif
@@ -71,15 +71,15 @@ function _PruneArray(log, now)
     return pruned;
 endfunction
 
-function _DropOldest(log, max_size)
-    if (log.size() <= max_size)
-        return log;
+function _DropOldest(entries, max_size)
+    if (entries.size() <= max_size)
+        return entries;
     endif
     var trimmed := array{};
-    var start_idx := log.size() - max_size + 1;
+    var start_idx := entries.size() - max_size + 1;
     var i := start_idx;
-    while (i <= log.size())
-        trimmed.append(log[i]);
+    while (i <= entries.size())
+        trimmed.append(entries[i]);
         i := i + 1;
     endwhile
     return trimmed;
@@ -87,34 +87,34 @@ endfunction
 
 function AppendWitness(npc, entry)
     var elem := GetCitizenElem(npc);
-    var log := elem.GetProp("witnessLog");
-    if (!log)
-        log := array{};
+    var entries := elem.GetProp("witnessLog");
+    if (!entries)
+        entries := array{};
     endif
 
-    log := _PruneArray(log, ReadGameClock());
-    log.append(entry);
-    log := _DropOldest(log, CITIZEN_WITNESS_MAX);
+    entries := _PruneArray(entries, ReadGameClock());
+    entries.append(entry);
+    entries := _DropOldest(entries, CITIZEN_WITNESS_MAX);
 
-    elem.SetProp("witnessLog", log);
+    elem.SetProp("witnessLog", entries);
 endfunction
 
 function PruneWitnessLog(npc)
     var elem := GetCitizenElem(npc);
-    var log := elem.GetProp("witnessLog");
-    if (!log)
+    var entries := elem.GetProp("witnessLog");
+    if (!entries)
         return;
     endif
-    elem.SetProp("witnessLog", _PruneArray(log, ReadGameClock()));
+    elem.SetProp("witnessLog", _PruneArray(entries, ReadGameClock()));
 endfunction
 
 function GetWitnessLog(npc)
     var elem := GetCitizenElem(npc);
-    var log := elem.GetProp("witnessLog");
-    if (!log)
+    var entries := elem.GetProp("witnessLog");
+    if (!entries)
         return array{};
     endif
-    return log;
+    return entries;
 endfunction
 
 function MarkAwarenessFreeUsed(npc, player)
