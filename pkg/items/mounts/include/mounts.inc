@@ -317,6 +317,11 @@ function MP_Mount(mobile, npc)
 	//sendsysmessage(mobile, "cor " + mount_piece.color + " " + npc.color);
 	SetName(mount_piece, npc.name);
 
+	// serial must be set BEFORE EquipItem so the 0x78 triggered by equip
+	// already carries the correct mount scale bytes via AppendMountScaleProp2Packet.
+	SetObjProperty(mount_piece, "serial", npc.serial);
+	SetObjProperty(mount_piece, "riderserial", mobile.serial);
+
 	var result := EquipItem(mobile, mount_piece);
 	if ( !result )
 		// Unable to equip the mount piece.
@@ -326,9 +331,6 @@ function MP_Mount(mobile, npc)
 		// Setting equipped mounts prevents un-equip exploits.
 		mount_piece.movable := 0;
 	endif
-
-	SetObjProperty(mount_piece, "serial", npc.serial);
-	SetObjProperty(mount_piece, "riderserial", mobile.serial);
 
 	//ExchangeStamina(mobile, npc);
 
