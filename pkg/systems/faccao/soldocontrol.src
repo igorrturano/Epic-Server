@@ -103,7 +103,6 @@ function _PagarSoldoPlayers(guild)
 
 	if (bag.errortext)
 		if (estava_travado) bau.locked := 1; endif
-		Print("[Soldo] ERRO: bag nao criada para guild '" + guild.GetProp("name") + "' (" + bag.errortext + ")");
 		return;
 	endif
 
@@ -122,14 +121,12 @@ function _CriarBagPagamento(bau, total)
 
 	var bag := CreateItemInContainer(bau, 0xE75, 1);
 	if (!bag)
-		Print("[Soldo] ERRO: não foi possível criar bag no baú. serial=" + bau.serial);
 		return error{"errortext":="bag_falhou"};
 	endif
 	bag.name := nome;
 
 	var moedas := CreateItemInContainer(bag, 0xba63, total);
 	if (!moedas)
-		Print("[Soldo] ERRO: não foi possível criar moedas na bag.");
 		bag.Destroy();
 		return error{"errortext":="moedas_falhou"};
 	endif
