@@ -41,7 +41,7 @@ program ferramentas_construcao_gump(params)
 	var choice := result[0];
 
 	if (choice == 1)
-		start_script(":architect:textcmd/player/architect", array{who, 1});
+		start_script(":architect:textcmd/player/architect2", array{who, 1});
 	elseif (choice == 2)
 		start_script(":tn:commands/coun/createroof", array{who, 1});
 	elseif (choice == 3)
