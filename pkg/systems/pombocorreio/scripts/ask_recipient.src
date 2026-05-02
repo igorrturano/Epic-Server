@@ -1,0 +1,33 @@
+use uo;
+use os;
+use basic;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+program ask_recipient(params)
+	var pigeon := params[1];
+	var recipient := params[2];
+	var sender_name := params[3];
+	var pigeon_pid := params[4];
+
+	if (!recipient || !pigeon)
+		return;
+	endif
+
+	var gump := GFCreateGump(150, 150);
+	GFResizePic(gump, 0, 0, 9200, 300, 150);
+	GFHTMLArea(gump, 0, 20, 300, 20, "<BASEFONT color=#111111><CENTER><B>Pombo-Correio</B></CENTER>", 0, 0);
+	GFHTMLArea(gump, 0, 50, 300, 20, "<BASEFONT color=#111111><CENTER>Aceitar mensagem de " + sender_name + "?</CENTER>", 0, 0);
+	
+	GFAddButton(gump, 80, 100, 0xF7, 0xF8, GF_CLOSE_BTN, 1); // Sim
+	GFAddButton(gump, 180, 100, 0xF1, 0xF2, GF_CLOSE_BTN, 0); // Não
+	
+	var input := GFSendGump(recipient, gump);
+	var accepted := (input[0] == 1);
+
+	var proc := getprocess(pigeon_pid);
+	if (proc)
+		proc.sendevent(struct{ type := "recipient_answer", accepted := accepted });
+	endif
+endprogram
