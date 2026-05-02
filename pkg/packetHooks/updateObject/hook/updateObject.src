@@ -17,6 +17,7 @@ exported function UpdateObject(who, byref packet)
 
 	AppendScaleProp2Packet(object, packet);
 	AppendRacialTraits2Packet(object, packet);
+	AppendMountScaleProp2Packet(object, packet);
 	
 	return 0;
 

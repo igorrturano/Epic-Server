@@ -6,6 +6,7 @@ use uo;
 use os;
 include "include/facings";
 include ":accounts:accounts";
+include ":mobileRescale:include/drawObjectExt";
 
 program Logon(who)
 	ACCT_SetLastLogin(who.acct);
@@ -117,6 +118,7 @@ function DrawObject(ktowhom, kobj, kgraphic, kcolor, keqitrandcolor := 0)
 		endforeach
 	endif
 	PacketHexStringPart2 := PacketHexStringPart2 + "00000000";
+	PacketHexStringPart2 := PacketHexStringPart2 + GetScaleTraitsHex(kobj);
 	var FullPacketHexStringLength := (len(PacketHexStringPart1) + len(PacketHexStringPart2)) / 2 + 2;
 	var FullPacketHexString := PacketHexStringPart1 + ConvertIntToHex(FullPacketHexStringLength, 2)
 																   + PacketHexStringPart2;
