@@ -293,7 +293,7 @@ function SetupMerchant(npc, player)
 							"onlyguild" := cint(GetObjproperty(npc, "onlyguild")),
 							"norace" := GetObjproperty(npc, "norace") };
 
-	if (!my_setup.imposto)
+	if (GetObjproperty(npc, "imposto") == error)
 		my_setup.imposto := 0.1;
 	endif
 	var all_categories := item_types.keys();
@@ -358,7 +358,7 @@ function SetupMerchant(npc, player)
 		return;
 	endif
 
-	if (cint(output[1]))
+	if (len(CStr(output[1])) > 0)
 		SetObjProperty(npc, "imposto", cdbl(output[1]) / cdbl(100));
 	endif
 
