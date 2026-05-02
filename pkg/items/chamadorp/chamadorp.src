@@ -1,0 +1,125 @@
+use uo;
+use os;
+use file;
+
+include ":DiscordWebhook:outbound";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:/include/epicGumps";
+
+const CD_GLOBAL := 540;  // 30 min
+const CD_TIER_1 := 540;  // 30 min
+const CD_TIER_2 := 1080; // 1 hora
+const CD_TIER_3 := 2160; // 2 horas
+
+program chamadorp(who, item)
+    var is_staff := (who.cmdlevel >= 1);
+    var cd_key   := "#chamadorp_" + CStr(item.objtype) + "_cd";
+    var tier_key := "#chamadorp_" + CStr(item.objtype) + "_tier";
+
+    if (!is_staff)
+        var last_global := CInt(GetObjProperty(item, "#cd"));
+        if (last_global)
+            var rest_global := (last_global + CD_GLOBAL) - POLCore().systime;
+            if (rest_global > 0)
+                var min_global := CInt(rest_global / 18);
+                SendSysMessage(who, "Este chamado está em repouso. Aguarde " + CStr(min_global) + " minuto(s).");
+                return 0;
+            endif
+        endif
+
+        var player_cd   := CInt(GetObjProperty(who, cd_key));
+        var player_tier := CInt(GetObjProperty(who, tier_key));
+
+        if (player_cd && player_tier > 0)
+            var cd_duration := CD_TIER_1;
+            if (player_tier == 2)
+                cd_duration := CD_TIER_2;
+            elseif (player_tier >= 3)
+                cd_duration := CD_TIER_3;
+            endif
+
+            var rest_player := (player_cd + cd_duration) - POLCore().systime;
+            if (rest_player > 0)
+                var min_player := CInt(rest_player / 18);
+                SendSysMessage(who, "Você usou este chamado recentemente. Aguarde " + CStr(min_player) + " minuto(s).");
+                return 0;
+            else
+                if (player_tier >= 3)
+                    SetObjProperty(who, tier_key, 0);
+                endif
+            endif
+        endif
+    endif
+
+    if (!MostrarConfirmacao(who))
+        return 0;
+    endif
+
+    var total_online := 0;
+    foreach jogador in EnumerateOnlineCharacters()
+        total_online := total_online + 1;
+        SleepMS(2);
+    endforeach
+
+    var region_ref := who.region;
+    var regiao := "Valtheris";
+    if (region_ref && !region_ref.errortext)
+        regiao := CStr(region_ref.name);
+    endif
+
+    var mensagem := "";
+    var objtype := item.objtype;
+    if (objtype == 0xEB98)
+        mensagem := "**[AVENTURA]** Um chamado soa em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Aventureiros estao se aprontando para uma aventura e convocam todos interessados. ||Staff: " + StaffInfo(who) + "||";
+    elseif (objtype == 0x1C12)
+        mensagem := "**[TAVERNA]** O sino da taverna ressoa em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Aventureiros entram na taverna para uma rodada de comes, bebes e boas conversas. ||Staff: " + StaffInfo(who) + "||";
+    elseif (objtype == 0xFC10)
+        mensagem := "**[EMERGENCIA]** O gongo de emergencia bate em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Algo urgente ocorre e aventureiros convocam a todos para ajudar Valtheris. ||Staff: " + StaffInfo(who) + "||";
+    else
+        return 0;
+    endif
+
+    PresetDiscordMessage(mensagem, "RP");
+
+    if (!is_staff)
+        var novo_tier := CInt(GetObjProperty(who, tier_key)) + 1;
+        if (novo_tier > 3)
+            novo_tier := 3;
+        endif
+        SetObjProperty(item, "#cd", POLCore().systime);
+        SetObjProperty(who, cd_key, POLCore().systime);
+        SetObjProperty(who, tier_key, novo_tier);
+    endif
+
+    SendSysMessage(who, "Seu chamado foi enviado!");
+    return 1;
+endprogram
+
+function StaffInfo(who)
+    var nome := CStr(GetObjProperty(who, "nome_inicial"));
+    if (!nome || nome == "0")
+        nome := CStr(who.name);
+    endif
+    return nome + " [" + who.acctname + "] em " + CStr(who.x) + ", " + CStr(who.y) + ", " + CStr(who.z);
+endfunction
+
+function MostrarConfirmacao(who)
+    var gump := GFECreateGump("Chamado RP", 560, 280);
+
+    GFTextMid(gump, 30, 78, 500, 53, "Você está prestes a enviar um chamado ao Discord do servidor.");
+    GFTextMid(gump, 30, 98, 500, 53, "Este recurso existe para incentivar diversão e encontros de RP.");
+
+    GFTextLine(gump, 35, 132, 53, "Ao confirmar, você declara que:");
+    GFTextLine(gump, 45, 152, 53, "- Não usará este chamado para emboscadas ou metagame;");
+    GFTextLine(gump, 45, 170, 53, "- Não irá atrair jogadores com intenções desonestas.");
+
+    GFTextLine(gump, 35, 198, 53, "A Staff registra quem aciona cada chamado. O uso indevido");
+    GFTextLine(gump, 35, 216, 53, "viola as regras da comunidade e pode resultar em punição.");
+
+    GFAddButton(gump, 150, 247, 2128, 2129, GF_CLOSE_BTN, 1);
+    GFAddButton(gump, 350, 247, 2119, 2120, GF_CLOSE_BTN, 0);
+
+    var input := GFSendGump(who, gump);
+    return (input[0] == 1);
+endfunction

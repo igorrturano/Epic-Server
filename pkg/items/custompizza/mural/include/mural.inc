@@ -1,12 +1,14 @@
 use uo;
 use os;
 use polsys;
+use file;
 
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:requestGump";
 include ":containers:containers";
 include ":tn:cooldown";
+include ":DiscordWebhook:outbound";
 
 const MURAL_GUMP_BACKGROUND  := 39929;
 const MURAL_INTERNAL_BG      := 9350;
@@ -497,6 +499,8 @@ function ValidateAndSubmitPost(who, board, draft)
 	SavePosts(board, posts);
 	SetObjProperty(board, "mural_next_id", next_id + 1);
 	setCooldown(who, "mural_post_cd", MURAL_POST_COOLDOWN);
+
+	PresetDiscordMessage("Ouçam, Ouçam!!!! Um novo cartaz foi pregado no mural da cidade de Valtheris.");
 
 	SendSysMessage(who, "Postagem publicada no mural.");
 	return 1;
