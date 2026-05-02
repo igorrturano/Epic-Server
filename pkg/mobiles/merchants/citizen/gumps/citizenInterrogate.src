@@ -1,13 +1,19 @@
 // =============================================================================
 // citizenInterrogate.src — Player-facing interrogation gump.
 //
-// Started by dblclick.src for non-GM players. Four pre-set buttons; each goes
-// through an AWARENESS skill check (per-question difficulty). Players with
-// chardata.Skills[AWARENESS] == 3 (primary tier) get one free answer per
-// citizen per IRL day before the skill check kicks in.
+// Started by dblclick.src for non-GM players. Six pre-set buttons.
 //
-// The citizen answers via AI_Speak, reading from its DataStore witnessLog
-// (most recent matching entry).
+// Eligibility (no SkillCheck — gating is membership-based to prevent grinding):
+//   * chardata.Skills[AWARENESS] == 3   (PRI tier)            → eligible
+//   * Player's faccao is in citizen's configured factions     → eligible
+//   * everyone else                                           → chit chat only
+//
+// Daily cooldown (per citizen, per player):
+//   * Eligible players consume one info pull per 24h per citizen.
+//   * Cooldown is only burned when the citizen actually had matching news
+//     to share — empty queries cost nothing.
+//   * After the cooldown is burned, the citizen says "ja te contei tudo
+//     que sabia hoje" until 24h elapses.
 // =============================================================================
 
 use uo;
@@ -16,10 +22,10 @@ use util;
 
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
-include ":attributes:attributes";
 include ":attributes:attributeConstants";
 include ":brainAI:npcCommands";
 include ":merchants:citizen/include/citizenStore";
+include ":merchants:citizen/include/citizenAuthority";
 
 const Q_SUSPICIOUS := 1;
 const Q_MAGIC      := 2;
@@ -69,119 +75,152 @@ program citizenInterrogate(params)
         if (fn != Q_SUSPICIOUS && fn != Q_MAGIC && fn != Q_HIDING && fn != Q_LOCKPICK && fn != Q_TARGET && fn != Q_DESCRIBE)
             return;
         endif
-        var difficulty := 0;
-        case (fn)
-            Q_SUSPICIOUS: difficulty := 0;
-            Q_MAGIC:      difficulty := 15;
-            Q_HIDING:     difficulty := 15;
-            Q_LOCKPICK:   difficulty := 15;
-            Q_TARGET:     difficulty := 30;
-            Q_DESCRIBE:   difficulty := 20;
-        endcase
 
-        if (!_PerformInterrogationCheck(npc, player, difficulty))
-            sleep(1);
+        // Tier 1 — eligibility. Non-eligible players get chit chat and the
+        // gump reopens for another try (or they right-click to leave).
+        if (!_IsEligibleForInfo(npc, player))
+            AI_Speak(npc, _ChitChat());
+            sleep(2);
             continue;
         endif
 
-        var answer := "";
+        // Tier 2 — daily cooldown. Already consumed today? Brush off.
+        if (!IsAwarenessFreeAvailable(npc, player))
+            AI_Speak(npc, "Ja te contei tudo que sabia hoje. Volte amanha.");
+            sleep(2);
+            continue;
+        endif
+
+        // Compute the answer. Helpers return { found, message }; "found"
+        // means the citizen had news to share — only then do we burn the
+        // daily cooldown.
+        var result := struct{ "found" := 0, "message" := "" };
         case (fn)
-            Q_SUSPICIOUS: answer := _AnswerSuspicious(npc);
-            Q_MAGIC:      answer := _AnswerByType(npc, "cast", "invocando magia");
-            Q_HIDING:     answer := _AnswerByType(npc, "hide", "se escondendo");
-            Q_LOCKPICK:   answer := _AnswerByType(npc, "lockpick", "arrombando ou mexendo em armadilhas");
-            Q_TARGET:     answer := _AnswerAboutTarget(npc, player);
-            Q_DESCRIBE:   answer := _AnswerDescribe(npc, player);
+            Q_SUSPICIOUS: result := _AnswerSuspicious(npc);
+            Q_MAGIC:      result := _AnswerByType(npc, "cast", "invocando magia");
+            Q_HIDING:     result := _AnswerByType(npc, "hide", "se escondendo");
+            Q_LOCKPICK:   result := _AnswerByType(npc, "lockpick", "arrombando ou mexendo em armadilhas");
+            Q_TARGET:     result := _AnswerAboutTarget(npc, player);
+            Q_DESCRIBE:   result := _AnswerDescribe(npc, player);
         endcase
 
-        if (answer != "")
-            AI_Speak(npc, answer);
+        if (result.found)
+            MarkAwarenessFreeUsed(npc, player);
+        endif
+
+        if (result.message != "")
+            AI_Speak(npc, result.message);
         endif
         sleep(2);
     endwhile
 endprogram
 
-function _PerformInterrogationCheck(npc, player, difficulty)
-    var chardata := GetObjProperty(player, "chardata");
-    var has_primary_aware := 0;
-    if (chardata != error && chardata.Skills != error)
-        if (chardata.Skills.Exists(AWARENESS) && chardata.Skills[AWARENESS] == 3)
-            has_primary_aware := 1;
-        endif
-    endif
+// ── Eligibility helpers ─────────────────────────────────────────────────────
 
-    if (has_primary_aware && IsAwarenessFreeAvailable(npc, player))
-        MarkAwarenessFreeUsed(npc, player);
-        SendSysMessage(player, "Sua percepcao apurada lhe rendeu uma resposta gratuita hoje.");
+function _IsEligibleForInfo(npc, player)
+    if (_HasPrimaryAwareness(player))
         return 1;
     endif
-
-    if (SkillCheck(player, AWARENESS, difficulty) > 0)
+    if (_IsCitizenFactionMember(npc, player))
         return 1;
     endif
-
-    AI_Speak(npc, "Hmm, nao tenho certeza sobre isso...");
     return 0;
 endfunction
 
-function _AnswerSuspicious(npc)
-    var log := GetWitnessLog(npc);
-    if (!log.size())
-        return "Nao vi nada estranho ultimamente.";
+function _HasPrimaryAwareness(player)
+    var chardata := GetObjProperty(player, "chardata");
+    if (chardata == error || chardata.Skills == error)
+        return 0;
     endif
-    return _DescribeEntry(log[log.size()]);
+    if (!chardata.Skills.Exists(AWARENESS))
+        return 0;
+    endif
+    return chardata.Skills[AWARENESS] == 3;
+endfunction
+
+function _IsCitizenFactionMember(npc, player)
+    var factions := GetCitizenFactions(npc);
+    if (!factions || !factions.size())
+        return 0;
+    endif
+    var idx := GetMobileFactionIndex(player);
+    if (!idx)
+        return 0;
+    endif
+    return idx in factions;
+endfunction
+
+function _ChitChat()
+    var lines := array{
+        "Que dia tranquilo, nao?",
+        "Esses tempos andam mesmo agitados.",
+        "Bom dia, estranho. Cuide-se por ai.",
+        "Ando ocupado, vai me desculpar.",
+        "Pena, nao tenho noticias para voce.",
+        "Tem coisas que nao se conta para qualquer um."
+    };
+    return lines[RandomInt(lines.size()) + 1];
+endfunction
+
+// ── Answer functions ────────────────────────────────────────────────────────
+
+function _AnswerSuspicious(npc)
+    var entries := GetWitnessLog(npc);
+    if (!entries.size())
+        return struct{ "found" := 0, "message" := "Nao vi nada estranho ultimamente." };
+    endif
+    return struct{ "found" := 1, "message" := _DescribeEntry(entries[entries.size()]) };
 endfunction
 
 function _AnswerByType(npc, target_type, label)
-    var log := GetWitnessLog(npc);
+    var entries := GetWitnessLog(npc);
     var match := 0;
-    var i := log.size();
+    var i := entries.size();
     while (i >= 1)
-        if (log[i].type == target_type)
-            match := log[i];
+        if (entries[i].type == target_type)
+            match := entries[i];
             i := 0;
         else
             i := i - 1;
         endif
     endwhile
     if (!match)
-        return "Nao, nao vi ninguem " + label + " por aqui.";
+        return struct{ "found" := 0, "message" := "Nao, nao vi ninguem " + label + " por aqui." };
     endif
-    return _DescribeEntry(match);
+    return struct{ "found" := 1, "message" := _DescribeEntry(match) };
 endfunction
 
 function _AnswerAboutTarget(npc, player)
     SendSysMessage(player, "Sobre quem voce quer perguntar?");
     var targ := Target(player);
     if (!targ)
-        return "Hmm, esquece.";
+        return struct{ "found" := 0, "message" := "Hmm, esquece." };
     endif
-    var log := GetWitnessLog(npc);
+    var entries := GetWitnessLog(npc);
     var match := 0;
-    var i := log.size();
+    var i := entries.size();
     while (i >= 1)
-        if (log[i].whoSerial == targ.serial)
-            match := log[i];
+        if (entries[i].whoSerial == targ.serial)
+            match := entries[i];
             i := 0;
         else
             i := i - 1;
         endif
     endwhile
     if (!match)
-        return "Nao vi " + targ.name + " fazendo nada por aqui.";
+        return struct{ "found" := 0, "message" := "Nao vi " + targ.name + " fazendo nada por aqui." };
     endif
-    return _DescribeEntry(match);
+    return struct{ "found" := 1, "message" := _DescribeEntry(match) };
 endfunction
 
 function _AnswerDescribe(npc, player)
-    var log := GetWitnessLog(npc);
-    if (!log.size())
-        return "Nao vi ninguem suspeito ultimamente.";
+    var entries := GetWitnessLog(npc);
+    if (!entries.size())
+        return struct{ "found" := 0, "message" := "Nao vi ninguem suspeito ultimamente." };
     endif
-    var entry := log[log.size()];
-    AI_Speak(npc, "Deixa eu te mostrar...");
+    var entry := entries[entries.size()];
     Start_Script(":merchants:citizen/gumps/citizenReport", { npc, player, entry });
-    return "";
+    return struct{ "found" := 1, "message" := "Deixa eu te mostrar..." };
 endfunction
 
 function _DescribeEntry(entry)
