@@ -16,7 +16,6 @@ const GUMP_SOLDO_SCRIPT     := ":faccao:gump_soldo";
 // ─────────────────────────────────────────────────────────────────────────────
 
 program startprogram()
-	Print("[Soldo] Iniciado. Ciclo a cada " + SOLDO_CICLO_SEGUNDOS + "s.");
 	while (1)
 		ControleDeSoldo();
 		sleep(SOLDO_CICLO_SEGUNDOS);
@@ -56,7 +55,6 @@ function _PagarNPCs(guild)
 			npc.Disable("invul");
 			SetObjProperty(npc, "GuardKill", 1);
 			ApplyRawDamage(npc, NPC_DANO_EXPULSAO);
-			Print("[Soldo] NPC " + npc.name + " expulso por falta de fundos.");
 		else
 			SetObjProperty(npc, "DaysOfService", polcore().systime);
 			money -= custo;
@@ -74,10 +72,7 @@ function _PagarSoldoPlayers(guild)
 	if (!proximo || polcore().systime < proximo) return; endif
 
 	var bau := SystemFindObjectBySerial(guild.GetProp("bau_serial"));
-	if (!bau)
-		Print("[Soldo] ERRO: baú não encontrado para guild '" + guild.GetProp("name") + "'.");
-		return;
-	endif
+	if (!bau) return; endif
 
 	var v_lider   := cint(guild.GetProp("soldo_lider"));
 	var v_membro  := cint(guild.GetProp("soldo_membro"));
@@ -89,7 +84,6 @@ function _PagarSoldoPlayers(guild)
 	var total := v_lider + (num_membros * v_membro);
 
 	if (total <= 0)
-		Print("[Soldo] SKIP: total=0, nada a pagar para guild '" + guild.GetProp("name") + "'.");
 		guild.SetProp("soldo_proximo", polcore().systime + intervalo);
 		return;
 	endif
