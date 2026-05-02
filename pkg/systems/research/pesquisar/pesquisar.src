@@ -331,13 +331,13 @@ function ShowQuickResearchGump(who, byref gump)
             y_pos := top_margin + 70;
             for i := 1 to maxPower
                 GFAddButton(gump, right_margin / 2 + 50, y_pos, 4005, 4006, GF_CLOSE_BTN, i);
-                GFTextLine(gump, right_margin / 2 + 85, y_pos, 2517, "Nível " + i);
+                GFTextLine(gump, right_margin / 2 + 85, y_pos, 2517, "Nível " + i + "  (" + GetManaRequirement(i) + " mana)");
                 y_pos += 40;
             endfor
         else
             GFResizePic(gump, 570, 69, 83, 67, 70);
             GFTextLine(gump, 363, 97, 2517, "Consome 5 pergaminhos em branco");
-            GFTextLine(gump, 363, 180, 2517, "Consome 20 de mana");
+            GFTextLine(gump, 363, 180, 2517, "Consome 20 a 40 de mana (por nível)");
             GFTextLine(gump, 448, 143, 2517, "+");
             GFResizePic(gump, 363, 290, 83, 80, 131);
             GFResizePic(gump, 449, 290, 83, 80, 131);
