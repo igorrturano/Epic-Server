@@ -187,7 +187,7 @@ endfunction
 function DetermineLumberDifficulty(logtype)
 
 	case (logtype)
-		0x1bdd: return 10; // madeira;
+		0x1bdd: return 5; // madeira;
 		0xee36: return 20; // pinheiro
 		0xee37: return 50; // carvalho
 		0xee39: return 60; // salgueiro

@@ -49,7 +49,7 @@ function OpenGump(who, pot)
 			graphic := 0xDF9;
 		endif
 
-		if (CDbl(AP_GetSkill(who, GATHERING)) >= ableToSmelt[oreObjType].ore.difficulty)
+		if (!DifficultyTooHard(CDbl(AP_GetSkill(who, GATHERING)),CDbl(ableToSmelt[oreObjType].ore.difficulty)))
 			var x2 := x;
 			GFAddButton(gump, x, y, 2151, 2154, GF_CLOSE_BTN, btnID);
 			x2 += 35;
