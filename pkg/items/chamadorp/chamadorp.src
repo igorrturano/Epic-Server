@@ -71,11 +71,11 @@ program chamadorp(who, item)
     var mensagem := "";
     var objtype := item.objtype;
     if (objtype == 0xEB98)
-        mensagem := "**[AVENTURA]** Um chamado soa em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Aventureiros estao se aprontando para uma aventura e convocam todos interessados. ||Staff: " + StaffInfo(who) + "||";
+        mensagem := "**[AVENTURA]** Um chamado soa em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Aventureiros estao se aprontando para uma aventura e convocam todos interessados.";
     elseif (objtype == 0x1C12)
-        mensagem := "**[TAVERNA]** O sino da taverna ressoa em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Aventureiros entram na taverna para uma rodada de comes, bebes e boas conversas. ||Staff: " + StaffInfo(who) + "||";
+        mensagem := "**[TAVERNA]** O sino da taverna ressoa em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Aventureiros entram na taverna para uma rodada de comes, bebes e boas conversas.";
     elseif (objtype == 0xFC10)
-        mensagem := "**[EMERGENCIA]** O gongo de emergencia bate em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Algo urgente ocorre e aventureiros convocam a todos para ajudar Valtheris. ||Staff: " + StaffInfo(who) + "||";
+        mensagem := "**[EMERGENCIA]** O gongo de emergencia bate em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Algo urgente ocorre e aventureiros convocam a todos para ajudar Valtheris.";
     else
         return 0;
     endif
