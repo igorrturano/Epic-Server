@@ -81,6 +81,12 @@ function InitializeEpicNPC(mobile)
         SetObjProperty(mobile, "throwItem", throwItem);
     endif
 
+    var spawnScale := CInt(GetConfigString(npc_elem, "SpawnScale"));
+    if (spawnScale > 0 && spawnScale != 100)
+        var rawScale := spawnScale * 10;
+        SetObjProperty(mobile, "entityScale", struct{ height := rawScale, width := rawScale });
+    endif
+
     // Use cached brain_type
     var brain_type := cache.brain_type;
     // Type-specific initialization
@@ -92,6 +98,18 @@ function InitializeEpicNPC(mobile)
     endcase
 
     SetObjProperty(mobile, "started", 1);
+
+    // Se o NPC tem SpawnScale, o 0x78 inicial foi enviado antes do init
+    // (antes do entityScale estar setado), então forçamos um re-render
+    // teleportando para fora do range e voltando.
+    if (spawnScale > 0 && spawnScale != 100)
+        var ox := mobile.x;
+        var oy := mobile.y;
+        var oz := mobile.z;
+        MoveObjectToLocation(mobile, 0, 0, 0, mobile.realm, MOVEOBJECT_FORCELOCATION);
+        sleepms(100);
+        MoveObjectToLocation(mobile, ox, oy, oz, mobile.realm, MOVEOBJECT_FORCELOCATION);
+    endif
 endfunction
 
 
