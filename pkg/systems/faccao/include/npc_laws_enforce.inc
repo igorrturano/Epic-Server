@@ -1465,14 +1465,10 @@ function CheckKnockedOut()
     if (!fighting.dead) return; endif
 
     var targ := fighting;
-    syslog("[KO] guarda={} detectou KO de alvo={} (serial={}) hits={} dead={}".format(
-        me.name, targ.name, targ.serial, targ.hits, targ.dead));
-
     var tipo := CStr(guild.getProp("staff_tipo"));
 
     if (tipo == "rufioes" &&
             GetObjProperty(targ, "#rufiao_robbery_{}".format(guild.guildid)) != error)
-        syslog("[KO]   -> rufioes robbery, nao vai para prisao");
         fighting := 0;
         state    := 1;
         SetWarMode(0);
@@ -1481,11 +1477,8 @@ function CheckKnockedOut()
     endif
 
     var tier := CInt(GetObjProperty(targ, "#pending_tier_{}".format(guild.guildid)));
-    syslog("[KO]   staff_tipo={} | pending_tier={} | guild={}".format(
-        tipo, tier, guild ? guild.guildid : "SEM_GUILD"));
 
     if (!tier || tier < 1 || tier > 3)
-        syslog("[KO]   -> sem violacao de lei pendente, apenas encerra combate");
         fighting := 0;
         state    := 0;
         SetOpponent(0);
@@ -1493,7 +1486,6 @@ function CheckKnockedOut()
         return;
     endif
 
-    syslog("[KO]   -> ENVIANDO PARA PRISAO (tier={})".format(tier));
     fighting := 0;
     state    := 1;
     SetWarMode(0);
@@ -2059,15 +2051,6 @@ function _SetupNPCSkills(agent)
         AP_SetTrueSkill(agent, WRESTLING, array{ 25, 45, 65 }[tier]);
         AP_SetTrueSkill(agent, RANGED,    array{  0, 15, 30 }[tier]);
         AP_SetTrueSkill(agent, PARRY,     array{  0, 40, 85 }[tier]);
-        syslog("[SKILL] guardafaccao template={} tier={} | TAC={} OH={} TH={} DW={} WR={} RNG={} PARRY={}".format(
-            agent.npctemplate, tier,
-            CInt(AP_GetSkill(agent, TACTICS)),
-            CInt(AP_GetSkill(agent, ONEHANDED)),
-            CInt(AP_GetSkill(agent, TWOHANDED)),
-            CInt(AP_GetSkill(agent, DUALWIELD)),
-            CInt(AP_GetSkill(agent, WRESTLING)),
-            CInt(AP_GetSkill(agent, RANGED)),
-            CInt(AP_GetSkill(agent, PARRY))));
         return;
     endif
 

@@ -98,6 +98,7 @@ program prisaotimer(params)
                 CobrarMoedas(who, multa);
                 g.setProp("money", CInt(g.getProp("money")) + multa);
                 EraseObjProperty(who, "#prisao_pendente");
+                DevolverItens(who, g);
                 var saida := GetReleasePoint(g);
                 MoveObjectToLocation(who, saida.x, saida.y, saida.z, saida.realm, MOVEOBJECT_FORCELOCATION);
                 SendSysMessageEx(who, "Multa paga. Voce esta livre - nao reincida!", SSM_INFO);
