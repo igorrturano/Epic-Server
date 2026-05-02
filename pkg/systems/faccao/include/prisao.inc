@@ -184,17 +184,49 @@ function ConfiscarItens(who, g)
 
     if (!confiscados.size()) return; endif
 
-    var label   := LabelMochila(who);
-    var mochila := CreateItemAtLocation(bau.x, bau.y, bau.z, 0xe75, 1, bau.realm);
-    if (!mochila) return; endif
+    var label          := LabelMochila(who);
+    var estava_travado := bau.locked;
+    if (estava_travado) bau.locked := 0; endif
+
+    var mochila := CreateItemInContainer(bau, 0xe75, 1);
+    if (!mochila)
+        if (estava_travado) bau.locked := 1; endif
+        return;
+    endif
     mochila.name := label;
-    MoveItemToContainer(mochila, bau);
+
     foreach item in confiscados
         sleepms(2);
         MoveItemToContainer(item, mochila);
     endforeach
 
+    if (estava_travado) bau.locked := 1; endif
+
+    SetObjProperty(who, "#prisao_mochila_serial", mochila.serial);
     SendSysMessageEx(who, "Seus itens foram confiscados pela faccao.", SSM_HARMFUL);
+endfunction
+
+// ── Devolucao de itens ao sair da prisao ─────────────────────────────────────
+
+function DevolverItens(who, g)
+    var mochila_serial := GetObjProperty(who, "#prisao_mochila_serial");
+    if (mochila_serial == error || !mochila_serial) return; endif
+
+    EraseObjProperty(who, "#prisao_mochila_serial");
+
+    var mochila := SystemFindObjectBySerial(mochila_serial);
+    if (!mochila) return; endif
+
+    var bp := who.backpack;
+    if (!bp) return; endif
+
+    foreach item in EnumerateItemsInContainer(mochila)
+        sleepms(2);
+        MoveItemToContainer(item, bp);
+    endforeach
+
+    DestroyItem(mochila);
+    SendSysMessageEx(who, "Seus itens confiscados foram devolvidos.", SSM_INFO);
 endfunction
 
 // ── Espera de conexao e timer entre gumps ────────────────────────────────────
