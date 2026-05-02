@@ -113,8 +113,6 @@ endif
 	var _prisao := GetObjProperty(ghost, "#prisao_destino");
 	if (_prisao != error)
 		EraseObjProperty(ghost, "#prisao_destino");
-		syslog("[PRISAO] KataWakeUp: {} acordando na prisao x={} y={} z={} realm={}".format(
-			ghost.name, _prisao.x, _prisao.y, _prisao.z, _prisao.realm));
 		MoveObjectToLocation(ghost, _prisao.x, _prisao.y, _prisao.z, _prisao.realm, MOVEOBJECT_FORCELOCATION);
 		SendSysMessage(ghost, "Voce acorda na prisao da faccao. Em 5 minutos sera apresentada a opcao de pagar a multa.");
 		start_script(":faccao:prisaotimer", array{ ghost.serial, _prisao.guildid, _prisao.tier });
