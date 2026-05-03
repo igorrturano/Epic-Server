@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# Example pre-commit hook for eScript linting
+#
+# To install:
+#   cp scripts/pre-commit.example .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# To bypass (when needed):
+#   git commit --no-verify
+
+echo "Running eScript linter on staged changes..."
+
+# Run the git diff linter on staged changes
+./scripts/lint-git-diff.sh
+
+LINT_EXIT=$?
+
+if [ $LINT_EXIT -ne 0 ]; then
+    echo ""
+    echo "=========================================="
+    echo "❌ Linting found issues in your changes."
+    echo "=========================================="
+    echo ""
+    echo "Please fix the issues above before committing."
+    echo "Or use 'git commit --no-verify' to skip this check."
+    echo ""
+    exit 1
+fi
+
+echo ""
+echo "✅ Linting passed! Proceeding with commit."
+echo ""
+
+exit 0
