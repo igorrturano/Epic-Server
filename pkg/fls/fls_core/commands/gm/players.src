@@ -22,9 +22,9 @@ endprogram
 function PlayersGump(who)
 	var gump := GFCreateGump();
 
-	GFResizePic(gump, 0, 0, 0x13BE, 570, 420);
-	GFResizePic(gump, 10, 10, /* 0xBB8 */ 0x2486, 550, 400);
-	GFAddAlphaRegion(gump, 10, 10, 550, 400);
+	GFResizePic(gump, 0, 0, 0x13BE, 590, 420);
+	GFResizePic(gump, 10, 10, /* 0xBB8 */ 0x2486, 570, 400);
+	GFAddAlphaRegion(gump, 10, 10, 570, 400);
 	GFTextLine(gump, 25, 20, 2100, "Player Name");
 	GFTextLine(gump, 255, 20, 2100, "Msg");
 	GFTextLine(gump, 305, 20, 2100, "Go");
@@ -63,10 +63,10 @@ function PlayersGump(who)
 		counter := counter + 1;
 
 		if (counter >= 18 && _acc_iter < num_players)
-			GFAddButton(gump, 523, 385, 0xA92, 0xA93, GF_PAGE_BTN, page_num + 1);
+			GFAddButton(gump, 543, 385, 0xA92, 0xA93, GF_PAGE_BTN, page_num + 1);
 			page_num := page_num + 1;
 			GFPage(gump, page_num);
-			GFAddButton(gump, 523, 40, 0xA90, 0xA91, GF_PAGE_BTN, page_num - 1);
+			GFAddButton(gump, 543, 40, 0xA90, 0xA91, GF_PAGE_BTN, page_num - 1);
 			counter := 0;
 			y_pos := 40;
 		endif
