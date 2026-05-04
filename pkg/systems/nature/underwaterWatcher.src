@@ -1,0 +1,85 @@
+use uo;
+use os;
+use datafile;
+
+program underwaterWatcher(params)
+	var status_df := OpenDataFile(":nature:watcherStatus");
+	if (!status_df)
+		status_df := CreateDataFile(":nature:watcherStatus");
+		if (!status_df) return; endif
+	endif
+
+	var status_elem := status_df.FindElement("uw_watcher");
+	if (!status_elem)
+		status_elem := status_df.CreateElement("uw_watcher");
+		if (!status_elem) return; endif
+	endif
+
+	status_elem.EraseProp("restart");
+
+	while (1)
+		if (status_elem.GetProp("restart"))
+			status_elem.EraseProp("restart");
+			status_elem.SetProp("heartbeat", 0);
+			return;
+		endif
+
+		status_elem.SetProp("heartbeat", polcore().systime);
+
+		var areas_df := OpenDataFile(":nature:underwaterAreas");
+		if (!areas_df || areas_df.keys().size() == 0)
+			sleep(60);
+			continue;
+		endif
+
+		var found_anyone := 0;
+
+		foreach area_name in (areas_df.keys())
+			var elem := areas_df.FindElement(area_name);
+			if (!elem) continue; endif
+
+			var coords := SplitWords(elem.GetProp("Rect"));
+			if (coords.size() < 4) continue; endif
+
+			var realm := elem.GetProp("Realm");
+			if (!realm) continue; endif
+
+			var x1 := CInt(coords[1]);
+			var y1 := CInt(coords[2]);
+			var x2 := CInt(coords[3]);
+			var y2 := CInt(coords[4]);
+
+			if (x1 > x2) var tmp := x1; x1 := x2; x2 := tmp; endif
+			if (y1 > y2) var tmp := y1; y1 := y2; y2 := tmp; endif
+
+			var cx := CInt((x1 + x2) / 2);
+			var cy := CInt((y1 + y2) / 2);
+			var w  := x2 - x1;
+			var h  := y2 - y1;
+			var radius := CInt((w > h ? w : h) / 2) + 5;
+
+			var near := ListMobilesNearLocation(cx, cy, GetWorldHeight(cx, cy, realm), radius, realm);
+			foreach mobile in near
+				if (mobile.npctemplate) continue; endif
+				if (mobile.dead)        continue; endif
+				if (mobile.x < x1 || mobile.x > x2) continue; endif
+				if (mobile.y < y1 || mobile.y > y2) continue; endif
+
+				found_anyone := 1;
+				SetObjProperty(mobile, "#uw_dynamic", polcore().systime);
+
+				if (!GetObjProperty(mobile, "#uw_running"))
+					Start_script(":nature:underwatereffect", { mobile, 1 });
+				endif
+
+				sleepms(10);
+			endforeach
+		endforeach
+
+		if (found_anyone)
+			sleepms(3000);
+		else
+			sleep(30);
+		endif
+	endwhile
+endprogram
