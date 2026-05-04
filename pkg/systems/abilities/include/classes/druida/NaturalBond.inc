@@ -314,16 +314,17 @@ class NaturalBond(CombatAbility)
         if (fis_str && !fis_str.errortext)
             var fis_parts := SplitWords(fis_str);
             if (fis_parts.size() >= 1)
-                // Wildshape uses linear tier scaling to avoid overpowered resistance spikes.
-                // T1 -> 1, T2 -> 2, ... T5 -> 5
+                // Wildshape usa tier linear escalado para % de reducao (escala
+                // do redesign — 5x sobre os valores antigos 0-5 flat). Aplicado
+                // apenas em fisicos via _ApplyResistMod.
                 var tier_str := Upper(CStr(fis_parts[1]));
                 case (tier_str)
                     "T0": resistmod_calc := 0;
-                    "T1": resistmod_calc := 1;
-                    "T2": resistmod_calc := 2;
-                    "T3": resistmod_calc := 3;
-                    "T4": resistmod_calc := 4;
-                    "T5": resistmod_calc := 5;
+                    "T1": resistmod_calc := 5;
+                    "T2": resistmod_calc := 10;
+                    "T3": resistmod_calc := 15;
+                    "T4": resistmod_calc := 20;
+                    "T5": resistmod_calc := 25;
                 endcase
             endif
         endif
@@ -340,7 +341,9 @@ class NaturalBond(CombatAbility)
         if (mobile.HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
             skill_a_calc   := CInt(skill_a_calc + bonusMagicLore);
             hitsmod_calc   := CInt(hitsmod_calc + bonusInstintoHP);
-            resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 30);
+            // Bonus de resist da Instinto de Sobrevivencia: theology/6 (max ~16% no
+            // GM). Escala 5x sobre legacy theology/30. Soma em fisicos.
+            resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 6);
         endif
 
         var hitscript := this._GetTaxonomyScript(taxonomy);
