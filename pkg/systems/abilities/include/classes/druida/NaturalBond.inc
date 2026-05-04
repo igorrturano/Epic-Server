@@ -415,12 +415,11 @@ class NaturalBond(CombatAbility)
     endfunction
 
     function _ApplyResistMod(this, who, resistmod_calc)
-        // Apply to engine-level resist mods (visible on char sheet, consumed by combat)
+        // Wildshape adiciona resist apenas em FISICOS (slash/piercing/blunt) por
+        // padrao — pele/escama/quitina protege contra impacto fisico. Resists
+        // elementais ficam por conta de Chamado da Forma Primordial (que usa
+        // primordial_resist_* em ClearPrimordialProperties no endmetamorfose).
         who.resist_physical_mod := who.resist_physical_mod + resistmod_calc;
-        who.resist_fire_mod     := who.resist_fire_mod     + resistmod_calc;
-        who.resist_cold_mod     := who.resist_cold_mod     + resistmod_calc;
-        who.resist_poison_mod   := who.resist_poison_mod   + resistmod_calc;
-        who.resist_energy_mod   := who.resist_energy_mod   + resistmod_calc;
 
         // Keep #SpellResist in sync (used by DamageController and status bar)
         var mw := MobileWrapper(who);
@@ -431,10 +430,6 @@ class NaturalBond(CombatAbility)
         sr.slash    += resistmod_calc;
         sr.piercing += resistmod_calc;
         sr.blunt    += resistmod_calc;
-        sr.fire     += resistmod_calc;
-        sr.cold     += resistmod_calc;
-        sr.poison   += resistmod_calc;
-        sr.energy   += resistmod_calc;
         mw.SetProperty("#SpellResist", sr);
     endfunction
 
