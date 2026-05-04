@@ -6,56 +6,63 @@ include ":attributes:attributes";
 include "include/say";
 
 program underwater(params)
-	var who := params[1];
-	var underwaterMessageSent := 0;
+	var who     := params[1];
+	var dynamic := params.size() >= 2 ? CInt(params[2]) : 0;
+
+	if (GetObjProperty(who, "#uw_running"))
+		return;
+	endif
+	SetObjProperty(who, "#uw_running", 1);
+
+	var messageSent := 0;
 
 	while (who)
-		if (who.dead)
-			break;
+		if (who.dead) break; endif
+
+		if (dynamic)
+			var stamp := CInt(GetObjProperty(who, "#uw_dynamic"));
+			if (!stamp || polcore().systime - stamp > 6) break; endif
+		else
+			var statics := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
+			var onWater := 0;
+			foreach static in statics
+				if (CInt(static.objtype) >= 5818 && CInt(static.objtype) <= 5839)
+					onWater := 1;
+					break;
+				endif
+			endforeach
+			if (!onWater || who.z > -20) break; endif
 		endif
 
-		var z := who.z;
-		var statics := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
+		if (GetCooldown(who, "can_breath") > 0)
+			sleepms(2000);
+			continue;
+		endif
 
-		var is_on_water_tile := 0;
-
-		foreach static in statics
-			if (CInt(static.objtype) >= 5818 && CInt(static.objtype) <= 5839)
-				is_on_water_tile := 1;
-				break;
+		if (GetObjProperty(who, "underwater"))
+			if (!messageSent)
+				SendSysMessage(who, "Você não consegue respirar!");
+				messageSent := 1;
 			endif
-		endforeach
-
-		if (is_on_water_tile && z <= -20)
-			if (GetCooldown(who, "can_breath") > 0)
-				break;
-			endif
-
-			if (GetObjProperty(who, "underwater"))
-				if (!underwaterMessageSent)
-					SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
-					underwaterMessageSent := 1;
-				endif
-
-				if (!AP_ConsumeVital(who, "Stamina", 10))
-					AP_ConsumeVital(who, "Hits", 10);
-				endif
-			else
-				SetObjProperty(who, "underwater", 1);
-				SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
-				underwaterMessageSent := 1;
+			if (!AP_ConsumeVital(who, "Stamina", 10))
+				AP_ConsumeVital(who, "Hits", 10);
 			endif
 		else
-			break;
+			SetObjProperty(who, "underwater", 1);
+			SendSysMessage(who, "Você não consegue respirar!");
+			messageSent := 1;
 		endif
 
 		sleepms(2000);
 	endwhile
 
+	EraseObjProperty(who, "#uw_running");
+	EraseObjProperty(who, "#uw_dynamic");
+
 	if (who && GetObjProperty(who, "underwater"))
 		EraseObjProperty(who, "underwater");
 		if (!who.dead)
-			SendSysMessageEx(who, "Você consegue respirar novamente!", SSM_INFO);
+			SendSysMessage(who, "Você consegue respirar novamente!");
 		endif
 	endif
 endprogram

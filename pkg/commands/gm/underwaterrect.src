@@ -1,0 +1,324 @@
+use uo;
+use os;
+use datafile;
+
+include ":gumpDesigner:include/Gump/Gump";
+include ":gumpDesigner:include/Control/Button";
+include ":gumpDesigner:include/Control/Text";
+include ":gumpDesigner:include/Control/TextBox";
+
+program underwaterrect(who, params)
+	if (!who.cmdlevel)
+		SendSysMessage(who, "Sem permissão.");
+		return;
+	endif
+
+	var parts := SplitWords(Lower(params));
+	var cmd := parts[1];
+
+	if (cmd == "del" || cmd == "deletar")
+		_DeleteRect(who, parts[2]);
+	elseif (cmd == "list" || cmd == "listar" || cmd == "ver")
+		_ListRects(who);
+	elseif (cmd == "restart")
+		_RestartWatcher(who);
+	else
+		_CreateRect(who);
+	endif
+endprogram
+
+function _OpenDf(create := 0)
+	var df := OpenDataFile(":nature:underwaterAreas");
+	if (!df && create)
+		df := CreateDataFile(":nature:underwaterAreas");
+	endif
+	return df;
+endfunction
+
+function _CreateRect(who)
+	SendSysMessage(who, "Selecione o primeiro ponto da área underwater.");
+	var p1 := TargetCoordinates(who);
+	if (!p1)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+
+	SendSysMessage(who, "Selecione o segundo ponto da área underwater.");
+	var p2 := TargetCoordinates(who);
+	if (!p2)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+
+	var x1 := (p1.x < p2.x) ? p1.x : p2.x;
+	var y1 := (p1.y < p2.y) ? p1.y : p2.y;
+	var x2 := (p1.x > p2.x) ? p1.x : p2.x;
+	var y2 := (p1.y > p2.y) ? p1.y : p2.y;
+	var realm := p1.realm;
+	var w := x2 - x1;
+	var h := y2 - y1;
+
+	SendSysMessage(who, $"Área: {w} x {h} tiles. Criando prévia...");
+	var markers := _PreviewRect(x1, y1, x2, y2, realm);
+
+	var gump := Gump(who, "Nova Área Underwater", 320, 130);
+	gump.AddControl(Text("txt", 20, 15, $"Confirmar {w}x{h} tiles em {realm}?", TEXT_COLOR::COLOR_DEFAULT));
+
+	var btnSim := Button("btnSim", 20, 55, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+	gump.AddControl(btnSim);
+	gump.AddControl(Text("lblSim", 58, 58, "Confirmar", TEXT_COLOR::COLOR_DEFAULT));
+
+	var btnNao := Button("btnNao", 160, 55, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+	gump.AddControl(btnNao);
+	gump.AddControl(Text("lblNao", 198, 58, "Cancelar", TEXT_COLOR::COLOR_DEFAULT));
+
+	var evento := gump.Show();
+	gump.Dispose();
+	_ClearPreview(markers);
+
+	if (evento.GetControl() == EVENT_ACTION::CLOSED || evento.GetControl().Equals(btnNao))
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+
+	var gump2 := Gump(who, "Nome da Área", 320, 80);
+	gump2.AddControl(Text("lbl", 20, 15, "Nome da área underwater:", TEXT_COLOR::COLOR_DEFAULT));
+	var tbNome := TextBox("tbNome", 20, 35, 280, 1, 1153, "", 40);
+	gump2.AddControl(tbNome);
+
+	var btnOk := Button("btnOk", 130, 55, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+	gump2.AddControl(btnOk);
+	gump2.AddControl(Text("lblOk", 168, 58, "Salvar", TEXT_COLOR::COLOR_DEFAULT));
+
+	var ev2 := gump2.Show();
+	var nome := CStr(tbNome.GetValue());
+	gump2.Dispose();
+
+	if (ev2.GetControl() == EVENT_ACTION::CLOSED || !nome || nome == "")
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+
+	var df := _OpenDf(1);
+	if (!df)
+		SendSysMessage(who, "Erro ao acessar datafile.");
+		return;
+	endif
+
+	var elem := df.FindElement(nome);
+	if (!elem)
+		elem := df.CreateElement(nome);
+		if (!elem)
+			SendSysMessage(who, "Erro ao criar elemento no datafile.");
+			return;
+		endif
+	endif
+
+	elem.SetProp("Name",  nome);
+	elem.SetProp("Rect",  $"{x1} {y1} {x2} {y2}");
+	elem.SetProp("Realm", realm);
+
+	SendSysMessage(who, $"Área underwater '{nome}' salva ({w}x{h} tiles, {realm}).");
+endfunction
+
+function _DeleteRect(who, nome)
+	if (!nome || nome == "")
+		SendSysMessage(who, "Uso: .underwaterrect del <nome>");
+		return;
+	endif
+
+	var df := _OpenDf();
+	if (!df)
+		SendSysMessage(who, "Nenhuma área cadastrada.");
+		return;
+	endif
+
+	if (!df.FindElement(nome))
+		SendSysMessage(who, $"Área '{nome}' não encontrada.");
+		return;
+	endif
+
+	df.DeleteElement(nome);
+	SendSysMessage(who, $"Área '{nome}' removida.");
+endfunction
+
+function _ListRects(who)
+	var df := _OpenDf();
+	var keys := df ? df.keys() : array{};
+
+	if (keys.size() == 0)
+		SendSysMessage(who, "Nenhuma área underwater cadastrada.");
+		return;
+	endif
+
+	var gump := Gump(who, "Áreas Underwater", 300, 60 + keys.size() * 25);
+
+	var btns := array{};
+	var y := 15;
+	var i := 1;
+	foreach nome in keys
+		var btn := Button("btn" + i, 20, y, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gump.AddControl(btn);
+		gump.AddControl(Text("lbl" + i, 58, y + 3, nome, TEXT_COLOR::COLOR_DEFAULT));
+		btns.append(btn);
+		i += 1;
+		y += 25;
+	endforeach
+
+	var ev := gump.Show();
+	gump.Dispose();
+
+	if (ev.GetControl() == EVENT_ACTION::CLOSED) return; endif
+
+	var idx := 1;
+	foreach btn in btns
+		if (ev.GetControl().Equals(btn))
+			var elem := df.FindElement(keys[idx]);
+			if (elem) _ShowDetails(who, elem, keys[idx]); endif
+			break;
+		endif
+		idx += 1;
+	endforeach
+endfunction
+
+function _ShowDetails(who, elem, nome)
+	var rect  := elem.GetProp("Rect");
+	var realm := elem.GetProp("Realm");
+	var coords := SplitWords(rect);
+
+	var x1 := 0; var y1 := 0; var x2 := 0; var y2 := 0;
+	var w  := 0; var h  := 0;
+	if (coords.size() >= 4)
+		x1 := CInt(coords[1]); y1 := CInt(coords[2]);
+		x2 := CInt(coords[3]); y2 := CInt(coords[4]);
+		w  := x2 - x1;        h  := y2 - y1;
+	endif
+
+	var gump := Gump(who, "Área Underwater", 300, 205);
+	gump.AddControl(Text("tNome",  20, 15, "Nome:     " + nome,                      TEXT_COLOR::COLOR_DEFAULT));
+	gump.AddControl(Text("tRect",  20, 35, "Rect:     " + rect,                      TEXT_COLOR::COLOR_DEFAULT));
+	gump.AddControl(Text("tRealm", 20, 55, "Realm:    " + realm,                     TEXT_COLOR::COLOR_DEFAULT));
+	gump.AddControl(Text("tSize",  20, 75, "Tamanho:  " + w + " x " + h + " tiles", TEXT_COLOR::COLOR_DEFAULT));
+
+	var btnTele := Button("btnTele", 20, 105, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+	gump.AddControl(btnTele);
+	gump.AddControl(Text("lblTele", 58, 108, "Ir para o centro", TEXT_COLOR::COLOR_DEFAULT));
+
+	var btnVer := Button("btnVer", 20, 130, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+	gump.AddControl(btnVer);
+	gump.AddControl(Text("lblVer", 58, 133, "Ver demarcação",   TEXT_COLOR::COLOR_DEFAULT));
+
+	var btnDel := Button("btnDel", 20, 155, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+	gump.AddControl(btnDel);
+	gump.AddControl(Text("lblDel", 58, 158, "Deletar área",     TEXT_COLOR::COLOR_DEFAULT));
+
+	var ev := gump.Show();
+	gump.Dispose();
+
+	if (ev.GetControl() == EVENT_ACTION::CLOSED) return; endif
+
+	if (ev.GetControl().Equals(btnTele))
+		if (coords.size() >= 4)
+			var cx := CInt((x1 + x2) / 2);
+			var cy := CInt((y1 + y2) / 2);
+			MoveObjectToLocation(who, cx, cy, GetWorldHeight(cx, cy, realm), realm, MOVEOBJECT_FORCELOCATION);
+			SendSysMessage(who, "Teleportado para o centro de '" + nome + "'.");
+		endif
+	elseif (ev.GetControl().Equals(btnVer))
+		if (coords.size() >= 4)
+			_ShowBorderPreview(who, nome, x1, y1, x2, y2, realm);
+		endif
+	elseif (ev.GetControl().Equals(btnDel))
+		var gumpDel := Gump(who, "Confirmar exclusão", 280, 90);
+		gumpDel.AddControl(Text("tConf", 20, 15, "Deletar '" + nome + "'?", TEXT_COLOR::COLOR_DEFAULT));
+
+		var btnSim := Button("btnSim", 20,  50, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gumpDel.AddControl(btnSim);
+		gumpDel.AddControl(Text("lblSim", 58, 53, "Confirmar", TEXT_COLOR::COLOR_DEFAULT));
+
+		var btnNao := Button("btnNao", 150, 50, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gumpDel.AddControl(btnNao);
+		gumpDel.AddControl(Text("lblNao", 188, 53, "Cancelar", TEXT_COLOR::COLOR_DEFAULT));
+
+		var evDel := gumpDel.Show();
+		gumpDel.Dispose();
+
+		if (evDel.GetControl().Equals(btnSim))
+			_DeleteRect(who, nome);
+		endif
+	endif
+endfunction
+
+function _RestartWatcher(who)
+	var df := OpenDataFile(":nature:watcherStatus");
+	if (!df)
+		df := CreateDataFile(":nature:watcherStatus");
+		if (!df)
+			SendSysMessage(who, "Erro ao acessar watcherStatus.");
+			return;
+		endif
+	endif
+
+	var elem := df.FindElement("uw_watcher");
+	if (elem)
+		elem.SetProp("restart", 1);
+		SendSysMessage(who, "Sinal de restart enviado. Aguarde até 30s e relogue para o novo watcher subir.");
+	else
+		Start_script(":nature:underwaterWatcher", {});
+		SendSysMessage(who, "Watcher iniciado.");
+	endif
+endfunction
+
+function _ShowBorderPreview(who, nome, x1, y1, x2, y2, realm)
+	SendSysMessage(who, "Desenhando demarcação de '" + nome + "'...");
+	var markers := _PreviewRect(x1, y1, x2, y2, realm);
+
+	var gump := Gump(who, "Demarcação: " + nome, 300, 75);
+	gump.AddControl(Text("tInfo", 20, 15, "Bordas visíveis no mapa.", TEXT_COLOR::COLOR_DEFAULT));
+
+	var btnFechar := Button("btnFechar", 20, 40, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+	gump.AddControl(btnFechar);
+	gump.AddControl(Text("lblFechar", 58, 43, "Fechar e limpar", TEXT_COLOR::COLOR_DEFAULT));
+
+	gump.Show();
+	gump.Dispose();
+	_ClearPreview(markers);
+	SendSysMessage(who, "Demarcação removida.");
+endfunction
+
+function _PreviewRect(x1, y1, x2, y2, realm)
+	var markers := array{};
+
+	var x := x1;
+	while (x <= x2)
+		var z := GetWorldHeight(x, y1, realm);
+		var m := CreateItemAtLocation(x, y1, z, 0xF240, 1, realm);
+		if (m) m.color := 39; m.saveonexit := 0; markers.append(m); endif
+		z := GetWorldHeight(x, y2, realm);
+		m := CreateItemAtLocation(x, y2, z, 0xF240, 1, realm);
+		if (m) m.color := 39; m.saveonexit := 0; markers.append(m); endif
+		x += 1;
+		sleepms(1);
+	endwhile
+
+	var y := y1 + 1;
+	while (y < y2)
+		var z := GetWorldHeight(x1, y, realm);
+		var m := CreateItemAtLocation(x1, y, z, 0xF240, 1, realm);
+		if (m) m.color := 39; m.saveonexit := 0; markers.append(m); endif
+		z := GetWorldHeight(x2, y, realm);
+		m := CreateItemAtLocation(x2, y, z, 0xF240, 1, realm);
+		if (m) m.color := 39; m.saveonexit := 0; markers.append(m); endif
+		y += 1;
+		sleepms(1);
+	endwhile
+
+	return markers;
+endfunction
+
+function _ClearPreview(markers)
+	foreach item in markers
+		if (item) DestroyItem(item); endif
+		sleepms(1);
+	endforeach
+endfunction

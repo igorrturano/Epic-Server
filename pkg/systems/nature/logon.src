@@ -1,5 +1,6 @@
-
+use uo;
 use os;
+use datafile;
 
 include ":fls_core:fls_characters";
 
@@ -7,4 +8,25 @@ program logon(who)
 	InitPlayerVision(who);
 
 	destroyIllyraOutsideDungeons(who);
+
+	EraseObjProperty(who, "#uw_running");
+	EraseObjProperty(who, "#uw_dynamic");
+
+	_EnsureUnderwaterWatcher();
 endprogram
+
+function _EnsureUnderwaterWatcher()
+	var df := OpenDataFile(":nature:watcherStatus");
+	if (!df)
+		df := CreateDataFile(":nature:watcherStatus");
+		if (!df) return; endif
+	endif
+
+	var elem := df.FindElement("uw_watcher");
+	if (elem)
+		var age := polcore().systime - CInt(elem.GetProp("heartbeat"));
+		if (age < 120) return; endif
+	endif
+
+	Start_script(":nature:underwaterWatcher", {});
+endfunction
