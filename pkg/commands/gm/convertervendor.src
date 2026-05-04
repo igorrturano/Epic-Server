@@ -1,0 +1,76 @@
+use uo;
+use guilds;
+
+include ":faccao:faccao";
+include ":faccao:shared_functions";
+
+program textcmd_convertervendor(who, text)
+    if (who.cmdlevel < 1)
+        return;
+    endif
+
+    var guildid := FindGuildByName("A Liga do Pacto Comum");
+    if (!guildid)
+        SendSysMessage(who, "[convertervendor] Guild 'A Liga do Pacto Comum' nao encontrada.");
+        return;
+    endif
+
+    var guild := FindGuild(guildid);
+    if (!guild)
+        SendSysMessage(who, "[convertervendor] Nao foi possivel carregar a guild.");
+        return;
+    endif
+
+    var convertidos := 0;
+    SendSysMessage(who, "[convertervendor] Clique em cada vendor para converter (ESC para encerrar).");
+
+    var continuar := 1;
+    while (continuar)
+        var targ := Target(who);
+
+        if (!targ || targ.errortext)
+            continuar := 0;
+        elseif (!targ.IsA(POLCLASS_MOBILE))
+            SendSysMessage(who, "[convertervendor] Selecione um NPC vendor, nao um item.");
+        elseif (lower(CStr(targ.script)) == ":merchantfaccao:main")
+            SendSysMessage(who, "[convertervendor] " + targ.name + " ja e merchantfaccao — ignorado.");
+        else
+            SetObjProperty(targ, "guild",       guild.guildid);
+            SetObjProperty(targ, "tipo_faccao", "staff");
+            SetObjProperty(targ, "contract_by", who.serial);
+            SetObjProperty(targ, "conf_ref",    1);
+            PropagateNomeFaccao(guild, targ);
+
+            var fix_loc := struct{ "x" := targ.x, "y" := targ.y, "z" := targ.z, "facing" := targ.facing };
+            SetObjProperty(targ, "fix_loc", fix_loc);
+
+            var npcs_active := guild.GetProp("npcs_active");
+            if (!npcs_active || npcs_active.errortext)
+                npcs_active := array{};
+            endif
+
+            var ja_reg := 0;
+            var i := 1;
+            while (i <= npcs_active.size() && !ja_reg)
+                if (npcs_active[i].serial == targ.serial)
+                    ja_reg := 1;
+                endif
+                i := i + 1;
+            endwhile
+
+            if (!ja_reg)
+                var entrada := struct{ "serial" := targ.serial, "price" := 10, "ref" := 1 };
+                npcs_active.append(entrada);
+                guild.SetProp("npcs_active", npcs_active);
+            endif
+
+            targ.script := ":merchantfaccao:main";
+            RestartScript(targ);
+
+            convertidos := convertidos + 1;
+            SendSysMessage(who, "[convertervendor] (" + convertidos + ") " + targ.name + " convertido com sucesso.");
+        endif
+    endwhile
+
+    SendSysMessage(who, "[convertervendor] Concluido. " + convertidos + " vendor(es) convertido(s) para merchantfaccao.");
+endprogram
