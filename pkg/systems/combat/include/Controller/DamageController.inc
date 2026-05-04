@@ -633,13 +633,15 @@ function CalculateDefenderResist(byRef attackInfo)
 	var armorsInBodyRegion := GetEquipsByAttackDirection(attackInfo);
 	var bodyResist := attackInfo.GetDefender().GetBodyResist();
 
-	attackInfo.GetDamage().DecreaseSlashBaseDamage(bodyResist.GetSlashResist())
-						  .DecreasePiercingBaseDamage(bodyResist.GetPiercingResist())
-						  .DecreaseBluntBaseDamage(bodyResist.GetBluntResist())
-						  .DecreaseFireBaseDamage(bodyResist.GetFireResist())
-						  .DecreaseColdBaseDamage(bodyResist.GetColdResist())
-						  .DecreasePoisonBaseDamage(bodyResist.GetPoisonResist())
-						  .DecreaseEnergyBaseDamage(bodyResist.GetEnergyResist());
+	// Body e armor agora aplicam % multiplicativo (design_combate.md). Spell resist
+	// permanece flat ate Phase 8 — sua conversao para % vive em design_magia.md.
+	attackInfo.GetDamage().DecreaseSlashPercentDamage(bodyResist.GetSlashResist())
+						  .DecreasePiercingPercentDamage(bodyResist.GetPiercingResist())
+						  .DecreaseBluntPercentDamage(bodyResist.GetBluntResist())
+						  .DecreaseFirePercentDamage(bodyResist.GetFireResist())
+						  .DecreaseColdPercentDamage(bodyResist.GetColdResist())
+						  .DecreasePoisonPercentDamage(bodyResist.GetPoisonResist())
+						  .DecreaseEnergyPercentDamage(bodyResist.GetEnergyResist());
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Defesa natural (BODY) do defensor reduziu dano em: {bodyResist.ToString()}"));
 
 	// Spell resist (virtual armor layer from magic: barkskin, protection, etc.)
@@ -663,13 +665,13 @@ function CalculateDefenderResist(byRef attackInfo)
 			WearDownEquip(equip, attackInfo.GetWeapon());
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em {armorResist.ToString()} e perdeu {attackInfo.GetDamage().GetTotalBaseDamage()} de durabilidade."));
 
-			attackInfo.GetDamage().DecreaseSlashBaseDamage(armorResist.GetSlashResist())
-								  .DecreasePiercingBaseDamage(armorResist.GetPiercingResist())
-								  .DecreaseBluntBaseDamage(armorResist.GetBluntResist())
-								  .DecreaseFireBaseDamage(armorResist.GetFireResist())
-								  .DecreaseColdBaseDamage(armorResist.GetColdResist())
-								  .DecreasePoisonBaseDamage(armorResist.GetPoisonResist())
-								  .DecreaseEnergyBaseDamage(armorResist.GetEnergyResist());
+			attackInfo.GetDamage().DecreaseSlashPercentDamage(armorResist.GetSlashResist())
+								  .DecreasePiercingPercentDamage(armorResist.GetPiercingResist())
+								  .DecreaseBluntPercentDamage(armorResist.GetBluntResist())
+								  .DecreaseFirePercentDamage(armorResist.GetFireResist())
+								  .DecreaseColdPercentDamage(armorResist.GetColdResist())
+								  .DecreasePoisonPercentDamage(armorResist.GetPoisonResist())
+								  .DecreaseEnergyPercentDamage(armorResist.GetEnergyResist());
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Restou: {attackInfo.GetDamage().ToString()}"));
 		endforeach
 	endif
