@@ -1254,6 +1254,16 @@ endfunction
 // Marca o bau com guild e tipo_faccao para que sistemas
 // externos saibam a qual faccao e categoria ele pertence.
 // -------------------------------------------------------
+function _LimparCofreidMerchants()
+	var npcs_active := guild.GetProp("npcs_active");
+	if (!npcs_active) return; endif
+	foreach entry in npcs_active
+		var npc := SystemFindObjectBySerial(entry.serial);
+		if (npc) EraseObjProperty(npc, "cofreid"); endif
+		sleepms(2);
+	endforeach
+endfunction
+
 function _CriarBauHandler(who)
 	if (guild.GetProp("tipo_faccao") != "staff")
 		return SendSysMessageEx(who, "O bau so pode ser criado para faccoes do tipo staff.", SSM_FAIL);
@@ -1299,6 +1309,7 @@ function _CriarBauHandler(who)
 	bau.name := "Bau da Faccao";
 
 	guild.SetProp("bau_serial", bau.serial);
+	_LimparCofreidMerchants();
 
 	SendSysMessageEx(who, "Bau criado | guild={} tipo={} lockid={}".format(guild.guildid, tipo, lockid), SSM_INFO);
 
@@ -1354,6 +1365,7 @@ function _SetarBauHandler(who)
 	targ.name := "Bau da Faccao";
 
 	guild.SetProp("bau_serial", targ.serial);
+	_LimparCofreidMerchants();
 
 	SendSysMessageEx(who, "Bau setado | serial={} guild={} tipo={}".format(targ.serial, guild.guildid, tipo), SSM_INFO);
 endfunction
