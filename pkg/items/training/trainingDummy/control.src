@@ -1,14 +1,23 @@
 use uo;
+use os;
+
+include ":training:dummyDps";
 
 program DummyControl(dummy)
-	// De-animates dummies on start-up.
-
-	if (dummy.graphic == 4209) // Animated
-		dummy.graphic := 4208; // None animated
-
-	elseif (dummy.graphic == 4213) // Animated
-		dummy.graphic := 4212; // Non animated
+	if (dummy.graphic == 4209)
+		dummy.graphic := 4208;
+	elseif (dummy.graphic == 4213)
+		dummy.graphic := 4212;
 	endif
+
+	while (dummy)
+		if (DummyIsIdle(dummy))
+			DummyResetWindow(dummy);
+		elseif (CInt(GetObjProperty(dummy, DUMMY_PROP_TOTAL)) > 0)
+			DummyRefreshOverhead(dummy);
+		endif
+		sleepms(1000);
+	endwhile
 
 	return 1;
 endprogram
