@@ -49,13 +49,14 @@ program skill_Alertness(who)
 		isLOS := CheckLosBetween(who.x, who.y, who.z, targ.x, targ.y, targ.z, who.realm);
 		if (isLOS)
 			isEncontrado := ExaminarObjeto(who, targ.item);
+			VerificarArtefato(who, targ.item);
 		endif
-	elseif (targ.item && GetObjProperty(targ.item, "TrapList"))
-		// Verifica itens com armadilha (como artefatos roubáveis)
+	elseif (targ.item)
 		deveCheckarLOS := true;
 		isLOS := CheckLosBetween(who.x, who.y, who.z, targ.item.x, targ.item.y, targ.item.z, who.realm);
 		if (isLOS)
-			isEncontrado := ExaminarObjeto(who, targ.item);
+			VerificarArtefato(who, targ.item);
+			isEncontrado := 1;
 		endif
 	elseif (targ == 0)
 		SendSysMessageEx(who, "Alvo Cancelado.", SSM_FAIL);
