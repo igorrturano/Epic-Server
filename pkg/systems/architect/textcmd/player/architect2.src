@@ -1,0 +1,1268 @@
+use cfgfile;
+use datafile;
+use math;
+use os;
+use uo;
+use util;
+
+include ":gumps:gumps";
+include ":architect:include/architect";
+include ":architect:include/systemclock";
+include ":charactercreation:habilidades";
+include ":destroyable:include/destroyItem";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":keys:key";
+include ":containers:containers";
+include ":gumps:yesNo";
+
+// ── IDs de botão ──────────────────────────────────────────────────────────────
+const BTN_BACK          := 1;
+const BTN_INICIO        := 2;
+const BTN_HELP          := 4;
+
+// Breadcrumb da tela de trabalho
+const BTN_GOTO_SECTOR   := 5;
+const BTN_GOTO_GROUP    := 6;
+const BTN_OLD_MENU      := 7;
+
+// Culturas: 10..29  (máx 20)
+const BTN_CULTURE_BASE  := 10;
+
+// Setores: 30..59   (máx 30)
+const BTN_SECTOR_BASE   := 30;
+
+// Grupos: 60..99    (máx 40)
+const BTN_GROUP_BASE    := 60;
+
+// Peças: 100..179   (máx 80)
+const BTN_PART_BASE     := 100;
+
+// Ações da tela de trabalho
+const BTN_CREATE        := 200;
+const BTN_LINE          := 201;
+const BTN_TILE          := 202;
+const BTN_RING          := 203;
+const BTN_MARK          := 204;
+const BTN_UNMARK        := 205;
+const BTN_HIDE          := 206;
+const BTN_DELETE        := 207;
+const BTN_UNDO          := 208;
+const BTN_SAVE          := 209;
+const BTN_LOAD          := 210;
+const BTN_CLEAR         := 211;
+const BTN_RANDOM        := 212;
+const BTN_MARK_BULK     := 213;
+const BTN_DELETE_BULK   := 214;
+const BTN_Z_UP_1        := 220;
+const BTN_Z_DN_1        := 221;
+const BTN_X_UP_1        := 222;
+const BTN_X_DN_1        := 223;
+
+// IDs dos checkboxes e campos de texto (lidos via GFExtractData)
+const CHK_MULTI         := 1;
+const CHK_MARKED        := 2;
+const ENTRY_STEP        := 3;
+
+// Cores UO
+const COR_AMARELO       := 53;
+const COR_PADRAO        := 2100;
+const COR_VERDE         := 68;
+const COR_VERMELHO      := 38;
+const COR_BRANCO        := 230;
+const COR_INATIVO       := 900;
+
+// Gráficos
+const GFX_BG_FILL       := 39929;
+const GFX_BTN_UP        := 2117;
+const GFX_BTN_DN        := 2118;
+const GFX_BTN_NAV       := 2151;
+const GFX_CHK_OFF       := 0x938;
+const GFX_CHK_ON        := 0x939;
+const GFX_PREVIEW_BG    := 0x0BB8;
+
+// ── Estado de módulo ──────────────────────────────────────────────────────────
+var _staffmode     := 0;
+var _undo          := array{};
+var _marked        := array{};
+var _hidden        := array{};
+var _lang          := 0;
+var _parts         := 0;
+var _cultures      := 0;
+
+var _culture_key   := "";
+var _sector_name   := "";
+var _group_name    := "";
+var _part_type     := 0;
+var _z_offset      := 0;
+var _x_offset      := 0;
+var _use_on_marked := 0;
+var _multi_select  := 0;
+var _random_mode   := 0;
+var _move_step     := 1;
+var _selected_parts := array{};
+
+// ── Entry point ───────────────────────────────────────────────────────────────
+program architect2_gump(params)
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+    var who, from_item;
+    if (typeof(params) == "Array")
+        who       := params[1];
+        from_item := params[2];
+    else
+        who       := params;
+        from_item := 0;
+    endif
+
+    if (!who) return 0; endif
+
+    if (who.cmdlevel >= STAFFMODELEVEL)
+        _staffmode := 1;
+        SendSysMessage(who, "*staff mode*");
+    elseif (from_item)
+        if (!MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
+            SendSysMessageEx(who, "Você não tem a habilidade de arquiteto.", SSM_INFO);
+            return 0;
+        endif
+        var _guild := who.guild;
+        if (_guild && _guild.GetProp("tipo_faccao") == "staff")
+            SendSysMessageEx(who, "Membros da facção staff não podem usar o architect.", SSM_INFO);
+            return 0;
+        endif
+    else
+        SendSysMessageEx(who, "Apenas GMs podem usar este comando. Use a ferramenta de construção.", SSM_INFO);
+        return 0;
+    endif
+
+    _parts    := ReadConfigFile(":architect:config/parts");
+    _cultures := ReadConfigFile(":architect:config/cultures");
+    _lang     := GetLangMessages();
+
+    if (!_parts || !_cultures)
+        SendSysMessage(who, "Erro: configuração do architect não encontrada.");
+        return 0;
+    endif
+
+    _LoadState(who);
+
+    while (who.ip)
+        if (!_culture_key)
+            var r1 := ShowCultureScreen(who);
+            if (r1 == "quit")          break; endif
+            if (r1 == "back_to_menu")  _SaveState(who); _LaunchMenuPrincipal(who); return 1; endif
+            if (r1 == "back_to_small") _LaunchClassicGump(who); return 1; endif
+            if (r1 == "inicio")        continue; endif
+            _culture_key    := r1;
+            _sector_name    := "";  // group element (ex: PovosLeste_Paredes)
+            _group_name     := "";  // sub-grupo / propname (ex: Parede_Argila_1)
+            _part_type      := 0;
+            _selected_parts := array{};
+            // Pula tela de grupo se só houver 1 group element
+            var auto_ge := GetGroupsForCulture(_culture_key);
+            if (auto_ge.size() == 1)
+                _sector_name := auto_ge[1];
+                var auto_sg := GetSubGroupsForGroup(_sector_name);
+                if (auto_sg.size() == 1)
+                    _group_name := auto_sg[1];
+                    var fi0 := GetGroupItems(_sector_name, _group_name);
+                    _part_type := (fi0.size() > 0) ? CInt(fi0[1]) : 0;
+                endif
+            endif
+
+        elseif (!_sector_name)
+            // Tela 2: seleciona o group element do parts.cfg
+            var r2 := ShowSectorScreen(who);
+            if (r2 == "quit")          break; endif
+            if (r2 == "back_to_small") _LaunchClassicGump(who); return 1; endif
+            if (r2 == "back")          _culture_key := ""; continue; endif
+            if (r2 == "inicio")        _culture_key := ""; continue; endif
+            _sector_name    := r2;  // ex: "PovosLeste_Paredes"
+            _group_name     := "";
+            _part_type      := 0;
+            _selected_parts := array{};
+            // Pula tela de sub-grupo se só houver 1
+            var auto_sg2 := GetSubGroupsForGroup(_sector_name);
+            if (auto_sg2.size() == 1)
+                _group_name := auto_sg2[1];
+                var fi2 := GetGroupItems(_sector_name, _group_name);
+                _part_type := (fi2.size() > 0) ? CInt(fi2[1]) : 0;
+            endif
+
+        elseif (!_group_name)
+            // Tela 3: seleciona o sub-grupo (propname dentro do group element)
+            var r3 := ShowGroupScreen(who);
+            if (r3 == "quit")          break; endif
+            if (r3 == "back_to_small") _LaunchClassicGump(who); return 1; endif
+            if (r3 == "back")          _sector_name := ""; continue; endif
+            if (r3 == "inicio")        _culture_key := ""; _sector_name := ""; continue; endif
+            _group_name     := r3;  // ex: "Parede_Argila_1"
+            _selected_parts := array{};
+            var first_items := GetGroupItems(_sector_name, _group_name);
+            _part_type := (first_items.size() > 0) ? CInt(first_items[1]) : 0;
+
+        else
+            var action := ShowWorkingScreen(who);
+            if (action == "quit")          break; endif
+            if (action == "back_to_small") _LaunchClassicGump(who); return 1; endif
+            if (action == "back")          _group_name := ""; _part_type := 0; continue; endif
+            if (action == "inicio")        _culture_key := ""; _sector_name := ""; _group_name := ""; _part_type := 0; continue; endif
+            if (action == "goto_sector")   _sector_name := ""; _group_name := ""; _part_type := 0; continue; endif
+            if (action == "goto_group")    _group_name := ""; _part_type := 0; continue; endif
+            if (action == "noop")          continue; endif
+
+            if (action == "create")      DoCreate(who);
+            elseif (action == "line")    DoLine(who);
+            elseif (action == "tile")    DoTile(who);
+            elseif (action == "ring")    DoRing(who);
+            elseif (action == "mark")      DoMark(who);
+            elseif (action == "mark_bulk") DoMarkBulk(who);
+            elseif (action == "unmark")  DoUnmark();
+            elseif (action == "hide")    DoHideUnhide(who);
+            elseif (action == "delete")       DoDelete(who);
+            elseif (action == "delete_bulk")  DoDeleteBulk(who);
+            elseif (action == "undo")    DoUndo(who);
+            elseif (action == "save")    DoSave(who);
+            elseif (action == "load")    DoLoad(who);
+            elseif (action == "clear")   DoClearDesign(who);
+            elseif (action == "random")  _random_mode := (_random_mode ? 0 : 1);
+            elseif (action == "z_up_1")  DoMoveMarked(who, 0, 0,  _move_step);
+            elseif (action == "z_dn_1")  DoMoveMarked(who, 0, 0, -_move_step);
+            elseif (action == "x_up_1")  DoMoveMarked(who,  _move_step, 0, 0);
+            elseif (action == "x_dn_1")  DoMoveMarked(who, -_move_step, 0, 0);
+            endif
+        endif
+    endwhile
+
+    _SaveState(who);
+    return 1;
+endprogram
+
+// ── Persistência ──────────────────────────────────────────────────────────────
+function _SaveState(who)
+    SetObjProperty(who, "#architect2_state", array{
+        _culture_key, _sector_name, _group_name, _part_type,
+        _z_offset, _x_offset, _use_on_marked, _multi_select, _random_mode, _move_step });
+endfunction
+
+function _LoadState(who)
+    var s := GetObjProperty(who, "#architect2_state");
+    if (!s || s.size() < 9) return; endif
+    _culture_key   := s[1];
+    _sector_name   := s[2];
+    _group_name    := s[3];
+    _part_type     := CInt(s[4]);
+    _z_offset      := CInt(s[5]);
+    _x_offset      := CInt(s[6]);
+    _use_on_marked := CInt(s[7]);
+    _multi_select  := CInt(s[8]);
+    _random_mode   := CInt(s[9]);
+    if (s.size() >= 10) _move_step := CInt(s[10]); endif
+endfunction
+
+function _LaunchMenuPrincipal(who)
+    start_script(":faccao:ferramentas_construcao_gump", array{who});
+endfunction
+
+function _LaunchClassicGump(who)
+    start_script(":architect:textcmd/player/architect", array{who, 1});
+endfunction
+
+// ── Helpers de layout ─────────────────────────────────────────────────────────
+// Moldura ornada igual ao questbutton, adaptada para dimensões variáveis
+function _DesenharFrame(byref gump, w, h)
+    GFGumpPicTiled(gump, 10, 10, w, h, GFX_BG_FILL);
+    // Cantos
+    GFGumpPicTiled(gump, 0,      0,      25,      25,      39925);
+    GFGumpPicTiled(gump, w - 25, 0,      35,      25,      39927);
+    GFGumpPicTiled(gump, w - 25, h - 25, 35,      35,      39933);
+    GFGumpPicTiled(gump, 0,      h - 25, 35,      35,      39931);
+    // Bordas
+    GFGumpPicTiled(gump, 25,     0,      w - 41,  25,      39926);
+    GFGumpPicTiled(gump, 25,     h - 25, w - 25,  35,      39932);
+    GFGumpPicTiled(gump, 0,      25,     10,      h - 50,  39928);
+    GFGumpPicTiled(gump, w - 25, 25,     35,      h - 50,  39930);
+endfunction
+
+// Barra de navegação inferior: Início | Voltar
+function _NavRodape(byref gump, w, h, show_inicio)
+    var y := h - 28;
+    if (show_inicio)
+        GFAddButton(gump, 20,  y, GFX_BTN_NAV, GFX_BTN_NAV, GF_CLOSE_BTN, BTN_INICIO);
+        GFTextLine(gump,  50, y + 2, COR_BRANCO, "Inicio");
+    endif
+    GFAddButton(gump, w - 105,  y, GFX_BTN_NAV, GFX_BTN_NAV, GF_CLOSE_BTN, BTN_BACK);
+    GFTextLine(gump,  w - 75,   y + 2, COR_BRANCO, "Voltar");
+endfunction
+
+// Cabeçalho padrão: subtítulo centralizado
+function _Cabecalho(byref gump, w, subtitulo)
+    if (subtitulo)
+        GFTextLine(gump, w/2 - 30, 20, COR_AMARELO, Upper(subtitulo));
+    endif
+endfunction
+
+function _CultureDisplayName(culture_key)
+    var dname := GetConfigString(_cultures[culture_key], "DisplayName");
+    return dname ? dname : culture_key;
+endfunction
+
+function _StripCulturePrefix(str, culture_key)
+    var prefix := GetConfigString(_cultures[culture_key], "Prefix");
+    var plen   := Len(prefix);
+    return (plen > 0 && Len(str) > plen) ? str[plen + 1, 999] : str;
+endfunction
+
+// Decodifica resultado dos botões nav
+function _NavAcao(btn)
+    if (btn == BTN_INICIO)   return "inicio"; endif
+    if (btn == BTN_BACK)     return "back"; endif
+    if (btn == BTN_OLD_MENU) return "back_to_small"; endif
+    return "";
+endfunction
+
+// ── Tela 1: Seleção de Cultura ────────────────────────────────────────────────
+function ShowCultureScreen(who)
+    var keys  := GetConfigStringKeys(_cultures);
+    var nkeys := keys.size();
+    var W     := 320;
+    var H     := 90 + (nkeys * 26) + 40;
+
+    var gump := GFCreateGump(220, 100);
+    _DesenharFrame(gump, W, H);
+    GFClosable(gump, 1);
+    GFMovable(gump, 1);
+
+    GFTextLine(gump, 22, 20, COR_AMARELO, "Estilo de Construção");
+
+    var y := 78;
+    var i := 0;
+    for (i := 1; i <= nkeys; i := i + 1)
+        var dname := GetConfigString(_cultures[keys[i]], "DisplayName");
+        if (!dname) dname := keys[i]; endif
+        GFAddButton(gump, 18, y, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_CULTURE_BASE + i);
+        GFTextLine(gump, 42, y + 2, COR_PADRAO, dname);
+        y := y + 26;
+        Sleepms(2);
+    endfor
+
+    _NavRodape(gump, W, H, 0);
+
+    var res := GFSendGump(who, gump);
+    var btn := res[0];
+
+    if (!btn) return "quit"; endif
+    var nav := _NavAcao(btn);
+    if (nav == "back") return "back_to_menu"; endif
+
+    var idx := btn - BTN_CULTURE_BASE;
+    if (idx >= 1 && idx <= nkeys) return keys[idx]; endif
+    return "quit";
+endfunction
+
+// ── Tela 2: Seleção de Group Element ─────────────────────────────────────────
+function ShowSectorScreen(who)
+    var dname  := _CultureDisplayName(_culture_key);
+    var groups := GetGroupsForCulture(_culture_key);
+    var ngrps  := groups.size();
+    var W      := 320;
+    var H      := 90 + (ngrps * 26) + 40;
+
+    var gump := GFCreateGump(220, 100);
+    _DesenharFrame(gump, W, H);
+    GFClosable(gump, 1);
+    GFMovable(gump, 1);
+
+    _Cabecalho(gump, W, dname);
+
+    var y := 78;
+    var i := 0;
+    for (i := 1; i <= ngrps; i := i + 1)
+        var ge  := groups[i];
+        var lbl := _StripCulturePrefix(ge, _culture_key);
+        GFAddButton(gump, 18, y, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_SECTOR_BASE + i);
+        GFTextLine(gump, 42, y + 2, COR_PADRAO, lbl);
+        y := y + 26;
+        Sleepms(2);
+    endfor
+
+    _NavRodape(gump, W, H, 1);
+
+    var res := GFSendGump(who, gump);
+    var btn := res[0];
+
+    if (!btn) return "quit"; endif
+    var nav := _NavAcao(btn);
+    if (nav) return nav; endif
+
+    var idx := btn - BTN_SECTOR_BASE;
+    if (idx >= 1 && idx <= ngrps) return groups[idx]; endif  // retorna nome completo
+    return "quit";
+endfunction
+
+// ── Tela 3: Seleção de Sub-Grupo ─────────────────────────────────────────────
+function ShowGroupScreen(who)
+    var dname    := _CultureDisplayName(_culture_key);
+    var ge_lbl   := _StripCulturePrefix(_sector_name, _culture_key);
+    var subgroups := GetSubGroupsForGroup(_sector_name);
+    var nsub     := subgroups.size();
+    if (nsub > 40) nsub := 40; endif
+    var W := 320;
+    var H := 90 + (nsub * 24) + 40;
+    if (H > 580) H := 580; endif
+
+    var gump := GFCreateGump(220, 80);
+    _DesenharFrame(gump, W, H);
+    GFClosable(gump, 1);
+    GFMovable(gump, 1);
+
+    _Cabecalho(gump, W, dname);
+    GFTextLine(gump, 22, 54, COR_PADRAO, ge_lbl);
+
+    var y := 78;
+    var i := 0;
+    for (i := 1; i <= nsub; i := i + 1)
+        var sg := subgroups[i];
+        GFAddButton(gump, 18, y, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_GROUP_BASE + i);
+        GFTextLine(gump, 42, y + 2, COR_PADRAO, sg);
+        y := y + 24;
+        if (y > H - 40) break; endif
+        Sleepms(2);
+    endfor
+
+    _NavRodape(gump, W, H, 1);
+
+    var res := GFSendGump(who, gump);
+    var btn := res[0];
+
+    if (!btn) return "quit"; endif
+    var nav := _NavAcao(btn);
+    if (nav) return nav; endif
+
+    var idx := btn - BTN_GROUP_BASE;
+    if (idx >= 1 && idx <= nsub) return subgroups[idx]; endif
+    return "quit";
+endfunction
+
+// ── Tela 4: Tela de Trabalho ──────────────────────────────────────────────────
+function ShowWorkingScreen(who)
+    var dname  := _CultureDisplayName(_culture_key);
+    var ge_lbl := _StripCulturePrefix(_sector_name, _culture_key);
+    var items  := GetGroupItems(_sector_name, _group_name);
+    var nitems := items.size();
+    if (nitems > 80) nitems := 80; endif
+
+    var W := 740;
+    var H := 570;
+    var gump := GFCreateGump(60, 40);
+    _DesenharFrame(gump, W, H);
+    GFClosable(gump, 1);
+    GFMovable(gump, 1);
+
+    // Cabeçalho
+    GFTextLine(gump, W/2 - 40, 18, COR_AMARELO, Upper(dname));
+    GFAddButton(gump, 15, 18, GFX_BTN_NAV, GFX_BTN_NAV, GF_CLOSE_BTN, BTN_OLD_MENU);
+    GFTextLine(gump, 45, 20, COR_PADRAO, "Menu Antigo");
+
+    // ── PAINEL ESQUERDO: breadcrumb + lista de peças (x 15..215) ─────────────
+    // Breadcrumb como botões de navegação (dropdown)
+    GFAddButton(gump, 15, 54, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_GOTO_SECTOR);
+    GFTextLine(gump,  38, 56, COR_AMARELO, "Menu de Grupos");
+    GFAddButton(gump, 22, 72, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_GOTO_GROUP);
+    GFTextLine(gump,  45, 74, COR_PADRAO, "› " + ge_lbl + " › " + _group_name);
+
+    // Lista de peças
+    var y_items := 96;
+    var i := 0;
+    for (i := 1; i <= nitems; i := i + 1)
+        var iid  := CInt(items[i]);
+        var icor;
+        if (_random_mode && _IndexOfInt(_selected_parts, iid) > 0)
+            icor := COR_AMARELO;
+        elseif (iid == _part_type)
+            icor := COR_VERDE;
+        else
+            icor := COR_PADRAO;
+        endif
+        GFAddButton(gump, 15, y_items, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_PART_BASE + i);
+        GFTextLine(gump,  38, y_items + 2, icor, lower(Hex(iid)));
+        y_items := y_items + 22;
+        if (y_items > 510) break; endif
+        Sleepms(2);
+    endfor
+
+    // ── PAINEL CENTRAL: preview da peça selecionada (x 220..450) ─────────────
+    GFResizePic(gump, 220, 50, GFX_PREVIEW_BG, 230, 460);
+    GFTextLine(gump, 290, 54, COR_AMARELO, "PEÇA ATUAL");
+    if (_part_type)
+        // Preview grande do tile selecionado
+        GFTilePic(gump, 295, 90, _part_type);
+    else
+        GFTextLine(gump, 260, 250, COR_INATIVO, "Selecione uma peça");
+    endif
+
+    // ── PAINEL DIREITO: ferramentas (x 460..720) ─────────────────────────────
+    GFTextLine(gump, 470, 54, COR_AMARELO, "FERRAMENTAS");
+
+    // Mover (X e Z offset)
+    GFTextLine(gump, 470, 76, COR_PADRAO, "Mover");
+    GFAddButton(gump, 470, 94, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_X_UP_1);
+    GFTextLine(gump,  492, 96, COR_PADRAO, "▲");
+    GFAddButton(gump, 470, 114, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_X_DN_1);
+    GFTextLine(gump,  492, 116, COR_PADRAO, "▼");
+    GFTextLine(gump,  516, 96, COR_PADRAO, "X");
+    GFTextLine(gump,  516, 112, COR_BRANCO, CStr(_x_offset));
+    GFAddButton(gump, 570, 94, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_Z_UP_1);
+    GFTextLine(gump,  592, 96, COR_PADRAO, "▲");
+    GFAddButton(gump, 570, 114, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_Z_DN_1);
+    GFTextLine(gump,  592, 116, COR_PADRAO, "▼");
+    GFTextLine(gump,  616, 96, COR_PADRAO, "Z");
+    GFTextLine(gump,  616, 112, COR_BRANCO, CStr(_z_offset));
+    GFEAddTextBox(gump, 516, 135, 40, 16, COR_BRANCO, CStr(_move_step), ENTRY_STEP, 4);
+    GFAddButton(gump, 570, 145, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_HELP);
+    GFTextLine(gump,  590, 144, COR_BRANCO, "OK");
+    GFTooltipText(gump, "Numero de tiles que as setas de mover avancam por clique (1 a 50). Clique OK para aplicar.");
+    GFTextLine(gump, 470, 143, COR_PADRAO, "Passo:");
+
+    // Checkboxes
+    GFCheckBox(gump, 460, 174, GFX_CHK_OFF, GFX_CHK_ON, _multi_select,  CHK_MULTI);
+    GFTextLine(gump, 482, 176, COR_PADRAO, "Repetir Acao");
+    GFTooltipText(gump, "Quando ativo, o comando se repete automaticamente ate voce pressionar ESC.");
+    GFCheckBox(gump, 460, 194, GFX_CHK_OFF, GFX_CHK_ON, _use_on_marked, CHK_MARKED);
+    GFTextLine(gump, 482, 196, COR_PADRAO, "Aplicar em Marcados");
+    GFTooltipText(gump, "Quando ativo, acoes como Deletar e Esconder afetam todos os itens marcados.");
+
+    // Botões de ação (grade 2 colunas)
+    var tx  := 460;
+    var tx2 := 610;
+    var ty  := 222;
+    var rh  := 24;
+
+    GFAddButton(gump, tx,  ty, GFX_BTN_UP,  GFX_BTN_DN,  GF_CLOSE_BTN, BTN_CREATE);
+    GFTextLine(gump,  tx+22, ty+2, COR_PADRAO, "Criar");
+    GFTooltipText(gump, "Clique em um ponto do mapa para criar 1 item na posicao escolhida.");
+    GFAddButton(gump, tx2, ty, GFX_BTN_UP,  GFX_BTN_DN,  GF_CLOSE_BTN, BTN_MARK);
+    GFTextLine(gump,  tx2+22, ty+2, COR_PADRAO, "Marcar");
+    GFTooltipText(gump, "Clique em um item para marca-lo. Itens marcados ficam coloridos e podem ser afetados em grupo.");
+    ty := ty + rh;
+
+    GFAddButton(gump, tx,  ty, GFX_BTN_UP,  GFX_BTN_DN,  GF_CLOSE_BTN, BTN_LINE);
+    GFTextLine(gump,  tx+22, ty+2, COR_PADRAO, "Linha");
+    GFTooltipText(gump, "Clique em dois pontos para criar itens em linha reta entre eles (horizontal ou vertical).");
+    GFAddButton(gump, tx2, ty, GFX_BTN_UP,  GFX_BTN_DN,  GF_CLOSE_BTN, BTN_MARK_BULK);
+    GFTextLine(gump,  tx2+22, ty+2, COR_PADRAO, "Marcar Bulk");
+    GFTooltipText(gump, "Clique em dois pontos para marcar todos os itens do arquiteto dentro da area retangular.");
+    ty := ty + rh;
+
+    GFAddButton(gump, tx,  ty, GFX_BTN_UP,  GFX_BTN_DN,  GF_CLOSE_BTN, BTN_TILE);
+    GFTextLine(gump,  tx+22, ty+2, COR_PADRAO, "Retangulo");
+    GFTooltipText(gump, "Clique em dois pontos para preencher toda a area retangular entre eles com itens.");
+    GFAddButton(gump, tx2, ty, GFX_BTN_UP,  GFX_BTN_DN,  GF_CLOSE_BTN, BTN_HIDE);
+    GFTextLine(gump,  tx2+22, ty+2, COR_PADRAO, "Escond/Revelar");
+    GFTooltipText(gump, "Esconde um item do mapa sem destrui-lo. Se ja houver itens escondidos, revela todos.");
+    ty := ty + rh;
+
+    GFAddButton(gump, tx,  ty, GFX_BTN_UP,  GFX_BTN_DN,  GF_CLOSE_BTN, BTN_RING);
+    GFTextLine(gump,  tx+22, ty+2, COR_PADRAO, "Circulo");
+    GFTooltipText(gump, "Clique em dois pontos para criar apenas o contorno de um retangulo (paredes sem interior).");
+    GFAddButton(gump, tx2, ty, GFX_BTN_UP,  GFX_BTN_DN,  GF_CLOSE_BTN, BTN_UNDO);
+    GFTextLine(gump,  tx2+22, ty+2, COR_PADRAO, "Desfazer");
+    GFTooltipText(gump, "Reverte a ultima acao realizada (criacao ou delecao de itens).");
+    ty := ty + rh;
+
+    GFAddButton(gump, tx,  ty, GFX_BTN_UP,   GFX_BTN_DN,   GF_CLOSE_BTN, BTN_UNMARK);
+    GFTextLine(gump,  tx+22, ty+2, COR_PADRAO, "Desmarcar");
+    GFTooltipText(gump, "Remove a marcacao de todos os itens marcados de uma vez.");
+    var cor_rand := _random_mode ? COR_VERDE : COR_PADRAO;
+    GFAddButton(gump, tx2, ty, GFX_BTN_UP,   GFX_BTN_DN,   GF_CLOSE_BTN, BTN_RANDOM);
+    GFTextLine(gump,  tx2+22, ty+2, cor_rand, "Modo Aleatorio");
+    GFTooltipText(gump, "Ative para selecionar itens da lista (ficam amarelos) e sortear entre eles ao criar. Clique num item amarelo para remove-lo da pool.");
+    ty := ty + rh;
+
+    GFAddButton(gump, tx,  ty, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_DELETE);
+    GFTextLine(gump,  tx+22, ty+2, COR_VERMELHO, "Deletar");
+    GFTooltipText(gump, "Destroi um item do mapa permanentemente.");
+    GFAddButton(gump, tx2, ty, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_DELETE_BULK);
+    GFTextLine(gump,  tx2+22, ty+2, COR_VERMELHO, "Deletar Bulk");
+    GFTooltipText(gump, "Destroi permanentemente todos os itens marcados pelo Marcar ou Marcar Bulk.");
+
+    // Altura Z
+    GFTextLine(gump, 460, 534, COR_PADRAO, "Altura (Z): " + CStr(_z_offset));
+
+    // ── Rodapé ────────────────────────────────────────────────────────────────
+    _NavRodape(gump, W, H, 1);
+
+    var res        := GFSendGump(who, gump);
+    var btn        := res[0];
+
+    _use_on_marked := GFExtractData(res, CHK_MARKED) ? 1 : 0;
+    _multi_select  := GFExtractData(res, CHK_MULTI)  ? 1 : 0;
+    var new_step   := CInt(GFExtractData(res, ENTRY_STEP));
+    if (new_step >= 1 && new_step <= 50) _move_step := new_step; endif
+
+    if (!btn) return "quit"; endif
+    var nav := _NavAcao(btn);
+    if (nav) return nav; endif
+
+    if (btn == BTN_GOTO_SECTOR) return "goto_sector"; endif
+    if (btn == BTN_GOTO_GROUP)  return "goto_group"; endif
+    if (btn == BTN_HELP)        return "noop"; endif  // TODO: ajuda
+
+    var pidx := btn - BTN_PART_BASE;
+    if (pidx >= 1 && pidx <= nitems)
+        var clicked_id := CInt(items[pidx]);
+        if (_random_mode)
+            var sidx := _IndexOfInt(_selected_parts, clicked_id);
+            if (sidx > 0)
+                _selected_parts.erase(sidx);
+            else
+                _selected_parts.append(clicked_id);
+            endif
+        else
+            _part_type     := clicked_id;
+            _selected_parts := array{};
+        endif
+        return "noop";
+    endif
+
+    if (btn == BTN_CREATE)  return "create"; endif
+    if (btn == BTN_LINE)    return "line"; endif
+    if (btn == BTN_TILE)    return "tile"; endif
+    if (btn == BTN_RING)    return "ring"; endif
+    if (btn == BTN_MARK)      return "mark"; endif
+    if (btn == BTN_MARK_BULK) return "mark_bulk"; endif
+    if (btn == BTN_UNMARK)  return "unmark"; endif
+    if (btn == BTN_HIDE)    return "hide"; endif
+    if (btn == BTN_DELETE)      return "delete"; endif
+    if (btn == BTN_DELETE_BULK) return "delete_bulk"; endif
+    if (btn == BTN_UNDO)    return "undo"; endif
+    if (btn == BTN_SAVE)    return "save"; endif
+    if (btn == BTN_LOAD)    return "load"; endif
+    if (btn == BTN_CLEAR)   return "clear"; endif
+    if (btn == BTN_RANDOM)  return "random"; endif
+    if (btn == BTN_Z_UP_1)  return "z_up_1"; endif
+    if (btn == BTN_Z_DN_1)  return "z_dn_1"; endif
+    if (btn == BTN_X_UP_1)  return "x_up_1"; endif
+    if (btn == BTN_X_DN_1)  return "x_dn_1"; endif
+    return "noop";
+endfunction
+
+// ── Ações de construção ───────────────────────────────────────────────────────
+function _EffectiveType()
+    if (!_random_mode) return _part_type; endif
+    if (_selected_parts.size() > 0)
+        return CInt(_selected_parts[RandomInt(_selected_parts.size()) + 1]);
+    endif
+    var items := GetGroupItems(_sector_name, _group_name);
+    if (items.size() < 1) return _part_type; endif
+    return CInt(items[RandomInt(items.size()) + 1]);
+endfunction
+
+function _CanActOnItem(item, who)
+    if (!item) return 0; endif
+    var built := GetObjProperty(item, "built_by_architect");
+    if (!built) return 0; endif
+    return _staffmode || built == who.serial;
+endfunction
+
+function DoCreate(who)
+    while (1)
+        var coords := _GetCoords(who, 1);
+        if (!coords) break; endif
+        var created := _CreateItem(who, coords[1] + _x_offset, coords[2], _z_offset, _EffectiveType());
+        if (created) _undo.append(array{1, array{created.serial}}); endif
+        if (!_multi_select) break; endif
+    endwhile
+endfunction
+
+function DoLine(who)
+    while (1)
+        var coords := _GetCoords(who, 2);
+        if (!coords) break; endif
+        if (Abs(coords[4] - coords[2]) > Abs(coords[3] - coords[1]))
+            coords[3] := coords[1];
+        else
+            coords[4] := coords[2];
+        endif
+        var serials := array{};
+        var x := 0; var y := 0; var c := 0;
+        for (x := coords[1]; x <= coords[3]; x := x + 1)
+            for (y := coords[2]; y <= coords[4]; y := y + 1)
+                c := _CreateItem(who, x + _x_offset, y, _z_offset, _EffectiveType());
+                if (c) serials.append(c.serial); endif
+            endfor
+        endfor
+        if (serials.size() > 0) _undo.append(array{1, serials}); endif
+        if (!_multi_select) break; endif
+    endwhile
+endfunction
+
+function DoTile(who)
+    while (1)
+        var coords := _GetCoords(who, 2);
+        if (!coords) break; endif
+        var serials := array{};
+        var x := 0; var y := 0; var c := 0;
+        for (x := coords[1]; x <= coords[3]; x := x + 1)
+            for (y := coords[2]; y <= coords[4]; y := y + 1)
+                c := _CreateItem(who, x + _x_offset, y, _z_offset, _EffectiveType());
+                if (c) serials.append(c.serial); endif
+            endfor
+        endfor
+        if (serials.size() > 0) _undo.append(array{1, serials}); endif
+        if (!_multi_select) break; endif
+    endwhile
+endfunction
+
+function DoRing(who)
+    while (1)
+        var coords := _GetCoords(who, 2);
+        if (!coords) break; endif
+        var serials := array{};
+        var x := 0; var y := 0; var c1 := 0; var c2 := 0;
+        for (x := coords[1]; x <= coords[3]; x := x + 1)
+            c1 := _CreateItem(who, x + _x_offset, coords[2], _z_offset, _EffectiveType());
+            c2 := _CreateItem(who, x + _x_offset, coords[4], _z_offset, _EffectiveType());
+            if (c1) serials.append(c1.serial); endif
+            if (c2) serials.append(c2.serial); endif
+        endfor
+        for (y := coords[2] + 1; y < coords[4]; y := y + 1)
+            c1 := _CreateItem(who, coords[1] + _x_offset, y, _z_offset, _EffectiveType());
+            c2 := _CreateItem(who, coords[3] + _x_offset, y, _z_offset, _EffectiveType());
+            if (c1) serials.append(c1.serial); endif
+            if (c2) serials.append(c2.serial); endif
+        endfor
+        if (serials.size() > 0) _undo.append(array{1, serials}); endif
+        if (!_multi_select) break; endif
+    endwhile
+endfunction
+
+function DoMark(who)
+    while (1)
+        SendSysMessageEx(who, "Clique no item para marcar.", SSM_REQUEST);
+        var tbm := Target(who, TGTOPT_NOCHECK_LOS);
+        if (!_CanActOnItem(tbm, who))
+            SendSysMessage(who, _lang["cancelled"]);
+            break;
+        endif
+        var idx := _IndexOf(_marked, tbm);
+        if (idx > 0)
+            tbm.color := 0;
+            _marked.erase(idx);
+        else
+            tbm.color := HILITE_MARK;
+            _marked.append(tbm);
+        endif
+        if (!_multi_select) break; endif
+    endwhile
+endfunction
+
+function DoMarkBulk(who)
+    var W := 200;
+    var H := 110;
+    var sg := GFCreateGump(300, 200);
+    _DesenharFrame(sg, W, H);
+    GFClosable(sg, 1);
+    GFMovable(sg, 1);
+    GFTextLine(sg, W/2 - 35, 18, COR_AMARELO, "Marcar Bulk");
+    GFAddButton(sg, 18, 46, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, 1);
+    GFTextLine(sg, 42, 48, COR_PADRAO, "Linha Reta");
+    GFAddButton(sg, 18, 72, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, 2);
+    GFTextLine(sg, 42, 74, COR_PADRAO, "Area");
+
+    var sres := GFSendGump(who, sg);
+    var mode := sres[0];
+    if (!mode) return; endif
+
+    var coords := _GetCoords(who, 2);
+    if (!coords) return; endif
+
+    if (mode == 1)
+        if (Abs(coords[4] - coords[2]) > Abs(coords[3] - coords[1]))
+            coords[3] := coords[1];
+        else
+            coords[4] := coords[2];
+        endif
+    endif
+
+    var z1    := GetWorldHeight(coords[1], coords[2]) - 10;
+    var count := 0;
+    foreach item in ListObjectsInBox(coords[1], coords[2], z1, coords[3], coords[4], 120, who.realm)
+        if (!_CanActOnItem(item, who)) continue; endif
+        if (_IndexOf(_marked, item) > 0) continue; endif
+        item.color := HILITE_MARK;
+        _marked.append(item);
+        count := count + 1;
+        Sleepms(2);
+    endforeach
+    SendSysMessage(who, count + " item(s) marcado(s).");
+endfunction
+
+function DoUnmark()
+    foreach item in _marked
+        item.color := 0;
+    endforeach
+    _marked := array{};
+endfunction
+
+function DoMoveMarked(who, dx, dy, dz)
+    if (_marked.size() < 1)
+        _x_offset := _x_offset + dx;
+        _z_offset := _z_offset + dz;
+        return;
+    endif
+    var undo_entries := array{};
+    foreach item in _marked
+        undo_entries.append(array{item, item.x, item.y, item.z});
+        set_critical(1);
+        item.movable := 1;
+        MoveObjectToLocation(item, item.x + dx, item.y + dy, item.z + dz, who.realm, MOVEOBJECT_FORCELOCATION);
+        item.movable := 0;
+        set_critical(0);
+    endforeach
+    if (undo_entries.size() > 0)
+        _undo.append(array{4, undo_entries});
+    endif
+endfunction
+
+function DoHideUnhide(who)
+    if (_hidden.size() > 0)
+        foreach item in _hidden
+            item.invisible := 0;
+        endforeach
+        _hidden := array{};
+        return;
+    endif
+    if (_use_on_marked)
+        foreach item in _marked
+            item.invisible := 1;
+            item.color     := 0;
+            _hidden.append(item);
+        endforeach
+    else
+        SendSysMessageEx(who, "Clique no item para esconder.", SSM_REQUEST);
+        var tbh := Target(who, TGTOPT_NOCHECK_LOS);
+        if (!tbh) return; endif
+        tbh.invisible := 1;
+        tbh.color     := 0;
+        _hidden.append(tbh);
+    endif
+endfunction
+
+function DoDelete(who)
+    var tbd := array{};
+    if (_use_on_marked)
+        tbd     := _marked;
+        _marked := array{};
+    else
+        SendSysMessageEx(who, "Clique no item para deletar.", SSM_REQUEST);
+        var targ := Target(who, TGTOPT_NOCHECK_LOS);
+        if (!targ) return; endif
+        tbd.append(targ);
+    endif
+    foreach item in tbd
+        if (_CanActOnItem(item, who))
+            _undo.append(array{2, item.objtype, item.x, item.y, item.z});
+            DestroyItem(item);
+        else
+            SendSysMessage(who, _lang["delete_err"]);
+        endif
+    endforeach
+endfunction
+
+function DoDeleteBulk(who)
+    if (_marked.size() < 1)
+        SendSysMessage(who, "Nenhum item marcado.");
+        return;
+    endif
+    var count := 0;
+    foreach item in _marked
+        if (_CanActOnItem(item, who))
+            _undo.append(array{2, item.objtype, item.x, item.y, item.z});
+            DestroyItem(item);
+            count := count + 1;
+        endif
+        Sleepms(2);
+    endforeach
+    _marked := array{};
+    SendSysMessage(who, count + " item(s) deletado(s).");
+endfunction
+
+function DoUndo(who)
+    if (_undo.size() < 1) return; endif
+    var last := _undo[_undo.size()];
+    if (last[1] == 1)
+        foreach serial in (last[2])
+            var item := SystemFindObjectBySerial(serial);
+            if (item && GetObjProperty(item, "built_by_architect") == who.serial)
+                DestroyItem(item);
+            endif
+            Sleepms(2);
+        endforeach
+    elseif (last[1] == 2)
+        _CreateItem(who, last[3], last[4], last[5], last[2]);
+    elseif (last[1] == 3)
+        set_critical(1);
+        last[2].movable := 1;
+        MoveObjectToLocation(last[2], last[3], last[4], last[5], who.realm, MOVEOBJECT_FORCELOCATION);
+        last[2].movable := 0;
+        set_critical(0);
+    elseif (last[1] == 4)
+        foreach entry in (last[2])
+            set_critical(1);
+            entry[1].movable := 1;
+            MoveObjectToLocation(entry[1], entry[2], entry[3], entry[4], who.realm, MOVEOBJECT_FORCELOCATION);
+            entry[1].movable := 0;
+            set_critical(0);
+        endforeach
+    endif
+    _undo.erase(_undo.size());
+    _marked := array{};
+endfunction
+
+function DoSave(who)
+    var df   := OpenDataFile("architect");
+    if (df.errortext) df := CreateDataFile("architect", 1); endif
+    var elem := df.FindElement(CInt(who.serial));
+    if (!elem)
+        elem := df.CreateElement(who.serial);
+        elem.SetProp("index", array{});
+    endif
+
+    var save_data   := array{ "Selecione o slot:", "— vazio —" };
+    var save_layout := array{
+        "page 0", "nodispose",
+        "resizepic 10 10 5120 260 240",
+        "checkertrans 10 10 260 240",
+        "text 20 15 600 0"
+    };
+    var saveindex := elem.GetProp("index");
+    if (!saveindex) saveindex := array{}; endif
+    var row := 35;
+    var i := 0;
+    for (i := 1; i <= MAXSAVES; i := i + 1)
+        save_layout.append("button 15 " + (row + 4) + " 2361 2360 1 0 " + i);
+        if (CStr(i) in elem.PropNames())
+            save_layout.append("text 33 " + row + " 600 " + save_data.size());
+            save_data.append(saveindex[i][1] + ": " + saveindex[i][2]);
+        else
+            save_layout.append("text 33 " + row + " 600 1");
+        endif
+        row := row + 20;
+    endfor
+
+    foreach item in _hidden
+        item.invisible := 0;
+    endforeach
+    _hidden := array{};
+
+    var res := SendDialogGump(who, save_layout, save_data);
+    if (!res[0]) return; endif
+
+    var topleft  := _staffmode ? array{who.x, who.y, who.z} : array{startloc[1], startloc[2], GetWorldHeight(startloc[1], startloc[2])};
+    var botright := _staffmode ? array{who.x + 50, who.y + 50, 120} : array{startloc[1] + SITESIZE, startloc[2] + SITESIZE, 120};
+    var output := array{};
+    foreach item in ListObjectsInBox(topleft[1], topleft[2], topleft[3], botright[1], botright[2], botright[3])
+        if (GetObjProperty(item, "built_by_architect") == who.serial)
+            output.append(array{CInt(item.objtype), item.x - topleft[1], item.y - topleft[2], item.z - topleft[3]});
+        endif
+    endforeach
+
+    var design_name := SendTextEntryGump(who, "Nome do design:", TE_CANCEL_ENABLE, TE_STYLE_NORMAL, 16);
+    if (!design_name) design_name := "---"; endif
+    saveindex[CInt(res[0])] := array{GetSysDate().toString, design_name};
+    elem.SetProp("index", saveindex);
+    elem.SetProp(CStr(res[0]), output);
+    SendSysMessage(who, _lang["saved"]);
+endfunction
+
+function DoLoad(who)
+    var df   := OpenDataFile("architect");
+    if (df.errortext) df := CreateDataFile("architect", 1); endif
+    var elem := df.FindElement(CInt(who.serial));
+    if (!elem)
+        SendSysMessage(who, _lang["load_noentry"]);
+        return;
+    endif
+
+    var load_data   := array{ "Selecione o design:", "— vazio —" };
+    var load_layout := array{
+        "page 0", "nodispose",
+        "resizepic 10 10 5120 260 240",
+        "checkertrans 10 10 260 240",
+        "text 20 15 600 0"
+    };
+    var row := 35;
+    foreach entry in (elem.GetProp("index"))
+        if (entry.size() < 1) continue; endif
+        load_layout.append("button 15 " + (row + 4) + " 2361 2360 1 0 " + _entry_iter);
+        load_layout.append("text 33 " + row + " 600 " + load_data.size());
+        load_data.append(entry[1] + ": " + entry[2]);
+        row := row + 20;
+    endforeach
+
+    var res := SendDialogGump(who, load_layout, load_data);
+    if (!res[0]) return; endif
+
+    var topleft := _staffmode ? array{who.x, who.y, who.z} : array{startloc[1], startloc[2], GetWorldHeight(startloc[1], startloc[2])};
+    foreach entry in (elem.GetProp(CStr(res[0])))
+        _CreateItem(who, topleft[1] + entry[2], topleft[2] + entry[3], topleft[3] + entry[4], entry[1]);
+    endforeach
+    _z_offset := 0; _x_offset := 0; _use_on_marked := 0;
+    _marked := array{}; _hidden := array{}; _undo := array{};
+endfunction
+
+function DoClearDesign(who)
+    if (!_staffmode)
+        if (!yesNo(who, array{"Limpar o design?", "Todos os itens serão destruídos."})) return; endif
+    endif
+    var x1 := _staffmode ? who.x - 50 : startloc[1];
+    var y1 := _staffmode ? who.y - 50 : startloc[2];
+    var z1 := GetWorldHeight(x1, y1);
+    var x2 := _staffmode ? who.x + 50 : startloc[1] + SITESIZE;
+    var y2 := _staffmode ? who.y + 50 : startloc[2] + SITESIZE;
+    foreach item in ListObjectsInBox(x1, y1, z1, x2, y2, 120, who.realm)
+        if (GetObjProperty(item, "built_by_architect") == who.serial)
+            DestroyItem(item);
+        endif
+        Sleepms(2);
+    endforeach
+    _marked := array{}; _hidden := array{}; _undo := array{};
+endfunction
+
+// ── Criação de item ───────────────────────────────────────────────────────────
+function _CreateItem(who, x, y, z, type)
+    var obj_type  := CInt(type);
+    var group_key := _FindGroupByType(obj_type);
+
+    if (!_staffmode)
+        if (!group_key)
+            SendSysMessageEx(who, "Tipo de item desconhecido.", SSM_INFO);
+            return 0;
+        endif
+        var res_cfg  := ReadConfigFile(":architect:config/resources");
+        var type_cfg := ReadConfigFile(":architect:config/resource_type");
+        var res_elem := FindconfigElem(res_cfg, group_key);
+        var res_name := GetConfigString(res_elem, "resourceName");
+        var qty      := GetConfigInt(res_elem, "quantity");
+        var te       := FindconfigElem(type_cfg, res_name);
+        var id_list  := GetConfigStringArray(te, "resourcesIdList");
+        var nm_list  := GetConfigStringArray(te, "resourcesNameList");
+        var prop     := dictionary;
+        if (_CheckResources(who, nm_list, qty, prop) < qty)
+            SendSysMessageEx(who, "Recursos insuficientes.", SSM_INFO);
+            return 0;
+        endif
+        _SubtractResources(who, id_list, nm_list, qty);
+    endif
+
+    var item := CreateItemAtLocation(x, y, z, obj_type, 1, who.realm);
+    if (!item || item is @Exception)
+        SendSysMessage(who, "[ERRO] Falha ao criar item.");
+        return 0;
+    endif
+
+    item.movable := 0;
+    SetObjProperty(item, "built_by_architect",  who.serial);
+    SetObjProperty(item, "architect_objtype",   obj_type);
+    SetObjProperty(item, PROPNAME_INDESTRUTIVEL, 1);
+    _SetupLockDoor(who, item);
+    return item;
+endfunction
+
+function _SetupLockDoor(who, item)
+    if (!KP_IsLockable(item)) return; endif
+    if (!YesNo(who, "Deseja instalar uma fechadura neste item?")) return; endif
+    SendSysMessageEx(who, "Clique na fechadura.", SSM_REQUEST);
+    var targ := Target(who);
+    if (!targ || targ.objtype != 4001) return; endif
+    var lockid := AllocLockId();
+    SetObjProperty(item, "LockId", lockid);
+    var key := CreateItemInBackpack(who, "ironkey", 1);
+    if (!key)
+        DestroyItem(item);
+        return;
+    endif
+    SetObjProperty(key, "LockId", lockid);
+    DestroyItem(targ);
+    SendSysMessageEx(who, "Fechadura instalada.", SSM_INFO);
+endfunction
+
+// ── Coordenadas ───────────────────────────────────────────────────────────────
+function _GetCoords(who, howmany)
+    SendSysMessage(who, (howmany == 1) ? _lang["target_chose"] : _lang["target_ul"]);
+    var tl := TargetCoordinates(who);
+    if (!tl || !_CheckCoords(who, tl))
+        SendSysMessage(who, _lang["cancelled"]);
+        return 0;
+    endif
+    if (howmany == 1) return array{tl.x, tl.y}; endif
+
+    SendSysMessage(who, _lang["target_lr"]);
+    var br := TargetCoordinates(who);
+    if (!br || !_CheckCoords(who, br))
+        SendSysMessage(who, _lang["cancelled"]);
+        return 0;
+    endif
+
+    var x1 := (tl.x < br.x) ? tl.x : br.x;
+    var y1 := (tl.y < br.y) ? tl.y : br.y;
+    var x2 := (tl.x > br.x) ? tl.x : br.x;
+    var y2 := (tl.y > br.y) ? tl.y : br.y;
+    return array{x1, y1, x2, y2};
+endfunction
+
+function _CheckCoords(who, coords)
+    if (who.cmdlevel >= 1) return 1; endif
+    var df := OpenDataFile(":architect:areas");
+    if (!df)
+        SendSysMessage(who, "Erro: sistema de áreas não inicializado.");
+        return 0;
+    endif
+    foreach key in (df.Keys())
+        var region := df.FindElement(key);
+        var r      := SplitWords(region.GetProp("Rect"));
+        var realm  := region.GetProp("Realm");
+        if (who.realm != realm) Sleepms(2); continue; endif
+        var rx1 := CInt(r[1]); var ry1 := CInt(r[2]);
+        var rx2 := CInt(r[3]); var ry2 := CInt(r[4]);
+        var tmp := 0;
+        if (rx1 > rx2) tmp := rx1; rx1 := rx2; rx2 := tmp; endif
+        if (ry1 > ry2) tmp := ry1; ry1 := ry2; ry2 := tmp; endif
+        if (coords.x >= rx1 && coords.x <= rx2 && coords.y >= ry1 && coords.y <= ry2)
+            var owner := region.GetProp("Faction");
+            if (!owner || owner == "Selvagem")
+                SendSysMessage(who, "Território selvagem. Domine-o com um totem primeiro.");
+                return 0;
+            endif
+            var pg := who.guild;
+            if (!pg || pg.GetProp("name") != owner)
+                SendSysMessage(who, "Este território pertence à facção '" + owner + "'.");
+                return 0;
+            endif
+            return 1;
+        endif
+        Sleepms(2);
+    endforeach
+    SendSysMessage(who, "Você só pode construir dentro de territórios dominados por sua facção.");
+    return 0;
+endfunction
+
+// ── Resources ────────────────────────────────────────────────────────────────
+function _CheckResources(who, name_list, qty, byref prop)
+    var total := 0;
+    foreach res_name in SplitWords(name_list)
+        prop["objtype"] := GetObjTypeByName(res_name);
+        total := AmountInContainer(who.backpack, prop);
+        if (total >= qty) break; endif
+    endforeach
+    return total;
+endfunction
+
+function _SubtractResources(who, id_list, name_list, qty)
+    foreach item in EnumerateItemsInContainer(who.backpack)
+        if (CStr(item.objtype) in SplitWords(id_list) ||
+            Lower(CStr(Hex(item.objtype))) in SplitWords(id_list) ||
+            item.Name in SplitWords(name_list) ||
+            Lower(item.Name) in SplitWords(name_list))
+            if (SubtractAmount(item, qty)) return; endif
+        endif
+    endforeach
+endfunction
+
+// ── Config helpers ────────────────────────────────────────────────────────────
+function GetSubGroupsForGroup(group_name)
+    return ListConfigElemProps(_parts[group_name]);
+endfunction
+
+function GetGroupItems(group_name, subgroup_name)
+    var items := array{};
+    foreach line in GetConfigStringArray(_parts[group_name], subgroup_name)
+        var id := CInt(SplitWords(line)[1]);
+        if (id) items.append(CStr(id)); endif
+    endforeach
+    return items;
+endfunction
+
+function GetGroupsForCulture(culture_key)
+    var prefix   := GetConfigString(_cultures[culture_key], "Prefix");
+    var all_keys := GetConfigStringKeys(_parts);
+    var groups   := array{};
+    if (prefix)
+        var plen := Len(prefix);
+        foreach key in all_keys
+            if (Len(key) >= plen && key[1, plen] == prefix)
+                groups.append(key);
+            endif
+            Sleepms(2);
+        endforeach
+    else
+        var all_prefixes := _CollectPrefixes();
+        foreach key in all_keys
+            if (!_MatchesAnyPrefix(key, all_prefixes))
+                groups.append(key);
+            endif
+            Sleepms(2);
+        endforeach
+    endif
+    return groups;
+endfunction
+
+function _CollectPrefixes()
+    var prefixes := array{};
+    foreach key in GetConfigStringKeys(_cultures)
+        var p := GetConfigString(_cultures[key], "Prefix");
+        if (p) prefixes.append(p); endif
+    endforeach
+    return prefixes;
+endfunction
+
+function _MatchesAnyPrefix(group_name, prefixes)
+    foreach prefix in prefixes
+        var plen := Len(prefix);
+        if (Len(group_name) >= plen && group_name[1, plen] == prefix) return 1; endif
+    endforeach
+    return 0;
+endfunction
+
+function _FindGroupByType(type)
+    foreach group_key in GetConfigStringKeys(_parts)
+        var elem := _parts[group_key];
+        foreach propname in ListConfigElemProps(elem)
+            foreach line in GetConfigStringArray(elem, propname)
+                if (CInt(SplitWords(line)[1]) == CInt(type)) return group_key; endif
+            endforeach
+        endforeach
+        Sleepms(2);
+    endforeach
+    return "";
+endfunction
+
+function _IndexOf(arr, needle)
+    var i := 0;
+    for (i := 1; i <= arr.size(); i := i + 1)
+        if (arr[i].serial == needle.serial) return i; endif
+    endfor
+    return 0;
+endfunction
+
+function _IndexOfInt(arr, val)
+    var i := 0;
+    for (i := 1; i <= arr.size(); i := i + 1)
+        if (CInt(arr[i]) == CInt(val)) return i; endif
+    endfor
+    return 0;
+endfunction
+
+function GetLangMessages()
+    var langcfg := ReadConfigFile(":architect:config/language");
+    if (!langcfg || !langcfg[LANGUAGE])
+        SysLog("ERROR: architect2 unable to read language config!");
+        return dictionary;
+    endif
+    var result := dictionary;
+    foreach propname in ListConfigElemProps(langcfg[LANGUAGE])
+        result[propname] := GetConfigString(langcfg[LANGUAGE], propname);
+    endforeach
+    return result;
+endfunction
