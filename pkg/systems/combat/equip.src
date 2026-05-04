@@ -225,6 +225,13 @@ program equipweapon(who, item)
 		UpdateMobileEntropy(who, -100);
 	endif
 
+	// Cleanup stale `#armor_evasion_penalty` from legacy AR penalty system (Phase 5 redesign).
+	// Wiped on equip so subsequent unequip is a no-op, preventing free evasion exploit
+	// when stale properties travel on dropped/traded items.
+	if (item.isa(POLCLASS_ARMOR))
+		EraseObjProperty(item, "#armor_evasion_penalty");
+	endif
+
 	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
 	ApplyEquipObjMods(who, item);
 
