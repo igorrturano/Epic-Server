@@ -82,13 +82,22 @@ program runecarving(who, chisel)
 
 	var runeType := choice; // choice will be 1-6, matching our RUNE_* constants
 
-	// Calculate bonuses
-	var baseBonus := CInt(theology / 20);
-	if (baseBonus < 1)
-		baseBonus := 1; // Minimum bonus of 1
+	// HOLY_WEAPON e a unica runa de ARMA — mantida na escala flat legacy
+	// porque weapon damage nao foi convertido para % no redesign atual.
+	// Demais runas (de armor) usam a escala % nova: theology/5 + gem 5.
+	var baseBonus, materialBonus;
+	if (runeType == RuneType::HOLY_WEAPON)
+		baseBonus := CInt(theology / 20);  // legacy: max 5 flat
+		materialBonus := getGemBonusFlat(gemtype, runeType);  // legacy: +1 flat se matching
+	else
+		baseBonus := CInt(theology / 5);   // novo %: max 20%
+		materialBonus := getGemBonus(gemtype, runeType);  // novo %: +5% se matching
 	endif
 
-	var materialBonus := getGemBonus(gemtype, runeType);
+	if (baseBonus < 1)
+		baseBonus := 1; // fallback — theology >= 20 gates above
+	endif
+
 	var totalBonus := baseBonus + materialBonus;
 
 
