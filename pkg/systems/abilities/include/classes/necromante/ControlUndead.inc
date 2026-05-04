@@ -6,7 +6,7 @@ include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":brainai:npcUtil";
+include "include/NPCUtil";
 
 /**
  * Controlar Mortos (Control Undead) - ABILITY_ID::CONTROLAR_MORTOS (2003)
