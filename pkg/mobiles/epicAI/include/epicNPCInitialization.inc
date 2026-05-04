@@ -82,6 +82,11 @@ function InitializeEpicNPC(mobile)
     endif
 
     var spawnScale := CInt(GetConfigString(npc_elem, "SpawnScale"));
+    // Boss struct pode sobrescrever o SpawnScale do template
+    var bossStruct := GetObjProperty(mobile, "EpicBossStruct");
+    if (bossStruct && bossStruct.spawn_scale && CInt(bossStruct.spawn_scale) > 0)
+        spawnScale := CInt(bossStruct.spawn_scale);
+    endif
     if (spawnScale > 0 && spawnScale != 100)
         var rawScale := spawnScale * 10;
         SetObjProperty(mobile, "entityScale", struct{ height := rawScale, width := rawScale });
@@ -102,6 +107,7 @@ function InitializeEpicNPC(mobile)
     // Se o NPC tem SpawnScale, o 0x78 inicial foi enviado antes do init
     // (antes do entityScale estar setado), então forçamos um re-render
     // teleportando para fora do range e voltando.
+    // Nota: spawnScale já inclui o override do EpicBossStruct (lido acima).
     if (spawnScale > 0 && spawnScale != 100)
         var ox := mobile.x;
         var oy := mobile.y;
