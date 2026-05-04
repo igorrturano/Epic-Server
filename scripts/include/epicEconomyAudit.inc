@@ -22,6 +22,10 @@ const EA_MINT_CHARGEN          := "MINT_CHARGEN";
 const EA_MINT_GUILD_PAYOUT     := "MINT_GUILD_PAYOUT";
 const EA_MINT_GUILD_WITHDRAW   := "MINT_GUILD_WITHDRAW";
 const EA_MINT_ESTALAGEM        := "MINT_ESTALAGEM";
+const EA_MINT_GEM_PAYOUT       := "MINT_GEM_PAYOUT";
+const EA_MINT_PLAYER_DEPOSIT   := "MINT_PLAYER_DEPOSIT";
+const EA_MINT_POOL_INJECT      := "MINT_POOL_INJECT";
+const EA_POOL_NPC_DRAW         := "POOL_NPC_DRAW";
 const EA_TRANSFER_CORPSE_LOOT  := "TRANSFER_CORPSE_LOOT";
 const EA_TRANSFER_PICKUP       := "TRANSFER_PICKUP";
 const EA_TRANSFER_VENDOR_REFUND := "TRANSFER_VENDOR_REFUND";
@@ -111,11 +115,20 @@ function EA_Record(event_type, item, amount, src_actor, dst_actor, extra)
 		return 0;
 	endif
 
-	// Filter TRANSFER_* events where the recipient is not a player (drops
-	// corpse-decay/mannequin noise). MINT_* bypasses this since mint dsts are containers.
+	// Filter TRANSFER_* events where neither side is a player (drops
+	// corpse-decay/mannequin noise). MINT_*/POOL_* bypass this since their
+	// counterparties are containers/pools.
+	// VENDOR_BUY is a sink: src=player, dst=NPC (no acctname). Validate src.
+	// Other TRANSFER_*: dst=player. Validate dst.
 	if (Find(event_type, "TRANSFER_", 1) == 1)
-		if (!dst_actor || dst_actor == error || dst_actor.acctname == error || !dst_actor.acctname)
-			return 0;
+		if (event_type == EA_TRANSFER_VENDOR_BUY)
+			if (!src_actor || src_actor == error || src_actor.acctname == error || !src_actor.acctname)
+				return 0;
+			endif
+		else
+			if (!dst_actor || dst_actor == error || dst_actor.acctname == error || !dst_actor.acctname)
+				return 0;
+			endif
 		endif
 	endif
 
