@@ -2,13 +2,13 @@ use uo;
 use os;
 
 include ":abilities:models/CombatAbility";
+include ":abilities:utils/tileChecks";
 include ":attributes:attributes";
 include ":tn:cooldown";
 include ":fls_core:packets";
 include ":timedScripts:timedScripts";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
-include ":survival:fishingFunctions";
 include "include/epicConstants";
 include "include/sounds";
 
@@ -170,7 +170,7 @@ function _EtherealJump(who, mobile, opponent := 0)
 	endif
 
 	var locinfo := GetMapInfo(targ.x, targ.y, who.realm);
-	if (IsWater(targ, locinfo))
+	if (_IsWaterTile(targ, locinfo))
 		Message("Voce nao pode saltar para a agua.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		who.concealed := 0;
 		who.frozen := 0;
