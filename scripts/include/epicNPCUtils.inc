@@ -131,13 +131,16 @@ function HasPlayerNearLocation(x, y, realm := 0)
 	return 0;
 endfunction
 
+// Valores em % de reducao de dano (0-100). Aplicados multiplicativamente em
+// DamageController.CalculateDefenderResist via Damage.Decrease*PercentDamage.
+// Ver design_combate.md / design_npcs.md para o redesign completo.
 enum RESISTS_TIERS
 	RESIST_TIER0 := 0,
-	RESIST_TIER1 := 1,
-	RESIST_TIER2 := 3,
-	RESIST_TIER3 := 6,
-	RESIST_TIER4 := 12,
-	RESIST_TIER5 := 16,
+	RESIST_TIER1 := 20,
+	RESIST_TIER2 := 40,
+	RESIST_TIER3 := 60,
+	RESIST_TIER4 := 80,
+	RESIST_TIER5 := 100,
 endenum
 
 enum TIERS

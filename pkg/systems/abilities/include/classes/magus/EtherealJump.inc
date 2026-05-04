@@ -2,11 +2,11 @@ use uo;
 use util;
 
 include ":abilities:models/CombatAbility";
+include ":abilities:utils/tileChecks";
 include ":message:model/Message";
 include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
-include ":survival:fishingFunctions";
 
 /**
  * Salto Etereo (Ethereal Jump) - ABILITY_ID::SALTO_ETEREO (2201)
@@ -74,7 +74,7 @@ class EtherealJump(CombatAbility)
         endif
 
         var locinfo := GetMapInfo(targ.x, targ.y, who.realm);
-        if (IsWater(targ, locinfo))
+        if (_IsWaterTile(targ, locinfo))
             Message("Voce nao pode teleportar para a agua.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
             who.concealed := 0;
             who.frozen := 0;

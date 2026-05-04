@@ -23,16 +23,19 @@ program SpellScript(params)
 		return;
 	endif
 
-	// Bonus
-	var bonus := CInt(who.GetSkill(ARCANA));
+	// Bonus em duas escalas — armor virou % no redesign, mas weapon/ammo
+	// continuam aplicando dano elemental flat (escala legacy intocada).
+	// Domínio Vital aplica o mesmo multiplicador (×1.4) nas duas escalas.
+	var arcana := CInt(who.GetSkill(ARCANA));
+	var bonusFlat := CInt(arcana * 0.05);  // weapon/ammo flat damage (max +5, +7 com DV)
+	var bonusPct := CInt(arcana / 2);      // armor % reduction (max 50, 70 com DV)
 
 	if (who.HasAbility(ABILITY_ID::DOMINIO_VITAL))
-		bonus := CInt(bonus * 0.07); // TODO: Rever se esse valor vai ser coerente com a hab. Max = 7
-	else
-		bonus := CInt(bonus * 0.05); // Max = 5
+		bonusFlat := CInt(bonusFlat * 1.4);
+		bonusPct := CInt(bonusPct * 1.4);
 	endif
 
-	setBonus(who, use_on, bonus);
+	setBonus(who, use_on, bonusFlat, bonusPct);
 
 	return 1;
 endprogram

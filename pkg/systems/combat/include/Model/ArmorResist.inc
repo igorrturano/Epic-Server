@@ -1,5 +1,11 @@
 include "IArmorResist";
 
+// SEMANTICA: a partir do redesign de combate (ver design_combate.md), os valores
+// armazenados aqui representam % de reducao de dano (0-100), nao mais subtracao
+// flat. A aplicacao multiplicativa fica em DamageController.CalculateDefenderResist
+// via Damage.Decrease*PercentDamage(pct). Layers que ainda usam reducao flat
+// (manashield, abilities de absorcao) continuam chamando Damage.Decrease*BaseDamage
+// e nao passam por esta classe.
 class ArmorResist(IArmorResist)
 	var _slash := 0;
 	var _piercing := 0;
