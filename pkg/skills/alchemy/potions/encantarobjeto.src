@@ -34,11 +34,16 @@ program drink_blue(who, potion)
 		return;
 	endif
 
-	var bonus := Cint(GetObjProperty(potion, "crafterskill"));
-	bonus := bonus * 0.05;
+	// Bonus em duas escalas — armor virou % no redesign, mas weapon/ammo
+	// continuam aplicando dano elemental flat. Mesma escala que encantarobjeto.src
+	// mas usando crafterskill (alchemia) em vez de Arcana. Sem multiplicador de DV
+	// (DV e habilidade de mage, nao se aplica a pocao).
+	var crafterskill := Cint(GetObjProperty(potion, "crafterskill"));
+	var bonusFlat := CInt(crafterskill * 0.05);
+	var bonusPct := CInt(crafterskill / 2);
 
 	empty_bottle(who.GetObjRef(), potion, 0);
 
 	Message("Você encantou o objeto.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
-	setBonus(who, use_on, bonus);
+	setBonus(who, use_on, bonusFlat, bonusPct);
 endprogram
