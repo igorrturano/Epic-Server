@@ -552,6 +552,7 @@ function DoPurchase(npc, player, input)
 	if (guild && imposto)
 		var guild_money := cint(Ceil(cost_amnt * imposto));
 		var cofreid := GetObjProperty(npc, "cofreid");
+		if (!cofreid || cofreid.errortext) cofreid := guild.GetProp("bau_serial"); endif
 		var cofre := SystemFindObjectBySerial(cofreid);
 		if (cofre && cofre.isA(POLCLASS_CONTAINER))
 			AddCoinToContainer(cofre, MOEDAS, guild_money);
@@ -662,6 +663,7 @@ function AddItemToSell(npc, player, item)
 	var total_imposto := CInt(cdbl(cost_amt * (item.amount / cost_lote)) * cdbl(imposto));
 
 	var cofreid := GetObjProperty(npc, "cofreid");
+	if (!cofreid || cofreid.errortext) cofreid := guild.GetProp("bau_serial"); endif
 	var cofre := 0;
 	if (cofreid)
 		cofre := SystemFindObjectBySerial(cofreid);
@@ -784,7 +786,7 @@ endfunction
 
 function ProcessVendorDoubleClick(npc, player)
 	var gump := GFCreateGump(220, 70);
-	GFResizePic(gump, 0, 0, 0x254E, 160, 140);
+	GFResizePic(gump, 0, 0, 0x254E, 160, 160);
 
 	GFTextLine(gump, 30, 15, 2100, "Produtos à Venda");
 	GFTooltipText(gump, "Abre a lista de produtos à venda deste vendedor.");
@@ -805,6 +807,10 @@ function ProcessVendorDoubleClick(npc, player)
 	GFTextLine(gump, 30, 95, 2100, "Facing");
 	GFTooltipText(gump, "Define a direcao para onde o vendedor ficara olhando.");
 	GFAddButton(gump, 15, 97, 2117, 2118, 1, 5);
+
+	GFTextLine(gump, 30, 115, 2100, "Configurar");
+	GFTooltipText(gump, "Abre o painel de configuracao do vendedor (imposto, bau, restricoes).");
+	GFAddButton(gump, 15, 117, 2117, 2118, 1, 6);
 
 	var input := GFSendGump(player, gump)[0];
 	var ev := struct;
@@ -873,26 +879,27 @@ function ProcessVendorDoubleClick(npc, player)
 			fev.facing := new_facing;
 			SendEvent(npc, fev);
 		endif
+	elseif (input == 6)
+		SetupMerchant(npc, player);
 	endif
 endfunction
 
 function AddCoinToContainer(cofre, objtype, amount)
+	var estava_travado := cofre.locked;
+	if (estava_travado) cofre.locked := 0; endif
+
 	foreach existing in EnumerateItemsInContainer(cofre)
 		if (existing.objtype == objtype)
 			var combined := existing.amount + amount;
 			DestroyItem(existing);
-			var coin := CreateItemAtLocation(cofre.x, cofre.y, cofre.z, objtype, combined, cofre.realm);
-			if (coin && coin != error)
-				MoveItemToContainer(coin, cofre);
-			endif
+			CreateItemInContainer(cofre, objtype, combined);
+			if (estava_travado) cofre.locked := 1; endif
 			return 1;
 		endif
 		sleepms(2);
 	endforeach
-	var coin := CreateItemAtLocation(cofre.x, cofre.y, cofre.z, objtype, amount, cofre.realm);
-	if (coin && coin != error)
-		MoveItemToContainer(coin, cofre);
-	endif
+	CreateItemInContainer(cofre, objtype, amount);
+	if (estava_travado) cofre.locked := 1; endif
 	return 1;
 endfunction
 
