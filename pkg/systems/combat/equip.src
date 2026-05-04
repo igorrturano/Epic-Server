@@ -225,19 +225,6 @@ program equipweapon(who, item)
 		UpdateMobileEntropy(who, -100);
 	endif
 
-	// Penalidade de esquiva: armaduras não-leves reduzem evasionchance_mod pelo AR da peça
-	if (item.isa(POLCLASS_ARMOR))
-		var itemdesc := ReadConfigFile(":combat:itemdesc");
-		var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
-		if (tipoProtecao["Armadura"] && !tipoProtecao["Armadura Leve"])
-			var ar_penalty := CInt(item.ar) + CInt(item.ar_mod);
-			if (ar_penalty > 0)
-				SetObjProperty(item, "#armor_evasion_penalty", ar_penalty);
-				who.evasionchance_mod := who.evasionchance_mod - ar_penalty;
-			endif
-		endif
-	endif
-
 	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
 	ApplyEquipObjMods(who, item);
 
