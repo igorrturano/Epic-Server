@@ -6,7 +6,6 @@ include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":magery:spells";
 include "include/sounds";
 
 /**

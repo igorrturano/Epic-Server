@@ -7,10 +7,8 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":gumps:gumps";
-include ":taming:taming";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
-include ":tn:boss";
 include ":spells:summon";
 include ":timedScripts:timedScripts";
 include "include/epicConstants";
@@ -156,7 +154,7 @@ class WildSummoning(CombatAbility)
             max_slots := 5;
         endif
 
-        var used_slots := GetNumSummons(who);
+        var used_slots := _GetNumSummons(who);
         var creature_tier := CInt(selected_creature.tier);
         if (creature_tier < 1)
             creature_tier := 1;
@@ -284,7 +282,7 @@ class WildSummoning(CombatAbility)
             return false;
         endif
 
-        if (isTrueBoss(targ))
+        if (_IsTrueBoss(targ))
             Message("Essa criatura poderosa nao pode ser vinculada.").SendSys(who);
             return false;
         endif
@@ -370,3 +368,42 @@ class WildSummoning(CombatAbility)
     endfunction
 
 endclass
+
+function _IsTrueBoss(targ)
+    var spawnpoint := SystemFindObjectBySerial(GetObjProperty(targ, "spawnpoint"));
+    if (spawnpoint != error)
+        if (GetObjProperty(spawnpoint, "true_boss") != error)
+            return 1;
+        endif
+    endif
+    return 0;
+endfunction
+
+function _GetNumSummons(who)
+    var num_summoned := 0;
+    var summoned_pets := GetObjProperty(who, "SummonedPets");
+
+    if (!summoned_pets)
+        return 0;
+    endif
+
+    foreach serial in summoned_pets
+        var pet := SystemFindObjectBySerial(serial);
+
+        if (pet && pet.master == who && GetObjProperty(pet, "summoned"))
+            var pet_slot := CInt(pet.getTier());
+            if (!pet_slot)
+                pet_slot := 1;
+            endif
+            num_summoned := num_summoned + pet_slot;
+        else
+            summoned_pets.erase(_serial_iter);
+        endif
+
+        sleepms(2);
+    endforeach
+
+    SetObjProperty(who, "SummonedPets", summoned_pets);
+
+    return num_summoned;
+endfunction
