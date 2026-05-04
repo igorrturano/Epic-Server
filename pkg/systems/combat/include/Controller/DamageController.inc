@@ -219,12 +219,14 @@ function CalculateStatusDamage(byRef attackInfo)
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(DEXTERITY);
 		endif
 	elseif (attackInfo.GetWeapon().IsFinesse())
-		statusDamage.stat := $"{STRENGTH}/{DEXTERITY}";
-		var _finesseStat := Max(attackInfo.GetAttacker().GetStr(), attackInfo.GetAttacker().GetDex());
-		var _finesseMain := CInt(_finesseStat / 20);
+		// Finesse usa DEX puro / 10 (mainhand) ou DEX / 20 (off-hand). DEX-only
+		// (em vez de max(STR, DEX)) forca a escolha de archetype: STR builds
+		// pegam non-finesse 2H, DEX builds pegam finesse 1H/dual. Ver
+		// design_dex_builds.md.
+		statusDamage.stat := DEXTERITY;
 		statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
-					 _finesseMain :
-					 CInt(_finesseMain / 2);
+					 CInt(attackInfo.GetAttacker().GetDex() / 10) :
+					 CInt(attackInfo.GetAttacker().GetDex() / 20);
 	else
 		statusDamage.stat := STRENGTH;
 
