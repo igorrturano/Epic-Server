@@ -8,9 +8,12 @@ include ":attributes:attributes";
 /**
  * Combate Leve (Unarmored Combat) - ABILITY_ID::UNARMORED_COMBAT (3628)
  *
- * Passive (DefenderBeforeDamage): Reduces incoming physical damage by Skill/20,
- * where Skill = max(Wrestling, Tactics).
- * Only works when wearing no armor.
+ * Passive (DefenderBeforeDamage): reduz dano fisico recebido em
+ * max(Wrestling, Tactics) / 2 % — multiplicativo, GM = 50%.
+ * Aplica apenas se totalmente nu (sem nenhuma peca com TipoProtecao).
+ *
+ * Unica fonte de absorcao para builds sem armor apos o redesign de combate
+ * (BarbarianResilience, DragonStance e CrabStyle perderam absorcao passiva).
  */
 class UnarmoredCombat(CombatAbility)
 
@@ -46,20 +49,20 @@ class UnarmoredCombat(CombatAbility)
 			skill := tactics;
 		endif
 
-		var reduction := CInt(skill / 20);
-		if (reduction <= 0)
+		var reductionPct := CInt(skill / 2);
+		if (reductionPct <= 0)
 			return false;
 		endif
 
 		attackInfo.GetDamage()
-			.DecreaseSlashBaseDamage(reduction)
-			.DecreasePiercingBaseDamage(reduction)
-			.DecreaseBluntBaseDamage(reduction);
+			.DecreaseSlashPercentDamage(reductionPct)
+			.DecreasePiercingPercentDamage(reductionPct)
+			.DecreaseBluntPercentDamage(reductionPct);
 
 		DebugMsg(
 			who,
 			DEBUG_HAB,
-			Message($"[UNARMORED_COMBAT] Reducao passiva: -{reduction}", Color(SYSTEM_COLOR::SUCCESS))
+			Message($"[UNARMORED_COMBAT] Reducao passiva: -{reductionPct}%", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;
