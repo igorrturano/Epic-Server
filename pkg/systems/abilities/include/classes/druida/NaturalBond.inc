@@ -619,7 +619,7 @@ class NaturalBond(CombatAbility)
             return false;
         endif
 
-        if (isTrueBoss(targ))
+        if (_isTrueBoss(targ))
             Message("Essa criatura poderosa nao pode ser estudada.").SendSys(who);
             return false;
         endif

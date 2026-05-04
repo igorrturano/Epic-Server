@@ -359,7 +359,7 @@ endfunction
 
 function ResolveEfeitoCaracteristica(valorEfeito)
 	var isFormatoTier := Find(valorEfeito,"t-",1);
-	
+
 	if(isFormatoTier)
 		var tier := Cint(SubStr(valorEfeito,isFormatoTier + 2, 1));
 		return PegaComponenteTierDesc(tier).valor;
