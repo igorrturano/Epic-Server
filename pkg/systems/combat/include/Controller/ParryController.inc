@@ -138,6 +138,26 @@ function CalculateParryChance(byRef attackInfo)
 		parryBonus := parryBonus + tempParryBonus;
 	endif
 
+	// HeavyArmorSpec: +1 chance de parry por peca de armadura pesada equipada
+	// (max +5). Contagem ao vivo — robusta contra trocas de gear em combate
+	// sem precisar de propriedade espelhada. Somado ao parryBonus (bonus flat)
+	// para nao receber o multiplicador weapon-only de WANDERER_PATH abaixo.
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
+		var heavyCount := 0;
+		foreach item in (ListEquippedItems(attackInfo.GetDefender().GetObjRef()))
+			if (item.IsA(POLCLASS_ARMOR))
+				var armor := ArmorWrapper(item);
+				var protType := armor.GetTipoProtecao();
+				if (protType && protType["Armadura Pesada"])
+					heavyCount += 1;
+				endif
+			endif
+		endforeach
+		if (heavyCount > 0)
+			parryBonus := parryBonus + heavyCount;
+		endif
+	endif
+
 	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::POSTURA_DE_DUELO))
 		var offhand := GetEquipmentByLayer(attackInfo.GetDefender().GetObjRef(), LAYER_HAND2);
 		if (offhand && offhand.objtype == 0x1B73)

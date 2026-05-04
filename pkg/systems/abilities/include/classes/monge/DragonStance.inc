@@ -10,13 +10,13 @@ include ":hotbar:custombuff";
 /**
  * Ryū no Kamae / Postura do Dragão (Dragon Stance) - ABILITY_ID::DRAGON_STANCE (701)
  *
- * SingleUse BEFORE_DAMAGE: Next attack deals bonus Tactics/10 damage.
- * After the hit, grants projectile immunity via "Desviar Disparos" cooldown
- * for Tactics/5 seconds.
+ * SingleUse BEFORE_DAMAGE: o proximo ataque ganha bonus de dano Tactics/10.
+ * Apos o golpe, concede imunidade a projeteis via cooldown "Desviar Disparos"
+ * por Tactics/5 segundos.
  *
- * Passive DefenderBeforeDamage: Enquanto a janela "Desviar Disparos" está
- * ativa, reduz dano físico recebido por max(Wrestling, Tactics)/20 — espelho
- * defensivo da BarbarianResilience, com driver temático do monge.
+ * (Pos-Phase 7) A absorcao passiva durante a janela "Desviar Disparos" foi
+ * removida — UnarmoredCombat passou a ser a unica fonte de reducao de dano
+ * para builds nu/sem armor pesada.
  */
 class DragonStance(CombatAbility)
 
@@ -73,40 +73,6 @@ class DragonStance(CombatAbility)
 			who,
 			DEBUG_HAB,
 			Message($"[DRAGON_STANCE] Dano bonus: +{damageBonus}, Desviar Disparos: {immunityDuration}s", Color(SYSTEM_COLOR::SUCCESS))
-		);
-
-		return true;
-	endfunction
-
-	function OnPassiveBeforeDamage(this, attackInfo)
-		var defender := attackInfo.GetDefender();
-		var who := defender.GetObjRef();
-
-		if (!GetCooldown(who, "Desviar Disparos"))
-			return false;
-		endif
-
-		var wrestling := CInt(defender.GetSkill(WRESTLING));
-		var tactics := CInt(defender.GetSkill(TACTICS));
-		var skill := wrestling;
-		if (tactics > wrestling)
-			skill := tactics;
-		endif
-
-		var reduction := CInt(skill / 20);
-		if (reduction <= 0)
-			return false;
-		endif
-
-		attackInfo.GetDamage()
-			.DecreaseSlashBaseDamage(reduction)
-			.DecreasePiercingBaseDamage(reduction)
-			.DecreaseBluntBaseDamage(reduction);
-
-		DebugMsg(
-			who,
-			DEBUG_HAB,
-			Message($"[DRAGON_STANCE] Reducao passiva: -{reduction}", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;

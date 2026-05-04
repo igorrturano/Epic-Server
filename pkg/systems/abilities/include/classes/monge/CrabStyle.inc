@@ -9,9 +9,15 @@ include ":attributes:attributes";
 /**
  * Kani no Sutairu / Estilo do Caranguejo (Crab Style) - ABILITY_ID::CRAB_STYLE (702)
  *
- * Active (SingleUse AFTER_DAMAGE): Next attack causes bleed for Tactics/10 seconds.
+ * Active (SingleUse AFTER_DAMAGE): proximo ataque causa sangramento por
+ * Tactics/10 segundos.
  *
- * Passive (DefenderBeforeDamage): Reduces incoming physical damage by Tactics/20.
+ * Passive (BeforeHitDefender): subtrai Tactics/10 da chance de acerto do
+ * atacante (= +Tactics/10 evasao para o defensor). GM Tactics = +10 evasao,
+ * combina com MartialArtist (tactics/5 = +20) para total +30 evasao em monge nu.
+ *
+ * (Pos-Phase 7) A absorcao passiva foi trocada por evasao — UnarmoredCombat
+ * agora e a unica fonte de reducao de dano para builds sem armor pesada.
  *
  * Climate resistance passive stays in coldeffect.src/caloreffect.src (outside combat).
  */
@@ -59,24 +65,21 @@ class CrabStyle(CombatAbility)
 		return true;
 	endfunction
 
-	// Passive: Physical damage reduction (defender side)
-	function OnPassiveBeforeDamage(this, attackInfo)
+	// Passive: evasion bonus (defender harder to hit)
+	function OnPassiveBeforeHitDefender(this, attackInfo)
 		var defender := attackInfo.GetDefender();
 
-		var reduction := CInt(defender.GetSkill(TACTICS) / 20);
-		if (reduction <= 0)
+		var penalty := CInt(defender.GetSkill(TACTICS) / 10);
+		if (penalty <= 0)
 			return false;
 		endif
 
-		attackInfo.GetDamage()
-			.DecreaseSlashBaseDamage(reduction)
-			.DecreasePiercingBaseDamage(reduction)
-			.DecreaseBluntBaseDamage(reduction);
+		attackInfo.SetHitChanceMod(CInt(attackInfo.GetHitChanceMod()) - penalty);
 
 		DebugMsg(
 			defender.GetObjRef(),
 			DEBUG_HAB,
-			Message($"[CRAB_STYLE] Protecao fisica: -{reduction}", Color(SYSTEM_COLOR::SUCCESS))
+			Message($"[CRAB_STYLE] Evasao: -{penalty} acerto inimigo", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;

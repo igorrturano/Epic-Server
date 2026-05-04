@@ -4,10 +4,9 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
+include ":destroyable:include/destroyItem";
 include ":tn:cooldown";
 include ":timedScripts:timedScripts";
-include ":destroyable:include/destroyItem";
-include ":taming:taming";
 include "include/sounds";
 include "include/epicConstants";
 
@@ -55,9 +54,9 @@ class PrismaticVortex(CombatAbility)
 
         PerformAction(who, HUMAN_ANIM::CAST_AREA);
 
-        // AoE damage to nearby objects
-        DanificaObjetosProximos(who, who.x, who.y, who.z, who.realm,
-            struct{ dano := total_dmg, desc := "Vortice Prismatico." }, range);
+        // // AoE damage to nearby objects
+        // DanificaObjetosProximos(who, who.x, who.y, who.z, who.realm,
+        //     struct{ dano := total_dmg, desc := "Vortice Prismatico." }, range);
 
         // Elemental damage to nearby hostiles
         var nearby := mobile.GetNearbyMobiles(range);

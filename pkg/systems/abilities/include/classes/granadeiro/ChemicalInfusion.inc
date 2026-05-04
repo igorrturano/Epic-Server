@@ -5,7 +5,6 @@ include ":abilities:models/CombatAbility";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":message:model/Message";
-include ":debug:Controller/DebugController";
 include ":fls_core:packets";
 
 /**

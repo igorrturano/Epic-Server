@@ -6,26 +6,28 @@ include ":combat:Model/ArmorResist";
 include ":combat:Model/ShieldAttributes";
 include ":combat:Model/AttributeModifier";
 
+// Valores em % de reducao de dano por tier de TipoProtecao (steps de 2%).
+// Floor por tipo de armadura (Light 10 / Medium 15 / Heavy 20) e cap por tipo
+// (50/60/70) sao aplicados em ArmorWrapper. Ver design_combate.md.
 function GetResistPhysicalByProtection(tier)
-	// TODO: Balancear os valores aqui, não é pra ser todos iguais.
 	if (Upper(tier) == Upper(ARMOR_LOWLOW))
 		return ArmorResist(0, 0, 0);
 	elseif (Upper(tier) == Upper(ARMOR_LOWMID))
-		return ArmorResist(1, 1, 1);
-	elseif (Upper(tier) == Upper(ARMOR_LOWHIGH))
 		return ArmorResist(2, 2, 2);
-	elseif (Upper(tier) == Upper(ARMOR_MIDLOW))
-		return ArmorResist(3, 3, 3);
-	elseif (Upper(tier) == Upper(ARMOR_MIDMID))
+	elseif (Upper(tier) == Upper(ARMOR_LOWHIGH))
 		return ArmorResist(4, 4, 4);
-	elseif (Upper(tier) == Upper(ARMOR_MIDHIGH))
-		return ArmorResist(5, 5, 5);
-	elseif (Upper(tier) == Upper(ARMOR_HIGHLOW))
+	elseif (Upper(tier) == Upper(ARMOR_MIDLOW))
 		return ArmorResist(6, 6, 6);
-	elseif (Upper(tier) == Upper(ARMOR_HIGHMID))
-		return ArmorResist(7, 7, 7);
-	elseif (Upper(tier) == Upper(ARMOR_HIGHHIGH))
+	elseif (Upper(tier) == Upper(ARMOR_MIDMID))
 		return ArmorResist(8, 8, 8);
+	elseif (Upper(tier) == Upper(ARMOR_MIDHIGH))
+		return ArmorResist(10, 10, 10);
+	elseif (Upper(tier) == Upper(ARMOR_HIGHLOW))
+		return ArmorResist(12, 12, 12);
+	elseif (Upper(tier) == Upper(ARMOR_HIGHMID))
+		return ArmorResist(14, 14, 14);
+	elseif (Upper(tier) == Upper(ARMOR_HIGHHIGH))
+		return ArmorResist(16, 16, 16);
 	endif
 
 	// Escudos também entram aqui porque atualmente eles não têm defesa. Se mudar, só adicionar as tags dos escudos nos IFs.

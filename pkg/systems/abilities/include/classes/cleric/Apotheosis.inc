@@ -1,7 +1,7 @@
 include ":abilities:models/CombatAbility";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
-include ":brainai:npcUtil";
+include "include/NPCUtil";
 
 /**
  * Apoteose (Apotheosis) - ABILITY_ID::APOTEOSE (2804)
