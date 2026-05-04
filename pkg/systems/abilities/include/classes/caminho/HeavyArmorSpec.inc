@@ -22,7 +22,7 @@ class HeavyArmorSpec(CombatAbility)
 	function OnPassiveOnEquip(this, equip)
 		if (!(equip is @ArmorWrapper)) return false; endif
 		if (!equip.GetTipoProtecao()["Armadura Pesada"]) return false; endif
-		equip.ApplyAbilityBonus(DEXTERITY, 2);
+		equip.ApplyAbilityBonus(DEXTERITY, 1);
 		return true;
 	endfunction
 
