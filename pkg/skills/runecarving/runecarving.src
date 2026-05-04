@@ -3,10 +3,12 @@ use os;
 
 include ":attributes:attributes";
 include ":runecarving:runeCarving";
-include "include/client";
-include "include/say";
+// include "include/client";
+// include "include/say";
 include ":gumps:yesNo";
 include ":tn:tngumps";
+// include ":wrappers:Objects/Model/MobileWrapper";
+// include ":abilities:models/Ability";
 
 program runecarving(who, chisel)
 
@@ -17,8 +19,12 @@ program runecarving(who, chisel)
 		return;
 	endif
 	var chardata := GetObjProperty(who, "chardata");
-	if (chardata.magia != "Sacerdote" && !(who.cmdlevel > 1))
-		SendSysMEssageEx(who, "Apenas Acolitos e Paladinos dominam o conhecimento para confeccao de runas.",
+	var mob := MobileWrapper(who);
+	if (chardata.magia != "Sacerdote"
+	    && !mob.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
+	    && !mob.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO)
+	    && !(who.cmdlevel > 1))
+		SendSysMessageEx(who, "Apenas Acolitos, Paladinos e Cacadores de Demonios dominam o conhecimento para confeccao de runas.",
 				   SSM_FAIL);
 		return 0;
 	endif
