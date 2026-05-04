@@ -457,6 +457,15 @@ program NPCMonitor()
 	endwhile
 endprogram
 
+// Valida se um ponto está dentro da área navegável do NPC.
+// Facções player usam o rect da guild; facções staff usam FACCAO_WALK_RECT.
+function _IsInNPCRect(loc)
+	if (GetObjProperty(me, "tipo_faccao") == "staff")
+		return IsNPCInWalkRect(loc);
+	endif
+	return inGuildRect(guild, loc, 4);
+endfunction
+
 function ResolveSpeech(ev, source := 0, order := 0)
 	if (source)
 		ev := struct{ "source" := source, "text" := "{} {}".format(me.name, order) };
@@ -529,7 +538,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		if (!targ)
 			return SendSysMessageEx(ev.source, "Cancelado");
 		endif
-		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(targ))
+		if (GetObjProperty(me, "guild") && !_IsInNPCRect(targ))
 			return SendSysMessageEx(ev.source, "Ponto de patrulha fora do alcance do territorio. Cancelado.");
 		endif
 		patrolling := array{ targ };
@@ -542,7 +551,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		elseif (CoordinateDistance(patrolling[1].x, patrolling[2].x, targ.x, targ.y) > 20)
 			return SendSysMessageEx(ev.source, "Patrulha muito distante. Cancelado.");
 		endif
-		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(targ))
+		if (GetObjProperty(me, "guild") && !_IsInNPCRect(targ))
 			patrolling := 0;
 			return SendSysMessageEx(ev.source, "Ponto de patrulha fora do alcance do territorio. Cancelado.");
 		endif
@@ -571,7 +580,7 @@ function ResolveSpeech(ev, source := 0, order := 0)
 		disableWarn();
 	elseif (text["ir"] && text["at"])
 		var where := TargetCoordinates(ev.source);
-		if (GetObjProperty(me, "guild") && !IsNPCInWalkRect(where))
+		if (GetObjProperty(me, "guild") && !_IsInNPCRect(where))
 			PrintTextAbove(me, "Nao posso ir alem do territorio da faccao!");
 			SendSysMessage(ev.source, "[Guard] Destino fora do alcance. O guarda pode ir ate 4 tiles alem do territorio.");
 		else

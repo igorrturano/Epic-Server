@@ -35,7 +35,7 @@ program TailSwipe(params)
 		DamageFLS(mobile, swipe_damage, DMG_FORCED, me, "tailswipe");
 		if (!CheckResist(mobile, REFLEXES, RESIST_HARD))
 			TS_StartTimer(mobile, "lentidao", 3);
-			PushMobile(me, 2, 50, mobile);
+			PushMobile(me, 8, 100, mobile);
 		else
 			SendSysMessageEx(mobile, "Você se firma e resiste ao empurrão!", SSM_REQUEST);
 		endif

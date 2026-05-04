@@ -122,10 +122,6 @@ function IntrinsicCalcFortitude(mobile, wrapper, chardata, entropy, commonStats)
 		fortitude += 2;
 	endif
 
-	if (chardata.raca == HUMANO)
-		fortitude += 2;
-	endif
-
 	if (entropy > 4000)
 		fortitude += CInt(entropy / 4000);
 	endif
@@ -153,10 +149,6 @@ function IntrinsicCalcReflexes(mobile, wrapper, chardata, commonStats)
 	if (chardata.classe == "Ladino")
 		reflexos += 5;
 	else
-		reflexos += 2;
-	endif
-
-	if (chardata.raca == HUMANO)
 		reflexos += 2;
 	endif
 

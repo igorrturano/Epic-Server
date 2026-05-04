@@ -73,6 +73,10 @@ program SpellScript(params)
 			var fire := CreateItemAtLocation(pos_x, pos_y, z, fire_type, 1, caster.realm);
 
 			if (fire)
+				// Grace duration past the buff lifetime so pirapurificadoraExpire
+				// normally wins the destroy race; if it fails to run, the field
+				// still self-cleans instead of becoming a permanent world item.
+				fire.SetDuration(duration + 5);
 				fire_serials.append(fire.serial);
 				SetObjProperty(fire, "summoner", caster.serial);
 				PlayStationaryEffect(pos_x, pos_y, z, EFFECT_FIRE, 7, 10, 0, caster.realm);
