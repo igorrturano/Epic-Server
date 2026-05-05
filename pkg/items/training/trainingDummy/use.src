@@ -5,6 +5,10 @@ use cfgfile;
 include ":attributes:attributes";
 include ":combat:weaponInfo";
 include ":training:training";
+include ":training:dummyDps";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Model/AttackInfo";
+include ":combat:Controller/DamageController";
 
 const DUMMY_HIT_SOUND := 0x13C;
 
@@ -19,28 +23,47 @@ program PracticeDummy(who, dummy)
 	var weapon := who.weapon;
 
 	if (!TP_CheckRange(who, weapon, dummy))
+		ReleaseItem(dummy);
 		return 0;
 	endif
 
 	var weapon_anim := CInt(CS_GetWeaponInfo(weapon, "Anim"));
-	var miss_sound := CInt(CS_GetWeaponInfo(weapon, "MissSound"));
 	var weapon_attribute := CS_GetWeaponInfo(weapon, "Attribute");
-	if (weapon_attribute["Archery"])
-		SendSysMessage(who, "Voce deveria usar o alvo de arquerismo.");
-		return 0;
-	endif
 
 	PerformAction(who, weapon_anim);
 
-	if (SkillCheck(who, weapon_attribute, -1, 0, 0) > 0)
-		PlaySoundEffect(who, DUMMY_HIT_SOUND);
-		DummyRock(dummy);
-	else
-		PlaySoundEffect(who, miss_sound);
-		ReleaseItem(dummy);
-		sleepms(3600);
-	endif
+	var totalDmg := RollDummyDamage(who);
+
+	PlaySoundEffect(who, DUMMY_HIT_SOUND);
+	DummyRegisterHit(dummy, totalDmg);
+	SkillCheck(who, weapon_attribute, -1, 0, 0);
+
+	DummyRock(dummy);
 endprogram
+
+function RollDummyDamage(who)
+	var attacker := MobileWrapper(who);
+	var weaponWrap := attacker.GetEquipBySlot(WEAPON);
+	if (weaponWrap is @Exception)
+		return 0;
+	endif
+
+	var attackInfo := AttackInfo(attacker, attacker);
+	attackInfo.SetWeapon(weaponWrap)
+	          .SetAttackType(attacker.GetCombatTraits().GetPosture())
+	          .SetDamageHand(DAMAGE_HAND::MAINHAND);
+
+	CalculateAttackerDamage(attackInfo);
+	var total := CInt(attackInfo.GetDamage().GetTotalBaseDamage());
+
+	if (weaponWrap.GetAttribute() == DUALWIELD)
+		attackInfo.SetDamageHand(DAMAGE_HAND::OFFHAND);
+		CalculateAttackerDamage(attackInfo);
+		total += CInt(attackInfo.GetDamage().GetTotalBaseDamage());
+	endif
+
+	return total;
+endfunction
 
 function DummyRock(dummy)
 	case (dummy.graphic)

@@ -58,28 +58,13 @@ var SCROLL_PURGE   := array{ 0xe38,   0xe39,   0xe3a,   0xe32           };
 // Returns the objtype for a given skill type and level.
 // Returns 0 for invalid inputs.
 function GetScrollObjtype(skillType, level)
+    if (level < 1 || level > 5) return 0; endif
     case (skillType)
-        "MW":
-        "WW":
-        "DW":
-        "alchemy":
-        "dye":
-        "spell":
-            if (level < 1 || level > 5) return 0; endif
-            case (skillType)
-                "MW":      return SCROLL_MW[level];
-                "WW":      return SCROLL_WW[level];
-                "DW":      return SCROLL_DW[level];
-                "alchemy": return SCROLL_ALCHEMY[level];
-                "dye":     return SCROLL_DYE[level];
-                "spell":   return SCROLL_SPELL[level];
-            endcase
-        "void":
-            if (level < 1 || level > 4) return 0; endif
-            return SCROLL_VOID[level];
-        "purge":
-            if (level < 1 || level > 4) return 0; endif
-            return SCROLL_PURGE[level];
+        "MW":      return SCROLL_MW[level];
+        "WW":      return SCROLL_WW[level];
+        "DW":      return SCROLL_DW[level];
+        "alchemy": return SCROLL_ALCHEMY[level];
+        "dye":     return SCROLL_DYE[level];
     endcase
     return 0;
 endfunction

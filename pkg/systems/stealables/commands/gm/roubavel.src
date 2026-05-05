@@ -23,10 +23,11 @@ include ":stealables:stealables";
 include ":traps:traps";
 
 // Constantes de UI
-const GUMP_BTN_CONFIRM := 99;
+const GUMP_BTN_CONFIRM  := 99;
 const GUMP_BTN_TELEPORT := 100;
-const GUMP_BTN_DELETE := 200;
-const GUMP_BTN_BACK := 300;
+const GUMP_BTN_DELETE   := 200;
+const GUMP_BTN_BACK     := 300;
+const GUMP_BTN_RESTART  := 400;
 
 program roubavel(who, text)
 	if (!who.cmdlevel)
@@ -689,35 +690,52 @@ function ShowStealableDetails(who, spawner)
 	endif
 	
 	y_pos += 50;
-	
-	// Botões de ação
+
+	// Botões de ação — linha 1
 	GFAddButton(gump, 50, y_pos, 2117, 2118, GF_CLOSE_BTN, GUMP_BTN_TELEPORT);
 	GFTextLine(gump, 75, y_pos, 68, "Teleportar para o Local");
-	
-	GFAddButton(gump, 280, y_pos, 2117, 2118, GF_CLOSE_BTN, GUMP_BTN_DELETE);
-	GFTextLine(gump, 305, y_pos, 33, "Deletar Artefato");
-	
-	GFAddButton(gump, 480, y_pos, 2117, 2118, GF_CLOSE_BTN, GUMP_BTN_BACK);
-	GFTextLine(gump, 505, y_pos, 2100, "Voltar");
-	
+
+	GFAddButton(gump, 350, y_pos, 2117, 2118, GF_CLOSE_BTN, GUMP_BTN_RESTART);
+	GFTextLine(gump, 375, y_pos, 2100, "Reiniciar Script");
+
+	y_pos += 28;
+
+	// Botões de ação — linha 2
+	GFAddButton(gump, 50, y_pos, 2117, 2118, GF_CLOSE_BTN, GUMP_BTN_DELETE);
+	GFTextLine(gump, 75, y_pos, 33, "Deletar Artefato");
+
+	GFAddButton(gump, 350, y_pos, 2117, 2118, GF_CLOSE_BTN, GUMP_BTN_BACK);
+	GFTextLine(gump, 375, y_pos, 2100, "Voltar");
+
 	var res := GFSendGump(who, gump);
-	
+
 	if (!res || res[0] == 0 || res[0] == GUMP_BTN_BACK)
 		ShowStealablesListGump(who);
 		return 0;
 	endif
-	
+
 	case (res[0])
 		GUMP_BTN_TELEPORT:
 			MoveObjectToLocation(who, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
 			Message("Você se teleportou para o artefato.", SSM_INFO).SendSys(who);
 			return 1;
-			
+
+		GUMP_BTN_RESTART:
+			// Start_Script sobrescreve SpawnerPid; o processo antigo detecta o PID diferente e encerra
+			var new_script := Start_Script(":stealables:artifact_spawner", array{spawner});
+			if (new_script)
+				Message("Script reiniciado. Processo antigo encerrará em até 5 segundos.", SSM_INFO).SendSys(who);
+			else
+				Message("Falha ao reiniciar o script.", SSM_FAIL).SendSys(who);
+			endif
+			ShowStealableDetails(who, spawner);
+			return 1;
+
 		GUMP_BTN_DELETE:
 			HandleArtifactDeletion(who, spawner);
 			return 1;
 	endcase
-	
+
 	return 1;
 endfunction
 
