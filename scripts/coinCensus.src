@@ -1,0 +1,93 @@
+// Phase 4 — Daily census daemon.
+// Iterates all accounts (online + offline), totals cobre/prata/ouro per char,
+// updates coinSupply datafile via UpdateSupplySnapshot.
+// Restart-resilient: persists last_census_day in polsys global. On boot, runs
+// immediately if today_key != last_census_day.
+// Polls every 60s (cheap) to detect day rollover.
+
+use uo;
+use os;
+use util;
+use file;
+use basic;
+use polsys;
+
+include "include/epicEconomyAudit";
+include ":currency:include/currency";
+include ":currency:include/seignorage";
+include ":containers:storageAreas";
+include ":accounts:accounts";
+
+const CENSUS_GLOBAL_LAST_DAY := "coin_census_last_day";
+const CENSUS_POLL_SECONDS    := 60;
+
+function CountCoinsInPlayer(p, byref total_cobre, byref total_prata, byref total_ouro)
+	if (!p || p == error || p.acctname == error || !p.acctname)
+		return 0;
+	endif
+
+	var bag := p.backpack;
+	if (bag && bag != error)
+		total_cobre := total_cobre + CInt(CountCoins(bag, EA_COIN_COBRE));
+		total_prata := total_prata + CInt(CountCoins(bag, EA_COIN_PRATA));
+		total_ouro  := total_ouro  + CInt(CountCoins(bag, EA_COIN_OURO));
+	endif
+
+	var bank := CP_GetStorageContainerForMobile(p, CP_DEFAULT_AREA, CP_NOCREATE);
+	if (bank && bank != error)
+		total_cobre := total_cobre + CInt(CountCoins(bank, EA_COIN_COBRE));
+		total_prata := total_prata + CInt(CountCoins(bank, EA_COIN_PRATA));
+		total_ouro  := total_ouro  + CInt(CountCoins(bank, EA_COIN_OURO));
+	endif
+
+	return 1;
+endfunction
+
+function RunCensus()
+	var total_cobre := 0;
+	var total_prata := 0;
+	var total_ouro  := 0;
+
+	foreach acct_name in (ListAccounts())
+		var acct := FindAccount(acct_name);
+		if (!acct || acct == error)
+			continue;
+		endif
+		if (acct.banned)
+			continue;
+		endif
+		var i;
+		for (i := 1; i <= 6; i := i + 1)
+			var p := acct.GetCharacter(i);
+			if (p && p != error)
+				CountCoinsInPlayer(p, total_cobre, total_prata, total_ouro);
+			endif
+			sleepms(2);
+		endfor
+		sleepms(2);
+	endforeach
+
+	var today_key := StrFormatTime("%d-%m-%Y", POLCore().systime);
+	var total_eq := UpdateSupplySnapshot(today_key, total_cobre, total_prata, total_ouro);
+	Print("[coinCensus] " + today_key + " — cobre=" + total_cobre +
+		" prata=" + total_prata + " ouro=" + total_ouro +
+		" total_eq=" + total_eq);
+	return today_key;
+endfunction
+
+program CoinCensusDaemon()
+	Print("[coinCensus] daemon started");
+
+	while (1)
+		var today_key := StrFormatTime("%d-%m-%Y", POLCore().systime);
+		var last_day := CStr(GetGlobalProperty(CENSUS_GLOBAL_LAST_DAY));
+
+		if (last_day != today_key)
+			Print("[coinCensus] running census for " + today_key + " (last=" + last_day + ")");
+			RunCensus();
+			SetGlobalProperty(CENSUS_GLOBAL_LAST_DAY, today_key);
+		endif
+
+		sleep(CENSUS_POLL_SECONDS);
+	endwhile
+endprogram

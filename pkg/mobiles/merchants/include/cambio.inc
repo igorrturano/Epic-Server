@@ -3,6 +3,7 @@
 use os;
 
 include "include/epicConstants";
+include "include/epicEconomyAudit";
 include ":containers:storageAreas";
 
 CONST MOEDA_MENOR_VALOR := SESTERTIUS;
@@ -126,11 +127,11 @@ function ContaCapital(quem, regiaoBanco := 0)
 	return objetoRetorno;
 endfunction
 
-function EfetuaDebito( quem, debito, regiaoBanco := CP_DEFAULT_AREA , tipoMoeda:= MOEDA_MENOR_VALOR)
+function EfetuaDebito( quem, debito, regiaoBanco := CP_DEFAULT_AREA , tipoMoeda:= MOEDA_MENOR_VALOR, event_type := EA_TRANSFER_VENDOR_BUY, dst_actor := 0, extra := "")
 	var tiposMoedas := array {AUREUS,DENARIUS,SESTERTIUS};
 	var capital := ContaCapital(quem, regiaoBanco);
 	var debitoConvertido := ConverterMoeda(debito,tipoMoeda);
-	
+
 	if(capital.valorTotal >= debitoConvertido.valorConvertido)
 		var chavesCarteiras := capital.carteiras.keys();
 		chavesCarteiras.reverse(); //inverto para a carteira do jogador vir primeiro.
@@ -161,6 +162,14 @@ function EfetuaDebito( quem, debito, regiaoBanco := CP_DEFAULT_AREA , tipoMoeda:
 				debitoConvertido.valorConvertido := valorRestante * -1;
 			endif
 		endforeach
+
+		var moedaProxy := struct;
+		moedaProxy.+objtype := tipoMoeda;
+		moedaProxy.+x := quem.x;
+		moedaProxy.+y := quem.y;
+		moedaProxy.+realm := quem.realm;
+		EA_Record(event_type, moedaProxy, debito, quem, dst_actor, extra);
+
 		return true;
 	endif
 	return error{"errortext" := "Moedas insuficientes."};

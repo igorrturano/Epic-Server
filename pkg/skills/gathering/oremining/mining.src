@@ -11,6 +11,7 @@ include ":attributes:attributes";
 include ":attributes:skillCheck";
 include ":crafting:toolWear";
 include ":gathering:mining";
+include ":gathering:meteoritos";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":wrappers:Objects/Model/MobileWrapper";
@@ -38,6 +39,10 @@ program OreMining(who, tool)
 	Message("Digite .skill gathering para selecionar o minerio desejado.").SetColor(SSM_REQUEST).SendSys(who);
 	var targ := TargetCoordinates(who);
 	var quebravel := GetObjProperty(targ.item, "quebrável");
+
+	if (targ.item && IsMeteorite(targ.item))
+		return MeteoriteExtractFlow(who, tool, targ.item);
+	endif
 
 	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2)
 		SendSysMessage(who, "Muito longe.");

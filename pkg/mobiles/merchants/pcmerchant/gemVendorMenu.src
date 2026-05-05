@@ -18,6 +18,7 @@ include ":brainAI:npcCommands";
 include ":gumps:yesNo";
 include "include/say";
 include ":charactercreation:habilidades";
+include "include/epicEconomyAudit";
 
 // const ADD_ITEM_SELL_BTN		:= 0x1;
 // const MY_SELLS_BTN		:= 0x2;
@@ -133,8 +134,9 @@ program MerchantMenu(params)
 				var escolhido := listaprodutos[pagina + CStr(input[0])];
 				if (escolhido != error || escolhido != 0)
 					AI_Speak(npc, "Aqui estão suas Moedas!");
-					CreateItemInBackpack(player, MOEDAS,
-						  escolhido.amount * GetObjProperty(escolhido, "valorgem"));
+					var preco := escolhido.amount * GetObjProperty(escolhido, "valorgem");
+					var moedas := CreateItemInBackpack(player, MOEDAS, preco);
+					EA_Record(EA_MINT_GEM_PAYOUT, moedas, preco, npc, player, escolhido.desc);
 					DestroyItem(escolhido);
 				else
 					SendSysMessageEx(player, "Erro de indice no menu de gemas!", SSM_FAIL);
