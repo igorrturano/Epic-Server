@@ -443,6 +443,8 @@ enum class WEAPON_CATEGORY
 	SPEAR := "Spear",
 	MACE := "Mace",
 	STAFF := "Staff",
+	WAND := "Wand",
+	SPELLBOOK := "Spellbook",
 	THROWING := "Throwing",
 	POLEARM := "Polearm",
 	WHIP := "Whip",
