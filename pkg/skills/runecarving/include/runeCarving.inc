@@ -2,7 +2,10 @@ use uo;
 
 include "include/say";
 
-// Gem objtype constants
+// Gem objtype constants — these 6 grant a matching-gem bonus.
+// Carvability is determined by IsAGem() in :itemutils:itemtypes (which
+// covers all 9 raw gems). Star sapphire / citrine / tourmaline can be
+// carved but contribute only the base theology scaling.
 const GEM_DIAMOND := 0xF30;
 const GEM_RUBY := 0xF13;
 const GEM_SAPPHIRE := 0xF11;

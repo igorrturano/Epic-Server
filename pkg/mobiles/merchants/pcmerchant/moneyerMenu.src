@@ -1,0 +1,221 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include ":merchants:merchant";
+include ":brainAI:npcCommands";
+include "include/say";
+include "include/epicConstants";
+include "include/epicEconomyAudit";
+include ":currency:include/mintRate";
+
+const MAX_ITEM_PAG := 19;
+
+const INGOT_COBRE := 0x6465;
+const INGOT_PRATA := 0x6993;
+const INGOT_OURO  := 0x630e;
+
+function GetCoinTypeForIngot(ingot_type)
+	case (ingot_type)
+		INGOT_COBRE:  return SESTERTIUS;
+		INGOT_PRATA:  return DENARIUS;
+		INGOT_OURO:   return AUREUS;
+	endcase
+	return 0;
+endfunction
+
+function GetCoinNameForIngot(ingot_type)
+	case (ingot_type)
+		INGOT_COBRE:  return "Sestertius";
+		INGOT_PRATA:  return "Denarius";
+		INGOT_OURO:   return "Aureus";
+	endcase
+	return "";
+endfunction
+
+// Classifica o item selecionável: "INGOT" / "GEM" / "" (não-aceitável)
+function ClassifyItem(item)
+	if (GetCoinTypeForIngot(item.objtype))
+		return "INGOT";
+	endif
+	var valorgem := GetObjProperty(item, "valorgem");
+	if (valorgem != error && valorgem)
+		return "GEM";
+	endif
+	return "";
+endfunction
+
+program MoneyerMenu(params)
+	var npc := params[1];
+	var player := params[2];
+	var escondido := player.hidden;
+	var listaproduto := dictionary;
+	var pagina := 1;
+
+	if (escondido)
+		player.hidden := 0;
+		SendSysMessageEx(player, "Voce se revelou ao moneyer.", SSM_FAIL);
+	endif
+
+	while (1)
+		var item := 0;
+		var linha := 0;
+		var limitepagfrente := MAX_ITEM_PAG * pagina;
+		var limitepagtras := limitepagfrente - MAX_ITEM_PAG;
+
+		var gump := GFCreateGump(0, 0);
+		GFPage(gump, 0);
+		GFResizePic(gump, 0, 0, BKGND_BLUESLAB, 480, 480);
+		GFResizePic(gump, 15, 15, BKGND_STONESLAB, 320, 450);
+
+		GFTextLine(gump, 20, 30, 2000, "Clique para trocar barras ou gemas por moedas.");
+		GFTextLine(gump, 340, 30, 2000, "Recebe:");
+
+		foreach barra in (EnumerateItemsInContainer(player.backpack))
+			var kind := ClassifyItem(barra);
+			if (kind != "")
+				item := item + 1;
+				if (item > limitepagfrente)
+					break;
+				else
+					if (item > limitepagtras)
+						linha := linha + 1;
+
+						var coinAmount := 0;
+						var label := "";
+						if (kind == "INGOT")
+							var coinType := GetCoinTypeForIngot(barra.objtype);
+							if (WouldCrossRefuse(coinType, barra.amount))
+								label := "[Quantidade alta demais]";
+							else
+								var rate := GetMintRate(coinType, barra.amount);
+								coinAmount := CInt(barra.amount * rate);
+								label := "" + coinAmount + " " + GetCoinNameForIngot(barra.objtype);
+							endif
+						else
+							// GEM: paga em cobre. valorgem é por unidade.
+							var valor_unit := CInt(GetObjProperty(barra, "valorgem"));
+							var preco_base := barra.amount * valor_unit;
+							if (WouldCrossRefuse(SESTERTIUS, preco_base))
+								label := "[Quantidade alta demais]";
+							else
+								var rate := GetMintRate(SESTERTIUS, preco_base);
+								coinAmount := CInt(preco_base * rate);
+								label := "" + coinAmount + " Sestertius";
+							endif
+						endif
+
+						GFTextLine(gump, 40, 30 + (20 * linha), GF_STDCOLOR, barra.desc);
+						GFTextLine(gump, 340, 30 + (20 * linha), 2005, label);
+						GFAddButton(gump, 20, 33 + (20 * linha), 2117, 2118, GF_CLOSE_BTN, linha);
+						var dicindex := pagina + CStr(linha);
+						listaproduto[dicindex] := barra;
+					endif
+				endif
+			endif
+		endforeach
+
+		if (item == 0)
+			GFTextLine(gump, 40, 50, 33, "Você não tem barras nem gemas para trocar.");
+		endif
+
+		if (pagina > 1)
+			GFAddButton(gump, 20, 430, 2117, 2118, GF_CLOSE_BTN, 201);
+			GFTextLine(gump, 40, 433, 2000, "Pagina Anterior");
+		endif
+
+		if (item >= limitepagfrente)
+			GFAddButton(gump, 315, 430, 2117, 2118, GF_CLOSE_BTN, 202);
+			GFTextLine(gump, 225, 433, 2000, "Proxima Pagina");
+		endif
+
+		var input := GFSendGump(player, gump);
+
+		if (input[0] == 0 || GetObjProperty(player, "#Online"))
+			AI_Speak(npc, "Que Demiurgo te acompanhe.");
+			break;
+		elseif (input[0] == 201)
+			if (pagina < 2)
+				pagina := 1;
+			else
+				pagina := pagina - 1;
+			endif
+		elseif (input[0] == 202)
+			if (pagina >= 10)
+				pagina := 10;
+			else
+				pagina := pagina + 1;
+			endif
+		else
+			if (IsMintRefused())
+				AI_Speak(npc, GetRefuseMessage());
+				continue;
+			endif
+
+			var Aceito := yesno(player, "Confirma a troca?");
+			if (Aceito)
+				var escolhida := listaproduto[pagina + CStr(input[0])];
+				if (escolhida != error && escolhida != 0)
+					var kind := ClassifyItem(escolhida);
+					if (kind == "INGOT")
+						var coinType := GetCoinTypeForIngot(escolhida.objtype);
+						if (WouldCrossRefuse(coinType, escolhida.amount))
+							AI_Speak(npc, GetRefuseMessage());
+							continue;
+						endif
+						var rate := GetMintRate(coinType, escolhida.amount);
+						var coinAmount := CInt(escolhida.amount * rate);
+						var taxAmount := escolhida.amount - coinAmount;
+						if (coinAmount > 0)
+							var ingotQty := escolhida.amount;
+							var ingotType := escolhida.objtype;
+							DestroyItem(escolhida);
+							var moedas := CreateItemInBackpack(player, coinType, coinAmount);
+							EA_Record(EA_MINT_PLAYER_DEPOSIT, moedas, coinAmount, npc, player,
+								"ingot=" + Hex(ingotType) + ";qty=" + ingotQty + ";tax=" + taxAmount);
+							if (taxAmount > 0)
+								InjectToPool(coinType, taxAmount);
+								EA_Record(EA_MINT_POOL_INJECT, moedas, taxAmount, npc, 0,
+									"source=deposit;ingot=" + Hex(ingotType));
+							endif
+							AI_Speak(npc, "Aqui estão suas moedas.");
+						else
+							SendSysMessageEx(player, "Quantidade insuficiente para cunhar.", SSM_FAIL);
+						endif
+					elseif (kind == "GEM")
+						var valor_unit := CInt(GetObjProperty(escolhida, "valorgem"));
+						var preco_base := escolhida.amount * valor_unit;
+						if (WouldCrossRefuse(SESTERTIUS, preco_base))
+							AI_Speak(npc, GetRefuseMessage());
+							continue;
+						endif
+						var rate := GetMintRate(SESTERTIUS, preco_base);
+						var coinAmount := CInt(preco_base * rate);
+						var taxAmount := preco_base - coinAmount;
+						if (coinAmount > 0)
+							var gemDesc := escolhida.desc;
+							DestroyItem(escolhida);
+							var moedas := CreateItemInBackpack(player, SESTERTIUS, coinAmount);
+							EA_Record(EA_MINT_GEM_PAYOUT, moedas, coinAmount, npc, player,
+								gemDesc + ";tax=" + taxAmount);
+							if (taxAmount > 0)
+								InjectToPool(SESTERTIUS, taxAmount);
+								EA_Record(EA_MINT_POOL_INJECT, moedas, taxAmount, npc, 0,
+									"source=gem;" + gemDesc);
+							endif
+							AI_Speak(npc, "Aqui estão suas moedas.");
+						else
+							SendSysMessageEx(player, "Valor da gema insuficiente.", SSM_FAIL);
+						endif
+					else
+						SendSysMessageEx(player, "Item nao aceitavel.", SSM_FAIL);
+					endif
+				else
+					SendSysMessageEx(player, "Erro de indice no menu da Casa da Moeda.", SSM_FAIL);
+				endif
+			endif
+		endif
+	endwhile
+	return 1;
+endprogram

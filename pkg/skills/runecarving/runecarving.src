@@ -7,6 +7,7 @@ include ":runecarving:runeCarving";
 // include "include/say";
 include ":gumps:yesNo";
 include ":tn:tngumps";
+include ":itemutils:itemtypes";
 // include ":wrappers:Objects/Model/MobileWrapper";
 // include ":abilities:models/Ability";
 
@@ -45,16 +46,8 @@ program runecarving(who, chisel)
 		return;
 	endif
 
-	if (!gem.isA(POLCLASS_ITEM))
+	if (!IsAGem(gem.objtype))
 		SendSysMessageEx(who, "Isto não é uma gema.", SSM_FAIL);
-		return;
-	endif
-
-	// Check if it's a valid raw gem
-	var gemtype := gem.objtype;
-	if (gemtype != GEM_DIAMOND && gemtype != GEM_RUBY && gemtype != GEM_SAPPHIRE &&
-	    gemtype != GEM_AMETHYST && gemtype != GEM_EMERALD && gemtype != GEM_AMBER)
-		SendSysMessageEx(who, "Esta gema não pode ser entalhada com runas sagradas.", SSM_FAIL);
 		return;
 	endif
 
@@ -62,6 +55,8 @@ program runecarving(who, chisel)
 		SendSysMessageEx(who, "A gema precisa estar na sua mochila.", SSM_FAIL);
 		return;
 	endif
+
+	var gemtype := gem.objtype;
 
 	// Display rune type selection menu
 	var rune_choices := array{
