@@ -522,7 +522,7 @@ function GetAllOrePossibilities()
 			  	
 			  	"0x6305",          // ouro
 			  	
-			  	"0x6307",          // galvorn
+			  	"0x6307",          // atrium
 			  	
 			  	"0x6308",          // mithril
 			  	
