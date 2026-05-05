@@ -244,6 +244,7 @@ function ExaminarArea(who)
 				PrintTextPrivate(item, "*!*", who);
 			endif
 		endif
+
 		sleepms(2);
 	endforeach
 
@@ -328,6 +329,69 @@ function AtivaDesativaPassivo(who)
 		SendSysMessageEx(who, "Modo Passivo Desligado. Percebe, mas não revela passivamente!", SSM_FAIL);
 		SetObjProperty(who, "IgnoreHidden", 1);
 	endif
+endfunction
+
+function VerificarArtefato(who, item)
+	var prop_stealable := CInt(GetObjProperty(item, "PropStealable"));
+	var skill          := CInt(AP_GetSkill(who, AWARENESS));
+
+	if (prop_stealable)
+		SendSysMessage(who, "Seus olhos percorrem o objeto... parece ter sido deixado aqui de propósito, à espera de mãos habilidosas.", 3, 44);
+
+		var trap_list := GetObjProperty(item, "TrapList");
+		if (trap_list && trap_list.size() > 0)
+			var item_level := CInt(GetObjProperty(item, "level"));
+			SendSysMessage(who, GetTrapRPPhrase(trap_list[1].name, item_level, skill), 3, 44);
+		endif
+	else
+		SendSysMessage(who, "Você examina o objeto com atenção, mas nada de incomum chama sua atenção.", 3, 44);
+	endif
+endfunction
+
+function GetTrapRPPhrase(trap_name, level, skill)
+	// skill é armazenado ×10 por AP_GetSkill (skill 30.0 = raw 300)
+	if (skill < 300)
+		return "Uma sensação inquietante emana do objeto. Algo não está certo, mas você não consegue precisar o quê.";
+	endif
+
+	var type_phrase;
+	case (trap_name)
+		"Needle":      type_phrase := "pequenos orifícios quase imperceptíveis na superfície";
+		"PoisonGas":   type_phrase := "um leve odor acre e adocicado que emana do interior";
+		"Explosion":   type_phrase := "marcas de enxofre e um mecanismo tenso na base";
+		"Magic":       type_phrase := "uma aura perturbadora e fora do natural ao redor do objeto";
+		"SteveDonald": type_phrase := "uma energia sombria e desgastante que emana do objeto";
+		default:       type_phrase := "sinais sutis de um mecanismo oculto";
+	endcase
+
+	if (skill < 600)
+		return "Você nota " + type_phrase + ". O objeto parece conter alguma proteção.";
+	endif
+
+	var intensity_phrase;
+	if (level <= 2)
+		intensity_phrase := "modesta";
+	elseif (level <= 4)
+		intensity_phrase := "considerável";
+	else
+		intensity_phrase := "altamente perigosa";
+	endif
+
+	if (skill < 800)
+		return "Você nota " + type_phrase + ". A ameaça parece ser " + intensity_phrase + ".";
+	endif
+
+	var precise_trap;
+	case (trap_name)
+		"Needle":      precise_trap := "agulhas envenenadas";
+		"PoisonGas":   precise_trap := "gás tóxico";
+		"Explosion":   precise_trap := "carga explosiva";
+		"Magic":       precise_trap := "encantamento protetor de origem arcana";
+		"SteveDonald": precise_trap := "feitiço de envelhecimento";
+		default:       precise_trap := "um mecanismo de natureza desconhecida";
+	endcase
+
+	return "Com olhos treinados, você decifra a proteção: " + precise_trap + " de intensidade " + intensity_phrase + ". Proceda com cautela.";
 endfunction
 
 function DrawObject(ktowhom, kobj, kgraphic, kcolor)
