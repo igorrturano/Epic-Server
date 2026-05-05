@@ -27,7 +27,7 @@ program BrainCriticalScript(params)
 	endif
 
 	NPC_SetupName(npc);
-	Loot_Generate(bag, settings["Loot"]);
+	Loot_Generate(bag, settings["Loot"], npc);
 
 	NPC_SetupColor(npc);
 

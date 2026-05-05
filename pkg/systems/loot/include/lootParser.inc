@@ -15,6 +15,58 @@ var itemdesc_cache := dictionary{};
 
 const LORE_DROPPED_DATAFILE := ":unicos:lore_dropped";
 
+// Phase 2 — coin tier filter helpers.
+// cobre: any tier; prata: NPC tier >= 3; ouro: NPC tier >= 5.
+// source=0 (no NPC, e.g. chests/mining/treasure) => no filter applied.
+
+function Loot_GetNpcTier(npc)
+	if (!npc || npc == error)
+		return 0;
+	endif
+	var tpl_name := npc.npctemplate;
+	if (!tpl_name || tpl_name == error)
+		return 0;
+	endif
+	var npccfg := ReadConfigFile(":*:npcdesc");
+	if (!npccfg || npccfg.errortext)
+		return 0;
+	endif
+	var elem := FindConfigElem(npccfg, tpl_name);
+	if (!elem || elem.errortext)
+		return 0;
+	endif
+	return CInt(elem.Tier);
+endfunction
+
+function Loot_ParsedCoinObjtype(parsed)
+	var ot := parsed.name;
+	var t := TypeOf(ot);
+	if (t != "Long" && t != "Integer")
+		ot := GetObjtypeByName(CStr(ot));
+	endif
+	if (EA_IsCoin(ot))
+		return ot;
+	endif
+	return 0;
+endfunction
+
+function Loot_CoinAllowedForTier(coin_objtype, npc)
+	if (!npc || npc == error)
+		return 1;
+	endif
+	if (coin_objtype == EA_COIN_COBRE)
+		return 1;
+	endif
+	var tier := Loot_GetNpcTier(npc);
+	if (coin_objtype == EA_COIN_PRATA)
+		return (tier >= 3);
+	endif
+	if (coin_objtype == EA_COIN_OURO)
+		return (tier >= 5);
+	endif
+	return 1;
+endfunction
+
 function LoreItems_GetDataFile()
     var df := OpenDataFile(LORE_DROPPED_DATAFILE);
     if (!df)
@@ -69,7 +121,7 @@ function LoreItems_Register(item)
     elem.SetProp("Time", polcore().systime);
 endfunction
 
-function Loot_Generate(container, loot_index)
+function Loot_Generate(container, loot_index, source := 0)
 	if ( !container.IsA(POLCLASS_CONTAINER) )
 		return error{"errortext" := "Object passed was not a container."};
 	endif
@@ -86,26 +138,26 @@ function Loot_Generate(container, loot_index)
 	endif
 
 	foreach line in GetConfigStringArray(index_elem, "Item")
-		Loot_CreateItem(container, line);
+		Loot_CreateItem(container, line, source);
 		sleepms(2);
 	endforeach
 
 	foreach line in GetConfigStringArray(index_elem, "Stack")
-		Loot_CreateStack(container, line);
+		Loot_CreateStack(container, line, source);
 		sleepms(2);
 	endforeach
 
 	foreach line in GetConfigStringArray(index_elem, "Random")
-		Loot_CreateRandom(container, line);
+		Loot_CreateRandom(container, line, source);
 		sleepms(2);
 	endforeach
-	
+
 	foreach line in GetConfigStringArray(index_elem, "Group")
 		if ( line != loot_index )
 			//To do:
 			// Check to make sure were not going back into the same group
 			// to avoid a potential endless loop!
-			Loot_Generate(container, line);
+			Loot_Generate(container, line, source);
 		endif
 		sleepms(2);
 	endforeach
@@ -114,7 +166,7 @@ function Loot_Generate(container, loot_index)
 		Loot_CreateMagic(container, line);
 		sleepms(2);
 	endforeach
-    
+
      Loot_TryAddSealedBook(container);
 	return 1;
 endfunction
@@ -137,7 +189,7 @@ function CacheItemDesc()
     endforeach
 endfunction
 
-function Loot_CreateItem(container, line)
+function Loot_CreateItem(container, line, source := 0)
     var parsed := Loot_ParseString(line);
     var item;
 
@@ -197,15 +249,20 @@ function CreateItemProcess(container, parsed, qtd)
     return item;
 endfunction
 
-function Loot_CreateStack(container, line)
+function Loot_CreateStack(container, line, source := 0)
 	var parsed := Loot_ParseString(line);
 
 	if ( Loot_ChanceCheck(parsed.chance) )
+		var coin_ot := Loot_ParsedCoinObjtype(parsed);
+		if (coin_ot && !Loot_CoinAllowedForTier(coin_ot, source))
+			return 1;
+		endif
+
 		var item := CreateItemProcess(container, parsed, parsed.amount);
 		if ( item.errortext )
 			return error{"errortext" := "Error - Could not create ["+parsed.name+"] ->"+item.errortext};
 		endif
-		EA_Record(EA_MINT_LOOT, item, parsed.amount, 0, container, parsed.name);
+		EA_Record(EA_MINT_LOOT, item, parsed.amount, source, container, parsed.name);
 	endif
 
 	return 1;
@@ -219,7 +276,7 @@ function Loot_InitBottle(item)
 	endif
 endfunction
 
-function Loot_CreateRandom(container, line)
+function Loot_CreateRandom(container, line, source := 0)
     var parsed, groups_cfg, groups_elem, lines, components;
     var all_items, item_count, stackable_count, item_entry, stack_entry;
     var amount, created, i, idx, item, result, qty;
@@ -314,12 +371,12 @@ function Loot_CreateRandom(container, line)
             
             if(item.type == "Stack")
                 qty := RandomDiceRoll(CStr(item.qty));
-                result := Loot_CreateStack(container, item.name + " " + qty + " 100 " + tier);
+                result := Loot_CreateStack(container, item.name + " " + qty + " 100 " + tier, source);
                 if(!result.errortext)
                     created += 1;
                 endif
             else
-                result := Loot_CreateItem(container, item.name + " 1 100 " + tier);
+                result := Loot_CreateItem(container, item.name + " 1 100 " + tier, source);
                 if(!result.errortext)
                     if (parsed.name == "LoreItems" && result.IsA(POLCLASS_ITEM))
                         LoreItems_Register(result);
