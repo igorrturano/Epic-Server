@@ -105,7 +105,7 @@ function DeterminaLiga(metals, who)
         0x6465: metais.append("cobre");
         0x6991: metais.append("estanho");
         0x6460: metais.append("frigutium");
-        0x6310: metais.append("galvorn");
+        0x6310: metais.append("atrium");
         0x6311: metais.append("mithril");
         0x6315: metais.append("illyra");
         0x630b: metais.append("fulmetium");
@@ -128,18 +128,6 @@ function DeterminaLiga(metals, who)
       return 0x6309; //ferro
     elseif (("carvao"  in metais ) && ("ferro" in metais))
       return 0x6995; //aco
-    // elseif (("litan" in metais) && ("estanho" in metais))
-    //   return 0x6601; //stalith
-    // elseif (("galvorn" in metais) && ("fulmetium" in metais))
-    //   return 0x6998; //teslium
-    // elseif (("galvorn" in metais) && ("venetium" in metais))
-    //   return 0x6999; //hissium
-    // elseif (("galvorn" in metais) && ("ignium" in metais))
-    //   return 0x6997; //solium
-    // elseif (("galvorn" in metais) && ("frigutium" in metais))
-    //   return 0x699A; //icelum
-    // elseif (("prata" in metais) && ("fulmetium" in metais))
-    //   return 0x6609; //lunium
     else
       return "noIngot";
     endif

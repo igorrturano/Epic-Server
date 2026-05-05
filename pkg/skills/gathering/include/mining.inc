@@ -126,7 +126,7 @@ function GetResourceId(oreToSearch)
 		"Ignium": return 0x6304;
 		"ouro": return 0x6305;
 		//"durang": return 0x6306;
-		"galvorn": return 0x6307; //TN USED
+		"atrium": return 0x6307; //TN USED
 		"mithril": return 0x6308; //TN USED
 		"frigutium": return 0x6451; //TN USED
         "illyra": return 0x6314;
@@ -346,7 +346,7 @@ function ConvertOreToIngot(ore)
 		0x6309: return 0x6995; // aco a partir de ferro temperado
 		0x6995: return 0x6995; //ligas elementais
 		0x6314: return 0x6315; //illyra
-		0x6307: return 0x6310; //galvorn
+		0x6307: return 0x6310; //atrium
 		0x6308: return 0x6311; //mithril
 		0x6303: return 0x630c; //venetium
 		0x6451: return 0x6460; //frigutium
@@ -508,9 +508,7 @@ enum ORE
 	ORE_FRIGUTITA := "ORE_FRIGUTITA",
 	ORE_FULMETIUM := "ORE_FULMETIUM",
 	ORE_FULMETITA := "ORE_FULMETITA",
-	
-	ORE_LITAN := "ORE_LITAN",
-	
+
 	ORE_ILLYRA := "ORE_ILLYRA",
 	ORE_MITHRIL := "ORE_MITHRIL",
 
