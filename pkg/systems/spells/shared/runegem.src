@@ -6,6 +6,8 @@ include ":runecarving:runeCarving";
 include "include/client";
 include "include/say";
 include "include/epicConstants";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 program runegem(who, rune)
 
@@ -22,8 +24,12 @@ program runegem(who, rune)
 	endif
 
 	var chardata := GetObjProperty(who, "chardata");
-	if (chardata.magia != "Sacerdote" && !(who.cmdlevel > 1))
-		SendSysMessageEx(who, "Apenas Acolitos e Paladinos dominam o conhecimento para confeccao de runas.",
+	var mob := MobileWrapper(who);
+	if (chardata.magia != "Sacerdote"
+	    && !mob.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
+	    && !mob.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO)
+	    && !(who.cmdlevel > 1))
+		SendSysMessageEx(who, "Apenas Acolitos, Paladinos e Cacadores de Demonios dominam o conhecimento para confeccao de runas.",
 				   SSM_FAIL);
 		return 0;
 	endif
