@@ -518,7 +518,19 @@ function ShowExtensiveResearchGump(who, byref gump)
                 continue;
             endif
 
-            if (CheckResearchRequirements(who, 0, selectedPower, recipe) && ValidateResearchParameters(who, recipe) && ConsumeResearchResources(who, recipe))
+            if (!CheckResearchRequirements(who, 0, selectedPower, recipe))
+                selectedType := "";
+                selectedPower := 0;
+                continue;
+            endif
+
+            if (!ValidateResearchParameters(who, recipe))
+                selectedType := "";
+                selectedPower := 0;
+                continue;
+            endif
+
+            if (ConsumeResearchResources(who, recipe))
                 if (InitiateResearch(who, recipe))
                     SendSysMessageEx(who, "Pesquisa extensiva iniciada com sucesso!", SSM_INFO);
                     return 1;
