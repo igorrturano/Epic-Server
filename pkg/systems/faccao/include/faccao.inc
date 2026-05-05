@@ -616,7 +616,7 @@ function SetBoss(npc, boss)
    var skinning_info := array{};
    foreach loot in (boss.loot)
       if(loot.by_group)
-         Loot_Generate(npc.backpack, loot);
+         Loot_Generate(npc.backpack, loot, npc);
       elseif (loot.skinning)
          skinning_info.append(loot);
       elseif( RandomDiceRoll("1d100") <= loot.chance)

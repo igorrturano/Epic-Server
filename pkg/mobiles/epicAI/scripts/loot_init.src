@@ -18,11 +18,12 @@ program LootInit(params)
 
     var container := params[1];
     var loot_index := params[2];
+    var source := (params.size() >= 3) ? params[3] : 0;
 
     if (!container || !loot_index)
         return 0;
     endif
 
-    Loot_Generate(container, loot_index);
+    Loot_Generate(container, loot_index, source);
     return 1;
 endprogram

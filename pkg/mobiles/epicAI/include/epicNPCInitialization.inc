@@ -68,7 +68,7 @@ function InitializeEpicNPC(mobile)
     SetupAmmo(mobile, npccfgfile, mytemplate);
     var loot := npccfgfile[mytemplate].Loot;
     if (loot)
-        start_script(":epicAI:scripts/loot_init", array{mobile.backpack, loot});
+        start_script(":epicAI:scripts/loot_init", array{mobile.backpack, loot, mobile});
     endif
 
     var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
