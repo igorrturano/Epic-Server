@@ -8,6 +8,8 @@ include ":attributes:stats";
 include ":fls_core:packets";
 include ":equipsys:packets/UpdateEquipmentRequest";
 include "include/say";
+include "MagicItemBonus";
+include ":spells:SpellRegistry";
 
 /**
  * SpellController — Unified spell effect orchestrator.
@@ -41,6 +43,19 @@ function SC_ApplyEffect(caster, targ, opts, duration, spellId, timerName := "spe
 	// (e.g. frozen := 1 with no timer to undo it).
 	if (CInt(duration) < 1)
 		return error{"errortext":=$"SC_ApplyEffect: duration must be > 0 (spellId={spellId})"};
+	endif
+
+	// Velkyn focus bonus (Cogumelo staff): extend duration on Velkyn-school
+	// effects. Gated on caster having a non-zero bonus to avoid the config
+	// read on every spell apply — only Velkyn-focus casters pay the lookup.
+	if (caster)
+		var velkynBonus := GetMagicItemVelkynDurationBonus(caster);
+		if (velkynBonus > 0)
+			var spellinfo := ResolveSpell(spellId);
+			if (spellinfo && spellinfo != error && CStr(spellinfo.School) == "Velkyn")
+				duration := duration + velkynBonus;
+			endif
+		endif
 	endif
 
 	// Mutual exclusion: if this spell has a category, displace any other active
