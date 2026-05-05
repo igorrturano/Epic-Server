@@ -121,7 +121,6 @@ function GetResourceId(oreToSearch)
 		"bronze": return 0x699c;
 		"argila": return 0x6074;
 		"ferro": return 0x6300; //TN USED
-		"litan": return 0x6301;
 		"Fulmetium": return 0x6302;
 		"Venetium": return 0x6303;
 		"Ignium": return 0x6304;
@@ -218,7 +217,6 @@ function DetermineMiningDifficulty(oretype)
 		0x62ff: return 45;  // ferro impuro (pig iron)
 		0x6300:	0x6309: return 50;  // ferro (raw + ingot)
 		0x6992: return 55;  // prata
-		0x6301: return 55;  // litan (mantido p/ items existentes em jogadores)
 
 		// Tier 4
 		0x6995: return 60;  // aço
@@ -347,7 +345,6 @@ function ConvertOreToIngot(ore)
 		//0x6309: return 0x6309; //aco -> acho q esse aqui chorou
 		0x6309: return 0x6995; // aco a partir de ferro temperado
 		0x6995: return 0x6995; //ligas elementais
-		0x6301: return 0x630a; //litan
 		0x6314: return 0x6315; //illyra
 		0x6307: return 0x6310; //galvorn
 		0x6308: return 0x6311; //mithril
@@ -533,12 +530,11 @@ function GetOreNameById(ore_id)
         "0x699c": return "Bronze";
         "0x6074": return "Argila";
         "0x6300": return "Ferro";
-        "0x6301": return "Litan";
         "0x6302": return "Fulmetium";
         "0x6303": return "Venetium";
         "0x6304": return "Ignium";
         "0x6305": return "Ouro";
-        "0x6307": return "Galvorn";
+        "0x6307": return "Atrium";
         "0x6308": return "Mithril";
         "0x6451": return "Frigutium";
         "0x6314": return "Illyra";

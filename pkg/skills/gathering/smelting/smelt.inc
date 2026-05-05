@@ -112,7 +112,6 @@ function DeterminaLiga(metals, who)
         0x630c: metais.append("venetium");
         0x630d: metais.append("ignium");
         0x6993: metais.append("prata");
-        0x630a: metais.append("litan");
         0x630e: metais.append("golden");
         0x6995: metais.append("aco");
      endcase
