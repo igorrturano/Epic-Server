@@ -60,7 +60,7 @@ function LimparBordas(mapeador)
 
     var item;
     foreach serial in serials
-        item := FindItemBySerial(serial);
+        item := SystemFindObjectBySerial(serial);
         if (item)
             DestroyItem(item);
         endif
