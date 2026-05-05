@@ -123,7 +123,9 @@ function DeterminaLiga(metals, who)
     //   return 0x6995; //aco
     // elseif (("prata" in metais) && ("estanho" in metais))
     //   return 0x6603; //cristalith
-    if (("carvao"  in metais ) && ("impuro" in metais))
+    if (("cobre"  in metais ) && ("estanho" in metais))
+      return 0x6994; //bronze
+    elseif (("carvao"  in metais ) && ("impuro" in metais))
       return 0x6309; //ferro
     elseif (("carvao"  in metais ) && ("ferro" in metais))
       return 0x6995; //aco
