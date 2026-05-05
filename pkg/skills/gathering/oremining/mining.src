@@ -239,9 +239,6 @@ function mineraRaroAleatorio(who)
 		SendSysMessage(who, "Achou um pouco de frigutium em meio ao minérios.");
 		CreateItemInBackPack(who, 0x6460, 1); // return 70; //frigutium
 		achou := 1;
-	elseif (rand < 1.2)
-		SendSysMessage(who, "Achou um pouco de Litan em meio ao minérios.");
-		return CreateItemInBackPack(who, 0x6301, 1); // return 60; //litan
 	elseif (rand < 1.4)
 		SendSysMessage(who, "Achou um pouco de Ouro em meio ao minérios.");
 		CreateItemInBackPack(who, 0x6305, 1); // return 40; //golden

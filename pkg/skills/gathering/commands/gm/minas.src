@@ -513,9 +513,7 @@ function GetAllOrePossibilities()
 			  	"0x6074",          // argila
 			  	
 			  	"0x6300",          // ferro
-			  	
-			  	"0x6301",          // litan
-			  	
+
 			  	"0x6302",          // Fulmetium
 			  	
 			  	"0x6303",          // Venetium
