@@ -1068,11 +1068,17 @@ function CompleteResearchTimer(params, byref gump)
 endfunction
 
 function DetermineResearchItem(recipe)
+    var skillType;
     case (recipe.type)
         "Instrução de Metalurgia":
+            skillType := (recipe.craftSkillType != error) ? recipe.craftSkillType : "MW";
+            return GetScrollObjtype(skillType, recipe.power);
         "Instrução de Marcenaria":
+            skillType := (recipe.craftSkillType != error) ? recipe.craftSkillType : "WW";
+            return GetScrollObjtype(skillType, recipe.power);
         "Instrução de Trabalho Doméstico":
-            return GetScrollObjtype(recipe.craftSkillType, recipe.power);
+            skillType := (recipe.craftSkillType != error) ? recipe.craftSkillType : "DW";
+            return GetScrollObjtype(skillType, recipe.power);
         "Receita Alquimica": return GetScrollObjtype("alchemy", recipe.power);
         "Tinta":             return GetScrollObjtype("dye", recipe.power);
         "Magia":             return GetMagicScrollObjtype(recipe.power);
@@ -1243,13 +1249,13 @@ function PerformRapidResearch(who, recipe, byref gump)
     case (recipe.type)
         "Instrução de Metalurgia":
             skillname := METALWORKING;
-            recipe.craftSkillType := "MW";
+            recipe.+craftSkillType := "MW";
         "Instrução de Marcenaria":
             skillname := WOODWORKING;
-            recipe.craftSkillType := "WW";
+            recipe.+craftSkillType := "WW";
         "Instrução de Trabalho Doméstico":
             skillname := "Domestic_Work";
-            recipe.craftSkillType := "DW";
+            recipe.+craftSkillType := "DW";
         "Receita Alquimica": skillname := ALCHEMY;
         "Tinta": skillname := ALCHEMY;
         "Magia": 
