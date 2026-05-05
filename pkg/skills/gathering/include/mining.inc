@@ -211,12 +211,14 @@ function DetermineMiningDifficulty(oretype)
 		0x6990: return 30;  // estanho
 		0x6075: return 30;  // areia (alquimia/vidro)
 		0x1BE3: return 35;  // vidro
+		0x6994:	0x699c:	0x699d: return 35;  // bronze (mantido p/ items existentes em jogadores)
 
 		// Tier 3
 		0x8850: return 40;  // mármore
 		0x62ff: return 45;  // ferro impuro (pig iron)
 		0x6300:	0x6309: return 50;  // ferro (raw + ingot)
 		0x6992: return 55;  // prata
+		0x6301: return 55;  // litan (mantido p/ items existentes em jogadores)
 
 		// Tier 4
 		0x6995: return 60;  // aço
