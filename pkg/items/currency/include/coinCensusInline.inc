@@ -1,15 +1,14 @@
-// Phase 4 — Daily census daemon.
-// Iterates all accounts (online + offline), totals cobre/prata/ouro per char,
-// updates coinSupply datafile via UpdateSupplySnapshot.
-// Restart-resilient: persists last_census_day in polsys global. On boot, runs
-// immediately if today_key != last_census_day.
-// Polls every 60s (cheap) to detect day rollover.
+// Phase 4 (revisado) — Census on-demand.
+// Substitui o daemon coinCensus.src. Chamado pelo moneyer no double-click
+// e por .mintstate. Lazy refresh: só roda se virou novo dia desde último.
+//
+// Custo: ~1s na primeira chamada do dia. Gratuito nas seguintes.
+// Race: 2 chamadas simultâneas no mesmo dia rodam 2x, last writer wins.
+// Aceitável (1s desperdiçado raramente).
 
 use uo;
 use os;
 use util;
-use file;
-use basic;
 use polsys;
 
 include "include/epicEconomyAudit";
@@ -19,7 +18,6 @@ include ":containers:storageAreas";
 include ":accounts:accounts";
 
 const CENSUS_GLOBAL_LAST_DAY := "coin_census_last_day";
-const CENSUS_POLL_SECONDS    := 60;
 
 function CountCoinsInPlayer(p, byref total_cobre, byref total_prata, byref total_ouro)
 	if (!p || p == error || p.acctname == error || !p.acctname)
@@ -43,7 +41,7 @@ function CountCoinsInPlayer(p, byref total_cobre, byref total_prata, byref total
 	return 1;
 endfunction
 
-function RunCensus()
+function RunCoinCensus()
 	var total_cobre := 0;
 	var total_prata := 0;
 	var total_ouro  := 0;
@@ -68,26 +66,18 @@ function RunCensus()
 	endforeach
 
 	var today_key := StrFormatTime("%d-%m-%Y", POLCore().systime);
-	var total_eq := UpdateSupplySnapshot(today_key, total_cobre, total_prata, total_ouro);
-	Print("[coinCensus] " + today_key + " — cobre=" + total_cobre +
-		" prata=" + total_prata + " ouro=" + total_ouro +
-		" total_eq=" + total_eq);
-	return today_key;
+	return UpdateSupplySnapshot(today_key, total_cobre, total_prata, total_ouro);
 endfunction
 
-program CoinCensusDaemon()
-	Print("[coinCensus] daemon started");
-
-	while (1)
-		var today_key := StrFormatTime("%d-%m-%Y", POLCore().systime);
-		var last_day := CStr(GetGlobalProperty(CENSUS_GLOBAL_LAST_DAY));
-
-		if (last_day != today_key)
-			Print("[coinCensus] running census for " + today_key + " (last=" + last_day + ")");
-			RunCensus();
-			SetGlobalProperty(CENSUS_GLOBAL_LAST_DAY, today_key);
-		endif
-
-		sleep(CENSUS_POLL_SECONDS);
-	endwhile
-endprogram
+// API pública. Chamar antes de qualquer leitura de supply.
+// No-op se census do dia já rodou.
+function EnsureSupplyFresh()
+	var today_key := StrFormatTime("%d-%m-%Y", POLCore().systime);
+	var last_day := CStr(GetGlobalProperty(CENSUS_GLOBAL_LAST_DAY));
+	if (last_day == today_key)
+		return 1;
+	endif
+	RunCoinCensus();
+	SetGlobalProperty(CENSUS_GLOBAL_LAST_DAY, today_key);
+	return 1;
+endfunction

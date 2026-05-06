@@ -8,8 +8,10 @@ use util;
 
 include "include/epicConstants";
 include ":currency:include/seignorage";
+include ":currency:include/coinCensusInline";
 
 program mintstate(mobile)
+	EnsureSupplyFresh();
 	var supply := GetCurrentSupply();
 	var supply_target := GetSupplyTarget();
 	var ratio := (supply_target > 0) ? (CDbl(supply) / CDbl(supply_target)) : 0.0;
@@ -35,10 +37,23 @@ program mintstate(mobile)
 	SendSysMessage(mobile, "  Ouro:  " + rate_ouro);
 
 	SendSysMessage(mobile, "");
-	SendSysMessage(mobile, "Pool acumulado:");
+	SendSysMessage(mobile, "Pool (Cofre virtual):");
 	SendSysMessage(mobile, "  Cobre: " + GetPoolAmount(SESTERTIUS));
 	SendSysMessage(mobile, "  Prata: " + GetPoolAmount(DENARIUS));
 	SendSysMessage(mobile, "  Ouro:  " + GetPoolAmount(AUREUS));
+
+	// Phase 4.5 — drained today
+	SendSysMessage(mobile, "");
+	SendSysMessage(mobile, "Drenado hoje (drops bonus de NPC):");
+	var cfg_cobre := GetPoolDropConfig(SESTERTIUS);
+	var cfg_prata := GetPoolDropConfig(DENARIUS);
+	var cfg_ouro  := GetPoolDropConfig(AUREUS);
+	var bdg_cobre := cfg_cobre ? cfg_cobre.daily_budget : 0;
+	var bdg_prata := cfg_prata ? cfg_prata.daily_budget : 0;
+	var bdg_ouro  := cfg_ouro  ? cfg_ouro.daily_budget  : 0;
+	SendSysMessage(mobile, "  Cobre: " + GetDrainedToday(SESTERTIUS) + "/" + bdg_cobre);
+	SendSysMessage(mobile, "  Prata: " + GetDrainedToday(DENARIUS) + "/" + bdg_prata);
+	SendSysMessage(mobile, "  Ouro:  " + GetDrainedToday(AUREUS) + "/" + bdg_ouro);
 
 	return 1;
 endprogram
