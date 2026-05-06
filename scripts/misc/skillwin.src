@@ -64,10 +64,10 @@ program core_skillWin(who)
 				ShowHabilidadesPage(gump, who);
 				AddNavigationBar(gump, 2);
 
-			3:
-				gump := GFECreateGump("Menu de Maestria", GUMP_WIDTH, GUMP_HEIGHT);
-				ShowMasteryGump(gump, who);
-				AddNavigationBar(gump, 3);
+			// 3:
+			// 	gump := GFECreateGump("Menu de Maestria", GUMP_WIDTH, GUMP_HEIGHT);
+			// 	ShowMasteryGump(gump, who);
+			// 	AddNavigationBar(gump, 3);
 		endcase
 
 		var input := GFSendGump(who, gump);
