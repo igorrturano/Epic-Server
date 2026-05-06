@@ -1,8 +1,12 @@
-// Phase 4 — Seignorage core.
+// Phase 4 + 4.5 — Seignorage core.
 //
-// Pool: 3 buckets per coin type (cobre/prata/ouro), accumulator only.
-// Pool injection happens via InjectToPool when moneyer/gemvendor pays.
-// V1 não tem drainage — pool só acumula. Phase 5+ pode drenar (eventos GM, fake-coin compensation).
+// Pool: 3 buckets per coin type (cobre/prata/ouro). Counter virtual — não há
+// coin físico armazenado. Tax destrói coin no momento do depósito; pool é
+// budget que NPCs podem usar pra mintar drops bonus (até daily budget).
+//
+// InjectToPool incrementa o counter (representa tax acumulada).
+// DrawFromPool decrementa e mintra coin nova (Phase 4.5 — drops bonus em mob).
+// Excesso acima do daily budget fica "preso" no counter — destruição efetiva.
 //
 // Supply: total cobre-equivalente lido do datafile coinSupply (atualizado pelo cron).
 // Bootstraps a 0 se datafile vazio (sistema novo / pre-launch).
@@ -251,7 +255,7 @@ function InjectToPool(coin_type, amount)
 	return 1;
 endfunction
 
-// Lê saldo atual do pool por moeda (debugging / GM cmd).
+// Lê saldo atual do pool por moeda (debugging / GM cmd). Clampa negativos pra 0.
 function GetPoolAmount(coin_type)
 	var key := CoinPoolKey(coin_type);
 	if (!key)
@@ -265,7 +269,133 @@ function GetPoolAmount(coin_type)
 	if (!elem || elem.errortext)
 		return 0;
 	endif
-	return CInt(elem.GetProp("Amount"));
+	var amount := CInt(elem.GetProp("Amount"));
+	return (amount < 0) ? 0 : amount;
+endfunction
+
+// Phase 4.5 — Identificação de TrueBoss (multiplicador 5x na chance de drop).
+function IsTrueBoss(npc)
+	if (!npc || npc == error)
+		return 0;
+	endif
+	var flag := GetObjProperty(npc, "true_boss");
+	if (flag == error || !flag)
+		return 0;
+	endif
+	return 1;
+endfunction
+
+// Phase 4.5 — Lê config do PoolDrop por moeda do mint.cfg.
+// Retorna struct { chance, dice, min_tier, daily_budget } ou 0 se não configurado.
+function GetPoolDropConfig(coin_type)
+	var key := CoinPoolKey(coin_type);
+	if (!key)
+		return 0;
+	endif
+	var cfg := ReadMintConfig();
+	if (!cfg)
+		return 0;
+	endif
+	// Block name: "Cobre" / "Prata" / "Ouro" (capitalize first letter)
+	var elem_name := Upper(key[1, 1]) + key[2, len(key)];
+	var elem := FindConfigElem(cfg, elem_name);
+	if (!elem || elem.errortext)
+		return 0;
+	endif
+	var c := struct;
+	c.+chance := CDbl(elem.Chance);
+	c.+dice := CStr(elem.DiceRoll);
+	c.+min_tier := CInt(elem.MinTier);
+	c.+daily_budget := CInt(elem.DailyBudget);
+	c.+trueboss_mult := CDbl(elem.TrueBossMultiplier);
+	if (c.trueboss_mult <= 0.0)
+		c.trueboss_mult := 5.0;
+	endif
+	return c;
+endfunction
+
+// Phase 4.5 — Drena do pool com 3 camadas de proteção contra valor negativo
+// + daily budget cap (reset por data). Retorna quantidade efetivamente drenada.
+function DrawFromPool(coin_type, max_amount)
+	if (max_amount <= 0)
+		return 0;
+	endif
+	var key := CoinPoolKey(coin_type);
+	if (!key)
+		return 0;
+	endif
+	var df := OpenDataFile(POOL_DATAFILE);
+	if (!df || df == error)
+		return 0;
+	endif
+	var elem := df.FindElement(key);
+	if (!elem || elem.errortext)
+		return 0;
+	endif
+
+	// (1) Camada: pool atual (clamp negativos pra 0 antes de calcular).
+	var current := CInt(elem.GetProp("Amount"));
+	if (current <= 0)
+		return 0;
+	endif
+
+	// Daily budget tracking: reset DrainedToday se virou dia.
+	var today_key := StrFormatTime("%d-%m-%Y", POLCore().systime);
+	var drain_day := CStr(elem.GetProp("DrainDay"));
+	var drained_today := CInt(elem.GetProp("DrainedToday"));
+	if (drain_day != today_key)
+		drained_today := 0;
+		elem.SetProp("DrainDay", today_key);
+	endif
+
+	var cfg := GetPoolDropConfig(coin_type);
+	var daily_budget := 0;
+	if (cfg)
+		daily_budget := cfg.daily_budget;
+	endif
+
+	if (daily_budget > 0)
+		var remaining_budget := daily_budget - drained_today;
+		if (remaining_budget <= 0)
+			return 0;
+		endif
+		if (max_amount > remaining_budget)
+			max_amount := remaining_budget;
+		endif
+	endif
+
+	// Drena: actual = min(max_amount, current).
+	var actual := (max_amount < current) ? max_amount : current;
+	var new_value := current - actual;
+	// (3) Camada defensiva: clamp em 0 mesmo em race condition.
+	if (new_value < 0)
+		new_value := 0;
+	endif
+	elem.SetProp("Amount", new_value);
+	elem.SetProp("DrainedToday", drained_today + actual);
+	return actual;
+endfunction
+
+// Phase 4.5 — Lê quanto já foi drenado hoje (mintstate cmd).
+function GetDrainedToday(coin_type)
+	var key := CoinPoolKey(coin_type);
+	if (!key)
+		return 0;
+	endif
+	var df := OpenDataFile(POOL_DATAFILE);
+	if (!df || df == error)
+		return 0;
+	endif
+	var elem := df.FindElement(key);
+	if (!elem || elem.errortext)
+		return 0;
+	endif
+	var today_key := StrFormatTime("%d-%m-%Y", POLCore().systime);
+	var drain_day := CStr(elem.GetProp("DrainDay"));
+	if (drain_day != today_key)
+		return 0;
+	endif
+	return CInt(elem.GetProp("DrainedToday"));
 endfunction
 
 // Atualização do snapshot diário — chamada pelo cron.
