@@ -9,6 +9,7 @@
 use cfgfile;
 use datafile;
 use file;
+use guilds;
 use math;
 use os;
 use uo;
@@ -42,17 +43,36 @@ endif
 var staffmode := 0;
 var undo := array{};
 
-program architect_gump(who)
+program architect_gump(params)
 	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); // Adicionado para diminuir a quantidade de logs no arquivo script.log
 
-	if (who.cmdlevel < STAFFMODELEVEL)
-		if (!MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT)) // Habilidade de construcao necessaria para executar o comando
-			SendSysMessageEx(who, "Voce nao tem habilidade de arquiteto.", SSM_INFO);
+	var who, from_item;
+	if (typeof(params) == "Array")
+		who := params[1];
+		from_item := params[2];
+	else
+		who := params;
+		from_item := 0;
+	endif
+
+	if (who.cmdlevel >= STAFFMODELEVEL)
+		staffmode := 1;
+		SendSysMessage(who, "*running in staff mode*");
+	elseif (from_item)
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
+			SendSysMessageEx(who, "Você não tem a habilidade de arquiteto.", SSM_INFO);
+			return 0;
+		endif
+
+		// Facções do tipo "staff" não podem construir com o architect
+		var _guild := who.guild;
+		if (_guild && _guild.GetProp("tipo_faccao") == "staff")
+			SendSysMessageEx(who, "Membros da facção staff não podem usar o architect.", SSM_INFO);
 			return 0;
 		endif
 	else
-		staffmode := 1;
-		SendSysMessage(who, "*running in staff mode*");
+		SendSysMessageEx(who, "Apenas GMs podem usar este comando. Use a ferramenta de construção.", SSM_INFO);
+		return 0;
 	endif
 
 	// TODO Comentado, mas nao sei os riscos
@@ -477,7 +497,7 @@ program architect_gump(who)
 			layout.append("text " + (gpos[1] + 140) + " " + (gpos[2] + 180) + " 40 27"); // Texto Mover
 
 			layout.append("page 10");
-			layout.append("resizepic " + (gpos[1] + 5 + col) + " " + (gpos[2] + row) + " 5100 320 490");
+			layout.append("resizepic " + (gpos[1] + 5 + col) + " " + (gpos[2] + row) + " 5100 700 490");
 			layout.append("button " + (gpos[1] + 8 + col) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
 
 			foreach group in maingroups
@@ -511,9 +531,9 @@ program architect_gump(who)
 			layout.append("button " + (gpos[1] + 8) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
 
 			if (subgroups.size() > 26)
-				layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 320 474");
+				layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 700 474");
 			else
-				layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 240 474");
+				layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 360 474");
 			endif
 
 			foreach subgroup in subgroups
@@ -542,7 +562,7 @@ program architect_gump(who)
 			// page 12: options (save, load...)
 			row := 69;
 			layout.append("page 12");
-			layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 240 456");
+			layout.append("resizepic " + (gpos[1] + 5) + " " + (gpos[2] + row) + " 5100 460 456");
 			layout.append("button " + (gpos[1] + 8) + " " + (gpos[2] + row - 13) + " 2437 2437 0 1");
 
 			layout.append("button " + (gpos[1] + 13) + " " + (gpos[2] + row + 10) + " 2361 2361 1 0 -320");
@@ -1559,6 +1579,7 @@ program architect_gump(who)
 		// sub group chosen
 		elseif (result[0] < -100)
 			choice[3] := subgroups[Abs(result[0] + 100)];
+			DrawResourcesOnGump(choice[3], who);
 			groupparts := GetConfigStringArray(parts[choice[2]], choice[3]);
 			makeArrayNumerical(groupparts);
 			groupparts.sort();
@@ -1703,39 +1724,62 @@ endfunction
  *         0 if they aren't
 */
 function check_coords(who, coords)
-
-	if (staffmode)
+	// 1. BYPASS DE GM: Se for Staff, ignora as regras e constrói em qualquer lugar.
+	if (who.cmdlevel >= 1)
 		return 1;
 	endif
 
-	// Retorna a localizacao de onde esta a pessoa
-	var where := GetResidenciasRegion(who);
-
-	var df := opendatafile(":architect:areas");
-	if (df == error)
-		df := createdatafile(":architect:areas");
-	endif
-
-	var elem := df.FindElement(where);
-	// Se nao tiver a prop Name, ele da um erro para nao conseguir construir fora do contexto da area
-	if (!elem.GetProp("Name"))
-		SendSysMessage(who, lang["outofbounds"]);
+	// 2. CARREGAR DADOS: Abre o arquivo de áreas que o seu Rectangle Creator usa.
+	var df := OpenDataFile(":architect:areas");
+	if (!df)
+		SendSysMessage(who, "Erro: Sistema de áreas não inicializado.");
 		return 0;
 	endif
 
-	// Verificar se o território pertence a uma facção
-	var faction := elem.GetProp("Faction");
-	if (faction && faction != "Selvagem")
-		// Território tem dono — apenas membros dessa facção podem construir
-		var guild := who.guild;
-		if (!guild || guild.GetProp("name") != faction)
-			SendSysMessage(who, "Este território pertence à facção '" + faction + "'. Apenas seus membros podem construir aqui.");
-			return 0;
+	// 3. BUSCAR ÁREA: Verifica se o local clicado (coords) pertence a algum retângulo.
+	foreach key in (df.Keys())
+		var region := df.FindElement(key);
+		var rect_str := region.GetProp("Rect");
+		var realm := region.GetProp("Realm");
+		var faction_owner := region.GetProp("Faction");
+
+		if (who.realm == realm)
+			var r := SplitWords(rect_str);
+			var x1 := CInt(r[1]); var y1 := CInt(r[2]);
+			var x2 := CInt(r[3]); var y2 := CInt(r[4]);
+
+			// Normalização (Garante que x1/y1 seja o menor e x2/y2 o maior)
+			if (x1 > x2) var t := x1; x1 := x2; x2 := t; endif
+			if (y1 > y2) var t := y1; y1 := y2; y2 := t; endif
+
+			// Verifica se o clique está dentro deste retângulo
+			if (coords.x >= x1 && coords.x <= x2 && coords.y >= y1 && coords.y <= y2)
+				
+				// A área foi encontrada! Agora verificamos o dono.
+				
+				// Se a área for "Selvagem", ninguém constrói (precisa dominar com totem antes).
+				if (!faction_owner || faction_owner == "Selvagem")
+					SendSysMessage(who, "Este território é selvagem. Sua facção precisa dominá-lo com um totem para construir aqui.");
+					return 0;
+				endif
+
+				// Verifica se o jogador pertence à facção dona da área (full ou honorário).
+				var player_guild := who.guild;
+				if (!player_guild || player_guild.GetProp("name") != faction_owner)
+					SendSysMessage(who, "Este território pertence à facção '" + faction_owner + "'. Você não tem permissão para construir aqui.");
+					return 0;
+				endif
+
+				// Se passou em tudo, permite a construção.
+				return 1; 
+			endif
 		endif
-	endif
+		sleepms(2);
+	endforeach
 
-	return 1;
-
+	// 4. FORA DE ÁREA: Se não encontrou nenhum retângulo no local do clique.
+	SendSysMessage(who, "Você só pode construir dentro de territórios dominados por sua facção.");
+	return 0;
 endfunction
 
 
@@ -1764,13 +1808,11 @@ function create_marked(who, x, y, z, type)
 
 	// Obter objtype de cada recurso
 	var resourceTypeConfig := ReadConfigFile(":architect:config/resource_type");
-	var resourcesIdList := GetConfigStringArray(FindconfigElem(resourceTypeConfig, resourceName),
-												 "resourcesIdList");
-	var resourcesNameList := GetConfigStringArray(FindconfigElem(resourceTypeConfig, resourceName),
-											   "resourcesNameList");
+	var resourcesIdList := GetConfigStringArray(FindconfigElem(resourceTypeConfig, resourceName), "resourcesIdList");
+	var resourcesNameList := GetConfigStringArray(FindconfigElem(resourceTypeConfig, resourceName), "resourcesNameList");
 
 	// Verifica se tem recursos suficientes
-	if (!staffmode) // Se não for staff, verifica os recursos
+	if (who.cmdlevel < 1) // Se for PLAYER (cmdlevel 0)
 		var total_recursos := CheckResources(who, resourcesNameList, quantity, prop);
 
 		if (total_recursos < quantity)
@@ -1780,38 +1822,28 @@ function create_marked(who, x, y, z, type)
 
 		// Subtrair os recursos da mochila
 		item_obj_type := SubtractResources(who, resourcesIdList, resourcesNameList, quantity);
+		SendSysMessageEx(who, "Voce usou o(s) recurso(s).", SSM_INFO);
+	else
+		// Se for STAFF
+		SendSysMessageEx(who, "Voce nao pagou nada por ser GM.", SSM_INFO);
 	endif
 
-	SendSysMessageEx(who, "Voce usou o(s) recurso(s).", SSM_INFO);
-	
 	// Trata Z e Faceta
 	var z_real := z;
 	var target_realm := who.realm;
-	
-	// Removido o hardcode antigo do britannia_alt que jogava o boneco pro z-60
-	// Agora ele segue exatamente a variavel z que veio do menu!
-	
 	var obj_type := CInt(type);
 	
-	// Heavy Debug Logging
-	SendSysMessage(who, "[DEBUG-ARQUITETO] Tentando spawnar: ObjType=" + obj_type + " | X=" + x + " | Y=" + y + " | Z=" + z_real + " | Reino=" + target_realm);
-	LogToFile("log/architect_debug.txt", "DEBUG-ARQUITETO: Jogador=" + who.name + " (" + who.serial + ") -> Type=" + obj_type + " (" + Hex(obj_type) + "), XYZ=(" + x + "," + y + "," + z_real + "), Realm=" + target_realm);
-	
+	// Spawn do item
 	var created := CreateItemAtLocation(x, y, z_real, obj_type, 1, target_realm);
 	
 	if (created == error)
-		SendSysMessage(who, "[ERRO FATAL ARQUITETO] CreateItem falhou: " + created.errortext);
-		LogToFile("log/architect_debug.txt", "  -> ERRO FATAL: " + created.errortext);
+		SendSysMessage(who, "[ERRO] CreateItem falhou: " + created.errortext);
 		return 0;
 	endif
 	
-	SendSysMessage(who, "[DEBUG-ARQUITETO] Item CRIADO com sucesso! Serial: " + created.serial);
-	LogToFile("log/architect_debug.txt", "  -> SUCESSO: Serial " + created.serial + " | Coodernadas finais do item: XYZ=(" + created.x + "," + created.y + "," + created.z + ") Realm=" + created.realm);
-	
 	created.movable := 0;
-
 	SetObjProperty(created, "built_by_architect", who.serial);
-	SetObjProperty(created, "architect_objtype", obj_type); // Modificado para obj_type correto
+	SetObjProperty(created, "architect_objtype", obj_type);
 	SetObjProperty(created, PROPNAME_INDESTRUTIVEL, 1);
 
 	SetupNewLockDoor(who, created);
@@ -1828,16 +1860,25 @@ function SetupNewLockDoor(who, created)
 			if (targ)
 				if (targ.objtype == 4001)
 					if (!created.isDoor())
-						var lvl := Cint(GetObjProperty(targ, "level"));
+						var lvl := PegaValorFabricacao(targ, CARACTERISTICA_FABRICACAO_TRANCA);
 						if (!lvl)
 							lvl := 1;
+						else
+							lvl := lvl > 5?  5 : lvl;
 						endif
 						SetObjProperty(created, "level", lvl);
 					endif
-					var lockid := CInt(GetObjProperty(targ, "LockId"));
+					var lockid := AllocLockId();
 					SetObjProperty(created, "LockId", lockid);
-					DestroyItem(targ);
-					SendSysMessageEx(who, "Voce instalou a fechadura com sucesso.", SSM_INFO);
+					var key := CreateItemInBackpack( who, "ironkey", 1 );
+					if(!key)
+						DestroyItem(created);
+						SendSysMessageEx(who, "Não foi possível criar a chave para esta fechadura.", SSM_FAIL);
+					else
+						SetObjProperty( key, "LockId", lockid );
+						DestroyItem(targ);
+						SendSysMessageEx(who, "Voce instalou a fechadura com sucesso.", SSM_INFO);
+					endif
 				else
 					SendSysMessageEx(who, "Isto nao parece uma fechadura.", SSM_FAIL);
 				endif

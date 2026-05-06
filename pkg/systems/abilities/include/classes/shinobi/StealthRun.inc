@@ -4,6 +4,7 @@ use os;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":attributes:attributes";
+include ":timedScripts:timedScripts";
 
 /**
  * Corrida Furtiva (Stealth Run) - ABILITY_ID::STEALTH_RUN (1303)
@@ -39,17 +40,9 @@ class StealthRun(CombatAbility)
 			Message($"[STEALTH_RUN] Concealed por {duration}s (Sneak: {sneakSkill})", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
-		var expires := ReadGameClock() + duration;
-		while (ReadGameClock() < expires)
-			if (who.warmode)
-				break;
-			endif
-			sleepms(500);
-		endwhile
-
-		if (who.concealed)
-			who.concealed := 0;
-		endif
+		// Concealment auto-clears when the "conceal" timer expires (fimconceal subscript).
+		// ExecuteOn returns immediately so the brain script doesn't block.
+		TS_StartTimer(who, "conceal", duration);
 
 		return true;
 	endfunction

@@ -1,0 +1,426 @@
+use uo;
+use os;
+use basic;
+
+include ":gumps:/include/gumps";
+include ":gumps:/include/gumps_ex";
+include ":brainAI:npcCommands";
+include ":correios:include/correio_data";
+include ":correios:include/correio_banking";
+include ":correios:include/jornal_engine";
+include ":correios:scripts/gumps/jornal_editor";
+
+// Páginas
+const PAG_INTRO       := 1;
+const PAG_CRIAR       := 2;
+const PAG_LISTAR      := 3;
+const PAG_MEU_JORNAL  := 4;
+const PAG_PUBLICAR    := 5;
+const PAG_ASSINATURAS := 6;
+
+// Botões intro
+const BTN_IR_CRIAR       := 1;
+const BTN_IR_LISTAR      := 2;
+const BTN_IR_MEU_JORNAL  := 3;
+const BTN_IR_ASSINATURAS := 4;
+const BTN_FECHAR         := 5;
+
+// Botões criar
+const BTN_CRIAR_CONFIRMAR := 10;
+const BTN_CRIAR_VOLTAR    := 11;
+const TXT_NOME_JORNAL     := 1;
+
+// Botões meu jornal
+const BTN_PUBLICAR  := 20;
+const BTN_MEU_VOLTAR := 21;
+
+// Botões listar/assinar (base 40)
+const BTN_LISTAR_VOLTAR := 39;
+const BTN_ASSINAR_BASE  := 40;
+
+// Botões assinaturas/cancelar (base 60)
+const BTN_ASSIN_VOLTAR  := 59;
+const BTN_CANCELAR_BASE := 60;
+
+set_script_option(SCRIPTOPT_NO_INTERRUPT, 1);
+
+program JornaleiroMenu(params)
+	var npc    := params[1];
+	var player := params[2];
+	var pag    := PAG_INTRO;
+
+	while (1)
+		case (pag)
+			PAG_INTRO:       pag := _PagIntro(player);
+			PAG_CRIAR:       pag := _PagCriar(player, npc);
+			PAG_LISTAR:      pag := _PagListar(player, npc);
+			PAG_MEU_JORNAL:  pag := _PagMeuJornal(player, npc);
+			PAG_PUBLICAR:    pag := _PagPublicar(player, npc);
+			PAG_ASSINATURAS: pag := _PagAssinaturas(player);
+			default:         return;
+		endcase
+	endwhile
+endprogram
+
+// ── Pág 1: Menu principal ─────────────────────────────────────────────────────
+
+function _PagIntro(player)
+	var w := 390;
+	var h := 290;
+	var gump := GFCreateGump(player);
+	GFGumpPicTiled(gump, 0, 0, w, h, 39929);
+	_JMoldura(gump, w, h);
+
+	GFHTMLArea(gump, 0, 10, w, 22,
+		"<center><basefont color=\"#F0E8A0\" size=\"4\">Correios</basefont></center>", 0, 0);
+	GFResizePic(gump, 10, 33, 9200, w-20, 2);
+
+	var y := 58;
+	GFAddButton(gump, 30, y,   0x0FA, 0x0FB, GF_CLOSE_BTN, BTN_IR_CRIAR);
+	GFHTMLArea(gump,  62, y-2, 280,   22,
+		"<basefont color=\"#EEEEEE\" size=\"3\">Criar Publicacao</basefont>", 0, 0);
+	y := y + 34;
+	GFAddButton(gump, 30, y,   0x0FA, 0x0FB, GF_CLOSE_BTN, BTN_IR_LISTAR);
+	GFHTMLArea(gump,  62, y-2, 280,   22,
+		"<basefont color=\"#EEEEEE\" size=\"3\">Assinaturas</basefont>", 0, 0);
+	y := y + 34;
+	GFAddButton(gump, 30, y,   0x0FA, 0x0FB, GF_CLOSE_BTN, BTN_IR_MEU_JORNAL);
+	GFHTMLArea(gump,  62, y-2, 280,   22,
+		"<basefont color=\"#EEEEEE\" size=\"3\">Gerenciar meu jornal</basefont>", 0, 0);
+	y := y + 34;
+	GFAddButton(gump, 30, y,   0x0FA, 0x0FB, GF_CLOSE_BTN, BTN_IR_ASSINATURAS);
+	GFHTMLArea(gump,  62, y-2, 280,   22,
+		"<basefont color=\"#EEEEEE\" size=\"3\">Minhas assinaturas</basefont>", 0, 0);
+	y := y + 48;
+	GFAddButton(gump, 30, y,   0x0F4, 0x0F5, GF_CLOSE_BTN, BTN_FECHAR);
+	GFHTMLArea(gump,  62, y-2, 280,   22,
+		"<basefont color=\"#AAAAAA\" size=\"3\">Fechar</basefont>", 0, 0);
+
+	var input := GFSendGump(player, gump);
+	if (!input)
+		return 0;
+	endif
+
+	case (input[0])
+		BTN_IR_CRIAR:       return PAG_CRIAR;
+		BTN_IR_LISTAR:      return PAG_LISTAR;
+		BTN_IR_MEU_JORNAL:  return PAG_MEU_JORNAL;
+		BTN_IR_ASSINATURAS: return PAG_ASSINATURAS;
+		default:            return 0;
+	endcase
+endfunction
+
+// ── Pág 2: Criar jornal ───────────────────────────────────────────────────────
+
+function _PagCriar(player, npc)
+	var pub_existente := CorreioGetPlayerPublication(player.serial);
+	if (pub_existente != error)
+		SendSysMessage(player, "Voce ja possui um jornal: " + pub_existente.nome);
+		return PAG_INTRO;
+	endif
+
+	var custo := 100;
+	var saldo  := CorreioGetBalance(player);
+	var w := 390;
+	var h := 250;
+
+	var gump := GFCreateGump(player);
+	GFGumpPicTiled(gump, 0, 0, w, h, 39929);
+	_JMoldura(gump, w, h);
+
+	GFAddButton(gump, 12, 10,  0x0F4, 0x0F5, GF_CLOSE_BTN, BTN_CRIAR_VOLTAR);
+	GFHTMLArea(gump,  38, 9,   80,    20,
+		"<basefont color=\"#CCCCCC\" size=\"3\">Voltar</basefont>", 0, 0);
+	GFHTMLArea(gump, 100, 9, w-120, 22,
+		"<center><basefont color=\"#F0E8A0\" size=\"4\">Criar Publicacao</basefont></center>", 0, 0);
+	GFResizePic(gump, 10, 33, 9200, w-20, 2);
+
+	GFHTMLArea(gump, 25, 48, 80, 20,
+		"<basefont color=\"#EEEEEE\" size=\"3\">Nome</basefont>", 0, 0);
+	GFResizePic(gump, 100, 46, 0x0BB8, 265, 28);
+	GFTextEntry(gump, 105, 51, 255, 20, 2100, "", TXT_NOME_JORNAL, 0);
+
+	GFHTMLArea(gump, 25, 90, 300, 20,
+		"<basefont color=\"#AAAAAA\" size=\"3\">Custo de criacao: " + custo + " moedacobre</basefont>", 0, 0);
+	GFHTMLArea(gump, 25, 110, 300, 20,
+		"<basefont color=\"#AAAAAA\" size=\"3\">Saldo atual: " + saldo + " moedacobre</basefont>", 0, 0);
+
+	GFAddButton(gump, w-100, h-44, 0x0FA, 0x0FB, GF_CLOSE_BTN, BTN_CRIAR_CONFIRMAR);
+	GFHTMLArea(gump,  w-74,  h-45, 80,    22,
+		"<basefont color=\"#EEEEEE\" size=\"3\">OK</basefont>", 0, 0);
+
+	var input := GFSendGump(player, gump);
+	if (!input)
+		return PAG_INTRO;
+	endif
+
+	case (input[0])
+		BTN_CRIAR_VOLTAR: return PAG_INTRO;
+		BTN_CRIAR_CONFIRMAR:
+			var nome := GFExtractData(input, TXT_NOME_JORNAL);
+			if (!nome || nome == "")
+				SendSysMessage(player, "Digite um nome para o jornal.");
+				return PAG_CRIAR;
+			endif
+			var res := JornalCreatePublication(player, nome);
+			if (res == error)
+				SendSysMessage(player, "Erro: " + res.errortext);
+				return PAG_CRIAR;
+			endif
+			AI_Speak(npc, "Parabens! O jornal '" + nome + "' foi registrado!");
+			return PAG_INTRO;
+		default: return PAG_INTRO;
+	endcase
+endfunction
+
+// ── Pág 3: Publicações disponíveis (assinar) ──────────────────────────────────
+
+function _PagListar(player, npc)
+	var pubs  := CorreioGetAllPublications();
+	var custo := 2;
+	var w := 390;
+	var h := 350;
+
+	var gump := GFCreateGump(player);
+	GFGumpPicTiled(gump, 0, 0, w, h, 39929);
+	_JMoldura(gump, w, h);
+
+	GFAddButton(gump, 12, 10,  0x0F4, 0x0F5, GF_CLOSE_BTN, BTN_LISTAR_VOLTAR);
+	GFHTMLArea(gump,  38, 9,   80,    20,
+		"<basefont color=\"#CCCCCC\" size=\"3\">Voltar</basefont>", 0, 0);
+	GFHTMLArea(gump, 100, 9, w-120, 22,
+		"<center><basefont color=\"#F0E8A0\" size=\"4\">Correios</basefont></center>", 0, 0);
+	GFResizePic(gump, 10, 33, 9200, w-20, 2);
+
+	GFHTMLArea(gump, 25, 40, w-50, 22,
+		"<basefont color=\"#EEEEEE\" size=\"3\">Publicacoes disponiveis</basefont>", 0, 0);
+	GFHTMLArea(gump, 25, 58, w-50, 18,
+		"<basefont color=\"#AAAAAA\" size=\"2\">Assinatura: " + custo + " moedacobre / edicao</basefont>", 0, 0);
+
+	if (!pubs || pubs.Size() == 0)
+		GFHTMLArea(gump, 25, 110, w-50, 40,
+			"<center><basefont color=\"#777777\" size=\"3\">[ Nenhuma publicacao disponivel ]</basefont></center>",
+			0, 0);
+	else
+		var y := 82;
+		var i := 0;
+		foreach pub in (pubs)
+			if (pub.owner_serial == player.serial)
+				i := i + 1;
+				continue;
+			endif
+			var ja_assina := (player.serial in pub.subscribers);
+			if (ja_assina)
+				GFHTMLArea(gump, 30, y, w-60, 20,
+					"<basefont color=\"#88CC88\" size=\"3\">[Assinado] " + pub.nome +
+					" — " + pub.subscribers.Size() + " assinante(s)</basefont>", 0, 0);
+			else
+				GFAddButton(gump, 25, y, 0x0FA, 0x0FB, GF_CLOSE_BTN, BTN_ASSINAR_BASE + i);
+				GFHTMLArea(gump,  55, y-2, w-80, 22,
+					"<basefont color=\"#EEEEEE\" size=\"3\">" + pub.nome +
+					" <basefont color=\"#AAAAAA\" size=\"2\">(" + pub.subscribers.Size() +
+					" assinante(s))</basefont></basefont>", 0, 0);
+			endif
+			y := y + 28;
+			i := i + 1;
+			if (i >= 8)
+				break;
+			endif
+		endforeach
+	endif
+
+	var input := GFSendGump(player, gump);
+	if (!input)
+		return PAG_INTRO;
+	endif
+
+	var btn := input[0];
+	if (btn == BTN_LISTAR_VOLTAR || btn == 0)
+		return PAG_INTRO;
+	endif
+
+	var idx := btn - BTN_ASSINAR_BASE;
+	if (idx >= 0 && idx < pubs.Size())
+		var pub := pubs[idx + 1];
+		var res := JornalSubscribe(player, pub.pub_id);
+		if (res == error)
+			SendSysMessage(player, "Erro: " + res.errortext);
+		else
+			AI_Speak(npc, "Voce agora assina o jornal '" + pub.nome + "'!");
+		endif
+	endif
+
+	return PAG_LISTAR;
+endfunction
+
+// ── Pág 4: Gerenciar meu jornal ───────────────────────────────────────────────
+
+function _PagMeuJornal(player, npc)
+	var pub := CorreioGetPlayerPublication(player.serial);
+	var w := 390;
+	var h := 270;
+
+	var gump := GFCreateGump(player);
+	GFGumpPicTiled(gump, 0, 0, w, h, 39929);
+	_JMoldura(gump, w, h);
+
+	GFAddButton(gump, 12, 10,  0x0F4, 0x0F5, GF_CLOSE_BTN, BTN_MEU_VOLTAR);
+	GFHTMLArea(gump,  38, 9,   80,    20,
+		"<basefont color=\"#CCCCCC\" size=\"3\">Voltar</basefont>", 0, 0);
+	GFHTMLArea(gump, 100, 9, w-120, 22,
+		"<center><basefont color=\"#F0E8A0\" size=\"4\">Gerenciar Jornal</basefont></center>", 0, 0);
+	GFResizePic(gump, 10, 33, 9200, w-20, 2);
+
+	if (pub == error)
+		GFHTMLArea(gump, 25, 70, w-50, 40,
+			"<center><basefont color=\"#AAAAAA\" size=\"3\">Voce nao possui um jornal registrado.</basefont></center>",
+			0, 0);
+		GFHTMLArea(gump, 25, 110, w-50, 40,
+			"<center><basefont color=\"#777777\" size=\"2\">Use 'Criar Publicacao' no menu principal.</basefont></center>",
+			0, 0);
+	else
+		GFHTMLArea(gump, 25, 44, w-50, 22,
+			"<basefont color=\"#F0E8A0\" size=\"4\"><b>" + pub.nome + "</b></basefont>", 0, 0);
+		GFHTMLArea(gump, 25, 70, w-50, 18,
+			"<basefont color=\"#EEEEEE\" size=\"3\">Edicoes publicadas: " + pub.edicoes + "</basefont>", 0, 0);
+		GFHTMLArea(gump, 25, 90, w-50, 18,
+			"<basefont color=\"#EEEEEE\" size=\"3\">Assinantes: " + pub.subscribers.Size() + "</basefont>", 0, 0);
+
+		GFResizePic(gump, 10, 115, 9200, w-20, 2);
+
+		GFAddButton(gump, 25, 130, 0x0FA, 0x0FB, GF_CLOSE_BTN, BTN_PUBLICAR);
+		GFHTMLArea(gump,  57, 128, 280,   22,
+			"<basefont color=\"#EEEEEE\" size=\"3\">Enviar nova edicao</basefont>", 0, 0);
+	endif
+
+	var input := GFSendGump(player, gump);
+	if (!input)
+		return PAG_INTRO;
+	endif
+
+	case (input[0])
+		BTN_PUBLICAR:   return PAG_PUBLICAR;
+		BTN_MEU_VOLTAR: return PAG_INTRO;
+		default:        return PAG_INTRO;
+	endcase
+endfunction
+
+// ── Pág 5: Publicar edição (editor de blocos) ─────────────────────────────────
+
+function _PagPublicar(player, npc)
+	var pub := CorreioGetPlayerPublication(player.serial);
+	if (pub == error)
+		SendSysMessage(player, "Voce nao possui um jornal.");
+		return PAG_INTRO;
+	endif
+
+	var html := JornalEditorGump(player);
+
+	if (!html || html == "" || html == error)
+		return PAG_MEU_JORNAL;
+	endif
+
+	var res := JornalPublishEdition(player, html);
+	if (res == error)
+		SendSysMessage(player, "Erro ao publicar: " + res.errortext);
+		return PAG_MEU_JORNAL;
+	endif
+
+	AI_Speak(npc, "Edicao " + res + " do jornal '" + pub.nome + "' publicada para " +
+	         pub.subscribers.Size() + " assinante(s)!");
+	return PAG_INTRO;
+endfunction
+
+// ── Pág 6: Minhas assinaturas ─────────────────────────────────────────────────
+
+function _PagAssinaturas(player)
+	var todas  := CorreioGetAllPublications();
+	var minhas := array{};
+
+	foreach pub in (todas)
+		if (player.serial in pub.subscribers)
+			minhas.Append(pub);
+		endif
+	endforeach
+
+	var w := 390;
+	var h := 340;
+
+	var gump := GFCreateGump(player);
+	GFGumpPicTiled(gump, 0, 0, w, h, 39929);
+	_JMoldura(gump, w, h);
+
+	GFAddButton(gump, 12, 10,  0x0F4, 0x0F5, GF_CLOSE_BTN, BTN_ASSIN_VOLTAR);
+	GFHTMLArea(gump,  38, 9,   80,    20,
+		"<basefont color=\"#CCCCCC\" size=\"3\">Voltar</basefont>", 0, 0);
+	GFHTMLArea(gump, 100, 9, w-120, 22,
+		"<center><basefont color=\"#F0E8A0\" size=\"4\">Correios</basefont></center>", 0, 0);
+	GFResizePic(gump, 10, 33, 9200, w-20, 2);
+
+	GFHTMLArea(gump, 25, 40, w-50, 22,
+		"<basefont color=\"#EEEEEE\" size=\"3\">Minhas assinaturas</basefont>", 0, 0);
+
+	if (minhas.Size() == 0)
+		GFHTMLArea(gump, 25, 110, w-50, 40,
+			"<center><basefont color=\"#777777\" size=\"3\">[ Voce nao assina nenhum jornal ]</basefont></center>",
+			0, 0);
+	else
+		var y := 68;
+		var i := 0;
+		foreach pub in (minhas)
+			var label := pub.nome + " <basefont color=\"#AAAAAA\" size=\"2\">(Ed." + pub.edicoes + ")</basefont>";
+			GFAddButton(gump, 25, y, 0x0F4, 0x0F5, GF_CLOSE_BTN, BTN_CANCELAR_BASE + i);
+			GFHTMLArea(gump,  55, y-2, w-80, 22,
+				"<basefont color=\"#EEEEEE\" size=\"3\">" + label + "</basefont>", 0, 0);
+			y := y + 28;
+			i := i + 1;
+			if (i >= 8)
+				break;
+			endif
+		endforeach
+		GFHTMLArea(gump, 25, h-52, w-50, 18,
+			"<basefont color=\"#888888\" size=\"2\">Clique em uma assinatura para cancelar.</basefont>",
+			0, 0);
+	endif
+
+	var input := GFSendGump(player, gump);
+	if (!input)
+		return PAG_INTRO;
+	endif
+
+	var btn := input[0];
+	if (btn == BTN_ASSIN_VOLTAR || btn == 0)
+		return PAG_INTRO;
+	endif
+
+	var idx := btn - BTN_CANCELAR_BASE;
+	if (idx >= 0 && idx < minhas.Size())
+		var pub := minhas[idx + 1];
+		var res := JornalUnsubscribe(player, pub.pub_id);
+		if (res == error)
+			SendSysMessage(player, "Erro: " + res.errortext);
+		else
+			SendSysMessage(player, "Assinatura de '" + pub.nome + "' cancelada.");
+		endif
+	endif
+
+	return PAG_ASSINATURAS;
+endfunction
+
+// ── Moldura dourada (cantos + fundo) ─────────────────────────────────────────
+
+function _JMoldura(byref gump, width, height)
+	var pecas := array{
+		struct{ x := 0,         y := 0,          w := 25,        h := 25,        g := 39925 },
+		struct{ x := width-25,  y := 0,          w := 35,        h := 25,        g := 39927 },
+		struct{ x := 25,        y := 0,          w := width-41,  h := 25,        g := 39926 },
+		struct{ x := 25,        y := height-25,  w := width-25,  h := 35,        g := 39932 },
+		struct{ x := 0,         y := 25,         w := 10,        h := height-50, g := 39928 },
+		struct{ x := width-25,  y := 25,         w := 35,        h := height-50, g := 39930 },
+		struct{ x := width-25,  y := height-25,  w := 35,        h := 35,        g := 39933 },
+		struct{ x := 0,         y := height-25,  w := 35,        h := 35,        g := 39931 }
+	};
+	foreach p in pecas
+		GFGumpPicTiled(gump, p.x, p.y, p.w, p.h, p.g);
+	endforeach
+endfunction

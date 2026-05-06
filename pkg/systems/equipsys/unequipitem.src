@@ -3,6 +3,7 @@ include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
 include "packets/UpdateEquipmentRequest";
+include ":combat:Model/ManaModFabricacao";
 
 program unequipitem(params)
 	var who := params[1];
@@ -28,16 +29,26 @@ program unequipitem(params)
 		endif
 	endif
 
-	if (item.IsA(POLCLASS_ARMOR))
-		var tipoProtecao := equip.GetTipoProtecao();
-		if (tipoProtecao["Armadura Media"] && who.HasAbility(ABILITY_ID::MEDIUM_ARMOR_SPEC))
-			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 1));
-		elseif (tipoProtecao["Armadura Pesada"] && who.HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
-			equip.SetModifier(AttributeModifier(DEXTERITY, equip.GetModifier(DEXTERITY).GetValue() + 2));
+	if (item.IsA(POLCLASS_ARMOR) && equip.IsShield())
+		var chardata := GetObjProperty(who.GetObjRef(), "chardata");
+		var isScutum := {0x1B76, 0x1B77, 0xFA62};
+		if (chardata.trait == "Força da Legião" && (item.objtype in isScutum))
+			var dexMod := equip.GetModifier(DEXTERITY).GetValue();
+			equip.SetModifier(AttributeModifier(DEXTERITY, CInt(dexMod / 2)));
 		endif
 	endif
 
+	who.TriggerUnequipPassives(equip);
 	who.RemoveItemModifiers(equip);
-	Start_Script("packets/AssyncUpdateEquipment", array{who.GetObjRef(), false, item, layer});
+
+	// Magic-focus mana mods — reverse of equipitem.src ManaModFabricacao apply.
+	if (item.IsA(POLCLASS_WEAPON))
+		var cat := equip.GetCategory();
+		if (cat == WEAPON_CATEGORY::STAFF || cat == WEAPON_CATEGORY::WAND || cat == WEAPON_CATEGORY::SPELLBOOK)
+			ManaModFabricacao(item).RemoveFrom(who.GetObjRef());
+		endif
+	endif
+
+	Start_Script("packets/AssyncUpdateEquipment", array{who, false, item, layer});
 	return 1;
 endprogram

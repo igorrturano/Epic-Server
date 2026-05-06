@@ -4,11 +4,11 @@ const PACKET_ID_GENERIC_COMMANDS_SUBCMD_UPDT_EQUIP := 0x63;
 
 //ENUMS
 enum class PACKET_BYTE_TYPE
-	INT,
-	BYTE,
-	DBL,
-	STR,
-	UNI_STR,
+	INT := 1,
+	BYTE := 2,
+	DBL := 3,
+	STR := 4,
+	UNI_STR := 5,
 endenum
 
 enum class PACKET_ENDIAN

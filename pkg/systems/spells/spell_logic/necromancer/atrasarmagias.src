@@ -5,18 +5,27 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
-	params := 0; // No longer needed
+	var spell := params[3];
+	params := 0;
 
-	TS_StartTimer(who, "atrasarmagias", cint(AP_GetSkill(who, ARCANA)) / 2,
-			   AP_GetSkill(who, ARCANA) * 20, who, 0); // 20 min
-	handleSilentMagic(who, who, 385);
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	var duration := CInt(AP_GetSkill(who, ARCANA)) / 2;
+	var extra_cycles := CInt(AP_GetSkill(who, ARCANA) / 20);
+
+	var opts := struct{};
+	opts.+properties := dictionary{ "#delaycycles" -> extra_cycles };
+	opts.+desc := "Atrasar Magias";
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+	SC_HandleSound(who, targ, 385);
 
 	SendSysMessageEx(targ, "Voce se sente mais fraco.", SSM_INFO);
 	Corromper(who, 17, targ);

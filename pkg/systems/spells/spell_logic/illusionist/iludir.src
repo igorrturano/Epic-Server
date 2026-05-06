@@ -7,6 +7,7 @@ include ":charactercreation:resists";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 include "include/eventID";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
@@ -30,7 +31,7 @@ program SpellScript(params)
 	endif
 
 	PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
-	handleSilentMagic(who, targ, SFX_SPELL_STRENGTH);
+	SC_HandleSound(who, targ, SFX_SPELL_STRENGTH);
 
 	if (targ.acctname)
 		var diff := handleSpellResistDiffForSpecialists(who, spell_school);
@@ -43,7 +44,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var globo := CreateNpcFromTemplate(":brainai:globodeluz", targ.x, targ.y, targ.z, 0, who.realm);
+	var globo := CreateNpcFromTemplate(":epicai:globodeluz", targ.x, targ.y, targ.z, 0, who.realm);
 	createIllusion(globo, duration);
 endprogram
 

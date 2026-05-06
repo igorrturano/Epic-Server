@@ -6,14 +6,16 @@ include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":timedScripts:timedScripts";
 include "include/tileEffects";
-include ":charactercreation:habilidades";
+include ":attributes:attributes";
 include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+	var spell := params[3];
 
 	if (who.npctemplate)
 		targ := who;
@@ -32,101 +34,64 @@ program SpellScript(params)
 		return;
 	endif
 
-	// AP_GetSkill uses internal scale (ex: 70.0 => ~700).
-	// Rule: with 70 Theology => 17 instant + 17 over time in 4 ticks.
+	// Block recast while HoT is still ticking on the target. If SpellOpts
+	// is present without a matching timer, treat it as an orphan (race in
+	// endspelleffect's shared "prop" channel can leave SpellOpts behind
+	// without a timer, jamming recast forever) and clear it before casting.
+	var spell_id := CInt(spell.id);
+	var existing := MobileWrapper(targ).GetProperty($"SpellOpts_{spell_id}");
+	if (existing && !existing.errortext)
+		var timer_list := TS_GetTimerList(targ);
+		if (!timer_list.Exists($"spelleffect_{spell_id}"))
+			SC_RemoveEffect(targ, spell_id);
+		else
+			SendSysMessageEx(who, "O alvo ja esta sob efeito de uma cura.", SSM_FAIL);
+			return;
+		endif
+	endif
+
+	// Rule: 70 Theology => 17 instant + 17 over 4 ticks.
 	var base_heal := cint(AP_GetSkill(who, THEOLOGY) / 3);
 	if (base_heal < 1)
 		base_heal := 1;
 	endif
 
-	var instant_heal := base_heal;
-	var hot_total := base_heal;
-	var hot_ticks := 4;
-	var hot_base_tick := cint(hot_total / hot_ticks);
-	var hot_remainder := hot_total - (hot_base_tick * hot_ticks);
-
-	// Apply instant heal
+	// Instant heal
 	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
 	var hp_before := GetVital(targ, HITS);
-	applyEpicHealing(targ, instant_heal);
+	applyEpicHealing(targ, base_heal);
 	var hp_after := GetVital(targ, HITS);
 	var instant_real_heal := hp_after - hp_before;
-	ShowHealFeedback(who, targ, instant_real_heal, 0, 0, 0);
 
-	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
-	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+	// HoT via SC tick-callback
+	var hot_total := base_heal;
+	var hot_ticks := 4;
+	var hot_tick_interval := 5;
+	var hot_base_tick := cint(hot_total / hot_ticks);
+	var hot_remainder := hot_total - (hot_base_tick * hot_ticks);
+	var duration := hot_ticks * hot_tick_interval;
 
-	// Apply heal over time
-	var hot_params := struct{
-		"caster" := who,
-		"target" := targ,
-		"base_tick_heal" := hot_base_tick,
-		"remainder" := hot_remainder,
-		"remaining_ticks" := hot_ticks,
-		"total_ticks" := hot_ticks
+	var opts := struct{};
+	opts.+buff_category := "druid_hot";
+	opts.+displayname := "Cura Leve";
+	opts.+desc := $"+{hot_base_tick} HP / tick";
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{
+		fx := FX_SPARK_EFFECT,
+		fx_speed := 2,
+		fx_duration := 2,
+		sound := SFX_SPELL_HEAL
+	};
+	opts.+tick_script := ":spells:spell_logic/druid/druidhealTick";
+	opts.+tick_interval := hot_tick_interval;
+	opts.+tick_params := struct{
+		base_tick := hot_base_tick,
+		remainder := hot_remainder,
+		total_ticks := hot_ticks
 	};
 
-	HealOverTime(hot_params);
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
 
 	return 1;
 endprogram
-
-function HealOverTime(params)
-	var caster := params.caster;
-	var targ := params.target;
-	var base_tick_heal := params.base_tick_heal;
-	var remainder := params.remainder;
-	var remaining_ticks := params.remaining_ticks;
-	var total_ticks := params.total_ticks;
-	var current_tick := 1;
-
-	if (!targ || !targ.connected)
-		return;
-	endif
-
-	// Apply heal over time every 5 seconds
-	while (remaining_ticks > 0)
-		sleep(5);
-
-		// Check if target is still valid
-		if (!targ || targ.dead)
-			return;
-		endif
-
-		// Apply the heal tick (distribute remainder in the first ticks)
-		var tick_heal := base_tick_heal;
-		if (current_tick <= remainder)
-			tick_heal := tick_heal + 1;
-		endif
-
-		var hp_before := GetVital(targ, HITS);
-		applyEpicHealing(targ, tick_heal);
-		var hp_after := GetVital(targ, HITS);
-		var tick_real_heal := hp_after - hp_before;
-		ShowHealFeedback(caster, targ, tick_real_heal, 1, current_tick, total_ticks);
-
-		// Visual and sound feedback
-		PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
-
-		current_tick := current_tick + 1;
-		remaining_ticks := remaining_ticks - 1;
-	endwhile
-
-	return 1;
-endfunction
-
-function ShowHealFeedback(caster, targ, amount, is_hot, tick, total_ticks)
-	if (amount < 0)
-		amount := 0;
-	endif
-
-	if (!caster || !caster.connected)
-		return;
-	endif
-
-	if (is_hot)
-		SendSysMessageEx(caster, $"Druid Heal: +{amount} HP ({tick}/{total_ticks})", SSM_INFO);
-	else
-		SendSysMessageEx(caster, $"Druid Heal: +{amount} HP (instantaneo)", SSM_INFO);
-	endif
-endfunction

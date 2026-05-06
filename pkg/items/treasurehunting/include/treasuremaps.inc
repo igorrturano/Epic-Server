@@ -99,6 +99,7 @@ function CreateNewTreasureMap(who, level := 1)
         var coords := GetMapCoordinates(map);
         var sextant_coords := ToSextant(coords.x, coords.y);
         SetName(map, "Mapa do Tesouro Nível " + level + " [" + sextant_coords + "]");
+        map.graphic := 0x3C7C;
         return map;
     else
         DestroyItem(map);
@@ -108,31 +109,53 @@ endfunction
 
 /*
  * SetTreasureLocation(map)
- * Define a localização do tesouro no mapa
+ * Define a localização do tesouro no mapa, filtrando zonas pelo nível do mapa.
  */
 function SetTreasureLocation(map)
     if (!map)
         return 0;
     endif
-    
-    var cfg := ReadConfigFile("treasure");
+
+    var maplevel := CInt(GetObjProperty(map, "level"));
+    var cfg := ReadConfigFile(":treasurehunting:treasure");
     if (!cfg)
         return 0;
     endif
-    
-    var num_locations := GetConfigMaxIntKey(cfg);
-    var chosen_loc := (RandomInt(num_locations) + 1);
-    var location := FindConfigElem(cfg, chosen_loc);
-    
-    if (!location)
+
+    var valid_zones := array{};
+    foreach zonekey in GetConfigStringKeys(cfg)
+        var elem := FindConfigElem(cfg, zonekey);
+        if (GetConfigInt(elem, "Level") == maplevel)
+            valid_zones.append(elem);
+        endif
+    endforeach
+
+    if (!valid_zones.size())
         return 0;
     endif
-    
-    SetObjProperty(map, "chestx", GetConfigInt(location, "X"));
-    SetObjProperty(map, "chesty", GetConfigInt(location, "Y"));
-    SetObjProperty(map, "chestz", GetConfigInt(location, "Z"));
-    SetObjProperty(map, "realm", GetConfigStr(location, "Realm"));
-    
+
+    var zone := valid_zones[RandomInt(valid_zones.size()) + 1];
+    var minX := GetConfigInt(zone, "MinX");
+    var maxX := GetConfigInt(zone, "MaxX");
+    var minY := GetConfigInt(zone, "MinY");
+    var maxY := GetConfigInt(zone, "MaxY");
+    var realm := GetConfigString(zone, "Realm");
+    if (!realm)
+        realm := "britannia_alt";
+    endif
+
+    var x := RandomInt(maxX - minX + 1) + minX;
+    var y := RandomInt(maxY - minY + 1) + minY;
+    var z := GetMapInfo(x, y, realm).z;
+    if (!z)
+        z := 0;
+    endif
+
+    SetObjProperty(map, "chestx", x);
+    SetObjProperty(map, "chesty", y);
+    SetObjProperty(map, "chestz", z);
+    SetObjProperty(map, "realm", realm);
+
     return 1;
 endfunction
 
@@ -158,7 +181,8 @@ function MarkMapComplete(map, who)
     var sextant_coords := ToSextant(coords.x, coords.y);
     
     SetName(map, "Mapa do Tesouro Nível " + map_level + " [" + sextant_coords + "] - Desvendado por " + who.name);
-    
+    map.graphic := 0x3C7D;
+
     return 1;
 endfunction
 

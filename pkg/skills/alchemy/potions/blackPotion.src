@@ -16,11 +16,10 @@ program drink_blue(who, potion)
 		SendSysMessage(who, "Voce nao pode beber isto.");
 		return;
 	endif
-	if (!checkifcandrink(who, "black"))
+	if (!checkifcandrink(who, potion))
 		return;
 	endif
 
-	empty_bottle(who, potion);
 	PlaySoundEffect(who, 0x1e4);
 
 	var vicio := (AP_getvital(who, "Viciodex"));
@@ -30,6 +29,7 @@ program drink_blue(who, potion)
 	vicio := vicio / 100;
 	var crafterskill := getobjProperty(potion, "crafterskill");
 	var duration := CInt((300 + crafterskill * 3) * vicio);
+	empty_bottle(who, potion);
 
 	ApplyMagicalVision(who, duration);
 

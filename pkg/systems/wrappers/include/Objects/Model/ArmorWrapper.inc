@@ -81,15 +81,17 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			return base;
 		endif
 
-		return ArmorResist(
+		var combined := ArmorResist(
 			CInt(base.GetSlashResist()) + CInt(mod.GetSlashResist()),
 			CInt(base.GetPiercingResist()) + CInt(mod.GetPiercingResist()),
 			CInt(base.GetBluntResist()) + CInt(mod.GetBluntResist()),
 			CInt(base.GetFireResist()) + CInt(mod.GetFireResist()),
 			CInt(base.GetColdResist()) + CInt(mod.GetColdResist()),
-			CInt(base.GetEnergyResist()) + CInt(mod.GetEnergyResist()),
-			CInt(base.GetPoisonResist()) + CInt(mod.GetPoisonResist())
+			CInt(base.GetPoisonResist()) + CInt(mod.GetPoisonResist()),
+			CInt(base.GetEnergyResist()) + CInt(mod.GetEnergyResist())
 		);
+
+		return this._ApplyTypeCap(combined);
 	endfunction
 
 	/**
@@ -286,17 +288,56 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	function __CalculateArmorResist(this)
 		var templateResists := getResistPhysicalByProtection(this.GetTemplate().tipoProtecao);
-		var slotResists := this.GetTipoProtecao() ? getResistPhysicalBySlot(this.GetCoverage()) : ArmorResist();
+		// var slotResists := this.GetTipoProtecao() ? getResistPhysicalBySlot(this.GetCoverage()) : ArmorResist();
+		// Slot bonus removed — armor tiers + crafting provide sufficient defense
+
+		// Floor por tipo de armadura (Light 10 / Medium 15 / Heavy 20). Aplicado
+		// apenas em fisico (slash/pierce/blunt) — elementais vem de material
+		// sub-effects, encantamento e runas. Ver design_combate.md.
+		var floor := this._GetPhysicalFloor();
 
 		return ArmorResist(
-			templateResists.GetSlashResist() + slotResists.GetSlashResist(),
-			templateResists.GetPiercingResist() + slotResists.GetPiercingResist(),
-			templateResists.GetBluntResist() + slotResists.GetBluntResist(),
+			templateResists.GetSlashResist() + floor,
+			templateResists.GetPiercingResist() + floor,
+			templateResists.GetBluntResist() + floor,
 			this.GetTemplate().FireResist,
 			this.GetTemplate().ColdResist,
 			this.GetTemplate().PoisonResist,
 			this.GetTemplate().EnergyResist
 		);
+	endfunction
+
+	function _GetPhysicalFloor(this)
+		var tp := this.GetTipoProtecao();
+		if (!tp || tp is @Exception) return 0; endif
+		if (tp["Armadura Leve"]) return 10; endif
+		if (tp["Armadura Media"]) return 15; endif
+		if (tp["Armadura Pesada"]) return 20; endif
+		return 0;
+	endfunction
+
+	function _GetTypeCap(this)
+		var tp := this.GetTipoProtecao();
+		if (!tp || tp is @Exception) return 0; endif
+		if (tp["Armadura Leve"]) return 50; endif
+		if (tp["Armadura Media"]) return 60; endif
+		if (tp["Armadura Pesada"]) return 70; endif
+		return 0;
+	endfunction
+
+	function _ApplyTypeCap(this, byRef resists)
+		var cap := this._GetTypeCap();
+		if (cap <= 0) return resists; endif
+
+		if (resists.GetSlashResist() > cap) resists.SetSlashResist(cap); endif
+		if (resists.GetPiercingResist() > cap) resists.SetPiercingResist(cap); endif
+		if (resists.GetBluntResist() > cap) resists.SetBluntResist(cap); endif
+		if (resists.GetFireResist() > cap) resists.SetFireResist(cap); endif
+		if (resists.GetColdResist() > cap) resists.SetColdResist(cap); endif
+		if (resists.GetPoisonResist() > cap) resists.SetPoisonResist(cap); endif
+		if (resists.GetEnergyResist() > cap) resists.SetEnergyResist(cap); endif
+
+		return resists;
 	endfunction
 
 	function __InitModifiers(this)
@@ -311,11 +352,19 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 			if (this.GetTipoProtecao())
 				var modifiersSlot := GetModifiersBySlot(this.GetCoverage()[1]);
 				var modifiersProt := GetModifiersByProtection(this.GetTipoProtecao());
-				this.SetModifier(AttributeModifier(DEXTERITY, modifiersSlot[DEXTERITY].GetValue() + modifiersProt[DEXTERITY].GetValue()));
+
+				// Armadura Leve não penaliza DEX por slot — couro/tecido deveria ser ágil
+				var slotDex := modifiersSlot[DEXTERITY].GetValue();
+				if (this.GetTipoProtecao()["Armadura Leve"])
+					slotDex := 0;
+				endif
+
+				this.SetModifier(AttributeModifier(DEXTERITY, slotDex + modifiersProt[DEXTERITY].GetValue()));
 				this.SetModifier(AttributeModifier(SNEAK, modifiersSlot[SNEAK].GetValue() + modifiersProt[SNEAK].GetValue()));
 				this.SetModifier(AttributeModifier(MECHANICS, modifiersSlot[MECHANICS].GetValue() + modifiersProt[MECHANICS].GetValue()));
 				this.SetModifier(AttributeModifier(MAGERY, modifiersSlot[MAGERY].GetValue() + modifiersProt[MAGERY].GetValue()));
-				this.SetModifier(AttributeModifier(AWARENESS, modifiersSlot[AWARENESS].GetValue() + modifiersProt[AWARENESS].GetValue()));
+				var awarenessProtPenalty := (Upper(this.GetCoverage()[1]) == Upper(HEAD)) ? modifiersProt[AWARENESS].GetValue() : 0;
+				this.SetModifier(AttributeModifier(AWARENESS, modifiersSlot[AWARENESS].GetValue() + awarenessProtPenalty));
 			endif
 		endif
 	endfunction

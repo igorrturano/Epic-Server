@@ -4,21 +4,14 @@
 use uo;
 use os;
 
-include ":attributes:attributeConstants";
 include ":attributes:attributes";
-include ":attributes:skillCheck";
-include ":crafting:crafting";
-include ":crafting:toolWear";
 include ":itemutils:canAccess";
 include "include/say";
-include ":charactercreation:habilidades";
 include ":tn:tngumps";
-include ":treasurehunting:treasuremaps";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":gumps:yesNo";
 
-var item_config := ReadConfigFile(":treasurehunting:itemdesc");
-var craft_config := ReadConfigFile(":treasurehunting:cartography");
 
 program use_MapmakersPen(who, tool)
 
@@ -54,35 +47,9 @@ program use_MapmakersPen(who, tool)
 
 	if (targ.objtype in blank_array)
 
-		if (TemHabilidade(who, "Mapear Regiao") || who.cmdlevel >= 3)
-			// var rinfo := sendCraftGump(who, "Cartography");
-
-			// OK was pressed, close it on out
-			// if(rinfo == 0)
-			// 	return 0;
-			// endif
-
-			// 		var options := RadioGump(who, 200, 200, "Que tipo de mapa deseja fazer:", array{"Local", "Regional", "Global"});
-			var options := "Local";
-
-			var the_objtype;
-			if (options == 0)
-				return;
-			elseif (options == "Local")
-				the_objtype := 0x6500;
-			elseif (options == "Regional")
-				the_objtype := 0x6501;
-			elseif (options == "Global")
-				the_objtype := 0x6502;
-			endif
-			var amt := 1;
-
-			makeCartographyMap(who, the_objtype, amt, tool);
-
-		else
-			SendSysMessageEx(who, "Voce nao tem conhecimentos para mapear regioes.", SSM_FAIL);
-		endif
-		return 1;
+		// TODO: Implementar sistema de cartografia
+		SendSysMessageEx(who, "Sistema ainda não foi implementado, consulte a staff.", SSM_FAIL);
+		return 0;
 	elseif (targ.isBook())
 		if (!targ.isWritable())
 			var content := targ.ExtractInfo();
@@ -201,108 +168,3 @@ program use_MapmakersPen(who, tool)
 	endif
 
 endprogram
-
-function makeCartographyMap(who, map_objtype, amount, tool)
-
-	var blank_array := array{ 0xE34, 0xEF3, 0x14EB, 0x14EC };
-	var blank := Target(who);
-	if (!blank)
-		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
-		return 0;
-	endif
-	if (!(blank.objtype in blank_array) || GetObjProperty(blank, "decoder"))
-		SendSysMessageEx(who, "Voce so pode escrever em mapas em branco ou pergaminhos.", SSM_FAIL);
-		return 0;
-	endif
-	if (!can_access(who, blank))
-		return 0;
-	endif
-	if (!(blank in EnumerateItemsInContainer(who.backpack)))
-		SendSysMessageEx(who, "O pergaminho precisa estar na sua mochila.", SSM_FAIL);
-		return 0;
-	endif
-	if (who.realm != "britannia")
-		SendSysMessageEx(who, "Esse local nao pode ser mapeado.", SSM_FAIL);
-		return 0;
-	endif
-	if ((who.x > 5120) && (who.y < 2304))
-		SendSysMessageEx(who, "Voce nao pode mapear aqui.", SSM_FAIL);
-		return 0;
-	endif
-
-	var itemname := craft_config[map_objtype].name;
-	var material := Cint(craft_config[map_objtype].material);
-	var reqd := Cint(craft_config[map_objtype].skill);
-	var diff := Cint(craft_config[map_objtype].difficulty);
-	var pts := Cint(craft_config[map_objtype].points);
-
-	var counter := 0, x := who.x, y := who.y;
-
-	while (counter < amount)
-		if ((who.x != x) || (who.y != y))
-			SendSysMessageEx(who, "Voce parou de escrever.", SSM_FAIL);
-			break;
-		endif
-		if (!tool)
-			break;
-		endif
-
-		sleep(2);
-
-		if (GetAmount(blank) >= material)
-			// if( CraftCheckSkill(who, craft_skill, diff, pts) )
-			var theitem := CreateCraftedMap(who, craft_skill, blank, map_objtype, material, itemname, reqd);
-			if (TypeOf(theitem) != "ItemRef")
-				SubtractAmount(blank, material);
-				SendSysMessageEx(who, "Voce falhou em escrever o mapa e parte do material foi perdido.",
-								  SSM_FAIL);
-				counter := counter + 1;
-				continue;
-			else
-				CheckToolWear(who, tool, craft_skill);
-				var props;
-				case (theitem.objtype)
-					0x6500:
-						props := array("local", who.x - 265, who.y - 260, who.x + 265, who.y + 260, 200, 200);
-						encodeMap(props, theitem);
-					0x6501:
-						props := array("regional", who.x - 850, who.y - 800, who.x + 850, who.y + 800, 400, 400);
-						encodeMap(props, theitem);
-					0x6502: props := array("world", 0, 0, 5119, 4095, 500, 400); encodeMap(props, theitem);
-				endcase
-			endif
-		// else
-		// 	if( SubtractAmount(blank, material) )
-		// 		SendSysMessageEx(who, "Voce perdeu parte do material.", SSM_FAIL);
-		// 	endif
-		// endif
-		else
-			SendSysMessageEx(who, "Voce nao possui os recursos necessarios para fazer este item.", SSM_FAIL);
-			counter := 100;
-			break;
-		endif
-		counter := counter + 1;
-	endwhile
-
-	return 0;
-
-endfunction
-
-function encodeMap(map_definitions, map)
-
-	if (map_definitions[2] < 0)
-		map_definitions[2] := 0;
-	endif
-	if (map_definitions[3] < 0)
-		map_definitions[3] := 0;
-	endif
-	map.xwest := map_definitions[2];
-	map.ynorth := map_definitions[3];
-	map.xeast := map_definitions[4];
-	map.ysouth := map_definitions[5];
-	map.gumpwidth := map_definitions[6];
-	map.gumpheight := map_definitions[7];
-
-	return 1;
-
-endfunction

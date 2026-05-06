@@ -7,6 +7,8 @@ include "epicSpecial";
 include "NPCMageryUtils";
 include ":abilities:include/models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":charactercreation:include/resists";
+include ":epicAI:include/npcDataCache";    // NPC_GetCachedData (used by GetClassProgression)
 
 function HumanoidBrain()
     var ev;
@@ -38,31 +40,7 @@ function HumanoidBrain()
     combat_abilities := BuildCombatAbilities(me);
     enter_abilities := BuildEnterAbilities(me);
 
-    // Cache myhabs as script-level vars (avoids per-tick GetObjProperty disk I/O)
-    myhabs_var := GetObjProperty(me, "myhabs");
-    if (myhabs_var)
-        myhabs_set_var := dictionary;
-        foreach hab in myhabs_var
-            myhabs_set_var[CInt(hab)] := 1;
-        endforeach
-    endif
-
     SM_TransitionTo("IDLE");
-
-    // Cache myhabs at activation — only active abilities, avoids per-tick disk I/O
-    var raw_habs := GetObjProperty(me, "myhabs");
-    if (raw_habs)
-        myhabs_var := array{};
-        myhabs_set_var := dictionary;
-        var habcfg := ReadConfigFile(":abilities:configs/habilidades");
-        foreach hab in raw_habs
-            var habelem := FindConfigElem(habcfg, CInt(hab));
-            if (habelem && GetConfigString(habelem, "uso") == "Ativa")
-                myhabs_var.append(CInt(hab));
-            endif
-            myhabs_set_var[CInt(hab)] := 1;
-        endforeach
-    endif
 
     while (me)
         ev := os::wait_for_event(0);
@@ -82,6 +60,18 @@ function HumanoidBrain()
             SM_TickStealing();
         elseif (state == "SNEAKING")
             SM_TickSneaking();
+        elseif (state == "INVESTIGATING")
+            SM_TickInvestigate();
+        endif
+
+        // Damage-weighted threat: decay table + reevaluate target if hysteresis
+        // margin is exceeded. DecayThreat self-throttles to 1Hz.
+        DecayThreat();
+        if (ShouldReevaluateTarget())
+            var threat_top := GetTopThreat();
+            if (threat_top && threat_top != me.opponent)
+                SetOpponent(threat_top);
+            endif
         endif
 
         // If we have an opponent, maintain combat position regardless of events
@@ -104,7 +94,15 @@ function HumanoidBrain()
             else
                 if (GetObjProperty(me, "metamorfose")) is_ranged := 0; endif
                 if (SM_GetState() != "FLEEING")
-                    PursueTarget(me.opponent);
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
+                endif
+                // Re-stealth before the chooser runs so ASSASSINAR's hidden-gate
+                // priority lands its #GuaranteedHit bonus. No-op for archetypes
+                // without ASSASSINAR; SkillCheck + 3s cooldown self-throttle.
+                if (me.isThief())
+                    _AttemptCombatStealth(me, MobileWrapper(me));
                 endif
                 // Per-tick casting + abilities — keep offensive pressure
                 UseAbilities(me, me.opponent);
@@ -121,10 +119,16 @@ function HumanoidBrain()
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED:
+                    AddThreat(ev.source, 0);
                     AlertAllies(ev.source, me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
+                    // Safety net for damage paths that bypass AttackLogger (DoTs,
+                    // environmental). Registers source at zero; EVID_THREAT_UPDATE
+                    // delivers the actual amount when AttackLogger fires.
+                    AddThreat(ev.source, 0);
+                    UpdateThreatList(me, ev);
                     // Break stealth states on damage
                     var dmg_state := SM_GetState();
                     if (dmg_state == "AMBUSH" || dmg_state == "STEALING" || dmg_state == "SNEAKING")
@@ -133,13 +137,15 @@ function HumanoidBrain()
                     endif
                     AskForHealing(me);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
+                EVID_THREAT_UPDATE:
+                    AddThreat(ev.source, ev.amount);
                 SYSEVENT_ENTEREDAREA:
                     if (CheckDarknessCreatureSurvival(me))
                         return;
                     endif
                     HandleHumanoidSpeech(ev.text, ev.source, is_ranged);
-                    HandleEnteredAreaAbilities(ev.source, is_ranged);
                     if (!IsAlly(ev.source))
+                        HandleEnteredAreaAbilities(ev.source, is_ranged);
                         UpdateThreatList(me, ev);
                         AlertAllies(ev.source, me);
                         HandleHumanoidEnteredArea(ev.source, is_ranged);
@@ -147,7 +153,12 @@ function HumanoidBrain()
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
                         UpdateThreatList(me, ev);
-                        HandleHumanoidLeftArea(is_ranged);
+                        // Only drop combat state if the leaver was our actual opponent.
+                        // Otherwise nearby movement (other players, pets, ally deaths)
+                        // would wipe opponent + threat table mid-fight and strand the NPC.
+                        if (me.opponent && ev.source.serial == me.opponent.serial)
+                            HandleHumanoidLeftArea(is_ranged);
+                        endif
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
@@ -160,8 +171,17 @@ function HumanoidBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    SetOpponent(0);
+                    InjectTauntThreat(ev.source);
                     HandleHumanoidCombatEvent(ev.source, is_ranged);
+                EVID_NOISE:
+                    last_activity_time := polcore().systime;
+                    if (!me.opponent && SM_GetState() == "IDLE" && me.alignment != 0)
+                        print("[noise rx] " + me.name + " investigating noise from " + ev.source.name);
+                        SM_TransitionTo("INVESTIGATING", struct{
+                            "noise_x" := ev.noise_x,
+                            "noise_y" := ev.noise_y
+                        });
+                    endif
                 EVID_BUDDYATTACKED:
                     if (!GetCooldown(me, "buddy_heal"))
                         var hurt_ally := ev.source;
@@ -332,14 +352,7 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
     endif
 
     if (MobileWrapper(me).HasAbility(ABILITY_ID::ALQUIMISTA_EXPERIENTE))
-        var explosive_potions := array{0xbf13, 0xbf14, 0xbf15, 0xef60, 0xef61, 0xef62};
-
-        foreach item in EnumerateItemsInContainer(me.backpack)
-            if (item.objtype in explosive_potions)
-                UseItem(item, me);
-                break;
-            endif
-        endforeach
+        NPC_UseAbilityById(me, ABILITY_ID::ALQUIMISTA_EXPERIENTE);
     endif
 
     return 1;
@@ -422,19 +435,103 @@ function NPC_UseAbilityById(npc, abilityId)
     if (result.errortext)
         return 0;
     endif
+
+    // Visual feedback: emote the ability name above the NPC so players can
+    // see when something fired (and react/learn the tells).
+    var ability_name := GetConfigString(habelem, "nome");
+    if (ability_name)
+        PrintTextAbove(npc, "*"+ability_name+"*");
+    endif
+
     return 1;
+endfunction
+
+// Abilities the chooser must never select for an NPC. Two reasons land here:
+//   1. Hard player-only gates (party/UI) where CanActivate always returns false
+//      for NPCs (AURA_DE_FE, PRESENCA_DIVINA).
+//   2. Per-file IsNPC fail-fast guards (CONTROLAR_MORTOS, CONVOCACAO_SELVAGEM,
+//      TRANSMUTAR, TRUQUE_SUJO) — selecting them just burns the 2s ability
+//      cooldown on a guaranteed-false ExecuteOn.
+function _IsNPCBlacklistedAbility(id)
+    case (id)
+        ABILITY_ID::AURA_DE_FE:           return 1;
+        ABILITY_ID::PRESENCA_DIVINA:      return 1;
+        ABILITY_ID::TRANSMUTAR:           return 1;
+        ABILITY_ID::TRUQUE_SUJO:          return 1;
+        ABILITY_ID::CONTROLAR_MORTOS:     return 1;
+        ABILITY_ID::CONVOCACAO_SELVAGEM:  return 1;
+    endcase
+    return 0;
+endfunction
+
+// Re-stealth between attacks for Assassino-subclass NPCs so the next
+// ASSASSINAR call lands the #GuaranteedHit bonus (the chooser already
+// prioritizes ASSASSINAR when npc.hidden). Ladino NPCs receive
+// runwhilestealth at brain init, so positioning preserves the hidden
+// state.
+//
+// Cooldown-throttled: a failed SkillCheck still eats the cooldown so we
+// don't spam SNEAK every 100ms tick. Successful re-stealth is consumed
+// almost immediately by the next ASSASSINAR attack.
+function _AttemptCombatStealth(npc, wrapper)
+    if (npc.hidden)
+        return 0;
+    endif
+    if (GetCooldown(npc, "combat_stealth"))
+        return 0;
+    endif
+    if (!wrapper.HasAbility(ABILITY_ID::ASSASSINAR))
+        return 0;
+    endif
+
+    SetCooldown(npc, "combat_stealth", 3);
+    if (SkillCheck(npc, SNEAK, -1) > 0)
+        npc.hidden := 1;
+        npc.stealthsteps := 30;
+        return 1;
+    endif
+    return 0;
+endfunction
+
+// Reads the NPC's myhabs live (same data shape as players) and returns only
+// the abilities tagged uso=Ativa in config — passives fire automatically via
+// the combat damage pipeline, so the chooser never needs to see them.
+// Blacklisted IDs (see _IsNPCBlacklistedAbility) are also excluded.
+function GetActiveHabs(npc)
+    var abilities := MobileWrapper(npc).GetAbilities();
+    if (!abilities)
+        return array{};
+    endif
+
+    var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+    var actives := array{};
+    foreach slot in (abilities.keys())
+        var id := CInt(abilities[slot]);
+        if (_IsNPCBlacklistedAbility(id))
+            sleepms(2);
+            continue;
+        endif
+        var elem := FindConfigElem(habcfg, id);
+        if (elem && GetConfigString(elem, "uso") == "Ativa")
+            actives.append(id);
+        endif
+        sleepms(2);
+    endforeach
+    return actives;
 endfunction
 
 function UseAbilities(npc, opponent)
     if (GetCooldown(npc, "ability_cooldown"))
         return 0;
     endif
-    if (!myhabs_var)
+
+    var actives := GetActiveHabs(npc);
+    if (actives.size() == 0)
         return 0;
     endif
 
     var state := GetCombatState(npc, opponent);
-    var best_hab := ChooseAbility(npc, state, myhabs_var);
+    var best_hab := ChooseAbility(npc, state, actives);
     if (!best_hab)
         return 0;
     endif
@@ -455,7 +552,8 @@ function GetCombatState(npc, opponent)
       "distance" := Distance(npc, opponent),
       "stamina" := AP_GetVital(npc, "Stamina"),
       "opponent_casting" := opponent.isSage(),
-      "has_advantage" := IsBehind(npc, opponent.x, opponent.y)
+      "has_advantage" := IsBehind(npc, opponent.x, opponent.y),
+      "is_ranged" := npc.weapon && npc.weapon.attribute == "Ranged"
    };
 endfunction
 
@@ -495,7 +593,7 @@ function GetHabsByLevel(npc, nivel)
 
   // Get subclass progression regardless of level
   var subclass := GetObjProperty(npc, "subclass");
-  var progression := GetClassProgression(habcfg, subclass);
+  var progression := GetClassProgression(habcfg, subclass, npc);
 
   // Add abilities from progression that match NPC's level
   foreach hab in progression
@@ -513,10 +611,10 @@ function GetHabsByLevel(npc, nivel)
   return valid_habs;
 endfunction
 
-function GetClassProgression(habcfg, subclass)
+function GetClassProgression(habcfg, subclass, npc)
     var progression := array{};
     var class_choice := array{};
-    var cache := NPC_GetCachedData(me);  // O(1) lookup
+    var cache := NPC_GetCachedData(npc);  // O(1) lookup
     var class_tree := struct{};
     var name_to_id := struct{};  // Map ability names to IDs
     var base_hab := 0;
@@ -588,66 +686,88 @@ endfunction
 
 function ChooseWarriorAbility(npc, state, habs)
     var opponent := npc.opponent;
+    var wrapper := MobileWrapper(npc);
 
-    if (Distance(npc, opponent) > 1)
+    // Melee warriors shouldn't burn abilities while still chasing.
+    // Ranged warriors (archers) skip the gate — their abilities are designed
+    // for distance and would never trigger otherwise.
+    if (!state.is_ranged && state.distance > 1)
         return 0;
     endif
 
+    // Light up Furia first — it's the prerequisite for the entire barbaro
+    // chain (RESILIENCIA_BARBARA / FURIA_INDOMAVEL / FURIA_IMPLACAVEL all
+    // gate on the "furia" cooldown that Fury.OnActivate sets).
+    if (wrapper.HasAbility(ABILITY_ID::FURIA) && !GetCooldown(npc, "furia"))
+        return ABILITY_ID::FURIA;
+    endif
+
+    // Mutante self-buff — fire FORMA_ADAPTAVEL once so the resist mod is in
+    // place before random combat picks. AdaptableForm.ExecuteOn writes the
+    // "Mutacao" ObjProperty and erases it on toggle-off.
+    if (wrapper.HasAbility(ABILITY_ID::FORMA_ADAPTAVEL) && !GetObjProperty(npc, "Mutacao"))
+        return ABILITY_ID::FORMA_ADAPTAVEL;
+    endif
+
     if (state.health == "dying")
-        if (myhabs_set_var.exists(ABILITY_ID::MANOBRA_DA_RESILIENCIA))  return ABILITY_ID::MANOBRA_DA_RESILIENCIA;  endif
-        if (myhabs_set_var.exists(ABILITY_ID::RESILIENCIA_BARBARA))     return ABILITY_ID::RESILIENCIA_BARBARA;     endif
+        if (wrapper.HasAbility(ABILITY_ID::MANOBRA_DA_RESILIENCIA))  return ABILITY_ID::MANOBRA_DA_RESILIENCIA;  endif
+        // RESILIENCIA_BARBARA.CanActivate requires the furia cooldown to be live.
+        if (GetCooldown(npc, "furia") && wrapper.HasAbility(ABILITY_ID::RESILIENCIA_BARBARA))     return ABILITY_ID::RESILIENCIA_BARBARA;     endif
     endif
 
     var enemies := NPC_GetPlayersPetsAndSummonsNearby(npc);
     if (enemies.size() >= 2)
-        if (myhabs_set_var.exists(ABILITY_ID::PROVOCAR))              return ABILITY_ID::PROVOCAR;              endif
-        if (myhabs_set_var.exists(ABILITY_ID::MANOBRA_DESAFIADORA))   return ABILITY_ID::MANOBRA_DESAFIADORA;   endif
+        if (wrapper.HasAbility(ABILITY_ID::PROVOCAR))              return ABILITY_ID::PROVOCAR;              endif
+        if (wrapper.HasAbility(ABILITY_ID::MANOBRA_DESAFIADORA))   return ABILITY_ID::MANOBRA_DESAFIADORA;   endif
     endif
 
     if (opponent.master)
-        if (myhabs_set_var.exists(ABILITY_ID::CACADOR_IMPLACAVEL))    return ABILITY_ID::CACADOR_IMPLACAVEL;    endif
+        if (wrapper.HasAbility(ABILITY_ID::CACADOR_IMPLACAVEL))    return ABILITY_ID::CACADOR_IMPLACAVEL;    endif
     endif
 
-    var chosen_hab := habs[RandomInt(habs.size())+1];
-    if (CInt(chosen_hab) == ABILITY_ID::CACADOR_EXPERIENTE)
-        var net := CreateItemInBackpack(npc, 0x1EA3, 1);
-        UseItem(net, npc);
-    endif
-
-    return chosen_hab;
+    return habs[RandomInt(habs.size())+1];
 endfunction
 
 function ChooseRogueAbility(npc, state, habs)
     var opponent := npc.opponent;
+    var wrapper := MobileWrapper(npc);
 
-    if (Distance(npc, opponent) > 1)
+    // Melee rogues gate on adjacency; ranged rogues (e.g. crossbow Caçadores) skip it.
+    if (!state.is_ranged && state.distance > 1)
         return 0;
     endif
 
+    // Shinobi foundation — NINJA_PATH writes "#ninja_mark" + "#ninja_mark_expires"
+    // which VITAL_STRIKE/PHANTOM_STRIKE damage-amplify off. Without the mark,
+    // dependents fire as plain hits. Re-fire when the mark window has lapsed.
+    if (wrapper.HasAbility(ABILITY_ID::NINJA_PATH) && !GetObjProperty(npc, "#ninja_mark_expires"))
+        return ABILITY_ID::NINJA_PATH;
+    endif
+
     if (state.health == "dying")
-        if (myhabs_set_var.exists(ABILITY_ID::DISTRAIR_OPONENTES))   return ABILITY_ID::DISTRAIR_OPONENTES;   endif
+        if (wrapper.HasAbility(ABILITY_ID::DISTRAIR_OPONENTES))   return ABILITY_ID::DISTRAIR_OPONENTES;   endif
     endif
 
     if (AP_GetVital(npc, STAMINA) < 40)
-        if (myhabs_set_var.exists(ABILITY_ID::REFLEXO_ESTRATEGICO))  return ABILITY_ID::REFLEXO_ESTRATEGICO;  endif
+        if (wrapper.HasAbility(ABILITY_ID::POSTURA_DE_DUELO))  return ABILITY_ID::POSTURA_DE_DUELO;  endif
     endif
 
     if (npc.hidden)
-        if (myhabs_set_var.exists(ABILITY_ID::ASSASSINAR))            return ABILITY_ID::ASSASSINAR;            endif
+        if (wrapper.HasAbility(ABILITY_ID::ASSASSINAR))            return ABILITY_ID::ASSASSINAR;            endif
     endif
 
     if (opponent.master)
-        if (myhabs_set_var.exists(ABILITY_ID::FANTASMA))              return ABILITY_ID::FANTASMA;              endif
+        if (wrapper.HasAbility(ABILITY_ID::FANTASMA))              return ABILITY_ID::FANTASMA;              endif
     endif
 
     if (state.has_advantage)
-        if (myhabs_set_var.exists(ABILITY_ID::FARO_POR_SANGUE))      return ABILITY_ID::FARO_POR_SANGUE;      endif
-        if (myhabs_set_var.exists(ABILITY_ID::GOLPE_SANGRENTO))       return ABILITY_ID::GOLPE_SANGRENTO;       endif
+        if (wrapper.HasAbility(ABILITY_ID::FARO_POR_SANGUE))      return ABILITY_ID::FARO_POR_SANGUE;      endif
+        if (wrapper.HasAbility(ABILITY_ID::GOLPE_SANGRENTO))       return ABILITY_ID::GOLPE_SANGRENTO;       endif
     endif
 
     if (opponent.isSage())
-        if (myhabs_set_var.exists(ABILITY_ID::LADRAO_DE_MAGIAS))     return ABILITY_ID::LADRAO_DE_MAGIAS;     endif
-        if (myhabs_set_var.exists(ABILITY_ID::LAMINA_DA_ESCURIDAO))  return ABILITY_ID::LAMINA_DA_ESCURIDAO;  endif
+        if (wrapper.HasAbility(ABILITY_ID::LADRAO_DE_MAGIAS))     return ABILITY_ID::LADRAO_DE_MAGIAS;     endif
+        if (wrapper.HasAbility(ABILITY_ID::LAMINA_DA_ESCURIDAO))  return ABILITY_ID::LAMINA_DA_ESCURIDAO;  endif
     endif
 
     return habs[RandomInt(habs.size())+1];
@@ -655,57 +775,101 @@ endfunction
 
 function ChooseSageAbility(npc, state, habs)
     var opponent := npc.opponent;
+    var wrapper := MobileWrapper(npc);
+    var has_souls := CInt(GetObjProperty(npc, "shaman_souls")) > 0;
+
+    // Engenheiro foundations — fire GOLEM_ASSEMBLY before any siblings if not
+    // already piloting (sets the "pilotando" prop that SALTO_A_VAPOR /
+    // OMBREIRA_TATICA / EXPLOSIVE_FIST ammo path read). Then EXPLOSIVE_FIST
+    // toggles the "#explosive_fist" damage bonus.
+    if (wrapper.HasAbility(ABILITY_ID::GOLEM_ASSEMBLY) && !GetObjProperty(npc, "pilotando"))
+        return ABILITY_ID::GOLEM_ASSEMBLY;
+    endif
+    if (wrapper.HasAbility(ABILITY_ID::EXPLOSIVE_FIST) && !GetObjProperty(npc, "#explosive_fist"))
+        return ABILITY_ID::EXPLOSIVE_FIST;
+    endif
+
+    // Arqueiro Arcano foundation — ARCANE_BOW sets the "arcane_bow" cooldown
+    // that CHANNELED_SHOT / PRISMATIC_SHOT need to fire. Without it the
+    // dependents fail CanActivate. (Religion=LORE is set at NPC spawn — until
+    // then this gate fails harmlessly and falls through.)
+    if (wrapper.HasAbility(ABILITY_ID::ARCANE_BOW) && !GetCooldown(npc, "arcane_bow"))
+        return ABILITY_ID::ARCANE_BOW;
+    endif
 
     if (state.health == "dying")
-        if (myhabs_set_var.exists(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA)) return ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA; endif
-        if (myhabs_set_var.exists(ABILITY_ID::PRISAO_DIMENSIONAL))        return ABILITY_ID::PRISAO_DIMENSIONAL;        endif
-        if (myhabs_set_var.exists(ABILITY_ID::BLOODTHIRST))               return ABILITY_ID::BLOODTHIRST;               endif
-        if (myhabs_set_var.exists(ABILITY_ID::SALTO_ETEREO))              return ABILITY_ID::SALTO_ETEREO;              endif
-        if (myhabs_set_var.exists(ABILITY_ID::ABRIR_PORTAIS))             return ABILITY_ID::ABRIR_PORTAIS;             endif
-        if (myhabs_set_var.exists(ABILITY_ID::RESILIENCIA_BARBARA))       return ABILITY_ID::RESILIENCIA_BARBARA;       endif
+        if (wrapper.HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA)) return ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA; endif
+        if (wrapper.HasAbility(ABILITY_ID::PRISAO_DIMENSIONAL))        return ABILITY_ID::PRISAO_DIMENSIONAL;        endif
+        // Bloodthirst heals Theology/25 per soul — without souls it heals trivially.
+        if (has_souls && wrapper.HasAbility(ABILITY_ID::BLOODTHIRST))  return ABILITY_ID::BLOODTHIRST;               endif
+        if (wrapper.HasAbility(ABILITY_ID::SALTO_ETEREO))              return ABILITY_ID::SALTO_ETEREO;              endif
+        if (wrapper.HasAbility(ABILITY_ID::ABRIR_PORTAIS))             return ABILITY_ID::ABRIR_PORTAIS;             endif
+        // RESILIENCIA_BARBARA also requires Furia (gate same as the warrior chooser).
+        if (GetCooldown(npc, "furia") && wrapper.HasAbility(ABILITY_ID::RESILIENCIA_BARBARA))       return ABILITY_ID::RESILIENCIA_BARBARA;       endif
     endif
 
     if (opponent.hidden && npc.getRace() == DROW)
-        if (myhabs_set_var.exists(ABILITY_ID::CONEXAO_DIVINA))            return ABILITY_ID::CONEXAO_DIVINA;            endif
+        if (wrapper.HasAbility(ABILITY_ID::CONEXAO_DIVINA))            return ABILITY_ID::CONEXAO_DIVINA;            endif
     endif
 
-    if (myhabs_set_var.exists(ABILITY_ID::CONTROLAR_MORTOS) || myhabs_set_var.exists(ABILITY_ID::SOUL_HARVEST))
+    if (wrapper.HasAbility(ABILITY_ID::CONTROLAR_MORTOS) || wrapper.HasAbility(ABILITY_ID::SOUL_HARVEST))
         foreach item in ListItemsNearLocation(npc.x, npc.y, npc.z, 5, npc.realm)
             if (item.IsA(POLCLASS_CORPSE))
-                if (myhabs_set_var.exists(ABILITY_ID::CONTROLAR_MORTOS)) return ABILITY_ID::CONTROLAR_MORTOS; endif
-                if (myhabs_set_var.exists(ABILITY_ID::SOUL_HARVEST))     return ABILITY_ID::SOUL_HARVEST;     endif
+                if (wrapper.HasAbility(ABILITY_ID::CONTROLAR_MORTOS)) return ABILITY_ID::CONTROLAR_MORTOS; endif
+                if (wrapper.HasAbility(ABILITY_ID::SOUL_HARVEST))     return ABILITY_ID::SOUL_HARVEST;     endif
             endif
         endforeach
     endif
 
-    if (myhabs_set_var.exists(ABILITY_ID::PROVOCAR) || myhabs_set_var.exists(ABILITY_ID::ELEMENTAL_ANCESTRY))
+    if (wrapper.HasAbility(ABILITY_ID::PROVOCAR) || wrapper.HasAbility(ABILITY_ID::ELEMENTAL_ANCESTRY))
         var enemies := NPC_GetPlayersPetsAndSummonsNearby(npc);
         if (enemies.size() >= 2)
-            if (myhabs_set_var.exists(ABILITY_ID::PROVOCAR))              return ABILITY_ID::PROVOCAR;              endif
-            if (myhabs_set_var.exists(ABILITY_ID::ELEMENTAL_ANCESTRY))    return ABILITY_ID::ELEMENTAL_ANCESTRY;    endif
+            if (wrapper.HasAbility(ABILITY_ID::PROVOCAR))              return ABILITY_ID::PROVOCAR;              endif
+            // Elemental Ancestry consumes shaman_souls — same heal-per-soul math.
+            if (has_souls && wrapper.HasAbility(ABILITY_ID::ELEMENTAL_ANCESTRY)) return ABILITY_ID::ELEMENTAL_ANCESTRY; endif
         endif
     endif
 
     if (opponent.master)
-        if (myhabs_set_var.exists(ABILITY_ID::ELO_NATURAL))
-            Start_Script(":spells:commands/player/assumirforma", array{npc, NPC_GetCachedData(npc).template});
+        if (wrapper.HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))    return ABILITY_ID::CORACAO_DA_MATILHA;    endif
+        if (wrapper.HasAbility(ABILITY_ID::ELO_NATURAL))           return ABILITY_ID::ELO_NATURAL;           endif
+    endif
+
+    // Filter shaman soul-consumers from the random fallback when no souls are
+    // banked (SOUL_HARVEST is a passive on-kill hook, so souls only land via
+    // combat — until then these abilities have nothing to spend).
+    if (!has_souls)
+        var filtered := array{};
+        foreach hab in habs
+            var skip := 0;
+            case (hab)
+                ABILITY_ID::BLOODTHIRST:
+                ABILITY_ID::SAND_BROTHERS:
+                ABILITY_ID::ELEMENTAL_ANCESTRY:
+                ABILITY_ID::BLOOD_ARENA:
+                    skip := 1;
+            endcase
+            if (!skip)
+                filtered.append(hab);
+            endif
+            sleepms(2);
+        endforeach
+        if (filtered.size() > 0)
+            return filtered[RandomInt(filtered.size())+1];
         endif
-        if (myhabs_set_var.exists(ABILITY_ID::CORACAO_DA_MATILHA))    return ABILITY_ID::CORACAO_DA_MATILHA;    endif
     endif
 
     return habs[RandomInt(habs.size())+1];
 endfunction
 
 function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
-    if (!myhabs_var)
+    var actives := GetActiveHabs(me);
+    if (actives.size() == 0)
         return;
     endif
-    foreach hab in myhabs_var
+    foreach hab in actives
         case (hab)
             ABILITY_ID::CAMUFLAGEM:
-                if (!me.hidden)
-                    me.hidden := 1;
-                endif
                 NPC_UseAbilityById(me, hab);
             ABILITY_ID::INVOCACAO_DO_CAOS: 
             ABILITY_ID::ARCANE_BOW:
@@ -717,21 +881,6 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
                 NPC_UseAbilityById(me, hab);
         endcase
     endforeach
-endfunction
-
-function HandleAssassinBehavior(opponent)
-    if (!me.hidden && Distance(me, opponent) <= 6)
-        GrantPrivilege(me, "hiddenattack");
-        me.enable("hiddenattack");
-        me.hidden := 1;
-        me.stealthsteps := 30;
-        
-        if (GetCooldown(me, "FaroPorSangue"))
-            SetObjProperty(me, "#GuaranteedHit", 1);
-            SetObjProperty(me, "#nextcritical", 1);
-            me.attack_once(opponent);
-        endif
-    endif
 endfunction
 
 function HandleThiefBehavior(opponent)

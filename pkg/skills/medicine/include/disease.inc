@@ -81,7 +81,8 @@ function InfectMobile(subject,duration,attacker,level,diseases,disease_grade, de
 		
 		var timer_disease := TS_GetTimerInfo(subject, "disease");
 		if (timer_disease)//SE JÁ ESTÁ INFECTADO
-			var duration_part := duration/3;
+			var duration_part := duration / 3;
+			duration_part := CInt(duration_part);
 			var level_infection := timer_disease.level;
 			var diseases_system := GetObjProperty(subject, "Diseases_System");
 			var falhou_cura := diseases_system.falhou_cura;
@@ -92,7 +93,7 @@ function InfectMobile(subject,duration,attacker,level,diseases,disease_grade, de
 					return;
 				elseif (level <= level_infection && limit_duration <= 6000)
 					TS_AddDuration(subject, "disease", duration_part);
-					SendSysMessageEx(subject, "AO TEMPO FOI ADICIONADO "+duration_part+" SEGUNDOS, LEMBRE OS SCRIPTERS QUE PRECISA CORRIGIR PARA ATUALIZAR NA BARRA BUFF/DEBUFF", SSM_FAIL);
+					//SendSysMessageEx(subject, "AO TEMPO FOI ADICIONADO "+duration_part+" SEGUNDOS, LEMBRE OS SCRIPTERS QUE PRECISA CORRIGIR PARA ATUALIZAR NA BARRA BUFF/DEBUFF", SSM_FAIL);
 					return;
 				elseif (level > level_infection)
 					TS_LowerDuration(subject, "disease", -1);

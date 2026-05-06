@@ -1,0 +1,174 @@
+// =============================================================================
+// cycle.src — Citizen LookAround/cycle nerve.
+//
+// Light idle nerve that:
+//   1. Prunes the witness log (24h decay).
+//   2. Wanders a small step within the Valtheris bounds (InValtheris rect).
+//      If the citizen drifts outside, walks back toward the center.
+//   3. Occasionally emits ambient speech that's context-aware: time of day,
+//      season, weather (storms / temperature). Falls back to generic lines.
+//
+// Real crime detection is push-based via NotifyCitizenWitnesses; this nerve
+// just gives citizens visible life so the town doesn't feel static.
+// =============================================================================
+
+use uo;
+use os;
+use util;
+
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include ":faccao:include/imperium";
+include ":nature:include/nature";
+include ":merchants:citizen/include/citizenStore";
+
+const WANDER_PAUSE_CHANCE  := 30;   // % chance of standing still on a tick
+const SPEECH_CHANCE        := 15;   // % chance of speaking on a tick
+const CYCLE_SLEEP_SECONDS  := 20;
+
+program BrainNerve(params)
+    var npc := params[1];
+    params := 0;
+
+    // Citizens speak the common tongue so players can understand them.
+    SetObjProperty(npc, "lingua_escolhida", "Comum");
+
+    while (npc)
+        PruneWitnessLog(npc);
+
+        _WanderStep(npc);
+
+        if (RandomInt(100) < SPEECH_CHANCE)
+            AI_Speak(npc, _PickAmbientLine(npc));
+        endif
+
+        AI_ClearThoughts(npc, CLR_NERVE);
+        Sleep(CYCLE_SLEEP_SECONDS);
+    endwhile
+endprogram
+
+// ── Wandering ────────────────────────────────────────────────────────────────
+
+function _WanderStep(npc)
+    if (npc.realm != VALTHERIS_REALM)
+        return;
+    endif
+
+    // Drift back toward the center if the citizen is outside the rect.
+    if (!InValtheris(npc))
+        var cx := (VALTHERIS_X1 + VALTHERIS_X2) / 2;
+        var cy := (VALTHERIS_Y1 + VALTHERIS_Y2) / 2;
+        AI_MoveXY(npc, cx, cy, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, 0);
+        return;
+    endif
+
+    // Sometimes stand still — citizens aren't always on the move.
+    if (RandomInt(100) < WANDER_PAUSE_CHANCE)
+        return;
+    endif
+
+    // Random step of -3..+3 tiles in each axis, clamped to the rect.
+    var dx := RandomInt(7) - 3;
+    var dy := RandomInt(7) - 3;
+    var tx := npc.x + dx;
+    var ty := npc.y + dy;
+
+    if (tx < VALTHERIS_X1) tx := VALTHERIS_X1; endif
+    if (tx > VALTHERIS_X2) tx := VALTHERIS_X2; endif
+    if (ty < VALTHERIS_Y1) ty := VALTHERIS_Y1; endif
+    if (ty > VALTHERIS_Y2) ty := VALTHERIS_Y2; endif
+
+    if (tx == npc.x && ty == npc.y)
+        return;
+    endif
+
+    AI_MoveXY(npc, tx, ty, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, 0);
+endfunction
+
+// ── Ambient chatter ──────────────────────────────────────────────────────────
+
+function _PickAmbientLine(npc)
+    var roll := RandomInt(100);
+    if (roll < 30)
+        return _NatureLine();
+    elseif (roll < 50)
+        return _WeatherLine(npc);
+    endif
+    return _GenericLine();
+endfunction
+
+function _NatureLine()
+    if (!isDaylight())
+        return _PickFrom(array{
+            "A noite traz um silencio estranho...",
+            "Acho melhor recolher-me, esta tarde.",
+            "Ouvi dizer que ladroes saem mais a noite.",
+            "Que a Lua proteja este lugar.",
+            "Esses becos ficam sinistros depois do anoitecer."
+        });
+    endif
+
+    case (getSeason())
+        SUMMER:
+            return _PickFrom(array{
+                "Esse calor de verao e cansativo.",
+                "Bom dia! Que sol forte hoje.",
+                "Estes dias estao quentes demais.",
+                "So sombra e agua fresca pra aguentar."
+            });
+        AUTUMN:
+            return _PickFrom(array{
+                "As folhas estao caindo...",
+                "Outono ja chegou.",
+                "Logo veremos o inverno.",
+                "Esses ventos secos trazem mau pressagio."
+            });
+        WINTER:
+            return _PickFrom(array{
+                "Que frio, hein?",
+                "Inverno e desagradavel sem uma boa lareira.",
+                "Espero que neve este ano.",
+                "Meus ossos doem com esse gelo."
+            });
+        SPRING:
+            return _PickFrom(array{
+                "A primavera renova tudo.",
+                "Os passaros estao voltando.",
+                "Que dia agradavel.",
+                "As flores ja estao abrindo."
+            });
+        default:
+            return "Que dia estranho...";
+    endcase
+endfunction
+
+function _WeatherLine(npc)
+    var tempestade := GetGlobalProperty("tempestade");
+    if (tempestade && CInt(tempestade) > 0)
+        return _PickFrom(array{
+            "Que tempestade! Acho melhor me abrigar.",
+            "Esses raios assustam ate os mais corajosos.",
+            "Espero que essa chuva pare logo.",
+            "Os ceus estao furiosos hoje."
+        });
+    endif
+
+    var sensation := GetTemperatureSensation(getTemperature(npc));
+    return "O tempo esta " + sensation + " hoje.";
+endfunction
+
+function _GenericLine()
+    return _PickFrom(array{
+        "Espero que os guardas estejam atentos hoje.",
+        "Vi muita gente estranha por ai ultimamente.",
+        "Bom dia, viajante.",
+        "Ja ouviram falar dos arrombamentos pelas redondezas?",
+        "Esses tempos andam perigosos.",
+        "A vida em Valtheris nao para.",
+        "Falam que magos tem aparecido na praca novamente."
+    });
+endfunction
+
+function _PickFrom(lines)
+    return lines[RandomInt(lines.size()) + 1];
+endfunction

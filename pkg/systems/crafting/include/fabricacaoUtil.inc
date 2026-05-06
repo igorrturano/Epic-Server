@@ -14,6 +14,7 @@ include ":keys:key";
 include ":crafting:/include/caracteristicasFabricacao";
 include ":crafting:/include/util/fabricacaoConstants";
 include "include/epicUtils";
+include ":itemutils:itemInfo";
 
 var LISTA_TIPO_MATERIAL := PegaListaTipoMateriais();
 var itemsConfig := ReadConfigFile(":*:itemdesc");
@@ -161,12 +162,12 @@ function CalculaValorPico(quem, pericia)
 	return AP_GetSkill(quem,pericia) / 20;
 endfunction
 
-function PegaDificuldadeFrabicarObjeto(quem, objtype, nomeProfissao, nomePericia, classe , produto := 0, estacao  := 0)
+function PegaDificuldadeFrabicarObjeto(quem, objtype, nomeProfissao, nomePericia, classe, sucessosNecessarios , produto := 0, estacao  := 0)
 	var skill :=  PegaSkillNecessaria(objtype, nomeProfissao, classe);
-	return PegaDificuldade(quem, skill, nomePericia, produto, estacao);
+	return PegaDificuldade(quem, skill, nomePericia,sucessosNecessarios, produto, estacao);
 endfunction 
 
-function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, estacao  := 0)
+function PegaDificuldade( quem, skillNecessaria, nomePericia, sucessosNecessarios, produto := 0, estacao  := 0)
 	 var retorno := struct;
 	 
 	 retorno.+skill := CDbl(skillNecessaria);
@@ -176,7 +177,8 @@ function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, esta
 	 retorno.+chanceBase := PegaChanceFabricacaoBase(quem,
 												nomePericia,
 												retorno.skill,
-												retorno.chancePelaSkill);
+												retorno.chancePelaSkill,
+												sucessosNecessarios);
 	
 	
 	var propFabricado := GetObjProperty(produto, PROPNAME_FABRICADO );
@@ -188,7 +190,7 @@ function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, esta
 			var chanceCalculada := cint(componente.poderAvaliado.poderContado) * -1;
 			
 			var modificador := struct{
-				origem := BLUE + "Dificuldade {} :{} {}%<br>".format(componente.item.nome,chanceCalculada < 0? RED_FIRE: SOFT_GREEN, "{}"),
+				origem := BLUE + "{}Dificuldade {}<br>".format(chanceCalculada < 0? RED_FIRE: SOFT_GREEN, componente.item.nome),
 				valor :=  chanceCalculada
 			};
 
@@ -199,15 +201,52 @@ function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, esta
 	endif
 
 	retorno.+chanceTotal := retorno.chanceBase + retorno.chanceModificadaTotal;
-	retorno.chanceTotal := retorno.chanceTotal < 0 ? 0: retorno.chanceTotal;
+	retorno.chanceTotal := cdbl(retorno.chanceTotal) < 0.0  ? 0.0 : cdbl(retorno.chanceTotal);
+	retorno.+chanceTratamentoFinal := PegaChanceTratamentoFinal(retorno.chanceTotal / 100, sucessosNecessarios);
 	return retorno;
 endfunction
 
-function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem, byref chancePelaSkill)
+function PegaChanceTratamentoFinal(chanceSucesso,sucessosNecessarios)
+
+	sucessosNecessarios := cint(sucessosNecessarios);
+	var chanceFalha := 1.0 - chanceSucesso;
+	var chanceFinal := 0.0;
+
+	for y := 0 to (PegaMaximoFalhas(0,sucessosNecessarios) - 1)
+		sleepms(2);
+		var combination := Comb(sucessosNecessarios + y - 1 , y);
+		chanceFinal := chanceFinal + combination * Pow(chanceSucesso, sucessosNecessarios) * Pow(chanceFalha, y);
+	endfor
+	
+	return Trunc(chanceFinal * 100, 1);
+endfunction
+
+function PegaDeslocamentoFacilitador(sucessos)
+	if(sucessos >= 14)
+		return 46;
+	elseif(sucessos > 10)
+		return 40;
+	elseif(sucessos > 8)
+		return 20;
+	elseif(sucessos > 6)
+		return 10;
+	else
+		return 0;
+	endif
+endfunction
+
+function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem, byref chancePelaSkill, sucessosNecessarios)
 	var valorPericia := AP_GetTrueSkill(quem, pericia);
 	valorPericia := ApplySkillModifiers(quem, pericia, valorPericia); 
 	chancePelaSkill := CalcSuccessPercent(quem, pericia,CDbl(dificuldadeItem), CDbl(valorPericia));
-	return  Trunc(CHANCE_FABRICACAO_MAX * (chancePelaSkill/100.0), 1);
+	if(chancePelaSkill == 0)
+		return 0;
+	endif
+	var chanceFacilitada := chancePelaSkill + PegaDeslocamentoFacilitador(sucessosNecessarios);
+	if(chanceFacilitada >= 100)
+		return 100;
+	endif
+	return  Trunc(chanceFacilitada, 1);
 endfunction
 
 function CriaComponenteDescriptor(objtype, chaveMaterial, qualidade, encaixe, configRecursos)
@@ -316,12 +355,11 @@ function AplicaAtributosItemFabricado(quem, item, propFabricadoMontado)
 	endif
 
 	AplicaFechadura(quem, item);
-	item.setAttrBase();
 endfunction
 
 function ResolveEfeitoCaracteristica(valorEfeito)
 	var isFormatoTier := Find(valorEfeito,"t-",1);
-	
+
 	if(isFormatoTier)
 		var tier := Cint(SubStr(valorEfeito,isFormatoTier + 2, 1));
 		return PegaComponenteTierDesc(tier).valor;
@@ -465,16 +503,25 @@ function isEstacaoValida(quem, estacaoAlvo, profissao)
 	return 0;
 endfunction
 
-function PegaDescDuracaoFabricacao(qtdSucessos)
-	case(qtdSucessos)
-		"EXTREMAMENTE_LONGO": return struct{ desc := "Extremamente Longo" , sucessos := 24}; break;
-		"MUITO_LONGO": return struct{ desc := "Muito Longo" , sucessos := 20}; break;
-		"LONGO": return struct{ desc := "Longo" , sucessos := 15}; break;
+function PegaDescDuracaoFabricacao(tagTempo)
+	case(tagTempo)
+		"EXTREMAMENTE_LONGO": return struct{ desc := "Extremamente Longo" , sucessos := 14}; break;
+		"MUITO_LONGO": return struct{ desc := "Muito Longo" , sucessos := 12}; break;
+		"LONGO": return struct{ desc := "Longo" , sucessos := 10}; break;
 		"EXTREMAMENTE_RAPIDO": return struct{ desc := "Extremamente Rápido" , sucessos := 2}; break;
-		"MUITO_RAPIDO": return struct{ desc := "Muito Rápido" , sucessos := 5}; break;
-		"RAPIDO": return struct{ desc := "Rápido" , sucessos := 8}; break;
-		default: return struct{ desc := "Razoável" , sucessos := 12}; break;
+		"MUITO_RAPIDO": return struct{ desc := "Muito Rápido" , sucessos := 4}; break;
+		"RAPIDO": return struct{ desc := "Rápido" , sucessos := 6}; break;
+		default: return struct{ desc := "Razoável" , sucessos := 8}; break;
 	endcase
+endfunction
+
+function PegaMaximoFalhas(item, sucessos := 0)
+		if(sucessos == 0)
+			var propFabricado := GetObjProperty(item,PROPNAME_FABRICADO);
+			sucessos := propFabricado.receita.sucessosNecessarios;
+		endif
+
+		return cint(sucessos * MULTIPLICADOR_FALHAS);
 endfunction
 
 function MontaCraftProp(fabricacaoConfig, prop)
@@ -558,3 +605,120 @@ function MontaInfoPote(quem, receitaObjtype)
 	endif
 	return 0;
 endfunction
+
+function DefinePropFabricado(esquema, receita , quem)
+	//Limpa propriedades desnecessárias ou rendundantes.
+	receita.-componentesNecessarios;
+	receita.-materiaisNecessarios;
+	receita.-textoDescItem;
+	receita.-dificuldade;
+	receita.-isVisualizada;
+	receita.-uso;
+
+	esquema.-modificadorCache;
+
+	var propFabricado := struct{ 
+		estado := ITEM_MONTADO,
+		receita := receita,
+		esquema := esquema};
+	
+	if(!receita.isEmpilhavel)
+		propFabricado.+fabricante := quem.serial;
+	endif
+
+	return propFabricado;
+endfunction
+
+function GetMaterialName(obj);
+
+  if ( (obj == "wood") || (obj == "leather") || (obj == "cloth") || (obj == "metal") || (obj == "glass") || (obj == "ossos") || (obj == "stone") || obj == "arrowhead")
+    return obj;
+  else
+    var items := ReadconfigFile("::itemdesc");
+    if (items[obj])
+      return items[obj].desc;
+    endif
+  endif
+
+endfunction
+
+function TruncatePlural(obj_type, add_S := 0)
+        obj_type := CInt(obj_type);
+
+        var config := ReadConfigFile(":*:itemdesc");
+        config := config[obj_type];
+
+        var name;
+        if (config.desc)
+                name := config.desc;
+        elseif (config.name)
+                name := config.name;
+        else
+                return error{"errortext":="Invalid Objtype : " + hex(obj_type) + "."};
+        endif
+
+        if ( !name["%"] )
+                if ( add_S == 0 )
+                        return name;
+                endif
+                if ( name[len(name)] in array{"s"} )
+                        return name;
+                elseif ( name[len(name)] in array{"h","j","x","z"} )
+                        return name + "es";
+                endif
+                return name + "s";
+        endif
+
+        // Will deal with:
+        //
+        //      Bread Stick%s
+        //      Bread Loa%ves/f%
+        //      Lump%s% of Coal
+        //      Loa%ves/f% of Bread
+        //
+        var first := find(name, "%", 1);
+        var slash := find(name, "/", first);
+        var second := find(name, "%", first + 1);
+        if ( slash && !second )
+                // Force-append a % if a '/' exists!
+                name := name + "%";
+                second := len(name);
+        elseif ( !slash )
+                slash := second;
+        endif
+
+        // wwwww%xx[/yy]%[zzzzz]
+        // 12345678     9 01234
+        // 12345678 901 2 34567
+
+        var s_plur := name[first+1, slash-(first+1)];
+        var s_sing := "";
+        if ( slash != first )
+                s_sing := name[slash+1, second-(slash+1)];
+        endif
+
+        var s_first := name[1, first-1];
+        var s_middle := s_plur;
+        var s_last := "";
+
+        if ( len(name) > second )
+                s_last := name[second+1, len(name)-second];
+        endif
+
+        if ( add_S == 0 )
+                s_middle := s_sing;
+        endif
+
+        if ( !s_first )
+                s_first := "";
+        endif
+        if ( !s_middle )
+                s_middle := "";
+        endif
+        if ( !s_last )
+                s_last := "";
+        endif
+        return s_first + s_middle + s_last;
+
+endfunction
+

@@ -15,9 +15,9 @@ program command_Tele(who)
 		return 0;
 	endif
 
-	PlaySoundEffectPrivate(who, SFX_TELEPORT, who);
+	// PlaySoundEffectPrivate(who, SFX_TELEPORT, who);
 	MoveObjectToLocation(who, targ.x, targ.y, targ.z, who.realm, MOVEOBJECT_FORCELOCATION);
-	PlayObjectCenteredEffect(who, FX_SMOKE, 0, 5);
+	// PlayObjectCenteredEffect(who, FX_SMOKE, 0, 5);
 
 	return 1;
 endprogram

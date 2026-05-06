@@ -21,7 +21,17 @@ function GenericBrain()
         if (CheckDarknessCreatureSurvival(me))
             return;
         endif
-    
+
+        // Damage-weighted threat: decay table + reevaluate target if hysteresis
+        // margin is exceeded. DecayThreat self-throttles to 1Hz.
+        DecayThreat();
+        if (ShouldReevaluateTarget())
+            var threat_top := GetTopThreat();
+            if (threat_top && threat_top != me.opponent)
+                SetOpponent(threat_top);
+            endif
+        endif
+
         // If we have an opponent, maintain combat position regardless of events
         if (me.opponent)
             last_activity_time := polcore().systime;
@@ -38,27 +48,43 @@ function GenericBrain()
             endif
         endif
         
-        if (ev)           
+        if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED:
-                    SetOpponent(ev.source);
-                    HandleGenericCombatEvent(ev.source);
+                    AddThreat(ev.source, 0);
+                    if (CanFight(me, ev.source))
+                        SetOpponent(ev.source);
+                        HandleGenericCombatEvent(ev.source);
+                    endif
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
-                    SetOpponent(ev.source);
-                    HandleGenericCombatEvent(ev.source);
+                    AddThreat(ev.source, 0);
+                    UpdateThreatList(me, ev);
+                    if (CanFight(me, ev.source))
+                        SetOpponent(ev.source);
+                        HandleGenericCombatEvent(ev.source);
+                    endif
+                EVID_THREAT_UPDATE:
+                    AddThreat(ev.source, ev.amount);
                 SYSEVENT_ENTEREDAREA:
                     if (!IsAlly(ev.source))
                         // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
-                        SetOpponent(ev.source);
-                        HandleGenericCombatEvent(ev.source);
+                        if (CanFight(me, ev.source))
+                            SetOpponent(ev.source);
+                            HandleGenericCombatEvent(ev.source);
+                        endif
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
                         // Phase 3: Update threat list cache
                         UpdateThreatList(me, ev);
-                        ClearCombatState();
+                        // Only drop combat state if the leaver was our actual opponent.
+                        // Otherwise nearby movement (other players, pets, ally deaths)
+                        // would wipe opponent + threat table mid-fight and strand the NPC.
+                        if (me.opponent && ev.source.serial == me.opponent.serial)
+                            ClearCombatState();
+                        endif
                     endif
                 default:
                     // Ignore other events

@@ -4,7 +4,6 @@ include ":gumps:/include/posicaoGump";
 include ":gumps:autoClose";
 include ":crafting:/gumps/fabricacaoGumps";
 include ":crafting:/include/fabricacaoUtil";
-include ":crafting:/include/tratamentoProduto";
 
 program GerenteTratamentoProduto(parametros)
 	var quem := parametros[1];
@@ -20,7 +19,6 @@ program GerenteTratamentoProduto(parametros)
 	var processoGerente := GetProcess(pidGerente);
 
 	while (retorno)
-
 		var propTratamento := GetObjProperty(produto, PROPNAME_FABRICADO_TRATAMENTO);
 		if (propTratamento)
 			sessao.sucessos := propTratamento.sucessos;
@@ -77,7 +75,10 @@ function InicializaSessao(quem, produto, estacao)
 	sessao.+maximoFalhas := PegaMaximoFalhas(produto);
 	sessao.+dificuldade := PegaDificuldadeFrabicarObjeto(quem, propFabricado.receita.objtype,
 													  propFabricado.receita.profissao, propFabricado.receita.pericia,
-													  propFabricado.receita.receitaClassificada.classe, produto, estacao);
+													  propFabricado.receita.receitaClassificada.classe,
+													  sessao.sucessosNecessarios,
+													  produto, 
+													  estacao);
 
 	sessao.+sucessos := propTratamento.sucessos ? propTratamento.sucessos : 0;
 	sessao.+falhas := propTratamento.falhas ? propTratamento.falhas : 0;

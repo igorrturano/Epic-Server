@@ -15,14 +15,16 @@ class Message(IMessage)
 	var _font; // Font object
 	var _fromWhom; // Mobile object
 	var _toWhom; // Mobile object
-	var _type; // MESSAGE_TYPE enum
-	
+	var _type; // MSG_TYPE enum
+	var _packetLanguage := "ENG"; // Marcador no campo "language" do pacote 0xAE — útil para hooks pularem nossos próprios envios
+
 	function Message(this, text, color := false, font := false, langSource := LANGUAGE::PORTUGUESE, langTarget := LANGUAGE::ENGLISH)
 		this._isAsync := false;
 		this._translate := false;
 		this._text := TranslatableText(text, langSource, langTarget);
 		this._color := color ?: Color();
 		this._font := font ?: Font();
+		this._packetLanguage := "ENG";
 	endfunction
 
 	function GetText(this)
@@ -118,6 +120,34 @@ class Message(IMessage)
 
 	function WantTranslation(this)
 		return this._translate;
+	endfunction
+
+	/**
+	 * Explicitly opt this message into translation. Sets source/target languages,
+	 * marks the message async (so the HTTP call doesn't block the caller),
+	 * and turns on the _translate flag so _WantTranslation honors it.
+	 */
+	function RequestTranslation(this, sourceLang, targetLang)
+		this._text.SetSourceLanguage(sourceLang);
+		this._text.SetTargetLanguage(targetLang);
+		this._translate := true;
+		this.SetAsync(true);
+
+		return this;
+	endfunction
+
+	function GetPacketLanguage(this)
+		return this._packetLanguage;
+	endfunction
+
+	/**
+	 * Define o campo "language" do pacote 0xAE (4 bytes). Usado para marcar
+	 * pacotes gerados pelo servidor (ex.: tradução) para que hooks de fala
+	 * possam diferenciar de mensagens reais do cliente e evitar loops.
+	 */
+	function SetPacketLanguage(this, langcode)
+		this._packetLanguage := langcode;
+		return this;
 	endfunction
 
 	function SendSys(this, who)
@@ -226,13 +256,11 @@ class Message(IMessage)
 	endfunction
 
 	function _WantTranslation(this, who)
-		var wantsTranslation := who.GetProp("langdata"); // Ajeitar essa prop aqui, essa é só um PLACEHOLDER
-		
-		if (wantsTranslation.wantsTranslation)
-			this.SetAsync(true); // Se quiser tradução, obriga a ser async por causa do POST na API de tradução
-		else
-			this.SetAsync(false);
+		if (this._translate)
+			this.SetAsync(true);
+			return true;
 		endif
+		return false;
 	endfunction
 endclass
 

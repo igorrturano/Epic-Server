@@ -1,0 +1,45 @@
+use uo;
+use os;
+use vitals;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Controller/DamageController_legacy";
+include ":timedScripts:timedScripts";
+include ":charactercreation:resists";
+include "include/utils";
+
+program TailSwipe(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead)
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	var swipe_damage := tier * 4;
+
+	PrintTextAbove(me, "*golpe de cauda*");
+	PlaySoundEffect(me, 0x233);
+
+	var targets := ListMobilesNearLocation(me.x, me.y, me.z, 2, me.realm);
+	foreach mobile in (targets)
+		sleepms(2);
+		if (mobile.serial == me.serial || mobile.dead)
+			continue;
+		endif
+		if (mobile.npctemplate && !mobile.master)
+			continue;
+		endif
+
+		DamageFLS(mobile, swipe_damage, DMG_FORCED, me, "tailswipe");
+		if (!CheckResist(mobile, REFLEXES, RESIST_HARD))
+			TS_StartTimer(mobile, "lentidao", 3);
+			PushMobile(me, 8, 100, mobile);
+		else
+			SendSysMessageEx(mobile, "Você se firma e resiste ao empurrão!", SSM_REQUEST);
+		endif
+	endforeach
+
+	return 1;
+endprogram

@@ -56,9 +56,14 @@ program skinning(parms)
 	if (GetObjProperty(cadaver, "cut") == "1")
 		SendSysMessage(who, "Voce nao pode pegar mais coisas desse corpo.");
 		foreach thing in EnumerateItemsInContainer(cadaver)
-			MoveObjectToLocation(thing, cadaver.x, cadaver.y, cadaver.z, cadaver.realm, MOVEOBJECT_FORCELOCATION);
+			if (thing.layer == LAYER_HAIR || thing.layer == LAYER_BEARD)
+				DestroyItem(thing);
+			elseif (thing.movable == 0)
+				DestroyItem(thing);
+			else
+				MoveObjectToLocation(thing, cadaver.x, cadaver.y, cadaver.z, cadaver.realm, MOVEOBJECT_FORCELOCATION);
+			endif
 		endforeach
-		// DestroyItem(cadaver);
 		return;
 	elseif ((GetObjProperty(cadaver, "npctemplate") == error) && (GetObjProperty(cadaver, "morto") != 1))
 		if ((idadeChar(who) > 30))
@@ -169,7 +174,7 @@ program skinning(parms)
 					endif
 					qtd := minamt;
 					if (MobileWrapper(who).HasAbility(ABILITY_ID::NO_WASTE))
-						qtd := qtd + CInt(qtd * AP_GetSkill(who, SURVIVAL) / 100);
+						qtd := CInt(qtd) + CInt(qtd * AP_GetSkill(who, SURVIVAL) / 100);
 					endif
 					var item := CreateItemInContainer(cadaver, cstr(thing), cint(qtd));
 					found := 1;

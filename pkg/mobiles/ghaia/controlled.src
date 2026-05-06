@@ -494,6 +494,10 @@ function Transfer(targ)
 		return;
 	endif
 
+	// Limpa qualquer estado de estabulo/limbo antes de trocar de dono
+	ClearPetStableAndLimboState(me);
+	ClearMasterLimboRef(me.master, me.serial);
+
 	Say("*" + me.name + " aceita " + targ.name + " como novo dono*");
 
 	SetObjProperty(me, "owner", targ.serial);
@@ -509,6 +513,8 @@ endfunction
 function UnTame()
 
 	PrintTextPrivate(me, "*" + me.name + " pode viver livre novamente.*", me.master);
+	ClearPetStableAndLimboState(me);
+	ClearMasterLimboRef(me.master, me.serial);
 	ErasePet(me.master, me.serial);
 	me.SetMaster(0);
 

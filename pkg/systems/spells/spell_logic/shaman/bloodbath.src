@@ -7,13 +7,15 @@ include "include/epicConstants";
 include "include/client";
 include ":message:model/Message";
 include ":death:death";
+include ":spells:Controller/SC_Damage";
 
 program spell_bloodbath(params)
     var who := params[1];
     var info := params[2];
+    var spell := params[3];
     SendSysMessageEx(who, "Você invoca um Banho de Sangue!", SSM_INFO);
     if (who.gender == 0)
-        PlaySoundEffect(who, 0x697); // blood laughter
+        // PlaySoundEffect(who, 0x697); // blood laughter
     endif
 
     var shaman_souls := CInt(GetObjProperty(who, "shaman_souls"));
@@ -74,8 +76,10 @@ program spell_bloodbath(params)
     foreach victim_data in victims
         var mobile := victim_data.mobile;
 
-        // Kill the creature normally to generate loot (DON'T use GuardKill - it destroys loot!)
-        ApplyRawDamage(mobile, hp_threshold);
+        // Kill the creature normally to generate loot (DON'T use GuardKill - it destroys loot!).
+        // SC_DealDamage routes through DamageFLS so loot generation works AND the shaman gets
+        // proper AFTER_DAMAGE / ON_KILL hook credit for each soul harvested.
+        SC_DealDamage(who, mobile, CInt(spell.id), hp_threshold, DMG_FORCED);
     endforeach
 
     // Wait for death processing to complete

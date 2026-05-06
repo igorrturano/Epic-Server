@@ -6,6 +6,7 @@ use uo;
 use os;
 use vitals;
 use math;
+use util;
 
 include "include/say";
 include ":gumps:gumps";
@@ -20,6 +21,9 @@ include ":mastery:controllers/CombatController";
 include ":achievements:controllers/CombatController";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":containers:storageAreas";
+include ":diceroll:include/model/Dice";
+include ":equipsys:Controller/WeaponController";
+include "include/epicNPCUtils";
 
 const MAX_LEVEL := 20;
 
@@ -168,11 +172,186 @@ function UpdateXPClient(who)
     packet.SendPacket(who);
 endfunction
 // =============================================================================
+// CHALLENGE RATE - Combina HP, dano, velocidade e resist fis em um score.
+// Formula: (eff_hp * threat) ^ 0.79; XP = tier * raw / 91, min 1 para tier >=1.
+// Calibrada pra Lagarto~8, Netjekh~94, Red Dragon~507.
+// =============================================================================
+function NPC_ParseDiceAvg(diceStr)
+    var d := Dice(diceStr);
+    return (CDbl(d.GetMinimum()) + CDbl(d.GetMaximum())) / 2.0;
+endfunction
+
+function NPC_GetSpeedMult(speedTag)
+    case (Upper(speedTag))
+        "MELEE_LOW":   return 1.0;
+        "MELEE_MID":   return 1.2;
+        "MELEE_HIGH":  return 1.4;
+        "MELEE_FAST":  return 1.6;
+        "RANGED_LOW":  return 1.0;
+        "RANGED_MID":  return 1.2;
+        "RANGED_HIGH": return 1.4;
+        "RANGED_FAST": return 1.6;
+        default:       return 1.0;
+    endcase
+endfunction
+
+function NPC_GetChallengeRate(npc_cfg)
+    var hits_str := npc_cfg.HITS;
+    if (hits_str == error)
+        return 0.0;
+    endif
+    var avg_hp := NPC_ParseDiceAvg(hits_str);
+
+    var phys_avg := 0.0;
+    var fis_str := npc_cfg.EpicFisResists;
+    if (fis_str != error)
+        var tiers := SplitWords(fis_str);
+        var rsum := 0;
+        foreach t in tiers
+            rsum := rsum + GetResistValueByTier(t);
+        endforeach
+        if (tiers.size() > 0)
+            phys_avg := CDbl(rsum) / CDbl(tiers.size());
+        endif
+    endif
+
+    // T5 daria divisão por zero; cap em 5x.
+    var phys_mult := 1.0;
+    if (phys_avg >= 100.0)
+        phys_mult := 5.0;
+    elseif (phys_avg > 0.0)
+        phys_mult := 1.0 / (1.0 - phys_avg / 100.0);
+    endif
+    var eff_hp := avg_hp * phys_mult;
+
+    var avg_dmg := 0.0;
+    var dmg_str := npc_cfg.EpicAttackDamage;
+    if (dmg_str != error)
+        var dmg_tags := SplitWords(dmg_str);
+        var dsum := 0.0;
+        var n := 0;
+        foreach tag in dmg_tags
+            var dice_str := getDamageByTier(tag);
+            if (dice_str == error)
+                continue;
+            endif
+            if (dice_str == 0)
+                continue;
+            endif
+            dsum := dsum + NPC_ParseDiceAvg(dice_str);
+            n := n + 1;
+        endforeach
+        if (n > 0)
+            avg_dmg := dsum / CDbl(n);
+        endif
+    endif
+
+    var spd_mult := 1.0;
+    var spd_str := npc_cfg.EpicAttackSpeed;
+    if (spd_str != error)
+        spd_mult := NPC_GetSpeedMult(spd_str);
+    endif
+
+    var threat := avg_dmg * spd_mult;
+
+    if (eff_hp <= 0.0 || threat <= 0.0)
+        return 0.0;
+    endif
+
+    return Pow(eff_hp * threat, 0.79);
+endfunction
+
+// =============================================================================
+// LEVEL GAP MODIFIER - Banda por tier: top = tier*4, bot = top - 3
+// (T1=1-4, T2=5-8, T3=9-12, T4=13-16, T5=17-20).
+// Acima da banda decai; abaixo, recompensa matar acima do peso.
+// Newbies (lvl 1-5) nunca sofrem decay.
+// =============================================================================
+function GetLevelGapModifier(player_level, tier)
+    if (tier <= 0)
+        return 1.0;
+    endif
+
+    var band_top := tier * 4;
+    var band_bot := band_top - 3;
+    var modifier := 1.0;
+
+    if (player_level > band_top)
+        var gap := player_level - band_top;
+        if (gap == 1)
+            modifier := 0.85;
+        elseif (gap == 2)
+            modifier := 0.70;
+        elseif (gap == 3)
+            modifier := 0.50;
+        elseif (gap == 4)
+            modifier := 0.25;
+        else
+            modifier := 0.0;
+        endif
+    elseif (player_level < band_bot)
+        var gap := band_bot - player_level;
+        if (gap >= 3)
+            modifier := 1.30;
+        elseif (gap == 2)
+            modifier := 1.20;
+        elseif (gap == 1)
+            modifier := 1.10;
+        endif
+    endif
+
+    if (player_level <= 5 && modifier < 1.0)
+        modifier := 1.0;
+    endif
+
+    return modifier;
+endfunction
+
+// =============================================================================
+// GLOBAL XP BOOST - Multiplier global ativado por GM; expira sozinho.
+// Estado em GlobalProperty "XPBoost": struct{ mult, until } (gameclock).
+// Cleared = 0.
+// =============================================================================
+function GetActiveXPBoostMult()
+    var boost := GetGlobalProperty("XPBoost");
+    if (boost == error || boost == 0)
+        return 1.0;
+    endif
+    if (CInt(boost.expires) <= ReadGameClock())
+        return 1.0;
+    endif
+    return CDbl(boost.mult);
+endfunction
+
+function SetXPBoost(mult, minutes)
+    var expires := ReadGameClock() + (minutes * 60);
+    SetGlobalProperty("XPBoost", struct{ mult := mult, expires := expires });
+    return expires;
+endfunction
+
+function ClearXPBoost()
+    SetGlobalProperty("XPBoost", 0);
+    return 1;
+endfunction
+
+function GetXPBoostStatus()
+    var boost := GetGlobalProperty("XPBoost");
+    if (boost == error || boost == 0)
+        return 0;
+    endif
+    var remaining := CInt(boost.expires) - ReadGameClock();
+    if (remaining <= 0)
+        return 0;
+    endif
+    return struct{ mult := CDbl(boost.mult), seconds := remaining };
+endfunction
+
+// =============================================================================
 // COMBAT XP - Called from npcdeath.src
 // =============================================================================
 function handleExpGain(corpse)
     var nearby := ListMobilesNearLocationEx(
-        corpse.x, corpse.y, LIST_IGNORE_Z, 8,
+        corpse.x, corpse.y, LIST_IGNORE_Z, 16,
         LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, corpse.realm
     );
 
@@ -193,28 +372,80 @@ endfunction
 function AwardXPFromKill(killers, corpse)
     var template := GetObjProperty(corpse, "npctemplate");
     var npc_cfg := NPC_GetNPCConfig(template);
+    var tier := CInt(npc_cfg.Tier);
 
-    var tier := npc_cfg.Tier;
-    var xp_gain := tier ? (tier * 25) : 5;
-
-    if (killers.size() > 1)
-        xp_gain := CInt(xp_gain * (1 + killers.size() * 0.1));
+    var base_xp := 0.0;
+    if (tier > 0)
+        base_xp := tier * NPC_GetChallengeRate(npc_cfg) / 91.0;
     endif
 
-    xp_gain := CInt(xp_gain / killers.size());
+    var party_mult := 1.0;
+    if (killers.size() > 1)
+        party_mult := 1.0 + killers.size() * 0.1;
+    endif
+    var split := CDbl(killers.size());
+    var boost_mult := GetActiveXPBoostMult();
 
     foreach killer in killers
-        AddXP(killer, xp_gain);
+        var lvl_mod := GetLevelGapModifier(GetPlayerLevel(killer), tier);
+        var killer_xp := CInt(base_xp * lvl_mod * boost_mult * party_mult / split);
+        if (killer_xp == 0 && lvl_mod > 0.0 && base_xp > 0.0)
+            killer_xp := 1;
+        endif
+        AddXP(killer, killer_xp);
         MasteryCombat_Advance(MobileWrapper(killer), dictionary{
 			MasteryCombatAtributes::Kills -> 1
 		});
         AchievementCombat_Advance(killer, corpse, struct{
-			xp := xp_gain,
+			xp := killer_xp,
 			kills := 1
 		});
     endforeach
 
     return 1;
+endfunction
+
+// =============================================================================
+// CRAFT XP - Called from controladoraComplexos.inc FabricaItemMontado
+// Formula: tier = diff/20, xp = tier * 5. diff < 20 => no award.
+// Stackable items and non-whitelisted (skill, category) pairs are skipped.
+// =============================================================================
+function AwardXPFromCraft(who, receita, skill, categoria)
+    if (!who || !receita)
+        return 0;
+    endif
+    if (receita.isEmpilhavel)
+        return 0;
+    endif
+
+    var allowed := dictionary{
+        "Tailoring"         -> array{"Armas", "LeatherArmor", "StuddedArmor",
+                                      "Gibao de Peles", "Armaduras de Ossos",
+                                      "Armaduras Especiais"},
+        "Blacksmithy"       -> array{"Axes", "Blades", "Blunt", "Polearms",
+                                      "Shields", "RingMail", "ChainMail",
+                                      "Platemail", "Helmets", "SteamArmor"},
+        "Carpentry"         -> array{"Armas e Escudos"},
+        "BowcraftFletching" -> array{"Armas"},
+        "Alchemy"           -> array{"Elixires", "Tonicos", "Toxinas",
+                                      "Explosivos", "Diversos"}
+    };
+
+    if (!allowed.Exists(skill))
+        return 0;
+    endif
+    if (!(categoria in allowed[skill]))
+        return 0;
+    endif
+
+    var tier := Cint(Cint(receita.dificuldade.skill) / 20);
+    if (tier < 1)
+        return 0;
+    endif
+
+    var xp_gain := CInt(tier * 5 * GetActiveXPBoostMult());
+    AddXP(who, xp_gain);
+    return xp_gain;
 endfunction
 
 // =============================================================================

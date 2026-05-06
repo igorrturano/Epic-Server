@@ -32,6 +32,18 @@ function AnimalBrain()
             SM_TickFollowing();
         elseif (state == "AMBUSH")
             SM_TickAmbush();
+        elseif (state == "INVESTIGATING")
+            SM_TickInvestigate();
+        endif
+
+        // Damage-weighted threat: decay table + reevaluate target if hysteresis
+        // margin is exceeded. DecayThreat self-throttles to 1Hz.
+        DecayThreat();
+        if (ShouldReevaluateTarget())
+            var threat_top := GetTopThreat();
+            if (threat_top && threat_top != me.opponent)
+                SetOpponent(threat_top);
+            endif
         endif
 
         if (me.opponent)
@@ -40,7 +52,9 @@ function AnimalBrain()
                 HandleAnimalLeftArea(me.opponent);
             else
                 if (SM_GetState() != "FLEEING")
-                    PursueTarget(me.opponent);
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
                 endif
             endif
         endif
@@ -52,6 +66,7 @@ function AnimalBrain()
             case (ev.type)
                 SYSEVENT_ENGAGED:
                     last_activity_time := polcore().systime;
+                    AddThreat(ev.source, 0);
                     if (should_flee)
                         SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
                     else
@@ -60,6 +75,8 @@ function AnimalBrain()
                     endif
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
+                    AddThreat(ev.source, 0);
+                    UpdateThreatList(me, ev);
                     if (SM_GetState() == "AMBUSH")
                         me.hidden := 0;
                         SM_TransitionTo("COMBAT");
@@ -69,6 +86,8 @@ function AnimalBrain()
                     else
                         HandleAnimalCombatEvent(ev.source);
                     endif
+                EVID_THREAT_UPDATE:
+                    AddThreat(ev.source, ev.amount);
                 SYSEVENT_ENTEREDAREA:
                     if (CheckDarknessCreatureSurvival(me))
                         return;
@@ -81,7 +100,12 @@ function AnimalBrain()
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
                         UpdateThreatList(me, ev);
-                        HandleAnimalLeftArea(ev.source);
+                        // Only drop combat state if the leaver was our actual opponent.
+                        // Otherwise nearby movement (other players, pets, ally deaths)
+                        // would wipe opponent + threat table mid-fight and strand the NPC.
+                        if (me.opponent && ev.source.serial == me.opponent.serial)
+                            HandleAnimalLeftArea(ev.source);
+                        endif
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
@@ -94,8 +118,17 @@ function AnimalBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    SetOpponent(0);
+                    InjectTauntThreat(ev.source);
                     HandleAnimalCombatEvent(ev.source);
+                EVID_NOISE:
+                    last_activity_time := polcore().systime;
+                    if (!me.opponent && SM_GetState() == "IDLE" && me.alignment != 0)
+                        print("[noise rx] " + me.name + " investigating noise from " + ev.source.name);
+                        SM_TransitionTo("INVESTIGATING", struct{
+                            "noise_x" := ev.noise_x,
+                            "noise_y" := ev.noise_y
+                        });
+                    endif
                 EVID_PEACEMADE:
                     last_activity_time := polcore().systime;
                     SetWarMode(0);
@@ -153,16 +186,22 @@ function HandleAnimalCombatEvent(opponent)
         return 0;
     endif
 
+    // Rural Life is player-only, so on pets we check the master, on players the player itself.
+    var rural_target := opponent.master ?: opponent;
+    if (MobileWrapper(rural_target).HasAbility(ABILITY_ID::RURAL_LIFE))
+        return 0;
+    endif
+
     // Check for health-based teleport
     CheckHealthTeleport(me);
 
-    if (me.isSpider() && opponent.getRace() == DROW)
+    if (NPC_GetCachedData(me).npc_race == "aranha" && opponent.getRace() == DROW)
         var tier := CInt(me.getTier());
         if (tier <= 2)
             return 0;
-        elseif (tier <= 3 && opponent.getCulture == HAROLOTH)
+        elseif (tier <= 3 && opponent.getCulture() == HAROLOTH)
             return 0;
-        elseif (tier <= 4 && opponent.getReligion == ELUITHORTH)
+        elseif (tier <= 4 && opponent.getReligion() == ELUITHORTH)
             return 0;
         endif
         // Tier 5 sempre desafia drows para testar se são oponentes valiosos

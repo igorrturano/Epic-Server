@@ -11,6 +11,7 @@ include ":attributes:attributes";
 include ":attributes:skillCheck";
 include ":crafting:toolWear";
 include ":gathering:mining";
+include ":gathering:meteoritos";
 include "include/say";
 include ":charactercreation:habilidades";
 include ":wrappers:Objects/Model/MobileWrapper";
@@ -39,12 +40,16 @@ program OreMining(who, tool)
 	var targ := TargetCoordinates(who);
 	var quebravel := GetObjProperty(targ.item, "quebrável");
 
+	if (targ.item && IsMeteorite(targ.item))
+		return MeteoriteExtractFlow(who, tool, targ.item);
+	endif
+
 	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2)
 		SendSysMessage(who, "Muito longe.");
 		return;
 	elseif (!CanMine(targ, "Stone"))
 		var maps := GetMapsInBackpack(who);
-		SendSysMessage(who, "DEBUG: Mapas encontrados: " + maps.size());
+		print("DEBUG: Mapas encontrados: " + maps.size());
 
 		if (maps.size() > 0)
 			var map := maps[1];
@@ -52,13 +57,13 @@ program OreMining(who, tool)
 				SendSysMessageEx(who, "Escolha o mapa que quer procurar.", SSM_REQUEST);
 				map := target(who);
 				if (!(IsTreasureMap(map)))
-					SendSysMessage(who, "DEBUG: Mapa inválido selecionado");
+					print("DEBUG: Mapa inválido selecionado");
 					return;
 				endif
 			endif
 
 			// Verificações adicionais de debug
-			SendSysMessage(who, "DEBUG: Verificando mapa...");
+			print("DEBUG: Verificando mapa...");
 			if (!IsTreasureMap(map))
 				SendSysMessageEx(who, "Este mapa não parece ser um mapa do tesouro válido.", SSM_FAIL);
 				return;
@@ -75,7 +80,7 @@ program OreMining(who, tool)
 			endif
 
 			var coords := GetMapCoordinates(map);
-			SendSysMessage(who, "DEBUG: Coordenadas do mapa - X: " + coords.x + " Y: "
+			print("DEBUG: Coordenadas do mapa - X: " + coords.x + " Y: "
 							+ coords.y + " Z: " + coords.z);
 
 			// Tenta iniciar a escavação
@@ -143,6 +148,9 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 
 	var ore_amount := GetOreAmount(who.realm, targx, targy); // feita
 	var difficulty := DetermineMiningDifficulty(ore_type); // feita
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
+		difficulty := difficulty - 5;
+	endif
 
 	if (who.cmdlevel > 2)
 		SendSysMessage(who, "ore " + ore_type);
@@ -212,28 +220,25 @@ function mineraRaroAleatorio(who)
 		achou := 1;
 		CreateItemInBackPack(who, 0x6308, 1); // return 95; //mithril
 	elseif (rand < 0.2)
-		SendSysMessage(who, "Achou um pouco de Galvorn em meio ao minérios.");
-		CreateItemInBackPack(who, 0x6310, 1); // return 95; //galvorn
+		SendSysMessage(who, "Achou um pouco de Atrita em meio ao minérios.");
+		CreateItemInBackPack(who, 0x6307, 1); // atrita raw
 		achou := 1;
 	elseif (rand < 0.4)
-		SendSysMessage(who, "Achou um pouco de Fulmetium  em meio ao minérios.");
-		CreateItemInBackPack(who, 0x6302, 1); // return 70; //fulmetium
+		SendSysMessage(who, "Achou um pouco de Fulmetita em meio ao minérios.");
+		CreateItemInBackPack(who, 0x6302, 1); // fulmetita raw
 		achou := 1;
 	elseif (rand < 0.6)
-		SendSysMessage(who, "Achou um pouco de Venetium em meio ao minérios.");
-		CreateItemInBackPack(who, 0x6303, 1); // return 70; //venetium
+		SendSysMessage(who, "Achou um pouco de Venetita em meio ao minérios.");
+		CreateItemInBackPack(who, 0x6303, 1); // venetita raw
 		achou := 1;
 	elseif (rand < 0.8)
-		SendSysMessage(who, "Achou um pouco de Ignium em meio ao minérios.");
-		CreateItemInBackPack(who, 0x6304, 1); // return 70; //ignium
+		SendSysMessage(who, "Achou um pouco de Ignitita em meio ao minérios.");
+		CreateItemInBackPack(who, 0x6304, 1); // ignitita raw
 		achou := 1;
 	elseif (rand < 1.0)
-		SendSysMessage(who, "Achou um pouco de frigutium em meio ao minérios.");
-		CreateItemInBackPack(who, 0x6460, 1); // return 70; //frigutium
+		SendSysMessage(who, "Achou um pouco de Frigutita em meio ao minérios.");
+		CreateItemInBackPack(who, 0x6451, 1); // frigutita raw
 		achou := 1;
-	elseif (rand < 1.2)
-		SendSysMessage(who, "Achou um pouco de Litan em meio ao minérios.");
-		return CreateItemInBackPack(who, 0x6301, 1); // return 60; //litan
 	elseif (rand < 1.4)
 		SendSysMessage(who, "Achou um pouco de Ouro em meio ao minérios.");
 		CreateItemInBackPack(who, 0x6305, 1); // return 40; //golden

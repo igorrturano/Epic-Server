@@ -16,10 +16,15 @@ include ":tn:cooldown";
 include "include/facings";
 
 function CheckParry(byRef attackInfo)
+	// Spells default to skipping parry — there's nothing to parry a fireball with.
+	if (attackInfo.ShouldSkipParry())
+		return false;
+	endif
+
 	var attacker := attackInfo.GetAttacker();
 	var defender := attackInfo.GetDefender();
 	var attackerPos := attacker.GetPosition();
-	
+
 	if (attacker.GetObjRef().GetProp("backstab") || // Se for habilidade de ataque pelas costas
 		IsBehind(defender.GetObjRef(), attackerPos.GetX(), attackerPos.GetY()) || // Se o atacante estiver atrás do defensor
 		!defender.IsWarMode() || // Se o defensor não estiver em war mode
@@ -133,8 +138,47 @@ function CalculateParryChance(byRef attackInfo)
 		parryBonus := parryBonus + tempParryBonus;
 	endif
 
-	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::REFLEXO_ESTRATEGICO))
-		skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
+	// HeavyArmorSpec: +1 chance de parry por peca de armadura pesada equipada
+	// (max +5). Contagem ao vivo — robusta contra trocas de gear em combate
+	// sem precisar de propriedade espelhada. Somado ao parryBonus (bonus flat)
+	// para nao receber o multiplicador weapon-only de WANDERER_PATH abaixo.
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::HEAVY_ARMOR_SPEC))
+		var heavyCount := 0;
+		foreach item in (ListEquippedItems(attackInfo.GetDefender().GetObjRef()))
+			if (item.IsA(POLCLASS_ARMOR))
+				var armor := ArmorWrapper(item);
+				var protType := armor.GetTipoProtecao();
+				if (protType && protType["Armadura Pesada"])
+					heavyCount += 1;
+				endif
+			endif
+		endforeach
+		if (heavyCount > 0)
+			parryBonus := parryBonus + heavyCount;
+		endif
+	endif
+
+	// SwordAndBoard: +5 chance de parry quando defensor usa 1H + escudo. Mesmo
+	// padrao da HeavyArmorSpec acima — inline aqui porque nao existe hook
+	// OnPassiveBeforeParry. Conferencia direta no defender sem reusar
+	// ability._MatchesContext (instancia da ability nao acessivel daqui).
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::SWORD_AND_BOARD))
+		var defWeapon := attackInfo.GetDefender().GetEquipBySlot(WEAPON);
+		if (defWeapon && !(defWeapon is @Exception)
+			&& Upper(defWeapon.GetAttribute()) == Upper(ONEHANDED)
+			&& attackInfo.GetDefender().GetObjRef().shield)
+			parryBonus := parryBonus + 5;
+		endif
+	endif
+
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::POSTURA_DE_DUELO))
+		var offhand := GetEquipmentByLayer(attackInfo.GetDefender().GetObjRef(), LAYER_HAND2);
+		if (offhand && offhand.objtype == 0x1B73)
+			skill := CInt(attackInfo.GetDefender().GetSkill(TACTICS));
+			DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_HAB, Message($"Postura de Duelo ativa: usando Tactics para calcular parry chance ({skill})", Color(SYSTEM_COLOR::INFO)));
+		else
+			skill := CInt(attackInfo.GetDefender().GetSkill(PARRY));
+		endif
 	else
 		skill := CInt(attackInfo.GetDefender().GetSkill(PARRY));
 	endif

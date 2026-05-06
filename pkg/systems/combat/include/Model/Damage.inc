@@ -272,6 +272,7 @@ class Damage(IDamage)
 
 	function DecreaseSlashRawDamage(this, value)
 		this.SlashRaw -= CInt(value);
+		this.SlashBase -= CInt(value);
 		return this;
 	endfunction
 
@@ -343,6 +344,45 @@ class Damage(IDamage)
 
 	function DecreaseEnergyBaseDamage(this, value)
 		this.EnergyBase -= CInt(value);
+		return this;
+	endfunction
+
+	// Reducoes multiplicativas por % (0-100). Aplicam Base = Base * (100 - pct) / 100.
+	// Usadas no novo pipeline de armor % (ver design_combate.md). Layers que ainda
+	// trabalham com flat (manashield, abilities de absorcao pre-Phase 7) continuam
+	// usando os Decrease*BaseDamage acima.
+	function DecreaseSlashPercentDamage(this, pct)
+		this.SlashBase := CInt(this.SlashBase * (100 - CInt(pct)) / 100);
+		return this;
+	endfunction
+
+	function DecreasePiercingPercentDamage(this, pct)
+		this.PiercingBase := CInt(this.PiercingBase * (100 - CInt(pct)) / 100);
+		return this;
+	endfunction
+
+	function DecreaseBluntPercentDamage(this, pct)
+		this.BluntBase := CInt(this.BluntBase * (100 - CInt(pct)) / 100);
+		return this;
+	endfunction
+
+	function DecreaseFirePercentDamage(this, pct)
+		this.FireBase := CInt(this.FireBase * (100 - CInt(pct)) / 100);
+		return this;
+	endfunction
+
+	function DecreaseColdPercentDamage(this, pct)
+		this.ColdBase := CInt(this.ColdBase * (100 - CInt(pct)) / 100);
+		return this;
+	endfunction
+
+	function DecreasePoisonPercentDamage(this, pct)
+		this.PoisonBase := CInt(this.PoisonBase * (100 - CInt(pct)) / 100);
+		return this;
+	endfunction
+
+	function DecreaseEnergyPercentDamage(this, pct)
+		this.EnergyBase := CInt(this.EnergyBase * (100 - CInt(pct)) / 100);
 		return this;
 	endfunction
 

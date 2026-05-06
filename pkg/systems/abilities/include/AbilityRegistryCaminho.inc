@@ -57,6 +57,7 @@ include ":abilities:classes/caminho/FarmerAbilities";
 // CAMINHO - Cross-Class (3600+)
 //===========================================
 include ":abilities:classes/caminho/CrossClassAbilities";
+include ":abilities:classes/caminho/UnarmoredCombat";
 
 // === ABILITY_CLASSES Registrations ===
 
@@ -114,7 +115,6 @@ ABILITY_CLASSES[ABILITY_ID::SCHOOL_SPEC_KAIJIN] := @SchoolSpecKaijin;
 // Caminho - Extrator (3560-3569)
 ABILITY_CLASSES[ABILITY_ID::EXTRACTOR_VIGOR] := @ExtractorVigor;
 ABILITY_CLASSES[ABILITY_ID::GEM_MINER] := @GemMiner;
-ABILITY_CLASSES[ABILITY_ID::CLEAN_CUT] := @CleanCut;
 ABILITY_CLASSES[ABILITY_ID::MINE_RARITIES] := @MineRarities;
 ABILITY_CLASSES[ABILITY_ID::TREASURE_FROM_TRASH] := @TreasureFromTrash;
 ABILITY_CLASSES[ABILITY_ID::PACK_MULE] := @PackMule;
@@ -141,3 +141,4 @@ ABILITY_CLASSES[ABILITY_ID::WRITE_SCROLLS] := @WriteScrolls;
 ABILITY_CLASSES[ABILITY_ID::HEALING_HERBS] := @HealingHerbs;
 ABILITY_CLASSES[ABILITY_ID::ACADEMIC_TRAINING] := @AcademicTraining;
 ABILITY_CLASSES[ABILITY_ID::PRESTIDIGITATOR] := @Prestidigitator;
+ABILITY_CLASSES[ABILITY_ID::UNARMORED_COMBAT] := @UnarmoredCombat;

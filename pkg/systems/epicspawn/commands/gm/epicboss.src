@@ -640,14 +640,14 @@ function ShowPage1(who, title, gump_width, gump_height)
 
 	// Right side - Preview and Profile
 	// Add a preview box for the boss image
-	GFResizePic(gump, 550, 170, 9350, 200, 200);
+	GFResizePic(gump, 550, 170, 9350, 210, 330);
 
 	// If URL is provided, show the image
 	if (form_data.url && form_data.url != "")
-		GFHTMLArea(gump, 550, 170, 200, 200,
-					"<img src=\"" + form_data.url + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">", 0, 0);
+		GFHTMLArea(gump, 550, 170, 210, 330,
+					"<img src=\"" + form_data.url + "\" width=\"210\" height=\"330\" x=\"0\" y=\"0\">", 0, 0);
 	else
-		GFTextMid(gump, 550, 260, 200, 1153, "Preview Image");
+		GFTextMid(gump, 550, 335, 210, 1153, "Preview Image");
 	endif
 
 	// NPC Profile Section
@@ -657,7 +657,7 @@ function ShowPage1(who, title, gump_width, gump_height)
 	GFResizePic(gump, 40, 430, 3000, gump_width - 80, 2);
 
 	// URL for image
-	GFTextLine(gump, 50, 450, 1153, "Image URL (200x200):");
+	GFTextLine(gump, 50, 450, 1153, "Image URL (210x330):");
 	GFTextEntry(gump, 200, 450, 400, 20, 1150, form_data.url ? form_data.url : "", 7);
 
 	// Detailed Description
@@ -3613,7 +3613,7 @@ function SelectMountFromList(who, byref form_data, page := 1)
 	// Collect all mounts
 	foreach template in elem_names
 		var elem := cfg[template];
-		if (elem.Category == "Mount")
+		if (elem.Environment == "Mount")
 			var mount_struct := struct{ "name" := elem.Name, "graphic" := elem.Objtype,
 										"template" := template };
 			available_mounts.append(mount_struct);

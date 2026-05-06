@@ -8,6 +8,7 @@ include "include/epicConstants";
 include ":gumps:epicGumps";
 include ":message:include/model/Message";
 include ":spells:SpellRegistry";
+include "include/epicEconomyAudit";
 //include ":nature:nature";
 //include ":charactercreation:include/RPTraits";
 
@@ -867,7 +868,9 @@ function genericItems(who)
     elseif (chardata.classe == LADINO)
         moedas := "1d12";
     endif
-	CreateItemInBackpack(who, 0xba63, RandomDiceRoll(moedas)); //moedas de cobre
+	var cobre_qty := RandomDiceRoll(moedas);
+	var cobre_stack := CreateItemInBackpack(who, 0xba63, cobre_qty); //moedas de cobre
+	EA_Record(EA_MINT_CHARGEN, cobre_stack, cobre_qty, "CHARGEN:class:" + CStr(chardata.classe), who, "");
     if (chardata.culture == BADURAN)
         CreateItemInicial(who, "boots", 1); 
     else
@@ -1013,7 +1016,7 @@ function weaponsByClassAndCulture(who)
         CreateItemInicial(who, 0xF99D, 1); // Adaga
 
         if (skills[ONEHANDED] >= 1)
-            CreateItemInicial(who, 0x0f5f, 1); // rapiera
+            CreateItemInicial(who, 0xFFCB, 1); // rapiera
         endif
         if (skills[PARRY] >= 1)
             CreateItemInicial(who, 0x1B73, 1); // buckler
@@ -1128,7 +1131,20 @@ function workingItems(who)
     if (skills[MEDICINE] == 3)
 		CreateItemInBackpack(who, 0xedfe, 1);
 		CreateItemInBackpack(who, 0xed2a, 1);
-
+        CreateItemInBackpack(who, 0xf0c8, 1);
+        case(randomint(3))//bisturi
+            1: CreateItemInBackpack(who, 0xD1CE, 1); 
+            2: CreateItemInBackpack(who, 0XD1D1, 1);
+            3: CreateItemInBackpack(who, 0XD1CF, 1);
+        endcase
+        case(randomint(2))// mascara da praga
+            1: CreateItemInBackpack(who, 0xF0C6, 1); 
+            2: CreateItemInBackpack(who, 0xF0C7, 1);
+        endcase
+        case(randomint(2))//sobretudo
+            1:CreateItemInBackpack(who, 0xD1B9, 1); 
+            2:CreateItemInBackpack(who, 0xD1BA, 1);
+        endcase
 		SendSysMessageEX(who, "Você recebeu itens de medicina por ter Medicine como primária.", SSM_INFO);
 	endif
 
@@ -1140,6 +1156,7 @@ function workingItems(who)
 
     if (skills[DOMESTIC_WORK] >= 1)
         CreateItemInicial(who, 0x0f9d, 1); // sewingkit
+		CreateItemInicial(who, 0x702C, 1); // recipebook
     endif
 
     if (skills[DOMESTIC_WORK] >= 1 || skills[MEDICINE] >= 1)
@@ -1159,50 +1176,12 @@ function workingItems(who)
         var dyebook := CreateItemInBackpack(who, "dyebook");
             setobjproperty(dyebook, "serialid", who.serial);
 		    setobjproperty(dyebook, "marked",who.name + " - " + who.acctname);
-        var recipe := struct;
-        var chosenRecipes := AlchChoices(who);
-        var r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.+recipe := chosenRecipes[1];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[2];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[3];
-        SetObjProperty(r1, "recipe", recipe);
-        r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-        recipe.recipe := chosenRecipes[4];
-        SetObjProperty(r1, "recipe", recipe);
-        var i := 0;
-        while(i != (skills[ALCHEMY])*2)
-            var tinta := randomint(1);
-            if(tinta == 0)
-                var t1 := CreateItemInBackpack(who, "tintasrecipe1");
-            else
-                var t1 := CreateItemInBackpack(who, "tintasrecipe2");
-            endif
-            i := ++i;
-        endwhile
-
-        if (skills[ALCHEMY] >= 2)
-		    r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-            recipe.recipe := chosenRecipes[5];
-            SetObjProperty(r1, "recipe", recipe);
-            r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-            recipe.recipe := chosenRecipes[6];
-            SetObjProperty(r1, "recipe", recipe);
-            
-	        if (skills[ALCHEMY] == 3)
-		        var book2:= CreateItemInBackpack(who, "alchemybook");
-        		setobjproperty(book2, "serialid",who.serial);
-		        setobjproperty(book2, "marked",who.name + " - " + who.acctname);
-                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-                recipe.recipe := chosenRecipes[7];
-                SetObjProperty(r1, "recipe", recipe);
-                r1 := CreateItemInBackpack(who, "alchemyrecipe1");
-                recipe.recipe := chosenRecipes[8];
-                SetObjProperty(r1, "recipe", recipe);
-            endif
+        if (skills[ALCHEMY] == 3)
+            var chosenRecipes := AlchChoices(who);
+            foreach chosen in chosenRecipes
+                var r1 := CreateItemInBackpack(who, "alchemyrecipe1");
+                SetObjProperty(r1, "AlchemyRecipe", chosen);
+            endforeach
         endif
 	endif
 endfunction
@@ -1450,25 +1429,25 @@ endfunction
 
 function startAdventureGump(who)
     var textosConfig := ReadConfigFile(":charactercreation:/config/descricoes");
+    var descricao := FindConfigElem(textosConfig, "adventureStart").descricao;
+    var startTime := ReadGameClock();
 
-    var gump := GFCreateGump();
-    GFClosable(gump, 0);
+    var result;
+    do
+        var gump := GFCreateGump();
+        GFClosable(gump, 0);
+        GFResizePic(gump, 0, 0, 9270, 760, 625);
+        GFHTMLArea(gump, 21, 16, 740, 40, "<BASEFONT Size=55 Color=#000000 >Epic! Beta Test - A Ilha", 0, 0);
+        GFHTMLArea(gump, 20, 15, 740, 40, "<BASEFONT Size=55 Color=#ffffff >Epic! Beta Test - A Ilha", 0, 0);
+        GFGumpPic(gump, 20, 50, 0xFFFD);
+        GFHTMLArea(gump, 20, 470, 720, 110, descricao, 1, 1);
+        GFAddButton(gump, 710, 590, 4005, 4007, GF_CLOSE_BTN, 200);
+        result := GFSendGump(who, gump);
+    dowhile (ReadGameClock() - startTime < 10);
 
-    GFResizePic(gump, 0, 0, 9270, 760, 625);
-
-    // Title with shadow (above the image)
-    GFHTMLArea(gump, 21, 16, 740, 40, "<BASEFONT Size=55 Color=#000000 >Epic! Beta Test - A Ilha", 0, 0);
-    GFHTMLArea(gump, 20, 15, 740, 40, "<BASEFONT Size=55 Color=#ffffff >Epic! Beta Test - A Ilha", 0, 0);
-
-    // Adventure main image (below title)
-    GFGumpPic(gump, 20, 50, 0xFFFD);
-
-    // Description and button overlaid on bottom of image
-    GFHTMLArea(gump, 20, 470, 720, 110, FindConfigElem(textosConfig, "adventureStart").descricao, 1, 1);
-
-    GFAddButton(gump, 710, 590, 4005, 4007, GF_CLOSE_BTN, 200);
-    return GFSendGump(who, gump);
+    return result;
 endfunction
+
 
 function languageSelectionGump(who, culture_pic, linguasOpt, known_languages, total_amount)
     var gump := GFCreateGump();
@@ -2418,18 +2397,25 @@ function AlchChoices(who)
     GFHTMLArea(gump, x+21, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > "+"Escolha suas receitas", 0, 0); //shadow
     GFHTMLArea(gump, x+20, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > "+"Escolha suas receitas", 0, 0);
 
+    var menucfg := ReadConfigFile(":alchemy:AlchMenu");
+    var recipe_names := array;
+    foreach section in GetConfigStringKeys(menucfg)
+        var menuelem := FindConfigElem(menucfg, section);
+        foreach line in GetConfigStringArray(menuelem, "Item")
+            if (Find(line, "Recipe ", 1) == 1)
+                recipe_names.append(line[8, len(line)]);
+            endif
+        endforeach
+    endforeach
+
     var recipecfg := ReadConfigFile(":alchemy:config/recipes");
     var keys := GetConfigIntKeys(recipecfg);
     var recipes := array;
-    var skill := getobjproperty(who, "chardata").skills[ALCHEMY];
     foreach key in keys
         var elem := FindConfigElem(recipecfg, key);
-        var recipelvl := GetConfigInt(elem, "init");
-            if (!recipelvl || recipelvl == error);
-                recipelvl := 4;
-            endif
-        if (recipelvl <= skill)
-            var recipe := dictionary{ 
+        var name := GetConfigString(elem, "Name");
+        if (name in recipe_names && GetConfigInt(elem, "level") == 1)
+            var recipe := dictionary{
                 "id" -> key,
                 "name" -> GetConfigString(elem, "Type"),
                 "desc" -> GetConfigString(elem, "Desc")
@@ -2441,7 +2427,7 @@ function AlchChoices(who)
     var selected_recipes := array;
     var btn_value;
     while (!GetObjProperty(who, "creation_completed") && who.connected)
-        var qtd := (skill*2)+2;
+        var qtd := 2;
         var input := alchSelectionGump(who, gump, recipes, selected_recipes, qtd, x, y);
         if (!input || input == error)
             sleepms(500);

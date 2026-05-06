@@ -10,7 +10,9 @@ include ":gumps:include/epicGumps";
 /**
  * Experienced Alchemist (Alquimista Experiente) - ABILITY_ID::ALQUIMISTA_EXPERIENTE (2500)
  *
- * Active (OnUse): Sets "extratoinstantaneo" property so next potion skips full process.
+ * Active (OnUse):
+ *   - Player: opens explosive configuration gump (menuExplosivos2).
+ *   - NPC:    throws one explosive potion from backpack.
  *
  * Passive (no hook, checked inline via HasAbility):
  * - Reduces reagent costs by 50% [alchemybook.src, dyebook.src]
@@ -24,6 +26,11 @@ class ExperiencedAlchemist(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
+
+		if (mobile.IsNPC())
+			return _NpcThrowExplosive(who);
+		endif
+
 		menuExplosivos2(who);
 		DebugMsg(
 			who,
@@ -35,6 +42,17 @@ class ExperiencedAlchemist(CombatAbility)
 	endfunction
 
 endclass
+
+function _NpcThrowExplosive(who)
+	var explosive_potions := array{0xbf13, 0xbf14, 0xbf15, 0xef60, 0xef61, 0xef62};
+	foreach item in EnumerateItemsInContainer(who.backpack)
+		if (item.objtype in explosive_potions)
+			UseItem(item, who);
+			return true;
+		endif
+	endforeach
+	return false;
+endfunction
 
 // Constantes de navegação
 const BOTAO_GATILHO        := 1;

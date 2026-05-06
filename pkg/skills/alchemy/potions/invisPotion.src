@@ -16,7 +16,7 @@ program drink_blue(who, potion)
 		return;
 	endif
 
-	if (!checkifcandrink(who, "invis"))
+	if (!checkifcandrink(who, potion))
 		return;
 	endif
 

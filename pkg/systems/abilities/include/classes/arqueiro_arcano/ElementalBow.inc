@@ -30,8 +30,7 @@ class ElementalBow(CombatAbility)
 	function CanActivate(this, mobile)
 		var who := mobile.GetObjRef();
 
-		var chardata := GetObjProperty(who, "chardata");
-		if (chardata.religion != LORE)
+		if (mobile.GetReligion() != LORE)
 			Message("Voce precisa ser devoto de Lore para conjurar o arco elemental.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
@@ -52,8 +51,10 @@ class ElementalBow(CombatAbility)
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
 		var instant := mobile.HasAbility(ABILITY_ID::ARCANE_MASTERY);
+		var is_npc := mobile.IsNPC();
 
-		if (!instant)
+		// 5s ritual is player-only — NPCs would freeze the executor and the brain script.
+		if (!instant && !is_npc)
 			who.frozen := 1;
 			var color;
 			var sound;
@@ -105,10 +106,14 @@ class ElementalBow(CombatAbility)
 				DEBUG_HAB,
 				Message($"[ARCANE_BOW] Arco elemental conjurado por {duration}s", Color(SYSTEM_COLOR::SUCCESS))
 			);
-			sleep(duration);
-			if (arcane_bow)
-				DestroyItem(arcane_bow);
-				Message("Seu arco se dissipou!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			// Sleep+destroy is player-only — for NPCs the cooldown alone gates re-conjure;
+			// the bow lingers ephemerally (acceptable until NPCs are granted ARCANE_MASTERY).
+			if (!is_npc)
+				sleep(duration);
+				if (arcane_bow)
+					DestroyItem(arcane_bow);
+					Message("Seu arco se dissipou!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				endif
 			endif
 		endif
 

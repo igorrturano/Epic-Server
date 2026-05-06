@@ -2,6 +2,10 @@
  * $Id$
  *
 */
+// Intentionally bypasses SpellController: fraturaexposta uses NoEnd=1 +
+// ContinueOnDeath=1 via the legacy cfg timer + Script tick loop. SC has no
+// self-renewing / survives-death opts, and adding them for one spell isn't
+// worth it.
 use uo;
 use os;
 
@@ -10,10 +14,12 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
 	var info := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	var duration := (CInt(AP_GetSkill(who, THEOLOGY)) / 10);
@@ -25,6 +31,7 @@ program SpellScript(params)
 		lama.name := "lama";
 		lama.movable := false;
 		TS_StartTimer(mob, "fraturaexposta", duration);
+		SendSpellBuff(who, mob, CInt(spell.id), duration);
 	endforeach
 
 	return 1;

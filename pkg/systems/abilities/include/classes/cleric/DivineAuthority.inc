@@ -1,7 +1,6 @@
 include ":abilities:models/CombatAbility";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
-include ":abilities:helpers/clericHelpers";
 
 /**
  * Autoridade Divina (Divine Authority) - ABILITY_ID::AUTORIDADE_DIVINA (2803)
@@ -34,7 +33,7 @@ class DivineAuthority(CombatAbility)
 		PlayObjectCenteredEffect(who, 0x376A, 1, 32);
 		PlaySoundEffect(who, 0x1F2);
 
-		var nearby_mobiles := ListMobilesNearLocation(who.x, who.y, who.z, 3, who.realm);
+		var nearby_mobiles := mobile.GetNearbyMobiles(3);
 		var allies := array{};
 		var enemies := array{};
 
@@ -43,7 +42,7 @@ class DivineAuthority(CombatAbility)
 				continue;
 			endif
 
-			if (IsPlayerAlly(who, mob))
+			if (mobile.IsAllyOf(MobileWrapper(mob)))
 				allies.append(mob);
 			else
 				enemies.append(mob);

@@ -9,6 +9,11 @@ include ":containers:checks";
 program canInsert(mobile, container, item, move_type, insert_type, adding_item, existing_stack,
 				  amount_to_add)
 
+	if (container.locked || CP_RootContainerLocked(container))
+		SendSysMessage(mobile, "voce nao pode por isto em um container trancado.");
+		return 0;
+	endif
+
 	if (move_type == MOVETYPE_COREMOVE)
 		var who := container.character_owner;
 		if (GetObjProperty(who, "pilotando") || GetObjProperty(who, "metamorfose") != error)
@@ -16,9 +21,6 @@ program canInsert(mobile, container, item, move_type, insert_type, adding_item, 
 			return 0;
 		endif
 		return 1;
-	elseif (CP_RootContainerLocked(item))
-		SendSysMessage(mobile, "voce nao pode por isto em um container trancado.");
-		return 0;
 	endif
 	if (mobile)
 		if (!mobile.npctemplate)

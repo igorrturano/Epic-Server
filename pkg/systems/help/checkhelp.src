@@ -1,0 +1,64 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":datafile:datafile";
+
+set_priority(255);
+set_script_option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+program CheckHelp()
+
+    Print("=== Building Help Index ===");
+
+    var df := DFOpenDataFile(":help:index", DF_CREATE);
+
+    DFPurgeFile(df);
+
+    foreach package in (polcore().packages)
+
+        var cfg := ReadConfigFile(":" + package + ":config/help");
+
+        if (cfg)
+
+            var elem := cfg["Topic"]; 
+
+            if (elem)
+
+                var name := GetConfigString(elem, "Name");
+                var category := GetConfigString(elem, "Category");
+                var subcategory := GetConfigString(elem, "SubCategory");
+				var index := GetConfigString(elem, "Index");
+
+                if (!name)
+                    name := "SemNome";
+                endif
+
+                // CHAVE STRING (CORRETO)
+                var key := package + "_" + name;
+
+                var e := DFFindElement(df, key, DF_CREATE);
+				
+				e.SetProp("Path", ":"+package+":config/help");
+                e.SetProp("Name", CStr(name));
+                e.SetProp("Category", CStr(category));
+                e.SetProp("SubCategory", CStr(subcategory));
+                e.SetProp("Package", package);
+				e.SetProp("Index", index);
+
+                Print("Loaded help: " + key);
+
+            endif
+
+        endif
+
+        UnloadConfigFile(":" + package + ":config/help");
+
+        SleepMS(2);
+
+    endforeach
+
+    Print("=== Help Index Ready ===");
+
+    return 1;
+endprogram

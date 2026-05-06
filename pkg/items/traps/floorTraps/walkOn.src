@@ -19,6 +19,7 @@ include "include/sysEvent";
 include "include/eventID";
 include ":timedscripts:timedScripts";
 include "include/epicConstants";
+include "include/noiseAlert";
 
 program TrapWalkOn(mobile, trap)
 	if (mobile.dead)
@@ -73,6 +74,8 @@ program TrapWalkOn(mobile, trap)
 		sleep(10);
 		return 1;
 	endif
+
+	EmitNoise(mobile);
 
 	if (cint(trap.objtype) == 0x4004) // beartrap
 		do

@@ -5,7 +5,7 @@ include ":propagacao:include/combustiveis/combustivelIncendio";
 
 class CombustivelEstaticos( CombustivelIncendio )
   function CombustivelEstaticos(this)
-    var config := ReadConfigFile("config/estaticosInflamaveis");
+    var config := ReadConfigFile(":propagacao:config/estaticosInflamaveis");
     super(0,COMBUSTIVEIS::ESTATICOS,0,config["geral"]);
   endfunction
 
@@ -15,6 +15,7 @@ class CombustivelEstaticos( CombustivelIncendio )
         Sleepms(2);
         var zAbsoluto := PegaAbsoluta(itemMarcador.z, estatico.z);
         var isAoAlcance :=  zAbsoluto <= 5;
+
         if(isAoAlcance)
           if(this.EncheCombustivelTile(this.ExtraiInfoTile(this.inflamaveisConfig[cstr(estatico.objtype)])))
             return this.TemCombustivel();

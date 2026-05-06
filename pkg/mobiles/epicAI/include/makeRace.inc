@@ -1,4 +1,5 @@
 include "include/client";
+include ":epicAI:include/npcDataCache";    // NPC_GetCachedData
 
 function HasHair(mobile)
     return GetEquipmentByLayer(mobile, LAYER_HAIR);
@@ -12,7 +13,6 @@ function makeRace(mobile, race := 0)
    if (!race)
       var races := array{ANAO, ELFO, DROW, ORC, PEQUILHO, HUMANO};
       race := races[RandomInt(races.size()) + 1];
-      print("Making race: " + race);
    endif
    
    case (race)
@@ -151,8 +151,6 @@ function makeElven(mobile)
 endfunction
 
 function makeDrow(mobile)
-   Print("Making Drow - Gender: " + mobile.gender);
-   
    // Set base graphics by gender
    if (mobile.gender == 0) // Male
       mobile.graphic := 1830; // Male elf graphic
@@ -280,9 +278,9 @@ endfunction
 function makePequilho(mobile)
    // Set base graphics by gender
    if (mobile.gender == 0) // Male
-      mobile.graphic := 1828;
+      mobile.graphic := 1835;
    else
-      mobile.graphic := 1829;
+      mobile.graphic := 1834;
    endif
 
    // Get NPC config to check for existing colors

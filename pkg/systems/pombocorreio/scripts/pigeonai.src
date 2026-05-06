@@ -1,0 +1,288 @@
+// =============================================================
+// Sistema de Pombo-Correio - IA do Animal Mensageiro
+// =============================================================
+
+use uo;
+use npc;
+use os;
+use basic;
+use math;
+
+include "include/sysEvent";
+include ":pigeoncorreio:include/pigeoncorreio";
+
+var me := Self();
+
+program PigeonAI()
+	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+	SleepMS(1500);
+
+	var flight_dir   := CInt(GetObjProperty(me, "flight_dir"));
+	var rec_serial   := CInt(GetObjProperty(me, "recipient_serial"));
+	var sender_serial := CInt(GetObjProperty(me, "sender_serial"));
+	var animal_type  := CInt(GetObjProperty(me, "animal_type"));
+
+	var monitor := start_script(":pigeoncorreio:scripts/pigeon_monitor", {me, sender_serial});
+	if (monitor)
+		SetObjProperty(me, "monitor_pid", monitor.pid);
+	endif
+
+	// ── FASE 1: DEPARTING — parte em direção aleatória ────────
+	var steps := 0;
+	while (steps < PIGEON_FLIGHT_DIST)
+		MoveForced(flight_dir);
+		steps += 1;
+		SleepMS(20);
+	endwhile
+
+	// Teleporta próximo ao destinatário
+	var recipient := SystemFindObjectBySerial(rec_serial);
+	if (!recipient || !recipient.connected || CInt(GetObjProperty(recipient, "morto")) == 1)
+		me.kill();
+		return;
+	endif
+
+	me.hidden := 1;
+
+	var sender_name := GetObjProperty(me, "sender_name");
+	start_script(":pigeoncorreio:scripts/ask_recipient", {me, recipient, sender_name, GetPid(), PigeonGetAnimalName(animal_type)});
+
+	var accepted := 0;
+	var wait_time := 0;
+	while (wait_time < 60)
+		var ev := wait_for_event(1);
+		if (ev && ev.type == "recipient_answer")
+			accepted := ev.accepted;
+			break;
+		endif
+		wait_time += 1;
+	endwhile
+
+	if (!accepted)
+		me.kill();
+		return;
+	endif
+
+	me.hidden := 0;
+
+	while (recipient.dead && recipient.connected && CInt(GetObjProperty(recipient, "morto")) != 1)
+		Sleep(2);
+		recipient := SystemFindObjectBySerial(rec_serial);
+	endwhile
+
+	if (!recipient || !recipient.connected || CInt(GetObjProperty(recipient, "morto")) == 1)
+		me.kill();
+		return;
+	endif
+
+	var spawn := GetSpawnPosition(recipient, 20);
+	MoveObjectToLocation(me, spawn.x, spawn.y, spawn.z, me.realm, MOVEOBJECT_FORCELOCATION);
+	PrintTextAbove(me, PigeonGetArrivalEmote(animal_type));
+	SendSysMessage(recipient, PigeonGetArrivalMsg(animal_type), 66);
+
+	// ── FASE 2: SEEKING — persegue o destinatário ─────────────
+	var seek := 0;
+	var max_seek := 500; // 10 segundos
+	while (seek < max_seek)
+		var recip := SystemFindObjectBySerial(rec_serial);
+		if (!recip || !recip.connected || CInt(GetObjProperty(recip, "morto")) == 1)
+			me.kill();
+			return;
+		endif
+
+		if (recip.dead)
+			Sleep(2);
+			continue;
+		endif
+
+		var dist := CoordinateDistance(me.x, me.y, recip.x, recip.y);
+		if (dist <= 1)
+			break;
+		endif
+
+		// Força aproximação caso esteja demorando muito
+		if (seek == 100)      TeleportCloser(recip, 30);
+		elseif (seek == 200)  TeleportCloser(recip, 20);
+		elseif (seek == 300)  TeleportCloser(recip, 10);
+		elseif (seek == 400)  TeleportCloser(recip, 5);
+		endif
+
+		MoveForced(GetDirTo(recip.x, recip.y));
+		seek += 1;
+		SleepMS(20);
+	endwhile
+
+	// ── FASE 3: FOLLOWING — segue e aguarda double-click ──────
+	EnableEvents(SYSEVENT_DOUBLECLICKED, 20);
+
+	var follow_emote := PigeonGetFollowEmote(animal_type);
+	PrintTextAbove(me, follow_emote);
+
+	var emote_tick  := 0;
+	var follow_tick := 0;
+	while (1)
+		var ev := wait_for_event(0);
+		if (ev && ev.type == SYSEVENT_DOUBLECLICKED)
+			if (HandleDoubleClick(ev.source, rec_serial))
+				var monitor_pid := CInt(GetObjProperty(me, "monitor_pid"));
+				if (monitor_pid)
+					var proc := getprocess(monitor_pid);
+					if (proc)
+						proc.sendevent(struct{ type := "delivered" });
+					endif
+				endif
+				break;
+			endif
+		endif
+
+		var recip2 := SystemFindObjectBySerial(rec_serial);
+		if (!recip2 || !recip2.connected || CInt(GetObjProperty(recip2, "morto")) == 1)
+			me.kill();
+			return;
+		endif
+
+		if (recip2.dead)
+			Sleep(2);
+			continue;
+		endif
+
+		var dist2 := CoordinateDistance(me.x, me.y, recip2.x, recip2.y);
+		if (dist2 > 1)
+			MoveForced(GetDirTo(recip2.x, recip2.y));
+		endif
+
+		if (dist2 > 15)
+			follow_tick += 1;
+			if (follow_tick > 100)
+				TeleportCloser(recip2, 2);
+				follow_tick := 0;
+			endif
+		else
+			follow_tick := 0;
+		endif
+
+		emote_tick += 1;
+		if (emote_tick >= 100)
+			PrintTextAbove(me, follow_emote);
+			emote_tick := 0;
+		endif
+
+		SleepMS(20);
+	endwhile
+
+	// ── FASE 4: LEAVING — vai embora ──────────────────────────
+	PrintTextAbove(me, PigeonGetLeaveEmote(animal_type));
+	var leave_dir := RandomInt(8);
+	var ls := 0;
+	while (ls < PIGEON_FLIGHT_DIST)
+		MoveForced(leave_dir);
+		ls += 1;
+		SleepMS(20);
+	endwhile
+
+	me.kill();
+endprogram
+
+// =============================================================
+// MoveForced — move 1 tile, ignora terreno
+// =============================================================
+function MoveForced(dir)
+	var dx := 0;
+	var dy := 0;
+	case (CInt(dir) % 8)
+		0: dy := -1;
+		1: dx :=  1; dy := -1;
+		2: dx :=  1;
+		3: dx :=  1; dy :=  1;
+		4: dy :=  1;
+		5: dx := -1; dy :=  1;
+		6: dx := -1;
+		7: dx := -1; dy := -1;
+	endcase
+
+	var tx := me.x + dx;
+	var ty := me.y + dy;
+
+	RunTowardLocation(tx, ty);
+
+	if (me.x != tx || me.y != ty)
+		MoveObjectToLocation(me, tx, ty, me.z, me.realm, MOVEOBJECT_FORCELOCATION);
+	endif
+endfunction
+
+// =============================================================
+// GetDirTo — calcula direção (0-7) de me até (tx, ty)
+// =============================================================
+function GetDirTo(tx, ty)
+	var dx := tx - me.x;
+	var dy := ty - me.y;
+
+	if (dx == 0 && dy == 0) return 0; endif
+
+	if (Abs(dx) >= Abs(dy) * 2)
+		if (dx > 0) return 2; else return 6; endif
+	elseif (Abs(dy) >= Abs(dx) * 2)
+		if (dy > 0) return 4; else return 0; endif
+	elseif (dx > 0 && dy < 0) return 1;
+	elseif (dx > 0 && dy > 0) return 3;
+	elseif (dx < 0 && dy > 0) return 5;
+	else return 7;
+	endif
+endfunction
+
+// =============================================================
+// TeleportCloser — força o animal para mais perto do alvo
+// =============================================================
+function TeleportCloser(mob, dist)
+	var current_dist := CoordinateDistance(me.x, me.y, mob.x, mob.y);
+	if (current_dist > dist)
+		var pos := GetSpawnPosition(mob, dist);
+		MoveObjectToLocation(me, pos.x, pos.y, pos.z, me.realm, MOVEOBJECT_FORCELOCATION);
+	endif
+endfunction
+
+// =============================================================
+// HandleDoubleClick — entrega o bilhete ao destinatário
+// =============================================================
+function HandleDoubleClick(clicker, rec_serial)
+	if (CInt(clicker.serial) != rec_serial)
+		SendSysMessage(clicker, "Este mensageiro não tem bilhetes para você.", 33);
+		return 0;
+	endif
+	if (!clicker.backpack)
+		SendSysMessage(clicker, "Você não tem mochila para receber o bilhete.", 33);
+		return 0;
+	endif
+
+	var scroll := CreateItemInContainer(clicker.backpack, PIGEON_SCROLL_OBJTYPE, 1);
+	if (scroll)
+		scroll.name := "Bilhete de Mensageiro";
+		SetObjProperty(scroll, "sender_name", GetObjProperty(me, "sender_name"));
+		SetObjProperty(scroll, "message",     GetObjProperty(me, "message"));
+	endif
+
+	SendSysMessage(clicker, "Você pegou o bilhete.", 66);
+	return 1;
+endfunction
+
+// =============================================================
+// GetSpawnPosition — posição aleatória a `dist` tiles do alvo
+// =============================================================
+function GetSpawnPosition(mob, dist)
+	var dx := RandomInt(dist * 2) - dist;
+	var dy := RandomInt(dist * 2) - dist;
+
+	if (Abs(dx) < dist / 2)
+		if (dx < 0) dx := -dist; else dx := dist; endif
+	endif
+	if (Abs(dy) < dist / 2)
+		if (dy < 0) dy := -dist; else dy := dist; endif
+	endif
+
+	var loc := struct;
+	loc.+x := mob.x + dx;
+	loc.+y := mob.y + dy;
+	loc.+z := mob.z;
+	return loc;
+endfunction

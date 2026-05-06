@@ -1,0 +1,360 @@
+use uo;
+use os;
+use npc;
+use util;
+use guilds;
+use datafile;
+
+include "include/sysEvent";
+include "include/events";
+include ":faccao:faccao";
+include ":tn:cooldown";
+include ":architect:include/architect";
+
+var me         := self();
+var guild      := 0;
+var following  := 0;
+var fix_location := 0;
+
+const MERCH_DEBUG := 0;
+
+// ============================================================
+// DEBUG
+// ============================================================
+
+function MerchLog(tag, msg)
+	if (!MERCH_DEBUG) return; endif
+	syslog("[Mercador][{}][{}] {} | pos=({},{},{})@{}".format(
+		me.name, tag, msg, me.x, me.y, me.z, me.realm
+	));
+endfunction
+
+// ============================================================
+// PERMISSOES
+// ============================================================
+
+function HasPermission(who)
+	if (!guild)
+		var gid := GetObjProperty(me, "guild");
+		if (gid) guild := FindGuild(gid); endif
+	endif
+
+	if (!guild)
+		MerchLog("PERM", "sem guild — exige cmdlevel>=3 | who={} cmdlevel={}".format(who.name, who.cmdlevel));
+		return who.cmdlevel >= 3;
+	endif
+
+	if (who.cmdlevel >= 3)
+		MerchLog("PERM", "autorizado por cmdlevel | who={}".format(who.name));
+		return 1;
+	endif
+
+	var leader_serial  := guild.GetProp("leader");
+	var is_leader      := (who.serial == leader_serial);
+	var user_subguilds := who.guild.getProp("subguilds");
+	if (!user_subguilds) user_subguilds := array{}; endif
+	var in_subguild    := (guild.guildid in user_subguilds);
+	var privs          := guild.GetProp(cstr(who.serial));
+	var above_guards   := (privs && privs.above_guards);
+
+	MerchLog("PERM", "who={} serial={} | leader_serial={} is_leader={} in_subguild={} above_guards={}".format(
+		who.name, who.serial, leader_serial, is_leader, in_subguild, above_guards));
+
+	return (is_leader || in_subguild || above_guards);
+endfunction
+
+// ============================================================
+// MOVIMENTO
+// ============================================================
+
+function PetGoTo(dest, run := 1)
+	var flags := FP_IGNORE_MOBILES;
+	var path  := FindPath(me.x, me.y, me.z, dest.x, dest.y, dest.z, me.realm, flags, 12);
+	var delay := 275 - me.run_speed;
+	foreach coord in path
+		if (run)
+			RunTowardLocation(coord.x, coord.y);
+		else
+			WalkTowardLocation(coord.x, coord.y);
+		endif
+		sleepms(delay);
+	endforeach
+endfunction
+
+// ============================================================
+// FALA / COMANDOS
+// ============================================================
+
+function ResolveSpeech(ev)
+	var text     := lower(ev.text);
+	var my_name  := lower(me.name);
+	var has_name := text[my_name];
+	var has_all  := text["todos"];
+
+	MerchLog("SPEECH", "ouviu '{}' de {} | nome='{}' has_name={} has_all={}".format(
+		ev.text, ev.source.name, me.name, (has_name != error), (has_all != error)));
+
+	if (!has_name && !has_all)
+		MerchLog("SPEECH", "ignorado — nao mencionou nome nem 'todos'");
+		return;
+	endif
+
+	if (!HasPermission(ev.source))
+		MerchLog("SPEECH", "recusado — sem permissao | who={} cmdlvl={}".format(
+			ev.source.name, ev.source.cmdlevel));
+		return;
+	endif
+
+	if (text["seguir"])
+		following    := ev.source;
+		fix_location := 0;
+		EraseObjProperty(me, "fix_loc");
+		PrintTextAbove(me, "Sim senhor, vou acompanha-lo.");
+		MerchLog("SEGUIR", "seguindo '{}'".format(ev.source.name));
+
+	elseif (text["ir"] && text["at"])
+		MerchLog("IR", "aguardando alvo de coordenadas...");
+		var where := TargetCoordinates(ev.source);
+		if (!where)
+			MerchLog("IR", "cancelado pelo jogador");
+			return SendSysMessage(ev.source, "Cancelado.");
+		endif
+		MerchLog("IR", "alvo=({},{},{}) | guild={}".format(where.x, where.y, where.z, guild ? guild.guildid : "nenhum"));
+		if (guild && !IsNPCInWalkRect(where))
+			PrintTextAbove(me, "Nao posso ir alem do territorio da faccao!");
+			SendSysMessage(ev.source, "[Mercador] Destino fora do territorio.");
+			MerchLog("IR", "destino fora do territorio — recusado");
+			return;
+		endif
+		following    := 0;
+		fix_location := 0;
+		PrintTextAbove(me, "Sim senhor.");
+		MerchLog("IR", "indo para ({},{},{})".format(where.x, where.y, where.z));
+		PetGoTo(where, 1);
+		fix_location := where;
+		SetObjProperty(me, "fix_loc", fix_location);
+		MerchLog("IR", "chegou ao destino, posto definido");
+
+	elseif (text["parar"] || (text["mant"] && text["posicao"]))
+		following    := 0;
+		fix_location := struct{
+			"x" := me.x, "y" := me.y, "z" := me.z,
+			"facing" := ev.source.facing
+		};
+		SetObjProperty(me, "fix_loc", fix_location);
+		me.facing := fix_location.facing;
+		PrintTextAbove(me, "Ficarei aqui.");
+		MerchLog("PARAR", "mantendo posicao ({},{})".format(me.x, me.y));
+
+	else
+		MerchLog("SPEECH", "comando nao reconhecido: '{}'".format(ev.text));
+	endif
+endfunction
+
+// ============================================================
+// INICIALIZACAO
+// ============================================================
+
+function Setup()
+	SetObjProperty(me, "lingua_escolhida", "Comum");
+
+	var guild_id := GetObjProperty(me, "guild");
+	if (guild_id)
+		guild := FindGuild(guild_id);
+	endif
+
+	fix_location := GetObjProperty(me, "fix_loc");
+	if (fix_location == error) fix_location := 0; endif
+
+	MerchLog("SETUP", "guild_id={} guild={} fix_loc={}".format(
+		guild_id, guild ? guild.guildid : "nenhum",
+		fix_location ? "({},{})".format(fix_location.x, fix_location.y) : "nenhum"));
+
+	// Delegar init de aparencia/equipamento ao script de init existente
+	start_script(":merchantfaccao:/include/init", array{ me, 0 });
+endfunction
+
+// ============================================================
+// LOOP PRINCIPAL
+// ============================================================
+
+program MerchantMain()
+	EnableEvents(SYSEVENT_SPEECH, 10);
+	EnableEvents(SYSEVENT_DOUBLECLICKED, 5);
+	EnableEvents(SYSEVENT_ITEM_GIVEN, 2);
+
+	MerchLog("INIT", "script iniciado | serial={}".format(me.serial));
+
+	Setup();
+	sleep(1); // aguarda init terminar
+
+	var wait_time := 10;
+
+	while (me)
+
+		// --- Re-leitura do guild caso nao tenha sido definido no Setup (timing de spawn) ---
+		if (!guild)
+			var _gid := GetObjProperty(me, "guild");
+			if (_gid)
+				guild := FindGuild(_gid);
+				MerchLog("GUILD", "guild detectado tardiamente: {}".format(guild ? guild.guildid : "erro"));
+			endif
+		endif
+
+		// Controle de território: staff usa rect hardcoded, player usa rect da guild.
+		if (guild)
+			if (GetObjProperty(me, "tipo_faccao") == "staff")
+				if (HandleWalkRectBreach(me, wait_time))
+					if (following)
+						MerchLog("RECT", "saiu do rect seguindo '{}' — parando".format(following.name));
+						following := 0;
+						PrintTextAbove(me, "Nao posso ir alem do meu territorio!");
+					endif
+				endif
+			elseif (!inGuildRect(guild, me, 4))
+				var _target := following ? following : 0;
+				var _target_inside := _target ? inGuildRect(guild, _target, 0) : 0;
+
+				if (!_target_inside && following)
+					following := 0;
+					PrintTextAbove(me, "Nao posso ir alem do territorio!");
+				endif
+
+				if (!fix_location && !_target_inside)
+					var _center := GetGuildCenter(guild);
+					if (_center)
+						RunTowardLocation(_center.x, _center.y);
+						wait_time := 0;
+					endif
+				endif
+			endif
+		endif
+
+		// --- Seguir ---
+		if (following)
+			if (!following.isA(POLCLASS_MOBILE) || following.dead)
+				following := 0;
+			else
+				var dist := Distance(me, following);
+				if (!GetCooldown(me, "debug_follow"))
+					MerchLog("SEGUINDO", "'{}' | dist={}".format(following.name, dist));
+					SetCooldown(me, "debug_follow", 2);
+				endif
+				if (dist > 25)
+					MerchLog("SEGUINDO", "perdeu '{}' (dist={}), abandonando".format(following.name, dist));
+					following := 0;
+					wait_time := 5;
+				elseif (dist > 2)
+					if (dist > 4)
+						RunTowardLocation(following.x, following.y);
+					else
+						WalkTowardLocation(following.x, following.y);
+					endif
+					wait_time := 0;
+				else
+					wait_time := 1;
+				endif
+			endif
+		endif
+
+		// --- Retornar ao posto (se afastou) ---
+		if (!following && fix_location)
+			var dist_posto := CoordinateDistance(me.x, me.y, fix_location.x, fix_location.y);
+			if (dist_posto > 1)
+				if (!GetCooldown(me, "debug_return"))
+					MerchLog("RETORNO", "voltando ao posto ({},{})".format(fix_location.x, fix_location.y));
+					SetCooldown(me, "debug_return", 3);
+				endif
+				WalkTowardLocation(fix_location.x, fix_location.y);
+				wait_time := 0;
+			else
+				me.facing := fix_location.facing;
+			endif
+		endif
+
+		// --- Vaguear pelo territorio quando ocioso ---
+		if (!following && !fix_location && guild && !GetCooldown(me, "wander_cd"))
+			var _is_staff_m := (GetObjProperty(me, "tipo_faccao") == "staff");
+			var _in_bounds_m := _is_staff_m ? IsNPCInWalkRect(me) : inGuildRect(guild, me, 0);
+			if (_in_bounds_m)
+				var _wp := GetRandomWanderPoint();
+				WalkTowardLocation(_wp.x, _wp.y);
+				SetCooldown(me, "wander_cd", RandomInt(8) + 4);
+				wait_time := 0;
+			endif
+		endif
+
+		var ev := Wait_For_Event(wait_time);
+		wait_time := 10;
+
+		case (ev.type)
+			SYSEVENT_SPEECH:
+				ResolveSpeech(ev);
+
+			SYSEVENT_DOUBLECLICKED:
+				if (!GetObjProperty(me, "#occupied"))
+					start_script(":merchantfaccao:merchant",
+						array{ me, "DblClick",
+							   struct{ "source" := ev.source, "item" := 0 },
+							   0 });
+				else
+					SendSysMessage(ev.source, "Já estou falando com alguém, aguarde um momento!");
+				endif
+
+			SYSEVENT_ITEM_GIVEN:
+				if (!GetObjProperty(me, "#occupied"))
+					start_script(":merchantfaccao:merchant",
+						array{ me, "ItemGiven",
+							   struct{ "source" := ev.source, "item" := ev.item },
+							   0 });
+				else
+					SendSysMessage(ev.source, "Já estou falando com alguém, aguarde um momento!");
+					MoveItemToContainer(ev.item, ev.source.backpack);
+				endif
+
+			MERCH_FACING_CMD:
+				me.facing := ev.facing;
+				if (fix_location)
+					fix_location.facing := ev.facing;
+					SetObjProperty(me, "fix_loc", fix_location);
+				endif
+				MerchLog("FACING", "facing alterado para {} via gump".format(ev.facing));
+
+			MERCH_FOLLOW_CMD:
+				following    := ev.targ;
+				fix_location := 0;
+				EraseObjProperty(me, "fix_loc");
+				PrintTextAbove(me, "Sim senhor, vou acompanha-lo.");
+				MerchLog("SEGUIR", "seguindo '{}' via gump".format(ev.targ ? ev.targ.name : "?"));
+				break;
+
+			MERCH_GO_CMD:
+				if (guild && !IsNPCInWalkRect(ev.dest))
+					PrintTextAbove(me, "Nao posso ir alem do territorio da faccao!");
+					if (ev.who) SendSysMessage(ev.who, "[Mercador] Destino fora do alcance do territorio."); endif
+					break;
+				endif
+				following    := 0;
+				fix_location := 0;
+				PrintTextAbove(me, "Sim senhor.");
+				MerchLog("IR", "indo para ({},{},{}) via gump".format(ev.dest.x, ev.dest.y, ev.dest.z));
+				PetGoTo(ev.dest, 1);
+				fix_location := ev.dest;
+				SetObjProperty(me, "fix_loc", fix_location);
+				MerchLog("IR", "chegou ao destino via gump");
+				break;
+
+			MERCH_STOP_CMD:
+				following    := 0;
+				fix_location := struct{
+					"x" := me.x, "y" := me.y, "z" := me.z,
+					"facing" := me.facing
+				};
+				SetObjProperty(me, "fix_loc", fix_location);
+				PrintTextAbove(me, "Ficarei aqui.");
+				MerchLog("PARAR", "mantendo posicao ({},{}) via gump".format(me.x, me.y));
+				break;
+		endcase
+
+	endwhile
+endprogram

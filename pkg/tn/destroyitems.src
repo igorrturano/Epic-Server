@@ -103,6 +103,7 @@ endfunction
 
 function RodaEfeitosAnim(quem, arma, alvo)
 	var attackInfo := AttackInfo(MobileWrapper(quem), ItemWrapper(alvo));
+	attackInfo.SetWeapon(WeaponWrapper(arma));
 	attackInfo.SetAttackType(attackInfo.GetAttacker().GetCombatTraits().GetPosture());
 
 	PlayAttackFX(attackInfo);

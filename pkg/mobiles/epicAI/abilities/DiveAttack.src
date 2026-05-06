@@ -1,0 +1,187 @@
+use uo;
+use os;
+use vitals;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Controller/DamageController_legacy";
+include ":charactercreation:resists";
+include ":equipsys:Controller/WeaponController";
+
+program DiveAttack(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	var cur_hp := GetVital(me, HITS) / 100;
+	var max_hp := GetVitalMaximumValue(me, HITS) / 100;
+
+	if (cur_hp < max_hp / 2)
+		return 0;
+	endif
+
+	var mob := MobileWrapper(me);
+	PrintTextAbove(me, "*ergue voo!*");
+
+	var origin_x := me.x;
+	var origin_y := me.y;
+	var origin_z := me.z;
+	var origin_realm := me.realm;
+	var aborted := 0;
+
+	// Freeze so the brain can't issue moves that override the forced altitude
+	me.frozen := 1;
+
+	// Ascent with ease-in-out: slow take-off, fast middle, slow apex (+40z over ~1.9s)
+	// Phases are tuples of {steps, dz_per_step, ms_per_step}
+	var ascent_phases := array{
+		array{10, 1, 70},  // take-off — heavy, slow, +10z
+		array{10, 2, 50},  // mid-rise — fast and powerful, +20z
+		array{10, 1, 70}   // apex — slowing into hover, +10z
+	};
+
+	var step_count := 0;
+	foreach phase in ascent_phases
+		for idx := 1 to phase[1]
+			if (me.dead || targ.dead)
+				aborted := 1;
+				break;
+			endif
+			step_count := step_count + 1;
+			// Re-trigger flap animation every 4 steps (each cycle ≈ 280ms of motion)
+			if (step_count % 4 == 1)
+				PerformAction(me, 1);
+			endif
+			// Spread sound out — 5 flaps total, not one per tick
+			if (step_count % 6 == 1)
+				PlaySoundEffect(me, 0x20F);
+			endif
+			MoveObjectToLocation(me, me.x, me.y, me.z + phase[2], me.realm, MOVEOBJECT_FORCELOCATION);
+			sleepms(phase[3]);
+		endfor
+		if (aborted)
+			break;
+		endif
+	endforeach
+
+	if (aborted)
+		MoveObjectToLocation(me, origin_x, origin_y, origin_z, origin_realm, MOVEOBJECT_FORCELOCATION);
+		me.frozen := 0;
+		return 0;
+	endif
+
+	// Brief first-peak hover — let the player see the dragon up there before the feints
+	PrintTextAbove(me, "*paira sobre a presa...*");
+	for hidx := 1 to 2
+		if (me.dead || targ.dead)
+			break;
+		endif
+		PerformAction(me, 1);
+		PlaySoundEffect(me, 0x20F);
+		sleepms(500);
+	endfor
+
+	if (me.dead || targ.dead)
+		MoveObjectToLocation(me, origin_x, origin_y, origin_z, origin_realm, MOVEOBJECT_FORCELOCATION);
+		me.frozen := 0;
+		return 0;
+	endif
+
+	// Feints: dip + rise, each peak higher than the last — builds tension before the real dive
+	var feint_count := 3;
+	for feint := 1 to feint_count
+		if (me.dead || targ.dead)
+			aborted := 1;
+			break;
+		endif
+		// Dip down — fast, fakes a commit
+		PerformAction(me, 1);
+		for didx := 1 to 5
+			if (me.dead || targ.dead)
+				aborted := 1;
+				break;
+			endif
+			MoveObjectToLocation(me, me.x, me.y, me.z - 3, me.realm, MOVEOBJECT_FORCELOCATION);
+			sleepms(50);
+		endfor
+		if (aborted)
+			break;
+		endif
+		// Pull up higher than before — net +12z per feint
+		PlaySoundEffect(me, 0x20F);
+		PerformAction(me, 1);
+		for uidx := 1 to 9
+			if (me.dead || targ.dead)
+				aborted := 1;
+				break;
+			endif
+			if (uidx % 4 == 1)
+				PerformAction(me, 1);
+			endif
+			MoveObjectToLocation(me, me.x, me.y, me.z + 3, me.realm, MOVEOBJECT_FORCELOCATION);
+			sleepms(55);
+		endfor
+		if (aborted)
+			break;
+		endif
+		sleepms(250); // brief pause at new peak
+	endfor
+
+	if (aborted || me.dead || targ.dead)
+		MoveObjectToLocation(me, origin_x, origin_y, origin_z, origin_realm, MOVEOBJECT_FORCELOCATION);
+		me.frozen := 0;
+		return 0;
+	endif
+
+	// Final commitment beat at the highest peak, then dive
+	PerformAction(me, 1);
+	sleepms(400);
+
+	// Reposition over target at high Z, then dive — fast and chunky, reads as gravity
+	PrintTextAbove(me, "*mergulha sobre a presa!*");
+	MoveObjectToLocation(me, targ.x, targ.y, me.z, targ.realm, MOVEOBJECT_FORCELOCATION);
+	sleepms(120);
+
+	// Fall: small detach → big mid-fall → impact. Easing in reverse — slow, fast, hard.
+	var fall_z := me.z;
+	var fall_steps := array{ 3, 15, 15, 15 }; // detach + 3 big chunks
+	foreach delta in fall_steps
+		if (fall_z - delta <= targ.z)
+			break;
+		endif
+		fall_z := fall_z - delta;
+		MoveObjectToLocation(me, me.x, me.y, fall_z, me.realm, MOVEOBJECT_FORCELOCATION);
+		sleepms(40);
+	endforeach
+	// Impact — strike animation + landing sound on the final snap
+	PerformAction(me, 5);
+	PlaySoundEffect(me, 0x210);
+	MoveObjectToLocation(me, targ.x, targ.y, targ.z, targ.realm, MOVEOBJECT_FORCELOCATION);
+
+	me.frozen := 0;
+
+	// Dive damage = NPC's piercing tier dice + tier×6 impact bonus
+	var template := mob.GetTemplate();
+	var raw_attack_damage := template.EpicAttackDamage;
+	var tiers := SplitWords(raw_attack_damage);
+	var pierce_tier := tiers.size() >= 2 ? tiers[2] : DAMAGE_TIER::DAMAGE_NONE;
+	var dice := getDamageByTier(pierce_tier);
+
+	var dice_roll := 0;
+	if (dice != error && dice != 0)
+		dice_roll := RandomDiceRoll(dice);
+	endif
+	var tier_bonus := CInt(mob.GetTier()) * 6;
+	var dive_damage := dice_roll + tier_bonus;
+
+	if (CheckResist(targ, REFLEXES, RESIST_MEDIUM))
+		dive_damage := CInt(dive_damage / 2);
+		SendSysMessageEx(targ, "Você se esquiva parcialmente do mergulho!", SSM_REQUEST);
+	endif
+
+	DamageFLS(targ, dive_damage, DMG_PIERCING, me, "diveattack");
+
+	return 1;
+endprogram

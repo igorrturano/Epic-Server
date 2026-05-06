@@ -10,6 +10,7 @@ use os;
 
 include "include/say";
 include ":traps:epicTraps";
+include "include/noiseAlert";
 
 program EpicTrapWalkOn(mobile, trap)
     // Validate mobile
@@ -42,6 +43,8 @@ program EpicTrapWalkOn(mobile, trap)
 
     // Set cooldown
     SetObjProperty(trap, "last_triggered", ReadGameClock());
+
+    EmitNoise(mobile);
 
     // Execute the trap effect
     ExecuteEpicTrapEffect(mobile, trap);

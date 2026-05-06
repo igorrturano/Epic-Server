@@ -1,30 +1,17 @@
 use uo;
 use os;
 
-// Não precisamos do include se só vamos chamar o start_script
-// O script que abre a janela de construção é o textcmd/player/architect.src
-
 program ferramentas_construcao_use(who, item)
-    // 1. Validação inicial
-    if (!who)
-        return 0; 
-    endif
-    
-    // 2. Verifica se a ferramenta está na mochila do jogador.
-    if (!item || item.container != who.backpack)
-        SendSysMessage(who, "As ferramentas de construção devem estar em sua mochila para serem usadas.");
-        return 0;
-    endif
-    
-    // 3. Inicia o sistema de construção chamando o textcmd correto
-    SendSysMessage(who, "Iniciando ferramentas de construção...");
-    
-    // O caminho do script de construção é textcmd/player/architect
-    var script := start_script(":architect:textcmd/player/architect", who);
-    
-    if (script.errortext)
-        SendSysMessage(who, "Erro ao iniciar as ferramentas: " + script.errortext);
-    endif
-    
-    return 1; 
+	if (!who)
+		return 0;
+	endif
+
+	if (!item || item.container != who.backpack)
+		SendSysMessage(who, "As ferramentas de construção devem estar em sua mochila para serem usadas.");
+		return 0;
+	endif
+
+	start_script(":faccao:ferramentas_construcao_gump", array{who});
+
+	return 1;
 endprogram

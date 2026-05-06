@@ -5,6 +5,7 @@ include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":tn:cooldown";
 include ":attributes:attributes";
+include ":hotbar:custombuff";
 
 
 /**
@@ -28,8 +29,8 @@ class Fury(CombatAbility)
 		foreach item in (ListEquippedItems(who))
 			if (item.isa(POLCLASS_ARMOR))
 				var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
-				if (tipoProtecao["Armadura Pesada"])
-					Message("Voce nao pode usar Furia com armadura pesada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				if (tipoProtecao["Armadura"])
+					Message("Voce nao pode usar Furia com armadura.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 					return false;
 				endif
 			endif
@@ -57,8 +58,7 @@ class Fury(CombatAbility)
 		else
 			PlaySoundEffect(who, 0x339);
 		endif
-
-		Message("*RRRAARRRRGHH!!*").SendAbove(who);
+		SendAbilityBuff(who, ABILITY_ID::FURIA, duration, "Bonus de dano em posturas fisicas");
 	endfunction
 
 	function OnBeforeDamage(this, attackInfo)

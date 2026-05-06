@@ -16,20 +16,17 @@ function ProgressAttackSkills(byRef attackInfo)
 	endif
 
 	// Testa se é possivel ganhar skill com o NPC alvo
-	// var skillAttacker := AP_GetSkill(attacker, attacker.weapon.attribute);
-	// var skillDefender := AP_GetSkill(defender, defender.weapon.attribute);
 	var skillAttacker := attackInfo.GetAttacker().GetSkillBase(attackInfo.GetWeapon().GetAttribute());
-	var skillDefender := attackInfo.GetDefender().GetSkillBase(attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetAttribute()); // TODO: Verificar se isso funciona com NPCs sem arma equipada (se pega WRESTLING)
+	var skillDefender;
+	if (attackInfo.GetDefender().IsNPC())
+		skillDefender := attackInfo.GetDefender().GetSkillBase(WRESTLING);
+	else
+		skillDefender := attackInfo.GetDefender().GetSkillBase(attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetAttribute());
+	endif
 
+	// Swordmage exception: arma marcada com swordmage prop usa skill ONEHANDED
+	// independente da Attribute do template. Mantido por compat com a habilidade.
 	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetAttacker().IsConnected())
-		if (attackInfo.GetWeapon().GetObjType() == 0x13b9 && !attackInfo.GetAttacker().GetEquipBySlot(SHIELD)) // bastarda
-			skillAttacker := attackInfo.GetAttacker().GetSkillBase(TWOHANDED);
-		endif
-
-		if (attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetObjType() == 0x13b9 && !attackInfo.GetDefender().GetEquipBySlot(SHIELD))
-			skillDefender := attackInfo.GetDefender().GetSkillBase(TWOHANDED);
-		endif
-
 		if (attackInfo.GetWeapon().GetObjRef().GetProp("swordmage") == attackInfo.GetAttacker().GetSerial())
 			skillAttacker := attackInfo.GetAttacker().GetSkillBase(ONEHANDED);
 		endif
@@ -39,8 +36,12 @@ function ProgressAttackSkills(byRef attackInfo)
 		endif
 	endif
 
-	// se a skill do atacante for maior 10 pontos a mais que a do defesor, não upa
-	if (skillAttacker > (skillDefender + 10))
+	// Gate por skill: weapon e tactics são avaliados separadamente contra o defensor
+	var skillAttackerTactics := attackInfo.GetAttacker().GetSkillBase(skillUsedForCritical);
+	var canGainWeapon := skillAttacker <= (skillDefender + 10);
+	var canGainTactics := skillAttackerTactics <= (skillDefender + 10);
+
+	if (!canGainWeapon && !canGainTactics)
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_UP, Message("Skill UP bloqueado: Voce tem 10 de skill a mais que seu oponente"));
 		return 0;
 	endif
@@ -76,16 +77,24 @@ function ProgressAttackSkills(byRef attackInfo)
 
 		// Randomize order so weapon skill and tactics level up ~50/50
 		if (RandomInt(2) == 0)
-			SkillCheck(attackInfo.GetAttacker().GetObjRef(), weaponSkill, -1);
+			if (canGainWeapon)
+				SkillCheck(attackInfo.GetAttacker().GetObjRef(), weaponSkill, -1);
+			endif
 			SleepMS(5);
-			SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+			if (canGainTactics)
+				SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+			endif
 		else
-			SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+			if (canGainTactics)
+				SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+			endif
 			SleepMS(5);
-			SkillCheck(attackInfo.GetAttacker().GetObjRef(), weaponSkill, -1);
+			if (canGainWeapon)
+				SkillCheck(attackInfo.GetAttacker().GetObjRef(), weaponSkill, -1);
+			endif
 		endif
 
-		if (shouldGainArcana)
+		if (shouldGainArcana && canGainWeapon)
 			SkillCheck(attackInfo.GetAttacker().GetObjRef(), ARCANA, -1);
 		endif
 	endif

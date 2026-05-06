@@ -482,17 +482,17 @@ function MontaTratamentoGump(x, y, byref sessao)
 	GFPicTiled(gump, x - 20 + larguraCelula* 7,y + 30 + alturaCelula * 5,larguraBarraFalha != 0 ? larguraBarraFalha : 1 , 8,9753);
 
 	GFGumpPic(gump,cint(x - 28 + larguraCelula* 10),y + 12 + alturaCelula * 5,1594); // espaço porcentagem
-	var tooltipChance := "Chance Base: {}<br>".format(cint(sessao.dificuldade.chanceBase));
+	var tooltipChance := "Chance de Fabricar com sucesso: {}<br>".format(sessao.dificuldade.chanceTratamentoFinal);
 	
 	foreach modificador in (sessao.dificuldade.modificadoresChance)
 		Sleepms(2);
-		tooltipChance += modificador.origem.format(modificador.valor);
+		tooltipChance += modificador.origem;
 	endforeach
 	GFTooltipText(gump,tooltipChance);
 	var gumpIdProfissaoPressed := sessao.gumpIdProfissaoPressed ? sessao.gumpIdProfissaoPressed : GUMPIC_ID_PROFISSOES_DEFAULT;
 	var gumpIdProfissaoUnpressed := sessao.gumpIdProfissaoUnpressed ? sessao.gumpIdProfissaoUnpressed : GUMPIC_ID_PROFISSOES_DEFAULT;
 
-	GFHTMLArea(gump,cint(x - 24 + larguraCelula* 10),y + 15 + alturaCelula * 5,40,30,"<basefont size=55 color=#016210><center>{}%</center>".format(cint(sessao.dificuldade.chanceTotal)));
+	GFHTMLArea(gump,cint(x - 24 + larguraCelula* 10),y + 15 + alturaCelula * 5,40,30,"<basefont size=55 color=#016210><center>{}%</center>".format(cint(sessao.dificuldade.chanceTratamentoFinal)));
 	GFAddButton(gump,x - 24 + larguraCelula * 2, y - 10 + alturaCelula * 5,gumpIdProfissaoPressed,gumpIdProfissaoUnpressed,GF_CLOSE_BTN, 6); // Botao ajuda pericia.
 	GFAddButton(gump,x + larguraCelula * 4, cint(y - 10 + alturaCelula * 9.9) ,2119,2120,GF_CLOSE_BTN, 3);
 	if(sessao.fazerTodos)
@@ -765,18 +765,18 @@ function MontaJanelaReceita(byref gump , x, y,linha, coluna, receita, indice, se
 		GFGumpPic(gump,x + 30 ,y + 10,1592,coresClassesReceitas[cint(receita.receitaClassificada.classe)]); //
 	endif
 	var corPino := 0;
-	if(receita.dificuldade.chanceBase > 45)
+	if(receita.dificuldade.chanceTratamentoFinal > 45)
 		corPino := 78; // verde
-	elseif(receita.dificuldade.chanceBase <= 45 && receita.dificuldade.chanceBase > 30)
+	elseif(receita.dificuldade.chanceTratamentoFinal <= 45 && receita.dificuldade.chanceTratamentoFinal > 30)
 		corPino := 2212; //amarelo
-	elseif(receita.dificuldade.chanceBase <= 30 && receita.dificuldade.chanceBase > 10)
+	elseif(receita.dificuldade.chanceTratamentoFinal <= 30 && receita.dificuldade.chanceTratamentoFinal > 10)
 		corPino:= 43;//Laranja
 	else
 		corPino := 0; // vermelho
 	endif
 	GFGumpPic(gump,x + 60 ,y + 10,9009, corPino); // Pino
 	if(receita.dificuldade.chanceBase)
-		GFTooltipText(gump,"Chance de obter sucessos: {}%".format(receita.dificuldade.chanceBase));
+		GFTooltipText(gump,"Chance de fabricar o objeto: {} - Chance de obter sucessos: {}%".format(receita.dificuldade.chanceTratamentoFinal, receita.dificuldade.chanceBase));
 	endif
 
 	if(sessao.receitaSelecionada.receita.receitaClassificada.nome == receita.receitaClassificada.nome &&
@@ -894,13 +894,4 @@ function MontaEscolhaComponenteModoGmGump(byref gump, sessao)
 
 	GFAddButton(gump, larguraCelula * 2, alturaBarraMenu + 170,2311,2312,GF_CLOSE_BTN, COMPLEXOS_BTN_OKAY_GM_CMPNT);
 	return gump;
-endfunction
-
-function MontaPaginador(paginaAtual, itensPorPagina)
-
-	return struct {
-					indicePaginaAtual := (paginaAtual * itensPorPagina) + 1,
-					indicePaginaSeguinte := ((1 + paginaAtual) * itensPorPagina) + 1,
-					indicePaginaAnterior := ((1 - paginaAtual) * itensPorPagina) + 1
-				};
 endfunction

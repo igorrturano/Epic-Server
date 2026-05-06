@@ -1,0 +1,17 @@
+use uo;
+use os;
+use util;
+use npc;
+
+include ":treasurehunting:treasureguardians";
+
+program spawn_guardians(params)
+    var who   := params[1];
+    var level := params[2];
+    var x     := params[3];
+    var y     := params[4];
+    var z     := params[5];
+    var realm := params[6];
+
+    SpawnTreasureGuardians(who, level, x, y, z, realm);
+endprogram

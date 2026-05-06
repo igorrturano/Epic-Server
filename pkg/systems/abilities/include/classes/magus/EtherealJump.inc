@@ -2,11 +2,11 @@ use uo;
 use util;
 
 include ":abilities:models/CombatAbility";
+include ":abilities:utils/tileChecks";
 include ":message:model/Message";
 include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
-include ":survival:fishingFunctions";
 
 /**
  * Salto Etereo (Ethereal Jump) - ABILITY_ID::SALTO_ETEREO (2201)
@@ -37,7 +37,7 @@ class EtherealJump(CombatAbility)
         var targ := TargetCoordinates(who);
 
         // NPC behavior - jump to random direction from opponent
-        if (who.npctemplate)
+        if (mobile.IsNPC())
             var directions := array{ array{ 1, 0 }, array{ 0, 1 }, array{ -1, 0 }, array{ 0, -1 } };
             var random_direction := directions[RandomInt(4) + 1];
             targ := struct{
@@ -74,7 +74,7 @@ class EtherealJump(CombatAbility)
         endif
 
         var locinfo := GetMapInfo(targ.x, targ.y, who.realm);
-        if (IsWater(targ, locinfo))
+        if (_IsWaterTile(targ, locinfo))
             Message("Voce nao pode teleportar para a agua.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
             who.concealed := 0;
             who.frozen := 0;

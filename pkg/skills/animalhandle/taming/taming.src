@@ -55,7 +55,7 @@ program TamingSkill(who)
 		endif
 	endforeach
 
-	var yn_gump := GFECreateGump("Menu de Trato de Animais", 275, 290);
+	var yn_gump := GFECreateGump("Menu de Trato de Animais", 275, 305);
 
 	GFAddButton(yn_gump, 20, (73), 2117, 2118, GF_CLOSE_BTN, 1);
 	GFTextLine(yn_gump, 40, 70, 1153, "Adestrar Animal.");
@@ -70,7 +70,7 @@ program TamingSkill(who)
 
 	GFTextLine(yn_gump, 25, 133, 1153, "Libertar Animal:");
 
-	if ((check_bond == 0 || check_bond == 2) && (AP_GetSkill(who, HANDLEANIMAL) >= 1))
+	if ((check_bond == 0 || check_bond == 2))
 		GFAddButton(yn_gump, 190, (253), 2117, 2118, GF_CLOSE_BTN, 4);
 		GFTextLine(yn_gump, 210, 250, 1153, "Fidelizar?");
 	endif
@@ -91,14 +91,17 @@ program TamingSkill(who)
 			GFTextLine(yn_gump, 40, y, 1153, "" + pet.name);
 			if (GetObjProperty(pet, "Fidelizar?") == "nao")
 				GFGumpPic(yn_gump, 190, y + 4, 2437);
+				GFToolTipText(yn_gump, "NÃO para fidelizar");
 			elseif (GetObjProperty(pet, "Fidelizar?") == "sim")
 				GFGumpPic(yn_gump, 190, y + 4, 2436);
+				GFToolTipText(yn_gump, "SIM para fidelizar");
 			endif
 		endif
 		// Cruzar
 		//GFResizePic(byref gump, x, y, gump_id, width:=0, height:=0)
 		if (GetObjProperty(pet, "Cruzar") == "nao")
 			GFGumpPic(yn_gump, 215, y + 4, 5019);
+			GFToolTipText(yn_gump, "NÃO permitido para cruzar");
 		elseif (GetObjProperty(pet, "Cruzar") == "sim")
 
 		endif
@@ -253,12 +256,7 @@ function taming(who)
 
 			Run_Script_To_Completion(":death:npcdeath", { targ });
 
-			var tamed := GetObjProperty(who, "TamedPets");
-			if (!tamed)
-				tamed := array;
-			endif
-			tamed.append(targ.serial);
-			SetObjProperty(who, "TamedPets", tamed);
+			AddPet(who, targ.serial);
 
 			break;
 		endif

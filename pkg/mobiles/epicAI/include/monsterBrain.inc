@@ -6,6 +6,20 @@ include ":npcs:thor/handling/thorai";
 include "epicSpecial";
 include "NPCMageryUtils";
 
+// Only players and player-controlled mobiles (pets, summons) should pull a
+// monster into engagement on ENTEREDAREA. Plain NPC-vs-NPC sightings are
+// noise — damage and taunt events still drive NPC-vs-NPC combat through
+// their own handlers.
+function IsPlayerControlled(mobile)
+    if (mobile.acctname)
+        return 1;
+    endif
+    if (mobile.master && mobile.master.acctname)
+        return 1;
+    endif
+    return 0;
+endfunction
+
 function MonsterBrain()
     var ev;
     var wanders := 0;
@@ -52,6 +66,18 @@ function MonsterBrain()
             SM_TickStealing();
         elseif (state == "SNEAKING")
             SM_TickSneaking();
+        elseif (state == "INVESTIGATING")
+            SM_TickInvestigate();
+        endif
+
+        // Damage-weighted threat: decay table + reevaluate target if hysteresis
+        // margin is exceeded. DecayThreat self-throttles to 1Hz.
+        DecayThreat();
+        if (ShouldReevaluateTarget())
+            var threat_top := GetTopThreat();
+            if (threat_top && threat_top != me.opponent)
+                SetOpponent(threat_top);
+            endif
         endif
 
         if (me.opponent)
@@ -75,7 +101,9 @@ function MonsterBrain()
                     is_ranged := 0;
                 endif
                 if (SM_GetState() != "FLEEING")
-                    PursueTarget(me.opponent);
+                    if (!TickHazardEscape())
+                        PursueTarget(me.opponent);
+                    endif
                 endif
                 // Per-tick casting — keep offensive pressure on opponent
                 TickCombatAbilities(me, me.opponent, combat_abilities);
@@ -91,10 +119,14 @@ function MonsterBrain()
         if (ev)
             case (ev.type)
                 SYSEVENT_ENGAGED:
+                    AddThreat(ev.source, 0);
                     AlertAllies(ev.source, me);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
+                    // Safety net for damage paths that bypass AttackLogger.
+                    AddThreat(ev.source, 0);
+                    UpdateThreatList(me, ev);
                     AskForHealing(me);
                     // Break stealth states on damage
                     var dmg_state := SM_GetState();
@@ -103,19 +135,30 @@ function MonsterBrain()
                         SM_TransitionTo("COMBAT");
                     endif
                     HandleMonsterCombatEvent(ev.source, is_ranged);
+                EVID_THREAT_UPDATE:
+                    AddThreat(ev.source, ev.amount);
                 SYSEVENT_ENTEREDAREA:
-                    if (CheckDarknessCreatureSurvival(me))
-                        return;
-                    endif
-                    if (!IsAlly(ev.source))
-                        UpdateThreatList(me, ev);
-                        AlertAllies(ev.source, me);
-                        HandleMonsterEnteredArea(ev.source, is_ranged);
+                    if (!IsPlayerControlled(ev.source))
+                        // ignore non-player-controlled mobiles (other NPCs, wildlife)
+                    else
+                        if (CheckDarknessCreatureSurvival(me))
+                            return;
+                        endif
+                        if (!IsAlly(ev.source))
+                            UpdateThreatList(me, ev);
+                            AlertAllies(ev.source, me);
+                            HandleMonsterEnteredArea(ev.source, is_ranged);
+                        endif
                     endif
                 SYSEVENT_LEFTAREA:
                     if (!IsAlly(ev.source))
                         UpdateThreatList(me, ev);
-                        HandleMonsterLeftArea(is_ranged);
+                        // Only drop combat state if the leaver was our actual opponent.
+                        // Otherwise nearby movement (other players, pets, ally deaths)
+                        // would wipe opponent + threat table mid-fight and strand the NPC.
+                        if (me.opponent && ev.source.serial == me.opponent.serial)
+                            HandleMonsterLeftArea(is_ranged);
+                        endif
                     endif
                 EVID_ALERT_ALLIES:
                     var opponent_serial := Cint(GetObjProperty(me, "#taunt_opponent"));
@@ -128,9 +171,17 @@ function MonsterBrain()
                     endif
                 EVID_TAUNT:
                     last_activity_time := polcore().systime;
-                    SetOpponent(0);
-                    target_lock_var := 0;
+                    InjectTauntThreat(ev.source);
                     HandleMonsterCombatEvent(ev.source, is_ranged);
+                EVID_NOISE:
+                    last_activity_time := polcore().systime;
+                    if (!me.opponent && SM_GetState() == "IDLE" && me.alignment != 0)
+                        print("[noise rx] " + me.name + " investigating noise from " + ev.source.name);
+                        SM_TransitionTo("INVESTIGATING", struct{
+                            "noise_x" := ev.noise_x,
+                            "noise_y" := ev.noise_y
+                        });
+                    endif
                 EVID_BUDDYATTACKED:
                     if (!GetCooldown(me, "buddy_heal"))
                         var hurt_ally := ev.source;
@@ -235,19 +286,13 @@ function HandleMonsterCombatEvent(opponent, is_ranged)
         if (taunter_serial)
             var taunter := SystemFindObjectBySerial(taunter_serial);
             if (taunter && CanFight(me, taunter))
-                // Forced to fight the taunter, ignore all other targets and locks
+                // Forced to fight the taunter; threat injection from EVID_TAUNT
+                // already biases selection in favor of the taunter via hysteresis.
                 opponent := taunter;
                 SetOpponent(opponent);
-                // Maintain taunt lock - prevent CheckForIdealTarget from overriding
-                target_lock_var := struct{
-                    "serial" := taunter.serial,
-                    "time" := ReadGameClock(),
-                    "taunt" := 1
-                };
             else
                 // Taunter is no longer valid, clear taunt
                 EraseObjProperty(me, "#taunter");
-                target_lock_var := 0;
                 SetCooldown(me, "taunted", 0);
             endif
         endif
@@ -362,7 +407,7 @@ endfunction
 
 // function handleMonsterInitialReaction(source)
 //     var npc_elem := NPC_GetNPCConfig(me);
-//     var category := GetConfigString(npc_elem, "Category");
+//     var environment := GetConfigString(npc_elem, "Environment");
 
 //     if (category == "Goblin")
 //         var playerRaca := source.getRace();

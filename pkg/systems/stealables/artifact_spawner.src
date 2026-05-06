@@ -17,9 +17,12 @@ use os;
 include "include/say";
 include ":stealables:stealables";
 include ":traps:traps";
+include ":attributes:attributes";
 
 // Constantes
-const CHECK_INTERVAL := 60; // Intervalo de verificação em segundos
+const CHECK_INTERVAL  := 60; // Intervalo padrão (segundos) — respawn e área vazia
+const NOTIFY_INTERVAL := 5;  // Intervalo quando há jogadores na área de interesse
+const AREA_RANGE      := 20; // Raio de detecção de presença (antes da checagem por skill)
 
 program artifact_spawner(spawner)	
 	if (!spawner)
@@ -37,16 +40,22 @@ program artifact_spawner(spawner)
 	
 	// Loop principal
 	while (spawner)
+		// Se outro processo assumiu o controle, encerra este
+		if (CInt(GetObjProperty(spawner, "SpawnerPid")) != GetPid())
+			return 1;
+		endif
+
 		var current_artifact := GetCurrentArtifact(spawner);
-		
+
 		// Se o artefato não existe, precisa spawnar um novo
 		if (!current_artifact)
 			WaitForRespawnCooldown(spawner);
 			SpawnArtifact(spawner, config);
+			Sleep(CHECK_INTERVAL);
+		else
+			var anyone_nearby := NotifyNearbyPlayers(current_artifact);
+			Sleep(anyone_nearby ? NOTIFY_INTERVAL : CHECK_INTERVAL);
 		endif
-		
-		// Aguarda antes de verificar novamente
-		Sleep(CHECK_INTERVAL);
 	endwhile
 	
 	return 1;
@@ -250,4 +259,52 @@ function CalculateTrapLevel(rarity, base_trap_level)
 	endif
 	
 	return final_level;
+endfunction
+
+/*
+ * NotifyNearbyPlayers(artifact)
+ *
+ * Varre jogadores próximos ao artefato (padrão alertaarea).
+ * Notifica quem tem modo passivo de Awareness ligado e skill suficiente.
+ */
+// Retorna 1 se havia jogadores dentro de AREA_RANGE, 0 caso contrário.
+// O retorno controla o intervalo do loop principal: curto quando há presença, longo quando não há.
+function NotifyNearbyPlayers(artifact)
+	var anyone_nearby := 0;
+
+	foreach player in EnumerateOnlineCharacters()
+		if (player.npctemplate)
+			continue;
+		endif
+
+		if (CStr(player.realm) != CStr(artifact.realm))
+			continue;
+		endif
+
+		var dist := Distance(player, artifact);
+
+		if (dist > AREA_RANGE)
+			continue;
+		endif
+
+		anyone_nearby := 1;
+
+		var skill         := CInt(AP_GetSkill(player, "Awareness"));
+		var passive_range := max(1, CInt(skill / 200)); // skill armazenado ×10 (80.0 = 800)
+
+		if (dist > passive_range)
+			continue;
+		endif
+
+		var cooldown_key := "#StealableAlert_" + CStr(artifact.serial);
+
+		if (CInt(GetObjProperty(player, cooldown_key)) >= POLCore().systime)
+			continue;
+		endif
+
+		SendSysMessage(player, "Seu instinto aguçado capta a presença de algo valioso nas proximidades.", 3, 53);
+		SetObjProperty(player, cooldown_key, POLCore().systime + 300);
+	endforeach
+
+	return anyone_nearby;
 endfunction

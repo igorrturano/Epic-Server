@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -9,6 +10,7 @@ include ":timedScripts:timedScripts";
 include "include/epicMageryUtils";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
@@ -22,7 +24,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	handleSilentMagic(who, targ, SFX_SPELL_WEAKEN);
+	SC_HandleSound(who, targ, SFX_SPELL_WEAKEN);
 
 	var time := 0;
 	var oldx := who.x;
@@ -49,6 +51,7 @@ program SpellScript(params)
 	endif
 
 	SetObjProperty(who, "#Casting", 1);
+	SendSpellBuff(who, targ, CInt(spell.id), 10);
 
 	while (time < 10)
 

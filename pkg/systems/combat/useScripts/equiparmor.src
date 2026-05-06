@@ -1,0 +1,18 @@
+use uo;
+include ":message:model/Message";
+
+program use_EquipArmor(who, item)
+	if (GetEquipmentByLayer(who, item.tile_layer) == item)
+		MoveItemToContainer(item, who.backpack);
+		return 1;
+	endif
+
+	if (EquipItem(who, item))
+		Message("Voce equipa o item.").SetColor(SSM_INFO).SendSys(who);
+		Message("Dica: Clique no item equipado para desequipá-lo.").SetColor(SSM_INFO).SendSys(who);
+		return 1;
+	else
+		Message("Nao foi possivel equipar o item.").SetColor(SSM_FAIL).SendSys(who);
+		return 0;
+	endif
+endprogram

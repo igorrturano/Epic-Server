@@ -57,7 +57,7 @@ program deathRecover(params)
 		if (corpse)
 			if (GetObjProperty(corpse, "curado"))
 				SendSysMessage(player, "Voce foi curado e acordara em 5 segundos!");
-				EraseObjProperty(player, "hurt");
+				EraseObjProperty(player, "#deferred_fratura");
 				sleep(5);
 				break;
 			elseif (CInt(GetObjProperty(corpse, "morto")) || CInt(GetObjProperty(player, "morto")))

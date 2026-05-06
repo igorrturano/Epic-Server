@@ -1,38 +1,51 @@
 use uo;
 use os;
+use vitals;
+
 include ":attributes:attributes";
 include ":tn:cooldown";
+include "include/client";
+include "include/say";
+include "include/sounds";
+include ":spells:Controller/SpellController";
 
 program sanctuary(params)
 	var who := params[1];
+	var spell := params[3];
+	params := 0;
 
-	var duration := Cint(AP_GetSkill(who, THEOLOGY) / 2);
-	var i := 0;
-	PLaySoundEffect(who, 0x216);
-	while (protected(who) && i < duration)
-		GrantPrivilege(who, "invul");
-		who.enable("invul");
-
-		PlayObjectCenteredEffect(who, 0x375a, 10, 80);
-		sleep(1);
-		i++;
-	endwhile
-
-	RevokePrivilege(who, "invul");
-	who.disable("invul");
-endprogram
-
-function protected(who)
+	// Guard conditions — same list enforced per-tick.
 	if (GetEquipmentByLayer(who, 1) || GetEquipmentByLayer(who, 2))
-		SendSysMessage(who, "Voce esta equipado e cancelou o santuario");
+		SendSysMessageEx(who, "Voce precisa estar desequipado para o santuario.", SSM_FAIL);
 		return 0;
-	elseif (who.warmode)
-		SendSysMessage(who, "Voce entrou em modo de combate e cancelou o santuario");
+	endif
+	if (who.warmode)
+		SendSysMessageEx(who, "Voce nao pode entrar em santuario em modo de combate.", SSM_FAIL);
 		return 0;
-	elseif (GetCooldown(who, "martir") > 0)
-		SendSysMessage(who, "Voce optou pelo sacrificio pessoal");
+	endif
+	if (GetCooldown(who, "martir") > 0)
+		SendSysMessageEx(who, "Voce optou pelo sacrificio pessoal.", SSM_FAIL);
 		return 0;
 	endif
 
+	var duration := CInt(AP_GetSkill(who, THEOLOGY) / 2);
+
+	// Snapshot HP so the tick can detect incoming damage (area/trap/DoT/etc.)
+	// and break sanctuary. `#`-prefixed property is dropped on world save.
+	SetObjProperty(who, "#sanctuary_hp_snapshot", GetVital(who, HITS));
+	PlaySoundEffect(who, 0x216);
+	PlayObjectCenteredEffect(who, FX_SANTUARIO, 10, 80);
+
+	var opts := struct{};
+	opts.+buff_category := "sanctum";
+	opts.+displayname := "Santuario";
+	opts.+desc := "Inalcançavel";
+	opts.+properties := dictionary{ "#sanctuary" -> 1 };
+	opts.+tick_script := ":spells:spell_logic/priest/santuarioTick";
+	opts.+tick_interval := 1;
+	opts.+tick_params := struct{};
+
+	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
+
 	return 1;
-endfunction
+endprogram

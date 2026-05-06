@@ -12,8 +12,12 @@ function IsAmmunition(item)
 	return objtype in array{0xf3f, 0x1bfb, 0x9088, 0x9098, 0x9090};
 endfunction
 
-function setBonus(who, item, bonus)
+// bonusFlat: usado por weapon/ammo (dano elemental adicional, escala legacy).
+// bonusPct:  usado por armor (% de reducao adicional, escala nova do redesign).
+// Decoupled em encantarobjeto.src — ver design_magia.md.
+function setBonus(who, item, bonusFlat, bonusPct)
 	var isAmmo := IsAmmunition(item);
+	var bonus := bonusFlat; // alias usado pelas paths de weapon/ammo abaixo
 
 	if (item.IsA(POLCLASS_ARMOR))
 		item := ArmorWrapper(item);
@@ -74,22 +78,37 @@ function setBonus(who, item, bonus)
 		item.SetDamageMod(damageMod);
 	elseif (item is @ArmorWrapper)
 		var resistMod := item.GetResistsMod();
+		// Armor usa bonusPct (escala % do redesign). ILLYRA e MITHRIL adicionados
+		// para paridade com o weapon branch — eram omissoes do codigo anterior, mas
+		// o design (design_magia.md) e o test plan ("DV mage encanta mithril → 70%
+		// em todos 4 elementos") os requerem.
 		if (material == MATERIAL_OBJTYPE::IGNIUM)
-			resistMod.IncreaseFireResist(bonus);
+			resistMod.IncreaseFireResist(bonusPct);
 		elseif (material == MATERIAL_OBJTYPE::VENETIUM)
-			resistMod.IncreasePoisonResist(bonus);
+			resistMod.IncreasePoisonResist(bonusPct);
 		elseif (material == MATERIAL_OBJTYPE::FRIGUTIUM)
-			resistMod.IncreaseColdResist(bonus);
+			resistMod.IncreaseColdResist(bonusPct);
 		elseif (material == MATERIAL_OBJTYPE::FULMIUM)
-			resistMod.IncreaseEnergyResist(bonus);
+			resistMod.IncreaseEnergyResist(bonusPct);
 		elseif (material == MATERIAL_OBJTYPE::ESCAMOSO)
-			resistMod.IncreasePoisonResist(bonus);
+			resistMod.IncreasePoisonResist(bonusPct);
 		elseif (material == MATERIAL_OBJTYPE::DRACONIANO)
-			resistMod.IncreaseFireResist(bonus);
+			resistMod.IncreaseFireResist(bonusPct);
 		elseif (material == MATERIAL_OBJTYPE::GIGANTE)
-			resistMod.IncreaseEnergyResist(bonus);
+			resistMod.IncreaseEnergyResist(bonusPct);
 		elseif (material == MATERIAL_OBJTYPE::POLAR)
-			resistMod.IncreaseColdResist(bonus);
+			resistMod.IncreaseColdResist(bonusPct);
+		elseif (material == MATERIAL_OBJTYPE::ILLYRA)
+			var illyraPct := CInt(bonusPct * 0.6);
+			resistMod.IncreaseFireResist(illyraPct);
+			resistMod.IncreaseColdResist(illyraPct);
+			resistMod.IncreasePoisonResist(illyraPct);
+			resistMod.IncreaseEnergyResist(illyraPct);
+		elseif (material == MATERIAL_OBJTYPE::MITHRIL)
+			resistMod.IncreaseFireResist(bonusPct);
+			resistMod.IncreaseColdResist(bonusPct);
+			resistMod.IncreasePoisonResist(bonusPct);
+			resistMod.IncreaseEnergyResist(bonusPct);
 		endif
 		item.SetResistsMod(resistMod);
 	elseif (isAmmo)

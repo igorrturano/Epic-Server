@@ -1,0 +1,73 @@
+// =============================================================================
+// dblclick.src — Citizen double-click dispatcher.
+//
+// GMs (cmdlevel >= 1) get the configuration gump (set reporting factions).
+// Players get the interrogation gump (4 pre-set questions, AWARENESS-3 perk
+// for one free question per IRL day).
+//
+// Modeled on :merchants:pcmerchant/dblclick_hairChanger.
+// =============================================================================
+
+use uo;
+use os;
+use util;
+use cfgfile;
+use polsys;
+
+include ":fls_core:packets";
+include ":brainAI:npcCommands";
+
+program DblClickNerve(params)
+    var npc := params[1];
+    var nerve_name := params[2];
+    var player := params[3].source;
+    var settings := params[4];
+
+    var serving := 0;
+    var busy := 0;
+
+    while (npc)
+        if (player)
+            if (busy.pid)
+                AI_Speak(npc, "Um momento, ja te atendo.");
+            else
+                serving := player;
+                if (player.cmdlevel >= 1)
+                    busy := Start_Script(":merchants:citizen/gumps/citizenGmConfig", { npc, player });
+                else
+                    busy := Start_Script(":merchants:citizen/gumps/citizenInterrogate", { npc, player });
+                endif
+                if (busy.errortext)
+                    AI_Speak(npc, "[Erro abrindo dialogo: " + busy.errortext + "]");
+                endif
+            endif
+        endif
+
+        var wait := 500;
+        if (busy.pid)
+            if (serving.hidden)
+                SendSysMessage(serving, "Voce se esconde e interrompe a conversa.");
+                CloseGumpPacket(serving, busy.pid, 0);
+                sleepms(500);
+                busy.kill();
+            elseif (Distance(npc, serving) > 4)
+                SendSysMessage(serving, "Voce se afasta e interrompe a conversa.");
+                CloseGumpPacket(serving, busy.pid, 0);
+                sleepms(500);
+                busy.kill();
+            else
+                wait := 1;
+            endif
+        endif
+
+        var ev := wait_for_event(wait);
+        if (ev)
+            case (ev.type)
+                SYSEVENT_DOUBLECLICKED: player := ev.source;
+                NPCEVENT_DONE:          player := 0;
+            endcase
+        else
+            player := 0;
+        endif
+    endwhile
+endprogram

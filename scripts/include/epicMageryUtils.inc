@@ -102,29 +102,36 @@ function distanceAllowedForSpells(who, mlore, school)
 	return dist_allowed;
 endfunction
 
-function bonusSpellDamageForSpecialists(who, dmg, school)
-	var bonus := 1.2;
-
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
-		dmg := Cint(dmg * bonus);
-	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
-		dmg := Cint(dmg * bonus);
+function _HasSchoolSpecialist(who, school)
+	var mw := MobileWrapper(who);
+	if (school == EVOCATIUM && mw.HasAbility(ABILITY_ID::EVOCATOR))
+		return 1;
 	endif
-
-	return dmg;
+	if (school == VELKYN && mw.HasAbility(ABILITY_ID::VALDRUK))
+		return 1;
+	endif
+	return 0;
 endfunction
 
-function epicSpellDamageRoll(who, spell_circle)
+function epicSpellDamageRoll(who, spell_circle, school := 0)
+	var effective_circle := spell_circle;
+	if (school != 0 && _HasSchoolSpecialist(who, school))
+		effective_circle := spell_circle + 1;
+		if (effective_circle > 5)
+			effective_circle := 5;  // C5 specialists clamp at 10d12 (no C6 dice defined).
+		endif
+	endif
+
 	var dice := cstr("1d4");
-	if (spell_circle == 1)
+	if (effective_circle == 1)
 		dice := cstr("2d4");
-	elseif (spell_circle == 2)
+	elseif (effective_circle == 2)
 		dice := cstr("4d6");
-	elseif (spell_circle == 3)
+	elseif (effective_circle == 3)
 		dice := cstr("6d8");
-	elseif (spell_circle == 4)
+	elseif (effective_circle == 4)
 		dice := cstr("8d10");
-	elseif (spell_circle == 5)
+	elseif (effective_circle == 5)
 		dice := cstr("10d12");
 	endif
 
@@ -166,7 +173,7 @@ function bonusSpellDurationForSpecialists(who, duration, school)
 	var bonus := 1.2;
 
    if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
-	  duration := Cint(duration * bonus);
+	  duration := Cint(duration * 1.5);  // Evocator: +50% duration
    elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
 	  duration := Cint(duration * bonus);
    elseif(MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA) && school == ARADALORE)
@@ -390,13 +397,13 @@ endfunction
 function EquipmentCheck(who)
 	var hand_1 := GetEquipmentByLayer(who, LAYER_HAND1);
 	if (hand_1)
-		if (!hand_1.IsA(POLCLASS_SPELLBOOK))
+		if (!hand_1.IsA(POLCLASS_SPELLBOOK) && !GetObjProperty(hand_1, "cancast"))
 			return 0;
 		endif
 	endif
 	var hand_2 := GetEquipmentByLayer(who, LAYER_HAND2);
 	if (hand_2)
-		if (!hand_2.IsA(POLCLASS_SPELLBOOK))
+		if (!hand_2.IsA(POLCLASS_SPELLBOOK) && !GetObjProperty(hand_2, "cancast"))
 			return 0;
 		endif
 	endif
@@ -418,6 +425,27 @@ function handleSpellResistDiffForDivineCasters(who, school)
    var diff := Cint(AP_GetSkill(who, THEOLOGY) / 4); // Baseado na skill de teologia
 
    return diff;
+endfunction
+
+// Returns 1 if the caster has an active "mobile cast" window matching the given spell school.
+// Ability ExecuteOn sets the "#mobilecast" property with an endtime game-clock value.
+// School-gating ensures Evocator only walks while casting Evocation, etc.
+function isMobileCastActive(who, school)
+	var info := GetObjProperty(who, "#mobilecast");
+	if (!info || info is @Exception)
+		return 0;
+	endif
+
+	if (info.endtime == error || info.endtime <= ReadGameClock())
+		EraseObjProperty(who, "#mobilecast");
+		return 0;
+	endif
+
+	if (info.school == error || info.school != school)
+		return 0;
+	endif
+
+	return 1;
 endfunction
 
 /*
@@ -486,21 +514,26 @@ function SummonSpiritualBlade(who)
 	if (!weapon)
 		who.frozen := 0;
 		Message("Erro ao criar lamina espiritual.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-		return 0;
+		return;
 	endif
 
 	weapon.graphic := weaponData.graphic;
 	weapon.color := 30000;
-	EquipItem(who, weapon);
 
+	who.frozen := 0;
+
+	var equipped := EquipItem(who, weapon);
+	if (!equipped)
+		DestroyItem(weapon);
+		Message("Erro ao equipar lamina espiritual.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return;
+	endif
 	if (weapon.maxhp > 0)
 		weapon.hp := weapon.maxhp;
 	endif
 
 	PlaySoundEffect(who, 0x245);
 	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0xB462, 8, 40, COLOR_ELEMENTAL_ENERGY);
-
-	who.frozen := 0;
 
 	SetCooldown(who, "spiritual_weapon", 99999);
 	Message("Sua lamina espiritual se materializa!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);

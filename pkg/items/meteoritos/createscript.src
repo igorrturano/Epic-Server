@@ -1,0 +1,28 @@
+use uo;
+use cfgfile;
+use util;
+
+const METEORITE_DEFAULT_ORE_LEFT := 15;
+
+program MeteoriteCreate(meteorite)
+	var cfg := ReadConfigFile(":meteoritos:oresettings");
+	var ore_left := METEORITE_DEFAULT_ORE_LEFT;
+
+	if (cfg && !cfg.errortext)
+		var key := Hex(meteorite.objtype);
+		if (key[1, 2] == "0x")
+			key := key[3, len(key)];
+		endif
+		key := Upper(CStr(key));
+		var elem := FindConfigElem(cfg, key);
+		if (elem && !elem.errortext)
+			var configured := CInt(elem.OreLeft);
+			if (configured > 0)
+				ore_left := configured;
+			endif
+		endif
+	endif
+
+	SetObjProperty(meteorite, "OreLeft", ore_left);
+	return 1;
+endprogram

@@ -17,6 +17,7 @@ include "include/say";
 
 const EXPANSION_START := 0xB0000;
 const CHAR_INFO_START := 0xC0000;
+const LANGUAGE_START := 0xD0000;
 
 const CANCEL_BTN := 0xA0000;
 // const OKAY_BTN		:= 0xA0001;
@@ -29,6 +30,7 @@ const CHANGE_EMAIL := 0xA0007;
 const CHANGE_ACCTNAME := 0xA0008;
 const DELETE_CHARACTER := 0xA0009;
 const MAXCHAR_BTN := 0xA0010;
+const CHANGE_LANGUAGE := 0xA0011;
 
 var msg_array := array{};
 
@@ -150,6 +152,15 @@ function GeneralInfoGump(account, byref gump)
 	GFAddButton(gump, 150, 280, 4023, 4024, GF_CLOSE_BTN, MAXCHAR_BTN);
 	GFResizePic(gump, 140, 276, 2620, 50, 30);
 	GFTextMid(gump, 140, 281, 60, 2100, account.getprop("maxchars"));
+
+	var lang := account.GetProp("original_language");
+	if (lang == error || !lang)
+		lang := "pt-BR";
+	endif
+	GFTextLine(gump, 25, 320, 2100, "Language:");
+	GFAddButton(gump, 150, 320, 4023, 4024, GF_CLOSE_BTN, CHANGE_LANGUAGE);
+	GFResizePic(gump, 140, 316, 2620, 50, 30);
+	GFTextMid(gump, 140, 321, 60, 2100, lang);
 
 	//////
 	// Mid-Right Buttons
@@ -417,6 +428,8 @@ function ProcessInput(who, account, input)
 		DeleteCharacter(who, account);
 	elseif (input[MAXCHAR_BTN])
 		SetMAxChar(who, account);
+	elseif (input[CHANGE_LANGUAGE])
+		ChangeLanguage(who, account);
 	else
 		SendSysMessage(who, "Cancelled");
 		return 0;
@@ -431,6 +444,55 @@ function SetMaxChar(who, account)
 	account.setprop("maxchars", qtd);
 	SendSysMessage(who, "Max Char: " + qtd);
 
+endfunction
+
+function ChangeLanguage(who, account)
+	var languages := dictionary;
+	languages["pt-BR"] := "Portugues (Brasil)";
+	languages["en"] := "English";
+	languages["es"] := "Espanol";
+
+	var current := account.GetProp("original_language");
+	if (current == error || !current)
+		current := "pt-BR";
+	endif
+
+	var gump := GFCreateGump();
+	GFMovable(gump, 0);
+	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 360, 280);
+	GFResizePic(gump, 15, 15, GFCfgConst("Defaults", "ForeGround"), 330, 250);
+	GFTextMid(gump, 15, 20, 330, 2100, "Select Account Language");
+
+	var y_pos := 60;
+	foreach key in (languages.keys())
+		GFRadioButton(gump, 30, y_pos, 210, 211, (key == current), LANGUAGE_START + _key_iter);
+		GFTextLine(gump, 60, y_pos, 2100, languages[key]);
+		y_pos := y_pos + 25;
+		SleepMS(2);
+	endforeach
+
+	GFAddButton(gump, 50, 230, 2128, 2129, GF_CLOSE_BTN, OKAY_BTN);
+	GFAddButton(gump, 245, 230, 2119, 2120, GF_CLOSE_BTN, CANCEL_BTN);
+
+	var input := GFSendGump(who, gump);
+	if (input[OKAY_BTN])
+		var picked;
+		foreach key in (input.keys)
+			if (key >= LANGUAGE_START)
+				picked := languages.Keys()[key - LANGUAGE_START];
+				break;
+			endif
+			SleepMS(2);
+		endforeach
+		if (picked)
+			account.SetProp("original_language", picked);
+			SendSysMessage(who, "Account language updated to: " + picked);
+		endif
+	else
+		SendSysMessage(who, "Cancelled");
+	endif
+
+	return 1;
 endfunction
 
 function DeleteCharacter(who, account)

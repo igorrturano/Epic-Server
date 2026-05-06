@@ -1,0 +1,71 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include "include/say";
+
+program ferramentas_undo_telhado(params)
+	var who := params[1];
+
+	if (!who)
+		return 0;
+	endif
+
+	var serial_list := GetObjProperty(who, "#last_roof_tiles");
+	var total_cost  := CInt(GetObjProperty(who, "#last_roof_cost"));
+
+	if (!serial_list || serial_list.size() == 0)
+		SendSysMessageEx(who, "Nenhum telhado para desfazer.", SSM_INFO);
+		return 0;
+	endif
+
+	var refund := CInt(total_cost / 2);
+
+	// Confirmação
+	var gump := GFCreateGump(270, 70);
+	GFResizePic(gump, 0, 0, 0x254E, 210, 90);
+	GFClosable(gump, 1);
+	GFDisposable(gump, 1);
+	GFMovable(gump, 1);
+
+	GFTextLine(gump, 10, 10, 2100, "Desfazer Último Telhado");
+	GFTextLine(gump, 10, 30, 1152, "Você receberá " + refund + " madeiras de volta.");
+
+	GFAddButton(gump, 15, 57, 2117, 2118, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 35, 55, 2100, "Confirmar");
+
+	GFAddButton(gump, 115, 57, 2117, 2118, GF_CLOSE_BTN, 2);
+	GFTextLine(gump, 135, 55, 2100, "Cancelar");
+
+	var result := GFSendGump(who, gump);
+
+	if (result[0] != 1)
+		return 0;
+	endif
+
+	// Destruir tiles
+	var destroyed := 0;
+	foreach serial in serial_list
+		var tile := SystemFindObjectBySerial(serial);
+		if (tile)
+			tile.movable := 1;
+			DestroyItem(tile);
+			destroyed := destroyed + 1;
+		endif
+		sleepms(5);
+	endforeach
+
+	// Devolver metade da madeira
+	if (refund > 0)
+		CreateItemInBackpack(who, 0x1bdd, refund);
+	endif
+
+	// Limpar propriedades
+	EraseObjProperty(who, "#last_roof_tiles");
+	EraseObjProperty(who, "#last_roof_cost");
+
+	SendSysMessageEx(who, destroyed + " tiles destruídos. Você recebeu " + refund + " madeiras.", SSM_INFO);
+	SysLog("[createroof] " + who.name + " desfez telhado: " + destroyed + " tiles, devolveu " + refund + " madeiras.");
+
+	return 1;
+endprogram

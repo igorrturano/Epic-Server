@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -21,7 +22,7 @@ program SpellScript(params)
 	var timer_list := TS_GetTimerList(targ);
 	var names := array;
 
-	handleSilentMagic(who, targ, SFX_SPELL_STRENGTH);
+	SC_HandleSound(who, targ, SFX_SPELL_STRENGTH);
 
 	foreach timer in (timer_list.keys())
 		timer := lower(timer);

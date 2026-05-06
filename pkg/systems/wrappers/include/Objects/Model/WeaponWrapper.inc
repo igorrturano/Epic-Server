@@ -79,9 +79,8 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this.MinRange := this.Template.MinRange ?: 0;
 			this.MaxRange := this.Template.MaxRange ?: 1;
 			this.IsThrowableVar := Boolean(this.Template.Throwable) ?: false;
-			this.CriticalChanceMod := PegaValorFabricacao(this.ItemOrTemplate,CARACTERISTICA_FABRICACAO_CRITICO);
-			this.AccuracyMod := PegaValorFabricacao(this.ItemOrTemplate,CARACTERISTICA_FABRICACAO_PRECISAO) * 3;
-
+			this.CriticalChanceMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_CRITICO);
+			this.AccuracyMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_PRECISAO);
 			/* TODO ver com o Evil sobre essa forma de guardar o CriticalChanceMod , me pareceu que ficaria dificil executar os calculos.
 			if (this.Prop) // Alguns atributos só estão nas props
 				this.CriticalChanceMod := this.Prop.CriticalChanceMod;
@@ -403,6 +402,19 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		       this.GetCategory() == WEAPON_CATEGORY::HANDCANNON;
 	endfunction
 
+	function IsFinesse(this)
+		if (Upper(this.GetSpeedTier()) != MELEE_HIGH)
+			return false;
+		endif
+		var _cat := this.GetCategory();
+		return _cat == WEAPON_CATEGORY::SWORD      ||
+		       _cat == WEAPON_CATEGORY::GREATSWORD ||
+		       _cat == WEAPON_CATEGORY::DAGGER     ||
+		       _cat == WEAPON_CATEGORY::POLEARM    ||
+		       _cat == WEAPON_CATEGORY::SPEAR      ||
+		       _cat == WEAPON_CATEGORY::STAFF;
+	endfunction
+
 	// Private functions
 	function _CalculateWeight(this)
 		var weight := 1;
@@ -431,6 +443,8 @@ enum class WEAPON_CATEGORY
 	SPEAR := "Spear",
 	MACE := "Mace",
 	STAFF := "Staff",
+	WAND := "Wand",
+	SPELLBOOK := "Spellbook",
 	THROWING := "Throwing",
 	POLEARM := "Polearm",
 	WHIP := "Whip",

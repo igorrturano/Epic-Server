@@ -1,5 +1,5 @@
 
-include ":crafting:controladoraComponentes";
+include ":crafting:include/controladoras/controladoraComponentes";
 
 function FabricaComponentes(quem,pericia := "todas")
 	EnviaGumpComponentes(quem, pericia );

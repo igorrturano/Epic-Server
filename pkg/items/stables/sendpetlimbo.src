@@ -1,0 +1,58 @@
+use uo;
+use os;
+use npc;
+use math;
+use util;
+
+const RUN_DISTANCE := 8;
+const RUN_TIMEOUT_SECONDS := 5;
+
+program SendPetToLimbo(params)
+	var pet := SystemFindObjectBySerial(params.pet_serial);
+	var owner := SystemFindObjectBySerial(params.owner_serial);
+
+	if (!pet || !owner)
+		return;
+	endif
+
+	if (params.run_away)
+		RunPetAwayFrom(pet, owner);
+	endif
+
+	MoveObjectToLocation(pet, 0, 0, 0, pet.realm, MOVEOBJECT_FORCELOCATION);
+
+	pet.hidden := 1;
+	pet.frozen := 1;
+	pet.invul := 1;
+endprogram
+
+function RunPetAwayFrom(pet, owner)
+	var dir_x := pet.x - owner.x;
+	var dir_y := pet.y - owner.y;
+	var size := Sqrt(dir_x * dir_x + dir_y * dir_y);
+
+	if (size > 0)
+		dir_x := CInt(dir_x / size * RUN_DISTANCE);
+		dir_y := CInt(dir_y / size * RUN_DISTANCE);
+	else
+		dir_x := RandomInt(RUN_DISTANCE) - RandomInt(RUN_DISTANCE);
+		dir_y := RandomInt(RUN_DISTANCE) - RandomInt(RUN_DISTANCE);
+	endif
+
+	var run_to_x := pet.x + dir_x;
+	var run_to_y := pet.y + dir_y;
+
+	var run_event := struct{ "type" := 0xA008,
+	                         "source" := owner,
+	                         "targ" := struct{ "x" := run_to_x, "y" := run_to_y, "type" := "run" } };
+
+	SendEvent(pet, run_event);
+
+	var start_time := ReadGameClock();
+	while (CoordinateDistance(pet.x, pet.y, run_to_x, run_to_y) > 2)
+		if (ReadGameClock() - start_time > RUN_TIMEOUT_SECONDS)
+			break;
+		endif
+		sleepms(500);
+	endwhile
+endfunction

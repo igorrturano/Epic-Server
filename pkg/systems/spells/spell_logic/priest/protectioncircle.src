@@ -36,7 +36,7 @@ program SpellScript(params)
 	SendSystemReport(who, "'Mova-se para parar a conjuração!'", SSM_INFO);
 
 	SetObjProperty(who, "#Casting", 1);
-	while (who.connected && !who.frozen && !who.paralyzed)
+	while (who.connected && !who.frozen)
 		if (oldx != who.x || oldy != who.y)
 			break;
 		endif
@@ -45,7 +45,7 @@ program SpellScript(params)
 
 		foreach mobile in newmobiles
 			var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
-			if (cfg[npctemplate.template].Category == "Undead" || cfg[npctemplate.template].Category == "Demons")
+			if (cfg[npctemplate.template].Environment == "Undead" || cfg[npctemplate.template].Environment == "Demons")
 				ForceDirection(mobile);
 			endif
 			sleepms(2);

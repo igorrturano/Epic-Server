@@ -1,5 +1,6 @@
 include "include/utils";
 include "include/colormap";
+include "/include/epicPropNames";
 
 function GetItemType(item)
    var item_type := 0;
@@ -15,6 +16,8 @@ function GetItemType(item)
 		item_type := "Joias";
 	elseif (item.isA(POLCLASS_CONTAINER))
 		item_type := "Containers";
+	elseif (GetObjProperty(item, PROPNAME_ENCAIXE_COMPONENTE))
+		item_type := "Componentes";
 	endif
 
    return item_type;

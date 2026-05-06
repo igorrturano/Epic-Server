@@ -1,0 +1,29 @@
+// ============================================================================
+// Loot Init — one-shot loot generation for NPC spawn
+// ============================================================================
+// Spawned via start_script() to isolate the loot/crafting/sealedBooks/architect
+// transitive include subgraph from brain.src's compile unit.
+// Pattern mirrors pkg/packetHooks/hotbar/scripts/send_*.src.
+// ============================================================================
+
+use uo;
+use os;
+
+include ":loot:include/lootParser";
+
+program LootInit(params)
+    if (params.size() < 2)
+        return 0;
+    endif
+
+    var container := params[1];
+    var loot_index := params[2];
+    var source := (params.size() >= 3) ? params[3] : 0;
+
+    if (!container || !loot_index)
+        return 0;
+    endif
+
+    Loot_Generate(container, loot_index, source);
+    return 1;
+endprogram

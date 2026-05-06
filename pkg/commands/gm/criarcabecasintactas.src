@@ -1,0 +1,146 @@
+
+use uo;
+
+// Comando GM: cria uma bolsa com 1 unidade de cada cabeca intacta (curada)
+// Intactas sao o resultado de curar raws no curtidor — usadas como material na carpintaria para fabricar trofeus
+program criar_cabecas_intactas(who)
+
+	var intactas := array{
+		// === CABEÇAS ANIMAIS ===
+		0xd1f1,  // cabecaboi (intacta)
+		0xd1f2,  // cabecaporco (intacta)
+		0xd1f3,  // cabecamorsa (intacta)
+		0xd1f4,  // cabecaalce (intacta)
+		0xd1f5,  // cabecacervo (intacta)
+		0xd1e7,  // CabecaAlce4 (intacta)
+		0xd1e3,  // CabecaTouro (intacta)
+		0xd1e2,  // CabecaGrandeTouro (intacta)
+		0xd1e1,  // craniocomchifre (intacta)
+		0xd1ca,  // CabecaLhama (intacta)
+		0xd1cd,  // CabecaOstard (intacta)
+
+		// === URSOS ===
+		0xd1be,  // bearhead (intacta)
+		0xd1bf,  // brownbearhead (intacta)
+		0xd1e4,  // CabecaUrsoNegro (intacta)
+		0xd1e6,  // CabecaUrsoPolar1 (intacta)
+
+		// === FELINOS ===
+		0xd1dd,  // CabecaLeao (intacta)
+		0xd1dc,  // CabecaLeaoGigante (intacta)
+		0xd1de,  // CabecaTigreDenteSabre (intacta)
+		0xd1c7,  // CabecaTigre (intacta)
+		0xd1df,  // CabecaOnca (intacta)
+		0xd1f8,  // cabecadefelino (intacta)
+
+		// === CANINOS / SÍMIOS ===
+		0xd1f6,  // cabecadegorila (intacta)
+		0xd1e5,  // CabecaGorilaGigante (intacta)
+		0xd1f9,  // cabecadelobodasneves (intacta)
+
+		// === RÉPTEIS / LAGARTOS ===
+		0xd1f7,  // cabecadelagarto (intacta)
+		0xd1e0,  // CabecaLagartoDeserto2 (intacta)
+		0xd1ce,  // CabecaDinossauro (intacta)
+		0xd1d1,  // CranioDinossauro (intacta)
+		0xd1d0,  // CabecaMamute (intacta)
+		0xd21e,  // cabecatriceratops (intacta)
+		0xd21f,  // cabecalagartodefogo (intacta)
+		0xd220,  // cabecalagartodigelo (intacta)
+		0xd221,  // cabecalagartodeserto2 (intacta)
+
+		// === DRAGÕES ===
+		0xd1e8,  // CabecaDragao (intacta)
+		0xd1e9,  // CabecaDragaoAzul (intacta)
+		0xd1eb,  // cabecadedragaovermelho (intacta)
+		0xd1ef,  // cabecadedragaobranco (intacta)
+		0xd1f0,  // cabecadedragaoverde (intacta)
+		0xd1c2,  // CabecaDragaoNegro (intacta)
+		0xd1ee,  // cabecadedrake (intacta)
+		0xd1c3,  // CranioEsqueletoGrandeDragao (intacta)
+		0xd1c4,  // CranioEsqueleticoCavalo (intacta)
+		0xd1d2,  // CranioDragao1 (intacta)
+		0xd219,  // cabecadragao6 (intacta)
+		0xd21a,  // cabecadragao9 (intacta)
+		0xd21b,  // cabecadragao10 (intacta)
+		0xd21c,  // cabecadragao11 (intacta)
+		0xd21d,  // cabecadragao12 (intacta)
+
+		// === HUMANOIDES / GOBLINOIDES ===
+		0xd1fa,  // cabecadegoblin (intacta)
+		0xd1db,  // CabecaHomemLagarto (intacta)
+		0xd1fc,  // cabecademinotauro (intacta)
+		0xd1da,  // CabecaCiclops (intacta)
+		0xd1fb,  // cabecadegigante (intacta)
+		0xd1d9,  // CabecaGigante (intacta)
+		0xd1c6,  // CabecaOrc (intacta)
+		0xd1c5,  // CabecaTitan (intacta)
+		0xd1cf,  // CabecaGargula (intacta)
+		0xd1cb,  // BustoHarpia (intacta)
+		0xd20d,  // humanears (intacta)
+
+		// === DEMÔNIOS ===
+		0xd1d5,  // CabecaDemonio (intacta)
+		0xd20e,  // cabecademonio3 (intacta)
+		0xd210,  // cabecademonio1 (intacta)
+		0xd212,  // cabecademonionegro (intacta)
+		0xd213,  // cabecagrandedemonio (intacta)
+		0xd214,  // cabecademoniochifrudo (intacta)
+		0xd215,  // cabecademoniodasprofundezas (intacta)
+		0xd20f,  // cabecademonioparede (intacta)
+		0xd211,  // cabecademonioparede1 (intacta)
+
+		// === GIGANTES ===
+		0xd216,  // CabecaGiganteGelo (intacta)
+		0xd217,  // cabecagigantedeserto2 (intacta)
+		0xd218,  // cabecagigantegelocombatente (intacta)
+		0xd1b7,  // cabecadeogro (intacta)
+		0xd222,  // cabecadetroll (intacta)
+
+		// === MONSTROS ESPECIAIS ===
+		0xd1d4,  // CabecaMindflayer (intacta)
+		0xd1d3,  // GrandeRinoceronteDemoniaco (intacta)
+		0xd1c8,  // CabecaMonstroFome (intacta)
+		0xd1c9,  // CabecaMonstroPulante (intacta)
+		0xd1d6,  // CabecaOvelhaLouca (intacta)
+		0xd1d8,  // CabecaCachorroGigante (intacta)
+		0xd1cc,  // CabecaCavaloDemoniaco (intacta)
+		0xd1ea,  // CabecaTubarao (intacta)
+		0xd1c1,  // cabecaderato (intacta)
+		0xd1c0,  // pigshead (intacta)
+		0xd1ed,  // unicornhead (intacta)
+
+		// === CHIFRES ===
+		0xd20b,  // chifre (intacta)
+		0xd206,  // chifre1 (intacta)
+		0xd207,  // chifre2 (intacta)
+		0xd208,  // chifre3 (intacta)
+		0xd209,  // chifre4 (intacta)
+		0xd20a,  // ChifreAlce (intacta)
+
+		// === AVES ===
+		0xd20c,  // corpodeaguia (intacta)
+
+		// === PEIXES CURADOS ===
+		0xd1fd,  // peixeazul (intacta)
+		0xd1fe,  // lambari (intacta)
+		0xd1ff,  // robalo (intacta)
+		0xd200,  // anchova (intacta)
+		0xd201,  // sardinha (intacta)
+		0xd202,  // peixegalo (intacta)
+		0xd203,  // atum (intacta)
+		0xd204,  // dourado (intacta)
+		0xd205,  // perca (intacta)
+		0xd223   // perca variante (intacta)
+	};
+
+	var bolsa := CreateItemInBackpack(who, "backpack", 1);
+	bolsa.color := 1167;
+	bolsa.name := "Cabecas Intactas (curadas)";
+
+	foreach coisa in intactas
+		CreateItemInContainer(bolsa, coisa, 1);
+	endforeach
+
+	SendSysMessage(who, "Bolsa criada com " + intactas.size() + " cabecas intactas.");
+endprogram

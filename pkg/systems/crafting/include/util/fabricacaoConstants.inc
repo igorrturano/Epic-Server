@@ -1,3 +1,5 @@
+use cfgfile;
+
 const LIMITE_MARTELADAS := 3;
 const LIMITE_AQUECIMENTO := 4;
 const NR_MAXIMO_ESQUEMAS := 6;
@@ -9,6 +11,24 @@ const FABRICACAO_AJUDA_CONFIG_PATH := ":crafting:config/ajuda";
 const CHANCE_FABRICACAO_MAX := 80.0;
 const LARGURA_DROPDOWN := 350;
 const CLASSE_PADRAO := 1;
+const MULTIPLICADOR_FALHAS := 2;
+
+var CATALOGO_LOG_PRA_TABUA := dictionary {
+        "0xee36" -> 0xee66,
+        "0xee37" -> 0xee67,
+        "0xee38" -> 0xee68,
+        "0xee39" -> 0xee69,
+        "0xee3a" -> 0xee70,
+        "0xee3b" -> 0xff05,
+        "0xee3c" -> 0xee65,
+        "0xee3f" -> 0xee64,
+        "0xee40" -> 0xef2a,
+        "0xee3d" -> 0xee73,
+        "0xee3e" -> 0x615b,
+        "0x1bdd" -> 0x1bd7 //madeira
+        };
+
+var configRecursos := ReadConfigFile(":crafting:config/resourceList");
 
 enum EV_TRATAMENTO
 	EV_FIM_CICLO,
@@ -53,21 +73,6 @@ enum class FABRICACAO_MODO_MATERIAL
 	MENOR_QUE_TIER,
 endenum
 
-var CATALOGO_LOG_PRA_TABUA := dictionary {
-        "0xee36" -> 0xee66,
-        "0xee37" -> 0xee67,
-        "0xee38" -> 0xee68,
-        "0xee39" -> 0xee69,
-        "0xee3a" -> 0xee70,
-        "0xee3b" -> 0xff05,
-        "0xee3c" -> 0xee65,
-        "0xee3f" -> 0xee64,
-        "0xee40" -> 0xef2a,
-        "0xee3d" -> 0xee73,
-        "0xee3e" -> 0x615b,
-        "0x1bdd" -> 0x1bd7 //madeira
-        };
-
 enum ITENS_ESTACAO
 	FONTE_CALOR := "fonteCalor",
 	FONTE_AGUA := "fonteAgua",
@@ -98,6 +103,12 @@ enum COMPONENTES_CARACTERISTICA
 	CARACTERISTICA_FABRICACAO_RESISTENCIACLIMACALOR := "resistenciaClimaCalor",
 	CARACTERISTICA_FABRICACAO_INTIMIDACAO := "intimidacao",
 	CARACTERISTICA_FABRICACAO_CATALISADOR := "catalisador",
+	CARACTERISTICA_FABRICACAO_DOSES := "doses",
+	CARACTERISTICA_FABRICACAO_EFICIENCIA := "eficiencia",
+	CARACTERISTICA_FABRICACAO_MANA_REGEN := "manaRegen",
+	CARACTERISTICA_FABRICACAO_MANA_MAXIMA := "manaMaxima",
+	CARACTERISTICA_FABRICACAO_SACRED_WOOD := "sacredWood",
+	CARACTERISTICA_FABRICACAO_BONUS_VELKYN := "bonusEscolaVelkyn",
 endenum
 
 enum COMPONENTES_SUBCARACTERISTICA

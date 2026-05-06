@@ -6,15 +6,16 @@ include ":debug:Controller/DebugController";
 include ":tn:cooldown";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
+include ":hotbar:custombuff";
 
 /**
  * Resiliencia Barbara (Barbarian Resilience) - ABILITY_ID::RESILIENCIA_BARBARA (601)
  *
- * Active (OnUse): Starts HP regen timed script ("recuperacaoaligera") for Tactics seconds.
- * Requires fury active.
+ * Active (OnUse): inicia timer de regen de HP ("recuperacaoaligera") por Tactics
+ * segundos. Requer furia ativa.
  *
- * Passive (DefenderBeforeDamage): Reduces incoming physical damage by Tactics/10,
- * but only when in fury AND no armor covers the hit body region (barbarian fights unarmored).
+ * (Pos-Phase 7) A absorcao passiva foi removida — UnarmoredCombat passou a ser
+ * a unica fonte de reducao de dano para builds nu/sem armor pesada.
  */
 class BarbarianResilience(CombatAbility)
 
@@ -42,39 +43,13 @@ class BarbarianResilience(CombatAbility)
 		endif
 
 		TS_StartTimer(who, "recuperacaoaligera", duration);
+		SendAbilityBuff(who, ABILITY_ID::RESILIENCIA_BARBARA, duration, "Recuperacao de HP");
 		Message($"Resiliencia Barbara ativada por {duration}s.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 		DebugMsg(
 			who,
 			DEBUG_HAB,
 			Message($"[RESILIENCIA_BARBARA] Recuperacao HP por {duration}s", Color(SYSTEM_COLOR::SUCCESS))
-		);
-
-		return true;
-	endfunction
-
-	function OnPassiveBeforeDamage(this, attackInfo)
-		var defender := attackInfo.GetDefender();
-		var who := defender.GetObjRef();
-
-		if (!GetCooldown(who, "furia"))
-			return false;
-		endif
-
-		var reduction := CInt(defender.GetSkill(TACTICS) / 20);
-		if (reduction <= 0)
-			return false;
-		endif
-
-		attackInfo.GetDamage()
-			.DecreaseSlashBaseDamage(reduction)
-			.DecreasePiercingBaseDamage(reduction)
-			.DecreaseBluntBaseDamage(reduction);
-
-		DebugMsg(
-			who,
-			DEBUG_HAB,
-			Message($"[RESILIENCIA_BARBARA] Reducao passiva: -{reduction}", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;

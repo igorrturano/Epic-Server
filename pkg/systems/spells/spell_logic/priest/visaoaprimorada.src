@@ -2,16 +2,19 @@ use uo;
 use os;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
 include ":nature:Controller/LightController";
+include ":hotbar:include/custombuff";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	if (!targ)
@@ -24,7 +27,7 @@ program SpellScript(params)
 	endif
 
 	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLES, 10, 10);
-	handleSilentMagic(who, targ, SFX_BLESS);
+	SC_HandleSound(who, targ, SFX_BLESS);
 
 	SendSysMessageEx(targ, "Voce passa a enxergar melhor", SSM_INFO);
 
@@ -32,6 +35,7 @@ program SpellScript(params)
 	var duration := CInt(magiclore_skill * 5);
 
 	ApplyMagicalVision(targ, duration);
+	SendSpellBuff(who, targ, CInt(spell.id), duration);
 
 	return 1;
 endprogram

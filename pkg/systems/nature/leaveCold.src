@@ -2,16 +2,19 @@ use uo;
 use os;
 use vitals;
 
+include ":nature:nature";
+
 program removecold(who, textarea)
 	EraseObjProperty(who, "neve");
-	EraseObjProperty(who, "teste_de_frio");
 
-	var stam_penalty := GetObjProperty(who, "penalidadetaiga");
-	if (stam_penalty != error)
-		var stammod := CInt(GetObjProperty(who, "stammod"));
-		SetObjProperty(who, "stammod", stammod - stam_penalty);
+	var p := cint(GetObjProperty(who, "penalidadeclima"));
+	if (p > 0)
+		if (p == 1)
+			RemoveColdMod(who, 1);
+		elseif (p >= 2)
+			RemoveColdMod(who, 1);
+			RemoveColdMod(who, 2);
+		endif
 	endif
-	EraseObjProperty(who, "penalidadetaiga");
-
-	RecalcVitals(who);
+	EraseObjProperty(who, "penalidadeclima");
 endprogram

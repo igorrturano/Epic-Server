@@ -2,6 +2,7 @@ use uo;
 use os;
 use math;
 use vitals;
+use cfgfile;
 
 include ":timedscripts:timedScripts";
 include "include/say";
@@ -28,7 +29,7 @@ program arremesso(params)
 	var who := params[1];
 	params := 0; // No longer needed
 
-	var cd := SetCooldown(who, "arremesso_cd", 10);
+	var cd := GetCooldown(who, "arremesso_cd");
 	if (cd)
 		SendSysMessageEx(who, "Voce precisa esperar " + cd + " segundos para arremessar novamente.", SSM_FAIL);
 		return 0;
@@ -44,6 +45,15 @@ program arremesso(params)
 		SendSysMessageEx(who, "Voce nao pode arremessar enquanto pilota um golem ou esta metamorfoseado.",
 				   SSM_FAIL);
 		return 0;
+	endif
+
+	var _left_hand := GetEquipmentByLayer(who, 0x02);
+	if (who.weapon)
+		var _weapon_attr := Upper(who.weapon.getCfgElem().Attribute);
+		if (_weapon_attr == "TWO_HANDED" || _weapon_attr == "DUAL_WIELD" || _left_hand)
+			SendSysMessageEx(who, "Voce precisa ter pelo menos uma mao livre para arremessar.", SSM_FAIL);
+			return 0;
+		endif
 	endif
 
 	if (AP_GetVital(who, "Stamina") < 20)
@@ -157,16 +167,22 @@ program arremesso(params)
 		AP_ConsumeVital(who, "Stamina", 20);
 	endif
 
+	SetCooldown(who, "arremesso_cd", 10);
+
 	var to_miss_chance := 50;
 	if (alvo.isA(POLCLASS_MOBILE))
 		to_miss_chance := GetResist(alvo, REFLEXES);
 	endif
 
-	var dmg := RandomDiceRoll("1d6");
+	var dmg;
 	if (targ.isA(POLCLASS_MOBILE) && !targ.npctemplate)
-		dmg += Cint(AP_GetStat(targ, STRENGTH) / 10);
+		dmg := RandomDiceRoll("1d6") + Cint(AP_GetStat(targ, STRENGTH) / 10);
 	elseif (targ.isA(POLCLASS_WEAPON))
-		dmg += CalculateRawDamage(who, targ);
+		dmg := RandomDiceRoll("1d6") + CalculateRawDamage(who, targ);
+	elseif (targ.weight < 3)
+		dmg := RandomDiceRoll("1d2");
+	else
+		dmg := RandomDiceRoll("1d4");
 	endif
 
 	var ranged_bonus := Cint(AP_GetSkill(who, RANGED));
@@ -244,9 +260,7 @@ program arremesso(params)
 				PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
 				PlaySoundEffect(alvo, 0x136);
 				DamageFLS(alvo, dmg, DMG_PHYSICAL, who);
-				DamageFLS(targ, dmg, DMG_PHYSICAL, who);
 				PlaySoundEffect(alvo, 0x521);
-				PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
 				if (alvo.isSpiderEggSac())
 					var pid := Start_Script(":lighting:onArremessado", array{ who, targ });
 				endif

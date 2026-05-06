@@ -4,13 +4,19 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":tn:cooldown";
+include ":attributes:attributes";
+include ":hotbar:custombuff";
 
 /**
  * Ryū no Kamae / Postura do Dragão (Dragon Stance) - ABILITY_ID::DRAGON_STANCE (701)
  *
- * SingleUse BEFORE_DAMAGE: Next attack deals bonus Tactics/10 damage.
- * After the hit, grants projectile immunity via "Desviar Disparos" cooldown
- * for Tactics/5 seconds.
+ * SingleUse BEFORE_DAMAGE: o proximo ataque ganha bonus de dano Tactics/10.
+ * Apos o golpe, concede imunidade a projeteis via cooldown "Desviar Disparos"
+ * por Tactics/5 segundos.
+ *
+ * (Pos-Phase 7) A absorcao passiva durante a janela "Desviar Disparos" foi
+ * removida — UnarmoredCombat passou a ser a unica fonte de reducao de dano
+ * para builds nu/sem armor pesada.
  */
 class DragonStance(CombatAbility)
 
@@ -30,8 +36,10 @@ class DragonStance(CombatAbility)
 
 	function OnActivate(this, mobile)
 		var who := mobile.GetObjRef();
+		var duration := this.GetDurationFor(mobile);
 		Message("*postura do dragao*").SendAbove(who);
 		PlaySoundEffect(who, 0x50E);
+		SendAbilityBuff(who, ABILITY_ID::DRAGON_STANCE, duration, "Bonus de dano + imunidade a projeteis");
 	endfunction
 
 	function OnBeforeDamage(this, attackInfo)
