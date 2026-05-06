@@ -101,10 +101,12 @@ function AssignAlchemyRecipe(item)
     var cfg := ReadConfigFile(":alchemy:config/recipes");
     if (cfg.errortext) return; endif
 
+    var menuKeys := _BuildMenuKeys("alchemy");
     var pool := array{};
     foreach key in (GetConfigIntKeys(cfg))
         var elem := FindConfigElem(cfg, key);
-        if (elem && GetConfigInt(elem, "level") == level)
+        if (!elem || GetConfigInt(elem, "level") != level) continue; endif
+        if (GetConfigString(elem, "Name") in menuKeys)
             pool.append(key);
         endif
     endforeach
@@ -269,6 +271,8 @@ function _BuildMenuKeys(skillType)
             paths.append(":woodworking:bowcraft/config/FletchMenu");
         "DW":
             paths.append(":DomesticWork:TailorMenu");
+        "alchemy":
+            paths.append(":alchemy:AlchMenu");
     endcase
 
     var keys := array{};
