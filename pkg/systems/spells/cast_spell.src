@@ -20,6 +20,7 @@ include ":wrappers:Objects/Model/WeaponWrapper";
 include ":spells:spellbooks";
 include ":spells:include/swordmage";
 include ":spells:SpellRegistry";
+include ":spells:include/Controller/MagicItemBonus";
 include "include/facings";
 include ":tn:cooldown";
 include "include/meusProcessos";
@@ -137,8 +138,12 @@ function performPreCastingChecks(mobile, mw, byref spellinfo)
 	endif
 
 	var weapon := mw.GetEquipBySlot(WEAPON);
-	var has_staff := (weapon && weapon.GetCategory() == WEAPON_CATEGORY::STAFF);
-	var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0" || has_staff;
+	var has_magic_focus := (weapon && (
+		weapon.GetCategory() == WEAPON_CATEGORY::STAFF ||
+		weapon.GetCategory() == WEAPON_CATEGORY::WAND ||
+		weapon.GetCategory() == WEAPON_CATEGORY::SPELLBOOK
+	));
+	var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0" || has_magic_focus;
 	var tem_hab := mw.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
 		|| mw.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO) 
 		|| mw.HasAbility(ABILITY_ID::NINJA_PATH)
@@ -274,6 +279,8 @@ function _HasFocoArcanoManaDiscount(mw)
 
 	var weaponCategory := weapon.GetCategory();
 	return weaponCategory == WEAPON_CATEGORY::STAFF ||
+	       weaponCategory == WEAPON_CATEGORY::WAND ||
+	       weaponCategory == WEAPON_CATEGORY::SPELLBOOK ||
 	       weaponCategory == WEAPON_CATEGORY::SPIRITUALBLADE ||
 	       weaponCategory == WEAPON_CATEGORY::MAGICBOW;
 endfunction
@@ -557,6 +564,9 @@ function checkCastingSuccess(mobile, mw, spellinfo, scroll)
 	if (schoolSpecId && mw.HasAbility(schoolSpecId))
 		difficulty := difficulty - 10;
 	endif
+
+	// Sacred wood focus (Teixo staff) reduces casting difficulty.
+	difficulty := difficulty - GetMagicItemSacredWoodBonus(mobile);
 
 	var skill_check := SkillCheck(mobile, attribute, difficulty);
 

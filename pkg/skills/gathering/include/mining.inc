@@ -121,13 +121,12 @@ function GetResourceId(oreToSearch)
 		"bronze": return 0x699c;
 		"argila": return 0x6074;
 		"ferro": return 0x6300; //TN USED
-		"litan": return 0x6301;
 		"Fulmetium": return 0x6302;
 		"Venetium": return 0x6303;
 		"Ignium": return 0x6304;
 		"ouro": return 0x6305;
 		//"durang": return 0x6306;
-		"galvorn": return 0x6307; //TN USED
+		"atrium": return 0x6307; //TN USED
 		"mithril": return 0x6308; //TN USED
 		"frigutium": return 0x6451; //TN USED
         "illyra": return 0x6314;
@@ -197,47 +196,41 @@ function DetermineOreType(who, where)
 endfunction
 
 //dificuldade de PEGAR o minerio
-function DetermineMiningDifficulty(oretype) 
+function DetermineMiningDifficulty(oretype)
 
 	case (oretype)
-		0x1bdd:	0xee36:	0xee37:	0xee38:	0xee39:	0xee3a:	0xee3b:	0xee3c:	0xee3d:	0xee3e:	0xee3f: return 5; // Carvão
-		0xBD11: return 0;  //pedra pequena 
-		//0xBD12: return 0;  //pedra media
-		//0xBD13: return 0;  //pedra grande
-		0xee99: return 0;  //calcario
+		// Tier 1
+		0x5001:	0x6666:	0xBD11: return 5;   // pedra (+ variantes/falso)
+		0x1bdd:	0xee36:	0xee37:	0xee38:	0xee39:	0xee3a:	0xee3b:	0xee3c:	0xee3d:	0xee3e:	0xee3f: return 10; // carvão
+		0xee99: return 10;  // calcário (vira vidro no smelt)
 
-		//minérios
-		0x6450: return 8; //cobre
- 		0x6990: return 35; //estanho
-		0x699c: return 45; //bronze
-		0x6300: return 55;  //iron ore
-		0x6992: return 70; //prata
-		0x6301: return 70; //litan
-		0x6302: return 91; //fulmetita
-		0x6303: return 91; //venetita
-		0x6304: return 91; //ignitita
-		0x6451: return 91; //frigutita
-        0x6314: return 100; //illyra
-		0x6308: return 107; //mithril
+		// Tier 2
+		0x6450:	0x6465: return 20;  // cobre (raw + ingot)
+		0x8852: return 25;  // arenito
+		0x6990: return 30;  // estanho
+		0x6075: return 30;  // areia (alquimia/vidro)
+		0x1BE3: return 35;  // vidro
+		0x6994:	0x699c:	0x699d: return 35;  // bronze (mantido p/ items existentes em jogadores)
 
-		0x6995: return 75; //aco
-		0x6307: return 90; //galvorn
-		0x62ff: return 50;  //ferro impuro
-		0x6309: return 60; //iron temperado
-		0x6465: return 25; //cobre -> bronze
-		
-		0x699d: return 25; // Bronze temperado
-		0x6994: return 20; // bronze
+		// Tier 3
+		0x8850: return 40;  // mármore
+		0x62ff: return 45;  // ferro impuro (pig iron)
+		0x6300:	0x6309: return 50;  // ferro (raw + ingot)
+		0x6992: return 55;  // prata
 
+		// Tier 4
+		0x6995: return 60;  // aço
+		0x6302: return 65;  // fulmetita
+		0x6303: return 65;  // venetita
+		0x6304: return 65;  // ignitita
+		0x6451: return 65;  // frigutita
+		0x630b:	0x630c:	0x630d:	0x6460: return 70;  // ium alloy ingots (fulmium/venium/ignium/frigutium)
+		0x6305:	0x630e: return 75;  // ouro (raw + ingot)
 
-		0x6075: return 3; //areia
-
-		0x6666: return 0; //id falso de pedra
-		0x8850: return 40; //marmore
-		0x8852: return 30; //arenito
-		0x5001: return 3; //id de stone
-
-		0x6305: return 40; //golden <- nao faz nada
+		// Tier 5
+		0x6314: return 80;  // illyra
+		0x6307:	0x6310: return 90;  // atrium (raw + ingot, renomeado de galvorn)
+		0x6308:	0x6311: return 100; // mithril (raw + ingot)
 
 		default: return 100;
 	endcase
@@ -352,9 +345,8 @@ function ConvertOreToIngot(ore)
 		//0x6309: return 0x6309; //aco -> acho q esse aqui chorou
 		0x6309: return 0x6995; // aco a partir de ferro temperado
 		0x6995: return 0x6995; //ligas elementais
-		0x6301: return 0x630a; //litan
 		0x6314: return 0x6315; //illyra
-		0x6307: return 0x6310; //galvorn
+		0x6307: return 0x6310; //atrium
 		0x6308: return 0x6311; //mithril
 		0x6303: return 0x630c; //venetium
 		0x6451: return 0x6460; //frigutium
@@ -516,9 +508,7 @@ enum ORE
 	ORE_FRIGUTITA := "ORE_FRIGUTITA",
 	ORE_FULMETIUM := "ORE_FULMETIUM",
 	ORE_FULMETITA := "ORE_FULMETITA",
-	
-	ORE_LITAN := "ORE_LITAN",
-	
+
 	ORE_ILLYRA := "ORE_ILLYRA",
 	ORE_MITHRIL := "ORE_MITHRIL",
 
@@ -538,12 +528,11 @@ function GetOreNameById(ore_id)
         "0x699c": return "Bronze";
         "0x6074": return "Argila";
         "0x6300": return "Ferro";
-        "0x6301": return "Litan";
         "0x6302": return "Fulmetium";
         "0x6303": return "Venetium";
         "0x6304": return "Ignium";
         "0x6305": return "Ouro";
-        "0x6307": return "Galvorn";
+        "0x6307": return "Atrium";
         "0x6308": return "Mithril";
         "0x6451": return "Frigutium";
         "0x6314": return "Illyra";
