@@ -275,6 +275,13 @@ function CalculateWeaponDamage(byRef attackInfo)
 		damageDice := attackInfo.GetWeapon().GetOffDamage();
 	endif
 
+	// Arma 1H qualquer (espada, adaga, machado, mace) com mao off-hand livre —
+	// dado fisico sobe um tier (1d4→1d6, ..., capa em 1d12). Estilo duelista /
+	// substitui o legacy hack da bastarda.
+	if (_IsOneHandedSoloHit(attackInfo))
+		damageDice := damageDice.WithUpgradedPhysicalDice();
+	endif
+
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dados de dano da arma:"));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {damageDice.GetSlashDamage().ToString() ?: "N/A"}"));
@@ -690,6 +697,21 @@ function CalculateDefenderResist(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano a ser aplicado (após defesa): {attackInfo.GetDamage().ToString()}"));
 
 	_ApplyPhysicalManaShield(attackInfo);
+endfunction
+
+// Detecta se o golpe e' de uma arma 1H mainhand com mao off-hand totalmente
+// livre (sem escudo, sem item algum). Vale para qualquer categoria — espada,
+// adaga, machado de uma mao, mace 1H, etc. — desde que o Attribute seja
+// ONEHANDED. Habilita o bonus de upgrade do dado fisico em CalculateWeaponDamage.
+// Substitui o legacy CheckBastardSword.
+function _IsOneHandedSoloHit(byRef attackInfo)
+	if (attackInfo.GetDamageHand() != DAMAGE_HAND::MAINHAND) return 0; endif
+
+	var weapon := attackInfo.GetWeapon();
+	if (Upper(weapon.GetAttribute()) != Upper(ONEHANDED)) return 0; endif
+
+	if (GetEquipmentByLayer(attackInfo.GetAttacker().GetObjRef(), 0x02)) return 0; endif
+	return 1;
 endfunction
 
 // Protecao Arcana (spell 114) — physical-only mana shield. Absorbs slash/piercing/blunt

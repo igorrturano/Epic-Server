@@ -24,15 +24,9 @@ function ProgressAttackSkills(byRef attackInfo)
 		skillDefender := attackInfo.GetDefender().GetSkillBase(attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetAttribute());
 	endif
 
+	// Swordmage exception: arma marcada com swordmage prop usa skill ONEHANDED
+	// independente da Attribute do template. Mantido por compat com a habilidade.
 	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetAttacker().IsConnected())
-		if (attackInfo.GetWeapon().GetObjType() == 0x13b9 && !attackInfo.GetAttacker().GetEquipBySlot(SHIELD)) // bastarda
-			skillAttacker := attackInfo.GetAttacker().GetSkillBase(TWOHANDED);
-		endif
-
-		if (attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetObjType() == 0x13b9 && !attackInfo.GetDefender().GetEquipBySlot(SHIELD))
-			skillDefender := attackInfo.GetDefender().GetSkillBase(TWOHANDED);
-		endif
-
 		if (attackInfo.GetWeapon().GetObjRef().GetProp("swordmage") == attackInfo.GetAttacker().GetSerial())
 			skillAttacker := attackInfo.GetAttacker().GetSkillBase(ONEHANDED);
 		endif
