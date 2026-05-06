@@ -126,7 +126,8 @@ function GetResourceId(oreToSearch)
 		"Ignium": return 0x6304;
 		"ouro": return 0x6305;
 		//"durang": return 0x6306;
-		"atrium": return 0x6307; //TN USED
+		"atrium": return 0x6307; //TN USED — retrocompat, alias de "atrita"
+		"atrita": return 0x6307;
 		"mithril": return 0x6308; //TN USED
 		"frigutium": return 0x6451; //TN USED
         "illyra": return 0x6314;
@@ -219,11 +220,11 @@ function DetermineMiningDifficulty(oretype)
 		0x6992: return 55;  // prata
 
 		// Tier 4
-		0x6995: return 60;  // aço
-		0x6302: return 65;  // fulmetita
-		0x6303: return 65;  // venetita
-		0x6304: return 65;  // ignitita
-		0x6451: return 65;  // frigutita
+		0x6995:  // aço
+		0x6302:  // fulmetita
+		0x6303:  // venetita
+		0x6304:  // ignitita
+		0x6451:  // frigutita
 		0x630b:	0x630c:	0x630d:	0x6460: return 70;  // ium alloy ingots (fulmium/venium/ignium/frigutium)
 		0x6305:	0x630e: return 75;  // ouro (raw + ingot)
 
@@ -445,11 +446,14 @@ function getAllOres()
 		toStruct(ORE_BRONZE_TEMP, "Barra de Bronze Impuro", "Barra de Bronze Temperado", 0x699d, {0x1BDE}),
 		toStruct(ORE_STEEL, "Barra de Ferro Temperado", "Barra de Aço", 0x6309, {0x1BDE, 0x6990}, 2599),
 
-		/* Ligas Elementais */
-		toStruct(ORE_IGNITITA, "Minério de Ignitita", "Barra de Ignium", 0x6304, {/* Colocar LIGA aqui */}, 2501),
-		toStruct(ORE_VENETITA, "Minério de Venetita", "Barra de Venetium", 0x6303, {/* Colocar LIGA aqui */}, 1428),
-		toStruct(ORE_FRIGUTITA, "Minério de Frigutita", "Barra de Frigutium", 0x6451, {/* Colocar LIGA aqui */}, 2360),
-		toStruct(ORE_FULMETITA, "Minério de Fulmetita", "Barra de Fulmetium", 0x6302, {/* Colocar LIGA aqui */}, 2726),
+		/* Ligas Elementais — tita + estanho + carvão */
+		toStruct(ORE_IGNITITA, "Minério de Ignitita", "Barra de Ignium", 0x6304, {0x1BDE, 0x6990}, 2501),
+		toStruct(ORE_VENETITA, "Minério de Venetita", "Barra de Venetium", 0x6303, {0x1BDE, 0x6990}, 1428),
+		toStruct(ORE_FRIGUTITA, "Minério de Frigutita", "Barra de Frigutium", 0x6451, {0x1BDE, 0x6990}, 2360),
+		toStruct(ORE_FULMETITA, "Minério de Fulmetita", "Barra de Fulmetium", 0x6302, {0x1BDE, 0x6990}, 2726),
+
+		/* Liga Endgame — atrita + aço + carvão */
+		toStruct(ORE_ATRITA, "Minério de Atrita", "Barra de Atrium", 0x6307, {0x1BDE, 0x6995}, 1175),
 
 		toStruct(ORE_ILLYRA, "Minério de Illyra", "Barra de Illyra", 0x6314, {}, 2278),
 		toStruct(ORE_MITHRIL, "Minério de Mithril", "Barra de Mithril", 0x6308, {}, 2448),
@@ -509,6 +513,7 @@ enum ORE
 	ORE_FULMETIUM := "ORE_FULMETIUM",
 	ORE_FULMETITA := "ORE_FULMETITA",
 
+	ORE_ATRITA := "ORE_ATRITA",
 	ORE_ILLYRA := "ORE_ILLYRA",
 	ORE_MITHRIL := "ORE_MITHRIL",
 
