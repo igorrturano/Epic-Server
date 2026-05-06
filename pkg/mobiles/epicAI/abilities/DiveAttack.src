@@ -176,16 +176,11 @@ program DiveAttack(params)
 	var tier_bonus := CInt(mob.GetTier()) * 6;
 	var dive_damage := dice_roll + tier_bonus;
 
-	print("[DiveAttack] npc=" + me.name + " tier=" + CStr(mob.GetTier()) + " EpicAttackDamage=" + CStr(raw_attack_damage) + " pierce_tier=" + CStr(pierce_tier) + " dice=" + CStr(dice));
-	print("[DiveAttack] dice_roll=" + CStr(dice_roll) + " + tier_bonus=" + CStr(tier_bonus) + " = " + CStr(dive_damage));
-
 	if (CheckResist(targ, REFLEXES, RESIST_MEDIUM))
 		dive_damage := CInt(dive_damage / 2);
-		print("[DiveAttack] dodged — halved to " + CStr(dive_damage));
 		SendSysMessageEx(targ, "Você se esquiva parcialmente do mergulho!", SSM_REQUEST);
 	endif
 
-	print("[DiveAttack] FINAL dive_damage=" + CStr(dive_damage));
 	DamageFLS(targ, dive_damage, DMG_PIERCING, me, "diveattack");
 
 	return 1;
