@@ -239,11 +239,7 @@ function CalculateRawDamage(attacker, weapon, offDamage := 0, attackType := BLUN
 		elseif (offDamage)
 			weaponDice := weapon.getOffDamageDice();
 		else
-			if (CheckBastardSword(attacker)) // Usando espada bastarda com as duas mãos
-				weaponDice := "1d10";
-			else
-				weaponDice := weapon.getMainDamageDice();
-			endif
+			weaponDice := weapon.getMainDamageDice();
     	endif
 	endif
 

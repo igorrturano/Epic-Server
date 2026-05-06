@@ -15,7 +15,8 @@ program walkOn(mobile, tile)
 
 	var pets := ListPetsNear(mobile, 4);
 	var hostiles := ListHostiles(mobile, 4);
-	var racesAllowed := GetObjProperty(tile, "Destination").race;
+	var dest := GetObjProperty(tile, "Destination");
+	var racesAllowed := dest.race;
 	if (racesAllowed == "all")
 		racesAllowed := array{ ANAO, DROW, ELFO, ORC, HUMANO, PEQUILHO };
 	else
@@ -37,14 +38,15 @@ program walkOn(mobile, tile)
 
 	foreach pet in pets
 		SetObjProperty(pet, "#Teleported", ReadMillisecondClock());
-		tile.SendToDestination(pet);
+		MoveObjectToLocation(pet, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+		sleepms(10);
 	endforeach
 
 	if (hostiles[1])
 		foreach x in hostiles
 			if (!x.acctname)
 				SetObjProperty(x, "#Teleported", ReadMillisecondClock());
-				tile.SendToDestination(x);
+				MoveObjectToLocation(x, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
 			endif
 			sleepms(10);
 		endforeach

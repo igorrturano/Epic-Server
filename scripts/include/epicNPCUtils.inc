@@ -133,13 +133,18 @@ endfunction
 
 // Valores em % de reducao de dano (0-100). Aplicados multiplicativamente em
 // DamageController.CalculateDefenderResist via Damage.Decrease*PercentDamage.
-// Ver design_combate.md / design_npcs.md para o redesign completo.
+//
+// Curva tunada para preservar TTK proximo ao sistema antigo flat — a curva linear
+// original (0/20/40/60/80/100) deixava mid-tier mobs muito tankies (Cyclops T3
+// dava ~42% menos dano que no sistema antigo). T5 mantem 100% por design
+// (imunidade tematica: fire elemental imune a fogo, undead imune a veneno) com
+// floor 1 de dano garantido em ApplyCombatDamage. Ver design_combate.md / design_npcs.md.
 enum RESISTS_TIERS
 	RESIST_TIER0 := 0,
-	RESIST_TIER1 := 20,
-	RESIST_TIER2 := 40,
-	RESIST_TIER3 := 60,
-	RESIST_TIER4 := 80,
+	RESIST_TIER1 := 10,
+	RESIST_TIER2 := 25,
+	RESIST_TIER3 := 40,
+	RESIST_TIER4 := 60,
 	RESIST_TIER5 := 100,
 endenum
 

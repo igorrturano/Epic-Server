@@ -9,7 +9,8 @@ include ":attributes:attributes";
  * Sword and Board Style - ABILITY_ID::SWORD_AND_BOARD (3101)
  *
  * Passive: When using a one-handed weapon WITH a shield:
- * - Attacker: +2 damage
+ * - Defender: +5 parry chance (aplicado inline em ParryController.CalculateParryChance,
+ *   mesmo padrao da HeavyArmorSpec — nao tem hook OnPassiveBeforeParry)
  * - Defender: -2 enemy hit chance (evasion)
  */
 class SwordAndBoard(CombatAbility)
@@ -25,24 +26,6 @@ class SwordAndBoard(CombatAbility)
 		endif
 		return Upper(weapon.GetAttribute()) == Upper(ONEHANDED) && mobile.GetObjRef().shield;
 	endfunction
-
-	// Attacker: +2 damage
-	function OnPassiveBeforeDamage(this, attackInfo)
-		var attacker := attackInfo.GetAttacker();
-		if (!this._MatchesContext(attacker))
-			return false;
-		endif
-
-		attackInfo.GetDamage()
-			.IncreaseSlashRawDamage(2)
-			.IncreasePiercingRawDamage(2)
-			.IncreaseBluntRawDamage(2);
-
-		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
-			Message("[SWORD_AND_BOARD] +2 dano", Color(SYSTEM_COLOR::SUCCESS)));
-		return true;
-	endfunction
-
 
 	// Defender: -2 evasion
 	function OnPassiveBeforeHitDefender(this, attackInfo)

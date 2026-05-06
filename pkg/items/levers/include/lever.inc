@@ -13,6 +13,7 @@ include ":destroyable:include/destroyItem";
 include ":epicspawn:epicBoss";
 include ":message:include/model/Message";
 include ":propagacao:include/efeitosPatogenicos";
+include "include/epicCombatUtils";
 
 function ChangeLeverStatus(la, only_on_levers := 0)
    if (typeof(la) != "Array")
@@ -570,14 +571,25 @@ endfunction
 
 function teleporter(who, item, opts)
    SetObjProperty(item, "#inuse", 1);
+
+   var x := Cint(GetObjProperty(item, "x_tp"));
+   var y := Cint(GetObjProperty(item, "y_tp"));
+   var z := Cint(GetObjProperty(item, "z_tp"));
+   var realm := GetObjProperty(item, "realm_tp");
+
+   var pets := ListAllPetsAndSummonedPetsNear(who, 4);
+
    Detach();
- 
-      var x := GetObjProperty(item, "x_tp");
-		var y := GetObjProperty(item, "y_tp");
-		var z := GetObjProperty(item, "z_tp");
-      var realm := GetObjProperty(item, "realm_tp");
-   
-   MoveObjectToLocation(who, Cint(x), Cint(y), Cint(z), realm, MOVEOBJECT_FORCELOCATION);
+
+   SetObjProperty(who, "#Teleported", ReadMillisecondClock());
+   MoveObjectToLocation(who, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
+
+   foreach pet in pets
+      SetObjProperty(pet, "#Teleported", ReadMillisecondClock());
+      MoveObjectToLocation(pet, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
+      sleepms(10);
+   endforeach
+
    //ChangeLeverStatus(opts.linked_to);
    EraseObjProperty(item, "#inuse");
 endfunction

@@ -4,6 +4,7 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":combat:Model/AttackInfo";
 include ":combat:Controller/CombatAbilityController";
 include ":combat:Controller/DamageController_legacy";
+include "MagicItemBonus";
 
 /**
  * SC_DealDamage — canonical entry point for spell damage.
@@ -28,6 +29,10 @@ function SC_DealDamage(caster, targ, spellId, amount, damageType := DMG_FORCED)
 	if (!caster || !targ || amount <= 0)
 		return 0;
 	endif
+
+	// Magic item elemental bonus from equipped focus (staff/wand/spellbook).
+	// Reads `dano <element>` sub-value from the focus's crafted properties.
+	amount := amount + GetMagicItemElementalBonus(caster, damageType);
 
 	// DamageFLS: resist calc + DisplayDamage + ApplyRawDamage + last-damage info.
 	DamageFLS(targ, amount, damageType, caster, $"spell_{spellId}");

@@ -546,17 +546,9 @@ endcase
 					// couroescamoso
 					prod_type := 0xef20;
 					break;
-				0xef12:
-					// couroespesso
-					prod_type := 0xef21;
-					break;
 				0xef13:
 					// couronegro
 					prod_type := 0xc605;
-					break;
-				0xef14:
-					// couroaspero
-					prod_type := 0xef23;
 					break;
 				0xef15:
 					// couropeludo
@@ -574,33 +566,9 @@ endcase
 					// courogigante
 					prod_type := 0xef27;
 					break;
-				0xef19:
-					// courorijo
-					prod_type := 0xef28;
-					break;
 				0xed20:
 					// courodraconiano
 					prod_type := 0xed29;
-					break;
-				0xef01:
-					// courorobusto
-					prod_type := 0xc601;
-					break;
-				0xeefd:
-					// couroanfibio
-					prod_type := 0xef22;
-					break;
-				0xef00:
-					// couromarinho
-					prod_type := 0xc602;
-					break;
-				0xeeff:
-					// couroescamosoduro
-					prod_type := 0xc603;
-					break;
-				0xeefe:
-					// courolamelar
-					prod_type := 0xACE5;
 					break;
 				default: SendSysMessage(who, "Voce so pode usar couro aqui"); return;
 			endcase

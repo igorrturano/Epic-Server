@@ -17,5 +17,7 @@ class IDamageDice()
 	uninit function SetPoisonDamage(this, value);
 	uninit function SetEnergyDamage(this, value);
 
+	uninit function WithUpgradedPhysicalDice(this);
+
 	uninit function ToString(this);
 endclass
