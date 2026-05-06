@@ -10,6 +10,7 @@ include ":destroyable:include/destroyItem";
 include ":sysbook:include/sealedBooks";
 include ":crafting:/include/fabricacaoComplexos";
 include "include/epicEconomyAudit";
+include ":currency:include/seignorage";
 
 var itemdesc_cache := dictionary{};
 
@@ -23,10 +24,19 @@ function Loot_GetNpcTier(npc)
 	if (!npc || npc == error)
 		return 0;
 	endif
-	var tpl_name := npc.npctemplate;
-	if (!tpl_name || tpl_name == error)
+	var tpl_name := CStr(npc.npctemplate);
+	if (!tpl_name || tpl_name == "")
 		return 0;
 	endif
+	// Strip namespace prefix: ":epicai:RedDragon" -> "RedDragon"
+	var i := len(tpl_name);
+	while (i >= 1 && tpl_name[i, 1] != ":")
+		i := i - 1;
+	endwhile
+	if (i > 0 && i < len(tpl_name))
+		tpl_name := tpl_name[i + 1, len(tpl_name) - i];
+	endif
+
 	var npccfg := ReadConfigFile(":*:npcdesc");
 	if (!npccfg || npccfg.errortext)
 		return 0;
@@ -64,6 +74,79 @@ function Loot_CoinAllowedForTier(coin_objtype, npc)
 	if (coin_objtype == EA_COIN_OURO)
 		return (tier >= 5);
 	endif
+	return 1;
+endfunction
+
+// Phase 4.5 — Drena Cofre virtual em drops bonus de NPC.
+// Chamado no fim de Loot_Generate quando source é NPC. Por tier de moeda:
+// - skip se tier do NPC < MinTier
+// - skip se pool vazio
+// - rola chance (5x se TrueBoss)
+// - cap pelo daily budget restante
+// - drena pool, mintra coin no container, audita POOL_NPC_DRAW
+
+function Loot_TryDrainCoinTier(container, source, coin_objtype, npc_tier, is_trueboss)
+	var cfg := GetPoolDropConfig(coin_objtype);
+	if (!cfg)
+		return 0;
+	endif
+
+	if (npc_tier < cfg.min_tier)
+		return 0;
+	endif
+
+	var pool := GetPoolAmount(coin_objtype);
+	if (pool <= 0)
+		return 0;
+	endif
+
+	var chance := cfg.chance;
+	if (is_trueboss)
+		chance := chance * cfg.trueboss_mult;
+	endif
+
+	// Roll com 2 casas decimais (0.01% de granularidade).
+	var roll := RandomInt(10000) + 1;
+	if (CDbl(roll) > chance * 100.0)
+		return 0;
+	endif
+
+	var dice_roll := CInt(RandomDiceRoll(cfg.dice));
+	if (dice_roll <= 0)
+		return 0;
+	endif
+
+	var actual := DrawFromPool(coin_objtype, dice_roll);
+	if (actual <= 0)
+		return 0;
+	endif
+
+	var coin := CreateItemInContainer(container, coin_objtype, actual);
+	if (!coin || coin == error || coin.errortext)
+		// Se falhou criar, devolve pro pool (best effort).
+		InjectToPool(coin_objtype, actual);
+		return 0;
+	endif
+
+	EA_Record(EA_POOL_NPC_DRAW, coin, actual, source, container,
+		(is_trueboss ? "trueboss=1;" : "") + "tier=" + npc_tier);
+	return actual;
+endfunction
+
+function Loot_TryDrainPool(container, source)
+	if (!source || source == error)
+		return 0;
+	endif
+	if (!container || container == error)
+		return 0;
+	endif
+
+	var npc_tier := Loot_GetNpcTier(source);
+	var is_trueboss := IsTrueBoss(source);
+
+	Loot_TryDrainCoinTier(container, source, EA_COIN_COBRE, npc_tier, is_trueboss);
+	Loot_TryDrainCoinTier(container, source, EA_COIN_PRATA, npc_tier, is_trueboss);
+	Loot_TryDrainCoinTier(container, source, EA_COIN_OURO, npc_tier, is_trueboss);
 	return 1;
 endfunction
 
@@ -168,6 +251,10 @@ function Loot_Generate(container, loot_index, source := 0)
 	endforeach
 
      Loot_TryAddSealedBook(container);
+
+     if (source && source != error)
+        Loot_TryDrainPool(container, source);
+     endif
 	return 1;
 endfunction
 
