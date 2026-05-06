@@ -461,7 +461,7 @@ endfunction
 
 
 function AddNavigationBar(byref gump, current_page)
-    var buttons := array{"Skills", "Habilidades", "Maestria"};
+    var buttons := array{"Skills", "Habilidades"};
     
     for i := 1 to buttons.size()
         var x_offset := (i-1)*150 + 25;
