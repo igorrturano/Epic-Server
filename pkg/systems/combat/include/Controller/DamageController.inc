@@ -432,7 +432,7 @@ function EstimateElementalWeaponDamage(attackInfo)
 
 	var arcana := attackInfo.GetAttacker().GetSkill(ARCANA);
 	var intBonus := CInt(attackInfo.GetAttacker().GetInt() / 20);
-	var arcanaBonus := CInt(arcana / 10);
+	var arcanaBonus := CInt(arcana / 5);
 
 	return intBonus + arcanaBonus;
 endfunction
@@ -568,9 +568,12 @@ function CalculateElementalWeaponDamage(byRef attackInfo)
 	var conversionRate := arcana / 200.0;
 	var convertedDamage := CInt(physicalRaw * conversionRate);
 
-	// Flat INT bonus + Arcana/10 bonus on top
+	// Flat INT bonus + Arcana/5 bonus on top — escala arcana/5 alinha com a
+	// escala da Lamina Espiritual base (CalculateSpiritualBladeDamage). Antes
+	// era /10 — undertuned vs o que mage-glass-cannon precisa contra alvos
+	// fora da escala fis-only.
 	var intBonus := CInt(attackInfo.GetAttacker().GetInt() / 20);
-	var arcanaBonus := CInt(arcana / 10);
+	var arcanaBonus := CInt(arcana / 5);
 	var totalElemental := convertedDamage + intBonus + arcanaBonus;
 
 	if (totalElemental < 1)
