@@ -219,14 +219,15 @@ function CalculateStatusDamage(byRef attackInfo)
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(DEXTERITY);
 		endif
 	elseif (attackInfo.GetWeapon().IsFinesse())
-		// Finesse usa DEX puro / 10 (mainhand) ou DEX / 20 (off-hand). DEX-only
+		// Finesse usa DEX puro / 15 (mainhand) ou DEX / 30 (off-hand). DEX-only
 		// (em vez de max(STR, DEX)) forca a escolha de archetype: STR builds
-		// pegam non-finesse 2H, DEX builds pegam finesse 1H/dual. Ver
-		// design_dex_builds.md.
+		// pegam non-finesse 2H, DEX builds pegam finesse 1H/dual. Escala
+		// /15 e' nerf vs Phase 9 inicial (/10) — aplicado quando ficou claro
+		// que finesse + swing speed dava DPS 2.5x do STR. Ver design_dex_builds.md.
 		statusDamage.stat := DEXTERITY;
 		statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
-					 CInt(attackInfo.GetAttacker().GetDex() / 10) :
-					 CInt(attackInfo.GetAttacker().GetDex() / 20);
+					 CInt(attackInfo.GetAttacker().GetDex() / 15) :
+					 CInt(attackInfo.GetAttacker().GetDex() / 30);
 	else
 		statusDamage.stat := STRENGTH;
 
