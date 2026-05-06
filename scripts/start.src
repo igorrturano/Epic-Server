@@ -13,9 +13,6 @@ program world_start_up()
 	Start_Script("storageWipe");
 	Print("Wiping merchant storage");
 
-	Start_Script("coinCensus");
-	Print("Coin census daemon started");
-
 	Print("Initializing teleporters");
 	CreateTeleporters();
 

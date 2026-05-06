@@ -9,6 +9,7 @@ include "include/say";
 include "include/epicConstants";
 include "include/epicEconomyAudit";
 include ":currency:include/mintRate";
+include ":currency:include/coinCensusInline";
 
 const MAX_ITEM_PAG := 19;
 
@@ -57,6 +58,9 @@ program MoneyerMenu(params)
 		player.hidden := 0;
 		SendSysMessageEx(player, "Voce se revelou ao moneyer.", SSM_FAIL);
 	endif
+
+	// Refresh do supply on-demand. Custa ~1s na primeira interação do dia, instantâneo nas seguintes.
+	EnsureSupplyFresh();
 
 	while (1)
 		var item := 0;
