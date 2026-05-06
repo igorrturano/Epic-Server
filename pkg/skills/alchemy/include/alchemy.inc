@@ -33,13 +33,16 @@ CONST REFORCO_CARGA_DUPLA := 52;
 CONST REFORCO_POTENCIA_ELEM := 53;
 
 function checkifcandrink(character, potion)
-  // Check to make sure they have at least one hand free to drink the potion
+  // Check to make sure they have at least one hand free to drink the potion.
+  // Dual_Wield items ocupam apenas LAYER_HAND1 fisicamente mas representam
+  // duas armas — bloqueio explicito pelo Attribute na main hand.
   var equippedright := GetEquipmentByLayer(character, 0x01);
   var equippedleft := GetEquipmentByLayer(character, 0x02);
   var cfg := ReadConfigFile(":*:itemdesc");
   var twohanded := Cint(cfg[equippedleft.objtype].Two_Handed);
+  var dualwield := equippedright && Lower(CStr(cfg[equippedright.objtype].Attribute)) == "dual_wield";
   var type := cfg[potion.objtype].Type;
-  if (equippedright and equippedleft || twohanded)
+  if (equippedright and equippedleft || twohanded || dualwield)
     SendSysMessage(character, "Voce precisa de pelo menos uma mao livre!");
     return 0;
   endif

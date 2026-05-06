@@ -158,6 +158,19 @@ function CalculateParryChance(byRef attackInfo)
 		endif
 	endif
 
+	// SwordAndBoard: +5 chance de parry quando defensor usa 1H + escudo. Mesmo
+	// padrao da HeavyArmorSpec acima — inline aqui porque nao existe hook
+	// OnPassiveBeforeParry. Conferencia direta no defender sem reusar
+	// ability._MatchesContext (instancia da ability nao acessivel daqui).
+	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::SWORD_AND_BOARD))
+		var defWeapon := attackInfo.GetDefender().GetEquipBySlot(WEAPON);
+		if (defWeapon && !(defWeapon is @Exception)
+			&& Upper(defWeapon.GetAttribute()) == Upper(ONEHANDED)
+			&& attackInfo.GetDefender().GetObjRef().shield)
+			parryBonus := parryBonus + 5;
+		endif
+	endif
+
 	if (attackInfo.GetDefender().HasAbility(ABILITY_ID::POSTURA_DE_DUELO))
 		var offhand := GetEquipmentByLayer(attackInfo.GetDefender().GetObjRef(), LAYER_HAND2);
 		if (offhand && offhand.objtype == 0x1B73)
