@@ -1,9 +1,8 @@
 // jailAction.inc — JailPlayer flow + supporting helpers.
 //
 // JailPlayer(jailor, guard, prisoner, severity) is the single entry point.
-// Validates the target, sets criminal flag, attaches a grilhão, hands a
-// matching key to the issuing guard, plays teleport FX, drops the prisoner
-// into the mine, and rolls a chance to spawn a meteorite there.
+// Validates the target, sets criminal flag + jail quota, plays teleport FX,
+// drops the prisoner into the mine, and rolls a meteorite spawn.
 //
 // Suborno is a no-op handled here for symmetry — speech only.
 
@@ -14,7 +13,6 @@ use util;
 include "include/say";
 include ":fls_core:packets";
 include ":brainAI:npcCommands";
-include ":grilhao:include/grilhao";
 include ":jailor:include/jailor";
 
 const JAIL_QUOTA_LEVE		:= 100;
@@ -76,13 +74,6 @@ function JailPlayer(jailor, guard, prisoner, severity)
 	SetObjProperty(prisoner, "#jail_collected", 0);
 	prisoner.SetCriminal(1);
 
-	var grilhao := AttachGrilhao(prisoner, GRILHAO_DEFAULT_DR);
-	if (grilhao == error || !grilhao)
-		SendSysMessage(guard, "Falha ao criar o grilhao.");
-		return 0;
-	endif
-
-	GiveKeyToGuard(guard, grilhao);
 	TeleportPrisoner(prisoner, JAIL_MINE_X, JAIL_MINE_Y, JAIL_MINE_Z, JAIL_MINE_REALM);
 	RollMeteoriteSpawn();
 
@@ -111,20 +102,6 @@ function ValidatePrisoner(jailor, guard, prisoner)
 		SendSysMessage(guard, "Esse alvo ja esta cumprindo pena.");
 		return 0;
 	endif
-	return 1;
-endfunction
-
-function GiveKeyToGuard(guard, grilhao)
-	var lockid := GetObjProperty(grilhao, "LockId");
-	if (!lockid)
-		return 0;
-	endif
-	var key := CreateItemInBackpack(guard, "ironkey", 1);
-	if (!key || key == error)
-		return 0;
-	endif
-	SetObjProperty(key, "LockId", lockid);
-	key.name := "Chave do Grilhao";
 	return 1;
 endfunction
 
@@ -186,8 +163,6 @@ function ReleasePrisoner(jailor, prisoner)
 	endif
 
 	prisoner.SetCriminal(0);
-
-	RemoveGrilhao(prisoner);
 
 	EraseObjProperty(prisoner, "#jail_quota");
 	EraseObjProperty(prisoner, "#jail_collected");
