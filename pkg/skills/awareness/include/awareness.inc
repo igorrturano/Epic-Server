@@ -121,6 +121,9 @@ function ExaminarObjeto(who,targ)
 				return 0;
 			endif
 		endif
+	else
+		SendSysMessageEx(who, "Você não encontrou nada de incomum em "+targ.name+".", SSM_FAIL);
+		return 0;
 	endif
 endfunction
 

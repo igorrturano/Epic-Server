@@ -220,8 +220,9 @@ program architect_gump(params)
 			   			lang["show_hexdec"],
 			   			lang["quit"],
 			   			"Export in sphere TXT Format",
-			   			"Baukosten schotzen", "Mover" // 27
-			   			
+			   			"Baukosten schotzen", "Mover", // 27
+			   			"Architect V2"                 // 28
+
 			   			};
 			layout := array{ "page 0",
 				 			"nodispose",
@@ -459,12 +460,23 @@ program architect_gump(params)
 				 			+ " " + (
 				 			gpos[2] + 454)
 				 			+ " 2361 2361 1 0 -331",           // undo
-				 			
+
 				 			"text " + (
 				 			gpos[1] + 152)
 				 			+ " " + (
 				 			gpos[2] + 450)
 				 			+ " 40 12",
+				 			"button " + (
+				 			gpos[1] + 135)
+				 			+ " " + (
+				 			gpos[2] + 472)
+				 			+ " 2361 2361 1 0 -340",           // architect v2
+
+				 			"text " + (
+				 			gpos[1] + 152)
+				 			+ " " + (
+				 			gpos[2] + 468)
+				 			+ " 40 28",
 				 			"checkbox " + (
 				 			gpos[1] + 133)
 				 			+ " " + (
@@ -1562,6 +1574,11 @@ program architect_gump(params)
 					hidden := array{};
 					marked := array{};
 			// kostenschaetzung(who, marked);
+
+				40: // architect v2
+					SetObjProperty(who, "#architect_choice", choice);
+					start_script(":architect:textcmd/player/architect2", array{who, from_item});
+					return 1;
 			endcase
 
 		// main group chosen
