@@ -58,6 +58,22 @@ const BTN_Z_UP_1        := 220;
 const BTN_Z_DN_1        := 221;
 const BTN_X_UP_1        := 222;
 const BTN_X_DN_1        := 223;
+const BTN_N_1           := 226;
+const BTN_S_1           := 227;
+const BTN_NE_1          := 228;
+const BTN_SE_1          := 229;
+const BTN_SW_1          := 230;
+const BTN_NW_1          := 231;
+
+// Gráficos das setas direcionais (igual ao Architect clássico)
+const GFX_ARROW_N       := 9760;
+const GFX_ARROW_NE      := 9761;
+const GFX_ARROW_E       := 9762;
+const GFX_ARROW_SE      := 9763;
+const GFX_ARROW_S       := 9764;
+const GFX_ARROW_SW      := 9765;
+const GFX_ARROW_W       := 9766;
+const GFX_ARROW_NW      := 9767;
 
 // IDs dos checkboxes e campos de texto (lidos via GFExtractData)
 const CHK_MULTI         := 1;
@@ -96,6 +112,7 @@ var _group_name    := "";
 var _part_type     := 0;
 var _z_offset      := 0;
 var _x_offset      := 0;
+var _y_offset      := 0;
 var _use_on_marked := 0;
 var _multi_select  := 0;
 var _random_mode   := 0;
@@ -204,8 +221,8 @@ program architect2_gump(params)
         else
             var action := ShowWorkingScreen(who);
             if (action == "quit")          break; endif
+            if (action == "back")          break; endif
             if (action == "back_to_small") _LaunchClassicGump(who); return 1; endif
-            if (action == "back")          _group_name := ""; _part_type := 0; continue; endif
             if (action == "inicio")        _culture_key := ""; _sector_name := ""; _group_name := ""; _part_type := 0; continue; endif
             if (action == "goto_sector")   _sector_name := ""; _group_name := ""; _part_type := 0; continue; endif
             if (action == "goto_group")    _group_name := ""; _part_type := 0; continue; endif
@@ -230,6 +247,12 @@ program architect2_gump(params)
             elseif (action == "z_dn_1")  DoMoveMarked(who, 0, 0, -_move_step);
             elseif (action == "x_up_1")  DoMoveMarked(who,  _move_step, 0, 0);
             elseif (action == "x_dn_1")  DoMoveMarked(who, -_move_step, 0, 0);
+            elseif (action == "n_1")     DoMoveMarked(who, 0,           -_move_step, 0);
+            elseif (action == "s_1")     DoMoveMarked(who, 0,            _move_step, 0);
+            elseif (action == "ne_1")    DoMoveMarked(who,  _move_step, -_move_step, 0);
+            elseif (action == "se_1")    DoMoveMarked(who,  _move_step,  _move_step, 0);
+            elseif (action == "sw_1")    DoMoveMarked(who, -_move_step,  _move_step, 0);
+            elseif (action == "nw_1")    DoMoveMarked(who, -_move_step, -_move_step, 0);
             endif
         endif
     endwhile
@@ -242,22 +265,23 @@ endprogram
 function _SaveState(who)
     SetObjProperty(who, "#architect2_state", array{
         _culture_key, _sector_name, _group_name, _part_type,
-        _z_offset, _x_offset, _use_on_marked, _multi_select, _random_mode, _move_step });
+        _z_offset, _x_offset, _y_offset, _use_on_marked, _multi_select, _random_mode, _move_step });
 endfunction
 
 function _LoadState(who)
     var s := GetObjProperty(who, "#architect2_state");
-    if (!s || s.size() < 9) return; endif
+    if (!s || s.size() < 10) return; endif
     _culture_key   := s[1];
     _sector_name   := s[2];
     _group_name    := s[3];
     _part_type     := CInt(s[4]);
     _z_offset      := CInt(s[5]);
     _x_offset      := CInt(s[6]);
-    _use_on_marked := CInt(s[7]);
-    _multi_select  := CInt(s[8]);
-    _random_mode   := CInt(s[9]);
-    if (s.size() >= 10) _move_step := CInt(s[10]); endif
+    _y_offset      := CInt(s[7]);
+    _use_on_marked := CInt(s[8]);
+    _multi_select  := CInt(s[9]);
+    _random_mode   := CInt(s[10]);
+    if (s.size() >= 11) _move_step := CInt(s[11]); endif
 endfunction
 
 function _LaunchMenuPrincipal(who)
@@ -495,47 +519,73 @@ function ShowWorkingScreen(who)
     GFResizePic(gump, 220, 50, GFX_PREVIEW_BG, 230, 460);
     GFTextLine(gump, 290, 54, COR_AMARELO, "PEÇA ATUAL");
     if (_part_type)
-        // Preview grande do tile selecionado
         GFTilePic(gump, 295, 90, _part_type);
     else
         GFTextLine(gump, 260, 250, COR_INATIVO, "Selecione uma peça");
     endif
 
+    // Custo da peça selecionada
+    if (_group_name)
+        var res_cfg  := ReadConfigFile(":architect:config/resources");
+        var res_elem := FindConfigElem(res_cfg, _group_name);
+        if (res_elem)
+            var res_name := GetConfigString(res_elem, "resourceName");
+            var qty      := GetConfigInt(res_elem, "quantity");
+            GFTextLine(gump, 240, 270, COR_PADRAO, "Custo: " + qty + " de " + res_name);
+        endif
+    endif
+
     // ── PAINEL DIREITO: ferramentas (x 460..720) ─────────────────────────────
     GFTextLine(gump, 470, 54, COR_AMARELO, "FERRAMENTAS");
 
-    // Mover (X e Z offset)
+    // Mover — 3 colunas: X / Y / Z
     GFTextLine(gump, 470, 76, COR_PADRAO, "Mover");
-    GFAddButton(gump, 470, 94, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_X_UP_1);
-    GFTextLine(gump,  492, 96, COR_PADRAO, "▲");
-    GFAddButton(gump, 470, 114, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_X_DN_1);
-    GFTextLine(gump,  492, 116, COR_PADRAO, "▼");
-    GFTextLine(gump,  516, 96, COR_PADRAO, "X");
-    GFTextLine(gump,  516, 112, COR_BRANCO, CStr(_x_offset));
-    GFAddButton(gump, 570, 94, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_Z_UP_1);
-    GFTextLine(gump,  592, 96, COR_PADRAO, "▲");
-    GFAddButton(gump, 570, 114, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_Z_DN_1);
-    GFTextLine(gump,  592, 116, COR_PADRAO, "▼");
-    GFTextLine(gump,  616, 96, COR_PADRAO, "Z");
-    GFTextLine(gump,  616, 112, COR_BRANCO, CStr(_z_offset));
-    GFEAddTextBox(gump, 516, 135, 40, 16, COR_BRANCO, CStr(_move_step), ENTRY_STEP, 4);
-    GFAddButton(gump, 570, 145, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_HELP);
-    GFTextLine(gump,  590, 144, COR_BRANCO, "OK");
+
+    // Valor exibido: posição do item marcado quando houver, senão offset
+    var display_x := (_marked.size() > 0) ? _marked[1].x : _x_offset;
+    var display_y := (_marked.size() > 0) ? _marked[1].y : _y_offset;
+
+    // Coluna X
+    GFAddButton(gump, 462, 94,  GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_X_UP_1);
+    GFTextLine(gump,  484, 96,  COR_PADRAO, "▲");
+    GFAddButton(gump, 462, 114, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_X_DN_1);
+    GFTextLine(gump,  484, 116, COR_PADRAO, "▼");
+    GFTextLine(gump,  506, 94,  COR_PADRAO, "X");
+    GFTextLine(gump,  506, 110, COR_BRANCO, CStr(display_x));
+    // Coluna Y  (X base + 68 + 20 = 550)
+    GFAddButton(gump, 550, 94,  GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_N_1);
+    GFTextLine(gump,  572, 96,  COR_PADRAO, "▲");
+    GFAddButton(gump, 550, 114, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_S_1);
+    GFTextLine(gump,  572, 116, COR_PADRAO, "▼");
+    GFTextLine(gump,  594, 94,  COR_PADRAO, "Y");
+    GFTextLine(gump,  594, 110, COR_BRANCO, CStr(display_y));
+    // Coluna Z  (Y base + 68 + 20 = 638)
+    GFAddButton(gump, 638, 94,  GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_Z_UP_1);
+    GFTextLine(gump,  660, 96,  COR_PADRAO, "▲");
+    GFAddButton(gump, 638, 114, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_Z_DN_1);
+    GFTextLine(gump,  660, 116, COR_PADRAO, "▼");
+    GFTextLine(gump,  682, 94,  COR_PADRAO, "Z");
+    GFTextLine(gump,  682, 110, COR_BRANCO, CStr(_z_offset));
+
+    // Passo
+    GFTextLine(gump, 462, 140, COR_PADRAO, "Passo:");
+    GFEAddTextBox(gump, 508, 138, 40, 16, COR_BRANCO, CStr(_move_step), ENTRY_STEP, 4);
+    GFAddButton(gump, 562, 147, GFX_BTN_UP, GFX_BTN_DN, GF_CLOSE_BTN, BTN_HELP);
+    GFTextLine(gump,  582, 146, COR_BRANCO, "OK");
     GFTooltipText(gump, "Numero de tiles que as setas de mover avancam por clique (1 a 50). Clique OK para aplicar.");
-    GFTextLine(gump, 470, 143, COR_PADRAO, "Passo:");
 
     // Checkboxes
-    GFCheckBox(gump, 460, 174, GFX_CHK_OFF, GFX_CHK_ON, _multi_select,  CHK_MULTI);
-    GFTextLine(gump, 482, 176, COR_PADRAO, "Repetir Acao");
+    GFCheckBox(gump, 460, 202, GFX_CHK_OFF, GFX_CHK_ON, _multi_select,  CHK_MULTI);
+    GFTextLine(gump, 482, 204, COR_PADRAO, "Repetir Acao");
     GFTooltipText(gump, "Quando ativo, o comando se repete automaticamente ate voce pressionar ESC.");
-    GFCheckBox(gump, 460, 194, GFX_CHK_OFF, GFX_CHK_ON, _use_on_marked, CHK_MARKED);
-    GFTextLine(gump, 482, 196, COR_PADRAO, "Aplicar em Marcados");
+    GFCheckBox(gump, 460, 222, GFX_CHK_OFF, GFX_CHK_ON, _use_on_marked, CHK_MARKED);
+    GFTextLine(gump, 482, 224, COR_PADRAO, "Aplicar em Marcados");
     GFTooltipText(gump, "Quando ativo, acoes como Deletar e Esconder afetam todos os itens marcados.");
 
     // Botões de ação (grade 2 colunas)
     var tx  := 460;
     var tx2 := 610;
-    var ty  := 222;
+    var ty  := 250;
     var rh  := 24;
 
     GFAddButton(gump, tx,  ty, GFX_BTN_UP,  GFX_BTN_DN,  GF_CLOSE_BTN, BTN_CREATE);
@@ -586,8 +636,8 @@ function ShowWorkingScreen(who)
     GFTextLine(gump,  tx2+22, ty+2, COR_VERMELHO, "Deletar Bulk");
     GFTooltipText(gump, "Destroi permanentemente todos os itens marcados pelo Marcar ou Marcar Bulk.");
 
-    // Altura Z
-    GFTextLine(gump, 460, 534, COR_PADRAO, "Altura (Z): " + CStr(_z_offset));
+    // Altura Z criação = who.z + _z_offset
+    GFTextLine(gump, 460, 534, COR_PADRAO, "Z: " + CStr(who.z + _z_offset));
 
     // ── Rodapé ────────────────────────────────────────────────────────────────
     _NavRodape(gump, W, H, 1);
@@ -644,6 +694,12 @@ function ShowWorkingScreen(who)
     if (btn == BTN_Z_DN_1)  return "z_dn_1"; endif
     if (btn == BTN_X_UP_1)  return "x_up_1"; endif
     if (btn == BTN_X_DN_1)  return "x_dn_1"; endif
+    if (btn == BTN_N_1)     return "n_1"; endif
+    if (btn == BTN_S_1)     return "s_1"; endif
+    if (btn == BTN_NE_1)    return "ne_1"; endif
+    if (btn == BTN_SE_1)    return "se_1"; endif
+    if (btn == BTN_SW_1)    return "sw_1"; endif
+    if (btn == BTN_NW_1)    return "nw_1"; endif
     return "noop";
 endfunction
 
@@ -669,7 +725,7 @@ function DoCreate(who)
     while (1)
         var coords := _GetCoords(who, 1);
         if (!coords) break; endif
-        var created := _CreateItem(who, coords[1] + _x_offset, coords[2], _z_offset, _EffectiveType());
+        var created := _CreateItem(who, coords[1] + _x_offset, coords[2] + _y_offset, who.z + _z_offset, _EffectiveType());
         if (created) _undo.append(array{1, array{created.serial}}); endif
         if (!_multi_select) break; endif
     endwhile
@@ -688,7 +744,7 @@ function DoLine(who)
         var x := 0; var y := 0; var c := 0;
         for (x := coords[1]; x <= coords[3]; x := x + 1)
             for (y := coords[2]; y <= coords[4]; y := y + 1)
-                c := _CreateItem(who, x + _x_offset, y, _z_offset, _EffectiveType());
+                c := _CreateItem(who, x + _x_offset, y + _y_offset, who.z + _z_offset, _EffectiveType());
                 if (c) serials.append(c.serial); endif
             endfor
         endfor
@@ -705,7 +761,7 @@ function DoTile(who)
         var x := 0; var y := 0; var c := 0;
         for (x := coords[1]; x <= coords[3]; x := x + 1)
             for (y := coords[2]; y <= coords[4]; y := y + 1)
-                c := _CreateItem(who, x + _x_offset, y, _z_offset, _EffectiveType());
+                c := _CreateItem(who, x + _x_offset, y + _y_offset, who.z + _z_offset, _EffectiveType());
                 if (c) serials.append(c.serial); endif
             endfor
         endfor
@@ -721,14 +777,14 @@ function DoRing(who)
         var serials := array{};
         var x := 0; var y := 0; var c1 := 0; var c2 := 0;
         for (x := coords[1]; x <= coords[3]; x := x + 1)
-            c1 := _CreateItem(who, x + _x_offset, coords[2], _z_offset, _EffectiveType());
-            c2 := _CreateItem(who, x + _x_offset, coords[4], _z_offset, _EffectiveType());
+            c1 := _CreateItem(who, x + _x_offset, coords[2] + _y_offset, who.z + _z_offset, _EffectiveType());
+            c2 := _CreateItem(who, x + _x_offset, coords[4] + _y_offset, who.z + _z_offset, _EffectiveType());
             if (c1) serials.append(c1.serial); endif
             if (c2) serials.append(c2.serial); endif
         endfor
         for (y := coords[2] + 1; y < coords[4]; y := y + 1)
-            c1 := _CreateItem(who, coords[1] + _x_offset, y, _z_offset, _EffectiveType());
-            c2 := _CreateItem(who, coords[3] + _x_offset, y, _z_offset, _EffectiveType());
+            c1 := _CreateItem(who, coords[1] + _x_offset, y + _y_offset, who.z + _z_offset, _EffectiveType());
+            c2 := _CreateItem(who, coords[3] + _x_offset, y + _y_offset, who.z + _z_offset, _EffectiveType());
             if (c1) serials.append(c1.serial); endif
             if (c2) serials.append(c2.serial); endif
         endfor
@@ -808,6 +864,7 @@ endfunction
 function DoMoveMarked(who, dx, dy, dz)
     if (_marked.size() < 1)
         _x_offset := _x_offset + dx;
+        _y_offset := _y_offset + dy;
         _z_offset := _z_offset + dz;
         return;
     endif
@@ -1008,7 +1065,7 @@ function DoLoad(who)
     foreach entry in (elem.GetProp(CStr(res[0])))
         _CreateItem(who, topleft[1] + entry[2], topleft[2] + entry[3], topleft[3] + entry[4], entry[1]);
     endforeach
-    _z_offset := 0; _x_offset := 0; _use_on_marked := 0;
+    _z_offset := 0; _x_offset := 0; _y_offset := 0; _use_on_marked := 0;
     _marked := array{}; _hidden := array{}; _undo := array{};
 endfunction
 
