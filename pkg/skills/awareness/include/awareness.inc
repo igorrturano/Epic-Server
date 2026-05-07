@@ -199,10 +199,11 @@ function ExaminarArea(who)
 		        	exibeCharEscondido(who,mobile,36);
 					PrintTextPrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,36);
 				endif
-	        elseif (mobile.npctemplate && CInt(GetObjProperty(who, "IgnoreHidden"))) //mostra NPC escondidos sem revelar
+	        elseif (mobile.npctemplate && CInt(GetObjProperty(who, "IgnoreHidden"))) //modo passivo: NPC hostil sempre revela
 	        	if ( SkillCheck(who, AWARENESS, difficulty, 0,ADV_DISABLE) > 0 )  //Não upa
-		        	exibeCharEscondido(who,mobile,37);
-					PrintTextPrivate(mobile, "!", who,_DEFAULT_TEXT_FONT,37);
+		        	found := found+1;
+					mobile.hidden := 0;
+					PrintTextAbove(mobile, "*Revelado por "+who.name+"*");
 				endif
 			else //Revela todo mundo que deveria
 				if ( SkillCheck(who, AWARENESS, difficulty) > 0 )
