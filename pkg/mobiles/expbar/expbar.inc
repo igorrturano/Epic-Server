@@ -386,8 +386,20 @@ function AwardXPFromKill(killers, corpse)
     var boost_mult := GetActiveXPBoostMult();
 
     foreach killer in killers
-        var lvl_mod := GetLevelGapModifier(GetPlayerLevel(killer), tier);
+        var killer_level := GetPlayerLevel(killer);
+        var lvl_mod := GetLevelGapModifier(killer_level, tier);
         var killer_xp := CInt(base_xp * lvl_mod * boost_mult * party_mult / split);
+
+        // Floor universal: fórmula antiga (tier*25) modulada pelos mesmos modifiers
+        // que a CR. Pra trash, OLD formula prevalece (garante monotonicidade por tier);
+        // pra boss, CR vence o piso. Decay e bonus do lvl_mod aplicam aos dois.
+        if (tier > 0)
+            var floor_xp := CInt(tier * 25 * lvl_mod * boost_mult * party_mult / split);
+            if (killer_xp < floor_xp)
+                killer_xp := floor_xp;
+            endif
+        endif
+
         if (killer_xp == 0 && lvl_mod > 0.0 && base_xp > 0.0)
             killer_xp := 1;
         endif
