@@ -1,0 +1,6 @@
+use uo;
+use os;
+
+program grilhao_control(item)
+	return 1;
+endprogram
