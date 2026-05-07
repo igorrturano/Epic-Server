@@ -1,6 +1,58 @@
+// Grilhão use script — handles double-click for removal.
+// Tries matching key first; falls back to a Mechanics skill check vs lockDR.
+// The wearer can never self-remove (can't reach own ankle lock).
+
 use uo;
 use os;
 
+include ":attributes:attributes";
+include ":keys:key";
+include ":grilhao:include/grilhao";
+
 program grilhao_use(who, item)
-	return 1;
+	var carrierSerial := GetObjProperty(item, "carrier");
+	if (carrierSerial && carrierSerial == who.serial)
+		SendSysMessage(who, "Você não consegue alcançar a fechadura.");
+		return 0;
+	endif
+
+	var lockId := GetObjProperty(item, "LockId");
+	if (lockId && KP_HasKeyForLock(who, lockId))
+		PrintTextAbove(who, "*destranca o grilhão*");
+		return RemoveGrilhaoAndReleaseCarrier(item);
+	endif
+
+	var dr := Cint(GetObjProperty(item, "lockDR"));
+	if (!dr)
+		dr := GRILHAO_DEFAULT_DR;
+	endif
+
+	PrintTextAbove(who, "*tenta forçar o grilhão*");
+
+	if (!Wait(who, 5))
+		SendSysMessage(who, "Você interrompeu o processo.");
+		return 0;
+	endif
+
+	var check := SkillCheck(who, MECHANICS, dr);
+	if (check > 0)
+		PrintTextAbove(who, "*forçou o grilhão*");
+		return RemoveGrilhaoAndReleaseCarrier(item);
+	endif
+
+	PrintTextAbove(who, "*falhou em forçar o grilhão*");
+	return 0;
 endprogram
+
+function RemoveGrilhaoAndReleaseCarrier(item)
+	var carrierSerial := GetObjProperty(item, "carrier");
+	if (carrierSerial)
+		var carrier := SystemFindObjectBySerial(carrierSerial);
+		if (carrier && carrier != error)
+			RemoveGrilhao(carrier);
+			return 1;
+		endif
+	endif
+	DestroyItem(item);
+	return 1;
+endfunction
