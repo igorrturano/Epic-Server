@@ -1,0 +1,6 @@
+use uo;
+use os;
+
+program grilhao_use(who, item)
+	return 1;
+endprogram
