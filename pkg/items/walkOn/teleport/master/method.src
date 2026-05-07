@@ -1,0 +1,22 @@
+use uo;
+
+program Install()
+	return 1;
+endprogram
+
+exported function IsMasterTelepad(tile)
+	tile := tile;
+	return 1;
+endfunction
+
+exported function GetFormData(tile)
+	var fd := GetObjProperty(tile, "form_data");
+	if (!fd || fd.errortext)
+		return 0;
+	endif
+	return fd;
+endfunction
+
+exported function SetFormData(tile, fd)
+	return SetObjProperty(tile, "form_data", fd);
+endfunction
