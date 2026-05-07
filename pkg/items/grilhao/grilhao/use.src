@@ -1,58 +1,81 @@
-// Grilhão use script — handles double-click for removal.
-// Tries matching key first; falls back to a Mechanics skill check vs lockDR.
-// The wearer can never self-remove (can't reach own ankle lock).
+// grilhao/use.src — double-click flow.
+//
+// Mirrors :fls_core:algemas: target a fallen body or get YesNo consent from
+// an awake player, then freeze them via the "corda" CProp pattern. The
+// grilhão item is consumed (SubtractAmount). Release uses the existing
+// freeze ecosystem: .soltar command, bladed weapon, etc.
+//
+// Jailor-issued grilhões are created directly via :grilhao:include/grilhao
+// with a carrier CProp pre-set; their lifecycle is managed by the Jailor
+// quota flow, not by this script.
 
 use uo;
 use os;
+use util;
 
-include ":attributes:attributes";
-include ":keys:key";
-include ":grilhao:include/grilhao";
+include ":gumps:yesNo";
+include "include/say";
 
 program grilhao_use(who, item)
-	var carrierSerial := GetObjProperty(item, "carrier");
-	if (carrierSerial && carrierSerial == who.serial)
-		SendSysMessage(who, "Você não consegue alcançar a fechadura.");
+	if (GetObjProperty(item, "carrier"))
+		SendSysMessage(who, "Esse grilhao ja esta em uso.");
 		return 0;
 	endif
 
-	var lockId := GetObjProperty(item, "LockId");
-	if (lockId && KP_HasKeyForLock(who, lockId))
-		PrintTextAbove(who, "*destranca o grilhão*");
-		return RemoveGrilhaoAndReleaseCarrier(item);
+	SendSysMessageEx(who, "Em quem voce deseja usar o grilhao?", SSM_REQUEST);
+	var alvo := Target(who, TGTOPT_CHECK_LOS);
+
+	if (!alvo)
+		SendSysMessage(who, "Cancelado.");
+		return 0;
 	endif
-
-	var dr := Cint(GetObjProperty(item, "lockDR"));
-	if (!dr)
-		dr := GRILHAO_DEFAULT_DR;
+	if (Distance(who, alvo) > 2)
+		SendSysMessage(who, "Voce esta muito longe.");
+		return 0;
 	endif
-
-	PrintTextAbove(who, "*tenta forçar o grilhão*");
-
-	if (!Wait(who, 5))
-		SendSysMessage(who, "Você interrompeu o processo.");
+	if (GetObjProperty(alvo, "corda"))
+		SendSysMessage(who, "Esse alvo ja esta amarrado.");
 		return 0;
 	endif
 
-	var check := SkillCheck(who, MECHANICS, dr);
-	if (check > 0)
-		PrintTextAbove(who, "*forçou o grilhão*");
-		return RemoveGrilhaoAndReleaseCarrier(item);
+	var diff := Cint(GetObjProperty(item, "diff"));
+	if (!diff)
+		diff := 100;
 	endif
 
-	PrintTextAbove(who, "*falhou em forçar o grilhão*");
+	if (alvo.corpsetype == 400 || alvo.corpsetype == 401 || alvo.corpsetype == 1828 ||
+	 alvo.corpsetype == 1829 || alvo.corpsetype == 1830 || alvo.corpsetype == 1831 ||
+	 alvo.corpsetype == 1832 || alvo.corpsetype == 1833 || alvo.corpsetype == 1834 ||
+	 alvo.corpsetype == 1835)
+		var char := SystemFindObjectBySerial(alvo.ownerserial);
+		if (!char)
+			SendSysMessage(who, "Voce nao pode usar grilhao nesse corpo.");
+			return 0;
+		endif
+		PrintTextAbove(who, "*algema " + char.name + "*");
+		SubtractAmount(item, 1);
+		SetObjProperty(alvo, "corda", 1);
+		SetObjProperty(char, "corda", diff);
+		return 1;
+	endif
+
+	if (alvo.ip)
+		if (!alvo.connected)
+			SendSysMessage(who, "Nao pode prender um jogador deslogado.");
+			return 0;
+		endif
+		var ok := YesNo(alvo, "Voce permite ser preso por " + who.name + " com um grilhao?", "Sim, permito.", "Nao.");
+		if (!ok)
+			SendSysMessage(who, alvo.name + " nao permitiu.");
+			return 0;
+		endif
+		PrintTextAbove(who, "*algema " + alvo.name + "*");
+		SubtractAmount(item, 1);
+		SetObjProperty(alvo, "corda", diff);
+		alvo.frozen := 1;
+		return 1;
+	endif
+
+	SendSysMessage(who, "Voce nao pode prender isso.");
 	return 0;
 endprogram
-
-function RemoveGrilhaoAndReleaseCarrier(item)
-	var carrierSerial := GetObjProperty(item, "carrier");
-	if (carrierSerial)
-		var carrier := SystemFindObjectBySerial(carrierSerial);
-		if (carrier && carrier != error)
-			RemoveGrilhao(carrier);
-			return 1;
-		endif
-	endif
-	DestroyItem(item);
-	return 1;
-endfunction
