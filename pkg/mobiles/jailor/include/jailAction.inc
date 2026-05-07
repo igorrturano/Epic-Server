@@ -110,10 +110,6 @@ function ValidatePrisoner(jailor, guard, prisoner)
 		SendSysMessage(guard, "O alvo precisa estar online.");
 		return 0;
 	endif
-	if (IsGuardOf(prisoner, jailor))
-		SendSysMessage(guard, "Voce nao pode prender um companheiro de faccao.");
-		return 0;
-	endif
 	if (IsPrisoner(prisoner))
 		SendSysMessage(guard, "Esse alvo ja esta cumprindo pena.");
 		return 0;
