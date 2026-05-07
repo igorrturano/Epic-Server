@@ -3,12 +3,12 @@ use os;
 use guilds;
 
 include ":faccao:include/faccao";
+include ":jailor:include/jailorStore";
 
 // Returns the canonical faccao index (1..5) for a mobile, or 0 if none.
 // Mirrors :merchants:citizen/include/citizenAuthority::GetMobileFactionIndex —
 // native guild membership wins (matching FACCAO_NOMES by name), with
-// nomefaccao CProp as a secondary path. The legacy "faccao" CProp is
-// intentionally ignored (it holds vendor codes, not faction names).
+// nomefaccao CProp as a secondary path.
 function GetMobileFactionIndex(mob)
 	if (!mob)
 		return 0;
@@ -36,30 +36,20 @@ function GetMobileFactionIndex(mob)
 	return 0;
 endfunction
 
-function GetJailorFaccao(npc)
-	return GetMobileFactionIndex(npc);
-endfunction
-
-function SetJailorFaccao(npc, idx)
-	if (idx < 1 || idx > FACCAO_NOMES.size())
-		return 0;
-	endif
-	SetObjProperty(npc, "nomefaccao", idx);
-	return 1;
-endfunction
-
-// True when player belongs to the same faccao as the Jailor.
-// Both sides resolved via GetMobileFactionIndex (guild OR nomefaccao CProp).
+// True when player belongs to one of the faccoes this Jailor serves.
 function IsGuardOf(player, jailor)
 	if (!player || !jailor)
 		return 0;
 	endif
-	var jailorFaccao := GetJailorFaccao(jailor);
-	if (!jailorFaccao)
+	var jailorFactions := GetJailorFactions(jailor);
+	if (!jailorFactions || !jailorFactions.size())
 		return 0;
 	endif
 	var playerFaccao := GetMobileFactionIndex(player);
-	return (playerFaccao == jailorFaccao);
+	if (!playerFaccao)
+		return 0;
+	endif
+	return (playerFaccao in jailorFactions);
 endfunction
 
 function IsPrisoner(player)
