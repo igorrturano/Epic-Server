@@ -1,7 +1,8 @@
 // Jailor ItemGiven nerve.
 //
-// Accepts pedras (0x5001) from prisoners (#jail_quota set), counts them
-// against the quota, releases on hit. Refuses everything else.
+// Accepts pedras (0x5001) or moedacobre (0xBA63) from prisoners
+// (#jail_quota set), converts to a unified pedras count, releases on hit.
+// Refuses everything else.
 
 use uo;
 use os;
@@ -38,8 +39,8 @@ function HandleItemGiven(npc, byref event)
 		return 0;
 	endif
 
-	if (Cint(item.objtype) == PEDRA_OBJTYPE && IsPrisoner(source))
-		ReceivePedras(npc, source, item);
+	if (IsPaymentItem(Cint(item.objtype)) && IsPrisoner(source))
+		ReceivePayment(npc, source, item);
 		return 1;
 	endif
 

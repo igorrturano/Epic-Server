@@ -1,6 +1,6 @@
 // jailorPunish — guard-only gump that picks the crime severity and targets
-// the offender. Each row is a single clickable button: click = pick that
-// severity and close. No OK/Cancel duo.
+// the offender. One click per option, matches the menu-button style used
+// by :commands:player/classe (4005/4007).
 
 use uo;
 use os;
@@ -24,25 +24,25 @@ program jailorPunish(params)
 	endif
 
 	var gump := GFCreateGump();
-	GFResizePic(gump, 0, 0, 9200, 360, 250);
-	GFResizePic(gump, 15, 15, 9350, 330, 220);
-	GFTextMid(gump, 15, 25, 330, 53, "Sentenca");
-	GFTextLine(gump, 30, 50, 1153, "Selecione a pena:");
+	GFResizePic(gump, 0, 0, 9200, 380, 280);
+	GFResizePic(gump, 15, 15, 9350, 350, 250);
+	GFTextMid(gump, 15, 30, 350, 53, "Sentenca");
+	GFTextLine(gump, 35, 60, 1153, "Selecione o nivel da pena:");
 
-	GFAddButton(gump, 30, 80,  2113, 2114, GF_CLOSE_BTN, BTN_LEVE);
-	GFTextLine(gump, 60, 80,  1153, "Leve  -  100 pedras");
+	GFAddButton(gump, 40, 95,  4005, 4007, GF_CLOSE_BTN, BTN_LEVE);
+	GFTextLine(gump, 80, 98,   1153, "Leve  -  100 pedras / 10 moedas");
 
-	GFAddButton(gump, 30, 110, 2113, 2114, GF_CLOSE_BTN, BTN_MODERADO);
-	GFTextLine(gump, 60, 110, 1153, "Moderado  -  400 pedras");
+	GFAddButton(gump, 40, 130, 4005, 4007, GF_CLOSE_BTN, BTN_MODERADO);
+	GFTextLine(gump, 80, 133,  1153, "Moderado  -  400 pedras / 40 moedas");
 
-	GFAddButton(gump, 30, 140, 2113, 2114, GF_CLOSE_BTN, BTN_PESADO);
-	GFTextLine(gump, 60, 140, 1153, "Pesado  -  1000 pedras");
+	GFAddButton(gump, 40, 165, 4005, 4007, GF_CLOSE_BTN, BTN_PESADO);
+	GFTextLine(gump, 80, 168,  1153, "Pesado  -  1000 pedras / 100 moedas");
 
-	GFAddButton(gump, 30, 170, 2113, 2114, GF_CLOSE_BTN, BTN_SUBORNO);
-	GFTextLine(gump, 60, 170, 1153, "Suborno  -  resolver socialmente");
+	GFAddButton(gump, 40, 200, 4005, 4007, GF_CLOSE_BTN, BTN_SUBORNO);
+	GFTextLine(gump, 80, 203,  1153, "Suborno  -  resolver socialmente");
 
-	GFAddButton(gump, 220, 210, 2119, 2120, GF_CLOSE_BTN, 0);
-	GFTextLine(gump, 250, 210, 1153, "Cancelar");
+	GFAddButton(gump, 175, 240, 2119, 2120, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 210, 243, 1153, "Cancelar");
 
 	var input := GFSendGump(guard, gump);
 	if (!input)
