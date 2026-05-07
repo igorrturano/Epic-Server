@@ -290,9 +290,9 @@ function NotifyNearbyPlayers(artifact)
 		anyone_nearby := 1;
 
 		var skill         := CInt(AP_GetSkill(player, "Awareness"));
-		var passive_range := max(1, CInt(skill / 200)); // skill armazenado ×10 (80.0 = 800)
+		var passive_range := CInt((skill - 20) / 20); // 40=1tile 60=2 80=3 100=4 120=5
 
-		if (dist > passive_range)
+		if (passive_range <= 0 || dist > passive_range)
 			continue;
 		endif
 
