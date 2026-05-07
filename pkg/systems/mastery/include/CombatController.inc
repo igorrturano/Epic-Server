@@ -26,6 +26,8 @@ const MAX_MASTERIES := 3; // Limite máximo de maestrias que um personagem pode 
  * Nenhum (void)
  */
 function MasteryCombat_Advance(attacker, combatInfo)
+	return; // Desabilitando pra pararem de perguntar...
+	
 	var key := Hex(attacker.weapon.objtype); // Chave para o índice.
 	var mastery := attacker.GetMastery(key) ?: MasteryCombat(key);
 
