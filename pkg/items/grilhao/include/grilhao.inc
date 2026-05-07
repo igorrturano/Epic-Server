@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":keys:key";
+include ":fls_core:packets";
 
 const GRILHAO_OBJTYPE       := 0xFCD7;
 const GRILHAO_DEFAULT_DR    := 60;

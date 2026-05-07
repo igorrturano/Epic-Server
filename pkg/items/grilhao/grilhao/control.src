@@ -5,6 +5,8 @@
 use uo;
 use os;
 
+include ":fls_core:packets";
+
 program grilhao_control(item)
 	while (item)
 		var carrierSerial := GetObjProperty(item, "carrier");
