@@ -73,9 +73,7 @@ function DispatchToGump(npc, player)
 	endif
 
 	if (IsGuardOf(player, npc))
-		// Phase 4 will route here for punishment gump.
-		AI_Speak(npc, "Em breve, guarda. (Jailor ainda nao opera.)");
-		return 0;
+		return Start_Script(":jailor:gumps/jailorPunish", { npc, player });
 	endif
 
 	AI_Speak(npc, "Voce nao tem assunto comigo.");
