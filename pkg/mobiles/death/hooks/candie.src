@@ -32,8 +32,8 @@ exported function CanDie(mobile)
 	// Stats and properties are cleaned up later by endmetamorfose (idempotent).
 	var metamorfose := GetObjProperty(mobile, "metamorfose");
 	if (metamorfose != error)
-		mobile.graphic := metamorfose.originalgraphic;
-		mobile.truegraphic := metamorfose.originalgraphic;
+		mobile.graphic := mobile.trueobjtype;
+		mobile.truegraphic := mobile.trueobjtype;
 		mobile.color := metamorfose.originalcolor;
 		var charname := GetObjProperty(mobile, "charname");
 		if (charname != error)

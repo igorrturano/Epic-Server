@@ -170,22 +170,34 @@ function racialSelection(who, culture_pic)
 	endif
 	SendSysMessageEX(who, "Voce será um " + prefix + chardata.raca, SSM_INFO);
 
+	// Set both .graphic AND .trueobjtype so the race body is the canonical
+	// "true" form. Anything that reverts via trueobjtype (polymorph end,
+	// resurrection, metamorfose dispel, ironmaiden release) will restore to
+	// the race body instead of the humano template (400/401).
 	if (who.graphic == 400 && (chardata.raca == ELFO || chardata.raca == DROW))
 		who.graphic := 1830;
+		who.trueobjtype := 1830;
 	elseif (who.graphic == 401 && (chardata.raca == ELFO || chardata.raca == DROW))
 		who.graphic := 1831;
+		who.trueobjtype := 1831;
 	elseif (who.graphic == 400 && (chardata.raca == ORC))
 		who.graphic := 1832;
+		who.trueobjtype := 1832;
 	elseif (who.graphic == 401 && (chardata.raca == ORC))
 		who.graphic := 1833;
+		who.trueobjtype := 1833;
 	elseif (who.graphic == 400 && (chardata.raca == ANAO))
 		who.graphic := 1828;
+		who.trueobjtype := 1828;
 	elseif (who.graphic == 401 && (chardata.raca == ANAO))
 		who.graphic := 1829;
+		who.trueobjtype := 1829;
 	elseif (who.graphic == 400 && (chardata.raca == PEQUILHO))
 		who.graphic := 1835;
+		who.trueobjtype := 1835;
 	elseif (who.graphic == 401 && (chardata.raca == PEQUILHO))
 		who.graphic := 1834;
+		who.trueobjtype := 1834;
 	endif
 
 	who.title_race := prefix+chardata.raca;

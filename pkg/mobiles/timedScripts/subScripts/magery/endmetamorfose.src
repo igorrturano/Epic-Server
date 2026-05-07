@@ -75,12 +75,14 @@ program cureScript(params)
 	// transformation — re-emit packets so status gump reflects current #SpellResist.
 	SC_RefreshArmorPackets(who);
 
-	// Revert appearance if metamorfose data exists
+	// Revert appearance if metamorfose data exists. Graphic restores from
+	// trueobjtype (canonical race body) rather than a per-cast snapshot —
+	// see epicgumpcriacao / logon migration for why trueobjtype is reliable.
 	var metamorfose := GetObjProperty(who, "metamorfose");
 	if (metamorfose != error)
 		who.color := metamorfose.originalcolor;
-		who.graphic := metamorfose.originalgraphic;
-		who.truegraphic := metamorfose.originalgraphic;
+		who.graphic := who.trueobjtype;
+		who.truegraphic := who.trueobjtype;
 
 		// Re-apply color overlays from any still-active SpellController effect
 		// (e.g. barkskin casts color=2826). originalcolor is now the druid's
