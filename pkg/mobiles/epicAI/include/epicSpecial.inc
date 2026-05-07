@@ -782,7 +782,11 @@ function WallClimb(spider)
       SetObjProperty(spider, "#nextcritical", 1);
 
       spider.attack_once(closest);
-      
+
+      // hiddenattack suppresses POL's auto-reveal; force the spider visible
+      // after the surprise blow so it can't keep attacking invisibly.
+      spider.hidden := 0;
+
       SetCooldown(spider, "wall_climb", 30);
       return 1;
    endif

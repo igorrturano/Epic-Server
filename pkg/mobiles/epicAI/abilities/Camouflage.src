@@ -28,5 +28,20 @@ program Camouflage(params)
 	me.enable("hiddenattack");
 
 	SetCooldown(me, "camouflage", 30);
+
+	// Cap the invisibility so the NPC can't stay hidden forever while attacking.
+	// hiddenattack suppresses POL's reveal-on-attack, so without this the mob
+	// keeps swinging invisibly until killed.
+	sleep(12);
+
+	if (!me || me.dead)
+		return 1;
+	endif
+
+	if (me.hidden)
+		me.hidden := 0;
+		PrintTextAbove(me, "*revela-se*");
+	endif
+
 	return 1;
 endprogram
