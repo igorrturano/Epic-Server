@@ -12,7 +12,7 @@ function AttachGrilhao(prisoner, lockDR := GRILHAO_DEFAULT_DR)
 		return error;
 	endif
 
-	var grilhao := CreateItemAtContainer(prisoner.backpack, GRILHAO_OBJTYPE, 1);
+	var grilhao := CreateItemInContainer(prisoner.backpack, GRILHAO_OBJTYPE, 1);
 	if (grilhao == error || !grilhao)
 		return error;
 	endif
