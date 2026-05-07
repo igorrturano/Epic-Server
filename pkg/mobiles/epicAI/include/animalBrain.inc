@@ -1,9 +1,12 @@
+include ":animais_vadios:include/animais_vadios";
+
 const FOLLOW_CMD := 0xA001;
 function AnimalBrain()
     var ev;
     var wanders := 0;
     var last_activity_time := polcore().systime;
     EnableMainEvents();
+    EnableEvents(SYSEVENT_ITEM_GIVEN, 5);
     Set_Event_Queue_Size(50);
 
     // Build ability tables ONCE at brain activation (script-level vars in brain.src)
@@ -29,7 +32,12 @@ function AnimalBrain()
         elseif (state == "HERDING")
             SM_TickHerding();
         elseif (state == "FOLLOWING")
-            SM_TickFollowing();
+            if (SM_TickFollowing())
+                VadioOnFollowEnd(me);
+            else
+                VadioCheckTelepad(me);
+                VadioCheckEmote(me);
+            endif
         elseif (state == "AMBUSH")
             SM_TickAmbush();
         elseif (state == "INVESTIGATING")
@@ -143,12 +151,15 @@ function AnimalBrain()
                 FOLLOW_CMD:
                     PrintTextAbove(me, "*segue*");
                     SM_TransitionTo("FOLLOWING", struct{ "target" := ev.source });
+                SYSEVENT_ITEM_GIVEN:
+                    VadioHandleItemGiven(me, ev);
             endcase
         endif
 
         // Idle behavior when no events and no combat
         if (!me.opponent && SM_GetState() == "IDLE")
             AnimalIdle(wanders);
+            VadioCheckBark(me);
             if (RandomInt(100) < 30)
                 wanders += 1;
                 if (wanders >= 30)
