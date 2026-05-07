@@ -36,7 +36,7 @@ class MartialArtist(CombatAbility)
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
 
-		var extraAttacks := CInt(mobile.GetSkill(TACTICS) / 30);
+		var extraAttacks := CInt(mobile.GetSkill(WRESTLING) / 30);
 		if (extraAttacks < 1)
 			extraAttacks := 1;
 		endif

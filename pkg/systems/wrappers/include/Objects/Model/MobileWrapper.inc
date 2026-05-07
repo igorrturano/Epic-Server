@@ -636,28 +636,32 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *   - Caso contrário, usa apenas o valor de força
 	 * - Se TACTICS estiver nos critérios, adiciona o valor da habilidade de táticas dividido por 20
 	 *
-	 * Nota: O divisor padrão utilizado é 20 para normalizar os valores dos atributos
+	 * Nota: stats brutos (STR/DEX) usam divisor 20. Skills (Tactics/Theology)
+	 * usam divisor 10 — escala mais forte porque skill representa pratica e
+	 * domino, deveria contribuir mais que stat bruto. Buff aplicado quando
+	 * jogadores reclamaram de dano melee fraco pos-redesign.
 	 */
 	function GetMainDamageModifierBy(this, criteria...)
-		var divisor := 20;
+		var statDivisor := 20;
+		var skillDivisor := 10;
 		var value := 0;
 
 		if (STRENGTH in criteria && DEXTERITY in criteria)
 			// Both stats - use average
 			var statValue := CInt((this.GetStr() + this.GetDex()) / 2);
-			value += CInt(statValue / divisor);
+			value += CInt(statValue / statDivisor);
 		elseif (STRENGTH in criteria)
 			// Only strength
-			value += CInt(this.GetStr() / divisor);
+			value += CInt(this.GetStr() / statDivisor);
 		elseif (DEXTERITY in criteria)
 			// Only dexterity
-			value += CInt(this.GetDex() / divisor);
+			value += CInt(this.GetDex() / statDivisor);
 		endif
 
 		if (TACTICS in criteria)
-			value += CInt(this.GetSkill(TACTICS) / divisor);
+			value += CInt(this.GetSkill(TACTICS) / skillDivisor);
 		elseif (THEOLOGY in criteria)
-			value += CInt(this.GetSkill(THEOLOGY) / divisor);
+			value += CInt(this.GetSkill(THEOLOGY) / skillDivisor);
 		endif
 
 		return CInt(value);

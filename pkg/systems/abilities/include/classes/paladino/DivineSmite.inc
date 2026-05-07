@@ -83,9 +83,8 @@ class DivineSmite(CombatAbility)
 
         // Add divine damage to all damage types
         attackInfo.GetDamage()
-            .IncreaseBluntRawDamage(theology_bonus)
-            .IncreasePiercingRawDamage(theology_bonus)
-            .IncreaseSlashRawDamage(theology_bonus);
+            .IncreaseFireRawDamage(theology_bonus);
+
 
         DebugMsg(
             who,
