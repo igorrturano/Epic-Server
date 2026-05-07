@@ -98,7 +98,6 @@ program grilhao_use(who, item)
 			return 0;
 		endif
 		AttachGrilhaoToTarget(item, alvo, diff, who);
-		alvo.frozen := 1;
 		return 1;
 	endif
 
@@ -128,6 +127,7 @@ function AttachGrilhaoToTarget(item, alvo, diff, who)
 		MoveItemToContainer(item, alvo.backpack);
 	endif
 	item.movable := 0;
+	PlayerSpeedSlower(alvo, 1);
 	PrintTextAbove(who, "*algema " + alvo.name + "*");
 	PlaySoundEffect(alvo, 0x04B);
 endfunction
@@ -136,7 +136,6 @@ function ReleaseGrilhao(item, carrier, who)
 	EraseObjProperty(carrier, "corda");
 	EraseObjProperty(carrier, "#grilhao_serial");
 	EraseObjProperty(item, "carrier");
-	carrier.frozen := 0;
 	PlayerSpeedSlower(carrier, 0);
 	item.movable := 1;
 	if (who.backpack)
