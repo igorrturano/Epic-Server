@@ -1,0 +1,51 @@
+// Jailor ItemGiven nerve.
+//
+// Accepts pedras (0x5001) from prisoners (#jail_quota set), counts them
+// against the quota, releases on hit. Refuses everything else.
+
+use uo;
+use os;
+
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include "include/say";
+include ":jailor:include/jailor";
+include ":jailor:include/jailAction";
+
+program BrainNerve(params)
+	var npc := params[1];
+	var event := params[3];
+	params := 0;
+
+	while (npc)
+		if (event)
+			case (event.type)
+				SYSEVENT_ITEM_GIVEN: HandleItemGiven(npc, event); break;
+				default:             break;
+			endcase
+			event := 0;
+		endif
+
+		SleepMS(5);
+		event := Wait_For_Event(900000);
+	endwhile
+endprogram
+
+function HandleItemGiven(npc, byref event)
+	var item := event.item;
+	var source := event.source;
+	if (!item || !source)
+		return 0;
+	endif
+
+	if (Cint(item.objtype) == PEDRA_OBJTYPE && IsPrisoner(source))
+		ReceivePedras(npc, source, item);
+		return 1;
+	endif
+
+	AI_Speak(npc, "Nao preciso disso.");
+	if (source.backpack)
+		MoveItemToContainer(item, source.backpack);
+	endif
+	return 0;
+endfunction
