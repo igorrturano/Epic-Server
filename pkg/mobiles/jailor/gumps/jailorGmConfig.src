@@ -1,0 +1,56 @@
+// jailorGmConfig — GM-only gump to set this Jailor's served faccao.
+// Single-select: each row is a button; clicking it picks that faccao and closes.
+
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":faccao:include/faccao";
+include ":jailor:include/jailor";
+
+program jailorGmConfig(params)
+	var npc := params[1];
+	var player := params[2];
+
+	if (!npc || !player)
+		return;
+	endif
+
+	var current := GetJailorFaccao(npc);
+	var currentName := "(nenhuma)";
+	if (current)
+		currentName := FACCAO_NOMES[current];
+	endif
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, 9200, 360, 280);
+	GFResizePic(gump, 15, 15, 9350, 330, 250);
+	GFTextMid(gump, 15, 25, 330, 53, "Configurar Jailor");
+	GFTextLine(gump, 30, 50, 1153, "Faccao atual: " + currentName);
+	GFTextLine(gump, 30, 70, 1153, "Escolha a faccao servida:");
+
+	var y := 95;
+	var idx := 1;
+	foreach name in (FACCAO_NOMES)
+		GFAddButton(gump, 30, y, 2113, 2114, GF_CLOSE_BTN, 100 + idx);
+		GFTextLine(gump, 60, y, 1153, name);
+		y := y + 25;
+		idx := idx + 1;
+		sleepms(2);
+	endforeach
+
+	GFAddButton(gump, 220, 240, 2119, 2120, GF_CLOSE_BTN, 0);
+
+	var input := GFSendGump(player, gump);
+	if (!input)
+		return;
+	endif
+
+	var pressed := Cint(input[0]);
+	if (pressed > 100 && pressed <= 100 + FACCAO_NOMES.size())
+		var selected := pressed - 100;
+		SetJailorFaccao(npc, selected);
+		SendSysMessage(player, "Jailor agora serve: " + FACCAO_NOMES[selected]);
+	endif
+endprogram

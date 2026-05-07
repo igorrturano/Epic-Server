@@ -1,0 +1,42 @@
+// Jailor ItemGiven nerve.
+// Phase 3 stub: refuses every item and returns it to the giver.
+// Phase 5 will accept pedras (0x5001) from prisoners and track quota.
+
+use uo;
+use os;
+
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+
+program BrainNerve(params)
+	var npc := params[1];
+	var event := params[3];
+	params := 0;
+
+	while (npc)
+		if (event)
+			case (event.type)
+				SYSEVENT_ITEM_GIVEN: HandleItemGiven(npc, event); break;
+				default:             break;
+			endcase
+			event := 0;
+		endif
+
+		SleepMS(5);
+		event := Wait_For_Event(900000);
+	endwhile
+endprogram
+
+function HandleItemGiven(npc, byref event)
+	var item := event.item;
+	var source := event.source;
+	if (!item || !source)
+		return 0;
+	endif
+
+	AI_Speak(npc, "Nao preciso disso.");
+	if (source.backpack)
+		MoveItemToContainer(item, source.backpack);
+	endif
+	return 0;
+endfunction
