@@ -38,6 +38,8 @@ const JAIL_RELEASE_Z		:= -4;
 const JAIL_RELEASE_REALM	:= "britannia_alt";
 
 const PEDRA_OBJTYPE			:= 0x5001;
+const MOEDACOBRE_OBJTYPE	:= 0xBA63;
+const MOEDACOBRE_TO_PEDRA	:= 10;
 const JAIL_PICKAXE_CPROP	:= "#jail_pickaxe";
 
 const SEVERITY_LEVE			:= "leve";
@@ -86,6 +88,10 @@ function ValidatePrisoner(jailor, guard, prisoner)
 		SendSysMessage(guard, "Alvo invalido.");
 		return 0;
 	endif
+	if (prisoner.serial == guard.serial)
+		SendSysMessage(guard, "Voce nao pode sentenciar a si mesmo.");
+		return 0;
+	endif
 	// if (prisoner.cmdlevel > 0)
 	// 	SendSysMessage(guard, "Voce nao pode prender membros da equipe.");
 	// 	return 0;
@@ -128,11 +134,12 @@ function HandleSuborno(jailor, guard, prisoner)
 	return 1;
 endfunction
 
-function ReceivePedras(jailor, prisoner, item)
+function ReceivePayment(jailor, prisoner, item)
 	if (!item || item == error)
 		return 0;
 	endif
-	if (Cint(item.objtype) != PEDRA_OBJTYPE)
+	var multiplier := PaymentMultiplier(Cint(item.objtype));
+	if (!multiplier)
 		return 0;
 	endif
 	if (!IsPrisoner(prisoner))
@@ -141,7 +148,8 @@ function ReceivePedras(jailor, prisoner, item)
 
 	var quota     := Cint(GetObjProperty(prisoner, "#jail_quota"));
 	var collected := Cint(GetObjProperty(prisoner, "#jail_collected"));
-	collected := collected + Cint(item.amount);
+	var contribution := Cint(item.amount) * multiplier;
+	collected := collected + contribution;
 
 	DestroyItem(item);
 	SetObjProperty(prisoner, "#jail_collected", collected);
@@ -153,8 +161,18 @@ function ReceivePedras(jailor, prisoner, item)
 	endif
 
 	var remaining := quota - collected;
-	AI_Speak(jailor, "Faltam " + remaining + " pedras, " + prisoner.name + ".");
+	AI_Speak(jailor, "Faltam " + remaining + " pedras (ou equivalente), " + prisoner.name + ".");
 	return 1;
+endfunction
+
+function PaymentMultiplier(objtype)
+	if (objtype == PEDRA_OBJTYPE)       return 1; endif
+	if (objtype == MOEDACOBRE_OBJTYPE)  return MOEDACOBRE_TO_PEDRA; endif
+	return 0;
+endfunction
+
+function IsPaymentItem(objtype)
+	return PaymentMultiplier(objtype) > 0;
 endfunction
 
 function ReleasePrisoner(jailor, prisoner)
