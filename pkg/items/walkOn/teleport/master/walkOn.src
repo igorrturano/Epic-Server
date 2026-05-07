@@ -1,0 +1,203 @@
+use uo;
+use os;
+use polsys;
+
+include ":fls_core:fls_characters";
+include ":attributes:skills";
+include "include/epicCombatUtils";
+
+program walkOn(mobile, tile)
+	if (_JustTeleported(mobile))
+		return 0;
+	endif
+
+	var fd := GetObjProperty(tile, "form_data");
+	if (!fd || fd.errortext)
+		return 0;
+	endif
+
+	var dest := _ResolveDest(tile, fd);
+	if (!dest)
+		return 0;
+	endif
+
+	if (!_PassaTodosFiltros(mobile, fd))
+		return 0;
+	endif
+
+	_ExecutarTeleporte(mobile, tile, dest, fd);
+	return 1;
+endprogram
+
+// ─── Resolução de destino ─────────────────────────────────────────
+
+function _ResolveDest(tile, fd)
+	if (CInt(fd.mode) == 0)
+		if (!CInt(fd.dest_x) && !CInt(fd.dest_y))
+			return 0;
+		endif
+		var d := struct{};
+		d.+x     := CInt(fd.dest_x);
+		d.+y     := CInt(fd.dest_y);
+		d.+z     := CInt(fd.dest_z);
+		d.+realm := CStr(fd.dest_realm);
+		return d;
+	endif
+
+	// Modo palavra mágica
+	var aberto := GetObjProperty(tile, "#aberto");
+	if (!aberto || aberto.errortext)
+		return 0;
+	endif
+	var ttl := 5000;
+	if (!fd.portal_ttl.errortext) ttl := CInt(fd.portal_ttl) * 1000; endif
+	if (ReadMillisecondClock() - CInt(aberto.ts) > ttl)
+		EraseObjProperty(tile, "#aberto");
+		return 0;
+	endif
+	var destino := fd.destinos[CInt(aberto.idx)];
+	if (!destino || destino.errortext)
+		EraseObjProperty(tile, "#aberto");
+		return 0;
+	endif
+	var d2 := struct{};
+	d2.+x     := CInt(destino.x);
+	d2.+y     := CInt(destino.y);
+	d2.+z     := CInt(destino.z);
+	d2.+realm := CStr(destino.realm);
+	return d2;
+endfunction
+
+// ─── Filtros ──────────────────────────────────────────────────────
+
+function _PassaTodosFiltros(mobile, fd)
+	if (_EhAnimalNPC(mobile) && CInt(fd.animais) == 0)
+		return 0;
+	endif
+	if (!mobile.acctname)
+		return 1; // NPCs não passam pelos filtros de jogador
+	endif
+	return (_FiltroFaccao(mobile, fd) &&
+		_FiltroGenero(mobile, fd) &&
+		_FiltroRaca(mobile, fd) &&
+		_FiltroScale(mobile, fd) &&
+		_FiltroReligiao(mobile, fd) &&
+		_FiltroSkills(mobile, fd));
+endfunction
+
+function _EhAnimalNPC(mobile)
+	if (!mobile.npctemplate)
+		return 0;
+	endif
+	if (mobile.master)
+		return 1;
+	endif
+	return CStr(GetObjProperty(mobile, "tipo")) == "animal";
+endfunction
+
+function _FiltroFaccao(mobile, fd)
+	if (!fd.faccoes || fd.faccoes.size() == 0)
+		return 1;
+	endif
+	return CStr(GetObjProperty(mobile, "faccao")) in fd.faccoes;
+endfunction
+
+function _FiltroGenero(mobile, fd)
+	var g := CInt(fd.genero);
+	if (g == 0)
+		return 1;
+	endif
+	// mobile.gender: 0 = masculino, 1 = feminino
+	// fd.genero:     1 = homem, 2 = mulher
+	return (g == 1 && mobile.gender == 0) ||
+		(g == 2 && mobile.gender == 1);
+endfunction
+
+function _FiltroRaca(mobile, fd)
+	if (!fd.racas || fd.racas.size() == 0)
+		return 1;
+	endif
+	return CStr(mobile.getRace()) in fd.racas;
+endfunction
+
+function _FiltroScale(mobile, fd)
+	var tem_min := CStr(fd.scale_min) != "";
+	var tem_max := CStr(fd.scale_max) != "";
+	if (!tem_min && !tem_max)
+		return 1;
+	endif
+
+	var pct := 100;
+	var sp := GetObjProperty(mobile, "entityScale");
+	if (sp && !sp.errortext && sp.height)
+		pct := CInt(sp.height) / 10;
+	endif
+
+	if (tem_min && pct < CInt(fd.scale_min))
+		return 0;
+	endif
+	if (tem_max && pct > CInt(fd.scale_max))
+		return 0;
+	endif
+	return 1;
+endfunction
+
+function _FiltroReligiao(mobile, fd)
+	if (!fd.religioes || fd.religioes.size() == 0)
+		return 1;
+	endif
+	var cd := GetObjProperty(mobile, "chardata");
+	if (!cd || cd.errortext)
+		return 0;
+	endif
+	return CStr(cd.religion) in fd.religioes;
+endfunction
+
+function _FiltroSkills(mobile, fd)
+	if (!fd.skills || fd.skills.size() == 0)
+		return 1;
+	endif
+	var skills_req := fd.skills;
+	foreach req in skills_req
+		var val := AP_GetTrueSkill(mobile, req.nome);
+		if (val.errortext || CDbl(val) < CDbl(req.valor))
+			return 0;
+		endif
+	endforeach
+	return 1;
+endfunction
+
+// ─── Execução do teleporte ────────────────────────────────────────
+
+function _ExecutarTeleporte(mobile, tile, dest, fd)
+	SetObjProperty(mobile, "#Teleported", ReadMillisecondClock());
+	MoveObjectToLocation(mobile, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+
+	if (CInt(fd.animais) == 1)
+		var pets := ListPetsNear(mobile, 4);
+		foreach pet in pets
+			SetObjProperty(pet, "#Teleported", ReadMillisecondClock());
+			MoveObjectToLocation(pet, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+			sleepms(10);
+		endforeach
+	endif
+
+	var hostiles := ListHostiles(mobile, 4);
+	foreach hostile in hostiles
+		if (!hostile.acctname)
+			SetObjProperty(hostile, "#Teleported", ReadMillisecondClock());
+			MoveObjectToLocation(hostile, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+		endif
+		sleepms(10);
+	endforeach
+
+	destroyIllyraOutsideDungeons(mobile);
+	var dname := mobile.IsInTheDungeon();
+	if (dname)
+		SendSysMessageEx(mobile, "Dungeon: " + dname + ". Feedback: .feedback ou Discord", SSM_INFO);
+	endif
+endfunction
+
+function _JustTeleported(mobile)
+	return CInt(GetObjProperty(mobile, "#Teleported")) > ReadMillisecondClock() - 500;
+endfunction
