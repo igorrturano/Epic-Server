@@ -11,7 +11,6 @@ use uo;
 use os;
 use util;
 
-include "include/client";
 include "include/say";
 include ":fls_core:packets";
 include ":brainAI:npcCommands";
@@ -32,7 +31,8 @@ const JAIL_MINE_BOUNDS_Y1	:= 2355;
 const JAIL_MINE_BOUNDS_X2	:= 4247;
 const JAIL_MINE_BOUNDS_Y2	:= 2420;
 
-const JAIL_TELEPORT_SOUND	:= 0x1F0;
+const JAIL_TELEPORT_SOUND	:= 0x1F2;
+const JAIL_FX_GRAPHIC		:= 0xD11B;
 
 const JAIL_RELEASE_X		:= 1407;
 const JAIL_RELEASE_Y		:= 1062;
@@ -83,10 +83,7 @@ function JailPlayer(jailor, guard, prisoner, severity)
 	endif
 
 	GiveKeyToGuard(guard, grilhao);
-	PlayTeleportFx(prisoner);
-	MoveObjectToLocation(prisoner, JAIL_MINE_X, JAIL_MINE_Y, JAIL_MINE_Z,
-	                     JAIL_MINE_REALM, MOVEOBJECT_FORCELOCATION);
-	PlayTeleportFx(prisoner);
+	TeleportPrisoner(prisoner, JAIL_MINE_X, JAIL_MINE_Y, JAIL_MINE_Z, JAIL_MINE_REALM);
 	RollMeteoriteSpawn();
 
 	AI_Speak(jailor, prisoner.name + " foi sentenciado(a) a pena " + severity + ".");
@@ -98,10 +95,10 @@ function ValidatePrisoner(jailor, guard, prisoner)
 		SendSysMessage(guard, "Alvo invalido.");
 		return 0;
 	endif
-	if (prisoner.cmdlevel > 0)
-		SendSysMessage(guard, "Voce nao pode prender membros da equipe.");
-		return 0;
-	endif
+	// if (prisoner.cmdlevel > 0)
+	// 	SendSysMessage(guard, "Voce nao pode prender membros da equipe.");
+	// 	return 0;
+	// endif
 	if (prisoner.dead)
 		SendSysMessage(guard, "Esse alvo esta morto.");
 		return 0;
@@ -131,13 +128,18 @@ function GiveKeyToGuard(guard, grilhao)
 	return 1;
 endfunction
 
-function PlayTeleportFx(who)
-	if (!who)
+function TeleportPrisoner(prisoner, x, y, z, realm)
+	if (!prisoner)
 		return 0;
 	endif
-	PlaySoundEffect(who, JAIL_TELEPORT_SOUND);
-	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, FX_ELETRICIDADE, 8, 8, 0, 10);
-	return 1;
+	PlayStationaryEffect(prisoner.x, prisoner.y, prisoner.z, JAIL_FX_GRAPHIC, 0, 30, 0, prisoner.realm);
+	PlaySoundEffect(prisoner, JAIL_TELEPORT_SOUND);
+
+	PlayStationaryEffect(x, y, z, JAIL_FX_GRAPHIC, 0, 30, 0, realm);
+	PlaySoundEffect(prisoner, JAIL_TELEPORT_SOUND);
+	sleep(2);
+
+	return MoveObjectToLocation(prisoner, x, y, z, realm, MOVEOBJECT_FORCELOCATION);
 endfunction
 
 function HandleSuborno(jailor, guard, prisoner)
@@ -192,10 +194,7 @@ function ReleasePrisoner(jailor, prisoner)
 
 	DestroyJailPickaxes(prisoner);
 
-	PlayTeleportFx(prisoner);
-	MoveObjectToLocation(prisoner, JAIL_RELEASE_X, JAIL_RELEASE_Y, JAIL_RELEASE_Z,
-	                     JAIL_RELEASE_REALM, MOVEOBJECT_FORCELOCATION);
-	PlayTeleportFx(prisoner);
+	TeleportPrisoner(prisoner, JAIL_RELEASE_X, JAIL_RELEASE_Y, JAIL_RELEASE_Z, JAIL_RELEASE_REALM);
 
 	return 1;
 endfunction
@@ -216,16 +215,14 @@ function DestroyJailPickaxes(prisoner)
 endfunction
 
 function RollMeteoriteSpawn()
+	// TEST MODE: 100% spawn rate. Tier split 10/30/60 ouro/prata/cobre.
+	// Restore "else return 0;" to gate spawns once testing is done.
 	var roll := RandomInt(100);
-	var ot := 0;
-	if (roll < 1)
+	var ot := METEOR_COBRE_OBJTYPE;
+	if (roll < 10)
 		ot := METEOR_OURO_OBJTYPE;
-	elseif (roll < 6)
+	elseif (roll < 40)
 		ot := METEOR_PRATA_OBJTYPE;
-	elseif (roll < 16)
-		ot := METEOR_COBRE_OBJTYPE;
-	else
-		return 0;
 	endif
 
 	var x := JAIL_MINE_BOUNDS_X1 + RandomInt(JAIL_MINE_BOUNDS_X2 - JAIL_MINE_BOUNDS_X1 + 1);
