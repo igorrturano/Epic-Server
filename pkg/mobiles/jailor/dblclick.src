@@ -67,9 +67,7 @@ function DispatchToGump(npc, player)
 	endif
 
 	if (IsPrisoner(player))
-		// Phase 6 will route here for pickaxe gump.
-		AI_Speak(npc, "Continue minerando, prisioneiro. Traga as pedras.");
-		return 0;
+		return Start_Script(":jailor:gumps/jailorPickaxe", { npc, player });
 	endif
 
 	if (IsGuardOf(player, npc))
