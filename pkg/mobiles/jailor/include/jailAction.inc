@@ -34,6 +34,14 @@ const JAIL_MINE_BOUNDS_Y2	:= 2420;
 
 const JAIL_TELEPORT_SOUND	:= 0x1F0;
 
+const JAIL_RELEASE_X		:= 1407;
+const JAIL_RELEASE_Y		:= 1062;
+const JAIL_RELEASE_Z		:= -4;
+const JAIL_RELEASE_REALM	:= "britannia_alt";
+
+const PEDRA_OBJTYPE			:= 0x5001;
+const JAIL_PICKAXE_CPROP	:= "#jail_pickaxe";
+
 const SEVERITY_LEVE			:= "leve";
 const SEVERITY_MODERADO		:= "moderado";
 const SEVERITY_PESADO		:= "pesado";
@@ -143,6 +151,72 @@ function HandleSuborno(jailor, guard, prisoner)
 	endif
 	AI_Speak(jailor, "Tudo certo, parceiro. Acertem entre voces.");
 	return 1;
+endfunction
+
+function ReceivePedras(jailor, prisoner, item)
+	if (!item || item == error)
+		return 0;
+	endif
+	if (Cint(item.objtype) != PEDRA_OBJTYPE)
+		return 0;
+	endif
+	if (!IsPrisoner(prisoner))
+		return 0;
+	endif
+
+	var quota     := Cint(GetObjProperty(prisoner, "#jail_quota"));
+	var collected := Cint(GetObjProperty(prisoner, "#jail_collected"));
+	collected := collected + Cint(item.amount);
+
+	DestroyItem(item);
+	SetObjProperty(prisoner, "#jail_collected", collected);
+
+	if (collected >= quota)
+		AI_Speak(jailor, "Pena cumprida. Voce esta livre.");
+		ReleasePrisoner(jailor, prisoner);
+		return 1;
+	endif
+
+	var remaining := quota - collected;
+	AI_Speak(jailor, "Faltam " + remaining + " pedras, " + prisoner.name + ".");
+	return 1;
+endfunction
+
+function ReleasePrisoner(jailor, prisoner)
+	if (!prisoner || !prisoner.IsA(POLCLASS_MOBILE))
+		return 0;
+	endif
+
+	prisoner.SetCriminal(0);
+
+	RemoveGrilhao(prisoner);
+
+	EraseObjProperty(prisoner, "#jail_quota");
+	EraseObjProperty(prisoner, "#jail_collected");
+
+	DestroyJailPickaxes(prisoner);
+
+	PlayTeleportFx(prisoner);
+	MoveObjectToLocation(prisoner, JAIL_RELEASE_X, JAIL_RELEASE_Y, JAIL_RELEASE_Z,
+	                     JAIL_RELEASE_REALM, MOVEOBJECT_FORCELOCATION);
+	PlayTeleportFx(prisoner);
+
+	return 1;
+endfunction
+
+function DestroyJailPickaxes(prisoner)
+	if (!prisoner.backpack)
+		return 0;
+	endif
+	var destroyed := 0;
+	foreach item in (EnumerateItemsInContainer(prisoner.backpack))
+		if (Cint(GetObjProperty(item, JAIL_PICKAXE_CPROP)))
+			DestroyItem(item);
+			destroyed := destroyed + 1;
+		endif
+		sleepms(2);
+	endforeach
+	return destroyed;
 endfunction
 
 function RollMeteoriteSpawn()
