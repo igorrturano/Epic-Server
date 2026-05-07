@@ -1,6 +1,6 @@
-// jailorGmConfig — GM-only gump to set this Jailor's served faccao.
-// Mirrors :merchants:citizen/gumps/citizenGmConfig layout. Uses radio
-// buttons since a Jailor serves exactly one faccao.
+// jailorGmConfig — GM-only gump to set which faccoes this Jailor serves.
+// Literal port of :merchants:citizen/gumps/citizenGmConfig — same checkbox
+// layout, same pic ids, same submit handling.
 
 use uo;
 use os;
@@ -8,7 +8,7 @@ use os;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":faccao:include/faccao";
-include ":jailor:include/jailor";
+include ":jailor:include/jailorStore";
 
 program jailorGmConfig(params)
 	var npc := params[1];
@@ -18,22 +18,22 @@ program jailorGmConfig(params)
 		return;
 	endif
 
-	var current := GetJailorFaccao(npc);
+	var current := GetJailorFactions(npc);
 
 	var gump := GFCreateGump();
 	GFResizePic(gump, 0, 0, 9200, 360, 280);
 	GFResizePic(gump, 15, 15, 9350, 330, 250);
 	GFTextMid(gump, 15, 25, 330, 53, "Configurar Jailor");
-	GFTextLine(gump, 30, 50, 1153, "Faccao servida por este Jailor:");
+	GFTextLine(gump, 30, 50, 1153, "Faccoes que este Jailor serve:");
 
 	var y := 80;
 	var idx := 1;
 	foreach name in (FACCAO_NOMES)
 		var checked := 0;
-		if (idx == current)
+		if (idx in current)
 			checked := 1;
 		endif
-		GFRadioButton(gump, 30, y, 2361, 2362, checked, idx);
+		GFCheckBox(gump, 30, y, 2361, 2362, checked, idx);
 		GFTextLine(gump, 60, y, 1153, name);
 		y := y + 25;
 		idx := idx + 1;
@@ -48,21 +48,15 @@ program jailorGmConfig(params)
 		return;
 	endif
 
-	var selected := 0;
+	var selected := array{};
 	var i := 1;
 	while (i <= FACCAO_NOMES.size())
 		if (input[i])
-			selected := i;
-			break;
+			selected.append(i);
 		endif
 		i := i + 1;
 	endwhile
 
-	if (!selected)
-		SendSysMessage(player, "Nenhuma faccao selecionada.");
-		return;
-	endif
-
-	SetJailorFaccao(npc, selected);
-	SendSysMessage(player, "Jailor agora serve: " + FACCAO_NOMES[selected]);
+	SetJailorFactions(npc, selected);
+	SendSysMessage(player, "Jailor configurado com " + selected.size() + " faccao(oes).");
 endprogram
