@@ -318,16 +318,17 @@ class NaturalBond(CombatAbility)
         if (fis_str && !fis_str.errortext)
             var fis_parts := SplitWords(fis_str);
             if (fis_parts.size() >= 1)
-                // Wildshape uses linear tier scaling to avoid overpowered resistance spikes.
-                // T1 -> 1, T2 -> 2, ... T5 -> 5
+                // Wildshape usa tier linear escalado para % de reducao (escala
+                // do redesign — 5x sobre os valores antigos 0-5 flat). Aplicado
+                // apenas em fisicos via _ApplyResistMod.
                 var tier_str := Upper(CStr(fis_parts[1]));
                 case (tier_str)
                     "T0": resistmod_calc := 0;
-                    "T1": resistmod_calc := 1;
-                    "T2": resistmod_calc := 2;
-                    "T3": resistmod_calc := 3;
-                    "T4": resistmod_calc := 4;
-                    "T5": resistmod_calc := 5;
+                    "T1": resistmod_calc := 5;
+                    "T2": resistmod_calc := 10;
+                    "T3": resistmod_calc := 15;
+                    "T4": resistmod_calc := 20;
+                    "T5": resistmod_calc := 25;
                 endcase
             endif
         endif
@@ -344,6 +345,8 @@ class NaturalBond(CombatAbility)
         if (mobile.HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
             skill_a_calc   := CInt(skill_a_calc + bonusMagicLore);
             hitsmod_calc   := CInt(hitsmod_calc + bonusInstintoHP);
+            // Bonus de resist da Instinto de Sobrevivencia: theology/6 (max ~16% no
+            // GM). Escala 5x sobre legacy theology/30. Soma em fisicos.
             resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 6);
         endif
 
@@ -419,12 +422,11 @@ class NaturalBond(CombatAbility)
     endfunction
 
     function _ApplyResistMod(this, who, resistmod_calc)
-        // Apply to engine-level resist mods (visible on char sheet, consumed by combat)
+        // Wildshape adiciona resist apenas em FISICOS (slash/piercing/blunt) por
+        // padrao — pele/escama/quitina protege contra impacto fisico. Resists
+        // elementais ficam por conta de Chamado da Forma Primordial (que usa
+        // primordial_resist_* em ClearPrimordialProperties no endmetamorfose).
         who.resist_physical_mod := who.resist_physical_mod + resistmod_calc;
-        who.resist_fire_mod     := who.resist_fire_mod     + resistmod_calc;
-        who.resist_cold_mod     := who.resist_cold_mod     + resistmod_calc;
-        who.resist_poison_mod   := who.resist_poison_mod   + resistmod_calc;
-        who.resist_energy_mod   := who.resist_energy_mod   + resistmod_calc;
 
         // Keep #SpellResist in sync (used by DamageController and status bar)
         var mw := MobileWrapper(who);
@@ -435,10 +437,6 @@ class NaturalBond(CombatAbility)
         sr.slash    += resistmod_calc;
         sr.piercing += resistmod_calc;
         sr.blunt    += resistmod_calc;
-        sr.fire     += resistmod_calc;
-        sr.cold     += resistmod_calc;
-        sr.poison   += resistmod_calc;
-        sr.energy   += resistmod_calc;
         mw.SetProperty("#SpellResist", sr);
 
         // Per-slot armor packets emitted during _UnequipWild carried the pre-wildshape
