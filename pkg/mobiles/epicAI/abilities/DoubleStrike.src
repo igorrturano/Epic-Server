@@ -25,7 +25,7 @@ program DoubleStrike(params)
 	DamageFLS(targ, hit_damage, DMG_BLUNT, me, "doublestrike");
 	sleepms(400);
 
-	if (targ.dead)
+	if (me.dead || targ.dead)
 		return 1;
 	endif
 
