@@ -46,28 +46,20 @@ program cureScript(params)
 		SetObjProperty(who, "stammod", CINT(GetObjProperty(who, "stammod")) - stammod);
 	endif
 
-	// Reset resistances — wildshape (NaturalBond._ApplyResistMod) so soma em
-	// fisicos hoje, entao o reverso aqui tambem so subtrai de fisicos. Resists
-	// elementais de formas primordiais ficam por conta de ClearPrimordialProperties.
+	// Reset native physical resist mod added by NaturalBond._ApplyResistMod.
+	// polymorph_resistmod was already erased above, so the SpellController
+	// recompute call below will derive #SpellResist from the buff layer alone
+	// (or 0 if no active buff). Elemental wildshape mods belong to primordial
+	// forms and are handled separately by ClearPrimordialProperties.
 	if (resist)
 		who.resist_physical_mod := who.resist_physical_mod - resist;
-
-		// Clear wildshape portion from #SpellResist (used by status bar and DamageController)
-		var mw := MobileWrapper(who);
-		var sr := mw.GetProperty("#SpellResist");
-		if (sr && !sr.errortext)
-			sr.slash    -= resist;
-			sr.piercing -= resist;
-			sr.blunt    -= resist;
-			mw.SetProperty("#SpellResist", sr);
-		endif
 	endif
 
 	RecalcVitals(who);
 	SendStatus(who);
-	// Client's ArmorResistances dict went stale while armor was stripped during
-	// transformation — re-emit packets so status gump reflects current #SpellResist.
-	SC_RefreshArmorPackets(who);
+	// Recompute #SpellResist (now polymorph_resistmod = 0) and push armor
+	// packets so status gump reflects the post-revert state.
+	SC_RecomputeSpellResist(who);
 
 	// Revert appearance if metamorfose data exists. Graphic restores from
 	// trueobjtype (canonical race body) rather than a per-cast snapshot —

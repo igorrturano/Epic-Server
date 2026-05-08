@@ -366,43 +366,43 @@ endfunction
 
 function _SC_ApplyResist(targ, opts)
 	var mw := MobileWrapper(targ);
-	var sr := mw.GetProperty("#SpellResist");
-	if (!sr || sr.errortext)
-		sr := struct{
+	var buff := mw.GetProperty("#buff_resist");
+	if (!buff || buff is @Exception)
+		buff := struct{
 			slash := 0, piercing := 0, blunt := 0,
 			fire := 0, cold := 0, poison := 0, energy := 0
 		};
 	endif
 
-	if (opts.slash_resist)    sr.slash    += opts.slash_resist;    endif
-	if (opts.piercing_resist) sr.piercing += opts.piercing_resist; endif
-	if (opts.blunt_resist)    sr.blunt    += opts.blunt_resist;    endif
-	if (opts.fire_resist)     sr.fire     += opts.fire_resist;     endif
-	if (opts.cold_resist)     sr.cold     += opts.cold_resist;     endif
-	if (opts.poison_resist)   sr.poison   += opts.poison_resist;   endif
-	if (opts.energy_resist)   sr.energy   += opts.energy_resist;   endif
+	if (opts.slash_resist)    buff.slash    += opts.slash_resist;    endif
+	if (opts.piercing_resist) buff.piercing += opts.piercing_resist; endif
+	if (opts.blunt_resist)    buff.blunt    += opts.blunt_resist;    endif
+	if (opts.fire_resist)     buff.fire     += opts.fire_resist;     endif
+	if (opts.cold_resist)     buff.cold     += opts.cold_resist;     endif
+	if (opts.poison_resist)   buff.poison   += opts.poison_resist;   endif
+	if (opts.energy_resist)   buff.energy   += opts.energy_resist;   endif
 
-	mw.SetProperty("#SpellResist", sr);
-	_SC_RefreshArmorPackets(targ);
+	mw.SetProperty("#buff_resist", buff);
+	_RecomputeSpellResist(targ);
 endfunction
 
 function _SC_RemoveResist(targ, opts)
 	var mw := MobileWrapper(targ);
-	var sr := mw.GetProperty("#SpellResist");
-	if (!sr || sr.errortext)
+	var buff := mw.GetProperty("#buff_resist");
+	if (!buff || buff is @Exception)
 		return;
 	endif
 
-	if (opts.slash_resist)    sr.slash    -= opts.slash_resist;    endif
-	if (opts.piercing_resist) sr.piercing -= opts.piercing_resist; endif
-	if (opts.blunt_resist)    sr.blunt    -= opts.blunt_resist;    endif
-	if (opts.fire_resist)     sr.fire     -= opts.fire_resist;     endif
-	if (opts.cold_resist)     sr.cold     -= opts.cold_resist;     endif
-	if (opts.poison_resist)   sr.poison   -= opts.poison_resist;   endif
-	if (opts.energy_resist)   sr.energy   -= opts.energy_resist;   endif
+	if (opts.slash_resist)    buff.slash    -= opts.slash_resist;    endif
+	if (opts.piercing_resist) buff.piercing -= opts.piercing_resist; endif
+	if (opts.blunt_resist)    buff.blunt    -= opts.blunt_resist;    endif
+	if (opts.fire_resist)     buff.fire     -= opts.fire_resist;     endif
+	if (opts.cold_resist)     buff.cold     -= opts.cold_resist;     endif
+	if (opts.poison_resist)   buff.poison   -= opts.poison_resist;   endif
+	if (opts.energy_resist)   buff.energy   -= opts.energy_resist;   endif
 
-	mw.SetProperty("#SpellResist", sr);
-	_SC_RefreshArmorPackets(targ);
+	mw.SetProperty("#buff_resist", buff);
+	_RecomputeSpellResist(targ);
 endfunction
 
 // Public wrapper: external systems (transformation revert, etc.) call this
@@ -411,6 +411,53 @@ endfunction
 // fired while the druid was stripped don't reflect re-equipped gear state.
 function SC_RefreshArmorPackets(targ)
 	_SC_RefreshArmorPackets(targ);
+endfunction
+
+// ============================================================
+// Internal: derived #SpellResist (max-wins between layers)
+// ============================================================
+//
+// #SpellResist is treated as a derived view over two persisted layers:
+//   - polymorph_resistmod (int): wildshape's physical contribution. Set in
+//     NaturalBond._ApplyResistMod path; cleared in endmetamorfose.
+//   - #buff_resist (struct of 7 elements): sum of contributions from active
+//     spell buffs. Maintained by _SC_ApplyResist / _SC_RemoveResist below.
+//
+// Per-element rule:
+//   slash/piercing/blunt = max(wildshape, buff_sum)   — non-stacking
+//   fire/cold/poison/energy = buff_sum                 — wildshape doesn't touch elementals
+//
+// Anyone who mutates either layer must call _RecomputeSpellResist afterwards.
+
+function _RecomputeSpellResist(targ)
+	var mw := MobileWrapper(targ);
+	var poly := CInt(GetObjProperty(targ, "polymorph_resistmod"));
+	if (poly == error) poly := 0; endif
+
+	var buff := mw.GetProperty("#buff_resist");
+	if (!buff || buff is @Exception)
+		buff := struct{slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0};
+	endif
+
+	var bs := CInt(buff.slash), bp := CInt(buff.piercing), bb := CInt(buff.blunt);
+
+	var sr := struct{
+		slash    := (poly > bs) ? poly : bs,
+		piercing := (poly > bp) ? poly : bp,
+		blunt    := (poly > bb) ? poly : bb,
+		fire     := CInt(buff.fire),
+		cold     := CInt(buff.cold),
+		poison   := CInt(buff.poison),
+		energy   := CInt(buff.energy)
+	};
+
+	mw.SetProperty("#SpellResist", sr);
+	_SC_RefreshArmorPackets(targ);
+endfunction
+
+// Public wrapper for callers outside this controller (NaturalBond, endmetamorfose).
+function SC_RecomputeSpellResist(targ)
+	_RecomputeSpellResist(targ);
 endfunction
 
 // Re-emit armor packets for every region slot so the client's StatusGumpEpic
@@ -503,23 +550,23 @@ function SC_ResyncOnLogin(mobile)
 		endif
 	endforeach
 
-	// Rebuild #SpellResist only if missing — the `#` prefix makes it ephemeral
+	// Rebuild #buff_resist only if missing — the `#` prefix makes it ephemeral
 	// (dropped on world save). Presence means same-session reconnect, so the
 	// existing struct is the source of truth; rebuilding would double-count.
 	if (active_opts.Size() > 0)
-		var existing_sr := mw.GetProperty("#SpellResist");
-		if (!existing_sr || existing_sr.errortext)
-			var sr := struct{ slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0 };
+		var existing_buff := mw.GetProperty("#buff_resist");
+		if (!existing_buff || existing_buff.errortext)
+			var buff := struct{ slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0 };
 			foreach op in (active_opts)
-				if (op.slash_resist)    sr.slash    += CInt(op.slash_resist);    endif
-				if (op.piercing_resist) sr.piercing += CInt(op.piercing_resist); endif
-				if (op.blunt_resist)    sr.blunt    += CInt(op.blunt_resist);    endif
-				if (op.fire_resist)     sr.fire     += CInt(op.fire_resist);     endif
-				if (op.cold_resist)     sr.cold     += CInt(op.cold_resist);     endif
-				if (op.poison_resist)   sr.poison   += CInt(op.poison_resist);   endif
-				if (op.energy_resist)   sr.energy   += CInt(op.energy_resist);   endif
+				if (op.slash_resist)    buff.slash    += CInt(op.slash_resist);    endif
+				if (op.piercing_resist) buff.piercing += CInt(op.piercing_resist); endif
+				if (op.blunt_resist)    buff.blunt    += CInt(op.blunt_resist);    endif
+				if (op.fire_resist)     buff.fire     += CInt(op.fire_resist);     endif
+				if (op.cold_resist)     buff.cold     += CInt(op.cold_resist);     endif
+				if (op.poison_resist)   buff.poison   += CInt(op.poison_resist);   endif
+				if (op.energy_resist)   buff.energy   += CInt(op.energy_resist);   endif
 			endforeach
-			mw.SetProperty("#SpellResist", sr);
+			mw.SetProperty("#buff_resist", buff);
 		endif
 	endif
 
@@ -529,9 +576,9 @@ function SC_ResyncOnLogin(mobile)
 
 	_SC_ResyncMetamorphosisResist(mobile);
 
-	// Client's ArmorResistances dict is session-only — push updated values so
-	// StatusGumpEpic reflects current #SpellResist after login.
-	_SC_RefreshArmorPackets(mobile);
+	// Combine buff layer + polymorph layer into the canonical #SpellResist and
+	// push armor packets so StatusGumpEpic reflects the recomputed values.
+	_RecomputeSpellResist(mobile);
 endfunction
 
 function _SC_ResyncMetamorphosisResist(mobile)
@@ -544,48 +591,34 @@ function _SC_ResyncMetamorphosisResist(mobile)
 		return;
 	endif
 
-	// Rebuild runtime engine resist mods that may reset across restart.
+	// Wildshape only mod the native physical resist field (post-Phase 8). Rebuild
+	// it if it dropped across restart — same max-semantics as before so we don't
+	// double-stack on warm reconnect. The virtual #SpellResist gets recomputed by
+	// the caller (SC_ResyncOnLogin) which reads polymorph_resistmod directly.
 	if (mobile.resist_physical_mod < resist)
 		mobile.resist_physical_mod := resist;
 	endif
-	if (mobile.resist_fire_mod < resist)
-		mobile.resist_fire_mod := resist;
-	endif
-	if (mobile.resist_cold_mod < resist)
-		mobile.resist_cold_mod := resist;
-	endif
-	if (mobile.resist_poison_mod < resist)
-		mobile.resist_poison_mod := resist;
-	endif
-	if (mobile.resist_energy_mod < resist)
-		mobile.resist_energy_mod := resist;
-	endif
-
-	// Ensure virtual spell resist layer also contains the polymorph resist value.
-	var mw := MobileWrapper(mobile);
-	var sr := mw.GetProperty("#SpellResist");
-	if (!sr || sr.errortext)
-		sr := struct{slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0};
-	endif
-
-	if (CInt(sr.slash) < resist)    sr.slash := resist; endif
-	if (CInt(sr.piercing) < resist) sr.piercing := resist; endif
-	if (CInt(sr.blunt) < resist)    sr.blunt := resist; endif
-	if (CInt(sr.fire) < resist)     sr.fire := resist; endif
-	if (CInt(sr.cold) < resist)     sr.cold := resist; endif
-	if (CInt(sr.poison) < resist)   sr.poison := resist; endif
-	if (CInt(sr.energy) < resist)   sr.energy := resist; endif
-
-	mw.SetProperty("#SpellResist", sr);
 endfunction
 
 function _SC_CleanupOrphans(mobile)
-	// Do not erase #SpellResist while player is in wildshape — it holds transformation resistances
+	// Do not erase resist layers while wildshape is active — polymorph_resistmod
+	// is still the live wildshape contribution, and a future spell apply needs
+	// a clean buff layer to add into. Recompute will derive #SpellResist from
+	// polymorph_resistmod alone.
+	var mw := MobileWrapper(mobile);
+
+	// No active spell timers — buff layer has nothing to represent. Drop it
+	// regardless of wildshape state; the recompute below handles the rest.
+	var buff := mw.GetProperty("#buff_resist");
+	if (buff && !buff.errortext)
+		mw.EraseProperty("#buff_resist");
+	endif
+
 	if (GetObjProperty(mobile, "metamorfose") != error)
 		return;
 	endif
 
-	var mw := MobileWrapper(mobile);
+	// No wildshape, no buffs — wipe the derived view too.
 	var sr := mw.GetProperty("#SpellResist");
 	if (sr && !sr.errortext)
 		mw.EraseProperty("#SpellResist");

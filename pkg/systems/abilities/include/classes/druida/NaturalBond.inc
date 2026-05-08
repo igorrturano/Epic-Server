@@ -428,21 +428,13 @@ class NaturalBond(CombatAbility)
         // primordial_resist_* em ClearPrimordialProperties no endmetamorfose).
         who.resist_physical_mod := who.resist_physical_mod + resistmod_calc;
 
-        // Keep #SpellResist in sync (used by DamageController and status bar)
-        var mw := MobileWrapper(who);
-        var sr := mw.GetProperty("#SpellResist");
-        if (!sr || sr.errortext)
-            sr := struct{slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0};
-        endif
-        sr.slash    += resistmod_calc;
-        sr.piercing += resistmod_calc;
-        sr.blunt    += resistmod_calc;
-        mw.SetProperty("#SpellResist", sr);
-
-        // Per-slot armor packets emitted during _UnequipWild carried the pre-wildshape
-        // #SpellResist (zero or pre-existing buffs). Without this refresh the client's
-        // ArmorResistances dict shows 0 across all regions until the next equip event.
-        SC_RefreshArmorPackets(who);
+        // polymorph_resistmod is set by the caller before this runs; SpellController
+        // recompute combines it with active armor_protection buff via max-wins so a
+        // wildshaped druid casting barkskin doesn't stack both contributions.
+        // Recompute also re-pushes the per-slot armor packets to refresh the client
+        // gump (per-slot packets emitted during _UnequipWild carried the pre-wildshape
+        // #SpellResist and would otherwise show 0 until the next equip event).
+        SC_RecomputeSpellResist(who);
     endfunction
 
     function _CalcDice(this, theology)

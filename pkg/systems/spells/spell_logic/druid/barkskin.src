@@ -73,6 +73,13 @@ program SpellScript(params)
 endprogram
 
 function HasArmorProtection(targ)
+	// Wildshape acts as natural armor for spell-resist scaling — a transformed
+	// druid is treated as armored, so casting barkskin on them skips the +10%
+	// naked bonus.
+	if (GetObjProperty(targ, "metamorfose") != error)
+		return 1;
+	endif
+
 	var itemdesc := ReadConfigFile(":*:itemdesc");
 	foreach item in (ListEquippedItems(targ))
 		if (!item.isa(POLCLASS_ARMOR))
