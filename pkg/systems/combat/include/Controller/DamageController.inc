@@ -743,9 +743,16 @@ endfunction
 
 // Defensor "armored" = veste qualquer peca com TipoProtecao em qualquer dos
 // slots de armadura (HELM, NECK, CHEST, ARMS, GLOVES, PANTS — SHOES nao tem
-// TipoProtecao). Usa GetEquipBySlot (O(1) por slot) com short-circuit no
-// primeiro hit, max 6 lookups, vs ListEquippedItems que itera todo equip.
+// TipoProtecao). Wildshape conta como armored: a forma animal substitui a
+// armadura mecanicamente, entao o cap combinado armor+spell aplica do mesmo
+// jeito que com peca equipada.
+//
+// Usa GetEquipBySlot (O(1) por slot) com short-circuit no primeiro hit,
+// max 6 lookups, vs ListEquippedItems que itera todo equip.
 function _IsDefenderArmored(byRef defender)
+	if (GetObjProperty(defender.GetObjRef(), "metamorfose") != error)
+		return 1;
+	endif
 	var armorLayers := array{LAYER_HELM, LAYER_NECK, LAYER_CHEST, LAYER_ARMS, LAYER_GLOVES, LAYER_PANTS};
 	foreach layer in armorLayers
 		var equip := defender.GetEquipBySlot(layer);
