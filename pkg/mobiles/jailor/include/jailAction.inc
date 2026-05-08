@@ -1,9 +1,9 @@
 // jailAction.inc — JailPlayer flow + supporting helpers.
 //
 // JailPlayer(jailor, guard, prisoner, severity) is the single entry point.
-// Validates the target, sets criminal flag, attaches a grilhão, hands a
-// matching key to the issuing guard, plays teleport FX, drops the prisoner
-// into the mine, and rolls a chance to spawn a meteorite there.
+// Validates the target, then asks the prisoner whether they want to pay the
+// penalty in moedacobre debited from their bank (immediate release) or work
+// it off in the mine (criminal flag + #jail_quota CProp + teleport).
 //
 // Suborno is a no-op handled here for symmetry — speech only.
 
@@ -14,7 +14,9 @@ use util;
 include "include/say";
 include ":fls_core:packets";
 include ":brainAI:npcCommands";
-include ":grilhao:include/grilhao";
+include ":gumps:yesNo";
+include ":containers:storageAreas";
+include ":currency:include/currency";
 include ":jailor:include/jailor";
 
 const JAIL_QUOTA_LEVE		:= 100;
@@ -40,6 +42,8 @@ const JAIL_RELEASE_Z		:= -4;
 const JAIL_RELEASE_REALM	:= "britannia_alt";
 
 const PEDRA_OBJTYPE			:= 0x5001;
+const MOEDACOBRE_OBJTYPE	:= 0xBA63;
+const MOEDACOBRE_TO_PEDRA	:= 10;
 const JAIL_PICKAXE_CPROP	:= "#jail_pickaxe";
 
 const SEVERITY_LEVE			:= "leve";
@@ -72,27 +76,46 @@ function JailPlayer(jailor, guard, prisoner, severity)
 		return 0;
 	endif
 
+	AI_Speak(jailor, prisoner.name + " foi sentenciado(a) a pena " + severity + ".");
+
+	var coinCost := quota / MOEDACOBRE_TO_PEDRA;
+	var payCoins := YesNo(prisoner,
+		"Voce prefere pagar sua pena com " + coinCost + " moedas (debitado do seu banco) ou trabalhar na mina por " + quota + " pedras?",
+		"Pagar moedas",
+		"Ir para a mina");
+
+	if (payCoins)
+		if (TryPayFromBank(prisoner, coinCost))
+			AI_Speak(jailor, "Pena paga em moedas. " + prisoner.name + " esta livre.");
+			return 1;
+		endif
+		AI_Speak(jailor, "Saldo insuficiente no banco. " + prisoner.name + " ira para a mina.");
+	endif
+
 	SetObjProperty(prisoner, "#jail_quota",     quota);
 	SetObjProperty(prisoner, "#jail_collected", 0);
 	prisoner.SetCriminal(1);
 
-	var grilhao := AttachGrilhao(prisoner, GRILHAO_DEFAULT_DR);
-	if (grilhao == error || !grilhao)
-		SendSysMessage(guard, "Falha ao criar o grilhao.");
-		return 0;
-	endif
-
-	GiveKeyToGuard(guard, grilhao);
 	TeleportPrisoner(prisoner, JAIL_MINE_X, JAIL_MINE_Y, JAIL_MINE_Z, JAIL_MINE_REALM);
 	RollMeteoriteSpawn();
-
-	AI_Speak(jailor, prisoner.name + " foi sentenciado(a) a pena " + severity + ".");
 	return 1;
+endfunction
+
+function TryPayFromBank(prisoner, amount)
+	var bank := CP_GetStorageContainerForMobile(prisoner, CP_BANK_AREA);
+	if (!bank || bank == error)
+		return 0;
+	endif
+	return SpendCoin(prisoner, amount, bank, MOEDACOBRE_OBJTYPE);
 endfunction
 
 function ValidatePrisoner(jailor, guard, prisoner)
 	if (!prisoner || !prisoner.IsA(POLCLASS_MOBILE))
 		SendSysMessage(guard, "Alvo invalido.");
+		return 0;
+	endif
+	if (prisoner.serial == guard.serial)
+		SendSysMessage(guard, "Voce nao pode sentenciar a si mesmo.");
 		return 0;
 	endif
 	// if (prisoner.cmdlevel > 0)
@@ -111,20 +134,6 @@ function ValidatePrisoner(jailor, guard, prisoner)
 		SendSysMessage(guard, "Esse alvo ja esta cumprindo pena.");
 		return 0;
 	endif
-	return 1;
-endfunction
-
-function GiveKeyToGuard(guard, grilhao)
-	var lockid := GetObjProperty(grilhao, "LockId");
-	if (!lockid)
-		return 0;
-	endif
-	var key := CreateItemInBackpack(guard, "ironkey", 1);
-	if (!key || key == error)
-		return 0;
-	endif
-	SetObjProperty(key, "LockId", lockid);
-	key.name := "Chave do Grilhao";
 	return 1;
 endfunction
 
@@ -186,8 +195,6 @@ function ReleasePrisoner(jailor, prisoner)
 	endif
 
 	prisoner.SetCriminal(0);
-
-	RemoveGrilhao(prisoner);
 
 	EraseObjProperty(prisoner, "#jail_quota");
 	EraseObjProperty(prisoner, "#jail_collected");

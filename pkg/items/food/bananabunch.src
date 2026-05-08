@@ -19,10 +19,10 @@ program bananabunch(who, bunch)
 	Sleep(1);
 	playsoundeffect(who, 0x5a);
 	Sleep(1);
-	if (!bunch.container)
-		createitematlocation(bunch.x, bunch.y, bunch.z, fruit, 6);
-	else
-		createitemincontainer(bunch.container, fruit, 6);
+	var harvested := CreateItemInBackpack(who, fruit, 6);
+	if (harvested == error)
+		SendSysMessage(who, "Sua mochila esta cheia.");
+		return 0;
 	endif
 	destroyitem(bunch);
 endprogram

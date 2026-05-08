@@ -401,10 +401,11 @@ function GetElementalEffects(form_name)
 endfunction
 
 function PerformTransformation(who, form)
-	// Save the player's original appearance before transformation
+	// Save the player's original appearance before transformation. Graphic is
+	// not snapshotted — trueobjtype is the canonical race body and what
+	// endmetamorfose / candie restore from.
 	var metamorfose := struct;
 	metamorfose.+originalcolor := who.color;
-	metamorfose.+originalgraphic := who.graphic;
 	metamorfose.+originalname := who.name;
 	metamorfose.+newgraphic := form.graphic;
 	SetObjProperty(who, "metamorfose", metamorfose);

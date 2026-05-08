@@ -99,14 +99,17 @@ function SendUpdateEquipmentRequest(quem, equip, isEquipping, layer := 0)
 			aEnergy := CInt(r.GetEnergyResist());
 		endif
 
+		// Combinacao multiplicativa armor + spell por tipo de dano. Soma simples
+		// estaria errada matematicamente ja que ambos sao % e podem passar de
+		// 100. Formula: 1 - (1-armor) * (1-spell), em escala 0-100.
 		packet
-			.AppendBytes(PACKET_BYTE_TYPE::BYTE, aSlash  + CInt(spellResist.GetSlashResist()))
-			.AppendBytes(PACKET_BYTE_TYPE::BYTE, aPierce + CInt(spellResist.GetPiercingResist()))
-			.AppendBytes(PACKET_BYTE_TYPE::BYTE, aBlunt  + CInt(spellResist.GetBluntResist()))
-			.AppendBytes(PACKET_BYTE_TYPE::BYTE, aFire   + CInt(spellResist.GetFireResist()))
-			.AppendBytes(PACKET_BYTE_TYPE::BYTE, aCold   + CInt(spellResist.GetColdResist()))
-			.AppendBytes(PACKET_BYTE_TYPE::BYTE, aPoison + CInt(spellResist.GetPoisonResist()))
-			.AppendBytes(PACKET_BYTE_TYPE::BYTE, aEnergy + CInt(spellResist.GetEnergyResist()));
+			.AppendBytes(PACKET_BYTE_TYPE::BYTE, _CombineResistDisplay(aSlash,  CInt(spellResist.GetSlashResist())))
+			.AppendBytes(PACKET_BYTE_TYPE::BYTE, _CombineResistDisplay(aPierce, CInt(spellResist.GetPiercingResist())))
+			.AppendBytes(PACKET_BYTE_TYPE::BYTE, _CombineResistDisplay(aBlunt,  CInt(spellResist.GetBluntResist())))
+			.AppendBytes(PACKET_BYTE_TYPE::BYTE, _CombineResistDisplay(aFire,   CInt(spellResist.GetFireResist())))
+			.AppendBytes(PACKET_BYTE_TYPE::BYTE, _CombineResistDisplay(aCold,   CInt(spellResist.GetColdResist())))
+			.AppendBytes(PACKET_BYTE_TYPE::BYTE, _CombineResistDisplay(aPoison, CInt(spellResist.GetPoisonResist())))
+			.AppendBytes(PACKET_BYTE_TYPE::BYTE, _CombineResistDisplay(aEnergy, CInt(spellResist.GetEnergyResist())));
 	else
 		return 0;
 	endif
@@ -115,4 +118,14 @@ function SendUpdateEquipmentRequest(quem, equip, isEquipping, layer := 0)
 	packet.Send(quem.GetObjRef());
 
 	return 1;
+endfunction
+
+// Combina dois valores de % (0-100) multiplicativamente. Usado para o display
+// no StatusGump: cada layer mostra o valor combinado da peca + spell resist
+// global, refletindo o que combat realmente faz. Sem cap aqui — display e'
+// informativo, gameplay aplica cap em CalculateDefenderResist se armored.
+function _CombineResistDisplay(armorPct, spellPct)
+	if (armorPct <= 0) return CInt(spellPct); endif
+	if (spellPct <= 0) return CInt(armorPct); endif
+	return CInt(100 - ((100 - armorPct) * (100 - spellPct) / 100));
 endfunction

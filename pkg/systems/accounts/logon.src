@@ -5,11 +5,24 @@
 use uo;
 use os;
 include "include/facings";
+include "include/epicConstants";
 include ":accounts:accounts";
 include ":mobileRescale:include/drawObjectExt";
 
 program Logon(who)
 	ACCT_SetLastLogin(who.acct);
+
+	// One-time backfill: characters created before epicgumpcriacao started
+	// syncing trueobjtype to the race body have trueobjtype=400/401 with
+	// graphic=race (1828-1835). That mismatch makes any restore-via-trueobjtype
+	// path (polymorph end, resurrection, metamorfose dispel, ironmaiden) revert
+	// race players to humano. Patch on login if it looks unsynced.
+	if ((who.trueobjtype == 400 || who.trueobjtype == 401) && who.race && who.race != HUMANO)
+		var newtrue := _RaceTrueObjtype(who.trueobjtype, who.race);
+		if (newtrue != 0)
+			who.trueobjtype := newtrue;
+		endif
+	endif
 
 	// ── Faccao: notificacoes e restauracoes de prisao ────────────────────────
 	start_script(":faccao:logon_hook", array{who});
@@ -31,6 +44,26 @@ program Logon(who)
 	// endif
 	return 1;
 endprogram
+
+// Maps (humano-template-sex, race string) to the race body graphic. Mirror
+// of the assignment in epicgumpcriacao.src; kept inline to avoid pulling
+// charactercreation as a dependency of accounts/logon.
+function _RaceTrueObjtype(sex, raca)
+	if (raca == ELFO || raca == DROW)
+		if (sex == 400) return 1830; endif
+		if (sex == 401) return 1831; endif
+	elseif (raca == ORC)
+		if (sex == 400) return 1832; endif
+		if (sex == 401) return 1833; endif
+	elseif (raca == ANAO)
+		if (sex == 400) return 1828; endif
+		if (sex == 401) return 1829; endif
+	elseif (raca == PEQUILHO)
+		if (sex == 400) return 1835; endif
+		if (sex == 401) return 1834; endif
+	endif
+	return 0;
+endfunction
 
 function UpdatePlayerGraphic(who, forwho, graphic, color)
 

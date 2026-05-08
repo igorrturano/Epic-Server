@@ -86,10 +86,12 @@ function CarveItems(who, tool, item)
 			return 0;
 		endif
 		PrintTextAbove(who, "*Retira a carne do cranio*");
-		var skull := CreateItemAtLocation(item.x, item.y, item.z, 0x1ae2, 1, item.realm);
-		if (skull)
-			DestroyItem(item);
+		var skull := CreateItemInBackpack(who, 0x1ae2, 1);
+		if (skull == error)
+			SendSysMessage(who, "Sua mochila esta cheia.");
+			return 0;
 		endif
+		DestroyItem(item);
 		return 1;
 	else
 		case (item.objtype)

@@ -1,8 +1,11 @@
 use uo;
+use basic;
 
 include ":tn:tngumps";
 include "include/say";
 include ":gumps:requestGump";
+include ":gumps:htmlGump";
+include ":uose:/include/merchant";
 
 program vendoropt(who)
 
@@ -65,6 +68,7 @@ program vendoropt(who)
 	else
 		opt.append(0);
 	endif
+	opt.append(0);
 
 	var curandeiro;
 	if (targ.npctemplate == ":merchants:curandeiro")
@@ -72,7 +76,7 @@ program vendoropt(who)
 	endif
 
 	var opcoes := { "Secreto", "Kit Artifice", "Sem Limite Minimo de 10", "Apenas GM vende", "Apenas Um Player Vende",
-					"Alterar Mensagens de Compra", "Cofre", "Taxa", "Faccao" };
+					"Alterar Mensagens de Compra", "Cofre", "Taxa", "Faccao", "Gerenciar Itens à Venda" };
 	if (curandeiro == 1)
 		opcoes.append("Custo por Sintoma");
 	endif
@@ -126,7 +130,104 @@ program vendoropt(who)
 		elseif (r == "Custo por Sintoma")
 			var custo := cint(RequestGump(who, "Insira o custo por sintoma [somente numeros inteiros]"));
 			SetObjProperty(targ, "custo", custo);
+		elseif (r == "Gerenciar Itens à Venda")
+			GerenciarItensVenda(who, targ);
 		endif
 	endforeach
 
 endprogram
+
+function ContemNaoAscii(s)
+	var i;
+	for (i := 1; i <= Len(s); i := i + 1)
+		if (CAsc(s[i]) > 127)
+			return 1;
+		endif
+	endfor
+	return 0;
+endfunction
+
+function EscaparHtml(s)
+	s := StrReplace(s, "&", "&amp;");
+	s := StrReplace(s, "<", "&lt;");
+	s := StrReplace(s, ">", "&gt;");
+	return s;
+endfunction
+
+function MontarFlags(item, lote)
+	var flags := "";
+	var graphic := cint(item.graphic);
+	if (graphic <= 0 || graphic >= 0x4000)
+		flags := flags + " [!gfx]";
+	endif
+	var desc := item.desc;
+	if (!desc) desc := ""; endif
+	if (Len(desc) > 30)
+		flags := flags + " [!len]";
+	endif
+	if (desc["<"] != error || desc[">"] != error || desc["&"] != error)
+		flags := flags + " [!html]";
+	endif
+	if (ContemNaoAscii(desc))
+		flags := flags + " [!utf8]";
+	endif
+	if (cint(lote) <= 0)
+		flags := flags + " [!lote]";
+	endif
+	return flags;
+endfunction
+
+function GerenciarItensVenda(who, npc)
+	while (1)
+		var slots := GetItemsSoldList(npc);
+		if (!slots || slots.size() == 0)
+			SendSysMessageEx(who, "Nenhum item à venda neste vendedor.", SSM_INFO);
+			return;
+		endif
+
+		var html := "<basefont color=#FFFFFF>";
+		html := html + "<b>" + npc.name + "</b> — " + cstr(slots.size()) + " itens<br><br>";
+
+		foreach slot in slots
+			sleepms(2);
+			var info := GetItemSoldInfo(npc, slot);
+			if (info == error || !info)
+				continue;
+			endif
+			var cost := info[1];
+			var item := info[2];
+
+			var desc := item.desc;
+			if (!desc) desc := "?"; endif
+			var graphic := cint(item.graphic);
+			var seller := cint(cost.seller);
+			var flags := MontarFlags(item, cost.lote);
+
+			html := html + "[" + cstr(slot) + "] gfx=" + Hex(graphic)
+			            + " '" + EscaparHtml(desc) + "'"
+			            + " seller=" + Hex(seller);
+			if (flags != "")
+				html := html + " <basefont color=#FF6666>" + flags + "<basefont color=#FFFFFF>";
+			endif
+			html := html + "<br>";
+		endforeach
+
+		SendHTMLGump(who, "Itens a Venda", html);
+
+		var input := RequestGump(who, "Slot a remover (vazio = sair):");
+		if (input == error || !input)
+			return;
+		endif
+		var slot_num := cint(input);
+		if (slot_num <= 0)
+			return;
+		endif
+		var alvo := GetItemSoldInfo(npc, slot_num);
+		if (alvo == error || !alvo)
+			SendSysMessageEx(who, "Slot " + cstr(slot_num) + " nao existe.", SSM_FAIL);
+			continue;
+		endif
+		RemoveItemForSale(npc, slot_num, 0, 1);
+		SendSysMessageEx(who, "Slot " + cstr(slot_num) + " removido.", SSM_INFO);
+	endwhile
+endfunction

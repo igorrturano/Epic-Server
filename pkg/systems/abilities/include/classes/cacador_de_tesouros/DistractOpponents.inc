@@ -26,9 +26,8 @@ class DistractOpponents(CombatAbility)
 
 		var nearby := mobile.GetNearbyMobiles(1);
 		foreach mob in nearby
-			if (mob.npctemplate || !(mob in who.party.members))
+			if (mob != who && (mob.npctemplate || !(mob in who.party.members)))
 				PlayAttackFX(AttackInfo(mobile, MobileWrapper(mob)));
-				PlayAttackSFX(AttackInfo(mobile, MobileWrapper(mob)));
 				sleepms(250);
 				who.facing := who.facing + 1;
 				TS_StartTimer(mob, "paralysis", 5);

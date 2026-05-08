@@ -30,24 +30,26 @@ program SpellScript(params)
 	// Remove efeito anterior se existir
 	SC_RemoveEffect(targ, CInt(spell.id));
 
-	// Calculate armor bonus based on skill
+	// Calcula bonus de spell resist (% de reducao multiplicativa). Variavel
+	// magiclore_skill mantem o nome legacy mas HandleSpellSkill retorna THEOLOGY
+	// pra druida (e ARCANA pra mago). Escala % do redesign: skill/3 (max 33% no GM).
 	var magiclore_skill := HandleSpellSkill(who);
-	var armor_bonus := CInt(magiclore_skill / 30); // 10 AR at 100 skill
+	var armor_bonus := CInt(magiclore_skill / 3);
 	if (armor_bonus < 1)
-		armor_bonus := 1; // Minimum 1 AR
+		armor_bonus := 1; // Minimum 1%
 	endif
 
-	// +2 when the target has no real armor equipped — casca grossa sobre pele nua.
+	// +10% quando o alvo nao usa armadura — casca grossa sobre pele nua.
 	if (!HasArmorProtection(targ))
-		armor_bonus += 2;
+		armor_bonus += 10;
 	endif
 
 	var duration := CInt(20 + (magiclore_skill * 2 / 5)); // 20s base + up to 40s at 100 skill (max 60s)
 
-	// Bonus de especialização
+	// Bonus de especializacao Coracao da Matilha: +5% spell resist + 20% duracao.
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		duration := CInt(duration * 1.2);
-		armor_bonus += 1;
+		armor_bonus += 5;
 	endif
 
 	var opts := struct{};
@@ -71,6 +73,13 @@ program SpellScript(params)
 endprogram
 
 function HasArmorProtection(targ)
+	// Wildshape acts as natural armor for spell-resist scaling — a transformed
+	// druid is treated as armored, so casting barkskin on them skips the +10%
+	// naked bonus.
+	if (GetObjProperty(targ, "metamorfose") != error)
+		return 1;
+	endif
+
 	var itemdesc := ReadConfigFile(":*:itemdesc");
 	foreach item in (ListEquippedItems(targ))
 		if (!item.isa(POLCLASS_ARMOR))

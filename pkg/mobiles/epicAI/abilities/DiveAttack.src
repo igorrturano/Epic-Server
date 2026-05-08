@@ -139,6 +139,12 @@ program DiveAttack(params)
 	PerformAction(me, 1);
 	sleepms(400);
 
+	if (me.dead || targ.dead)
+		MoveObjectToLocation(me, origin_x, origin_y, origin_z, origin_realm, MOVEOBJECT_FORCELOCATION);
+		me.frozen := 0;
+		return 0;
+	endif
+
 	// Reposition over target at high Z, then dive — fast and chunky, reads as gravity
 	PrintTextAbove(me, "*mergulha sobre a presa!*");
 	MoveObjectToLocation(me, targ.x, targ.y, me.z, targ.realm, MOVEOBJECT_FORCELOCATION);
@@ -148,6 +154,10 @@ program DiveAttack(params)
 	var fall_z := me.z;
 	var fall_steps := array{ 3, 15, 15, 15 }; // detach + 3 big chunks
 	foreach delta in fall_steps
+		if (me.dead || targ.dead)
+			aborted := 1;
+			break;
+		endif
 		if (fall_z - delta <= targ.z)
 			break;
 		endif
@@ -155,6 +165,13 @@ program DiveAttack(params)
 		MoveObjectToLocation(me, me.x, me.y, fall_z, me.realm, MOVEOBJECT_FORCELOCATION);
 		sleepms(40);
 	endforeach
+
+	if (aborted || me.dead || targ.dead)
+		MoveObjectToLocation(me, origin_x, origin_y, origin_z, origin_realm, MOVEOBJECT_FORCELOCATION);
+		me.frozen := 0;
+		return 0;
+	endif
+
 	// Impact — strike animation + landing sound on the final snap
 	PerformAction(me, 5);
 	PlaySoundEffect(me, 0x210);
