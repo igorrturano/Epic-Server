@@ -32,7 +32,12 @@ program HypnoticGaze(params)
 
 	SetObjProperty(targ, "charmed_by", me.serial);
 	SendSysMessageEx(targ, "Os olhos da serpente prendem sua mente!", SSM_FAIL);
-	sleep(6);
+	for cidx := 1 to 6
+		sleep(1);
+		if (me.dead || targ.dead)
+			break;
+		endif
+	endfor
 	EraseObjProperty(targ, "charmed_by");
 
 	return 1;
