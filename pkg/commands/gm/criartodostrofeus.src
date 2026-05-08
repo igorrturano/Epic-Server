@@ -1,0 +1,316 @@
+
+use uo;
+
+// Comando GM: cria uma bolsa com 1 unidade de cada trofeu (item final montavel na parede)
+// Trofeus sao fabricados na carpintaria usando cabecas intactas + madeira + prego
+program criar_todos_trofeus(who)
+
+	var trofeus := array{
+		// === ÁGUIA ===
+		0xC080,  // trofeuAguia
+		0xC081,  // trofeuAguiaInvertido
+		0xC0F5,  // trofeuCabecaAguiaGigante
+		0xC0F6,  // trofeuCabecaAguiaGiganteInvertida
+
+		// === ALCE ===
+		0xC04A,  // trofeuAlce
+		0xC056,  // trofeuAlce1
+		0xC059,  // trofeuAlce2
+		0xC071,  // trofeuAlce3
+		0xC095,  // trofeuAlce4
+		0xC06E,  // trofeuAlce5
+		0xC04B,  // trofeuAlceInvertido
+		0xC057,  // trofeuAlceInvertido1
+		0xC072,  // trofeuAlceInvertido3
+		0xC096,  // trofeuAlceInvertido4
+		0xC06f,  // trofeuAlceInvertido5
+		0xFC03,  // trofeuGrandeAlceVeado
+		0xFC04,  // trofeuGrandeAlceVeadoInvertido
+		0xFC2E,  // trofeuMontariaAlce
+		0xFC2F,  // trofeuMontariaAlceInvertido
+
+		// === DINOSSAUROS ===
+		0x9C0A,  // trofeuAllosauro
+		0x9C0b,  // trofeuAllosauroInvertido
+		0x9C08,  // trofeuAnchiosaur
+		0x9C09,  // trofeuAnchiosaurInvertido
+		0x9C0C,  // trofeuDimetosauro
+		0x9C0D,  // trofeuDimetosauroInvertido
+		0x9C0E,  // trofeuSaurosauro
+		0x9C0f,  // trofeuSaurosauroInvertido
+		0xC5C9,  // trofeuLizardJacare
+		0xC5CA,  // trofeuLizardJacareInvertido
+		0xC125,  // trofeuCranioDinossauro
+		0xC126,  // trofeuCranioDinossauroInvertido
+		0x9F2B,  // trofeuTriceratops
+		0x9F2C,  // trofeuTriceratopsInvertido
+
+		// === PEIXES ===
+		0xC0A1,  // trofeuAnchova
+		0xC0A2,  // trofeuAnchovaInvertido
+		0xC0AD,  // trofeuAtum
+		0xC0B0,  // trofeuDourado
+		0xC09B,  // trofeuLambari
+		0xC09c,  // trofeuLambariInvertido
+		0x1E69,  // trofeuPeixeAzul2
+		0xC0A7,  // trofeuPeixeGalo
+		0xC0A8,  // trofeuPeixeGaloInvertido
+		0xC0AA,  // trofeuPerca
+		0xC0Ab,  // trofeuPercaInvertida
+		0xC09E,  // trofeuRobalo
+		0xC09F,  // trofeuRobaloInvertido
+		0xC098,  // trofeuSardinha
+		0xC099,  // trofeuSardinhaInvertida
+		0xC0A4,  // trofeuSardinha2
+		0xC0A5,  // trofeuSardinha2Invertido
+
+		// === BOI / TOURO / JAVALI ===
+		0xFFD1,  // trofeuBoiChifrudo
+		0xFFD2,  // trofeuBoiChifrudoInvertido
+		0xC092,  // trofeuGrandeTouro
+		0xC093,  // trofeuGrandeTouroInvertido
+		0xC08F,  // trofeuTouro
+		0xC090,  // trofeuTouroInvertido
+		0xC04D,  // trofeuJavali
+		0xFFD4,  // trofeuJavali2
+		0xC04E,  // trofeuJavaliInvertido
+		0xFFD5,  // trofeuJavaliInvertido2
+
+		// === CAVALO ===
+		0xC5BF,  // trofeuCavalo
+		0xC5C0,  // trofeuCavaloInvertido
+		0xC143,  // trofeuCavaloDemoniaco
+		0xC144,  // trofeuCavaloDemoniacoInvertido
+
+		// === CHIFRES ===
+		0xC05C,  // trofeuChifre
+		0xC05D,  // trofeuChifreInvertido
+		0xC05F,  // trofeuChifre1
+		0xC060,  // trofeuChifreInvertido1
+		0xC062,  // trofeuChifre2
+		0xC063,  // trofeuChifreInvertido2
+		0xC065,  // trofeuChifre3
+		0xC066,  // trofeuChifreInvertido3
+		0xC068,  // trofeuChifre4
+		0xC069,  // trofeuChifreInvertido4
+		0xC06B,  // trofeuChifre5 (ChifreAlce)
+		0xC06c,  // trofeuChifreInvertido5
+
+		// === CICLOPES ===
+		0xC0D7,  // trofeuCiclopes
+		0xC0D8,  // trofeuCiclopesInvertido
+		0xC5B7,  // trofeuCiclopesMarinho
+		0xC5B8,  // trofeuCiclopesMarinhoInvertido
+
+		// === DRAGÕES ===
+		0xC11F,  // trofeuCranioDragao
+		0xC122,  // trofeuCranioDragao1
+		0xC120,  // trofeuCranioDragaoInvertido
+		0xC123,  // trofeuCranioDragaoInvertido1
+		0xC029,  // trofeuDragao (vermelho)
+		0xC02A,  // trofeuDragaoInvertido
+		0xC02C,  // trofeuDragao2 (verde)
+		0xC02D,  // trofeuDragaoInvertido2
+		0xC02F,  // trofeuDragao3 (drake)
+		0xC030,  // trofeuDragaoInvertido3
+		0xC032,  // trofeuDragao4 (azul)
+		0xC033,  // trofeuDragaoInvertido4
+		0xC035,  // trofeuDragao5 (branco)
+		0xC036,  // trofeuDragaoInvertido5
+		0xC038,  // trofeuDragao6
+		0xC039,  // trofeuDragaoInvertido6
+		0xC03B,  // trofeuDragao7
+		0xC03C,  // trofeuDragaoInvertido7
+		0xC041,  // trofeuDragao9
+		0xC042,  // trofeuDragaoInvertido9
+		0xC045,  // trofeuDragaoInvertido10
+		0xC047,  // trofeuDragao11
+		0xC048,  // trofeuDragaoInvertido11
+		0xFACC,  // trofeuDragao12
+		0xFACB,  // trofeuDragao12Invertido
+		0xFBB7,  // trofeuDragao13 (negro)
+		0xFE5E,  // trofeuDragaoPescocudo
+		0xFE5D,  // trofeuDragaoPescocudoInvertido
+
+		// === DEMÔNIOS ===
+		0xC023,  // trofeuDemonio
+		0xC024,  // trofeuDemonioEspelhado
+		0xC101,  // trofeuDemonio1
+		0xC102,  // trofeuDemonioInvertido1
+		0xC10D,  // trofeuDemonio2 (parede)
+		0xC10e,  // trofeuDemonioInvertido2
+		0xC110,  // trofeuDemonio3
+		0xC111,  // trofeuDemonioInvertido3
+		0xC113,  // trofeuDemonioChifrudo
+		0xC114,  // trofeuDemonioChifrudoInvertido
+		0xC146,  // trofeuDemonioMenor
+		0xC147,  // trofeuDemonioMenorInvertido
+		0xC104,  // trofeuDemonioNegro
+		0xC105,  // trofeuDemonioNegroInvertido
+		0xC116,  // trofeuDemonioProfundezas
+		0xC117,  // trofeuDemonioProfundezasInvertido
+		0xC5C7,  // trofeuDemonioSaltador
+		0xC5C8,  // trofeuDemonioSaltadorInvertido
+		0xC10A,  // trofeuGrandeDemonio
+		0xC10b,  // trofeuGrandeDemonio1
+		0xC0FE,  // cabecaParedeDemonio
+		0xC0FF,  // cabecaParedeDemonioInvertida
+		0xC107,  // cabecaParedeDemonio1
+		0xC108,  // cabecaParedeDemonioInvertida1
+
+		// === FELINOS ===
+		0xC5D2,  // trofeuFelino
+		0xC5D3,  // trofeuFelinoInvertido
+		0xC0C8,  // trofeuLeao
+		0x9F2D,  // trofeuLeao2
+		0xC0C9,  // trofeuLeaoInvertido
+		0x9F2e,  // trofeuLeaoInvertido2
+		0xC0CB,  // trofeuLeaoGigantesco
+		0xC0Cc,  // trofeuLeaoGigantescoInvertido
+		0xC0B3,  // trofeuCaelith (tigre dente de sabre)
+		0xC0B4,  // trofeuCaelithInvertido
+		0xC0BC,  // trofeuTigre
+		0xC0Bd,  // trofeuTigreInvertido
+		0x9F2F,  // trofeuTigreBranco
+		0x9F30,  // trofeuTigreBrancoInvertido
+		0xC0C5,  // trofeuTigreDenteSabre
+		0xC0C6,  // trofeuTigreDenteSabreInvertido
+		0x9DA4,  // trofeuTigresPatas
+		0x9DA5,  // trofeuTigresPatasInvertido
+		0xC0BF,  // trofeuOnca
+		0x9F31,  // trofeuPantera
+		0x9F32,  // trofeuPanteraInvertido
+
+		// === URSOS ===
+		0xC07A,  // trofeuUrsoPardo
+		0xC07b,  // trofeuUrsoPardoInvertido
+		0xC074,  // trofeuUrsoPolar
+		0xC077,  // trofeuUrsoPolar1
+		0xC075,  // trofeuUrsoPolarInvertido
+		0xC078,  // trofeuUrsoPolarInvertido1
+		0xC07D,  // trofeuUrsoPreto
+		0xC07e,  // trofeuUrsoPretoInvertido
+		0x1E60,  // trofeuUrsoGrizzly
+		0x1E67,  // trofeuUrsoGrizzlyInvertido
+		0x1E6C,  // trofeuUrsoBranco3
+		0x1E65,  // trofeuUrsoBrancoInvertido3
+
+		// === LOBOS / CANINOS ===
+		0xC089,  // trofeuLobo
+		0xC08A,  // trofeuLoboInvertido
+		0xC0C2,  // trofeuLoboBranco
+		0xC0C3,  // trofeuLoboBrancoInvertido
+
+		// === GORILAS ===
+		0xC083,  // trofeuGorila
+		0xC084,  // trofeuGorilaInvertido
+		0xC086,  // trofeuGorilaGigante
+		0xC087,  // trofeuGorilaGiganteInvertido
+
+		// === GIGANTES ===
+		0xC0F2,  // trofeuGiganteAiglano
+		0xC0F3,  // trofeuGiganteAiglanoInvertido
+		0xC0E3,  // trofeuGiganteDeserto
+		0xC12E,  // trofeuGiganteDeserto1
+		0xC0E4,  // trofeuGiganteDesertoInvertido
+		0xC12f,  // trofeuGiganteDesertoInvertido1
+		0xC0E0,  // trofeuGiganteGelo
+		0xC0E1,  // trofeuGiganteGeloInvertido
+		0xC0E6,  // trofeuGiganteGeloCombatente
+		0xC0E7,  // trofeuGiganteGeloCombatenteInvertido
+
+		// === OGROS ===
+		0xC0DA,  // trofeuOgro
+		0xC0Db,  // trofeuOgroInvertido
+		0xC0EC,  // trofeuOgro1
+		0xC0Ed,  // trofeuOgro2
+		0xC0DD,  // trofeuOgroGelo
+		0xC0De,  // trofeuOgroGeloInvertido
+		0xC0E9,  // trofeuOgroMago
+		0xC0EA,  // trofeuOgroMagoInvertido
+
+		// === HUMANOIDES ===
+		0xC0D4,  // trofeuGoblin
+		0xC0D5,  // trofeuGoblinInvertido
+		0xC0D1,  // trofeuHomemLagarto
+		0xC0D2,  // trofeuHomemLagartoInvertido
+		0xC0CE,  // trofeuHomemLagartoLider
+		0xC0Cf,  // trofeuHomemLagartoLiderInvertido
+		0x9DA6,  // trofeuHomemFormiga
+		0x9DA7,  // trofeuHomemFormigaInvertido
+		0xC13D,  // trofeuMinotauro
+		0xC13e,  // trofeuMinotauroInvertido
+		0xC5BE,  // trofeuHarpia
+		0xC5D5,  // trofeuOrc
+		0x1E64,  // trofeuOrc1
+		0xC5D4,  // trofeuOrcInvertido
+		0x1E6B,  // trofeuOrcInvertido1
+		0xF037,  // trofeuPessoaMorta
+		0xF03A,  // trofeuPessoaMorta1
+		0xF03b,  // trofeuPessoaMorta2
+		0xF03E,  // trofeuPessoaMorta3
+		0xF040,  // trofeuPessoaMorta4
+		0xF038,  // trofeuPessoaMortaInvertida
+		0xF039,  // trofeuPessoaMortaInvertida1
+		0xF03c,  // trofeuPessoaMortaInvertida2
+		0xF03D,  // trofeuPessoaMortaInvertida3
+		0xF03F,  // trofeuPessoaMortaInvertida4
+		0x1E66,  // trofeuTroll
+		0x1E6D,  // trofeuTrollInvertido
+
+		// === LAGARTOS ===
+		0xC0B6,  // trofeuLagartoDeserto
+		0xC137,  // trofeuLagartoDeserto1
+		0xC0B7,  // trofeuLagartoDesertoInvertido
+		0xC138,  // trofeuLagartoDesertoInvertido1
+		0xC131,  // trofeuLagartoFogo
+		0xC132,  // trofeuLagartoFogoInvertido
+		0xC134,  // trofeuLagartoGelo
+		0xC135,  // trofeuLagartoGeloInvertido
+		0xC0B9,  // trofeuLagartoLava
+		0xC0BA,  // trofeuLagartoLavaInvertido
+
+		// === MONSTROS ESPECIAIS ===
+		0xC11C,  // trofeuGrandeRinoceronteDemoniaco
+		0xC11d,  // trofeuGrandeRinoceronteDemoniacoInvertido
+		0xC119,  // trofeuMindflayer
+		0xC11A,  // trofeuMindflayerInvertido
+		0xC5CB,  // trofeuMonstroDevorador
+		0xC5CE,  // trofeuMonstroDevoradorInvertido
+		0xC12B,  // trofeuGargola
+		0xC12c,  // trofeuGargolaInvertido
+		0xC128,  // trofeuMamute
+		0xC129,  // trofeuMamuteInvertido
+		0xC0EF,  // trofeuTitan
+		0xC0F0,  // trofeuTitanInvertido
+		0xC0FB,  // trofeuOvelhaLouca
+		0xC0Fc,  // trofeuOvelhaLoucaInvertido
+		0xC140,  // trofeuOstard
+		0xC141,  // trofeuOstardInvertido
+		0xC053,  // trofeuMorsa
+		0xC054,  // trofeuMorsaInvertido
+		0xC050,  // trofeuFoca
+		0xC051,  // trofeuFocaInvertido
+		0xC5C3,  // trofeuLlama
+		0xC5C4,  // trofeuLlamaInvertido
+		0xC5B9,  // trofeuTubarao
+		0xC5BA,  // trofeuTubaraoInvertido
+		0x3158,  // trofeuUnicornio
+		0xEE7A,  // trofeuUnicornioAmaldicoado
+		0x3157,  // trofeuUnicornioAmaldicoadoInvertido
+		0x3159,  // trofeuUnicornioInvertido
+		0x723A,  // trofeuRatoEspelhado
+		0xA9C3,  // trofeuEspada
+		0xA9C4   // trofeuEspadaInvertido
+	};
+
+	var bolsa := CreateItemInBackpack(who, "backpack", 1);
+	bolsa.color := 1175;
+	bolsa.name := "Todos os Trofeus";
+
+	foreach coisa in trofeus
+		CreateItemInContainer(bolsa, coisa, 1);
+	endforeach
+
+	SendSysMessage(who, "Bolsa criada com " + trofeus.size() + " trofeus.");
+endprogram

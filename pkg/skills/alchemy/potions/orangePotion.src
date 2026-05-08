@@ -16,7 +16,7 @@ program drink_orange(who, potion)
 		SendSysMessage(who, "Voce nao pode beber isto.");
 		return;
 	endif
-	if (!checkifcandrink(who, "orange"))
+	if (!checkifcandrink(who, potion))
 		return;
 	endif
 	var tier := peganivelpocao(who, potion);

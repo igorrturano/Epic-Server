@@ -87,7 +87,8 @@ class DemonicTrap(CombatAbility)
 
         // Find and affect targets
         var targets := array{};
-        foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm)
+        var nearby := mobile.GetNearbyMobiles(range);
+        foreach mob in nearby
             if (mob.serial != who.serial)
                 if (!(mob in who.party.members))
                     targets.append(mob.serial);
@@ -98,7 +99,7 @@ class DemonicTrap(CombatAbility)
                     // Paralyze demons/undead
                     if (mob.npctemplate)
                         var npctemplate := NPC_ParseTemplateName(mob.npctemplate);
-                        if (cfg[npctemplate.template].Category in inimigo)
+                        if (cfg[npctemplate.template].Environment in inimigo)
                             TS_StartTimer(mob, "paralysis", duration);
                             ApplyRawDamage(mob, 1);
                         endif

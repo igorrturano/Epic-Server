@@ -12,6 +12,30 @@
 include "include/NPCUtil";
 include "include/epicConstants";
 
+// NPCRace-based umbrella groups for ability inheritance (isDragon, isDemon).
+// Race lists live in :epicAI:config/raceCategories.cfg — keeping the literals
+// out of the brain data segment (inlining the arrays here pushed brain.src
+// past the 64KB limit on 2026-04-18).
+function _IsRaceInCategory(npc_race, category)
+    if (!npc_race)
+        return 0;
+    endif
+    var cfg := ReadConfigFile(":epicAI:config/raceCategories");
+    if (!cfg)
+        return 0;
+    endif
+    var elem := cfg[category];
+    if (!elem)
+        return 0;
+    endif
+    foreach r in GetConfigStringArray(elem, "NPCRace")
+        if (npc_race == Lower(r))
+            return 1;
+        endif
+    endforeach
+    return 0;
+endfunction
+
 /*
  * NPC_GetCachedData(mobile)
  *
@@ -55,8 +79,8 @@ function BuildNPCCache(mobile)
         "template" := template,
         "template_lower" := template_lower,
         "package" := parsed.package,
-        "category" := npc_elem.Category,
-        "category_lower" := Lower(npc_elem.Category),
+        "environment" := npc_elem.Environment,
+        "environment_lower" := Lower(npc_elem.Environment),
         "classe" := npc_elem.Classe,
         "tier" := GetEffectiveTier(mobile, npc_elem),
         "brain_type" := Lower(npc_elem.BrainType),
@@ -92,7 +116,7 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
 
     // Config-based checks
     var classe := npc_elem.Classe;
-    var category_lower := Lower(npc_elem.Category);
+    var environment_lower := Lower(npc_elem.Environment);
     var brain_type := Lower(npc_elem.BrainType);
     var npc_race := Lower(npc_elem.NPCRace ?: "");
 
@@ -155,12 +179,13 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         "isSage" := (classe == SABIO),
         "isWarrior" := (classe == GUERREIRO),
 
-        // Category-based
-        "isBloodless" := (category_lower == "undead"),
-        "isDragon" := (category_lower == "dragon"),
-        "isDemon" := (category_lower == "demons"),
-        "isUndead" := (category_lower == "undead"),
-        "isBeast" := (category_lower == "animal" || category_lower == "giantanimal"),
+        // Umbrella flags
+        // isUndead + isBloodless: Environment-based (per project: "Environment Undead" is the umbrella)
+        "isBloodless" := (environment_lower == "undead"),
+        "isUndead" := (environment_lower == "undead"),
+        // isDragon + isDemon: NPCRace-based, lookup driven by raceCategories.cfg.
+        "isDragon" := _IsRaceInCategory(npc_race, "dragon"),
+        "isDemon" := _IsRaceInCategory(npc_race, "demon"),
 
         // Template-based: Gazers/Beholders
         "isGazer" := (template_lower in array{
@@ -175,16 +200,6 @@ function BuildAbilitiesCache(template, template_lower, npc_elem)
         // Mage check — Shaman/Priest/Druid have dedicated behaviors, don't dispatch MageBehavior for them
         "hasMageConfig" := (npc_elem.SpellSchool != error && !(npc_elem.SpellSchool in array{"Shaman", "Druid"}))
     };
-endfunction
-
-/*
- * InvalidateNPCCache(mobile)
- *
- * Purpose: Force cache rebuild (for special cases like transformations)
- * Note: Not normally needed - cache is permanent per user decision
- */
-function InvalidateNPCCache(mobile)
-    EraseObjProperty(mobile, "#npc_cache");
 endfunction
 
 /*

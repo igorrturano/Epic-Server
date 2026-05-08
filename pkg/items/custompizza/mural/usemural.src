@@ -1,0 +1,39 @@
+use uo;
+use os;
+
+include "include/mural";
+
+program usemural(who, self)
+	CleanupMuralTempBooks(who);
+
+	var page := 1;
+
+	while (1)
+		var action := ShowMuralListGump(who, self, page);
+
+		if (action.cmd == "exit")
+			break;
+		elseif (action.cmd == "list")
+			page := action.page;
+		elseif (action.cmd == "view")
+			var posts := LoadPosts(self);
+			if (action.index >= 1 && action.index <= posts.size())
+				ShowMuralViewGump(who, posts[action.index]);
+			endif
+			page := action.page;
+		elseif (action.cmd == "delete")
+			DeletePostByIndex(who, self, action.index);
+			page := action.page;
+		elseif (action.cmd == "compose")
+			var draft := RunMuralComposeFlow(who);
+			if (draft)
+				ValidateAndSubmitPost(who, self, draft);
+			endif
+			page := 1;
+		endif
+
+		sleepms(50);
+	endwhile
+
+	return 1;
+endprogram

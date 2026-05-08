@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -78,7 +79,7 @@ program SpellScript(params)
 		undead := createnpcfromtemplate(":brainai:fleshgolem", targ.x, targ.y, targ.z, 0, who.realm);
 	endif
 
-	handleSilentMagic(who, targ, 383);
+	SC_HandleSound(who, targ, 383);
 
 	Destroyitem(targ);
 	undead.SetMaster(who);

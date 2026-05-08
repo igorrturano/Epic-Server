@@ -5,7 +5,6 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":abilities:helpers/shinobiHelpers";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include "include/client";
 
@@ -58,15 +57,24 @@ class NinjaPath(CombatAbility)
 			endif
 			return this._TeleportToMark(who, mark_serial, sneak);
 		else
-			return this._MarkTarget(who, sneak);
+			return this._MarkTarget(mobile, who, sneak);
 		endif
 	endfunction
 
-	function _MarkTarget(this, who, sneak)
+	function _MarkTarget(this, mobile, who, sneak)
 		var item_graphic := 0x1BFE;
 
-		Message("Selecione o alvo para marcar.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-		var targ := Target(who);
+		var targ;
+		if (mobile.IsNPC())
+			targ := who.opponent;
+			if (!targ)
+				targ := GetRandomNearbyHostile(who);
+			endif
+		else
+			Message("Selecione o alvo para marcar.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			targ := Target(who);
+		endif
+
 		if (!targ)
 			return false;
 		elseif (!targ.isA(POLCLASS_MOBILE))
@@ -95,7 +103,7 @@ class NinjaPath(CombatAbility)
 		Message($"Alvo marcado por {mark_duration} segundos. Use novamente para teleportar.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
 
 		// Reset cooldown so player can use the ability again to teleport
-		EraseObjProperty(who, $"AbilityCooldown_{ABILITY_ID::NINJA_PATH}");
+		mobile.ClearAbilityCooldown(ABILITY_ID::NINJA_PATH);
 
 		DebugMsg(
 			who,
@@ -182,7 +190,7 @@ class NinjaPath(CombatAbility)
 
 		// Teleport behind target
 		PlaySoundEffect(who, 0x511);
-		TeleportBehindTarget(who, targ);
+		MobileWrapper(who).TeleportBehind(MobileWrapper(targ));
 
 		// Guaranteed attack
 		SetObjProperty(who, "#GuaranteedHit", 1);

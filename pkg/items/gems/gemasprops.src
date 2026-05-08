@@ -9,7 +9,12 @@ program GemasProps(object)
 	var brilho := BuscaProp("Brilho");
 
 	if (brilho || tamanho)
-		SetObjProperty(object, "valorgem", CInt((object.buyprice / 3 + CInt(brilho[2])) * CDbl(tamanho[2])));
+		// Range 5–30 coins/unidade. Phase 4 modula com mintRate.
+		var valor := CInt((object.buyprice / 30) + (CInt(brilho[2]) * CDbl(tamanho[2]) / 12));
+		if (valor < 2)
+			valor := 2;
+		endif
+		SetObjProperty(object, "valorgem", valor);
 		SetObjProperty(object, "brilho", brilho[1]);
 		SetObjProperty(object, "tamanho", tamanho[1]);
 		var nomegema := Trim(StrReplace(object.desc, CStr(object.amount), "")); // marreta .create + amount

@@ -1,0 +1,13 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include ":spells:runeRecharge";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0;
+
+	return RechargeRunesOnTarget(who, targ);
+endprogram

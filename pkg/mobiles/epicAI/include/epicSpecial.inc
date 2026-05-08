@@ -1,9 +1,9 @@
 include ":timedScripts:timedScripts";
-include ":awareness:awareness";
-include ":nature:nature";
-include ":acid:acid";
 include "include/epicNPCUtils";
 include ":abilities:models/Ability";
+include ":destroyable:include/destroyItem";
+include ":combat:include/Controller/FXController";
+include ":charactercreation:include/resists";
 
 const CHARGE_MINIMUM_DISTANCE := 5;
 
@@ -29,32 +29,6 @@ function StartCharge(attacker, defender)
    start_script(":epicAI:abilities/ChargeImpact", array{ attacker, defender });
 
    return 1;
-endfunction
-
-function ProcessChargeImpact(attacker, defender)
-   var charge_start := GetObjProperty(attacker, "#chargestart");
-   if (!charge_start)
-      return 0;
-   endif
-
-   if (charge_start.target != defender.serial)
-      return 0;
-   endif
-
-   var dist := CoordinateDistance(charge_start.x, charge_start.y, defender.x, defender.y);
-   var tier := CInt(MobileWrapper(attacker).GetTier());
-   var charge_damage := CInt(dist * tier * 3) + CInt(attacker.strength / 20);
-
-   if (charge_damage < 1)
-      charge_damage := 1;
-   endif
-
-   EraseObjProperty(attacker, "#chargestart");
-   SetObjProperty(attacker, "charge_damage", charge_damage);
-
-   ApplyRawDamage(defender, charge_damage);
-   DisplayDamage(defender, charge_damage, attacker);
-   PrintTextAbove(attacker, "*impacto da carga*");
 endfunction
 
 function SporeSpecial(attacker, defender)
@@ -161,7 +135,7 @@ function PerformHealingRain(shaman, allies)
             DamageFLS(mobile, RandomDiceRoll("1d10") + 20, DMG_ENERGY, shaman);
             PrintTextAbove(mobile, "*atingido por um raio*");
             SetWeatherForPlayer(mobile, 1, 50);
-            wetPowder(mobile);
+            _wetPowderLocal(mobile);
         endif
         sleepms(2);
     endforeach
@@ -234,7 +208,7 @@ function AcidSpray(me, targ)
    
    // Deal initial acid damage
    var acid_damage := "1d6";
-   DealAcidDamage(me, targ, acid_pool, acid_damage);
+   _dealAcidDamageLocal(me, targ, acid_pool, acid_damage);
    
    return 1;
 endfunction
@@ -944,4 +918,101 @@ function petrify(attacker, defender)
     SetCooldown(me, "petrify", 30);
 
 	return 1;
+endfunction
+
+function _wetPowderLocal(who)
+    SetObjProperty(who, "molhado", 1);
+    SendSysMessageEx(who, "Você está molhado!", SSM_INFO);
+    var fire_weapons := Array{0xC5FD, 0xC5FE, 0xC5FF, 0xC600, 0x89A7};
+
+    var itemsinbag := EnumerateItemsInContainer(who.backpack);
+    foreach item in itemsinbag
+        var container := item.container;
+        if ((item.objtype == 0x9092 && container.objtype != 0xDE31))
+            SendSysMessageEx(who, "A chuva danificou parte de sua pólvora!", SSM_FAIL);
+            SubtractAmount(item, RandomInt(5) + 1);
+        endif
+        if (item.objtype in fire_weapons)
+            SetObjProperty(item, "balas", 0);
+            SendSysMessageEx(who, "A pólvora da sua arma molhou!", SSM_FAIL);
+        endif
+    endforeach
+
+    var items := ListItemsNearLocation(who.x, who.y, who.z, 20, who.realm);
+    foreach item in items
+        if (item.objtype == 0x9092)
+            PrintTextAbove(item, "*Molhada*");
+            SubtractAmount(item, RandomInt(5) + 1);
+        endif
+    endforeach
+endfunction
+
+function _isAcidImuneLocal(mobile)
+    if (Cint(GetObjProperty(mobile, "AcidImune")))
+        return 1;
+    endif
+    if (mobile.npctemplate)
+        var npc_info := NPC_GetNPCConfig(mobile.npctemplate);
+        if (Cint(npc_info.AcidImune))
+            return 1;
+        endif
+    endif
+    return 0;
+endfunction
+
+function _getAcidDiceFromTemplateLocal(npc)
+    if (npc.isA(POLCLASS_NPC))
+        var npc_info := NPC_GetNPCConfig(npc.npctemplate);
+        if (!npc_info.AcidDamage)
+            return 0;
+        else
+            return npc_info.AcidDamage;
+        endif
+    else
+        return 0;
+    endif
+endfunction
+
+function _getAcidDiceFromItemLocal(acid_pool)
+    if (acid_pool.isA(POLCLASS_ITEM))
+        if (TypeOf(GetObjProperty(acid_pool, "AcidDice")) == "String")
+            return GetObjProperty(acid_pool, "AcidDice");
+        else
+            return 0;
+        endif
+    else
+        return 0;
+    endif
+endfunction
+
+function _dealAcidDamageLocal(npc, mobile, acid_pool, acid_damage := 0)
+    if (_isAcidImuneLocal(mobile))
+        return 0;
+    endif
+    var acid_dice := _getAcidDiceFromTemplateLocal(npc);
+    if (TypeOf(acid_dice) != "String")
+        acid_dice := _getAcidDiceFromItemLocal(acid_pool);
+    endif
+    if (acid_damage)
+        acid_damage := RandomDiceRoll(acid_damage);
+    elseif (TypeOf(acid_dice) == "String")
+        acid_damage := RandomDiceRoll(acid_dice);
+    else
+        return 0;
+    endif
+    DamageFLS(mobile, acid_damage, DMG_POISON, npc);
+    var equipped_items := ListEquippedItems(mobile);
+    if (RandomInt(10) > 5)
+        var acid_burned := equipped_items[RandomInt(equipped_items.size())+1];
+        if (acid_burned.isA(POLCLASS_WEAPON) || acid_burned.isA(POLCLASS_ARMOR))
+            var armor_damage := RandomInt(4) + 1;
+            if (acid_burned.hp > armor_damage)
+                acid_burned.hp := acid_burned.hp - armor_damage;
+                PrintTextPrivate(mobile, "*Acido danificou seu equipamento*", mobile, _DEFAULT_TEXT_FONT, 72);
+            else
+                DestroyItem(acid_burned);
+            endif
+        endif
+    endif
+    return acid_dice;
 endfunction

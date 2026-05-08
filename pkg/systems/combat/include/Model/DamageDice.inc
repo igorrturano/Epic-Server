@@ -205,4 +205,15 @@ class DamageDice(IDamageDice)
 			$"Poison={this.GetPoisonDamage().ToString()}, " +
 			$"Energy={this.GetEnergyDamage().ToString()}";
 	endfunction
+
+	// Retorna um DamageDice novo com os 3 dados fisicos (slash/piercing/blunt)
+	// upgraded um tier. Elementais inalterados. Usado pelo bonus de 1H sword
+	// solo em CalculateWeaponDamage (espada com mao off-hand livre permite
+	// swing mais aberto). Cada Dice fisico vira upgraded via Dice.WithUpgradedSides.
+	function WithUpgradedPhysicalDice(this)
+		var slash    := this._slash    is @Dice ? this._slash.WithUpgradedSides()    : this._slash;
+		var piercing := this._piercing is @Dice ? this._piercing.WithUpgradedSides() : this._piercing;
+		var blunt    := this._blunt    is @Dice ? this._blunt.WithUpgradedSides()    : this._blunt;
+		return DamageDice(slash, piercing, blunt, this._fire, this._cold, this._poison, this._energy);
+	endfunction
 endclass

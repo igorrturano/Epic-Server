@@ -1,0 +1,101 @@
+use uo;
+use os;
+
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Text";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/Container/ContainerGridLayout";
+
+var SCALES := array{10, 30, 50, 60, 70, 80, 120, 150, 200};
+
+program GMSetScale(who, text)
+    if (who.cmdlevel < 2)
+        SendSysMessage(who, "Sem permissão.");
+        return 0;
+    endif
+
+    SendSysMessage(who, "Selecione o mobile.");
+    var targ := Target(who);
+    if (!targ || !targ.IsA(POLCLASS_MOBILE))
+        SendSysMessage(who, "Selecione um mobile válido.");
+        return 0;
+    endif
+
+    var scaleProp    := GetObjProperty(targ, "entityScale");
+    var curHeightPct := 100;
+    var curWidthPct  := 100;
+    if (scaleProp && scaleProp.height && scaleProp.width)
+        curHeightPct := CInt(scaleProp.height) / 10;
+        curWidthPct  := CInt(scaleProp.width)  / 10;
+    endif
+
+    var gump := Gump(who, "Escala do Mobile", 220, 310);
+
+    var txtNome  := Text("txtNome",  15, 15, targ.name, TEXT_COLOR::COLOR_YELLOW);
+    var txtAtual := Text("txtAtual", 15, 38, "Atual: " + curHeightPct + "% x " + curWidthPct + "%", TEXT_COLOR::COLOR_DEFAULT);
+
+    // Grid: 9 linhas (8 opções + reset), 2 colunas (botão + label)
+    var grid := ContainerGridLayout("grid", 10, 65, 40, 220, 10, 2);
+
+    var buttons := array{};
+    foreach pct in SCALES
+        var idx := _pct_iter;
+        var btn := Button("btn" + pct, 10, 2, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+        var lbl := Text("lbl" + pct, 5, 5,
+            pct + "%"  + (pct == curHeightPct ? "  ◀" : ""),
+            pct == curHeightPct ? TEXT_COLOR::COLOR_GREEN : TEXT_COLOR::COLOR_DEFAULT);
+        buttons.append(btn);
+        grid.AddControl(btn, idx, 1);
+        grid.AddControl(lbl, idx, 2);
+    endforeach
+
+    var btnReset := Button("btnReset", 10, 2, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+    var lblReset := Text("lblReset",  5,  5, "Resetar (100%)", TEXT_COLOR::COLOR_DEFAULT);
+    grid.AddControl(btnReset, 10, 1);
+    grid.AddControl(lblReset, 10, 2);
+
+    gump.AddControl(txtNome);
+    gump.AddControl(txtAtual);
+    gump.AddControl(grid);
+
+    var evento := gump.Show();
+    gump.Dispose();
+
+    if (evento.GetControl() == EVENT_ACTION::CLOSED)
+        return 0;
+    endif
+
+    if (evento.GetControl().Equals(btnReset))
+        EraseObjProperty(targ, "entityScale");
+        SendSysMessage(who, targ.name + ": escala resetada para 100%.");
+        return 1;
+    endif
+
+    foreach btn in buttons
+        if (evento.GetControl().Equals(btn))
+            var pct := SCALES[_btn_iter];
+            var val := pct * 10;
+
+            SetObjProperty(targ, "entityScale", struct{ height := val, width := val });
+
+            // debug: confirma o que foi salvo
+            var check := GetObjProperty(targ, "entityScale");
+            SendSysMessage(who, "[DEBUG] Salvo: height=" + check.height + " width=" + check.width + " (raw=" + val + ")");
+
+            // força re-render: teleporta para fora do range do cliente e de volta
+            // o hook UpdateObject (packet 0x78) só dispara quando o objeto entra no campo de visão
+            var ox := targ.x;
+            var oy := targ.y;
+            var oz := targ.z;
+            var moved1 := MoveObjectToLocation(targ, ox + 30, oy + 30, oz, targ.realm, MOVEOBJECT_FORCELOCATION);
+            sleepms(100);
+            var moved2 := MoveObjectToLocation(targ, ox, oy, oz, targ.realm, MOVEOBJECT_FORCELOCATION);
+            SendSysMessage(who, "[DEBUG] Teleporte fora/volta: " + moved1 + " / " + moved2);
+
+            SendSysMessage(who, targ.name + ": escala definida para " + pct + "%.");
+            return 1;
+        endif
+    endforeach
+
+    return 0;
+endprogram

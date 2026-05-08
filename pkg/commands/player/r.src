@@ -10,40 +10,48 @@ include ":fls_core:packets";
 include ":commands:/include/r";
 
 program reconhecer(who, param)
-	var conhecidos := dictionary;
-
-	if (GetObjProperty(who, "conhecidos"))
-		conhecidos := GetObjProperty(who, "conhecidos"); // Lista de pessoas conhecidadas
-	endif
-
 	var targ := Target(who);
 	if (GetObjProperty(targ, "realname"))
 		SendSysMessageEx(who, "Precisar ver o rosto pra reconhecer.", SSM_FAIL);
 		return 0;
 	endif
 
-	var ID := VerificaDisfarce(targ, who);
-
-	if (targ.IsA(POLCLASS_MOBILE))
-		if (targ.npctemplate)
-			SendSysMessageEx(who, "Nao é um alvo valido.", SSM_FAIL);
-		elseif (param)
-			conhecidos[ID] := Cstr(param);
-			SetObjProperty(who, "conhecidos", conhecidos);
-			SetName(targ, targ.name);
-			SendSysMessageEx(who, "Novo nome salvo.", SSM_INFO);
-		else
-			var apelido := RequestGump(who, "Como quer reconhecer essa pessoa?");
-			if (apelido)
-				conhecidos[ID] := apelido;
-				SetObjProperty(who, "conhecidos", conhecidos);
-				SetName(targ, targ.name);
-				SendSysMessageEx(who, "Novo nome salvo.", SSM_INFO);
-			endif
-		endif
-		return 1;
-	else
+	if (!targ.IsA(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "So pode reconhecer jogadores.", SSM_FAIL);
 		return 0;
 	endif
+
+	if (targ.npctemplate)
+		SendSysMessageEx(who, "Nao é um alvo valido.", SSM_FAIL);
+		return 1;
+	endif
+
+	// Route to conhecidos_disfarce when target is disguised and observer
+	// cannot see through — so nicknames given to a disguise don't leak to
+	// the target's real identity after the disguise is removed.
+	var targetDisguised := (GetObjProperty(targ, "disfarce") != error);
+	var useDisguiseDict := targetDisguised && !_PodeVerDisfarce(who);
+	var dictName := useDisguiseDict ? "conhecidos_disfarce" : "conhecidos";
+	var key := useDisguiseDict ? Cstr(GetObjProperty(targ, "FakeID")) : Cstr(targ.serial);
+
+	var dict := GetObjProperty(who, dictName);
+	if (dict == error || !dict)
+		dict := dictionary;
+	endif
+
+	var apelido;
+	if (param)
+		apelido := Cstr(param);
+	else
+		apelido := RequestGump(who, "Como quer reconhecer essa pessoa?");
+		if (apelido == error || !apelido)
+			return 1;
+		endif
+	endif
+
+	dict[key] := apelido;
+	SetObjProperty(who, dictName, dict);
+	SetName(targ, targ.name);
+	SendSysMessageEx(who, "Novo nome salvo.", SSM_INFO);
+	return 1;
 endprogram

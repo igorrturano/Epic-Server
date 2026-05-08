@@ -3,7 +3,6 @@ use util;
 include ":attributes:attributes";
 include ":equipsys:Controller/WeaponController";
 include ":combat:Model/Damage";
-include ":taming:taming";
 
 function customizeNpc(mob, set_tier := "0")
 	var npc_elem := NPC_GetNPCConfig(mob);
@@ -33,6 +32,7 @@ function customizeNpc(mob, set_tier := "0")
 	if (classe == SABIO)
 		AP_SetTrueSkill(mob, MAGERY, mob_skill);
 		AP_SetTrueSkill(mob, ARCANA, mob_skill);
+		AP_SetTrueSkill(mob, THEOLOGY, mob_skill);
 		skill_combat := MAGERY;
 		skill_support := ARCANA;
 	elseif(classe == LADINO || mob.isSpider())
@@ -131,13 +131,21 @@ function HasPlayerNearLocation(x, y, realm := 0)
 	return 0;
 endfunction
 
+// Valores em % de reducao de dano (0-100). Aplicados multiplicativamente em
+// DamageController.CalculateDefenderResist via Damage.Decrease*PercentDamage.
+//
+// Curva tunada para preservar TTK proximo ao sistema antigo flat — a curva linear
+// original (0/20/40/60/80/100) deixava mid-tier mobs muito tankies (Cyclops T3
+// dava ~42% menos dano que no sistema antigo). T5 mantem 100% por design
+// (imunidade tematica: fire elemental imune a fogo, undead imune a veneno) com
+// floor 1 de dano garantido em ApplyCombatDamage. Ver design_combate.md / design_npcs.md.
 enum RESISTS_TIERS
 	RESIST_TIER0 := 0,
-	RESIST_TIER1 := 1,
-	RESIST_TIER2 := 3,
-	RESIST_TIER3 := 6,
-	RESIST_TIER4 := 12,
-	RESIST_TIER5 := 16,
+	RESIST_TIER1 := 10,
+	RESIST_TIER2 := 25,
+	RESIST_TIER3 := 40,
+	RESIST_TIER4 := 60,
+	RESIST_TIER5 := 100,
 endenum
 
 enum TIERS
@@ -409,37 +417,6 @@ function controlNPC(who, targ)
 		
 		Run_Script_To_Completion(":death:npcdeath", {targ});
 	endif
-endfunction
-
-function endControlNPC(who)
-	ErasePet(who.master, who.serial);
-	who.SetMaster(0);
-
-	var orig_script := GetObjProperty(who, "script");
-
-	if ( !orig_script )
-
-		PrintTextAbove(who, "*doesnt have an original script to use now that taming is done?!*");
-		SysLog(who.name+" doesnt have an original script to use now that taming is done?!");
-		orig_script := ":brainai:brain";
-
-	elseif ( orig_script["tamed"] )
-
-		PrintTextAbove(who, "*my original script was tamed.src ?!*");
-		SysLog(who.name+" my original script was tamed.src ?!");
-		orig_script := ":brainai:brain";
-
-	endif
-
-	who.script := orig_script;
-	SetName(who, GetObjProperty(who, "name"));
-	EraseObjProperty(who, "owner");
-	EraseObjProperty(who, "name");
-	EraseObjproperty(who, "script");
-	EraseObjProperty(who, "happiness");
-	RestartScript(who);
-
-	ErasePetMods(who);
 endfunction
 
 function isHurt(mobile)

@@ -99,7 +99,7 @@ function OrganizeNPCsByCategory()
         var npc_elem := cfg[template_name];
 
         // Get category, default to "Uncategorized" if not set
-        var category := GetConfigString(npc_elem, "Category");
+        var category := GetConfigString(npc_elem, "Environment");
         if (!category || category == "")
             category := default_category;
         endif

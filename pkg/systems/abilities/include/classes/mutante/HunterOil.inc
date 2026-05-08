@@ -28,10 +28,15 @@ class HunterOil(CombatAbility)
 		var oleo := GetObjProperty(who, "Óleo");
 
 		if (oleo == error)
-			var inimigo := RadioGump(who, 200, 260, "Escolha o Óleo", { "Dragon", "EvilHuman", "GiantAnimal",
-																		"Giants", "Goblin", "Undead", "Underdark" });
-			if (!inimigo)
-				return false;
+			var opts := array{ "Dragon", "EvilHuman", "GiantAnimal", "Giants", "Goblin", "Undead", "Underdark" };
+			var inimigo;
+			if (mobile.IsNPC())
+				inimigo := opts[RandomInt(opts.size()) + 1];
+			else
+				inimigo := RadioGump(who, 200, 260, "Escolha o Óleo", opts);
+				if (!inimigo)
+					return false;
+				endif
 			endif
 
 			SetObjProperty(who, "Óleo", CStr(inimigo));

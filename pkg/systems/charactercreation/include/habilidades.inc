@@ -7,7 +7,7 @@ include ":tn:equipment";
 include ":abilities:include/models/Ability";
 include ":census:include/CensusController";
 include "/include/math";
-
+include ":fls_core:fls_characters";
 function NivelHabilidade(habilidade, classe)
 
 	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
@@ -461,7 +461,7 @@ endfunction
 
 
 function AddNavigationBar(byref gump, current_page)
-    var buttons := array{"Skills", "Habilidades", "Maestria"};
+    var buttons := array{"Skills", "Habilidades"};
     
     for i := 1 to buttons.size()
         var x_offset := (i-1)*150 + 25;
@@ -704,6 +704,12 @@ endfunction
 function GetSkillLevelInfo(who)
 	var characterPrimarySkills := GetCharacterSkills(who, SKILL_PRIORITY::PRIMARY);
 	var periciaCombinadaAcima := characterPrimarySkills.combinedSkillsValue - characterPrimarySkills.skills.Size() * 40; //so conta os pontos que subiu a partir de 40
+
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata != error && chardata.trait == "Sabe-Tudo")
+		periciaCombinadaAcima += 3; // Sabe-Tudo sobe de nivel com 43 (em vez de 46) na sua unica primaria
+	endif
+
 	var divisor := characterPrimarySkills.skills.Size() * 3;
 	var levelAtual := cint(periciaCombinadaAcima/divisor);
 

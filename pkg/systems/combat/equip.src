@@ -146,8 +146,8 @@ program equipweapon(who, item)
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::FURIA) && item.isa(POLCLASS_ARMOR))
 		var cfg := ReadConfigFile(":combat:itemdesc");
 		var tipoProtecao := CStr(cfg[item.objtype].TipoProtecao);
-		if (tipoProtecao["Armadura Pesada"])
-			SendSysMessageEx(who, "Como bárbaro você se recusa a usar armaduras de metal", SSM_FAIL);
+		if (tipoProtecao["Armadura"])
+			SendSysMessageEx(who, "Como bárbaro você se recusa a usar armaduras.", SSM_FAIL);
 			return 0;
 		endif
 	endif
@@ -224,6 +224,14 @@ program equipweapon(who, item)
 	if (item.cursed == 1)
 		UpdateMobileEntropy(who, -100);
 	endif
+
+	// Cleanup stale `#armor_evasion_penalty` from legacy AR penalty system (Phase 5 redesign).
+	// Wiped on equip so subsequent unequip is a no-op, preventing free evasion exploit
+	// when stale properties travel on dropped/traded items.
+	if (item.isa(POLCLASS_ARMOR))
+		EraseObjProperty(item, "#armor_evasion_penalty");
+	endif
+
 	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
 	ApplyEquipObjMods(who, item);
 

@@ -103,7 +103,7 @@ class RocketJump(CombatAbility)
 				endforeach
 			endif
 
-			var nearby := ListMobilesNearLocation(who.x, who.y, who.z, 2, who.realm);
+			var nearby := mobile.GetNearbyMobiles(2);
 			foreach char in nearby
 				var char_owner := GetObjProperty(char, "owner");
 				if (!(char in (festa.members) || char == who))

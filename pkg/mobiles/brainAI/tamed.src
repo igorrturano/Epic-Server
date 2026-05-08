@@ -22,6 +22,7 @@ use storage;
 include ":attributes:attributes";
 include "include/sysEvent";
 include ":mounts:mounts";
+include ":taming:taming";
 include "include/client";
 include ":gumps:yesNo";
 include "include/npcUtil";
@@ -991,12 +992,12 @@ function TakeItem(ev)
 			SendSysMessage(ev.source, "Voce precisa esvaziar a mochila antes de coloca-la na montaria.");
 			return;
 		endif
-		if (me.npctemplate == ":brainai:Horse3")
+		if (me.npctemplate == ":epicai:Horse3")
 			SetObjProperty(me, "beforepack", me.graphic);
 			me.graphic := 291;
 			DestroyItem(ev.item);
 			PrintTextAbove(ev.source, "*prende uma mochila no cavalo*");
-		elseif (me.npctemplate == ":brainai:Llama")
+		elseif (me.npctemplate == ":epicai:Llama")
 			SetObjProperty(me, "beforepack", me.graphic);
 			me.graphic := 292;
 			DestroyItem(ev.item);
@@ -1019,6 +1020,9 @@ function UnTame()
 
 	PrintTextPrivate(me, "*" + me.name + " pode viver livre denovo.*", me.master);
 
+	ClearPetStableAndLimboState(me);
+	ClearMasterLimboRef(me.master, me.serial);
+	ErasePet(me.master, me.serial);
 	me.SetMaster(0);
 
 	var orig_script := GetObjProperty(me, "script");
@@ -1055,8 +1059,20 @@ function Transfer(targ)
 		return;
 	endif
 
+	if ((GetNumPets(targ) + GetPetCost(me)) > GetMaxPets(targ))
+		Say("*" + me.name + " nao aceita " + targ.name + " como dono.*");
+		return;
+	endif
+
+	// Limpa qualquer estado de estabulo/limbo antes de trocar de dono
+	ClearPetStableAndLimboState(me);
+	ClearMasterLimboRef(me.master, me.serial);
+
 	Say("*" + me.name + " aceitou " + targ.name + " como seu novo dono*");
 	SetObjProperty(me, "owner", targ.serial);
+	ErasePet(me.master, me.serial);
+	AddPet(targ, me.serial);
+
 	me.SetMaster(targ);
 
 	RestartScript(me);

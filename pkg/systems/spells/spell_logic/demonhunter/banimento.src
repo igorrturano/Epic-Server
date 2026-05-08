@@ -4,9 +4,11 @@ use npc;
 
 include "include/say";
 include ":attributes:attributes";
+include ":spells:Controller/SC_Damage";
 
 program SpellScript(params)
 	var who := params[1];
+	var spell := params[3];
 	params := 0;
 
 	SendSysMessageEx(who, "Invocando poder sagrado para banir criaturas malignas...", SSM_INFO);
@@ -28,12 +30,12 @@ program SpellScript(params)
 			var tier := CInt(GetConfigString(elem, "Tier"));
 			var is_boss := GetObjProperty(mobile, "true_boss");
 
-			if ((cfg[npctemplate.template].Category in inimigo) && tier <= max_tier && !is_boss)
+			if ((cfg[npctemplate.template].Environment in inimigo) && tier <= max_tier && !is_boss)
 				affected += 1;
 				PlayObjectCenteredEffect(mobile, 0x37CC, 10, 10);
 				PrintTextAbove(mobile, "*Banido*", who);
-				ApplyRawDamage(mobile, 9999);
-			elseif ((cfg[npctemplate.template].Category in inimigo) && (tier > max_tier || is_boss))
+				SC_DealDamage(who, mobile, CInt(spell.id), 9999, DMG_FORCED);
+			elseif ((cfg[npctemplate.template].Environment in inimigo) && (tier > max_tier || is_boss))
 				PrintTextAbove(mobile, "*Resiste ao Banimento*");
 				SendSysMessageEx(who, "A criatura é poderosa demais para ser banida!", SSM_FAIL);
 			endif

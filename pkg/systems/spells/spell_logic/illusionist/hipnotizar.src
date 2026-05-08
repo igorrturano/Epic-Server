@@ -7,6 +7,7 @@ include ":abilities:models/Ability";
 include ":charactercreation:resists";
 include ":tn:boss";
 include "include/sysEvent";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
@@ -29,7 +30,7 @@ program SpellScript(params)
 		controlNPC(who, targ);
 	endif
 
-	handleSilentMagic(who, targ, SFX_SPELL_TELEKINESIS);
+	SC_HandleSound(who, targ, SFX_SPELL_TELEKINESIS);
 	// PlayObjectCenteredEffectEx(targ, FX_HIPNOSYS, 255, 60);
 	// PlayObjectCenteredEffect(targ, FX_HIPNOSYS, 150, 50);
 
@@ -47,7 +48,7 @@ program SpellScript(params)
 	EraseObjProperty(targ, "charmed_by");
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
-		endControlNPC(targ);
+		start_script(":epicAI:scripts/end_control_npc", array{targ});
 		var event := struct{ "type" := SYSEVENT_ENGAGED, "source" := who };
 		SendEvent(targ, event);
 	endif

@@ -22,7 +22,7 @@ function CreateBookInContainer(container)
     endif
 endfunction
 
-// Retorna um serial aleatório de livro lacrado disponível
+// Retorna um serial aleatório de livro lacrado disponível (apenas publicados)
 function SealedBooks_GetRandomSerial()
     var df := OpenDataFile(SEALED_BOOKS_DATAFILE);
     if (df.errortext) // Corrected check
@@ -30,14 +30,23 @@ function SealedBooks_GetRandomSerial()
     endif
 
     var keys := df.Keys();
+    var published_serials := array{};
     
-    if (!keys.size())
-        
+    // Filtra apenas livros com status "publicado"
+    foreach serial in keys
+        var elem := df.FindElement(serial);
+        if (elem && elem.GetProp("status") == "publicado")
+            published_serials.append(serial);
+        endif
+        sleepms(1);
+    endforeach
+    
+    if (!published_serials.size())
         return 0;
     endif
 
-    var idx := RandomInt(keys.size()) + 1;
-    var serial := keys[idx];
+    var idx := RandomInt(published_serials.size()) + 1;
+    var serial := published_serials[idx];
     return serial;
 endfunction
 

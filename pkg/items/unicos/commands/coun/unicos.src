@@ -1,5 +1,6 @@
 use uo;
 use os;
+use datafile;
 
 include ":unicos:unicos";
 include ":merchants:crafthelp";
@@ -15,11 +16,13 @@ const DESTROY_BTN := 0x5;
 const GET_BTN := 0x6;
 const REMOVE_BTN := 0x7;
 const REMOVEPDONO_BTN := 0x8;
+const SHOW_LORE_BTN := 0x9;
 
 // Menu Position Constants
 const MENU_INTRO := 0x0;
 const MENU_ITEMS_LIST := 0x1;
 const MENU_ITEM_INFO := 0x2;
+const MENU_LORE_LIST := 0x3;
 
 // Gump Constants
 const BKGND_STONESLAB := 9200; // Gray stone slab background
@@ -43,12 +46,27 @@ program UniqueItemsMenu(player)
 				if (input == SHOW_ITEMS_BTN)
 					ShowItems(gump, player);
 				else
-					cur_menu := MENU_ITEM_INFO;
 					item := SystemFindObjectBySerial(input, 3);
 					if (!item)
 						GetItemsDataFile().DeleteElement(Hex(input));
 						SendSysMessage(player, "Este item nao existe mais e foi removido da lista.");
+						ShowItems(gump, player);
 					else
+						cur_menu := MENU_ITEM_INFO;
+						ShowItemInfo(gump, player, item);
+					endif
+				endif
+			MENU_LORE_LIST:
+				if (input == SHOW_LORE_BTN)
+					ShowLoreItems(gump, player);
+				else
+					item := SystemFindObjectBySerial(input, 3);
+					if (!item)
+						GetItemsDataFile().DeleteElement(Hex(input));
+						SendSysMessage(player, "Este item nao existe mais e foi removido da lista.");
+						ShowLoreItems(gump, player);
+					else
+						cur_menu := MENU_ITEM_INFO;
 						ShowItemInfo(gump, player, item);
 					endif
 				endif
@@ -66,6 +84,7 @@ program UniqueItemsMenu(player)
 			ADD_ITEM_BTN:     AddItem(player); cur_menu := MENU_INTRO;
 			ERASE_IT_ALL_BTN: ClearList(player); cur_menu := MENU_INTRO;
 			SHOW_ITEMS_BTN:   cur_menu := MENU_ITEMS_LIST;
+			SHOW_LORE_BTN:    cur_menu := MENU_LORE_LIST;
 			GO_BTN:
 				var cont := item;
 				while (cont.container)
@@ -76,6 +95,13 @@ program UniqueItemsMenu(player)
 				SendSysMessage(player, "Voce se teleportou para o item com sucesso.");
 				return 1;
 			DESTROY_BTN:
+				var lista_elem := GetItemsDataElem(ElemName(item));
+				if (lista_elem.GetProp("Title") == "Lore Item")
+					var lore_df := OpenDataFile(":unicos:lore_dropped");
+					if (lore_df)
+						lore_df.DeleteElement(Hex(item.objtype));
+					endif
+				endif
 				RemoveItemOfTheList(item);
 				DestroyItem(item);
 				SendSysMessage(player, "Voce destruiu o item com sucesso.");
@@ -109,11 +135,14 @@ function MainLayout(player)
 	GFAddButton(gump, 20, 33, 2117, 2118, GF_CLOSE_BTN, SHOW_ITEMS_BTN);
 	GFTextLine(gump, 40, 30, GF_STDCOLOR, "Existentes no Mundo");
 
-	GFAddButton(gump, 20, 83, 2117, 2118, GF_CLOSE_BTN, ADD_ITEM_BTN);
-	GFTextLine(gump, 40, 80, GF_STDCOLOR, "Adicionar item");
+	GFAddButton(gump, 20, 83, 2117, 2118, GF_CLOSE_BTN, SHOW_LORE_BTN);
+	GFTextLine(gump, 40, 80, GF_STDCOLOR, "Itens de Lore");
 
-	GFAddButton(gump, 20, 133, 2117, 2118, GF_CLOSE_BTN, ERASE_IT_ALL_BTN);
-	GFTextLine(gump, 40, 130, GF_STDCOLOR, "Apagar lista");
+	GFAddButton(gump, 20, 133, 2117, 2118, GF_CLOSE_BTN, ADD_ITEM_BTN);
+	GFTextLine(gump, 40, 130, GF_STDCOLOR, "Adicionar item");
+
+	GFAddButton(gump, 20, 183, 2117, 2118, GF_CLOSE_BTN, ERASE_IT_ALL_BTN);
+	GFTextLine(gump, 40, 180, GF_STDCOLOR, "Apagar lista");
 
 	return gump;
 endfunction
@@ -287,6 +316,9 @@ function ShowItems(byref gump, player)
 	var y_pos := 45;
 	foreach elem in items
 		var info := GetItemsDataElem(elem);
+		if (info.GetProp("Title") == "Lore Item")
+			continue;
+		endif
 		var name := info.GetProp("ItemDesc");
 		var owner := info.GetProp("OwnerName");
 		var acctname := info.GetProp("OwnerAcc");
@@ -330,4 +362,46 @@ function ClearList(player)
 	endif
 	RemoveAllofTheList();
 	SendSysMessage(player, "Voce limpou a lista, mas os itens ainda possuem a prop de unicos. Normal...");
+endfunction
+
+function ShowLoreItems(byref gump, player)
+	GFResizePic(gump, 170, 15, BKGND_STONESLAB, 455, 450);
+	GFTextMid(gump, 200, 25, 455, 0, "LORE ITEMS NO MUNDO");
+	GFPage(gump, 1);
+
+	var items := GetItemsList();
+	var y_pos := 45;
+	var found := 0;
+
+	foreach elem_name in items
+		var info := GetItemsDataElem(elem_name);
+		if (info.GetProp("Title") != "Lore Item")
+			continue;
+		endif
+
+		var lore_name := info.GetProp("LoreName");
+		if (!lore_name)
+			lore_name := info.GetProp("ItemDesc");
+		endif
+
+		if (y_pos > END_Y)
+			GFAddButton(gump, 580, 30, 2224, 2224, GF_PAGE_BTN, gump.cur_page + 1);
+			y_pos := 45;
+			GFPage(gump, gump.cur_page + 1);
+		endif
+		if (gump.cur_page > 1)
+			GFAddButton(gump, 550, 30, 2223, 2223, GF_PAGE_BTN, gump.cur_page - 1);
+		endif
+
+		GFAddButton(gump, 175, y_pos + 3, 2117, 2118, 1, elem_name);
+		GFTextLine(gump, 195, y_pos, GF_STDCOLOR, lore_name);
+
+		y_pos := y_pos + 20;
+		found := found + 1;
+		sleepms(2);
+	endforeach
+
+	if (!found)
+		GFTextMid(gump, 170, 200, 455, GF_STDCOLOR, "Nenhum lore item no mundo ainda.");
+	endif
 endfunction

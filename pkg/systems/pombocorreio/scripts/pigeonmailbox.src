@@ -1,0 +1,268 @@
+// Script do item caixa de correio.
+
+use uo;
+use os;
+use basic;
+use math;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":pigeoncorreio:include/pigeoncorreio";
+
+program pigeonmailbox(who, mailbox)
+	if (CoordinateDistance(who.x, who.y, mailbox.x, mailbox.y) > 2)
+		SendSysMessage(who, "Aquilo está longe demais.", 33);
+		return;
+	endif
+
+	var is_gm := who.cmdlevel >= 1;
+	var conhecidos;
+	if (is_gm)
+		conhecidos := PigeonGetAllOnline(who);
+	else
+		conhecidos := PigeonGetConhecidos(who);
+	endif
+
+	if (conhecidos.Size() == 0)
+		if (is_gm)
+			SendSysMessage(who, "Não há nenhum jogador online.", 33);
+		else
+			SendSysMessage(who, "Você não tem nenhum conhecido online.", 33);
+		endif
+		return;
+	endif
+
+	var gump := BuildMailGump(conhecidos, is_gm);
+	var input := GFSendGump(who, gump);
+
+	var btn := CInt(input[0]);
+	if (btn == 0 || btn == 2)
+		SendSysMessage(who, "Envio cancelado.", 33);
+		return;
+	elseif (btn != 1)
+		return;
+	endif
+
+	var msg := CStr(GFExtractData(input, 1));
+
+	if (Len(msg) == 0)
+		SendSysMessage(who, "A mensagem não pode estar vazia.", 33);
+		return;
+	endif
+
+	if (Len(msg) > PIGEON_MSG_MAX_LEN)
+		SendSysMessage(who, "A mensagem é longa demais (máximo " + CStr(PIGEON_MSG_MAX_LEN) + " caracteres).", 33);
+		return;
+	endif
+
+	var animal_type := PIGEON_ANIMAL_PIGEON;
+	var a := 0;
+	while (a < PIGEON_ANIMAL_COUNT)
+		if (CInt(input[100 + a]) == 1)
+			animal_type := a;
+			break;
+		endif
+		a += 1;
+	endwhile
+
+	// nome_inicial é o nome visível do personagem — nunca who.name/realname
+	var sender_nome := CStr(GetObjProperty(who, "nome_inicial"));
+	if (!sender_nome || sender_nome == "0")
+		sender_nome := CStr(who.name);
+	endif
+
+	if (is_gm && CInt(input[9]) == 1)
+		SendBroadcast(who, msg, sender_nome, animal_type);
+		return;
+	endif
+
+	var selected_idx := -1;
+	var i := 0;
+	while (i < conhecidos.Size())
+		var radio_id := 10 + i;
+		if (CInt(input[radio_id]) == 1)
+			selected_idx := i;
+			break;
+		endif
+		i += 1;
+	endwhile
+
+	if (selected_idx < 0)
+		SendSysMessage(who, "Você deve selecionar um destinatário.", 33);
+		return;
+	endif
+
+	var entry     := conhecidos[selected_idx + 1];
+	var recipient := entry.mob;
+
+	if (!recipient || !recipient.connected)
+		SendSysMessage(who, "Esse jogador saiu do servidor.", 33);
+		return;
+	endif
+
+	if (!PigeonConsumeCost(who))
+		SendSysMessage(who, "*voce precisa pagar " + CStr(PIGEON_COST) + " moedas para usar o serviço*", 33);
+		return;
+	endif
+
+	var sender_apelido := PigeonGetSenderApelido(who, recipient, sender_nome);
+	var pigeon := SpawnPigeon(who, recipient, msg, sender_apelido, animal_type);
+	if (!pigeon)
+		SendSysMessage(who, "Erro ao criar o mensageiro. Contate um GM.", 33);
+		CreateItemInContainer(who.backpack, PIGEON_COIN_TYPE, PIGEON_COST);
+		return;
+	endif
+
+	SendSysMessage(who, PigeonGetAnimalName(animal_type) + " enviado para " + CStr(entry.apelido) + "!", 66);
+endprogram
+
+// Envia um animal mensageiro para cada jogador online (uso exclusivo de GMs, sem custo).
+function SendBroadcast(who, msg, sender_nome, animal_type)
+	var count := 0;
+
+	foreach chr in EnumerateOnlineCharacters()
+		if (chr.serial == who.serial || !chr.connected || CInt(GetObjProperty(chr, "morto")) == 1)
+			SleepMS(2);
+			continue;
+		endif
+
+		var sender_apelido := PigeonGetSenderApelido(who, chr, sender_nome);
+		var pigeon := SpawnPigeon(who, chr, msg, sender_apelido, animal_type);
+		if (pigeon)
+			count += 1;
+		endif
+
+		SleepMS(5);
+	endforeach
+
+	SendSysMessage(who, "Mensagem enviada para " + CStr(count) + " jogadores!", 66);
+endfunction
+
+// Retorna o apelido que o destinatário tem para o remetente, ou sender_nome como fallback.
+function PigeonGetSenderApelido(who, recipient, sender_nome)
+	var rec_conhecidos := GetObjProperty(recipient, "conhecidos");
+	if (rec_conhecidos)
+		var chave := CStr(who.serial);
+		if (rec_conhecidos.Exists(chave))
+			return CStr(rec_conhecidos[chave]);
+		endif
+	endif
+	return sender_nome;
+endfunction
+
+// Cria e configura um NPC animal mensageiro apontado para `recipient`.
+function SpawnPigeon(who, recipient, msg, sender_apelido, animal_type)
+	var tmpl := PigeonGetTemplate(animal_type);
+	var pigeon := CreateNpcFromTemplate(tmpl, who.x, who.y, who.z, 0, who.realm);
+	if (!pigeon)
+		return 0;
+	endif
+
+	SetObjProperty(pigeon, "state",            PIGEON_DEPARTING);
+	SetObjProperty(pigeon, "dist_count",       0);
+	SetObjProperty(pigeon, "flight_dir",       RandomInt(8));
+	SetObjProperty(pigeon, "recipient_serial", CInt(recipient.serial));
+	SetObjProperty(pigeon, "sender_name",      sender_apelido);
+	SetObjProperty(pigeon, "sender_serial",    CInt(who.serial));
+	SetObjProperty(pigeon, "message",          msg);
+	SetObjProperty(pigeon, "animal_type",      CInt(animal_type));
+	return pigeon;
+endfunction
+
+function BuildMailGump(conhecidos, is_gm)
+	var gump := GFCreateGump(100, 50);
+
+	var W := 360;
+	var H := 500;
+
+	GFPage(gump, 0);
+
+	GFGumpPicTiled(gump, 10,    10,    W-20,  H-20,  39929);
+	GFGumpPicTiled(gump, 0,     0,     25,    25,    39925);
+	GFGumpPicTiled(gump, W-25,  0,     35,    25,    39927);
+	GFGumpPicTiled(gump, 25,    0,     W-50,  25,    39926);
+	GFGumpPicTiled(gump, 25,    H-25,  W-25,  35,    39932);
+	GFGumpPicTiled(gump, 0,     25,    10,    H-50,  39928);
+	GFGumpPicTiled(gump, W-25,  25,    35,    H-50,  39930);
+	GFGumpPicTiled(gump, W-25,  H-25,  35,    35,    39933);
+	GFGumpPicTiled(gump, 0,     H-25,  35,    35,    39931);
+
+	GFTextLine(gump, 25, 15, 53, "Pombo-Correio");
+
+	GFResizePic(gump, 15, 32, 9350, W-30, 22);
+	GFTextLine(gump, 20, 35, 53, "Destinatario:");
+
+	// Seção animal mensageiro (radio group 2, IDs 100-106)
+	GFResizePic(gump, 15, 262, 9350, W-30, 85);
+	GFTextLine(gump, 20, 265, 53, "Animal mensageiro:");
+
+	GFSetRadioGroup(gump, 2);
+	GFRadioButton(gump, 20,  283, 0xD0, 0xD1, 0, 100);
+	GFTextLine(gump,    38,  283, 53, "Pombo");
+	GFSetRadioGroup(gump, 2);
+	GFRadioButton(gump, 90,  283, 0xD0, 0xD1, 0, 101);
+	GFTextLine(gump,    108, 283, 53, "Rato");
+	GFSetRadioGroup(gump, 2);
+	GFRadioButton(gump, 155, 283, 0xD0, 0xD1, 0, 102);
+	GFTextLine(gump,    173, 283, 53, "Gato");
+	GFSetRadioGroup(gump, 2);
+	GFRadioButton(gump, 218, 283, 0xD0, 0xD1, 0, 103);
+	GFTextLine(gump,    236, 283, 53, "Furao");
+
+	GFSetRadioGroup(gump, 2);
+	GFRadioButton(gump, 20,  323, 0xD0, 0xD1, 0, 104);
+	GFTextLine(gump,    38,  323, 53, "Esquilo");
+	GFSetRadioGroup(gump, 2);
+	GFRadioButton(gump, 100, 323, 0xD0, 0xD1, 0, 105);
+	GFTextLine(gump,    118, 323, 53, "Corvo");
+	GFSetRadioGroup(gump, 2);
+	GFRadioButton(gump, 170, 323, 0xD0, 0xD1, 0, 106);
+	GFTextLine(gump,    188, 323, 53, "Arara");
+
+	// Seção mensagem
+	GFResizePic(gump, 15, 350, 9350, W-30, 22);
+	GFTextLine(gump, 20, 353, 53, "Mensagem:");
+	GFResizePic(gump, 15, 372, 3000, W-30, 60);
+	GFTextEntry(gump, 20, 377, W-40, 50, 0, "", 1, PIGEON_MSG_MAX_LEN);
+
+	GFAddButton(gump, 85,  450, 2128, 2129, GF_CLOSE_BTN, 1);
+	GFAddButton(gump, 205, 450, 2119, 2120, GF_CLOSE_BTN, 2);
+
+
+	var y := 57;
+	var i := 1;
+	var page := 1;
+	var per_page := 10;
+	if (is_gm)
+		per_page := 9;
+	endif
+
+	GFPage(gump, 1);
+
+	if (is_gm)
+		GFSetRadioGroup(gump, 1);
+		GFRadioButton(gump, 20, y, 0xD0, 0xD1, 0, 9);
+		GFTextLine(gump, 38, y, 230, "[GM] Enviar para TODOS online");
+		y += 25;
+	endif
+
+	while (i <= conhecidos.Size())
+		if (i > 1 && (i - 1) % per_page == 0)
+			GFAddButton(gump, W-55, 248, 0x15E1, 0x15E5, GF_PAGE_BTN, page + 1);
+			page += 1;
+			GFPage(gump, page);
+			GFAddButton(gump, W-80, 248, 0x15E3, 0x15E7, GF_PAGE_BTN, page - 1);
+			y := 57;
+		endif
+
+		var entry    := conhecidos[i];
+		var radio_id := 10 + (i - 1);
+		GFSetRadioGroup(gump, 1);
+		GFRadioButton(gump, 20, y, 0xD0, 0xD1, 0, radio_id);
+		GFTextLine(gump, 38, y, 53, CStr(entry.apelido));
+		y += 20;
+		i += 1;
+	endwhile
+
+	return gump;
+endfunction

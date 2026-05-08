@@ -14,6 +14,7 @@ include "/include/packets";
 include ":combat:Model/AttackInfo";
 include ":combat:Controller/DamageController";
 include ":crafting:include/util/fabricacaoConstants";
+include ":furniture:chairfall";
 
 const ELEM_CFG_DEST := "Destruiveis";
 const TIPO_DISCORD_DESTRUIDO := "itemDestruido";
@@ -178,6 +179,7 @@ function Destruir(quem, itemAlvo, fonteDano)
 	endif
 
 	RunTraps(itemAlvo, quem);
+	DispararArmadilhaWalkOn(quem, itemAlvo);
 	TocaSFXDestruicao(itemAlvo, isObjetoMovido);
 	if (!IsDestroco(itemAlvo))
 		var itemAlvoDesc := itemAlvo.desc;
@@ -197,6 +199,10 @@ function Destruir(quem, itemAlvo, fonteDano)
 			InsereLogItemDestruido(quem,POLCore().systime,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano,deveMarcar);
 			DisparaAvisoDiscord(quem,itemAlvo.x,itemAlvo.y,itemAlvo.z,itemAlvo.realm,itemAlvoDesc,descFonteDano);
 		endif
+	endif
+
+	if (IsChairGraphic(itemAlvo.graphic))
+		TriggerChairFall(itemAlvo.x, itemAlvo.y, itemAlvo.z, itemAlvo.realm);
 	endif
 
 	if (!envelopeDeed.isDeed)
@@ -278,6 +284,42 @@ function CalculaMaxDestrocos(item)
 	var numeroMaximoDest := Ceil(item.height / 5);
 	numeroMaximoDest := numeroMaximoDest > 1 ? numeroMaximoDest : 1;
 	return RandomInt(cInt(numeroMaximoDest)) + 1;
+endfunction
+
+/*
+ * DispararArmadilhaWalkOn(quem, item)
+ *
+ * Purpose
+ * Quando uma armadilha de chão é destruída pelo sistema de destruíveis,
+ * dispara o WalkOnScript da armadilha contra o destruidor para que o dano
+ * seja aplicado antes do item ser destruído. Sem isso o jogador atacaria
+ * a armadilha em segurança e ela cairia silenciosamente.
+ *
+ * Parameters
+ * quem: O destruidor (será o "mobile" passado para o WalkOnScript).
+ * item: O item armadilha sendo destruído.
+*/
+function DispararArmadilhaWalkOn(quem, item)
+	if (quem == error || quem.dead)
+		return;
+	endif
+	if (cint(GetObjProperty(item, "trap_inativa")) == 1)
+		return;
+	endif
+
+	var cfg := ReadConfigFile(":*:itemdesc");
+	var elem := cfg[item.objtype];
+	if (elem.errortext)
+		return;
+	endif
+
+	var walkScript := elem.WalkOnScript;
+	if (!walkScript || !Find(walkScript, "floorTraps/", 1))
+		return;
+	endif
+
+	start_script(":traps:" + walkScript, { quem, item });
+	sleepms(2); // yield para o WalkOnScript aplicar o dano antes do DestroyItem
 endfunction
 
 /*

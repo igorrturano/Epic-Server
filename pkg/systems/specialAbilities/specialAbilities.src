@@ -8,7 +8,7 @@ include ":timedscripts:timedScripts";
 include ":charactercreation:habilidades";
 include "include/utils";
 include ":hotbar:include/cooldown_packet";
-
+include ":tn:cooldown";
 program specialAbilities(who)
 	if (!who)
 		return 0;

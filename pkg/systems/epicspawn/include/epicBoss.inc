@@ -24,6 +24,22 @@ function CreateEpicBoss(boss, x, y, z, realm)
     SetObjProperty(npc, "EpicBossStruct", boss);
     SetObjProperty(npc, "IsBoss", 1);
 
+    // Subclass selection comes from the gump as the base ability NAME
+    // (e.g. "Furia do Dragao"). GetClassProgression expects the ability ID,
+    // so we resolve name → ID here. Must run BEFORE customizeNpc so the brain's
+    // first InitializeHumanoidNPC pass sees the correct subclass.
+    if (boss.classe)
+        var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+        foreach hab_id in (GetConfigStringKeys(habcfg))
+            var elem := FindConfigElem(habcfg, hab_id);
+            if (GetConfigString(elem, "nome") == boss.classe)
+                SetObjProperty(npc, "subclass", CInt(hab_id));
+                break;
+            endif
+            sleepms(2);
+        endforeach
+    endif
+
     var tier := boss.tier != 0 ? boss.tier : npc.getTier();
     customizeNpc(npc, tier);
     // Set basic properties
@@ -266,10 +282,6 @@ function CreateEpicBoss(boss, x, y, z, realm)
         SetObjProperty(npc, "flee_health", CInt(boss.flee_health));
     endif
 
-    if (boss.classe)
-        SetObjProperty(npc, "subclass", boss.classe);
-    endif
-    
     if (boss.preferred_target)
         SetObjProperty(npc, "preferred_target", boss.preferred_target);
     endif

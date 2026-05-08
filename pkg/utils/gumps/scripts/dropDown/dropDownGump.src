@@ -14,7 +14,7 @@ program DropDownGump(parametros)
 		return 1;
 	endif
 
-	Sleepms(150);
+	Sleepms(200);
 	var retornoDropDown := 1;
 	while (GetProcess(pidPai) && retornoDropDown)
 

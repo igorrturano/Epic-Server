@@ -1,0 +1,12 @@
+// Spellcaster spell scroll create script.
+// Delegates all spell assignment logic to scrollRecipes.inc.
+use uo;
+use cfgfile;
+use util;
+use os;
+
+include ":recipes:include/scrollRecipes";
+
+program create(item)
+    AssignSpellRecipe(item);
+endprogram

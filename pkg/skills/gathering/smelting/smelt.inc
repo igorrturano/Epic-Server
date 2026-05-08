@@ -25,7 +25,6 @@ function EsfriarLiga(user, item)
       else
         SendSysMessage(user, "Voce esfriou o metal derretido e fez as barras.", FONT_NORMAL, 90);
         CreateItemInBackpack(user, ingot, amt);
-        SendSysMessage(user, ""+MobileWrapper(user).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH));
         if (MobileWrapper(user).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH))
           smeltaImpurezasRaras(user, amt);
         endif
@@ -77,7 +76,6 @@ function EsfriarLiga(user, item)
         endif
       else
         CreateItemInBackpack(user, ingot, amt);
-        SendSysMessage(user, ""+MobileWrapper(user).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH));
         if (MobileWrapper(user).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH))
           smeltaImpurezasRaras(user, amt);
         endif
@@ -107,14 +105,13 @@ function DeterminaLiga(metals, who)
         0x6465: metais.append("cobre");
         0x6991: metais.append("estanho");
         0x6460: metais.append("frigutium");
-        0x6310: metais.append("galvorn");
+        0x6310: metais.append("atrium");
         0x6311: metais.append("mithril");
         0x6315: metais.append("illyra");
         0x630b: metais.append("fulmetium");
         0x630c: metais.append("venetium");
         0x630d: metais.append("ignium");
         0x6993: metais.append("prata");
-        0x630a: metais.append("litan");
         0x630e: metais.append("golden");
         0x6995: metais.append("aco");
      endcase
@@ -131,18 +128,6 @@ function DeterminaLiga(metals, who)
       return 0x6309; //ferro
     elseif (("carvao"  in metais ) && ("ferro" in metais))
       return 0x6995; //aco
-    // elseif (("litan" in metais) && ("estanho" in metais))
-    //   return 0x6601; //stalith
-    // elseif (("galvorn" in metais) && ("fulmetium" in metais))
-    //   return 0x6998; //teslium
-    // elseif (("galvorn" in metais) && ("venetium" in metais))
-    //   return 0x6999; //hissium
-    // elseif (("galvorn" in metais) && ("ignium" in metais))
-    //   return 0x6997; //solium
-    // elseif (("galvorn" in metais) && ("frigutium" in metais))
-    //   return 0x699A; //icelum
-    // elseif (("prata" in metais) && ("fulmetium" in metais))
-    //   return 0x6609; //lunium
     else
       return "noIngot";
     endif
@@ -174,44 +159,57 @@ function DeterminaLiga(metals, who)
 endfunction
 
 function smeltaImpurezasRaras(who, amt)
-  var achou := 0;
-  if(amt >= 40) //VALORES SETADOS PARA 40 PARA EVITAR POSSÍVEL PROBLEMA - SETAR PARA 20 CASO DÊ TUDO CERTO!
-    var rand := RandomFloat(200);
-    if(rand<0.1)
-      SendSysMessage(who, "Achou um pouco de Mithril em meio ao minerios.");
-      CreateItemInBackPack(who, 0x6311, CInt(amt/40)); // return 95; //mithril
-      achou := 1;
-    elseif(rand<0.2)
-      SendSysMessage(who, "Achou um pouco de Galvorn em meio ao minerios.");
-      CreateItemInBackPack(who, 0x6310, CInt(amt/40)); // return 90; //galvorn
-      achou := 1;
-    elseif(rand<0.4)
-      SendSysMessage(who, "Achou um pouco de Fulmetium  em meio ao minerios.");
-      CreateItemInBackPack(who, 0x630b, CInt(amt/40)); // return 80; //fulmetium
-      achou := 1;
-    elseif(rand<0.6)
-      SendSysMessage(who, "Achou um pouco de Venetium em meio ao minerios.");
-      CreateItemInBackPack(who, 0x630c, CInt(amt/40)); // return 80; //venetium
-      achou := 1;
-    elseif(rand<0.8)
-      SendSysMessage(who, "Achou um pouco de Ignium em meio ao minerios.");
-      CreateItemInBackPack(who, 0x630d, CInt(amt/40)); // return 80; //ignium
-      achou := 1;
-    elseif(rand<1.0)
-      SendSysMessage(who, "Achou um pouco de frigutium em meio ao minerios.");
-      CreateItemInBackPack(who, 0x6460, CInt(amt/40)); // return 80; //frigutium
-      achou := 1;
-    elseif(rand<1.2)
-      SendSysMessage(who, "Achou um pouco de litan em meio ao minerios.");
-      return CreateItemInBackPack(who, 0x630a, CInt(amt/40)); // return 70; //litan
-    elseif(rand<1.4)
-      SendSysMessage(who, "Achou um pouco de Ouro em meio ao minerios.");
-      CreateItemInBackPack(who, 0x630e, CInt(amt/40)); // return 40; //golden
-      achou := 1;
+  if (amt < 40)
+    return 0;
+  endif
+
+  var chunks := CInt(amt / 40);
+  var drops := dictionary;
+  var i;
+  for (i := 1; i <= chunks; i := i + 1)
+    var rand := RandomFloat(20);
+    var metal := 0;
+    if (rand < 0.1)
+      metal := 0x6311; // Mithril
+    elseif (rand < 0.2)
+      metal := 0x6315; // Illyra
+    elseif (rand < 0.5)
+      metal := 0x630b; // Fulmetium
+    elseif (rand < 0.8)
+      metal := 0x630c; // Venetium
+    elseif (rand < 1.1)
+      metal := 0x630d; // Ignium
+    elseif (rand < 1.4)
+      metal := 0x6460; // Frigutium
     endif
+
+    if (metal)
+      if (!drops.Exists(metal))
+        drops[metal] := 0;
+      endif
+      drops[metal] := drops[metal] + 1;
+    endif
+  endfor
+
+  var keys := drops.keys();
+  if (!keys.size())
+    return 0;
   endif
-  if(achou)
-    SkillCheck(who, GATHERING, -1);
-  endif
-  return achou;
+
+  var names := dictionary;
+  names[0x6311] := "Mithril";
+  names[0x6315] := "Illyra";
+  names[0x630b] := "Fulmetium";
+  names[0x630c] := "Venetium";
+  names[0x630d] := "Ignium";
+  names[0x6460] := "Frigutium";
+
+  foreach objtype in (keys)
+    var qty := drops[objtype];
+    CreateItemInBackpack(who, objtype, qty);
+    SendSysMessage(who, $"Achou {qty} unidade(s) de {names[objtype]} em meio aos minerios.");
+  endforeach
+
+  SkillCheck(who, GATHERING, -1);
+  return 1;
 endfunction

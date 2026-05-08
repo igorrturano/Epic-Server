@@ -14,14 +14,25 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":message:model/Message";
 include ":hotbar:include/custombuff";
 include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
 
 program cureScript(params)
 	var who := params[1];
 
-	// Always clean up polymorph stat modifiers first, regardless of metamorfose state
+	// Atomically read+erase the polymorph deltas. Without this, two concurrent
+	// endmetamorfose runs (e.g. MaldicaoMetamorfose stacking from two undead in
+	// the same tick) both read the same polymorph_* before either erases it,
+	// double-subtracting and leaving the player with negative *mod values.
+	Set_Critical(1);
 	var hitsmod := CINT(GetObjProperty(who, "polymorph_hitsmod"));
 	var manamod := CINT(GetObjProperty(who, "polymorph_manamod"));
 	var stammod := CINT(GetObjProperty(who, "polymorph_stammod"));
+	var resist  := CINT(GetObjProperty(who, "polymorph_resistmod"));
+	EraseObjProperty(who, "polymorph_hitsmod");
+	EraseObjProperty(who, "polymorph_manamod");
+	EraseObjProperty(who, "polymorph_stammod");
+	EraseObjProperty(who, "polymorph_resistmod");
+	Set_Critical(0);
 
 	if (hitsmod)
 		SetObjProperty(who, "hitsmod", CINT(GetObjProperty(who, "hitsmod")) - hitsmod);
@@ -36,7 +47,6 @@ program cureScript(params)
 	endif
 
 	// Reset resistances
-	var resist := CINT(GetObjProperty(who, "polymorph_resistmod"));
 	if (resist)
 		who.resist_physical_mod := who.resist_physical_mod - resist;
 		who.resist_fire_mod := who.resist_fire_mod - resist;
@@ -61,6 +71,9 @@ program cureScript(params)
 
 	RecalcVitals(who);
 	SendStatus(who);
+	// Client's ArmorResistances dict went stale while armor was stripped during
+	// transformation — re-emit packets so status gump reflects current #SpellResist.
+	SC_RefreshArmorPackets(who);
 
 	// Revert appearance if metamorfose data exists
 	var metamorfose := GetObjProperty(who, "metamorfose");
@@ -68,6 +81,22 @@ program cureScript(params)
 		who.color := metamorfose.originalcolor;
 		who.graphic := metamorfose.originalgraphic;
 		who.truegraphic := metamorfose.originalgraphic;
+
+		// Re-apply color overlays from any still-active SpellController effect
+		// (e.g. barkskin casts color=2826). originalcolor is now the druid's
+		// truecolor, so spells that were tinting before/during transformation
+		// need their visual stamped back on.
+		var timer_list := TS_GetTimerList(who);
+		var mwc := MobileWrapper(who);
+		foreach timer in (timer_list)
+			if (_timer_iter[1, 12] != "spelleffect_")
+				continue;
+			endif
+			var opts := mwc.GetProperty($"SpellOpts_{CInt(timer.level)}");
+			if (opts && !opts.errortext && opts.color)
+				who.color := opts.color;
+			endif
+		endforeach
 
 		var namechar := GetObjProperty(who, "charname");
 		SetName(who, namechar);
@@ -90,12 +119,25 @@ program cureScript(params)
 	EraseObjProperty(who, "dicedmg");
 	EraseObjProperty(who, "polymorphbonus");
 	EraseObjProperty(who, "metamorfose");
-	EraseObjProperty(who, "polymorph_hitsmod");
-	EraseObjProperty(who, "polymorph_manamod");
-	EraseObjProperty(who, "polymorph_stammod");
-	EraseObjProperty(who, "polymorph_resistmod");
 	EraseObjProperty(who, "namechar");
 	EraseObjProperty(who, "HitScripts");
+
+	// Re-equip gear stripped at transformation. Runs AFTER metamorfose is erased
+	// because equip.src rejects any armor/weapon equip while that prop is live
+	// ("Voce nao pode equipar nada nessa forma"). NaturalBond._UnequipWild
+	// snapshots serials into #wildshape_equips before unequipping — we can't
+	// recover them via #EquippedOn because UnequipTest wipes it on unequip.
+	// Skip on dead: items already live on the corpse and wakeup.inc owns that path.
+	var wildshape_equips := GetObjProperty(who, "#wildshape_equips");
+	if (!who.dead && wildshape_equips != error && wildshape_equips.size() > 0)
+		foreach serial in wildshape_equips
+			var item := SystemFindObjectBySerial(CInt(serial));
+			if (item && !item.errortext)
+				EquipItem(who, item);
+			endif
+		endforeach
+	endif
+	EraseObjProperty(who, "#wildshape_equips");
 
 	// Restore speech on form end
 	who.squelch(0);

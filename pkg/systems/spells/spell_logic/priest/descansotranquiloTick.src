@@ -1,0 +1,59 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/say";
+include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SpellController";
+
+// Per-tick heal aura for Prece Curativa. Cancels if target moved from
+// origin or any mobile in 6-tile radius is in warmode.
+// Args: { caster, targ, spellId, tick_number, tick_params }
+// tick_params: struct{ origin_x, origin_y, heal, caster_serial }
+program DescansoTranquiloTick(args)
+	var caster := args[1];
+	var targ := args[2];
+	var spellId := CInt(args[3]);
+	var tp := args[5];
+	args := 0;
+
+	if (!targ)
+		return;
+	endif
+
+	// Target moved? Cancel.
+	if (targ.x != CInt(tp.origin_x) || targ.y != CInt(tp.origin_y))
+		if (caster && caster.connected)
+			SendSysMessageEx(caster, "Voce cancelou a magia.", SSM_FAIL);
+		endif
+		SC_RemoveEffect(targ, spellId);
+		return;
+	endif
+
+	var nearby := ListMobilesNearLocation(targ.x, targ.y, targ.z, 6, targ.realm);
+
+	// Combat in the zone? Cancel.
+	foreach char in (nearby)
+		if (char.warmode)
+			if (caster && caster.connected)
+				SendSysMessageEx(caster, "A magia foi interrompida por um conflito.", SSM_FAIL);
+			endif
+			SC_RemoveEffect(targ, spellId);
+			return;
+		endif
+	endforeach
+
+	// Resolve caster — the tick driver's caster arg may have gone offline.
+	var actual_caster := caster;
+	if ((!actual_caster || !actual_caster.connected) && tp.caster_serial)
+		actual_caster := SystemFindObjectBySerial(CInt(tp.caster_serial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+	endif
+
+	// Heal everyone but the caster, matching the original semantic.
+	foreach char in (nearby)
+		if (actual_caster && char == actual_caster)
+			continue;
+		endif
+		ApplyEpicHealing(char, CInt(tp.heal));
+	endforeach
+endprogram

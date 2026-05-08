@@ -31,6 +31,7 @@ program SpellScript(params)
 		opts.+properties := dictionary{ "dmgreturn" -> lvl };
 		opts.+armor_hit_scripts := array{ ":combat:armorHitScripts/rawdmgreturn" };
 		opts.+desc := "Retribuicao Profana";
+		opts.+maintainable := 1;
 
 		SC_ApplyEffect(who, who, opts, time, CInt(spell.id));
 		return 1;

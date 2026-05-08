@@ -2,13 +2,13 @@ use uo;
 use os;
 
 include ":abilities:models/CombatAbility";
+include ":abilities:utils/tileChecks";
 include ":attributes:attributes";
 include ":tn:cooldown";
 include ":fls_core:packets";
 include ":timedScripts:timedScripts";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
-include ":survival:fishingFunctions";
 include "include/epicConstants";
 include "include/sounds";
 
@@ -58,7 +58,16 @@ class PrismaticShot(CombatAbility)
 			activeElement := "energy_arrow";
 		endif
 
-		var targ := Target(who);
+		var targ;
+		if (mobile.IsNPC())
+			targ := who.opponent;
+			if (!targ)
+				targ := GetRandomNearbyHostile(who);
+			endif
+		else
+			targ := Target(who);
+		endif
+
 		if (!targ)
 			Message("Disparo cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 			return false;
@@ -93,7 +102,7 @@ class PrismaticShot(CombatAbility)
 				Run_Script(":spells:spell_logic/mage/fireball", { who, targ });
 
 			"energy_arrow":
-				_EtherealJump(who, mobile);
+				_EtherealJump(who, mobile, targ);
 
 			"cold_arrow":
 				var freezeDuration := CInt(mobile.GetSkill(ARCANA) / 10);
@@ -112,7 +121,7 @@ class PrismaticShot(CombatAbility)
 
 endclass
 
-function _EtherealJump(who, mobile)
+function _EtherealJump(who, mobile, opponent := 0)
 	who.concealed := 1;
 	who.frozen := 1;
 	PerformAction(who, HUMAN_ANIM::CAST_AREA);
@@ -120,7 +129,21 @@ function _EtherealJump(who, mobile)
 	PlaySoundEffect(who, 0x1f2);
 	sleep(1);
 
-	var targ := TargetCoordinates(who);
+	var targ;
+	if (mobile.IsNPC() && opponent)
+		// Jump to a random cardinal direction 5 tiles from the opponent (matches EtherealJump.inc NPC behavior)
+		var directions := array{ array{ 1, 0 }, array{ 0, 1 }, array{ -1, 0 }, array{ 0, -1 } };
+		var random_direction := directions[RandomInt(4) + 1];
+		targ := struct{
+			x := opponent.x + random_direction[1] * 5,
+			y := opponent.y + random_direction[2] * 5,
+			z := opponent.z,
+			realm := opponent.realm
+		};
+	else
+		targ := TargetCoordinates(who);
+	endif
+
 	if (!targ)
 		Message("Salto cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		who.concealed := 0;
@@ -147,7 +170,7 @@ function _EtherealJump(who, mobile)
 	endif
 
 	var locinfo := GetMapInfo(targ.x, targ.y, who.realm);
-	if (IsWater(targ, locinfo))
+	if (_IsWaterTile(targ, locinfo))
 		Message("Voce nao pode saltar para a agua.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 		who.concealed := 0;
 		who.frozen := 0;

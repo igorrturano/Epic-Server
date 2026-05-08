@@ -1,7 +1,12 @@
 use uo;
+use vitals;
 
 include ":timedScripts:timedScripts";
 include ":mounts:mounts";
+include ":charactercreation:habilidades";
+include ":stables:include/stable";
+include "include/NPCUtil";
+include ":tn:cooldown";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
 
@@ -49,14 +54,26 @@ function GetNumPets(who)
 
 	foreach serial in tamed
 		var pet := SystemFindObjectBySerial(serial);
-		if ( pet.master == who && !GetObjProperty(pet, "summoned")) //se não é summon
-				if (!Cint(pet.getTier()))
+		if (!pet)
+			// Miss transiente (pet fora do cache, etc). Nao podar a entrada —
+			// ondelete.src cuida de exclusoes reais.
+			sleepms(2);
+			continue;
+		endif
+		if ( pet.master != who || GetObjProperty(pet, "summoned") )
+			tamed.erase(_serial_iter);
+			sleepms(2);
+			continue;
+		endif
+		// Pets no estabulo ou em limbo nao ocupam slots, mas continuam pertencendo
+		// ao player. Contratos expirados nao sao limpos aqui — o gump do post
+		// cuida disso no momento do resgate.
+		if ( !IsStabled(pet) && !IsInLimbo(pet) )
+			if (!Cint(pet.getTier()))
 				num_tamed := num_tamed+1;
 			else
 				num_tamed := num_tamed + Cint(pet.getTier());
 			endif
-		else
-			tamed.erase(_serial_iter);
 		endif
 		sleepms(2);
 	endforeach
@@ -133,12 +150,13 @@ function ErasePet(who, myserial)
 				SetObjProperty(who, "SummonedPets", tamed);
 				var timer_num := GetObjProperty(pet, "slot");
 				var timer := "summon_"+timer_num;
-				TS_LowerDuration(who, timer, -1);				
+				TS_LowerDuration(who, timer, -1);
 				break;
 			endif
 			sleepms(2);
 		endforeach
 	endif
+	OwnerClearPetRef(who, myserial);
 	return;
 endfunction
 
@@ -153,6 +171,42 @@ function AddPet(who, serial)
 
 	var pet := SystemFindObjectBySerial(serial);
 	who.followers := who.followers + GetPetCost(pet);
+endfunction
+
+// Libera estado de estabulo/limbo de um pet e desassocia o post.
+// Chame antes de transferir o pet ou logo apos libertá-lo/matá-lo.
+function ClearPetStableAndLimboState(pet)
+	if (!pet)
+		return 0;
+	endif
+
+	if (IsStabled(pet) || IsInLimbo(pet))
+		pet.setParalyzed(0);
+		RevokePrivilege(pet, "invul");
+		pet.disable("invul");
+		pet.hidden := 0;
+		pet.frozen := 0;
+	endif
+
+	var data := GetPetStable(pet);
+	if (data != error && CInt(data["post"]))
+		var post := SystemFindObjectBySerial(CInt(data["post"]));
+		if (post && GetObjProperty(post, "StoredAnimal") == pet.serial)
+			EraseObjProperty(post, "StoredAnimal");
+		endif
+	endif
+
+	ClearPetStable(pet);
+	return 1;
+endfunction
+
+// Limpa refs do master para este pet (limbo_pet, post, stabled_pets).
+function ClearMasterLimboRef(master, pet_serial)
+	if (!master)
+		return 0;
+	endif
+	OwnerClearPetRef(master, pet_serial);
+	return 1;
 endfunction
 
 //numero maximo de pets que alguem pode ter
@@ -210,7 +264,7 @@ function LogoutPets(who)
 			location.append(pet.x);
 			location.append(pet.y);
 			location.append(pet.z);
-			MoveObjectToLocation(pet, 6066, 60, 22, pet.realm, MOVEOBJECT_FORCELOCATION);
+			MoveObjectToLocation(pet, 5688, 625, 0, "britannia_alt", MOVEOBJECT_FORCELOCATION);
 			SetObjProperty(pet, "previous_location", location);
 		endif
 		sleepms(2);
@@ -426,7 +480,7 @@ function GetDietByTaxonomy(tax)
     if (tax == "canidae")
         return {"meat"};
     elseif (tax == "felidae")
-        return {"meat"};
+        return {"meat", "fish"};
     elseif (tax == "arachnida")
         return {"meat"};
     elseif (tax == "serpentes")

@@ -6,6 +6,7 @@ include ":faccao:faccao";
 include ":timeUtils:time";
 include ":attributes:attributes";
 include ":nature:nature";
+include "include/epicEconomyAudit";
 
 const SOLDO_CICLO_SEGUNDOS  := 60;
 const SOLDO_INTERVALO_DIAS  := 7;
@@ -15,7 +16,6 @@ const GUMP_SOLDO_SCRIPT     := ":faccao:gump_soldo";
 // ─────────────────────────────────────────────────────────────────────────────
 
 program startprogram()
-	Print("[Soldo] Iniciado. Ciclo a cada " + SOLDO_CICLO_SEGUNDOS + "s.");
 	while (1)
 		ControleDeSoldo();
 		sleep(SOLDO_CICLO_SEGUNDOS);
@@ -55,7 +55,6 @@ function _PagarNPCs(guild)
 			npc.Disable("invul");
 			SetObjProperty(npc, "GuardKill", 1);
 			ApplyRawDamage(npc, NPC_DANO_EXPULSAO);
-			Print("[Soldo] NPC " + npc.name + " expulso por falta de fundos.");
 		else
 			SetObjProperty(npc, "DaysOfService", polcore().systime);
 			money -= custo;
@@ -73,10 +72,7 @@ function _PagarSoldoPlayers(guild)
 	if (!proximo || polcore().systime < proximo) return; endif
 
 	var bau := SystemFindObjectBySerial(guild.GetProp("bau_serial"));
-	if (!bau)
-		Print("[Soldo] ERRO: baú não encontrado para guild '" + guild.GetProp("name") + "'.");
-		return;
-	endif
+	if (!bau) return; endif
 
 	var v_lider   := cint(guild.GetProp("soldo_lider"));
 	var v_membro  := cint(guild.GetProp("soldo_membro"));
@@ -86,15 +82,28 @@ function _PagarSoldoPlayers(guild)
 	if (num_membros > 0) num_membros -= 1; endif // desconta o lider
 
 	var total := v_lider + (num_membros * v_membro);
+
 	if (total <= 0)
 		guild.SetProp("soldo_proximo", polcore().systime + intervalo);
 		return;
 	endif
 
+	// Desbloqueia o baú para toda a criação (bag + moedas + livro ficam dentro dele)
+	// canInsert verifica CP_RootContainerLocked — precisa estar aberto até o fim
+	var estava_travado := bau.locked;
+	if (estava_travado) bau.locked := 0; endif
+
 	var bag := _CriarBagPagamento(bau, total);
-	if (!bag) return; endif
+
+	if (bag.errortext)
+		if (estava_travado) bau.locked := 1; endif
+		return;
+	endif
 
 	_CriarLivroSoldo(bag, guild, v_lider, membros, v_membro);
+
+	if (estava_travado) bau.locked := 1; endif
+
 	_NotificarMembros(membros);
 
 	guild.SetProp("soldo_proximo", polcore().systime + intervalo);
@@ -106,16 +115,16 @@ function _CriarBagPagamento(bau, total)
 
 	var bag := CreateItemInContainer(bau, 0xE75, 1);
 	if (!bag)
-		Print("[Soldo] ERRO: não foi possível criar bag no baú.");
 		return error{"errortext":="bag_falhou"};
 	endif
 	bag.name := nome;
 
 	var moedas := CreateItemInContainer(bag, 0xba63, total);
 	if (!moedas)
-		Print("[Soldo] ERRO: não foi possível criar moedas na bag.");
+		bag.Destroy();
 		return error{"errortext":="moedas_falhou"};
 	endif
+	EA_Record(EA_MINT_GUILD_PAYOUT, moedas, total, "GUILD:soldo", bag, bau.name);
 
 	return bag;
 endfunction
@@ -123,7 +132,9 @@ endfunction
 // ── Cria o livro de recibo dentro da bag ─────────────────────────────────────
 function _CriarLivroSoldo(bag, guild, v_lider, membros, v_membro)
 	var livro := CreateItemInContainer(bag, 0xFEF, 1);
-	if (!livro) return; endif
+	if (!livro)
+		return;
+	endif
 
 	var lider_serial := guild.GetProp("leader");
 	var titulo       := "Recibo - " + getDayOfMonth() + "/" + getMonth() + "/" + getYear();
@@ -162,10 +173,10 @@ function _NomeRP(mob_ou_serial)
 	if (!mob) return "Desconhecido"; endif
 
 	var dados := GetObjProperty(mob, "dados_convite");
-	if (dados && dados.nome_personalizado)
-		return dados.nome_personalizado;
-	endif
-	return mob.name;
+	if (!dados || dados.errortext) return mob.name; endif
+	var nome := dados.nome_personalizado;
+	if (!nome || nome.errortext) return mob.name; endif
+	return nome;
 endfunction
 
 // ── Notifica membros: gump se online, flag se offline ────────────────────────

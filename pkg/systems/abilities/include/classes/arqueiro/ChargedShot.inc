@@ -46,14 +46,16 @@ class ChargedShot(CombatAbility)
 			return false;
 		endif
 
-		var dexBonus := attacker.GetMainDamageModifierBy(DEXTERITY);
-		if (dexBonus > 0)
-			attackInfo.GetDamage().IncreasePiercingRawDamage(dexBonus);
+		var ranged := CInt(attacker.GetSkill(RANGED));
+		var bonus := CInt(ranged / 2);
+
+		if (bonus > 0)
+			attackInfo.GetDamage().IncreasePiercingRawDamage(bonus);
 
 			DebugMsg(
 				attacker.GetObjRef(),
 				DEBUG_HAB,
-				Message($"[TIRO_CARREGADO] Bonus de dano por DEX: +{dexBonus}", Color(SYSTEM_COLOR::SUCCESS))
+				Message($"[TIRO_CARREGADO] Bonus de dano por RANGED: +{bonus}", Color(SYSTEM_COLOR::SUCCESS))
 			);
 		endif
 

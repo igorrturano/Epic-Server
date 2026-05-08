@@ -1,0 +1,27 @@
+use uo;
+use os;
+
+include "include/client";
+include ":spells:Controller/SpellController";
+
+// Per-tick visual refresh for Protecao Arcana. Absorb logic lives in the
+// damage pipeline (_ApplyManaShield / _ApplyPhysicalManaShield), which erases
+// the "#manashield" property when mana runs out. If that property is gone we
+// tear the buff down so the FX stops within ~1s of the shield breaking.
+program ProtecaoArcanaTick(args)
+	var targ := args[2];
+	var spellId := CInt(args[3]);
+	args := 0;
+
+	if (!targ || targ.errortext)
+		return;
+	endif
+
+	var shield := GetObjProperty(targ, "#manashield");
+	if (!shield || shield.errortext)
+		SC_RemoveEffect(targ, spellId);
+		return;
+	endif
+
+	PlayObjectCenteredEffect(targ, FX_ESCUDO_PROTETIVO, 0, 30);
+endprogram

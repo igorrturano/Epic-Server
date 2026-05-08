@@ -51,9 +51,9 @@ program spell(params)
 	var cfg := ReadConfigFile(":spells:config/tnspells");
 	var elem;
 	var id := 0;
-	if (name == "weaken")
-		id := 26;
-	elseif (name == "mantodabesta")
+	// Removed: "weaken" now flows through SC's native maintain (opts.maintainable)
+	// via endspelleffect.src → offerMaintain.src. See mage/enfraquecer.src.
+	if (name == "mantodabesta")
 		id := 2;
 	elseif (name == "desviarprojetil")
 		id := 8;

@@ -32,13 +32,17 @@ CONST REFORCO_COMUM := 51;
 CONST REFORCO_CARGA_DUPLA := 52;
 CONST REFORCO_POTENCIA_ELEM := 53;
 
-function checkifcandrink(character, type)
-  // Check to make sure they have at least one hand free to drink the potion
+function checkifcandrink(character, potion)
+  // Check to make sure they have at least one hand free to drink the potion.
+  // Dual_Wield items ocupam apenas LAYER_HAND1 fisicamente mas representam
+  // duas armas — bloqueio explicito pelo Attribute na main hand.
   var equippedright := GetEquipmentByLayer(character, 0x01);
   var equippedleft := GetEquipmentByLayer(character, 0x02);
   var cfg := ReadConfigFile(":*:itemdesc");
   var twohanded := Cint(cfg[equippedleft.objtype].Two_Handed);
-  if (equippedright and equippedleft || twohanded)
+  var dualwield := equippedright && Lower(CStr(cfg[equippedright.objtype].Attribute)) == "dual_wield";
+  var type := cfg[potion.objtype].Type;
+  if (equippedright and equippedleft || twohanded || dualwield)
     SendSysMessage(character, "Voce precisa de pelo menos uma mao livre!");
     return 0;
   endif
@@ -362,21 +366,6 @@ Function epicPotionDamageRoll(tier, bonus)
   return dmg;
 endfunction
 
-Function AlchLabTransfer (item, alvo)
-  SetObjProperty(item, "strength", cint(GetObjProperty(alvo, "strength")));
-  SetObjProperty(item, "bonus", cint(GetObjProperty(alvo, "bonus")));
-  SetObjProperty(item, "tier", cint(GetObjProperty(alvo, "tier")));
-  SetObjProperty(item, "crafterskill", cint(GetObjProperty(alvo,"crafterskill")));
-  SetObjProperty(item, "science", (GetObjProperty(alvo,"science")));
-  
-  EraseObjProperty(alvo, "extrato");
-  EraseObjProperty(alvo, "strength");
-  EraseObjProperty(alvo, "bonus");
-  EraseObjProperty(alvo, "tier");
-  EraseObjProperty(alvo, "crafterskill");
-  EraseObjProperty(alvo, "science");
-endfunction
-
 Function AplicaVicio (who, potion, Atr)
   var tier := peganivelpocao(who, potion);
   var bonus := 0;
@@ -406,7 +395,7 @@ Function AplicaVicio (who, potion, Atr)
   If(dmg < 0)
     dmg := 0;
   endif
-  dmg := TesteVicio(who, tier, dmg);
+  dmg := TesteVicio(who, potion, dmg);
   vicio := vicio-dmg;
   if (vicio < 0)
     vicio := 0;
@@ -417,23 +406,22 @@ Function AplicaVicio (who, potion, Atr)
 
 Endfunction
 
-function TesteVicio(who, tier, dmg)
-  if (tier == 1)
-    if (CheckResist(who, FORTITUDE, RESIST_EASY))
+function TesteVicio(who, potion, dmg)
+  var tier := PegaNivelPocao(who, potion);
+  var pureza := getobjproperty(potion, "bonus"); 
+  var dif := 0;
+  case (tier)
+    1: dif := RESIST_EASY;
+    2: dif := RESIST_MEDIUM;
+    3: dif := RESIST_VERY_HARD;
+    4: dif := RESIST_ALMOST_IMPOSSIBLE;
+  endcase
+  dif -= pureza;
+  if (CheckResist(who, FORTITUDE, dif))
       dmg := 0;
-    endif
-  elseif (tier == 2)
-    if (CheckResist(who, FORTITUDE, RESIST_MEDIUM))
-      dmg := 0;
-    endif
-  elseif (tier == 3)
-    if (CheckResist(who, FORTITUDE, RESIST_VERY_HARD))
-      dmg := 0;
-    endif
-  elseif (tier == 4)
-    if (CheckResist(who, FORTITUDE, RESIST_ALMOST_IMPOSSIBLE))
-      dmg := 0;
-    endif
+      SendSysMessageEx(who, "Seu corpo absorve bem a substância.", SSM_INFO);
+  else
+      SendSysMessageEx(who, "Seu corpo cria tolerância à substância.", SSM_INFO);
   endif
   return dmg;
 endfunction

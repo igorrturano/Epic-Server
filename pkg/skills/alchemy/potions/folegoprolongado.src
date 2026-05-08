@@ -15,7 +15,7 @@ program drink_blue(who, potion)
 		return;
 	endif
 
-	if (!checkifcandrink(who, "folegoprolongado"))
+	if (!checkifcandrink(who, potion))
 		return;
 	endif
 	var vicio := (AP_getvital(who, "Viciostr"));
