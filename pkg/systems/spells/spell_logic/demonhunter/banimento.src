@@ -24,7 +24,7 @@ program SpellScript(params)
 		if (mobile.npctemplate)
 			var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
 			var cfg := ReadConfigFile(":*:npcdesc");
-			var inimigo := array{ "Undead", "Demon" };
+			var inimigo := array{ "Undead", "Demons" };
 
 			var elem := NPC_GetNPCConfig(mobile.npctemplate);
 			var tier := CInt(GetConfigString(elem, "Tier"));
