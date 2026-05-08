@@ -300,11 +300,15 @@ function ProduzComponentes(quem,configRecursos,objtype,byref materiaisEncontrado
 			continue;
 		endif
 		var descriptor :=  CriaComponenteDescriptor(objtype,chaveMaterialPrincipal,qualidade,encaixe, configRecursos);
-		var item := CreateItemInBackpack(quem,descriptor,cint(qualidades[qualidade]));
-		if(!item)
-			item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, cint(qualidades[qualidade]), quem.realm);
-		endif
-		item.hp := item.maxhp;
+		var qtdTier := cint(qualidades[qualidade]);
+		for j := 1 to qtdTier
+			var item := CreateItemInBackpack(quem,descriptor,1);
+			if(!item)
+				item := CreateItemAtLocation( quem.x, quem.y, quem.z, descriptor, 1, quem.realm);
+			endif
+			if(item) item.hp := item.maxhp; endif
+			Sleepms(2);
+		endfor
 	endforeach
 
 	if(quantidadeRecicladaTotal > 0)
