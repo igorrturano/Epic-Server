@@ -11,10 +11,10 @@ program peel(who, fruit)
 	endif
 	SendSysMessage(who, "Voce descasca a banana.");
 	playsoundeffect(who, 0x5a);
-	if (!fruit.container)
-		createitematlocation(fruit.x, fruit.y, fruit.z, peeled, 1);
-	else
-		createitemincontainer(fruit.container, peeled, 1);
+	var peeledItem := CreateItemInBackpack(who, peeled, 1);
+	if (peeledItem == error)
+		SendSysMessage(who, "Sua mochila esta cheia.");
+		return 0;
 	endif
 	subtractamount(fruit, 1);
 endprogram
