@@ -29,9 +29,14 @@ program BanishSummon(params)
 	PlaySoundEffect(summoned, 0x1FE);
 
 	sleepms(500);
+
+	if (me.dead)
+		return 0;
+	endif
+
 	MoveObjectToLocation(summoned, 10, 10, 10, summoned.realm, MOVEOBJECT_FORCELOCATION);
 	var kill_count := 10;
-	while (kill_count > 0 && !summoned.dead)
+	while (kill_count > 0 && !summoned.dead && !me.dead)
 		ApplyRawDamage(summoned, 200);
 		kill_count -= 1;
 		sleepms(2);
