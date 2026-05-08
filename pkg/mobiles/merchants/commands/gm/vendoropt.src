@@ -140,7 +140,7 @@ endprogram
 function ContemNaoAscii(s)
 	var i;
 	for (i := 1; i <= Len(s); i := i + 1)
-		if (Asc(s[i]) > 127)
+		if (CAsc(s[i]) > 127)
 			return 1;
 		endif
 	endfor
@@ -227,7 +227,7 @@ function GerenciarItensVenda(who, npc)
 			SendSysMessageEx(who, "Slot " + cstr(slot_num) + " nao existe.", SSM_FAIL);
 			continue;
 		endif
-		RemoveItemForSale(npc, slot_num);
+		RemoveItemForSale(npc, slot_num, 0, 1);
 		SendSysMessageEx(who, "Slot " + cstr(slot_num) + " removido.", SSM_INFO);
 	endwhile
 endfunction
