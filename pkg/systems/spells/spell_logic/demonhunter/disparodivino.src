@@ -1,5 +1,6 @@
 use uo;
 use os;
+use cfgfile;
 
 include ":attributes:attributes";
 include "include/client";
@@ -15,14 +16,18 @@ program SpellScript(params)
 	var spellinfo := params[3];
 	params := 0;
 
-	SendSysMessage(who, "Selecione o alvo.");
 	if (!targ.IsA(POLCLASS_MOBILE))
 		SendSysMessage(who, "Alvo invalido.");
 		return 0;
 	endif
 
 	var theology := AP_GetSkill(who, THEOLOGY);
-	var damage := RandomDiceRoll("1d6") + CInt(theology / 10);
+	var damage := RandomDiceRoll("2d6") + CInt(theology / 10);
+
+	var demon_hit := IsDemon(targ);
+	if (demon_hit)
+		damage := damage + RandomDiceRoll("1d10") + CInt(theology / 6);
+	endif
 
 	PlayMovingEffectEx(who, targ, 0x5426, 10, 20, 0x0845, 2);
 	PlaySoundEffect(who, 0x235);
@@ -31,7 +36,7 @@ program SpellScript(params)
 
 	SC_RemoveEffect(targ, CInt(spellinfo.id));
 
-	var duration := CInt(AP_GetSkill(who, THEOLOGY) / 2);
+	var duration := CInt(theology / 2);
 
 	var opts := struct{};
 	opts.+color := 2516;
@@ -39,7 +44,27 @@ program SpellScript(params)
 	opts.+desc := "Disparo Divino";
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spellinfo.id));
-	SendSysMessageEx(who, "Uma flecha divina atinge o alvo!", SSM_INFO);
+
+	if (demon_hit)
+		SendSysMessageEx(who, "A flecha divina queima a carne profana!", SSM_INFO);
+	else
+		SendSysMessageEx(who, "Uma flecha divina atinge o alvo!", SSM_INFO);
+	endif
 
 	return 1;
 endprogram
+
+function IsDemon(mobile)
+	if (!mobile.npctemplate)
+		return 0;
+	endif
+
+	var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
+	var cfg := ReadConfigFile(":*:npcdesc");
+
+	if (cfg[npctemplate.template].Environment == "Demons")
+		return 1;
+	endif
+
+	return 0;
+endfunction
