@@ -24,6 +24,9 @@ program HammerSlam(params)
 	var targets := ListMobilesNearLocation(me.x, me.y, me.z, 4, me.realm);
 	foreach mobile in (targets)
 		sleepms(2);
+		if (me.dead)
+			break;
+		endif
 		if (mobile.serial == me.serial || mobile.dead)
 			continue;
 		endif
