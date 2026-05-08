@@ -30,16 +30,18 @@ program SpellScript(params)
 	// Remove efeito anterior se existir
 	SC_RemoveEffect(targ, CInt(spell.id));
 
-	// Calculate armor bonus based on skill
+	// Spell resist scaling per design_overview.md / design_combate.md:
+	//   armored:   Theology/5 (max 20 at GM)
+	//   unarmored: Theology/3 (max 33 at GM)
 	var magiclore_skill := HandleSpellSkill(who);
-	var armor_bonus := CInt(magiclore_skill / 30); // 10 AR at 100 skill
-	if (armor_bonus < 1)
-		armor_bonus := 1; // Minimum 1 AR
+	var armor_bonus;
+	if (HasArmorProtection(targ))
+		armor_bonus := CInt(magiclore_skill / 5);
+	else
+		armor_bonus := CInt(magiclore_skill / 3);
 	endif
-
-	// +2 when the target has no real armor equipped — casca grossa sobre pele nua.
-	if (!HasArmorProtection(targ))
-		armor_bonus += 2;
+	if (armor_bonus < 1)
+		armor_bonus := 1;
 	endif
 
 	var duration := CInt(20 + (magiclore_skill * 2 / 5)); // 20s base + up to 40s at 100 skill (max 60s)
