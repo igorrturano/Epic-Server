@@ -1,9 +1,54 @@
 use math;
+use basic;
 
 include ":gumps:/include/gumps";
 include ":gumps:/include/epicGumps";
 include ":gumps:/include/gumps_ex";
 include ":gumps:/include/requestGump";
+
+CONST GUMP_SAFE_GRAPHIC_MAX := 0xFFFF;
+CONST GUMP_SAFE_GRAPHIC_FALLBACK := 0x0EED; // gold pile — always present in art
+CONST GUMP_SAFE_TOOLTIP_MAX := 1500;
+CONST GUMP_SAFE_HTML_MAX := 200;
+
+// Strips characters that can corrupt the gump packet or downstream .format() calls
+// when seller- or item-supplied free-text flows into HTML/tooltip fields.
+function SanitizarTextoGump(s, max_len := 0)
+	if (!s || s == error) return ""; endif
+	s := cstr(s);
+	s := StrReplace(s, "&", "&amp;");
+	s := StrReplace(s, "<", "&lt;");
+	s := StrReplace(s, ">", "&gt;");
+	s := StrReplace(s, "{", "(");
+	s := StrReplace(s, "}", ")");
+	if (max_len > 0 && Len(s) > max_len)
+		s := s[1, max_len] + "...";
+	endif
+	return s;
+endfunction
+
+// Returns a graphic ID guaranteed to render. If the stored ID is missing, negative,
+// or above the standard art table, ClassicUO can crash silently on GFTilePic; fall
+// back to a known-safe icon so the gump still opens.
+function GraficoSeguro(g)
+	g := cint(g);
+	if (g <= 0 || g > GUMP_SAFE_GRAPHIC_MAX)
+		return GUMP_SAFE_GRAPHIC_FALLBACK;
+	endif
+	return g;
+endfunction
+
+function CorSegura(c)
+	c := cint(c);
+	if (c < 0 || c > 0xFFFF) return 0; endif
+	return c;
+endfunction
+
+function LoteSeguro(l)
+	l := cint(l);
+	if (l <= 0) return 1; endif
+	return l;
+endfunction
 
 CONST GUMP_MONTALOJA_WIDTH := 1045;
 CONST GUMP_MONTALOJA_HEIGHT := 600;
@@ -199,11 +244,16 @@ function PainelProduto(byref gump,session ,x,y,isAdministrador)
 
 		x += PAINELPRODUTO_ESPACO_X; //espaçamento.
 		y += (PAINELPRODUTO_ESPACO_Y * linha); //espaçamento.
+		var safeDesc := SanitizarTextoGump(itemNoIndice.item.desc, GUMP_SAFE_HTML_MAX);
+		var safeTooltip := SanitizarTextoGump(itemNoIndice.descVenda, GUMP_SAFE_TOOLTIP_MAX);
+		var safeNomeVendedor := SanitizarTextoGump(itemNoIndice.nomeVendedor, 60);
+		var safeLote := LoteSeguro(itemNoIndice.infoCusto.lote);
+
 		GFResizePic(gump, x + 20, y + 20, 5054, 260, 160); //brackgroud iteminfo  5054 | 3500
 		GFResizePic(gump, x + 30, y + 30, 9250, 100, 110); //foto 9250 | 94
-		GFTooltipText(gump, itemNoIndice.descVenda);
+		GFTooltipText(gump, safeTooltip);
 		if(isAdministrador)
-			GFHTMLArea( gump, x + 45, y + 42, 80, 20, "<BASEFONT size=4 color=#FFFFFF><center>{}".format(itemNoIndice.nomeVendedor));
+			GFHTMLArea( gump, x + 45, y + 42, 80, 20, "<BASEFONT size=4 color=#FFFFFF><center>{}".format(safeNomeVendedor));
 			GFTooltipText( gump, "Nome do vendedor deste prouto");
 		endif
 		GFGumpPic(gump,x + 152,y + 149,40022); // moeda de ouro
@@ -211,20 +261,20 @@ function PainelProduto(byref gump,session ,x,y,isAdministrador)
 		GFGumpPic(gump,x + 260,y + 148,97);//detalhe direito gold
 		GFResizePic(gump, x + 141, y + 30,9350 , 125, 110); //sellerinfo
 
-		GFHTMLArea( gump, x + 146, y + 35, 110, 40, "<BASEFONT size=8 color=#13518c><center>{}".format(itemNoIndice.item.desc) );
-		if(itemNoIndice.infoCusto.lote > 1)
-			GFGumpPic(gump,x + 178,y + 95,5601);//seta 
+		GFHTMLArea( gump, x + 146, y + 35, 110, 40, "<BASEFONT size=8 color=#13518c><center>{}".format(safeDesc) );
+		if(safeLote > 1)
+			GFGumpPic(gump,x + 178,y + 95,5601);//seta
 			GFTextLine( gump, x + 149, y + 94, 1051, "Lote");
-			GFTextLine( gump, x + 197, y + 94, 1153, "{}".format(itemNoIndice.infoCusto.lote));
+			GFTextLine( gump, x + 197, y + 94, 1153, "{}".format(safeLote));
 		endif;
 		GFGumpPic(gump,x + 200,y + 117,5601); //seta
 		GFTextLine( gump, x + 149, y + 115, 1051, "A Venda" );
-		GFTextLine( gump, x + 220, y + 115, 1153, "{}".format( itemNoIndice.item.amount / itemNoIndice.infoCusto.lote));
+		GFTextLine( gump, x + 220, y + 115, 1153, "{}".format( cint(itemNoIndice.item.amount) / safeLote));
 		GFTextLine( gump, x + 172, y + 148, 1153, "{}".format( itemNoIndice.infoCusto.cost_amt));
-		GFTooltipText( gump, "{} unidades por {} moedas de {}".format( itemNoIndice.infoCusto.lote,
+		GFTooltipText( gump, "{} unidades por {} moedas de {}".format( safeLote,
 																		itemNoIndice.infoCusto.cost_amt,
 																		itemNoIndice.infoCusto.cost_name ) );
-		GFTilePic( gump, x + 58, y + 75, itemNoIndice.item.graphic, cint( itemNoIndice.item.color) );
+		GFTilePic( gump, x + 58, y + 75, GraficoSeguro(itemNoIndice.item.graphic), CorSegura(itemNoIndice.item.color) );
 
 		GFAddButton(gump, x + 26,y + 141,4037,4036,GF_CLOSE_BTN, baseIdBotao);//comprar
 		GFTooltipText( gump, "Comprar" );
