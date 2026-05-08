@@ -37,7 +37,12 @@ program WarCry(params)
 		SetObjProperty(mobile, "#warcry_bonus", 5);
 	endforeach
 
-	sleep(10);
+	for cidx := 1 to 10
+		sleep(1);
+		if (me.dead)
+			break;
+		endif
+	endfor
 
 	foreach mobile in (npc_allies)
 		if (mobile.dead)

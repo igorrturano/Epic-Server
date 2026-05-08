@@ -1,7 +1,8 @@
 // Jailor ItemGiven nerve.
 //
 // Accepts pedras (0x5001) from prisoners (#jail_quota set), counts them
-// against the quota, releases on hit. Refuses everything else.
+// against the quota, releases on hit. Coins are not accepted here — use
+// the bank-debit option offered at sentencing time. Refuses everything else.
 
 use uo;
 use os;

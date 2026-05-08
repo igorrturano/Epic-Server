@@ -1,0 +1,11 @@
+<u><div align="center">FxShow Textcmd Help</div></u>
+<BASEFONT COLOR="#101010">
+<h1>Usage:</h1>
+.fxshow [start_hex]
+
+<h1>Parameters:</h1>
+start_hex is optional. If supplied (e.g. 0x1159), the sweep resumes at the entry whose graphic matches that value. Without arguments the sweep starts at the first FX in the EFFECTS enum.
+
+<h1>Description:</h1>
+Walks every active entry in the EFFECTS enum (scripts/include/client.inc) and prompts you to target a tile for each one. Drops a static, non-decaying, non-movable item with the FX graphic at the targeted location, names it FX_NAME 0xHEX, then auto-advances to the next entry. Cancel the target prompt to stop — the resume hex is printed so you can restart with .fxshow 0xHEX.
+</BASEFONT>

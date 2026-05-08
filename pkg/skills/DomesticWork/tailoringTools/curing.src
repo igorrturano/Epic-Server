@@ -154,6 +154,10 @@ program use_curing(who, item)
 					intacta_obj := 0xd1f9;
 					intacta_name := "cabecadelobodasneves";
 					break;
+				0xC08B:
+					intacta_obj := 0xd1f9;
+					intacta_name := "cabecadelobointacta";
+					break;
 				0xC04C:
 					intacta_obj := 0xd1f1;
 					intacta_name := "cabecaboi";

@@ -9,10 +9,10 @@ program split(who, item)
 	endif
 	SendSysMessage(who, "Voce abre o coco.");
 	playsoundeffect(who, 0x58);
-	if (!item.container)
-		createitematlocation(item.x, item.y, item.z, opened, 1);
-	else
-		createitemincontainer(item.container, opened);
+	var openedItem := CreateItemInBackpack(who, opened, 1);
+	if (openedItem == error)
+		SendSysMessage(who, "Sua mochila esta cheia.");
+		return 0;
 	endif
 	destroyitem(item);
 endprogram

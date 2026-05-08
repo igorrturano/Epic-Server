@@ -121,17 +121,25 @@ function DoConfusionRay(me, targ)
 			SendSysMessageEx(targ, "Você fica paralisado de confusão!", SSM_FAIL);
 		2:
 			var walk_steps := RandomInt(3) + 2;
+			SendSysMessageEx(targ, "Você caminha desorientado!", SSM_FAIL);
 			for idx := 1 to walk_steps
+				if (me.dead || targ.dead)
+					break;
+				endif
 				var rx := targ.x + RandomInt(3) - 1;
 				var ry := targ.y + RandomInt(3) - 1;
 				MoveObjectToLocation(targ, rx, ry, GetMapInfo(rx, ry).z, targ.realm, MOVEOBJECT_FORCELOCATION);
 				sleepms(300);
 			endfor
-			SendSysMessageEx(targ, "Você caminha desorientado!", SSM_FAIL);
 		3:
 			targ.frozen := 1;
 			SendSysMessageEx(targ, "Sua mente é invadida por confusão!", SSM_FAIL);
-			sleep(3);
+			for fidx := 1 to 3
+				sleep(1);
+				if (me.dead || targ.dead)
+					break;
+				endif
+			endfor
 			targ.frozen := 0;
 	endcase
 
@@ -199,9 +207,14 @@ function DoCharmRay(me, targ)
 	PlayStationaryEffectEx(targ.x, targ.y, targ.z + 10, targ.realm, 0x6e0d, 5, 45, 2, 2740);
 
 	SetObjProperty(targ, "charmed_by", me.serial);
-	sleep(15);
-	EraseObjProperty(targ, "charmed_by");
 	SendSysMessageEx(targ, "Você foi hipnotizado!", SSM_INFO);
+	for cidx := 1 to 15
+		sleep(1);
+		if (me.dead || targ.dead)
+			break;
+		endif
+	endfor
+	EraseObjProperty(targ, "charmed_by");
 
 	return 1;
 endfunction

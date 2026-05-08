@@ -1,3 +1,8 @@
+use uo;
+use os;
+
+include ":spells:Controller/SpellController";
+
 const _NB_BTN_ESTUDAR   := 1;
 const _NB_BTN_VOLTAR    := 2;
 const _NB_BTN_TRANSFORM := 100;
@@ -218,13 +223,12 @@ class NaturalBond(CombatAbility)
     endfunction
 
     function _DoTransform(this, who, form)
-        // Snapshot the POL-native truecolor/trueobjtype (immutable body values),
-        // not who.color/who.graphic — those reflect any active visual overlays
-        // (e.g. barkskin tints color to 2826). Capturing the overlay would make
-        // endmetamorfose restore the tint permanently even after the spell expires.
+        // Snapshot truecolor (POL-native immutable) instead of who.color so
+        // restoring on metamorfose end doesn't pin overlay tints (e.g. barkskin
+        // sets color=2826). Graphic doesn't need a snapshot — trueobjtype is
+        // the canonical race body (set in epicgumpcriacao + logon migration).
         var metamorfose := struct;
         metamorfose.+originalcolor   := who.truecolor;
-        metamorfose.+originalgraphic := who.trueobjtype;
         metamorfose.+originalname    := who.name;
         metamorfose.+newgraphic      := form.graphic;
         SetObjProperty(who, "metamorfose", metamorfose);
@@ -314,16 +318,17 @@ class NaturalBond(CombatAbility)
         if (fis_str && !fis_str.errortext)
             var fis_parts := SplitWords(fis_str);
             if (fis_parts.size() >= 1)
-                // Wildshape uses linear tier scaling to avoid overpowered resistance spikes.
-                // T1 -> 1, T2 -> 2, ... T5 -> 5
+                // Wildshape usa tier linear escalado para % de reducao (escala
+                // do redesign — 5x sobre os valores antigos 0-5 flat). Aplicado
+                // apenas em fisicos via _ApplyResistMod.
                 var tier_str := Upper(CStr(fis_parts[1]));
                 case (tier_str)
                     "T0": resistmod_calc := 0;
-                    "T1": resistmod_calc := 1;
-                    "T2": resistmod_calc := 2;
-                    "T3": resistmod_calc := 3;
-                    "T4": resistmod_calc := 4;
-                    "T5": resistmod_calc := 5;
+                    "T1": resistmod_calc := 5;
+                    "T2": resistmod_calc := 10;
+                    "T3": resistmod_calc := 15;
+                    "T4": resistmod_calc := 20;
+                    "T5": resistmod_calc := 25;
                 endcase
             endif
         endif
@@ -340,7 +345,9 @@ class NaturalBond(CombatAbility)
         if (mobile.HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
             skill_a_calc   := CInt(skill_a_calc + bonusMagicLore);
             hitsmod_calc   := CInt(hitsmod_calc + bonusInstintoHP);
-            resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 30);
+            // Bonus de resist da Instinto de Sobrevivencia: theology/6 (max ~16% no
+            // GM). Escala 5x sobre legacy theology/30. Soma em fisicos.
+            resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 6);
         endif
 
         var hitscript := this._GetTaxonomyScript(taxonomy);
@@ -415,27 +422,19 @@ class NaturalBond(CombatAbility)
     endfunction
 
     function _ApplyResistMod(this, who, resistmod_calc)
-        // Apply to engine-level resist mods (visible on char sheet, consumed by combat)
+        // Wildshape adiciona resist apenas em FISICOS (slash/piercing/blunt) por
+        // padrao — pele/escama/quitina protege contra impacto fisico. Resists
+        // elementais ficam por conta de Chamado da Forma Primordial (que usa
+        // primordial_resist_* em ClearPrimordialProperties no endmetamorfose).
         who.resist_physical_mod := who.resist_physical_mod + resistmod_calc;
-        who.resist_fire_mod     := who.resist_fire_mod     + resistmod_calc;
-        who.resist_cold_mod     := who.resist_cold_mod     + resistmod_calc;
-        who.resist_poison_mod   := who.resist_poison_mod   + resistmod_calc;
-        who.resist_energy_mod   := who.resist_energy_mod   + resistmod_calc;
 
-        // Keep #SpellResist in sync (used by DamageController and status bar)
-        var mw := MobileWrapper(who);
-        var sr := mw.GetProperty("#SpellResist");
-        if (!sr || sr.errortext)
-            sr := struct{slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0};
-        endif
-        sr.slash    += resistmod_calc;
-        sr.piercing += resistmod_calc;
-        sr.blunt    += resistmod_calc;
-        sr.fire     += resistmod_calc;
-        sr.cold     += resistmod_calc;
-        sr.poison   += resistmod_calc;
-        sr.energy   += resistmod_calc;
-        mw.SetProperty("#SpellResist", sr);
+        // polymorph_resistmod is set by the caller before this runs; SpellController
+        // recompute combines it with active armor_protection buff via max-wins so a
+        // wildshaped druid casting barkskin doesn't stack both contributions.
+        // Recompute also re-pushes the per-slot armor packets to refresh the client
+        // gump (per-slot packets emitted during _UnequipWild carried the pre-wildshape
+        // #SpellResist and would otherwise show 0 until the next equip event).
+        SC_RecomputeSpellResist(who);
     endfunction
 
     function _CalcDice(this, theology)

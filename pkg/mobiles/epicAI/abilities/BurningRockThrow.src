@@ -27,6 +27,10 @@ program BurningRockThrow(params)
 
 	sleepms(500);
 
+	if (me.dead || targ.dead)
+		return 0;
+	endif
+
 	if (CheckResist(targ, REFLEXES, RESIST_MEDIUM))
 		PrintTextAbove(targ, "*esquiva da rocha*");
 		return 1;
