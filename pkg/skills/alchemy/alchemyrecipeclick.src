@@ -6,7 +6,7 @@ include ":alchemy:alchemy";
 
 program usaPergaminho(who, scroll)
 
-	var recipe := GetObjProperty(scroll, "recipe");
+	var recipe := struct{ "recipe" := GetObjProperty(scroll, "AlchemyRecipe") };
 
 	WriteAlchInfo(recipe);
 

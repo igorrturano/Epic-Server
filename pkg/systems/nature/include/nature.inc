@@ -1,12 +1,14 @@
 
 use uo;
+use os;
 use util;
 use cfgfile;
 use datafile;
+use vitals;
 
 include ":combat:Controller/DamageController_legacy";
 include ":debug:Controller/DebugController";
-
+include "include/dungeons";
 // Calendar constants
 var MONTHS := array{
     struct{ "name" := "Duwus", "days" := 30 }, // Mês dedicado ao Deus Sol - Björska
@@ -972,4 +974,102 @@ function UpdateAllShiftMerchants()
 
 	// Debug output
 	print("[SHIFT] Updated " + updated_count + " merchants, removed " + removed_count + " dead NPCs");
+endfunction
+
+function RemoveHeatMod(who, mod)
+	Set_Critical(1);
+
+	if (mod == 1)
+		if (GetObjProperty(who, "climate_penalty") != error)
+			var fortitudeMod := GetObjProperty(who, "#FortitudeMod");
+			if (fortitudeMod != error)
+				var climatePenalty := GetObjProperty(who, "climate_penalty");
+				SetObjProperty(who, "#FortitudeMod", fortitudeMod - climatePenalty);
+			endif
+			EraseObjProperty(who, "climate_penalty");
+		endif
+	elseif (mod == 2)
+		if (GetObjProperty(who, "stam_penalty") != error)
+			var stammod := cint(GetObjProperty(who, "stammod"));
+			var manamod := cint(GetObjProperty(who, "manamod"));
+			var stam_penalty := GetObjProperty(who, "stam_penalty");
+			var mana_penalty := GetObjProperty(who, "mana_penalty");
+			SetObjProperty(who, "stammod", stammod - stam_penalty);
+			SetObjProperty(who, "manamod", manamod - mana_penalty);
+			EraseObjProperty(who, "stam_penalty");
+			EraseObjProperty(who, "mana_penalty");
+			RecalcVitals(who);
+		endif
+	endif
+
+	Set_Critical(0);
+endfunction
+
+function ApplyHeatMod(who, mod)
+	Set_Critical(1);
+	if (who.gender == 1)
+		PlaySoundEffect(who, 0x31A);
+	else
+		PlaySoundEffect(who, 0x42A);
+	endif
+
+	if (mod == 1)
+		var temp := getTemperature(who);
+		var fortitudePenalty := resistPenaltyByClimate(temp) * -1;
+		var currentFortitudeMod := GetObjProperty(who, "#FortitudeMod");
+		if (currentFortitudeMod == error)
+			currentFortitudeMod := 0;
+		endif
+		SetObjProperty(who, "#FortitudeMod", currentFortitudeMod + fortitudePenalty);
+		SetObjProperty(who, "climate_penalty", fortitudePenalty);
+	endif
+
+	Set_Critical(0);
+endfunction
+
+function RemoveColdMod(who, mod)
+	Set_Critical(1);
+
+	if (mod == 1)
+		if (GetObjProperty(who, "climate_penalty") != error)
+			var fortitudeMod := GetObjProperty(who, "#FortitudeMod");
+			if (fortitudeMod != error)
+				var climatePenalty := GetObjProperty(who, "climate_penalty");
+				SetObjProperty(who, "#FortitudeMod", fortitudeMod - climatePenalty);
+			endif
+			EraseObjProperty(who, "climate_penalty");
+		endif
+	elseif (mod == 2)
+		if (GetObjProperty(who, "penalidadetaiga") != error)
+			var stammod := cint(GetObjProperty(who, "stammod"));
+			var penalidade := GetObjProperty(who, "penalidadetaiga");
+			SetObjProperty(who, "stammod", stammod - penalidade);
+			EraseObjProperty(who, "penalidadetaiga");
+			RecalcVitals(who);
+		endif
+	endif
+
+	Set_Critical(0);
+endfunction
+
+function ApplyColdMod(who, mod)
+	Set_Critical(1);
+	if (who.gender == 1)
+		PlaySoundEffect(who, 0x31A);
+	else
+		PlaySoundEffect(who, 0x42A);
+	endif
+
+	if (mod == 1)
+		var temp := getTemperature(who);
+		var fortitudePenalty := resistPenaltyByClimate(temp) * -1;
+		var currentFortitudeMod := GetObjProperty(who, "#FortitudeMod");
+		if (currentFortitudeMod == error)
+			currentFortitudeMod := 0;
+		endif
+		SetObjProperty(who, "#FortitudeMod", currentFortitudeMod + fortitudePenalty);
+		SetObjProperty(who, "climate_penalty", fortitudePenalty);
+	endif
+
+	Set_Critical(0);
 endfunction

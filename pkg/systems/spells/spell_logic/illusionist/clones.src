@@ -143,6 +143,9 @@ function CopyEquipment(source, dest)
 	var mypack := CreateItemAtLocation(20, 20, 0, 0xe75, 1, dest.realm);
 
 	foreach item in ListEquippedItems(source)
+		if (item.layer == 0x19) // LAYER_MOUNT
+			continue;
+		endif
 		var newItem := CreateItemCopyAtLocation(20, 20, 0, item);
 		if (newItem)
 			newItem.color := item.color;

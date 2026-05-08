@@ -174,7 +174,7 @@ program skinning(parms)
 					endif
 					qtd := minamt;
 					if (MobileWrapper(who).HasAbility(ABILITY_ID::NO_WASTE))
-						qtd := qtd + CInt(qtd * AP_GetSkill(who, SURVIVAL) / 100);
+						qtd := CInt(qtd) + CInt(qtd * AP_GetSkill(who, SURVIVAL) / 100);
 					endif
 					var item := CreateItemInContainer(cadaver, cstr(thing), cint(qtd));
 					found := 1;

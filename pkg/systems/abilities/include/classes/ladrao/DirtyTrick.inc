@@ -22,6 +22,11 @@ class DirtyTrick(CombatAbility)
     endfunction
 
     function ExecuteOn(this, mobile)
+        // Roleplay/Pickpocket flavor — two Target() calls, no NPC use case.
+        if (mobile.IsNPC())
+            return false;
+        endif
+
         var who := mobile.GetObjRef();
 
         Message("Escolha um item da sua mochila para por na mochila do alvo.", Color(SYSTEM_COLOR::INFO)).SendSys(who);

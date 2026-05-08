@@ -30,14 +30,13 @@ function UpdateMobileEntropy(who, amt)
     updateDPEntropyBonus(who, current_entropy);
     // updateEntropyDescription(who, current_entropy);
     
-    var color := SSM_REQUEST;
-    if (amt < 0)
-        var color := SSM_FAIL;
+    if (amt > 0)
+        Message("Você ganhou {} pontos de entropia".format(amt), Color(SYSTEM_COLOR::SUCCESS))
+            .SendSys(who);
+    elseif (amt < 0)
+        Message("Você perdeu {} pontos de entropia".format(Abs(amt)), Color(SYSTEM_COLOR::FAIL))
+            .SendSys(who);
     endif
-
-    Message("Você ganhou {} pontos de entropia".format(amt))
-        .SetColor(color)
-        .SendSys(who);
     return current_entropy;
 endfunction
 
@@ -48,11 +47,7 @@ endfunction
  * @param amt Integer - Amount to add/subtract from global entropy
  */
 function updateGlobalEntropy(amt)
-    var global_entropy := GetGlobalProperty("GlobalEntropy");
-    if (!global_entropy)
-        global_entropy := 0;
-    endif
-
+    var global_entropy := CInt(GetGlobalProperty("GlobalEntropy"));
     SetGlobalProperty("GlobalEntropy", global_entropy + amt);
 endfunction
 
@@ -156,7 +151,7 @@ function AwardEntropyFromKill(killers, corpse)
     var template := GetObjProperty(corpse, "npctemplate"); // Set by the core.
 	var npc_cfg := NPC_GetNPCConfig(template);
 
-	var category := Lower(npc_cfg.Category);
+	var category := Lower(npc_cfg.Environment);
 	var tier := npc_cfg.Tier;
 
 	// Only award entropy for Undead, Demons, and Void creatures

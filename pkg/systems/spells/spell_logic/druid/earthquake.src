@@ -13,7 +13,7 @@ include "include/client";
 include "include/say";
 include ":taming:taming";
 include "include/epicMageryUtils";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 
 program earthquake(parms)
 	var caster := parms[1];
@@ -45,10 +45,9 @@ program earthquake(parms)
 		PlaySoundEffect(mobile, SFX_223);
 		sleepms(200);
 		SendSysMessageEx(mobile, "Voce sente o chao tremer com extrema violencia.", SSM_FAIL);
-		var dmg := epicSpellDamageRoll(caster, spell_circle);
-		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
 
-		DamageFLS(mobile, cint(dmg), DMG_FORCED, caster, "earthquake");
+		SC_DealDamage(caster, mobile, CInt(spell.id), cint(dmg), DMG_FORCED);
 		sleepms(600);
 	endforeach
 

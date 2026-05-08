@@ -2,7 +2,10 @@ use uo;
 
 include "include/say";
 
-// Gem objtype constants
+// Gem objtype constants — these 6 grant a matching-gem bonus.
+// Carvability is determined by IsAGem() in :itemutils:itemtypes (which
+// covers all 9 raw gems). Star sapphire / citrine / tourmaline can be
+// carved but contribute only the base theology scaling.
 const GEM_DIAMOND := 0xF30;
 const GEM_RUBY := 0xF13;
 const GEM_SAPPHIRE := 0xF11;
@@ -29,21 +32,36 @@ const CARVED_RUNE_POISON := 0xc897;
 const CARVED_RUNE_HOLY := 0xc898;
 
 /*
- * Returns the material bonus (+1) based on gem type matching rune type
- * Only grants bonus if the gem type matches the rune type
+ * Retorna o bonus de material para runas DE ARMADURA (+5%) se o tipo de gema
+ * casa com o tipo de runa. Escala % do redesign — gem matching contribui ~20%
+ * do total max possivel: base 20 + gem 5 = 25. Ver design_magia.md.
+ *
+ * NAO usar para HOLY_WEAPON — runas de arma seguem escala flat legacy via
+ * getGemBonusFlat() (weapons foram mantidos flat por enquanto, fora do redesign).
  */
 function getGemBonus(gemtype, runeType)
 	case (runeType)
 		RuneType::PROTECTION:
-			return (gemtype == GEM_DIAMOND) ? 1 : 0;
+			return (gemtype == GEM_DIAMOND) ? 5 : 0;
 		RuneType::FIRE_RESIST:
-			return (gemtype == GEM_RUBY) ? 1 : 0;
+			return (gemtype == GEM_RUBY) ? 5 : 0;
 		RuneType::COLD_RESIST:
-			return (gemtype == GEM_SAPPHIRE) ? 1 : 0;
+			return (gemtype == GEM_SAPPHIRE) ? 5 : 0;
 		RuneType::ENERGY_RESIST:
-			return (gemtype == GEM_AMETHYST) ? 1 : 0;
+			return (gemtype == GEM_AMETHYST) ? 5 : 0;
 		RuneType::POISON_RESIST:
-			return (gemtype == GEM_EMERALD) ? 1 : 0;
+			return (gemtype == GEM_EMERALD) ? 5 : 0;
+		default:
+			return 0;
+	endcase
+endfunction
+
+/*
+ * Bonus flat (+1) para runas de arma (HOLY_WEAPON). Escala legacy preservada
+ * pois weapon damage nao foi convertido para % no redesign atual.
+ */
+function getGemBonusFlat(gemtype, runeType)
+	case (runeType)
 		RuneType::HOLY_WEAPON:
 			return (gemtype == GEM_AMBER) ? 1 : 0;
 		default:

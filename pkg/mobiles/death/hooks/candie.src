@@ -3,7 +3,7 @@ use os;
 use cfgfile;
 include "include/say";
 include ":merchants:pcconversation";
-include ":epicAI:epicai";
+include ":epicAI:include/epicNPCCombat";   // RestoreDoppelgangerAppearance
 include ":tn:npcutil";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";

@@ -1,0 +1,404 @@
+// ============================================================
+// faccao_fix.src — Auditoria e correção de dados de facções
+//
+// Uso:
+//   .faccao_fix          → dry-run (só reporta, não aplica)
+//   .faccao_fix fix      → aplica todas as correções
+//
+// Corrige:
+//   - Guilds sem tipo_faccao ou npcs_active
+//   - honorary_members com seriais mortos ou props divergentes
+//   - nomefaccao desincronizado em players, NPCs e itens
+//   - honorary_guild_id stale (guild deletada)
+//   - Player com honorary_guild_id mas faltando no array do guild
+//   - Member struct ausente para membros full
+// ============================================================
+
+use uo;
+use os;
+use guilds;
+
+include ":faccao:faccao";
+include ":faccao:membership";
+
+var DEFAULT_MEMBER_STRUCT := struct{
+    "above_guards"    := 0,
+    "above_merchants" := 0,
+    "above_members"   := 0,
+    "giveprivs"       := 0,
+    "contractnpc"     := 0,
+    "fixitems"        := 0,
+    "unlockdoors"     := 0,
+    "buyuniforms"     := 0
+};
+
+// ============================================================
+// LOGGING
+// ============================================================
+
+function _Log(who, msg, dry_run)
+    var prefix := dry_run ? "[DRY] " : "[FIX] ";
+    SendSysMessage(who, prefix + msg);
+    syslog(prefix + "[faccao_fix] " + msg);
+endfunction
+
+function _Warn(who, msg)
+    SendSysMessage(who, "[WARN] " + msg);
+    syslog("[WARN][faccao_fix] " + msg);
+endfunction
+
+// ============================================================
+// FASE 1 — GUILDS
+// ============================================================
+
+function _FixGuild(who, guild, dry_run, counters)
+    var gname := guild.GetProp("name");
+    if (!gname) gname := "guild#" + guild.guildid; endif
+
+    // 1. tipo_faccao ausente
+    if (guild.GetProp("tipo_faccao") == error)
+        _Log(who, "Guild '{}': tipo_faccao ausente → 'player'".format(gname), dry_run);
+        if (!dry_run) guild.SetProp("tipo_faccao", "player"); endif
+        counters.fixes := counters.fixes + 1;
+    endif
+
+    // 2. npcs_active ausente
+    if (guild.GetProp("npcs_active") == error)
+        _Log(who, "Guild '{}': npcs_active ausente → array vazio".format(gname), dry_run);
+        if (!dry_run) guild.SetProp("npcs_active", array{}); endif
+        counters.fixes := counters.fixes + 1;
+    endif
+
+    // 3. honorary_members — limpar mortos e corrigir props
+    var hon_serials := guild.GetProp("honorary_members");
+    if (!hon_serials) hon_serials := array{}; endif
+    var hon_limpo := array{};
+    var hon_changed := 0;
+
+    foreach serial in hon_serials
+        sleepms(2);
+        var mob := SystemFindObjectBySerial(CInt(serial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+        if (!mob)
+            _Log(who, "Guild '{}': serial {} não existe → removendo de honorary_members".format(gname, serial), dry_run);
+            if (!dry_run) hon_changed := 1; endif
+            counters.fixes := counters.fixes + 1;
+            continue;
+        endif
+        hon_limpo.append(serial);
+
+        var hon_id := GetObjProperty(mob, "honorary_guild_id");
+        if (hon_id != guild.guildid)
+            _Log(who, "Guild '{}': {} tem honorary_guild_id={} mas deveria ser {} → corrigindo".format(
+                gname, mob.name, hon_id, guild.guildid), dry_run);
+            if (!dry_run) SetObjProperty(mob, "honorary_guild_id", guild.guildid); endif
+            counters.fixes := counters.fixes + 1;
+        endif
+    endforeach
+
+    if (hon_changed && !dry_run)
+        guild.SetProp("honorary_members", hon_limpo);
+    endif
+
+    // 4. nomefaccao sync (só staff)
+    var nome_idx := guild.GetProp("nomefaccao");
+    if (nome_idx && nome_idx != error)
+        // Full members (online)
+        foreach member in (guild.members)
+            sleepms(2);
+            var cur := GetObjProperty(member, "nomefaccao");
+            if (cur != nome_idx)
+                _Log(who, "Guild '{}': {} (full) nomefaccao={} → {}".format(gname, member.name, cur, nome_idx), dry_run);
+                if (!dry_run) SetObjProperty(member, "nomefaccao", nome_idx); endif
+                counters.fixes := counters.fixes + 1;
+            endif
+        endforeach
+
+        // Honorary members (online + offline)
+        foreach serial in hon_limpo
+            sleepms(2);
+            var mob := SystemFindObjectBySerial(CInt(serial), SYSFIND_SEARCH_OFFLINE_MOBILES);
+            if (!mob) continue; endif
+            var cur := GetObjProperty(mob, "nomefaccao");
+            if (cur != nome_idx)
+                _Log(who, "Guild '{}': {} (hon) nomefaccao={} → {}".format(gname, mob.name, cur, nome_idx), dry_run);
+                if (!dry_run) SetObjProperty(mob, "nomefaccao", nome_idx); endif
+                counters.fixes := counters.fixes + 1;
+            endif
+        endforeach
+
+        // NPCs ativos
+        var npcs_active := guild.GetProp("npcs_active");
+        if (npcs_active)
+            var npcs_limpos := array{};
+            var npcs_changed := 0;
+            foreach npc_data in npcs_active
+                sleepms(2);
+                var npc := SystemFindObjectBySerial(npc_data.serial);
+                if (!npc)
+                    _Warn(who, "Guild '{}': NPC serial {} não existe → removendo de npcs_active".format(gname, npc_data.serial));
+                    npcs_changed := 1;
+                    counters.warnings := counters.warnings + 1;
+                    continue;
+                endif
+                npcs_limpos.append(npc_data);
+                var cur := GetObjProperty(npc, "nomefaccao");
+                if (cur != nome_idx)
+                    _Log(who, "Guild '{}': NPC {} nomefaccao={} → {}".format(gname, npc.name, cur, nome_idx), dry_run);
+                    if (!dry_run) SetObjProperty(npc, "nomefaccao", nome_idx); endif
+                    counters.fixes := counters.fixes + 1;
+                endif
+            endforeach
+            if (npcs_changed && !dry_run)
+                guild.SetProp("npcs_active", npcs_limpos);
+            endif
+        endif
+
+        // Itens registrados (murais, mesas, etc.)
+        var itens := guild.GetProp("itens_faccao");
+        if (itens)
+            var itens_limpos := array{};
+            var itens_changed := 0;
+            foreach item_serial in itens
+                sleepms(2);
+                var item := SystemFindObjectBySerial(CInt(item_serial));
+                if (!item)
+                    itens_changed := 1;
+                    continue;
+                endif
+                itens_limpos.append(item_serial);
+                var cur := GetObjProperty(item, "nomefaccao");
+                if (cur != nome_idx)
+                    _Log(who, "Guild '{}': item {} nomefaccao={} → {}".format(gname, item_serial, cur, nome_idx), dry_run);
+                    if (!dry_run) SetObjProperty(item, "nomefaccao", nome_idx); endif
+                    counters.fixes := counters.fixes + 1;
+                endif
+            endforeach
+            if (itens_changed && !dry_run)
+                guild.SetProp("itens_faccao", itens_limpos);
+            endif
+        endif
+    endif
+
+    // 5. Member struct ausente para full members online
+    foreach member in (guild.members)
+        sleepms(2);
+        var mstruct := guild.GetProp(cstr(member.serial));
+        if (mstruct == error || !mstruct)
+            _Log(who, "Guild '{}': {} sem member struct → criando padrão".format(gname, member.name), dry_run);
+            if (!dry_run) guild.SetProp(cstr(member.serial), DEFAULT_MEMBER_STRUCT); endif
+            counters.fixes := counters.fixes + 1;
+        endif
+    endforeach
+endfunction
+
+function _FixAllGuilds(who, dry_run, counters)
+    SendSysMessage(who, "[FaccaoFix] Fase 1: auditando guilds...");
+    var total := 0;
+    foreach guild in ListGuilds()
+        sleepms(2);
+        _FixGuild(who, guild, dry_run, counters);
+        total := total + 1;
+    endforeach
+    SendSysMessage(who, "[FaccaoFix] Fase 1 concluída: {} guilds auditadas.".format(total));
+endfunction
+
+// ============================================================
+// FASE 2 — PLAYERS
+// ============================================================
+
+function _FixPlayer(who, char, dry_run, counters)
+    // 1. honorary_guild_id stale (guild deletada)
+    var hon_id := GetObjProperty(char, "honorary_guild_id");
+    if (hon_id && hon_id != error)
+        var hon_g := FindGuild(hon_id);
+        if (!hon_g)
+            _Log(who, "Player '{}': honorary_guild_id={} aponta para guild inexistente → limpando".format(char.name, hon_id), dry_run);
+            if (!dry_run)
+                EraseObjProperty(char, "honorary_guild_id");
+                hon_id := 0;
+            else
+                hon_id := 0; // simula limpeza para os checks seguintes no dry-run
+            endif
+            counters.fixes := counters.fixes + 1;
+        endif
+    else
+        hon_id := 0;
+    endif
+
+    // 2. honorary_guild_id válido mas player não está em honorary_members do guild
+    if (hon_id)
+        var hon_g := FindGuild(hon_id);
+        if (hon_g)
+            var hon_members := hon_g.GetProp("honorary_members");
+            if (!hon_members) hon_members := array{}; endif
+            if (!(char.serial in hon_members))
+                _Log(who, "Player '{}': tem honorary_guild_id={} mas não está em honorary_members → adicionando".format(
+                    char.name, hon_id), dry_run);
+                if (!dry_run)
+                    hon_members.append(char.serial);
+                    hon_g.SetProp("honorary_members", hon_members);
+                endif
+                counters.fixes := counters.fixes + 1;
+            endif
+        endif
+    endif
+
+    // 3. nomefaccao esperado
+    var expected_nomefaccao := 0;
+
+    // Verifica guild principal (full member)
+    var pg := char.guild;
+    if (pg)
+        var pg_nome := pg.GetProp("nomefaccao");
+        if (pg_nome && pg_nome != error)
+            expected_nomefaccao := pg_nome;
+        endif
+    endif
+
+    // Verifica guild honorária (se não achou no principal)
+    if (!expected_nomefaccao && hon_id)
+        var hon_g := FindGuild(hon_id);
+        if (hon_g)
+            var hon_nome := hon_g.GetProp("nomefaccao");
+            if (hon_nome && hon_nome != error)
+                expected_nomefaccao := hon_nome;
+            endif
+        endif
+    endif
+
+    var current_nomefaccao := GetObjProperty(char, "nomefaccao");
+    if (current_nomefaccao == error) current_nomefaccao := 0; endif
+
+    if (current_nomefaccao != expected_nomefaccao)
+        if (expected_nomefaccao)
+            _Log(who, "Player '{}': nomefaccao={} → {}".format(char.name, current_nomefaccao, expected_nomefaccao), dry_run);
+            if (!dry_run) SetObjProperty(char, "nomefaccao", expected_nomefaccao); endif
+        else
+            _Log(who, "Player '{}': nomefaccao={} sem facção staff → removendo".format(char.name, current_nomefaccao), dry_run);
+            if (!dry_run) EraseObjProperty(char, "nomefaccao"); endif
+        endif
+        counters.fixes := counters.fixes + 1;
+    endif
+
+    // 4. Member struct ausente para full member
+    if (pg)
+        var mstruct := pg.GetProp(cstr(char.serial));
+        if (mstruct == error || !mstruct)
+            var gname := pg.GetProp("name");
+            if (!gname) gname := "guild#" + pg.guildid; endif
+            _Log(who, "Player '{}': membro full de '{}' sem member struct → criando padrão".format(char.name, gname), dry_run);
+            if (!dry_run) pg.SetProp(cstr(char.serial), DEFAULT_MEMBER_STRUCT); endif
+            counters.fixes := counters.fixes + 1;
+        endif
+    endif
+
+    // 5. dados_convite stale — se o player não está em nenhuma facção, o dado é órfão
+    var convite := GetObjProperty(char, "dados_convite");
+    if (convite && convite != error)
+        var sem_guild := (!char.guild && !hon_id);
+        if (sem_guild)
+            _Log(who, "Player '{}': dados_convite sem facção associada → removendo".format(char.name), dry_run);
+            if (!dry_run) EraseObjProperty(char, "dados_convite"); endif
+            counters.fixes := counters.fixes + 1;
+        endif
+    endif
+
+    // 6. Props dinâmicas de enforcement de guilds deletadas
+    // Itera as guilds EXISTENTES e constrói o conjunto de IDs válidos.
+    // Depois testa os prefixos conhecidos contra todos os guild IDs que já
+    // apareceram no servidor (range 1..max_guildid_visto).
+    var known_prefixes := array{ "#pending_tier_", "#multa_paga_", "carteira_faccao_" };
+    var max_id := 0;
+    foreach g in ListGuilds()
+        if (g.guildid > max_id) max_id := g.guildid; endif
+        sleepms(1);
+    endforeach
+
+    // Para cada ID possível abaixo do máximo, se a guild não existe, limpa as props
+    var gid_check := 1;
+    while (gid_check <= max_id)
+        if (!FindGuild(gid_check))
+            foreach prefix in known_prefixes
+                var prop_name := prefix + cstr(gid_check);
+                var val := GetObjProperty(char, prop_name);
+                if (val != error)
+                    _Log(who, "Player '{}': prop '{}' de guild inexistente → removendo".format(char.name, prop_name), dry_run);
+                    if (!dry_run) EraseObjProperty(char, prop_name); endif
+                    counters.fixes := counters.fixes + 1;
+                endif
+                sleepms(1);
+            endforeach
+        endif
+        gid_check := gid_check + 1;
+    endwhile
+endfunction
+
+function _FixAllPlayers(who, dry_run, counters)
+    SendSysMessage(who, "[FaccaoFix] Fase 2: auditando jogadores (online + offline)...");
+    var total := 0;
+
+    foreach acct_name in SplitWords(ListAccounts(), " ")
+        acct_name := Trim(acct_name, type := TRIM_BOTH, to_trim := " ,");
+        if (!acct_name || acct_name == "") continue; endif
+
+        var acct := FindAccount(acct_name);
+        if (!acct || acct.errortext) continue; endif
+
+        for slot := 1 to 5
+            var char := acct.GetCharacter(slot);
+            if (!char) continue; endif
+            _FixPlayer(who, char, dry_run, counters);
+            total := total + 1;
+            sleepms(2);
+        endfor
+    endforeach
+
+    SendSysMessage(who, "[FaccaoFix] Fase 2 concluída: {} personagens auditados.".format(total));
+endfunction
+
+// ============================================================
+// ENTRY POINT
+// ============================================================
+
+program faccao_fix(who, argv)
+    if (!who || !who.cmdlevel)
+        return;
+    endif
+
+    var dry_run := 1;
+    var single_target := 0;
+
+    foreach arg in argv
+        var a := lower(cstr(arg));
+        if (a == "fix")  dry_run := 0;       endif
+        if (a == "alvo") single_target := 1; endif
+    endforeach
+
+    var counters := struct{ "fixes" := 0, "warnings" := 0 };
+
+    SendSysMessage(who, "=== [FaccaoFix] Modo: " + (dry_run ? "DRY-RUN" : "FIX") + (single_target ? " | ALVO ÚNICO" : " | TODOS") + " ===");
+
+    if (single_target)
+        SendSysMessage(who, "[FaccaoFix] Clique no personagem alvo...");
+        var targ := Target(who);
+        if (!targ || targ == error)
+            SendSysMessage(who, "[FaccaoFix] Cancelado.");
+            return;
+        endif
+        if (!targ.IsA(POLCLASS_MOBILE))
+            SendSysMessage(who, "[FaccaoFix] Alvo deve ser um personagem.");
+            return;
+        endif
+        SendSysMessage(who, "[FaccaoFix] Auditando: " + targ.name);
+        _FixPlayer(who, targ, dry_run, counters);
+    else
+        _FixAllGuilds(who, dry_run, counters);
+        _FixAllPlayers(who, dry_run, counters);
+    endif
+
+    SendSysMessage(who, "=== [FaccaoFix] Concluído | fixes: {} | warnings: {} ===".format(counters.fixes, counters.warnings));
+    if (dry_run && counters.fixes > 0)
+        var hint := single_target ? "'.faccao_fix alvo fix'" : "'.faccao_fix fix'";
+        SendSysMessage(who, "    Use {} para aplicar as {} correções.".format(hint, counters.fixes));
+    endif
+endprogram

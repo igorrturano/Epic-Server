@@ -1,0 +1,53 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include ":spells:Controller/SC_Damage";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+
+program cast_firebolt(params)
+	var caster := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
+
+	var spell_circle := spell.Circle;
+	params := 0; // No longer needed
+
+	SendSysMessage(caster, "Selecione o alvo.");
+	if (!targ.IsA(POLCLASS_MOBILE))
+		SendSysMessage(caster, "Alvo invalido.");
+		return 0;
+	endif
+
+	if (!targ)
+		SendSysMessageEx(caster, "Cancelado", SSM_FAIL);
+		return 0;
+	endif
+
+	var mlore := cint(HandleSpellSkill(caster) / 20);
+	var dist := Distance(caster, targ);
+	var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
+
+	if (dist > dist_allowed)
+		SendSysMessage(caster, "O alvo esta muito distante");
+		return 0;
+	endif
+
+	LaunchProjectile(caster, targ, spell_circle, spell_school, CInt(spell.id));
+endprogram
+
+function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
+	PlaySoundEffect(caster, SFX_AQUARIUM_USE);
+	PlayMovingEffectXYZHued(caster, targ, 0x54AD, 10, 1643, 0);
+	var dmg := RandomDiceRoll("1d4"); /* epicSpellDamageRoll(caster, spell_circle); */
+	// dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+
+	SC_DealDamage(caster, targ, spellId, cint(dmg), DMG_COLD);
+endfunction

@@ -1,0 +1,79 @@
+// Jailor double-click dispatcher.
+//
+// GM (cmdlevel >= 1)         -> jailorGmConfig (set this Jailor's faccao)
+// Guard of Jailor's faccao   -> jailorPunish (Phase 4)
+// Prisoner (#jail_quota > 0) -> jailorPickaxe (Phase 6)
+// Anyone else                -> dismissive line
+//
+// Modeled on :merchants:citizen/dblclick.
+
+use uo;
+use os;
+use util;
+use polsys;
+
+include ":fls_core:packets";
+include ":brainAI:npcCommands";
+include ":jailor:include/jailor";
+
+program DblClickNerve(params)
+	var npc := params[1];
+	var nerve_name := params[2];
+	var player := params[3].source;
+	var settings := params[4];
+
+	var serving := 0;
+	var busy := 0;
+
+	while (npc)
+		if (player)
+			if (busy.pid)
+				AI_Speak(npc, "Um momento, cidadao.");
+			else
+				serving := player;
+				busy := DispatchToGump(npc, player);
+				if (busy && busy.errortext)
+					AI_Speak(npc, "[Erro abrindo dialogo: " + busy.errortext + "]");
+				endif
+			endif
+		endif
+
+		var wait := 500;
+		if (busy && busy.pid)
+			if (Distance(npc, serving) > 4)
+				CloseGumpPacket(serving, busy.pid, 0);
+				sleepms(500);
+				busy.kill();
+			else
+				wait := 1;
+			endif
+		endif
+
+		var ev := wait_for_event(wait);
+		if (ev)
+			case (ev.type)
+				SYSEVENT_DOUBLECLICKED: player := ev.source;
+				NPCEVENT_DONE:          player := 0;
+			endcase
+		else
+			player := 0;
+		endif
+	endwhile
+endprogram
+
+function DispatchToGump(npc, player)
+	if (player.cmdlevel >= 1)
+		return Start_Script(":jailor:gumps/jailorGmConfig", { npc, player });
+	endif
+
+	if (IsPrisoner(player))
+		return Start_Script(":jailor:gumps/jailorPickaxe", { npc, player });
+	endif
+
+	if (IsGuardOf(player, npc))
+		return Start_Script(":jailor:gumps/jailorPunish", { npc, player });
+	endif
+
+	AI_Speak(npc, "Voce nao tem assunto comigo.");
+	return 0;
+endfunction

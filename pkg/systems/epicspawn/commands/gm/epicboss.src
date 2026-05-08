@@ -43,7 +43,7 @@ program epicBOSS(params)
 	endif
 	// Create a gump with title "EPIC BOSS"
 	var gump_width := 960; // Reduced from 1200 (20% reduction)
-	var gump_height := 640; // Reduced from 800 (20% reduction)
+	var gump_height := 720;
 	var title := "EPIC! BOSS";
 
 	// Check if editing an existing spawner
@@ -126,6 +126,9 @@ function InitializeFormData()
 	// Add default respawn time values
 	form_data.min_respawn := "60"; // Default 60 minutes
 	form_data.max_respawn := "120"; // Default 120 minutes
+
+	// Visual size (SpawnScale)
+	form_data.spawn_scale := "100";
 
 	// Attributes
 	form_data.str := "0";
@@ -272,6 +275,14 @@ function ExtractPageData(input, page)
 			var max_respawn := GFExtractData(input, 43);
 			if (max_respawn != error && max_respawn != "")
 				form_data.max_respawn := CInt(max_respawn);
+			endif
+
+			var spawn_scale := GFExtractData(input, 45);
+			if (spawn_scale != error && spawn_scale != "")
+				var scale_val := CInt(spawn_scale);
+				if (scale_val > 0)
+					form_data.spawn_scale := scale_val;
+				endif
 			endif
 
 			break;
@@ -605,64 +616,70 @@ function ShowPage1(who, title, gump_width, gump_height)
 	GFTextLine(gump, 50, 310, 1153, "Description:");
 	GFTextEntry(gump, 200, 310, 300, 60, 1150, form_data.description ? form_data.description : "", 4);
 
+	// Tamanho do Mob (SpawnScale)
+	GFTextLine(gump, 50, 380, 1153, "Tamanho do Mob:");
+	GFTooltipText(gump, "Define o tamanho visual do mob em percentual. 100 = tamanho original. 150 = 50% maior. 50 = metade do tamanho. Deixe em 100 para usar o valor do template.");
+	GFTextEntry(gump, 200, 380, 80, 20, 1150, form_data.spawn_scale ? form_data.spawn_scale : "100", 45);
+	GFTextLine(gump, 290, 380, 2100, "(% do tamanho original)");
+
 	// True Boss checkbox
-	GFCheckBox(gump, 50, 350, 2510, 2511, form_data.trueboss ? form_data.trueboss : 0, 5);
-	GFTextLine(gump, 80, 350, 1153, "True Boss");
+	GFCheckBox(gump, 50, 410, 2510, 2511, form_data.trueboss ? form_data.trueboss : 0, 5);
+	GFTextLine(gump, 80, 410, 1153, "True Boss");
 
 	// Special AI
-	GFTextLine(gump, 50, 380, 1153, "Special AI:");
-	GFTextEntry(gump, 200, 380, 300, 20, 1150, form_data.special_ai ? form_data.special_ai : "", 6);
+	GFTextLine(gump, 50, 440, 1153, "Special AI:");
+	GFTextEntry(gump, 200, 440, 300, 20, 1150, form_data.special_ai ? form_data.special_ai : "", 6);
 
 	// Amount - Add this field
-	GFTextLine(gump, 50, 410, 1153, "Amount to Spawn:");
-	GFTextEntry(gump, 200, 410, 100, 20, 1150, form_data.amount ? form_data.amount : "1", 44);
+	GFTextLine(gump, 50, 470, 1153, "Amount to Spawn:");
+	GFTextEntry(gump, 200, 470, 100, 20, 1150, form_data.amount ? form_data.amount : "1", 44);
 
 	// Add a divider line for Respawn Time Configuration
-	GFResizePic(gump, 650, 450, 3000, 2, 100);
+	GFResizePic(gump, 650, 490, 3000, 2, 100);
 
 	// Add Respawn Time Configuration
-	GFTextLine(gump, 670, 450, 1153, "Tempo de Respawn (minutos):");
+	GFTextLine(gump, 670, 490, 1153, "Tempo de Respawn (minutos):");
 
 	// Minimum respawn time
-	GFTextLine(gump, 670, 500, 1153, "Mínimo:");
-	GFResizePic(gump, 720, 500, 9350, 60, 25);
-	GFTextEntry(gump, 725, 505, 50, 20, 1153, form_data.min_respawn ? form_data.min_respawn : "60",
+	GFTextLine(gump, 670, 530, 1153, "Mínimo:");
+	GFResizePic(gump, 720, 530, 9350, 60, 25);
+	GFTextEntry(gump, 725, 535, 50, 20, 1153, form_data.min_respawn ? form_data.min_respawn : "60",
 				 42);
 
 	// Maximum respawn time - positioned beside minimum
-	GFTextLine(gump, 800, 500, 1153, "Máximo:");
-	GFResizePic(gump, 850, 500, 9350, 60, 25);
-	GFTextEntry(gump, 855, 505, 50, 20, 1153, form_data.max_respawn ? form_data.max_respawn : "120",
+	GFTextLine(gump, 800, 530, 1153, "Máximo:");
+	GFResizePic(gump, 850, 530, 9350, 60, 25);
+	GFTextEntry(gump, 855, 535, 50, 20, 1153, form_data.max_respawn ? form_data.max_respawn : "120",
 				 43);
 
 	// Add a vertical divider
-	GFResizePic(gump, 520, 160, 3000, 2, 230);
+	GFResizePic(gump, 520, 160, 3000, 2, 330);
 
 	// Right side - Preview and Profile
 	// Add a preview box for the boss image
-	GFResizePic(gump, 550, 170, 9350, 200, 200);
+	GFResizePic(gump, 550, 170, 9350, 210, 330);
 
 	// If URL is provided, show the image
 	if (form_data.url && form_data.url != "")
-		GFHTMLArea(gump, 550, 170, 200, 200,
-					"<img src=\"" + form_data.url + "\" width=\"200\" height=\"200\" x=\"0\" y=\"0\">", 0, 0);
+		GFHTMLArea(gump, 550, 170, 210, 330,
+					"<img src=\"" + form_data.url + "\" width=\"210\" height=\"330\" x=\"0\" y=\"0\">", 0, 0);
 	else
-		GFTextMid(gump, 550, 260, 200, 1153, "Preview Image");
+		GFTextMid(gump, 550, 335, 210, 1153, "Preview Image");
 	endif
 
 	// NPC Profile Section
-	GFTextMid(gump, 0, 410, gump_width, 1153, "NPC PROFILE");
+	GFTextMid(gump, 0, 510, gump_width, 1153, "NPC PROFILE");
 
 	// Add a divider line
-	GFResizePic(gump, 40, 430, 3000, gump_width - 80, 2);
+	GFResizePic(gump, 40, 530, 3000, gump_width - 80, 2);
 
 	// URL for image
-	GFTextLine(gump, 50, 450, 1153, "Image URL (200x200):");
-	GFTextEntry(gump, 200, 450, 400, 20, 1150, form_data.url ? form_data.url : "", 7);
+	GFTextLine(gump, 50, 550, 1153, "Image URL (210x330):");
+	GFTextEntry(gump, 200, 550, 400, 20, 1150, form_data.url ? form_data.url : "", 7);
 
 	// Detailed Description
-	GFTextLine(gump, 50, 480, 1153, "Detailed Description:");
-	GFTextEntry(gump, 200, 480, 400, 80, 1150, form_data.detailed_description ?
+	GFTextLine(gump, 50, 580, 1153, "Detailed Description:");
+	GFTextEntry(gump, 200, 580, 400, 60, 1150, form_data.detailed_description ?
 				 form_data.detailed_description : "", 8);
 
 	// Add a divider line before buttons
@@ -2521,6 +2538,11 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
 	boss.min_respawn := CInt(form_data.min_respawn);
 	boss.max_respawn := CInt(form_data.max_respawn);
 
+	// Visual size override
+	if (form_data.spawn_scale && CInt(form_data.spawn_scale) > 0)
+		boss.spawn_scale := CInt(form_data.spawn_scale);
+	endif
+
 	if (form_data.combatevents && form_data.combatevents.size() > 0)
 		foreach event in (form_data.combatevents)
 
@@ -3613,7 +3635,7 @@ function SelectMountFromList(who, byref form_data, page := 1)
 	// Collect all mounts
 	foreach template in elem_names
 		var elem := cfg[template];
-		if (elem.Category == "Mount")
+		if (elem.Environment == "Mount")
 			var mount_struct := struct{ "name" := elem.Name, "graphic" := elem.Objtype,
 										"template" := template };
 			available_mounts.append(mount_struct);

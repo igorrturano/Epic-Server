@@ -1,0 +1,116 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include "include/utils";
+include ":spells:Controller/SC_Damage";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
+include ":wrappers:Objects/Model/MobileWrapper";
+include "include/facings";
+
+program spell_singularidade(params)
+	var caster := params[1];
+	var targ := params[2];
+	var spellinfo := params[3];
+	var spell_circle := spellinfo.Circle;
+	var spell_school := spellinfo.School;
+	params := 0;
+
+	SendSysMessage(caster, "Escolha o ponto onde a singularidade abrira.");
+	if (!targ)
+		SendSysMessageEx(caster, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	var mlore := cint(AP_GetSkill(caster, ARCANA) / 20);
+	var dist := Distance(caster, targ);
+	var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
+
+	if (dist > dist_allowed)
+		SendSysMessage(caster, "O alvo esta muito distante");
+		return 0;
+	endif
+
+	var radius := Cint(AP_GetSkill(caster, ARCANA) / 10);
+	if (radius < 3)
+		radius := 3;
+	elseif (radius > 7)
+		radius := 7;
+	endif
+
+	// Visual + sound for the singularity opening at the target point.
+	PlayStationaryEffectEx(targ.x, targ.y, targ.z, caster.realm, 0xE464, 15, 40, 0, 0);
+	PlaySoundEffect(caster, 0x457);
+	sleepms(400);
+
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+
+	var arcana := AP_GetSkill(caster, ARCANA);
+	var pull_tiles := Cint(arcana / 8);
+	if (pull_tiles < 1)
+		pull_tiles := 1;
+	endif
+
+	var is_evocator := MobileWrapper(caster).HasAbility(ABILITY_ID::EVOCATOR) && spell_school == EVOCATIUM;
+	if (is_evocator)
+		pull_tiles := pull_tiles + 2;
+	endif
+
+	var mobs := ListMobilesNearLocation(targ.x, targ.y, targ.z, radius, caster.realm);
+	print("[DEBUG singularidade] targ=(" + targ.x + "," + targ.y + "," + targ.z + ") radius=" + radius + " pull_tiles=" + pull_tiles + " mob_count=" + mobs.size());
+
+	foreach mob in mobs
+		if (mob == caster)
+			print("[DEBUG singularidade] skipped caster itself");
+			continue;
+		endif
+
+		print("[DEBUG singularidade] --- mob=" + mob.name + " serial=" + mob.serial + " at=(" + mob.x + "," + mob.y + "," + mob.z + ") facing_before=" + mob.facing);
+
+		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+
+		var pull := pull_tiles;
+		var save := CheckResist(mob, FORTITUDE, diff, -bonus);
+		print("[DEBUG singularidade] fort_save=" + save + " (>0 means saved)");
+		if (save > 0)
+			pull := Cint(pull / 2);
+			if (pull < 1)
+				pull := 1;
+			endif
+			SendSysMessageEx(mob, "Voce se firma contra a atracao arcana.", SSM_INFO);
+		endif
+
+		// Distance(mob, coord_struct) retorna error em POL; calcula chebyshev manualmente.
+		var dx := mob.x - targ.x;
+		if (dx < 0) dx := -dx; endif
+		var dy := mob.y - targ.y;
+		if (dy < 0) dy := -dy; endif
+		var dist_to_point := (dx > dy) ? dx : dy;
+		print("[DEBUG singularidade] dist_to_point=" + dist_to_point + " pull_before_cap=" + pull);
+		if (pull > dist_to_point)
+			pull := dist_to_point;
+		endif
+		print("[DEBUG singularidade] pull_after_cap=" + pull);
+
+		SendSysMessageEx(mob, "Voce e sugado para a singularidade!", SSM_FAIL);
+		SC_DealDamage(caster, mob, CInt(spellinfo.id), cint(dmg), DMG_ENERGY);
+
+		PlayObjectCenteredEffect(mob, 0xE464, 5, 10);
+
+		// Dispara o puxao em sub-script para cada mob se mover em paralelo,
+		// ignorando bloqueios de LOS/tile via MOVEOBJECT_FORCELOCATION.
+		print("[DEBUG singularidade] launching pull sub-script pull=" + pull);
+		start_script(":spells:spell_logic/evocation/singularidadePull",
+					 array{ mob, targ, pull });
+	endforeach
+
+	return 1;
+endprogram

@@ -21,6 +21,7 @@ include "include/client";
 include "include/epicConstants";
 include "include/dungeons";
 include ":message:include/model/Message";
+include ":stables:include/stable";
 
 /*
  * MP_GetMountsCfgFile()
@@ -215,15 +216,12 @@ function MP_CheckMountRestriction(mobile, npc)
 
 	var chardata := GetObjProperty(mobile, "chardata");
 
-	// Check race restriction
-	if (chardata.raca != restriction.race)
-		var msg := "Apenas " + restriction.race_name + " podem montar essa criatura";
-		return error{"errortext" := msg};
-	endif
+	// Check race and gender restrictions
+	var race_mismatch := chardata.raca != restriction.race;
+	var gender_mismatch := restriction.gender > 0 && mobile.gender != restriction.gender;
 
-	// Check gender restriction (if specified)
-	if (restriction.gender > 0 && mobile.gender != restriction.gender)
-		var msg := "Apenas femeas " + restriction.race_name + " podem montar essa criatura";
+	if (race_mismatch || gender_mismatch)
+		var msg := "Apenas " + restriction.race_name + " podem montar essa criatura";
 		return error{"errortext" := msg};
 	endif
 
@@ -254,26 +252,36 @@ function MP_Mount(mobile, npc)
 
 	var cfg_elem := cfg[npctemplate.template];
 
-	if (cfg[npctemplate.template].Category != "Mount")
+	if (cfg[npctemplate.template].Environment != "Mount")
 		Message("Nao pode montar este animal").SetColor(SSM_FAIL).SendSys(mobile);
 		return 0;
 	endif
 
+	if (IsStabled(npc))
+		Message("Este animal está armazenado no estábulo", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
 	if ( Cint(GetObjProperty(mobile, "#desmontar")) == 1)
-		Message("Voce nao pode montar").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Voce nao pode montar").SetColor(SYSTEM_COLOR::FAIL).SendSys(mobile);
 		return 0;
 	endif
 
 	//check de polymorph druid
 	if ( Cint(GetObjProperty(mobile, "metamorfosedruida")) == 1)
-		Message("Voce nao pode montar nessa forma").SetColor(SSM_FAIL).SendSys(mobile);
+		Message("Voce nao pode montar nessa forma", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
+	if ( GetObjProperty(mobile, "metamorfose") )
+		Message("Voce nao pode montar nessa forma", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 
 	// Check race/gender restrictions using new system
 	var restriction_check := MP_CheckMountRestriction(mobile, npc);
-	if (!restriction_check)
-		Message(restriction_check.errortext).SetColor(SSM_FAIL).SendSys(mobile);
+	if (restriction_check == error)
+		Message(restriction_check.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 
@@ -282,7 +290,7 @@ function MP_Mount(mobile, npc)
 	var in_dungeon := InDungeon(coord);
 	if (in_dungeon)
 		if (!IsDungeonApprovedMount(mount_graphic))
-			Message("Você não pode usar essa montaria em masmorras").SetColor(SSM_FAIL).SendSys(mobile);
+			Message("Você não pode usar essa montaria em masmorras").SetColor(SYSTEM_COLOR::FAIL).SendSys(mobile);
 			return 0;
 		endif
 	endif
@@ -309,6 +317,11 @@ function MP_Mount(mobile, npc)
 	//sendsysmessage(mobile, "cor " + mount_piece.color + " " + npc.color);
 	SetName(mount_piece, npc.name);
 
+	// serial must be set BEFORE EquipItem so the 0x78 triggered by equip
+	// already carries the correct mount scale bytes via AppendMountScaleProp2Packet.
+	SetObjProperty(mount_piece, "serial", npc.serial);
+	SetObjProperty(mount_piece, "riderserial", mobile.serial);
+
 	var result := EquipItem(mobile, mount_piece);
 	if ( !result )
 		// Unable to equip the mount piece.
@@ -318,9 +331,6 @@ function MP_Mount(mobile, npc)
 		// Setting equipped mounts prevents un-equip exploits.
 		mount_piece.movable := 0;
 	endif
-
-	SetObjProperty(mount_piece, "serial", npc.serial);
-	SetObjProperty(mount_piece, "riderserial", mobile.serial);
 
 	//ExchangeStamina(mobile, npc);
 

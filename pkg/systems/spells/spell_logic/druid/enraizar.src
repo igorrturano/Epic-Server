@@ -23,7 +23,9 @@ program SpellScript(params)
 
 			var opts := struct{};
 			opts.+frozen := 1;
-			opts.+desc := "Enraizar";
+			opts.+buff_category := "movement_root";
+			opts.+displayname := "Enraizar";
+			opts.+desc := "Preso por raizes";
 
 			SC_ApplyEffect(who, mobile, opts, duration, CInt(spell.id));
 		endif

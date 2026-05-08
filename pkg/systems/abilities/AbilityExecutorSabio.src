@@ -5,5 +5,5 @@ include ":abilities:AbilityRegistrySabio";
 include ":abilities:AbilityService";
 
 program AbilityExecutorSabio(params)
-	return RunAbilityExecutor(params);
+	return AbilityExecutionController().Run(params);
 endprogram

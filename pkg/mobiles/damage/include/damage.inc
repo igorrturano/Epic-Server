@@ -105,13 +105,6 @@ function ApplyDamageEX(mobile, amount, type:=DMG_FORCED, source:=0)
 			SetLastDamageInfo(mobile, amount, type, source);
 			SetScriptController(source);
 		endif
-    // Added for necromancer wraith form
-    if(source and GetObjProperty(source, "wraith"))
-		DoManaSuck(mobile, source, amount);
-    endif
-    if(GetObjProperty(source , "cursed_weapon"))
-		LifeDrain(source, amount, 50);
-    endif
 		ApplyDamage(mobile, amount);
 	endif
 
@@ -146,14 +139,6 @@ function ApplyRawDamageEX(mobile, amount, type:=DMG_FORCED, source:=0)
 		if ( source )
 			SetLastDamageInfo(mobile, amount, type, source);
 			SetScriptController(source);
-		endif
-
-		// Added for necromancer wraith form
-		if(source and GetObjProperty(source, "wraith"))
-			DoManaSuck(mobile, source, amount);
-		endif
-		if(GetObjProperty(source , "cursed_weapon"))
-			LifeDrain(source, amount, 50);
 		endif
 
 		ApplyRawDamage(mobile, amount);
@@ -215,13 +200,6 @@ function ApplySpellDamageEX(mobile, amount, type:=DMG_FORCED, source:=0, circle 
 		endif
 	ApplyDamage(mobile, amount);
 	endif
-	// Added for necromancer wraith form
-	if(source and GetObjProperty(source, "wraith"))
-		DoManaSuck(mobile, source, amount);
-	endif
-	if(GetObjProperty(source, "cursed_weapon"))
-		LifeDrain(source, amount, 50);
-	endif
 
 	return amount;
 endfunction
@@ -268,13 +246,6 @@ function ApplyRawSpellDamageEX(mobile, amount, type:=DMG_FORCED, source:=0, circ
 			SetScriptController(source);
 		endif
 		ApplyRawDamage(mobile, amount);
-	endif
-	// Added for necromancer wraith form
-	if(source and GetObjProperty(source, "wraith"))
-		DoManaSuck(mobile, source, amount);
-	endif
-	if(GetObjProperty(source , "cursed_weapon"))
-		LifeDrain(source, amount, 50);
 	endif
 
 	return CInt( amount );

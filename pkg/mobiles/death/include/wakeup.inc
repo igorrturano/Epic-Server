@@ -62,20 +62,18 @@ function KataWakeUp(ghost, corpse)
 	SetVital(ghost, "mana", CInt(GetVitalMaximumValue(ghost, "mana") * 0.5));
 	RecalcVitals(ghost);
 
-	var deferred_fraturas := GetObjProperty(ghost, "#deferred_fratura");
-	if (deferred_fraturas != error)
-		foreach fratura in deferred_fraturas
-			var cooldown_name := "hurt_" + fratura.part;
-			var existing := GetCooldown(ghost, cooldown_name);
-			if (existing > 0)
-				SetCoolDown(ghost, cooldown_name, existing * 2);
-			elseif (CInt(fratura.tempo) > 0)
-				SetCoolDown(ghost, cooldown_name, CInt(fratura.tempo));
-			endif
-			TS_StartTimer(ghost, fratura.part, 1);
-		endforeach
-		EraseObjProperty(ghost, "#deferred_fratura");
-	endif
+var deferred_fraturas := GetObjProperty(ghost, "#deferred_fratura");
+if (deferred_fraturas != error)
+	foreach fratura in deferred_fraturas
+
+		if (CInt(fratura.tempo) > 0)
+			TS_StartTimer(ghost, fratura.part, CInt(fratura.tempo));
+		endif
+
+	endforeach
+
+	EraseObjProperty(ghost, "#deferred_fratura");
+endif
 
 	DestroyItem(corpse);
 
@@ -109,6 +107,16 @@ function KataWakeUp(ghost, corpse)
 
 	EraseObjProperty(ghost, "death_remaining");
 	EraseObjProperty(ghost, "death_corpse_serial");
+
+	// Redirecionamento de prisao da faccao: se o player foi derrubado por um guarda,
+	// acorda na prisao em vez do local do corpo.
+	var _prisao := GetObjProperty(ghost, "#prisao_destino");
+	if (_prisao != error)
+		EraseObjProperty(ghost, "#prisao_destino");
+		MoveObjectToLocation(ghost, _prisao.x, _prisao.y, _prisao.z, _prisao.realm, MOVEOBJECT_FORCELOCATION);
+		SendSysMessage(ghost, "Voce acorda na prisao da faccao. Em 5 minutos sera apresentada a opcao de pagar a multa.");
+		start_script(":faccao:prisaotimer", array{ ghost.serial, _prisao.guildid, _prisao.tier });
+	endif
 endfunction
 
 function DuelWakeUp(ghost, corpse)

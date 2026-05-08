@@ -88,7 +88,6 @@ program forensic(who)
 	if (stethoscope == 1)
 		skill_check := skill_check + 5;
 	endif
-	print("skill foi " + skill_check);
 	if (skill_check > 0)
 		var yn_gump := GFCreateGump(160, 130);
 		var serial;
@@ -111,24 +110,30 @@ program forensic(who)
 			GFTextLine(yn_gump, 90, 153, 1153, "Sem fraturas");
 		else
 			if ("Cabeca" in fracture)
+				GFTextLine(yn_gump, 116, 60, 1153, "Cabeça");
 				GFAddButton(yn_gump, 100, (63), 2117, 2118, GF_CLOSE_BTN, 2);
-				GFTextLine(yn_gump, 120, 60, 1153, "Cabeça");
+				GFGumpPic(yn_gump, 38, 25, 0xd1d2); //Cabeça
 			endif
 			if ("Maos" in fracture)
-				GFAddButton(yn_gump, 180, (103), 2117, 2118, GF_CLOSE_BTN, 3);
-				GFTextLine(yn_gump, 200, 100, 1153, "Mãos");
+				GFTextLine(yn_gump, 200, 120, 1153, "Mãos");
+				GFAddButton(yn_gump, 210, (140), 2117, 2118, GF_CLOSE_BTN, 3);
+				GFGumpPic(yn_gump, 165, -5, 0xd1d0); //mao
+				GFGumpPic(yn_gump, 158, -4, 0xd1d0); //mao
 			endif
 			if ("Bracos" in fracture)
-				GFAddButton(yn_gump, 20, (103), 2117, 2118, GF_CLOSE_BTN, 4);
-				GFTextLine(yn_gump, 40, 100, 1153, "Braços");
+				GFTextLine(yn_gump, 175, 105, 1153, "Braços");
+				GFAddButton(yn_gump, 186, (123), 2117, 2118, GF_CLOSE_BTN, 4);
+				GFTilePic(yn_gump, 155, 75, 0xD1E1); //braço
 			endif
 			if ("Torso" in fracture)
-				GFAddButton(yn_gump, 123, (143), 2117, 2118, GF_CLOSE_BTN, 5);
-				GFTextLine(yn_gump, 116, 153, 1153, "Torso");
+				GFTextLine(yn_gump, 90, 153, 1153, "Torso");
+				GFAddButton(yn_gump, 97, (143), 2117, 2118, GF_CLOSE_BTN, 5);
+				GFGumpPic(yn_gump, 36, 20, 0xd1d4); //torso
 			endif
 			if ("Pernas" in fracture)
-				GFAddButton(yn_gump, 100, (223), 2117, 2118, GF_CLOSE_BTN, 6);
-				GFTextLine(yn_gump, 120, 220, 1153, "Pernas");
+				GFAddButton(yn_gump, 92, (208), 2117, 2118, GF_CLOSE_BTN, 6);
+				GFTextLine(yn_gump, 80, 220, 1153, "Pernas");
+				GFGumpPic(yn_gump, 42, 45, 0xD1cb);
 			endif
 		endif
 
@@ -277,22 +282,21 @@ program forensic(who)
 
 		var input := GFSendGump(who, yn_gump);
 		input := input[0];
-		print("lastdamage time eh " + time_lastdamage);
 		if (input == 2)
 			HandleFracture(subject, "Cabeca");
-			HealFractureTimer(subject, "fratura_cabeca");
+			HealFractureTimer(who, subject, "fratura_cabeca");
 		elseif (input == 3)
 			HandleFracture(subject, "Maos");
-			HealFractureTimer(subject, "fratura_maos");
+			HealFractureTimer(who, subject, "fratura_maos");
 		elseif (input == 4)
 			HandleFracture(subject, "Bracos");
-			HealFractureTimer(subject, "fratura_bracos");
+			HealFractureTimer(who, subject, "fratura_bracos");
 		elseif (input == 5)
 			HandleFracture(subject, "Torso");
-			HealFractureTimer(subject, "fratura_torso");
+			HealFractureTimer(who, subject, "fratura_torso");
 		elseif (input == 6)
 			HandleFracture(subject, "Pernas");
-			HealFractureTimer(subject, "fratura_pernas");
+			HealFractureTimer(who, subject, "fratura_pernas");
 		elseif (input == 8)
 			Autopsy(who, subject);
 		endif
@@ -336,12 +340,38 @@ function diagnosis(who, subject)
 	else
 		strMsg := subject.title_race;
 	endif
-
+	var addiction_text := GetAddictionState(subject);
 	var base_diagnosis := strMsg + " aparenta " + streng + " e é " + dext + ". " + " Seus trejeitos indicam "
 													  + int + ", e está " + DPMsg(subject,
-													  who) + ". Seu sistema imunológico é " + fort + ".";
+													  who) + ". Seu sistema imunológico é " + fort + ". " + addiction_text;
 
 	return base_diagnosis;
+endfunction
+
+function GetAddictionState(subject)
+    var vstr := AP_GetVital(subject, "Viciostr");
+    var vdex := AP_GetVital(subject, "Viciodex");
+    var vint := AP_GetVital(subject, "Vicioint");
+
+    // pega o pior estado (menor valor)
+    var addiction := vstr;
+    if (vdex < addiction)
+        addiction := vdex;
+    endif
+    if (vint < addiction)
+        addiction := vint;
+    endif
+
+    // interpretação (0–100)
+if (addiction >= 80 && addiction <= 100)
+    return "Não há sinais aparentes de dependência.";
+elseif (addiction >= 60 && addiction < 80)
+    return "Apresenta sinais sutis de uso recorrente, porém ainda mantém controle sobre si.";
+elseif (addiction > 40 && addiction < 60)
+    return "Seus trejeitos indicam um início de dependência, com leves inquietações e olhar disperso.";
+else // <= 40
+    return "Demonstra claros sinais de abstinência: tremores, inquietação e dificuldade de foco.";
+endif
 endfunction
 
 function info_corpo(who, subject) // Infos do agressor para furtos, corpos mortos e agressões
@@ -378,8 +408,6 @@ function info_corpo(who, subject) // Infos do agressor para furtos, corpos morto
 endfunction
 
 function HandleFracture(subject, fractureName)
-	print("entrou na function");
-
 	// Então, cria um novo array com as fraturas que não foram selecionadas
 	var newFracture := array;
 	var fracture := GetObjProperty(subject, "Fractures");
@@ -841,7 +869,38 @@ function SortArray(symptoms_array)
 	return "disease_" + sorted_array.join("_");
 endfunction
 
-function HealFractureTimer(subject, timer_name)
-	TS_LowerDuration(subject, timer_name, -1);
-	EraseObjProperty(subject, "#hurt_" + timer_name);
+function HealFractureTimer(medic, subject, timer_name)
+    var total := 0;
+
+    foreach item in EnumerateItemsInContainer(medic.backpack)
+        if (item.objtype == 0xe21)
+            total := total + item.amount;
+        endif
+    endforeach
+
+    if (total >= 5)
+        TS_LowerDuration(subject, timer_name, -1);
+        EraseObjProperty(subject, "#hurt_" + timer_name);
+
+        var remaining := 5;
+
+        foreach item in EnumerateItemsInContainer(medic.backpack)
+            if (item.objtype == 0xe21)
+                if (item.amount <= remaining)
+                    remaining := remaining - item.amount;
+                    DestroyItem(item);
+                else
+                    SubtractAmount(item, remaining);
+                    remaining := 0;
+                endif
+
+                if (remaining <= 0)
+                    break;
+                endif
+            endif
+        endforeach
+
+    else
+        SendSysMessageEx(medic, "Você não tem bandagens necessárias (5).");
+    endif
 endfunction

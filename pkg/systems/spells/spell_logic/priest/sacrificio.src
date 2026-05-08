@@ -9,7 +9,7 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include "include/tileEffects";
 include ":charactercreation:habilidades";
-include ":epicAI:epicai";
+include ":epicAI:include/epicNPCCombat";   // CheckForWoundedAllies, FindMostWoundedAlly
 
 program SpellScript(params)
 	var who := params[1];
@@ -46,6 +46,8 @@ program SpellScript(params)
 	endif
 
 	var healed := cint((AP_GetVitalMaximumValue(who, HITS) - GetHP(who)) / 2);
+	// Self-damage as a casting cost — intentionally NOT routed through SC_DealDamage,
+	// which would fire AFTER_DAMAGE/ON_KILL hooks against the priest for damaging themselves.
 	DamageFLS(who, healed);
 
 	// ApplyEpicHealing( targ, healed );

@@ -7,7 +7,7 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":destroyable:include/destroyItem";
@@ -44,13 +44,13 @@ program cast_chamasagrada(params)
 		return 0;
 	endif
 
-	LaunchProjectile(caster, targ, spell_circle, spell_school);
+	LaunchProjectile(caster, targ, spell_circle, spell_school, CInt(spell.id));
 endprogram
 
-function LaunchProjectile(caster, targ, spell_circle, spell_school)
+function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
 	PlaySoundEffect(caster, SFX_MAGIC_ARROW);
 	PlayMovingEffectXYZHued(caster, targ, FX_MAGIC_ARROW, 10, 1643, 0);
 	var dmg := RandomDiceRoll("1d4");
 
-	DamageFLS(targ, cint(dmg), DMG_FORCED, caster, "chamasagrada");
+	SC_DealDamage(caster, targ, spellId, cint(dmg), DMG_FORCED);
 endfunction

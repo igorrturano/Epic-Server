@@ -8,9 +8,12 @@ include "include/say";
 include ":food:include/hunger";
 
 program HungerCounter(chr)
+	if (!chr)
+		return 1;
+	endif
 	Sleep(1); // pra evitar bug no start do server
 
-	while (chr)
+	while (chr && chr.connected)
 		Erase(chr);
 		CalcHunger(chr);
 		RecalcVitals(chr);

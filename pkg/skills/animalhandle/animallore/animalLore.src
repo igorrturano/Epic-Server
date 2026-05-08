@@ -12,6 +12,7 @@ include ":tn:cooldown";
 include "include/eventID";
 include ":epicAI:epicai";
 include ":tn:boss";
+include ":taming:taming";
 
 program skill_animal_lore(who)
 
@@ -28,8 +29,9 @@ program skill_animal_lore(who)
 	var npccfgfile := ReadConfigFile(":*:npcdesc");
 	var template := ParseTemplateName(creature.npctemplate).template;
 	var taxonomy := npccfgfile[template].Taxonomy;
+	var animal_brain := npccfgfile[template].BrainType;
 
-	if (!taxonomy)
+	if (animal_brain != "animal")
 		SendSysMessage(who, "Esse não pode ser um alvo válido.");
 		return 0;
 	endif

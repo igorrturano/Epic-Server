@@ -20,6 +20,23 @@ class IMobileWrapper()
 
 	uninit function IsNPC(this);
 
+	uninit function GetNearbyMobiles(this, range, flags, ignoreZ);
+	uninit function GetNearbyHostiles(this, range, flags);
+	uninit function GetNearbyEnemies(this, range);
+	uninit function GetNearbyAllies(this, range);
+	uninit function IsAllyOf(this, other);
+	uninit function IsRaging(this);
+	uninit function HasReligiousBannerEquipped(this);
+	uninit function TeleportBehind(this, target);
+	uninit function IsInSmokeZone(this);
+	uninit function ClearSmokeProtection(this);
+
+	uninit function IsAbilityOnCooldown(this, abilityId);
+	uninit function GetAbilityCooldownRemaining(this, abilityId);
+	uninit function SetAbilityCooldown(this, abilityId, seconds);
+	uninit function ClearAbilityCooldown(this, abilityId);
+	uninit function RollbackAbilityActivation(this, abilityId);
+
 	uninit function ApplyItemModifiers(this, byRef itemWrapped);
 	uninit function RemoveItemModifiers(this, byRef itemWrapped);
 endclass

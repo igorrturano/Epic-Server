@@ -2,7 +2,6 @@ use os;
 use uo;
 
 include ":abilities:models/CombatAbility";
-include ":abilities:helpers/shinobiHelpers";
 include ":message:model/Message";
 include ":attributes:attributes";
 include ":combat:Controller/HitController";
@@ -44,7 +43,16 @@ class Assassinate(CombatAbility)
 		var who := mobile.GetObjRef();
 		var range := CInt(AP_GetSkill(who, SNEAK) / 2);
 
-		var targ := Target(who);
+		var targ;
+		if (mobile.IsNPC())
+			targ := who.opponent;
+			if (!targ)
+				targ := GetRandomNearbyHostile(who);
+			endif
+		else
+			targ := Target(who);
+		endif
+
 		if (!targ)
 			return false;
 		elseif (!targ.isA(POLCLASS_MOBILE))
@@ -59,7 +67,7 @@ class Assassinate(CombatAbility)
 		endif
 
 		who.setwarmode(1);
-		TeleportBehindTarget(who, targ);
+		mobile.TeleportBehind(MobileWrapper(targ));
 
 		if (mobile.IsHidden())
 			mobile.SetProperty("#GuaranteedHit", 1);

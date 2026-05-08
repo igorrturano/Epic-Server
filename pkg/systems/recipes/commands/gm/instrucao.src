@@ -1,59 +1,57 @@
+// GM command to create a craft recipe scroll with a specific recipe.
+// Usage: .instrucao listar
+//        .instrucao <recipeName>
+// Defaults to MetalWork scroll type; the correct level is derived from the recipe config.
 use uo;
 use util;
 use cfgfile;
 
+include ":recipes:include/scrollRecipes";
+
 program instrucao(who, nome)
-	if (who.cmdlevel > 1)
-		var item;
-		var cfg;
+    if (who.cmdlevel <= 1)
+        return 0;
+    endif
 
-		// explica como usa a funcao caso nao sejam passados parametros
-		if (!nome)
-			SendSysMessage(who, "Usos validos:");
-			SendSysMessage(who, ".instrucao listar");
-			SendSysMessage(who, ".instrucao <nomedoitem>");
-			return 0;
+    if (!nome)
+        SendSysMessage(who, "Usos validos:");
+        SendSysMessage(who, ".instrucao listar");
+        SendSysMessage(who, ".instrucao <nomedoitem>");
+        return 0;
+    endif
 
-		// lista as opcoes de instrucoes de fabricacao
-		elseif (nome == "listar")
-			cfg := ReadConfigFile(":recipes:recipes");
-			var opcoes := "";
+    var cfg := ReadConfigFile(":recipes:recipes");
 
-			// prepara a lista de instruções
-			foreach key in (GetconfigStringKeys(cfg))
-				opcoes := opcoes + key + "\n";
-			endforeach
+    if (nome == "listar")
+        var opcoes := "";
+        foreach key in (GetConfigStringKeys(cfg))
+            opcoes := opcoes + key + "\n";
+        endforeach
 
-			// Prepara as definições de layout do gump
-			var gflayout := {      // "noclose",   // close by right-click forbidden
-				  			"NoDispose",     // you did not want to hit esc, did you?
-	  			// "nomove",    // you musn't move the window around
-	  			
-	  			"GumpPic 0 0 1249", // Plano de fundo (dimensões: 400x320)
-	  			
-	  			"text 50 50 0 0",
-	  			"HtmlGump 50 70 300 220 1 0 1" };
+        var gflayout := {
+            "NoDispose",
+            "GumpPic 0 0 1249",
+            "text 50 50 0 0",
+            "HtmlGump 50 70 300 220 1 0 1"
+        };
+        var gfdata := { "Instrucoes de Fabricacao: ", opcoes };
+        SendDialogGump(who, gflayout, gfdata);
+        return 0;
+    endif
 
-			// Prepara as definições dos dados a serem exibidor nos campos do gump
-			// Mais a frente é necessário um Append do conteudo de "partituraTxt" em "gfdata"
-			var gfdata := { "Instrucoes de Fabricacao: ", opcoes };
+    foreach key in (GetConfigStringKeys(cfg))
+        if (key == nome)
+            var elem := FindConfigElem(cfg, key);
+            var level := GetConfigInt(elem, "level");
+            if (!level) level := 1; endif
+            // Creates a MetalWork scroll of the correct level; CreateScript assigns a random recipe,
+            // then we override with the specific requested recipe name.
+            var item := CreateItemInBackpack(who, GetScrollObjtype("MW", level), 1);
+            SetObjProperty(item, "recipe", key);
+            return 1;
+        endif
+    endforeach
 
-			// exibe o gump
-			SendDialogGump(who, gflayout, gfdata);
-			return 0;
-		else
-			cfg := ReadConfigFile(":recipes:recipes");
-			foreach key in (GetconfigStringKeys(cfg))
-				if (key == nome)
-					item := CreateItemInBackpack(who, 0xff990, 1);
-					SetObjProperty(item, "recipe", key);
-					return 1;
-				endif
-			endforeach
-			SendSysMessage(who, "Instrucao nao encontrada.");
-			return 0;
-		endif
-	else
-		return 0;
-	endif
+    SendSysMessage(who, "Instrucao nao encontrada.");
+    return 0;
 endprogram

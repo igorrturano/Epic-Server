@@ -1,5 +1,4 @@
 include ":abilities:models/CombatAbility";
-include ":abilities:helpers/paladinoHelpers";
 
 /**
  * Aura de Fe (Aura of Faith) - ABILITY_ID::AURA_DE_FE (402)
@@ -34,9 +33,8 @@ class AuraOfFaith(CombatAbility)
         var festa := paladin.party;
         var paladin_religion := mobile.GetReligion();
 
-        var bannerInfo := CheckReligiousBanner(mobile);
-        var range := bannerInfo.range;
-        var has_banner := bannerInfo.has_banner;
+        var has_banner := mobile.HasReligiousBannerEquipped();
+        var range := has_banner ? 6 : 2;
 
         // Show menu
         Message("Escolha seu comando:", Color(SYSTEM_COLOR::INFO)).SendSys(paladin);

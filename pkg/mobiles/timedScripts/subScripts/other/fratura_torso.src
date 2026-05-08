@@ -1,45 +1,17 @@
 use uo;
 use os;
+use vitals;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
 include "include/say";
 
-function StartScript(mobile, attacker := 0, level := 0)
-	SendSysMessage(mobile, "Suas costelas fraturadas drenam sua resistencia.");
-
-	while (AP_GetVital(mobile, "DP") <= 19 || GetCooldown(mobile, "hurt_fratura_torso") > 0)
-		var stam := AP_GetVital(mobile, STAMINA);
-		if (stam > 10)
-			AP_ConsumeVital(mobile, STAMINA, 5);
-		endif
-		sleep(4);
-	endwhile
-
-	return 1;
-endfunction
-
-function EndScript(mobile)
-	return 1;
-endfunction
-
-function LogOffScript(mobile)
-	return 1;
-endfunction
-
-program TimedScriptInit(params)
+program TimedScript_Torse(params)
 	var mobile := params[1];
-	var type := params[2];
-	var level := params[3];
-
-	if (typeof(type) == "String")
-		if (type == "End")
-			return EndScript(mobile);
-		elseif (type == "LogOff")
-			return LogOffScript(mobile);
-		endif
-	endif
-
-	return StartScript(mobile, type, level);
+	SendSysMessage(mobile, "Suas costelas fraturadas drenam a regeneração de sua stamina.");
+	AP_SetVitalRegenRateMod(mobile, "Stamina", AP_GetVitalRegenRateMod(mobile, "Stamina") - 60);
+	SetObjProperty(mobile, "#fratura_torso_penalty", 1);
+	RecalcVitals(mobile);
+	return 1;
 endprogram

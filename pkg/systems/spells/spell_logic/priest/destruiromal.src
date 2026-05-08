@@ -9,10 +9,12 @@ include "include/say";
 include "include/tileEffects";
 include ":timedScripts:timedScripts";
 include ":brainai:npcUtil";
+include ":spells:Controller/SC_Damage";
 
 program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
+	var spell := params[3];
 	params := 0; // No longer needed
 
 	if (!targ)
@@ -30,7 +32,7 @@ program SpellScript(params)
 		var i := 1;
 		if (mobile.npctemplate && i <= amt)
 			var elem := NPC_GetNPCConfig(mobile.npctemplate);
-			var category := lower(GetConfigString(elem, "Category"));
+			var category := lower(GetConfigString(elem, "Environment"));
 
 			if (category == "undead" || category == "demons")
 				PlayMovingEffectXYZEx(mobile.x, mobile.y, mobile.z, mobile.x, mobile.y, mobile.z + 60,
@@ -38,11 +40,9 @@ program SpellScript(params)
 
 				MoveObjectToLocation(mobile, 10, 10, 10, mobile.realm, MOVEOBJECT_FORCELOCATION);
 
-				ApplyRawDamage(mobile, 200);
-				ApplyRawDamage(mobile, 200);
-				ApplyRawDamage(mobile, 200);
-				ApplyRawDamage(mobile, 200);
-				ApplyRawDamage(mobile, 200);
+				// 5 × ApplyRawDamage(200) consolidated into a single 1000 SC_DealDamage call
+				// to avoid firing AFTER_DAMAGE / ON_KILL hooks 5× per target.
+				SC_DealDamage(who, mobile, CInt(spell.id), 1000, DMG_FORCED);
 				i++;
 			endif
 

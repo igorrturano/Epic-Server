@@ -11,6 +11,7 @@ include "include/say";
 include ":keys:key";
 include ":tn:tngumps";
 include ":destroyable:include/destroyItem";
+include "include/epicEconomyAudit";
 
 // Gump Constants
 const BKGND_STONESLAB := 9200; // Gray stone slab background
@@ -153,11 +154,11 @@ program MerchantMenu(params)
 			room.+door := porta.serial;
 			SendSysMessageEx(player, "Selecione o centro com mais visibilidade dentro do quarto.");
 			var cent := TargetCoordinates(player);
-			room.+centro := { cent.x, cent.y, cent.z };
+			room.+centro := { cent.x, cent.y, cent.z, cent.realm };
 			if (YesNo(player, "Existe um centro em Z diferente?"))
 				SendSysMessageEx(player, "Selecione o centro com mais visibilidade dentro do novo Z.", SSM_INFO);
 				var cent2 := TargetCoordinates(player);
-				room.+centro := { cent.x, cent.y, cent.z, cent2.x, cent2.y, cent2.z };
+				room.+centro := { cent.x, cent.y, cent.z, cent2.x, cent2.y, cent2.z, cent.realm };
 			endif
 			room.+custo := cint(RequestGump(player, "Quanto vai ser cobrado em moedas de cobre?", 0, 1));
 			room.+name := cstr(RequestGump(player, "Qual o nome do quarto?"));
@@ -194,10 +195,17 @@ program MerchantMenu(params)
 		var quarto := quartos[meuquarto];
 		if (yes)
 			var cent := quarto.centro;
+			var cent_size := cent.size();
+			var room_realm := npc.realm;
+			if (cent_size == 4)
+				room_realm := cent[4];
+			elseif (cent_size == 7)
+				room_realm := cent[7];
+			endif
 			if (cent[1])
-				DestroyRentItens(cent[1], cent[2], cent[3], npc.realm);
-				if (cent[4])
-					DestroyRentItens(cent[4], cent[5], cent[6], npc.realm);
+				DestroyRentItens(cent[1], cent[2], cent[3], room_realm);
+				if (cent_size == 6 || cent_size == 7)
+					DestroyRentItens(cent[4], cent[5], cent[6], room_realm);
 				endif
 			endif
 			var door := SystemFindObjectBySerial(quarto.door);
@@ -242,12 +250,15 @@ program MerchantMenu(params)
 				if (GetObjProperty(npc, "cofreAluguel"))
 					var cofser := getObjProperty(npc, "cofreAluguel");
 					var cofrereal := SystemFindObjectBySerial(cofser);
-					CreateItemInContainer(cofrereal, "moedacobre", valortaxa);
+					var c_aluguel := CreateItemInContainer(cofrereal, "moedacobre", valortaxa);
+					EA_Record(EA_MINT_ESTALAGEM, c_aluguel, valortaxa, "ESTALAGEM:aluguel", cofrereal, npc.name);
 				endif
 				if (GetObjProperty(npc, "cofreImpostos"))
 					var cofser1 := getObjProperty(npc, "cofreImpostos");
 					var cofrereal1 := SystemFindObjectBySerial(cofser1);
-					CreateItemInContainer(cofrereal1, "moedacobre", quartos[i].custo - valortaxa);
+					var c_imposto_qty := quartos[i].custo - valortaxa;
+					var c_imposto := CreateItemInContainer(cofrereal1, "moedacobre", c_imposto_qty);
+					EA_Record(EA_MINT_ESTALAGEM, c_imposto, c_imposto_qty, "ESTALAGEM:imposto", cofrereal1, npc.name);
 				endif
 			endif
 			i := i + 1;
@@ -336,12 +347,12 @@ program MerchantMenu(params)
 			elseif (gmmenu == "Mudar Centro")
 				SendSysMessageEx(player, "Selecione o centro com mais visibilidade dentro do quarto.", SSM_INFO);
 				var cent := TargetCoordinates(player);
-				quartos[input[0]].centro := { cent.x, cent.y, cent.z };
+				quartos[input[0]].centro := { cent.x, cent.y, cent.z, cent.realm };
 				if (YesNo(player, "Existe um centro em Z diferente?"))
 					SendSysMessageEx(player, "Selecione o centro com mais visibilidade dentro do novo Z.",
 									  SSM_INFO);
 					var cent2 := TargetCoordinates(player);
-					quartos[input[0]].centro := { cent.x, cent.y, cent.z, cent2.x, cent2.y, cent2.z };
+					quartos[input[0]].centro := { cent.x, cent.y, cent.z, cent2.x, cent2.y, cent2.z, cent.realm };
 				endif
 
 				setobjproperty(npc, "quartos", quartos);
@@ -477,15 +488,15 @@ endfunction
 function DestroyRentItens(x, y, z, r)
 	var objects := ListItemsNearLocation(x, y, z, 10, r);
 	foreach obj in objects
+		if (obj.isDoor())
+			sleepms(20);
+			continue;
+		endif
 		if (CheckLosBetween(x, y, z, obj.x, obj.y, obj.z, r))
 			if (GetObjProperty(obj, "crafterserial"))
 				DestroyItem(obj);
 			elseif (KP_IsLockable(obj))
-				var container := EnumerateItemsInContainer(obj, ENUMERATE_IGNORE_LOCKED);
-				foreach item in container
-					DestroyItem(item);
-					sleepms(20);
-				endforeach
+				DestroyItem(obj);
 			endif
 		endif
 		sleepms(20);

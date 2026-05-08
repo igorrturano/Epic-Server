@@ -67,6 +67,7 @@ function BuildCombatAbilities(who)
         table.append(struct{ "id" := "BreathWeapon", "range_min" := 3, "range_max" := 8 });
         table.append(struct{ "id" := "WingBuffet", "range_min" := 1, "range_max" := 4 });
         table.append(struct{ "id" := "TailSwipe", "range_min" := 0, "range_max" := 2 });
+        table.append(struct{ "id" := "DiveAttack", "range_min" := 3, "range_max" := 15, "cd" := 15 });
     endif
 
     // Undead abilities
@@ -170,9 +171,10 @@ function ExecuteCombatAbility(id, who, opponent, cd := 0, cd_key := "")
         "Enrage":             return _StartAbilityScript(":epicAI:abilities/Enrage", who, opponent, "enrage", 15);
         // Gazer
         "GazerRay":           return _StartAbilityScript(":epicAI:abilities/GazerRay", who, opponent, "gazer_ray", 8);
-        // Race-based abilities: DiveAttack/FrostAura need HP checks
+        // Race-based abilities: DiveAttack/FrostAura/ShedSkin need HP checks
         "DiveAttack":         return _StartDiveAttack(who, opponent);
         "FrostAura":          return _StartFrostAura(who, opponent);
+        "ShedSkin":           return _StartShedSkin(who, opponent);
         // All other race abilities use convention: script path = ":epicAI:abilities/" + id
         default:              return _StartRaceAbility(id, who, opponent, cd, cd_key);
     endcase
@@ -278,6 +280,23 @@ function _StartFrostAura(who, opponent)
 	return 1;
 endfunction
 
+// ShedSkin only fires when HP < 40% (Yuan-ti panic cleanse)
+function _StartShedSkin(who, opponent)
+	if (GetCooldown(who, "shed_skin") > 0)
+		return 0;
+	endif
+
+	var cur_hp := GetVital(who, HITS) / 100;
+	var max_hp := GetVitalMaximumValue(who, HITS) / 100;
+	if (cur_hp > CInt(max_hp * 0.4))
+		return 0;
+	endif
+
+	SetCooldown(who, "shed_skin", 40);
+	start_script(":epicAI:abilities/ShedSkin", array{ who, opponent });
+	return 1;
+endfunction
+
 // Generic handler for race-based abilities: derives script path from id
 function _StartRaceAbility(id, who, opponent, cd, cd_key := "")
 	if (cd < 1)
@@ -293,7 +312,7 @@ endfunction
 function _BuildRaceAbilities(race, byref table)
 	case (race)
 		"goblin":
-			table.append(struct{ "id" := "DirtyTrick", "range_min" := 0, "range_max" := 2, "cd" := 12 });
+			table.append(struct{ "id" := "DirtyTrick", "range_min" := 0, "range_max" := 2, "cd" := 30 });
 		"hobgoblin":
 			table.append(struct{ "id" := "WarCry", "range_min" := 0, "range_max" := 6, "cd" := 25 });
 		"orog":
@@ -340,5 +359,13 @@ function _BuildRaceAbilities(race, byref table)
 		"warg":
 			table.append(struct{ "id" := "PackTactics", "range_min" := 0, "range_max" := 4, "cd" := 5 });
 			table.append(struct{ "id" := "Enrage", "range_min" := 0, "range_max" := 99, "cd" := 15 });
+		"yuan-ti":
+			table.append(struct{ "id" := "HypnoticGaze", "range_min" := 2, "range_max" := 5, "cd" := 25 });
+			table.append(struct{ "id" := "VenomousFangs", "range_min" := 0, "range_max" := 1, "cd" := 12 });
+			table.append(struct{ "id" := "ShedSkin", "range_min" := 0, "range_max" := 99, "cd" := 40 });
+		"ciclope":
+			table.append(struct{ "id" := "HammerSlam", "range_min" := 0, "range_max" := 1, "cd" := 20 });
+		"gigante das neves":
+			table.append(struct{ "id" := "FrozenBreath", "range_min" := 3, "range_max" := 5, "cd" := 20 });
 	endcase
 endfunction

@@ -1,0 +1,49 @@
+use uo;
+use os;
+
+include "include/sounds";
+include "system/exception/Exception";
+
+// Fires when Renascimento da Terra expires or is dispelled. Animates the
+// stones sinking and then destroys them.
+// Args: { _unused, targ (caster), spellId, on_expire_params }
+// on_expire_params: struct{ stone_serials }
+program RenascimentodaterraExpire(args)
+	var caster := args[2];
+	var ep := args[4];
+	args := 0;
+
+	if (!ep || !ep.stone_serials)
+		return;
+	endif
+
+	var parts := array{};
+	foreach ser in (ep.stone_serials)
+		var stone := SystemFindObjectBySerial(CInt(ser));
+		if (stone && !(stone is @Exception))
+			parts.append(stone);
+		endif
+	endforeach
+
+	if (parts.Size() == 0)
+		return;
+	endif
+
+	if (caster && !(caster is @Exception))
+		PlaySoundEffect(caster, 0x220);
+	endif
+
+	var fall_count := 1;
+	while (fall_count <= 20)
+		foreach part in parts
+			MoveObjectToLocation(part, part.x, part.y, part.z - 1, part.realm,
+								MOVEOBJECT_FORCELOCATION | MOVEITEM_IGNOREMOVABLE);
+		endforeach
+		fall_count := fall_count + 1;
+		sleepms(100);
+	endwhile
+
+	foreach part in parts
+		DestroyItem(part);
+	endforeach
+endprogram

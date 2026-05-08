@@ -28,6 +28,7 @@ class DivineAura(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
+
 		var religiao := mobile.GetReligion();
 		var theology_bonus := CInt(mobile.GetSkill(THEOLOGY) / 5);
 
@@ -35,6 +36,9 @@ class DivineAura(CombatAbility)
 
 		case (religiao)
 			ELUITHORTH:
+				if (mobile.IsNPC())
+					return false;
+				endif
 				var targ := Target(who);
 				if (!targ)
 					Message("Voce deve selecionar um local.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
@@ -98,7 +102,7 @@ class DivineAura(CombatAbility)
 				PlayStationaryEffect(who.x + 2, who.y + 2, who.z, 0x6C9B, 0, 10, 0, who.realm);
 				PlaySoundEffect(who, 0x221);
 				sleepms(500);
-				var sb_nearby := ListMobilesNearLocation(who.x, who.y, who.z, 2, who.realm);
+				var sb_nearby := mobile.GetNearbyMobiles(2);
 				var sb_party := who.party ? who.party.members : array{};
 				var sb_pets := array{};
 				foreach sb_member in sb_party
@@ -127,20 +131,30 @@ class DivineAura(CombatAbility)
 				endforeach
 
 			HALLEUAD:
-				var targ := Target(who);
-				if (!targ)
-					Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
+				var targ;
+				if (mobile.IsNPC())
+					targ := who;
+				else
+					targ := Target(who);
+					if (!targ)
+						Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
 				endif
 				PlayObjectCenteredEffectEx(targ, FX_SPEED_BOOTS, 7, 32, 0, 1);
 				PlaySoundEffect(targ, 0x20F);
 				TS_StartTimer(targ, "velocidade", theology_bonus);
 
 			VENERATIO:
-				var targ := Target(who);
-				if (!targ)
-					Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
+				var targ;
+				if (mobile.IsNPC())
+					targ := who;
+				else
+					targ := Target(who);
+					if (!targ)
+						Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
 				endif
 
 				PlayObjectCenteredEffectEx(targ, FX_MORALE_UP, 7, 32);
@@ -172,10 +186,15 @@ class DivineAura(CombatAbility)
 				Message("Seu alvo foi abencoado com forca divina!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			KAI:
-				var targ := Target(who);
-				if (!targ)
-					Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-					return false;
+				var targ;
+				if (mobile.IsNPC())
+					targ := who;
+				else
+					targ := Target(who);
+					if (!targ)
+						Message("Voce deve selecionar um alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+						return false;
+					endif
 				endif
 
 				PlayObjectCenteredEffect(targ, 0x373A, 10, 20);

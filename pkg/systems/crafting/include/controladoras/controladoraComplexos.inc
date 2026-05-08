@@ -10,6 +10,7 @@ include ":crafting:/include/fabricacaoUtil";
 include ":crafting:/include/craftingRepair";
 include "include/epicValidAction";
 include ":crafting:include/util/fabricacaoConstants";
+include ":expbar:expbar";
 
 function NovoObjetoModoGm()
 	return struct{ 
@@ -140,13 +141,13 @@ function MontaMelhorEsquema(quem, sessao)
 	return sessao.receitaSelecionada.esquemaSelecionado;
 endfunction
 
-function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false)
+function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false, skill := "", categoria := "")
 	var posicaoInicial := BuildPositionStruct(quem);
 	var vidaInicial := AP_GetVital(quem, "Hits");
 
 	if(receita.isEmpilhavel)
 		Sleep(1);
-		var retorno := FabricaItemMontado(quem,esquema, receita, quantidade, modoGm);
+		var retorno := FabricaItemMontado(quem,esquema, receita, quantidade, modoGm, skill, categoria);
 		if(!retorno)
 			SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
 		endif
@@ -157,11 +158,11 @@ function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false)
 			else
 				Sleep(1);
 			endif
-			
+
 			if(!CheckCanWork(quem,vidaInicial, posicaoInicial))
 				break;
 			endif
-			var retorno := FabricaItemMontado(quem,esquema, receita, 1, modoGm);
+			var retorno := FabricaItemMontado(quem,esquema, receita, 1, modoGm, skill, categoria);
 			if(!retorno)
 				SendSysMessageEX(quem, "Você parou de fabricar produtos.", SSM_FAIL);
 				break;
@@ -170,7 +171,7 @@ function FabricaItens(quem, esquema, receita, quantidade := 1, modoGm := false)
 	endif
 endfunction
 
-function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarRequisitos := false)
+function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarRequisitos := false, skill := "", categoria := "")
 	var contagem := ContaQuantidadeRequisitos(quem,esquema, receita, deveIgnorarRequisitos);
 
 	if(isRequisitoSuficiente(quem,contagem, receita, esquema, quantidade, deveIgnorarRequisitos))
@@ -187,9 +188,12 @@ function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarR
 				SendSysMessageEX(quem, "Não foi possivel criar o item.", SSM_FAIL);
 			endif
 		else
-			CriaItemMontado(quem,esquema,receita, quantidade);
+			var itemCriado := CriaItemMontado(quem,esquema,receita, quantidade);
+			if(itemCriado)
+				AwardXPFromCraft(quem, receita, skill, categoria);
+			endif
 		endif
-	else 
+	else
 		return 0;
 	endif
 
@@ -276,7 +280,7 @@ function ContaQuantidadeRequisitos(quem, esquema, receita, deveIgnorarRequisitos
 
 	if(deveIgnorarRequisitos) return contagemFinal; endif
 
-	foreach item in EnumerateItemsInContainer(quem.backpack)
+	foreach item in (EnumerateItemsInContainer(quem.backpack, ENUMERATE_ROOT_ONLY))
 		Sleepms(2);
 		foreach componenteEscolhido in (esquema.componentesEscolhidos)
 			Sleepms(2);
@@ -593,7 +597,7 @@ endfunction
 function CarregaComponentesEncontrados(quem, receita, configRecursos)
 	var retorno := dictionary;
 	
-	foreach item in EnumerateItemsInContainer(quem.backpack)
+	foreach item in (EnumerateItemsInContainer(quem.backpack, ENUMERATE_ROOT_ONLY))
 		Sleepms(2);
 		foreach componenteNecessario in (receita.componentesNecessarios)
 			Sleepms(2);
@@ -843,7 +847,7 @@ function MontaReceitaItem(quem, objtype, nomePericia, receitasConfig, byref prop
 	receita.+sucessosNecessarios := PegaDescDuracaoFabricacao(duracao).sucessos;
 	receita.+materiaisNecessarios := PegaMateriaisNecessarios(definicaoFabricacao, receitaClassificada.classe);
 	receita.+textoDescItem := PegaTextoDescItem(quem,objtype,definicaoItem,receita.componentesNecessarios, receita.materiaisNecessarios, duracao, definicaoFabricacao.lote);
-	receita.+dificuldade := PegaDificuldadeFrabicarObjeto(quem,objtype,nomeProfissao,nomePericia, receitaClassificada.classe);
+	receita.+dificuldade := PegaDificuldadeFrabicarObjeto(quem,objtype,nomeProfissao,nomePericia, receitaClassificada.classe, receita.sucessosNecessarios);
 	receita.+objtype := objtype;
 	receita.+pericia := nomePericia;
 	receita.+profissao := nomeProfissao;
@@ -1004,10 +1008,28 @@ function DeveAparecerReceita(
 	var isValorPericiaSuficiente := TemValorPericiaNecessaria(quem, objtype, receitaClassificada.classe, nomePericia, nomeProfissao );
 	
 	if(isDuplaOrigem)
-		isOrigemValida := PegaNomeReceitaClassificada(receitaClassificada) in receitasAprendidas || povo == itemOrigem;
+		var nomeReceita1 := PegaNomeReceitaClassificada(receitaClassificada);
+		isOrigemValida := nomeReceita1 in receitasAprendidas || povo == itemOrigem;
+		if (!isOrigemValida && povo != itemOrigem)
+			foreach aprendida1 in receitasAprendidas
+				if (StrReplace(Lower(aprendida1), " ", "") + "-1" == nomeReceita1)
+					isOrigemValida := true;
+					break;
+				endif
+			endforeach
+		endif
 	else
 		if(itemOrigem == "Recipe")
-			isOrigemValida := PegaNomeReceitaClassificada(receitaClassificada) in receitasAprendidas;
+			var nomeReceita2 := PegaNomeReceitaClassificada(receitaClassificada);
+			isOrigemValida := nomeReceita2 in receitasAprendidas;
+			if (!isOrigemValida)
+				foreach aprendida2 in receitasAprendidas
+					if (StrReplace(Lower(aprendida2), " ", "") + "-1" == nomeReceita2)
+						isOrigemValida := true;
+						break;
+					endif
+				endforeach
+			endif
 		elseif(itemOrigem == "itemComum")
 			isOrigemValida := true;
 		else

@@ -1,0 +1,66 @@
+use uo;
+use os;
+use util;
+
+include "include/client";
+include "include/sounds";
+include ":spells:Controller/SC_Damage";
+
+const SOUND_EFFECT_FIRE := 0x1de;
+
+// Per-tick area damage for Pira Purificadora. Runs every tick_interval
+// seconds; burns any mobile standing on a fire tile spawned by the cast.
+// Args: { caster, targ, spellId, tick_number, tick_params }
+// tick_params: struct{ fire_serials, theology }
+program PirapurificadoraTick(args)
+	var caster := args[1];
+	var spellId := CInt(args[3]);
+	var tp := args[5];
+	args := 0;
+
+	// Resolve fire items from serials — refs don't survive SpellOpts_ serialization.
+	var fire_positions := array{};
+	var a_fire;
+	foreach ser in (tp.fire_serials)
+		var fire := SystemFindObjectBySerial(CInt(ser));
+		if (fire && !(fire is @Exception))
+			fire_positions.append(struct{ "x" := fire.x, "y" := fire.y });
+			a_fire := fire;
+		endif
+	endforeach
+
+	if (fire_positions.Size() == 0)
+		return;
+	endif
+
+	if (a_fire)
+		PlaySoundEffect(a_fire, SOUND_EFFECT_FIRE);
+	endif
+
+	var theology := CInt(tp.theology);
+	var dmg_caster := caster;
+
+	// Scan mobiles around the fire cluster. Use the first fire tile as anchor.
+	var mobs := ListMobilesNearLocation(fire_positions[1].x, fire_positions[1].y, 0, 15, a_fire.realm);
+
+	foreach mob in mobs
+		if (dmg_caster && mob == dmg_caster)
+			continue;
+		endif
+
+		foreach fire_pos in fire_positions
+			if (mob.x == fire_pos.x && mob.y == fire_pos.y)
+				var damage := CInt(theology / 10) + RandomDiceRoll("1d4");
+				PlayObjectCenteredEffect(mob, 0x3709, 7, 10);
+				SC_DealDamage(dmg_caster, mob, spellId, damage, DMG_FIRE);
+				// Pira creates fire tiles in the world; the caster never directly targets
+				// the mobs that walk into the fire, so AI brains have no aggro relationship
+				// to the caster. Set it explicitly so NPCs react to being burned.
+				if (dmg_caster)
+					mob.setAggro(dmg_caster.serial, 150);
+				endif
+				break;
+			endif
+		endforeach
+	endforeach
+endprogram

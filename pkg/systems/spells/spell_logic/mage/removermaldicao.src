@@ -6,6 +6,8 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include ":timedScripts:timedScripts";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":spells:Controller/SpellController";
 
 program SpellScript(params)
 	var who := params[1];
@@ -59,14 +61,30 @@ program SpellScript(params)
 	PlaySoundEffect(targ, SFX_SPELL_STRENGTH);
 
 	foreach timer in (timer_list.keys())
-		timer := lower(timer);
-		if (timer == "paralysis" || timer == "weaken" || timer == "lentidao" || timer == "curse" ||
-	  timer == "desarmar" || timer == "desmontar" || timer == "polymorph" || timer == "apodrecer" ||
-	  timer == "clumsy" || timer == "atrasarmagias" || timer == "feebleMind" || timer == "dmgreduction" ||
-	  timer == "sleep")
+		var tname := lower(timer);
+		if (tname == "paralysis" || tname == "weaken" || tname == "lentidao" || tname == "curse" ||
+	  tname == "desarmar" || tname == "desmontar" || tname == "polymorph" || tname == "apodrecer" ||
+	  tname == "clumsy" || tname == "atrasarmagias" || tname == "feebleMind" || tname == "dmgreduction" ||
+	  tname == "sleep")
 			TS_LowerDuration(targ, timer, -1);
 		endif
 
+	endforeach
+
+	// Cleanse SC-tracked debuffs (spelleffect_{spellId} timers with opts.is_debuff).
+	var mw := MobileWrapper(targ);
+	foreach timer_name in (timer_list.keys())
+		if (timer_name[1, 12] != "spelleffect_")
+			continue;
+		endif
+		var spellId := CInt(timer_list[timer_name].level);
+		if (!spellId)
+			continue;
+		endif
+		var opts := mw.GetProperty($"SpellOpts_{spellId}");
+		if (opts && !opts.errortext && CInt(opts.is_debuff))
+			SC_RemoveEffect(targ, spellId);
+		endif
 	endforeach
 
 	SendSysMessageEx(targ, "Sua maldicao foi removida.", SSM_INFO);

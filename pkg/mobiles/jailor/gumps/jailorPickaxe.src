@@ -1,0 +1,64 @@
+// jailorPickaxe — prisoner double-clicks Jailor to request a pickaxe.
+// One per prisoner, marked with the JAIL_PICKAXE_CPROP so ReleasePrisoner
+// can destroy it on the way out.
+
+use uo;
+use os;
+
+include ":gumps:yesNo";
+include "include/say";
+include ":jailor:include/jailor";
+include ":jailor:include/jailAction";
+
+const PICKAXE_OBJTYPE := 0x0E85;
+
+program jailorPickaxe(params)
+	var jailor := params[1];
+	var prisoner := params[2];
+
+	if (!jailor || !prisoner)
+		return;
+	endif
+
+	if (HasJailPickaxe(prisoner))
+		AI_Speak(jailor, "Voce ja tem uma picareta. Volte ao trabalho.");
+		return;
+	endif
+
+	var yes := YesNo(prisoner, "Voce quer uma picareta para minerar?");
+	if (!yes)
+		return;
+	endif
+
+	if (HasJailPickaxe(prisoner))
+		AI_Speak(jailor, "Voce ja tem uma picareta.");
+		return;
+	endif
+
+	if (!prisoner.backpack)
+		AI_Speak(jailor, "Onde voce vai guardar isso? Volte com uma mochila.");
+		return;
+	endif
+
+	var pickaxe := CreateItemInBackpack(prisoner, PICKAXE_OBJTYPE, 1);
+	if (!pickaxe || pickaxe == error)
+		AI_Speak(jailor, "Sem picaretas no momento.");
+		return;
+	endif
+	SetObjProperty(pickaxe, JAIL_PICKAXE_CPROP, 1);
+
+	AI_Speak(jailor, "Toma. Cuide dela.");
+endprogram
+
+function HasJailPickaxe(prisoner)
+	if (!prisoner.backpack)
+		return 0;
+	endif
+	foreach item in (EnumerateItemsInContainer(prisoner.backpack))
+		if (Cint(GetObjProperty(item, JAIL_PICKAXE_CPROP)))
+			return 1;
+		endif
+		sleepms(2);
+	endforeach
+	return 0;
+endfunction

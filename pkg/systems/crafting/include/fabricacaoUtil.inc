@@ -162,12 +162,12 @@ function CalculaValorPico(quem, pericia)
 	return AP_GetSkill(quem,pericia) / 20;
 endfunction
 
-function PegaDificuldadeFrabicarObjeto(quem, objtype, nomeProfissao, nomePericia, classe , produto := 0, estacao  := 0)
+function PegaDificuldadeFrabicarObjeto(quem, objtype, nomeProfissao, nomePericia, classe, sucessosNecessarios , produto := 0, estacao  := 0)
 	var skill :=  PegaSkillNecessaria(objtype, nomeProfissao, classe);
-	return PegaDificuldade(quem, skill, nomePericia, produto, estacao);
+	return PegaDificuldade(quem, skill, nomePericia,sucessosNecessarios, produto, estacao);
 endfunction 
 
-function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, estacao  := 0)
+function PegaDificuldade( quem, skillNecessaria, nomePericia, sucessosNecessarios, produto := 0, estacao  := 0)
 	 var retorno := struct;
 	 
 	 retorno.+skill := CDbl(skillNecessaria);
@@ -177,7 +177,8 @@ function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, esta
 	 retorno.+chanceBase := PegaChanceFabricacaoBase(quem,
 												nomePericia,
 												retorno.skill,
-												retorno.chancePelaSkill);
+												retorno.chancePelaSkill,
+												sucessosNecessarios);
 	
 	
 	var propFabricado := GetObjProperty(produto, PROPNAME_FABRICADO );
@@ -189,7 +190,7 @@ function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, esta
 			var chanceCalculada := cint(componente.poderAvaliado.poderContado) * -1;
 			
 			var modificador := struct{
-				origem := BLUE + "Dificuldade {} :{} {}%<br>".format(componente.item.nome,chanceCalculada < 0? RED_FIRE: SOFT_GREEN, "{}"),
+				origem := BLUE + "{}Dificuldade {}<br>".format(chanceCalculada < 0? RED_FIRE: SOFT_GREEN, componente.item.nome),
 				valor :=  chanceCalculada
 			};
 
@@ -200,15 +201,52 @@ function PegaDificuldade( quem, skillNecessaria, nomePericia, produto := 0, esta
 	endif
 
 	retorno.+chanceTotal := retorno.chanceBase + retorno.chanceModificadaTotal;
-	retorno.chanceTotal := retorno.chanceTotal < 0 ? 0: retorno.chanceTotal;
+	retorno.chanceTotal := cdbl(retorno.chanceTotal) < 0.0  ? 0.0 : cdbl(retorno.chanceTotal);
+	retorno.+chanceTratamentoFinal := PegaChanceTratamentoFinal(retorno.chanceTotal / 100, sucessosNecessarios);
 	return retorno;
 endfunction
 
-function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem, byref chancePelaSkill)
+function PegaChanceTratamentoFinal(chanceSucesso,sucessosNecessarios)
+
+	sucessosNecessarios := cint(sucessosNecessarios);
+	var chanceFalha := 1.0 - chanceSucesso;
+	var chanceFinal := 0.0;
+
+	for y := 0 to (PegaMaximoFalhas(0,sucessosNecessarios) - 1)
+		sleepms(2);
+		var combination := Comb(sucessosNecessarios + y - 1 , y);
+		chanceFinal := chanceFinal + combination * Pow(chanceSucesso, sucessosNecessarios) * Pow(chanceFalha, y);
+	endfor
+	
+	return Trunc(chanceFinal * 100, 1);
+endfunction
+
+function PegaDeslocamentoFacilitador(sucessos)
+	if(sucessos >= 14)
+		return 46;
+	elseif(sucessos > 10)
+		return 40;
+	elseif(sucessos > 8)
+		return 20;
+	elseif(sucessos > 6)
+		return 10;
+	else
+		return 0;
+	endif
+endfunction
+
+function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem, byref chancePelaSkill, sucessosNecessarios)
 	var valorPericia := AP_GetTrueSkill(quem, pericia);
 	valorPericia := ApplySkillModifiers(quem, pericia, valorPericia); 
 	chancePelaSkill := CalcSuccessPercent(quem, pericia,CDbl(dificuldadeItem), CDbl(valorPericia));
-	return  Trunc(CHANCE_FABRICACAO_MAX * (chancePelaSkill/100.0), 1);
+	if(chancePelaSkill == 0)
+		return 0;
+	endif
+	var chanceFacilitada := chancePelaSkill + PegaDeslocamentoFacilitador(sucessosNecessarios);
+	if(chanceFacilitada >= 100)
+		return 100;
+	endif
+	return  Trunc(chanceFacilitada, 1);
 endfunction
 
 function CriaComponenteDescriptor(objtype, chaveMaterial, qualidade, encaixe, configRecursos)
@@ -317,12 +355,11 @@ function AplicaAtributosItemFabricado(quem, item, propFabricadoMontado)
 	endif
 
 	AplicaFechadura(quem, item);
-	item.setAttrBase();
 endfunction
 
 function ResolveEfeitoCaracteristica(valorEfeito)
 	var isFormatoTier := Find(valorEfeito,"t-",1);
-	
+
 	if(isFormatoTier)
 		var tier := Cint(SubStr(valorEfeito,isFormatoTier + 2, 1));
 		return PegaComponenteTierDesc(tier).valor;
@@ -466,16 +503,25 @@ function isEstacaoValida(quem, estacaoAlvo, profissao)
 	return 0;
 endfunction
 
-function PegaDescDuracaoFabricacao(qtdSucessos)
-	case(qtdSucessos)
-		"EXTREMAMENTE_LONGO": return struct{ desc := "Extremamente Longo" , sucessos := 24}; break;
-		"MUITO_LONGO": return struct{ desc := "Muito Longo" , sucessos := 20}; break;
-		"LONGO": return struct{ desc := "Longo" , sucessos := 15}; break;
+function PegaDescDuracaoFabricacao(tagTempo)
+	case(tagTempo)
+		"EXTREMAMENTE_LONGO": return struct{ desc := "Extremamente Longo" , sucessos := 14}; break;
+		"MUITO_LONGO": return struct{ desc := "Muito Longo" , sucessos := 12}; break;
+		"LONGO": return struct{ desc := "Longo" , sucessos := 10}; break;
 		"EXTREMAMENTE_RAPIDO": return struct{ desc := "Extremamente Rápido" , sucessos := 2}; break;
-		"MUITO_RAPIDO": return struct{ desc := "Muito Rápido" , sucessos := 5}; break;
-		"RAPIDO": return struct{ desc := "Rápido" , sucessos := 8}; break;
-		default: return struct{ desc := "Razoável" , sucessos := 12}; break;
+		"MUITO_RAPIDO": return struct{ desc := "Muito Rápido" , sucessos := 4}; break;
+		"RAPIDO": return struct{ desc := "Rápido" , sucessos := 6}; break;
+		default: return struct{ desc := "Razoável" , sucessos := 8}; break;
 	endcase
+endfunction
+
+function PegaMaximoFalhas(item, sucessos := 0)
+		if(sucessos == 0)
+			var propFabricado := GetObjProperty(item,PROPNAME_FABRICADO);
+			sucessos := propFabricado.receita.sucessosNecessarios;
+		endif
+
+		return cint(sucessos * MULTIPLICADOR_FALHAS);
 endfunction
 
 function MontaCraftProp(fabricacaoConfig, prop)

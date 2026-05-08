@@ -5,12 +5,12 @@ include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
+include ":timedScripts:timedScripts";
 
 /**
  * Tiro Poderoso (Power Shot) - ABILITY_ID::TIRO_PODEROSO (1)
  *
- * OnUse: Player chooses a direction, fires a piercing shot that hits
- * all valid targets along a line within weapon range.
+ * OnUse: Guaranteed ranged shot that paralyzes the target for Ranged/10 seconds.
  */
 class PowerShot(CombatAbility)
 
@@ -36,16 +36,25 @@ class PowerShot(CombatAbility)
 		var weapon := mobile.GetEquipBySlot(WEAPON);
 
 		SetScriptController(who);
-		Message("Escolha a direcao que ira disparar a flecha", Color(SYSTEM_COLOR::INFO)).SendSys(who);
-		var targ := TargetCoordinates(who);
+
+		var targ;
+		if (mobile.IsNPC())
+			targ := who.opponent;
+			if (!targ)
+				targ := GetRandomNearbyHostile(who);
+			endif
+		else
+			Message("Escolha o alvo do seu tiro.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			targ := Target(who);
+		endif
 
 		if (!targ)
 			Message("Alvo cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 			return false;
 		endif
 
-		if (!CheckLOSAt(who, targ.x, targ.y, targ.z))
-			Message("O alvo nao esta visivel para voce.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		if (!targ.isA(POLCLASS_MOBILE))
+			Message("Alvo invalido.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
 
@@ -54,75 +63,30 @@ class PowerShot(CombatAbility)
 			return false;
 		endif
 
-		var targetsInLine := _GetTargetsInLine(who, targ.x, targ.y);
-		if (targetsInLine.size() == 0)
-			Message("Nao ha alvos na linha de tiro.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		if (!CheckLineOfSight(who, targ))
+			Message("O alvo nao esta visivel para voce.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
 
-		var dmg := CInt(mobile.GetSkill(RANGED) / 5);
+		var duration := CInt(mobile.GetSkill(RANGED) / 10);
+		if (duration < 1)
+			duration := 1;
+		endif
 
-		foreach target in targetsInLine
-			sleepms(50);
-			ApplyRawDamage(target, dmg);
-		endforeach
+		SetObjProperty(who, "#GuaranteedHit", 1);
+		who.attack_once(targ);
 
-		Message($"*tiro poderoso em linha - {targetsInLine.size()} alvos*").SendAbove(who);
+		TS_StartTimer(targ, "paralysis", duration);
+		Message("*tiro poderoso*").SendAbove(who);
+		Message("*paralisado*").SendAbove(targ);
 
 		DebugMsg(
 			who,
 			DEBUG_HAB,
-			Message($"[TIRO_PODEROSO] Atingiu {targetsInLine.size()} alvos em linha", Color(SYSTEM_COLOR::SUCCESS))
+			Message($"[TIRO_PODEROSO] Paralisou por {duration}s", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;
 	endfunction
 
 endclass
-
-function _GetTargetsInLine(who, targetX, targetY)
-	var validTargets := array{};
-	var alreadyTargeted := array{};
-
-	var lineCoords := GetCoordsInLine(who.x, who.y, targetX, targetY);
-
-	foreach point in lineCoords
-		var mobiles := ListMobilesNearLocation(point.x, point.y, who.z, 1, who.realm);
-
-		foreach mobile in mobiles
-			if (mobile.serial in alreadyTargeted)
-				continue;
-			endif
-
-			if (mobile == who)
-				continue;
-			endif
-
-			if (who.party && mobile in who.party.members)
-				continue;
-			endif
-
-			if (GetObjProperty(mobile, "owner") == who.serial)
-				continue;
-			endif
-
-			if (who.party)
-				var skipPet := 0;
-				foreach member in (who.party.members)
-					if (GetObjProperty(mobile, "owner") == member.serial)
-						skipPet := 1;
-						break;
-					endif
-				endforeach
-				if (skipPet)
-					continue;
-				endif
-			endif
-
-			validTargets.append(mobile);
-			alreadyTargeted.append(mobile.serial);
-		endforeach
-	endforeach
-
-	return validTargets;
-endfunction

@@ -1,0 +1,140 @@
+// .economy            - census of ONLINE players only (fast)
+// .economy full       - census of ALL accounts + characters (online + offline; slow but complete)
+// .economy <acctname> - census of a single account (all characters, online + offline)
+//
+// Output: ::data/log/economy/<DD-MM-YYYY>/census_<HH-MM-SS>.csv
+
+use uo;
+use os;
+use file;
+use util;
+use basic;
+use polsys;
+
+include "include/epicEconomyAudit";
+include ":currency:include/currency";
+include ":containers:storageAreas";
+include ":accounts:accounts";
+
+function CensusOne(p, census_file, byref total_cobre, byref total_prata, byref total_ouro)
+	if (!p || p == error || p.acctname == error || !p.acctname)
+		return 0;
+	endif
+
+	var bag := p.backpack;
+	var bc := 0; var bp := 0; var bo := 0;
+	if (bag && bag != error)
+		bc := CountCoins(bag, EA_COIN_COBRE);
+		bp := CountCoins(bag, EA_COIN_PRATA);
+		bo := CountCoins(bag, EA_COIN_OURO);
+	endif
+
+	var bank := CP_GetStorageContainerForMobile(p, CP_DEFAULT_AREA, CP_NOCREATE);
+	var kc := 0; var kp := 0; var ko := 0;
+	if (bank && bank != error)
+		kc := CountCoins(bank, EA_COIN_COBRE);
+		kp := CountCoins(bank, EA_COIN_PRATA);
+		ko := CountCoins(bank, EA_COIN_OURO);
+	endif
+
+	if (bc + bp + bo + kc + kp + ko == 0)
+		return 0;
+	endif
+
+	var char_name := GetObjProperty(p, "nome_inicial");
+	if (char_name == error || !char_name)
+		char_name := p.name;
+	endif
+	char_name := StrReplace(CStr(char_name), ",", ";");
+
+	var equiv := (bc + kc) + (bp + kp) * 10 + (bo + ko) * 100;
+	total_cobre += bc + kc;
+	total_prata += bp + kp;
+	total_ouro += bo + ko;
+
+	var online_flag := p.connected ? "online" : "offline";
+	var line := "{},{},{},{},{},{},{},{},{},{}".format(
+		p.acctname, char_name, online_flag, bc, bp, bo, kc, kp, ko, equiv
+	);
+	LogToFile(census_file, line, 0);
+	return 1;
+endfunction
+
+program economy(mobile, arg)
+	var timestamp_fmt := StrFormatTime("%H-%M-%S", POLCore().systime);
+	var today := StrFormatTime("%d-%m-%Y", POLCore().systime);
+	var log_dir := "::data/log/economy/" + today;
+	if (!FileExists(log_dir))
+		CreateDirectory(log_dir);
+	endif
+
+	var mode := "online";
+	var acct_filter := "";
+	if (arg && arg != error)
+		var arg_s := Lower(CStr(arg));
+		if (arg_s == "full")
+			mode := "full";
+		else
+			mode := "acct";
+			acct_filter := arg_s;
+		endif
+	endif
+
+	var census_file := log_dir + "/census_" + mode + "_" + timestamp_fmt + ".csv";
+	LogToFile(census_file,
+		"acct,char,state,bag_cobre,bag_prata,bag_ouro,bank_cobre,bank_prata,bank_ouro,total_cobre_equiv", 0);
+
+	var n_players := 0;
+	var total_cobre := 0;
+	var total_prata := 0;
+	var total_ouro := 0;
+
+	if (mode == "online")
+		SendSysMessage(mobile, "Census (online)...");
+		foreach p in EnumerateOnlineCharacters()
+			if (CensusOne(p, census_file, total_cobre, total_prata, total_ouro))
+				n_players += 1;
+			endif
+			sleepms(2);
+		endforeach
+	else
+		// "full" or single-account: iterate accounts
+		var accts;
+		if (mode == "acct")
+			var one := FindAccount(acct_filter);
+			if (!one || one == error || one.errortext)
+				SendSysMessage(mobile, "Account not found: " + acct_filter);
+				return;
+			endif
+			accts := array{one.name};
+		else
+			SendSysMessage(mobile, "Census (full, may take a minute)...");
+			accts := ListAccounts();
+		endif
+
+		foreach acct_name in accts
+			var acct := FindAccount(acct_name);
+			if (!acct || acct == error)
+				continue;
+			endif
+			if (acct.banned)
+				continue;
+			endif
+			for i := 1 to 6
+				var p := acct.GetCharacter(i);
+				if (!p || p == error)
+					continue;
+				endif
+				if (CensusOne(p, census_file, total_cobre, total_prata, total_ouro))
+					n_players += 1;
+				endif
+				sleepms(2);
+			endfor
+			sleepms(1);
+		endforeach
+	endif
+
+	SendSysMessage(mobile, "Census done: " + CStr(n_players) + " chars with coins (" + mode + ")");
+	SendSysMessage(mobile, "Totals: " + CStr(total_cobre) + " cobre, " + CStr(total_prata) + " prata, " + CStr(total_ouro) + " ouro");
+	SendSysMessage(mobile, "File: " + census_file);
+endprogram

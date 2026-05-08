@@ -1,0 +1,402 @@
+use uo;
+use os;
+use npc;
+use util;
+use guilds;
+
+include ":attributes:attributes";
+include "include/sysEvent";
+include ":tn:cooldown";
+include ":faccao:faccao";
+include ":faccao:membership";
+include ":combat:Controller/DamageController_legacy";
+include ":faccao:npc_laws_enforce";
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+var me           := self();
+var guild        := 0;
+var following    := 0;
+var fighting     := 0;
+var fix_location := 0;
+var wait_time    := 10;
+
+// Estado: IDLE (0), TRACKING (1), COMBAT (3)
+var state        := 0;
+var track_target := 0;
+var hidden_since := 0;     // timestamp quando alvo ficou invisivel
+// stand_fight declarado em npc_laws_enforce.inc
+
+const FOLLOW_CMD := 0xA001;
+const ATTACK_CMD := 0xA002;
+const GO_LOC_CMD := 0xA008;
+const HELP_CMD   := 0x78458;
+
+const SNIPE_RANGE       := 6;   // distancia ideal de combate ranged
+const DETECT_RANGE      := 8;   // tiles para comecar a rastrear
+const MIN_RANGE         := 3;   // distancia minima a manter do alvo
+const HIDDEN_TOLERANCE  := 4;   // segundos ate desistir de alvo invisivel
+const FLEE_HP_PCT       := 40;  // percentual de HP para re-esconder
+
+// ============================================================
+// INICIALIZACAO
+// ============================================================
+
+function Setup()
+	SetupFaccaoNPCBase(1);
+endfunction
+
+// ============================================================
+// AUXILIARES
+// ============================================================
+
+function IsValidTarget(who)
+	if (who.hidden || who.concealed) return 0; endif
+	return IsValidCombatTarget(who);
+endfunction
+
+function SneakShot(targ)
+	// Tiro garantido critico saindo da sombra
+	SetObjProperty(me, "#GuaranteedHit", 1);
+	SetObjProperty(me, "#nextcritical", 1);
+	me.hidden   := 0;
+	me.frozen   := 0;
+	stand_fight := 1;
+	SetOpponent(targ);
+	SetWarMode(1);
+endfunction
+
+function MaintainDistance(targ)
+	var stam     := AP_GetVital(me, STAMINA);
+	var max_stam := AP_GetVitalMaximumValue(me, STAMINA);
+	var can_run  := (stam > max_stam * 0.25);
+
+	if (!me.weapon || !me.weapon.isRanged())
+		if (Distance(me, targ) > 1)
+			if (can_run)
+				RunTowardLocation(targ.x, targ.y);
+				AP_ConsumeVital(me, STAMINA, 3);
+			else
+				WalkTowardLocation(targ.x, targ.y);
+			endif
+			wait_time := 0;
+		endif
+		return;
+	endif
+
+	var dist    := Distance(me, targ);
+	var has_los := CheckLineOfSight(me, targ);
+
+	if (dist < MIN_RANGE)
+		if (can_run)
+			RunAwayFrom(targ);
+			AP_ConsumeVital(me, STAMINA, 3);
+		else
+			WalkAwayFrom(targ);
+		endif
+		wait_time := 0;
+		return;
+	endif
+
+	if (dist <= SNIPE_RANGE && has_los)
+		wait_time := 0;
+		return;
+	endif
+
+	if (!me.hidden)
+		if (can_run)
+			RunTowardLocation(targ.x, targ.y);
+			AP_ConsumeVital(me, STAMINA, 3);
+		else
+			WalkTowardLocation(targ.x, targ.y);
+		endif
+	else
+		WalkTowardLocation(targ.x, targ.y);
+	endif
+	wait_time := 0;
+endfunction
+
+function Reposition(threat)
+	// Se exposto e com pouca vida: re-esconder e reposicionar
+	fighting     := 0;
+	track_target := 0;
+	stand_fight  := 0;
+	state        := 0;
+	SetOpponent(0);
+	SetWarMode(0);
+	me.stealthsteps := 9999;
+	me.hidden := 1;
+	if (threat && threat.isA(POLCLASS_MOBILE))
+		RunAwayFrom(threat);
+		sleepms(300);
+		RunAwayFrom(threat);
+	endif
+	sleep(8);
+	state := 0;
+endfunction
+
+function CombatTick()
+	var _gone := (!fighting || !fighting.isA(POLCLASS_MOBILE) || fighting.dead);
+
+	// Tolerancia de invisibilidade: desiste apos HIDDEN_TOLERANCE segundos
+	if (!_gone)
+		if (fighting.hidden || fighting.concealed)
+			if (!hidden_since)
+				hidden_since := ReadGameClock();
+			elseif ((ReadGameClock() - hidden_since) >= HIDDEN_TOLERANCE)
+				hidden_since := 0;
+				_gone := 1;
+			endif
+		else
+			hidden_since := 0;
+		endif
+	endif
+
+	if (_gone)
+		SetOpponent(0);
+		SetWarMode(0);
+		var _next := GetNearTarget();
+		if (_next)
+			fighting := _next;
+			SetOpponent(_next);
+			SetWarMode(1);
+			return;
+		endif
+		stand_fight := 0;
+		fighting := 0;
+		Reposition(0);
+		return;
+	endif
+
+	// Verificar HP — cooldown de 30s para evitar ciclo infinito de fuga
+	if (GetHPPercent() < FLEE_HP_PCT && !stand_fight && !GetCooldown(me, "hp_flee_cd"))
+		SetCooldown(me, "hp_flee_cd", 30);
+		PrintTextAbove(me, "*recua nas sombras*");
+		if (guild) AddReport(guild, "{} se reposicionou do combate com {}".format(me.name, fighting.name)); endif
+		Reposition(fighting);
+		return;
+	endif
+
+	// Alvo alem de 13 tiles: desistir e reposicionar
+	if (Distance(me, fighting) > 13)
+		var _next2 := GetNearTarget();
+		if (_next2)
+			fighting := _next2;
+			SetOpponent(_next2);
+			SetWarMode(1);
+			return;
+		endif
+		stand_fight := 0;
+		fighting := 0;
+		Reposition(0);
+		return;
+	endif
+
+	MaintainDistance(fighting);
+endfunction
+
+// ============================================================
+// LOOP PRINCIPAL
+// ============================================================
+
+program AssassinoArqueiroMain()
+	EnableEvents(SYSEVENT_ENTEREDAREA, 6);
+	EnableEvents(SYSEVENT_ENGAGED);
+	EnableEvents(SYSEVENT_DAMAGED);
+	EnableEvents(SYSEVENT_DOUBLECLICKED, 5);
+	EnableEvents(SYSEVENT_SPEECH, 8);
+	EnableEvents(PICKPOCKET_EVENT);
+	EnableEvents(REVELADO_EVENT);
+	EnableEvents(LOCKPICK_EVENT);
+	EnableEvents(CERCA_EVENT);
+	EnableEvents(RESET_SETUP_EVENT);
+
+	Setup();
+	sleep(1);
+
+	while (me)
+
+		LazyReloadGuild();
+		if (EnforceTerritoryBounds()) track_target := 0; endif
+
+		var _shadow := GetObjProperty(me, "shadow_mode");
+		case (state)
+
+			0: // IDLE
+				if (_shadow)
+					me.stealthsteps := 9999;
+					if (!me.hidden && !stand_fight) me.hidden := 1; endif
+				endif
+
+				if (following)
+					if (following.isA(POLCLASS_MOBILE) && !following.dead)
+						WalkTowardLocation(following.x, following.y);
+						wait_time := 0;
+					else
+						following := 0;
+					endif
+				endif
+
+				// Patrulhar / posto fixo / vaguear
+				if (!following)
+					if (!UpdatePatrolState())
+						if (fix_location)
+							var dist_posto := CoordinateDistance(me.x, me.y, fix_location.x, fix_location.y);
+							if (dist_posto > 1)
+								WalkTowardLocation(fix_location.x, fix_location.y);
+								wait_time := 0;
+							else
+								me.facing := fix_location.facing;
+							endif
+						else
+							WanderNPC();
+						endif
+					endif
+				endif
+
+				ScanNearbyLaws();
+
+				// Detectar alvo
+				if (!GetCooldown(me, "detect_cd"))
+					var targ := GetNearTarget();
+					if (targ)
+						track_target := targ;
+						state := 1;
+						wait_time := 0;
+					endif
+					SetCooldown(me, "detect_cd", 2);
+				endif
+
+				CheckRevealTimeout();
+				break;
+
+			1: // TRACKING — seguir alvo
+				if (!IsValidTarget(track_target))
+					track_target := 0;
+					state := 0;
+					break;
+				endif
+
+				if (_shadow)
+					me.stealthsteps := 9999;
+					if (!me.hidden) me.hidden := 1; endif
+				endif
+
+				var dist_track := Distance(me, track_target);
+
+				if (dist_track > DETECT_RANGE + 2)
+					track_target := 0;
+					state := 0;
+				elseif (dist_track <= SNIPE_RANGE && CheckLineOfSight(me, track_target))
+					if (me.hidden) PrintTextAbove(me, "*dispara das sombras*"); endif
+					SneakShot(track_target);
+					fighting     := track_target;
+					track_target := 0;
+					state        := 3;
+					if (guild) AddReport(guild, "{} atirou de emboscada em {}".format(me.name, fighting.name)); endif
+					wait_time := 0;
+				elseif (dist_track > SNIPE_RANGE)
+					if (_shadow)
+						WalkTowardLocation(track_target.x, track_target.y);
+					else
+						RunTowardLocation(track_target.x, track_target.y);
+					endif
+					wait_time := 0;
+				endif
+				break;
+
+			3: // COMBAT
+				CombatTick();
+				break;
+
+		endcase
+
+		// Processar aviso de violacao de lei
+		if (guild && warning) WarnViolator(); endif
+
+		var ev := Wait_For_Event(wait_time);
+		wait_time := 3;
+
+		HandleLawEvent(ev);
+
+		case (ev.type)
+			SYSEVENT_DOUBLECLICKED:
+				ShowFaccaoCombatGump(ev);
+				if (fighting) state := 3; endif
+				if (!fighting) state := 0; track_target := 0; endif
+				break;
+
+			SYSEVENT_ENGAGED:
+				if (!ev.source.dead && !ev.source.concealed)
+					if (IsValidTarget(ev.source) && state != 3)
+						fighting := ev.source;
+						state    := 3;
+						me.hidden := 0;
+						SetOpponent(fighting);
+						SetWarMode(1);
+					endif
+				endif
+				break;
+
+			SYSEVENT_DAMAGED:
+				if (ev.source && ev.source.isA(POLCLASS_MOBILE) && !ev.source.dead)
+					if (state == 0 || state == 1)
+						fighting := ev.source;
+						state    := 3;
+						me.hidden := 0;
+						SetOpponent(fighting);
+						SetWarMode(1);
+					endif
+				endif
+				break;
+
+			SYSEVENT_ENTEREDAREA:
+				if (state == 0 && IsValidTarget(ev.source))
+					track_target := ev.source;
+					state := 1;
+					wait_time := 0;
+				endif
+				if (me.hidden && ev.source.connected && !ev.source.dead)
+					CheckAwarenessDetection(ev.source);
+				endif
+				break;
+
+			FOLLOW_CMD:
+				fighting     := 0;
+				track_target := 0;
+				state        := 0;
+				following    := ev.targ;
+				SetOpponent(0);
+				SetWarMode(0);
+				fix_location := 0;
+				EraseObjProperty(me, "fix_loc");
+				break;
+
+			ATTACK_CMD:
+				if (ev.targ && IsValidTarget(ev.targ))
+					track_target := ev.targ;
+					state := 1;
+					wait_time := 0;
+				endif
+				break;
+
+			HELP_CMD:
+				if (!fighting && ev.targ && IsValidTarget(ev.targ))
+					track_target := ev.targ;
+					state := 1;
+					wait_time := 0;
+				endif
+				break;
+
+			SYSEVENT_SPEECH:
+				HandleRevealSpeech(ev);
+				break;
+
+			default:
+				// Em combate, nao bloquear o loop por 5s — CombatTick precisa rodar frequentemente
+				if (state != 3) wait_time := 5; endif
+		endcase
+
+		sleepms(10);
+	endwhile
+endprogram

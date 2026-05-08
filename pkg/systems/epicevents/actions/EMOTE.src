@@ -29,7 +29,7 @@ program EMOTE_Action(params)
 	var anchor := CreateItemAtLocation(item.x, item.y, item.z, 0x00C3, 1, item.realm);
 	anchor.movable := 0;
 
-	Message(emote_text, Color(MESSAGE_COLOR::NARRATOR)).SendAbove(anchor);
+	PrintTextAbove(anchor, emote_text, MESSAGE_COLOR::NARRATOR);
 	sleep(5);
 	DestroyItem(anchor);
 	return 1;

@@ -9,7 +9,7 @@ include ":attributes:attributes";
  * Single Weapon Style - ABILITY_ID::SINGLE_WEAPON_STYLE (3100)
  *
  * Passive: When using a one-handed weapon WITHOUT a shield:
- * - Attacker: +5 critical hit chance
+ * - Attacker: +3 damage
  * - Defender: -2 enemy hit chance (evasion)
  */
 class SingleWeaponStyle(CombatAbility)
@@ -38,17 +38,20 @@ class SingleWeaponStyle(CombatAbility)
 		return true;
 	endfunction
 
-	// Attacker: +5 critical hit chance
+	// Attacker: +3 damage
 	function OnPassiveBeforeDamage(this, attackInfo)
 		var attacker := attackInfo.GetAttacker();
 		if (!this._MatchesContext(attacker))
 			return false;
 		endif
 
-		attackInfo.GetAttacker().SetCriticalChanceMod(CInt(attackInfo.GetAttacker().GetCriticalChanceMod()) + 5);
+		attackInfo.GetDamage()
+			.IncreaseSlashRawDamage(3)
+			.IncreasePiercingRawDamage(3)
+			.IncreaseBluntRawDamage(3);
 
 		DebugMsg(attacker.GetObjRef(), DEBUG_HAB,
-			Message("[SINGLE_WEAPON] +5 critico", Color(SYSTEM_COLOR::SUCCESS)));
+			Message("[SINGLE_WEAPON] +3 dano", Color(SYSTEM_COLOR::SUCCESS)));
 		return true;
 	endfunction
 

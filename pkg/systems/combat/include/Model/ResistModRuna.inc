@@ -3,6 +3,11 @@ use uo;
 include "ResistModBase";
 include "ArmorResist";
 
+// SEMANTICA pos-redesign: os valores em runePhysBonus / runeFireBonus / etc.
+// representam % de reducao (0-25 tipico: theology/5 = 0-20, gem matching = 0-5).
+// Aplicados aditivamente a peca via ResistModCollection.GetTotal, que por sua vez
+// alimenta ArmorWrapper.GetResists onde o cap por tipo (50/60/70) e finalmente
+// aplicado. Ver design_magia.md para a derivacao das formulas.
 class ResistModRuna(ResistModBase)
 
 	function ResistModRuna(this, byRef item)

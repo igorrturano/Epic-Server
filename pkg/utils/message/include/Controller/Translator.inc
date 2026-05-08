@@ -6,10 +6,12 @@ include "system/exception/FormatException/InvalidFormatException";
 
 class Translator(ITranslator)
 	var _apiURL := ""; // URL da API de tradução
+	var _apiKey := ""; // API key opcional, enviada como header X-API-Key
 	var _translatableText; // Objeto de texto traduzível
-	
+
 	function Translator(this)
 		this._apiURL := "http://127.0.0.1:5000/translate";
+		this._apiKey := "";
 	endfunction
 
 	function GetText(this)
@@ -30,10 +32,10 @@ class Translator(ITranslator)
 		if (!this._translatableText)
 			return InvalidFormatException("There is no text to translate");
 		endif
-		
+
 		this._apiTranslate();
-		
-		this.GetText();
+
+		return this.GetText();
 	endfunction
 
 	function _apiTranslate(this)
@@ -43,28 +45,46 @@ class Translator(ITranslator)
 			"target" := this._translatableText.GetLanguageTarget()
 		});
 
+		var headers := struct{
+			"Content-Type" := "application/json"
+		};
+		if (this._apiKey)
+			headers.+"X-API-Key" := this._apiKey;
+		endif
+
 		var apiResponse := HTTPRequest(
 			this._apiURL,
 			"POST",
 			struct{
 				data := jsonData,
-				headers := struct{
-					"Content-Type" := "application/json"
-				}
+				headers := headers,
+				timeout := 10000
 			},
 			HTTPREQUEST_EXTENDED_RESPONSE
 		);
 
-		print ("apiResponse: " + apiResponse);
-
-		if (apiResponse.status == 200)
-			// Convertendo o JSON da PIOR FORMA POSSÍVEL pq o Unpack e UnpackJSON não funcionam
-			var body := apiResponse.body;
-			var start_pos := body.Find("\":\"") + 3;
-			var end_pos := body.Length() - start_pos - 2;
-			body := body[start_pos, end_pos];
-			this._translatableText.SetTextTarget(body);
+		if (apiResponse == error)
+			Print("[Translator] HTTPRequest error for " + this._apiURL + ": " + apiResponse.errortext);
+			return;
 		endif
+
+		if (!apiResponse.status)
+			Print("[Translator] No HTTP status from " + this._apiURL + " (connection refused, DNS, or timeout — is LibreTranslate up?)");
+			return;
+		endif
+
+		if (apiResponse.status != 200)
+			Print("[Translator] HTTP " + apiResponse.status + " from " + this._apiURL + ": " + apiResponse.body);
+			return;
+		endif
+
+		var parsed := UnpackJSON(apiResponse.body);
+		if (parsed is @Exception || !parsed.translatedText)
+			Print("[Translator] Failed to parse response body: " + apiResponse.body);
+			return;
+		endif
+
+		this._translatableText.SetTextTarget(parsed.translatedText);
 	endfunction
 endclass
 

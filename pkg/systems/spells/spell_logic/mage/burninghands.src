@@ -9,13 +9,15 @@ include ":timedscripts:timedScripts";
 ;
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include ":taming:taming";
-include "include/facings";
 include "include/shapes";
 include ":magery:fields";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":charactercreation:resists";
+include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program SpellScript(params)
 	var caster := params[1];
@@ -39,43 +41,79 @@ program SpellScript(params)
 	TurnObjectToward(caster, targ.x, targ.y);
 	sleepms(300);
 
-	var effect_id := 0x6d70; // ID do efeito que você quer jogar
-	var lines_count := range; // Número de linhas que você quer criar
-	var effect_distance := range * 2; // Distância que o efeito cobre em cada linha
-	var effect_duration := 30; // Duração do efeito
+	var effect_id := 0x6d70;
+	var effect_duration := 30;
 
-	PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, caster.realm);
+	var rings := BuildConeRings(caster, range);
+	PlayConeEffect(rings, caster.z, caster.realm, effect_id, effect_duration);
+
+	var cone_tiles := dictionary{};
+	foreach ring in rings
+		foreach tile in ring
+			cone_tiles[$"{tile.x},{tile.y}"] := 1;
+		endforeach
+	endforeach
+
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+	var arcana := AP_GetSkill(caster, ARCANA);
+	var dot_total_ticks := Cint(arcana / 15);
+	if (dot_total_ticks < 4)
+		dot_total_ticks := 4;
+	elseif (dot_total_ticks > 10)
+		dot_total_ticks := 10;
+	endif
 
 	var mobs := ListMobilesNearLocation(caster.x, caster.y, caster.z, range, caster.realm);
 	foreach mob in mobs
-		if (InPosition(caster, mob.x, mob.y, FACE_POS_INFRONT))
-			if (mob == caster)
-				continue;
-			endif
-
-			var damage := epicSpellDamageRoll(caster, spell_circle);
-			damage := bonusSpellDamageForSpecialists(caster, damage, spell_school);
-
-			PlaySoundEffect(mob, SFX_226);
-			sleepms(100);
-			PlaySoundEffect(mob, SFX_227);
-			sleepms(100);
-			PlaySoundEffect(mob, SFX_228);
-			sleepms(100);
-			SendSysMessageEx(mob, "As chamas queimam voce.", SSM_FAIL);
-			DamageFLS(mob, cint(damage), DMG_FIRE, caster, "burninghands");
-			sleepms(100);
+		if (mob == caster)
+			continue;
 		endif
+		if (!cone_tiles.Exists($"{mob.x},{mob.y}"))
+			continue;
+		endif
+
+		var damage := epicSpellDamageRoll(caster, spell_circle, spell_school);
+
+		// Reflex save halves the initial blast damage but does NOT prevent the burn DoT.
+		if (CheckResist(mob, REFLEXES, diff, -bonus) > 0)
+			damage := Cint(damage / 2);
+			SendSysMessageEx(mob, "Voce se esquiva de parte das chamas.", SSM_INFO);
+		endif
+
+		SendSysMessageEx(mob, "As chamas queimam voce.", SSM_FAIL);
+		SC_DealDamage(caster, mob, CInt(spellinfo.id), cint(damage), DMG_FIRE);
+
+		// Apply SC-based burn DoT on top of the initial blast.
+		// Chip fixo de 1d4+1 por tick (sem escalar com Arcana). A escala vem
+		// do impact (via epicSpellDamageRoll com bump do Evocator) + duracao.
+		var existing := MobileWrapper(mob).GetProperty($"SpellOpts_{CInt(spellinfo.id)}");
+		if (!existing || existing.errortext)
+			var tick_interval := 2;
+			var opts := struct{};
+			opts.+buff_category := "fire_dot";
+			opts.+displayname := "Maos Flamejantes";
+			opts.+desc := "1d4+1 dano / tick";
+			opts.+tick_script := ":spells:spell_logic/mage/burninghandsTick";
+			opts.+tick_interval := tick_interval;
+			opts.+tick_params := struct{
+				total_ticks := dot_total_ticks
+			};
+			SC_ApplyEffect(caster, mob, opts, dot_total_ticks * tick_interval, CInt(spellinfo.id));
+		endif
+
+		sleepms(50);
 	endforeach
 endprogram
 
-function PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect_duration, realm)
+function BuildConeRings(caster, lines_count)
+	var rings := array{};
 	var facing := caster.facing;
 	var start_x := caster.x;
 	var start_y := caster.y;
 
 	for line := 0 to lines_count
-		var width := line * 2 + 1;
+		var ring := array{};
 		for i := -line to line
 			var pos_x, pos_y;
 			case (facing)
@@ -105,10 +143,20 @@ function PlayEffectLines(caster, effect_id, lines_count, effect_distance, effect
 					pos_y := start_y - line + i;
 			endcase
 
-			if (pos_x != start_x || pos_y != start_y) // Don't place effect on caster
-				PlayStationaryEffect(pos_x, pos_y, caster.z, effect_id, 10, effect_duration, 0, realm);
+			if (pos_x != start_x || pos_y != start_y)
+				ring.Append(struct{ x := pos_x, y := pos_y });
 			endif
 		endfor
-		sleepms(50);
+		rings.Append(ring);
 	endfor
+	return rings;
+endfunction
+
+function PlayConeEffect(rings, z, realm, effect_id, effect_duration)
+	foreach ring in rings
+		foreach tile in ring
+			PlayStationaryEffect(tile.x, tile.y, z, effect_id, 10, effect_duration, 0, realm);
+		endforeach
+		sleepms(50);
+	endforeach
 endfunction

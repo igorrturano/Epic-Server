@@ -1,8 +1,7 @@
 include ":abilities:models/CombatAbility";
 include ":timedscripts:timedScripts";
 include ":tn:cooldown";
-include ":brainai:npcUtil";
-include ":abilities:helpers/clericHelpers";
+include "include/NPCUtil";
 
 /**
  * Apoteose (Apotheosis) - ABILITY_ID::APOTEOSE (2804)
@@ -41,7 +40,7 @@ class Apotheosis(CombatAbility)
 
 		case (religiao)
 			VENERATIO:
-				var nearby_enemies := GetNearbyEnemies(who, 8);
+				var nearby_enemies := mobile.GetNearbyEnemies(8);
 				foreach enemy in (nearby_enemies)
 					TS_StartTimer(enemy, "apodrecer", duration);
 					Message("*marcado pela gloria eterna*").SendAbove(enemy);
@@ -71,7 +70,7 @@ class Apotheosis(CombatAbility)
 				Message("Voce manifesta a Fortaleza Inabalavel de Bokk Bharaz!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			HALLEUAD:
-				var nearby_mobiles := ListMobilesNearLocation(who.x, who.y, who.z, 8, who.realm);
+				var nearby_mobiles := mobile.GetNearbyMobiles(8);
 				PlayStationaryEffect(who.x, who.y, who.z + 10, 0x37C4, 10, 30);
 
 				foreach mob in (nearby_mobiles)
@@ -79,7 +78,7 @@ class Apotheosis(CombatAbility)
 						continue;
 					endif
 
-					var is_ally := IsPlayerAlly(who, mob);
+					var is_ally := mobile.IsAllyOf(MobileWrapper(mob));
 
 					if (is_ally)
 						var heal_amount := CInt(theology_skill * 1.4);
@@ -88,7 +87,7 @@ class Apotheosis(CombatAbility)
 						Message("Voce e curado pela luz divina!", Color(SYSTEM_COLOR::INFO)).SendSys(mob);
 					else
 						var npc_elem := NPC_GetNPCConfig(mob.npctemplate);
-						var isDarknessCreature := GetObjProperty(mob, "Mobnoturno") || Lower(npc_elem.Category) == "undead";
+						var isDarknessCreature := GetObjProperty(mob, "Mobnoturno") || Lower(npc_elem.Environment) == "undead";
 
 						// Darkness check: night time or in dungeon
 						var isInDarkness := (GetGlobalProperty("dia") != "dia") || (mob.realm != "britannia");
@@ -113,7 +112,7 @@ class Apotheosis(CombatAbility)
 				var isInDarkness := (GetGlobalProperty("dia") != "dia") || (who.realm != "britannia");
 				PerformAction(who, HUMAN_ANIM::CAST_AREA);
 				PlaySoundEffect(who, 0x684);
-				var tor_enemies := GetNearbyEnemies(who, tor_range);
+				var tor_enemies := mobile.GetNearbyEnemies(tor_range);
 				foreach mob in tor_enemies
 					TS_StartTimer(mob, "paralysis", tor_dur);
 					PlayObjectCenteredEffect(mob, 0x54F7, 10, 30);
@@ -128,7 +127,7 @@ class Apotheosis(CombatAbility)
 				Message("Voce manifesta o Tormento de Idrith!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
 
 			KAI:
-				var nearby_allies := GetNearbyAllies(who, 8);
+				var nearby_allies := mobile.GetNearbyAllies(8);
 				foreach ally in (nearby_allies)
 					SetObjProperty(ally, "#GuaranteedHit", 1);
 					SetObjProperty(ally, "#CriticalChance", 100);

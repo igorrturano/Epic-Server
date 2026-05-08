@@ -1,4 +1,5 @@
 include "include/client";
+include ":epicAI:include/npcDataCache";    // NPC_GetCachedData
 
 function HasHair(mobile)
     return GetEquipmentByLayer(mobile, LAYER_HAIR);
@@ -277,9 +278,9 @@ endfunction
 function makePequilho(mobile)
    // Set base graphics by gender
    if (mobile.gender == 0) // Male
-      mobile.graphic := 1834;
-   else
       mobile.graphic := 1835;
+   else
+      mobile.graphic := 1834;
    endif
 
    // Get NPC config to check for existing colors

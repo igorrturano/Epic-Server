@@ -296,7 +296,7 @@ function ProduzComponentes(quem,configRecursos,objtype,byref materiaisEncontrado
 		if(deveReciclar && qualidade != maiorQualidade)
 			var quantidadeTier :=  cint(qualidades[qualidade]);
 			quantidadeRecicladaTotal += quantidadeTier;
-			quantidadeMaterialRetornado += CriaMaterialReciclado(quem,materiaisEscolhidos,quantidadeTier);
+			quantidadeMaterialRetornado += CriaMaterialReciclado(quem,materiaisEscolhidos,lote,quantidadeTier);
 			continue;
 		endif
 		var descriptor :=  CriaComponenteDescriptor(objtype,chaveMaterialPrincipal,qualidade,encaixe, configRecursos);
@@ -314,7 +314,7 @@ function ProduzComponentes(quem,configRecursos,objtype,byref materiaisEncontrado
 	return 1;
 endfunction
 
-function CriaMaterialReciclado(quem, materiaisEscolhidos, quantidade)
+function CriaMaterialReciclado(quem, materiaisEscolhidos, lote, quantidade)
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
 	var Percentuais := SplitWords(profissaoConfig["Setup"].ReciclagemPercentual);
 	var percentualFinal := RandomIntMinMax(cint(Percentuais[1]), cint(Percentuais[2]));
@@ -324,7 +324,7 @@ function CriaMaterialReciclado(quem, materiaisEscolhidos, quantidade)
 	foreach materialEscolhido in materiaisEscolhidos
 		Sleepms(2);
 
-		var quantidadeReciclada := cint(cint(materialEscolhido.quantidadeNecessaria) * quantidade * percentualReciclagem);
+		var quantidadeReciclada := cint(cint(materialEscolhido.quantidadeNecessaria) * (quantidade / lote) * percentualReciclagem);
 		if(quantidadeReciclada <= 1) 
 			if(RandomInt(100) <= (percentualFinal + 1))
 				quantidadeReciclada := 1;
@@ -496,7 +496,7 @@ function CarregaMateriaisEncontrados(quem,configRecursos, componente)
 	var retorno := dictionary;
 	var materiaisComponente;
 
-	foreach item in EnumerateItemsInContainer(quem.backpack)
+	foreach item in (EnumerateItemsInContainer(quem.backpack, ENUMERATE_ROOT_ONLY))
 		Sleepms(2);
 		var materialDetalhe := configRecursos[item.objtype];
 		if(materialDetalhe)
