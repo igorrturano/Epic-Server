@@ -32,9 +32,16 @@ program SpellScript(params)
 	// Remove efeito anterior se existir
 	SC_RemoveEffect(targ, CInt(spell.id));
 
-	// Calculate resist bonus based on Theology skill / 25
+	// Spell resist scaling per design_overview.md / design_combate.md:
+	//   armored:   Theology/5 (max 20 at GM)
+	//   unarmored: Theology/3 (max 33 at GM)
 	var theology := AP_GetSkill(who, THEOLOGY);
-	var bonus := CInt(theology / 30);
+	var bonus;
+	if (HasArmorProtection(targ))
+		bonus := CInt(theology / 5);
+	else
+		bonus := CInt(theology / 3);
+	endif
 	if (bonus < 1)
 		bonus := 1;
 	endif
@@ -67,3 +74,17 @@ program SpellScript(params)
 
 	return 1;
 endprogram
+
+function HasArmorProtection(targ)
+	var itemdesc := ReadConfigFile(":*:itemdesc");
+	foreach item in (ListEquippedItems(targ))
+		if (!item.isa(POLCLASS_ARMOR))
+			continue;
+		endif
+		var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
+		if (tipoProtecao["Armadura"])
+			return 1;
+		endif
+	endforeach
+	return 0;
+endfunction

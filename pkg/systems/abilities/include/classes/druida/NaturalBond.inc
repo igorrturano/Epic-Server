@@ -1,3 +1,8 @@
+use uo;
+use os;
+
+include ":spells:Controller/SpellController";
+
 const _NB_BTN_ESTUDAR   := 1;
 const _NB_BTN_VOLTAR    := 2;
 const _NB_BTN_TRANSFORM := 100;
@@ -339,7 +344,7 @@ class NaturalBond(CombatAbility)
         if (mobile.HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
             skill_a_calc   := CInt(skill_a_calc + bonusMagicLore);
             hitsmod_calc   := CInt(hitsmod_calc + bonusInstintoHP);
-            resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 30);
+            resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 6);
         endif
 
         var hitscript := this._GetTaxonomyScript(taxonomy);
@@ -435,6 +440,11 @@ class NaturalBond(CombatAbility)
         sr.poison   += resistmod_calc;
         sr.energy   += resistmod_calc;
         mw.SetProperty("#SpellResist", sr);
+
+        // Per-slot armor packets emitted during _UnequipWild carried the pre-wildshape
+        // #SpellResist (zero or pre-existing buffs). Without this refresh the client's
+        // ArmorResistances dict shows 0 across all regions until the next equip event.
+        SC_RefreshArmorPackets(who);
     endfunction
 
     function _CalcDice(this, theology)
