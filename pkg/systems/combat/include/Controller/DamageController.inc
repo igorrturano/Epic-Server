@@ -646,8 +646,10 @@ function CalculateDefenderResist(byRef attackInfo)
 	var armorsInBodyRegion := GetEquipsByAttackDirection(attackInfo);
 	var bodyResist := attackInfo.GetDefender().GetBodyResist();
 
-	// Body e armor agora aplicam % multiplicativo (design_combate.md). Spell resist
-	// permanece flat ate Phase 8 — sua conversao para % vive em design_magia.md.
+	// Body, armor e spell resist aplicam % multiplicativo (design_combate.md e
+	// design_magia.md). Cap combinado armor+spell em 80% para defensores armored
+	// — armadura sozinha ja' cabe em 70% (cap por tipo em ArmorWrapper) e magia
+	// pode adicionar ate completar os 80%.
 	attackInfo.GetDamage().DecreaseSlashPercentDamage(bodyResist.GetSlashResist())
 						  .DecreasePiercingPercentDamage(bodyResist.GetPiercingResist())
 						  .DecreaseBluntPercentDamage(bodyResist.GetBluntResist())
@@ -657,16 +659,17 @@ function CalculateDefenderResist(byRef attackInfo)
 						  .DecreaseEnergyPercentDamage(bodyResist.GetEnergyResist());
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Defesa natural (BODY) do defensor reduziu dano em: {bodyResist.ToString()}"));
 
-	// Spell resist (virtual armor layer from magic: barkskin, protection, etc.)
-	var spellResist := attackInfo.GetDefender().GetSpellResist();
-	attackInfo.GetDamage().DecreaseSlashBaseDamage(spellResist.GetSlashResist())
-						  .DecreasePiercingBaseDamage(spellResist.GetPiercingResist())
-						  .DecreaseBluntBaseDamage(spellResist.GetBluntResist())
-						  .DecreaseFireBaseDamage(spellResist.GetFireResist())
-						  .DecreaseColdBaseDamage(spellResist.GetColdResist())
-						  .DecreasePoisonBaseDamage(spellResist.GetPoisonResist())
-						  .DecreaseEnergyBaseDamage(spellResist.GetEnergyResist());
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Proteção mágica do defensor reduziu dano em: {spellResist.ToString()}"));
+	// Snapshot pos-body — referencia para o cap combinado armor+spell aplicado
+	// no fim. Body resist fica fora do cap (intencional).
+	var postBody := struct{
+		slash    := CInt(attackInfo.GetDamage().GetSlashBaseDamage()),
+		piercing := CInt(attackInfo.GetDamage().GetPiercingBaseDamage()),
+		blunt    := CInt(attackInfo.GetDamage().GetBluntBaseDamage()),
+		fire     := CInt(attackInfo.GetDamage().GetFireBaseDamage()),
+		cold     := CInt(attackInfo.GetDamage().GetColdBaseDamage()),
+		poison   := CInt(attackInfo.GetDamage().GetPoisonBaseDamage()),
+		energy   := CInt(attackInfo.GetDamage().GetEnergyBaseDamage())
+	};
 
 	if (armorsInBodyRegion == array{})
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Não há armadura na região atingida. Dano direto no corpo do defensor."));
@@ -687,6 +690,26 @@ function CalculateDefenderResist(byRef attackInfo)
 								  .DecreaseEnergyPercentDamage(armorResist.GetEnergyResist());
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Restou: {attackInfo.GetDamage().ToString()}"));
 		endforeach
+	endif
+
+	// Spell resist (camada virtual de magia: protecao, casca, etc.). Multiplicativa
+	// pos-Phase 8.5. Valores nos spells re-tunados em Phase 8.5b para escala % nova.
+	var spellResist := attackInfo.GetDefender().GetSpellResist();
+	attackInfo.GetDamage().DecreaseSlashPercentDamage(spellResist.GetSlashResist())
+						  .DecreasePiercingPercentDamage(spellResist.GetPiercingResist())
+						  .DecreaseBluntPercentDamage(spellResist.GetBluntResist())
+						  .DecreaseFirePercentDamage(spellResist.GetFireResist())
+						  .DecreaseColdPercentDamage(spellResist.GetColdResist())
+						  .DecreasePoisonPercentDamage(spellResist.GetPoisonResist())
+						  .DecreaseEnergyPercentDamage(spellResist.GetEnergyResist());
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Proteção mágica do defensor reduziu dano em: {spellResist.ToString()}"));
+
+	// Cap combinado armor+spell de 80% (apenas se defensor estiver armored).
+	// Armadura sozinha ja' cabe em 70% por peca; spell pode adicionar mais ate 80%.
+	// Mages nu nao recebem cap — sua unica defesa e' spell e nunca atinge 80%
+	// sozinha (max theology/3 = 33%).
+	if (_IsDefenderArmored(attackInfo.GetDefender()))
+		_ApplyArmorSpellCombinedCap(attackInfo, postBody);
 	endif
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
@@ -716,6 +739,47 @@ function _IsOneHandedSoloHit(byRef attackInfo)
 
 	if (GetEquipmentByLayer(attackInfo.GetAttacker().GetObjRef(), 0x02)) return 0; endif
 	return 1;
+endfunction
+
+// Defensor "armored" = veste qualquer peca com TipoProtecao em qualquer dos
+// slots de armadura (HELM, NECK, CHEST, ARMS, GLOVES, PANTS — SHOES nao tem
+// TipoProtecao). Usa GetEquipBySlot (O(1) por slot) com short-circuit no
+// primeiro hit, max 6 lookups, vs ListEquippedItems que itera todo equip.
+function _IsDefenderArmored(byRef defender)
+	var armorLayers := array{LAYER_HELM, LAYER_NECK, LAYER_CHEST, LAYER_ARMS, LAYER_GLOVES, LAYER_PANTS};
+	foreach layer in armorLayers
+		var equip := defender.GetEquipBySlot(layer);
+		if (equip is @ArmorWrapper)
+			var tp := equip.GetTipoProtecao();
+			if (tp && !(tp is @Exception) && tp != "")
+				return 1;
+			endif
+		endif
+	endforeach
+	return 0;
+endfunction
+
+// Cap combinado armor+spell em 80% para defensores armored. Recebe o snapshot
+// de dano pos-body (antes de armor e spell). Ajusta cada tipo de dano para nao
+// cair abaixo de 20% do snapshot — equivale a clipping da reducao combinada
+// armor+spell em 80%. Body resist fica fora do cap.
+function _ApplyArmorSpellCombinedCap(byRef attackInfo, byRef postBody)
+	var dmg := attackInfo.GetDamage();
+	var minSlash    := CInt(postBody.slash    * 20 / 100);
+	var minPiercing := CInt(postBody.piercing * 20 / 100);
+	var minBlunt    := CInt(postBody.blunt    * 20 / 100);
+	var minFire     := CInt(postBody.fire     * 20 / 100);
+	var minCold     := CInt(postBody.cold     * 20 / 100);
+	var minPoison   := CInt(postBody.poison   * 20 / 100);
+	var minEnergy   := CInt(postBody.energy   * 20 / 100);
+
+	if (dmg.GetSlashBaseDamage()    < minSlash)    dmg.SetSlashBaseDamage(minSlash);       endif
+	if (dmg.GetPiercingBaseDamage() < minPiercing) dmg.SetPiercingBaseDamage(minPiercing); endif
+	if (dmg.GetBluntBaseDamage()    < minBlunt)    dmg.SetBluntBaseDamage(minBlunt);       endif
+	if (dmg.GetFireBaseDamage()     < minFire)     dmg.SetFireBaseDamage(minFire);         endif
+	if (dmg.GetColdBaseDamage()     < minCold)     dmg.SetColdBaseDamage(minCold);         endif
+	if (dmg.GetPoisonBaseDamage()   < minPoison)   dmg.SetPoisonBaseDamage(minPoison);     endif
+	if (dmg.GetEnergyBaseDamage()   < minEnergy)   dmg.SetEnergyBaseDamage(minEnergy);     endif
 endfunction
 
 // Protecao Arcana (spell 114) — physical-only mana shield. Absorbs slash/piercing/blunt
