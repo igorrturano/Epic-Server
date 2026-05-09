@@ -176,8 +176,13 @@ function SplashObject(who, bucket, targ)
 			aguinha.color := 2322;
 			SetName(aguinha, "leite derramado");
 			PrintTextAbove(targ, "*" + name + " esta cheirando leite*");
-		// 	elseif ( targ.IsA(POLCLASS_MOBILE) )
-		// 		CureSpecific(targ, "poostink", -1);
+		elseif (bucket.objtype == FRESH_WATER_BUCKET)
+			var cheiro_expira := GetObjProperty(targ, "#cheiro_expira");
+			if (cheiro_expira && !cheiro_expira.errortext)
+				EraseObjProperty(targ, "#cheiro_expira");
+				EraseObjProperty(targ, "descmodboss");
+				PrintTextAbove(targ, "*" + name + " se livra do cheiro de fezes*");
+			endif
 		endif
 		SetObjProperty(targ, "molhado", 1);
 		sleep(15);
