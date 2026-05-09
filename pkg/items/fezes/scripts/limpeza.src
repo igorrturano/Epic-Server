@@ -3,7 +3,7 @@ use os;
 
 include ":fezes:include/pid_guard";
 
-const CHEIRO_DURACAO     := 60;
+const CHEIRO_DURACAO     := 10800;
 const PROP_CHEIRO_PID    := "#cheiro_pid";
 const PROP_CHEIRO_EXPIRA := "#cheiro_expira";
 
