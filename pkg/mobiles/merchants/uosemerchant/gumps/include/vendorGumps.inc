@@ -11,14 +11,30 @@ CONST GUMP_SAFE_GRAPHIC_FALLBACK := 0x0EED; // gold pile — always present in a
 CONST GUMP_SAFE_TOOLTIP_MAX := 1500;
 CONST GUMP_SAFE_HTML_MAX := 200;
 
-// Strips characters that can corrupt the gump packet or downstream .format() calls
-// when seller- or item-supplied free-text flows into HTML/tooltip fields.
+// Full HTML escape — for fields that should render as plain text inside an HTML
+// area (item names, player names). Also neutralises {} so nothing downstream
+// reinterprets them as .format() spec.
 function SanitizarTextoGump(s, max_len := 0)
 	if (!s || s == error) return ""; endif
 	s := cstr(s);
 	s := StrReplace(s, "&", "&amp;");
 	s := StrReplace(s, "<", "&lt;");
 	s := StrReplace(s, ">", "&gt;");
+	s := StrReplace(s, "{", "(");
+	s := StrReplace(s, "}", ")");
+	if (max_len > 0 && Len(s) > max_len)
+		s := s[1, max_len] + "...";
+	endif
+	return s;
+endfunction
+
+// Light sanitize — for tooltip/description text that is intentionally HTML
+// (built up by MontaDescricaoItem with <BASEFONT>, <br>, etc.). Only defuses
+// {} and caps length so seller-supplied free-text inside can't break .format
+// or overflow the tooltip packet, without mangling the legitimate HTML tags.
+function SanitizarTooltipGump(s, max_len := 0)
+	if (!s || s == error) return ""; endif
+	s := cstr(s);
 	s := StrReplace(s, "{", "(");
 	s := StrReplace(s, "}", ")");
 	if (max_len > 0 && Len(s) > max_len)
@@ -245,7 +261,7 @@ function PainelProduto(byref gump,session ,x,y,isAdministrador)
 		x += PAINELPRODUTO_ESPACO_X; //espaçamento.
 		y += (PAINELPRODUTO_ESPACO_Y * linha); //espaçamento.
 		var safeDesc := SanitizarTextoGump(itemNoIndice.item.desc, GUMP_SAFE_HTML_MAX);
-		var safeTooltip := SanitizarTextoGump(itemNoIndice.descVenda, GUMP_SAFE_TOOLTIP_MAX);
+		var safeTooltip := SanitizarTooltipGump(itemNoIndice.descVenda, GUMP_SAFE_TOOLTIP_MAX);
 		var safeNomeVendedor := SanitizarTextoGump(itemNoIndice.nomeVendedor, 60);
 		var safeLote := LoteSeguro(itemNoIndice.infoCusto.lote);
 
