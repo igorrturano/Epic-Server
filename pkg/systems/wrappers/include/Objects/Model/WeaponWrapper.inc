@@ -10,6 +10,7 @@ include ":combat:Model/Damage";
 include ":combat:Model/DamageModCollection";
 include ":combat:Model/DamageModBase";
 include ":combat:Model/DamageModFabricacao";
+include ":combat:Model/DamageModEncantar";
 include ":combat:Model/Ammo";
 include ":diceroll:model/Dice";
 
@@ -69,6 +70,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			);
 			this.DamageMods := DamageModCollection();
 			this.SetDamageMod(DamageModFabricacao(this.GetObjRef() ? this.GetObjRef() : this.GetTemplate()));
+			if (this.GetObjRef())
+				this.SetDamageMod(DamageModEncantar(this.GetObjRef()));
+			endif
 
 			this.Speed := GetSpeedByTier(this.SpeedTier);
 			this.CriticalChance := GetCriticalChanceByTier(this.CriticalChanceTier);
