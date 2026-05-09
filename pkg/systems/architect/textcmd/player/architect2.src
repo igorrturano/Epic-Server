@@ -636,8 +636,7 @@ function ShowWorkingScreen(who)
     GFTextLine(gump,  tx2+22, ty+2, COR_VERMELHO, "Deletar Bulk");
     GFTooltipText(gump, "Destroi permanentemente todos os itens marcados pelo Marcar ou Marcar Bulk.");
 
-    // Altura Z criação = who.z + _z_offset
-    GFTextLine(gump, 460, 534, COR_PADRAO, "Z: " + CStr(who.z + _z_offset));
+    GFTextLine(gump, 460, 534, COR_PADRAO, "Altura (Z): " + CStr(_z_offset));
 
     // ── Rodapé ────────────────────────────────────────────────────────────────
     _NavRodape(gump, W, H, 1);
@@ -725,7 +724,7 @@ function DoCreate(who)
     while (1)
         var coords := _GetCoords(who, 1);
         if (!coords) break; endif
-        var created := _CreateItem(who, coords[1] + _x_offset, coords[2] + _y_offset, who.z + _z_offset, _EffectiveType());
+        var created := _CreateItem(who, coords[1] + _x_offset, coords[2] + _y_offset, _z_offset, _EffectiveType());
         if (created) _undo.append(array{1, array{created.serial}}); endif
         if (!_multi_select) break; endif
     endwhile
@@ -744,7 +743,7 @@ function DoLine(who)
         var x := 0; var y := 0; var c := 0;
         for (x := coords[1]; x <= coords[3]; x := x + 1)
             for (y := coords[2]; y <= coords[4]; y := y + 1)
-                c := _CreateItem(who, x + _x_offset, y + _y_offset, who.z + _z_offset, _EffectiveType());
+                c := _CreateItem(who, x + _x_offset, y + _y_offset, _z_offset, _EffectiveType());
                 if (c) serials.append(c.serial); endif
             endfor
         endfor
@@ -761,7 +760,7 @@ function DoTile(who)
         var x := 0; var y := 0; var c := 0;
         for (x := coords[1]; x <= coords[3]; x := x + 1)
             for (y := coords[2]; y <= coords[4]; y := y + 1)
-                c := _CreateItem(who, x + _x_offset, y + _y_offset, who.z + _z_offset, _EffectiveType());
+                c := _CreateItem(who, x + _x_offset, y + _y_offset, _z_offset, _EffectiveType());
                 if (c) serials.append(c.serial); endif
             endfor
         endfor
@@ -777,14 +776,14 @@ function DoRing(who)
         var serials := array{};
         var x := 0; var y := 0; var c1 := 0; var c2 := 0;
         for (x := coords[1]; x <= coords[3]; x := x + 1)
-            c1 := _CreateItem(who, x + _x_offset, coords[2] + _y_offset, who.z + _z_offset, _EffectiveType());
-            c2 := _CreateItem(who, x + _x_offset, coords[4] + _y_offset, who.z + _z_offset, _EffectiveType());
+            c1 := _CreateItem(who, x + _x_offset, coords[2] + _y_offset, _z_offset, _EffectiveType());
+            c2 := _CreateItem(who, x + _x_offset, coords[4] + _y_offset, _z_offset, _EffectiveType());
             if (c1) serials.append(c1.serial); endif
             if (c2) serials.append(c2.serial); endif
         endfor
         for (y := coords[2] + 1; y < coords[4]; y := y + 1)
-            c1 := _CreateItem(who, coords[1] + _x_offset, y + _y_offset, who.z + _z_offset, _EffectiveType());
-            c2 := _CreateItem(who, coords[3] + _x_offset, y + _y_offset, who.z + _z_offset, _EffectiveType());
+            c1 := _CreateItem(who, coords[1] + _x_offset, y + _y_offset, _z_offset, _EffectiveType());
+            c2 := _CreateItem(who, coords[3] + _x_offset, y + _y_offset, _z_offset, _EffectiveType());
             if (c1) serials.append(c1.serial); endif
             if (c2) serials.append(c2.serial); endif
         endfor
