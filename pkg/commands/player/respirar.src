@@ -1,0 +1,58 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include "include/client";
+
+program txt_respirar(character)
+	Respirar(MobileWrapper(character));
+	return 1;
+endprogram
+
+function Respirar(mobile)
+	if (mobile.GetObjRef() is @Exception)
+		return mobile.GetObjRef();
+	endif
+
+	var ref := mobile.GetObjRef();
+	var pos := mobile.GetPosition();
+	var offset := GetMouthOffset(ref.facing);
+
+	var px := pos.GetX() + offset.x;
+	var py := pos.GetY() + offset.y;
+	var pz := pos.GetZ() + offset.z;
+	var realm := pos.GetRealm();
+
+	var duration := 15;
+	var text := "*respira*";
+	var isCold := mobile.IsInCold();
+
+	if (isCold)
+		duration := 40;
+		text := "*solta um vapor branco no ar gelado*";
+	endif
+
+	PlayStationaryEffect(px, py, pz, FX_FIZZLE, 5, duration, 0, realm);
+
+	if (isCold)
+		PlayStationaryEffect(px + offset.x, py + offset.y, pz, FX_FIZZLE, 5, duration, 0, realm);
+	endif
+
+	Message(text).SendEmote(ref);
+	return 1;
+endfunction
+
+function GetMouthOffset(facing)
+	case (facing)
+		0:  return struct{ x := 0,  y := -1, z := 9 };
+		1:  return struct{ x := 1,  y := -1, z := 13 };
+		2:  return struct{ x := 1,  y := 0,  z := 13 };
+		3:  return struct{ x := 1,  y := 1,  z := 18 };
+		4:  return struct{ x := 0,  y := 1,  z := 13 };
+		5:  return struct{ x := -1, y := 0,  z := 9 };
+		6:  return struct{ x := -1, y := 0,  z := 9 };
+		7:  return struct{ x := -1, y := -1, z := 5 };
+	endcase
+	return struct{ x := 0, y := 0, z := 9 };
+endfunction
