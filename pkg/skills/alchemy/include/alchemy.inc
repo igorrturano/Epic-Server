@@ -7,6 +7,8 @@ include ":fls_core:fls_characters";
 include ":charactercreation:resists";
 include "include/epicConstants";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":attributes:attributes";
 include ":abilities:models/Ability";
 include ":crafting:/include/caracteristicasFabricacao";
 include ":crafting:/include/fabricacaoUtil";
@@ -33,16 +35,16 @@ CONST REFORCO_CARGA_DUPLA := 52;
 CONST REFORCO_POTENCIA_ELEM := 53;
 
 function checkifcandrink(character, potion)
-  // Check to make sure they have at least one hand free to drink the potion.
-  // Dual_Wield items ocupam apenas LAYER_HAND1 fisicamente mas representam
-  // duas armas — bloqueio explicito pelo Attribute na main hand.
+  // Two_Handed and Dual_Wield armas prendem as duas maos mesmo quando uma
+  // unica layer esta fisicamente ocupada — checa o atributo da arma
+  // empunhada, nao apenas a ocupacao das layers.
   var equippedright := GetEquipmentByLayer(character, 0x01);
   var equippedleft := GetEquipmentByLayer(character, 0x02);
+  var weapon := equippedright ?: equippedleft;
+  var attribute := weapon ? WeaponWrapper(weapon).GetAttribute() : "";
   var cfg := ReadConfigFile(":*:itemdesc");
-  var twohanded := Cint(cfg[equippedleft.objtype].Two_Handed);
-  var dualwield := equippedright && Lower(CStr(cfg[equippedright.objtype].Attribute)) == "dual_wield";
   var type := cfg[potion.objtype].Type;
-  if (equippedright and equippedleft || twohanded || dualwield)
+  if ((equippedright and equippedleft) || attribute == TWOHANDED || attribute == DUALWIELD)
     SendSysMessage(character, "Voce precisa de pelo menos uma mao livre!");
     return 0;
   endif
