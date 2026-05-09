@@ -1831,6 +1831,12 @@ function GetActionNumber(action)
 			return 33;
 		"furar":
 			return 34;
+		"apontar":
+			return 35;
+		"assoviar":
+			return 36;
+		"bow":
+			return 37;
 	endcase
 	return 0;
 
@@ -1954,7 +1960,10 @@ function GetActionDataArray()
 				"31 - atacar2",
 				"32 - atacar3",
 				"33 - atacar4",
-				"34 - furar"
+				"34 - furar",
+				"35 - apontar",
+				"36 - assoviar",
+				"37 - bow"
 			);
 endfunction
 
@@ -2235,6 +2244,30 @@ function GetActionEffect(input, repeatcount, repeatflag, delay)
 		resultado[5] := repeatflag;
 		resultado[6] := delay;
 	endif
+	if ( (input[35]==1) )
+		resultado[1] := 0x21;
+		resultado[2] := 5;
+		resultado[3] := repeatcount;
+		resultado[4] := ACTION_DIR_FORWARD;
+		resultado[5] := repeatflag;
+		resultado[6] := delay;
+	endif
+	if ( (input[36]==1) )
+		resultado[1] := 0x22;
+		resultado[2] := 5;
+		resultado[3] := repeatcount;
+		resultado[4] := ACTION_DIR_FORWARD;
+		resultado[5] := repeatflag;
+		resultado[6] := delay;
+	endif
+	if ( (input[37]==1) )
+		resultado[1] := 0x20;
+		resultado[2] := 5;
+		resultado[3] := repeatcount;
+		resultado[4] := ACTION_DIR_FORWARD;
+		resultado[5] := repeatflag;
+		resultado[6] := delay;
+	endif
 
 	return resultado;
 endfunction
@@ -2261,7 +2294,7 @@ function GetAction(who, text)
 		else
 
 			var k := 0;
-			while (k < 34)
+			while (k < 37)
 				input[k] := 0;
 				k := k + 1;
 			endwhile
