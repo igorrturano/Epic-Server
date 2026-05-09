@@ -257,6 +257,7 @@ function taming(who)
 			Run_Script_To_Completion(":death:npcdeath", { targ });
 
 			AddPet(who, targ.serial);
+			Start_Script(":fezes:scripts/defecador", array{targ});
 
 			break;
 		endif
