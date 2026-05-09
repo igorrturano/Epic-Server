@@ -126,9 +126,9 @@ function performPreCastingChecks(mobile, mw, byref spellinfo)
 		spellinfo.mana += Cint(entropy / 4000);
 	endif
 
-	// Spiritual weapon prerequisite for Ahtaleloreth spells (except Absorver Arma 422 and elemental blade spells 400-402)
+	// Spiritual weapon prerequisite for Ahtaleloreth spells (except Absorver Arma 422, Encantar Objeto 421 and elemental blade spells 400-402)
 	var spellId := CInt(spellinfo.id);
-	if (spellinfo.School == "Ahtaleloreth" && spellId != 422 && spellId != 400 && spellId != 401 && spellId != 402)
+	if (spellinfo.School == "Ahtaleloreth" && spellId != 422 && spellId != 421 && spellId != 400 && spellId != 401 && spellId != 402)
 		if (!GetCooldown(mobile, "spiritual_weapon"))
 			SendSysMessageEx(mobile, "Voce precisa invocar sua lamina espiritual primeiro.", SSM_FAIL);
 			mobile.frozen := 0;
