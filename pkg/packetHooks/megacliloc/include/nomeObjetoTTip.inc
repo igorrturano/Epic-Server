@@ -80,6 +80,11 @@ function PreencheNomePersonagem(quem,objeto, nomeObjeto := "")
 		nomeObjeto := nomeObjeto + " [" + objeto.acctname + "]";
 	endif
 
+	var desc := GetObjProperty(objeto, "descmodboss");
+	if (desc)
+		nomeObjeto := nomeObjeto + "<br>" + WHITE + desc;
+	endif
+
 	return nomeObjeto;
 endfunction
 

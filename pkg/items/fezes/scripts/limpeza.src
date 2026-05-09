@@ -1,0 +1,26 @@
+use uo;
+use os;
+
+include ":fezes:include/pid_guard";
+
+const CHEIRO_DURACAO     := 60;
+const PROP_CHEIRO_PID    := "#cheiro_pid";
+const PROP_CHEIRO_EXPIRA := "#cheiro_expira";
+
+program LimpezaFezes(who, item)
+    if (!who.IsA(POLCLASS_MOBILE)) return 0; endif
+    if (!item || item.errortext) return 0; endif
+
+    DestroyItem(item);
+
+    SetObjProperty(who, PROP_CHEIRO_EXPIRA, CInt(polcore().systime) + CHEIRO_DURACAO);
+    SetObjProperty(who, "descmodboss", "*Cheirando a fezes*");
+    SendSysMessage(who, "Que nojo! Você ficou cheirando a fezes.");
+    IniciarCheiro(who);
+    return 1;
+endprogram
+
+function IniciarCheiro(who)
+    if (IsScriptRunning(who, PROP_CHEIRO_PID)) return; endif
+    Start_Script(":fezes:scripts/cheiro", array{who});
+endfunction
