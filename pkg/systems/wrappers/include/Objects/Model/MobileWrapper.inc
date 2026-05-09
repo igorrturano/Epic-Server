@@ -1367,8 +1367,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 	/*
 	 * Verifica se mobile está dentro de uma zona de fumaça shinobi ativa
-	 * (#smoke_state ObjProperty). Limpa automaticamente o estado se expirado
-	 * ou inválido.
+	 * (#smoke_state ObjProperty). Predicate puro para o caso "fora do raio";
+	 * limpa estado zumbi quando a zona está expirada ou inválida.
 	 *
 	 * @return 1 se dentro de zona ativa, 0 caso contrário
 	 */
@@ -1402,7 +1402,6 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		var radius := CInt(sr);
 
 		if ((dx * dx + dy * dy) > (radius * radius))
-			this.ClearSmokeProtection();
 			return 0;
 		endif
 
@@ -1410,18 +1409,46 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	/*
-	 * Limpa proteção da zona de fumaça shinobi: erase #smoke_state, concealed := 0,
-	 * revoga "hiddenattack".
+	 * Liga proteção da fumaça no mobile: concealed := 1 + grant/enable
+	 * "hiddenattack". Idempotente. Não toca em #smoke_state.
+	 */
+	function ApplySmokeProtection(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var meRef := this.GetObjRef();
+		GrantPrivilege(meRef, "hiddenattack");
+		meRef.enable("hiddenattack");
+		meRef.concealed := 1;
+	endfunction
+
+	/*
+	 * Desliga proteção da fumaça no mobile: concealed := 0 + revoke
+	 * "hiddenattack". Não apaga #smoke_state — usado em transição "saiu do raio"
+	 * enquanto a zona ainda está ativa no mundo.
+	 */
+	function RemoveSmokeProtection(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var meRef := this.GetObjRef();
+		meRef.concealed := 0;
+		RevokePrivilege(meRef, "hiddenattack");
+	endfunction
+
+	/*
+	 * Cleanup terminal: erase #smoke_state + RemoveSmokeProtection.
+	 * Chamado no expiry da fumaça e em estado zumbi (expired/inválido).
 	 */
 	function ClearSmokeProtection(this)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
 
-		var meRef := this.GetObjRef();
-		EraseObjProperty(meRef, "#smoke_state");
-		meRef.concealed := 0;
-		RevokePrivilege(meRef, "hiddenattack");
+		EraseObjProperty(this.GetObjRef(), "#smoke_state");
+		this.RemoveSmokeProtection();
 	endfunction
 
 	// ============================================================================
