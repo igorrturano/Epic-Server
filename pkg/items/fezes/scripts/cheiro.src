@@ -1,0 +1,30 @@
+use uo;
+use os;
+
+include ":fezes:include/pid_guard";
+
+const PROP_CHEIRO_PID    := "#cheiro_pid";
+const PROP_CHEIRO_EXPIRA := "#cheiro_expira";
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+program Cheiro(params)
+    var who := params[1];
+    if (!who) return 0; endif
+
+    if (!TryAcquirePID(who, PROP_CHEIRO_PID)) return 0; endif
+
+    while (who)
+        var expira := CInt(GetObjProperty(who, PROP_CHEIRO_EXPIRA));
+        if (!expira || CInt(polcore().systime) >= expira)
+            EraseObjProperty(who, "descmodboss");
+            EraseObjProperty(who, PROP_CHEIRO_EXPIRA);
+            ReleasePID(who, PROP_CHEIRO_PID);
+            return 1;
+        endif
+        sleep(60);
+    endwhile
+
+    ReleasePID(who, PROP_CHEIRO_PID);
+    return 1;
+endprogram
