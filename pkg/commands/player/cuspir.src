@@ -1,0 +1,59 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include "include/client";
+
+const POCA_GRAPHIC  := 0x122C;
+const POCA_COR      := 2435;
+const POCA_DURACAO  := 10;
+
+program txt_cuspir(character)
+	Detach();
+
+	var mobile := MobileWrapper(character);
+	if (mobile.GetObjRef() is @Exception)
+		return mobile.GetObjRef();
+	endif
+
+	var ref := mobile.GetObjRef();
+
+	SendSysMessage(ref, "Cuspir onde?");
+	var targ := TargetCoordinates(ref);
+	if (!targ)
+		return 0;
+	endif
+
+	PerformAction(ref, HUMAN_ANIM::EAT);
+
+	var tx, ty, tz;
+	if (targ.mobile)
+		tx := targ.mobile.x;
+		ty := targ.mobile.y;
+		tz := targ.mobile.z;
+		PrintTextAbove(targ.mobile, "*recebe uma cuspida*", FONT_NORMAL, 55);
+	elseif (targ.item)
+		tx := targ.item.x;
+		ty := targ.item.y;
+		tz := targ.item.z;
+	else
+		tx := targ.x;
+		ty := targ.y;
+		tz := targ.z;
+	endif
+
+	PrintTextAbove(ref, "*cospe*", FONT_NORMAL, 55);
+
+	var poca := CreateItemAtLocation(tx, ty, tz, POCA_GRAPHIC, 1, ref.realm);
+	if (!poca || poca.errortext)
+		return 0;
+	endif
+
+	poca.color   := POCA_COR;
+	poca.movable := 0;
+
+	Sleep(POCA_DURACAO);
+	DestroyItem(poca);
+
+	return 1;
+endprogram

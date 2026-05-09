@@ -1,7 +1,7 @@
 use uo;
 use os;
-use npc;
 use util;
+use npc;
 
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
@@ -852,6 +852,12 @@ function Setup()
 
 	me.cmdlevel := 4;
 	SetWarMode(0);
+
+	var defecador_pid := CInt(GetObjProperty(me, "#defecador_pid"));
+	var defecador_proc := defecador_pid ? GetProcess(defecador_pid) : 0;
+	if (!defecador_proc || !defecador_proc.pid)
+		Start_Script(":fezes:scripts/defecador", array{me});
+	endif
 
 endfunction
 

@@ -166,6 +166,7 @@ function ResgatarAnimal(who, post)
 		ExitStable(who, animal, post);
 		AddPet(who, animal.serial);
 		TeleportarPetPerto(animal, who);
+		Start_Script(":fezes:scripts/defecador", array{animal});
 		GetNumPets(who);
 		SendSysMessage(who, animal.name + " foi resgatado. O contrato continua ativo.");
 		return 1;
@@ -174,6 +175,7 @@ function ResgatarAnimal(who, post)
 		CloseContractForOwner(who, animal);
 		AddPet(who, animal.serial);
 		TeleportarPetPerto(animal, who);
+		Start_Script(":fezes:scripts/defecador", array{animal});
 		GetNumPets(who);
 		SendSysMessage(who, "Contrato rescindido. " + animal.name + " foi liberado.");
 		return 1;

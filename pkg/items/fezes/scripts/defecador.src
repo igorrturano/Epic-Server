@@ -1,0 +1,99 @@
+use uo;
+use os;
+use util;
+
+include ":stables:include/stable";
+include ":faccao:include/imperium";
+include ":fezes:include/pid_guard";
+
+const FEZES_OBJTYPE      := 0xfd51;
+const FEZES_MAX_AREA     := 5;
+const PROP_PID           := "#defecador_pid";
+const SLEEP_OCIOSO       := 60;
+const STABLEPOST_OBJTYPE := 0x14E8;
+const STABLEPOST_RAIO    := 10;
+const OWNER_SEM_DONO     := 1;
+const RAIO_DONO_LONGE    := 20;
+
+program Defecador(params)
+    var npc := params[1];
+    if (!npc || !npc.IsA(POLCLASS_NPC))
+        Print("[defecador] ERRO: parametro invalido ou nao e NPC");
+        return 0;
+    endif
+
+    if (!TryAcquirePID(npc, PROP_PID)) return 0; endif
+
+    while (npc)
+        if (PodeDefecate(npc))
+            var defecou := Defecate(npc);
+            sleep(defecou ? (300 + RandomInt(600)) : SLEEP_OCIOSO);
+        else
+            sleep(SLEEP_OCIOSO);
+        endif
+    endwhile
+
+    ReleasePID(npc, PROP_PID);
+    return 1;
+endprogram
+
+function PodeDefecate(npc)
+    var owner := CInt(GetObjProperty(npc, "owner"));
+    if (!owner || owner == OWNER_SEM_DONO) return 0; endif
+    if (IsStabled(npc)) return 0; endif
+    if (!InValtheris(npc)) return 0; endif
+    if (!npc.isUnderRoof()) return 0; endif
+    if (!DonoEstaLonge(npc, owner)) return 0; endif
+    if (PertoDeStablepost(npc)) return 0; endif
+    return 1;
+endfunction
+
+function DonoEstaLonge(npc, owner_serial)
+    if (!owner_serial || owner_serial == OWNER_SEM_DONO) return 0; endif
+    var dono := SystemFindObjectBySerial(owner_serial);
+    if (!dono || dono.errortext) return 1; endif
+    var dx := dono.x - npc.x;
+    var dy := dono.y - npc.y;
+    return (dx*dx + dy*dy > RAIO_DONO_LONGE * RAIO_DONO_LONGE) ? 1 : 0;
+endfunction
+
+function PertoDeStablepost(who)
+    var items := ListItemsNearLocation(who.x, who.y, who.z, STABLEPOST_RAIO, who.realm);
+    foreach item in items
+        sleepms(2);
+        if (item.objtype == STABLEPOST_OBJTYPE)
+            return 1;
+        endif
+    endforeach
+    return 0;
+endfunction
+
+function Defecate(who)
+    var count := 0;
+    var nearby := ListItemsNearLocation(who.x, who.y, who.z, 3, who.realm);
+    foreach item in nearby
+        sleepms(2);
+        if (item.objtype == FEZES_OBJTYPE)
+            count += 1;
+        endif
+    endforeach
+    if (count >= FEZES_MAX_AREA) return 0; endif
+
+    var dx := RandomInt(3) - 1;
+    var dy := RandomInt(3) - 1;
+    var fezes := CreateItemAtLocation(who.x + dx, who.y + dy, who.z, FEZES_OBJTYPE, 1, who.realm);
+    if (fezes.errortext)
+        fezes := CreateItemAtLocation(who.x, who.y, who.z, FEZES_OBJTYPE, 1, who.realm);
+        if (fezes.errortext)
+            Print("[defecador] ERRO ao criar fezes: " + fezes.errortext);
+            return 0;
+        endif
+    endif
+
+    SetObjProperty(fezes, "#fezes", 1);
+
+    var nome_prop := GetObjProperty(who, "nome_inicial");
+    var nome := (!nome_prop.errortext && CStr(nome_prop) != "0") ? CStr(nome_prop) : CStr(who.name);
+    PrintTextAbove(who, "*" + nome + " defeca no chao*");
+    return 1;
+endfunction
