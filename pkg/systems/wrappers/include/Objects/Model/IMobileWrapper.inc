@@ -29,6 +29,8 @@ class IMobileWrapper()
 	uninit function HasReligiousBannerEquipped(this);
 	uninit function TeleportBehind(this, target);
 	uninit function IsInSmokeZone(this);
+	uninit function ApplySmokeProtection(this);
+	uninit function RemoveSmokeProtection(this);
 	uninit function ClearSmokeProtection(this);
 
 	uninit function IsAbilityOnCooldown(this, abilityId);
