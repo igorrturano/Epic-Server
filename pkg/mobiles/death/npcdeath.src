@@ -98,6 +98,12 @@ program core_npcDeath(params)
 	HandleEpicBossLoot(corpse);
 	HandleLeverSpawnedBoss(corpse);
 
+	if (GetObjProperty(corpse, "true_boss") == 1)
+		if (PersonalLoot_Arm(corpse))
+			PersonalLoot_Stamp(corpse);
+		endif
+	endif
+
 	if (getObjProperty(corpse, "owner")) // se for tamed, atualiza a prop tamedpets do master
 		var lastDamage := GetObjProperty(corpse, "LastDamage");
 		var region := GetRegionName(corpse);

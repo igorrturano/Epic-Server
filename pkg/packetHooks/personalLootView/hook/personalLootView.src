@@ -1,0 +1,100 @@
+/*
+ * Per-viewer filter for the 0x3C (Container Content) packet on true_boss
+ * corpses. Items whose loot_owner doesn't match the viewer are stripped
+ * from the outgoing packet, so each player only sees their own loot.
+ *
+ * Bails fast on any non-boss container so normal containers are untouched.
+ */
+use uo;
+use os;
+use util;
+
+include ":containers:personalLoot";
+
+// Packet 0x3C layout:
+//   byte  0    : 0x3C
+//   bytes 1-2  : total packet length (BE)
+//   bytes 3-4  : item count (BE)
+//   per item   : 19 bytes (legacy client) or 20 bytes (grid-aware client)
+//                serial(4) graphic(2) stack(1) amount(2) x(2) y(2) [grid(1)] container(4) hue(2)
+// Container serial sits at item_size - 6 bytes from the start of each entry.
+
+const PL_HEADER_SIZE := 5;
+
+program Install()
+	return 1;
+endprogram
+
+exported function FilterContainerContent(who, byref packet)
+	var orig_count := packet.GetInt16(3);
+	if (orig_count < 1)
+		return 0;
+	endif
+
+	var packet_size := packet.GetSize();
+	var body_size   := packet_size - PL_HEADER_SIZE;
+	if (body_size <= 0 || (body_size % orig_count) != 0)
+		return 0;
+	endif
+	var item_size := body_size / orig_count;
+	if (item_size != 19 && item_size != 20)
+		return 0;
+	endif
+
+	var container_offset := item_size - 6;
+	var container_serial := packet.GetInt32(PL_HEADER_SIZE + container_offset);
+	var container := SystemFindObjectBySerial(container_serial);
+	if (!container || container == error)
+		return 0;
+	endif
+	if (GetObjProperty(container, "true_boss") != 1)
+		return 0;
+	endif
+	if (GetObjProperty(container, "loot_unlock_at") == error)
+		return 0;
+	endif
+
+	// GMs see the full container for moderation.
+	if (who.cmdlevel > 0)
+		return 0;
+	endif
+
+	var read_offset  := PL_HEADER_SIZE;
+	var write_offset := PL_HEADER_SIZE;
+	var kept_count   := 0;
+	var i := 0;
+	while (i < orig_count)
+		var item_serial := packet.GetInt32(read_offset);
+		var keep := 1;
+		var item := SystemFindObjectBySerial(item_serial);
+		if (item && item != error)
+			var owner := GetObjProperty(item, "loot_owner");
+			if (owner != error && owner != who.serial)
+				keep := 0;
+			endif
+		endif
+		if (keep)
+			if (write_offset != read_offset)
+				var k := 0;
+				while (k < item_size)
+					packet.SetInt8(write_offset + k, packet.GetInt8(read_offset + k));
+					k := k + 1;
+				endwhile
+			endif
+			write_offset := write_offset + item_size;
+			kept_count := kept_count + 1;
+		endif
+		read_offset := read_offset + item_size;
+		i := i + 1;
+	endwhile
+
+	if (kept_count == orig_count)
+		return 0;
+	endif
+
+	packet.SetInt16(3, kept_count);
+	packet.SetInt16(1, write_offset);
+	packet.SetSize(write_offset);
+
+	return 0;
+endfunction

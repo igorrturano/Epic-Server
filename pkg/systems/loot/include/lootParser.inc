@@ -11,6 +11,7 @@ include ":sysbook:include/sealedBooks";
 include ":crafting:/include/fabricacaoComplexos";
 include "include/epicEconomyAudit";
 include ":currency:include/seignorage";
+include ":containers:personalLoot";
 
 var itemdesc_cache := dictionary{};
 
@@ -255,6 +256,12 @@ function Loot_Generate(container, loot_index, source := 0)
      if (source && source != error)
         Loot_TryDrainPool(container, source);
      endif
+
+	// True_boss corpses get personal-loot ownership stamped here, after all
+	// async items have landed. Idempotent with the sync stamp in npcdeath.src.
+	if (GetObjProperty(container, "true_boss") == 1)
+		PersonalLoot_Stamp(container);
+	endif
 	return 1;
 endfunction
 
