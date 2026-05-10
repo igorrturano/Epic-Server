@@ -283,23 +283,34 @@ function CalculateWeaponDamage(byRef attackInfo)
 		damageDice := damageDice.WithUpgradedPhysicalDice();
 	endif
 
+	// Capturamos o dice uma vez por tipo: GetXxxDamage() retorna error quando
+	// o tipo nao e um dice valido (arma sem fogo etc.), e error nao e falsy
+	// no eScript — entao o `?: "N/A"` antigo deixava o errortext vazar.
+	var slashDice := damageDice.GetSlashDamage();
+	var piercingDice := damageDice.GetPiercingDamage();
+	var bluntDice := damageDice.GetBluntDamage();
+	var fireDice := damageDice.GetFireDamage();
+	var coldDice := damageDice.GetColdDamage();
+	var poisonDice := damageDice.GetPoisonDamage();
+	var energyDice := damageDice.GetEnergyDamage();
+
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dados de dano da arma:"));
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {damageDice.GetSlashDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {damageDice.GetPiercingDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {damageDice.GetBluntDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {damageDice.GetFireDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {damageDice.GetColdDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {damageDice.GetPoisonDamage().ToString() ?: "N/A"}"));
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {damageDice.GetEnergyDamage().ToString() ?: "N/A"}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::SLASH)}: {slashDice is @Exception ? "N/A" : slashDice.ToString()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::PIERCING)}: {piercingDice is @Exception ? "N/A" : piercingDice.ToString()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::BLUNT)}: {bluntDice is @Exception ? "N/A" : bluntDice.ToString()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FIRE)}: {fireDice is @Exception ? "N/A" : fireDice.ToString()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::COLD)}: {coldDice is @Exception ? "N/A" : coldDice.ToString()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::POISON)}: {poisonDice is @Exception ? "N/A" : poisonDice.ToString()}"));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {energyDice is @Exception ? "N/A" : energyDice.ToString()}"));
 
-	var slashDamage := damageDice.GetSlashDamage().Roll().GetResult() ?: 0;
-	var piercingDamage := damageDice.GetPiercingDamage().Roll().GetResult() ?: 0;
-	var bluntDamage := damageDice.GetBluntDamage().Roll().GetResult() ?: 0;
-	var fireDamage := damageDice.GetFireDamage().Roll().GetResult() ?: 0;
-	var coldDamage := damageDice.GetColdDamage().Roll().GetResult() ?: 0;
-	var poisonDamage := damageDice.GetPoisonDamage().Roll().GetResult() ?: 0;
-	var energyDamage := damageDice.GetEnergyDamage().Roll().GetResult() ?: 0;
+	var slashDamage := slashDice is @Exception ? 0 : (slashDice.Roll().GetResult() ?: 0);
+	var piercingDamage := piercingDice is @Exception ? 0 : (piercingDice.Roll().GetResult() ?: 0);
+	var bluntDamage := bluntDice is @Exception ? 0 : (bluntDice.Roll().GetResult() ?: 0);
+	var fireDamage := fireDice is @Exception ? 0 : (fireDice.Roll().GetResult() ?: 0);
+	var coldDamage := coldDice is @Exception ? 0 : (coldDice.Roll().GetResult() ?: 0);
+	var poisonDamage := poisonDice is @Exception ? 0 : (poisonDice.Roll().GetResult() ?: 0);
+	var energyDamage := energyDice is @Exception ? 0 : (energyDice.Roll().GetResult() ?: 0);
 
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("Dano rolado:"));
@@ -385,10 +396,13 @@ function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
 		MinMaxWeaponDamage.max := damageDice.GetMaximum(attackInfo.GetAttackType()) + totalModDamage;
 		MinMaxWeaponDamage.min := damageDice.GetMinimum(attackInfo.GetAttackType()) + totalModDamage;
 
-		attackInfo.GetDamage().IncreaseFireBaseDamage(damageMod.GetFireRawDamage())
-							.IncreaseColdBaseDamage(damageMod.GetColdRawDamage())
-							.IncreasePoisonBaseDamage(damageMod.GetPoisonRawDamage())
-							.IncreaseEnergyBaseDamage(damageMod.GetEnergyRawDamage());
+		// IncreaseRaw* tambem incrementa Base — usar Raw aqui mantem o Damage
+		// resultante coerente com a leitura do StatusGumpEpic em
+		// SendUpdateEquipmentRequest, que chama GetFireRawDamage() etc.
+		attackInfo.GetDamage().IncreaseFireRawDamage(damageMod.GetFireRawDamage())
+							.IncreaseColdRawDamage(damageMod.GetColdRawDamage())
+							.IncreasePoisonRawDamage(damageMod.GetPoisonRawDamage())
+							.IncreaseEnergyRawDamage(damageMod.GetEnergyRawDamage());
 	endif
 
 

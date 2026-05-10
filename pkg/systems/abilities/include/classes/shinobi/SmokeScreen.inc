@@ -12,7 +12,9 @@ include "include/client";
  * Passive: Doubles stealth steps, removes distance penalty for detection.
  * Active (OnUse): Creates a smoke cloud that hides all party members.
  *   Only the ninja can attack without revealing while inside the smoke.
- *   Area = Tactics/20, Duration = Tactics/5 seconds.
+ *   The cloud persists for the full duration regardless of the ninja's
+ *   position; walking back into it re-applies stealth automatically.
+ *   Area = Sneak/10 tiles, Duration = Sneak/5 seconds.
  */
 class SmokeScreen(CombatAbility)
 
@@ -28,7 +30,7 @@ class SmokeScreen(CombatAbility)
 		var who := mobile.GetObjRef();
 		var sneak := CInt(mobile.GetSkill(SNEAK));
 
-		var area := CInt(sneak / 20);
+		var area := CInt(sneak / 10);
 		if (area < 1)
 			area := 1;
 		endif
@@ -45,6 +47,7 @@ class SmokeScreen(CombatAbility)
 		PlaySoundEffect(who, 0x533);
 		Sleep(1);
 		// Set smoke protection on the ninja (only inside smoke area)
+		PlayStationaryEffect(who.x, who.y, who.z, FX_FUMACA_NOVA, 0, 15, 0, who.realm); // Smoke visual effect
 		SetObjProperty(
 			who,
 			"#smoke_state",
@@ -56,11 +59,7 @@ class SmokeScreen(CombatAbility)
 			}
 		);
 
-		GrantPrivilege(who, "hiddenattack");
-		who.enable("hiddenattack");
-
-		// Hide the ninja
-		who.concealed := 1;
+		mobile.ApplySmokeProtection();
 		Message("*Lanca uma bomba de fumaca!*").SendEmote(who);
 
 		// Hide party members in range (they only get hidden, reveal normally on attack)

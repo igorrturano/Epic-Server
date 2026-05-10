@@ -23,5 +23,6 @@ program ProtecaoArcanaTick(args)
 		return;
 	endif
 
-	PlayObjectCenteredEffect(targ, FX_ESCUDO_PROTETIVO, 0, 30);
+	PlayObjectCenteredEffect(targ, FX_ARMADURA_ELETRICA, 0, 30);
+	PlayObjectCenteredEffect(targ, FX_RAIO_PEQUENO, 0, 30);
 endprogram

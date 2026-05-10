@@ -4,6 +4,7 @@ include ":equipsys:Controller/ArmorController";
 include ":combat:Model/ResistModCollection";
 include ":combat:Model/ResistModFabricacao";
 include ":combat:Model/ResistModRuna";
+include ":combat:Model/ResistModEncantar";
 
 include ":combat:Model/ArmorResist";
 include ":combat:Model/ShieldAttributes";
@@ -32,6 +33,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 				if (_runeType && _runeCharges > 0)
 					this.SetResistsMod(ResistModRuna(this.GetObjRef()));
 				endif
+				this.SetResistsMod(ResistModEncantar(this.GetObjRef()));
 			endif
 
 			this.WeightVar := this.__CalculateWeight();

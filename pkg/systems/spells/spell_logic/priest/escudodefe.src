@@ -70,6 +70,8 @@ program SpellScript(params)
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
 
+	PlayObjectCenteredEffect(targ, FX_ESCUDO_PROTETIVO, 0, duration * 20);
+
 	SendSysMessageEx(who, "Voce concede um Escudo de Fe a " + targ.name + ".", SSM_INFO);
 	SendSysMessageEx(targ, "Voce recebe um Escudo de Fe. (+" + bonus + "% resistencia por " + duration + " segundos)", SSM_INFO);
 
