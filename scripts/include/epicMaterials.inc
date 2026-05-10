@@ -1,19 +1,24 @@
+// Estes objtypes precisam bater com as chaves Resource em
+// pkg/systems/crafting/config/resourceList.cfg, que e' o que o crafting
+// grava na CProp "material" do item. Comparar com valores fora de sync
+// faz qualquer if (material == MATERIAL_OBJTYPE::X) virar no-op silencioso
+// (ja queimou a magia Encantar Objeto pra quase todos os metais).
 enum class MATERIAL_OBJTYPE
 	AREIA := 0x6075,
-	COBRE := 0x6450,
-	BRONZE := 0x699c,
+	COBRE := 0x6465,
+	BRONZE := 0x6994,
 	ARGILA := 0x6074,
-	FERRO := 0x6300,
-	FULMETIUM := 0x6302,
+	FERRO := 0x6309,
+	FULMETIUM := 0x630b,
 	VENETITA := 0x6303,
 	VENETIUM := 0x630c,
-	IGNIUM := 0x6304,
-	OURO := 0x6305,
-	ATRIUM := 0x6307,
-	MITHRIL := 0x6308,
-	FRIGUTIUM := 0x6451,
-	ILLYRA := 0x6314,
-	PRATA := 0x6992,
+	IGNIUM := 0x630d,
+	OURO := 0x630e,
+	ATRIUM := 0x6310,
+	MITHRIL := 0x6311,
+	FRIGUTIUM := 0x6460,
+	ILLYRA := 0x6315,
+	PRATA := 0x6993,
 	ESTANHO := 0x6990,
 	PEDRAS := 0xBD11,
 	MARMORE := 0x8850,
