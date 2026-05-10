@@ -23,10 +23,14 @@ function setBonus(who, item, bonusFlat, bonusPct)
 	// Le o material ANTES de embrulhar — getMaterialID e' uma method-dispatch
 	// no methods.src do UObject (chama item.getProp("material")). Se chamada em
 	// um wrapper class, retorna uninit silenciosamente e o spell vira no-op.
-	var material;
+	//
+	// Normaliza pra int: o crafting grava a chave do resourceList como STRING
+	// ("0x6311"), e enum class compara via ==, que e' type-strict — sem CInt
+	// nenhum branch material == MATERIAL_OBJTYPE::X bate.
+	var material := 0;
 	var materialName := "";  // Used for ammo (material name matching)
 	if (!isAmmo)
-		material := item.getMaterialID();
+		material := CInt(item.getMaterialID());
 	endif
 
 	if (item.IsA(POLCLASS_ARMOR))
