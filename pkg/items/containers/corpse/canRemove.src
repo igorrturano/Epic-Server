@@ -3,6 +3,7 @@
 use uo;
 include ":attributes:attributes";
 include "include/say";
+include ":containers:personalLoot";
 
 program canRemove(character, container, item, move_type)
 	if (container.ownerserial == character.serial)
@@ -17,6 +18,21 @@ program canRemove(character, container, item, move_type)
 		return 0;
 	elseif (GetObjProperty(item, "OnlyKit"))
 		if (GetObjProperty(item, "OnlyKit") != GetObjProperty(character, "kit"))
+			return 0;
+		endif
+	endif
+
+	if (PersonalLoot_IsActive(container) && character.cmdlevel == 0)
+		var unlock_at := CInt(GetObjProperty(container, "loot_unlock_at"));
+		if (ReadGameClock() < unlock_at)
+			SendSysMessageEx(character, "O corpo ainda fumega — aguarde alguns segundos.",
+							 SSM_INFO);
+			return 0;
+		endif
+		var owner := GetObjProperty(item, "loot_owner");
+		if (owner != error && owner != character.serial)
+			SendSysMessageEx(character, "Este item pertence a outro participante do combate.",
+							 SSM_INFO);
 			return 0;
 		endif
 	endif

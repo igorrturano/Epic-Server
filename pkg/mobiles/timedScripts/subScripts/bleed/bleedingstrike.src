@@ -7,6 +7,7 @@ include ":attributes:skills";
 include ":timedscripts:timedScripts";
 include ":combat:Controller/DamageController_legacy";
 include ":blood:blood";
+include "include/client";
 
 program default_poison(params)
 
@@ -41,6 +42,7 @@ program default_poison(params)
 
 		damageFLS(who, cint(dmg), DMG_FORCED, attacker);
 		MakeBleed(who);
+		PlayObjectCenteredEffect(who, FX_BLOOD_DROP, 0, 15);
 
 		if (who.dead)
 			break;

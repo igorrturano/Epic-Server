@@ -17,10 +17,13 @@ program Logon(who)
 	// graphic=race (1828-1835). That mismatch makes any restore-via-trueobjtype
 	// path (polymorph end, resurrection, metamorfose dispel, ironmaiden) revert
 	// race players to humano. Patch on login if it looks unsynced.
-	if ((who.trueobjtype == 400 || who.trueobjtype == 401) && who.race && who.race != HUMANO)
-		var newtrue := _RaceTrueObjtype(who.trueobjtype, who.race);
-		if (newtrue != 0)
-			who.trueobjtype := newtrue;
+	if (who.trueobjtype == 400 || who.trueobjtype == 401)
+		var chardata := GetObjProperty(who, "chardata");
+		if (chardata != error && chardata.raca && chardata.raca != HUMANO)
+			var newtrue := _RaceTrueObjtype(who.trueobjtype, chardata.raca);
+			if (newtrue != 0)
+				who.trueobjtype := newtrue;
+			endif
 		endif
 	endif
 
