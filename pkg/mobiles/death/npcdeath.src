@@ -13,6 +13,7 @@ use cfgfile;
 use storage;
 
 include ":containers:merchantUtil";
+include ":containers:personalLoot";
 include ":timedscripts:timedScripts";
 include ":death:death";
 include ":mounts:mounts";

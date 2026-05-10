@@ -15,6 +15,7 @@ include ":spells:Controller/SpellController";
 program SanctuaryTick(args)
 	var targ := args[2];
 	var spellId := CInt(args[3]);
+	var tp := args[5];
 	args := 0;
 
 	if (!targ)
@@ -44,5 +45,9 @@ program SanctuaryTick(args)
 		return;
 	endif
 
-	PlayObjectCenteredEffect(targ, FX_SANTUARIO, 10, 80);
+	var fx_id := CInt(tp.fx);
+	if (!fx_id)
+		fx_id := FX_EXPLOSAO_DE_ENERGIA;
+	endif
+	PlayObjectCenteredEffect(targ, fx_id, 10, 80);
 endprogram

@@ -34,6 +34,8 @@ program SpellScript(params)
 	opts.+on_apply_params := struct{ sound := SFX_SPELL_AGILITY };
 
 	SC_ApplyEffect(who, who, opts, tempo, CInt(spell.id));
+
+	PlayObjectCenteredEffect(who, FX_SPEED_BOOTS, 0, tempo * 20);
 	SendSysMessageEx(who, "Voce esta muito veloz.", SSM_INFO);
 
 	return 1;

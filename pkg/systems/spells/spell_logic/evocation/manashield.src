@@ -59,7 +59,7 @@ program SpellScript(params)
 	opts.+on_apply_script := ":spells:spell_logic/evocation/manashield_apply";
 	opts.+on_apply_params := struct{
 		duration := duration,
-		fx := FX_ESCUDO_PROTETIVO,
+		fx := FX_RAIO_CONTUNDENTE,
 		sound := SFX_SPELL_PROTECTION,
 		mana_ratio := mana_ratio,
 		vontade_bonus := vontade_bonus

@@ -31,7 +31,7 @@ program IncinerarTick(args)
 	var chip := RandomDiceRoll("1d4") + 1;
 	SC_DealDamage(dmg_caster, targ, spellId, chip, DMG_FIRE);
 
-	PlayObjectCenteredEffect(targ, 0xDC06, 10, 15);
+	PlayObjectCenteredEffect(targ, FX_SMALL_FIRE_MAGIC, 10, 15);
 	PlaySoundEffect(targ, 0x357);
 
 	if (tick_number % 3 == 0)

@@ -7,7 +7,9 @@ include ":tn:cooldown";
 include "include/client";
 include "include/say";
 include "include/sounds";
+include "include/epicConstants";
 include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program sanctuary(params)
 	var who := params[1];
@@ -34,7 +36,11 @@ program sanctuary(params)
 	// and break sanctuary. `#`-prefixed property is dropped on world save.
 	SetObjProperty(who, "#sanctuary_hp_snapshot", GetVital(who, HITS));
 	PlaySoundEffect(who, 0x216);
-	PlayObjectCenteredEffect(who, FX_SANTUARIO, 10, 80);
+
+	// Religion drives the visual: Kai gets fire engulf, every other faith gets
+	// the energy burst. Cast-time and per-tick FX share the same id.
+	var fx_id := (MobileWrapper(who).GetReligion() == KAI) ? FX_FIRE_ENGULF : FX_EXPLOSAO_DE_ENERGIA;
+	PlayObjectCenteredEffect(who, fx_id, 10, 80);
 
 	var opts := struct{};
 	opts.+buff_category := "sanctum";
@@ -43,7 +49,7 @@ program sanctuary(params)
 	opts.+properties := dictionary{ "#sanctuary" -> 1 };
 	opts.+tick_script := ":spells:spell_logic/priest/santuarioTick";
 	opts.+tick_interval := 1;
-	opts.+tick_params := struct{};
+	opts.+tick_params := struct{ fx := fx_id };
 
 	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
 
