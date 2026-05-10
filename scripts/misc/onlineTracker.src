@@ -1,0 +1,58 @@
+// Periodic online-player census. Boot-started by scripts/start.src.
+// Samples every SAMPLE_INTERVAL seconds and appends one CSV row to
+// ::data/log/online/<DD-MM-YYYY>/online.log
+//
+// Schema: timestamp,total_players,gms
+//   total_players = characters with cmdlevel 0
+//   gms           = characters with cmdlevel >= 1
+
+use uo;
+use os;
+use file;
+use util;
+use basic;
+use polsys;
+
+const SAMPLE_INTERVAL := 300;
+const HEARTBEAT_KEY   := "online_tracker_heartbeat";
+
+program OnlineTracker()
+	set_critical(0);
+
+	// Singleton guard: previous instance may have been persisted across world save.
+	// If a heartbeat landed within the last sample window, another copy is alive — exit.
+	var last := CInt(GetGlobalProperty(HEARTBEAT_KEY));
+	if (last && polcore().systime - last < SAMPLE_INTERVAL * 2)
+		Print("OnlineTracker: another instance active (heartbeat " + (polcore().systime - last) + "s ago), exiting.");
+		return 0;
+	endif
+
+	Print("OnlineTracker: started (interval " + SAMPLE_INTERVAL + "s)");
+
+	while (1)
+		SetGlobalProperty(HEARTBEAT_KEY, polcore().systime);
+
+		var total := 0;
+		var gms   := 0;
+		foreach p in EnumerateOnlineCharacters()
+			if (p.cmdlevel >= 1)
+				gms := gms + 1;
+			else
+				total := total + 1;
+			endif
+		endforeach
+
+		var ts  := StrFormatTime("%d-%m-%Y %H:%M:%S", polcore().systime);
+		var day := StrFormatTime("%d-%m-%Y", polcore().systime);
+		var dir := "::data/log/online/" + day;
+		if (!FileExists(dir))
+			CreateDirectory(dir);
+		endif
+
+		LogToFile(dir + "/online.log", ts + "," + total + "," + gms, 0);
+
+		sleep(SAMPLE_INTERVAL);
+	endwhile
+
+	return 1;
+endprogram
