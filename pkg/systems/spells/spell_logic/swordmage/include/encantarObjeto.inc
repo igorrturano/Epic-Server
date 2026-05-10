@@ -3,6 +3,7 @@ use uo;
 include "include/client";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/ArmorWrapper";
+include ":equipsys:packets/UpdateEquipmentRequest";
 include "include/epicMaterials";
 
 // Helper function to detect if item is ammunition
@@ -19,6 +20,15 @@ function setBonus(who, item, bonusFlat, bonusPct)
 	var isAmmo := IsAmmunition(item);
 	var bonus := bonusFlat; // alias usado pelas paths de weapon/ammo abaixo
 
+	// Le o material ANTES de embrulhar — getMaterialID e' uma method-dispatch
+	// no methods.src do UObject (chama item.getProp("material")). Se chamada em
+	// um wrapper class, retorna uninit silenciosamente e o spell vira no-op.
+	var material;
+	var materialName := "";  // Used for ammo (material name matching)
+	if (!isAmmo)
+		material := item.getMaterialID();
+	endif
+
 	if (item.IsA(POLCLASS_ARMOR))
 		item := ArmorWrapper(item);
 	elseif (item.IsA(POLCLASS_WEAPON))
@@ -26,10 +36,6 @@ function setBonus(who, item, bonusFlat, bonusPct)
 	elseif (!isAmmo)
 		return;
 	endif
-
-	// For ammunition, get material from damage component (arrowhead) in fabricado CProp
-	var material;
-	var materialName := "";  // Used for ammo (material name matching)
 
 	if (isAmmo)
 		var fabricado := item.GetItem().GetProperty(item, PROPNAME_FABRICADO);
@@ -47,70 +53,71 @@ function setBonus(who, item, bonusFlat, bonusPct)
 
 		// Match material by NAME instead of hex code (due to data inconsistency)
 		materialName := Lower(danoComp.material.nome);
-	else
-		material := item.getMaterialID();
 	endif
 
-	bonus := CInt(bonus); // POL BUGADO DO CARALHO!!!!!!!!!!
-	
+	bonus := CInt(bonus);
+
 	if (item is @WeaponWrapper)
-		var damageMod := item.GetDamageMod();
+		// Encantar = elemental flat damage por material. Persistido na CProp
+		// EncantarDamage e relido via DamageModEncantar a cada construcao de
+		// WeaponWrapper. Overwrite semantics: cada cast substitui o struct.
+		var ench := struct{ fire := 0, cold := 0, poison := 0, energy := 0 };
 		if (material == MATERIAL_OBJTYPE::IGNIUM)
-			damageMod.IncreaseFireRawDamage(bonus);
+			ench.fire := bonus;
 		elseif (material == MATERIAL_OBJTYPE::VENETIUM)
-			damageMod.IncreasePoisonRawDamage(bonus);
+			ench.poison := bonus;
 		elseif (material == MATERIAL_OBJTYPE::FRIGUTIUM)
-			damageMod.IncreaseColdRawDamage(bonus);
+			ench.cold := bonus;
 		elseif (material == MATERIAL_OBJTYPE::FULMIUM)
-			damageMod.IncreaseEnergyRawDamage(bonus);
+			ench.energy := bonus;
 		elseif (material == MATERIAL_OBJTYPE::ILLYRA)
-			bonus := bonus * 0.6;
-			damageMod.IncreaseFireRawDamage(bonus);
-			damageMod.IncreaseColdRawDamage(bonus);
-			damageMod.IncreasePoisonRawDamage(bonus);
-			damageMod.IncreaseEnergyRawDamage(bonus);
+			var illyra := CInt(bonus * 0.6);
+			ench.fire := illyra;
+			ench.cold := illyra;
+			ench.poison := illyra;
+			ench.energy := illyra;
 		elseif (material == MATERIAL_OBJTYPE::MITHRIL)
-			damageMod.IncreaseFireRawDamage(bonus);
-			damageMod.IncreaseColdRawDamage(bonus);
-			damageMod.IncreasePoisonRawDamage(bonus);
-			damageMod.IncreaseEnergyRawDamage(bonus);
+			ench.fire := bonus;
+			ench.cold := bonus;
+			ench.poison := bonus;
+			ench.energy := bonus;
 		endif
-		item.SetDamageMod(damageMod);
+		item.SetProperty("EncantarDamage", ench);
 	elseif (item is @ArmorWrapper)
-		var resistMod := item.GetResistsMod();
 		// Armor usa bonusPct (escala % do redesign). ILLYRA e MITHRIL adicionados
 		// para paridade com o weapon branch — eram omissoes do codigo anterior, mas
 		// o design (design_magia.md) e o test plan ("DV mage encanta mithril → 70%
 		// em todos 4 elementos") os requerem.
+		var ench := struct{ fire := 0, cold := 0, poison := 0, energy := 0 };
 		if (material == MATERIAL_OBJTYPE::IGNIUM)
-			resistMod.IncreaseFireResist(bonusPct);
+			ench.fire := bonusPct;
 		elseif (material == MATERIAL_OBJTYPE::VENETIUM)
-			resistMod.IncreasePoisonResist(bonusPct);
+			ench.poison := bonusPct;
 		elseif (material == MATERIAL_OBJTYPE::FRIGUTIUM)
-			resistMod.IncreaseColdResist(bonusPct);
+			ench.cold := bonusPct;
 		elseif (material == MATERIAL_OBJTYPE::FULMIUM)
-			resistMod.IncreaseEnergyResist(bonusPct);
+			ench.energy := bonusPct;
 		elseif (material == MATERIAL_OBJTYPE::ESCAMOSO)
-			resistMod.IncreasePoisonResist(bonusPct);
+			ench.poison := bonusPct;
 		elseif (material == MATERIAL_OBJTYPE::DRACONIANO)
-			resistMod.IncreaseFireResist(bonusPct);
+			ench.fire := bonusPct;
 		elseif (material == MATERIAL_OBJTYPE::GIGANTE)
-			resistMod.IncreaseEnergyResist(bonusPct);
+			ench.energy := bonusPct;
 		elseif (material == MATERIAL_OBJTYPE::POLAR)
-			resistMod.IncreaseColdResist(bonusPct);
+			ench.cold := bonusPct;
 		elseif (material == MATERIAL_OBJTYPE::ILLYRA)
 			var illyraPct := CInt(bonusPct * 0.6);
-			resistMod.IncreaseFireResist(illyraPct);
-			resistMod.IncreaseColdResist(illyraPct);
-			resistMod.IncreasePoisonResist(illyraPct);
-			resistMod.IncreaseEnergyResist(illyraPct);
+			ench.fire := illyraPct;
+			ench.cold := illyraPct;
+			ench.poison := illyraPct;
+			ench.energy := illyraPct;
 		elseif (material == MATERIAL_OBJTYPE::MITHRIL)
-			resistMod.IncreaseFireResist(bonusPct);
-			resistMod.IncreaseColdResist(bonusPct);
-			resistMod.IncreasePoisonResist(bonusPct);
-			resistMod.IncreaseEnergyResist(bonusPct);
+			ench.fire := bonusPct;
+			ench.cold := bonusPct;
+			ench.poison := bonusPct;
+			ench.energy := bonusPct;
 		endif
-		item.SetResistsMod(resistMod);
+		item.SetProperty("EncantarResist", ench);
 	elseif (isAmmo)
 		// Ammunition enchantment - store elemental damage in AmmoDamage CProp
 		var ammoDamage := struct{
@@ -147,6 +154,16 @@ function setBonus(who, item, bonusFlat, bonusPct)
 			return;
 		endif
 		SetObjProperty(item, "AmmoDamage", ammoDamage);
+	endif
+
+	// Se o alvo esta equipado no caster, dispara o packet 0xBF:0x63 para
+	// atualizar o StatusGumpEpic na hora — sem isso o jogador so veria o
+	// bonus elemental apos desequipar e reequipar a peca.
+	if (item is @WeaponWrapper || item is @ArmorWrapper)
+		var ref := item.GetObjRef();
+		if (ref.container && ref.container.serial == who.GetObjRef().serial)
+			SendUpdateEquipmentRequest(who, ref, 1, ref.layer);
+		endif
 	endif
 
 	Message("Você encantou o objeto.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
