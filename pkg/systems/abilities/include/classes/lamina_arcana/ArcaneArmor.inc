@@ -32,8 +32,8 @@ class ArcaneArmor(CombatAbility)
         var who := mobile.GetObjRef();
         var duration := CInt(mobile.GetSkill(ARCANA) / 10);
 
-        var effect_color := _GrantArmorBonus(who, duration);
-        if (!effect_color)
+        var element_type := _GrantArmorBonus(who, duration);
+        if (element_type == "")
             return 0;
         endif
 
@@ -48,7 +48,7 @@ class ArcaneArmor(CombatAbility)
 
         sleep(duration);
 
-        _RevokeArmorBonus(who, effect_color);
+        _RevokeArmorBonus(who, element_type);
 
         return 1;
     endfunction
@@ -100,25 +100,21 @@ endclass
 function _GrantArmorBonus(who, duration)
     var weapon := who.weapon;
     var elemental := GetObjProperty(weapon, "#elementalweapon");
-    var effect_color := 0;
     var element_type := "";
 
     if (elemental.type == "Fire")
-        effect_color := COLOR_ELEMENTAL_FIRE;
         element_type := "Fire";
         who.resist_fire_mod := who.resist_fire_mod + 100;
     elseif (elemental.type == "Cold")
-        effect_color := COLOR_ELEMENTAL_ICE;
         element_type := "Cold";
         who.resist_cold_mod := who.resist_cold_mod + 100;
     elseif (elemental.type == "Energy")
-        effect_color := COLOR_ELEMENTAL_ENERGY;
         element_type := "Energy";
         who.resist_energy_mod := who.resist_energy_mod + 100;
     endif
 
-    if (effect_color)
-        PlayObjectCenteredEffectHuefx(who, 0x5454, 6, duration * 20, effect_color, 0);
+    if (element_type != "")
+        PlayObjectCenteredEffect(who, FX_ENERGY_GLOBE, 6, duration * 20);
     endif
 
     return element_type;

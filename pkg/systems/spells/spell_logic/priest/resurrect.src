@@ -31,6 +31,8 @@ program SpellScript(params)
 		return 0;
 	endif
 
+	PlayObjectCenteredEffect(who, FX_ANKH_MISTICA, 1, 25);
+
 	if (GetObjProperty(targ, "assassinado"))
 		SendSysMessage(who, "O corpo foi violado e voce nao podera ajuda-lo");
 	endif
