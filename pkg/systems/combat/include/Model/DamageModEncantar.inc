@@ -20,7 +20,8 @@ class DamageModEncantar(DamageModBase)
 		if (!this._item) return damage; endif
 
 		var bonus := GetObjProperty(this._item, "EncantarDamage");
-		if (!bonus) return damage; endif
+		// CProp ausente vira error (truthy), por isso o is @Exception explicito.
+		if (!bonus || bonus is @Exception) return damage; endif
 
 		damage.SetFireRawDamage(CInt(bonus.fire));
 		damage.SetColdRawDamage(CInt(bonus.cold));

@@ -20,7 +20,8 @@ class ResistModEncantar(ResistModBase)
 		if (!this._item) return resist; endif
 
 		var bonus := GetObjProperty(this._item, "EncantarResist");
-		if (!bonus) return resist; endif
+		// CProp ausente vira error (truthy), por isso o is @Exception explicito.
+		if (!bonus || bonus is @Exception) return resist; endif
 
 		resist.SetFireResist(CInt(bonus.fire));
 		resist.SetColdResist(CInt(bonus.cold));
