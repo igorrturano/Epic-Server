@@ -31,7 +31,7 @@ program DruidHealTick(args)
 	var hp_after := GetVital(targ, HITS);
 	var real_heal := hp_after - hp_before;
 
-	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_YELLOW_SPARKLE, 2, 2);
 
 	if (caster && caster.connected)
 		SendSysMessageEx(caster, $"Druid Heal: +{real_heal} HP ({tick_number}/{CInt(tp.total_ticks)})", SSM_INFO);

@@ -16,5 +16,8 @@ program world_start_up()
 	Print("Initializing teleporters");
 	CreateTeleporters();
 
+	Print("Starting online tracker");
+	Start_Script("misc/onlineTracker");
+
 	return 1;
 endprogram
