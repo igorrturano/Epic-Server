@@ -68,7 +68,7 @@ function cookon(who, item)
 			return 1;
 		elseif ((trg.objtype >= 0x0de3) && (trg.objtype <= 0x0de9))
 			return 1;
-		elseif ((trg.objtype == 0x19bb) || (trg.objtype == 0x0fb1))
+		elseif ((trg.objtype == 0x19bb) || (trg.objtype == 0x0fb1)|| (trg.objtype == 0xa12))
 			return 1;
 		else
 			SendSysMessage(who, "Voce nao pode cozinhar comida nisto.");

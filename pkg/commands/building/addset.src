@@ -4,9 +4,12 @@
 */
 use uo;
 use os;
-use cfgfile;
+use datafile;
 
 include ":gumps:yesNo";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":datafile:datafile";
 
 program textcmd_MakeSet(who, text)
 	if (!text)
@@ -40,6 +43,7 @@ program textcmd_MakeSet(who, text)
 		startx := se_targ.x;
 		endx := nw_targ.x;
 	endif
+
 	if (nw_targ.y <= se_targ.y)
 		starty := nw_targ.y;
 		endy := se_targ.y;
@@ -48,16 +52,26 @@ program textcmd_MakeSet(who, text)
 		endy := nw_targ.y;
 	endif
 
-	var config := readconfigfile("::sets");
-	if (config[text])
+	// DATASTORE
+	var ds := OpenDataFile(":tn:sets");
+
+if (!ds)
+		ds := CreateDataFile(":tn:sets");
+	endif
+
+	if (!ds)
+		SendSysMessage(who, "Erro ao criar datastore.");
+		return;
+	endif
+	// Verifica se já existe
+	var elem := DFFindElement(ds, text);
+
+	if (elem)
 		SendSysMessage(who, "Error: There is already a set called " + text, 3, 40);
 		return;
 	endif
 
-	var itemlist := struct;
-	var iteminfo := struct;
-	iteminfo.+name;
-	iteminfo.+value;
+	var itemlist := {};
 
 	SendSysMessage(who, "Target a piece of the item you wish to use as a reference point.");
 	SendSysMessage(who, "The reference point will be used for recreating this set.");
@@ -69,17 +83,20 @@ program textcmd_MakeSet(who, text)
 
 	foreach item in (ListObjectsInBox(startx, starty, -100, endx, endy, 100, who.realm))
 		if (item.ISA(POLCLASS_ITEM))
-			iteminfo.name := "item";
-			iteminfo.value := CInt(item.objtype) + " " + item.graphic + " " + item.color + " " + (item.x - targ.x)
+
+			var line := CInt(item.objtype) + " " + item.graphic + " " + item.color + " " + (item.x - targ.x)
 						  + " " + (item.y - targ.y) + " " + (item.z - targ.z) + " \/\/" + item.desc;
 
-			itemlist.Append(iteminfo);
+			itemlist.Append(line);
+
 			SleepMS(2);
 		endif
 	endforeach
 
-	AppendConfigFileElem("::noncore/sets", "set", text, itemlist);
-	UnloadConfigFile("::noncore/sets");
+	var set_elem := ds.CreateElement(text);
 
+	set_elem.SetProp("items", itemlist);
+
+	//SaveDataFile(ds);
 	SendSysMessage(who, "Done!");
 endprogram
