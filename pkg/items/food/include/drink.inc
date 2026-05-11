@@ -7,8 +7,9 @@ function reduce_container_fullness (byref character, byref container)
 	var cfgfile := ReadConfigFile( "itemdesc" );
 	var elem := FindConfigElem( cfgfile, container.objtype );
 	var return_type := GetConfigInt (elem, "return_type");
+	var dosesmod := GetConfigInt (elem, "doses");
 
-	if (! fullness)
+	if (! fullness && dosesmod != 1)
 		SetObjProperty (container, "fullness", 3);
 		var tempstring := container.desc;
 		container.name := "um quase cheio " + tempstring;
