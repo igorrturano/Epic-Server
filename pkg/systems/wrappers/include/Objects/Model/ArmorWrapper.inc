@@ -290,32 +290,16 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	function __CalculateArmorResist(this)
 		var templateResists := getResistPhysicalByProtection(this.GetTemplate().tipoProtecao);
-		// var slotResists := this.GetTipoProtecao() ? getResistPhysicalBySlot(this.GetCoverage()) : ArmorResist();
-		// Slot bonus removed — armor tiers + crafting provide sufficient defense
-
-		// Floor por tipo de armadura (Light 10 / Medium 15 / Heavy 20). Aplicado
-		// apenas em fisico (slash/pierce/blunt) — elementais vem de material
-		// sub-effects, encantamento e runas. Ver design_combate.md.
-		var floor := this._GetPhysicalFloor();
 
 		return ArmorResist(
-			templateResists.GetSlashResist() + floor,
-			templateResists.GetPiercingResist() + floor,
-			templateResists.GetBluntResist() + floor,
+			templateResists.GetSlashResist(),
+			templateResists.GetPiercingResist(),
+			templateResists.GetBluntResist(),
 			this.GetTemplate().FireResist,
 			this.GetTemplate().ColdResist,
 			this.GetTemplate().PoisonResist,
 			this.GetTemplate().EnergyResist
 		);
-	endfunction
-
-	function _GetPhysicalFloor(this)
-		var tp := this.GetTipoProtecao();
-		if (!tp || tp is @Exception) return 0; endif
-		if (tp["Armadura Leve"]) return 10; endif
-		if (tp["Armadura Media"]) return 15; endif
-		if (tp["Armadura Pesada"]) return 20; endif
-		return 0;
 	endfunction
 
 	function _GetTypeCap(this)
