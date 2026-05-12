@@ -918,6 +918,11 @@ function CalculateAttackerCriticalHit(byRef attackInfo)
 		return true;
 	endif
 
+	// Off-hand swing of a Dual_Wield never crits — main-hand handles crit for the cycle
+    if (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
+        return true;
+    endif
+
 	// Only calculate if not already forced by ability
 	if (!attackInfo.GetDamage().IsCritical())
 		attackInfo.SetCriticalHitChance(CalculateCriticalChance(attackInfo));
