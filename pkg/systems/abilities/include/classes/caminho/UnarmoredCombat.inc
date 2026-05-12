@@ -19,7 +19,7 @@ class UnarmoredCombat(CombatAbility)
 
 	function UnarmoredCombat(this)
 		Super(ABILITY_ID::UNARMORED_COMBAT);
-		this.IsDefenderSide := true;
+		this.IsDefenderSide := 1;
 	endfunction
 
 	function _IsWearingArmor(this, who)
@@ -36,7 +36,6 @@ class UnarmoredCombat(CombatAbility)
 	endfunction
 
 	function OnPassiveBeforeDamage(this, attackInfo)
-		print($"[UNARMORED_COMBAT.OnPassiveBeforeDamage] attacker={attackInfo.GetAttacker().GetObjRef().serial} defender={attackInfo.GetDefender().GetObjRef().serial}");
 		var defender := attackInfo.GetDefender();
 		var who := defender.GetObjRef();
 

@@ -41,6 +41,7 @@ class Ability(IAbility)
 	// === BEHAVIOR (subclass defines these) ===
 	var ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	var EffectDuration := 0;
+	var IsDefenderSide := 0;   // 0 = attacker passive (default), 1 = defender passive. Used by the side-gate in AbilityService.RunPassive.
 
 	function Ability(this, abilityEnum)
 		var cfgFile := CFGFile("abilities", "configs/habilidades").SetElementName(abilityEnum);

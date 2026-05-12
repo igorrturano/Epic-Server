@@ -18,7 +18,7 @@ class UntamableFury(CombatAbility)
 
 	function UntamableFury(this)
 		Super(ABILITY_ID::FURIA_INDOMAVEL);
-		this.IsDefenderSide := true;
+		this.IsDefenderSide := 1;
 	endfunction
 
 	function OnPassiveBeforeDamage(this, attackInfo)
