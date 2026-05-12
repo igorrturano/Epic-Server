@@ -1050,6 +1050,14 @@ function ApplyCriticalDamage(byRef attackInfo)
 					 + attackInfo.GetDamage().GetEnergyRawDamage();
 
 	foreach hitscript in (weapon_scripts)
+		// Armor piercing: bypass armor resist for this swing. Flag is read by
+		// CalculateDefenderResist immediately after this function returns.
+		if (hitscript["armorpierce"])
+			attackInfo.SetIgnoreArmor(true);
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("[CRIT] Armor piercing — ignora armadura"));
+			continue;
+		endif
+
 		// Damage multipliers: multiply the Damage object so it flows through armor + ApplyCombatDamage as one result
 		if (hitscript["damage2"] || hitscript["damage3"])
 			var multiplier := hitscript["damage3"] ? 2 : 1; // damage2 = 2x total (increase by 1x), damage3 = 3x total (increase by 2x)
