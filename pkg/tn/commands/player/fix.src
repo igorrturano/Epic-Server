@@ -13,6 +13,7 @@ program fix(who, param)
 		if (who.cmdlevel)
 			SendSysMessage(who, "\".fix travar\" GM fixa ou desfixa itens (Player NAO PODE mais usar .fix).");
 			SendSysMessage(who, "\".fix liberar\" GM fixa ou desfixa itens (Qualquer Player pode tomar controle do item com .fix).");
+			SendSysMessage(who, "\".fix novodono\" GM atribui controle do item diretamente a um jogador.");
 		endif
 		return 0;
 	endif
@@ -138,6 +139,20 @@ program fix(who, param)
 		else
 			return 0;
 		endif
+		return 1;
+	elseif (param == "novodono")
+		if (!who.cmdlevel)
+			return 0;
+		endif
+		SendSysMessageEx(who, "Para quem voce quer transferir o controle do item?", SSM_REQUEST);
+		var novoDono := Target(who);
+		if (!novoDono || !novoDono.acctname)
+			SendSysMessage(who, "Cancelado", SSM_FAIL);
+			return 0;
+		endif
+		SetObjProperty(alvo, "crafterserial", novoDono.serial);
+		SetObjProperty(alvo, "fixer", novoDono.serial);
+		PrintTextAbove(alvo, who.name + " transferiu o controle de " + alvo.name + " para " + novoDono.name + ".");
 		return 1;
 	else
 		SendSysMessage(who, "Opcao invalida. Para listar opcoes use o comando .fix help");
