@@ -1,5 +1,8 @@
+use polsys;
+
 include ":timedScripts:timedScripts";
 include "include/epicNPCUtils";
+include "include/facings";
 include ":abilities:models/Ability";
 include ":destroyable:include/destroyItem";
 include ":combat:include/Controller/FXController";
@@ -347,22 +350,26 @@ function doConfusion(opponent)
             TS_StartTimer(opponent, "paralysis", 5);
             PrintTextAbove(opponent, "*paralisado*");
         2: // Walk randomly
+            PrintTextAbove(opponent, "*movendo aleatoriamente*");
             if (!opponent.npctemplate)
-                // For players - simulate random walking
-                var iterations := RandomInt(3) + 2; // 2-4 random moves
-                for i := 1 to iterations
-                    var randx := opponent.x + RandomInt(6) - 3; // -3 to +3
-                    var randy := opponent.y + RandomInt(6) - 3;
-                    var coords := GetCoordsInLine(opponent.x, opponent.y, randx, randy);
-                    foreach coord in coords
-                        MoveObjectToLocation(opponent, coord.x, coord.y, opponent.z, opponent.realm, MOVEOBJECT_FORCELOCATION);
-                        PerformAction(opponent, HUMAN_ANIM::WALK_WARMODE);
-                        sleepms(200);
-                    endforeach
-                    PrintTextAbove(opponent, "*movendo aleatoriamente*");
+                var packet := CreatePacket(0x97, 2);
+                var steps := RandomInt(4) + 4;
+                for i := 1 to steps
+                    if (opponent.dead)
+                        break;
+                    endif
+                    var facing := RandomInt(8);
+                    var mods := GetModByFacing(facing);
+                    if (!mods)
+                        continue;
+                    endif
+                    if (CheckLOSAt(opponent, opponent.x + mods[1], opponent.y + mods[2], opponent.z))
+                        packet.SetInt8(1, facing | 0x80);
+                        packet.SendPacket(opponent);
+                    endif
+                    sleepms(150);
                 endfor
             else
-                // For NPCs - use Wander()
                 SetOpponent(0);
                 for i := 1 to 5
                     opponent.Wander();
