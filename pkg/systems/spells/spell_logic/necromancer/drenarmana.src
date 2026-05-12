@@ -85,7 +85,7 @@ program SpellScript(params)
 
 		AP_SetVital(who, MANA, mymana);
 		PrintTextPrivate(who, "+" + amt + " Mana", who, 3, 568); // verde
-		PlayMovingEffectEx(targ, who, 3982, 255, 1, 2119);
+		PlayMovingEffectEx(targ, who, 3982, 10, 1, 2119);
 		time := time + 1;
 		PerformAction(who, HUMAN_ANIM::CAST_AREA);
 		sleep(1);
