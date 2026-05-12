@@ -49,7 +49,7 @@ endprogram
 
 function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
 	PlaySoundEffect(caster, SFX_MAGIC_ARROW);
-	PlayMovingEffectXYZHued(caster, targ, FX_MAGIC_ARROW, 10, 1643, 0);
+	PlayMovingEffectXYZHued(caster, targ, FX_MAGIC_ARROW, 18, 1643, 0);
 	var dmg := RandomDiceRoll("1d4");
 
 	SC_DealDamage(caster, targ, spellId, cint(dmg), DMG_FORCED);

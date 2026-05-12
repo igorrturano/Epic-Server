@@ -213,6 +213,14 @@ function CheckDistance(attacker, defender) // attacker: MobileWrapper, defender:
 		return false;
 	endif
 
+	if (weapon.GetAttribute() != RANGED)
+		var zDelta := Abs(attacker.GetObjRef().z - defender.GetObjRef().z);
+		var zCap := (weapon.GetMaxRange() > 1) ? 6 : 5;
+		if (zDelta > zCap)
+			return false;
+		endif
+	endif
+
 	return true;
 endfunction
 

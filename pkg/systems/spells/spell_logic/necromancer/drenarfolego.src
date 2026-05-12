@@ -87,7 +87,7 @@ program SpellScript(params)
 		AP_SetVital(who, STAMINA, mymana);
 		PrintTextPrivate(who, "+" + amt + " Stamina", who, 3, 568); // verde
 
-		PlayMovingEffect(targ, who, 3982, 255, 1);
+		PlayMovingEffect(targ, who, 3982, 10, 1);
 		time := time + 1;
 		PerformAction(who, HUMAN_ANIM::CAST_AREA);
 		sleep(1);

@@ -2,6 +2,7 @@ use uo;
 use os;
 use vitals;
 use math;
+use polsys;
 
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
@@ -120,17 +121,36 @@ function DoConfusionRay(me, targ)
 			TS_StartTimer(targ, "paralysis", 5);
 			SendSysMessageEx(targ, "Você fica paralisado de confusão!", SSM_FAIL);
 		2:
-			var walk_steps := RandomInt(3) + 2;
 			SendSysMessageEx(targ, "Você caminha desorientado!", SSM_FAIL);
-			for idx := 1 to walk_steps
-				if (me.dead || targ.dead)
-					break;
-				endif
-				var rx := targ.x + RandomInt(3) - 1;
-				var ry := targ.y + RandomInt(3) - 1;
-				MoveObjectToLocation(targ, rx, ry, GetMapInfo(rx, ry).z, targ.realm, MOVEOBJECT_FORCELOCATION);
-				sleepms(300);
-			endfor
+			if (!targ.npctemplate)
+				var packet := CreatePacket(0x97, 2);
+				var steps := RandomInt(4) + 4;
+				for idx := 1 to steps
+					if (me.dead || targ.dead)
+						break;
+					endif
+					var facing := RandomInt(8);
+					var mods := GetModByFacing(facing);
+					if (!mods)
+						continue;
+					endif
+					if (CheckLOSAt(targ, targ.x + mods[1], targ.y + mods[2], targ.z))
+						packet.SetInt8(1, facing | 0x80);
+						packet.SendPacket(targ);
+					endif
+					sleepms(150);
+				endfor
+			else
+				for idx := 1 to 5
+					if (me.dead || targ.dead)
+						break;
+					endif
+					var rx := targ.x + RandomInt(3) - 1;
+					var ry := targ.y + RandomInt(3) - 1;
+					MoveObjectToLocation(targ, rx, ry, GetMapInfo(rx, ry).z, targ.realm, MOVEOBJECT_FORCELOCATION);
+					sleepms(300);
+				endfor
+			endif
 		3:
 			targ.frozen := 1;
 			SendSysMessageEx(targ, "Sua mente é invadida por confusão!", SSM_FAIL);
