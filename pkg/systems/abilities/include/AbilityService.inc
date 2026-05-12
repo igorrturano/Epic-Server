@@ -47,7 +47,13 @@ class AbilityExecutionController()
 				if (params.size() >= 4)
 					moment := params[4];
 				endif
-				return this.RunPassive(CInt(params[2]), moment, params[3]);
+				// params[5] is dispatchedToDefender (0/1) — present when called
+				// from _ExecutePassiveAbilities, absent for legacy call sites.
+				var dispatchedToDefender := 0;
+				if (params.size() >= 5)
+					dispatchedToDefender := CInt(params[5]);
+				endif
+				return this.RunPassive(CInt(params[2]), moment, params[3], dispatchedToDefender);
 			"query_is_on_use":
 				return this.QueryIsOnUse(CInt(params[2]));
 			"activate":
@@ -76,11 +82,22 @@ class AbilityExecutionController()
 		return _ResultExecuted(executed, singleUse);
 	endfunction
 
-	function RunPassive(this, abilityId, moment, attackInfo)
+	function RunPassive(this, abilityId, moment, attackInfo, dispatchedToDefender)
 		var ability := this._InstantiateAbility(abilityId);
 		if (!ability)
 			return _ResultExecuted(0, 0);
 		endif
+
+		// Side gate — ability declares which side it applies to via
+		// IsDefenderSide (default false = attacker). Dispatcher tells us which
+		// side it iterated. Mismatch → skip, so a defender-side passive owned by
+		// the attacker can't fire as if the attacker were defending.
+		if (CInt(ability.IsDefenderSide) != CInt(dispatchedToDefender))
+			print($"[PASSIVE-SIDE-GATE] SKIP id={abilityId} ability.IsDefenderSide={ability.IsDefenderSide} dispatchedToDefender={dispatchedToDefender} moment={moment}");
+			return _ResultExecuted(0, 0);
+		endif
+
+		print($"[PASSIVE-SIDE-GATE] FIRE id={abilityId} side={dispatchedToDefender ? "DEFENDER" : "ATTACKER"} moment={moment}");
 
 		var triggered := 0;
 		case (moment)
