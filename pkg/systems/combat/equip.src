@@ -268,7 +268,7 @@ program equipweapon(who, item)
 
 	// Mochila de Costas: +50 carry capacity
 	if (item.objtype == 0xEDA0)
-		who.carrying_capacity_mod := who.carrying_capacity_mod + 50;
+		who.carrying_capacity_mod := who.carrying_capacity_mod + 20;
 	endif
 
 	// Steam Armor: Dex penalty (double heaviest normal armor)
