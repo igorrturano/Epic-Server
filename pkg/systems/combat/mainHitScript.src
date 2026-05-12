@@ -34,11 +34,11 @@ program MainHitScript(attackInfo)
 	CheckBodyRegionToHit(attackInfo); // Verifica a parte do corpo a ser atingida
 
 	WeaponHitScripts(attackInfo);
-	ArmorHitScripts(attackInfo);
 	sleepms(2);
 
 	WearDownEquip(attackInfo.GetWeapon());
 	ProccessCombatDamage(attackInfo);
+	ArmorHitScripts(attackInfo);
 	sleepms(2);
 	PlayAttackFX(attackInfo);
 	PlayAttackSFX(attackInfo);

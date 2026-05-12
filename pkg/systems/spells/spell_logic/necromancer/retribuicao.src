@@ -19,10 +19,9 @@ program SpellScript(params)
 
 	if (who.npctemplate)
 		var time := CInt(AP_GetSkill(who, ARCANA)) * 2;
-		var lvl := CDbl(AP_GetSkill(who, ARCANA) * 0.6 / 100);
-		if (TemHabilidade(targ, "Aura Mortis"))
-			SendSysMessageEx(who, "Voce exala corrupcao", SSM_INFO);
-			lvl *= 1.34;
+		var lvl := 0.5;
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::CETRO_DA_MORTE))
+			lvl := 0.7;
 		endif
 
 		SC_RemoveEffect(who, CInt(spell.id));
@@ -49,11 +48,9 @@ program SpellScript(params)
 		return;
 	endif
 
-	var lvl := CDbl(AP_GetSkill(who, ARCANA) * 0.6 / 100);
-
-	if (TemHabilidade(targ, "Aura Mortis"))
-		SendSysMessageEx(who, "Voce exala corrupcao", SSM_INFO);
-		lvl *= 1.34;
+	var lvl := 0.5;
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CETRO_DA_MORTE))
+		lvl := 0.7;
 	endif
 
 	var time := CInt(AP_GetSkill(who, ARCANA)) * 2;
