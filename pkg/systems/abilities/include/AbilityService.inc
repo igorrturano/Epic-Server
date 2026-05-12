@@ -89,15 +89,13 @@ class AbilityExecutionController()
 		endif
 
 		// Side gate — ability declares which side it applies to via
-		// IsDefenderSide (default false = attacker). Dispatcher tells us which
-		// side it iterated. Mismatch → skip, so a defender-side passive owned by
-		// the attacker can't fire as if the attacker were defending.
+		// IsDefenderSide (default 0 = attacker, set to 1 on defender abilities).
+		// Dispatcher tells us which side it iterated; mismatch means a
+		// defender-side passive is being run on the attacker (or vice versa) —
+		// skip, so the handler can't self-nerf the wrong mobile.
 		if (CInt(ability.IsDefenderSide) != CInt(dispatchedToDefender))
-			print($"[PASSIVE-SIDE-GATE] SKIP id={abilityId} ability.IsDefenderSide={ability.IsDefenderSide} dispatchedToDefender={dispatchedToDefender} moment={moment}");
 			return _ResultExecuted(0, 0);
 		endif
-
-		print($"[PASSIVE-SIDE-GATE] FIRE id={abilityId} side={dispatchedToDefender ? "DEFENDER" : "ATTACKER"} moment={moment}");
 
 		var triggered := 0;
 		case (moment)
