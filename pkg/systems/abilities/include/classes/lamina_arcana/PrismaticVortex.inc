@@ -27,6 +27,7 @@ class PrismaticVortex(CombatAbility)
     function PrismaticVortex(this)
         Super(ABILITY_ID::VORTICE_PRISMATICO);
         this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
+        this.IsDefenderSide := true;
     endfunction
 
     function ExecuteOn(this, mobile)
