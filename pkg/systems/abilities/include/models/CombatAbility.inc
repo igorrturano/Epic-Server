@@ -6,6 +6,7 @@ class CombatAbility(Ability)
 
     var SingleUse := false;
     var IsPool := false;
+    var IsDefenderSide := false;   // attacker-side passive by default; defender abilities set this in their constructor
 
     function CombatAbility(this, abilityEnum)
         Super(abilityEnum);
