@@ -34,7 +34,7 @@ program SpellScript(params)
 	PerformAction(who, HUMAN_ANIM::CAST_DIR);
 
 	// Play visual effect on target (Holy Flame Strike effect)
-	PlayStationaryEffect(targ.x, targ.y, targ.z, 0xAFED, 7, 10);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, 0x3715, 15, 60, 0, targ.realm);
 
 	// Play sound effect
 	PlaySoundEffect(targ, 0x358);
