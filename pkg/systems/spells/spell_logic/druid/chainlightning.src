@@ -37,7 +37,7 @@ program chainLightning(params)
 
 	var casterThenNextMobile := caster;
 	foreach mobile in allMobiles
-		PlayMovingEffect(casterThenNextMobile, mobile, 0x379f, 0, 20);
+		PlayMovingEffect(casterThenNextMobile, mobile, 0x379f, 8, 20);
 		casterThenNextMobile := mobile;
 		PlaySoundEffect(mobile, SFX_SPELL_LIGHTNING);
 		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);

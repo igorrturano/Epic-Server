@@ -42,7 +42,7 @@ program SpellScript(params)
 		endif
 		var mob2 := SystemFindObjectBySerial(targets[y]);
 		PlayObjectCenteredEffectEx(mob, 14186, 0, 10, 2444, 0, 0, 0);
-		PlayMovingEffectEx(mob, mob2, 14360, 13, 0, 2444, 0, 0, 0, 0, 0, 0);
+		PlayMovingEffectEx(mob, mob2, 14360, 5, 0, 2444, 0, 0, 0, 0, 0, 0);
 		SetObjProperty(mob, "#chainserials", targets);
 	endforeach
 

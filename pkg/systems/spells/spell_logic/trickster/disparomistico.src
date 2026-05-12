@@ -29,7 +29,7 @@ program SpellScript(params)
 	var mlore := cint(AP_GetSkill(who, ARCANA) / 20);
 	SendSysMessageEx(who, "O disparo mistico sai de sua mao", SSM_INFO);
 
-	PlayMovingEffectEx(who, targ, 0xCDD2, 10, 20, 2442, 2);
+	PlayMovingEffectEx(who, targ, 0xCDD2, 13, 20, 2442, 2);
 	PlaySoundEffect(who, SFX_AGILITY2);
 	var dmg := epicSpellDamageRoll(who, 1);
 	SC_DealDamage(who, targ, CInt(spell.id), dmg, DMG_FORCED);

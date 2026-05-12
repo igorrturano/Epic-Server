@@ -43,7 +43,7 @@ program SpellScript(params)
 	SendSysMessageEx(who, "Mísseis mágicos saem de sua mão", SSM_INFO);
 	var i := 1;
 	for (i := 1; i <= mlore; i += 1)
-		PlayMovingEffectEx(who, targ, 0x5426, 10, 20, 2290, 2);
+		PlayMovingEffectEx(who, targ, 0x5426, 19, 20, 2290, 2);
 		PlaySoundEffect(who, SFX_AGILITY2);
 
 		var dmg;
