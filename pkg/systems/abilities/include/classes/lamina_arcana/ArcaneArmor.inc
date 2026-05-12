@@ -26,6 +26,7 @@ class ArcaneArmor(CombatAbility)
     function ArcaneArmor(this)
         Super(ABILITY_ID::ARMADURA_ARCANA);
         this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
+        this.IsDefenderSide := true;
     endfunction
 
     function ExecuteOn(this, mobile)
