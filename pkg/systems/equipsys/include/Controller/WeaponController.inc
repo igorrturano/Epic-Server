@@ -73,9 +73,9 @@ function getDamageByTier(tier)
 		DAMAGE_TIER::ONEHANDED_HIGH: return "1d8";
 			
 		// TWO HANDED
-		DAMAGE_TIER::TWOHANDED_LOW: return "1d8";
-		DAMAGE_TIER::TWOHANDED_MID: return "1d10";
-		DAMAGE_TIER::TWOHANDED_HIGH: return "1d12";
+		DAMAGE_TIER::TWOHANDED_LOW: return "2d4";
+		DAMAGE_TIER::TWOHANDED_MID: return "3d4";
+		DAMAGE_TIER::TWOHANDED_HIGH: return "4d4";
 
 		// BOW
 		DAMAGE_TIER::BOW_LOW: return "1d4";
