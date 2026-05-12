@@ -29,7 +29,7 @@ program SpellScript(params)
 		damage := damage + RandomDiceRoll("1d10") + CInt(theology / 6);
 	endif
 
-	PlayMovingEffectEx(who, targ, 0x5426, 10, 20, 0x0845, 2);
+	PlayMovingEffectEx(who, targ, 0x5426, 13, 20, 0x0845, 2);
 	PlaySoundEffect(who, 0x235);
 
 	SC_DealDamage(who, targ, CInt(spellinfo.id), damage, DMG_FORCED);
