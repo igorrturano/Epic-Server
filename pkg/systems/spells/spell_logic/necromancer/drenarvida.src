@@ -67,7 +67,7 @@ program SpellScript(params)
 		elseif (AP_GetVital(targ, HITS) <= 0)
 			time := 10;
 		else
-			PlayMovingEffectEx(targ, who, 3982, 255, 1, 2117);
+			PlayMovingEffectEx(targ, who, 3982, 10, 1, 2117);
 			PerformAction(who, HUMAN_ANIM::CAST_AREA);
 			SC_DealDamage(who, targ, CInt(spell.id), amt, DMG_FORCED);
 			targ.setAggro(who.serial, 150);
