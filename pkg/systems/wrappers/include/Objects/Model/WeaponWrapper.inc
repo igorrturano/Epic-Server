@@ -35,6 +35,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var MinRange := 0;
 	var MaxRange := 1;
 	var IsThrowableVar := false;
+	var IsFinesseVar := false;
 	var EpicMainDamage := "";
 
 	function WeaponWrapper(this, byRef item)
@@ -83,6 +84,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this.MinRange := this.Template.MinRange ?: 0;
 			this.MaxRange := this.Template.MaxRange ?: 1;
 			this.IsThrowableVar := Boolean(this.Template.Throwable) ?: false;
+			this.IsFinesseVar := Boolean(this.Template.Finesse) ?: false;
 			this.CriticalChanceMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_CRITICO);
 			this.AccuracyMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_PRECISAO);
 			/* TODO ver com o Evil sobre essa forma de guardar o CriticalChanceMod , me pareceu que ficaria dificil executar os calculos.
@@ -407,16 +409,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	endfunction
 
 	function IsFinesse(this)
-		if (Upper(this.GetSpeedTier()) != MELEE_HIGH)
-			return false;
-		endif
-		var _cat := this.GetCategory();
-		return _cat == WEAPON_CATEGORY::SWORD      ||
-		       _cat == WEAPON_CATEGORY::GREATSWORD ||
-		       _cat == WEAPON_CATEGORY::DAGGER     ||
-		       _cat == WEAPON_CATEGORY::POLEARM    ||
-		       _cat == WEAPON_CATEGORY::SPEAR      ||
-		       _cat == WEAPON_CATEGORY::STAFF;
+		return this.IsFinesseVar;
 	endfunction
 
 	// Private functions
