@@ -51,9 +51,13 @@ endprogram
 function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
 	PlaySoundEffect(caster, SFX_MAGIC_ARROW);
 	if (GetObjProperty(caster, "chardata").magia == "Druid")
-		PlayObjectCenteredEffect(targ, 0x548F, 10, 30);
+		PlayObjectCenteredEffect(targ, 0x548F, 80, 60);
 	else
-		PlayMovingEffectXYZHued(caster, targ, FX_MAGIC_ARROW, 10, 1643, 0);
+		var projSpeed := 13;
+		if (spellId == 6)
+			projSpeed := 255;
+		endif
+		PlayMovingEffectXYZHued(caster, targ, FX_MAGIC_ARROW, projSpeed, 1643, 0);
 	endif
 	var dmg := RandomDiceRoll("1d4"); /* epicSpellDamageRoll(caster, spell_circle);
     dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school); */
