@@ -426,7 +426,9 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	endfunction
 
 	function _CalculateSTRRequired(this)
-		return CInt(this.GetWeight() * 7.5);
+		// Round up to next multiple of 5 so display (raw/5) is a clean integer.
+		var raw := CInt(this.GetWeight() * 7.5);
+		return CInt((raw + 4) / 5) * 5;
 	endfunction
 endclass
 
