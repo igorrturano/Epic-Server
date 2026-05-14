@@ -133,11 +133,18 @@ function _ExecutePassiveAbilities(byRef mobile, passiveMoment, byRef attackInfo)
 		return 0;
 	endif
 
+	// Which side is this mobile playing in the current attack? The wrappers
+	// above us (ExecutePassiveAbilitiesAttacker* / Defender*) already encoded
+	// the side by which mobile they passed — we project it back out so the
+	// AbilityService gate can compare against ability.IsDefenderSide.
+	var dispatchedToDefender :=
+		(mobile.GetObjRef().serial != attackInfo.GetAttacker().GetObjRef().serial);
+
 	var abilitiesExecuted := 0;
 
 	foreach level in (abilities.keys())
 		var abilityId := CInt(abilities[level]);
-		var execResult := run_script_to_completion(":abilities:AbilityController", array{"passive", abilityId, attackInfo, passiveMoment});
+		var execResult := run_script_to_completion(":abilities:AbilityController", array{"passive", abilityId, attackInfo, passiveMoment, dispatchedToDefender});
 		if (!execResult || execResult.errortext)
 			continue;
 		endif

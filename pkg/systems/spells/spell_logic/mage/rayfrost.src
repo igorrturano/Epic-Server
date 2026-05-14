@@ -44,10 +44,10 @@ program cast_firebolt(params)
 endprogram
 
 function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
+	var speed := 25;
+	Print("[RAYFROST] caster=" + caster.name + " pos=(" + caster.x + "," + caster.y + "," + caster.z + ") targ=" + targ.name + " pos=(" + targ.x + "," + targ.y + "," + targ.z + ") dist=" + Distance(caster, targ) + " speed=" + speed + " graphic=0x54AD");
 	PlaySoundEffect(caster, SFX_AQUARIUM_USE);
-	PlayMovingEffectXYZHued(caster, targ, 0x54AD, 10, 1643, 0);
-	var dmg := RandomDiceRoll("1d4"); /* epicSpellDamageRoll(caster, spell_circle); */
-	// dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
-
+	PlayMovingEffectXYZHued(caster, targ, 0x54AD, speed, 1643, 0);
+	var dmg := RandomDiceRoll("1d4");
 	SC_DealDamage(caster, targ, spellId, cint(dmg), DMG_COLD);
 endfunction

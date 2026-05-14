@@ -19,6 +19,7 @@ class UnarmoredCombat(CombatAbility)
 
 	function UnarmoredCombat(this)
 		Super(ABILITY_ID::UNARMORED_COMBAT);
+		this.IsDefenderSide := 1;
 	endfunction
 
 	function _IsWearingArmor(this, who)
