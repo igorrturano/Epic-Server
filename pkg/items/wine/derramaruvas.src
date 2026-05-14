@@ -10,7 +10,7 @@ program colocaruvas(who, item)
 	var uvas;
 
 	if (carregado == 1)
-		SendSysMessage(who, "Este balde ja contem uvas frescas! Agora pise nelas!");
+		SendSysMessage(who, "Este balde já contém uvas frescas! Agora pise nelas!");
 		return;
 	else
 		SendSysMessage(who, "Selecione as 50 uvas.");
@@ -19,29 +19,30 @@ program colocaruvas(who, item)
 			return;
 		endif
 
-		if ((uvas.graphic != 0xd1a))
-			SendSysMessage(who, "Isto nao sao uvas!");
+		if ((uvas.objtype == 0x09d1) || uvas.objtype == 0x0d1a)
+		else
+			SendSysMessage(who, "Isto não são uvas!");
 			return;
 		endif
 
 		if (uvas.movable == 0)
-			SendSysMessage(who, "Voce nao pode usar estas uvas.");
+			SendSysMessage(who, "Você não pode usar estas uvas.");
 			return;
 		endif
 		if (!Accessible(who, uvas))
-			SendSysMessage(who, "Voce nao alcanca isto.");
+			SendSysMessage(who, "Você não alcança isto.");
 			return;
 		elseif (distance(who, uvas) > 2)
-			SendSysMessage(who, "O alvo esta muito longe.");
+			SendSysMessage(who, "O alvo está muito longe.");
 			return;
 		endif
 
 		if (uvas.amount < 50)
-			SendSysMessage(who, "Voce precisa por 50 uvas aqui!");
+			SendSysMessage(who, "Você precisa por 50 uvas aqui!");
 			return;
 		else
 			SubtractAmount(uvas, 50);
-			SendSysMessage(who, "Voce derramou as uvas, agora e so pisar!");
+			SendSysMessage(who, "Você derramou as uvas, agora é só pisar!");
 			ChangeVatGraphic(item, 2);
 			SetObjProperty(item, "carregado", 1);
 		endif
@@ -51,7 +52,7 @@ endprogram
 function ChangeVatGraphic(item, mode)
 
 	if (mode == 1) // cheio pra vazio
-		var nearitens := ListItemsNearLocation(item.x, item.y, item.z, 4);
+		var nearitens := ListItemsNearLocation(item.x, item.y, item.z, 4, item.realm);
 		foreach coisa in nearitens
 			if (coisa.graphic == 5409)
 				coisa.graphic := 5337;
@@ -68,7 +69,7 @@ function ChangeVatGraphic(item, mode)
 			endif
 		endforeach
 	else
-		var nearitens := ListItemsNearLocation(item.x, item.y, item.z, 4);
+		var nearitens := ListItemsNearLocation(item.x, item.y, item.z, 4, item.realm);
 		foreach coisa in nearitens
 			if (coisa.graphic == 5337)
 				coisa.graphic := 5409;

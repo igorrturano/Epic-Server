@@ -25,7 +25,7 @@ program fillpitcher(who, pitcher)
 	if (check_for_water(targetted))
 		PlaySoundEffect(who, 0x0026);
 		DestroyItem(pitcher);
-		CreateItemInBackpack(who, 0x1f9e, 1);
+		CreateItemInBackpack(who, 0x99c, 1);
 	elseif (check_for_cows(targetted))
 		PlaySoundEffect(who, 0x007a);
 		DestroyItem(pitcher);

@@ -47,7 +47,13 @@ class AbilityExecutionController()
 				if (params.size() >= 4)
 					moment := params[4];
 				endif
-				return this.RunPassive(CInt(params[2]), moment, params[3]);
+				// params[5] is dispatchedToDefender (0/1) — present when called
+				// from _ExecutePassiveAbilities, absent for legacy call sites.
+				var dispatchedToDefender := 0;
+				if (params.size() >= 5)
+					dispatchedToDefender := CInt(params[5]);
+				endif
+				return this.RunPassive(CInt(params[2]), moment, params[3], dispatchedToDefender);
 			"query_is_on_use":
 				return this.QueryIsOnUse(CInt(params[2]));
 			"activate":
@@ -76,9 +82,18 @@ class AbilityExecutionController()
 		return _ResultExecuted(executed, singleUse);
 	endfunction
 
-	function RunPassive(this, abilityId, moment, attackInfo)
+	function RunPassive(this, abilityId, moment, attackInfo, dispatchedToDefender)
 		var ability := this._InstantiateAbility(abilityId);
 		if (!ability)
+			return _ResultExecuted(0, 0);
+		endif
+
+		// Side gate — ability declares which side it applies to via
+		// IsDefenderSide (default 0 = attacker, set to 1 on defender abilities).
+		// Dispatcher tells us which side it iterated; mismatch means a
+		// defender-side passive is being run on the attacker (or vice versa) —
+		// skip, so the handler can't self-nerf the wrong mobile.
+		if (CInt(ability.IsDefenderSide) != CInt(dispatchedToDefender))
 			return _ResultExecuted(0, 0);
 		endif
 

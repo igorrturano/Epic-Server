@@ -40,7 +40,7 @@ program chainLightning(params)
 	var casterThenNextMobile := caster;
 	var jump := 0;
 	foreach mobile in allMobiles
-		PlayMovingEffect(casterThenNextMobile, mobile, 0xE088, 0, 20);
+		PlayMovingEffect(casterThenNextMobile, mobile, 0xE088, 15, 20);
 		casterThenNextMobile := mobile;
 		PlaySoundEffect(mobile, 0x457);
 		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);

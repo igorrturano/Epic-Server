@@ -21,10 +21,15 @@ program SpellScript(params)
 	// SendSysMessage(who, "Selecione o alvo.");
 	// var targ := Target(who);
 
-	// if ( targ.IsA(POLCLASS_MOBILE) || (targ.multi.serial) || (targ.container.serial) )
-	// 	SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
-	// 	return 0;
-	// endif
+	if ( targ.IsA(POLCLASS_MOBILE) || (targ.multi.serial) || (targ.container.serial) )
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (targ == who.backpack)
+		SendSysMessageEx(who, "Voce nao pode levitar seu proprio inventario.", SSM_FAIL);
+		return 0;
+	endif
 
 	SendSysMessageEx(who, "Escolha para onde quer mover.", SSM_REQUEST);
 	var loc := TargetCoordinates(who);

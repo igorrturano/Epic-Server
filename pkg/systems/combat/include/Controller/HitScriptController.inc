@@ -234,11 +234,42 @@ endfunction
 function ArmorHitScripts(byRef attackInfo)
 	var armorsInSlot := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
 	var itemCfg := CFGFile("*", "itemdesc");
-	
+
+	var defenderRef := attackInfo.GetDefender().GetObjRef();
+	var baseArgs := array{
+		attackInfo.GetAttacker().GetObjRef(),
+		defenderRef,
+		attackInfo.GetWeapon().GetObjRef(),
+		uninit,
+		attackInfo.GetDamage().GetTotalBaseDamage(),
+		attackInfo.GetDamage().GetTotalRawDamage()
+	};
+
+	// Defender-wide hooks (SC spell effects like retribuicao): fire once per
+	// hit, independent of armor presence in the slot.
+	var body_scripts := defenderRef.GetProp("ArmorHitScripts");
+	if (!body_scripts) body_scripts := array{}; endif
+
+	foreach hitscript in body_scripts
+		start_script(hitscript, baseArgs);
+		sleepms(2);
+	endforeach
+
+	if (GetCooldown(defenderRef, "campoeletrico"))
+		var e := start_script(":combat:armorHitScripts/campoeletrico", baseArgs);
+		if (e == error)
+			Message(e).SendAbove(defenderRef);
+		endif
+	endif
+
+	// Armor-specific hooks (per-piece): require armor in slot.
+	if (armorsInSlot is @Exception)
+		return 1;
+	endif
+
 	foreach armor in (armorsInSlot)
 		itemCfg.SetElementName(armor.GetObjType());
-		
-		var body_scripts := attackInfo.GetDefender().GetObjRef().GetProp("ArmorHitScripts");
+
 		var armor_scripts := armor.GetObjRef().GetProp("ArmorHitScripts");
 		var others_scripts := itemCfg.GetPropertyValue("ArmorHitScripts");
 
@@ -247,55 +278,21 @@ function ArmorHitScripts(byRef attackInfo)
 														  .GetPropertyValue("ArmorHitScripts");
 		endif
 
-		if (!body_scripts)
-			body_scripts := array{};
-		endif
+		if (!armor_scripts) armor_scripts := array{}; endif
+		if (!others_scripts) others_scripts := array{}; endif
 
-		if (!armor_scripts)
-			armor_scripts := array{};
-		endif
-
-		if (!others_scripts)
-			others_scripts := array{};
-		endif
-
-		if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "campoeletrico"))
-			var e := start_script(
-				":combat:armorHitScripts/campoeletrico",
-				array{
-					attackInfo.GetAttacker().GetObjRef(),
-					attackInfo.GetDefender().GetObjRef(),
-					attackInfo.GetWeapon().GetObjRef(),
-					armor.GetObjRef(),
-					attackInfo.GetDamage().GetTotalBaseDamage(),
-					attackInfo.GetDamage().GetTotalRawDamage()
-				}
-			);
-
-			if (e == error)
-				Message(e).SendAbove(attackInfo.GetDefender().GetObjRef());
-			endif
-		endif
-
-		armor_scripts := armor_scripts + body_scripts + others_scripts;
-
-		foreach hitscript in armor_scripts
-			var script := start_script(
+		foreach hitscript in (armor_scripts + others_scripts)
+			start_script(
 				hitscript,
 				array{
 					attackInfo.GetAttacker().GetObjRef(),
-					attackInfo.GetDefender().GetObjRef(),
+					defenderRef,
 					attackInfo.GetWeapon().GetObjRef(),
 					armor.GetObjRef(),
 					attackInfo.GetDamage().GetTotalBaseDamage(),
 					attackInfo.GetDamage().GetTotalRawDamage()
 				}
 			);
-			if (script.errortext)
-				// Message("*Defender* armor script error starting [" + hitscript + "] :" + script.errortext)
-				// 	.SendSys(attacker)
-				// 	.SendSys(defender);
-			endif
 			sleepms(2);
 		endforeach
 	endforeach
