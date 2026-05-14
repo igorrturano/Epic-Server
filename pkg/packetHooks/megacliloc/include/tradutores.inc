@@ -7,6 +7,8 @@ function TranslateCritical(crit)
 		return "Ataque Atordoante";
 	elseif (Crit == "bleed")
 		return "Alvejar Ponto Vital";
+    elseif (Crit == "armorpierce")
+        return "Ignorar Armadura";
 	endif
 
 endfunction
