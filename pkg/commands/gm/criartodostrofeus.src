@@ -123,7 +123,7 @@ program criar_todos_trofeus(who)
 		0xC03C,  // trofeuDragaoInvertido7
 		0xC041,  // trofeuDragao9
 		0xC042,  // trofeuDragaoInvertido9
-		0xC045,  // trofeuDragaoInvertido10
+		0xC045,  // trofeuDragao10
 		0xC047,  // trofeuDragao11
 		0xC048,  // trofeuDragaoInvertido11
 		0xFACC,  // trofeuDragao12
@@ -134,7 +134,7 @@ program criar_todos_trofeus(who)
 
 		// === DEMÔNIOS ===
 		0xC023,  // trofeuDemonio
-		0xC024,  // trofeuDemonioEspelhado
+		0xC024,  // trofeuDemonioInvertido
 		0xC101,  // trofeuDemonio1
 		0xC102,  // trofeuDemonioInvertido1
 		0xC10D,  // trofeuDemonio2 (parede)
@@ -188,8 +188,8 @@ program criar_todos_trofeus(who)
 		0xC077,  // trofeuUrsoPolar1
 		0xC075,  // trofeuUrsoPolarInvertido
 		0xC078,  // trofeuUrsoPolarInvertido1
-		0xC07D,  // trofeuUrsoPreto
-		0xC07e,  // trofeuUrsoPretoInvertido
+		0xC07D,  // trofeuUrsoNegro
+		0xC07e,  // trofeuUrsoNegroInvertido
 		0x1E60,  // trofeuUrsoGrizzly
 		0x1E67,  // trofeuUrsoGrizzlyInvertido
 		0x1E6C,  // trofeuUrsoBranco3
