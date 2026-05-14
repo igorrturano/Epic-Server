@@ -16,7 +16,7 @@ program showdfdiff(params)
 			if (!mob.hiding)
 				var dif := CalcSuccessPercent(mob, AWARENESS, cdbl(CalculateDHDiff(mob, who)),
 											   AP_GetTrueSkill(mob, AWARENESS));
-				PrintTextPrivate(mob, "" + dif, who, _DEFAULT_TEXT_FONT, GetMagentaMap(cint(dif / 10)));
+				SendSysMessage(mob, "" + dif, who, _DEFAULT_TEXT_FONT/* , GetMagentaMap(cint(dif / 10) )*/);
 			endif
 			sleepms(2);
 		endforeach

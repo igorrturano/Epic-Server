@@ -28,7 +28,7 @@ program mining(who)
 	var i := 1;
 	var k := 1;
 
-	var skill := AP_GetSkill(who, GATHERING);
+	var skill := EffectiveSkill(who, "Mining");
 
 	foreach thing in ores
 		var dif := DetermineMiningDifficulty(GetResourceId(thing));

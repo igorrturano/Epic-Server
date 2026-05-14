@@ -111,22 +111,32 @@ function LevelUp(who)
             scroll.newbie := 1;
         endif
     else
-        var chardata := GetObjProperty(who, "chardata");
-        var hp_up := 0;
-        if (chardata)
-            if (chardata.classe == GUERREIRO)
-                hp_up := 10;
-            elseif (chardata.classe == LADINO)
-                hp_up := 8;
-            elseif (chardata.classe == SABIO)
-                hp_up := 6;
-            endif
-        endif
-
-        if (hp_up > 0)
-            var hitsmod := CInt(GetObjProperty(who, "hitsmod")) + hp_up;
-            SetObjProperty(who, "hitsmod", hitsmod);
+        // ODD level — HP bonus.
+        // Path-rework characters: HP grows automatically because GetPH() uses
+        // CountOddLevelsReached(Level) · ClassDie. Bumping Level is sufficient;
+        // a RecalcVitals applies the new max immediately. DO NOT also adjust
+        // hitsmod here or HP would double-count.
+        // Legacy characters: archetype-keyed hitsmod bump (Guerreiro/Ladino/Sabio).
+        if (HasNewSystemDice(who))
             RecalcVitals(who);
+        else
+            var chardata := GetObjProperty(who, "chardata");
+            var hp_up := 0;
+            if (chardata)
+                if (chardata.classe == GUERREIRO)
+                    hp_up := 10;
+                elseif (chardata.classe == LADINO)
+                    hp_up := 8;
+                elseif (chardata.classe == SABIO)
+                    hp_up := 6;
+                endif
+            endif
+
+            if (hp_up > 0)
+                var hitsmod := CInt(GetObjProperty(who, "hitsmod")) + hp_up;
+                SetObjProperty(who, "hitsmod", hitsmod);
+                RecalcVitals(who);
+            endif
         endif
     endif
 

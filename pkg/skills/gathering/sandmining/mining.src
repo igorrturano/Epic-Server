@@ -60,7 +60,7 @@ program SandMining(who, scoop)
 			endif
 			AP_ConsumeVital(who, "Stamina", 3);
 		endif
-		CheckToolWear(who, scoop, GATHERING);
+		CheckToolWear(who, scoop, "Mining");
 		sleep(3);
 	endwhile
 	SendSysMessageEx(who, "Voce parou de cavar.", SSM_FAIL);
@@ -98,9 +98,9 @@ function MiningLoop(who, scoop, my_x, my_y, my_facing, location_name)
 
 	var difficulty := 5; // CInt(100 - (resource_amount * 100 / MAX_RESOURCE_AMOUNT));
 
-	var skill := Cint(AP_GetSkill(who, GATHERING));
+	var skill := Cint(EffectiveSkill(who, "Mining"));
 
-	if (SkillCheck(who, GATHERING, difficulty) > 0)
+	if (SkillCheck(who, "Mining", difficulty) > 0)
 		var amt := min(CInt(resource_amount), CInt(skill / 20));
 		if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_MINER))
 			amt := amt + 2;

@@ -228,7 +228,7 @@ function ProcessSpeech(ev)
 		if (targ == me || targ == ev.source || !targ.IsA(POLCLASS_MOBILE))
 			return;
 		endif
-		if (obediencecheck() == 0)
+		if (obedienceCheckCombat() == 0)
 			return;
 		endif
 
@@ -239,7 +239,7 @@ function ProcessSpeech(ev)
 		endif
 
 	elseif (text["guarde"])
-		if (obediencecheck() == 0)
+		if (obedienceCheckCombat() == 0)
 			return;
 		endif
 		if (text["todos guardem"])
@@ -338,7 +338,7 @@ function ProcessSpeech(ev)
 
 		var targ := target(ev.source);
 		if (Cint(me.getTameDifficulty()) >= 61)
-			if (AP_GetSkill(targ, HANDLEANIMAL) * 1.4 < Cint(me.getTameDifficulty()))
+			if (EffectiveSkill(targ, "Taming") * 1.4 < Cint(me.getTameDifficulty()))
 				SendSysMessage(owner, "A criatura nao aceita o alvo como novo dono.");
 				return;
 			endif
@@ -425,7 +425,7 @@ function TakeItem(ev)
 	var happy := GetObjProperty(me, "happiness");
 	var timebond := ReadGameClock(); // tempo do relógio
 	var startbond := GetObjProperty(me, "bond"); // hora que foi tamado
-	var adestramento := AP_GetSkill(owner, HANDLEANIMAL); // skill do owner
+	var adestramento := EffectiveSkill(owner, "Taming"); // skill do owner
 	var adestramentocalc := (adestramento * 4320); // modificador com base na skill
 	var tempo_detreino := (432001 - adestramentocalc); // tempo que irá demorar para fidelizar
 	var tempo_fiel := (startbond + tempo_detreino); // tempo em que irá ficar pronto o fidelizar
@@ -765,7 +765,7 @@ function ProcessDoubleClick(ev)
 			var input := GFSendGump(owner, gump);
 			input := input[0];
 			if (input == 10)
-				if (obediencecheck() == 0)
+				if (obedienceCheckCombat() == 0)
 					return;
 				endif
 				guarding := targ.mobile;
@@ -775,7 +775,7 @@ function ProcessDoubleClick(ev)
 				endif
 				following := targ.mobile;
 			elseif (input == 30)
-				if (obediencecheck() == 0)
+				if (obedienceCheckCombat() == 0)
 					return;
 				endif
 				opponent := targ.mobile;
@@ -879,8 +879,8 @@ function obediencecheck()
 	var dmgsound := npccfgfile[me.npctemplate].damagedsound;
 	var hit := npccfgfile[me.npctemplate].attackhitsound;
 
-	var maslore := AP_GetSkill(owner, HANDLEANIMAL) / 2;
-	var mastaming := CInt(AP_GetSkill(owner, HANDLEANIMAL) + maslore);
+	var maslore := EffectiveSkill(owner, "Taming") / 2;
+	var mastaming := CInt(EffectiveSkill(owner, "Taming") + maslore);
 	var checkvalue := CInt(mastaming - 25); // era 20
 	var happiness := GetObjProperty(me, "happiness");
 	var happybonus := happiness / 10;
@@ -915,6 +915,62 @@ function obediencecheck()
 		return 1;
 	endif
 
+endfunction
+
+// obedienceCheckCombat: combat-command obedience (ATTACK, GUARD, KILL).
+// Uses owner's Beastmastery skill (vs the general obediencecheck which uses
+// Taming). Difficulty scales with pet's Wrestling so strong pets need higher
+// Beastmastery to obey in combat. Fidelizado (NeverRelease) and summoned
+// pets auto-obey, mirroring the general check.
+function obedienceCheckCombat()
+	var arry := { 0xcc, 0xc8, 0xe2, 0xe4, 0x123, 0x124, 0xd2, 0xdb };
+	if (me.objtype in arry)
+		return 1;
+	endif
+
+	if (GetObjProperty(me, "summoned") == 1)
+		return 1;
+	endif
+	if (GetObjProperty(me, "NeverRelease") == 1)
+		return 1;
+	endif
+
+	var happiness := CInt(GetObjProperty(me, "happiness"));
+	if (happiness < 10)
+		SendSysMessage(owner, "*Seu pet " + me.name + " decidiu que eh melhor ficar sozinho*");
+		UnTame();
+		return 0;
+	endif
+
+	// Difficulty: pet's Wrestling (combat skill of the animal).
+	var pet_wrestling := CInt(AP_GetSkill(me, "Wrestling"));
+	if (pet_wrestling < 30)
+		pet_wrestling := 30;
+	endif
+
+	// SkillCheck handles read-via-EffectiveTrueSkill + Beastmastery skill gain.
+	var ok := SkillCheck(owner, "Beastmastery", pet_wrestling);
+
+	// Happy pets get a second-chance margin: clear bias toward obedience
+	// when they like their master, even if the skill roll was tight.
+	if (ok <= 0 && happiness >= 50)
+		if (RandomInt(100) < (happiness - 30))
+			ok := 1;
+		endif
+	endif
+
+	var npccfgfile := ReadConfigFile(":*:npcdesc");
+	if (ok <= 0)
+		PrintTextPrivate(me, "*" + me.name + " resiste e te ignora*", owner);
+		var dmgsound := npccfgfile[me.npctemplate].damagedsound;
+		PlaySoundEffect(me, dmgsound);
+		SetObjProperty(me, "happiness", happiness - 1);
+		return 0;
+	endif
+
+	var hit := npccfgfile[me.npctemplate].attackhitsound;
+	PlaySoundEffect(me, hit);
+	return 1;
 endfunction
 
 function SpecialHab(me)

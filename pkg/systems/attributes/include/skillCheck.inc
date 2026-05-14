@@ -48,7 +48,12 @@ function SkillCheck(mobile, attrib_name, difficulty, award_diff:=0, advance_flag
 		g_skill_debug := (GetObjProperty(mobile, "SkillDebug") != error);
 	endif
 
-	var effective_skill := AP_GetTrueSkill(mobile, attrib_name);
+	// Path-rework bridge: EffectiveTrueSkill returns max(new, legacy_parent)
+	// for split skills (Provisioning/Tailoring/Mining/Lumberjacking/Taming/
+	// Beastmastery), or plain AP_GetTrueSkill for everything else. Lets
+	// callsites migrate from legacy names (Gathering, Domestic_Work,
+	// Handle_Animal) to new names without breaking pre-migration chars.
+	var effective_skill := EffectiveTrueSkill(mobile, attrib_name);
 	effective_skill := ApplySkillModifiers(mobile, attrib_name, effective_skill); //Modificadores de habilidade
 
     if (difficulty == -1)
