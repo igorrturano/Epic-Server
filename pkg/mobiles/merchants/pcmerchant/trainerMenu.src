@@ -398,7 +398,7 @@ endfunction
 // Builds a dict skill_name -> per-level cost for the player's class. Mirrors
 // creation rules: bgBonus override -> cost 1; primarias (P) -> 1; secundarias
 // (S) -> 2; terciarias (T) -> 3; quaternarias (Q) -> 4. Cavar Buracos trait
-// promotes GATHERING to secondary cost regardless of class list.
+// promotes Mining to secondary cost regardless of class list.
 function BuildSkillCostMap(chardata)
 	var costs := dictionary;
 	var cfg := ReadConfigFile(":charactercreation:config/classes");
@@ -437,10 +437,9 @@ function BuildSkillCostMap(chardata)
 		costs[bg] := 1;
 	endif
 
-	// Cavar Buracos trait promotes Gathering to secondary cost.
-	if (chardata.trait == "Cavar Buracos" && !(GATHERING in primarias))
-		costs[GATHERING] := 2;
-	endif
+	// Note: legacy Cavar Buracos discount removed. New system has no skill
+	// point-buying; the trait now grants only the +2 amount bonus on mining
+	// yield (see oremining/mining.src and meteoritos.inc).
 
 	return costs;
 endfunction
@@ -629,9 +628,6 @@ function SkillRespecGump(who, byref respec_data, pri_allowed)
 		endif
 		y := DrawSkillRow(gump, respec_data, skill, x, y, 2, 200, 230, minus_btn, plus_btn, pri_allowed);
 	endforeach
-	if (respec_data.trait == "Cavar Buracos" && !(GATHERING in secundarias))
-		y := DrawSkillRow(gump, respec_data, GATHERING, x, y, 2, 200, 230, minus_btn, plus_btn, pri_allowed);
-	endif
 	y += 8;
 
 	// TERCIARIAS (cost 3)
@@ -639,9 +635,6 @@ function SkillRespecGump(who, byref respec_data, pri_allowed)
 	y += 24;
 	foreach skill in terciarias
 		if (skill == respec_data.bgBonus)
-			continue;
-		endif
-		if (respec_data.trait == "Cavar Buracos" && skill == GATHERING)
 			continue;
 		endif
 		y := DrawSkillRow(gump, respec_data, skill, x, y, 3, 300, 330, minus_btn, plus_btn, pri_allowed);

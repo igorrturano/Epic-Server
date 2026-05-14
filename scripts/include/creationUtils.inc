@@ -330,6 +330,43 @@ function ProcessSelection(byref chardata, input)
         endif
 endfunction
 
+function PathGump(who, culture_pic)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+
+    var x := 63;
+    var y := 100;
+
+    showPreviousGumpInformation(gump, who, culture_pic, x, y);
+
+    GFHTMLArea(gump, x+16, y+40, 320, 40, "<BASEFONT Size=55 Color=#999999 > Escolha sua vocação", 0, 0); //shadow
+    GFHTMLArea(gump, x+15, y+39, 320, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha sua vocação", 0, 0);
+
+    var path_options := array{
+        struct{ label := "Militar",
+                desc  := "Treinado para o combate. Dois primários no caminho militar, um primário civil cruzado, e três secundários (um militar, um civil, um flutuante). Acesso a classes guerreiras, ladinas e sábias de combate.",
+                btn   := 201 },
+        struct{ label := "Civil",
+                desc  := "Treinado em ofícios e conhecimento. Dois primários no caminho civil, um primário militar cruzado, e três secundários (um civil, um militar, um flutuante). Acesso a classes de artífices, exploradores e profissionais.",
+                btn   := 202 }
+    };
+
+    var i := 1;
+    foreach opt in path_options
+        GFHTMLArea(gump, x, y+65, 192, 24, "<BASEFONT color=#000000>{}".format(opt.label), 1, 0);
+        GFTooltipText(gump, "{}<br><BASEFONT color=#ffffff>".format(opt.desc));
+        GFRadioButton(gump, x+201, y+65, 0x9C4E, 0x9C4F, 0, opt.btn);
+        sleepms(2);
+        y += 26;
+        i++;
+    endforeach
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200);
+    GFGumpPic(gump, 298, 100, culture_pic);
+
+    return GFSendGump(who, gump);
+endfunction
+
 function ClassGump(who, culture_pic)
     var gump := GFCreateGump();
     GFClosable(gump, 0);
@@ -343,7 +380,7 @@ function ClassGump(who, culture_pic)
     GFHTMLArea(gump, x+16, y+40, 192, 40, "<BASEFONT Size=55 Color=#999999 > Escolha seu caminho", 0, 0); //shadow
     GFHTMLArea(gump, x+15, y+39, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha seu caminho", 0, 0);
 
-    var all_classes := array{ 
+    var all_classes := array{
         "Caminho das Armas",
 		"Caminho do Subterfúgio",
 		"Caminho da Sabedoria"
@@ -355,6 +392,118 @@ function ClassGump(who, culture_pic)
         sleepms(2);
         y += 26;
         i++;
+    endforeach
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200);
+    GFGumpPic(gump, 298, 100, culture_pic);
+
+    return GFSendGump(who, gump);
+endfunction
+
+// GetPathClasses reads :charactercreation:config/classes and returns the
+// new-system class catalog as struct{ Guerreiro := array, Ladino := array,
+// Sabio := array } in cfg-file order. Legacy archetype entries (which lack
+// the `archetype` field) are skipped automatically.
+function GetPathClasses()
+    var cfg := ReadConfigFile(":charactercreation:config/classes");
+    var keys := GetConfigStringKeys(cfg);
+    var result := struct{
+        Guerreiro := array{},
+        Ladino    := array{},
+        Sabio     := array{}
+    };
+    foreach key in keys
+        var elem := FindConfigElem(cfg, key);
+        if (elem == error)
+            continue;
+        endif
+        var arch := elem.archetype;
+        if (arch != "Guerreiro" && arch != "Ladino" && arch != "Sabio")
+            continue;
+        endif
+        result[arch].append(key);
+        sleepms(2);
+    endforeach
+    return result;
+endfunction
+
+// ClassFlatList returns all path-rework classes as a flat ordered array:
+// Guerreiro classes first, then Ladino, then Sabio. Used by ClasseSelectionGump
+// to map radio button index -> class name.
+function ClassFlatList()
+    var grouped := GetPathClasses();
+    var flat := array;
+    var arr;
+
+    arr := grouped.Guerreiro;
+    foreach cls in arr
+        flat.append(cls);
+    endforeach
+
+    arr := grouped.Ladino;
+    foreach cls in arr
+        flat.append(cls);
+    endforeach
+
+    arr := grouped.Sabio;
+    foreach cls in arr
+        flat.append(cls);
+    endforeach
+
+    return flat;
+endfunction
+
+// ClasseSelectionGump renders all path-rework classes in a single right-side
+// column (x=555), mirroring the layout of the legacy skillGump. Classes are
+// NOT filtered by chardata.path — any class can be picked with any path.
+// Archetypes are visually distinguished by color:
+//   Guerreiro = red, Ladino = purple, Sabio = blue
+// Returns input dict; radio button IDs are 200+i where i is the 1-based
+// index into ClassFlatList() (Guerreiro first, then Ladino, then Sabio).
+function ClasseSelectionGump(who, culture_pic)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+
+    var x := 63;
+    var y := 100;
+    showPreviousGumpInformation(gump, who, culture_pic, x, y);
+
+    // Right-side content area, matching legacy skillGump positioning.
+    var cx := 555;
+    var cy := 100;
+    GFHTMLArea(gump, cx+1, cy-24, 240, 40, "<BASEFONT Size=55 Color=#999999 > Escolha sua classe", 0, 0); //shadow
+    GFHTMLArea(gump, cx,   cy-25, 240, 40, "<BASEFONT Size=55 Color=#ffffff > Escolha sua classe", 0, 0);
+
+    var grouped := GetPathClasses();
+    var cfg := ReadConfigFile(":charactercreation:config/classes");
+
+    var arch_order := array{
+        struct{ key := "Guerreiro", color := "#8B0000" },
+        struct{ key := "Ladino",    color := "#4B0082" },
+        struct{ key := "Sabio",     color := "#00008B" }
+    };
+
+    var idx := 1;
+    foreach arch in arch_order
+        var arch_classes := grouped[arch.key];
+        foreach cls in arch_classes
+            var elem := FindConfigElem(cfg, cls);
+            var desc := "";
+            var die  := "";
+            if (elem != error)
+                desc := elem.description;
+                die  := elem.dice;
+            endif
+            var label := "{}  ({})".format(StrReplace(cls, "_", " "), die);
+            GFHTMLArea(gump, cx, cy-4, 160, 22, "<BASEFONT color={}>{}".format(arch.color, label), 1, 0);
+            GFTooltipText(gump, "{}<br><BASEFONT color=#ffffff>".format(desc));
+            GFRadioButton(gump, cx+165, cy-2, 0x9C4E, 0x9C4F, 0, 200+idx);
+            sleepms(2);
+            cy += 19;
+            idx++;
+        endforeach
+        // Small visual gap between archetype groups.
+        cy += 4;
     endforeach
 
     GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200);
@@ -496,7 +645,7 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
     var race := chardata.raca;
     var color := "#FFD700";
     var classe := chardata.classe;
-    var bg := chardata.background;
+    var path := chardata.path;
     var trait := chardata.trait;
     var skills := chardata.Skills;
     if (race)
@@ -518,10 +667,10 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
         GFHTMLArea(gump, x+16, y+51, 192, 24, "<BASEFONT color=#{}>{}".format(color, classe), 1, 0);
     endif
 
-    if (bg)
-        GFHTMLArea(gump, x+81, y+82, 192, 40, "<BASEFONT Size=55 Color=#999999 > Passado", 0, 0); //shadow
-        GFHTMLArea(gump, x+80, y+81, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Passado", 0, 0);
-        GFHTMLArea(gump, x+16, y+101, 192, 24, "<BASEFONT color=#{}>{}".format(color, bg), 1, 0);
+    if (path)
+        GFHTMLArea(gump, x+81, y+82, 192, 40, "<BASEFONT Size=55 Color=#999999 > Caminho", 0, 0); //shadow
+        GFHTMLArea(gump, x+80, y+81, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Caminho", 0, 0);
+        GFHTMLArea(gump, x+16, y+101, 192, 24, "<BASEFONT color=#{}>{}".format(color, path), 1, 0);
     endif
 
     if (trait)
@@ -726,6 +875,130 @@ function howManyPrimarias(chardata)
     return 2;
 endfunction
 
+// Path-rework slot helpers (Phase 2).
+//
+// BuildSkillSlots returns an ordered array of slot definitions for the new
+// slot-based skill picker. Each slot is:
+//   struct{ tier := 3|2, bucket := "Militar"|"Civil"|"Any" }
+// where tier 3 = Primary (starts at 40) and tier 2 = Secondary (starts at 10).
+//
+// Normal build is 3P + 3S (2 path-aligned primaries + 1 cross-path primary,
+// 1 path-aligned secondary + 1 cross secondary + 1 floating-any secondary).
+// Sabe-Tudo build drops the cross-path primary and gains a path-aligned and
+// a cross-path secondary, yielding 2P + 5S.
+function BuildSkillSlots(path, has_sabe_tudo)
+    var path_bucket := path;
+    var cross_bucket := "";
+    if (path == "Militar")
+        cross_bucket := "Civil";
+    else
+        cross_bucket := "Militar";
+    endif
+
+    var slots := array;
+    if (has_sabe_tudo)
+        slots.append(struct{ tier := 3, bucket := path_bucket });
+        slots.append(struct{ tier := 3, bucket := path_bucket });
+        slots.append(struct{ tier := 2, bucket := path_bucket });
+        slots.append(struct{ tier := 2, bucket := path_bucket });
+        slots.append(struct{ tier := 2, bucket := cross_bucket });
+        slots.append(struct{ tier := 2, bucket := cross_bucket });
+        slots.append(struct{ tier := 2, bucket := "Any" });
+    else
+        slots.append(struct{ tier := 3, bucket := path_bucket });
+        slots.append(struct{ tier := 3, bucket := path_bucket });
+        slots.append(struct{ tier := 3, bucket := cross_bucket });
+        slots.append(struct{ tier := 2, bucket := path_bucket });
+        slots.append(struct{ tier := 2, bucket := cross_bucket });
+        slots.append(struct{ tier := 2, bucket := "Any" });
+    endif
+
+    return slots;
+endfunction
+
+// SkillsForBucket returns the ordered list of skill names for a bucket.
+// "Any" concatenates Military then Civic.
+function SkillsForBucket(bucket)
+    if (bucket == "Militar")
+        return MILITARY_SKILLS;
+    elseif (bucket == "Civil")
+        return CIVIC_SKILLS;
+    endif
+    var combined := array;
+    foreach s in MILITARY_SKILLS
+        combined.append(s);
+    endforeach
+    foreach s in CIVIC_SKILLS
+        combined.append(s);
+    endforeach
+    return combined;
+endfunction
+
+// SlotSkillGump renders the picker for one slot. Single right-side column
+// (x=555), mirroring the legacy skillGump layout so it doesn't overlap with
+// the breadcrumb panel on the left. The caller iterates over BuildSkillSlots
+// and runs this once per slot. Picked skills are filtered out.
+//
+// Returns an input dict from GFSendGump. Radio button IDs are 200+i where
+// i is the 1-based position in the FULL bucket array (NOT the filtered
+// array). SkillFromSlotInput() maps back via the same indexing.
+function SlotSkillGump(who, culture_pic, byref chardata, slot_num, total_slots, slot_def, picked_skills)
+    var gump := GFCreateGump();
+    GFClosable(gump, 0);
+
+    var x := 63;
+    var y := 100;
+    showPreviousGumpInformation(gump, who, culture_pic, x, y);
+
+    var tier_label := "Primária";
+    var tier_color := "#0000CC";
+    if (slot_def.tier == 2)
+        tier_label := "Secundária";
+        tier_color := "#007A23";
+    endif
+
+    var header := "Slot {}/{}: {} {}".format(slot_num, total_slots, tier_label, slot_def.bucket);
+    var cx := 555;
+    var cy := 100;
+    GFHTMLArea(gump, cx+1, cy-24, 280, 40, "<BASEFONT Size=55 Color=#999999 > {}".format(header), 0, 0); //shadow
+    GFHTMLArea(gump, cx,   cy-25, 280, 40, "<BASEFONT Size=55 Color=#ffffff > {}".format(header), 0, 0);
+
+    var all_for_bucket := SkillsForBucket(slot_def.bucket);
+
+    var i := 1;
+    foreach skill in all_for_bucket
+        if (skill in picked_skills)
+            i++;
+            continue;
+        endif
+        GFHTMLArea(gump, cx, cy-4, 160, 24, "<BASEFONT color={}>{}".format(tier_color, StrReplace(skill, "_", " ")), 1, 0);
+        GFTooltipText(gump, GetSkillTooltipDescriptionFromName(skill));
+        GFRadioButton(gump, cx+165, cy-2, 0x9C4E, 0x9C4F, 0, 200+i);
+        sleepms(2);
+        cy += 22;
+        i++;
+    endforeach
+
+    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200);
+    GFGumpPic(gump, 298, 100, culture_pic);
+
+    return GFSendGump(who, gump);
+endfunction
+
+// SkillFromSlotInput maps a gump button value back to a skill name for a slot.
+// Returns "" if no radio was clicked or the index is out of range.
+function SkillFromSlotInput(slot_def, btn_value)
+    if (btn_value <= 200)
+        return "";
+    endif
+    var idx := btn_value - 200;
+    var all_for_bucket := SkillsForBucket(slot_def.bucket);
+    if (idx < 1 || idx > all_for_bucket.size())
+        return "";
+    endif
+    return all_for_bucket[idx];
+endfunction
+
 function culturalTraitBonus(who, byref chardata)
     var cfg := ReadConfigFile(":charactercreation:config/backgrounds");
     var culturalBg := chardata.background;
@@ -750,7 +1023,7 @@ function attributeGump(who, culture_pic, byref chardata)
     if (chardata.str > 40)
         GFAddButton(gump, 675, y+25, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 201);
     endif
-    if ((chardata.attribute_points - cost >= 0) && (chardata.str <100)) 
+    if ((chardata.attribute_points - cost >= 0) && (chardata.str <100))
         GFAddButton(gump, 695, y+25, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 200);
     endif
 
@@ -759,7 +1032,7 @@ function attributeGump(who, culture_pic, byref chardata)
     if (chardata.dex > 40)
         GFAddButton(gump, 675, y+45, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 211);
     endif
-    if ((chardata.attribute_points - cost >= 0) && (chardata.dex <100)) 
+    if ((chardata.attribute_points - cost >= 0) && (chardata.dex <100))
         GFAddButton(gump, 695, y+45, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 210);
     endif
 
@@ -768,7 +1041,7 @@ function attributeGump(who, culture_pic, byref chardata)
     if (chardata.int > 40)
         GFAddButton(gump, 675, y+65, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 221);
     endif
-    if ((chardata.attribute_points - cost >= 0) && (chardata.int <100)) 
+    if ((chardata.attribute_points - cost >= 0) && (chardata.int <100))
         GFAddButton(gump, 695, y+65, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 220);
     endif
 

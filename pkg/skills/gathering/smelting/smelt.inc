@@ -210,6 +210,6 @@ function smeltaImpurezasRaras(who, amt)
     SendSysMessage(who, $"Achou {qty} unidade(s) de {names[objtype]} em meio aos minerios.");
   endforeach
 
-  SkillCheck(who, GATHERING, -1);
+  SkillCheck(who, "Mining", -1);
   return 1;
 endfunction

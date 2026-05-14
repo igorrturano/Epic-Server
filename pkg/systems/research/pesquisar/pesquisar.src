@@ -853,7 +853,12 @@ function CheckResearchRequirements(who, isQuickResearch := 0, power := 0, recipe
             "Instrução de Marcenaria":
                 skillLevel := AP_GetSkill(who, WOODWORKING);
             "Instrução de Trabalho Doméstico":
-                skillLevel := AP_GetSkill(who, "Domestic_Work");
+                // Path-rework: legacy "Trabalho Doméstico" recipes cover both
+                // tailoring and provisioning. Use the higher of the two new
+                // skills (or the legacy parent via EffectiveSkill bridge).
+                var _td_tail := EffectiveSkill(who, "Tailoring");
+                var _td_prov := EffectiveSkill(who, "Provisioning");
+                skillLevel := (_td_tail > _td_prov) ? _td_tail : _td_prov;
             "Receita Alquimica":
             "Tinta":
                 skillLevel := AP_GetSkill(who, ALCHEMY);
@@ -952,9 +957,13 @@ function CheckforBooks(who, power := 0)
 endfunction
 
 function GetResearchSkills(who)
+    // "costureiro" is the tailor display entry — bridge to Tailoring (with
+    // EffectiveSkill falling back to legacy Domestic_Work for pre-migration
+    // characters). Other entries use legacy constants that resolve to the
+    // same SkillId as their new names via cfg Aliases.
     return struct{
         "ferreiro" := AP_GetSkill(who, METALWORKING),
-        "costureiro" := AP_GetSkill(who, "Domestic_Work"),
+        "costureiro" := EffectiveSkill(who, "Tailoring"),
         "alquimista" := AP_GetSkill(who, ALCHEMY),
         "mago" := AP_GetSkill(who, MAGERY),
         "carpenter" := AP_GetSkill(who, WOODWORKING)
@@ -1254,7 +1263,10 @@ function PerformRapidResearch(who, recipe, byref gump)
             skillname := WOODWORKING;
             recipe.+craftSkillType := "WW";
         "Instrução de Trabalho Doméstico":
-            skillname := "Domestic_Work";
+            // skillname is set but appears unused downstream in PerformRapidResearch;
+            // setting to "Tailoring" for consistency with the new system. Bridge
+            // to legacy Domestic_Work would happen via EffectiveSkill if read.
+            skillname := "Tailoring";
             recipe.+craftSkillType := "DW";
         "Receita Alquimica": skillname := ALCHEMY;
         "Tinta": skillname := ALCHEMY;

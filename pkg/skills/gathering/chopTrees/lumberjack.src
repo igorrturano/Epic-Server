@@ -77,7 +77,7 @@ program skill_LumberJack(who, tool)
 		endif
 		ChopTree(who, tool, targ, orig_x, orig_y);
 		// AP_ConsumeVital(who, "Stamina", 5);
-		CheckToolWear(who, tool, GATHERING);
+		CheckToolWear(who, tool, "Lumberjacking");
 		sleep(1);
 		if (LJ_GetWoodAmount(who.realm, targ.x, targ.y) == 0)
 			PrintTextAbove(who, "*derruba a arvore*");
@@ -126,8 +126,8 @@ function ChopTree(who, tool, targ, orig_x, orig_y)
 	// 	SendSysMessage(who, "Difficulty ->"+difficulty);
 	// endif
 
-	if (SkillCheck(who, GATHERING, difficulty) > 0 || MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
-		var amt := Cint(AP_GetSkill(who, GATHERING) / 20);
+	if (SkillCheck(who, "Lumberjacking", difficulty) > 0 || MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
+		var amt := Cint(EffectiveSkill(who, "Lumberjacking") / 20);
 		if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_LUMBERJACK))
 			amt := amt + 4;
 		endif
