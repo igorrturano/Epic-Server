@@ -50,7 +50,7 @@ program PlantSeed(who, seed)
 		difficulty := difficulty - 20;
 	endif
 
-	if (SkillCheck(who, DOMESTIC_WORK, difficulty, award_diff) > 0)
+	if (SkillCheck(who, "Provisioning", difficulty, award_diff) > 0)
 		var grower := CreateItemAtLocation(who.x, who.y, who.z + 1, GROWTH_UNIT, 1, who.realm);
 		grower.SetGrowerType(seed.objtype);
 		SendSysMessage(who, "Voce plantou a semente.");

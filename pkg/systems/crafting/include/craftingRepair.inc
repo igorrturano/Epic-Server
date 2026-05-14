@@ -189,6 +189,12 @@ endif
 endfunction
 
 function AnimRepair(who, skill, delay)
+  // Path-rework bridge: new-system Tailoring uses the same animation as
+  // legacy Domestic_Work tailoring. Renames (Smithing/Carpentry) are
+  // aliased so METALWORKING/WOODWORKING constants already cover them.
+  if (skill == "Tailoring")
+    skill := DOMESTIC_WORK;
+  endif
   for i:=1 to delay
     case (skill)
       METALWORKING: Imersao(who, "mw"); break;
@@ -201,14 +207,22 @@ endfunction
 
 function CreateRepairDeed(who, scroll, craft_skill)
 
+  // Path-rework bridge: normalize Tailoring -> Domestic_Work for case dispatch.
+  // The AP_GetSkill below reads via EffectiveSkill so both legacy and new
+  // characters get a useful value.
+  var skill_for_dispatch := craft_skill;
+  if (skill_for_dispatch == "Tailoring")
+    skill_for_dispatch := DOMESTIC_WORK;
+  endif
+
   var type, title, color;
-  case(CInt(craft_skill))
+  case(CInt(skill_for_dispatch))
      METALWORKING: 		type := "Blacksmith"; color := CInt(2107);
      WOODWORKING: 	type := "Bowyer"; color := CInt(2116);
      //CARPENTRY: 		type := "Carpenter"; color := CInt(2113);
      DOMESTIC_WORK: 		type := "Tailor"; color := CInt(2128);
   endcase
-  var ramt := AP_GetSkill(who, craft_skill);
+  var ramt := EffectiveSkill(who, craft_skill);
   if(ramt < 50)
     SendSysMessage(who, "You must be at least apprentice level to create a repair service contract.");
     return;
@@ -275,8 +289,14 @@ function repair_this(who, craft_skill := METALWORKING)
     endcase
     return;
   endif
+  // Path-rework bridge: normalize Tailoring -> Domestic_Work for case dispatch.
+  var skill_for_dispatch := craft_skill;
+  if (skill_for_dispatch == "Tailoring")
+    skill_for_dispatch := DOMESTIC_WORK;
+  endif
+
   var forge := 0;
-  case(craft_skill)
+  case(skill_for_dispatch)
     METALWORKING:
       forge := 1;
       break;

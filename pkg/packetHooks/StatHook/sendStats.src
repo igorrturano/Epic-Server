@@ -126,9 +126,9 @@ exported function HandleSendStats(character, byref packet)
 			var levelAtual := CInt(GetObjProperty(character, "Level"));
 				if (!levelAtual) levelAtual := 1; endif
 
-			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::STRENGTH, packet.GetInt16(OLD_STATUS_OFFSETS::STRENGTH));
-			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEXTERITY, packet.GetInt16(OLD_STATUS_OFFSETS::DEXTERITY));
-			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::INTELLIGENCE, packet.GetInt16(OLD_STATUS_OFFSETS::INTELLIGENCE));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::STRENGTH, packet.GetInt16(OLD_STATUS_OFFSETS::STRENGTH) / 5);
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEXTERITY, packet.GetInt16(OLD_STATUS_OFFSETS::DEXTERITY) / 5);
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::INTELLIGENCE, packet.GetInt16(OLD_STATUS_OFFSETS::INTELLIGENCE) / 5);
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::STAMINA, packet.GetInt16(OLD_STATUS_OFFSETS::STAMINA));
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::STAMINA_MAX, packet.GetInt16(OLD_STATUS_OFFSETS::STAMINA_MAX));
 			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::MANA, packet.GetInt16(OLD_STATUS_OFFSETS::MANA));

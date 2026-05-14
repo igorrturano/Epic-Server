@@ -35,19 +35,42 @@ endfunction
 
 function TraduzirProfissao(profissao)
     case (profissao)
+        // Legacy + renamed skills (Smithing/Carpentry/etc. resolve here too
+        // via cfg Alias, so we map both spellings just in case the raw new
+        // name is passed in).
         "Metal_Working": return "Ferreiro";
-        "Alchemy": return "Alquimista";
-        "Magery": return "Mago";
-        "Survival": return "Sobrevivencialista";
-        "Medicine": return "Médico";
-        "Domestic_Work": return "Trabalhador Doméstico";
+        "Smithing":      return "Ferreiro";
+        "Wood_Working":  return "Carpinteiro";
+        "Carpentry":     return "Carpinteiro";
+        "Sneak":         return "Furtividade";
+        "Stealth":       return "Furtividade";
+        "Pickpocketing": return "Punguista";
+        "Theft":         return "Punguista";
+        "Awareness":     return "Perceptivo";
+        "Perception":    return "Perceptivo";
+
+        "Alchemy":   return "Alquimista";
+        "Magery":    return "Mago";
+        "Survival":  return "Sobrevivencialista";
+        "Medicine":  return "Médico";
         "Mechanics": return "Mecânico";
-        "Wood_Working": return "Carpinteiro";
-        "Gathering": return "Coletor";
+        "Theology":  return "Teologia";
+        "Science":   return "Ciência";
+        "Arcana":    return "Arcana";
+
+        // Legacy split parents (kept during migration window)
+        "Domestic_Work": return "Trabalhador Doméstico";
+        "Gathering":     return "Coletor";
         "Handle_Animal": return "Adestrador de Animais";
-        "Theology": return "Teologia";
-        "Science": return "Ciência";
-        "Arcana": return "Arcana";
+
+        // Path-rework split skills
+        "Tailoring":     return "Costureiro";
+        "Provisioning":  return "Provedor";
+        "Mining":        return "Minerador";
+        "Lumberjacking": return "Lenhador";
+        "Taming":        return "Domador";
+        "Beastmastery":  return "Mestre de Bestas";
+
         default: return profissao;
     endcase
 endfunction

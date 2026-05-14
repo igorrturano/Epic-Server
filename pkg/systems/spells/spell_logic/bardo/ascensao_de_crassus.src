@@ -32,7 +32,7 @@ program SpellScript(params)
 			AP_ModifyStatMod(mobile, INTELLIGENCE, bonus);
 			SetObjProperty(mobile, "#cantico_crassus", bonus);
 			PlayStationaryEffect(mobile.x, mobile.y, mobile.z, FX_BLESS_EFFECT, 3, 3);
-			SendSysMessageEx(mobile, $"Ascensao de Crassus: +{bonus} STR/DEX/INT por {duration}s.", SSM_INFO);
+			SendSysMessageEx(mobile, $"Ascensao de Crassus: +{CInt(bonus / 5)} STR/DEX/INT por {duration}s.", SSM_INFO);
 			buffed_list[buffed + 1] := mobile;
 			buffed += 1;
 		endif

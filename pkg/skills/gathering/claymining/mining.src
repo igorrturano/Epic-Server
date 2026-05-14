@@ -113,7 +113,7 @@ program SandMining(who, scoop)
 			endif
 			AP_ConsumeVital(who, "Stamina", 5);
 		endif
-		CheckToolWear(who, scoop, GATHERING);
+		CheckToolWear(who, scoop, "Mining");
 		sleep(3);
 	endwhile
 	SendSysMessage(who, "Voce parou de minerar.");
@@ -145,7 +145,7 @@ function MiningLoop(who, scoop, my_x, my_y, my_facing, location_name)
 
 	var difficulty := 20; // CInt(100 - (resource_amount * 100 / MAX_RESOURCE_AMOUNT));
 
-	if (SkillCheck(who, GATHERING, difficulty) > 0)
+	if (SkillCheck(who, "Mining", difficulty) > 0)
 		CreateItemInBackPack(who, CLAY_BALL, 1);
 		SendSysMessageEx(who, "Voce pegou um pouco de argila.", SSM_INFO);
 		return 1;
@@ -428,5 +428,5 @@ function DesenterrarBau(who, scoop, targ)
 	Message("*Termina de desenterrar o baú*").SendEmote(who);
 	SendSysMessageEx(who, "Você desenterrou um baú!", SSM_INFO);
 
-	CheckToolWear(who, scoop, GATHERING);
+	CheckToolWear(who, scoop, "Mining");
 endfunction

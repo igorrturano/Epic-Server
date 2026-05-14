@@ -131,9 +131,9 @@ program skill_Anatomy(who)
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::ACADEMIC_TRAINING))
 		if (sucesso > 0)
-			SendSysMessageEx(who, strMsg + " parece " + streng + " (" + AP_GetStat(subject, "Strength") + "),",
+			SendSysMessageEx(who, strMsg + " parece " + streng + " (" + CInt(AP_GetStat(subject, "Strength") / 5) + "),",
 							  SSM_INFO);
-			SendSysMessageEx(who, dext + " (" + AP_GetStat(subject, "Dexterity") + "),", SSM_INFO);
+			SendSysMessageEx(who, dext + " (" + CInt(AP_GetStat(subject, "Dexterity") / 5) + "),", SSM_INFO);
 			SendSysMessageEx(who, endur + ".", SSM_INFO);
 			SendSysMessageEx(who, fort + " (" + GetResist(subject, FORTITUDE) + "),", SSM_INFO);
 			SendSysMessageEx(who, refl + " (" + GetResist(subject, REFLEXES) + "),", SSM_INFO);

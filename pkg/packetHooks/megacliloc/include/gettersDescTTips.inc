@@ -165,10 +165,11 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	var str_required := weapon.GetSTRRequired();
 	
 	if(str_required > 0)
+		var str_required_disp := CInt(str_required / 5);
 		if (character.GetSTR() < str_required)
-			xDesc := xDesc + RED + "Força exigida: " + str_required + "<br>";
+			xDesc := xDesc + RED + "Força exigida: " + str_required_disp + "<br>";
 		else
-			xDesc := xDesc + "Força exigida: " + str_required + "<br>";
+			xDesc := xDesc + "Força exigida: " + str_required_disp + "<br>";
 		endif
 	endif
 
