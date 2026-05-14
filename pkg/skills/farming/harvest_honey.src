@@ -44,7 +44,7 @@ program harvest_honey(character, beehive)
 									COLMEIA_FONT_COLOR_BAD);
 					return 1;
 				// Testa a skill para retirar a cera de abelha e o mel
-				elseif (SkillCheck(character, DOMESTIC_WORK, 20, 0) > 0 || SkillCheck(character, GATHERING, 20, 0) > 0)
+				elseif (SkillCheck(character, "Provisioning", 20, 0) > 0)
 					if (!already_harvested_amount)
 						SetObjProperty(beehive, "#harvested", 1);
 					else
@@ -67,7 +67,7 @@ program harvest_honey(character, beehive)
 									COLMEIA_FONT_COLOR_BAD);
 				endif
 				// Testa se as abelhas ficaram furiosas
-				if (!(SkillCheck(character, HANDLEANIMAL, 15, 0) > 0))
+				if (!(SkillCheck(character, "Taming", 15, 0) > 0))
 					// if (!TemHabilidade(character, "Sorte na Coleta"))
 						if (RandomInt(4) == 1)
 							CreateItemAtLocation(beehive.x, beehive.y, beehive.z, ITEM_SWARM, 1, character.realm);

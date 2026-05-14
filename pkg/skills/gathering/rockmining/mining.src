@@ -44,7 +44,7 @@ program RockMining(who, tool)
 	for (i; i >= 0; i := i - 1)
 		if (!MiningLoop(who, tool, my_x, my_y, my_facing, location_name))
 			break;
-		elseif (!CheckToolWear(who, tool, GATHERING))
+		elseif (!CheckToolWear(who, tool, "Mining"))
 			break;
 		endif
 		sleep(3);
@@ -78,7 +78,7 @@ function MiningLoop(who, tool, my_x, my_y, my_facing, location_name)
 
 	var difficulty := CInt(100 - (resource_amount * 100 / MAX_RESOURCE_AMOUNT));
 
-	if (SkillCheck(who, GATHERING, difficulty) > 0 || MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
+	if (SkillCheck(who, "Mining", difficulty) > 0 || MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
 		CreateItemInBackPack(who, BLOCK_OF_STONE, 1);
 		SendSysMessage(who, "Voce minerou um bloco de pedra.");
 		return 1;

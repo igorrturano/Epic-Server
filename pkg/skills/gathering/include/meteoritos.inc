@@ -71,12 +71,12 @@ function MeteoriteSwingAndExtract(who, tool, meteorite)
 		difficulty := difficulty - 5;
 	endif
 
-	if (SkillCheck(who, GATHERING, difficulty) <= 0)
+	if (SkillCheck(who, "Mining", difficulty) <= 0)
 		SendSysMessage(who, "Você falhou em extrair minério.");
 		return 1;
 	endif
 
-	var amt := CInt(AP_GetSkill(who, GATHERING) / 20);
+	var amt := CInt(EffectiveSkill(who, "Mining") / 20);
 	var chardata := GetObjProperty(who, "chardata");
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_MINER) || chardata.trait == "Cavar Buracos")
 		amt := amt + 2;
@@ -116,7 +116,7 @@ function MeteoriteExtractFlow(who, tool, meteorite)
 	endif
 
 	while (MeteoriteSwingAndExtract(who, tool, meteorite))
-		CheckToolWear(who, tool, GATHERING);
+		CheckToolWear(who, tool, "Mining");
 
 		var stam_cost := 5;
 		if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))

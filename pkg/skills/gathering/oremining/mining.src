@@ -106,7 +106,7 @@ program OreMining(who, tool)
 	endif
 
 	while (MiningLoop(who, tool, my_x, my_y, targ.x, targ.y, my_facing))
-		CheckToolWear(who, tool, GATHERING);
+		CheckToolWear(who, tool, "Mining");
 
 		if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
 			if (!CheckLoop(who, tool, my_x, my_y, my_facing))
@@ -162,7 +162,7 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 	if (!ore_type)
 		return 0;
 	/* elseif (ore_type == 20481) // Se for pedra
-		if ( SkillCheck(who, GATHERING, difficulty) > 0 )
+		if ( SkillCheck(who, "Mining", difficulty) > 0 )
 			var minerio := CreateItemInBackPack(who, ore_type, 1);
 			minerio.movable := 1;
 			SendSysMessage(who, "Voce pegou alguns minerios. " );
@@ -175,8 +175,8 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 	if (ore_amount > 0)
 		if (ore_type != 999) // 999 eh quando nao passou na chance de raridade do minerio
 
-			if (SkillCheck(who, GATHERING, difficulty) > 0)
-				var amt := Cint(AP_GetSkill(who, GATHERING) / 20);
+			if (SkillCheck(who, "Mining", difficulty) > 0)
+				var amt := Cint(EffectiveSkill(who, "Mining") / 20);
 				if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_MINER) || chardata.trait == "Cavar Buracos")
 					amt := amt + 2;
 				endif
@@ -192,7 +192,7 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 				minerio.movable := 1;
 				SendSysMessage(who, "Você pegou alguns minérios. ");
 				// Verifica se encontra joia
-				if (AP_GetSkill(who, GATHERING) > 40.0)
+				if (EffectiveSkill(who, "Mining") > 40.0)
 					Garimpeiro(who);
 				endif
 				if (MobileWrapper(who).HasAbility(ABILITY_ID::MINE_RARITIES))
@@ -245,7 +245,7 @@ function mineraRaroAleatorio(who)
 		achou := 1;
 	endif
 	if (achou)
-		SkillCheck(who, GATHERING, -1);
+		SkillCheck(who, "Mining", -1);
 	endif
 	return achou;
 endfunction

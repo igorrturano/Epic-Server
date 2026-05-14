@@ -46,7 +46,7 @@ program skill_animal_lore(who)
 	var npcDificuldade := CInt(AP_GetSkill(creature, "Wrestling"));
 	PrintTextAbove(who, "*Analisando " + creature.name + "*");
 	Sleep(1);
-	if (SkillCheck(who, HANDLEANIMAL, npcDificuldade, npcDificuldade - 10, advance_flags) > 0)
+	if (SkillCheck(who, "Beastmastery", npcDificuldade, npcDificuldade - 10, advance_flags) > 0)
 		var al_Gump := AL_LoadGump(who, creature);
 		var input := GFSendGump(who, al_Gump);
 
@@ -61,7 +61,7 @@ program skill_animal_lore(who)
 			ev.+source;
 			ev.source := who;
 			sendEvent(creature, ev);
-			SetCooldown(creature, "peacemade", cint(AP_GetSkill(who, HANDLEANIMAL) * 5));
+			SetCooldown(creature, "peacemade", cint(EffectiveSkill(who, "Beastmastery") * 5));
 			PrintTextPrivate(creature, "A criatura foi acalmada.", who);
 		endif
 
@@ -77,7 +77,7 @@ program skill_animal_lore(who)
 			ev.+source;
 			ev.source := who;
 			sendEvent(creature, ev);
-			SetCooldown(creature, "peacemade", cint(AP_GetSkill(who, HANDLEANIMAL) * 5));
+			SetCooldown(creature, "peacemade", cint(EffectiveSkill(who, "Beastmastery") * 5));
 			PrintTextPrivate(creature, "A criatura foi acalmada.", who);
 		endif
 	else
@@ -172,7 +172,7 @@ var foodtype := GetDietByTaxonomy(taxonomy);
 	var tempo_fidelizar := "";
 	var timebond := ReadGameClock(); // tempo do relógio
 	var startbond := GetObjProperty(creature, "bond"); // hora que foi tamado
-	var adestramento := AP_GetSkill(who, HANDLEANIMAL); // skill do owner
+	var adestramento := EffectiveSkill(who, "Taming"); // skill do owner
 	var adestramentocalc := (adestramento * 4320); // calculo do modificador do tempo
 	var tempo_detreino := (432001 - adestramentocalc); // modificador do tempo menos 5 dias total para fidelizar qqr animal
 
