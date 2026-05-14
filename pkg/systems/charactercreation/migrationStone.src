@@ -1,0 +1,43 @@
+use uo;
+use os;
+
+include ":gumps:yesNo";
+include "include/say";
+
+// Double-click handler for the path-rework migration stone (0x5005).
+//
+// Wipes chardata + creation_completed so epicCreationGump runs fresh,
+// preserves XP/Level/createdate/name into a `migration_preserve` ObjProperty
+// that epicCreationGump consumes at the very end to restore. The player
+// re-picks culture/race/path/class/skills/etc., then comes out the other
+// side with their level and history intact under the new system.
+program migrationStone(who, theStone)
+    var prompt := "Deseja migrar seu personagem para o novo sistema?\n\n"
+                + "Isto vai resetar suas habilidades, classe, e equipamentos atuais. "
+                + "XP, nível, nome e data de criação serão preservados.\n\n"
+                + "Você precisará refazer todo o processo de criação.";
+
+    if (!YesNo(who, prompt, "Sim, migrar", "Cancelar"))
+        SendSysMessage(who, "Migração cancelada.");
+        return;
+    endif
+
+    // Stash everything that should survive the rerun. Restored at the very
+    // end of epicCreationGump.
+    var preserve := struct{
+        XP            := CInt(GetObjProperty(who, "XP")),
+        Level         := CInt(GetObjProperty(who, "Level")),
+        createdate    := GetObjProperty(who, "createdate"),
+        original_name := who.name
+    };
+    SetObjProperty(who, "migration_preserve", preserve);
+
+    // Wipe creation state so epicCreationGump bypasses its early-return guard
+    // and runs from scratch.
+    EraseObjProperty(who, "chardata");
+    EraseObjProperty(who, "creation_completed");
+
+    SendSysMessage(who, "Iniciando migração. Por favor refaça seu personagem.");
+
+    Start_Script(":charactercreation:epicgumpcriacao", who);
+endprogram

@@ -53,14 +53,14 @@ program epicCreationGump(who)
 	SetObjProperty(who, "nome_inicial", who.name);
 
 	racialSelection(who, culture_pic);
+	pathSelection(who, culture_pic);
 	classSelection(who, culture_pic);
-	backgroundSelection(who, culture_pic);
 	traitSelection(who, culture_pic);
 	skillSelection(who, culture_pic);
 	attributeSelection(who, culture_pic);
 	religionSelection(who);
 	// gameModeSelection(who);
-	pathOfWisdom(who, culture_pic);
+	applyClassStarter(who);
 	itemInheritance(who);
 	languageSelection(who, culture_pic);
 	signSelection(who);
@@ -86,6 +86,24 @@ program epicCreationGump(who)
 	if (who.cmdlevel == 0)
 		var chardata_census := GetObjProperty(who, "chardata");
 		CensusTrackCreation(chardata_census);
+	endif
+
+	// Migration handoff (Phase 5). If migrationStone.src triggered this run,
+	// it stashed the player's pre-migration XP/Level/createdate/name into
+	// `migration_preserve`. Restore them now so the player keeps their
+	// progression and identity across the rerun. Recalculate vitals so
+	// max HP reflects the restored Level under the new formula.
+	var preserve := GetObjProperty(who, "migration_preserve");
+	if (preserve != error && preserve)
+		SetObjProperty(who, "XP", preserve.XP);
+		SetObjProperty(who, "Level", preserve.Level);
+		SetObjProperty(who, "createdate", preserve.createdate);
+		if (preserve.original_name && preserve.original_name != "")
+			who.name := preserve.original_name;
+		endif
+		EraseObjProperty(who, "migration_preserve");
+		RecalcVitals(who);
+		SendSysMessageEX(who, "Migração completa. XP, nível, nome e data de criação preservados.", SSM_INFO);
 	endif
 endprogram
 
@@ -272,12 +290,12 @@ function CountSelectedCategories(caracteristicas_rp, required_categories)
 	return count;
 endfunction
 
-function classSelection(who, culture_pic)
+function pathSelection(who, culture_pic)
 	var btn_value;
 	var chardata := GetObjProperty(who, "chardata");
 	while (!CreationCompleted(who))
 		sleepms(2);
-		var input := ClassGump(who, culture_pic);
+		var input := PathGump(who, culture_pic);
 		if (!IsGumpValid(input))
 			continue;
 		endif
@@ -285,22 +303,70 @@ function classSelection(who, culture_pic)
 			btn_value := key;
 		endforeach
 		if (btn_value == 201)
-			chardata.+classe := GUERREIRO;
+			chardata.+path := MILITAR;
 			break;
 		elseif (btn_value == 202)
-			chardata.+classe := LADINO;
-			break;
-		elseif (btn_value == 203)
-			chardata.+classe := SABIO;
+			chardata.+path := CIVIL;
 			break;
 		else
-			SendSysMessageEX(who, "Escolha seu caminho", SSM_FAIL);
+			SendSysMessageEX(who, "Escolha sua vocação", SSM_FAIL);
 		endif
 	endwhile
 
 	SetObjProperty(who, "chardata", chardata);
+	SendSysMessageEX(who, "Você escolheu o caminho " + chardata.path, SSM_INFO);
+endfunction
+
+// Class selection (Phase 3 rework). Player picks one of 29 specific classes
+// regardless of their chosen path. The class determines:
+//   chardata.subclasse — specific class (e.g. "Paladino"), used by new code
+//   chardata.classe    — legacy archetype label ("Guerreiro"/"Ladino"/"Sabio"),
+//                        preserved so existing code reading chardata.classe
+//                        (ability registries, pathOfWisdom-era checks, etc.)
+//                        continues to function unchanged
+//   chardata.dice      — HP die for the new HP formula (Phase 4)
+function classSelection(who, culture_pic)
+	var btn_value;
+	var chardata := GetObjProperty(who, "chardata");
+	var cfg := ReadConfigFile(":charactercreation:config/classes");
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var input := ClasseSelectionGump(who, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		foreach key in (input.keys)
+			btn_value := key;
+		endforeach
+
+		if (btn_value <= 200)
+			SendSysMessageEX(who, "Escolha sua classe", SSM_FAIL);
+			continue;
+		endif
+
+		var flat := ClassFlatList();
+		var idx := btn_value - 200;
+		if (idx < 1 || idx > flat.size())
+			SendSysMessageEX(who, "Escolha sua classe", SSM_FAIL);
+			continue;
+		endif
+
+		var picked := flat[idx];
+		var elem := FindConfigElem(cfg, picked);
+		if (elem == error)
+			SendSysMessageEX(who, "Erro ao carregar classe " + picked, SSM_FAIL);
+			continue;
+		endif
+
+		chardata.+subclasse := picked;
+		chardata.+classe    := elem.archetype;
+		chardata.+dice      := elem.dice;
+		break;
+	endwhile
+
+	SetObjProperty(who, "chardata", chardata);
 	SetObjProperty(who, "classe", chardata.classe);
-	SendSysMessageEX(who, "Você escolheu o caminho do " + chardata.classe, SSM_INFO);
+	SendSysMessageEX(who, "Você escolheu a classe " + StrReplace(chardata.subclasse, "_", " ") + " (" + chardata.classe + ", " + chardata.dice + ")", SSM_INFO);
 endfunction
 
 function backgroundSelection(who, culture_pic)
@@ -374,146 +440,59 @@ function traitSelection(who, culture_pic)
 	SendSysMessageEX(who, "Sua característica é " + chardata.trait, SSM_INFO);
 endfunction
 
+// Slot-based skill selection (Phase 2 rework).
+//
+// Each character picks 3 Primary + 3 Secondary skills (or 2P + 5S with Sabe-Tudo)
+// from buckets gated by their chosen path. No points pool, no background bonus,
+// no class-driven primary cap — slot layout is fixed by path + trait.
+//
+// Primary starts at 40, Secondary starts at 10. See BuildSkillSlots for the
+// per-path slot layout.
 function skillSelection(who, culture_pic)
-	var btn_value;
 	var chardata := GetObjProperty(who, "chardata");
-	var pri_allowed := howManyPrimarias(chardata);
-	var i := 1;
-	chardata.+points := 20;
-	if (chardata.trait == "Sabe-Tudo")
-		chardata.points += 5;
-	endif
-	if (chardata.raca == "Humano")
-		chardata.points += 2;
-	endif
+	var has_sabe_tudo := (chardata.trait == "Sabe-Tudo");
+	var slots := BuildSkillSlots(chardata.path, has_sabe_tudo);
+	var total := slots.size();
+
 	chardata.+Skills := dictionary;
-	var points := chardata.points;
-	var pri_count := 0;
-	while (!CreationCompleted(who))
+	var picked_skills := array;
+
+	var slot_idx := 1;
+	while (slot_idx <= total && !CreationCompleted(who))
 		sleepms(2);
-		if (chardata.points < 0)
-			SendSysMessageEX(who, "Compra de habilidade inválida", SSM_FAIL);
-			DisconnectClient(who);
-		endif
-		var input := skillGump(who, culture_pic, chardata);
+		var slot_def := slots[slot_idx];
+		var input := SlotSkillGump(who, culture_pic, chardata, slot_idx, total, slot_def, picked_skills);
 		if (!IsGumpValid(input))
 			continue;
 		endif
+
+		var btn_value := 0;
 		foreach key in (input.keys)
 			btn_value := key;
 		endforeach
-		if (btn_value >= 100 && btn_value < 130)
-			var skill := GetSkillNameFromId(btn_value - 100);
-			chardata.Skills.+skill;
-			if (chardata.Skills[skill] > 3)
-				chardata.Skills[skill] := 3;
-			endif
-			chardata.Skills[skill] -= 1;
-			chardata.points++;
-		elseif (btn_value >= 130 && btn_value < 200)
-			var skill := GetSkillNameFromId(btn_value - 130);
 
-			chardata.Skills.+skill;
-			if (chardata.Skills[skill] < 1)
-				chardata.Skills[skill] := 0;
-			endif
-			chardata.Skills[skill] += 1;
-			chardata.points--;
+		var pick := SkillFromSlotInput(slot_def, btn_value);
+		if (pick == "" || pick in picked_skills)
+			SendSysMessageEX(who, "Selecione uma habilidade válida", SSM_FAIL);
+			continue;
 		endif
-		if (btn_value >= 200 && btn_value < 230)
-			var skill := GetSkillNameFromId(btn_value - 200);
 
-			chardata.Skills.+skill;
-			if (chardata.Skills[skill] < 1)
-				chardata.Skills[skill] := 0;
-			endif
-			chardata.Skills[skill] -= 1;
-			chardata.points += 2;
-		elseif (btn_value >= 230 && btn_value < 300)
-			var skill := GetSkillNameFromId(btn_value - 230);
-
-			chardata.Skills.+skill;
-			if (chardata.Skills[skill] < 1)
-				chardata.Skills[skill] := 0;
-			endif
-			chardata.Skills[skill] += 1;
-			chardata.points -= 2;
-		endif
-		if (btn_value >= 300 && btn_value < 330)
-			var skill := GetSkillNameFromId(btn_value - 300);
-
-			chardata.Skills.+skill;
-			if (chardata.Skills[skill] < 1)
-				chardata.Skills[skill] := 0;
-			endif
-			chardata.Skills[skill] -= 1;
-			chardata.points += 3;
-		elseif (btn_value >= 330 && btn_value < 400)
-			var skill := GetSkillNameFromId(btn_value - 330);
-
-			chardata.Skills.+skill;
-			if (chardata.Skills[skill] < 1)
-				chardata.Skills[skill] := 0;
-			endif
-			chardata.Skills[skill] += 1;
-			chardata.points -= 3;
-		endif
-		if (btn_value >= 400 && btn_value < 430)
-			var skill := GetSkillNameFromId(btn_value - 400);
-
-			chardata.Skills.+skill;
-			if (chardata.Skills[skill] < 1)
-				chardata.Skills[skill] := 0;
-			endif
-			chardata.Skills[skill] -= 1;
-			chardata.points += 4;
-		elseif (btn_value >= 430 && btn_value < 500)
-			var skill := GetSkillNameFromId(btn_value - 430);
-
-			chardata.Skills.+skill;
-			if (chardata.Skills[skill] < 1)
-				chardata.Skills[skill] := 0;
-			endif
-			chardata.Skills[skill] += 1;
-			chardata.points -= 4;
-		elseif (btn_value == 500)
-			chardata["Skills"].Erase("skill");
-			var skillsmap := chardata.Skills;
-			var skillsArray := skillsmap.keys();
-			foreach skill in skillsArray
-				if (chardata.Skills[skill] == 0)
-					chardata.Skills.Erase(skill);
-				endif
-			endforeach
-			foreach skill in skillsArray
-				if (chardata.Skills[skill] == 3)
-					pri_count++;
-				endif
-			endforeach
-			if (pri_count > pri_allowed)
-				SendSysMessageEX(who, "Você ultrapassou o número de primárias permitidas", SSM_FAIL);
-				pri_count := 0;
-				DisconnectClient(who);
-			endif
-
-			SetObjProperty(who, "chardata", chardata);
-			SetObjProperty(who, "skill", 1);
-			SendSysMessageEX(who, "Você definiu suas skills", SSM_INFO);
-			break;
-		endif
+		chardata.Skills[pick] := slot_def.tier;
+		picked_skills.append(pick);
+		slot_idx++;
 	endwhile
 
-	var value;
-	var skillsmap := chardata.Skills;
-	var skillsArray := skillsmap.keys();
-	foreach skill in skillsArray
-		value := 0;
+	SetObjProperty(who, "chardata", chardata);
+	SetObjProperty(who, "skill", 1);
+	SendSysMessageEX(who, "Você definiu suas skills", SSM_INFO);
+
+	// Apply: Primary (tier 3) starts at 40, Secondary (tier 2) starts at 20.
+	foreach skill in (chardata.Skills.keys())
+		var value := 0;
 		if (chardata.Skills[skill] == 3)
 			value := 40;
 		elseif (chardata.Skills[skill] == 2)
 			value := 20;
-		else
-			value := 0;
 		endif
 		if (AP_GetTrueSkill(who, skill) == 0)
 			AP_SetTrueSkill(who, skill, value);
@@ -802,155 +781,104 @@ function beardSelection(who, byref chardata)
 	SetObjProperty(who, "chardata", chardata);
 endfunction
 
-function pathOfWisdom(who, culture_pic)
+// applyClassStarter dispatches starter-kit side-effects by the new-system
+// class (chardata.subclasse). Replaces the legacy pathOfWisdom gump flow.
+//
+// Sets chardata.magia and grants starting items for spellcaster-style
+// classes (Magus, Cleric, Druida, Shaman, Engenheiro, Arqueiro_Arcano,
+// Necromante, Lamina_Arcana). Other classes get nothing here — they pull
+// abilities/equipment from the level-up system as before.
+function applyClassStarter(who)
 	var chardata := GetObjProperty(who, "chardata");
-	var btn_value;
-	if (chardata.classe != "Sabio")
+	if (chardata == error || !chardata)
 		return;
 	endif
-	while (!CreationCompleted(who))
-		sleepms(2);
-		var input := pathOfWisdomGump(who, culture_pic);
-		if (!IsGumpValid(input))
-			continue;
-		endif
-		foreach key in (input.keys)
-			btn_value := key;
+
+	var subclasse := chardata.subclasse;
+	if (subclasse == error || !subclasse)
+		return;
+	endif
+
+	if (subclasse == "Magus")
+		chardata.+magia := "spellcaster";
+		var grimorio := CreateItemInBackpack(who, "grimoriodasmagias", 1);
+		SetObjProperty(grimorio, "Booktype", "spellcaster");
+		SetObjProperty(grimorio, "serialid", who.serial);
+		SetObjProperty(grimorio, "marked", who.name + " - " + who.acctname);
+		grimorio.newbie := 1;
+		grimorio.graphic := 0x0EFA;
+		var spellinfo := struct;
+		spellinfo.+magic_path := "spellcaster";
+		var chosenSpells := spellChoices(who);
+		foreach spell in chosenSpells
+			var scroll := CreateItemInBackpack(who, "pergaminhospellcaster1");
+			spellinfo.id := spell.id;
+			spellinfo.school := spell.school;
+			SetObjProperty(scroll, "spellinfo", spellinfo);
 		endforeach
 
-		// Get the wisdom paths array using the helper function
-		var wisdomPaths := getWisdomPathsByCulture(who);
+	elseif (subclasse == "Necromante" || subclasse == "Lamina_Arcana")
+		// Both are arcane casters mechanically. No starter items today —
+		// future phase may add school-specific kits.
+		chardata.+magia := "spellcaster";
 
-		// Get the selected path name based on the button value
-		var selectedIndex := btn_value - 200;
-		if (selectedIndex < 1 || selectedIndex > wisdomPaths.size())
-			SendSysMessageEX(who, "Defina seu caminho da sabedoria", SSM_FAIL);
-			continue;
+	elseif (subclasse == "Cleric")
+		chardata.+magia := "Sacerdote";
+		// Haroloth-culture clerics get the whip starter (newbie via
+		// CreateItemInicial — was a bug in legacy code using CreateItemInBackpack).
+		if (chardata.culture == HAROLOTH)
+			CreateItemInicial(who, 0x166E, 1);
 		endif
-		var selectedPath := wisdomPaths[selectedIndex];
+		CreateItemInBackPack(who, "chisels", 1);
+		var gems := array{
+			"rawstarsapphire",
+			"rawemerald",
+			"rawsapphire",
+			"rawruby",
+			"rawcitrine",
+			"rawamethyst",
+			"rawtourmaline",
+			"rawamber",
+			"rawdiamond"
+		};
+		CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
+		CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
 
-		// Handle each path by name
-		if (selectedPath == "Mago")
-			chardata.+wisdom_path := "Mago";
-			chardata.+magia := "spellcaster";
-			var grimorio := CreateItemInBackpack(who, "grimoriodasmagias", 1);
-			SetObjProperty(grimorio, "Booktype", "spellcaster");
-			SetObjProperty(grimorio, "serialid", who.serial);
-			SetObjProperty(grimorio, "marked", who.name + " - " + who.acctname);
-			grimorio.newbie := 1;
-			grimorio.graphic := 0x0EFA;
-			var spellinfo := struct;
-			spellinfo.+magic_path := "spellcaster";
-			var chosenSpells := spellChoices(who);
-			foreach spell in chosenSpells
-				var scroll := CreateItemInBackpack(who, "pergaminhospellcaster1");
-				spellinfo.id := spell.id;
-				spellinfo.school := spell.school;
-				SetObjProperty(scroll, "spellinfo", spellinfo);
-			endforeach
-			break;
-		elseif (selectedPath == "Alquimista")
-			chardata.+wisdom_path := "Alquimista";
-			break;
-		elseif (selectedPath == "Xamã")
-			chardata.+wisdom_path := "Xamã";
-			chardata.+magia := "Shaman";
-			break;
-		elseif (selectedPath == "Clérigo" || selectedPath == "Clériga de Idrith")
-			chardata.magia := "Sacerdote";
-			if (chardata.culture == HAROLOTH)
-				CreateItemInBackpack(who, 0x166E, 1);
-			endif
-			chardata.+wisdom_path := selectedPath;
-			CreateItemInBackPack(who, "chisels", 1);
-			var gems := array{
-				"rawstarsapphire",
-				"rawemerald",
-				"rawsapphire",
-				"rawruby",
-				"rawcitrine",
-				"rawamethyst",
-				"rawtourmaline",
-				"rawamber",
-				"rawdiamond"
-			};
-			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
-			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
-			break;
-		elseif (selectedPath == "Engenheiro")
-			chardata.+wisdom_path := "Engenheiro";
-			CreateItemInBackPack(who, "ammo", 20);
-			CreateItemInBackPack(who, "powder", 20);
-			CreateItemInBackPack(who, "powderfixer", 1);
-			CreateItemInBackpack(who, 0xC892, 1); // Bandoleira
+	elseif (subclasse == "Druida")
+		chardata.+magia := "Druid";
 
-			var pistol1 := CreateItemInBackPack(who, "pistol1", 1);
-			var pistol2 := CreateItemInBackPack(who, "pistol2", 1);
-			SetObjProperty(pistol1, "serialid", who.serial);
-			SetObjProperty(pistol2, "serialid", who.serial);
-			break;
-		elseif (selectedPath == "Druida")
-			chardata.+wisdom_path := "Druida";
-			chardata.+magia := "Druid";
-			break;
-		elseif (selectedPath == "Martelo Divino")
-			chardata.+wisdom_path := "Martelo Divino";
-			chardata.+magia := "Sacerdote";
-			CreateItemInBackPack(who, "chisels", 1);
-			var gems := array{
-				"rawstarsapphire",
-				"rawemerald",
-				"rawsapphire",
-				"rawruby",
-				"rawcitrine",
-				"rawamethyst",
-				"rawtourmaline",
-				"rawamber",
-				"rawdiamond"
-			};
-			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
-			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
-			break;
-		elseif (selectedPath == "Augur")
-			chardata.+wisdom_path := "Augur";
-			chardata.+magia := "Sacerdote";
-			CreateItemInBackPack(who, "chisels", 1);
-			var gems := array{
-				"rawemerald",
-				"rawsapphire",
-				"rawruby",
-				"rawamethyst",
-				"rawamber",
-				"rawdiamond"
-			};
-			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
-			CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
-			break;
-		elseif (selectedPath == "Arqueiro Arcano")
-			chardata.+wisdom_path := "arcane_archer";
-			chardata.+magia := "arcane_archer";
-			chardata.+religion := LORE;
-			// Unlock ARCANE_BOW automatically (level 2 ability slot)
-			var myhabs := GetObjProperty(who, "myhabs");
-			if (myhabs == error)
-				myhabs := dictionary;
-			endif
-			var habs := GetObjProperty(who, "buyhab");
-			if (habs[0] == error)
-				habs[0] := 1;
-			endif
-			myhabs[2] := ABILITY_ID::ARCANE_BOW;
-			habs[2] := 2;
-			SetObjProperty(who, "myhabs", myhabs);
-			SetObjProperty(who, "buyhab", habs);
-			break;
-		else
-			SendSysMessageEX(who, "Defina seu caminho da sabedoria", SSM_FAIL);
+	elseif (subclasse == "Shaman")
+		chardata.+magia := "Shaman";
+
+	elseif (subclasse == "Engenheiro")
+		CreateItemInBackPack(who, "ammo", 20);
+		CreateItemInBackPack(who, "powder", 20);
+		CreateItemInBackPack(who, "powderfixer", 1);
+		CreateItemInBackpack(who, 0xC892, 1); // Bandoleira
+		var pistol1 := CreateItemInBackPack(who, "pistol1", 1);
+		var pistol2 := CreateItemInBackPack(who, "pistol2", 1);
+		SetObjProperty(pistol1, "serialid", who.serial);
+		SetObjProperty(pistol2, "serialid", who.serial);
+
+	elseif (subclasse == "Arqueiro_Arcano")
+		chardata.+magia := "arcane_archer";
+		chardata.+religion := LORE;
+		var myhabs := GetObjProperty(who, "myhabs");
+		if (myhabs == error)
+			myhabs := dictionary;
 		endif
-	endwhile
+		var habs := GetObjProperty(who, "buyhab");
+		if (habs[0] == error)
+			habs[0] := 1;
+		endif
+		myhabs[2] := ABILITY_ID::ARCANE_BOW;
+		habs[2] := 2;
+		SetObjProperty(who, "myhabs", myhabs);
+		SetObjProperty(who, "buyhab", habs);
+
+	endif
 
 	SetObjProperty(who, "chardata", chardata);
-	SendSysMessageEX(who, "Seu caminho da sabedoria é " + chardata.wisdom_path, SSM_INFO);
 endfunction
 
 function startAdventure(who)

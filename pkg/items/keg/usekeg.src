@@ -673,7 +673,7 @@ function finishDrink(who, item, bebida)
 			bebida.objtype := 0xC879;
 		endif
     elseif (estado == "vinho")
-    var skill := AP_GetSkill(who, "DOMESTIC_WORK");
+    var skill := EffectiveSkill(who, "Provisioning");
     var season := GetSeason();
     var score := 0;
 		if (season == 1)
@@ -811,8 +811,8 @@ function getAdjustTime (who, tempo)
 
 var reduction := 0;
 
-if (SkillCheck(who, DOMESTIC_WORK, -1))
-	var skill := Ap_GetSkill(who, DOMESTIC_WORK);
+if (SkillCheck(who, "Provisioning", -1))
+	var skill := EffectiveSkill(who, "Provisioning");
 	
 	reduction := (skill / 100) * 0.70;
 endif

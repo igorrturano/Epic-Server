@@ -857,7 +857,9 @@ endfunction
 function CalcLumberjackingDamageMod( byref attacker )
 
 	if( attacker.weapon.IsAxe() )
-		var lumberjack_skill := CDbl( GetAttribute( attacker, GATHERING, ATTRIBUTE_PRECISION_TENTHS ) ) / 10.0;
+		var _lj_new := CDbl( GetAttribute( attacker, "Lumberjacking", ATTRIBUTE_PRECISION_TENTHS ) ) / 10.0;
+		var _lj_legacy := CDbl( GetAttribute( attacker, GATHERING, ATTRIBUTE_PRECISION_TENTHS ) ) / 10.0;
+		var lumberjack_skill := (_lj_legacy > _lj_new) ? _lj_legacy : _lj_new;
 		var lumberjack_dmg_mod := 0.0;
 		if( lumberjack_skill < 100.0 )
 			lumberjack_dmg_mod := lumberjack_skill / 5.0;

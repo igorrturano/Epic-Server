@@ -33,7 +33,7 @@ function EncontraGema(who)
 	SendSysMessageEx(who, "Você achou uma pedra preciosa!", SSM_INFO);
 	CreateItemInBackPack(who, gema, 1);
 	PrintTextAbove(who, "*encontra algo reluzente*");
-	SkillCheck(who, GATHERING, -1);
+	SkillCheck(who, "Mining", -1);
 	return;
 endfunction
 
@@ -53,7 +53,7 @@ endfunction
 
 function GetRange( who );
 
-  var skill := Cint((AP_GetSkill( who, GATHERING )));
+  var skill := Cint(EffectiveSkill(who, "Mining"));
 
   if( skill >= 100 )
     return 5;
@@ -158,7 +158,7 @@ function DetermineOreType(who, where)
 	percent := SplitWords(percent);
 	var chance := RandomInt(1000);
 	var oreToSearch;
-	var skill := AP_GetSkill(who, GATHERING);
+	var skill := EffectiveSkill(who, "Mining");
 
 	if (GetObjProperty(who, "searchore") == error)
 		oreToSearch := "pedras";

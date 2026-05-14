@@ -188,10 +188,10 @@ program UseBandage(mobile, bandage)
 	npctemplate := npctemplate[10, len(npctemplate) - 9];
 	npcdesc := npcdesc[npctemplate];
 	if (targ.isAnimalBrain() || GetObjProperty(targ, "npctemplate"))
-		aux_skill := HANDLEANIMAL;
+		aux_skill := "Taming";
 	endif
 
-	aux_skill := AP_GetSkill(mobile, aux_skill);
+	aux_skill := EffectiveSkill(mobile, aux_skill);
 
 	var valor;
 	if (targ.IsA(POLCLASS_CORPSE))

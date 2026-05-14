@@ -53,7 +53,7 @@ function OpenGump(who, pot)
 		if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
 			diff := diff - 5;
 		endif
-		if (CDbl(AP_GetSkill(who, GATHERING)) >= diff)
+		if (CDbl(EffectiveSkill(who, "Mining")) >= diff)
 			var x2 := x;
 			GFAddButton(gump, x, y, 2151, 2154, GF_CLOSE_BTN, btnID);
 			x2 += 35;
@@ -265,7 +265,7 @@ function SmeltFail(who, ores, amt)
 	amt := CInt(amt); // POL BUGADO DO CARALHO!!!
 
 	var roll := RandomInt(6);
-	var lostBySkill := CInt(((AP_GetSkill(who, GATHERING) - 100) * -1) / 10);
+	var lostBySkill := CInt(((EffectiveSkill(who, "Mining") - 100) * -1) / 10);
 	var amtLost := roll + lostBySkill;
 
 	if (amtLost > amt)
@@ -274,7 +274,7 @@ function SmeltFail(who, ores, amt)
 
 	DebugMsg(who, DEBUG_SMELTING, Message("***ERROU***"));
 	DebugMsg(who, DEBUG_SMELTING, Message($"Rolagem de erro (0-5): {roll}"));
-	DebugMsg(who, DEBUG_SMELTING, Message($"Fator de perda pelo {GATHERING}: {lostBySkill}"));
+	DebugMsg(who, DEBUG_SMELTING, Message($"Fator de perda pelo Mining: {lostBySkill}"));
 	DebugMsg(who, DEBUG_SMELTING, Message($"Perdeu: {amtLost}"));
 
 	SendSysMessageEx(who, "Você errou o processo e perdeu parte dos minérios.", FONT_NORMAL,
@@ -291,7 +291,7 @@ function CheckSmeltDifficulty(who, ore)
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
 		diff := diff - 5;
 	endif
-	if (SkillCheck(who, GATHERING, diff, ((diff / 2) + 10)) > 0)
+	if (SkillCheck(who, "Mining", diff, ((diff / 2) + 10)) > 0)
 		return 1;
 	endif
 	return 0;

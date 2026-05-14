@@ -168,11 +168,11 @@ program herd(who)
 			SendSysMessageEx(who, "Criaturas agressivas não podem ser pastoreadas!", SSM_FAIL);
 			return;
 		endif
-		if (SkillCheck(who, HANDLEANIMAL, CInt(npc.getTameDifficulty())) > 0)
+		if (SkillCheck(who, "Taming", CInt(npc.getTameDifficulty())) > 0)
 
 			if (location.mobile == who)
 
-				var time := AP_GetTrueSkill(who, HANDLEANIMAL) / 15;
+				var time := EffectiveTrueSkill(who, "Taming") / 15;
 				var time2 := time * 60;
 
 				SendSysMessage(who, "O animal te seguirá por " + time + " minutos");
@@ -243,7 +243,7 @@ endfunction
 function Engravidar(who, location_mobile, npc, partos, female_template)
 
 	var dificuldade := CInt(npc.getTameDifficulty() + 10);
-	var skill_check := (SkillCheck(who, HANDLEANIMAL, dificuldade) > 0);
+	var skill_check := (SkillCheck(who, "Taming", dificuldade) > 0);
 
 	if (!partos)
 		if (skill_check)
@@ -302,7 +302,7 @@ function CalcularTempoGestacao(who, npc)
         gestacao_base := 24 * 60 * 60;
     endif
 
-    var skill := AP_GetTrueSkill(who, HANDLEANIMAL);
+    var skill := EffectiveTrueSkill(who, "Taming");
     var diff := CInt(npc.getTameDifficulty());
 
     var bonus := skill - (diff + 15);

@@ -475,33 +475,128 @@ function AddNavigationBar(byref gump, current_page)
     endfor
 endfunction
 
+// Builds skill -> path lookup dict ("Militar" / "Civil"). Includes the new
+// path-rework skill names (Stealth, Smithing, etc.) plus legacy names mapped
+// to their closest path equivalent so old characters' skill lists still
+// group cleanly.
+function BuildSkillPathLookup()
+    var lookup := dictionary;
+    var s;
+
+    var mil := MILITARY_SKILLS;
+    foreach s in mil
+        lookup[s] := "Militar";
+    endforeach
+
+    var civ := CIVIC_SKILLS;
+    foreach s in civ
+        lookup[s] := "Civil";
+    endforeach
+
+    // Legacy skill names (kept as parallel attributes until Phase 6 cleanup).
+    lookup["Sneak"]         := "Militar";
+    lookup["Handle_Animal"] := "Militar";
+    lookup["Throwing"]      := "Militar";
+    lookup["Pickpocketing"] := "Civil";
+    lookup["Metal_Working"] := "Civil";
+    lookup["Wood_Working"]  := "Civil";
+    lookup["Awareness"]     := "Civil";
+    lookup["Domestic_Work"] := "Civil";
+    lookup["Gathering"]     := "Civil";
+
+    return lookup;
+endfunction
+
+function ShortTierLabel(tier)
+    if (tier == 3)
+        return "Pri";
+    elseif (tier == 2)
+        return "Sec";
+    elseif (tier == 1)
+        return "Ter";
+    endif
+    return "";
+endfunction
+
+function RenderSkillRow(byref gump, who, byref chardata, skill, x, y)
+    var valor_mod := "";
+    if (AP_GetSkillMod(who, skill) > 0)
+        valor_mod := " (+" + CStr(AP_GetSkillMod(who, skill)) + ")";
+    elseif (AP_GetSkillMod(who, skill) < 0)
+        valor_mod := " (" + CStr(AP_GetSkillMod(who, skill)) + ")";
+    endif
+
+    var tier_text := ShortTierLabel(chardata.Skills[skill]);
+    var tier_suffix := "";
+    if (tier_text != "")
+        tier_suffix := " [" + tier_text + "]";
+    endif
+
+    GFTextLine(gump, x, y, 1153, StrReplace(skill, "_", " ") + tier_suffix);
+    GFTextLine(gump, x+145, y, GetSkillColor(AP_GetSKill(who, skill)), CStr(AP_GetLevelTitle(AP_GetSKill(who, skill))) + valor_mod);
+    GFTextRight(gump, x+279, y, GetSkillColor(AP_GetSKill(who, skill)), CStr(AP_GetTrueSkill(who, skill)));
+endfunction
+
 function ShowSkillsPage(byref gump, who)
     var chardata := GetObjProperty(who, "chardata");
-    
+
     var x := 50;
     var y := 120;
-    
-    foreach skill in (chardata.Skills.keys())
-        var valor_mod := "";
-        if(AP_GetSkillMod(who, skill) > 0)
-            valor_mod := " (+" + CStr(AP_GetSkillMod(who, skill)) + ")";
-        elseif (AP_GetSkillMod(who, skill) < 0)
-            valor_mod := " (" + CStr(AP_GetSkillMod(who, skill)) + ")";
-        endif
 
-        GFTextLine(gump, x, y, 1153, StrReplace(skill, "_", " ") + " [" + GetSkillDescValue(chardata.Skills[skill]) +"]" );
-        GFTextLine(gump, x+145, y, GetSkillColor(AP_GetSKill(who, skill)), CStr(AP_GetLevelTitle(AP_GetSKill(who, skill))) + valor_mod);
-        GFTextRight(gump, x+279, y, GetSkillColor(AP_GetSKill(who, skill)), CStr(AP_GetTrueSkill(who, skill)));
+    var path_lookup := BuildSkillPathLookup();
 
-        if (AP_GetSkillScript(skill) != error)
-            var elem := AP_GetAttributeCfgElem(skill);
-            var id := elem.SkillId;
-            //TODO Desativado para investigação do bug de usar skill a partir do GUMP
-            //GFAddButton(gump, x - 20, y+4, 2103, 2104, 1, id);
-        endif
-        
-        y := y + 15;
-    endforeach
+    var mil_owned   := array;
+    var civ_owned   := array;
+    var other_owned := array;
+    var skill_keys  := chardata.Skills.keys();
+
+    // Iterate tier-descending (Pri 3 → Sec 2 → Ter 1) so primaries appear
+    // first within each section, secondaries below, tertiaries last.
+    var tier;
+    for (tier := 3; tier >= 1; tier := tier - 1)
+        foreach skill in skill_keys
+            if (chardata.Skills[skill] != tier)
+                continue;
+            endif
+            var p := path_lookup[skill];
+            if (p == "Militar")
+                mil_owned.append(skill);
+            elseif (p == "Civil")
+                civ_owned.append(skill);
+            else
+                other_owned.append(skill);
+            endif
+        endforeach
+    endfor
+
+    if (mil_owned.size() > 0)
+        GFTextLine(gump, x, y, 33, "Militar");
+        y := y + 16;
+        foreach skill in mil_owned
+            RenderSkillRow(gump, who, chardata, skill, x, y);
+            y := y + 15;
+        endforeach
+        y := y + 6;
+    endif
+
+    if (civ_owned.size() > 0)
+        GFTextLine(gump, x, y, 33, "Civil");
+        y := y + 16;
+        foreach skill in civ_owned
+            RenderSkillRow(gump, who, chardata, skill, x, y);
+            y := y + 15;
+        endforeach
+        y := y + 6;
+    endif
+
+    if (other_owned.size() > 0)
+        GFTextLine(gump, x, y, 33, "Outras");
+        y := y + 16;
+        foreach skill in other_owned
+            RenderSkillRow(gump, who, chardata, skill, x, y);
+            y := y + 15;
+        endforeach
+    endif
 
     ShowCapInfo(gump, who);
 endfunction

@@ -280,7 +280,7 @@ function ProcessSpeech(ev)
 
 		var targ := target(ev.source);
 		if (cfg.TameDifficulty >= 61)
-			if (AP_GetSkill(targ, HANDLEANIMAL) * 1.4 < cfg.TameDifficulty)
+			if (EffectiveSkill(targ, "Taming") * 1.4 < cfg.TameDifficulty)
 				SendSysMessage(owner, "A criatura nao aceita o alvo como novo dono.");
 				return;
 			endif

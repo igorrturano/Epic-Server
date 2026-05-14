@@ -495,9 +495,9 @@ program use_curing(who, item)
 endcase
 
 			if (intacta_obj)
-				var dom_skill := AP_GetTrueSkill(who, DOMESTIC_WORK);
+				var dom_skill := EffectiveTrueSkill(who, "Tailoring");
 				var sur_skill := AP_GetTrueSkill(who, SURVIVAL);
-				var use_skill := DOMESTIC_WORK;
+				var use_skill := "Tailoring";
 				if (sur_skill > dom_skill)
 					use_skill := SURVIVAL;
 				endif

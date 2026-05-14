@@ -71,7 +71,7 @@ function taming(who)
 		return;
 	endif
 
-	var skill := AP_GetSkill(who, HANDLEANIMAL);
+	var skill := EffectiveSkill(who, "Taming");
 	var info := struct;
 	info.+x := who.x;
 	info.+y := who.y;
@@ -90,7 +90,7 @@ function taming(who)
 		SetTamingCooldown(who);
 
 		sleep(3);
-		if (SkillCheck(who, HANDLEANIMAL, CInt(info.difficulty)) > 0)
+		if (SkillCheck(who, "Taming", CInt(info.difficulty)) > 0)
 			SendSysMessageEx(who, "Voce ganhou a confianca de " + targ.name + ".", SSM_INFO);
 			targ.SetMaster(who);
 			var erase_selvagem := GetObjProperty(targ, "Selvagem");
@@ -125,7 +125,7 @@ function TameLoop(who, targ, byref info)
 	if (!ownerarray)
 		ownerarray := {};
 	endif
-	var check := SkillCheck(who, HANDLEANIMAL, info.difficulty);
+	var check := SkillCheck(who, "Taming", info.difficulty);
 	if ((check > 0) || (who.serial in ownerarray))
 		SendSysMessageEx(who, "" + targ.name + " parece ser seu amigo.", SSM_INFO);
 		AI_MoveXY(targ, info.x, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, 1);
