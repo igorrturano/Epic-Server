@@ -73,6 +73,25 @@ enum CAMINHOS
     SABIO := "Sabio"
 endenum
 
+enum PATH
+    MILITAR := "Militar",
+    CIVIL := "Civil"
+endenum
+
+// Path-rework skill buckets (Phase 2). Each path has 13 skills; total 26 new system skills.
+// Order within each bucket determines display order in the slot picker.
+var MILITARY_SKILLS := array{
+    "Wrestling", "One_Handed", "Two_Handed", "Dual_Wield", "Parry",
+    "Ranged", "Tactics", "Stealth", "Beastmastery", "Magery",
+    "Arcana", "Theology", "Science"
+};
+
+var CIVIC_SKILLS := array{
+    "Smithing", "Carpentry", "Tailoring", "Provisioning", "Alchemy",
+    "Mining", "Lumberjacking", "Survival", "Taming", "Medicine",
+    "Mechanics", "Perception", "Theft"
+};
+
 const FIST := 0x1F020;
 
 enum RESIST_DIFF

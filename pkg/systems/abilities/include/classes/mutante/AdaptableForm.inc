@@ -24,7 +24,7 @@ class AdaptableForm(CombatAbility)
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
 		var resist := GetObjProperty(who, "formaadaptavel");
-		var bonus := CInt(AP_GetSkill(who, ALCHEMY) / 20);
+		var bonus := CInt(AP_GetSkill(who, SCIENCE) / 20);
 
 		if (resist == error)
 			var prot;

@@ -19,7 +19,7 @@ program UseGrower(who, grower)
 	where.+x := who.x;
 	where.+y := who.y;
 
-	var farm_bonus := CInt(AP_GetSkill(who, DOMESTIC_WORK));
+	var farm_bonus := CInt(EffectiveSkill(who, "Provisioning"));
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_FARMER))
 		farm_bonus := farm_bonus + 20;
@@ -57,7 +57,7 @@ function HarvestPlant(who, grower)
 		difficulty := difficulty - 20;
 	endif
 
-	if (SkillCheck(who, DOMESTIC_WORK, difficulty, award_diff) > 0)
+	if (SkillCheck(who, "Provisioning", difficulty, award_diff) > 0)
 		if (MobileWrapper(who).HasAbility(ABILITY_ID::HARVEST_LUCK))
 			CreateItemInBackPack(who, grower.GetProduceType(), 2);
 		else

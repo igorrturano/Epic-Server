@@ -38,14 +38,17 @@ var _SKILL_IDS := array{
 	PARRY, ONEHANDED, TWOHANDED, DUALWIELD, RANGED, TACTICS,
 	SNEAK, PICKPOCKETING, AWARENESS, MECHANICS,
 	MEDICINE, SURVIVAL, METALWORKING, WOODWORKING,
-	DOMESTIC_WORK, GATHERING, HANDLEANIMAL, WRESTLING
+	DOMESTIC_WORK, GATHERING, HANDLEANIMAL, WRESTLING,
+	// Path-rework split skills (legacy entries above stay for migration window)
+	"Tailoring", "Provisioning", "Mining", "Lumberjacking", "Taming", "Beastmastery"
 };
 var _SKILL_NOMES := array{
 	"Alquimia", "Magia", "Arcana", "Ciência", "Teologia",
 	"Defesa", "Uma Mão", "Duas Mãos", "Dualidade", "Arco", "Táticas",
 	"Furtividade", "Furto", "Percepção", "Mecânica",
 	"Medicina", "Sobrevivência", "Metalurgia", "Marcenaria",
-	"Dom. Doméstico", "Coleta", "Trein. Animal", "Luta Livre"
+	"Dom. Doméstico", "Coleta", "Trein. Animal", "Luta Livre",
+	"Costura", "Suprimentos", "Mineração", "Lenhadoria", "Doma", "Mestre de Bestas"
 };
 
 var form_data := struct{};

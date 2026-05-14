@@ -224,6 +224,146 @@ function maolivre(who, qtd, checkmount := 1)
     return 1;
 endfunction
 
+// Phase 4 rework helpers.
+//
+// ParseDieValue converts a chardata.dice string ("d4".."d12") into its
+// numeric die size. Returns 0 for unrecognized input.
+function ParseDieValue(dice_str)
+	case (dice_str)
+		"d4":  return 4;
+		"d6":  return 6;
+		"d8":  return 8;
+		"d10": return 10;
+		"d12": return 12;
+	endcase
+	return 0;
+endfunction
+
+// CountOddLevelsReached returns how many HP-gain levels (3, 5, 7, ..., 19)
+// the character has reached. Level 1 = 0, Level 3 = 1, ..., Level 19 = 9.
+// Level >= 19 saturates at 9 (no more HP grants past L19).
+function CountOddLevelsReached(level)
+	if (level < 3)
+		return 0;
+	endif
+	if (level >= 19)
+		return 9;
+	endif
+	return (level - 1) / 2;
+endfunction
+
+// HasNewSystemDice tells whether `who` is a path-rework character.
+// Returns 1 if chardata.dice is set to a valid die string, 0 otherwise.
+// Legacy characters (no chardata.dice) keep the old HP formula.
+function HasNewSystemDice(who)
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata == error || !chardata)
+		return 0;
+	endif
+	var d := chardata.dice;
+	if (d == error || d == "" || !d)
+		return 0;
+	endif
+	return ParseDieValue(d) > 0;
+endfunction
+
+// EffectiveSkill returns the maximum of a new-system split skill and its
+// legacy parent, so crafting/skill code calling EffectiveSkill(who, "X")
+// stays productive for both pre-migration legacy characters (who still
+// have the legacy parent skill) and post-migration new characters (who
+// have the specific split skill).
+//
+// Renames (Stealth↔Sneak, Theft↔Pickpocketing, Smithing↔Metal_Working,
+// Carpentry↔Wood_Working, Perception↔Awareness) are handled at the cfg
+// layer via `Alias` directives — they share a SkillId, so this helper is
+// NOT needed for them. AP_GetSkill(who, "Stealth") and AP_GetSkill(who,
+// "Sneak") already return the same value.
+//
+// For splits, callers should migrate `AP_GetSkill(who, <legacy>)` calls
+// to `EffectiveSkill(who, <new>)` opportunistically. Once the player base
+// has fully migrated (Phase 6), this helper collapses into AP_GetSkill.
+function EffectiveSkill(who, skill_name)
+	case (skill_name)
+		"Provisioning":
+			var cur := AP_GetSkill(who, "Provisioning");
+			var legacy := AP_GetSkill(who, "Domestic_Work");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Tailoring":
+			var cur := AP_GetSkill(who, "Tailoring");
+			var legacy := AP_GetSkill(who, "Domestic_Work");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Mining":
+			var cur := AP_GetSkill(who, "Mining");
+			var legacy := AP_GetSkill(who, "Gathering");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Lumberjacking":
+			var cur := AP_GetSkill(who, "Lumberjacking");
+			var legacy := AP_GetSkill(who, "Gathering");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Taming":
+			var cur := AP_GetSkill(who, "Taming");
+			var legacy := AP_GetSkill(who, "Handle_Animal");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Beastmastery":
+			var cur := AP_GetSkill(who, "Beastmastery");
+			var legacy := AP_GetSkill(who, "Handle_Animal");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+	endcase
+	return AP_GetSkill(who, skill_name);
+endfunction
+
+// EffectiveTrueSkill is the AP_GetTrueSkill-flavored mirror of EffectiveSkill.
+// Used internally by SkillCheck so that migrating a callsite from a legacy
+// split-parent skill name to a new-system split name keeps legacy chars
+// (whose value lives under the parent name) productive while letting
+// new-system chars (whose value lives under the new name) advance normally.
+//
+// For non-split names this is just AP_GetTrueSkill(who, name) — backward
+// compatible with every existing SkillCheck call.
+function EffectiveTrueSkill(who, skill_name)
+	case (skill_name)
+		"Provisioning":
+			var cur := AP_GetTrueSkill(who, "Provisioning");
+			var legacy := AP_GetTrueSkill(who, "Domestic_Work");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Tailoring":
+			var cur := AP_GetTrueSkill(who, "Tailoring");
+			var legacy := AP_GetTrueSkill(who, "Domestic_Work");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Mining":
+			var cur := AP_GetTrueSkill(who, "Mining");
+			var legacy := AP_GetTrueSkill(who, "Gathering");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Lumberjacking":
+			var cur := AP_GetTrueSkill(who, "Lumberjacking");
+			var legacy := AP_GetTrueSkill(who, "Gathering");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Taming":
+			var cur := AP_GetTrueSkill(who, "Taming");
+			var legacy := AP_GetTrueSkill(who, "Handle_Animal");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Beastmastery":
+			var cur := AP_GetTrueSkill(who, "Beastmastery");
+			var legacy := AP_GetTrueSkill(who, "Handle_Animal");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+	endcase
+	return AP_GetTrueSkill(who, skill_name);
+endfunction
+
+// GetHP returns the STR-derived portion of the player's max HP. Same formula
+// for legacy and path-rework characters: raw STR plus ability/prop mods.
 function GetHP(who)
 	var hp := CInt(AP_GetTrueStat(who, "Strength"));
 
@@ -236,18 +376,37 @@ function GetHP(who)
 	return hp;
 endfunction
 
+// GetPH returns the level/class-derived portion of the player's max HP.
+//
+// Path-rework characters: PH = ClassDie · (1 + OddLevelsReached(Level)).
+//   - At L1: +ClassDie HP (e.g. +10 for d10, +6 for d6) replaces the old
+//     archetype-wide bonus (Guerreiro 25 / Ladino 20 / Sabio 15).
+//   - Each odd level reached (3, 5, ..., 19) adds another ClassDie worth of HP.
+//   - At L20: +10·ClassDie total (e.g. +100 for d10, +120 for d12).
+//
+// Legacy characters fall through to the original archetype lookup.
 function GetPH(who)
 	var ph;
-	var classe := GetObjProperty(who, "classe");
 
-	if ( (classe == "Guerreiro") || (GetObjProperty(who, "kit") == "Mago de Combate")) // 125
-		ph := 25; // 25 + 10;
-    elseif (classe == "Artifice")
-		ph := 105;
-	elseif (classe == "Ladino") // 100
-		ph := 20; // 20 + 80
-	else // 75
-		ph := 15; // 15 + 60; 
+	if (HasNewSystemDice(who))
+		var chardata := GetObjProperty(who, "chardata");
+		var die := ParseDieValue(chardata.dice);
+		var level := CInt(GetObjProperty(who, "Level"));
+		if (level < 1)
+			level := 1;
+		endif
+		ph := die * (1 + CountOddLevelsReached(level));
+	else
+		var classe := GetObjProperty(who, "classe");
+		if ( (classe == "Guerreiro") || (GetObjProperty(who, "kit") == "Mago de Combate")) // 125
+			ph := 25; // 25 + 10;
+		elseif (classe == "Artifice")
+			ph := 105;
+		elseif (classe == "Ladino") // 100
+			ph := 20; // 20 + 80
+		else // 75
+			ph := 15; // 15 + 60;
+		endif
 	endif
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_IMPLACAVEL))

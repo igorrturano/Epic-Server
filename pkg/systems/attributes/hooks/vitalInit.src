@@ -276,7 +276,7 @@ exported function GetSkillCapMaximumValue(mobile)
 endfunction
 
 exported function GetVicioPotRegenRate(mobile)
-	var base_regen := (CInt(AP_GetSettingsCfgElem("Regen").Vicio) * 14) + (cint(mobile.lower_reagent_cost_mod));
+	var base_regen := Cint(((AP_GetSettingsCfgElem("Regen").Vicio) * 28) + (cint(mobile.lower_reagent_cost_mod))*100);
 	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "vicio");
 
 	return regen;
