@@ -46,7 +46,7 @@ var elem := FindConfigElem(cfg, Hex(cint(what.objtype)));
 
 var item_skill:= cdbl(SplitWords(fabdesc[Hex(cint(what.objtype))].Skill)[0]);
 
-var hisskill := AP_GetSkill(character, craft_skill);
+var hisskill := EffectiveSkill(character, craft_skill);
 
 ver_reparos:=(GetObjProperty(what,"reparos"));
 

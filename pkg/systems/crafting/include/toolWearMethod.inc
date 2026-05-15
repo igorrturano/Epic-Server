@@ -25,7 +25,7 @@ exported function CheckToolWear (tool, who, craft_skill)
 		DestroyItem(tool);
 		SendSysMessage(who,"Your tool broke.");
 	else
-		var skill := AP_GetSkill(who, craft_skill);
+		var skill := EffectiveSkill(who, craft_skill);
 		if(skill > 80)
 			skill := 80;
 		elseif(skill < 20)
@@ -64,7 +64,7 @@ exported function SetToolDurability(tool, who, craft_skill)
 
 	if( TypeOf(item_script) != "Struct" )
 		if(!tool.isA(POLCLASS_CONTAINER) && !tool.isA(POLCLASS_ARMOR))
-			var myskill := AP_GetSkill(who, craft_skill);
+			var myskill := EffectiveSkill(who, craft_skill);
 			var swings := 0;
 			var mods := GetObjProperty(tool, "durability");
 			var bonus := 0;
