@@ -314,6 +314,16 @@ function EffectiveSkill(who, skill_name)
 			var legacy := AP_GetSkill(who, "Handle_Animal");
 			if (cur >= legacy) return cur; endif
 			return legacy;
+		"Stealth":
+			var cur := AP_GetSkill(who, "Stealth");
+			var legacy := AP_GetSkill(who, "Sneak");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Sneak":
+			var cur := AP_GetSkill(who, "Sneak");
+			var legacy := AP_GetSkill(who, "Stealth");
+			if (cur >= legacy) return cur; endif
+			return legacy;
 	endcase
 	return AP_GetSkill(who, skill_name);
 endfunction
@@ -356,6 +366,16 @@ function EffectiveTrueSkill(who, skill_name)
 		"Beastmastery":
 			var cur := AP_GetTrueSkill(who, "Beastmastery");
 			var legacy := AP_GetTrueSkill(who, "Handle_Animal");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Stealth":
+			var cur := AP_GetTrueSkill(who, "Stealth");
+			var legacy := AP_GetTrueSkill(who, "Sneak");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Sneak":
+			var cur := AP_GetTrueSkill(who, "Sneak");
+			var legacy := AP_GetTrueSkill(who, "Stealth");
 			if (cur >= legacy) return cur; endif
 			return legacy;
 	endcase
