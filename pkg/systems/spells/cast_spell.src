@@ -590,7 +590,13 @@ endfunction
 function getSupportingSkill(mobile, mw)
 	var chardata := getobjProperty(mobile, "chardata");
 	var attribute := ARCANA;
-	if (chardata != error && chardata.wisdom_path != "Mago" && !(mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)))
+	// "Mago" wisdom_path (legacy) and "spellcaster" magia (path-rework Magus/
+	// Necromante/Lamina_Arcana) both keep Arcana as the supporting skill.
+	// Everyone else falls back to Theology unless they have SENSIBILIDADE_ARCANA.
+	if (chardata != error
+		&& chardata.wisdom_path != "Mago"
+		&& chardata.magia != "spellcaster"
+		&& !(mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)))
 		attribute := THEOLOGY;
 	endif
 	return attribute;

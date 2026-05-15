@@ -39,7 +39,7 @@ function GetCombatHotkeys(who)
             special_hue := 63;
             special_index := 2;
         "Sabio":
-            if (chardata.wisdom_path == "Engenheiro")
+            if (chardata.subclasse == "Engenheiro" || chardata.wisdom_path == "Engenheiro")
                 special_name := "Recarga Rapida";
                 special_class := "Engenheiro";
                 special_hue := 2101;
