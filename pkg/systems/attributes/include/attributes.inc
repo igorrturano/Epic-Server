@@ -314,6 +314,33 @@ function EffectiveSkill(who, skill_name)
 			var legacy := AP_GetSkill(who, "Handle_Animal");
 			if (cur >= legacy) return cur; endif
 			return legacy;
+		"Domestic_Work":
+			// Reverse bridge: legacy parent reads max of itself and its splits.
+			// Lets read-only gates keyed on the old name (e.g. lore_items.cfg)
+			// stay productive after a player migrates to Tailoring/Provisioning.
+			var parent := AP_GetSkill(who, "Domestic_Work");
+			var tail := AP_GetSkill(who, "Tailoring");
+			var prov := AP_GetSkill(who, "Provisioning");
+			var best := parent;
+			if (tail > best) best := tail; endif
+			if (prov > best) best := prov; endif
+			return best;
+		"Gathering":
+			var parent := AP_GetSkill(who, "Gathering");
+			var mine := AP_GetSkill(who, "Mining");
+			var lumb := AP_GetSkill(who, "Lumberjacking");
+			var best := parent;
+			if (mine > best) best := mine; endif
+			if (lumb > best) best := lumb; endif
+			return best;
+		"Handle_Animal":
+			var parent := AP_GetSkill(who, "Handle_Animal");
+			var tame := AP_GetSkill(who, "Taming");
+			var beast := AP_GetSkill(who, "Beastmastery");
+			var best := parent;
+			if (tame > best) best := tame; endif
+			if (beast > best) best := beast; endif
+			return best;
 		"Stealth":
 			var cur := AP_GetSkill(who, "Stealth");
 			var legacy := AP_GetSkill(who, "Sneak");
@@ -408,6 +435,30 @@ function EffectiveTrueSkill(who, skill_name)
 			var legacy := AP_GetTrueSkill(who, "Handle_Animal");
 			if (cur >= legacy) return cur; endif
 			return legacy;
+		"Domestic_Work":
+			var parent := AP_GetTrueSkill(who, "Domestic_Work");
+			var tail := AP_GetTrueSkill(who, "Tailoring");
+			var prov := AP_GetTrueSkill(who, "Provisioning");
+			var best := parent;
+			if (tail > best) best := tail; endif
+			if (prov > best) best := prov; endif
+			return best;
+		"Gathering":
+			var parent := AP_GetTrueSkill(who, "Gathering");
+			var mine := AP_GetTrueSkill(who, "Mining");
+			var lumb := AP_GetTrueSkill(who, "Lumberjacking");
+			var best := parent;
+			if (mine > best) best := mine; endif
+			if (lumb > best) best := lumb; endif
+			return best;
+		"Handle_Animal":
+			var parent := AP_GetTrueSkill(who, "Handle_Animal");
+			var tame := AP_GetTrueSkill(who, "Taming");
+			var beast := AP_GetTrueSkill(who, "Beastmastery");
+			var best := parent;
+			if (tame > best) best := tame; endif
+			if (beast > best) best := beast; endif
+			return best;
 		"Stealth":
 			var cur := AP_GetTrueSkill(who, "Stealth");
 			var legacy := AP_GetTrueSkill(who, "Sneak");
