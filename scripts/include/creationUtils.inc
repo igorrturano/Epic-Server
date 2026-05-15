@@ -1258,7 +1258,7 @@ function weaponsByClassAndCulture(who)
             CreateItemInicial(who, 0x27EF, 1); // wakizashi
         endif
         if (skills[PARRY] >= 1)
-            CreateItemInicial(who, 0x1B72, 1); // round shield
+            CreateItemInicial(who, 0x1b7a, 1); // wooden shield
         endif
         if (skills[TWOHANDED] >= 1)
             CreateItemInicial(who, 0x27A2, 1); // Katana
@@ -1380,18 +1380,33 @@ function workingItems(who)
     var chardata := GetObjProperty(who, "chardata");
     var skills := chardata.Skills;
 
-    if (skills[WOODWORKING] >= 1)
+    // chardata.Skills is a string-keyed dict. cfg `Alias` directives do NOT
+    // propagate to dict keys, so we check BOTH spellings (legacy + new).
+    // Legacy split parents (Gathering, Domestic_Work, Handle_Animal) cover
+    // every descendant since pre-migration characters could do both.
+
+    // Carpentry (was Wood_Working)
+    if (skills["Carpentry"] >= 1 || skills[WOODWORKING] >= 1)
         CreateItemInicial(who, 0x1034, 1); // saw
-        CreateItemInicial(who, 0x1022, 1);
+        CreateItemInicial(who, 0x1022, 1); // draw knife
     endif
-    if (skills[METALWORKING] >= 1)
+
+    // Smithing (was Metal_Working)
+    if (skills["Smithing"] >= 1 || skills[METALWORKING] >= 1)
         CreateItemInicial(who, 0x13E3, 1); // smithhammer
         CreateItemInicial(who, 0x5107, 1); // smelting pot
     endif
-    if (skills[GATHERING] >= 1)
-        CreateItemInicial(who, 0x0f43, 1); // hatchet
+
+    // Mining (split from Gathering — legacy covers both halves)
+    if (skills["Mining"] >= 1 || skills[GATHERING] >= 1)
         CreateItemInicial(who, 0x0e85, 1); // pickaxe
     endif
+
+    // Lumberjacking (split from Gathering)
+    if (skills["Lumberjacking"] >= 1 || skills[GATHERING] >= 1)
+        CreateItemInicial(who, 0x0f43, 1); // hatchet
+    endif
+
     if (skills[SURVIVAL] >= 1)
         CreateItemInicial(who, 0x13f6, 1); // butcher knife
         CreateItemInicial(who, 0x0ec4, 1); // skinning knife
@@ -1406,16 +1421,16 @@ function workingItems(who)
 		CreateItemInBackpack(who, 0xed2a, 1);
         CreateItemInBackpack(who, 0xf0c8, 1);
         case(randomint(3))//bisturi
-            1: CreateItemInBackpack(who, 0xD1CE, 1); 
+            1: CreateItemInBackpack(who, 0xD1CE, 1);
             2: CreateItemInBackpack(who, 0XD1D1, 1);
             3: CreateItemInBackpack(who, 0XD1CF, 1);
         endcase
         case(randomint(2))// mascara da praga
-            1: CreateItemInBackpack(who, 0xF0C6, 1); 
+            1: CreateItemInBackpack(who, 0xF0C6, 1);
             2: CreateItemInBackpack(who, 0xF0C7, 1);
         endcase
         case(randomint(2))//sobretudo
-            1:CreateItemInBackpack(who, 0xD1B9, 1); 
+            1:CreateItemInBackpack(who, 0xD1B9, 1);
             2:CreateItemInBackpack(who, 0xD1BA, 1);
         endcase
 		SendSysMessageEX(who, "Você recebeu itens de medicina por ter Medicine como primária.", SSM_INFO);
@@ -1425,17 +1440,28 @@ function workingItems(who)
         CreateItemInicial(who, 0x14FB, (skills[MECHANICS] * 8)); // lockpick
     endif
 
-    
-
-    if (skills[DOMESTIC_WORK] >= 1)
+    // Tailoring (split from Domestic_Work)
+    if (skills["Tailoring"] >= 1 || skills[DOMESTIC_WORK] >= 1)
         CreateItemInicial(who, 0x0f9d, 1); // sewingkit
-		CreateItemInicial(who, 0x702C, 1); // recipebook
     endif
 
-    if (skills[DOMESTIC_WORK] >= 1 || skills[MEDICINE] >= 1)
+    // Provisioning (split from Domestic_Work) — cooking/farming/beeswax
+    if (skills["Provisioning"] >= 1 || skills[DOMESTIC_WORK] >= 1)
+        CreateItemInicial(who, 0x702C, 1); // recipebook
+        CreateItemInicial(who, 0x1042, 1); // rolling pin
+        CreateItemInicial(who, 0x097F, 1); // skillet
+    endif
+
+    // Scissors: tailoring tool OR medical tool
+    if (skills["Tailoring"] >= 1 || skills[DOMESTIC_WORK] >= 1 || skills[MEDICINE] >= 1)
         CreateItemInicial(who, 0xf9e, 1); // Scissors
     endif
-    
+
+    // Taming (peaceful side, split from Handle_Animal)
+    if (skills["Taming"] >= 1 || skills[HANDLEANIMAL] >= 1)
+        CreateItemInicial(who, 0xE81, 1); // shepherd's crook
+    endif
+
     if (skills[ALCHEMY] >= 1)
         CreateItemInBackpack(who, 0x0e9b, 1); // mortar
         CreateItemInBackpack(who, 0x1832, 1); // balao
