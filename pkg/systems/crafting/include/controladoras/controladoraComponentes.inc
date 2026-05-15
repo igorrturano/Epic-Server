@@ -155,7 +155,7 @@ function EnviaGumpComponentes(quem, pericia := "todas")
 					var materialDetalhes := configRecursos[alvo.objtype];
 					if(materialDetalhes)
 						var informacaoComponente := configComponentes[sessao.componenteSelecionado.selecione.objtype];
-						var isTrabalhavel := materialDetalhes.Skill <= AP_GetSkill(quem,informacaoComponente.pericia);
+						var isTrabalhavel := materialDetalhes.Skill <= EffectiveSkill(quem, informacaoComponente.pericia);
 						if(IsMaterialTrabalhavel(quem, sessao.componenteSelecionado, alvo.objtype))
 							SendSysMessageEX(quem,"Você tem conhecimento para trabalhar o material para este componente.",SSM_HELPFU);
 						else
@@ -521,7 +521,7 @@ function IsMaterialTrabalhavel(quem, componente, chaveMaterial)
 	var pericia := PegaPericiaPeloMaterial(materialPrincipal);
 	
 	if(lower(materialPrincipal) == lower(tipoMaterial))
-		return cDbl(materialDetalhe.Skill) <= AP_GetSkill(quem,pericia);
+		return cDbl(materialDetalhe.Skill) <= EffectiveSkill(quem, pericia);
 	else
 		return tipoMaterial in (componente.selecione.materiais.keys());
 	endif

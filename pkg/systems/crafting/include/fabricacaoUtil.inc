@@ -159,7 +159,7 @@ function PegaComponenteTiers()
 endfunction
 
 function CalculaValorPico(quem, pericia)
-	return AP_GetSkill(quem,pericia) / 20;
+	return EffectiveSkill(quem, pericia) / 20;
 endfunction
 
 function PegaDificuldadeFrabicarObjeto(quem, objtype, nomeProfissao, nomePericia, classe, sucessosNecessarios , produto := 0, estacao  := 0)
@@ -236,7 +236,7 @@ function PegaDeslocamentoFacilitador(sucessos)
 endfunction
 
 function PegaChanceFabricacaoBase(quem, pericia, dificuldadeItem, byref chancePelaSkill, sucessosNecessarios)
-	var valorPericia := AP_GetTrueSkill(quem, pericia);
+	var valorPericia := EffectiveTrueSkill(quem, pericia);
 	valorPericia := ApplySkillModifiers(quem, pericia, valorPericia); 
 	chancePelaSkill := CalcSuccessPercent(quem, pericia,CDbl(dificuldadeItem), CDbl(valorPericia));
 	if(chancePelaSkill == 0)

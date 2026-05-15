@@ -1043,7 +1043,7 @@ endfunction
 function TemValorPericiaNecessaria(quem, objtype, classe, nomePericia, nomeProfissao)
 	var settings := AP_GetSettingsCfgElem("Skills");
 
-	return (  PegaSkillNecessaria(objtype, nomeProfissao, classe) - Cdbl(settings.TooHard) + FIXO_DIF_ADICIONAL_PERICIA) <= AP_GetSkill(quem, nomePericia);
+	return (  PegaSkillNecessaria(objtype, nomeProfissao, classe) - Cdbl(settings.TooHard) + FIXO_DIF_ADICIONAL_PERICIA) <= EffectiveSkill(quem, nomePericia);
 endfunction
 
 function CriaPropFabricadoGerada(
