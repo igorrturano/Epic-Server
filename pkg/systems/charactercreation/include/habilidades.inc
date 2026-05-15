@@ -356,11 +356,19 @@ function comprarHabilidade(who, item, nv:=-1)
 	var possiveis := HabilidadesPorNivelPossiveis(who, chardata.classe, chardata.culture, nivel);
 
 	nivel := nivel*2;
-	var diference := Trunc(GetBuyHabDiference(who, nivel),1);
-	
-	if (diference > 0)
-		SendSysMessageEx(who, "Você não pode comprar habilidade desse nivel, faltam {} pontos de skill distribuídas nas suas primárias. ".format(diference), SSM_FAIL);
-		return 0;
+
+	// True Mode gates ability tiers purely by character Level — the buyhab
+	// slot itself enforces level progression (set to 1 on the appropriate
+	// even level by LevelUp / RepairMigratedBuyhab). The skill-distribution
+	// gate stays for Story Mode characters, who progress on the old
+	// "accumulate enough primary skill points" curve.
+	if (chardata.game_mode != "True Mode")
+		var diference := Trunc(GetBuyHabDiference(who, nivel),1);
+
+		if (diference > 0)
+			SendSysMessageEx(who, "Você não pode comprar habilidade desse nivel, faltam {} pontos de skill distribuídas nas suas primárias. ".format(diference), SSM_FAIL);
+			return 0;
+		endif
 	endif
 
 	if ( possiveis.size() > 0 )
