@@ -1175,15 +1175,29 @@ function ApplyCombatDamage(byRef attackInfo)
 	else
 		attackInfo.GetDamage().SetEnergyBaseDamage(0); // Garante que dano elemental que ficou negativo por causa da resistência não seja aplicado
 	endif
+//FRAJ adicionado por causa do autopsia
+var totalDamage := attackInfo.GetDamage().GetTotalBaseDamage();
 
-	var totalDamage := attackInfo.GetDamage().GetTotalBaseDamage();
-	if (totalDamage > 0)
-		var owner := ResolvePetOwner(attackInfo.GetAttacker().GetObjRef());
-		if (owner)
-			MostraDano(owner, attackInfo.GetAttacker().GetObjRef(), totalDamage);
-		endif
-		AccumulateVinganca(attackInfo.GetDefender().GetObjRef(), totalDamage);
+if (totalDamage > 0)
+
+	var defender := attackInfo.GetDefender().GetObjRef();
+			
+	var attacker := attackInfo.GetAttacker().GetObjRef();
+	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
+
+	var life := AP_GetVital(defender, "HITS");
+
+	if (totalDamage >= life)
+		SetLastDamageInfo(defender, totalDamage, posture, attacker);
 	endif
+
+	var owner := ResolvePetOwner(attacker);
+	if (owner)
+		MostraDano(owner, attacker, totalDamage);
+	endif
+
+	AccumulateVinganca(defender, totalDamage);
+endif	 
 endfunction
 
 function AccumulateVinganca(defender, amount)

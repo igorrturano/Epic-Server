@@ -5,10 +5,10 @@ include "include/say";
 
 var booklist := { 0x702D, 0x702C };
 
-function recipecfg(recipetype)
+function recipecfg(who, recipetype)
 	var alchemy := ReadConfigFile(":cooking:cookbook");
 	if (!alchemy || alchemy == error)
-		broadcast("Cant find cooking.cfg");
+		SendSysMessage(who, "RecipeList cant find cooking.cfg");
 		return 0;
 	endif
 	if (alchemy[recipetype])
@@ -24,7 +24,7 @@ program fillbook(who, slip)
 		SetObjProperty(slip, "RecipeId", RandomInt(41) + 1);
 	endif
 
-	SendSysMessageEx(who, "Escolha o livro de receitas para a receita " + recipecfg(cint(GetObjProperty(slip,
+	SendSysMessageEx(who, "Escolha o livro de receitas para a receita " + recipecfg(who, cint(GetObjProperty(slip,
 																										 "RecipeId"))).name, SSM_REQUEST);
 	var targ := target(who);
 
