@@ -51,6 +51,14 @@ program forensic(who)
 	elseif (!subject.IsA(POLCLASS_MOBILE) && !subject.IsA(POLCLASS_CORPSE))
 		SendSysMessageEx(who, "O alvo tem que ser um corpo ou ser vivo.", SSM_FAIL);
 		return 0;
+	elseif (subject.IsA(POLCLASS_MOBILE) || subject.IsA(POLCLASS_CORPSE))
+	// Obter informações do corpo
+		var autopsy_data := GetObjProperty(subject, "Autopsy");
+		var lastDamage := GetObjProperty(subject, "LastDamage");
+			if (!autopsy_data || !lastDamage)
+				PrintTextPrivate(who, "*O corpo está muito deteriorado para uma autopsia adequada.*", who);
+				return;
+			endif
 	elseif (Distance(who, subject) > 1)
 		SendSysMessage(who, "Seu alvo está muito longe", color := 33);
 		return 0;
@@ -449,6 +457,9 @@ function Autopsy(who, corpse)
 	var check_result_orig := SkillCheck(who, MEDICINE, 35);
 	var check_result;
 
+	var autopsy_data := GetObjProperty(corpse, "Autopsy");
+	var lastDamage := GetObjProperty(corpse, "LastDamage");
+
 	if ((equippedright.objtype in bisturi) || (equippedleft.objtype in bisturi))
 		check_result := check_result_orig + 10;
 		SendSysMessageEx(who, "Por usar o bisturi você tem bônus de +10", SSM_INFO);
@@ -467,16 +478,6 @@ function Autopsy(who, corpse)
 
 	// Definir a propriedade para indicar que o personagem está realizando uma autópsia
 	SetObjProperty(who, "#DoingAutopsy", 1);
-
-	// Obter informações do corpo
-	var autopsy_data := GetObjProperty(corpse, "Autopsy");
-	var lastDamage := GetObjProperty(corpse, "LastDamage");
-
-	if (!autopsy_data || !lastDamage)
-		EraseObjProperty(who, "#DoingAutopsy");
-		PrintTextPrivate(who, "*O corpo está muito deteriorado para uma autopsia adequada.*", who);
-		return;
-	endif
 
 	var discovery_results := dictionary{};
 
@@ -716,19 +717,19 @@ function DesmembreCorpse(cadaver)
 	endforeach
 	var partsarray := {};
 	var part;
-	part := CreateItemAtLocation(cadaver.x - 1, cadaver.y, cadaver.z, 0x1da0, 1);
+	part := CreateItemAtLocation(cadaver.x - 1, cadaver.y, cadaver.z, 0x1da0, 1, cadaver.realm);
 	partsarray.append(part);
-	part := CreateItemAtLocation(cadaver.x - 1, cadaver.y + 1, cadaver.z, 0x1CF0, 1);
+	part := CreateItemAtLocation(cadaver.x - 1, cadaver.y + 1, cadaver.z, 0x1CF0, 1, cadaver.realm);
 	partsarray.append(part);
-	part := CreateItemAtLocation(cadaver.x + 1, cadaver.y, cadaver.z, 0x1CEE, 1);
+	part := CreateItemAtLocation(cadaver.x + 1, cadaver.y, cadaver.z, 0x1CEE, 1, cadaver.realm);
 	partsarray.append(part);
-	part := CreateItemAtLocation(cadaver.x + 1, cadaver.y + 1, cadaver.z, 0x1CED, 1);
+	part := CreateItemAtLocation(cadaver.x + 1, cadaver.y + 1, cadaver.z, 0x1CED, 1, cadaver.realm);
 	partsarray.append(part);
-	part := CreateItemAtLocation(cadaver.x, cadaver.y, cadaver.z, 0x1CEA, 1);
+	part := CreateItemAtLocation(cadaver.x, cadaver.y, cadaver.z, 0x1CEA, 1, cadaver.realm);
 	partsarray.append(part);
 	MakeBleed(cadaver);
 	DestroyItem(cadaver);
-
+	
 endfunction
 
 // Função simplificada para obter informações de doença conhecida
