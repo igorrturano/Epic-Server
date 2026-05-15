@@ -414,7 +414,23 @@ endfunction
 function HandleSpellSkill(who)
 	var chardata := getobjProperty(who, "chardata");
 	var skill := Cint(AP_GetSkill(who, ARCANA));
-	if (chardata != error && chardata.wisdom_path != "Mago" && !(MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)))
+
+	// Detect arcane casters so they scale on Arcana; everyone else uses Theology.
+	// Path-rework chars are tagged via chardata.magia (applyClassStarter sets
+	// "spellcaster" for Magus/Necromante/Lamina_Arcana, "arcane_archer" for
+	// Arqueiro_Arcano). Legacy chars use chardata.wisdom_path = "Mago" — kept
+	// as a fallback for any char predating the rework.
+	var is_arcane := 0;
+	if (chardata != error)
+		var magia := chardata.magia;
+		if (magia == "spellcaster" || magia == "arcane_archer")
+			is_arcane := 1;
+		elseif (chardata.wisdom_path == "Mago")
+			is_arcane := 1;
+		endif
+	endif
+
+	if (!is_arcane && !(MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)))
 		skill := Cint(AP_GetSkill(who, THEOLOGY));
 	endif
 
