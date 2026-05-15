@@ -166,9 +166,64 @@ function HabilidadesPorNivel(who, classe, lvl)
 
 endfunction
 
+// GetAbilitySubclasse maps an ability ID (from habilidades.cfg key) to the
+// path-rework subclass it belongs to. Encoded via the ID range — each class
+// occupies a 100-block of IDs (Arqueiro 1-5, Cacador 100-104, Combatente
+// 200-204, etc.). Bardo is the only non-block-aligned class (1708-1712),
+// but 1708/100 still resolves cleanly to 17 since no other class lives in
+// 1700-1799. Returns "" for cross-class (Caminho) abilities so they fall
+// through the subclass filter.
+function GetAbilitySubclasse(hab_id)
+	var id := CInt(hab_id);
+	case (id / 100)
+		0:  return "Arqueiro";
+		1:  return "Cacador";
+		2:  return "Combatente";
+		3:  return "Defensor";
+		4:  return "Paladino";
+		5:  return "Aklattur";
+		6:  return "Barbaro";
+		7:  return "Monge";
+		8:  return "Samurai";
+		9:  return "Mutante";
+		10: return "Malandro_Arcano";
+		11: return "Cacador_de_Tesouros";
+		12: return "Assassino";
+		13: return "Shinobi";
+		14: return "Vivisseccionista";
+		15: return "Esgrimista";
+		16: return "Ladrao";
+		17: return "Bardo";
+		18: return "Dancarino_das_Sombras";
+		19: return "Cacador_de_Demonios";
+		20: return "Necromante";
+		21: return "Druida";
+		22: return "Magus";
+		23: return "Lamina_Arcana";
+		24: return "Arqueiro_Arcano";
+		25: return "Granadeiro";
+		26: return "Shaman";
+		27: return "Engenheiro";
+		28: return "Cleric";
+	endcase
+	return "";
+endfunction
+
 function HabilidadesPorNivelPossiveis(who, classe, povo, lvl)
 	//sendsysmessage(who, "Procurando Habs!");
 	var possiveis := array;
+
+	// Path-rework: narrow class abilities to the player's specific subclass.
+	// Legacy chars (no chardata.subclasse) fall back to the archetype-wide
+	// list as before.
+	var chardata := GetObjProperty(who, "chardata");
+	var subclasse := "";
+	if (chardata != error && chardata)
+		subclasse := chardata.subclasse;
+		if (subclasse == error)
+			subclasse := "";
+		endif
+	endif
 
 	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
 	var keys := getConfigStringKeys( habcfg );
@@ -183,6 +238,16 @@ function HabilidadesPorNivelPossiveis(who, classe, povo, lvl)
 
 		//sendsysmessage(who, "elem " + elem + " classe " + classe  + " c[1] " + c[1]+" c[2] " + c[2]+ " p[povo] " + p[povo] + "requisito:"+requisito);
 		if ((c[classe]!=error) && (cint(c[classe]) == lvl) && ((p[povo]==error) || (p.Exists(povo))))// && (povo in p))
+			// Subclass narrowing: skip abilities that belong to a different
+			// subclass within the same archetype. Caminho/cross-class entries
+			// return "" from GetAbilitySubclasse and pass through.
+			if (subclasse != "")
+				var hab_subclasse := GetAbilitySubclasse(key);
+				if (hab_subclasse != "" && hab_subclasse != subclasse)
+					continue;
+				endif
+			endif
+
 			//sendsysmessage(who, "classe" + CInt(c[classe]) + "povo" + CInt(p[povo]));
 			if(lvl > 2) //Se o level for maior que 4, verifique requisito
 				if(TemHabilidade(who,requisito))
