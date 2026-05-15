@@ -48,7 +48,7 @@ program SpellScript(params)
 	opts.+dex_mod := -amt;
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
-	PrintTextPrivate(targ, "-" + CInt(amt / 5) + " Dex", who, 3, 38);
+	PrintTextPrivate(targ, "-" + amt + " Dex", who, 3, 38);
 	SC_HandleSound(who, targ, SFX_SPELL_WEAKEN);
 
 	SendSysMessageEx(who, "Voce deixou o alvo atrapalhado.", SSM_INFO);
