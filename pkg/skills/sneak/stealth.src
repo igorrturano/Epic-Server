@@ -18,7 +18,7 @@ program skill_Stealth(who)
 		return 0;
 	endif
 
-	var skill := AP_GetSkill(who, SNEAK);
+	var skill := EffectiveSkill(who, "Stealth");
 	var skillTested := SNEAK;
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
