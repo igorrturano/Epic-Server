@@ -18,6 +18,21 @@ program core_reconnect(who)
 	//  return 1;
 	EraseObjProperty(who, "#Casting"); // Bugs de cast
 
+	var cheiro_expira := CInt(GetObjProperty(who, "#cheiro_expira"));
+	if (cheiro_expira)
+		if (CInt(polcore().systime) >= cheiro_expira)
+			EraseObjProperty(who, "descmodboss");
+			EraseObjProperty(who, "#cheiro_expira");
+			EraseObjProperty(who, "#cheiro_pid");
+		else
+			var cheiro_pid := CInt(GetObjProperty(who, "#cheiro_pid"));
+			var proc := cheiro_pid ? GetProcess(cheiro_pid) : 0;
+			if (!proc || !proc.pid)
+				Start_Script(":fezes:scripts/cheiro", array{who});
+			endif
+		endif
+	endif
+
 	if (who.cmdlevel <= 1)
 		var acc := who.acct;
 		var count := ACCT_GetNumCharacters(acc);
