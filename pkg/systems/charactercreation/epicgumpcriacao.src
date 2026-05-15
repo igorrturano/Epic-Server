@@ -821,7 +821,13 @@ function applyClassStarter(who)
 		return;
 	endif
 
-	if (subclasse == "Magus")
+	if (subclasse == "Magus" || subclasse == "Necromante" || subclasse == "Lamina_Arcana"
+		|| subclasse == "Deslocador_das_Sombras")
+		// All are arcane "spellcaster" casters: they get the grimoire and the
+		// starter spell-choice scrolls so they can buy/cast spells. Note the
+		// Ladino rogue Dancarino_das_Sombras is deliberately NOT here — it
+		// shares the 1800-1804 ability tree but is a martial class with no
+		// spellbook; only the Sabio Deslocador_das_Sombras casts.
 		chardata.+magia := "spellcaster";
 		var grimorio := CreateItemInBackpack(who, "grimoriodasmagias", 1);
 		SetObjProperty(grimorio, "Booktype", "spellcaster");
@@ -838,11 +844,6 @@ function applyClassStarter(who)
 			spellinfo.school := spell.school;
 			SetObjProperty(scroll, "spellinfo", spellinfo);
 		endforeach
-
-	elseif (subclasse == "Necromante" || subclasse == "Lamina_Arcana")
-		// Both are arcane casters mechanically. No starter items today —
-		// future phase may add school-specific kits.
-		chardata.+magia := "spellcaster";
 
 	elseif (subclasse == "Cleric")
 		chardata.+magia := "Sacerdote";
