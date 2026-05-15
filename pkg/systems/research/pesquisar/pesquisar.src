@@ -849,9 +849,9 @@ function CheckResearchRequirements(who, isQuickResearch := 0, power := 0, recipe
     if (recipe)
         case (recipe.type)
             "Instrução de Metalurgia":
-                skillLevel := AP_GetSkill(who, METALWORKING);
+                skillLevel := EffectiveSkill(who, "Smithing");
             "Instrução de Marcenaria":
-                skillLevel := AP_GetSkill(who, WOODWORKING);
+                skillLevel := EffectiveSkill(who, "Carpentry");
             "Instrução de Trabalho Doméstico":
                 // Path-rework: legacy "Trabalho Doméstico" recipes cover both
                 // tailoring and provisioning. Use the higher of the two new
@@ -962,11 +962,11 @@ function GetResearchSkills(who)
     // characters). Other entries use legacy constants that resolve to the
     // same SkillId as their new names via cfg Aliases.
     return struct{
-        "ferreiro" := AP_GetSkill(who, METALWORKING),
+        "ferreiro" := EffectiveSkill(who, "Smithing"),
         "costureiro" := EffectiveSkill(who, "Tailoring"),
         "alquimista" := AP_GetSkill(who, ALCHEMY),
         "mago" := AP_GetSkill(who, MAGERY),
-        "carpenter" := AP_GetSkill(who, WOODWORKING)
+        "carpenter" := EffectiveSkill(who, "Carpentry")
     };
 endfunction
 

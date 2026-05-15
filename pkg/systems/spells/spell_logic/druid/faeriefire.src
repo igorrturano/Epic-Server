@@ -56,7 +56,7 @@ program SpellScript(params)
 		// Verifica se está escondido ou concealed
 		if (mobile.hidden == 1)
 			// O alvo faz um teste de SNEAK contra o THEOLOGY do druida
-			var target_sneak := CInt(AP_GetSkill(mobile, SNEAK));
+			var target_sneak := CInt(EffectiveSkill(mobile, "Stealth"));
 
 			// Teste resistido: theology do druida vs sneak do alvo
 			if (SkillCheck(mobile, SNEAK, difficulty) <= 0)

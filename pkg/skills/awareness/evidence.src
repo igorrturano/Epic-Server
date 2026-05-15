@@ -256,8 +256,8 @@ function InvestigarAreaCrime(magnifyingGlass, areax, areay, areaz, arearealm)
 
 	SetObjProperty(magnifyingGlass, "InvestigarAreaCrime_Realizado", 1);
 
-	var investigatorSkill := AP_GetTrueSkill(investigator, AWARENESS);
-	var perpetratorSkill := AP_GetTrueSkill(perpetrator, SNEAK);
+	var investigatorSkill := EffectiveTrueSkill(investigator, "Perception");
+	var perpetratorSkill := EffectiveTrueSkill(perpetrator, "Stealth");
 	SetObjProperty(magnifyingGlass, "PerpetratorSkill", perpetratorSkill);
 	var skillDifference := investigatorSkill - perpetratorSkill;
 	var difficulty := 50 - (skillDifference / 2);

@@ -8,7 +8,7 @@ include ":charactercreation:habilidades";
 
 function ExaminarMobile(who,targ)
 	if (GetObjProperty(targ, "disfarce") )
-		if (SkillCheck(who, AWARENESS, AP_GetSkill(who, SNEAK)))
+		if (SkillCheck(who, AWARENESS, EffectiveSkill(who, "Stealth")))
 			var char := GetObjProperty(targ, "chardata");
 			var name := char.FirstName;
 			var last_name := char.LastName;
@@ -129,7 +129,7 @@ endfunction
 
 function CalculateDHDiff(who, mobile)
 
-	var mobile_skill := CInt(AP_GetSkill(mobile, SNEAK));
+	var mobile_skill := CInt(EffectiveSkill(mobile, "Stealth"));
 
 	//sendsysmessage(mobile, "dificuldade de  "  + who.name + "te achar " + mobile_skill);
 	if (GetObjProperty(mobile, "#overridehiding") != error)
@@ -168,7 +168,7 @@ endfunction
 
 function ExaminarArea(who)
 
-	var range := CInt( AP_GetSkill(who, AWARENESS) / 10 ) + 1;
+	var range := CInt( EffectiveSkill(who, "Perception") / 10 ) + 1;
 
 	if ( MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA) )
 		range := range + 5;
@@ -266,7 +266,7 @@ function CheckForSecretDoors(who)
 		return 0;
 	endif
 
-	var awareness_skill := CInt(AP_GetSkill(who, AWARENESS));
+	var awareness_skill := CInt(EffectiveSkill(who, "Perception"));
 	var range := CInt(awareness_skill / 10) + 1;
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA))
@@ -337,7 +337,7 @@ endfunction
 
 function VerificarArtefato(who, item)
 	var prop_stealable := CInt(GetObjProperty(item, "PropStealable"));
-	var skill          := CInt(AP_GetSkill(who, AWARENESS));
+	var skill          := CInt(EffectiveSkill(who, "Perception"));
 
 	if (prop_stealable)
 		SendSysMessage(who, "Seus olhos percorrem o objeto... parece ter sido deixado aqui de propósito, à espera de mãos habilidosas.", 3, 44);

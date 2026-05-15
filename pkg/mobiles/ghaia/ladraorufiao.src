@@ -83,7 +83,7 @@ function FindStealableItem(targ)
 endfunction
 
 function TrySteal(targ)
-	var difficulty := 15 + CInt(AP_GetSkill(targ, AWARENESS));
+	var difficulty := 15 + CInt(EffectiveSkill(targ, "Perception"));
 	if (!SkillCheck(me, PICKPOCKETING, difficulty))
 		// Detectado: avisa alvo e foge
 		PrintTextAbove(me, "*escorrega a mao e recua*");

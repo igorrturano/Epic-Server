@@ -28,7 +28,7 @@ class ShadowCloak(CombatAbility)
 
 		// Sneak vs Awareness contest
 		var defender := attackInfo.GetDefender();
-		var awarenessSkill := CInt(AP_GetSkill(defender.GetObjRef(), AWARENESS));
+		var awarenessSkill := CInt(EffectiveSkill(defender.GetObjRef(), "Perception"));
 
 		if (SkillCheck(who, SNEAK, awarenessSkill, 0, ADV_DISABLE) <= 0)
 			DebugMsg(who, DEBUG_HAB,
@@ -38,7 +38,7 @@ class ShadowCloak(CombatAbility)
 		endif
 
 		// Re-enter stealth
-		var sneakSkill := CInt(AP_GetSkill(who, SNEAK));
+		var sneakSkill := CInt(EffectiveSkill(who, "Stealth"));
 		var steps := CInt(sneakSkill / 10);
 		if (steps < 3)
 			steps := 3;

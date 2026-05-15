@@ -38,7 +38,7 @@ program magia_shinobi(who, spellname := "")
 
 	// If no spell name provided, show techniques gump
 	if (!spellname || spellname == "")
-		var sneak_skill := CInt(AP_GetSkill(who, SNEAK));
+		var sneak_skill := CInt(EffectiveSkill(who, "Stealth"));
 		var max_circle := (sneak_skill + 10) / 20;
 		if (max_circle < 1)
 			max_circle := 1;

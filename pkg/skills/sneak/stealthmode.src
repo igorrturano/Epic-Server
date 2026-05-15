@@ -1,5 +1,6 @@
 use uo;
 
+include ":attributes:attributes";
 include ":awareness:awareness";
 include "include/colormap";
 
@@ -15,7 +16,7 @@ program showdfdiff(params)
 		foreach mob in mobs
 			if (!mob.hiding)
 				var dif := CalcSuccessPercent(mob, AWARENESS, cdbl(CalculateDHDiff(mob, who)),
-											   AP_GetTrueSkill(mob, AWARENESS));
+											   EffectiveTrueSkill(mob, "Perception"));
 				SendSysMessage(mob, "" + dif, who, _DEFAULT_TEXT_FONT/* , GetMagentaMap(cint(dif / 10) )*/);
 			endif
 			sleepms(2);

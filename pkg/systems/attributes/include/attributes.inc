@@ -324,6 +324,46 @@ function EffectiveSkill(who, skill_name)
 			var legacy := AP_GetSkill(who, "Stealth");
 			if (cur >= legacy) return cur; endif
 			return legacy;
+		"Perception":
+			var cur := AP_GetSkill(who, "Perception");
+			var legacy := AP_GetSkill(who, "Awareness");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Awareness":
+			var cur := AP_GetSkill(who, "Awareness");
+			var legacy := AP_GetSkill(who, "Perception");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Theft":
+			var cur := AP_GetSkill(who, "Theft");
+			var legacy := AP_GetSkill(who, "Pickpocketing");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Pickpocketing":
+			var cur := AP_GetSkill(who, "Pickpocketing");
+			var legacy := AP_GetSkill(who, "Theft");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Smithing":
+			var cur := AP_GetSkill(who, "Smithing");
+			var legacy := AP_GetSkill(who, "Metal_Working");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Metal_Working":
+			var cur := AP_GetSkill(who, "Metal_Working");
+			var legacy := AP_GetSkill(who, "Smithing");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Carpentry":
+			var cur := AP_GetSkill(who, "Carpentry");
+			var legacy := AP_GetSkill(who, "Wood_Working");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Wood_Working":
+			var cur := AP_GetSkill(who, "Wood_Working");
+			var legacy := AP_GetSkill(who, "Carpentry");
+			if (cur >= legacy) return cur; endif
+			return legacy;
 	endcase
 	return AP_GetSkill(who, skill_name);
 endfunction
@@ -376,6 +416,46 @@ function EffectiveTrueSkill(who, skill_name)
 		"Sneak":
 			var cur := AP_GetTrueSkill(who, "Sneak");
 			var legacy := AP_GetTrueSkill(who, "Stealth");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Perception":
+			var cur := AP_GetTrueSkill(who, "Perception");
+			var legacy := AP_GetTrueSkill(who, "Awareness");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Awareness":
+			var cur := AP_GetTrueSkill(who, "Awareness");
+			var legacy := AP_GetTrueSkill(who, "Perception");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Theft":
+			var cur := AP_GetTrueSkill(who, "Theft");
+			var legacy := AP_GetTrueSkill(who, "Pickpocketing");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Pickpocketing":
+			var cur := AP_GetTrueSkill(who, "Pickpocketing");
+			var legacy := AP_GetTrueSkill(who, "Theft");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Smithing":
+			var cur := AP_GetTrueSkill(who, "Smithing");
+			var legacy := AP_GetTrueSkill(who, "Metal_Working");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Metal_Working":
+			var cur := AP_GetTrueSkill(who, "Metal_Working");
+			var legacy := AP_GetTrueSkill(who, "Smithing");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Carpentry":
+			var cur := AP_GetTrueSkill(who, "Carpentry");
+			var legacy := AP_GetTrueSkill(who, "Wood_Working");
+			if (cur >= legacy) return cur; endif
+			return legacy;
+		"Wood_Working":
+			var cur := AP_GetTrueSkill(who, "Wood_Working");
+			var legacy := AP_GetTrueSkill(who, "Carpentry");
 			if (cur >= legacy) return cur; endif
 			return legacy;
 	endcase
