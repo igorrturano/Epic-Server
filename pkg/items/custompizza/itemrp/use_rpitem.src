@@ -30,7 +30,7 @@ function ShowLoreItemInfo(who, item, item_info)
 	var evaluated_archaeology := GetObjProperty(item, "evaluated_archaeology");
 
 	// Verifica se o jogador atual pode avaliar o item
-	var player_skill := AP_GetSkill(who, item_info.required_skill);
+	var player_skill := EffectiveSkill(who, item_info.required_skill);
 	var can_evaluate_skill := (player_skill >= item_info.required_skill_value);
 	var can_evaluate_archaeology := MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO);
 
@@ -272,7 +272,7 @@ function EvaluateItem(who, item, eval_type)
 endfunction
 
 function ShowSkillInfo(who, item_info)
-	var player_skill := AP_GetSkill(who, item_info.required_skill);
+	var player_skill := EffectiveSkill(who, item_info.required_skill);
 	if (player_skill >= item_info.required_skill_value)
 		var skill_gump := GFCreateGump();
 		GFClosable(skill_gump, 1);
