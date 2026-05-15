@@ -31,14 +31,14 @@ program TrainerMenu(params)
 	GFResizePic(gump, 15, 40, 0x13BE, 250, 150);
 	GFTextLine(gump, 60, 50, 1153, "O que deseja fazer?");
 
-	GFAddButton(gump, 30, 90, 4005, 4007, GF_CLOSE_BTN, 1);
-	GFTextLine(gump, 65, 90, 1153, "Redistribuir Atributos");
+	// GFAddButton(gump, 30, 90, 4005, 4007, GF_CLOSE_BTN, 1);
+	// GFTextLine(gump, 65, 90, 1153, "Redistribuir Atributos");
 
 	GFAddButton(gump, 30, 120, 4005, 4007, GF_CLOSE_BTN, 2);
 	GFTextLine(gump, 65, 120, 1153, "Remover Habilidade");
 
-	GFAddButton(gump, 30, 150, 4005, 4007, GF_CLOSE_BTN, 3);
-	GFTextLine(gump, 65, 150, 1153, "Redistribuir Skills");
+	// GFAddButton(gump, 30, 150, 4005, 4007, GF_CLOSE_BTN, 3);
+	// GFTextLine(gump, 65, 150, 1153, "Redistribuir Skills");
 
 	var input := GFSendGump(who, gump);
 	var btn := 0;
