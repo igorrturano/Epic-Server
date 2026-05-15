@@ -37,123 +37,51 @@ program skill_Hide(who)
 
 	SendSysMessageEx(who, "Voce comecou a tentar se esconder...", SSM_INFO);
 
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
-		while (1)
-			if (isPequilho)
-				sleep(2);
-			else
-				sleep(3);
-			endif
+	while (1)
+		if (isPequilho)
+			sleep(2);
+		else
+			sleep(3);
+		endif
 
-			if (!CanHide(who, orig_x, orig_y))
-				break;
+		if (!CanHide(who, orig_x, orig_y))
+			break;
+		endif
+		var check := SkillCheck(who, SNEAK, -1);
+		var diff := 0;
+		if (GetObjProperty(who, "forjoumorte") == 1)
+			diff := diff - 50;
+			if (diff <= 0)
+				diff := 5;
 			endif
-			var check := SkillCheck(who, SURVIVAL, -1);
-			var diff;
+		endif
+		var chardata := GetObjProperty(who, "chardata");
+		if (chardata.trait == "Sorrateiro")
+			diff := -10;
+			if (diff <= 0)
+				diff := 5;
+			endif
+		endif
+		var semfalha := EffectiveSkill(who, "Stealth");
 
-			var region := GetRegionName(who);
-			var towns := { "Kazad", "Nygurath", "Kaijing", "Gulshurr", "Borfjell",
-			   			"Aldorathrim", "Feira", "Colhesol", "Aigla" };
-			if (!(region in towns))
-				diff := diff - 50;
-				if (diff <= 0)
-					diff := 5;
-				endif
-			else
-				diff := 50;
+		if (check > diff)
+			SendSysMessageEx(who, "Voce se escondeu.", SSM_INFO);
+			who.hidden := 1;
+			NotifyCitizenWitnesses(who, "hide", struct);
+			var a := start_script(":sneak:stealthmode", array{ who });
+			EraseObjProperty(who, "#steathsteps");
+			if (GetCooldown(who, "partyhiding") > 0) // Se tiver usado habilidade de Emboscada
+				HidingParty(who);
 			endif
-
-			if (GetObjProperty(who, "forjoumorte") == 1)
-				diff := diff - 50;
-				if (diff <= 0)
-					diff := 5;
-				endif
-
-			endif
-
-			var semfalha := AP_GetSkill(who, SURVIVAL);
-
-			if (check > diff)
-				SendSysMessageEx(who, "Voce se escondeu.", SSM_INFO);
-				who.hidden := 1;
-				NotifyCitizenWitnesses(who, "hide", struct);
-				var a := start_script(":sneak:stealthmode", array{ who });
-				// sendsysmessage(who, " "+ a);
-				EraseObjProperty(who, "#steathsteps");
-				if (GetCooldown(who, "partyhiding") > 0) // Se tiver usado habilidade de Emboscada
-					HidingParty(who);
-				endif
-				break;
-			elseif (check >= -25)
-				SendSysMessageEx(who, "Voce falhou ao tentar se esconder.", SSM_FAIL);
-				who.hidden := 0;
-			elseif (semfalha <= 79) // Falha Cr�tica
-				Message("*tentando se esconder*").SendEmote(who);
-			endif
-		endwhile
-		SetObjProperty(who, "#hidewait", readgameclock() + 5);
-		return;
-	else
-
-		while (1)
-			if (isPequilho)
-				sleep(2);
-			else
-				sleep(3);
-			endif
-
-			if (!CanHide(who, orig_x, orig_y))
-				break;
-			endif
-			var check := SkillCheck(who, SNEAK, -1);
-			var diff := 0;
-			/* case ( temHabilidade(who, "Misturar-se na Selva") )
-				1:
-					var region := GetRegionName(who);
-					if(region != "aghaja" && region != "zharkia")
-						diff := diff - 50;
-						if (diff <= 0)
-							diff := 5;
-						endif
-					endif
-				0:
-					diff := 0;
-			endcase */
-			if (GetObjProperty(who, "forjoumorte") == 1)
-				diff := diff - 50;
-				if (diff <= 0)
-					diff := 5;
-				endif
-			endif
-			var chardata := GetObjProperty(who, "chardata");
-			if (chardata.trait == "Sorrateiro")
-				diff := -10;
-				if (diff <= 0)
-					diff := 5;
-				endif
-			endif
-			var semfalha := EffectiveSkill(who, "Stealth");
-
-			if (check > diff)
-				SendSysMessageEx(who, "Voce se escondeu.", SSM_INFO);
-				who.hidden := 1;
-				NotifyCitizenWitnesses(who, "hide", struct);
-				var a := start_script(":sneak:stealthmode", array{ who });
-				// sendsysmessage(who, " "+ a);
-				EraseObjProperty(who, "#steathsteps");
-				if (GetCooldown(who, "partyhiding") > 0) // Se tiver usado habilidade de Emboscada
-					HidingParty(who);
-				endif
-				break;
-			elseif (check >= -25)
-				SendSysMessageEx(who, "Voce falhou ao tentar se esconder.", SSM_FAIL);
-				who.hidden := 0;
-			elseif (semfalha <= 79) // Falha Cr�tica
-				Message("*tentando se esconder*").SendEmote(who);
-			endif
-		endwhile
-		SetObjProperty(who, "#hidewait", readgameclock() + 5);
-	endif
+			break;
+		elseif (check >= -25)
+			SendSysMessageEx(who, "Voce falhou ao tentar se esconder.", SSM_FAIL);
+			who.hidden := 0;
+		elseif (semfalha <= 79) // Falha Critica
+			Message("*tentando se esconder*").SendEmote(who);
+		endif
+	endwhile
+	SetObjProperty(who, "#hidewait", readgameclock() + 5);
 endprogram
 
 function HidingParty(who)
@@ -202,10 +130,6 @@ function CanHide(who, orig_x, orig_y, override_hiding := 0)
 
 	var skill := EffectiveSkill(who, "Stealth");
 
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
-		var skill := AP_GetSkill(who, SURVIVAL);
-	endif
-
 	if (override_hiding)
 		skill := override_hiding;
 	endif
@@ -245,9 +169,6 @@ function GetWatchingPeople(who)
 	var counter := 0;
 	var counterpt := 0;
 	var range := GetHidingRange(EffectiveSkill(who, "Stealth"));
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
-		var range := GetHidingRange(AP_GetSkill(who, SURVIVAL));
-	endif
 	// adicionada exclusão para membros de pt - BORS
 	foreach person in ListMobilesInLineOfSight(who, range)
 		if ((person.connected) && (person != who))
