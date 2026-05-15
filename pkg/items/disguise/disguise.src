@@ -121,8 +121,8 @@ function criaDisfarceTarget(who, kit)
 	endif
 
 	if (GetObjProperty(who, "chardata").raca != GetObjProperty(targ, "chardata").raca)
-		if (AP_GetSkill(who, SNEAK) < 70)
-			SendSysMessageEx(who, "Voce nao pode se disfarcar de pessoas de outra raca antes de atingir 70 de skill em SNEAK.", SSM_FAIL);
+		if (EffectiveSkill(who, "Stealth") < 70)
+			SendSysMessageEx(who, "Voce nao pode se disfarcar de pessoas de outra raca antes de atingir 70 de skill em Stealth.", SSM_FAIL);
 			return;
 		endif
 	endif
@@ -274,7 +274,7 @@ function usarDisfarce(who, disfarce)
 	endif
 */
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
-		TS_StartTimer(who, "kitdisfarce", AP_GetSkill(who, SNEAK) * 60);
+		TS_StartTimer(who, "kitdisfarce", EffectiveSkill(who, "Stealth") * 60);
 	else
 		TS_StartTimer(who, "kitdisfarce", 600);
 	endif
@@ -457,8 +457,8 @@ function disguiseSelf(who, kit, byref disfarce)
 		var myraca := GetObjProperty(who, "raca");
 		if (myraca == "Anao")
 			SendSysMessageEx(who, "Voce nao pode criar disfarce de outras racas.", SSM_FAIL);
-		elseif (AP_GetSkill(who, SNEAK) < 70)
-			SendSysMessageEx(who, "Voce precisa de 70 de Sneak para alterar a raca.", SSM_FAIL);
+		elseif (EffectiveSkill(who, "Stealth") < 70)
+			SendSysMessageEx(who, "Voce precisa de 70 de Stealth para alterar a raca.", SSM_FAIL);
 		else
 			var raca := RadioGump(who, 250, 330, "Escolha a raca do disfarce.", { "Humano", "Elfo" });
 			SendSysMessageEx(who, "Voce escolheu a raca para o disfarce.", SSM_INFO);

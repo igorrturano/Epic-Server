@@ -345,9 +345,9 @@ var autopsy := struct;
 		skills_combat.+magery := AP_GetTrueSkill(mobile, MAGERY);
 		skills_combat.+arcana := AP_GetTrueSkill(mobile, ARCANA);
 	elseif(classe == LADINO || mobile.isSpider())
-		skills_combat.+sneak := AP_GetTrueSkill(mobile, SNEAK);
-		skills_combat.+awareness := AP_GetTrueSkill(mobile, AWARENESS);
-		skills_combat.+pickpocketing := AP_GetTrueSkill(mobile, PICKPOCKETING);
+		skills_combat.+sneak := EffectiveTrueSkill(mobile, "Stealth");
+		skills_combat.+awareness := EffectiveTrueSkill(mobile, "Perception");
+		skills_combat.+pickpocketing := EffectiveTrueSkill(mobile, "Theft");
 	else
 		skills_combat.+wrestling := AP_GetTrueSkill(mobile, WRESTLING);
 		skills_combat.+tactics := AP_GetTrueSkill(mobile, TACTICS);
@@ -563,7 +563,7 @@ function CalcDamageHabs(attacker, defender, damage)
 	endif
 
     if (MobileWrapper(attacker).HasAbility(ABILITY_ID::ARSENAL_SOMBRIO))
-        var damagemod := CInt(AP_GetSkill(attacker, SNEAK) / 20);
+        var damagemod := CInt(EffectiveSkill(attacker, "Stealth") / 20);
         if (isAssassinWeapon(attacker))
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));

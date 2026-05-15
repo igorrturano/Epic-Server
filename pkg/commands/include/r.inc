@@ -1,5 +1,6 @@
 use uo;
 include ":attributes:skills";
+include ":attributes:attributes";
 
 function VerificaDisfarce(alvo, quem := 0)
 	var ID := cstr(alvo.serial); //Salva o serial do personagem
@@ -17,7 +18,7 @@ function _PodeVerDisfarce(quem)
 	if (CInt(GetObjProperty(quem, "#truesight_active")) > now)
 		return 1;
 	endif
-	if (AP_GetSkill(quem, AWARENESS) >= 70)
+	if (EffectiveSkill(quem, "Perception") >= 70)
 		return 1;
 	endif
 	return 0;

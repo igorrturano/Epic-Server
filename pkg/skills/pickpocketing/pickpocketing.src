@@ -103,7 +103,7 @@ program skill_Stealing(mobile)
 		endif
 	endif
 
-	var diff := 15 + CInt(AP_GetSkill(targ, AWARENESS));
+	var diff := 15 + CInt(EffectiveSkill(targ, "Perception"));
 	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::VALENTAO))
 		var multidao := ListMobilesNearLocation(targ.x, targ.y, targ.z, 4, targ.realm).size();
 		if (multidao > 4)
@@ -120,8 +120,8 @@ program skill_Stealing(mobile)
 		mobile,
 		DEBUG_HAB,
 		Message(
-			"[PICKPOCKET] bag-open skill=" + AP_GetSkill(mobile, PICKPOCKETING) +
-			" awar=" + AP_GetSkill(targ, AWARENESS) +
+			"[PICKPOCKET] bag-open skill=" + EffectiveSkill(mobile, "Theft") +
+			" awar=" + EffectiveSkill(targ, "Perception") +
 			" diff=" + diff + " check=" + check,
 			Color(SYSTEM_COLOR::INFO)
 		)
@@ -129,8 +129,8 @@ program skill_Stealing(mobile)
 	if (check > 0)
 
 		if (!mobile.hidden)
-			var range := 13 - CInt(AP_GetSkill(mobile, PICKPOCKETING) / 7);
-			var diff_awar := CInt(AP_GetSkill(mobile, PICKPOCKETING)) - 15;
+			var range := 13 - CInt(EffectiveSkill(mobile, "Theft") / 7);
+			var diff_awar := CInt(EffectiveSkill(mobile, "Theft")) - 15;
 			foreach player in (ListMobilesInLineOfSight(targ, range))
 				if (player.npctemplate)
 				elseif (player == mobile)
@@ -213,7 +213,7 @@ program skill_Stealing(mobile)
 
 			diff := diff + difbonus;
 
-			if (diff > 1.5 * AP_GetSkill(mobile, PICKPOCKETING))
+			if (diff > 1.5 * EffectiveSkill(mobile, "Theft"))
 				Message(steal.desc + " (peso " + steal.weight + "): Voce nao tentara roubar isso, pois tem certeza que falhara.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 				continue;
 			endif
@@ -232,7 +232,7 @@ program skill_Stealing(mobile)
 					"[PICKPOCKET] item=" + steal.desc + " objtype=" + steal.objtype +
 					" weight=" + steal.weight + " amount=" + steal.amount +
 					" diff=" + diff + " check=" + item_check +
-					" skill=" + AP_GetSkill(mobile, PICKPOCKETING),
+					" skill=" + EffectiveSkill(mobile, "Theft"),
 					Color(SYSTEM_COLOR::INFO)
 				)
 			);
@@ -312,8 +312,8 @@ program skill_Stealing(mobile)
 		Message("Voce sentiu algo na sua bolsa.").SetColor(Color(SYSTEM_COLOR::INFO)).SendSys(targ);
 
 		if (!mobile.hidden)
-			var range := 13 - CInt(AP_GetSkill(mobile, PICKPOCKETING) / 7);
-			var diff_awar := CInt(AP_GetSkill(mobile, PICKPOCKETING)) - 15;
+			var range := 13 - CInt(EffectiveSkill(mobile, "Theft") / 7);
+			var diff_awar := CInt(EffectiveSkill(mobile, "Theft")) - 15;
 			foreach player in (ListMobilesInLineOfSight(targ, range))
 				if (player.npctemplate)
 				elseif (player == mobile)
@@ -396,7 +396,7 @@ function HandleStealableArtifact(mobile, artifact)
 	var difficulty := CalculateStealingDifficulty(rarity, artifact.weight);
 	
 	// Pega o valor da skill do jogador (sempre Pickpocketing)
-	var player_skill := AP_GetSkill(mobile, PICKPOCKETING);
+	var player_skill := EffectiveSkill(mobile, "Theft");
 	
 	// Verifica se o jogador tem skill suficiente
 	if (difficulty > 1.5 * player_skill)

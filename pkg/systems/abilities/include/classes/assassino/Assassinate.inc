@@ -41,7 +41,7 @@ class Assassinate(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
-		var range := CInt(AP_GetSkill(who, SNEAK) / 2);
+		var range := CInt(EffectiveSkill(who, "Stealth") / 2);
 
 		var targ;
 		if (mobile.IsNPC())
@@ -92,7 +92,7 @@ class Assassinate(CombatAbility)
 			return false;
 		endif
 
-		var sneak := CInt(AP_GetSkill(who, SNEAK));
+		var sneak := CInt(EffectiveSkill(who, "Stealth"));
 		var bonus := CInt(sneak / 2);
 
 		if(attacker.HasAbility(ABILITY_ID::INSTINTO_ASSASSINO))

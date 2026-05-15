@@ -280,7 +280,7 @@ function ValidateSpellRequirements(who, spell_data, spell_type)
     case (spell_type)
         SPELL_TYPE_SHINOBI:
             // Check sneak skill against spell difficulty
-            var sneak_skill := CInt(AP_GetSkill(who, SNEAK));
+            var sneak_skill := CInt(EffectiveSkill(who, "Stealth"));
             if (sneak_skill < spell_data.difficulty)
                 SendSysMessageEx(who, "Voce nao possui furtividade suficiente para esta tecnica.", SSM_FAIL);
                 return 0;

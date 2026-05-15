@@ -41,7 +41,7 @@ program select(player, tool)
 		return;
 	endif
 
-	var metalworking := CInt(AP_GetSkill(player, METALWORKING));
+	var metalworking := CInt(EffectiveSkill(player, "Smithing"));
 	var max_improvements := metalworking / 30;
 	if (max_improvements > 4)
 		max_improvements := 4;
@@ -138,7 +138,7 @@ function ApplyImprovement(byref item, improvement, player)
 	if (!aprimoramentos)
 		aprimoramentos := struct{};
 	endif
-	var bs_bonus := CInt(AP_GetSkill(player, METALWORKING));
+	var bs_bonus := CInt(EffectiveSkill(player, "Smithing"));
 	case (improvement)
 		"Arma Elaborada":  aprimoramentos["Arma Elaborada"] := 1;
 		"Arma Afiada":     aprimoramentos["Arma Afiada"] := 2;

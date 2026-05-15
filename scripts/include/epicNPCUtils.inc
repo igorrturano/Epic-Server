@@ -435,7 +435,7 @@ function StealCriticalFailure(mobile, targ)
 		SendSysMessageEx(mobile, "Voce acordou o alvo!", SSM_FAIL);
 		TS_LowerDuration(targ, "sleep", -1);
 	endif
-	var range := 25 - CInt(AP_GetSkill(mobile, PICKPOCKETING)/5);
+	var range := 25 - CInt(EffectiveSkill(mobile, "Theft")/5);
 
 	foreach player in ( ListMobilesInLineOfSight(targ, range) )
 		if ( player.npctemplate );
