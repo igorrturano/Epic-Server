@@ -1,9 +1,52 @@
 use uo;
 use os;
 include ":message:include/model/Message";
+
+// Repairs the buyhab dict for a character who just completed a stone-driven
+// migration. The migrationStone sets `migration_preserve` and the creation
+// flow leaves it in place after the XP/Level/name restore; logon (here)
+// treats its presence as the repair flag, resets all odd-level slots
+// (1, 3, 5, ..., 19) up to the character's current level so they can
+// re-spend the stat purchases stranded by the rework, then erases the
+// property so the repair only fires once.
+function RepairMigratedBuyhab(who)
+    var preserve := GetObjProperty(who, "migration_preserve");
+    if (preserve == error || !preserve)
+        return;
+    endif
+
+    var habs := GetObjProperty(who, "buyhab");
+    if (habs == error || !habs)
+        habs := dictionary;
+    endif
+
+    var curr_level := CInt(GetObjProperty(who, "Level"));
+    if (curr_level < 1)
+        curr_level := 1;
+    endif
+
+    var level;
+    for (level := 1; level <= curr_level; level := level + 1)
+        if (level % 2 == 1)
+            habs[level] := 1;
+        endif
+    endfor
+
+    SetObjProperty(who, "buyhab", habs);
+    EraseObjProperty(who, "migration_preserve");
+
+    Message("Sua redistribuição de status foi liberada — abra o menu de habilidades para reaplicar.")
+        .SetColor(SSM_INFO)
+        .SendSys(who);
+endfunction
+
 program createChar(who)
     var creation_completed := GetObjProperty(who, "creation_completed");
-    
+
+    // One-shot migration repair: runs once per char after the migration
+    // stone, before bailing out for already-created chars.
+    RepairMigratedBuyhab(who);
+
     // If already completed, never run again
     if (creation_completed)
         return;

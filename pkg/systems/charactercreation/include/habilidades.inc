@@ -707,25 +707,47 @@ endfunction
 
 function ShowCapInfo(byref gump, who)
     var chardata := GetObjProperty(who, "chardata");
-    var primarias := getPrimarias(who);
-    var pri := primarias[1];
-    var cappri := Cdbl(AP_GetSkillCap(who)) + Cdbl(valorinicial(who, pri));
-    var capprimax := 100;
+    var cappri, capsec, capter, capprimax, capsecmax, captermax;
 
-    var secundarias := getSecundarias(who);
-    var capsec := cappri - 20;
-    var capsecmax := capprimax - 30;
-
-    var terciarias := getTerciarias(who);
-    var capter := capsec - 20;
-    var captermax := (chardata.vantagemracial == "Sabedoria dos Antigos") ? 50 : 40;
-
-    if(capsec > capsecmax)
-        capsec := capsecmax;
-    endif
-
-    if(capter > captermax)
-        capter := captermax;
+    if (chardata != error && chardata && chardata.game_mode == "True Mode")
+        // True Mode: caps grow +3 per level. Per-tier ceilings:
+        // Primary 100, Secondary 60, Tertiary 40. Matches AP_GetSkillCap
+        // → TrueModeSkillCap formula so the display matches gain behavior.
+        var level := CInt(GetObjProperty(who, "Level"));
+        if (level < 1)
+            level := 1;
+        endif
+        capprimax := 100;
+        capsecmax := 60;
+        captermax := (chardata.vantagemracial == "Sabedoria dos Antigos") ? 50 : 40;
+        cappri := 40 + (level * 3);
+        capsec := 20 + (level * 3);
+        capter := level * 3;
+        if (cappri > capprimax)
+            cappri := capprimax;
+        endif
+        if (capsec > capsecmax)
+            capsec := capsecmax;
+        endif
+        if (capter > captermax)
+            capter := captermax;
+        endif
+    else
+        // Story Mode (and legacy / unset characters): age-based progression.
+        var primarias := getPrimarias(who);
+        var pri := primarias[1];
+        cappri := Cdbl(AP_GetSkillCap(who)) + Cdbl(valorinicial(who, pri));
+        capprimax := 100;
+        capsec := cappri - 20;
+        capsecmax := capprimax - 30;
+        capter := capsec - 20;
+        captermax := (chardata.vantagemracial == "Sabedoria dos Antigos") ? 50 : 40;
+        if (capsec > capsecmax)
+            capsec := capsecmax;
+        endif
+        if (capter > captermax)
+            capter := captermax;
+        endif
     endif
 
     var y_pos := GUMP_HEIGHT - 60;
