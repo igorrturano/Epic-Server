@@ -47,13 +47,19 @@ program SendSkills(who)
             continue;
         endif
 
+        // Bridge for path-rework: chardata.Skills doesn't honor cfg Aliases or
+        // split renames. ResolveSkillTier finds the player's tier under the
+        // paired alias name (Sneak↔Stealth) or split parent (Gathering →
+        // Mining/Lumberjacking). Without this bridge, players picking the new
+        // names see no entry, and legacy Gathering players never see the
+        // Mining/Lumberjacking buttons that share the same skill script.
         var is_eligible := 0;
         if (is_gm)
             is_eligible := 1;
-        else
-            if (player_skills[skill_name])
-                is_eligible := 1;
-            endif
+        elseif (player_skills[skill_name])
+            is_eligible := 1;
+        elseif (CInt(ResolveSkillTier(player_skills, skill_name)) > 0)
+            is_eligible := 1;
         endif
 
         if (!is_eligible)
@@ -76,7 +82,11 @@ program SendSkills(who)
         var skill_base := CInt(AP_GetTrueSkill(who, skill_name));
         var skill_cap := CInt(AP_GetSkillCap(who, skill_name));
 
-        var display_name := StrReplace(skill_name, "_", " ");
+        // FormatSkillName remaps legacy attribute names to their player-facing
+        // labels (Sneak → "Stealth", Pickpocketing → "Theft", etc.) so the
+        // hotbar tile reads correctly even though the underlying attribute
+        // (and SkillId) is the legacy one.
+        var display_name := FormatSkillName(skill_name);
 
         skills.append(struct{
             "name" := display_name,
