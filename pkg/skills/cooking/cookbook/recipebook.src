@@ -381,7 +381,7 @@ endfunction
 function recipecfg(recipetype)
 	var alchemy := ReadConfigFile(":cooking:cookbook");
 	if (!alchemy || alchemy == error)
-		broadcast("Cant find cooking.cfg");
+		print("Cant find cooking.cfg");
 		return 0;
 	endif
 	if (alchemy[recipetype])
