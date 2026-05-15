@@ -23,9 +23,12 @@ program migrationStone(who, theStone)
     endif
 
     // Stash everything that should survive the rerun. Restored at the very
-    // end of epicCreationGump.
+    // end of epicCreationGump. NOTE: the XP property is named "Experience"
+    // everywhere else in the codebase (see expbar.inc — GetPlayerXP reads
+    // "Experience", AddXP writes "Experience"). Using the wrong key here
+    // is what was wiping people's XP through migration.
     var preserve := struct{
-        XP            := CInt(GetObjProperty(who, "XP")),
+        Experience    := CInt(GetObjProperty(who, "Experience")),
         Level         := CInt(GetObjProperty(who, "Level")),
         createdate    := GetObjProperty(who, "createdate"),
         original_name := who.name
