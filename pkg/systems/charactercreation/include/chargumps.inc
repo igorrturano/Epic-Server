@@ -143,17 +143,17 @@ function GumpAttr(who, byref chardata, byref stats, byref str, byref int, byref 
 	GFResizePic(chargump, 0, 25, 3600, 300, 300);
 	GFResizePic(chargump, 15, 40, 0x13BE, 270, 270);
 	GFTextMid(chargump, 15, 50, 300, 1153, "Defina os Atributos");
-	GFTextMid(chargump, 15, 70, 300, 1153, "Voce tem " + CInt(stats / 5) + " pontos.");
+	GFTextMid(chargump, 15, 70, 300, 1153, "Voce tem " + stats + " pontos.");
 	GFTextLine(chargump, 235, 90, 1153,  "+   - ");
 	GFTextLine(chargump, 50, 120, 1153,  "Forca: ");
 	GFTextLine(chargump, 50, 150, 1153, "Destreza: ");
 	//GFTextLine(chargump, 50, 180, 1153, "Vitalidade: ");
 	GFTextLine(chargump, 50, 180, 1153, "Inteligencia: ");
 
-	GFTextLine(chargump, 120, 120, 1153, CInt(baseStr / 5) + " + " + CInt(str / 5));
-	GFTextLine(chargump, 120, 150, 1153, CInt(baseDex / 5) + " + " + CInt(dex / 5));
+	GFTextLine(chargump, 120, 120, 1153,  baseStr + " + "  + str);
+	GFTextLine(chargump, 120, 150, 1153, baseDex +  " + " + dex);
 	//GFTextLine(chargump, 120, 180, 1153, baseVit +  " + " + vit);
-	GFTextLine(chargump, 120, 180, 1153, CInt(baseInt / 5) + " + " + CInt(int / 5));
+	GFTextLine(chargump, 120, 180, 1153, baseInt +  " + " + int);
 
 	GFAddButton(chargump, 230, 120, 9760, 9761, 1, 10); //+str
 	GFAddButton(chargump, 230, 150, 9760, 9761, 1, 11); //+dex
@@ -178,7 +178,7 @@ function GumpAttr(who, byref chardata, byref stats, byref str, byref int, byref 
 				str := str +5;
 				stats := stats - 5;
 			else
-				SendSysMessage(who, "Voce so pode colocar 12 pontos em um attributo.");
+				SendSysMessage(who, "Voce so pode colocar 60 pontos em um attributo.");
 			endif
 		endif
 	elseif (input == 11)
@@ -187,7 +187,7 @@ function GumpAttr(who, byref chardata, byref stats, byref str, byref int, byref 
 				dex := dex + 5;
 				stats := stats - 5;
 			else
-				SendSysMessage(who, "Voce so pode colocar 12 pontos em um attributo.");
+				SendSysMessage(who, "Voce so pode colocar 60 pontos em um attributo.");
 			endif
 		endif
 	/*elseif (input == 12)
@@ -196,7 +196,7 @@ function GumpAttr(who, byref chardata, byref stats, byref str, byref int, byref 
 				vit := vit + 5;
 				stats := stats - 5;
 			else
-				SendSysMessage(who, "Voce so pode colocar 10 pontos em um attributo.");
+				SendSysMessage(who, "Voce so pode colocar 50 pontos em um attributo.");
 			endif
 		endif*/
 	elseif (input == 13)
@@ -205,7 +205,7 @@ function GumpAttr(who, byref chardata, byref stats, byref str, byref int, byref 
 				int := int+5;
 				stats := stats - 5;
 			else
-				SendSysMessage(who, "Voce so pode colocar 12 pontos em um attributo.");
+				SendSysMessage(who, "Voce so pode colocar 60 pontos em um attributo.");
 			endif
 		endif
 	elseif (input == 20)

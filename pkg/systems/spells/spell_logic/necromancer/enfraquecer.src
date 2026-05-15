@@ -47,7 +47,7 @@ program SpellScript(params)
 	opts.+str_mod := -amt;
 
 	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
-	PrintTextPrivate(targ, "-" + CInt(amt / 5) + " Str", who, 3, 38);
+	PrintTextPrivate(targ, "-" + amt + " Str", who, 3, 38);
 	SC_HandleSound(who, targ, SFX_SPELL_WEAKEN);
 
 	SendSysMessageEx(who, "Voce deixou o alvo mais fraco.", SSM_INFO);
