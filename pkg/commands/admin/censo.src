@@ -9,6 +9,9 @@ include ":census:include/CensusController";
 const GUMP_WIDTH  := 500;
 const GUMP_HEIGHT := 500;
 
+// Old categories are kept (legacy data is preserved, not erased). The new
+// path-rework pages are appended after them so fresh data accumulates
+// alongside the historical numbers.
 var page_titles := array{
 	"Habilidades Mais Compradas",
 	"Culturas Escolhidas",
@@ -16,8 +19,15 @@ var page_titles := array{
 	"Racas Escolhidas",
 	"Backgrounds Escolhidos",
 	"Religioes Escolhidas",
-	"Caminhos de Sabedoria",
-	"Caracteristicas (Traits)"
+	"Caminhos de Sabedoria (legado)",
+	"Caracteristicas (Traits)",
+	"Vocacao (Path)",
+	"Subclasses Escolhidas",
+	"Modo de Jogo",
+	"Tipo de Magia",
+	"Skills - Todas",
+	"Skills - Primarias",
+	"Skills - Secundarias"
 };
 
 var page_categories := array{
@@ -28,7 +38,14 @@ var page_categories := array{
 	"creation_background",
 	"creation_religion",
 	"creation_path",
-	"creation_trait"
+	"creation_trait",
+	"creation_vocacao",
+	"creation_subclasse",
+	"creation_game_mode",
+	"creation_magia",
+	"skills_all",
+	"skills_primary",
+	"skills_secondary"
 };
 
 program censo(who, param)

@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":gumps:yesNo";
+include ":attributes:attributes";
 include "include/say";
 
 // Double-click handler for the path-rework migration stone (0x5005).

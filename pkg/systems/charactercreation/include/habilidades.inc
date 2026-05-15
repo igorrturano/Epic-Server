@@ -479,7 +479,7 @@ function comprarHabilidade(who, item, nv:=-1)
 		elseif (escolhida_id == ABILITY_ID::ELO_NATURAL)
 			setObjProperty(who, "empatiacomanimais", 1);
 		elseif (escolhida_id == ABILITY_ID::EXPLOSIVE_FIST)
-			if (chardata.wisdom_path != "Engenheiro")
+			if (chardata.subclasse != "Engenheiro" && chardata.wisdom_path != "Engenheiro")
 				SendSysMessageEx(who, "Apenas engenheiros podem comprar essa habilidade.", SSM_FAIL);
 				return 0;
 			endif
