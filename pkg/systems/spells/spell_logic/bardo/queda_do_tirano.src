@@ -37,8 +37,8 @@ program SpellScript(params)
 
 	AP_ModifyStatMod(targ, DEXTERITY, -dex_pen);
 	SetObjProperty(targ, "#cantico_dex_down", dex_pen);
-	PrintTextAbove(targ, $"-{CInt(dex_pen / 5)} DEX", 3, 38);
-	SendSysMessageEx(targ, $"Queda do Tirano: -{CInt(dex_pen / 5)} Destreza por {duration}s.", SSM_FAIL);
+	PrintTextAbove(targ, $"-{dex_pen} DEX", 3, 38);
+	SendSysMessageEx(targ, $"Queda do Tirano: -{dex_pen} Destreza por {duration}s.", SSM_FAIL);
 
 	sleep(duration);
 

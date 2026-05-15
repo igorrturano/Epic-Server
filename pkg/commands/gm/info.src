@@ -272,7 +272,10 @@ function DisplayAttributes(targ, byref gump, byref entry, byref y_pos)
 				RegisterButton(btn_id, attrib_name, "attribEdit");
 			endif
 
-			GFTextLine(gump, 175, y_pos, 2100, attrib_name);
+			// FormatSkillName resolves legacy attribute names to their
+			// path-rework display label (Sneak -> Stealth, etc.) so the GM
+			// .info gump shows the same name the player sees.
+			GFTextLine(gump, 175, y_pos, 2100, FormatSkillName(attrib_name));
 			var value := AP_GetTrueSkill(targ, attrib_name);
 			var mod_value := AP_GetSkillMod(targ, attrib_name);
 			if (gm.acctname in gmParedes && (!targ.npctemplate))

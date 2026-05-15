@@ -59,7 +59,7 @@ program epicCreationGump(who)
 	skillSelection(who, culture_pic);
 	attributeSelection(who, culture_pic);
 	religionSelection(who);
-	// gameModeSelection(who);
+	gameModeSelection(who);
 	applyClassStarter(who);
 	itemInheritance(who);
 	languageSelection(who, culture_pic);
@@ -101,7 +101,10 @@ program epicCreationGump(who)
 		if (preserve.original_name && preserve.original_name != "")
 			who.name := preserve.original_name;
 		endif
-		EraseObjProperty(who, "migration_preserve");
+		// Note: migration_preserve is NOT erased here. Its continued presence
+		// is the signal logon.src (RepairMigratedBuyhab) uses to detect a
+		// stone-driven migration and reset the odd-level buyhab slots. Logon
+		// erases it after the repair runs.
 		RecalcVitals(who);
 		SendSysMessageEX(who, "Migração completa. XP, nível, nome e data de criação preservados.", SSM_INFO);
 	endif
@@ -429,7 +432,12 @@ function traitSelection(who, culture_pic)
 			btn_value := key;
 		endforeach
 		if (btn_value > 200)
-			chardata.+trait := traits[btn_value - 200].Nome;
+			// listTraits() builds trait structs with lowercase `.nome`
+			// (creationUtils.inc:629). Reading `.Nome` returns empty/error,
+			// silently storing a blank chardata.trait and breaking every
+			// trait-dependent check downstream (most visibly Sabe-Tudo's
+			// 2P+5S slot build).
+			chardata.+trait := traits[btn_value - 200].nome;
 			break;
 		else
 			SendSysMessageEX(who, "Escolha sua característica", SSM_FAIL);
@@ -479,6 +487,10 @@ function skillSelection(who, culture_pic)
 
 		chardata.Skills[pick] := slot_def.tier;
 		picked_skills.append(pick);
+		// Persist after every pick so the breadcrumb in the NEXT slot's gump
+		// reflects the running picks (showPreviousGumpInformation reads from
+		// the ObjProperty, not the local var).
+		SetObjProperty(who, "chardata", chardata);
 		slot_idx++;
 	endwhile
 

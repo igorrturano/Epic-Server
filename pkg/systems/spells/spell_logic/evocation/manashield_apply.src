@@ -46,7 +46,7 @@ program ProtecaoArcanaApply(args)
 	endif
 
 	if (p.fx)
-		PlayObjectCenteredEffect(targ, CInt(p.fx), 0, 30);
+		PlayObjectCenteredEffect(targ, CInt(p.fx), 0, 10);
 	endif
 
 	if (p.sound)

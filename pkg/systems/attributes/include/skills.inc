@@ -123,6 +123,67 @@ function AP_GetSkillStats(attribute_name)
 endfunction
 
 const NO_SKILL_NAME		:= 0x0;
+
+/*
+ * TrueModeSkillCap(mobile, skill_name)
+ *
+ * Path-rework True Mode cap: governed by character Level, not age.
+ *   Primary (tier 3): starts at 40, +3 per level, capped at 100
+ *   Secondary (tier 2): starts at 20, +3 per level, capped at 60
+ *   Tertiary / untiered: same growth, no per-tier ceiling (falls back to
+ *     general SkillCap from settings.cfg).
+ *
+ * Levels: L1 → primary 43 / secondary 23 ... L20 → primary 100 / secondary 60.
+ *
+ * Tier comes from chardata.Skills (with ResolveSkillTier handling alias and
+ * split mismatches that otherwise leave the dict-key lookup blank).
+ */
+function TrueModeSkillCap(mobile, skill_name)
+    if (mobile.npctemplate)
+        return 120.0;
+    endif
+
+    var chardata := GetObjProperty(mobile, "chardata");
+    if (chardata == error || !chardata)
+        return 120.0;
+    endif
+
+    var myskills := chardata.Skills;
+    var tier := myskills[skill_name];
+    if (tier == error || CInt(tier) == 0)
+        tier := ResolveSkillTier(myskills, skill_name);
+    endif
+
+    var initial := 0;
+    var ceiling := 0;
+    if (tier == 3)
+        initial := 40;
+        ceiling := 100;
+    elseif (tier == 2)
+        initial := 20;
+        ceiling := 60;
+    else
+        // Tertiary / unselected — let it grow without a tier-specific ceiling.
+        // Fall back to the general SkillCap from settings.cfg.
+        ceiling := CInt(GetConfigReal(AP_GetSettingsCfgElem("Skills"), "SkillCap"));
+        if (ceiling <= 0)
+            ceiling := 120;
+        endif
+    endif
+
+    var level := CInt(GetObjProperty(mobile, "Level"));
+    if (level < 1)
+        level := 1;
+    endif
+
+    var cap := initial + (level * 3);
+    if (cap > ceiling)
+        cap := ceiling;
+    endif
+
+    return CDbl(cap);
+endfunction
+
 /*
  * AP_GetSkillCap(skill_name)
  * Purpose: Gets the number a skill caps at.
@@ -130,10 +191,20 @@ const NO_SKILL_NAME		:= 0x0;
  * Return: a number or error
  */
 function AP_GetSkillCap(mobile, skill_name:=NO_SKILL_NAME)
+    // True Mode (chardata.game_mode == "True Mode") uses a level-gated cap.
+    // Story Mode, unset, and legacy characters all fall through to the
+    // age-based cap below.
+    if (skill_name)
+        var chardata := GetObjProperty(mobile, "chardata");
+        if (chardata != error && chardata && chardata.game_mode == "True Mode")
+            return TrueModeSkillCap(mobile, skill_name);
+        endif
+    endif
+
     var cfg_elem := AP_GetSettingsCfgElem("Skills");
     var cap_val;
-    
-    // Check if skill_name is valid 
+
+    // Check if skill_name is valid
     var initial_skill_value := 0;
     if (skill_name)
         cap_val := GetConfigReal(cfg_elem, skill_name);
@@ -141,12 +212,12 @@ function AP_GetSkillCap(mobile, skill_name:=NO_SKILL_NAME)
     endif
 
     // If no specific cap is found or skill_name is not provided, use the general cap
-    if (!cap_val)  
+    if (!cap_val)
         cap_val := GetConfigReal(cfg_elem, "SkillCap");
     endif
 
     // If no specific or general cap is found, use limiteportempo as the fallback
-    if (!cap_val) 
+    if (!cap_val)
         cap_val := limiteportempo(mobile);
     endif
 
@@ -246,13 +317,23 @@ function AP_CheckClassSkillCap(mobile, skill_name)
 
 	var myskills := chardata.Skills;
 
-	if ( myskills[skill_name] == error)
+	// Dict-key bridge: chardata.Skills doesn't honor cfg Aliases or split
+	// renames. Fall back to ResolveSkillTier so e.g. AP_CheckClassSkillCap
+	// (mobile, "Sneak") returns 100 for a player who picked "Stealth" as
+	// their primary. Without this bridge CheckSkillAdvance reads class cap
+	// as 0 and immediately fires "Você atingiu o nível máximo da skill!".
+	var tier := myskills[skill_name];
+	if (tier == error || CInt(tier) == 0)
+		tier := ResolveSkillTier(myskills, skill_name);
+	endif
+
+	if (tier == error || CInt(tier) == 0)
 		return 0;
-	elseif (myskills[skill_name] == 1)
-        return 40.0;
-	elseif (myskills[skill_name] == 2)
+	elseif (tier == 1)
+		return 40.0;
+	elseif (tier == 2)
 		return 70.0;
-	elseif ( myskills[skill_name] == 3)
+	elseif (tier == 3)
 		return 100.0;
 	endif
 
@@ -392,6 +473,50 @@ function idadeChar(character)
 endfunction
 
 //retorna quanto o valor inicial da skill ao iniciar o personagem
+// ResolveSkillTier handles the alias/split mismatch between attribute names
+// (resolved at the cfg layer) and `chardata.Skills` dict keys (raw strings).
+// Returns the tier (1/2/3) the player chose for this skill, looking up the
+// alias counterpart or legacy parent if the requested name isn't in the dict.
+function ResolveSkillTier(byref myskills, skill_name)
+	// Renames: try the paired name
+	case (skill_name)
+		"Sneak":         return CInt(myskills["Stealth"]);
+		"Stealth":       return CInt(myskills["Sneak"]);
+		"Pickpocketing": return CInt(myskills["Theft"]);
+		"Theft":         return CInt(myskills["Pickpocketing"]);
+		"Metal_Working": return CInt(myskills["Smithing"]);
+		"Smithing":      return CInt(myskills["Metal_Working"]);
+		"Wood_Working":  return CInt(myskills["Carpentry"]);
+		"Carpentry":     return CInt(myskills["Wood_Working"]);
+		"Awareness":     return CInt(myskills["Perception"]);
+		"Perception":    return CInt(myskills["Awareness"]);
+
+		// Splits: new names fall back to the legacy parent
+		"Tailoring":     return CInt(myskills["Domestic_Work"]);
+		"Provisioning":  return CInt(myskills["Domestic_Work"]);
+		"Mining":        return CInt(myskills["Gathering"]);
+		"Lumberjacking": return CInt(myskills["Gathering"]);
+		"Taming":        return CInt(myskills["Handle_Animal"]);
+		"Beastmastery":  return CInt(myskills["Handle_Animal"]);
+
+		// Legacy parents queried on a new char: take the higher of the two
+		// descendants (whichever the player invested in).
+		"Domestic_Work":
+			var dw_t := CInt(myskills["Tailoring"]);
+			var dw_p := CInt(myskills["Provisioning"]);
+			return (dw_t > dw_p) ? dw_t : dw_p;
+		"Gathering":
+			var ga_m := CInt(myskills["Mining"]);
+			var ga_l := CInt(myskills["Lumberjacking"]);
+			return (ga_m > ga_l) ? ga_m : ga_l;
+		"Handle_Animal":
+			var ha_t := CInt(myskills["Taming"]);
+			var ha_b := CInt(myskills["Beastmastery"]);
+			return (ha_t > ha_b) ? ha_t : ha_b;
+	endcase
+	return 0;
+endfunction
+
 function valorInicial(mobile, skill_name)
 	var skill_inicial := 0.0;
 
@@ -406,13 +531,20 @@ function valorInicial(mobile, skill_name)
 
 	var myskills := chardata.Skills;
 
-	if ( myskills[skill_name] == error)
+	// Try the requested key directly; fall back to alias/parent resolution
+	// for the dict-key mismatch caused by cfg aliases and split skills.
+	var tier := myskills[skill_name];
+	if (tier == error || CInt(tier) == 0)
+		tier := ResolveSkillTier(myskills, skill_name);
+	endif
+
+	if (tier == error || tier == 0)
 		return 0.0;
-	elseif (myskills[skill_name] == 1)
+	elseif (tier == 1)
 		skill_inicial := skill_inicial + 0.0;
-	elseif (myskills[skill_name] == 2)
+	elseif (tier == 2)
 		skill_inicial := skill_inicial + 20.0;
-	elseif ( myskills[skill_name] == 3)
+	elseif (tier == 3)
 		skill_inicial := skill_inicial + 40.0;
 	endif
 
@@ -422,10 +554,26 @@ endfunction
 function FormatSkillName(skillName)
     case (skillName)
         "Arcana":         return "Arcana";
+
+        // Renames: show the new (player-facing) name even when the legacy
+        // name was passed in. Sneak/Stealth, Pickpocketing/Theft, etc. share
+        // a SkillId via cfg Alias, so internal code may call with either
+        // spelling but the player picked the new one.
+        "Sneak":          return "Stealth";
+        "Stealth":        return "Stealth";
+        "Pickpocketing":  return "Theft";
+        "Theft":          return "Theft";
+        "Metal_Working":  return "Smithing";
+        "Smithing":       return "Smithing";
+        "Wood_Working":   return "Carpentry";
+        "Carpentry":      return "Carpentry";
+        "Awareness":      return "Perception";
+        "Perception":     return "Perception";
+
+        // Splits keep their distinct display names
         "Handle_Animal":  return "Handle Animal";
         "Domestic_Work":  return "Domestic Work";
-        "Wood_Working":   return "Wood Working";
-        "Metal_Working":  return "Metal Working";
+
         "Two_Handed":     return "Two Handed";
         "One_Handed":     return "One Handed";
         "Dual_Wield":     return "Dual Wield";
