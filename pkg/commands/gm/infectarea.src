@@ -1,0 +1,414 @@
+use uo;
+use os;
+use util;
+
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Text";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/TextBox";
+include ":gumpDesigner:Control/CheckBox";
+include ":gumpDesigner:Control/RadioButton";
+include ":gumpDesigner:Control/Tooltip";
+
+include ":medicine:disease";
+
+// Graphic do marcador: visível para GMs, pode ser trocado livremente
+const MARKER_GRAPHIC  := 0xF55;
+const MARKER_COLOR    := 0x004A; // verde-acinzentado
+const MARKER_PROP     := "infectarea_id";
+const INFECTAREA_DF   := ":tn:infected_areas";
+const WATCHER_SCRIPT  := ":infectArea:watcher";
+const HB_TIMEOUT      := 30;
+const PER_PAGE        := 6;
+
+program infectarea(mob)
+
+	while (1)
+		var gump := Gump(mob, "Área de Infecção", 340, 210);
+
+		var txtSub    := Text("txtSub",    25, 80,  "Gerenciar áreas de infecção ambiental", TEXT_COLOR::COLOR_YELLOW);
+		var btnCriar  := Button("btnCriar",  30, 110,  BUTTON_IMAGE::MODERN_V_UNPRESSED,   BUTTON_IMAGE::MODERN_V_PRESSED);
+		var lblCriar  := Text("lblCriar",   60, 113,  "Criar Nova Área", TEXT_COLOR::COLOR_GREEN);
+		var btnListar := Button("btnListar", 30, 150, BUTTON_IMAGE::MODERN_EYE_UNPRESSED, BUTTON_IMAGE::MODERN_EYE_PRESSED);
+		var lblListar := Text("lblListar",  60, 153, "Listar / Remover Áreas Ativas", TEXT_COLOR::COLOR_DEFAULT);
+
+		gump.AddControl(txtSub);
+		gump.AddControl(btnCriar);  gump.AddControl(lblCriar);
+		gump.AddControl(btnListar); gump.AddControl(lblListar);
+
+		var ev := gump.Show();
+		gump.Dispose();
+
+		if (ev.GetControl() == EVENT_ACTION::CLOSED)
+			return;
+		elseif (ev.GetControl().Equals(btnCriar))
+			FluxoCriarArea(mob);
+		elseif (ev.GetControl().Equals(btnListar))
+			FluxoListarAreas(mob);
+		endif
+	endwhile
+
+endprogram
+
+// ============================================================
+// CRIAR ÁREA
+// ============================================================
+
+function FluxoCriarArea(mob)
+
+	SendSysMessage(mob, "Selecione o local no mapa.");
+	var loc := TargetCoordinates(mob);
+	if (!loc)
+		SendSysMessage(mob, "Cancelado.");
+		return;
+	endif
+
+	var gump := Gump(mob, "", 460, 535);
+	var y := 70;
+
+	var txtTitulo := Text("titulo", 20, 35, "Configurar Área de Infecção", TEXT_COLOR::COLOR_YELLOW, 433, TEXT_ALIGN::ALIGN_CENTER);
+
+	var txtLoc := Text("txtLoc", 25, y,
+		"Local: " + loc.x + ", " + loc.y + ", " + loc.z,
+		TEXT_COLOR::COLOR_YELLOW);
+	y += 30;
+
+	var lblNome := Text("lblNome", 25, y+6, "Nome:", TEXT_COLOR::COLOR_YELLOW);
+	var tbNome  := TextBox("tbNome", 120, y, 200, 1, 2100, "Área Infectada", 40);
+	y += 35;
+
+	var lblRaio := Text("lblRaio", 25, y+6, "Raio (tiles, 1-50):", TEXT_COLOR::COLOR_YELLOW);
+	var tbRaio  := TextBox("tbRaio", 210, y, 60, 1, 2100, "10");
+	y += 35;
+
+	var lblNivel := Text("lblNivel", 25, y+6, "Nível da doença (1-5):", TEXT_COLOR::COLOR_YELLOW);
+	var tbNivel  := TextBox("tbNivel", 210, y, 60, 1, 2100, "3");
+	y += 35;
+
+	var lblDur := Text("lblDur", 25, y+6, "Duração da área (min, 0=∞):", TEXT_COLOR::COLOR_YELLOW);
+	var tbDur  := TextBox("tbDur", 230, y, 80, 1, 2100, "0");
+	y += 35;
+
+	var lblGrade := Text("lblGrade", 25, y, "Gravidade:", TEXT_COLOR::COLOR_YELLOW);
+	y += 22;
+	var rbLeve   := RadioButton("rbLeve",  25,  y, RADIOBUTTON_IMAGE::DEFAULT_UNPRESSED, RADIOBUTTON_IMAGE::DEFAULT_PRESSED, RADIOBUTTON_VALUE::PRESSED);
+	var lblLeve  := Text("lblLeve",  50,  y, "Leve",     TEXT_COLOR::COLOR_YELLOW);
+	var rbMod    := RadioButton("rbMod",   150, y, RADIOBUTTON_IMAGE::DEFAULT_UNPRESSED, RADIOBUTTON_IMAGE::DEFAULT_PRESSED, RADIOBUTTON_VALUE::UNPRESSED);
+	var lblMod   := Text("lblMod",   175, y, "Moderado", TEXT_COLOR::COLOR_YELLOW);
+	var rbGrave  := RadioButton("rbGrave", 290, y, RADIOBUTTON_IMAGE::DEFAULT_UNPRESSED, RADIOBUTTON_IMAGE::DEFAULT_PRESSED, RADIOBUTTON_VALUE::UNPRESSED);
+	var lblGrave := Text("lblGrave", 315, y, "Grave",    TEXT_COLOR::COLOR_YELLOW);
+	y += 35;
+
+	var lblDoencas := Text("lblDoencas", 25, y, "Doenças:", TEXT_COLOR::COLOR_YELLOW);
+	y += 22;
+	var chkRandom := CheckBox("chkRandom", 25, y, CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, CHECKBOX_VALUE::UNCHECKED);
+	var lblRandom := Text("lblRandom", 50, y, "Aleatório (recomendado)", TEXT_COLOR::COLOR_GREEN);
+	y += 25;
+	var chkFebre  := CheckBox("chkFebre",  25,  y, CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, CHECKBOX_VALUE::UNCHECKED);
+	var lblFebre  := Text("lblFebre",  50,  y, "Febre",       TEXT_COLOR::COLOR_YELLOW);
+	var chkTrombo := CheckBox("chkTrombo", 170, y, CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, CHECKBOX_VALUE::UNCHECKED);
+	var lblTrombo := Text("lblTrombo", 195, y, "Trombo",      TEXT_COLOR::COLOR_YELLOW);
+	var chkPust   := CheckBox("chkPust",   320, y, CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, CHECKBOX_VALUE::UNCHECKED);
+	var lblPust   := Text("lblPust",   345, y, "Pústulas",    TEXT_COLOR::COLOR_YELLOW);
+	y += 25;
+	var chkLacer  := CheckBox("chkLacer",  25,  y, CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, CHECKBOX_VALUE::UNCHECKED);
+	var lblLacer  := Text("lblLacer",  50,  y, "Laceração",   TEXT_COLOR::COLOR_YELLOW);
+	var chkPrur   := CheckBox("chkPrur",   170, y, CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, CHECKBOX_VALUE::UNCHECKED);
+	var lblPrur   := Text("lblPrur",   195, y, "Prurido",     TEXT_COLOR::COLOR_YELLOW);
+	var chkColic  := CheckBox("chkColic",  320, y, CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, CHECKBOX_VALUE::UNCHECKED);
+	var lblColic  := Text("lblColic",  345, y, "Cólicas",     TEXT_COLOR::COLOR_YELLOW);
+	y += 25;
+	var chkPalp   := CheckBox("chkPalp",   25,  y, CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, CHECKBOX_VALUE::UNCHECKED);
+	var lblPalp   := Text("lblPalp",   50,  y, "Palpitações", TEXT_COLOR::COLOR_YELLOW);
+	var chkNause  := CheckBox("chkNause",  170, y, CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, CHECKBOX_VALUE::UNCHECKED);
+	var lblNause  := Text("lblNause",  195, y, "Náusea",      TEXT_COLOR::COLOR_YELLOW);
+	var chkCefal  := CheckBox("chkCefal",  320, y, CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, CHECKBOX_VALUE::UNCHECKED);
+	var lblCefal  := Text("lblCefal",  345, y, "Cefaleia",    TEXT_COLOR::COLOR_YELLOW);
+	y += 40;
+
+	var btnOk   := Button("btnOk",   90,  y, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+	var lblOk   := Text("lblOk",    120, y+3, "Criar Área", TEXT_COLOR::COLOR_GREEN);
+	var btnCanc := Button("btnCanc", 280, y, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+	var lblCanc := Text("lblCanc",  310, y+3, "Cancelar",   TEXT_COLOR::COLOR_RED);
+
+	gump.AddControl(txtTitulo);
+	gump.AddControl(txtLoc);
+	gump.AddControl(lblNome);  gump.AddControl(tbNome);
+	gump.AddControl(lblRaio);  gump.AddControl(tbRaio);
+	gump.AddControl(lblNivel); gump.AddControl(tbNivel);
+	gump.AddControl(lblDur);   gump.AddControl(tbDur);
+	gump.AddControl(lblGrade);
+	gump.AddControl(rbLeve);   gump.AddControl(lblLeve);
+	gump.AddControl(rbMod);    gump.AddControl(lblMod);
+	gump.AddControl(rbGrave);  gump.AddControl(lblGrave);
+	gump.AddControl(lblDoencas);
+	gump.AddControl(chkRandom); gump.AddControl(lblRandom);
+	gump.AddControl(chkFebre);  gump.AddControl(lblFebre);
+	gump.AddControl(chkTrombo); gump.AddControl(lblTrombo);
+	gump.AddControl(chkPust);   gump.AddControl(lblPust);
+	gump.AddControl(chkLacer);  gump.AddControl(lblLacer);
+	gump.AddControl(chkPrur);   gump.AddControl(lblPrur);
+	gump.AddControl(chkColic);  gump.AddControl(lblColic);
+	gump.AddControl(chkPalp);   gump.AddControl(lblPalp);
+	gump.AddControl(chkNause);  gump.AddControl(lblNause);
+	gump.AddControl(chkCefal);  gump.AddControl(lblCefal);
+	gump.AddControl(btnOk);     gump.AddControl(lblOk);
+	gump.AddControl(btnCanc);   gump.AddControl(lblCanc);
+
+	var ev := gump.Show();
+	gump.Dispose();
+
+	if (ev.GetControl() == EVENT_ACTION::CLOSED || ev.GetControl().Equals(btnCanc))
+		SendSysMessage(mob, "Cancelado.");
+		return;
+	endif
+	if (!ev.GetControl().Equals(btnOk))
+		return;
+	endif
+
+	// Lê e valida
+	var nome  := CStr(tbNome.GetValue());
+	if (!nome) nome := "Área Infectada"; endif
+
+	var raio := CInt(tbRaio.GetValue());
+	if (raio < 1)  raio := 1;  endif
+	if (raio > 50) raio := 50; endif
+
+	var nivel := CInt(tbNivel.GetValue());
+	if (nivel < 1) nivel := 1; endif
+	if (nivel > 5) nivel := 5; endif
+
+	var dur := CInt(tbDur.GetValue());
+	if (dur < 0) dur := 0; endif
+
+	var grade := DISEASE_GRADES::LIGHT;
+	if (CInt(rbGrave.GetValue()) == 1)
+		grade := DISEASE_GRADES::SERIOUS;
+	elseif (CInt(rbMod.GetValue()) == 1)
+		grade := DISEASE_GRADES::MODERATE;
+	endif
+
+	var diseases := "random";
+	if (CInt(chkRandom.GetValue()) != 1)
+		diseases := array{};
+		if (CInt(chkFebre.GetValue())  == 1) diseases.append(DISEASES::FEVER);        endif
+		if (CInt(chkTrombo.GetValue()) == 1) diseases.append(DISEASES::THROMBOSIS);   endif
+		if (CInt(chkPust.GetValue())   == 1) diseases.append(DISEASES::PUSTULES);     endif
+		if (CInt(chkLacer.GetValue())  == 1) diseases.append(DISEASES::LACERATION);   endif
+		if (CInt(chkPrur.GetValue())   == 1) diseases.append(DISEASES::ITCHING);      endif
+		if (CInt(chkColic.GetValue())  == 1) diseases.append(DISEASES::COLIC);        endif
+		if (CInt(chkPalp.GetValue())   == 1) diseases.append(DISEASES::PALPITATIONS); endif
+		if (CInt(chkNause.GetValue())  == 1) diseases.append(DISEASES::NAUSEA);       endif
+		if (CInt(chkCefal.GetValue())  == 1) diseases.append(DISEASES::HEADACHE);     endif
+		if (diseases.size() == 0)
+			SendSysMessageEx(mob, "Selecione ao menos uma doença ou use Aleatório.", SSM_FAIL);
+			return;
+		endif
+	endif
+
+	// Cria item marcador no local (GM pode destruí-lo para desativar a área)
+	var marker := CreateItemAtLocation(loc.x, loc.y, loc.z, MARKER_GRAPHIC, 1, mob.realm);
+	if (!marker)
+		SendSysMessageEx(mob, "Falha ao criar marcador no local.", SSM_FAIL);
+		return;
+	endif
+	marker.movable := 0;
+	marker.color   := MARKER_COLOR;
+	marker.name    := "Infecção: " + nome;
+
+	// Persiste no datafile
+	var area_id := "area_" + marker.serial;
+
+	var df := OpenDataFile(INFECTAREA_DF);
+	if (!df)
+		CreateDataFile(INFECTAREA_DF);
+		df := OpenDataFile(INFECTAREA_DF);
+	endif
+
+	var elem := df.CreateElement(area_id);
+	elem.SetProp("marker_serial", marker.serial);
+	elem.SetProp("name",          nome);
+	elem.SetProp("range",         raio);
+	elem.SetProp("level",         nivel);
+	elem.SetProp("grade",         grade);
+	elem.SetProp("diseases",      diseases);
+	elem.SetProp("expiry",        dur > 0 ? (POLCore().systime + dur * 60) : 0);
+	elem.SetProp("created_by",    CStr(GetObjProperty(mob, "nome_inicial")));
+
+	SetObjProperty(marker, MARKER_PROP, area_id);
+
+	var dur_txt := dur > 0 ? (dur + " min") : "permanente";
+	SendSysMessageEx(mob,
+		"Área '" + nome + "' criada: " + raio + " tiles, nível " + nivel +
+		", " + grade + ", " + dur_txt + ".",
+		SSM_INFO);
+
+	EnsureWatcherRunning();
+
+endfunction
+
+// ============================================================
+// LISTAR / REMOVER ÁREAS
+// ============================================================
+
+function FluxoListarAreas(mob)
+
+	var page := 0;
+
+	while (1)
+
+		var df    := OpenDataFile(INFECTAREA_DF);
+		var areas := array{};
+
+		if (df)
+			var names := DFGetElemNames(df);
+			foreach name in names
+				var s := CStr(name);
+				if (s[1,5] != "area_") continue; endif
+				var elem := DFFindElement(df, s);
+				if (!elem) continue; endif
+				areas.append(struct{
+					id     := s,
+					name   := CStr(DFGetProp(elem, "name")),
+					range  := CInt(DFGetProp(elem, "range")),
+					level  := CInt(DFGetProp(elem, "level")),
+					grade  := CStr(DFGetProp(elem, "grade")),
+					serial := CInt(DFGetProp(elem, "marker_serial")),
+					expiry := CInt(DFGetProp(elem, "expiry"))
+				});
+			endforeach
+		endif
+
+		if (areas.size() == 0)
+			SendSysMessage(mob, "Nenhuma área de infecção ativa.");
+			return;
+		endif
+
+		var total  := areas.size();
+		var start  := page * PER_PAGE + 1;
+		var ending := start + PER_PAGE - 1;
+		if (ending > total) ending := total; endif
+
+		var rows  := ending - start + 1;
+		var gump  := Gump(mob, "Áreas de Infecção Ativas (" + total + ")", 500, 140 + rows * 32);
+		var now   := POLCore().systime;
+
+		// Cabeçalho
+		gump.AddControl(Text("hNome",  15,  80, "Nome",       TEXT_COLOR::COLOR_YELLOW));
+		gump.AddControl(Text("hRaio",  250, 80, "Raio",       TEXT_COLOR::COLOR_YELLOW));
+		gump.AddControl(Text("hNivel", 295, 80, "Niv",        TEXT_COLOR::COLOR_YELLOW));
+		gump.AddControl(Text("hGrade", 325, 80, "Gravidade",  TEXT_COLOR::COLOR_YELLOW));
+		gump.AddControl(Text("hExp",   415, 80, "Expira",     TEXT_COLOR::COLOR_YELLOW));
+
+		var btns_tp  := array{};
+		var btns_del := array{};
+		var y := 105;
+
+		for i := start to ending
+			var area   := areas[i];
+			var marker := SystemFindObjectBySerial(area.serial);
+			var loc_txt := marker ? (marker.x + "," + marker.y) : "desconhecido";
+			var exp_txt := area.expiry > 0
+				? (CInt((area.expiry - now) / 60) + "m")
+				: "∞";
+
+			gump.AddControl(Text("rNome_" + i,  15,  y, area.name + " [" + loc_txt + "]", TEXT_COLOR::COLOR_DEFAULT));
+			gump.AddControl(Text("rRaio_" + i,  250, y, CStr(area.range),                 TEXT_COLOR::COLOR_DEFAULT));
+			gump.AddControl(Text("rNivel_" + i, 295, y, CStr(area.level),                 TEXT_COLOR::COLOR_DEFAULT));
+			gump.AddControl(Text("rGrade_" + i, 325, y, area.grade,                       TEXT_COLOR::COLOR_DEFAULT));
+			gump.AddControl(Text("rExp_" + i,   415, y, exp_txt,                          TEXT_COLOR::COLOR_DEFAULT));
+
+			var btnTp  := Button("btnTp_"  + i, 448, y, BUTTON_IMAGE::MODERN_EYE_UNPRESSED, BUTTON_IMAGE::MODERN_EYE_PRESSED);
+			var btnDel := Button("btnDel_" + i, 476, y, BUTTON_IMAGE::MODERN_X_UNPRESSED,   BUTTON_IMAGE::MODERN_X_PRESSED);
+			btnTp.SetTooltip(Tooltip("tTp_"  + i, "Teleportar para a área"));
+			btnDel.SetTooltip(Tooltip("tDel_" + i, "Remover área"));
+			btns_tp.append(btnTp);
+			btns_del.append(btnDel);
+			gump.AddControl(btnTp);
+			gump.AddControl(btnDel);
+
+			y += 32;
+		endfor
+
+		// Paginação
+		var btnPrev := Button("btnPrev", 160, y + 5, BUTTON_IMAGE::MODERN_PREVIOUS_UNPRESSED, BUTTON_IMAGE::MODERN_PREVIOUS_PRESSED);
+		var btnNext := Button("btnNext", 320, y + 5, BUTTON_IMAGE::MODERN_NEXT_UNPRESSED,     BUTTON_IMAGE::MODERN_NEXT_PRESSED);
+		if (page > 0)          gump.AddControl(btnPrev); endif
+		if (ending < total)    gump.AddControl(btnNext); endif
+
+		var ev := gump.Show();
+		gump.Dispose();
+
+		if (ev.GetControl() == EVENT_ACTION::CLOSED)
+			return;
+		endif
+
+		if (page > 0 && ev.GetControl().Equals(btnPrev))
+			page -= 1;
+			continue;
+		endif
+		if (ending < total && ev.GetControl().Equals(btnNext))
+			page += 1;
+			continue;
+		endif
+
+		for i := 1 to btns_tp.size()
+			if (ev.GetControl().Equals(btns_tp[i]))
+				var area := areas[start + i - 1];
+				var marker := SystemFindObjectBySerial(area.serial);
+				if (marker)
+					MoveObjectToLocation(mob, marker.x, marker.y, marker.z,
+						marker.realm, MOVEOBJECT_FORCELOCATION);
+					SendSysMessage(mob, "Teleportado para '" + area.name + "'.");
+				else
+					SendSysMessage(mob, "Marcador não encontrado.");
+				endif
+				break;
+			endif
+			if (ev.GetControl().Equals(btns_del[i]))
+				var area := areas[start + i - 1];
+				RemoverArea(mob, area);
+				page := 0;
+				break;
+			endif
+		endfor
+
+	endwhile
+
+endfunction
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function RemoverArea(mob, area)
+
+	var marker := SystemFindObjectBySerial(area.serial);
+	if (marker)
+		DestroyItem(marker);
+	endif
+
+	var df := OpenDataFile(INFECTAREA_DF);
+	if (df)
+		df.DeleteElement(area.id);
+	endif
+
+	SendSysMessageEx(mob, "Área '" + area.name + "' removida.", SSM_INFO);
+
+endfunction
+
+function EnsureWatcherRunning()
+
+	var df := OpenDataFile(INFECTAREA_DF);
+	if (df)
+		var hb := DFFindElement(df, "heartbeat");
+		if (hb)
+			if ((POLCore().systime - CInt(DFGetProp(hb, "ts"))) < HB_TIMEOUT)
+				return; // Watcher já está rodando
+			endif
+		endif
+	endif
+
+	start_script(WATCHER_SCRIPT);
+
+endfunction

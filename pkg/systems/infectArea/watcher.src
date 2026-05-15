@@ -1,0 +1,127 @@
+use uo;
+use os;
+use util;
+
+include ":medicine:disease";
+
+const INFECTAREA_DF := ":tn:infected_areas";
+const PLAYER_CD     := 600;
+const IDLE_SLEEP    := 60;
+const ACTIVE_SLEEP  := 15;
+const HB_TIMEOUT    := 30;
+
+program infectarea_watcher()
+
+	var df := OpenDataFile(INFECTAREA_DF);
+	if (df)
+		var hb := DFFindElement(df, "heartbeat");
+		if (hb)
+			if ((POLCore().systime - CInt(DFGetProp(hb, "ts"))) < HB_TIMEOUT)
+				return;
+			endif
+		endif
+	endif
+
+	detach();
+	Print("[infectArea] watcher iniciado");
+
+	while (1)
+
+		df := OpenDataFile(INFECTAREA_DF);
+		if (!df)
+			sleep(IDLE_SLEEP);
+			continue;
+		endif
+
+		var hb := DFFindElement(df, "heartbeat");
+		if (!hb) hb := df.CreateElement("heartbeat"); endif
+		hb.SetProp("ts", POLCore().systime);
+
+		var active := _LoadActiveAreas(df, POLCore().systime);
+
+		if (active.size() == 0)
+			sleep(IDLE_SLEEP);
+			continue;
+		endif
+
+		Print("[infectArea] ciclo: " + active.size() + " área(s) ativa(s)");
+
+		foreach area in active
+			_ProcessArea(area);
+		endforeach
+
+		sleep(ACTIVE_SLEEP);
+	endwhile
+
+endprogram
+
+function _LoadActiveAreas(byRef df, now)
+
+	var names  := DFGetElemNames(df);
+	var active := array{};
+
+	foreach name in names
+		var s := CStr(name);
+		if (s[1,5] != "area_") continue; endif
+
+		var elem := DFFindElement(df, s);
+		if (!elem) continue; endif
+
+		var expiry := CInt(DFGetProp(elem, "expiry"));
+		if (expiry > 0 && now > expiry)
+			Print("[infectArea] '" + s + "' expirou, removendo");
+			var dead_marker := SystemFindObjectBySerial(CInt(DFGetProp(elem, "marker_serial")));
+			if (dead_marker) DestroyItem(dead_marker); endif
+			df.DeleteElement(s);
+			continue;
+		endif
+
+		var marker := SystemFindObjectBySerial(CInt(DFGetProp(elem, "marker_serial")));
+		if (!marker)
+			Print("[infectArea] '" + s + "' sem marcador, removendo");
+			df.DeleteElement(s);
+			continue;
+		endif
+
+		active.append(struct{
+			id       := s,
+			marker   := marker,
+			range    := CInt(DFGetProp(elem, "range")),
+			level    := CInt(DFGetProp(elem, "level")),
+			grade    := CStr(DFGetProp(elem, "grade")),
+			diseases := DFGetProp(elem, "diseases")
+		});
+	endforeach
+
+	return active;
+
+endfunction
+
+function _ProcessArea(area)
+
+	var mobiles := ListMobilesNearLocation(
+		area.marker.x, area.marker.y, LIST_IGNORE_Z,
+		area.range, area.marker.realm);
+
+	Print("[infectArea] '" + area.id + "' (range=" + area.range + ") → " + mobiles.size() + " mobile(s)");
+
+	foreach mob in mobiles
+		sleepms(2);
+		if (!mob.acctname) continue; endif
+
+		var _nm := CStr(GetObjProperty(mob, "nome_inicial"));
+		if (!_nm || _nm == "0") _nm := mob.name; endif
+
+		var cd_prop := "#ia_cd_" + area.id;
+		var last_cd := GetObjProperty(mob, cd_prop);
+		if (last_cd && (POLCore().systime - CInt(last_cd)) < PLAYER_CD)
+			Print("[infectArea] " + _nm + " em cooldown (" + CInt(PLAYER_CD - (POLCore().systime - CInt(last_cd))) + "s restantes)");
+			continue;
+		endif
+
+		Print("[infectArea] infectando " + _nm + " | level=" + area.level + " | grade=" + area.grade);
+		SetObjProperty(mob, cd_prop, POLCore().systime);
+		InfectMobile(mob, 0, 0, area.level, area.diseases, area.grade);
+	endforeach
+
+endfunction
