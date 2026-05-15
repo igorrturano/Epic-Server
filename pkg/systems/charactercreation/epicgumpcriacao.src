@@ -73,8 +73,15 @@ program epicCreationGump(who)
 	AP_SetVital(who, "Hunger", 0);
 	ApplyEpicHealing(who, 200);
 	RecalcVitals(who);
-	var tempo_agora := polcore().systime;
-	SetObjProperty(who, "createdate", tempo_agora);
+	// Only stamp createdate for genuinely new characters. The migration
+	// stone wipes chardata + creation_completed but NOT createdate, so an
+	// unconditional set here would clobber the original creation date and
+	// reset Story Mode age-based skill caps on every migration rerun.
+	var existing_createdate := GetObjProperty(who, "createdate");
+	if (existing_createdate == error || CInt(existing_createdate) == 0)
+		var tempo_agora := polcore().systime;
+		SetObjProperty(who, "createdate", tempo_agora);
+	endif
 
 	// Open Beta 28/09
 	startAdventure(who);
@@ -95,7 +102,10 @@ program epicCreationGump(who)
 	// max HP reflects the restored Level under the new formula.
 	var preserve := GetObjProperty(who, "migration_preserve");
 	if (preserve != error && preserve)
-		SetObjProperty(who, "XP", preserve.XP);
+		// "Experience" is the canonical XP property (see expbar.inc:56,82).
+		// The old code mistakenly used "XP" which is a phantom property
+		// nobody reads, effectively wiping migrated players' XP.
+		SetObjProperty(who, "Experience", preserve.Experience);
 		SetObjProperty(who, "Level", preserve.Level);
 		SetObjProperty(who, "createdate", preserve.createdate);
 		if (preserve.original_name && preserve.original_name != "")

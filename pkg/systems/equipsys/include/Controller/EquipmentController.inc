@@ -51,9 +51,8 @@ function GetWeightMultiplierByMaterial(material)
 	case (material)
 		0x6994: modifier := 1.3; break; // Bronze
 		0x6309: modifier := 1.1; break; // Ferro
-		0x6995: modifier := 0.9; break; // Aço
-		0x6315: modifier := 0.8; break; // Illyra
-		0x6311: modifier := 0.7; break; // Mithril
+		0x6315: modifier := 0.9; break; // Illyra
+		0x6311: modifier := 0.8; break; // Mithril
 
 		default: modifier := 1;
 	endcase
