@@ -1448,10 +1448,10 @@ function workingItems(who)
 		CreateItemInBackpack(who, 0xedfe, 1);
 		CreateItemInBackpack(who, 0xed2a, 1);
         CreateItemInBackpack(who, 0xf0c8, 1);
-        case(randomint(3))//bisturi
-            1: CreateItemInBackpack(who, 0xD1CE, 1);
-            2: CreateItemInBackpack(who, 0XD1D1, 1);
-            3: CreateItemInBackpack(who, 0XD1CF, 1);
+        case(randomint(2))//bisturi
+            // 1: CreateItemInBackpack(who, 0xD1CE, 1); // ta dando que eh cabeca de dinossauro
+            1: CreateItemInBackpack(who, 0XD1D1, 1);
+            2: CreateItemInBackpack(who, 0XD1CF, 1);
         endcase
         case(randomint(2))// mascara da praga
             1: CreateItemInBackpack(who, 0xF0C6, 1);
