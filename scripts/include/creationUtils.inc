@@ -644,15 +644,31 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
     chardata.+Primarias;
     var race := chardata.raca;
     var color := "#FFD700";
-    var classe := chardata.classe;
+    // Show the specific class (e.g. "Paladino") when picked; fall back to
+    // the archetype label (chardata.classe = "Guerreiro") if subclasse
+    // isn't set yet (which it won't be until classSelection runs).
+    var classe_display := chardata.subclasse;
+    if (classe_display == error || !classe_display)
+        classe_display := chardata.classe;
+    endif
     var path := chardata.path;
     var trait := chardata.trait;
     var skills := chardata.Skills;
+
+    // Sliding row layout: each block emits a header + value pair and advances
+    // row_y by a fixed amount. Empty blocks skip entirely so there are never
+    // visual gaps for not-yet-selected sections. Order matches the creation
+    // flow: Race → Caminho → Classe → Característica → Skills.
+    var row_y := y - 25;
+    var HEADER_TO_VALUE := 25;
+    var SECTION_STRIDE := 52;
+
     if (race)
-        GFHTMLArea(gump, x+86, y-24, 192, 40, "<BASEFONT Size=55 Color=#999999 > Raça", 0, 0); //shadow
-        GFHTMLArea(gump, x+85, y-25, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Raça", 0, 0);
-        GFHTMLArea(gump, x+16, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, race), 1, 0);
+        GFHTMLArea(gump, x+86, row_y+1, 192, 40, "<BASEFONT Size=55 Color=#999999 > Raça", 0, 0); //shadow
+        GFHTMLArea(gump, x+85, row_y,   192, 40, "<BASEFONT Size=55 Color=#ffffff > Raça", 0, 0);
+        GFHTMLArea(gump, x+16, row_y+HEADER_TO_VALUE, 192, 24, "<BASEFONT color=#{}>{}".format(color, race), 1, 0);
         GFTooltipText(gump, "{}".format(displayRacialBonus(race)));
+        row_y := row_y + SECTION_STRIDE;
     endif
 
     if (culture_pic)
@@ -661,43 +677,52 @@ function showPreviousGumpInformation(byref gump, who, culture_pic := 0, x, y)
         GFGumpPic(gump, 298, 100, culture_pic);
     endif
 
-    if (classe)
-        GFHTMLArea(gump, x+81, y+29, 192, 40, "<BASEFONT Size=55 Color=#999999 > Classe", 0, 0); //shadow
-        GFHTMLArea(gump, x+80, y+30, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Classe", 0, 0);
-        GFHTMLArea(gump, x+16, y+51, 192, 24, "<BASEFONT color=#{}>{}".format(color, classe), 1, 0);
+    if (path)
+        GFHTMLArea(gump, x+81, row_y+1, 192, 40, "<BASEFONT Size=55 Color=#999999 > Caminho", 0, 0); //shadow
+        GFHTMLArea(gump, x+80, row_y,   192, 40, "<BASEFONT Size=55 Color=#ffffff > Caminho", 0, 0);
+        GFHTMLArea(gump, x+16, row_y+HEADER_TO_VALUE, 192, 24, "<BASEFONT color=#{}>{}".format(color, path), 1, 0);
+        row_y := row_y + SECTION_STRIDE;
     endif
 
-    if (path)
-        GFHTMLArea(gump, x+81, y+82, 192, 40, "<BASEFONT Size=55 Color=#999999 > Caminho", 0, 0); //shadow
-        GFHTMLArea(gump, x+80, y+81, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Caminho", 0, 0);
-        GFHTMLArea(gump, x+16, y+101, 192, 24, "<BASEFONT color=#{}>{}".format(color, path), 1, 0);
+    if (classe_display)
+        GFHTMLArea(gump, x+81, row_y+1, 192, 40, "<BASEFONT Size=55 Color=#999999 > Classe", 0, 0); //shadow
+        GFHTMLArea(gump, x+80, row_y,   192, 40, "<BASEFONT Size=55 Color=#ffffff > Classe", 0, 0);
+        GFHTMLArea(gump, x+16, row_y+HEADER_TO_VALUE, 192, 24, "<BASEFONT color=#{}>{}".format(color, StrReplace(classe_display, "_", " ")), 1, 0);
+        row_y := row_y + SECTION_STRIDE;
     endif
 
     if (trait)
-        GFHTMLArea(gump, x+61, y+132, 192, 40, "<BASEFONT Size=55 Color=#999999 > Característica", 0, 0); //shadow
-        GFHTMLArea(gump, x+60, y+131, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Característica", 0, 0);
-        GFHTMLArea(gump, x+16, y+151, 192, 24, "<BASEFONT color=#{}>{}".format(color, trait), 1, 0);
+        GFHTMLArea(gump, x+61, row_y+1, 192, 40, "<BASEFONT Size=55 Color=#999999 > Característica", 0, 0); //shadow
+        GFHTMLArea(gump, x+60, row_y,   192, 40, "<BASEFONT Size=55 Color=#ffffff > Característica", 0, 0);
+        GFHTMLArea(gump, x+16, row_y+HEADER_TO_VALUE, 192, 24, "<BASEFONT color=#{}>{}".format(color, trait), 1, 0);
+        row_y := row_y + SECTION_STRIDE;
     endif
 
-if (GetObjProperty(who, "skill") == 1)
-    GFHTMLArea(gump, x+81, y+182, 192, 40, "<BASEFONT Size=55 Color=#999999 > Skills", 0, 0); //shadow
-    GFHTMLArea(gump, x+80, y+181, 192, 40, "<BASEFONT Size=55 Color=#ffffff > Skills", 0, 0);
-
-    foreach skill in (skills.keys())
-        var color := "";
-        if (skills[skill] == 3)
-            color := "0000CC";
-        elseif (skills[skill] == 2)
-            color := "007A23";
-        elseif (skills[skill] == 1)
-            color := "FFE700";
+    // Skills also render during slot picking (not only after `who.skill` is
+    // set), so players can track their picks slot-by-slot. Guard against
+    // chardata.Skills being undefined for pre-skillSelection steps — calling
+    // .keys() on error/undefined leaks the header onto every prior screen.
+    if (skills != error && skills)
+        var skill_keys := skills.keys();
+        if (GetObjProperty(who, "skill") == 1 || skill_keys.size() > 0)
+            GFHTMLArea(gump, x+81, row_y+1, 192, 40, "<BASEFONT Size=55 Color=#999999 > Skills", 0, 0); //shadow
+            GFHTMLArea(gump, x+80, row_y,   192, 40, "<BASEFONT Size=55 Color=#ffffff > Skills", 0, 0);
+            row_y := row_y + HEADER_TO_VALUE;
+            foreach skill in skill_keys
+                var sk_color := "";
+                if (skills[skill] == 3)
+                    sk_color := "0000CC";
+                elseif (skills[skill] == 2)
+                    sk_color := "007A23";
+                elseif (skills[skill] == 1)
+                    sk_color := "FFE700";
+                endif
+                GFHTMLArea(gump, x+16, row_y, 192, 24, "<BASEFONT color=#{}>{} | {}".format(sk_color, StrReplace(skill, "_", " "), GetSkillValueDesc(skills[skill])), 1, 0);
+                row_y := row_y + 22;
+            endforeach
         endif
+    endif
 
-        GFHTMLArea(gump, x+16, y+201, 192, 24, "<BASEFONT color=#{}>{} | {}".format(color, skill, GetSkillValueDesc(skills[skill])), 1, 0); //shadow
-        y += 30;
-    endforeach
-endif
-    
 endfunction
 
 function skillGump(who, culture_pic, byref chardata)
@@ -879,13 +904,14 @@ endfunction
 //
 // BuildSkillSlots returns an ordered array of slot definitions for the new
 // slot-based skill picker. Each slot is:
-//   struct{ tier := 3|2, bucket := "Militar"|"Civil"|"Any" }
+//   struct{ tier := 3|2, bucket := "Militar"|"Civil"|"Ambos" }
 // where tier 3 = Primary (starts at 40) and tier 2 = Secondary (starts at 10).
 //
 // Normal build is 3P + 3S (2 path-aligned primaries + 1 cross-path primary,
 // 1 path-aligned secondary + 1 cross secondary + 1 floating-any secondary).
-// Sabe-Tudo build drops the cross-path primary and gains a path-aligned and
-// a cross-path secondary, yielding 2P + 5S.
+// Sabe-Tudo build drops one path-aligned primary so the two primaries are
+// split 1 per vocation, and adds a path + cross secondary so the total
+// shape is 1P-path + 1P-cross + 2S-path + 2S-cross + 1S-any = 2P + 5S.
 function BuildSkillSlots(path, has_sabe_tudo)
     var path_bucket := path;
     var cross_bucket := "";
@@ -898,26 +924,28 @@ function BuildSkillSlots(path, has_sabe_tudo)
     var slots := array;
     if (has_sabe_tudo)
         slots.append(struct{ tier := 3, bucket := path_bucket });
-        slots.append(struct{ tier := 3, bucket := path_bucket });
-        slots.append(struct{ tier := 2, bucket := path_bucket });
+        slots.append(struct{ tier := 3, bucket := cross_bucket });
         slots.append(struct{ tier := 2, bucket := path_bucket });
         slots.append(struct{ tier := 2, bucket := cross_bucket });
-        slots.append(struct{ tier := 2, bucket := cross_bucket });
-        slots.append(struct{ tier := 2, bucket := "Any" });
+        slots.append(struct{ tier := 2, bucket := "Ambos" });
+        slots.append(struct{ tier := 2, bucket := "Ambos" });
+        slots.append(struct{ tier := 2, bucket := "Ambos" });
     else
         slots.append(struct{ tier := 3, bucket := path_bucket });
         slots.append(struct{ tier := 3, bucket := path_bucket });
         slots.append(struct{ tier := 3, bucket := cross_bucket });
         slots.append(struct{ tier := 2, bucket := path_bucket });
         slots.append(struct{ tier := 2, bucket := cross_bucket });
-        slots.append(struct{ tier := 2, bucket := "Any" });
+        slots.append(struct{ tier := 2, bucket := "Ambos" });
     endif
 
     return slots;
 endfunction
 
 // SkillsForBucket returns the ordered list of skill names for a bucket.
-// "Any" concatenates Military then Civic.
+// "Militar" returns military only; "Civil" returns civic only; anything
+// else (e.g. "Ambos") concatenates military then civic — the floating
+// any-path slot used by Sabe-Tudo and the normal build's 6th slot.
 function SkillsForBucket(bucket)
     if (bucket == "Militar")
         return MILITARY_SKILLS;
@@ -2778,6 +2806,22 @@ endfunction
 function GetSkillTooltipDescriptionFromName(name)
 	var cfg := AP_GetAttributesCfgFile();
 	var elem := FindConfigElem(cfg, name);
+	// cfg Alias names (Stealth, Theft, Smithing, Carpentry, Perception) live
+	// only on their parent Attribute elem — FindConfigElem doesn't resolve
+	// them, so fall back manually to the legacy elem.
+	if (elem == error)
+		var fallback := "";
+		case (name)
+			"Stealth":    fallback := "Sneak";
+			"Theft":      fallback := "Pickpocketing";
+			"Smithing":   fallback := "Metal_Working";
+			"Carpentry":  fallback := "Wood_Working";
+			"Perception": fallback := "Awareness";
+		endcase
+		if (fallback != "")
+			elem := FindConfigElem(cfg, fallback);
+		endif
+	endif
 	if (elem == error)
 		return "Descrição não encontrada para: " + name;
 	endif
