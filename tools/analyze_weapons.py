@@ -136,7 +136,7 @@ APPLY_TWO_HANDED_CLEANUP = True
 # Finesse flag today — the generator must ADD `Finesse 1` to these.
 TWO_HANDED_MAKE_FINESSE = {"CrescentBlade"}
 # 2H weapons that keep a flavor crit script (Option-3, filled after dry-run).
-TWO_HANDED_PRESERVE_CRIT = set()
+TWO_HANDED_PRESERVE_CRIT = {"marteloduasmanos"}  # signature stun (Garras-precedent)
 
 def two_handed_profile(craft, finesse):
     """Single-swing 2H. Str-2H = heavy-hitter apex; finesse-2H (Dex) sits
