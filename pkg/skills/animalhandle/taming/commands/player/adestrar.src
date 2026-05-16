@@ -46,7 +46,7 @@ function taming(who)
 	if (!targ.IsA(POLCLASS_NPC))
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return;
-	elseif (targ.script[":ghaia:tamed"]) // Verifica se o animal ja esta domado/ tem script de tamed
+	elseif (IsTamedPet(targ)) // Verifica se o animal ja esta domado/ tem script de tamed
 		SendSysMessageEx(who, targ.name + " nao pode ser adestrado.", SSM_FAIL);
 		return 0;
 	elseif (!CanAcquirePet(who, targ))
