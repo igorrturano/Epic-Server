@@ -24,14 +24,22 @@ silently breaks everywhere. So identity must be decoupled FIRST.
    (already included by all consumers). Definition: has `master`, has
    `"owner"` prop, NOT `"summoned"`. Brain script becomes an implementation
    detail. Aligns with `IsNonCombatantPet` (P2).
-2. **Brain home.** New `pkg/mobiles/epicAI/scripts/tamedBrain.src`, a
-   `Run_Script`'d program (mirrors `initialize.src`/`setup_mount.src`
-   precedent) → its own 64KB compile unit, keeps heavy taming/mounts
-   includes out of `brain.src`.
-3. **Dispatch.** `brain.src` `DetermineBrainType()`: if
-   `IsTamedPet(me)` → `brain_type := "tamed"`; new case
-   `"tamed": Run_Script(":epicAI:scripts/tamedBrain", me)` reusing the
-   existing `Run_Script` pattern at brain.src:46.
+2. **Brain home (CORRECTED — Option B).** New
+   `pkg/mobiles/epicAI/tamedBrain.src`, a standalone **attached** script
+   `program TamedBrain()` with `me := self()` (like ghaia/tamed.src is
+   today, relocated+modernized into the epicAI pkg). Its own compile
+   unit/segment → no 64KB risk; free to include
+   `:taming:taming`/`:mounts:mounts`/`:gumps:gumps`. Referenced as
+   `":epicai:tamedBrain"` (lowercase, matching npcdesc `:epicai:brain`
+   convention; eScript substring matching is case-sensitive so the token
+   must be exactly this everywhere).
+3. **Dispatch — NONE.** `brain.src` is NOT touched. Run_Script from the
+   dispatcher was rejected: object events are delivered to the *attached*
+   script, not a Run_Script child, so an event-loop brain must BE the
+   attached script. Pets get `me.script := ":epicai:tamedBrain"` at the
+   assignment sites / lazy shim and never run the monster brain. P2's
+   epicNPCCombat/threatModel predicates still apply (wild NPCs evaluate
+   the pet object regardless of the pet's own brain).
 4. **Lifecycle (DECIDED).** `tamedBrain.src` keeps the ghaia-style
    permanent loop with `CAN_ACCESS_OFFLINE_MOBILES` (does NOT return to
    brain.src's dormancy model). brain.src delegates pets to it via
@@ -60,8 +68,8 @@ silently breaks everywhere. So identity must be decoupled FIRST.
    `ghaia/tamed.src` body becomes dead, physically deleted in a later
    cleanup phase once telemetry shows zero on the old version.
 7. **New-tame repoint.** Change the 5 assignment sites' `":ghaia:tamed"`
-   → `":epicAI:brain"` (owner/master/props already set there, so dispatch
-   classifies them as tamed).
+   → `":epicai:tamedBrain"`. `petidentity.inc` migrated-branch corrected
+   from the P4a placeholder `:epicAI:brain` → `:epicai:tamedBrain`.
 
 ## Sub-phases
 
