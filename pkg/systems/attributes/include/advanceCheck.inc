@@ -258,7 +258,7 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
 
     var true_skill := CDbl(AP_GetTrueSkill(mobile, skill_name));
     var max_skillcap_class := CDbl(AP_CheckClassSkillCap(mobile, skill_name));
-    if (true_skill >= max_skillcap_class)  
+    if (true_skill >= max_skillcap_class)
         DebugMsg(mobile, DEBUG_UP, Message("Você atingiu o nível máximo da skill!"));
         return 0;
     endif

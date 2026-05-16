@@ -75,10 +75,18 @@ function DoRogueAbility(who, cooldown)
 endfunction
 
 function DoSageAbility(who, chardata, cooldown)
+	// Path-rework: dispatch by subclasse first, then chardata.magia for the
+	// "arcane_archer" branch, then fall back to legacy wisdom_path so any
+	// un-migrated player still routes to the right ability.
+	var sub := chardata.subclasse;
+	if (sub == "Engenheiro")                                  return DoEngineerAbility(who, cooldown); endif
+	if (sub == "Arqueiro_Arcano" || chardata.magia == "arcane_archer") return DoArcaneArcherAbility(who, cooldown); endif
+	if (sub == "Granadeiro" || sub == "Vivisseccionista")     return DoAlchemistAbility(who, cooldown); endif
+
 	case (chardata.wisdom_path)
 		"Engenheiro":    return DoEngineerAbility(who, cooldown);
 		"arcane_archer": return DoArcaneArcherAbility(who, cooldown);
-		"Alquimista": return DoAlchemistAbility(who, cooldown);
+		"Alquimista":    return DoAlchemistAbility(who, cooldown);
 		default:
 			return DoSpellcasterAbility(who, cooldown);
 	endcase

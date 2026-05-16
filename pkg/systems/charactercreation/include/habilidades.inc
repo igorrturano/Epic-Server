@@ -6,6 +6,7 @@ include "include/epicUtils";
 include ":tn:equipment";
 include ":abilities:include/models/Ability";
 include ":census:include/CensusController";
+include ":wrappers:Objects/Model/MobileWrapper";
 include "/include/math";
 include ":fls_core:fls_characters";
 function NivelHabilidade(habilidade, classe)
@@ -167,46 +168,52 @@ function HabilidadesPorNivel(who, classe, lvl)
 endfunction
 
 // GetAbilitySubclasse maps an ability ID (from habilidades.cfg key) to the
-// path-rework subclass it belongs to. Encoded via the ID range — each class
-// occupies a 100-block of IDs (Arqueiro 1-5, Cacador 100-104, Combatente
-// 200-204, etc.). Bardo is the only non-block-aligned class (1708-1712),
-// but 1708/100 still resolves cleanly to 17 since no other class lives in
-// 1700-1799. Returns "" for cross-class (Caminho) abilities so they fall
-// through the subclass filter.
+// path-rework subclass(es) it belongs to. Encoded via the ID range — each
+// class occupies a 100-block of IDs (Arqueiro 1-5, Cacador 100-104,
+// Combatente 200-204, etc.). Bardo is the only non-block-aligned class
+// (1708-1712), but 1708/100 still resolves cleanly to 17.
+//
+// Returns an ARRAY of subclass names (set semantics). Most trees belong to
+// exactly one subclass (single-element array). A shared tree — one ability
+// line feeding two class fantasies — returns multiple subclasses; the
+// 1800-1804 shadow-dance tree is buyable by both the Ladino rogue
+// (Dancarino_das_Sombras) and the Sabio Velkyn melee-caster
+// (Deslocador_das_Sombras). An empty array means cross-class (Caminho) /
+// unknown, which falls through the subclass filter unrestricted.
 function GetAbilitySubclasse(hab_id)
 	var id := CInt(hab_id);
 	case (id / 100)
-		0:  return "Arqueiro";
-		1:  return "Cacador";
-		2:  return "Combatente";
-		3:  return "Defensor";
-		4:  return "Paladino";
-		5:  return "Aklattur";
-		6:  return "Barbaro";
-		7:  return "Monge";
-		8:  return "Samurai";
-		9:  return "Mutante";
-		10: return "Malandro_Arcano";
-		11: return "Cacador_de_Tesouros";
-		12: return "Assassino";
-		13: return "Shinobi";
-		14: return "Vivisseccionista";
-		15: return "Esgrimista";
-		16: return "Ladrao";
-		17: return "Bardo";
-		18: return "Dancarino_das_Sombras";
-		19: return "Cacador_de_Demonios";
-		20: return "Necromante";
-		21: return "Druida";
-		22: return "Magus";
-		23: return "Lamina_Arcana";
-		24: return "Arqueiro_Arcano";
-		25: return "Granadeiro";
-		26: return "Shaman";
-		27: return "Engenheiro";
-		28: return "Cleric";
+		0:  return array{ "Arqueiro" };
+		1:  return array{ "Cacador" };
+		2:  return array{ "Combatente" };
+		3:  return array{ "Defensor" };
+		4:  return array{ "Paladino" };
+		5:  return array{ "Aklattur" };
+		6:  return array{ "Barbaro" };
+		7:  return array{ "Monge" };
+		8:  return array{ "Samurai" };
+		9:  return array{ "Mutante" };
+		10: return array{ "Malandro_Arcano" };
+		11: return array{ "Cacador_de_Tesouros" };
+		12: return array{ "Assassino" };
+		13: return array{ "Shinobi" };
+		14: return array{ "Vivisseccionista" };
+		15: return array{ "Esgrimista" };
+		16: return array{ "Ladrao" };
+		17: return array{ "Bardo" };
+		18: return array{ "Dancarino_das_Sombras", "Deslocador_das_Sombras" };
+		19: return array{ "Cacador_de_Demonios" };
+		20: return array{ "Necromante" };
+		21: return array{ "Druida" };
+		22: return array{ "Magus" };
+		23: return array{ "Lamina_Arcana" };
+		24: return array{ "Arqueiro_Arcano" };
+		25: return array{ "Granadeiro" };
+		26: return array{ "Shaman" };
+		27: return array{ "Engenheiro" };
+		28: return array{ "Cleric" };
 	endcase
-	return "";
+	return array{};
 endfunction
 
 function HabilidadesPorNivelPossiveis(who, classe, povo, lvl)
@@ -240,10 +247,12 @@ function HabilidadesPorNivelPossiveis(who, classe, povo, lvl)
 		if ((c[classe]!=error) && (cint(c[classe]) == lvl) && ((p[povo]==error) || (p.Exists(povo))))// && (povo in p))
 			// Subclass narrowing: skip abilities that belong to a different
 			// subclass within the same archetype. Caminho/cross-class entries
-			// return "" from GetAbilitySubclasse and pass through.
+			// return an empty set and pass through. Shared trees (e.g.
+			// 1800-1804 shadow-dance) list multiple subclasses; the player
+			// passes if theirs is in the set.
 			if (subclasse != "")
-				var hab_subclasse := GetAbilitySubclasse(key);
-				if (hab_subclasse != "" && hab_subclasse != subclasse)
+				var hab_subclasses := GetAbilitySubclasse(key);
+				if (hab_subclasses.size() > 0 && !(subclasse in hab_subclasses))
 					continue;
 				endif
 			endif
@@ -479,12 +488,10 @@ function comprarHabilidade(who, item, nv:=-1)
 		elseif (escolhida_id == ABILITY_ID::ELO_NATURAL)
 			setObjProperty(who, "empatiacomanimais", 1);
 		elseif (escolhida_id == ABILITY_ID::EXPLOSIVE_FIST)
-			if (chardata.wisdom_path != "Engenheiro")
+			if (chardata.subclasse != "Engenheiro" && chardata.wisdom_path != "Engenheiro")
 				SendSysMessageEx(who, "Apenas engenheiros podem comprar essa habilidade.", SSM_FAIL);
 				return 0;
 			endif
-		elseif (escolhida_id == ABILITY_ID::BOLSA_INFINITA)
-			who.carrying_capacity_mod := 120;
 		elseif (escolhida_id == ABILITY_ID::ELEMENTAL_AFFINITY)
 			var damage_effect := struct{};
 			damage_effect.+fire_arrow := 0;
@@ -501,8 +508,6 @@ function comprarHabilidade(who, item, nv:=-1)
 			if (wing_type)
 				SetObjProperty(who, "chosen_wings", wing_type);
 			endif
-		elseif (escolhida_id == ABILITY_ID::PACK_MULE)
-			who.carrying_capacity_mod := who.carrying_capacity_mod + 60;
 		elseif(escolhida_id == ABILITY_ID::AURA_DE_FE)
 			ChooseFlag(who);
 		endif
@@ -510,6 +515,14 @@ function comprarHabilidade(who, item, nv:=-1)
 		habs[nivel] := 2;
 		SetObjProperty(who, "buyhab", habs);
 		SetObjProperty(who, "myhabs", myhabs);
+
+		// Carry-weight abilities are recomputed from scratch (single source of
+		// truth in MobileWrapper) AFTER myhabs is persisted so HasAbility sees
+		// the just-bought ability. Replaces the old in-place += 60 / := 120.
+		if (escolhida_id == ABILITY_ID::PACK_MULE || escolhida_id == ABILITY_ID::BOLSA_INFINITA)
+			MobileWrapper(who).RecalcCarryWeightMod();
+		endif
+
 		if (who.cmdlevel == 0)
 			CensusTrackAbility(escolhida_id);
 		endif
