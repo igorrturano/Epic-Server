@@ -54,7 +54,7 @@
 |---|---|---|---|---|---|---|
 | one_handed | 124 | 7.0 | 7.6 | 8.4 | 10.1 | **10.3** |
 | two_handed | 80 | 6.8 | 7.9 | 8.6 | 11.0 | **13.2** |
-| dual_wield | 23 | 11.2 | 13.7 | 14.8 | 15.1 | **15.1** |
+| dual_wield | 23 | 10.9 | 13.7 | 14.4 | 14.5 | **14.5** |
 | wrestling | 7 | 7.4 | 8.0 | 8.4 | 8.9 | **8.9** |
 | ranged | 34 | 5.9 | 6.9 | 8.0 | 8.4 | **9.4** |
 | throwing | 2 | 10.8 | 10.8 | 10.8 | 10.8 | **10.8** |
@@ -68,7 +68,7 @@ All fixes applied: P1 (2H apex), P2 (finesse → armorpierce), P4 (firearms tabl
 |---|---|---|---|---|---|---|---|
 | one_handed | 124 | 7.4 | 7.8 | 8.4 | 10.3 | **10.3** | +0.0 |
 | two_handed | 80 | 6.8 | 7.9 | 8.6 | 11.0 | **13.2** | +0.0 |
-| dual_wield | 23 | 9.7 | 12.3 | 12.9 | 13.1 | **13.1** | -2.0 |
+| dual_wield | 23 | 9.4 | 11.9 | 12.6 | 12.7 | **12.7** | -1.8 |
 | wrestling | 7 | 7.4 | 8.0 | 8.4 | 8.4 | **8.9** | +0.0 |
 | ranged | 34 | 6.3 | 7.4 | 8.0 | 8.6 | **9.4** | +0.0 |
 | throwing | 2 | 10.8 | 10.8 | 10.8 | 10.8 | **10.8** | +0.0 |
@@ -82,7 +82,7 @@ Healthy: positive Pearson r — higher craft skill → higher DPS.
 |---|---|---|---|
 | one_handed | +0.87 | +0.89 | +0.02 |
 | two_handed | +0.84 | +0.84 | +0.00 |
-| dual_wield | +0.86 | +0.83 | -0.03 |
+| dual_wield | +0.85 | +0.83 | -0.02 |
 | wrestling | -0.39 | -0.35 | +0.04 |
 | ranged | -0.32 | +0.06 | +0.38 |
 | throwing | n/a | n/a | — |
@@ -121,23 +121,23 @@ Only the meta-cluster gets a *situational* nerf (armorpierce trades vs unarmored
 
 | Family | Name | Δ DPS | Current → Post-fix | CraftSkill | Note |
 |---|---|---|---|---|---|
-| dual_wield | dualknives | -2.0 | 15.1 → 13.1 | 80 | P2 armorpierce |
-| dual_wield | machadosduplosthuria | -2.0 | 15.1 → 13.1 | 80 | P5-A offhand |
-| dual_wield | elvenroyalblades | -2.0 | 15.1 → 13.1 | 92 | P5-A offhand |
-| dual_wield | elvendoubleblade | -2.0 | 15.1 → 13.1 | 92 | P5-A offhand |
-| dual_wield | katanawakizashi | -2.0 | 15.1 → 13.1 | 72 | P5-A offhand |
-| dual_wield | doublekatana | -2.0 | 15.1 → 13.1 | 91 | P5-A offhand |
-| dual_wield | pequilhodaggers | -2.0 | 14.3 → 12.3 | 54 | P2 armorpierce |
-| dual_wield | dualtanto | -2.0 | 15.1 → 13.1 | 72 | P2 armorpierce |
-| dual_wield | rapierandshortsword | -2.0 | 15.1 → 13.1 | 75 | P2 armorpierce |
-| dual_wield | CimitarrasDuplas | -1.9 | 14.8 → 12.9 | 73 | P5-A offhand |
-| dual_wield | elvenblades | -1.9 | 14.8 → 12.9 | 73 | P5-A offhand |
-| dual_wield | elvencurveblades | -1.9 | 14.8 → 12.9 | 78 | P5-A offhand |
-| dual_wield | longandshortsword | -1.9 | 14.8 → 12.9 | 77 | P5-A offhand |
-| dual_wield | bjorskadoubleaxe | -1.9 | 14.8 → 12.9 | 75 | P5-A offhand |
-| dual_wield | bjorskadoublesword | -1.9 | 14.8 → 12.9 | 74 | P5-A offhand |
+| dual_wield | dualknives | -1.8 | 14.5 → 12.7 | 80 | P2 armorpierce |
+| dual_wield | machadosduplosthuria | -1.8 | 14.5 → 12.7 | 80 | P5-A offhand |
+| dual_wield | CimitarrasDuplas | -1.8 | 14.4 → 12.6 | 73 | P5-A offhand |
+| dual_wield | elvenblades | -1.8 | 14.4 → 12.6 | 73 | P5-A offhand |
+| dual_wield | elvenroyalblades | -1.8 | 14.5 → 12.7 | 92 | P5-A offhand |
+| dual_wield | elvencurveblades | -1.8 | 14.4 → 12.6 | 78 | P5-A offhand |
+| dual_wield | elvendoubleblade | -1.8 | 14.5 → 12.7 | 92 | P5-A offhand |
+| dual_wield | longandshortsword | -1.8 | 14.4 → 12.6 | 77 | P5-A offhand |
+| dual_wield | bjorskadoubleaxe | -1.8 | 14.4 → 12.6 | 75 | P5-A offhand |
+| dual_wield | katanawakizashi | -1.8 | 14.5 → 12.7 | 72 | P5-A offhand |
+| dual_wield | doublekatana | -1.8 | 14.5 → 12.7 | 91 | P5-A offhand |
+| dual_wield | bjorskadoublesword | -1.8 | 14.4 → 12.6 | 74 | P5-A offhand |
+| dual_wield | pequilhodaggers | -1.8 | 13.7 → 11.9 | 54 | P2 armorpierce |
+| dual_wield | bjorskadoubleaxes | -1.8 | 14.4 → 12.6 | 74 | P5-A offhand |
+| dual_wield | lestedoubleaxes | -1.8 | 14.4 → 12.6 | 72 | P5-A offhand |
 
-## 7. Tier compliance — 73/302 weapons in band (±0.5)
+## 7. Tier compliance — 75/302 weapons in band (±0.5)
 
 | Family | Tier | Name | Target | Actual | Drift | Reason |
 |---|---|---|---|---|---|---|
@@ -172,7 +172,7 @@ Only the meta-cluster gets a *situational* nerf (armorpierce trades vs unarmored
 | ranged | T7 | ArcoYumi | 12.0 | 9.4 | -2.6 | template edit pending |
 | ranged | T5 | aiglanabola | 10.0 | 7.4 | -2.6 | template edit pending |
 
-*… and 199 more. See CSV.*
+*… and 197 more. See CSV.*
 
 ## 8. Same-tier examples: STR vs DEX vs HYB per Attribute
 
@@ -215,12 +215,12 @@ For each family at a fixed tier, the best **Str-scaling (non-finesse)** weapon a
 
 | Tier | Scaling | Weapon | STR build | DEX build | HYB build |
 |---|---|---|---|---|---|
-| T5 | Dex (finesse) | `Garras` | 8.8 | **12.3** | 10.7 |
-| T7 | Str (non-finesse) | `CimitarrasDuplas` | **10.3** | 11.6 | 11.2 |
-| T7 | Dex (finesse) | `katanawakizashi` | 9.5 | **13.1** | 11.4 |
-| T7 | **gap** | DEX-best vs STR-best | | | **+27%** |
-| T9 | Str (non-finesse) | `elvenroyalblades` | **10.5** | 11.9 | 11.4 |
-| T9 | Dex (finesse) | `rapierandshortsword` | 9.5 | **13.1** | 11.4 |
+| T5 | Dex (finesse) | `Garras` | 8.5 | **11.9** | 10.3 |
+| T7 | Str (non-finesse) | `CimitarrasDuplas` | **10.1** | 11.3 | 10.9 |
+| T7 | Dex (finesse) | `katanawakizashi` | 9.2 | **12.7** | 11.1 |
+| T7 | **gap** | DEX-best vs STR-best | | | **+26%** |
+| T9 | Str (non-finesse) | `elvenroyalblades` | **10.2** | 11.5 | 11.1 |
+| T9 | Dex (finesse) | `rapierandshortsword` | 9.2 | **12.7** | 11.1 |
 | T9 | **gap** | DEX-best vs STR-best | | | **+25%** |
 
 
@@ -239,7 +239,7 @@ DEX builds compensate for lower defenses with faster swings. STR builds get HP +
 |---|---|---|---|---|---|
 | one_handed | `VikingSword` (8.2) | `florete` (10.3) | `VikingSword` (8.8) | **DEX** | +26% |
 | two_handed | `machadoduasmanos` (10.6) | `drowdoubleblade` (13.2) | `machadoduasmanos` (11.4) | **DEX** | +25% |
-| dual_wield | `machadosduplosthuria` (10.5) | `dualknives` (13.1) | `dualknives` (11.4) | **DEX** | +25% |
+| dual_wield | `machadosduplosthuria` (10.2) | `dualknives` (12.7) | `dualknives` (11.1) | **DEX** | +25% |
 | wrestling | `nunchaku` (6.3) | `nunchaku` (8.9) | `nunchaku` (7.6) | **DEX** | +41% |
 | ranged | `ArcoYumi` (6.7) | `ArcoYumi` (9.4) | `ArcoYumi` (8.0) | **DEX** | +40% |
 | throwing | `shuriken` (7.9) | `shuriken` (9.8) | `shuriken` (8.9) | **DEX** | +24% |
@@ -264,7 +264,7 @@ If a player insists on their archetype, what's their DPS ceiling vs the metagame
 |---|---|---|---|---|---|
 | one_handed | `florete` | 7.4 | 10.3 | 8.8 | +39% |
 | two_handed | `drowdoubleblade` | 9.7 | 13.2 | 11.4 | +36% |
-| dual_wield | `dualknives` | 9.5 | 13.1 | 11.4 | +38% |
+| dual_wield | `dualknives` | 9.2 | 12.7 | 11.1 | +38% |
 | wrestling | `nunchaku` | 6.3 | 8.9 | 7.6 | +41% |
 | ranged | `ArcoYumi` | 6.7 | 9.4 | 8.0 | +40% |
 | throwing | `shuriken` | 7.9 | 9.8 | 8.9 | +24% |
@@ -283,10 +283,10 @@ Avg DPS per family at each craft-skill band. Healthy: families overlap; no clear
 | Craft band | one_handed | two_handed | dual_wield | wrestling | ranged |
 |---|---|---|---|---|---|
 | 0-29 | 7.5 (n=30) | 6.8 (n=8) | — | — | 7.3 (n=2) |
-| 30-49 | 8.8 (n=24) | 7.7 (n=2) | 9.8 (n=3) | 8.3 (n=6) | 8.2 (n=15) |
-| 50-69 | 8.6 (n=34) | 8.0 (n=18) | 12.3 (n=3) | 8.0 (n=1) | 7.8 (n=13) |
-| 70-89 | 10.3 (n=31) | 9.9 (n=37) | 13.0 (n=14) | — | 8.2 (n=4) |
-| 90-100 | 10.3 (n=5) | 13.2 (n=15) | 13.1 (n=3) | — | — |
+| 30-49 | 8.8 (n=24) | 7.7 (n=2) | 9.5 (n=3) | 8.3 (n=6) | 8.2 (n=15) |
+| 50-69 | 8.6 (n=34) | 8.0 (n=18) | 11.9 (n=3) | 8.0 (n=1) | 7.8 (n=13) |
+| 70-89 | 10.3 (n=31) | 9.9 (n=37) | 12.6 (n=14) | — | 8.2 (n=4) |
+| 90-100 | 10.3 (n=5) | 13.2 (n=15) | 12.7 (n=3) | — | — |
 
 ---
 
@@ -445,6 +445,13 @@ Components from `fabricacaoDesc.cfg ComponenteEncaixe` — per-craft variance. C
 3. **Per-weapon cfg batch.** ~50 templates from D.1+D.2+D.3 in one PR.
 4. **Bulk curve cfg batch.** D.5 rules → ~80 one_handed+ranged templates.
 5. **Component caps audit.** Verify in-game effects match §E caps.
+
+## F2. Accepted deviations (signed off — not bugs)
+
+Surfaced by independent audit, consciously accepted by the design owner:
+
+- **N2 — dual_wield true premium ≈ +21% (not +25%).** The engine never crits the dual-wield offhand swing ([DamageController.inc:921-924](pkg/systems/combat/include/Controller/DamageController.inc#L921-L924)); the model now matches that (crit EV applies to mainhand only). Net: dual_wield's apex Dex premium is ~21%, ~4pp under the 25-35% band floor, *only* for dual_wield (1H/2H single-swing land ~25-26%). **Accepted** — a ~4pp lower premium on the highest-DPS family is fine; it slightly narrows dual_wield's lead over 1H/2H, which is benign.
+- **N3 — collateral engine nerf to ~6-9 un-retiered finesse weapons.** The `Dex/15→/20` engine change reduces the per-hit stat bonus of every finesse weapon. Finesse weapons in wrestling/ranged/throwing (`leque`, `kama`, `nunchaku`, `luvaComGarras`, `lajatang`, `socalLaminado`, and any finesse ranged/throwing) were *not* retiered to absorb it, so they lose ~5-6% effective DPS. **Accepted as collateral** — these families were explicitly out of scope (wrestling de-prioritized, ranged Dex-only by design, throwing P0); a future pass can retier them if it matters.
 
 ## G. Open questions
 

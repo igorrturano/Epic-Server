@@ -607,10 +607,15 @@ def compute_dps(w, apply_fixes, craft_skill, profile=None):
         offhand  = (posture_dice + off_stat + tac_off) * hit_rate
         per_hit  = mainhand + offhand
     else:
+        offhand  = 0.0
         per_hit  = mainhand
 
     crit_chance = max(0, min(100, wcrit + p_tac//20))
-    per_hit_exp = per_hit * (1 + (crit_chance/100.0) * (mult-1)) if mult > 1 else per_hit
+    # Engine never crits the dual-wield offhand swing
+    # (DamageController.inc:921-924) — crit EV applies to mainhand only;
+    # the offhand contributes flat. (N2 fix: model was over-crediting it.)
+    crit_mult_factor = (1 + (crit_chance/100.0) * (mult-1)) if mult > 1 else 1.0
+    per_hit_exp = mainhand * crit_mult_factor + offhand
     eff_swing_stat = swing_stat(attr, finesse, p_str, p_dex, apply_fixes and APPLY_SWING_SPEED_FIX)
     swing_ms       = 15_000_000 / ((eff_swing_stat + 100) * speed)
     dps            = per_hit_exp / (swing_ms/1000.0)
@@ -1041,6 +1046,10 @@ def main():
     P("4. **Bulk curve cfg batch.** D.5 rules → ~80 one_handed+ranged templates.\n")
     P("5. **Component caps audit.** Verify in-game effects match §E caps.\n\n")
 
+    P("## F2. Accepted deviations (signed off — not bugs)\n\n")
+    P("Surfaced by independent audit, consciously accepted by the design owner:\n\n")
+    P("- **N2 — dual_wield true premium ≈ +21% (not +25%).** The engine never crits the dual-wield offhand swing ([DamageController.inc:921-924](pkg/systems/combat/include/Controller/DamageController.inc#L921-L924)); the model now matches that (crit EV applies to mainhand only). Net: dual_wield's apex Dex premium is ~21%, ~4pp under the 25-35% band floor, *only* for dual_wield (1H/2H single-swing land ~25-26%). **Accepted** — a ~4pp lower premium on the highest-DPS family is fine; it slightly narrows dual_wield's lead over 1H/2H, which is benign.\n")
+    P("- **N3 — collateral engine nerf to ~6-9 un-retiered finesse weapons.** The `Dex/15→/20` engine change reduces the per-hit stat bonus of every finesse weapon. Finesse weapons in wrestling/ranged/throwing (`leque`, `kama`, `nunchaku`, `luvaComGarras`, `lajatang`, `socalLaminado`, and any finesse ranged/throwing) were *not* retiered to absorb it, so they lose ~5-6% effective DPS. **Accepted as collateral** — these families were explicitly out of scope (wrestling de-prioritized, ranged Dex-only by design, throwing P0); a future pass can retier them if it matters.\n\n")
     P("## G. Open questions\n\n")
     P("1. **Wrestling cap at T6.** Intentional (separate skill cost) or should there be a T7-T8 master-monk weapon?\n")
     P("2. **Throwing 10.8 DPS.** Inside band but P0 keeps shuriken/senbon untouched — verify throw-and-retrieve friction limits sustained DPS in playtest.\n")
