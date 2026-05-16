@@ -1,6 +1,7 @@
 use uo;
 use os;
 include ":message:include/model/Message";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 // Repairs the buyhab dict for a character who just completed a stone-driven
 // migration. The migrationStone sets `migration_preserve` and the creation
@@ -47,8 +48,13 @@ program createChar(who)
     // stone, before bailing out for already-created chars.
     RepairMigratedBuyhab(who);
 
-    // If already completed, never run again
+    // If already completed, never run again. Before bailing, recompute the
+    // carry-weight mod from current sources (single source of truth). This
+    // self-heals every existing character that still carries a drifted
+    // carrying_capacity_mod from the old scattered +=/-=/:= era — idempotent,
+    // so running it on every login is safe.
     if (creation_completed)
+        MobileWrapper(who).RecalcCarryWeightMod();
         return;
     endif
     

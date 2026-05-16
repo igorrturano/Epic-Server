@@ -53,10 +53,13 @@ program textcmd_acalmar(who)
 
 	PrintTextAbove(who, "*Tenta acalmar " + creature.name + "*");
 	Sleep(1);
-	if (SkillCheck(who, "Beastmastery", tameDifficulty, tameDifficulty - 15) > 0)
+	// Calming succeeds on whichever the player is stronger in: a war-beast
+	// master cows the creature, a tamer soothes it. Tie favors Taming.
+	var calm_skill := (EffectiveTrueSkill(who, "Beastmastery") > EffectiveTrueSkill(who, "Taming")) ? "Beastmastery" : "Taming";
+	if (SkillCheck(who, calm_skill, tameDifficulty, tameDifficulty - 15) > 0)
 		var eventStruct := struct{ type := EVID_PEACEMADE, source := who };
 		sendEvent(creature, eventStruct);
-		SetCooldown(creature, "peacemade", cint(EffectiveSkill(who, "Beastmastery")));
+		SetCooldown(creature, "peacemade", cint(EffectiveSkill(who, calm_skill)));
 		PrintTextPrivate(creature, "A criatura foi acalmada.", who);
 		return 1;
 	else

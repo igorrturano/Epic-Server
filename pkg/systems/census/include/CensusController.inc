@@ -78,4 +78,37 @@ function CensusTrackCreation(chardata)
 	if (chardata.trait)
 		_CensusIncrement("creation_trait", chardata.trait);
 	endif
+
+	// --- Path-rework fields (new system) ---
+	if (chardata.path)
+		_CensusIncrement("creation_vocacao", chardata.path);
+	endif
+
+	if (chardata.subclasse)
+		_CensusIncrement("creation_subclasse", chardata.subclasse);
+	endif
+
+	if (chardata.game_mode)
+		_CensusIncrement("creation_game_mode", chardata.game_mode);
+	endif
+
+	if (chardata.magia)
+		_CensusIncrement("creation_magia", chardata.magia);
+	endif
+
+	// Selected skills, split by tier. Primary = tier 3, Secondary = tier 2.
+	// "skills_all" counts every picked skill regardless of tier so we can see
+	// raw popularity; the tiered buckets show how players weight their build.
+	var myskills := chardata.Skills;
+	if (myskills != error && myskills)
+		foreach skill_name in (myskills.keys())
+			var tier := CInt(myskills[skill_name]);
+			_CensusIncrement("skills_all", skill_name);
+			if (tier == 3)
+				_CensusIncrement("skills_primary", skill_name);
+			elseif (tier == 2)
+				_CensusIncrement("skills_secondary", skill_name);
+			endif
+		endforeach
+	endif
 endfunction

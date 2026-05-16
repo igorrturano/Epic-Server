@@ -37,8 +37,9 @@ program SpellScript(params)
 	endif
 
 	var chardata := GetObjProperty(who, "chardata");
-	if (chardata.wisdom_path != "Mago" && !TemHabilidade(who, "Aura Mortis") &&
-	 !MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
+	if (chardata.wisdom_path != "Mago" && chardata.magia != "spellcaster"
+		&& !TemHabilidade(who, "Aura Mortis")
+		&& !MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
 		SendSysMessageEx(who, "Voce nao sabe usar essa magia.", SSM_INFO);
 		return 1;
 	endif

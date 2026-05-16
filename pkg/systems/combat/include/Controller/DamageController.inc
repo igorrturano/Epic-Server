@@ -219,15 +219,16 @@ function CalculateStatusDamage(byRef attackInfo)
 						 attackInfo.GetAttacker().GetOffDamageModifierBy(DEXTERITY);
 		endif
 	elseif (attackInfo.GetWeapon().IsFinesse())
-		// Finesse usa DEX puro / 15 (mainhand) ou DEX / 30 (off-hand). DEX-only
-		// (em vez de max(STR, DEX)) forca a escolha de archetype: STR builds
-		// pegam non-finesse 2H, DEX builds pegam finesse 1H/dual. Escala
-		// /15 e' nerf vs Phase 9 inicial (/10) — aplicado quando ficou claro
-		// que finesse + swing speed dava DPS 2.5x do STR. Ver design_dex_builds.md.
+		// STAT/20 model: finesse scales DEX / 20 (mainhand), DEX / 40 (off-hand)
+		// — symmetric with the STR / 20 non-finesse path below. Finesse no longer
+		// gets a larger per-hit stat bonus; the DEX archetype's edge comes purely
+		// from swing speed (Dex drives the engine swing rate), which the weapon
+		// tier ladder budgets as a ~25-35% damage premium to offset DEX builds
+		// being locked out of heavy armor/shields. See weapons_balance_tiers.md.
 		statusDamage.stat := DEXTERITY;
 		statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
-					 CInt(attackInfo.GetAttacker().GetDex() / 15) :
-					 CInt(attackInfo.GetAttacker().GetDex() / 30);
+					 CInt(attackInfo.GetAttacker().GetDex() / 20) :
+					 CInt(attackInfo.GetAttacker().GetDex() / 40);
 	else
 		statusDamage.stat := STRENGTH;
 
