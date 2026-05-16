@@ -17,7 +17,7 @@ include ":abilities:classes/arqueiro/MultiShot";
 //===========================================
 include ":abilities:classes/cacador/WarBond";
 include ":abilities:classes/cacador/BeastCommand";
-include ":abilities:classes/cacador/BeastMaster";
+include ":abilities:classes/cacador/WildAwakening";
 include ":abilities:classes/cacador/WildStalker";
 include ":abilities:classes/cacador/RelentlessHunter";
 
@@ -105,7 +105,7 @@ ABILITY_CLASSES[ABILITY_ID::DISPARO_MULTIPLO] := @MultiShot;
 // Cacador (100-104)
 ABILITY_CLASSES[ABILITY_ID::VINCULO_DE_GUERRA] := @WarBond;
 ABILITY_CLASSES[ABILITY_ID::COMANDO_DE_FERAS] := @BeastCommand;
-ABILITY_CLASSES[ABILITY_ID::MESTRE_DE_FERAS] := @BeastMaster;
+ABILITY_CLASSES[ABILITY_ID::MESTRE_DE_FERAS] := @WildAwakening;
 ABILITY_CLASSES[ABILITY_ID::ESPREITA_SELVAGEM] := @WildStalker;
 ABILITY_CLASSES[ABILITY_ID::CACADOR_IMPLACAVEL] := @RelentlessHunter;
 
