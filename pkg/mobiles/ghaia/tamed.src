@@ -42,6 +42,18 @@ const GUARD_CMD := 0xA004;
 const GO_LOC_CMD := 0xA008;
 
 program TamedAI()
+	// Phase 4 lazy migration: pet-like creatures on this legacy script move
+	// to the epicAI tamed brain on next wake. Gate is the "summoned" FLAG,
+	// not the spell type: flagged-summoned creatures (summon.inc,
+	// invocarespirito, montarianefasta, arcane mounts) stay on this legacy
+	// script until Phase 5 (ControlledBrain). raiseundead/levantarmortos
+	// undead are NOT flagged summoned -> pet-like, they migrate now.
+	if (!GetObjProperty(me, "summoned"))
+		me.script := ":epicai:tamedBrain";
+		RestartScript(me);
+		return;
+	endif
+
 	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); // Adicionado para diminuir a quantidade de logs no arquivo script.log
 	EnableMainEvents();
 	Setup();
