@@ -227,7 +227,7 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 SetupArcherLoadout(mobile);
             endif
 
-            if (ABILITY_ID::CAMUFLAGEM in habs)
+            if (ABILITY_ID::VINCULO_DE_GUERRA in habs)
                 var tier := 0;
                 var boss_struct := GetObjProperty(mobile, "EpicBossStruct");
                 if (boss_struct && boss_struct.tier)
@@ -239,7 +239,7 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
 
                 // var template := GetAnimalTemplateByTier(tier);
                 // if (template)
-                //     SetObjProperty(mobile, "#camuflagem_template", template);
+                //     SetObjProperty(mobile, "#Vínculo de Guerra_template", template);
                 //     var pet := CreateNpcFromTemplate(":epicai:"+template, mobile.x, mobile.y, mobile.z, 0, mobile.realm);
                 //     sleepms(250);  // This was the key - giving the NPC time to initialize
                 //     pet.alignment := 1;

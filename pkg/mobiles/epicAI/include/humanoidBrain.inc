@@ -869,7 +869,7 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
     endif
     foreach hab in actives
         case (hab)
-            ABILITY_ID::CAMUFLAGEM:
+            ABILITY_ID::VINCULO_DE_GUERRA:
                 NPC_UseAbilityById(me, hab);
             ABILITY_ID::INVOCACAO_DO_CAOS: 
             ABILITY_ID::ARCANE_BOW:
