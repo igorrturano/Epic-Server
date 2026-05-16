@@ -1012,10 +1012,13 @@ def main():
         P(f"| `{n}` | {s} | {c} | `{sc}` | T{t} |\n")
     P("\n")
 
-    P("### D.4 P5-A — Dual-wield offhand Tactics halved\n\n")
-    P("ONLY change. In [DamageController.inc CalculateSkillDamage](pkg/systems/combat/include/Controller/DamageController.inc): for offhand path, divide Tactics by 20 instead of using the standard `skillDivisor := 10`.\n\n")
-    P("**P5-B (penalty curve change) is DROPPED.** Would punish newbie dual-wielders too hard. Keep current `max(10, (100-skill)/2)` formula.\n\n")
-    P("**Result:** apex dual-wield drops from 18.1 → ~14 DPS (parity with apex 2H). Entry-level dual-wielders barely affected.\n\n")
+    P("### D.4 Dual-wield offhand Tactics halving — NO code change (pre-existing)\n\n")
+    P("The offhand swing already does half-Tactics in the live engine via the\n")
+    P("pre-existing wrapper `GetOffDamageModifierBy = CInt(GetMainDamageModifierBy / 2)`\n")
+    P("([MobileWrapper.inc:670-674](pkg/systems/wrappers/include/Objects/Model/MobileWrapper.inc#L670-L674)).\n")
+    P("**No engine change was made or needed for this** — the model mirrors it (`tac_off = Tactics//20`). The only shipped engine diff is the STAT/20 finesse divisor (§D / DamageController.inc:230-231).\n\n")
+    P("**P5-B (penalty curve change) is DROPPED.** Would punish newbie dual-wielders. Keeps the engine's existing `max(10, (100-skill)/2)` penalty.\n\n")
+    P("**Result:** dual-wield apex Dex premium ≈ +25% apex-vs-apex (true per-weapon ~21%, accepted — see §F2 N2).\n\n")
 
     P("### D.5 Bulk curve lifts (1H Str + Ranged bow/crossbow)\n\n")
     P("Rule-based, applied automatically by the analyzer. Targets the broken Pearson r in those families.\n\n")
@@ -1041,7 +1044,7 @@ def main():
 
     P("## F. Roadmap\n\n")
     P("1. **P3 — declarative tier scaffold.** Add `GetWeaponTier()` to [WeaponWrapper.inc](pkg/systems/wrappers/include/Objects/Model/WeaponWrapper.inc), `TIER_TARGET_DPS` dict to `pkg/systems/combat/include/Model/TierTargets.inc`, CI compliance check. Zero gameplay risk.\n")
-    P("2. **P5-A code change.** One-line in DamageController.inc offhand path.\n")
+    P("2. *(done)* STAT/20 engine change shipped (DamageController.inc:230-231). Offhand-Tactics halving needed no change — pre-existing wrapper logic.\n")
     P("3. **Per-weapon cfg batch.** ~50 templates from D.1+D.2+D.3 in one PR.\n")
     P("4. **Bulk curve cfg batch.** D.5 rules → ~80 one_handed+ranged templates.\n")
     P("5. **Component caps audit.** Verify in-game effects match §E caps.\n\n")
