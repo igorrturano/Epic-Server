@@ -152,6 +152,29 @@ def two_handed_profile(craft, finesse):
     else:        dice, sp, ncr, fcr = "TWOHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_HIGH","CRITICAL_HIGH", "CRITICAL_HIGH"
     return dice, sp, (fcr if finesse else ncr), "damage2"
 
+# ---- Phase C: one_handed cleanup ----
+APPLY_ONE_HANDED_CLEANUP = True
+ONE_HANDED_PRESERVE_CRIT = {"Dagger", "Rapier", "aiglanarapier", "alurieldagger", "bjorskadagger", "bonedagger", "drowfinerapier", "dwarvendagger", "elvendagger", "florete", "florete2", "gulthrakdagger", "harolothkryss", "harolothritualdagger", "lestedagger", "pequilhodagger", "pequilhorapier", "pequilhosimpledagger", "rapieira"}  # armorpierce precision-blade sub-line
+
+def one_handed_profile(craft, finesse):
+    """Single-swing 1H. Family cap T7 (1H pairs with shield, so its offensive
+    ceiling is below 2H/dual_wield). finesse-1H (Dex) sits +25-35% above
+    non-finesse-1H (Str) via the Dex100/Dex60 swing ratio + a +1 crit nudge.
+    1H dice cap = ONEHANDED_HIGH (1d8). Tier clamped to 7.
+
+    Option B (user-approved): speed band one tier higher than the initial
+    conservative draft, so the 1H family keeps today's power level — meta
+    still dies (all tier-mates converge), median/starter weapons stay stable.
+    Premium identical to the conservative draft (+25-28%)."""
+    t = min(7, int(craft // 10))
+    if   t <= 2: dice, sp, ncr, fcr = "ONEHANDED_LOW DAMAGE_NONE DAMAGE_NONE",  "MELEE_MID",  "CRITICAL_LOW",  "CRITICAL_MID"
+    elif t == 3: dice, sp, ncr, fcr = "ONEHANDED_MID DAMAGE_NONE DAMAGE_NONE",  "MELEE_MID",  "CRITICAL_LOW",  "CRITICAL_MID"
+    elif t == 4: dice, sp, ncr, fcr = "ONEHANDED_MID DAMAGE_NONE DAMAGE_NONE",  "MELEE_HIGH", "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 5: dice, sp, ncr, fcr = "ONEHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_MID",  "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 6: dice, sp, ncr, fcr = "ONEHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_HIGH", "CRITICAL_MID",  "CRITICAL_HIGH"
+    else:        dice, sp, ncr, fcr = "ONEHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_HIGH", "CRITICAL_HIGH", "CRITICAL_HIGH"
+    return dice, sp, (fcr if finesse else ncr), "damage2"
+
 # ============================================================
 #       PER-WEAPON OVERRIDE TABLES (legacy model — kept off for
 #       cleaned families; still used by 1H/ranged)
@@ -513,6 +536,10 @@ def compute_dps(w, apply_fixes, craft_skill, profile=None):
         elif APPLY_TWO_HANDED_CLEANUP and attr == "Two_Handed":
             # Phase B: two_handed clean rule-based profile.
             ndice, nspd, ncrit, nsc = two_handed_profile(craft_skill, finesse)
+            epic, spd_tier, crit_tier, mult = ndice, nspd, ncrit, crit_script_to_mult(nsc)
+        elif APPLY_ONE_HANDED_CLEANUP and attr == "One_Handed":
+            # Phase C: one_handed clean rule-based profile.
+            ndice, nspd, ncrit, nsc = one_handed_profile(craft_skill, finesse)
             epic, spd_tier, crit_tier, mult = ndice, nspd, ncrit, crit_script_to_mult(nsc)
         elif APPLY_P1_2H_LIFT and name in P1_TWO_HANDED_LIFT:
             ns, nc, sc, _ = P1_TWO_HANDED_LIFT[name]
