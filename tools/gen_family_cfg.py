@@ -24,13 +24,13 @@ FAMILIES = {
                        preserve=getattr(aw, "PRESERVE_CRIT_SCRIPT",
                                         {"Garras","tessen","badurandoubleaxes",
                                          "aiglanatwindaggers","drowdualkryss"}),
-                       make_finesse=set()),
+                       make_finesse=set(), offhand_mirror=True),
     "two_handed": dict(attr="Two_Handed", profile=aw.two_handed_profile,
                        preserve=aw.TWO_HANDED_PRESERVE_CRIT,
-                       make_finesse=aw.TWO_HANDED_MAKE_FINESSE),
+                       make_finesse=aw.TWO_HANDED_MAKE_FINESSE, offhand_mirror=False),
     "one_handed": dict(attr="One_Handed", profile=aw.one_handed_profile,
                        preserve=aw.ONE_HANDED_PRESERVE_CRIT,
-                       make_finesse=set()),
+                       make_finesse=set(), offhand_mirror=False),
 }
 
 def craft_lookup():
@@ -54,9 +54,9 @@ def main(family, apply=False):
     i, n = 0, len(lines)
     while i < n:
         line = lines[i]
-        if not re.match(r"\s*Weapon\s+(0x[0-9A-Fa-f]+)", line):
+        if not re.match(r"\s*Weapon\s+(0x[0-9A-Fa-f]+|[0-9]+)", line):
             out.append(line); i += 1; continue
-        ot = aw.norm_ot(re.match(r"\s*Weapon\s+(0x[0-9A-Fa-f]+)", line).group(1))
+        ot = aw.norm_ot(re.match(r"\s*Weapon\s+(0x[0-9A-Fa-f]+|[0-9]+)", line).group(1))
         block = [line]; i += 1; depth = 0; started = False
         while i < n:
             block.append(lines[i]); s = lines[i].strip()
@@ -79,6 +79,11 @@ def main(family, apply=False):
         want = {"EpicMainDamage": dice, "EpicSpeed": spd,
                 "EpicCriticalChance": crit,
                 "CriticalHitScripts": f":combat:criticalHitScripts/{script}"}
+        if cfg.get("offhand_mirror"):
+            # dual-wield = twin identical blades; offhand swing reads
+            # EpicOffDamage (DamageController.inc:277). Mirror mainhand so
+            # the model's "offhand uses same dice" assumption holds in-engine.
+            want["EpicOffDamage"] = dice
         if name in cfg["preserve"]:
             want.pop("CriticalHitScripts")
         add_finesse = name in cfg["make_finesse"] and props.get("Finesse","").strip() not in ("1","i1")
@@ -94,8 +99,10 @@ def main(family, apply=False):
             else:
                 new_block.append(bl)
             if bl.strip() == "}": close_idx = len(new_block) - 1
-        ins = [f"\t{k}\t{want[k]}" for k in FIELDS if k not in seen and k in want]
-        for k in FIELDS:
+        order = ("EpicMainDamage","EpicOffDamage","EpicSpeed",
+                 "EpicCriticalChance","CriticalHitScripts")
+        ins = [f"\t{k}\t{want[k]}" for k in order if k not in seen and k in want]
+        for k in order:
             if k not in seen and k in want:
                 edits.append((name, ot, f"(missing {k})", f"{k} {want[k]}"))
         if add_finesse:
