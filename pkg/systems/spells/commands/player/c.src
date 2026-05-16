@@ -27,8 +27,12 @@ program sigilodeprotecao(who, spellname := "")
 		spellname := params[2];
 	endif
 
-	// Check if player has demon hunter ability
-	var isDemonHunter := MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO);
+	// Caçadores de Demônios têm acesso aos sigilos desde o nível 1 (pela
+	// subclasse). O HasAbility é mantido para personagens legados que ganharam
+	// o acesso via SIGILO_DE_PROTECAO antes do path-rework.
+	var _cd := GetObjProperty(who, "chardata");
+	var isDemonHunter := MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO)
+		|| (_cd != error && _cd && _cd.subclasse == "Cacador_de_Demonios");
 	if (!isDemonHunter)
 		SendSysMessageEx(who, "Apenas Caçadores de Demônios podem usar este comando.", SSM_FAIL);
 		return 0;
