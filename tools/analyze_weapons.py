@@ -129,9 +129,32 @@ def dual_wield_profile(craft, finesse):
     else:        dice, sp, ncr, fcr, sc = "ONEHANDED_HIGH ONEHANDED_MID DAMAGE_NONE","MELEE_MID","CRITICAL_HIGH","CRITICAL_HIGH", "damage2"
     return dice, sp, (fcr if finesse else ncr), sc
 
+# ---- Phase B: two_handed cleanup ----
+APPLY_TWO_HANDED_CLEANUP = True
+
+# CrescentBlade is the designated Dex-2H anchor (user call). itemdesc has no
+# Finesse flag today — the generator must ADD `Finesse 1` to these.
+TWO_HANDED_MAKE_FINESSE = {"CrescentBlade"}
+# 2H weapons that keep a flavor crit script (Option-3, filled after dry-run).
+TWO_HANDED_PRESERVE_CRIT = set()
+
+def two_handed_profile(craft, finesse):
+    """Single-swing 2H. Str-2H = heavy-hitter apex; finesse-2H (Dex) sits
+    +25-35% above via the Dex100/Dex60 swing ratio + a +1 crit-tier nudge.
+    2H dice cap = TWOHANDED_HIGH (4d4)."""
+    t = min(9, int(craft // 10))
+    if   t <= 3: dice, sp, ncr, fcr = "TWOHANDED_LOW DAMAGE_NONE DAMAGE_NONE",  "MELEE_LOW", "CRITICAL_LOW",  "CRITICAL_MID"
+    elif t == 4: dice, sp, ncr, fcr = "TWOHANDED_LOW DAMAGE_NONE DAMAGE_NONE",  "MELEE_MID", "CRITICAL_LOW",  "CRITICAL_MID"
+    elif t == 5: dice, sp, ncr, fcr = "TWOHANDED_MID DAMAGE_NONE DAMAGE_NONE",  "MELEE_LOW", "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 6: dice, sp, ncr, fcr = "TWOHANDED_MID DAMAGE_NONE DAMAGE_NONE",  "MELEE_MID", "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 7: dice, sp, ncr, fcr = "TWOHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_LOW", "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 8: dice, sp, ncr, fcr = "TWOHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_MID", "CRITICAL_HIGH", "CRITICAL_HIGH"
+    else:        dice, sp, ncr, fcr = "TWOHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_HIGH","CRITICAL_HIGH", "CRITICAL_HIGH"
+    return dice, sp, (fcr if finesse else ncr), "damage2"
+
 # ============================================================
 #       PER-WEAPON OVERRIDE TABLES (legacy model — kept off for
-#       dual_wield once cleanup is on; still used by 1H/2H/ranged)
+#       cleaned families; still used by 1H/ranged)
 # ============================================================
 P1_TWO_HANDED_LIFT = {
     "TwoHandedAxe":        ("MELEE_HIGH", "CRITICAL_HIGH", "damage2", 9),
@@ -258,6 +281,15 @@ def parse_weapons():
             return list(csv.DictReader(f, delimiter="|"))
     return parse_itemdesc()
 
+def norm_ot(s):
+    """Canonical objtype key. itemdesc uses zero-padded hex (0x0f49) but
+    fabricacaoDesc uses unpadded (0xF49) — normalize both to int-canonical
+    lowercase hex so recipe joins don't silently miss."""
+    try:
+        return f"0x{int(str(s).strip(), 16):x}"
+    except (ValueError, TypeError):
+        return str(s).lower().strip()
+
 def parse_itemdesc():
     text = Path(ITEMDESC_CFG).read_text(errors="replace")
     weapons = []
@@ -265,7 +297,7 @@ def parse_itemdesc():
     for line in text.splitlines():
         m = re.match(r"\s*Weapon\s+(0x[0-9A-Fa-f]+)", line)
         if m:
-            cur = {"ObjType": m.group(1), "_props": {}}
+            cur = {"ObjType": norm_ot(m.group(1)), "_props": {}}
             continue
         if cur is None:
             continue
@@ -337,7 +369,7 @@ def parse_recipes_psv():
                 continue
             m = re.match(r"fabricacao\s+(0x[0-9A-Fa-f]+)", line)
             if m:
-                cur_ot = m.group(1).lower(); cur_skill = 0.0; cur_comp = []
+                cur_ot = norm_ot(m.group(1)); cur_skill = 0.0; cur_comp = []
                 continue
             if cur_ot is None:
                 continue
@@ -381,7 +413,7 @@ def build_name_to_objtype():
     for line in text.splitlines():
         m_obj = re.match(r"\s*Weapon\s+(0x[0-9A-Fa-f]+)", line)
         if m_obj:
-            current_ot = m_obj.group(1).lower()
+            current_ot = norm_ot(m_obj.group(1))
             continue
         m_name = re.match(r"\s*Name\s+(\S+)", line)
         if m_name and current_ot:
@@ -458,8 +490,9 @@ def compute_dps(w, apply_fixes, craft_skill, profile=None):
     else:
         p_str, p_dex, p_tac, p_dw = profile["str"], profile["dex"], profile["tac"], profile["dw"]
     attr    = (w["Attribute"] or "").strip()
-    finesse = (w["Finesse"] == "1" or w["Name"] in P2_FINESSE_FLAG_NEEDED) \
-              and w["Name"] not in FINESSE_CFG_CORRECTIONS
+    finesse = ((w["Finesse"] == "1" or w["Name"] in P2_FINESSE_FLAG_NEEDED
+                or w["Name"] in TWO_HANDED_MAKE_FINESSE)
+               and w["Name"] not in FINESSE_CFG_CORRECTIONS)
     ranged  = w["Ranged"]  == "1"
     cat     = w["Category"]
     dual    = attr == "Dual_Wield"
@@ -476,6 +509,10 @@ def compute_dps(w, apply_fixes, craft_skill, profile=None):
             # Phase A: dual_wield uses the clean rule-based profile, bypassing
             # all legacy P-tables for this family.
             ndice, nspd, ncrit, nsc = dual_wield_profile(craft_skill, finesse)
+            epic, spd_tier, crit_tier, mult = ndice, nspd, ncrit, crit_script_to_mult(nsc)
+        elif APPLY_TWO_HANDED_CLEANUP and attr == "Two_Handed":
+            # Phase B: two_handed clean rule-based profile.
+            ndice, nspd, ncrit, nsc = two_handed_profile(craft_skill, finesse)
             epic, spd_tier, crit_tier, mult = ndice, nspd, ncrit, crit_script_to_mult(nsc)
         elif APPLY_P1_2H_LIFT and name in P1_TWO_HANDED_LIFT:
             ns, nc, sc, _ = P1_TWO_HANDED_LIFT[name]
@@ -557,7 +594,7 @@ def main():
 
     rows = []
     for w in weapons:
-        ot   = w["ObjType"].lower().strip()
+        ot   = norm_ot(w["ObjType"])
         skill, craft_cat, components = recipes.get(ot, (0.0, "uncraftable", ""))
         cur     = compute_dps(w, apply_fixes=False, craft_skill=skill)
         post    = compute_dps(w, apply_fixes=True,  craft_skill=skill)
