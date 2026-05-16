@@ -6,7 +6,7 @@ include ":mounts:mounts";
 include ":charactercreation:habilidades";
 include ":stables:include/stable";
 include "include/NPCUtil";
-include "include/petidentity";
+include ":taming:petidentity";
 include ":tn:cooldown";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
