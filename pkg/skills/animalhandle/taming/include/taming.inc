@@ -256,7 +256,7 @@ endfunction
 function GetMaxWarPets(who)
 	var maxwar := 1;
 
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VINCULO_DE_GUERRA))
 		maxwar := maxwar + 1;
 	endif
 

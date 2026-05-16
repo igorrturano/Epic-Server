@@ -142,7 +142,7 @@ program neve(params)
 					SendSysMessageEX(who, "O Protetor de Fogo lhe protege do frio.", SSM_INFO);
 					dif := dif - 4;
 				endif
-				if ((MobileWrapper(mobile).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE)) && who.party &&
+				if ((MobileWrapper(mobile).HasAbility(ABILITY_ID::MESTRE_DE_FERAS)) && who.party &&
 		(who.party.leader == mobile.party.leader))
 					resistchecked := mobile;
 				endif
