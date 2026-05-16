@@ -44,12 +44,42 @@ function GetPetCost(pet)
 
 endfunction
 
-/* funcao pega o custo dos pets. tbm atualiza os pets perdidos ou que foram transferidos*/
-function GetNumPets(who)
-	var num_tamed := 0;
+// Um pet sendo cavalgado nao consome slot (montaria sempre isenta). O elo
+// confiavel eh a peca de LAYER_MOUNT do dono apontando para este serial.
+function IsBeingRiddenAsMount(pet)
+	var owner := pet.master;
+	if (!owner)
+		return 0;
+	endif
+	var piece := GetEquipmentByLayer(owner, LAYER_MOUNT);
+	if (!piece)
+		return 0;
+	endif
+	return CInt(GetObjProperty(piece, "serial")) == pet.serial;
+endfunction
+
+// Categoria de slot do pet: "mount" (isento), "war" (alignment evil, cap 1)
+// ou "grey" (alignment neutro — nao-combatente, pool = Taming/20).
+function PetSlotCategory(pet)
+	if (IsBeingRiddenAsMount(pet))
+		return "mount";
+	endif
+	if (pet.alignment == 0)
+		return "grey";
+	endif
+	return "war";
+endfunction
+
+/* Passo canonico sobre TamedPets. Poda entradas invalidas/summoned, persiste
+   a lista limpa, sincroniza who.followers e retorna o tally por categoria.
+   Montarias e pets no estabulo/limbo continuam do player mas nao custam slot. */
+function _TallyPets(who)
+	var war := 0;
+	var grey := 0;
 	var tamed := GetObjProperty(who, "TamedPets");
 	if ( !tamed )
-		return 0;
+		who.followers := 0;
+		return struct{ war := 0, grey := 0, total := 0 };
 	endif
 
 	foreach serial in tamed
@@ -69,10 +99,14 @@ function GetNumPets(who)
 		// ao player. Contratos expirados nao sao limpos aqui — o gump do post
 		// cuida disso no momento do resgate.
 		if ( !IsStabled(pet) && !IsInLimbo(pet) )
-			if (!Cint(pet.getTier()))
-				num_tamed := num_tamed+1;
-			else
-				num_tamed := num_tamed + Cint(pet.getTier());
+			var cat := PetSlotCategory(pet);
+			if (cat != "mount")
+				var cost := GetPetCost(pet);
+				if (cat == "war")
+					war := war + cost;
+				else
+					grey := grey + cost;
+				endif
 			endif
 		endif
 		sleepms(2);
@@ -82,8 +116,22 @@ function GetNumPets(who)
 		tamed := array;
 	endif
 	SetObjProperty(who, "TamedPets", tamed);
-	who.followers := num_tamed;
-	return num_tamed;
+	var total := war + grey;
+	who.followers := total;
+	return struct{ war := war, grey := grey, total := total };
+endfunction
+
+/* funcao pega o custo dos pets. tbm atualiza os pets perdidos ou que foram transferidos*/
+function GetNumPets(who)
+	return _TallyPets(who).total;
+endfunction
+
+function GetNumWarPets(who)
+	return _TallyPets(who).war;
+endfunction
+
+function GetNumGreyPets(who)
+	return _TallyPets(who).grey;
 endfunction
 
 function GetNumSummons(who)
@@ -209,28 +257,46 @@ function ClearMasterLimboRef(master, pet_serial)
 	return 1;
 endfunction
 
-//numero maximo de pets que alguem pode ter
+// War pet = criatura evil (alignment 1). Cap 1 para todos; Ranger ganha +1
+// via a hab Camuflagem (sem rework do efeito — adiado). extrapets (bonus de
+// GM/evento) continua somando no lado de combate.
+function GetMaxWarPets(who)
+	var maxwar := 1;
+
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
+		maxwar := maxwar + 1;
+	endif
+
+	maxwar := maxwar + cint( GetObjProperty(who, "extrapets") );
+
+	return maxwar;
+endfunction
+
+// Grey pet = criatura neutra (alignment 0), nao-combatente. Pool escala com
+// Taming: 1 slot a cada 20 pontos (Taming 100 -> 5 greys). Mounts nao contam.
+function GetMaxGreyPets(who)
+	return CInt( EffectiveSkill(who, "Taming") / 20 );
+endfunction
+
+// Agregado mantido por compatibilidade: paperdoll/followers/recall leem este
+// numero e continuam coerentes sem precisar conhecer a divisao por categoria.
 function GetMaxPets(who)
-	var maxpets := 1;
+	return GetMaxWarPets(who) + GetMaxGreyPets(who);
+endfunction
 
-	//Influência da skill na quantidade
-	var skill := cint(EffectiveSkill(who, "Taming"));
-	if (skill >= 45 && skill < 75)
-		maxpets := maxpets + 1;
-	elseif (skill >= 75 && skill < 90)
-		maxpets := maxpets + 2;
-	elseif (skill >= 90)
-		maxpets := maxpets + 3;
+// Portao unico de aquisicao (tame/transfer/resurrect). Grandfather: so
+// bloqueia o NOVO pet; pets legados acima do cap nunca sao removidos aqui.
+function CanAcquirePet(who, pet)
+	var cat := PetSlotCategory(pet);
+	if (cat == "mount")
+		return 1;
 	endif
-
-	//Influência de Habs na quantidade
-	if(MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM))
-		maxpets := maxpets + 1;
+	var tally := _TallyPets(who);
+	var cost := GetPetCost(pet);
+	if (cat == "war")
+		return (tally.war + cost) <= GetMaxWarPets(who);
 	endif
-
-	maxpets := maxpets + cint( GetObjProperty(who, "extrapets") );
-
-	return maxpets;
+	return (tally.grey + cost) <= GetMaxGreyPets(who);
 endfunction
 
 function GetMaxSummons(who)
@@ -401,7 +467,7 @@ function RessuscitarPet(corpse, owner, is_bandage := 0)
     if (!owner)
         destama(npc.serial);
     else
-        if ((GetNumPets(owner) + GetPetCost(npc)) > GetMaxPets(owner))
+        if (!CanAcquirePet(owner, npc))
             SendSysMessageEx(owner, "Voce ja tem muitos animais.", SSM_FAIL);
             destama(npc.serial);
         elseif ( GetObjProperty(npc, "bond") == "fiel" && animais_fidelizados >= limite_animais)
