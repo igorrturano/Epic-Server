@@ -49,7 +49,7 @@ function taming(who)
 	elseif (targ.script[":ghaia:tamed"]) // Verifica se o animal ja esta domado/ tem script de tamed
 		SendSysMessageEx(who, targ.name + " nao pode ser adestrado.", SSM_FAIL);
 		return 0;
-	elseif ((GetNumPets(who) + GetPetCost(targ)) > GetMaxPets(who))
+	elseif (!CanAcquirePet(who, targ))
 		SendSysMessageEx(who, "Este animal excede a sua capacidade atual de animais domesticados.",
 				   SSM_FAIL);
 		return 0;
