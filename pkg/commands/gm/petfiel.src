@@ -71,7 +71,7 @@ function GM_PetFidelity_BuildGump(mob, pet)
     if (inst && typeof(inst) == "Dictionary")
         inst_count := inst.Size();
     endif
-if (pet.script != ":ghaia:tamed")
+if (!IsTamedPet(pet))
     GFTextLine(g, 310, 260, 123, "Não é PET!");
 else
     GFTextLine(g, 310, 240, 123, "Pet: " + pet.name);
