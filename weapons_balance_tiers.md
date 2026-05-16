@@ -52,9 +52,9 @@
 
 | Family | n | min | p25 | median | p75 | **max** |
 |---|---|---|---|---|---|---|
-| one_handed | 124 | 7.0 | 7.6 | 8.4 | 10.1 | **10.3** |
-| two_handed | 80 | 6.8 | 7.9 | 8.6 | 11.0 | **13.2** |
-| dual_wield | 23 | 10.9 | 13.7 | 14.4 | 14.5 | **14.5** |
+| one_handed | 124 | 7.0 | 7.4 | 8.4 | 9.8 | **13.2** |
+| two_handed | 80 | 6.4 | 7.8 | 8.6 | 11.0 | **14.4** |
+| dual_wield | 23 | 10.4 | 13.0 | 14.4 | 14.4 | **17.4** |
 | wrestling | 7 | 7.4 | 8.0 | 8.4 | 8.9 | **8.9** |
 | ranged | 34 | 5.9 | 6.9 | 8.0 | 8.4 | **9.4** |
 | throwing | 2 | 10.8 | 10.8 | 10.8 | 10.8 | **10.8** |
@@ -66,9 +66,9 @@ All fixes applied: P1 (2H apex), P2 (finesse → armorpierce), P4 (firearms tabl
 
 | Family | n | min | p25 | median | p75 | **max** | Δmax |
 |---|---|---|---|---|---|---|---|
-| one_handed | 124 | 7.4 | 7.8 | 8.4 | 10.3 | **10.3** | +0.0 |
-| two_handed | 80 | 6.8 | 7.9 | 8.6 | 11.0 | **13.2** | +0.0 |
-| dual_wield | 23 | 9.4 | 11.9 | 12.6 | 12.7 | **12.7** | -1.8 |
+| one_handed | 124 | 7.0 | 7.4 | 8.4 | 9.8 | **13.2** | +0.0 |
+| two_handed | 80 | 6.4 | 7.8 | 8.6 | 11.0 | **14.4** | +0.0 |
+| dual_wield | 23 | 8.9 | 11.2 | 12.6 | 12.6 | **15.3** | -2.1 |
 | wrestling | 7 | 7.4 | 8.0 | 8.4 | 8.4 | **8.9** | +0.0 |
 | ranged | 34 | 6.3 | 7.4 | 8.0 | 8.6 | **9.4** | +0.0 |
 | throwing | 2 | 10.8 | 10.8 | 10.8 | 10.8 | **10.8** | +0.0 |
@@ -80,9 +80,9 @@ Healthy: positive Pearson r — higher craft skill → higher DPS.
 
 | Family | r (current) | r (post-fix) | Δ |
 |---|---|---|---|
-| one_handed | +0.87 | +0.89 | +0.02 |
-| two_handed | +0.84 | +0.84 | +0.00 |
-| dual_wield | +0.85 | +0.83 | -0.02 |
+| one_handed | +0.80 | +0.80 | -0.00 |
+| two_handed | +0.82 | +0.82 | +0.00 |
+| dual_wield | +0.92 | +0.93 | +0.00 |
 | wrestling | -0.39 | -0.35 | +0.04 |
 | ranged | -0.32 | +0.06 | +0.38 |
 | throwing | n/a | n/a | — |
@@ -91,8 +91,8 @@ Healthy: positive Pearson r — higher craft skill → higher DPS.
 
 | Outcome | Count | % |
 |---|---|---|
-| **Buffed** (≥+0.3 DPS) | 27 | 9% |
-| Unchanged (±0.3 DPS)   | 250   | 83% |
+| **Buffed** (≥+0.3 DPS) | 8 | 3% |
+| Unchanged (±0.3 DPS)   | 269   | 89% |
 | Nerfed (≤−0.3 DPS)    | 25 | 8% |
 
 Only the meta-cluster gets a *situational* nerf (armorpierce trades vs unarmored; keeps DPS vs heavy armor). Dual-wield apex pays a small offhand cost.
@@ -106,52 +106,53 @@ Only the meta-cluster gets a *situational* nerf (armorpierce trades vs unarmored
 | ranged | handcannon | +1.3 | 6.6 → 7.9 | 60 |
 | ranged | musket | +1.3 | 6.2 → 7.5 | 85 |
 | ranged | carabine | +1.0 | 6.2 → 7.2 | 70 |
-| one_handed | florete | +0.9 | 9.4 → 10.3 | 60 |
-| one_handed | florete2 | +0.9 | 9.4 → 10.3 | 80 |
-| one_handed | drowfinerapier | +0.9 | 9.4 → 10.3 | 88 |
-| one_handed | pequilhorapier | +0.9 | 9.4 → 10.3 | 72 |
-| one_handed | aiglanarapier | +0.9 | 9.4 → 10.3 | 78 |
-| one_handed | harolothritualdagger | +0.9 | 9.4 → 10.3 | 82 |
-| one_handed | rapieira | +0.8 | 7.8 → 8.6 | 55 |
-| one_handed | harolothkryss | +0.8 | 7.8 → 8.6 | 54 |
-| one_handed | Rapier | +0.6 | 7.0 → 7.6 | 0 |
-| one_handed | Dagger | +0.6 | 7.0 → 7.6 | 15 |
+| one_handed | karda | +0.6 | 7.0 → 7.6 | 28 |
+| ranged | pistol1 | +0.4 | 5.9 → 6.3 | 50 |
+| ranged | pistol2 | +0.4 | 5.9 → 6.3 | 50 |
+| one_handed | longsword | +0.0 | 8.4 → 8.4 | 58 |
+| one_handed | WarAxe | +0.0 | 8.4 → 8.4 | 54 |
+| ranged | ShortBow | +0.0 | 8.9 → 8.9 | 30 |
+| ranged | Arcocurtocomposto | +0.0 | 8.0 → 8.0 | 50 |
+| ranged | LongBow | +0.0 | 8.3 → 8.3 | 50 |
+| ranged | ArcoLongoComposto | +0.0 | 8.4 → 8.4 | 65 |
+| ranged | ArcoCurtoNumaja | +0.0 | 7.6 → 7.6 | 30 |
 
 ### Top 15 nerfs
 
 | Family | Name | Δ DPS | Current → Post-fix | CraftSkill | Note |
 |---|---|---|---|---|---|
-| dual_wield | dualknives | -1.8 | 14.5 → 12.7 | 80 | P2 armorpierce |
+| dual_wield | elvenroyalblades | -2.1 | 17.4 → 15.3 | 92 | P5-A offhand |
+| dual_wield | elvendoubleblade | -2.1 | 17.4 → 15.3 | 92 | P5-A offhand |
+| dual_wield | doublekatana | -2.1 | 17.4 → 15.3 | 91 | P5-A offhand |
+| dual_wield | dualknives | -1.8 | 13.7 → 11.9 | 80 | P2 armorpierce |
 | dual_wield | machadosduplosthuria | -1.8 | 14.5 → 12.7 | 80 | P5-A offhand |
 | dual_wield | CimitarrasDuplas | -1.8 | 14.4 → 12.6 | 73 | P5-A offhand |
+| dual_wield | Garras | -1.8 | 13.0 → 11.2 | 54 | P5-A offhand |
 | dual_wield | elvenblades | -1.8 | 14.4 → 12.6 | 73 | P5-A offhand |
-| dual_wield | elvenroyalblades | -1.8 | 14.5 → 12.7 | 92 | P5-A offhand |
 | dual_wield | elvencurveblades | -1.8 | 14.4 → 12.6 | 78 | P5-A offhand |
-| dual_wield | elvendoubleblade | -1.8 | 14.5 → 12.7 | 92 | P5-A offhand |
 | dual_wield | longandshortsword | -1.8 | 14.4 → 12.6 | 77 | P5-A offhand |
 | dual_wield | bjorskadoubleaxe | -1.8 | 14.4 → 12.6 | 75 | P5-A offhand |
+| dual_wield | aiglanatwindaggers | -1.8 | 13.0 → 11.2 | 54 | P2 armorpierce |
 | dual_wield | katanawakizashi | -1.8 | 14.5 → 12.7 | 72 | P5-A offhand |
-| dual_wield | doublekatana | -1.8 | 14.5 → 12.7 | 91 | P5-A offhand |
 | dual_wield | bjorskadoublesword | -1.8 | 14.4 → 12.6 | 74 | P5-A offhand |
-| dual_wield | pequilhodaggers | -1.8 | 13.7 → 11.9 | 54 | P2 armorpierce |
-| dual_wield | bjorskadoubleaxes | -1.8 | 14.4 → 12.6 | 74 | P5-A offhand |
-| dual_wield | lestedoubleaxes | -1.8 | 14.4 → 12.6 | 72 | P5-A offhand |
+| dual_wield | drowdualkryss | -1.8 | 13.7 → 11.9 | 78 | P2 armorpierce |
 
-## 7. Tier compliance — 75/302 weapons in band (±0.5)
+## 7. Tier compliance — 73/302 weapons in band (±0.5)
 
 | Family | Tier | Name | Target | Actual | Drift | Reason |
 |---|---|---|---|---|---|---|
 | two_handed | T7 | bjorskahalberd | 12.0 | 6.8 | -5.2 | template edit pending |
+| two_handed | T8 | marteloduasmanos | 13.0 | 8.0 | -5.0 | template edit pending |
 | two_handed | T8 | zweihander | 13.0 | 8.6 | -4.4 | template edit pending |
-| two_handed | T8 | marteloduasmanos | 13.0 | 8.6 | -4.4 | template edit pending |
+| two_handed | T6 | bjorskabastardsword | 11.0 | 6.7 | -4.3 | template edit pending |
 | ranged | T7 | handcannon | 12.0 | 7.9 | -4.1 | template edit pending |
+| one_handed | T6 | Rapier | 11.0 | 7.0 | -4.0 | uncraftable, template edit pending |
 | ranged | T5 | baduranthrowingdoubleaxe | 10.0 | 6.4 | -3.6 | template edit pending |
+| one_handed | T0 | CimitarraKuxaijkan | 5.0 | 8.5 | +3.5 | uncraftable, template edit pending |
 | ranged | T6 | musket | 11.0 | 7.5 | -3.5 | template edit pending |
 | two_handed | T7 | WarHammer | 12.0 | 8.6 | -3.4 | template edit pending |
 | two_handed | T7 | Bardiche | 12.0 | 8.6 | -3.4 | template edit pending |
-| one_handed | T6 | Rapier | 11.0 | 7.6 | -3.4 | uncraftable, template edit pending |
 | one_handed | T7 | adagaduelos | 12.0 | 8.6 | -3.4 | template edit pending |
-| two_handed | T7 | katana | 12.0 | 8.6 | -3.4 | template edit pending |
 | two_handed | T7 | badurandoubleaxe | 12.0 | 8.6 | -3.4 | template edit pending |
 | two_handed | T7 | baduranhammer | 12.0 | 8.6 | -3.4 | template edit pending |
 | two_handed | T7 | gulthrakspear | 12.0 | 8.6 | -3.4 | template edit pending |
@@ -164,15 +165,14 @@ Only the meta-cluster gets a *situational* nerf (armorpierce trades vs unarmored
 | two_handed | T7 | harolothdoubleaxe | 12.0 | 8.6 | -3.4 | template edit pending |
 | ranged | T0 | ArcaneBow | 5.0 | 8.3 | +3.3 | uncraftable, template edit pending |
 | two_handed | T7 | naginata | 12.0 | 8.8 | -3.2 | template edit pending |
-| two_handed | T9 | TwoHandedAxe | 14.0 | 11.0 | -3.0 | template edit pending |
+| dual_wield | T7 | twindaggers | 12.0 | 8.9 | -3.1 | template edit pending |
+| two_handed | T8 | ExecutionersAxe | 13.0 | 10.0 | -3.0 | template edit pending |
+| two_handed | T6 | sarissa | 11.0 | 8.0 | -3.0 | template edit pending |
+| two_handed | T5 | BladedStaff | 10.0 | 7.2 | -2.8 | template edit pending |
 | throwing | T3 | senbon | 8.0 | 10.8 | +2.8 | P0 exempt, template edit pending |
 | ranged | T5 | aiglanacrossbow | 10.0 | 7.2 | -2.8 | template edit pending |
-| one_handed | T8 | Lance | 13.0 | 10.3 | -2.7 | template edit pending |
-| ranged | T6 | ArcoLongoComposto | 11.0 | 8.4 | -2.6 | template edit pending |
-| ranged | T7 | ArcoYumi | 12.0 | 9.4 | -2.6 | template edit pending |
-| ranged | T5 | aiglanabola | 10.0 | 7.4 | -2.6 | template edit pending |
 
-*… and 197 more. See CSV.*
+*… and 199 more. See CSV.*
 
 ## 8. Same-tier examples: STR vs DEX vs HYB per Attribute
 
@@ -187,14 +187,14 @@ For each family at a fixed tier, the best **Str-scaling (non-finesse)** weapon a
 | Tier | Scaling | Weapon | STR build | DEX build | HYB build |
 |---|---|---|---|---|---|
 | T3 | Str (non-finesse) | `HammerPick` | **6.3** | 7.0 | 6.7 |
-| T3 | Dex (finesse) | `elvendagger` | 5.7 | **8.0** | 6.8 |
-| T3 | **gap** | DEX-best vs STR-best | | | **+27%** |
-| T5 | Str (non-finesse) | `longsword` | **6.7** | 7.6 | 7.2 |
-| T5 | Dex (finesse) | `Kryss` | 6.2 | **8.6** | 7.3 |
-| T5 | **gap** | DEX-best vs STR-best | | | **+28%** |
-| T7 | Str (non-finesse) | `VikingSword` | **8.2** | 9.2 | 8.8 |
+| T3 | Dex (finesse) | `elvendagger` | 5.3 | **7.4** | 6.3 |
+| T3 | **gap** | DEX-best vs STR-best | | | **+17%** |
+| T5 | Str (non-finesse) | `aiglanobattleaxe` | **8.6** | 9.9 | 9.3 |
+| T5 | Dex (finesse) | `elvenshortsword` | 6.2 | **8.6** | 7.3 |
+| T5 | **gap** | DEX-best vs STR-best | | | **+0%** |
+| T7 | Str (non-finesse) | `pequilholongsword` | **10.6** | 12.1 | 11.4 |
 | T7 | Dex (finesse) | `lanirias` | 7.4 | **10.3** | 8.8 |
-| T7 | **gap** | DEX-best vs STR-best | | | **+26%** |
+| T7 | **gap** | DEX-best vs STR-best | | | **-3%** |
 
 ### two_handed
 
@@ -202,26 +202,26 @@ For each family at a fixed tier, the best **Str-scaling (non-finesse)** weapon a
 |---|---|---|---|---|---|
 | T3 | Dex (finesse) | `alurielshortspear` | 5.0 | **6.9** | 5.9 |
 | T5 | Str (non-finesse) | `DoubleAxe` | **6.2** | 7.1 | 6.7 |
-| T5 | Dex (finesse) | `BladedStaff` | 5.8 | **7.9** | 6.8 |
+| T5 | Dex (finesse) | `aiglatrident` | 5.8 | **7.9** | 6.8 |
 | T5 | **gap** | DEX-best vs STR-best | | | **+27%** |
 | T7 | Str (non-finesse) | `Halberd` | **8.8** | 10.1 | 9.5 |
 | T7 | Dex (finesse) | `DoubleBladedStaff` | 8.1 | **11.0** | 9.5 |
 | T7 | **gap** | DEX-best vs STR-best | | | **+25%** |
-| T9 | Str (non-finesse) | `machadoduasmanos` | **10.6** | 12.1 | 11.4 |
+| T9 | Str (non-finesse) | `machadosuperior` | **11.5** | 13.2 | 12.4 |
 | T9 | Dex (finesse) | `drowdoubleblade` | 9.7 | **13.2** | 11.4 |
-| T9 | **gap** | DEX-best vs STR-best | | | **+25%** |
+| T9 | **gap** | DEX-best vs STR-best | | | **+15%** |
 
 ### dual_wield
 
 | Tier | Scaling | Weapon | STR build | DEX build | HYB build |
 |---|---|---|---|---|---|
-| T5 | Dex (finesse) | `Garras` | 8.5 | **11.9** | 10.3 |
+| T5 | Dex (finesse) | `Garras` | 8.0 | **11.2** | 9.7 |
 | T7 | Str (non-finesse) | `CimitarrasDuplas` | **10.1** | 11.3 | 10.9 |
 | T7 | Dex (finesse) | `katanawakizashi` | 9.2 | **12.7** | 11.1 |
 | T7 | **gap** | DEX-best vs STR-best | | | **+26%** |
-| T9 | Str (non-finesse) | `elvenroyalblades` | **10.2** | 11.5 | 11.1 |
+| T9 | Str (non-finesse) | `elvenroyalblades` | **12.2** | 13.8 | 13.3 |
 | T9 | Dex (finesse) | `rapierandshortsword` | 9.2 | **12.7** | 11.1 |
-| T9 | **gap** | DEX-best vs STR-best | | | **+25%** |
+| T9 | **gap** | DEX-best vs STR-best | | | **+4%** |
 
 
 ## 8b. Playstyle parity — STR vs DEX vs HYBRID
@@ -237,9 +237,9 @@ DEX builds compensate for lower defenses with faster swings. STR builds get HP +
 
 | Family | STR best (DPS) | DEX best (DPS) | HYB best (DPS) | Winner | DEX/STR gap |
 |---|---|---|---|---|---|
-| one_handed | `VikingSword` (8.2) | `florete` (10.3) | `VikingSword` (8.8) | **DEX** | +26% |
-| two_handed | `machadoduasmanos` (10.6) | `drowdoubleblade` (13.2) | `machadoduasmanos` (11.4) | **DEX** | +25% |
-| dual_wield | `machadosduplosthuria` (10.2) | `dualknives` (12.7) | `dualknives` (11.1) | **DEX** | +25% |
+| one_handed | `pequilholongsword` (10.6) | `pequilholongsword` (12.1) | `pequilholongsword` (11.4) | **DEX** | +14% |
+| two_handed | `machadosuperior` (11.5) | `machadosuperior` (13.2) | `machadosuperior` (12.4) | **DEX** | +15% |
+| dual_wield | `elvenroyalblades` (12.2) | `elvenroyalblades` (13.8) | `elvenroyalblades` (13.3) | **DEX** | +13% |
 | wrestling | `nunchaku` (6.3) | `nunchaku` (8.9) | `nunchaku` (7.6) | **DEX** | +41% |
 | ranged | `ArcoYumi` (6.7) | `ArcoYumi` (9.4) | `ArcoYumi` (8.0) | **DEX** | +40% |
 | throwing | `shuriken` (7.9) | `shuriken` (9.8) | `shuriken` (8.9) | **DEX** | +24% |
@@ -262,19 +262,19 @@ If a player insists on their archetype, what's their DPS ceiling vs the metagame
 
 | Family | Apex weapon | STR DPS | DEX DPS | HYB DPS | Gap STR↔DEX |
 |---|---|---|---|---|---|
-| one_handed | `florete` | 7.4 | 10.3 | 8.8 | +39% |
-| two_handed | `drowdoubleblade` | 9.7 | 13.2 | 11.4 | +36% |
-| dual_wield | `dualknives` | 9.2 | 12.7 | 11.1 | +38% |
+| one_handed | `pequilholongsword` | 10.6 | 12.1 | 11.4 | +14% |
+| two_handed | `machadosuperior` | 11.5 | 13.2 | 12.4 | +15% |
+| dual_wield | `elvenroyalblades` | 12.2 | 13.8 | 13.3 | +13% |
 | wrestling | `nunchaku` | 6.3 | 8.9 | 7.6 | +41% |
 | ranged | `ArcoYumi` | 6.7 | 9.4 | 8.0 | +40% |
 | throwing | `shuriken` | 7.9 | 9.8 | 8.9 | +24% |
 
 **Fun verdict:** 
-- A pure STR build's best weapon: `machadoduasmanos` (two_handed) at **10.6 DPS**.
-- A pure DEX build's best weapon: `drowdoubleblade` (two_handed) at **13.2 DPS**.
-- A pure HYB build's best weapon: `machadoduasmanos` (two_handed) at **11.4 DPS**.
+- A pure STR build's best weapon: `elvenroyalblades` (dual_wield) at **12.2 DPS**.
+- A pure DEX build's best weapon: `elvenroyalblades` (dual_wield) at **13.8 DPS**.
+- A pure HYB build's best weapon: `elvenroyalblades` (dual_wield) at **13.3 DPS**.
 
-DEX offensive ceiling is +25% above STR. This compensates STR's defensive advantages (more HP, heavy armor, shield if 1H). Target: 20-40% DEX offensive premium for parity with STR's defensive premium.
+DEX offensive ceiling is +13% above STR. This compensates STR's defensive advantages (more HP, heavy armor, shield if 1H). Target: 20-40% DEX offensive premium for parity with STR's defensive premium.
 
 ## 9. Cross-family fairness (DPS by craft band — 100/100/100 reference)
 
@@ -282,11 +282,11 @@ Avg DPS per family at each craft-skill band. Healthy: families overlap; no clear
 
 | Craft band | one_handed | two_handed | dual_wield | wrestling | ranged |
 |---|---|---|---|---|---|
-| 0-29 | 7.5 (n=30) | 6.8 (n=8) | — | — | 7.3 (n=2) |
-| 30-49 | 8.8 (n=24) | 7.7 (n=2) | 9.5 (n=3) | 8.3 (n=6) | 8.2 (n=15) |
-| 50-69 | 8.6 (n=34) | 8.0 (n=18) | 11.9 (n=3) | 8.0 (n=1) | 7.8 (n=13) |
-| 70-89 | 10.3 (n=31) | 9.9 (n=37) | 12.6 (n=14) | — | 8.2 (n=4) |
-| 90-100 | 10.3 (n=5) | 13.2 (n=15) | 12.7 (n=3) | — | — |
+| 0-29 | 7.3 (n=30) | 6.8 (n=8) | — | — | 7.3 (n=2) |
+| 30-49 | 8.6 (n=24) | 7.7 (n=2) | 9.3 (n=3) | 8.3 (n=6) | 8.2 (n=15) |
+| 50-69 | 8.5 (n=34) | 7.9 (n=18) | 11.2 (n=3) | 8.0 (n=1) | 7.8 (n=13) |
+| 70-89 | 10.7 (n=31) | 9.9 (n=37) | 12.5 (n=14) | — | 8.2 (n=4) |
+| 90-100 | 10.5 (n=5) | 13.4 (n=15) | 15.3 (n=3) | — | — |
 
 ---
 

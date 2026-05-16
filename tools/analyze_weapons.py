@@ -127,13 +127,15 @@ def dual_wield_profile(craft, finesse):
     # (Dex100) vs STR build (Dex60) swing ratio alone = +25%. Finesse gets
     # ONE crit tier higher as the small nudge toward ~+30% (stays in 25-35%).
     # (dice, speed, nonf_crit, fin_crit, script)
-    if   t <= 4: dice, sp, ncr, fcr, sc = "ONEHANDED_MID DAMAGE_NONE DAMAGE_NONE", "MELEE_LOW", "CRITICAL_MID",  "CRITICAL_HIGH", "damage2"
-    elif t == 5: dice, sp, ncr, fcr, sc = "ONEHANDED_MID DAMAGE_NONE DAMAGE_NONE", "MELEE_MID", "CRITICAL_MID",  "CRITICAL_HIGH", "damage2"
-    elif t == 6: dice, sp, ncr, fcr, sc = "ONEHANDED_HIGH DAMAGE_NONE DAMAGE_NONE","MELEE_LOW", "CRITICAL_HIGH", "CRITICAL_HIGH", "damage2"
-    elif t == 7: dice, sp, ncr, fcr, sc = "ONEHANDED_HIGH DAMAGE_NONE DAMAGE_NONE","MELEE_MID", "CRITICAL_MID",  "CRITICAL_HIGH", "damage2"
-    elif t == 8: dice, sp, ncr, fcr, sc = "ONEHANDED_HIGH ONEHANDED_LOW DAMAGE_NONE","MELEE_MID","CRITICAL_HIGH","CRITICAL_HIGH", "damage2"
-    else:        dice, sp, ncr, fcr, sc = "ONEHANDED_HIGH ONEHANDED_MID DAMAGE_NONE","MELEE_MID","CRITICAL_HIGH","CRITICAL_HIGH", "damage2"
-    return dice, sp, (fcr if finesse else ncr), sc
+    # lvl: target magnitude for the PRIMARY damage slot (0=LOW,1=MID,2=HIGH).
+    # The generator maps this onto the weapon's baseline slot pattern.
+    if   t <= 4: lvl, sp, ncr, fcr = 1, "MELEE_LOW", "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 5: lvl, sp, ncr, fcr = 1, "MELEE_MID", "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 6: lvl, sp, ncr, fcr = 2, "MELEE_LOW", "CRITICAL_HIGH", "CRITICAL_HIGH"
+    elif t == 7: lvl, sp, ncr, fcr = 2, "MELEE_MID", "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 8: lvl, sp, ncr, fcr = 2, "MELEE_MID", "CRITICAL_HIGH", "CRITICAL_HIGH"
+    else:        lvl, sp, ncr, fcr = 2, "MELEE_HIGH","CRITICAL_HIGH", "CRITICAL_HIGH"
+    return lvl, sp, (fcr if finesse else ncr)
 
 # ---- Phase B: two_handed cleanup ----
 APPLY_TWO_HANDED_CLEANUP = True
@@ -167,14 +169,14 @@ def two_handed_profile(craft, finesse):
     +25-35% above via the Dex100/Dex60 swing ratio + a +1 crit-tier nudge.
     2H dice cap = TWOHANDED_HIGH (4d4)."""
     t = min(9, int(craft // 10))
-    if   t <= 3: dice, sp, ncr, fcr = "TWOHANDED_LOW DAMAGE_NONE DAMAGE_NONE",  "MELEE_LOW", "CRITICAL_LOW",  "CRITICAL_MID"
-    elif t == 4: dice, sp, ncr, fcr = "TWOHANDED_LOW DAMAGE_NONE DAMAGE_NONE",  "MELEE_MID", "CRITICAL_LOW",  "CRITICAL_MID"
-    elif t == 5: dice, sp, ncr, fcr = "TWOHANDED_MID DAMAGE_NONE DAMAGE_NONE",  "MELEE_LOW", "CRITICAL_MID",  "CRITICAL_HIGH"
-    elif t == 6: dice, sp, ncr, fcr = "TWOHANDED_MID DAMAGE_NONE DAMAGE_NONE",  "MELEE_MID", "CRITICAL_MID",  "CRITICAL_HIGH"
-    elif t == 7: dice, sp, ncr, fcr = "TWOHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_LOW", "CRITICAL_MID",  "CRITICAL_HIGH"
-    elif t == 8: dice, sp, ncr, fcr = "TWOHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_MID", "CRITICAL_HIGH", "CRITICAL_HIGH"
-    else:        dice, sp, ncr, fcr = "TWOHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_HIGH","CRITICAL_HIGH", "CRITICAL_HIGH"
-    return dice, sp, (fcr if finesse else ncr), "damage2"
+    if   t <= 3: lvl, sp, ncr, fcr = 0, "MELEE_LOW", "CRITICAL_LOW",  "CRITICAL_MID"
+    elif t == 4: lvl, sp, ncr, fcr = 0, "MELEE_MID", "CRITICAL_LOW",  "CRITICAL_MID"
+    elif t == 5: lvl, sp, ncr, fcr = 1, "MELEE_LOW", "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 6: lvl, sp, ncr, fcr = 1, "MELEE_MID", "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 7: lvl, sp, ncr, fcr = 2, "MELEE_LOW", "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 8: lvl, sp, ncr, fcr = 2, "MELEE_MID", "CRITICAL_HIGH", "CRITICAL_HIGH"
+    else:        lvl, sp, ncr, fcr = 2, "MELEE_HIGH","CRITICAL_HIGH", "CRITICAL_HIGH"
+    return lvl, sp, (fcr if finesse else ncr)
 
 # ---- Phase C: one_handed cleanup ----
 APPLY_ONE_HANDED_CLEANUP = True
@@ -191,13 +193,13 @@ def one_handed_profile(craft, finesse):
     still dies (all tier-mates converge), median/starter weapons stay stable.
     Premium identical to the conservative draft (+25-28%)."""
     t = min(7, int(craft // 10))
-    if   t <= 2: dice, sp, ncr, fcr = "ONEHANDED_LOW DAMAGE_NONE DAMAGE_NONE",  "MELEE_MID",  "CRITICAL_LOW",  "CRITICAL_MID"
-    elif t == 3: dice, sp, ncr, fcr = "ONEHANDED_MID DAMAGE_NONE DAMAGE_NONE",  "MELEE_MID",  "CRITICAL_LOW",  "CRITICAL_MID"
-    elif t == 4: dice, sp, ncr, fcr = "ONEHANDED_MID DAMAGE_NONE DAMAGE_NONE",  "MELEE_HIGH", "CRITICAL_MID",  "CRITICAL_HIGH"
-    elif t == 5: dice, sp, ncr, fcr = "ONEHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_MID",  "CRITICAL_MID",  "CRITICAL_HIGH"
-    elif t == 6: dice, sp, ncr, fcr = "ONEHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_HIGH", "CRITICAL_MID",  "CRITICAL_HIGH"
-    else:        dice, sp, ncr, fcr = "ONEHANDED_HIGH DAMAGE_NONE DAMAGE_NONE", "MELEE_HIGH", "CRITICAL_HIGH", "CRITICAL_HIGH"
-    return dice, sp, (fcr if finesse else ncr), "damage2"
+    if   t <= 2: lvl, sp, ncr, fcr = 0, "MELEE_MID",  "CRITICAL_LOW",  "CRITICAL_MID"
+    elif t == 3: lvl, sp, ncr, fcr = 1, "MELEE_MID",  "CRITICAL_LOW",  "CRITICAL_MID"
+    elif t == 4: lvl, sp, ncr, fcr = 1, "MELEE_HIGH", "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 5: lvl, sp, ncr, fcr = 2, "MELEE_MID",  "CRITICAL_MID",  "CRITICAL_HIGH"
+    elif t == 6: lvl, sp, ncr, fcr = 2, "MELEE_HIGH", "CRITICAL_MID",  "CRITICAL_HIGH"
+    else:        lvl, sp, ncr, fcr = 2, "MELEE_HIGH", "CRITICAL_HIGH", "CRITICAL_HIGH"
+    return lvl, sp, (fcr if finesse else ncr)
 
 # ============================================================
 #       PER-WEAPON OVERRIDE TABLES (legacy model — kept off for
@@ -319,6 +321,70 @@ def crit_script_to_mult(script):
     if "damage3" in s: return 3
     if "damage2" in s: return 2
     return 1
+
+# ── Identity-preserving retier ────────────────────────────────────────────
+# EpicMainDamage = "<SLASH> <PIERCE> <BLUNT>". The slot pattern (which types
+# are non-NONE, multi-type, primary vs secondary) is WEAPON IDENTITY and must
+# come from the pre-rebalance baseline — only dice MAGNITUDE is a tier lever.
+_LEVELS = ["LOW", "MID", "HIGH"]
+
+def _split_tier(tok):
+    """'ONEHANDED_MID' -> ('ONEHANDED', 1); 'DAMAGE_NONE' -> (None,-1)."""
+    tok = (tok or "").strip().upper()
+    if tok in ("", "DAMAGE_NONE"): return None, -1
+    cat, _, lvl = tok.rpartition("_")
+    return (cat or tok), (_LEVELS.index(lvl) if lvl in _LEVELS else 1)
+
+def rescale_epic(baseline_epic, target_level):
+    """Keep the baseline slot pattern + relative gaps; shift magnitude so the
+    primary (highest) slot lands at target_level (0=LOW,1=MID,2=HIGH).
+    Mace stays blunt, rapier stays pierce, multi-type stays multi-type."""
+    parts = (baseline_epic or "").split()
+    while len(parts) < 3: parts.append("DAMAGE_NONE")
+    slots = [_split_tier(p) for p in parts[:3]]
+    levels = [lv for _, lv in slots if lv >= 0]
+    if not levels:                      # nothing to scale
+        return "DAMAGE_NONE DAMAGE_NONE DAMAGE_NONE"
+    shift = target_level - max(levels)
+    out = []
+    for cat, lv in slots:
+        if lv < 0:
+            out.append("DAMAGE_NONE")
+        else:
+            nl = max(0, min(2, lv + shift))
+            out.append(f"{cat}_{_LEVELS[nl]}")
+    return " ".join(out)
+
+_BASELINE_REF = "bf8665085"   # pre-rebalance commit — the identity source
+_baseline_cache = None
+def load_baseline():
+    """{norm_ot: {'epic': str, 'name': str, 'crit': [full CriticalHitScripts lines]}}
+    parsed from the pre-rebalance itemdesc at _BASELINE_REF."""
+    global _baseline_cache
+    if _baseline_cache is not None: return _baseline_cache
+    import subprocess
+    txt = subprocess.run(
+        ["git", "show", f"{_BASELINE_REF}:pkg/systems/combat/itemdesc.cfg"],
+        cwd=REPO, capture_output=True, text=True, errors="replace").stdout
+    out, cur = {}, None
+    for line in txt.split("\n"):
+        m = re.match(r"\s*Weapon\s+(0x[0-9A-Fa-f]+|[0-9]+)", line)
+        if m:
+            cur = {"ot": norm_ot(m.group(1)), "epic": "", "name": "", "crit": []}
+            continue
+        if cur is None: continue
+        if line.strip() == "}":
+            if cur["epic"] or cur["crit"]:
+                out[cur["ot"]] = cur
+            cur = None; continue
+        mm = re.match(r"\s*(\S+)\s+(.*?)\s*$", line)
+        if not mm: continue
+        k, v = mm.group(1), mm.group(2).strip()
+        if   k == "EpicMainDamage":     cur["epic"] = v
+        elif k == "Name":               cur["name"] = v
+        elif k == "CriticalHitScripts": cur["crit"].append(v)
+    _baseline_cache = out
+    return out
 
 def parse_weapons():
     """Prefer the PSV cache; fall back to parsing itemdesc.cfg directly so the
@@ -559,16 +625,22 @@ def compute_dps(w, apply_fixes, craft_skill, profile=None):
         if APPLY_DUAL_WIELD_CLEANUP and attr == "Dual_Wield":
             # Phase A: dual_wield uses the clean rule-based profile, bypassing
             # all legacy P-tables for this family.
-            ndice, nspd, ncrit, nsc = dual_wield_profile(craft_skill, finesse)
-            epic, spd_tier, crit_tier, mult = ndice, nspd, ncrit, crit_script_to_mult(nsc)
+            lvl, spd_tier, crit_tier = dual_wield_profile(craft_skill, finesse)
+            _bl = load_baseline().get(norm_ot(w["ObjType"]))
+            epic = rescale_epic(_bl["epic"] if _bl else w["EpicMainDamage"], lvl)
+            mult = crit_script_to_mult(" ".join(_bl["crit"]) if _bl else w["CriticalHitScripts"])
         elif APPLY_TWO_HANDED_CLEANUP and attr == "Two_Handed":
             # Phase B: two_handed clean rule-based profile.
-            ndice, nspd, ncrit, nsc = two_handed_profile(tier_override_craft(name, craft_skill), finesse)
-            epic, spd_tier, crit_tier, mult = ndice, nspd, ncrit, crit_script_to_mult(nsc)
+            lvl, spd_tier, crit_tier = two_handed_profile(tier_override_craft(name, craft_skill), finesse)
+            _bl = load_baseline().get(norm_ot(w["ObjType"]))
+            epic = rescale_epic(_bl["epic"] if _bl else w["EpicMainDamage"], lvl)
+            mult = crit_script_to_mult(" ".join(_bl["crit"]) if _bl else w["CriticalHitScripts"])
         elif APPLY_ONE_HANDED_CLEANUP and attr == "One_Handed":
             # Phase C: one_handed clean rule-based profile.
-            ndice, nspd, ncrit, nsc = one_handed_profile(craft_skill, finesse)
-            epic, spd_tier, crit_tier, mult = ndice, nspd, ncrit, crit_script_to_mult(nsc)
+            lvl, spd_tier, crit_tier = one_handed_profile(craft_skill, finesse)
+            _bl = load_baseline().get(norm_ot(w["ObjType"]))
+            epic = rescale_epic(_bl["epic"] if _bl else w["EpicMainDamage"], lvl)
+            mult = crit_script_to_mult(" ".join(_bl["crit"]) if _bl else w["CriticalHitScripts"])
         elif APPLY_P1_2H_LIFT and name in P1_TWO_HANDED_LIFT:
             ns, nc, sc, _ = P1_TWO_HANDED_LIFT[name]
             spd_tier, crit_tier, mult = ns, nc, crit_script_to_mult(sc)
