@@ -691,6 +691,35 @@ function DrawSkillRow(byref gump, byref respec_data, skill, x, y, cost, refund_b
 	return y + 22;
 endfunction
 
+// Reverses the persistent stat/privilege side-effects an ability applied at
+// purchase time in comprarHabilidade (:charactercreation:habilidades). Each
+// branch is the exact inverse of one purchase mutation so a buy+remove nets
+// to zero. Called after the ability is erased from myhabs.
+//
+// BOLSA_INFINITA caveat: its purchase does `carrying_capacity_mod := 120`
+// (absolute, clobbering any prior value), so `-= 120` here is only exact when
+// it was the sole carry source. With PACK_MULE also active the prior +60 was
+// already lost at purchase time — a known asymmetry that lives in the
+// purchase code, not here.
+function ReverseAbilityPurchaseEffects(who, hab_id)
+	var id := CInt(hab_id);
+
+	if (id == ABILITY_ID::CACADOR_IMPLACAVEL || id == ABILITY_ID::RESISTENCIA_DO_DESERTO)
+		var hitsmod := CInt(GetObjProperty(who, "hitsmod")) - 20;
+		SetObjProperty(who, "hitsmod", hitsmod);
+		recalcvitals(who);
+	elseif (id == ABILITY_ID::ELO_NATURAL)
+		EraseObjProperty(who, "empatiacomanimais");
+	elseif (id == ABILITY_ID::TIRO_EM_MOVIMENTO)
+		who.disable("firewhilemoving");
+		RevokePrivilege(who, "firewhilemoving");
+	elseif (id == ABILITY_ID::PACK_MULE)
+		who.carrying_capacity_mod := who.carrying_capacity_mod - 60;
+	elseif (id == ABILITY_ID::BOLSA_INFINITA)
+		who.carrying_capacity_mod := who.carrying_capacity_mod - 120;
+	endif
+endfunction
+
 // =============================================================================
 // ABILITY REMOVAL
 // =============================================================================
@@ -859,6 +888,7 @@ function AbilityRemoval(who, npc)
 			buy[selected_key] := 1;
 			SetObjProperty(who, "myhabs", habs);
 			SetObjProperty(who, "buyhab", buy);
+			ReverseAbilityPurchaseEffects(who, selected_hab);
 			SendSysMessageEx(who, selected_nome + " removida completamente!", SSM_INFO);
 		endif
 
@@ -883,6 +913,10 @@ function AbilityRemoval(who, npc)
 
 	SetObjProperty(who, "myhabs", habs);
 	SetObjProperty(who, "buyhab", buy);
+
+	// Reverse purchase-time stat/privilege side-effects now that the ability
+	// is gone from myhabs (hitsmod, carry weight, firewhilemoving, etc.).
+	ReverseAbilityPurchaseEffects(who, selected_hab);
 
 	// Give back the pergaminho
 	var pergaminho_name := "pergaminho_" + selected_key;
