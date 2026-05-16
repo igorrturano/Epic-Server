@@ -370,7 +370,10 @@ function ValidateSpellRequirements(who, spell_data, spell_type)
             // Every spellcaster school requires the spell to be in the
             // grimoire. Trickster (SENSIBILIDADE_ARCANA) and GMs bypass.
             if (!who.cmdlevel && spell_data.circle != 0)
-                if (!MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
+                var _cd_ma := GetObjProperty(who, "chardata");
+                var _arcane_sensitive := MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)
+                    || (_cd_ma != error && _cd_ma && _cd_ma.subclasse == "Malandro_Arcano");
+                if (!_arcane_sensitive)
                     var spellBookInfo := FindSpellInSpellBooks(who, spell_data.id);
                     if (!spellBookInfo.found)
                         SendSysMessageEx(who, "Voce nao possui a magia " + spell_data.name + " no seu grimorio.", SSM_FAIL);

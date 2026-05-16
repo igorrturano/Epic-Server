@@ -9,6 +9,7 @@ include ":debug:Controller/DebugController";
 include ":gumps:gumps";
 include ":attributes:attributes";
 include ":attributes:skillCheck";
+include ":taming:petidentity";
 include ":spells:summon";
 include ":timedScripts:timedScripts";
 include "include/epicConstants";
@@ -272,7 +273,7 @@ class WildSummoning(CombatAbility)
             return false;
         endif
 
-        if (targ.script[":ghaia:tamed"])
+        if (IsTamedPet(targ))
             Message("Voce so pode criar vinculos com criaturas selvagens.").SendSys(who);
             return false;
         endif

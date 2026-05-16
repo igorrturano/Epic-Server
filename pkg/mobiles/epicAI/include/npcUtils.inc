@@ -56,3 +56,19 @@ function NPC_GetPlayersPetsAndSummonsNearby(mobile)
     endforeach
     return enemies;
 endfunction
+
+// IsNonCombatantPet: an owned animal that must never fight, never be
+// targeted by hostile AI, always flee, and contribute zero threat. This is
+// the grey (neutral-alignment) pet that walks beside its owner. War pets
+// (alignment == 1) and summons are combatants and are excluded. Mounts
+// while ridden are already excluded upstream by the defender.hidden guard
+// in CanFight; the economy-side mount slot exemption is handled in Phase 3.
+function IsNonCombatantPet(creature)
+    if (!creature || !creature.master)
+        return 0;
+    endif
+    if (GetObjProperty(creature, "summoned"))
+        return 0;
+    endif
+    return (creature.alignment == 0);
+endfunction
