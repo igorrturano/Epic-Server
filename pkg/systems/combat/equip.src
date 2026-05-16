@@ -261,14 +261,11 @@ program equipweapon(who, item)
 		EraseObjProperty(who, "twohanded");
 	endif
 
-	// Steam Legs: +50 carry capacity
-	if (item.objtype == 0xFFC2)
-		who.carrying_capacity_mod := who.carrying_capacity_mod + 50;
-	endif
-
-	// Mochila de Costas: +50 carry capacity
-	if (item.objtype == 0xEDA0)
-		who.carrying_capacity_mod := who.carrying_capacity_mod + 20;
+	// Carry-weight bonus sources are recomputed from scratch (single source of
+	// truth) instead of += here — prevents the accumulator drift that let
+	// nerfed/old bonuses stick. The item is already on its layer at equip time.
+	if (item.objtype == 0xFFC2 || item.objtype == 0xEDA0)
+		MobileWrapper(who).RecalcCarryWeightMod();
 	endif
 
 	// Steam Armor: Dex penalty (double heaviest normal armor)

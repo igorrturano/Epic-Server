@@ -41,4 +41,5 @@ class IMobileWrapper()
 
 	uninit function ApplyItemModifiers(this, byRef itemWrapped);
 	uninit function RemoveItemModifiers(this, byRef itemWrapped);
+	uninit function RecalcCarryWeightMod(this, excludeSerial);
 endclass
