@@ -132,11 +132,29 @@ def dual_wield_profile(craft, finesse):
 # ---- Phase B: two_handed cleanup ----
 APPLY_TWO_HANDED_CLEANUP = True
 
-# CrescentBlade is the designated Dex-2H anchor (user call). itemdesc has no
-# Finesse flag today — the generator must ADD `Finesse 1` to these.
-TWO_HANDED_MAKE_FINESSE = {"CrescentBlade"}
+# 2H weapons promoted to finesse (Dex-2H line). itemdesc has no Finesse flag
+# today — the generator ADDs `Finesse 1`. Backbone Axe/GreatSword/Mace
+# (38 weapons) stays pure Str and is never in this set.
+TWO_HANDED_MAKE_FINESSE = {
+    "CrescentBlade",            # original Dex-2H anchor
+    "alurieldoublebladed",      # bladed-staff line (twins of already-finesse BladedStaff)
+    "baduranbladedstaff",
+    "drowdoubleblade",          # signature apex — forced top tier (see override)
+    "gulthrakdoublebladedstaff",
+    "aiglatrident",             # agile thrusting spear
+    "pequilhowarfork",
+}
+# Signature weapons with a forced tier regardless of craft skill (design call).
+TWO_HANDED_TIER_OVERRIDE = {"drowdoubleblade": 9}  # apex Dex-2H, top tier
 # 2H weapons that keep a flavor crit script (Option-3, filled after dry-run).
 TWO_HANDED_PRESERVE_CRIT = {"marteloduasmanos"}  # signature stun (Garras-precedent)
+
+def tier_override_craft(name, craft):
+    """A forced-tier signature weapon ignores its recipe craft skill for
+    tiering (returns synthetic craft = tier*10). Used for drowdoubleblade."""
+    if name in TWO_HANDED_TIER_OVERRIDE:
+        return TWO_HANDED_TIER_OVERRIDE[name] * 10
+    return craft
 
 def two_handed_profile(craft, finesse):
     """Single-swing 2H. Str-2H = heavy-hitter apex; finesse-2H (Dex) sits
@@ -539,7 +557,7 @@ def compute_dps(w, apply_fixes, craft_skill, profile=None):
             epic, spd_tier, crit_tier, mult = ndice, nspd, ncrit, crit_script_to_mult(nsc)
         elif APPLY_TWO_HANDED_CLEANUP and attr == "Two_Handed":
             # Phase B: two_handed clean rule-based profile.
-            ndice, nspd, ncrit, nsc = two_handed_profile(craft_skill, finesse)
+            ndice, nspd, ncrit, nsc = two_handed_profile(tier_override_craft(name, craft_skill), finesse)
             epic, spd_tier, crit_tier, mult = ndice, nspd, ncrit, crit_script_to_mult(nsc)
         elif APPLY_ONE_HANDED_CLEANUP and attr == "One_Handed":
             # Phase C: one_handed clean rule-based profile.
