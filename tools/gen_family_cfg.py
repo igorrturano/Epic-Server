@@ -65,10 +65,13 @@ def main(family, apply=False):
                 depth -= 1
                 if started and depth == 0: i += 1; break
             i += 1
-        props = {}
+        props, cur_crit = {}, []
         for bl in block:
             mm = re.match(r"\s*(\S+)\s+(.*?)\s*$", bl)
-            if mm: props.setdefault(mm.group(1), mm.group(2))
+            if mm:
+                props.setdefault(mm.group(1), mm.group(2))
+                if mm.group(1) == "CriticalHitScripts":
+                    cur_crit.append(mm.group(2).strip())
         if (props.get("Attribute") or "").strip() != cfg["attr"]:
             out.extend(block); continue
 
@@ -76,36 +79,49 @@ def main(family, apply=False):
         fin  = is_finesse(name, props, cfg["make_finesse"])
         skill = recipes.get(ot, (0.0,"",""))[0]
         skill = aw.tier_override_craft(name, skill)  # signature forced-tier weapons
-        dice, spd, crit, script = cfg["profile"](skill, fin)
-        want = {"EpicMainDamage": dice, "EpicSpeed": spd,
-                "EpicCriticalChance": crit,
-                "CriticalHitScripts": f":combat:criticalHitScripts/{script}"}
-        if cfg.get("offhand_mirror"):
-            # dual-wield = twin identical blades; offhand swing reads
-            # EpicOffDamage (DamageController.inc:277). Mirror mainhand so
-            # the model's "offhand uses same dice" assumption holds in-engine.
-            want["EpicOffDamage"] = dice
-        if name in cfg["preserve"]:
-            want.pop("CriticalHitScripts")
+
+        # IDENTITY comes from the pre-rebalance baseline: damage-type slot
+        # pattern (EpicMainDamage) and crit scripts. Only MAGNITUDE (dice
+        # level), speed and crit-chance are tier levers.
+        b = aw.load_baseline().get(ot)
+        base_epic = (b["epic"] if b and b.get("epic") else props.get("EpicMainDamage",""))
+        base_crit = b["crit"] if b else None          # list of script values, or None
+        lvl, spd, crit = cfg["profile"](skill, fin)
+        epic = aw.rescale_epic(base_epic, lvl)
+
+        want = {"EpicMainDamage": epic, "EpicSpeed": spd, "EpicCriticalChance": crit}
+        if cfg.get("offhand_mirror"):                 # twin blades
+            want["EpicOffDamage"] = epic
         add_finesse = name in cfg["make_finesse"] and props.get("Finesse","").strip() not in ("1","i1")
+        # Repair crit scripts back to baseline only if they actually diverged
+        # (keeps the generator idempotent). Fixes the damage2-flattening +
+        # WarHammer stun-loss + duplicate-line corruption we introduced.
+        crit_repair = base_crit is not None and cur_crit != base_crit
 
         new_block, seen, close_idx = [], set(), None
         for bl in block:
             mm = re.match(r"(\s*)(\S+)(\s+)(.*?)\s*$", bl)
-            if mm and mm.group(2) in want:
-                k = mm.group(2); seen.add(k)
-                if mm.group(4).strip() != want[k]:
-                    edits.append((name, ot, f"{k} {mm.group(4)}", f"{k} {want[k]}"))
-                new_block.append(f"{mm.group(1)}{k}{mm.group(3)}{want[k]}")
+            key = mm.group(2) if mm else None
+            if key == "CriticalHitScripts" and crit_repair:
+                continue                              # drop; baseline re-inserted
+            if mm and key in want:
+                seen.add(key)
+                if mm.group(4).strip() != want[key]:
+                    edits.append((name, ot, f"{key} {mm.group(4)}", f"{key} {want[key]}"))
+                new_block.append(f"{mm.group(1)}{key}{mm.group(3)}{want[key]}")
             else:
                 new_block.append(bl)
             if bl.strip() == "}": close_idx = len(new_block) - 1
-        order = ("EpicMainDamage","EpicOffDamage","EpicSpeed",
-                 "EpicCriticalChance","CriticalHitScripts")
+        order = ("EpicMainDamage","EpicOffDamage","EpicSpeed","EpicCriticalChance")
         ins = [f"\t{k}\t{want[k]}" for k in order if k not in seen and k in want]
         for k in order:
             if k not in seen and k in want:
                 edits.append((name, ot, f"(missing {k})", f"{k} {want[k]}"))
+        if crit_repair:
+            for cs in base_crit:
+                ins.append(f"\tCriticalHitScripts\t{cs}")
+            edits.append((name, ot, "crit "+(", ".join(c.split('/')[-1] for c in cur_crit) or "none"),
+                          "baseline "+", ".join(c.split('/')[-1] for c in base_crit)))
         if add_finesse:
             ins.insert(0, "\tFinesse\t1")
             edits.append((name, ot, "(no Finesse)", "Finesse 1  [Dex-anchor]"))
