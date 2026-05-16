@@ -15,7 +15,7 @@ program Tame(who)
 			SetObjproperty(targ, "script", targ.script);
 		endif
 
-		targ.script := ":ghaia:tamed";
+		targ.script := ":epicai:tamedBrain";
 		RestartScript(targ);
 
 		Run_Script_To_Completion(":death:npcdeath", { targ });
