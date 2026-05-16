@@ -242,13 +242,17 @@ function ValidateSpellAccess(who, spell_type)
             endif
             
         SPELL_TYPE_PALADIN:
-            if (!MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
+            var _cd_pal := GetObjProperty(who, "chardata");
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
+                && !(_cd_pal != error && _cd_pal && _cd_pal.subclasse == "Paladino"))
                 SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
                 return 0;
             endif
-            
+
         SPELL_TYPE_DEMONHUNTER:
-            if (!MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
+            var _cd_dh := GetObjProperty(who, "chardata");
+            if (!MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO)
+                && !(_cd_dh != error && _cd_dh && _cd_dh.subclasse == "Cacador_de_Demonios"))
                 SendSysMessageEx(who, "Apenas Cacadores de Demonios podem usar este comando.", SSM_FAIL);
                 return 0;
             endif

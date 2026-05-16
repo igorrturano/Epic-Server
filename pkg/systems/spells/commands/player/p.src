@@ -23,8 +23,12 @@ program magia_paladin(who, spellname := "")
 		spellname := params[2];
 	endif
 
-	// Check if player has paladin ability
-	var isPaladin := MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA);
+	// Paladinos têm acesso às magias divinas desde o nível 1 (pela subclasse).
+	// O HasAbility é mantido para personagens legados que ganharam o acesso
+	// via CONSAGRACAO_DIVINA antes do path-rework.
+	var _cd := GetObjProperty(who, "chardata");
+	var isPaladin := MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
+		|| (_cd != error && _cd && _cd.subclasse == "Paladino");
 	if (!isPaladin)
 		SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
 		return 0;
