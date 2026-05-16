@@ -75,6 +75,7 @@ def main(family, apply=False):
         name = (props.get("Name") or "").strip()
         fin  = is_finesse(name, props, cfg["make_finesse"])
         skill = recipes.get(ot, (0.0,"",""))[0]
+        skill = aw.tier_override_craft(name, skill)  # signature forced-tier weapons
         dice, spd, crit, script = cfg["profile"](skill, fin)
         want = {"EpicMainDamage": dice, "EpicSpeed": spd,
                 "EpicCriticalChance": crit,
