@@ -261,9 +261,14 @@ function GetMaxWarPets(who)
 endfunction
 
 // NonWar = criaturas cinza (alignment 0) E montarias. Pool unico que escala
-// com Taming: 1 slot a cada 20 pontos (Taming 100 -> 5; Taming 0-19 -> 0).
+// com Taming: 1 slot a cada 20 pontos, com piso de 1 para que todo mundo
+// tenha ao menos uma montaria/pet utilitario (Taming 0-19 -> 1, 100 -> 5).
 function GetMaxNonWarPets(who)
-	return CInt( EffectiveSkill(who, "Taming") / 20 );
+	var slots := CInt( EffectiveSkill(who, "Taming") / 20 );
+	if (slots < 1)
+		slots := 1;
+	endif
+	return slots;
 endfunction
 
 // Agregado mantido por compatibilidade: paperdoll/followers/recall leem este
