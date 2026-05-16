@@ -859,6 +859,9 @@ function AbilityRemoval(who, npc)
 			buy[selected_key] := 1;
 			SetObjProperty(who, "myhabs", habs);
 			SetObjProperty(who, "buyhab", buy);
+			// Single source of truth: recompute carry-weight in case a pool
+			// ability ever contributes to it (none today; future-proof + idempotent).
+			MobileWrapper(who).RecalcCarryWeightMod();
 			SendSysMessageEx(who, selected_nome + " removida completamente!", SSM_INFO);
 		endif
 
@@ -883,6 +886,12 @@ function AbilityRemoval(who, npc)
 
 	SetObjProperty(who, "myhabs", habs);
 	SetObjProperty(who, "buyhab", buy);
+
+	// Recompute carry-weight from the remaining sources (single source of
+	// truth). Runs after myhabs is persisted so HasAbility no longer sees the
+	// removed ability — covers PACK_MULE / BOLSA_INFINITA and any future
+	// carry-weight ability with no per-ability reversal logic.
+	MobileWrapper(who).RecalcCarryWeightMod();
 
 	// Give back the pergaminho
 	var pergaminho_name := "pergaminho_" + selected_key;

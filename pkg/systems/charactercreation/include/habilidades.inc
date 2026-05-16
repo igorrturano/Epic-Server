@@ -6,6 +6,7 @@ include "include/epicUtils";
 include ":tn:equipment";
 include ":abilities:include/models/Ability";
 include ":census:include/CensusController";
+include ":wrappers:Objects/Model/MobileWrapper";
 include "/include/math";
 include ":fls_core:fls_characters";
 function NivelHabilidade(habilidade, classe)
@@ -491,8 +492,6 @@ function comprarHabilidade(who, item, nv:=-1)
 				SendSysMessageEx(who, "Apenas engenheiros podem comprar essa habilidade.", SSM_FAIL);
 				return 0;
 			endif
-		elseif (escolhida_id == ABILITY_ID::BOLSA_INFINITA)
-			who.carrying_capacity_mod := 120;
 		elseif (escolhida_id == ABILITY_ID::ELEMENTAL_AFFINITY)
 			var damage_effect := struct{};
 			damage_effect.+fire_arrow := 0;
@@ -509,8 +508,6 @@ function comprarHabilidade(who, item, nv:=-1)
 			if (wing_type)
 				SetObjProperty(who, "chosen_wings", wing_type);
 			endif
-		elseif (escolhida_id == ABILITY_ID::PACK_MULE)
-			who.carrying_capacity_mod := who.carrying_capacity_mod + 60;
 		elseif(escolhida_id == ABILITY_ID::AURA_DE_FE)
 			ChooseFlag(who);
 		endif
@@ -518,6 +515,14 @@ function comprarHabilidade(who, item, nv:=-1)
 		habs[nivel] := 2;
 		SetObjProperty(who, "buyhab", habs);
 		SetObjProperty(who, "myhabs", myhabs);
+
+		// Carry-weight abilities are recomputed from scratch (single source of
+		// truth in MobileWrapper) AFTER myhabs is persisted so HasAbility sees
+		// the just-bought ability. Replaces the old in-place += 60 / := 120.
+		if (escolhida_id == ABILITY_ID::PACK_MULE || escolhida_id == ABILITY_ID::BOLSA_INFINITA)
+			MobileWrapper(who).RecalcCarryWeightMod();
+		endif
+
 		if (who.cmdlevel == 0)
 			CensusTrackAbility(escolhida_id);
 		endif

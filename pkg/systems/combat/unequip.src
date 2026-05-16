@@ -4,6 +4,7 @@ use cfgfile;
 
 include ":attributes:attributes";
 include ":tn:equipment";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program unequipweapon(who, item)
 	var descmod_item := GetObjProperty(item, "descmod");
@@ -47,14 +48,11 @@ program unequipweapon(who, item)
 		EraseObjProperty(who, "twohanded");
 	endif
 
-	// Steam Legs: remove carry capacity bonus
-	if (item.objtype == 0xFFC2)
-		who.carrying_capacity_mod := who.carrying_capacity_mod - 50;
-	endif
-
-	// Mochila de Costas: remove carry capacity bonus
-	if (item.objtype == 0xEDA0)
-		who.carrying_capacity_mod := who.carrying_capacity_mod - 20;
+	// Carry-weight bonus recomputed from scratch (single source of truth).
+	// item.serial is excluded because this hook may run while the leaving
+	// item is still on its layer — keeps the result correct either way.
+	if (item.objtype == 0xFFC2 || item.objtype == 0xEDA0)
+		MobileWrapper(who).RecalcCarryWeightMod(item.serial);
 	endif
 
 	// Steam Armor: remove dex penalty
