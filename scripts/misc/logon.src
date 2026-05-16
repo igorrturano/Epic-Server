@@ -1,6 +1,7 @@
 use uo;
 use os;
 use polsys;
+use file;
 include ":fls_core:fls_characters";
 include "include/say";
 include "include/client";
@@ -10,6 +11,8 @@ include ":gumps:gumpPrompt";
 include ":charactercreation:resists";
 include ":attributes:advanceCheck";
 include ":attributes:skills";
+include ":datafile:datafile";
+include ":motd:motd_settings";
 
 program Logon(who)
 
@@ -105,6 +108,8 @@ program Logon(who)
 	LogonPets(who);
 	RecalcVitals(who);
 
+	MOTDLogon(who);
+
 	// Enforce skill cap when the player logs in
 	// EnforceSkillCap(who);
 
@@ -176,6 +181,44 @@ program Logon(who)
 	endif
 	return 1;
 endprogram
+
+// Abre a Mensagem do Dia ao logar conforme a preferencia do jogador:
+// sempre, apenas quando houver novidade (padrao), ou nunca.
+function MOTDLogon(who)
+	var data_file := DFOpenDataFile(":motd:settings", DF_CREATE);
+	if (data_file == error)
+		return;
+	endif
+	var data_elem := DFFindElement(data_file, who.acctname, DF_CREATE);
+	if (data_elem == error)
+		return;
+	endif
+
+	var mode := MOTD_GetMode(data_elem);
+	if (mode == MOTD_MODE_OFF)
+		return;
+	endif
+	if (mode == MOTD_MODE_ALWAYS)
+		Start_Script(":motd:motd", who);
+		return;
+	endif
+
+	// MOTD_MODE_UNREAD: so abre se motd.txt mudou desde a ultima leitura.
+	// Script de core: caminho relativo resolve a partir da raiz do POL.
+	var lines := ReadFile("pkg/systems/motd/motd.txt");
+	var current := "";
+	if (lines != error && lines.size() > 0)
+		current := CStr(lines[1]);
+	endif
+	var seenProp := data_elem.GetProp("FirstLine");
+	var seen := "";
+	if (seenProp != error)
+		seen := CStr(seenProp);
+	endif
+	if (current != seen)
+		Start_Script(":motd:motd", who);
+	endif
+endfunction
 
 function IsGm(who)
 	if (who.cmdlevel >= 1)
