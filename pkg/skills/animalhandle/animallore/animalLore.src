@@ -37,7 +37,7 @@ program skill_animal_lore(who)
 	endif
 	unloadConfigFile(":*:npcdesc");
 	var advance_flags;
-	if (creature.script == ":ghaia:tamed")
+	if (IsTamedPet(creature))
 		advance_flags := ADV_DISABLE;
 	else
 		advance_flags := ADV_SKILL;
@@ -168,7 +168,7 @@ var foodtype := GetDietByTaxonomy(taxonomy);
 	endif
 
 	var loyalty := "";
-	if (creature.script == ":ghaia:tamed")
+	if (IsTamedPet(creature))
 		loyalty := Gethappy(CInt(GetObjProperty(creature, "happiness")));
 	endif
 

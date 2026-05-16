@@ -412,7 +412,7 @@ function controlNPC(who, targ)
 		if ( !GetObjProperty(targ, "script") )
 			SetObjproperty(targ, "script", targ.Script);
 		endif
-		targ.script := ":ghaia:tamed";
+		targ.script := ":epicai:tamedBrain";
 		RestartScript(targ);
 		
 		Run_Script_To_Completion(":death:npcdeath", {targ});

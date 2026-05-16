@@ -6,6 +6,7 @@ include ":mounts:mounts";
 include ":charactercreation:habilidades";
 include ":stables:include/stable";
 include "include/NPCUtil";
+include "include/petidentity";
 include ":tn:cooldown";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
@@ -44,12 +45,37 @@ function GetPetCost(pet)
 
 endfunction
 
-/* funcao pega o custo dos pets. tbm atualiza os pets perdidos ou que foram transferidos*/
-function GetNumPets(who)
-	var num_tamed := 0;
+// IsTamedPet() vive em include/petidentity (leve) para consumidores
+// sensiveis poderem reutiliza-lo sem o peso de taming.inc. Reexportado
+// aqui via include para todos os callers existentes de :taming:taming.
+
+// Criatura de template montaria (mesmo gate que MP_Mount usa: npcdesc
+// Environment == "Mount"). Independe de estar sendo cavalgada agora.
+function IsMountType(pet)
+	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
+	var cfg := ReadConfigFile(":*:npcdesc");
+	return cfg[npctemplate.template].Environment == "Mount";
+endfunction
+
+// Categoria de slot: "war" (criatura evil de combate, cap 1) ou "nonwar"
+// (cinza/neutro OU montaria — nao-combatente, pool compartilhado Taming/20).
+function PetSlotCategory(pet)
+	if (pet.alignment == 0 || IsMountType(pet))
+		return "nonwar";
+	endif
+	return "war";
+endfunction
+
+/* Passo canonico sobre TamedPets. Poda entradas invalidas/summoned, persiste
+   a lista limpa, sincroniza who.followers e retorna o tally por categoria.
+   Pets no estabulo/limbo continuam do player mas nao custam slot. */
+function _TallyPets(who)
+	var war := 0;
+	var nonwar := 0;
 	var tamed := GetObjProperty(who, "TamedPets");
 	if ( !tamed )
-		return 0;
+		who.followers := 0;
+		return struct{ war := 0, nonwar := 0, total := 0 };
 	endif
 
 	foreach serial in tamed
@@ -69,10 +95,11 @@ function GetNumPets(who)
 		// ao player. Contratos expirados nao sao limpos aqui — o gump do post
 		// cuida disso no momento do resgate.
 		if ( !IsStabled(pet) && !IsInLimbo(pet) )
-			if (!Cint(pet.getTier()))
-				num_tamed := num_tamed+1;
+			var cost := GetPetCost(pet);
+			if (PetSlotCategory(pet) == "war")
+				war := war + cost;
 			else
-				num_tamed := num_tamed + Cint(pet.getTier());
+				nonwar := nonwar + cost;
 			endif
 		endif
 		sleepms(2);
@@ -82,8 +109,22 @@ function GetNumPets(who)
 		tamed := array;
 	endif
 	SetObjProperty(who, "TamedPets", tamed);
-	who.followers := num_tamed;
-	return num_tamed;
+	var total := war + nonwar;
+	who.followers := total;
+	return struct{ war := war, nonwar := nonwar, total := total };
+endfunction
+
+/* funcao pega o custo dos pets. tbm atualiza os pets perdidos ou que foram transferidos*/
+function GetNumPets(who)
+	return _TallyPets(who).total;
+endfunction
+
+function GetNumWarPets(who)
+	return _TallyPets(who).war;
+endfunction
+
+function GetNumNonWarPets(who)
+	return _TallyPets(who).nonwar;
 endfunction
 
 function GetNumSummons(who)
@@ -209,28 +250,47 @@ function ClearMasterLimboRef(master, pet_serial)
 	return 1;
 endfunction
 
-//numero maximo de pets que alguem pode ter
+// War pet = criatura evil (alignment 1). Cap 1 para todos; Ranger ganha +1
+// via a hab Camuflagem (sem rework do efeito — adiado). extrapets (bonus de
+// GM/evento) continua somando no lado de combate.
+function GetMaxWarPets(who)
+	var maxwar := 1;
+
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMUFLAGEM))
+		maxwar := maxwar + 1;
+	endif
+
+	maxwar := maxwar + cint( GetObjProperty(who, "extrapets") );
+
+	return maxwar;
+endfunction
+
+// NonWar = criaturas cinza (alignment 0) E montarias. Pool unico que escala
+// com Taming: 1 slot a cada 20 pontos, com piso de 1 para que todo mundo
+// tenha ao menos uma montaria/pet utilitario (Taming 0-19 -> 1, 100 -> 5).
+function GetMaxNonWarPets(who)
+	var slots := CInt( EffectiveSkill(who, "Taming") / 20 );
+	if (slots < 1)
+		slots := 1;
+	endif
+	return slots;
+endfunction
+
+// Agregado mantido por compatibilidade: paperdoll/followers/recall leem este
+// numero e continuam coerentes sem precisar conhecer a divisao por categoria.
 function GetMaxPets(who)
-	var maxpets := 1;
+	return GetMaxWarPets(who) + GetMaxNonWarPets(who);
+endfunction
 
-	//Influência da skill na quantidade
-	var skill := cint(EffectiveSkill(who, "Taming"));
-	if (skill >= 45 && skill < 75)
-		maxpets := maxpets + 1;
-	elseif (skill >= 75 && skill < 90)
-		maxpets := maxpets + 2;
-	elseif (skill >= 90)
-		maxpets := maxpets + 3;
+// Portao unico de aquisicao (tame/transfer/resurrect). Grandfather: so
+// bloqueia o NOVO pet; pets legados acima do cap nunca sao removidos aqui.
+function CanAcquirePet(who, pet)
+	var tally := _TallyPets(who);
+	var cost := GetPetCost(pet);
+	if (PetSlotCategory(pet) == "war")
+		return (tally.war + cost) <= GetMaxWarPets(who);
 	endif
-
-	//Influência de Habs na quantidade
-	if(MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM))
-		maxpets := maxpets + 1;
-	endif
-
-	maxpets := maxpets + cint( GetObjProperty(who, "extrapets") );
-
-	return maxpets;
+	return (tally.nonwar + cost) <= GetMaxNonWarPets(who);
 endfunction
 
 function GetMaxSummons(who)
@@ -377,7 +437,7 @@ function RessuscitarPet(corpse, owner, is_bandage := 0)
     var npc := CreateNpcFromTemplate(GetObjProperty(corpse, "npctemplate"), corpse.x, corpse.y, corpse.z, 0, corpse.realm);
     CopyPropsPet(corpse, npc);
     var corpse_parsed := corpse.name[13, len(corpse.name)-12];
-    npc.script := ":ghaia:tamed";
+    npc.script := ":epicai:tamedBrain";
     RestartScript(npc);
     SetName(npc, corpse_parsed);
     RecalcVitals(npc);
@@ -401,7 +461,7 @@ function RessuscitarPet(corpse, owner, is_bandage := 0)
     if (!owner)
         destama(npc.serial);
     else
-        if ((GetNumPets(owner) + GetPetCost(npc)) > GetMaxPets(owner))
+        if (!CanAcquirePet(owner, npc))
             SendSysMessageEx(owner, "Voce ja tem muitos animais.", SSM_FAIL);
             destama(npc.serial);
         elseif ( GetObjProperty(npc, "bond") == "fiel" && animais_fidelizados >= limite_animais)
