@@ -305,20 +305,24 @@ def parse_weapons():
     return parse_itemdesc()
 
 def norm_ot(s):
-    """Canonical objtype key. itemdesc uses zero-padded hex (0x0f49) but
-    fabricacaoDesc uses unpadded (0xF49) — normalize both to int-canonical
-    lowercase hex so recipe joins don't silently miss."""
+    """Canonical objtype key. POL config mixes representations:
+      - 0x-prefixed hex, zero-padded (itemdesc: 0x0f49) or not (fabricacao: 0xF49)
+      - bare decimal (itemdesc: `Weapon 11571`)
+    Parse 0x-prefixed as base-16, bare digits as base-10, emit one canonical
+    lowercase hex so every representation of the same item joins."""
+    s = str(s).strip()
     try:
-        return f"0x{int(str(s).strip(), 16):x}"
+        v = int(s, 16) if s.lower().startswith("0x") else int(s, 10)
+        return f"0x{v:x}"
     except (ValueError, TypeError):
-        return str(s).lower().strip()
+        return s.lower()
 
 def parse_itemdesc():
     text = Path(ITEMDESC_CFG).read_text(errors="replace")
     weapons = []
     cur = None
     for line in text.splitlines():
-        m = re.match(r"\s*Weapon\s+(0x[0-9A-Fa-f]+)", line)
+        m = re.match(r"\s*Weapon\s+(0x[0-9A-Fa-f]+|[0-9]+)", line)
         if m:
             cur = {"ObjType": norm_ot(m.group(1)), "_props": {}}
             continue
@@ -390,7 +394,7 @@ def parse_recipes_psv():
             line = raw.strip()
             if line.startswith("#"):                       # comment / commented template
                 continue
-            m = re.match(r"fabricacao\s+(0x[0-9A-Fa-f]+)", line)
+            m = re.match(r"fabricacao\s+(0x[0-9A-Fa-f]+|[0-9]+)", line)
             if m:
                 cur_ot = norm_ot(m.group(1)); cur_skill = 0.0; cur_comp = []
                 continue
@@ -434,7 +438,7 @@ def build_name_to_objtype():
     out = {}
     current_ot = None
     for line in text.splitlines():
-        m_obj = re.match(r"\s*Weapon\s+(0x[0-9A-Fa-f]+)", line)
+        m_obj = re.match(r"\s*Weapon\s+(0x[0-9A-Fa-f]+|[0-9]+)", line)
         if m_obj:
             current_ot = norm_ot(m_obj.group(1))
             continue
