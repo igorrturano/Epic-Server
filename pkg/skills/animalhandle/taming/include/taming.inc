@@ -6,6 +6,7 @@ include ":mounts:mounts";
 include ":charactercreation:habilidades";
 include ":stables:include/stable";
 include "include/NPCUtil";
+include "include/petidentity";
 include ":tn:cooldown";
 
 function ListTamablePetsNearLocation(x, y, z, range, realm := _DEFAULT_REALM)
@@ -44,25 +45,9 @@ function GetPetCost(pet)
 
 endfunction
 
-// Identidade canonica de "pet domado" — substitui os testes espalhados de
-// `script == ":ghaia:tamed"`. Drop-in fiel: enquanto o pet roda o brain
-// legado retorna igual ao teste antigo (inclui summons em :ghaia:tamed,
-// tratados ate a Phase 5). Apos migracao para :epicAI:brain identifica pelo
-// dono, excluindo summons. Brain script vira detalhe de implementacao.
-function IsTamedPet(creature)
-	if (!creature)
-		return 0;
-	endif
-	if (creature.script[":ghaia:tamed"])
-		return 1;
-	endif
-	if (creature.script[":epicAI:brain"])
-		return creature.master
-			&& GetObjProperty(creature, "owner")
-			&& !GetObjProperty(creature, "summoned");
-	endif
-	return 0;
-endfunction
+// IsTamedPet() vive em include/petidentity (leve) para consumidores
+// sensiveis poderem reutiliza-lo sem o peso de taming.inc. Reexportado
+// aqui via include para todos os callers existentes de :taming:taming.
 
 // Criatura de template montaria (mesmo gate que MP_Mount usa: npcdesc
 // Environment == "Mount"). Independe de estar sendo cavalgada agora.
