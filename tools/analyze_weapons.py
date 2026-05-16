@@ -27,7 +27,13 @@ import csv, re, statistics
 from collections import defaultdict
 from pathlib import Path
 
-REPO              = "/home/igorrturano/epic/epic-shard"
+# REPO is derived from this script's own location (tools/analyze_weapons.py
+# -> repo root is its parent's parent). This makes the analyzer operate on
+# whatever checkout it lives in — the worktree when run from the worktree,
+# main when run from main. Hardcoding an absolute path (the old N1 bug) made
+# it silently read/write the main repo even when run from a worktree branch,
+# producing stale artifacts that didn't match the shipped cfg.
+REPO              = str(Path(__file__).resolve().parent.parent)
 WEAPONS_PSV       = "/tmp/weapons_raw.psv"   # optional cache; falls back to itemdesc
 RECIPES_CFG       = f"{REPO}/pkg/systems/recipes/recipes.cfg"
 ITEMDESC_CFG      = f"{REPO}/pkg/systems/combat/itemdesc.cfg"
@@ -38,8 +44,8 @@ FABRICACAO_CFGS   = [
     f"{REPO}/pkg/skills/woodworking/carpentry/config/fabricacaoDesc.cfg",
     f"{REPO}/pkg/skills/DomesticWork/fabricacaoDesc.cfg",
 ]
-OUT_CSV           = "/home/igorrturano/epic/epic-shard/weapons_balance.csv"
-OUT_MD            = "/home/igorrturano/epic/epic-shard/weapons_balance_tiers.md"
+OUT_CSV           = f"{REPO}/weapons_balance.csv"
+OUT_MD            = f"{REPO}/weapons_balance_tiers.md"
 
 REF_STR, REF_DEX, REF_TAC = 100, 100, 100
 EFF_DEX = REF_DEX
@@ -623,6 +629,9 @@ def intended_tier(name, craft_skill, fam):
     Used to detect drift between intent and post-fix DPS. NOT derived from DPS
     (that would be tautological).
     """
+    # signature forced-tier weapons (e.g. drowdoubleblade apex) — the cfg
+    # ships them at this tier's profile, so the drift label must use it too.
+    if name in TWO_HANDED_TIER_OVERRIDE:  return TWO_HANDED_TIER_OVERRIDE[name]
     # explicit per-weapon target (D.1/D.2/D.3)
     if name in P1_TWO_HANDED_LIFT:        return P1_TWO_HANDED_LIFT[name][3]
     if name in P2_FINESSE_TO_ARMORPIERCE: return P2_FINESSE_TO_ARMORPIERCE[name]
