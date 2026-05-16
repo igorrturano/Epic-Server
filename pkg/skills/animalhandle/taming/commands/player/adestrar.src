@@ -46,10 +46,10 @@ function taming(who)
 	if (!targ.IsA(POLCLASS_NPC))
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return;
-	elseif (targ.script[":ghaia:tamed"]) // Verifica se o animal ja esta domado/ tem script de tamed
+	elseif (IsTamedPet(targ)) // Verifica se o animal ja esta domado/ tem script de tamed
 		SendSysMessageEx(who, targ.name + " nao pode ser adestrado.", SSM_FAIL);
 		return 0;
-	elseif ((GetNumPets(who) + GetPetCost(targ)) > GetMaxPets(who))
+	elseif (!CanAcquirePet(who, targ))
 		SendSysMessageEx(who, "Este animal excede a sua capacidade atual de animais domesticados.",
 				   SSM_FAIL);
 		return 0;
@@ -172,7 +172,7 @@ function SetTamedProperties(targ, who)
 		EraseObjProperty(targ, "Selvagem");
 		EraseObjProperty(targ, "Critic");
 	endif
-	targ.script := ":ghaia:tamed";
+	targ.script := ":epicai:tamedBrain";
 	RestartScript(targ);
 endfunction
 

@@ -566,6 +566,11 @@ function CanFight(attacker, defender)
         return 0;
     endif
 
+    // Owned grey/non-combatant pets are never valid targets for hostile AI.
+    if (IsNonCombatantPet(defender))
+        return 0;
+    endif
+
     // Only require LoS for NEW targets, not existing opponent
     // This allows pursuit of current target even if LoS is temporarily blocked
     if (attacker.opponent != defender)
@@ -1992,6 +1997,12 @@ function ShouldFlee(me)
             return 1;
         endif
     endif
+    // Owned grey pets always flee. (Also covered by the neutral check below,
+    // but stated explicitly so intent survives any alignment-helper refactor.)
+    if (IsNonCombatantPet(me))
+        return 1;
+    endif
+
      // if mob is neutral alignment, alaways flee
     if (GetAlignment(me) == ALIGN_NEUTRAL)
         return 1;

@@ -136,7 +136,7 @@ function ResgatarAnimal(who, post)
 		return 1;
 	endif
 
-	if ( (GetNumPets(who) + GetPetCost(animal)) > GetMaxPets(who) )
+	if ( !CanAcquirePet(who, animal) )
 		SendSysMessage(who, "Voce nao tem slots suficientes para resgatar seu pet.");
 		return 0;
 	endif
