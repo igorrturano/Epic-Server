@@ -251,7 +251,7 @@ function taming(who)
 				EraseObjProperty(targ, "Selvagem");
 				EraseObjProperty(targ, "Critic");
 			endif
-			targ.script := ":ghaia:tamed";
+			targ.script := ":epicai:tamedBrain";
 			RestartScript(targ);
 
 			Run_Script_To_Completion(":death:npcdeath", { targ });

@@ -17,7 +17,7 @@ program TimedScript_Clumsy(params)
 	SetObjproperty(mobile, "script", mobile.script);
 	SetObjProperty(mobile, "AntigoTreinadorID", attacker.serial);
 
-	mobile.script := ":ghaia:tamed";
+	mobile.script := ":epicai:tamedBrain";
 	RestartScript(mobile);
 
 	return 1;

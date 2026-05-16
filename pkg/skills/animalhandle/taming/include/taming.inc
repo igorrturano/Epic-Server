@@ -437,7 +437,7 @@ function RessuscitarPet(corpse, owner, is_bandage := 0)
     var npc := CreateNpcFromTemplate(GetObjProperty(corpse, "npctemplate"), corpse.x, corpse.y, corpse.z, 0, corpse.realm);
     CopyPropsPet(corpse, npc);
     var corpse_parsed := corpse.name[13, len(corpse.name)-12];
-    npc.script := ":ghaia:tamed";
+    npc.script := ":epicai:tamedBrain";
     RestartScript(npc);
     SetName(npc, corpse_parsed);
     RecalcVitals(npc);
