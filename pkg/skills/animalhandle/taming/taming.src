@@ -615,4 +615,18 @@ function TeachNow(who, tamed, ins)
 		SendSysMessageEX(who, "Você despertou o instinto com sucesso.", SSM_INFO);
 	endif
 
+	// L5 Despertar Selvagem: Beastmastery-scaled pet HP + damage. Snapshot at
+	// awaken time, gated upstream by HasAbility(MESTRE_DE_FERAS). Idempotent
+	// via #bm_awaken so re-teaching instincts never stacks the bonus.
+	var bm := CInt(AP_GetSkill(who, "Beastmastery"));
+	var applied := CInt(GetObjProperty(tamed, "#bm_awaken"));
+	if (bm > applied)
+		var delta := bm - applied;
+		var hp_base := CInt(AP_GetVitalMaximumValue(tamed, "Hits"));
+		SetObjProperty(tamed, "hitsmod", CInt(GetObjProperty(tamed, "hitsmod")) + CInt(hp_base * delta / 200));
+		AP_SetTrueStat(tamed, STRENGTH, AP_GetStat(tamed, STRENGTH) + CInt(delta / 10));
+		SetObjProperty(tamed, "#bm_awaken", bm);
+		RecalcVitals(tamed);
+	endif
+
 endfunction
