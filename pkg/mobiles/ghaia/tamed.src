@@ -644,7 +644,7 @@ function Transfer(targ)
 		return;
 	endif
 
-	if ((GetNumPets(targ) + GetPetCost(me)) > GetMaxPets(targ))
+	if (!CanAcquirePet(targ, me))
 		Say("*" + me.name + " nao aceita " + targ.name + "como dono.");
 		return;
 	endif
