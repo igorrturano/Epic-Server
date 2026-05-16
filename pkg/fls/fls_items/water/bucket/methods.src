@@ -23,7 +23,6 @@ function SwapBucket(bucket, change_to)
 	info.+z := bucket.z;
 
 	ReleaseItem(bucket);
-	Print("whaaa? " + DestroyItem(bucket));
 
 	var new_bucket;
 	if (info.container)

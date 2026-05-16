@@ -227,8 +227,8 @@ function CalculateStatusDamage(byRef attackInfo)
 		// being locked out of heavy armor/shields. See weapons_balance_tiers.md.
 		statusDamage.stat := DEXTERITY;
 		statusDamage.damageMod := attackInfo.GetDamageHand() == DAMAGE_HAND::MAINHAND ?
-					 CInt(attackInfo.GetAttacker().GetDex() / 20) :
-					 CInt(attackInfo.GetAttacker().GetDex() / 40);
+					 CInt(attackInfo.GetAttacker().GetDex() / 15) :
+					 CInt(attackInfo.GetAttacker().GetDex() / 30);
 	else
 		statusDamage.stat := STRENGTH;
 
