@@ -28,6 +28,9 @@ FAMILIES = {
     "two_handed": dict(attr="Two_Handed", profile=aw.two_handed_profile,
                        preserve=aw.TWO_HANDED_PRESERVE_CRIT,
                        make_finesse=aw.TWO_HANDED_MAKE_FINESSE),
+    "one_handed": dict(attr="One_Handed", profile=aw.one_handed_profile,
+                       preserve=aw.ONE_HANDED_PRESERVE_CRIT,
+                       make_finesse=set()),
 }
 
 def craft_lookup():
