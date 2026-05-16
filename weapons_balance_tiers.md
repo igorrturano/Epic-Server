@@ -400,13 +400,16 @@ All fixes are **per-weapon override tables** in [tools/analyze_weapons.py](tools
 | `handcannon` | RANGED_LOW | CRITICAL_HIGH | `damage3pierce` | T7 |
 | `RepeatingCrossbow` | RANGED_LOW | CRITICAL_HIGH | `damage2` | T5 |
 
-### D.4 P5-A — Dual-wield offhand Tactics halved
+### D.4 Dual-wield offhand Tactics halving — NO code change (pre-existing)
 
-ONLY change. In [DamageController.inc CalculateSkillDamage](pkg/systems/combat/include/Controller/DamageController.inc): for offhand path, divide Tactics by 20 instead of using the standard `skillDivisor := 10`.
+The offhand swing already does half-Tactics in the live engine via the
+pre-existing wrapper `GetOffDamageModifierBy = CInt(GetMainDamageModifierBy / 2)`
+([MobileWrapper.inc:670-674](pkg/systems/wrappers/include/Objects/Model/MobileWrapper.inc#L670-L674)).
+**No engine change was made or needed for this** — the model mirrors it (`tac_off = Tactics//20`). The only shipped engine diff is the STAT/20 finesse divisor (§D / DamageController.inc:230-231).
 
-**P5-B (penalty curve change) is DROPPED.** Would punish newbie dual-wielders too hard. Keep current `max(10, (100-skill)/2)` formula.
+**P5-B (penalty curve change) is DROPPED.** Would punish newbie dual-wielders. Keeps the engine's existing `max(10, (100-skill)/2)` penalty.
 
-**Result:** apex dual-wield drops from 18.1 → ~14 DPS (parity with apex 2H). Entry-level dual-wielders barely affected.
+**Result:** dual-wield apex Dex premium ≈ +25% apex-vs-apex (true per-weapon ~21%, accepted — see §F2 N2).
 
 ### D.5 Bulk curve lifts (1H Str + Ranged bow/crossbow)
 
@@ -441,7 +444,7 @@ Components from `fabricacaoDesc.cfg ComponenteEncaixe` — per-craft variance. C
 ## F. Roadmap
 
 1. **P3 — declarative tier scaffold.** Add `GetWeaponTier()` to [WeaponWrapper.inc](pkg/systems/wrappers/include/Objects/Model/WeaponWrapper.inc), `TIER_TARGET_DPS` dict to `pkg/systems/combat/include/Model/TierTargets.inc`, CI compliance check. Zero gameplay risk.
-2. **P5-A code change.** One-line in DamageController.inc offhand path.
+2. *(done)* STAT/20 engine change shipped (DamageController.inc:230-231). Offhand-Tactics halving needed no change — pre-existing wrapper logic.
 3. **Per-weapon cfg batch.** ~50 templates from D.1+D.2+D.3 in one PR.
 4. **Bulk curve cfg batch.** D.5 rules → ~80 one_handed+ranged templates.
 5. **Component caps audit.** Verify in-game effects match §E caps.
