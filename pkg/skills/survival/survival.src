@@ -59,7 +59,7 @@ endfunction
 
 function MobileTracking(who)
 	var diff := 1;
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE))
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS))
 		diff := -30;
 	endif
 	// SendSysMessage(who, "dif: "+diff);
@@ -70,7 +70,7 @@ function MobileTracking(who)
 		if (range < 25)
 			range := 25;
 		endif
-		if (MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS))
 			range := range + 15;
 		endif
 		var nmobiles := ListMobilesNearLocationEX(who.x, who.y, LIST_IGNORE_Z, range, 0x03, who.realm);
@@ -343,8 +343,8 @@ function CreatureTrack(who, mobontrack, mobname)
 		GFTextLine(gump, 47, 200, 800, "Marcar no mapa");
 		GFAddButton(gump, 30, 204, 2103, 2104, GF_CLOSE_BTN, 6);
 		var char := GetObjProperty(mobontrack, "createdate"); // check se é player
-		if (MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE) && !char)
-			GFTextLine(gump, 47, 220, 32, "Cacador Experiente");
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::MESTRE_DE_FERAS) && !char)
+			GFTextLine(gump, 47, 220, 32, "Despertar Selvagem");
 			GFAddButton(gump, 30, 224, 2103, 2104, GF_CLOSE_BTN, 7);
 		endif
 		var ifres := GFSendGump(who, gump);
