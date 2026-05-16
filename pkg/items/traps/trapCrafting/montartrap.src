@@ -14,7 +14,7 @@ include ":itemutils:canAccess";
 
 program Make_Trap(who, trap)
 
-	if (!MobileWrapper(who).HasAbility(ABILITY_ID::CACADOR_EXPERIENTE))
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::VINCULO_DE_GUERRA))
 		SendSysMessageEx(who, "Voce nao tem a menor ideia de como usar isso.", SSM_FAIL);
 		return 0;
 	endif
