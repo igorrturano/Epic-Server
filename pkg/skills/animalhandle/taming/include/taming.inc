@@ -44,42 +44,33 @@ function GetPetCost(pet)
 
 endfunction
 
-// Um pet sendo cavalgado nao consome slot (montaria sempre isenta). O elo
-// confiavel eh a peca de LAYER_MOUNT do dono apontando para este serial.
-function IsBeingRiddenAsMount(pet)
-	var owner := pet.master;
-	if (!owner)
-		return 0;
-	endif
-	var piece := GetEquipmentByLayer(owner, LAYER_MOUNT);
-	if (!piece)
-		return 0;
-	endif
-	return CInt(GetObjProperty(piece, "serial")) == pet.serial;
+// Criatura de template montaria (mesmo gate que MP_Mount usa: npcdesc
+// Environment == "Mount"). Independe de estar sendo cavalgada agora.
+function IsMountType(pet)
+	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
+	var cfg := ReadConfigFile(":*:npcdesc");
+	return cfg[npctemplate.template].Environment == "Mount";
 endfunction
 
-// Categoria de slot do pet: "mount" (isento), "war" (alignment evil, cap 1)
-// ou "grey" (alignment neutro — nao-combatente, pool = Taming/20).
+// Categoria de slot: "war" (criatura evil de combate, cap 1) ou "nonwar"
+// (cinza/neutro OU montaria — nao-combatente, pool compartilhado Taming/20).
 function PetSlotCategory(pet)
-	if (IsBeingRiddenAsMount(pet))
-		return "mount";
-	endif
-	if (pet.alignment == 0)
-		return "grey";
+	if (pet.alignment == 0 || IsMountType(pet))
+		return "nonwar";
 	endif
 	return "war";
 endfunction
 
 /* Passo canonico sobre TamedPets. Poda entradas invalidas/summoned, persiste
    a lista limpa, sincroniza who.followers e retorna o tally por categoria.
-   Montarias e pets no estabulo/limbo continuam do player mas nao custam slot. */
+   Pets no estabulo/limbo continuam do player mas nao custam slot. */
 function _TallyPets(who)
 	var war := 0;
-	var grey := 0;
+	var nonwar := 0;
 	var tamed := GetObjProperty(who, "TamedPets");
 	if ( !tamed )
 		who.followers := 0;
-		return struct{ war := 0, grey := 0, total := 0 };
+		return struct{ war := 0, nonwar := 0, total := 0 };
 	endif
 
 	foreach serial in tamed
@@ -99,14 +90,11 @@ function _TallyPets(who)
 		// ao player. Contratos expirados nao sao limpos aqui — o gump do post
 		// cuida disso no momento do resgate.
 		if ( !IsStabled(pet) && !IsInLimbo(pet) )
-			var cat := PetSlotCategory(pet);
-			if (cat != "mount")
-				var cost := GetPetCost(pet);
-				if (cat == "war")
-					war := war + cost;
-				else
-					grey := grey + cost;
-				endif
+			var cost := GetPetCost(pet);
+			if (PetSlotCategory(pet) == "war")
+				war := war + cost;
+			else
+				nonwar := nonwar + cost;
 			endif
 		endif
 		sleepms(2);
@@ -116,9 +104,9 @@ function _TallyPets(who)
 		tamed := array;
 	endif
 	SetObjProperty(who, "TamedPets", tamed);
-	var total := war + grey;
+	var total := war + nonwar;
 	who.followers := total;
-	return struct{ war := war, grey := grey, total := total };
+	return struct{ war := war, nonwar := nonwar, total := total };
 endfunction
 
 /* funcao pega o custo dos pets. tbm atualiza os pets perdidos ou que foram transferidos*/
@@ -130,8 +118,8 @@ function GetNumWarPets(who)
 	return _TallyPets(who).war;
 endfunction
 
-function GetNumGreyPets(who)
-	return _TallyPets(who).grey;
+function GetNumNonWarPets(who)
+	return _TallyPets(who).nonwar;
 endfunction
 
 function GetNumSummons(who)
@@ -272,31 +260,27 @@ function GetMaxWarPets(who)
 	return maxwar;
 endfunction
 
-// Grey pet = criatura neutra (alignment 0), nao-combatente. Pool escala com
-// Taming: 1 slot a cada 20 pontos (Taming 100 -> 5 greys). Mounts nao contam.
-function GetMaxGreyPets(who)
+// NonWar = criaturas cinza (alignment 0) E montarias. Pool unico que escala
+// com Taming: 1 slot a cada 20 pontos (Taming 100 -> 5; Taming 0-19 -> 0).
+function GetMaxNonWarPets(who)
 	return CInt( EffectiveSkill(who, "Taming") / 20 );
 endfunction
 
 // Agregado mantido por compatibilidade: paperdoll/followers/recall leem este
 // numero e continuam coerentes sem precisar conhecer a divisao por categoria.
 function GetMaxPets(who)
-	return GetMaxWarPets(who) + GetMaxGreyPets(who);
+	return GetMaxWarPets(who) + GetMaxNonWarPets(who);
 endfunction
 
 // Portao unico de aquisicao (tame/transfer/resurrect). Grandfather: so
 // bloqueia o NOVO pet; pets legados acima do cap nunca sao removidos aqui.
 function CanAcquirePet(who, pet)
-	var cat := PetSlotCategory(pet);
-	if (cat == "mount")
-		return 1;
-	endif
 	var tally := _TallyPets(who);
 	var cost := GetPetCost(pet);
-	if (cat == "war")
+	if (PetSlotCategory(pet) == "war")
 		return (tally.war + cost) <= GetMaxWarPets(who);
 	endif
-	return (tally.grey + cost) <= GetMaxGreyPets(who);
+	return (tally.nonwar + cost) <= GetMaxNonWarPets(who);
 endfunction
 
 function GetMaxSummons(who)
