@@ -100,3 +100,68 @@ controlarmortovivo. Legacy file deletion = later cleanup phase.
   `:ghaia:controlled` until its own phase, so P4 must not reroute them.
 - grep sweep for any `:ghaia:tamed` identity test missed by the list above
   is mandatory before P4c (No-Semantic-Search rule).
+
+## P4b dead-code audit of ghaia/tamed.src (1050 LOC)
+
+Reviewed every function/block. `tamedBrain.src` reimplements ONLY the
+LIVE set; DROP set is left behind.
+
+### LIVE — port into tamedBrain.src
+- **Main loop** (TamedAI 44-198): event dispatch + state machine
+  (opponent→Fight+Follow / following→Follow+look_around / guarding→Guard
+  / going_loc→goToLoc) + happiness<10 warning.
+- **ProcessSpeech** (211-371): command parsing. Obedience split already
+  correct (combat cmds→obedienceCheckCombat[Beastmastery],
+  rest→obediencecheck[Taming]).
+- **TakeItem** (373-499): feeding + bond/fidelizar + pack-mochila. (Core
+  per user: "feeding".)
+- **Fight/IsDead/Follow/Guard/goToLoc** (501-634): movement/combat state.
+- **Transfer** (636-669): already on `CanAcquirePet` (P3b).
+- **AllCommand** (714-731): "todos" broadcast.
+- **ProcessDoubleClick** (733-798): gump (guard/follow/attack), pack
+  remove, go-to-loc, web `EstimulaAbdomen`.
+- **EnableMainEvents** (800-808), **Setup** (819-862),
+  **obediencecheck** (864-918, Taming), **obedienceCheckCombat**
+  (925-974, Beastmastery), **GetHappy** (1004-1028), **Go** (1030-1050).
+- **State/consts**: pack_animals var, custom event consts,
+  guarding/following/fighting/opponent/going_loc, owner/owner_serial,
+  `SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES` (lifecycle = permanent loop),
+  `look_around` (200-209).
+- **happyCounter.src** sub-script kept (liveness already on IsTamedPet
+  from P4a).
+
+### LIVE + ADAPT (behavior change required)
+- **Fight()/Guard()**: add `IsNonCombatantPet(me)` guard — grey pet
+  refuses to enter Fight() and Guard() never sets opponent (command-side
+  half of P2; engine half already blocks targeting/threat/forces flee).
+- **UnTame** (671-712): drop the legacy `orig_script` / `"script"` prop /
+  `:brainai:brain` fallback dance → restore cleanly to `":epicAI:brain"`
+  (wild epicai brain), clear pet props, RestartScript.
+- **Program signature**: `program TamedBrain(npc)` invoked via
+  `Run_Script` from brain.src; `me := npc` not `self()`.
+
+### DROP — dead/unused, do NOT carry over
+1. Commented `EVID_FLEE` block (84-87).
+2. `mountables` var (21) — unused; code uses `IsMountable()` builtin.
+3. Commented inline happycounter (65-68).
+4. Commented "Dear…shut up" (219).
+5. `companheiro` guards (334-337, 362-365) — prop NEVER set anywhere
+   (confirmed P3 research); dead scaffold.
+6. **DisableMainEvents** (810-817) — never called.
+7. Commented happycounter block in Setup (847-851).
+8. Commented debug prints in obediencecheck (889-890).
+
+### KEEP but FLAG (legacy refs to clean while porting)
+- `SpecialHab`/`CastFaerieHeal` (976-1002): faerie-heal, gated on
+  `npctemplate == ":brainai:fadinha"` — port, fix namespace to
+  `:epicai:` per `[[feedback_npc_namespace]]`.
+- Loop line 143 `me.npctemplate == ":brainai:Unicorn"` — same namespace
+  fix.
+- `defecador` / sheep-wool (Setup 856-860; loop 76-80): livestock realism
+  — keep for parity, low risk.
+- TakeItem fidelizado cap uses `ESPREITA_SELVAGEM` (444-445): this is the
+  "faithful animals" limit, SEPARATE from P3 war/nonwar slots. Keep as-is
+  per user ("faithful pet"); reconciling with P3 economy is OUT of P4
+  scope — flagged for a possible later spec.
+
+Result: ~1050 LOC → est. ~750 LOC of live logic, minus the 8 DROP items.
