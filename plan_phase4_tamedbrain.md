@@ -95,8 +95,13 @@ silently breaks everywhere. So identity must be decoupled FIRST.
   Verify: newly tamed creature runs new brain; a pre-existing
   `:ghaia:tamed` pet auto-migrates on next wake and behaves identically.
 
-Phase 5 (separate) = ControlledBrain for summon/necro/mage/merchant/
-controlarmortovivo. Legacy file deletion = later cleanup phase.
+Phase 5 (separate) = ControlledBrain for the FLAGGED-summoned set only:
+summon.inc, invocarespirito, montarianefasta, cimitarravoadora,
+montariaarcana (all set `"summoned",1`), plus merchant/controlarmortovivo
+(:ghaia:controlled) + brainAI makeswarm GM tool. NOTE: raiseundead &
+levantarmortos undead do NOT set `"summoned"` — they are pet-like and
+already migrate to :epicai:tamedBrain via the P4c shim, so Phase 5 does
+NOT need to cover them. Legacy file deletion = later cleanup phase.
 
 ## Risks / call-outs
 
