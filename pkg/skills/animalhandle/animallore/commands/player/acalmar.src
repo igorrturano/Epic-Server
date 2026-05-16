@@ -10,6 +10,7 @@ include ":tn:npcutil";
 include ":tn:cooldown";
 include "include/sysEvent";
 include "include/eventID";
+include ":taming:taming";
 
 program textcmd_acalmar(who)
 	var delay := GetObjProperty(who, "delayskill");
@@ -45,7 +46,7 @@ program textcmd_acalmar(who)
 	if (!isAnimal)
 		SendSysMessage(who, "Esse não pode ser um alvo válido.");
 		return 0;
-	elseif (creature.script[":ghaia:tamed"])
+	elseif (IsTamedPet(creature))
 		SendSysMessageEx(who, creature.name + " não pode ser acalmado.", SSM_FAIL);
 		return 0;
 	endif

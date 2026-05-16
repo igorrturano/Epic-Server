@@ -189,7 +189,7 @@ function taming(who)
 	if (!targ.IsA(POLCLASS_NPC))
 		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
 		return;
-	elseif (targ.script[":ghaia:tamed"])
+	elseif (IsTamedPet(targ))
 		SendSysMessageEx(who, targ.name + " não pode ser adestrado.", SSM_FAIL);
 		return 0;
 	elseif (!CanAcquirePet(who, targ))
@@ -343,7 +343,7 @@ function Teach(who)
 	endif
 
 	var advance_flags;
-	if (creature.script == ":ghaia:tamed")
+	if (IsTamedPet(creature))
 		TeachGump(who, creature);
 	else
 		return 0;
