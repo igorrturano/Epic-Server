@@ -13,6 +13,7 @@ include ":timedScripts:timedScripts";
 include "include/eventID";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":taming:taming";
 
 var cfg := ReadConfigFile(":*:npcdesc");
 const FOLLOW_CMD := 0xA001;
@@ -45,16 +46,17 @@ program herd(who)
     var align := GetConfigString(elem, "Alignment");
 	var cruzar_alvo := GetObjProperty(npc, "Cruzar");
 	var chk := 0;
-	case (npc.script)
-		":ghaia:tamed":    
+	if (IsTamedPet(npc))
 		if (cruzar_alvo != "nao")
 			SendSysMessageEx(who, npc.name + " só pode acasalar!", SSM_FAIL);
 		else
 			chk := 1;
 		endif
-		":ghaia:worker":   chk := 1;
-		":ghaia:employed": chk := 1;
-	endcase
+	elseif (npc.script[":ghaia:worker"])
+		chk := 1;
+	elseif (npc.script[":ghaia:employed"])
+		chk := 1;
+	endif
 
 	if ((chk == 1) or (!npc.getTameDifficulty()))
 		SendSysMessageEx(who, "Esta criatura não pode ser pastoreada e/ou não está habiliata a acasalar!", SSM_FAIL);
@@ -143,7 +145,7 @@ program herd(who)
 		endif
 
 		if ((gender_destino == 2) && (gender_alvo == 1) && (!newborn) &&
-		    (compatibles) && (location.mobile.script == ":ghaia:tamed"))
+		    (compatibles) && IsTamedPet(location.mobile))
 
 			PrintTextAbove(npc, "*" + npc.name + " corre com o membro ereto*");
 			SetObjProperty(location.mobile, "alvo", 1);

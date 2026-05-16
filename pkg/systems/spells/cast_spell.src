@@ -149,8 +149,8 @@ function performPreCastingChecks(mobile, mw, byref spellinfo)
 		|| mw.HasAbility(ABILITY_ID::NINJA_PATH)
 		|| mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) 
 		|| mw.HasAbility(ABILITY_ID::SOUL_HARVEST) 
-		|| mw.HasAbility(ABILITY_ID::CONEXAO_DIVINA) 
-		|| mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA);
+		|| mw.HasAbility(ABILITY_ID::CONEXAO_DIVINA)
+		|| IsArcaneSensitive(mw, mobile);
 
 	if (mobile.squelched && !mobile.npctemplate)
 		SendSysMessageEx(mobile, "Voce precisa falar devido os componentes verbais da magia.", SSM_FAIL);
@@ -538,13 +538,26 @@ function checkTargetValidity(mobile, targ, spellinfo)
 	return 1;
 endfunction
 
+// The Malandro Arcano's arcane-trickster identity (cast with weapon, roll vs
+// Arcana, Arcana as supporting skill, scroll reuse, grimoire bypass) is the
+// SENSIBILIDADE_ARCANA ability. Path-rework: it applies from level 1 by
+// subclasse, so a fresh Malandro_Arcano plays the class immediately. Legacy
+// chars that earned the ability still qualify.
+function IsArcaneSensitive(mw, mobile)
+	if (mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
+		return 1;
+	endif
+	var cd := GetObjProperty(mobile, "chardata");
+	return (cd != error && cd && cd.subclasse == "Malandro_Arcano");
+endfunction
+
 function checkCastingSuccess(mobile, mw, spellinfo, scroll)
 	if (spellinfo.Type == "Ninjutsu")
 		return 1;
 	endif
 
 	var attribute := MAGERY;
-	if (mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
+	if (IsArcaneSensitive(mw, mobile) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
 		attribute := ARCANA;
 	elseif (spellinfo.Type == "Divine")
 		attribute := THEOLOGY;
@@ -596,7 +609,7 @@ function getSupportingSkill(mobile, mw)
 	if (chardata != error
 		&& chardata.wisdom_path != "Mago"
 		&& chardata.magia != "spellcaster"
-		&& !(mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)))
+		&& !IsArcaneSensitive(mw, mobile))
 		attribute := THEOLOGY;
 	endif
 	return attribute;
@@ -634,7 +647,7 @@ function consumeScroll(mobile, mw, scroll)
 		SubtractAmount(scroll, 1);
 	else
 		var attrib_value := MAGERY;
-		if (mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
+		if (IsArcaneSensitive(mw, mobile))
 			attrib_value := ARCANA;
 		endif
 		var chance := RandomIntMinMax(0, 100);

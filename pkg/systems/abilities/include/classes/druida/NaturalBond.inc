@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":spells:Controller/SpellController";
+include ":taming:petidentity";
 
 const _NB_BTN_ESTUDAR   := 1;
 const _NB_BTN_VOLTAR    := 2;
@@ -608,7 +609,7 @@ class NaturalBond(CombatAbility)
             return false;
         endif
 
-        if (targ.script[":ghaia:tamed"])
+        if (IsTamedPet(targ))
             Message("Voce so pode estudar criaturas selvagens.").SendSys(who);
             return false;
         endif

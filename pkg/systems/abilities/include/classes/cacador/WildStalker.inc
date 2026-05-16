@@ -6,7 +6,7 @@ include ":abilities:models/CombatAbility";
  * Purely passive ability - no combat hooks.
  * Effects are handled inline across multiple systems:
  *   - stealth.src: Doubles stealth steps (baseSteps * 2.0)
- *   - camuflagem: Doubles pet stealth steps
+ *   - Vínculo de Guerra: Doubles pet stealth steps
  *   - taming.src: Allows 2 bonded pets instead of 1
  *   - taming.inc: +1 pet slot, bonded pet limit 2 for resurrect
  *   - tamed.src: Bonded pet limit 2 during feeding/fidelization

@@ -51,7 +51,7 @@ program forensic(who)
 	elseif (!subject.IsA(POLCLASS_MOBILE) && !subject.IsA(POLCLASS_CORPSE))
 		SendSysMessageEx(who, "O alvo tem que ser um corpo ou ser vivo.", SSM_FAIL);
 		return 0;
-	elseif (subject.IsA(POLCLASS_MOBILE) || subject.IsA(POLCLASS_CORPSE))
+	elseif (subject.IsA(POLCLASS_CORPSE))
 	// Obter informações do corpo
 		var autopsy_data := GetObjProperty(subject, "Autopsy");
 		var lastDamage := GetObjProperty(subject, "LastDamage");

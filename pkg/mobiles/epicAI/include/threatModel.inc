@@ -53,6 +53,11 @@ function AddThreat(source, amount)
     if (!source || source == me)
         return;
     endif
+    // A grey/non-combatant pet's hits never register or escalate threat, so
+    // hostile AI can't be pulled onto the owner's harmless pet.
+    if (IsNonCombatantPet(source))
+        return;
+    endif
     var key := source.serial;
     var entry;
     if (threat_table_var.exists(key))
