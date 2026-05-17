@@ -18,7 +18,6 @@ program sacrifice(params)
     endif
 
     SetObjProperty(targ, "animal_sacrifice", who.serial);
-    SetObjProperty(who, "death_protection", 1);
 
     Message(msg).SendSys(who);
 endprogram

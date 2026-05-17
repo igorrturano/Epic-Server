@@ -72,12 +72,6 @@ program death(params)
 		save := 1;
 	endif
 
-	if (GetObjProperty(ghost, "death_protection"))
-		Message("O Deserto se lembra. Voce esta protegido contra a morte.").SendSys(ghost);
-		protecao := 1;
-		EraseObjProperty(ghost, "death_protection");
-	endif
-
 	// Check no Chain Of Pain, para retirar 1 do copnumber se for o caso.
 	if (getObjProperty(corpse, "chainofpain"))
 		var seriais := getObjProperty(corpse, "chainofpain");
