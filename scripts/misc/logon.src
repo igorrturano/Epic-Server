@@ -13,8 +13,27 @@ include ":attributes:advanceCheck";
 include ":attributes:skills";
 include ":datafile:datafile";
 include ":motd:motd_settings";
+include ":tn:equipment";
+include ":disguise:incognito";
 
 program Logon(who)
+
+	// Self-heal: a player flagged incognito but wearing no face-covering item
+	// is stuck (the async-race / death / relog failure mode). Clear it before
+	// the race-name init below so that runs on clean state. A legitimately
+	// masked player keeps the mask equipped, so this is skipped for them.
+	if (!who.npctemplate && IsIncognito(who))
+		var stillMasked := 0;
+		foreach eq in (EnumeratePhysicalItems(who))
+			if (coverFace(eq))
+				stillMasked := 1;
+				break;
+			endif
+		endforeach
+		if (!stillMasked)
+			RemoveIncognito(who);
+		endif
+	endif
 
 	// Inicializa exibir apenas nome da raca
 	if (!who.npctemplate && !GetObjProperty(who, "nome_inicial"))

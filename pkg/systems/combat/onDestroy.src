@@ -5,6 +5,7 @@
 use uo;
 
 include ":tn:equipment";
+include ":disguise:incognito";
 
 program OnDestroy(item)
 	var equipped := CInt(GetObjProperty(item, "#EquippedOn"));
@@ -16,12 +17,9 @@ program OnDestroy(item)
 
 	RemoveEquipObjMods(mobile, item);
 
-	if (coverFace(item))
-		mobile.name := GetObjProperty(mobile, "realname");
-		mobile.title_race := GetObjProperty(mobile, "realrace");
-		EraseObjProperty(mobile, "realname");
-		EraseObjProperty(mobile, "realrace");
-		SetObjProperty(mobile, "url", GetObjProperty(mobile, "old_url"));
+	if (coverFace(item) && mobile && mobile != error)
+		// item excluded: it is being destroyed but may still be on its layer.
+		RemoveIncognito(mobile, item);
 	endif
 
 	return 1;
