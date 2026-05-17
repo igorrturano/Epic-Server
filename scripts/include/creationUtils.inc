@@ -3,6 +3,7 @@ use basic;
 include ":attributes:attributes";
 include ":disguise:disguise";
 include ":charactercreation:createchar";
+include ":charactercreation:raceDisplay";
 include ":tn:tngumps";
 include "include/epicConstants";
 include ":gumps:epicGumps";
@@ -207,11 +208,7 @@ function getRaceByCulturalId(culture_pic)
 endfunction
 
 function CaracteristicasRPGump(who, byref chardata, culture_pic)
-    var display_race := "";
-    if (chardata.culture == AIGLANA || chardata.culture == LESTE)
-        display_race += "Meio-";
-    endif
-    display_race += chardata.raca;
+    var display_race := RaceDisplayFromChardata(chardata);
     var racial_traits := GetRacialTraits(chardata.raca);
     var gump := GFCreateGump();
     GFClosable(gump, 0);
