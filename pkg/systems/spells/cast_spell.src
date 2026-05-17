@@ -150,7 +150,7 @@ function performPreCastingChecks(mobile, mw, byref spellinfo)
 		|| mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) 
 		|| mw.HasAbility(ABILITY_ID::SOUL_HARVEST) 
 		|| mw.HasAbility(ABILITY_ID::CONEXAO_DIVINA)
-		|| IsArcaneSensitive(mw, mobile);
+		|| IsArcaneSensitive(mw);
 
 	if (mobile.squelched && !mobile.npctemplate)
 		SendSysMessageEx(mobile, "Voce precisa falar devido os componentes verbais da magia.", SSM_FAIL);
@@ -540,15 +540,11 @@ endfunction
 
 // The Malandro Arcano's arcane-trickster identity (cast with weapon, roll vs
 // Arcana, Arcana as supporting skill, scroll reuse, grimoire bypass) is the
-// SENSIBILIDADE_ARCANA ability. Path-rework: it applies from level 1 by
-// subclasse, so a fresh Malandro_Arcano plays the class immediately. Legacy
-// chars that earned the ability still qualify.
-function IsArcaneSensitive(mw, mobile)
-	if (mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
-		return 1;
-	endif
-	var cd := GetObjProperty(mobile, "chardata");
-	return (cd != error && cd && cd.subclasse == "Malandro_Arcano");
+// SENSIBILIDADE_ARCANA ability — the single source of truth. It is granted at
+// creation and backfilled on logon (GrantSignatureAbility), so no
+// chardata.subclasse fallback is needed.
+function IsArcaneSensitive(mw)
+	return mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA);
 endfunction
 
 function checkCastingSuccess(mobile, mw, spellinfo, scroll)
@@ -557,7 +553,7 @@ function checkCastingSuccess(mobile, mw, spellinfo, scroll)
 	endif
 
 	var attribute := MAGERY;
-	if (IsArcaneSensitive(mw, mobile) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
+	if (IsArcaneSensitive(mw) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
 		attribute := ARCANA;
 	elseif (spellinfo.Type == "Divine")
 		attribute := THEOLOGY;
@@ -609,7 +605,7 @@ function getSupportingSkill(mobile, mw)
 	if (chardata != error
 		&& chardata.wisdom_path != "Mago"
 		&& chardata.magia != "spellcaster"
-		&& !IsArcaneSensitive(mw, mobile))
+		&& !IsArcaneSensitive(mw))
 		attribute := THEOLOGY;
 	endif
 	return attribute;
@@ -647,7 +643,7 @@ function consumeScroll(mobile, mw, scroll)
 		SubtractAmount(scroll, 1);
 	else
 		var attrib_value := MAGERY;
-		if (IsArcaneSensitive(mw, mobile))
+		if (IsArcaneSensitive(mw))
 			attrib_value := ARCANA;
 		endif
 		var chance := RandomIntMinMax(0, 100);
