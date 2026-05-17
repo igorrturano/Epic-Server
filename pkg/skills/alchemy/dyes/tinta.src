@@ -2,7 +2,6 @@ use uo;
 use util;
 use cfgfile;
 include ":alchemy:alchemy";
-// include ":alchemy:drinkPotion";
 
 program drink_blue(who, potion)
 	EraseObjProperty(who, "IsMeditating");
