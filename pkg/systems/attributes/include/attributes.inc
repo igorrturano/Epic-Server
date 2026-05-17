@@ -203,27 +203,6 @@ function Wait(who, segundos)
 	return 1;
 endfunction
 
-function maolivre(who, qtd, checkmount := 1)
-    var rightHand := GetEquipmentByLayer(who, 0x01);
-    var leftHand := GetEquipmentByLayer(who, 0x02);
-
-    // Verifica montaria se necessário
-    if (checkmount)
-        var mounted := GetEquipmentByLayer(who, 0x19);
-        if (mounted)
-            SendSysMessage(who, "Voce nao pode fazer isto montado.");
-            return 0;
-        endif
-    endif
-
-    // Verifica se há itens nas mãos
-    if (rightHand && leftHand)
-        return 0;
-    endif
-
-    return 1;
-endfunction
-
 // Phase 4 rework helpers.
 //
 // ParseDieValue converts a chardata.dice string ("d4".."d12") into its
