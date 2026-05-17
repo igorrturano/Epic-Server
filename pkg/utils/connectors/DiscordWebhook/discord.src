@@ -8,6 +8,7 @@ include ":DiscordWebhook:outbound";
 include ":DiscordWebhook:report";
 include "include/arrays";
 include ":destroyable:include/destroyItem";
+include ":datafile:datafile";
 
 program textcmd_testdiscordbot(params)
 	var tipo := params[1]; // Id # of the spell
