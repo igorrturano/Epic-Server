@@ -24,7 +24,9 @@ const PIGEON_ANIMAL_FERRET   := 3;
 const PIGEON_ANIMAL_SQUIRREL := 4;
 const PIGEON_ANIMAL_CROW     := 5;
 const PIGEON_ANIMAL_ARARA    := 6;
-const PIGEON_ANIMAL_COUNT    := 7;
+const PIGEON_ANIMAL_BOY      := 7;
+const PIGEON_ANIMAL_GIRL     := 8;
+const PIGEON_ANIMAL_COUNT    := 9;
 
 function PigeonGetTemplate(animal)
 	case (CInt(animal))
@@ -35,6 +37,8 @@ function PigeonGetTemplate(animal)
 		PIGEON_ANIMAL_SQUIRREL: return ":pigeoncorreio:DeliverySquirrel";
 		PIGEON_ANIMAL_CROW:     return ":pigeoncorreio:DeliveryCrow";
 		PIGEON_ANIMAL_ARARA:    return ":pigeoncorreio:DeliveryArara";
+		PIGEON_ANIMAL_BOY:      return ":pigeoncorreio:DeliveryBoy";
+		PIGEON_ANIMAL_GIRL:     return ":pigeoncorreio:DeliveryGirl";
 		default:                return ":pigeoncorreio:DeliveryPigeon";
 	endcase
 endfunction
@@ -48,6 +52,8 @@ function PigeonGetAnimalName(animal)
 		PIGEON_ANIMAL_SQUIRREL: return "Esquilo";
 		PIGEON_ANIMAL_CROW:     return "Corvo";
 		PIGEON_ANIMAL_ARARA:    return "Arara";
+		PIGEON_ANIMAL_BOY:      return "Menino";
+		PIGEON_ANIMAL_GIRL:     return "Menina";
 		default:                return "Pombo";
 	endcase
 endfunction
@@ -61,6 +67,8 @@ function PigeonGetArrivalMsg(animal)
 		PIGEON_ANIMAL_SQUIRREL: return "Um esquilo mensageiro está chegando até você!";
 		PIGEON_ANIMAL_CROW:     return "Um corvo mensageiro está chegando até você!";
 		PIGEON_ANIMAL_ARARA:    return "Uma arara mensageira está chegando até você!";
+		PIGEON_ANIMAL_BOY:      return "Um menino mensageiro está chegando até você!";
+		PIGEON_ANIMAL_GIRL:     return "Uma menina mensageira está chegando até você!";
 		default:                return "Um animal mensageiro está chegando até você!";
 	endcase
 endfunction
@@ -74,11 +82,13 @@ function PigeonGetArrivalEmote(animal)
 		PIGEON_ANIMAL_SQUIRREL: return "*salta e chega saltitando*";
 		PIGEON_ANIMAL_CROW:     return "*pousa planejando*";
 		PIGEON_ANIMAL_ARARA:    return "*chega grasnando*";
+		PIGEON_ANIMAL_BOY:      return "*chega correndo e para ofegante*";
+		PIGEON_ANIMAL_GIRL:     return "*chega correndo e para ofegante*";
 		default:                return "*chega*";
 	endcase
 endfunction
 
-function PigeonGetFollowEmote(animal)
+function PigeonGetFollowEmote(animal, recipient_gender := 0)
 	case (CInt(animal))
 		PIGEON_ANIMAL_PIGEON:   return "*para com um papel preso na perna*";
 		PIGEON_ANIMAL_RAT:      return "*para com um rolo preso no pescoco*";
@@ -87,6 +97,13 @@ function PigeonGetFollowEmote(animal)
 		PIGEON_ANIMAL_SQUIRREL: return "*segura um bilhete nas patas*";
 		PIGEON_ANIMAL_CROW:     return "*exibe um papel no bico*";
 		PIGEON_ANIMAL_ARARA:    return "*repete: mensagem! mensagem!*";
+		PIGEON_ANIMAL_BOY:
+		PIGEON_ANIMAL_GIRL:
+			if (recipient_gender == 1)
+				return "Tia! Tenho uma mensagem pra voce!";
+			else
+				return "Tio! Tenho uma mensagem pra voce!";
+			endif
 		default:                return "*para com um papel*";
 	endcase
 endfunction
@@ -100,15 +117,27 @@ function PigeonGetLeaveEmote(animal)
 		PIGEON_ANIMAL_SQUIRREL: return "*salta de galho em galho e some*";
 		PIGEON_ANIMAL_CROW:     return "*alca voo*";
 		PIGEON_ANIMAL_ARARA:    return "*voa grasnando*";
+		PIGEON_ANIMAL_BOY:      return "*sai correndo a toda velocidade*";
+		PIGEON_ANIMAL_GIRL:     return "*sai correndo e some pelo caminho*";
 		default:                return "*vai embora*";
 	endcase
 endfunction
 
-function PigeonConsumeCost(who)
+function PigeonGetCost(animal_type)
+	case (CInt(animal_type))
+		PIGEON_ANIMAL_BOY:
+		PIGEON_ANIMAL_GIRL:
+			return PIGEON_COST * 3;
+		default:
+			return PIGEON_COST;
+	endcase
+endfunction
+
+function PigeonConsumeCost(who, animal_type := PIGEON_ANIMAL_PIGEON)
 	if (!who.backpack)
 		return 0;
 	endif
-	return SpendCoin(who, PIGEON_COST, who.backpack, PIGEON_COIN_TYPE);
+	return SpendCoin(who, PigeonGetCost(animal_type), who.backpack, PIGEON_COIN_TYPE);
 endfunction
 
 // Retorna {mob, apelido} de jogadores online. dict=0 retorna todos; dict=conhecidos filtra pelos reconhecidos.
