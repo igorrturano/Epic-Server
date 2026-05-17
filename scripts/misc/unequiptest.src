@@ -3,6 +3,7 @@ use os;
 
 include ":combat:armorZones";
 include ":tn:equipment";
+include ":disguise:incognito";
 
 program UnequipTest(mobile, item)
 	var retval := 1;
@@ -27,16 +28,9 @@ program UnequipTest(mobile, item)
 		RemoveEquipObjMods(mobile, item);
 		EraseObjProperty(item, "#EquippedOn");
 		if (coverFace(item))
-			mobile.name := GetObjProperty(mobile, "realname");
-			mobile.title_race := GetObjProperty(mobile, "realrace");
-			if (GetObjProperty(mobile, "olddescription"))
-				SetObjProperty(mobile, "description", GetObjProperty(mobile, "olddescription"));
-				EraseObjProperty(mobile, "olddescription");
-			endif
-			EraseObjProperty(mobile, "realname");
-			EraseObjProperty(mobile, "realrace");
-			EraseObjProperty(mobile, "Incognito");
-			SetObjProperty(mobile, "url", GetObjProperty(mobile, "old_url"));
+			// item is excluded from the stacked-mask scan: UnequipTest fires
+			// while the mask is still on its layer.
+			RemoveIncognito(mobile, item);
 		endif
 	endif
 
