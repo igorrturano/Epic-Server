@@ -7,6 +7,7 @@ use util;
 include ":attributes:attributes";
 include ":containers:checks";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program canRemove(mobile, container, item, move_type)
 
@@ -26,11 +27,17 @@ program canRemove(mobile, container, item, move_type)
 			while (aux.container)
 				aux := aux.container;
 			endwhile
-			if (aux == mobile && maoLivre(mobile, 1, 0))
+			var mobWrapper := MobileWrapper(mobile);
+			if (aux == mobile && mobWrapper.HasFreeHand())
 				return 1;
 			endif
 
-			if (!maoLivre(mobile, 1))
+			if (mobWrapper.IsMounted())
+				SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
+				return 0;
+			endif
+
+			if (!mobWrapper.HasFreeHand())
 				return 0;
 			endif
 

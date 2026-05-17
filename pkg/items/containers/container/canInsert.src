@@ -5,6 +5,7 @@ use os;
 use cfgfile;
 include ":attributes:attributes";
 include ":containers:checks";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program canInsert(mobile, container, item, move_type, insert_type, adding_item, existing_stack,
 				  amount_to_add)
@@ -28,11 +29,17 @@ program canInsert(mobile, container, item, move_type, insert_type, adding_item, 
 			while (aux.container)
 				aux := aux.container;
 			endwhile
-			if (aux == mobile && maoLivre(mobile, 1, 0))
+			var mobWrapper := MobileWrapper(mobile);
+			if (aux == mobile && mobWrapper.HasFreeHand())
 				return 1;
 			endif
 
-			if (!maoLivre(mobile, 1))
+			if (mobWrapper.IsMounted())
+				SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
+				return 0;
+			endif
+
+			if (!mobWrapper.HasFreeHand())
 				return 0;
 			endif
 

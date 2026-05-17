@@ -8,6 +8,7 @@ use util;
 include ":attributes:attributes";
 include "include/client";
 include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program pickupItems()
 	Print("Hooking Item Pickup...");
@@ -36,7 +37,12 @@ exported function HandleItemPickup(who, byref packet)
 	var item2 := GetEquipmentByLayer(who, 2);
 
 	if (!item.container)
-		if (!maoLivre(who, 1))
+		var mobWrapper := MobileWrapper(who);
+		var mounted := mobWrapper.IsMounted();
+		if (mounted || !mobWrapper.HasFreeHand())
+			if (mounted)
+				SendSysMessage(who, "Voce nao pode fazer isto montado.");
+			endif
 			SendPacket(who, "2705");
 			return 1;
 		else

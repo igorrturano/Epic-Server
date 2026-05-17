@@ -4,19 +4,33 @@ use uo;
 include ":attributes:attributes";
 include "include/say";
 include ":containers:personalLoot";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program canRemove(character, container, item, move_type)
 	if (container.ownerserial == character.serial)
 		return 1;
-	elseif (character.warmode)
+	endif
+
+	if (character.warmode)
 		SendSysMessageEx(character, "Você não pode pegar itens em modo de guerra.", SSM_FAIL);
 		return 0;
-	elseif (!maoLivre(character, 1))
+	endif
+
+	var mobWrapper := MobileWrapper(character);
+	if (mobWrapper.IsMounted())
+		SendSysMessage(character, "Voce nao pode fazer isto montado.");
 		return 0;
-	elseif (character.frozen || character.paralyzed)
+	endif
+	if (!mobWrapper.HasFreeHand())
+		return 0;
+	endif
+
+	if (character.frozen || character.paralyzed)
 		SendSysMessage(character, "Voce esta paralizado.");
 		return 0;
-	elseif (GetObjProperty(item, "OnlyKit"))
+	endif
+
+	if (GetObjProperty(item, "OnlyKit"))
 		if (GetObjProperty(item, "OnlyKit") != GetObjProperty(character, "kit"))
 			return 0;
 		endif
