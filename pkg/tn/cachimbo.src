@@ -5,31 +5,42 @@ use cfgfile;
 
 include "include/say";
 include "include/client";
-// include "include/util_extend";
 
 program cachimbo(player, cachimbo)
 	var preenchido := GetObjProperty(cachimbo, "preenchido");
 	if (!preenchido)
 		SendSysMessage(player, "Selecione o fumo:");
 		var targ := target(player);
+		if (!targ || targ.errortext)
+			return;
+		endif
 		if (PodeFumar(targ))
 			SetObjProperty(cachimbo, "preenchido", 1);
 			SendSysMessage(player, "Voce colocou o fumo no cachimbo");
 			DestroyItem(targ);
-			return;
+		else
+			SendSysMessage(player, "Isso nao pode ser colocado no cachimbo.");
 		endif
+		return;
 	endif
-	if (preenchido)
-		Fumar(player, cachimbo);
+	if (GetObjProperty(player, "#fumando"))
+		SendSysMessage(player, "Voce ja esta fumando.");
+		return;
 	endif
+	Fumar(player, cachimbo);
 endprogram
 
-function fumar(player, cachimbo)
+function Fumar(player, cachimbo)
+	SetObjProperty(player, "#fumando", 1);
 	PrintTextAbove(player, "*Acendendo um cachimbo*");
 	Fumaca(player);
-	var loop := 0;
+	detach();
 	Sleep(4);
+	var loop := 0;
 	while (loop < 4)
+		if (!player || !cachimbo)
+			break;
+		endif
 		PrintTextAbove(player, "*Dando tragadas em um cachimbo*");
 		Fumaca(player);
 		Sleep(4);
@@ -39,58 +50,32 @@ function fumar(player, cachimbo)
 		Sleep(4);
 		loop := loop + 1;
 	endwhile
-	SendSysMessage(player, "O fumo do cachimbo acabou");
-	EraseObjProperty(cachimbo, "preenchido");
+	EraseObjProperty(player, "#fumando");
+	if (cachimbo)
+		SendSysMessage(player, "O fumo do cachimbo acabou");
+		EraseObjProperty(cachimbo, "preenchido");
+	endif
 endfunction
 
-function fumaca(player)
-	var facing := player.facing;
+function Fumaca(player)
 	var x, y, z;
-	case (facing)
-		0:
-			x := 0;
-			y := -1;
-			z := 6;
-		1:
-			x := 1;
-			y := -1;
-			z := 10;
-		2:
-			x := 1;
-			y := 0;
-			z := 10;
-		3:
-			x := 1;
-			y := 1;
-			z := 15;
-		4:
-			x := 0;
-			y := 1;
-			z := 10;
-		5:
-			x := -1;
-			y := 0;
-			z := 6;
-		6:
-			x := -1;
-			y := 0;
-			z := 6;
-		7:
-			x := -1;
-			y := -1;
-			z := 2;
+	case (player.facing)
+		0: x := 0;  y := -1; z := 6;   // Norte
+		1: x := 1;  y := -1; z := 10;  // Nordeste
+		2: x := 1;  y := 0;  z := 10;  // Leste
+		3: x := 1;  y := 1;  z := 15;  // Sudeste
+		4: x := 0;  y := 1;  z := 10;  // Sul
+		5: x := -1; y := 1;  z := 6;   // Sudoeste
+		6: x := -1; y := 0;  z := 6;   // Oeste
+		7: x := -1; y := -1; z := 2;   // Noroeste
 	endcase
 	PlayStationaryEffect(player.x + x, player.y + y, player.z + z, FX_FIZZLE, 5, 50, 0, player.realm);
-	x := 0;
-	y := 0;
-	z := 0;
 endfunction
 
 function PodeFumar(item)
 	var config := ReadConfigFile(":*:itemdesc");
-	config := config[item.objtype];
-
-	if (config.PodeFumar)
+	var elem := config[item.objtype];
+	if (elem.PodeFumar)
 		return 1;
 	endif
 	return 0;

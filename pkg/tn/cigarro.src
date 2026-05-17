@@ -1,0 +1,60 @@
+use uo;
+use os;
+
+include "include/client";
+
+const CHARGES_CIGARRO := 5;
+const CHARGES_CHARUTO  := 5;
+
+program cigarro(who, item)
+	if (!Accessible(who, item))
+		return;
+	endif
+
+	if (GetObjProperty(who, "#fumando"))
+		SendSysMessage(who, "Voce ja esta fumando.");
+		return;
+	endif
+
+	var charges := GetObjProperty(item, "charges");
+	if (charges.errortext)
+		if (item.objtype == 0xCDA8)
+			charges := CHARGES_CHARUTO;
+		else
+			charges := CHARGES_CIGARRO;
+		endif
+	endif
+
+	if (charges <= 0)
+		SendSysMessage(who, "Não há mais fumo neste item.");
+		DestroyItem(item);
+		return;
+	endif
+
+	var nome := item.desc;
+	PrintTextAbove(who, "*Acendendo " + nome + "*");
+	Fumaca(who);
+
+	charges := charges - 1;
+	if (charges <= 0)
+		SendSysMessage(who, nome + " acabou.");
+		DestroyItem(item);
+	else
+		SetObjProperty(item, "charges", charges);
+	endif
+endprogram
+
+function Fumaca(player)
+	var x, y, z;
+	case (player.facing)
+		0: x := 0;  y := -1; z := 6;
+		1: x := 1;  y := -1; z := 10;
+		2: x := 1;  y := 0;  z := 10;
+		3: x := 1;  y := 1;  z := 15;
+		4: x := 0;  y := 1;  z := 10;
+		5: x := -1; y := 1;  z := 6;
+		6: x := -1; y := 0;  z := 6;
+		7: x := -1; y := -1; z := 2;
+	endcase
+	PlayStationaryEffect(player.x + x, player.y + y, player.z + z, FX_FIZZLE, 5, 50, 0, player.realm);
+endfunction
