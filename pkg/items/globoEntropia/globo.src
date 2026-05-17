@@ -1,0 +1,101 @@
+use uo;
+use os;
+
+include ":gumpDesigner:include/Gump/Gump";
+include ":gumpDesigner:include/Control/ImageGump";
+include ":gumpDesigner:include/Control/Tooltip";
+
+const ENT_CAOS_ABSOLUTO  := -50000;
+const ENT_CAOS_PROFUNDO  := -20000;
+const ENT_CAOS_LEVE      := -5000;
+const ENT_ORDEM_LEVE     := 5000;
+const ENT_ORDEM_PROFUNDA := 20000;
+const ENT_ORDEM_ABSOLUTA := 50000;
+
+function _GetGlobeHue(entropy)
+    if (entropy <= ENT_CAOS_ABSOLUTO)
+        return 2122; // roxo
+    elseif (entropy <= ENT_CAOS_PROFUNDO)
+        return 394;  // azul
+    elseif (entropy <= ENT_CAOS_LEVE)
+        return 2336; // teal
+    elseif (entropy < ENT_ORDEM_LEVE)
+        return 2126; // verde claro
+    elseif (entropy < ENT_ORDEM_PROFUNDA)
+        return 1281; // dourado
+    elseif (entropy < ENT_ORDEM_ABSOLUTA)
+        return 1127; // âmbar
+    else
+        return 2118; // vermelho
+    endif
+endfunction
+
+function _GetGlobeGumpId(entropy)
+    if (entropy <= ENT_CAOS_ABSOLUTO)
+        return 0xA6A5; // roxo
+    elseif (entropy <= ENT_CAOS_PROFUNDO)
+        return 0xA6A6; // azul escuro
+    elseif (entropy <= ENT_CAOS_LEVE)
+        return 0xA6A7; // teal
+    elseif (entropy < ENT_ORDEM_LEVE)
+        return 0xA6AA; // verde — equilíbrio
+    elseif (entropy < ENT_ORDEM_PROFUNDA)
+        return 0xA6A9; // dourado — ordem crescente
+    elseif (entropy < ENT_ORDEM_ABSOLUTA)
+        return 0xA6AB; // âmbar — ordem profunda
+    else
+        return 0xA6AC; // vermelho — ordem absoluta
+    endif
+endfunction
+
+function _GetObservacao(entropy)
+    if (entropy <= ENT_CAOS_ABSOLUTO)
+        return "...redemoinhos violetas e negros giram freneticamente, cruzados por raios de energia que se partem em mil direções sem sentido. Você sente a realidade ao redor vacilando sob seus dedos.";
+    elseif (entropy <= ENT_CAOS_PROFUNDO)
+        return "...espirais nebulosas de azul profundo giram sobre si mesmas, absorvendo a luz que tenta emergir do centro. Sussurros incompreensíveis ecoam brevemente em sua mente.";
+    elseif (entropy <= ENT_CAOS_LEVE)
+        return "...correntes turquesa serpenteiam em espirais lentas, como fumaça presa num vendaval contido, sem jamais encontrar repouso. Algo parece inquieto no éter.";
+    elseif (entropy < ENT_ORDEM_LEVE)
+        return "...uma luz verde e serena pulsa no centro do globo como um coração tranquilo, irradiando para as bordas em ondas suaves e regulares. O mundo respira.";
+    elseif (entropy < ENT_ORDEM_PROFUNDA)
+        return "...feixes dourados partem do centro e tocam as paredes do cristal como raios de um sol nascente preso no interior, organizados e constantes. A ordem começa a ganhar terreno.";
+    elseif (entropy < ENT_ORDEM_ABSOLUTA)
+        return "...chamas âmbar giram em movimentos lentos e deliberados ao redor de um núcleo brilhante, envoltas numa luz quente que aquece levemente suas mãos. A virtude prevalece visivelmente sobre as sombras.";
+    else
+        return "...uma luz vermelha e ofuscante emana em pulsos rítmicos do núcleo, com veios de energia carmesim que percorrem toda a superfície interna do cristal em padrões perfeitos. A ordem tomou Valtheris por completo.";
+    endif
+endfunction
+
+program globo(who, item)
+    // Cooldown — bloqueia novo uso enquanto o globo ainda está reagindo
+    if (GetObjProperty(item, "#globo_ativo"))
+        SendSysMessage(who, "O globo ainda está reagindo ao último uso.");
+        return;
+    endif
+
+    var entropy := CInt(GetGlobalProperty("GlobalEntropy"));
+    if (!entropy) entropy := 0; endif
+
+    // Muda a cor do item no mundo
+    var original_color := item.color;
+    item.color := _GetGlobeHue(entropy);
+    SetObjProperty(item, "#globo_ativo", 1);
+
+    // Script separado reverte a cor após 60s
+    Start_Script(":globoEntropia:globo_revert", array{item, original_color});
+
+    PrintTextAbove(who, "*chacoalhando o globo...*");
+
+    sleepms(5000);
+
+    SendSysMessage(who, "Seus olhos se fixam no cristal... algo como um cosmos vivo, um céu de estrelas preso no interior, pulsa diante de você.");
+
+    SendSysMessage(who, "Você olha para o globo e começa a perceber" + _GetObservacao(entropy));
+
+    var gump := Gump(who, "", 200, 200, array{HIDE_BORDER, HIDE_TITLE, HIDE_PAGE});
+    var img := ImageGump("globe", 0, 0, _GetGlobeGumpId(entropy));
+    img.SetTooltip(Tooltip("tip", "Você olha para o globo e começa a perceber" + _GetObservacao(entropy)));
+    gump.AddControl(img);
+    gump.Show();
+    gump.Dispose();
+endprogram
