@@ -1,0 +1,122 @@
+/*
+ * .exportrumores - Scans every realm for NPCs carrying the "rumores"
+ * ObjProperty and dumps a readable report to log/rumores_export.log
+ */
+
+use uo;
+use os;
+use polsys;
+use file;
+
+const OUTPUT_FILE := "log/rumores_export.log";
+
+function JoinList(list)
+	var joined := "";
+	foreach entry in list
+		if (joined == "")
+			joined := cstr(entry);
+		else
+			joined := joined + ", " + cstr(entry);
+		endif
+	endforeach
+	return joined;
+endfunction
+
+program exportrumores(who)
+	Set_Priority(100);
+
+	SendSysMessage(who, "Varrendo todos os realms atras de NPCs com rumores...");
+
+	var lines := array{};
+	lines.append("=================================================");
+	lines.append("Epic Shard - Exportacao de Rumores de NPCs");
+	lines.append("Gerado em: " + POLCore().systime);
+	lines.append("=================================================");
+	lines.append("");
+
+	var npc_count := 0;
+	var rumor_count := 0;
+	var realm_list := Realms();
+
+	foreach realm_info in realm_list
+		var realm_name := _realm_info_iter;
+		if (!realm_info.mobile_count)
+			continue;
+		endif
+
+		var realm_has_npc := 0;
+		var scanned := 0;
+
+		foreach thing in ListObjectsInBox(1, 1, -120, realm_info.width, realm_info.height, 120, realm_name)
+			scanned := scanned + 1;
+			if (scanned % 250 == 0)
+				sleepms(2);
+			endif
+
+			if (!thing.npctemplate)
+				continue;
+			endif
+
+			var rumores := GetObjProperty(thing, "rumores");
+			if (rumores == error)
+				continue;
+			endif
+			if (!rumores || rumores.size() == 0)
+				continue;
+			endif
+
+			if (!realm_has_npc)
+				lines.append("");
+				lines.append("##### Realm: " + realm_name + " #####");
+				realm_has_npc := 1;
+			endif
+
+			npc_count := npc_count + 1;
+			lines.append("");
+			lines.append("--- NPC: " + thing.name + " (serial " + thing.serial +
+				", template " + thing.npctemplate + ") @ " +
+				thing.x + "," + thing.y + "," + thing.z + " ---");
+
+			var idx := 0;
+			foreach rumor in rumores
+				idx := idx + 1;
+				rumor_count := rumor_count + 1;
+
+				var head := "  [" + idx + "] " + rumor.nome;
+				if (cint(rumor.custo) != 0)
+					head := head + "  (custo: " + rumor.custo + " moedas)";
+				endif
+				lines.append(head);
+
+				if (rumor.racas && rumor.racas.size() > 0)
+					lines.append("      Racas: " + JoinList(rumor.racas));
+				endif
+				if (rumor.culturas && rumor.culturas.size() > 0)
+					lines.append("      Culturas: " + JoinList(rumor.culturas));
+				endif
+
+				lines.append("      Desc: " + rumor.desc);
+				sleepms(2);
+			endforeach
+		endforeach
+
+		sleepms(5);
+	endforeach
+
+	lines.append("");
+	lines.append("=================================================");
+	lines.append("Total de NPCs com rumores: " + npc_count);
+	lines.append("Total de rumores: " + rumor_count);
+	lines.append("=================================================");
+
+	var result := WriteFile(OUTPUT_FILE, lines);
+	if (!result)
+		SendSysMessage(who, "Erro: nao foi possivel escrever o arquivo!", 33);
+		return 0;
+	endif
+
+	SendSysMessage(who, "Exportacao concluida: " + npc_count + " NPCs, " +
+		rumor_count + " rumores.", 66);
+	SendSysMessage(who, "Arquivo: " + OUTPUT_FILE, 66);
+	return 1;
+endprogram

@@ -22,7 +22,7 @@ program start_xpbar(who, text)
 		endif
 
 		var amount := tparams.size() ? CInt(tparams[1]) : 0;
-		AddXP(targ, amount);
+		AddXP(targ, amount, XP_GM);
 		SendSysMessage(who, "Dado " + amount + " XP para " + targ.name);
 		PrintTextAbovePrivate(targ, "Você recebeu " + amount + " XP pela qualidade do seu RP, parabens!!", targ);
 		return 1;

@@ -1,0 +1,146 @@
+// .xpcensus           - level/experience snapshot of ONLINE players (fast)
+// .xpcensus full      - ALL accounts + characters (online + offline; slow)
+// .xpcensus <acctname>- a single account (all characters)
+//
+// Output: ::data/log/xp/<DD-MM-YYYY>/xpcensus_<mode>_<HH-MM-SS>.csv
+// Suspects (Level > 15) are written at the TOP of the file and echoed
+// in-game — they are the likeliest farm beneficiaries.
+
+use uo;
+use os;
+use file;
+use util;
+use basic;
+use polsys;
+
+include "include/say";
+include ":accounts:accounts";
+
+const SUSPECT_LEVEL := 15;
+
+function CensusRow(p)
+	if (!p || p == error || p.acctname == error || !p.acctname)
+		return 0;
+	endif
+
+	var char_name := GetObjProperty(p, "nome_inicial");
+	if (char_name == error || !char_name)
+		char_name := p.name;
+	endif
+	char_name := StrReplace(CStr(char_name), ",", ";");
+
+	var level := GetObjProperty(p, "Level");
+	if (level == error || !level)
+		level := 0;
+	endif
+	var experience := GetObjProperty(p, "Experience");
+	if (experience == error || !experience)
+		experience := 0;
+	endif
+
+	var state := p.connected ? "online" : "offline";
+	return struct{
+		"level"   := CInt(level),
+		"line"    := "{},{},{},{},{}".format(p.acctname, char_name, state, CInt(level), CInt(experience))
+	};
+endfunction
+
+program xpcensus(mobile, arg)
+	if (mobile.cmdlevel < 3)
+		return 0;
+	endif
+
+	var timestamp_fmt := StrFormatTime("%H-%M-%S", POLCore().systime);
+	var today := StrFormatTime("%d-%m-%Y", POLCore().systime);
+	var log_dir := "::data/log/xp/" + today;
+	if (!FileExists(log_dir))
+		CreateDirectory(log_dir);
+	endif
+
+	var mode := "online";
+	var acct_filter := "";
+	if (arg && arg != error)
+		var arg_s := Lower(CStr(arg));
+		if (arg_s == "full")
+			mode := "full";
+		else
+			mode := "acct";
+			acct_filter := arg_s;
+		endif
+	endif
+
+	var census_file := log_dir + "/xpcensus_" + mode + "_" + timestamp_fmt + ".csv";
+
+	var suspects := array{};
+	var others := array{};
+
+	if (mode == "online")
+		SendSysMessage(mobile, "XP census (online)...");
+		foreach p in EnumerateOnlineCharacters()
+			var row := CensusRow(p);
+			if (row)
+				if (row.level > SUSPECT_LEVEL)
+					suspects.append(row);
+				else
+					others.append(row);
+				endif
+			endif
+			sleepms(2);
+		endforeach
+	else
+		var accts;
+		if (mode == "acct")
+			var one := FindAccount(acct_filter);
+			if (!one || one == error || one.errortext)
+				SendSysMessage(mobile, "Account not found: " + acct_filter);
+				return;
+			endif
+			accts := array{one.name};
+		else
+			SendSysMessage(mobile, "XP census (full, may take a minute)...");
+			accts := ListAccounts();
+		endif
+
+		foreach acct_name in accts
+			var acct := FindAccount(acct_name);
+			if (!acct || acct == error)
+				continue;
+			endif
+			if (acct.banned)
+				continue;
+			endif
+			for i := 1 to 6
+				var p := acct.GetCharacter(i);
+				if (!p || p == error)
+					continue;
+				endif
+				var row := CensusRow(p);
+				if (row)
+					if (row.level > SUSPECT_LEVEL)
+						suspects.append(row);
+					else
+						others.append(row);
+					endif
+				endif
+				sleepms(2);
+			endfor
+			sleepms(1);
+		endforeach
+	endif
+
+	LogToFile(census_file, "acct,char,state,level,experience", 0);
+	LogToFile(census_file, "# SUSPECTS (Level > " + SUSPECT_LEVEL + ")", 0);
+	foreach row in suspects
+		LogToFile(census_file, row.line, 0);
+		SendSysMessage(mobile, "[L" + row.level + "] " + row.line);
+		sleepms(2);
+	endforeach
+	LogToFile(census_file, "# ALL OTHERS", 0);
+	foreach row in others
+		LogToFile(census_file, row.line, 0);
+		sleepms(2);
+	endforeach
+
+	SendSysMessage(mobile, "XP census done (" + mode + "): " + CStr(suspects.size()) + " suspects > L" + SUSPECT_LEVEL + ", " + CStr(others.size()) + " others.");
+	SendSysMessage(mobile, "File: " + census_file);
+endprogram
