@@ -210,7 +210,7 @@ endfunction
 function CalculateParryDelay(byRef attackInfo)
 	// Aplica delay básico do escudo, reduz delay com base na skill e soma fator de balanceamento
 	var parryDelay := CInt(
-		-(CInt(attackInfo.GetParryEquip().GetShieldAttributes().GetParryDelay())) + // Parry Delay Básico do escudo
+		(CInt(attackInfo.GetParryEquip().GetShieldAttributes().GetParryDelay())) + // Parry Delay Básico do escudo
 		-(CInt(attackInfo.GetDefender().GetSkill(PARRY) / 20)) + // Parry Delay Bônus de acordo com a skill
 		8 // Fator de balanceamento
 	);
