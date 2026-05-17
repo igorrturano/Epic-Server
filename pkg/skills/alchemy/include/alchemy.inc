@@ -34,20 +34,23 @@ CONST REFORCO_COMUM := 51;
 CONST REFORCO_CARGA_DUPLA := 52;
 CONST REFORCO_POTENCIA_ELEM := 53;
 
-function checkifcandrink(character, potion)
-  // Two_Handed and Dual_Wield armas prendem as duas maos mesmo quando uma
-  // unica layer esta fisicamente ocupada — checa o atributo da arma
-  // empunhada, nao apenas a ocupacao das layers.
-  var equippedright := GetEquipmentByLayer(character, 0x01);
-  var equippedleft := GetEquipmentByLayer(character, 0x02);
-  var weapon := equippedright ?: equippedleft;
-  var attribute := weapon ? WeaponWrapper(weapon).GetAttribute() : "";
-  var cfg := ReadConfigFile(":*:itemdesc");
-  var type := cfg[potion.objtype].Type;
-  if ((equippedright and equippedleft) || attribute == TWOHANDED || attribute == DUALWIELD)
+// Facade de mensagem sobre MobileWrapper.HasFreeHand(). A regra real
+// (ocupacao de layer + Two_Handed/Dual_Wield) vive no wrapper; aqui so
+// emitimos a mensagem de pocao. Toda pocao consumida passa por aqui.
+function hasFreeHandToDrink(character)
+  if (!MobileWrapper(character).HasFreeHand())
     SendSysMessage(character, "Voce precisa de pelo menos uma mao livre!");
     return 0;
   endif
+  return 1;
+endfunction
+
+function checkifcandrink(character, potion)
+  if (!hasFreeHandToDrink(character))
+    return 0;
+  endif
+  var cfg := ReadConfigFile(":*:itemdesc");
+  var type := cfg[potion.objtype].Type;
   if((type != "red") and (type != "green_potion"))
     if(GetCooldown(character, type))
         SendSysMessage(character, "Voce deve esperar um pouco antes de beber outra pocao!");
