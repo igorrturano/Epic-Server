@@ -144,13 +144,16 @@ function performPreCastingChecks(mobile, mw, byref spellinfo)
 		weapon.GetCategory() == WEAPON_CATEGORY::SPELLBOOK
 	));
 	var can_cast_with_weapon := (spellinfo.School == "Ahtaleloreth") || spellinfo.Circle[1] == "0" || has_magic_focus;
-	var tem_hab := mw.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
-		|| mw.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO) 
-		|| mw.HasAbility(ABILITY_ID::NINJA_PATH)
-		|| mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) 
-		|| mw.HasAbility(ABILITY_ID::SOUL_HARVEST) 
+	// Casting concessions tied to class identity (cast in armor / with weapon)
+	// apply from level 1 via CanCastAsClass; the rest are genuine abilities
+	// still gated by HasAbility.
+	var tem_hab := CanCastAsClass(mobile, "Paladino")
+		|| CanCastAsClass(mobile, "Cacador_de_Demonios")
+		|| CanCastAsClass(mobile, "Shinobi")
+		|| mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL)
+		|| mw.HasAbility(ABILITY_ID::SOUL_HARVEST)
 		|| mw.HasAbility(ABILITY_ID::CONEXAO_DIVINA)
-		|| IsArcaneSensitive(mw);
+		|| IsArcaneSensitive(mobile);
 
 	if (mobile.squelched && !mobile.npctemplate)
 		SendSysMessageEx(mobile, "Voce precisa falar devido os componentes verbais da magia.", SSM_FAIL);
@@ -539,12 +542,12 @@ function checkTargetValidity(mobile, targ, spellinfo)
 endfunction
 
 // The Malandro Arcano's arcane-trickster identity (cast with weapon, roll vs
-// Arcana, Arcana as supporting skill, scroll reuse, grimoire bypass) is the
-// SENSIBILIDADE_ARCANA ability — the single source of truth. It is granted at
-// creation and backfilled on logon (GrantSignatureAbility), so no
-// chardata.subclasse fallback is needed.
-function IsArcaneSensitive(mw)
-	return mw.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA);
+// Arcana, Arcana as supporting skill, scroll reuse, grimoire bypass) comes
+// from the class itself (chardata.subclasse) from level 1; the
+// SENSIBILIDADE_ARCANA ability is a separate level-up reward. CanCastAsClass
+// also honors legacy chars who earned casting by buying it.
+function IsArcaneSensitive(mobile)
+	return CanCastAsClass(mobile, "Malandro_Arcano");
 endfunction
 
 function checkCastingSuccess(mobile, mw, spellinfo, scroll)
@@ -553,7 +556,7 @@ function checkCastingSuccess(mobile, mw, spellinfo, scroll)
 	endif
 
 	var attribute := MAGERY;
-	if (IsArcaneSensitive(mw) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
+	if (IsArcaneSensitive(mobile) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
 		attribute := ARCANA;
 	elseif (spellinfo.Type == "Divine")
 		attribute := THEOLOGY;
@@ -581,7 +584,7 @@ function checkCastingSuccess(mobile, mw, spellinfo, scroll)
 
 	// Chance to also up magic lore on cast
 
-	var magic_lore_check := SkillCheck(mobile, getSupportingSkill(mobile, mw), difficulty);
+	var magic_lore_check := SkillCheck(mobile, getSupportingSkill(mobile), difficulty);
 	if (skill_check > 0)
 		if (scroll.isA(POLCLASS_ITEM))
 			consumeScroll(mobile, mw, scroll);
@@ -596,7 +599,7 @@ function checkCastingSuccess(mobile, mw, spellinfo, scroll)
 	return 0;
 endfunction
 
-function getSupportingSkill(mobile, mw)
+function getSupportingSkill(mobile)
 	var chardata := getobjProperty(mobile, "chardata");
 	var attribute := ARCANA;
 	// "Mago" wisdom_path (legacy) and "spellcaster" magia (path-rework Magus/
@@ -605,7 +608,7 @@ function getSupportingSkill(mobile, mw)
 	if (chardata != error
 		&& chardata.wisdom_path != "Mago"
 		&& chardata.magia != "spellcaster"
-		&& !IsArcaneSensitive(mw))
+		&& !IsArcaneSensitive(mobile))
 		attribute := THEOLOGY;
 	endif
 	return attribute;
@@ -643,7 +646,7 @@ function consumeScroll(mobile, mw, scroll)
 		SubtractAmount(scroll, 1);
 	else
 		var attrib_value := MAGERY;
-		if (IsArcaneSensitive(mw))
+		if (IsArcaneSensitive(mobile))
 			attrib_value := ARCANA;
 		endif
 		var chance := RandomIntMinMax(0, 100);

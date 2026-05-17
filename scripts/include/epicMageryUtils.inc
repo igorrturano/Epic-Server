@@ -430,7 +430,9 @@ function HandleSpellSkill(who)
 		endif
 	endif
 
-	if (!is_arcane && !(MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA)))
+	// Malandro Arcano scales casting on Arcana from level 1 by class identity
+	// (CanCastAsClass); the SENSIBILIDADE_ARCANA ability is a separate reward.
+	if (!is_arcane && !CanCastAsClass(who, "Malandro_Arcano"))
 		skill := Cint(AP_GetSkill(who, THEOLOGY));
 	endif
 
