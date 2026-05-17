@@ -22,14 +22,15 @@ program skill_lockpicking(me, lockpick)
 	EraseObjProperty(me, "IsMeditating");
 	EraseObjProperty(me, "HealTimer");
 	var sucesso := 0;
+	var mobWrapper := MobileWrapper(me);
 
 	// Primeira verificação de mãos livres
-	if (MobileWrapper(me).IsMounted())
+	if (mobWrapper.IsMounted())
 		SendSysMessageEx(me, "Voce nao pode fazer isto montado.", SSM_FAIL);
 		return 0;
 	endif
 
-	if (!MobileWrapper(me).HasBothHandsFree())
+	if (!mobWrapper.HasBothHandsFree())
 		SendSysMessageEx(me, "Voce precisa ter as duas maos livres para manusear a gazua.", SSM_FAIL);
 		return 0;
 	endif
@@ -70,12 +71,12 @@ program skill_lockpicking(me, lockpick)
 	endif
 
 	if (GetObjProperty(chest, "level") || GetObjProperty(chest, "levelPlayerLock"))
-		if (MobileWrapper(me).IsMounted())
+		if (mobWrapper.IsMounted())
 			SendSysMessageEx(me, "Voce nao pode fazer isto montado.", SSM_FAIL);
 			return 0;
 		endif
 
-		if (!MobileWrapper(me).HasBothHandsFree())
+		if (!mobWrapper.HasBothHandsFree())
 			SendSysMessageEx(me, "Voce precisa estar com as maos livres.", SSM_FAIL);
 			return 0;
 		endif
@@ -95,7 +96,7 @@ program skill_lockpicking(me, lockpick)
 
 		// Verifica mãos livres durante o processo
 		for i := 1 to 5
-			if (!MobileWrapper(me).HasBothHandsFree())
+			if (!mobWrapper.HasBothHandsFree())
 				SendSysMessageEx(me, "Voce nao pode usar sua gazua com as maos ocupadas.", SSM_FAIL);
 				return 0;
 			endif
@@ -184,8 +185,9 @@ function PickTreasureChest(me, lockpick, chest)
 	var check := SkillCheck(me, MECHANICS, diff);
 	var mec_skill := AP_GetSkill(me, MECHANICS);
 	var magic_chest := (GetObjProperty(chest, "level") == 6);
-	var hab1_mchest := MobileWrapper(me).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA);
-	var hab2_mchest := MobileWrapper(me).HasAbility(ABILITY_ID::DESBRAVADOR_NATO);
+	var mobWrapper := MobileWrapper(me);
+	var hab1_mchest := mobWrapper.HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA);
+	var hab2_mchest := mobWrapper.HasAbility(ABILITY_ID::DESBRAVADOR_NATO);
 
 	if (hab1_mchest || hab2_mchest)
 		if (magic_chest || (diff > mec_skill + 15 && diff < mec_skill + 40))

@@ -10,12 +10,14 @@ include ":abilities:models/Ability";
 
 program Test(who)
 
-	if (MobileWrapper(who).IsMounted())
+	var mobWrapper := MobileWrapper(who);
+
+	if (mobWrapper.IsMounted())
 		SendSysMessage(who, "Voce nao pode fazer isto montado.");
 		return 0;
 	endif
 
-	if (!MobileWrapper(who).HasBothHandsFree())
+	if (!mobWrapper.HasBothHandsFree())
 		SendSysMessage(who, "Voce precisa estar com as maos livres para arrastar.");
 		return 0;
 	endif
@@ -60,12 +62,12 @@ program Test(who)
 		endif
 	endif
 
-	if (MobileWrapper(who).IsMounted())
+	if (mobWrapper.IsMounted())
 		SendSysMessage(who, "Voce nao pode fazer isto montado.");
 		return 0;
 	endif
 
-	if (!MobileWrapper(who).HasBothHandsFree())
+	if (!mobWrapper.HasBothHandsFree())
 		SendSysMessage(who, "Voce precisa estar com as maos livres para arrastar.");
 		return 0;
 	endif
@@ -76,10 +78,10 @@ program Test(who)
 	endif
 
 	var desgaste := 500;
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
+	if (mobWrapper.HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
 		desgaste := desgaste - 100;
 	endif
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::PACK_MULE))
+	if (mobWrapper.HasAbility(ABILITY_ID::PACK_MULE))
 		desgaste := desgaste - 200;
 	endif
 

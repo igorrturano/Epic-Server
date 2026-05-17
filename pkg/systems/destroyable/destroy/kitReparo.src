@@ -63,12 +63,13 @@ function IsUsoPermitido(quem, alvo)
 		return false;
 	endif
 
-	if (MobileWrapper(quem).IsMounted())
+	var mobWrapper := MobileWrapper(quem);
+	if (mobWrapper.IsMounted())
 		SendSysMessageEx(quem, "Voce nao pode fazer isto montado.", SSM_FAIL);
 		return false;
 	endif
 
-	if (!MobileWrapper(quem).HasBothHandsFree())
+	if (!mobWrapper.HasBothHandsFree())
 		SendSysMessageEx(quem, "Você precisa esta com as duas mãos livres", SSM_FAIL);
 		return false;
 	endif
