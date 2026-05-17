@@ -2,6 +2,7 @@ use uo;
 use os;
 include ":message:include/model/Message";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":charactercreation:habilidades";
 
 // Repairs the buyhab dict for a character who just completed a stone-driven
 // migration. The migrationStone sets `migration_preserve` and the creation
@@ -48,13 +49,18 @@ program createChar(who)
     // stone, before bailing out for already-created chars.
     RepairMigratedBuyhab(who);
 
-    // If already completed, never run again. Before bailing, recompute the
-    // carry-weight mod from current sources (single source of truth). This
-    // self-heals every existing character that still carries a drifted
-    // carrying_capacity_mod from the old scattered +=/-=/:= era — idempotent,
-    // so running it on every login is safe.
+    // If already completed, never run again. Before bailing, run the
+    // idempotent self-heals (single source of truth). These re-derive state
+    // from current sources on every login, so they cost nothing on a
+    // healthy char and repair every legacy one:
+    //   - carry-weight mod drifted by the old scattered +=/-=/:= era
+    //   - signature ability missing on classes created before it was
+    //     granted at creation (Paladino/Cacador de Demonios/Malandro
+    //     Arcano/Shinobi/Arqueiro Arcano) — backfills HasAbility so no
+    //     scattered chardata.subclasse fallbacks are needed anywhere.
     if (creation_completed)
         MobileWrapper(who).RecalcCarryWeightMod();
+        GrantSignatureAbility(who);
         return;
     endif
     
