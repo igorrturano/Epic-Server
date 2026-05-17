@@ -27,11 +27,7 @@ program skinning(parms)
 	var isStoryMode := GetObjProperty(who, "chardata").game_mode == STORY_MODE;
 	var isCorpseStoryMode := GetObjProperty(cadaver, "chardata").game_mode == STORY_MODE;
 	if (who.weapon != blade)
-		var cfg := ReadConfigFile(":combat:itemdesc");
-		var equippedright := GetEquipmentByLayer(who, 0x01);
-		var equippedleft := GetEquipmentByLayer(who, 0x02);
-		var twohanded := Cint(cfg[equippedleft.objtype].Two_Handed);
-		if (equippedright || equippedleft || twohanded)
+		if (!MobileWrapper(who).HasBothHandsFree())
 			SendSysMessage(who, "Voce precisa das duas maos livres!");
 			return 0;
 		endif
