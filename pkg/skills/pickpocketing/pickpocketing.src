@@ -51,7 +51,13 @@ program skill_Stealing(mobile)
 		SetObjProperty(mobile, "#StealWait", ReadGameClock() + 5);
 	endif
 
-	if (!maolivre(mobile, 1))
+	if (MobileWrapper(mobile).IsMounted())
+		Message("Voce nao pode fazer isto montado.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
+	if (!MobileWrapper(mobile).HasFreeHand())
+		Message("Voce precisa de pelo menos uma mao livre!", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 
