@@ -17,6 +17,9 @@ program drink_blue(who, potion)
 		SendSysMessageEx(who, "Voce nao pode beber isto.", SSM_FAIL);
 		return;
 	endif
+	if (!hasFreeHandToDrink(who))
+		return;
+	endif
 	if (cint(GetObjProperty(who, "#staminapotion")))
 		SendSysMessageEx(who, "Voce ja esta sob efeito de uma pocao igual.", SSM_FAIL);
 		return;

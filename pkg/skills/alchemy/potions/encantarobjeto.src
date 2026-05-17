@@ -21,6 +21,10 @@ program drink_blue(who, potion)
 		return;
 	endif
 
+	if (!hasFreeHandToDrink(who.GetObjRef()))
+		return;
+	endif
+
 	Message("Qual item deseja encantar?", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
 	var use_on := Target(who.GetObjRef());
 

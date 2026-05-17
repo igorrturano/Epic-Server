@@ -10,6 +10,9 @@ program drink_blue(who, potion)
 	if (!Accessible(who, potion))
 		return;
 	endif
+	if (!hasFreeHandToDrink(who))
+		return;
+	endif
 	var lich_serial := GetObjProperty(who, "phylactery");
 	var the_lich := SystemFindObjectBySerial(lich_serial);
 	if (lich_serial != who.serial)

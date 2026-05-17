@@ -19,6 +19,10 @@ program drink_potion (who, potion)
 		return;
 	endif
 
+	if (!hasFreeHandToDrink(who))
+		return;
+	endif
+
 	var tier := peganivelpocao(who, potion);
 	if (!tier)
 		tier := 1;

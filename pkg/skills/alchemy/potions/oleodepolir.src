@@ -15,6 +15,10 @@ program drink_blue(who, potion)
 		return;
 	endif
 
+	if (!hasFreeHandToDrink(who))
+		return;
+	endif
+
 	var targ;
 	SendSysMessageEx(who, "Escolha sua armadura:", SSM_REQUEST);
 	targ := Target(who);
