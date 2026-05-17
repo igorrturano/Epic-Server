@@ -38,6 +38,12 @@ function ApplyIncognito(who)
     if (GetObjProperty(who, "disfarce"))
         return 0;
     endif
+    // Masks are NOT blocked at equip while polymorphed (combat/equip.src only
+    // blocks weapon/armor), so guard here: going incognito while metamorfosed
+    // would leave the player stuck when the form reverts. Error == not set.
+    if (GetObjProperty(who, "metamorfose") != error)
+        return 0;
+    endif
     if (IsIncognito(who))
         return 1;
     endif
