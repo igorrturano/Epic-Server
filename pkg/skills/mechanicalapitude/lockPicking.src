@@ -16,6 +16,7 @@ include ":traps:include/traps";
 include "include/string";
 include "include/noiseAlert";
 include ":merchants:citizen/include/citizenWitness";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program skill_lockpicking(me, lockpick)
 	EraseObjProperty(me, "IsMeditating");
@@ -23,7 +24,12 @@ program skill_lockpicking(me, lockpick)
 	var sucesso := 0;
 
 	// Primeira verificação de mãos livres
-	if (!maolivre(me, 2))
+	if (MobileWrapper(me).IsMounted())
+		SendSysMessageEx(me, "Voce nao pode fazer isto montado.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!MobileWrapper(me).HasBothHandsFree())
 		SendSysMessageEx(me, "Voce precisa ter as duas maos livres para manusear a gazua.", SSM_FAIL);
 		return 0;
 	endif
@@ -64,7 +70,12 @@ program skill_lockpicking(me, lockpick)
 	endif
 
 	if (GetObjProperty(chest, "level") || GetObjProperty(chest, "levelPlayerLock"))
-		if (!maolivre(me, 2))
+		if (MobileWrapper(me).IsMounted())
+			SendSysMessageEx(me, "Voce nao pode fazer isto montado.", SSM_FAIL);
+			return 0;
+		endif
+
+		if (!MobileWrapper(me).HasBothHandsFree())
 			SendSysMessageEx(me, "Voce precisa estar com as maos livres.", SSM_FAIL);
 			return 0;
 		endif
@@ -84,7 +95,7 @@ program skill_lockpicking(me, lockpick)
 
 		// Verifica mãos livres durante o processo
 		for i := 1 to 5
-			if (!maolivre(me, 2))
+			if (!MobileWrapper(me).HasBothHandsFree())
 				SendSysMessageEx(me, "Voce nao pode usar sua gazua com as maos ocupadas.", SSM_FAIL);
 				return 0;
 			endif

@@ -4,6 +4,7 @@ include ":destroyable:include/destroyItem";
 include ":attributes:attributes";
 include "include/imersao";
 include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program kitReparo(quem, kit)
 
@@ -62,7 +63,12 @@ function IsUsoPermitido(quem, alvo)
 		return false;
 	endif
 
-	if (!maolivre(quem, 2))
+	if (MobileWrapper(quem).IsMounted())
+		SendSysMessageEx(quem, "Voce nao pode fazer isto montado.", SSM_FAIL);
+		return false;
+	endif
+
+	if (!MobileWrapper(quem).HasBothHandsFree())
 		SendSysMessageEx(quem, "Você precisa esta com as duas mãos livres", SSM_FAIL);
 		return false;
 	endif
