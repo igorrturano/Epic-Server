@@ -27,6 +27,9 @@ class IMobileWrapper()
 	uninit function IsAllyOf(this, other);
 	uninit function IsRaging(this);
 	uninit function HasReligiousBannerEquipped(this);
+	uninit function GetFreeHandCount(this);
+	uninit function HasFreeHand(this);
+	uninit function HasBothHandsFree(this);
 	uninit function TeleportBehind(this, target);
 	uninit function IsInSmokeZone(this);
 	uninit function ApplySmokeProtection(this);
