@@ -1106,22 +1106,37 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	 *   BOLSA_INFINITA ability ..... +120
 	 *
 	 * excludeSerial: skip the item with this serial in the equipped scan.
-	 * The unequip hook may fire while the leaving item is still on its layer;
-	 * passing its serial keeps the recompute correct regardless of whether
-	 * the hook runs before or after the item actually leaves (no-op if gone).
+	 * The unequip hook fires while the leaving item is STILL on its layer;
+	 * passing its serial keeps the recompute correct (no-op if already gone).
+	 *
+	 * includeItem: an item ref to fold in even if it isn't in the equipped
+	 * scan. The equip hook (POL equipscript) is a permission gate that runs
+	 * BEFORE the item is attached to its layer, so the just-equipped item is
+	 * NOT in ListEquippedItems yet — the caller passes it here. Deduped by
+	 * serial so a POL that equips-first can never double-count it.
 	 */
-	function RecalcCarryWeightMod(this, excludeSerial := 0)
+	function RecalcCarryWeightMod(this, excludeSerial := 0, includeItem := 0)
 		if (this.GetObjRef() is @Exception)
 			return this.GetObjRef();
 		endif
 
 		var who := this.GetObjRef();
 		var total := 0;
+		var seen := array;
 
-		foreach item in (ListEquippedItems(who))
+		var equipped := ListEquippedItems(who);
+		if (includeItem)
+			equipped.append(includeItem);
+		endif
+
+		foreach item in (equipped)
 			if (excludeSerial && item.serial == excludeSerial)
 				continue;
 			endif
+			if (item.serial in seen)
+				continue;
+			endif
+			seen.append(item.serial);
 			case (item.objtype)
 				0xFFC2: total += 50;  // Steam Legs
 				0xEDA0: total += 20;  // Mochila de Costas
