@@ -242,21 +242,22 @@ function ValidateSpellAccess(who, spell_type)
             endif
             
         SPELL_TYPE_PALADIN:
-            // Signature ability is the single source of truth (granted at
-            // creation + backfilled on logon by GrantSignatureAbility).
-            if (!MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA))
+            // Casting identity is chardata.subclasse from level 1; the
+            // ability itself is a separate level-up reward (CanCastAsClass
+            // also honors legacy chars who bought it).
+            if (!CanCastAsClass(who, "Paladino"))
                 SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
                 return 0;
             endif
 
         SPELL_TYPE_DEMONHUNTER:
-            if (!MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO))
+            if (!CanCastAsClass(who, "Cacador_de_Demonios"))
                 SendSysMessageEx(who, "Apenas Cacadores de Demonios podem usar este comando.", SSM_FAIL);
                 return 0;
             endif
 
         SPELL_TYPE_SHINOBI:
-            if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
+            if (!CanCastAsClass(who, "Shinobi"))
                 SendSysMessageEx(who, "Apenas Shinobis podem usar este comando.", SSM_FAIL);
                 return 0;
             endif
@@ -366,11 +367,10 @@ function ValidateSpellRequirements(who, spell_data, spell_type)
         SPELL_TYPE_ILLUSION:
         SPELL_TYPE_SWORDMAGE:
             // Every spellcaster school requires the spell to be in the
-            // grimoire. Trickster (SENSIBILIDADE_ARCANA) and GMs bypass. The
-            // ability is the single source of truth — granted at creation and
-            // backfilled on logon by GrantSignatureAbility.
+            // grimoire. Trickster casting (Malandro Arcano — by class
+            // identity from level 1, legacy chars by ability) and GMs bypass.
             if (!who.cmdlevel && spell_data.circle != 0)
-                if (!MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
+                if (!CanCastAsClass(who, "Malandro_Arcano"))
                     var spellBookInfo := FindSpellInSpellBooks(who, spell_data.id);
                     if (!spellBookInfo.found)
                         SendSysMessageEx(who, "Voce nao possui a magia " + spell_data.name + " no seu grimorio.", SSM_FAIL);
