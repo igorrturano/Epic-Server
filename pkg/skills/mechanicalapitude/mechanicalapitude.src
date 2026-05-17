@@ -16,12 +16,13 @@ program skillremoveTrap(who)
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
 
-	if (MobileWrapper(who).IsMounted())
+	var mobWrapper := MobileWrapper(who);
+	if (mobWrapper.IsMounted())
 		SendSysMessageEx(who, "Voce nao pode fazer isto montado.", SSM_FAIL);
 		return 0;
 	endif
 
-	if (!MobileWrapper(who).HasBothHandsFree())
+	if (!mobWrapper.HasBothHandsFree())
 		SendSysMessageEx(who, "Voce precisa estar com as maos livres.", SSM_FAIL);
 		return 0;
 	endif
