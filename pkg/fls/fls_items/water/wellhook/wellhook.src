@@ -55,13 +55,13 @@ endprogram
 
 function MoveHookInWell(hook, bucket)
 	hook.movable := 1;
-	MoveObjectToLocation(hook, hook.x - 1, hook.y, hook.z, MOVEOBJECT_FORCELOCATION);
-	MoveObjectToLocation(bucket, hook.x - 2, hook.y, hook.z - 4, MOVEOBJECT_FORCELOCATION);
+	MoveObjectToLocation(hook, hook.x - 1, hook.y, hook.z, hook.realm, MOVEOBJECT_FORCELOCATION);
+	MoveObjectToLocation(bucket, hook.x - 2, hook.y, hook.z - 4, hook.realm, MOVEOBJECT_FORCELOCATION);
 	sleepms(600);
 	var i;
 	for (i := 3; i > 0; i := i - 1)
-		MoveObjectToLocation(hook, hook.x, hook.y, hook.z - 1, MOVEOBJECT_FORCELOCATION);
-		MoveObjectToLocation(bucket, hook.x - 1, hook.y, hook.z - 4, MOVEOBJECT_FORCELOCATION);
+		MoveObjectToLocation(hook, hook.x, hook.y, hook.z - 1, hook.realm, MOVEOBJECT_FORCELOCATION);
+		MoveObjectToLocation(bucket, hook.x - 1, hook.y, hook.z - 4, hook.realm, MOVEOBJECT_FORCELOCATION);
 		sleepms(200);
 	endfor
 endfunction
@@ -69,13 +69,13 @@ endfunction
 function RemoveHookFromWell(hook, bucket)
 	var i;
 	for (i := 3; i > 0; i := i - 1)
-		MoveObjectToLocation(hook, hook.x, hook.y, hook.z + 1, MOVEOBJECT_FORCELOCATION);
-		MoveObjectToLocation(bucket, hook.x - 1, hook.y, hook.z - 4, MOVEOBJECT_FORCELOCATION);
+		MoveObjectToLocation(hook, hook.x, hook.y, hook.z + 1, hook.realm, MOVEOBJECT_FORCELOCATION);
+		MoveObjectToLocation(bucket, hook.x - 1, hook.y, hook.z - 4, hook.realm, MOVEOBJECT_FORCELOCATION);
 		sleepms(200);
 	endfor
-	MoveObjectToLocation(hook, hook.x + 1, hook.y, hook.z, MOVEOBJECT_FORCELOCATION);
+	MoveObjectToLocation(hook, hook.x + 1, hook.y, hook.z, hook.realm, MOVEOBJECT_FORCELOCATION);
 	hook.movable := 0;
-	MoveObjectToLocation(bucket, hook.x - 1, hook.y, hook.z - 4, MOVEOBJECT_FORCELOCATION);
+	MoveObjectToLocation(bucket, hook.x - 1, hook.y, hook.z - 4, hook.realm, MOVEOBJECT_FORCELOCATION);
 	sleepms(600);
-	MoveObjectToLocation(bucket, hook.x, hook.y + 1, hook.z - 2);
+	MoveObjectToLocation(bucket, hook.x, hook.y + 1, hook.z - 2, hook.realm);
 endfunction
