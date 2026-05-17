@@ -17,6 +17,10 @@ program drink_blue(who, potion)
 		return;
 	endif
 
+	if (!hasFreeHandToDrink(who))
+		return;
+	endif
+
 
 	SendSysMessage(who, "Voce espalhou o po ao redor.");
 	PrintTextAbove(who, "*espalha um fino po ao redor de si*");

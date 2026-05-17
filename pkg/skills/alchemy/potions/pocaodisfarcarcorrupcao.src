@@ -23,6 +23,10 @@ program drink_potion (who, potion)
 		return;
 	endif
 
+	if (!hasFreeHandToDrink(who))
+		return;
+	endif
+
 	// Check if already has the effect active
 	if (GetCooldown(who, "necrotic"))
 		Message("Você já está disfarçando sua corrupção.")

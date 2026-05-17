@@ -31,6 +31,10 @@ program drink_blue(who, potion)
 		return;
 	endif
 
+	if (!hasFreeHandToDrink(who))
+		return;
+	endif
+
 	if (GetObjProperty(who, "CannotHeal"))
 		SendSysMessageEx(who, "Essa pocao nao fara efeito nas atuais circunstacias", SSM_FAIL);
 		return;

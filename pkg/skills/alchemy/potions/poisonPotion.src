@@ -14,7 +14,7 @@ program drink_blue(who, potion)
 		SendSysMessage(who, "Voce nao pode beber isto.");
 		return;
 	endif
-	if (!checkifcandrink(who, "green_potion"))
+	if (!hasFreeHandToDrink(who))
 		return;
 	endif
 	do_poison(who, potion);
