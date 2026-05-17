@@ -1129,3 +1129,78 @@ function SkillEraser(who)
     SendSysMessageEx(who, "Suas pericias selecionadas serao esquecidas com o tempo.", SSM_INFO);
 
 endfunction
+
+// ---------------------------------------------------------------------------
+// Signature ability — single source of truth
+// ---------------------------------------------------------------------------
+// A few classes ARE their level-1 passive: Paladino casts divine in heavy
+// armor (Consagracao Divina), Cacador de Demonios wears protective sigils,
+// Malandro Arcano does arcane tricks, Shinobi walks the ninja path, Arqueiro
+// Arcano shoots arcane arrows. The rest of the codebase reads that identity
+// only through MobileWrapper.HasAbility(). Granting it once at creation and
+// backfilling it on logon is what lets HasAbility be the ONLY signal — no
+// per-call-site chardata.subclasse fallbacks anywhere.
+function SignatureAbilityFor(subclasse)
+	if (subclasse == "Paladino")
+		return ABILITY_ID::CONSAGRACAO_DIVINA;
+	elseif (subclasse == "Cacador_de_Demonios")
+		return ABILITY_ID::SIGILO_DE_PROTECAO;
+	elseif (subclasse == "Malandro_Arcano")
+		return ABILITY_ID::SENSIBILIDADE_ARCANA;
+	elseif (subclasse == "Shinobi")
+		return ABILITY_ID::NINJA_PATH;
+	elseif (subclasse == "Arqueiro_Arcano")
+		return ABILITY_ID::ARCANE_BOW;
+	endif
+	return 0;
+endfunction
+
+// Idempotent. Writes the signature ability into the level-1 ability slot
+// (slot 2 — the buyhab nivel*2 convention; buyhab[2]:=2 marks it consumed so
+// the ability gump never re-offers a level-1 pick) plus any one-time grant
+// side-effect. Safe at creation and on every logon (backfill for chars made
+// before this existed). Returns 1 if it granted, 0 if it was a no-op.
+function GrantSignatureAbility(who)
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata == error || !chardata)
+		return 0;
+	endif
+	var subclasse := chardata.subclasse;
+	if (subclasse == error || !subclasse)
+		return 0;
+	endif
+
+	var ability_id := SignatureAbilityFor(subclasse);
+	if (!ability_id)
+		return 0;
+	endif
+
+	var mw := MobileWrapper(who);
+	if (mw.HasAbility(ability_id))
+		return 0;
+	endif
+
+	var myhabs := GetObjProperty(who, "myhabs");
+	if (myhabs == error)
+		myhabs := dictionary;
+	endif
+	var habs := GetObjProperty(who, "buyhab");
+	if (habs[0] == error)
+		habs[0] := 1;
+	endif
+	myhabs[2] := ability_id;
+	habs[2] := 2;
+	SetObjProperty(who, "myhabs", myhabs);
+	SetObjProperty(who, "buyhab", habs);
+
+	// One-time grant side-effect, mirroring the ability-buy path
+	// (HabilidadesPorNivelPossiveis). The ninja kit (3592) must not stack
+	// across repeated logon backfills.
+	if (ability_id == ABILITY_ID::NINJA_PATH)
+		if (!FindObjtypeInContainer(who.backpack, 3592))
+			CreateItemInBackPack(who, 3592, 1);
+		endif
+	endif
+
+	return 1;
+endfunction

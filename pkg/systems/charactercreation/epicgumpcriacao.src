@@ -9,6 +9,7 @@ include ":gumps:requestGump";
 include ":attributes:attributes";
 include "include/client";
 include ":charactercreation:createchar";
+include ":charactercreation:habilidades";
 include ":disguise:disguise";
 include ":datafile:datafile";
 include "include/say";
@@ -884,24 +885,19 @@ function applyClassStarter(who)
 		SetObjProperty(pistol2, "serialid", who.serial);
 
 	elseif (subclasse == "Arqueiro_Arcano")
+		// Signature ability (ARCANE_BOW) is granted by GrantSignatureAbility
+		// below; only the magia/religion starter state is class-specific here.
 		chardata.+magia := "arcane_archer";
 		chardata.+religion := LORE;
-		var myhabs := GetObjProperty(who, "myhabs");
-		if (myhabs == error)
-			myhabs := dictionary;
-		endif
-		var habs := GetObjProperty(who, "buyhab");
-		if (habs[0] == error)
-			habs[0] := 1;
-		endif
-		myhabs[2] := ABILITY_ID::ARCANE_BOW;
-		habs[2] := 2;
-		SetObjProperty(who, "myhabs", myhabs);
-		SetObjProperty(who, "buyhab", habs);
 
 	endif
 
 	SetObjProperty(who, "chardata", chardata);
+
+	// Single source of truth: grant the class signature ability (Paladino,
+	// Cacador de Demonios, Malandro Arcano, Shinobi, Arqueiro Arcano) so every
+	// HasAbility() gate recognizes the class from level 1. Idempotent.
+	GrantSignatureAbility(who);
 endfunction
 
 function startAdventure(who)
