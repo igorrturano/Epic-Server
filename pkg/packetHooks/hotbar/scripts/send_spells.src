@@ -465,11 +465,12 @@ function GetPlayerSpells(who)
         endif
     endif
 
-    // Ability-based spell access
-    var has_paladin := MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA);
-    var has_trickster := MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA);
-    var has_demonhunter := MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO);
-    var has_shinobi := MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH);
+    // Casting access is by class identity from level 1 (CanCastAsClass); the
+    // ability itself is a separate level-up reward gated by HasAbility.
+    var has_paladin := CanCastAsClass(who, "Paladino");
+    var has_trickster := CanCastAsClass(who, "Malandro_Arcano");
+    var has_demonhunter := CanCastAsClass(who, "Cacador_de_Demonios");
+    var has_shinobi := CanCastAsClass(who, "Shinobi");
 
     // Paladin spells
     if (has_paladin)
