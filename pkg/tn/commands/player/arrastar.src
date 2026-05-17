@@ -10,9 +10,17 @@ include ":abilities:models/Ability";
 
 program Test(who)
 
-	if (!maolivre(who, 2))
+	if (MobileWrapper(who).IsMounted())
+		SendSysMessage(who, "Voce nao pode fazer isto montado.");
 		return 0;
-	elseif (AP_GetVital(who, "Stamina") < 10)
+	endif
+
+	if (!MobileWrapper(who).HasBothHandsFree())
+		SendSysMessage(who, "Voce precisa estar com as maos livres para arrastar.");
+		return 0;
+	endif
+
+	if (AP_GetVital(who, "Stamina") < 10)
 		SendSysMessage(who, "Voce esta cansado demais para arrastar algo...");
 		return;
 	endif
@@ -52,9 +60,17 @@ program Test(who)
 		endif
 	endif
 
-	if (!maolivre(who, 2))
+	if (MobileWrapper(who).IsMounted())
+		SendSysMessage(who, "Voce nao pode fazer isto montado.");
 		return 0;
-	elseif (AP_GetVital(who, "Stamina") < 10)
+	endif
+
+	if (!MobileWrapper(who).HasBothHandsFree())
+		SendSysMessage(who, "Voce precisa estar com as maos livres para arrastar.");
+		return 0;
+	endif
+
+	if (AP_GetVital(who, "Stamina") < 10)
 		SendSysMessage(who, "Voce esta cansado demais para arrastar algo...");
 		return;
 	endif
