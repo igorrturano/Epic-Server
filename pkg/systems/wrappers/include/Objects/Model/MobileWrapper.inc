@@ -1375,6 +1375,53 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	endfunction
 
 	/*
+	 * Conta quantas mãos (LAYER_HAND1 / LAYER_HAND2) estão livres.
+	 * Uma arma TWOHANDED ou DUALWIELD ocupa AMBAS as mãos mesmo que
+	 * apenas uma layer esteja fisicamente preenchida.
+	 *
+	 * @return 0, 1 ou 2 (ou Exception se ref inválido)
+	 */
+	function GetFreeHandCount(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+
+		var weapon := this.GetEquipBySlot(WEAPON);
+		if (!(weapon is @Exception))
+			var attribute := weapon.GetAttribute();
+			if (attribute == TWOHANDED || attribute == DUALWIELD)
+				return 0;
+			endif
+		endif
+
+		var freeHands := 0;
+		if (!this.GetEquipByLayer(LAYER_HAND1))
+			freeHands := freeHands + 1;
+		endif
+		if (!this.GetEquipByLayer(LAYER_HAND2))
+			freeHands := freeHands + 1;
+		endif
+
+		return freeHands;
+	endfunction
+
+	/* @return 1 se houver ao menos uma mão livre. Silencioso. */
+	function HasFreeHand(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+		return this.GetFreeHandCount() >= 1;
+	endfunction
+
+	/* @return 1 se ambas as mãos estiverem livres. Silencioso. */
+	function HasBothHandsFree(this)
+		if (this.GetObjRef() is @Exception)
+			return this.GetObjRef();
+		endif
+		return this.GetFreeHandCount() == 2;
+	endfunction
+
+	/*
 	 * Teleporta este mobile para a coordenada atrás do alvo, encarando o alvo.
 	 * Bloqueia (sleeps) durante o movimento em linha. Fallback para tile aleatório
 	 * em raio 1 do alvo se a posição direta não for caminhável.
