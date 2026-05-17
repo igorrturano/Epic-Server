@@ -23,10 +23,10 @@ program magia_paladin(who, spellname := "")
 		spellname := params[2];
 	endif
 
-	// CONSAGRACAO_DIVINA is the Paladino signature ability, granted at creation
-	// and backfilled on logon (GrantSignatureAbility), so HasAbility is the
-	// single source of truth — no chardata.subclasse fallback needed.
-	var isPaladin := MobileWrapper(who).HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA);
+	// Casting identity is the class (chardata.subclasse) from level 1; the
+	// CONSAGRACAO_DIVINA ability is a separate level-up reward. CanCastAsClass
+	// also honors legacy chars who earned casting by buying the ability.
+	var isPaladin := CanCastAsClass(who, "Paladino");
 	if (!isPaladin)
 		SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
 		return 0;

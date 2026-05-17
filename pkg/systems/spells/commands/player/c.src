@@ -27,10 +27,10 @@ program sigilodeprotecao(who, spellname := "")
 		spellname := params[2];
 	endif
 
-	// SIGILO_DE_PROTECAO is the Cacador de Demonios signature ability, granted
-	// at creation and backfilled on logon (GrantSignatureAbility), so
-	// HasAbility is the single source of truth — no subclasse fallback needed.
-	var isDemonHunter := MobileWrapper(who).HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO);
+	// Casting identity is the class (chardata.subclasse) from level 1; the
+	// SIGILO_DE_PROTECAO ability is a separate level-up reward. CanCastAsClass
+	// also honors legacy chars who earned casting by buying the ability.
+	var isDemonHunter := CanCastAsClass(who, "Cacador_de_Demonios");
 	if (!isDemonHunter)
 		SendSysMessageEx(who, "Apenas Caçadores de Demônios podem usar este comando.", SSM_FAIL);
 		return 0;
