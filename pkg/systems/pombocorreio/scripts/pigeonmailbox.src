@@ -100,8 +100,8 @@ program pigeonmailbox(who, mailbox)
 		return;
 	endif
 
-	if (!PigeonConsumeCost(who))
-		SendSysMessage(who, "*voce precisa pagar " + CStr(PIGEON_COST) + " moedas para usar o serviço*", 33);
+	if (!PigeonConsumeCost(who, animal_type))
+		SendSysMessage(who, "*voce precisa pagar " + CStr(PigeonGetCost(animal_type)) + " moedas para usar o serviço*", 33);
 		return;
 	endif
 
@@ -173,7 +173,7 @@ function BuildMailGump(conhecidos, is_gm)
 	var gump := GFCreateGump(100, 50);
 
 	var W := 360;
-	var H := 500;
+	var H := 520;
 
 	GFPage(gump, 0);
 
@@ -192,8 +192,8 @@ function BuildMailGump(conhecidos, is_gm)
 	GFResizePic(gump, 15, 32, 9350, W-30, 22);
 	GFTextLine(gump, 20, 35, 53, "Destinatario:");
 
-	// Seção animal mensageiro (radio group 2, IDs 100-106)
-	GFResizePic(gump, 15, 262, 9350, W-30, 85);
+	// Seção animal mensageiro (radio group 2, IDs 100-108)
+	GFResizePic(gump, 15, 262, 9350, W-30, 105);
 	GFTextLine(gump, 20, 265, 53, "Animal mensageiro:");
 
 	GFSetRadioGroup(gump, 2);
@@ -210,23 +210,30 @@ function BuildMailGump(conhecidos, is_gm)
 	GFTextLine(gump,    236, 283, 53, "Furao");
 
 	GFSetRadioGroup(gump, 2);
-	GFRadioButton(gump, 20,  323, 0xD0, 0xD1, 0, 104);
-	GFTextLine(gump,    38,  323, 53, "Esquilo");
+	GFRadioButton(gump, 20,  303, 0xD0, 0xD1, 0, 104);
+	GFTextLine(gump,    38,  303, 53, "Esquilo");
 	GFSetRadioGroup(gump, 2);
-	GFRadioButton(gump, 100, 323, 0xD0, 0xD1, 0, 105);
-	GFTextLine(gump,    118, 323, 53, "Corvo");
+	GFRadioButton(gump, 100, 303, 0xD0, 0xD1, 0, 105);
+	GFTextLine(gump,    118, 303, 53, "Corvo");
 	GFSetRadioGroup(gump, 2);
-	GFRadioButton(gump, 170, 323, 0xD0, 0xD1, 0, 106);
-	GFTextLine(gump,    188, 323, 53, "Arara");
+	GFRadioButton(gump, 170, 303, 0xD0, 0xD1, 0, 106);
+	GFTextLine(gump,    188, 303, 53, "Arara");
+
+	GFSetRadioGroup(gump, 2);
+	GFRadioButton(gump, 20,  323, 0xD0, 0xD1, 0, 107);
+	GFTextLine(gump,    38,  323, 53, "Menino");
+	GFSetRadioGroup(gump, 2);
+	GFRadioButton(gump, 100, 323, 0xD0, 0xD1, 0, 108);
+	GFTextLine(gump,    118, 323, 53, "Menina");
 
 	// Seção mensagem
-	GFResizePic(gump, 15, 350, 9350, W-30, 22);
-	GFTextLine(gump, 20, 353, 53, "Mensagem:");
-	GFResizePic(gump, 15, 372, 3000, W-30, 60);
-	GFTextEntry(gump, 20, 377, W-40, 50, 0, "", 1, PIGEON_MSG_MAX_LEN);
+	GFResizePic(gump, 15, 370, 9350, W-30, 22);
+	GFTextLine(gump, 20, 373, 53, "Mensagem:");
+	GFResizePic(gump, 15, 392, 3000, W-30, 60);
+	GFTextEntry(gump, 20, 397, W-40, 50, 0, "", 1, PIGEON_MSG_MAX_LEN);
 
-	GFAddButton(gump, 85,  450, 2128, 2129, GF_CLOSE_BTN, 1);
-	GFAddButton(gump, 205, 450, 2119, 2120, GF_CLOSE_BTN, 2);
+	GFAddButton(gump, 85,  465, 2128, 2129, GF_CLOSE_BTN, 1);
+	GFAddButton(gump, 205, 465, 2119, 2120, GF_CLOSE_BTN, 2);
 
 
 	var y := 57;

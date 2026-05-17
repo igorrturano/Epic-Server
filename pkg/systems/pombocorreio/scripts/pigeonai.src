@@ -116,7 +116,7 @@ program PigeonAI()
 	// ── FASE 3: FOLLOWING — segue e aguarda double-click ──────
 	EnableEvents(SYSEVENT_DOUBLECLICKED, 20);
 
-	var follow_emote := PigeonGetFollowEmote(animal_type);
+	var follow_emote := PigeonGetFollowEmote(animal_type, recipient.gender);
 	PrintTextAbove(me, follow_emote);
 
 	var emote_tick  := 0;
