@@ -153,6 +153,25 @@ function WeaponHitScripts(byRef attackInfo)
 		endforeach
 	endif
 
+	var armedEnfraq := attackInfo.GetAttacker().GetObjRef().GetProp("#enfraq_xama");
+	if (armedEnfraq && attackInfo.GetWeapon().GetAttribute() != RANGED)
+		// Sync erase closes the double-fire window before the next swing;
+		// the delivery script's SC_RemoveEffect does the rest of the cleanup.
+		attackInfo.GetAttacker().GetObjRef().EraseProp("#enfraq_xama");
+		start_script(
+			":combat:weaponHitScripts/enfraquecerXama",
+			array{
+				attackInfo.GetAttacker().GetObjRef(),
+				attackInfo.GetDefender().GetObjRef(),
+				attackInfo.GetWeapon().GetObjRef(),
+				uninit,
+				attackInfo.GetDamage().GetTotalBaseDamage(),
+				attackInfo.GetDamage().GetTotalRawDamage(),
+				armedEnfraq
+			}
+		);
+	endif
+
 	if (GetCooldown(attackInfo.GetWeapon().GetObjRef(), "circulodevas"))
 		var elemental := attackInfo.GetWeapon().GetObjRef().GetProp("#elementalweapon");
 

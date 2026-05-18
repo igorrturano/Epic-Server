@@ -1,0 +1,39 @@
+use uo;
+
+include ":spells:Effects/Weaken";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":charactercreation:habilidades";
+
+// Delivery for shaman Enfraquecer (spell 607). The cast arms a #enfraq_xama
+// marker; WeaponHitScripts fires this on the caster's next melee hit. We
+// compute the STR debuff here (THEOLOGY-scaled, no resist roll — landing
+// the melee hit is the gate), apply it to the defender via the shared
+// ApplyWeakenEffect, then consume the arm so the buff icon clears.
+program HitScript(params)
+	var attacker := params[1];
+	var defender := params[2];
+	var spellId   := CInt(params[7]);
+	params := 0;
+
+	if (!attacker || !defender || !spellId)
+		return;
+	endif
+
+	var amt := CInt(AP_GetSkill(attacker, THEOLOGY) * 0.5);
+
+	// Necro parity: Sacrificio da Carne amplifies while bloodied.
+	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::SACRIFICIO_DA_CARNE))
+		if (IsBloodied(attacker))
+			amt := CInt(amt * 1.5);
+		endif
+	endif
+
+	var duration := CInt(AP_GetSkill(attacker, THEOLOGY));
+
+	ApplyWeakenEffect(attacker, defender, amt, duration, spellId);
+
+	// Consume the arm: clears the caster's buff icon + SpellOpts.
+	SC_RemoveEffect(attacker, spellId);
+	return 1;
+endprogram
