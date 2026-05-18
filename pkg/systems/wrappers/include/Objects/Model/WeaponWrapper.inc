@@ -36,6 +36,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var MaxRange := 1;
 	var IsThrowableVar := false;
 	var IsFinesseVar := false;
+	var IsGatheringToolVar := false;
 	var EpicMainDamage := "";
 
 	function WeaponWrapper(this, byRef item)
@@ -85,6 +86,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this.MaxRange := this.Template.MaxRange ?: 1;
 			this.IsThrowableVar := Boolean(this.Template.Throwable) ?: false;
 			this.IsFinesseVar := Boolean(this.Template.Finesse) ?: false;
+			this.IsGatheringToolVar := Boolean(this.Template.GatheringTool) ?: false;
 			this.CriticalChanceMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_CRITICO);
 			this.AccuracyMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_PRECISAO);
 			/* TODO ver com o Evil sobre essa forma de guardar o CriticalChanceMod , me pareceu que ficaria dificil executar os calculos.
@@ -410,6 +412,15 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 
 	function IsFinesse(this)
 		return this.IsFinesseVar;
+	endfunction
+
+	/*
+	 * Ferramenta de coleta (picareta, machado de lenhador, etc.). Mesmo
+	 * sendo Two_Handed para combate, não deve travar o acesso à mochila —
+	 * marcada com `GatheringTool 1` no itemdesc.
+	 */
+	function IsGatheringTool(this)
+		return this.IsGatheringToolVar;
 	endfunction
 
 	// Private functions
