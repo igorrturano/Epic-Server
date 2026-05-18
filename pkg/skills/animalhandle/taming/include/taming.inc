@@ -59,11 +59,20 @@ endfunction
 
 // Categoria de slot: "war" (criatura evil de combate, cap 1) ou "nonwar"
 // (cinza/neutro OU montaria — nao-combatente, pool compartilhado Taming/20).
+//
+// Alinhamento vem do npcdesc (string "evil"/"neutral"/"good"), NAO do membro
+// nativo pet.alignment: o init epicAI nunca escreve esse inteiro (fica 0 para
+// tudo), entao usar pet.alignment classificava ate wargs como nonwar.
 function PetSlotCategory(pet)
-	if (pet.alignment == 0 || IsMountType(pet))
+	if (IsMountType(pet))
 		return "nonwar";
 	endif
-	return "war";
+	var npctemplate := NPC_ParseTemplateName(pet.npctemplate);
+	var cfg := ReadConfigFile(":*:npcdesc");
+	if (cfg[npctemplate.template].Alignment == "evil")
+		return "war";
+	endif
+	return "nonwar";
 endfunction
 
 /* Passo canonico sobre TamedPets. Poda entradas invalidas/summoned, persiste
@@ -95,11 +104,13 @@ function _TallyPets(who)
 		// ao player. Contratos expirados nao sao limpos aqui — o gump do post
 		// cuida disso no momento do resgate.
 		if ( !IsStabled(pet) && !IsInLimbo(pet) )
-			var cost := GetPetCost(pet);
+			// Cada pet conta como 1 slot na sua categoria — contagem de
+			// CRIATURAS, nao de tier. Tier alto (ex: Warg = Tier 2) nao pode
+			// estourar o cap de guerra (1); "1 war pet" = 1 criatura.
 			if (PetSlotCategory(pet) == "war")
-				war := war + cost;
+				war := war + 1;
 			else
-				nonwar := nonwar + cost;
+				nonwar := nonwar + 1;
 			endif
 		endif
 		sleepms(2);
@@ -173,8 +184,7 @@ function ErasePet(who, myserial)
 				MP_Unmount(who);
 				tamed.erase(_serial_iter);
 				SetObjProperty(who, "TamedPets", tamed);
-				var pet := SystemFindObjectBySerial(serial);
-				who.followers := who.followers - GetPetCost(pet);
+				who.followers := who.followers - 1;
 				break;
 			endif
 			sleepms(2);
@@ -210,8 +220,7 @@ function AddPet(who, serial)
 	tamed.append(serial);
 	SetObjProperty(who, "TamedPets", tamed);
 
-	var pet := SystemFindObjectBySerial(serial);
-	who.followers := who.followers + GetPetCost(pet);
+	who.followers := who.followers + 1;
 endfunction
 
 // Libera estado de estabulo/limbo de um pet e desassocia o post.
@@ -251,7 +260,7 @@ function ClearMasterLimboRef(master, pet_serial)
 endfunction
 
 // War pet = criatura evil (alignment 1). Cap 1 para todos; Ranger ganha +1
-// via a hab Camuflagem (sem rework do efeito — adiado). extrapets (bonus de
+// via a hab VINCULO_DE_GUERRA (ex-CAMUFLAGEM). extrapets (bonus de
 // GM/evento) continua somando no lado de combate.
 function GetMaxWarPets(who)
 	var maxwar := 1;
@@ -286,11 +295,11 @@ endfunction
 // bloqueia o NOVO pet; pets legados acima do cap nunca sao removidos aqui.
 function CanAcquirePet(who, pet)
 	var tally := _TallyPets(who);
-	var cost := GetPetCost(pet);
+	// O novo pet conta como 1 na sua categoria (criatura, nao tier).
 	if (PetSlotCategory(pet) == "war")
-		return (tally.war + cost) <= GetMaxWarPets(who);
+		return (tally.war + 1) <= GetMaxWarPets(who);
 	endif
-	return (tally.nonwar + cost) <= GetMaxNonWarPets(who);
+	return (tally.nonwar + 1) <= GetMaxNonWarPets(who);
 endfunction
 
 function GetMaxSummons(who)
