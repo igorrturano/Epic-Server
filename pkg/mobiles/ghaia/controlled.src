@@ -39,6 +39,11 @@ const GUARD_CMD := 0xA004;
 const GO_LOC_CMD := 0xA008;
 
 program TamedAI()
+	// Phase 5 lazy migration: this legacy script is fully dead. Every
+	// creature on it moves to the epicAI controlled brain on next wake.
+	me.script := ":epicai:controlledBrain";
+	RestartScript(me);
+	return;
 
 	EnableMainEvents();
 	Setup();

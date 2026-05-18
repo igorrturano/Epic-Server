@@ -126,65 +126,60 @@ function CensusTrackAbility(ability_id)
 	_CensusIncrement("abilities", CStr(ability_id));
 endfunction
 
-function CensusTrackCreation(chardata)
-	if (chardata.culture)
-		_CensusIncrement("creation_culture", chardata.culture);
+function _AddPair(byref pairs, cat, val)
+	// Stricter than a bare truthiness check: living veterans carry partial
+	// chardata structs, so a missing member resolves to error here. Skip
+	// those instead of recording an "error" key.
+	if (val != error && val)
+		pairs.append(struct{ cat := cat, key := val });
+	endif
+endfunction
+
+// Single source of truth: maps a chardata struct to the list of
+// (category, key) census dimensions it contributes. Shared by the
+// cumulative creation tracker and the live .censo atual snapshot so the
+// two can never drift apart.
+function CensusCreationPairs(chardata)
+	var pairs := array;
+	if (chardata == error || !chardata)
+		return pairs;
 	endif
 
-	if (chardata.classe)
-		_CensusIncrement("creation_classe", chardata.classe);
-	endif
-
-	if (chardata.raca)
-		_CensusIncrement("creation_race", chardata.raca);
-	endif
-
-	if (chardata.background)
-		_CensusIncrement("creation_background", chardata.background);
-	endif
-
-	if (chardata.religion)
-		_CensusIncrement("creation_religion", chardata.religion);
-	endif
-
-	if (chardata.wisdom_path)
-		_CensusIncrement("creation_path", chardata.wisdom_path);
-	endif
-
-	if (chardata.trait)
-		_CensusIncrement("creation_trait", chardata.trait);
-	endif
-
+	_AddPair(pairs, "creation_culture",    chardata.culture);
+	_AddPair(pairs, "creation_classe",     chardata.classe);
+	_AddPair(pairs, "creation_race",       chardata.raca);
+	_AddPair(pairs, "creation_background", chardata.background);
+	_AddPair(pairs, "creation_religion",   chardata.religion);
+	_AddPair(pairs, "creation_path",       chardata.wisdom_path);
+	_AddPair(pairs, "creation_trait",      chardata.trait);
 	// --- Path-rework fields (new system) ---
-	if (chardata.path)
-		_CensusIncrement("creation_vocacao", chardata.path);
-	endif
-
-	if (chardata.subclasse)
-		_CensusIncrement("creation_subclasse", chardata.subclasse);
-	endif
-
-	if (chardata.game_mode)
-		_CensusIncrement("creation_game_mode", chardata.game_mode);
-	endif
-
-	if (chardata.magia)
-		_CensusIncrement("creation_magia", chardata.magia);
-	endif
+	_AddPair(pairs, "creation_vocacao",    chardata.path);
+	_AddPair(pairs, "creation_subclasse",  chardata.subclasse);
+	_AddPair(pairs, "creation_game_mode",  chardata.game_mode);
+	_AddPair(pairs, "creation_magia",      chardata.magia);
 
 	// Selected skills, split by tier. Primary = tier 3, Secondary = tier 2.
-	// "skills_all" counts every picked skill regardless of tier so we can see
-	// raw popularity; the tiered buckets show how players weight their build.
+	// "skills_all" counts every picked skill regardless of tier so we can
+	// see raw popularity; the tiered buckets show how players weight builds.
 	var myskills := chardata.Skills;
 	if (myskills != error && myskills)
 		foreach skill_name in (myskills.keys())
 			var tier := CInt(myskills[skill_name]);
-			_CensusIncrement("skills_all", skill_name);
+			pairs.append(struct{ cat := "skills_all", key := skill_name });
 			if (tier == 3)
-				_CensusIncrement("skills_primary", skill_name);
+				pairs.append(struct{ cat := "skills_primary", key := skill_name });
 			elseif (tier == 2)
-				_CensusIncrement("skills_secondary", skill_name);
+				pairs.append(struct{ cat := "skills_secondary", key := skill_name });
 			endif
 		endforeach
 	endif
+
+	return pairs;
+endfunction
+
+function CensusTrackCreation(chardata)
+	var pairs := CensusCreationPairs(chardata);
+	foreach pr in (pairs)
+		_CensusIncrement(pr.cat, pr.key);
+	endforeach
 endfunction

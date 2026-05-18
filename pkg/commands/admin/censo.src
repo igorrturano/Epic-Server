@@ -57,12 +57,40 @@ var page_categories := array{
 // enabled, non-banned account) instead of cumulative creation history.
 var atual_titles := array{
 	"Atual - Habilidades",
-	"Atual - Niveis"
+	"Atual - Niveis",
+	"Atual - Culturas",
+	"Atual - Classes",
+	"Atual - Racas",
+	"Atual - Backgrounds",
+	"Atual - Religioes",
+	"Atual - Caminho (legado)",
+	"Atual - Traits",
+	"Atual - Vocacao",
+	"Atual - Subclasses",
+	"Atual - Modo de Jogo",
+	"Atual - Tipo de Magia",
+	"Atual - Skills Todas",
+	"Atual - Skills Primarias",
+	"Atual - Skills Secundarias"
 };
 
 var atual_categories := array{
 	"current_abilities",
-	"current_level"
+	"current_level",
+	"cur_creation_culture",
+	"cur_creation_classe",
+	"cur_creation_race",
+	"cur_creation_background",
+	"cur_creation_religion",
+	"cur_creation_path",
+	"cur_creation_trait",
+	"cur_creation_vocacao",
+	"cur_creation_subclasse",
+	"cur_creation_game_mode",
+	"cur_creation_magia",
+	"cur_skills_all",
+	"cur_skills_primary",
+	"cur_skills_secondary"
 };
 
 program censo(who, param)
@@ -330,6 +358,7 @@ function RunCurrentSnapshot(who)
 	var ability_counts := dictionary;
 	var level_counts := dictionary;
 	var level_hi := dictionary;
+	var creation_counters := dictionary;	// category -> (dict key->count)
 	var total_chars := 0;
 
 	var accts := ListAccounts();
@@ -389,6 +418,22 @@ function RunCurrentSnapshot(who)
 					endif
 				endforeach
 			endif
+
+			// Replay this living character's chardata through the same
+			// mapping the creation tracker uses, so the "Atual" pages mirror
+			// the historical pages but for the current population only.
+			var cd := GetObjProperty(p, "chardata");
+			var pairs := CensusCreationPairs(cd);
+			foreach pr in (pairs)
+				if (!creation_counters.Exists(pr.cat))
+					creation_counters[pr.cat] := dictionary;
+				endif
+				var bucket := creation_counters[pr.cat];
+				var ckey := CensusNormalizeKey(pr.key);
+				var bc := bucket.Exists(ckey) ? bucket[ckey] : 0;
+				bucket[ckey] := bc + 1;
+				creation_counters[pr.cat] := bucket;
+			endforeach
 			sleepms(2);
 		endwhile
 		sleepms(1);
@@ -397,6 +442,21 @@ function RunCurrentSnapshot(who)
 	CensusSnapshot("current_abilities", ability_counts);
 	CensusSnapshot("current_level", level_counts);
 	CensusSnapshot("current_level_hi", level_hi);
+
+	// Snapshot every dimension explicitly (not just the ones seen this run)
+	// so a category that dropped to zero clears instead of showing stale
+	// data from a previous run.
+	var cur_dims := array{
+		"creation_culture", "creation_classe", "creation_race",
+		"creation_background", "creation_religion", "creation_path",
+		"creation_trait", "creation_vocacao", "creation_subclasse",
+		"creation_game_mode", "creation_magia",
+		"skills_all", "skills_primary", "skills_secondary"
+	};
+	foreach cat in (cur_dims)
+		var bucket := creation_counters.Exists(cat) ? creation_counters[cat] : dictionary;
+		CensusSnapshot("cur_" + cat, bucket);
+	endforeach
 
 	var meta := dictionary;
 	meta["generated_at"] := StrFormatTime("%d/%m/%Y %H:%M", POLCore().systime);

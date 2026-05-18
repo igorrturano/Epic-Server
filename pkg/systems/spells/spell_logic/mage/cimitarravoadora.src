@@ -97,7 +97,7 @@ program SpellScript(params)
 		SetObjproperty(globo, "script", globo.script);
 		SetObjProperty(globo, "AntigoTreinadorID", who.serial);
 		SetObjProperty(globo, "summoned", 1);
-		globo.script := ":ghaia:tamed";
+		globo.script := ":epicai:controlledBrain";
 		RestartScript(globo);
 		TS_StartTimer(globo, "summon", GetSpellDuration(who) + 180);
 		SetObjProperty(who, "cimitarravoadora", globo.serial);
