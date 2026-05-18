@@ -64,5 +64,6 @@ class IAttackInfo()
 	uninit function RollCriticalHitChance(this);
 	uninit function Succeeded(this);
 	uninit function Parried(this);
+	uninit function ResolveSubstituicao(this);
 	uninit function ExecuteAbilitesOnMomentum(this, momentum);
 endclass

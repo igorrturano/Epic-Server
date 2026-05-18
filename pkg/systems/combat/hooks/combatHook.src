@@ -180,6 +180,7 @@ function TryToAttack(byRef attackInfo)
 	ExecuteCombatAbilitiesBeforeHit(attackInfo);
 	ExecutePassiveAbilitiesAttackerBeforeHit(attackInfo);
 	ExecutePassiveAbilitiesDefenderBeforeHit(attackInfo);
+	attackInfo.ResolveSubstituicao();
 	DebugMsg(attacker.GetObjRef(), DEBUG_HIT, Message($"HitChanceMod após passivas (acerto: {CInt(attackInfo.GetHitChanceMod())})"));
 	sleepms(2);
 	if (attackInfo.Succeeded())
