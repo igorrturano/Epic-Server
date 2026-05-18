@@ -188,9 +188,18 @@ function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarR
 				SendSysMessageEX(quem, "Não foi possivel criar o item.", SSM_FAIL);
 			endif
 		else
+			// Compute now (receita.dificuldade still present) but DO NOT award:
+			// stamp it on the montado so the XP is only paid at completion
+			// (EV_ITEM_PRODUZIDO). Awarding here would be farmable.
+			var xpPendente := ComputeCraftXP(receita, skill, categoria);
 			var itemCriado := CriaItemMontado(quem,esquema,receita, quantidade);
-			if(itemCriado)
-				AwardXPFromCraft(quem, receita, skill, categoria);
+			if(itemCriado && xpPendente > 0)
+				var propFab := GetObjProperty(itemCriado, PROPNAME_FABRICADO);
+				if(propFab)
+					propFab.+xpPendente := xpPendente;
+					propFab.+xpCategoria := categoria;
+					SetObjProperty(itemCriado, PROPNAME_FABRICADO, propFab);
+				endif
 			endif
 		endif
 	else
