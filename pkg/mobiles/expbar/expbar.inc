@@ -23,6 +23,7 @@ include ":containers:storageAreas";
 include ":diceroll:include/model/Dice";
 include ":equipsys:Controller/WeaponController";
 include "include/epicNPCUtils";
+include "include/epicXpAudit";
 
 const MAX_LEVEL := 20;
 
@@ -68,7 +69,7 @@ endfunction
 // =============================================================================
 // CORE XP FUNCTIONS
 // =============================================================================
-function AddXP(who, amount)
+function AddXP(who, amount, source := XP_UNKNOWN)
     if (!who || amount <= 0)
         return 0;
     endif
@@ -87,6 +88,7 @@ function AddXP(who, amount)
     endwhile
 
     UpdateXPClient(who);
+    XP_Record(who, amount, source, "");
     return 1;
 endfunction
 
@@ -413,7 +415,7 @@ function AwardXPFromKill(killers, corpse)
         if (killer_xp == 0 && lvl_mod > 0.0 && base_xp > 0.0)
             killer_xp := 1;
         endif
-        AddXP(killer, killer_xp);
+        AddXP(killer, killer_xp, XP_NPC_KILL);
         MasteryCombat_Advance(killer, struct{ kills := 1 });
         AchievementCombat_Advance(killer, corpse, struct{ xp := killer_xp, kills := 1 });
     endforeach
@@ -424,13 +426,18 @@ endfunction
 // =============================================================================
 // CRAFT XP - Called from controladoraComplexos.inc FabricaItemMontado
 // Formula: tier = diff/20, xp = tier * 5. diff < 20 => no award.
-// Stackable items and non-whitelisted (skill, category) pairs are skipped.
+// Non-whitelisted (skill, category) pairs (e.g. tinkering) yield nothing.
+//
+// SUPPRESSED BY DEFAULT. The would-be amount is computed (incl. stackable
+// potions, so alchemy demand is captured) and logged as CRAFT_SUPPRESSED;
+// no XP is granted unless the "CraftXpEnabled" GlobalProperty == 1.
+//
+// WARNING: setting CraftXpEnabled = 1 reopens the original farm — XP here
+// is awarded at the *montagem* step, not at completion. Before re-enabling,
+// move the award to EV_ITEM_PRODUZIDO in gerenteTratamentoProduto.src.
 // =============================================================================
 function AwardXPFromCraft(who, receita, skill, categoria)
     if (!who || !receita)
-        return 0;
-    endif
-    if (receita.isEmpilhavel)
         return 0;
     endif
 
@@ -460,8 +467,14 @@ function AwardXPFromCraft(who, receita, skill, categoria)
     endif
 
     var xp_gain := CInt(tier * 5 * GetActiveXPBoostMult());
-    AddXP(who, xp_gain);
-    return xp_gain;
+
+    if (CInt(GetGlobalProperty("CraftXpEnabled")) == 1)
+        AddXP(who, xp_gain, XP_CRAFT);
+        return xp_gain;
+    endif
+
+    XP_Record(who, xp_gain, XP_CRAFT_SUPPRESSED, categoria);
+    return 0;
 endfunction
 
 // =============================================================================

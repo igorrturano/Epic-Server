@@ -9,13 +9,21 @@ include "include/say";
 include ":charactercreation:habilidades";
 include ":merchants:citizen/include/citizenWitness";
 include "include/noiseAlert";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program skillremoveTrap(who)
 
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
 
-	if (!maolivre(who, 2))
+	var mobWrapper := MobileWrapper(who);
+	if (mobWrapper.IsMounted())
+		SendSysMessageEx(who, "Voce nao pode fazer isto montado.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!mobWrapper.HasBothHandsFree())
+		SendSysMessageEx(who, "Voce precisa estar com as maos livres.", SSM_FAIL);
 		return 0;
 	endif
 

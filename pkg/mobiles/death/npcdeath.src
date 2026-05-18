@@ -30,11 +30,12 @@ include "include/epicCombatUtils";
 include ":commands:possess";
 include ":expbar:expbar";
 include ":epicAI:epicai";
+include ":tn:cooldown";
+include ":hotbar:include/custombuff";
 // include ":entropy:entropy";
 
 program core_npcDeath(params)
 	var corpse := params[1];
-
 	// Check if this is a conquest NPC
 	// if (corpse.GetProp("conquest_totem"))
 	// 	CNQST_OnNPCDeath(corpse);
@@ -268,12 +269,18 @@ program core_npcDeath(params)
 		endif
 	endforeach
 	var shaman := SystemFindObjectBySerial(GetObjProperty(corpse, "animal_sacrifice"));
-	if (accepted_sacrifice == 1)
+	if (accepted_sacrifice == 1 && shaman && shaman != error)
 		var time := 3600;
 		if (GetObjProperty(corpse, "aklat_sacrifice"))
 			time := 9800;
 		endif
 		TS_StartTimer(shaman, "bless", time);
+		// Death protection is delivered here, on the kill — not on cast.
+		// Same cooldown the Protecao Contra a Morte spell (616) uses, so
+		// players.src honors it via GetCooldown and it auto-expires.
+		SetCooldown(shaman, "protecaomorte", time);
+		SendSpellBuff(shaman, shaman, 617, time);
+		SendSysMessageEx(shaman, "O Deserto se lembra. Voce esta protegido contra a morte.", SSM_INFO);
     	PlayStationaryEffect(shaman.x, shaman.y, shaman.z, 0xD035, 10, 30, 0, shaman.realm);
     	PlaySoundEffect(shaman, 0x1F1); // Sacrifice sound effect
 	endif
@@ -370,8 +377,9 @@ program core_npcDeath(params)
 				endif
 			endif
 			var coords := { corpse.x, corpse.y, corpse.z, CStr(corpse.realm) };
-			var trueBoss := GetObjProperty(corpse, "true_boss");
-			if (isBoss(corpse))
+			var trueBoss := Cint(GetObjProperty(corpse, "true_boss"));
+			var epicboss := GetObjProperty(corpse, "EpicBossStruct");
+			if (isBoss(corpse) || epicboss)
 				SetObjProperty(corpse, "coords", coords);
 				if (trueBoss == 1 && fin && nome) // Para acionar o DiscordWebhook
 					var tipo := "boss";

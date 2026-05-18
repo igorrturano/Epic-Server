@@ -18,7 +18,7 @@ program drink_blue(who, potion)
 		return;
 	endif
 
-	if (!checkifcandrink(who, "green_potion"))
+	if (!hasFreeHandToDrink(who))
 		return;
 	endif
 

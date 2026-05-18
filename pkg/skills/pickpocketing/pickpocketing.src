@@ -51,7 +51,14 @@ program skill_Stealing(mobile)
 		SetObjProperty(mobile, "#StealWait", ReadGameClock() + 5);
 	endif
 
-	if (!maolivre(mobile, 1))
+	var mobWrapper := MobileWrapper(mobile);
+	if (mobWrapper.IsMounted())
+		Message("Voce nao pode fazer isto montado.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
+	if (!mobWrapper.HasFreeHand())
+		Message("Voce precisa de pelo menos uma mao livre!", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	endif
 
@@ -95,7 +102,7 @@ program skill_Stealing(mobile)
 		Message("O alvo esta muito longe.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	elseif (!IsBehind(targ, mobile.x, mobile.y))
-		if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
+		if (!mobWrapper.HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
 			Message("Voce precisa estar nas costas do alvo.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 			return 0;
 		else
@@ -104,7 +111,7 @@ program skill_Stealing(mobile)
 	endif
 
 	var diff := 15 + CInt(EffectiveSkill(targ, "Perception"));
-	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::VALENTAO))
+	if (mobWrapper.HasAbility(ABILITY_ID::VALENTAO))
 		var multidao := ListMobilesNearLocation(targ.x, targ.y, targ.z, 4, targ.realm).size();
 		if (multidao > 4)
 			var bonus := 5 * (multidao - 4);
@@ -162,7 +169,7 @@ program skill_Stealing(mobile)
 				Message("O alvo se afastou demais.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 				break;
 			elseif (!IsBehind(targ, mobile.x, mobile.y))
-				if (!MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
+				if (!mobWrapper.HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA))
 					Message("O alvo nao esta mais de costas para voce.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 					break;
 				endif
@@ -187,7 +194,7 @@ program skill_Stealing(mobile)
 				continue;
 			endif
 
-			var batedor := MobileWrapper(mobile).HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA);
+			var batedor := mobWrapper.HasAbility(ABILITY_ID::BATEDOR_DE_CARTEIRA);
 			if (steal.objtype IN { 0xba63, 0xba64, 0xba65 }) // moeda
 				diff := CInt(steal.amount / 5);
 				if (batedor)

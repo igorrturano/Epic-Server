@@ -2,9 +2,7 @@
         Created by *Edwards
         
         2009-07-29
-        
-        Added EmptyHands_Check() but not activated
-        
+
         To use:
        	if( !useItem_check( mobile, item, flags ))
           return 0;
@@ -64,29 +62,6 @@ function useItem_check( mobile, item, option := DEFAULT_ITEM, temp_dist := 0 )
     endif
 
   return 1;
-endfunction
-
-function EmptyHands_Check( mobile )
-
-        //Below could be simplified but it saves a lot of process
-        //since all items are using this function.
-        
- 	var equipped_left := GetEquipmentByLayer( mobile, 0x02 );
-	if( equipped_left )
-                var equipped_right := GetEquipmentByLayer( mobile, 0x01 );
-                if( equipped_right )
-			return 0;
-                endif
-                
-		var cfg := ReadConfigFile( ":*:itemdesc" ),
-		    two_handed := Cint( cfg[equipped_left.objtype].Two_Handed );
-      
-                if( two_handed )
-			return 0;
-                endif
-	endif
- 
-        return 1;
 endfunction
 
 // This function is used for backpack full scenarios 

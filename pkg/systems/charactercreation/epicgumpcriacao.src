@@ -9,6 +9,7 @@ include ":gumps:requestGump";
 include ":attributes:attributes";
 include "include/client";
 include ":charactercreation:createchar";
+include ":charactercreation:raceDisplay";
 include ":disguise:disguise";
 include ":datafile:datafile";
 include "include/say";
@@ -192,14 +193,8 @@ function racialSelection(who, culture_pic)
 			break;
 		endif
 	endwhile
-	var prefix := "";
-	if (chardata.culture == AIGLANA || chardata.culture == LESTE)
-		// Only Elfo, Drow, and Orc can be half races
-		if (chardata.raca == ELFO || chardata.raca == DROW || chardata.raca == ORC)
-			prefix := "Meio-";
-		endif
-	endif
-	SendSysMessageEX(who, "Voce será um " + prefix + chardata.raca, SSM_INFO);
+	var raceDisplay := RaceDisplayFromChardata(chardata);
+	SendSysMessageEX(who, "Voce será um " + raceDisplay, SSM_INFO);
 
 	// Set both .graphic AND .trueobjtype so the race body is the canonical
 	// "true" form. Anything that reverts via trueobjtype (polymorph end,
@@ -231,9 +226,9 @@ function racialSelection(who, culture_pic)
 		who.trueobjtype := 1834;
 	endif
 
-	who.title_race := prefix+chardata.raca;
+	who.title_race := raceDisplay;
 	who.race := chardata.raca;
-	who.name := prefix+chardata.raca;
+	who.name := raceDisplay;
 	SetObjProperty(who, "chardata", chardata);
 endfunction
 
@@ -886,6 +881,9 @@ function applyClassStarter(who)
 	elseif (subclasse == "Arqueiro_Arcano")
 		chardata.+magia := "arcane_archer";
 		chardata.+religion := LORE;
+		// ARCANE_BOW is granted at creation (NOT a level-up reward): the
+		// arcane archer's abilities require the arrow to function. Other
+		// casting classes get casting via chardata.subclasse, not a grant.
 		var myhabs := GetObjProperty(who, "myhabs");
 		if (myhabs == error)
 			myhabs := dictionary;

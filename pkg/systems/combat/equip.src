@@ -263,9 +263,10 @@ program equipweapon(who, item)
 
 	// Carry-weight bonus sources are recomputed from scratch (single source of
 	// truth) instead of += here — prevents the accumulator drift that let
-	// nerfed/old bonuses stick. The item is already on its layer at equip time.
+	// nerfed/old bonuses stick. The equipscript runs BEFORE the item is on its
+	// layer, so it is not in ListEquippedItems yet — pass it as includeItem.
 	if (item.objtype == 0xFFC2 || item.objtype == 0xEDA0)
-		MobileWrapper(who).RecalcCarryWeightMod();
+		MobileWrapper(who).RecalcCarryWeightMod(0, item);
 	endif
 
 	// Steam Armor: Dex penalty (double heaviest normal armor)

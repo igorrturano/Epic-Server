@@ -5,9 +5,15 @@ use cfgfile;
 include ":attributes:attributes";
 include ":containers:checks";
 include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program canInsert(mobile, container, movetype, inserttype, item, existing_stack, amount_to_add)
-	if (!maoLivre(mobile, 1))
+	var mobWrapper := MobileWrapper(mobile);
+	if (mobWrapper.IsMounted())
+		SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
+		return 0;
+	endif
+	if (!mobWrapper.HasFreeHand())
 		return 0;
 	endif
 	if (mobile.frozen || mobile.paralyzed)

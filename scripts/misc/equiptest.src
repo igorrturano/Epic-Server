@@ -3,6 +3,7 @@ use os;
 
 include ":tn:equipment";
 include ":combat:armorZones";
+include ":disguise:incognito";
 include "include/say";
 
 program EquipTest(mobile, item, start_up)
@@ -53,7 +54,10 @@ program EquipTest(mobile, item, start_up)
 	if (retval)
 		SetObjProperty(item, "#EquippedOn", mobile.serial);
 		if (coverFace(item) && !mobile.npctemplate)
-			start_script("misc/applyIncognito", array{mobile, item});
+			// Synchronous + idempotent. The old async misc/applyIncognito
+			// (sleepms 100) raced the synchronous unequip/destroy paths and
+			// left players stuck as "Desconhecido".
+			ApplyIncognito(mobile);
 		endif
 	else
 		// Unable to equip but no reaso was given above.

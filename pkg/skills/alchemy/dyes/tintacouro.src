@@ -1,7 +1,6 @@
 use uo;
 use util;
 use cfgfile;
-// include ":alchemy:drinkPotion";
 
 const UOBJ_EMPTY_BOTTLE := 0x0f0e;
 

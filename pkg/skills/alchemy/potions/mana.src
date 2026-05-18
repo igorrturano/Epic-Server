@@ -20,6 +20,10 @@ program drink_blue(who, potion)
 		return;
 	endif
 
+	if (!hasFreeHandToDrink(who))
+		return;
+	endif
+
 	if (TS_GetCooldown(who, "manapot") != error)
 		SendSysMEssageEx(who, "Voce nao pode usar essa pocao agora.", SSM_FAIL);
 		return 1;

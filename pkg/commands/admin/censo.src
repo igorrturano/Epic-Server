@@ -1,10 +1,15 @@
 use uo;
 use cfgfile;
+use os;
+use basic;
+use polsys;
+use util;
 
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:/include/epicGumps";
 include ":census:include/CensusController";
+include ":accounts:accounts";
 
 const GUMP_WIDTH  := 500;
 const GUMP_HEIGHT := 500;
@@ -48,12 +53,39 @@ var page_categories := array{
 	"skills_secondary"
 };
 
+// .censo atual snapshots the live population (every cmdlevel-0 char in an
+// enabled, non-banned account) instead of cumulative creation history.
+var atual_titles := array{
+	"Atual - Habilidades",
+	"Atual - Niveis"
+};
+
+var atual_categories := array{
+	"current_abilities",
+	"current_level"
+};
+
 program censo(who, param)
+	var titles := page_titles;
+	var categories := page_categories;
+
+	var args := SplitWords(param);
+	if (args && args != error && args.size() >= 1 && Lower(args[1]) == "atual")
+		if (who.cmdlevel < 3)
+			SendSysMessage(who, "Apenas admin pode rodar o censo atual.");
+			return;
+		endif
+		SendSysMessage(who, "Coletando censo da populacao atual, aguarde...");
+		RunCurrentSnapshot(who);
+		titles := atual_titles;
+		categories := atual_categories;
+	endif
+
 	var current_page := 1;
-	var total_pages := page_titles.size();
+	var total_pages := titles.size();
 
 	while (1)
-		var gump := BuildCensusGump(current_page, total_pages);
+		var gump := BuildCensusGump(current_page, total_pages, titles, categories);
 		var input := GFSendGump(who, gump);
 
 		if (!input || input[0] == 0)
@@ -76,15 +108,17 @@ program censo(who, param)
 	endwhile
 endprogram
 
-function BuildCensusGump(page, total_pages)
-	var title := "Censo - " + page_titles[page];
+function BuildCensusGump(page, total_pages, titles, categories)
+	var title := "Censo - " + titles[page];
 	var gump := GFECreateGump(title, GUMP_WIDTH, GUMP_HEIGHT);
 
-	var category := page_categories[page];
+	var category := categories[page];
 	var y := 75;
 
-	if (category == "abilities")
-		RenderAbilitiesList(gump, y);
+	if (category == "abilities" || category == "current_abilities")
+		RenderAbilitiesList(gump, y, category);
+	elseif (category == "current_level")
+		RenderLevelList(gump, y);
 	else
 		RenderGenericList(gump, y, category);
 	endif
@@ -98,8 +132,8 @@ function BuildCensusGump(page, total_pages)
 	return gump;
 endfunction
 
-function RenderAbilitiesList(byref gump, byref y)
-	var counters := CensusGetCounters("abilities");
+function RenderAbilitiesList(byref gump, byref y, category)
+	var counters := CensusGetCounters(category);
 	var hab_cfg := ReadConfigFile(":abilities:configs/habilidades");
 
 	var entries := array;
@@ -131,7 +165,7 @@ function RenderGenericList(byref gump, byref y, category)
 	var entries := array;
 	foreach key in (counters.keys())
 		var entry := struct;
-		entry.+name := key;
+		entry.+name := StrReplace(key, "_", " ");
 		entry.+count := counters[key];
 		entries.append(entry);
 	endforeach
@@ -196,4 +230,178 @@ function SortByCount(byref arr)
 		endwhile
 		i := i + 1;
 	endwhile
+endfunction
+
+function SortByLevelAsc(byref arr)
+	var n := arr.size();
+	var i := 1;
+	while (i <= n)
+		var j := i + 1;
+		while (j <= n)
+			if (arr[j].lvl < arr[i].lvl)
+				var temp := arr[i];
+				arr[i] := arr[j];
+				arr[j] := temp;
+			endif
+			j := j + 1;
+		endwhile
+		i := i + 1;
+	endwhile
+endfunction
+
+// Unpacks "acct:xp;acct:xp" into "{acct, xp}, {acct, xp}" for the gump.
+function FormatLevelDetail(packed)
+	var pieces := SplitWords(packed, ";");
+	if (!pieces || pieces == error || pieces.size() == 0)
+		return "";
+	endif
+	var joined := "";
+	var idx := 1;
+	while (idx <= pieces.size())
+		var pair := SplitWords(pieces[idx], ":");
+		if (pair && pair != error && pair.size() >= 2)
+			if (joined != "")
+				joined := joined + ", ";
+			endif
+			joined := joined + "{" + pair[1] + ", " + pair[2] + "}";
+		endif
+		idx := idx + 1;
+	endwhile
+	return joined;
+endfunction
+
+function RenderLevelList(byref gump, byref y)
+	var counts := CensusGetCounters("current_level");
+	var hi := CensusGetRaw("current_level_hi");
+	var meta := CensusGetRaw("current_meta");
+
+	var entries := array;
+	foreach lvl_key in (counts.keys())
+		var entry := struct;
+		entry.+lvl := CInt(lvl_key);
+		entry.+count := counts[lvl_key];
+		entry.+detail := "";
+		if (entry.lvl > 15 && hi.Exists(lvl_key))
+			entry.detail := FormatLevelDetail(hi[lvl_key]);
+		endif
+		entries.append(entry);
+	endforeach
+
+	if (entries.size() == 0)
+		GFTextMid(gump, 30, y + 40, GUMP_WIDTH - 60, 946, "Sem dados registrados");
+		return;
+	endif
+
+	SortByLevelAsc(entries);
+
+	var total := 0;
+	foreach ent in (entries)
+		total := total + ent.count;
+	endforeach
+
+	var html := "<BASEFONT Color=#FFFFFF Size=5>";
+	if (meta.Exists("generated_at"))
+		html := html + "<BASEFONT Color=#AAAAAA>Atualizado: " + meta["generated_at"] + "<BR>";
+	endif
+	html := html + "<BASEFONT Color=#FFFFFF><b>Total de personagens: " + total + "</b><BR><BR>";
+
+	foreach ent in (entries)
+		var color := "#FFFFFF";
+		if (ent.lvl > 15)
+			color := "#B8860B";
+		endif
+		html := html + "<BASEFONT Color=" + color + ">";
+		html := html + "Nivel " + CStr(ent.lvl) + " - " + CStr(ent.count);
+		if (ent.detail != "")
+			html := html + " (" + ent.detail + ")";
+		endif
+		html := html + "<BR>";
+	endforeach
+
+	var scroll_height := GUMP_HEIGHT - y - 45;
+	GFHTMLArea(gump, 25, y, GUMP_WIDTH - 45, scroll_height, html, 1, 1);
+endfunction
+
+// Walks every account: skip banned, skip disabled ("jail"), and per
+// character slot skip non-cmdlevel-0. Aggregates purchased abilities
+// (myhabs) and a Level distribution, with per-account XP detail for
+// the high-level (>15) tail. Snapshots replace the prior run.
+function RunCurrentSnapshot(who)
+	var ability_counts := dictionary;
+	var level_counts := dictionary;
+	var level_hi := dictionary;
+	var total_chars := 0;
+
+	var accts := ListAccounts();
+	foreach acct_name in (accts)
+		var acct := FindAccount(acct_name);
+		if (!acct || acct == error)
+			continue;
+		endif
+		if (acct.banned)
+			continue;
+		elseif (!acct.enabled)
+			continue;
+		endif
+
+		var slot := 1;
+		while (slot <= 6)
+			var p := acct.GetCharacter(slot);
+			slot := slot + 1;
+			if (!p || p == error)
+				continue;
+			endif
+			if (p.cmdlevel != 0)
+				continue;
+			endif
+
+			total_chars := total_chars + 1;
+
+			var raw_lvl := GetObjProperty(p, "Level");
+			if (raw_lvl == error || !raw_lvl)
+				raw_lvl := 0;
+			endif
+			var lvl := CInt(raw_lvl);
+			if (lvl < 1)
+				lvl := 1;
+			endif
+			var raw_xp := GetObjProperty(p, "Experience");
+			if (raw_xp == error || !raw_xp)
+				raw_xp := 0;
+			endif
+			var xp := CInt(raw_xp);
+			var lkey := CStr(lvl);
+			var lc := level_counts.Exists(lkey) ? level_counts[lkey] : 0;
+			level_counts[lkey] := lc + 1;
+
+			if (lvl > 15)
+				var prefix := level_hi.Exists(lkey) ? (level_hi[lkey] + ";") : "";
+				level_hi[lkey] := prefix + CStr(acct_name) + ":" + CStr(xp);
+			endif
+
+			var myhabs := GetObjProperty(p, "myhabs");
+			if (myhabs != error && myhabs)
+				foreach hk in (myhabs.keys())
+					var aid := CStr(myhabs[hk]);
+					if (aid != "" && aid != "0")
+						var ac := ability_counts.Exists(aid) ? ability_counts[aid] : 0;
+						ability_counts[aid] := ac + 1;
+					endif
+				endforeach
+			endif
+			sleepms(2);
+		endwhile
+		sleepms(1);
+	endforeach
+
+	CensusSnapshot("current_abilities", ability_counts);
+	CensusSnapshot("current_level", level_counts);
+	CensusSnapshot("current_level_hi", level_hi);
+
+	var meta := dictionary;
+	meta["generated_at"] := StrFormatTime("%d/%m/%Y %H:%M", POLCore().systime);
+	meta["total_chars"] := CStr(total_chars);
+	CensusSnapshot("current_meta", meta);
+
+	SendSysMessage(who, "Censo atual: " + CStr(total_chars) + " personagens processados.");
 endfunction

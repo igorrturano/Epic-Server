@@ -25,11 +25,7 @@ program UseBandage(mobile, bandage)
 		return 0;
 	endif
 
-	var cfg := ReadConfigFile(":combat:itemdesc");
-	var equippedright := GetEquipmentByLayer(mobile, 0x01);
-	var equippedleft := GetEquipmentByLayer(mobile, 0x02);
-	var twohanded := Cint(cfg[equippedleft.objtype].Two_Handed);
-	if (equippedright || equippedleft || twohanded)
+	if (!MobileWrapper(mobile).HasBothHandsFree())
 		SendSysMessageEx(mobile, "Voce precisa das duas maos livres para usar as ataduras!", SSM_FAIL);
 		return 0;
 	endif

@@ -1,0 +1,39 @@
+// .craftxp           - show whether craft XP is enabled or suppressed
+// .craftxp on        - enable craft XP grants (see WARNING below)
+// .craftxp off       - suppress craft XP (log-only, fail-safe default)
+//
+// WARNING: enabling craft XP reopens the original farm — XP is awarded at
+// the montagem step, not at completion. Don't enable until the award is
+// moved to EV_ITEM_PRODUZIDO in gerenteTratamentoProduto.src.
+
+use uo;
+use os;
+
+include "include/say";
+
+program craftxp(who, text)
+	if (who.cmdlevel < 3)
+		return 0;
+	endif
+
+	var arg := "";
+	if (text && text != error)
+		arg := Lower(CStr(text));
+	endif
+
+	if (arg == "on")
+		SetGlobalProperty("CraftXpEnabled", 1);
+		SendSysMessage(who, "Craft XP ENABLED. WARNING: montagem farm is open until the award is moved to completion.");
+		return 1;
+	endif
+
+	if (arg == "off")
+		SetGlobalProperty("CraftXpEnabled", 0);
+		SendSysMessage(who, "Craft XP suppressed (log-only). Would-be grants logged as CRAFT_SUPPRESSED.");
+		return 1;
+	endif
+
+	var enabled := CInt(GetGlobalProperty("CraftXpEnabled")) == 1;
+	SendSysMessage(who, "Craft XP is currently " + (enabled ? "ENABLED" : "SUPPRESSED (log-only)") + ". Use: .craftxp on | off");
+	return 1;
+endprogram
