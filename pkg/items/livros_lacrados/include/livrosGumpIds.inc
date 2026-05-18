@@ -1,0 +1,261 @@
+// livrosGumpIds.inc
+// GERADO AUTOMATICAMENTE por gerar_ids_escript.py - nao editar manualmente
+// Fonte: internal-tools/livros_lacrados/gump_ids.json
+
+const LL_GUMP_DEFAULT := 0xA6A5;
+
+function GetPortraitGumpId(tipo)
+    case (tipo)
+ "a_confissao_do_tardio": return 0xA81D;
+ "a_mae_que_procura": return 0xA814;
+ "a_que_quer_um_nome": return 0xA821;
+ "a_que_recita_nomes": return 0xA81E;
+ "a_voz_do_velho_mundo": return 0xA81B;
+ "aglabita_antigo": return 0xA807;
+ "ahruwen": return 0xA80A;
+ "antessenhora": return 0xA82C;
+ "avistamentos": return 0xA819;
+ "belezzira": return 0xA826;
+ "bjorske_cursivo": return 0xA809;
+ "cantante": return 0xA828;
+ "canto_bjorske": return 0xA7FB;
+ "carta_aiglano": return 0xA7F9;
+ "coisa_errada": return 0xA82F;
+ "coisa_imita": return 0xA829;
+ "confissao_drow": return 0xA7FE;
+ "conhecidas_da_liga": return 0xA833;
+ "cronica_orc": return 0xA800;
+ "diario_catedral": return 0xA801;
+ "diario_necromante": return 0xA805;
+ "diario_puxado": return 0xA7F8;
+ "eco_do_andarilho": return 0xA835;
+ "espirito_origem_lobo": return 0xA839;
+ "essencia_fea": return 0xA837;
+ "filho_servidor": return 0xA82E;
+ "fragmento": return 0xA810;
+ "manchado": return 0xA810;
+ "fragmento_limiar": return 0xA806;
+ "fragmento_retornado": return 0xA832;
+ "herbario_pequilho": return 0xA7FF;
+ "herdeiro_senhor_guerra": return 0xA831;
+ "idrith_har": return 0xA80B;
+ "khar_runico": return 0xA808;
+ "lirenne_a_esquecida": return 0xA816;
+ "marogh": return 0xA825;
+ "mensageiro_ora": return 0xA834;
+ "necro_cifrado": return 0xA80C;
+ "nota_espiao_liga": return 0xA803;
+ "nota_senhor_guerra": return 0xA7FC;
+ "o_bibliotecario_morto": return 0xA818;
+ "o_cobrador_da_divida_antiga": return 0xA823;
+ "o_coletor_de_anos": return 0xA81F;
+ "o_pacto_roto": return 0xA813;
+ "o_primeiro_puxado": return 0xA830;
+ "o_que_pede_sangue": return 0xA820;
+ "o_que_veio_por_memoria": return 0xA822;
+ "o_quieto": return 0xA824;
+ "o_soldado_de_aiglano": return 0xA815;
+ "os_sete_nomes": return 0xA812;
+ "os_tres_irmaos": return 0xA817;
+ "ovo": return 0xA82A;
+ "pequenos_limiar": return 0xA827;
+ "primeiro_lacrador": return 0xA82B;
+ "primeiro_lacre": return 0xA80E;
+ "registro_anao_khar": return 0xA7FA;
+ "registro_do_anuncio": return 0xA81C;
+ "relato_mercador": return 0xA802;
+ "sem_nome": return 0xA82D;
+ "sobre_o_mensageiro": return 0xA81A;
+ "sombra_vaelshorath": return 0xA836;
+ "testemunho_retornado": return 0xA804;
+ "tomo_leste": return 0xA7FD;
+ "tsu_ngathar": return 0xA80D;
+ "vael_glifo": return 0xA80F;
+ "vexalim_o_faminto": return 0xA811;
+ "voz_do_plano_oco": return 0xA838;
+    endcase
+    return LL_GUMP_DEFAULT;
+endfunction
+
+function GetIlustracaoGumpId(tipo, nivel, afinidade)
+    // tenta chave com afinidade primeiro (ex: sujeito_3_neutro para profetico)
+    // se nao encontrar, tenta sem afinidade (ex: diario_puxado_5 para inerte)
+    // como ultimo fallback, tenta o tipo direto (entidades lore sem nivel/afinidade)
+ if (afinidade && afinidade != "0")
+ var id := _IllByKey(tipo + "_" + CStr(nivel) + "_" + afinidade);
+        if (id != LL_GUMP_DEFAULT) return id; endif
+    endif
+ var id2 := _IllByKey(tipo + "_" + CStr(nivel));
+    if (id2 != LL_GUMP_DEFAULT) return id2; endif
+    return _IllByKey(tipo);
+endfunction
+
+function _IllByKey(key)
+    case (key)
+ "a_confissao_do_tardio_lore_cat4": return 0xA91A;
+ "a_mae_que_procura_lore_cat2": return 0xA911;
+ "a_que_quer_um_nome_lore_cat5": return 0xA91E;
+ "a_que_recita_nomes_lore_cat4": return 0xA91B;
+ "a_voz_do_velho_mundo_lore_cat4": return 0xA918;
+ "aglabita_antigo_3": return 0xA8ED;
+ "ahruwen_4": return 0xA8F0;
+ "antessenhora_lore_cat7_df": return 0xA929;
+ "avistamentos_lore_cat3": return 0xA916;
+ "belezzira_lore_cat1_df": return 0xA923;
+ "bjorske_cursivo_3": return 0xA8EF;
+ "cantante_lore_cat3_df": return 0xA925;
+ "canto_bjorske_3": return 0xA8C9;
+ "canto_bjorske_4": return 0xA8CA;
+ "canto_bjorske_5": return 0xA8CB;
+ "carta_aiglano_3": return 0xA8C3;
+ "carta_aiglano_4": return 0xA8C4;
+ "carta_aiglano_5": return 0xA8C5;
+ "clausula_adicao_4": return 0xA909;
+ "clausula_adicao_5": return 0xA90A;
+ "clausula_todos_default": return 0xA908;
+ "clausula_todos_lua_cheia": return 0xA905;
+ "clausula_todos_lua_nova": return 0xA906;
+ "clausula_todos_masmorra": return 0xA907;
+ "coisa_errada_lore_cat7_df": return 0xA92C;
+ "coisa_imita_lore_cat3_df": return 0xA926;
+ "confissao_drow_3": return 0xA8D2;
+ "confissao_drow_4": return 0xA8D3;
+ "confissao_drow_5": return 0xA8D4;
+ "conhecidas_da_liga_lore_cat8_df": return 0xA930;
+ "cronica_orc_3": return 0xA8D8;
+ "cronica_orc_4": return 0xA8D9;
+ "cronica_orc_5": return 0xA8DA;
+ "diario_catedral_3": return 0xA8DB;
+ "diario_catedral_4": return 0xA8DC;
+ "diario_catedral_5": return 0xA8DD;
+ "diario_necromante_3": return 0xA8E7;
+ "diario_necromante_4": return 0xA8E8;
+ "diario_necromante_5": return 0xA8E9;
+ "diario_puxado_3": return 0xA8C0;
+ "diario_puxado_4": return 0xA8C1;
+ "diario_puxado_5": return 0xA8C2;
+ "eco_do_andarilho_lore_cat8_df": return 0xA932;
+ "eco_todos_neutro": return 0xA90C;
+ "eco_todos_profano": return 0xA90D;
+ "eco_todos_sagrado": return 0xA90B;
+ "espirito_origem_lobo_lore_cat8_df": return 0xA936;
+ "essencia_fea_lore_cat8_df": return 0xA934;
+ "filho_servidor_lore_cat7_df": return 0xA92B;
+ "fragmento_3": return 0xA8F6;
+ "fragmento_4": return 0xA8F7;
+ "fragmento_5": return 0xA8F8;
+ "manchado_3": return 0xA8F6;
+ "manchado_4": return 0xA8F7;
+ "manchado_5": return 0xA8F8;
+ "fragmento_limiar_3": return 0xA8EA;
+ "fragmento_limiar_4": return 0xA8EB;
+ "fragmento_limiar_5": return 0xA8EC;
+ "fragmento_retornado_lore_cat8_df": return 0xA92F;
+ "herbario_pequilho_3": return 0xA8D5;
+ "herbario_pequilho_4": return 0xA8D6;
+ "herbario_pequilho_5": return 0xA8D7;
+ "herdeiro_senhor_guerra_lore_cat8_df": return 0xA92E;
+ "idrith_har_4": return 0xA8F1;
+ "khar_runico_3": return 0xA8EE;
+ "lirenne_a_esquecida_lore_cat2": return 0xA913;
+ "marogh_lore_cat1_df": return 0xA922;
+ "mensageiro_ora_lore_cat8_df": return 0xA931;
+ "necro_cifrado_4": return 0xA8F2;
+ "nota_espiao_liga_3": return 0xA8E1;
+ "nota_espiao_liga_4": return 0xA8E2;
+ "nota_espiao_liga_5": return 0xA8E3;
+ "nota_senhor_guerra_3": return 0xA8CC;
+ "nota_senhor_guerra_4": return 0xA8CD;
+ "nota_senhor_guerra_5": return 0xA8CE;
+ "o_bibliotecario_morto_lore_cat2": return 0xA915;
+ "o_cobrador_da_divida_antiga_lore_cat5": return 0xA920;
+ "o_coletor_de_anos_lore_cat5": return 0xA91C;
+ "o_pacto_roto_lore_cat1": return 0xA910;
+ "o_primeiro_puxado_lore_cat8_df": return 0xA92D;
+ "o_que_pede_sangue_lore_cat5": return 0xA91D;
+ "o_que_veio_por_memoria_lore_cat5": return 0xA91F;
+ "o_quieto_lore_cat1_df": return 0xA921;
+ "o_soldado_de_aiglano_lore_cat2": return 0xA912;
+ "os_sete_nomes_lore_cat1": return 0xA90F;
+ "os_tres_irmaos_lore_cat2": return 0xA914;
+ "ovo_lore_cat3_df": return 0xA927;
+ "pequenos_limiar_lore_cat3_df": return 0xA924;
+ "primeiro_lacrador_lore_cat7_df": return 0xA928;
+ "primeiro_lacre_5": return 0xA8F4;
+ "registro_anao_khar_3": return 0xA8C6;
+ "registro_anao_khar_4": return 0xA8C7;
+ "registro_anao_khar_5": return 0xA8C8;
+ "registro_do_anuncio_lore_cat4": return 0xA919;
+ "relato_mercador_3": return 0xA8DE;
+ "relato_mercador_4": return 0xA8DF;
+ "relato_mercador_5": return 0xA8E0;
+ "sem_nome_lore_cat7_df": return 0xA92A;
+ "sobre_o_mensageiro_lore_cat4": return 0xA917;
+ "sombra_vaelshorath_lore_cat8_df": return 0xA933;
+ "sujeito_3_neutro": return 0xA8FA;
+ "sujeito_3_profano": return 0xA8FB;
+ "sujeito_3_sagrado": return 0xA8F9;
+ "sujeito_4_neutro": return 0xA8FD;
+ "sujeito_4_profano": return 0xA8FE;
+ "sujeito_4_sagrado": return 0xA8FC;
+ "sujeito_5_neutro": return 0xA900;
+ "sujeito_5_profano": return 0xA901;
+ "sujeito_5_sagrado": return 0xA8FF;
+ "testemunho_retornado_3": return 0xA8E4;
+ "testemunho_retornado_4": return 0xA8E5;
+ "testemunho_retornado_5": return 0xA8E6;
+ "tomo_leste_3": return 0xA8CF;
+ "tomo_leste_4": return 0xA8D0;
+ "tomo_leste_5": return 0xA8D1;
+ "tsu_ngathar_5": return 0xA8F3;
+ "vael_glifo_5": return 0xA8F5;
+ "verbo_3": return 0xA902;
+ "verbo_4": return 0xA903;
+ "verbo_5": return 0xA904;
+ "vexalim_o_faminto_lore_cat1": return 0xA90E;
+ "voz_do_plano_oco_lore_cat8_df": return 0xA935;
+        // aliases tipo-only para entidades lore (fallback sem nivel/afinidade)
+ "vexalim_o_faminto": return 0xA90E;
+ "os_sete_nomes": return 0xA90F;
+ "o_pacto_roto": return 0xA910;
+ "o_quieto": return 0xA921;
+ "marogh": return 0xA922;
+ "belezzira": return 0xA923;
+ "a_mae_que_procura": return 0xA911;
+ "o_soldado_de_aiglano": return 0xA912;
+ "lirenne_a_esquecida": return 0xA913;
+ "os_tres_irmaos": return 0xA914;
+ "o_bibliotecario_morto": return 0xA915;
+ "avistamentos": return 0xA916;
+ "pequenos_limiar": return 0xA924;
+ "cantante": return 0xA925;
+ "coisa_imita": return 0xA926;
+ "ovo": return 0xA927;
+ "sobre_o_mensageiro": return 0xA917;
+ "a_voz_do_velho_mundo": return 0xA918;
+ "registro_do_anuncio": return 0xA919;
+ "a_confissao_do_tardio": return 0xA91A;
+ "a_que_recita_nomes": return 0xA91B;
+ "o_coletor_de_anos": return 0xA91C;
+ "o_que_pede_sangue": return 0xA91D;
+ "a_que_quer_um_nome": return 0xA91E;
+ "o_que_veio_por_memoria": return 0xA91F;
+ "o_cobrador_da_divida_antiga": return 0xA920;
+ "antessenhora": return 0xA929;
+ "sem_nome": return 0xA92A;
+ "filho_servidor": return 0xA92B;
+ "coisa_errada": return 0xA92C;
+ "primeiro_lacrador": return 0xA928;
+ "o_primeiro_puxado": return 0xA92D;
+ "herdeiro_senhor_guerra": return 0xA92E;
+ "fragmento_retornado": return 0xA92F;
+ "conhecidas_da_liga": return 0xA930;
+ "mensageiro_ora": return 0xA931;
+ "eco_do_andarilho": return 0xA932;
+ "sombra_vaelshorath": return 0xA933;
+ "essencia_fea": return 0xA934;
+ "voz_do_plano_oco": return 0xA935;
+ "espirito_origem_lobo": return 0xA936;
+    endcase
+    return LL_GUMP_DEFAULT;
+endfunction

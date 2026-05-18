@@ -19,5 +19,8 @@ program world_start_up()
 	Print("Starting online tracker");
 	Start_Script("misc/onlineTracker");
 
+	Print("Initializing livros lacrados DataFiles");
+	Start_Script(":livros_lacrados:start");
+
 	return 1;
 endprogram
