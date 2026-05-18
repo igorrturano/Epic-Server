@@ -1404,7 +1404,10 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 		var weapon := this.GetEquipBySlot(WEAPON);
 		if (!(weapon is @Exception))
 			var attribute := weapon.GetAttribute();
-			if (attribute == TWOHANDED || attribute == DUALWIELD)
+			// Ferramentas de coleta (picareta, machado, vara) ocupam as
+			// duas mãos para combate, mas não devem travar o acesso à
+			// mochila — senão minerar/cortar madeira tranca a bag.
+			if ((attribute == TWOHANDED || attribute == DUALWIELD) && weapon.IsGatheringTool() != true)
 				return 0;
 			endif
 		endif
