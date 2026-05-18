@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+program globo_revert(params)
+    var item          := params[1];
+    var original_color := params[2];
+
+    sleep(60);
+
+    if (item && !item.errortext)
+        item.color := original_color;
+        EraseObjProperty(item, "#globo_ativo");
+    endif
+endprogram
