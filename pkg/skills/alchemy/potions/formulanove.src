@@ -18,12 +18,10 @@ program formula90(who, pocao)
 		return 0;
 	endif
 
-	var cfg := ReadConfigFile(":combat:itemdesc");
-	var cfg2 := ReadConfigFile(":metalworking:blacksmithy");
+	var cfgComponentes := ReadConfigFile(":*:componentes");
 
 	SendSysMessageEx(who, "Qual item deseja transmutar?", SSM_REQUEST);
 	var targ := Target(who);
-	var elem := FindConfigElem(cfg2, targ.objtype);
 
 	if (!targ)
 		SendSysMessage(who, "Cancelado");
@@ -37,14 +35,41 @@ program formula90(who, pocao)
 
 	if (targ.isA(POLCLASS_WEAPON) || targ.isA(POLCLASS_ARMOR))
 
-		var skill := (getobjProperty(pocao, "crafterskill") * 0.6);
-		var item := Getobjproperty(targ, "material");
-		if (!getobjproperty(targ, "material"))
-			item := 0x6309;
+		var fabricado := GetObjProperty(targ, "fabricado");
+
+		if (!fabricado || !fabricado.componentes)
+			SendSysMessageEx(who, "Este item nao pode ser transmutado", SSM_FAIL);
+			return 0;
 		endif
-		var materials := GetConfigStringDictionary(elem, "materials");
-		var metal := cdbl(materials.metal);
+
+		var item := 0;
+		var metal := 0.0;
+
+		foreach comp in (fabricado.componentes)
+			Sleepms(2);
+			var compElem := cfgComponentes[hex(comp.item.objtype)];
+			var compMats := GetConfigStringDictionary(compElem, "materials");
+			var compMetal := cdbl(compMats.metal);
+			if (compMetal > 0)
+				if (!item)
+					item := cint(comp.material.chave);
+				endif
+				metal := metal + (compMetal * cint(comp.componenteNecessario.qtdNecessaria));
+			endif
+		endforeach
+
+		if (metal <= 0 || !item)
+			SendSysMessageEx(who, "Este item nao pode ser transmutado", SSM_FAIL);
+			return 0;
+		endif
+
+		var skill := (getobjProperty(pocao, "crafterskill") * 0.6);
 		var amt := cint(metal * skill / 100);
+
+		if (amt <= 0)
+			SendSysMessageEx(who, "Habilidade insuficiente para transmutar este item", SSM_FAIL);
+			return 0;
+		endif
 
 		CreateItemAtLocation(targ.x, targ.y, targ.z, item, amt, targ.realm);
 
