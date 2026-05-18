@@ -36,7 +36,6 @@ include ":hotbar:include/custombuff";
 
 program core_npcDeath(params)
 	var corpse := params[1];
-
 	// Check if this is a conquest NPC
 	// if (corpse.GetProp("conquest_totem"))
 	// 	CNQST_OnNPCDeath(corpse);
@@ -378,8 +377,9 @@ program core_npcDeath(params)
 				endif
 			endif
 			var coords := { corpse.x, corpse.y, corpse.z, CStr(corpse.realm) };
-			var trueBoss := GetObjProperty(corpse, "true_boss");
-			if (isBoss(corpse))
+			var trueBoss := Cint(GetObjProperty(corpse, "true_boss"));
+			var epicboss := GetObjProperty(corpse, "EpicBossStruct");
+			if (isBoss(corpse) || epicboss)
 				SetObjProperty(corpse, "coords", coords);
 				if (trueBoss == 1 && fin && nome) // Para acionar o DiscordWebhook
 					var tipo := "boss";
