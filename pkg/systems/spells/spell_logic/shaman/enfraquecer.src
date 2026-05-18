@@ -1,0 +1,42 @@
+use uo;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":spells:Controller/SpellController";
+
+// Shaman Enfraquecer (spell 607, Target Self) — arms the caster's next
+// melee hit to land the STR-debuff. Delivery + amount live in the combat
+// hit pipeline (weaponHitScripts/enfraquecerXama); this script only primes
+// it. The SC self-buff gives the player a visible icon, auto-expires the
+// armed window, and plants/cleans the #enfraq_xama marker the hit hook reads.
+program SpellScript(params)
+	var who := params[1];
+	var spell := params[3];
+	params := 0;
+
+	var spellId := CInt(spell.id);
+
+	// Re-casting refreshes the window — drop any prior arm first.
+	SC_RemoveEffect(who, spellId);
+
+	var window := CInt(AP_GetSkill(who, THEOLOGY) / 10);
+	if (window < 6)
+		window := 6;
+	endif
+
+	var props := dictionary;
+	props["#enfraq_xama"] := spellId;
+
+	var opts := struct{};
+	opts.+displayname := "Enfraquecer";
+	opts.+desc := "Proximo golpe corpo-a-corpo enfraquece o alvo";
+	opts.+properties := props;
+
+	SC_ApplyEffect(who, who, opts, window, spellId);
+
+	SC_HandleSound(who, who, SFX_SPELL_WEAKEN);
+	SendSysMessageEx(who, "Voce prepara um golpe enfraquecedor.", SSM_INFO);
+	return 1;
+endprogram
