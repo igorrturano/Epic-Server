@@ -75,6 +75,13 @@ function removeDisguise(who)
 	endif
 
 	if (original.aparencia != "")
+		// Defensive legacy branch. The disguise kit and the incognito mask
+		// (:disguise:incognito) both use the `realname` key but are mutually
+		// exclusive by construction: disguise.src refuses the kit while masked
+		// ("rosto coberto"), and ApplyIncognito no-ops while a disguise is
+		// active. So a disguised player should never be "Desconhecido" here;
+		// this only writes the disguise alias into realname for that
+		// should-not-happen overlap. Do not generalize it.
 		if (who.name == "Desconhecido")
 			SetObjProperty(who, "realname", original.aparencia);
 			SetName(who, original.aparencia);

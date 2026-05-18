@@ -22,6 +22,7 @@ include ":attributes:attributes";
 include ":traps:traps";
 include "include/say";
 include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
 
 program quadros(who, item)
 
@@ -30,7 +31,14 @@ program quadros(who, item)
 		return 0;
 	endif
 
-	if (!maolivre(who, 2))
+	var mobWrapper := MobileWrapper(who);
+	if (mobWrapper.IsMounted())
+		SendSysMessageEx(who, "Voce nao pode fazer isto montado.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!mobWrapper.HasBothHandsFree())
+		SendSysMessageEx(who, "Voce precisa estar com as maos livres.", SSM_FAIL);
 		return 0;
 	endif
 

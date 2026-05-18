@@ -1430,6 +1430,7 @@ function GetTooltipText(item_template, who)
 				xDesc := xDesc + "Delay Bonus: " + getParryDelayTemplate(elem, item_template) + "<br>";
 			endif
 			xDesc := xDesc + fisico + "Fisico " + (elem.PhysicalResist + item_template.resist_physical_mod) + "<br>";
+			xDesc := xDesc + "Tipo: " + CStr(elem.TipoProtecao) + "<br>";
 
 			if (elem.ColdResist + item_template.resist_cold_mod != 0)
 				xDesc := xDesc  + blueice + "Frio " + (elem.ColdResist + item_template.resist_cold_mod) + "<br>";

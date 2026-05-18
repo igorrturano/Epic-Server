@@ -27,6 +27,9 @@ class IMobileWrapper()
 	uninit function IsAllyOf(this, other);
 	uninit function IsRaging(this);
 	uninit function HasReligiousBannerEquipped(this);
+	uninit function GetFreeHandCount(this);
+	uninit function HasFreeHand(this);
+	uninit function HasBothHandsFree(this);
 	uninit function TeleportBehind(this, target);
 	uninit function IsInSmokeZone(this);
 	uninit function ApplySmokeProtection(this);
@@ -41,5 +44,5 @@ class IMobileWrapper()
 
 	uninit function ApplyItemModifiers(this, byRef itemWrapped);
 	uninit function RemoveItemModifiers(this, byRef itemWrapped);
-	uninit function RecalcCarryWeightMod(this, excludeSerial);
+	uninit function RecalcCarryWeightMod(this, excludeSerial, includeItem);
 endclass

@@ -10,9 +10,19 @@ include ":abilities:models/Ability";
 
 program Test(who)
 
-	if (!maolivre(who, 2))
+	var mobWrapper := MobileWrapper(who);
+
+	if (mobWrapper.IsMounted())
+		SendSysMessage(who, "Voce nao pode fazer isto montado.");
 		return 0;
-	elseif (AP_GetVital(who, "Stamina") < 10)
+	endif
+
+	if (!mobWrapper.HasBothHandsFree())
+		SendSysMessage(who, "Voce precisa estar com as maos livres para arrastar.");
+		return 0;
+	endif
+
+	if (AP_GetVital(who, "Stamina") < 10)
 		SendSysMessage(who, "Voce esta cansado demais para arrastar algo...");
 		return;
 	endif
@@ -52,18 +62,26 @@ program Test(who)
 		endif
 	endif
 
-	if (!maolivre(who, 2))
+	if (mobWrapper.IsMounted())
+		SendSysMessage(who, "Voce nao pode fazer isto montado.");
 		return 0;
-	elseif (AP_GetVital(who, "Stamina") < 10)
+	endif
+
+	if (!mobWrapper.HasBothHandsFree())
+		SendSysMessage(who, "Voce precisa estar com as maos livres para arrastar.");
+		return 0;
+	endif
+
+	if (AP_GetVital(who, "Stamina") < 10)
 		SendSysMessage(who, "Voce esta cansado demais para arrastar algo...");
 		return;
 	endif
 
 	var desgaste := 500;
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
+	if (mobWrapper.HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
 		desgaste := desgaste - 100;
 	endif
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::PACK_MULE))
+	if (mobWrapper.HasAbility(ABILITY_ID::PACK_MULE))
 		desgaste := desgaste - 200;
 	endif
 

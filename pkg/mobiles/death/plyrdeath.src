@@ -20,6 +20,7 @@ include "include/say";
 include ":commands:possess";
 include ":death:resurrection";
 include ":tn:cooldown";
+include ":disguise:incognito";
 
 program core_chrDeath(params)
 	var corpse := params[1];
@@ -54,6 +55,13 @@ program core_chrDeath(params)
 		EraseObjProperty(corpse, "realname");
 	endif
 	SetName(corpse, corpse_name);
+
+	// Clear any incognito state that persisted onto the player/ghost (the mask
+	// itself moved to the corpse, but realname/realrace/Incognito live on the
+	// mobile). Without this the ghost keeps showing "Incognito" and survives
+	// resurrection/relog stuck. Recomputes name from chardata; no-op if a
+	// disguise kit is active (disguise owns realname there).
+	RemoveIncognito(ghost);
 
 	TS_Death(ghost);
 

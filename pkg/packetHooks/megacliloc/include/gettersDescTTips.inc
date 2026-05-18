@@ -365,6 +365,11 @@ function PegaDescResistArmadura(objeto,cfg,armadura, xDesc := "")
 		if(bluntRes> 0)
 			xDesc := xDesc  + " Cont: " + resistColor + (bluntRes) + FECHA_BASEFONT_TAG + "<br>";
 		endif
+
+		var tipoProtecao := armadura.GetTipoProtecao();
+		if (!(tipoProtecao is @Exception) && tipoProtecao)
+			xDesc := xDesc + "Tipo: " + tipoProtecao + "<br>";
+		endif
 	endif
 
 	

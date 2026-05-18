@@ -1129,3 +1129,50 @@ function SkillEraser(who)
     SendSysMessageEx(who, "Suas pericias selecionadas serao esquecidas com o tempo.", SSM_INFO);
 
 endfunction
+
+// ---------------------------------------------------------------------------
+// Casting class identity — single source of truth
+// ---------------------------------------------------------------------------
+// Paladino, Cacador de Demonios, Malandro Arcano and Shinobi can CAST from
+// level 1 purely by class identity. The level-1 *ability* sharing the name
+// (Consagracao Divina / Sigilo de Protecao / Sensibilidade Arcana / Caminho
+// do Ninja) is a SEPARATE level-up reward the class buys for its mechanical
+// effects (willpower, advantage, lockpick, disguise, stealth) — it is NOT
+// granted at creation, so the level-1 ability pick still has value. Arqueiro
+// Arcano is the lone exception: ARCANE_BOW IS granted at creation (its
+// abilities need the arrow), and that grant stays inline in
+// epicgumpcriacao.src::applyClassStarter.
+//
+// SignatureAbilityFor maps a class to that ability purely so CanCastAsClass
+// can honor pre-path-rework characters who earned casting by buying it.
+function SignatureAbilityFor(subclasse)
+	if (subclasse == "Paladino")
+		return ABILITY_ID::CONSAGRACAO_DIVINA;
+	elseif (subclasse == "Cacador_de_Demonios")
+		return ABILITY_ID::SIGILO_DE_PROTECAO;
+	elseif (subclasse == "Malandro_Arcano")
+		return ABILITY_ID::SENSIBILIDADE_ARCANA;
+	elseif (subclasse == "Shinobi")
+		return ABILITY_ID::NINJA_PATH;
+	elseif (subclasse == "Arqueiro_Arcano")
+		return ABILITY_ID::ARCANE_BOW;
+	endif
+	return 0;
+endfunction
+
+// The single predicate every CASTING gate uses. Casting identity is the
+// class (chardata.subclasse), available from level 1. HasAbility(signature)
+// is the legacy fallback ONLY — pre-path-rework chars who earned casting by
+// buying the ability. This deliberately grants nothing: the ability and its
+// mechanical effects stay a level-up reward gated by HasAbility elsewhere.
+function CanCastAsClass(who, subclasse_name)
+	var cd := GetObjProperty(who, "chardata");
+	if (cd != error && cd && cd.subclasse == subclasse_name)
+		return 1;
+	endif
+	var ability_id := SignatureAbilityFor(subclasse_name);
+	if (!ability_id)
+		return 0;
+	endif
+	return MobileWrapper(who).HasAbility(ability_id);
+endfunction

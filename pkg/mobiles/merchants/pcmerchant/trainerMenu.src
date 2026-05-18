@@ -696,11 +696,10 @@ endfunction
 // branch is the exact inverse of one purchase mutation so a buy+remove nets
 // to zero. Called after the ability is erased from myhabs.
 //
-// BOLSA_INFINITA caveat: its purchase does `carrying_capacity_mod := 120`
-// (absolute, clobbering any prior value), so `-= 120` here is only exact when
-// it was the sole carry source. With PACK_MULE also active the prior +60 was
-// already lost at purchase time — a known asymmetry that lives in the
-// purchase code, not here.
+// Carry-weight abilities (PACK_MULE / BOLSA_INFINITA) are intentionally NOT
+// handled here: carrying_capacity_mod has a single source of truth in
+// MobileWrapper.RecalcCarryWeightMod, which AbilityRemoval calls after myhabs
+// is persisted (HasAbility then returns false, so the bonus drops on its own).
 function ReverseAbilityPurchaseEffects(who, hab_id)
 	var id := CInt(hab_id);
 
@@ -713,10 +712,6 @@ function ReverseAbilityPurchaseEffects(who, hab_id)
 	elseif (id == ABILITY_ID::TIRO_EM_MOVIMENTO)
 		who.disable("firewhilemoving");
 		RevokePrivilege(who, "firewhilemoving");
-	elseif (id == ABILITY_ID::PACK_MULE)
-		who.carrying_capacity_mod := who.carrying_capacity_mod - 60;
-	elseif (id == ABILITY_ID::BOLSA_INFINITA)
-		who.carrying_capacity_mod := who.carrying_capacity_mod - 120;
 	endif
 endfunction
 
@@ -888,9 +883,12 @@ function AbilityRemoval(who, npc)
 			buy[selected_key] := 1;
 			SetObjProperty(who, "myhabs", habs);
 			SetObjProperty(who, "buyhab", buy);
-			// Single source of truth: recompute carry-weight in case a pool
-			// ability ever contributes to it (none today; future-proof + idempotent).
+			// Carry-weight has its own single source of truth (recomputed
+			// from HasAbility, idempotent). Everything else an ability applied
+			// at purchase (hitsmod, empatiacomanimais, firewhilemoving) is
+			// reversed here — no-op for abilities without such effects.
 			MobileWrapper(who).RecalcCarryWeightMod();
+			ReverseAbilityPurchaseEffects(who, selected_hab);
 			SendSysMessageEx(who, selected_nome + " removida completamente!", SSM_INFO);
 		endif
 
@@ -916,11 +914,12 @@ function AbilityRemoval(who, npc)
 	SetObjProperty(who, "myhabs", habs);
 	SetObjProperty(who, "buyhab", buy);
 
-	// Recompute carry-weight from the remaining sources (single source of
-	// truth). Runs after myhabs is persisted so HasAbility no longer sees the
-	// removed ability — covers PACK_MULE / BOLSA_INFINITA and any future
-	// carry-weight ability with no per-ability reversal logic.
+	// Carry-weight: single source of truth, recomputed from HasAbility after
+	// myhabs is persisted (covers PACK_MULE / BOLSA_INFINITA). Other purchase
+	// side-effects (hitsmod, empatiacomanimais, firewhilemoving privilege) are
+	// reversed separately — RecalcCarryWeightMod does not touch those.
 	MobileWrapper(who).RecalcCarryWeightMod();
+	ReverseAbilityPurchaseEffects(who, selected_hab);
 
 	// Give back the pergaminho
 	var pergaminho_name := "pergaminho_" + selected_key;
