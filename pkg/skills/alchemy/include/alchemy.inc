@@ -261,10 +261,10 @@ function GetReagName(objtype)
     
     //pizza dentro do EvilLink
     0xc020: return "graveto teixo";
-    0xc023: return "graveto imbuia";
+    0xEE62: return "graveto imbuia";
     0xc026: return "graveto mogno";
-    0xc02c: return "graveto cogumelo";
-    0xc02f: return "graveto ebano";
+    0xEE60: return "graveto cogumelo";
+    0xEE61: return "graveto ebano";
 
     ///// OTHERS /////
     0x1f9e: return "Jarra de Água";
