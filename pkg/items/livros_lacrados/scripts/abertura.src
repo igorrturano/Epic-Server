@@ -1,7 +1,0 @@
-// abertura.src - stub
-// As funcoes (AbrirLivroLacrado, GerarItemSecundario) estao em abertura.inc
-// incluido por use.src. Este arquivo existe apenas para satisfazer o compilador.
-
-program Install()
-    return 1;
-endprogram
