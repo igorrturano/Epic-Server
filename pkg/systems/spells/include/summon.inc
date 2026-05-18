@@ -28,7 +28,7 @@ function summon(template, targ, mage)
     endif
 
     if (mage.acctname)
-        undead.script := ":ghaia:tamed";
+        undead.script := ":epicai:controlledBrain";
         undead.facing := mage.facing;
         RestartScript(undead);
     else
