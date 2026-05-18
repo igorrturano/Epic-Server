@@ -1,10 +1,10 @@
 // .craftxp           - show whether craft XP is enabled or suppressed
-// .craftxp on        - enable craft XP grants (see WARNING below)
+// .craftxp on        - enable craft XP grants (paid at completion)
 // .craftxp off       - suppress craft XP (log-only, fail-safe default)
 //
-// WARNING: enabling craft XP reopens the original farm — XP is awarded at
-// the montagem step, not at completion. Don't enable until the award is
-// moved to EV_ITEM_PRODUZIDO in gerenteTratamentoProduto.src.
+// XP is paid at completion (EV_ITEM_PRODUZIDO), not at montagem, so the
+// old assembly-spam farm is closed. There is still no rate limit / fatigue
+// system, so a 24h AFK crafter is unbounded until that lands (Phase 2).
 
 use uo;
 use os;
@@ -23,7 +23,7 @@ program craftxp(who, text)
 
 	if (arg == "on")
 		SetGlobalProperty("CraftXpEnabled", 1);
-		SendSysMessage(who, "Craft XP ENABLED. WARNING: montagem farm is open until the award is moved to completion.");
+		SendSysMessage(who, "Craft XP ENABLED (paid at completion). No rate limit yet - watch xp.log for AFK farmers.");
 		return 1;
 	endif
 
