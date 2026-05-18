@@ -1,0 +1,79 @@
+use uo;
+use os;
+use datafile;
+
+include ":livros_lacrados:scripts/setup_helper";
+
+program SetupCifradoChunk2(who, cmdline)
+ var df := OpenDataFile(":livros_lacrados:cifrado_textos");
+    if (df.errortext)
+ df := CreateDataFile(":livros_lacrados:cifrado_textos", DF_KEYTYPE_STRING);
+    else
+    endif
+    if (df.errortext)
+ if (who) SendSysMessage(who, "Erro df: " + df.errortext); endif
+        return;
+    endif
+
+    //   -- -- -- ahruwen   -- -- --
+
+ _Setup(df, "c_ahruwen_lingua", array{
+ "[Fragmento dos Conclaves — Ahruwën Clássico]<br><br>Escrevo porque o Conclave não ouvirá.<br>Fëa não é uma técnica. A‰ a condição do ser que reconhece<br>o próprio peso. Quem aprendeu isso sem permissão<br>aprendeu demais.<br><br>Fui afastado antes de terminar a sentença.<br>O exílio não apaga o que já foi compreendido.<br><br>— Sem assinatura. A tinta do nome foi raspada.",
+ "[Fragmento dos Conclaves — Ahruwën Clássico]<br><br>O Limiar não está em nenhum mapa.<br>Quem chega lá não cruzou fronteira nenhuma —<br>está simplesmente em dois lugares com igual convicção.<br>Tentei explicar isso ao Conclave. Usaram palavras<br>como 'contaminação' e 'risco de dissolução'.<br><br>Nenhuma das duas está errada. Esse é o problema.<br><br>— Anotação de margem, sem data",
+ "[Fragmento dos Conclaves — Ahruwën Clássico]<br><br>A Rota das Marés não transporta mercadorias.<br>Transporta pessoas que já estão no Limiar<br>e não sabem que entraram no sistema.<br><br>Alora observa. Alora espera alguém que entenda<br>o problema inteiro. Não a solução — o problema.<br><br>Quem propuser solução antes de entender<br>se tornará parte do que precisa ser resolvido.<br><br>— Ašltima entrada antes do lacre"
+    });
+
+ _Setup(df, "c_ahruwen_magia", array{
+ "[Camada de Intenção — Ahruwën]<br><br>Medo de ter acertado.<br>Não de errar — de ter acertado e de que ninguém<br>pudesse suportar saber disso junto com ele.<br><br>Escreveu com cuidado. Cada palavra escolhida<br>para não soar como acusação.<br>Soou assim mesmo.<br><br>O lacre foi aposto com as mãos tremendo.",
+ "[Camada de Intenção — Ahruwën]<br><br>Saudade do Conclave. Não dos indivíduos —<br>da estrutura. Da sensação de que havia<br>alguém acima a quem reportar.<br><br>O exílio tirou isso. Agora só há o que sabe<br>e ninguém autorizado a receber.<br><br>Escreveu para si. Lacrou para que outro encontrasse.<br>Não pediu que concordassem. Pediu que lembrassem.",
+ "[Camada de Intenção — Ahruwën]<br><br>Ele sabia que Alora já havia encontrado alguém assim antes.<br>E que essa pessoa desapareceu.<br><br>Escreveu mesmo assim.<br>Não porque era corajoso — porque era<br>incapaz de fingir que não sabia.<br><br>A intenção no papel: um homem que não consegue<br>parar de entender coisas que custam caro."
+    });
+
+ _Setup(df, "c_ahruwen_arq", array{
+ "[Transcrição Acadêmica — Ahruwën Clássico — Exilado do Conclave Norte]<br><br>Autor identificado como membro expulso do Conclave élfico do norte,<br>período estimado: dois séculos antes do presente.<br>Motivo do exílio: acesso não autorizado à teoria completa do Fëa.<br><br>O texto descreve o Limiar como estado interno, não geográfico —<br>posição considerada herética pelo Conclave,<br>que insiste em tratar o Limiar como território delimitável.<br><br>Nota: referência a Alora como entidade observante confirma<br>presença ativa desta no período pré-exílio.<br><br>— Arquivo VII, Coleção de Fragmentos Não Classificados",
+ "[Transcrição Acadêmica — Ahruwën Clássico]<br><br>O documento introduz o conceito da Rota das Marés<br>como sistema de captura de indivíduos em estado de Limiar ativo.<br>O autor sugere que a captura é passiva — os sujeitos entram<br>sem perceber que estão entrando.<br><br>Implicação não declarada mas presente:<br>o sistema foi projetado para isso.<br>O autor evita a conclusão direta. O exilado ainda temia o Conclave.<br><br>— Nota do pesquisador, Arquivo Não Catalogado",
+ "[Transcrição Acadêmica — Ahruwën Clássico]<br><br>Ašltima entrada do corpus. O lacre foi aplicado sobre<br>texto ainda úmido — análise da cera confirma.<br>O autor não esperou secar.<br><br>A frase final — 'quem propuser solução antes de entender<br>se tornará parte do que precisa ser resolvido' —<br>é a única declaração direta de risco neste corpus.<br><br>Resto do texto operava em eufemismos elfoicos clássicos.<br>Aqui, não.<br><br>— Coleção do Desbravador, Série Norte"
+    });
+
+    //   -- -- -- idrith_har   -- -- --
+
+ _Setup(df, "c_idrith_har_lingua", array{
+ "[Relatório de Expedição — Idrith'har]<br><br>Doze descemos. Cinco voltaram dentro dos parâmetros normais.<br>Quatro em estado de Limiar ativo — funcionais, sem risco imediato.<br>Duas optaram por permanecer. Decisão registrada, não contestada.<br>Uma, Vel'shara, não voltou nem ficou.<br><br>O sistema a capturou. Definição operacional de captura:<br>presente no Limiar, ausente de toda outra localização.<br><br>— Relatório de campo, Comandante Vreth'alia",
+ "[Relatório de Expedição — Idrith'har]<br><br>O estado de Limiar não é loucura.<br>A‰ percepção dupla com igual resolução.<br>As quatro que retornaram neste estado descrevem<br>dois lugares com igual convicção de presença.<br><br>Operacionalmente: incapacitadas para missões que exijam localização singular.<br>Operacionalmente úteis para tudo o mais.<br><br>Recomendação: não eliminar. Estudar.<br><br>— Apêndice médico, Expedição ao Limiar",
+ "[Relatório de Expedição — Idrith'har]<br><br>Vel'shara não gritou. Não resistiu.<br>O sistema a levou com a mesma indiferença<br>com que um rio leva folha morta.<br><br>O que nos perturbou: ela parecia saber.<br>Não surpresa. Reconhecimento.<br><br>Isso sugere que Vel'shara já havia estado<br>no Limiar antes desta expedição.<br>Pergunta sem resposta: por quê não relatou.<br><br>— Nota pessoal, Vreth'alia"
+    });
+
+ _Setup(df, "c_idrith_har_magia", array{
+ "[Camada de Intenção — Idrith'har]<br><br>Culpa.<br>Drow não usam a palavra, mas a autora a carrega.<br>Ela sabia que Vel'shara era vulnerável ao Limiar<br>e não retirou da expedição.<br><br>A frieza do relatório é armadura.<br>Por baixo: ela voltou e Vel'shara não.<br><br>O que o papel guarda: uma comandante<br>que ainda procura uma linguagem para 'me arrependo'.",
+ "[Camada de Intenção — Idrith'har]<br><br>As quatro em estado de Limiar<br>não perturbam a autora.<br>O que a perturba são as duas que ficaram por escolha.<br><br>Ela não entende a escolha.<br>Não por crueldade — por genuína incapacidade<br>de conceber que alguém prefira o Limiar.<br><br>O que o texto guarda: medo de que a escolha<br>delas faça sentido e ela não consiga ver como.",
+ "[Camada de Intenção — Idrith'har]<br><br>Ela descreve Vel'shara reconhecendo o sistema<br>sem surpresa. Escreve isso três vezes em rascunhos.<br>No relatório final, uma vez, com neutralidade.<br><br>O que não conseguiu escrever:<br>que Vel'shara olhou para ela no momento da captura<br>e que aquele olhar não pedia socorro.<br><br>Pedia testemunha."
+    });
+
+ _Setup(df, "c_idrith_har_arq", array{
+ "[Transcrição Acadêmica — Idrith'har — Expedição Drow ao Limiar]<br><br>Documento produzido por comandante de expedição drow,<br>cultura Idrith'har, aproximadamente 80 anos antes do presente.<br>Doze membros desceram; cinco retornaram dentro da norma operacional.<br><br>Dados sobre as quatro em estado de Limiar ativo:<br>todas funcionais até última verificação conhecida.<br>As duas que escolheram permanecer: sem registro posterior de qualquer tipo.<br><br>Vel'shara: único caso documentado de captura direta pelo sistema.<br><br>— Coleção: Fenômenos do Limiar, Vol. III",
+ "[Transcrição Acadêmica — Idrith'har]<br><br>A descrição do estado de Limiar neste documento<br>é a mais precisa do corpus disponível —<br>'dois lugares com igual convicção de presença'.<br><br>Cultura drow produz relatórios superiores sobre horror<br>precisamente por recusar linguagem emocional.<br>Note-se: a autora nunca nomeia o sistema de captura.<br>Descreve seu funcionamento. Evita nomeá-lo.<br>Isso é medo funcionando dentro de uma drow treinada.<br><br>— Nota do pesquisador",
+ "[Transcrição Acadêmica — Idrith'har]<br><br>A observação sobre Vel'shara — que reconheceu o sistema<br>sem surpresa — é a entrada de maior peso neste corpus.<br><br>Duas interpretações possíveis:<br>(a) Vel'shara já havia tido contato anterior com o sistema,<br>não relatado por razão desconhecida;<br>(b) o sistema comunica sua natureza imediatamente antes da captura,<br>de forma compreensível apenas ao capturado.<br><br>Nenhuma das duas pode ser verificada. Ambas têm implicações sérias.<br><br>— Arquivo: Vel'shara, Caso Ašnico, entrada 1"
+    });
+
+    //   -- -- -- necro_cifrado   -- -- --
+
+ _Setup(df, "c_necro_cifrado_lingua", array{
+ "[Estudo dos Retornados — Cifra Necromântica Drow]<br><br>Os que voltam da morte voltam incompletos.<br>Não falta memória. Não falta forma.<br>Falta a camada que faz as coisas importarem.<br><br>O morto vê seu filho. Reconhece. Não sente.<br>Funciona. Não habita.<br><br>A camada ausente tem nome provisório: profundidade.<br>O sistema de captura retém essa camada.<br>Uso desconhecido. Hipótese em desenvolvimento.<br><br>— Pesquisadora V., nota inicial",
+ "[Estudo dos Retornados — Cifra Necromântica Drow]<br><br>Hipótese H3: o sistema funciona exatamente como projetado.<br>Corolário: alguém mentiu sobre o propósito.<br><br>Não é disfunção. A‰ coleta.<br>O que é coletado: profundidade. O que faz as coisas custarem.<br>Para quê: não sabemos ainda.<br><br>Se H3 é verdadeira, quem projetou o sistema<br>sabia que os Retornados existiriam.<br>Os Retornados não são consequência. São produto.<br><br>— Pesquisadora V., entrada 7",
+ "[Estudo dos Retornados — Cifra Necromântica Drow]<br><br>A reversão é possível. Os dados confirmam.<br>Exige trabalho simultâneo de dentro e de fora.<br><br>De dentro: alguém no Limiar ativo com acesso ao ponto de captura.<br>De fora: alguém que entenda a arquitetura do sistema<br>sem ter sido capturado por ele.<br><br>Problema operacional:<br>quem entende o suficiente está geralmente dentro.<br>Quem está fora geralmente não entende o suficiente.<br><br>— Pesquisadora V., entrada 12"
+    });
+
+ _Setup(df, "c_necro_cifrado_magia", array{
+ "[Camada de Intenção — Cifra Necromântica]<br><br>Ela examinou Retornados durante anos.<br>Aprendeu a não olhar nos olhos por muito tempo.<br><br>Não por medo. Por o quê é pior:<br>pela estranheza de olhar para alguém funcional<br>que não está lá de nenhuma maneira que importe.<br><br>O que o texto guarda: uma pesquisadora<br>que começou a checar se ela mesma ainda sente.<br>Ainda sente. Isso a alivia e a preocupa igualmente.",
+ "[Camada de Intenção — Cifra Necromântica]<br><br>Quando escreveu H3, suas mãos pararam por um momento.<br>Não vacilação — reconhecimento.<br><br>Ela já sabia antes de escrever.<br>Estava adiando a conclusão porque a conclusão<br>significa que alguém, em algum momento, decidiu que isso valia.<br><br>O que o texto guarda: raiva contida<br>de quem percebeu que foi usada como pesquisadora<br>para mapear um crime que já estava concluído.",
+ "[Camada de Intenção — Cifra Necromântica]<br><br>A entrada sobre reversão foi escrita por último,<br>mas a intenção que a atravessa é mais antiga.<br><br>Ela não acredita que alguém tentará.<br>Sabe que o problema de acesso é real —<br>quem entende está dentro, quem está fora não entende.<br><br>Escreveu mesmo assim. Para quem lê a cifra séculos depois.<br>A intenção: 'se você está lendo isso, talvez seja você.<br>Não achei que houvesse alguém assim. Talvez haja.'"
+    });
+
+ _Setup(df, "c_necro_cifrado_arq", array{
+ "[Transcrição Acadêmica — Cifra Necromântica Drow]<br><br>Documento em cifra necromântica, língua base Idrith'har.<br>Autora identificada como 'Pesquisadora V.' — nome completo não recuperado.<br>Período: indeterminado, posterior à expedição drow ao Limiar.<br><br>Tema central: estudo dos Retornados como fenômeno de<br>extração da camada de profundidade durante a morte.<br>Este é o único documento a nomear essa camada explicitamente.<br><br>H3 é a mais relevante: o sistema funciona conforme projetado.<br><br>— Arquivo: Retornados, Série Necromântica, Vol. I",
+ "[Transcrição Acadêmica — Cifra Necromântica Drow]<br><br>A Hipótese H3 tem implicações que a autora apenas indica.<br>Se o sistema foi projetado para produzir Retornados<br>como efeito colateral de captura de profundidade,<br>então existe um agente com propósito definido<br>e conhecimento técnico do processo da morte.<br><br>A autora não nomeia esse agente.<br>Não por ignorância — o texto demonstra raciocínio preciso.<br>Por precaução. Nomear tornava o documento mais perigoso.<br><br>— Nota do pesquisador, Arquivo Restrito",
+ "[Transcrição Acadêmica — Cifra Necromântica Drow]<br><br>A entrada 12 é a mais significativa:<br>a autora declara que a reversão do sistema é possível<br>mas exige agente simultâneo interno e externo.<br><br>Nenhum caso de tentativa de reversão está documentado.<br>O agente interno deve estar em Limiar ativo com<br>capacidade de ação preservada —<br>condição que o próprio estado torna instável.<br><br>Vel'shara permanece o único candidato interno documentado.<br>Status: capturada. Não eliminada.<br><br>— Arquivo: Vel'shara, Caso Ašnico, entrada 2"
+    });
+
+ if (who) SendSysMessage(who, "[Cifrado DS] Chunk2 ok."); endif
+endprogram
