@@ -22,6 +22,7 @@ program alertaarea(rune)
 		foreach people in nearbypeople
 			if (!people.npctemplate)
 				SendSysMessage(people, mensagem, 3, 53);
+				PrintTextAbovePrivate(people, mensagem, 3, 53);
 			endif
 		endforeach
 
