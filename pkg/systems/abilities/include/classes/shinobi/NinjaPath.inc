@@ -114,57 +114,6 @@ class NinjaPath(CombatAbility)
 		return true;
 	endfunction
 
-	// Substituicao passive: when hit while #substituicao_active, stun attacker + hide + leave a log
-	function OnPassiveBeforeHitDefender(this, attackInfo)
-		var defender := attackInfo.GetDefender();
-		var defRef := defender.GetObjRef();
-
-		if (!defender.HasAbility(ABILITY_ID::NINJA_PATH))
-			return false;
-		endif
-
-		if (!GetObjProperty(defRef, "#substituicao_active"))
-			return false;
-		endif
-
-		// Consume the substituicao
-		EraseObjProperty(defRef, "#substituicao_active");
-
-		var attacker := attackInfo.GetAttacker().GetObjRef();
-		var sneak := CInt(defender.GetSkill(SNEAK));
-
-		// Stun the attacker
-		var stun_duration := CInt(sneak / 10);
-		if (stun_duration < 2)
-			stun_duration := 2;
-		endif
-
-		// Create a log at the ninja's position
-		var log_item := CreateItemAtLocation(defRef.x, defRef.y, defRef.z, 0x1BDD, 1, defRef.realm);
-		if (log_item)
-			log_item.name := "Tora";
-			log_item.decayat := ReadGameClock() + 15;
-		endif
-
-		// Hide the ninja
-		defRef.hidden := 1;
-
-		// VFX
-		PlaySoundEffect(defRef, 0x228);
-		PlayObjectCenteredEffect(defRef, 0x3728, 10, 10);
-
-		Message("*Substituicao!*").SendEmote(defRef);
-		Message($"Voce substituiu seu corpo por uma tora!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(defRef);
-
-		// Force miss by setting a very negative hit chance modifier
-		attackInfo.SetHitChanceMod(-1000);
-
-		DebugMsg(defRef, DEBUG_HAB,
-			Message($"[NINJA_PATH] Substituicao triggered!", Color(SYSTEM_COLOR::SUCCESS)));
-
-		return true;
-	endfunction
-
 	function _TeleportToMark(this, who, mark_serial, sneak)
 		var targ := SystemFindObjectBySerial(mark_serial);
 

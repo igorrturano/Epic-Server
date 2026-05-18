@@ -696,6 +696,47 @@ class AttackInfo(IAttackInfo)
 	endfunction
 
 	/**
+	 * Substituicao (Kawarimi, spell 1100) — reação de fuga do defensor.
+	 *
+	 * Disparada na janela before-hit. NÃO depende da habilidade NINJA_PATH:
+	 * o cast foi desacoplado da habilidade (o Shinobi conjura desde a criação
+	 * mas só ganha a habilidade ao subir de nível), então o efeito chaveia
+	 * apenas em #substituicao_active, espelhando como o combate lê #sanctuary.
+	 *
+	 * @return Boolean true se o ataque foi substituído (forçado a errar)
+	 */
+	function ResolveSubstituicao(this)
+		var defRef := this._defender.GetObjRef();
+
+		if (!defRef.GetProp("#substituicao_active"))
+			return false;
+		endif
+
+		// Consome a flag: encerra o wait-loop da magia e impede re-trigger.
+		defRef.EraseProp("#substituicao_active");
+
+		// Deixa uma tora no lugar do ninja e some.
+		var decoy := CreateItemAtLocation(defRef.x, defRef.y, defRef.z, 0x1BDD, 1, defRef.realm);
+		if (decoy)
+			decoy.name := "Tora";
+			decoy.decayat := ReadGameClock() + 15;
+		endif
+
+		defRef.hidden := 1;
+
+		PlaySoundEffect(defRef, 0x228);
+		PlayObjectCenteredEffect(defRef, 0x3728, 10, 10);
+
+		Message("*Substituicao!*").SendEmote(defRef);
+		Message($"Voce substituiu seu corpo por uma tora!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(defRef);
+
+		// Força este ataque a errar.
+		this._hitChanceMod := -1000;
+
+		return true;
+	endfunction
+
+	/**
 	 * Executa habilidades programadas para um determinado momento.
 	 *
 	 * @param momentum COMBATABILITY_MOMENT Momento de execução das habilidades
