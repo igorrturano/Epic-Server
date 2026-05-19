@@ -1018,10 +1018,12 @@ function DeveAparecerReceita(
 	
 	if(isDuplaOrigem)
 		var nomeReceita1 := PegaNomeReceitaClassificada(receitaClassificada);
+		var nomeReceita1Norm := StrReplace(Lower(nomeReceita1), " ", "");
 		isOrigemValida := nomeReceita1 in receitasAprendidas || povo == itemOrigem;
 		if (!isOrigemValida && povo != itemOrigem)
 			foreach aprendida1 in receitasAprendidas
-				if (StrReplace(Lower(aprendida1), " ", "") + "-1" == nomeReceita1)
+				var aprendida1Norm := StrReplace(Lower(aprendida1), " ", "");
+				if (aprendida1Norm == nomeReceita1Norm || aprendida1Norm + "-1" == nomeReceita1Norm)
 					isOrigemValida := true;
 					break;
 				endif
@@ -1030,10 +1032,12 @@ function DeveAparecerReceita(
 	else
 		if(itemOrigem == "Recipe")
 			var nomeReceita2 := PegaNomeReceitaClassificada(receitaClassificada);
+			var nomeReceita2Norm := StrReplace(Lower(nomeReceita2), " ", "");
 			isOrigemValida := nomeReceita2 in receitasAprendidas;
 			if (!isOrigemValida)
 				foreach aprendida2 in receitasAprendidas
-					if (StrReplace(Lower(aprendida2), " ", "") + "-1" == nomeReceita2)
+					var aprendida2Norm := StrReplace(Lower(aprendida2), " ", "");
+					if (aprendida2Norm == nomeReceita2Norm || aprendida2Norm + "-1" == nomeReceita2Norm)
 						isOrigemValida := true;
 						break;
 					endif
