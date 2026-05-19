@@ -64,7 +64,7 @@ Você dispara um tiro certeiro e implacável: o ataque é um acerto garantido e 
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 120s
 
-Por alguns segundos, baseados no seu *Tactics*, seus disparos adicionam destreza ao dano.
+Por alguns segundos (baseados no seu *Tactics*), seus disparos causam dano adicional proporcional à sua perícia *Ranged*.
 
 ::
 

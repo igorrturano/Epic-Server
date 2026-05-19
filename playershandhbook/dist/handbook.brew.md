@@ -3600,7 +3600,7 @@ Você dispara um tiro certeiro e implacável: o ataque é um acerto garantido e 
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 120s
 
-Por alguns segundos, baseados no seu *Tactics*, seus disparos adicionam destreza ao dano.
+Por alguns segundos (baseados no seu *Tactics*), seus disparos causam dano adicional proporcional à sua perícia *Ranged*.
 
 ::
 
@@ -4255,7 +4255,7 @@ Alterando seu corpo através de mutações, você consegue aumentar uma resistê
 **Custo:**        :: 20 stamina
 **Cooldown:**     :: 600s
 
-Você aprende a criar óleos para armas que ferem com mais eficácia determinados tipos de alvos. Adicionalmente, você recebe um bônus de acerto baseado na sua habilidade em alquimia.
+Você aprende a criar óleos para armas que ferem com mais eficácia determinados tipos de alvos. Adicionalmente, você recebe um bônus de acerto baseado na sua perícia *Science*.
 
 ::
 
@@ -6534,7 +6534,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 10s
 
-Você se esquiva do próximo golpe e recebe um bônus temporário em acerto e esquiva.
+Ao ativar, você se esquiva do próximo golpe. Enquanto tiver esta habilidade, você recebe um bônus permanente em acerto e esquiva.
 
 ::
 
@@ -6545,7 +6545,7 @@ Você se esquiva do próximo golpe e recebe um bônus temporário em acerto e es
 **Custo:**    :: 30 stamina
 **Cooldown:** :: 20s
 
-Passivamente, você usa *Tactics* como *Parry*. Ao ativar, sua destreza aumenta em relação à falta de stamina.
+Passivamente, empunhando um *buckler*, você usa *Tactics* no lugar de *Parry* para aparar. Ao ativar, você regenera stamina por um período.
 
 ::
 
