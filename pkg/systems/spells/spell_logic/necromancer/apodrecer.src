@@ -6,6 +6,8 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include ":spells:Controller/SpellController";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
 
 program SpellScript(params)
 	var who := params[1];
@@ -21,6 +23,17 @@ program SpellScript(params)
 	if (!targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
 		return;
+	endif
+
+	// WILL save negates the rot. SC_ApplyEffect has no save layer of its
+	// own — gate before the call (mirrors the necromancer canonical
+	// ampliardor / atrapalhar pattern).
+	var diff := handleSpellResistDiffForSpecialists(who, info.School);
+	var bonus := epicWisdomPathBonus(who);
+	if (CheckResist(targ, WILL, diff, -bonus))
+		SendSysMessageEx(who, "O alvo resiste a corrupcao.", SSM_FAIL);
+		SendSysMessageEx(targ, "Voce resiste ao apodrecimento.", SSM_INFO);
+		return 1;
 	endif
 
 	SC_RemoveEffect(targ, 0); // No spell ID for standalone apodrecer
