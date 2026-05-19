@@ -21,7 +21,7 @@ program SpellScript(params)
 	// Re-casting refreshes the window — drop any prior arm first.
 	SC_RemoveEffect(who, spellId);
 
-	var window := CInt(AP_GetSkill(who, THEOLOGY) / 10);
+	var window := CInt(AP_GetSkill(who, THEOLOGY) / 5);
 	if (window < 6)
 		window := 6;
 	endif

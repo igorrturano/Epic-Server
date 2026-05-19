@@ -39,5 +39,8 @@ program SpellScript(params)
 
 	var duration := CInt(AP_GetSkill(who, ARCANA));
 
-	return ApplyWeakenEffect(who, targ, amt, duration, CInt(spell.id));
+	ApplyWeakenEffect(who, targ, amt, duration, CInt(spell.id));
+	Corromper(who, 1, targ);
+
+	return 1;
 endprogram
