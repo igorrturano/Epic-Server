@@ -293,7 +293,7 @@ Um DP é recuperado a cada hora que você estiver jogando com seu personagem. Se
 
 ### Desmaio
 :
-O desmaio ocorre quando um personagem tem seus pontos de vida zerados, isto é: leva mais dano do que poderia receber. Enquanto seu personagem ainda possuir DPs, ele poderá desmaiar sem que morra e a cada desmaio ele perderá um DP. No caso de sua morte ter sido causada por algum jogador, você não perderá Pontos de Morte.
+O desmaio ocorre quando um personagem tem seus pontos de vida zerados, isto é: leva mais dano do que poderia receber. Enquanto seu personagem ainda possuir DPs, ele poderá desmaiar sem que morra. Toda derrota custa Pontos de Morte — tanto contra criaturas quanto contra outros jogadores: você perde 1 DP por desmaio, ou 2 se o golpe fatal acertar o pescoço. Não há perda de DP em duelos, sob proteção contra morte, ou para a equipe de GMs.
 :
 Uma vez desmaiado o personagem será teletransportado para uma região do mapa onde só ficam os jogadores desmaiados. Isso serve para evitar que ele conheça os fatos ocorridos enquanto esteve desmaiado. Nessa região não é necessário interpretar, é como se fosse um tempo de pausa enquanto seu personagem se recupera do desmaio.
 
