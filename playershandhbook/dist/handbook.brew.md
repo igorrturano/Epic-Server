@@ -304,15 +304,15 @@ Uma vez desmaiado o personagem será teletransportado para uma região do mapa o
 :
 Ao desmaiar um Teste de Fortitude é feito para verificar se há possibilidade de uma fratura. Sua dificuldade aumenta conforme o número de pontos de morte (DP) que o personagem tem.
 :
-O teste de resistência de fortitude tem dificuldade de 1d30 + Fortitude. Ele é aplicado na quantidade de DP que o personagem terá após ser desmaiado.
+É o mesmo teste de resistência descrito em *Testes de Resistência*: você rola 1d20 somado ao seu valor de Fortitude contra uma dificuldade fixa. O teste considera a quantidade de DP que o personagem terá após desmaiar — quanto menos DP, mais difícil resistir à fratura.
 :
 ##### Fraturas
-| Pontos de Morte (DP) | Dificuldade|
-|:---------------------|:----------:|
-| Menor que 5          | 30         |
-| Menor que 4          | 40         |
-| Menor que 3          | 60         |
-| Menor que 2          | 90         |
+| Pontos de Morte (DP) | Dificuldade   |
+|:---------------------|:-------------:|
+| Menor que 5          | Média         |
+| Menor que 4          | Difícil       |
+| Menor que 3          | Muito Difícil |
+| Menor que 2          | Extrema       |
 :
 ### Morrendo
 A morte ocorre quando seu personagem desmaia e seus DPs são reduzidos à zero. Uma mensagem irá alertá-lo da morte de seu personagem, a partir desse momento você deverá criar um novo personagem. Um personagem morto não pode ser recriado.
