@@ -197,7 +197,7 @@ CalculateDefenderResist()                       # body/armor/spell % reduction (
 |---|---|---|
 | Status | `CalculateStatusDamage` (`:200`) | STR (melee), DEX (ranged/finesse: DEX/15 main, /30 off), STR+DEX (throwing). Added to **all 3** physical channels. |
 | Skill | `CalculateSkillDamage` (`:248`) | Tactics (or Theology if `metamorfose`). All 3 physical channels. |
-| Weapon | `CalculateWeaponDamage` (`:271`) | Dice roll per channel + weapon damage mod. 1H solo-hit upgrades the physical die one tier (`:283`, `_IsOneHandedSoloHit:749`). |
+| Weapon | `CalculateWeaponDamage` (`:271`) | Dice roll per channel + weapon damage mod. 1H solo-hit upgrades the physical die one tier (`:283`, `_IsOneHandedSoloHit:749`). The weapon/armor mod values come from the crafted `fabricado` prop via `PegaValorFabricacao` — how a material+tier becomes that number is [`craft-pipeline.md`](craft-pipeline.md) (value-math spine). |
 | Entropy | `CalculateEntropyDamage` (`:1397`) | +dmg vs undead/demon/void (player entropy ≥12k, or global ≤−20k). |
 | Primordial | `CalculatePrimordialDamage` (`:461`) | Metamorfose elemental: blunt raw → element. |
 | Arcane bow | `CalculateArcaneBowDamage` (`:488`) | MagicBow: arcana/10 (or /5 w/ ARCANE_MASTERY) elemental. |
