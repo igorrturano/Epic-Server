@@ -1,0 +1,51 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":spells:Controller/SpellController";
+
+// Spell 615 - Forca do Touro (shaman.cfg)
+// STR buff scaled by caster's Theology (Theology/3). Maintainable.
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Voce so pode usar esta magia em coisas vivas.", SSM_FAIL);
+		return 0;
+	endif
+
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	var theology := AP_GetSkill(who, THEOLOGY);
+	var duration := CInt(theology);
+	if (duration < 30)
+		duration := 30;
+	endif
+
+	var str_bonus := CInt(theology / 3);
+
+	var opts := struct{};
+	opts.+str_mod := str_bonus;
+	opts.+displayname := "Forca do Touro";
+	opts.+desc := $"+{str_bonus} Forca";
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{ sound := SFX_SPELL_STRENGTH };
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+
+	SendSysMessageEx(who, "Voce infunde a forca do touro selvagem no alvo.", SSM_INFO);
+	SendSysMessageEx(targ, $"Voce sente seus musculos arderem com forca selvagem (+{str_bonus} Forca).", SSM_INFO);
+	return 1;
+endprogram
