@@ -36,7 +36,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 				this.SetResistsMod(ResistModEncantar(this.GetObjRef()));
 			endif
 
-			this.Weight := this.GetTemplate().weight;
+			this.Weight := this.__CalculateWeight();
 			this.STRRequired := this.__CalculateSTRRequired();
 			this.__InitModifiers();
 			this.CriticalReductionMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_REDUCAOCRITICO);
@@ -268,6 +268,10 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 	endfunction
 
 	// Private functions
+	function __CalculateWeight(this)
+		return CInt(this.GetTemplate().weight * GetWeightMultiplierByMaterial(this.GetColor()));
+	endfunction
+
 	function __CalculateSTRRequired(this)
 		return CInt(this.GetWeight() * 7.5);
 	endfunction
