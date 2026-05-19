@@ -169,19 +169,16 @@ Resumindo:
 :
 O sistema de fome no shard não é muito complexo mas também possui consequências para os personagens que ignoram o sistema. De outras fases, sempre fizemos sistemas que traziam pequenos incômodos para quem não se alimentasse, percebemos que isso fazia com que a maioria simplesmente ignorasse a comida. Não queremos tornar chato ou prejudicar a jogabilidade a ponto de fazer a pessoa morrer de fome, mas fazer um sistema que incentive a alimentação, além de valorizar uma perícia (Domestic’s Work), ajuda na imersão no jogo: aqueles momentos de parar a noite para fazer um acampamento e acender uma fogueira ou as visitas à taverna.
 
-O sistema foi simplificado, existem 5 níveis de fome, que podem ser vistas no comando .fome. O nível 0 e 1 é o considerado “sem fome” ou “satisfeito”, o nível 4 a fome está prejudicando você e no nível 5 você está “faminto”. As comidas satisfazem melhor conforme mais elaboradas elas são, as mais simples como uma carne assada ou uma fruta alimentam muito pouco enquanto pratos mais elaborados saciam muito mais.
+O sistema foi simplificado: existem 6 níveis de fome (de 0 a 5), vistos no comando .fome. Dos níveis 0 a 2 você está bem alimentado ou apenas satisfeito; **a partir do nível 3 (“com fome”) a fome começa a prejudicar você**, piorando até o nível 5, quando está “faminto”. As comidas satisfazem melhor conforme mais elaboradas elas são: as mais simples como uma carne assada ou uma fruta alimentam muito pouco, enquanto pratos mais elaborados saciam muito mais.
 :
 ### Penalidades
-Uma pessoa faminta se encontra em estado frágil e, portanto, sofre penalidades pelo estado enfraquecido.
+Uma pessoa com fome se encontra em estado frágil e, portanto, sofre penalidades pelo enfraquecimento. A partir do nível 3, a fome reduz sua **Força, Destreza e Inteligência**, e a penalidade aumenta a cada nível:
 :
-As penalidades pela fome 4 são:
-- -10 em todos os atributos
-- -10 nos testes de resistência
-
- As penalidades pela fome 5 são:
-
-- -20 em todos os atributos
-- -20 nos testes de resistência
+- **Nível 3 (com fome):** penalidade moderada
+- **Nível 4 (com muita fome):** penalidade maior
+- **Nível 5 (faminto):** penalidade severa
+:
+Personagens com **Fortitude** alta o bastante resistem por completo aos efeitos da fome — nesse caso, nenhuma penalidade é aplicada. Não existe uma penalidade direta “nos testes de resistência”: como Força e Destreza alimentam suas resistências, passar fome apenas as enfraquece de forma indireta.
 
 A stamina além de ser usada no movimento, sendo extremamente útil numa fuga ou em combates longos, também é usada com as habilidades dos Caminhos. Já os testes de resistência ajudam a evitar danos, efeitos de magia, armadilhas ou clima.
 
