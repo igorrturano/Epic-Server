@@ -1,0 +1,26 @@
+﻿// start.src - livros_lacrados
+// Popula DataFiles de textos a cada boot do servidor.
+// Os setup scripts sao idempontentes (sobrescrevem via SetProp).
+
+use os;
+
+program LivrosLacradosStart()
+    sleep(3);
+
+    Start_Script(":livros_lacrados:scripts/setup_inerte_ds_chunk1", array{0});
+    Start_Script(":livros_lacrados:scripts/setup_inerte_ds_chunk2", array{0});
+    Start_Script(":livros_lacrados:scripts/setup_inerte_ds_chunk3", array{0});
+
+    Start_Script(":livros_lacrados:scripts/setup_cifrado_ds_chunk1", array{0});
+    Start_Script(":livros_lacrados:scripts/setup_cifrado_ds_chunk2", array{0});
+    Start_Script(":livros_lacrados:scripts/setup_cifrado_ds_chunk3", array{0});
+
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat1", array{0});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat2", array{0});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat3", array{0});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat4", array{0});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat5", array{0});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat7", array{0});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat8", array{0});
+
+endprogram
