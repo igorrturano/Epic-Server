@@ -44,7 +44,7 @@ function GetMagicItemElementalBonus(caster, damageType)
 		DMG_ENERGY:  subKey := SUBCARACTERISTICA_FABRICACAO_ENERGIA;
 		default:     return 0;
 	endcase
-	return CInt(PegaSubValoresFabricacao(item, subKey));
+	return PegaSubValorFabricacao(item, CARACTERISTICA_FABRICACAO_DANO, subKey);
 endfunction
 
 // Returns the sacredWood difficulty reduction (in skill-check points) granted
