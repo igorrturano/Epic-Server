@@ -10,6 +10,7 @@ include "include/sounds";
 include ":spells:Controller/SC_Damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
+include ":charactercreation:resists";
 
 program cast_firebolt(params)
 	var caster := params[1];
@@ -39,6 +40,14 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
 	PlayMovingEffectXYZHued(caster, targ, 0x54AD, 10, 1643, 0);
 	var dmg := RandomDiceRoll("1d4"); /* epicSpellDamageRoll(caster, spell_circle); */
 	// dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+
+	// REFLEX save halves the cold ray's damage.
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+	if (CheckResist(targ, REFLEXES, diff, -bonus))
+		dmg := Cint(dmg / 2);
+		SendSysMessageEx(targ, "Voce desvia parcialmente do raio gelido.", SSM_INFO);
+	endif
 
 	SC_DealDamage(caster, targ, spellId, cint(dmg), DMG_COLD);
 endfunction
