@@ -27,24 +27,10 @@ program HitScript(params)
 		return 0;
 	endif
 
-	var dist := Distance(who, targ);
-	var mlore := Cint(AP_GetSkill(who, ARCANA));
 	who.frozen := 1;
 
 	if (!CheckLosAt(who, targ.x, targ.y, targ.z))
 		SendSysMessage(who, "Voce nao consegue ver o alvo.");
-		who.hidden := 0;
-		who.frozen := 0;
-		return 0;
-	endif
-
-	var allowedDistance := mlore / 10;
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
-		allowedDistance := mlore / 5;
-	endif
-
-	if (dist > Cint(allowedDistance))
-		SendSysMessage(who, "O alvo esta muito distante");
 		who.hidden := 0;
 		who.frozen := 0;
 		return 0;
