@@ -7481,7 +7481,7 @@ Parry (Aparar) é a perícia que envolve a habilidade de bloquear ou desviar ata
 :
 
 #### Magery
-Magery (Magia) é a perícia que abrange a capacidade do personagem de conjurar, manipular e controlar energias mágicas para lançar feitiços e realizar atos sobrenaturais. Esta perícia representa tanto o conhecimento teórico quanto a prática de artes mágicas, incluindo a capacidade de canalizar mana ou outras fontes de poder arcano. Personagens proficientes em Magery podem lançar uma variedade de feitiços ofensivos, defensivos e utilitários, tornando-se versáteis em combate e outras situações. **[Necessário para classes: Magus, Lâmina Arcana, Necromante, Deslocador das Sombras, Clérigo, Xamã e Druida]**
+Magery (Magia) é a perícia que abrange a capacidade do personagem de conjurar, manipular e controlar energias mágicas para lançar feitiços e realizar atos sobrenaturais. Esta perícia representa tanto o conhecimento teórico quanto a prática de artes mágicas, incluindo a capacidade de canalizar mana ou outras fontes de poder arcano. Personagens proficientes em Magery podem lançar uma variedade de feitiços ofensivos, defensivos e utilitários, tornando-se versáteis em combate e outras situações. **[É a perícia de conjuração padrão. Conjuradores arcanos conjuram com *Arcana* e conjuradores de magia divina com *Theology* no lugar de Magery — veja essas perícias.]**
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}

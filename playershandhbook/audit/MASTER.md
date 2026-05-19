@@ -100,3 +100,20 @@ all 30 class ability lists, racial perk boxes. **Not yet audited:** Passados
   code-fix session (user-owned, 2026-05-19). Revisit handbook after the
   hunger decay is restored. Also flagged: penalty magnitude fome*10 to 3
   stats (−30/−40/−50) may be over-tuned vs "pequenos incômodos" intent.
+
+## Second pass (Passados/Perícias/Magias/Faccoes) — 2026-05-19
+
+| Domain | HIGH | MED | LOW | INVENTED |
+|---|---|---|---|---|
+| P — Passados + Faccoes | 0 | 0 | 2 | 0 |
+| Q — Perícias | 1 | 1 | 3 | 0 |
+| M1 — Magias base (truques/cânticos/ninjutsu) | 5 | 4 | 6 | 0 |
+| M2 — Magias Divinas | 6 | 4 | 1 | 0 |
+| M3 — Magias Natureza/Primordiais | 1 | 7 | 2 | 0 |
+
+Code-TODO forks (book describes spell, code doesn't deliver — decide like
+Presença Divina/Hunger): Ninjutsu mana-free header (false), Bardo "O Chamado
+Irresistível" (charm unread by AI), "O Sonho do Louco" (hallucination
+unimplemented), "Requiem do Silêncio" (only blocks bard spells), "Dança das
+Lâminas" (attack-speed TODO), Clérigo "Aura Mortis" (spell 517 commented out
+in priest.cfg → unobtainable). Detail in audit/M1*, M2*.
