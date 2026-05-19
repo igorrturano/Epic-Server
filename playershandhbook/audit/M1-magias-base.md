@@ -245,7 +245,8 @@ the cast path (not flagged; lore).
   (pkg/systems/spells/spell_logic/bardo/danca_das_laminas.src:10,29-39).
   No attack-speed change is applied. Worse, the hit bonus is stored in
   `#hit_mod` (the one-shot ObjProperty consumed and erased by
-  HitController on the first swing — see spells-guide Pitfall #1/#2),
+  HitController on the first swing — see docs/spells-pipeline.md
+  Pitfall #1),
   not the durational `opts.hitchance_mod`. So the +hit lasts exactly one
   attack despite the cântico advertising a duration, and the cleanup at
   :50-61 can corrupt an unrelated `#hit_mod` pushed by another source.
@@ -254,8 +255,8 @@ the cast path (not flagged; lore).
   player is told (and the message claims `por {duration}s`).
 - **Severity:** HIGH (a C3 party cântico delivering ~one of two stated
   effects, and that one for a single attack)
-- **Cross-links:** Same `#hit_mod` anti-pattern flagged in spells-guide
-  (danca_das_laminas case study). Any handbook fix should also stop
+- **Cross-links:** Same `#hit_mod` anti-pattern flagged in
+  docs/spells-pipeline.md (Pitfall #1). Any handbook fix should also stop
   promising the speed component until implemented.
 
 ### "Escudo dos Ancestrais" — buffs only 4 of the 7 resist types
