@@ -5899,11 +5899,11 @@ Assassinos são verdadeiros artistas da execução, habilidosos em emboscadas e 
 ##### Assassino
 | Level | Habilidades | 
 |:-----:|:-----------:|
-|  2 |Salto das Sombras |
-|  6 |Ataque Furtivo |
+|  2 |Assassinar |
+|  6 |Instinto Assassino |
 |  10 |Arsenal Sombrio |
-|  14 |Instinto Assassino |
-|  20 |Faro por Sangue |
+|  14 |Faro por Sangue |
+|  20 |Manto das Sombras |
 
 ##### * Skill Necessária: Sneak
 }}
@@ -5915,25 +5915,25 @@ Assassinos são verdadeiros artistas da execução, habilidosos em emboscadas e 
 ## Habilidades
 A cada level alcançado, o jogador poderá escolher uma habilidade dentre as opções disponíveis para o level em referência.
 
-### Salto das Sombras
+### Assassinar
 *Habilidade Nível 2*
 
 **Tipo:**     :: Ativa
-**Custo:**    :: 10 stamina
+**Custo:**    :: 20 stamina
 **Cooldown:** :: 180s
 
-Você consegue dar um salto furtivo que não consome passos escondidos, aterrissando diretamente nas costas do oponente.
+Você salta até as costas do oponente e prepara um ataque furtivo. Se estiver em modo furtivo, o acerto é garantido.
 
 ::
 
-### Ataque Furtivo
+### Instinto Assassino
 *Habilidade Nível 6*
 
-**Tipo:**     :: Ativa
-**Custo:**    :: 30 stamina
-**Cooldown:** :: 180s
+**Tipo:**     :: Passiva
+**Custo:**    :: --
+**Cooldown:** :: --
 
-Quando ativado em modo furtivo, garante o próximo acerto com dano adicional baseado no seu sneak. Fora do modo furtivo, tenta acertar normalmente.
+Seu Assassinar passa a garantir um crítico e a dobrar o dano causado.
 
 ::
 
@@ -5944,32 +5944,32 @@ Quando ativado em modo furtivo, garante o próximo acerto com dano adicional bas
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Você desenvolveu aptidão e estima por alguns tipos de armas, aumentando seu dano com base no seu sneak.
+Ao usar uma arma de assassino, você adiciona dano adicional com base no seu Sneak.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
 
 \page
 
-### Instinto Assassino
-*Habilidade Nível 14*
-
-**Tipo:**     :: Passiva
-**Custo:**    :: --
-**Cooldown:** :: --
-
-Caso acerte um ataque furtivo, o golpe é sempre um crítico garantido.
-
-::
-
 ### Faro por Sangue
-*Habilidade Nível 20*
+*Habilidade Nível 14*
 
 **Tipo:**     :: Ativa
 **Custo:**    :: 30 stamina
 **Cooldown:** :: 240s
 
 Você fareja o sangue dos feridos, eliminando oponentes debilitados com rapidez letal. Quanto mais ferido o alvo, maiores os seus bônus.
+
+::
+
+### Manto das Sombras
+*Habilidade Nível 20*
+
+**Tipo:**     :: Passiva
+**Custo:**    :: --
+**Cooldown:** :: --
+
+Após acertar um ataque furtivo, você testa seu Sneak contra a Percepção do alvo. Se vencer, retorna imediatamente ao modo furtivo.
 
 :::
 
