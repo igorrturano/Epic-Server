@@ -58,6 +58,71 @@ SpellStarter(params)                         cast_spell.src:35
   `SC_ApplyEffect` / `SC_RemoveEffect`. **SC is not auto-invoked** — a
   spell that doesn't call it doesn't route through this framework.
 
+## Targeting & range (cast-entry side, not SC)
+
+This is the cast driver, but it's where "click a target" becomes the
+`targ` SC receives, and it's the layer that *should* gate distance/LoS.
+
+- `selectSpellTarget(mobile, spellinfo, targ)` `cast_spell.src:463` — if
+  no pre-supplied `targ`, prompts by the cfg `Target` field
+  (`spellinfo.alvo`): `Self` → caster; `Unico` → `Target()` (notoriety
+  from `spellinfo.align`); `Area` → `TargetCoordinates()`. Cancel →
+  `FailSpell` + abort. **Spell scripts do not prompt their own target**
+  for the common path — targeting is already centralized here (a minority
+  still call their own `Spell_Target` internally; enumerate before
+  assuming).
+- `checkTargetValidity` `cast_spell.src:504` — central gates on every
+  target: `repeal` invuln, `corpofechado`, **line of sight**
+  (`CheckLineOfSight` for Unico `:521`, `CheckLOSAt` for Area `:527`),
+  `charmed_by`.
+- **Distance is NOT gated centrally.** Each spell script that wants a
+  range cap calls `distanceAllowedForSpells` itself; scripts that don't
+  have effectively unlimited range.
+- Ordering trap: target selection (`:59`) runs **after**
+  `consumeResourcesForSpell` (`:51`). A cancel/invalid target past that
+  point = mana already spent; `FailSpell` refunds nothing.
+
+### Range formula (`scripts/include/epicMageryUtils.inc:86`)
+
+`distanceAllowedForSpells(who, skill, school)`:
+
+```
+r = cint(skill / 10)
+range = 5 + r
+      + r   if (Evocator & school==Evocatium) | (Valdruk & school==Velkyn) | who is NPC
+      + 5   if caster has SPELL_RANGE (caminho ability)
+```
+
+`skill` = caster's casting skill via `HandleSpellSkill(who)` (`:415`) —
+**Arcana for arcane casters, Theology for divine**. Smooth +1 tile / 10
+skill. Every standard caller passes `HandleSpellSkill(caster)` (uniform
+since the range rework). Canonical gate in a spell script:
+
+```
+var dist := Distance(caster, targ);            // Chebyshev, z-ignored
+if (dist > distanceAllowedForSpells(caster, HandleSpellSkill(caster), school))
+    SendSysMessage(caster, "O alvo esta muito distante"); return 0;
+endif
+```
+
+Reference reach: non-spec 50/70/100 skill = 10/12/15 tiles; specialist
+or NPC = 15/19/25; +5 with Spell Range.
+
+### Coverage gap (audit 2026-05-19)
+
+All 307 spell scripts audited. ~168 are legitimately NA
+(self/self-centered/area-around-caster/corpse). Only ~39 ranged-targeted
+spells gate distance correctly; ~92 ranged-targeted scripts have **no**
+gate, and ~8 use ad-hoc hardcoded gates (`teleport` Arcana/10 —
+intentionally its own model; `berge` 15; `drenarvida`/`horrorparalisante`
+≥16; `maldicaoasan` ≥12; `acalmarbestas` >8; `manipularsombras`). The
+real exploit surface is ungated **offensive** spells (most of
+necromancer's single-target debuffs, `chainlightning`, `disparodivino`,
+`disparomistico`); ungated *helpful* ranged spells are a balance
+question, not a bug. Centralizing the gate into `checkTargetValidity`
+(skill-scaled, Harmful-only or all-targeted — TBD) is the open design
+item.
+
 ## File map (verified line numbers)
 
 | Concern | File:line | Role |
