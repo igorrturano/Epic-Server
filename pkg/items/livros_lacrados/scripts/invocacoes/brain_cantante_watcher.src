@@ -1,0 +1,15 @@
+// brain_cantante_watcher.src - limpa cantante_ativo apos 7 dias.
+// params: {expira_systime}
+
+use uo;
+use os;
+
+program BrainCantanteWatcher(params)
+    var expira := CInt(params[1]);
+
+    while (ReadGameClock() < expira)
+        sleep(60);
+    endwhile
+
+ SetGlobalProperty("cantante_ativo", 0);
+endprogram

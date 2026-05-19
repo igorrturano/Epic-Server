@@ -1,0 +1,68 @@
+use uo;
+use os;
+use datafile;
+
+include ":livros_lacrados:scripts/setup_helper";
+
+program SetupLoreCat2(who, cmdline)
+ var df := OpenDataFile(":livros_lacrados:lore_entidades");
+    if (df.errortext)
+ df := CreateDataFile(":livros_lacrados:lore_entidades", DF_KEYTYPE_STRING);
+    else
+    endif
+    if (df.errortext)
+ if (who) SendSysMessage(who, "Erro df: " + df.errortext); endif
+        return;
+    endif
+
+    //   -- -- -- bibliotecario   -- -- --
+
+ _SetupStr(df, "bibliotecario_titulo", "O Bibliotecário Morto");
+ _SetupStr(df, "bibliotecario_autor", "Nota da Prateleira Vazia");
+ _SetupPags(df, "bibliotecario", array{
+ "Passou a vida organizando livros. Morreu organizando livros. Depois de morrer, continuou — não por falta de alternativa, mas porque catalogar era o único ato que ainda lhe parecia urgente.<br><br>A biblioteca que gerencia agora existe em algum lugar entre o Limiar e o mundo físico. Ninguém a visitou. Mas os livros lacrados que existem no mundo aparecem nos registros dele.",
+ "Conhece todos os livros lacrados que já foram selados. Sabe o que está dentro de cada um, quem o selou, em que estado estava ao selar.<br><br>Perguntá-lo sobre um título é arriscado não porque ele seja hostil — mas porque ele também sabe quem abriu cada livro. E sabe o que saiu de dentro. E sabe o que ficou preso no leitor depois.",
+ "O que ele pede em troca de informação é simples: que o livro que o invocou seja tratado com cuidado depois. Não destruído. Não vendido como curiosidade.<br><br>Ele guarda os livros. Os livros guardam o que foi lacrado. Quem quebra a cadeia, segundo ele, deve algo que não tem taxa estabelecida.<br><br>Não disse o que acontece com quem deve isso. Preferiu não dizer."
+    });
+
+    //   -- -- -- lirenne   -- -- --
+
+ _SetupStr(df, "lirenne_titulo", "Lirenne, a Esquecida");
+ _SetupStr(df, "lirenne_autor", "Nota sem data");
+ _SetupPags(df, "lirenne", array{
+ "Morreu no dia do noivado. O vestido estava pronto. A sala estava pronta. O noivo chegou pontual, como sempre foi — e ela não estava mais lá para recebê-lo.<br><br>O que a mantém é a distância entre o que deveria ter acontecido e o que aconteceu. Ela não lembra da morte. Lembra do dia. E o dia nunca termina para ela.",
+ "Não sabe que morreu. Continua esperando na mesma posição em que esperava quando morreu — de costas para a janela, de frente para a porta.<br><br>Qualquer um que se aproxime é o noivo que voltou. Qualquer um que vá embora é o abandono outra vez. Ela não distingue entre um visitante e o rosto que passou décadas esperando.",
+ "Aparece em casamentos. Não para perturbar — para verificar. Procura o rosto que a memória guardou deformada pelo tempo. Nunca encontra exatamente o que procura.<br><br>A pétala que deixa é real. Seca, mas real. Do buquê que segurou enquanto esperava. O buquê virou pó há gerações, mas a pétala continua aparecendo."
+    });
+
+    //   -- -- -- mae_procura   -- -- --
+
+ _SetupStr(df, "mae_procura_titulo", "A Mãe que Procura");
+ _SetupStr(df, "mae_procura_autor", "Arquivo do Limiar, vol. III");
+ _SetupPags(df, "mae_procura", array{
+ "Ela morreu procurando alguém. O nome que procurava se perdeu com ela — ou antes dela, que é o que a mantém andando.<br><br>O que ficou foi o ato de procurar, separado da razão. A estrutura do amor sem o objeto do amor. A‰ das coisas mais perigosas que o Arquivo já registrou — não por maldade, mas por proporção.",
+ "Não é hostil. Está ocupada. Quem se coloca entre ela e o horizonte vira obstáculo. Obstáculos são removidos sem raiva e sem hesitação — da mesma forma que uma mãe remove qualquer coisa que se coloque entre ela e um filho desaparecido.",
+ "Quando o Limiar a conteve, foi preciso oferecer algo que a fizesse parar. O que funcionou foi um nome — qualquer nome que rimasse com o que ela havia perdido. Ela aceitou. Por algumas horas, acreditou ter encontrado.<br><br>Então o Limiar fechou antes que percebesse.<br><br>Quando o lacre cede, ela recomeça de onde parou."
+    });
+
+    //   -- -- -- soldado   -- -- --
+
+ _SetupStr(df, "soldado_titulo", "O Soldado de Aiglano");
+ _SetupStr(df, "soldado_autor", "Relato de um mercenário");
+ _SetupPags(df, "soldado", array{
+ "A guerra terminou há mais de quarenta anos. A décima coorte recebeu a ordem de dispersão e se foi para casa. Ele não recebeu. Ninguém sabe por quê — mensageiro morreu no caminho, papel se perdeu, alguém esqueceu.<br><br>O Aiglano não registrou a omissão. As omissões raramente são registradas.",
+ "Ele continua marchando. Não ataca por maldade — ataca porque vê inimigos, e para ele todos são inimigos até que uma ordem diga o contrário. A ordem nunca chegou.<br><br>Há uma única forma de parar o combate: responder com convicção que a guerra acabou. Se hesitar, ele sabe que está sendo enganado. Trezentos anos de serviço ensinam a distinguir.",
+ "O capacete que cai depois da batalha tem um nome gravado na aba interna. Não é o nome que ele usa agora — é o nome que usava antes. O Aiglano tem registro desse nome num arquivo de deserção que nunca foi retificado.<br><br>Ele não desertou. Foi esquecido. Há diferença. Mas o arquivo não faz distinção."
+    });
+
+    //   -- -- -- tres_irmaos   -- -- --
+
+ _SetupStr(df, "tres_irmaos_titulo", "Os Três Irmãos");
+ _SetupStr(df, "tres_irmaos_autor", "Crônica familiar");
+ _SetupPags(df, "tres_irmaos", array{
+ "Morreram juntos. Ninguém sabe como — nem eles. Cada um tem uma versão. As três versões são incompatíveis entre si e cada um está absolutamente certo da sua.<br><br>Em vida brigavam sobre tudo. Na morte continuam, com a diferença de que agora não há mais nada para brigar exceto o motivo da morte — que é o argumento mais importante e o que ninguém vai vencer.",
+ "Ignoram o leitor por algum tempo depois do lacre ceder. Estão ocupados demais com a briga de séculos para notar que há alguém lá.<br><br>Quando percebem — quando se lembram, por um instante, de que há um vivo diante deles — a briga para. Só por um instante. E nesse instante os três se viram para o leitor ao mesmo tempo.<br><br>A reconciliação deles é breve. O que a produz é pior que a briga."
+    });
+
+ if (who) SendSysMessage(who, "[Lore DS] Cat2 ok."); endif
+endprogram
