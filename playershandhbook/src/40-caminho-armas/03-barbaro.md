@@ -49,7 +49,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 120s
 
-Você entra num estado de fúria cujo dano adicional e duração são baseados no seu *Tactics*.
+Você entra num estado de fúria cujo dano adicional e duração são baseados no seu *Tactics*. Não pode ser usada com armadura equipada.
 
 ::
 
@@ -86,7 +86,7 @@ Enquanto estiver em Fúria, você fica imune a golpes críticos e seus próprios
 **Custo:**    :: 25 stamina
 **Cooldown:** :: 120s
 
-Você recebe um bônus em HP e sempre contra-ataca quando for acertado.
+Você recebe um bônus em HP e sempre contra-ataca quando for acertado. Só pode ser ativada enquanto estiver em Fúria.
 
 \column
 

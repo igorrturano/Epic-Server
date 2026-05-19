@@ -45,7 +45,7 @@ O espadachim é um mestre guerreiro, dedicado à perfeição de sua postura de c
 
 
 ## Habilidades
-A cada level alcançado, o jogador poderá escolher uma habilidade dentre as opções disponíveis para o level em referência. <br>
+A cada level alcançado, o jogador poderá escolher uma habilidade dentre as opções disponíveis para o level em referência. As habilidades ativas do Samurai não podem ser usadas com um escudo equipado. <br>
 ::
 ### Caminho do Andarilho
 *Habilidade Nível 2*

@@ -63,7 +63,7 @@ Você consegue esquivar-se por completo de armadilhas quando bem sucedido num te
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 90s
 
-Você consegue distrair criaturas de forma convincente, passando despercebido por elas por algum tempo.
+Você cria uma distração que paralisa por alguns segundos os inimigos imediatamente ao seu redor.
 
 ::
 
