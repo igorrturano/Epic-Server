@@ -521,17 +521,6 @@ Você tem bastante talento para encontrar joias enquanto minera. Sua chance de e
 
 ::
 
-### Corte Limpo
-*Habilidade de Caminho*
-
-**Tipo:**     :: Passiva
-**Custo:**    :: --
-**Cooldown:** :: --
-
-Você corta lenha com tanta precisão que consegue retirar mais toras de madeira por árvore cortada.
-
-::
-
 ### Minerar Raridades
 *Habilidade de Caminho*
 
