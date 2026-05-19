@@ -2812,7 +2812,7 @@ A cada ponto de Caminho gasto, o jogador poderá escolher uma habilidade dentre 
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Ao usar uma arma de uma mão sem escudo: +5 de chance de crítico e -2 na chance de acerto do inimigo.
+Ao usar uma arma de uma mão sem escudo: +3 de dano e -2 na chance de acerto do inimigo.
 
 ::
 
@@ -2823,7 +2823,7 @@ Ao usar uma arma de uma mão sem escudo: +5 de chance de crítico e -2 na chance
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Ao usar uma arma de uma mão com escudo: +2 de dano e -2 na chance de acerto do inimigo.
+Ao usar uma arma de uma mão com escudo: +5 de chance de aparar e -2 na chance de acerto do inimigo.
 
 ::
 
