@@ -67,6 +67,7 @@ program SpellScript(params)
 		item.name := "Nuvem Nefasta";
 		item.color := 563;
 		item.setDuration(duration);
+		item.SetOwner(who);
 		var lvl := cint(AP_GetSkill(who, ARCANA) / 20);
 		if (lvl < 1)
 			lvl := 1;

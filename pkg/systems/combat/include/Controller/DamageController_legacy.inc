@@ -562,9 +562,11 @@ function CalcDamageHabs(attacker, defender, damage)
 		DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Precisão Cirurgica]: " + CInt(damagemod));
 	endif
 
-    if (MobileWrapper(attacker).HasAbility(ABILITY_ID::ARSENAL_SOMBRIO))
+    var arsenalWrap := MobileWrapper(attacker);
+    if (arsenalWrap.HasAbility(ABILITY_ID::ARSENAL_SOMBRIO))
         var damagemod := CInt(EffectiveSkill(attacker, "Stealth") / 20);
-        if (isAssassinWeapon(attacker))
+        var weapon := arsenalWrap.GetEquipBySlot(WEAPON);
+        if (weapon && weapon.IsAssassin())
 			damage += damagemod;
 			DebugMsg(attacker, DEBUG_DAMAGE, "Dano de Habilidade[Arsenal Sombrio]: " + CInt(damagemod));
         endif

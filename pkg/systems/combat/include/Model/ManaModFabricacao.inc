@@ -1,6 +1,7 @@
 use uo;
 
 include ":crafting:/include/caracteristicasFabricacao";
+include ":crafting:/include/fabricacaoUtil";
 include ":crafting:/include/util/fabricacaoConstants";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":attributes:vitals";
@@ -26,8 +27,8 @@ class ManaModFabricacao(IModificator)
 
 	function ManaModFabricacao(this, itemOrTemplate)
 		this._itemOrTemplate := itemOrTemplate;
-		this._maxBonus := CInt(PegaValorFabricacao(itemOrTemplate, CARACTERISTICA_FABRICACAO_MANA_MAXIMA));
-		this._regenBonus := CInt(PegaValorFabricacao(itemOrTemplate, CARACTERISTICA_FABRICACAO_MANA_REGEN));
+		this._maxBonus := PegaValorMaterialPrincipalFabricacao(itemOrTemplate, CARACTERISTICA_FABRICACAO_MANA_MAXIMA);
+		this._regenBonus := PegaValorMaterialPrincipalFabricacao(itemOrTemplate, CARACTERISTICA_FABRICACAO_MANA_REGEN);
 	endfunction
 
 	function GetSource(this)
