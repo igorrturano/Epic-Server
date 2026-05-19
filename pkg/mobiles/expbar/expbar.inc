@@ -7,6 +7,7 @@ use os;
 use vitals;
 use math;
 use util;
+use polsys;
 
 include "include/say";
 include ":gumps:gumps";
@@ -480,6 +481,15 @@ function GrantCraftXP(who, xp_gain, categoria)
     if (CInt(GetGlobalProperty("CraftXpEnabled")) == 1)
         AddXP(who, xp_gain, XP_CRAFT);
         return xp_gain;
+    endif
+
+    // Neutral, throttled notice (max once/hour per char) so crafters know
+    // the lack of XP is intentional, without naming the farm.
+    var now := POLCore().systime;
+    var lastNotice := GetObjProperty(who, "xpSuppressNoticeAt");
+    if (lastNotice == error || !lastNotice || now - CInt(lastNotice) >= 3600)
+        SendSysMessage(who, "O ganho de XP por criação está temporariamente em ajustes.");
+        SetObjProperty(who, "xpSuppressNoticeAt", now);
     endif
 
     XP_Record(who, xp_gain, XP_CRAFT_SUPPRESSED, categoria);

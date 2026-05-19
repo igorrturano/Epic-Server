@@ -280,19 +280,16 @@ endfunction
 function GetWeaponSFX(byRef attackInfo)
 	var weaponSFX := struct{
 		hit := array{},
-		miss := array{},
-		critical := array{}
+		miss := array{}
 	};
 
 	if (attackInfo.GetAttacker().IsNPC() && attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::UNARMED)
 		var npcTemplate := attackInfo.GetAttacker().GetTemplate();
 		weaponSFX.hit := array{npcTemplate.AttackHitSound};
 		weaponSFX.miss := array{npcTemplate.AttackMissSound};
-		weaponSFX.critical := array{npcTemplate.AttackHitSound};
 	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::UNARMED)
 		weaponSFX.hit := array{0x136, 0x138, 0x13C, 0x13D, 0x13E, 0x142, 0x145, 0x146, 0x149, 0x14A, 0x14B};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-		weaponSFX.critical := array{};
 	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::MAGICBOW)
 		if (attackInfo.GetWeapon().GetObjRef().GetProp("fire_arrow"))
 			weaponSFX.hit := array{0x5D0};
@@ -304,75 +301,58 @@ function GetWeaponSFX(byRef attackInfo)
 			weaponSFX.hit := array{0x235};
 		endif
 		weaponSFX.miss := array{0x526};
-		weaponSFX.critical := array{};
 	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::BOW)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-		weaponSFX.critical := array{};
 	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::CROSSBOW)
 		weaponSFX.hit := array{0x235, 0x4C9, 0x4CA};
 		weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-		weaponSFX.critical := array{};
 	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::PISTOL)
 		weaponSFX.hit := array{0x11C};
 		weaponSFX.miss := array{0x11C};
-		weaponSFX.critical := array{};
 	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::HANDCANNON)
 		weaponSFX.hit := array{0x308};
 		weaponSFX.miss := array{0x308};
-		weaponSFX.critical := array{};
 	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::CARABINE)
 		weaponSFX.hit := array{0x309};
 		weaponSFX.miss := array{0x309};
-		weaponSFX.critical := array{};
 	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::MUSKET)
 		weaponSFX.hit := array{0x11E};
 		weaponSFX.miss := array{0x11E};
-		weaponSFX.critical := array{};
 	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::WHIP)
 		weaponSFX.hit := array{0x67F};
 		weaponSFX.miss := array{0x67F};
-		weaponSFX.critical := array{0x67F};
 	elseif (attackInfo.GetWeapon().GetCategory() == WEAPON_CATEGORY::THROWING)
 		weaponSFX.hit := array{0x531};
 		weaponSFX.miss := array{0x532};
-		weaponSFX.critical := array{0x531};
 	else
 		if (Upper(attackInfo.GetWeapon().GetAttribute()) == Upper(TWOHANDED))
 			if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 				weaponSFX.hit := array{0x237, 0x238};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-				weaponSFX.critical := array{};
 			elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::PIERCING))
 				weaponSFX.hit := array{0x23D, 0x23D};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-				weaponSFX.critical := array{};
 			elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::BLUNT))
 				weaponSFX.hit := array{0x3AE};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-				weaponSFX.critical := array{};
 			endif
 		else
 			if (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::SLASH))
 				weaponSFX.hit := array{0x23C, 0x23D};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-				weaponSFX.critical := array{};
 			elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::PIERCING))
 				weaponSFX.hit := array{0x23C, 0x23D};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-				weaponSFX.critical := array{};
 			elseif (Upper(attackInfo.GetAttackType()) == Upper(DAMAGE_TYPE::BLUNT))
 				weaponSFX.hit := array{0x3AC};
 				weaponSFX.miss := array{0x0239, 0x023A, 0x023B, 0x539, 0x53A, 0x53B};
-				weaponSFX.critical := array{};
 			endif
 		endif
 	endif
 
 	if (!attackInfo.Succeeded())
 		weaponSFX := weaponSFX.miss;
-	elseif (attackInfo.GetDamage().IsCritical())
-		weaponSFX := weaponSFX.critical;
 	else
 		weaponSFX := weaponSFX.hit;
 	endif

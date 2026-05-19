@@ -55,6 +55,11 @@ function PoisonNearbyMobiles(field, poison_level, creator)
 endfunction
 
 function PoisonMobile(mobile, poison_level, creator)
+	// An NPC that cast this cloud shouldn't poison itself by walking through it.
+	if (creator && creator.npctemplate && mobile.serial == creator.serial)
+		return 0;
+	endif
+
 	TS_StartTimer(mobile, "DefaultPoison", 60, poison_level, creator);
 
 	return 1;
