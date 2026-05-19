@@ -54,7 +54,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 60s
 
-Você aprendeu a lutar sem depender de escudo ou armadura pesada. Passivamente, não recebe penalidade para defender sem escudo quando sem armadura ou com armaduras leves de madeira. Ao ativar, garante uma defesa.
+Você aprendeu a aparar golpes empunhando apenas a sua arma, sem escudo. Em vez da penalidade que normalmente se sofre ao aparar sem escudo, você recebe um bônus na chance de aparar. Ao ativar, garante a sua próxima defesa.
 
 ::
 

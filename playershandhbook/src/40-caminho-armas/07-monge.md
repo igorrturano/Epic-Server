@@ -78,7 +78,7 @@ Seu próximo ataque causará uma explosão de força. Após o golpe, sua postura
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 180s
 
-Este estilo concede proteção física e resistência climática passivamente. Ativamente, seu próximo ataque causará sangramento no oponente.
+Este estilo concede esquiva (inimigos têm mais dificuldade de acertá-lo) e resistência climática passivamente. Ativamente, seu próximo ataque causará sangramento no oponente.
 
 <br>
 <br>

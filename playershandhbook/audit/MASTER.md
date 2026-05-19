@@ -82,3 +82,12 @@ all 30 class ability lists, racial perk boxes. **Not yet audited:** Passados
   triage which classes to touch first.
 - Run the second pass (Passados, Perícias, all Magias, Faccoes) — Magias is
   the largest single domain still unaudited.
+
+## Code-side issues surfaced during fixes (not handbook bugs)
+
+- **Presença Divina fear immunity unimplemented.** `habilidades.cfg:323`
+  desc promises "Você é imune a medo", but no code grants fear-resist to
+  `PRESENCA_DIVINA` — `medo.src:24` only checks `AURA_DIVINA`. Handbook was
+  corrected to match the engine (2026-05-19); the cfg desc and the missing
+  implementation remain a code TODO for the dev to reconcile (wire the
+  immunity, or fix the cfg desc).
