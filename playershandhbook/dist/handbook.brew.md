@@ -323,7 +323,7 @@ A morte ocorre quando seu personagem desmaia e seus DPs são reduzidos à zero. 
 :
 - O assassino precisa ter mais de 30 dias de personagem;
 - O alvo deve estar desmaiado e seu corpo não pode estar sob proteção de ressurreição;
-- A ação não pode ocorrer em Modo Estória.
+- O corpo do alvo não pode estar sob proteção de ressurreição (já era um dos itens acima — manter).
 
 Para matar um personagem o processo é simples, basta dar duplo clique em alguma arma cortante e usar o alvo no corpo desmaiado. Ao assassinar um outro jogador, seu personagem perderá um DP permanente.
 ::
