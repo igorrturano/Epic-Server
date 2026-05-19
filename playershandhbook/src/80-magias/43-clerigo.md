@@ -67,18 +67,6 @@ Concede redução de dano ao alvo por alguns segundos.
 
 ## Segundo Círculo
 
-### Aura Mortis
-Parte do dano que você levar volta para quem causou.
-##### Características
-- **Alvo:** Auto
-- **Alcance:** Distância
-##### Conjuração
-- **Dificuldade:** 40
-- **Custo:** 20 mana
-- **Ciclos:** 1
-
-::
-
 ### Círculo de Proteção
 Você usa sua fé para afastar criaturas malignas na área.
 ##### Características

@@ -107,18 +107,6 @@ Invoca a proteção dos ancestrais, aumentando a resistência de toda a party.
 
 ::
 
-### O Sonho do Louco
-Mergulha um alvo em alucinações que invertem sua percepção de aliados e inimigos.
-##### Características
-- **Alvo:** Único
-- **Alcance:** Distância
-##### Conjuração
-- **Dificuldade:** 40
-- **Custo:** 10 mana
-- **Ciclos:** 1
-
-::
-
 ### Requiem do Silêncio
 Um requiem aterrador que, em área, impede inimigos de conjurar suas próprias magias de bardo. Não afeta a conjuração de magos, sacerdotes ou outras escolas.
 ##### Características
@@ -138,30 +126,6 @@ Um requiem aterrador que, em área, impede inimigos de conjurar suas próprias m
 
 ### A Ascensão de Crassus
 Eleva toda a party a um estado heroico, aumentando Força, Destreza e Inteligência.
-##### Características
-- **Alvo:** Auto
-- **Alcance:** Distância
-##### Conjuração
-- **Dificuldade:** 60
-- **Custo:** 15 mana
-- **Ciclos:** 1
-
-::
-
-### Dança das Lâminas
-Uma dança vibrante que aumenta a chance de acerto e a velocidade de ataque da party.
-##### Características
-- **Alvo:** Auto
-- **Alcance:** Distância
-##### Conjuração
-- **Dificuldade:** 60
-- **Custo:** 15 mana
-- **Ciclos:** 1
-
-::
-
-### O Chamado Irresistível
-Encanta até três criaturas próximas, fazendo-as lutar ao seu lado temporariamente.
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Distância

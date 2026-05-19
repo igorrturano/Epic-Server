@@ -117,3 +117,13 @@ Irresistível" (charm unread by AI), "O Sonho do Louco" (hallucination
 unimplemented), "Requiem do Silêncio" (only blocks bard spells), "Dança das
 Lâminas" (attack-speed TODO), Clérigo "Aura Mortis" (spell 517 commented out
 in priest.cfg → unobtainable). Detail in audit/M1*, M2*.
+
+## Removed from handbook (unimplemented in code) — 2026-05-19
+
+Per user decision, removed these spell entries because the engine does not
+deliver them; re-add when/if implemented:
+- Bardo "O Sonho do Louco" (`#bard_hallucination` set, read by no code)
+- Bardo "Dança das Lâminas" (attack-speed TODO; hit bonus one-swing only)
+- Bardo "O Chamado Irresistível" (`#bard_charmed` set, no AI reads it)
+- Clérigo "Aura Mortis" (Spell 517 fully commented out in priest.cfg)
+CODE-TODO: implement or formally retire these four; handbook will track code.
