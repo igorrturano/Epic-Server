@@ -413,7 +413,7 @@ Uma pessoa com fome se encontra em estado frágil e, portanto, sofre penalidades
 - **Nível 4 (com muita fome):** penalidade maior
 - **Nível 5 (faminto):** penalidade severa
 :
-Personagens com **Fortitude** alta o bastante resistem por completo aos efeitos da fome — nesse caso, nenhuma penalidade é aplicada. Não existe uma penalidade direta “nos testes de resistência”: como Força e Destreza alimentam suas resistências, passar fome apenas as enfraquece de forma indireta.
+Personagens com **Fortitude** alta o bastante resistem por completo aos efeitos da fome — nesse caso, nenhuma penalidade é aplicada. Não existe uma penalidade direta “nos testes de resistência”: como Força, Destreza e Inteligência alimentam Fortitude, Reflexos e Vontade, passar fome apenas enfraquece suas resistências de forma indireta.
 
 A stamina além de ser usada no movimento, sendo extremamente útil numa fuga ou em combates longos, também é usada com as habilidades dos Caminhos. Já os testes de resistência ajudam a evitar danos, efeitos de magia, armadilhas ou clima.
 
