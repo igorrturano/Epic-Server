@@ -16,7 +16,7 @@ Cria uma chama dançante que ilumina a área e causa dano de fogo contínuo ao a
 ::
 
 ### Canção de Ninar
-Uma melodia suave que pode adormecer um alvo caso ele falhe em resistir.
+Uma melodia suave que pode adormecer um alvo caso ele falhe em resistir. O sono dura todo o tempo do efeito e não é interrompido por dano.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -67,7 +67,7 @@ Uma marcha gloriosa que fortalece a party, aumentando a Força de todos.
 ::
 
 ### O Lamento do Covarde
-Um lamento aterrorizante que pode fazer um alvo fugir de pavor.
+Um lamento aterrorizante que paralisa de pavor um alvo, deixando-o imóvel por um tempo.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -96,7 +96,7 @@ Conta a história de um tirano derrotado. Causa dano forçado e reduz a Destreza
 ::
 
 ### Escudo dos Ancestrais
-Invoca a proteção dos ancestrais, aumentando a resistência de toda a party.
+Invoca a proteção dos ancestrais, aumentando as resistências elementais e a venenos de toda a party (não protege contra dano físico).
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Distância

@@ -293,7 +293,7 @@ Ajusta a luminosidade aos olhos do alvo, melhorando sua visão.
 ### Orientar
 *Exclusivo: Clérigo*
 
-Você concede uma bênção divina que guia o próximo ataque do alvo.
+Você concede uma bênção divina que melhora a pontaria do alvo por um tempo.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
