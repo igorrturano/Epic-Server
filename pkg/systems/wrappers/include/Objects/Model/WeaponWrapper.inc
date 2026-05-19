@@ -431,15 +431,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 
 	// Private functions
 	function _CalculateWeight(this)
-		var weight := 1;
-		
-		var maxMainDamage := this.GetMainDamage().GetMaximum();
-		var maxOffDamage := this.GetOffDamage().GetMaximum();
-
-		weight := CInt(maxMainDamage) + CInt(maxOffDamage);
-		weight *= GetWeightMultiplierByMaterial(this.GetMaterial());
-
-		return weight;
+		return CInt(this.GetTemplate().weight * GetWeightMultiplierByMaterial(this.GetColor()));
 	endfunction
 
 	function _CalculateSTRRequired(this)
