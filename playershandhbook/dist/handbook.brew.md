@@ -472,11 +472,11 @@ Determina sua agilidade para evitar e desviar de coisas rápidas e inesperadas. 
 ##### Vontade
 Determina a sua resistência a efeitos que afetam a sua mente, principalmente as magias.
 :
-O efeito de passar em um teste de resistência depende do teste, algumas magias são completamente evitadas caso resistidas, outras causam metade do efeito. Com armadilhas por exemplo, sempre metade do dano é evitado caso passe no teste.Cada teste também possui uma dificuldade própria, o das magias é definido pelo Arcana do mago que invocou a magia, as armadilhas tem dificuldades maiores de acordo com o dano que elas causam, os venenos de acordo com o level deles, etc.
+O efeito de passar em um teste de resistência depende do teste, algumas magias são completamente evitadas caso resistidas, outras causam metade do efeito. Com armadilhas por exemplo, sempre metade do dano é evitado caso passe no teste.Cada teste também possui uma dificuldade própria, definida por quem aplica o efeito: a das magias geralmente vem do Arcana do conjurador, as armadilhas têm dificuldades maiores conforme o dano que causam, os venenos conforme o seu nível, etc.
 :
 {{note
 ##### Como o teste é rolado
-Um teste de resistência é uma rolagem de **1d20 + Valor da Resistência** contra a dificuldade do efeito. Tirar **1** no dado é falha automática; tirar **20** é sucesso automático. Algumas origens ganham uma **segunda rolagem** ao falhar: Drow e nascidos em Har'oloth contra venenos, portadores de Aura Divina contra venenos, Anões contra magia, qualquer Colhesiano, e almas profundamente corrompidas contra Fortitude.
+Um teste de resistência é uma rolagem de **1d20 + Valor da Resistência** contra a dificuldade do efeito. Tirar **1** no dado é falha automática; tirar **20** é sucesso automático. Algumas origens, ao falhar, ganham uma **segunda rolagem** (o dado é jogado mais uma vez): Drow e nascidos em Har'oloth, portadores de Aura Divina e almas profundamente corrompidas refazem qualquer teste de **Fortitude**; Anões refazem testes de **Vontade**; e qualquer Colhesiano refaz **qualquer** teste de resistência.
 }}
 :
 #### Valor da Resistência
@@ -486,9 +486,11 @@ O valor é definido por: ::
 **Valor da Resistência** = Bônus de Classe + Bônus de Atributo + Outros Bônus
 ::
 ![](http://flsgenese.wdfiles.com/local--files/sistemas:resistencia/statusbar.png) {width:325px,mix-blend-mode:multiply,border:"3px solid",border-radius:10px}
-*1 - Fortitude; 2 - Vontadee; 3 - Reflexos*
+*1 - Fortitude; 2 - Vontade; 3 - Reflexos*
 :
-Cada Caminho corresponde a um arquétipo de classe — guerreiro (Caminho das Armas), ladino (Caminho do Subterfúgio) ou sábio (Caminho da Sabedoria) — e esse arquétipo define a sua resistência principal: Fortitude para guerreiros, Reflexos para ladinos e Vontade para sábios. Você recebe um **bônus de classe maior na sua resistência principal e um bônus menor nas outras duas**. Além disso, **para cada 20 pontos no atributo regente você ganha +1** na resistência correspondente (Força → Fortitude, Destreza → Reflexos, Inteligência → Vontade). Raça, cultura, Características, Habilidades e alguns Kits também somam: humanos recebem um pequeno bônus nas três; Características como *Fortitude do Urso*, *Reflexos de Pantera* e *Vontade da Águia* reforçam a sua; entropia extrema e corrupção podem reduzir Fortitude e Vontade.
+Cada Caminho corresponde a um arquétipo de classe — guerreiro (Caminho das Armas), ladino (Caminho do Subterfúgio) ou sábio (Caminho da Sabedoria) — e esse arquétipo define a sua resistência principal: Fortitude para guerreiros, Reflexos para ladinos e Vontade para sábios. Você recebe um **bônus de classe maior na sua resistência principal e um bônus menor nas outras duas**. Além disso, **para cada 20 pontos no atributo regente você ganha +1** na resistência correspondente (Força → Fortitude, Destreza → Reflexos, Inteligência → Vontade).
+
+Raça, cultura, Características e Habilidades também somam: humanos recebem um pequeno bônus nas três resistências; Características como *Fortitude do Urso*, *Reflexos de Pantera* e *Vontade da Águia* reforçam a sua; e certas Habilidades de classe elevam uma resistência específica. Por fim, **entropia extrema** altera Fortitude e Vontade — para cima quando muito alta, para baixo quando muito negativa — e a **corrupção** reduz a Fortitude. Outros efeitos pontuais ainda podem somar ou subtrair de cada resistência.
 ::
 {{note
 ##### Exemplo
