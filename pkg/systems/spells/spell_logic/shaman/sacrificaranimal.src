@@ -20,4 +20,5 @@ program sacrifice(params)
     SetObjProperty(targ, "animal_sacrifice", who.serial);
 
     Message(msg).SendSys(who);
+    Message("O animal foi marcado. Mate-o perto de um altar xamanico para receber a protecao contra a morte.").SendSys(who);
 endprogram
