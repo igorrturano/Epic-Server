@@ -72,9 +72,12 @@ program SCTickDriver(args)
 		endif
 
 		if (opts.tick_damage)
+			// Tick declarativo = chip; NAO carrega bonus do foco. O golpe
+			// direto da magia ja aplica o elemental do foco uma vez no cast;
+			// os chips do DoT nao multiplicam (padrao magicmissile, ver 63%).
 			SC_DealDamage(caster, targ, spellId,
 				CInt(opts.tick_damage.amount),
-				opts.tick_damage.type);
+				opts.tick_damage.type, 0);
 		endif
 
 		if (tick_script)
