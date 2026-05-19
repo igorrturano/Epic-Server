@@ -27,6 +27,10 @@ class DamageModFabricacao(DamageModBase)
 		damage.SetPiercingRawDamage(danoBase + Cint(sub[SUBCARACTERISTICA_FABRICACAO_PERFURANTE]));
 		damage.SetBluntRawDamage(danoBase + Cint(sub[SUBCARACTERISTICA_FABRICACAO_CONTUSAO]));
 
+		// Elemental da madeira e INERENTE ao componente (igual ao físico) —
+		// nao precisa de ativacao. Metal nao tem elemental no dano (poe no
+		// defesa) por isso depende de Encantar Objeto; isso e diferenca de
+		// material, nao um gate. Encantar soma por cima via DamageModEncantar.
 		//OBS: se no futuro tiver um componente só pra dano mágico tem que adicionar aqui a soma.
 		damage.SetFireRawDamage(Cint(sub[SUBCARACTERISTICA_FABRICACAO_FOGO]));
 		damage.SetColdRawDamage(Cint(sub[SUBCARACTERISTICA_FABRICACAO_GELO]));
