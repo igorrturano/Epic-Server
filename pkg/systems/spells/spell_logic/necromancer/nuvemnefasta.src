@@ -16,9 +16,8 @@ program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 
-	var mlore := cint(AP_GetSkill(who, ARCANA) / 20);
 	var dist := Distance(who, targ);
-	var dist_allowed := distanceAllowedForSpells(who, mlore, VELKYN);
+	var dist_allowed := distanceAllowedForSpells(who, HandleSpellSkill(who), VELKYN);
 
 	if (dist > dist_allowed)
 		SendSysMessage(who, "O alvo esta muito distante");
