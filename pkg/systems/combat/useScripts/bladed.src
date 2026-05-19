@@ -352,19 +352,19 @@ function CarveObject(who, tool, objtype, targ)
 				// kindling.color := 2512; //polar
 				0x12b9: kindling := CreateItemInBackpack(who, 0xc020, 1);
 				// kindling.color := 2355; //teixo
-				0xa5ce: kindling := CreateItemInBackpack(who, 0xc023, 1);
+				0xa5ce: kindling := CreateItemInBackpack(who, 0xEE62, 1);
 				// kindling.color := 2354; //imbuia
 				0x309c: kindling := CreateItemInBackpack(who, 0xc026, 1);
 				// kindling.color := 2353; //mogno
-				0x222e: kindling := CreateItemInBackpack(who, 0xc02c, 1);
+				0x222e: kindling := CreateItemInBackpack(who, 0xEE60, 1);
 				// kindling.color := 2352; //cogumelo
-				0x222f: kindling := CreateItemInBackpack(who, 0xc02c, 1);
+				0x222f: kindling := CreateItemInBackpack(who, 0xEE60, 1);
 				// kindling.color := 2352; //cogumelo
-				0x2231: kindling := CreateItemInBackpack(who, 0xc02c, 1);
+				0x2231: kindling := CreateItemInBackpack(who, 0xEE60, 1);
 				// kindling.color := 2352; //cogumelo
-				0x2230: kindling := CreateItemInBackpack(who, 0xc02c, 1);
+				0x2230: kindling := CreateItemInBackpack(who, 0xEE60, 1);
 				// kindling.color := 2352; //cogumelo
-				0x30bd: kindling := CreateItemInBackpack(who, 0xc02f, 1);
+				0x30bd: kindling := CreateItemInBackpack(who, 0xEE61, 1);
 				// kindling.color := 0455; //ebano
 				default: CreateItemInBackpack(who, UOBJ_KINDLING, 1);
 			endcase
