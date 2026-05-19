@@ -8,6 +8,8 @@ include "include/client";
 include ":message:model/Message";
 include ":death:death";
 include ":spells:Controller/SC_Damage";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
 
 program spell_bloodbath(params)
     var who := params[1];
@@ -26,6 +28,8 @@ program spell_bloodbath(params)
     var mobiles := listAllMobilesNearbyButPetsAndParty(who, 8, who);
 
     // First pass: identify eligible creatures and store their data
+    var diff := handleSpellResistDiffForSpecialists(who, spell.School);
+    var bonus := epicWisdomPathBonus(who);
     var victims := array{};
     foreach mobile in mobiles
         var is_eligible := 0;
@@ -41,6 +45,13 @@ program spell_bloodbath(params)
                 // NPCs only need HP check
                 is_eligible := 1;
             endif
+        endif
+
+        // FORTITUDE save negates the ritual entirely for this victim — no
+        // paralyze, no execution. Toughing it out at the edge of death.
+        if (is_eligible && CheckResist(mobile, FORTITUDE, diff, -bonus))
+            SendSysMessageEx(mobile, "Voce resiste ao chamado do Banho de Sangue.", SSM_INFO);
+            is_eligible := 0;
         endif
 
         if (is_eligible)
