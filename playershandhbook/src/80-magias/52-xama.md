@@ -30,7 +30,7 @@ Cura ferimentos leves do alvo.
 ::
 
 ### Despertar
-Acorda o alvo de um desmaio.
+Conjurada sobre o corpo de um personagem caído, desperta-o do desmaio. Não funciona em alguém que ainda esteja de pé.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -162,7 +162,7 @@ O monstro escolhido não ataca você por um tempo.
 ::
 
 ### Intimidar
-O alvo passa a causar menos dano no combate.
+O alvo passa a errar mais os seus ataques no combate.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -229,7 +229,7 @@ Você converte a mana do alvo em HP para o xamã.
 ## Quinto Círculo
 
 ### Rito de Sangue
-Todas as criaturas ao redor com HP abaixo do seu *Theology* explodem e concedem uma alma extra ao xamã.
+Todas as criaturas feridas ao redor (abaixo de um limiar de HP que cresce com seu *Theology* e com as almas já acumuladas) explodem e concedem almas extras ao xamã. Só pode ser conjurada quando o próprio xamã está com pouquíssimos Pontos de Morte.
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Toque

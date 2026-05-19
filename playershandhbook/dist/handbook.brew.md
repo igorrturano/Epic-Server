@@ -9223,7 +9223,7 @@ Cria um raio que se propaga entre vários alvos.
 ::
 
 ### Reviver Animais
-Revive um animal morto.
+Revive um animal de estimação morto — apenas os seus próprios pets domesticados.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -9237,7 +9237,7 @@ Revive um animal morto.
 ## Quinto Círculo
 
 ### Crescimento Selvagem
-Videiras espinhosas surgem do chão prendendo todos os inimigos em uma área, paralisando-os e causando dano contínuo.
+Videiras espinhosas surgem do chão prendendo todos os inimigos de uma área no lugar; ao se libertarem, sofrem sangramento.
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Distância
@@ -9297,7 +9297,7 @@ Cura ferimentos leves do alvo.
 ::
 
 ### Despertar
-Acorda o alvo de um desmaio.
+Conjurada sobre o corpo de um personagem caído, desperta-o do desmaio. Não funciona em alguém que ainda esteja de pé.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -9429,7 +9429,7 @@ O monstro escolhido não ataca você por um tempo.
 ::
 
 ### Intimidar
-O alvo passa a causar menos dano no combate.
+O alvo passa a errar mais os seus ataques no combate.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -9496,7 +9496,7 @@ Você converte a mana do alvo em HP para o xamã.
 ## Quinto Círculo
 
 ### Rito de Sangue
-Todas as criaturas ao redor com HP abaixo do seu *Theology* explodem e concedem uma alma extra ao xamã.
+Todas as criaturas feridas ao redor (abaixo de um limiar de HP que cresce com seu *Theology* e com as almas já acumuladas) explodem e concedem almas extras ao xamã. Só pode ser conjurada quando o próprio xamã está com pouquíssimos Pontos de Morte.
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Toque
@@ -9559,7 +9559,7 @@ Você evoca um poderoso trovão em seu alvo.
 ### Primeiro Círculo
 
 #### Mísseis Mágicos
-Você cria três dardos brilhantes de força mágica. Cada dardo atinge uma criatura de sua escolha que você possa ver dentro do alcance.
+Você dispara uma rajada de dardos brilhantes de força mágica contra um único alvo à vista. A quantidade de dardos aumenta com a sua *Arcana*.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -9701,9 +9701,9 @@ Aumenta drasticamente a velocidade e agilidade do alvo.
 ### Quinto Círculo
 
 #### Chuva de Gelo
-Invoca uma tempestade de gelo.
+Invoca uma tempestade de gelo que atinge todos numa área.
 ##### Características
-- **Alvo:** Único
+- **Alvo:** Área
 - **Alcance:** Distância
 ##### Conjuração
 - **Dificuldade:** 100
@@ -9713,9 +9713,9 @@ Invoca uma tempestade de gelo.
 ::
 
 #### Chuva de Meteoros
-Invoca uma devastadora chuva de meteoros, causando dano extremo.
+Invoca uma devastadora chuva de meteoros sobre uma área, causando dano extremo.
 ##### Características
-- **Alvo:** Único
+- **Alvo:** Área
 - **Alcance:** Distância
 ##### Conjuração
 - **Dificuldade:** 100
