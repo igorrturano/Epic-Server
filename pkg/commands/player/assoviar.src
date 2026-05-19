@@ -147,6 +147,11 @@ function SendPetAway(character)
 		return 0;
 	endif
 
+	if (IsPackAnimal(target_pet))
+		SendSysMessage(character, "Animais de carga nao podem ser enviados para um local seguro.");
+		return 0;
+	endif
+
 	if (IsInLimbo(target_pet))
 		SendSysMessage(character, "Este pet ja esta em um local seguro.");
 		return 0;
@@ -188,4 +193,11 @@ function SendPetAway(character)
 	GetNumPets(character);
 	SendSysMessage(character, target_pet.name + " foi para um local seguro.");
 	return 1;
+endfunction
+
+function IsPackAnimal(pet)
+	var tmpl := Lower(CStr(pet.npctemplate));
+	return ( tmpl == ":epicai:packhorse"  || tmpl == "packhorse"
+	      || tmpl == ":epicai:packhorse2" || tmpl == "packhorse2"
+	      || tmpl == ":epicai:packllama"  || tmpl == "packllama" );
 endfunction
