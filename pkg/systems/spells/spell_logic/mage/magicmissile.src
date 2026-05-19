@@ -9,7 +9,6 @@ include "include/sounds";
 include ":spells:Controller/SC_Damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
-include ":charactercreation:resists";
 
 program SpellScript(params)
 	var who := params[1];
@@ -35,8 +34,6 @@ program SpellScript(params)
 		mlore := mlore + 1;
 	endif
 	SendSysMessageEx(who, "Mísseis mágicos saem de sua mão", SSM_INFO);
-	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
-	var bonus := epicWisdomPathBonus(who);
 	var i := 1;
 	for (i := 1; i <= mlore; i += 1)
 		PlayMovingEffectEx(who, targ, 0x5426, 19, 20, 2290, 2);
@@ -51,12 +48,7 @@ program SpellScript(params)
 			dmg := RandomDiceRoll("1d4") + 1;
 		endif
 
-		// REFLEX save halves THIS missile's damage independently.
-		if (CheckResist(targ, REFLEXES, diff, -bonus))
-			dmg := Cint(dmg / 2);
-			SendSysMessageEx(targ, "Voce desvia parcialmente de um missil.", SSM_INFO);
-		endif
-
+		// Misseis Magicos is auto-hit flavor — no save by design.
 		SC_DealDamage(who, targ, CInt(spellinfo.id), cint(dmg), DMG_FORCED);
 		SleepMS(500);
 	endfor
