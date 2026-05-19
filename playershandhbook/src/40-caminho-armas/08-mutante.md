@@ -61,7 +61,7 @@ Alterando seu corpo através de mutações, você consegue aumentar uma resistê
 **Custo:**        :: 20 stamina
 **Cooldown:**     :: 600s
 
-Você aprende a criar óleos para armas que ferem com mais eficácia determinados tipos de alvos. Adicionalmente, você recebe um bônus de acerto baseado na sua habilidade em alquimia.
+Você aprende a criar óleos para armas que ferem com mais eficácia determinados tipos de alvos. Adicionalmente, você recebe um bônus de acerto baseado na sua perícia *Science*.
 
 ::
 
@@ -97,7 +97,7 @@ Eureka! Você aprende a manusear a fórmula 90, além de aprender a criar resina
 **Custo:**        :: 5 mana
 **Cooldown:**     :: 10s
 
-Você descobriu uma fórmula secreta para criar mutagênicos que alteram permanentemente seu metabolismo. Escolha um aprimoramento em destreza, força ou inteligência. Adicionalmente, você aprende a criar e utilizar a Pedra Filosofal.
+Você descobriu uma fórmula secreta para criar mutagênicos que alteram seu metabolismo. Ao ativar, escolha um aprimoramento em destreza, força ou inteligência (que também reforça a vitalidade ligada a esse atributo); ativar de novo desfaz o efeito.
 
 {{imageMaskEdge4,--offset:0%,--rotation:270
   ![](https://i.imgur.com/Adgptje.png){height:100%,right:-80%}

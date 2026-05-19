@@ -9,6 +9,7 @@ include "include/client";
 include "include/sounds";
 include ":spells:Controller/SC_Damage";
 include "include/epicMageryUtils";
+include ":charactercreation:resists";
 
 program cast_thornstorm(params)
 	var caster := params[1];
@@ -27,5 +28,14 @@ function LaunchProjectile(caster, targ, spellinfo)
 	PlaySoundEffect(targ, 0x22F);
 
 	var dmg := cint(AP_GetSkill(caster, THEOLOGY) / 10) + epicSpellDamageRoll(caster, spellinfo.Circle);
+
+	// REFLEX save halves the thorn-storm's damage.
+	var diff := handleSpellResistDiffForSpecialists(caster, spellinfo.School);
+	var bonus := epicWisdomPathBonus(caster);
+	if (CheckResist(targ, REFLEXES, diff, -bonus))
+		dmg := Cint(dmg / 2);
+		SendSysMessageEx(targ, "Voce desvia parcialmente dos espinhos.", SSM_INFO);
+	endif
+
 	SC_DealDamage(caster, targ, CInt(spellinfo.id), cint(dmg), DMG_PHYSICAL);
 endfunction

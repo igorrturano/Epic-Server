@@ -27,24 +27,10 @@ program HitScript(params)
 		return 0;
 	endif
 
-	var dist := Distance(who, targ);
-	var mlore := Cint(AP_GetSkill(who, ARCANA));
 	who.frozen := 1;
 
 	if (!CheckLosAt(who, targ.x, targ.y, targ.z))
 		SendSysMessage(who, "Voce nao consegue ver o alvo.");
-		who.hidden := 0;
-		who.frozen := 0;
-		return 0;
-	endif
-
-	var allowedDistance := mlore / 10;
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
-		allowedDistance := mlore / 5;
-	endif
-
-	if (dist > Cint(allowedDistance))
-		SendSysMessage(who, "O alvo esta muito distante");
 		who.hidden := 0;
 		who.frozen := 0;
 		return 0;
@@ -73,21 +59,29 @@ program HitScript(params)
 
 	targ.hidden := 1;
 
-	var moveTo := TargetCoordinates(who);
-	if (!CheckLosAt(who, moveTo.x, moveTo.y, moveTo.z))
-		SendSysMessageEx(who, "Voce nao ve o local de destino.", SSM_FAIL);
-		targ.hidden := 0;
-		who.frozen := 0;
-		return 0;
-	endif
-	if (CanWalk("L", who.x, who.y, who.z, moveTo.x, moveTo.y, who.realm) == error)
-		SendSysMessage(who, "Local Inacessível");
-		targ.hidden := 0;
-		who.frozen := 0;
-		return 0;
-	else
-		MoveObjectToLocation(targ, moveTo.x, moveTo.y, moveTo.z, who.realm);
-	endif
+	// Re-prompt on bad clicks (LoS / unwalkable) so a misclick doesn't waste
+	// the whole spell. Explicit cancel (no coord) is the only abort path.
+	var moveTo;
+	while (1)
+		moveTo := TargetCoordinates(who);
+		if (!moveTo)
+			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+			targ.hidden := 0;
+			who.frozen := 0;
+			return 0;
+		endif
+		if (!CheckLosAt(who, moveTo.x, moveTo.y, moveTo.z))
+			SendSysMessageEx(who, "Voce nao ve o local de destino. Escolha outro local.", SSM_FAIL);
+			continue;
+		endif
+		if (CanWalk("L", who.x, who.y, who.z, moveTo.x, moveTo.y, who.realm) == error)
+			SendSysMessage(who, "Local inacessivel. Escolha outro local.");
+			continue;
+		endif
+		break;
+	endwhile
+
+	MoveObjectToLocation(targ, moveTo.x, moveTo.y, moveTo.z, who.realm);
 
 	sleep(1);
 	targ.hidden := 0;

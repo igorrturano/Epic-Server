@@ -12,6 +12,7 @@ include ":spells:Controller/SC_Damage";
 include "include/shapes";
 include ":spells:include/swordmage";
 include "include/epicMageryUtils";
+include ":charactercreation:resists";
 
 program SpellScript(params)
 	var who := params[1];
@@ -98,6 +99,8 @@ program SpellScript(params)
 			sleepms(200);
 		endwhile
 
+		var diff := handleSpellResistDiffForSpecialists(who, spell.School);
+		var bonus := epicWisdomPathBonus(who);
 		foreach defender in (ListMobilesNearLocation(who.x, who.y, who.z, 12, who.realm))
 			if (!(defender in who.party.members))
 				if (defender.serial != who.serial)
@@ -105,6 +108,13 @@ program SpellScript(params)
 					PlaySoundEffect(defender, 0x228);
 					var dmg := cint(AP_GetSkill(who, ARCANA)) / 2;
 					dmg := Floor(dmg / cargasRetorno.divisor);
+
+					// REFLEX save halves the pandemonium's damage per defender.
+					if (CheckResist(defender, REFLEXES, diff, -bonus))
+						dmg := Cint(dmg / 2);
+						SendSysMessageEx(defender, "Voce desvia parcialmente das chamas.", SSM_INFO);
+					endif
+
 					SC_DealDamage(who, defender, CInt(spell.id), cint(dmg), DMG_FIRE);
 				// ApplyDamageEX(defender, cint(dmg), DMG_FIRE);
 				endif

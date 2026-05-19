@@ -76,7 +76,7 @@ Você envolve sua arma em energia sombria. Seu próximo ataque causa dano mágic
 **Custo:**    :: 10 stamina | 20 mana
 **Cooldown:** :: 180s
 
-Você se funde com as sombras, tornando-se completamente invisível por algum tempo. Ao sair da invisibilidade na escuridão, assume uma forma borrada, dificultando que os inimigos te acertem.
+Você se funde com as sombras, tornando-se completamente invisível por algum tempo. Enquanto a habilidade está ativa, suas magias de ilusão, arcanas e necromânticas tornam-se mais poderosas.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}

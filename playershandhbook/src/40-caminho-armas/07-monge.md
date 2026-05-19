@@ -53,7 +53,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 30 stamina
 **Cooldown:** :: 180s
 
-O monge dispara uma sequência de golpes rápidos. Sua esquiva passiva também aumenta. Ambos os efeitos escalam com o seu *Tactics*.
+O monge dispara uma sequência de golpes rápidos cuja quantidade escala com *Wrestling*. Passivamente, sua esquiva aumenta com *Tactics*, e ele ganha dano extra ao lutar desarmado (perícia de punhos) e sem armadura pesada.
 
 <br>
 <br>
@@ -78,7 +78,7 @@ Seu próximo ataque causará uma explosão de força. Após o golpe, sua postura
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 180s
 
-Este estilo concede proteção física e resistência climática passivamente. Ativamente, seu próximo ataque causará sangramento no oponente.
+Este estilo concede esquiva (inimigos têm mais dificuldade de acertá-lo) e resistência climática passivamente. Ativamente, seu próximo ataque causará sangramento no oponente.
 
 <br>
 <br>

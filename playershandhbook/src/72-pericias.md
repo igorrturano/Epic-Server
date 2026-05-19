@@ -21,6 +21,8 @@ ___
 
 As perícias representam o conjunto de habilidades, conhecimentos e talentos específicos que um personagem possui e pode utilizar para superar desafios, resolver problemas e interagir com o ambiente e outros personagens de maneira eficaz. Elas derivam dos atributos básicos do personagem e permitem a realização de ações com maior precisão e sucesso, seja em combate, exploração ou interação social. As perícias refletem a especialização do personagem em determinadas áreas, sendo fundamentais para o desenvolvimento e a progressão dentro do jogo. A escolha e o uso estratégico das perícias podem influenciar significativamente o desenrolar da história e os resultados das ações empreendidas pelos personagens.
 
+As indicações de classe ("Necessário para...") abaixo são orientações de quais classes mais se beneficiam de cada perícia — não são pré-requisitos rígidos cobrados pelo sistema, que libera perícias por categoria e nível, não por classe específica.
+
 
 ::
 ### Perícias de Combate
@@ -49,7 +51,7 @@ Parry (Aparar) é a perícia que envolve a habilidade de bloquear ou desviar ata
 :
 
 #### Magery
-Magery (Magia) é a perícia que abrange a capacidade do personagem de conjurar, manipular e controlar energias mágicas para lançar feitiços e realizar atos sobrenaturais. Esta perícia representa tanto o conhecimento teórico quanto a prática de artes mágicas, incluindo a capacidade de canalizar mana ou outras fontes de poder arcano. Personagens proficientes em Magery podem lançar uma variedade de feitiços ofensivos, defensivos e utilitários, tornando-se versáteis em combate e outras situações. **[Necessário para classes: Magus, Lâmina Arcana, Necromante, Deslocador das Sombras, Clérigo, Xamã e Druida]**
+Magery (Magia) é a perícia que abrange a capacidade do personagem de conjurar, manipular e controlar energias mágicas para lançar feitiços e realizar atos sobrenaturais. Esta perícia representa tanto o conhecimento teórico quanto a prática de artes mágicas, incluindo a capacidade de canalizar mana ou outras fontes de poder arcano. Personagens proficientes em Magery podem lançar uma variedade de feitiços ofensivos, defensivos e utilitários, tornando-se versáteis em combate e outras situações. **[É a perícia de conjuração padrão. Conjuradores arcanos conjuram com *Arcana* e conjuradores de magia divina com *Theology* no lugar de Magery — veja essas perícias.]**
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}

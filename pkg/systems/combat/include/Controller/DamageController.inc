@@ -66,10 +66,13 @@ function SnapshotDefenderLocation(byRef attackInfo)
 	};
 endfunction
 
-// NPCs always gib on a crit-kill. Players only gib on a permadeath-worthy
-// kill (DP exhausted or already flagged morto) — regular deaths just go to
-// ghost normally.
+// Only two-handed melee killing blows gib — arrows and one-handers leave
+// the corpse intact. NPCs always gib when the gate passes. Players only
+// gib on a permadeath-worthy kill (DP exhausted or already flagged morto);
+// regular deaths just go to ghost normally.
 function ShouldExplodeBody(byRef attackInfo)
+	if (CStr(attackInfo.GetWeapon().GetAttribute()) != TWOHANDED) return 0; endif
+
 	if (attackInfo.GetDefender().IsNpc()) return 1; endif
 	var ref := attackInfo.GetDefender().GetObjRef();
 	if (AP_GetVital(ref, "DP") < 10) return 1; endif

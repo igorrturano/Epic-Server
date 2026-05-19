@@ -90,7 +90,7 @@ Você inspira seus aliados com sua fé inabalável, podendo ordenar diferentes c
 **Custo:**    :: 40 stamina
 **Cooldown:** :: 300s
 
-Sua presença em campo é suficiente para afastar o medo de seus aliados. Você fica imune a medo e inspira sua party com diferentes comandos de fortalecimento.
+Sua presença em campo inspira sua party: através de um menu, você emite diferentes comandos de fortalecimento aos seus aliados.
 
 <br>
 <br>

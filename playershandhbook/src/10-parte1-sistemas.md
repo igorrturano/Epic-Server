@@ -35,14 +35,15 @@ O sistema de desmaios e morte é um sistema bastante importante para o funcionam
 :
 ### Pontos de Morte
 :
-Todo personagem tem uma determinada quantidade de Pontos de Morte (ou Death Points, DPs) eles servem para que seu personagem tenha uma capacidade de desmaiar algumas vezes antes de atingir a morte definitiva. A quantidade máxima desses pontos é fixada em quatro, salvo exceções que recebem bônus ou penalidades.
+Todo personagem tem uma determinada quantidade de Pontos de Morte (ou Death Points, DPs) eles servem para que seu personagem tenha uma capacidade de desmaiar algumas vezes antes de atingir a morte definitiva. Normalmente um personagem chega a cinco Pontos de Morte, mas bônus (como certos Kits) ou penalidades podem elevar ou reduzir esse total.
 :
 Para descobrir a quantidade de DPs atual de um determinado personagem, seja o seu ou de terceiros, basta utilizar a perícia Medicine e uma descrição será dada, baseado na definição é possível ter uma idéia da situação de um determinado personagem.
 :
 ##### Pontos de Morte (DP)
 | Mensagem                          | Quantidade |
 |:----------------------------------|:----------:|
-| O alvo está mais do que preparado | 5+         |
+| O alvo está mais do que preparado | 6 ou mais  |
+| O alvo está preparado para tudo   | 5          |
 | O alvo está bastante disposto     | 4          |
 | O alvo está relativamente bem     | 3          |
 | O alvo está mal                   | 2          |
@@ -58,7 +59,7 @@ Um DP é recuperado a cada hora que você estiver jogando com seu personagem. Se
 
 ### Desmaio
 :
-O desmaio ocorre quando um personagem tem seus pontos de vida zerados, isto é: leva mais dano do que poderia receber. Enquanto seu personagem ainda possuir DPs, ele poderá desmaiar sem que morra e a cada desmaio ele perderá um DP. No caso de sua morte ter sido causada por algum jogador, você não perderá Pontos de Morte.
+O desmaio ocorre quando um personagem tem seus pontos de vida zerados, isto é: leva mais dano do que poderia receber. Enquanto seu personagem ainda possuir DPs, ele poderá desmaiar sem que morra. Toda derrota custa Pontos de Morte — tanto contra criaturas quanto contra outros jogadores: você perde 1 DP por desmaio, ou 2 se o golpe fatal acertar o pescoço. Não há perda de DP em duelos, sob proteção contra morte, ou para a equipe de GMs.
 :
 Uma vez desmaiado o personagem será teletransportado para uma região do mapa onde só ficam os jogadores desmaiados. Isso serve para evitar que ele conheça os fatos ocorridos enquanto esteve desmaiado. Nessa região não é necessário interpretar, é como se fosse um tempo de pausa enquanto seu personagem se recupera do desmaio.
 
@@ -69,15 +70,15 @@ Uma vez desmaiado o personagem será teletransportado para uma região do mapa o
 :
 Ao desmaiar um Teste de Fortitude é feito para verificar se há possibilidade de uma fratura. Sua dificuldade aumenta conforme o número de pontos de morte (DP) que o personagem tem.
 :
-O teste de resistência de fortitude tem dificuldade de 1d30 + Fortitude. Ele é aplicado na quantidade de DP que o personagem terá após ser desmaiado.
+É o mesmo teste de resistência descrito em *Testes de Resistência*: você rola 1d20 somado ao seu valor de Fortitude contra uma dificuldade fixa. O teste considera a quantidade de DP que o personagem terá após desmaiar — quanto menos DP, mais difícil resistir à fratura.
 :
 ##### Fraturas
-| Pontos de Morte (DP) | Dificuldade|
-|:---------------------|:----------:|
-| Menor que 5          | 30         |
-| Menor que 4          | 40         |
-| Menor que 3          | 60         |
-| Menor que 2          | 90         |
+| Pontos de Morte (DP) | Dificuldade   |
+|:---------------------|:-------------:|
+| Menor que 5          | Média         |
+| Menor que 4          | Difícil       |
+| Menor que 3          | Muito Difícil |
+| Menor que 2          | Extrema       |
 :
 ### Morrendo
 A morte ocorre quando seu personagem desmaia e seus DPs são reduzidos à zero. Uma mensagem irá alertá-lo da morte de seu personagem, a partir desse momento você deverá criar um novo personagem. Um personagem morto não pode ser recriado.
@@ -85,9 +86,9 @@ A morte ocorre quando seu personagem desmaia e seus DPs são reduzidos à zero. 
 ### Assassinato
 É possível que personagens matem outros personagens. Mas o assassino deve satisfazer algumas condições:
 :
-- Possuir 60 dias, ou mais, de personagem;
-- Ter uma avaliação nula ou positiva de sua interpretação;
-- Ter pelo menos dois DPs.
+- O assassino precisa ter mais de 30 dias de personagem;
+- O alvo deve estar desmaiado e seu corpo não pode estar sob proteção de ressurreição;
+- O corpo do alvo não pode estar sob proteção de ressurreição (já era um dos itens acima — manter).
 
 Para matar um personagem o processo é simples, basta dar duplo clique em alguma arma cortante e usar o alvo no corpo desmaiado. Ao assassinar um outro jogador, seu personagem perderá um DP permanente.
 ::
@@ -169,19 +170,16 @@ Resumindo:
 :
 O sistema de fome no shard não é muito complexo mas também possui consequências para os personagens que ignoram o sistema. De outras fases, sempre fizemos sistemas que traziam pequenos incômodos para quem não se alimentasse, percebemos que isso fazia com que a maioria simplesmente ignorasse a comida. Não queremos tornar chato ou prejudicar a jogabilidade a ponto de fazer a pessoa morrer de fome, mas fazer um sistema que incentive a alimentação, além de valorizar uma perícia (Domestic’s Work), ajuda na imersão no jogo: aqueles momentos de parar a noite para fazer um acampamento e acender uma fogueira ou as visitas à taverna.
 
-O sistema foi simplificado, existem 5 níveis de fome, que podem ser vistas no comando .fome. O nível 0 e 1 é o considerado “sem fome” ou “satisfeito”, o nível 4 a fome está prejudicando você e no nível 5 você está “faminto”. As comidas satisfazem melhor conforme mais elaboradas elas são, as mais simples como uma carne assada ou uma fruta alimentam muito pouco enquanto pratos mais elaborados saciam muito mais.
+O sistema foi simplificado: existem 6 níveis de fome (de 0 a 5), vistos no comando .fome. Dos níveis 0 a 2 você está bem alimentado ou apenas satisfeito; **a partir do nível 3 (“com fome”) a fome começa a prejudicar você**, piorando até o nível 5, quando está “faminto”. As comidas satisfazem melhor conforme mais elaboradas elas são: as mais simples como uma carne assada ou uma fruta alimentam muito pouco, enquanto pratos mais elaborados saciam muito mais.
 :
 ### Penalidades
-Uma pessoa faminta se encontra em estado frágil e, portanto, sofre penalidades pelo estado enfraquecido.
+Uma pessoa com fome se encontra em estado frágil e, portanto, sofre penalidades pelo enfraquecimento. A partir do nível 3, a fome reduz sua **Força, Destreza e Inteligência**, e a penalidade aumenta a cada nível:
 :
-As penalidades pela fome 4 são:
-- -10 em todos os atributos
-- -10 nos testes de resistência
-
- As penalidades pela fome 5 são:
-
-- -20 em todos os atributos
-- -20 nos testes de resistência
+- **Nível 3 (com fome):** penalidade moderada
+- **Nível 4 (com muita fome):** penalidade maior
+- **Nível 5 (faminto):** penalidade severa
+:
+Personagens com **Fortitude** alta o bastante resistem por completo aos efeitos da fome — nesse caso, nenhuma penalidade é aplicada. Não existe uma penalidade direta “nos testes de resistência”: como Força, Destreza e Inteligência alimentam Fortitude, Reflexos e Vontade, passar fome apenas enfraquece suas resistências de forma indireta.
 
 A stamina além de ser usada no movimento, sendo extremamente útil numa fuga ou em combates longos, também é usada com as habilidades dos Caminhos. Já os testes de resistência ajudam a evitar danos, efeitos de magia, armadilhas ou clima.
 
@@ -237,22 +235,29 @@ Determina sua agilidade para evitar e desviar de coisas rápidas e inesperadas. 
 ##### Vontade
 Determina a sua resistência a efeitos que afetam a sua mente, principalmente as magias.
 :
-O efeito de passar em um teste de resistência depende do teste, algumas magias são completamente evitadas caso resistidas, outras causam metade do efeito. Com armadilhas por exemplo, sempre metade do dano é evitado caso passe no teste.Cada teste também possui uma dificuldade própria, o das magias é definido pelo Arcana do mago que invocou a magia, as armadilhas tem dificuldades maiores de acordo com o dano que elas causam, os venenos de acordo com o level deles, etc.
+O efeito de passar em um teste de resistência depende do teste, algumas magias são completamente evitadas caso resistidas, outras causam metade do efeito. Com armadilhas por exemplo, sempre metade do dano é evitado caso passe no teste.Cada teste também possui uma dificuldade própria, definida por quem aplica o efeito: a das magias geralmente vem do Arcana do conjurador, as armadilhas têm dificuldades maiores conforme o dano que causam, os venenos conforme o seu nível, etc.
+:
+{{note
+##### Como o teste é rolado
+Um teste de resistência é uma rolagem de **1d20 + Valor da Resistência** contra a dificuldade do efeito. Tirar **1** no dado é falha automática; tirar **20** é sucesso automático. Algumas origens, ao falhar, ganham uma **segunda rolagem** (o dado é jogado mais uma vez): Drow e nascidos em Har'oloth, portadores de Aura Divina e almas profundamente corrompidas refazem qualquer teste de **Fortitude**; Anões refazem testes de **Vontade**; e qualquer Colhesiano refaz **qualquer** teste de resistência.
+}}
 :
 #### Valor da Resistência
 É possível ver a resistência do seu personagem na barra de Status:
 :
 O valor é definido por: ::
-**Valor da Resistência** = Caminho do Personagem + Bônus de Atributo + Outros Bônus
+**Valor da Resistência** = Bônus de Classe + Bônus de Atributo + Outros Bônus
 ::
 ![](http://flsgenese.wdfiles.com/local--files/sistemas:resistencia/statusbar.png) {width:325px,mix-blend-mode:multiply,border:"3px solid",border-radius:10px}
-*1 - Fortitude; 2 - Vontadee; 3 - Reflexos*
+*1 - Fortitude; 2 - Vontade; 3 - Reflexos*
 :
-O bônus do Caminho do Personagem para o Caminho das Armas, Caminho da Sabedoria e o Caminho do Subterfúgio é de 20 para a resistência principal e 10 para os demais. Para cada 4 pontos em um atributo o personagem ganha 1 da resistência equivalente. Alguns Kits também conferem bônus em resistências.
+Cada Caminho corresponde a um arquétipo de classe — guerreiro (Caminho das Armas), ladino (Caminho do Subterfúgio) ou sábio (Caminho da Sabedoria) — e esse arquétipo define a sua resistência principal: Fortitude para guerreiros, Reflexos para ladinos e Vontade para sábios. Você recebe um **bônus de classe maior na sua resistência principal e um bônus menor nas outras duas**. Além disso, **para cada 20 pontos no atributo regente você ganha +1** na resistência correspondente (Força → Fortitude, Destreza → Reflexos, Inteligência → Vontade).
+
+Raça, cultura, Características e Habilidades também somam: humanos recebem um pequeno bônus nas três resistências; Características como *Fortitude do Urso*, *Reflexos de Pantera* e *Vontade da Águia* reforçam a sua; e certas Habilidades de classe elevam uma resistência específica. Por fim, **entropia extrema** altera Fortitude e Vontade — para cima quando muito alta, para baixo quando muito negativa — e a **corrupção** reduz a Fortitude. Outros efeitos pontuais ainda podem somar ou subtrair de cada resistência.
 ::
 {{note
 ##### Exemplo
-Um personagem do Caminho das Armas, com 100 de Força e 70 de Destreza teria 45 em Fortitude, 27.5 em Reflexos e 20 em Vontade.
+Um humano do Caminho das Armas com 100 de Força e 70 de Destreza tem por volta de 12 em Fortitude (resistência principal), 7 em Reflexos e 4 em Vontade. Os valores reais são modestos — resistência se constrói com vários bônus pequenos, não com um único número grande.
 }}
 :
 #### Testes por GMs

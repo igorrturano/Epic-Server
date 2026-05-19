@@ -50,18 +50,18 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**        :: 10 mana
 **Cooldown:**     :: 60s
 
-A próxima poção não precisará de todo o processo alquímico. Adicionalmente, suas poções consomem menos reagentes.
+Ativamente, abre o menu de modificação de explosivos. Passivamente, suas poções consomem menos reagentes.
 
 ::
 
 ### Infusão Química
 *Habilidade Nível 6*
 
-**Tipo:** :: Ativa
-**Custo:**        :: 15 mana
-**Cooldown:**     :: 20s
+**Tipo:** :: Passiva
+**Custo:**        :: --
+**Cooldown:**     :: --
 
-Você é capaz de alterar as propriedades químicas de uma poção explosiva, modificando seu efeito.
+Passivamente, desbloqueia a modificação do elemento das suas poções explosivas no menu de explosivos.
 
 ::
 

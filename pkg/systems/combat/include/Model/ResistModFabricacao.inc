@@ -36,6 +36,9 @@ class ResistModFabricacao(ResistModBase)
 		resist.SetPiercingResist((defesaBase + Cint(sub[SUBCARACTERISTICA_FABRICACAO_PERFURANTE])) * ARMOR_PCT_MULT);
 		resist.SetBluntResist((defesaBase + Cint(sub[SUBCARACTERISTICA_FABRICACAO_CONTUSAO])) * ARMOR_PCT_MULT);
 
+		// Resist elemental da madeira e INERENTE ao componente (igual metal
+		// Ignium/Frigutium tem defesa fogo/gelo inerente) — sem ativacao.
+		// Encantar Objeto soma por cima via ResistModEncantar.
 		//OBS: se no futuro tiver um componente só pra resistência mágica tem que adicionar aqui a soma.
 		resist.SetFireResist(Cint(sub[SUBCARACTERISTICA_FABRICACAO_FOGO]) * ARMOR_PCT_MULT);
 		resist.SetColdResist(Cint(sub[SUBCARACTERISTICA_FABRICACAO_GELO]) * ARMOR_PCT_MULT);

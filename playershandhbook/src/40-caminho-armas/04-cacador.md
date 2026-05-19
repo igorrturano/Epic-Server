@@ -28,9 +28,9 @@ Os Caçadores são vigilantes incansáveis da natureza e mestres da perseguiçã
 #### Caçador
 | Level | Habilidades |
 |:-----:|:-----------:|
-|  2 |Camuflagem |
-|  6 |Caçador Experiente |
-|  10 |Mestre de Feras |
+|  2 |Vínculo de Guerra |
+|  6 |Comando de Feras |
+|  10 |Despertar Selvagem |
 |  14 |Espreita Selvagem |
 |  20 |Caçador Implacável |
 
@@ -41,34 +41,34 @@ Os Caçadores são vigilantes incansáveis da natureza e mestres da perseguiçã
 ## Habilidades
 A cada level alcançado, o jogador poderá escolher uma habilidade dentre as opções disponíveis para o level em referência.
 
-### Camuflagem
+### Vínculo de Guerra
 *Habilidade Nível 2*
 
-**Tipo:**     :: Ativa
-**Custo:**    :: 15 stamina
-**Cooldown:** :: 120s
+**Tipo:**     :: Passiva
+**Custo:**    :: --
+**Cooldown:** :: --
 
-Você consegue se esgueirar fora de cidades. Caso tenha um pet, ele se esgueirará junto e, se ele acertar o próximo ataque, será um crítico.
+A natureza selvagem moldou seu estilo de batalha. Você ganha um vínculo de guerra adicional com suas feras e o conhecimento para fabricar redes jogáveis e armadilhas de caça.
 
 
-### Caçador Experiente
+### Comando de Feras
 *Habilidade Nível 6*
 
 **Tipo:**     :: Ativa
 **Custo:**    :: 20 stamina
-**Cooldown:** :: 180s
+**Cooldown:** :: 120s
 
-Você é um especialista em sobrevivência. Sabe como fazer redes jogáveis usando cordas e instalar armadilhas de caça. Além disso, é capaz de rastrear e proteger um grupo que esteja liderando dos efeitos adversos do clima.
+Emita ordens de batalha às suas feras de guerra. Os comandos disponíveis — atacar, proteger, emboscar, recuar e farejar — aumentam conforme o seu domínio de Beastmastery.
 
 
-### Mestre de Feras
+### Despertar Selvagem
 *Habilidade Nível 10*
 
 **Tipo:**     :: Passiva
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Você possui a habilidade de despertar a verdadeira natureza do seu animal fiel, alterando seus atributos físicos e despertando um instinto selvagem que aumenta o dano crítico do animal de acordo com o tipo de fera.
+Você desperta a verdadeira natureza do seu animal fiel, alterando seus atributos físicos e despertando um instinto selvagem que aumenta o dano crítico de acordo com o tipo de fera. Também concede resistência ao clima e melhora o rastreamento de quem você lidera.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}

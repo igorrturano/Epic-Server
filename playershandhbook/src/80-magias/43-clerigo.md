@@ -54,7 +54,7 @@ Detecta se um item possui propriedades mágicas.
 ::
 
 ### Escudo de Fé
-Concede redução de dano ao alvo por alguns segundos.
+Concede redução de dano físico ao alvo por alguns segundos; alvos sem armadura recebem proteção extra. Não acumula com Pele de Árvore.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -66,18 +66,6 @@ Concede redução de dano ao alvo por alguns segundos.
 ::
 
 ## Segundo Círculo
-
-### Aura Mortis
-Parte do dano que você levar volta para quem causou.
-##### Características
-- **Alvo:** Auto
-- **Alcance:** Distância
-##### Conjuração
-- **Dificuldade:** 40
-- **Custo:** 20 mana
-- **Ciclos:** 1
-
-::
 
 ### Círculo de Proteção
 Você usa sua fé para afastar criaturas malignas na área.
@@ -131,7 +119,7 @@ Enquanto a região permanecer calma, todos ao redor do sacerdote ganham regenera
 ::
 
 ### Sacrifício
-O sacerdote troca todo seu HP por uma cura instantânea no alvo.
+O sacerdote fere a si mesmo para curar instantaneamente um alvo ferido. Quanto cura (e quanto se fere) depende de quanto HP falta ao próprio sacerdote — com vida cheia, não cura nada. Não funciona em alvos gravemente feridos demais.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -246,7 +234,7 @@ O alvo não pode ser alvejado por outras magias.
 ::
 
 ### Ressurreição
-Você consegue trazer um herói cujo corpo não foi violado de volta à vida.
+Você traz um herói caído de volta à vida. É mais garantido logo após a morte; passado esse tempo, só um sacerdote de domínio altíssimo em Theology consegue. Um corpo violado ainda pode ser revivido, mas a alma retorna enfraquecida.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância

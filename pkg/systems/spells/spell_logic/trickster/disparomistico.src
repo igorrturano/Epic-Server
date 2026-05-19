@@ -9,6 +9,7 @@ include "include/sounds";
 include ":spells:Controller/SC_Damage";
 include "include/facings";
 include "include/epicMageryUtils";
+include ":charactercreation:resists";
 
 program SpellScript(params)
 	var who := params[1];
@@ -32,6 +33,15 @@ program SpellScript(params)
 	PlayMovingEffectEx(who, targ, 0xCDD2, 13, 20, 2442, 2);
 	PlaySoundEffect(who, SFX_AGILITY2);
 	var dmg := epicSpellDamageRoll(who, 1);
+
+	// REFLEX save halves the mystic shot's damage.
+	var diff := handleSpellResistDiffForSpecialists(who, spell.School);
+	var bonus := epicWisdomPathBonus(who);
+	if (CheckResist(targ, REFLEXES, diff, -bonus))
+		dmg := Cint(dmg / 2);
+		SendSysMessageEx(targ, "Voce desvia parcialmente do disparo mistico.", SSM_INFO);
+	endif
+
 	SC_DealDamage(who, targ, CInt(spell.id), dmg, DMG_FORCED);
 	SleepMS(500);
 	SetCooldown(who, "disparomistico", mlore);

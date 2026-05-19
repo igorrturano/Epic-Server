@@ -21,7 +21,7 @@
 ### Primeiro Círculo
 
 #### Mísseis Mágicos
-Você cria três dardos brilhantes de força mágica. Cada dardo atinge uma criatura de sua escolha que você possa ver dentro do alcance.
+Você dispara uma rajada de dardos brilhantes de força mágica contra um único alvo à vista. A quantidade de dardos aumenta com a sua *Arcana*.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -163,9 +163,9 @@ Aumenta drasticamente a velocidade e agilidade do alvo.
 ### Quinto Círculo
 
 #### Chuva de Gelo
-Invoca uma tempestade de gelo.
+Invoca uma tempestade de gelo que atinge todos numa área.
 ##### Características
-- **Alvo:** Único
+- **Alvo:** Área
 - **Alcance:** Distância
 ##### Conjuração
 - **Dificuldade:** 100
@@ -175,9 +175,9 @@ Invoca uma tempestade de gelo.
 ::
 
 #### Chuva de Meteoros
-Invoca uma devastadora chuva de meteoros, causando dano extremo.
+Invoca uma devastadora chuva de meteoros sobre uma área, causando dano extremo.
 ##### Características
-- **Alvo:** Único
+- **Alvo:** Área
 - **Alcance:** Distância
 ##### Conjuração
 - **Dificuldade:** 100
