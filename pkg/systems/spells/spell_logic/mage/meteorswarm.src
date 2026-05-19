@@ -26,13 +26,6 @@ program spell_meteorSwarm(parms)
 	var spell_school := spell.School;
 
 	SendSysMessage(caster, "Selecione o alvo.");
-	var dist := Distance(caster, targ);
-	var dist_allowed := distanceAllowedForSpells(caster, HandleSpellSkill(caster), spell_school);
-
-	if (dist > dist_allowed)
-		SendSysMessage(caster, "O alvo esta muito distante");
-		return 0;
-	endif
 
 	var radius := Cint(AP_GetSkill(caster, ARCANA) / 15);
 	if (radius < 4)

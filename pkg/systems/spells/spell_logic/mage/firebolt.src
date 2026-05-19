@@ -36,14 +36,6 @@ program cast_firebolt(params)
 		return 0;
 	endif
 
-	var dist := Distance(caster, targ);
-	var dist_allowed := distanceAllowedForSpells(caster, HandleSpellSkill(caster), spell_school);
-
-	if (dist > dist_allowed)
-		SendSysMessage(caster, "O alvo esta muito distante");
-		return 0;
-	endif
-
 	LaunchProjectile(caster, targ, spell_circle, spell_school, CInt(spell.id));
 endprogram
 

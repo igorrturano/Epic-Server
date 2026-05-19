@@ -30,12 +30,6 @@ program spell_fireball(params)
 	endif
 
 	var dist := Distance(caster, cast_on);
-	var dist_allowed := distanceAllowedForSpells(caster, HandleSpellSkill(caster), spell_school);
-
-	if (dist > dist_allowed)
-		SendSysMessage(caster, "O alvo esta muito distante");
-		return 0;
-	endif
 
 	// PlayMovingEffect com dst = coord struct nao renderiza; usar XYZ pra alvo de area.
 	PlayMovingEffectXYZ(caster.x, caster.y, caster.z, cast_on.x, cast_on.y, cast_on.z,
