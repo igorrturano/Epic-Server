@@ -65,7 +65,9 @@ impact.
 - Spells: `pkg/systems/spells/spell_logic/`
 - Skills/perícias, fome, morte: grep `pkg/systems/` and `pkg/fls/`
 - Wrappers (entity contracts): `pkg/systems/wrappers/include/Objects/Model/`
-- Skills available to you: `combat-guide`, `spells-guide` (navigation aids)
+- Combat/ability/spell reference (source of truth):
+  `docs/combat-pipeline.md`, `docs/ability-pipeline.md`,
+  `docs/spells-pipeline.md`, `docs/resist-system.md`
 
 ## Rules
 

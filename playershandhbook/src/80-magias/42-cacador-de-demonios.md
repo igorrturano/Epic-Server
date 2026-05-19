@@ -5,7 +5,7 @@
 ## Primeiro Círculo
 
 ### Cura Leve
-Canaliza energia vital para curar ferimentos.
+Canaliza energia vital para curar ferimentos. Em mortos-vivos e demônios, em vez de curar, causa dano equivalente.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -61,7 +61,7 @@ Compele o alvo a duelar com você.
 ## Terceiro Círculo
 
 ### Disparo Divino
-Projeta uma flecha de energia divina que fere apenas demônios.
+Projeta uma flecha de energia divina que fere qualquer alvo e reduz sua precisão por um tempo. Demônios sofrem dano adicional.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -105,7 +105,7 @@ Remove encantamentos e tem chance de banir invocações.
 ::
 
 ### Transferência Vital
-Drena a força vital de um demônio e a transfere para um aliado.
+Drena, aos poucos, a força vital de um alvo (que pode resistir com Vontade) e a transfere para um aliado.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância

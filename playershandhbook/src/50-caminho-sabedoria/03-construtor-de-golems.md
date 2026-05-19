@@ -30,7 +30,7 @@ Alguns anões, a partir de suas mentes criativas e seu amor pela tecnologia, for
 |:-----:|:-------------------------:|
 |  2 |Punho Explosivo |
 |  6 |Salto a Vapor |
-|  10 |Gancho de Agarrar |
+|  10 |Ombreira Tática |
 |  14 |Visor de Mira |
 |  20 |Montagem do Golem |
 
@@ -50,7 +50,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 
 **Tipo:** :: Ativa
 **Custo:**        :: 10 stamina
-**Cooldown:**     :: --
+**Cooldown:**     :: 5s
 
 Ao ativar, seus golpes corpo a corpo consomem pólvora e causam dano de fogo adicional com empurrão. Permite fabricar pólvora sem alchemy.
 
@@ -70,14 +70,14 @@ Você salta para frente e causa uma explosão ao pousar, consumindo pólvora. Se
 
 \page
 
-### Gancho de Agarrar
+### Ombreira Tática
 *Habilidade Nível 10*
 
 **Tipo:** :: Ativa
 **Custo:**        :: 25 stamina
 **Cooldown:**     :: 120s
 
-Você dispara um gancho mecânico em um alvo. Se ele falhar em esquivar, fica paralisado e é puxado até você.
+Dispara o dispositivo instalado na ombreira dos seus Braços a Vapor. Clicando duas vezes nos braços equipados, você instala um canhão de mão, um arpão mecânico (o *Gancho de Agarrar*) ou uma armadilha de pólvora.
 
 ::
 
@@ -96,8 +96,8 @@ Você ativa o visor de mira do capacete, ignorando a armadura do alvo nos próxi
 *Habilidade Nível 20*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 40 stamina
-**Cooldown:**     :: 900s
+**Custo:**        :: 1 stamina
+**Cooldown:**     :: 5s
 
 No ápice da sua manufatura, você é capaz de construir seu próprio Golem de metal, pronto para ser pilotado.
 

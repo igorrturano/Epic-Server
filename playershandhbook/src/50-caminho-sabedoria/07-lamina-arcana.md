@@ -89,7 +89,7 @@ Você recebe bônus em todas as magias de mago de batalha. Ativamente, você usa
 Dependendo do elemento da sua arma, você ganha bônus na armadura. Se for acertado à curta distância, sua armadura reage:
 - **Gelo**: Congela o atacante.
 - **Fogo**: Incinera o atacante.
-- **Raio**: Você ganha velocidade de movimento.
+- **Raio**: Deixa o atacante mais lento.
 
 ::
 

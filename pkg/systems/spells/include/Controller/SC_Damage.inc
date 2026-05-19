@@ -24,7 +24,7 @@ include "MagicItemBonus";
  *                               / DMG_PHYSICAL; DMG_FORCED to bypass resist
  * @return Integer - the base amount passed in (resist is handled internally)
  */
-function SC_DealDamage(caster, targ, spellId, amount, damageType := DMG_FORCED)
+function SC_DealDamage(caster, targ, spellId, amount, damageType := DMG_FORCED, applyItemBonus := 1)
 	amount := CInt(amount);
 	if (!caster || !targ || amount <= 0)
 		return 0;
@@ -32,7 +32,12 @@ function SC_DealDamage(caster, targ, spellId, amount, damageType := DMG_FORCED)
 
 	// Magic item elemental bonus from equipped focus (staff/wand/spellbook).
 	// Reads `dano <element>` sub-value from the focus's crafted properties.
-	amount := amount + GetMagicItemElementalBonus(caster, damageType);
+	// applyItemBonus=0 lets DoT tick scripts skip it: the spell's direct/
+	// impact hit applies the focus bonus once (default 1); the DoT chips
+	// must not re-add it every tick (magicmissile pattern; see "63%" report).
+	if (applyItemBonus)
+		amount := amount + GetMagicItemElementalBonus(caster, damageType);
+	endif
 
 	// DamageFLS: resist calc + DisplayDamage + ApplyRawDamage + last-damage info.
 	DamageFLS(targ, amount, damageType, caster, $"spell_{spellId}");

@@ -32,6 +32,11 @@ include "include/epicConstants";
 include ":faccao:include/imperium";
 include ":merchants:citizen/include/citizenWitness";
 
+// checkTargetValidity tri-state: 1 = ok, 0 = hard fail (already messaged +
+// cleaned, abort), TARGET_RETRY = bad click (out of range / no LoS) — an
+// interactive caster re-prompts instead of fizzling the cast.
+const TARGET_RETRY := 2;
+
 program SpellStarter(params)
 	var mobile := params[1]; // Caster
 	var spellinfo := params[2]; // spellinfo
@@ -48,16 +53,19 @@ program SpellStarter(params)
 		return 0;
 	endif
 
+	// Target BEFORE resources/cast bar: a cancelled or out-of-range click
+	// now costs nothing (no mana to refund), and selectSpellTarget loops
+	// on bad targets instead of fizzling the whole cast.
+	targ := selectSpellTarget(mobile, spellinfo, targ);
+	if (!targ)
+		return 0;
+	endif
+
 	if (!consumeResourcesForSpell(mobile, mw, spellinfo, scroll))
 		return 0;
 	endif
 
 	if (!performCastingProcess(mobile, mw, spellinfo))
-		return 0;
-	endif
-
-	targ := selectSpellTarget(mobile, spellinfo, targ);
-	if (!targ)
 		return 0;
 	endif
 
@@ -107,10 +115,10 @@ function initializeSpellCasting(mobile, mw, byref spellinfo, scroll)
 		return 0;
 	endif
 
-	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) && spellinfo.Type != "Ninjutsu"
-		&& !isMobileCastActive(mobile, spellinfo.School))
-		mobile.frozen := 1;
-	endif
+	// Freeze used to happen here, but with target-before-mana the player is
+	// frozen DURING the cursor prompt and the client treats a frozen-caster
+	// Target() as auto-cancelled. Freeze is now applied at the start of
+	// performCastingProcess (the cast-bar phase, post-target).
 
 	return 1;
 endfunction
@@ -293,6 +301,14 @@ function performCastingProcess(mobile, mw, spellinfo)
 	SetObjProperty(mobile, "#Casting", 1);
 	DistribuiEvento(mobile, EV_SPELLCAST);
 
+	// Freeze the caster for the cast bar (moved here from initializeSpellCasting
+	// so target selection happens on an unfrozen caster — frozen breaks the
+	// client cursor).
+	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) && spellinfo.Type != "Ninjutsu"
+		&& !isMobileCastActive(mobile, spellinfo.School))
+		mobile.frozen := 1;
+	endif
+
 	// if (!mobile.npctemplate)
 	performSpellVocalization(mobile, spellinfo);
 	// endif
@@ -461,12 +477,31 @@ function performCastingAnimation(mobile, range)
 endfunction
 
 function selectSpellTarget(mobile, spellinfo, targ)
-	if (!targ)
+	// Pre-supplied target (war-mode / scroll / ability): no cursor to loop
+	// on, so validate once and abort on any failure.
+	if (targ)
+		var pre := checkTargetValidity(mobile, targ, spellinfo);
+		if (pre == 1)
+			return targ;
+		endif
+		if (pre == TARGET_RETRY)
+			// range/LoS already messaged but not cleaned (the retry path
+			// assumes an interactive caster) — release the cast lock here.
+			FailSpell(mobile, spellinfo);
+		endif
+		return 0;
+	endif
+
+	var noto := TGTOPT_NEUTRAL;
+	var validity := 0;
+	var event := 0;
+
+	while (1)
 		case (spellinfo.alvo)
 			"Self": targ := mobile;
 			"Unico":
 				SendSysMessageEx(mobile, "Escolha o alvo da magia.", SSM_REQUEST);
-				var noto := TGTOPT_NEUTRAL;
+				noto := TGTOPT_NEUTRAL;
 				if (spellinfo.align == "Harmful")
 					noto := TGTOPT_HARMFUL;
 				elseif (spellinfo.align == "HELPFUL")
@@ -485,25 +520,40 @@ function selectSpellTarget(mobile, spellinfo, targ)
 		endif
 
 		if (!targ.opponent && spellinfo.alvo == "Unico" && targ.npctemplate)
-			var event := {"type" := SYSEVENT_DAMAGED, "source" := mobile};
+			event := {"type" := SYSEVENT_DAMAGED, "source" := mobile};
 			SendEvent(mobile, event);
 		endif
 
 		if (spellinfo.alvo != "Self" && targ.serial != mobile.serial)
 			TurnObjectToward(mobile, targ.x, targ.y);
 		endif
-	endif
 
-	if (!checkTargetValidity(mobile, targ, spellinfo))
+		validity := checkTargetValidity(mobile, targ, spellinfo);
+		if (validity == 1)
+			return targ;
+		endif
+
+		if (validity == TARGET_RETRY)
+			// out of range / no LoS: keep the cast alive, ask again.
+			targ := 0;
+			continue;
+		endif
+
+		// hard fail (invuln / corpofechado / charmed): already messaged
+		// and cleaned by checkTargetValidity.
 		return 0;
-	endif
+	endwhile
 
-	return targ;
+	return 0;
 endfunction
 
+// Tri-state (see TARGET_RETRY). Range and LoS are retryable so a misclick
+// re-prompts; invuln/corpofechado/charmed are hard fails. This now runs
+// BEFORE performCastingProcess, so a hard fail must release the cast lock
+// itself (frozen was set in initializeSpellCasting).
 function checkTargetValidity(mobile, targ, spellinfo)
 	if (GetCooldown(targ, "repeal") > 0)
-		EraseObjProperty(mobile, "#Casting");
+		_ReleaseCastLock(mobile);
 		SendSysMessageEx(mobile, "O alvo esta invulneravel a magias.", SSM_FAIL);
 		return 0;
 	endif
@@ -513,31 +563,54 @@ function checkTargetValidity(mobile, targ, spellinfo)
 				   SSM_FAIL);
 		var vont := GetResist(targ, WILL);
 		DamageMANA(mobile, vont / 3);
-		EraseObjProperty(mobile, "#Casting");
+		_ReleaseCastLock(mobile);
 		return 0;
 	endif
 
 	if (spellinfo.alvo != "Area")
 		if (!CheckLineOfSight(mobile, targ))
 			SendSysMessageEx(mobile, "Voce nao ve o alvo.", SSM_FAIL);
-			FailSpell(mobile, spellinfo);
-			return 0;
+			return TARGET_RETRY;
 		endif
 	else
 		if (!CheckLOSAt(mobile, targ.x, targ.y, targ.z))
 			SendSysMessageEx(mobile, "O ponto que voce selecionou esta fora da sua linha de visao.",
 							  SSM_FAIL);
-			FailSpell(mobile, spellinfo);
-			return 0;
+			return TARGET_RETRY;
+		endif
+	endif
+
+	// Central skill-scaled range gate — every non-self targeted spell.
+	// Self-cast ground-target spells (teleport/portals) gate internally.
+	if (spellinfo.alvo != "Self")
+		var dist;
+		if (spellinfo.alvo == "Area")
+			dist := CoordinateDistance(mobile.x, mobile.y, targ.x, targ.y);
+		else
+			dist := Distance(mobile, targ);
+		endif
+
+		if (dist > distanceAllowedForSpells(mobile, HandleSpellSkill(mobile), spellinfo.School))
+			SendSysMessageEx(mobile, "O alvo esta muito distante.", SSM_FAIL);
+			return TARGET_RETRY;
 		endif
 	endif
 
 	if (Cint(GetObjProperty(mobile, "charmed_by")) == targ.serial)
 		PrintTextAbove(mobile, "*hipnotizado*");
-		EraseObjProperty(mobile, "#Casting");
+		_ReleaseCastLock(mobile);
 		return 0;
 	endif
 
+	return 1;
+endfunction
+
+// Full cast-lock release for the hard-fail target paths (mirrors the
+// non-fizzle half of FailSpell — these emit their own message, no FX).
+function _ReleaseCastLock(mobile)
+	mobile.frozen := 0;
+	EraseObjProperty(mobile, "#medding");
+	EraseObjProperty(mobile, "#Casting");
 	return 1;
 endfunction
 

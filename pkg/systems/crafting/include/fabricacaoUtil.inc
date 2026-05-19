@@ -426,6 +426,16 @@ function PegaValorMaterialPrincipalFabricacao(item, caracteristica)
 		return 0;
 	endif
 
+	// So aplica se a MADEIRA realmente declara a caracteristica. Sem este
+	// guard qualquer cajado ganharia +qualidade-do-crafter mesmo com
+	// madeira sem manaRegen/manaMaxima (bug: Nogueira dava +maxmana).
+	// Checar a chave (e nao valorPrincipal>0) porque material t-1 resolve
+	// para valor 0 — t-1 valido != ausente.
+	var efeitosMaterial := GetConfigStringDictionary(ReadConfigFile(RECURSOS_CONFIG_PATH)[chaveMaterial], "ComponenteEfeito");
+	if (!efeitosMaterial.Exists(caracteristica))
+		return 0;
+	endif
+
 	var efeitos := InterpretaMaterialEfeitos(caracteristica, chaveMaterial);
 	return Cint(efeitos.valorPrincipal) + Cint(principal.tier.valor);
 endfunction

@@ -4,6 +4,7 @@ use os;
 include "include/say";
 include ":attributes:attributes";
 include "include/client";
+include "include/epicMageryUtils";
 const PARA_MANA_DRAIN := 5;
 
 program spell(params)
@@ -12,7 +13,7 @@ program spell(params)
 
 	SendSysMessageEx(who, "Escolha qual longe quer que a magia va.", SSM_REQUEST);
 	var targ := TargetCoordinates(who);
-	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 15)
+	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > distanceAllowedForSpells(who, HandleSpellSkill(who), info.School))
 		SendSysMessageEX(who, "Cancelado", SSM_FAIL);
 		return;
 	endif

@@ -63,15 +63,15 @@ Como caçador de demônios, você aprendeu a usar sigilos mágicos protetivos me
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 120s
 
-Você sacrifica parte da sua saúde para fortalecer seu próximo ataque. Causa dano extra contra demônios, com efeitos adicionais baseados na sua religião:
+Seu próximo ataque desfere dano divino adicional. Conforme a sua religião, ele também aplica um efeito extra no alvo:
 
-- **Lóre**: Enraíza o alvo
+- **Lóre**: Nenhum efeito adicional (apenas o dano divino)
 - **Veneratio**: Silencia o alvo
-- **Bokk Bharaz**: Invoca uma pistola sagrada com um projétil
-- **Ush'krar**: Causa sangramento
+- **Bokk Bharaz**: Deixa o alvo mais lento
+- **Ush'krar**: Nenhum efeito adicional (apenas o dano divino)
 - **Halleuad**: Cega o alvo
-- **Eluith'orth**: Cria uma ilusão, confundindo alvos ao redor
-- **Kai**: Desarma o oponente / monstros recebem penalidade em acerto
+- **Eluith'orth**: Envolve o alvo em trevas
+- **Kai**: Causa sangramento no alvo
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -85,7 +85,7 @@ Você sacrifica parte da sua saúde para fortalecer seu próximo ataque. Causa d
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Uma marca visível de corrupção se manifesta em seu corpo, concedendo bônus contra demônios e a capacidade de senti-los nas proximidades.
+Uma marca visível de corrupção se manifesta em seu corpo, concedendo um bônus de acerto e tornando seus inimigos mais fáceis de atingir.
 
 ::
 

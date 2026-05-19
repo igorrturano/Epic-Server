@@ -9,6 +9,7 @@ include ":spells:Controller/SC_Damage";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":spells:Controller/SpellController";
+include ":charactercreation:resists";
 
 program SpellScript(params)
 	var who := params[1];
@@ -31,6 +32,15 @@ program SpellScript(params)
 
 	PlayMovingEffectEx(who, targ, 0x5426, 13, 20, 0x0845, 2);
 	PlaySoundEffect(who, 0x235);
+
+	// REFLEX save halves the damage (the hitchance debuff still applies —
+	// dodging the projectile, not the divine mark).
+	var diff := handleSpellResistDiffForSpecialists(who, spellinfo.School);
+	var bonus := epicWisdomPathBonus(who);
+	if (CheckResist(targ, REFLEXES, diff, -bonus))
+		damage := Cint(damage / 2);
+		SendSysMessageEx(targ, "Voce desvia parcialmente da flecha divina.", SSM_INFO);
+	endif
 
 	SC_DealDamage(who, targ, CInt(spellinfo.id), damage, DMG_FORCED);
 

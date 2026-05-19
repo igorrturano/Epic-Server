@@ -246,7 +246,7 @@ A cada ponto de Caminho gasto, o jogador poderá escolher uma habilidade dentre 
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Ao usar uma arma de uma mão sem escudo: +5 de chance de crítico e -2 na chance de acerto do inimigo.
+Ao usar uma arma de uma mão sem escudo: +3 de dano e -2 na chance de acerto do inimigo.
 
 ::
 
@@ -257,7 +257,7 @@ Ao usar uma arma de uma mão sem escudo: +5 de chance de crítico e -2 na chance
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Ao usar uma arma de uma mão com escudo: +2 de dano e -2 na chance de acerto do inimigo.
+Ao usar uma arma de uma mão com escudo: +5 de chance de aparar e -2 na chance de acerto do inimigo.
 
 ::
 
@@ -354,7 +354,7 @@ Reduz a penalidade de destreza em 2 ao usar armadura pesada.
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Reduz o cooldown de aparar em 20%.
+Reduz o cooldown de aparar em 20% — aplicado apenas quando você apara com um escudo equipado.
 
 ::
 
@@ -521,17 +521,6 @@ Você tem bastante talento para encontrar joias enquanto minera. Sua chance de e
 
 ::
 
-### Corte Limpo
-*Habilidade de Caminho*
-
-**Tipo:**     :: Passiva
-**Custo:**    :: --
-**Cooldown:** :: --
-
-Você corta lenha com tanta precisão que consegue retirar mais toras de madeira por árvore cortada.
-
-::
-
 ### Minerar Raridades
 *Habilidade de Caminho*
 
@@ -695,7 +684,7 @@ Você é capaz de decifrar escritos antigos.
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Ao colher um reagente vegetal, você tem 30% de chance de obter o dobro.
+Ao colher um reagente vegetal, você tem 30% de chance de colher uma unidade extra.
 
 ::
 

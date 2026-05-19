@@ -41,6 +41,55 @@ function RepairMigratedBuyhab(who)
         .SendSys(who);
 endfunction
 
+// One-shot repair for the old AdaptableForm (Forma Adaptável) toggle bug.
+// The legacy toggle could subtract its bonus from #FortitudeMod/#ReflexosMod/
+// #VontadeMod without a matching add (double-revert / orphaned marker),
+// stranding the stat permanently negative — and the buggy revert often
+// erased its own markers, so the damage is no longer attributable.
+//
+// AF only ever adds a positive bonus then removes exactly that, so while
+// it is NOT legitimately active its contribution must be >= 0. With no
+// consistent active marker, any negative on these three mods is AF
+// residue: clear the stuck markers and floor the mods at 0.
+//
+// Guarded by `af_sweep_v1` so it runs exactly once per character — the
+// reworked AdaptableForm prevents new strands, so this only needs to
+// clear the existing backlog and must never fight nature/Temor on later
+// logins. Scope is AdaptableForm only by request; a transient combat
+// debuff (Temor) never survives a logout, so flooring at login can't
+// cancel a legitimately active one.
+function RepairAdaptableFormMods(who)
+    if (GetObjProperty(who, "af_sweep_v1"))
+        return;
+    endif
+
+    var marker := GetObjProperty(who, "formaadaptavel");
+    var amount := CInt(GetObjProperty(who, "Mutacao"));
+    var consistentActive := (marker == "Fortitude" || marker == "Reflexes" || marker == "Will") && amount > 0;
+
+    if (!consistentActive)
+        EraseObjProperty(who, "formaadaptavel");
+        EraseObjProperty(who, "Mutacao");
+
+        var modKeys := { "#FortitudeMod", "#ReflexosMod", "#VontadeMod" };
+        var repaired := 0;
+        foreach key in (modKeys)
+            if (CInt(GetObjProperty(who, key)) < 0)
+                SetObjProperty(who, key, 0);
+                repaired := 1;
+            endif
+        endforeach
+
+        if (repaired)
+            Message("Seus atributos de resistência (Fortitude/Reflexos/Vontade) foram restaurados após uma correção da Forma Adaptável.")
+                .SetColor(SSM_INFO)
+                .SendSys(who);
+        endif
+    endif
+
+    SetObjProperty(who, "af_sweep_v1", 1);
+endfunction
+
 program createChar(who)
     var creation_completed := GetObjProperty(who, "creation_completed");
 
@@ -55,6 +104,7 @@ program createChar(who)
     // so running it on every login is safe.
     if (creation_completed)
         MobileWrapper(who).RecalcCarryWeightMod();
+        RepairAdaptableFormMods(who);
         return;
     endif
     

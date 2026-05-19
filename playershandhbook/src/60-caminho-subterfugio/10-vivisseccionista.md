@@ -89,7 +89,7 @@ Você aproveita o potencial máximo dos seus venenos, aumentando sua duração, 
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Suas mãos são extremamente firmes, fazendo com que seus golpes sejam mais precisos e causem mais dano.
+Suas mãos são extremamente firmes, fazendo com que seus golpes causem mais dano.
 
 <br>
 <br>

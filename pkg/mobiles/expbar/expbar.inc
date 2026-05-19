@@ -530,6 +530,10 @@ function discrete_gump(who)
 
     var result := GFSendGump(who, gump);
     if (result[0] == 1)
+        // Open the buyhab slots earned for the new level before rendering,
+        // same as core_skillWin does on menu entry — otherwise the slot
+        // just reached doesn't show until the player opens the full menu.
+        SetPlayerSkillLevel(who);
         var hab_gump := GFECreateGump("Menu de Habilidades", 440, 565);
         ShowHabilidadesPage(hab_gump, who);
         AddNavigationBar(hab_gump, 2);

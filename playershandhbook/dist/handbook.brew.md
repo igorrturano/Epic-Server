@@ -270,14 +270,15 @@ O sistema de desmaios e morte é um sistema bastante importante para o funcionam
 :
 ### Pontos de Morte
 :
-Todo personagem tem uma determinada quantidade de Pontos de Morte (ou Death Points, DPs) eles servem para que seu personagem tenha uma capacidade de desmaiar algumas vezes antes de atingir a morte definitiva. A quantidade máxima desses pontos é fixada em quatro, salvo exceções que recebem bônus ou penalidades.
+Todo personagem tem uma determinada quantidade de Pontos de Morte (ou Death Points, DPs) eles servem para que seu personagem tenha uma capacidade de desmaiar algumas vezes antes de atingir a morte definitiva. Normalmente um personagem chega a cinco Pontos de Morte, mas bônus (como certos Kits) ou penalidades podem elevar ou reduzir esse total.
 :
 Para descobrir a quantidade de DPs atual de um determinado personagem, seja o seu ou de terceiros, basta utilizar a perícia Medicine e uma descrição será dada, baseado na definição é possível ter uma idéia da situação de um determinado personagem.
 :
 ##### Pontos de Morte (DP)
 | Mensagem                          | Quantidade |
 |:----------------------------------|:----------:|
-| O alvo está mais do que preparado | 5+         |
+| O alvo está mais do que preparado | 6 ou mais  |
+| O alvo está preparado para tudo   | 5          |
 | O alvo está bastante disposto     | 4          |
 | O alvo está relativamente bem     | 3          |
 | O alvo está mal                   | 2          |
@@ -293,7 +294,7 @@ Um DP é recuperado a cada hora que você estiver jogando com seu personagem. Se
 
 ### Desmaio
 :
-O desmaio ocorre quando um personagem tem seus pontos de vida zerados, isto é: leva mais dano do que poderia receber. Enquanto seu personagem ainda possuir DPs, ele poderá desmaiar sem que morra e a cada desmaio ele perderá um DP. No caso de sua morte ter sido causada por algum jogador, você não perderá Pontos de Morte.
+O desmaio ocorre quando um personagem tem seus pontos de vida zerados, isto é: leva mais dano do que poderia receber. Enquanto seu personagem ainda possuir DPs, ele poderá desmaiar sem que morra. Toda derrota custa Pontos de Morte — tanto contra criaturas quanto contra outros jogadores: você perde 1 DP por desmaio, ou 2 se o golpe fatal acertar o pescoço. Não há perda de DP em duelos, sob proteção contra morte, ou para a equipe de GMs.
 :
 Uma vez desmaiado o personagem será teletransportado para uma região do mapa onde só ficam os jogadores desmaiados. Isso serve para evitar que ele conheça os fatos ocorridos enquanto esteve desmaiado. Nessa região não é necessário interpretar, é como se fosse um tempo de pausa enquanto seu personagem se recupera do desmaio.
 
@@ -304,15 +305,15 @@ Uma vez desmaiado o personagem será teletransportado para uma região do mapa o
 :
 Ao desmaiar um Teste de Fortitude é feito para verificar se há possibilidade de uma fratura. Sua dificuldade aumenta conforme o número de pontos de morte (DP) que o personagem tem.
 :
-O teste de resistência de fortitude tem dificuldade de 1d30 + Fortitude. Ele é aplicado na quantidade de DP que o personagem terá após ser desmaiado.
+É o mesmo teste de resistência descrito em *Testes de Resistência*: você rola 1d20 somado ao seu valor de Fortitude contra uma dificuldade fixa. O teste considera a quantidade de DP que o personagem terá após desmaiar — quanto menos DP, mais difícil resistir à fratura.
 :
 ##### Fraturas
-| Pontos de Morte (DP) | Dificuldade|
-|:---------------------|:----------:|
-| Menor que 5          | 30         |
-| Menor que 4          | 40         |
-| Menor que 3          | 60         |
-| Menor que 2          | 90         |
+| Pontos de Morte (DP) | Dificuldade   |
+|:---------------------|:-------------:|
+| Menor que 5          | Média         |
+| Menor que 4          | Difícil       |
+| Menor que 3          | Muito Difícil |
+| Menor que 2          | Extrema       |
 :
 ### Morrendo
 A morte ocorre quando seu personagem desmaia e seus DPs são reduzidos à zero. Uma mensagem irá alertá-lo da morte de seu personagem, a partir desse momento você deverá criar um novo personagem. Um personagem morto não pode ser recriado.
@@ -320,9 +321,9 @@ A morte ocorre quando seu personagem desmaia e seus DPs são reduzidos à zero. 
 ### Assassinato
 É possível que personagens matem outros personagens. Mas o assassino deve satisfazer algumas condições:
 :
-- Possuir 60 dias, ou mais, de personagem;
-- Ter uma avaliação nula ou positiva de sua interpretação;
-- Ter pelo menos dois DPs.
+- O assassino precisa ter mais de 30 dias de personagem;
+- O alvo deve estar desmaiado e seu corpo não pode estar sob proteção de ressurreição;
+- O corpo do alvo não pode estar sob proteção de ressurreição (já era um dos itens acima — manter).
 
 Para matar um personagem o processo é simples, basta dar duplo clique em alguma arma cortante e usar o alvo no corpo desmaiado. Ao assassinar um outro jogador, seu personagem perderá um DP permanente.
 ::
@@ -404,19 +405,16 @@ Resumindo:
 :
 O sistema de fome no shard não é muito complexo mas também possui consequências para os personagens que ignoram o sistema. De outras fases, sempre fizemos sistemas que traziam pequenos incômodos para quem não se alimentasse, percebemos que isso fazia com que a maioria simplesmente ignorasse a comida. Não queremos tornar chato ou prejudicar a jogabilidade a ponto de fazer a pessoa morrer de fome, mas fazer um sistema que incentive a alimentação, além de valorizar uma perícia (Domestic’s Work), ajuda na imersão no jogo: aqueles momentos de parar a noite para fazer um acampamento e acender uma fogueira ou as visitas à taverna.
 
-O sistema foi simplificado, existem 5 níveis de fome, que podem ser vistas no comando .fome. O nível 0 e 1 é o considerado “sem fome” ou “satisfeito”, o nível 4 a fome está prejudicando você e no nível 5 você está “faminto”. As comidas satisfazem melhor conforme mais elaboradas elas são, as mais simples como uma carne assada ou uma fruta alimentam muito pouco enquanto pratos mais elaborados saciam muito mais.
+O sistema foi simplificado: existem 6 níveis de fome (de 0 a 5), vistos no comando .fome. Dos níveis 0 a 2 você está bem alimentado ou apenas satisfeito; **a partir do nível 3 (“com fome”) a fome começa a prejudicar você**, piorando até o nível 5, quando está “faminto”. As comidas satisfazem melhor conforme mais elaboradas elas são: as mais simples como uma carne assada ou uma fruta alimentam muito pouco, enquanto pratos mais elaborados saciam muito mais.
 :
 ### Penalidades
-Uma pessoa faminta se encontra em estado frágil e, portanto, sofre penalidades pelo estado enfraquecido.
+Uma pessoa com fome se encontra em estado frágil e, portanto, sofre penalidades pelo enfraquecimento. A partir do nível 3, a fome reduz sua **Força, Destreza e Inteligência**, e a penalidade aumenta a cada nível:
 :
-As penalidades pela fome 4 são:
-- -10 em todos os atributos
-- -10 nos testes de resistência
-
- As penalidades pela fome 5 são:
-
-- -20 em todos os atributos
-- -20 nos testes de resistência
+- **Nível 3 (com fome):** penalidade moderada
+- **Nível 4 (com muita fome):** penalidade maior
+- **Nível 5 (faminto):** penalidade severa
+:
+Personagens com **Fortitude** alta o bastante resistem por completo aos efeitos da fome — nesse caso, nenhuma penalidade é aplicada. Não existe uma penalidade direta “nos testes de resistência”: como Força, Destreza e Inteligência alimentam Fortitude, Reflexos e Vontade, passar fome apenas enfraquece suas resistências de forma indireta.
 
 A stamina além de ser usada no movimento, sendo extremamente útil numa fuga ou em combates longos, também é usada com as habilidades dos Caminhos. Já os testes de resistência ajudam a evitar danos, efeitos de magia, armadilhas ou clima.
 
@@ -472,22 +470,29 @@ Determina sua agilidade para evitar e desviar de coisas rápidas e inesperadas. 
 ##### Vontade
 Determina a sua resistência a efeitos que afetam a sua mente, principalmente as magias.
 :
-O efeito de passar em um teste de resistência depende do teste, algumas magias são completamente evitadas caso resistidas, outras causam metade do efeito. Com armadilhas por exemplo, sempre metade do dano é evitado caso passe no teste.Cada teste também possui uma dificuldade própria, o das magias é definido pelo Arcana do mago que invocou a magia, as armadilhas tem dificuldades maiores de acordo com o dano que elas causam, os venenos de acordo com o level deles, etc.
+O efeito de passar em um teste de resistência depende do teste, algumas magias são completamente evitadas caso resistidas, outras causam metade do efeito. Com armadilhas por exemplo, sempre metade do dano é evitado caso passe no teste.Cada teste também possui uma dificuldade própria, definida por quem aplica o efeito: a das magias geralmente vem do Arcana do conjurador, as armadilhas têm dificuldades maiores conforme o dano que causam, os venenos conforme o seu nível, etc.
+:
+{{note
+##### Como o teste é rolado
+Um teste de resistência é uma rolagem de **1d20 + Valor da Resistência** contra a dificuldade do efeito. Tirar **1** no dado é falha automática; tirar **20** é sucesso automático. Algumas origens, ao falhar, ganham uma **segunda rolagem** (o dado é jogado mais uma vez): Drow e nascidos em Har'oloth, portadores de Aura Divina e almas profundamente corrompidas refazem qualquer teste de **Fortitude**; Anões refazem testes de **Vontade**; e qualquer Colhesiano refaz **qualquer** teste de resistência.
+}}
 :
 #### Valor da Resistência
 É possível ver a resistência do seu personagem na barra de Status:
 :
 O valor é definido por: ::
-**Valor da Resistência** = Caminho do Personagem + Bônus de Atributo + Outros Bônus
+**Valor da Resistência** = Bônus de Classe + Bônus de Atributo + Outros Bônus
 ::
 ![](http://flsgenese.wdfiles.com/local--files/sistemas:resistencia/statusbar.png) {width:325px,mix-blend-mode:multiply,border:"3px solid",border-radius:10px}
-*1 - Fortitude; 2 - Vontadee; 3 - Reflexos*
+*1 - Fortitude; 2 - Vontade; 3 - Reflexos*
 :
-O bônus do Caminho do Personagem para o Caminho das Armas, Caminho da Sabedoria e o Caminho do Subterfúgio é de 20 para a resistência principal e 10 para os demais. Para cada 4 pontos em um atributo o personagem ganha 1 da resistência equivalente. Alguns Kits também conferem bônus em resistências.
+Cada Caminho corresponde a um arquétipo de classe — guerreiro (Caminho das Armas), ladino (Caminho do Subterfúgio) ou sábio (Caminho da Sabedoria) — e esse arquétipo define a sua resistência principal: Fortitude para guerreiros, Reflexos para ladinos e Vontade para sábios. Você recebe um **bônus de classe maior na sua resistência principal e um bônus menor nas outras duas**. Além disso, **para cada 20 pontos no atributo regente você ganha +1** na resistência correspondente (Força → Fortitude, Destreza → Reflexos, Inteligência → Vontade).
+
+Raça, cultura, Características e Habilidades também somam: humanos recebem um pequeno bônus nas três resistências; Características como *Fortitude do Urso*, *Reflexos de Pantera* e *Vontade da Águia* reforçam a sua; e certas Habilidades de classe elevam uma resistência específica. Por fim, **entropia extrema** altera Fortitude e Vontade — para cima quando muito alta, para baixo quando muito negativa — e a **corrupção** reduz a Fortitude. Outros efeitos pontuais ainda podem somar ou subtrair de cada resistência.
 ::
 {{note
 ##### Exemplo
-Um personagem do Caminho das Armas, com 100 de Força e 70 de Destreza teria 45 em Fortitude, 27.5 em Reflexos e 20 em Vontade.
+Um humano do Caminho das Armas com 100 de Força e 70 de Destreza tem por volta de 12 em Fortitude (resistência principal), 7 em Reflexos e 4 em Vontade. Os valores reais são modestos — resistência se constrói com vários bônus pequenos, não com um único número grande.
 }}
 :
 #### Testes por GMs
@@ -2807,7 +2812,7 @@ A cada ponto de Caminho gasto, o jogador poderá escolher uma habilidade dentre 
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Ao usar uma arma de uma mão sem escudo: +5 de chance de crítico e -2 na chance de acerto do inimigo.
+Ao usar uma arma de uma mão sem escudo: +3 de dano e -2 na chance de acerto do inimigo.
 
 ::
 
@@ -2818,7 +2823,7 @@ Ao usar uma arma de uma mão sem escudo: +5 de chance de crítico e -2 na chance
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Ao usar uma arma de uma mão com escudo: +2 de dano e -2 na chance de acerto do inimigo.
+Ao usar uma arma de uma mão com escudo: +5 de chance de aparar e -2 na chance de acerto do inimigo.
 
 ::
 
@@ -2915,7 +2920,7 @@ Reduz a penalidade de destreza em 2 ao usar armadura pesada.
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Reduz o cooldown de aparar em 20%.
+Reduz o cooldown de aparar em 20% — aplicado apenas quando você apara com um escudo equipado.
 
 ::
 
@@ -3082,17 +3087,6 @@ Você tem bastante talento para encontrar joias enquanto minera. Sua chance de e
 
 ::
 
-### Corte Limpo
-*Habilidade de Caminho*
-
-**Tipo:**     :: Passiva
-**Custo:**    :: --
-**Cooldown:** :: --
-
-Você corta lenha com tanta precisão que consegue retirar mais toras de madeira por árvore cortada.
-
-::
-
 ### Minerar Raridades
 *Habilidade de Caminho*
 
@@ -3256,7 +3250,7 @@ Você é capaz de decifrar escritos antigos.
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Ao colher um reagente vegetal, você tem 30% de chance de obter o dobro.
+Ao colher um reagente vegetal, você tem 30% de chance de colher uma unidade extra.
 
 ::
 
@@ -3583,7 +3577,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 30 stamina
 **Cooldown:** :: 60s
 
-Você dispara uma flecha em linha reta que causa dano em todos no caminho dela.
+Você dispara um tiro certeiro e implacável: o ataque é um acerto garantido e deixa o alvo paralisado por alguns segundos.
 
 ::::
 
@@ -3595,7 +3589,7 @@ Você dispara uma flecha em linha reta que causa dano em todos no caminho dela.
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 120s
 
-Por alguns segundos, baseados no seu *Tactics*, seus disparos adicionam destreza ao dano.
+Por alguns segundos (baseados no seu *Tactics*), seus disparos causam dano adicional proporcional à sua perícia *Ranged*.
 
 ::
 
@@ -3699,7 +3693,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 120s
 
-Você entra num estado de fúria cujo dano adicional e duração são baseados no seu *Tactics*.
+Você entra num estado de fúria cujo dano adicional e duração são baseados no seu *Tactics*. Não pode ser usada com armadura equipada.
 
 ::
 
@@ -3710,7 +3704,7 @@ Você entra num estado de fúria cujo dano adicional e duração são baseados n
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 120s
 
-Você ignora a dor de golpes recebidos, ganhando um bônus na resistência física. Ativamente, recupera HP por um período.
+Enquanto estiver em Fúria, você pode ativar esta habilidade para recuperar HP por um período.
 
 ::
 
@@ -3721,7 +3715,7 @@ Você ignora a dor de golpes recebidos, ganhando um bônus na resistência físi
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Você aterroriza seus inimigos, reduzindo a chance de acerto deles. Além disso, fica imune a críticos e paralisia, e passa a usar *Fortitude* para resistir diversas magias.
+Enquanto estiver em Fúria, você fica imune a golpes críticos e seus próprios ataques se tornam mais certeiros.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -3736,7 +3730,7 @@ Você aterroriza seus inimigos, reduzindo a chance de acerto deles. Além disso,
 **Custo:**    :: 25 stamina
 **Cooldown:** :: 120s
 
-Você recebe um bônus em HP e sempre contra-ataca quando for acertado.
+Você recebe um bônus em HP e sempre contra-ataca quando for acertado. Só pode ser ativada enquanto estiver em Fúria.
 
 \column
 
@@ -3793,9 +3787,9 @@ Os Caçadores são vigilantes incansáveis da natureza e mestres da perseguiçã
 #### Caçador
 | Level | Habilidades |
 |:-----:|:-----------:|
-|  2 |Camuflagem |
-|  6 |Caçador Experiente |
-|  10 |Mestre de Feras |
+|  2 |Vínculo de Guerra |
+|  6 |Comando de Feras |
+|  10 |Despertar Selvagem |
 |  14 |Espreita Selvagem |
 |  20 |Caçador Implacável |
 
@@ -3806,34 +3800,34 @@ Os Caçadores são vigilantes incansáveis da natureza e mestres da perseguiçã
 ## Habilidades
 A cada level alcançado, o jogador poderá escolher uma habilidade dentre as opções disponíveis para o level em referência.
 
-### Camuflagem
+### Vínculo de Guerra
 *Habilidade Nível 2*
 
-**Tipo:**     :: Ativa
-**Custo:**    :: 15 stamina
-**Cooldown:** :: 120s
+**Tipo:**     :: Passiva
+**Custo:**    :: --
+**Cooldown:** :: --
 
-Você consegue se esgueirar fora de cidades. Caso tenha um pet, ele se esgueirará junto e, se ele acertar o próximo ataque, será um crítico.
+A natureza selvagem moldou seu estilo de batalha. Você ganha um vínculo de guerra adicional com suas feras e o conhecimento para fabricar redes jogáveis e armadilhas de caça.
 
 
-### Caçador Experiente
+### Comando de Feras
 *Habilidade Nível 6*
 
 **Tipo:**     :: Ativa
 **Custo:**    :: 20 stamina
-**Cooldown:** :: 180s
+**Cooldown:** :: 120s
 
-Você é um especialista em sobrevivência. Sabe como fazer redes jogáveis usando cordas e instalar armadilhas de caça. Além disso, é capaz de rastrear e proteger um grupo que esteja liderando dos efeitos adversos do clima.
+Emita ordens de batalha às suas feras de guerra. Os comandos disponíveis — atacar, proteger, emboscar, recuar e farejar — aumentam conforme o seu domínio de Beastmastery.
 
 
-### Mestre de Feras
+### Despertar Selvagem
 *Habilidade Nível 10*
 
 **Tipo:**     :: Passiva
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Você possui a habilidade de despertar a verdadeira natureza do seu animal fiel, alterando seus atributos físicos e despertando um instinto selvagem que aumenta o dano crítico do animal de acordo com o tipo de fera.
+Você desperta a verdadeira natureza do seu animal fiel, alterando seus atributos físicos e despertando um instinto selvagem que aumenta o dano crítico de acordo com o tipo de fera. Também concede resistência ao clima e melhora o rastreamento de quem você lidera.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -4128,7 +4122,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 30 stamina
 **Cooldown:** :: 180s
 
-O monge dispara uma sequência de golpes rápidos. Sua esquiva passiva também aumenta. Ambos os efeitos escalam com o seu *Tactics*.
+O monge dispara uma sequência de golpes rápidos cuja quantidade escala com *Wrestling*. Passivamente, sua esquiva aumenta com *Tactics*, e ele ganha dano extra ao lutar desarmado (perícia de punhos) e sem armadura pesada.
 
 <br>
 <br>
@@ -4153,7 +4147,7 @@ Seu próximo ataque causará uma explosão de força. Após o golpe, sua postura
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 180s
 
-Este estilo concede proteção física e resistência climática passivamente. Ativamente, seu próximo ataque causará sangramento no oponente.
+Este estilo concede esquiva (inimigos têm mais dificuldade de acertá-lo) e resistência climática passivamente. Ativamente, seu próximo ataque causará sangramento no oponente.
 
 <br>
 <br>
@@ -4250,7 +4244,7 @@ Alterando seu corpo através de mutações, você consegue aumentar uma resistê
 **Custo:**        :: 20 stamina
 **Cooldown:**     :: 600s
 
-Você aprende a criar óleos para armas que ferem com mais eficácia determinados tipos de alvos. Adicionalmente, você recebe um bônus de acerto baseado na sua habilidade em alquimia.
+Você aprende a criar óleos para armas que ferem com mais eficácia determinados tipos de alvos. Adicionalmente, você recebe um bônus de acerto baseado na sua perícia *Science*.
 
 ::
 
@@ -4286,7 +4280,7 @@ Eureka! Você aprende a manusear a fórmula 90, além de aprender a criar resina
 **Custo:**        :: 5 mana
 **Cooldown:**     :: 10s
 
-Você descobriu uma fórmula secreta para criar mutagênicos que alteram permanentemente seu metabolismo. Escolha um aprimoramento em destreza, força ou inteligência. Adicionalmente, você aprende a criar e utilizar a Pedra Filosofal.
+Você descobriu uma fórmula secreta para criar mutagênicos que alteram seu metabolismo. Ao ativar, escolha um aprimoramento em destreza, força ou inteligência (que também reforça a vitalidade ligada a esse atributo); ativar de novo desfaz o efeito.
 
 {{imageMaskEdge4,--offset:0%,--rotation:270
   ![](https://i.imgur.com/Adgptje.png){height:100%,right:-80%}
@@ -4393,7 +4387,7 @@ Você inspira seus aliados com sua fé inabalável, podendo ordenar diferentes c
 **Custo:**    :: 40 stamina
 **Cooldown:** :: 300s
 
-Sua presença em campo é suficiente para afastar o medo de seus aliados. Você fica imune a medo e inspira sua party com diferentes comandos de fortalecimento.
+Sua presença em campo inspira sua party: através de um menu, você emite diferentes comandos de fortalecimento aos seus aliados.
 
 <br>
 <br>
@@ -4462,7 +4456,7 @@ O espadachim é um mestre guerreiro, dedicado à perfeição de sua postura de c
 
 
 ## Habilidades
-A cada level alcançado, o jogador poderá escolher uma habilidade dentre as opções disponíveis para o level em referência. <br>
+A cada level alcançado, o jogador poderá escolher uma habilidade dentre as opções disponíveis para o level em referência. As habilidades ativas do Samurai não podem ser usadas com um escudo equipado. <br>
 ::
 ### Caminho do Andarilho
 *Habilidade Nível 2*
@@ -4471,7 +4465,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 60s
 
-Você aprendeu a lutar sem depender de escudo ou armadura pesada. Passivamente, não recebe penalidade para defender sem escudo quando sem armadura ou com armaduras leves de madeira. Ao ativar, garante uma defesa.
+Você aprendeu a aparar golpes empunhando apenas a sua arma, sem escudo. Em vez da penalidade que normalmente se sofre ao aparar sem escudo, você recebe um bônus na chance de aparar. Ao ativar, garante a sua próxima defesa.
 
 ::
 
@@ -4653,7 +4647,7 @@ O Arqueiro Arcano renunciou à sua essência mágica inata para devotar sua exis
 |  6 |Ainalaith |
 |  10 |Disparo Canalizado |
 |  14 |Tirothan |
-|  20 |Tempestade Elemental |
+|  20 |Disparo Prismatico |
 
 ##### * Skills Necessárias: Ranged, Arcana
 }}
@@ -4669,8 +4663,8 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 *Habilidade Nível 2*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 10 mana
-**Cooldown:**     :: 180s
+**Custo:**        :: 10 stamina
+**Cooldown:**     :: 10s
 
 Você cria um arco elemental capaz de disparar flechas imbuídas de poder arcano.
 
@@ -4699,13 +4693,13 @@ A cada terceiro disparo consecutivo, seu arco libera um efeito baseado no elemen
 *Habilidade Nível 10*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 20 mana
+**Custo:**        :: 20 stamina
 **Cooldown:**     :: 180s
 
-Você canaliza os elementos em um super efeito baseado no seu elemento encantado:
-- **Arco Ígneo**: Dispara uma bola de fogo explosiva.
-- **Arco Gélido**: Congela o alvo. Se já estiver congelado, dobra o dano e quebra o gelo.
-- **Arco Elétrico**: Dispara uma flecha para um local onde você se teleporta.
+Você dispara uma flecha em linha reta que atravessa todos os alvos no caminho, aplicando o efeito do seu elemento encantado:
+- **Arco Ígneo**: Queima os alvos atingidos.
+- **Arco Gélido**: Deixa os alvos atingidos mais lentos.
+- **Arco Elétrico**: Você fica oculto por alguns segundos.
 
 ::
 
@@ -4720,17 +4714,17 @@ Seu domínio sobre o arco elemental aumenta consideravelmente seu dano, alcance 
 
 ::
 
-### Tempestade Elemental
+### Disparo Prismatico
 *Habilidade Nível 20*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 30 mana
+**Custo:**        :: 30 stamina
 **Cooldown:**     :: 300s
 
-No ápice do seu caos elemental, você conjura um efeito massivo baseado no seu elemento:
-- **Arco Ígneo**: Uma chuva de flechas de fogo que explodem e incendeiam tudo em área.
-- **Arco Gélido**: Uma chuva de flechas gélidas que congelam todos na área.
-- **Arco Elétrico**: Uma flecha que desencadeia relâmpagos entre todos os inimigos próximos ao alvo.
+Você dispara três flechas em sequência, uma de cada elemento. O efeito final depende do seu elemento ativo:
+- **Arco Ígneo**: A flecha final detona em uma bola de fogo sobre o alvo.
+- **Arco Gélido**: A flecha final congela o alvo.
+- **Arco Elétrico**: A flecha final o lança em um salto etéreo.
 
 <br>
 
@@ -4817,7 +4811,7 @@ Você canaliza energia divina em um ataque devastador contra seus inimigos. Cada
 **Custo:**        :: 20 stamina
 **Cooldown:**     :: 180s
 
-Você se torna imune a doenças e pragas, mais resistente a venenos e não sente mais medo. Além disso, manifesta uma aura de proteção baseada na sua religião.
+Você fica mais resistente a venenos e não sente mais medo. Além disso, manifesta uma aura de proteção baseada na sua religião.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -4894,7 +4888,7 @@ Alguns anões, a partir de suas mentes criativas e seu amor pela tecnologia, for
 |:-----:|:-------------------------:|
 |  2 |Punho Explosivo |
 |  6 |Salto a Vapor |
-|  10 |Gancho de Agarrar |
+|  10 |Ombreira Tática |
 |  14 |Visor de Mira |
 |  20 |Montagem do Golem |
 
@@ -4914,7 +4908,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 
 **Tipo:** :: Ativa
 **Custo:**        :: 10 stamina
-**Cooldown:**     :: --
+**Cooldown:**     :: 5s
 
 Ao ativar, seus golpes corpo a corpo consomem pólvora e causam dano de fogo adicional com empurrão. Permite fabricar pólvora sem alchemy.
 
@@ -4934,14 +4928,14 @@ Você salta para frente e causa uma explosão ao pousar, consumindo pólvora. Se
 
 \page
 
-### Gancho de Agarrar
+### Ombreira Tática
 *Habilidade Nível 10*
 
 **Tipo:** :: Ativa
 **Custo:**        :: 25 stamina
 **Cooldown:**     :: 120s
 
-Você dispara um gancho mecânico em um alvo. Se ele falhar em esquivar, fica paralisado e é puxado até você.
+Dispara o dispositivo instalado na ombreira dos seus Braços a Vapor. Clicando duas vezes nos braços equipados, você instala um canhão de mão, um arpão mecânico (o *Gancho de Agarrar*) ou uma armadilha de pólvora.
 
 ::
 
@@ -4960,8 +4954,8 @@ Você ativa o visor de mira do capacete, ignorando a armadura do alvo nos próxi
 *Habilidade Nível 20*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 40 stamina
-**Cooldown:**     :: 900s
+**Custo:**        :: 1 stamina
+**Cooldown:**     :: 5s
 
 No ápice da sua manufatura, você é capaz de construir seu próprio Golem de metal, pronto para ser pilotado.
 
@@ -5056,7 +5050,7 @@ Você envolve sua arma em energia sombria. Seu próximo ataque causa dano mágic
 **Custo:**    :: 10 stamina | 20 mana
 **Cooldown:** :: 180s
 
-Você se funde com as sombras, tornando-se completamente invisível por algum tempo. Ao sair da invisibilidade na escuridão, assume uma forma borrada, dificultando que os inimigos te acertem.
+Você se funde com as sombras, tornando-se completamente invisível por algum tempo. Enquanto a habilidade está ativa, suas magias de ilusão, arcanas e necromânticas tornam-se mais poderosas.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -5149,7 +5143,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 *Habilidade Nível 2*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 5 mana
+**Custo:**        :: 15 stamina
 **Cooldown:**     :: 300s
 
 Você pode conjurar magias, falar e usar itens mesmo em forma animal. Ativamente, você pode estudar e aprender a forma de criaturas ao seu redor.
@@ -5160,7 +5154,7 @@ Você pode conjurar magias, falar e usar itens mesmo em forma animal. Ativamente
 *Habilidade Nível 6*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 10 mana
+**Custo:**        :: 10 stamina
 **Cooldown:**     :: 60s
 
 Você consegue invocar um espírito da natureza daquela região para lutar ao seu lado.
@@ -5184,11 +5178,11 @@ Sua forma animal se torna ainda mais poderosa quando você está gravemente feri
 ### Coração da Matilha
 *Habilidade Nível 14*
 
-**Tipo:** :: Ativa
-**Custo:**        :: 25 mana
-**Cooldown:**     :: 180s
+**Tipo:** :: Passiva
+**Custo:**        :: --
+**Cooldown:**     :: --
 
-Os animais que atenderam ao seu chamado permanecem por mais tempo e ganham bônus em suas resistências. Ativamente, um dos animais escolhidos por você é abençoado como o exemplo máximo de sua espécie.
+Seu vínculo com a natureza aprofunda o domínio sobre suas formas selvagens: você pode aprender mais formas animais, e suas transformações duram mais e ficam mais poderosas. Suas magias de druida também duram mais tempo.
 
 \column
 
@@ -5196,7 +5190,7 @@ Os animais que atenderam ao seu chamado permanecem por mais tempo e ganham bônu
 *Habilidade Nível 20*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 40 mana
+**Custo:**        :: 40 stamina
 **Cooldown:**     :: 300s
 
 Você aprende a fundir seu espírito com os elementos primordiais da criação, tornando-se uma manifestação viva das forças mais antigas do mundo.
@@ -5261,18 +5255,18 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**        :: 10 mana
 **Cooldown:**     :: 60s
 
-A próxima poção não precisará de todo o processo alquímico. Adicionalmente, suas poções consomem menos reagentes.
+Ativamente, abre o menu de modificação de explosivos. Passivamente, suas poções consomem menos reagentes.
 
 ::
 
 ### Infusão Química
 *Habilidade Nível 6*
 
-**Tipo:** :: Ativa
-**Custo:**        :: 15 mana
-**Cooldown:**     :: 20s
+**Tipo:** :: Passiva
+**Custo:**        :: --
+**Cooldown:**     :: --
 
-Você é capaz de alterar as propriedades químicas de uma poção explosiva, modificando seu efeito.
+Passivamente, desbloqueia a modificação do elemento das suas poções explosivas no menu de explosivos.
 
 ::
 
@@ -5413,7 +5407,7 @@ Você recebe bônus em todas as magias de mago de batalha. Ativamente, você usa
 Dependendo do elemento da sua arma, você ganha bônus na armadura. Se for acertado à curta distância, sua armadura reage:
 - **Gelo**: Congela o atacante.
 - **Fogo**: Incinera o atacante.
-- **Raio**: Você ganha velocidade de movimento.
+- **Raio**: Deixa o atacante mais lento.
 
 ::
 
@@ -5727,7 +5721,7 @@ O xamã é capaz de armazenar as almas dos inimigos abatidos para dar propósito
 **Custo:**        :: 15 stamina | 10 mana
 **Cooldown:**     :: 120s
 
-A cada morte, o deserto responde com um sopro de vida. Você recupera HP a cada inimigo abatido passivamente. Ativamente, recupera vida a cada golpe desferido por um período baseado nas almas coletadas.
+A cada morte, o deserto responde com um sopro de vida. Você recupera HP a cada inimigo abatido passivamente. Ativamente, consome todas as almas coletadas para recuperar vida instantaneamente, proporcional à quantidade de almas reunidas.
 
 ::
 
@@ -5894,11 +5888,11 @@ Assassinos são verdadeiros artistas da execução, habilidosos em emboscadas e 
 ##### Assassino
 | Level | Habilidades | 
 |:-----:|:-----------:|
-|  2 |Salto das Sombras |
-|  6 |Ataque Furtivo |
+|  2 |Assassinar |
+|  6 |Instinto Assassino |
 |  10 |Arsenal Sombrio |
-|  14 |Instinto Assassino |
-|  20 |Faro por Sangue |
+|  14 |Faro por Sangue |
+|  20 |Manto das Sombras |
 
 ##### * Skill Necessária: Sneak
 }}
@@ -5910,25 +5904,25 @@ Assassinos são verdadeiros artistas da execução, habilidosos em emboscadas e 
 ## Habilidades
 A cada level alcançado, o jogador poderá escolher uma habilidade dentre as opções disponíveis para o level em referência.
 
-### Salto das Sombras
+### Assassinar
 *Habilidade Nível 2*
 
 **Tipo:**     :: Ativa
-**Custo:**    :: 10 stamina
+**Custo:**    :: 20 stamina
 **Cooldown:** :: 180s
 
-Você consegue dar um salto furtivo que não consome passos escondidos, aterrissando diretamente nas costas do oponente.
+Você salta até as costas do oponente e prepara um ataque furtivo. Se estiver em modo furtivo, o acerto é garantido.
 
 ::
 
-### Ataque Furtivo
+### Instinto Assassino
 *Habilidade Nível 6*
 
-**Tipo:**     :: Ativa
-**Custo:**    :: 30 stamina
-**Cooldown:** :: 180s
+**Tipo:**     :: Passiva
+**Custo:**    :: --
+**Cooldown:** :: --
 
-Quando ativado em modo furtivo, garante o próximo acerto com dano adicional baseado no seu sneak. Fora do modo furtivo, tenta acertar normalmente.
+Seu Assassinar passa a garantir um crítico e a dobrar o dano causado.
 
 ::
 
@@ -5939,32 +5933,32 @@ Quando ativado em modo furtivo, garante o próximo acerto com dano adicional bas
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Você desenvolveu aptidão e estima por alguns tipos de armas, aumentando seu dano com base no seu sneak.
+Ao usar uma arma de assassino, você adiciona dano adicional com base no seu Sneak.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
 
 \page
 
-### Instinto Assassino
-*Habilidade Nível 14*
-
-**Tipo:**     :: Passiva
-**Custo:**    :: --
-**Cooldown:** :: --
-
-Caso acerte um ataque furtivo, o golpe é sempre um crítico garantido.
-
-::
-
 ### Faro por Sangue
-*Habilidade Nível 20*
+*Habilidade Nível 14*
 
 **Tipo:**     :: Ativa
 **Custo:**    :: 30 stamina
 **Cooldown:** :: 240s
 
 Você fareja o sangue dos feridos, eliminando oponentes debilitados com rapidez letal. Quanto mais ferido o alvo, maiores os seus bônus.
+
+::
+
+### Manto das Sombras
+*Habilidade Nível 20*
+
+**Tipo:**     :: Passiva
+**Custo:**    :: --
+**Cooldown:** :: --
+
+Após acertar um ataque furtivo, você testa seu Sneak contra a Percepção do alvo. Se vencer, retorna imediatamente ao modo furtivo.
 
 :::
 
@@ -6182,15 +6176,15 @@ Como caçador de demônios, você aprendeu a usar sigilos mágicos protetivos me
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 120s
 
-Você sacrifica parte da sua saúde para fortalecer seu próximo ataque. Causa dano extra contra demônios, com efeitos adicionais baseados na sua religião:
+Seu próximo ataque desfere dano divino adicional. Conforme a sua religião, ele também aplica um efeito extra no alvo:
 
-- **Lóre**: Enraíza o alvo
+- **Lóre**: Nenhum efeito adicional (apenas o dano divino)
 - **Veneratio**: Silencia o alvo
-- **Bokk Bharaz**: Invoca uma pistola sagrada com um projétil
-- **Ush'krar**: Causa sangramento
+- **Bokk Bharaz**: Deixa o alvo mais lento
+- **Ush'krar**: Nenhum efeito adicional (apenas o dano divino)
 - **Halleuad**: Cega o alvo
-- **Eluith'orth**: Cria uma ilusão, confundindo alvos ao redor
-- **Kai**: Desarma o oponente / monstros recebem penalidade em acerto
+- **Eluith'orth**: Envolve o alvo em trevas
+- **Kai**: Causa sangramento no alvo
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -6204,7 +6198,7 @@ Você sacrifica parte da sua saúde para fortalecer seu próximo ataque. Causa d
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Uma marca visível de corrupção se manifesta em seu corpo, concedendo bônus contra demônios e a capacidade de senti-los nas proximidades.
+Uma marca visível de corrupção se manifesta em seu corpo, concedendo um bônus de acerto e tornando seus inimigos mais fáceis de atingir.
 
 ::
 
@@ -6302,7 +6296,7 @@ Você consegue esquivar-se por completo de armadilhas quando bem sucedido num te
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 90s
 
-Você consegue distrair criaturas de forma convincente, passando despercebido por elas por algum tempo.
+Você cria uma distração que paralisa por alguns segundos os inimigos imediatamente ao seu redor.
 
 ::
 
@@ -6529,7 +6523,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 10s
 
-Você se esquiva do próximo golpe e recebe um bônus temporário em acerto e esquiva.
+Ao ativar, você se esquiva do próximo golpe. Enquanto tiver esta habilidade, você recebe um bônus permanente em acerto e esquiva.
 
 ::
 
@@ -6540,7 +6534,7 @@ Você se esquiva do próximo golpe e recebe um bônus temporário em acerto e es
 **Custo:**    :: 30 stamina
 **Cooldown:** :: 20s
 
-Passivamente, você usa *Tactics* como *Parry*. Ao ativar, sua destreza aumenta em relação à falta de stamina.
+Passivamente, empunhando um *buckler*, você usa *Tactics* no lugar de *Parry* para aparar. Ao ativar, você regenera stamina por um período.
 
 ::
 
@@ -7025,7 +7019,7 @@ Você aproveita o potencial máximo dos seus venenos, aumentando sua duração, 
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Suas mãos são extremamente firmes, fazendo com que seus golpes sejam mais precisos e causem mais dano.
+Suas mãos são extremamente firmes, fazendo com que seus golpes causem mais dano.
 
 <br>
 <br>
@@ -7288,9 +7282,9 @@ Sua força de vontade é acima da média. Você é mais resistente a efeitos que
 ### Sabe-Tudo
 Você sempre teve facilidade em aprender muitas perícias, mas se especializar não é o seu forte.
 
-**Vantagem:** +5 pontos para comprar perícias
+**Vantagem:** Você começa com mais perícias secundárias do que o normal — 2 primárias e 5 secundárias, no lugar das 3 primárias e 3 secundárias padrão — e suas perícias sobem de nível com mais facilidade.
 
-**Desvantagem:** Apenas uma perícia primária
+**Desvantagem:** Uma perícia primária a menos: você não se especializa tão bem quanto quem foca poucas perícias.
 
 ::
 
@@ -7460,6 +7454,8 @@ ___
 
 As perícias representam o conjunto de habilidades, conhecimentos e talentos específicos que um personagem possui e pode utilizar para superar desafios, resolver problemas e interagir com o ambiente e outros personagens de maneira eficaz. Elas derivam dos atributos básicos do personagem e permitem a realização de ações com maior precisão e sucesso, seja em combate, exploração ou interação social. As perícias refletem a especialização do personagem em determinadas áreas, sendo fundamentais para o desenvolvimento e a progressão dentro do jogo. A escolha e o uso estratégico das perícias podem influenciar significativamente o desenrolar da história e os resultados das ações empreendidas pelos personagens.
 
+As indicações de classe ("Necessário para...") abaixo são orientações de quais classes mais se beneficiam de cada perícia — não são pré-requisitos rígidos cobrados pelo sistema, que libera perícias por categoria e nível, não por classe específica.
+
 
 ::
 ### Perícias de Combate
@@ -7488,7 +7484,7 @@ Parry (Aparar) é a perícia que envolve a habilidade de bloquear ou desviar ata
 :
 
 #### Magery
-Magery (Magia) é a perícia que abrange a capacidade do personagem de conjurar, manipular e controlar energias mágicas para lançar feitiços e realizar atos sobrenaturais. Esta perícia representa tanto o conhecimento teórico quanto a prática de artes mágicas, incluindo a capacidade de canalizar mana ou outras fontes de poder arcano. Personagens proficientes em Magery podem lançar uma variedade de feitiços ofensivos, defensivos e utilitários, tornando-se versáteis em combate e outras situações. **[Necessário para classes: Magus, Lâmina Arcana, Necromante, Deslocador das Sombras, Clérigo, Xamã e Druida]**
+Magery (Magia) é a perícia que abrange a capacidade do personagem de conjurar, manipular e controlar energias mágicas para lançar feitiços e realizar atos sobrenaturais. Esta perícia representa tanto o conhecimento teórico quanto a prática de artes mágicas, incluindo a capacidade de canalizar mana ou outras fontes de poder arcano. Personagens proficientes em Magery podem lançar uma variedade de feitiços ofensivos, defensivos e utilitários, tornando-se versáteis em combate e outras situações. **[É a perícia de conjuração padrão. Conjuradores arcanos conjuram com *Arcana* e conjuradores de magia divina com *Theology* no lugar de Magery — veja essas perícias.]**
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -7928,7 +7924,7 @@ Ajusta a luminosidade aos olhos do alvo, melhorando sua visão.
 ### Orientar
 *Exclusivo: Clérigo*
 
-Você concede uma bênção divina que guia o próximo ataque do alvo.
+Você concede uma bênção divina que melhora a pontaria do alvo por um tempo.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8027,7 +8023,7 @@ Cria uma chama dançante que ilumina a área e causa dano de fogo contínuo ao a
 ::
 
 ### Canção de Ninar
-Uma melodia suave que pode adormecer um alvo caso ele falhe em resistir.
+Uma melodia suave que pode adormecer um alvo caso ele falhe em resistir. O sono dura todo o tempo do efeito e não é interrompido por dano.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8078,7 +8074,7 @@ Uma marcha gloriosa que fortalece a party, aumentando a Força de todos.
 ::
 
 ### O Lamento do Covarde
-Um lamento aterrorizante que pode fazer um alvo fugir de pavor.
+Um lamento aterrorizante que paralisa de pavor um alvo, deixando-o imóvel por um tempo.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8107,7 +8103,7 @@ Conta a história de um tirano derrotado. Causa dano forçado e reduz a Destreza
 ::
 
 ### Escudo dos Ancestrais
-Invoca a proteção dos ancestrais, aumentando a resistência de toda a party.
+Invoca a proteção dos ancestrais, aumentando as resistências elementais e a venenos de toda a party (não protege contra dano físico).
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Distância
@@ -8118,20 +8114,8 @@ Invoca a proteção dos ancestrais, aumentando a resistência de toda a party.
 
 ::
 
-### O Sonho do Louco
-Mergulha um alvo em alucinações que invertem sua percepção de aliados e inimigos.
-##### Características
-- **Alvo:** Único
-- **Alcance:** Distância
-##### Conjuração
-- **Dificuldade:** 40
-- **Custo:** 10 mana
-- **Ciclos:** 1
-
-::
-
 ### Requiem do Silêncio
-Um requiem aterrador que silencia todos os inimigos em uma área de três tiles, impedindo-os de conjurar.
+Um requiem aterrador que, em área, impede inimigos de conjurar suas próprias magias de bardo. Não afeta a conjuração de magos, sacerdotes ou outras escolas.
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Distância
@@ -8149,30 +8133,6 @@ Um requiem aterrador que silencia todos os inimigos em uma área de três tiles,
 
 ### A Ascensão de Crassus
 Eleva toda a party a um estado heroico, aumentando Força, Destreza e Inteligência.
-##### Características
-- **Alvo:** Auto
-- **Alcance:** Distância
-##### Conjuração
-- **Dificuldade:** 60
-- **Custo:** 15 mana
-- **Ciclos:** 1
-
-::
-
-### Dança das Lâminas
-Uma dança vibrante que aumenta a chance de acerto e a velocidade de ataque da party.
-##### Características
-- **Alvo:** Auto
-- **Alcance:** Distância
-##### Conjuração
-- **Dificuldade:** 60
-- **Custo:** 15 mana
-- **Ciclos:** 1
-
-::
-
-### O Chamado Irresistível
-Encanta até três criaturas próximas, fazendo-as lutar ao seu lado temporariamente.
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Distância
@@ -8229,7 +8189,7 @@ A última história. Fortalece toda a party e enfraquece todos os inimigos ao re
 
 # Ninjutsu
 
-Técnicas ancestrais dos Povos do Leste, transmitidas em segredo através de gerações. Diferente das magias convencionais, o Ninjutsu não consome mana, porém precisa ser intervalado para preservar o esforço físico e mental do corpo do praticante.
+Técnicas ancestrais dos Povos do Leste, transmitidas em segredo através de gerações. Como as magias convencionais, cada técnica consome mana; o que as distingue é o intervalo próprio entre usos, que preserva o esforço físico e mental do praticante.
 
 *Exclusivo: Shinobi*
 
@@ -8404,7 +8364,7 @@ Faz com que as ataduras curem mais.
 ::
 
 ### Cura Leve
-Cura ferimentos leves do alvo.
+Cura ferimentos leves do alvo. Em mortos-vivos e demônios, em vez de curar, causa dano equivalente.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8491,7 +8451,7 @@ Um alvo perde todos os encantamentos, buffs ou debuffs. Chance de banir invocaç
 ::
 
 ### Sacrifício
-O paladino transfere todas as suas forças para um alvo, ficando com 1 em cada atributo.
+O paladino transfere a própria vitalidade — vida, stamina e mana — para um alvo, ficando com apenas 1 de cada.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8551,7 +8511,7 @@ O paladino não pode ser alvejado diretamente por magia.
 ## Primeiro Círculo
 
 ### Cura Leve
-Canaliza energia vital para curar ferimentos.
+Canaliza energia vital para curar ferimentos. Em mortos-vivos e demônios, em vez de curar, causa dano equivalente.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8607,7 +8567,7 @@ Compele o alvo a duelar com você.
 ## Terceiro Círculo
 
 ### Disparo Divino
-Projeta uma flecha de energia divina que fere apenas demônios.
+Projeta uma flecha de energia divina que fere qualquer alvo e reduz sua precisão por um tempo. Demônios sofrem dano adicional.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8651,7 +8611,7 @@ Remove encantamentos e tem chance de banir invocações.
 ::
 
 ### Transferência Vital
-Drena a força vital de um demônio e a transfere para um aliado.
+Drena, aos poucos, a força vital de um alvo (que pode resistir com Vontade) e a transfere para um aliado.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8755,7 +8715,7 @@ Detecta se um item possui propriedades mágicas.
 ::
 
 ### Escudo de Fé
-Concede redução de dano ao alvo por alguns segundos.
+Concede redução de dano físico ao alvo por alguns segundos; alvos sem armadura recebem proteção extra. Não acumula com Pele de Árvore.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8767,18 +8727,6 @@ Concede redução de dano ao alvo por alguns segundos.
 ::
 
 ## Segundo Círculo
-
-### Aura Mortis
-Parte do dano que você levar volta para quem causou.
-##### Características
-- **Alvo:** Auto
-- **Alcance:** Distância
-##### Conjuração
-- **Dificuldade:** 40
-- **Custo:** 20 mana
-- **Ciclos:** 1
-
-::
 
 ### Círculo de Proteção
 Você usa sua fé para afastar criaturas malignas na área.
@@ -8832,7 +8780,7 @@ Enquanto a região permanecer calma, todos ao redor do sacerdote ganham regenera
 ::
 
 ### Sacrifício
-O sacerdote troca todo seu HP por uma cura instantânea no alvo.
+O sacerdote fere a si mesmo para curar instantaneamente um alvo ferido. Quanto cura (e quanto se fere) depende de quanto HP falta ao próprio sacerdote — com vida cheia, não cura nada. Não funciona em alvos gravemente feridos demais.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8947,7 +8895,7 @@ O alvo não pode ser alvejado por outras magias.
 ::
 
 ### Ressurreição
-Você consegue trazer um herói cujo corpo não foi violado de volta à vida.
+Você traz um herói caído de volta à vida. É mais garantido logo após a morte; passado esse tempo, só um sacerdote de domínio altíssimo em Theology consegue. Um corpo violado ainda pode ser revivido, mas a alma retorna enfraquecida.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -9277,7 +9225,7 @@ Cria um raio que se propaga entre vários alvos.
 ::
 
 ### Reviver Animais
-Revive um animal morto.
+Revive um animal de estimação morto — apenas os seus próprios pets domesticados.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -9291,7 +9239,7 @@ Revive um animal morto.
 ## Quinto Círculo
 
 ### Crescimento Selvagem
-Videiras espinhosas surgem do chão prendendo todos os inimigos em uma área, paralisando-os e causando dano contínuo.
+Videiras espinhosas surgem do chão prendendo todos os inimigos de uma área no lugar; ao se libertarem, sofrem sangramento.
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Distância
@@ -9351,7 +9299,7 @@ Cura ferimentos leves do alvo.
 ::
 
 ### Despertar
-Acorda o alvo de um desmaio.
+Conjurada sobre o corpo de um personagem caído, desperta-o do desmaio. Não funciona em alguém que ainda esteja de pé.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -9457,7 +9405,7 @@ O alvo não corre risco de morrer caso desmaie.
 ::
 
 ### Sacrificar Animal
-Você recebe uma bênção e proteção contra a morte ao sacrificar um animal.
+Marca um animal para o sacrifício. Para receber a proteção contra a morte, você precisa matá-lo perto de um altar xamânico.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -9483,7 +9431,7 @@ O monstro escolhido não ataca você por um tempo.
 ::
 
 ### Intimidar
-O alvo passa a causar menos dano no combate.
+O alvo passa a errar mais os seus ataques no combate.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -9550,7 +9498,7 @@ Você converte a mana do alvo em HP para o xamã.
 ## Quinto Círculo
 
 ### Rito de Sangue
-Todas as criaturas ao redor com HP abaixo do seu *Theology* explodem e concedem uma alma extra ao xamã.
+Todas as criaturas feridas ao redor (abaixo de um limiar de HP que cresce com seu *Theology* e com as almas já acumuladas) explodem e concedem almas extras ao xamã. Só pode ser conjurada quando o próprio xamã está com pouquíssimos Pontos de Morte.
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Toque
@@ -9613,7 +9561,7 @@ Você evoca um poderoso trovão em seu alvo.
 ### Primeiro Círculo
 
 #### Mísseis Mágicos
-Você cria três dardos brilhantes de força mágica. Cada dardo atinge uma criatura de sua escolha que você possa ver dentro do alcance.
+Você dispara uma rajada de dardos brilhantes de força mágica contra um único alvo à vista. A quantidade de dardos aumenta com a sua *Arcana*.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -9755,9 +9703,9 @@ Aumenta drasticamente a velocidade e agilidade do alvo.
 ### Quinto Círculo
 
 #### Chuva de Gelo
-Invoca uma tempestade de gelo.
+Invoca uma tempestade de gelo que atinge todos numa área.
 ##### Características
-- **Alvo:** Único
+- **Alvo:** Área
 - **Alcance:** Distância
 ##### Conjuração
 - **Dificuldade:** 100
@@ -9767,9 +9715,9 @@ Invoca uma tempestade de gelo.
 ::
 
 #### Chuva de Meteoros
-Invoca uma devastadora chuva de meteoros, causando dano extremo.
+Invoca uma devastadora chuva de meteoros sobre uma área, causando dano extremo.
 ##### Características
-- **Alvo:** Único
+- **Alvo:** Área
 - **Alcance:** Distância
 ##### Conjuração
 - **Dificuldade:** 100

@@ -82,3 +82,57 @@ all 30 class ability lists, racial perk boxes. **Not yet audited:** Passados
   triage which classes to touch first.
 - Run the second pass (Passados, Perícias, all Magias, Faccoes) — Magias is
   the largest single domain still unaudited.
+
+## Code-side issues surfaced during fixes (not handbook bugs)
+
+- **Presença Divina fear immunity unimplemented.** `habilidades.cfg:323`
+  desc promises "Você é imune a medo", but no code grants fear-resist to
+  `PRESENCA_DIVINA` — `medo.src:24` only checks `AURA_DIVINA`. Handbook was
+  corrected to match the engine (2026-05-19); the cfg desc and the missing
+  implementation remain a code TODO for the dev to reconcile (wire the
+  immunity, or fix the cfg desc).
+
+- **Hunger system inert (regression).** `hunger_counter.src` `CalcHunger`
+  no longer increments the `"Hunger"` vital (only pokes `luck_mod`), so
+  hunger never rises past 0; the STR/DEX/INT debuff in
+  `pkg/items/food/include/hunger.inc` is unreachable. Handbook "Sistema de
+  Fome / Penalidades" left describing intended design pending a separate
+  code-fix session (user-owned, 2026-05-19). Revisit handbook after the
+  hunger decay is restored. Also flagged: penalty magnitude fome*10 to 3
+  stats (−30/−40/−50) may be over-tuned vs "pequenos incômodos" intent.
+
+## Second pass (Passados/Perícias/Magias/Faccoes) — 2026-05-19
+
+| Domain | HIGH | MED | LOW | INVENTED |
+|---|---|---|---|---|
+| P — Passados + Faccoes | 0 | 0 | 2 | 0 |
+| Q — Perícias | 1 | 1 | 3 | 0 |
+| M1 — Magias base (truques/cânticos/ninjutsu) | 5 | 4 | 6 | 0 |
+| M2 — Magias Divinas | 6 | 4 | 1 | 0 |
+| M3 — Magias Natureza/Primordiais | 1 | 7 | 2 | 0 |
+
+Code-TODO forks (book describes spell, code doesn't deliver — decide like
+Presença Divina/Hunger): Ninjutsu mana-free header (false), Bardo "O Chamado
+Irresistível" (charm unread by AI), "O Sonho do Louco" (hallucination
+unimplemented), "Requiem do Silêncio" (only blocks bard spells), "Dança das
+Lâminas" (attack-speed TODO), Clérigo "Aura Mortis" (spell 517 commented out
+in priest.cfg → unobtainable). Detail in audit/M1*, M2*.
+
+## Removed from handbook (unimplemented in code) — 2026-05-19
+
+Per user decision, removed these spell entries because the engine does not
+deliver them; re-add when/if implemented:
+- Bardo "O Sonho do Louco" (`#bard_hallucination` set, read by no code)
+- Bardo "Dança das Lâminas" (attack-speed TODO; hit bonus one-swing only)
+- Bardo "O Chamado Irresistível" (`#bard_charmed` set, no AI reads it)
+- Clérigo "Aura Mortis" (Spell 517 fully commented out in priest.cfg)
+CODE-TODO: implement or formally retire these four; handbook will track code.
+
+## Deferred structural fixes (layout-fragile, not yet applied)
+
+- Circle-misplacement (M2): Paladino "Cura Leve" (book Primeiro Círculo, cfg
+  Circle 2) & "Forçar Duelo" (book Segundo, cfg Circle 1) — should swap
+  sections; Caçador de Demônios "Cura Leve" (book Primeiro, cfg Circle 2) →
+  Segundo. Physically moving spell blocks across `## Círculo` sections risks
+  Homebrewery page/column flow; deferred to a focused layout pass. Textual
+  effects of these spells already corrected (undead/demon damage).

@@ -73,7 +73,7 @@ Você canaliza energia divina em um ataque devastador contra seus inimigos. Cada
 **Custo:**        :: 20 stamina
 **Cooldown:**     :: 180s
 
-Você se torna imune a doenças e pragas, mais resistente a venenos e não sente mais medo. Além disso, manifesta uma aura de proteção baseada na sua religião.
+Você fica mais resistente a venenos e não sente mais medo. Além disso, manifesta uma aura de proteção baseada na sua religião.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
