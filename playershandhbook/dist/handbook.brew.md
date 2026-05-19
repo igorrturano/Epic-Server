@@ -3692,7 +3692,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 120s
 
-Você entra num estado de fúria cujo dano adicional e duração são baseados no seu *Tactics*.
+Você entra num estado de fúria cujo dano adicional e duração são baseados no seu *Tactics*. Não pode ser usada com armadura equipada.
 
 ::
 
@@ -3729,7 +3729,7 @@ Enquanto estiver em Fúria, você fica imune a golpes críticos e seus próprios
 **Custo:**    :: 25 stamina
 **Cooldown:** :: 120s
 
-Você recebe um bônus em HP e sempre contra-ataca quando for acertado.
+Você recebe um bônus em HP e sempre contra-ataca quando for acertado. Só pode ser ativada enquanto estiver em Fúria.
 
 \column
 
@@ -4121,7 +4121,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 30 stamina
 **Cooldown:** :: 180s
 
-O monge dispara uma sequência de golpes rápidos. Sua esquiva passiva também aumenta. Ambos os efeitos escalam com o seu *Tactics*.
+O monge dispara uma sequência de golpes rápidos cuja quantidade escala com *Wrestling*. Passivamente, sua esquiva aumenta com *Tactics*, e ele ganha dano extra ao lutar desarmado (perícia de punhos) e sem armadura pesada.
 
 <br>
 <br>
@@ -4279,7 +4279,7 @@ Eureka! Você aprende a manusear a fórmula 90, além de aprender a criar resina
 **Custo:**        :: 5 mana
 **Cooldown:**     :: 10s
 
-Você descobriu uma fórmula secreta para criar mutagênicos que alteram permanentemente seu metabolismo. Escolha um aprimoramento em destreza, força ou inteligência. Adicionalmente, você aprende a criar e utilizar a Pedra Filosofal.
+Você descobriu uma fórmula secreta para criar mutagênicos que alteram seu metabolismo. Ao ativar, escolha um aprimoramento em destreza, força ou inteligência (que também reforça a vitalidade ligada a esse atributo); ativar de novo desfaz o efeito.
 
 {{imageMaskEdge4,--offset:0%,--rotation:270
   ![](https://i.imgur.com/Adgptje.png){height:100%,right:-80%}
@@ -4455,7 +4455,7 @@ O espadachim é um mestre guerreiro, dedicado à perfeição de sua postura de c
 
 
 ## Habilidades
-A cada level alcançado, o jogador poderá escolher uma habilidade dentre as opções disponíveis para o level em referência. <br>
+A cada level alcançado, o jogador poderá escolher uma habilidade dentre as opções disponíveis para o level em referência. As habilidades ativas do Samurai não podem ser usadas com um escudo equipado. <br>
 ::
 ### Caminho do Andarilho
 *Habilidade Nível 2*
@@ -6295,7 +6295,7 @@ Você consegue esquivar-se por completo de armadilhas quando bem sucedido num te
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 90s
 
-Você consegue distrair criaturas de forma convincente, passando despercebido por elas por algum tempo.
+Você cria uma distração que paralisa por alguns segundos os inimigos imediatamente ao seu redor.
 
 ::
 
