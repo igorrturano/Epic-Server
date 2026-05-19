@@ -13,27 +13,30 @@ program SpellScript(params)
 	var info := params[2];
 	params := 0; // No longer needed
 
-	SendSysMessageEx(who, "Escolha para onde quer mover.", SSM_REQUEST);
-	var loc := TargetCoordinates(who);
-	if (!loc)
-		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
-		return 0;
-	endif
-
-	if (!CheckLosAt(who, loc.x, loc.y, loc.z))
-		SendSysMessageEx(who, "Voce nao ve o alvo.", SSM_FAIL);
-		return 0;
-	endif
-
 	// Normalized to the central spell range formula
 	// (5 + skill/10 + spec/NPC + SpellRange ability). Self-cast ground-target,
 	// so the central gate in cast_spell.src does not cover this — we resolve
-	// the same reach locally.
+	// the same reach locally, and re-prompt on bad clicks so a misclick
+	// doesn't fizzle the whole cast.
 	var max_range := distanceAllowedForSpells(who, HandleSpellSkill(who), info.School);
-	if (Distance(who, loc) > max_range)
-		SendSysMessageEx(who, $"O destino esta muito distante. Alcance maximo: {max_range} tiles.", SSM_FAIL);
-		return 0;
-	endif
+	var loc;
+	while (1)
+		SendSysMessageEx(who, "Escolha para onde quer mover.", SSM_REQUEST);
+		loc := TargetCoordinates(who);
+		if (!loc)
+			SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+			return 0;
+		endif
+		if (!CheckLosAt(who, loc.x, loc.y, loc.z))
+			SendSysMessageEx(who, "Voce nao ve o destino. Escolha outro local.", SSM_FAIL);
+			continue;
+		endif
+		if (Distance(who, loc) > max_range)
+			SendSysMessageEx(who, $"O destino esta muito distante. Alcance maximo: {max_range} tiles. Escolha outro local.", SSM_FAIL);
+			continue;
+		endif
+		break;
+	endwhile
 
 	TurnObjectToward(who, loc.x, loc.y);
 
