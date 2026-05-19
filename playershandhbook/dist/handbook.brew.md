@@ -5061,7 +5061,7 @@ Você envolve sua arma em energia sombria. Seu próximo ataque causa dano mágic
 **Custo:**    :: 10 stamina | 20 mana
 **Cooldown:** :: 180s
 
-Você se funde com as sombras, tornando-se completamente invisível por algum tempo. Ao sair da invisibilidade na escuridão, assume uma forma borrada, dificultando que os inimigos te acertem.
+Você se funde com as sombras, tornando-se completamente invisível por algum tempo. Enquanto a habilidade está ativa, suas magias de ilusão, arcanas e necromânticas tornam-se mais poderosas.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -5154,7 +5154,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 *Habilidade Nível 2*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 5 mana
+**Custo:**        :: 15 stamina
 **Cooldown:**     :: 300s
 
 Você pode conjurar magias, falar e usar itens mesmo em forma animal. Ativamente, você pode estudar e aprender a forma de criaturas ao seu redor.
@@ -5165,7 +5165,7 @@ Você pode conjurar magias, falar e usar itens mesmo em forma animal. Ativamente
 *Habilidade Nível 6*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 10 mana
+**Custo:**        :: 10 stamina
 **Cooldown:**     :: 60s
 
 Você consegue invocar um espírito da natureza daquela região para lutar ao seu lado.
@@ -5189,11 +5189,11 @@ Sua forma animal se torna ainda mais poderosa quando você está gravemente feri
 ### Coração da Matilha
 *Habilidade Nível 14*
 
-**Tipo:** :: Ativa
-**Custo:**        :: 25 mana
-**Cooldown:**     :: 180s
+**Tipo:** :: Passiva
+**Custo:**        :: --
+**Cooldown:**     :: --
 
-Os animais que atenderam ao seu chamado permanecem por mais tempo e ganham bônus em suas resistências. Ativamente, um dos animais escolhidos por você é abençoado como o exemplo máximo de sua espécie.
+Seu vínculo com a natureza aprofunda o domínio sobre suas formas selvagens: você pode aprender mais formas animais, e suas transformações duram mais e ficam mais poderosas. Suas magias de druida também duram mais tempo.
 
 \column
 
@@ -5201,7 +5201,7 @@ Os animais que atenderam ao seu chamado permanecem por mais tempo e ganham bônu
 *Habilidade Nível 20*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 40 mana
+**Custo:**        :: 40 stamina
 **Cooldown:**     :: 300s
 
 Você aprende a fundir seu espírito com os elementos primordiais da criação, tornando-se uma manifestação viva das forças mais antigas do mundo.
@@ -5266,18 +5266,18 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**        :: 10 mana
 **Cooldown:**     :: 60s
 
-A próxima poção não precisará de todo o processo alquímico. Adicionalmente, suas poções consomem menos reagentes.
+Ativamente, abre o menu de modificação de explosivos. Passivamente, suas poções consomem menos reagentes.
 
 ::
 
 ### Infusão Química
 *Habilidade Nível 6*
 
-**Tipo:** :: Ativa
-**Custo:**        :: 15 mana
-**Cooldown:**     :: 20s
+**Tipo:** :: Passiva
+**Custo:**        :: --
+**Cooldown:**     :: --
 
-Você é capaz de alterar as propriedades químicas de uma poção explosiva, modificando seu efeito.
+Passivamente, desbloqueia a modificação do elemento das suas poções explosivas no menu de explosivos.
 
 ::
 
