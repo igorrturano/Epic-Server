@@ -8484,7 +8484,7 @@ Um alvo perde todos os encantamentos, buffs ou debuffs. Chance de banir invocaç
 ::
 
 ### Sacrifício
-O paladino transfere todas as suas forças para um alvo, ficando com 1 em cada atributo.
+O paladino transfere a própria vitalidade — vida, stamina e mana — para um alvo, ficando com apenas 1 de cada.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8600,7 +8600,7 @@ Compele o alvo a duelar com você.
 ## Terceiro Círculo
 
 ### Disparo Divino
-Projeta uma flecha de energia divina que fere apenas demônios.
+Projeta uma flecha de energia divina que fere qualquer alvo e reduz sua precisão por um tempo. Demônios sofrem dano adicional.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8644,7 +8644,7 @@ Remove encantamentos e tem chance de banir invocações.
 ::
 
 ### Transferência Vital
-Drena a força vital de um demônio e a transfere para um aliado.
+Drena, aos poucos, a força vital de um alvo (que pode resistir com Vontade) e a transfere para um aliado.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8825,7 +8825,7 @@ Enquanto a região permanecer calma, todos ao redor do sacerdote ganham regenera
 ::
 
 ### Sacrifício
-O sacerdote troca todo seu HP por uma cura instantânea no alvo.
+O sacerdote fere a si mesmo para curar instantaneamente um alvo ferido. Quanto cura (e quanto se fere) depende de quanto HP falta ao próprio sacerdote — com vida cheia, não cura nada. Não funciona em alvos gravemente feridos demais.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8940,7 +8940,7 @@ O alvo não pode ser alvejado por outras magias.
 ::
 
 ### Ressurreição
-Você consegue trazer um herói cujo corpo não foi violado de volta à vida.
+Você traz um herói caído de volta à vida. É mais garantido logo após a morte; passado esse tempo, só um sacerdote de domínio altíssimo em Theology consegue. Um corpo violado ainda pode ser revivido, mas a alma retorna enfraquecida.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
