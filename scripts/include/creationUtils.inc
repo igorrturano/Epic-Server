@@ -10,6 +10,7 @@ include ":gumps:epicGumps";
 include ":message:include/model/Message";
 include ":spells:SpellRegistry";
 include "include/epicEconomyAudit";
+include ":dyes:dyes";
 //include ":nature:nature";
 //include ":charactercreation:include/RPTraits";
 
@@ -1156,30 +1157,81 @@ endfunction
 
 function genericItems(who)
     var chardata := GetObjProperty(who, "chardata");
-    var skills := chardata.Skills;
-    
-    var robe := CreateItemInicial(who, 0x1F03, 1); // Roupa
-    EquipItem(who, robe);
+
     var moedas := "1d4";
     if (chardata.classe == GUERREIRO)
         moedas := "1d8";
     elseif (chardata.classe == LADINO)
         moedas := "1d12";
     endif
-	var cobre_qty := RandomDiceRoll(moedas);
-	var cobre_stack := CreateItemInBackpack(who, 0xba63, cobre_qty); //moedas de cobre
-	EA_Record(EA_MINT_CHARGEN, cobre_stack, cobre_qty, "CHARGEN:class:" + CStr(chardata.classe), who, "");
-    if (chardata.culture == BADURAN)
-        CreateItemInicial(who, "boots", 1); 
-    else
-        CreateItemInicial(who, 0x170D, 1); // Sandals
-    endif
-    CreateItemInicial(who, 0x152e, 1); // short pants
-    CreateItemInicial(who, 0x1517, 1); // shirt
+    var cobre_qty := RandomDiceRoll(moedas);
+    var cobre_stack := CreateItemInBackpack(who, 0xba63, cobre_qty); //moedas de cobre
+    EA_Record(EA_MINT_CHARGEN, cobre_stack, cobre_qty, "CHARGEN:class:" + CStr(chardata.classe), who, "");
+
+    CulturalStarterOutfit(who, chardata.culture);
+
     CreateItemInBackpack(who, 3940, 1); // torch
     CreateItemInBackpack(who, 0xC61F, 1); // laterna cintura
     var oleo := CreateItemInicial(who, 0x606f, 2); // Oleo de Polir Equipamentos
     SetObjProperty(oleo, "descmod", "Óleo de polir equipamentos" + "<br>");
+endfunction
+
+// Per-culture starter outfit. Each piece is colored independently from the
+// culture's palette (GetRPColorValue) and equipped. Layers used: outer torso
+// (robe), inner torso (shirt/tunic/doublet), pants, feet — no conflicts.
+function CulturalStarterOutfit(who, culture)
+    var outfit := CulturalOutfitTable(culture);
+    foreach piece in (outfit)
+        CreateCulturalClothing(who, piece, culture);
+    endforeach
+endfunction
+
+function CulturalOutfitTable(culture)
+    // [robe, top, bottom, footwear]
+    case (culture)
+        AIGLANA:    return array{ 0x1F03, 0x153b, 0x1539, 0x170D }; // Robe, Tunic, LongPants, Sandals
+        HAROLOTH:   return array{ 0x1F03, 0x1545, 0x1539, 0x170B }; // Robe, Doublet, LongPants, Boots
+        LESTE:      return array{ 0x1F03, 0x153b, 0x1539, 0x170D }; // Robe, Tunic, LongPants, Sandals
+        BJORSKA:    return array{ 0x1F03, 0x153b, 0x1537, 0x170B }; // Robe, Tunic, Kilt, Boots
+        ALURIEL:    return array{ 0x1F03, 0x153b, 0x1539, 0x170D }; // Robe, Tunic, LongPants, Sandals
+        BADURAN:    return array{ 0x1F03, 0x1517, 0x152e, 0x170B }; // Robe, Shirt, ShortPants, Boots
+        GULTHRAK:   return array{ 0x1F03, 0x153b, 0x152e, 0x170B }; // Robe, Tunic, ShortPants, Boots
+        COLHESIANA: return array{ 0x1F03, 0x1545, 0x1539, 0x170B }; // Robe, Doublet, LongPants, Boots
+        default:    return array{ 0x1F03, 0x1517, 0x152e, 0x170D }; // Robe, Shirt, ShortPants, Sandals
+    endcase
+endfunction
+
+function CreateCulturalClothing(who, objtype, culture)
+    var item := GeraItemComplexo(
+        who.backpack,
+        objtype,
+        1,
+        RandomIntMinMax(1, 10) > 7 ? "1>2" : 1,
+        1,
+        array{ 0x630e },
+        FABRICACAO_MODO_MATERIAL::MENOR_QUE_TIER
+    );
+    if (!item)
+        SendSysMessageEX(who, "Erro ao criar roupa cultural {}".format(Hex(objtype)), SSM_FAIL);
+        return error;
+    endif
+    item.color := GetRPColorValue(CultureColorKey(culture));
+    EquipItem(who, item);
+    return item;
+endfunction
+
+function CultureColorKey(culture)
+    case (culture)
+        AIGLANA:    return "AIGLANA";
+        HAROLOTH:   return "HAROLOTH";
+        LESTE:      return "LESTE";
+        BJORSKA:    return "BJORSKA";
+        ALURIEL:    return "ALURIEL";
+        BADURAN:    return "BADURAN";
+        GULTHRAK:   return "GULTHRAK";
+        COLHESIANA: return "COLHESIANA";
+        default:    return "Neutro";
+    endcase
 endfunction
 
 function weaponsByClassAndCulture(who)
