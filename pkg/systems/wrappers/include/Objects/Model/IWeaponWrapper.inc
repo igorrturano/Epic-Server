@@ -1,6 +1,7 @@
 class IWeaponWrapper()
 	uninit function GetAttribute(this);
 	uninit function IsGatheringTool(this);
+	uninit function IsAssassin(this);
 	uninit function GetAttackType(this);
 	uninit function GetSpeed(this);
 	uninit function GetMainDamage(this);
