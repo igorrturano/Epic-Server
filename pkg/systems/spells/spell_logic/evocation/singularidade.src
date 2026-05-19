@@ -29,14 +29,6 @@ program spell_singularidade(params)
 		return 0;
 	endif
 
-	var dist := Distance(caster, targ);
-	var dist_allowed := distanceAllowedForSpells(caster, HandleSpellSkill(caster), spell_school);
-
-	if (dist > dist_allowed)
-		SendSysMessage(caster, "O alvo esta muito distante");
-		return 0;
-	endif
-
 	var radius := Cint(AP_GetSkill(caster, ARCANA) / 10);
 	if (radius < 3)
 		radius := 3;

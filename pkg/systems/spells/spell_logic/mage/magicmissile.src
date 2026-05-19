@@ -33,13 +33,6 @@ program SpellScript(params)
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR))
 		mlore := mlore + 1;
 	endif
-	var dist := Distance(who, targ);
-	var dist_allowed := distanceAllowedForSpells(who, HandleSpellSkill(who), spell_school);
-
-	if (dist > dist_allowed)
-		SendSysMessage(who, "O alvo esta muito distante");
-		return 0;
-	endif
 	SendSysMessageEx(who, "Mísseis mágicos saem de sua mão", SSM_INFO);
 	var i := 1;
 	for (i := 1; i <= mlore; i += 1)

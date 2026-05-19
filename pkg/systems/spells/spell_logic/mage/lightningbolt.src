@@ -27,14 +27,6 @@ program cast_lightningbolt(params)
 		return 0;
 	endif
 
-	var dist := Distance(caster, targ);
-	var dist_allowed := distanceAllowedForSpells(caster, HandleSpellSkill(caster), spell_school);
-
-	if (dist > dist_allowed)
-		SendSysMessage(caster, "O alvo esta muito distante");
-		return 0;
-	endif
-
 	PlaySoundEffect(caster, SFX_SPELL_ENERGY_BOLT);
 	// PlayMovingEffectXYZHued(caster, targ, 0xCDE5, 10, 1643, 0);
 	PlayObjectCenteredEffect(targ, 0xCDE5, 15, 10);
