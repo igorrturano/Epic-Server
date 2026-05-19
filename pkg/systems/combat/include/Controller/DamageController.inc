@@ -1080,24 +1080,32 @@ function ApplyCriticalDamage(byRef attackInfo)
 			continue;
 		endif
 
-		foreach armor in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
-			var script := start_script(
-				hitscript,
-				array{
-					attackInfo.GetAttacker().GetObjRef(),
-					attackInfo.GetDefender().GetObjRef(),
-					attackInfo.GetWeapon().GetObjRef(),
-					armor.GetObjRef(),
-					attackInfo.GetDamage().GetTotalBaseDamage(),
-					effectiveRawDmg
-				}
-			);
-			if (!script || script.errortext)
-				Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
-			endif
-
-			SleepMS(2);
+		// Crit scripts read params positionally and ignore the armor slot, but it
+		// must still be filled so basedamage/rawdamage stay at params[5]/[6].
+		// GetEquipBySlot returns an Exception (not an empty array) when the region
+		// is unarmored, so iterate rather than index.
+		var hitArmor := 0;
+		foreach equip in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
+			hitArmor := equip.GetObjRef();
+			break;
 		endforeach
+
+		var script := start_script(
+			hitscript,
+			array{
+				attackInfo.GetAttacker().GetObjRef(),
+				attackInfo.GetDefender().GetObjRef(),
+				attackInfo.GetWeapon().GetObjRef(),
+				hitArmor,
+				attackInfo.GetDamage().GetTotalBaseDamage(),
+				effectiveRawDmg
+			}
+		);
+		if (!script || script.errortext)
+			Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+		endif
+
+		SleepMS(2);
 	endforeach
 
 	return true;
