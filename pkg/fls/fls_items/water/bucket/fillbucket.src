@@ -133,6 +133,7 @@ function EmptyBalde(bucket)
 	info.+x := bucket.x;
 	info.+y := bucket.y;
 	info.+z := bucket.z;
+	info.+realm := bucket.realm;
 
 	ReleaseItem(bucket);
 
