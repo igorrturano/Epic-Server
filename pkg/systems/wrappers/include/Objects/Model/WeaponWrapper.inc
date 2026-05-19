@@ -80,7 +80,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this.Speed := GetSpeedByTier(this.SpeedTier);
 			this.CriticalChance := GetCriticalChanceByTier(this.CriticalChanceTier);
 			this.MaxHP := GetDurabilityByType(this.GetAttackType());
-			this.Weight := this._CalculateWeight();
+			this.Weight := this.GetTemplate().weight;
 			this.StrRequired := this._CalculateSTRRequired();
 			this.Ammo := this.Template.ProjectileType ? Ammo(this.Template.ProjectileType) : uninit;
 			this.MinRange := this.Template.MinRange ?: 0;
