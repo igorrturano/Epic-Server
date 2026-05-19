@@ -269,19 +269,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	// Private functions
 	function __CalculateWeight(this)
-		// TODO: Revisar para ver está calculando correto
-		var weight := 1;
-		
-		if (this.IsShield()) // Se for escudo, peso é o DEX Penalty
-			weight := -(this.Modifiers[DEXTERITY].GetValue()) ?: 1;
-		else // Se não for, é a soma do maior valor de resistência + resistência por slot
-			weight := Max(array{this.Resists.GetSlashResist(), this.Resists.GetPiercingResist(), this.Resists.GetBluntResist()});
-			weight += CInt(getResistPhysicalBySlot(this.GetCoverage()[1]));
-		endif
-
-		weight *= GetWeightMultiplierByMaterial(this.GetMaterial());
-
-		return weight;
+		return CInt(this.GetTemplate().weight * GetWeightMultiplierByMaterial(this.GetColor()));
 	endfunction
 
 	function __CalculateSTRRequired(this)
