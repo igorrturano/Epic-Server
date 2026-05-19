@@ -1,6 +1,21 @@
 # Spec — Resist Saves (Track R)
 
-Status: APPROVED design, R2 in progress.
+Status: IMPLEMENTED 2026-05-19 (R2A–R2G shipped). This file is the
+design record; see commits `aeddeaa95`..`c6ebdf94f` for the live changes.
+
+R2 deltas vs the original "MISSING" list:
+- magicmissile reverted from REFLEX save (auto-hit flavor spell by
+  design — confirmed during smoke test).
+- frostbolt + ignite WILL-partial patterns (slow-on-save / halve-DoT
+  duration) kept as legitimate variants of the WILL convention —
+  these aren't pure "negate" but they ARE intentional partial saves;
+  forcing them to negate would erase deliberate design.
+- turnundead custom-diff and detectarcorrupcao 3-arg CheckResist kept
+  as intentional pre-existing variants (divine/utility spells).
+- Bug fix folded into R2G: banimentoarcano had `CheckResist(..., bonus)`
+  (positive sign) where canonical is `-bonus` — that flipped the
+  Wisdom-path effect from "harder to resist" to "easier to resist".
+  Real bug, not a stylistic normalization.
 
 ## Decisions (locked)
 
