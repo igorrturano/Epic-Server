@@ -14,6 +14,7 @@ include "include/say";
 include ":taming:taming";
 include "include/epicMageryUtils";
 include ":spells:Controller/SC_Damage";
+include ":charactercreation:resists";
 
 program earthquake(parms)
 	var caster := parms[1];
@@ -35,6 +36,8 @@ program earthquake(parms)
 	var range := Cint(AP_GetSKill(caster, THEOLOGY) / 10);
 	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range);
 
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
 	foreach mobile in allMobiles
 		PlaySoundEffect(mobile, SFX_220);
 		sleepms(200);
@@ -46,6 +49,12 @@ program earthquake(parms)
 		sleepms(200);
 		SendSysMessageEx(mobile, "Voce sente o chao tremer com extrema violencia.", SSM_FAIL);
 		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+
+		// REFLEX save halves damage per affected mobile.
+		if (CheckResist(mobile, REFLEXES, diff, -bonus))
+			dmg := Cint(dmg / 2);
+			SendSysMessageEx(mobile, "Voce mantem o equilibrio em parte do tremor.", SSM_INFO);
+		endif
 
 		SC_DealDamage(caster, mobile, CInt(spell.id), cint(dmg), DMG_FORCED);
 		sleepms(600);
