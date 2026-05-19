@@ -410,6 +410,26 @@ function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
 	return retornoEfeitos;
 endfunction
 
+// Resolve uma caracteristica que NAO tem encaixe proprio na receita
+// (manaRegen, manaMaxima, ...) a partir do MATERIAL do componente
+// principal do item. Combina material + qualidade do componente
+// principal, igual MontaPropriedadesComponente faz para as caracteristicas
+// que tem encaixe. Retorna 0 se o item nao for fabricado / sem principal.
+function PegaValorMaterialPrincipalFabricacao(item, caracteristica)
+	var principal := PegaComponenteFabricacao(item);
+	if (TypeOfInt(principal) == OT_ERROR || !principal)
+		return 0;
+	endif
+
+	var chaveMaterial := principal.material.chave;
+	if (TypeOfInt(chaveMaterial) == OT_ERROR || !chaveMaterial)
+		return 0;
+	endif
+
+	var efeitos := InterpretaMaterialEfeitos(caracteristica, chaveMaterial);
+	return Cint(efeitos.valorPrincipal) + Cint(principal.tier.valor);
+endfunction
+
 function AplicaFechadura(quem, item)
 	var levelFechadura := PegaValorFabricacao(item, CARACTERISTICA_FABRICACAO_TRANCA);
 	
