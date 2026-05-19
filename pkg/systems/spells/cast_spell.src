@@ -115,10 +115,10 @@ function initializeSpellCasting(mobile, mw, byref spellinfo, scroll)
 		return 0;
 	endif
 
-	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) && spellinfo.Type != "Ninjutsu"
-		&& !isMobileCastActive(mobile, spellinfo.School))
-		mobile.frozen := 1;
-	endif
+	// Freeze used to happen here, but with target-before-mana the player is
+	// frozen DURING the cursor prompt and the client treats a frozen-caster
+	// Target() as auto-cancelled. Freeze is now applied at the start of
+	// performCastingProcess (the cast-bar phase, post-target).
 
 	return 1;
 endfunction
@@ -300,6 +300,14 @@ function performCastingProcess(mobile, mw, spellinfo)
 	mobile.hidden := 0;
 	SetObjProperty(mobile, "#Casting", 1);
 	DistribuiEvento(mobile, EV_SPELLCAST);
+
+	// Freeze the caster for the cast bar (moved here from initializeSpellCasting
+	// so target selection happens on an unfrozen caster — frozen breaks the
+	// client cursor).
+	if (!mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) && spellinfo.Type != "Ninjutsu"
+		&& !isMobileCastActive(mobile, spellinfo.School))
+		mobile.frozen := 1;
+	endif
 
 	// if (!mobile.npctemplate)
 	performSpellVocalization(mobile, spellinfo);
