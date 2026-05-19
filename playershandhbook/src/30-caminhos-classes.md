@@ -354,7 +354,7 @@ Reduz a penalidade de destreza em 2 ao usar armadura pesada.
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Reduz o cooldown de aparar em 20%.
+Reduz o cooldown de aparar em 20% — aplicado apenas quando você apara com um escudo equipado.
 
 ::
 
@@ -684,7 +684,7 @@ Você é capaz de decifrar escritos antigos.
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Ao colher um reagente vegetal, você tem 30% de chance de obter o dobro.
+Ao colher um reagente vegetal, você tem 30% de chance de colher uma unidade extra.
 
 ::
 

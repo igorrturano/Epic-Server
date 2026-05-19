@@ -270,14 +270,15 @@ O sistema de desmaios e morte é um sistema bastante importante para o funcionam
 :
 ### Pontos de Morte
 :
-Todo personagem tem uma determinada quantidade de Pontos de Morte (ou Death Points, DPs) eles servem para que seu personagem tenha uma capacidade de desmaiar algumas vezes antes de atingir a morte definitiva. A quantidade máxima desses pontos é fixada em quatro, salvo exceções que recebem bônus ou penalidades.
+Todo personagem tem uma determinada quantidade de Pontos de Morte (ou Death Points, DPs) eles servem para que seu personagem tenha uma capacidade de desmaiar algumas vezes antes de atingir a morte definitiva. Normalmente um personagem chega a cinco Pontos de Morte, mas bônus (como certos Kits) ou penalidades podem elevar ou reduzir esse total.
 :
 Para descobrir a quantidade de DPs atual de um determinado personagem, seja o seu ou de terceiros, basta utilizar a perícia Medicine e uma descrição será dada, baseado na definição é possível ter uma idéia da situação de um determinado personagem.
 :
 ##### Pontos de Morte (DP)
 | Mensagem                          | Quantidade |
 |:----------------------------------|:----------:|
-| O alvo está mais do que preparado | 5+         |
+| O alvo está mais do que preparado | 6 ou mais  |
+| O alvo está preparado para tudo   | 5          |
 | O alvo está bastante disposto     | 4          |
 | O alvo está relativamente bem     | 3          |
 | O alvo está mal                   | 2          |
@@ -2919,7 +2920,7 @@ Reduz a penalidade de destreza em 2 ao usar armadura pesada.
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Reduz o cooldown de aparar em 20%.
+Reduz o cooldown de aparar em 20% — aplicado apenas quando você apara com um escudo equipado.
 
 ::
 
@@ -3249,7 +3250,7 @@ Você é capaz de decifrar escritos antigos.
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Ao colher um reagente vegetal, você tem 30% de chance de obter o dobro.
+Ao colher um reagente vegetal, você tem 30% de chance de colher uma unidade extra.
 
 ::
 
@@ -7018,7 +7019,7 @@ Você aproveita o potencial máximo dos seus venenos, aumentando sua duração, 
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Suas mãos são extremamente firmes, fazendo com que seus golpes sejam mais precisos e causem mais dano.
+Suas mãos são extremamente firmes, fazendo com que seus golpes causem mais dano.
 
 <br>
 <br>
