@@ -65,7 +65,7 @@ O xamã é capaz de armazenar as almas dos inimigos abatidos para dar propósito
 **Custo:**        :: 15 stamina | 10 mana
 **Cooldown:**     :: 120s
 
-A cada morte, o deserto responde com um sopro de vida. Você recupera HP a cada inimigo abatido passivamente. Ativamente, recupera vida a cada golpe desferido por um período baseado nas almas coletadas.
+A cada morte, o deserto responde com um sopro de vida. Você recupera HP a cada inimigo abatido passivamente. Ativamente, consome todas as almas coletadas para recuperar vida instantaneamente, proporcional à quantidade de almas reunidas.
 
 ::
 

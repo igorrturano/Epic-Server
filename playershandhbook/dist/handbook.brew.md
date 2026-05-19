@@ -4822,7 +4822,7 @@ Você canaliza energia divina em um ataque devastador contra seus inimigos. Cada
 **Custo:**        :: 20 stamina
 **Cooldown:**     :: 180s
 
-Você se torna imune a doenças e pragas, mais resistente a venenos e não sente mais medo. Além disso, manifesta uma aura de proteção baseada na sua religião.
+Você fica mais resistente a venenos e não sente mais medo. Além disso, manifesta uma aura de proteção baseada na sua religião.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -5418,7 +5418,7 @@ Você recebe bônus em todas as magias de mago de batalha. Ativamente, você usa
 Dependendo do elemento da sua arma, você ganha bônus na armadura. Se for acertado à curta distância, sua armadura reage:
 - **Gelo**: Congela o atacante.
 - **Fogo**: Incinera o atacante.
-- **Raio**: Você ganha velocidade de movimento.
+- **Raio**: Deixa o atacante mais lento.
 
 ::
 
@@ -5732,7 +5732,7 @@ O xamã é capaz de armazenar as almas dos inimigos abatidos para dar propósito
 **Custo:**        :: 15 stamina | 10 mana
 **Cooldown:**     :: 120s
 
-A cada morte, o deserto responde com um sopro de vida. Você recupera HP a cada inimigo abatido passivamente. Ativamente, recupera vida a cada golpe desferido por um período baseado nas almas coletadas.
+A cada morte, o deserto responde com um sopro de vida. Você recupera HP a cada inimigo abatido passivamente. Ativamente, consome todas as almas coletadas para recuperar vida instantaneamente, proporcional à quantidade de almas reunidas.
 
 ::
 
