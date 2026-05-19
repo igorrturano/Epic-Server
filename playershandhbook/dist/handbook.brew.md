@@ -4658,7 +4658,7 @@ O Arqueiro Arcano renunciou à sua essência mágica inata para devotar sua exis
 |  6 |Ainalaith |
 |  10 |Disparo Canalizado |
 |  14 |Tirothan |
-|  20 |Tempestade Elemental |
+|  20 |Disparo Prismatico |
 
 ##### * Skills Necessárias: Ranged, Arcana
 }}
@@ -4674,8 +4674,8 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 *Habilidade Nível 2*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 10 mana
-**Cooldown:**     :: 180s
+**Custo:**        :: 10 stamina
+**Cooldown:**     :: 10s
 
 Você cria um arco elemental capaz de disparar flechas imbuídas de poder arcano.
 
@@ -4704,13 +4704,13 @@ A cada terceiro disparo consecutivo, seu arco libera um efeito baseado no elemen
 *Habilidade Nível 10*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 20 mana
+**Custo:**        :: 20 stamina
 **Cooldown:**     :: 180s
 
-Você canaliza os elementos em um super efeito baseado no seu elemento encantado:
-- **Arco Ígneo**: Dispara uma bola de fogo explosiva.
-- **Arco Gélido**: Congela o alvo. Se já estiver congelado, dobra o dano e quebra o gelo.
-- **Arco Elétrico**: Dispara uma flecha para um local onde você se teleporta.
+Você dispara uma flecha em linha reta que atravessa todos os alvos no caminho, aplicando o efeito do seu elemento encantado:
+- **Arco Ígneo**: Queima os alvos atingidos.
+- **Arco Gélido**: Deixa os alvos atingidos mais lentos.
+- **Arco Elétrico**: Você fica oculto por alguns segundos.
 
 ::
 
@@ -4725,17 +4725,17 @@ Seu domínio sobre o arco elemental aumenta consideravelmente seu dano, alcance 
 
 ::
 
-### Tempestade Elemental
+### Disparo Prismatico
 *Habilidade Nível 20*
 
 **Tipo:** :: Ativa
-**Custo:**        :: 30 mana
+**Custo:**        :: 30 stamina
 **Cooldown:**     :: 300s
 
-No ápice do seu caos elemental, você conjura um efeito massivo baseado no seu elemento:
-- **Arco Ígneo**: Uma chuva de flechas de fogo que explodem e incendeiam tudo em área.
-- **Arco Gélido**: Uma chuva de flechas gélidas que congelam todos na área.
-- **Arco Elétrico**: Uma flecha que desencadeia relâmpagos entre todos os inimigos próximos ao alvo.
+Você dispara três flechas em sequência, uma de cada elemento. O efeito final depende do seu elemento ativo:
+- **Arco Ígneo**: A flecha final detona em uma bola de fogo sobre o alvo.
+- **Arco Gélido**: A flecha final congela o alvo.
+- **Arco Elétrico**: A flecha final o lança em um salto etéreo.
 
 <br>
 
