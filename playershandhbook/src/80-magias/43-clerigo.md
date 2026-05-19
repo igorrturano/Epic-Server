@@ -54,7 +54,7 @@ Detecta se um item possui propriedades mágicas.
 ::
 
 ### Escudo de Fé
-Concede redução de dano ao alvo por alguns segundos.
+Concede redução de dano físico ao alvo por alguns segundos; alvos sem armadura recebem proteção extra. Não acumula com Pele de Árvore.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância

@@ -18,7 +18,7 @@ Faz com que as ataduras curem mais.
 ::
 
 ### Cura Leve
-Cura ferimentos leves do alvo.
+Cura ferimentos leves do alvo. Em mortos-vivos e demônios, em vez de curar, causa dano equivalente.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância

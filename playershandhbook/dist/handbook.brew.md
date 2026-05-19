@@ -8362,7 +8362,7 @@ Faz com que as ataduras curem mais.
 ::
 
 ### Cura Leve
-Cura ferimentos leves do alvo.
+Cura ferimentos leves do alvo. Em mortos-vivos e demônios, em vez de curar, causa dano equivalente.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8509,7 +8509,7 @@ O paladino não pode ser alvejado diretamente por magia.
 ## Primeiro Círculo
 
 ### Cura Leve
-Canaliza energia vital para curar ferimentos.
+Canaliza energia vital para curar ferimentos. Em mortos-vivos e demônios, em vez de curar, causa dano equivalente.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -8713,7 +8713,7 @@ Detecta se um item possui propriedades mágicas.
 ::
 
 ### Escudo de Fé
-Concede redução de dano ao alvo por alguns segundos.
+Concede redução de dano físico ao alvo por alguns segundos; alvos sem armadura recebem proteção extra. Não acumula com Pele de Árvore.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
