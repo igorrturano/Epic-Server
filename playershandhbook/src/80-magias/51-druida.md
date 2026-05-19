@@ -233,7 +233,7 @@ Cria um raio que se propaga entre vários alvos.
 ::
 
 ### Reviver Animais
-Revive um animal morto.
+Revive um animal de estimação morto — apenas os seus próprios pets domesticados.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -247,7 +247,7 @@ Revive um animal morto.
 ## Quinto Círculo
 
 ### Crescimento Selvagem
-Videiras espinhosas surgem do chão prendendo todos os inimigos em uma área, paralisando-os e causando dano contínuo.
+Videiras espinhosas surgem do chão prendendo todos os inimigos de uma área no lugar; ao se libertarem, sofrem sangramento.
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Distância
