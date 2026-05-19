@@ -224,8 +224,8 @@ function WeaponHitScripts(byRef attackInfo)
 		endforeach
 	endif
 
-	if (GetCooldown(attackInfo.GetAttacker().GetObjRef(), "habelemental"))
-		attackInfo.GetAttacker().GetObjRef().EraseProp("#habelemental");
+	if (GetCooldown(attackInfo.GetWeapon().GetObjRef(), "habelemental"))
+		attackInfo.GetWeapon().GetObjRef().EraseProp("#habelemental");
 		var elemental := attackInfo.GetWeapon().GetObjRef().GetProp("#elementalweapon");
 
 		foreach armor in (armorsInSlot)
