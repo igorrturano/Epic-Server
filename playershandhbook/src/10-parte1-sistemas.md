@@ -35,14 +35,15 @@ O sistema de desmaios e morte é um sistema bastante importante para o funcionam
 :
 ### Pontos de Morte
 :
-Todo personagem tem uma determinada quantidade de Pontos de Morte (ou Death Points, DPs) eles servem para que seu personagem tenha uma capacidade de desmaiar algumas vezes antes de atingir a morte definitiva. A quantidade máxima desses pontos é fixada em quatro, salvo exceções que recebem bônus ou penalidades.
+Todo personagem tem uma determinada quantidade de Pontos de Morte (ou Death Points, DPs) eles servem para que seu personagem tenha uma capacidade de desmaiar algumas vezes antes de atingir a morte definitiva. Normalmente um personagem chega a cinco Pontos de Morte, mas bônus (como certos Kits) ou penalidades podem elevar ou reduzir esse total.
 :
 Para descobrir a quantidade de DPs atual de um determinado personagem, seja o seu ou de terceiros, basta utilizar a perícia Medicine e uma descrição será dada, baseado na definição é possível ter uma idéia da situação de um determinado personagem.
 :
 ##### Pontos de Morte (DP)
 | Mensagem                          | Quantidade |
 |:----------------------------------|:----------:|
-| O alvo está mais do que preparado | 5+         |
+| O alvo está mais do que preparado | 6 ou mais  |
+| O alvo está preparado para tudo   | 5          |
 | O alvo está bastante disposto     | 4          |
 | O alvo está relativamente bem     | 3          |
 | O alvo está mal                   | 2          |
