@@ -45,17 +45,3 @@ function GetDurabilityMultiplierByMaterial(material)
 	return CDbl(modifier);
 endfunction
 
-function GetWeightMultiplierByMaterial(material)
-	var modifier := 0;
-
-	case (material)
-		0x6994: modifier := 1.3; break; // Bronze
-		0x6309: modifier := 1.1; break; // Ferro
-		0x6315: modifier := 0.9; break; // Illyra
-		0x6311: modifier := 0.8; break; // Mithril
-
-		default: modifier := 1;
-	endcase
-
-	return CDbl(modifier);
-endfunction
