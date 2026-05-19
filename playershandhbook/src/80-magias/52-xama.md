@@ -136,7 +136,7 @@ O alvo não corre risco de morrer caso desmaie.
 ::
 
 ### Sacrificar Animal
-Você recebe uma bênção e proteção contra a morte ao sacrificar um animal.
+Marca um animal para o sacrifício. Para receber a proteção contra a morte, você precisa matá-lo perto de um altar xamânico.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância

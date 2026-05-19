@@ -8124,7 +8124,7 @@ Mergulha um alvo em alucinações que invertem sua percepção de aliados e inim
 ::
 
 ### Requiem do Silêncio
-Um requiem aterrador que silencia todos os inimigos em uma área de três tiles, impedindo-os de conjurar.
+Um requiem aterrador que, em área, impede inimigos de conjurar suas próprias magias de bardo. Não afeta a conjuração de magos, sacerdotes ou outras escolas.
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Distância
@@ -8222,7 +8222,7 @@ A última história. Fortalece toda a party e enfraquece todos os inimigos ao re
 
 # Ninjutsu
 
-Técnicas ancestrais dos Povos do Leste, transmitidas em segredo através de gerações. Diferente das magias convencionais, o Ninjutsu não consome mana, porém precisa ser intervalado para preservar o esforço físico e mental do corpo do praticante.
+Técnicas ancestrais dos Povos do Leste, transmitidas em segredo através de gerações. Como as magias convencionais, cada técnica consome mana; o que as distingue é o intervalo próprio entre usos, que preserva o esforço físico e mental do praticante.
 
 *Exclusivo: Shinobi*
 
@@ -9450,7 +9450,7 @@ O alvo não corre risco de morrer caso desmaie.
 ::
 
 ### Sacrificar Animal
-Você recebe uma bênção e proteção contra a morte ao sacrificar um animal.
+Marca um animal para o sacrifício. Para receber a proteção contra a morte, você precisa matá-lo perto de um altar xamânico.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância

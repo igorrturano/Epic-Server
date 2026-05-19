@@ -120,7 +120,7 @@ Mergulha um alvo em alucinações que invertem sua percepção de aliados e inim
 ::
 
 ### Requiem do Silêncio
-Um requiem aterrador que silencia todos os inimigos em uma área de três tiles, impedindo-os de conjurar.
+Um requiem aterrador que, em área, impede inimigos de conjurar suas próprias magias de bardo. Não afeta a conjuração de magos, sacerdotes ou outras escolas.
 ##### Características
 - **Alvo:** Auto
 - **Alcance:** Distância
