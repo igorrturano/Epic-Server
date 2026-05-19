@@ -91,3 +91,12 @@ all 30 class ability lists, racial perk boxes. **Not yet audited:** Passados
   corrected to match the engine (2026-05-19); the cfg desc and the missing
   implementation remain a code TODO for the dev to reconcile (wire the
   immunity, or fix the cfg desc).
+
+- **Hunger system inert (regression).** `hunger_counter.src` `CalcHunger`
+  no longer increments the `"Hunger"` vital (only pokes `luck_mod`), so
+  hunger never rises past 0; the STR/DEX/INT debuff in
+  `pkg/items/food/include/hunger.inc` is unreachable. Handbook "Sistema de
+  Fome / Penalidades" left describing intended design pending a separate
+  code-fix session (user-owned, 2026-05-19). Revisit handbook after the
+  hunger decay is restored. Also flagged: penalty magnitude fome*10 to 3
+  stats (−30/−40/−50) may be over-tuned vs "pequenos incômodos" intent.
