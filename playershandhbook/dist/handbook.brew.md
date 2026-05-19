@@ -7284,9 +7284,9 @@ Sua força de vontade é acima da média. Você é mais resistente a efeitos que
 ### Sabe-Tudo
 Você sempre teve facilidade em aprender muitas perícias, mas se especializar não é o seu forte.
 
-**Vantagem:** +5 pontos para comprar perícias
+**Vantagem:** Você começa com mais perícias secundárias do que o normal — 2 primárias e 5 secundárias, no lugar das 3 primárias e 3 secundárias padrão — e suas perícias sobem de nível com mais facilidade.
 
-**Desvantagem:** Apenas uma perícia primária
+**Desvantagem:** Uma perícia primária a menos: você não se especializa tão bem quanto quem foca poucas perícias.
 
 ::
 
