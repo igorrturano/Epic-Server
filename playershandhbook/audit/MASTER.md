@@ -127,3 +127,12 @@ deliver them; re-add when/if implemented:
 - Bardo "O Chamado Irresistível" (`#bard_charmed` set, no AI reads it)
 - Clérigo "Aura Mortis" (Spell 517 fully commented out in priest.cfg)
 CODE-TODO: implement or formally retire these four; handbook will track code.
+
+## Deferred structural fixes (layout-fragile, not yet applied)
+
+- Circle-misplacement (M2): Paladino "Cura Leve" (book Primeiro Círculo, cfg
+  Circle 2) & "Forçar Duelo" (book Segundo, cfg Circle 1) — should swap
+  sections; Caçador de Demônios "Cura Leve" (book Primeiro, cfg Circle 2) →
+  Segundo. Physically moving spell blocks across `## Círculo` sections risks
+  Homebrewery page/column flow; deferred to a focused layout pass. Textual
+  effects of these spells already corrected (undead/demon damage).

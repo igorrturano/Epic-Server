@@ -5,7 +5,7 @@
 ## Primeiro Círculo
 
 ### Cura Leve
-Canaliza energia vital para curar ferimentos.
+Canaliza energia vital para curar ferimentos. Em mortos-vivos e demônios, em vez de curar, causa dano equivalente.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
