@@ -36,6 +36,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var MaxRange := 1;
 	var IsThrowableVar := false;
 	var IsFinesseVar := false;
+	var IsAssassinVar := false;
 	var IsGatheringToolVar := false;
 	var EpicMainDamage := "";
 
@@ -86,6 +87,7 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this.MaxRange := this.Template.MaxRange ?: 1;
 			this.IsThrowableVar := Boolean(this.Template.Throwable) ?: false;
 			this.IsFinesseVar := Boolean(this.Template.Finesse) ?: false;
+			this.IsAssassinVar := Boolean(this.Template.Assassin) ?: false;
 			this.IsGatheringToolVar := Boolean(this.Template.GatheringTool) ?: false;
 			this.CriticalChanceMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_CRITICO);
 			this.AccuracyMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_PRECISAO);
@@ -412,6 +414,10 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 
 	function IsFinesse(this)
 		return this.IsFinesseVar;
+	endfunction
+
+	function IsAssassin(this)
+		return this.IsAssassinVar;
 	endfunction
 
 	/*

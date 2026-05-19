@@ -13,6 +13,7 @@ include ":equipsys:Controller/ArmorController";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
 
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
@@ -191,6 +192,10 @@ function PegaDescArmas(objeto,who,cfg := struct)
 
 	if (weapon.IsFinesse())
 		xDesc := xDesc + AMARELO_CLARO + "Arma Ágil<br>";
+	endif
+
+	if (weapon.IsAssassin() && character.HasAbility(ABILITY_ID::ASSASSINAR))
+		xDesc := xDesc + AMARELO_CLARO + "Arma de Assassino<br>";
 	endif
 
 	if (objeto.hp_mod > 0)
