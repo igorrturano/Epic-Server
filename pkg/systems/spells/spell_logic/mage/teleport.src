@@ -5,6 +5,7 @@ include "include/client";
 include "include/say";
 include "include/facings";
 include ":attributes:attributes";
+include "include/epicMageryUtils";
 
 program SpellScript(params)
 
@@ -24,11 +25,11 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	// Capped range keeps Teleportar strictly weaker than the Salto Etereo ability (arcana/5).
-	var max_range := Cint(AP_GetSkill(who, ARCANA) / 10);
-	if (max_range < 4)
-		max_range := 4;
-	endif
+	// Normalized to the central spell range formula
+	// (5 + skill/10 + spec/NPC + SpellRange ability). Self-cast ground-target,
+	// so the central gate in cast_spell.src does not cover this — we resolve
+	// the same reach locally.
+	var max_range := distanceAllowedForSpells(who, HandleSpellSkill(who), info.School);
 	if (Distance(who, loc) > max_range)
 		SendSysMessageEx(who, $"O destino esta muito distante. Alcance maximo: {max_range} tiles.", SSM_FAIL);
 		return 0;
