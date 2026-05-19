@@ -1,6 +1,6 @@
 # Ninjutsu
 
-Técnicas ancestrais dos Povos do Leste, transmitidas em segredo através de gerações. Diferente das magias convencionais, o Ninjutsu não consome mana, porém precisa ser intervalado para preservar o esforço físico e mental do corpo do praticante.
+Técnicas ancestrais dos Povos do Leste, transmitidas em segredo através de gerações. Como as magias convencionais, cada técnica consome mana; o que as distingue é o intervalo próprio entre usos, que preserva o esforço físico e mental do praticante.
 
 *Exclusivo: Shinobi*
 
