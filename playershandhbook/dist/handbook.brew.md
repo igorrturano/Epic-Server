@@ -7454,6 +7454,8 @@ ___
 
 As perícias representam o conjunto de habilidades, conhecimentos e talentos específicos que um personagem possui e pode utilizar para superar desafios, resolver problemas e interagir com o ambiente e outros personagens de maneira eficaz. Elas derivam dos atributos básicos do personagem e permitem a realização de ações com maior precisão e sucesso, seja em combate, exploração ou interação social. As perícias refletem a especialização do personagem em determinadas áreas, sendo fundamentais para o desenvolvimento e a progressão dentro do jogo. A escolha e o uso estratégico das perícias podem influenciar significativamente o desenrolar da história e os resultados das ações empreendidas pelos personagens.
 
+As indicações de classe ("Necessário para...") abaixo são orientações de quais classes mais se beneficiam de cada perícia — não são pré-requisitos rígidos cobrados pelo sistema, que libera perícias por categoria e nível, não por classe específica.
+
 
 ::
 ### Perícias de Combate
