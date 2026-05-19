@@ -19,20 +19,20 @@ class DamageModFabricacao(DamageModBase)
 			damage := Damage();
 		endif
 		
-		damage.SetSlashRawDamage(this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_CORTANTE)));
-		damage.SetPiercingRawDamage(this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_PERFURANTE)));
-		damage.SetBluntRawDamage(this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_CONTUSAO)));
-		
-		//OBS: se no futuro tiver um componente só pra dano mágico tem que adicionar aqui a soma.
-		damage.SetFireRawDamage(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_FOGO)));
-		damage.SetColdRawDamage(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_GELO)));
-		damage.SetPoisonRawDamage(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_VENENO)));
-		damage.SetEnergyRawDamage(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_ENERGIA)));
-		
-		return damage;
-	endfunction
+		var bundle := PegaFabricacaoBundle(this._itemOrTemplate, CARACTERISTICA_FABRICACAO_DANO);
+		var danoBase := bundle.principal;
+		var sub := bundle.subs;
 
-	function _GetCraftingFullBonus(this)
-		return  PegaValorFabricacao(this._itemOrTemplate,CARACTERISTICA_FABRICACAO_DANO);
+		damage.SetSlashRawDamage(danoBase + Cint(sub[SUBCARACTERISTICA_FABRICACAO_CORTANTE]));
+		damage.SetPiercingRawDamage(danoBase + Cint(sub[SUBCARACTERISTICA_FABRICACAO_PERFURANTE]));
+		damage.SetBluntRawDamage(danoBase + Cint(sub[SUBCARACTERISTICA_FABRICACAO_CONTUSAO]));
+
+		//OBS: se no futuro tiver um componente só pra dano mágico tem que adicionar aqui a soma.
+		damage.SetFireRawDamage(Cint(sub[SUBCARACTERISTICA_FABRICACAO_FOGO]));
+		damage.SetColdRawDamage(Cint(sub[SUBCARACTERISTICA_FABRICACAO_GELO]));
+		damage.SetPoisonRawDamage(Cint(sub[SUBCARACTERISTICA_FABRICACAO_VENENO]));
+		damage.SetEnergyRawDamage(Cint(sub[SUBCARACTERISTICA_FABRICACAO_ENERGIA]));
+
+		return damage;
 	endfunction
 endclass

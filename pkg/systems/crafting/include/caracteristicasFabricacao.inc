@@ -14,11 +14,15 @@ function PegaValorFabricacao(item, caracteristica)
 	return TypeOfInt(valorRetorno) != OT_ERROR ? Cint(valorRetorno): 0;
 endfunction
 
+// efeitosAdicionais e um dict {subEfeito: valorInteiro} (ver
+// InterpretaMaterialEfeitos em fabricacaoUtil.inc) — indexa direto,
+// sem .valor. Componente/efeito ausente -> acesso encadeado vira erro
+// -> retorna 0.
 function PegaSubValorFabricacao(item, caracteristica, subEfeitoAlvo)
 	var propFabricadoMontado := PegaPropFabricadoMontado(item);
 	var retorno := ExecutaOperadorCaracteristica(
-									caracteristica, 
-									propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais[subEfeitoAlvo].valor
+									caracteristica,
+									propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais[subEfeitoAlvo]
 								);
 	
 	return TypeOfInt(retorno) != OT_ERROR ? Cint(retorno): 0;
@@ -27,7 +31,31 @@ endfunction
 
 function PegaSubValoresFabricacao(item, caracteristica)
 	var propFabricadoMontado := PegaPropFabricadoMontado(item);
-	return propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais; 
+	return propFabricadoMontado.componentes[caracteristica].propriedades.efeitosAdicionais;
+endfunction
+
+// Le PROPNAME_FABRICADO UMA vez e devolve { principal, subs } da
+// caracteristica. principal e cada subs[<sub>] ja vem resolvidos como
+// int (0 em ausencia/erro/uninit). Hot path de combate: use isto em vez
+// de varias chamadas PegaSubValorFabricacao, que releem a prop por chave.
+// Chave de sub ausente -> Cint(uninit) == 0 no consumidor.
+function PegaFabricacaoBundle(item, caracteristica)
+	var prop := PegaPropFabricadoMontado(item);
+	var props := prop.componentes[caracteristica].propriedades;
+
+	var principal := ExecutaOperadorCaracteristica(caracteristica, props.valorPrincipal);
+	principal := TypeOfInt(principal) != OT_ERROR ? Cint(principal) : 0;
+
+	var subs := dictionary{};
+	var subsRaw := props.efeitosAdicionais;
+	if (TypeOfInt(subsRaw) != OT_ERROR && subsRaw)
+		foreach valorSub in (subsRaw)
+			var resolvido := ExecutaOperadorCaracteristica(caracteristica, valorSub);
+			subs[_valorSub_iter] := TypeOfInt(resolvido) != OT_ERROR ? Cint(resolvido) : 0;
+		endforeach
+	endif
+
+	return struct{ principal := principal, subs := subs };
 endfunction
 
 function ExecutaOperadorCaracteristica(caracteristica, valor)
