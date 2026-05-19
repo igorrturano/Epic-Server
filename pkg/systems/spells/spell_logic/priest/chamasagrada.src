@@ -12,6 +12,7 @@ include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":destroyable:include/destroyItem";
 include ":propagacao:include/efeitosIncendiarios";
+include ":charactercreation:resists";
 
 program cast_chamasagrada(params)
 	var caster := params[1];
@@ -42,6 +43,17 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
 	PlaySoundEffect(caster, SFX_MAGIC_ARROW);
 	PlayMovingEffectXYZHued(caster, targ, FX_MAGIC_ARROW, 18, 1643, 0);
 	var dmg := RandomDiceRoll("1d4");
+
+	// REFLEX save halves the chama sagrada's damage (mobile only —
+	// fagulha path lands on non-mobiles).
+	if (targ.IsA(POLCLASS_MOBILE))
+		var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+		var bonus := epicWisdomPathBonus(caster);
+		if (CheckResist(targ, REFLEXES, diff, -bonus))
+			dmg := Cint(dmg / 2);
+			SendSysMessageEx(targ, "Voce desvia parcialmente da chama sagrada.", SSM_INFO);
+		endif
+	endif
 
 	SC_DealDamage(caster, targ, spellId, cint(dmg), DMG_FORCED);
 endfunction
