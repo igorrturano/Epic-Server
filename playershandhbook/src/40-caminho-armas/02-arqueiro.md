@@ -52,7 +52,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 30 stamina
 **Cooldown:** :: 60s
 
-Você dispara uma flecha em linha reta que causa dano em todos no caminho dela.
+Você dispara um tiro certeiro e implacável: o ataque é um acerto garantido e deixa o alvo paralisado por alguns segundos.
 
 ::::
 

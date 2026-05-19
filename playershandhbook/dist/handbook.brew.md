@@ -3588,7 +3588,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 30 stamina
 **Cooldown:** :: 60s
 
-Você dispara uma flecha em linha reta que causa dano em todos no caminho dela.
+Você dispara um tiro certeiro e implacável: o ataque é um acerto garantido e deixa o alvo paralisado por alguns segundos.
 
 ::::
 
@@ -3715,7 +3715,7 @@ Você entra num estado de fúria cujo dano adicional e duração são baseados n
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 120s
 
-Você ignora a dor de golpes recebidos, ganhando um bônus na resistência física. Ativamente, recupera HP por um período.
+Enquanto estiver em Fúria, você pode ativar esta habilidade para recuperar HP por um período.
 
 ::
 
@@ -3726,7 +3726,7 @@ Você ignora a dor de golpes recebidos, ganhando um bônus na resistência físi
 **Custo:**    :: --
 **Cooldown:** :: --
 
-Você aterroriza seus inimigos, reduzindo a chance de acerto deles. Além disso, fica imune a críticos e paralisia, e passa a usar *Fortitude* para resistir diversas magias.
+Enquanto estiver em Fúria, você fica imune a golpes críticos e seus próprios ataques se tornam mais certeiros.
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -4158,7 +4158,7 @@ Seu próximo ataque causará uma explosão de força. Após o golpe, sua postura
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 180s
 
-Este estilo concede proteção física e resistência climática passivamente. Ativamente, seu próximo ataque causará sangramento no oponente.
+Este estilo concede esquiva (inimigos têm mais dificuldade de acertá-lo) e resistência climática passivamente. Ativamente, seu próximo ataque causará sangramento no oponente.
 
 <br>
 <br>
@@ -4398,7 +4398,7 @@ Você inspira seus aliados com sua fé inabalável, podendo ordenar diferentes c
 **Custo:**    :: 40 stamina
 **Cooldown:** :: 300s
 
-Sua presença em campo é suficiente para afastar o medo de seus aliados. Você fica imune a medo e inspira sua party com diferentes comandos de fortalecimento.
+Sua presença em campo inspira sua party: através de um menu, você emite diferentes comandos de fortalecimento aos seus aliados.
 
 <br>
 <br>
@@ -4476,7 +4476,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 60s
 
-Você aprendeu a lutar sem depender de escudo ou armadura pesada. Passivamente, não recebe penalidade para defender sem escudo quando sem armadura ou com armaduras leves de madeira. Ao ativar, garante uma defesa.
+Você aprendeu a aparar golpes empunhando apenas a sua arma, sem escudo. Em vez da penalidade que normalmente se sofre ao aparar sem escudo, você recebe um bônus na chance de aparar. Ao ativar, garante a sua próxima defesa.
 
 ::
 
