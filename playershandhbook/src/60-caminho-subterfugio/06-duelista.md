@@ -51,7 +51,7 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**    :: 20 stamina
 **Cooldown:** :: 10s
 
-Você se esquiva do próximo golpe e recebe um bônus temporário em acerto e esquiva.
+Ao ativar, você se esquiva do próximo golpe. Enquanto tiver esta habilidade, você recebe um bônus permanente em acerto e esquiva.
 
 ::
 
@@ -62,7 +62,7 @@ Você se esquiva do próximo golpe e recebe um bônus temporário em acerto e es
 **Custo:**    :: 30 stamina
 **Cooldown:** :: 20s
 
-Passivamente, você usa *Tactics* como *Parry*. Ao ativar, sua destreza aumenta em relação à falta de stamina.
+Passivamente, empunhando um *buckler*, você usa *Tactics* no lugar de *Parry* para aparar. Ao ativar, você regenera stamina por um período.
 
 ::
 

@@ -61,7 +61,7 @@ Alterando seu corpo através de mutações, você consegue aumentar uma resistê
 **Custo:**        :: 20 stamina
 **Cooldown:**     :: 600s
 
-Você aprende a criar óleos para armas que ferem com mais eficácia determinados tipos de alvos. Adicionalmente, você recebe um bônus de acerto baseado na sua habilidade em alquimia.
+Você aprende a criar óleos para armas que ferem com mais eficácia determinados tipos de alvos. Adicionalmente, você recebe um bônus de acerto baseado na sua perícia *Science*.
 
 ::
 
