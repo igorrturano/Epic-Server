@@ -26,9 +26,8 @@ program cast_frostbolt(params)
 		return 0;
 	endif
 
-	var mlore := cint(AP_GetSkill(caster, ARCANA) / 20);
 	var dist := Distance(caster, targ);
-	var dist_allowed := distanceAllowedForSpells(caster, mlore, spell_school);
+	var dist_allowed := distanceAllowedForSpells(caster, HandleSpellSkill(caster), spell_school);
 
 	if (dist > dist_allowed)
 		SendSysMessage(caster, "O alvo esta muito distante");

@@ -34,7 +34,7 @@ program SpellScript(params)
 		mlore := mlore + 1;
 	endif
 	var dist := Distance(who, targ);
-	var dist_allowed := distanceAllowedForSpells(who, mlore, spell_school);
+	var dist_allowed := distanceAllowedForSpells(who, HandleSpellSkill(who), spell_school);
 
 	if (dist > dist_allowed)
 		SendSysMessage(who, "O alvo esta muito distante");
