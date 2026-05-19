@@ -34,10 +34,12 @@ class EtherealJump(CombatAbility)
         PlaySoundEffect(who, 0x1f2);
         sleep(2);
 
-        var targ := TargetCoordinates(who);
+        var arcana := CInt(mobile.GetSkill(ARCANA));
+        var maxRange := CInt(arcana / 5);
+        var targ;
 
-        // NPC behavior - jump to random direction from opponent
         if (mobile.IsNPC())
+            // NPC: deterministic pick + single-pass validation; abort silently on fail.
             var directions := array{ array{ 1, 0 }, array{ 0, 1 }, array{ -1, 0 }, array{ 0, -1 } };
             var random_direction := directions[RandomInt(4) + 1];
             targ := struct{
@@ -46,46 +48,44 @@ class EtherealJump(CombatAbility)
                 z := who.opponent.z,
                 realm := who.opponent.realm
             };
-        endif
 
-        if (!targ)
-            Message("Alvo Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-            who.concealed := 0;
-            who.frozen := 0;
-            return 0;
-        endif
-
-        var dist := Distance(who, targ);
-        var arcana := CInt(mobile.GetSkill(ARCANA));
-        var maxRange := CInt(arcana / 5);
-
-        if (!CheckLosAt(who, targ.x, targ.y, targ.z))
-            Message("Voce nao consegue ver o alvo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-            who.concealed := 0;
-            who.frozen := 0;
-            return 0;
-        endif
-
-        if (dist > maxRange)
-            Message($"O alvo esta muito distante. Range maximo: {maxRange} tiles.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-            who.concealed := 0;
-            who.frozen := 0;
-            return 0;
-        endif
-
-        var locinfo := GetMapInfo(targ.x, targ.y, who.realm);
-        if (_IsWaterTile(targ, locinfo))
-            Message("Voce nao pode teleportar para a agua.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-            who.concealed := 0;
-            who.frozen := 0;
-            return 0;
-        endif
-
-        if (CanWalk("L", who.x, who.y, who.z, targ.x, targ.y, who.realm) == error)
-            Message("Local Inacessivel.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
-            who.concealed := 0;
-            who.frozen := 0;
-            return 0;
+            if (!CheckLosAt(who, targ.x, targ.y, targ.z)
+                || Distance(who, targ) > maxRange
+                || _IsWaterTile(targ, GetMapInfo(targ.x, targ.y, who.realm))
+                || CanWalk("L", who.x, who.y, who.z, targ.x, targ.y, who.realm) == error)
+                who.concealed := 0;
+                who.frozen := 0;
+                return 0;
+            endif
+        else
+            // Player: re-prompt on bad clicks (LoS / range / water / unwalkable);
+            // only explicit cancel aborts.
+            while (1)
+                targ := TargetCoordinates(who);
+                if (!targ)
+                    Message("Alvo cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+                    who.concealed := 0;
+                    who.frozen := 0;
+                    return 0;
+                endif
+                if (!CheckLosAt(who, targ.x, targ.y, targ.z))
+                    Message("Voce nao consegue ver o destino. Escolha outro local.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+                    continue;
+                endif
+                if (Distance(who, targ) > maxRange)
+                    Message($"O destino esta muito distante. Range maximo: {maxRange} tiles. Escolha outro local.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+                    continue;
+                endif
+                if (_IsWaterTile(targ, GetMapInfo(targ.x, targ.y, who.realm)))
+                    Message("Voce nao pode teleportar para a agua. Escolha outro local.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+                    continue;
+                endif
+                if (CanWalk("L", who.x, who.y, who.z, targ.x, targ.y, who.realm) == error)
+                    Message("Local inacessivel. Escolha outro local.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+                    continue;
+                endif
+                break;
+            endwhile
         endif
 
         MoveObjectToLocation(who, targ.x, targ.y, targ.z, who.realm);
