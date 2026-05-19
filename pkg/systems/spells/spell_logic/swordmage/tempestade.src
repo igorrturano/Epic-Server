@@ -13,6 +13,7 @@ include "include/shapes";
 include ":nature:nature";
 include ":spells:include/swordmage";
 include "include/epicMageryUtils";
+include ":charactercreation:resists";
 
 program SpellScript(params)
 	var who := params[1];
@@ -65,12 +66,21 @@ program SpellScript(params)
 			sleepms(10);
 		endwhile
 
+		var diff := handleSpellResistDiffForSpecialists(who, spell.School);
+		var bonus := epicWisdomPathBonus(who);
 		foreach defender in (ListMobilesNearLocation(who.x, who.y, who.z, 12, who.realm))
 			if (!(defender in who.party.members))
 				if (defender.serial != who.serial)
 					PlaySoundEffect(defender, 0x228);
 					var dmg := cint(AP_GetSkill(who, ARCANA)) / 2;
 					PlayLightningBoltEffect(defender);
+
+					// REFLEX save halves the storm's damage per defender.
+					if (CheckResist(defender, REFLEXES, diff, -bonus))
+						dmg := Cint(dmg / 2);
+						SendSysMessageEx(defender, "Voce desvia parcialmente do raio.", SSM_INFO);
+					endif
+
 					SC_DealDamage(who, defender, CInt(spell.id), cint(dmg), DMG_COLD);
 				endif
 			endif

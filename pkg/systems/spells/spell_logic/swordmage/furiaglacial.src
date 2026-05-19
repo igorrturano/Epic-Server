@@ -13,6 +13,7 @@ include "include/shapes";
 include ":nature:nature";
 include ":spells:include/swordmage";
 include "include/epicMageryUtils";
+include ":charactercreation:resists";
 
 program SpellScript(params)
 	var who := params[1];
@@ -85,9 +86,18 @@ program SpellScript(params)
 			sleepms(100);
 		endwhile
 
+		var diff := handleSpellResistDiffForSpecialists(who, spell.School);
+		var bonus := epicWisdomPathBonus(who);
 		foreach defender in mobs
 			var dmg := cint(AP_GetSkill(who, ARCANA)) / 2;
 			dmg := Floor(dmg / cargasRetorno.divisor);
+
+			// REFLEX save halves the icy shards' damage per defender.
+			if (CheckResist(defender, REFLEXES, diff, -bonus))
+				dmg := Cint(dmg / 2);
+				SendSysMessageEx(defender, "Voce se esquiva de parte do gelo.", SSM_INFO);
+			endif
+
 			SC_DealDamage(who, defender, CInt(spell.id), cint(dmg), DMG_COLD);
 			defender.frozen := 0;
 		endforeach
