@@ -729,7 +729,7 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 	if(modificadorPeso)
 		propriedades.+modificadorPeso := Round(modificadorPeso / (quantidadeComponentesNecessaria - quantidadeOpicionais));
 	else
-		propriedades.modificadorHp := 0;
+		propriedades.+modificadorPeso := 0;
 	endif
 
 	if(valorEfeitos.efeitosAdicionais)
