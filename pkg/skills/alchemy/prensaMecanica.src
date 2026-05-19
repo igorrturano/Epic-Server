@@ -53,8 +53,9 @@ var origensVegetais := array {
 						0x7036,		//"MandrakeSeed"                       
 						0x7039,		//"NightshadeSeed"                     
 						0xD4E8,		//"ExecutionerCapSeed"                 
-						0xD4E9,		//"BloodMossSeed"                      
-						0x7033		//"CocoaSeed"                          
+						0xD4E9,		//"BloodMossSeed"
+						0x7033,		//"CocoaSeed"
+						0xbf1f		//"TabacoSeed"
 					};
 
 var derivadosCera := array{
