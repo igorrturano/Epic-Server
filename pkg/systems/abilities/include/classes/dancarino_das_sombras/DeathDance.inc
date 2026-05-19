@@ -5,6 +5,7 @@ include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":tn:cooldown";
 include ":attributes:attributes";
+include "include/epicCombatUtils";
 
 /**
  * Danca da Morte (Death Dance) - ABILITY_ID::DANCA_DA_MORTE (1803)
@@ -15,7 +16,7 @@ include ":attributes:attributes";
  * Passive (AFTER_DAMAGE):
  * - While cooldown active, each hit teleports attacker behind the defender
  * - combatHook.src:300 already has facing bypass for "deathdance" cooldown
- * - moveToBehind() from epicCombatUtils.inc (transitive include via combatHook.src)
+ * - moveToBehind() from epicCombatUtils.inc
  */
 class DeathDance(CombatAbility)
 
