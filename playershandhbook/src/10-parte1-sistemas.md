@@ -239,20 +239,25 @@ Determina a sua resistência a efeitos que afetam a sua mente, principalmente as
 :
 O efeito de passar em um teste de resistência depende do teste, algumas magias são completamente evitadas caso resistidas, outras causam metade do efeito. Com armadilhas por exemplo, sempre metade do dano é evitado caso passe no teste.Cada teste também possui uma dificuldade própria, o das magias é definido pelo Arcana do mago que invocou a magia, as armadilhas tem dificuldades maiores de acordo com o dano que elas causam, os venenos de acordo com o level deles, etc.
 :
+{{note
+##### Como o teste é rolado
+Um teste de resistência é uma rolagem de **1d20 + Valor da Resistência** contra a dificuldade do efeito. Tirar **1** no dado é falha automática; tirar **20** é sucesso automático. Algumas origens ganham uma **segunda rolagem** ao falhar: Drow e nascidos em Har'oloth contra venenos, portadores de Aura Divina contra venenos, Anões contra magia, qualquer Colhesiano, e almas profundamente corrompidas contra Fortitude.
+}}
+:
 #### Valor da Resistência
 É possível ver a resistência do seu personagem na barra de Status:
 :
 O valor é definido por: ::
-**Valor da Resistência** = Caminho do Personagem + Bônus de Atributo + Outros Bônus
+**Valor da Resistência** = Bônus de Classe + Bônus de Atributo + Outros Bônus
 ::
 ![](http://flsgenese.wdfiles.com/local--files/sistemas:resistencia/statusbar.png) {width:325px,mix-blend-mode:multiply,border:"3px solid",border-radius:10px}
 *1 - Fortitude; 2 - Vontadee; 3 - Reflexos*
 :
-O bônus do Caminho do Personagem para o Caminho das Armas, Caminho da Sabedoria e o Caminho do Subterfúgio é de 20 para a resistência principal e 10 para os demais. Para cada 4 pontos em um atributo o personagem ganha 1 da resistência equivalente. Alguns Kits também conferem bônus em resistências.
+Cada Caminho corresponde a um arquétipo de classe — guerreiro (Caminho das Armas), ladino (Caminho do Subterfúgio) ou sábio (Caminho da Sabedoria) — e esse arquétipo define a sua resistência principal: Fortitude para guerreiros, Reflexos para ladinos e Vontade para sábios. Você recebe um **bônus de classe maior na sua resistência principal e um bônus menor nas outras duas**. Além disso, **para cada 20 pontos no atributo regente você ganha +1** na resistência correspondente (Força → Fortitude, Destreza → Reflexos, Inteligência → Vontade). Raça, cultura, Características, Habilidades e alguns Kits também somam: humanos recebem um pequeno bônus nas três; Características como *Fortitude do Urso*, *Reflexos de Pantera* e *Vontade da Águia* reforçam a sua; entropia extrema e corrupção podem reduzir Fortitude e Vontade.
 ::
 {{note
 ##### Exemplo
-Um personagem do Caminho das Armas, com 100 de Força e 70 de Destreza teria 45 em Fortitude, 27.5 em Reflexos e 20 em Vontade.
+Um humano do Caminho das Armas com 100 de Força e 70 de Destreza tem por volta de 12 em Fortitude (resistência principal), 7 em Reflexos e 4 em Vontade. Os valores reais são modestos — resistência se constrói com vários bônus pequenos, não com um único número grande.
 }}
 :
 #### Testes por GMs
