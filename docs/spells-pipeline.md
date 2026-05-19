@@ -75,12 +75,23 @@ This is the cast driver, but it's where "click a target" becomes the
   target: `repeal` invuln, `corpofechado`, **line of sight**
   (`CheckLineOfSight` for Unico `:521`, `CheckLOSAt` for Area `:527`),
   `charmed_by`.
-- **Distance is NOT gated centrally.** Each spell script that wants a
-  range cap calls `distanceAllowedForSpells` itself; scripts that don't
-  have effectively unlimited range.
-- Ordering trap: target selection (`:59`) runs **after**
-  `consumeResourcesForSpell` (`:51`). A cancel/invalid target past that
-  point = mana already spent; `FailSpell` refunds nothing.
+- **Distance is gated centrally** (since 2026-05-19 refactor). The same
+  `checkTargetValidity` branches `spellinfo.alvo`: `Unico` →
+  `Distance(mobile, targ)`, `Area` → `CoordinateDistance(...)`, both vs
+  `distanceAllowedForSpells(mobile, HandleSpellSkill(mobile), spellinfo.School)`.
+  Self-cast scripts that internally `TargetCoordinates` (teleport, berge)
+  must still gate locally — central can't see their second prompt.
+- **Range + LoS are retryable** — `checkTargetValidity` returns
+  `TARGET_RETRY` (const at `cast_spell.src:38`) for those, and
+  `selectSpellTarget`'s loop re-issues the cursor instead of fizzling
+  the cast. Invuln / corpofechado / charmed remain hard fails.
+- **Target runs pre-consume.** `SpellStarter` order is now initialize →
+  preCast → selectSpellTarget → consumeResources → castingProcess →
+  checkSuccess → finalize. A bad click or ESC costs zero mana. As a
+  consequence, the hard-fail branches in `checkTargetValidity` now
+  release the cast lock themselves via `_ReleaseCastLock` (frozen,
+  `#medding`, `#Casting`) because `performCastingProcess` (which used
+  to clear `frozen`) hasn't run yet.
 
 ### Range formula (`scripts/include/epicMageryUtils.inc:86`)
 
@@ -108,20 +119,28 @@ endif
 Reference reach: non-spec 50/70/100 skill = 10/12/15 tiles; specialist
 or NPC = 15/19/25; +5 with Spell Range.
 
-### Coverage gap (audit 2026-05-19)
+### Coverage (post-2026-05-19 refactor)
 
-All 307 spell scripts audited. ~168 are legitimately NA
-(self/self-centered/area-around-caster/corpse). Only ~39 ranged-targeted
-spells gate distance correctly; ~92 ranged-targeted scripts have **no**
-gate, and ~8 use ad-hoc hardcoded gates (`teleport` Arcana/10 —
-intentionally its own model; `berge` 15; `drenarvida`/`horrorparalisante`
-≥16; `maldicaoasan` ≥12; `acalmarbestas` >8; `manipularsombras`). The
-real exploit surface is ungated **offensive** spells (most of
-necromancer's single-target debuffs, `chainlightning`, `disparodivino`,
-`disparomistico`); ungated *helpful* ranged spells are a balance
-question, not a bug. Centralizing the gate into `checkTargetValidity`
-(skill-scaled, Harmful-only or all-targeted — TBD) is the open design
-item.
+Every spell whose cfg `Target` is `Unico` or `Area` is now gated by the
+central skill-scaled check in `checkTargetValidity` (~39 inline gates
+in the spell scripts were stripped as redundant — including the
+necromancer single-target debuffs that were previously ungated).
+Self-cast scripts that prompt their own coord (`teleport`, `berge`)
+gate locally via `distanceAllowedForSpells` so the math matches.
+
+**Deliberately *not* centralized** — different mechanics, kept as-is:
+- *Channel-break radii* (drenarvida/folego/mana, horrorparalisante,
+  maldicaoasan, transferenciavital, mage+shaman sugaralma,
+  sentir_motivacao tick): re-checked inside the channel loop to break
+  when the target walks away; fixed radius is the intent.
+- *Touch range* (`> 1`: abrirfechaduramagica, vinculodasepultura,
+  faroldosespiritos): adjacency mechanics, not spell-reach.
+- *Shinobi* (irekawari, sentir_motivacao initial): retains Sneak/10
+  identity scaling and the flat 5 RP-feel cap — `shinobi.cfg` is
+  excluded from this refactor.
+- *Bardo* (sussurro_do_vento flat 20): intentional flavor.
+- *Orphaned virtue portals* in `mage/`: not referenced by any cfg or
+  caller — dead code, candidate for a separate cleanup pass.
 
 ## File map (verified line numbers)
 

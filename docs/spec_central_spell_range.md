@@ -1,7 +1,20 @@
 # Spec — Central Spell Range Gate + Target-First Retry QoL
 
-Status: APPROVED design, NOT yet implemented. Build is phased; each phase
-verified (user compiles eScript) before the next.
+Status: IMPLEMENTED 2026-05-19 (Phases 1, 2A, 2C, 2D shipped). See
+`spells-pipeline.md` "Targeting & range" for the live behavior; this
+file is kept as the design record.
+
+Exclusions from the original scope (decided during implementation):
+- `shinobi.cfg` excluded entirely (irekawari Sneak-scaled identity,
+  sentir_motivacao flat-5 RP-feel kept).
+- Bardo `sussurro_do_vento` flat 20 kept (flavor).
+- Channel-break radii (drenar* / horror / maldicaoasan /
+  transferenciavital / sugaralma / sentir_motivacao tick) kept — they
+  are mid-channel break mechanics, not initial-cast reach.
+- Touch-range (`> 1`) gates kept — adjacency mechanic.
+- Virtue portals in `mage/`: orphaned dead code, not in cast pipeline;
+  deferred to a separate cleanup.
+- `acalmarbestas.src` (druid/) is a textcmd, not a spell — out of scope.
 
 ## Decisions (locked)
 
