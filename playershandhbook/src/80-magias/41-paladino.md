@@ -105,7 +105,7 @@ Um alvo perde todos os encantamentos, buffs ou debuffs. Chance de banir invocaç
 ::
 
 ### Sacrifício
-O paladino transfere todas as suas forças para um alvo, ficando com 1 em cada atributo.
+O paladino transfere a própria vitalidade — vida, stamina e mana — para um alvo, ficando com apenas 1 de cada.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância

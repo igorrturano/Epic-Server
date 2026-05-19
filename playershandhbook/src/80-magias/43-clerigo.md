@@ -131,7 +131,7 @@ Enquanto a região permanecer calma, todos ao redor do sacerdote ganham regenera
 ::
 
 ### Sacrifício
-O sacerdote troca todo seu HP por uma cura instantânea no alvo.
+O sacerdote fere a si mesmo para curar instantaneamente um alvo ferido. Quanto cura (e quanto se fere) depende de quanto HP falta ao próprio sacerdote — com vida cheia, não cura nada. Não funciona em alvos gravemente feridos demais.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
@@ -246,7 +246,7 @@ O alvo não pode ser alvejado por outras magias.
 ::
 
 ### Ressurreição
-Você consegue trazer um herói cujo corpo não foi violado de volta à vida.
+Você traz um herói caído de volta à vida. É mais garantido logo após a morte; passado esse tempo, só um sacerdote de domínio altíssimo em Theology consegue. Um corpo violado ainda pode ser revivido, mas a alma retorna enfraquecida.
 ##### Características
 - **Alvo:** Único
 - **Alcance:** Distância
