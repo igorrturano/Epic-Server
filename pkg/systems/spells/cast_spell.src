@@ -53,19 +53,21 @@ program SpellStarter(params)
 		return 0;
 	endif
 
-	// Target BEFORE resources/cast bar: a cancelled or out-of-range click
-	// now costs nothing (no mana to refund), and selectSpellTarget loops
-	// on bad targets instead of fizzling the whole cast.
-	targ := selectSpellTarget(mobile, spellinfo, targ);
-	if (!targ)
-		return 0;
-	endif
-
 	if (!consumeResourcesForSpell(mobile, mw, spellinfo, scroll))
 		return 0;
 	endif
 
 	if (!performCastingProcess(mobile, mw, spellinfo))
+		return 0;
+	endif
+
+	// Pre-cast model: cast bar runs first, THEN the player picks a target
+	// (and can walk around with the cursor up — performCastingProcess
+	// already cleared frozen). selectSpellTarget keeps the retry loop, so
+	// a bad click (out of range / no LoS) re-prompts instead of fizzling;
+	// only an explicit ESC after the cast bar fizzles + costs mana.
+	targ := selectSpellTarget(mobile, spellinfo, targ);
+	if (!targ)
 		return 0;
 	endif
 
