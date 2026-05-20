@@ -9,7 +9,6 @@ include ":charactercreation:habilidades";
 include ":abilities:models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
 include "include/packets";
-include ":combat:Controller/DamageController_legacy";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":tn:cooldown";
@@ -83,15 +82,16 @@ function graphicByAltar(altar)
 	return graphic;
 endfunction
 
-function distanceAllowedForSpells(who, mlore, school)
-	var dist_allowed := 5 + mlore;
+function distanceAllowedForSpells(who, skill, school)
+	var r := cint(skill / 10);
+	var dist_allowed := 5 + r;
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
-		dist_allowed := dist_allowed + (mlore * 2);
+		dist_allowed := dist_allowed + r;
 	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
-		dist_allowed := dist_allowed + (mlore * 2);
+		dist_allowed := dist_allowed + r;
 	elseif (who.npctemplate)
-		dist_allowed := dist_allowed + (mlore * 2);
+		dist_allowed := dist_allowed + r;
 	endif
 
 	// Caminho: Spell Range (+5 tiles)

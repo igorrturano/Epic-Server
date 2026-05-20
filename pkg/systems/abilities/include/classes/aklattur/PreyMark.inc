@@ -3,6 +3,7 @@ use uo;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
+include ":hotbar:custombuff";
 
 /**
  * Marca da Presa (Prey Mark) - ABILITY_ID::MARCA_DA_PRESA (502)
@@ -27,6 +28,12 @@ class PreyMark(CombatAbility)
 			duration := 3;
 		endif
 		return duration;
+	endfunction
+
+	function OnActivate(this, mobile)
+		var who := mobile.GetObjRef();
+		var duration := this.GetDurationFor(mobile);
+		SendAbilityBuff(who, ABILITY_ID::MARCA_DA_PRESA, duration, "Ataques ignoram armadura");
 	endfunction
 
 	function OnBeforeDamage(this, attackInfo)

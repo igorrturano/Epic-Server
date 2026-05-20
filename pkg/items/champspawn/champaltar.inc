@@ -43,11 +43,18 @@ endfunction
 function spawnChampion(altar)
 	var loc := getSpawnLocation(altar);
   var cfg := GetObjProperty(altar, "config");
-  var creature := CreateBoss(cfg.boss, loc[1], loc[2], loc[3], altar.realm);
-  SetObjPRoperty(creature, "#championspawn", altar.serial); //deixa corpo se tiver essa prop
+  // cfg.boss is a struct in newer champ configs and just a template name string
+  // in legacy data — wrap a bare string so CreateEpicBoss always gets a struct.
+  var bossArg := cfg.boss;
+  if (TypeOf(bossArg) == "String")
+    bossArg := struct{ "npctemplate" := bossArg };
+  endif
+  var creature := CreateEpicBoss(bossArg, loc[1], loc[2], loc[3], altar.realm);
   if (creature == error)
     PrintTextAbove(altar, " " + creature);
+    return;
   endif
+  SetObjPRoperty(creature, "#championspawn", altar.serial); //deixa corpo se tiver essa prop
 	SetObjProperty(altar, "champ", creature.serial);
 endfunction
 
@@ -77,12 +84,10 @@ function activateAltar(altar)
 		piece.color:=0;
 	endforeach
 	SetObjProperty(altar, "#active", 1);
-  
-//  PrintTextAbove(altar, "activate");
+
+  // Legacy PrepareEvent/ExecuteEvent hook removed (the event system was deleted).
+  // The `status` flip is preserved so other code that reads it still works.
   if (GetObjProperty(altar,  "status") == "on")
-   // PrintTextAbove(altar, "status on, preparando");
-    var configuracao := GetObjProperty(altar, "config");
-    PrepareEvent(configuracao.evento);
     SetObjProperty(altar, "status", "off");
   endif
 endfunction
@@ -98,13 +103,12 @@ function deactivateAltar(altar)
 	EraseObjProperty(altar, "#completed");
 	EraseObjProperty(altar, "#active");
   var boss :=  SystemFindObjectBySerial( GetObjProperty(altar, "champ") );
-  ApplyDamage( boss, 20000);
+  // Kill the boss to deactivate; legacy ApplyDamage(boss, 20000) is gone.
+  if (boss && boss != error)
+    boss.kill();
+  endif
 	EraseObjProperty(altar, "champ");
-  var configuracao := GetObjProperty(altar, "config");
-  //PrintTextAbove(altar, "desativando");
   if (GetObjProperty(altar, "status") == "off")
-    //PrintTextAbove(altar,"status off, executando");
-    ExecuteEvent(configuracao.evento);
     SetObjProperty(altar,  "status", "on");
   endif
 endfunction

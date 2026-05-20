@@ -11,6 +11,8 @@ use util;
 use math;
 
 include ":attributes:attributes";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":epicspawn:epicBoss";
 /*
  * ExecuteCombatEvent(npc, event, actions)
@@ -250,20 +252,19 @@ function ExecuteDamageAction(targets, action)
         // Processa cada vital
         foreach vital in vitals
             if (vital == "Hits")
-                // Para Hits, aplica cada tipo de dano separadamente
+                // Dispatch each damage_type string from cfg onto the matching channel.
                 foreach damage_type in damage_types
-                    // Usa DamageFLS para tratamento adequado do tipo de dano
                     var dmg_type;
                     case (damage_type)
-                        "Physical": dmg_type := DMG_PHYSICAL; break;
-                        "Fire":     dmg_type := DMG_FIRE; break;
-                        "Cold":     dmg_type := DMG_COLD; break;
-                        "Poison":   dmg_type := DMG_POISON; break;
-                        "Energy":   dmg_type := DMG_ENERGY; break;
-                        default:    dmg_type := DMG_PHYSICAL;
+                        "Physical": dmg_type := DAMAGE_TYPE::BLUNT; break;
+                        "Fire":     dmg_type := DAMAGE_TYPE::FIRE; break;
+                        "Cold":     dmg_type := DAMAGE_TYPE::COLD; break;
+                        "Poison":   dmg_type := DAMAGE_TYPE::POISON; break;
+                        "Energy":   dmg_type := DAMAGE_TYPE::ENERGY; break;
+                        default:    dmg_type := DAMAGE_TYPE::BLUNT;
                     endcase
-                    
-                    DamageFLS(targ, damage, dmg_type);
+
+                    DealDamage(targ, damage, dmg_type);
                 endforeach
             elseif (vital == "Mana")
                 AP_ConsumeVital(targ, MANA, damage);

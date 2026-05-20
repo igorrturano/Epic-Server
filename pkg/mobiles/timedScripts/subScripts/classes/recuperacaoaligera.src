@@ -4,7 +4,6 @@ use os;
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":timedscripts:poisonUtil";
-include ":combat:Controller/DamageController_legacy";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 

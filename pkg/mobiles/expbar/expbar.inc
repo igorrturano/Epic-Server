@@ -7,6 +7,7 @@ use os;
 use vitals;
 use math;
 use util;
+use polsys;
 
 include "include/say";
 include ":gumps:gumps";
@@ -424,20 +425,22 @@ function AwardXPFromKill(killers, corpse)
 endfunction
 
 // =============================================================================
-// CRAFT XP - Called from controladoraComplexos.inc FabricaItemMontado
-// Formula: tier = diff/20, xp = tier * 5. diff < 20 => no award.
-// Non-whitelisted (skill, category) pairs (e.g. tinkering) yield nothing.
+// CRAFT XP - two-step: compute at montagem, pay at completion.
 //
-// SUPPRESSED BY DEFAULT. The would-be amount is computed (incl. stackable
-// potions, so alchemy demand is captured) and logged as CRAFT_SUPPRESSED;
-// no XP is granted unless the "CraftXpEnabled" GlobalProperty == 1.
+// ComputeCraftXP: pure. Whitelist + tier + boost -> int, no side effect.
+//   Called from FabricaItemMontado and stamped onto the montado prop
+//   (xpPendente), because receita.dificuldade is destroyed before the
+//   montado is persisted (DefinePropFabricado strips it).
+// GrantCraftXP: pays the stamped amount at EV_ITEM_PRODUZIDO, i.e. when a
+//   real item is finished and materials were consumed - never at montagem,
+//   so spamming the assembly step grants nothing. Farm closed.
 //
-// WARNING: setting CraftXpEnabled = 1 reopens the original farm — XP here
-// is awarded at the *montagem* step, not at completion. Before re-enabling,
-// move the award to EV_ITEM_PRODUZIDO in gerenteTratamentoProduto.src.
+// SUPPRESSED BY DEFAULT: logged as CRAFT_SUPPRESSED unless the
+// "CraftXpEnabled" GlobalProperty == 1. Tinkering / non-whitelisted pairs
+// and recipes with skill requirement < 20 yield nothing by design.
 // =============================================================================
-function AwardXPFromCraft(who, receita, skill, categoria)
-    if (!who || !receita)
+function ComputeCraftXP(receita, skill, categoria)
+    if (!receita)
         return 0;
     endif
 
@@ -466,11 +469,27 @@ function AwardXPFromCraft(who, receita, skill, categoria)
         return 0;
     endif
 
-    var xp_gain := CInt(tier * 5 * GetActiveXPBoostMult());
+    return CInt(tier * 5 * GetActiveXPBoostMult());
+endfunction
+
+function GrantCraftXP(who, xp_gain, categoria)
+    xp_gain := CInt(xp_gain);
+    if (!who || xp_gain <= 0)
+        return 0;
+    endif
 
     if (CInt(GetGlobalProperty("CraftXpEnabled")) == 1)
         AddXP(who, xp_gain, XP_CRAFT);
         return xp_gain;
+    endif
+
+    // Neutral, throttled notice (max once/hour per char) so crafters know
+    // the lack of XP is intentional, without naming the farm.
+    var now := POLCore().systime;
+    var lastNotice := GetObjProperty(who, "xpSuppressNoticeAt");
+    if (lastNotice == error || !lastNotice || now - CInt(lastNotice) >= 3600)
+        SendSysMessage(who, "O ganho de XP por criação está temporariamente em ajustes.");
+        SetObjProperty(who, "xpSuppressNoticeAt", now);
     endif
 
     XP_Record(who, xp_gain, XP_CRAFT_SUPPRESSED, categoria);
@@ -511,6 +530,10 @@ function discrete_gump(who)
 
     var result := GFSendGump(who, gump);
     if (result[0] == 1)
+        // Open the buyhab slots earned for the new level before rendering,
+        // same as core_skillWin does on menu entry — otherwise the slot
+        // just reached doesn't show until the player opens the full menu.
+        SetPlayerSkillLevel(who);
         var hab_gump := GFECreateGump("Menu de Habilidades", 440, 565);
         ShowHabilidadesPage(hab_gump, who);
         AddNavigationBar(hab_gump, 2);

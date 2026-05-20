@@ -36,7 +36,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 				this.SetResistsMod(ResistModEncantar(this.GetObjRef()));
 			endif
 
-			this.WeightVar := this.__CalculateWeight();
+			this.Weight := this.__CalculateWeight();
 			this.STRRequired := this.__CalculateSTRRequired();
 			this.__InitModifiers();
 			this.CriticalReductionMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_REDUCAOCRITICO);
@@ -269,19 +269,7 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 
 	// Private functions
 	function __CalculateWeight(this)
-		// TODO: Revisar para ver está calculando correto
-		var weight := 1;
-		
-		if (this.IsShield()) // Se for escudo, peso é o DEX Penalty
-			weight := -(this.Modifiers[DEXTERITY].GetValue()) ?: 1;
-		else // Se não for, é a soma do maior valor de resistência + resistência por slot
-			weight := Max(array{this.Resists.GetSlashResist(), this.Resists.GetPiercingResist(), this.Resists.GetBluntResist()});
-			weight += CInt(getResistPhysicalBySlot(this.GetCoverage()[1]));
-		endif
-
-		weight *= GetWeightMultiplierByMaterial(this.GetMaterial());
-
-		return weight;
+		return CInt(this.GetTemplate().weight * GetWeightMultiplierByMaterial(this.GetColor()));
 	endfunction
 
 	function __CalculateSTRRequired(this)
@@ -346,7 +334,16 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 				endif
 
 				this.SetModifier(AttributeModifier(DEXTERITY, slotDex + modifiersProt[DEXTERITY].GetValue()));
-				this.SetModifier(AttributeModifier(SNEAK, modifiersSlot[SNEAK].GetValue() + modifiersProt[SNEAK].GetValue()));
+
+				// Couro Negro (0xef23) em Armadura Leve zera penalidade de furtividade do slot.
+				var slotSneak := modifiersSlot[SNEAK].GetValue();
+				if (this.GetTipoProtecao()["Armadura Leve"])
+					var fabProp := GetObjProperty(this.GetObjRef(), "fabricado");
+					if (fabProp != error && fabProp.materialPrincipal && CInt(fabProp.materialPrincipal) == 0xef23)
+						slotSneak := 0;
+					endif
+				endif
+				this.SetModifier(AttributeModifier(SNEAK, slotSneak + modifiersProt[SNEAK].GetValue()));
 				this.SetModifier(AttributeModifier(MECHANICS, modifiersSlot[MECHANICS].GetValue() + modifiersProt[MECHANICS].GetValue()));
 				this.SetModifier(AttributeModifier(MAGERY, modifiersSlot[MAGERY].GetValue() + modifiersProt[MAGERY].GetValue()));
 				var awarenessProtPenalty := (Upper(this.GetCoverage()[1]) == Upper(HEAD)) ? modifiersProt[AWARENESS].GetValue() : 0;

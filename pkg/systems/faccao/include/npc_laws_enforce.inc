@@ -1,3 +1,7 @@
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include "include/arrays";
+
 // npc_laws_enforce.inc — Enforcement de leis de faccao para NPCs de combate.
 //
 // REQUERIMENTOS do script que inclui este arquivo:

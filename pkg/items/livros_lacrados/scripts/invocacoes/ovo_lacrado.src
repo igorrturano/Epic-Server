@@ -1,0 +1,83 @@
+// ovo_lacrado.src - Ovo invocado pelo livro lacrado. Clique para ler o que acontece dentro.
+// Eclode no 30A dia em um Acefalo Bebe.
+
+use uo;
+use os;
+
+include "include/say";
+
+program OvoLacrado(who, item)
+ var leitor := CInt(GetObjProperty(item, "ovo_leitor"));
+    if (leitor != who.serial)
+ SendSysMessageEX(who, "Este ovo nao pertence a voce.", SSM_INFO);
+        return;
+    endif
+
+ var criado := CInt(GetObjProperty(item, "ovo_criado_em"));
+    var dias := CInt((ReadGameClock() - criado) / 86400) + 1;
+    if (dias < 1)  dias := 1;  endif
+    if (dias > 30) dias := 30; endif
+
+    var frases := array{
+ "O ovo esta levemente mais quente do que deveria.",
+ "Uma textura diferente na casca. Como se algo tivesse tocado por dentro.",
+ "Um cheiro levemente metalico emana do ovo. Nao era esse cheiro ontem.",
+ "Ao colocar o ouvido junto, ha um ritmo. Lento. Mas e um ritmo.",
+ "A casca mudou de cor em uma pequena area. Do tamanho de uma moeda.",
+ "Peso diferente hoje. Como se algo tivesse se deslocado internamente.",
+ "Tres vezes ele vibrou durante a noite. Voce acordou sem saber por que.",
+ "A mancha colorida cresceu. Agora tem o tamanho de uma palma.",
+ "Um nao-som. Uma ausencia de barulho em uma forma especifica.",
+ "Quente demais para segurar por mais de alguns segundos.",
+ "Algo se apoia na parede interna. O peso muda conforme voce inclina o ovo.",
+ "A casca faz um som seco quando tocada. Mais oco do que antes.",
+ "Um arranhao fino apareceu na casca. Vindo de dentro.",
+ "Dois arranhoes agora. Paralelos. Espacados de forma regular.",
+ "O cheiro metalico ficou mais forte. Misturado com algo organico.",
+ "Quatro arranhoes. O padrao sugere dedos. Ou algo analogo a dedos.",
+ "Ele escorregou da sua mao esta manha. Nao caiu. Saltou.",
+ "O ritmo interno acelerou. Agora e claramente uma batida.",
+ "A casca esta fina o suficiente para ver luz atraves dela ao sol.",
+ "Voce viu uma sombra mover-se dentro. Por um momento.",
+ "O ovo aquece sua mochila como uma brasa que tem calor mas nao tem fogo.",
+ "A batida parou por horas. Entao voltou, mais forte do que antes.",
+ "Os arranhoes formam um padrao. Nao e aleatorio.",
+ "Ao inclinar o ovo, algo solido desliza de um lado para o outro.",
+ "A casca esta rachando por dentro. Nao visivel ainda. Mas audivel.",
+ "Voce acordou com o ovo nas suas maos. Nao se lembra de te-lo pego.",
+ "A luz que passa pela casca projeta uma silhueta. A silhueta nao tem cabeca.",
+ "As rachaduras internas chegaram a superficie. Uma. Longa e fina.",
+ "Ele esta pronto. Voce sabe disso da mesma forma que sabe quando algo termina.",
+ "A casca cede."
+    };
+
+    SendSysMessageEX(who, frases[dias], SSM_INFO);
+
+    if (dias < 30) return; endif
+
+    sleep(2);
+    DestroyItem(item);
+
+ var npc := CreateNpcFromTemplate(":epicAI:headless", who.x + 1, who.y, who.z, 0, who.realm);
+    if (!npc || npc.errortext) return; endif
+
+ SetName(npc, "Acefalo Bebe");
+    var escala := struct{height := 500, width := 500};
+ SetObjProperty(npc, "entityScale", escala);
+
+    var ox := npc.x;
+    var oy := npc.y;
+    var oz := npc.z;
+    MoveObjectToLocation(npc, ox + 30, oy + 30, oz, npc.realm, MOVEOBJECT_FORCELOCATION);
+    sleepms(150);
+    MoveObjectToLocation(npc, ox, oy, oz, npc.realm, MOVEOBJECT_FORCELOCATION);
+
+    var frases_bebe := array{
+ "*tropeca ao tentar andar*",
+ "*olha ao redor confuso*",
+ "*emite um som pequeno*",
+ "*fica parado por um instante*"
+    };
+ start_script(":livros_lacrados:scripts/invocacoes/brain_wander",
+        array{npc, ReadGameClock() + 1800, frases_bebe, 30});
+endprogram

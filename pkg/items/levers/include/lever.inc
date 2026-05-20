@@ -4,7 +4,7 @@ use os;
 use cfgfile;
 include ":traps:traps";
 include "include/arrays";
-include ":tn:boss";
+
 include ":combat:hitscripts";
 include ":levers:efeitos";
 include ":tn:cooldown";
@@ -428,20 +428,23 @@ function spawnBoss(item, opts)
    // Get the boss configuration saved by epicboss command
    var form_data := GetObjProperty(item, "form_data");
    if (!form_data)
-      // Fallback to old config if no form_data exists
+      // Legacy fallback: old levers stored just a template name in `configboss.boss`
+      // via the deprecated `Createboss` GM command (now removed). Wrap it in the
+      // minimal struct CreateEpicBoss expects (just npctemplate) so existing
+      // world data still spawns. New levers use the full form_data path below.
       var cfg := GetObjProperty(item, "configboss");
       if (cfg && cfg.boss)
-         // Use old system as fallback
          var text_above := GetObjProperty(item, "txtabove");
-         var creature;
+         var spawn_x, spawn_y, spawn_z;
          if (GetObjProperty(item, "loc") == 1)
-            creature := Createboss(cfg.boss, item.x, item.y, item.z, item.realm);
+            spawn_x := item.x; spawn_y := item.y; spawn_z := item.z;
          else
-            var x := GetObjProperty(item, "x");
-            var y := GetObjProperty(item, "y");
-            var z := GetObjProperty(item, "z");
-            creature := Createboss(cfg.boss, CInt(x), CInt(y), CInt(z), item.realm);
+            spawn_x := CInt(GetObjProperty(item, "x"));
+            spawn_y := CInt(GetObjProperty(item, "y"));
+            spawn_z := CInt(GetObjProperty(item, "z"));
          endif
+
+         var creature := CreateEpicBoss(struct{ "npctemplate" := cfg.boss }, spawn_x, spawn_y, spawn_z, item.realm);
 
          if (creature && creature != error)
             SetObjProperty(creature, "anchor", array{item.x, item.y, item.z});

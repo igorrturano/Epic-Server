@@ -7,7 +7,8 @@ use util;
 
 include ":brainAI:npcUtil";
 include "include/packets";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 
 /*
  * SpitAced(spitter, spit_on)
@@ -72,7 +73,7 @@ function DealAcidDamage(npc, mobile, acid_pool, acid_damage:=0)
 	else
 		return 0;
 	endif
-	DamageFLS(mobile, acid_damage, DMG_POISON, npc);
+	DealDamage(mobile, acid_damage, DAMAGE_TYPE::POISON, npc);
 	var equipped_items := ListEquippedItems(mobile);
 	if( RandomInt(10) > 5 )
 		var acid_burned := equipped_items[RandomInt(equipped_items.size())+1];

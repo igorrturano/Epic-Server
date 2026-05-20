@@ -3,6 +3,7 @@ use os;
 use util;
 use cfgfile;
 
+include "include/epicCombatUtils";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":magery:spells";
@@ -12,6 +13,7 @@ include ":spells:Controller/SC_Damage";
 include "include/tileEffects";
 include ":taming:taming";
 include "include/epicMageryUtils";
+include ":charactercreation:resists";
 
 program chainLightning(params)
 	var caster := params[1];
@@ -39,6 +41,8 @@ program chainLightning(params)
 
 	var casterThenNextMobile := caster;
 	var jump := 0;
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
 	foreach mobile in allMobiles
 		PlayMovingEffect(casterThenNextMobile, mobile, 0xE088, 15, 20);
 		casterThenNextMobile := mobile;
@@ -52,6 +56,12 @@ program chainLightning(params)
 				falloff := 0.2;
 			endif
 			dmg := Cint(dmg * falloff);
+		endif
+
+		// REFLEX save halves damage on each jump independently.
+		if (CheckResist(mobile, REFLEXES, diff, -bonus))
+			dmg := Cint(dmg / 2);
+			SendSysMessageEx(mobile, "Voce desvia parcialmente do raio.", SSM_INFO);
 		endif
 
 		SC_DealDamage(caster, mobile, CInt(spellinfo.id), cint(dmg), DMG_ENERGY);

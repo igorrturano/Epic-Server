@@ -2,7 +2,8 @@ use uo;
 use os;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
 
@@ -22,7 +23,7 @@ program Rend(params)
 	var damage := tier * 4;
 
 	PrintTextAbove(me, "*rasga com as garras!*");
-	DamageFLS(targ, damage, DMG_FORCED, me, "rend");
+	DealDamage(targ, damage, DAMAGE_TYPE::BLUNT, me);
 
 	if (!CheckResist(targ, FORTITUDE, RESIST_HARD))
 		TS_StartTimer(targ, "bleed", 15, tier, me);

@@ -4,7 +4,6 @@ use os;
 
 include ":attributes:attributes";
 include "include/client";
-include ":combat:Controller/DamageController_legacy";
 
 use vitals;
 

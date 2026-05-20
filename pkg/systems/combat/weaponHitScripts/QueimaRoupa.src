@@ -2,10 +2,11 @@ use uo;
 use vitals;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":wrappers:Objects/Model/WeaponWrapper";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
 
 program HitScript(params)
 
@@ -26,7 +27,11 @@ program HitScript(params)
 		dmg := 10;
 	endif
 
-	DamageFLS(defender, CInt(dmg), DMG_FORCED, attacker);
+	var qrType := WeaponWrapper(attacker.weapon).GetAttackType();
+	if (!qrType || qrType is @Exception)
+		qrType := DAMAGE_TYPE::BLUNT;
+	endif
+	DealDamage(defender, CInt(dmg), qrType, attacker);
 
 	return 1;
 endprogram

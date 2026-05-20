@@ -10,7 +10,6 @@ include ":timedscripts:timedScripts";
 include ":attributes:attributes";
 include "include/sounds";
 include "include/say";
-include ":combat:Controller/DamageController_legacy";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":combat:Controller/FXController";
 include ":fls_core:fls_characters";

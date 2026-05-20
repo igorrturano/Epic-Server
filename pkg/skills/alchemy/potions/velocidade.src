@@ -2,6 +2,7 @@ use os;
 use uo;
 use util;
 use cfgfile;
+include ":timedScripts:timedScripts";
 include ":alchemy:alchemy";
 
 program drink_blue(who, potion)

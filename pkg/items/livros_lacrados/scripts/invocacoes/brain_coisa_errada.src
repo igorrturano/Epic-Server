@@ -1,0 +1,12 @@
+// brain_coisa_errada.src - timer de 1h; limpa flags globais ao expirar.
+
+use uo;
+use os;
+
+program BrainCoisaErrada(params)
+ var expira := CInt(GetGlobalProperty("coisa_errada_expira"));
+    var restante := expira - ReadGameClock();
+    if (restante > 0) sleep(restante); endif
+ EraseGlobalProperty("coisa_errada_presente");
+ EraseGlobalProperty("coisa_errada_expira");
+endprogram

@@ -1,7 +1,6 @@
 use uo;
 use os;
 use cfgfile;
-include ":damage:damage";
 include ":wrappers:Objects/Model/MobileWrapper";
 
 // Constantes

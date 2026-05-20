@@ -3,7 +3,6 @@ use os;
 use vitals;
 
 include ":charactercreation:resists";
-include ":combat:Controller/DamageController_legacy";
 
 program calor(who, regioname)
 	start_script(":nature:caloreffect", { who });

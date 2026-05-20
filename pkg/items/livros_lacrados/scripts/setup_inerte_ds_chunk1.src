@@ -1,0 +1,178 @@
+use uo;
+use os;
+use datafile;
+
+include ":livros_lacrados:scripts/setup_helper";
+
+program SetupInerteChunk1(who, cmdline)
+ var df := OpenDataFile(":livros_lacrados:inerte_textos");
+    if (df.errortext)
+ df := CreateDataFile(":livros_lacrados:inerte_textos", DF_KEYTYPE_STRING);
+    else
+    endif
+    if (df.errortext)
+ if (who) SendSysMessage(who, "Erro df: " + df.errortext); endif
+        return;
+    endif
+
+    //   -- -- -- diario_puxado   -- -- --
+
+ _Setup(df, "t_diario_puxado", array{
+ "Diario — Primeiros Dias em Valtheris",
+ "O que Esqueci no Caminho",
+ "Notas de Um Recem-Chegado",
+ "Anotacoes sem Data — Letra Tremente",
+ "Diario de Quem Nao Sabe Voltar"
+    });
+
+ _Setup(df, "c_diario_puxado_3", array{
+ "Terceiro dia. Acordei sabendo meu nome. So meu nome. O resto veio aos poucos, como escorrer de gelo — lento, frio, incerto de ate onde vai chegar.<br><br>Ha outros que vieram pelo mesmo caminho. Reconheco pelo olhar. A gente nao fala sobre isso. Nao ha o que falar ainda.",
+ "Semana e dois dias. O nome da minha cidade saiu enquanto dormia. Sei que tinha rio. Sei que tinha mercado as quartas. O rosto da minha irma ainda esta inteiro, mas nao sei mais a cor do cabelo dela.<br><br>Continuo escrevendo. E a unica coisa que freia o escorregamento.",
+ "Encontrei uma mulher que tambem chegou ha pouco. Ela disse que veio de muito longe. Nao perguntei de onde — quando alguem diz 'muito longe' aqui, nao e uma distancia. E outra coisa.<br><br>Ela me deu pao. Eu dei a ela meu nome. Fico pensando se foi troca justa.",
+ "Perguntei a um velho no mercado como se vai embora daqui. Ele olhou para mim com cansaco — nao de raiva, de ter respondido muito. Disse: 'A maioria para de perguntar no segundo ano.'<br><br>Nao gostei da resposta. Mas e o tipo de resposta que fica.",
+ "Ha um menino que me observa toda vez que passo pela fonte. Nao e ameaca. E reconhecimento — como se ele soubesse algo de mim que eu ainda nao sei.<br><br>Hoje ele apontou para o norte antes que eu passasse. Fui para o norte. Nao sei por que fui."
+    });
+
+ _Setup(df, "c_diario_puxado_4", array{
+ "Faz seis meses. Comecei a perceber os que chegaram antes de mim — os que tem o mesmo olhar mas perderam a urgencia. Pararam de perguntar como sair. Pararam de mapear. Simplesmente... ficaram.<br><br>Nao e rendição. E transformação. O problema e que de fora parece igual.",
+ "Fui ate onde dizem que fica a Torre. Nao cheguei perto o suficiente para ver a entrada, mas vi a sombra dela no horizonte ao entardecer. E grande demais para ser so pedra.<br><br>Voltei antes do escuro. Tem coisas que a gente aprende a respeitar aqui sem ninguem explicar.",
+ "Vim buscar algo. Isso eu escrevi num papel quando ainda estava do outro lado. O papel eu perdi no caminho. O que eu vim buscar, ha meses nao consigo mais escrever — quando tento, a frase nao termina.<br><br>Talvez o que eu vim buscar ja nao seja o que preciso encontrar.",
+ "O Primeiro Puxado nao tinha nome, dizem. Chegou antes de qualquer outro e nao conseguiu ir embora e em vez de lutar aprendeu a entender. Dizem que ainda esta aqui. Dizem que nao parece como deveria parecer.<br><br>Deixei pao numa pedra como alguem me disse para fazer. De manha o pao tinha sumido. Pode ser animal. Prefiro pensar que nao e.",
+ "Hoje nao vou escrever o que vi. Nao porque seja perigoso — porque se eu escrever vai parecer real e se parecer real vou ter que decidir o que fazer. Prefiro ainda um pouco mais de tempo antes disso."
+    });
+
+ _Setup(df, "c_diario_puxado_5", array{
+ "Dezessete anos. Parei de escrever em ciclos — ja nao sei mais que estacao e la de onde vim. So sei a de ca. O calendário de la perdeu sentido antes do quinto ano.<br><br>Minha filha nasceu aqui. Ela tem os olhos da minha mae. Isso as vezes e suficiente para aguentar o resto.",
+ "Ha uma diferenca entre ser puxado e ser chamado. Puxado e o que acontece quando o mecanismo te alcanca. Chamado e quando alguem especifico abriu a porta para voce.<br><br>Eu vim puxado. Mas ha marcas no meu caminho — escolhas de rota que eu nao me lembro de ter feito — que sugerem que alguem tambem chamou. Essas duas coisas podem ser verdade ao mesmo tempo. O que me inquieta nao e isso. E quem chamou e por que nao se apresentou ainda.",
+ "O mecanismo que nos trouxe nao tem interruptor. Tres anos tentando entender isso, e o que posso dizer com certeza. Nao e descuido de quem construiu — e caracteristica. Foi feito para nao parar.<br><br>A pergunta que nao consigo responder: para nao parar por quanto tempo? E para servir a que, depois que o proposito original acabou?",
+ "Existe algo na costa que nao e so agua e pedra. Os pescadores sabem. Nao falam, mas sabem. Ha noites em que a mare se comporta diferente — nao de forma perigosa, de forma intencional. Como se algo a movesse de baixo, com proposito.<br><br>O velho Brennan me disse para nao pescar na mare da lua nova. Nao deu motivo. Ja vi tres que nao ouviram. Dois voltaram diferentes. Um nao voltou.",
+ "Escrevo isso sabendo que nao vou conseguir levar estas paginas de volta. Escrevo para quem vier depois e encontrar este diario num bau ou numa prateleira.<br><br>O que aprendi que vale a pena passar: a ilha nao e prisao por descaso. E prisao por projeto. Quem a fez sabia o que fazia. A saida, se existe, nao esta onde a maioria procura. E isso que vou tentar descobrir antes que minha memória de la desapareça de vez."
+    });
+
+    //   -- -- -- carta_aiglano   -- -- --
+
+ _Setup(df, "t_carta_aiglano", array{
+ "Despacho — Coorte Vigesima, Ano Quinto",
+ "Correspondencia Interceptada — Cera da Legiao",
+ "Carta para o Arquivo Central — Classificado",
+ "Palavras a Um Irmao de Armas — Nunca Enviadas",
+ "Relatorio de Campanha — Setor Norte"
+    });
+
+ _Setup(df, "c_carta_aiglano_3", array{
+ "Ao Arquivo da Decima Segunda Legiao —<br><br>Chegamos a Valtheris sem baixas. A passagem foi mais suave do que o relatorio anterior indicava. Povo local nao demonstra hostilidade aberta. Demonstra, ao contrario, uma indiferenca que nao sei classificar. Soldados de Aiglano nao impressionam aqui da mesma forma que impressionam nos territorios do continente.<br><br>Recomendo cautela antes de qualquer demonstracao de forca.<br><br>— Centuriao Quintus Varro, Coorte Vigesima",
+ "Brennus —<br><br>Nao e desobedecer ordens escrever isso. E registrar o que as ordens nao cobrem.<br><br>A cada semana que passa entendo melhor por que as coortes anteriores escolheram ficar. Nao e magia, nao e fraqueza. E que o lugar entra diferente. O lugar de onde viemos entrava com barulho. Aqui entra em silencio, pelo fundo.<br><br>Estou bem. Nao estou mais com saudade. Isso me preocupa um pouco.<br><br>— Quintus",
+ "Ao Decano Lucio Varro —<br><br>Encontramos as ruinas da guarnicao anterior hoje. Quinze anos de abandono e ainda parece que um turno de sentinelas poderia comecar amanha. Nossas marcas na pedra. Nossos brasoes na madeira podre.<br><br>O soldado Brennan encontrou um nome gravado na pedra da entrada. Era o nome dele. Ele nunca esteve aqui antes. Nao temos explicacao. Prefiro registrar e nao especular.",
+ "CONFIDENCIAL — Ao General Marcellus —<br><br>O suprimento da Coorte Vigesima Tres foi perdido em transporte. Nao por emboscada. Simplesmente nao chegou. Quatorze homens conduziram o comboio. Todos chegaram ao destino. O suprimento nao chegou com eles. Nenhum dos quatorze sabe dizer o que aconteceu.<br><br>Nenhum deles concorda no ponto exato onde a carga estava pela ultima vez. Os relatos diferem em ate dois dias de marcha.<br><br>Aguardo ordens.",
+ "Irma —<br><br>Voce perguntou se me arrependo de ter me alistado. Hoje nao. Ontem sim.<br><br>O que nao esperava: o servico aqui e diferente de qualquer campanha anterior. Em Aiglano lutamos contra inimigos com nome e bandeira. Aqui o que ameaca as vezes nao tem bandeira, as vezes nao tem nome, mas sempre tem intencao. Aprender a distinguir qual e qual tem sido meu treino real."
+    });
+
+ _Setup(df, "c_carta_aiglano_4", array{
+ "Ao Arquivo Central da Legiao — Relato da Campanha do Norte, Ano 12 —<br><br>O acampamento foi estabelecido conforme o plano. Na manha do terceiro dia, encontramos marcas no chao que nenhum de nos havia feito. Tres curvas fechadas, desenhadas com cinza fria — cinza que nao estava quente, que nunca esteve.<br><br>O magista identificou o simbolo. Pediu que nao registrassemos no diario oficial. Registramos aqui, em separado.<br><br>Associacao conhecida: culto serpentino do pantano. Grau de ameaca: incerto. Recomendacao: nao investigar sem reforco.",
+ "Decano Varro —<br><br>O prisioneiro capturado na rota leste nao e inimigo no sentido convencional. Dois dias de interrogatorio deixaram isso claro. Tambem nao e aliado.<br><br>E um homem que passou por algo que nenhuma categoria da Legiao cobre adequadamente. Sobreviveu, mas de forma incompleta. Pede apenas que o deixemos ir para o norte. Diz que tem uma obrigacao antes de poder encerrar o que tem para encerrar.<br><br>Nao sei o que fazer com isso. Aguardo sua instrucao.",
+ "Este nao e relatorio oficial. E aviso de um homem que sera promovido amanha e transferido depois de amanha e que portanto nao vera o que esta prestes a acontecer aqui.<br><br>Algo se movimenta nos arredores do acampamento norte. Nao sei o que e. Sei que sentinelas que ficam la mais de tres semanas comecam a ouvir coisas. Sei que dois homens pediram baixa no mesmo dia sem se comunicar e deram as mesmas razoes.<br><br>Investiguem. Nao esperem.",
+ "Encontrado entre os pertences do Subcomandante Antonius —<br><br>Se voce le isto, eu nao consegui entregar pessoalmente. O que descobri sobre a campanha de setenta anos atras nao pode ser destruido mas tambem nao pode chegar a maos erradas.<br><br>O general que conduziu aquela campanha nao morreu na travessia. Foi capturado. Nao pelo inimigo identificado. Por algo que usava o inimigo como distancia.<br><br>Procure a fenda na rocha vermelha a leste do porto velho. O que esta la dentro responde perguntas, mas cobra.",
+ "Para quem encontrar este diario —<br><br>Sou Gaius Porthus, centuria da Decima Legiao de Aiglano. Estou vivo mas nao estou bem. Minha coorte se dissolveu ha tres meses. Nao em batalha — simplesmente parou de ser uma unidade. Cada um foi embora para um lado sem ordem de dissolucao.<br><br>Continuo aqui porque nao sei para onde ir. Valtheris nao parece querer me deixar. Ou sou eu que nao quero ir. Ja nao consigo distinguir."
+    });
+
+ _Setup(df, "c_carta_aiglano_5", array{
+ "ARQUIVO SELLADO — ACESSO: CONSUL OU SUPERIOR —<br><br>Depoimento do ultimo sobrevivente da Expedicao Especial da Decima Segunda Legiao, ciclo 43.<br><br>O Andarilho nos encontrou. Nao o encontramos — ele encontrou a nos. Sabia nossos nomes. Sabia o nome do filho do meu comandante, nascido depois que partimos.<br><br>Disse apenas: 'Saí de onde nao se sai. Isso nao e conquista — e um erro que o que me retinha ainda nao corrigiu.'<br><br>Pediu que enviassemos mensagem ao Conselho: 'O caminho existe, mas nao esta onde procuram. Quem souber ler o peso das aguas vai entender.'<br><br>Depois foi embora. A direcao que tomou nao consta em nenhum mapa.",
+ "Comandante Sextus Varro — Pessoal e Urgente — Destruir apos leitura —<br><br>Tres soldados da Coorte Vigesima Dois retornaram de patrulha costeira. Fisicamente intactos. Historicos de combate intactos. Personalidade reconhecivel.<br><br>Mas algo esta faltando. O magista examinou os tres. Disse apenas: 'O que foi deixado para tras nao volta. O que esta aqui ainda e a pessoa — mas a pessoa ficou menor.'<br><br>Nao sei o que fazer com isso. O magista tampouco. Nenhuma doutrina da Legiao cobre este caso.",
+ "Encontrado nos arquivos selados da Legiao — data ilegivel —<br><br>O mecanismo costeiro nao distingue aliado de inimigo. Isso era sabido. O que nao era sabido: ele tambem nao distingue adequadamente entre quem esta pronto para a travessia e quem nao esta.<br><br>Tres casos documentados de homens capturados que nao deveriam ter sido capturados. Todos retornaram. Todos diferentes. O grau de diferenca variou, mas a direcao da mudanca foi a mesma em todos os tres: menos.<br><br>Recomendacao do magista-chefe: evacuar o setor costeiro norte durante as luas de mare alta. Recomendacao ignorada por razoes operacionais.<br><br>Registro aqui para que haja pelo menos um papel que diga que alguem avisou."
+    });
+
+    //   -- -- -- registro_anao_khar   -- -- --
+
+ _Setup(df, "t_registro_anao_khar", array{
+ "Inventario de Turno — Galeria Doze",
+ "Registro de Dividas — Assinado em Pedra",
+ "Notas do Mestre Aldrun — Khar-Zulgrimm",
+ "Relatorio ao Conselho dos Anciaos",
+ "Correspondencia entre Clas — Uso Interno"
+    });
+
+ _Setup(df, "c_registro_anao_khar_3", array{
+ "INVENTARIO — GALERIA DOZE — CICLO 7<br><br>Ferro cinza: 340 fragmentos. 12 descartados, impureza de pedra escura. Qualidade: media.<br>Carvao vulcanoso bruto: 3 blocos. Destino: fundicao norte.<br>Cristal de calor: 2 unidades. Aguardando classificacao.<br><br>Nota do Mestre Aldrun: veia sul resistindo acima do esperado para a composicao. Nao e dureza de minerio — e outra coisa. Borin tera que investigar antes do proximo turno.",
+ "DIVIDAS REGISTRADAS — ASSINADAS EM PEDRA — VALIDAS ATE O SETIMO HERDEIRO<br><br>Cla Grimtor deve ao Cla Khar: 400 fragmentos de minerio processado. Prazo: colheita de pedra, ciclo seguinte.<br>Cla Veldrak deve ao Cla Khar: favor sem medida em minerio. A natureza do favor registrada em separado, selada. Validade: enquanto o Cla Veldrak tiver herdeiros vivos.<br><br>Nota: a divida do Cla Veldrak e de sangue. O Conselho sabe. O Cla sabe. Ninguem fala. Mas todo mundo paga.",
+ "DIARIO PESSOAL — ALDRUN KO DURHAM<br><br>Decimo terceiro dia na Galeria Nova. Ainda nao me acostumei com o silencio desta parte. Nas outras galerias a picareta ecoa e voce sabe onde esta. Aqui o som some.<br><br>Borin disse que encontrou uma camara fechada por dentro, tres turnos atras. Dei desculpa para nao ir ver. Amanha vou ter que ir ver.",
+ "RELATORIO DE OCORRENCIA — CLA KHAR — AO CONSELHO DOS ANCIAOS<br><br>O problema nao e a pedra. A pedra esta la, como sempre esteve. O problema e o que vive dentro da pedra.<br><br>Nao sao criaturas. Nenhuma criatura foi encontrada. O que encontramos foi intencao. Nos, que vivemos sob a terra, sabemos reconhecer intencao quando a encontramos na pedra.<br><br>A pedra das profundezas quer algo. Nao sabemos o que. Mas quer.",
+ "CORRESPONDENCIA ENTRE GUILDAS — MESTRE BRUMDAR —<br><br>O encomendante humano voltou. Ainda quer a liga especial. Ainda nao diz para que serve. Ainda oferece o mesmo preco absurdo.<br><br>Minha recomendacao permanece a mesma: nao fazer. O minerio que ele especificou nao deveria ser misturado da forma que pede. Nao porque seja dificil — porque vai funcionar. E o que vai resultar disso e algo que nao quero ter feito com estas maos.<br><br>Mas e sua decisao, Mestre."
+    });
+
+ _Setup(df, "c_registro_anao_khar_4", array{
+ "DIARIO — MESTRE ALDRUN — CONTINUACAO<br><br>Entrei na camara fechada por dentro. Borin estava certo sobre a camara. Errou sobre o que havia la dentro.<br><br>Nao era deposito esquecido. Era espaco de trabalho. Mesa de pedra. Ferramentas organizadas. Como se o ocupante tivesse saido para o turno e nao voltado.<br><br>As marcas eram do Cla Khar — mas de uma era diferente. Calculei: selada ha pelo menos trezentos ciclos. Alguem viveu aqui por muito tempo sem que nenhum de nos soubesse.",
+ "RELATORIO TECNICO — FUNDICAO NORTE — SELADO<br><br>A amostra da Galeria Profunda nao e so pedra. A composicao mineral esta certa, mas ha algo misturado que nao reage como mineral reage.<br><br>Aquecemos alem do ponto de fusao. A amostra nao derreteu. Se reorganizou. Os padroes que formou foram desenhados e arquivados.<br><br>O magista humano que visitou a fundicao quinze dias depois reconheceu os padroes como glifos de uma lingua antiga. Nao disse qual lingua. Ficou em silencio por um tempo longo. Depois foi embora sem comentar mais.<br><br>A amostra esta selada. Paramos o experimento.",
+ "MEMORIAS — DURGIN KO VELDRAK — ESCRITO PARA OS FILHOS<br><br>Havia algo na Galeria Quatorze que sua avo encontrou antes de mim. Ela nunca disse o que era. Disse apenas que era velho, estava esperando, e que se nao tivesse ido embora naquele dia talvez ainda estivesse la.<br><br>Fui ver. Encontrei marcas no chao. Com tempo percebi que formavam mapa. De onde, nao sei. Para onde, tambem nao sei. Mas alguem queria que alguem seguisse.",
+ "NOTA AO ARQUIVO — AO MESTRE DURRAK<br><br>A delegacao humana que pediu acesso a Galeria Profunda foi informada: galeria em manutencao. Isso e tecnicamente verdade.<br><br>O que nao dissemos: as anomalias respondem diferente a presenca humana e a presenca ana. Com humanos, a pedra se aquece. Com anaos, a pedra ecoa de um jeito que faz os mineiros mais velhos pararem sem conseguir explicar por que.<br><br>Nenhuma delegacao externa entra antes de entendermos isso.",
+ "CARTA PARA DORNAL EM PHRUGUM<br><br>Voce vai rir. Encontrei o que voce procurava — nao onde voce olhava, numa parede que deveria ser so granito.<br><br>O simbolo que seu magista chamou de 'marca de contencao arcana' nao e arcano. E marca de propriedade. Alguem afirmou, em linguagem de pedra que nenhum de nos aprendeu a ler mas que todos entendemos instintivamente, que aquela parede pertence a alguem.<br><br>Nao sei a quem. Mas a afirmacao esta clara.<br><br>Vem me ver. Traz o magista."
+    });
+
+ _Setup(df, "c_registro_anao_khar_5", array{
+ "ARQUIVO SELADO — CLA KHAR — MESTRE E HERDEIRO DIRETO APENAS<br><br>Ha tres ciclos, um mineiro da Galeria Vinte e Dois foi retirado por razao medica. Havia parado de dormir. Nao porque nao conseguia — porque nao queria. Dizia que o que via dormindo era pior que acordado.<br><br>Quando finalmente dormiu, na presenca de dois guardiaos, murmurou em lingua desconhecida pelos dois. O magista chamado disse que era uma lingua arcana antiga — das profundezas, anterior ao que os humanos falam.<br><br>O mineiro nunca aprendeu essa lingua. Nunca teve acesso a ela. Mas falou por quarenta minutos enquanto dormia.<br><br>Transcrevemos. O texto esta no compartimento dois deste arquivo. Nao o leia sem preparo.",
+ "MEMORIAS DO MESTRE ALDRUN — PAGINAS FINAIS<br><br>A camara que vigio ha quarenta ciclos mostrou o que guarda.<br><br>Nao e tesouro. Nao e arma. E uma escolha que alguem fez ha muito tempo e que ainda esta ativa. Ainda opera. Ainda espera que alguem a reverta ou a confirme.<br><br>Nao sou eu que vai decidir. Nao sou suficientemente velho, nao sou suficientemente louco, nao tenho o que e necessario para entrar naquela camara sem sair diferente.<br><br>Deixo estas notas para quem vier depois. Que seja paciente. Que nao subestime o que a pedra lembra."
+    });
+
+    //   -- -- -- canto_bjorske   -- -- --
+
+ _Setup(df, "t_canto_bjorske", array{
+ "Pedra Vermelha — Canto do Cla Brumajord",
+ "Hino dos Afogados — Transmitido Oralmente",
+ "Versos do Inverno Longo",
+ "Para os que Foram Antes do Degelo",
+ "Canto do Cacador que Nao Voltou"
+    });
+
+ _Setup(df, "c_canto_bjorske_3", array{
+ "Pedra vermelha, sangue frio.<br>O lobo partiu, nao voltou mais.<br>Tres noites na neve. Quatro. Cinco.<br>No setimo dia parti sozinho.<br><br>Nao choro o morto — choro a espera.<br>Brumajord lembra os seus.<br>Os seus nem sempre lembram de voltar.",
+ "HINO DOS AFOGADOS DE BRUMAJORD<br><br>Fomos ao fundo — nao por querer.<br>O mar levou. O mar devolve.<br>As vezes devolve menos.<br><br>Bebemos pelos que nao voltaram.<br>Bebemos porque ainda podemos.<br>Brumajord canta pelos ossos no fundo.<br>Os ossos nao precisam mais de voz.",
+ "O Inverno Longo durou sete anos.<br>Meu pai viu o sol sumir atras da neve.<br>Minha mae sentiu o frio entrar nos ossos<br>e nao sair mais — disse que ficou la dentro para sempre.<br><br>Eu nasci no quinto ano.<br>Nunca conheci o sol que eles perderam.<br>Mas conheco o frio que ficou.<br>Esse eu conheco muito bem.",
+ "Para os que foram antes do degelo —<br><br>Voce nao viu o urso acordar este ano.<br>Nao bebeu a cerveja do primeiro degelo.<br>Nao gritou no pico como gritavamos os dois.<br><br>Eu gritei por nos dois.<br>Disse seu nome quando gritei.<br>Brumajord ouviu.<br>Eu espero que voce tambem.",
+ "Ele foi antes da neve endurecer<br>e a neve endureceu sem ele.<br>O rastro no chao foi o ultimo que a neve guardou.<br><br>Nao foi desonra. Foi o jeito certo.<br>Pernas no chao, olhos longe.<br>Fazendo o que nasceu para fazer<br>ate o fim do folego.<br><br>Isso Brumajord honra.<br>Isso o Cla lembra."
+    });
+
+ _Setup(df, "c_canto_bjorske_4", array{
+ "VERSOS DO RETORNO — CANTADOS POR QUEM VEIO DE FORA<br><br>Sai da neve por escolha.<br>O sul tem calor — e tem perguntas.<br>A neve nunca perguntou quem eu era.<br>O sul pergunta toda manha.<br><br>Ainda nao sei responder direito.<br>Mas continuo tentando.<br>Isso Brumajord nao me ensinou — aprendi aqui.",
+ "CANTO DA LOBA DE ACO<br><br>Nasceu em Brumajord, nao ficou.<br>Partiu com dezesseis veraos.<br>Voltou uma vez — cicatrizes que nao eram do frio,<br>olhos que viram o que a neve nao mostra.<br><br>O Cla quis que ficasse.<br>Ela disse: nao posso. Carrego algo que nao pode parar.<br>Saiu antes do sol. O canto das lobas<br>seguiu ela ate o horizonte.",
+ "PALAVRAS DO VELHO GRIMVALD — PARA OS FILHOS<br><br>Seus irmaos foram servir a uma legiao humana.<br>Voltaram com ouro e com palavras que a nossa lingua<br>nao tem espaco para guardar.<br><br>Nao me arrependo. Nao me alegro.<br>O mundo mudou. Brumajord mudou com ele.<br>A neve ficou. Nos mudamos.<br>Isso e o jeito que sempre foi.",
+ "VERSO DO XAMA — TRANSMITIDO ORALMENTE, ESCRITO POR HUMANO<br><br>O lobo que virou homem<br>nao esquece como e ser lobo.<br>O homem que virou lobo<br>raramente lembra como e ser homem.<br><br>O mais dificil e ser os dois.<br>Conheco tres que tentaram.<br>Um vive bem. Um vive mal.<br>O terceiro parou de se importar com qual e qual.",
+ "CANTO DE VIAGEM — PARA ALEM DAS MONTANHAS<br><br>Cada passo para o sul e um passo mais longe.<br>Cada passo que pesa.<br>Nao e culpa — e a neve te puxando de volta.<br><br>Vai assim mesmo.<br>O que voce vai buscar<br>vale o peso do caminho.<br>Pelo menos e o que precisa acreditar."
+    });
+
+ _Setup(df, "c_canto_bjorske_5", array{
+ "CANTO DO ULTIMO XAMA — NAO CANTAR EM VOZ ALTA<br><br>Ha algo que bebe antes do Sangue-das-Arvores chegar.<br>Nao sei o nome. Ninguem ensina o nome.<br>Sei que bebe coisas que deveriam durar.<br><br>Vi a Arvore uma vez, de longe.<br>A sombra dela cai no lado errado.<br>Nao segue o sol — segue outra coisa.<br><br>Nao fui mais perto.<br>Vim embora e escrevi para que<br>pelo menos um humano entendesse<br>por que nao fui.",
+ "FRAGMENTO — ORIGEM DESCONHECIDA<br><br>O primeiro lobo nao foi criado.<br>Escolheu.<br>A escolha ainda ecoa em quem carrega o sangue certo.<br><br>Nao e maldicao.<br>E memoria do corpo.<br>O corpo lembra o que a mente<br>ainda nao aprendeu a perguntar.<br><br>Quando a memoria despertar vai doer primeiro.<br>Aguenta o primeiro dia.<br>O segundo ja e diferente."
+    });
+
+    //   -- -- -- nota_senhor_guerra   -- -- --
+
+ _Setup(df, "t_nota_senhor_guerra", array{
+ "Ordens de Campo — Territorio Sul",
+ "Nota do Senhor Karveth — Uso Pessoal",
+ "Diario de Campanha — Era dos Senhores",
+ "Decreto: Tributacao dos Povoados do Rio",
+ "Relatorio ao Senhor: O Estranho Foi Visto"
+    });
+
+ _Setup(df, "c_nota_senhor_guerra_3", array{
+ "ORDENS DO DIA — ACAMPAMENTO LESTE<br><br>Ao amanhecer: dois esquadraos a oeste. Nao passar do terceiro marco sem permissao — o que esta alem do terceiro marco nao e nosso ainda.<br>Meio-dia: rotacao de sentinelas conforme escala.<br>Anoitecer: portoes fechados antes do escuro.<br><br>O individuo sem bandeira foi avistado novamente. Reportar imediatamente se visto. Nao abordar. A ultima patrulha que tentou abordar chegou de volta com tres homens a menos e sem conseguir explicar onde os outros foram.<br><br>— Karveth, Senhor do Territorio Sul",
+ "NOTA PESSOAL — NAO ABRIR<br><br>Aceito as consequencias. So quero registrado que sabia o que estava aceitando quando aceitei.<br><br>A oferta era razoavel demais. Quando uma oferta e razoavel demais, alguem quer muito que voce aceite e esta pagando pelo privilegio de parecer razoavel. Aprendi isso cedo. Esqueci quando precisava lembrar.<br><br>O acordo esta feito. Valtheris vai pagar o que o acordo determina. A questao e o que vai cobrar em troca.",
+ "DIARIO DE CAMPANHA — ERA DOS SENHORES<br><br>Dia quarenta e um. O individuo sem bandeira foi visto novamente pelo turno da madrugada. Dois sentinelas confirmam a mesma descricao: homem alto, vestes gastas, sem armas visiveis, caminhando em direcao ao acampamento sem hesitar.<br><br>Parou a duzentos metros. Ficou parado. Foi embora.<br><br>Nao reagiu aos sentinelas. Nao pareceu notar que estavam la. Isso e pior do que se tivesse notado.",
+ "DECRETO — AOS POVOADOS DO RIO KELDATH —<br><br>A tributacao do ciclo sera dobrada. Motivacao: custo de manutencao das guarnicoes. Os que nao pagarem no prazo serao recolhidos como trabalhadores compulsorios ate que a divida seja saldada.<br><br>Excecom: o moleiro da margem sul que fornece grao para o acampamento. Esse continua com a taxa antiga enquanto o fornecimento se mantiver.<br><br>Registrado e selado — Karveth",
+ "RELATORIO AO SENHOR KARVETH — URGENTE<br><br>O individuo sem bandeira foi avistado na colina norte, dois quilometros do acampamento. Meu observador diz que ficou parado por duas horas. Olhando.<br><br>Nao com hostilidade. Com reconhecimento. Como alguem que ja viu este acampamento antes, em outro tempo.<br><br>Peco instrucoes sobre como proceder. Nao tenho precedente para isso."
+    });
+
+ _Setup(df, "c_nota_senhor_guerra_4", array{
+ "DIARIO SELADO — COMANDANTE VARRO ALDRIC<br><br>Para meu sucessor: quando voce ler isso eu fui embora ou estou morto. O que escrevo aqui vale mais que os registros oficiais.<br><br>O individuo sem bandeira entrou na minha tenda na noite do decimo setimo dia. Nao pulou a cerca. As sentinelas estavam nos postos. Estava simplesmente la quando acordei.<br><br>Ficou em silencio. Depois disse: 'Voce esta no caminho de algo que nao pode ser parado por voce. So posso dizer: quando o terreno mudar embaixo dos seus pes, saia. Saia rapido.'<br><br>Nao entendi na hora. Entendo agora.",
+ "NOTA CONFIDENCIAL — AO CONSELHO DOS SENHORES<br><br>O individuo sem bandeira nao opera dentro de nenhum objetivo convencional. Nao rouba. Nao recruta. Nao interfere.<br><br>O que faz: aparece em pontos estrategicos antes de eventos. Nossa analise mostra que ele foi visto em sete locais diferentes nos seis meses anteriores a sete eventos que mudaram o mapa da ilha.<br><br>Hipotese: ele nao cria os eventos. Ele sabe onde vao acontecer. A diferenca importa — e muito.",
+ "NOTA PESSOAL — SUBCOMANDANTE RENN<br><br>Revi todos os relatos do individuo nos arquivos. Mais de setenta, cobrindo quarenta anos.<br><br>O que me perturba nao e a regularidade. E a consistencia da descricao. O homem descrito no primeiro relato, quarenta anos atras, e identico ao descrito ontem. Mesma altura. Mesmos tracos. Vestes gastas do mesmo jeito.<br><br>Ou sao pessoas diferentes com aparencia identica, ou ele nao envelhece.<br><br>Nenhuma das duas opcoes me conforta.",
+ "DIARIO DE CAMPANHA — ULTIMO REGISTRO<br><br>Encontrei o individuo ontem. Sem querer — estava no setor leste, ele estava sentado numa pedra olhando para o horizonte.<br><br>Me viu antes que eu o visse. Nao fugiu. Disse apenas: 'Voce procura algo ou esta perdida?'<br><br>Disse que estava em patrulha. Ele sorriu — do jeito de quem sabe que e mentira — e disse: 'O que voce procura nao esta nesta direcao. Mas vai estar. Em alguns anos. Tenha paciencia.'<br><br>Fui embora. Ainda nao sei o que fazer com isso.",
+ "RELATORIO DE INCIDENTE — SELADO<br><br>Durante a operacao do setor norte, dois soldados tiveram contato com o individuo.<br><br>Ambos relatam que ele os deixou passar. Disse apenas: 'Voces nao estao aqui pelo motivo que pensam. Mas esta tudo bem. O motivo real e melhor.'<br><br>Ambos se recusaram a retornar ao setor norte. Um pediu transferencia. O outro simplesmente nao foi ao turno seguinte.<br><br>Localizamos o segundo tres semanas depois. Estava bem. Dizia que esperava algo — nao sabia o que. Nao quis voltar."
+    });
+
+ _Setup(df, "c_nota_senhor_guerra_5", array{
+ "ARQUIVO SELLADO — RELATO DIRETO COM O INDIVIDUO — OPERATIVA VENNIR, MISSAO 17<br><br>Ele sabia que eu estava la para observa-lo. Sentou-se ao meu lado como se fossemos conhecidos e disse:<br><br>'Posso poupar voce de um mes de relatorios. Sai de onde nao se sai. Fiz algo que o mecanismo considerou erro. O mecanismo vai tentar corrigir. A correcao vai demorar mais do que qualquer um de nos vive para ver. Enquanto isso, carrego a inconsistencia. Nao e confortavel. Mas e o que e.'<br><br>Perguntei o que deviamos fazer.<br><br>Ele disse: 'O que ja fazem. Apenas saibam que ha uma rachadura no que parecia solido. Rachaduras sao onde a luz entra, se voce for otimista. Ou onde a agua entra, se voce for arquiteto.'<br><br>Foi embora antes que eu pudesse perguntar mais.",
+ "NOTA FINAL DO COMANDANTE ALDRIC — DOIS DIAS ANTES<br><br>Entendo agora o que ele quis dizer sobre o terreno que muda.<br><br>Nao e metafora. E literal. O terreno deste acampamento mudou. A colina ao norte esta dois metros mais alta do que quando chegamos. Ninguem percebeu porque foi lento.<br><br>Mas esta dois metros mais alta. Medi.<br><br>Algo cresceu embaixo de nos. O individuo sabia. Disse para sair quando o terreno mudasse.<br><br>Nao sai porque nao acreditei. Agora acredito. Mas o terreno ja mudou o suficiente que nao sei mais onde e a saida."
+    });
+
+ if (who) SendSysMessage(who, "[Inerte DS] Chunk1 ok."); endif
+endprogram

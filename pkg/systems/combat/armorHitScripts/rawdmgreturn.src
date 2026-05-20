@@ -2,7 +2,8 @@
 use uo;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -27,7 +28,7 @@ program HitScript(params)
 		dmg := 1;
 	endif
 
-	DamageFLS(attacker, cint(dmg), DMG_FORCED, defender);
+	DealDamage(attacker, cint(dmg), DAMAGE_TYPE::BLUNT, defender);
 
 	return 1;
 endprogram

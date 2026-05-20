@@ -10,11 +10,10 @@ include ":attributes:attributes";
 include ":gumps:requestGump";
 include ":gumps:gumps";
 include ":tn:tngumps";
-include ":combat:Controller/DamageController_legacy";
 include ":timedscripts:timedScripts";
 include ":traps:traps";
 include ":levers:lever";
-include ":tn:boss";
+
 include ":combat:hitscripts";
 include ":itemUtils:itemInfo";
 include ":message:include/model/Message";

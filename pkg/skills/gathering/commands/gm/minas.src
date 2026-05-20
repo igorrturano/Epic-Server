@@ -514,7 +514,7 @@ function GetAllOrePossibilities()
 			  	
 			  	"0x6300",          // ferro
 
-			  	"0x6302",          // Fulmetium
+			  	"0x6302",          // Fulmium
 			  	
 			  	"0x6303",          // Venetium
 			  	

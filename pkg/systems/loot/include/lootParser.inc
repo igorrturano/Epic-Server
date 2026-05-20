@@ -11,6 +11,7 @@ include ":sysbook:include/sealedBooks";
 include ":crafting:/include/fabricacaoComplexos";
 include "include/epicEconomyAudit";
 include ":currency:include/seignorage";
+include "include/epicCombatUtils";
 include ":containers:personalLoot";
 
 var itemdesc_cache := dictionary{};

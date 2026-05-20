@@ -14,7 +14,7 @@ include ":attributes:attributes";
 include "include/facings";
 include "include/say";
 include ":timedscripts:timedScripts";
-include ":tn:boss";
+include "include/epicCombatUtils";
 include "include/epicNPCUtils";
 include ":stealables:stealables";
 include ":traps:traps";
@@ -95,7 +95,7 @@ program skill_Stealing(mobile)
 	elseif (targ.npctemplate == ":merchants:estalagem")
 		Message("Voce nao pode roubar este tipo de NPC.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
-	elseif (isBoss(targ))
+	elseif (isTrueBoss(targ))
 		Message("Voce nao pode roubar este tipo de NPC.").SetColor(Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
 		return 0;
 	elseif (Distance(mobile, targ) > 2)

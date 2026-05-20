@@ -1,5 +1,6 @@
 use uo;
 use os;
+include ":timedScripts:timedScripts";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:epicGumps";

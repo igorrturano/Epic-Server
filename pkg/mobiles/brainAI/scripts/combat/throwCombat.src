@@ -21,7 +21,8 @@ include "include/shapes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 
 program BrainNerve(params)
 	var npc := params[1];
@@ -131,7 +132,7 @@ function throw(npc, opponent, byref dist, settings)
 			PlaySoundEffect(npc, 0x137);
 		endif
 	else
-		ApplyDamageEX(opponent, RandomDiceRoll(settings["throwDamage"]), DMG_PHYSICAL);
+		DealDamage(opponent, RandomDiceRoll(settings["throwDamage"]), DAMAGE_TYPE::BLUNT);
 		PlaySoundEffect(npc, settings["throwHit"]);
 	endif
 

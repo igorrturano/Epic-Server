@@ -6,7 +6,8 @@ use util;
 
 include "include/client";
 include "include/say";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:habilidades";
 include ":charactercreation:resists";
 include ":timedscripts:timedScripts";
@@ -49,7 +50,7 @@ program trapScript(params)
 			endif
 
 			PerformAction(mobile, HUMAN_ANIM::HIT);
-			DamageFLS(mobile, dmgfinal);
+			DealDamage(mobile, dmgfinal, DAMAGE_TYPE::PIERCING);
 			mobile.hidden := 0;
 		endif
 	endforeach

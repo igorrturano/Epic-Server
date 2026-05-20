@@ -5,7 +5,9 @@ use vitals;
 include "include/client";
 include "include/say";
 include "include/tileEffects";
-include ":combat:Controller/DamageController_legacy";
+include ":attributes:attributes";
+include ":attributes:vitals";
+include "system/exception/Exception";
 
 // Per-tick heal for druid Cura Leve HoT. Driven by SC tick-callback.
 // Args: { caster, targ, spellId, tick_number, tick_params }

@@ -2,13 +2,13 @@ use uo;
 use os;
 use vitals;
 
+include ":timedScripts:timedScripts";
 include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";
 include "include/say";
 include "include/tileEffects";
 include ":attributes:attributes";
-include ":combat:Controller/DamageController_legacy";
 include ":spells:Controller/SpellController";
 include ":wrappers:Objects/Model/MobileWrapper";
 

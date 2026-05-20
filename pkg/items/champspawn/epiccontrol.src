@@ -6,7 +6,8 @@ const TINY_WAIT := 2;
 const DEFAULT_RESPAWN_DELAY := 120 * 60; // Default 2 hours in seconds
 
 include "champaltar";
-include ":tn:boss";
+include ":epicspawn:epicBoss";
+
 include "include/epicNPCUtils";
 
 program control(altar)

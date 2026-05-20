@@ -4,7 +4,8 @@
 
 use uo;
 use os;
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 
 program mimic_animation(who, item)
 	// First, determine direction based on current graphic
@@ -37,7 +38,7 @@ program mimic_animation(who, item)
 		sleepms(100); // 200ms delay between frames
 	endfor
 	PlaySoundEffect(who, 0x44F); // Play sound effect for mimic animation
-	DamageFLS(who, RandomInt(20));
+	DealDamage(who, RandomInt(20), DAMAGE_TYPE::PIERCING);
 
 	// Leave the mimic in the final position for 2 seconds
 	sleep(1);

@@ -1,0 +1,30 @@
+// rebuildlivros.src
+// Comando GM: .rebuildlivros
+// Forca a repopulacao de todos os DataFiles de livros lacrados.
+// Usar apos strip de acentos nos setup scripts.
+
+use uo;
+use os;
+use datafile;
+
+program RebuildLivros(who, cmdline)
+    SendSysMessage(who, "[LL] Iniciando rebuild de todos os DataFiles...");
+
+    Start_Script(":livros_lacrados:scripts/setup_inerte_ds_chunk1",  array{who});
+    Start_Script(":livros_lacrados:scripts/setup_inerte_ds_chunk2",  array{who});
+    Start_Script(":livros_lacrados:scripts/setup_inerte_ds_chunk3",  array{who});
+
+    Start_Script(":livros_lacrados:scripts/setup_cifrado_ds_chunk1", array{who});
+    Start_Script(":livros_lacrados:scripts/setup_cifrado_ds_chunk2", array{who});
+    Start_Script(":livros_lacrados:scripts/setup_cifrado_ds_chunk3", array{who});
+
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat1", array{who});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat2", array{who});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat3", array{who});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat4", array{who});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat5", array{who});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat7", array{who});
+    Start_Script(":livros_lacrados:scripts/setup_lore_cat8", array{who});
+
+    SendSysMessage(who, "[LL] 13 chunks disparados. Aguarde as confirmacoes no console.");
+endprogram

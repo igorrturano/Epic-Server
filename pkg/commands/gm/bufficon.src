@@ -6,7 +6,6 @@ include "include/client";
 include ":attributes:attributes";
 // include ":timedScripts:diseaseUtil"; // MUDADO serve pra curas
 include ":timedScripts:timedScripts";
-include ":damage:damage";
 
 program bufficon(who, icon)
 	// var mag;

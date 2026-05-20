@@ -70,6 +70,8 @@ class IDamage()
 	uninit function DecreasePoisonBaseDamage(this, value);
 	uninit function DecreaseEnergyBaseDamage(this, value);
 
+	uninit function IncreaseRawDamageByType(this, dmgType, value);
+
 	// Reducao multiplicativa por % (0-100). Base = Base * (100 - pct) / 100.
 	uninit function DecreaseSlashPercentDamage(this, pct);
 	uninit function DecreasePiercingPercentDamage(this, pct);

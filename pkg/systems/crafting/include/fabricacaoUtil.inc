@@ -370,27 +370,28 @@ function ResolveEfeitoCaracteristica(valorEfeito)
 endfunction
 
 function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
+	// Inicializa todos os campos sempre: uma caracteristica ausente na madeira
+	// deve render 0 explicito, nunca uninit (uninit propaga para o calculo de
+	// poder do componente e some silenciosamente do tooltip).
 	var retornoEfeitos := struct;
+	retornoEfeitos.+valorPrincipal := 0;
+	retornoEfeitos.+valorLiteralPrincipal := 0;
+	retornoEfeitos.+valorTotalSubefeitos := 0;
+
 	if(FIND(UPPER(caracteristica),"VAZIO", 1) > 0)
-		retornoEfeitos.+valorPrincipal := 0;
-		retornoEfeitos.+valorLiteralPrincipal := 0;
-		retornoEfeitos.+valorTotalSubefeitos := 0;
 		return retornoEfeitos;
 	endif
-	
+
 	var configRecursos := ReadConfigFile(RECURSOS_CONFIG_PATH);
 	var efeitosMaterial := GetConfigStringDictionary(configRecursos[chaveMaterial],"ComponenteEfeito");
 	var efeitosMaterialString := efeitosMaterial[caracteristica];
 	var subEfeitosMaterial;
-	var valorEfeitoMaterial := 0;
 
 	if(efeitosMaterialString)
 		subEfeitosMaterial := SplitWords(efeitosMaterialString);
-		valorEfeitoMaterial := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
-		retornoEfeitos.+valorPrincipal := valorEfeitoMaterial;
-		retornoEfeitos.+valorLiteralPrincipal := subEfeitosMaterial[subEfeitosMaterial.size()];
-		retornoEfeitos.+valorTotalSubefeitos := 0;
-		
+		retornoEfeitos.valorPrincipal := ResolveEfeitoCaracteristica(subEfeitosMaterial[subEfeitosMaterial.size()]);
+		retornoEfeitos.valorLiteralPrincipal := subEfeitosMaterial[subEfeitosMaterial.size()];
+
 		if(subEfeitosMaterial.size() > 1)
 			subEfeitosMaterial.shrink(subEfeitosMaterial.size() - 1); // Remove o valorPrincipal e deixa só os subefeitos.
 			var subefeitosDict := dictionary{};
@@ -407,6 +408,36 @@ function InterpretaMaterialEfeitos(caracteristica, chaveMaterial)
 	endif
 	
 	return retornoEfeitos;
+endfunction
+
+// Resolve uma caracteristica que NAO tem encaixe proprio na receita
+// (manaRegen, manaMaxima, ...) a partir do MATERIAL do componente
+// principal do item. Combina material + qualidade do componente
+// principal, igual MontaPropriedadesComponente faz para as caracteristicas
+// que tem encaixe. Retorna 0 se o item nao for fabricado / sem principal.
+function PegaValorMaterialPrincipalFabricacao(item, caracteristica)
+	var principal := PegaComponenteFabricacao(item);
+	if (TypeOfInt(principal) == OT_ERROR || !principal)
+		return 0;
+	endif
+
+	var chaveMaterial := principal.material.chave;
+	if (TypeOfInt(chaveMaterial) == OT_ERROR || !chaveMaterial)
+		return 0;
+	endif
+
+	// So aplica se a MADEIRA realmente declara a caracteristica. Sem este
+	// guard qualquer cajado ganharia +qualidade-do-crafter mesmo com
+	// madeira sem manaRegen/manaMaxima (bug: Nogueira dava +maxmana).
+	// Checar a chave (e nao valorPrincipal>0) porque material t-1 resolve
+	// para valor 0 — t-1 valido != ausente.
+	var efeitosMaterial := GetConfigStringDictionary(ReadConfigFile(RECURSOS_CONFIG_PATH)[chaveMaterial], "ComponenteEfeito");
+	if (!efeitosMaterial.Exists(caracteristica))
+		return 0;
+	endif
+
+	var efeitos := InterpretaMaterialEfeitos(caracteristica, chaveMaterial);
+	return Cint(efeitos.valorPrincipal) + Cint(principal.tier.valor);
 endfunction
 
 function AplicaFechadura(quem, item)

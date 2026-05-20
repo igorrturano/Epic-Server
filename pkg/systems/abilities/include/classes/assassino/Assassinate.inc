@@ -7,7 +7,6 @@ include ":attributes:attributes";
 include ":combat:Controller/HitController";
 include "include/utils";
 include "include/client";
-include "include/epicCombatUtils";
 
 /**
  * Assassinar (Assassinate) - ABILITY_ID::ASSASSINAR (1200)
@@ -32,7 +31,8 @@ class Assassinate(CombatAbility)
 			Message("Você não consegue se mover.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif
-		if (!CanBackStab(mobile) || !isAssassinWeapon(who))
+		var weapon := mobile.GetEquipBySlot(WEAPON);
+		if (!CanBackStab(mobile) || !weapon || !weapon.IsAssassin())
 			Message("Esta arma não é apropriada para um ataque furtivo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return false;
 		endif

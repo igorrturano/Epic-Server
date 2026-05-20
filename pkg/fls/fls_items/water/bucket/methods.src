@@ -21,6 +21,7 @@ function SwapBucket(bucket, change_to)
 	info.+x := bucket.x;
 	info.+y := bucket.y;
 	info.+z := bucket.z;
+	info.+realm := bucket.realm;
 
 	ReleaseItem(bucket);
 
@@ -31,6 +32,7 @@ function SwapBucket(bucket, change_to)
 		new_bucket := CreateItemAtLocation(info.x, info.y, info.z, change_to, info.realm);
 	endif
 	new_bucket.color := info.color;
+	DestroyItem(bucket);
 
 	return new_bucket;
 endfunction

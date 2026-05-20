@@ -4,6 +4,7 @@ use npc;
 use util;
 use guilds;
 
+include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/sysEvent";
 include "include/say";
@@ -11,7 +12,6 @@ include ":mounts:mounts";
 include ":taming:taming";
 include ":tn:cooldown";
 include ":faccao:npc";
-include ":combat:Controller/DamageController_legacy";
 include ":faccao:faccao";
 include "include/dungeons";
 include "include/utils";

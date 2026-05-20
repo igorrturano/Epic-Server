@@ -1,6 +1,9 @@
 use uo;
 use os;
 use polsys;
+use datafile;
+
+include ":datafile:datafile";
 
 function CreateItemTemplate(item)
 	if ( !item.IsA(POLCLASS_ITEM) )

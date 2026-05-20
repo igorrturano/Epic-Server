@@ -1,0 +1,64 @@
+use uo;
+use os;
+use datafile;
+
+include ":livros_lacrados:scripts/setup_helper";
+
+program SetupLoreCat4(who, cmdline)
+ var df := OpenDataFile(":livros_lacrados:lore_entidades");
+    if (df.errortext)
+ df := CreateDataFile(":livros_lacrados:lore_entidades", DF_KEYTYPE_STRING);
+    else
+    endif
+    if (df.errortext)
+ if (who) SendSysMessage(who, "Erro df: " + df.errortext); endif
+        return;
+    endif
+
+    //   -- -- -- anuncio   -- -- --
+
+ _SetupStr(df, "anuncio_titulo", "Registro do Anúncio");
+ _SetupStr(df, "anuncio_autor", "Observador presente");
+ _SetupPags(df, "anuncio", array{
+ "Ele anuncia. Sempre com precisão. Nunca com contexto suficiente para que a precisão seja útil.<br><br>A ordem dos eventos não é clara porque O Anúncio não distingue entre passado, futuro e o presente de outros lugares. Para ele, um evento é um evento. O quando é problema do ouvinte.",
+ "O que diz é sempre verdadeiro. O problema não é a veracidade — é o tempo.<br><br>Há um relato de um observador que ouviu O Anúncio declarar que 'a chave foi enterrada sob a pedra cinza'. Ele procurou por anos. Encontrou a pedra. Encontrou a chave. A fechadura que abria tinha sido destruída oitenta anos antes de ele nascer.<br><br>A verdade era perfeita. O tempo, não."
+    });
+
+    //   -- -- -- confissor   -- -- --
+
+ _SetupStr(df, "confissor_titulo", "A Confissão do Tardio");
+ _SetupStr(df, "confissor_autor", "Sem assinatura");
+ _SetupPags(df, "confissor", array{
+ "Confessa crimes que cometeu. Não por remorso — o remorso teria chegado antes da morte, se fosse chegar. Confessa por necessidade: algo o prende entre o Limiar e o descanso até que a confissão seja recebida por alguém com autoridade para recebê-la.<br><br>Qualquer pessoa que abrisse o livro seria essa autoridade. O Limiar não distingue título — distingue presença.",
+ "Absolvê-lo não cancela o crime. Cancela a dívida de testemunho que o mantém retido.<br><br>Para onde ele vai depois, nenhum arquivo registra. A hipótese dominante entre quem estudou o sistema é que vai para onde deveria ter ido quando morreu — com todos os anos de espera acumulados, convertidos em algo que o destino decidirá o que fazer.<br><br>Provavelmente não é lugar melhor do que onde estava. Mas é onde pertencia."
+    });
+
+    //   -- -- -- mensageiro   -- -- --
+
+ _SetupStr(df, "mensageiro_titulo", "Sobre o Mensageiro");
+ _SetupStr(df, "mensageiro_autor", "Anotação do Selo");
+ _SetupPags(df, "mensageiro", array{
+ "Toda mensagem que alguém não conseguiu dizer vai para algum lugar. O Mensageiro é esse lugar em forma de ser.<br><br>Ele não carrega o que foi escrito. Carrega o que ficou na garganta. O que existia antes de se tornar palavras — e que a maioria das pessoas leva para o túmulo sem transmitir.",
+ "O que ele entrega não é o que foi enviado. A‰ o que deveria ter sido dito, antes que o medo, o orgulho ou o tempo tornassem impossível dizê-lo.<br><br>Quem recebe a mensagem a reconhece mesmo sem entender de onde vem. A‰ o peso de algo que precisava chegar, chegando tarde demais para mudar qualquer coisa — e na hora exata para mudar tudo o que ainda resta."
+    });
+
+    //   -- -- -- recita_nomes   -- -- --
+
+ _SetupStr(df, "recita_nomes_titulo", "A Que Recita Nomes");
+ _SetupStr(df, "recita_nomes_autor", "Pesquisa do Círculo Fechado");
+ _SetupPags(df, "recita_nomes", array{
+ "Recita nomes de mortos. Não os famosos, não os registrados — os que ninguém mais pronuncia. O nome que sai da língua dela pode ser o único ato de existência que esse morto ainda tem no mundo.<br><br>Enquanto ela recita, eles permanecem. De que forma permanecem, o Círculo Fechado passou décadas tentando determinar. A conclusão foi que a forma não era determinável de fora — apenas que cessava quando o nome cessava.",
+ "Interrompê-la é apagar alguém.<br><br>Pode ser alguém que você conhecia. Pode ser alguém que você deveria ter conhecido e nunca conheceu. Pode ser alguém de quem nunca ouviu falar, de um lugar que não existe mais, de uma época que nenhum arquivo cobre.<br><br>O Círculo Fechado selou o livro não para proteger quem a invoca — para proteger os nomes. Quem abre o livro recebe esta informação como aviso. O que faz com ela é responsabilidade que o aviso não cancela."
+    });
+
+    //   -- -- -- voz_velho   -- -- --
+
+ _SetupStr(df, "voz_velho_titulo", "A Voz do Velho Mundo");
+ _SetupStr(df, "voz_velho_autor", "Transcrição aproximada");
+ _SetupPags(df, "voz_velho", array{
+ "Ela fala sobre o mundo como ele era antes de ser chamado de mundo. Antes de o tempo ter direção. Antes de o que existe precisar de nome para existir.<br><br>Os que têm conhecimento suficiente entendem mais do que os outros — não porque a Voz fale de formas diferentes, mas porque o que ela diz exige ancoragem que a maioria não tem. Palavras sobre o que não existe mais precisam de algo no ouvinte que ainda ressoe com o que foi.",
+ "Não é profecia. A‰ memória de alguém que existia antes de o presente ser uma categoria.<br><br>O que a Voz descreve como passado é, em alguns casos, o que ainda está acontecendo em lugares que o tempo ainda não alcançou. Em outros, é o que nunca aconteceu, mas que deveria ter e não houve quem estivesse lá para deixar que fosse.<br><br>Ouvir com cuidado tem custo. O que foi ouvido não pode ser desouvido."
+    });
+
+ if (who) SendSysMessage(who, "[Lore DS] Cat4 ok."); endif
+endprogram

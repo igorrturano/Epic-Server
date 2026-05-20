@@ -3,7 +3,6 @@ use os;
 use vitals;
 
 include ":charactercreation:resists";
-include ":combat:Controller/DamageController_legacy";
 
 program swamp(who)
 	start_script(":nature:swampEffect", who);

@@ -4,12 +4,13 @@ use os;
 include ":attributes:attributes";
 include "include/tileEffects";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 include "include/client";
 // O Deserto de Kordum (1214) - C4
 // Fogo AoE: Arc/3 dano imediato + Arc/10 por tick por 4 ticks em area 4 tiles
 program SpellScript(params)
 	var who := params[1];
+	var spell := params[3];
 
 	var arcana    := CInt(AP_GetSkill(who, ARCANA));
 	var burst_dmg := CInt(arcana / 3);
@@ -40,7 +41,7 @@ program SpellScript(params)
 	PlayStationaryEffect(who.x, who.y, who.z, 0x36CB, 5, 5);
 	foreach mobile in targets
 		if (mobile && !mobile.dead)
-			DamageFLS(mobile, burst_dmg, DMG_FIRE, who, "deserto_de_kordum");
+			SC_DealDamage(who, mobile, CInt(spell.id), burst_dmg, DMG_FIRE);
 		endif
 	endforeach
 	SendSysMessageEx(who, $"Deserto de Kordum: {burst_dmg} dano de fogo em {count} alvo(s)!", SSM_INFO);
@@ -52,7 +53,7 @@ program SpellScript(params)
 		foreach mobile in targets
 			if (mobile && !mobile.dead)
 				PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x36CB, 1, 1);
-				DamageFLS(mobile, dot_dmg, DMG_FIRE, who, "deserto_de_kordum");
+				SC_DealDamage(who, mobile, CInt(spell.id), dot_dmg, DMG_FIRE, 0);
 			endif
 		endforeach
 		t += 1;
