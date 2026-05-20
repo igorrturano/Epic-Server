@@ -108,7 +108,7 @@ function DeterminaLiga(metals, who)
         0x6310: metais.append("atrium");
         0x6311: metais.append("mithril");
         0x6315: metais.append("illyra");
-        0x630b: metais.append("fulmetium");
+        0x630b: metais.append("fulmium");
         0x630c: metais.append("venetium");
         0x630d: metais.append("ignium");
         0x6993: metais.append("prata");
@@ -138,8 +138,8 @@ function DeterminaLiga(metals, who)
       return 0x6606; //frigutium
     elseif (("aco" in metais) && ("carvao" in metais)  && ("venetium" in metais))
       return 0x6607; //venetium
-    elseif (("aco" in metais) && ("carvao" in metais)  && ("fulmetium" in metais))
-      return 0x6608; //fulmetium
+    elseif (("aco" in metais) && ("carvao" in metais)  && ("fulmium" in metais))
+      return 0x6608; //fulmium
     // elseif (("aco" in metais) && ("carvao" in metais)  && ("ferro" in metais))
     //   return 0x6602; //acielith
     // elseif (("cobre" in metais) && ("prata" in metais)  && ("golden" in metais))
@@ -148,7 +148,7 @@ function DeterminaLiga(metals, who)
       return "noIngot";
     endif
   elseif (metais.size() == 5)
-    if(("mithril" in metais) && ("fulmetium" in metais) && ("venetium" in metais) && ("ignium" in metais) && ("frigutium" in metais))
+    if(("mithril" in metais) && ("fulmium" in metais) && ("venetium" in metais) && ("ignium" in metais) && ("frigutium" in metais))
       return 0x699B; //oricalcum
     else
       return "noIngot";
@@ -174,7 +174,7 @@ function smeltaImpurezasRaras(who, amt)
     elseif (rand < 0.2)
       metal := 0x6315; // Illyra
     elseif (rand < 0.5)
-      metal := 0x630b; // Fulmetium
+      metal := 0x630b; // Fulmium
     elseif (rand < 0.8)
       metal := 0x630c; // Venetium
     elseif (rand < 1.1)
@@ -199,7 +199,7 @@ function smeltaImpurezasRaras(who, amt)
   var names := dictionary;
   names[0x6311] := "Mithril";
   names[0x6315] := "Illyra";
-  names[0x630b] := "Fulmetium";
+  names[0x630b] := "Fulmium";
   names[0x630c] := "Venetium";
   names[0x630d] := "Ignium";
   names[0x6460] := "Frigutium";
