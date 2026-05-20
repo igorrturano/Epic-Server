@@ -1,7 +1,8 @@
 use uo;
 use os;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
 
@@ -22,7 +23,7 @@ program Gnaw(params)
 
 	var resist := CheckResist(targ, REFLEXES, RESIST_MEDIUM);
 	if (!resist)
-		DamageFLS(targ, "1d6", DMG_FORCED, me, "gnaw");
+		DealDamage(targ, "1d6", DAMAGE_TYPE::BLUNT, me);
 	elseif (resist == -1)
 		TS_StartTimer(targ, "paralysis", 3);
 		SendSysMessageEx(targ, "A mordida paralisa você!", SSM_FAIL);

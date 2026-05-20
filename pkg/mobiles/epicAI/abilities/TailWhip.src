@@ -2,7 +2,8 @@ use uo;
 use os;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
 include "include/utils";
@@ -27,7 +28,7 @@ program TailWhip(params)
 	var damage := tier * 3;
 
 	PrintTextAbove(me, "*chicoteia com a cauda*");
-	DamageFLS(targ, damage, DMG_BLUNT, me, "tailwhip");
+	DealDamage(targ, damage, DAMAGE_TYPE::BLUNT, me);
 
 	if (!CheckResist(targ, REFLEXES, RESIST_MEDIUM))
 		TS_StartTimer(targ, "lentidao", 3);

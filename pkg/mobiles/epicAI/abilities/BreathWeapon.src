@@ -4,7 +4,8 @@ use vitals;
 use math;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/epicNPCUtils";
 include "include/shapes";
 include "include/tileEffects";
@@ -25,17 +26,17 @@ program BreathWeapon(params)
 
 	var npc_elem := NPC_GetNPCConfig(me.npctemplate);
 	var elem_parts := SplitWords(npc_elem.EpicElemDamage);
-	var dmg_type := DMG_FIRE;
+	var dmg_type := DAMAGE_TYPE::FIRE;
 	var breath_name := "fogo";
 
 	if (Upper(elem_parts[2]) != "DAMAGE_NONE")
-		dmg_type := DMG_COLD;
+		dmg_type := DAMAGE_TYPE::COLD;
 		breath_name := "gelo";
 	elseif (Upper(elem_parts[3]) != "DAMAGE_NONE")
-		dmg_type := DMG_POISON;
+		dmg_type := DAMAGE_TYPE::POISON;
 		breath_name := "veneno";
 	elseif (Upper(elem_parts[4]) != "DAMAGE_NONE")
-		dmg_type := DMG_ENERGY;
+		dmg_type := DAMAGE_TYPE::ENERGY;
 		breath_name := "energia";
 	endif
 
@@ -52,7 +53,7 @@ program BreathWeapon(params)
 			continue;
 		endif
 
-		if (dmg_type == DMG_FIRE)
+		if (dmg_type == DAMAGE_TYPE::FIRE)
 			CriaMuralhaFogo(coord.x, coord.y, me.z, me.realm, GRAFICO_FIREWALL_NORTE_SUL, 0, 15, me);
 		else
 			PlayStationaryEffect(coord.x, coord.y, me.z, FX_EXPLODE_1, 10, 10, 0, me.realm);
@@ -74,7 +75,7 @@ program BreathWeapon(params)
 				PlayStationaryEffect(coord.x, coord.y, targ.z, FX_EXPLODE_3, 10, 10, 0, me.realm);
 		endcase
 
-		if (dmg_type == DMG_FIRE && RandomInt(2))
+		if (dmg_type == DAMAGE_TYPE::FIRE && RandomInt(2))
 			CriaMuralhaFogo(coord.x, coord.y, targ.z, me.realm, GRAFICO_FIREWALL_NORTE_SUL, 0, 8, me, 8);
 		endif
 		sleepms(5);
@@ -103,7 +104,7 @@ program BreathWeapon(params)
 			final_damage := CInt(breath_damage / 2);
 			SendSysMessageEx(mobile, "Você se esquiva parcialmente do sopro!", SSM_REQUEST);
 		endif
-		DamageFLS(mobile, final_damage, dmg_type, me, "breathweapon");
+		DealDamage(mobile, final_damage, dmg_type, me);
 	endforeach
 
 	return 1;

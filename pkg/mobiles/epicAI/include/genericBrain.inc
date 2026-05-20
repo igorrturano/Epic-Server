@@ -1,5 +1,4 @@
 include "include/sysEvent";
-include ":combat:Controller/DamageController_legacy";
 include "include/facings";
 
 function GenericBrain()

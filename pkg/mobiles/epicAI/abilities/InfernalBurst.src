@@ -2,7 +2,8 @@ use uo;
 use os;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 
 program InfernalBurst(params)
@@ -37,7 +38,7 @@ program InfernalBurst(params)
 			final_damage := CInt(burst_damage / 2);
 			SendSysMessageEx(mobile, "Você se esquiva parcialmente da explosão!", SSM_REQUEST);
 		endif
-		DamageFLS(mobile, final_damage, DMG_FIRE, me, "infernalburst");
+		DealDamage(mobile, final_damage, DAMAGE_TYPE::FIRE, me);
 	endforeach
 
 	return 1;

@@ -6,6 +6,8 @@ include "include/facings";
 include ":abilities:models/Ability";
 include ":destroyable:include/destroyItem";
 include ":combat:include/Controller/FXController";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:include/resists";
 
 const CHARGE_MINIMUM_DISTANCE := 5;
@@ -135,7 +137,7 @@ function PerformHealingRain(shaman, allies)
     foreach mobile in GetNearbyMobilesOnce(shaman, 12, LISTEX_FLAG_NORMAL)
         if (!mobile.isUnderRoof() && CanFight(shaman, mobile))
             PlayLightningBoltEffect(mobile);
-            DamageFLS(mobile, RandomDiceRoll("1d10") + 20, DMG_ENERGY, shaman);
+            DealDamage(mobile, RandomDiceRoll("1d10") + 20, DAMAGE_TYPE::ENERGY, shaman);
             PrintTextAbove(mobile, "*atingido por um raio*");
             SetWeatherForPlayer(mobile, 1, 50);
             _wetPowderLocal(mobile);
@@ -312,7 +314,7 @@ function earthquake(attacker)
             TS_StartTimer(defender, "tombar", 5);
             TS_StartTimer(defender, "lentidao", 5*2);
             TS_StartTimer(defender, "paralysis", 5);
-            DamageFLS(defender, dmg, DMG_FORCED, attacker);
+            DealDamage(defender, dmg, DAMAGE_TYPE::BLUNT, attacker);
         endif
     endforeach
 endfunction
@@ -434,7 +436,7 @@ function Bite(me, opponent)
     
     var resist := CheckResist(opponent, REFLEXES, RESIST_MEDIUM);
     if (!resist)
-        DamageFLS(opponent, bite_dmg, DMG_FORCED, me);
+        DealDamage(opponent, bite_dmg, DAMAGE_TYPE::BLUNT, me);
     elseif (resist == -1) // Falha crítica
         TS_StartTimer(opponent, "paralysis", 5);
     else
@@ -567,7 +569,7 @@ function TongueGrab(toad, opponent)
     if (success)
         // Final grab damage
         var raw_dmg := RandomDiceRoll("2d6");
-        DamageFLS(opponent, raw_dmg, DMG_PHYSICAL, toad);
+        DealDamage(opponent, raw_dmg, DAMAGE_TYPE::BLUNT, toad);
         PrintTextAbove(toad, "*engole " + opponent.name + "*");
         TS_StartTimer(opponent, "paralysis", 5);
     endif
@@ -672,7 +674,7 @@ function ApplyThrowEffect(attacker, defender, throw_info)
       endcase
    endforeach
 
-   DamageFLS(defender, throw_info.dmg, DMG_FORCED, attacker);
+   DealDamage(defender, throw_info.dmg, DAMAGE_TYPE::BLUNT, attacker);
 
    return 1;
 endfunction
@@ -1011,7 +1013,7 @@ function _dealAcidDamageLocal(npc, mobile, acid_pool, acid_damage := 0)
     else
         return 0;
     endif
-    DamageFLS(mobile, acid_damage, DMG_POISON, npc);
+    DealDamage(mobile, acid_damage, DAMAGE_TYPE::POISON, npc);
     var equipped_items := ListEquippedItems(mobile);
     if (RandomInt(10) > 5)
         var acid_burned := equipped_items[RandomInt(equipped_items.size())+1];

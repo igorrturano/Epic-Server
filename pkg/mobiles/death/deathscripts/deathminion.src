@@ -10,7 +10,8 @@ use vitals;
 include "include/client";
 include "include/sysEvent";
 include ":attributes:attributes";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":attributes:vitals";
 include ":epicAI:epicai";
 
@@ -31,20 +32,20 @@ program DeathScript(params)
 	if (order == 1)
 		dmg := life_mother * 0.05;
 		case (dmgtype)
-			"fire":     DamageFLS(find_mother, Cint(dmg), DMG_FIRE);
-			"cold":     DamageFLS(find_mother, Cint(dmg), DMG_COLD);
-			"energy":   DamageFLS(find_mother, Cint(dmg), DMG_ENERGY);
-			"poison":   DamageFLS(find_mother, Cint(dmg), DMG_POISON);
-			"physical": DamageFLS(find_mother, Cint(dmg), DMG_PHYSICAL);
+			"fire":     DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::FIRE);
+			"cold":     DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::COLD);
+			"energy":   DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::ENERGY);
+			"poison":   DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::POISON);
+			"physical": DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::BLUNT);
 		endcase
 	else
 		dmg := life_mother * 0.15;
 		case (dmgtype)
-			"fire":     DamageFLS(find_mother, Cint(dmg), DMG_FIRE);
-			"cold":     DamageFLS(find_mother, Cint(dmg), DMG_COLD);
-			"energy":   DamageFLS(find_mother, Cint(dmg), DMG_ENERGY);
-			"poison":   DamageFLS(find_mother, Cint(dmg), DMG_POISON);
-			"physical": DamageFLS(find_mother, Cint(dmg), DMG_PHYSICAL);
+			"fire":     DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::FIRE);
+			"cold":     DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::COLD);
+			"energy":   DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::ENERGY);
+			"poison":   DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::POISON);
+			"physical": DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::BLUNT);
 		endcase
 	endif
 

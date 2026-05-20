@@ -11,7 +11,6 @@ include ":mounts:mounts";
 include ":taming:taming";
 include ":tn:cooldown";
 include ":faccao:npc";
-include ":combat:Controller/DamageController_legacy";
 include ":faccao:faccao";
 include "include/dungeons";
 include "include/utils";

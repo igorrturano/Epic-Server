@@ -11,7 +11,6 @@ include ":brainAI:commonFunctions";
 include ":attributes:attributes";
 include ":magery:spells_ex";
 include "include/facings";
-include ":combat:Controller/DamageController_legacy";
 
 program BrainNerve(params)
 	var npc := params[1];

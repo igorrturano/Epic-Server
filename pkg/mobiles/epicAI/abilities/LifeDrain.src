@@ -3,7 +3,8 @@ use os;
 use vitals;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 
 program LifeDrain(params)
@@ -24,7 +25,7 @@ program LifeDrain(params)
 	PrintTextAbove(me, "*drena vida*");
 
 	if (!CheckResist(targ, WILL, RESIST_MEDIUM))
-		DamageFLS(targ, drain, DMG_ENERGY, me, "lifedrain");
+		DealDamage(targ, drain, DAMAGE_TYPE::ENERGY, me);
 		HealDamage(me, drain);
 		SendSysMessageEx(targ, "Sua vida é drenada!", SSM_FAIL);
 	else

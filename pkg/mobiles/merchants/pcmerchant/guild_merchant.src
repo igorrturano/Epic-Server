@@ -8,7 +8,6 @@ use guilds;
 include ":merchants:merchant";
 include "include/string";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
 include ":merchants:crafthelp";
 include ":gumps:gumps";
 include ":recipes:recipes";
@@ -664,8 +663,9 @@ function GetDetails(item, who)
 		ret += "Qualidade: {}<br>".format(getQuality(item.quality));
 
 		if (item.ObjClass == "Armor")
-			var resists := array{ DMG_FIRE, DMG_POISON, DMG_COLD, DMG_ENERGY, DMG_PHYSICAL };
-			// DMG_SLASH, DMG_BLUDGE, DMG_PIERCE};
+			// Inline resist-key strings — these are the item ObjProperty suffixes
+			// ("resist_Fire", "resist_Cold", ...), not damage-type enum values.
+			var resists := array{ "Fire", "Poison", "Cold", "Energy", "Physical" };
 
 			var res := 0;
 			foreach resist in resists
