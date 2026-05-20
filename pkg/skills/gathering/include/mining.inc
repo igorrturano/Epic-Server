@@ -121,7 +121,7 @@ function GetResourceId(oreToSearch)
 		"bronze": return 0x699c;
 		"argila": return 0x6074;
 		"ferro": return 0x6300; //TN USED
-		"Fulmetium": return 0x6302;
+		"Fulmium": return 0x6302;
 		"Venetium": return 0x6303;
 		"Ignium": return 0x6304;
 		"ouro": return 0x6305;
@@ -352,7 +352,7 @@ function ConvertOreToIngot(ore)
 		0x6303: return 0x630c; //venetium
 		0x6451: return 0x6460; //frigutium
 		0x6304: return 0x630d; //ignium
-		0x6302: return 0x630b; //fulmetium
+		0x6302: return 0x630b; //fulmium
 
 		//esses ultimos nao estao sendo usados.
 		0x6312: return 0x6313; //ario
@@ -450,7 +450,7 @@ function getAllOres()
 		toStruct(ORE_IGNITITA, "Minério de Ignitita", "Barra de Ignium", 0x6304, {0x1BDE, 0x6990}, 2501),
 		toStruct(ORE_VENETITA, "Minério de Venetita", "Barra de Venetium", 0x6303, {0x1BDE, 0x6990}, 1428),
 		toStruct(ORE_FRIGUTITA, "Minério de Frigutita", "Barra de Frigutium", 0x6451, {0x1BDE, 0x6990}, 2360),
-		toStruct(ORE_FULMETITA, "Minério de Fulmetita", "Barra de Fulmetium", 0x6302, {0x1BDE, 0x6990}, 2726),
+		toStruct(ORE_FULMETITA, "Minério de Fulmetita", "Barra de Fulmium", 0x6302, {0x1BDE, 0x6990}, 2726),
 
 		/* Liga Endgame — atrita + aço + carvão */
 		toStruct(ORE_ATRITA, "Minério de Atrita", "Barra de Atrium", 0x6307, {0x1BDE, 0x6995}, 1175),
@@ -510,7 +510,7 @@ enum ORE
 	ORE_VENETITA := "ORE_VENETITA",
 	ORE_FRIGUTIUM := "ORE_FRIGUTIUM",
 	ORE_FRIGUTITA := "ORE_FRIGUTITA",
-	ORE_FULMETIUM := "ORE_FULMETIUM",
+	ORE_FULMIUM := "ORE_FULMIUM",
 	ORE_FULMETITA := "ORE_FULMETITA",
 
 	ORE_ATRITA := "ORE_ATRITA",
@@ -533,7 +533,7 @@ function GetOreNameById(ore_id)
         "0x699c": return "Bronze";
         "0x6074": return "Argila";
         "0x6300": return "Ferro";
-        "0x6302": return "Fulmetium";
+        "0x6302": return "Fulmium";
         "0x6303": return "Venetium";
         "0x6304": return "Ignium";
         "0x6305": return "Ouro";
