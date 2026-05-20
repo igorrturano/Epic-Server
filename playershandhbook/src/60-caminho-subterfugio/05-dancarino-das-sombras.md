@@ -29,6 +29,7 @@ Os dançarinos das sombras são guerreiros Drow especializados na arte das sombr
 
 {{classTable,frame,decoration
 ##### Dançarino das Sombras
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Dança das Sombras |
