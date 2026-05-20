@@ -24,6 +24,22 @@ As Características servem para aprofundar a criação de personagens, proporcio
 
 :
 
+## Distribuição de Atributos
+
+Antes de escolher Características, o personagem distribui seus atributos. A criação começa com **Força, Destreza e Inteligência a 40 cada** e oferece **80 pontos** para distribuir entre os três, em incrementos de 5.
+
+Os bônus de **Raça** e de **Características** são aplicados em cima dessa distribuição. Um Anão com Corpulento começa, portanto, em 50 + 10 + 10 = **70 STR** antes mesmo de gastar qualquer ponto do *pool* em Força.
+
+{{classTable,frame,decoration
+##### Resumo dos Atributos
+- **Atributos iniciais:** 40 STR / 40 DEX / 40 INT
+- **Pontos para distribuir:** 80 (em passos de 5)
+- **Bônus de Raça:** aplicados após a distribuição
+- **Bônus de Características:** aplicados após a distribuição
+}}
+
+:
+
 ### Corpulento
 Seu corpo se desenvolveu bastante forte, largo e volumoso, porém , porém, o desenvolvimento de seus reflexos e raciocínio foi negligenciado..
 
