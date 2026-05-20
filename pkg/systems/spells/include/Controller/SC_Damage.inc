@@ -39,10 +39,6 @@ function SC_DealDamage(caster, targ, spellId, amount, damageType := DMG_FORCED, 
 	return DealDamage(targ, amount, _SC_MapLegacyDamageType(damageType), caster, spellId);
 endfunction
 
-// Maps the legacy DMG_* enum used by spell scripts to the new DAMAGE_TYPE
-// enum the combat pipeline operates on. DMG_FORCED (no thematic type) and
-// DMG_PHYSICAL (no slash/pierce/blunt bias) collapse to sensible defaults
-// matching the pre-migration channel choice in _SC_StampSpellDamage.
 function _SC_MapLegacyDamageType(legacy)
 	case (CStr(legacy))
 		DMG_FIRE:     return DAMAGE_TYPE::FIRE;

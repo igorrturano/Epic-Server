@@ -43,7 +43,8 @@ program default_poison(params)
 			sleepms(2);
 		endforeach
 
-		DealDamage(who, cint(dmg), DAMAGE_TYPE::BLUNT, attacker);
+		// Bleed is internal cut damage — bypasses the resist chain.
+		DealDamage(who, cint(dmg), DAMAGE_TYPE::FORCED, attacker);
 		MakeBleed(who);
 		PlayObjectCenteredEffect(who, FX_BLOOD_DROP, 0, 15);
 
