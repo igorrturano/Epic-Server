@@ -11,7 +11,8 @@ use os;
 
 include "include/client";
 include "include/epicConstants";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":diceroll:model/Dice";
 include ":combat:Model/DamageDice";
 include ":charactercreation:resists";
@@ -159,11 +160,11 @@ endfunction
  */
 function GetDamageTypeConstants()
     return dictionary{
-        "Physical" -> DMG_PHYSICAL,
-        "Fire" -> DMG_FIRE,
-        "Cold" -> DMG_COLD,
-        "Poison" -> DMG_POISON,
-        "Energy" -> DMG_ENERGY
+        "Physical" -> DAMAGE_TYPE::BLUNT,
+        "Fire" -> DAMAGE_TYPE::FIRE,
+        "Cold" -> DAMAGE_TYPE::COLD,
+        "Poison" -> DAMAGE_TYPE::POISON,
+        "Energy" -> DAMAGE_TYPE::ENERGY
     };
 endfunction
 
@@ -256,7 +257,7 @@ function ExecuteEpicTrapEffect(mobile, trap)
     foreach dmg_type in damage_types
         var dmg_constant := damage_type_map[dmg_type];
         if (dmg_constant)
-            DamageFLS(mobile, final_damage, dmg_constant);
+            DealDamage(mobile, final_damage, dmg_constant);
         endif
         sleepms(50);
     endforeach

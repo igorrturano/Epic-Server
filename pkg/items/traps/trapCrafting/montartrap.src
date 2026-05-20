@@ -7,7 +7,6 @@ include "include/shapes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:Controller/DamageController_legacy";
 include ":traps:traps";
 include ":tn:tngumps";
 include ":itemutils:canAccess";
