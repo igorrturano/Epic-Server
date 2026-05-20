@@ -22,7 +22,7 @@ function CreateEpicBoss(boss, x, y, z, realm)
     // IMPORTANT: Set EpicBossStruct BEFORE customizeNpc to prevent race condition
     // The NPC brain may start during customizeNpc and needs this property
     SetObjProperty(npc, "EpicBossStruct", boss);
-    SetObjProperty(npc, "IsTrueBoss", 1);
+    SetObjProperty(npc, "IsBoss", 1);
 
     // Subclass selection comes from the gump as the base ability NAME
     // (e.g. "Furia do Dragao"). GetClassProgression expects the ability ID,
