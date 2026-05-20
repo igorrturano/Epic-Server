@@ -7,7 +7,6 @@ use math;
 
 include "include/client";
 include "include/say";
-include ":combat:Controller/DamageController_legacy";
 include ":timedscripts:timedScripts";
 include ":charactercreation:habilidades";
 include ":charactercreation:resists";

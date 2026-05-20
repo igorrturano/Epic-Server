@@ -5,7 +5,8 @@ use uo;
 use util;
 
 include "include/client";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":timedscripts:timedScripts";
 
 program trapScript(params)
@@ -44,7 +45,7 @@ program trapScript(params)
 	elseif (rand == 4)
 		PlayLightningBoltEffect(mobile);
 		PlaySoundEffect(mobile, 0x2a);
-		ApplyDamageEX(mobile, 60, DMG_ENERGY);
+		DealDamage(mobile, 60, DAMAGE_TYPE::ENERGY);
 	endif
 
 	return 1;
