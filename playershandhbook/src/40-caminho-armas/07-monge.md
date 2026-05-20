@@ -29,6 +29,7 @@ O monge é um mestre das artes marciais que utiliza seu corpo como arma. Ele dom
 
 {{classTable,frame,decoration
 #### Monge
+**Dado de Vida:** d12
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Artista Marcial |

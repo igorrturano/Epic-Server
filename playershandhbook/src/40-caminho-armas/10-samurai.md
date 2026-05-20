@@ -30,6 +30,7 @@ O espadachim é um mestre guerreiro, dedicado à perfeição de sua postura de c
 
 {{classTable,frame,decoration
 #### Samurai
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Caminho do Andarilho |

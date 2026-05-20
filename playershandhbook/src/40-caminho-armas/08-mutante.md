@@ -24,6 +24,7 @@ Os Mutantes são alquimistas extraordinários que manipulam a química e a gené
 
 {{classTable,frame,decoration
 ##### Mutante
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Forma Adaptável |
