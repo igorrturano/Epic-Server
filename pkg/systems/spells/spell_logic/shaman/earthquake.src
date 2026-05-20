@@ -2,6 +2,7 @@ use vitals;
 use uo;
 use util;
 
+include "include/epicCombatUtils";
 include ":attributes:attributes";
 include ":magery:spells";
 include "include/client";

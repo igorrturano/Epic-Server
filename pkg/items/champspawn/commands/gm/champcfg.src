@@ -3,8 +3,8 @@ use uo;
 use datafile;
 
 include ":gumps:gumps";
-include ":combat:hitscripts";
-include ":tn:boss";
+include ":gumps:requestGump";
+// include ":epicspawn:epicboss";
 // fechar porta
 // definir mobs
 // definir boss
@@ -38,14 +38,14 @@ program cfgdata(who, text)
 	cfg.lvl2mobs := lvl2mobs;
 	cfg.lvl3mobs := lvl3mobs;
 
-	CreateBossStructGump(who, cfg.boss);
+	// CreateBossFromGump(who, cfg.boss);
 
 	cfg.teleporte := Requestgump(who, "Escreva onde vai ser teleportado quem morrer", "", cfg.teleporte);
 
 	cfg.sound := Requestgump(who, "Som especial pra quando o boss aparecer", "", cfg.sound);
 	cfg.frase := Requestgump(who, "FRASE que o boss vai falar quando aparecer", "", cfg.frase);
 
-	cfg.evento := ConfigureEvent(who);
+	// cfg.evento := ConfigureEvent(who);
 
 	var erro := setobjproperty(altar, "config", cfg);
 

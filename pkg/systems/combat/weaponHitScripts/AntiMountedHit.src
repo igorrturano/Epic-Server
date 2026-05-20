@@ -2,13 +2,13 @@ use uo;
 use util;
 use vitals;
 
-include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":attributes:vitals";
 include ":attributes:attributes";
 include "include/client";
 include ":mounts:mounts";
+include ":timedScripts:timedScripts";
 
 program HitScript(attackInfo)
 	var attacker := attackInfo.GetAttacker();

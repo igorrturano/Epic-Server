@@ -1,10 +1,11 @@
 use uo;
 use os;
+use basic;
+use util;
 
 include "include/say";
-include ":tn:boss";
+
 include ":timedscripts:timedScripts";
-include ":merchants:pcconversation";
 include ":merchants:include/item_template";
 
 program DeathEventsControl(params)

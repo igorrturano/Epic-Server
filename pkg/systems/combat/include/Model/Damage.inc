@@ -429,6 +429,24 @@ enum class DAMAGE_TYPE
 	ENERGY := "Energia"
 endenum
 
+// Legacy DMG_* string enum — kept as a compat layer for files that still
+// compare against legacy values stored in ObjProp data (e.g. #elementalweapon
+// .type set to "Fire"). New code should use DAMAGE_TYPE::* above. Migrated
+// here from the deleted DamageController_legacy.inc.
+enum DAMAGE_TYPES
+	DMG_FORCED    := -1, // not a real type — signaled resist bypass in legacy
+	DMG_PHYSICAL  := "Physical",
+
+	DMG_SLASH     := "Slash",
+	DMG_PIERCING  := "Piercing",
+	DMG_BLUNT     := "Blunt",
+
+	DMG_FIRE      := "Fire",
+	DMG_COLD      := "Cold",
+	DMG_POISON    := "Poison",
+	DMG_ENERGY    := "Energy"
+endenum
+
 enum class STANCE_TYPE
 	NEUTRAL := "Neutra",
 	AGGRESSIVE := "Agressiva",

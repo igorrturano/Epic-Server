@@ -3,7 +3,6 @@ use uo;
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":combat:Model/Damage";
 include ":combat:Controller/DamageController";
-include ":combat:Controller/DamageController_legacy"; // DMG_* enum (pending deletion)
 include "MagicItemBonus";
 
 /**

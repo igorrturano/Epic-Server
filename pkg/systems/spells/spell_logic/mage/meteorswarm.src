@@ -1,6 +1,7 @@
 use cfgfile;
 use uo;
 
+include "include/epicCombatUtils";
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":magery:spells";

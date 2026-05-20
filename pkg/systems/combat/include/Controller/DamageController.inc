@@ -6,6 +6,7 @@
  */
 
 // Internal
+include ":timedScripts:timedScripts";
 include ":combat:armorZones";
 // include ":abilities:models/Ability";
 include ":combat:Model/Damage";
@@ -13,10 +14,11 @@ include "CombatAbilityController";
 include "SkillController";
 include "ParryController";
 include ":combat:Controller/WearDownController";
-include ":combat:Controller/DamageController_legacy"; // SetLastDamageInfo, DamageFLS — pending migration
 
 // External
 include ":io:CFGFile";
+include "include/epicNPCUtils";
+include "include/NPCUtil";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":charactercreation:resists";
 include ":charactercreation:habilidades";
@@ -25,6 +27,97 @@ include "include/eventID";
 include "include/client";
 include "include/epicConstants";
 include ":fls_core:fls_characters";
+
+/**
+ * SetLastDamageInfo — writes the LastDamage ObjProp (used by forensics) and,
+ * on a lethal hit, an Autopsy ObjProp containing weapon/stats/resists/skills
+ * snapshot for forensicEvaluation. Migrated from DamageController_legacy.
+ */
+function SetLastDamageInfo(mobile, amount, type, source, spell := "")
+	var last_damage := struct;
+	last_damage.+serial	:= source.serial;
+	last_damage.+time	:= polcore().systime;
+	last_damage.+amount	:= amount;
+	last_damage.+type	:= type;
+
+	if (spell)
+		last_damage.+spell := spell;
+	endif
+
+	// AUTOPSIA — only on lethal hit (forensicEvaluation reads this)
+	var life := AP_GetVital(mobile, "HITS");
+	if (amount >= life)
+		var autopsy := struct;
+		if (source.weapon)
+			autopsy.+serial_weapon := source.weapon.serial;
+			autopsy.+objtype := source.weapon.objtype;
+		endif
+
+		var slashDamage    := getNPCMainDamage(mobile, SLASHDAMAGE);
+		var piercingDamage := getNPCMainDamage(mobile, PIERCINGDAMAGE);
+		var bluntDamage    := getNPCMainDamage(mobile, BLUNTDAMAGE);
+		var maxDamage := slashDamage.dice;
+		var maxType := SLASHDAMAGE;
+		if (piercingDamage.dice > maxDamage)
+			maxDamage := piercingDamage.dice;
+			maxType := PIERCINGDAMAGE;
+		endif
+		if (bluntDamage.dice > maxDamage)
+			maxDamage := bluntDamage.dice;
+			maxType := BLUNTDAMAGE;
+		endif
+		autopsy.+dano_principal := maxType;
+
+		var stat := struct;
+		stat.+STR := AP_GetStat(mobile, "STRENGTH");
+		stat.+DEX := AP_GetStat(mobile, "DEXTERITY");
+		stat.+INT := AP_GetStat(mobile, "INTELLIGENCE");
+
+		var vital := struct;
+		vital.+HIT := AP_GetVitalMaximumValue(mobile, "HITS");
+		vital.+STA := AP_GetVitalMaximumValue(mobile, "STAMINA");
+		vital.+MAN := AP_GetVitalMaximumValue(mobile, "MANA");
+
+		autopsy.+resists := getNPCResists(mobile);
+		autopsy.+elemdamage := getNPCElemDamages(mobile);
+		autopsy.+stats := stat;
+		autopsy.+vitals := vital;
+
+		var npc_elem := NPC_GetNPCConfig(mobile);
+		var classe := npc_elem.Classe;
+		var skills_combat := struct;
+
+		if (classe == SABIO)
+			skills_combat.+magery := AP_GetTrueSkill(mobile, MAGERY);
+			skills_combat.+arcana := AP_GetTrueSkill(mobile, ARCANA);
+		elseif (classe == LADINO || mobile.isSpider())
+			skills_combat.+sneak := EffectiveTrueSkill(mobile, "Stealth");
+			skills_combat.+awareness := EffectiveTrueSkill(mobile, "Perception");
+			skills_combat.+pickpocketing := EffectiveTrueSkill(mobile, "Theft");
+		else
+			skills_combat.+wrestling := AP_GetTrueSkill(mobile, WRESTLING);
+			skills_combat.+tactics := AP_GetTrueSkill(mobile, TACTICS);
+		endif
+		autopsy.+skills := skills_combat;
+		autopsy.+taxonomy := npc_elem.Taxonomy;
+		autopsy.+rastros := npc_elem.rastro;
+
+		SetObjProperty(mobile, "Autopsy", autopsy);
+	endif
+
+	if (last_damage.acctname)
+		last_damage.+acctname := source.acctname;
+	endif
+	if (source.name)
+		last_damage.+name := source.name;
+	else
+		last_damage.+name := source.desc;
+	endif
+
+	SetObjProperty(mobile, "LastDamage", last_damage);
+
+	return last_damage;
+endfunction
 
 function ProccessCombatDamage(byRef attackInfo)
 	var corpseLoc := SnapshotDefenderLocation(attackInfo);

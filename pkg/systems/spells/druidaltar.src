@@ -2,6 +2,7 @@ use uo;
 use os;
 use polsys;
 
+include ":timedScripts:timedScripts";
 include "include/client";
 include "include/sysEvent";
 include ":tn:tngumps";

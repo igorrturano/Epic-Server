@@ -6,7 +6,6 @@ include ":attributes:attributes";
 include "include/say";
 include ":timedscripts:timedScripts";
 include ":loot:magicLoot";
-// include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:habilidades";
 include "include/epicConstants";
 include ":alchemy:include/alchemy";

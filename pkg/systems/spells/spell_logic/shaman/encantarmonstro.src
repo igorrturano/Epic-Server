@@ -1,9 +1,10 @@
+include "include/epicCombatUtils";
 include "include/say";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
 include "include/epicNPCUtils";
 include ":charactercreation:resists";
-include ":tn:boss";
+
 include "include/sysEvent";
 include ":spells:Controller/SpellController";
 

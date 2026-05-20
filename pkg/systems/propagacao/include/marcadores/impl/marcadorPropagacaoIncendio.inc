@@ -14,7 +14,7 @@ include "/include/epicConstants";
 include "include/client";
 include "/include/math";
 include ":destroyable:include/destroyItem";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Model/Damage";
 include ":nature:include/nature";
 
 class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)

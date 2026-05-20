@@ -2,6 +2,7 @@ use uo;
 use os;
 use vitals;
 
+include ":timedScripts:timedScripts";
 include ":spells:tnmagery";
 include "include/client";
 include "include/sounds";

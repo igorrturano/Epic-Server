@@ -7,11 +7,10 @@ include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
 include ":gumps:include/gumps";
 include ":brainAI:npcUtil";
-include ":combat:Controller/DamageController_legacy";
 include ":tn:cooldown";
 include "include/eventID";
 include ":epicAI:epicai";
-include ":tn:boss";
+include "include/epicCombatUtils";
 include ":taming:taming";
 
 program skill_animal_lore(who)
@@ -55,7 +54,7 @@ program skill_animal_lore(who)
 		var calm_skill := (EffectiveTrueSkill(who, "Beastmastery") > EffectiveTrueSkill(who, "Taming")) ? "Beastmastery" : "Taming";
 
 		if (creature.opponent)
-			if (isBoss(creature))
+			if (isTrueBoss(creature))
 				SendSysMessage(who, "Esse nao pode ser um alvo valido.");
 				return 0;
 			endif
@@ -71,7 +70,7 @@ program skill_animal_lore(who)
 
 		if (input[0] == 999)
 		elseif (input[0] == 900)
-			if (isBoss(creature))
+			if (isTrueBoss(creature))
 				SendSysMessage(who, "Esse nao pode ser um alvo valido.");
 				return 0;
 			endif

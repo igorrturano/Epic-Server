@@ -9,7 +9,6 @@ include ":charactercreation:habilidades";
 include ":abilities:models/Ability";
 include ":wrappers:Objects/Model/MobileWrapper";
 include "include/packets";
-include ":combat:Controller/DamageController_legacy";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":tn:cooldown";

@@ -3,6 +3,7 @@ use uo;
 use os;
 use util;
 
+include "include/epicCombatUtils";
 include ":attributes:attributes";
 include ":attributes:stats";
 include ":brainAI:include/npcCommands";
@@ -11,7 +12,7 @@ include "include/say";
 include ":taming:taming";
 include ":mounts:mounts";
 include ":tn:characters";
-include ":tn:boss";
+
 include ":charactercreation:habilidades";
 // include ":damage:damage"; para os criticos talvez?
 

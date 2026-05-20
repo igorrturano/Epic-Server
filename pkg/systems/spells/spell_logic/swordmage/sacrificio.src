@@ -7,7 +7,7 @@ include "include/client";
 include "include/sounds";
 include "include/say";
 include ":tn:cooldown";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Model/Damage";
 include "include/epicMageryUtils";
 include ":spells:Controller/SpellController";
 

@@ -40,6 +40,7 @@ use npc;
 use util;
 use guilds;
 
+include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include "include/sysEvent";
 include "include/say";

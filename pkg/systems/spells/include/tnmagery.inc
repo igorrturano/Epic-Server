@@ -4,7 +4,6 @@ use math;
 include "include/client";
 include "include/sounds";
 include ":attributes:attributes";
-include ":combat:Controller/DamageController_legacy";
 include ":timedScripts:timedScripts";
 include "spellSounds";
 include ":charactercreation:resists";

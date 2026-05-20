@@ -1,6 +1,7 @@
 use uo;
 use os;
 
+include ":timedScripts:timedScripts";
 include ":spells:Controller/SpellController";
 include ":taming:petidentity";
 
