@@ -23,6 +23,51 @@ As perícias representam o conjunto de habilidades, conhecimentos e talentos esp
 
 As indicações de classe ("Necessário para...") abaixo são orientações de quais classes mais se beneficiam de cada perícia — não são pré-requisitos rígidos cobrados pelo sistema, que libera perícias por categoria e nível, não por classe específica.
 
+::
+
+## Vocação: Militar ou Civil
+
+Durante a criação, antes de escolher as perícias, o personagem opta por uma **Vocação** — a vereda profissional que decide de qual grupo a maior parte dos seus *slots* iniciais será preenchida.
+
+- **Militar**: voltada ao combate, à magia e à investigação científica das artes ofensivas.
+- **Civil**: voltada à produção, ao artesanato, à medicina e ao trato com o mundo.
+
+A escolha não bloqueia perícias do grupo oposto — todo personagem recebe ao menos um *slot* cruzado e um slot livre — mas determina o foco principal da sua experiência inicial.
+
+### Distribuição de Slots
+
+A criação concede **6 slots de perícia**, divididos em dois tiers: **Primário (P)** começa em 40 pontos e **Secundário (S)** em 20 pontos.
+
+{{classTable,frame,decoration
+##### Slots Padrão
+| Slot | Tier | Grupo |
+|:----:|:----:|:-----:|
+| 1 | Primário | Vocação |
+| 2 | Primário | Vocação |
+| 3 | Primário | Vocação oposta |
+| 4 | Secundário | Vocação |
+| 5 | Secundário | Vocação oposta |
+| 6 | Secundário | Qualquer perícia |
+}}
+
+A característica **Sabe-Tudo** (veja Características) substitui esse layout por **2 Primários + 5 Secundários**, abrindo a maioria dos slots para perícias de qualquer vocação — o gabarito mais versátil do livro.
+
+### Grupos de Perícia
+
+{{classTable,frame,decoration
+##### Vocação Militar
+Wrestling, One Handed, Two Handed, Dual Wield, Parry, Ranged, Tactics, Stealth (Furtividade), Beastmastery (Lidar com Animais), Magery, Arcana, Theology, Science
+}}
+
+{{classTable,frame,decoration
+##### Vocação Civil
+Smithing (Ferraria), Carpentry (Marcenaria), Tailoring (Alfaiataria), Provisioning (Suprimentos), Alchemy, Mining (Mineração), Lumberjacking (Lenhamento), Survival, Taming (Domação), Medicine, Mechanics, Perception (Percepção), Theft (Furto)
+}}
+
+{{footnote [Voltar ao Índice](#p4)}}
+{{pageNumber,auto}}
+
+\page
 
 ::
 ### Perícias de Combate
