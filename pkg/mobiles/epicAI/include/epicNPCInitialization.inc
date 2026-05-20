@@ -26,17 +26,15 @@ include ":crafting:include/fabricacaoComplexos"; // GeraDescriptorComplexo (tier
 include "include/epicMageryUtils";         // ApplyElementalWeaponProperties (swordmage loadout)
 
 
-// Color helpers used only by boss-init paths (ApplyBossColors / GetColorValue)
+// Color helpers used only by boss-init paths (ApplyBossColors / GetColorValue).
+// RandomColorFromRanges is canonical in :dyes:dyes (transitively included via
+// creationUtils.inc -> dyes.inc); don't redefine it here.
 function GetRandomColorFromRanges(color_ranges)
     if (!color_ranges || color_ranges.size() == 0)
         return 0; // Default color
     endif
     var selected_range := color_ranges[RandomInt(color_ranges.size()) + 1];
     return GetColorValue(selected_range);
-endfunction
-
-function RandomColorFromRanges(colorRanges)
-    return colorRanges[RandomInt(colorRanges.size()) + 1];
 endfunction
 
 
