@@ -2,7 +2,9 @@ use uo;
 use util;
 use vitals;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":wrappers:Objects/Model/WeaponWrapper";
 include "include/client";
 include "include/sounds";
 include ":attributes:vitals";
@@ -42,7 +44,11 @@ program HitScript(params)
 		var inimigo := GetObjProperty(weapon, "slayer");
 		if (cfg[npctemplate.template].Environment == inimigo)
 			var dmg := rawdamage / 2;
-			DamageFLS(defender, dmg, DMG_FORCED, attacker);
+			var slayerType := WeaponWrapper(weapon).GetAttackType();
+			if (!slayerType || slayerType is @Exception)
+				slayerType := DAMAGE_TYPE::BLUNT;
+			endif
+			DealDamage(defender, dmg, slayerType, attacker);
 		endif
 	endif
 
