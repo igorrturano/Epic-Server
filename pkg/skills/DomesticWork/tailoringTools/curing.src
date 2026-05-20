@@ -551,7 +551,7 @@ endcase
 					prod_type := 0xef20;
 					break;
 				0xef13:
-					// couronegro
+					// courosombrio
 					prod_type := 0xc605;
 					break;
 				0xef15:
