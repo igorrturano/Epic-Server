@@ -2,7 +2,6 @@ use uo;
 
 include "include/say";
 include ":tn:cooldown";
-include ":combat:Controller/DamageController_legacy";
 include ":spells:tnmagery";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";

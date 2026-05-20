@@ -46,9 +46,11 @@ program SpellScript(params)
 	endif
 
 	var healed := cint((AP_GetVitalMaximumValue(who, HITS) - GetHP(who)) / 2);
-	// Self-damage as a casting cost — intentionally NOT routed through SC_DealDamage,
-	// which would fire AFTER_DAMAGE/ON_KILL hooks against the priest for damaging themselves.
-	DamageFLS(who, healed);
+	// Self-damage as a casting cost — intentionally bypasses the SC / DealDamage
+	// pipeline, which would fire AFTER_DAMAGE/ON_KILL hooks against the priest
+	// for damaging themselves. Raw display + HP deduct only.
+	DisplayDamage(who, healed, 0);
+	ApplyRawDamage(who, healed);
 
 	// ApplyEpicHealing( targ, healed );
 	applyEpicHealing(targ, healed);
