@@ -180,7 +180,8 @@ function DealDamage(defender, amount, dmgType, source := 0, spellId := 0)
 	attackInfo.SetSkipParry(true)
 			  .SetSkipCrit(true)
 			  .SetSkipBodyRegion(true)
-			  .SetAppliesArmorWear(false);
+			  .SetAppliesArmorWear(false)
+			  .SetUsesChannelApply(true);
 
 	if (CInt(spellId) > 0)
 		attackInfo.SetSpellOrigin(spellId, dmgType);
@@ -1334,10 +1335,10 @@ function ApplyCombatDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano aplicado em: {attackInfo.GetDefender().GetName()}"));
 
-	// Spells (and other non-swing damage via DealDamage) skip posture coupling —
-	// the source channel was picked by the damage type, no zeroing or min-1
-	// phantom damage. Swings keep the legacy posture-driven application.
-	if (attackInfo.IsSpell())
+	// Non-swing damage (spells, DealDamage env/abilities/bleed/poison) applies
+	// whatever physical channel was stamped — no posture zeroing or min-1
+	// phantom damage. Real swings keep the legacy posture-driven application.
+	if (attackInfo.UsesChannelApply())
 		_ApplyPhysicalDamageByChannel(attackInfo);
 	else
 		_ApplyPhysicalDamageByPosture(attackInfo);
@@ -1373,6 +1374,14 @@ function ApplyCombatDamage(byRef attackInfo)
 		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::ENERGY)}: {attackInfo.GetDamage().GetEnergyBaseDamage()}"));
 	else
 		attackInfo.GetDamage().SetEnergyBaseDamage(0); // Garante que dano elemental que ficou negativo por causa da resistência não seja aplicado
+	endif
+
+	// FORCED channel — bypasses resist by design. No DecreaseForcedPercentDamage
+	// exists, so anything stamped here flows through untouched.
+	if (attackInfo.GetDamage().GetForcedBaseDamage() > 0)
+		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetForcedBaseDamage(), attackInfo.GetAttacker().GetObjRef());
+		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetForcedBaseDamage());
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"{Upper(DAMAGE_TYPE::FORCED)}: {attackInfo.GetDamage().GetForcedBaseDamage()}"));
 	endif
 //FRAJ adicionado por causa do autopsia
 var totalDamage := attackInfo.GetDamage().GetTotalBaseDamage();

@@ -17,8 +17,11 @@ class Damage(IDamage)
 	var PoisonBase := 0;
 	var EnergyRaw := 0;
 	var EnergyBase := 0;
+	// Forced channel — bypasses resist. Stamped by FORCED-typed damage.
+	var ForcedRaw := 0;
+	var ForcedBase := 0;
 
-	function Damage(this, slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0)
+	function Damage(this, slash := 0, piercing := 0, blunt := 0, fire := 0, cold := 0, poison := 0, energy := 0, forced := 0)
 		this.CriticalDamage := false;
 
 		this.SetSlashRawDamage(slash);
@@ -29,6 +32,7 @@ class Damage(IDamage)
 		this.SetColdRawDamage(cold);
 		this.SetPoisonRawDamage(poison);
 		this.SetEnergyRawDamage(energy);
+		this.SetForcedRawDamage(forced);
 	endfunction
 
 	function GetSlashRawDamage(this)
@@ -59,6 +63,10 @@ class Damage(IDamage)
 		return CInt(this.EnergyRaw);
 	endfunction
 
+	function GetForcedRawDamage(this)
+		return CInt(this.ForcedRaw);
+	endfunction
+
 	function GetSlashBaseDamage(this)
 		return CInt(this.SlashBase);
 	endfunction
@@ -85,6 +93,10 @@ class Damage(IDamage)
 
 	function GetEnergyBaseDamage(this)
 		return CInt(this.EnergyBase);
+	endfunction
+
+	function GetForcedBaseDamage(this)
+		return CInt(this.ForcedBase);
 	endfunction
 
 	function GetTotalRawDamage(this)
@@ -153,6 +165,12 @@ class Damage(IDamage)
 		return this;
 	endfunction
 
+	function SetForcedRawDamage(this, value)
+		this.ForcedRaw := CInt(value);
+		this.ForcedBase := this.ForcedRaw;
+		return this;
+	endfunction
+
 	function SetSlashBaseDamage(this, value)
 		this.SlashBase := CInt(value);
 		return this;
@@ -185,6 +203,11 @@ class Damage(IDamage)
 
 	function SetEnergyBaseDamage(this, value)
 		this.EnergyBase := CInt(value);
+		return this;
+	endfunction
+
+	function SetForcedBaseDamage(this, value)
+		this.ForcedBase := CInt(value);
 		return this;
 	endfunction
 
@@ -235,6 +258,12 @@ class Damage(IDamage)
 		return this;
 	endfunction
 
+	function IncreaseForcedRawDamage(this, value)
+		this.ForcedRaw += CInt(value);
+		this.ForcedBase += CInt(value);
+		return this;
+	endfunction
+
 	function IncreaseSlashBaseDamage(this, value)
 		this.SlashBase += CInt(value);
 		return this;
@@ -267,6 +296,11 @@ class Damage(IDamage)
 
 	function IncreaseEnergyBaseDamage(this, value)
 		this.EnergyBase += CInt(value);
+		return this;
+	endfunction
+
+	function IncreaseForcedBaseDamage(this, value)
+		this.ForcedBase += CInt(value);
 		return this;
 	endfunction
 
@@ -312,6 +346,12 @@ class Damage(IDamage)
 		return this;
 	endfunction
 
+	function DecreaseForcedRawDamage(this, value)
+		this.ForcedRaw -= CInt(value);
+		this.ForcedBase -= CInt(value);
+		return this;
+	endfunction
+
 	function DecreaseSlashBaseDamage(this, value)
 		this.SlashBase -= CInt(value);
 		return this;
@@ -344,6 +384,11 @@ class Damage(IDamage)
 
 	function DecreaseEnergyBaseDamage(this, value)
 		this.EnergyBase -= CInt(value);
+		return this;
+	endfunction
+
+	function DecreaseForcedBaseDamage(this, value)
+		this.ForcedBase -= CInt(value);
 		return this;
 	endfunction
 
@@ -402,6 +447,7 @@ class Damage(IDamage)
 			DAMAGE_TYPE::COLD:     this.IncreaseColdRawDamage(value);     break;
 			DAMAGE_TYPE::POISON:   this.IncreasePoisonRawDamage(value);   break;
 			DAMAGE_TYPE::ENERGY:   this.IncreaseEnergyRawDamage(value);   break;
+			DAMAGE_TYPE::FORCED:   this.IncreaseForcedRawDamage(value);   break;
 		endcase
 		return this;
 	endfunction
@@ -414,19 +460,25 @@ class Damage(IDamage)
 			$"Fire: [Raw={this.GetFireRawDamage()}, Base={this.GetFireBaseDamage()}], " +
 			$"Cold: [Raw={this.GetColdRawDamage()}, Base={this.GetColdBaseDamage()}], " +
 			$"Poison: [Raw={this.GetPoisonRawDamage()}, Base={this.GetPoisonBaseDamage()}], " +
-			$"Energy: [Raw={this.GetEnergyRawDamage()}, Base={this.GetEnergyBaseDamage()}]";
+			$"Energy: [Raw={this.GetEnergyRawDamage()}, Base={this.GetEnergyBaseDamage()}], " +
+			$"Forced: [Raw={this.GetForcedRawDamage()}, Base={this.GetForcedBaseDamage()}]";
 	endfunction
 endclass
 
 enum class DAMAGE_TYPE
-	SLASH := "Cortante",
+	SLASH    := "Cortante",
 	PIERCING := "Perfurante",
-	BLUNT := "Contusivo",
+	BLUNT    := "Contusivo",
 
-	FIRE := "Fogo",
-	COLD := "Gelo",
-	POISON := "Veneno",
-	ENERGY := "Energia"
+	FIRE     := "Fogo",
+	COLD     := "Gelo",
+	POISON   := "Veneno",
+	ENERGY   := "Energia",
+
+	// Bypasses the entire resist chain (body/armor/spell). Used for damage
+	// that already past its defense check (Fortitude save for poison ticks),
+	// internal damage (bleed, disease), or admin/scripted forced kills.
+	FORCED   := "Forcado"
 endenum
 
 // Legacy DMG_* string enum — kept as a compat layer for files that still

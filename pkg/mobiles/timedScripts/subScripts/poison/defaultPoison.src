@@ -88,7 +88,8 @@ program default_poison(params)
 
 		endcase
 
-		DealDamage(who, cint(dmg), DAMAGE_TYPE::BLUNT, attacker);
+		// Poison ticks inside the body — bypass the resist chain.
+		DealDamage(who, cint(dmg), DAMAGE_TYPE::FORCED, attacker);
 
 		if (who.dead)
 			break;
