@@ -2,7 +2,8 @@ use uo;
 use vitals;
 use os;
 include ":attributes:attributes";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 
 program danoarea(rune)
 	while (1)
@@ -32,7 +33,10 @@ function ApplyAreaDamage(mobile, rune)
 
 	if (GetObjProperty(rune, "hits"))
 		damage_dealt.hits := CInt(GetObjProperty(rune, "hits"));
-		DamageFLS(mobile, damage_dealt.hits, GetObjProperty(rune, "tipodano"));
+		// tipodano is a runtime-set rune property — expected to be a
+		// DAMAGE_TYPE enum value. Missing/unknown values fall through to
+		// no damage (was a silent no-op in the legacy path too).
+		DealDamage(mobile, damage_dealt.hits, GetObjProperty(rune, "tipodano"));
 	endif
 
 	if (GetObjProperty(rune, "mana"))

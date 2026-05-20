@@ -6,7 +6,8 @@ use uo;
 use os;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":destroyable:include/destroyItem";
 
 program controlScript(field)
@@ -64,7 +65,7 @@ endfunction
 
 function BurnMobile(mobile, dmg_dice, field_owner)
 	var dmg := RandomDiceRoll(dmg_dice); // - resistance ?
-	DamageFLS(mobile, dmg, DMG_FIRE);
+	DealDamage(mobile, dmg, DAMAGE_TYPE::FIRE);
 	SetObjProperty(mobile, "affected_by_spell", field_owner.serial);
 	return 1;
 endfunction

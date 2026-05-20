@@ -9,7 +9,6 @@ include ":attributes:attributes";
 include ":gumps:requestGump";
 include ":levers:lever";
 include ":traps:traps";
-include ":combat:Controller/DamageController_legacy";
 
 program loko(who, item)
 	if (who.npctemplate)
