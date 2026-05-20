@@ -390,6 +390,22 @@ class Damage(IDamage)
 		return this.CriticalDamage;
 	endfunction
 
+	// Dispatch a typed amount onto the matching channel. Single entry so
+	// callers (DealDamage, future damage builders) don't reinvent the
+	// type → channel mapping. Accepts DAMAGE_TYPE::* enum values.
+	function IncreaseRawDamageByType(this, dmgType, value)
+		case (CStr(dmgType))
+			DAMAGE_TYPE::SLASH:    this.IncreaseSlashRawDamage(value);    break;
+			DAMAGE_TYPE::PIERCING: this.IncreasePiercingRawDamage(value); break;
+			DAMAGE_TYPE::BLUNT:    this.IncreaseBluntRawDamage(value);    break;
+			DAMAGE_TYPE::FIRE:     this.IncreaseFireRawDamage(value);     break;
+			DAMAGE_TYPE::COLD:     this.IncreaseColdRawDamage(value);     break;
+			DAMAGE_TYPE::POISON:   this.IncreasePoisonRawDamage(value);   break;
+			DAMAGE_TYPE::ENERGY:   this.IncreaseEnergyRawDamage(value);   break;
+		endcase
+		return this;
+	endfunction
+
 	function ToString(this)
 		return "Damage" + (this.IsCritical() ? " (CRITICAL)" : "") + ": " +
 			$"Slash: [Raw={this.GetSlashRawDamage()}, Base={this.GetSlashBaseDamage()}], " +

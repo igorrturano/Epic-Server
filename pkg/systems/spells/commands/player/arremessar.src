@@ -12,9 +12,8 @@ include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:Controller/DamageController_legacy";
-include ":combat:Controller/DamageController_legacy";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":tn:cooldown";
@@ -178,7 +177,7 @@ program arremesso(params)
 	if (targ.isA(POLCLASS_MOBILE) && !targ.npctemplate)
 		dmg := RandomDiceRoll("1d6") + Cint(AP_GetStat(targ, STRENGTH) / 10);
 	elseif (targ.isA(POLCLASS_WEAPON))
-		dmg := RandomDiceRoll("1d6") + CalculateRawDamage(who, targ);
+		dmg := RandomDiceRoll("1d6") + RandomDiceRoll(targ.getMainDamageDice());
 	elseif (targ.weight < 3)
 		dmg := RandomDiceRoll("1d2");
 	else
@@ -238,7 +237,7 @@ program arremesso(params)
 				endif
 			endif
 			PlayMovingEffect(who, alvo, 0x22C6, 10);
-			DamageFLS(alvo, dmg, DMG_PHYSICAL, who);
+			DealDamage(alvo, dmg, DAMAGE_TYPE::BLUNT, who);
 			PlaySoundEffect(alvo, 0x521);
 			PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
 			MakeBleed(alvo);
@@ -259,7 +258,7 @@ program arremesso(params)
 			else
 				PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
 				PlaySoundEffect(alvo, 0x136);
-				DamageFLS(alvo, dmg, DMG_PHYSICAL, who);
+				DealDamage(alvo, dmg, DAMAGE_TYPE::BLUNT, who);
 				PlaySoundEffect(alvo, 0x521);
 				if (alvo.isSpiderEggSac())
 					var pid := Start_Script(":lighting:onArremessado", array{ who, targ });

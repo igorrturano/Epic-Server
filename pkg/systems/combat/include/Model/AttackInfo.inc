@@ -61,6 +61,11 @@ class AttackInfo(IAttackInfo)
 	var _skipParry := false;
 	var _skipCrit := false;
 	var _skipBodyRegion := false;
+	// True when this attack physically contacts the defender's armor and should wear it down.
+	// Melee/ranged/thrown weapons default true. Spells, abilities, env damage set false —
+	// armor resist *values* still apply (Ignium/Venetium/Mithril give elemental resist),
+	// only the HP loss per piece is gated.
+	var _appliesArmorWear := true;
 
 	function AttackInfo(this, attacker, defender, moment := ATTACK_MOMENT::COMBATING) // attacker: MobileWrapper, defender: MobileWrapper
 		this._moment := moment;
@@ -598,6 +603,7 @@ class AttackInfo(IAttackInfo)
 		this._skipParry := true;
 		this._skipCrit := true;
 		this._skipBodyRegion := true;
+		this._appliesArmorWear := false;
 		return this;
 	endfunction
 
@@ -614,6 +620,15 @@ class AttackInfo(IAttackInfo)
 	function SetSkipBodyRegion(this, value := true)
 		this._skipBodyRegion := value;
 		return this;
+	endfunction
+
+	function SetAppliesArmorWear(this, value := true)
+		this._appliesArmorWear := value;
+		return this;
+	endfunction
+
+	function GetAppliesArmorWear(this)
+		return this._appliesArmorWear;
 	endfunction
 
 	/**
