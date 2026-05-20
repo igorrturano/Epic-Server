@@ -46,6 +46,15 @@ Meta-game estraga boa parte da imersão. Quando você cria um personagem novo, a
 ##### Jogue para mudar
 Seu personagem, pra ser realmente interessante, precisa mudar. Não crie um personagem com uma visão definida do futuro, deixe-se influenciar pelo o que acontece de bom ou ruim com ele. Não apenas seu personagem deve mudar, mas você, como jogador também. É o que você leva dessa experiência toda afinal e o que torna o Epic um servidor e comunidade tão interessantes.
 
+### Modo de Jogo: História ou Verdade
+
+Durante a criação você escolhe sob qual conjunto de regras seu personagem irá viver. A escolha é permanente: é a única decisão de criação que não pode ser refeita por migração.
+
+- **Modo História**: regras mais brandas. As perícias ganham *caps* atrelados à **idade** do personagem, premiando aventureiros maduros e amaciando a progressão inicial. É o único modo que preserva a *data de criação* do personagem para esse cálculo etário.
+- **Modo Verdade**: o ruleset cheio, sem concessões. Sem teto de perícia por idade e sem o relógio de criação a seu favor — somente o quanto você dedica ao jogo determina seu progresso.
+
+Em ambos os modos o resto da experiência é idêntico: combate, magia, morte e mundo seguem as mesmas regras. A diferença está apenas em como a sua **progressão de perícia** é gateada.
+
 ### A Base física
 Ao entrar e selecionar o servidor você será direcionado para a criação de personagem do Ultima Online, nesta parte da criação do seu personagem você escolherá o nome e o sexo do personagem. Aqui, apesar de ter opções de outras raças, escolha humano mesmo se for criar um elfo, pois as outras raças usam skins diferentes que foram desabilitadas no shard. Não se preocupe com a configuração do cabelo e cor de pele, eles serão modificados em outra etapa da criação.
 :
