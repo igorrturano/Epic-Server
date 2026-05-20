@@ -51,7 +51,15 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**        :: 10 stamina
 **Cooldown:**     :: 120s
 
-Você se conecta com sua divindade, canalizando seu poder. Cada religião oferece uma manifestação única dessa conexão. O uso de armaduras leves e médias não mais limitam seus gestos sagrados.
+Você se conecta com sua divindade, canalizando seu poder através de uma manifestação dependente da sua religião. O uso de armaduras leves e médias não mais limitam seus gestos sagrados.
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Silencia o alvo e desfere dano forçado contra ele
+- **Bokk Bharaz**: Conjura uma barreira de escudos sobre sua party, protegendo aliados próximos
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Fortalece o aliado escolhido com Tactics durante o dia ou Awareness à noite
+- **Eluith'orth**: Ativa a visão verdadeira, revelando inimigos ocultos próximos (apenas na escuridão)
+- **Kai**: Concede vitalidade inabalável ao alvo escolhido
 
 ::
 
@@ -62,7 +70,15 @@ Você se conecta com sua divindade, canalizando seu poder. Cada religião oferec
 **Custo:**        :: 20 stamina
 **Cooldown:**     :: 180s
 
-Você canaliza energia divina em um ataque devastador contra seus inimigos. Cada religião manifesta efeitos únicos.
+Você canaliza energia divina em um ataque devastador. Conforme a sua religião, a habilidade se manifesta de forma diferente:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Enfraquece o alvo com debuffs de Força, Destreza e Inteligência
+- **Bokk Bharaz**: Arremessa um martelo elétrico no alvo, paralisando-o (requer arma contusiva equipada)
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Cega o alvo com luz divina
+- **Eluith'orth**: Desfere uma chicotada dominante que pode paralisar o alvo na escuridão (requer chicote equipado)
+- **Kai**: Marca o alvo como exposto, comprometendo sua defesa
 
 ::
 
@@ -73,7 +89,15 @@ Você canaliza energia divina em um ataque devastador contra seus inimigos. Cada
 **Custo:**        :: 20 stamina
 **Cooldown:**     :: 180s
 
-Você fica mais resistente a venenos e não sente mais medo. Além disso, manifesta uma aura de proteção baseada na sua religião.
+Você fica mais resistente a venenos e não sente mais medo. Além disso, manifesta uma aura cujo efeito depende da sua religião:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Aumenta a Força, Destreza e Inteligência do alvo
+- **Bokk Bharaz**: Salto da bigorna — você se lança pelo chão e derruba, lentifica, paralisa e fere os inimigos ao redor do ponto de queda
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Concede um surto de velocidade ao alvo
+- **Eluith'orth**: Invoca aranhas-prole sombrias para servir você (uma adicional na escuridão)
+- **Kai**: Concede um bônus de precisão (chance de acerto) ao alvo
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -87,7 +111,15 @@ Você fica mais resistente a venenos e não sente mais medo. Além disso, manife
 **Custo:**        :: 40 stamina
 **Cooldown:**     :: 300s
 
-Você cria um terreno consagrado que fortalece aliados e enfraquece inimigos. Cada religião manifesta efeitos únicos nesse campo sagrado.
+Você cria um terreno consagrado ao seu redor que fortalece aliados e enfraquece inimigos. Conforme a sua religião, o campo sagrado se manifesta de forma diferente:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Silencia todos os não-aliados na área
+- **Bokk Bharaz**: Concede a força da montanha aos aliados (redução de dano recebido)
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Cega todos os inimigos na área
+- **Eluith'orth**: Envolve todos os presentes em trevas sagradas
+- **Kai**: Restaura o equilíbrio dos aliados, protegendo-os contra acertos críticos
 
 
 ### Apoteose
@@ -97,7 +129,15 @@ Você cria um terreno consagrado que fortalece aliados e enfraquece inimigos. Ca
 **Custo:**        :: 60 stamina | 50 mana
 **Cooldown:**     :: 600s
 
-Você ascende à manifestação divina. Suas magias divinas não consomem mana nem possuem delay. Cada religião concede um poder supremo ao seu campeão.
+Você ascende à manifestação divina. Suas magias divinas não consomem mana nem possuem delay. Conforme a sua religião, um poder supremo se manifesta ao seu lado:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Marca os inimigos próximos com a Glória Eterna, fazendo-os receberem o dobro do dano
+- **Bokk Bharaz**: Fortaleza inabalável — torna você invulnerável por um tempo
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: O Sol Divino — cura aliados próximos e fulmina criaturas das trevas e mortos-vivos
+- **Eluith'orth**: Tormento de Idrith — paralisa e fere todos os inimigos próximos (e os cega se for noite)
+- **Kai**: Manifesta o Destino — garante acerto crítico no próximo ataque de todos os aliados próximos
 
 {{imageMaskEdge3,--offset:2%,--rotation:270
   ![](https://i.imgur.com/4ArV4sw.png){height:100%,right:-40%}
