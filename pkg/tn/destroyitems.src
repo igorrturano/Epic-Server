@@ -4,7 +4,7 @@ use os;
 use polsys;
 
 include ":attributes:attributes";
-include ":combat:weardown_legacy";
+include ":combat:Controller/WearDownController";
 include ":destroyable:include/destroyItem";
 include "include/epicConstants";
 include "include/facings";
@@ -92,7 +92,7 @@ function TentaDestruir(quem, itemAlvo, fonteDano, consumoStamina)
 
 		RodaEfeitosAnim(quem, fonteDano, itemAlvo);
 		ConsumeVital(quem, STAMINA, consumoStamina * 100);
-		WearDownWeapon(quem, fonteDano, 3);
+		WearDownEquip(WeaponWrapper(fonteDano), false, 3);
 
 		var danoCalculado := DanificaItem(quem, itemAlvo, fonteDano);
 		if (!danoCalculado.isEficaz)
