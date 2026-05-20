@@ -16,7 +16,8 @@ include "include/shapes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":destroyable:include/destroyItem";
 
 program BrainNerve(params)
@@ -153,7 +154,7 @@ function BreathAttack(npc, opponent, byref dist, settings)
 																						 	settings["BreathDamage"]),
 																						 	desc := "Bafo Draconico." }, settings["BreathRadius"], FX_EXPLODE_2);
 	foreach mobile in chars
-		ApplyDamageEX(mobile, RandomDiceRoll(settings["BreathDamage"]), DMG_FIRE);
+		DealDamage(mobile, RandomDiceRoll(settings["BreathDamage"]), DAMAGE_TYPE::FIRE);
 	endforeach
 
 	npc.frozen := 0;

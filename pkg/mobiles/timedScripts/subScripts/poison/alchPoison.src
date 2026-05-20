@@ -4,7 +4,8 @@ use os;
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include ":timedscripts:poisonUtil";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 
 program default_poison(params)
 	var who := params[1];
@@ -33,7 +34,7 @@ program default_poison(params)
 		endcase
 
 		sleep(time);
-		damageFLS(who, cint(damage), DMG_FORCED, attacker);
+		DealDamage(who, cint(damage), DAMAGE_TYPE::BLUNT, attacker);
 
 		if (who.dead)
 			break;

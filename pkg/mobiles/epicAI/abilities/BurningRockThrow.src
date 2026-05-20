@@ -1,7 +1,8 @@
 use uo;
 use os;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 
 program BurningRockThrow(params)
@@ -39,8 +40,8 @@ program BurningRockThrow(params)
 	var blunt_dmg := tier * 3;
 	var fire_dmg := tier * 2;
 
-	DamageFLS(targ, blunt_dmg, DMG_BLUNT, me, "burningrock");
-	DamageFLS(targ, fire_dmg, DMG_FIRE, me, "burningrock");
+	DealDamage(targ, blunt_dmg, DAMAGE_TYPE::BLUNT, me);
+	DealDamage(targ, fire_dmg, DAMAGE_TYPE::FIRE, me);
 	SendSysMessageEx(targ, "Uma rocha incandescente atinge você!", SSM_FAIL);
 
 	return 1;

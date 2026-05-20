@@ -22,7 +22,6 @@ include ":tn:questevent";
 include ":attributes:vitals";
 include ":combat:hitscripts";
 include "include/say";
-include ":combat:Controller/DamageController_legacy";
 include ":tn:npcutil";
 include ":epicAI:include/epicNPCCombat";   // CleanupDoppelgangerEquipment
 include ":taming:taming";

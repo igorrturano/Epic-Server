@@ -2,7 +2,8 @@ use uo;
 use os;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
 
@@ -32,7 +33,7 @@ program VenomousFangs(params)
 
 	PrintTextAbove(me, "*cravam presas venenosas*");
 	PlaySoundEffect(me, 0x28a);
-	DamageFLS(targ, tier * 2, DMG_PIERCING, me, "venomous_fangs");
+	DealDamage(targ, tier * 2, DAMAGE_TYPE::PIERCING, me);
 
 	if (CheckResist(targ, FORTITUDE, diff))
 		SendSysMessageEx(targ, "Você resiste ao veneno das presas.", SSM_REQUEST);

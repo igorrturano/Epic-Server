@@ -5,7 +5,8 @@ use os;
 include ":attributes:attributes";
 include ":attributes:skills";
 include ":timedscripts:timedScripts";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":blood:blood";
 include "include/client";
 
@@ -42,7 +43,7 @@ program default_poison(params)
 			sleepms(2);
 		endforeach
 
-		damageFLS(who, cint(dmg), DMG_FORCED, attacker);
+		DealDamage(who, cint(dmg), DAMAGE_TYPE::BLUNT, attacker);
 		MakeBleed(who);
 		PlayObjectCenteredEffect(who, FX_BLOOD_DROP, 0, 15);
 

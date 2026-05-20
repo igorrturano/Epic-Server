@@ -2,7 +2,8 @@ use uo;
 use os;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
 include "include/shapes";
@@ -51,12 +52,12 @@ program FrozenBreath(params)
 		endif
 
 		if (CheckResist(mobile, WILL, RESIST_HARD) > 0)
-			DamageFLS(mobile, CInt(damage / 2), DMG_COLD, me, "frozenbreath");
+			DealDamage(mobile, CInt(damage / 2), DAMAGE_TYPE::COLD, me);
 			TS_StartTimer(mobile, "lentidao", tier * 2);
 			SendSysMessageEx(mobile, "O frio cala em seus ossos.", SSM_REQUEST);
 			PrintTextAbove(mobile, "*lento*");
 		else
-			DamageFLS(mobile, damage, DMG_COLD, me, "frozenbreath");
+			DealDamage(mobile, damage, DAMAGE_TYPE::COLD, me);
 			TS_StartTimer(mobile, "prisaogelida", 3);
 			PlayObjectCenteredEffect(mobile, FX_BLUE_SPARKLE_GROUND, 3, 4);
 			SendSysMessageEx(mobile, "O sopro congelante te aprisiona!", SSM_FAIL);

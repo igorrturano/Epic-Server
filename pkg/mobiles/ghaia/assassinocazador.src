@@ -9,7 +9,6 @@ include "include/sysEvent";
 include ":tn:cooldown";
 include ":faccao:faccao";
 include ":faccao:membership";
-include ":combat:Controller/DamageController_legacy";
 include ":faccao:npc_laws_enforce";
 
 // AssasinoCazador — assassino do Sinodo com pantera companheira.
