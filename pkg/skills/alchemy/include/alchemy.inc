@@ -252,12 +252,12 @@ function GetReagName(objtype)
     0x630e: return "barras de ouro";
 
     ///// GRAVETOS NUMAJA /////
-    0xee29: return "gravetos numaja preto metálico";
-    0xee2a: return "gravetos numaja verde musgo metálico";
-    0xee2b: return "gravetos numaja dourado";
-    0xee2c: return "gravetos numaja azul metálico";
-    0xee2d: return "gravetos numaja azul lunar";
-    0xee2e: return "gravetos numaja azul penumbra";
+    0xee29: return "gravetos preto metálico";
+    0xee2a: return "gravetos verde musgo metálico";
+    0xee2b: return "gravetos dourado";
+    0xee2c: return "gravetos azul metálico";
+    0xee2d: return "gravetos azul lunar";
+    0xee2e: return "gravetos azul penumbra";
     
     //pizza dentro do EvilLink
     0xc020: return "graveto teixo";
