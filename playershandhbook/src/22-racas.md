@@ -62,20 +62,20 @@ Pequilhos são de estatura bem baixa, com pés grandes e peludos, rostos redondo
 :
 **Sortudos**: Sempre rolam novamente ao rolar 1 no dado.
 ## Meio-Elfo
-Meio-elfos carregam traços dos dois mundos — orelhas levemente pontudas, feições suaves e uma graça sutil que os distingue dos humanos comuns. Costumam ser sociáveis e empáticos, navegando bem entre grupos diferentes.
+Meio-elfos são elfos nascidos ou criados nas culturas multirraciais de Aiglana ou dos Povos do Leste, onde a mistura de sangues e costumes suavizou os traços ancestrais. Carregam as mesmas vantagens raciais dos elfos puros, mas conservam orelhas levemente pontudas, feições mais arredondadas e uma graça discreta que os distingue dos humanos comuns. Costumam ser sociáveis e empáticos, navegando bem entre grupos diferentes.
 #### **Vantagens Raciais**:
 **Sabedoria de Alora**: +10 INT
 :
 **Templo da Mente**: Recebe +20 Vontade
 :
 ## Meio-Drow
-Meio-Drows têm a pele em tons acinzentados mais claros que os Drows puros, cabelos escuros ou esbranquiçados e olhos de tons incomuns. Tendem ao comportamento reservado e observador.
+Meio-drows são drows nascidos ou criados nas culturas multirraciais de Aiglana ou dos Povos do Leste, onde a vida fora do Subterrâneo abrandou seus traços. Compartilham todas as vantagens raciais dos drows puros, mas têm pele em tons acinzentados mais claros, cabelos escuros ou esbranquiçados e olhos de tons incomuns. Tendem ao comportamento reservado e observador.
 #### **Vantagens Raciais**:
 **Sobrevivência Umbreterna**: +5 INT +5 DEX 
 :
 **Toxina Natural**: Sua alimentação baseada em fungos fez com que desenvolvessem uma resistência natural a venenos.
 ## Meio-Orc
-Meio-Orcs têm estatura imponente e traços marcantes, pele acinzentada, mandíbula forte e presas discretas. São diretos e determinados, com uma presença física que naturalmente chama atenção.
+Meio-orcs são orcs nascidos ou criados nas culturas multirraciais de Aiglana ou dos Povos do Leste, distantes das dunas do Grunntam. Mantêm todas as vantagens raciais dos orcs puros, mas exibem estatura imponente com traços mais contidos: pele acinzentada, mandíbula forte e presas discretas. São diretos e determinados, com uma presença física que naturalmente chama atenção.
 :
 #### **Vantagens Raciais**:
 **Sabedoria Ancestral**: +5 INT +5 STR
