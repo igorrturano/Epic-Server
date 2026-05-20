@@ -85,13 +85,20 @@ This is the cast driver, but it's where "click a target" becomes the
   `TARGET_RETRY` (const at `cast_spell.src:38`) for those, and
   `selectSpellTarget`'s loop re-issues the cursor instead of fizzling
   the cast. Invuln / corpofechado / charmed remain hard fails.
-- **Target runs pre-consume.** `SpellStarter` order is now initialize →
-  preCast → selectSpellTarget → consumeResources → castingProcess →
-  checkSuccess → finalize. A bad click or ESC costs zero mana. As a
-  consequence, the hard-fail branches in `checkTargetValidity` now
-  release the cast lock themselves via `_ReleaseCastLock` (frozen,
-  `#medding`, `#Casting`) because `performCastingProcess` (which used
-  to clear `frozen`) hasn't run yet.
+- **Pre-cast model preserved.** `SpellStarter` order is initialize →
+  preCast → consumeResources → castingProcess → selectSpellTarget →
+  checkSuccess → finalize. The cast bar runs first; the player then
+  picks a target with the cursor up and can walk while doing so
+  (`performCastingProcess` cleared `frozen` at the end of the cycles).
+  Trade-off: an explicit ESC after the cast bar still fizzles and
+  costs mana — the retry loop only catches bad clicks, not cancels.
+- The freeze itself was moved out of `initializeSpellCasting` into the
+  start of `performCastingProcess` so a Target() prompt would never run
+  on a frozen caster (clients auto-cancel cursors when the mobile is
+  frozen). Hard-fail branches in `checkTargetValidity` still release
+  the cast lock via `_ReleaseCastLock` (`frozen := 0`, erase `#medding`
+  and `#Casting`) so a repeal/corpofechado/charmed bounce doesn't leave
+  the caster stuck.
 
 ### Range formula (`scripts/include/epicMageryUtils.inc:86`)
 
