@@ -27,6 +27,7 @@ Os caçadores de tesouros são exploradores natos, capazes de revelar segredos c
 
 {{classTable,frame,decoration
 ##### Caçador de Tesouros
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Desbravador Nato |

@@ -27,6 +27,7 @@ Os caçadores de demônios são jurados divinos, determinados a caçar e extermi
 
 {{classTable,frame,decoration
 ##### Caçador de Demônios
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Sigilo de Proteção |

@@ -27,6 +27,7 @@ Bardos são artistas implacáveis, capazes de controlar as emoções de uma mult
 
 {{classTable,frame,decoration
 ##### Bardo
+**Dado de Vida:** d6
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Vox Arcana |

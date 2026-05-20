@@ -26,6 +26,7 @@ Assassinos são verdadeiros artistas da execução, habilidosos em emboscadas e 
 \column
 {{classTable,frame,decoration
 ##### Assassino
+**Dado de Vida:** d8
 | Level | Habilidades | 
 |:-----:|:-----------:|
 |  2 |Assassinar |
