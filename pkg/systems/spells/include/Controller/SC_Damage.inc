@@ -1,28 +1,31 @@
 use uo;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Model/AttackInfo";
-include ":combat:Controller/CombatAbilityController";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Model/Damage";
+include ":combat:Controller/DamageController";
+include ":combat:Controller/DamageController_legacy"; // DMG_* enum (pending deletion)
 include "MagicItemBonus";
 
 /**
  * SC_DealDamage — canonical entry point for spell damage.
  *
- * Delegates the actual damage application to DamageFLS (resist calc,
- * DisplayDamage, ApplyRawDamage, last-damage-info + autopsy), then fires
- * the post-damage ability hooks (CombatAbility AFTER_DAMAGE / ON_KILL
- * and PassiveAbility AFTER_DAMAGE) via a spell-flagged AttackInfo.
- * Spells that migrate to this call stop using DamageFLS directly so all
- * spell damage consistently triggers ability hooks.
+ * Thin facade over DealDamage. Adds the equipped-focus elemental bonus
+ * and maps the legacy DMG_* damage-type strings to the new DAMAGE_TYPE
+ * enum so callers don't have to change.
+ *
+ * Resist, application, ability hooks (AFTER_DAMAGE / ON_KILL), forensics,
+ * lastHit tracking and #vinganca are all handled by DealDamage.
  *
  * @param caster       Mobile - the attacker
  * @param targ         Mobile - the victim
- * @param spellId      Integer - spell id (for AttackInfo.GetSpellId)
- * @param amount       Integer - base damage amount, before resist
- * @param damageType   String  - DMG_FIRE / DMG_COLD / DMG_ENERGY / DMG_POISON
- *                               / DMG_PHYSICAL; DMG_FORCED to bypass resist
- * @return Integer - the base amount passed in (resist is handled internally)
+ * @param spellId      Integer - spell id (forensics tag, ability gating)
+ * @param amount       Integer - base damage before resist (post-resist if DMG_FORCED)
+ * @param damageType   Legacy DMG_* (FIRE/COLD/ENERGY/POISON/PHYSICAL/SLASH/...);
+ *                     DMG_FORCED falls back to energy channel (matches the
+ *                     pre-migration default in _SC_StampSpellDamage).
+ * @param applyItemBonus 1 to add equipped focus elemental bonus (default);
+ *                     DoT tick scripts pass 0 to avoid re-adding it per tick.
+ * @return Integer - damage actually dealt after resists
  */
 function SC_DealDamage(caster, targ, spellId, amount, damageType := DMG_FORCED, applyItemBonus := 1)
 	amount := CInt(amount);
@@ -30,45 +33,27 @@ function SC_DealDamage(caster, targ, spellId, amount, damageType := DMG_FORCED, 
 		return 0;
 	endif
 
-	// Magic item elemental bonus from equipped focus (staff/wand/spellbook).
-	// Reads `dano <element>` sub-value from the focus's crafted properties.
-	// applyItemBonus=0 lets DoT tick scripts skip it: the spell's direct/
-	// impact hit applies the focus bonus once (default 1); the DoT chips
-	// must not re-add it every tick (magicmissile pattern; see "63%" report).
 	if (applyItemBonus)
 		amount := amount + GetMagicItemElementalBonus(caster, damageType);
 	endif
 
-	// DamageFLS: resist calc + DisplayDamage + ApplyRawDamage + last-damage info.
-	DamageFLS(targ, amount, damageType, caster, $"spell_{spellId}");
-
-	// Build a spell-origin AttackInfo and fire post-damage hooks so abilities
-	// like ON_KILL / AFTER_DAMAGE effects work for spell damage, not just melee.
-	var attInfo := AttackInfo(MobileWrapper(caster), MobileWrapper(targ));
-	attInfo.SetSpellOrigin(spellId, damageType);
-	_SC_StampSpellDamage(attInfo, damageType, amount);
-
-	ExecuteCombatAbilitiesAfterDamage(attInfo);
-	ExecutePassiveAbilitiesAfterDamage(attInfo);
-
-	if (targ.dead)
-		ExecuteCombatAbilitiesOnKill(attInfo);
-		ExecutePassiveAbilitiesOnKill(attInfo);
-	endif
-
-	return amount;
+	return DealDamage(targ, amount, _SC_MapLegacyDamageType(damageType), caster, spellId);
 endfunction
 
-// Stamp the landed damage onto the AttackInfo's Damage object in the right
-// type slot so ability hooks that read Damage see a non-zero value.
-function _SC_StampSpellDamage(byref attInfo, damageType, amount)
-	var dmg := attInfo.GetDamage();
-	case (damageType)
-		DMG_FIRE:     dmg.SetFireBaseDamage(amount);
-		DMG_COLD:     dmg.SetColdBaseDamage(amount);
-		DMG_POISON:   dmg.SetPoisonBaseDamage(amount);
-		DMG_ENERGY:   dmg.SetEnergyBaseDamage(amount);
-		DMG_PHYSICAL: dmg.SetSlashBaseDamage(amount); // physical → slash as the generic physical slot
-		default:      dmg.SetEnergyBaseDamage(amount); // DMG_FORCED or unknown — park it in energy
+// Maps the legacy DMG_* enum used by spell scripts to the new DAMAGE_TYPE
+// enum the combat pipeline operates on. DMG_FORCED (no thematic type) and
+// DMG_PHYSICAL (no slash/pierce/blunt bias) collapse to sensible defaults
+// matching the pre-migration channel choice in _SC_StampSpellDamage.
+function _SC_MapLegacyDamageType(legacy)
+	case (CStr(legacy))
+		DMG_FIRE:     return DAMAGE_TYPE::FIRE;
+		DMG_COLD:     return DAMAGE_TYPE::COLD;
+		DMG_POISON:   return DAMAGE_TYPE::POISON;
+		DMG_ENERGY:   return DAMAGE_TYPE::ENERGY;
+		DMG_SLASH:    return DAMAGE_TYPE::SLASH;
+		DMG_PIERCING: return DAMAGE_TYPE::PIERCING;
+		DMG_BLUNT:    return DAMAGE_TYPE::BLUNT;
+		DMG_PHYSICAL: return DAMAGE_TYPE::BLUNT;
 	endcase
+	return DAMAGE_TYPE::ENERGY;
 endfunction
