@@ -26,6 +26,7 @@ Os Caçadores são vigilantes incansáveis da natureza e mestres da perseguiçã
 
 {{classTable,frame,decoration
 #### Caçador
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Vínculo de Guerra |

@@ -22,6 +22,7 @@ São combatentes de grande valor pois possuem um vasto conhecimento em armamento
 \column
 {{classTable,frame,decoration
 #### Combatente
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Contra-Empunhadura |

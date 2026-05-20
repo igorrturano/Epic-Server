@@ -26,6 +26,7 @@
 
 {{classTable,frame,decoration
 #### Arqueiro
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:----------------:|
 |  2 |Tiro Poderoso |
