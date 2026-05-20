@@ -1170,12 +1170,10 @@ function ApplyCriticalDamage(byRef attackInfo)
 	return true;
 endfunction
 
-function ApplyCombatDamage(byRef attackInfo)
-	ExecuteCombatAbilitiesOnHit(attackInfo);
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano aplicado em: {attackInfo.GetDefender().GetName()}"));
-
+// Swing path: pick one physical channel from the attacker's posture, zero the
+// other two, guarantee a minimum 1 damage on the chosen channel. Original
+// pre-spell-migration behavior — preserved verbatim for melee/ranged.
+function _ApplyPhysicalDamageByPosture(byRef attackInfo)
 	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
 	if (posture == DAMAGE_TYPE::SLASH)
 		attackInfo.GetDamage().SetPiercingRawDamage(0).SetBluntRawDamage(0);
@@ -1210,6 +1208,46 @@ function ApplyCombatDamage(byRef attackInfo)
 
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage());
+	endif
+endfunction
+
+// Spell / DealDamage path: apply whatever physical channels were stamped by
+// the damage source. The damage type already picked the channel (via
+// Damage.IncreaseRawDamageByType), so there's no posture to read and no
+// min-1 enforcement that would create phantom physical damage on a pure
+// elemental hit.
+function _ApplyPhysicalDamageByChannel(byRef attackInfo)
+	var dmg := attackInfo.GetDamage();
+	var defender := attackInfo.GetDefender().GetObjRef();
+	var attacker := attackInfo.GetAttacker().GetObjRef();
+
+	if (dmg.GetSlashBaseDamage() > 0)
+		DisplayDamage(defender, dmg.GetSlashBaseDamage(), attacker);
+		ApplyRawDamage(defender, dmg.GetSlashBaseDamage());
+	endif
+	if (dmg.GetPiercingBaseDamage() > 0)
+		DisplayDamage(defender, dmg.GetPiercingBaseDamage(), attacker);
+		ApplyRawDamage(defender, dmg.GetPiercingBaseDamage());
+	endif
+	if (dmg.GetBluntBaseDamage() > 0)
+		DisplayDamage(defender, dmg.GetBluntBaseDamage(), attacker);
+		ApplyRawDamage(defender, dmg.GetBluntBaseDamage());
+	endif
+endfunction
+
+function ApplyCombatDamage(byRef attackInfo)
+	ExecuteCombatAbilitiesOnHit(attackInfo);
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano aplicado em: {attackInfo.GetDefender().GetName()}"));
+
+	// Spells (and other non-swing damage via DealDamage) skip posture coupling —
+	// the source channel was picked by the damage type, no zeroing or min-1
+	// phantom damage. Swings keep the legacy posture-driven application.
+	if (attackInfo.IsSpell())
+		_ApplyPhysicalDamageByChannel(attackInfo);
+	else
+		_ApplyPhysicalDamageByPosture(attackInfo);
 	endif
 
 	if (attackInfo.GetDamage().GetFireBaseDamage() > 0)
