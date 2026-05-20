@@ -119,6 +119,29 @@ Toda classe possui um **Dado de Vida** próprio, que representa a vitalidade gan
 | Xamã                  | d8 |
 }}
 
+### Como o Dado de Vida vira HP
+
+A vitalidade máxima do personagem soma duas parcelas: uma vem da **Força**, a outra do **Dado de Vida** acumulado pelos níveis ímpares.
+
+- **Parcela de Força**: a sua Força base entra direto como pontos de vida.
+- **Parcela de Classe**: o dado da classe rende um valor cheio no nível 1 e ganha outro valor cheio a cada **nível ímpar** alcançado (3, 5, 7, 9, 11, 13, 15, 17, 19). A partir do nível 19 a progressão satura — não há mais ganho por nível ímpar.
+
+{{classTable,frame,decoration
+##### HP de Classe (nível 1 → 19+)
+| Dado | Nível 1 | Nível 19+ |
+|:----:|:-------:|:---------:|
+| d4   |  4 |  40 |
+| d6   |  6 |  60 |
+| d8   |  8 |  80 |
+| d10  | 10 | 100 |
+| d12  | 12 | 120 |
+}}
+
+Algumas escolhas adicionam parcelas fixas em cima:
+
+- A cultura **Badûran** concede +10 de HP máximo permanente.
+- A Habilidade de Caminho **Resistência do Deserto** concede +30 de HP enquanto o personagem a mantiver ativa.
+
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
 
