@@ -1,0 +1,45 @@
+use uo;
+use os;
+
+include ":faccao:faccao";
+include ":message:model/Message";
+include ":text:Color";
+
+program JOIN_FACTION_Action(params)
+	var event := params[2];
+	var action_params := params[3];
+
+	var mobile := event.source;
+	if (!mobile || !mobile.acctname)
+		return 0;
+	endif
+
+	if (!action_params)
+		return 0;
+	endif
+
+	var idx := CInt(action_params.faccao_index);
+	if (idx < 1 || idx > FACCAO_NOMES.size())
+		return 0;
+	endif
+
+	var faccao_name := FACCAO_NOMES[idx];
+	var guild := FindGuild(faccao_name);
+	if (!guild)
+		Message($"Faccao '{faccao_name}' nao encontrada no servidor.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
+	var err := CanJoinFaccao(guild, mobile);
+	if (err)
+		Message(CStr(err), Color(SYSTEM_COLOR::FAIL)).SendSys(mobile);
+		return 0;
+	endif
+
+	var honorary := CInt(action_params.honorary);
+	AddMember(guild, mobile, honorary);
+
+	var tipo_label := honorary ? "honorário" : "membro";
+	Message($"Você agora é {tipo_label} de {faccao_name}.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(mobile);
+	return 1;
+endprogram

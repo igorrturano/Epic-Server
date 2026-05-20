@@ -1,4 +1,5 @@
 use uo;
+include "include/epicCombatUtils";
 include "include/tileEffects";
 include ":attributes:attributes";
 include ":spells:Controller/SC_Damage";

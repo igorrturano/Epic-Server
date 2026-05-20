@@ -1,6 +1,5 @@
 use uo;
 
-include ":combat:Controller/DamageController_legacy";
 include ":attributes:attributes";
 include ":epicspawn:epicCombatEventsController";
 include "include/utils";

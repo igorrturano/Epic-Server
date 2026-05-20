@@ -12,7 +12,6 @@ use util;
 use cfgfile;
 use os;
 
-include ":combat:Controller/DamageController_legacy";
 include ":tn:equipment";
 include ":spells:tnmagery";
 

@@ -8,6 +8,7 @@ include ":epicevents:Model/EventConfig";
 include ":epicevents:Model/ActionConfig";
 include ":epicevents:Model/CreatureSpawnInfo";
 include ":text:Color";
+include ":faccao:faccao";
 
 const DEFAULT_TRIGGER_RADIUS := 8;
 
@@ -44,6 +45,8 @@ const BTN_ACTION_TYPE_EMOTE := 260;
 const BTN_ACTION_TYPE_SPAWN := 261;
 const BTN_ACTION_TYPE_TELEPORT := 262;
 const BTN_ACTION_TYPE_CONVERSATION := 263;
+const BTN_ACTION_TYPE_GIVE_ITEM := 264;
+const BTN_ACTION_TYPE_JOIN_FACTION := 265;
 
 // Action edit field IDs
 const ID_ACTION_DELAY := 300;
@@ -55,6 +58,14 @@ const ID_ACTION_TELEPORT_X := 310;
 const ID_ACTION_TELEPORT_Y := 311;
 const ID_ACTION_TELEPORT_Z := 312;
 const ID_ACTION_TELEPORT_REALM := 313;
+const BTN_GIVE_ITEM_TARGET := 320;
+const ID_ACTION_GIVE_ITEM_AMOUNT := 321;
+const RADIO_JOIN_FACCAO_1 := 322;
+const RADIO_JOIN_FACCAO_2 := 323;
+const RADIO_JOIN_FACCAO_3 := 324;
+const RADIO_JOIN_FACCAO_4 := 325;
+const RADIO_JOIN_FACCAO_5 := 326;
+const BTN_JOIN_FACCAO_HONORARY := 327;
 
 // Nature condition checkboxes (separate gump)
 const CHK_MOON_KALENDAE := 400;
@@ -1021,6 +1032,24 @@ function GetActionDescription(action)
 			return tp_desc;
 		"CONVERSATION":
 			return "Conversa (Dialogo)";
+		"GIVE_ITEM":
+			if (!action.params || !action.params.template)
+				return "Dar Item: (nao configurado)";
+			endif
+			var t := action.params.template;
+			var label := t.desc ? CStr(t.desc) : (t.name ? CStr(t.name) : $"0x{Hex(t.objtype)}");
+			var qty := action.params.amount ? CInt(action.params.amount) : (t.amount ? CInt(t.amount) : 1);
+			return $"Dar Item: {label} x{qty}";
+		"JOIN_FACTION":
+			if (!action.params || !action.params.faccao_index)
+				return "Recrutar: (nao configurado)";
+			endif
+			var fidx := CInt(action.params.faccao_index);
+			if (fidx < 1 || fidx > FACCAO_NOMES.size())
+				return "Recrutar: (faccao invalida)";
+			endif
+			var tipo_label := action.params.honorary ? " [honorario]" : "";
+			return $"Recrutar em: {FACCAO_NOMES[fidx]}{tipo_label}";
 		default:
 			return action.type;
 	endcase
@@ -1105,8 +1134,8 @@ endfunction
 
 // Action type selection gump
 function BuildActionTypeSelectionGump()
-	var gump := GFECreateGump("Selecione o Tipo de Acao", 500, 420);
-	var y := SetupGumpFrame(gump, 500, 420);
+	var gump := GFECreateGump("Selecione o Tipo de Acao", 500, 560);
+	var y := SetupGumpFrame(gump, 500, 560);
 
 	var x := 40;
 	var spacing := 70;
@@ -1137,6 +1166,18 @@ function BuildActionTypeSelectionGump()
 	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_TYPE_CONVERSATION);
 	GFTextLine(gump, x + 40, y, GUMP_COLOR::HIGHLIGHT, "Conversa (Dialogo)");
 	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Arvore de dialogo interativa com o NPC");
+	y := y + spacing;
+
+	// GIVE_ITEM action
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_TYPE_GIVE_ITEM);
+	GFTextLine(gump, x + 40, y, GUMP_COLOR::HIGHLIGHT, "Dar Item");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Entregar um item ao jogador (preserva todas as props)");
+	y := y + spacing;
+
+	// JOIN_FACTION action
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_ACTION_TYPE_JOIN_FACTION);
+	GFTextLine(gump, x + 40, y, GUMP_COLOR::HIGHLIGHT, "Recrutar em Faccao");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Tornar o jogador membro (full ou honorario) de uma das faccoes staff");
 
 	return gump;
 endfunction
@@ -1153,6 +1194,10 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 			title_text := title_text + "Teleporte";
 		"CONVERSATION":
 			title_text := title_text + "Conversa (Dialogo)";
+		"GIVE_ITEM":
+			title_text := title_text + "Dar Item";
+		"JOIN_FACTION":
+			title_text := title_text + "Recrutar em Faccao";
 	endcase
 
 	var gump := GFECreateGump(title_text, 600, 500);
@@ -1260,6 +1305,76 @@ function BuildActionEditGump(action_type, existing_action := 0, who := 0)
 
 			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Ex: X=1000 Y=2000 Z=0 Realm=britannia");
 			y := y + 35;
+
+		"GIVE_ITEM":
+			var template := 0;
+			if (existing_action && existing_action.params && existing_action.params.template)
+				template := existing_action.params.template;
+			endif
+
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Item modelo:");
+			GFAddButton(gump, x + 390, y + 2, 2117, 2118, GF_CLOSE_BTN, BTN_GIVE_ITEM_TARGET);
+			GFTextLine(gump, x + 410, y + 5, GUMP_COLOR::LABEL, "[Target]");
+			y := y + 25;
+
+			if (template)
+				var label := template.desc ? CStr(template.desc) : (template.name ? CStr(template.name) : "");
+				if (label == "")
+					label := "(sem nome)";
+				endif
+				GFTextLine(gump, x, y, GUMP_COLOR::HIGHLIGHT, label);
+				y := y + 20;
+				GFTextLine(gump, x, y, GUMP_COLOR::LABEL, $"objtype: 0x{Hex(template.objtype)}  cor: 0x{Hex(template.color ? template.color : 0)}");
+				y := y + 25;
+			else
+				GFTextLine(gump, x, y, GUMP_COLOR::LABEL, "Clique no botao acima para selecionar o item de referencia.");
+				y := y + 25;
+			endif
+
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Quantidade (em branco = usa a do modelo):");
+			y := y + 25;
+			var amount_default := "";
+			if (existing_action && existing_action.params && existing_action.params.amount && CInt(existing_action.params.amount) > 0)
+				amount_default := CStr(existing_action.params.amount);
+			endif
+			GFResizePic(gump, x, y, 9350, 100, 25);
+			GFTextEntry(gump, x + 5, y + 5, 90, 20, GUMP_COLOR::TEXT_ENTRY, amount_default, ID_ACTION_GIVE_ITEM_AMOUNT);
+			y := y + 35;
+
+		"JOIN_FACTION":
+			var selected_idx := 0;
+			var honorary := 0;
+			if (existing_action && existing_action.params)
+				if (existing_action.params.faccao_index)
+					selected_idx := CInt(existing_action.params.faccao_index);
+				endif
+				if (existing_action.params.honorary)
+					honorary := CInt(existing_action.params.honorary);
+				endif
+			endif
+
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Faccao:");
+			y := y + 22;
+
+			GFSetRadioGroup(gump, 1);
+			var radio_ids := array{
+				RADIO_JOIN_FACCAO_1,
+				RADIO_JOIN_FACCAO_2,
+				RADIO_JOIN_FACCAO_3,
+				RADIO_JOIN_FACCAO_4,
+				RADIO_JOIN_FACCAO_5
+			};
+			var i;
+			for (i := 1; i <= FACCAO_NOMES.size(); i := i + 1)
+				GFRadioButton(gump, x, y, 0x25F8, 0x25FB, (selected_idx == i), radio_ids[i]);
+				GFTextLine(gump, x + 25, y + 3, GUMP_COLOR::LABEL, FACCAO_NOMES[i]);
+				y := y + 25;
+			endfor
+
+			y := y + 10;
+			GFCheckBox(gump, x, y, 0x938, 0x939, honorary, BTN_JOIN_FACCAO_HONORARY);
+			GFTextLine(gump, x + 30, y + 2, GUMP_COLOR::HELP_TEXT, "Entrar como membro honorario (sem cargos/privilegios)");
+			y := y + 35;
 	endcase
 
 	// Divider before button
@@ -1312,13 +1427,17 @@ function ParseActionTypeSelectionInput(input)
 		return "TELEPORT";
 	elseif (input[BTN_ACTION_TYPE_CONVERSATION])
 		return "CONVERSATION";
+	elseif (input[BTN_ACTION_TYPE_GIVE_ITEM])
+		return "GIVE_ITEM";
+	elseif (input[BTN_ACTION_TYPE_JOIN_FACTION])
+		return "JOIN_FACTION";
 	endif
 
 	return 0;
 endfunction
 
 // Parse action edit input - build ActionConfig from gump input
-function ParseActionEditInput(input, action_type)
+function ParseActionEditInput(input, action_type, working_action := 0)
 	if (!input || !input[BTN_NEXT])
 		return 0;
 	endif
@@ -1361,6 +1480,40 @@ function ParseActionEditInput(input, action_type)
 			endif
 
 			action.params := struct{ x := tp_x, y := tp_y, z := tp_z, realm := realm_str };
+
+		"GIVE_ITEM":
+			if (!working_action || !working_action.params || !working_action.params.template)
+				return 0;  // template required (must hit Target before saving)
+			endif
+
+			var amount_str := Trim(GFExtractData(input, ID_ACTION_GIVE_ITEM_AMOUNT));
+			var amt := CInt(amount_str);
+			if (amt < 0)
+				amt := 0;
+			endif
+
+			action.params := struct{ template := working_action.params.template, amount := amt };
+
+		"JOIN_FACTION":
+			var picked := 0;
+			if (input[RADIO_JOIN_FACCAO_1])
+				picked := 1;
+			elseif (input[RADIO_JOIN_FACCAO_2])
+				picked := 2;
+			elseif (input[RADIO_JOIN_FACCAO_3])
+				picked := 3;
+			elseif (input[RADIO_JOIN_FACCAO_4])
+				picked := 4;
+			elseif (input[RADIO_JOIN_FACCAO_5])
+				picked := 5;
+			endif
+
+			if (!picked)
+				return 0;  // a faction must be selected
+			endif
+
+			var honorary_flag := input[BTN_JOIN_FACCAO_HONORARY] ? 1 : 0;
+			action.params := struct{ faccao_index := picked, honorary := honorary_flag };
 	endcase
 
 	return action;

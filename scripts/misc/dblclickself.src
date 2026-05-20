@@ -17,7 +17,6 @@ include ":attributes:attributes";
 include ":timedscripts:timedScripts";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 include "include/say";
 include "include/facings";

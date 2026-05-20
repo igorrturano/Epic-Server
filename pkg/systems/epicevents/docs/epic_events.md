@@ -83,7 +83,7 @@
 
 ---
 
-## Action Types (3 Current, Expandable)
+## Action Types (5 Current, Expandable)
 
 ### 1. EMOTE
 **Purpose**: Display atmospheric messages to create storytelling moments
@@ -121,6 +121,58 @@ Condition: Player has "Ancient Key"
 ```javascript
 Action: Teleport to (1000, 2000, 0)
 Condition: None (always execute)
+```
+
+### 4. GIVE_ITEM
+**Purpose**: Hand the player an item, cloned from a GM-targeted model item, with every CProp preserved. Used for quest rewards, marker/contract items, and any "this NPC gives you X" scenario.
+
+**Parameters**:
+- `template` (struct) - Snapshot of the source item produced by `CreateItemTemplate` ([item_template.inc](../../mobiles/merchants/include/item_template.inc)). Captures objtype, color, name, desc, graphic, quality/hp/mods, gump metadata, book info, and a full `CProps` dict.
+- `amount` (integer, optional) - Override the template's amount. `0` or empty = use template's own amount.
+
+**How the editor wires it**: in the action edit gump, the "[Target]" button next to "Item modelo" prompts the GM to target an in-world item. `CreateItemTemplate` snapshots it into `params.template`. At runtime, `actions/GIVE_ITEM.src` calls `CreateItemInContainerFromTemplate(mobile.backpack, template)` so CProps are restored correctly.
+
+**Example**:
+```javascript
+Node 1: "Olá viajante"
+  Answer: "Aceito a missão" → Node 2
+    Actions:
+      1. GIVE_ITEM (Contrato de Caça, qty 1)
+         Delay: 0s, Condition: Always
+
+Node 2: "Traga-me 10 peles..."
+  Answer: "Aqui estão as peles" → Node 3
+    Condition: PLAYER_HAS_ITEM(pelt × 10, consume=1)
+              AND PLAYER_HAS_ITEM(contract × 1, consume=1)
+    Actions:
+      1. GIVE_ITEM (Saco de Ouro, qty 500)
+```
+
+### 5. JOIN_FACTION
+**Purpose**: Recruit the player into one of the 5 staff factions (full or honorary). Used by faction-NPC questers to grant membership as a quest reward or initiation.
+
+**Parameters**:
+- `faccao_index` (1-5) - Index into `FACCAO_NOMES` ([faccao.inc](../../faccao/include/faccao.inc#L43-L49)).
+- `honorary` (0 | 1) - `0` = full member (with privileges/cargos), `1` = honorary (no privileges).
+
+**Runtime**:
+1. Looks up the guild via `FindGuild(FACCAO_NOMES[idx])`.
+2. Calls `CanJoinFaccao(guild, player)` ([faccao.inc:294](../../faccao/include/faccao.inc#L294)). On rejection (already a member, conflicting faction type, two memberships already) the rejection reason is sent to the player and the action returns `0` (chainable via `ACTION_SUCCEEDED`).
+3. On success calls `AddMember(guild, player, honorary)` ([faccao.inc:371](../../faccao/include/faccao.inc#L371)). For staff factions this also propagates `nomefaccao` to the player.
+
+**Editor**: action edit gump shows 5 radio buttons (one per `FACCAO_NOMES` entry) plus an "Entrar como honorario" checkbox.
+
+**Example**:
+```javascript
+Node 3: "Você provou seu valor"
+  Answer: "Aceito a oferta" → end
+    Condition: PLAYER_HAS_ITEM(proof_of_deed × 1, consume=1)
+    Actions:
+      1. JOIN_FACTION (Sinodo, honorary=0)
+      2. EMOTE "*o NPC inclina a cabeça*"
+         Condition: ACTION_SUCCEEDED(action_id=1)
+      3. EMOTE "*você sente o peso da oferta...*"
+         Condition: NOT chained — fires if recruit was rejected
 ```
 
 ---

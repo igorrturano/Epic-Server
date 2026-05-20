@@ -3,7 +3,6 @@ use util;
 include "/include/epicPropNames";
 include ":propagacao:include/propagacao";
 include ":propagacao:include/afetaMobilePropagacao";
-include ":combat:Controller/DamageController_legacy";
 
 program onPisarMarcador(quem, item, lastx, lasty, lastz, lastrealm)
 	lastx == 0;

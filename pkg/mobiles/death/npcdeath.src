@@ -18,7 +18,6 @@ include ":timedscripts:timedScripts";
 include ":death:death";
 include ":mounts:mounts";
 include ":taming:taming";
-include ":tn:questevent";
 include ":attributes:vitals";
 include ":combat:hitscripts";
 include "include/say";
@@ -43,16 +42,6 @@ program core_npcDeath(params)
 	// Clean up doppelganger equipment and storage (appearance was already restored in candie.src)
 	if (GetObjProperty(corpse, "#doppelganger_transformed"))
 		CleanupDoppelgangerEquipment(corpse);
-	endif
-
-	var lastHit := GetObjProperty(corpse, "lastHit");
-	if (":combat:weaponHitScripts/generic" in lastHit.hitscript)
-		if (lastHit.attacker && !lastHit.attacker.errortext)
-			var attacker := SystemFindObjectBySerial(lastHit.attacker);
-			if (attacker != error)
-				execonkill(attacker, corpse);
-			endif
-		endif
 	endif
 
 	if (cint(GetObjProperty(corpse, "soulstone")) == 1)
@@ -314,26 +303,29 @@ program core_npcDeath(params)
 		spawnpoint := SystemFindObjectBySerial(spawnpoint_serial);
 	endif
 	// PrintTextAbove(corpse, "spawnpoint " + spawnpoint);
-	if (GetObjProperty(corpse, "spawnkill") == error)
-		if (spawnpoint)
-			if (GetObjProperty(spawnpoint, "unique") == 1)
-				var boss := GetObjProperty(spawnpoint, "uniquestat");
-				if (boss.deathevent)
-					foreach nevent in (boss.deathevent)
-						// 	PrintTextAbove(corpse, " " + nevent.type);
-						if ((nevent.type == "Criar Npcs") && (cint(nevent.x) == 6) && (cint(nevent.y) == 6) &&
-		  (cint(nevent.z) == 6))
-							nevent.x := corpse.x;
-							nevent.y := corpse.y;
-							nevent.z := corpse.z;
-						// PrintTextAbove(corpse, "mudei o evento");
-						endif
-						ExecuteEvent(nevent);
-					endforeach
-				endif
-			endif
-		endif
-	endif
+	// Legacy unique-boss deathevent path: depended on SetBoss (disabled in
+	// faccao.inc) and the old ExecuteEvent system (deleted). Modern bosses
+	// use the DeathEvents ObjProp + :epicspawn:scripts/deathEventsControl.
+	// Kept commented as breadcrumb until/if the spawnpoint unique flow is
+	// reimplemented on the new event system.
+	// if (GetObjProperty(corpse, "spawnkill") == error)
+	// 	if (spawnpoint)
+	// 		if (GetObjProperty(spawnpoint, "unique") == 1)
+	// 			var boss := GetObjProperty(spawnpoint, "uniquestat");
+	// 			if (boss.deathevent)
+	// 				foreach nevent in (boss.deathevent)
+	// 					if ((nevent.type == "Criar Npcs") && (cint(nevent.x) == 6) && (cint(nevent.y) == 6) &&
+	//  		  (cint(nevent.z) == 6))
+	// 						nevent.x := corpse.x;
+	// 						nevent.y := corpse.y;
+	// 						nevent.z := corpse.z;
+	// 					endif
+	// 					ExecuteEvent(nevent);
+	// 				endforeach
+	// 			endif
+	// 		endif
+	// 	endif
+	// endif
 
 	if (GetObjProperty(corpse, "spawnkill") == error)
 		if (death_script)
@@ -378,7 +370,7 @@ program core_npcDeath(params)
 			var coords := { corpse.x, corpse.y, corpse.z, CStr(corpse.realm) };
 			var trueBoss := Cint(GetObjProperty(corpse, "true_boss"));
 			var epicboss := GetObjProperty(corpse, "EpicBossStruct");
-			if (isBoss(corpse) || epicboss)
+			if (isTrueBoss(corpse) || epicboss)
 				SetObjProperty(corpse, "coords", coords);
 				if (trueBoss == 1 && fin && nome) // Para acionar o DiscordWebhook
 					var tipo := "boss";

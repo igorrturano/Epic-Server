@@ -7,7 +7,7 @@ include ":gumps:yesNo";
 include ":gumps:requestGump";
 include ":gumps:gumps_ex";
 include ":gumps:epicGumps";
-include ":tn:boss";
+// 
 include ":combat:hitscripts";
 include "include/epicNPCUtils";
 
@@ -156,7 +156,7 @@ function InputsHandler(inputs, who, spawnpoint, uniquestat)
 		var i;
 		if (inputs[17] == 1) // Is boss?
 			SetObjProperty(spawnpoint, "unique", 1);
-			CreateBossStructGump(who, uniquestat);
+			// CreateBossStructGump(who, uniquestat);
 		else
 			SetObjProperty(spawnpoint, "unique", 0);
 		endif

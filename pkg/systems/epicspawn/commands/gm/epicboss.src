@@ -9,7 +9,7 @@ include ":gumps:include/epicGumps";
 include ":epicspawn:epicBoss";
 include ":epicspawn:epicCombatEvents";
 include ":epicspawn:epicDeathEvents";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Model/Damage";
 include "include/creationUtils";
 
 // Constants for button IDs and menu pages

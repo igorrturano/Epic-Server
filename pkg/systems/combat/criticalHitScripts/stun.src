@@ -3,7 +3,6 @@ use util;
 use os;
 use vitals;
 
-include ":combat:Controller/DamageController_legacy";
 include "include/client";
 include "include/sounds";
 include ":timedScripts:timedScripts";

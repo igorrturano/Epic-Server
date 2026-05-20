@@ -3,8 +3,9 @@ use os;
 use util;
 use basicio;
 include ":attributes:attributes";
-include ":tn:boss";
+
 include ":combat:hitscripts";
+include ":faccao:faccao";
 include "include/epicNPCUtils";
 
 program spawnpointcontrol(spawnpoint)
@@ -244,16 +245,19 @@ function CreateSpawn(spawnpoint, templates, amounts, tiers, names, index)
 
 	var npcSerial := SetupSpawn(spawnpoint, chosenTemplate, chosenTier, chosenName);
 
-	var theBoss := GetObjProperty(spawnpoint, "unique");
-	if (theBoss)
-		var spawnmod := GetObjProperty(spawnpoint, "uniquestat");
-		if (spawnmod != error)
-			var npc := SystemFindObjectBySerial(npcSerial);
-			if (npc)
-				SetBoss(npc, spawnmod);
-			endif
-		endif
-	endif
+	// Legacy "unique boss" stat-mod path: SetBoss is currently disabled in
+	// faccao.inc. Spawnpoint still spawns the base NPC; the unique modifier
+	// is a no-op until SetBoss (or an equivalent in :epicspawn:) is restored.
+	// var theBoss := GetObjProperty(spawnpoint, "unique");
+	// if (theBoss)
+	// 	var spawnmod := GetObjProperty(spawnpoint, "uniquestat");
+	// 	if (spawnmod != error)
+	// 		var npc := SystemFindObjectBySerial(npcSerial);
+	// 		if (npc)
+	// 			SetBoss(npc, spawnmod);
+	// 		endif
+	// 	endif
+	// endif
 
 	return npcSerial;
 endfunction

@@ -1,3 +1,4 @@
+include ":timedScripts:timedScripts";
 include ":abilities:models/CombatAbility";
 include "include/epicUtils";
 include ":hotbar:custombuff";

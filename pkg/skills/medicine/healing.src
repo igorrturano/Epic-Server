@@ -15,7 +15,6 @@ include ":tn:cooldown";
 include ":charactercreation:habilidades";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
-include ":combat:Controller/DamageController_legacy";
 
 var MIN_SKILL_FOR_BLOODIED := 40;
 

@@ -10,6 +10,7 @@ include ":combat:Model/Damage";
 include ":charactercreation:resists";
 include ":taming:taming";
 include "include/epicConstants";
+include "include/epicCombatUtils";
 
 program cordasubir(who, item)
 

@@ -9,11 +9,9 @@ include ":timedscripts:timedScripts";
 include ":death:death";
 include ":mounts:mounts";
 include ":taming:taming";
-include ":tn:questevent";
 include ":attributes:vitals";
 include ":combat:hitscripts";
 include "include/say";
-include ":combat:Controller/DamageController_legacy";
 include ":gumps:htmlGump";
 
 include ":gumps:gumps";

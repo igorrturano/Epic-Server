@@ -10,7 +10,8 @@ const ACTIVE_EACH := 8640; // 24 hours, activate each
 const LVLDOWNCHECK := 1800; // checks for level down each 30 mins
 
 include "champaltar";
-include ":tn:boss";
+include ":epicspawn:epicBoss";
+
 
 program control(altar)
 

@@ -9,7 +9,6 @@ include "/include/epicConstants";
 include "include/client";
 include "/include/math";
 include ":destroyable:include/destroyItem";
-include ":combat:Controller/DamageController_legacy";
 include ":nature:include/nature";
 
 class PropagacaoEstiloGas( MarcadorPropagacaoBase )

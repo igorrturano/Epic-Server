@@ -1,6 +1,5 @@
 use cfgfile;
 
-include ":combat:Controller/DamageController_legacy";
 include ":tn:tngumps";
 
 //funcao que pergunta por fechadura, caso o item seja lockable

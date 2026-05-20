@@ -1,0 +1,31 @@
+use uo;
+use os;
+
+include ":merchants:item_template";
+
+program GIVE_ITEM_Action(params)
+	var event := params[2];
+	var action_params := params[3];
+
+	var mobile := event.source;
+	if (!mobile || !mobile.acctname)
+		return 0;
+	endif
+
+	if (!action_params || !action_params.template)
+		return 0;
+	endif
+
+	var template := action_params.template;
+	if (action_params.amount)
+		template.amount := CInt(action_params.amount);
+	endif
+
+	var backpack := mobile.backpack;
+	if (!backpack)
+		return 0;
+	endif
+
+	var item := CreateItemInContainerFromTemplate(backpack, template);
+	return item ? 1 : 0;
+endprogram

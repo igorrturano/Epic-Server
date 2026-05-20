@@ -199,3 +199,17 @@ function ListPetsNear(who,  range)
 	return pets;
 
 endfunction
+
+// True for NPCs flagged as a "true boss" via the `true_boss` ObjProp.
+// Used by loot generation (5x drop chance multiplier), charm/hypnotize spells
+// (immune to mind-control), and taming (can't be tamed).
+function IsTrueBoss(npc)
+	if (!npc || npc == error)
+		return 0;
+	endif
+	var flag := GetObjProperty(npc, "true_boss");
+	if (flag == error || !flag)
+		return 0;
+	endif
+	return 1;
+endfunction
