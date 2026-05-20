@@ -22,6 +22,7 @@ Os Vivisseccionistas dominam a traiçoeira arte de assassinar com venenos mortai
 \column
 {{classTable,frame,decoration
 ##### Vivisseccionista
+**Dado de Vida:** d8
 | Level | Habilidades | 
 |:-----:|:-----------:|
 |  2 |Mestre dos Venenos |

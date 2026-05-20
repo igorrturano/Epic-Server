@@ -26,6 +26,7 @@ Espiões treinam sua discrição e são capazes de coletar informações importa
 \column
 {{classTable,frame,decoration
 ##### Shinobi
+**Dado de Vida:** d8
 | Level | Habilidades | 
 |:-----:|:-----------:|
 |  2 |Caminho do Ninja |
