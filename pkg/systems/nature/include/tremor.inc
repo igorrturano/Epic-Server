@@ -4,7 +4,8 @@ use vitals;
 
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 
 function EfeitosTerremoto(who,danobase,danoale,dif)
      if (who.dead)
@@ -31,7 +32,7 @@ function EfeitosTerremoto(who,danobase,danoale,dif)
         PrintTextAbove(who, "*Preso pelas raizes*");
          TS_StartTimer(who, "paralysis", 5);
          PerformAction(who, 21);
-         DamageFLS(who, danobase + (RandomInt(danoale)));
+         DealDamage(who, danobase + (RandomInt(danoale)), DAMAGE_TYPE::BLUNT);
          var vine := CreateItemAtLocation(who.x, who.y, who.z, 0x0CF2);
          SetObjProperty(vine,"movable", 0);
          sleep(5);

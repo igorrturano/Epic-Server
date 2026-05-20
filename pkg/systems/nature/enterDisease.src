@@ -3,7 +3,6 @@ use os;
 use vitals;
 
 include ":charactercreation:resists";
-include ":combat:Controller/DamageController_legacy";
 
 program disease_enter(who, regioname)
 	PrintTextAbove(who, "entrou");
