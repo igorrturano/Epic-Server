@@ -334,7 +334,16 @@ class ArmorWrapper(EquipWrapper, IArmorWrapper)
 				endif
 
 				this.SetModifier(AttributeModifier(DEXTERITY, slotDex + modifiersProt[DEXTERITY].GetValue()));
-				this.SetModifier(AttributeModifier(SNEAK, modifiersSlot[SNEAK].GetValue() + modifiersProt[SNEAK].GetValue()));
+
+				// Couro Negro (0xef23) em Armadura Leve zera penalidade de furtividade do slot.
+				var slotSneak := modifiersSlot[SNEAK].GetValue();
+				if (this.GetTipoProtecao()["Armadura Leve"])
+					var fabProp := GetObjProperty(this.GetObjRef(), "fabricado");
+					if (fabProp != error && fabProp.materialPrincipal && CInt(fabProp.materialPrincipal) == 0xef23)
+						slotSneak := 0;
+					endif
+				endif
+				this.SetModifier(AttributeModifier(SNEAK, slotSneak + modifiersProt[SNEAK].GetValue()));
 				this.SetModifier(AttributeModifier(MECHANICS, modifiersSlot[MECHANICS].GetValue() + modifiersProt[MECHANICS].GetValue()));
 				this.SetModifier(AttributeModifier(MAGERY, modifiersSlot[MAGERY].GetValue() + modifiersProt[MAGERY].GetValue()));
 				var awarenessProtPenalty := (Upper(this.GetCoverage()[1]) == Upper(HEAD)) ? modifiersProt[AWARENESS].GetValue() : 0;
