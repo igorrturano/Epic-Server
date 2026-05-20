@@ -24,6 +24,7 @@ Os Granadeiros são especialistas em explosivos e arremessáveis, mestres da art
 
 {{classTable,frame,decoration
 ##### Granadeiro
+**Dado de Vida:** d6
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Alquimista Experiente |

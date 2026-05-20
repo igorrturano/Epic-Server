@@ -24,6 +24,7 @@ Os Lâminas Arcanas são guerreiros místicos com uma conexão profunda com suas
 
 {{classTable,frame,decoration
 ##### Lâmina Arcana
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Vínculo Elemental |
