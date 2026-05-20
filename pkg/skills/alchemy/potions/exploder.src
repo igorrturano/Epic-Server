@@ -4,7 +4,8 @@ use util;
 use vitals;
 use polsys;
 include "include/client";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/shapes";
 include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
@@ -218,13 +219,13 @@ endfunction
 
 function ExplosionEffect(who, potion, dmg)
 	var color := COLOR_ELEMENTAL_FIRE;
-	var dmg_type := DMG_FIRE;
+	var dmg_type := DAMAGE_TYPE::FIRE;
 	var mods := GetObjProperty(who, "ExplosivoConfig");
 	var bonus := GetObjProperty(potion,"bonus");
 	var push := bonus/3;
 	case(mods.elemento)
-		ELEMENTO_GELO:		color := COLOR_ELEMENTAL_ICE;		dmg_type := DMG_COLD;
-		ELEMENTO_ENERGIA:	color := COLOR_ELEMENTAL_ENERGY;	dmg_type := DMG_ENERGY;
+		ELEMENTO_GELO:		color := COLOR_ELEMENTAL_ICE;		dmg_type := DAMAGE_TYPE::COLD;
+		ELEMENTO_ENERGIA:	color := COLOR_ELEMENTAL_ENERGY;	dmg_type := DAMAGE_TYPE::ENERGY;
 	endcase
 	var dist := 4;
 	var diff := -1;
@@ -261,7 +262,7 @@ function ExplosionEffect(who, potion, dmg)
 					PlayObjectCenteredEffectHuefx(critter, 0x36b0, 7, 0x10, color);
 					PlaySoundEffect(critter, 0x208);
 					// ApplyDamageEX(critter, dmg, DMG_FIRE);
-					DamageFLS(critter, CInt(dmg / 2), dmg_type);
+					DealDamage(critter, CInt(dmg / 2), dmg_type, who);
 					DanificaObjetosProximos(who, potion.x, potion.y, potion.z, potion.realm, struct{ dano := dmg,
 																				 					desc := "Bomba de Fragmentacao." },
 											dist, 0x36b0, potion.serial, color);
@@ -271,9 +272,9 @@ function ExplosionEffect(who, potion, dmg)
 					endcase
 					if(mods.reforco == REFORCO_POTENCIA_ELEM)
 						case(dmg_type)
-							DMG_FIRE:	TS_StartTimer(critter, "queimar", 5);
-							DMG_COLD:	TS_StartTimer(critter, "lentidao", 5);
-							DMG_ENERGY:	TS_StartTimer(critter, "paralysis", 1);
+							DAMAGE_TYPE::FIRE:	TS_StartTimer(critter, "queimar", 5);
+							DAMAGE_TYPE::COLD:	TS_StartTimer(critter, "lentidao", 5);
+							DAMAGE_TYPE::ENERGY:	TS_StartTimer(critter, "paralysis", 1);
 						endcase
 					endif
 				endif
@@ -283,7 +284,7 @@ function ExplosionEffect(who, potion, dmg)
 					PlayObjectCenteredEffectHuefx(critter, 0x36b0, 7, 0x10, color);
 					PlaySoundEffect(critter, 0x208);
 					// ApplyDamageEX(critter, dmg, DMG_FIRE);
-					DamageFLS(critter, CInt(dmg / 2), dmg_type);
+					DealDamage(critter, CInt(dmg / 2), dmg_type, who);
 					DanificaObjetosProximos(who, potion.x, potion.y, potion.z, potion.realm, struct{ dano := dmg,
 																				 					desc := "Bomba de Fragmentacao." },
 											dist, 0x36b0, potion.serial);
@@ -293,16 +294,16 @@ function ExplosionEffect(who, potion, dmg)
 					endcase
 					if(mods.reforco == REFORCO_POTENCIA_ELEM)
 						case(dmg_type)
-							DMG_FIRE:	TS_StartTimer(critter, "queimar", 5);
-							DMG_COLD:	TS_StartTimer(critter, "lentidao", 5);
-							DMG_ENERGY:	TS_StartTimer(critter, "paralysis", 1);
+							DAMAGE_TYPE::FIRE:	TS_StartTimer(critter, "queimar", 5);
+							DAMAGE_TYPE::COLD:	TS_StartTimer(critter, "lentidao", 5);
+							DAMAGE_TYPE::ENERGY:	TS_StartTimer(critter, "paralysis", 1);
 						endcase	
 					endif
 				else
 					PlayObjectCenteredEffectHuefx(critter, 0x36b0, 7, 0x10, color);
 					PlaySoundEffect(critter, 0x208);
 					// ApplyDamageEX(critter, dmg, DMG_FIRE);
-					DamageFLS(critter, dmg, dmg_type);
+					DealDamage(critter, dmg, dmg_type, who);
 					DanificaObjetosProximos(who, potion.x, potion.y, potion.z, potion.realm, struct{ dano := dmg,
 																				 					desc := "Bomba de Fragmentacao." },
 											dist, 0x36b0, potion.serial);
@@ -312,9 +313,9 @@ function ExplosionEffect(who, potion, dmg)
 					endcase
 					if(mods.reforco == REFORCO_POTENCIA_ELEM)
 						case(dmg_type)
-							DMG_FIRE:	TS_StartTimer(critter, "queimar", 10);
-							DMG_COLD:	TS_StartTimer(critter, "lentidao", 10);
-							DMG_ENERGY:	TS_StartTimer(critter, "paralysis", 3);
+							DAMAGE_TYPE::FIRE:	TS_StartTimer(critter, "queimar", 10);
+							DAMAGE_TYPE::COLD:	TS_StartTimer(critter, "lentidao", 10);
+							DAMAGE_TYPE::ENERGY:	TS_StartTimer(critter, "paralysis", 3);
 						endcase	
 					endif
 				endif
