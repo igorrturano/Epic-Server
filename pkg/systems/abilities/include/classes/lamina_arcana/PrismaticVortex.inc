@@ -1,6 +1,8 @@
 use uo;
 
 include ":abilities:models/CombatAbility";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
 include ":attributes:attributes";
@@ -86,16 +88,16 @@ class PrismaticVortex(CombatAbility)
                     if (effect == "Fire")
                         PlaySoundEffect(char, 0x5D0);
                         PlayObjectCenteredEffect(char, 0x6d77, 7, 60);
-                        DamageFLS(char, total_dmg, DMG_FIRE, who);
+                        DealDamage(char, total_dmg, DAMAGE_TYPE::FIRE, who);
                         TS_StartTimer(char, "queimar", 10);
                     elseif (effect == "Cold")
                         PlaySoundEffect(char, 0x65b);
                         PlayObjectCenteredEffectHuefx(char, 0x54f7, 30, 60, COLOR_ELEMENTAL_ICE, 0);
-                        DamageFLS(char, total_dmg, DMG_COLD, who);
+                        DealDamage(char, total_dmg, DAMAGE_TYPE::COLD, who);
                         TS_StartTimer(char, "congelamento", 10);
                     elseif (effect == "Energy")
                         PlaySoundEffect(char, 0x5CF);
-                        DamageFLS(char, CInt(total_dmg * 1.2), DMG_ENERGY, who);
+                        DealDamage(char, CInt(total_dmg * 1.2), DAMAGE_TYPE::ENERGY, who);
                         PlayObjectCenteredEffect(char, 0xcdaf, 7, 30);
                     endif
                     sleepms(20);

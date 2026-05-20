@@ -1,5 +1,6 @@
 use uo;
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 
 program jogar(who, dano)
 
@@ -32,7 +33,7 @@ program jogar(who, dano)
 
 	alvo.frozen := 1;
 
-	ApplyDamageEX(alvo, CInt(dano), DMG_PHYSICAL);
+	DealDamage(alvo, CInt(dano), DAMAGE_TYPE::BLUNT);
 
 	CreateItemCopyAtLocation(alvo.x, alvo.y, item.z, item, item.realm);
 	item.movable := 1;
