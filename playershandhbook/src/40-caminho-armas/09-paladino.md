@@ -28,6 +28,7 @@ Paladinos são guerreiros ungidos pela fé, que encontraram em sua devoção uma
 
 {{classTable,frame,decoration
 #### Paladino
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Consagração Divina |

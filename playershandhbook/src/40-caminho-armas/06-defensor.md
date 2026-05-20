@@ -28,6 +28,7 @@ Mestres na arte da defesa. Seu primeiro brinquedo quando ainda criança foi um e
 
 {{classTable,frame,decoration
 #### Defensor
+**Dado de Vida:** d12
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Provocar |
