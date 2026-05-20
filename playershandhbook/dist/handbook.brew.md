@@ -4361,7 +4361,15 @@ Como paladino, você consegue conjurar magias divinas mesmo utilizando armaduras
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 120s
 
-Seu próximo ataque é imbuído com poder divino, causando dano adicional e um efeito baseado na sua religião.
+Seu próximo ataque desfere dano divino adicional sobre o alvo. Conforme a sua religião, ele também aplica um efeito extra:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Drena a mana do alvo e impede o atacante de receber cura por um tempo
+- **Bokk Bharaz**: Derruba e reduz a velocidade do alvo
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Cega o alvo
+- **Eluith'orth**: Envolve o alvo em trevas, removendo sua visão noturna e o cegando
+- **Kai**: Ignora a armadura do alvo
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -4377,6 +4385,8 @@ Seu próximo ataque é imbuído com poder divino, causando dano adicional e um e
 
 Você inspira seus aliados com sua fé inabalável, podendo ordenar diferentes comandos para fortalecer sua party.
 
+Empunhar um estandarte religioso da sua mesma religião amplia o alcance dos comandos e potencializa seus efeitos sobre aliados que comungam da mesma fé.
+
 <br>
 <br>
 
@@ -4389,6 +4399,8 @@ Você inspira seus aliados com sua fé inabalável, podendo ordenar diferentes c
 
 Sua presença em campo inspira sua party: através de um menu, você emite diferentes comandos de fortalecimento aos seus aliados.
 
+Empunhar um estandarte religioso da sua mesma religião amplia o alcance dos comandos e potencializa seus efeitos sobre aliados que comungam da mesma fé.
+
 <br>
 <br>
 
@@ -4399,7 +4411,15 @@ Sua presença em campo inspira sua party: através de um menu, você emite difer
 **Custo:**    :: 50 stamina
 **Cooldown:** :: 300s
 
-Você atinge o ápice da sua devoção e se torna um campeão dos deuses, recebendo um grande bônus em seus atributos. Aqueles que ousarem te atacar sentirão a ira divina.
+Você atinge o ápice da sua devoção e se torna um campeão dos deuses, recebendo um grande bônus em seus atributos. Aqueles que ousarem te atacar sentirão a ira divina — e conforme a sua religião, a represália carrega um efeito extra sobre o atacante:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Drena a mana do atacante
+- **Bokk Bharaz**: Reduz a velocidade do atacante
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Cega o atacante
+- **Eluith'orth**: Envolve o atacante em trevas
+- **Kai**: Reduz o dano físico (corte, perfuração e contusão) do atacante
 
 {{imageMaskEdge2,--offset:-1%,--rotation:270
   ![](https://i.imgur.com/0KrB5b5.png){height:100%,right:-40%}
@@ -4789,7 +4809,15 @@ A cada level alcançado, o jogador poderá escolher uma habilidade dentre as op�
 **Custo:**        :: 10 stamina
 **Cooldown:**     :: 120s
 
-Você se conecta com sua divindade, canalizando seu poder. Cada religião oferece uma manifestação única dessa conexão. O uso de armaduras leves e médias não mais limitam seus gestos sagrados.
+Você se conecta com sua divindade, canalizando seu poder através de uma manifestação dependente da sua religião. O uso de armaduras leves e médias não mais limitam seus gestos sagrados.
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Silencia o alvo e desfere dano forçado contra ele
+- **Bokk Bharaz**: Conjura uma barreira de escudos sobre sua party, protegendo aliados próximos
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Fortalece o aliado escolhido com Tactics durante o dia ou Awareness à noite
+- **Eluith'orth**: Ativa a visão verdadeira, revelando inimigos ocultos próximos (apenas na escuridão)
+- **Kai**: Concede vitalidade inabalável ao alvo escolhido
 
 ::
 
@@ -4800,7 +4828,15 @@ Você se conecta com sua divindade, canalizando seu poder. Cada religião oferec
 **Custo:**        :: 20 stamina
 **Cooldown:**     :: 180s
 
-Você canaliza energia divina em um ataque devastador contra seus inimigos. Cada religião manifesta efeitos únicos.
+Você canaliza energia divina em um ataque devastador. Conforme a sua religião, a habilidade se manifesta de forma diferente:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Enfraquece o alvo com debuffs de Força, Destreza e Inteligência
+- **Bokk Bharaz**: Arremessa um martelo elétrico no alvo, paralisando-o (requer arma contusiva equipada)
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Cega o alvo com luz divina
+- **Eluith'orth**: Desfere uma chicotada dominante que pode paralisar o alvo na escuridão (requer chicote equipado)
+- **Kai**: Marca o alvo como exposto, comprometendo sua defesa
 
 ::
 
@@ -4811,7 +4847,15 @@ Você canaliza energia divina em um ataque devastador contra seus inimigos. Cada
 **Custo:**        :: 20 stamina
 **Cooldown:**     :: 180s
 
-Você fica mais resistente a venenos e não sente mais medo. Além disso, manifesta uma aura de proteção baseada na sua religião.
+Você fica mais resistente a venenos e não sente mais medo. Além disso, manifesta uma aura cujo efeito depende da sua religião:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Aumenta a Força, Destreza e Inteligência do alvo
+- **Bokk Bharaz**: Salto da bigorna — você se lança pelo chão e derruba, lentifica, paralisa e fere os inimigos ao redor do ponto de queda
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Concede um surto de velocidade ao alvo
+- **Eluith'orth**: Invoca aranhas-prole sombrias para servir você (uma adicional na escuridão)
+- **Kai**: Concede um bônus de precisão (chance de acerto) ao alvo
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -4825,7 +4869,15 @@ Você fica mais resistente a venenos e não sente mais medo. Além disso, manife
 **Custo:**        :: 40 stamina
 **Cooldown:**     :: 300s
 
-Você cria um terreno consagrado que fortalece aliados e enfraquece inimigos. Cada religião manifesta efeitos únicos nesse campo sagrado.
+Você cria um terreno consagrado ao seu redor que fortalece aliados e enfraquece inimigos. Conforme a sua religião, o campo sagrado se manifesta de forma diferente:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Silencia todos os não-aliados na área
+- **Bokk Bharaz**: Concede a força da montanha aos aliados (redução de dano recebido)
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Cega todos os inimigos na área
+- **Eluith'orth**: Envolve todos os presentes em trevas sagradas
+- **Kai**: Restaura o equilíbrio dos aliados, protegendo-os contra acertos críticos
 
 
 ### Apoteose
@@ -4835,7 +4887,15 @@ Você cria um terreno consagrado que fortalece aliados e enfraquece inimigos. Ca
 **Custo:**        :: 60 stamina | 50 mana
 **Cooldown:**     :: 600s
 
-Você ascende à manifestação divina. Suas magias divinas não consomem mana nem possuem delay. Cada religião concede um poder supremo ao seu campeão.
+Você ascende à manifestação divina. Suas magias divinas não consomem mana nem possuem delay. Conforme a sua religião, um poder supremo se manifesta ao seu lado:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Marca os inimigos próximos com a Glória Eterna, fazendo-os receberem o dobro do dano
+- **Bokk Bharaz**: Fortaleza inabalável — torna você invulnerável por um tempo
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: O Sol Divino — cura aliados próximos e fulmina criaturas das trevas e mortos-vivos
+- **Eluith'orth**: Tormento de Idrith — paralisa e fere todos os inimigos próximos (e os cega se for noite)
+- **Kai**: Manifesta o Destino — garante acerto crítico no próximo ataque de todos os aliados próximos
 
 {{imageMaskEdge3,--offset:2%,--rotation:270
   ![](https://i.imgur.com/4ArV4sw.png){height:100%,right:-40%}
@@ -6220,7 +6280,15 @@ Você cria um pentagrama que impede demônios e mortos-vivos de escapar. O alvo 
 **Custo:**    :: 50 stamina
 **Cooldown:** :: 300s
 
-Asas demoníacas se manifestam em seu corpo, permitindo que você voe fora de combate. Em batalha, você se torna um avatar abissal, recebendo bônus consideráveis em todos os atributos.
+Asas demoníacas se manifestam em seu corpo, permitindo que você voe fora de combate. Em batalha, você se torna um avatar abissal, recebendo bônus consideráveis em todos os atributos. Enquanto a forma estiver ativa, cada golpe recebido provoca uma represália abissal — e conforme a sua religião, ela carrega um efeito extra sobre o atacante:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Drena a mana do atacante
+- **Bokk Bharaz**: Reduz a velocidade do atacante
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Cega o atacante
+- **Eluith'orth**: Envolve o atacante em trevas
+- **Kai**: Reduz o dano físico (corte, perfuração e contusão) do atacante
 
 {{imageMaskEdge1,--offset:-8%,--rotation:0
   ![](https://i.imgur.com/dwMkvEF.png){height:70%,right:-20%,top:35%}
