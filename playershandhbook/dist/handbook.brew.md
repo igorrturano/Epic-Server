@@ -554,6 +554,15 @@ Meta-game estraga boa parte da imersão. Quando você cria um personagem novo, a
 ##### Jogue para mudar
 Seu personagem, pra ser realmente interessante, precisa mudar. Não crie um personagem com uma visão definida do futuro, deixe-se influenciar pelo o que acontece de bom ou ruim com ele. Não apenas seu personagem deve mudar, mas você, como jogador também. É o que você leva dessa experiência toda afinal e o que torna o Epic um servidor e comunidade tão interessantes.
 
+### Modo de Jogo: História ou Verdade
+
+Durante a criação você escolhe sob qual conjunto de regras seu personagem irá viver. A escolha é permanente: é a única decisão de criação que não pode ser refeita por migração.
+
+- **Modo História**: regras mais brandas. As perícias ganham *caps* atrelados à **idade** do personagem, premiando aventureiros maduros e amaciando a progressão inicial. É o único modo que preserva a *data de criação* do personagem para esse cálculo etário.
+- **Modo Verdade**: o ruleset cheio, sem concessões. Sem teto de perícia por idade e sem o relógio de criação a seu favor — somente o quanto você dedica ao jogo determina seu progresso.
+
+Em ambos os modos o resto da experiência é idêntico: combate, magia, morte e mundo seguem as mesmas regras. A diferença está apenas em como a sua **progressão de perícia** é gateada.
+
 ### A Base física
 Ao entrar e selecionar o servidor você será direcionado para a criação de personagem do Ultima Online, nesta parte da criação do seu personagem você escolherá o nome e o sexo do personagem. Aqui, apesar de ter opções de outras raças, escolha humano mesmo se for criar um elfo, pois as outras raças usam skins diferentes que foram desabilitadas no shard. Não se preocupe com a configuração do cabelo e cor de pele, eles serão modificados em outra etapa da criação.
 :
@@ -813,6 +822,14 @@ ___
 
 ## Aiglanos
 <img src='https://i.imgur.com/5EG02Fb.png' style='position:absolute;bottom:890px;left:70px;width:55px' />
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Humano
+- **Raças permitidas:** todas (Humano, Anão, Elfo, Drow, Orc, Pequilho)
+- **Língua padrão:** Imperialis
+- **Característica cultural:** Força da Legião
+}}
 <div style="text-align: justify"> 
 
 **Gentilíco**: aiglanos ou povo áquilo em referência a sua capital famosa no auge do Império, Aquileia.
@@ -1027,6 +1044,16 @@ ___
 
 \page
 ## Badûran
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Anão
+- **Raças permitidas:** Anão
+- **Língua padrão:** Aglâb
+- **Bônus cultural:** +10 HP máximo
+- **Característica cultural:** Defensor Anão
+}}
+
 {{width:43px}} **Bandeira**: Um martelo dourado a frente de {{width:43px}} engrenagens, representando seu apreço pela {{width:43px}} forja e pela tecnologia. 
 <img src='https://i.imgur.com/C2hQQrv.png' style='position:absolute;bottom:930px;left:70px;width:45px' />
 <div style="text-align: justify">
@@ -1205,6 +1232,14 @@ ___
 
 ## Björske
 <img src='https://i.imgur.com/WYn2bsC.png' style='position:absolute;bottom:810px;left:58px;width:75px' />
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Humano
+- **Raças permitidas:** Humano
+- **Língua padrão:** Björ
+- **Característica cultural:** Cavalaria de Escaramuça
+}}
 <div style="text-align: justify"> 
 
 **Gentilíco**: são chamados comumente de nórdicos ou homens do norte; e bragoneses para os que tem mais contato por conta dos livros de história. Também são referenciados coloquialmente como "povo jávalo". Entretanto, para os seus, se autoproclamam como Björska (singular) e Björske (plural).
@@ -1360,6 +1395,16 @@ ___
 
 <!-- Atualizado por Enzo em 05/01/2024, às 23:55-->
 ## Har'oloth
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Drow
+- **Raças permitidas:** Drow
+- **Língua padrão:** Idrith'har
+- **Característica cultural:** Oito Olhos
+- **Organismo Drow:** ao falhar uma resistência de Fortitude contra veneno, ganha uma segunda chance de expurgá-lo.
+}}
+
 {{width:50px}} **Bandeira**: Uma aranha púrpura contornada  {{width:50px}} em preto. 
 <img src='https://i.imgur.com/Vs9EtyL.png' style='position:absolute;bottom:930px;left:70px;width:50px' />
 :
@@ -1511,6 +1556,14 @@ ___
 \page
 
 ## Alüriel
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Elfo
+- **Raças permitidas:** Elfo
+- **Língua padrão:** Ahruwën
+- **Característica cultural:** Conexão com Alora
+}}
 
 <div style="text-align: justify"> 
 
@@ -1769,6 +1822,15 @@ ___
 
 \page
 ## Gulthrak
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Orc
+- **Raças permitidas:** Orc
+- **Língua padrão:** Grumnak
+- **Característica cultural:** Cria do Deserto
+}}
+
 <div style="text-align: justify"> 
 
  {{width:40px}} **Bandeira**: Um crânio de Orc com fundo cinza.
@@ -1930,6 +1992,15 @@ ___
 \page
 ## Colhesiana
 <img src='https://i.imgur.com/27iD8UX.png' style='position:absolute;bottom:925px;left:65px;width:55px' />
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Pequilho
+- **Raças permitidas:** Pequilho
+- **Língua padrão:** Comum
+- **Característica cultural:** Desapercebido
+- **Sorte do Pequilho:** ao falhar qualquer resistência (Fortitude, Reflexos ou Vontade), ganha uma segunda chance de evitar o efeito.
+}}
 <div style="text-align: justify"> 
 
 {{width:40px}} **Bandeira**: Um galo cantando sobre um grande e 
@@ -2128,6 +2199,14 @@ ___
 
 \page
 ## Povos do Leste
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Humano
+- **Raças permitidas:** todas (Humano, Anão, Elfo, Drow, Orc, Pequilho)
+- **Língua padrão:** Phalk
+- **Característica cultural:** Cavalaria de Escaramuça
+}}
 
 <div style="text-align: justify">
 <img src='https://i.imgur.com/1maqTAr.png' style='position:absolute;bottom:850px;left:60px;width:65px' />
@@ -2342,7 +2421,7 @@ Anões são baixos e atarracados, com musculatura densa e rostos frequentemente 
 #### **Vantagens Raciais**:
 **Força Bruta**: +10 STR
 :
-**Constituição Anã**: Anões são mais resistentes a magia naturalmente.
+**Constituição Anã**: Ao falhar uma resistência de **Vontade** contra magia, o anão recebe uma segunda chance de evitar o efeito ("Sua constituição anã o salvou da magia").
 :
 ## Orc
 Orcs são imponentes, com pele esverdeada ou acinzentada, mandíbulas proeminentes e presas visíveis. Sua postura é naturalmente agressiva, mas demonstram lealdade intensa a quem consideram seus.
@@ -2358,20 +2437,20 @@ Pequilhos são de estatura bem baixa, com pés grandes e peludos, rostos redondo
 :
 **Sortudos**: Sempre rolam novamente ao rolar 1 no dado.
 ## Meio-Elfo
-Meio-elfos carregam traços dos dois mundos — orelhas levemente pontudas, feições suaves e uma graça sutil que os distingue dos humanos comuns. Costumam ser sociáveis e empáticos, navegando bem entre grupos diferentes.
+Meio-elfos são elfos nascidos ou criados nas culturas multirraciais de Aiglana ou dos Povos do Leste, onde a mistura de sangues e costumes suavizou os traços ancestrais. Carregam as mesmas vantagens raciais dos elfos puros, mas conservam orelhas levemente pontudas, feições mais arredondadas e uma graça discreta que os distingue dos humanos comuns. Costumam ser sociáveis e empáticos, navegando bem entre grupos diferentes.
 #### **Vantagens Raciais**:
 **Sabedoria de Alora**: +10 INT
 :
 **Templo da Mente**: Recebe +20 Vontade
 :
 ## Meio-Drow
-Meio-Drows têm a pele em tons acinzentados mais claros que os Drows puros, cabelos escuros ou esbranquiçados e olhos de tons incomuns. Tendem ao comportamento reservado e observador.
+Meio-drows são drows nascidos ou criados nas culturas multirraciais de Aiglana ou dos Povos do Leste, onde a vida fora do Subterrâneo abrandou seus traços. Compartilham todas as vantagens raciais dos drows puros, mas têm pele em tons acinzentados mais claros, cabelos escuros ou esbranquiçados e olhos de tons incomuns. Tendem ao comportamento reservado e observador.
 #### **Vantagens Raciais**:
 **Sobrevivência Umbreterna**: +5 INT +5 DEX 
 :
 **Toxina Natural**: Sua alimentação baseada em fungos fez com que desenvolvessem uma resistência natural a venenos.
 ## Meio-Orc
-Meio-Orcs têm estatura imponente e traços marcantes, pele acinzentada, mandíbula forte e presas discretas. São diretos e determinados, com uma presença física que naturalmente chama atenção.
+Meio-orcs são orcs nascidos ou criados nas culturas multirraciais de Aiglana ou dos Povos do Leste, distantes das dunas do Grunntam. Mantêm todas as vantagens raciais dos orcs puros, mas exibem estatura imponente com traços mais contidos: pele acinzentada, mandíbula forte e presas discretas. São diretos e determinados, com uma presença física que naturalmente chama atenção.
 :
 #### **Vantagens Raciais**:
 **Sabedoria Ancestral**: +5 INT +5 STR
@@ -2627,6 +2706,87 @@ Diferente das Classes, as Habilidades de Caminho não seguem uma progressão lin
 Juntos, Caminhos, Classes e Habilidades de Caminho formam a tapeçaria completa de um personagem. O Caminho é a direção — a bússola que aponta para onde você vai. A Classe é o fio principal dessa tapeçaria — forte, definida, inconfundível. As Habilidades de Caminho são os fios secundários que preenchem os espaços, adicionam cor e textura, e tornam cada aventureiro verdadeiramente único.
 
 Nenhum dos que seguiram o mesmo Caminho chegarão ao mesmo destino. E é exatamente isso que torna cada história digna de ser contada.
+
+{{footnote [Voltar ao Índice](#p4)}}
+{{pageNumber,auto}}
+
+\page
+
+## Dados de Vida por Classe
+
+Toda classe possui um **Dado de Vida** próprio, que representa a vitalidade ganha ao subir de nível. Quanto maior o dado, mais robusto o personagem.
+
+{{classTable,frame,decoration
+##### Caminho das Armas (Guerreiro)
+| Classe | Dado |
+|:------|:----:|
+| Aklat'tur     | d10 |
+| Arqueiro      | d10 |
+| Bárbaro       | d12 |
+| Caçador       | d10 |
+| Combatente    | d10 |
+| Defensor      | d12 |
+| Monge         | d12 |
+| Mutante       |  d8 |
+| Paladino      | d10 |
+| Samurai       | d10 |
+}}
+
+{{classTable,frame,decoration
+##### Caminho do Subterfúgio (Ladino)
+| Classe | Dado |
+|:------|:----:|
+| Assassino             | d8 |
+| Bardo                 | d6 |
+| Caçador de Demônios   | d8 |
+| Caçador de Tesouros   | d8 |
+| Dançarino das Sombras | d8 |
+| Duelista              | d8 |
+| Ladrão                | d8 |
+| Malandro Arcano       | d6 |
+| Shinobi               | d8 |
+| Vivisseccionista      | d8 |
+}}
+
+{{classTable,frame,decoration
+##### Caminho da Sabedoria (Sábio)
+| Classe | Dado |
+|:------|:----:|
+| Arqueiro Arcano       | d6 |
+| Clérigo               | d8 |
+| Construtor de Golems  | d8 |
+| Deslocador das Sombras| d8 |
+| Druida                | d8 |
+| Granadeiro            | d6 |
+| Lâmina Arcana         | d8 |
+| Magus                 | d6 |
+| Necromante            | d6 |
+| Xamã                  | d8 |
+}}
+
+### Como o Dado de Vida vira HP
+
+A vitalidade máxima do personagem soma duas parcelas: uma vem da **Força**, a outra do **Dado de Vida** acumulado pelos níveis ímpares.
+
+- **Parcela de Força**: a sua Força base entra direto como pontos de vida.
+- **Parcela de Classe**: o dado da classe rende um valor cheio no nível 1 e ganha outro valor cheio a cada **nível ímpar** alcançado (3, 5, 7, 9, 11, 13, 15, 17, 19). A partir do nível 19 a progressão satura — não há mais ganho por nível ímpar.
+
+{{classTable,frame,decoration
+##### HP de Classe (nível 1 → 19+)
+| Dado | Nível 1 | Nível 19+ |
+|:----:|:-------:|:---------:|
+| d4   |  4 |  40 |
+| d6   |  6 |  60 |
+| d8   |  8 |  80 |
+| d10  | 10 | 100 |
+| d12  | 12 | 120 |
+}}
+
+Algumas escolhas adicionam parcelas fixas em cima:
+
+- A cultura **Badûran** concede +10 de HP máximo permanente.
+- A Habilidade de Caminho **Resistência do Deserto** concede +30 de HP enquanto o personagem a mantiver ativa.
+
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
 
@@ -3439,6 +3599,7 @@ Os Aklat'tur, nascidos e moldados pelas implacáveis areias de Adar Kor Doom, s�
 
 {{classTable,frame,decoration
 #### Aklat'tur
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Fúria do Deserto |
@@ -3551,6 +3712,7 @@ A cada morte, suas habilidades de caçador são reativadas por alguns segundos. 
 
 {{classTable,frame,decoration
 #### Arqueiro
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:----------------:|
 |  2 |Tiro Poderoso |
@@ -3669,6 +3831,7 @@ Guerreiros que são tomados por uma ira incessante em meio ao combate, valendo-s
 
 {{classTable,frame,decoration
 #### Bárbaro
+**Dado de Vida:** d12
 | Level | Habilidades |
 |:-----:|:----------------:|
 |  2 |Fúria |
@@ -3785,6 +3948,7 @@ Os Caçadores são vigilantes incansáveis da natureza e mestres da perseguiçã
 
 {{classTable,frame,decoration
 #### Caçador
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Vínculo de Guerra |
@@ -3889,6 +4053,7 @@ São combatentes de grande valor pois possuem um vasto conhecimento em armamento
 \column
 {{classTable,frame,decoration
 #### Combatente
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Contra-Empunhadura |
@@ -3980,6 +4145,7 @@ Mestres na arte da defesa. Seu primeiro brinquedo quando ainda criança foi um e
 
 {{classTable,frame,decoration
 #### Defensor
+**Dado de Vida:** d12
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Provocar |
@@ -4098,6 +4264,7 @@ O monge é um mestre das artes marciais que utiliza seu corpo como arma. Ele dom
 
 {{classTable,frame,decoration
 #### Monge
+**Dado de Vida:** d12
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Artista Marcial |
@@ -4207,6 +4374,7 @@ Os Mutantes são alquimistas extraordinários que manipulam a química e a gené
 
 {{classTable,frame,decoration
 ##### Mutante
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Forma Adaptável |
@@ -4325,6 +4493,7 @@ Paladinos são guerreiros ungidos pela fé, que encontraram em sua devoção uma
 
 {{classTable,frame,decoration
 #### Paladino
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Consagração Divina |
@@ -4461,6 +4630,7 @@ O espadachim é um mestre guerreiro, dedicado à perfeição de sua postura de c
 
 {{classTable,frame,decoration
 #### Samurai
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Caminho do Andarilho |
@@ -4651,7 +4821,9 @@ ___
 {{width:10px}}
 O Arqueiro Arcano renunciou à sua essência mágica inata para devotar sua existência a Alora e defender seu povo a qualquer custo, sendo reverenciado como a elite militar dos elfos. Ele canaliza os poderes de Alora para imbuir seu arco com energias arcanas colossais. Com sua maestria mágica, forja flechas elementais que rasgam os céus e aniquilam os inimigos com precisão devastadora. Seja manipulando chamas infernais, eletricidade fulminante ou gelo cortante, o Arqueiro Arcano é um soberano da destruição à distância, combinando a precisão letal de um arqueiro com o poder ilimitado da magia elemental.
 :
-**Pré-Requisitos: Elfo Alüriel | Religião Lorë**
+**Pré-Requisitos: Elfo Alüriel**
+
+> A escolha por esta classe **força a religião a Lorë**, independentemente da fé selecionada na criação. Não é possível ser Arqueiro Arcano devoto de outro deus.
 
 {{imageMaskCorner24,--offsetX:-50%,--offsetY:-46%,--rotation:0
   ![Arqueiro Arcano](https://i.imgur.com/fucNqah.png){height:70%,right:3%}
@@ -4661,6 +4833,7 @@ O Arqueiro Arcano renunciou à sua essência mágica inata para devotar sua exis
 
 {{classTable,frame,decoration
 ##### Arqueiro Arcano
+**Dado de Vida:** d6
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Gwaenedh |
@@ -4783,6 +4956,7 @@ Os Clérigos são devotos guerreiros da fé, que canalizam o poder divino de sua
 
 {{classTable,frame,decoration
 ##### Clérigo
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Conexão Divina |
@@ -4944,6 +5118,7 @@ Alguns anões, a partir de suas mentes criativas e seu amor pela tecnologia, for
 
 {{classTable,frame,decoration
 ##### Construtor de Golems
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Punho Explosivo |
@@ -5063,6 +5238,7 @@ Os deslocadores das sombras são guerreiros Drow especializados na arte das somb
 
 {{classTable,frame,decoration
 ##### Deslocador das Sombras
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Dança das Sombras |
@@ -5180,6 +5356,7 @@ Os Druidas são guardiões da natureza, mestres das magias Aradalorë que amplif
 
 {{classTable,frame,decoration
 ##### Druida
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Elo Natural |
@@ -5289,6 +5466,7 @@ Os Granadeiros são especialistas em explosivos e arremessáveis, mestres da art
 
 {{classTable,frame,decoration
 ##### Granadeiro
+**Dado de Vida:** d6
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Alquimista Experiente |
@@ -5402,6 +5580,7 @@ Os Lâminas Arcanas são guerreiros místicos com uma conexão profunda com suas
 
 {{classTable,frame,decoration
 ##### Lâmina Arcana
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Vínculo Elemental |
@@ -5519,6 +5698,7 @@ Os Magus são poderosos conjuradores, mestres da escola de magia Evocatium, cria
 
 {{classTable,frame,decoration
 ##### Magus
+**Dado de Vida:** d6
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Determinação Arcana |
@@ -5631,6 +5811,7 @@ Os Necromantes são mestres da magia Kaijin, a arte corrompida descoberta no les
 
 {{classTable,frame,decoration
 ##### Necromante
+**Dado de Vida:** d6
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Sacrifício da Carne |
@@ -5744,6 +5925,7 @@ Xamãs, os orcs mais sábios, são líderes espirituais que dominam a magia xam�
 
 {{classTable,frame,decoration
 ##### Xamã
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Colheita de Almas |
@@ -5946,6 +6128,7 @@ Assassinos são verdadeiros artistas da execução, habilidosos em emboscadas e 
 \column
 {{classTable,frame,decoration
 ##### Assassino
+**Dado de Vida:** d8
 | Level | Habilidades | 
 |:-----:|:-----------:|
 |  2 |Assassinar |
@@ -6085,6 +6268,7 @@ Bardos são artistas implacáveis, capazes de controlar as emoções de uma mult
 
 {{classTable,frame,decoration
 ##### Bardo
+**Dado de Vida:** d6
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Vox Arcana |
@@ -6200,6 +6384,7 @@ Os caçadores de demônios são jurados divinos, determinados a caçar e extermi
 
 {{classTable,frame,decoration
 ##### Caçador de Demônios
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Sigilo de Proteção |
@@ -6328,6 +6513,7 @@ Os caçadores de tesouros são exploradores natos, capazes de revelar segredos c
 
 {{classTable,frame,decoration
 ##### Caçador de Tesouros
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Desbravador Nato |
@@ -6446,6 +6632,7 @@ Os dançarinos das sombras são guerreiros Drow especializados na arte das sombr
 
 {{classTable,frame,decoration
 ##### Dançarino das Sombras
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Dança das Sombras |
@@ -6567,6 +6754,7 @@ Mestres da lâmina, os duelista são combatentes ágeis e precisos que dominam a
 
 {{classTable,frame,decoration
 ##### Duelista
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Movimentação Graciosa |
@@ -6681,6 +6869,7 @@ Espiões treinam sua discrição e são capazes de coletar informações importa
 \column
 {{classTable,frame,decoration
 ##### Shinobi
+**Dado de Vida:** d8
 | Level | Habilidades | 
 |:-----:|:-----------:|
 |  2 |Caminho do Ninja |
@@ -6793,6 +6982,7 @@ Malandros arcanos são aqueles que adquiriram certa sensibilidade mágica para s
 \column
 {{classTable,frame,decoration
 ##### Malandro Arcano
+**Dado de Vida:** d6
 | Level | Habilidades | 
 |:-----:|:-----------:|
 |  2 |Sensibilidade Arcana |
@@ -6908,6 +7098,7 @@ Os ladrões são furtivos e jogadores sujos, capazes de sair na vantagem em cada
 \column
 {{classTable,frame,decoration
 ##### Ladrão
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Batedor de Carteira |
@@ -7020,6 +7211,7 @@ Os Vivisseccionistas dominam a traiçoeira arte de assassinar com venenos mortai
 \column
 {{classTable,frame,decoration
 ##### Vivisseccionista
+**Dado de Vida:** d8
 | Level | Habilidades | 
 |:-----:|:-----------:|
 |  2 |Mestre dos Venenos |
@@ -7297,6 +7489,39 @@ As Características servem para aprofundar a criação de personagens, proporcio
 
 :
 
+## Distribuição de Atributos
+
+Antes de escolher Características, o personagem distribui seus atributos. A criação começa com **Força, Destreza e Inteligência a 40 cada** e oferece **80 pontos** para distribuir entre os três, em incrementos de 5.
+
+Os bônus de **Raça** e de **Características** são aplicados em cima dessa distribuição. Um Anão com Corpulento começa, portanto, em 50 + 10 + 10 = **70 STR** antes mesmo de gastar qualquer ponto do *pool* em Força.
+
+{{classTable,frame,decoration
+##### Resumo dos Atributos
+- **Atributos iniciais:** 40 STR / 40 DEX / 40 INT
+- **Pontos para distribuir:** 80 (em passos de 5)
+- **Bônus de Raça:** aplicados após a distribuição
+- **Bônus de Características:** aplicados após a distribuição
+}}
+
+### Línguas Conhecidas
+
+A Inteligência também define quantas línguas o personagem domina ao começar a jornada. Todo personagem fala automaticamente o **idioma da sua cultura**. **Inteligência igual ou superior a 40** já concede o **Comum** como bônus universal, e a cada 30 pontos de INT acima de 60 o personagem aprende mais um idioma extra à sua escolha.
+
+{{classTable,frame,decoration
+##### Línguas pela Inteligência
+| INT | Línguas conhecidas |
+|:---:|:------------------:|
+| < 40   | Apenas o idioma cultural |
+| 40-59  | Cultural + Comum |
+| 60-89  | Cultural + Comum + 1 extra |
+| 90-119 | Cultural + Comum + 2 extras |
+| 120+   | Cultural + Comum + 3 extras (e assim por diante) |
+}}
+
+A classe **Druida** recebe ainda **Sylovir** automaticamente, somando-se à lista que sua Inteligência permitiria.
+
+:
+
 ### Corpulento
 Seu corpo se desenvolveu bastante forte, largo e volumoso, porém , porém, o desenvolvimento de seus reflexos e raciocínio foi negligenciado..
 
@@ -7524,6 +7749,51 @@ As perícias representam o conjunto de habilidades, conhecimentos e talentos esp
 
 As indicações de classe ("Necessário para...") abaixo são orientações de quais classes mais se beneficiam de cada perícia — não são pré-requisitos rígidos cobrados pelo sistema, que libera perícias por categoria e nível, não por classe específica.
 
+::
+
+## Vocação: Militar ou Civil
+
+Durante a criação, antes de escolher as perícias, o personagem opta por uma **Vocação** — a vereda profissional que decide de qual grupo a maior parte dos seus *slots* iniciais será preenchida.
+
+- **Militar**: voltada ao combate, à magia e à investigação científica das artes ofensivas.
+- **Civil**: voltada à produção, ao artesanato, à medicina e ao trato com o mundo.
+
+A escolha não bloqueia perícias do grupo oposto — todo personagem recebe ao menos um *slot* cruzado e um slot livre — mas determina o foco principal da sua experiência inicial.
+
+### Distribuição de Slots
+
+A criação concede **6 slots de perícia**, divididos em dois tiers: **Primário (P)** começa em 40 pontos e **Secundário (S)** em 20 pontos.
+
+{{classTable,frame,decoration
+##### Slots Padrão
+| Slot | Tier | Grupo |
+|:----:|:----:|:-----:|
+| 1 | Primário | Vocação |
+| 2 | Primário | Vocação |
+| 3 | Primário | Vocação oposta |
+| 4 | Secundário | Vocação |
+| 5 | Secundário | Vocação oposta |
+| 6 | Secundário | Qualquer perícia |
+}}
+
+A característica **Sabe-Tudo** (veja Características) substitui esse layout por **2 Primários + 5 Secundários**, abrindo a maioria dos slots para perícias de qualquer vocação — o gabarito mais versátil do livro.
+
+### Grupos de Perícia
+
+{{classTable,frame,decoration
+##### Vocação Militar
+Wrestling, One Handed, Two Handed, Dual Wield, Parry, Ranged, Tactics, Stealth (Furtividade), Beastmastery (Lidar com Animais), Magery, Arcana, Theology, Science
+}}
+
+{{classTable,frame,decoration
+##### Vocação Civil
+Smithing (Ferraria), Carpentry (Marcenaria), Tailoring (Alfaiataria), Provisioning (Suprimentos), Alchemy, Mining (Mineração), Lumberjacking (Lenhamento), Survival, Taming (Domação), Medicine, Mechanics, Perception (Percepção), Theft (Furto)
+}}
+
+{{footnote [Voltar ao Índice](#p4)}}
+{{pageNumber,auto}}
+
+\page
 
 ::
 ### Perícias de Combate
