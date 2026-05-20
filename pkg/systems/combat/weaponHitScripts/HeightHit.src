@@ -2,10 +2,10 @@ use uo;
 use vitals;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
 
 program HitScript(params)
 
@@ -24,7 +24,7 @@ program HitScript(params)
 	if (dmg > 10)
 		dmg := 10;
 	endif
-	DamageFLS(defender, CInt(dmg), DMG_PHYSICAL, attacker);
+	DealDamage(defender, CInt(dmg), DAMAGE_TYPE::BLUNT, attacker);
 	// endif
 
 	return 1;

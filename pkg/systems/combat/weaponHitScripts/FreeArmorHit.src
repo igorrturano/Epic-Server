@@ -3,7 +3,8 @@ use util;
 use vitals;
 use cfgfile;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
 include "include/client";
@@ -40,7 +41,11 @@ program HitScript(params)
 		var maxDmg := weapon.GetMainDamage().GetMaximum();
 		var dmg := CInt((maxDmg + 4) / 5); // ceil(20% of max weapon damage)
 		if (dmg > 0)
-			DamageFLS(defender, dmg, DMG_FORCED, attacker);
+			var freeType := weapon.GetAttackType();
+			if (!freeType || freeType is @Exception)
+				freeType := DAMAGE_TYPE::BLUNT;
+			endif
+			DealDamage(defender, dmg, freeType, attacker);
 		endif
 	endif
 

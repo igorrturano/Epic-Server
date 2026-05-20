@@ -4,7 +4,8 @@ use vitals;
 
 include ":charactercreation:habilidades";
 include ":timedScripts:timedScripts";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 
 program loko(params)
 	var who := params[1];
@@ -29,7 +30,7 @@ program loko(params)
 
 		while (i < y)
 			PrintTextAbove(targ, "*sendo segurado*");
-			DamageFLS(targ, AP_GetSkill(who, THEOLOGY) / 20, DMG_FORCED, who);
+			DealDamage(targ, AP_GetSkill(who, THEOLOGY) / 20, DAMAGE_TYPE::BLUNT, who);
 			Sleep(1);
 			if (!AP_ConsumeVital(who, STAMINA, 5))
 				break;

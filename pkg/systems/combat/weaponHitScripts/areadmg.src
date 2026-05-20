@@ -1,7 +1,8 @@
 use uo;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/client";
 include "include/sounds";
 include ":acid:acid";
@@ -24,8 +25,18 @@ program HitScript(params)
 	endif
 
 	if (!dmgtype || dmgtype == error)
-		dmgtype := DMG_PHYSICAL;
+		dmgtype := DAMAGE_TYPE::BLUNT;
 	endif
+
+	// Normalize legacy DMG_* strings (stored on weapon #elementalweapon prop)
+	// to the new DAMAGE_TYPE enum so the rest of this script and DealDamage agree.
+	case (CStr(dmgtype))
+		"Cold":     dmgtype := DAMAGE_TYPE::COLD; break;
+		"Fire":     dmgtype := DAMAGE_TYPE::FIRE; break;
+		"Energy":   dmgtype := DAMAGE_TYPE::ENERGY; break;
+		"Poison":   dmgtype := DAMAGE_TYPE::POISON; break;
+		"Physical": dmgtype := DAMAGE_TYPE::BLUNT; break;
+	endcase
 
 	params := 0; // Not needed anymore.
 
@@ -44,7 +55,7 @@ program HitScript(params)
 		endforeach
 	endif
 
-	if (dmgtype == DMG_COLD)
+	if (dmgtype == DAMAGE_TYPE::COLD)
 		var itemDmg := cint((rawdamage * 0.5) + 1);
 		DanificaObjetosProximos(attacker, attacker.x, attacker.y, attacker.z, attacker.realm, struct{ dano := itemDmg,
 																							  		desc := "Hit Script [Frio]." },
@@ -56,13 +67,13 @@ program HitScript(params)
 				if (defender.serial != attacker.serial)
 					PlayObjectCenteredEffect(defender, FX_BLUE_SPARKLE_GROUND, 7, 16);
 					PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
-					var total := ApplyDamageEX(defender, cint((rawdamage * 0.5) + 1), DMG_COLD);
+					var total := DealDamage(defender, cint((rawdamage * 0.5) + 1), DAMAGE_TYPE::COLD);
 					DisplayDamage(defender, total, attacker);
 
 				endif
 			endif
 		endforeach
-	elseif (dmgtype == DMG_FIRE)
+	elseif (dmgtype == DAMAGE_TYPE::FIRE)
 		var itemDmg := cint((rawdamage * 0.5) + 1);
 		DanificaObjetosProximos(attacker, attacker.x, attacker.y, attacker.z, attacker.realm, struct{ dano := itemDmg,
 																							  		desc := "Hit Script [Fogo]." },
@@ -74,12 +85,12 @@ program HitScript(params)
 				if (defender.serial != attacker.serial)
 					PlayObjectCenteredEffect(defender, FX_EXPLODE_1, 7, 16);
 					PlaySoundEffect(defender, SFX_EXPLOSION_11);
-					var total := ApplyDamageEX(defender, cint((rawdamage * 0.5) + 1), DMG_FIRE);
+					var total := DealDamage(defender, cint((rawdamage * 0.5) + 1), DAMAGE_TYPE::FIRE);
 					DisplayDamage(defender, total, attacker);
 				endif
 			endif
 		endforeach
-	elseif (dmgtype == DMG_ENERGY)
+	elseif (dmgtype == DAMAGE_TYPE::ENERGY)
 		var itemDmg := cint((rawdamage * 0.5) + 1);
 		DanificaObjetosProximos(attacker, attacker.x, attacker.y, attacker.z, attacker.realm, struct{ dano := itemDmg,
 																							  		desc := "Hit Script [Energia]." },
@@ -98,12 +109,12 @@ program HitScript(params)
 					PlayMovingEffectXYZ(defender.x, defender.y, defender.z + 15, defender.x, defender.y - 1,
 										 defender.z + 15, FX_ENERGY, 5, 25);
 					PlaySoundEffect(defender, SFX_LIGHTNING);
-					var total := ApplyDamageEX(defender, cint((rawdamage * 0.5) + 1), DMG_ENERGY);
+					var total := DealDamage(defender, cint((rawdamage * 0.5) + 1), DAMAGE_TYPE::ENERGY);
 					DisplayDamage(defender, total, attacker);
 				endif
 			endif
 		endforeach
-	elseif (dmgtype == DMG_PHYSICAL)
+	elseif (dmgtype == DAMAGE_TYPE::BLUNT)
 		var itemDmg := cint((rawdamage * 1.5) + 1);
 		DanificaObjetosProximos(attacker, attacker.x, attacker.y, attacker.z, attacker.realm, struct{ dano := itemDmg,
 																							  		desc := "Hit Script [Fisico]." },
@@ -114,7 +125,7 @@ program HitScript(params)
 			if (!(defender in attacker.party.members) && !(defender in allPets))
 				if (defender.serial != attacker.serial)
 					PlayObjectCenteredEffectEx(defender, 0x22c6, 1, 9);
-					var total := ApplyDamageEX(defender, cint((rawdamage * 1.5) + 1), DMG_PHYSICAL);
+					var total := DealDamage(defender, cint((rawdamage * 1.5) + 1), DAMAGE_TYPE::BLUNT);
 					DisplayDamage(attacker, total, defender);
 				endif
 			endif

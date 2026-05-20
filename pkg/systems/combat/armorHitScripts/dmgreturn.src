@@ -1,7 +1,8 @@
 use uo;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -28,9 +29,9 @@ program HitScript(params)
 	var chardata := GetObjProperty(defender, "chardata");
 
 	if (chardata.magia != "spellcaster")
-		ApplyDamageEX(attacker, dmg, DMG_PHYSICAL);
+		DealDamage(attacker, dmg, DAMAGE_TYPE::BLUNT, defender);
 	else
-		ApplyDamageEX(attacker, dmg, DMG_POISON);
+		DealDamage(attacker, dmg, DAMAGE_TYPE::POISON, defender);
 	endif
 
 	return 1;
