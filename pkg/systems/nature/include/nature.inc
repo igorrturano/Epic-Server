@@ -6,7 +6,8 @@ use cfgfile;
 use datafile;
 use vitals;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":debug:Controller/DebugController";
 include "include/dungeons";
 // Calendar constants
@@ -136,7 +137,7 @@ function DruidWeather(who, type, duration, radius, som, bolt := 0, ventoForte :=
 			foreach mobile in (ListMobilesNearLocation( who.x, who.y, who.z, radius, who.realm ))
 				if (RandomInt(100) < 5)
 					PlayLightningBoltEffect( mobile );
-					ApplyDamageEX(mobile, RandomDiceRoll("1d10")+40, DMG_ENERGY);
+					DealDamage(mobile, RandomDiceRoll("1d10")+40, DAMAGE_TYPE::ENERGY);
 				elseif (RandomInt(100) < 15 )
 					DoBolt(who);
 				endif
