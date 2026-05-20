@@ -14,7 +14,9 @@
 {{width:10px}}
 O Arqueiro Arcano renunciou à sua essência mágica inata para devotar sua existência a Alora e defender seu povo a qualquer custo, sendo reverenciado como a elite militar dos elfos. Ele canaliza os poderes de Alora para imbuir seu arco com energias arcanas colossais. Com sua maestria mágica, forja flechas elementais que rasgam os céus e aniquilam os inimigos com precisão devastadora. Seja manipulando chamas infernais, eletricidade fulminante ou gelo cortante, o Arqueiro Arcano é um soberano da destruição à distância, combinando a precisão letal de um arqueiro com o poder ilimitado da magia elemental.
 :
-**Pré-Requisitos: Elfo Alüriel | Religião Lorë**
+**Pré-Requisitos: Elfo Alüriel**
+
+> A escolha por esta classe **força a religião a Lorë**, independentemente da fé selecionada na criação. Não é possível ser Arqueiro Arcano devoto de outro deus.
 
 {{imageMaskCorner24,--offsetX:-50%,--offsetY:-46%,--rotation:0
   ![Arqueiro Arcano](https://i.imgur.com/fucNqah.png){height:70%,right:3%}
