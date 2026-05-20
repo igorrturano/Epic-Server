@@ -13,6 +13,7 @@ include "CombatAbilityController";
 include "SkillController";
 include "ParryController";
 include ":combat:Controller/WearDownController";
+include ":combat:Controller/DamageController_legacy"; // SetLastDamageInfo, DamageFLS — pending migration
 
 // External
 include ":io:CFGFile";
@@ -52,6 +53,60 @@ function ProccessCombatDamage(byRef attackInfo)
 		TriggerCriticalHitFeedback(attackInfo);
 	endif
 
+endfunction
+
+/**
+ * DealDamage - Unified entry for pre-calculated, non-swing damage (spells,
+ * abilities, traps, nature, fall, alchemy). For weapon swings, go through
+ * combatHook → TryToAttack. For thrown weapons, build AttackInfo and call
+ * TryToAttack directly so the hit-roll/parry/crit pipeline fires.
+ *
+ * Stamps `amount` onto the matching damage channel via
+ * Damage.IncreaseRawDamageByType, then runs the resist chain + apply +
+ * post-damage hooks. Armor resist *values* still apply (elemental armors
+ * still defend) but armor pieces are not worn — physical-contact behavior
+ * gated by AttackInfo.GetAppliesArmorWear().
+ *
+ * @param defender ObjRef of the defender mobile
+ * @param amount Pre-calculated damage
+ * @param dmgType DAMAGE_TYPE::* enum value (SLASH/PIERCING/BLUNT/FIRE/...)
+ * @param source ObjRef of source mobile, or 0 for sourceless damage (defender
+ *               doubles as attacker — attacker-side hook scans of defender's
+ *               own abilities naturally no-op since those trigger on defense)
+ * @param spellId Spell id for forensics tagging; 0 for non-spell sources
+ * @return Damage actually dealt after resists
+ */
+function DealDamage(defender, amount, dmgType, source := 0, spellId := 0)
+	if (!defender || CInt(amount) <= 0)
+		return 0;
+	endif
+
+	var attackerRef := source ? source : defender;
+	var attackInfo := AttackInfo(MobileWrapper(attackerRef), MobileWrapper(defender));
+
+	attackInfo.SetSkipParry(true)
+			  .SetSkipCrit(true)
+			  .SetSkipBodyRegion(true)
+			  .SetAppliesArmorWear(false);
+
+	if (CInt(spellId) > 0)
+		attackInfo.SetSpellOrigin(spellId, dmgType);
+	endif
+
+	attackInfo.GetDamage().IncreaseRawDamageByType(dmgType, CInt(amount));
+
+	CalculateDefenderResist(attackInfo);
+	ApplyCombatDamage(attackInfo);
+	AttackLogger(attackInfo);
+	ExecuteCombatAbilitiesAfterDamage(attackInfo);
+	ExecutePassiveAbilitiesAfterDamage(attackInfo);
+
+	if (attackInfo.GetDefender().IsDead())
+		ExecuteCombatAbilitiesOnKill(attackInfo);
+		ExecutePassiveAbilitiesOnKill(attackInfo);
+	endif
+
+	return CInt(attackInfo.GetDamage().GetTotalBaseDamage());
 endfunction
 
 // Capture the defender's coords up front — once ApplyCombatDamage runs the
@@ -695,8 +750,9 @@ function CalculateDefenderResist(byRef attackInfo)
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
 
-			// WearDownArmor(attackInfo.GetDefender().GetObjRef(), equip.GetObjRef(), attackInfo.GetDamage().GetTotalBaseDamage(), attackInfo.GetWeapon().GetObjRef());
-			WearDownEquip(equip, attackInfo.GetWeapon());
+			if (attackInfo.GetAppliesArmorWear())
+				WearDownEquip(equip, attackInfo.GetWeapon());
+			endif
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em {armorResist.ToString()} e perdeu {attackInfo.GetDamage().GetTotalBaseDamage()} de durabilidade."));
 
 			attackInfo.GetDamage().DecreaseSlashPercentDamage(armorResist.GetSlashResist())
