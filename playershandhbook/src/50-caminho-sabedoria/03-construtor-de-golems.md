@@ -26,6 +26,7 @@ Alguns anões, a partir de suas mentes criativas e seu amor pela tecnologia, for
 
 {{classTable,frame,decoration
 ##### Construtor de Golems
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Punho Explosivo |
