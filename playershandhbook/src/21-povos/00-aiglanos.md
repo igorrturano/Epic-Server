@@ -23,6 +23,14 @@ ___
 
 ## Aiglanos
 <img src='https://i.imgur.com/5EG02Fb.png' style='position:absolute;bottom:890px;left:70px;width:55px' />
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Humano
+- **Raças permitidas:** todas (Humano, Anão, Elfo, Drow, Orc, Pequilho)
+- **Língua padrão:** Imperialis
+- **Característica cultural:** Força da Legião
+}}
 <div style="text-align: justify"> 
 
 **Gentilíco**: aiglanos ou povo áquilo em referência a sua capital famosa no auge do Império, Aquileia.
