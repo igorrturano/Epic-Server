@@ -26,6 +26,7 @@ Os Aklat'tur, nascidos e moldados pelas implacáveis areias de Adar Kor Doom, s�
 
 {{classTable,frame,decoration
 #### Aklat'tur
+**Dado de Vida:** d10
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Fúria do Deserto |

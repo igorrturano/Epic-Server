@@ -25,6 +25,7 @@ Guerreiros que são tomados por uma ira incessante em meio ao combate, valendo-s
 
 {{classTable,frame,decoration
 #### Bárbaro
+**Dado de Vida:** d12
 | Level | Habilidades |
 |:-----:|:----------------:|
 |  2 |Fúria |
