@@ -12,6 +12,14 @@ ___
 
 ## Alüriel
 
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Elfo
+- **Raças permitidas:** Elfo
+- **Língua padrão:** Ahruwën
+- **Característica cultural:** Conexão com Alora
+}}
+
 <div style="text-align: justify"> 
 
 ⠀⠀⠀⠀⠀⠀**Bandeira**: Uma bandeira retangular, com um {{width:45px}} campo azul profundo, no centro uma grande {{width:45px}} árvore brilhante em um círculo dourado repleto de runas arcanas
