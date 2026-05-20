@@ -10,6 +10,15 @@ ___
 
 \page
 ## Gulthrak
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Orc
+- **Raças permitidas:** Orc
+- **Língua padrão:** Grumnak
+- **Característica cultural:** Cria do Deserto
+}}
+
 <div style="text-align: justify"> 
 
  {{width:40px}} **Bandeira**: Um crânio de Orc com fundo cinza.

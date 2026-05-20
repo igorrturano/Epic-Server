@@ -19,6 +19,14 @@ ___
 \page
 ## Povos do Leste
 
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Humano
+- **Raças permitidas:** todas (Humano, Anão, Elfo, Drow, Orc, Pequilho)
+- **Língua padrão:** Phalk
+- **Característica cultural:** Cavalaria de Escaramuça
+}}
+
 <div style="text-align: justify">
 <img src='https://i.imgur.com/1maqTAr.png' style='position:absolute;bottom:850px;left:60px;width:65px' />
 

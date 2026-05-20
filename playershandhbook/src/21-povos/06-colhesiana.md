@@ -18,6 +18,14 @@ ___
 \page
 ## Colhesiana
 <img src='https://i.imgur.com/27iD8UX.png' style='position:absolute;bottom:925px;left:65px;width:55px' />
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Pequilho
+- **Raças permitidas:** Pequilho
+- **Língua padrão:** Comum
+- **Característica cultural:** Desapercebido
+}}
 <div style="text-align: justify"> 
 
 {{width:40px}} **Bandeira**: Um galo cantando sobre um grande e 
