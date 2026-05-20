@@ -107,7 +107,15 @@ Você cria um pentagrama que impede demônios e mortos-vivos de escapar. O alvo 
 **Custo:**    :: 50 stamina
 **Cooldown:** :: 300s
 
-Asas demoníacas se manifestam em seu corpo, permitindo que você voe fora de combate. Em batalha, você se torna um avatar abissal, recebendo bônus consideráveis em todos os atributos.
+Asas demoníacas se manifestam em seu corpo, permitindo que você voe fora de combate. Em batalha, você se torna um avatar abissal, recebendo bônus consideráveis em todos os atributos. Enquanto a forma estiver ativa, cada golpe recebido provoca uma represália abissal — e conforme a sua religião, ela carrega um efeito extra sobre o atacante:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Drena a mana do atacante
+- **Bokk Bharaz**: Reduz a velocidade do atacante
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Cega o atacante
+- **Eluith'orth**: Envolve o atacante em trevas
+- **Kai**: Reduz o dano físico (corte, perfuração e contusão) do atacante
 
 {{imageMaskEdge1,--offset:-8%,--rotation:0
   ![](https://i.imgur.com/dwMkvEF.png){height:70%,right:-20%,top:35%}
