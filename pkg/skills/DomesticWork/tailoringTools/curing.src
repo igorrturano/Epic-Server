@@ -554,6 +554,10 @@ endcase
 					// courosombrio
 					prod_type := 0xc605;
 					break;
+				0xef14:
+					// couronegro
+					prod_type := 0xef23;
+					break;
 				0xef15:
 					// couropeludo
 					prod_type := 0xef24;
