@@ -19,6 +19,14 @@ ___
 
 ## Björske
 <img src='https://i.imgur.com/WYn2bsC.png' style='position:absolute;bottom:810px;left:58px;width:75px' />
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Humano
+- **Raças permitidas:** Humano
+- **Língua padrão:** Björ
+- **Característica cultural:** Cavalaria de Escaramuça
+}}
 <div style="text-align: justify"> 
 
 **Gentilíco**: são chamados comumente de nórdicos ou homens do norte; e bragoneses para os que tem mais contato por conta dos livros de história. Também são referenciados coloquialmente como "povo jávalo". Entretanto, para os seus, se autoproclamam como Björska (singular) e Björske (plural).

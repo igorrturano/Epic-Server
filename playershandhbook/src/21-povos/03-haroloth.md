@@ -21,6 +21,15 @@ ___
 
 <!-- Atualizado por Enzo em 05/01/2024, às 23:55-->
 ## Har'oloth
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Drow
+- **Raças permitidas:** Drow
+- **Língua padrão:** Idrith'har
+- **Característica cultural:** Oito Olhos
+}}
+
 {{width:50px}} **Bandeira**: Uma aranha púrpura contornada  {{width:50px}} em preto. 
 <img src='https://i.imgur.com/Vs9EtyL.png' style='position:absolute;bottom:930px;left:70px;width:50px' />
 :

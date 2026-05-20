@@ -12,6 +12,16 @@ ___
 
 \page
 ## Badûran
+
+{{classTable,frame,decoration
+##### Traços Culturais
+- **Raça padrão:** Anão
+- **Raças permitidas:** Anão
+- **Língua padrão:** Aglâb
+- **Bônus cultural:** +10 HP máximo
+- **Característica cultural:** Defensor Anão
+}}
+
 {{width:43px}} **Bandeira**: Um martelo dourado a frente de {{width:43px}} engrenagens, representando seu apreço pela {{width:43px}} forja e pela tecnologia. 
 <img src='https://i.imgur.com/C2hQQrv.png' style='position:absolute;bottom:930px;left:70px;width:45px' />
 <div style="text-align: justify">
