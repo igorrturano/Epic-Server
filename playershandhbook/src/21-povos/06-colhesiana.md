@@ -25,6 +25,7 @@ ___
 - **Raças permitidas:** Pequilho
 - **Língua padrão:** Comum
 - **Característica cultural:** Desapercebido
+- **Sorte do Pequilho:** ao falhar qualquer resistência (Fortitude, Reflexos ou Vontade), ganha uma segunda chance de evitar o efeito.
 }}
 <div style="text-align: justify"> 
 

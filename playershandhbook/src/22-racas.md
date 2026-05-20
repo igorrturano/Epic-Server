@@ -46,7 +46,7 @@ Anões são baixos e atarracados, com musculatura densa e rostos frequentemente 
 #### **Vantagens Raciais**:
 **Força Bruta**: +10 STR
 :
-**Constituição Anã**: Anões são mais resistentes a magia naturalmente.
+**Constituição Anã**: Ao falhar uma resistência de **Vontade** contra magia, o anão recebe uma segunda chance de evitar o efeito ("Sua constituição anã o salvou da magia").
 :
 ## Orc
 Orcs são imponentes, com pele esverdeada ou acinzentada, mandíbulas proeminentes e presas visíveis. Sua postura é naturalmente agressiva, mas demonstram lealdade intensa a quem consideram seus.

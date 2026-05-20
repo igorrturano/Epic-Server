@@ -28,6 +28,7 @@ ___
 - **Raças permitidas:** Drow
 - **Língua padrão:** Idrith'har
 - **Característica cultural:** Oito Olhos
+- **Organismo Drow:** ao falhar uma resistência de Fortitude contra veneno, ganha uma segunda chance de expurgá-lo.
 }}
 
 {{width:50px}} **Bandeira**: Uma aranha púrpura contornada  {{width:50px}} em preto. 
