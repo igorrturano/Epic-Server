@@ -57,7 +57,7 @@ program spell_iceStorm(parms)
 			SendSysMessageEx(mobile, "Voce se esquiva de parte do gelo.", SSM_INFO);
 		endif
 
-		SC_DealDamage(caster, mobile, CInt(spell.id), cint(target_dmg), DMG_COLD);
+		SC_DealDamage(caster, mobile, CInt(spell.id), cint(target_dmg), DAMAGE_TYPE::COLD);
 
 		// AoE slow: everyone hit gets lentidao unless they pass a WILL save.
 		if (!CheckResist(mobile, WILL, diff, -bonus))

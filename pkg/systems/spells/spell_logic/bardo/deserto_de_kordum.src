@@ -41,7 +41,7 @@ program SpellScript(params)
 	PlayStationaryEffect(who.x, who.y, who.z, 0x36CB, 5, 5);
 	foreach mobile in targets
 		if (mobile && !mobile.dead)
-			SC_DealDamage(who, mobile, CInt(spell.id), burst_dmg, DMG_FIRE);
+			SC_DealDamage(who, mobile, CInt(spell.id), burst_dmg, DAMAGE_TYPE::FIRE);
 		endif
 	endforeach
 	SendSysMessageEx(who, $"Deserto de Kordum: {burst_dmg} dano de fogo em {count} alvo(s)!", SSM_INFO);
@@ -53,7 +53,7 @@ program SpellScript(params)
 		foreach mobile in targets
 			if (mobile && !mobile.dead)
 				PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x36CB, 1, 1);
-				SC_DealDamage(who, mobile, CInt(spell.id), dot_dmg, DMG_FIRE, 0);
+				SC_DealDamage(who, mobile, CInt(spell.id), dot_dmg, DAMAGE_TYPE::FIRE, 0);
 			endif
 		endforeach
 		t += 1;

@@ -31,7 +31,7 @@ program BurningHandsTick(args)
 	// Tick = chip; NAO carrega bonus do foco. O impacto inicial de Maos
 	// Flamejantes (burninghands.src) ja aplicou o elemental do foco UMA vez.
 	// Padrao magicmissile: so o golpe principal escala (ver 63% incinerar).
-	SC_DealDamage(dmg_caster, targ, spellId, chip, DMG_FIRE, 0);
+	SC_DealDamage(dmg_caster, targ, spellId, chip, DAMAGE_TYPE::FIRE, 0);
 	PlayObjectCenteredEffect(targ, FX_FIRE_COLUMN, 5, 10);
 
 	if (tick_number >= CInt(tp.total_ticks))

@@ -24,7 +24,7 @@ program HitScript(params)
 	endif
 
 	if (!dmgtype || dmgtype == error)
-		dmgtype := DMG_PHYSICAL;
+		dmgtype := DAMAGE_TYPE::BLUNT;
 	endif
 
 	params := 0; // Not needed anymore.
@@ -42,7 +42,7 @@ program HitScript(params)
 		AP_ConsumeVital(defender, STAMINA, stamdmg);
 	endif
 
-	if (dmgtype == DMG_COLD)
+	if (dmgtype == DAMAGE_TYPE::COLD)
 
 		if (GetObjProperty(weapon, "prisaogelida") == 1)
 			EraseObjProperty(weapon, "prisaogelida");
@@ -56,7 +56,7 @@ program HitScript(params)
 			TS_StartTimer(defender, "paralysis", time);
 		endif
 
-	elseif (dmgtype == DMG_FIRE)
+	elseif (dmgtype == DAMAGE_TYPE::FIRE)
 
 		PlayObjectCenteredEffect(defender, FX_EXPLODE_1, 7, 16);
 		PlaySoundEffect(defender, SFX_EXPLOSION_11);

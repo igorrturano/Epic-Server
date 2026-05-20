@@ -84,7 +84,7 @@ program spell_fireball(params)
 
 	var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
 	DanificaObjetosProximos(caster, cast_on.x, cast_on.y, cast_on.z, cast_on.realm,
-							struct{ dano := dmg, desc := "Bola de Fogo.", tipo := DMG_FIRE },
+							struct{ dano := dmg, desc := "Bola de Fogo.", tipo := DAMAGE_TYPE::FIRE },
 							radius, FX_EXPLODE_1);
 
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
@@ -100,9 +100,9 @@ program spell_fireball(params)
 		endif
 
 		if (Getcooldown(mobile, "spellthief"))
-			SC_DealDamage(caster, caster, CInt(spell.id), cint(target_dmg), DMG_FIRE);
+			SC_DealDamage(caster, caster, CInt(spell.id), cint(target_dmg), DAMAGE_TYPE::FIRE);
 		else
-			SC_DealDamage(caster, mobile, CInt(spell.id), cint(target_dmg), DMG_FIRE);
+			SC_DealDamage(caster, mobile, CInt(spell.id), cint(target_dmg), DAMAGE_TYPE::FIRE);
 		endif
 
 		sleepms(20);

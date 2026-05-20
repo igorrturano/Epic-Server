@@ -33,5 +33,5 @@ function LaunchProjectile(caster, info, spellId, spell_school)
 		SendSysMessageEx(info, "Voce desvia parcialmente do trovao.", SSM_INFO);
 	endif
 
-	SC_DealDamage(caster, info, spellId, cint(dmg), DMG_ENERGY);
+	SC_DealDamage(caster, info, spellId, cint(dmg), DAMAGE_TYPE::ENERGY);
 endfunction

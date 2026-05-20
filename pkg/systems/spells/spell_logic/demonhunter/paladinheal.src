@@ -52,7 +52,7 @@ program SpellScript(params)
         var category := lower(GetConfigString(elem, "Environment"));
 
         if (category == "undead" || category == "demons")
-            SC_DealDamage(who, targ, CInt(spell.id), healed, DMG_FORCED);
+            SC_DealDamage(who, targ, CInt(spell.id), healed, DAMAGE_TYPE::FORCED);
             EraseObjProperty(who, "#Casting");
             return 1;
         endif

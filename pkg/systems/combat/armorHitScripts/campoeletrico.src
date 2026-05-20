@@ -27,7 +27,7 @@ program HitScript(params)
 	if (dmg < 2)
 		dmg := 2;
 	endif
-	// ApplyDamageEX(attacker, dmg, DMG_ENERGY);
+	// ApplyDamageEX(attacker, dmg, DAMAGE_TYPE::ENERGY);
 	DealDamage(attacker, dmg, DAMAGE_TYPE::ENERGY, defender);
 	PlaySoundEffect(attacker, SFX_LIGHTNING);
 

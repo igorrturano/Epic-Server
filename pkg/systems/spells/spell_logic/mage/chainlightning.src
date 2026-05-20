@@ -64,7 +64,7 @@ program chainLightning(params)
 			SendSysMessageEx(mobile, "Voce desvia parcialmente do raio.", SSM_INFO);
 		endif
 
-		SC_DealDamage(caster, mobile, CInt(spellinfo.id), cint(dmg), DMG_ENERGY);
+		SC_DealDamage(caster, mobile, CInt(spellinfo.id), cint(dmg), DAMAGE_TYPE::ENERGY);
 		jump := jump + 1;
 		sleepms(600);
 	endforeach

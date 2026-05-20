@@ -69,7 +69,7 @@ program SpellScript(params)
 		else
 			PlayMovingEffectEx(targ, who, 3982, 10, 1, 2117);
 			PerformAction(who, HUMAN_ANIM::CAST_AREA);
-			SC_DealDamage(who, targ, CInt(spell.id), amt, DMG_FORCED);
+			SC_DealDamage(who, targ, CInt(spell.id), amt, DAMAGE_TYPE::FORCED);
 			targ.setAggro(who.serial, 150);
 			if (GetObjProperty(targ, "#sleep"))
 				EraseObjProperty(targ, "#sleep");

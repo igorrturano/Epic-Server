@@ -60,7 +60,7 @@ program SpellScript(params)
 		endif
 
 		SendSysMessageEx(mob, "Uma onda arcana te empurra!", SSM_FAIL);
-		SC_DealDamage(caster, mob, CInt(spellinfo.id), cint(damage), DMG_ENERGY);
+		SC_DealDamage(caster, mob, CInt(spellinfo.id), cint(damage), DAMAGE_TYPE::ENERGY);
 
 		PlayObjectCenteredEffect(mob, 0xE175, 5, 10);
 

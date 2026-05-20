@@ -38,7 +38,7 @@ program spell_meteorSwarm(parms)
 	var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
 	DanificaObjetosProximos(caster, targ.x, targ.y, targ.z, targ.realm, struct{ dano := dmg,
 																				desc := "Chuva de Meteoros.",
-																				tipo := DMG_FIRE }, radius, 0x6CCE);
+																				tipo := DAMAGE_TYPE::FIRE }, radius, 0x6CCE);
 
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
 	var bonus := epicWisdomPathBonus(caster);
@@ -57,7 +57,7 @@ program spell_meteorSwarm(parms)
 			SendSysMessageEx(mobile, "Voce consegue desviar de alguns meteoros.", SSM_INFO);
 		endif
 
-		SC_DealDamage(caster, mobile, CInt(spell.id), cint(target_dmg), DMG_FIRE);
+		SC_DealDamage(caster, mobile, CInt(spell.id), cint(target_dmg), DAMAGE_TYPE::FIRE);
 		sleepms(20);
 	endforeach
 endprogram

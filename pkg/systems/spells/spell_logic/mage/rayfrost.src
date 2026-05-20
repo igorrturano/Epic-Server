@@ -40,5 +40,5 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
 	PlaySoundEffect(caster, SFX_AQUARIUM_USE);
 	PlayMovingEffectXYZHued(caster, targ, 0x54AD, speed, 1643, 0);
 	var dmg := RandomDiceRoll("1d4");
-	SC_DealDamage(caster, targ, spellId, cint(dmg), DMG_COLD);
+	SC_DealDamage(caster, targ, spellId, cint(dmg), DAMAGE_TYPE::COLD);
 endfunction

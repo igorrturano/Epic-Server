@@ -352,11 +352,11 @@ function HandleSwordMageSpellChoice(opponent)
         // Choose spells based on enchantment type
         var spell := "";
         case (elementalWeapon.type)
-            DMG_FIRE:
+            DAMAGE_TYPE::FIRE:
                 spell := ChooseFireSpell();
-            DMG_ENERGY:
+            DAMAGE_TYPE::ENERGY:
                 spell := ChooseEnergySpell();  
-            DMG_COLD:
+            DAMAGE_TYPE::COLD:
                 spell := ChooseColdSpell();
         endcase
 
