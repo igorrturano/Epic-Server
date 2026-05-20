@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+program conceal(params)
+    var mobs  := params[2];
+    var pv    := params[3];
+    var ativo := CInt(pv[1]);
+
+    foreach mob in mobs
+        mob.concealed := ativo;
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

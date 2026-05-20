@@ -1,0 +1,21 @@
+use uo;
+use os;
+
+program dupe(params)
+    var dm   := params[1];
+    var item := params[2];
+
+    if (!item || !item.serial)
+        SendSysMessage(dm, "[EpicDungeon] Alvo invalido.");
+        return 0;
+    endif
+
+    var novo := CreateItemAtLocation(item.x, item.y, item.z, item.objtype, item.amount, item.realm);
+    if (!novo)
+        SendSysMessage(dm, "[EpicDungeon] Falha ao duplicar.");
+        return 0;
+    endif
+    novo.color := item.color;
+    novo.name  := item.name;
+    return 1;
+endprogram

@@ -1,0 +1,29 @@
+use uo;
+use os;
+
+program createat(params)
+    var dm      := params[1];
+    var pv      := params[3];
+    var objtype := pv[1];
+    var x       := CInt(pv[2]);
+    var y       := CInt(pv[3]);
+    var z       := CInt(pv[4]);
+    var qtd     := CInt(pv[5]);
+
+    if (!objtype || objtype == "")
+        SendSysMessage(dm, "[EpicDungeon] Objtype vazio.");
+        return 0;
+    endif
+    if (x <= 0 || y <= 0)
+        SendSysMessage(dm, "[EpicDungeon] Coordenadas invalidas.");
+        return 0;
+    endif
+    if (qtd <= 0) qtd := 1; endif
+
+    var item := CreateItemAtLocation(x, y, z, CInt(objtype), qtd, 0);
+    if (!item)
+        SendSysMessage(dm, "[EpicDungeon] Falha ao criar item.");
+        return 0;
+    endif
+    return 1;
+endprogram

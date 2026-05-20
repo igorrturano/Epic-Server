@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+program createnpc(params)
+    var dm       := params[1];
+    var pos      := params[2];
+    var pv       := params[3];
+    var template := pv[1];
+    var qtd      := CInt(pv[2]);
+
+    if (!template || template == "")
+        SendSysMessage(dm, "[EpicDungeon] Template vazio.");
+        return 0;
+    endif
+    if (qtd <= 0) qtd := 1; endif
+
+    for i := 1 to qtd
+        CreateNpcFromTemplate(template, pos.x, pos.y, pos.z, 0, pos.realm);
+        sleepms(5);
+    endfor
+    return 1;
+endprogram
