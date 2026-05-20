@@ -26,6 +26,7 @@ Malandros arcanos são aqueles que adquiriram certa sensibilidade mágica para s
 \column
 {{classTable,frame,decoration
 ##### Malandro Arcano
+**Dado de Vida:** d6
 | Level | Habilidades | 
 |:-----:|:-----------:|
 |  2 |Sensibilidade Arcana |

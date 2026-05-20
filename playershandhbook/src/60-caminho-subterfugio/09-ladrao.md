@@ -26,6 +26,7 @@ Os ladrões são furtivos e jogadores sujos, capazes de sair na vantagem em cada
 \column
 {{classTable,frame,decoration
 ##### Ladrão
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Batedor de Carteira |

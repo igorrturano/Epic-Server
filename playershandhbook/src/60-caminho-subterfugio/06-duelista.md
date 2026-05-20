@@ -27,6 +27,7 @@ Mestres da lâmina, os duelista são combatentes ágeis e precisos que dominam a
 
 {{classTable,frame,decoration
 ##### Duelista
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Movimentação Graciosa |
