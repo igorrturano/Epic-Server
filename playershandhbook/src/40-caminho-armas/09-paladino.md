@@ -64,7 +64,15 @@ Como paladino, você consegue conjurar magias divinas mesmo utilizando armaduras
 **Custo:**    :: 15 stamina
 **Cooldown:** :: 120s
 
-Seu próximo ataque é imbuído com poder divino, causando dano adicional e um efeito baseado na sua religião.
+Seu próximo ataque desfere dano divino adicional sobre o alvo. Conforme a sua religião, ele também aplica um efeito extra:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Drena a mana do alvo e impede o atacante de receber cura por um tempo
+- **Bokk Bharaz**: Derruba e reduz a velocidade do alvo
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Cega o alvo
+- **Eluith'orth**: Envolve o alvo em trevas, removendo sua visão noturna e o cegando
+- **Kai**: Ignora a armadura do alvo
 
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
@@ -80,6 +88,8 @@ Seu próximo ataque é imbuído com poder divino, causando dano adicional e um e
 
 Você inspira seus aliados com sua fé inabalável, podendo ordenar diferentes comandos para fortalecer sua party.
 
+Empunhar um estandarte religioso da sua mesma religião amplia o alcance dos comandos e potencializa seus efeitos sobre aliados que comungam da mesma fé.
+
 <br>
 <br>
 
@@ -92,6 +102,8 @@ Você inspira seus aliados com sua fé inabalável, podendo ordenar diferentes c
 
 Sua presença em campo inspira sua party: através de um menu, você emite diferentes comandos de fortalecimento aos seus aliados.
 
+Empunhar um estandarte religioso da sua mesma religião amplia o alcance dos comandos e potencializa seus efeitos sobre aliados que comungam da mesma fé.
+
 <br>
 <br>
 
@@ -102,7 +114,15 @@ Sua presença em campo inspira sua party: através de um menu, você emite difer
 **Custo:**    :: 50 stamina
 **Cooldown:** :: 300s
 
-Você atinge o ápice da sua devoção e se torna um campeão dos deuses, recebendo um grande bônus em seus atributos. Aqueles que ousarem te atacar sentirão a ira divina.
+Você atinge o ápice da sua devoção e se torna um campeão dos deuses, recebendo um grande bônus em seus atributos. Aqueles que ousarem te atacar sentirão a ira divina — e conforme a sua religião, a represália carrega um efeito extra sobre o atacante:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Drena a mana do atacante
+- **Bokk Bharaz**: Reduz a velocidade do atacante
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Cega o atacante
+- **Eluith'orth**: Envolve o atacante em trevas
+- **Kai**: Reduz o dano físico (corte, perfuração e contusão) do atacante
 
 {{imageMaskEdge2,--offset:-1%,--rotation:270
   ![](https://i.imgur.com/0KrB5b5.png){height:100%,right:-40%}
