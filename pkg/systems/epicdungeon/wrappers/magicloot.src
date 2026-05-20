@@ -1,0 +1,31 @@
+use uo;
+use os;
+
+include ":loot:magicLoot";
+include ":loot:lootParser";
+
+program magicloot(params)
+    var dm       := params[1];
+    var pv       := params[3];
+    var grupo    := pv[1];
+    var nivel    := CInt(pv[2]);
+    var template := pv[3];
+
+    if (!grupo || grupo == "")
+        SendSysMessage(dm, "[EpicDungeon] Grupo vazio.");
+        return 0;
+    endif
+    if (!template || template == "")
+        SendSysMessage(dm, "[EpicDungeon] Template vazio.");
+        return 0;
+    endif
+    if (nivel <= 0) nivel := 5; endif
+
+    var e := CreateMagicItem(dm.backpack, grupo + " 1 100 " + nivel + " " + template);
+    if (e == error)
+        SendSysMessage(dm, "[EpicDungeon] " + e.errortext);
+        return 0;
+    endif
+    SendSysMessage(dm, "[EpicDungeon] Item criado na mochila.");
+    return 1;
+endprogram

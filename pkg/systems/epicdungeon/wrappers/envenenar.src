@@ -1,0 +1,12 @@
+use uo;
+use os;
+
+program envenenar(params)
+    var mobs := params[2];
+
+    foreach mob in mobs
+        mob.SetPoisoned(1);
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

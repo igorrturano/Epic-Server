@@ -1,0 +1,8 @@
+use uo;
+use os;
+
+program propedit_w(params)
+    var dm := params[1];
+    Start_Script(":commands:coun/propedit", dm);
+    return 1;
+endprogram

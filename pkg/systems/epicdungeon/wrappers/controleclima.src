@@ -1,0 +1,21 @@
+use uo;
+use os;
+
+include "include/packets";
+
+program controleclima(params)
+    var mobs  := params[2];
+    var pv    := params[3];
+    var idx   := CInt(pv[1]);
+
+    // dropdown: 0=Chuva, 1=Neve, 2=Tempestade, 3=Limpar
+    var weather_types := array{ 0, 2, 1, 255 };
+    var weather := weather_types[idx + 1];
+    if (!weather && idx != 0) weather := 255; endif
+
+    foreach mob in mobs
+        SetWeatherForPlayer(mob, weather, 50);
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

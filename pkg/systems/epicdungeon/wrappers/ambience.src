@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+program ambience(params)
+    var pv         := params[3];
+    var som_id     := CInt(pv[1]);
+    var repeticoes := CInt(pv[2]);
+
+    if (som_id     <= 0) som_id     := 100; endif
+    if (repeticoes <= 0) repeticoes := 2;   endif
+
+    foreach mob in EnumerateOnlineCharacters()
+        if (!mob.npctemplate)
+            for i := 1 to repeticoes
+                PlaySoundEffect(mob, som_id);
+                sleepms(500);
+            endfor
+            sleepms(2);
+        endif
+    endforeach
+    return 1;
+endprogram

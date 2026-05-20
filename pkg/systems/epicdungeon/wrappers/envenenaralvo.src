@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+program envenenaralvo(params)
+    var mobs  := params[2];
+    var pv    := params[3];
+    var nivel := CInt(pv[1]) + 1;  // dropdown 0-based → level 1-4
+
+    foreach mob in mobs
+        mob.SetPoisoned(nivel);
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

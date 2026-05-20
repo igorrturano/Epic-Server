@@ -1,0 +1,25 @@
+use uo;
+use os;
+use polsys;
+
+program mtele(params)
+    var dm  := params[1];
+    var pos := params[2];
+
+    var key    := "RaidRoster_" + CStr(dm.serial);
+    var roster := GetGlobalProperty(key);
+    if (roster == error || !roster || roster.size() == 0)
+        SendSysMessage(dm, "[EpicDungeon] Roster vazio.");
+        return 0;
+    endif
+
+    foreach serial in roster
+        var mob := SystemFindObjectBySerial(serial);
+        if (mob && mob.connected)
+            MoveObjectToLocation(mob, pos.x, pos.y, pos.z, pos.realm, MOVEOBJECT_FORCELOCATION);
+            SendSysMessage(mob, "[EpicDungeon] Voce foi teleportado pelo GM.");
+        endif
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram
