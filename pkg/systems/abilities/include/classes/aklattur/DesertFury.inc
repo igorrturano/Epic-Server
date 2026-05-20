@@ -4,6 +4,7 @@ use os;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
+include ":hotbar:custombuff";
 include "include/epicCombatUtils";
 /**
  * Furia do Deserto (Desert Fury) - ABILITY_ID::FURIA_DO_DESERTO (500)
@@ -34,6 +35,12 @@ class DesertFury(CombatAbility)
 			duration := 5;
 		endif
 		return duration;
+	endfunction
+
+	function OnActivate(this, mobile)
+		var who := mobile.GetObjRef();
+		var duration := this.GetDurationFor(mobile);
+		SendAbilityBuff(who, ABILITY_ID::FURIA_DO_DESERTO, duration, "Cleave em todos os inimigos proximos");
 	endfunction
 
 	// ACTIVE: Cleave - attack all nearby hostiles after each hit
