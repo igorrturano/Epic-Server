@@ -25,6 +25,7 @@ Os Druidas são guardiões da natureza, mestres das magias Aradalorë que amplif
 
 {{classTable,frame,decoration
 ##### Druida
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Elo Natural |

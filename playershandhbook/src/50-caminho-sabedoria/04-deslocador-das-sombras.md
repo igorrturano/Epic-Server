@@ -29,6 +29,7 @@ Os deslocadores das sombras são guerreiros Drow especializados na arte das somb
 
 {{classTable,frame,decoration
 ##### Deslocador das Sombras
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-----------:|
 |  2 |Dança das Sombras |

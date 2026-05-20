@@ -25,6 +25,7 @@ Os Clérigos são devotos guerreiros da fé, que canalizam o poder divino de sua
 
 {{classTable,frame,decoration
 ##### Clérigo
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Conexão Divina |

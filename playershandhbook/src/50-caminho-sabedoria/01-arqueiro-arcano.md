@@ -24,6 +24,7 @@ O Arqueiro Arcano renunciou à sua essência mágica inata para devotar sua exis
 
 {{classTable,frame,decoration
 ##### Arqueiro Arcano
+**Dado de Vida:** d6
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Gwaenedh |
