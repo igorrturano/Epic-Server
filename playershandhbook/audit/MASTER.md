@@ -137,24 +137,27 @@ CODE-TODO: implement or formally retire these four; handbook will track code.
   Homebrewery page/column flow; deferred to a focused layout pass. Textual
   effects of these spells already corrected (undead/demon damage).
 
-## Deferred — Religion-keyed ability documentation (8 abilities)
+## Deferred — Religion-keyed ability documentation (2 abilities remain)
 
-The handbook's Paladino, Clérigo and Caçador de Demônios chapters all
-abstract per-religion ability effects as "baseado na sua religião" /
-"cada religião manifesta efeitos únicos" without listing what each
-religion does. Only Sentença Profana (Caç. Demônios) was broken down so
-far. Eight other religion-keyed abilities still need the same template:
+Original gap: 8 religion-keyed abilities + 2 banner notes had no per-
+religion breakdown. Most are now done in-handbook:
 
-- Forma Abissal (Caç. Demônios L20)
-- Golpe Divino (Paladino L6), Campeão Divino (Paladino L20)
-- Conexão Divina (Clérigo L2), Golpe Radiante (L6), Aura Divina (L10),
-  Autoridade Divina (L14), Apoteose (L20)
-- Plus a one-sentence banner-amplification note for Paladino Aura de Fé
-  (L10) and Presença Divina (L14) — these aren't per-religion-distinct,
-  but the banner mechanic isn't in the book either.
+**Done** (Sentença Profana template applied):
+- Caç. Demônios: Sentença Profana, Forma Abissal (L20) ✓
+- Paladino: Golpe Divino (L6), Campeão Divino (L20) ✓
+  + banner-amplification notes on Aura de Fé (L10) + Presença Divina (L14) ✓
+- Clérigo: Conexão Divina (L2), Golpe Radiante (L6), Aura Divina (L10) ✓
 
-Handed to a focused fresh session 2026-05-19 (user-owned). Template:
-the Sentença Profana per-religion bullet list (`Lóre/Veneratio/
-Bokk Bharaz/Ush'krar/Halleuad/Eluith'orth/Kai`, "Nenhum efeito" where the
-code has no `case`). Code paths and handbook target lines listed in the
-session prompt.
+**Still TODO** (Clérigo only):
+- Autoridade Divina (L14) — `cleric/DivineAuthority.inc:52` case block:
+  VENERATIO silence all · KAI balance_restored (crit immunity) ·
+  BOKK_BHARAZ mountains_strength (dmg reduction) · HALLEUAD blinded ·
+  ELUITHORTH true_darkness
+- Apoteose (L20) — `cleric/Apotheosis.inc:41` case block: VENERATIO
+  apodrecer (double dmg taken) · BOKK_BHARAZ pelepedra · HALLEUAD heals
+  allies + destroys undead/darkness · ELUITHORTH tormento · KAI guaranteed
+  crits for allies
+
+Template + conventions: `docs/religion-system.md` (authoritative agent
+reference). All seven religions listed in each bullet block; "Nenhum efeito
+adicional" for Lóre/Ush'krar when code has no case.
