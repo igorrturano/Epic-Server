@@ -28,6 +28,7 @@ Xamãs, os orcs mais sábios, são líderes espirituais que dominam a magia xam�
 
 {{classTable,frame,decoration
 ##### Xamã
+**Dado de Vida:** d8
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Colheita de Almas |

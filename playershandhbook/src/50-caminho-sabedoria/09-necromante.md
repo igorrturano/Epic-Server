@@ -22,6 +22,7 @@ Os Necromantes são mestres da magia Kaijin, a arte corrompida descoberta no les
 
 {{classTable,frame,decoration
 ##### Necromante
+**Dado de Vida:** d6
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Sacrifício da Carne |

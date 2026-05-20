@@ -24,6 +24,7 @@ Os Magus são poderosos conjuradores, mestres da escola de magia Evocatium, cria
 
 {{classTable,frame,decoration
 ##### Magus
+**Dado de Vida:** d6
 | Level | Habilidades |
 |:-----:|:-------------------------:|
 |  2 |Determinação Arcana |
