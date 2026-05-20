@@ -1,6 +1,8 @@
 use uo;
 
 include ":abilities:models/CombatAbility";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":attributes:attributes";
 include ":attributes:vitals";
 include ":nature:nature";
@@ -103,7 +105,7 @@ class ElementalAncestry(CombatAbility)
 
 					if (hasSouls && RandomInt(100) < mlore)
 						PlayLightningBoltEffect(mob);
-						ApplyDamageEX(mob, RandomDiceRoll("1d10") + 40, DMG_ENERGY);
+						DealDamage(mob, RandomDiceRoll("1d10") + 40, DAMAGE_TYPE::ENERGY);
 						Message("Voce foi atingido por um raio!").SendSys(mob);
 					endif
 				endif

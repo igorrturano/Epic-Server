@@ -4,7 +4,8 @@ include ":abilities:models/CombatAbility";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include ":tn:cooldown";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":message:model/Message";
 include "include/client";
 
@@ -64,7 +65,7 @@ class BloodArena(CombatAbility)
 
 		// Poison damage
 		var dano_mlore := CInt(mobile.GetSkill(THEOLOGY) + (shaman_souls * 5));
-		DamageFLS(defender, dano_mlore, DMG_POISON, who);
+		DealDamage(defender, dano_mlore, DAMAGE_TYPE::POISON, who);
 
 		who.SetProp("shaman_souls", 0);
 
