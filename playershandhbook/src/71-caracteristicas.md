@@ -38,6 +38,23 @@ Os bônus de **Raça** e de **Características** são aplicados em cima dessa di
 - **Bônus de Características:** aplicados após a distribuição
 }}
 
+### Línguas Conhecidas
+
+A Inteligência também define quantas línguas o personagem domina ao começar a jornada. Todo personagem fala automaticamente o **idioma da sua cultura**. **Inteligência igual ou superior a 40** já concede o **Comum** como bônus universal, e a cada 30 pontos de INT acima de 60 o personagem aprende mais um idioma extra à sua escolha.
+
+{{classTable,frame,decoration
+##### Línguas pela Inteligência
+| INT | Línguas conhecidas |
+|:---:|:------------------:|
+| < 40   | Apenas o idioma cultural |
+| 40-59  | Cultural + Comum |
+| 60-89  | Cultural + Comum + 1 extra |
+| 90-119 | Cultural + Comum + 2 extras |
+| 120+   | Cultural + Comum + 3 extras (e assim por diante) |
+}}
+
+A classe **Druida** recebe ainda **Sylovir** automaticamente, somando-se à lista que sua Inteligência permitiria.
+
 :
 
 ### Corpulento
