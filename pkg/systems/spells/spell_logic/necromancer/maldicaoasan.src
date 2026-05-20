@@ -63,7 +63,7 @@ program SpellScript(params)
 			mydmg := AP_GetVital(who, HITS) - (AP_GetVital(who, HITS) - 1);
 
 			// Da o ultimo dano antes de parar o spell
-			SC_DealDamage(who, targ, CInt(spell.id), mydmg, DMG_POISON);
+			SC_DealDamage(who, targ, CInt(spell.id), mydmg, DAMAGE_TYPE::POISON);
 			// Self-damage as channel cost — raw HP deduct only, no hooks (would
 			// fire AFTER_DAMAGE/ON_KILL against the caster for damaging themself).
 			DisplayDamage(who, mydmg, 0);
@@ -73,7 +73,7 @@ program SpellScript(params)
 			break;
 		endif
 
-		SC_DealDamage(who, targ, CInt(spell.id), mydmg, DMG_POISON, time == 0 ? 1 : 0);
+		SC_DealDamage(who, targ, CInt(spell.id), mydmg, DAMAGE_TYPE::POISON, time == 0 ? 1 : 0);
 		// Self-damage as channel cost — raw HP deduct only, no hooks.
 		DisplayDamage(who, mydmg, 0);
 		ApplyRawDamage(who, mydmg);

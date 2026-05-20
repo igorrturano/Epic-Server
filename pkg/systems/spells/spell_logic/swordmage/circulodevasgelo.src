@@ -28,7 +28,7 @@ program SpellScript(params)
 	if (targ.isA(POLCLASS_WEAPON))
 
 		var elemental := GetObjProperty(targ, "#elementalweapon");
-		if (elemental.type != "Cold")
+		if (elemental.type != DAMAGE_TYPE::COLD)
 			Message("Esta arma precisa estar encantada com Lamina de Gelo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return 1;
 		endif

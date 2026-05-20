@@ -31,7 +31,7 @@ program SpellScript(params)
 	if (targ.isA(POLCLASS_WEAPON))
 
 		var elemental := GetObjProperty(targ, "#elementalweapon");
-		if (elemental.type != DMG_COLD)
+		if (elemental.type != DAMAGE_TYPE::COLD)
 			SendSysMessageEx(who, "Esta arma precisa estar encantada com Lamina de Gelo.", SSM_FAIL);
 			return 1;
 		endif
@@ -98,7 +98,7 @@ program SpellScript(params)
 				SendSysMessageEx(defender, "Voce se esquiva de parte do gelo.", SSM_INFO);
 			endif
 
-			SC_DealDamage(who, defender, CInt(spell.id), cint(dmg), DMG_COLD);
+			SC_DealDamage(who, defender, CInt(spell.id), cint(dmg), DAMAGE_TYPE::COLD);
 			defender.frozen := 0;
 		endforeach
 

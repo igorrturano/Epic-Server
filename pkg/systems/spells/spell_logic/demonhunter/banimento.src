@@ -34,7 +34,7 @@ program SpellScript(params)
 				affected += 1;
 				PlayObjectCenteredEffect(mobile, 0x37CC, 10, 10);
 				PrintTextAbove(mobile, "*Banido*", who);
-				SC_DealDamage(who, mobile, CInt(spell.id), 9999, DMG_FORCED);
+				SC_DealDamage(who, mobile, CInt(spell.id), 9999, DAMAGE_TYPE::FORCED);
 			elseif ((cfg[npctemplate.template].Environment in inimigo) && (tier > max_tier || is_boss))
 				PrintTextAbove(mobile, "*Resiste ao Banimento*");
 				SendSysMessageEx(who, "A criatura é poderosa demais para ser banida!", SSM_FAIL);

@@ -37,5 +37,5 @@ function LaunchProjectile(caster, targ, spellinfo)
 		SendSysMessageEx(targ, "Voce desvia parcialmente dos espinhos.", SSM_INFO);
 	endif
 
-	SC_DealDamage(caster, targ, CInt(spellinfo.id), cint(dmg), DMG_PHYSICAL);
+	SC_DealDamage(caster, targ, CInt(spellinfo.id), cint(dmg), DAMAGE_TYPE::BLUNT);
 endfunction

@@ -42,7 +42,7 @@ program SpellScript(params)
 		SendSysMessageEx(targ, "Voce desvia parcialmente da flecha divina.", SSM_INFO);
 	endif
 
-	SC_DealDamage(who, targ, CInt(spellinfo.id), damage, DMG_FORCED);
+	SC_DealDamage(who, targ, CInt(spellinfo.id), damage, DAMAGE_TYPE::FORCED);
 
 	SC_RemoveEffect(targ, CInt(spellinfo.id));
 

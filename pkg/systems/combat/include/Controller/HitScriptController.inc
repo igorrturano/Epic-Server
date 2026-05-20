@@ -218,7 +218,7 @@ function WeaponHitScripts(byRef attackInfo)
 					_ArmorObjRefOrUninit(armor),
 					attackInfo.GetDamage().GetTotalBaseDamage(),
 					dmg,
-					DMG_PHYSICAL
+					DAMAGE_TYPE::BLUNT
 				}
 			);
 		endforeach

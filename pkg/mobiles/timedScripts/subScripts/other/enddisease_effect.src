@@ -122,7 +122,7 @@ function DoFeverEffect(mobile, damage)
 	PrintTextAbove(mobile, "*suando*");
 
 	// Apply life damage
-	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::BLUNT);
+	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::FORCED);
 
 	return 1;
 endfunction
@@ -150,7 +150,7 @@ function DoPustulesEffect(mobile, damage)
 	Imersao(mobile, "tossir1");
 
 	// Apply life damage
-	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::BLUNT);
+	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::FORCED);
 
 	sleep(3);
 	PrintTextAbove(mobile, "*uma pústula estoura*");
@@ -169,7 +169,7 @@ function DoLacerationEffect(mobile, damage)
 	PrintTextAbove(mobile, "*segura o ferimento*");
 
 	// Apply life damage
-	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::BLUNT);
+	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::FORCED);
 
 	// Bleeding effect
 	PlaySoundEffect(mobile, 0x26); // Liquid sound
@@ -203,7 +203,7 @@ function DoStomachacheEffect(mobile, damage)
 	Imersao(mobile, "vomitar"); // Sound and emote
 
 var half := CInt(damage / 2);
-DealDamage(mobile, half, DAMAGE_TYPE::BLUNT);
+DealDamage(mobile, half, DAMAGE_TYPE::FORCED);
 ReduceStamina(mobile, half);
 
 	DoVomit(mobile);
@@ -248,7 +248,7 @@ function DoHeadacheEffect(mobile, damage)
 	PlayCharCair(mobile);
 
 	// Apply life damage
-	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::BLUNT);
+	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::FORCED);
 
 	sleep(1);
 	mobile.freeze := 1;

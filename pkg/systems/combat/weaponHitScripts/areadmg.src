@@ -29,16 +29,6 @@ program HitScript(params)
 		dmgtype := DAMAGE_TYPE::BLUNT;
 	endif
 
-	// Normalize legacy DMG_* strings (stored on weapon #elementalweapon prop)
-	// to the new DAMAGE_TYPE enum so the rest of this script and DealDamage agree.
-	case (CStr(dmgtype))
-		"Cold":     dmgtype := DAMAGE_TYPE::COLD; break;
-		"Fire":     dmgtype := DAMAGE_TYPE::FIRE; break;
-		"Energy":   dmgtype := DAMAGE_TYPE::ENERGY; break;
-		"Poison":   dmgtype := DAMAGE_TYPE::POISON; break;
-		"Physical": dmgtype := DAMAGE_TYPE::BLUNT; break;
-	endcase
-
 	params := 0; // Not needed anymore.
 
 	var allPets := array{};

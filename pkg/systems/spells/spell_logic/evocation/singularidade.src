@@ -92,7 +92,7 @@ program spell_singularidade(params)
 		print("[DEBUG singularidade] pull_after_cap=" + pull);
 
 		SendSysMessageEx(mob, "Voce e sugado para a singularidade!", SSM_FAIL);
-		SC_DealDamage(caster, mob, CInt(spellinfo.id), cint(dmg), DMG_ENERGY);
+		SC_DealDamage(caster, mob, CInt(spellinfo.id), cint(dmg), DAMAGE_TYPE::ENERGY);
 
 		PlayObjectCenteredEffect(mob, 0xE464, 5, 10);
 

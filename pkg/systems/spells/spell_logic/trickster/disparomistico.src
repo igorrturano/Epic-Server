@@ -42,7 +42,7 @@ program SpellScript(params)
 		SendSysMessageEx(targ, "Voce desvia parcialmente do disparo mistico.", SSM_INFO);
 	endif
 
-	SC_DealDamage(who, targ, CInt(spell.id), dmg, DMG_FORCED);
+	SC_DealDamage(who, targ, CInt(spell.id), dmg, DAMAGE_TYPE::FORCED);
 	SleepMS(500);
 	SetCooldown(who, "disparomistico", mlore);
 

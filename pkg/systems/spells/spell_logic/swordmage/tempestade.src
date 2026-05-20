@@ -31,7 +31,7 @@ program SpellScript(params)
 	if (targ.isA(POLCLASS_WEAPON))
 
 		var elemental := GetObjProperty(targ, "#elementalweapon");
-		if (elemental.type != DMG_ENERGY)
+		if (elemental.type != DAMAGE_TYPE::ENERGY)
 			SendSysMessageEx(who, "Esta arma precisa estar encantada com Lamina Eletrificada.", SSM_FAIL);
 			return 1;
 		endif
@@ -81,7 +81,7 @@ program SpellScript(params)
 						SendSysMessageEx(defender, "Voce desvia parcialmente do raio.", SSM_INFO);
 					endif
 
-					SC_DealDamage(who, defender, CInt(spell.id), cint(dmg), DMG_COLD);
+					SC_DealDamage(who, defender, CInt(spell.id), cint(dmg), DAMAGE_TYPE::COLD);
 				endif
 			endif
 		endforeach

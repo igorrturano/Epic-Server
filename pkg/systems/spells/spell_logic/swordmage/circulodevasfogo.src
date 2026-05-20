@@ -28,7 +28,7 @@ program SpellScript(params)
 	if (targ.isA(POLCLASS_WEAPON))
 
 		var elemental := GetObjProperty(targ, "#elementalweapon");
-		if (elemental.type != "Fire")
+		if (elemental.type != DAMAGE_TYPE::FIRE)
 			Message("Esta arma precisa estar encantada com Lamina Flamejante.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
 			return 1;
 		endif

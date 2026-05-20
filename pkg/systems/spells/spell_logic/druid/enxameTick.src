@@ -28,7 +28,7 @@ program EnxameTick(args)
 		dmg_caster := targ;
 	endif
 
-	SC_DealDamage(dmg_caster, targ, spellId, CInt(tp.damage_per_tick), DMG_PHYSICAL);
+	SC_DealDamage(dmg_caster, targ, spellId, CInt(tp.damage_per_tick), DAMAGE_TYPE::BLUNT);
 
 	PlayObjectCenteredEffect(targ, FX_SWARM_3_MAGIC, 70, 50);
 	PlaySoundEffect(targ, 0x5CD);

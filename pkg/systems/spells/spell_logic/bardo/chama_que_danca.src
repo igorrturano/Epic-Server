@@ -35,7 +35,7 @@ program SpellScript(params)
 		endif
 		PlayStationaryEffect(targ.x, targ.y, targ.z, 0x36CB, 1, 1);
 		// First tick applies focus bonus once; subsequent ticks skip it (magicmissile pattern).
-		SC_DealDamage(who, targ, CInt(spell.id), dmg_tick, DMG_FIRE, t == 1 ? 1 : 0);
+		SC_DealDamage(who, targ, CInt(spell.id), dmg_tick, DAMAGE_TYPE::FIRE, t == 1 ? 1 : 0);
 		sleepms(1000);
 		t += 1;
 	endwhile
