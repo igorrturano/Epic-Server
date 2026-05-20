@@ -31,7 +31,7 @@ program cast_frostbolt(params)
 
 	// Congelar is pure CC. Direct damage is a token frostbite, scaling comes from the freeze duration.
 	var token_dmg := RandomDiceRoll("1d4");
-	SC_DealDamage(caster, targ, CInt(spellinfo.id), token_dmg, DMG_COLD);
+	SC_DealDamage(caster, targ, CInt(spellinfo.id), token_dmg, DAMAGE_TYPE::COLD);
 
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
 	var bonus := epicWisdomPathBonus(caster);

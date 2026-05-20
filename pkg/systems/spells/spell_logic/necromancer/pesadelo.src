@@ -39,7 +39,7 @@ program SpellScript(params)
 			dmg := CInt(dmg * 1.5);
 		endif
 	endif
-	SC_DealDamage(who, targ, CInt(spell.id), dmg, DMG_FORCED);
+	SC_DealDamage(who, targ, CInt(spell.id), dmg, DAMAGE_TYPE::FORCED);
 	PrintTextPrivate(targ, "-" + dmg + " Vida", who, 3, 38); // vermelho
 
 	SC_HandleSound(who, who, 385);

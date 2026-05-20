@@ -57,7 +57,7 @@ class AttackInfo(IAttackInfo)
 	// combat-specific mechanics; individual spells can opt into them if needed.
 	var _isSpell := false;
 	var _spellId := 0;
-	var _damageType := ""; // e.g. DMG_FIRE / DMG_COLD / DMG_ENERGY
+	var _damageType := ""; // e.g. DAMAGE_TYPE::FIRE / DAMAGE_TYPE::COLD / DAMAGE_TYPE::ENERGY
 	var _skipParry := false;
 	var _skipCrit := false;
 	var _skipBodyRegion := false;
@@ -66,6 +66,12 @@ class AttackInfo(IAttackInfo)
 	// armor resist *values* still apply (Ignium/Venetium/Mithril give elemental resist),
 	// only the HP loss per piece is gated.
 	var _appliesArmorWear := true;
+
+	// True when ApplyCombatDamage should apply whatever physical channel was stamped
+	// (DealDamage path, spells) instead of using the attacker's posture to zero out
+	// the other two channels (swing path). Without this flag, a sourceless bleed
+	// stamped as PIERCING gets nuked because defender-as-attacker posture is unrelated.
+	var _usesChannelApply := false;
 
 	function AttackInfo(this, attacker, defender, moment := ATTACK_MOMENT::COMBATING) // attacker: MobileWrapper, defender: MobileWrapper
 		this._moment := moment;
@@ -604,7 +610,17 @@ class AttackInfo(IAttackInfo)
 		this._skipCrit := true;
 		this._skipBodyRegion := true;
 		this._appliesArmorWear := false;
+		this._usesChannelApply := true;
 		return this;
+	endfunction
+
+	function SetUsesChannelApply(this, value := true)
+		this._usesChannelApply := value;
+		return this;
+	endfunction
+
+	function UsesChannelApply(this)
+		return this._usesChannelApply;
 	endfunction
 
 	function SetSkipParry(this, value := true)

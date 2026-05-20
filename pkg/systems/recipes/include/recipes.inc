@@ -213,20 +213,20 @@ function CraftRecipe(who, index)
      	 		var hpmod := GetConfigInt(elem, "hpmod");
 			if(theitem.isA(POLCLASS_WEAPON))
 				var finaldmg := dictionary;
-				finaldmg[DMG_PHYSICAL] := Cdbl(DmgMods[1]);
-				finaldmg[DMG_FIRE] := Cdbl(DmgMods[2]);
-				finaldmg[DMG_COLD] := Cdbl(DmgMods[3]);
-				finaldmg[DMG_POISON] := Cdbl(DmgMods[4]);
-				finaldmg[DMG_ENERGY] := Cdbl(DmgMods[5]);
+				finaldmg[DAMAGE_TYPE::BLUNT] := Cdbl(DmgMods[1]);
+				finaldmg[DAMAGE_TYPE::FIRE] := Cdbl(DmgMods[2]);
+				finaldmg[DAMAGE_TYPE::COLD] := Cdbl(DmgMods[3]);
+				finaldmg[DAMAGE_TYPE::POISON] := Cdbl(DmgMods[4]);
+				finaldmg[DAMAGE_TYPE::ENERGY] := Cdbl(DmgMods[5]);
 				SetObjProperty(theitem, "DamageTypes", finaldmg );
 			elseif(theitem.isA(POLCLASS_ARMOR))
 			        var itemresist := GetObjProperty(theitem, "Resistances");
 				var finalresist := dictionary;
-				finalresist[DMG_PHYSICAL] := Cint(ResistMods[1])+ Cint(itemresist[DMG_PHYSICAL]);
-				finalresist[DMG_FIRE] := Cint(ResistMods[2]) + Cint(itemresist[DMG_FIRE]);
-				finalresist[DMG_COLD] := Cint(ResistMods[3]) + Cint(itemresist[DMG_COLD]);
-				finalresist[DMG_POISON] := Cint(ResistMods[4]) +  Cint(itemresist[DMG_POISON]);
-				finalresist[DMG_ENERGY] := Cint(ResistMods[5]) +  Cint(itemresist[DMG_ENERGY]);
+				finalresist[DAMAGE_TYPE::BLUNT] := Cint(ResistMods[1])+ Cint(itemresist[DAMAGE_TYPE::BLUNT]);
+				finalresist[DAMAGE_TYPE::FIRE] := Cint(ResistMods[2]) + Cint(itemresist[DAMAGE_TYPE::FIRE]);
+				finalresist[DAMAGE_TYPE::COLD] := Cint(ResistMods[3]) + Cint(itemresist[DAMAGE_TYPE::COLD]);
+				finalresist[DAMAGE_TYPE::POISON] := Cint(ResistMods[4]) +  Cint(itemresist[DAMAGE_TYPE::POISON]);
+				finalresist[DAMAGE_TYPE::ENERGY] := Cint(ResistMods[5]) +  Cint(itemresist[DAMAGE_TYPE::ENERGY]);
 				SetObjProperty(theitem, "Resistances", finalresist );
 			endif
 		endif

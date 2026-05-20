@@ -34,7 +34,8 @@ program default_poison(params)
 		endcase
 
 		sleep(time);
-		DealDamage(who, cint(damage), DAMAGE_TYPE::BLUNT, attacker);
+		// Alch poison ticks inside the body — bypass the resist chain.
+		DealDamage(who, cint(damage), DAMAGE_TYPE::FORCED, attacker);
 
 		if (who.dead)
 			break;
