@@ -33,7 +33,7 @@ program SpellScript(params)
 	PlaySoundEffect(who, 0x211);
 	PlayStationaryEffect(targ.x, targ.y, targ.z, 0x36CB, 3, 3);
 
-	SC_DealDamage(who, targ, CInt(spell.id), damage, DMG_FORCED);
+	SC_DealDamage(who, targ, CInt(spell.id), damage, DAMAGE_TYPE::FORCED);
 	SendSysMessageEx(who, $"Queda do Tirano: {damage} dano forcado.", SSM_INFO);
 
 	AP_ModifyStatMod(targ, DEXTERITY, -dex_pen);

@@ -90,7 +90,7 @@ program spell_bloodbath(params)
         // Kill the creature normally to generate loot (DON'T use GuardKill - it destroys loot!).
         // SC_DealDamage routes through DamageFLS so loot generation works AND the shaman gets
         // proper AFTER_DAMAGE / ON_KILL hook credit for each soul harvested.
-        SC_DealDamage(who, mobile, CInt(spell.id), hp_threshold, DMG_FORCED);
+        SC_DealDamage(who, mobile, CInt(spell.id), hp_threshold, DAMAGE_TYPE::FORCED);
     endforeach
 
     // Wait for death processing to complete

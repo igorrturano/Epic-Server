@@ -49,7 +49,7 @@ program SpellScript(params)
 		endif
 
 		// Misseis Magicos is auto-hit flavor — no save by design.
-		SC_DealDamage(who, targ, CInt(spellinfo.id), cint(dmg), DMG_FORCED);
+		SC_DealDamage(who, targ, CInt(spellinfo.id), cint(dmg), DAMAGE_TYPE::FORCED);
 		SleepMS(500);
 	endfor
 	return 1;

@@ -29,7 +29,7 @@ program SpellScript(params)
 	endif
 
 	var elemental := GetObjProperty(targ, "#elementalweapon");
-	if (elemental.type != DMG_FIRE)
+	if (elemental.type != DAMAGE_TYPE::FIRE)
 		SendSysMEssageEx(who, "Esta arma precisa estar encantada com Lamina Flamejante.", SSM_FAIL);
 		return 1;
 	endif

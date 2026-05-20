@@ -42,7 +42,7 @@ program SpellScript(params)
 
 				// 5 × ApplyRawDamage(200) consolidated into a single 1000 SC_DealDamage call
 				// to avoid firing AFTER_DAMAGE / ON_KILL hooks 5× per target.
-				SC_DealDamage(who, mobile, CInt(spell.id), 1000, DMG_FORCED);
+				SC_DealDamage(who, mobile, CInt(spell.id), 1000, DAMAGE_TYPE::FORCED);
 				i++;
 			endif
 

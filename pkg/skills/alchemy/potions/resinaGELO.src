@@ -36,7 +36,7 @@ program resinaFOGO(who, resina)
 		endif
 
 		var dmg := struct;
-		dmg.+type := DMG_COLD;
+		dmg.+type := DAMAGE_TYPE::COLD;
 		dmg.+serial := who.serial;
 		dmg.+endtime := readgameclock() + time;
 		dmg.+bonus := AP_GetSkill(who, ALCHEMY) / 400.0;
@@ -46,7 +46,7 @@ program resinaFOGO(who, resina)
 
 		SetObjProperty(targ, "#elementalweapon", dmg);
 
-		start_script(":spells:elementalweapon", { targ, time, DMG_COLD });
+		start_script(":spells:elementalweapon", { targ, time, DAMAGE_TYPE::COLD });
 		PlaySoundEffect(targ, SFX_BLESS);
 		SendSysMessageEx(who, "A arma ficou coberta de gelo.", SSM_INFO);
 		DestroyItem(resina);

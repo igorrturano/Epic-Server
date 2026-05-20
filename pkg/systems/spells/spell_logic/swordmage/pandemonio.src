@@ -32,7 +32,7 @@ program SpellScript(params)
 	if (targ.isA(POLCLASS_WEAPON))
 
 		var elemental := GetObjProperty(targ, "#elementalweapon");
-		if (elemental.type != DMG_FIRE)
+		if (elemental.type != DAMAGE_TYPE::FIRE)
 			SendSysMessageEx(who, "Esta arma precisa estar encantada com Lamina Flamejante.", SSM_FAIL);
 			return 1;
 		endif
@@ -115,8 +115,8 @@ program SpellScript(params)
 						SendSysMessageEx(defender, "Voce desvia parcialmente das chamas.", SSM_INFO);
 					endif
 
-					SC_DealDamage(who, defender, CInt(spell.id), cint(dmg), DMG_FIRE);
-				// ApplyDamageEX(defender, cint(dmg), DMG_FIRE);
+					SC_DealDamage(who, defender, CInt(spell.id), cint(dmg), DAMAGE_TYPE::FIRE);
+				// ApplyDamageEX(defender, cint(dmg), DAMAGE_TYPE::FIRE);
 				endif
 			endif
 		endforeach

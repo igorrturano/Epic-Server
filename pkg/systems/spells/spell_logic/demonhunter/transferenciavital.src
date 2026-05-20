@@ -67,7 +67,7 @@ program manobra(mobile)
 			break;
 		endif
 
-		SC_DealDamage(mobile, targ, SPELL_ID_TRANSFERENCIA_VITAL, amt, DMG_FORCED);
+		SC_DealDamage(mobile, targ, SPELL_ID_TRANSFERENCIA_VITAL, amt, DAMAGE_TYPE::FORCED);
 		ApplyEpicHealing(who, amt);
 
 		if (targ.dead)

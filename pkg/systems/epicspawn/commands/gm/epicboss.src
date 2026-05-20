@@ -3037,8 +3037,9 @@ function SelectTraitType(who, trait_type, byref form_data)
 
 	GFTextMid(gump, 0, 25, 500, 1153, "Select " + trait_type + " Type");
 
-	var options := array{ "DMG_PHYSICAL", "DMG_SLASH", "DMG_PIERCING", "DMG_BLUNT", "DMG_FIRE",
-					  	"DMG_COLD", "DMG_POISON", "DMG_ENERGY", "Backstab", "Spells" };
+	var options := array{ CStr(DAMAGE_TYPE::BLUNT), CStr(DAMAGE_TYPE::SLASH), CStr(DAMAGE_TYPE::PIERCING), CStr(DAMAGE_TYPE::BLUNT),
+					  	CStr(DAMAGE_TYPE::FIRE), CStr(DAMAGE_TYPE::COLD), CStr(DAMAGE_TYPE::POISON), CStr(DAMAGE_TYPE::ENERGY),
+					  	"Backstab", "Spells" };
 
 	var y_pos := 60;
 	var counter := 1;
@@ -3196,8 +3197,8 @@ function SelectDamageType(who, nature_type, byref form_data)
 	var y_pos := 60;
 	var counter := 1;
 
-	foreach damage_type in (array{ DMG_PHYSICAL, DMG_SLASH, DMG_PIERCING, DMG_BLUNT,
-							   	DMG_FIRE, DMG_COLD, DMG_POISON, DMG_ENERGY })
+	foreach damage_type in (array{ DAMAGE_TYPE::BLUNT, DAMAGE_TYPE::SLASH, DAMAGE_TYPE::PIERCING, DAMAGE_TYPE::BLUNT,
+							   	DAMAGE_TYPE::FIRE, DAMAGE_TYPE::COLD, DAMAGE_TYPE::POISON, DAMAGE_TYPE::ENERGY })
 		GFAddButton(gump, 50, y_pos, 2103, 2104, GF_CLOSE_BTN, counter);
 		GFTextLine(gump, 80, y_pos, 1153, damage_type);
 		y_pos += 30;
@@ -3216,14 +3217,14 @@ function SelectDamageType(who, nature_type, byref form_data)
 
 	var selected_damage_type;
 	case (input[0])
-		1: selected_damage_type := DMG_PHYSICAL;
-		2: selected_damage_type := DMG_SLASH;
-		3: selected_damage_type := DMG_PIERCING;
-		4: selected_damage_type := DMG_BLUNT;
-		5: selected_damage_type := DMG_FIRE;
-		6: selected_damage_type := DMG_COLD;
-		7: selected_damage_type := DMG_POISON;
-		8: selected_damage_type := DMG_ENERGY;
+		1: selected_damage_type := DAMAGE_TYPE::BLUNT;
+		2: selected_damage_type := DAMAGE_TYPE::SLASH;
+		3: selected_damage_type := DAMAGE_TYPE::PIERCING;
+		4: selected_damage_type := DAMAGE_TYPE::BLUNT;
+		5: selected_damage_type := DAMAGE_TYPE::FIRE;
+		6: selected_damage_type := DAMAGE_TYPE::COLD;
+		7: selected_damage_type := DAMAGE_TYPE::POISON;
+		8: selected_damage_type := DAMAGE_TYPE::ENERGY;
 	endcase
 
 	// Add to form_data

@@ -140,7 +140,7 @@ class MarcadorPropagacaoIncendio( MarcadorPropagacaoBase)
       isAlvoEncontrado := true;
 
       if(this.estado > ESTADO_PROPAGACAO::DORMENTE)
-        DanificaItem(this.mobileOrigemIncendio,item,struct {desc := "Incêndio", dano := rolagemDano, tipo := DMG_FIRE});
+        DanificaItem(this.mobileOrigemIncendio,item,struct {desc := "Incêndio", dano := rolagemDano, tipo := DAMAGE_TYPE::FIRE});
       endif
     endforeach
 

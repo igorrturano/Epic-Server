@@ -49,5 +49,5 @@ function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
 		SendSysMessageEx(targ, "Voce desvia parcialmente do raio gelido.", SSM_INFO);
 	endif
 
-	SC_DealDamage(caster, targ, spellId, cint(dmg), DMG_COLD);
+	SC_DealDamage(caster, targ, spellId, cint(dmg), DAMAGE_TYPE::COLD);
 endfunction

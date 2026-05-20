@@ -101,7 +101,7 @@ function FlameEffect(who, potion, lvl, bonus)
 			endif
 			PlayObjectCenteredEffect(critter, 0x36b0, 7, 0x10);
 			PlaySoundEffect(critter, 0x208);
-			// ApplyDamageEX(critter, lvl*15, DMG_FIRE);
+			// ApplyDamageEX(critter, lvl*15, DAMAGE_TYPE::FIRE);
 			case(lvl)
 				2:	TS_StartTimer(critter, "chamasperpetuas", 4);
 				3:	TS_StartTimer(critter, "chamasperpetuas", 8);
@@ -261,7 +261,7 @@ function ExplosionEffect(who, potion, dmg)
 					SendSysMessageEx(critter, "Voce escapou parcialmente da explosao.", SSM_INFO);
 					PlayObjectCenteredEffectHuefx(critter, 0x36b0, 7, 0x10, color);
 					PlaySoundEffect(critter, 0x208);
-					// ApplyDamageEX(critter, dmg, DMG_FIRE);
+					// ApplyDamageEX(critter, dmg, DAMAGE_TYPE::FIRE);
 					DealDamage(critter, CInt(dmg / 2), dmg_type, who);
 					DanificaObjetosProximos(who, potion.x, potion.y, potion.z, potion.realm, struct{ dano := dmg,
 																				 					desc := "Bomba de Fragmentacao." },
@@ -283,7 +283,7 @@ function ExplosionEffect(who, potion, dmg)
 					SendSysMessageEx(critter, "Por instinto voce escapou parcialmente da explosao.", SSM_INFO);
 					PlayObjectCenteredEffectHuefx(critter, 0x36b0, 7, 0x10, color);
 					PlaySoundEffect(critter, 0x208);
-					// ApplyDamageEX(critter, dmg, DMG_FIRE);
+					// ApplyDamageEX(critter, dmg, DAMAGE_TYPE::FIRE);
 					DealDamage(critter, CInt(dmg / 2), dmg_type, who);
 					DanificaObjetosProximos(who, potion.x, potion.y, potion.z, potion.realm, struct{ dano := dmg,
 																				 					desc := "Bomba de Fragmentacao." },
@@ -302,7 +302,7 @@ function ExplosionEffect(who, potion, dmg)
 				else
 					PlayObjectCenteredEffectHuefx(critter, 0x36b0, 7, 0x10, color);
 					PlaySoundEffect(critter, 0x208);
-					// ApplyDamageEX(critter, dmg, DMG_FIRE);
+					// ApplyDamageEX(critter, dmg, DAMAGE_TYPE::FIRE);
 					DealDamage(critter, dmg, dmg_type, who);
 					DanificaObjetosProximos(who, potion.x, potion.y, potion.z, potion.realm, struct{ dano := dmg,
 																				 					desc := "Bomba de Fragmentacao." },

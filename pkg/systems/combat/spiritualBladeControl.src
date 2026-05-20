@@ -1,16 +1,19 @@
 use uo;
 use os;
 
+include ":combat:Model/Damage";
+
 program spiritualBladeControl(item)
     while (item)
         var elemental := GetObjProperty(item, "#elementalweapon");
         if (elemental != error)
             var colors;
-            if (elemental.type == "Fire")
+            var elemType := elemental.type;
+            if (elemType == DAMAGE_TYPE::FIRE)
                 colors := array{ 0x4E7, 0x4E8, 0x4E9, 0x4EA, 0x4EB, 0x4EC };
-            elseif (elemental.type == "Cold")
+            elseif (elemType == DAMAGE_TYPE::COLD)
                 colors := array{ 0x4ED, 0x4EE, 0x4EF, 0x4F0, 0x4F1, 0x4F2 };
-            elseif (elemental.type == "Energy")
+            elseif (elemType == DAMAGE_TYPE::ENERGY)
                 colors := array{ 0x4F9, 0x4FA, 0x4FB, 0x4FC, 0x4FD, 0x4FE };
             endif
             if (colors)

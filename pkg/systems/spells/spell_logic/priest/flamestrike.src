@@ -53,7 +53,7 @@ program SpellScript(params)
 	endif
 
 	// Apply damage with fire type via SC (routes through after-damage ability hooks)
-	SC_DealDamage(who, targ, CInt(spell.id), cint(dmg), DMG_FIRE);
+	SC_DealDamage(who, targ, CInt(spell.id), cint(dmg), DAMAGE_TYPE::FIRE);
 
 	SendSysMessageEx(who, "Voce invoca chamas sagradas sobre " + targ.name + "!", SSM_INFO);
 
