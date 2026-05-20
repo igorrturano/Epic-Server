@@ -4,7 +4,8 @@ include "include/say";
 include "include/client";
 include ":timedScripts:timedScripts";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/facings";
 include "include/epicNPCUtils";
 include ":wrappers:Objects/Model/MobileWrapper";
@@ -271,7 +272,7 @@ function AimAndShoot(who, item, targ, weapon_info)
 	endif
 
 	// Calculate and deal damage
-	var dmg := CalculateWeaponDamage(who, item, targ, weapon_info, dist);
+	var dmg := CalculateFireweaponDamage(who, item, targ, weapon_info, dist);
 
 	// Handle wet powder
 	if (GetObjProperty(who, "molhado"))
@@ -284,7 +285,7 @@ function AimAndShoot(who, item, targ, weapon_info)
 	if (RandomFloat(100) <= 5)
 		SendSysMessageEx(who, "O tiro saiu pela culatra!", SSM_FAIL);
 		DestroyItem(item);
-		DamageFLS(who, dmg, DMG_FORCED, who);
+		DealDamage(who, dmg, DAMAGE_TYPE::BLUNT, who);
 		return 0;
 	endif
 
@@ -293,11 +294,11 @@ function AimAndShoot(who, item, targ, weapon_info)
 	PlayMovingEffect(who, targ, FX_EXPLODE_1, 5, 1, 1);
 	PlaySoundEffect(who, weapon_info.shot_sound);
 
-	DamageFLS(targ, dmg, DMG_FORCED, who);
+	DealDamage(targ, dmg, DAMAGE_TYPE::PIERCING, who);
 	return 1;
 endfunction
 
-function CalculateWeaponDamage(who, item, targ, weapon_info, dist)
+function CalculateFireweaponDamage(who, item, targ, weapon_info, dist)
 	var dmg := RandomDiceRoll(weapon_info.dmg_dice);
 
 	if (GetObjProperty(who, "Municao Explosiva"))
