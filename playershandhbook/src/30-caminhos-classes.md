@@ -61,6 +61,64 @@ Diferente das Classes, as Habilidades de Caminho não seguem uma progressão lin
 Juntos, Caminhos, Classes e Habilidades de Caminho formam a tapeçaria completa de um personagem. O Caminho é a direção — a bússola que aponta para onde você vai. A Classe é o fio principal dessa tapeçaria — forte, definida, inconfundível. As Habilidades de Caminho são os fios secundários que preenchem os espaços, adicionam cor e textura, e tornam cada aventureiro verdadeiramente único.
 
 Nenhum dos que seguiram o mesmo Caminho chegarão ao mesmo destino. E é exatamente isso que torna cada história digna de ser contada.
+
+{{footnote [Voltar ao Índice](#p4)}}
+{{pageNumber,auto}}
+
+\page
+
+## Dados de Vida por Classe
+
+Toda classe possui um **Dado de Vida** próprio, que representa a vitalidade ganha ao subir de nível. Quanto maior o dado, mais robusto o personagem.
+
+{{classTable,frame,decoration
+##### Caminho das Armas (Guerreiro)
+| Classe | Dado |
+|:------|:----:|
+| Aklat'tur     | d10 |
+| Arqueiro      | d10 |
+| Bárbaro       | d12 |
+| Caçador       | d10 |
+| Combatente    | d10 |
+| Defensor      | d12 |
+| Monge         | d12 |
+| Mutante       |  d8 |
+| Paladino      | d10 |
+| Samurai       | d10 |
+}}
+
+{{classTable,frame,decoration
+##### Caminho do Subterfúgio (Ladino)
+| Classe | Dado |
+|:------|:----:|
+| Assassino             | d8 |
+| Bardo                 | d6 |
+| Caçador de Demônios   | d8 |
+| Caçador de Tesouros   | d8 |
+| Dançarino das Sombras | d8 |
+| Duelista              | d8 |
+| Ladrão                | d8 |
+| Malandro Arcano       | d6 |
+| Shinobi               | d8 |
+| Vivisseccionista      | d8 |
+}}
+
+{{classTable,frame,decoration
+##### Caminho da Sabedoria (Sábio)
+| Classe | Dado |
+|:------|:----:|
+| Arqueiro Arcano       | d6 |
+| Clérigo               | d8 |
+| Construtor de Golems  | d8 |
+| Deslocador das Sombras| d8 |
+| Druida                | d8 |
+| Granadeiro            | d6 |
+| Lâmina Arcana         | d8 |
+| Magus                 | d6 |
+| Necromante            | d6 |
+| Xamã                  | d8 |
+}}
+
 {{footnote [Voltar ao Índice](#p4)}}
 {{pageNumber,auto}}
 
