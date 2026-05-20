@@ -4,13 +4,14 @@ use os;
 include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 
 // A Queda do Tirano (1206) - C2
 // Dano FORCED (Arc/3) + -DEX (Arc/5) por Arc/3 segundos
 program SpellScript(params)
-	var who  := params[1];
-	var targ := params[2];
+	var who   := params[1];
+	var targ  := params[2];
+	var spell := params[3];
 
 	if (!targ || !targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
@@ -32,7 +33,7 @@ program SpellScript(params)
 	PlaySoundEffect(who, 0x211);
 	PlayStationaryEffect(targ.x, targ.y, targ.z, 0x36CB, 3, 3);
 
-	DamageFLS(targ, damage, DMG_FORCED, who, "queda_do_tirano");
+	SC_DealDamage(who, targ, CInt(spell.id), damage, DMG_FORCED);
 	SendSysMessageEx(who, $"Queda do Tirano: {damage} dano forcado.", SSM_INFO);
 
 	AP_ModifyStatMod(targ, DEXTERITY, -dex_pen);

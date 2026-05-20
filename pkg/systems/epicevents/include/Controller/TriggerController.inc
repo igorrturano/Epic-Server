@@ -2,11 +2,20 @@ use uo;
 use polsys;
 
 include ":epicevents:Model/TriggerConfig";
+include "include/sysEvent";
 
 // Main entry point - processes events
 function ProcessTriggerEvent(item, event, triggerConfig)
 	// Check cooldown first
 	if (!CanTrigger(item, triggerConfig))
+		return 0;
+	endif
+
+	// Reject events whose type doesn't match the configured trigger.
+	// Without this, custom events broadcast via SendEvent (e.g. EVID_NOISE
+	// from EmitNoise) fall through to validators that return 1 unconditionally
+	// and spuriously fire actions on unrelated nearby event NPCs.
+	if (!EventTypeMatchesTrigger(event, triggerConfig.type))
 		return 0;
 	endif
 
@@ -25,6 +34,22 @@ function ProcessTriggerEvent(item, event, triggerConfig)
 		default:
 			return 0;
 	endcase
+endfunction
+
+function EventTypeMatchesTrigger(event, trigger_type)
+	var ev_type := event.type;
+	if (ev_type == error || !ev_type)
+		return 0;
+	endif
+
+	case (trigger_type)
+		"SPEECH":         return (ev_type == SYSEVENT_SPEECH);
+		"ENTEREDAREA":    return (ev_type == SYSEVENT_ENTEREDAREA);
+		"LEFTAREA":       return (ev_type == SYSEVENT_LEFTAREA);
+		"ITEM_GIVEN":     return (ev_type == SYSEVENT_ITEM_GIVEN);
+		"DOUBLECLICKED":  return (ev_type == SYSEVENT_DOUBLECLICKED);
+	endcase
+	return 0;
 endfunction
 
 function ValidateSpeechTrigger(event, triggerConfig)

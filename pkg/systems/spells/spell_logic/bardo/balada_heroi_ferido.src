@@ -5,7 +5,6 @@ use vitals;
 include ":attributes:attributes";
 include "include/tileEffects";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
 
 // Balada do Heroi Ferido (1203) - C1
 // HoT: Arc/10 por tick x 5 ticks

@@ -4,6 +4,8 @@ include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":tn:tngumps";
 include ":nature:nature";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":fls_core:packets";
 include "include/say";
 include "include/client";
@@ -89,7 +91,7 @@ program controleclima(who)
 					if (bolt)
 						if (RandomInt(100) < 5)
 							PlayLightningBoltEffect(mob);
-							ApplyDamageEX(mob, RandomDiceRoll("1d10") + 40, DMG_ENERGY);
+							DealDamage(mob, RandomDiceRoll("1d10") + 40, DAMAGE_TYPE::ENERGY);
 							SendSysMessageEx(mob, "Voce foi atingido por um raio!", SSM_INFO);
 						endif
 					endif

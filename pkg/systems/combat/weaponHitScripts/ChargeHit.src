@@ -2,12 +2,13 @@ use uo;
 use util;
 use vitals;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":wrappers:Objects/Model/WeaponWrapper";
 include "include/client";
 include "include/sounds";
 include ":attributes:vitals";
 include ":attributes:attributes";
-include "include/client";
 include ":mounts:mounts";
 
 program HitScript(params)
@@ -27,7 +28,13 @@ program HitScript(params)
 			dmg := 2;
 		endif
 
-		DamageFLS(defender, cint(dmg), DMG_FORCED, attacker);
+		// Charge bonus inherits the weapon's attack type — lance/spear = piercing,
+		// hammer/mace = blunt, sword = slash. Naked attackers fall back to blunt.
+		var chargeType := WeaponWrapper(attacker.weapon).GetAttackType();
+		if (!chargeType || chargeType is @Exception)
+			chargeType := DAMAGE_TYPE::BLUNT;
+		endif
+		DealDamage(defender, cint(dmg), chargeType, attacker);
 	// ApplyRawDamage(defender, CInt(dmg));
 	endif
 	return 1;

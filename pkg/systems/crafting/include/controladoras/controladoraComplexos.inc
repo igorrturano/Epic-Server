@@ -188,9 +188,18 @@ function FabricaItemMontado(quem,esquema, receita, quantidade := 1, deveIgnorarR
 				SendSysMessageEX(quem, "Não foi possivel criar o item.", SSM_FAIL);
 			endif
 		else
+			// Compute now (receita.dificuldade still present) but DO NOT award:
+			// stamp it on the montado so the XP is only paid at completion
+			// (EV_ITEM_PRODUZIDO). Awarding here would be farmable.
+			var xpPendente := ComputeCraftXP(receita, skill, categoria);
 			var itemCriado := CriaItemMontado(quem,esquema,receita, quantidade);
-			if(itemCriado)
-				AwardXPFromCraft(quem, receita, skill, categoria);
+			if(itemCriado && xpPendente > 0)
+				var propFab := GetObjProperty(itemCriado, PROPNAME_FABRICADO);
+				if(propFab)
+					propFab.+xpPendente := xpPendente;
+					propFab.+xpCategoria := categoria;
+					SetObjProperty(itemCriado, PROPNAME_FABRICADO, propFab);
+				endif
 			endif
 		endif
 	else
@@ -720,7 +729,7 @@ function MontaPropriedadesComponente(chaveMaterial, caracteristica ,tierProduto 
 	if(modificadorPeso)
 		propriedades.+modificadorPeso := Round(modificadorPeso / (quantidadeComponentesNecessaria - quantidadeOpicionais));
 	else
-		propriedades.modificadorHp := 0;
+		propriedades.+modificadorPeso := 0;
 	endif
 
 	if(valorEfeitos.efeitosAdicionais)
@@ -1009,10 +1018,12 @@ function DeveAparecerReceita(
 	
 	if(isDuplaOrigem)
 		var nomeReceita1 := PegaNomeReceitaClassificada(receitaClassificada);
+		var nomeReceita1Norm := StrReplace(Lower(nomeReceita1), " ", "");
 		isOrigemValida := nomeReceita1 in receitasAprendidas || povo == itemOrigem;
 		if (!isOrigemValida && povo != itemOrigem)
 			foreach aprendida1 in receitasAprendidas
-				if (StrReplace(Lower(aprendida1), " ", "") + "-1" == nomeReceita1)
+				var aprendida1Norm := StrReplace(Lower(aprendida1), " ", "");
+				if (aprendida1Norm == nomeReceita1Norm || aprendida1Norm + "-1" == nomeReceita1Norm)
 					isOrigemValida := true;
 					break;
 				endif
@@ -1021,10 +1032,12 @@ function DeveAparecerReceita(
 	else
 		if(itemOrigem == "Recipe")
 			var nomeReceita2 := PegaNomeReceitaClassificada(receitaClassificada);
+			var nomeReceita2Norm := StrReplace(Lower(nomeReceita2), " ", "");
 			isOrigemValida := nomeReceita2 in receitasAprendidas;
 			if (!isOrigemValida)
 				foreach aprendida2 in receitasAprendidas
-					if (StrReplace(Lower(aprendida2), " ", "") + "-1" == nomeReceita2)
+					var aprendida2Norm := StrReplace(Lower(aprendida2), " ", "");
+					if (aprendida2Norm == nomeReceita2Norm || aprendida2Norm + "-1" == nomeReceita2Norm)
 						isOrigemValida := true;
 						break;
 					endif

@@ -2,7 +2,8 @@
 use uo;
 use vitals;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/client";
 include "include/sounds";
 include ":timedScripts:timedScripts";
@@ -100,7 +101,7 @@ program genericscript(who, item)
 				PlayObjectCenteredEffect(trg, FX_EXPLODE_1, 7, 16);
 				PlaySoundEffect(trg, SFX_EXPLOSION_11);
 			endif
-			ApplyDamageEX(trg, dmg, DMG_FIRE);
+			DealDamage(trg, dmg, DAMAGE_TYPE::FIRE);
 		elseif (itemdmgtype == "gelo")
 			if (othertarg)
 				PlayObjectCenteredEffect(trg, FX_BLUE_SPARKLE_GROUND, 7, 16);
@@ -109,7 +110,7 @@ program genericscript(who, item)
 				PlayObjectCenteredEffect(trg, FX_BLUE_SPARKLE_GROUND, 7, 16);
 				PlaySoundEffect(trg, SFX_GLASS_BREAK_3);
 			endif
-			ApplyDamageEX(trg, dmg, DMG_COLD);
+			DealDamage(trg, dmg, DAMAGE_TYPE::COLD);
 		elseif (itemdmgtype == "eletricidade")
 			if (othertarg)
 				PlayLightningBoltEffect(trg);
@@ -121,14 +122,14 @@ program genericscript(who, item)
 				PlayMovingEffectXYZ(trg.x, trg.y, trg.z + 15, trg.x, trg.y - 1, trg.z + 15, FX_ENERGY, 5, 25);
 				PlaySoundEffect(trg, SFX_LIGHTNING);
 			endif
-			ApplyDamageEX(trg, dmg, DMG_ENERGY);
+			DealDamage(trg, dmg, DAMAGE_TYPE::ENERGY);
 		elseif (itemdmgtype == "fisico")
 			if (othertarg)
 			else
 			endif
-			ApplyDamageEX(trg, dmg, DMG_PHYSICAL);
+			DealDamage(trg, dmg, DAMAGE_TYPE::BLUNT);
 		elseif (itemdmgtype == "veneno")
-			ApplyDamageEX(trg, dmg, DMG_POISON);
+			DealDamage(trg, dmg, DAMAGE_TYPE::POISON);
 			PlayStationaryEffect(trg.x, trg.y, trg.z, FX_POISON_GAS, 10, 10, 0, trg.realm);
 		endif
 

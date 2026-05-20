@@ -28,20 +28,23 @@ class ResistModFabricacao(ResistModBase)
 		// no parking lot ate refatorarmos controladoraComplexos.inc dict-keys.
 		var ARMOR_PCT_MULT := 5;
 
-		resist.SetSlashResist((this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_CORTANTE))) * ARMOR_PCT_MULT);
-		resist.SetPiercingResist((this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_PERFURANTE))) * ARMOR_PCT_MULT);
-		resist.SetBluntResist((this._GetCraftingFullBonus() + cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_CONTUSAO))) * ARMOR_PCT_MULT);
+		var bundle := PegaFabricacaoBundle(this._itemOrTemplate, CARACTERISTICA_FABRICACAO_DEFESA);
+		var defesaBase := bundle.principal;
+		var sub := bundle.subs;
 
+		resist.SetSlashResist((defesaBase + Cint(sub[SUBCARACTERISTICA_FABRICACAO_CORTANTE])) * ARMOR_PCT_MULT);
+		resist.SetPiercingResist((defesaBase + Cint(sub[SUBCARACTERISTICA_FABRICACAO_PERFURANTE])) * ARMOR_PCT_MULT);
+		resist.SetBluntResist((defesaBase + Cint(sub[SUBCARACTERISTICA_FABRICACAO_CONTUSAO])) * ARMOR_PCT_MULT);
+
+		// Resist elemental da madeira e INERENTE ao componente (igual metal
+		// Ignium/Frigutium tem defesa fogo/gelo inerente) — sem ativacao.
+		// Encantar Objeto soma por cima via ResistModEncantar.
 		//OBS: se no futuro tiver um componente só pra resistência mágica tem que adicionar aqui a soma.
-		resist.SetFireResist(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_FOGO)) * ARMOR_PCT_MULT);
-		resist.SetColdResist(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_GELO)) * ARMOR_PCT_MULT);
-		resist.SetPoisonResist(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_VENENO)) * ARMOR_PCT_MULT);
-		resist.SetEnergyResist(cint(PegaSubValoresFabricacao(this._itemOrTemplate,SUBCARACTERISTICA_FABRICACAO_ENERGIA)) * ARMOR_PCT_MULT);
+		resist.SetFireResist(Cint(sub[SUBCARACTERISTICA_FABRICACAO_FOGO]) * ARMOR_PCT_MULT);
+		resist.SetColdResist(Cint(sub[SUBCARACTERISTICA_FABRICACAO_GELO]) * ARMOR_PCT_MULT);
+		resist.SetPoisonResist(Cint(sub[SUBCARACTERISTICA_FABRICACAO_VENENO]) * ARMOR_PCT_MULT);
+		resist.SetEnergyResist(Cint(sub[SUBCARACTERISTICA_FABRICACAO_ENERGIA]) * ARMOR_PCT_MULT);
 
 		return resist;
-	endfunction
-
-	function _GetCraftingFullBonus(this)
-		return  PegaValorFabricacao(this._itemOrTemplate,CARACTERISTICA_FABRICACAO_DEFESA);
 	endfunction
 endclass

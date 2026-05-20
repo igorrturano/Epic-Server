@@ -2,7 +2,8 @@ use uo;
 use os;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 
 program DoubleStrike(params)
@@ -22,7 +23,7 @@ program DoubleStrike(params)
 
 	PrintTextAbove(me, "*ataque duplo!*");
 
-	DamageFLS(targ, hit_damage, DMG_BLUNT, me, "doublestrike");
+	DealDamage(targ, hit_damage, DAMAGE_TYPE::BLUNT, me);
 	sleepms(400);
 
 	if (me.dead || targ.dead)
@@ -30,7 +31,7 @@ program DoubleStrike(params)
 	endif
 
 	if (!CheckResist(targ, REFLEXES, RESIST_MEDIUM))
-		DamageFLS(targ, hit_damage, DMG_BLUNT, me, "doublestrike");
+		DealDamage(targ, hit_damage, DAMAGE_TYPE::BLUNT, me);
 		SendSysMessageEx(targ, "O segundo golpe acerta em cheio!", SSM_FAIL);
 	else
 		SendSysMessageEx(targ, "Você esquiva do segundo golpe!", SSM_REQUEST);

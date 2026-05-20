@@ -7,6 +7,7 @@ include ":epicevents:Controller/ConversationController";
 include ":epicevents:Model/ActionConfig";
 include ":epicevents:Model/EventConfig";
 include ":message:model/Message";
+include ":merchants:item_template";
 
 // ============================================================================
 // CONDITION EDITOR
@@ -324,7 +325,36 @@ function HandleActionEdit(who, action_type, existing_action)
 			continue;
 		endif
 
-		var parsed_action := ParseActionEditInput(edit_input, action_type);
+		if (edit_input[BTN_GIVE_ITEM_TARGET])
+			PreserveFormDataForTargeting(working_action, edit_input, action_type);
+
+			Message("Target o item modelo (sera clonado para o jogador)...", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			var targ := Target(who);
+
+			if (!targ)
+				Message("Target cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				continue;
+			endif
+
+			var template := CreateItemTemplate(targ);
+			if (template == error)
+				Message("Erro ao gerar modelo do item.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+				continue;
+			endif
+
+			var keep_amount := 0;
+			if (working_action.params && working_action.params.amount)
+				keep_amount := working_action.params.amount;
+			endif
+
+			working_action.params := struct{ template := template, amount := keep_amount };
+
+			var label := targ.desc ? CStr(targ.desc) : (targ.name ? CStr(targ.name) : $"0x{Hex(targ.objtype)}");
+			Message($"Modelo capturado: {label}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			continue;
+		endif
+
+		var parsed_action := ParseActionEditInput(edit_input, action_type, working_action);
 
 		if (!parsed_action)
 			return 0;
@@ -372,6 +402,17 @@ function PreserveFormDataForTargeting(byref working_action, edit_input, action_t
 				new_params.+realm := realm_str;
 			endif
 			working_action.params := new_params;
+
+		"GIVE_ITEM":
+			var amount_str := Trim(GFExtractData(edit_input, ID_ACTION_GIVE_ITEM_AMOUNT));
+			var existing_template := 0;
+			if (working_action.params && working_action.params.template)
+				existing_template := working_action.params.template;
+			endif
+			working_action.params := struct{
+				template := existing_template,
+				amount := amount_str ? CInt(amount_str) : 0
+			};
 	endcase
 
 	return 1;

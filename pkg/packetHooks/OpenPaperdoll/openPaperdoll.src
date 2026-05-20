@@ -29,7 +29,6 @@ include ":taming:taming";
 include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include "include/client";
-include ":combat:Controller/DamageController_legacy";
 include ":commands:/include/r";
 
 program sendStats()

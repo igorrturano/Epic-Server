@@ -2,7 +2,8 @@ use uo;
 use os;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
 
@@ -32,7 +33,7 @@ program GroundSlam(params)
 			continue;
 		endif
 
-		DamageFLS(mobile, damage, DMG_BLUNT, me, "groundslam");
+		DealDamage(mobile, damage, DAMAGE_TYPE::BLUNT, me);
 
 		if (!CheckResist(mobile, FORTITUDE, RESIST_HARD))
 			TS_StartTimer(mobile, "tombar", 5);

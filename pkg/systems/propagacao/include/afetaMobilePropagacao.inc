@@ -1,6 +1,7 @@
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":medicine:disease";
 include ":tn:cooldown";
 include "include/imersao";
@@ -12,7 +13,7 @@ function AfetaMobileIncendiado(quem,estado,propPropagacao,rolagemDano := 0)
 		rolagemDano := RandomDiceRoll(danoDado);
 	endif
 
-	DamageFLS(quem, cint(rolagemDano), DMG_FIRE, 0, "Incêndio");
+	DealDamage(quem, cint(rolagemDano), DAMAGE_TYPE::FIRE);
 endfunction
 
 function AfetaMobileInfectado(quem,propPropagacao, resfriamento)

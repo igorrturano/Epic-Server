@@ -8,7 +8,8 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 include ":timedScripts:timedScripts";
 include ":charactercreation:resists";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/facings";
 
 program GazerRay(params)
@@ -249,7 +250,7 @@ function DoDisintegrationRay(me, targ, tier)
 	PlaySoundEffect(me, 0x211);
 
 	var damage := tier * 10;
-	DamageFLS(targ, damage, DMG_ENERGY, me, "disintegration");
+	DealDamage(targ, damage, DAMAGE_TYPE::ENERGY, me);
 
 	SendSysMessageEx(targ, "O raio desintegrador atinge você!", SSM_FAIL);
 	return 1;

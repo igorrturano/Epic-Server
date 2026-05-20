@@ -44,11 +44,15 @@ exported function HandleDoubleClick(who, byref packet)
 		defender := defender.container;
 	endwhile
 
+	if (defender.objtype == 0x1F13) // se for um mobile, checa a distancia pro mobile
+		return 0;
+	endif
+
 	if (Distance(who, defender) > 15)
 		SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
 		return 1;
 	endif
-	if (abs(who.z - defender.z) > 10)
+	if (abs(who.z - defender.z) > 10) 
 		SendSysMessageEx(who, "Voce esta muito distante.", SSM_FAIL);
 		return 1;
 	endif

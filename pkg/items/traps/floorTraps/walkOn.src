@@ -10,7 +10,8 @@ use os;
 use cfgfile;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/say";
 include ":blood:blood";
 include ":charactercreation:habilidades";
@@ -100,7 +101,7 @@ program TrapWalkOn(mobile, trap)
 				PlaySoundEffect(mobile, 0x3BA);
 				SetObjProperty(trap, "trap_ativada", 1);
 				sleep(2);
-				DamageFLS(mobile, dmg);
+				DealDamage(mobile, dmg, DAMAGE_TYPE::BLUNT);
 				performaction(mobile, 0x14);
 				if (mobile.graphic == 401)
 					PlaySoundEffect(mobile, 0x32F);
@@ -149,7 +150,7 @@ program TrapWalkOn(mobile, trap)
 				dmg := CInt(dmg * 0.5);
 			endif
 		endif
-		DamageFLS(mobile, dmg);
+		DealDamage(mobile, dmg, DAMAGE_TYPE::BLUNT);
 		performaction(mobile, 0x14);
 		if (mobile.graphic == 401)
 			PlaySoundEffect(mobile, 0x32F);

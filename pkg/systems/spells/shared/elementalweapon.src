@@ -1,7 +1,6 @@
 use uo;
 use os;
 
-include ":combat:Controller/DamageController_legacy";
 include "include/epicConstants";
 include "include/epicMageryUtils";
 ;

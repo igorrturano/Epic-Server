@@ -4,7 +4,7 @@ use util;
 
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
-include ":combat:Controller/DamageController_legacy";
+include ":charactercreation:habilidades";
 
 program cogumelo(who, item)
 
@@ -33,10 +33,13 @@ program cogumelo(who, item)
 		if (povo != "Thuriao")
 			dmg := AP_GetVital(who, HITS);
 			SendSysMessageEx(who, "Voce nao eh digno", SSM_FAIL);
-			DamageFLS(who, dmg);
+			// Self-damage from mushroom (cost / "unworthy" flavor) — raw, no hooks.
+			DisplayDamage(who, dmg, 0);
+			ApplyRawDamage(who, dmg);
 			return;
 		endif
-		DamageFLS(who, dmg);
+		DisplayDamage(who, dmg, 0);
+		ApplyRawDamage(who, dmg);
 		AP_ModifyStatMod(who, STRENGTH, 10);
 		RecalcVitals(who);
 		PrintTextAbove(who, "*Pupilas dilatam, a pele fica enrubrecida*");

@@ -8,6 +8,8 @@ include "include/sounds";
 include "include/say";
 include ":spells:Controller/SC_Damage";
 include "include/tileEffects";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
 
 program SpellScript(params)
 	var who := params[1];
@@ -41,6 +43,14 @@ program SpellScript(params)
 
 	// Calculate damage: 8d6 holy fire damage
 	var dmg := RandomDiceRoll("8d6");
+
+	// REFLEX save halves the strike.
+	var diff := handleSpellResistDiffForSpecialists(who, spell.School);
+	var bonus := epicWisdomPathBonus(who);
+	if (CheckResist(targ, REFLEXES, diff, -bonus))
+		dmg := Cint(dmg / 2);
+		SendSysMessageEx(targ, "Voce desvia parcialmente das chamas sagradas.", SSM_INFO);
+	endif
 
 	// Apply damage with fire type via SC (routes through after-damage ability hooks)
 	SC_DealDamage(who, targ, CInt(spell.id), cint(dmg), DMG_FIRE);

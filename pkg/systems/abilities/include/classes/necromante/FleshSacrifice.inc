@@ -31,7 +31,9 @@ class FleshSacrifice(CombatAbility)
         AP_SetVital(who, MANA, mana + bonus);
 
         var dmg := AP_GetVital(who, HITS) - GetHP(who);
-        DamageFLS(who, dmg);
+        // Self-damage as ability cost — raw HP deduct, no hooks.
+        DisplayDamage(who, dmg, 0);
+        ApplyRawDamage(who, dmg);
 
         RecalcVitals(who);
 

@@ -431,9 +431,10 @@ function comprarHabilidade(who, item, nv:=-1)
 
 	nivel := nivel*2;
 
-	// True Mode gates ability tiers purely by character Level — the buyhab
-	// slot itself enforces level progression (set to 1 on the appropriate
-	// even level by LevelUp / RepairMigratedBuyhab). The skill-distribution
+	// True Mode gates ability tiers purely by character Level — even-level
+	// abilities arrive as the pergaminho scroll (granted by LevelUp), and
+	// odd-level stat slots are opened by character Level in
+	// SetPlayerSkillLevel / RepairMigratedBuyhab. The skill-distribution
 	// gate stays for Story Mode characters, who progress on the old
 	// "accumulate enough primary skill points" curve.
 	if (chardata.game_mode != "True Mode")
@@ -891,6 +892,26 @@ function SetPlayerSkillLevel(who)
 	var habs := GetObjProperty(who, "buyhab");
 	if(!habs)
 		habs[0] := 1;
+	endif
+
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata != error && chardata && chardata.game_mode == "True Mode")
+		// True Mode: stat slots open by character Level, not the Story
+		// Mode skill-accumulation curve. Odd levels (3,5,...,19) grant a
+		// +2 stat purchase; even levels deliver abilities via the
+		// pergaminho scroll, so only the odd slots open here. Mirrors
+		// RepairMigratedBuyhab, but runs every menu open instead of once.
+		var curr_level := CInt(GetObjProperty(who, "Level"));
+		if (curr_level < 1)
+			curr_level := 1;
+		endif
+		for level := 1 to curr_level
+			if (level % 2 == 1 && !habs[level])
+				habs[level] := 1;
+			endif
+		endfor
+		SetObjProperty(who, "buyhab", habs);
+		return;
 	endif
 
 	var levelInfo := GetSkillLevelInfo(who);

@@ -5,10 +5,12 @@ use util;
 include ":moongates:moongate";
 include "include/say";
 include ":attributes:attributes";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 include ":taming:taming";
 include "include/epicConstants";
+include "include/epicCombatUtils";
 
 program cordasubir(who, item)
 
@@ -50,7 +52,7 @@ program cordasubir(who, item)
 					else
 
 						SendSysMessageEx(who, "Voce se moveu e soltou da corda!", SSM_FAIL);
-						DamageFLS(who, cInt(dmg * i));
+						DealDamage(who, cInt(dmg * i), DAMAGE_TYPE::BLUNT);
 						return 0;
 					endif
 				endif
@@ -72,7 +74,7 @@ program cordasubir(who, item)
 							MoveObjectToLocation(pet, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
 						endforeach
 						SendSysMessageEx(who, "Voce se moveu e soltou da corda!", SSM_FAIL);
-						DamageFLS(who, cInt(dmg / i));
+						DealDamage(who, cInt(dmg / i), DAMAGE_TYPE::BLUNT);
 					endif
 				endif
 		endcase

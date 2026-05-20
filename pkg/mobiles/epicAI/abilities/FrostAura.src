@@ -3,7 +3,8 @@ use os;
 use vitals;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
 
@@ -38,7 +39,7 @@ program FrostAura(params)
 			continue;
 		endif
 
-		DamageFLS(mobile, damage, DMG_COLD, me, "frostaura");
+		DealDamage(mobile, damage, DAMAGE_TYPE::COLD, me);
 
 		if (!CheckResist(mobile, FORTITUDE, RESIST_MEDIUM))
 			TS_StartTimer(mobile, "lentidao", 3);

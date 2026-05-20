@@ -5,10 +5,10 @@
  *
 */
 use uo;
+use os;
 use util;
 
 include "include/client";
-include ":combat:Controller/DamageController_legacy";
 
 program trapScript(params)
 	var mobile := params[1];

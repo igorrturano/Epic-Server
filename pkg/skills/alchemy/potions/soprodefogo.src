@@ -8,7 +8,8 @@ include ":timedscripts:timedScripts";
 ;
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/facings";
 include "include/shapes";
 include ":magery:fields";
@@ -69,7 +70,7 @@ program use_explosion(who, potion)
 			PlaySoundEffect(mob, SFX_228);
 			sleepms(100);
 			SendSysMessageEx(mob, "As chamas queimam voce.", SSM_FAIL);
-			DamageFLS(mob, cint(damage), DMG_FIRE, who);
+			DealDamage(mob, cint(damage), DAMAGE_TYPE::FIRE, who);
 			sleepms(100);
 		endif
 	endforeach

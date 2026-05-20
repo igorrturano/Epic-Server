@@ -3,7 +3,6 @@ use os;
 
 include ":attributes:attributes";
 include ":timedscripts:timedScripts";
-include ":combat:Controller/DamageController_legacy";
 
 program default_poison(params)
 	var who := params[1];

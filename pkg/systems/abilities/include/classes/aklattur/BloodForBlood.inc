@@ -3,6 +3,7 @@ use uo;
 include ":abilities:models/CombatAbility";
 include ":message:model/Message";
 include ":debug:Controller/DebugController";
+include ":hotbar:custombuff";
 
 /**
  * Sangue por Sangue (Blood for Blood) - ABILITY_ID::SANGUE_POR_SANGUE (501)
@@ -27,6 +28,12 @@ class BloodForBlood(CombatAbility)
 			duration := 5;
 		endif
 		return duration;
+	endfunction
+
+	function OnActivate(this, mobile)
+		var who := mobile.GetObjRef();
+		var duration := this.GetDurationFor(mobile);
+		SendAbilityBuff(who, ABILITY_ID::SANGUE_POR_SANGUE, duration, "Roubo de vida em cada golpe");
 	endfunction
 
 	function OnAfterDamage(this, attackInfo)

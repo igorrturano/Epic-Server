@@ -2,7 +2,8 @@
 use uo;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/client";
 include "include/sounds";
 include "include/say";
@@ -27,7 +28,7 @@ program HitScript(params)
 		dmg := 2;
 	endif
 	// ApplyDamageEX(attacker, dmg, DMG_ENERGY);
-	DamageFLS(attacker, dmg, DMG_ENERGY);
+	DealDamage(attacker, dmg, DAMAGE_TYPE::ENERGY, defender);
 	PlaySoundEffect(attacker, SFX_LIGHTNING);
 
 	return 1;

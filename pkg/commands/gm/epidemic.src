@@ -3,6 +3,7 @@ use uo;
 use os;
 use util;
 
+include ":timedScripts:timedScripts";
 include "include/say";
 include ":medicine:disease";
 include ":gumps:include/gumps";

@@ -2,7 +2,6 @@ use os;
 include "include/say";
 include "include/facings";
 include ":tn:cooldown";
-include ":combat:Controller/DamageController_legacy";
 include ":combat:Controller/HitController";
 include ":combat:Model/AttackInfo";
 

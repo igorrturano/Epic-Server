@@ -1,0 +1,63 @@
+use uo;
+use os;
+use cfgfile;
+
+include "/include/epicConstants";
+
+// Caracteristicas que TODA madeira deve definir (matriz universal de
+// combate/defesa/utilidade). Se um commit truncar a lista de uma madeira,
+// componentes cujo encaixe pede a caracteristica removida saem com buff
+// vazio (sem erro). Este validador transforma essa regressao silenciosa
+// num alerta de console no boot.
+//
+// Extras intencionais por madeira (manaMaxima, manaRegen, sacredWood,
+// bonusEscolaVelkyn) NAO entram aqui de proposito.
+var MATRIZ_MADEIRA := array{
+	"reducaoCritico", "defesa", "mobilidade", "bonusAparar", "atrasoAparar",
+	"dano", "precisao", "critico", "prestigio", "resistencia",
+	"durabilidade", "tranca", "resistenciaClimaFrio", "resistenciaClimaCalor",
+	"intimidacao"
+};
+
+program ValidaMatrizMadeiras()
+	var cfg := ReadConfigFile(RECURSOS_CONFIG_PATH);
+	if(cfg.errortext)
+		Print("[MADEIRAS] ERRO ao ler " + RECURSOS_CONFIG_PATH + ": " + cfg.errortext);
+		return 0;
+	endif
+
+	var chaves := GetConfigStringKeys(cfg);
+	var totalMadeiras := 0;
+	var totalProblemas := 0;
+
+	foreach chave in (chaves)
+		var recurso := cfg[chave];
+		Sleepms(2);
+		if(UPPER(recurso.type) == "WOOD")
+			totalMadeiras := totalMadeiras + 1;
+			var efeitos := GetConfigStringDictionary(recurso, "ComponenteEfeito");
+			var faltando := array{};
+
+			foreach carac in (MATRIZ_MADEIRA)
+				if(!efeitos.Exists(carac))
+					faltando.append(carac);
+				endif
+			endforeach
+
+			if(faltando.size() > 0)
+				totalProblemas := totalProblemas + 1;
+				Print("[MADEIRAS] ALERTA: '" + recurso.name + "' (" + chave +
+					  ") sem caracteristica(s): " + faltando);
+			endif
+		endif
+	endforeach
+
+	if(totalProblemas == 0)
+		Print("[MADEIRAS] OK: " + totalMadeiras + " madeiras com matriz completa.");
+	else
+		Print("[MADEIRAS] " + totalProblemas + " de " + totalMadeiras +
+			  " madeiras com buff faltando -- itens craftados sairao com buff vazio!");
+	endif
+
+	return 1;
+endprogram

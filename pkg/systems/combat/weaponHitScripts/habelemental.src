@@ -1,7 +1,7 @@
 use uo;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Model/Damage";
 include "include/client";
 include "include/sounds";
 include ":acid:acid";

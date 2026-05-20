@@ -1,7 +1,8 @@
 use uo;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/client";
 include "include/sounds";
 include ":acid:acid";
@@ -19,8 +20,8 @@ program HitScript(params)
 	PlayObjectCenteredEffectEx(defender, FX_BLUE_SPARKLE_GROUND, 7, 16, COLOR_ELEMENTAL_ICE);
 	PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
 
-	// ApplyDamageEX(defender, RandomDiceRoll("1d3"), DMG_COLD, attacker);
-	DamageFLS(defender, cint((rawdamage * 0.5) + 1), DMG_COLD, attacker);
+	// ApplyDamageEX(defender, RandomDiceRoll("1d3"), DAMAGE_TYPE::COLD, attacker);
+	DealDamage(defender, cint((rawdamage * 0.5) + 1), DAMAGE_TYPE::COLD, attacker);
 
 	return 1;
 endprogram

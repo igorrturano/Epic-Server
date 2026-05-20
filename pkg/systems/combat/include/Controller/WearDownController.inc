@@ -26,7 +26,7 @@ include ":combat:Exceptions/InvalidEquipmentException";
  * WearDownEquip(myWeapon);
  * WearDownEquip(defensorArmor, attackerWeapon);
  */
-function WearDownEquip(equip, weapon := false) // equip EquipWrapper, weapon WeaponWrapper
+function WearDownEquip(equip, weapon := false, wearMlt := 1) // equip EquipWrapper, weapon WeaponWrapper
 	if (!(equip is @EquipWrapper))
 		return InvalidEquipmentException("The equipment must be an instance of ArmorWrapper or WeaponWrapper!");
 	endif
@@ -34,14 +34,14 @@ function WearDownEquip(equip, weapon := false) // equip EquipWrapper, weapon Wea
 	if (weapon != false && !(weapon is @WeaponWrapper))
 		return InvalidEquipmentException("The weapon must be an instance of WeaponWrapper!");
 	endif
-	
+
 	var wearChance := CalculateWearChance(equip);
 
 	if (Dice("1d100").Roll().GetResult() > wearChance)
 		return;
 	endif
-	
-	DamageEquipment(equip, weapon);
+
+	DamageEquipment(equip, weapon, wearMlt);
 endfunction
 
 function CalculateWearChance(equip)
@@ -68,8 +68,8 @@ function CalculateWearChance(equip)
 	return wearChance;
 endfunction
 
-function DamageEquipment(equip, weapon)
-	var damage := CalculateWearDamage(equip);
+function DamageEquipment(equip, weapon, wearMlt := 1)
+	var damage := CalculateWearDamage(equip) * wearMlt;
 	var owner := equip.GetOwner();
 	
 	if (equip is @ArmorWrapper)

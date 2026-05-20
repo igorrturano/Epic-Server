@@ -36,6 +36,8 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 	var MaxRange := 1;
 	var IsThrowableVar := false;
 	var IsFinesseVar := false;
+	var IsAssassinVar := false;
+	var IsGatheringToolVar := false;
 	var EpicMainDamage := "";
 
 	function WeaponWrapper(this, byRef item)
@@ -78,13 +80,15 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 			this.Speed := GetSpeedByTier(this.SpeedTier);
 			this.CriticalChance := GetCriticalChanceByTier(this.CriticalChanceTier);
 			this.MaxHP := GetDurabilityByType(this.GetAttackType());
-			this.WeightVar := this._CalculateWeight();
+			this.Weight := this._CalculateWeight();
 			this.StrRequired := this._CalculateSTRRequired();
 			this.Ammo := this.Template.ProjectileType ? Ammo(this.Template.ProjectileType) : uninit;
 			this.MinRange := this.Template.MinRange ?: 0;
 			this.MaxRange := this.Template.MaxRange ?: 1;
 			this.IsThrowableVar := Boolean(this.Template.Throwable) ?: false;
 			this.IsFinesseVar := Boolean(this.Template.Finesse) ?: false;
+			this.IsAssassinVar := Boolean(this.Template.Assassin) ?: false;
+			this.IsGatheringToolVar := Boolean(this.Template.GatheringTool) ?: false;
 			this.CriticalChanceMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_CRITICO);
 			this.AccuracyMod := PegaValorFabricacao(this.GetObjRef(),CARACTERISTICA_FABRICACAO_PRECISAO);
 			/* TODO ver com o Evil sobre essa forma de guardar o CriticalChanceMod , me pareceu que ficaria dificil executar os calculos.
@@ -412,17 +416,22 @@ class WeaponWrapper(EquipWrapper, IWeaponWrapper)
 		return this.IsFinesseVar;
 	endfunction
 
+	function IsAssassin(this)
+		return this.IsAssassinVar;
+	endfunction
+
+	/*
+	 * Ferramenta de coleta (picareta, machado de lenhador, etc.). Mesmo
+	 * sendo Two_Handed para combate, não deve travar o acesso à mochila —
+	 * marcada com `GatheringTool 1` no itemdesc.
+	 */
+	function IsGatheringTool(this)
+		return this.IsGatheringToolVar;
+	endfunction
+
 	// Private functions
 	function _CalculateWeight(this)
-		var weight := 1;
-		
-		var maxMainDamage := this.GetMainDamage().GetMaximum();
-		var maxOffDamage := this.GetOffDamage().GetMaximum();
-
-		weight := CInt(maxMainDamage) + CInt(maxOffDamage);
-		weight *= GetWeightMultiplierByMaterial(this.GetMaterial());
-
-		return weight;
+		return CInt(this.GetTemplate().weight * GetWeightMultiplierByMaterial(this.GetColor()));
 	endfunction
 
 	function _CalculateSTRRequired(this)

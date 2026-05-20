@@ -273,17 +273,8 @@ function GetPoolAmount(coin_type)
 	return (amount < 0) ? 0 : amount;
 endfunction
 
-// Phase 4.5 — Identificação de TrueBoss (multiplicador 5x na chance de drop).
-function IsTrueBoss(npc)
-	if (!npc || npc == error)
-		return 0;
-	endif
-	var flag := GetObjProperty(npc, "true_boss");
-	if (flag == error || !flag)
-		return 0;
-	endif
-	return 1;
-endfunction
+// IsTrueBoss moved to scripts/include/epicCombatUtils.inc — broader scope
+// (loot + spells + taming all share the same true_boss ObjProp check).
 
 // Phase 4.5 — Lê config do PoolDrop por moeda do mint.cfg.
 // Retorna struct { chance, dice, min_tier, daily_budget } ou 0 se não configurado.

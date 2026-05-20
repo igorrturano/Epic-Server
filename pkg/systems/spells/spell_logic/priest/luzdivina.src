@@ -2,7 +2,6 @@ use uo;
 use os;
 include ":spells:tnmagery";
 include ":attributes:attributes";
-include ":combat:Controller/DamageController_legacy";
 include ":tn:cooldown";
 include "include/say";
 include "include/client";

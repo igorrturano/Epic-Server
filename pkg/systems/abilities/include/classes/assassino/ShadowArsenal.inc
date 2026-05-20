@@ -2,7 +2,6 @@ include ":abilities:models/CombatAbility";
 include ":debug:Controller/DebugController";
 include ":message:model/Message";
 include ":attributes:attributes";
-include "include/epicCombatUtils";
 
 /**
  * Arsenal Sombrio (Shadow Arsenal) - ABILITY_ID::ARSENAL_SOMBRIO (1202)
@@ -20,8 +19,9 @@ class ShadowArsenal(CombatAbility)
 
 	function OnPassiveBeforeDamage(this, attackInfo)
 		var attacker := attackInfo.GetAttacker();
+		var weapon := attacker.GetEquipBySlot(WEAPON);
 
-		if (!isAssassinWeapon(attacker.GetObjRef()))
+		if (!weapon || !weapon.IsAssassin())
 			return false;
 		endif
 

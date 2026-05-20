@@ -1,21 +1,6 @@
 use uo;
 include "include/facings";
 
-function isAssassinWeapon(who)
-    var assassin_weapons := {
-        0x27EF, 0x27ab, 0x27af, 11570, 11565, 11566, 0x1401, 0x1440, 0x0f51, 0x0f63, 0x143c, 0x13B2, 0xF9FC, 0xF99F, 
-        0xF998, 0xF99B, 0xF99A, 0xF999, 0xF99D, 0xF9A1, 0xF9A2, 0xF9D2, 0xF9CA, 0xF9DC, 0xF9F4,  0xF9A0, 0xF9D4, 0xF9DE,
-        0xF9E5, 0xF9A9, 0xF9B5, 0xF9C1, 0xF99E, 0xF9DB, 0xFA4D, 0xFA4E, 0xFA4F, 0xFA51, 0x27a9, 0x27A3, 0x8fd
-        };
-    foreach weapon in assassin_weapons
-        if (weapon == who.weapon.objtype)
-            return 1;
-        endif
-    endforeach
-
-    return 0;
-endfunction
-
 function isWoodWeapon(who)
     var wood_weapons := { 
         0xF996, 0x0df0, 0xECE6, 0x13f9, 0x0e8a, 0x0e81, 0x27AD, 0x27AE, 0x27A7, 0x13b3, 0xF9C0, 0x13B2, 0xe137, 0x26CC, 0xe139, 0x2d2b, 
@@ -213,4 +198,18 @@ function ListPetsNear(who,  range)
 
 	return pets;
 
+endfunction
+
+// True for NPCs flagged as a "true boss" via the `true_boss` ObjProp.
+// Used by loot generation (5x drop chance multiplier), charm/hypnotize spells
+// (immune to mind-control), and taming (can't be tamed).
+function IsTrueBoss(npc)
+	if (!npc || npc == error)
+		return 0;
+	endif
+	var flag := GetObjProperty(npc, "true_boss");
+	if (flag == error || !flag)
+		return 0;
+	endif
+	return 1;
 endfunction

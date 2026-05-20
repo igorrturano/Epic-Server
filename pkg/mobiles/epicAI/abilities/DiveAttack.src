@@ -3,7 +3,8 @@ use os;
 use vitals;
 
 include ":wrappers:Objects/Model/MobileWrapper";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":charactercreation:resists";
 include ":equipsys:Controller/WeaponController";
 
@@ -198,7 +199,7 @@ program DiveAttack(params)
 		SendSysMessageEx(targ, "Você se esquiva parcialmente do mergulho!", SSM_REQUEST);
 	endif
 
-	DamageFLS(targ, dive_damage, DMG_PIERCING, me, "diveattack");
+	DealDamage(targ, dive_damage, DAMAGE_TYPE::PIERCING, me);
 
 	return 1;
 endprogram

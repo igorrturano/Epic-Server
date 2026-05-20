@@ -1,3 +1,4 @@
+include "include/epicCombatUtils";
 include "include/say";
 include ":attributes:attributes";
 include "include/epicMageryUtils";
@@ -5,7 +6,7 @@ include "include/epicNPCUtils";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 include ":charactercreation:resists";
-include ":tn:boss";
+
 include "include/sysEvent";
 include ":spells:Controller/SpellController";
 

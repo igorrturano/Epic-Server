@@ -1,5 +1,6 @@
 use uo;
 
+include ":timedScripts:timedScripts";
 include ":abilities:models/CombatAbility";
 include ":tn:cooldown";
 include ":message:model/Message";

@@ -13,7 +13,8 @@ include "include/shapes";
 include "include/client";
 include "include/sounds";
 include "include/facings";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 
 program BrainNerve(params)
 	var npc := params[1];
@@ -119,7 +120,7 @@ function SpecialAttack(npc, opponent, byref dist)
 	endforeach
 
 	PlaySoundEffect(opponent, 0x208);
-	ApplyDamageEX(opponent, RandomDiceRoll("3d7"), DMG_FIRE);
+	DealDamage(opponent, RandomDiceRoll("3d7"), DAMAGE_TYPE::FIRE);
 
 	foreach coord in GetCoordsInSquare(opponent.x, opponent.y, 3)
 		if (RandomInt(2) != 1) // Don't place a fire field

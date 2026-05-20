@@ -390,6 +390,22 @@ class Damage(IDamage)
 		return this.CriticalDamage;
 	endfunction
 
+	// Dispatch a typed amount onto the matching channel. Single entry so
+	// callers (DealDamage, future damage builders) don't reinvent the
+	// type → channel mapping. Accepts DAMAGE_TYPE::* enum values.
+	function IncreaseRawDamageByType(this, dmgType, value)
+		case (CStr(dmgType))
+			DAMAGE_TYPE::SLASH:    this.IncreaseSlashRawDamage(value);    break;
+			DAMAGE_TYPE::PIERCING: this.IncreasePiercingRawDamage(value); break;
+			DAMAGE_TYPE::BLUNT:    this.IncreaseBluntRawDamage(value);    break;
+			DAMAGE_TYPE::FIRE:     this.IncreaseFireRawDamage(value);     break;
+			DAMAGE_TYPE::COLD:     this.IncreaseColdRawDamage(value);     break;
+			DAMAGE_TYPE::POISON:   this.IncreasePoisonRawDamage(value);   break;
+			DAMAGE_TYPE::ENERGY:   this.IncreaseEnergyRawDamage(value);   break;
+		endcase
+		return this;
+	endfunction
+
 	function ToString(this)
 		return "Damage" + (this.IsCritical() ? " (CRITICAL)" : "") + ": " +
 			$"Slash: [Raw={this.GetSlashRawDamage()}, Base={this.GetSlashBaseDamage()}], " +
@@ -411,6 +427,24 @@ enum class DAMAGE_TYPE
 	COLD := "Gelo",
 	POISON := "Veneno",
 	ENERGY := "Energia"
+endenum
+
+// Legacy DMG_* string enum — kept as a compat layer for files that still
+// compare against legacy values stored in ObjProp data (e.g. #elementalweapon
+// .type set to "Fire"). New code should use DAMAGE_TYPE::* above. Migrated
+// here from the deleted DamageController_legacy.inc.
+enum DAMAGE_TYPES
+	DMG_FORCED    := -1, // not a real type — signaled resist bypass in legacy
+	DMG_PHYSICAL  := "Physical",
+
+	DMG_SLASH     := "Slash",
+	DMG_PIERCING  := "Piercing",
+	DMG_BLUNT     := "Blunt",
+
+	DMG_FIRE      := "Fire",
+	DMG_COLD      := "Cold",
+	DMG_POISON    := "Poison",
+	DMG_ENERGY    := "Energy"
 endenum
 
 enum class STANCE_TYPE

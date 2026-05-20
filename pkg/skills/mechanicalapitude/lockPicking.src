@@ -131,6 +131,12 @@ function PickTreasureChest(me, lockpick, chest)
 		return 0;
 	endif
 
+	var learned := GetObjProperty(chest, "lockLearnedBy");
+	var grantsSkill := !(me.serial in learned);
+	if (!grantsSkill)
+		SendSysMessageEx(me, "Você já aprendeu como destrancar essa fechadura.", SSM_INFO);
+	endif
+
 	if (valorInicial(me, AWARENESS) >= 40)
 		if (me.hidden)
 			SendSysMessageEx(me, "*Arrombando a fechadura. [silencioso]*", SSM_INFO);
@@ -174,7 +180,7 @@ function PickTreasureChest(me, lockpick, chest)
 		SendSysMessageEx(me, "Esta fechadura é diferente... Algo a torna mais difícil de abrir.", SSM_INFO);
 		if (mini_game(me, diff, AP_GetSkill(me, MECHANICS), chest))
 			EraseObjProperty(chest, "minigame_lock");
-			_UnlockChest(me, chest);
+			_UnlockChest(me, chest, grantsSkill);
 			return 1;
 		else
 			_MarkChestFailed(me, chest);
@@ -182,7 +188,7 @@ function PickTreasureChest(me, lockpick, chest)
 		endif
 	endif
 
-	var check := SkillCheck(me, MECHANICS, diff);
+	var check := SkillCheck(me, MECHANICS, diff, 0, grantsSkill ? ADV_SKILL : ADV_DISABLE);
 	var mec_skill := AP_GetSkill(me, MECHANICS);
 	var magic_chest := (GetObjProperty(chest, "level") == 6);
 	var mobWrapper := MobileWrapper(me);
@@ -193,7 +199,7 @@ function PickTreasureChest(me, lockpick, chest)
 		if (magic_chest || (diff > mec_skill + 15 && diff < mec_skill + 40))
 			if (mini_game(me, diff, mec_skill, chest))
 				if (chest.isDoor())
-					_UnlockChest(me, chest);
+					_UnlockChest(me, chest, grantsSkill);
 				else
 					set_critical(1);
 					SetObjProperty(chest, "arrombado", "" + me.name);
@@ -205,8 +211,11 @@ function PickTreasureChest(me, lockpick, chest)
 					RunTraps(chest, me);
 					SendViewContainer(me, chest);
 					NotifyCitizenWitnesses(me, "lockpick", struct);
-					var skill := AP_GetTrueSkill(me, "MECHANICS");
-					AP_SetTrueSkill(me, "MECHANICS", skill + 0.1);
+					if (grantsSkill)
+						var skill := AP_GetTrueSkill(me, "MECHANICS");
+						AP_SetTrueSkill(me, "MECHANICS", skill + 0.1);
+						_RecordLockLearned(me, chest);
+					endif
 				endif
 				return 1;
 			else
@@ -244,6 +253,9 @@ function PickTreasureChest(me, lockpick, chest)
 		chest.locked := 0;
 		set_critical(0);
 		NotifyCitizenWitnesses(me, "lockpick", struct);
+		if (grantsSkill)
+			_RecordLockLearned(me, chest);
+		endif
 		return 1;
 	else
 		if (me.hidden)
@@ -264,7 +276,7 @@ function PickTreasureChest(me, lockpick, chest)
 
 endfunction
 
-function _UnlockChest(me, chest)
+function _UnlockChest(me, chest, grantsSkill)
 	set_critical(1);
 	SetObjProperty(chest, "arrombado", "" + me.name);
 	if (chest.isDoor())
@@ -279,8 +291,11 @@ function _UnlockChest(me, chest)
 	chest.locked := 0;
 	set_critical(0);
 	NotifyCitizenWitnesses(me, "lockpick", struct);
-	var skill := AP_GetTrueSkill(me, "MECHANICS");
-	AP_SetTrueSkill(me, "MECHANICS", skill + 0.1);
+	if (grantsSkill)
+		var skill := AP_GetTrueSkill(me, "MECHANICS");
+		AP_SetTrueSkill(me, "MECHANICS", skill + 0.1);
+		_RecordLockLearned(me, chest);
+	endif
 endfunction
 
 function _MarkChestFailed(me, chest)
@@ -289,5 +304,16 @@ function _MarkChestFailed(me, chest)
 		KP_SetDungeonDoorRelockTimer(chest);
 	else
 		SetObjProperty(chest, "locktime", ReadGameClock());
+	endif
+endfunction
+
+function _RecordLockLearned(me, chest)
+	var learned := GetObjProperty(chest, "lockLearnedBy");
+	if (learned == error)
+		learned := array;
+	endif
+	if (!(me.serial in learned))
+		learned.append(me.serial);
+		SetObjProperty(chest, "lockLearnedBy", learned);
 	endif
 endfunction

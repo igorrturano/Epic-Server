@@ -8,6 +8,7 @@ include ":crafting:/gumps/fabricacaoGumps";
 include ":crafting:/include/fabricacaoUtil";
 include ":gumps:/include/posicaoGump";
 include ":crafting:include/util/fabricacaoConstants";
+include ":expbar:expbar";
 
 program GerenteTratamentoProduto(parametros)
 	var quem := parametros[1];
@@ -52,6 +53,10 @@ program GerenteTratamentoProduto(parametros)
 					SendSysMessageEx(quem, "Item produzido com sucesso.", SSM_INFO);
 					CloseGump(quem, processosGerenciados[GUMP_INTERATIVO].pid, 0);
 					processosGerenciados[CICLO].kill();
+					var fabProp := GetObjProperty(produto, PROPNAME_FABRICADO);
+					if (fabProp && CInt(fabProp.xpPendente) > 0)
+						GrantCraftXP(quem, CInt(fabProp.xpPendente), fabProp.xpCategoria);
+					endif
 					CriaItemFabricado(quem, produto);
 					estadoGerenciamento := FINALIZADO;
 					break;

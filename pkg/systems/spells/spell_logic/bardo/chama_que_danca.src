@@ -4,13 +4,14 @@ use os;
 include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":spells:Controller/SC_Damage";
 
 // A Chama que Danca (1201) - C0
 // Cria luz + dano fogo (Arc/10 por tick, Arc/5 ticks)
 program SpellScript(params)
-	var who  := params[1];
-	var targ := params[2];
+	var who   := params[1];
+	var targ  := params[2];
+	var spell := params[3];
 
 	if (!targ || !targ.isa(POLCLASS_MOBILE))
 		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
@@ -33,7 +34,8 @@ program SpellScript(params)
 			break;
 		endif
 		PlayStationaryEffect(targ.x, targ.y, targ.z, 0x36CB, 1, 1);
-		DamageFLS(targ, dmg_tick, DMG_FIRE, who, "chama_que_danca");
+		// First tick applies focus bonus once; subsequent ticks skip it (magicmissile pattern).
+		SC_DealDamage(who, targ, CInt(spell.id), dmg_tick, DMG_FIRE, t == 1 ? 1 : 0);
 		sleepms(1000);
 		t += 1;
 	endwhile

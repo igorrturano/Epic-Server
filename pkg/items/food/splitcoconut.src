@@ -1,4 +1,3 @@
-include ":combat:Controller/DamageController_legacy";
 use uo;
 
 program split(who, item)

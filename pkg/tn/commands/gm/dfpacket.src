@@ -2,7 +2,7 @@ use uo;
 use os;
 use vitals;
 
-include ":tn:boss";
+
 include ":fls_core:packets";
 include ":tn:tngumps";
 use polsys;

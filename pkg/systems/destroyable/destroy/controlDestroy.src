@@ -4,11 +4,9 @@ use os;
 include "include/say";
 include "include/client";
 include ":tn:cooldown";
-include ":combat:Controller/DamageController_legacy";
 
 include ":fls_core:packets";
 include ":blood:blood";
-include ":combat:Controller/DamageController_legacy";
 include "include/tileEffects";
 
 program controlDestroy(item)

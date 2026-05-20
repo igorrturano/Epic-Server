@@ -6,6 +6,7 @@
  */
 
 // Internal
+include ":timedScripts:timedScripts";
 include ":combat:armorZones";
 // include ":abilities:models/Ability";
 include ":combat:Model/Damage";
@@ -16,6 +17,8 @@ include ":combat:Controller/WearDownController";
 
 // External
 include ":io:CFGFile";
+include "include/epicNPCUtils";
+include "include/NPCUtil";
 include ":wrappers:include/Objects/Model/MobileWrapper";
 include ":charactercreation:resists";
 include ":charactercreation:habilidades";
@@ -24,6 +27,97 @@ include "include/eventID";
 include "include/client";
 include "include/epicConstants";
 include ":fls_core:fls_characters";
+
+/**
+ * SetLastDamageInfo — writes the LastDamage ObjProp (used by forensics) and,
+ * on a lethal hit, an Autopsy ObjProp containing weapon/stats/resists/skills
+ * snapshot for forensicEvaluation. Migrated from DamageController_legacy.
+ */
+function SetLastDamageInfo(mobile, amount, type, source, spell := "")
+	var last_damage := struct;
+	last_damage.+serial	:= source.serial;
+	last_damage.+time	:= polcore().systime;
+	last_damage.+amount	:= amount;
+	last_damage.+type	:= type;
+
+	if (spell)
+		last_damage.+spell := spell;
+	endif
+
+	// AUTOPSIA — only on lethal hit (forensicEvaluation reads this)
+	var life := AP_GetVital(mobile, "HITS");
+	if (amount >= life)
+		var autopsy := struct;
+		if (source.weapon)
+			autopsy.+serial_weapon := source.weapon.serial;
+			autopsy.+objtype := source.weapon.objtype;
+		endif
+
+		var slashDamage    := getNPCMainDamage(mobile, SLASHDAMAGE);
+		var piercingDamage := getNPCMainDamage(mobile, PIERCINGDAMAGE);
+		var bluntDamage    := getNPCMainDamage(mobile, BLUNTDAMAGE);
+		var maxDamage := slashDamage.dice;
+		var maxType := SLASHDAMAGE;
+		if (piercingDamage.dice > maxDamage)
+			maxDamage := piercingDamage.dice;
+			maxType := PIERCINGDAMAGE;
+		endif
+		if (bluntDamage.dice > maxDamage)
+			maxDamage := bluntDamage.dice;
+			maxType := BLUNTDAMAGE;
+		endif
+		autopsy.+dano_principal := maxType;
+
+		var stat := struct;
+		stat.+STR := AP_GetStat(mobile, "STRENGTH");
+		stat.+DEX := AP_GetStat(mobile, "DEXTERITY");
+		stat.+INT := AP_GetStat(mobile, "INTELLIGENCE");
+
+		var vital := struct;
+		vital.+HIT := AP_GetVitalMaximumValue(mobile, "HITS");
+		vital.+STA := AP_GetVitalMaximumValue(mobile, "STAMINA");
+		vital.+MAN := AP_GetVitalMaximumValue(mobile, "MANA");
+
+		autopsy.+resists := getNPCResists(mobile);
+		autopsy.+elemdamage := getNPCElemDamages(mobile);
+		autopsy.+stats := stat;
+		autopsy.+vitals := vital;
+
+		var npc_elem := NPC_GetNPCConfig(mobile);
+		var classe := npc_elem.Classe;
+		var skills_combat := struct;
+
+		if (classe == SABIO)
+			skills_combat.+magery := AP_GetTrueSkill(mobile, MAGERY);
+			skills_combat.+arcana := AP_GetTrueSkill(mobile, ARCANA);
+		elseif (classe == LADINO || mobile.isSpider())
+			skills_combat.+sneak := EffectiveTrueSkill(mobile, "Stealth");
+			skills_combat.+awareness := EffectiveTrueSkill(mobile, "Perception");
+			skills_combat.+pickpocketing := EffectiveTrueSkill(mobile, "Theft");
+		else
+			skills_combat.+wrestling := AP_GetTrueSkill(mobile, WRESTLING);
+			skills_combat.+tactics := AP_GetTrueSkill(mobile, TACTICS);
+		endif
+		autopsy.+skills := skills_combat;
+		autopsy.+taxonomy := npc_elem.Taxonomy;
+		autopsy.+rastros := npc_elem.rastro;
+
+		SetObjProperty(mobile, "Autopsy", autopsy);
+	endif
+
+	if (last_damage.acctname)
+		last_damage.+acctname := source.acctname;
+	endif
+	if (source.name)
+		last_damage.+name := source.name;
+	else
+		last_damage.+name := source.desc;
+	endif
+
+	SetObjProperty(mobile, "LastDamage", last_damage);
+
+	return last_damage;
+endfunction
 
 function ProccessCombatDamage(byRef attackInfo)
 	var corpseLoc := SnapshotDefenderLocation(attackInfo);
@@ -54,6 +148,60 @@ function ProccessCombatDamage(byRef attackInfo)
 
 endfunction
 
+/**
+ * DealDamage - Unified entry for pre-calculated, non-swing damage (spells,
+ * abilities, traps, nature, fall, alchemy). For weapon swings, go through
+ * combatHook → TryToAttack. For thrown weapons, build AttackInfo and call
+ * TryToAttack directly so the hit-roll/parry/crit pipeline fires.
+ *
+ * Stamps `amount` onto the matching damage channel via
+ * Damage.IncreaseRawDamageByType, then runs the resist chain + apply +
+ * post-damage hooks. Armor resist *values* still apply (elemental armors
+ * still defend) but armor pieces are not worn — physical-contact behavior
+ * gated by AttackInfo.GetAppliesArmorWear().
+ *
+ * @param defender ObjRef of the defender mobile
+ * @param amount Pre-calculated damage
+ * @param dmgType DAMAGE_TYPE::* enum value (SLASH/PIERCING/BLUNT/FIRE/...)
+ * @param source ObjRef of source mobile, or 0 for sourceless damage (defender
+ *               doubles as attacker — attacker-side hook scans of defender's
+ *               own abilities naturally no-op since those trigger on defense)
+ * @param spellId Spell id for forensics tagging; 0 for non-spell sources
+ * @return Damage actually dealt after resists
+ */
+function DealDamage(defender, amount, dmgType, source := 0, spellId := 0)
+	if (!defender || CInt(amount) <= 0)
+		return 0;
+	endif
+
+	var attackerRef := source ? source : defender;
+	var attackInfo := AttackInfo(MobileWrapper(attackerRef), MobileWrapper(defender));
+
+	attackInfo.SetSkipParry(true)
+			  .SetSkipCrit(true)
+			  .SetSkipBodyRegion(true)
+			  .SetAppliesArmorWear(false);
+
+	if (CInt(spellId) > 0)
+		attackInfo.SetSpellOrigin(spellId, dmgType);
+	endif
+
+	attackInfo.GetDamage().IncreaseRawDamageByType(dmgType, CInt(amount));
+
+	CalculateDefenderResist(attackInfo);
+	ApplyCombatDamage(attackInfo);
+	AttackLogger(attackInfo);
+	ExecuteCombatAbilitiesAfterDamage(attackInfo);
+	ExecutePassiveAbilitiesAfterDamage(attackInfo);
+
+	if (attackInfo.GetDefender().IsDead())
+		ExecuteCombatAbilitiesOnKill(attackInfo);
+		ExecutePassiveAbilitiesOnKill(attackInfo);
+	endif
+
+	return CInt(attackInfo.GetDamage().GetTotalBaseDamage());
+endfunction
+
 // Capture the defender's coords up front — once ApplyCombatDamage runs the
 // death pipeline invalidates the mobile ref and .x/.y/.z return uninitialized.
 function SnapshotDefenderLocation(byRef attackInfo)
@@ -66,10 +214,13 @@ function SnapshotDefenderLocation(byRef attackInfo)
 	};
 endfunction
 
-// NPCs always gib on a crit-kill. Players only gib on a permadeath-worthy
-// kill (DP exhausted or already flagged morto) — regular deaths just go to
-// ghost normally.
+// Only two-handed melee killing blows gib — arrows and one-handers leave
+// the corpse intact. NPCs always gib when the gate passes. Players only
+// gib on a permadeath-worthy kill (DP exhausted or already flagged morto);
+// regular deaths just go to ghost normally.
 function ShouldExplodeBody(byRef attackInfo)
+	if (CStr(attackInfo.GetWeapon().GetAttribute()) != TWOHANDED) return 0; endif
+
 	if (attackInfo.GetDefender().IsNpc()) return 1; endif
 	var ref := attackInfo.GetDefender().GetObjRef();
 	if (AP_GetVital(ref, "DP") < 10) return 1; endif
@@ -692,8 +843,9 @@ function CalculateDefenderResist(byRef attackInfo)
 		foreach equip in (armorsInBodyRegion)
 			var armorResist := equip.GetResists();
 
-			// WearDownArmor(attackInfo.GetDefender().GetObjRef(), equip.GetObjRef(), attackInfo.GetDamage().GetTotalBaseDamage(), attackInfo.GetWeapon().GetObjRef());
-			WearDownEquip(equip, attackInfo.GetWeapon());
+			if (attackInfo.GetAppliesArmorWear())
+				WearDownEquip(equip, attackInfo.GetWeapon());
+			endif
 			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Equipamento {equip.GetName()} reduziu dano em {armorResist.ToString()} e perdeu {attackInfo.GetDamage().GetTotalBaseDamage()} de durabilidade."));
 
 			attackInfo.GetDamage().DecreaseSlashPercentDamage(armorResist.GetSlashResist())
@@ -1080,35 +1232,41 @@ function ApplyCriticalDamage(byRef attackInfo)
 			continue;
 		endif
 
-		foreach armor in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
-			var script := start_script(
-				hitscript,
-				array{
-					attackInfo.GetAttacker().GetObjRef(),
-					attackInfo.GetDefender().GetObjRef(),
-					attackInfo.GetWeapon().GetObjRef(),
-					armor.GetObjRef(),
-					attackInfo.GetDamage().GetTotalBaseDamage(),
-					effectiveRawDmg
-				}
-			);
-			if (!script || script.errortext)
-				Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
-			endif
-
-			SleepMS(2);
+		// Crit scripts read params positionally and ignore the armor slot, but it
+		// must still be filled so basedamage/rawdamage stay at params[5]/[6].
+		// GetEquipBySlot returns an Exception (not an empty array) when the region
+		// is unarmored, so iterate rather than index.
+		var hitArmor := 0;
+		foreach equip in (attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion()))
+			hitArmor := equip.GetObjRef();
+			break;
 		endforeach
+
+		var script := start_script(
+			hitscript,
+			array{
+				attackInfo.GetAttacker().GetObjRef(),
+				attackInfo.GetDefender().GetObjRef(),
+				attackInfo.GetWeapon().GetObjRef(),
+				hitArmor,
+				attackInfo.GetDamage().GetTotalBaseDamage(),
+				effectiveRawDmg
+			}
+		);
+		if (!script || script.errortext)
+			Message("*Attacker* Weapon script error starting [" + hitscript + "] :" + script.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
+		endif
+
+		SleepMS(2);
 	endforeach
 
 	return true;
 endfunction
 
-function ApplyCombatDamage(byRef attackInfo)
-	ExecuteCombatAbilitiesOnHit(attackInfo);
-
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
-	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano aplicado em: {attackInfo.GetDefender().GetName()}"));
-
+// Swing path: pick one physical channel from the attacker's posture, zero the
+// other two, guarantee a minimum 1 damage on the chosen channel. Original
+// pre-spell-migration behavior — preserved verbatim for melee/ranged.
+function _ApplyPhysicalDamageByPosture(byRef attackInfo)
 	var posture := attackInfo.GetAttacker().GetCombatTraits().GetPosture();
 	if (posture == DAMAGE_TYPE::SLASH)
 		attackInfo.GetDamage().SetPiercingRawDamage(0).SetBluntRawDamage(0);
@@ -1143,6 +1301,46 @@ function ApplyCombatDamage(byRef attackInfo)
 
 		DisplayDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage(), attackInfo.GetAttacker().GetObjRef());
 		ApplyRawDamage(attackInfo.GetDefender().GetObjRef(), attackInfo.GetDamage().GetBluntBaseDamage());
+	endif
+endfunction
+
+// Spell / DealDamage path: apply whatever physical channels were stamped by
+// the damage source. The damage type already picked the channel (via
+// Damage.IncreaseRawDamageByType), so there's no posture to read and no
+// min-1 enforcement that would create phantom physical damage on a pure
+// elemental hit.
+function _ApplyPhysicalDamageByChannel(byRef attackInfo)
+	var dmg := attackInfo.GetDamage();
+	var defender := attackInfo.GetDefender().GetObjRef();
+	var attacker := attackInfo.GetAttacker().GetObjRef();
+
+	if (dmg.GetSlashBaseDamage() > 0)
+		DisplayDamage(defender, dmg.GetSlashBaseDamage(), attacker);
+		ApplyRawDamage(defender, dmg.GetSlashBaseDamage());
+	endif
+	if (dmg.GetPiercingBaseDamage() > 0)
+		DisplayDamage(defender, dmg.GetPiercingBaseDamage(), attacker);
+		ApplyRawDamage(defender, dmg.GetPiercingBaseDamage());
+	endif
+	if (dmg.GetBluntBaseDamage() > 0)
+		DisplayDamage(defender, dmg.GetBluntBaseDamage(), attacker);
+		ApplyRawDamage(defender, dmg.GetBluntBaseDamage());
+	endif
+endfunction
+
+function ApplyCombatDamage(byRef attackInfo)
+	ExecuteCombatAbilitiesOnHit(attackInfo);
+
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano aplicado em: {attackInfo.GetDefender().GetName()}"));
+
+	// Spells (and other non-swing damage via DealDamage) skip posture coupling —
+	// the source channel was picked by the damage type, no zeroing or min-1
+	// phantom damage. Swings keep the legacy posture-driven application.
+	if (attackInfo.IsSpell())
+		_ApplyPhysicalDamageByChannel(attackInfo);
+	else
+		_ApplyPhysicalDamageByPosture(attackInfo);
 	endif
 
 	if (attackInfo.GetDamage().GetFireBaseDamage() > 0)

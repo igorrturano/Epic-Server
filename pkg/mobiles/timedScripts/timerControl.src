@@ -492,11 +492,6 @@ function LowerDuration(mobile, byref event, byref timer_list, byref cooldowns, b
 		endif
 		SaveState(mobile, timer_list, cooldowns);
 
-		// tive que colocar esse codigo aqui, deveria ser em outro arquivo separado
-		if (event.name[1, 5] == "quest")
-			Start_Script(":tn:endquest", array{ mobile, timer_info });
-		endif
-
 		return 1;
 	endif
 

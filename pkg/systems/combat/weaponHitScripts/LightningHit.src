@@ -1,7 +1,8 @@
 use uo;
 use util;
 
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include "include/client";
 include "include/sounds";
 
@@ -24,9 +25,9 @@ program HitScript(params)
 	// PlayMovingEffectXYZ(defender.x, defender.y, defender.z+15, defender.x, defender.y-1, defender.z+15, FX_ENERGY, 5, 25);
 	PlaySoundEffect(defender, SFX_LIGHTNING);
 
-	// ApplyDamageEX(defender, RandomDiceRoll("1d3"), DMG_ENERGY);
+	// ApplyDamageEX(defender, RandomDiceRoll("1d3"), DAMAGE_TYPE::ENERGY);
 	// ApplyDamageEX(defender, (rawdamage*0.5)+1, DMG_COLD);
-	DamageFLS(defender, cint((rawdamage * 0.5) + 1), DMG_ENERGY, attacker);
+	DealDamage(defender, cint((rawdamage * 0.5) + 1), DAMAGE_TYPE::ENERGY, attacker);
 
 	return 1;
 endprogram

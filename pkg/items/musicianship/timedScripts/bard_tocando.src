@@ -3,7 +3,6 @@ use os;
 
 include ":attributes:attributes";
 include ":musicianship:bardmusic";
-include ":combat:Controller/DamageController_legacy";
 
 program TimedScript_Bard_tocando(params)
 	var alvo := params[1];
@@ -25,7 +24,9 @@ program TimedScript_Bard_tocando(params)
 			AP_SetVital(alvo, "Stamina", (stamina - custo));
 		else
 			AP_SetVital(alvo, "Stamina", 0);
-			damageFLS(alvo, cint(custo * 2), DMG_FORCED, 0);
+			// Self-damage when bard plays beyond stamina — raw, no hooks.
+			DisplayDamage(alvo, cint(custo * 2), 0);
+			ApplyRawDamage(alvo, cint(custo * 2));
 			PrintTextPrivate(alvo, "Voce esta tocando alem do seu limite fisico.", alvo, BARD_FONT,
 							  BARD_FONT_COLOR_BAD);
 		endif

@@ -106,7 +106,7 @@ program MakeSwarm(who, text)
 				SetObjProperty(npc, "owner", who.serial);
 				SetObjProperty(npc, "name", npc.name);
 				SetObjproperty(npc, "script", npc.script);
-				npc.script := ":ghaia:tamed";
+				npc.script := ":epicai:tamedBrain";
 				RestartScript(npc);
 			endif
 			//

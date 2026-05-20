@@ -3,7 +3,6 @@ use os;
 
 include "include/client";
 include "include/say";
-include ":combat:Controller/DamageController_legacy";
 include ":spells:Controller/SpellController";
 
 // Per-tick heal aura for Prece Curativa. Cancels if target moved from

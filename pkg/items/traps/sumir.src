@@ -5,7 +5,6 @@ use util;
 include ":moongates:moongate";
 include "include/say";
 include ":attributes:attributes";
-include ":combat:Controller/DamageController_legacy";
 include ":charactercreation:resists";
 include ":taming:taming";
 

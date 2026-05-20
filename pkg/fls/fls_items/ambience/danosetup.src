@@ -4,7 +4,7 @@ use os;
 include ":attributes:attributes";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Model/Damage";
 
 const GUMP_BACKGROUND := 39929;
 const INTERNAL_BACKGROUND := 9350;
@@ -90,7 +90,7 @@ function CreateGump(rune)
 	// Tipo de dano
 	GFTextLine(gump, 20, y, 53, "Tipo de dano (selecione um ou mais):");
 	y += 25;
-	var damage_types := array{ DMG_PHYSICAL, DMG_FIRE, DMG_COLD, DMG_POISON, DMG_ENERGY };
+	var damage_types := array{ DAMAGE_TYPE::BLUNT, DAMAGE_TYPE::FIRE, DAMAGE_TYPE::COLD, DAMAGE_TYPE::POISON, DAMAGE_TYPE::ENERGY };
 	var damage_names := array{ "Físico", "Fogo", "Frio", "Veneno", "Energia" };
 	foreach dmg_type in damage_types
 		GFCheckBox(gump, 20, y, 0x9CE, 0x9CF, GetObjProperty(rune, "tipo_dano_" + dmg_type) ? 1 : 0,
@@ -170,7 +170,7 @@ function SaveConfigurations(who, rune, input)
 		EraseObjProperty(rune, "stam");
 	endif
 
-	var damage_types := array{ DMG_PHYSICAL, DMG_FIRE, DMG_COLD, DMG_POISON, DMG_ENERGY };
+	var damage_types := array{ DAMAGE_TYPE::BLUNT, DAMAGE_TYPE::FIRE, DAMAGE_TYPE::COLD, DAMAGE_TYPE::POISON, DAMAGE_TYPE::ENERGY };
 	foreach dmg_type in damage_types
 		if (input[20 + _dmg_type_iter])
 			SetObjProperty(rune, "tipo_dano_" + dmg_type, 1);

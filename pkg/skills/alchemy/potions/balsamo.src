@@ -7,7 +7,6 @@ use attributes;
 include ":alchemy:alchemy";
 include "include/say";
 include ":timedScripts:timedScripts";
-include ":combat:Controller/DamageController_legacy";
 
 program drink_blue(who, potion)
 	EraseObjProperty(who, "IsMeditating");

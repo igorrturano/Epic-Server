@@ -10,7 +10,8 @@ include ":timedscripts:timedScripts";
 include ":magery:spells";
 include "include/client";
 include "include/sounds";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 
 program SpellScript(params)
 	var who := params[1];
@@ -38,7 +39,7 @@ program SpellScript(params)
 
 	// Figure out resistance here?
 
-	ApplyDamageEX(targ, points, DMG_FIRE);
+	DealDamage(targ, points, DAMAGE_TYPE::FIRE, who);
 
 	return 1;
 endprogram

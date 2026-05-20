@@ -4,7 +4,8 @@ use vitals;
 
 include ":charactercreation:resists";
 include ":timedScripts:timedScripts";
-include ":combat:Controller/DamageController_legacy";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
 include ":attributes:attributeConstants";
 include ":nature:nature";
 
@@ -21,7 +22,7 @@ function EfeitosTremor(item, danobase, danoale, dif, range)
 		PlaySoundEffect(char, 0x222);
         SendSysMessageEx(char, "O solo nas proximidades treme violentamente.", SSM_INFO);
         if (char.npctemplate == "Zombie")
-            DamageFLS(char, 1000);
+            DealDamage(char, 1000, DAMAGE_TYPE::BLUNT);
         endif
         if (CheckResist(char, REFLEXES, dif)) //note: colocar uma variavel de chance de resistir ao terremoto
             PrintTextAbove(char, "*Atraves de movimentos acrobaticos habeis, resiste ao tremor*");
@@ -29,7 +30,7 @@ function EfeitosTremor(item, danobase, danoale, dif, range)
         else
             TS_StartTimer(char, "paralysis", 2);
             PerformAction(char, 21);
-            DamageFLS(char, danobase + (RandomInt(danoale)));
+            DealDamage(char, danobase + (RandomInt(danoale)), DAMAGE_TYPE::BLUNT);
 
             var pedra;
 
@@ -115,7 +116,7 @@ function EfeitosClima(item, options, duration, range)
                 if (bolt)
                     if (RandomInt(100) < 5)
                         PlayLightningBoltEffect(char);
-                        ApplyDamageEX(char, RandomDiceRoll("1d10") + 40, DMG_ENERGY);
+                        DealDamage(char, RandomDiceRoll("1d10") + 40, DAMAGE_TYPE::ENERGY);
                         SendSysMessageEx(char, "Voce foi atingido por um raio!", SSM_INFO);
                     endif
                 endif
