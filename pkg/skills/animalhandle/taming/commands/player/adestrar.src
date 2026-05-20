@@ -16,7 +16,6 @@ include ":tn:characters";
 
 include ":charactercreation:habilidades";
 include "include/epicNPCUtils";
-// include ":damage:damage"; para os criticos talvez?
 
 const START_Y := 91;
 const END_Y := 311;
