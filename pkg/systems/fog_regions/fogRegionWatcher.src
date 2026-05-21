@@ -1,0 +1,41 @@
+// Watcher per-player: loop sleep(2) detecta transições de região e envia packets de fog.
+
+use uo;
+use os;
+
+include ":fog_regions:include/fogRegionCore";
+
+program fogRegionWatcher(who)
+    if (!who || !who.connected)
+        return;
+    endif
+
+    SetObjProperty(who, "#fogWatcherActive", 1);
+    var last_region_name := "";
+
+    while (who && who.connected && GetObjProperty(who, "#fogWatcherActive") == 1)
+        var current      := GetRegionAtPosition(who.x, who.y, who.realm);
+        var current_name := "";
+        if (!current.errortext)
+            current_name := current.Name;
+        endif
+
+        if (current_name != last_region_name)
+            if (Len(last_region_name) > 0)
+                SendFogOff(who);
+            endif
+            if (Len(current_name) > 0 && !current.errortext)
+                SendFogPacketForRegion(who, current);
+            endif
+            last_region_name := current_name;
+        endif
+
+        sleep(2);
+    endwhile
+
+    if (Len(last_region_name) > 0 && who && who.connected)
+        SendFogOff(who);
+    endif
+
+    EraseObjProperty(who, "#fogWatcherActive");
+endprogram
