@@ -1,0 +1,47 @@
+// Timer per-região: aguarda expiração e atualiza Status=STOPPED no datafile.
+
+use uo;
+use os;
+
+include ":fog_regions:include/fogRegionCore";
+
+program fogRegionEffect(region_name)
+    if (Len(region_name) == 0)
+        return;
+    endif
+
+    var region := GetRegionByName(region_name);
+    if (region.errortext)
+        return;
+    endif
+    if (region.Mode != FOG_REGION_MODE_TIMED)
+        return;
+    endif
+    if (region.Status != FOG_REGION_STATUS_ACTIVE)
+        return;
+    endif
+
+    var initial_timer_end := region.TimerEnd;
+    var sleep_seconds := initial_timer_end - polcore().systime;
+    if (sleep_seconds > 0)
+        sleep(sleep_seconds);
+    endif
+
+    // Relê região após sleep — verifica se ainda é a mesma intenção
+    var updated := GetRegionByName(region_name);
+    if (updated.errortext)
+        return;
+    endif
+    if (updated.TimerEnd != initial_timer_end)
+        return;
+    endif
+    if (updated.Status != FOG_REGION_STATUS_ACTIVE)
+        return;
+    endif
+    if (updated.Mode != FOG_REGION_MODE_TIMED)
+        return;
+    endif
+
+    updated.Status := FOG_REGION_STATUS_STOPPED;
+    SaveRegion(updated);
+endprogram
