@@ -8,7 +8,7 @@ include ":ultimalive:include/ultimalive";
 program ul_test_mutation(who, text)
     var args := SplitWords(text);
     if (Len(args) < 1)
-        SendSysMessage(who, "Uso: .ul_test_mutation <get|set|delete|revert> [args]");
+        SendSysMessage(who, "Uso: .ul_test_mutation <get|set|delete|revert|setland|getland|revertland> [args]");
         return 0;
     endif
 
@@ -22,8 +22,14 @@ program ul_test_mutation(who, text)
         return _Cmd_Delete(who);
     elseif (subcmd == "revert")
         return _Cmd_Revert(who);
+    elseif (subcmd == "setland")
+        return _Cmd_SetLand(who, args);
+    elseif (subcmd == "getland")
+        return _Cmd_GetLand(who);
+    elseif (subcmd == "revertland")
+        return _Cmd_RevertLand(who);
     else
-        SendSysMessage(who, "Subcomando invalido. Use: get, set, delete, revert");
+        SendSysMessage(who, "Subcomando invalido. Use: get, set, delete, revert, setland, getland, revertland");
         return 0;
     endif
 endprogram
@@ -84,5 +90,51 @@ function _Cmd_Revert(who)
         return 0;
     endif
     SendSysMessage(who, "Mutacao revertida em (" + who.x + ", " + who.y + ", " + who.z + ").");
+    return 1;
+endfunction
+
+function _Cmd_SetLand(who, args)
+    if (Len(args) < 2)
+        SendSysMessage(who, "Uso: .ul_test_mutation setland <graphic>");
+        return 0;
+    endif
+    // CInt aceita "0x1234" — confirmado em bounty/CONTEXT_LOG e nature.inc
+    var graphic := CInt(args[2]);
+    var result := UL_SetLandTile(who.realm, who.x, who.y, graphic, "admin");
+    if (result == error)
+        SendSysMessage(who, "Erro ao setar land tile: " + result.errortext);
+        return 0;
+    endif
+    SendSysMessage(who, "Land tile setado: graphic=" + graphic + " (" + Hex(graphic) + ") em (" + who.x + ", " + who.y + ", z=0).");
+    return 1;
+endfunction
+
+function _Cmd_GetLand(who)
+    // z=0 é a convenção UltimaLive para land mutations
+    var m := UL_GetMutation(who.realm, who.x, who.y, 0);
+    if (m == error)
+        SendSysMessage(who, "Sem mutacao de land em (" + who.x + ", " + who.y + ", 0).");
+        return 0;
+    endif
+    SendSysMessage(who, "Land mutation em (" + who.x + ", " + who.y + ", 0) realm=" + who.realm + ":");
+    SendSysMessage(who, "  Type: " + m.MutationType);
+    SendSysMessage(who, "  Graphic: " + m.Graphic + " (" + Hex(m.Graphic) + ")");
+    SendSysMessage(who, "  Created: " + m.CreatedAt + " (epoch)");
+    SendSysMessage(who, "  Source: " + m.Source);
+    return 1;
+endfunction
+
+function _Cmd_RevertLand(who)
+    // z=0 é a convenção UltimaLive para land mutations
+    var result := UL_RevertMutation(who.realm, who.x, who.y, 0);
+    if (result == error)
+        if (result.errortext == "no mutation to revert")
+            SendSysMessage(who, "Nada pra reverter em (" + who.x + ", " + who.y + ", 0).");
+        else
+            SendSysMessage(who, "Erro ao reverter land: " + result.errortext);
+        endif
+        return 0;
+    endif
+    SendSysMessage(who, "Land mutation revertida em (" + who.x + ", " + who.y + ", 0).");
     return 1;
 endfunction
