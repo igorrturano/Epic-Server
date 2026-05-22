@@ -112,8 +112,26 @@ function UL_RevertMutation(realm, x, y, z)
 endfunction
 
 // Substitui o tile de land em (realm, x, y) pelo graphic dado.
-function UL_SetLandTile(realm, x, y, graphic)
-    return error{"errortext" := "STUB - sub-fase 1.A"};
+// z=0 é a convenção UltimaLive para land — sempre armazenado com z fixo.
+// Land tiles não têm hue (diferente de statics).
+function UL_SetLandTile(realm, x, y, graphic, source := "unknown")
+    var df := _UL_GetMutationsDF();
+    if (df == error) return df; endif
+
+    var key := _UL_MutationKey(realm, x, y, 0);
+
+    var existing := df.FindElement(key);
+    if (!existing)
+        df.CreateElement(key);
+    endif
+    var elem := df.FindElement(key);
+    if (!elem) return error{"errortext" := "UL_SetLandTile: could not create element"}; endif
+
+    elem.SetProp("MutationType", "land_modify");
+    elem.SetProp("Graphic", CInt(graphic));
+    elem.SetProp("CreatedAt", CInt(polcore().systime));
+    elem.SetProp("Source", CStr(source));
+    return 1;
 endfunction
 
 // Altera a altitude do tile de land em (realm, x, y) para z.

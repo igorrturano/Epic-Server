@@ -4,6 +4,8 @@
 use uo;
 use basic;
 
+include ":ultimalive:include/ultimalive";
+
 // Calcula Fletcher-16 de um array de inteiros (0–255).
 // Usa mod 255 — é o que o cliente (ClassicUO/UltimaLive.cs) implementa.
 // Retorna uint16: (sum2 << 8) | sum1.
@@ -31,9 +33,16 @@ function UL_ComputeBlockHash(realm, blockX, blockY)
         while (y < 8)
             var info := GetMapInfo(blockX * 8 + x, blockY * 8 + y, realm);
             var tile_id := CInt(info.landtile);
+            var z := CInt(info.z);
+
+            // Aplica mutação de land se registrada; z=0 é convenção UltimaLive pra land.
+            var mutation := UL_GetMutation(realm, blockX * 8 + x, blockY * 8 + y, 0);
+            if (mutation != error && mutation.MutationType == "land_modify")
+                tile_id := mutation.Graphic;
+            endif
+
             bytes.append(tile_id % 256);
             bytes.append(tile_id / 256);
-            var z := CInt(info.z);
             if (z < 0)
                 z := (1 << 8) + z;
             endif
