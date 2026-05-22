@@ -1,0 +1,3 @@
+// Boot hook: registrará o packet handler 0x3F do UltimaLive. Sub-fase 1.A: noop.
+
+print("UltimaLive: package carregado.");
