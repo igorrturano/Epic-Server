@@ -6,6 +6,7 @@ use basic;
 use datafile;
 
 include ":loot:magicLoot";
+include ":loot:magicItemLoot";
 include ":destroyable:include/destroyItem";
 include ":sysbook:include/sealedBooks";
 include ":crafting:/include/fabricacaoComplexos";
@@ -249,6 +250,12 @@ function Loot_Generate(container, loot_index, source := 0)
 
 	foreach line in GetConfigStringArray(index_elem, "Magic");
 		Loot_CreateMagic(container, line);
+		sleepms(2);
+	endforeach
+
+	// MagicSpell <qty_dice> <chance> <tier>  -- spell-stick / vital-mod magic items
+	foreach line in GetConfigStringArray(index_elem, "MagicSpell")
+		Loot_RollMagicSpellLine(container, line);
 		sleepms(2);
 	endforeach
 
