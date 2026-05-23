@@ -1,0 +1,146 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+
+include "include/client";
+include ":itemutils:canAccess";
+include ":attributes:attributeConstants";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":alchemy:alchemy";
+include ":hotbar:include/custombuff";
+
+const ARROW_GRAPHIC := 0x1bfb;
+const BOLT_GRAPHIC  := 0xf3f;
+
+// Duração padrão (segundos) que o stack oleado deixa o alvo iluminado para
+// efeito de HasLightNearby. Usado por DamageController.CheckOilArrow ao
+// renovar o cooldown "fire_arrow_lit" no defender a cada acerto.
+const FIRE_ARROW_LIT_SECONDS := 30;
+
+const LANTERN_BUFF_ID := 30001;
+const LANTERN_BUFF_ICON := 0x8C5;
+
+program use_oil(who, oil)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if (!can_access(who, oil))
+		SendSysMessageEx(who, "Voce nao pode usar isto!", SSM_FAIL);
+		return;
+	endif
+
+	SendSysMessageEx(who, "Escolha flechas para olear ou uma lanterna/vela acesa para reabastecer.", SSM_REQUEST);
+	var targ := Target(who, TGTOPT_CHECK_LOS);
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	elseif (!can_access(who, targ))
+		SendSysMessageEx(who, "Voce nao pode usar isto!", SSM_FAIL);
+		return;
+	elseif (Distance(who, targ) > 1)
+		SendSysMessageEx(who, "Voce esta muito distante!", SSM_FAIL);
+		return;
+	endif
+
+	// Lanterna/vela: o cfg de :lighting:itemdesc tem o campo Duration.
+	// Se o alvo estiver atualmente aceso (#fuel_expires gravado), reabastece.
+	var lightCfg := ReadConfigFile(":*:itemdesc");
+	var elem := FindConfigElem(lightCfg, targ.objtype);
+	if (elem)
+		var refillDuration := CInt(elem.Duration);
+		if (refillDuration > 0)
+			TryRefill(who, oil, targ, elem, refillDuration);
+			return;
+		endif
+	endif
+
+	// Caso contrário: caminho de olear flechas.
+	CoatArrows(who, oil, targ);
+endprogram
+
+// Refill: repõe o combustível para Duration cheio (não empilha). Aceita dois estados:
+//   - Acesa (#fuel_expires): só repõe; refill nunca reduz tempo se já houver mais.
+//   - Seca (#fuel_dry, queimou inteira): também religa o gráfico e respawna o timer.
+// Lanterna apagada manualmente (sem dry nem expires) é rejeitada — usar double-click.
+function TryRefill(who, oil, lantern, elem, duration)
+	var isLit := (GetObjProperty(lantern, "#fuel_expires") != error);
+	var isDry := (GetObjProperty(lantern, "#fuel_dry") != error);
+
+	if (!isLit && !isDry)
+		SendSysMessageEx(who, "Acenda a lanterna primeiro antes de reabastecer.", SSM_FAIL);
+		return;
+	endif
+
+	var now := ReadGameClock();
+	var newExpires := now + duration;
+	if (isLit)
+		var currentExpires := CInt(GetObjProperty(lantern, "#fuel_expires"));
+		if (currentExpires > newExpires)
+			newExpires := currentExpires;
+		endif
+	endif
+
+	SetObjProperty(lantern, "#fuel_expires", CInt(newExpires));
+
+	if (isDry)
+		// Religar: troca o gráfico para a versão acesa, limpa flag e spawna timer
+		EraseObjProperty(lantern, "#fuel_dry");
+		lantern.graphic := elem.change;
+		SetObjProperty(lantern, "graphic", elem.change);
+		if (elem.changesnd)
+			PlaySoundEffect(who, elem.changesnd);
+		endif
+		Start_Script(":lighting:fuelTimer", array{ lantern.serial });
+	endif
+
+	var remaining := newExpires - now;
+	SendCustomBuff(who, LANTERN_BUFF_ID, LANTERN_BUFF_ICON, remaining, "Lanterna acesa", "Combustivel ardendo. Use oleo para reabastecer.", remaining);
+
+	empty_bottle(who, oil, 0, 1);
+
+	SendSysMessageEx(who, $"Voce reabasteceu a lanterna. Restam aproximadamente {CInt(remaining / 60)} minutos.", SSM_INFO);
+endfunction
+
+function CoatArrows(who, oil, arrows)
+	if (arrows.graphic != ARROW_GRAPHIC && arrows.graphic != BOLT_GRAPHIC)
+		SendSysMessageEx(who, "Voce so pode olear flechas, virotes ou recarregar lanternas acesas.", SSM_FAIL);
+		return;
+	elseif (GetObjProperty(arrows, "oil_arrow") != error)
+		SendSysMessageEx(who, "Estas flechas ja estao oleadas.", SSM_FAIL);
+		return;
+	elseif (GetObjProperty(arrows, "poisonInfo") != error)
+		SendSysMessageEx(who, "Voce nao pode olear flechas envenenadas.", SSM_FAIL);
+		return;
+	endif
+
+	var mw := MobileWrapper(who);
+	var cap := CInt(mw.GetSkill(RANGED));
+	if (cap < 10)
+		cap := 10;
+	endif
+
+	if (arrows.amount > cap)
+		SendSysMessageEx(who, $"Voce so consegue olear ate {cap} flechas de uma vez (Ranged atual).", SSM_FAIL);
+		return;
+	endif
+
+	var oilInfo := struct;
+	oilInfo.+oilName  := oil.name;
+	oilInfo.+duration := FIRE_ARROW_LIT_SECONDS;
+	oilInfo.+acc      := who.acctname;
+
+	SetObjProperty(arrows, "oil_arrow", oilInfo);
+
+	var nome_antigo := arrows.name;
+	if (arrows.graphic == BOLT_GRAPHIC)
+		arrows.name := nome_antigo + " oleados";
+	else
+		arrows.name := nome_antigo + " oleadas";
+	endif
+
+	PlaySoundEffect(who, 0x240);
+	SubtractAmount(oil, 1);
+
+	SendSysMessageEx(who, $"Voce oleou {arrows.amount} flechas.", SSM_INFO);
+endfunction
