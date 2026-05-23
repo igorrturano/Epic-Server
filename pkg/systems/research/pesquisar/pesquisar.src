@@ -937,10 +937,19 @@ function CheckforBooks(who, power := 0)
     var items := ListItemsNearLocation(who.x, who.y, who.z, 5, who.realm);
 
     var commonBooks := {0x6F97, 0x6F98};  // comum — power 1-2
-    var oldBooks    := {0x63FE, 0x63FD, 0x63FF, 0x6400, 0x6A9E, 0x6A9F, 0x6AA0, 0x6AA1};  // velha — power 3
+    // 0x6400 era oldBook no tiledata vanilla mas pkg/items/treasurehunting/itemdesc.cfg
+    // o redefine como "pena e tinteiro" (graphic 0xFBF). Mantê-lo aqui permitia largar
+    // uma pena perto da estante para destravar pesquisa nível 3.
+    var oldBooks    := {0x63FE, 0x63FD, 0x63FF, 0x6A9E, 0x6A9F, 0x6AA0, 0x6AA1};  // velha — power 3
     var rareBooks   := {0xEA08, 0xEA07, 0x2DEF, 0x2DF0, 0x6A94, 0x6A95, 0x6A96, 0x6A97, 0x0C14, 0x0C15};  // rara — power 4-5
 
     foreach item in items
+        // Defesa em profundidade: estantes são sempre Containers no cfg.
+        // Recusa qualquer item solto cujo objtype colida com a lista (ex.: futuras
+        // redefinições de objtype em itemdesc).
+        if (!item.IsA(POLCLASS_CONTAINER))
+            continue;
+        endif
         if (item.objtype in rareBooks)
             return 1;
         endif
