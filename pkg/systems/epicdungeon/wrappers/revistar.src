@@ -1,0 +1,17 @@
+use uo;
+use os;
+
+program revistar(params)
+    var dm   := params[1];
+    var mobs := params[2];
+
+    foreach mob in mobs
+        if (!mob.backpack)
+            SendSysMessage(dm, "[EpicDungeon] " + mob.name + " nao tem mochila.");
+        else
+            SendOpenSpecialContainer(dm, mob.backpack);
+        endif
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

@@ -6,6 +6,7 @@ include "include/say";
 include ":chestspawn:treasurechest";
 include ":treasurehunting:treasuremaps";
 include ":treasurehunting:diggingEffects";
+include ":loot:chestPostProcess";
 
 function GetChestGraphicForLevel(level)
     var graphics := array{};
@@ -137,6 +138,7 @@ exported function StartTreasureDigging(who, targ, map)
     chest.movable := 0;
     AddRandomTraps(chest, maplevel);
     var loot_result := Loot_Generate(chest, loot);
+    ChestLoot_PostProcess(chest);
     print("[Digging] Loot_Generate resultado: " + loot_result + " | itens no bau: " + EnumerateItemsInContainer(chest).size());
     chest.locked := 1;
 

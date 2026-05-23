@@ -2,7 +2,7 @@
 // citizenWitness.inc — Crime-site notification helper.
 //
 // Exported function NotifyCitizenWitnesses(actor, crime_type, payload).
-// Called from the four crime hook sites (sneak.src, mechanicalapitude.src,
+// Called from the four crime hook sites (stealth.src, mechanicalapitude.src,
 // cast_spell.src, requestAttack.src). Filters to citizen-template NPCs in the
 // actor's line of sight and starts witness.src for each.
 //

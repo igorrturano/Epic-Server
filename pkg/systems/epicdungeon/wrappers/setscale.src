@@ -1,0 +1,17 @@
+use uo;
+use os;
+
+program setscale(params)
+    var mobs  := params[2];
+    var pv    := params[3];
+    var escala := CInt(pv[1]);
+
+    if (escala <= 0) escala := 1; endif
+
+    foreach mob in mobs
+        SetObjProperty(mob, "entityScale", escala);
+        MoveObjectToLocation(mob, mob.x, mob.y, mob.z, mob.realm, 0);
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

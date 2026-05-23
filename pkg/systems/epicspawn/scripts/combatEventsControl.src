@@ -18,11 +18,23 @@ program combatEventsControl(params)
 	// Initialize tracking for combat events
 	SetupCombatEventTracking(npc);
 
+	var in_combat := 0;
+	var combat_start := 0;
+	var fired_this_combat := dictionary{};
+
 	// Run the main loop while NPC is alive
 	while (npc && !npc.dead)
 		// Process combat events if in combat
 		if (npc.opponent)
-			ProcessCombatEvents(npc);
+			if (!in_combat)
+				// New engagement: anchor run-once events and clear their fired set
+				in_combat := 1;
+				combat_start := ReadGameClock();
+				fired_this_combat := dictionary{};
+			endif
+			ProcessCombatEvents(npc, combat_start, fired_this_combat);
+		else
+			in_combat := 0;
 		endif
 
 		// Sleep to avoid excessive CPU usage
@@ -56,12 +68,14 @@ function SetupCombatEventTracking(npc)
 endfunction
 
 /*
- * ProcessCombatEvents(npc)
+ * ProcessCombatEvents(npc, combat_start, fired_this_combat)
  * Purpose: Processes any combat events configured for the NPC
  * Parameters: npc - The NPC to process combat events for
+ *             combat_start - game clock time the current engagement began
+ *             fired_this_combat - dict of event names already fired this engagement
  * Return: 1 if any events were processed, 0 if none
 */
-function ProcessCombatEvents(npc)
+function ProcessCombatEvents(npc, combat_start, byref fired_this_combat)
 	// Get the combat events
 	var combat_events := GetObjProperty(npc, "CombatEvents");
 	if (!combat_events || !combat_events.size())
@@ -96,8 +110,30 @@ function ProcessCombatEvents(npc)
 			continue; // No actions to perform
 		endif
 
-		// Skip if the cooldown hasn't elapsed
-		if (last_cast_times.exists(event.name) && (current_time - last_cast_times[event.name]) < CInt(event.cd))
+		// Run-once gate: if this event already fired in the current engagement, skip
+		if (event.once && fired_this_combat.exists(event.name))
+			continue;
+		endif
+
+		// HP threshold gate: only fire once the boss is at or below the configured %
+		if (CInt(event.hp_percent) > 0)
+			var hp_max := AP_GetVitalMaximumValue(npc, HITS);
+			var hp_curr := AP_GetVital(npc, HITS);
+			if (hp_max <= 0 || hp_curr > (hp_max * CInt(event.hp_percent)) / 100)
+				continue;
+			endif
+		endif
+
+		// Cooldown check. For run-once events the cooldown is measured from the
+		// start of the engagement, so it acts as a delay before the single trigger.
+		var cd_anchor := 0;
+		if (last_cast_times.exists(event.name))
+			cd_anchor := last_cast_times[event.name];
+		endif
+		if (event.once)
+			cd_anchor := combat_start;
+		endif
+		if ((current_time - cd_anchor) < CInt(event.cd))
 			continue;
 		endif
 
@@ -125,6 +161,9 @@ function ProcessCombatEvents(npc)
 			// Update the last cast time
 			last_cast_times[event.name] := current_time;
 			SetObjProperty(npc, "EventLastCastTimes", last_cast_times);
+			if (event.once)
+				fired_this_combat[event.name] := 1;
+			endif
 			processed += 1;
 
 			// Only process one event per cycle

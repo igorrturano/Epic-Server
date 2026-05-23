@@ -1,0 +1,14 @@
+use uo;
+use os;
+use polsys;
+use datafile;
+use attributes;
+use vitals;
+
+include ":commands:possess";
+
+program unpossess_wrapper(params)
+    var dm := params[1];
+    unpossess(dm);
+    return 1;
+endprogram

@@ -89,7 +89,7 @@ program epicchest(who)
 			
 
 
-			// Chest Type (radio buttons IDs 41-44)
+			// Chest Type (radio buttons IDs 41-45)
 			var chest_type := "Warrior";
 			if (res[42])
 				chest_type := "Thief";
@@ -97,6 +97,8 @@ program epicchest(who)
 				chest_type := "Artifice";
 			elseif (res[44])
 				chest_type := "Mage";
+			elseif (res[45])
+				chest_type := "Misto";
 			endif
 
 		var is_mimic := CInt(res[50]); // Checkbox value is 0 or 1
@@ -356,6 +358,9 @@ function CreateEpicChestGump(who, selected_chest_graphics)
 	y_pos += 25;
 	GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 44);
 	GFTextLine(gump, x_label + 45, y_pos, 1153, "Mago");
+	y_pos += 25;
+	GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 45);
+	GFTextLine(gump, x_label + 45, y_pos, 1153, "Misto (sem flavor de classe)");
 	y_pos += 30;
 
 	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
