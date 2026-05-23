@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":loot:lootParser";
+include ":loot:chestPostProcess";
 include ":traps:traps";
 include ":chestspawn:treasurechest"; // Assuming this contains CreateTreasureChests
 
@@ -249,6 +250,7 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 							if (flavor_suffix != "")
 								Loot_Generate(new_chest, base_lootname + flavor_suffix);
 							endif
+							ChestLoot_PostProcess(new_chest);
 						endif
 					endif
 
@@ -268,6 +270,7 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 							if (flavor_suffix != "")
 								Loot_Generate(new_chest, base_lootname + flavor_suffix);
 							endif
+							ChestLoot_PostProcess(new_chest);
 						endif
 
 						created_chests_this_cycle.append(new_chest.serial);
