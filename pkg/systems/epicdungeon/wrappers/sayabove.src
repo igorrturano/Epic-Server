@@ -1,0 +1,18 @@
+use uo;
+use os;
+
+program sayabove(params)
+    var mobs := params[2];
+    var pv   := params[3];
+    var msg  := pv[1];
+
+    if (!msg || msg == "")
+        return 0;
+    endif
+
+    foreach mob in mobs
+        PrintTextAbove(mob, msg);
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

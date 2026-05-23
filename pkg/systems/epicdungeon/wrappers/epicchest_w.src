@@ -1,0 +1,8 @@
+use uo;
+use os;
+
+program epicchest_w(params)
+    var dm := params[1];
+    Start_Script(":chestspawn:commands/coun/epicchest", dm);
+    return 1;
+endprogram

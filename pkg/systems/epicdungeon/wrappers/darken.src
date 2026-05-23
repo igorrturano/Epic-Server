@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+program darken(params)
+    var mobs  := params[2];
+    var pv    := params[3];
+    var level := CInt(pv[1]);
+
+    foreach mob in mobs
+        mob.setlightlevel(level, 30000);
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

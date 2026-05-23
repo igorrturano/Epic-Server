@@ -1,0 +1,23 @@
+use uo;
+use os;
+
+program create(params)
+    var dm      := params[1];
+    var pos     := params[2];
+    var pv      := params[3];
+    var objtype := pv[1];
+    var qtd     := CInt(pv[2]);
+
+    if (!objtype || objtype == "")
+        SendSysMessage(dm, "[EpicDungeon] Objtype vazio.");
+        return 0;
+    endif
+    if (qtd <= 0) qtd := 1; endif
+
+    var item := CreateItemAtLocation(pos.x, pos.y, pos.z + 1, CInt(objtype), qtd, pos.realm);
+    if (!item)
+        SendSysMessage(dm, "[EpicDungeon] Falha ao criar item.");
+        return 0;
+    endif
+    return 1;
+endprogram

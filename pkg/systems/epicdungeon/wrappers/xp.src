@@ -1,0 +1,19 @@
+use uo;
+use os;
+
+include ":expbar:expbar";
+
+program xp(params)
+    var mobs := params[2];
+    var pv   := params[3];
+    var qtd  := CInt(pv[1]);
+
+    if (qtd <= 0) qtd := 100; endif
+
+    foreach mob in mobs
+        AddXP(mob, qtd, "GM");
+        PrintTextAbovePrivate(mob, "+" + qtd + " XP", mob);
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

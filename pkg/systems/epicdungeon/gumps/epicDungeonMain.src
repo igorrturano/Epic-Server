@@ -1,0 +1,609 @@
+use uo;
+use os;
+use basic;
+use util;
+use polsys;
+
+include ":gumps:include/epicGumps";
+include ":epicdungeon:include/epicdungeon";
+include ":epicdungeon:include/actionRegistry";
+
+const ED_W := 920;
+const ED_H := 720;
+
+const ED_TAB_Y       := 70;
+const ED_SIDEBAR_X   := 20;
+const ED_SIDEBAR_Y   := 110;
+const ED_SIDEBAR_W   := 190;
+const ED_SIDEBAR_H   := 530;
+const ED_CONTENT_X   := 220;
+const ED_CONTENT_Y   := 110;
+const ED_CONTENT_W   := 672;
+const ED_CONTENT_H   := 530;
+const ED_FOOTER_DIV  := 648;
+const ED_FOOTER_BTN  := 658;
+
+const BTN_TAB_ROSTER      := 1;
+const BTN_TAB_COMMS       := 2;
+const BTN_TAB_ENVIRON     := 3;
+const BTN_TAB_MOBS        := 4;
+const BTN_TAB_PLAYER      := 5;
+const BTN_TAB_ITEMS       := 6;
+const BTN_CLEAR_RAID      := 10;
+const BTN_REFRESH         := 11;
+const BTN_ROSTER_ADD_BASE := 100;  // 100+idx
+const BTN_ROSTER_REM_BASE := 200;  // 200+idx
+const BTN_ACTION_BASE     := 300;  // 300-399: lista de actions
+const BTN_ACTION_EXEC     := 400;
+const BTN_ACTION_BACK     := 401;
+const BTN_CONFIRM_YES     := 402;
+const BTN_CONFIRM_NO      := 403;
+const BTN_PARAM_DEC       := 500;  // 500+pidx
+const BTN_PARAM_INC       := 600;  // 600+pidx
+const BTN_TARGET_BASE     := 700;  // 700+tidx: selecionar alvo do roster
+const BTN_DROPDOWN_BASE   := 800;  // 800 + (pidx-1)*10 + oidx
+const BTN_HUE_BASE        := 900;  // 900 + (pidx-1)*10 + oidx
+const ED_MAX_OPTS         := 10;   // maximo de opcoes por dropdown/hue
+
+// Paleta de hues predefinidos para o tipo "hue"
+var ED_HUE_PALETTE := array{ 0, 53, 1153, 34, 33, 63, 1359, 2100 };
+
+var current_tab           := BTN_TAB_ROSTER;
+var online_list           := array{};
+var action_list           := array{};
+var current_action        := "";
+var current_action_obj    := 0;
+var current_param_values  := array{};
+var text_entry_ids        := array{};
+var pending_confirm       := 0;
+var current_target_serial := 0;
+
+program epicDungeonMain(params)
+    var who := params[1];
+
+    var input := EDShowMainGump(who);
+
+    while (input[0] != 0)
+        var btn := input[0];
+
+        if (btn >= BTN_HUE_BASE)
+            var raw_h  := btn - BTN_HUE_BASE;
+            var pidx_h := (raw_h / ED_MAX_OPTS) + 1;
+            var oidx_h := raw_h % ED_MAX_OPTS;
+            var hv     := ED_HUE_PALETTE[oidx_h + 1];
+            if (hv != 0 || oidx_h == 0)
+                current_param_values[pidx_h] := hv;
+            endif
+
+        elseif (btn >= BTN_DROPDOWN_BASE)
+            var raw_d  := btn - BTN_DROPDOWN_BASE;
+            var pidx_d := (raw_d / ED_MAX_OPTS) + 1;
+            var oidx_d := raw_d % ED_MAX_OPTS;
+            current_param_values[pidx_d] := oidx_d;
+
+        elseif (btn >= BTN_TARGET_BASE)
+            var tidx    := btn - BTN_TARGET_BASE;
+            var roster_t := EDGetRoster(who);
+            if (roster_t[tidx])
+                current_target_serial := roster_t[tidx];
+            endif
+
+        elseif (btn >= BTN_PARAM_INC)
+            var pidx1 := btn - BTN_PARAM_INC;
+            if (current_action_obj)
+                var all1 := EDParseAllParams(current_action_obj.params);
+                var p1   := all1[pidx1];
+                if (p1)
+                    if (p1.ptype == "slider")
+                        var st1 := Max(1, CInt((p1.pmax - p1.pmin) / 10));
+                        current_param_values[pidx1] := Min(CInt(current_param_values[pidx1]) + st1, p1.pmax);
+                    elseif (p1.ptype == "bool")
+                        current_param_values[pidx1] := 1 - CInt(current_param_values[pidx1]);
+                    endif
+                endif
+            endif
+
+        elseif (btn >= BTN_PARAM_DEC)
+            var pidx2 := btn - BTN_PARAM_DEC;
+            if (current_action_obj)
+                var all2 := EDParseAllParams(current_action_obj.params);
+                var p2   := all2[pidx2];
+                if (p2 && p2.ptype == "slider")
+                    var st2 := Max(1, CInt((p2.pmax - p2.pmin) / 10));
+                    current_param_values[pidx2] := Max(CInt(current_param_values[pidx2]) - st2, p2.pmin);
+                endif
+            endif
+
+        elseif (btn >= BTN_ACTION_BASE)
+            if (btn == BTN_ACTION_EXEC)
+                if (current_action != "")
+                    EDCollectTextEntries(input);
+                    if (CInt(current_action_obj.confirm))
+                        pending_confirm := 1;
+                    else
+                        EDDoExecute(who);
+                        EDResetAction();
+                    endif
+                endif
+            elseif (btn == BTN_ACTION_BACK)
+                EDResetAction();
+            elseif (btn == BTN_CONFIRM_YES)
+                EDDoExecute(who);
+                EDResetAction();
+            elseif (btn == BTN_CONFIRM_NO)
+                pending_confirm := 0;
+            elseif (btn < BTN_ACTION_EXEC)
+                var aidx := btn - BTN_ACTION_BASE;
+                if (action_list[aidx])
+                    current_action        := action_list[aidx].id;
+                    current_action_obj    := action_list[aidx];
+                    current_param_values  := EDGetParamDefaults(action_list[aidx]);
+                    text_entry_ids        := array{};
+                    pending_confirm       := 0;
+                    current_target_serial := 0;
+                endif
+            endif
+
+        elseif (btn >= BTN_ROSTER_REM_BASE)
+            var roster := EDGetRoster(who);
+            var ridx   := btn - BTN_ROSTER_REM_BASE;
+            if (roster[ridx])
+                EDRemovePlayer(who, roster[ridx]);
+            endif
+
+        elseif (btn >= BTN_ROSTER_ADD_BASE)
+            var aidx2 := btn - BTN_ROSTER_ADD_BASE;
+            if (online_list[aidx2])
+                EDAddPlayer(who, online_list[aidx2]);
+            endif
+
+        else
+            case (btn)
+                BTN_TAB_ROSTER:
+                    current_tab := BTN_TAB_ROSTER;
+                    EDResetAction();
+                BTN_TAB_COMMS:
+                    current_tab := BTN_TAB_COMMS;
+                    EDResetAction();
+                BTN_TAB_ENVIRON:
+                    current_tab := BTN_TAB_ENVIRON;
+                    EDResetAction();
+                BTN_TAB_MOBS:
+                    current_tab := BTN_TAB_MOBS;
+                    EDResetAction();
+                BTN_TAB_PLAYER:
+                    current_tab := BTN_TAB_PLAYER;
+                    EDResetAction();
+                BTN_TAB_ITEMS:
+                    current_tab := BTN_TAB_ITEMS;
+                    EDResetAction();
+                BTN_CLEAR_RAID:
+                    EDClearRoster(who);
+                    SendSysMessage(who, "[EpicDungeon] Raid limpa.");
+                BTN_REFRESH: // re-render apenas
+            endcase
+        endif
+
+        input := EDShowMainGump(who);
+    endwhile
+
+    return 1;
+endprogram
+
+function EDResetAction()
+    current_action        := "";
+    current_action_obj    := 0;
+    current_param_values  := array{};
+    text_entry_ids        := array{};
+    pending_confirm       := 0;
+    current_target_serial := 0;
+endfunction
+
+function EDCollectTextEntries(byref input)
+    if (!current_action_obj) return; endif
+    var all_params := EDParseAllParams(current_action_obj.params);
+    for pidx := 1 to all_params.size()
+        var param := all_params[pidx];
+        if (param.ptype == "text" && text_entry_ids[pidx])
+            current_param_values[pidx] := GFExtractData(input, text_entry_ids[pidx]);
+        endif
+    endfor
+endfunction
+
+function EDDoExecute(who)
+    var action := current_action_obj;
+    var scope  := action.scope;
+
+    if (scope == "Roster")
+        var mobs := EDResolveMobs(who);
+        if (!mobs || mobs.size() == 0)
+            SendSysMessage(who, "[EpicDungeon] Roster vazio, nenhum jogador afetado.");
+            return;
+        endif
+        EDExecuteAction(who, action, mobs, current_param_values);
+
+    elseif (scope == "PerTarget")
+        if (!current_target_serial)
+            SendSysMessage(who, "[EpicDungeon] Selecione um alvo primeiro.");
+            return;
+        endif
+        var mob := SystemFindObjectBySerial(current_target_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+        if (mob == error || !mob || !mob.connected)
+            SendSysMessage(who, "[EpicDungeon] Alvo invalido ou offline.");
+            return;
+        endif
+        EDExecuteAction(who, action, array{ mob }, current_param_values);
+
+    elseif (scope == "Global")
+        EDExecuteAction(who, action, 0, current_param_values);
+
+    elseif (scope == "Position")
+        SendSysMessage(who, "[EpicDungeon] Clique no alvo no mundo.");
+        var targ := Target(who);
+        if (targ == error || !targ)
+            SendSysMessage(who, "[EpicDungeon] Cancelado.");
+            return;
+        endif
+        EDExecuteAction(who, action, targ, current_param_values);
+    endif
+endfunction
+
+function EDShowMainGump(who)
+    online_list := array{};
+    action_list := array{};
+
+    var gump := GFECreateGump("EPIC DUNGEON -- Painel de Raid", ED_W, ED_H);
+
+    GFTextLine(gump, ED_W - 220, 35, 1153, "GM: " + who.name);
+
+    EDAddTabs(gump);
+    EDAddSidebar(gump, who);
+    EDAddContent(gump, who);
+    EDAddFooter(gump);
+
+    return GFSendGump(who, gump);
+endfunction
+
+function EDAddTabs(byref gump)
+    var tab_names := array{ "Roster", "Comms", "Environ", "Mobs", "Player", "Items" };
+    var tab_ids   := array{ BTN_TAB_ROSTER, BTN_TAB_COMMS, BTN_TAB_ENVIRON,
+                            BTN_TAB_MOBS,   BTN_TAB_PLAYER, BTN_TAB_ITEMS };
+    var tab_tx    := array{ 90, 220, 350, 480, 610, 740 };
+
+    GFResizePic(gump, 20, ED_TAB_Y, 9350, ED_W - 47, 32);
+
+    for i := 1 to 6
+        var gfx := 2151;
+        var col := 53;
+        if (tab_ids[i] == current_tab)
+            gfx := 2153;
+            col := 230;
+        endif
+        GFAddButton(gump, tab_tx[i] - 35, ED_TAB_Y + 4, gfx, gfx, 1, tab_ids[i]);
+        GFTextLine(gump,  tab_tx[i],       ED_TAB_Y + 8, col, tab_names[i]);
+    endfor
+endfunction
+
+function EDAddSidebar(byref gump, dm)
+    GFResizePic(gump, ED_SIDEBAR_X, ED_SIDEBAR_Y, 9350, ED_SIDEBAR_W, ED_SIDEBAR_H);
+    GFTextLine(gump, ED_SIDEBAR_X + 10, ED_SIDEBAR_Y + 8,  53,   "Raid Ativa");
+    GFResizePic(gump, ED_SIDEBAR_X + 5, ED_SIDEBAR_Y + 25, 3000, ED_SIDEBAR_W - 10, 2);
+
+    var entries := EDGetRosterEntries(dm);
+    var row_y   := ED_SIDEBAR_Y + 35;
+    var count   := 0;
+    var max_y   := ED_SIDEBAR_Y + ED_SIDEBAR_H - 25;
+
+    foreach entry in entries
+        if (row_y + 28 > max_y)
+            break;
+        endif
+        count += 1;
+        GFAddButton(gump, ED_SIDEBAR_X + ED_SIDEBAR_W - 22, row_y, 2119, 2120, 1, BTN_ROSTER_REM_BASE + count);
+        var display := entry.name;
+        if (Len(display) > 13) display := SubStr(display, 1, 13) + ".."; endif
+        GFTextLine(gump, ED_SIDEBAR_X + 8, row_y,      entry.col, display);
+        GFTextLine(gump, ED_SIDEBAR_X + 8, row_y + 13, entry.col, entry.label);
+        row_y += 30;
+    endforeach
+
+    if (count == 0)
+        GFTextLine(gump, ED_SIDEBAR_X + 10, ED_SIDEBAR_Y + 35, 2100, "(sem players)");
+    endif
+
+    GFTextLine(gump, ED_SIDEBAR_X + 10, ED_SIDEBAR_Y + ED_SIDEBAR_H - 20, 2100,
+               "Total: " + count + " players");
+endfunction
+
+function EDAddContent(byref gump, dm)
+    GFResizePic(gump, ED_CONTENT_X, ED_CONTENT_Y, 9350, ED_CONTENT_W, ED_CONTENT_H);
+
+    var title    := "Roster";
+    var category := "";
+    case (current_tab)
+        BTN_TAB_ROSTER:  title := "Roster";
+        BTN_TAB_COMMS:   title := "Narracao";   category := "Comms";
+        BTN_TAB_ENVIRON: title := "Ambiente";   category := "Environ";
+        BTN_TAB_MOBS:    title := "Mobs";       category := "Mobs";
+        BTN_TAB_PLAYER:  title := "Player";     category := "Player";
+        BTN_TAB_ITEMS:   title := "Itens";      category := "Items";
+    endcase
+
+    GFTextLine(gump, ED_CONTENT_X + 10, ED_CONTENT_Y + 8,  53,   title);
+    GFResizePic(gump, ED_CONTENT_X + 5, ED_CONTENT_Y + 25, 3000, ED_CONTENT_W - 10, 2);
+
+    if (current_tab == BTN_TAB_ROSTER)
+        EDAddRosterContent(gump, dm);
+    elseif (current_action != "" && current_action_obj != 0)
+        EDAddParamForm(gump, dm);
+    elseif (category != "")
+        EDAddActionList(gump, category);
+    else
+        GFTextLine(gump, ED_CONTENT_X + 10, ED_CONTENT_Y + 40, 2100, "(em construcao)");
+    endif
+endfunction
+
+function EDAddRosterContent(byref gump, dm)
+    var roster := EDGetRoster(dm);
+
+    GFTextLine(gump, ED_CONTENT_X + 10, ED_CONTENT_Y + 35, 2100, "Players online (fora do roster):");
+
+    var row_y := ED_CONTENT_Y + 52;
+    var max_y := ED_CONTENT_Y + ED_CONTENT_H - 10;
+    var idx   := 0;
+    var chars := EnumerateOnlineCharacters();
+
+    foreach mob in chars
+        if (row_y + 18 > max_y)
+            break;
+        endif
+        var in_roster := 0;
+        foreach s in roster
+            if (s == mob.serial)
+                in_roster := 1;
+                break;
+            endif
+        endforeach
+        if (!in_roster)
+            idx += 1;
+            online_list.append(mob.serial);
+            GFAddButton(gump, ED_CONTENT_X + 10, row_y, 2103, 2104, 1, BTN_ROSTER_ADD_BASE + idx);
+            GFTextLine(gump,  ED_CONTENT_X + 42,  row_y, 1153, mob.name);
+            row_y += 22;
+        endif
+        sleepms(2);
+    endforeach
+
+    if (idx == 0)
+        GFTextLine(gump, ED_CONTENT_X + 10, ED_CONTENT_Y + 52, 2100,
+                   "(nenhum player online fora do roster)");
+    endif
+endfunction
+
+function EDAddActionList(byref gump, category)
+    var actions := EDGetActionsByCategory(category);
+
+    if (!actions || actions.size() == 0)
+        GFTextLine(gump, ED_CONTENT_X + 10, ED_CONTENT_Y + 40, 2100, "(nenhuma acao disponivel)");
+        return;
+    endif
+
+    var row_y := ED_CONTENT_Y + 35;
+    var max_y := ED_CONTENT_Y + ED_CONTENT_H - 10;
+    var idx   := 0;
+
+    foreach action in actions
+        if (row_y + 32 > max_y) break; endif
+        idx += 1;
+        action_list.append(action);
+
+        var hint := "";
+        var all_p := EDParseAllParams(action.params);
+        if (all_p.size() > 0)
+            var fp := all_p[1];
+            if (fp.ptype == "slider")
+                hint := fp.name + ": " + fp.pmin + "-" + fp.pmax;
+            elseif (fp.ptype == "text")
+                hint := fp.name;
+            elseif (fp.ptype == "dropdown")
+                hint := fp.name + " (" + fp.poptions.size() + " opcoes)";
+            elseif (fp.ptype == "hue")
+                hint := fp.name + " (cor)";
+            endif
+            if (all_p.size() > 1)
+                hint := hint + " +mais";
+            endif
+        endif
+
+        var lcol := 1153;
+        if (action.scope == "Position")
+            lcol := 53;
+        elseif (action.scope == "PerTarget")
+            lcol := 230;
+        endif
+
+        GFTextLine(gump, ED_CONTENT_X + 15, row_y + 2,  lcol, action.label);
+        if (hint != "")
+            GFTextLine(gump, ED_CONTENT_X + 15, row_y + 16, 2100, hint);
+        endif
+
+        GFAddButton(gump, ED_CONTENT_X + ED_CONTENT_W - 110, row_y + 2, 2103, 2104, 1,
+                    BTN_ACTION_BASE + idx);
+        GFTextLine(gump,  ED_CONTENT_X + ED_CONTENT_W - 75,  row_y + 4, 53, "Executar");
+
+        row_y += 36;
+        sleepms(2);
+    endforeach
+endfunction
+
+function EDAddParamForm(byref gump, dm)
+    var action := current_action_obj;
+    var cx     := ED_CONTENT_X + 20;
+    var cy     := ED_CONTENT_Y + 35;
+
+    GFTextLine(gump, cx, cy, 1153, action.label);
+    cy += 18;
+
+    if (action.description && Len(action.description) > 0)
+        GFTextLine(gump, cx, cy, 2100, action.description);
+        cy += 18;
+    endif
+    cy += 5;
+
+    // Seletor de alvo para PerTarget
+    if (action.scope == "PerTarget")
+        cy := EDAddTargetPicker(gump, dm, cx, cy);
+    endif
+
+    // Estado de confirmação: mostra Sim/Nao em vez dos params
+    if (pending_confirm)
+        GFResizePic(gump, cx, cy, 9350, ED_CONTENT_W - 40, 28);
+        GFTextLine(gump, cx + 10, cy + 8, 33, "Tem certeza? Esta acao nao pode ser desfeita.");
+        var by0 := ED_CONTENT_Y + ED_CONTENT_H - 40;
+        GFAddButton(gump, ED_CONTENT_X + ED_CONTENT_W - 210, by0, 2119, 2120, 1, BTN_CONFIRM_NO);
+        GFTextLine(gump,  ED_CONTENT_X + ED_CONTENT_W - 175, by0 + 2, 33,   "Nao");
+        GFAddButton(gump, ED_CONTENT_X + ED_CONTENT_W - 110, by0, 2103, 2104, 1, BTN_CONFIRM_YES);
+        GFTextLine(gump,  ED_CONTENT_X + ED_CONTENT_W - 75,  by0 + 2, 53,   "Sim");
+        return;
+    endif
+
+    // Parâmetros
+    var all_params := EDParseAllParams(action.params);
+    if (all_params.size() == 0)
+        GFTextLine(gump, cx, cy, 2100, "Sem parametros.");
+        cy += 22;
+    else
+        // pre-aloca IDs de text entry
+        text_entry_ids := array{};
+        for i := 1 to all_params.size()
+            text_entry_ids.append(0);
+        endfor
+
+        for pidx := 1 to all_params.size()
+            cy := EDRenderParam(gump, all_params[pidx], pidx, cx, cy);
+        endfor
+    endif
+
+    var btn_y := ED_CONTENT_Y + ED_CONTENT_H - 40;
+    GFAddButton(gump, ED_CONTENT_X + ED_CONTENT_W - 210, btn_y, 2119, 2120, 1, BTN_ACTION_BACK);
+    GFTextLine(gump,  ED_CONTENT_X + ED_CONTENT_W - 175, btn_y + 2, 33,   "Cancelar");
+    GFAddButton(gump, ED_CONTENT_X + ED_CONTENT_W - 110, btn_y, 2103, 2104, 1, BTN_ACTION_EXEC);
+    GFTextLine(gump,  ED_CONTENT_X + ED_CONTENT_W - 75,  btn_y + 2, 53,   "Confirmar");
+endfunction
+
+function EDAddTargetPicker(byref gump, dm, cx, cy)
+    var roster  := EDGetRoster(dm);
+    var entries := EDGetRosterEntries(dm);
+
+    GFTextLine(gump, cx, cy, 2100, "Alvo:");
+    cy += 18;
+
+    if (!entries || entries.size() == 0)
+        GFTextLine(gump, cx, cy, 33, "(roster vazio — adicione players na aba Roster)");
+        cy += 22;
+    else
+        var tidx := 0;
+        foreach entry in entries
+            tidx += 1;
+            if (tidx > 8) break; endif
+            var is_sel  := (current_target_serial == roster[tidx]);
+            var col_txt := entry.col;
+            var bgfx    := 2151;
+            if (is_sel)
+                col_txt := 1153;
+                bgfx    := 2153;
+            endif
+            GFAddButton(gump, cx,      cy, bgfx, bgfx, 1, BTN_TARGET_BASE + tidx);
+            GFTextLine(gump,  cx + 22, cy + 2, col_txt, entry.name + " (" + entry.label + ")");
+            cy += 22;
+        endforeach
+    endif
+
+    GFResizePic(gump, cx, cy, 3000, ED_CONTENT_W - 40, 2);
+    cy += 10;
+    return cy;
+endfunction
+
+function EDRenderParam(byref gump, param, pidx, cx, cy)
+    GFTextLine(gump, cx, cy, 2100, param.name + ":");
+    cy += 18;
+
+    if (param.ptype == "slider")
+        var cur_val := CInt(current_param_values[pidx]);
+        GFAddButton(gump, cx,      cy, 2119, 2120, 1, BTN_PARAM_DEC + pidx);
+        GFTextLine(gump,  cx + 40, cy + 2, 1153, CStr(cur_val));
+        GFAddButton(gump, cx + 80, cy, 2103, 2104, 1, BTN_PARAM_INC + pidx);
+        cy += 30;
+
+    elseif (param.ptype == "text")
+        GFResizePic(gump, cx, cy, 9350, ED_CONTENT_W - 40, 24);
+        var eid := GFTextEntry(gump, cx + 6, cy + 4, ED_CONTENT_W - 52, 16, 2100, "");
+        text_entry_ids[pidx] := eid;
+        cy += 34;
+
+    elseif (param.ptype == "bool")
+        var bval := CInt(current_param_values[pidx]);
+        var bgfx2 := 2151;
+        var bcol  := 2100;
+        var blbl  := "Nao";
+        if (bval)
+            bgfx2 := 2153;
+            bcol  := 1153;
+            blbl  := "Sim";
+        endif
+        GFAddButton(gump, cx,      cy, bgfx2, bgfx2, 1, BTN_PARAM_INC + pidx);
+        GFTextLine(gump,  cx + 22, cy + 2, bcol, blbl);
+        cy += 28;
+
+    elseif (param.ptype == "dropdown")
+        var sel_idx := CInt(current_param_values[pidx]);
+        var ox      := cx;
+        for i := 1 to param.poptions.size()
+            if (i > ED_MAX_OPTS) break; endif
+            var oidx   := i - 1;
+            var is_sel := (sel_idx == oidx);
+            var ogfx   := 2151;
+            var ocol   := 2100;
+            if (is_sel)
+                ogfx := 2153;
+                ocol := 1153;
+            endif
+            GFAddButton(gump, ox,      cy, ogfx, ogfx, 1,
+                        BTN_DROPDOWN_BASE + (pidx - 1) * ED_MAX_OPTS + oidx);
+            GFTextLine(gump,  ox + 22, cy + 2, ocol, param.poptions[i]);
+            ox += 95;
+        endfor
+        cy += 28;
+
+    elseif (param.ptype == "hue")
+        var cur_hue := CInt(current_param_values[pidx]);
+        var hx      := cx;
+        for i := 1 to ED_HUE_PALETTE.size()
+            var oidx2  := i - 1;
+            var hv2    := ED_HUE_PALETTE[i];
+            var hsel   := (cur_hue == hv2);
+            var hbgfx  := 2151;
+            if (hsel) hbgfx := 2153; endif
+            GFAddButton(gump, hx,     cy, hbgfx, hbgfx, 1,
+                        BTN_HUE_BASE + (pidx - 1) * ED_MAX_OPTS + oidx2);
+            GFTextLine(gump,  hx + 4, cy + 2, hv2, "ABC");
+            hx += 55;
+        endfor
+        cy += 28;
+    endif
+
+    return cy;
+endfunction
+
+function EDAddFooter(byref gump)
+    GFResizePic(gump, 20, ED_FOOTER_DIV, 3000, ED_W - 47, 2);
+
+    GFAddButton(gump, 25,         ED_FOOTER_BTN, 2119, 2120, 1, BTN_CLEAR_RAID);
+    GFTextLine(gump,  62,         ED_FOOTER_BTN + 2, 33,   "Limpar Raid");
+
+    GFAddButton(gump, 162,        ED_FOOTER_BTN, 2103, 2104, 1, BTN_REFRESH);
+    GFTextLine(gump,  197,        ED_FOOTER_BTN + 2, 53,   "Refresh");
+
+    GFAddButton(gump, ED_W - 200, ED_FOOTER_BTN, 2119, 2120, 1, 0);
+    GFTextLine(gump,  ED_W - 163, ED_FOOTER_BTN + 2, 33,   "Fechar Painel");
+endfunction

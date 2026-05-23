@@ -1,0 +1,8 @@
+use uo;
+use os;
+
+program epicboss_w(params)
+    var dm := params[1];
+    Start_Script(":epicspawn:commands/gm/epicboss", array{dm, 0});
+    return 1;
+endprogram
