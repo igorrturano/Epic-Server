@@ -18,7 +18,7 @@ program SpellScript(who)
 		return SendSysMessageEX(who, "Habilidade em Cooldown!", SSM_FAIL);
 	endif
 
-	Start_Script(":sneak:sneak", who);
+	Start_Script(":sneak:stealth", who);
 
 // var who := params[1];
 // params := 0; // No longer needed

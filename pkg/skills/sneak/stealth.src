@@ -4,13 +4,30 @@ include ":attributes:attributeConstants";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include "include/say";
+include "include/facings";
+include "include/creationUtils";
 include "include/dungeons";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":tn:cooldown";
 include ":message:model/Message";
+include ":merchants:citizen/include/citizenWitness";
+include ":combat:Controller/HitController";
 
 program skill_Stealth(who)
 
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
+
+	if (who.hidden)
+		DoStealthReroll(who);
+	else
+		DoHide(who);
+	endif
+
+endprogram
+
+function DoStealthReroll(who)
 
 	if (GetEquipmentByLayer(who, 25))
 		who.hidden := 0;
@@ -26,17 +43,31 @@ program skill_Stealth(who)
 		baseSteps := Cint(baseSteps * 1.5);
 	endif
 
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM))
+	var mw := MobileWrapper(who);
+	if (mw.HasAbility(ABILITY_ID::ESPREITA_SELVAGEM))
 		baseSteps := Cint(baseSteps * 2.0);
 	endif
 
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::SMOKE_SCREEN))
+	if (mw.HasAbility(ABILITY_ID::SMOKE_SCREEN))
 		baseSteps := baseSteps * 2;
+	endif
+
+	var stepsBeforeLight := baseSteps;
+	var lightLabel := "";
+	if (InDarkness(who))
+		baseSteps := Cint(baseSteps * 1.5);
+		lightLabel := "(dark)";
+	elseif (HasLightNearby(who))
+		baseSteps := Cint(baseSteps * 0.66);
+		lightLabel := "(light)";
+	endif
+	if (lightLabel != "")
+		PrintTextAbove(who, "[stealth] steps " + stepsBeforeLight + "->" + baseSteps + " " + lightLabel);
 	endif
 
 	var atualStep := CInt(GetObjProperty(who, "#steathsteps"));
 	var diff := 15 + atualStep * 10;
-	if (!MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH) && !MobileWrapper(who).HasAbility(ABILITY_ID::ASSASSINAR))
+	if (!mw.HasAbility(ABILITY_ID::NINJA_PATH) && !mw.HasAbility(ABILITY_ID::ASSASSINAR))
 		diff := diff + 50;
 	endif
 
@@ -76,7 +107,7 @@ program skill_Stealth(who)
 		return 0;
 	endif
 
-endprogram
+endfunction
 
 function qtdSteps(who, skill)
 	var steps := CInt(skill / 7);
@@ -84,4 +115,210 @@ function qtdSteps(who, skill)
 		steps := 3;
 	endif
 	return steps;
+endfunction
+
+function DoHide(who)
+
+	EraseObjProperty(who, "#overridehiding");
+	var orig_x := who.x;
+	var orig_y := who.y;
+	var isPequilho := GetObjProperty(who, "chardata").race == PEQUILHO;
+
+	if (!CanHide(who, orig_x, orig_y))
+		return;
+	elseif (GetProcess(CInt(GetObjProperty(who, "#HidePid"))))
+		SendSysMessageEx(who, "Voce ja esta tentando se esconder.", SSM_FAIL);
+		return;
+	else
+		SetObjProperty(who, "#HidePid", GetPid());
+	endif
+
+	SendSysMessageEx(who, "Voce comecou a tentar se esconder...", SSM_INFO);
+
+	while (1)
+		if (isPequilho)
+			sleep(2);
+		else
+			sleep(3);
+		endif
+
+		if (!CanHide(who, orig_x, orig_y))
+			break;
+		endif
+		var check := SkillCheck(who, SNEAK, -1);
+		var diff := 0;
+		if (GetObjProperty(who, "forjoumorte") == 1)
+			diff := diff - 50;
+			if (diff <= 0)
+				diff := 5;
+			endif
+		endif
+		var chardata := GetObjProperty(who, "chardata");
+		if (chardata.trait == "Sorrateiro")
+			diff := -10;
+			if (diff <= 0)
+				diff := 5;
+			endif
+		endif
+
+		var diffBeforeLight := diff;
+		var hideLightLabel := "";
+		if (InDarkness(who))
+			diff := diff - 10;
+			hideLightLabel := "(dark)";
+		endif
+		if (HasLightNearby(who))
+			diff := diff + 15;
+			hideLightLabel := hideLightLabel + "(light)";
+		endif
+		if (hideLightLabel != "")
+			PrintTextAbove(who, "[hide] diff " + diffBeforeLight + "->" + diff + " " + hideLightLabel);
+		endif
+
+		var semfalha := EffectiveSkill(who, "Stealth");
+
+		if (check > diff)
+			SendSysMessageEx(who, "Voce se escondeu.", SSM_INFO);
+			who.hidden := 1;
+			NotifyCitizenWitnesses(who, "hide", struct);
+			var a := start_script(":sneak:stealthmode", array{ who });
+			EraseObjProperty(who, "#steathsteps");
+			if (GetCooldown(who, "partyhiding") > 0)
+				HidingParty(who);
+			endif
+			break;
+		elseif (check >= -25)
+			SendSysMessageEx(who, "Voce falhou ao tentar se esconder.", SSM_FAIL);
+			who.hidden := 0;
+		elseif (semfalha <= 79)
+			Message("*tentando se esconder*").SendEmote(who);
+		endif
+	endwhile
+	SetObjProperty(who, "#hidewait", readgameclock() + 5);
+endfunction
+
+function HidingParty(who)
+
+	var festa := who.party;
+
+	if (!festa)
+		return;
+	endif
+
+	var skill := EffectiveSkill(who, "Stealth");
+
+	foreach member in (festa.members)
+		if (member.serial != who.serial)
+			if (Distance(who, member) < 8)
+				if (CanHide(member, member.x, member.y, skill))
+					SendSysMessageEx(member, "Voce esta preparando a emboscada!", SSM_INFO);
+					member.hidden := 1;
+					start_script(":sneak:stealthmode", array{ who });
+					SetObjProperty(member, "#overridehiding", skill);
+				else
+					SendSysMessageEx(member, "Voce nao pode se esconder!", SSM_FAIL);
+					SendSysMessageEx(who, member.name + " nao consegue se esconder!", SSM_FAIL);
+				endif
+			endif
+		endif
+	endforeach
+
+endfunction
+
+function CanHide(who, orig_x, orig_y, override_hiding := 0)
+
+	if (who.warmode)
+		SendSysMessageEx(who, "Voce nao pode se esconder em posicao de combate.", SSM_FAIL);
+		return 0;
+	elseif (who.x != orig_x || who.y != orig_y)
+		SendSysMessageEx(who, "Voce parou de tentar se esconder.", SSM_FAIL);
+		return 0;
+	elseif (GetEquipmentByLayer(who, 0x19))
+		SendSysMessageEx(who, "Voce nao pode fazer isto montado.", SSM_FAIL);
+		return 0;
+	elseif (who.frozen)
+		SendSysMessageEx(who, "Voce nao pode fazer isto.", SSM_FAIL);
+		return 0;
+	endif
+
+	var skill := EffectiveSkill(who, "Stealth");
+
+	if (override_hiding)
+		skill := override_hiding;
+	endif
+	var range := GetHidingRange(skill);
+
+	var rangebonus := Cint(GetObjProperty(who, "esconderseaprimorado"));
+	range := range - rangebonus;
+	if (range <= 1)
+		range := 1;
+	endif
+
+	var hostiles := ListHostiles(who, range);
+	var mw := MobileWrapper(who);
+	if (mw.HasAbility(ABILITY_ID::FUGA_DE_EMERGENCIA) || mw.HasAbility(ABILITY_ID::STEALTH_RUN))
+		return 1;
+	elseif (hostiles[1])
+		SendSysMessageEx(who, "Voce nao pode se esconder enquanto " + hostiles[1].name
+				   + " esta atacando voce.", SSM_FAIL);
+		return 0;
+	endif
+
+	var num_watching := GetWatchingPeople(who);
+	var skill2 := EffectiveSkill(who, "Stealth") / 20;
+
+	if (skill2 < 1)
+		skill2 := 0;
+	endif
+
+	if (num_watching > skill2)
+		SendSysMessageEx(who, "Existem muitas pessoas olhando voce se esconder aqui.", SSM_FAIL);
+		return 0;
+	endif
+
+	return 1;
+endfunction
+
+function GetWatchingPeople(who)
+	var counter := 0;
+	var counterpt := 0;
+	var range := GetHidingRange(EffectiveSkill(who, "Stealth"));
+	foreach person in ListMobilesInLineOfSight(who, range)
+		if ((person.connected) && (person != who))
+			if ((person in who.party.members))
+				if (IsFacing(person, who.x, who.y))
+					counterpt := counterpt + 1;
+				endif
+			endif
+		endif
+		if (IsFacing(person, who.x, who.y))
+			counter := counter + 1;
+		endif
+		sleepms(4);
+	endforeach
+	var counterliq := counter - counterpt;
+	return counterliq;
+endfunction
+
+function GetHidingRange(skill)
+
+	if (skill >= 100)
+		return 2;
+	elseif (skill >= 90)
+		return 4;
+	elseif (skill >= 80)
+		return 6;
+	elseif (skill >= 70)
+		return 7;
+	elseif (skill >= 60)
+		return 8;
+	elseif (skill >= 50)
+		return 9;
+	elseif (skill >= 40)
+		return 10;
+	elseif (skill >= 30)
+		return 12;
+	else
+		return 15;
+	endif
 endfunction

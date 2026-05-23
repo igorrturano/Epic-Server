@@ -9,7 +9,7 @@ include ":timedScripts:timedScripts";
 /**
  * Corrida Furtiva (Stealth Run) - ABILITY_ID::STEALTH_RUN (1303)
  *
- * Passive: Allows hiding while being attacked (checked in sneak.src).
+ * Passive: Allows hiding while being attacked (checked in stealth.src).
  * Active (OnUse): Conceals the caster for Sneak/5 seconds, allowing
  * them to run while hidden.
  */
