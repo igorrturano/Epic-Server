@@ -1,5 +1,6 @@
 use uo;
 
+include "include/client";
 include "include/epicPropNames";
 
 // ============================================================
@@ -44,10 +45,10 @@ endfunction
 
 function ChestLoot_IsJewelry(item)
 	case (item.layer)
-		LAYER_RING:     return 1;
-		LAYER_BRACELET: return 1;
-		LAYER_EARRINGS: return 1;
-		LAYER_NECK:     return 1;
+		LAYER_RING:  return 1;
+		LAYER_WRIST: return 1;
+		LAYER_EARS:  return 1;
+		LAYER_NECK:  return 1;
 	endcase
 	return 0;
 endfunction
