@@ -35,6 +35,12 @@ class Ammo()
 		return this.GetItem().GetObjType() in ammoType;
 	endfunction
 
+	// Retorna o struct oil_arrow gravado pelo oilOnUse.src (campos: oilName, duration, acc).
+	// Devolve `error` quando o stack não está oleado — caller decide o ramo.
+	function GetOilCoating(this)
+		return GetObjProperty(this.GetItem().GetObjRef(), "oil_arrow");
+	endfunction
+
 	function ToString(this)
 		return $"Ammo: {this.GetItem().GetName()} (ObjType: {CStr(Hex(this.GetItem().GetObjType()))}, Anim: {CStr(Hex(this.GetAnim()))}, Sound: {CStr(Hex(this.GetSound()))}, NeedsQuiver: {CStr(this.NeedQuiver)})";
 	endfunction

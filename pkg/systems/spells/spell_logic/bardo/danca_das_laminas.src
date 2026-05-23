@@ -28,8 +28,7 @@ program SpellScript(params)
 
 	foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm))
 		if (mobile.isa(POLCLASS_MOBILE) && !mobile.IsHostile(who))
-			SetObjProperty(mobile, "#hit_mod",
-				CInt(GetObjProperty(mobile, "#hit_mod")) + hit_bonus);
+			mobile.hitchance_mod := mobile.hitchance_mod + hit_bonus;
 			SetObjProperty(mobile, "#cantico_danca_laminas", hit_bonus);
 			PlayStationaryEffect(mobile.x, mobile.y, mobile.z, FX_BLESS_EFFECT, 2, 2);
 			SendSysMessageEx(mobile, $"Danca das Laminas: +{hit_bonus} ao ataque por {duration}s.", SSM_INFO);
@@ -49,13 +48,7 @@ program SpellScript(params)
 
 	foreach mobile in buffed_list
 		if (mobile && !mobile.dead && GetObjProperty(mobile, "#cantico_danca_laminas") == hit_bonus)
-			var cur := CInt(GetObjProperty(mobile, "#hit_mod")) - hit_bonus;
-			if (cur < 0) cur := 0; endif
-			if (cur == 0)
-				EraseObjProperty(mobile, "#hit_mod");
-			else
-				SetObjProperty(mobile, "#hit_mod", cur);
-			endif
+			mobile.hitchance_mod := mobile.hitchance_mod - hit_bonus;
 			EraseObjProperty(mobile, "#cantico_danca_laminas");
 		endif
 	endforeach

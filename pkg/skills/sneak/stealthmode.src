@@ -3,6 +3,9 @@ use uo;
 include ":attributes:attributes";
 include ":awareness:awareness";
 include "include/colormap";
+include "include/sysEvent";
+include "include/packets";
+include ":message:model/Message";
 
 program showdfdiff(params)
 
@@ -15,9 +18,25 @@ program showdfdiff(params)
 		var mobs := ListMobilesInLineOfSight(who, 11);
 		foreach mob in mobs
 			if (!mob.hiding)
-				var dif := CalcSuccessPercent(mob, AWARENESS, cdbl(CalculateDHDiff(mob, who)),
+				var diff := CInt(CalculateDHDiff(mob, who));
+				var pct := CalcSuccessPercent(mob, AWARENESS, cdbl(diff),
 											   EffectiveTrueSkill(mob, "Perception"));
-				SendSysMessage(mob, "" + dif, who, _DEFAULT_TEXT_FONT/* , GetMagentaMap(cint(dif / 10) )*/);
+				PrintTextPrivate(mob, "" + pct + "%", who, _DEFAULT_TEXT_FONT, GetMagentaMap(CInt(pct / 10)));
+
+				// Passive NPC perception: hostile NPCs in LoS roll Awareness
+				// against the stealth diff each tick (3s). On hit, the player
+				// is revealed and the NPC engages.
+				if (mob.npctemplate && mob.alignment != 0 && mob != who)
+					if (SkillCheck(mob, AWARENESS, diff) > 0)
+						who.hidden := 0;
+						ScreenShake(who, 0.6, 15);
+						Message("*!*").SendAbove(mob);
+						Message("*aparece*").SendEmote(who);
+						SendSysMessageEx(who, mob.name + " te encontrou!", SSM_FAIL);
+						SendEvent(mob, struct{ "type" := SYSEVENT_ENGAGED, "source" := who });
+						break;
+					endif
+				endif
 			endif
 			sleepms(2);
 		endforeach

@@ -14,7 +14,7 @@ include "include/epicConstants";
  * Active (ON_USE):
  * - Target enemy, drain their elemental resist based on weapon element (arcana*0.3)
  * - Grant self that resist amount
- * - Set #bomcomeco for guaranteed next hit (+50 in HitController)
+ * - Grant +50 hitchance_mod for the drain duration
  * - Duration = arcana/10
  * - Requires enchanted weapon (fire/ice/energy color)
  */
@@ -52,7 +52,7 @@ class Fluency(CombatAbility)
         _GrantBonus(who, targ);
         Message("Voce drenou parte da armadura do alvo.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
         Message("Suas defesas sao drenadas!", Color(SYSTEM_COLOR::FAIL)).SendSys(targ);
-        mobile.GetObjRef().SetProp("#bomcomeco", 1);
+        SetObjProperty(who, "#GuaranteedHit", 1);
 
         var duration := CInt(mobile.GetSkill(ARCANA) / 10);
         SetCooldown(who, "armor_drain", duration);

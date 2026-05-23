@@ -5,43 +5,47 @@ use cfgfile;
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":message:model/Message";
+include ":charactercreation:subclasses";
 
 // Subclass definitions: { name, startId, endId }
-// Guerreiro subclasses
-var SUBCLASS_ARQUEIRO        := array{ "Arqueiro",              1, 5 };
-var SUBCLASS_CACADOR         := array{ "Cacador",             100, 104 };
-var SUBCLASS_COMBATENTE      := array{ "Combatente",          200, 204 };
-var SUBCLASS_DEFENSOR        := array{ "Defensor",            300, 304 };
-var SUBCLASS_PALADINO        := array{ "Paladino",            400, 404 };
-var SUBCLASS_AKLAT_TUR       := array{ "Aklat'tur",           500, 504 };
-var SUBCLASS_BARBARO         := array{ "Barbaro",             600, 604 };
-var SUBCLASS_MONGE           := array{ "Monge",               700, 704 };
-var SUBCLASS_SAMURAI         := array{ "Samurai",             800, 804 };
-var SUBCLASS_MUTANTE         := array{ "Mutante",             900, 904 };
+// Names are sourced from SUBCLASS enum (see :charactercreation:subclasses)
+// so chardata.subclasse[1] and any enum-based combat checks stay in sync.
 
-// Ladino subclasses
-var SUBCLASS_MALANDRO_ARCANO := array{ "Malandro Arcano",    1000, 1004 };
-var SUBCLASS_CAC_TESOUROS    := array{ "Cacador de Tesouros", 1100, 1104 };
-var SUBCLASS_ASSASSINO       := array{ "Assassino",          1200, 1204 };
-var SUBCLASS_SHINOBI         := array{ "Shinobi",            1300, 1304 };
-var SUBCLASS_VIVISSECCIONISTA := array{ "Vivisseccionista",   1400, 1404 };
-var SUBCLASS_ESGRIMISTA      := array{ "Esgrimista",         1500, 1504 };
-var SUBCLASS_LADRAO          := array{ "Ladrao",             1600, 1604 };
-var SUBCLASS_BARDO           := array{ "Bardo",              1708, 1712 };
-var SUBCLASS_DANC_SOMBRAS    := array{ "Dancarino das Sombras", 1800, 1804 };
-var SUBCLASS_CAC_DEMONIOS    := array{ "Cacador de Demonios", 1900, 1904 };
+// Guerreiro
+var SUBCLASS_ARQUEIRO        := array{ SUBCLASS::ARQUEIRO,            1,    5 };
+var SUBCLASS_CACADOR         := array{ SUBCLASS::CACADOR,           100,  104 };
+var SUBCLASS_COMBATENTE      := array{ SUBCLASS::COMBATENTE,        200,  204 };
+var SUBCLASS_DEFENSOR        := array{ SUBCLASS::DEFENSOR,          300,  304 };
+var SUBCLASS_PALADINO        := array{ SUBCLASS::PALADINO,          400,  404 };
+var SUBCLASS_AKLAT_TUR       := array{ SUBCLASS::AKLAT_TUR,         500,  504 };
+var SUBCLASS_BARBARO         := array{ SUBCLASS::BARBARO,           600,  604 };
+var SUBCLASS_MONGE           := array{ SUBCLASS::MONGE,             700,  704 };
+var SUBCLASS_SAMURAI         := array{ SUBCLASS::SAMURAI,           800,  804 };
+var SUBCLASS_MUTANTE         := array{ SUBCLASS::MUTANTE,           900,  904 };
 
-// Sabio subclasses
-var SUBCLASS_NECROMANTE      := array{ "Necromante",         2000, 2004 };
-var SUBCLASS_DRUIDA          := array{ "Druida",             2100, 2104 };
-var SUBCLASS_MAGUS           := array{ "Magus",              2200, 2204 };
-var SUBCLASS_LAMINA_ARCANA   := array{ "Lamina Arcana",      2300, 2304 };
-var SUBCLASS_ARQ_ARCANO      := array{ "Arqueiro Arcano",    2400, 2404 };
-var SUBCLASS_ALQUIMISTA      := array{ "Alquimista",         2500, 2504 };
-var SUBCLASS_CLERIGO         := array{ "Clerigo",            2800, 2804 };
-var SUBCLASS_ENGENHEIRO      := array{ "Engenheiro",         2700, 2704 };
-var SUBCLASS_SHAMAN          := array{ "Shaman",             2600, 2604 };
-var SUBCLASS_Desloc_SOMBRAS    := array{ "Deslocador das Sombras", 1800, 1804 };
+// Ladino
+var SUBCLASS_MALANDRO_ARCANO := array{ SUBCLASS::MALANDRO_ARCANO,        1000, 1004 };
+var SUBCLASS_CAC_TESOUROS    := array{ SUBCLASS::CACADOR_DE_TESOUROS,    1100, 1104 };
+var SUBCLASS_ASSASSINO       := array{ SUBCLASS::ASSASSINO,              1200, 1204 };
+var SUBCLASS_SHINOBI         := array{ SUBCLASS::SHINOBI,                1300, 1304 };
+var SUBCLASS_VIVISSECCIONISTA := array{ SUBCLASS::VIVISSECCIONISTA,      1400, 1404 };
+var SUBCLASS_ESGRIMISTA      := array{ SUBCLASS::ESGRIMISTA,             1500, 1504 };
+var SUBCLASS_LADRAO          := array{ SUBCLASS::LADRAO,                 1600, 1604 };
+var SUBCLASS_BARDO           := array{ SUBCLASS::BARDO,                  1708, 1712 };
+var SUBCLASS_DANC_SOMBRAS    := array{ SUBCLASS::DANCARINO_DAS_SOMBRAS,  1800, 1804 };
+var SUBCLASS_CAC_DEMONIOS    := array{ SUBCLASS::CACADOR_DE_DEMONIOS,    1900, 1904 };
+
+// Sabio
+var SUBCLASS_NECROMANTE      := array{ SUBCLASS::NECROMANTE,             2000, 2004 };
+var SUBCLASS_DRUIDA          := array{ SUBCLASS::DRUIDA,                 2100, 2104 };
+var SUBCLASS_MAGUS           := array{ SUBCLASS::MAGUS,                  2200, 2204 };
+var SUBCLASS_LAMINA_ARCANA   := array{ SUBCLASS::LAMINA_ARCANA,          2300, 2304 };
+var SUBCLASS_ARQ_ARCANO      := array{ SUBCLASS::ARQUEIRO_ARCANO,        2400, 2404 };
+var SUBCLASS_ALQUIMISTA      := array{ SUBCLASS::ALQUIMISTA,             2500, 2504 };
+var SUBCLASS_CLERIGO         := array{ SUBCLASS::CLERIGO,                2800, 2804 };
+var SUBCLASS_ENGENHEIRO      := array{ SUBCLASS::ENGENHEIRO,             2700, 2704 };
+var SUBCLASS_SHAMAN          := array{ SUBCLASS::SHAMAN,                 2600, 2604 };
+var SUBCLASS_DESLOC_SOMBRAS  := array{ SUBCLASS::DESLOCADOR_DAS_SOMBRAS, 1800, 1804 };
 
 program classe(who, text)
 	if (who.cmdlevel == 0)
@@ -92,12 +96,12 @@ program classe(who, text)
 
 	// Set chardata.magia for magic subclasses
 	var magia_map := dictionary;
-	magia_map["Magus"]           := "spellcaster";
-	magia_map["Druida"]          := "Druid";
-	magia_map["Shaman"]          := "Shaman";
-	magia_map["Clerigo"]         := "Sacerdote";
-	magia_map["Necromante"]      := "Necromancer";
-	magia_map["Arqueiro Arcano"] := "arcane_archer";
+	magia_map[SUBCLASS::MAGUS]           := "spellcaster";
+	magia_map[SUBCLASS::DRUIDA]          := "Druid";
+	magia_map[SUBCLASS::SHAMAN]          := "Shaman";
+	magia_map[SUBCLASS::CLERIGO]         := "Sacerdote";
+	magia_map[SUBCLASS::NECROMANTE]      := "Necromancer";
+	magia_map[SUBCLASS::ARQUEIRO_ARCANO] := "arcane_archer";
 
 	if (magia_map.Exists(nome))
 		var chardata := GetObjProperty(who, "chardata");
