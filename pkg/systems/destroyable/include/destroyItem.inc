@@ -476,7 +476,7 @@ function PegaResistenciaItem(itemAlvo, fonteDano ,materialId, isInflamavel)
 	endif
 	if (materialId)
 		resFinal := resFinal + resistenciaFabricacao;
-		resFinal := isInflamavel && fonteDano.tipo == "Fire" ? 0 : resFinal;
+		resFinal := isInflamavel && fonteDano.tipo == DAMAGE_TYPE::FIRE ? 0 : resFinal;
 	endif
 
 	return resFinal;
@@ -527,7 +527,7 @@ function CalculaDanoRecebido(quemDanificou, fonteDano, atributosItem)
 		danoCru := fonteDano;
 	endif
 	
-	if(fonteDano.tipo == "Fire")
+	if(fonteDano.tipo == DAMAGE_TYPE::FIRE)
 		if(atributosItem.inflamabilidade > 0)
 			danoCru := danoCru * (1 + (atributosItem.inflamabilidade / 2));
 		else

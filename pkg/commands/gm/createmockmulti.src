@@ -3,6 +3,8 @@ use os;
 use file;
 use cfgfile;
 
+include "/include/epicPropNames";
+
 include ":gumpDesigner:include/Gump/Gump";
 include ":gumpDesigner:include/Control/Button";
 include ":gumpDesigner:include/Control/Text";
@@ -223,6 +225,7 @@ function CriarReal(tiles, bx, by, bz, realm, nome, who)
         var item := CreateItemAtLocation(bx + t.dx, by + t.dy, bz + t.dz, t.graphic, 1, realm);
         if (item && !item.errortext)
             item.movable := 0;
+            SetObjProperty(item, PROPNAME_INDESTRUTIVEL, 1);
             criados += 1;
         endif
         SleepMS(2);

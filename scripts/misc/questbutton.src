@@ -157,7 +157,7 @@ function MostrarInformacoesBasicas(byref gump, targ, chardata, byref y_pos)
 	endif
 	AddInfoLine(gump, y_pos, "Raca e Cultura", display_text);
 	AddInfoLine(gump, y_pos, "Sexo", GetGenderString(targ.gender));
-	AddInfoLine(gump, y_pos, "Caminho", GetCharDataValue(chardata, "classe"));
+	AddInfoLine(gump, y_pos, "Classe", GetCharDataValue(chardata, "subclasse"));
 	AddInfoLine(gump, y_pos, "Background", GetCharDataValue(chardata, "background"));
 	AddInfoLine(gump, y_pos, "Caracteristica", GetCharDataValue(chardata, "trait"));
 
@@ -367,7 +367,7 @@ function ShowTracosRaciaisGump(who, targ)
 	var racial_traits := GetRacialTraits(chardata.culture);
 
 	if (!racial_traits)
-		GFTextMid(gump, 238, 280, 400, 2100, "Nenhum traço racial encontrado para esta raça.");
+		GFTextMid(gump, 118, 280, 400, 2100, "Nenhum traço racial encontrado para esta raça.");
 		return GFSendGump(who, gump);
 	endif
 

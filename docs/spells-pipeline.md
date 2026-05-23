@@ -105,9 +105,9 @@ This is the cast driver, but it's where "click a target" becomes the
 `distanceAllowedForSpells(who, skill, school)`:
 
 ```
-r = cint(skill / 10)
-range = 5 + r
-      + r   if (Evocator & school==Evocatium) | (Valdruk & school==Velkyn) | who is NPC
+base = clamp(5 + cint(skill/10), 7, 12)      // floor 7, cap 12 at skill 70
+spec = min(3, cint(skill/30))                // applies if Evocator+Evocatium, Valdruk+Velkyn, or NPC
+range = base + spec
       + 5   if caster has SPELL_RANGE (caminho ability)
 ```
 
@@ -123,8 +123,18 @@ if (dist > distanceAllowedForSpells(caster, HandleSpellSkill(caster), school))
 endif
 ```
 
-Reference reach: non-spec 50/70/100 skill = 10/12/15 tiles; specialist
-or NPC = 15/19/25; +5 with Spell Range.
+Reference reach (post-2026-05-20 rebalance — top is 20):
+
+| Profile | 0 | 30 | 50 | 60 | 70+ | 100 |
+|---|---|---|---|---|---|---|
+| Non-spec | 7 | 8 | 10 | 11 | 12 | 12 |
+| Non-spec + SpellRange | 12 | 13 | 15 | 16 | 17 | 17 |
+| Specialist / NPC | 7 | 9 | 11 | 13 | 14 | 15 |
+| Specialist + SpellRange | 12 | 14 | 16 | 18 | 19 | **20** |
+
+Design intent: low-skill floor of 7 (early-game survivability), mid-game
+matches old behavior (11 at 60 skill), late-game plateaus past skill 70.
+SpellRange ability always adds a clean +5.
 
 ### Coverage (post-2026-05-19 refactor)
 

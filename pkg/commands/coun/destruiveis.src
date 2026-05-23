@@ -119,6 +119,8 @@ program destruiveis(quem, texto)
 			SendSysMessageEX(quem, "Parâmetro para o comando marca não reconhecido, os possiveis sao [pdisp] e [pind]",
 							  SSM_GM_NOTICE);
 		endif
+	elseif (UPPER(parametros[1]) == "FIXFACCAO")
+		_FixIndestrutiveisFaccao(quem);
 	elseif (UPPER(parametros[1]) == "FIXSELECAO")
 		SendSysMessageEx(quem, "Atenção! este comando serve para arrumar os casos onde os itens foram selecionados e o server crashou, deixando tudo com a cor de seleção. Se algo foi alterado alem disso, pode causar incosistência.",
 				   SSM_GM_NOTICE);
@@ -153,3 +155,107 @@ program destruiveis(quem, texto)
 	endif
 
 endprogram
+
+function _FixIndestrutiveisFaccao(quem)
+	var rect_df := OpenDataFile(":architect:areas");
+	if (rect_df == error)
+		SendSysMessageEx(quem, "Erro ao abrir DataFile de áreas.", SSM_FAIL);
+		return;
+	endif
+
+	// Coleta facções únicas presentes no DataFile
+	var faccoes := array{};
+	var vistas := dictionary;
+	foreach nome in (rect_df.keys())
+		var elem := rect_df.FindElement(nome);
+		var fac := elem.GetProp("Faction");
+		if (!fac || fac == "") fac := "Selvagem"; endif
+		if (!vistas[fac])
+			vistas.insert(fac, 1);
+			faccoes.append(fac);
+		endif
+		Sleepms(2);
+	endforeach
+
+	if (faccoes.size() == 0)
+		SendSysMessageEx(quem, "Nenhuma facção encontrada no DataFile de áreas.", SSM_GM_NOTICE);
+		return;
+	endif
+
+	// Gump de seleção
+	var gump_h := 60 + faccoes.size() * 22 + 10;
+	var gump := GFECreateGump("Fix Indestrutíveis por Facção", 300, gump_h, array{ BORDER_BLUE });
+	GFTextLine(gump, 25, 42, 1891, "Selecione a facção alvo:");
+
+	var y := 68;
+	var i := 1;
+	while (i <= faccoes.size())
+		GFAddButton(gump, 25, y, 2361, 2361, 1, 100 + i);
+		GFTextLine(gump, 50, y - 3, 1153, faccoes[i]);
+		y += 22;
+		i += 1;
+	endwhile
+
+	var input := GFSendGump(quem, gump);
+	input := input[0];
+
+	if (input < 101 || input > 100 + faccoes.size())
+		SendSysMessageEx(quem, "Operação cancelada.", SSM_INFO);
+		return;
+	endif
+
+	var nomeFaccao := faccoes[input - 100];
+
+	// Confirmação
+	if (!YesNo(quem, "Marcar TODOS os itens fixos nos territórios de '" + nomeFaccao + "' como indestrutíveis?"))
+		SendSysMessageEx(quem, "Operação cancelada.", SSM_INFO);
+		return;
+	endif
+
+	// Coleta retângulos da facção escolhida
+	var retangulos := array{};
+	foreach nome in (rect_df.keys())
+		var elem := rect_df.FindElement(nome);
+		var fac := elem.GetProp("Faction");
+		if (!fac || fac == "") fac := "Selvagem"; endif
+		if (UPPER(fac) == UPPER(nomeFaccao))
+			var coords := SplitWords(elem.GetProp("Rect"));
+			if (coords.size() >= 4)
+				var r := struct;
+				r.+x1    := CInt(coords[1]);
+				r.+y1    := CInt(coords[2]);
+				r.+x2    := CInt(coords[3]);
+				r.+y2    := CInt(coords[4]);
+				r.+realm := elem.GetProp("Realm");
+				r.+nome  := nome;
+				retangulos.append(r);
+			endif
+		endif
+		Sleepms(2);
+	endforeach
+
+	SendSysMessageEx(quem, retangulos.size() + " retângulo(s) de '" + nomeFaccao + "'. Processando...", SSM_INFO);
+
+	var totalMarcados := 0;
+	foreach r in retangulos
+		var objetos := ListObjectsInBoxOfClass(POLCLASS_ITEM,
+			r.x1, r.y1, -15,
+			r.x2, r.y2,  15, r.realm);
+
+		foreach obj in objetos
+			if (obj.invisible)               continue; endif
+			if (obj.ISA(POLCLASS_EQUIPMENT)) continue; endif
+			if (obj.movable != 0)            continue; endif
+			if (GetObjProperty(obj, "PropStealable")) continue; endif
+
+			SetObjProperty(obj, PROPNAME_INDESTRUTIVEL, 1);
+			totalMarcados += 1;
+			Sleepms(2);
+		endforeach
+
+		SendSysMessageEx(quem, "  '" + r.nome + "': " + objetos.size() + " obj(s) processados.", SSM_INFO);
+		Sleepms(4);
+	endforeach
+
+	SendSysMessageEx(quem, "Concluído. " + totalMarcados + " item(s) marcados como indestrutíveis.", SSM_INFO);
+endfunction

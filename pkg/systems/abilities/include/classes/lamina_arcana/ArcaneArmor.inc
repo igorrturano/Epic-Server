@@ -8,6 +8,7 @@ include ":tn:cooldown";
 include ":timedScripts:timedScripts";
 include "include/sounds";
 include "include/epicConstants";
+include ":combat:Model/Damage";
 
 /**
  * Armadura Arcana (Arcane Armor) - ABILITY_ID::ARMADURA_ARCANA (2303)
@@ -71,15 +72,15 @@ class ArcaneArmor(CombatAbility)
         var elemental := GetObjProperty(weapon, "#elementalweapon");
         var status_duration := 5;
 
-        if (elemental.type == "Fire")
+        if (elemental.type == DAMAGE_TYPE::FIRE)
             TS_StartTimer(attacker, "queimar", status_duration);
             PlaySoundEffect(attacker, 0x5cb);
             PlayObjectCenteredEffectHuefx(attacker, 0x6d77, 7, 30, COLOR_ELEMENTAL_FIRE, 0);
-        elseif (elemental.type == "Cold")
+        elseif (elemental.type == DAMAGE_TYPE::COLD)
             TS_StartTimer(attacker, "congelamento", status_duration);
             PlaySoundEffect(attacker, 0x5c8);
             PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 30, COLOR_ELEMENTAL_ICE, 0);
-        elseif (elemental.type == "Energy")
+        elseif (elemental.type == DAMAGE_TYPE::ENERGY)
             TS_StartTimer(attacker, "lentidao", status_duration);
             PlaySoundEffect(attacker, 0x666);
             PlayObjectCenteredEffectHuefx(attacker, 0xcdaf, 7, 30, COLOR_ELEMENTAL_ENERGY, 0);
@@ -103,14 +104,14 @@ function _GrantArmorBonus(who, duration)
     var elemental := GetObjProperty(weapon, "#elementalweapon");
     var element_type := "";
 
-    if (elemental.type == "Fire")
-        element_type := "Fire";
+    if (elemental.type == DAMAGE_TYPE::FIRE)
+        element_type := DAMAGE_TYPE::FIRE;
         who.resist_fire_mod := who.resist_fire_mod + 100;
-    elseif (elemental.type == "Cold")
-        element_type := "Cold";
+    elseif (elemental.type == DAMAGE_TYPE::COLD)
+        element_type := DAMAGE_TYPE::COLD;
         who.resist_cold_mod := who.resist_cold_mod + 100;
-    elseif (elemental.type == "Energy")
-        element_type := "Energy";
+    elseif (elemental.type == DAMAGE_TYPE::ENERGY)
+        element_type := DAMAGE_TYPE::ENERGY;
         who.resist_energy_mod := who.resist_energy_mod + 100;
     endif
 
@@ -122,11 +123,11 @@ function _GrantArmorBonus(who, duration)
 endfunction
 
 function _RevokeArmorBonus(who, element_type)
-    if (element_type == "Fire")
+    if (element_type == DAMAGE_TYPE::FIRE)
         who.resist_fire_mod := who.resist_fire_mod - 100;
-    elseif (element_type == "Cold")
+    elseif (element_type == DAMAGE_TYPE::COLD)
         who.resist_cold_mod := who.resist_cold_mod - 100;
-    elseif (element_type == "Energy")
+    elseif (element_type == DAMAGE_TYPE::ENERGY)
         who.resist_energy_mod := who.resist_energy_mod - 100;
     endif
 endfunction
