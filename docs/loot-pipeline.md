@@ -213,10 +213,11 @@ Flow per item:
    `-tier*100`. The existing equip gate at
    [equip.src:209-221](../pkg/systems/combat/equip.src#L209-L221)
    enforces the threshold on equip.
-5. **Jewelry alternative**: if the base is jewelry (ring / bracelet /
-   earrings / amulet / necklace / circlet) there's a 50% chance the
-   item rolls a vital mod (`hitsmod` / `manamod` / `stammod` = +tier)
-   instead of a spell. Spell-stick bases always roll the spell.
+5. **Every item also gets a +tier vital mod** (one of `hitsmod` /
+   `manamod` / `stammod`, rolled per item). No jewelry-vs-spellstick
+   distinction — all bases stamp both the spell (if one matches the
+   circle window) and a vital mod. If no spell matches, the vital
+   mod alone keeps the item meaningfully magical.
 6. `ApplyEpicProperties` stamps everything. Item is tagged with
    `epic_magic_loot = 1` so `ChestLoot_PostProcess` skips the
    iron-lock and jewelry-mod-strip passes.
