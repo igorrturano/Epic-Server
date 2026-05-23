@@ -30,19 +30,16 @@ function ParseScriptString(crit)
 endfunction
 
 //Função criada para pergar Prop de Objeto tanto na forma de item quanto de item template.
+// Retorna o valor da prop, ou error (intrínseco do POL) se não existir.
+// Callers DEVEM checar `== error` antes de usar — error é truthy em eScript.
 function PegaPropObjItemOrTemplate(item, propriedade)
 	if(item.isA(POLCLASS_ITEM))
 		return GetObjProperty(item, propriedade);
-	else
-		if(item.?Cprops)
-			var prop := item.Cprops[propriedade];
-			if(prop != error)
-				return prop;
-			endif
-		endif
+	elseif(item.?Cprops)
+		return item.Cprops[propriedade];
 	endif
 
-	return error{"errortext":="Property not found"};
+	return error;
 endfunction
 
 function MontaObjCfgArmaArmadura(objeto,xDesc := "")

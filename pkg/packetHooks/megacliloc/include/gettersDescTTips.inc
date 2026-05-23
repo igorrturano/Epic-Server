@@ -19,30 +19,34 @@ include ":combat:Model/Damage";
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
 function PegaDescMagica(objeto,xDesc := "")
-	if (PegaPropObjItemOrTemplate(objeto,"magic_excep"))
+	var magic_excep := PegaPropObjItemOrTemplate(objeto,"magic_excep");
+	if (magic_excep != error && magic_excep)
 		xDesc := xDesc + ROXO + "Magico Excepcional<br>";
-	elseif (PegaPropObjItemOrTemplate(objeto,"magic"))
-		xDesc := xDesc + ROXO + "Magico<br>";
+	else
+		var magic := PegaPropObjItemOrTemplate(objeto,"magic");
+		if (magic != error && magic)
+			xDesc := xDesc + ROXO + "Magico<br>";
+		endif
 	endif
 	return xDesc;
 endfunction
 
 function PegaDescComponente(objeto,xDesc := "")
 	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_TIER_COMPONENTE);
-	if(prop)
+	if(prop != error && prop)
 		xDesc := xDesc + SOFT_PINK + "Componente<br>";
 		var tierDesc := PegaComponenteTierDesc(prop).desc;
 		if (tierDesc)
 			xDesc := xDesc + WHITE + "Qualidade: " + tierDesc + "<br>";
 		endif
 		var encaixeProp := PegaPropObjItemOrTemplate(objeto, PROPNAME_ENCAIXE_COMPONENTE);
-		if(encaixeProp)
+		if(encaixeProp != error && encaixeProp)
 			xDesc := xDesc + WHITE + "Encaixe: " + encaixeProp + "<br>";
 		endif
 	endif
 
 	prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
-	if((prop.estado == ITEM_PRONTO || prop.estado == ITEM_GERADO) && !prop.isCompletamenteComum)
+	if(prop != error && (prop.estado == ITEM_PRONTO || prop.estado == ITEM_GERADO) && !prop.isCompletamenteComum)
 		//xDesc := xDesc + "<br>";
 		if(prop.qualidade > 0)
 			xDesc := xDesc + LARANJA + "Excepcional<br>";
@@ -61,7 +65,7 @@ endfunction
 
 function PegaDescProdutoMontado(objeto,xDesc := "")
 	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
-	if(prop)
+	if(prop != error && prop)
 		var quantidadeLote := "";
 		if(prop.receita.lote && prop.receita.lote > 1)
 			quantidadeLote := prop.receita.lote  + "x ";
@@ -160,13 +164,14 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	endif
 
 	var weapon := WeaponWrapper(objeto);
-	weapon.SetCprops(objeto.Cprops);
-	var character := MobileWrapper(who);
 	var xDesc := cfg.desc;
-	// Coloca vermelho se a força do usuario for menor, verde se for maior ou igual a força exigida
+	// MobileWrapper(who) é caro (5+ alocações de Exception por construção).
+	// Só constrói se algum branch abaixo precisar dele.
+	var character := 0;
 	var str_required := weapon.GetSTRRequired();
-	
+
 	if(str_required > 0)
+		character := MobileWrapper(who);
 		if (character.GetSTR() < str_required)
 			xDesc := xDesc + RED + "Força exigida: " + str_required + "<br>";
 		else
@@ -195,8 +200,11 @@ function PegaDescArmas(objeto,who,cfg := struct)
 		xDesc := xDesc + AMARELO_CLARO + "Arma Ágil<br>";
 	endif
 
-	if (weapon.IsAssassin() && character.HasAbility(ABILITY_ID::ASSASSINAR))
-		xDesc := xDesc + AMARELO_CLARO + "Arma de Assassino<br>";
+	if (weapon.IsAssassin())
+		if (!character) character := MobileWrapper(who); endif
+		if (character.HasAbility(ABILITY_ID::ASSASSINAR))
+			xDesc := xDesc + AMARELO_CLARO + "Arma de Assassino<br>";
+		endif
 	endif
 
 	if (objeto.hp_mod > 0)
@@ -204,7 +212,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	endif
 
 	var aprimoramentos := PegaPropObjItemOrTemplate(objeto, "Aprimoramentos");
-	if (aprimoramentos)
+	if (aprimoramentos != error && aprimoramentos)
 		xDesc := xDesc + ROXO + "Aprimoramentos: " +  "<br>";
 		foreach key in (aprimoramentos.keys())
 				xDesc := xDesc + AMARELO_CLARO + key + "<br>";
@@ -235,12 +243,8 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	return xDesc;
 endfunction
 
+// Caller (PegaDescArmas) já constrói weapon e passa por parâmetro — não reconstrói.
 function PegaDescDanoArma(objeto,cfg,xDesc := "", weapon := 0)
-	
-	if(!weapon)
-		weapon := WeaponWrapper(objeto);
-	endif
-
 	var mainDamage := weapon.GetMainDamage();
 	var offDamage := weapon.GetOffDamage();
 	var bluntMD,slashMD,pircMD :=0;
@@ -268,11 +272,8 @@ function PegaDescDanoArma(objeto,cfg,xDesc := "", weapon := 0)
 	return xDesc;
 endfunction
 
+// Caller (PegaDescArmas) já constrói weapon e passa por parâmetro — não reconstrói.
 function PegaDescDanoModArma(objeto,xDesc := "", weapon := 0)
-	if(!weapon)
-		weapon := WeaponWrapper(objeto);
-	endif
-
 	var damageMod := weapon.GetDamageMod();
 	var fireDamage := damageMod.GetFireBaseDamage();
 	var coldDamage := damageMod.GetColdBaseDamage();
@@ -300,8 +301,8 @@ function PegaDescDanoModArma(objeto,xDesc := "", weapon := 0)
 endfunction
 
 function PegaDescCargasArmElemental(objeto, who, XDesc := "")
-	if ( PegaPropObjItemOrTemplate(objeto,"#elementalweapon").serial == who.serial)	
-		var elWpn := PegaPropObjItemOrTemplate(objeto, "#elementalweapon");
+	var elWpn := PegaPropObjItemOrTemplate(objeto, "#elementalweapon");
+	if (elWpn != error && elWpn.serial == who.serial)
 		if (elWpn.type == DAMAGE_TYPE::COLD)
 			xDesc := xDesc + BLUE_ICE + "Cargas Arcanas: "+elWpn.cargas+"<br>";
 		elseif (elWpn.type == DAMAGE_TYPE::FIRE)
@@ -319,8 +320,7 @@ function PegaDescArmaduras(objeto,cfg := struct)
 		cfg := MontaObjCfgArmaArmadura(objeto);
 	endif
 
-	var armadura := ArmorWrapper(objeto); 
-	armadura.SetCprops(objeto.Cprops);
+	var armadura := ArmorWrapper(objeto);
 
 	var xDesc := cfg.desc;
 
@@ -343,13 +343,8 @@ function PegaDescArmaduras(objeto,cfg := struct)
 	return xDesc;
 endfunction
 
+// Caller (PegaDescArmaduras) já constrói armadura e passa por parâmetro — não reconstrói.
 function PegaDescResistArmadura(objeto,cfg,armadura, xDesc := "")
-
-	var atrib := struct;
-	if(!armadura)
-		armadura := ArmorWrapper(objeto);
-	endif
-
 	var resists := armadura.GetResists();
 	var slashRes := resists.GetSlashResist();
 	var pircRes := resists.GetPiercingResist();
@@ -402,8 +397,9 @@ function PegaDescMagicLore(objeto, who , xDesc := "")
 	var pplmage := PegaPropObjItemOrTemplate(objeto, "magicwho"); //magic lore
 		if ( pplmage != error)
 			if (who.serial in pplmage)
-				if (PegaPropObjItemOrTemplate(objeto, "pocaoname"))
-					xDesc := xDesc + WHITE + PegaPropObjItemOrTemplate(objeto, "pocaoname") + "<br>";
+				var pocaoname := PegaPropObjItemOrTemplate(objeto, "pocaoname");
+				if (pocaoname != error && pocaoname)
+					xDesc := xDesc + WHITE + pocaoname + "<br>";
 					var potencia := PegaPropObjItemOrTemplate(objeto, "crafterskill");
 					var title ;
 					if (potencia == error)
@@ -465,8 +461,9 @@ function PegaDescMagicLore(objeto, who , xDesc := "")
 endfunction
 
 function PegaDescDoses(objeto, xDesc)
-		if (PegaPropObjItemOrTemplate(objeto, "doses"))
-			xDesc := xDesc + BLUE_ICE + PegaPropObjItemOrTemplate(objeto, "doses") + " doses";
+		var doses := PegaPropObjItemOrTemplate(objeto, "doses");
+		if (doses != error && doses)
+			xDesc := xDesc + BLUE_ICE + doses + " doses";
 		endif
 		return xDesc;
 endfunction
