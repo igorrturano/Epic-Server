@@ -40,7 +40,11 @@ program SpellScript(params)
 			SendSysMessageEx(who, "Você nota que o alvo nao foi afetado.", SSM_FAIL);
 			return;
 		endif
-		SetObjProperty(targ, "#hit_mod", -cint(AP_GetSkill(who, ARCANA)));
+		SC_RemoveEffect(targ, CInt(spell.id));
+		var opts := struct{};
+		opts.+hitchance_mod := -CInt(AP_GetSkill(who, ARCANA));
+		opts.+desc := "Iludido";
+		SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
 		return;
 	endif
 
