@@ -4,6 +4,7 @@
 use uo;
 use polsys;
 use basic;
+use cfgfile;
 
 include ":ultimalive:include/ultimalive";
 
@@ -95,6 +96,103 @@ function UL_SendBlockUpdate(who, realm, blockX, blockY)
     endwhile
 
     pkt.SendPacket(who);
+    return 1;
+endfunction
+
+function _UL_GetShardIdentifier()
+    var cfg := ReadConfigFile(":ultimalive:config/ultimalive");
+    if (cfg == error)
+        return error{"errortext" := "_UL_GetShardIdentifier: falha ao abrir ultimalive.cfg"};
+    endif
+    var elem := cfg["Settings"];
+    if (elem == error)
+        return error{"errortext" := "_UL_GetShardIdentifier: elem Settings nao encontrado"};
+    endif
+    var id := GetConfigString(elem, "ShardIdentifier");
+    if (id == error)
+        return error{"errortext" := "_UL_GetShardIdentifier: ShardIdentifier ausente"};
+    endif
+    return id;
+endfunction
+
+function UL_BuildLoginConfirmationPacket(shard_id)
+    var pkt := CreatePacket(0x3F, 43);
+    pkt.SetInt16(1, 43);
+    pkt.SetInt8(13, 0x02);
+    if (Len(shard_id) > 27)
+        shard_id := SubStr(shard_id, 1, 27);
+    endif
+    pkt.SetString(15, shard_id, 1);
+    return pkt;
+endfunction
+
+function UL_BuildMapDefinitionPacket()
+    var realms_map := Realms();
+    var keys       := realms_map.Keys();
+    var n          := Len(keys);
+    if (n == 0)
+        return error{"errortext" := "UL_BuildMapDefinitionPacket: nenhum realm encontrado"};
+    endif
+    var v       := (n * 9 + 6) / 7;
+    var pkt_len := 15 + n * 9;
+    var pkt := CreatePacket(0x3F, pkt_len);
+    pkt.SetInt16(1, pkt_len);
+    pkt.SetInt32(7, v);
+    pkt.SetInt8(13, 0x01);
+    var offset := 15;
+    foreach realm_name in keys
+        var realm_info := realms_map[realm_name];
+        var map_id     := CInt(realm_info.mapid);
+        var width      := CInt(realm_info.width);
+        var height     := CInt(realm_info.height);
+        pkt.SetInt8 (offset,     map_id);
+        pkt.SetInt16(offset + 1, width);
+        pkt.SetInt16(offset + 3, height);
+        pkt.SetInt16(offset + 5, width);
+        pkt.SetInt16(offset + 7, height);
+        offset += 9;
+    endforeach
+    return pkt;
+endfunction
+
+function UL_BuildHashQueryPacket(realm, centerBlockX, centerBlockY)
+    var realm_info := Realms()[CStr(realm)];
+    if (!realm_info)
+        return error{"errortext" := "UL_BuildHashQueryPacket: realm nao encontrado: " + realm};
+    endif
+    var map_height_blocks := CInt(realm_info.height) / 8;
+    var center_block      := centerBlockX * map_height_blocks + centerBlockY;
+    var map_id            := CInt(realm_info.mapid);
+    var pkt := CreatePacket(0x3F, 15);
+    pkt.SetInt16(1, 15);
+    pkt.SetInt32(3, center_block);
+    pkt.SetInt8(13, 0xFF);
+    pkt.SetInt8(14, map_id);
+    return pkt;
+endfunction
+
+function UL_SendHandshake(who)
+    var shard_id := _UL_GetShardIdentifier();
+    if (shard_id == error)
+        return shard_id;
+    endif
+    var pkt_login := UL_BuildLoginConfirmationPacket(shard_id);
+    if (pkt_login == error)
+        return pkt_login;
+    endif
+    pkt_login.SendPacket(who);
+    var pkt_map := UL_BuildMapDefinitionPacket();
+    if (pkt_map == error)
+        return pkt_map;
+    endif
+    pkt_map.SendPacket(who);
+    var blockX         := CInt(who.x) / 8;
+    var blockY         := CInt(who.y) / 8;
+    var pkt_hash_query := UL_BuildHashQueryPacket(who.realm, blockX, blockY);
+    if (pkt_hash_query == error)
+        return pkt_hash_query;
+    endif
+    pkt_hash_query.SendPacket(who);
     return 1;
 endfunction
 
