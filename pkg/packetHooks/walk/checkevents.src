@@ -15,19 +15,6 @@ exported function CheckEventsWalk(who, byref packet)
 		if (who.stealthsteps >= 1)
 			var passos := who.stealthsteps - 1;
 			SendSysMessage(who, "Ainda lhe restam " + passos + " passos.");
-
-			var total := CInt(GetObjProperty(who, "#stealthBudgetTotal"));
-			if (total >= 4)
-				var threshold := CInt(total * 0.3);
-				if (threshold < 2)
-					threshold := 2;
-				endif
-				if (who.stealthsteps == threshold && !GetObjProperty(who, "#stealthShakeFired"))
-					ScreenShake(who, 0.4, 10);
-					SendSysMessage(who, "*suas pernas tremem*");
-					SetObjProperty(who, "#stealthShakeFired", 1);
-				endif
-			endif
 		endif
 	endif
 

@@ -173,6 +173,10 @@ function CalculateDHDiff(who, mobile)
 		difficulty := CInt(difficulty * 0.85);
 		dhLightLabel := dhLightLabel + "(light)";
 	endif
+	if (GetObjProperty(mobile, "#stealthExausto"))
+		difficulty := difficulty - 15;
+		dhLightLabel := dhLightLabel + "(exausto)";
+	endif
 	if (dhLightLabel != "")
 		PrintTextAbove(who, "[DH] " + mobile.name + " " + diffBeforeLight + "->" + difficulty + " " + dhLightLabel);
 	endif
