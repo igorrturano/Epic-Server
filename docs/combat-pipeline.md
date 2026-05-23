@@ -26,10 +26,17 @@ Read this instead of re-tracing the pipeline every time.
 - Ability hooks are spliced in at fixed moments along that path (before
   hit, before damage, after damage, on crit, on kill, on parry, on miss),
   both **active** and **passive** variants.
-- Damage is 7 typed channels carried as `Raw` (pre-resist) and `Base`
-  (post-resist). Only the **active posture's** physical channel is applied;
-  `GetTotalBaseDamage()` sums all 7 and is ~3× real physical. See the
+- Damage is 8 channels carried as `Raw` (pre-resist) and `Base`
+  (post-resist): 3 physical (slash/piercing/blunt) + 4 elemental
+  (fire/cold/poison/energy) + **FORCED** (bypasses the resist chain).
+  For swings, only the **active posture's** physical channel is applied;
+  `GetTotalBaseDamage()` sums all 8 and is ~3× real physical. See the
   pitfall section.
+- Non-swing damage (spells, traps, abilities, bleed/poison ticks) goes
+  through **`DealDamage(target, amount, DAMAGE_TYPE::*, source, spellId)`**
+  in `DamageController.inc`. It enters the pipeline at a lower stage —
+  skips the hit roll (caller already decided this hits) but runs resist,
+  apply, and post-damage hooks. See Stage 5b.
 
 ## The four files
 
@@ -241,23 +248,111 @@ CalculateDefenderResist()                       # body/armor/spell % reduction (
 ### 5d — `ApplyCombatDamage()` (`:1114-1210`)
 
 - Fires `ExecuteCombatAbilitiesOnHit` first (`:1115`).
-- Zeroes the two non-active physical channels, **guarantees min 1** on the
-  active posture channel, `DisplayDamage` + `ApplyRawDamage` per channel
-  (`:1120-1154`).
+- **Branches on `attackInfo.UsesChannelApply()`**:
+  - **Swing path** (`_ApplyPhysicalDamageByPosture`): zeroes the two
+    non-active physical channels, **guarantees min 1** on the active
+    posture channel.
+  - **Non-swing path** (`_ApplyPhysicalDamageByChannel`, set by
+    `DealDamage` and `SetSpellOrigin`): applies whatever physical channels
+    were stamped, no posture zeroing, no min-1 phantom damage. Required
+    for sourceless damage (attacker=defender) where defender's posture
+    is unrelated to what the caller stamped.
+- `DisplayDamage` + `ApplyRawDamage` per channel.
 - Each elemental channel applied only if `> 0`, else clamped to 0
   (negative-after-resist guard) (`:1156-1186`).
+- **FORCED channel** applied independently if `> 0` — no `Decrease*Percent`
+  exists for it so it flows through `CalculateDefenderResist` untouched.
 - Post: `SetLastDamageInfo` on lethal hits, pet-owner damage display,
   `AccumulateVinganca` (`:1188-1209`).
 
+## Non-swing damage entry: `DealDamage()` (`DamageController.inc:172`)
+
+Spells, traps, abilities, bleed/poison ticks, environmental damage all
+go through this facade instead of `combatHook.Attack`. It enters the
+pipeline at Stage 5 — caller already decided the hit happens; no hit
+roll, no parry, no body region.
+
+```escript
+DealDamage(defender, amount, dmgType, source := 0, spellId := 0)
+```
+
+Inside (`:172-203`):
+1. Builds `AttackInfo` with `MobileWrapper(source)` (or `MobileWrapper(defender)`
+   if sourceless — defender doubles as attacker).
+2. Sets flags: `SetSkipParry(true).SetSkipCrit(true).SetSkipBodyRegion(true).SetAppliesArmorWear(false).SetUsesChannelApply(true)`.
+3. If `spellId > 0`, calls `SetSpellOrigin(spellId, dmgType)` — flags
+   `_isSpell` for forensics; same flag-setup as above.
+4. Stamps damage via `Damage.IncreaseRawDamageByType(dmgType, amount)`.
+5. Calls `CalculateDefenderResist` → `ApplyCombatDamage` → `AttackLogger`
+   → After/OnKill ability hooks.
+
+**Spell facade — `SC_DealDamage`** (`pkg/systems/spells/include/Controller/SC_Damage.inc:23`):
+adds the equipped focus elemental bonus (`GetMagicItemElementalBonus`),
+then delegates to `DealDamage`. All ~50 spell scripts call SC_DealDamage,
+not DealDamage directly.
+
+**`DAMAGE_TYPE::FORCED`** stamps the dedicated `Damage.ForcedRaw/ForcedBase`
+channel. No `DecreaseForcedPercentDamage` exists by design — FORCED
+damage is unresistible. Use it for damage that already passed its defense
+check (poison ticks after Fortitude save, bleed ticks, disease ticks,
+admin/scripted forced kills).
+
+## Coating + Fortitude save — `CheckPoison()` (`DamageController.inc:1525-1590`)
+
+Called from `ProccessCombatDamage` post-apply (Stage 5 main flow above).
+Reads the `poisonInfo` ObjProp set by
+[`envenenar.src`](pkg/commands/player/envenenar.src) (player coats a
+weapon with an alchemist poison potion). On a hit:
+
+```
+sourcePoison := attackInfo.GetAmmo().GetItem().GetObjRef()
+              ?: attackInfo.GetWeapon().GetObjRef()
+poisonInfo := sourcePoison.GetProp("poisonInfo")
+if poisonInfo == error: return false
+
+// decrement dosage, etc.
+
+if CheckResist(defender, FORTITUDE, poisonInfo.difficulty, -poisonInfo.difficulty_mod):
+    # Fortitude save succeeded — no effect
+    SendSys(attacker, "Seu veneno parece não ter surtido efeito no alvo.")
+    SendSys(defender, "Você resistiu ao veneno.")
+    return false
+else:
+    # Save failed — start poison timer
+    TS_StartTimer(defender, poisonInfo.name, poisonInfo.time,
+                  poisonInfo.level, attacker)
+```
+
+The `poisonInfo.name` is a TS-script identifier — `"alchPoison"`,
+`"defaultPoison"`, `"strPoison"`, `"staminaPoison"`, `"manaPoison"`,
+`"paralyzePoison"`. Tick scripts live in
+`pkg/mobiles/timedScripts/subScripts/poison/`. Each tick deals damage
+typed as **`DAMAGE_TYPE::FORCED`** — the Fortitude check at coating-hit
+time was the defense; subsequent ticks are internal and bypass armor.
+
+Bleed (`bleed.src`, `bleedingstrike.src`) and disease (`enddisease_effect.src`)
+ticks follow the same pattern: FORCED damage, no resist applies.
+
+`CheckPoison` itself **does not deal damage** — it only starts a timer.
+The hit-time damage (the swing landing) is handled by the normal swing
+pipeline above.
+
 ## The damage-total pitfall (read before touching damage)
 
-`GetTotalBaseDamage()` / `GetTotalRawDamage()` **sum all 7 channels**.
-Status + skill bonuses are added to **all three** physical channels
-(slash/piercing/blunt) in `CalculateStatusDamage`/`CalculateSkillDamage`,
-but `ApplyCombatDamage` only applies the **active posture's** channel and
-zeroes the other two. So a total-based read is ~3× the real physical hit.
+`GetTotalBaseDamage()` / `GetTotalRawDamage()` **sum all 8 channels**.
+For **swing damage**, status + skill bonuses are added to all three
+physical channels (slash/piercing/blunt) in `CalculateStatusDamage` /
+`CalculateSkillDamage`, but `ApplyCombatDamage` only applies the **active
+posture's** channel and zeroes the other two. So a total-based read is
+~3× the real physical hit.
 
-Correct pattern for "what did this swing actually do physically":
+For **non-swing damage** via `DealDamage`, the channel selected by
+`Damage.IncreaseRawDamageByType(dmgType, amount)` is the only physical
+one stamped — no posture zeroing (Stage 5d's channel branch). FORCED is
+applied independently and untouched by resist.
+
+Correct pattern for "what did this swing actually do" (works for both
+swings and DealDamage callers):
 
 ```escript
 var posture := attacker.GetCombatTraits().GetPosture();
@@ -267,12 +362,14 @@ elseif  (posture == DAMAGE_TYPE::PIERCING) real := damage.GetPiercingBaseDamage(
 elseif  (posture == DAMAGE_TYPE::BLUNT)    real := damage.GetBluntBaseDamage();
 endif
 real += damage.GetFireBaseDamage() + damage.GetColdBaseDamage()
-      + damage.GetPoisonBaseDamage() + damage.GetEnergyBaseDamage();  // elementals always apply
+      + damage.GetPoisonBaseDamage() + damage.GetEnergyBaseDamage()  // elementals always apply
+      + damage.GetForcedBaseDamage();                                 // FORCED always applies
 ```
 
 `Raw*` = before resist, `Base*` = after resist. `Increase*RawDamage` also
 bumps Base (they track together until `CalculateDefenderResist` decreases
-Base via the `Decrease*PercentDamage` calls).
+Base via the `Decrease*PercentDamage` calls — except FORCED, which has
+no percent-decrease method by design).
 
 ## Ability hook insertion points (combat moments)
 

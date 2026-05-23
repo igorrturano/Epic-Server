@@ -7,6 +7,7 @@
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":abilities:models/Ability";
 include ":tn:cooldown";
+include ":charactercreation:subclasses";
 include "include/packets";
 include "include/dungeons";
 
@@ -50,7 +51,7 @@ function CalculateHitChance(byRef attackInfo)
 	CalculateAbilityHitModifier(hit_chance, attackInfo);
 	CalculateEntropyHitModifier(hit_chance, attackInfo);
 	CalculateCooldownHitModifier(hit_chance, attackInfo);
-	CalculatePropHitModifier(hit_chance, attackInfo);
+	CalculateDuelHitModifier(hit_chance, attackInfo);
 
 	if (!attackInfo.GetAttacker().IsNPC())
 		DarknessHitModifier(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), hit_chance);
@@ -113,7 +114,9 @@ function CalculateDualWieldPenalty(attackInfo)
 endfunction
 
 function DarknessHitModifier(attacker, defender, byref hit_chance)
-    var attacker_race := GetObjProperty(attacker, "chardata").raca;
+    var chardata := GetObjProperty(attacker, "chardata");
+    var attacker_race := chardata.raca;
+    var attacker_subclasse := (TypeOfInt(chardata.subclasse) == OT_ARRAY ? chardata.subclasse[1] : "");
     var in_darkness := InDarkness(attacker);
 	var metamorfose := GetObjProperty(attacker, "metamorfose");
 	if (metamorfose)
@@ -133,16 +136,22 @@ function DarknessHitModifier(attacker, defender, byref hit_chance)
         if (!HasLightNearby(defender))
 			if (GetCooldown(attacker, "nightvision") > 0)
             	hit_chance -= 10;
-            	SendSysMessageEx(attacker, "A escuridão faz você lutar com certa dificuldade.", SSM_FAIL);
+            	// SendSysMessageEx(attacker, "A escuridão faz você lutar com certa dificuldade.", SSM_FAIL);
 			else
 				hit_chance -= 20;
 				SendSysMessageEx(attacker, "A escuridão faz você lutar com muita dificuldade.", SSM_FAIL);
+			endif
+			// Arqueiros têm visão treinada para combate noturno: +10 que compensa parcialmente.
+			// Empilha com nightvision (-10 + 10 = 0) e sozinho reduz -20 para -10. Só se aplica
+			// dentro do ramo de penalidade, então nunca vira bônus em ambiente iluminado.
+			if (attacker_subclasse == SUBCLASS::ARQUEIRO)
+				hit_chance += 10;
 			endif
         endif
     elseif (!in_darkness && attacker_race == DROW)
 		if (GetCooldown(attacker, "nightvision") > 0)
 			hit_chance -= 10;
-			SendSysMessageEx(attacker, "A claridade faz você lutar com certa dificuldade.", SSM_FAIL);
+			// SendSysMessageEx(attacker, "A claridade faz você lutar com certa dificuldade.", SSM_FAIL);
 		else
 			hit_chance -= 20;
 			SendSysMessageEx(attacker, "A claridade faz você lutar com muita dificuldade.", SSM_FAIL);
@@ -159,7 +168,7 @@ function HasLightNearby(defender)
 
 	// Mais barato: checa tochas/lanternas equipadas em players proximos (caso mais comum)
 	var nearby_mobiles := ListMobilesNearLocation(defender.x, defender.y, defender.z, SEARCH_RANGE, defender.realm);
-	var isEquippedLightSource := {0x0a12, 0x0a22, 0x0a23, 0x0a24, 0x0a15, 0xC626, 0xC620, 0xC622, 0xC628};
+	var isEquippedLightSource := {0x0a12, 0x0a22, 0x0a23, 0x0a24, 0x0a15, 0xC626, 0xC620, 0xC622, 0xC624, 0xC628};
 
 	foreach mob in nearby_mobiles
 		if (!mob.npctemplate)
@@ -390,42 +399,35 @@ function CalculateCooldownHitModifier(byref hit_chance, attackInfo)
 	endif
 endfunction
 
-function CalculatePropHitModifier(hit_chance, attackInfo)
-	var challenged_by := attackInfo.GetAttacker().GetObjRef().GetProp("#DuelChallenge");
-	if (challenged_by && !attackInfo.GetAttacker().IsNPC)
-		if (challenged_by.time < ReadGameClock())
-			attackInfo.GetAttacker().GetObjRef().EraseProp("#DuelChallenge");
-		else
-			var challenger := SystemFindObjectBySerial(challenged_by.challenger);
-			if (challenger && challenger.connected)
-				if (attackInfo.GetDefender().GetSerial() != challenger.serial)
-					hit_chance -= 10.0;
-					if (RandomInt(100 + 1) < 20.0)
-						Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackInfo.GetAttacker().GetObjRef());
-					endif
-				endif
-			else
-				attackInfo.GetAttacker().GetObjRef().EraseProp("#DuelChallenge");
-			endif
-		endif
+// Penalty for hitting a target other than your duel challenger.
+// #DuelChallenge is set by :spells:paladin/forcarduelo and cleared lazily here on expiry.
+// Kept as a prop read (instead of hitchance_mod) because the penalty is target-conditional.
+function CalculateDuelHitModifier(byref hit_chance, attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var attackerRef := attacker.GetObjRef();
+	var challenged_by := attackerRef.GetProp("#DuelChallenge");
+
+	if (!challenged_by || attacker.IsNPC())
+		return;
 	endif
 
-	if (attackInfo.GetAttacker().GetObjRef().GetProp("#bomcomeco"))
-		var attackers := attackInfo.GetDefender().GetObjRef().GetProp("#bomcomecoserials");
-		if (attackers == error) attackers := array{}; endif
-
-		if (!(attackInfo.GetAttacker().GetSerial() in attackers))
-			hit_chance += 50.0;
-			attackers.append(attackInfo.GetAttacker().GetSerial());
-			attackInfo.GetDefender().GetObjRef().SetProp("#bomcomecoserials", attackers);
-			Message("Você começou bem.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(attackInfo.GetAttacker().GetObjRef());
-		endif
-
-		attackInfo.GetAttacker().GetObjRef().EraseProp("#bomcomeco");
+	if (challenged_by.time < ReadGameClock())
+		attackerRef.EraseProp("#DuelChallenge");
+		return;
 	endif
 
-	if (attackInfo.GetAttacker().GetObjRef().GetProp("#hit_mod"))
-		hit_chance += CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#hit_mod"));
-		attackInfo.GetAttacker().GetObjRef().EraseProp("#hit_mod");
+	var challenger := SystemFindObjectBySerial(challenged_by.challenger);
+	if (!challenger || !challenger.connected)
+		attackerRef.EraseProp("#DuelChallenge");
+		return;
+	endif
+
+	if (attackInfo.GetDefender().GetSerial() == challenger.serial)
+		return;
+	endif
+
+	hit_chance -= 10.0;
+	if (RandomInt(101) < 20)
+		Message("Você está em duelo! Seus ataques são menos efetivos contra outros alvos.", Color(SYSTEM_COLOR::FAIL)).SendSys(attackerRef);
 	endif
 endfunction

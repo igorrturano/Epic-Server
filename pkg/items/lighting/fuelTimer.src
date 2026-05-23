@@ -1,0 +1,55 @@
+// Watchdog spawned por change.src ao acender uma lanterna/vela com Duration definida.
+// Tica a cada 60s checando o CProp #fuel_expires; quando expira (ou some, indicando
+// extinção manual), restaura o gráfico para o objtype original e termina.
+// O ícone de buff não é removido aqui — o cliente conta a duração que recebeu via
+// SendCustomBuff e some sozinho. Extinção manual é tratada por change.src.
+
+use uo;
+use os;
+use cfgfile;
+
+const POLL_SECONDS := 60;
+
+program fuelTimer(params)
+	var serial := params[1];
+
+	while (1)
+		var item := SystemFindObjectBySerial(serial);
+		if (!item)
+			return;
+		endif
+
+		var expires := CInt(GetObjProperty(item, "#fuel_expires"));
+		if (!expires)
+			return;
+		endif
+
+		var remaining := expires - ReadGameClock();
+		if (remaining <= 0)
+			Extinguish(item);
+			return;
+		endif
+
+		if (remaining < POLL_SECONDS)
+			sleep(remaining);
+		else
+			sleep(POLL_SECONDS);
+		endif
+	endwhile
+endprogram
+
+function Extinguish(item)
+	// Itens Consumable (velas, tochas) viram cinza ao queimar — DestroyItem.
+	// Itens reabasteciáveis (lanternas) viram secos e ficam aguardando óleo.
+	var cfg := ReadConfigFile(":*:itemdesc");
+	var elem := FindConfigElem(cfg, item.objtype);
+	if (elem && CInt(elem.Consumable) > 0)
+		DestroyItem(item);
+		return;
+	endif
+
+	item.graphic := item.objtype;
+	SetObjProperty(item, "graphic", item.objtype);
+	EraseObjProperty(item, "#fuel_expires");
+	SetObjProperty(item, "#fuel_dry", 1);
+endfunction
