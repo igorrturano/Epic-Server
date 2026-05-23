@@ -29,6 +29,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 	var Race := "";
 	var Culture := "";
 	var Religion := "";
+	var Subclasse := "";
 	var CombatTraitsVar; // CombatTraits class
 	var Abilities; // Dictionary<ABILITY_ID, Integer>
 	var ActiveAbilities; // Dictionary<ACTIVATION_MOMENT, Dictionary<ABILITY_ID, INTEGER>> // O valor dentro do 2º é quantas cargas ativas existem dessa habilidade
@@ -50,11 +51,13 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 				this.Race := err;
 				this.Culture := err;
 				this.Religion := err;
+				this.Subclasse := err;
 				this.CombatTraitsVar := err;
 			else // Se entrar aqui, é player
 				this.Race := this.GetProperty(MOBILE_PROPNAME::CHARDATA).raca;
 				this.Culture := this.GetProperty(MOBILE_PROPNAME::CHARDATA).culture;
 				this.Religion := this.GetProperty(MOBILE_PROPNAME::CHARDATA).religion;
+				this.Subclasse := this.GetProperty(MOBILE_PROPNAME::CHARDATA).subclasse;
 
 				// Variáveis que indicarão que é um player
 				var err := IsPlayerException();
@@ -91,6 +94,7 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			this.Race := err;
 			this.Culture := err;
 			this.Religion := err;
+			this.Subclasse := err;
 			this.CombatTraitsVar := err;
 			this.Abilities := err;
 			this.ActiveAbilities := err;
@@ -150,7 +154,17 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 
 		return this.Religion;
 	endfunction
-	
+
+	function GetSubclasse(this)
+		if (this.Subclasse is @Exception)
+			return this.Subclasse;
+		endif
+		if (TypeOfInt(this.Subclasse) != OT_ARRAY)
+			return "";
+		endif
+		return this.Subclasse[1];
+	endfunction
+
 	function GetStr(this)
 		return this.GetStrBase() + this.GetStrMod();
 	endfunction
@@ -1777,7 +1791,8 @@ class MobileWrapper(UObjectWrapper, IMobileWrapper)
 			$"Color: {this.GetColor()} ({this.GetColor()}), " +
 			$"Str: {this.GetStr()}, " +
 			$"Dex: {this.GetDex()}, " +
-			$"Int: {this.GetInt()}";
+			$"Int: {this.GetInt()}, " +
+			$"Subclasse: {this.GetSubclasse()}";
 	endfunction
 
 	// ============================================================================
