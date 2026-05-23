@@ -114,15 +114,16 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 	// Calculate how many new chests we need to spawn
 	var new_amount_to_spawn := amount - chest_count;
 
-	var loot_name_prefix := "";
+	var base_lootname := "EpicChest" + level;
+	var flavor_suffix := "";
 	case (chest_type)
-		"Warrior":  loot_name_prefix := "Humano" + "Guerreiro"; break;
-		"Thief":    loot_name_prefix := "Humano" + "Ladino"; break;
-		"Artifice": loot_name_prefix := "Humano" + "Artifice"; break;
-		"Mage":     loot_name_prefix := "Humano" + "Sabio"; break;
-		default:    loot_name_prefix := "Humano" + "Guerreiro"; break;
+		"Warrior":  flavor_suffix := "_FlavorWarrior"; break;
+		"Thief":    flavor_suffix := "_FlavorThief"; break;
+		"Artifice": flavor_suffix := "_FlavorArtifice"; break;
+		"Mage":     flavor_suffix := "_FlavorMage"; break;
+		"Misto":    flavor_suffix := ""; break;
+		default:    flavor_suffix := ""; break;
 	endcase
-	var lootname := loot_name_prefix + "Chest" + level;
 
 	var created_chests_this_cycle := array;
 	var puzzle_chests_spawned_this_cycle := 0;
@@ -244,7 +245,10 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 							SetObjProperty(new_chest, PROPNAME_DURABILIDADE_MAX, chest_info.maxhp * level);
 
 							AddRandomTraps(new_chest, level);
-							Loot_Generate(new_chest, lootname);
+							Loot_Generate(new_chest, base_lootname);
+							if (flavor_suffix != "")
+								Loot_Generate(new_chest, base_lootname + flavor_suffix);
+							endif
 						endif
 					endif
 
@@ -260,7 +264,10 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 						new_chest.locked := 1;
 
 						if (GetObjProperty(new_chest, "IsPuzzleChest"))
-							Loot_Generate(new_chest, lootname);
+							Loot_Generate(new_chest, base_lootname);
+							if (flavor_suffix != "")
+								Loot_Generate(new_chest, base_lootname + flavor_suffix);
+							endif
 						endif
 
 						created_chests_this_cycle.append(new_chest.serial);
