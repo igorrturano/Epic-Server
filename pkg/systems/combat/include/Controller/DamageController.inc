@@ -132,6 +132,7 @@ function ProccessCombatDamage(byRef attackInfo)
 
 	// Post Damage
 	CheckPoison(attackInfo);
+	CheckOilArrow(attackInfo);
 	ExecuteCombatAbilitiesAfterDamage(attackInfo);
 	ExecutePassiveAbilitiesAfterDamage(attackInfo);
 
@@ -1471,6 +1472,30 @@ function ResolvePetOwner(attacker)
 	endif
 
 	return owner;
+endfunction
+
+// Stack oleado: a cada hit renova o cooldown "fire_arrow_lit" no defender,
+// que HasLightNearby honra para anular a penalidade de escuridão. Escrita
+// direta no `#fire_arrow_lit` em vez de setCooldown() porque o helper
+// preserva o cooldown existente — queremos que cada acerto refresque a janela.
+const OIL_ARROW_LIT_SECONDS := 30;
+
+function CheckOilArrow(byRef attackInfo)
+	var ammo := attackInfo.GetAmmo();
+	if (!ammo || ammo == error)
+		return false;
+	endif
+	if (attackInfo.GetDamage().GetTotalBaseDamage() < 1)
+		return false;
+	endif
+
+	if (ammo.GetOilCoating() == error)
+		return false;
+	endif
+
+	var defender := attackInfo.GetDefender().GetObjRef();
+	SetObjProperty(defender, "#fire_arrow_lit", CInt(ReadGameClock() + OIL_ARROW_LIT_SECONDS));
+	return true;
 endfunction
 
 function CheckPoison(byRef attackInfo)

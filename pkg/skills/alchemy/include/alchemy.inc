@@ -64,12 +64,14 @@ function checkifcandrink(character, potion)
   endif
 endfunction
 
-function empty_bottle(character, potion, drinkSound:= 1)
+function empty_bottle(character, potion, drinkSound:= 1, silent:= 0)
 
   if (drinkSound)
     PlaySoundEffect(character, DRINK_SOUND);
   endif
-  PrintTextAbove(character, "*usa uma pocao*");
+  if (!silent)
+    PrintTextAbove(character, "*usa uma pocao*");
+  endif
   var doses;
   var objtype := GetObjType(potion);
   
