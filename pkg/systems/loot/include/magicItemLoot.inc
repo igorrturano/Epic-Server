@@ -25,7 +25,9 @@ include ":loot:magicNameGen";
 //
 // Charges: flat 10 per item, all tiers.
 // Sacred/cursed roll: 15% / 15% / 70%. Threshold = +/- (tier*100).
-// Jewelry split: 50% spell-stick, 50% vital-mod = +tier.
+// Every magic item carries BOTH a spell (if one matches the
+//   circle window) AND a +tier vital mod on hits / mana / stam
+//   (one rolled per item). No jewelry-vs-spellstick distinction.
 // Resulting name composed via Loot_GenerateMagicName().
 // ============================================================
 
@@ -67,18 +69,16 @@ function Loot_MagicSchoolConfigs()
 endfunction
 
 function Loot_MagicItemBases()
-	// kind: "jewelry" = eligible for vital-mod alternative
-	//       "spellstick" = always rolls a spell
 	return array{
-		struct{ name := "ring",         kind := "jewelry"   },
-		struct{ name := "bracelet",     kind := "jewelry"   },
-		struct{ name := "earrings",     kind := "jewelry"   },
-		struct{ name := "amuleto",      kind := "jewelry"   },
-		struct{ name := "longnecklace", kind := "jewelry"   },
-		struct{ name := "circlet",      kind := "jewelry"   },
-		struct{ name := "staff",        kind := "spellstick"},
-		struct{ name := "Scepter",      kind := "spellstick"},
-		struct{ name := "WizardHat",    kind := "spellstick"}
+		"ring",
+		"bracelet",
+		"earrings",
+		"amuleto",
+		"longnecklace",
+		"circlet",
+		"staff",
+		"Scepter",
+		"WizardHat"
 	};
 endfunction
 
@@ -160,7 +160,7 @@ function Loot_BuildMagicState()
 	return state;
 endfunction
 
-function Loot_ApplyJewelryVitalMod(byref state, tier)
+function Loot_ApplyVitalMod(byref state, tier)
 	case (RandomInt(3))
 		0: state.hitsmod  := tier;
 		1: state.manamod  := tier;
@@ -222,37 +222,27 @@ function Loot_CreateMagicSpellItem(container, tier)
 	endif
 
 	var bases := Loot_MagicItemBases();
-	var base  := bases[RandomInt(bases.size()) + 1];
+	var base_name := bases[RandomInt(bases.size()) + 1];
 
-	var item := CreateItemInContainer(container, base.name, 1);
+	var item := CreateItemInContainer(container, base_name, 1);
 	if (!item || item == error || item.errortext)
 		return 0;
 	endif
 
 	var state := Loot_BuildMagicState();
 
-	// Jewelry can roll vital-mod instead of spell-stick (50/50).
-	var roll_spell := 1;
-	if (base.kind == "jewelry" && RandomInt(2) == 0)
-		roll_spell := 0;
-	endif
+	// Every magic item gets a +tier vital mod (hits / mana / stam).
+	Loot_ApplyVitalMod(state, tier);
 
-	if (roll_spell)
-		var spell := Loot_PickMagicSpell(tier);
-		if (!spell)
-			// No spell matched the window — fall back to vital-mod so the
-			// drop still feels magical instead of being a plain ring.
-			Loot_ApplyJewelryVitalMod(state, tier);
-		else
-			state.effect_type   := "spell";
-			state.effect_id     := spell.id;
-			state.effect_name   := spell.name;
-			state.effect_script := spell.script;
-			state.effect_target := spell.target;
-			state.charges       := MAGIC_CHARGES;
-		endif
-	else
-		Loot_ApplyJewelryVitalMod(state, tier);
+	// And a spell-stick effect if one matches the tier circle window.
+	var spell := Loot_PickMagicSpell(tier);
+	if (spell)
+		state.effect_type   := "spell";
+		state.effect_id     := spell.id;
+		state.effect_name   := spell.name;
+		state.effect_script := spell.script;
+		state.effect_target := spell.target;
+		state.charges       := MAGIC_CHARGES;
 	endif
 
 	Loot_RollSacredOrCursed(state, tier);
