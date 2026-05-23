@@ -325,6 +325,9 @@ endfunction
 // ── Entrada na facção ─────────────────────────────────────────────────────────
 
 // Retorna 1 se auto-honorário, 0 se auto-full, -1 se o jogador precisa escolher.
+// O POL suporta apenas uma guild nativa por mobile: o slot full é mobile.guild
+// (único) e o slot honorário é honorary_guild_id (único). A determinação é por
+// disponibilidade de slot, sem levar em conta tipo de facção.
 function GetAutoMemberTipo(mobile)
    if (mobile.guild)
       return 1;
