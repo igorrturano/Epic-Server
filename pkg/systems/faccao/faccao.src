@@ -140,6 +140,13 @@ program faccao(params)
 		// Aberto pelo mural de recrutamento (item clicado)
 		guild := targ.guild;
 		use_member_alias := (who.cmdlevel >= 1) ? 2 : 1;
+		// Player em múltiplas facções: mostra seleção em vez de abrir direto
+		if (!who.cmdlevel)
+			var _hon_id := GetObjProperty(who, "honorary_guild_id");
+			if (who.guild && _hon_id && FindGuild(_hon_id))
+				return Faccoes(who);
+			endif
+		endif
 	endif
 
 	if (!guild)
@@ -504,7 +511,9 @@ function guildHandler(who, input)
 		endif
 		var _join_err := CanJoinFaccao(guild, targ);
 		if (_join_err)
-			return SendSysMessageEx(who, _join_err);
+			SendSysMessageEx(who, targ.name + ": " + _join_err);
+			SendSysMessage(targ, "Você não pode entrar nesta facção: " + _join_err);
+			return;
 		endif
 
 		SendSysMessageEx(who, "O alvo foi convidado para se juntar a faccao", SSM_INFO);
@@ -525,6 +534,7 @@ function guildHandler(who, input)
 		AddMember(guild, targ, _tipo);
 		var _tipo_str := _tipo ? "honorário" : "full";
 		SendSysMessageEx(who, "{} ingressou como membro {}.".format(targ.name, _tipo_str), SSM_INFO);
+		SendSysMessage(targ, "Você entrou na facção {} como membro {}!".format(guild_name, _tipo_str));
 	elseif (input == BUTTON_MONEY_TRANSFER)
 
 		var opt_choice := array{ "Acrescentar Moedas", "Transferir para outra Faccao" };
@@ -878,8 +888,9 @@ function _MudarTipoMembroHandler(who, player)
 	var tipo_novo      := is_honorary ? 0 : 1; // 0=full, 1=honorary
 	var tipo_novo_str  := is_honorary ? "Membro Full" : "Membro Honorário";
 
-	// Cooldown
-	var last_change := GetObjProperty(player, "tipo_change_time");
+	// Cooldown por facção (não bloqueia mudança de tipo em outras facções)
+	var _cd_key := "tipo_change_time_" + cstr(guild.guildid);
+	var last_change := GetObjProperty(player, _cd_key);
 	var agora := POLCore().systime;
 	if (last_change)
 		var restante := COOLDOWN - (agora - last_change);
@@ -887,7 +898,7 @@ function _MudarTipoMembroHandler(who, player)
 			var dias  := cint(restante / 86400);
 			var horas := cint((restante - dias * 86400) / 3600);
 			return SendSysMessageEx(who,
-				"{} precisa esperar mais {} dia(s) e {} hora(s) para mudar de tipo.".format(
+				"{} precisa esperar mais {} dia(s) e {} hora(s) para mudar de tipo nesta facção.".format(
 					player.name, dias, horas), SSM_FAIL);
 		endif
 	endif
@@ -924,7 +935,7 @@ function _MudarTipoMembroHandler(who, player)
 	GFTextLine(gump, 140, 118, 63, tipo_novo_str);
 
 	GFHTMLArea(gump, 30, 158, 320, 50,
-		"<basefont color=#888888>Obs: ao mudar o tipo, o membro ficará 7 dias sem poder alterar novamente.", 0);
+		"<basefont color=#888888>Obs: ao mudar o tipo, o membro ficará 7 dias sem poder alterar o tipo nesta facção novamente.", 0);
 
 	GFAddButton(gump, 65,  220, 4005, 4006, GF_CLOSE_BTN, 1);
 	GFTextLine(gump,  100, 220, 1153, "Confirmar");
@@ -940,7 +951,7 @@ function _MudarTipoMembroHandler(who, player)
 	var guild_name := guild.GetProp("name");
 	RemMember(guild, player);
 	AddMember(guild, player, tipo_novo);
-	SetObjProperty(player, "tipo_change_time", agora);
+	SetObjProperty(player, _cd_key, agora);
 
 	SendSysMessageEx(who,
 		"{} teve o tipo alterado de {} para {} na facção {}.".format(
@@ -948,7 +959,7 @@ function _MudarTipoMembroHandler(who, player)
 	SendSysMessage(player,
 		"Seu tipo de membro na facção " + guild_name +
 		" foi alterado: " + tipo_atual_str + " → " + tipo_novo_str +
-		". Você não pode alterar novamente por 7 dias.");
+		". Você não pode alterar o tipo nesta facção novamente por 7 dias.");
 endfunction
 
 function gmHandler(who)

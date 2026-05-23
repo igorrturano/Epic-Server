@@ -12,6 +12,7 @@ include "include/packets";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":tn:cooldown";
+include ":combat:Model/Damage";
 
 function playAltarAnimations(who, item)
 	var altar := altarByObjtype(who, item);
@@ -83,18 +84,33 @@ function graphicByAltar(altar)
 endfunction
 
 function distanceAllowedForSpells(who, skill, school)
-	var r := cint(skill / 10);
-	var dist_allowed := 5 + r;
-
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
-		dist_allowed := dist_allowed + r;
-	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
-		dist_allowed := dist_allowed + r;
-	elseif (who.npctemplate)
-		dist_allowed := dist_allowed + r;
+	// Base: 5 + skill/10, with a floor of 7 (early-game survivability) and
+	// a cap of 12 at skill 70 (graceful late-game plateau).
+	var base := 5 + cint(skill / 10);
+	if (base < 7)
+		base := 7;
 	endif
+	if (base > 12)
+		base := 12;
+	endif
+	var dist_allowed := base;
 
-	// Caminho: Spell Range (+5 tiles)
+	// Specialist on own school, or NPC: small +skill/30 nudge, capped at +3.
+	var spec_bonus := 0;
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
+		spec_bonus := cint(skill / 30);
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
+		spec_bonus := cint(skill / 30);
+	elseif (who.npctemplate)
+		spec_bonus := cint(skill / 30);
+	endif
+	if (spec_bonus > 3)
+		spec_bonus := 3;
+	endif
+	dist_allowed := dist_allowed + spec_bonus;
+
+	// Caminho: Spell Range ability (+5 tiles, always meaningful — top reach
+	// of 20 is hit by specialist + this ability at 100 skill).
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::SPELL_RANGE))
 		dist_allowed := dist_allowed + 5;
 	endif
@@ -223,6 +239,22 @@ function ApplyElementalWeaponProperties(who, elemento)
 		return 0;
 	endif
 
+	// Normalize legacy English keys ("Fire"/"Cold"/"Energy") into the
+	// canonical DAMAGE_TYPE::* enum values ("Fogo"/"Gelo"/"Energia").
+	// The 14 swordmage follow-up spells, spiritualBladeControl, and the
+	// combat hit-script paths now all compare against DAMAGE_TYPE::*; the
+	// English-string storage left over from before bf72d738a was making
+	// every check silently fail, which read in-game as "blade enchanted
+	// but no attack-elemental / no charge consumption / damage never
+	// stops".
+	if (elemento == "Fire" || elemento == DAMAGE_TYPE::FIRE)
+		elemento := DAMAGE_TYPE::FIRE;
+	elseif (elemento == "Cold" || elemento == DAMAGE_TYPE::COLD)
+		elemento := DAMAGE_TYPE::COLD;
+	elseif (elemento == "Energy" || elemento == DAMAGE_TYPE::ENERGY)
+		elemento := DAMAGE_TYPE::ENERGY;
+	endif
+
 	var elementalPropAtual := GetObjProperty(weapon, "#elementalweapon");
 	var jaEncantada := elementalPropAtual != error;
 
@@ -248,11 +280,13 @@ function ApplyElementalWeaponProperties(who, elemento)
 	elementalWeapon.decayScriptPid := start_script(":spells:elementalweapon", { weapon,
 																				elementalWeapon.endtime }).pid;
 
-	if (elemento == "Fire")
+	// `elemento` was normalized to DAMAGE_TYPE::* above, so compare against
+	// the canonical enum values here.
+	if (elemento == DAMAGE_TYPE::FIRE)
 		weapon.color := COLOR_ELEMENTAL_FIRE_LIGHT;
-	elseif (elemento == "Cold")
+	elseif (elemento == DAMAGE_TYPE::COLD)
 		weapon.color := COLOR_ELEMENTAL_ICE_LIGHT;
-	elseif (elemento == "Energy")
+	elseif (elemento == DAMAGE_TYPE::ENERGY)
 		weapon.color := COLOR_ELEMENTAL_ENERGY_LIGHT;
 	endif
 
@@ -324,11 +358,11 @@ function ConsumeItemArcaneCharges(item, quantidade, consumeAll := false)
 
 	if (elementalWeapon != error)
 		var typeColor;
-		if (elementalWeapon.type == "Fire")
+		if (elementalWeapon.type == DAMAGE_TYPE::FIRE)
 			typeColor := COLOR_ELEMENTAL_FIRE_LIGHT;
-		elseif (elementalWeapon.type == "Cold")
+		elseif (elementalWeapon.type == DAMAGE_TYPE::COLD)
 			typeColor := COLOR_ELEMENTAL_ICE_LIGHT;
-		elseif (elementalWeapon.type == "Energy")
+		elseif (elementalWeapon.type == DAMAGE_TYPE::ENERGY)
 			typeColor := COLOR_ELEMENTAL_ENERGY_LIGHT;
 		endif
 

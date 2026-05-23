@@ -85,17 +85,17 @@ class PrismaticVortex(CombatAbility)
             var char_owner := GetObjProperty(char, "owner");
             if (!(char in party_members) && char != who)
                 if (!(char in allPets) && !(char_owner == who.serial))
-                    if (effect == "Fire")
+                    if (effect == DAMAGE_TYPE::FIRE)
                         PlaySoundEffect(char, 0x5D0);
                         PlayObjectCenteredEffect(char, 0x6d77, 7, 60);
                         DealDamage(char, total_dmg, DAMAGE_TYPE::FIRE, who);
                         TS_StartTimer(char, "queimar", 10);
-                    elseif (effect == "Cold")
+                    elseif (effect == DAMAGE_TYPE::COLD)
                         PlaySoundEffect(char, 0x65b);
                         PlayObjectCenteredEffectHuefx(char, 0x54f7, 30, 60, COLOR_ELEMENTAL_ICE, 0);
                         DealDamage(char, total_dmg, DAMAGE_TYPE::COLD, who);
                         TS_StartTimer(char, "congelamento", 10);
-                    elseif (effect == "Energy")
+                    elseif (effect == DAMAGE_TYPE::ENERGY)
                         PlaySoundEffect(char, 0x5CF);
                         DealDamage(char, CInt(total_dmg * 1.2), DAMAGE_TYPE::ENERGY, who);
                         PlayObjectCenteredEffect(char, 0xcdaf, 7, 30);

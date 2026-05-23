@@ -291,7 +291,8 @@ function _ConvidarJogador(lider, jogador, guild, nome, cargo)
 
     var _join_err := CanJoinFaccao(guild, jogador);
     if (_join_err)
-        SendSysMessage(lider, jogador.name + ": " + _join_err);
+        SendSysMessage(lider,  jogador.name + ": " + _join_err);
+        SendSysMessage(jogador, "Você não pode entrar nesta facção: " + _join_err);
         return 0;
     endif
 

@@ -14,6 +14,7 @@ include ":wrappers:Objects/Model/WeaponWrapper";
 include ":wrappers:Objects/Model/ArmorWrapper";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":combat:Model/Damage";
 
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
@@ -301,11 +302,11 @@ endfunction
 function PegaDescCargasArmElemental(objeto, who, XDesc := "")
 	if ( PegaPropObjItemOrTemplate(objeto,"#elementalweapon").serial == who.serial)	
 		var elWpn := PegaPropObjItemOrTemplate(objeto, "#elementalweapon");
-		if (elWpn.type == "Cold")
+		if (elWpn.type == DAMAGE_TYPE::COLD)
 			xDesc := xDesc + BLUE_ICE + "Cargas Arcanas: "+elWpn.cargas+"<br>";
-		elseif ( elWpn.type == "Fire")
+		elseif (elWpn.type == DAMAGE_TYPE::FIRE)
 			xDesc := xDesc + RED_FIRE + "Cargas Arcanas: "+elWpn.cargas +"<br>";
-		elseif (elWpn.type == "Energy")
+		elseif (elWpn.type == DAMAGE_TYPE::ENERGY)
 			xDesc := xDesc + ROXO + "Cargas Arcanas "+elWpn.cargas+"<br>";
 		endif
 	endif
