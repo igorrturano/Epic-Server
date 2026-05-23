@@ -129,6 +129,8 @@ program Logon(who)
 
 	MOTDLogon(who);
 
+	Start_Script(":lighting:fuelRehydrate", who);
+
 	// Enforce skill cap when the player logs in
 	// EnforceSkillCap(who);
 

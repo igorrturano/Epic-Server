@@ -1,0 +1,59 @@
+// Chamado de scripts/misc/logon.src. Varre os itens do jogador procurando lanternas/velas
+// com #fuel_expires ainda válido. Itens vencidos durante o offline são apagados na hora;
+// itens com fuel restante recebem ícone de buff atualizado e respawnam o fuelTimer.
+
+use uo;
+use os;
+use cfgfile;
+
+include ":hotbar:include/custombuff";
+
+const LANTERN_BUFF_ID := 30001;
+const LANTERN_BUFF_ICON := 0x8C5;
+
+program fuelRehydrate(who)
+	if (who.npctemplate)
+		return;
+	endif
+
+	var cfg := ReadConfigFile(":*:itemdesc");
+	var now := ReadGameClock();
+
+	foreach item in (EnumerateItemsInContainer(who.backpack))
+		ProcessItem(who, item, cfg, now);
+	endforeach
+
+	foreach item in (ListEquippedItems(who))
+		ProcessItem(who, item, cfg, now);
+	endforeach
+endprogram
+
+function ProcessItem(who, item, cfg, now)
+	var expires := CInt(GetObjProperty(item, "#fuel_expires"));
+	if (!expires)
+		return;
+	endif
+
+	var elem := FindConfigElem(cfg, item.objtype);
+	if (!elem)
+		return;
+	endif
+
+	var duration := CInt(elem.Duration);
+	if (!duration)
+		EraseObjProperty(item, "#fuel_expires");
+		return;
+	endif
+
+	var remaining := expires - now;
+	if (remaining <= 0)
+		item.graphic := item.objtype;
+		SetObjProperty(item, "graphic", item.objtype);
+		EraseObjProperty(item, "#fuel_expires");
+		SetObjProperty(item, "#fuel_dry", 1);
+		return;
+	endif
+
+	SendCustomBuff(who, LANTERN_BUFF_ID, LANTERN_BUFF_ICON, remaining, "Lanterna acesa", "Combustivel ardendo. Use oleo para reabastecer.", duration);
+	Start_Script(":lighting:fuelTimer", array{ item.serial });
+endfunction
