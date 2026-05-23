@@ -21,6 +21,10 @@ include ":propagacao:include/efeitosIncendiarios";
 include ":propagacao:include/combustiveis/impl/combustivelEstaticos";
 include ":propagacao:include/combustiveis/impl/combustivelTerreno";
 include ":propagacao:include/tiles/TileScanner";
+include ":hotbar:include/custombuff";
+
+const LANTERN_BUFF_ID := 30001;
+const LANTERN_BUFF_ICON := 0x8C5;
 
 program change(who, item)
 	var cfg := ReadConfigFile(":*:itemdesc");
@@ -134,11 +138,20 @@ program change(who, item)
 		return;
 	endif
 	if (item.graphic == item.objtype)
+		// Lanterna seca (queimou até o fim): exige reabastecimento com óleo
+		// antes de acender de novo. Itens sem Duration (tochas/archotes) não
+		// passam por isto pois nunca recebem #fuel_dry.
+		if (CInt(elem.Duration) > 0 && GetObjProperty(item, "#fuel_dry") != error)
+			SendSysMessageEX(who, "A lanterna esta sem oleo. Use um frasco de oleo para reabastece-la.", SSM_FAIL);
+			return;
+		endif
+
 		if (elem.changesnd)
 			PlaySoundEffect(who, elem.changesnd);
 		endif
 		item.graphic := elem.change;
 		setobjproperty(item, "graphic", item.graphic);
+		StartFuelBurn(who, item, elem);
 		if (item.graphic == 6222)
 			var k := 1;
 			while (k < 60)
@@ -166,8 +179,45 @@ program change(who, item)
 		endif
 		item.graphic := item.objtype;
 		setobjproperty(item, "graphic", item.graphic);
+		StopFuelBurn(who, item);
 	endif
 endprogram
+
+// Acende: se houver tempo guardado em #fuel_remaining (extinção manual anterior),
+// retoma a partir dele; caso contrário começa com elem.Duration completo. Itens
+// sem Duration (tochas de parede, archotes estáticos) ignoram tudo isto.
+function StartFuelBurn(who, item, elem)
+	var duration := CInt(elem.Duration);
+	if (duration <= 0)
+		return;
+	endif
+
+	var saved := CInt(GetObjProperty(item, "#fuel_remaining"));
+	if (saved > 0)
+		duration := saved;
+		EraseObjProperty(item, "#fuel_remaining");
+	endif
+
+	SetObjProperty(item, "#fuel_expires", CInt(ReadGameClock() + duration));
+	SendCustomBuff(who, LANTERN_BUFF_ID, LANTERN_BUFF_ICON, duration, "Lanterna acesa", "Combustivel ardendo. Use oleo para reabastecer.", duration);
+	Start_Script(":lighting:fuelTimer", array{ item.serial });
+endfunction
+
+// Extinção manual: guarda o tempo remanescente em #fuel_remaining para que uma
+// próxima relight retome de onde parou (apagar não desperdiça óleo). Auto-extinção
+// pelo fuelTimer NÃO chama isto — quando o combustível acaba, nada a preservar.
+function StopFuelBurn(who, item)
+	var expires := CInt(GetObjProperty(item, "#fuel_expires"));
+	if (!expires)
+		return;
+	endif
+	var remaining := expires - ReadGameClock();
+	if (remaining > 0)
+		SetObjProperty(item, "#fuel_remaining", remaining);
+	endif
+	EraseObjProperty(item, "#fuel_expires");
+	RemoveCustomBuff(who, LANTERN_BUFF_ID);
+endfunction
 
 function Destilar(balao, beker, who, item)
 
