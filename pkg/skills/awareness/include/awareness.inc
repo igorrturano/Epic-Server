@@ -163,22 +163,11 @@ function CalculateDHDiff(who, mobile)
 		endif
 	endif
 
-	var diffBeforeLight := difficulty;
-	var dhLightLabel := "";
 	if (!MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA) && InDarkness(mobile))
 		difficulty := CInt(difficulty * 1.10);
-		dhLightLabel := "(dark)";
 	endif
 	if (HasLightNearby(mobile))
 		difficulty := CInt(difficulty * 0.85);
-		dhLightLabel := dhLightLabel + "(light)";
-	endif
-	if (GetObjProperty(mobile, "#stealthExausto"))
-		difficulty := difficulty - 15;
-		dhLightLabel := dhLightLabel + "(exausto)";
-	endif
-	if (dhLightLabel != "")
-		PrintTextAbove(who, "[DH] " + mobile.name + " " + diffBeforeLight + "->" + difficulty + " " + dhLightLabel);
 	endif
 
 	return difficulty;

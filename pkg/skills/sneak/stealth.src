@@ -13,6 +13,8 @@ include ":tn:cooldown";
 include ":message:model/Message";
 include ":merchants:citizen/include/citizenWitness";
 include ":combat:Controller/HitController";
+include "include/noiseAlert";
+include "include/packets";
 
 program skill_Stealth(who)
 
@@ -23,12 +25,29 @@ program skill_Stealth(who)
 		DoStealthReroll(who);
 	else
 		DoHide(who);
-		if (who.hidden)
-			DoStealthReroll(who);
-		endif
 	endif
 
 endprogram
+
+function _GrantStealthSteps(who, skill)
+	var steps := qtdSteps(who, skill);
+	if (GetObjProperty(who, "chardata").trait == "Desapercebido")
+		steps := Cint(steps * 1.5);
+	endif
+	var mw := MobileWrapper(who);
+	if (mw.HasAbility(ABILITY_ID::ESPREITA_SELVAGEM))
+		steps := Cint(steps * 2.0);
+	endif
+	if (mw.HasAbility(ABILITY_ID::SMOKE_SCREEN))
+		steps := steps * 2;
+	endif
+	if (InDarkness(who))
+		steps := Cint(steps * 1.5);
+	elseif (HasLightNearby(who))
+		steps := Cint(steps * 0.66);
+	endif
+	return steps;
+endfunction
 
 function DoStealthReroll(who)
 
@@ -40,30 +59,7 @@ function DoStealthReroll(who)
 
 	var skill := EffectiveSkill(who, "Stealth");
 	var skillTested := SNEAK;
-
-	var baseSteps := qtdSteps(who, skill);
-	if (GetObjProperty(who, "chardata").trait == "Desapercebido")
-		baseSteps := Cint(baseSteps * 1.5);
-	endif
-
 	var mw := MobileWrapper(who);
-	if (mw.HasAbility(ABILITY_ID::ESPREITA_SELVAGEM))
-		baseSteps := Cint(baseSteps * 2.0);
-	endif
-
-	if (mw.HasAbility(ABILITY_ID::SMOKE_SCREEN))
-		baseSteps := baseSteps * 2;
-	endif
-
-	var stepsBeforeLight := baseSteps;
-	var darkFlag := InDarkness(who);
-	var lightFlag := HasLightNearby(who);
-	if (darkFlag)
-		baseSteps := Cint(baseSteps * 1.5);
-	elseif (lightFlag)
-		baseSteps := Cint(baseSteps * 0.66);
-	endif
-	PrintTextAbove(who, "[stealth] skill=" + skill + " dark=" + (darkFlag ? 1 : 0) + " light=" + (lightFlag ? 1 : 0) + " steps " + stepsBeforeLight + "->" + baseSteps);
 
 	var atualStep := CInt(GetObjProperty(who, "#steathsteps"));
 	var diff := 15 + atualStep * 10;
@@ -73,9 +69,7 @@ function DoStealthReroll(who)
 
 	var check := SkillCheck(who, skillTested, diff);
 	if (check > 0)
-		who.stealthsteps := baseSteps;
-		EraseObjProperty(who, "#stealthExausto");
-		EraseObjProperty(who, "#stealthExaustoMsg");
+		who.stealthsteps := _GrantStealthSteps(who, skill);
 		SendSysMessageEx(who, "Voce esta se movendo silenciosamente.", SSM_INFO);
 
 		if (who.hidden == 1)
@@ -86,29 +80,18 @@ function DoStealthReroll(who)
 		endif
 
 		SetObjProperty(who, "#steathsteps", atualStep + 2);
-		EnsureRecoveryWatcher(who);
 		return 1;
 	elseif (check >= -15)
 		SendSysMessageEx(who, "Voce falhou mas se manteve escondido.", SSM_FAIL);
-		PrintTextAbove(who, "[reroll-fail] check=" + check + " skill=" + skill + " exausto-gate=" + (skill >= 80 ? "YES" : "no"));
-		if (skill >= 80)
-			SetObjProperty(who, "#stealthExausto", 1);
-			if (!GetObjProperty(who, "#stealthExaustoMsg"))
-				SendSysMessageEx(who, "Voce esta exausto, suas pernas tremem.", SSM_FAIL);
-				SetObjProperty(who, "#stealthExaustoMsg", 1);
-			endif
-			EnsureRecoveryWatcher(who);
-		endif
 		return 0;
 	else
-		PrintTextAbove(who, "[reroll-crit] check=" + check + " skill=" + skill);
 		if (who.hidden)
 			SendSysMessageEx(who, "Voce falhou e se revelou.", SSM_FAIL);
 			ScreenShake(who, 0.6, 15);
 			who.hidden := 0;
-			EraseObjProperty(who, "#stealthExausto");
-			EraseObjProperty(who, "#stealthExaustoMsg");
 			Message("*aparece*").SendEmote(who);
+			EmitNoise(who, 12, 1);
+
 			var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
 			foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12,
 														  LISTEX_FLAG_NORMAL | LISTEX_FLAG_HIDDEN | LISTEX_FLAG_NPC_ONLY)
@@ -123,14 +106,6 @@ function DoStealthReroll(who)
 		return 0;
 	endif
 
-endfunction
-
-function EnsureRecoveryWatcher(who)
-	var pid := CInt(GetObjProperty(who, "#stealthRecoveryPid"));
-	if (pid > 0 && GetProcess(pid))
-		return;
-	endif
-	start_script(":sneak:stealthRecovery", who);
 endfunction
 
 function qtdSteps(who, skill)
@@ -185,16 +160,12 @@ function DoHide(who)
 			endif
 		endif
 
-		var diffBeforeLight := diff;
-		var hideDark := InDarkness(who);
-		var hideLight := HasLightNearby(who);
-		if (hideDark)
+		if (InDarkness(who))
 			diff := diff - 10;
 		endif
-		if (hideLight)
+		if (HasLightNearby(who))
 			diff := diff + 15;
 		endif
-		PrintTextAbove(who, "[hide] dark=" + (hideDark ? 1 : 0) + " light=" + (hideLight ? 1 : 0) + " diff " + diffBeforeLight + "->" + diff + " check=" + check);
 
 		var semfalha := EffectiveSkill(who, "Stealth");
 
@@ -204,6 +175,8 @@ function DoHide(who)
 			NotifyCitizenWitnesses(who, "hide", struct);
 			var a := start_script(":sneak:stealthmode", array{ who });
 			EraseObjProperty(who, "#steathsteps");
+			who.stealthsteps := _GrantStealthSteps(who, EffectiveSkill(who, "Stealth"));
+			SendSysMessageEx(who, "Voce esta se movendo silenciosamente.", SSM_INFO);
 			if (GetCooldown(who, "partyhiding") > 0)
 				HidingParty(who);
 			endif
@@ -261,6 +234,13 @@ function CanHide(who, orig_x, orig_y, override_hiding := 0)
 		SendSysMessageEx(who, "Voce nao pode fazer isto.", SSM_FAIL);
 		return 0;
 	endif
+
+	foreach item in ListEquippedItems(who)
+		if (CInt(item.graphic) in {0x0a12, 0x0a22, 0x0a23, 0x0a24, 0x0a15, 0xC626, 0xC620, 0xC622, 0xC628})
+			SendSysMessageEx(who, "Voce nao pode se esconder carregando uma fonte de luz acesa!", SSM_FAIL);
+			return 0;
+		endif
+	endforeach
 
 	var skill := EffectiveSkill(who, "Stealth");
 
