@@ -175,10 +175,10 @@ function HumanoidBrain()
                 EVID_NOISE:
                     last_activity_time := polcore().systime;
                     if (!me.opponent && SM_GetState() == "IDLE" && me.alignment != 0)
-                        print("[noise rx] " + me.name + " investigating noise from " + ev.source.name);
                         SM_TransitionTo("INVESTIGATING", struct{
                             "noise_x" := ev.noise_x,
-                            "noise_y" := ev.noise_y
+                            "noise_y" := ev.noise_y,
+                            "scan_hidden" := CInt(ev.scan_hidden)
                         });
                     endif
                 EVID_BUDDYATTACKED:

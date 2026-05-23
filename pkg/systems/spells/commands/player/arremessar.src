@@ -17,6 +17,7 @@ include ":combat:Model/Damage";
 include ":charactercreation:resists";
 include ":wrappers:Objects/Model/WeaponWrapper";
 include ":tn:cooldown";
+include "include/noiseAlert";
 
 enum arrremesso
 	ARREMESSO_TIPO_ITEM,
@@ -32,6 +33,11 @@ program arremesso(params)
 	if (cd)
 		SendSysMessageEx(who, "Voce precisa esperar " + cd + " segundos para arremessar novamente.", SSM_FAIL);
 		return 0;
+	endif
+
+	var _chardata := GetObjProperty(who, "chardata");
+	if (who.hidden && _chardata && (CInt(_chardata.Skills["Stealth"]) == 3 || CInt(_chardata.Skills["Sneak"]) == 3))
+		return DoStealthDistraction(who);
 	endif
 
 	if (who.hidden && !MobileWrapper(who).HasAbility(ABILITY_ID::NINJA_PATH))
@@ -269,6 +275,7 @@ program arremesso(params)
 			if (targ.objtype == 0x0a12 || targ.objtype == 0x0f64)
 				var pid := Start_Script(":lighting:onArremessado", array{ who, targ });
 			endif
+
 		endif
 	endif
 
@@ -283,3 +290,63 @@ program arremesso(params)
 		endif
 	endif
 endprogram
+
+// Stealth-primary distraction throw. Picks an item from inventory, throws it
+// at a coordinate (mobiles refused), emits noise from the landing tile so
+// nearby NPCs investigate the wrong spot. 120s cooldown. Player stays hidden.
+function DoStealthDistraction(who)
+	if (AP_GetVital(who, "Stamina") < 10)
+		SendSysMessageEx(who, "Voce esta cansado demais para arremessar algo.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(who, "Escolha o item para distrair", SSM_REQUEST);
+	var targ := Target(who);
+	if (!targ)
+		SendSysMessageEx(who, "Cancelled.", SSM_FAIL);
+		return 0;
+	elseif (!targ.isA(POLCLASS_ITEM))
+		SendSysMessageEx(who, "Escolha um item.", SSM_FAIL);
+		return 0;
+	elseif (!targ.movable)
+		SendSysMessageEx(who, "Voce nao pode arremessar isso.", SSM_FAIL);
+		return 0;
+	elseif (targ.amount > 1)
+		SendSysMessageEx(who, "Voce so pode arremessar um item por vez.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(who, "Aonde vai arremessar?", SSM_REQUEST);
+	var alvo := TargetCoordinates(who);
+	if (!alvo)
+		SendSysMessageEx(who, "Cancelled.", SSM_FAIL);
+		return 0;
+	elseif (alvo.mobile)
+		SendSysMessageEx(who, "Voce nao pode arremessar nisso!", SSM_FAIL);
+		return 0;
+	endif
+
+	var ax := alvo.item ? alvo.item.x : alvo.x;
+	var ay := alvo.item ? alvo.item.y : alvo.y;
+	var az := alvo.item ? alvo.item.z : alvo.z;
+	var ar := alvo.item ? alvo.item.realm : alvo.realm;
+
+	var throw_max_range := AP_GetStat(who, STRENGTH) / 5;
+	if (CoordinateDistance(who.x, who.y, ax, ay) > throw_max_range)
+		SendSysMessageEx(who, "Sua forca so permite voce arremesar ate " + Cint(throw_max_range) + " tiles.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!CheckLosAt(who, ax, ay, az))
+		SendSysMessageEx(who, "Voce nao consegue ver o alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	AP_ConsumeVital(who, "Stamina", 10);
+	MoveObjectToLocation(targ, ax, ay, az, ar, MOVEOBJECT_FORCELOCATION);
+	PlaySoundEffect(who, 0x51C);
+	SendSysMessageEx(who, "Voce arremessa com intuito de distrair.", SSM_INFO);
+	EmitNoise(targ, 12, 0);
+	SetCooldown(who, "arremesso_cd", 120);
+	return 1;
+endfunction
