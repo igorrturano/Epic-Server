@@ -346,7 +346,7 @@ function DoStealthDistraction(who)
 	MoveObjectToLocation(targ, ax, ay, az, ar, MOVEOBJECT_FORCELOCATION);
 	PlaySoundEffect(who, 0x51C);
 	SendSysMessageEx(who, "Voce arremessa com intuito de distrair.", SSM_INFO);
-	EmitNoise(targ, 12, 0);
+	EmitNoise(targ, 12);
 	SetCooldown(who, "arremesso_cd", 120);
 	return 1;
 endfunction

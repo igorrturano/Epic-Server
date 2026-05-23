@@ -106,28 +106,13 @@ function SM_TickInvestigate()
     // POL doesn't reliably auto-fire ENTEREDAREA when *we* move into a
     // stationary mobile's vicinity, so scan and self-fire so the existing
     // ENTEREDAREA handler engages.
-    // When _sm_data.scan_hidden is set (stealth-failure investigation), also
-    // sweep hidden players and gate the find on an opposed Awareness check.
-    var flags := LISTEX_FLAG_NORMAL + LISTEX_FLAG_PLAYERS_ONLY;
-    if (_sm_data.scan_hidden)
-        flags := flags + LISTEX_FLAG_HIDDEN;
-    endif
-    var nearby := ListMobilesNearLocationEx(me.x, me.y, LIST_IGNORE_Z, 12, flags, me.realm);
+    var nearby := ListMobilesNearLocationEx(me.x, me.y, LIST_IGNORE_Z, 12,
+        LISTEX_FLAG_NORMAL + LISTEX_FLAG_PLAYERS_ONLY, me.realm);
     foreach mob in nearby
         if (mob && !mob.dead && !IsAlly(mob))
-            if (_sm_data.scan_hidden && mob.hidden)
-                if (SkillCheck(me, AWARENESS, 0) > 0)
-                    mob.hidden := 0;
-                    PrintTextAbove(me, "*!*");
-                    SendEvent(me, struct{ "type" := SYSEVENT_ENTEREDAREA, "source" := mob });
-                    SM_TransitionTo("IDLE");
-                    return 1;
-                endif
-            else
-                SendEvent(me, struct{ "type" := SYSEVENT_ENTEREDAREA, "source" := mob });
-                SM_TransitionTo("IDLE");
-                return 1;
-            endif
+            SendEvent(me, struct{ "type" := SYSEVENT_ENTEREDAREA, "source" := mob });
+            SM_TransitionTo("IDLE");
+            return 1;
         endif
     endforeach
 

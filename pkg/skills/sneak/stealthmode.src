@@ -4,7 +4,6 @@ include ":attributes:attributes";
 include ":awareness:awareness";
 include "include/colormap";
 include "include/sysEvent";
-include "include/noiseAlert";
 include "include/packets";
 include ":message:model/Message";
 
@@ -35,7 +34,6 @@ program showdfdiff(params)
 						Message("*aparece*").SendEmote(who);
 						SendSysMessageEx(who, mob.name + " te encontrou!", SSM_FAIL);
 						SendEvent(mob, struct{ "type" := SYSEVENT_ENGAGED, "source" := who });
-						EmitNoise(who, 12, 0);
 						break;
 					endif
 				endif

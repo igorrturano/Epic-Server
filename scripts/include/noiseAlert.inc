@@ -6,7 +6,7 @@ include "include/sysEvent";
 const NOISE_DEFAULT_RADIUS := 40;
 const NOISE_PER_SOURCE_COOLDOWN := 1;
 
-function EmitNoise(source, radius := NOISE_DEFAULT_RADIUS, scan_hidden := 0)
+function EmitNoise(source, radius := NOISE_DEFAULT_RADIUS)
     if (!source)
         return 0;
     endif
@@ -25,11 +25,10 @@ function EmitNoise(source, radius := NOISE_DEFAULT_RADIUS, scan_hidden := 0)
     );
 
     var ev := struct{
-        "type"        := EVID_NOISE,
-        "source"      := source,
-        "noise_x"     := source.x,
-        "noise_y"     := source.y,
-        "scan_hidden" := scan_hidden
+        "type"    := EVID_NOISE,
+        "source"  := source,
+        "noise_x" := source.x,
+        "noise_y" := source.y
     };
 
     var sent := 0;
