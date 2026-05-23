@@ -28,10 +28,11 @@ program SpellScript(params)
 	SC_RemoveEffect(targ, CInt(spell.id));
 
 	var theology := AP_GetSkill(who, THEOLOGY);
-	var duration := CInt(theology);
-	if (duration < 30)
-		duration := 30;
-	endif
+	// 20 theo -> 5min, 100 theo -> 10min (linear, clamped)
+	var clamped := theology;
+	if (clamped < 20) clamped := 20; endif
+	if (clamped > 100) clamped := 100; endif
+	var duration := 300 + CInt((clamped - 20) * 15 / 4);
 
 	var str_bonus := CInt(theology / 3);
 
@@ -39,7 +40,6 @@ program SpellScript(params)
 	opts.+str_mod := str_bonus;
 	opts.+displayname := "Forca do Touro";
 	opts.+desc := $"+{str_bonus} Forca";
-	opts.+maintainable := 1;
 	opts.+on_apply_script := ":spells:shared/playApplyFX";
 	opts.+on_apply_params := struct{ sound := SFX_SPELL_STRENGTH };
 
