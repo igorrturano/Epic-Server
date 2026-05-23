@@ -103,11 +103,11 @@ function WeaponHitScripts(byRef attackInfo)
 			var dmg := CInt(arcana / 10) + CInt(attackInfo.GetAttacker().GetInt() / 20);
 
 			var hitScript;
-			if (elemental.type == "Fire")
+			if (elemental.type == DAMAGE_TYPE::FIRE)
 				hitScript := ":combat:weaponHitScripts/FireHit";
-			elseif (elemental.type == "Cold")
+			elseif (elemental.type == DAMAGE_TYPE::COLD)
 				hitScript := ":combat:weaponHitScripts/IceHit";
-			elseif (elemental.type == "Energy")
+			elseif (elemental.type == DAMAGE_TYPE::ENERGY)
 				hitScript := ":combat:weaponHitScripts/LightningHit";
 			endif
 			print("Debug: Elemental weapon hit - selected hit script: " + (hitScript ? hitScript : "none"));
