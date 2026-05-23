@@ -3,18 +3,18 @@ use uo;
 include ":abilities:models/CombatAbility";
 include ":attributes:attributes";
 include ":attributes:vitals";
-include ":tn:cooldown";
 include ":message:model/Message";
 
 /**
  * Sede de Sangue (Bloodthirst) - ABILITY_ID::BLOODTHIRST (2601)
  *
- * ON_USE: Consumes all collected shaman_souls to heal the caster.
- *   Healing = shaman_souls * (Theology / 25)
- *   Sets "bloodlust" cooldown for shaman_souls duration.
+ * Toggle ability. While active, each landed melee hit consumes one
+ * shaman_soul and heals the attacker for damage_dealt * theology / 200
+ * (up to 50% lifesteal at GM theology). Auto-deactivates when souls
+ * run out. The 120s recast delay is enforced by habilidades.cfg.
  *
- * Passive: On nearby NPC death, heals Theology/10 HP.
- *   (Handled externally in npcdeath.src, checked via HasAbility)
+ * Passive on-kill heal (theology/10 per nearby NPC death) is handled
+ * externally in npcdeath.src and is unchanged by this rework.
  */
 class Bloodthirst(CombatAbility)
 
@@ -26,21 +26,65 @@ class Bloodthirst(CombatAbility)
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
 
-		var shaman_souls := CInt(who.GetProp("shaman_souls"));
-		if (!shaman_souls)
-			shaman_souls := 1;
+		if (GetObjProperty(who, "#bloodthirst_active"))
+			EraseObjProperty(who, "#bloodthirst_active");
+			Message("*A sede de sangue se acalma.*").SendAbove(who);
+			return true;
 		endif
 
-		var bonus_mlore := CInt(mobile.GetSkill(THEOLOGY) / 25);
-		var healing := shaman_souls * bonus_mlore;
+		var souls := CInt(who.GetProp("shaman_souls"));
+		if (souls < 1)
+			Message("Voce nao possui almas para saciar sua sede.").SendSys(who);
+			return false;
+		endif
 
-		SetCooldown(who, "bloodlust", shaman_souls);
+		SetObjProperty(who, "#bloodthirst_active", 1);
+		PlaySoundEffect(who, 0x653);
+		Message("*Sua sede de sangue desperta.*").SendAbove(who);
+		return true;
+	endfunction
+
+	function OnPassiveAfterDamage(this, attackInfo)
+		var attacker := attackInfo.GetAttacker();
+		var who := attacker.GetObjRef();
+
+		if (!GetObjProperty(who, "#bloodthirst_active"))
+			return false;
+		endif
+
+		var weapon := attackInfo.GetWeapon();
+		if (!weapon || weapon.GetAttribute() == RANGED)
+			return false;
+		endif
+
+		var souls := CInt(who.GetProp("shaman_souls"));
+		if (souls < 1)
+			EraseObjProperty(who, "#bloodthirst_active");
+			Message("*As almas se esgotam e sua sede esmorece.*").SendSys(who);
+			return false;
+		endif
+
+		var damage := CInt(attackInfo.GetDamage().GetTotalBaseDamage());
+		if (damage < 1)
+			return false;
+		endif
+
+		var theology := CInt(attacker.GetSkill(THEOLOGY));
+		var healing := CInt(damage * theology / 200);
+		if (healing < 1)
+			healing := 1;
+		endif
+
+		SetObjProperty(who, "shaman_souls", souls - 1);
 		applyEpicHealing(who, healing);
 
-		PlayStationaryEffect(who.x, who.y, who.z + 2, 0x546C, 0, 30);
-		who.EraseProp("shaman_souls");
+		var defender := attackInfo.GetDefender().GetObjRef();
+		PlayMovingEffect(defender, who, 14202, 5, 1, 0);
 
-		Message("Voce concede as almas um novo proposito.").SendSys(who);
+		if (souls - 1 <= 0)
+			EraseObjProperty(who, "#bloodthirst_active");
+			Message("*A ultima alma sacia sua sede.*").SendAbove(who);
+		endif
 
 		return true;
 	endfunction
