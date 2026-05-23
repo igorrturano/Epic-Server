@@ -19,6 +19,7 @@ class IMobileWrapper()
 	uninit function SetSkillMod(this, skillName, value);
 
 	uninit function IsNPC(this);
+	uninit function GetSubclasse(this);
 
 	uninit function GetNearbyMobiles(this, range, flags, ignoreZ);
 	uninit function GetNearbyHostiles(this, range, flags);

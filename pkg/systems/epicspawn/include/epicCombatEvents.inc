@@ -35,7 +35,9 @@ function HandleAddCombatEvent(who, input, byref form_data)
         onlybloodied := 0,
         dist := 0,
         actions := array{},
-        steps := array{} // Mantém isto para compatibilidade com versões anteriores
+        steps := array{}, // Mantém isto para compatibilidade com versões anteriores
+        once := 0,
+        hp_percent := 0
     };
     
     // Mostra a tela de gerenciamento de eventos
@@ -72,7 +74,7 @@ function ShowCombatEventsList(who, byref combat_event)
     
     while (continue_editing)
         // Create a gump with standardized style
-        var gump := GFECreateGump("Combat Event Configuration", 600, 450);
+        var gump := GFECreateGump("Combat Event Configuration", 600, 510);
         
         // Basic event properties at the top
         GFTextLine(gump, 30, 75, 1153, "Event Name:");
@@ -86,16 +88,22 @@ function ShowCombatEventsList(who, byref combat_event)
         
         GFTextLine(gump, 300, 120, 1153, "Required Distance:");
         GFTextEntry(gump, 420, 120, 100, 20, 1153, combat_event.dist, 4);
-        
+
+        GFCheckBox(gump, 30, 140, 2510, 2511, combat_event.once, 5);
+        GFTextLine(gump, 60, 140, 1153, "Run only once per combat");
+
+        GFTextLine(gump, 300, 140, 1153, "Execute at HP % (0 = off):");
+        GFTextEntry(gump, 480, 140, 60, 20, 1153, combat_event.hp_percent, 6);
+
         // Divider line
-        GFResizePic(gump, 30, 150, 3000, 540, 2);
-        
+        GFResizePic(gump, 30, 170, 3000, 540, 2);
+
         // Add action button
-        GFAddButton(gump, 30, 165, 2117, 2118, GF_CLOSE_BTN, 100);
-        GFTextLine(gump, 60, 165, 1153, "Add New Action");
-        
+        GFAddButton(gump, 30, 185, 2117, 2118, GF_CLOSE_BTN, 100);
+        GFTextLine(gump, 60, 185, 1153, "Add New Action");
+
         // List existing actions
-        var list_y := 195;
+        var list_y := 215;
         if (combat_event.actions.size() > 0)
             GFTextLine(gump, 30, list_y, 1153, "Configured Actions:");
             list_y += 25;
@@ -145,8 +153,8 @@ function ShowCombatEventsList(who, byref combat_event)
         endif
         
         // Add Save and Cancel buttons
-        GFAddButton(gump, 30, 420, 2128, 2129, GF_CLOSE_BTN, 999); // Save button
-        GFAddButton(gump, 200, 420, 2119, 2120, GF_CLOSE_BTN, 998); // Cancel button
+        GFAddButton(gump, 30, 480, 2128, 2129, GF_CLOSE_BTN, 999); // Save button
+        GFAddButton(gump, 200, 480, 2119, 2120, GF_CLOSE_BTN, 998); // Cancel button
         
         var input := GFSendGump(who, gump);
         
@@ -168,6 +176,16 @@ function ShowCombatEventsList(who, byref combat_event)
             if (dist >= 0)
                 combat_event.dist := dist;
             endif
+
+            combat_event.once := input[5] ? 1 : 0;
+
+            var hp_pct := CInt(GFExtractData(input, 6));
+            if (hp_pct < 0)
+                hp_pct := 0;
+            elseif (hp_pct > 100)
+                hp_pct := 100;
+            endif
+            combat_event.hp_percent := hp_pct;
         endif
         
         // Handle button clicks

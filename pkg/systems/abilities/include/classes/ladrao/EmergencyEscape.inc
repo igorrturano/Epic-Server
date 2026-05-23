@@ -11,7 +11,7 @@ include ":timedScripts:timedScripts";
  * Active (ON_USE):
  * - Grants concealment for 30 seconds, allowing stealth running
  *
- * Passive (via HasAbility in sneak.src):
+ * Passive (via HasAbility in stealth.src):
  * - Can hide while under combat threat
  */
 class EmergencyEscape(CombatAbility)

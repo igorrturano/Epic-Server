@@ -1,0 +1,13 @@
+use uo;
+use os;
+
+program fetch(params)
+    var dm   := params[1];
+    var mobs := params[2];
+
+    foreach mob in mobs
+        MoveObjectToLocation(mob, dm.x, dm.y, dm.z, dm.realm, MOVEOBJECT_FORCELOCATION);
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

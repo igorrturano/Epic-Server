@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+program teleto(params)
+    var dm   := params[1];
+    var mobs := params[2];
+    var pv   := params[3];
+    var x    := CInt(pv[1]);
+    var y    := CInt(pv[2]);
+    var z    := CInt(pv[3]);
+
+    if (x <= 0 || y <= 0)
+        SendSysMessage(dm, "[EpicDungeon] Coordenadas invalidas.");
+        return 0;
+    endif
+
+    foreach mob in mobs
+        MoveObjectToLocation(mob, x, y, z, 0, MOVEOBJECT_FORCELOCATION);
+        sleepms(5);
+    endforeach
+    return 1;
+endprogram

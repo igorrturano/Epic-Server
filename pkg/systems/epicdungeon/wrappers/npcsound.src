@@ -1,0 +1,13 @@
+use uo;
+use os;
+
+program npcsound(params)
+    var pos      := params[2];
+    var pv       := params[3];
+    var som_id := CInt(pv[1]);
+
+    if (som_id <= 0) som_id := 100; endif
+
+    PlaySoundEffectXYZ(pos.x, pos.y, pos.z, som_id, pos.realm);
+    return 1;
+endprogram

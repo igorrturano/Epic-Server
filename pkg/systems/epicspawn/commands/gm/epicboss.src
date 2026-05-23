@@ -1007,7 +1007,9 @@ function ShowPage3(who, title, gump_width, gump_height)
 			// Add delete button before the event name
 			GFAddButton(gump, 550, y_posc, 30008, 30009, GF_CLOSE_BTN, 44 + i); // Button ID will be 45 for first event
 			GFTextLine(gump, 580, y_posc, 1153,
-						"- " + event.name + " (Steps: " + event.steps.size() + ", CD: " + event.cd + "s)");
+						"- " + event.name + " (Steps: " + event.steps.size() + ", CD: " + event.cd + "s" +
+						(event.once ? ", Once" : "") +
+						(CInt(event.hp_percent) > 0 ? ", HP<=" + event.hp_percent + "%" : "") + ")");
 			y_posc += 20;
 		endfor
 	else
@@ -2552,6 +2554,8 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
 			event_struct.+cd := event.cd;
 			event_struct.+onlybloodied := event.onlybloodied;
 			event_struct.+dist := event.dist;
+			event_struct.+once := event.once;
+			event_struct.+hp_percent := event.hp_percent;
 
 			// Initialize both arrays to ensure compatibility
 			event_struct.+actions := array{};

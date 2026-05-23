@@ -1,0 +1,8 @@
+use uo;
+use os;
+
+program setdesc_w(params)
+    var dm := params[1];
+    Start_Script(":tn:commands/coun/setdesc", dm);
+    return 1;
+endprogram

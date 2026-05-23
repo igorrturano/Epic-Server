@@ -1,0 +1,8 @@
+use uo;
+use os;
+
+program epictrap_w(params)
+    var dm := params[1];
+    Start_Script(":traps:commands/coun/epictrap", dm);
+    return 1;
+endprogram

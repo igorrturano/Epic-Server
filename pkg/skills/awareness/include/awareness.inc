@@ -4,6 +4,7 @@ include ":itemUtils:itemdesc";
 include ":gumps:yesNo";
 include ":traps:traps";
 include ":charactercreation:habilidades";
+include ":combat:Controller/HitController";
 
 
 function ExaminarMobile(who,targ)
@@ -160,6 +161,13 @@ function CalculateDHDiff(who, mobile)
 		else
 			difficulty := CInt(mobile_skill * 0.25);
 		endif
+	endif
+
+	if (!MobileWrapper(who).HasAbility(ABILITY_ID::SEMPRE_ALERTA) && InDarkness(mobile))
+		difficulty := CInt(difficulty * 1.10);
+	endif
+	if (HasLightNearby(mobile))
+		difficulty := CInt(difficulty * 0.85);
 	endif
 
 	return difficulty;
