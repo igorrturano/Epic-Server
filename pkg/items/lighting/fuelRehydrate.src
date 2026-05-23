@@ -47,10 +47,14 @@ function ProcessItem(who, item, cfg, now)
 
 	var remaining := expires - now;
 	if (remaining <= 0)
-		item.graphic := item.objtype;
-		SetObjProperty(item, "graphic", item.objtype);
-		EraseObjProperty(item, "#fuel_expires");
-		SetObjProperty(item, "#fuel_dry", 1);
+		if (CInt(elem.Consumable) > 0)
+			DestroyItem(item);
+		else
+			item.graphic := item.objtype;
+			SetObjProperty(item, "graphic", item.objtype);
+			EraseObjProperty(item, "#fuel_expires");
+			SetObjProperty(item, "#fuel_dry", 1);
+		endif
 		return;
 	endif
 
