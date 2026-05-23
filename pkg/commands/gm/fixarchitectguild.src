@@ -1,0 +1,85 @@
+use uo;
+use os;
+use datafile;
+
+include "/include/say";
+include ":gumps:yesNo";
+include ":gumps:gumps";
+
+program FixArchitectGuild(who, texto)
+    var rect_df := OpenDataFile(":architect:areas");
+    if (rect_df == error)
+        SendSysMessageEX(who, "Erro ao abrir DataFile :architect:areas.", SSM_FAIL);
+        return;
+    endif
+
+    if (!YesNo(who, array{
+        "Retroagir built_by_guild em itens de architect?",
+        "Varre todos os retângulos e linka cada item ao guildid do criador.",
+        "Pode demorar dependendo do tamanho do mapa."
+    }))
+        SendSysMessageEX(who, "Operação cancelada.", SSM_INFO);
+        return;
+    endif
+
+    var total_ok          := 0;
+    var total_ja_tinha    := 0;
+    var total_sem_builder := 0;
+    var total_sem_guild   := 0;
+
+    foreach nome in (rect_df.keys())
+        var elem   := rect_df.FindElement(nome);
+        var coords := SplitWords(elem.GetProp("Rect"));
+        if (coords.size() < 4) continue; endif
+
+        var realm_prop := elem.GetProp("Realm");
+        var realm := (realm_prop && realm_prop != error) ? realm_prop : "britannia";
+        var x1 := CInt(coords[1]);
+        var y1 := CInt(coords[2]);
+        var x2 := CInt(coords[3]);
+        var y2 := CInt(coords[4]);
+
+        var objetos := ListObjectsInBoxOfClass(POLCLASS_ITEM, x1, y1, -15, x2, y2, 15, realm);
+        var rect_ok := 0;
+
+        foreach obj in objetos
+            var built := GetObjProperty(obj, "built_by_architect");
+            if (!built || built == error) continue; endif
+
+            if (GetObjProperty(obj, "built_by_guild"))
+                total_ja_tinha += 1;
+                continue;
+            endif
+
+            var builder := SystemFindObjectBySerial(CInt(built), SYSFIND_SEARCH_OFFLINE_MOBILES);
+            if (!builder || builder == error)
+                total_sem_builder += 1;
+                Sleepms(2);
+                continue;
+            endif
+
+            if (!builder.guild)
+                total_sem_guild += 1;
+                Sleepms(2);
+                continue;
+            endif
+
+            SetObjProperty(obj, "built_by_guild", builder.guildid);
+            total_ok  += 1;
+            rect_ok   += 1;
+            Sleepms(2);
+        endforeach
+
+        if (rect_ok > 0)
+            SendSysMessageEX(who, "  '" + nome + "': " + rect_ok + " item(s) atualizados.", SSM_INFO);
+        endif
+        Sleepms(4);
+    endforeach
+
+    SendSysMessageEX(who,
+        "Concluído: " + total_ok + " atualizados | " +
+        total_ja_tinha + " já tinham guild | " +
+        total_sem_builder + " sem builder | " +
+        total_sem_guild + " builder sem guild.",
+        SSM_INFO);
+endprogram
