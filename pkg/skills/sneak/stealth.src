@@ -13,7 +13,6 @@ include ":tn:cooldown";
 include ":message:model/Message";
 include ":merchants:citizen/include/citizenWitness";
 include ":combat:Controller/HitController";
-include "include/noiseAlert";
 include "include/packets";
 
 program skill_Stealth(who)
@@ -90,7 +89,6 @@ function DoStealthReroll(who)
 			ScreenShake(who, 0.6, 15);
 			who.hidden := 0;
 			Message("*aparece*").SendEmote(who);
-			EmitNoise(who, 12, 1);
 
 			var last_loc := struct{ "x" := who.x, "z" := who.z, "y" := who.y };
 			foreach monster in ListMobilesNearLocationEx(who.x, who.y, who.z, 12,

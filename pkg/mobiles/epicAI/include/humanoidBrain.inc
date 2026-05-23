@@ -177,8 +177,7 @@ function HumanoidBrain()
                     if (!me.opponent && SM_GetState() == "IDLE" && me.alignment != 0)
                         SM_TransitionTo("INVESTIGATING", struct{
                             "noise_x" := ev.noise_x,
-                            "noise_y" := ev.noise_y,
-                            "scan_hidden" := CInt(ev.scan_hidden)
+                            "noise_y" := ev.noise_y
                         });
                     endif
                 EVID_BUDDYATTACKED:
