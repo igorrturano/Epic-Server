@@ -280,11 +280,13 @@ function ApplyElementalWeaponProperties(who, elemento)
 	elementalWeapon.decayScriptPid := start_script(":spells:elementalweapon", { weapon,
 																				elementalWeapon.endtime }).pid;
 
-	if (elemento == "Fire")
+	// `elemento` was normalized to DAMAGE_TYPE::* above, so compare against
+	// the canonical enum values here.
+	if (elemento == DAMAGE_TYPE::FIRE)
 		weapon.color := COLOR_ELEMENTAL_FIRE_LIGHT;
-	elseif (elemento == "Cold")
+	elseif (elemento == DAMAGE_TYPE::COLD)
 		weapon.color := COLOR_ELEMENTAL_ICE_LIGHT;
-	elseif (elemento == "Energy")
+	elseif (elemento == DAMAGE_TYPE::ENERGY)
 		weapon.color := COLOR_ELEMENTAL_ENERGY_LIGHT;
 	endif
 
@@ -356,11 +358,11 @@ function ConsumeItemArcaneCharges(item, quantidade, consumeAll := false)
 
 	if (elementalWeapon != error)
 		var typeColor;
-		if (elementalWeapon.type == "Fire")
+		if (elementalWeapon.type == DAMAGE_TYPE::FIRE)
 			typeColor := COLOR_ELEMENTAL_FIRE_LIGHT;
-		elseif (elementalWeapon.type == "Cold")
+		elseif (elementalWeapon.type == DAMAGE_TYPE::COLD)
 			typeColor := COLOR_ELEMENTAL_ICE_LIGHT;
-		elseif (elementalWeapon.type == "Energy")
+		elseif (elementalWeapon.type == DAMAGE_TYPE::ENERGY)
 			typeColor := COLOR_ELEMENTAL_ENERGY_LIGHT;
 		endif
 
