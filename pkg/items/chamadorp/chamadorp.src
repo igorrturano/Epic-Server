@@ -52,7 +52,7 @@ program chamadorp(who, item)
         endif
     endif
 
-    if (!MostrarConfirmacao(who))
+    if (!MostrarConfirmacao(who, item.objtype))
         return 0;
     endif
 
@@ -69,17 +69,22 @@ program chamadorp(who, item)
     endif
 
     var mensagem := "";
+    var som := 0;
     var objtype := item.objtype;
-    if (objtype == 0xEB98)
+    if (objtype == 0xE900)
         mensagem := "**[AVENTURA]** Um chamado soa em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Aventureiros estao se aprontando para uma aventura e convocam todos interessados.";
+        som := 0x68f;
     elseif (objtype == 0x1C12)
         mensagem := "**[TAVERNA]** O sino da taverna ressoa em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Aventureiros entram na taverna para uma rodada de comes, bebes e boas conversas.";
+        som := 0x664;
     elseif (objtype == 0xFC10)
         mensagem := "**[EMERGENCIA]** O gongo de emergencia bate em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Algo urgente ocorre e aventureiros convocam a todos para ajudar Valtheris.";
+        som := 0x66d;
     else
         return 0;
     endif
 
+    PlaySoundEffect(who, som);
     PresetDiscordMessage(mensagem, "RP");
 
     if (!is_staff)
@@ -104,21 +109,30 @@ function StaffInfo(who)
     return nome + " [" + who.acctname + "] em " + CStr(who.x) + ", " + CStr(who.y) + ", " + CStr(who.z);
 endfunction
 
-function MostrarConfirmacao(who)
-    var gump := GFECreateGump("Chamado RP", 560, 280);
+function MostrarConfirmacao(who, objtype)
+    var descricao := "";
+    if (objtype == 0xE900)
+        descricao := "Trombeta da Aventura: convoca aventureiros para uma missao ou exploracao em grupo.";
+    elseif (objtype == 0x1C12)
+        descricao := "Sino da Taverna: convida jogadores para comes, bebes e boas conversas na taverna.";
+    elseif (objtype == 0xFC10)
+        descricao := "Gongo da Emergencia: alerta a todos sobre uma situacao urgente que exige ajuda imediata.";
+    endif
+
+    var gump := GFECreateGump("Chamado RP", 560, 300);
 
     GFTextMid(gump, 30, 78, 500, 53, "Você está prestes a enviar um chamado ao Discord do servidor.");
-    GFTextMid(gump, 30, 98, 500, 53, "Este recurso existe para incentivar diversão e encontros de RP.");
+    GFTextMid(gump, 30, 98, 500, 53, descricao);
 
-    GFTextLine(gump, 35, 132, 53, "Ao confirmar, você declara que:");
-    GFTextLine(gump, 45, 152, 53, "- Não usará este chamado para emboscadas ou metagame;");
-    GFTextLine(gump, 45, 170, 53, "- Não irá atrair jogadores com intenções desonestas.");
+    GFTextLine(gump, 35, 152, 53, "Ao confirmar, você declara que:");
+    GFTextLine(gump, 45, 172, 53, "- Não usará este chamado para emboscadas ou metagame;");
+    GFTextLine(gump, 45, 190, 53, "- Não irá atrair jogadores com intenções desonestas.");
 
-    GFTextLine(gump, 35, 198, 53, "A Staff registra quem aciona cada chamado. O uso indevido");
-    GFTextLine(gump, 35, 216, 53, "viola as regras da comunidade e pode resultar em punição.");
+    GFTextLine(gump, 35, 218, 53, "A Staff registra quem aciona cada chamado. O uso indevido");
+    GFTextLine(gump, 35, 236, 53, "viola as regras da comunidade e pode resultar em punição.");
 
-    GFAddButton(gump, 150, 247, 2128, 2129, GF_CLOSE_BTN, 1);
-    GFAddButton(gump, 350, 247, 2119, 2120, GF_CLOSE_BTN, 0);
+    GFAddButton(gump, 150, 267, 2128, 2129, GF_CLOSE_BTN, 1);
+    GFAddButton(gump, 350, 267, 2119, 2120, GF_CLOSE_BTN, 0);
 
     var input := GFSendGump(who, gump);
     return (input[0] == 1);
