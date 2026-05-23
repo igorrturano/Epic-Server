@@ -109,8 +109,8 @@ function Loot_PickMagicSpell(tier)
 				continue;
 			endif
 
-			var target := GetConfigString(elem, "Target");
-			if (!target || target == "" || target == "Self")
+			var targ_kind := GetConfigString(elem, "Target");
+			if (!targ_kind || targ_kind == "" || targ_kind == "Self")
 				continue;
 			endif
 
@@ -118,7 +118,7 @@ function Loot_PickMagicSpell(tier)
 			entry.+id     := spell_id;
 			entry.+name   := GetConfigString(elem, "Name");
 			entry.+school := cfg_info.school;
-			entry.+target := target;
+			entry.+target := targ_kind;
 			entry.+script := script;
 			entry.+circle := circle;
 			pool.Append(entry);
