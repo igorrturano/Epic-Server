@@ -1,0 +1,20 @@
+use uo;
+use os;
+
+program destroyradius(params)
+    var dm   := params[1];
+    var pos  := params[2];
+    var pv   := params[3];
+    var raio := CInt(pv[1]);
+
+    if (raio <= 0) raio := 5; endif
+
+    var count := 0;
+    foreach item in ListItemsNearLocation(pos.x, pos.y, pos.z, raio, pos.realm)
+        DestroyItem(item);
+        count := count + 1;
+        sleepms(2);
+    endforeach
+    SendSysMessage(dm, "[EpicDungeon] " + count + " itens destruidos.");
+    return 1;
+endprogram

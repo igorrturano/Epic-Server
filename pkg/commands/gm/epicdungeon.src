@@ -1,0 +1,7 @@
+use uo;
+use os;
+
+program epicdungeon(who, text)
+    Start_Script(":epicdungeon:gumps/epicDungeonMain", array{ who });
+    return 1;
+endprogram

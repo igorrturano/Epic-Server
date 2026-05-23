@@ -1,0 +1,8 @@
+use uo;
+use os;
+
+program epicitem_w(params)
+    var dm := params[1];
+    Start_Script(":commands:gm/epicitem", dm);
+    return 1;
+endprogram
