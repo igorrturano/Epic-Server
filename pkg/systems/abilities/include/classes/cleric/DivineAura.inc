@@ -200,8 +200,7 @@ class DivineAura(CombatAbility)
 				PlayObjectCenteredEffect(targ, 0x373A, 10, 20);
 				PlaySoundEffect(targ, 0x1F7);
 
-				var attack_bonus := CInt(mobile.GetSkill(THEOLOGY) / 2);
-				SetObjProperty(targ, "#hit_mod", attack_bonus);
+				SetObjProperty(targ, "#GuaranteedHit", 1);
 
 				Message("Sua precisao foi aprimorada pela aura divina!", Color(SYSTEM_COLOR::INFO)).SendSys(targ);
 				Message("Voce concede precisao divina ao alvo!", Color(SYSTEM_COLOR::INFO)).SendSys(who);
