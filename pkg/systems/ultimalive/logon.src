@@ -1,0 +1,16 @@
+use uo;
+use polsys;
+use basic;
+
+include ":ultimalive:include/packets";
+
+program logon(who)
+    if (who.npctemplate)
+        return 0;
+    endif
+    var result := UL_SendHandshake(who);
+    if (result == error)
+        Print("UL logon error [" + who.name + "]: " + result.errortext);
+    endif
+    return 1;
+endprogram
