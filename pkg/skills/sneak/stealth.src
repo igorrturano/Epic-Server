@@ -74,6 +74,8 @@ function DoStealthReroll(who)
 	var check := SkillCheck(who, skillTested, diff);
 	if (check > 0)
 		who.stealthsteps := baseSteps;
+		SetObjProperty(who, "#stealthBudgetTotal", baseSteps);
+		EraseObjProperty(who, "#stealthShakeFired");
 		SendSysMessageEx(who, "Voce esta se movendo silenciosamente.", SSM_INFO);
 
 		if (who.hidden == 1)
