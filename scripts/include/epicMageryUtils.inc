@@ -83,18 +83,33 @@ function graphicByAltar(altar)
 endfunction
 
 function distanceAllowedForSpells(who, skill, school)
-	var r := cint(skill / 10);
-	var dist_allowed := 5 + r;
-
-	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
-		dist_allowed := dist_allowed + r;
-	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
-		dist_allowed := dist_allowed + r;
-	elseif (who.npctemplate)
-		dist_allowed := dist_allowed + r;
+	// Base: 5 + skill/10, with a floor of 7 (early-game survivability) and
+	// a cap of 12 at skill 70 (graceful late-game plateau).
+	var base := 5 + cint(skill / 10);
+	if (base < 7)
+		base := 7;
 	endif
+	if (base > 12)
+		base := 12;
+	endif
+	var dist_allowed := base;
 
-	// Caminho: Spell Range (+5 tiles)
+	// Specialist on own school, or NPC: small +skill/30 nudge, capped at +3.
+	var spec_bonus := 0;
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR) && school == EVOCATIUM)
+		spec_bonus := cint(skill / 30);
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK) && school == VELKYN)
+		spec_bonus := cint(skill / 30);
+	elseif (who.npctemplate)
+		spec_bonus := cint(skill / 30);
+	endif
+	if (spec_bonus > 3)
+		spec_bonus := 3;
+	endif
+	dist_allowed := dist_allowed + spec_bonus;
+
+	// Caminho: Spell Range ability (+5 tiles, always meaningful — top reach
+	// of 20 is hit by specialist + this ability at 100 skill).
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::SPELL_RANGE))
 		dist_allowed := dist_allowed + 5;
 	endif

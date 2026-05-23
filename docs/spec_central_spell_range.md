@@ -29,12 +29,14 @@ Exclusions from the original scope (decided during implementation):
    including `teleport` (loses its `Arcana/10` min-4 model unless
    overridden).
 
-## Range formula (already shipped)
+## Range formula (rebalanced 2026-05-20)
 
-`distanceAllowedForSpells(who, skill, school)` —
-`r = cint(skill/10)`, `range = 5 + r [+ r if Evocator/Valdruk own-school
-or NPC] [+5 SPELL_RANGE]`, `skill = HandleSpellSkill(who)` (Arcana
-arcane / Theology divine).
+`distanceAllowedForSpells(who, skill, school)` — base `clamp(5 +
+skill/10, 7, 12)` + spec `min(3, skill/30)` (Evocator/Valdruk own-school
+or NPC) + 5 if `SPELL_RANGE` ability. `skill = HandleSpellSkill(who)`
+(Arcana arcane / Theology divine). Top reach 20 (specialist + SpellRange
+at 100 skill). Floor 7 at low skill. See spells-pipeline.md for the
+full reference table.
 
 ## Architecture
 
