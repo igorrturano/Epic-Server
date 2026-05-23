@@ -12,6 +12,7 @@ include "include/packets";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":tn:cooldown";
+include ":combat:Model/Damage";
 
 function playAltarAnimations(who, item)
 	var altar := altarByObjtype(who, item);
@@ -236,6 +237,22 @@ function ApplyElementalWeaponProperties(who, elemento)
 	var weapon := who.weapon;
 	if (weapon == error)
 		return 0;
+	endif
+
+	// Normalize legacy English keys ("Fire"/"Cold"/"Energy") into the
+	// canonical DAMAGE_TYPE::* enum values ("Fogo"/"Gelo"/"Energia").
+	// The 14 swordmage follow-up spells, spiritualBladeControl, and the
+	// combat hit-script paths now all compare against DAMAGE_TYPE::*; the
+	// English-string storage left over from before bf72d738a was making
+	// every check silently fail, which read in-game as "blade enchanted
+	// but no attack-elemental / no charge consumption / damage never
+	// stops".
+	if (elemento == "Fire" || elemento == DAMAGE_TYPE::FIRE)
+		elemento := DAMAGE_TYPE::FIRE;
+	elseif (elemento == "Cold" || elemento == DAMAGE_TYPE::COLD)
+		elemento := DAMAGE_TYPE::COLD;
+	elseif (elemento == "Energy" || elemento == DAMAGE_TYPE::ENERGY)
+		elemento := DAMAGE_TYPE::ENERGY;
 	endif
 
 	var elementalPropAtual := GetObjProperty(weapon, "#elementalweapon");

@@ -758,12 +758,13 @@ function CalculateElementalWeaponDamage(byRef attackInfo)
 		damage.DecreaseBluntRawDamage(convertedDamage);
 	endif
 
-	// Add elemental damage
-	if (elemental.type == "Fire")
+	// Add elemental damage. type is stored as DAMAGE_TYPE::* (see
+	// ApplyElementalWeaponProperties normalization).
+	if (elemental.type == DAMAGE_TYPE::FIRE)
 		damage.IncreaseFireRawDamage(totalElemental);
-	elseif (elemental.type == "Cold")
+	elseif (elemental.type == DAMAGE_TYPE::COLD)
 		damage.IncreaseColdRawDamage(totalElemental);
-	elseif (elemental.type == "Energy")
+	elseif (elemental.type == DAMAGE_TYPE::ENERGY)
 		damage.IncreaseEnergyRawDamage(totalElemental);
 	endif
 
