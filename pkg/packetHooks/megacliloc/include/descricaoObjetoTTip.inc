@@ -8,26 +8,27 @@ include "include/epicCombatUtils";
 function MontaDescPersonagem(objeto, quem, xDesc)
 	if (!objeto.npctemplate)
 		if (quem.cmdlevel > 1) //Staff consegue ver o nome e raça
-			if(GetObjProperty(objeto, "disfarce"))
+			var disfarce := GetObjProperty(objeto, "disfarce");
+			if (disfarce != error && disfarce)
 				xDesc := xDesc + WHITE + " [disfarce] [" + objeto.acctname + "]" + "<br>";
 			endif
-			var culture;
-			if (GetObjProperty(objeto, "chardata"))
-				culture := GetObjProperty(objeto, "chardata").culture;
-			endif
-			if (culture)
-				xDesc := xDesc + WHITE + culture + "<br>";
+			var chardata := GetObjProperty(objeto, "chardata");
+			if (chardata != error && chardata)
+				var culture := chardata.culture;
+				if (culture)
+					xDesc := xDesc + WHITE + culture + "<br>";
+				endif
 			endif
 		endif
 
 		// Entropy-based appearance description (shows for everyone)
 		var entropy_desc := GetObjProperty(objeto, "descmodentropy");
-		if (entropy_desc)
+		if (entropy_desc != error && entropy_desc)
 			var tier := GetObjProperty(objeto, "entropy_description_tier");
 			var color := WHITE;
 
 			// Color coding: purple for corrupted, golden for radiant
-			if (tier < 0)
+			if (tier != error && tier < 0)
 				color := ROXO;  // Purple for dark/corrupted
 			else
 				color := AMARELO_CLARO;  // Golden for light/virtuous
@@ -40,7 +41,7 @@ function MontaDescPersonagem(objeto, quem, xDesc)
 	// Pet/creature description set via RURAL_LIFE (Campestre) ability
 	if (objeto.npctemplate)
 		var pet_desc := GetObjProperty(objeto, "description");
-		if (pet_desc)
+		if (pet_desc != error && pet_desc)
 			xDesc := xDesc + WHITE + pet_desc + "<br>";
 		endif
 	endif

@@ -41,7 +41,7 @@ function PreencheNomeNpc(quem,objeto, nomeObjeto := "")
 
 	var desc_npc := GetObjProperty(objeto, "descmodboss");
 
-	if (desc_npc) //Adicionado para mostrar descrição do boss
+	if (desc_npc != error && desc_npc) //Adicionado para mostrar descrição do boss
 		nomeObjeto := objeto.name +"<br>"+WHITE+desc_npc;
 	endif
 	if (objeto.alignment == 1) // only hostile (evil) NPCs show gold/red skill color
@@ -69,7 +69,8 @@ function PreencheNomePersonagem(quem,objeto, nomeObjeto := "")
 	if(!objeto.IsA(POLCLASS_MOBILE)) return error{"errortext":="Object passed was not an POLCLASS_MOBILE."}; endif
 
 	//Caso em que tá desconhecido
-	if(GetObjProperty(objeto, "realname"))
+	var realname := GetObjProperty(objeto, "realname");
+	if (realname != error && realname)
 		nomeObjeto := AMARELO_CLARO + "Incognito";
 	else
 		var nickname := GetKnownNickname(quem, objeto);
@@ -81,7 +82,7 @@ function PreencheNomePersonagem(quem,objeto, nomeObjeto := "")
 	endif
 
 	var desc := GetObjProperty(objeto, "descmodboss");
-	if (desc)
+	if (desc != error && desc)
 		nomeObjeto := nomeObjeto + "<br>" + WHITE + desc;
 	endif
 
@@ -101,25 +102,23 @@ function PreencheNomeItem(objeto)
 endfunction
 
 function recuperaNomeItemMaterial(objeto)
-	var resource_config := ReadConfigFile(":crafting:config/resourceList") ;
-
-	if(GetObjProperty(objeto, "material"))
-		return objeto.desc + " [" + resource_config[GetObjProperty(objeto, "material")].name + "]";
-	else
+	var material := GetObjProperty(objeto, "material");
+	if (material == error || !material)
 		return objeto.desc;
 	endif
+	var resource_config := ReadConfigFile(":crafting:config/resourceList");
+	return objeto.desc + " [" + resource_config[material].name + "]";
 endfunction
 
 function IsLoreItem(objeto)
 	var is_lore_item := GetObjProperty(objeto, "IsLoreItem");
-	if (!is_lore_item)
-		var cfg := ReadConfigFile(":*:itemdesc");
-		var elem := FindConfigElem(cfg, objeto.objtype);
-		if (elem)
-			return GetConfigInt(elem, "IsLoreItem");
-		endif
-	else
+	if (is_lore_item != error && is_lore_item)
 		return 1;
+	endif
+	var cfg := ReadConfigFile(":*:itemdesc");
+	var elem := FindConfigElem(cfg, objeto.objtype);
+	if (elem)
+		return GetConfigInt(elem, "IsLoreItem");
 	endif
 	return 0;
 endfunction
@@ -132,7 +131,7 @@ function AdicionaLore(objeto,nomeObjeto)
 
 		// Verifica se o item já foi avaliado por um especialista
 		var evaluated_skill := GetObjProperty(objeto, "evaluated_skill");
-		if (evaluated_skill)
+		if (evaluated_skill != error && evaluated_skill)
 			nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#d98cd9>Esse item foi avaliado por um " + TraduzirProfissao(item_info.required_skill);
 		else
 			nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#d98cd9>" + GetConsultaEspecialistaTexto(item_info.required_skill);
@@ -140,7 +139,7 @@ function AdicionaLore(objeto,nomeObjeto)
 
 		// Verifica se o item já foi examinado por um arqueólogo
 		var evaluated_archaeology := GetObjProperty(objeto, "evaluated_archaeology");
-		if (evaluated_archaeology)
+		if (evaluated_archaeology != error && evaluated_archaeology)
 			nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#a1eca7>Esse item foi avaliado por um Arqueólogo";
 		else
 			nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#a1eca7>Consulte um Arqueólogo";
