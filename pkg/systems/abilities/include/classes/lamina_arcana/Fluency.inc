@@ -7,6 +7,7 @@ include ":attributes:attributes";
 include ":tn:cooldown";
 include "include/sounds";
 include "include/epicConstants";
+include ":combat:Model/Damage";
 
 /**
  * Fluencia (Fluency) - ABILITY_ID::FLUENCIA (2301)
@@ -80,15 +81,15 @@ function _GrantBonus(who, targ)
     var effect_color := 0;
     var armor_drain := CInt(AP_GetSkill(who, ARCANA) * 0.3);
 
-    if (elemental.type == "Fire")
+    if (elemental.type == DAMAGE_TYPE::FIRE)
         effect_color := COLOR_ELEMENTAL_FIRE;
         targ.resist_fire_mod := targ.resist_fire_mod - armor_drain;
         who.resist_fire_mod := who.resist_fire_mod + armor_drain;
-    elseif (elemental.type == "Cold")
+    elseif (elemental.type == DAMAGE_TYPE::COLD)
         effect_color := COLOR_ELEMENTAL_ICE;
         targ.resist_cold_mod := targ.resist_cold_mod - armor_drain;
         who.resist_cold_mod := who.resist_cold_mod + armor_drain;
-    elseif (elemental.type == "Energy")
+    elseif (elemental.type == DAMAGE_TYPE::ENERGY)
         effect_color := COLOR_ELEMENTAL_ENERGY;
         targ.resist_energy_mod := targ.resist_energy_mod - armor_drain;
         who.resist_energy_mod := who.resist_energy_mod + armor_drain;
@@ -103,13 +104,13 @@ function _RevokeBonus(who, targ)
     var elemental := GetObjProperty(weapon, "#elementalweapon");
     var armor_drain := CInt(AP_GetSkill(who, ARCANA) * 0.3);
 
-    if (elemental.type == "Fire")
+    if (elemental.type == DAMAGE_TYPE::FIRE)
         targ.resist_fire_mod := targ.resist_fire_mod + armor_drain;
         who.resist_fire_mod := who.resist_fire_mod - armor_drain;
-    elseif (elemental.type == "Cold")
+    elseif (elemental.type == DAMAGE_TYPE::COLD)
         targ.resist_cold_mod := targ.resist_cold_mod + armor_drain;
         who.resist_cold_mod := who.resist_cold_mod - armor_drain;
-    elseif (elemental.type == "Energy")
+    elseif (elemental.type == DAMAGE_TYPE::ENERGY)
         targ.resist_energy_mod := targ.resist_energy_mod + armor_drain;
         who.resist_energy_mod := who.resist_energy_mod - armor_drain;
     endif
