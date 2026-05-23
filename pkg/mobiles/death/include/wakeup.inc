@@ -107,6 +107,7 @@ endif
 
 	EraseObjProperty(ghost, "death_remaining");
 	EraseObjProperty(ghost, "death_corpse_serial");
+	EraseObjProperty(ghost, "#bloodthirst_active");
 
 	// Redirecionamento de prisao da faccao: se o player foi derrubado por um guarda,
 	// acorda na prisao em vez do local do corpo.
@@ -169,6 +170,7 @@ function DuelWakeUp(ghost, corpse)
 
 	EraseObjProperty(ghost, "death_remaining");
 	EraseObjProperty(ghost, "death_corpse_serial");
+	EraseObjProperty(ghost, "#bloodthirst_active");
 endfunction
 
 function FallbackResurrect(ghost)
@@ -203,4 +205,5 @@ function FallbackResurrect(ghost)
 
 	EraseObjProperty(ghost, "death_remaining");
 	EraseObjProperty(ghost, "death_corpse_serial");
+	EraseObjProperty(ghost, "#bloodthirst_active");
 endfunction
