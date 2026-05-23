@@ -64,6 +64,11 @@ endprogram
 //   - Seca (#fuel_dry, queimou inteira): também religa o gráfico e respawna o timer.
 // Lanterna apagada manualmente (sem dry nem expires) é rejeitada — usar double-click.
 function TryRefill(who, oil, lantern, elem, duration)
+	if (CInt(elem.Consumable) > 0)
+		SendSysMessageEx(who, "Velas e tochas sao descartaveis e nao podem ser reabastecidas.", SSM_FAIL);
+		return;
+	endif
+
 	var isLit := (GetObjProperty(lantern, "#fuel_expires") != error);
 	var isDry := (GetObjProperty(lantern, "#fuel_dry") != error);
 

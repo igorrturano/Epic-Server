@@ -6,6 +6,7 @@
 
 use uo;
 use os;
+use cfgfile;
 
 const POLL_SECONDS := 60;
 
@@ -38,10 +39,17 @@ program fuelTimer(params)
 endprogram
 
 function Extinguish(item)
+	// Itens Consumable (velas, tochas) viram cinza ao queimar — DestroyItem.
+	// Itens reabasteciáveis (lanternas) viram secos e ficam aguardando óleo.
+	var cfg := ReadConfigFile(":*:itemdesc");
+	var elem := FindConfigElem(cfg, item.objtype);
+	if (elem && CInt(elem.Consumable) > 0)
+		DestroyItem(item);
+		return;
+	endif
+
 	item.graphic := item.objtype;
 	SetObjProperty(item, "graphic", item.objtype);
 	EraseObjProperty(item, "#fuel_expires");
-	// Marca a lanterna como seca — change.src vai recusar acender novamente
-	// até que oleoOnUse limpe esta flag durante o refill.
 	SetObjProperty(item, "#fuel_dry", 1);
 endfunction
