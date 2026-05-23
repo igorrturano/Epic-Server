@@ -522,15 +522,16 @@ function PegaDescEfeitosComponente(componente, xDesc)
 endfunction
 
 function PegaDescCargasRunicas(objeto, who, XDesc := "")
-	if ( GetObjProperty(objeto, "runecharges"))	
-		xDesc := xDesc + AMARELO_CLARO + "Cargas Rúnicas: "+GetObjProperty(objeto, "runecharges")+"<br>";
+	var runecharges := GetObjProperty(objeto, "runecharges");
+	if (runecharges != error && runecharges)
+		xDesc := xDesc + AMARELO_CLARO + "Cargas Rúnicas: " + runecharges + "<br>";
 	endif
 	return XDesc;
 endfunction
 
 function PegaDescEstudavel(objeto, xDesc := "")
 	var skill_name := GetObjProperty(objeto, "estudavel");
-	if (!skill_name)
+	if (skill_name == error || !skill_name)
 		return xDesc;
 	endif
 
