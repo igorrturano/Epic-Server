@@ -717,7 +717,10 @@ function _CanActOnItem(item, who)
     if (!item) return 0; endif
     var built := GetObjProperty(item, "built_by_architect");
     if (!built) return 0; endif
-    return _staffmode || built == who.serial;
+    if (_staffmode || built == who.serial) return 1; endif
+    if (!who.guild) return 0; endif
+    var item_guild := GetObjProperty(item, "built_by_guild");
+    return (item_guild && item_guild == who.guildid);
 endfunction
 
 function DoCreate(who)
@@ -950,7 +953,7 @@ function DoUndo(who)
     if (last[1] == 1)
         foreach serial in (last[2])
             var item := SystemFindObjectBySerial(serial);
-            if (item && GetObjProperty(item, "built_by_architect") == who.serial)
+            if (_CanActOnItem(item, who))
                 DestroyItem(item);
             endif
             Sleepms(2);
@@ -1078,7 +1081,7 @@ function DoClearDesign(who)
     var x2 := _staffmode ? who.x + 50 : startloc[1] + SITESIZE;
     var y2 := _staffmode ? who.y + 50 : startloc[2] + SITESIZE;
     foreach item in ListObjectsInBox(x1, y1, z1, x2, y2, 120, who.realm)
-        if (GetObjProperty(item, "built_by_architect") == who.serial)
+        if (_CanActOnItem(item, who))
             DestroyItem(item);
         endif
         Sleepms(2);
@@ -1122,6 +1125,7 @@ function _CreateItem(who, x, y, z, type)
     SetObjProperty(item, "built_by_architect",  who.serial);
     SetObjProperty(item, "architect_objtype",   obj_type);
     SetObjProperty(item, PROPNAME_INDESTRUTIVEL, 1);
+    if (who.guild) SetObjProperty(item, "built_by_guild", who.guildid); endif
     _SetupLockDoor(who, item);
     return item;
 endfunction
