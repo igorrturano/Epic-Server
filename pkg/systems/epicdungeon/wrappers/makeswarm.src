@@ -1,27 +1,8 @@
 use uo;
 use os;
-use util;
 
 program makeswarm(params)
-    var dm       := params[1];
-    var pos      := params[2];
-    var pv       := params[3];
-    var template := pv[1];
-    var qtd      := CInt(pv[2]);
-    var raio     := CInt(pv[3]);
-
-    if (!template || template == "")
-        SendSysMessage(dm, "[EpicDungeon] Template vazio.");
-        return 0;
-    endif
-    if (qtd  <= 0) qtd  := 5;  endif
-    if (raio <= 0) raio := 3; endif
-
-    for i := 1 to qtd
-        var dx := RandomInt(raio * 2 + 1) - raio;
-        var dy := RandomInt(raio * 2 + 1) - raio;
-        CreateNpcFromTemplate(template, pos.x + dx, pos.y + dy, pos.z, 0, pos.realm);
-        sleepms(10);
-    endfor
+    var dm := params[1];
+    Start_Script(":brainAI:commands/gm/makeswarm", dm);
     return 1;
 endprogram

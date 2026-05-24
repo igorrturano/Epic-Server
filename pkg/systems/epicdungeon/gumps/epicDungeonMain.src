@@ -31,6 +31,7 @@ const BTN_TAB_PLAYER      := 5;
 const BTN_TAB_ITEMS       := 6;
 const BTN_CLEAR_RAID      := 10;
 const BTN_REFRESH         := 11;
+const BTN_ROSTER_TARGET   := 12;
 const BTN_ROSTER_ADD_BASE := 100;  // 100+idx
 const BTN_ROSTER_REM_BASE := 200;  // 200+idx
 const BTN_ACTION_BASE     := 300;  // 300-399: lista de actions
@@ -95,7 +96,12 @@ program epicDungeonMain(params)
                 var p1   := all1[pidx1];
                 if (p1)
                     if (p1.ptype == "slider")
-                        var st1 := Max(1, CInt((p1.pmax - p1.pmin) / 10));
+                        var st1 := 0;
+                        if (p1.pstep > 0)
+                            st1 := p1.pstep;
+                        else
+                            st1 := Max(1, CInt((p1.pmax - p1.pmin) / 10));
+                        endif
                         current_param_values[pidx1] := Min(CInt(current_param_values[pidx1]) + st1, p1.pmax);
                     elseif (p1.ptype == "bool")
                         current_param_values[pidx1] := 1 - CInt(current_param_values[pidx1]);
@@ -109,7 +115,12 @@ program epicDungeonMain(params)
                 var all2 := EDParseAllParams(current_action_obj.params);
                 var p2   := all2[pidx2];
                 if (p2 && p2.ptype == "slider")
-                    var st2 := Max(1, CInt((p2.pmax - p2.pmin) / 10));
+                    var st2 := 0;
+                    if (p2.pstep > 0)
+                        st2 := p2.pstep;
+                    else
+                        st2 := Max(1, CInt((p2.pmax - p2.pmin) / 10));
+                    endif
                     current_param_values[pidx2] := Max(CInt(current_param_values[pidx2]) - st2, p2.pmin);
                 endif
             endif
@@ -180,6 +191,13 @@ program epicDungeonMain(params)
                 BTN_CLEAR_RAID:
                     EDClearRoster(who);
                     SendSysMessage(who, "[EpicDungeon] Raid limpa.");
+                BTN_ROSTER_TARGET:
+                    var targ_t := Target(who);
+                    if (targ_t && targ_t != error)
+                        if (targ_t.IsA(POLCLASS_MOBILE) && !targ_t.npctemplate && targ_t.connected)
+                            EDAddPlayer(who, targ_t.serial);
+                        endif
+                    endif
                 BTN_REFRESH: // re-render apenas
             endcase
         endif
@@ -238,13 +256,18 @@ function EDDoExecute(who)
         EDExecuteAction(who, action, 0, current_param_values);
 
     elseif (scope == "Position")
-        SendSysMessage(who, "[EpicDungeon] Clique no alvo no mundo.");
-        var targ := Target(who);
+        SendSysMessage(who, "[EpicDungeon] Clique no local no mundo.");
+        var targ := TargetCoordinates(who);
         if (targ == error || !targ)
             SendSysMessage(who, "[EpicDungeon] Cancelado.");
             return;
         endif
-        EDExecuteAction(who, action, targ, current_param_values);
+        var pos := struct{};
+        pos.+x     := CInt(targ.x);
+        pos.+y     := CInt(targ.y);
+        pos.+z     := CInt(targ.z);
+        pos.+realm := who.realm;
+        EDExecuteAction(who, action, pos, current_param_values);
     endif
 endfunction
 
@@ -301,9 +324,11 @@ function EDAddSidebar(byref gump, dm)
         count += 1;
         GFAddButton(gump, ED_SIDEBAR_X + ED_SIDEBAR_W - 22, row_y, 2119, 2120, 1, BTN_ROSTER_REM_BASE + count);
         var display := entry.name;
-        if (Len(display) > 13) display := SubStr(display, 1, 13) + ".."; endif
+        if (Len(display) > 22) display := SubStr(display, 1, 22) + ".."; endif
+        var label_disp := entry.label;
+        if (Len(label_disp) > 22) label_disp := SubStr(label_disp, 1, 22) + ".."; endif
         GFTextLine(gump, ED_SIDEBAR_X + 8, row_y,      entry.col, display);
-        GFTextLine(gump, ED_SIDEBAR_X + 8, row_y + 13, entry.col, entry.label);
+        GFTextLine(gump, ED_SIDEBAR_X + 8, row_y + 13, entry.col, label_disp);
         row_y += 30;
     endforeach
 
@@ -354,7 +379,7 @@ function EDAddRosterContent(byref gump, dm)
     var chars := EnumerateOnlineCharacters();
 
     foreach mob in chars
-        if (row_y + 18 > max_y)
+        if (row_y + 18 > max_y - 40)
             break;
         endif
         var in_roster := 0;
@@ -368,7 +393,7 @@ function EDAddRosterContent(byref gump, dm)
             idx += 1;
             online_list.append(mob.serial);
             GFAddButton(gump, ED_CONTENT_X + 10, row_y, 2103, 2104, 1, BTN_ROSTER_ADD_BASE + idx);
-            GFTextLine(gump,  ED_CONTENT_X + 42,  row_y, 1153, mob.name);
+            GFTextLine(gump,  ED_CONTENT_X + 42,  row_y, 1153, EDPlayerLabel(mob));
             row_y += 22;
         endif
         sleepms(2);
@@ -378,6 +403,10 @@ function EDAddRosterContent(byref gump, dm)
         GFTextLine(gump, ED_CONTENT_X + 10, ED_CONTENT_Y + 52, 2100,
                    "(nenhum player online fora do roster)");
     endif
+
+    GFResizePic(gump, ED_CONTENT_X + 5, max_y - 35, 3000, ED_CONTENT_W - 10, 2);
+    GFAddButton(gump, ED_CONTENT_X + 10, max_y - 25, 2103, 2104, 1, BTN_ROSTER_TARGET);
+    GFTextLine(gump,  ED_CONTENT_X + 42, max_y - 23, 53, "Adicionar por alvo...");
 endfunction
 
 function EDAddActionList(byref gump, category)
@@ -469,11 +498,7 @@ function EDAddParamForm(byref gump, dm)
 
     // Parâmetros
     var all_params := EDParseAllParams(action.params);
-    if (all_params.size() == 0)
-        GFTextLine(gump, cx, cy, 2100, "Sem parametros.");
-        cy += 22;
-    else
-        // pre-aloca IDs de text entry
+    if (all_params.size() > 0)
         text_entry_ids := array{};
         for i := 1 to all_params.size()
             text_entry_ids.append(0);

@@ -1,0 +1,11 @@
+use uo;
+use os;
+
+program emote_cuspir(params)
+    var mobs := params[2];
+    foreach mob in mobs
+        PerformAction(mob, 34);
+        sleepms(50);
+    endforeach
+    return 1;
+endprogram
