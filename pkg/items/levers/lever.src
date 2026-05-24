@@ -13,6 +13,7 @@ include ":tn:tngumps";
 include ":timedscripts:timedScripts";
 include ":traps:traps";
 include ":levers:lever";
+include "include/lever_mockmulti";
 
 include ":combat:hitscripts";
 include ":itemUtils:itemInfo";
@@ -27,7 +28,7 @@ function ConstructGump(item)
    var gump := GFCreateGump();
 	GFSetID(gump, 0x597);
 	GFPage(gump, 0);
-	GFResizePic(gump, 0, 0, 9200, 480, 410);
+	GFResizePic(gump, 0, 0, 9200, 480, 440);
    GFTextLine(gump, 165, 20, 900, "Alavancas");
    GFPage(gump, 1);
 
@@ -144,6 +145,10 @@ GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 131);
    y += 20;
    GFTextLine(gump, 45, y, _ifElse(opts.changegraphicitem, 520, 500), "Mudar graphic de certo item");
    GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 98);
+
+   y += 20;
+   GFTextLine(gump, 45, y, _ifElse(opts.mockmulti, 520, 500), "Controlar MockMulti");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 109);
 
    y += 20;
    GFTextLine(gump, 45, y, _ifElse(GetObjProperty(item, "status") == "on", 520, 500), "Resetar agora");
@@ -266,6 +271,7 @@ program lever(who, item)
 		 56: efeitos (who, item);
 		 //98: setprp(who, item, res);           // setobjproperty()
 		 98: changegraphic(who, item);
+		 109: setMockMulti(who, item);
          97: setOnofftext(who, item);
          99: normalusage(who, item);           // use item like normal
          100: setHiding(who, item);
