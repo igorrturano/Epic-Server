@@ -22,39 +22,18 @@ include ":nature:nature";
 include ":crafting:/include/fabricacaoComplexos";
 include ":census:include/CensusController";
 
-// Sonda de erros: flip pra 1, recompila, joga em prod alguns minutos, flip pra
-// 0. Cola o console no chat pra fazer a matriz "quando POL retorna o quê".
-const DIAG_ERR_PROBE_GUMP := 0;
-
 // Gate dos while loops do gump. Se o player desconectou OU o ref ficou
 // inválido (account/char deletados mid-creation), retorna 1 pra encerrar
 // o loop — senão o script vira zumbi e fica logando "Could not attach
 // modules for external function call jump" pro resto da uptime,
 // segurando memória até OOM.
+//
+// POL error é falsy: `!who` cobre both invalid ref (error) e desconectado
+// (Integer 0). Ver docs/escript-error-handling.md.
 function CreationCompleted(who)
-	if (DIAG_ERR_PROBE_GUMP)
-		print($"[CreationCompleted] who TypeOf={TypeOf(who)} !who={!who} ==error={who==error}");
-	endif
-	if (!who || who == error)
-		if (DIAG_ERR_PROBE_GUMP) print("  -> exit: who falsy/error"); endif
-		return 1;
-	endif
-	var connected := who.connected;
-	if (DIAG_ERR_PROBE_GUMP)
-		print($"  connected TypeOf={TypeOf(connected)} val={connected} ==error={connected==error} !v={!connected}");
-	endif
-	if (connected == error || !connected)
-		if (DIAG_ERR_PROBE_GUMP) print("  -> exit: disconnected/error"); endif
-		return 1;
-	endif
-	var done := GetObjProperty(who, "creation_completed");
-	if (DIAG_ERR_PROBE_GUMP)
-		print($"  creation_completed TypeOf={TypeOf(done)} val={done} ==error={done==error}");
-	endif
-	if (done == error)
-		return 0;
-	endif
-	return done;
+	if (!who) return 1; endif
+	if (!who.connected) return 1; endif
+	return GetObjProperty(who, "creation_completed");
 endfunction
 
 // Retorna 1 se o gump retornou algo válido, 0 se foi fechado por colisão/erro.

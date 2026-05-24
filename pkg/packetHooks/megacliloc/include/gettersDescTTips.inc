@@ -19,34 +19,32 @@ include ":combat:Model/Damage";
 Const FECHA_BASEFONT_TAG := "</BASEFONT>";
 
 function PegaDescMagica(objeto,xDesc := "")
-	var magic_excep := PegaPropObjItemOrTemplate(objeto,"magic_excep");
-	if (magic_excep != error && magic_excep)
+	if (PegaPropObjItemOrTemplate(objeto,"magic_excep"))
 		xDesc := xDesc + ROXO + "Magico Excepcional<br>";
-	else
-		var magic := PegaPropObjItemOrTemplate(objeto,"magic");
-		if (magic != error && magic)
-			xDesc := xDesc + ROXO + "Magico<br>";
-		endif
+	elseif (PegaPropObjItemOrTemplate(objeto,"magic"))
+		xDesc := xDesc + ROXO + "Magico<br>";
 	endif
 	return xDesc;
 endfunction
 
 function PegaDescComponente(objeto,xDesc := "")
 	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_TIER_COMPONENTE);
-	if(prop != error && prop)
+	if (prop)
 		xDesc := xDesc + SOFT_PINK + "Componente<br>";
 		var tierDesc := PegaComponenteTierDesc(prop).desc;
 		if (tierDesc)
 			xDesc := xDesc + WHITE + "Qualidade: " + tierDesc + "<br>";
 		endif
 		var encaixeProp := PegaPropObjItemOrTemplate(objeto, PROPNAME_ENCAIXE_COMPONENTE);
-		if(encaixeProp != error && encaixeProp)
+		if (encaixeProp)
 			xDesc := xDesc + WHITE + "Encaixe: " + encaixeProp + "<br>";
 		endif
 	endif
 
 	prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
-	if(prop != error && (prop.estado == ITEM_PRONTO || prop.estado == ITEM_GERADO) && !prop.isCompletamenteComum)
+	// `prop` guard keeps field accesses safe — `error.estado` is uninit but
+	// untested in comparisons.
+	if (prop && (prop.estado == ITEM_PRONTO || prop.estado == ITEM_GERADO) && !prop.isCompletamenteComum)
 		//xDesc := xDesc + "<br>";
 		if(prop.qualidade > 0)
 			xDesc := xDesc + LARANJA + "Excepcional<br>";
@@ -65,7 +63,7 @@ endfunction
 
 function PegaDescProdutoMontado(objeto,xDesc := "")
 	var prop := PegaPropObjItemOrTemplate(objeto,PROPNAME_FABRICADO);
-	if(prop != error && prop)
+	if (prop)
 		var quantidadeLote := "";
 		if(prop.receita.lote && prop.receita.lote > 1)
 			quantidadeLote := prop.receita.lote  + "x ";
@@ -96,10 +94,9 @@ function PegaDescProdutoMontado(objeto,xDesc := "")
 endfunction
 
 function PegaDescDosesVeneno(objeto,xDesc := "")
-	if (PegaPropObjItemOrTemplate(objeto,"poisonInfo") != error )
-		if (objeto.graphic == 0x0F01)
-			xDesc := xDesc + SOFT_GREEN + "Doses de Veneno: " + PegaPropObjItemOrTemplate(objeto,"poisonInfo").dosage +  "<br>";
-		endif
+	var poison := PegaPropObjItemOrTemplate(objeto,"poisonInfo");
+	if (poison && objeto.graphic == 0x0F01)
+		xDesc := xDesc + SOFT_GREEN + "Doses de Veneno: " + poison.dosage + "<br>";
 	endif
 	return xDesc;
 endfunction
@@ -109,15 +106,15 @@ function PegaDescArtefato(objeto,who,xDesc := "")
 	var description := PegaPropObjItemOrTemplate(objeto, "description");
 	var lingua := PegaPropObjItemOrTemplate(objeto, "lingua");
 
-	if (lingua != error)
+	if (lingua)
 		xDesc := xDesc + "<BASEFONT COLOR=#FFD700>[Artefato Arqueológico]<br>";
 
-		if (description != error && description != "")
+		if (description)
 			xDesc := PegaDescLeitura(who,lingua,description,xDesc);
 		else
 			xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>*Sem inscrições visíveis*<br>";
 		endif
-	elseif (description != error && description != "")
+	elseif (description)
 		xDesc := xDesc + "<BASEFONT COLOR=#FFFFFF>" + description + "<br>";
 	endif
 
@@ -159,7 +156,7 @@ endfunction
 
 function PegaDescArmas(objeto,who,cfg := struct)
 
-	if(cfg == error || cfg.size() <= 0)
+	if (!cfg || cfg.size() <= 0)
 		cfg := MontaObjCfgArmaArmadura(objeto);
 	endif
 
@@ -212,7 +209,7 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	endif
 
 	var aprimoramentos := PegaPropObjItemOrTemplate(objeto, "Aprimoramentos");
-	if (aprimoramentos != error && aprimoramentos)
+	if (aprimoramentos)
 		xDesc := xDesc + ROXO + "Aprimoramentos: " +  "<br>";
 		foreach key in (aprimoramentos.keys())
 				xDesc := xDesc + AMARELO_CLARO + key + "<br>";
@@ -222,12 +219,12 @@ function PegaDescArmas(objeto,who,cfg := struct)
 	xDesc := PegaDescCargasArmElemental(objeto,who,xDesc);
 
 	var swordmage := PegaPropObjItemOrTemplate(objeto, "swordmage");
-	if (swordmage != error)
+	if (swordmage)
 		xDesc := xDesc + WHITE + swordmage + "<br>";
 	endif
 
 	var hitsscripts := PegaPropObjItemOrTemplate(objeto, "HitScripts");
-	if (hitsscripts != error)
+	if (hitsscripts)
 		foreach hits in hitsscripts
 		var dano_esp := GetDmgStringSpecialDmg(cfg.elem, objeto);
 			if (hits == ":combat:weaponHitScripts/FireHit")
@@ -302,7 +299,8 @@ endfunction
 
 function PegaDescCargasArmElemental(objeto, who, XDesc := "")
 	var elWpn := PegaPropObjItemOrTemplate(objeto, "#elementalweapon");
-	if (elWpn != error && elWpn.serial == who.serial)
+	// `elWpn` guard keeps `.serial` access safe.
+	if (elWpn && elWpn.serial == who.serial)
 		if (elWpn.type == DAMAGE_TYPE::COLD)
 			xDesc := xDesc + BLUE_ICE + "Cargas Arcanas: "+elWpn.cargas+"<br>";
 		elseif (elWpn.type == DAMAGE_TYPE::FIRE)
@@ -316,7 +314,7 @@ endfunction
 
 function PegaDescArmaduras(objeto,cfg := struct)
 
-	if(cfg == error || cfg.size() <= 0)
+	if (!cfg || cfg.size() <= 0)
 		cfg := MontaObjCfgArmaArmadura(objeto);
 	endif
 
@@ -402,17 +400,17 @@ function PegaDescMagicLore(objeto, who , xDesc := "")
 	// Theology on sacred/cursed — but the tooltip is permissive: either
 	// flag reveals all mods to the player who learned anything.
 	var identified_by_viewer :=
-		(pplmage  != error && who.serial in pplmage) ||
-		(ppltheol != error && who.serial in ppltheol);
+		(pplmage  && who.serial in pplmage) ||
+		(ppltheol && who.serial in ppltheol);
 
-		if (pplmage != error || ppltheol != error)
+		if (pplmage || ppltheol)
 			if (identified_by_viewer)
 				var pocaoname := PegaPropObjItemOrTemplate(objeto, "pocaoname");
-				if (pocaoname != error && pocaoname)
+				if (pocaoname)
 					xDesc := xDesc + WHITE + pocaoname + "<br>";
 					var potencia := PegaPropObjItemOrTemplate(objeto, "crafterskill");
-					var title ;
-					if (potencia == error)
+					var title;
+					if (!potencia)
 						potencia := 0;
 					endif
 					case(potencia)
@@ -432,7 +430,7 @@ function PegaDescMagicLore(objeto, who , xDesc := "")
 					xDesc := xDesc + ROXO + title + "<br>";
 				endif
 				var mods := PegaPropObjItemOrTemplate(objeto, "equip");
-				if (mods != error)
+				if (mods)
 					foreach mod in (mods.keys())
 						if (mod == "strmod")
 							xDesc := xDesc + ROXO + "Bônus For "+mods[mod]+"<br>";
@@ -472,7 +470,7 @@ endfunction
 
 function PegaDescDoses(objeto, xDesc)
 		var doses := PegaPropObjItemOrTemplate(objeto, "doses");
-		if (doses != error && doses)
+		if (doses)
 			xDesc := xDesc + BLUE_ICE + doses + " doses";
 		endif
 		return xDesc;
@@ -530,7 +528,7 @@ endfunction
 
 function PegaDescCargasRunicas(objeto, who, XDesc := "")
 	var runecharges := GetObjProperty(objeto, "runecharges");
-	if (runecharges != error && runecharges)
+	if (runecharges)
 		xDesc := xDesc + AMARELO_CLARO + "Cargas Rúnicas: " + runecharges + "<br>";
 	endif
 	return XDesc;
@@ -538,7 +536,7 @@ endfunction
 
 function PegaDescEstudavel(objeto, xDesc := "")
 	var skill_name := GetObjProperty(objeto, "estudavel");
-	if (skill_name == error || !skill_name)
+	if (!skill_name)
 		return xDesc;
 	endif
 

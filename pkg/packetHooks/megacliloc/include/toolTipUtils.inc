@@ -29,31 +29,14 @@ function ParseScriptString(crit)
 
 endfunction
 
-// Sonda de erros: flip pra 1, recompila, gera alguns tooltips em prod (passa o
-// mouse por items diferentes), flip pra 0. Console mostra o que cada path
-// retorna em condições reais.
-const DIAG_ERR_PROBE_TT := 0;
-
-//Função criada para pergar Prop de Objeto tanto na forma de item quanto de item template.
-// Retorna o valor da prop, ou error (intrínseco do POL) se não existir.
-// Callers DEVEM checar `== error` antes de usar — error é truthy em eScript.
+// Lê uma prop tanto em ItemRef quanto em template (cfg elem com .Cprops).
+// Retorna error (POL builtin, falsy) quando ausente — callers podem
+// simplesmente usar `if (v) ...`. Ver docs/escript-error-handling.md.
 function PegaPropObjItemOrTemplate(item, propriedade)
-	if(item.isA(POLCLASS_ITEM))
-		var r := GetObjProperty(item, propriedade);
-		if (DIAG_ERR_PROBE_TT)
-			print($"[PegaPropObjItemOrTemplate item] prop={propriedade} TypeOf={TypeOf(r)} ==error={r==error} !r={!r} is@Exception={r is @Exception}");
-		endif
-		return r;
-	elseif(item.?Cprops)
-		var r := item.Cprops[propriedade];
-		if (DIAG_ERR_PROBE_TT)
-			print($"[PegaPropObjItemOrTemplate template] prop={propriedade} TypeOf={TypeOf(r)} ==error={r==error} !r={!r} is@Exception={r is @Exception}");
-		endif
-		return r;
-	endif
-
-	if (DIAG_ERR_PROBE_TT)
-		print($"[PegaPropObjItemOrTemplate fallback] prop={propriedade} returning error");
+	if (item.isA(POLCLASS_ITEM))
+		return GetObjProperty(item, propriedade);
+	elseif (item.?Cprops)
+		return item.Cprops[propriedade];
 	endif
 	return error;
 endfunction
