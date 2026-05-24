@@ -163,11 +163,35 @@ function Loot_BuildMagicState()
 	return state;
 endfunction
 
+// Vital bonus by chest tier. Capped low so 5 jewelry slots stack to at
+// most +15 (vs +25 under the old `tier` scaling), and chest tiers 1-2
+// give no vital bonus at all — those drops are spell-only.
+function Loot_VitalBonusForTier(tier)
+	case (tier)
+		1: return 0;
+		2: return 0;
+		3: return 1;
+		4: return 2;
+		5: return 3;
+	endcase
+	return 0;
+endfunction
+
 function Loot_ApplyVitalMod(byref state, tier)
+	var amount := Loot_VitalBonusForTier(tier);
+	if (amount <= 0)
+		return;
+	endif
+	// Cursed items flip the sign — the bonus becomes a penalty. Combined
+	// with the locked-on-body curse and the entropy gate, this is what
+	// makes cursed loot a real trade rather than free upside.
+	if (state.category == "cursed")
+		amount := -1 * amount;
+	endif
 	case (RandomInt(3))
-		0: state.hitsmod  := tier;
-		1: state.manamod  := tier;
-		2: state.stammod  := tier;
+		0: state.hitsmod  := amount;
+		1: state.manamod  := amount;
+		2: state.stammod  := amount;
 	endcase
 endfunction
 
@@ -237,10 +261,14 @@ function Loot_CreateMagicSpellItem(container, tier)
 
 	var state := Loot_BuildMagicState();
 
-	// Every magic item gets a +tier vital mod (hits / mana / stam).
+	// Category first — it decides whether the vital mod is a bonus
+	// (magic / sacred) or a penalty (cursed).
+	Loot_RollMagicCategory(state, tier);
+
+	// Vital bonus / penalty on hits / mana / stam (one rolled per item).
 	Loot_ApplyVitalMod(state, tier);
 
-	// And a spell-stick effect if one matches the tier circle window.
+	// Spell-stick effect if one matches the tier circle window.
 	var spell := Loot_PickMagicSpell(tier);
 	if (spell)
 		state.effect_type   := "spell";
@@ -250,8 +278,6 @@ function Loot_CreateMagicSpellItem(container, tier)
 		state.effect_target := spell.target;
 		state.charges       := MAGIC_CHARGES;
 	endif
-
-	Loot_RollMagicCategory(state, tier);
 
 	ApplyEpicProperties(item, state);
 	item.name := Loot_GenerateMagicName(item.desc);
