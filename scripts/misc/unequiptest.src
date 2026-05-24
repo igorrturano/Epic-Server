@@ -3,6 +3,7 @@ use os;
 
 include ":combat:armorZones";
 include ":tn:equipment";
+include ":equipsys:Model/EquipModStamper";
 include ":disguise:incognito";
 
 program UnequipTest(mobile, item)
@@ -12,6 +13,8 @@ program UnequipTest(mobile, item)
 		SendSysMessage(mobile, "You are unable to move in order to unequip that.");
 		retval := 0;
 	elseif ("cursed" in (GetObjProperty(item, "equip")))
+		// Cursed-block stays strict-first: must short-circuit BEFORE any
+		// remove path runs. Player has to die or use removermaldicao.
 		retval := 0;
 	endif
 
@@ -25,11 +28,9 @@ program UnequipTest(mobile, item)
 	endif
 
 	if (retval)
-		RemoveEquipObjMods(mobile, item);
+		EquipModStamper(item).RemoveFrom(mobile);
 		EraseObjProperty(item, "#EquippedOn");
 		if (coverFace(item))
-			// item is excluded from the stacked-mask scan: UnequipTest fires
-			// while the mask is still on its layer.
 			RemoveIncognito(mobile, item);
 		endif
 	endif
