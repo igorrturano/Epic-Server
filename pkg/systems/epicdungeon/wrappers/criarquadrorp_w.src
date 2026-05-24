@@ -1,0 +1,12 @@
+use uo;
+use os;
+
+program criarquadrorp_w(params)
+    var dm  := params[1];
+    var pid := Start_Script(":commands:gm/criarquadrorp", dm);
+    if (!pid || pid == error)
+        SendSysMessage(dm, "[EpicDungeon] Falha ao iniciar criarquadrorp.");
+        return 0;
+    endif
+    return 1;
+endprogram
