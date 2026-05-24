@@ -39,7 +39,7 @@ function PresetDiscordMessage( content, presetType:= "Default")
 	var default_cfg_elem := FindConfigElem( settings_cfg, "Default" );
 	var cfg_elem := FindConfigElem( settings_cfg, presetType );
 
-	var channel_id := "1160301742651609199";//CheckAndGetConfig( cfg_elem, default_cfg_elem, "channel_id" );
+	var channel_id := CheckAndGetConfig( cfg_elem, default_cfg_elem, "channel_id" );
 	var token := CheckAndGetConfig( cfg_elem, default_cfg_elem, "token" );
 	var username := CheckAndGetConfig( cfg_elem, default_cfg_elem, "username" );
 	var avatar_url := CheckAndGetConfig( cfg_elem, default_cfg_elem, "avatar_url" );
