@@ -62,6 +62,7 @@ include ":debug:Controller/DebugController";
 include ":attributes:skills";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include "include/epicConstants";
 
 /*
  * CheckStatsForSkill(mobile, skill_name)
@@ -229,9 +230,18 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         endif
     endif
 
-    if (GetObjProperty(mobile, "NoGains")) 
+    if (GetObjProperty(mobile, "NoGains"))
         SkillDbgMsg(mobile, "O ganho de skill está desabilitado.");
         DebugMsg(mobile, DEBUG_UP, Message("O ganho de skill está desabilitado!"));
+        return 0;
+    endif
+
+    // Path-rework hide rules: Magery is hidden for Guerreiro+Ladino, Tactics
+    // for Sabio. Block all passive gain on the hidden skill regardless of any
+    // stored value (legacy chars keep the value until spec 07 migration).
+    var chardata_hide := GetObjProperty(mobile, "chardata");
+    if (chardata_hide != error && chardata_hide && HiddenSkillForArchetype(chardata_hide.classe) == skill_name)
+        SkillDbgMsg(mobile, "Skill '" + FormatSkillName(skill_name) + "' is hidden for archetype " + CStr(chardata_hide.classe) + ".");
         return 0;
     endif
 

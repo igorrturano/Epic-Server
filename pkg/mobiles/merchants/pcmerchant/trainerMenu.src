@@ -411,21 +411,26 @@ function BuildSkillCostMap(chardata)
 	var secundarias := GetConfigStringArray(elem, "S");
 	var terciarias := GetConfigStringArray(elem, "T");
 	var quaternarias := GetConfigStringArray(elem, "Q");
+	var hidden := HiddenSkillForArchetype(chardata.classe);
 
 	foreach skill in primarias
+		if (skill == hidden) continue; endif
 		costs[skill] := 1;
 	endforeach
 	foreach skill in secundarias
+		if (skill == hidden) continue; endif
 		if (!costs.Exists(skill))
 			costs[skill] := 2;
 		endif
 	endforeach
 	foreach skill in terciarias
+		if (skill == hidden) continue; endif
 		if (!costs.Exists(skill))
 			costs[skill] := 3;
 		endif
 	endforeach
 	foreach skill in quaternarias
+		if (skill == hidden) continue; endif
 		if (!costs.Exists(skill))
 			costs[skill] := 4;
 		endif
@@ -433,7 +438,7 @@ function BuildSkillCostMap(chardata)
 
 	// bgBonus is treated as primary regardless of which list it appears in.
 	var bg := chardata.bgBonus;
-	if (bg != error && bg)
+	if (bg != error && bg && bg != hidden)
 		costs[bg] := 1;
 	endif
 
@@ -668,6 +673,9 @@ endfunction
 
 function DrawSkillRow(byref gump, byref respec_data, skill, x, y, cost, refund_base, buy_base, minus_btn, plus_btn, pri_allowed)
 	if (skill == error || !skill || skill == "")
+		return y;
+	endif
+	if (skill == HiddenSkillForArchetype(respec_data.classe))
 		return y;
 	endif
 	var skill_id := GetSkillIdFromName(skill);

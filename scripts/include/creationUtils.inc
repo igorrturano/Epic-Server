@@ -944,20 +944,35 @@ endfunction
 // "Militar" returns military only; "Civil" returns civic only; anything
 // else (e.g. "Ambos") concatenates military then civic — the floating
 // any-path slot used by Sabe-Tudo and the normal build's 6th slot.
-function SkillsForBucket(bucket)
+//
+// hidden_skill, when non-empty, is dropped from the result so picker rows
+// and SkillFromSlotInput indexing stay in lockstep without exposing the
+// archetype-hidden skill (Magery for Guerreiro/Ladino, Tactics for Sabio).
+function SkillsForBucket(bucket, hidden_skill := "")
+    var base := array;
     if (bucket == "Militar")
-        return MILITARY_SKILLS;
+        base := MILITARY_SKILLS;
     elseif (bucket == "Civil")
-        return CIVIC_SKILLS;
+        base := CIVIC_SKILLS;
+    else
+        foreach s in MILITARY_SKILLS
+            base.append(s);
+        endforeach
+        foreach s in CIVIC_SKILLS
+            base.append(s);
+        endforeach
     endif
-    var combined := array;
-    foreach s in MILITARY_SKILLS
-        combined.append(s);
+
+    if (hidden_skill == "")
+        return base;
+    endif
+    var filtered := array;
+    foreach s in base
+        if (s != hidden_skill)
+            filtered.append(s);
+        endif
     endforeach
-    foreach s in CIVIC_SKILLS
-        combined.append(s);
-    endforeach
-    return combined;
+    return filtered;
 endfunction
 
 // SlotSkillGump renders the picker for one slot. Single right-side column
@@ -989,7 +1004,7 @@ function SlotSkillGump(who, culture_pic, byref chardata, slot_num, total_slots, 
     GFHTMLArea(gump, cx+1, cy-24, 280, 40, "<BASEFONT Size=55 Color=#999999 > {}".format(header), 0, 0); //shadow
     GFHTMLArea(gump, cx,   cy-25, 280, 40, "<BASEFONT Size=55 Color=#ffffff > {}".format(header), 0, 0);
 
-    var all_for_bucket := SkillsForBucket(slot_def.bucket);
+    var all_for_bucket := SkillsForBucket(slot_def.bucket, HiddenSkillForArchetype(chardata.classe));
 
     var i := 1;
     foreach skill in all_for_bucket
@@ -1013,12 +1028,13 @@ endfunction
 
 // SkillFromSlotInput maps a gump button value back to a skill name for a slot.
 // Returns "" if no radio was clicked or the index is out of range.
-function SkillFromSlotInput(slot_def, btn_value)
+// chardata is needed so the hidden-skill filter matches SlotSkillGump's view.
+function SkillFromSlotInput(slot_def, btn_value, chardata)
     if (btn_value <= 200)
         return "";
     endif
     var idx := btn_value - 200;
-    var all_for_bucket := SkillsForBucket(slot_def.bucket);
+    var all_for_bucket := SkillsForBucket(slot_def.bucket, HiddenSkillForArchetype(chardata.classe));
     if (idx < 1 || idx > all_for_bucket.size())
         return "";
     endif

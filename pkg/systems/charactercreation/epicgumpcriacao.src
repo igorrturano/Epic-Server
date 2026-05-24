@@ -491,7 +491,7 @@ function skillSelection(who, culture_pic)
 			btn_value := key;
 		endforeach
 
-		var pick := SkillFromSlotInput(slot_def, btn_value);
+		var pick := SkillFromSlotInput(slot_def, btn_value, chardata);
 		if (pick == "" || pick in picked_skills)
 			SendSysMessageEX(who, "Selecione uma habilidade válida", SSM_FAIL);
 			continue;
