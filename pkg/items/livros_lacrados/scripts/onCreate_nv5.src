@@ -1,0 +1,12 @@
+// onCreate_nv5.src
+// Executado quando o LivroLacrado nivel 5 (drop de NPC tier 5) e criado.
+
+use uo;
+use os;
+use util;
+
+include ":livros_lacrados:include/livrosLacrados";
+
+program OnCreateLivroLacradoNv5(book, param)
+    return ExecutarOnCreate(book, 5);
+endprogram

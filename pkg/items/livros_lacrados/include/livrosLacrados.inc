@@ -357,6 +357,47 @@ function PlayNPCBowAnim(npc)
 endfunction
 
 // ============================================================
+// FUN  AA'O: ExecutarOnCreate(book, nivel)
+// Logica compartilhada pelos 3 scripts onCreate (nv3/4/5).
+// ============================================================
+function ExecutarOnCreate(book, nivel)
+    if (nivel < 3) nivel := 3; endif
+    if (nivel > 5) nivel := 5; endif
+
+    var natureza  := SortearNatureza();
+    var afinidade := SortearAfinidade();
+    var invocacao := "";
+
+    if (natureza == NAT_CONVOCADOR || natureza == NAT_DESPERTADOR)
+        invocacao := SortearInvocacao(nivel);
+    endif
+
+    SetObjProperty(book, "nivel_bau",  nivel);
+    SetObjProperty(book, "natureza",   natureza);
+    SetObjProperty(book, "afinidade",  afinidade);
+    SetObjProperty(book, "invocacao",  invocacao);
+    SetObjProperty(book, "aberto",     0);
+
+    var graphics := array{
+        0x0FEF, 0x0FF0, 0x0FF1, 0x0FF2, 0x36A2, 0x36A3, 0x42B7, 0x42B8,
+        0x71B0, 0x71B1, 0x71B2, 0x71B3, 0x71B4, 0x9C16, 0x9C17, 0xAE31,
+        0xAE32, 0xAE35, 0xAE36, 0xB257, 0xB258, 0xFF34, 0xFF35, 0xFF36,
+        0xFF37, 0xFF38, 0xFF39, 0xF8D5, 0xF8D6, 0xF8D7, 0xF8D8, 0xEB2D,
+        0xEB2E, 0xE9BE, 0xE9BF,
+        0xE8A4, 0xE8A5, 0xE8A6, 0xE8A7, 0xE8A8, 0xE8A9, 0xE8AA, 0xE8AB,
+        0xE8AC, 0xE8AD, 0xE8B2, 0xE8B3, 0xE8B4, 0xE8B5, 0xE8B6, 0xE8B7,
+        0xE8C8, 0xE8C9, 0xE8CA, 0xE8CB, 0xE8CC, 0xE8CD, 0xE8CE, 0xE8CF,
+        0xE8D0, 0xE8D1, 0xE8D2, 0xE8D3, 0xE8D4, 0xE8D5, 0xE8D6, 0xE8D7,
+        0xE8D9, 0xE8DA, 0xE8DB, 0xE8E0, 0xE8E1, 0xE8E2, 0xE8E3, 0xE8E4,
+        0xE8E5, 0xE8E6, 0xE8E7, 0xE8E8, 0xE8E9, 0xE8EA, 0xE8EF, 0xE8F0,
+        0xE8F1, 0xE8F6, 0xE8F7, 0xE8F8, 0xE8F9, 0xE8FA, 0xE901, 0xE902
+    };
+    book.graphic := graphics[RandomInt(graphics.size()) + 1];
+    SetName(book, "Livro Lacrado");
+    return 1;
+endfunction
+
+// ============================================================
 // FUN  AA'O: GerarMensagemRP(who)
 // Gera mensagem de abertura para o Mensageiro baseada em props ativas.
 // ============================================================
