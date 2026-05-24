@@ -14,6 +14,7 @@ include ":epicspawn:epicBoss";
 include ":message:include/model/Message";
 include ":propagacao:include/efeitosPatogenicos";
 include "include/epicCombatUtils";
+include "mockmultiUtils";
 
 function ChangeLeverStatus(la, only_on_levers := 0)
    if (typeof(la) != "Array")
@@ -366,6 +367,10 @@ endif
 		endif
 	endif
    
+	if (opts.mockmulti)
+		moverMockMulti(item, opts);
+	endif
+
 	if(opts.somfim)//ADICIONADO PARA SIM 2 (FINAL)
 		var snd := Cint(GetObjProperty(item, "Som_fim"));
 		foreach char in chars
@@ -816,6 +821,9 @@ endforeach
    if (opts.moveitems)
       moveObjects(item, opts);
    endif
+   if (opts.mockmulti)
+      moverMockMulti(item, opts);
+   endif
 	if (opts.spawn_boss)
 		  var boss :=  SystemFindObjectBySerial( GetObjProperty(item, "champ") );
 			ApplyDamage( boss, 20000);
@@ -825,6 +833,37 @@ endforeach
    if (opts.all_levers_order == 2)
       SetRandomOrder(item);
    endif
+endfunction
+
+function moverMockMulti(item, opts)
+   var mm := opts.mockmulti;
+   var gdata := GetGlobalProperty("mmGroup_" + mm.groupId);
+   if (!gdata || gdata.errortext) return; endif
+
+   var serials := gdata.serials;
+   if (!serials || serials.size() == 0) return; endif
+
+   var newStatus := GetObjProperty(item, "status");
+   var z_destino := newStatus == "on" ? mm.z_up : mm.z_down;
+   var shift     := z_destino - BaseZAtual(serials);
+   if (shift == 0) return; endif
+
+   var cloud_serials := gdata.cloud_serials ? gdata.cloud_serials : array{};
+   if (z_destino > CLOUD_Z_THRESHOLD && cloud_serials.size() == 0)
+      cloud_serials := _CriarNuvens(serials);
+   endif
+   var extras := cloud_serials + (mm.corda_volta ? array{mm.corda_volta} : array{});
+
+   Detach();
+   _AnimarSerials(serials + extras, shift, VelStep(mm.vel), VelDelay(mm.vel));
+
+   if (z_destino <= CLOUD_Z_THRESHOLD)
+      _DestruirNuvens(cloud_serials);
+      cloud_serials := array{};
+   endif
+   _AtualizarDestino(mm.corda_subir, shift);
+   gdata.cloud_serials := cloud_serials.size() > 0 ? cloud_serials : 0;
+   SetGlobalProperty("mmGroup_" + mm.groupId, gdata);
 endfunction
 
 function CheckNatureEvent(item)

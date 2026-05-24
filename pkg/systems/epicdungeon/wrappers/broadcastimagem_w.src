@@ -1,0 +1,86 @@
+use uo;
+use os;
+
+include ":epicdungeon:include/epicdungeon";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
+
+program broadcastimagem_w(params)
+    var dm := params[1];
+
+    var gump := GFCreateGump();
+    GFClosable(gump, 1);
+    GFDisposable(gump, 0);
+
+    var gw := 530;
+    var gh := 420;
+
+    GFGumpPicTiled(gump, 0, 0, gw, gh, 39929);
+    _Moldura(gump, gw, gh);
+
+    GFTextMid(gump, 25, 22, gw - 50, 53, "Broadcast de Imagem");
+
+    var y := 60;
+    GFResizePic(gump, 15, y, 9350, gw - 30, 315);
+    y += 20;
+
+    GFTextLine(gump, 30, y, 53, "Titulo:");
+    var txt_titulo := GFTextEntry(gump, 30, y + 20, gw - 70, 20, 0, "");
+    y += 55;
+
+    GFTextLine(gump, 30, y, 53, "URL da imagem:");
+    var txt_url := GFTextEntry(gump, 30, y + 20, gw - 70, 20, 0, "");
+    y += 55;
+
+    GFTextLine(gump, 30, y, 53, "Texto:");
+    var txt_corpo := GFTextEntry(gump, 30, y + 20, gw - 70, 20, 0, "");
+    y += 55;
+
+    GFTextLine(gump, 30, y, 2100, "Imagem: max 790x500 pixels");
+
+    GFAddButton(gump, (gw / 2) - 15, gh - 40, 247, 248, GF_CLOSE_BTN, 1);
+
+    var result := GFSendGump(dm, gump);
+
+    if (result[0] != 1)
+        SendSysMessage(dm, "[EpicDungeon] Cancelado.");
+        return 0;
+    endif
+
+    var titulo := GFExtractData(result, txt_titulo);
+    var url    := GFExtractData(result, txt_url);
+    var corpo  := GFExtractData(result, txt_corpo);
+
+    if (!url || Len(url) == 0)
+        SendSysMessage(dm, "[EpicDungeon] URL nao pode ser vazia.");
+        return 0;
+    endif
+
+    var mobs     := EDResolveMobs(dm);
+    var enviados := 0;
+    foreach mob in mobs
+        Start_Script(":epicdungeon:wrappers/broadcastimagem_show", array{ mob, titulo, url, corpo });
+        enviados += 1;
+        sleepms(50);
+    endforeach
+
+    SendSysMessage(dm, "[EpicDungeon] Broadcast enviado para " + enviados + " jogador(es).");
+    return 1;
+endprogram
+
+function _Moldura(byref gump, width, height)
+    var molduras := array{
+        struct{ x := 0,          y := 0,           width := 25,         height := 25,          gump := 39925 },
+        struct{ x := width - 25, y := 0,           width := 35,         height := 25,          gump := 39927 },
+        struct{ x := 25,         y := 0,           width := width - 41, height := 25,          gump := 39926 },
+        struct{ x := 25,         y := height - 25, width := width - 25, height := 35,          gump := 39932 },
+        struct{ x := 0,          y := 25,          width := 10,         height := height - 50, gump := 39928 },
+        struct{ x := width - 25, y := 25,          width := 35,         height := height - 50, gump := 39930 },
+        struct{ x := width - 25, y := height - 25, width := 35,         height := 35,          gump := 39933 },
+        struct{ x := 0,          y := height - 25, width := 35,         height := 35,          gump := 39931 }
+    };
+    foreach moldura in molduras
+        GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+    endforeach
+endfunction

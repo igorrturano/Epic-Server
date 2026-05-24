@@ -55,6 +55,12 @@ function EDResolveMobs(dm)
     return mobs;
 endfunction
 
+function EDPlayerLabel(mob)
+    var nome := GetObjProperty(mob, "nome_inicial");
+    if (!nome) nome := mob.name; endif
+    return mob.acctname + " - " + mob.title_race + " [" + nome + "]";
+endfunction
+
 // Retorna array de structs para renderizar na sidebar
 function EDGetRosterEntries(dm)
     var roster  := EDGetRoster(dm);
@@ -68,19 +74,25 @@ function EDGetRosterEntries(dm)
             entry.+label  := "?";
             entry.+col    := 32;
         elseif (!mob.connected)
-            entry.+name   := mob.name;
-            entry.+label  := "OFFLINE";
-            entry.+col    := 32;
+            entry.+name  := mob.acctname + " - " + mob.title_race;
+            var nome_off := GetObjProperty(mob, "nome_inicial");
+            if (!nome_off) nome_off := mob.name; endif
+            entry.+label := "[" + nome_off + "] OFFLINE";
+            entry.+col   := 32;
         elseif (mob.dead)
-            entry.+name   := mob.name;
-            entry.+label  := "MORTO";
-            entry.+col    := 34;
+            entry.+name  := mob.acctname + " - " + mob.title_race;
+            var nome_dead := GetObjProperty(mob, "nome_inicial");
+            if (!nome_dead) nome_dead := mob.name; endif
+            entry.+label := "[" + nome_dead + "] MORTO";
+            entry.+col   := 34;
         else
             var maxhp := CInt(mob.maxhits);
             if (maxhp <= 0) maxhp := 1; endif
             var pct := CInt(CInt(mob.hits) * 100 / maxhp);
-            entry.+name   := mob.name;
-            entry.+label  := pct + "%";
+            entry.+name  := mob.acctname + " - " + mob.title_race;
+            var nome_hp  := GetObjProperty(mob, "nome_inicial");
+            if (!nome_hp) nome_hp := mob.name; endif
+            entry.+label := "[" + nome_hp + "] " + pct + "%";
             if (pct > 50)
                 entry.+col := 1153;
             elseif (pct > 25)

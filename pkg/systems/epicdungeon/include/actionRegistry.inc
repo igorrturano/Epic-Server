@@ -30,6 +30,12 @@ function EDParseParam(param_str)
         param.+pmin     := CInt(p[3]);
         param.+pmax     := CInt(p[4]);
         param.+pdefault := CInt(p[5]);
+        var raw_step := CInt(p[6]);
+        if (raw_step > 0)
+            param.+pstep := raw_step;
+        else
+            param.+pstep := 0;
+        endif
     elseif (param.ptype == "text")
         param.+pmaxlen  := CInt(p[3]);
         param.+pdefault := "";

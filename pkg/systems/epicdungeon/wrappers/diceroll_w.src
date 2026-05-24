@@ -1,0 +1,38 @@
+use uo;
+use os;
+use util;
+include ":epicdungeon:include/epicdungeon";
+
+program diceroll_w(params)
+    var dm      := params[1];
+    var pv      := params[3];
+    var destino := CInt(pv[1]);  // 1=Todos, 2=Um Jogador, 3=Apenas GM
+
+    var resultado := RandomInt(20) + 1;
+    var texto     := "[D20] " + resultado;
+
+    case (destino)
+        1:
+            var mobs := EDResolveMobs(dm);
+            foreach mob in mobs
+                PrintTextAbove(mob, texto);
+                sleepms(50);
+            endforeach
+            SendSysMessage(dm, "[EpicDungeon] D20 → " + resultado + " (mostrado ao roster).");
+
+        2:
+            SendSysMessage(dm, "[EpicDungeon] Selecione o jogador.");
+            var alvo := Target(dm);
+            if (alvo && alvo != error && alvo.IsA(POLCLASS_MOBILE))
+                PrintTextAbove(alvo, texto);
+                SendSysMessage(dm, "[EpicDungeon] D20 → " + resultado + " (mostrado a " + alvo.name + ").");
+            else
+                SendSysMessage(dm, "[EpicDungeon] Cancelado.");
+            endif
+
+        3:
+            SendSysMessage(dm, "[EpicDungeon] D20 → " + resultado + " (apenas voce).");
+    endcase
+
+    return 1;
+endprogram

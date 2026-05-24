@@ -1,0 +1,39 @@
+use uo;
+use os;
+use vitals;
+
+include "include/packets";
+include ":epicdungeon:include/epicdungeon";
+
+program arremessar_w(params)
+    var dm   := params[1];
+    var pos  := params[2];
+    var pv   := params[3];
+    var tipo := CInt(pv[1]);
+    var dano := CInt(pv[2]);
+
+    var graficos    := array{ 0x1BFE, 0x1363, 0x36D4, 0x22FF };
+    var velocidades := array{ 10, 8, 12, 15 };
+    var sons        := array{ 0x224, 0x12A, 0x208, 0x029 };
+
+    var grafico    := graficos[tipo + 1];
+    var velocidade := velocidades[tipo + 1];
+    var som        := sons[tipo + 1];
+
+    var mobs := EDResolveMobs(dm);
+    if (mobs.size() == 0)
+        SendSysMessage(dm, "[EpicDungeon] Nenhum jogador no roster.");
+        return 0;
+    endif
+
+    foreach mob in mobs
+        PlayMovingEffectXYZHuefx(mob, pos.x, pos.y, pos.z, mob.x, mob.y, mob.z, grafico, velocidade);
+        PlaySoundEffect(mob, som);
+        if (dano > 0)
+            ApplyRawDamage(mob, dano);
+        endif
+        sleepms(100);
+    endforeach
+
+    return 1;
+endprogram
