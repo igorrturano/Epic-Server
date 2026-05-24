@@ -633,6 +633,8 @@ function checkCastingSuccess(mobile, mw, spellinfo, scroll)
 	var attribute := MAGERY;
 	if (IsArcaneSensitive(mobile) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
 		attribute := ARCANA;
+	elseif (CanCastAsClass(mobile, "Druida") || CanCastAsClass(mobile, "Shaman"))
+		attribute := NATURE;
 	elseif (spellinfo.Type == "Divine")
 		attribute := THEOLOGY;
 	endif
@@ -676,17 +678,21 @@ endfunction
 
 function getSupportingSkill(mobile)
 	var chardata := getobjProperty(mobile, "chardata");
-	var attribute := ARCANA;
 	// "Mago" wisdom_path (legacy) and "spellcaster" magia (path-rework Magus/
-	// Necromante/Lamina_Arcana) both keep Arcana as the supporting skill.
-	// Everyone else falls back to Theology unless they have SENSIBILIDADE_ARCANA.
-	if (chardata != error
-		&& chardata.wisdom_path != "Mago"
-		&& chardata.magia != "spellcaster"
-		&& !IsArcaneSensitive(mobile))
-		attribute := THEOLOGY;
+	// Necromante/Lamina_Arcana) keep Arcana. Druida/Shaman use Nature
+	// (path-rework spec 02). Everyone else falls back to Theology unless they
+	// have SENSIBILIDADE_ARCANA.
+	if (IsArcaneSensitive(mobile))
+		return ARCANA;
 	endif
-	return attribute;
+	if (chardata != error
+		&& (chardata.wisdom_path == "Mago" || chardata.magia == "spellcaster"))
+		return ARCANA;
+	endif
+	if (CanCastAsClass(mobile, "Druida") || CanCastAsClass(mobile, "Shaman"))
+		return NATURE;
+	endif
+	return THEOLOGY;
 endfunction
 
 function finalizeCasting(mobile, spellinfo, targ, scroll)
