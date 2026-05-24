@@ -5,6 +5,7 @@ use uo;
 use os;
 use file;
 use util;
+use polsys;
 
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
@@ -17,6 +18,7 @@ const LOG_ROOT := "data/log/online";
 
 program peak(who)
 	var stats := LoadStats();
+	FoldLiveSample(stats);
 	if (stats.total_samples == 0)
 		var gump := GFECreateGump("Online - Pico", GUMP_WIDTH, 180);
 		GFHTMLArea(gump, 25, 75, GUMP_WIDTH - 45, 60, "<BASEFONT Color=#FFFFFF>Nenhum registro encontrado em <i>" + LOG_ROOT + "</i>.<BR>O OnlineTracker pode não ter rodado ainda.", 0, 0);
@@ -272,6 +274,49 @@ function LoadStats()
 	endforeach
 
 	return stats;
+endfunction
+
+// Live sample so the gump reflects the current moment, not just the last
+// 1-minute tick of the OnlineTracker. Folds the live count into both the
+// all-time peak and the current hour/day buckets.
+function FoldLiveSample(byref stats)
+	var total := 0;
+	foreach p in EnumerateOnlineCharacters()
+		if (p.cmdlevel < 1)
+			total := total + 1;
+		endif
+	endforeach
+
+	if (total > stats.alltime_peak)
+		stats.alltime_peak := total;
+	endif
+
+	var now  := polcore().systime;
+	var hkey := StrFormatTime("%H", now);
+	var dkey := StrFormatTime("%d-%m-%Y", now);
+
+	if (!stats.hourly.Exists(hkey))
+		var h := struct;
+		h.+sum := 0.0;
+		h.+count := 0;
+		h.+peak := 0;
+		stats.hourly[hkey] := h;
+	endif
+	if (total > stats.hourly[hkey].peak)
+		stats.hourly[hkey].peak := total;
+	endif
+
+	if (!stats.daily.Exists(dkey))
+		var d := struct;
+		d.+sum := 0.0;
+		d.+count := 0;
+		d.+peak := 0;
+		stats.daily[dkey] := d;
+		stats.days_count := stats.days_count + 1;
+	endif
+	if (total > stats.daily[dkey].peak)
+		stats.daily[dkey].peak := total;
+	endif
 endfunction
 
 // --------------------------------------------------------------------------

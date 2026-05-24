@@ -51,11 +51,11 @@ exported function GetHitsMaximumValue(mobile)
 		vital_points := (GetHP(mobile) + GetPH(mobile)) * 100;
 	endif
 
-	if (GetObjProperty(mobile, "chardata").culture == BADURAN)
-		vital_points := vital_points + 1000;
-	endif
-
 	if (!mobile.npctemplate)
+		if (GetObjProperty(mobile, "chardata").culture == BADURAN)
+			vital_points := vital_points + 1000;
+		endif
+
 		var hunger := CInt(AP_GetVital(mobile, "Hunger") / 60);
 		if (hunger >= FomeGetLimiar())
 			vital_points := vital_points - (FomeCalcDebuff(hunger) * 100);
@@ -98,7 +98,7 @@ exported function GetManaMaximumValue(mobile)
 
 	if (!vital_points)
 		vital_points := CInt(AP_GetTrueStat(mobile, "Intelligence")) * 100;
-		if (GetObjProperty(mobile, "chardata").trait == "Conexão com Alora")
+		if (!mobile.npctemplate && GetObjProperty(mobile, "chardata").trait == "Conexão com Alora")
 			vital_points := vital_points + 1000;
 		endif
 	endif
@@ -127,7 +127,7 @@ exported function GetStaminaRegenRate(mobile)
 		base_regen := CInt(AP_GetSettingsCfgElem("Regen").Stamina * 100);
 	endif
 
-	if (GetObjProperty(mobile, "chardata").culture == AIGLANA)
+	if (!mobile.npctemplate && GetObjProperty(mobile, "chardata").culture == AIGLANA)
 		base_regen *= 1.5;
 	endif
 
@@ -140,7 +140,7 @@ exported function GetStaminaMaximumValue(mobile)
 	vital_points := GetNPCVitalSetting(mobile, "STAM");
 	if (!vital_points)
 		vital_points := CInt(AP_GetTrueStat(mobile, "Dexterity")) * 100;
-		if (GetObjProperty(mobile, "chardata").culture == BADURAN)
+		if (!mobile.npctemplate && GetObjProperty(mobile, "chardata").culture == BADURAN)
 			vital_points := vital_points + 1000;
 		endif
 	endif
