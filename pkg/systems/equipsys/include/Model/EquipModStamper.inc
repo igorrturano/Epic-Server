@@ -129,6 +129,9 @@ class EquipModStamper()
         if (!this._item || !this._item.serial)
             return 0;
         endif
+        if (!mobile || mobile == error)
+            return 0;
+        endif
 
         var key := this._StampKey();
         if (GetObjProperty(mobile, key) != error)
@@ -199,6 +202,9 @@ class EquipModStamper()
     // from the legacy RemoveEquipObjMods so on-character hits don't drift.
     function RemoveFrom(this, mobile)
         if (!this._item || !this._item.serial)
+            return 0;
+        endif
+        if (!mobile || mobile == error)
             return 0;
         endif
 
