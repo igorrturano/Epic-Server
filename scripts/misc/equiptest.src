@@ -2,67 +2,64 @@ use uo;
 use os;
 
 include ":tn:equipment";
+include ":equipsys:Model/EquipModStamper";
 include ":combat:armorZones";
 include ":disguise:incognito";
 include "include/say";
 
 program EquipTest(mobile, item, start_up)
-	var retval := 0;
+    var retval := 0;
 
-	if (start_up)
-		// POL is starting up, yes the mobile can equip it
-		retval := 1;
-	elseif (mobile.npctemplate)
-		// NPCs can wear anything
-		retval := 1;
-	elseif (mobile.cmdlevel)
-		// CmdLevel > 0 can equip anything.
-		retval := 1;
-	elseif (item.isa(POLCLASS_CONTAINER))
-		// Makes backpacks always equippable.
-		retval := 1;
-	elseif ((mobile.frozen) || (mobile.paralyzed))
-		// Frozen players cant equip stuff
-		SendSysMessage(mobile, "You are unable to move in order to equip that.");
-		return 0;
-	else
-		retval := 1;
-	endif
+    if (start_up)
+        retval := 1;
+    elseif (mobile.npctemplate)
+        retval := 1;
+    elseif (mobile.cmdlevel)
+        retval := 1;
+    elseif (item.isa(POLCLASS_CONTAINER))
+        retval := 1;
+    elseif ((mobile.frozen) || (mobile.paralyzed))
+        SendSysMessage(mobile, "You are unable to move in order to equip that.");
+        return 0;
+    else
+        retval := 1;
+    endif
 
-	if (item.graphic IN array{ 9920, 9930 })
-		var mounted := GetEquipmentByLayer(mobile, 0x19);
-		if (!mounted)
-			SendSysMessage(mobile, "Voce nao pode equipar essa arma desmontado.");
-			return 0;
-		endif
-	endif
+    if (item.graphic IN array{ 9920, 9930 })
+        var mounted := GetEquipmentByLayer(mobile, 0x19);
+        if (!mounted)
+            SendSysMessage(mobile, "Voce nao pode equipar essa arma desmontado.");
+            return 0;
+        endif
+    endif
 
-	if (GetObjProperty(item, "broken") == 1)
-		SendSysMessageEx(mobile, "Voce nao pode equipar um item danificado.", SSM_FAIL);
-		return 0;
-	endif
+    if (GetObjProperty(item, "broken") == 1)
+        SendSysMessageEx(mobile, "Voce nao pode equipar um item danificado.", SSM_FAIL);
+        return 0;
+    endif
 
-	if (mobile.hidden)
-		var zones := CS_GetArmorZone(item);
-		if ("Body" IN zones || "Arms" IN zones || "Legs/feet" IN zones)
-			SendSysMessage(mobile, "Voce apareceu ao colocar " + item.desc + ".");
-			mobile.hidden := 0;
-			PrintTextAbove(mobile, "*aparece*");
-		endif
-	endif
+    if (mobile.hidden)
+        var zones := CS_GetArmorZone(item);
+        if ("Body" IN zones || "Arms" IN zones || "Legs/feet" IN zones)
+            SendSysMessage(mobile, "Voce apareceu ao colocar " + item.desc + ".");
+            mobile.hidden := 0;
+            PrintTextAbove(mobile, "*aparece*");
+        endif
+    endif
 
-	if (retval)
-		SetObjProperty(item, "#EquippedOn", mobile.serial);
-		if (coverFace(item) && !mobile.npctemplate)
-			// Synchronous + idempotent. The old async misc/applyIncognito
-			// (sleepms 100) raced the synchronous unequip/destroy paths and
-			// left players stuck as "Desconhecido".
-			ApplyIncognito(mobile);
-		endif
-	else
-		// Unable to equip but no reaso was given above.
-		SendSysMessage(mobile, "Unable to equip ->" + item.desc);
-	endif
+    if (retval)
+        SetObjProperty(item, "#EquippedOn", mobile.serial);
+        if (coverFace(item) && !mobile.npctemplate)
+            ApplyIncognito(mobile);
+        endif
+        // Single source of truth for equip-dict modifier application.
+        // Idempotent: re-firing is a no-op while the stamp exists.
+        // Fires for EVERY equippable item (jewelry / clothing / armor /
+        // weapon), so magic rings finally work.
+        EquipModStamper(item).ApplyOn(mobile);
+    else
+        SendSysMessage(mobile, "Unable to equip ->" + item.desc);
+    endif
 
-	return retval;
+    return retval;
 endprogram
