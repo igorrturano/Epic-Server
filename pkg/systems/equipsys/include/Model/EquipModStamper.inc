@@ -39,7 +39,7 @@ include ":attributes:vitals";
 
 const EQUIPMOD_STAMP_PREFIX := "#equipMods_";
 
-class EquipModStamper
+class EquipModStamper()
     var _item;
 
     function EquipModStamper(this, item)
