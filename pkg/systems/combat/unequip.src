@@ -6,8 +6,15 @@ include ":attributes:attributes";
 include ":wrappers:Objects/Model/MobileWrapper";
 
 program unequipweapon(who, item)
-	// STRICT-FIRST: cursed block. Must short-circuit BEFORE any modifier
-	// rollback path so a failed-unequip can never half-clean the mobile.
+	// Cursed block — death-path safety net.
+	// POL fires UnequipTest BEFORE UnEquipScript, so the canonical cursed
+	// short-circuit lives in scripts/misc/unequiptest.src (returns 0 there
+	// and POL never reaches this script). The branch below only runs when
+	// UnequipTest is bypassed — e.g. POL's corpse-strip on death, where
+	// we still want to flush wrapper-side mods via :equipsys:unequipitem
+	// so a dead cursed-wearer doesn't keep stale combat traits.
+	// Uses `mods.keys()` (array form of `in`) — the dict form is silently
+	// false in eScript; see feedback_escript_dict_exists.md.
 	var mods := GetObjProperty(item, "equip");
 	if (mods && "cursed" in (mods.keys()))
 		if (who.dead)
