@@ -177,17 +177,52 @@ function Loot_VitalBonusForTier(tier)
 	return 0;
 endfunction
 
+// Vital mod application — three category strategies:
+//   sacred  → +N to ONE vital. Pure upside (entropy gate is the cost).
+//   magic   → +N to one vital, -N to a DIFFERENT vital. Tradeoff item —
+//             forces the player to pick a loadout per fight instead of
+//             stacking 5 magic rings for pure upside.
+//   cursed  → -5 * tier_bucket on one vital. T3=-5, T4=-10, T5=-15.
+//             High risk, the priest spell `removermaldicao` is the way
+//             out. Custom/lore curses with worse penalties stay GM-made.
 function Loot_ApplyVitalMod(byref state, tier)
+	if (state.category == "cursed")
+		var bucket := Loot_VitalBonusForTier(tier);  // 1/2/3 at T3/T4/T5
+		if (bucket <= 0)
+			return;
+		endif
+		var penalty := -5 * bucket;
+		case (RandomInt(3))
+			0: state.hitsmod := penalty;
+			1: state.manamod := penalty;
+			2: state.stammod := penalty;
+		endcase
+		return;
+	endif
+
 	var amount := Loot_VitalBonusForTier(tier);
 	if (amount <= 0)
 		return;
 	endif
-	// Cursed items flip the sign — the bonus becomes a penalty. Combined
-	// with the locked-on-body curse and the entropy gate, this is what
-	// makes cursed loot a real trade rather than free upside.
-	if (state.category == "cursed")
-		amount := -1 * amount;
+
+	if (state.category == "magic")
+		// Pick two distinct vital slots — one gets +amount, one gets -amount.
+		var plus_idx  := RandomInt(3);
+		var minus_idx := (plus_idx + 1 + RandomInt(2)) % 3;  // guaranteed != plus_idx
+		case (plus_idx)
+			0: state.hitsmod := amount;
+			1: state.manamod := amount;
+			2: state.stammod := amount;
+		endcase
+		case (minus_idx)
+			0: state.hitsmod := -amount;
+			1: state.manamod := -amount;
+			2: state.stammod := -amount;
+		endcase
+		return;
 	endif
+
+	// Sacred (and any future pure-upside category) — one vital, +amount.
 	case (RandomInt(3))
 		0: state.hitsmod  := amount;
 		1: state.manamod  := amount;
