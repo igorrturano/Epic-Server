@@ -26,20 +26,23 @@ function _UL_MutationKey(realm, x, y, z)
 endfunction
 
 // Insere ou substitui um static em (realm, x, y, z) com graphic e hue dados.
-// Se já havia mutação na posição, registra como "static_modify"; caso contrário, "static_add".
+// "static_modify" se há static nativo em statics.mul neste z; "static_add" se não.
 function UL_SetStatic(realm, x, y, z, graphic, hue, source := "unknown")
     var df := _UL_GetMutationsDF();
     if (df == error) return df; endif
 
     var key := _UL_MutationKey(realm, x, y, z);
 
-    // "static_modify" se entry já existe; "static_add" se posição virgem.
-    var existing := df.FindElement(key);
     var mutation_type := "static_add";
-    if (existing)
-        mutation_type := "static_modify";
-    endif
+    var natives := ListStaticsAtLocation(CInt(x), CInt(y), LIST_IGNORE_Z, 0, realm);
+    foreach st in natives
+        if (CInt(st.z) == CInt(z))
+            mutation_type := "static_modify";
+            break;
+        endif
+    endforeach
 
+    var existing := df.FindElement(key);
     if (!existing)
         df.CreateElement(key);
     endif
