@@ -1,0 +1,12 @@
+use uo;
+use os;
+
+program createtier_w(params)
+    var dm := params[1];
+    var pid := Start_Script(":commands:coun/createtier", dm);
+    if (!pid || pid == error)
+        SendSysMessage(dm, "[EpicDungeon] Falha ao iniciar createtier.");
+        return 0;
+    endif
+    return 1;
+endprogram
