@@ -37,4 +37,8 @@ const PROPNAME_LIMITADORA_GLOBAL := "limitaPropagacao";
 const PROPNAME_POSICAO_GUMP := "posicaoGump";
 
 //GMS
-const PROPNAME_PREFERENCIAS_GM := "preferenciasGm"; 
+const PROPNAME_PREFERENCIAS_GM := "preferenciasGm";
+
+//MOCKMULTI
+const PROPNAME_MOCKMULTI_GROUP := "mockmultiGroup";
+const PROPNAME_MOCKMULTI_Z     := "mockmultiZ";

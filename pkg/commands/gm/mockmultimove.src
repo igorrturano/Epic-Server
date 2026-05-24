@@ -1,0 +1,553 @@
+use uo;
+use os;
+
+include "/include/epicPropNames";
+
+include ":gumpDesigner:include/Gump/Gump";
+include ":gumpDesigner:include/Control/Button";
+include ":gumpDesigner:include/Control/Text";
+include ":gumpDesigner:include/Control/TextBox";
+include ":levers:include/mockmultiUtils";
+
+const GUMP_W    := 380;
+const ABA_CTRL  := 0;
+const ABA_TODOS := 1;
+
+program textcmd_mockmultimove(who, text)
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+    var estado := struct{
+        aba        := ABA_CTRL,
+        groupId    := 0,
+        serials    := array{},
+        velocidade := VEL_NORMAL,
+        z_destino  := 0,
+        page       := 0
+    };
+
+    if (text == "todos")
+        estado.aba := ABA_TODOS;
+    endif
+
+    var continuar := 1;
+    while (continuar)
+        var resultado;
+
+        if (estado.aba == ABA_CTRL)
+            resultado := MostrarGumpControle(who, estado);
+        else
+            resultado := MostrarGumpTodos(who, estado);
+        endif
+
+        if (!resultado)
+            continuar := 0;
+
+        elseif (resultado.acao == "selecionar_peca")
+            SendSysMessage(who, "Clique em um tile do grupo (ESC cancela).");
+            var targ := Target(who);
+            if (targ && targ.isa(POLCLASS_ITEM))
+                var gid := GetObjProperty(targ, PROPNAME_MOCKMULTI_GROUP);
+                if (gid && !gid.errortext)
+                    var sers := CarregarSerials(gid);
+                    if (sers.size() > 0)
+                        estado.groupId   := gid;
+                        estado.serials   := sers;
+                        estado.z_destino := BaseZAtual(sers);
+                        estado.aba       := ABA_CTRL;
+                    else
+                        SendSysMessage(who, "Grupo #" + gid + " nao encontrado no registro.");
+                    endif
+                else
+                    SendSysMessage(who, "Este item nao pertence a um MockMulti.");
+                endif
+            endif
+
+        elseif (resultado.acao == "trocar_aba")
+            estado.aba  := resultado.aba;
+            estado.page := 0;
+            if (estado.aba == ABA_CTRL && estado.groupId)
+                estado.z_destino := BaseZAtual(estado.serials);
+            endif
+
+        elseif (resultado.acao == "selecionar_grupo")
+            estado.aba       := ABA_CTRL;
+            estado.groupId   := resultado.groupId;
+            estado.serials   := CarregarSerials(resultado.groupId);
+            estado.z_destino := BaseZAtual(estado.serials);
+
+        elseif (resultado.acao == "vel")
+            estado.velocidade := resultado.vel;
+            estado.z_destino  := resultado.z;
+
+        elseif (resultado.acao == "teleportar")
+            TeleportarGrupo(estado.groupId, estado.serials, resultado.z, BaseZAtual(estado.serials), who);
+            estado.z_destino := resultado.z;
+
+        elseif (resultado.acao == "animar")
+            AnimarGrupo(estado.groupId, estado.serials, resultado.z, BaseZAtual(estado.serials), estado.velocidade, who);
+            estado.z_destino := resultado.z;
+
+        elseif (resultado.acao == "voltar_chao")
+            VoltarAoChao(estado.groupId, estado.serials, who);
+            estado.z_destino := BaseZAtual(estado.serials);
+
+        elseif (resultado.acao == "criar_corda")
+            CriarCordaDeSubir(estado, who, resultado.volta);
+
+        elseif (resultado.acao == "ir")
+            var gdata := GetGlobalProperty("mmGroup_" + resultado.groupId);
+            if (gdata && !gdata.errortext)
+                var irZ := BaseZAtual(CarregarSerials(resultado.groupId));
+                MoveObjectToLocation(who, gdata.ax, gdata.ay, irZ, gdata.realm, MOVEOBJECT_FORCELOCATION);
+            endif
+
+        elseif (resultado.acao == "remover")
+            RemoverGrupo(resultado.groupId, who);
+            estado.page := 0;
+            if (estado.groupId == resultado.groupId)
+                estado.groupId  := 0;
+                estado.serials  := array{};
+                estado.aba      := ABA_TODOS;
+            endif
+
+        elseif (resultado.acao == "page")
+            estado.page := resultado.page;
+
+        endif
+    endwhile
+
+    return 1;
+endprogram
+
+// ─── Registro ────────────────────────────────────────────────────────────────
+
+function RemoverGrupo(groupId, who)
+    var gdata     := GetGlobalProperty("mmGroup_" + groupId);
+    var serials   := CarregarSerials(groupId);
+    var destruidos := 0;
+    foreach serial in serials
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            DestroyItem(item);
+            destruidos += 1;
+        endif
+    endforeach
+
+    if (gdata && !gdata.errortext)
+        foreach cSerial in array{ gdata.corda_subir, gdata.corda_volta, gdata.corda_serial }
+            if (cSerial)
+                var corda := SystemFindObjectBySerial(cSerial);
+                if (corda) DestroyItem(corda); endif
+            endif
+        endforeach
+    endif
+
+    if (gdata && !gdata.errortext && gdata.cloud_serials)
+        _DestruirNuvens(gdata.cloud_serials);
+    endif
+
+    var grupos := GetGlobalProperty("mockmultiGroups");
+    if (grupos)
+        var novos := array{};
+        foreach g in grupos
+            if (g != groupId) novos.append(g); endif
+        endforeach
+        SetGlobalProperty("mockmultiGroups", novos);
+    endif
+    SetGlobalProperty("mmGroup_" + groupId, 0);
+
+    SendSysMessage(who, "Grupo #" + groupId + " removido: " + destruidos + " tile(s) destruidos.");
+endfunction
+
+// ─── Utilidades ──────────────────────────────────────────────────────────────
+
+function SpanZ(serials)
+    var minZ :=  32767;
+    var maxZ := -32767;
+    foreach serial in serials
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            if (item.z < minZ) minZ := item.z; endif
+            if (item.z > maxZ) maxZ := item.z; endif
+        endif
+    endforeach
+    if (minZ == 32767) return 0; endif
+    return maxZ - minZ;
+endfunction
+
+function TeleportarGrupo(groupId, serials, z_destino, baseZ, who)
+    var shift := z_destino - baseZ;
+    var n := 0;
+    foreach serial in serials
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            MoveObjectToLocation(item, item.x, item.y, item.z + shift, item.realm, MOVEOBJECT_FORCELOCATION);
+            n += 1;
+        endif
+    endforeach
+
+    var gdata := GetGlobalProperty("mmGroup_" + groupId);
+    if (gdata && !gdata.errortext)
+        if (gdata.cloud_serials) _DestruirNuvens(gdata.cloud_serials); endif
+        gdata.cloud_serials := z_destino > CLOUD_Z_THRESHOLD ? _CriarNuvens(serials) : 0;
+
+        if (gdata.corda_volta)
+            var cv := SystemFindObjectBySerial(gdata.corda_volta);
+            if (cv) MoveObjectToLocation(cv, cv.x, cv.y, cv.z + shift, cv.realm, MOVEOBJECT_FORCELOCATION); endif
+        endif
+        _AtualizarDestino(gdata.corda_subir, shift);
+
+        SetGlobalProperty("mmGroup_" + groupId, gdata);
+    endif
+
+    SendSysMessage(who, n + " tile(s) teleportados -> base Z " + z_destino + ".");
+endfunction
+
+function VoltarAoChao(groupId, serials, who)
+    var n := 0;
+    foreach serial in serials
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            var origZ := GetObjProperty(item, PROPNAME_MOCKMULTI_Z);
+            if (!origZ || origZ.errortext) origZ := item.z; endif
+            MoveObjectToLocation(item, item.x, item.y, origZ, item.realm, MOVEOBJECT_FORCELOCATION);
+            n += 1;
+        endif
+    endforeach
+
+    var gdata := GetGlobalProperty("mmGroup_" + groupId);
+    if (gdata && !gdata.errortext && gdata.cloud_serials)
+        _DestruirNuvens(gdata.cloud_serials);
+        gdata.cloud_serials := 0;
+        SetGlobalProperty("mmGroup_" + groupId, gdata);
+    endif
+
+    SendSysMessage(who, n + " tile(s) restaurados para o Z original.");
+endfunction
+
+function CriarCordaDeSubir(byRef estado, who, volta)
+    var resultado := _CriarCordaNoMundo(who, volta);
+    if (!resultado) return; endif
+
+    if (estado.groupId)
+        var gdata := GetGlobalProperty("mmGroup_" + estado.groupId);
+        if (gdata && !gdata.errortext)
+            if (volta)
+                gdata.corda_volta := resultado.corda.serial;
+            else
+                gdata.corda_subir := resultado.corda.serial;
+            endif
+            SetGlobalProperty("mmGroup_" + estado.groupId, gdata);
+        endif
+    endif
+endfunction
+
+function AnimarGrupo(groupId, serials, z_destino, baseZ, velocidade, who)
+    var shift := z_destino - baseZ;
+    if (shift == 0)
+        SendSysMessage(who, "Grupo ja esta no Z destino.");
+        return;
+    endif
+    var gdata := GetGlobalProperty("mmGroup_" + groupId);
+    var cloud_serials := (gdata && !gdata.errortext && gdata.cloud_serials) ? gdata.cloud_serials : array{};
+    if (z_destino > CLOUD_Z_THRESHOLD && cloud_serials.size() == 0)
+        cloud_serials := _CriarNuvens(serials);
+    endif
+    var corda_volta_serial := (gdata && !gdata.errortext) ? gdata.corda_volta : 0;
+    var extras := cloud_serials + (corda_volta_serial ? array{corda_volta_serial} : array{});
+    _AnimarSerials(serials + extras, shift, VelStep(velocidade), VelDelay(velocidade));
+    if (z_destino <= CLOUD_Z_THRESHOLD)
+        _DestruirNuvens(cloud_serials);
+        cloud_serials := array{};
+    endif
+    if (gdata && !gdata.errortext)
+        gdata.cloud_serials := cloud_serials.size() > 0 ? cloud_serials : 0;
+        SetGlobalProperty("mmGroup_" + groupId, gdata);
+        _AtualizarDestino(gdata.corda_subir, shift);
+    endif
+    SendSysMessage(who, "Animacao concluida: base Z agora em " + z_destino + ".");
+endfunction
+
+function VelNome(vel)
+    if (vel == VEL_LENTO)  return "Lento";  endif
+    if (vel == VEL_RAPIDO) return "Rapido"; endif
+    return "Normal";
+endfunction
+
+// ─── Gump: Aba Controlar ─────────────────────────────────────────────────────
+
+function MostrarGumpControle(who, byRef estado)
+    var temGrupo := estado.groupId != 0 && estado.serials.size() > 0;
+    var baseZ    := temGrupo ? BaseZAtual(estado.serials) : 0;
+    var gdata    := temGrupo ? GetGlobalProperty("mmGroup_" + estado.groupId) : 0;
+    var nome     := (gdata && !gdata.errortext) ? gdata.nome : "Nenhum grupo selecionado";
+
+    var gump := Gump(who, "MockMulti — Controlar", GUMP_W, 490);
+
+    // Abas
+    var btnAbaCtrl := Button("abaCtrl", 30, 15,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnAbaCtrl);
+    gump.AddControl(Text("lAbaCtrl", 68, 19, "> Controlar", TEXT_COLOR::COLOR_YELLOW));
+
+    var btnAbaTodos := Button("abaTodos", 170, 15,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnAbaTodos);
+    gump.AddControl(Text("lAbaTodos", 208, 19, "Todos os Multis", TEXT_COLOR::COLOR_DEFAULT));
+
+    // Selecionar Peca
+    var btnSelPeca := Button("selPeca", 30, 55,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnSelPeca);
+    gump.AddControl(Text("lSelPeca", 68, 59, "Selecionar Peca de MockMulti", TEXT_COLOR::COLOR_DEFAULT));
+
+    // Info
+    var infoColor := temGrupo ? TEXT_COLOR::COLOR_YELLOW : TEXT_COLOR::COLOR_DEFAULT;
+    var infoLabel := temGrupo
+        ? (nome + "  |  " + estado.serials.size() + " tiles  |  Z: " + baseZ)
+        : nome;
+    gump.AddControl(Text("info", 30, 110, infoLabel, infoColor));
+
+    if (temGrupo)
+        var span    := SpanZ(estado.serials);
+        var maxBase :=  127 - span;
+        var minBase := -128;
+        gump.AddControl(Text("limites", 30, 130,
+            "Span: " + span + "  |  Max subir: Z=" + maxBase + "  |  Max descer: Z=" + minBase,
+            TEXT_COLOR::COLOR_DEFAULT));
+    endif
+
+    // Z destino
+    gump.AddControl(Text("lblZ", 30, 160, "Z destino:", TEXT_COLOR::COLOR_DEFAULT));
+    var tbZ := TextBox("tbZ", 115, 160, 80, 1, 2100, CStr(estado.z_destino), 6);
+    gump.AddControl(tbZ);
+
+    // Velocidade
+    gump.AddControl(Text("lblVel", 30, 210,
+        "Velocidade:  " + VelNome(estado.velocidade), TEXT_COLOR::COLOR_DEFAULT));
+
+    var velOpts := array{ VEL_LENTO, VEL_NORMAL, VEL_RAPIDO };
+    var btnVels := array{};
+    var vi := 1;
+    var vx := 30;
+    while (vi <= 3)
+        var vel  := velOpts[vi];
+        var mark := vel == estado.velocidade ? "> " : "  ";
+        var bv   := Button("bv" + vel, vx, 235,
+            BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+        gump.AddControl(bv);
+        gump.AddControl(Text("tv" + vel, vx + 38, 240,
+            mark + VelNome(vel), TEXT_COLOR::COLOR_DEFAULT));
+        btnVels.append(struct{ btn := bv, vel := vel });
+        vx += 115;
+        vi += 1;
+    endwhile
+
+    // Acoes
+    var btnTeleport := Button("btnTeleport", 30, 310,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnTeleport);
+    gump.AddControl(Text("lblTeleport", 68, 315, "Teleportar", TEXT_COLOR::COLOR_DEFAULT));
+
+    var btnAnimar := Button("btnAnimar", 210, 310,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnAnimar);
+    gump.AddControl(Text("lblAnimar", 248, 315, "Animar", TEXT_COLOR::COLOR_DEFAULT));
+
+    var btnChao := Button("btnChao", 30, 355,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnChao);
+    gump.AddControl(Text("lblChao", 68, 360, "Voltar ao Chao", TEXT_COLOR::COLOR_DEFAULT));
+
+    var btnCorda := Button("btnCorda", 30, 410,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnCorda);
+    gump.AddControl(Text("lblCorda", 68, 415, "Corda de Subir", TEXT_COLOR::COLOR_DEFAULT));
+
+    var btnCordaVolta := Button("btnCordaVolta", 210, 410,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnCordaVolta);
+    gump.AddControl(Text("lblCordaVolta", 248, 415, "Corda de Volta", TEXT_COLOR::COLOR_DEFAULT));
+
+    var evento := gump.Show();
+    var zVal   := CInt(tbZ.GetValue());
+    gump.Dispose();
+
+    if (evento.GetControl() == EVENT_ACTION::CLOSED) return 0; endif
+
+    if (evento.GetControl().Equals(btnSelPeca))
+        return struct{ acao := "selecionar_peca" };
+    endif
+
+    if (evento.GetControl().Equals(btnAbaTodos))
+        return struct{ acao := "trocar_aba", aba := ABA_TODOS };
+    endif
+
+    var i := 1;
+    while (i <= btnVels.size())
+        if (evento.GetControl().Equals(btnVels[i].btn))
+            return struct{ acao := "vel", vel := btnVels[i].vel, z := zVal };
+        endif
+        i += 1;
+    endwhile
+
+    if (!temGrupo) return 0; endif
+
+    if (evento.GetControl().Equals(btnTeleport))
+        return struct{ acao := "teleportar", z := zVal };
+    elseif (evento.GetControl().Equals(btnAnimar))
+        return struct{ acao := "animar", z := zVal };
+    elseif (evento.GetControl().Equals(btnChao))
+        return struct{ acao := "voltar_chao" };
+    elseif (evento.GetControl().Equals(btnCorda))
+        return struct{ acao := "criar_corda", volta := 0 };
+    elseif (evento.GetControl().Equals(btnCordaVolta))
+        return struct{ acao := "criar_corda", volta := 1 };
+    endif
+
+    return 0;
+endfunction
+
+// ─── Gump: Aba Todos ─────────────────────────────────────────────────────────
+
+const PER_PAGE := 8;
+
+function MostrarGumpTodos(who, byRef estado)
+    var grupos := GetGlobalProperty("mockmultiGroups");
+    if (!grupos) grupos := array{}; endif
+
+    var validos := array{};
+    foreach g in grupos
+        var gd := GetGlobalProperty("mmGroup_" + g);
+        if (gd && !gd.errortext) validos.append(g); endif
+    endforeach
+
+    var total    := validos.size();
+    var max_page := total > 0 ? CInt((total - 1) / PER_PAGE) : 0;
+    if (estado.page > max_page) estado.page := max_page; endif
+
+    var start := estado.page * PER_PAGE + 1;
+    var fim   := start + PER_PAGE - 1;
+    if (fim > total) fim := total; endif
+    var n := fim >= start ? fim - start + 1 : 0;
+
+    var gump_h := 180 + n * 32 + 50;
+    if (gump_h < 490) gump_h := 490; endif
+
+    var gump := Gump(who, "MockMulti — Todos", GUMP_W, gump_h);
+
+    // Abas
+    var btnAbaCtrl := Button("abaCtrl", 35, 63,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnAbaCtrl);
+    gump.AddControl(Text("lAbaCtrl", 73, 67, "Controlar", TEXT_COLOR::COLOR_DEFAULT));
+
+    var btnAbaTodos := Button("abaTodos", 175, 63,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnAbaTodos);
+    gump.AddControl(Text("lAbaTodos", 213, 67, "> Todos os Multis", TEXT_COLOR::COLOR_YELLOW));
+
+    // Cabecalho da tabela
+    gump.AddControl(Text("hNome", 35,  102, "Estrutura", TEXT_COLOR::COLOR_YELLOW));
+    gump.AddControl(Text("hZ",   235,  102, "Z atual",   TEXT_COLOR::COLOR_YELLOW));
+
+    if (total == 0)
+        gump.AddControl(Text("vazio", 35, 125,
+            "Nenhum MockMulti registrado.", TEXT_COLOR::COLOR_DEFAULT));
+        var evento0 := gump.Show();
+        gump.Dispose();
+        if (evento0.GetControl() == EVENT_ACTION::CLOSED) return 0; endif
+        return struct{ acao := "trocar_aba", aba := ABA_CTRL };
+    endif
+
+    var btnSels := array{};
+    var btnIrs  := array{};
+    var btnRems := array{};
+    var gy := 122;
+    var i  := start;
+    while (i <= fim)
+        var g    := validos[i];
+        var gd   := GetGlobalProperty("mmGroup_" + g);
+        var nome := gd.nome;
+        var bz   := BaseZAtual(gd.serials);
+        var label := nome;
+        if (len(label) > 22) label := SubStr(label, 1, 22) + ".."; endif
+
+        var bSel := Button("sel" + i, 35, gy,
+            BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+        gump.AddControl(bSel);
+        gump.AddControl(Text("nSel" + i, 73,  gy + 4, label,     TEXT_COLOR::COLOR_DEFAULT));
+        gump.AddControl(Text("zSel" + i, 235, gy + 4, "Z=" + bz, TEXT_COLOR::COLOR_DEFAULT));
+
+        var bIr := Button("ir" + i, 290, gy,
+            BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+        gump.AddControl(bIr);
+        gump.AddControl(Text("lIr" + i, 328, gy + 4, "Ir", TEXT_COLOR::COLOR_DEFAULT));
+
+        var bRem := Button("rem" + i, 345, gy,
+            BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+        gump.AddControl(bRem);
+        gump.AddControl(Text("lRem" + i, 383, gy + 4, "X", TEXT_COLOR::COLOR_DEFAULT));
+
+        btnSels.append(struct{ btn := bSel, groupId := g });
+        btnIrs.append(struct{  btn := bIr,  groupId := g });
+        btnRems.append(struct{ btn := bRem, groupId := g });
+
+        gy += 32;
+        i  += 1;
+    endwhile
+
+    // Paginacao
+    var btn_prev := 0;
+    var btn_next := 0;
+    var nav_y := gump_h - 38;
+
+    if (estado.page > 0)
+        btn_prev := Button("prev", 35, nav_y,
+            BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+        gump.AddControl(btn_prev);
+        gump.AddControl(Text("lPrev", 73, nav_y + 4, "< Anterior", TEXT_COLOR::COLOR_DEFAULT));
+    endif
+
+    gump.AddControl(Text("pagInfo", 180, nav_y + 4,
+        "Pag. " + (estado.page + 1) + "/" + (max_page + 1), TEXT_COLOR::COLOR_DEFAULT));
+
+    if (estado.page < max_page)
+        btn_next := Button("next", 280, nav_y,
+            BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+        gump.AddControl(btn_next);
+        gump.AddControl(Text("lNext", 318, nav_y + 4, "Proxima >", TEXT_COLOR::COLOR_DEFAULT));
+    endif
+
+    var evento := gump.Show();
+    gump.Dispose();
+
+    if (evento.GetControl() == EVENT_ACTION::CLOSED) return 0; endif
+
+    if (evento.GetControl().Equals(btnAbaCtrl))
+        return struct{ acao := "trocar_aba", aba := ABA_CTRL };
+    endif
+
+    if (btn_prev && evento.GetControl().Equals(btn_prev))
+        return struct{ acao := "page", page := estado.page - 1 };
+    endif
+    if (btn_next && evento.GetControl().Equals(btn_next))
+        return struct{ acao := "page", page := estado.page + 1 };
+    endif
+
+    i := 1;
+    while (i <= btnSels.size())
+        if (evento.GetControl().Equals(btnSels[i].btn))
+            return struct{ acao := "selecionar_grupo", groupId := btnSels[i].groupId };
+        endif
+        if (evento.GetControl().Equals(btnIrs[i].btn))
+            return struct{ acao := "ir", groupId := btnIrs[i].groupId };
+        endif
+        if (evento.GetControl().Equals(btnRems[i].btn))
+            return struct{ acao := "remover", groupId := btnRems[i].groupId };
+        endif
+        i += 1;
+    endwhile
+
+    return 0;
+endfunction
