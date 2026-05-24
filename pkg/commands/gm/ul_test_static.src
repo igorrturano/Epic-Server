@@ -29,7 +29,21 @@ program ul_test_static(who, text)
 endprogram
 
 function _GetTarget(who)
-    SendSysMessage(who, "Selecione um tile/static...");
+    SendSysMessage(who, "Selecione um static...");
+    var targ := TargetCoordinates(who);
+    if (!targ)
+        SendSysMessage(who, "Cancelado.");
+        return error{"errortext" := "cancelado"};
+    endif
+    if (!targ.objtype)
+        SendSysMessage(who, "Land tile — use .ul_test_mutation getland/revertland.");
+        return error{"errortext" := "land_tile"};
+    endif
+    return targ;
+endfunction
+
+function _GetTargetCoords(who)
+    SendSysMessage(who, "Selecione tile/coordenada...");
     var targ := TargetCoordinates(who);
     if (!targ)
         SendSysMessage(who, "Cancelado.");
@@ -65,7 +79,7 @@ function _Cmd_Get(who)
     endif
     foreach st in natives
         var sz       := CInt(st.z);
-        var mutation := UL_GetMutation(who.realm, x, y, sz);
+        var mutation := UL_GetMutation(who.realm, x, y, sz, CInt(st.objtype));
         var mut_str  := "";
         if (mutation != error)
             mut_str := " | mutation=" + mutation.MutationType + " g=" + Hex(mutation.Graphic) + " hue=" + mutation.Hue;
@@ -93,7 +107,10 @@ function _Cmd_Set(who, args)
     var y := CInt(targ.y);
     var z := CInt(targ.z);
 
-    var result := UL_SetStatic(who.realm, x, y, z, graphic, hue, "gm");
+    // NOTA: se tile já tem mutação, targ.objtype retorna
+    // graphic visual (mutado), não o native. Se quiser
+    // re-mutar tile já mutado, use revert antes.
+    var result := UL_SetStatic(who.realm, x, y, z, graphic, hue, "gm", CInt(targ.objtype));
     if (result == error)
         SendSysMessage(who, "Erro ao setar static: " + result.errortext);
         return 0;
@@ -103,39 +120,53 @@ function _Cmd_Set(who, args)
 endfunction
 
 function _Cmd_Delete(who)
-    var targ := _GetTarget(who);
+    var targ := _GetTargetCoords(who);
     if (targ == error) return 0; endif
 
     var x := CInt(targ.x);
     var y := CInt(targ.y);
     var z := CInt(targ.z);
 
-    var result := UL_DeleteStatic(who.realm, x, y, z, "gm");
-    if (result == error)
-        SendSysMessage(who, "Erro ao deletar static: " + result.errortext);
+    var natives := ListStaticsAtLocation(x, y, LIST_IGNORE_Z, 0, who.realm);
+    var count   := 0;
+    foreach st in natives
+        if (CInt(st.z) == z)
+            UL_DeleteStatic(who.realm, x, y, z, CInt(st.objtype), "gm");
+            count += 1;
+        endif
+    endforeach
+
+    if (!count)
+        SendSysMessage(who, "Nenhum static nativo em (" + x + ", " + y + ", " + z + ").");
         return 0;
     endif
-    SendSysMessage(who, "static_delete registrado em (" + x + ", " + y + ", " + z + ").");
+    SendSysMessage(who, "static_delete registrado para " + count + " static(s) em (" + x + ", " + y + ", " + z + ").");
     return _SendUpdate(who, x, y);
 endfunction
 
 function _Cmd_Revert(who)
-    var targ := _GetTarget(who);
+    var targ := _GetTargetCoords(who);
     if (targ == error) return 0; endif
 
     var x := CInt(targ.x);
     var y := CInt(targ.y);
     var z := CInt(targ.z);
 
-    var result := UL_RevertMutation(who.realm, x, y, z);
-    if (result == error)
-        if (result.errortext == "no mutation to revert")
-            SendSysMessage(who, "Nada pra reverter em (" + x + ", " + y + ", " + z + ").");
-        else
-            SendSysMessage(who, "Erro ao reverter: " + result.errortext);
+    var natives := ListStaticsAtLocation(x, y, LIST_IGNORE_Z, 0, who.realm);
+    var count   := 0;
+    foreach st in natives
+        if (CInt(st.z) == z)
+            if (UL_GetMutation(who.realm, x, y, z, CInt(st.objtype)) != error)
+                UL_RevertMutation(who.realm, x, y, z, CInt(st.objtype));
+                count += 1;
+            endif
         endif
+    endforeach
+
+    if (!count)
+        SendSysMessage(who, "Nada pra reverter em (" + x + ", " + y + ", " + z + ").");
         return 0;
     endif
-    SendSysMessage(who, "Mutacao revertida em (" + x + ", " + y + ", " + z + ").");
+    SendSysMessage(who, "Revertido " + count + " mutacao(es) em (" + x + ", " + y + ", " + z + ").");
     return _SendUpdate(who, x, y);
 endfunction

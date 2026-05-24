@@ -36,7 +36,7 @@ function UL_ComputeBlockHash(realm, blockX, blockY)
             var z := CInt(info.z);
 
             // Aplica mutação de land se registrada; z=0 é convenção UltimaLive pra land.
-            var mutation := UL_GetMutation(realm, blockX * 8 + x, blockY * 8 + y, 0);
+            var mutation := UL_GetMutation(realm, blockX * 8 + x, blockY * 8 + y, 0, 0);
             if (mutation != error && mutation.MutationType == "land_modify")
                 tile_id := mutation.Graphic;
             endif
