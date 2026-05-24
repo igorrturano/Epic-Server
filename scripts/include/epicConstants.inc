@@ -83,7 +83,7 @@ endenum
 var MILITARY_SKILLS := array{
     "Wrestling", "One_Handed", "Two_Handed", "Dual_Wield", "Parry",
     "Ranged", "Tactics", "Stealth", "Beastmastery", "Magery",
-    "Arcana", "Theology", "Science"
+    "Arcana", "Theology", "Science", "Nature"
 };
 
 var CIVIC_SKILLS := array{

@@ -54,6 +54,17 @@ enum SKILLS
 	GATHERING		:= "Gathering",
 	HANDLEANIMAL	:= "Handle_Animal",
 
+	// Path-rework additions (Phase 1 splits + Nature). Legacy entries above
+	// stay until spec 06 cleanup so existing reads keep compiling during the
+	// migration window.
+	NATURE			:= "Nature",
+	BEASTMASTERY	:= "Beastmastery",
+	TAMING			:= "Taming",
+	MINING			:= "Mining",
+	LUMBERJACKING	:= "Lumberjacking",
+	TAILORING		:= "Tailoring",
+	PROVISIONING	:= "Provisioning",
+
 	//pros npcs
 	WRESTLING		:= "Wrestling"
 endenum

@@ -116,7 +116,7 @@ program TamingSkill(who)
 	input := input[0];
 
 	if (input == 1)
-		taming(who);
+		tamecreature(who);
 	elseif (input == 2)
 		Start_Script(":animallore:animalLore", who);
 	elseif (input == 3)
@@ -171,7 +171,7 @@ elseif (input == 5) // botão cruzar (toggle livre)
 	EraseObjProperty(who, "#medding");
 endprogram
 
-function taming(who)
+function tamecreature(who)
 
 	if (who.hidden)
 		who.hidden := 0;

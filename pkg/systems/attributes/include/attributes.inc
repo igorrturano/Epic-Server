@@ -25,6 +25,7 @@ include ":attributes:attributeConstants";
 include ":attributes:skillCheck";
 include ":attributes:advanceCheck";
 include ":datafile:datafile";
+include "include/epicConstants";
 // V3: TemHabilidade removed - use MobileWrapper.HasAbility(ABILITY_ID::X) instead
 
 function GetSkillIdFromName(name)
