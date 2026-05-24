@@ -9,11 +9,11 @@ include ":message:model/Message";
  * Sede de Sangue (Bloodthirst) - ABILITY_ID::BLOODTHIRST (2601)
  *
  * Toggle ability. While active, each landed melee hit consumes one
- * shaman_soul and heals the attacker for damage_dealt * theology / 200
- * (up to 50% lifesteal at GM theology). Auto-deactivates when souls
+ * shaman_soul and heals the attacker for damage_dealt * nature / 200
+ * (up to 50% lifesteal at GM nature). Auto-deactivates when souls
  * run out. The 120s recast delay is enforced by habilidades.cfg.
  *
- * Passive on-kill heal (theology/10 per nearby NPC death) is handled
+ * Passive on-kill heal (nature/10 per nearby NPC death) is handled
  * externally in npcdeath.src and is unchanged by this rework.
  */
 class Bloodthirst(CombatAbility)
@@ -69,8 +69,8 @@ class Bloodthirst(CombatAbility)
 			return false;
 		endif
 
-		var theology := CInt(attacker.GetSkill(THEOLOGY));
-		var healing := CInt(damage * theology / 200);
+		var nature := CInt(attacker.GetSkill(NATURE));
+		var healing := CInt(damage * nature / 200);
 		if (healing < 1)
 			healing := 1;
 		endif

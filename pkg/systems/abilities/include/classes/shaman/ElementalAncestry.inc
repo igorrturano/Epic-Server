@@ -14,8 +14,8 @@ include "include/packets";
  * Ancestralidade Elemental (Elemental Ancestry) - ABILITY_ID::ELEMENTAL_ANCESTRY (2603)
  *
  * ON_USE: Channeled storm ability. Caster must stay still.
- *   - Duration: Theology/10 ticks (5s each)
- *   - Heals allies in 20-tile radius: Theology/5 per tick
+ *   - Duration: Nature/10 ticks (5s each)
+ *   - Heals allies in 20-tile radius: Nature/5 per tick
  *   - If has souls: weather + lightning bolts on enemies (1d10+40 energy)
  *   - Wets enemy powder
  *   - Consumes all souls. Cancels on movement.
@@ -29,7 +29,7 @@ class ElementalAncestry(CombatAbility)
 
 	function ExecuteOn(this, mobile)
 		var who := mobile.GetObjRef();
-		var mlore := CInt(mobile.GetSkill(THEOLOGY));
+		var mlore := CInt(mobile.GetSkill(NATURE));
 		var duration := CInt(mlore / 10);
 
 		var shaman_souls := CInt(who.GetProp("shaman_souls"));

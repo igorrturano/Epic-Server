@@ -105,7 +105,7 @@ class ExplosiveFist(CombatAbility)
 			SubtractAmount(powder, 1);
 		endif
 
-		var bonus := CInt(attacker.GetSkill(METALWORKING) / 10);
+		var bonus := CInt(attacker.GetSkill(SCIENCE) / 10);
 		if (bonus > 0)
 			attackInfo.GetDamage().IncreaseFireRawDamage(bonus);
 		endif

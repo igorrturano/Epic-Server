@@ -8,7 +8,7 @@ include ":hotbar:custombuff";
 /**
  * Sangue por Sangue (Blood for Blood) - ABILITY_ID::SANGUE_POR_SANGUE (501)
  *
- * AfterDamage: 50% of damage dealt returns as healing for Survival/2 seconds (min 5).
+ * AfterDamage: 50% of damage dealt returns as healing for Nature/2 seconds (min 5).
  * Supports pre-set duration override (used by Carnage chain-activation).
  */
 class BloodForBlood(CombatAbility)
@@ -23,7 +23,7 @@ class BloodForBlood(CombatAbility)
 			return this.GetDuration();
 		endif
 
-		var duration := CInt(mobile.GetSkill(SURVIVAL) / 2);
+		var duration := CInt(mobile.GetSkill(NATURE) / 2);
 		if (duration < 5)
 			duration := 5;
 		endif

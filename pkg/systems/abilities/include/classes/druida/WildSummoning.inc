@@ -27,8 +27,8 @@ const _WS_BTN_BOND   := 100;
  * Active (ON_USE):
  * - Bond with wild creatures to create spirit bonds
  * - Summon bonded creatures as spirit allies
- * - Max bonds = Theology/20 (cap 5)
- * - Summon duration = 60 + Theology*3
+ * - Max bonds = Nature/20 (cap 5)
+ * - Summon duration = 60 + Nature*3
  */
 class WildSummoning(CombatAbility)
 
@@ -91,8 +91,8 @@ class WildSummoning(CombatAbility)
             return false;
         endif
 
-        var theology := AP_GetSkill(who, THEOLOGY);
-        var max_tier := CInt(theology / 20);
+        var nature := AP_GetSkill(who, NATURE);
+        var max_tier := CInt(nature / 20);
 
         if (max_tier < 1)
             max_tier := 1;
@@ -106,7 +106,7 @@ class WildSummoning(CombatAbility)
         endif
 
         if (creature_tier > max_tier)
-            Message($"A criatura {targ.name} e poderosa demais para voce criar um vinculo. (Tier {creature_tier} requer {creature_tier * 20} de Theology)").SendSys(who);
+            Message($"A criatura {targ.name} e poderosa demais para voce criar um vinculo. (Tier {creature_tier} requer {creature_tier * 20} de Nature)").SendSys(who);
             return false;
         endif
 
@@ -122,7 +122,7 @@ class WildSummoning(CombatAbility)
             SetObjProperty(who, "#bondwait", ReadGameClock() + 5);
             sleep(3);
 
-            if (SkillCheck(who, THEOLOGY, CInt(info.difficulty)) > 0)
+            if (SkillCheck(who, NATURE, CInt(info.difficulty)) > 0)
                 Message("Voce criou um vinculo espiritual com " + targ.name + ".").SendSys(who);
 
                 PerformAction(who, HUMAN_ANIM::CAST_DIR);
@@ -147,8 +147,8 @@ class WildSummoning(CombatAbility)
     endfunction
 
     function _SummonSelectedCreature(this, who, selected_creature)
-        var theology := AP_GetSkill(who, THEOLOGY);
-        var max_slots := CInt(theology / 20);
+        var nature := AP_GetSkill(who, NATURE);
+        var max_slots := CInt(nature / 20);
         if (max_slots < 1)
             max_slots := 1;
         elseif (max_slots > 5)
@@ -193,8 +193,8 @@ class WildSummoning(CombatAbility)
         PrintTextAbove(who, "*invocando " + selected_creature.name + "*");
         Message("Voce invocou " + selected_creature.name + "!").SendSys(who);
 
-        var duration := 60 + (theology * 3);
-        var level := CInt(theology / 5) + 5;
+        var duration := 60 + (nature * 3);
+        var level := CInt(nature / 5) + 5;
 
         TS_StartTimer(creature, "summon", duration, level);
 
@@ -210,8 +210,8 @@ class WildSummoning(CombatAbility)
     function _CreateSummonGump(this, who, bonded_creatures)
         var gump := GFCreateGump();
 
-        var theology := AP_GetSkill(who, THEOLOGY);
-        var max_bonds := CInt(theology / 20);
+        var nature := AP_GetSkill(who, NATURE);
+        var max_bonds := CInt(nature / 20);
         if (max_bonds < 1)
             max_bonds := 1;
         elseif (max_bonds > 5)
@@ -292,8 +292,8 @@ class WildSummoning(CombatAbility)
     endfunction
 
     function _StoreBond(this, who, targ)
-        var theology := AP_GetSkill(who, THEOLOGY);
-        var max_bonds := CInt(theology / 20);
+        var nature := AP_GetSkill(who, NATURE);
+        var max_bonds := CInt(nature / 20);
 
         if (max_bonds < 1)
             max_bonds := 1;

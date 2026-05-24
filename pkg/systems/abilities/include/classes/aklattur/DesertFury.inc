@@ -10,10 +10,10 @@ include "include/epicCombatUtils";
  * Furia do Deserto (Desert Fury) - ABILITY_ID::FURIA_DO_DESERTO (500)
  *
  * Active (AfterDamage): Cleave mode - each attack hits all nearby enemies.
- * Duration: Survival/2 seconds (min 5).
+ * Duration: Nature/2 seconds (min 5).
  * Uses recursion guard to prevent cleave triggering cleave.
  *
- * Passive (BeforeDamage): When raging (low HP), adds Survival/20 bonus
+ * Passive (BeforeDamage): When raging (low HP), adds Nature/20 bonus
  * to all damage types.
  *
  * Supports pre-set duration override (used by Carnage chain-activation).
@@ -30,7 +30,7 @@ class DesertFury(CombatAbility)
 			return this.GetDuration();
 		endif
 
-		var duration := CInt(mobile.GetSkill(SURVIVAL) / 2);
+		var duration := CInt(mobile.GetSkill(NATURE) / 2);
 		if (duration < 5)
 			duration := 5;
 		endif
@@ -87,8 +87,8 @@ class DesertFury(CombatAbility)
 			return false;
 		endif
 
-		var survival := attacker.GetSkill(SURVIVAL);
-		var bonus := CInt(survival / 20);
+		var nature := attacker.GetSkill(NATURE);
+		var bonus := CInt(nature / 20);
 
 		if (bonus <= 0)
 			return false;
