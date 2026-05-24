@@ -22,11 +22,24 @@ include ":nature:nature";
 include ":crafting:/include/fabricacaoComplexos";
 include ":census:include/CensusController";
 
+// Gate dos while loops do gump. Se o player desconectou OU o ref ficou
+// inválido (account/char deletados mid-creation), retorna 1 pra encerrar
+// o loop — senão o script vira zumbi e fica logando "Could not attach
+// modules for external function call jump" pro resto da uptime,
+// segurando memória até OOM.
 function CreationCompleted(who)
-	if (!who.connected)
+	if (!who || who == error)
 		return 1;
 	endif
-	return GetObjProperty(who, "creation_completed");
+	var connected := who.connected;
+	if (connected == error || !connected)
+		return 1;
+	endif
+	var done := GetObjProperty(who, "creation_completed");
+	if (done == error)
+		return 0;
+	endif
+	return done;
 endfunction
 
 // Retorna 1 se o gump retornou algo válido, 0 se foi fechado por colisão/erro.
