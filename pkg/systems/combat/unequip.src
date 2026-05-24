@@ -6,15 +6,7 @@ include ":attributes:attributes";
 include ":wrappers:Objects/Model/MobileWrapper";
 
 program unequipweapon(who, item)
-	// Cursed block — death-path safety net.
-	// POL fires UnequipTest BEFORE UnEquipScript, so the canonical cursed
-	// short-circuit lives in scripts/misc/unequiptest.src (returns 0 there
-	// and POL never reaches this script). The branch below only runs when
-	// UnequipTest is bypassed — e.g. POL's corpse-strip on death, where
-	// we still want to flush wrapper-side mods via :equipsys:unequipitem
-	// so a dead cursed-wearer doesn't keep stale combat traits.
-	// Uses `mods.keys()` (array form of `in`) — the dict form is silently
-	// false in eScript; see feedback_escript_dict_exists.md.
+	// Cursed death-path safety net (UnequipTest is canonical for the live path).
 	var mods := GetObjProperty(item, "equip");
 	if (mods && "cursed" in (mods.keys()))
 		if (who.dead)
@@ -91,8 +83,5 @@ program unequipweapon(who, item)
 	endif
 
 	Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
-	// Modifier rollback is owned by scripts/misc/unequiptest.src (POL's
-	// global UnequipTest hook). It already fired before this script (POL
-	// runs UnequipTest first, then UnEquipScript). Stamps removed there.
 
 endprogram

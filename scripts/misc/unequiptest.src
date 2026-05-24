@@ -13,12 +13,8 @@ program UnequipTest(mobile, item)
 		SendSysMessage(mobile, "You are unable to move in order to unequip that.");
 		retval := 0;
 	else
-		// Cursed-block stays strict-first: must short-circuit BEFORE the
-		// `if (retval)` remove path so the stamp survives a failed unequip
-		// (otherwise POL re-attaches the item via the combat-side
-		// UnEquipScript but the player loses the bonus). Player has to die
-		// or use removermaldicao.
-		// NOTE: `in` only works on arrays in eScript — dicts need .Exists().
+		// Cursed block must short-circuit before the remove path so the
+		// stamp survives the refused unequip.
 		var equip_data := GetObjProperty(item, "equip");
 		if (equip_data && equip_data.Exists("cursed"))
 			retval := 0;
