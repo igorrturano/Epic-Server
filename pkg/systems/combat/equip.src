@@ -2,7 +2,6 @@ use uo;
 use os;
 use cfgfile;
 
-include ":tn:equipment";
 include ":tn:cooldown";
 include "include/say";
 include "include/client";
@@ -233,7 +232,10 @@ program equipweapon(who, item)
 	endif
 
 	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
-	ApplyEquipObjMods(who, item);
+	// Modifier application is owned by scripts/misc/equiptest.src
+	// (POL's global EquipTest hook). It fires for every equip event,
+	// so jewelry, clothing, and combat gear all flow through the same
+	// EquipModStamper path with idempotent per-item delta stamping.
 
 	// SteamGloves: auto-equip companion armor for hands protection
 	// if (item.objtype == 0xFFC1)
