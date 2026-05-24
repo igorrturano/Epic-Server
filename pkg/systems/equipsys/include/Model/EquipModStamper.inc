@@ -73,14 +73,20 @@ class EquipModStamper
             hitsmod   := 0,
             manamod   := 0,
             stammod   := 0,
-            resists   := struct{},
-            setprop   := struct{},
+            resists   := struct{
+                ColdResistMod     := 0,
+                FireResistMod     := 0,
+                PhysicalResistMod := 0,
+                EnergyResistMod   := 0,
+                PoisonResistMod   := 0
+            },
+            setprop   := struct{ name := "", value := 0 },
             skillmods := dictionary{}
         };
-        if (!mods || mods.errortext)
+        if (!mods)
             return delta;
         endif
-        if (mods.keys().size() < 1)
+        if (mods.size() < 1)
             return delta;
         endif
 
@@ -93,11 +99,15 @@ class EquipModStamper
                 "manamod": delta.manamod := CInt(mods[key]);
                 "stammod": delta.stammod := CInt(mods[key]);
                 "ColdResistMod":
+                    delta.resists.+ColdResistMod := CInt(mods[key]);
                 "FireResistMod":
+                    delta.resists.+FireResistMod := CInt(mods[key]);
                 "PhysicalResistMod":
+                    delta.resists.+PhysicalResistMod := CInt(mods[key]);
                 "EnergyResistMod":
+                    delta.resists.+EnergyResistMod := CInt(mods[key]);
                 "PoisonResistMod":
-                    delta.resists.+(key) := CInt(mods[key]);
+                    delta.resists.+PoisonResistMod := CInt(mods[key]);
                 "setprop":
                     delta.setprop.+name  := CStr(GetObjProperty(this._item, "propname"));
                     delta.setprop.+value := GetObjProperty(this._item, "propvalue");
@@ -125,11 +135,11 @@ class EquipModStamper
             return 1;
         endif
 
-        if (!this._ShouldApply(this))
+        if (!this._ShouldApply())
             return 1;
         endif
 
-        var delta := this._ComputeDelta(this);
+        var delta := this._ComputeDelta();
 
         if (delta.strmod != 0)
             AP_ModifyStatMod(mobile, STRENGTH, delta.strmod);
@@ -243,14 +253,12 @@ class EquipModStamper
             EraseObjProperty(mobile, "#" + delta.setprop.name);
         endif
 
-        if (delta.skillmods)
-            foreach skill in (delta.skillmods.keys())
-                var val := CInt(delta.skillmods[skill]);
-                if (val != 0)
-                    AP_ModifySkillMod(mobile, skill, -val);
-                endif
-            endforeach
-        endif
+        foreach skill in (delta.skillmods.keys())
+            var val := CInt(delta.skillmods[skill]);
+            if (val != 0)
+                AP_ModifySkillMod(mobile, skill, -val);
+            endif
+        endforeach
 
         EraseObjProperty(mobile, key);
         return 1;
