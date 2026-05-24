@@ -99,7 +99,10 @@ class ManaModFabricacao(IModificator)
 		var key := $"#manaModFab_{serial}";
 		var applied := GetObjProperty(mobile, key);
 		if (applied == error)
-			return 0;
+			// No stamp = nothing to undo = idempotent success.
+			// Matches EquipModStamper.RemoveFrom convention so callers can
+			// treat 1 as "operation completed without error" uniformly.
+			return 1;
 		endif
 
 		if (CInt(applied.manaMax) != 0)
