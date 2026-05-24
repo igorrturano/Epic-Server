@@ -12,10 +12,17 @@ program UnequipTest(mobile, item)
 	if ((mobile.frozen) || (mobile.paralyzed))
 		SendSysMessage(mobile, "You are unable to move in order to unequip that.");
 		retval := 0;
-	elseif ("cursed" in (GetObjProperty(item, "equip")))
-		// Cursed-block stays strict-first: must short-circuit BEFORE any
-		// remove path runs. Player has to die or use removermaldicao.
-		retval := 0;
+	else
+		// Cursed-block stays strict-first: must short-circuit BEFORE the
+		// `if (retval)` remove path so the stamp survives a failed unequip
+		// (otherwise POL re-attaches the item via the combat-side
+		// UnEquipScript but the player loses the bonus). Player has to die
+		// or use removermaldicao.
+		// NOTE: `in` only works on arrays in eScript — dicts need .Exists().
+		var equip_data := GetObjProperty(item, "equip");
+		if (equip_data && equip_data.Exists("cursed"))
+			retval := 0;
+		endif
 	endif
 
 	if (mobile.hidden)
