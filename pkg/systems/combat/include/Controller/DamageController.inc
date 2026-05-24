@@ -204,6 +204,68 @@ function DealDamage(defender, amount, dmgType, source := 0, spellId := 0)
 	return CInt(attackInfo.GetDamage().GetTotalBaseDamage());
 endfunction
 
+/**
+ * ApplyFieldDamage - Lightweight damage path for environmental sources
+ * (walkOn fields, traps, weather). Applies the full resist chain (body +
+ * armor + spell, with cap) via CalculateDefenderResist, then bypasses
+ * ApplyCombatDamage to avoid:
+ *   - ExecuteCombatAbilitiesOnHit  (no on-hit triggers for env damage)
+ *   - AttackLogger                  (no forensics spam per tick)
+ *   - Post-damage ability hooks     (Combat/Passive AfterDamage)
+ *   - onKill ability hooks
+ *
+ * When `source` is 0, the defender wrapper is reused as attacker, cutting
+ * MobileWrapper construction in half — the key win for AoE fields ticking
+ * on multiple victims per second.
+ *
+ * @param defender ObjRef of the defender mobile
+ * @param amount Pre-calculated raw damage
+ * @param dmgType DAMAGE_TYPE::* enum value (FIRE/COLD/POISON/ENERGY/...)
+ * @param source ObjRef of source mobile, or 0 for sourceless damage
+ * @return Damage actually dealt after resists
+ */
+function ApplyFieldDamage(defender, amount, dmgType, source := 0)
+	if (!defender || CInt(amount) <= 0)
+		return 0;
+	endif
+
+	var defenderW := MobileWrapper(defender);
+	var attackerW := source ? MobileWrapper(source) : defenderW;
+	var attackInfo := AttackInfo(attackerW, defenderW);
+
+	attackInfo.SetSkipParry(true)
+			  .SetSkipCrit(true)
+			  .SetSkipBodyRegion(true)
+			  .SetAppliesArmorWear(false)
+			  .SetUsesChannelApply(true);
+
+	attackInfo.GetDamage().IncreaseRawDamageByType(dmgType, CInt(amount));
+	CalculateDefenderResist(attackInfo);
+
+	var finalDmg := _GetBaseDamageByType(attackInfo.GetDamage(), dmgType);
+	if (finalDmg > 0)
+		DisplayDamage(defender, finalDmg, source ? source : defender);
+		ApplyRawDamage(defender, finalDmg);
+	endif
+
+	return finalDmg;
+endfunction
+
+// Read a single damage channel post-resist. Used by ApplyFieldDamage to
+// avoid ApplyCombatDamage's all-channel application + hook execution.
+function _GetBaseDamageByType(byRef dmg, dmgType)
+	case (dmgType)
+		DAMAGE_TYPE::SLASH:    return CInt(dmg.GetSlashBaseDamage());
+		DAMAGE_TYPE::PIERCING: return CInt(dmg.GetPiercingBaseDamage());
+		DAMAGE_TYPE::BLUNT:    return CInt(dmg.GetBluntBaseDamage());
+		DAMAGE_TYPE::FIRE:     return CInt(dmg.GetFireBaseDamage());
+		DAMAGE_TYPE::COLD:     return CInt(dmg.GetColdBaseDamage());
+		DAMAGE_TYPE::POISON:   return CInt(dmg.GetPoisonBaseDamage());
+		DAMAGE_TYPE::ENERGY:   return CInt(dmg.GetEnergyBaseDamage());
+	endcase
+	return 0;
+endfunction
+
 // Capture the defender's coords up front — once ApplyCombatDamage runs the
 // death pipeline invalidates the mobile ref and .x/.y/.z return uninitialized.
 function SnapshotDefenderLocation(byRef attackInfo)
