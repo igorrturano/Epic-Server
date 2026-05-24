@@ -481,7 +481,10 @@ function HandleSpellSkill(who)
 endfunction
 
 function handleSpellResistDiffForDivineCasters(who, school)
-   var diff := Cint(AP_GetSkill(who, THEOLOGY) / 4); // Baseado na skill de teologia
+   // HandleSpellSkill already branches Druida/Shaman to Nature; Cleric/Paladino/
+   // Caçador de Demônios stay on Theology. Routing through it keeps a single
+   // source of truth for the divine-caster primary skill.
+   var diff := Cint(HandleSpellSkill(who) / 4);
 
    return diff;
 endfunction

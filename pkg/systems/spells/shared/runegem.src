@@ -6,6 +6,7 @@ include ":runecarving:runeCarving";
 include "include/client";
 include "include/say";
 include "include/epicConstants";
+include "include/epicMageryUtils";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 
@@ -90,8 +91,9 @@ program runegem(who, rune)
 
 	SendSysMessageEx(who, "Você começa a gravar a " + runeType + " no equipamento...", SSM_INFO);
 
-	// Calculate carving time
-	var carvingTime := CInt(AP_GetSkill(who, THEOLOGY) / 20);
+	// Calculate carving time. HandleSpellSkill resolves the divine primary
+	// skill per class (Druida/Shaman = Nature, others = Theology).
+	var carvingTime := CInt(HandleSpellSkill(who) / 20);
 	if (carvingTime < 2)
 		carvingTime := 2; // Minimum 2 seconds
 	endif
