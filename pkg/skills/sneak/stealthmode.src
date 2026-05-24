@@ -7,6 +7,35 @@ include "include/sysEvent";
 include "include/packets";
 include ":message:model/Message";
 
+// EpicUO custom 0xBF/0x00B0: overhead text above `source`, only `viewer` sees it.
+// No journal entry, no speech hook. Layout:
+//   BF | len_u16 | 00B0 | serial_u32 | hue_u16 | textlen_u8 | ascii[textlen]
+function SendOverheadLabel(viewer, source, text, hue)
+	var bytes := len(text);
+	if (bytes > 255) bytes := 255; endif
+	var size := 12 + bytes;
+	var pkt := CreatePacket(0xBF, size);
+	pkt.SetInt8(0, 0xBF);
+	SetInt16BE(pkt, 1, size);
+	SetInt16BE(pkt, 3, 0x00B0);
+	pkt.SetInt32(5, source.serial);
+	SetInt16BE(pkt, 9, hue);
+	pkt.SetInt8(11, bytes);
+	var i := 0;
+	while (i < bytes)
+		pkt.SetInt8(12 + i, CAsc(text[i + 1]));
+		i := i + 1;
+	endwhile
+	pkt.SendPacket(viewer);
+endfunction
+
+function PerceptionHue(pct)
+	if (pct >= 80)     return 0x0044; endif  // green
+	if (pct >= 50)     return 0x0035; endif  // yellow
+	if (pct >= 25)     return 0x002B; endif  // orange
+	return 0x0021;                            // red
+endfunction
+
 program showdfdiff(params)
 
 	var who := params[1];
@@ -21,7 +50,10 @@ program showdfdiff(params)
 				var diff := CInt(CalculateDHDiff(mob, who));
 				var pct := CalcSuccessPercent(mob, AWARENESS, cdbl(diff),
 											   EffectiveTrueSkill(mob, "Perception"));
-				PrintTextPrivate(mob, "" + pct + "%", who, _DEFAULT_TEXT_FONT, GetMagentaMap(CInt(pct / 10)));
+				var shown := CInt(pct);
+				if (shown < 0) shown := 0; endif
+				if (shown > 100) shown := 100; endif
+				SendOverheadLabel(who, mob, "" + shown + "%", PerceptionHue(shown));
 
 				// Passive NPC perception: hostile NPCs in LoS roll Awareness
 				// against the stealth diff each tick (3s). On hit, the player
