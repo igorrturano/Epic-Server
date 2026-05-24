@@ -32,7 +32,7 @@ endfunction
 // Sonda de erros: flip pra 1, recompila, gera alguns tooltips em prod (passa o
 // mouse por items diferentes), flip pra 0. Console mostra o que cada path
 // retorna em condições reais.
-const DIAG_ERR_PROBE := 0;
+const DIAG_ERR_PROBE_TT := 0;
 
 //Função criada para pergar Prop de Objeto tanto na forma de item quanto de item template.
 // Retorna o valor da prop, ou error (intrínseco do POL) se não existir.
@@ -40,19 +40,19 @@ const DIAG_ERR_PROBE := 0;
 function PegaPropObjItemOrTemplate(item, propriedade)
 	if(item.isA(POLCLASS_ITEM))
 		var r := GetObjProperty(item, propriedade);
-		if (DIAG_ERR_PROBE)
+		if (DIAG_ERR_PROBE_TT)
 			print($"[PegaPropObjItemOrTemplate item] prop={propriedade} TypeOf={TypeOf(r)} ==error={r==error} !r={!r} is@Exception={r is @Exception}");
 		endif
 		return r;
 	elseif(item.?Cprops)
 		var r := item.Cprops[propriedade];
-		if (DIAG_ERR_PROBE)
+		if (DIAG_ERR_PROBE_TT)
 			print($"[PegaPropObjItemOrTemplate template] prop={propriedade} TypeOf={TypeOf(r)} ==error={r==error} !r={!r} is@Exception={r is @Exception}");
 		endif
 		return r;
 	endif
 
-	if (DIAG_ERR_PROBE)
+	if (DIAG_ERR_PROBE_TT)
 		print($"[PegaPropObjItemOrTemplate fallback] prop={propriedade} returning error");
 	endif
 	return error;
