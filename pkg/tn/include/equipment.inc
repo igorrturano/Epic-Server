@@ -54,11 +54,22 @@ function ApplyEquipObjMods(who, item)
 		return;
 	endif
 
-	foreach mod in (mods.keys())
-		if (GetObjProperty(item, "magic") == 1)
-			continue;
-		endif
+	// Identification gate. An item is "identified-magic" only when its
+	// `magic` ObjProperty has been flipped to 2 by Arcana (plain magic)
+	// or Theology (sacred/cursed). While unidentified (magic == 1),
+	// bonuses are withheld on equip. Cursed items are an exception:
+	// they apply immediately on equip so the player feels the trap.
+	// Items without any `magic` property (crafted gear, etc.) pass
+	// through with no gating.
+	var magic_state := GetObjProperty(item, "magic");
+	var has_magic   := (magic_state == 1 || magic_state == 2);
+	var identified  := (magic_state == 2);
+	var is_cursed   := CInt(mods["cursed"]) == 1;
+	if (has_magic && !identified && !is_cursed)
+		return;
+	endif
 
+	foreach mod in (mods.keys())
 		case (mod)
 			"strmod":
 				AP_ModifyStatMod(who, STRENGTH, CInt(mods["strmod"]));
@@ -101,11 +112,19 @@ function RemoveEquipObjMods(who, item)
 		return;
 	endif
 
-	foreach mod in (mods.keys())
-		if (GetObjProperty(item, "magic") == 1)
-			continue;
-		endif
+	// Mirror the ApplyEquipObjMods identification gate. If the apply path
+	// skipped this item (unidentified, non-cursed) we must skip the remove
+	// path too — otherwise we subtract a bonus that was never added and
+	// drift the mob's #stammod / #hitsmod / #manamod negative.
+	var magic_state := GetObjProperty(item, "magic");
+	var has_magic   := (magic_state == 1 || magic_state == 2);
+	var identified  := (magic_state == 2);
+	var is_cursed   := CInt(mods["cursed"]) == 1;
+	if (has_magic && !identified && !is_cursed)
+		return;
+	endif
 
+	foreach mod in (mods.keys())
 		case (mod)
 			"strmod":
 				AP_ModifyStatMod(who, STRENGTH, -CInt(mods["strmod"]));

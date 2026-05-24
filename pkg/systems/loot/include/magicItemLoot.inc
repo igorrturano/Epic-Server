@@ -24,7 +24,12 @@ include ":loot:magicNameGen";
 //   sticks lead to surprise behavior).
 //
 // Charges: flat 10 per item, all tiers.
-// Sacred/cursed roll: 15% / 15% / 70%. Threshold = +/- (tier*100).
+// Category roll: 33% magic / 33% sacred / 33% cursed.
+//   - Magic   → identified via Arcana skill, then bonuses apply on equip.
+//   - Sacred  → identified via Theology, needs +entropy >= tier*100 to equip.
+//   - Cursed  → identified via Theology, bonuses apply on equip immediately
+//               but can ONLY be unequipped via the priest spell
+//               :spells:spell_logic/priest/removermaldicao.
 // Every magic item carries BOTH a spell (if one matches the
 //   circle window) AND a +tier vital mod on hits / mana / stam
 //   (one rolled per item). No jewelry-vs-spellstick distinction.
@@ -32,8 +37,6 @@ include ":loot:magicNameGen";
 // ============================================================
 
 const MAGIC_CHARGES        := 10;
-const MAGIC_SACRED_PCT     := 15;
-const MAGIC_CURSED_PCT     := 15;
 const MAGIC_ENTROPY_PER_TIER := 100;
 
 function Loot_MagicCircleMin(tier)
@@ -168,15 +171,18 @@ function Loot_ApplyVitalMod(byref state, tier)
 	endcase
 endfunction
 
-function Loot_RollSacredOrCursed(byref state, tier)
-	var roll := RandomInt(100);
-	if (roll < MAGIC_SACRED_PCT)
-		state.category          := "sacred";
-		state.entropy_threshold := tier * MAGIC_ENTROPY_PER_TIER;
-	elseif (roll < MAGIC_SACRED_PCT + MAGIC_CURSED_PCT)
-		state.category          := "cursed";
-		state.entropy_threshold := -1 * tier * MAGIC_ENTROPY_PER_TIER;
-	endif
+function Loot_RollMagicCategory(byref state, tier)
+	// Three equal buckets: plain magic / sacred / cursed.
+	case (RandomInt(3))
+		0:
+			state.category := "magic";
+		1:
+			state.category          := "sacred";
+			state.entropy_threshold := tier * MAGIC_ENTROPY_PER_TIER;
+		2:
+			state.category          := "cursed";
+			state.entropy_threshold := -1 * tier * MAGIC_ENTROPY_PER_TIER;
+	endcase
 endfunction
 
 // Parse and execute one `MagicSpell <qty_dice> <chance> <tier>` line.
@@ -245,7 +251,7 @@ function Loot_CreateMagicSpellItem(container, tier)
 		state.charges       := MAGIC_CHARGES;
 	endif
 
-	Loot_RollSacredOrCursed(state, tier);
+	Loot_RollMagicCategory(state, tier);
 
 	ApplyEpicProperties(item, state);
 	item.name := Loot_GenerateMagicName(item.desc);

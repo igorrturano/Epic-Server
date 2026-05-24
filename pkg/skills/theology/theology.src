@@ -62,6 +62,15 @@ program skill_theology(who)
 			whos.append(who.serial);
 			SetObjProperty(item, "theologywho", whos);
 		endif
+
+		// Flip the global "identified" flag so the equip path applies bonuses.
+		// Mirrors what Arcana's ActivateMagicItem does for plain magic items.
+		// Only flip if the item is actually sacred/cursed — plain magic items
+		// must still be routed through Arcana.
+		var equip_data := GetObjProperty(item, "equip");
+		if (equip_data && (equip_data.sacred || equip_data.cursed))
+			SetObjProperty(item, "magic", 2);
+		endif
 	else
 		SendSysMessageEx(who, "Voce nao esta certo...", SSM_FAIL);
 	endif
