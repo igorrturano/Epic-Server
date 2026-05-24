@@ -196,6 +196,132 @@ function UL_SendHandshake(who)
     return 1;
 endfunction
 
+// SUB-FASE 2.A: itera apenas statics nativos via
+// ListStaticsAtLocation. Mutações static_add em tiles SEM
+// native static não são incluídas no packet.
+//
+// DÉBITO TÉCNICO: pra fase 3 da árvore destrutível
+// (4 pedaços de fallen log em tiles vizinhos), precisará
+// iterar DataFile :ultimalive:mutations e adicionar entries
+// com MutationType="static_add" deste bloco. Sub-fase 2.D.
+function UL_BuildStaticsUpdatePacket(realm, blockX, blockY)
+    var realm_info := Realms()[CStr(realm)];
+    if (!realm_info)
+        return error{"errortext" := "UL_BuildStaticsUpdatePacket: realm nao encontrado: " + realm};
+    endif
+
+    var map_height_blocks := CInt(realm_info.height) / 8;
+    var block_number      := blockX * map_height_blocks + blockY;
+    var map_id            := CInt(realm_info.mapid);
+
+    var statics_list := array{};
+    var x := 0;
+    while (x < 8)
+        var y := 0;
+        while (y < 8)
+            var tile_x  := blockX * 8 + x;
+            var tile_y  := blockY * 8 + y;
+            var natives := ListStaticsAtLocation(tile_x, tile_y, LIST_IGNORE_Z, 0, realm);
+            foreach st in natives
+                var sz       := CInt(st.z);
+                var mutation := UL_GetMutation(realm, tile_x, tile_y, sz);
+                var s        := struct{};
+                if (mutation == error)
+                    s.+graphic := CInt(st.objtype);
+                    s.+x_w     := x;
+                    s.+y_w     := y;
+                    s.+z       := sz;
+                    s.+hue     := 0;
+                    statics_list.append(s);
+                elseif (mutation.MutationType == "static_delete")
+                    // omitir — static removido pela mutação
+                elseif (mutation.MutationType == "static_modify")
+                    s.+graphic := mutation.Graphic;
+                    s.+x_w     := x;
+                    s.+y_w     := y;
+                    s.+z       := sz;
+                    s.+hue     := mutation.Hue;
+                    statics_list.append(s);
+                else
+                    // tipo desconhecido — mantém native por segurança
+                    s.+graphic := CInt(st.objtype);
+                    s.+x_w     := x;
+                    s.+y_w     := y;
+                    s.+z       := sz;
+                    s.+hue     := 0;
+                    statics_list.append(s);
+                endif
+            endforeach
+            y += 1;
+        endwhile
+        x += 1;
+    endwhile
+
+    var n       := Len(statics_list);
+    var pkt_len := 15 + n * 7;
+    var pkt     := CreatePacket(0x3F, pkt_len);
+
+    pkt.SetInt16(1, pkt_len);
+    pkt.SetInt32(3, block_number);
+    pkt.SetInt32(7, n);
+    // bytes 11-12 ficam zero (CreatePacket inicializa com zeros)
+    pkt.SetInt8(13, 0x00);
+    pkt.SetInt8(14, map_id);
+
+    var i := 0;
+    while (i < n)
+        var st   := statics_list[i + 1];
+        var base := 15 + i * 7;
+        var z    := st.z;
+        if (z < 0)
+            z := (1 << 8) + z;
+        endif
+        // StaticsBlock é LE (Pack=1) — SetInt16 normal é BE, então escrevemos 2× SetInt8
+        pkt.SetInt8(base,     st.graphic % 256);
+        pkt.SetInt8(base + 1, st.graphic / 256);
+        pkt.SetInt8(base + 2, st.x_w);
+        pkt.SetInt8(base + 3, st.y_w);
+        pkt.SetInt8(base + 4, z);
+        pkt.SetInt8(base + 5, st.hue % 256);
+        pkt.SetInt8(base + 6, st.hue / 256);
+        i += 1;
+    endwhile
+
+    return pkt;
+endfunction
+
+function UL_SendStaticsUpdate(who, realm, blockX, blockY)
+    var pkt := UL_BuildStaticsUpdatePacket(realm, blockX, blockY);
+    if (pkt == error)
+        return pkt;
+    endif
+
+    var block_number := pkt.GetInt32(3);
+    var n            := pkt.GetInt32(7);
+    var map_id       := pkt.GetInt8(14);
+
+    Print("UL_SEND_STATICS realm=" + realm + " blockX=" + blockX + " blockY=" + blockY +
+          " block=" + block_number + " mapId=" + map_id + " N=" + n + " size=" + pkt.GetSize());
+
+    var dump_end := pkt.GetSize() - 1;
+    if (dump_end > 63) dump_end := 63; endif
+    var i          := 0;
+    var line       := "";
+    var line_start := 0;
+    while (i <= dump_end)
+        line := line + _UL_Hex2(pkt.GetInt8(i)) + " ";
+        if ((i % 32) == 31 || i == dump_end)
+            Print("UL_SEND_STATICS bytes[" + line_start + ".." + i + "] " + line);
+            line       := "";
+            line_start := i + 1;
+        endif
+        i += 1;
+    endwhile
+
+    pkt.SendPacket(who);
+    return 1;
+endfunction
+
 function UL_BuildHashResponsePacket(realm, centerBlockX, centerBlockY)
     return error{"errortext" := "STUB - sub-fase 1.E"};
 endfunction
