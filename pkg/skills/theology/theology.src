@@ -81,6 +81,8 @@ program skill_theology(who)
 					EquipModStamper(item).ApplyOn(wearer);
 				endif
 			endif
+			// Refresh client tooltip so the identified state is visible.
+			IncRevision(item);
 		endif
 	else
 		SendSysMessageEx(who, "Voce nao esta certo...", SSM_FAIL);
