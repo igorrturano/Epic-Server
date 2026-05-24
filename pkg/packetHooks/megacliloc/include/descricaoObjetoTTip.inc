@@ -8,32 +8,23 @@ include "include/epicCombatUtils";
 function MontaDescPersonagem(objeto, quem, xDesc)
 	if (!objeto.npctemplate)
 		if (quem.cmdlevel > 1) //Staff consegue ver o nome e raça
-			var disfarce := GetObjProperty(objeto, "disfarce");
-			if (disfarce != error && disfarce)
+			if (GetObjProperty(objeto, "disfarce"))
 				xDesc := xDesc + WHITE + " [disfarce] [" + objeto.acctname + "]" + "<br>";
 			endif
 			var chardata := GetObjProperty(objeto, "chardata");
-			if (chardata != error && chardata)
-				var culture := chardata.culture;
-				if (culture)
-					xDesc := xDesc + WHITE + culture + "<br>";
-				endif
+			if (chardata && chardata.culture)
+				xDesc := xDesc + WHITE + chardata.culture + "<br>";
 			endif
 		endif
 
 		// Entropy-based appearance description (shows for everyone)
 		var entropy_desc := GetObjProperty(objeto, "descmodentropy");
-		if (entropy_desc != error && entropy_desc)
+		if (entropy_desc)
 			var tier := GetObjProperty(objeto, "entropy_description_tier");
-			var color := WHITE;
-
-			// Color coding: purple for corrupted, golden for radiant
-			if (tier != error && tier < 0)
-				color := ROXO;  // Purple for dark/corrupted
-			else
-				color := AMARELO_CLARO;  // Golden for light/virtuous
-			endif
-
+			// tier missing → error (falsy) → fallback to AMARELO_CLARO.
+			// tier < 0 explicit numeric compare needs the not-error guard
+			// because `error < 0` semantics are untested.
+			var color := (tier != error && tier < 0) ? ROXO : AMARELO_CLARO;
 			xDesc := xDesc + color + entropy_desc + "<br>";
 		endif
 	endif
@@ -41,7 +32,7 @@ function MontaDescPersonagem(objeto, quem, xDesc)
 	// Pet/creature description set via RURAL_LIFE (Campestre) ability
 	if (objeto.npctemplate)
 		var pet_desc := GetObjProperty(objeto, "description");
-		if (pet_desc != error && pet_desc)
+		if (pet_desc)
 			xDesc := xDesc + WHITE + pet_desc + "<br>";
 		endif
 	endif
