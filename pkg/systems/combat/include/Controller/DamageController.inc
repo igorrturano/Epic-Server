@@ -1660,12 +1660,19 @@ function CheckPoison(byRef attackInfo)
 			endif
 			
 			if (attackInfo.GetDefender().GetObjRef().GetProp("#poisontier"))
-				var poison := TS_GetTimerNames(attackInfo.GetDefender().GetObjRef(), type := "P");
+				// TS_GetTimerNames retorna ARRAY de strings — precisa iterar.
+				// Bug anterior: passava o array inteiro para TS_LowerDuration,
+				// que CStr-ificava em "{ alchPoison }" e perdia todos os
+				// lookups de cfg → spam de Error::TS_GetCfgElem.
+				var active_poisons := TS_GetTimerNames(attackInfo.GetDefender().GetObjRef(), type := "P");
 				var teste := CInt(attackInfo.GetDefender().GetObjRef().GetProp("#poisontier"));
 
 				if (teste <= poisonInfo.tier)
 					// compara o poison atual com o novo, substituindo caso o novo seja maior
-					TS_LowerDuration(attackInfo.GetDefender().GetObjRef(), poison, -1);
+					foreach poison_name in (active_poisons)
+						TS_LowerDuration(attackInfo.GetDefender().GetObjRef(), poison_name, -1);
+						SleepMS(2);
+					endforeach
 					TS_StartTimer(attackInfo.GetDefender().GetObjRef(), poisonInfo.Name, poisonInfo.time, poisonInfo.level, attackInfo.GetAttacker().GetObjRef());
 				endif
 			else
