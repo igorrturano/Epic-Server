@@ -3,6 +3,8 @@ use uo;
 include ":attributes:attributes";
 include "include/say";
 include ":loot:magicLoot";
+include ":tn:equipment";
+include ":equipsys:Model/EquipModStamper";
 
 program skill_armslore(who)
 
@@ -42,6 +44,16 @@ program skill_armslore(who)
 				endif
 				if (equip_check)
 					ActivateMagicItem(item);
+					// If the item is currently worn, apply its mods now so the
+					// player feels the bonus without unequip+re-equip cycle.
+					// Stamp is idempotent; no-op if somehow already stamped.
+					var equipped_on := CInt(GetObjProperty(item, "#EquippedOn"));
+					if (equipped_on)
+						var wearer := SystemFindObjectBySerial(equipped_on);
+						if (wearer && wearer != error)
+							EquipModStamper(item).ApplyOn(wearer);
+						endif
+					endif
 				endif
 				SendSysMessageEx(who, "Voce identificou encantamentos nesse item.", SSM_INFO);
 				var cfg := ReadConfigFile(":spells:config/swordmage");
