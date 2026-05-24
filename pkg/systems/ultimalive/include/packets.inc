@@ -41,7 +41,7 @@ function UL_BuildBlockUpdatePacket(realm, blockX, blockY)
             var tile_id := CInt(info.landtile);
             var z       := CInt(info.z);
 
-            var mutation := UL_GetMutation(realm, tile_x, tile_y, 0);
+            var mutation := UL_GetMutation(realm, tile_x, tile_y, 0, 0);
             if (mutation != error && mutation.MutationType == "land_modify")
                 tile_id := mutation.Graphic;
             endif
@@ -224,7 +224,7 @@ function UL_BuildStaticsUpdatePacket(realm, blockX, blockY)
             var natives := ListStaticsAtLocation(tile_x, tile_y, LIST_IGNORE_Z, 0, realm);
             foreach st in natives
                 var sz       := CInt(st.z);
-                var mutation := UL_GetMutation(realm, tile_x, tile_y, sz);
+                var mutation := UL_GetMutation(realm, tile_x, tile_y, sz, CInt(st.objtype));
                 var s        := struct{};
                 if (mutation == error)
                     s.+graphic := CInt(st.objtype);
