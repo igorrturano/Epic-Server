@@ -16,10 +16,10 @@ program SpellScript(params)
 	params := 0;
 
 
-	var theology := AP_GetSkill(who, THEOLOGY);
-	var forward_tiles := CInt(theology / 20) + 1;
-	var side_tiles := CInt(theology / 10) + 2;
-	var duration := CInt(theology);
+	var nature := AP_GetSkill(who, NATURE);
+	var forward_tiles := CInt(nature / 20) + 1;
+	var side_tiles := CInt(nature / 10) + 2;
+	var duration := CInt(nature);
 	if (duration < 30)
 		duration := 30;
 	endif

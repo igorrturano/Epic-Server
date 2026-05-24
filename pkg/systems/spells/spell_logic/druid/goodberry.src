@@ -46,9 +46,9 @@ program SpellScript(params)
 		return;
 	endif
 
-	// Calculate healing power based on theology skill
-	var theology_skill := HandleSpellSkill(who);
-	var healing_bonus := CInt(theology_skill);
+	// Calculate healing power based on nature skill
+	var nature_skill := HandleSpellSkill(who);
+	var healing_bonus := CInt(nature_skill);
 
 	if (healing_bonus < 20)
 		healing_bonus := 20; // Minimum healing
@@ -64,7 +64,7 @@ program SpellScript(params)
 	targ.color := 1151; // Green color for magical fruit
 	SetObjProperty(targ, "bonus", healing_bonus);
 	SetObjProperty(targ, "created_by", who.serial);
-	SetObjProperty(targ, "imbue_expires", polcore().systime + (theology_skill * 60));
+	SetObjProperty(targ, "imbue_expires", polcore().systime + (nature_skill * 60));
 
 	// Set the script to use when consumed
 	targ.usescript := ":tn:fruta_curativa";

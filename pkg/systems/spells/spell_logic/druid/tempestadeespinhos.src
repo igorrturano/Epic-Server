@@ -27,7 +27,7 @@ function LaunchProjectile(caster, targ, spellinfo)
 	sleepms(500);
 	PlaySoundEffect(targ, 0x22F);
 
-	var dmg := cint(AP_GetSkill(caster, THEOLOGY) / 10) + epicSpellDamageRoll(caster, spellinfo.Circle);
+	var dmg := cint(AP_GetSkill(caster, NATURE) / 10) + epicSpellDamageRoll(caster, spellinfo.Circle);
 
 	// REFLEX save halves the thorn-storm's damage.
 	var diff := handleSpellResistDiffForSpecialists(caster, spellinfo.School);

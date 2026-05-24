@@ -20,16 +20,16 @@ program SpellScript(params)
 
 	PlaySoundEffect(who, 0x1E9);
 
-	// Calcula o range baseado no theology do druida
-	var range := CInt(AP_GetSkill(who, THEOLOGY) / 10);
+	// Calcula o range baseado no nature do druida
+	var range := CInt(AP_GetSkill(who, NATURE) / 10);
 	if (range < 5)
 		range := 5;
 	elseif (range > 15)
 		range := 15;
 	endif
 
-	// Dificuldade do teste é o theology do druida
-	var difficulty := CInt(AP_GetSkill(who, THEOLOGY));
+	// Dificuldade do teste é o nature do druida
+	var difficulty := CInt(AP_GetSkill(who, NATURE));
 
 	var revealed_count := 0;
 
@@ -55,10 +55,10 @@ program SpellScript(params)
 
 		// Verifica se está escondido ou concealed
 		if (mobile.hidden == 1)
-			// O alvo faz um teste de SNEAK contra o THEOLOGY do druida
+			// O alvo faz um teste de SNEAK contra o NATURE do druida
 			var target_sneak := CInt(EffectiveSkill(mobile, "Stealth"));
 
-			// Teste resistido: theology do druida vs sneak do alvo
+			// Teste resistido: nature do druida vs sneak do alvo
 			if (SkillCheck(mobile, SNEAK, difficulty) <= 0)
 				// Falhou no teste - é revelado
 				mobile.hidden := 0;

@@ -12,7 +12,7 @@ program SpellScript(params)
 	var spell := params[3];
 	params := 0;
 
-	var duration := CInt(AP_GetSkill(who, THEOLOGY) / 10);
+	var duration := CInt(AP_GetSkill(who, NATURE) / 10);
 
 	PlayStationaryEffect(info.x, info.y, info.z, 0x38C8, 7, 100, 0, info.realm);
 

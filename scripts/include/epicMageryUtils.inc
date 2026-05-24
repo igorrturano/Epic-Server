@@ -449,11 +449,12 @@ function HandleSpellSkill(who)
 	var chardata := getobjProperty(who, "chardata");
 	var skill := Cint(AP_GetSkill(who, ARCANA));
 
-	// Detect arcane casters so they scale on Arcana; everyone else uses Theology.
-	// Path-rework chars are tagged via chardata.magia (applyClassStarter sets
-	// "spellcaster" for Magus/Necromante/Lamina_Arcana, "arcane_archer" for
-	// Arqueiro_Arcano). Legacy chars use chardata.wisdom_path = "Mago" — kept
-	// as a fallback for any char predating the rework.
+	// Detect arcane casters so they scale on Arcana; nature casters (Druida/
+	// Shaman) scale on Nature; everyone else uses Theology. Path-rework chars
+	// are tagged via chardata.magia (applyClassStarter sets "spellcaster" for
+	// Magus/Necromante/Lamina_Arcana, "arcane_archer" for Arqueiro_Arcano).
+	// Legacy chars use chardata.wisdom_path = "Mago" — kept as a fallback for
+	// any char predating the rework.
 	var is_arcane := 0;
 	if (chardata != error)
 		var magia := chardata.magia;
@@ -466,11 +467,17 @@ function HandleSpellSkill(who)
 
 	// Malandro Arcano scales casting on Arcana from level 1 by class identity
 	// (CanCastAsClass); the SENSIBILIDADE_ARCANA ability is a separate reward.
-	if (!is_arcane && !CanCastAsClass(who, "Malandro_Arcano"))
-		skill := Cint(AP_GetSkill(who, THEOLOGY));
+	if (is_arcane || CanCastAsClass(who, "Malandro_Arcano"))
+		return skill;
 	endif
 
-	return skill;
+	// Druida and Shaman cast on Nature (path rework spec 02). All other divine
+	// casters (Cleric, Paladino, Caçador de Demônios) remain on Theology.
+	if (CanCastAsClass(who, "Druida") || CanCastAsClass(who, "Shaman"))
+		return Cint(AP_GetSkill(who, NATURE));
+	endif
+
+	return Cint(AP_GetSkill(who, THEOLOGY));
 endfunction
 
 function handleSpellResistDiffForDivineCasters(who, school)

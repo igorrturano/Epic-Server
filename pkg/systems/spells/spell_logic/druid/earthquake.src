@@ -34,7 +34,7 @@ program earthquake(parms)
 	PlaySoundEffect(caster, SFX_223);
 	sleepms(200);
 
-	var range := Cint(AP_GetSKill(caster, THEOLOGY) / 10);
+	var range := Cint(AP_GetSKill(caster, NATURE) / 10);
 	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range);
 
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);

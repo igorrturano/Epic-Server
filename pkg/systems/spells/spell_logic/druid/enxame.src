@@ -32,16 +32,16 @@ program SpellScript(params)
 		return;
 	endif
 
-	var theology := AP_GetSkill(caster, THEOLOGY);
+	var nature := AP_GetSkill(caster, NATURE);
 
-	var total_ticks := CInt(theology / 10);
+	var total_ticks := CInt(nature / 10);
 	if (total_ticks < 4)
 		total_ticks := 4;
 	elseif (total_ticks > 10)
 		total_ticks := 10;
 	endif
 
-	var damage_per_tick := CInt(theology / 20) + RandomDiceRoll("1d4");
+	var damage_per_tick := CInt(nature / 20) + RandomDiceRoll("1d4");
 	var tick_interval := 2;
 	var duration := total_ticks * tick_interval;
 

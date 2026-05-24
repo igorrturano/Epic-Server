@@ -22,7 +22,7 @@ program SpellScript(params)
 		return 0;
 	endif
 
-	var duration_minutes := CInt(AP_GetSkill(who, THEOLOGY));
+	var duration_minutes := CInt(AP_GetSkill(who, NATURE));
 	if (duration_minutes < 1)
 		duration_minutes := 1;
 	endif

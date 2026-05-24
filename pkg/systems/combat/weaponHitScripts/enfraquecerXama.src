@@ -7,7 +7,7 @@ include ":charactercreation:habilidades";
 
 // Delivery for shaman Enfraquecer (spell 607). The cast arms a #enfraq_xama
 // marker; WeaponHitScripts fires this on the caster's next melee hit. We
-// compute the STR debuff here (THEOLOGY-scaled, no resist roll — landing
+// compute the STR debuff here (NATURE-scaled, no resist roll — landing
 // the melee hit is the gate), apply it to the defender via the shared
 // ApplyWeakenEffect, then consume the arm so the buff icon clears.
 program HitScript(params)
@@ -20,7 +20,7 @@ program HitScript(params)
 		return;
 	endif
 
-	var amt := CInt(AP_GetSkill(attacker, THEOLOGY) * 0.5);
+	var amt := CInt(AP_GetSkill(attacker, NATURE) * 0.5);
 
 	// Necro parity: Sacrificio da Carne amplifies while bloodied.
 	if (MobileWrapper(attacker).HasAbility(ABILITY_ID::SACRIFICIO_DA_CARNE))
@@ -29,7 +29,7 @@ program HitScript(params)
 		endif
 	endif
 
-	var duration := CInt(AP_GetSkill(attacker, THEOLOGY));
+	var duration := CInt(AP_GetSkill(attacker, NATURE));
 
 	ApplyWeakenEffect(attacker, defender, amt, duration, spellId);
 

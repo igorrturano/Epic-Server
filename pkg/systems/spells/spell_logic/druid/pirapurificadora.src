@@ -22,9 +22,9 @@ program SpellScript(params)
 	var spell := params[3];
 	params := 0;
 
-	var theology := AP_GetSkill(caster, THEOLOGY);
-	var range := CInt(theology / 20) + 2;
-	var duration := CInt(theology / 10);
+	var nature := AP_GetSkill(caster, NATURE);
+	var range := CInt(nature / 20) + 2;
+	var duration := CInt(nature / 10);
 
 	if (duration < 4)
 		duration := 4;
@@ -100,7 +100,7 @@ program SpellScript(params)
 	opts.+tick_interval := tick_interval;
 	opts.+tick_params := struct{
 		fire_serials := fire_serials,
-		theology := CInt(theology)
+		nature := CInt(nature)
 	};
 	opts.+on_expire_script := ":spells:spell_logic/druid/pirapurificadoraExpire";
 	opts.+on_expire_params := struct{
