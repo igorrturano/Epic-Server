@@ -1,18 +1,15 @@
 // .diagerr - sonda empírica de retorno de erros em POL/wrappers/getobjproperty.
 //
-// Uso: .diagerr → seleciona um alvo (player conectado, NPC, item arma,
-// item armadura, item container, item genérico, template ref).
-// Tudo cai no print() do console POL — sem UI in-game. Roda quantas vezes
-// quiser, em alvos diferentes, e cola o output pra construir a matriz de
-// "quando POL retorna error vs Exception vs 0 vs uninit".
+// Uso: .diagerr (sem alvo — usa você mesmo como cobaia).
+// Tudo cai no print() do console POL — sem UI in-game.
 //
 // O que está sendo respondido:
 //   - error builtin: como ele se compara, qual TypeOf, é falsy ou truthy?
 //   - GetObjProperty(prop inexistente): retorna error builtin ou struct?
 //   - PegaPropObjItemOrTemplate idem
-//   - WrapperX(alvo) em path inválido: GetObjRef() retorna error builtin
-//     ou InvalidTemplateException class? `is @Exception` realmente funciona?
-//   - .connected em ref recém-deletada/desconectada: retorna 0 ou error?
+//   - WrapperX em path inválido: GetObjRef() retorna error builtin ou
+//     InvalidTemplateException class? `is @Exception` realmente funciona?
+//   - .connected / .npctemplate: tipo de retorno
 
 use uo;
 use os;
@@ -28,17 +25,9 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":megacliloc:include/toolTipUtils";
 
 program diagerr(who)
-	SendSysMessage(who, "Selecione o alvo (Ctrl+Esc cancela).");
-	var target := Target(who);
-	if (!target)
-		SendSysMessage(who, "Cancelado.");
-		return 0;
-	endif
-
 	print("");
 	print("===================== DIAGERR =====================");
-	print($"alvo: serial=0x{Hex(target.serial)} name='{target.name}'");
-	DumpValue("target", target);
+	print($"alvo: serial=0x{Hex(who.serial)} name='{who.name}'");
 
 	print("");
 	print("--- POL builtin error keyword ---");
@@ -50,26 +39,24 @@ program diagerr(who)
 	DumpValue("nada", nada);
 
 	print("");
-	print("--- IsA checks no alvo ---");
-	print($"  IsA(POLCLASS_MOBILE) = {target.IsA(POLCLASS_MOBILE)}");
-	print($"  IsA(POLCLASS_ITEM)   = {target.IsA(POLCLASS_ITEM)}");
+	print("--- who (executor) ---");
+	DumpValue("who", who);
+	print($"  IsA(POLCLASS_MOBILE) = {who.IsA(POLCLASS_MOBILE)}");
 
-	if (target.IsA(POLCLASS_MOBILE))
-		print("");
-		print("--- .connected / .npctemplate ---");
-		DumpValue("target.connected", target.connected);
-		DumpValue("target.npctemplate", target.npctemplate);
-	endif
+	print("");
+	print("--- .connected / .npctemplate ---");
+	DumpValue("who.connected", who.connected);
+	DumpValue("who.npctemplate", who.npctemplate);
 
 	print("");
 	print("--- GetObjProperty (prop inexistente) ---");
-	var miss := GetObjProperty(target, "_diagprobe_nonexistent_xyz_");
+	var miss := GetObjProperty(who, "_diagprobe_nonexistent_xyz_");
 	DumpValue("missing prop", miss);
 
 	print("");
-	print("--- PegaPropObjItemOrTemplate (prop inexistente) ---");
-	var pmiss := PegaPropObjItemOrTemplate(target, "_diagprobe_nonexistent_xyz_");
-	DumpValue("missing prop", pmiss);
+	print("--- PegaPropObjItemOrTemplate em mobile (prop inexistente) ---");
+	var pmiss := PegaPropObjItemOrTemplate(who, "_diagprobe_nonexistent_xyz_");
+	DumpValue("missing prop on mobile", pmiss);
 
 	print("");
 	print("--- struct field access em error ---");
@@ -78,19 +65,39 @@ program diagerr(who)
 	DumpValue("error.errortext", x.errortext);
 
 	print("");
-	print("--- Wrapper constructions ---");
-	ProbeWrapper("UObjectWrapper", UObjectWrapper(target));
+	print("--- Wrapper em who (player) ---");
+	ProbeWrapper("UObjectWrapper(who)", UObjectWrapper(who));
+	ProbeMobileWrapperOn(who);
+	// Items que o player não é: probe wrappers "errados" e vê o que retornam
+	ProbeWrapper("ItemWrapper(who)", ItemWrapper(who));
+	ProbeWrapper("ContainerWrapper(who)", ContainerWrapper(who));
+	ProbeWrapper("EquipWrapper(who)", EquipWrapper(who));
+	ProbeWrapper("ArmorWrapper(who)", ArmorWrapper(who));
+	ProbeWrapper("WeaponWrapper(who)", WeaponWrapper(who));
 
-	if (target.IsA(POLCLASS_MOBILE))
-		ProbeMobileWrapper(target);
+	print("");
+	print("--- Wrapper em arma equipada (se tiver) ---");
+	var wpn := who.weapon;
+	if (wpn)
+		DumpValue("who.weapon", wpn);
+		ProbeWrapper("WeaponWrapper(weapon)", WeaponWrapper(wpn));
+		ProbeWrapper("ArmorWrapper(weapon)", ArmorWrapper(wpn)); // path errado: arma não é armadura
+		ProbeWrapper("ContainerWrapper(weapon)", ContainerWrapper(wpn));
+		var wprop := PegaPropObjItemOrTemplate(wpn, "_diagprobe_nonexistent_xyz_");
+		DumpValue("PegaProp miss on weapon", wprop);
+	else
+		print("  sem arma equipada — pula");
 	endif
 
-	if (target.IsA(POLCLASS_ITEM))
-		ProbeWrapper("ItemWrapper", ItemWrapper(target));
-		ProbeWrapper("ContainerWrapper", ContainerWrapper(target));
-		ProbeWrapper("EquipWrapper", EquipWrapper(target));
-		ProbeWrapper("ArmorWrapper", ArmorWrapper(target));
-		ProbeWrapper("WeaponWrapper", WeaponWrapper(target));
+	print("");
+	print("--- Wrapper em backpack ---");
+	var bp := who.backpack;
+	if (bp)
+		DumpValue("who.backpack", bp);
+		ProbeWrapper("ContainerWrapper(backpack)", ContainerWrapper(bp));
+		ProbeWrapper("WeaponWrapper(backpack)", WeaponWrapper(bp)); // path errado
+	else
+		print("  sem backpack — pula");
 	endif
 
 	print("");
@@ -108,12 +115,12 @@ endprogram
 // Imprime as 6 facetas mais úteis pra discriminar tipo de retorno.
 function DumpValue(label, v)
 	print($"  [{label}]");
-	print($"    TypeOf       = {TypeOf(v)}");
-	print($"    TypeOfInt    = {TypeOfInt(v)}");
-	print($"    !v           = {!v}");
-	print($"    v == error   = {v == error}");
+	print($"    TypeOf          = {TypeOf(v)}");
+	print($"    TypeOfInt       = {TypeOfInt(v)}");
+	print($"    !v              = {!v}");
+	print($"    v == error      = {v == error}");
 	print($"    v is @Exception = {v is @Exception}");
-	print($"    CStr(v)      = {CStr(v)}");
+	print($"    CStr(v)         = {CStr(v)}");
 	return 1;
 endfunction
 
@@ -126,10 +133,10 @@ function ProbeWrapper(name, w)
 	return 1;
 endfunction
 
-function ProbeMobileWrapper(target)
-	var mw := MobileWrapper(target);
+function ProbeMobileWrapperOn(targ)
+	var mw := MobileWrapper(targ);
 	print("");
-	print("[MobileWrapper]");
+	print("[MobileWrapper(who)]");
 	DumpValue("wrapper", mw);
 	DumpValue("GetObjRef()", mw.GetObjRef());
 	DumpValue("Race", mw.Race);
