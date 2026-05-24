@@ -20,7 +20,7 @@ program SpellScript(params)
 
 	SC_RemoveEffect(info, CInt(spell.id));
 
-	var penalty := -CInt(AP_GetSkill(who, THEOLOGY) / 5);
+	var penalty := -CInt(AP_GetSkill(who, NATURE) / 5);
 	if (penalty > -1)
 		penalty := -1;
 	endif

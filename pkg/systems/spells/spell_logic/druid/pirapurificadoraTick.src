@@ -11,7 +11,7 @@ const SOUND_EFFECT_FIRE := 0x1de;
 // Per-tick area damage for Pira Purificadora. Runs every tick_interval
 // seconds; burns any mobile standing on a fire tile spawned by the cast.
 // Args: { caster, targ, spellId, tick_number, tick_params }
-// tick_params: struct{ fire_serials, theology }
+// tick_params: struct{ fire_serials, nature }
 program PirapurificadoraTick(args)
 	var caster := args[1];
 	var spellId := CInt(args[3]);
@@ -37,7 +37,7 @@ program PirapurificadoraTick(args)
 		PlaySoundEffect(a_fire, SOUND_EFFECT_FIRE);
 	endif
 
-	var theology := CInt(tp.theology);
+	var nature := CInt(tp.nature);
 	var dmg_caster := caster;
 
 	// Scan mobiles around the fire cluster. Use the first fire tile as anchor.
@@ -50,7 +50,7 @@ program PirapurificadoraTick(args)
 
 		foreach fire_pos in fire_positions
 			if (mob.x == fire_pos.x && mob.y == fire_pos.y)
-				var damage := CInt(theology / 10) + RandomDiceRoll("1d4");
+				var damage := CInt(nature / 10) + RandomDiceRoll("1d4");
 				PlayObjectCenteredEffect(mob, 0x3709, 7, 10);
 				SC_DealDamage(dmg_caster, mob, spellId, damage, DAMAGE_TYPE::FIRE);
 				// Pira creates fire tiles in the world; the caster never directly targets

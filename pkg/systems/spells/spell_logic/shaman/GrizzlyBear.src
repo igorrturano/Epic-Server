@@ -14,8 +14,8 @@ program SpellScript(params)
 	var spell := params[3];
 	params := 0; // No longer needed
 
-	var amt := cint(AP_GetSkill(who, THEOLOGY) * 0.5);
-	var duration := GetSpellDuration(AP_GetSkill(who, THEOLOGY));
+	var amt := cint(AP_GetSkill(who, NATURE) * 0.5);
+	var duration := GetSpellDuration(AP_GetSkill(who, NATURE));
 
 	TS_StartTimer(who, "berserk", duration, amt, who, 1);
 	SendSpellBuff(who, who, CInt(spell.id), duration);

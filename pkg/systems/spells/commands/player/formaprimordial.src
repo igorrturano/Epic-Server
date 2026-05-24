@@ -522,8 +522,8 @@ function ApplyAttributeModifiers(who, form, duration, transformation_duration)
 	endif
 
 	var bonusMagicLore := 0;
-	bonusMagicLore := CINT(AP_GetSkill(who, THEOLOGY) / 6);
-	var bonusInstintoHP := CINT(AP_GetSkill(who, THEOLOGY) / 3);
+	bonusMagicLore := CINT(AP_GetSkill(who, NATURE) / 6);
+	var bonusInstintoHP := CINT(AP_GetSkill(who, NATURE) / 3);
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
 		skill_a_calc := CINT(skill_a_calc + bonusMagicLore);
 		hitsmod_calc := CINT(hitsmod_calc + bonusInstintoHP);
@@ -597,7 +597,7 @@ function CalculateDiceDamage()
 endfunction
 
 function CalculateTransformationDuration(who)
-	var duration := 60 + 540 * AP_GetSkill(who, THEOLOGY) / 100;
+	var duration := 60 + 540 * AP_GetSkill(who, NATURE) / 100;
 	return duration;
 endfunction
 

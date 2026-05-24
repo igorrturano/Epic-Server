@@ -23,7 +23,7 @@ program SpellScript(params)
 	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 7, 16);
 	PlaySoundEffect(targ, SFX_109);
 
-	var duration := CInt(10 + (AP_GetSkill(who, THEOLOGY) / 2));
+	var duration := CInt(10 + (AP_GetSkill(who, NATURE) / 2));
 
 	var opts := struct{};
 	opts.+dex_mod := -20;

@@ -136,7 +136,7 @@ program SpellScript(params)
 
 	detach();
 
-	var time := cint(AP_GetSkill(who, THEOLOGY));
+	var time := cint(AP_GetSkill(who, NATURE));
 	if (time < 30)
 		time := 30;
 	endif

@@ -21,8 +21,8 @@ program spell_bloodbath(params)
     endif
 
     var shaman_souls := CInt(GetObjProperty(who, "shaman_souls"));
-    var theology := AP_GetSkill(who, THEOLOGY);
-    var hp_threshold := CInt((theology / 2) + (shaman_souls * 2));
+    var nature := AP_GetSkill(who, NATURE);
+    var hp_threshold := CInt((nature / 2) + (shaman_souls * 2));
     
     // Get all mobiles nearby except pets and party
     var mobiles := listAllMobilesNearbyButPetsAndParty(who, 8, who);

@@ -22,7 +22,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var duration := 120 * Cint((AP_GetSkill(who, THEOLOGY) / 20));
+	var duration := 120 * Cint((AP_GetSkill(who, NATURE) / 20));
 
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
 		duration := Cint(duration * 1.2);

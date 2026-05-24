@@ -51,10 +51,10 @@ program textcmd_acalmar(params)
 
 	PrintTextAbove(who, "*Tenta acalmar " + creature.name + "*");
 	Sleep(1);
-	if (SkillCheck(who, THEOLOGY, tameDifficulty, tameDifficulty - 15) > 0)
+	if (SkillCheck(who, NATURE, tameDifficulty, tameDifficulty - 15) > 0)
 		var eventStruct := struct{ type := EVID_PEACEMADE, source := who };
 		sendEvent(creature, eventStruct);
-		SetCooldown(creature, "peacemade", cint(AP_GetSkill(who, THEOLOGY)));
+		SetCooldown(creature, "peacemade", cint(AP_GetSkill(who, NATURE)));
 		PrintTextPrivate(creature, "A criatura foi acalmada.", who);
 		return 1;
 	else

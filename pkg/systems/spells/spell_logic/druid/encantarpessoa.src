@@ -46,7 +46,7 @@ program SpellScript(params)
 		return;
 	endif
 
-	var duration := cint(AP_GetSkill(who, THEOLOGY) / 5);
+	var duration := cint(AP_GetSkill(who, NATURE) / 5);
 	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
 		duration := Cint(duration * 1.5);
 	endif

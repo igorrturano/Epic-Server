@@ -50,8 +50,8 @@ program SpellScript(params)
 		endif
 	endif
 
-	// Rule: 70 Theology => 17 instant + 17 over 4 ticks.
-	var base_heal := cint(AP_GetSkill(who, THEOLOGY) / 3);
+	// Rule: 70 Nature => 17 instant + 17 over 4 ticks.
+	var base_heal := cint(AP_GetSkill(who, NATURE) / 3);
 	if (base_heal < 1)
 		base_heal := 1;
 	endif
