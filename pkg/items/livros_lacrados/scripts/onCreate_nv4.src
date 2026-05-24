@@ -1,0 +1,12 @@
+// onCreate_nv4.src
+// Executado quando o LivroLacrado nivel 4 (drop de NPC tier 4) e criado.
+
+use uo;
+use os;
+use util;
+
+include ":livros_lacrados:include/livrosLacrados";
+
+program OnCreateLivroLacradoNv4(book, param)
+    return ExecutarOnCreate(book, 4);
+endprogram

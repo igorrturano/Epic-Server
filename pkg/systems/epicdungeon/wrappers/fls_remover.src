@@ -1,0 +1,29 @@
+use uo;
+use os;
+
+program fls_remover(params)
+    var dm  := params[1];
+    var pos := params[2];
+
+    var tipos := array{ 0xeefec, 0xeefed, 0xFE77, 0xeefee, 0xeefef, 0xeefefe };
+    var encontrados := 0;
+
+    var items := ListItemsNearLocation(pos.x, pos.y, pos.z, 3, pos.realm);
+    foreach item in items
+        foreach tipo in tipos
+            if (item.objtype == tipo)
+                DestroyItem(item);
+                encontrados += 1;
+                break;
+            endif
+        endforeach
+        sleepms(5);
+    endforeach
+
+    if (encontrados == 0)
+        SendSysMessage(dm, "[EpicDungeon] Nenhum item de ambience encontrado no raio 3.");
+    else
+        SendSysMessage(dm, "[EpicDungeon] " + encontrados + " area(s) de ambience removida(s).");
+    endif
+    return 1;
+endprogram
