@@ -5,12 +5,15 @@ include ":attributes:attributes";
 include "include/client";
 include "include/say";
 include "include/sounds";
+include "include/epicMageryUtils";
 
 const RUNE_RECHARGE_MANA_COST := 25;
 
 /*
- * Refills `runecharges` on rune-bearing equipment to the caster's THEOLOGY.
- * Reads `priestrune` to identify rune items.
+ * Refills `runecharges` on rune-bearing equipment to the caster's divine
+ * primary skill (HandleSpellSkill resolves: Druida/Shaman = Nature,
+ * Cleric/Paladino/Caçador de Demônios = Theology). Reads `priestrune` to
+ * identify rune items.
  *
  * targ may be a player (recharges all equipped runed items, paying mana per
  * item up to the caster's available pool) or a single item.
@@ -23,8 +26,7 @@ function RechargeRunesOnTarget(who, targ)
 		return 0;
 	endif
 
-	var theology := CInt(AP_GetSkill(who, THEOLOGY));
-	var maxCharges := theology;
+	var maxCharges := CInt(HandleSpellSkill(who));
 
 	if (targ.acctname)
 		var equippedItems := ListEquippedItems(targ);
