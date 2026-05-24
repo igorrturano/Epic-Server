@@ -1,0 +1,31 @@
+use uo;
+use os;
+
+program telepad_w(params)
+    var dm    := params[1];
+    var pos   := params[2];
+    var pv    := params[3];
+    var destx := CInt(pv[1]);
+    var desty := CInt(pv[2]);
+    var destz := CInt(pv[3]);
+
+    var tile := CreateItemAtLocation(pos.x, pos.y, pos.z, "telepad", 1, pos.realm);
+    if (!tile || tile == error)
+        SendSysMessage(dm, "[EpicDungeon] Falha ao criar telepad.");
+        return 0;
+    endif
+    tile.movable := 0;
+
+    if (destx > 0 && desty > 0)
+        if (!destz)
+            destz := GetWorldHeight(destx, desty);
+        endif
+        var dest := struct{ realm := pos.realm, x := destx, y := desty, z := destz };
+        SetObjProperty(tile, "Destination", dest);
+        PlayStationaryEffect(pos.x, pos.y, pos.z, 3546, 200, 0, 0, pos.realm);
+        SendSysMessage(dm, "[EpicDungeon] Telepad criado → (" + destx + "," + desty + "," + destz + ").");
+    else
+        SendSysMessage(dm, "[EpicDungeon] Telepad criado sem destino (configure via .setprop Destination).");
+    endif
+    return 1;
+endprogram
