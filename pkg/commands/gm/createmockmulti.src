@@ -220,17 +220,37 @@ function DestruirGhosts(serials)
 endfunction
 
 function CriarReal(tiles, bx, by, bz, realm, nome, who)
-    var criados := 0;
+    var groupId := polcore().systime;
+    var serials := array{};
+    var criados  := 0;
     foreach t in tiles
         var item := CreateItemAtLocation(bx + t.dx, by + t.dy, bz + t.dz, t.graphic, 1, realm);
         if (item && !item.errortext)
             item.movable := 0;
             SetObjProperty(item, PROPNAME_INDESTRUTIVEL, 1);
+            SetObjProperty(item, PROPNAME_MOCKMULTI_GROUP, groupId);
+            SetObjProperty(item, PROPNAME_MOCKMULTI_Z, bz + t.dz);
+            serials.append(item.serial);
             criados += 1;
         endif
         SleepMS(2);
     endforeach
-    SendSysMessage(who, "'" + nome + "' criado: " + criados + " item(s) em " + bx + "," + by + "," + bz + ".");
+
+    // Registra no grupo global para mockmultimove
+    var grupos := GetGlobalProperty("mockmultiGroups");
+    if (!grupos) grupos := array{}; endif
+    if (!(groupId in grupos)) grupos.append(groupId); endif
+    SetGlobalProperty("mockmultiGroups", grupos);
+    SetGlobalProperty("mmGroup_" + groupId, struct{
+        nome    := nome,
+        serials := serials,
+        realm   := realm,
+        ax      := bx,
+        ay      := by,
+        az      := bz
+    });
+
+    SendSysMessage(who, "'" + nome + "' criado: " + criados + " item(s) | grupo #" + groupId);
 endfunction
 
 // ─── GUMPs ───────────────────────────────────────────────────────────────────
