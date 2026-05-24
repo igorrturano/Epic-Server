@@ -3,10 +3,19 @@ use os;
 use cfgfile;
 
 include ":attributes:attributes";
-include ":tn:equipment";
 include ":wrappers:Objects/Model/MobileWrapper";
 
 program unequipweapon(who, item)
+	// STRICT-FIRST: cursed block. Must short-circuit BEFORE any modifier
+	// rollback path so a failed-unequip can never half-clean the mobile.
+	var mods := GetObjProperty(item, "equip");
+	if (mods && "cursed" in (mods.keys()))
+		if (who.dead)
+			Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
+		endif
+		return 0;
+	endif
+
 	var descmod_item := GetObjProperty(item, "descmod");
 	var descmod := array;
 	var aux := array;
@@ -35,22 +44,11 @@ program unequipweapon(who, item)
 		return 1;
 	endif
 
-	var mods := GetObjProperty(item, "equip");
-
-	if ("cursed" in (mods.keys()))
-		if (who.dead)
-			Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
-		endif
-		return 0;
-	endif
-
 	if (item.isA(POLCLASS_WEAPON))
 		EraseObjProperty(who, "twohanded");
 	endif
 
 	// Carry-weight bonus recomputed from scratch (single source of truth).
-	// item.serial is excluded because this hook may run while the leaving
-	// item is still on its layer — keeps the result correct either way.
 	if (item.objtype == 0xFFC2 || item.objtype == 0xEDA0)
 		MobileWrapper(who).RecalcCarryWeightMod(item.serial);
 	endif
@@ -62,7 +60,7 @@ program unequipweapon(who, item)
 		EraseObjProperty(item, "#steam_dex_penalty");
 	endif
 
-	// Reverte penalidade de esquiva de armadura não-leve aplicada no equip
+	// Reverte penalidade de esquiva de armadura nao-leve aplicada no equip
 	var evasion_penalty := CInt(GetObjProperty(item, "#armor_evasion_penalty"));
 	if (evasion_penalty > 0)
 		who.evasionchance_mod := who.evasionchance_mod + evasion_penalty;
@@ -86,6 +84,8 @@ program unequipweapon(who, item)
 	endif
 
 	Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
-	RemoveEquipObjMods(who, item);
+	// Modifier rollback is owned by scripts/misc/unequiptest.src (POL's
+	// global UnequipTest hook). It already fired before this script (POL
+	// runs UnequipTest first, then UnEquipScript). Stamps removed there.
 
 endprogram
