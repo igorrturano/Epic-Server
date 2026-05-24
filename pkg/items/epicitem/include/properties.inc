@@ -58,11 +58,12 @@ function ApplyEpicProperties(item, state)
 	SetObjProperty(item, "equip", equip);
 
 	// Magic flag — start unidentified for ALL enchanted categories.
-	//   magic == 1 → unidentified (mods skipped on equip)
+	//   magic == 1 → unidentified (mods skipped on equip, no stamp written)
 	//   magic == 2 → identified (Arcana for "magic", Theology for sacred/cursed)
-	// Cursed items still apply mods on equip even while unidentified — the
-	// gate in :tn:include/equipment.inc explicitly lets them through. See
-	// docs/loot-pipeline.md for the full state machine.
+	// Identification scripts re-apply mods immediately if the item is worn.
+	// Mod application owned by EquipModStamper
+	// (pkg/systems/equipsys/include/Model/EquipModStamper.inc),
+	// invoked from POL's global EquipTest/UnequipTest hooks.
 	if (state.category == "magic" || state.category == "sacred" || state.category == "cursed")
 		SetObjProperty(item, "magic", 1);
 	else
