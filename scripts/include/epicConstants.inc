@@ -1,5 +1,7 @@
 use uo;
 
+include ":attributes:attributeConstants";
+
 const PROFISSAO_CONFIG_PATH := ":crafting:config/craftConfig";
 const RECURSOS_CONFIG_PATH := ":crafting:config/resourceList";
 const VICIO_MAX_POINTS := 100;
@@ -72,6 +74,19 @@ enum CAMINHOS
     LADINO := "Ladino",
     SABIO := "Sabio"
 endenum
+
+// Path-rework hide rules: each archetype loses exactly one Military skill
+// so all three end up with 13 visible out of 14 raw. Guerreiro and Ladino
+// hide Magery (they have no spellcasting identity); Sabio hides Tactics
+// (gish subclasses scale melee on patron skill instead — see spec 05).
+function HiddenSkillForArchetype(classe)
+    if (classe == GUERREIRO || classe == LADINO)
+        return MAGERY;
+    elseif (classe == SABIO)
+        return TACTICS;
+    endif
+    return "";
+endfunction
 
 enum PATH
     MILITAR := "Militar",
