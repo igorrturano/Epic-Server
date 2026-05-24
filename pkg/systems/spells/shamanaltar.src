@@ -31,7 +31,7 @@ program orderSpells(who, item)
 		SendSysMessageEx(who, "O altar parece te observar de volta", SSM_INFO);
 		return;
 	endif
-	var mlore := cint(AP_GetSkill(who, THEOLOGY));
+	var mlore := cint(AP_GetSkill(who, NATURE));
 	var cfg := ReadConfigFile(":spells:config/shaman");
 	var cleric_slots := Cint(mlore / 5);
 

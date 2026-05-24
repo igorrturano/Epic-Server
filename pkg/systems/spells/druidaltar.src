@@ -22,7 +22,7 @@ program orderSpells(who, item)
 		return;
 	endif
 
-	var mlore := cint(AP_GetSkill(who, THEOLOGY));
+	var mlore := cint(AP_GetSkill(who, NATURE));
 	var cfg := ReadConfigFile(":spells:config/druid");
 	var cleric_slots := Cint(mlore / 5);
 
