@@ -4,38 +4,10 @@ use os;
 include ":attributes:attributes";
 include ":attributes:vitals";
 
-// =============================================================================
-// EquipModStamper
-//
-// Single source of truth for applying and removing the modifiers stored in
-// an item's `equip` ObjProperty dict (the historical home of stat / vital /
-// resist / skill mods for magic & crafted gear).
-//
-// Pattern mirrors ManaModFabricacao: per-item delta is stamped on the
-// mobile keyed by item serial, so RemoveFrom subtracts EXACTLY what
-// ApplyOn added, regardless of:
-//   - the dict mutating while equipped
-//   - the identification flag flipping mid-wear
-//   - re-apply on the same item (idempotent, no double-stamp)
-//   - the item being destroyed while equipped (caller passes the stamp,
-//     not the dict)
-//
-// Identification gate:
-//   `magic == 1`  → unidentified, ApplyOn is a no-op; nothing is stamped,
-//                   so RemoveFrom is also a no-op. Symmetric.
-//   `magic == 2`  → identified, mods apply, stamp is written.
-//   no `magic` property → crafted gear, mods apply unconditionally.
-//
-// The stamp lives at `#equipMods_<serial>` on the mobile and holds a
-// struct with the exact deltas, e.g.:
-//   { strmod := 0, dexmod := 0, intmod := 0,
-//     hitsmod := 5, manamod := 0, stammod := 0,
-//     resists := struct{ ColdResistMod := 10, ... },
-//     setprop := struct{ name := "...", value := ... },
-//     skillmods := dictionary{ "MAGERY" := 5, ... } }
-//
-// `sacred` and `cursed` are category FLAGS, not mods — never stamped.
-// =============================================================================
+// Applies/removes the `equip` ObjProperty modifier dict on a mobile.
+// Stamps the applied delta on `#equipMods_<serial>` so RemoveFrom can
+// subtract exactly what ApplyOn added, decoupled from later mutations
+// to the source dict or `magic` flag.
 
 const EQUIPMOD_STAMP_PREFIX := "#equipMods_";
 
@@ -50,10 +22,8 @@ class EquipModStamper()
         return EQUIPMOD_STAMP_PREFIX + CStr(this._item.serial);
     endfunction
 
-    // Returns 1 if the item is in a state where mods should be applied.
-    // No magic property → always apply (crafted gear).
-    // magic == 2       → apply (identified).
-    // magic == 1       → skip (unidentified).
+    // magic == 1 → unidentified, skip (Arcana/Theology flip to 2).
+    // No magic property → crafted gear, always apply.
     function _ShouldApply(this)
         var magic_state := GetObjProperty(this._item, "magic");
         if (magic_state == error)
@@ -62,8 +32,6 @@ class EquipModStamper()
         return (CInt(magic_state) == 2);
     endfunction
 
-    // Reads the item's equip dict, returns a struct of what WOULD be applied.
-    // Used by ApplyOn to build the stamp and by tests to inspect intent.
     function _ComputeDelta(this)
         var mods := GetObjProperty(this._item, "equip");
         var delta := struct{
@@ -113,7 +81,6 @@ class EquipModStamper()
                     delta.setprop.+value := GetObjProperty(this._item, "propvalue");
                 "sacred":
                 "cursed":
-                    // category flags, never become mods
                 default:
                     delta.skillmods[key] := CInt(mods[key]);
             endcase
@@ -122,9 +89,6 @@ class EquipModStamper()
         return delta;
     endfunction
 
-    // Apply the item's mods to `mobile` and stamp the exact delta.
-    // Idempotent: a second call while the stamp exists is a no-op.
-    // Returns 1 on apply (or no-op skip), 0 only on serial-missing failure.
     function ApplyOn(this, mobile)
         if (!this._item || !this._item.serial)
             return 0;
@@ -196,10 +160,6 @@ class EquipModStamper()
         return 1;
     endfunction
 
-    // Roll back the exact delta that ApplyOn stamped and erase the stamp.
-    // No stamp → no-op (item was either never applied or already removed).
-    // The hitsmod underflow guard (erase the prop if total ≤ 0) is preserved
-    // from the legacy RemoveEquipObjMods so on-character hits don't drift.
     function RemoveFrom(this, mobile)
         if (!this._item || !this._item.serial)
             return 0;

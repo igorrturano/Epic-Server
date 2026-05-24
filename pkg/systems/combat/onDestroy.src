@@ -15,9 +15,7 @@ program OnDestroy(item)
 		return 1;
 	endif
 
-	// Item is being destroyed while still on a mobile's layer.
-	// UnequipTest will not fire for a destroyed item, so we roll back
-	// the stamp explicitly here. RemoveFrom is no-op if no stamp exists.
+	// Destroy bypasses UnequipTest, so we must roll back the stamp here.
 	EquipModStamper(item).RemoveFrom(mobile);
 
 	if (coverFace(item))

@@ -64,16 +64,10 @@ program skill_theology(who)
 			SetObjProperty(item, "theologywho", whos);
 		endif
 
-		// Flip the global "identified" flag so the equip path applies bonuses.
-		// Mirrors what Arcana's ActivateMagicItem does for plain magic items.
-		// Only flip if the item is actually sacred/cursed — plain magic items
-		// must still be routed through Arcana.
+		// Sacred/cursed identified via Theology; plain magic still routes through Arcana.
 		var equip_data := GetObjProperty(item, "equip");
 		if (equip_data && (equip_data.sacred || equip_data.cursed))
 			SetObjProperty(item, "magic", 2);
-			// Apply mods immediately if currently worn — especially critical
-			// for cursed items, which can't be unequipped to re-trigger
-			// the equip path. Stamp is idempotent.
 			var equipped_on := CInt(GetObjProperty(item, "#EquippedOn"));
 			if (equipped_on)
 				var wearer := SystemFindObjectBySerial(equipped_on);
@@ -81,7 +75,6 @@ program skill_theology(who)
 					EquipModStamper(item).ApplyOn(wearer);
 				endif
 			endif
-			// Refresh client tooltip so the identified state is visible.
 			IncRevision(item);
 		endif
 	else

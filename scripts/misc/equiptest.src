@@ -52,10 +52,6 @@ program EquipTest(mobile, item, start_up)
         if (coverFace(item) && !mobile.npctemplate)
             ApplyIncognito(mobile);
         endif
-        // Single source of truth for equip-dict modifier application.
-        // Idempotent: re-firing is a no-op while the stamp exists.
-        // Fires for EVERY equippable item (jewelry / clothing / armor /
-        // weapon), so magic rings finally work.
         EquipModStamper(item).ApplyOn(mobile);
     else
         SendSysMessage(mobile, "Unable to equip ->" + item.desc);

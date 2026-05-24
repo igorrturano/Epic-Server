@@ -44,9 +44,6 @@ program skill_armslore(who)
 				endif
 				if (equip_check)
 					ActivateMagicItem(item);
-					// If the item is currently worn, apply its mods now so the
-					// player feels the bonus without unequip+re-equip cycle.
-					// Stamp is idempotent; no-op if somehow already stamped.
 					var equipped_on := CInt(GetObjProperty(item, "#EquippedOn"));
 					if (equipped_on)
 						var wearer := SystemFindObjectBySerial(equipped_on);
@@ -54,7 +51,6 @@ program skill_armslore(who)
 							EquipModStamper(item).ApplyOn(wearer);
 						endif
 					endif
-					// Refresh client tooltip so the identified state is visible.
 					IncRevision(item);
 				endif
 				SendSysMessageEx(who, "Voce identificou encantamentos nesse item.", SSM_INFO);
