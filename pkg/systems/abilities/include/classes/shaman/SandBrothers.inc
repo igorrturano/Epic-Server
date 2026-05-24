@@ -13,7 +13,7 @@ include "include/epicCombatUtils";
  * ON_USE: 4s cast animation, then:
  *   - Allies (party + pets) within 8 tiles get guaranteed next critical hit
  *   - Enemies within 8 tiles get "apodrecer" debuff (hit penalty) for duration
- *   - Duration: (Theology/10) * shaman_souls
+ *   - Duration: (Nature/10) * shaman_souls
  *   - Consumes all souls
  */
 class SandBrothers(CombatAbility)
@@ -42,7 +42,7 @@ class SandBrothers(CombatAbility)
 		endwhile
 		who.frozen := 0;
 
-		var duration := CInt(AP_GetSkill(who, THEOLOGY) / 10) * shaman_souls;
+		var duration := CInt(AP_GetSkill(who, NATURE) / 10) * shaman_souls;
 		who.EraseProp("shaman_souls");
 
 		// Get enemies

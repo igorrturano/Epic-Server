@@ -296,7 +296,7 @@ class NaturalBond(CombatAbility)
     endfunction
 
     function _CalcDuration(this, who, mobile)
-        var duration := 60 + 540 * AP_GetSkill(who, THEOLOGY) / 100;
+        var duration := 60 + 540 * AP_GetSkill(who, NATURE) / 100;
         if (mobile.HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
             duration := duration * 2;
         endif
@@ -339,17 +339,17 @@ class NaturalBond(CombatAbility)
         var hitsmod_calc := CInt(strength / 3);
         var manamod_calc := CInt(dexterity / 5);
         var stammod_calc := CInt(intelligence / 5);
-        var dicedmg_calc := this._CalcDice(AP_GetSkill(who, THEOLOGY));
+        var dicedmg_calc := this._CalcDice(AP_GetSkill(who, NATURE));
 
-        var bonusMagicLore  := CInt(AP_GetSkill(who, THEOLOGY) / 10);
-        var bonusInstintoHP := CInt(AP_GetSkill(who, THEOLOGY) / 3);
+        var bonusMagicLore  := CInt(AP_GetSkill(who, NATURE) / 10);
+        var bonusInstintoHP := CInt(AP_GetSkill(who, NATURE) / 3);
 
         if (mobile.HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
             skill_a_calc   := CInt(skill_a_calc + bonusMagicLore);
             hitsmod_calc   := CInt(hitsmod_calc + bonusInstintoHP);
-            // Bonus de resist da Instinto de Sobrevivencia: theology/6 (max ~16% no
-            // GM). Escala 5x sobre legacy theology/30. Soma em fisicos.
-            resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, THEOLOGY) / 6);
+            // Bonus de resist da Instinto de Sobrevivencia: nature/6 (max ~16% no
+            // GM). Escala 5x sobre legacy nature/30. Soma em fisicos.
+            resistmod_calc := resistmod_calc + CInt(AP_GetSkill(who, NATURE) / 6);
         endif
 
         var hitscript := this._GetTaxonomyScript(taxonomy);
@@ -439,8 +439,8 @@ class NaturalBond(CombatAbility)
         SC_RecomputeSpellResist(who);
     endfunction
 
-    function _CalcDice(this, theology)
-        var tier := CInt(CInt(theology) / 20);
+    function _CalcDice(this, nature)
+        var tier := CInt(CInt(nature) / 20);
         var dice;
         case (tier)
             0: dice := "1d4";

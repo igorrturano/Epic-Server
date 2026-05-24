@@ -13,12 +13,12 @@ include "include/sounds";
  *
  * Active (ON_USE):
  * - AoE heal all non-hostile mobs in range
- * - Range = Theology/10
- * - Healing = Theology/5 + 6d8
+ * - Range = Nature/10
+ * - Healing = Nature/5 + 6d8
  *
  * Passive (via HasAbility checks in other files):
  * - Boosts polymorph stats (assumirforma.src, polymorph.src, formaprimordial.src)
- * - Uses Theology instead of Tactics for combat when polymorphed (DamageController.inc)
+ * - Uses Nature instead of Tactics for combat when polymorphed (DamageController.inc)
  */
 class SurvivalInstinct(CombatAbility)
 
@@ -30,8 +30,8 @@ class SurvivalInstinct(CombatAbility)
     function ExecuteOn(this, mobile)
         var who := mobile.GetObjRef();
 
-        var range := CInt(AP_GetSkill(who, THEOLOGY) / 10);
-        var points := CInt(AP_GetSkill(who, THEOLOGY) / 5) + RandomDiceRoll("6d8");
+        var range := CInt(AP_GetSkill(who, NATURE) / 10);
+        var points := CInt(AP_GetSkill(who, NATURE) / 5) + RandomDiceRoll("6d8");
         var hostiles := mobile.GetNearbyHostiles(range);
         var nearby := mobile.GetNearbyMobiles(range);
 

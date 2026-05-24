@@ -464,7 +464,7 @@ function CalculateSkillDamage(byRef attackInfo)
 	var skill := TACTICS;
 	// Check if druid with metamorfose + survival ability
 	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error)
-		skill := THEOLOGY;
+		skill := NATURE;
 	endif
 
 	var skillDamage := struct{
@@ -1173,7 +1173,7 @@ function CalculateCriticalChance(byRef attackInfo)
 
 	// Check if druid with metamorfose + survival ability
 	if (attackInfo.GetAttacker().GetProperty("metamorfose") != error && attackInfo.GetAttacker().HasAbility(ABILITY_ID::INSTINTO_DE_SOBREVIVENCIA))
-		skillUsedForCritical := THEOLOGY;
+		skillUsedForCritical := NATURE;
 	endif
 
 	var opponentCriticalReduction := CalculateDefenderCriticalReduction(attackInfo.GetDefender(), attackInfo.GetBodyRegion());
@@ -1660,10 +1660,6 @@ function CheckPoison(byRef attackInfo)
 			endif
 			
 			if (attackInfo.GetDefender().GetObjRef().GetProp("#poisontier"))
-				// TS_GetTimerNames retorna ARRAY de strings — precisa iterar.
-				// Bug anterior: passava o array inteiro para TS_LowerDuration,
-				// que CStr-ificava em "{ alchPoison }" e perdia todos os
-				// lookups de cfg → spam de Error::TS_GetCfgElem.
 				var active_poisons := TS_GetTimerNames(attackInfo.GetDefender().GetObjRef(), type := "P");
 				var teste := CInt(attackInfo.GetDefender().GetObjRef().GetProp("#poisontier"));
 

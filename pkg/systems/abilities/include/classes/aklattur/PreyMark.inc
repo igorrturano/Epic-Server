@@ -8,7 +8,7 @@ include ":hotbar:custombuff";
 /**
  * Marca da Presa (Prey Mark) - ABILITY_ID::MARCA_DA_PRESA (502)
  *
- * BeforeDamage: All attacks ignore armor for Survival/5 seconds (min 3).
+ * BeforeDamage: All attacks ignore armor for Nature/5 seconds (min 3).
  * Supports pre-set duration override (used by Carnage chain-activation).
  */
 class PreyMark(CombatAbility)
@@ -23,7 +23,7 @@ class PreyMark(CombatAbility)
 			return this.GetDuration();
 		endif
 
-		var duration := CInt(mobile.GetSkill(SURVIVAL) / 5);
+		var duration := CInt(mobile.GetSkill(NATURE) / 5);
 		if (duration < 3)
 			duration := 3;
 		endif

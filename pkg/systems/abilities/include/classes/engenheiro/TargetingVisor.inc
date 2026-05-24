@@ -15,7 +15,7 @@ class TargetingVisor(CombatAbility)
 	endfunction
 
 	function GetDurationFor(this, mobile)
-		var duration := CInt(mobile.GetSkill(METALWORKING) / 5);
+		var duration := CInt(mobile.GetSkill(SCIENCE) / 5);
 		if (duration < 2)
 			duration := 2;
 		endif

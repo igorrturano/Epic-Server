@@ -28,7 +28,7 @@ class GolemAssembly(CombatAbility)
 		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	endfunction
 
-	// Passive: When piloting a golem, add blunt damage based on METALWORKING
+	// Passive: When piloting a golem, add blunt damage based on SCIENCE
 	function OnPassiveBeforeDamage(this, attackInfo)
 		var attacker := attackInfo.GetAttacker();
 		var who := attacker.GetObjRef();
@@ -37,8 +37,8 @@ class GolemAssembly(CombatAbility)
 			return false;
 		endif
 
-		var metalworking := CInt(attacker.GetSkill(METALWORKING));
-		var damageBonus := CInt(metalworking / 5);
+		var science := CInt(attacker.GetSkill(SCIENCE));
+		var damageBonus := CInt(science / 5);
 
 		if (damageBonus <= 0)
 			return false;

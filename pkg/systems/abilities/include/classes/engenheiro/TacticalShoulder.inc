@@ -195,15 +195,15 @@ function _FireHandcannon(mobile, who)
 	PlaySoundEffect(who, 0x306); // explosion
 
 	// AoE damage
-	var metalworking := mobile.GetSkill(METALWORKING);
-	var base_damage := CInt(metalworking / 10);
-	var dano := RandomDiceRoll($"{base_damage}d12") + CInt((AP_GetStat(who, DEXTERITY) - 50) / 10) + CInt(metalworking / 10);
+	var science := mobile.GetSkill(SCIENCE);
+	var base_damage := CInt(science / 10);
+	var dano := RandomDiceRoll($"{base_damage}d12") + CInt((AP_GetStat(who, DEXTERITY) - 50) / 10) + CInt(science / 10);
 
 	if (mobile.HasAbility(ABILITY_ID::TARGETING_VISOR))
 		dano := CInt(dano * 1.25);
 	endif
 
-	var duration := CInt(metalworking / 10);
+	var duration := CInt(science / 10);
 	if (duration < 1)
 		duration := 1;
 	endif
@@ -294,7 +294,7 @@ function _FireHarpoon(mobile, who)
 
 	// Reflex test (Visor skips it)
 	if (!has_visor)
-		var difficulty := CInt(mobile.GetSkill(METALWORKING) / 5);
+		var difficulty := CInt(mobile.GetSkill(SCIENCE) / 5);
 		if (difficulty < 1)
 			difficulty := 1;
 		endif
@@ -378,8 +378,8 @@ function _DeployPowderTrap(mobile, who)
 		SubtractAmount(trap_item, 1);
 	endif
 
-	var metalworking := mobile.GetSkill(METALWORKING);
-	var dano := CInt(metalworking / 2);
+	var science := mobile.GetSkill(SCIENCE);
+	var dano := CInt(science / 2);
 
 	if (mobile.HasAbility(ABILITY_ID::TARGETING_VISOR))
 		dano := CInt(dano * 1.5);

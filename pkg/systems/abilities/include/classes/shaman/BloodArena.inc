@@ -13,9 +13,9 @@ include "include/client";
  * Arena de Sangue (Blood Arena) - ABILITY_ID::BLOOD_ARENA (2604)
  *
  * ON_USE: Target an enemy to:
- *   - Paralyze for Theology/10 seconds
+ *   - Paralyze for Nature/10 seconds
  *   - Apply "apodrecer" debuff (hit penalty) for shaman_souls + duration seconds
- *   - Deal Theology + (shaman_souls * 5) poison damage
+ *   - Deal Nature + (shaman_souls * 5) poison damage
  *   - Consumes all souls
  */
 class BloodArena(CombatAbility)
@@ -43,7 +43,7 @@ class BloodArena(CombatAbility)
 			return false;
 		endif
 
-		var duration := CInt(mobile.GetSkill(THEOLOGY) / 10);
+		var duration := CInt(mobile.GetSkill(NATURE) / 10);
 		var shaman_souls := CInt(who.GetProp("shaman_souls"));
 		if (!shaman_souls)
 			shaman_souls := 0;
@@ -64,7 +64,7 @@ class BloodArena(CombatAbility)
 		endif
 
 		// Poison damage
-		var dano_mlore := CInt(mobile.GetSkill(THEOLOGY) + (shaman_souls * 5));
+		var dano_mlore := CInt(mobile.GetSkill(NATURE) + (shaman_souls * 5));
 		DealDamage(defender, dano_mlore, DAMAGE_TYPE::POISON, who);
 
 		who.SetProp("shaman_souls", 0);

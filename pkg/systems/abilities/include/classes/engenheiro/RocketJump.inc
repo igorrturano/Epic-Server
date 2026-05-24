@@ -81,11 +81,11 @@ class RocketJump(CombatAbility)
 			PlayStationaryEffect(who.x + 2, who.y + 2, who.z, 0x6C9B, 0, 10, 0, who.realm);
 			PlaySoundEffect(who, 0x221);
 
-			var duration := CInt(mobile.GetSkill(METALWORKING) / 10);
+			var duration := CInt(mobile.GetSkill(SCIENCE) / 10);
 			if (duration < 1)
 				duration := 1;
 			endif
-			var dano := CInt(mobile.GetSkill(METALWORKING) / 2);
+			var dano := CInt(mobile.GetSkill(SCIENCE) / 2);
 
 			sleepms(500);
 

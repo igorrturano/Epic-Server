@@ -7,7 +7,7 @@ include ":attributes:attributes";
 /**
  * Golpe Sangrento (Bloody Strike) - ABILITY_ID::GOLPE_SANGRENTO (1401)
  *
- * Active (SingleUse AFTER_DAMAGE): Next hit causes bleed for ALCHEMY/10 seconds.
+ * Active (SingleUse AFTER_DAMAGE): Next hit causes bleed for SCIENCE/10 seconds.
  * Follows CrabStyle bleed pattern.
  */
 class BloodyStrike(CombatAbility)
@@ -19,7 +19,7 @@ class BloodyStrike(CombatAbility)
 	endfunction
 
 	function GetDurationFor(this, mobile)
-		var duration := CInt(mobile.GetSkill(ALCHEMY) / 10);
+		var duration := CInt(mobile.GetSkill(SCIENCE) / 10);
 		if (duration < 2)
 			duration := 2;
 		endif
@@ -34,7 +34,7 @@ class BloodyStrike(CombatAbility)
 		var attacker := attackInfo.GetAttacker();
 		var defender := attackInfo.GetDefender();
 
-		var bleedDuration := CInt(attacker.GetSkill(ALCHEMY) / 10);
+		var bleedDuration := CInt(attacker.GetSkill(SCIENCE) / 10);
 		if (bleedDuration < 3)
 			bleedDuration := 3;
 		endif

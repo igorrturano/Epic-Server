@@ -5,7 +5,7 @@ include ":debug:Controller/DebugController";
 /**
  * Caçador Implacável (Relentless Hunter) - ABILITY_ID::CACADOR_IMPLACAVEL (104)
  *
- * Active (BeforeDamage): Ignores all armor on attacks for Survival/5 seconds.
+ * Active (BeforeDamage): Ignores all armor on attacks for Nature/5 seconds.
  * Passive effects (handled inline elsewhere):
  *   - intrinsicMods.src: +2 Fortitude bonus
  *   - attributes.inc: +25 base HP
@@ -19,7 +19,7 @@ class RelentlessHunter(CombatAbility)
 	endfunction
 
 	function GetDurationFor(this, mobile)
-		var duration := CInt(mobile.GetSkill(SURVIVAL) / 5);
+		var duration := CInt(mobile.GetSkill(NATURE) / 5);
 		if (duration < 1)
 			duration := 1;
 		endif
