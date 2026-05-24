@@ -34,7 +34,13 @@ program skill_armslore(who)
 			whos.append(who.serial);
 			SetObjProperty(item, "magicwho", whos);
 			if (GetObjProperty(item, "magic"))
-				if (GetObjProperty(item, "equip"))
+				var equip_check := GetObjProperty(item, "equip");
+				// Sacred/cursed items belong to Theology — Arcana won't identify them.
+				if (equip_check && (equip_check.sacred || equip_check.cursed))
+					SendSysMessageEx(who, "Este item possui uma aura divina — use Teologia para identifica-lo.", SSM_INFO);
+					return;
+				endif
+				if (equip_check)
 					ActivateMagicItem(item);
 				endif
 				SendSysMessageEx(who, "Voce identificou encantamentos nesse item.", SSM_INFO);

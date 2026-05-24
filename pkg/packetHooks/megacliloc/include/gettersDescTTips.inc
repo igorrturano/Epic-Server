@@ -394,9 +394,19 @@ function PegaDescResistArmadura(objeto,cfg,armadura, xDesc := "")
 endfunction
 
 function PegaDescMagicLore(objeto, who , xDesc := "")
-	var pplmage := PegaPropObjItemOrTemplate(objeto, "magicwho"); //magic lore
-		if ( pplmage != error)
-			if (who.serial in pplmage)
+	var pplmage  := PegaPropObjItemOrTemplate(objeto, "magicwho"); //magic lore (Arcana)
+	var ppltheol := PegaPropObjItemOrTemplate(objeto, "theologywho"); //Theology
+
+	// Mods/bonuses are revealed if EITHER Arcana or Theology has identified
+	// the item for this specific viewer. Arcana works on plain "magic" items,
+	// Theology on sacred/cursed — but the tooltip is permissive: either
+	// flag reveals all mods to the player who learned anything.
+	var identified_by_viewer :=
+		(pplmage  != error && who.serial in pplmage) ||
+		(ppltheol != error && who.serial in ppltheol);
+
+		if (pplmage != error || ppltheol != error)
+			if (identified_by_viewer)
 				var pocaoname := PegaPropObjItemOrTemplate(objeto, "pocaoname");
 				if (pocaoname != error && pocaoname)
 					xDesc := xDesc + WHITE + pocaoname + "<br>";

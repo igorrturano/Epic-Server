@@ -57,8 +57,13 @@ function ApplyEpicProperties(item, state)
 
 	SetObjProperty(item, "equip", equip);
 
-	// Magic flag (only for magic category)
-	if (state.category == "magic")
+	// Magic flag — start unidentified for ALL enchanted categories.
+	//   magic == 1 → unidentified (mods skipped on equip)
+	//   magic == 2 → identified (Arcana for "magic", Theology for sacred/cursed)
+	// Cursed items still apply mods on equip even while unidentified — the
+	// gate in :tn:include/equipment.inc explicitly lets them through. See
+	// docs/loot-pipeline.md for the full state machine.
+	if (state.category == "magic" || state.category == "sacred" || state.category == "cursed")
 		SetObjProperty(item, "magic", 1);
 	else
 		EraseObjProperty(item, "magic");
