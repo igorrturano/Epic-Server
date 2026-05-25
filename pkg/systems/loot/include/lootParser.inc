@@ -301,7 +301,7 @@ function Loot_CreateItem(container, line, source := 0)
         var i;
         for(i := 1; i <= parsed.amount; i := i + 1)
             var combatDesc := ReadConfigFile(":combat:itemdesc");
-                        CreateItemProcess(container, parsed, 1);
+                        CreateItemProcess(container, parsed, 1, source);
 
             sleepms(2);
         endfor
@@ -311,9 +311,17 @@ function Loot_CreateItem(container, line, source := 0)
     return 1;
 endfunction
 
-function CreateItemProcess(container, parsed, qtd)
+// Chest / treasure-map loot uses iron (0x6309, FerroTemperadoIngot) as the
+// material pool so generated gear is mechanically baseline — crafters
+// stay relevant. NPC loot keeps the legacy goldenIngot (0x630e) pool.
+// This is detected by source==0 (no source NPC = chest/map path).
+// Note: changing the actual `fabricado` prop's material is what counts —
+// combat reads bonuses via PegaValorFabricacao(item, carac) which dives
+// into fabricado.componentes, NOT a flat "material" ObjProperty.
+function CreateItemProcess(container, parsed, qtd, source := 0)
     var objtype := GetObjtypeByName(parsed.name);
     var item;
+    var material_pool := source ? array{0x630e} : array{0x6309};
 
     if( parsed.level && parsed.level != 1)
         item :=  GeraItemComplexo(
@@ -322,7 +330,7 @@ function CreateItemProcess(container, parsed, qtd)
                                     qtd,
                                     parsed.level,
                                     1,
-                                    array {0x630e},
+                                    material_pool,
                                     FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR,
                                     false,
                                     1,//TODO alterar quando as classes estiverem implementadas nos loots
@@ -338,12 +346,12 @@ function CreateItemProcess(container, parsed, qtd)
                                     qtd,
                                     1,
                                     1,
-                                    array {0x630e},
+                                    material_pool,
                                     FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
                                 );
         //Gera como produto montado
     endif
-    
+
     if(!item)
         item := CreateItemInContainer(container, parsed.name);
         Loot_InitBottle(item);
@@ -362,7 +370,7 @@ function Loot_CreateStack(container, line, source := 0)
 			return 1;
 		endif
 
-		var item := CreateItemProcess(container, parsed, parsed.amount);
+		var item := CreateItemProcess(container, parsed, parsed.amount, source);
 		if ( item.errortext )
 			return error{"errortext" := "Error - Could not create ["+parsed.name+"] ->"+item.errortext};
 		endif
