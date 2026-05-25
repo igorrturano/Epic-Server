@@ -1,6 +1,7 @@
 use uo;
 use polsys;
 use basic;
+use os;
 
 include ":ultimalive:include/packets";
 
@@ -13,35 +14,10 @@ program logon(who)
         Print("UL logon error [" + who.name + "]: " + result.errortext);
         return 1;
     endif
-    _UL_SendLogonStatics(who);
+    UL_SendPlayerBlockWindow(who);
+    var monitor := Start_Script(":ultimalive:ul_block_monitor", who);
+    if (!monitor)
+        Print("UL: failed to start ul_block_monitor for " + who.name);
+    endif
     return 1;
 endprogram
-
-function _UL_SendLogonStatics(who)
-    var realm_info := Realms()[CStr(who.realm)];
-    if (!realm_info)
-        return;
-    endif
-    var max_bx := CInt(realm_info.width)  / 8 - 1;
-    var max_by := CInt(realm_info.height) / 8 - 1;
-    var cx     := CInt(who.x) / 8;
-    var cy     := CInt(who.y) / 8;
-    var dx     := -2;
-    while (dx <= 2)
-        var dy := -2;
-        while (dy <= 2)
-            var bx := cx + dx;
-            var by := cy + dy;
-            if (bx >= 0 && bx <= max_bx && by >= 0 && by <= max_by)
-                if (UL_IsBlockMutated(who.realm, bx, by))
-                    var r := UL_SendStaticsUpdate(who, who.realm, bx, by);
-                    if (r == error)
-                        Print("UL logon statics error [" + who.name + "] block(" + bx + "," + by + "): " + r.errortext);
-                    endif
-                endif
-            endif
-            dy += 1;
-        endwhile
-        dx += 1;
-    endwhile
-endfunction

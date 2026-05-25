@@ -1,0 +1,20 @@
+use uo;
+use os;
+use basic;
+
+include ":ultimalive:include/packets";
+
+program ul_block_monitor(who)
+    var last_bx := CInt(who.x) / 8;
+    var last_by := CInt(who.y) / 8;
+    while (who.connected)
+        sleep(1);
+        var bx := CInt(who.x) / 8;
+        var by := CInt(who.y) / 8;
+        if (bx != last_bx || by != last_by)
+            last_bx := bx;
+            last_by := by;
+            UL_SendPlayerBlockWindow(who);
+        endif
+    endwhile
+endprogram

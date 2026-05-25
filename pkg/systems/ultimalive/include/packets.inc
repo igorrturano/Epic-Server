@@ -322,6 +322,35 @@ function UL_SendStaticsUpdate(who, realm, blockX, blockY)
     return 1;
 endfunction
 
+function UL_SendPlayerBlockWindow(who)
+    var realm_info := Realms()[CStr(who.realm)];
+    if (!realm_info)
+        return;
+    endif
+    var max_bx := CInt(realm_info.width)  / 8 - 1;
+    var max_by := CInt(realm_info.height) / 8 - 1;
+    var cx     := CInt(who.x) / 8;
+    var cy     := CInt(who.y) / 8;
+    var dx     := -2;
+    while (dx <= 2)
+        var dy := -2;
+        while (dy <= 2)
+            var bx := cx + dx;
+            var by := cy + dy;
+            if (bx >= 0 && bx <= max_bx && by >= 0 && by <= max_by)
+                if (UL_IsBlockMutated(who.realm, bx, by))
+                    var r := UL_SendStaticsUpdate(who, who.realm, bx, by);
+                    if (r == error)
+                        Print("UL block window error [" + who.name + "] block(" + bx + "," + by + "): " + r.errortext);
+                    endif
+                endif
+            endif
+            dy += 1;
+        endwhile
+        dx += 1;
+    endwhile
+endfunction
+
 function UL_BuildHashResponsePacket(realm, centerBlockX, centerBlockY)
     return error{"errortext" := "STUB - sub-fase 1.E"};
 endfunction
