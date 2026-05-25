@@ -19,6 +19,16 @@ var itemdesc_cache := dictionary{};
 
 const LORE_DROPPED_DATAFILE := ":unicos:lore_dropped";
 
+// Equipment policy for loot — see CreateItemProcess.
+//   Excluded metals (Cobre / Prata / Ouro): reserved for coin objtypes,
+//     never picked as a gear material.
+//   Chest tier-2 pin: at tier=2 + MESMO_TIER the metal bucket holds
+//     only Bronze, so chest metal gear is uniformly Bronze without any
+//     enumeration. Non-metal components pick freely from their
+//     respective tier-2 pool (wood=Salgueiro, cloth=Algodão, etc.).
+const LOOT_EXCLUDED_METALS := array{ 0x6465, 0x6993, 0x630e };
+const LOOT_CHEST_METAL_TIER := 2;
+
 // Phase 2 — coin tier filter helpers.
 // cobre: any tier; prata: NPC tier >= 3; ouro: NPC tier >= 5.
 // source=0 (no NPC, e.g. chests/mining/treasure) => no filter applied.
@@ -301,7 +311,7 @@ function Loot_CreateItem(container, line, source := 0)
         var i;
         for(i := 1; i <= parsed.amount; i := i + 1)
             var combatDesc := ReadConfigFile(":combat:itemdesc");
-                        CreateItemProcess(container, parsed, 1);
+                        CreateItemProcess(container, parsed, 1, source);
 
             sleepms(2);
         endfor
@@ -311,51 +321,51 @@ function Loot_CreateItem(container, line, source := 0)
     return 1;
 endfunction
 
-// The 6th GeraItemComplexo param is `listaDeMateriaisIgnorados` — a
-// BLOCKLIST, not a pool. `array {0x630e}` excludes goldenIngot so the
-// crafting framework picks random tier-1 materials (bronze, copper,
-// etc.). Tier=1 maps to valor=0 in PegaComponenteTierDesc, so combat
-// bonuses from the material are baseline regardless of pick — crafters
-// at higher tiers stay strictly stronger.
-function CreateItemProcess(container, parsed, qtd)
+// GeraItemComplexo's material picker filters by component Type first,
+// then applies the blocklist (6th param), then buckets by the material's
+// own `tier` field from resourceList.cfg. We use this to enforce two
+// policies (see constants above):
+//   - NPC drops (source != 0): respect parsed.level, exclude coin-named
+//     metals globally.
+//   - Chest / treasure-map (source == 0): pin metal to Bronze by
+//     narrowing the picker to tier-2 + MESMO_TIER. Bronze is the only
+//     tier-2 metal so it's selected by being alone in its bucket.
+function CreateItemProcess(container, parsed, qtd, source := 0)
     var objtype := GetObjtypeByName(parsed.name);
     var item;
 
-    if( parsed.level && parsed.level != 1)
-        item :=  GeraItemComplexo(
-                                    container,
-                                    objtype,
-                                    qtd,
-                                    parsed.level,
-                                    1,
-                                    array {0x630e},
-                                    FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR,
-                                    false,
-                                    1,//TODO alterar quando as classes estiverem implementadas nos loots
-                                    ITEM_MONTADO
-                                );
-        if(item)
-            item.name := "Item Danificado";
+    if (source)
+        if (parsed.level && parsed.level != 1)
+            item := GeraItemComplexo(
+                container, objtype, qtd, parsed.level, 1,
+                LOOT_EXCLUDED_METALS,
+                FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR,
+                false, 1, ITEM_MONTADO
+            );
+            if (item)
+                item.name := "Item Danificado";
+            endif
+        else
+            item := GeraItemComplexo(
+                container, objtype, qtd, 1, 1,
+                LOOT_EXCLUDED_METALS,
+                FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
+            );
         endif
     else
-        item :=  GeraItemComplexo(
-                                    container,
-                                    objtype,
-                                    qtd,
-                                    1,
-                                    1,
-                                    array {0x630e},
-                                    FABRICACAO_MODO_MATERIAL::MESMO_TIER_OU_MENOR
-                                );
-        //Gera como produto montado
+        item := GeraItemComplexo(
+            container, objtype, qtd, LOOT_CHEST_METAL_TIER, 1,
+            LOOT_EXCLUDED_METALS,
+            FABRICACAO_MODO_MATERIAL::MESMO_TIER
+        );
     endif
 
-    if(!item)
+    if (!item)
         item := CreateItemInContainer(container, parsed.name);
         Loot_InitBottle(item);
     endif
 
-    SetObjProperty(item,PROPNAME_DISPENSAVEL_FLAG,true);
+    SetObjProperty(item, PROPNAME_DISPENSAVEL_FLAG, true);
     return item;
 endfunction
 
@@ -368,7 +378,7 @@ function Loot_CreateStack(container, line, source := 0)
 			return 1;
 		endif
 
-		var item := CreateItemProcess(container, parsed, parsed.amount);
+		var item := CreateItemProcess(container, parsed, parsed.amount, source);
 		if ( item.errortext )
 			return error{"errortext" := "Error - Could not create ["+parsed.name+"] ->"+item.errortext};
 		endif
