@@ -71,7 +71,7 @@ program chamadorp(who, item)
     var mensagem := "";
     var som := 0;
     var objtype := item.objtype;
-    if (objtype == 0xE900)
+    if (objtype == 0xEB98 || objtype == 0xEB99 || objtype == 0xF8DC || objtype == 0xE8FF || objtype == 0xE900)
         mensagem := "**[AVENTURA]** Um chamado soa em **" + regiao + "** | Online: **" + CStr(total_online) + "** | Aventureiros estao se aprontando para uma aventura e convocam todos interessados.";
         som := 0x68f;
     elseif (objtype == 0x1C12)
