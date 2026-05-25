@@ -1,4 +1,5 @@
 use uo;
+use cfgfile;
 
 include "include/client";
 include "include/epicPropNames";
@@ -53,6 +54,24 @@ function ChestLoot_IsJewelry(item)
 	return 0;
 endfunction
 
+// Real combat armor is distinguished from clothes/robes/aprons/hats by
+// the `TipoProtecao` field in :combat:itemdesc (e.g. "Armadura Leve",
+// "Armadura Pesada Media"). Clothing pieces are POLCLASS_ARMOR too but
+// don't set TipoProtecao — those are cosmetic and should keep whatever
+// material they came with.
+function ChestLoot_IsCombatArmor(item)
+	var cfg := ReadConfigFile(":combat:itemdesc");
+	if (!cfg || cfg.errortext)
+		return 0;
+	endif
+	var elem := FindConfigElem(cfg, item.objtype);
+	if (!elem || elem.errortext)
+		return 0;
+	endif
+	var tipo := GetConfigString(elem, "TipoProtecao");
+	return (tipo && tipo != "");
+endfunction
+
 function ChestLoot_PostProcess(chest)
 	if (!chest || chest == error)
 		return 0;
@@ -67,7 +86,7 @@ function ChestLoot_PostProcess(chest)
 			continue;
 		endif
 
-		if (item.IsA(POLCLASS_WEAPON) || item.IsA(POLCLASS_ARMOR))
+		if (item.IsA(POLCLASS_WEAPON) || ChestLoot_IsCombatArmor(item))
 			SetObjProperty(item, PROPNAME_MATERIAL, CHEST_IRON_OBJTYPE);
 		endif
 
