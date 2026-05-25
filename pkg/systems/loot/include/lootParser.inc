@@ -26,7 +26,7 @@ const LORE_DROPPED_DATAFILE := ":unicos:lore_dropped";
 //     only Bronze, so chest metal gear is uniformly Bronze without any
 //     enumeration. Non-metal components pick freely from their
 //     respective tier-2 pool (wood=Salgueiro, cloth=Algodão, etc.).
-const LOOT_EXCLUDED_METALS := array{ 0x6465, 0x6993, 0x630e };
+var LOOT_EXCLUDED_METALS := array{ 0x6465, 0x6993, 0x630e };
 const LOOT_CHEST_METAL_TIER := 2;
 
 // Phase 2 — coin tier filter helpers.
