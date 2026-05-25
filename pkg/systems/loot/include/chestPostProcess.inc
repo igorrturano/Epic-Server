@@ -1,25 +1,21 @@
 use uo;
-use cfgfile;
 
 include "include/client";
-include "include/epicPropNames";
 
 // ============================================================
 // ChestLoot_PostProcess(chest)
 //
-// Runs after Loot_Generate fills an epic chest. Enforces the
-// chest-loot economy rules that should not bleed into NPC drops:
+// Runs after Loot_Generate fills an epic chest. Today the only job
+// left here is jewelry stat-mod sanitation — the iron-lock on
+// mundane gear is enforced at creation time inside CreateItemProcess
+// (see lootParser.inc), which actually writes the fabricado prop
+// that combat reads. A flat "material" ObjProperty stamp wouldn't
+// move combat math.
 //
-//   1. Mundane weapons/armor are forced to baseline iron so chest
-//      drops never outshine what crafters can make.
-//   2. Jewelry never carries stat mods (strmod/dexmod/intmod);
-//      vital mods on jewelry are deliberate (Phase 2b magic loot).
-//
-// Magic-loot items (carrying epic_magic_loot) are exempt from the
-// iron force — they're meant to be magical objects, not metalwork.
+// Jewelry rule: never carries strmod / dexmod / intmod. Vital mods
+// on jewelry are deliberate (Phase 2b magic loot, applied via
+// ApplyEpicProperties).
 // ============================================================
-
-const CHEST_IRON_OBJTYPE := 0x6309;  // FerroTemperadoIngot
 
 function ChestLoot_StripJewelryStatMods(item)
 	var equip := GetObjProperty(item, "equip");
@@ -54,42 +50,12 @@ function ChestLoot_IsJewelry(item)
 	return 0;
 endfunction
 
-// Real combat armor is distinguished from clothes/robes/aprons/hats by
-// the `TipoProtecao` field in :combat:itemdesc (e.g. "Armadura Leve",
-// "Armadura Pesada Media"). Clothing pieces are POLCLASS_ARMOR too but
-// don't set TipoProtecao — those are cosmetic and should keep whatever
-// material they came with.
-function ChestLoot_IsCombatArmor(item)
-	var cfg := ReadConfigFile(":combat:itemdesc");
-	if (!cfg || cfg.errortext)
-		return 0;
-	endif
-	var elem := FindConfigElem(cfg, item.objtype);
-	if (!elem || elem.errortext)
-		return 0;
-	endif
-	var tipo := GetConfigString(elem, "TipoProtecao");
-	return (tipo && tipo != "");
-endfunction
-
 function ChestLoot_PostProcess(chest)
 	if (!chest || chest == error)
 		return 0;
 	endif
 
 	foreach item in EnumerateItemsInContainer(chest)
-		// Skip our own magic loot — it's intentionally not iron.
-		if (GetObjProperty(item, "epic_magic_loot"))
-			if (ChestLoot_IsJewelry(item))
-				ChestLoot_StripJewelryStatMods(item);
-			endif
-			continue;
-		endif
-
-		if (item.IsA(POLCLASS_WEAPON) || ChestLoot_IsCombatArmor(item))
-			SetObjProperty(item, PROPNAME_MATERIAL, CHEST_IRON_OBJTYPE);
-		endif
-
 		if (ChestLoot_IsJewelry(item))
 			ChestLoot_StripJewelryStatMods(item);
 		endif
