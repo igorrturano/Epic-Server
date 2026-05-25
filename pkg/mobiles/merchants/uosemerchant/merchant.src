@@ -34,7 +34,7 @@ const MAXIMO_VALOR_ITEM := 10000;
 var item_cfg := ReadConfigFile(":*:itemdesc");
 var npc;
 var guild, above_merchant, is_guild_member;
-var imposto := 0; // TODO: restaurar para 0.1 quando quiser reativar o imposto
+var imposto := 0.1;
 var item_types := dictionary{ "Armaduras" -> 7,
 							  "Roupas" -> 8,
 							  "Armas" -> 9,
@@ -581,6 +581,9 @@ function AddItemToSell(npc, player, item)
 	var cost_type := MOEDAS;
 
 	var total_imposto := CInt(cdbl(cost_amt * (item.amount / cost_lote)) * cdbl(imposto));
+	if (total_imposto < 1)
+		total_imposto := 1;
+	endif
 
 	if (!cost_amt || cost_amt == 0)
 		SendSysMessageEx(player, "Cancelado", SSM_FAIL);
@@ -601,10 +604,6 @@ function AddItemToSell(npc, player, item)
 				   SSM_FAIL);
 		return 0;
 	endif
-
-	// if (total_imposto < 1)
-	// 	total_imposto := 1;
-	// endif
 
 	var desc := RequestGump(player, "Entre com uma pequena descrição do produto.", "Isso é opcional",
 							 "", 1);
