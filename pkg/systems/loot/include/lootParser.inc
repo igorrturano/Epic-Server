@@ -262,6 +262,7 @@ function Loot_Generate(container, loot_index, source := 0)
      Loot_TryAddSealedBook(container);
 
      if (source && source != error)
+        Loot_TryAddLivroLacrado(container, loot_index, source);
         Loot_TryDrainPool(container, source);
      endif
 
@@ -551,6 +552,79 @@ function Loot_ParseString(line)
     result.+chance := chance;
     result.+level := level;
     return result;
+endfunction
+
+function _LivroNivelFromLootIndex(loot_index)
+	var tier5 := array{
+		"baronhuman","supremeorc","giants","greatgiants","goblinking",
+		"ophidianimperial","ophidianmage","liche","demiliche","dracolich",
+		"greaterdragons","lesserdragons","daemon","greatdemon","machinaElite",
+		"duegarlider","drowpriestess","drowmatronpriestess","titan","harddrider",
+		"ogrelord","greatercold","greaterfire","greaterenergy","greatpirate"
+	};
+	foreach name in tier5
+		if (loot_index == name) return 5; endif
+	endforeach
+
+	var tier4 := array{
+		"wealthyhuman","richhuman","mercenary","wealthmercenary","highorc","greatorc",
+		"troll","goblincaptain","etherealundead","ossadaescarlate","demon","magedemon",
+		"midfire","midenergy","midcold","centaur","blackeye","ophidian","machina",
+		"machinaMid","mage","necromante","evilmage","duegarminer","duegarBS","duegar",
+		"kuatoahunter","sahaginmed","sahaginlarge","sahaginboss","ogre","ogremage",
+		"drowrico","middrider","vicarna","beholdervampirico","ogrethuria","trasgo",
+		"satiro","sheeda","skeletonElite","oldmemmar","highmageorc","damaaracnidea"
+	};
+	foreach name in tier4
+		if (loot_index == name) return 4; endif
+	endforeach
+
+	var tier3 := array{
+		"poorhuman","human","poormercenary","loworc","orc","goblin","goblin1","goblin2",
+		"goblinwarrior","lesserundead","skeleton","skeletonmage","goblinmage","imp",
+		"lesserdemon","lesserfire","lessercold","lesserenergy","easydrider","verme",
+		"drowpobre","drow","ratman","mummy","sahaginpeq","fungo","criafuria",
+		"lizardman","fossil","kuatoa","evilspellbook","svirfneblinilusionista","pirate","mageorc"
+	};
+	foreach name in tier3
+		if (loot_index == name) return 3; endif
+	endforeach
+
+	return 0;
+endfunction
+
+function Loot_TryAddLivroLacrado(container, loot_index, source)
+	var nivel := _LivroNivelFromLootIndex(loot_index);
+	if (nivel == 0) return 0; endif
+
+	// Tier 3 = 0.1% (1/1000), Tier 4 = 0.2% (2/1000), Tier 5 = 0.5% (5/1000)
+	var limiar;
+	if (nivel == 5)
+		limiar := 5;
+	elseif (nivel == 4)
+		limiar := 2;
+	else
+		limiar := 1;
+	endif
+
+	if (RandomInt(1000) >= limiar)
+		return 0;
+	endif
+
+	var objtype;
+	if (nivel == 5)
+		objtype := 0xFFB;
+	elseif (nivel == 4)
+		objtype := 0xFF9;
+	else
+		objtype := 0xFF7;
+	endif
+
+	var book := CreateItemInContainer(container, objtype, 1);
+	if (!book || book.errortext)
+		return 0;
+	endif
+	return 1;
 endfunction
 
 function Loot_TryAddSealedBook(container)
