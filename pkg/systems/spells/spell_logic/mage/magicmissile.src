@@ -42,7 +42,7 @@ program SpellScript(params)
 		var dmg;
 		if (i == mlore)
 			// Carro-chefe: ultimo dardo rola o dado completo do circulo (com bump do Evocator).
-			dmg := epicSpellDamageRoll(who, spell_circle, spell_school);
+			dmg := epicSpellDamageRoll(who, spell_circle, 0);
 		else
 			// Dardos regulares: dano pequeno e confiavel, sem escalar.
 			dmg := RandomDiceRoll("1d4") + 1;
