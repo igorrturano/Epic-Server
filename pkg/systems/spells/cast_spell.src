@@ -633,8 +633,6 @@ function checkCastingSuccess(mobile, mw, spellinfo, scroll)
 	var attribute := MAGERY;
 	if (IsArcaneSensitive(mobile) || mw.HasAbility(ABILITY_ID::VOX_ARCANA))
 		attribute := ARCANA;
-	elseif (CanCastAsClass(mobile, "Druida") || CanCastAsClass(mobile, "Shaman"))
-		attribute := NATURE;
 	elseif (spellinfo.Type == "Divine")
 		attribute := THEOLOGY;
 	endif
