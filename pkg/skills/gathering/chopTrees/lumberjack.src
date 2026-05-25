@@ -16,6 +16,7 @@ include ":charactercreation:habilidades";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 include ":destroyable:include/destroyItem";
+include ":ultimalive:include/tree_damage";
 
 program skill_LumberJack(who, tool)
 
@@ -139,6 +140,7 @@ function ChopTree(who, tool, targ, orig_x, orig_y)
 		endif
 		wood_amount := wood_amount - amt;
 		LJ_SetWoodAmount(who.realm, targ.x, targ.y, wood_amount);
+		UL_DamageTree(who.realm, CInt(targ.x), CInt(targ.y), CInt(targ.objtype), wood_amount, who);
 		if (wood_amount < 0)
 			wood_amount := 0;
 		endif
