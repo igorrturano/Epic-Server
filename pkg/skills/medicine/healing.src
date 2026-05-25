@@ -202,6 +202,9 @@ program UseBandage(mobile, bandage)
 		elseif (bandage.amount < 5)
 			SendSysMessageEx(mobile, "Voce precisa de 5 bandagens.", SSM_FAIL);
 			return 0;
+		elseif (GetObjProperty(targ, "npctemplate") && MobileWrapper(mobile).IsMounted())
+			SendSysMessageEx(mobile, "Voce nao pode ressuscitar animais enquanto montado.", SSM_FAIL);
+			return 0;
 		endif
 
 		var restauraDP := 0;
