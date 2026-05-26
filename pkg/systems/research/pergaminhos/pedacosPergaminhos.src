@@ -220,7 +220,7 @@ function CountPedacos(who, tipo)
 	var objtype := GetObjtypePorTipo(tipo);
 	foreach item in EnumerateItemsInContainer(who.backpack)
 		if (item.objtype == objtype)
-			count += 1;
+			count += item.amount;
 		endif
 	endforeach
 	return count;
@@ -310,13 +310,18 @@ function CreatePergaminhoItem(who, tipo, nivel)
 endfunction
 
 function ConsumirPedacos(who, tipo, quantidade)
-	var consumidos := 0;
+	var restante := quantidade;
 	var objtype := GetObjtypePorTipo(tipo);
 	foreach item in EnumerateItemsInContainer(who.backpack)
 		if (item.objtype == objtype)
-			DestroyItem(item);
-			consumidos += 1;
-			if (consumidos >= quantidade)
+			if (item.amount <= restante)
+				restante -= item.amount;
+				DestroyItem(item);
+			else
+				SubtractAmount(item, restante);
+				restante := 0;
+			endif
+			if (restante <= 0)
 				break;
 			endif
 		endif
