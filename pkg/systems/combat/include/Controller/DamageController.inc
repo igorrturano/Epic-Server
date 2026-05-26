@@ -385,10 +385,7 @@ function CalculateAttackerDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetDefender().GetObjRef(), DEBUG_DAMAGE, Message($"Bônus de dano por {skillDamageInfo.skill}: {skillDamageInfo.damageMod}"));
 	CalculateWeaponDamage(attackInfo);
 	CalculateEntropyDamage(attackInfo);
-	CalculatePrimordialDamage(attackInfo);
-	CalculateArcaneBowDamage(attackInfo);
-	CalculateSpiritualBladeDamage(attackInfo);
-	CalculateElementalWeaponDamage(attackInfo);
+	CalculateSpellSourceDamage(attackInfo);
 endfunction
 
 function CalculateEstimatedMinMaxDamage(attackInfo)
@@ -400,10 +397,11 @@ function CalculateEstimatedMinMaxDamage(attackInfo)
 	var arcaneBowBonus := EstimateArcaneBowDamage(attackInfo);
 	var spiritualBladeBonus := EstimateSpiritualBladeDamage(attackInfo);
 	var elementalWeaponBonus := EstimateElementalWeaponDamage(attackInfo);
+	var enfurecidoBonus := EstimateEnfurecidoDamage(attackInfo);
 	var finalDamage := CalculateEstimatedMinMaxWeaponDamage(attackInfo);
 
 	var flatBonus := statusDamage.damageMod + skillDamage.damageMod + primordialDamage
-					+ arcaneBowBonus + spiritualBladeBonus + elementalWeaponBonus;
+					+ arcaneBowBonus + spiritualBladeBonus + elementalWeaponBonus + enfurecidoBonus;
 	
 	finalDamage.max += flatBonus;
 	finalDamage.min += flatBonus;
@@ -625,6 +623,44 @@ function CalculateEstimatedMinMaxWeaponDamage(byRef attackInfo)
 	return MinMaxWeaponDamage;
 endfunction
 
+/**
+ * Unified entry point for damage modifiers sourced from spells, buffs, or
+ * weapon-class flags rather than from the static weapon template. Each
+ * sub-calculator gates on its own activation condition (ObjProperty,
+ * weapon category, etc.); the wrapper just dispatches in order.
+ *
+ * Counterpart for the status-gump min/max preview is the matching
+ * Estimate* function for each contributor, summed as a flat bonus in
+ * CalculateEstimatedMinMaxDamage. Anyone adding a new spell-source
+ * modifier must add both halves.
+ */
+function CalculateSpellSourceDamage(byRef attackInfo)
+	CalculatePrimordialDamage(attackInfo);
+	CalculateArcaneBowDamage(attackInfo);
+	CalculateSpiritualBladeDamage(attackInfo);
+	CalculateElementalWeaponDamage(attackInfo);
+	CalculateEnfurecidoDamage(attackInfo);
+endfunction
+
+/**
+ * Estimates the flat physical bonus contributed by an active Frenesi buff
+ * (the "enfurecido" ObjProperty set via SpellController opts.properties).
+ * Mirrors CalculateEnfurecidoDamage's bonus formula for the status-gump
+ * min/max preview.
+ */
+function EstimateEnfurecidoDamage(attackInfo)
+	if (GetObjProperty(attackInfo.GetAttacker().GetObjRef(), "enfurecido") == error)
+		return 0;
+	endif
+
+	var bonus := CInt(attackInfo.GetAttacker().GetSkill(NATURE) / 20);
+	if (bonus < 0)
+		return 0;
+	endif
+
+	return bonus;
+endfunction
+
 function EstimateArcaneBowDamage(attackInfo)
 	if (attackInfo.GetWeapon().GetCategory() != WEAPON_CATEGORY::MAGICBOW)
 		return 0;
@@ -693,6 +729,33 @@ function CalculatePrimordialDamage(byRef attackInfo)
 
 	attackInfo.SetDamage(damage);
 	return rawDamage;
+endfunction
+
+/**
+ * Applies bonus physical damage while the Frenesi shaman buff is active.
+ * The spell sets opts.properties := dictionary{ "enfurecido" -> 1 } via
+ * SpellController; this calculator reads the flag and adds Nature/20 raw
+ * damage to all three physical channels (the unused channel for the
+ * current posture is zeroed later in ApplyCombatDamage, matching the
+ * pattern Fury uses from the ability framework).
+ */
+function CalculateEnfurecidoDamage(byRef attackInfo)
+	var who := attackInfo.GetAttacker().GetObjRef();
+	if (GetObjProperty(who, "enfurecido") == error)
+		return;
+	endif
+
+	var bonus := CInt(attackInfo.GetAttacker().GetSkill(NATURE) / 20);
+	if (bonus < 1)
+		return;
+	endif
+
+	attackInfo.GetDamage()
+		.IncreaseSlashRawDamage(bonus)
+		.IncreasePiercingRawDamage(bonus)
+		.IncreaseBluntRawDamage(bonus);
+
+	DebugMsg(who, DEBUG_DAMAGE, Message($"Bônus de Frenesi (enfurecido): +{bonus}"));
 endfunction
 
 /**
