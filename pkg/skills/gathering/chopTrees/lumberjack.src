@@ -17,6 +17,7 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 include ":destroyable:include/destroyItem";
 include ":ultimalive:include/tree_damage";
+include ":ultimalive:include/tree_pieces";
 
 program skill_LumberJack(who, tool)
 
@@ -49,6 +50,55 @@ program skill_LumberJack(who, tool)
 			var script := start_script(":tn:destroyitems", { who, targ.item, tool });
 			return 1;
 		endif
+	endif
+
+	if (UL_IsFallenLog(targ.item))
+		if (GetObjProperty(who, "ul_chopping_piece") == 1)
+			return 0;
+		endif
+		SetObjProperty(who, "ul_chopping_piece", 1);
+		var fl_x     := who.x;
+		var fl_y     := who.y;
+		var max_iter := 50;
+		var iter     := 0;
+		while (iter < max_iter)
+			iter := iter + 1;
+			if (who.hidden ||
+			    who.x != fl_x ||
+			    who.y != fl_y ||
+			    !(tool in ListEquippedItems(who)) ||
+			    GetEquipmentByLayer(who, LAYER_MOUNT) ||
+			    CoordinateDistance(who.x, who.y, targ.x, targ.y) > 1)
+				SendSysMessage(who, "Voce parou de cortar.");
+				EraseObjProperty(who, "ul_chopping_piece");
+				return 0;
+			endif
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
+				if (AP_GetVital(who, "Stamina") < 2)
+					SendSysMessageEx(who, "Voce esta muito cansado para continuar.", SSM_FAIL);
+					EraseObjProperty(who, "ul_chopping_piece");
+					return 0;
+				endif
+				AP_ConsumeVital(who, "Stamina", 2);
+			else
+				if (AP_GetVital(who, "Stamina") < 4)
+					SendSysMessageEx(who, "Voce esta muito cansado para continuar.", SSM_FAIL);
+					EraseObjProperty(who, "ul_chopping_piece");
+					return 0;
+				endif
+				AP_ConsumeVital(who, "Stamina", 4);
+			endif
+			PerformAction(who, HUMAN_ANIM::ATTACK_2HAND_SLASH);
+			PlaySoundEffect(who, FLS_SFX_SKILL_LUMBERJACK);
+			sleepms(1200);
+			var res := UL_DamagePiece(who.realm, targ.x, targ.y, who, tool);
+			if (res != 1)
+				EraseObjProperty(who, "ul_chopping_piece");
+				return 1;
+			endif
+		endwhile
+		EraseObjProperty(who, "ul_chopping_piece");
+		return 0;
 	endif
 
 	if (!LJ_IsTree(targ.objtype))
