@@ -1,0 +1,52 @@
+use uo;
+use os;
+include ":timedScripts:timedScripts";
+include ":alchemy:alchemy";
+include ":mobileRescale:include/rerender";
+
+const SCALE_TIMER  := "pocaoEscala";
+const SCALE_ENDKEY := "pocaoEscala_endtime";
+
+function _GetScaleValue(objtype)
+    if (objtype == 0xDF01) return 300;  endif
+    if (objtype == 0xDF02) return 600;  endif
+    if (objtype == 0xDF03) return 1200; endif
+    if (objtype == 0xDF04) return 1500; endif
+    return 0;
+endfunction
+
+program drinkScalePotion(who, potion)
+    if (!Accessible(who, potion))
+        return;
+    endif
+    if (potion.movable == 0)
+        SendSysMessage(who, "Você não pode beber isto.");
+        return;
+    endif
+    if (!checkifcandrink(who, potion))
+        return;
+    endif
+
+    var val := _GetScaleValue(potion.objtype);
+    if (!val)
+        return;
+    endif
+
+    var skill    := CInt(GetObjProperty(potion, "crafterskill"));
+    var duration := 300 + CInt(skill * 15);
+
+    // cancela timer anterior; armazena endtime antes para que o EndScript
+    // antigo (disparado assincronamente por TS_LowerDuration) não interfira
+    var endtime := ReadGameClock() + duration;
+    SetObjProperty(who, SCALE_ENDKEY, endtime);
+
+    if (!(TS_GetTimerInfo(who, SCALE_TIMER) is @Exception))
+        TS_LowerDuration(who, SCALE_TIMER, -1);
+    endif
+
+    SetObjProperty(who, "entityScale", struct{ height := val, width := val });
+    ForceScaleRerender(who);
+
+    TS_StartTimer(who, SCALE_TIMER, duration);
+    empty_bottle(who, potion);
+endprogram
