@@ -886,9 +886,9 @@
 
 Recipes meiacapa
 {
-    name Meia Capa de Memmar
+    name Meia Capa
     level 1
-    text (DW) Meia capa típica da nobres com que ainda honram sua linhagem sanguínea proveniente de Memmar.
+    text (DW) Meia capa típica da nobres com que ainda honram Aigla.
 }
 
 Recipes botasdeinverno
