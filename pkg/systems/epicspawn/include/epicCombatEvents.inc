@@ -1,7 +1,7 @@
 var all_scripts := array{
     "summon", "summon_1", "summon_2", "summon_3", "summon_4", "sumir", "encantar", "events", 
     "defaultPoison", "hallucination", "paralysis", "congelamento", "alcohol", "clumsy", "feebleMind", 
-    "weaken", "spelleffect_219", "agility", "strength", "stamina", "berserk", "graspingroots", "intelligence", 
+    "weaken", "spelleffect_219", "agility", "strength", "stamina", "graspingroots", "intelligence",
     "invis", "vinganca", "velocidade", "lentidao", "dominioprofano", "aparenciacadaverica", 
     "metamorfosedruida", "PhysicalResist", "MagicResist", "bless", "curse", "phmod", "auraphmod", "fimod", 
     "comod", "enmod", "aurafimod", "auracomod", "auraenmod", "aurahpregenmod", "aurastamregenmod", 
