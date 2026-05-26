@@ -4,6 +4,7 @@ use vitals;
 include ":tn:cooldown";
 include ":attributes:attributes";
 include "include/say";
+include "include/epicConstants";
 
 program underwater(params)
 	var who := params[1];
@@ -35,6 +36,13 @@ program underwater(params)
 				if (!underwaterMessageSent)
 					SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
 					underwaterMessageSent := 1;
+				endif
+
+				if (SkillCheck(who, NATURE, RESIST_VERY_HARD, 0, ADV_SKILL) > 0)
+					SetCooldown(who, "can_breath", 3);
+					SendSysMessageEx(who, "A água sustenta você por um momento — saia daqui!", SSM_INFO);
+					sleepms(2000);
+					continue;
 				endif
 
 				if (!AP_ConsumeVital(who, "Stamina", 10))
