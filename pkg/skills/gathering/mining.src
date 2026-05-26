@@ -11,7 +11,7 @@ include ":abilities:models/Ability";
 
 program mining(who)
 
-	var where := GetMiningRegion(who.x, who.y);
+	var where := GetMiningRegion(who.x, who.y, who.realm);
 
 	var df := opendatafile(":gathering:miningspots");
 	if (df == error)
