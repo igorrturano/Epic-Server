@@ -53,8 +53,9 @@ program use_FishingPole(who, fishingpole)
 		return 0;
 	endif
 	if ((isca.objtype == 0x9980) || (isca.objtype == 0x9981) || (isca.objtype == 0x9982) ||
-	 (isca.objtype == 0x9983) || (isca.objtype == 0x9984) || (isca.objtype == 0xdd7) ||
-	 (isca.objtype == 0xdd6) || (isca.graphic == 0x0C82) || (isca.graphic == 0x1CEF))
+	 (isca.objtype == 0x9983) || (isca.objtype == 0x9984) || (isca.objtype == 0x9985) ||
+	 (isca.objtype == 0x9987) || (isca.objtype == 0xdd7) || (isca.objtype == 0xdd6) ||
+	 (isca.graphic == 0x0C82) || (isca.graphic == 0x1CEF))
 		SendSysMessage(who, "Voce escolheu " + isca.desc + " para pescar.");
 	else
 		SendSysMessageEx(who, "Isso nao pode ser usado de Isca.", SSM_FAIL);
