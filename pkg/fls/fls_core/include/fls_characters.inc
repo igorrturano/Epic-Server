@@ -3,7 +3,7 @@ use uo;
 use cfgfile;
 
 include ":timedScripts:timedScripts";
-include ":brainai:npcUtil";
+
 include ":attributes:attributes";
 include ":fls_core:fls_chargumps_ex";
 include "include/dungeons";

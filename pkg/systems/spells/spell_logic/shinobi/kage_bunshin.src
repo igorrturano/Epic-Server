@@ -7,7 +7,7 @@ include "include/eventID";
 include "include/say";
 include "include/client";
 include ":attributes:attributes";
-include ":brainai:npcUtil";
+
 
 /**
  * Kage Bunshin no Jutsu - Spell 1109

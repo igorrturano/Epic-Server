@@ -12,7 +12,7 @@ use storage;
 use cfgfile;
 
 include ":attributes:attributes";
-include ":brainAI:npcUtil";
+
 include ":gumps:gumps";
 include ":gumps:gumpPrompt";
 include ":gumps:requestGump";

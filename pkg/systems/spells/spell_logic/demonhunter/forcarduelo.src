@@ -6,7 +6,7 @@ include "include/sounds";
 include "include/say";
 include ":attributes:attributes";
 include ":timedScripts:timedScripts";
-include ":brainai:npcUtil";
+
 include "include/sysEvent";
 include "include/eventID";
 include ":tn:cooldown";

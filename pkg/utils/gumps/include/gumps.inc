@@ -39,6 +39,8 @@ use os;
 use basic;
 use cfgfile;
 
+include "tooltipTranslate";
+
 // // include ":gumps:autoClose";
 // include ":gumps:gumpPrompt";
 // // include ":gumps:gumps_ex";
@@ -790,6 +792,7 @@ endfunction
  *
  */
 function GFSendGump(mobile, byref gump)
+	_TranslateGumpTooltips(mobile, gump);
 	var ret_val := SendDialogGump(mobile, gump.layout, gump.data, gump.base.x, gump.base.y);
 	if ( ret_val.errortext )
 		//Sometimes comes up when the gump has too much information.

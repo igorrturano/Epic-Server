@@ -103,8 +103,11 @@ function DispatchTranslation(byRef messageData)
 	endif
 
 	var mode := messageData.target.GetObjRef().GetProp("translation");
-	if (mode == error || !mode || mode == 0)
-		return false;
+	if (mode == error || mode == "")
+		mode := 1; // unset = legenda by default
+	endif
+	if (mode == 0)
+		return false; // explicit opt-out
 	endif
 
 	var sourceAcct := FindAccount(messageData.source.GetObjRef().acctname);

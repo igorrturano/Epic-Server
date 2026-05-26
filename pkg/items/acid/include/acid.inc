@@ -5,7 +5,7 @@ use uo;
 use cfgfile;
 use util;
 
-include ":brainAI:npcUtil";
+
 include "include/packets";
 include ":combat:Controller/DamageController";
 include ":combat:Model/Damage";

@@ -9,7 +9,7 @@ include "include/client";
 include "include/sounds";
 include ":attributes:vitals";
 include ":attributes:attributes";
-include ":brainAI:npcUtil";
+
 
 program HitScript(params)
 	var attacker := params[1];

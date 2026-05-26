@@ -13,7 +13,7 @@ use util;
 use cfgfile;
 
 include "include/say";
-include ":brainAI:npcUtil";
+include "include/NPCUtil";
 include ":brainAI:npcError";
 
 

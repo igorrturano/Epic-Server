@@ -2,7 +2,7 @@
 use os;
 use cfgfile;
 
-include ":brainAI:npcUtil";
+
 include ":attributes:attributes";
 
 function CalculateRawDamage(attacker, weapon)

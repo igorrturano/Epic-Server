@@ -5,7 +5,7 @@ use os;
 include ":charactercreation:habilidades";
 include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
-include ":brainAI:npcUtil";
+
 include ":tn:npcutil";
 include ":tn:cooldown";
 include "include/sysEvent";

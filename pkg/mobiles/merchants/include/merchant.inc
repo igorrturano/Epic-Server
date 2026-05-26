@@ -2,7 +2,7 @@
 include ":datafile:include/datafile";
 include ":merchants:item_template";
 include ":spells:include/swordmage";
-include ":brainAI:npcUtil";
+
 include ":npcs:thor/handling/thorai";
 include ":megacliloc:/include/gettersTTipUtils";
 include ":brainAI:npcCommands";
@@ -387,31 +387,6 @@ function GetItemsSoldList(merchant)
 		sleepms(4);
 	endforeach
 	return prop_list;
-endfunction
-
-// AI Speak Open AI Start
-function AI_Speak_Openai(npcType, DescricaoItem, cost_amt)
-
-	var language := "None";
-	var event := "comercio";
-	
-	var npcEvil := False;
-	
-	var specialLore := False;
-	var gossip_storage := GetGlobalProperty("gossip_storage");
-	var gossip := True;
-	if (gossip_storage == array{})
-		gossip := False;
-	endif
-	var mood := "None";
-	if ( (RandomInt(100) < 50 ) ) // por cento de chance
-		mood := " se o personagem gasta poucas moedas (para sua avaliação, 10 moedas é um ótimo valor), você fica nervoso, mesquinho ou sarcástico;";
-	endif
-	var playerinput := "<o personagem compra o item " + DescricaoItem + " por " + cost_amt + " moedas>";
-	
-	var responseText := handle_open_ai_npc_speech_utils(npcType, language, event, npcEvil, mood, gossip, specialLore, playerinput);
-
-	return responseText;
 endfunction
 
 function DoPurchase(npc, player, input)

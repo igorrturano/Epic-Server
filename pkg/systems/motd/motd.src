@@ -2,8 +2,8 @@
  *
  * Mensagem do Dia. Moldura no estilo do mural da cidade (sem imagem),
  * texto escuro e legivel sobre pergaminho, rolavel, com escolha de
- * quando abrir ao logar. Traduz o texto para o idioma da conta quando
- * o jogador tem traducao ativa (cacheado por versao da MOTD).
+ * quando abrir ao logar. Traduz o texto para o idioma da conta via
+ * CachedTranslator quando o jogador nao optou por desativar.
  */
 use uo;
 use os;
@@ -14,7 +14,7 @@ include ":datafile:datafile";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":motd:motd_settings";
-include ":message:Controller/Translator";
+include ":message:Controller/CachedTranslator";
 include ":text:TranslatableText";
 
 const MOTD_RB_ALWAYS := 1;
@@ -51,12 +51,7 @@ program MessageOfTheDay(mobile)
 		text := "Nao ha nenhuma Mensagem do Dia hoje.";
 	endif
 
-	var version := "";
-	if (text_lines.size() > 0)
-		version := CStr(text_lines[1]);
-	endif
-
-	text := MOTD_Localize(mobile, text, version);
+	text := MOTD_Localize(mobile, text);
 
 	// Pergaminho claro -> texto escuro
 	text := "<BASEFONT COLOR=#2A1A0A>" + text;
@@ -127,47 +122,19 @@ function MOTD_DrawFrame(byref gump, width, height)
 	endforeach
 endfunction
 
-// Traduz o texto da MOTD para o idioma da conta do jogador, quando ele
-// tem traducao ativa e a lingua difere do pt-BR de origem. Resultado
-// cacheado em GlobalProperty por (versao da MOTD + idioma) para nao
-// bater no LibreTranslate a cada login. Em qualquer falha, devolve o
-// texto original.
-function MOTD_Localize(mobile, text, version)
-	var tmode := GetObjProperty(mobile, "translation");
-	if (tmode == error || !tmode || tmode == 0)
-		return text;
+// Translates MOTD text into the account language via the shared CachedTranslator.
+// Cache is keyed by (lang, text), so a MOTD edit naturally invalidates the entry.
+function MOTD_Localize(mobile, text)
+	if (GetObjProperty(mobile, "translation") == 0)
+		return text; // explicit opt-out
 	endif
-
 	var acct := mobile.acct;
 	if (acct == error || !acct)
 		return text;
 	endif
 	var targetLang := acct.GetProp("original_language");
-	if (targetLang == error || !targetLang || targetLang == LANGUAGE::PORTUGUESE)
+	if (targetLang == error || !targetLang)
 		return text;
 	endif
-
-	var cache := GetGlobalProperty("motd_tcache");
-	if (cache == error || !cache || TypeOf(cache) != "Struct" || cache.version != version)
-		cache := struct{ version := version, langs := dictionary{} };
-	endif
-	if (cache.langs.Exists(targetLang))
-		return cache.langs[targetLang];
-	endif
-
-	var translator := Translator();
-	var translated := translator.Translate(
-		TranslatableText(text, LANGUAGE::PORTUGUESE, targetLang)
-	);
-	if (!(translated is @TranslatableText))
-		return text;
-	endif
-	var out_text := translated.GetTextTarget();
-	if (!out_text || out_text == "")
-		return text;
-	endif
-
-	cache.langs[targetLang] := out_text;
-	SetGlobalProperty("motd_tcache", cache);
-	return out_text;
+	return CachedTranslator().Translate(text, LANGUAGE::PORTUGUESE, targetLang);
 endfunction

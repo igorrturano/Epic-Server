@@ -33,7 +33,7 @@ include ":spells:tnmagery";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":tn:npcutil";
-include ":brainAI:npcUtil";
+
 include ":spells:summon";
 include ":survival:fishingFunctions";
 include ":wrappers:Objects/Model/MobileWrapper";
