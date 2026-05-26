@@ -22,10 +22,11 @@ program storagewipe()
 	npctest := CreateNpcFromTemplate("banker", 5445, 1153, 0, 0, "britannia"); // newmap problem
 	// Guard contra silent fail: se CreateNpcFromTemplate retornar error,
 	// endnum := error.serial é uninit, o for loop não roda, wipe nunca
-	// executa, e o log mostra "Searched from 1 through <uninitialized object>"
-	// com 0 destruções. Storage órfão acumula até OOM.
+	// executa. Loga o errortext do POL pra entender POR QUE falhou
+	// (template inválido? coord bloqueada? privilégio?).
 	if (!npctest)
-		print("Error::storageWipe - CreateNpcFromTemplate('banker', 5445, 1153, 0) returned error. Wipe ABORTED.");
+		print("Error::storageWipe - CreateNpcFromTemplate('banker', 5445, 1153, 0) failed: " + npctest.errortext);
+		print("Error::storageWipe - Wipe ABORTED.");
 		return;
 	endif
 	endnum := npctest.serial;
