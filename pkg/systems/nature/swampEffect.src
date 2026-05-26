@@ -5,6 +5,8 @@ include ":timedScripts:timedScripts";
 include "include/say";
 include ":tn:cooldown";
 include ":fls_core:packets";
+include ":attributes:attributes";
+include "include/epicConstants";
 
 program spiderWebEffect(who)
 	var sounds := { 560, 561, 562 };
@@ -26,13 +28,19 @@ program spiderWebEffect(who)
 				PlaysoundEffect(who, sounds[RandomInt(sounds.size()) + 1]);
 				PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0x54f7, 10, 30, 2283);
 
-				TS_StartTimer(who, "defaultPoison", 120, RandomInt(4) + 1);
+				if (SkillCheck(who, NATURE, RESIST_HARD, 0, ADV_SKILL) > 0)
+					SendSysMessage(who, "Voce evita os esporos.");
+				else
+					TS_StartTimer(who, "defaultPoison", 120, RandomInt(4) + 1);
+				endif
 				break;
 			endif
 		endforeach
 
 		if (is_on_swamp)
-			PlayerSpeedSlower(who, 1);
+			if (SkillCheck(who, NATURE, RESIST_MEDIUM, 0, ADV_SKILL) <= 0)
+				PlayerSpeedSlower(who, 1);
+			endif
 		else
 			PlayerSpeedSlower(who, 0);
 		endif
