@@ -5,6 +5,7 @@ use basic;
 
 include ":ultimalive:include/packets";
 include ":ultimalive:include/trees_meta";
+include ":ultimalive:include/tree_pieces";
 
 const UL_TREE_PHASES_DF    := ":ultimalive:tree_phases";
 const UL_PHASE_1_THRESHOLD := 20;  // wood_amount > 20 → fase 1
@@ -79,6 +80,7 @@ function _UL_ApplyFaseTransition(realm, x, y, meta, new_phase, old_phase, who)
         z_foliage := _UL_FindStaticZ(realm, x, y, meta.foliage);
         if (!z_foliage.errortext)
             UL_DeleteStatic(realm, x, y, z_foliage, meta.foliage);
+            PrintTextAbove(who, "*folhas comecam a cair*");
         endif
     endif
 
@@ -94,7 +96,9 @@ function _UL_ApplyFaseTransition(realm, x, y, meta, new_phase, old_phase, who)
         if (z_trunk.errortext)
             return 0;
         endif
+        PrintTextAbove(who, "*o tronco do " + meta.type_name + " cede com um estalo*");
         UL_SetStatic(realm, x, y, z_trunk, UL_TREE_STUMP_GRAPHIC, 0, "ul_tree_damage", meta.trunk);
+        UL_CreateFallenLogs(realm, x, y, z_trunk, meta, who);
     endif
 
     UL_SendStaticsUpdate(who, realm, bx, by);
