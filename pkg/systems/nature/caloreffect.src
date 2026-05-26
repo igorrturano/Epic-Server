@@ -77,6 +77,7 @@ program calor(params)
 				endif
 				EraseObjProperty(who, "penalidadeclima");
 				EraseObjProperty(who, "teste_de_calor");
+				EraseObjProperty(who, "calor_streak");
 				return;
 			endif
 
@@ -126,8 +127,7 @@ program calor(params)
 				dif := dif - 2;
 			endif
 
-			var survivalBonus := cint(AP_GetSkill(who, SURVIVAL) / 20);
-			dif := dif - survivalBonus;
+			dif := dif - cint(AP_GetSkill(who, NATURE) / 25);
 
 			foreach item in (ListEquippedITems(who))
 				// Manto de Aquil facilita a resistência contra calor
@@ -177,6 +177,15 @@ program calor(params)
 				endif
 				sleepms(20);
 			endforeach
+
+			var calorStreak := cint(GetObjProperty(who, "calor_streak")) + 1;
+			SetObjProperty(who, "calor_streak", calorStreak);
+			dif := dif + calorStreak;
+
+			if (SkillCheck(who, NATURE, dif, 0, ADV_SKILL) > 0)
+				SendSysMessageEx(who, "Sua sintonia com a natureza protege voce do calor.", SSM_INFO);
+				continue;
+			endif
 
 			var penalty := cint(GetObjProperty(who, "penalidadeclima"));
 
