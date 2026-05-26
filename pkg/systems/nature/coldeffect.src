@@ -8,6 +8,7 @@ include "include/epicConstants";
 include ":nature:nature";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":itemUtils:objtype";
 
 var leatherArmors := { 0x13C7, 0x13CD, 0x13C6, 0x1DB9, 0x13CB, 0x13CC, 0x13D3, 0x13D6,
 					   0x13D5, 0x13D4, 0x13DA, 0x13DB, 0x170B, 0x1711 };
@@ -132,6 +133,25 @@ program neve(params)
 				endif
 				sleepms(20);
 			endforeach
+
+			// Phase 2: scaled cold ward — closest campfire within 4 tiles, scales with Survival
+			var closestFireDist := -1;
+			foreach fireItem in (ListItemsNearLocation(who.x, who.y, who.z, 4, who.realm))
+				if (fireItem.objtype == UOBJ_CAMPFIRE)
+					var d := CoordinateDistance(who.x, who.y, fireItem.x, fireItem.y);
+					if (closestFireDist == -1 || d < closestFireDist)
+						closestFireDist := d;
+					endif
+				endif
+				sleepms(20);
+			endforeach
+			if (closestFireDist >= 0)
+				var fireBonus := (5 - closestFireDist) + cint(AP_GetSkill(who, SURVIVAL) / 25);
+				if (fireBonus < 0)
+					fireBonus := 0;
+				endif
+				dif := dif - fireBonus;
+			endif
 
 			var resistcheck;
 			var resistchecked;

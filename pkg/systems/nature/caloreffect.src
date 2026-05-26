@@ -149,6 +149,14 @@ program calor(params)
 				sleepms(20);
 			endforeach
 
+			// Phase 2: cantil heat ward — active hydration buff
+			var cantilBuff := cint(GetObjProperty(who, "cantilBuff"));
+			if (cantilBuff > ReadGameClock())
+				dif := dif - (2 + cint(AP_GetSkill(who, SURVIVAL) / 25));
+			elseif (cantilBuff > 0)
+				EraseObjProperty(who, "cantilBuff");
+			endif
+
 			// Modificador de dificuldade baseado em regions
 			var cfg := ReadConfigFile("::regions/regions");
 			var elems := GetconfigStringKeys(cfg);

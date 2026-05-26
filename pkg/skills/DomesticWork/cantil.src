@@ -1,0 +1,60 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":survival:fishingFunctions";
+include "include/say";
+
+const BUFF_DURATION := 600;
+
+program use_cantil(who, cantil)
+	if (cantil.container != who.backpack && cantil.container != who)
+		SendSysMessage(who, "O cantil precisa estar em sua mochila.");
+		return;
+	endif
+
+	var doses := cint(GetObjProperty(cantil, "doses"));
+
+	if (doses > 0)
+		SetObjProperty(cantil, "doses", doses - 1);
+		SetObjProperty(who, "cantilBuff", ReadGameClock() + BUFF_DURATION);
+		PlaySoundEffect(who, 0x30);
+		SendSysMessage(who, "Você bebe um gole de água. Sente-se hidratado.");
+	else
+		SendSysMessage(who, "Seu cantil está vazio. Mire em uma fonte de água para enchê-lo.");
+		RefillCantil(who, cantil);
+	endif
+endprogram
+
+function RefillCantil(who, cantil)
+	var targ := TargetCoordinates(who);
+	if (!targ)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2)
+		SendSysMessage(who, "Você está muito longe da água.");
+		return;
+	endif
+	var locinfo := GetMapInfo(targ.x, targ.y, who.realm);
+	if (!IsWater(targ, locinfo))
+		SendSysMessage(who, "Isso não é uma fonte de água.");
+		return;
+	endif
+	var capacity := GetCantilCapacity(cantil);
+	SetObjProperty(cantil, "doses", capacity);
+	PlaySoundEffect(who, 0x26);
+	PrintTextAbove(cantil, "*enchendo*");
+	SendSysMessage(who, "Cantil cheio: " + capacity + " goles.");
+endfunction
+
+function GetCantilCapacity(cantil)
+	var fab := GetObjProperty(cantil, "fabricado");
+	if (fab && fab.componentes && fab.componentes["doses"])
+		var v := cint(fab.componentes["doses"].propriedades.valorPrincipal);
+		if (v > 0)
+			return v;
+		endif
+	endif
+	return 4;
+endfunction
