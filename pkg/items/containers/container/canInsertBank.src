@@ -85,6 +85,8 @@ program canInsert(mobile, container, movetype, inserttype, item, existing_stack,
 			   	0x6103,
 			   	0xec29,        // grimório
 			   	
+			   	0xE9C1,        // livro de pesquisa
+			   	
 			   	0x6161,
 			   	0x6157,
 			   	0x6158,
