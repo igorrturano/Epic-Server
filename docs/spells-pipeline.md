@@ -338,6 +338,54 @@ as melee — see [`ability-pipeline.md`](ability-pipeline.md). DoT spells
 should declare `opts.tick_damage` rather than hand-rolling `ApplyRawDamage`
 so this hook wiring is consistent.
 
+## Spell-source bonus damage on melee/ranged swings
+
+Spells that grant **per-swing damage bonuses** to the caster's normal
+attacks (Frenesi, Forma Primordial, Lâmina Arcana wielding, Elemental
+Weapon enchant, MagicBow arcane bonus) do not flow through `SC_DealDamage`
+— they hook into the **physical attack** damage chain at one named seam:
+
+`DamageController.CalculateSpellSourceDamage(byRef attackInfo)` is called
+once during `CalculateAttackerDamage`, after `CalculateWeaponDamage` and
+`CalculateEntropyDamage`. It dispatches in order to:
+
+| Calculator | Activation | Effect |
+|---|---|---|
+| `CalculatePrimordialDamage` | `metamorfose` + `primordial_<element>` ObjProps | Mirrors blunt raw into matching elemental channel (druid/shaman wildshape) |
+| `CalculateArcaneBowDamage` | `WEAPON_CATEGORY::MAGICBOW` + `fire/cold/energy_arrow` weapon prop | Arcana/5 or /10 to matching elemental |
+| `CalculateSpiritualBladeDamage` | `WEAPON_CATEGORY::SPIRITUALBLADE` | Arcana/5 to posture-matched physical |
+| `CalculateElementalWeaponDamage` | weapon's `#elementalweapon` ObjProp (charged buff) | Converts part of physical → elemental + Arcana/5 + INT/20, consumes a charge |
+| `CalculateEnfurecidoDamage` | attacker's `enfurecido` ObjProp (set by Frenesi via `opts.properties`) | Nature/20 added to slash/pierce/blunt (Fury-style) |
+
+Each contributor has a sibling `Estimate*Damage` function returning a flat
+int, summed into the status-gump min/max preview in
+`CalculateEstimatedMinMaxDamage`. **Both halves are required** — a new
+spell-source modifier that only adds a `Calculate*` will silently lie in
+the min/max preview.
+
+### How to add a new spell-source modifier
+
+1. In the `SpellScript`, set the activation flag via SC opts:
+   ```escript
+   opts.+properties := dictionary{ "mybufflag" -> 1 };
+   ```
+   `_SC_ApplyOpts` writes it as a real ObjProperty; `_SC_RemoveOpts` erases
+   it on expiry/dispel/replacement. The flag survives logout because it's
+   a normal (non-`#`) ObjProperty.
+2. Add `CalculateMyBuffDamage(byRef attackInfo)` next to the others in
+   `DamageController.inc`. Gate on `GetObjProperty(attacker, "mybufflag")`,
+   then call `attackInfo.GetDamage().Increase*RawDamage(bonus)` on the
+   channel(s) you want. The posture filter zeros unused physical channels
+   later, so adding to all three slash/pierce/blunt is safe.
+3. Add the matching `EstimateMyBuffDamage(attackInfo)` that returns the
+   same bonus as a flat int.
+4. Register both in `CalculateSpellSourceDamage` and the flat-bonus sum in
+   `CalculateEstimatedMinMaxDamage`.
+
+Reference implementation: Frenesi
+([GrizzlyBear.src](../pkg/systems/spells/spell_logic/shaman/GrizzlyBear.src) →
+[CalculateEnfurecidoDamage](../pkg/systems/combat/include/Controller/DamageController.inc)).
+
 ## Resync (`SC_ResyncOnLogin:499`, called from `logon.src:6`)
 
 Intentionally **asymmetric** with apply — it does **not** call
@@ -388,6 +436,12 @@ session-only (re-push), additive math (leave), persistent server field
    `#buff_resist`/`#SpellResist` on resync; your own `#` opts.properties
    are intentionally not restored — usually what you want for
    effect-bound flags.
+7. **`opts.properties` is not magic for combat damage.** Setting a flag
+   via `opts.properties` only puts an ObjProperty on the target — nothing
+   reads it unless you also add a `Calculate*Damage` + `Estimate*Damage`
+   pair into `CalculateSpellSourceDamage` (see the spell-source bonus
+   damage section above). The flag is purely a contract between your
+   spell and your combat hook.
 
 ## Connection to the other pipelines
 
