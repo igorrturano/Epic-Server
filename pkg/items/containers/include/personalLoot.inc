@@ -2,13 +2,14 @@
  * Personal-loot rules for true_boss corpses.
  *
  * Lifecycle: 0..BOSS_LOOT_LOCKOUT seconds nobody can loot. After the
- * lockout, items that were in the corpse at Arm-time have been processed:
+ * lockout, items the GM authored in the epicboss "Add Loot" gump
+ * (HandleEpicBossLoot tags them with from_boss_loot := 1) are cloned
+ * once per nearby participant and stamped with each player's serial as
+ * loot_owner. Each player only sees and can take their own copy.
  *
- *   - Armor and weapons (boss's equipped gear) are left as a single
- *     untagged copy, visible to all. First to grab wins.
- *   - Everything else is cloned once per nearby participant and stamped
- *     with each player's serial as loot_owner. Each player only sees and
- *     can take their own copy.
+ * Everything else in the corpse — the boss's equipped gear, hair, beard,
+ * clothes, NPC backpack loot, etc. — is left as a single untagged copy,
+ * visible to all. First to grab wins.
  *
  * Owned items stay locked to their owner until POL's natural corpse
  * decay removes the corpse — there is no FFA fallback.
@@ -48,9 +49,10 @@ function PersonalLoot_Arm(corpse)
 	return 1;
 endfunction
 
-// Idempotent. Armor/weapons stay as a single untagged copy (FFA). Other
-// untagged items get the original stamped for participants[1] and a clone
-// per remaining participant. Already-owned items are skipped.
+// Idempotent. For each unowned item flagged from_boss_loot, keep the
+// original for participants[1] and clone it for each remaining
+// participant. Items without the flag (equipment, hair, beard, etc.) are
+// left untouched — single copy, FFA.
 function PersonalLoot_Stamp(corpse)
 	if (!corpse || corpse == error)
 		return 0;
@@ -66,17 +68,16 @@ function PersonalLoot_Stamp(corpse)
 	// Two-pass: collect first so we don't iterate while adding clones.
 	var pending := array{};
 	foreach scan_item in (EnumerateItemsInContainer(corpse))
-		if (GetObjProperty(scan_item, "loot_owner") == error)
-			pending.Append(scan_item);
+		if (GetObjProperty(scan_item, "loot_owner") != error)
+			continue;
 		endif
+		if (GetObjProperty(scan_item, "from_boss_loot") != 1)
+			continue;
+		endif
+		pending.Append(scan_item);
 	endforeach
 
 	foreach loot in pending
-		// Boss-equipped gear: single copy, untagged → FFA.
-		if (loot.isA(POLCLASS_ARMOR) || loot.isA(POLCLASS_WEAPON))
-			continue;
-		endif
-
 		SetObjProperty(loot, "loot_owner", participants[1]);
 
 		var p_idx := 2;
