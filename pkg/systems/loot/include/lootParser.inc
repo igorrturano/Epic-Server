@@ -13,7 +13,6 @@ include ":crafting:/include/fabricacaoComplexos";
 include "include/epicEconomyAudit";
 include ":currency:include/seignorage";
 include "include/epicCombatUtils";
-include ":containers:personalLoot";
 
 var itemdesc_cache := dictionary{};
 
@@ -276,13 +275,6 @@ function Loot_Generate(container, loot_index, source := 0)
         Loot_TryDrainPool(container, source);
      endif
 
-	// Defensive: if Loot_Generate is ever called directly on a true_boss
-	// corpse (not its backpack), stamp the new items. In the normal NPC
-	// flow Loot_Generate fills the backpack at spawn — corpse stamping
-	// runs from npcdeath.src.
-	if (GetObjProperty(container, "true_boss") == 1)
-		PersonalLoot_Stamp(container);
-	endif
 	return 1;
 endfunction
 

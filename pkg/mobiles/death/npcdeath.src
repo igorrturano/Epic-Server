@@ -521,6 +521,9 @@ function HandleEpicBossLoot(corpse)
 		endif
 
 		item.movable := 1;
+		// Mark so PersonalLoot_Stamp knows this came from the boss's
+		// "Add Loot" gump entries and should be cloned per participant.
+		SetObjProperty(item, "from_boss_loot", 1);
 	endforeach
 
 	return 1;
