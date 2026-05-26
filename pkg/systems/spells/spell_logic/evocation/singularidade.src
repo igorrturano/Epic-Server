@@ -67,6 +67,7 @@ program spell_singularidade(params)
 		print("[DEBUG singularidade] --- mob=" + mob.name + " serial=" + mob.serial + " at=(" + mob.x + "," + mob.y + "," + mob.z + ") facing_before=" + mob.facing);
 
 		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
 		var pull := pull_tiles;
 		var save := CheckResist(mob, FORTITUDE, diff, -bonus);

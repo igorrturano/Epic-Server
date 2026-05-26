@@ -74,6 +74,7 @@ program SpellScript(params)
 		endif
 
 		var damage := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		damage := bonusSpellDamageForSpecialists(caster, damage, spell_school);
 
 		// Reflex save halves the initial blast damage but does NOT prevent the burn DoT.
 		if (CheckResist(mob, REFLEXES, diff, -bonus) > 0)
@@ -85,8 +86,7 @@ program SpellScript(params)
 		SC_DealDamage(caster, mob, CInt(spellinfo.id), cint(damage), DAMAGE_TYPE::FIRE);
 
 		// Apply SC-based burn DoT on top of the initial blast.
-		// Chip fixo de 1d4+1 por tick (sem escalar com Arcana). A escala vem
-		// do impact (via epicSpellDamageRoll com bump do Evocator) + duracao.
+		// Chip fixo de 1d4+1 por tick (sem escalar com Arcana).
 		var existing := MobileWrapper(mob).GetProperty($"SpellOpts_{CInt(spellinfo.id)}");
 		if (!existing || existing.errortext)
 			var tick_interval := 2;
