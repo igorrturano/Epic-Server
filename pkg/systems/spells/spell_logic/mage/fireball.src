@@ -83,6 +83,7 @@ program spell_fireball(params)
 	endforeach
 
 	var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 	DanificaObjetosProximos(caster, cast_on.x, cast_on.y, cast_on.z, cast_on.realm,
 							struct{ dano := dmg, desc := "Bola de Fogo.", tipo := DAMAGE_TYPE::FIRE },
 							radius, FX_EXPLODE_1);
@@ -93,6 +94,7 @@ program spell_fireball(params)
 	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, radius, cast_on);
 	foreach mobile in allMobiles
 		var target_dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		target_dmg := bonusSpellDamageForSpecialists(caster, target_dmg, spell_school);
 
 		if (CheckResist(mobile, REFLEXES, diff, -bonus))
 			target_dmg := Cint(target_dmg / 2);

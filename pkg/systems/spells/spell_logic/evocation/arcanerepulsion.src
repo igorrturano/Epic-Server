@@ -49,6 +49,7 @@ program SpellScript(params)
 		endif
 
 		var damage := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		damage := bonusSpellDamageForSpecialists(caster, damage, spell_school);
 
 		var push := knockback_tiles;
 		if (CheckResist(mob, REFLEXES, diff, -bonus) > 0)

@@ -63,6 +63,7 @@ program SpellScript(params)
 
 		// Light cold damage always, halved dice to keep CC identity.
 		var damage := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		damage := bonusSpellDamageForSpecialists(caster, damage, spell_school);
 		damage := Cint(damage / 2);
 
 		SendSysMessageEx(mob, "Voce e atingido por lascas de gelo.", SSM_FAIL);

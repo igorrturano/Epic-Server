@@ -48,6 +48,7 @@ program chainLightning(params)
 		casterThenNextMobile := mobile;
 		PlaySoundEffect(mobile, 0x457);
 		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
 		// 20% falloff per additional jump after the first target.
 		if (jump > 0)

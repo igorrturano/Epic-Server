@@ -38,6 +38,7 @@ program cast_incinerar(params)
 	PlayObjectCenteredEffect(targ, 0xDC06, 15, 10);
 	PlaySoundEffect(targ, 0x357);
 	var impact := epicSpellDamageRoll(caster, spell_circle, spell_school);
+	impact := bonusSpellDamageForSpecialists(caster, impact, spell_school);
 	SC_DealDamage(caster, targ, CInt(spellinfo.id), cint(impact), DAMAGE_TYPE::FIRE);
 
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
