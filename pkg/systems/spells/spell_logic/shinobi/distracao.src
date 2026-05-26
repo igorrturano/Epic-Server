@@ -5,7 +5,7 @@ include "include/say";
 include "include/client";
 include "include/eventID";
 include ":attributes:attributes";
-include ":brainai:npcUtil";
+
 
 /**
  * Distracao (Mayowashi no Jutsu) - Spell 1104

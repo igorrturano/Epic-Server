@@ -6,7 +6,7 @@ include ":charactercreation:habilidades";
 include ":attributes:include/attributeConstants";
 include ":attributes:include/attributes";
 include ":gumps:include/gumps";
-include ":brainAI:npcUtil";
+
 include ":tn:cooldown";
 include "include/eventID";
 include ":epicAI:epicai";

@@ -12,7 +12,7 @@ use uo;
 use os;
 use cfgfile;
 
-include ":brainAI:npcUtil";
+
 
 /*
  * NPC_DefaultSettings(settings:=0)

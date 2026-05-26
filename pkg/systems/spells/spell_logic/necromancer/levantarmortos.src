@@ -9,7 +9,7 @@ include "include/say";
 include ":timedScripts:timedScripts";
 include ":attributes:attributes";
 include ":tn:npcutil";
-include ":brainAI:npcUtil";
+
 include "include/epicMageryUtils";
 include ":epicAI:epicai";
 

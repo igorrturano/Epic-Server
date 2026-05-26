@@ -482,17 +482,22 @@ endfunction
  * Re-syncs spell effects on login / server restart.
  *
  * _SC_ApplyOpts is additive — calling it on top of already-applied state
- * doubles stat_mod, run_speed, hitchance_mod, etc. So we deliberately do
- * NOT call it here. Instead we:
+ * doubles run_speed, hitchance_mod, etc. So we deliberately do NOT call
+ * the full _SC_ApplyOpts here. Instead we:
  *   - Rebuild #SpellResist only if it was dropped (server restart — `#`
  *     props are ephemeral). Same-session reconnect keeps the property
  *     intact, so we skip the rebuild and avoid doubling.
  *   - Re-push client-session-only state: PlayerSpeedBoost, buff icons,
  *     and armor packets (client's ArmorResistances dict resets on
  *     disconnect).
- *   - Native server-side fields (color, stat_mod, run_speed, hitchance,
- *     graphic, armor_hit_scripts array) all persist across restart — no
+ *   - Native mobile fields (color, run_speed, hitchance_mod, frozen,
+ *     graphic, armor_hit_scripts array) persist across restart — no
  *     reapply needed.
+ *   - Re-apply attribute TemporaryMods (str/dex/int). These go through
+ *     SetAttributeTemporaryMod, which is volatile and gets wiped on
+ *     logout. Without this re-apply, the buff icon shows +N but the
+ *     stat is 0; when the timer later expires, _SC_RemoveOpts subtracts
+ *     N from 0 and the player ends up with a -N stat mod.
  *
  * @param mobile Mobile - the player logging in
  */
@@ -524,6 +529,14 @@ function SC_ResyncOnLogin(mobile)
 		var opts := mw.GetProperty($"SpellOpts_{spellId}");
 		if (opts && !opts.errortext)
 			active_opts.Append(opts);
+
+			// Re-apply volatile attribute TemporaryMods. SetAttributeTemporaryMod
+			// is wiped on logout, so without this the stat is 0 while the buff
+			// icon still claims +N — and the eventual _SC_RemoveOpts subtracts
+			// N from 0, leaving the player at -N.
+			if (opts.str_mod) AP_ModifyStatMod(mobile, STRENGTH,     CInt(opts.str_mod)); endif
+			if (opts.dex_mod) AP_ModifyStatMod(mobile, DEXTERITY,    CInt(opts.dex_mod)); endif
+			if (opts.int_mod) AP_ModifyStatMod(mobile, INTELLIGENCE, CInt(opts.int_mod)); endif
 
 			// Client-session-only state — lost on disconnect, must re-push.
 			if (opts.speed_boost && !mobile.npctemplate)

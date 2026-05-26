@@ -10,7 +10,7 @@ use uo;
 use os;
 
 include ":attributes:attributes";
-include ":brainAI:npcUtil";
+
 include ":gumps:gumps";
 include ":gumps:gumpPrompt";
 include ":gumps:requestGump";

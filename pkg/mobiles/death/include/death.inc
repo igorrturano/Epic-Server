@@ -8,7 +8,7 @@ use uo;
 use os;
 use util;
 
-include ":brainAI:npcUtil";
+
 include ":attributes:attributes";
 include ":timeutils:time";
 include ":wrappers:Objects/Model/MobileWrapper";

@@ -6,7 +6,8 @@
 use uo;
 use cfgfile;
 
-include ":brainAI:npcUtil";
+include "include/NPCUtil";
+
 
 /*
  * MakeBleed(object, blood_color)

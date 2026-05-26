@@ -11,7 +11,7 @@ include "include/tileEffects";
 include ":charactercreation:habilidades";
 include ":spells:Controller/SC_Damage";
 include ":epicAI:include/epicNPCCombat";   // CheckForWoundedAllies, FindMostWoundedAlly
-include ":brainai:npcUtil";
+
 include ":epicAI:epicai";
 
 program SpellScript(params)

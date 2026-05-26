@@ -12,7 +12,7 @@ include ":charactercreation:habilidades";
 include ":epicAI:include/epicNPCCombat";   // CheckForWoundedAllies, FindMostWoundedAlly
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
-include ":brainai:npcUtil";
+
 include ":epicAI:epicai";
 
 program SpellScript(params)

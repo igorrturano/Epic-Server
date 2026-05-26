@@ -1,50 +1,106 @@
 include ":gumpDesigner:Gump/Gump";
 include ":gumpDesigner:Control/Button";
 include ":gumpDesigner:Control/Text";
-include ":gumpDesigner:Control/Container/ContainerGridLayout";
 include ":message:model/Message";
+include ":text:TranslatableText";
 include ":wrappers:Objects/Model/MobileWrapper";
 
 program cmd_translation(who)
-	// TODO: Gump para escolher a lingua que fala
-	who := MobileWrapper(who);
-	
-	var cont := true;
-	while (cont)
-		var gump := Gump(who.GetObjRef(), "Translation Settings", 300, 200);
-		var label := Text("Text1", 0, 0, "Setting");
-		var label2 := Text("Text2", 0, 0, "Ativar Legenda");
-		var label3 := Text("Text3", 0, 0, "Ativar Dublagem");
-		var label4 := Text("Text4", 0, 0, "Desativar Tradução");
+	var mw := MobileWrapper(who);
+	var ref := mw.GetObjRef();
+	var acct := ref.acct;
 
-		var button2 := Button("Legenda", 0, 3);
-		var button3 := Button("Dublagem", 0, 3);
-		var button4 := Button("Desativado", 0, 3);
+	while (1)
+		var curLang := acct.GetProp("original_language");
+		if (curLang == error || !curLang)
+			curLang := LANGUAGE::PORTUGUESE;
+		endif
 
-		var container := ContainerGridLayout("Container1", 30, 80, 100, 100, 4, 2)
-			.AddControl(label, 1, 2)
-			.AddControl(label2, 2, 2)
-			.AddControl(label3, 3, 2)
-			.AddControl(label4, 4, 2)
-			.AddControl(button2, 2, 1)
-			.AddControl(button3, 3, 1)
-			.AddControl(button4, 4, 1);
-		
-		gump.AddControl(container);
+		var curMode := ref.GetProp("translation");
+		if (curMode == error || curMode == "")
+			curMode := 1;
+		endif
 
-		var result := gump.Show();
+		var gump := Gump(ref, "Tradução", 380, 320);
 
-		if (result.GetControl() == EVENT_ACTION::CLOSED)
-			cont := false;
-		elseif (result.GetControl().Equals(button2))
-			who.SetProperty("translation", 1);
-			Message("Tradução: Legenda Ativada.").SendSys(who.GetObjRef());
-		elseif (result.GetControl().Equals(button3))
-			who.SetProperty("translation", 2);
-			Message("Tradução: Dublagem Ativada.").SendSys(who.GetObjRef());
-		elseif (result.GetControl().Equals(button4))
-			who.SetProperty("translation", 0);
-			Message("Tradução: Desativada.").SendSys(who.GetObjRef());
+		gump.AddControl(Text("hLang", 20, 50, "Meu idioma:", 53));
+		gump.AddControl(Text("curLang", 20, 70, "Atual: " + _LangLabel(curLang), 2100));
+
+		var btn_pt := Button("bpt", 22, 95, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gump.AddControl(btn_pt);
+		gump.AddControl(Text("lpt", 47, 97, "Português (Brasil)", (curLang == LANGUAGE::PORTUGUESE) ? 63 : 2100));
+
+		var btn_en := Button("ben", 22, 120, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gump.AddControl(btn_en);
+		gump.AddControl(Text("len", 47, 122, "English", (curLang == LANGUAGE::ENGLISH) ? 63 : 2100));
+
+		var btn_es := Button("bes", 22, 145, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gump.AddControl(btn_es);
+		gump.AddControl(Text("les", 47, 147, "Español", (curLang == LANGUAGE::SPANISH) ? 63 : 2100));
+
+		gump.AddControl(Text("hMode", 20, 185, "Como receber traduções:", 53));
+		gump.AddControl(Text("curMode", 20, 205, "Atual: " + _ModeLabel(curMode), 2100));
+
+		var btn_leg := Button("bleg", 22, 230, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gump.AddControl(btn_leg);
+		gump.AddControl(Text("lleg", 47, 232, "Legenda — original + tradução", (curMode == 1) ? 63 : 2100));
+
+		var btn_dub := Button("bdub", 22, 255, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gump.AddControl(btn_dub);
+		gump.AddControl(Text("ldub", 47, 257, "Dublagem — apenas tradução", (curMode == 2) ? 63 : 2100));
+
+		var btn_off := Button("boff", 22, 280, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gump.AddControl(btn_off);
+		gump.AddControl(Text("loff", 47, 282, "Desativado — apenas original", (curMode == 0) ? 63 : 2100));
+
+		var btn_close := Button("bclose", 320, 285, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+		gump.AddControl(btn_close);
+
+		var evento := gump.Show();
+		gump.Dispose();
+
+		if (evento.GetControl() == EVENT_ACTION::CLOSED || evento.GetControl().Equals(btn_close))
+			return 1;
+		endif
+
+		if (evento.GetControl().Equals(btn_pt))
+			_SetLang(acct, ref, curLang, LANGUAGE::PORTUGUESE);
+		elseif (evento.GetControl().Equals(btn_en))
+			_SetLang(acct, ref, curLang, LANGUAGE::ENGLISH);
+		elseif (evento.GetControl().Equals(btn_es))
+			_SetLang(acct, ref, curLang, LANGUAGE::SPANISH);
+		elseif (evento.GetControl().Equals(btn_leg))
+			_SetMode(ref, curMode, 1);
+		elseif (evento.GetControl().Equals(btn_dub))
+			_SetMode(ref, curMode, 2);
+		elseif (evento.GetControl().Equals(btn_off))
+			_SetMode(ref, curMode, 0);
 		endif
 	endwhile
 endprogram
+
+function _LangLabel(code)
+	if (code == LANGUAGE::PORTUGUESE) return "Português"; endif
+	if (code == LANGUAGE::ENGLISH) return "English"; endif
+	if (code == LANGUAGE::SPANISH) return "Español"; endif
+	return CStr(code);
+endfunction
+
+function _ModeLabel(mode)
+	if (mode == 1) return "Legenda"; endif
+	if (mode == 2) return "Dublagem"; endif
+	if (mode == 0) return "Desativado"; endif
+	return CStr(mode);
+endfunction
+
+function _SetLang(acct, ref, cur, picked)
+	if (cur == picked) return; endif
+	acct.SetProp("original_language", picked);
+	Message("Idioma da conta atualizado: " + _LangLabel(picked)).SendSys(ref);
+endfunction
+
+function _SetMode(ref, cur, picked)
+	if (cur == picked) return; endif
+	ref.SetProp("translation", picked);
+	Message("Modo de tradução: " + _ModeLabel(picked)).SendSys(ref);
+endfunction

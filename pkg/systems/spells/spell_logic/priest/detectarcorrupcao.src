@@ -13,7 +13,7 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":attributes:attributes";
 include ":charactercreation:resists";
 include ":message:include/model/Message";
-include ":brainAI:npcUtil";
+
 
 program SpellScript(params)
 	var who := params[1];

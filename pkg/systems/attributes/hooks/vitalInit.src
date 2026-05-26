@@ -2,7 +2,7 @@ use uo;
 use util;
 
 include ":attributes:attributes";
-include ":brainAI:npcUtil";
+
 include ":charactercreation:habilidades";
 include ":timedscripts:timedScripts";
 include ":food:include/hunger";
