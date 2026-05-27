@@ -1,0 +1,121 @@
+use uo;
+use os;
+use basic;
+use polsys;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:/include/epicGumps";
+
+const CHUNK_SIZE := 512;
+const PAGE_SIZE  := 15;
+
+program ul_find_mushroom(who, text)
+    SendSysMessage(who, "[UL_FIND] Scanning britannia e britannia_alt... aguarde (~20s).");
+    print("[UL_FIND] Executado por " + who.name);
+
+    var found     := array{};
+    var realm_map := Realms();
+    var scan_list := array{"britannia", "britannia_alt"};
+
+    foreach realm_name in scan_list
+        var ri := realm_map[realm_name];
+        if (!ri || ri.errortext)
+            print("[UL_FIND] Realm nao encontrado: " + realm_name);
+            continue;
+        endif
+        var rw := CInt(ri.width);
+        var rh := CInt(ri.height);
+        var cx := 0;
+        while (cx < rw)
+            var cy := 0;
+            while (cy < rh)
+                var x2 := cx + CHUNK_SIZE - 1;
+                var y2 := cy + CHUNK_SIZE - 1;
+                if (x2 >= rw) x2 := rw - 1; endif
+                if (y2 >= rh) y2 := rh - 1; endif
+                var statics := ListStaticsInBox(cx, cy, -127, x2, y2, 127, 0, realm_name);
+                foreach st in statics
+                    var g := CInt(st.objtype);
+                    if (g == 0x222E || g == 0x222F || g == 0x2230 || g == 0x2231)
+                        var fi      := struct{};
+                        fi.+realm   := CStr(realm_name);
+                        fi.+x       := st.x;
+                        fi.+y       := st.y;
+                        fi.+z       := st.z;
+                        fi.+graphic := g;
+                        found.Append(fi);
+                    endif
+                endforeach
+                sleepms(50);
+                cy := cy + CHUNK_SIZE;
+            endwhile
+            cx := cx + CHUNK_SIZE;
+        endwhile
+        print("[UL_FIND] " + realm_name + ": scan completo.");
+    endforeach
+
+    SendSysMessage(who, "[UL_FIND] Scan concluido. " + Len(found) + " cogumelos encontrados.");
+    print("[UL_FIND] Total: " + Len(found));
+
+    if (Len(found) == 0)
+        SendSysMessage(who, "[UL_FIND] NENHUM cogumelo static encontrado nos realms. Sao items dinamicos.");
+        return 0;
+    endif
+
+    var page := 1;
+    while (1)
+        var gump  := _BuildMushGump(found, page);
+        var input := GFSendGump(who, gump);
+        if (!input || input[0] == 0) break; endif
+        var btn := CInt(input[0]);
+        if (btn == 900)
+            if (page > 1) page := page - 1; endif
+        elseif (btn == 901)
+            var max_page := CInt((Len(found) - 1) / PAGE_SIZE) + 1;
+            if (page < max_page) page := page + 1; endif
+        elseif (btn >= 1 && btn <= PAGE_SIZE)
+            var idx := (page - 1) * PAGE_SIZE + btn;
+            if (idx <= Len(found))
+                var fi := found[idx];
+                MoveObjectToLocation(who, fi.x, fi.y, fi.z, fi.realm, MOVEOBJECT_FORCELOCATION);
+                SendSysMessage(who, "[UL_FIND] Teleportado: " + fi.realm + " x=" + fi.x + " y=" + fi.y + " z=" + fi.z);
+            endif
+        else
+            break;
+        endif
+    endwhile
+    return 1;
+endprogram
+
+function _BuildMushGump(found, page)
+    var total    := Len(found);
+    var max_page := CInt((total - 1) / PAGE_SIZE) + 1;
+    var start    := (page - 1) * PAGE_SIZE + 1;
+    var finish   := start + PAGE_SIZE - 1;
+    if (finish > total) finish := total; endif
+
+    var gump := GFECreateGump("Cogumelos no Mapa — " + total + " encontrados", 520, 500);
+    GFTextLine(gump, 20, 70, 53, "Pagina " + page + "/" + max_page + "   Clique para teleportar");
+
+    var y_pos := 100;
+    var i     := start;
+    while (i <= finish)
+        var fi    := found[i];
+        var label := Hex(fi.graphic) + "  " + fi.realm + "  x=" + fi.x + "  y=" + fi.y + "  z=" + fi.z;
+        GFAddButton(gump, 15, y_pos, 0x845, 0x846, GF_CLOSE_BTN, i - start + 1);
+        GFTextLine(gump, 50, y_pos + 2, 53, label);
+        y_pos := y_pos + 25;
+        i := i + 1;
+    endwhile
+
+    if (page > 1)
+        GFAddButton(gump, 15, 462, 0x15E3, 0x15E7, GF_CLOSE_BTN, 900);
+        GFTextLine(gump, 50, 465, 53, "< Anterior");
+    endif
+    if (page < max_page)
+        GFAddButton(gump, 260, 462, 0x15E1, 0x15E5, GF_CLOSE_BTN, 901);
+        GFTextLine(gump, 295, 465, 53, "Proxima >");
+    endif
+    return gump;
+endfunction
