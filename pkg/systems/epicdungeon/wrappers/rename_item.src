@@ -1,0 +1,21 @@
+use uo;
+use os;
+
+program rename_item(params)
+    var dm   := params[1];
+    var item := params[2];
+    var pv   := params[3];
+    var nome := pv[1];
+
+    if (!item || !item.serial)
+        SendSysMessage(dm, "[EpicDungeon] Alvo invalido.");
+        return 0;
+    endif
+    if (!nome || nome == "")
+        SendSysMessage(dm, "[EpicDungeon] Nome vazio.");
+        return 0;
+    endif
+
+    item.name := nome;
+    return 1;
+endprogram

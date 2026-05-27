@@ -1,0 +1,36 @@
+use uo;
+use os;
+
+program settrap(params)
+    var dm    := params[1];
+    var pos   := params[2];
+    var pv    := params[3];
+    var tipo  := CInt(pv[1]);
+    var nivel := CInt(pv[2]);
+
+    if (nivel <= 0) nivel := 5; endif
+
+    var trap := CreateItemAtLocation(pos.x, pos.y, pos.z, 0xee7, 1, pos.realm);
+    if (!trap)
+        SendSysMessage(dm, "[EpicDungeon] Falha ao criar armadilha.");
+        return 0;
+    endif
+
+    var tipos := array{"physical", "poison", "paralyze", "energy"};
+    var nomes := array{"Dano", "Veneno", "Paralisia", "Relampago"};
+    var tipo_str := tipos[tipo + 1];
+    if (!tipo_str) tipo_str := "physical"; endif
+    var nome_str := nomes[tipo + 1];
+    if (!nome_str) nome_str := "Armadilha"; endif
+
+    trap.name := "Armadilha";
+    SetObjProperty(trap, "epic_trap_name", "Armadilha");
+    SetObjProperty(trap, "epic_trap_damage_dice", nivel + "d8");
+    SetObjProperty(trap, "epic_trap_damage_types", tipo_str);
+    SetObjProperty(trap, "epic_trap_sfx", 0);
+    SetObjProperty(trap, "epic_trap_fx", 0);
+    SetObjProperty(trap, "epic_trap_fx_type", 0);
+
+    SendSysMessage(dm, "[EpicDungeon] Armadilha " + nome_str + " nivel " + nivel + " criada.");
+    return 1;
+endprogram

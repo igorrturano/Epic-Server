@@ -1,0 +1,17 @@
+use uo;
+use os;
+
+program fls_danoarea(params)
+    var dm  := params[1];
+    var pos := params[2];
+
+    var item := CreateItemAtLocation(pos.x, pos.y, pos.z, 0xeefec, 1, pos.realm);
+    if (!item || item == error)
+        SendSysMessage(dm, "[EpicDungeon] Falha ao criar area de dano.");
+        return 0;
+    endif
+
+    PlayStationaryEffect(pos.x, pos.y, pos.z, 14120, 30, 0, 0, pos.realm);
+    SendSysMessage(dm, "[EpicDungeon] Area de dano criada. Clique duas vezes para configurar.");
+    return 1;
+endprogram

@@ -1,0 +1,8 @@
+use uo;
+use os;
+
+program copylook_w(params)
+    var dm := params[1];
+    Start_Script(":commands:seer/copylook", dm);
+    return 1;
+endprogram

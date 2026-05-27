@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+program npcaction(params)
+    var mobs      := params[2];
+    var pv        := params[3];
+    var action_id := CInt(pv[1]);
+
+    foreach mob in mobs
+        PerformAction(mob, action_id);
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

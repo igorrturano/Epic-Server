@@ -1,0 +1,11 @@
+use uo;
+use os;
+
+program emote_bow(params)
+    var mobs := params[2];
+    foreach mob in mobs
+        Start_Script(":commands:player/bow", mob);
+        sleepms(50);
+    endforeach
+    return 1;
+endprogram

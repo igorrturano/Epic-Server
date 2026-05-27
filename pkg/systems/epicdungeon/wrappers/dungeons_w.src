@@ -1,0 +1,8 @@
+use uo;
+use os;
+
+program dungeons_w(params)
+    var dm := params[1];
+    Start_Script(":commands:gm/dungeons", dm);
+    return 1;
+endprogram
