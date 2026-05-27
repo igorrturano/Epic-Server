@@ -1,0 +1,103 @@
+use uo;
+use os;
+use basic;
+
+include ":datafile:datafile";
+
+program ul_reset_all(who, text)
+    var args := SplitWords(text);
+    if (Len(args) == 0 || args[1] != "confirm")
+        SendSysMessage(who, "[UL_RESET] Comando perigoso. Uso: .ul_reset_all confirm");
+        SendSysMessage(who, "[UL_RESET] Limpa: tree_phases, tree_pieces, mutations, mutated_blocks");
+        SendSysMessage(who, "[UL_RESET] Destroi items dinamicos dos pedacos no mundo");
+        return 0;
+    endif
+
+    SendSysMessage(who, "[UL_RESET] Iniciando reset completo...");
+    print("[UL_RESET] Executado por " + who.name);
+
+    var count_phases    := 0;
+    var count_pieces    := 0;
+    var count_items     := 0;
+    var count_mutations := 0;
+    var count_blocks    := 0;
+    var df              := 0;
+    var elems           := 0;
+    var el              := 0;
+    var serial          := 0;
+    var item            := 0;
+
+    // 1. tree_pieces — destrói items físicos antes de limpar o DF
+    df := DFOpenDataFile(":ultimalive:tree_pieces", DF_CREATE);
+    if (df)
+        elems := DFGetElemNames(df);
+        foreach key_p in (elems)
+            el := df.FindElement(key_p);
+            if (el)
+                serial := CInt(el.GetProp("Serial"));
+                if (serial > 0)
+                    item := SystemFindObjectBySerial(serial);
+                    if (!item.errortext)
+                        DestroyItem(item);
+                        count_items := count_items + 1;
+                    endif
+                endif
+            endif
+            df.DeleteElement(key_p);
+            count_pieces := count_pieces + 1;
+            sleepms(1);
+        endforeach
+    endif
+    SendSysMessage(who, "[UL_RESET] tree_pieces: " + count_pieces + " entries (" + count_items + " items destruidos)");
+
+    // 2. tree_phases
+    df := DFOpenDataFile(":ultimalive:tree_phases", DF_CREATE);
+    if (df)
+        elems := DFGetElemNames(df);
+        foreach key_ph in (elems)
+            df.DeleteElement(key_ph);
+            count_phases := count_phases + 1;
+            sleepms(1);
+        endforeach
+    endif
+    SendSysMessage(who, "[UL_RESET] tree_phases: " + count_phases + " entries");
+
+    // 3. mutations
+    df := DFOpenDataFile(":ultimalive:mutations", DF_CREATE);
+    if (df)
+        elems := DFGetElemNames(df);
+        foreach key_m in (elems)
+            df.DeleteElement(key_m);
+            count_mutations := count_mutations + 1;
+            sleepms(1);
+        endforeach
+    endif
+    SendSysMessage(who, "[UL_RESET] mutations: " + count_mutations + " entries");
+
+    // 4. mutated_blocks
+    df := DFOpenDataFile(":ultimalive:mutated_blocks", DF_CREATE);
+    if (df)
+        elems := DFGetElemNames(df);
+        foreach key_b in (elems)
+            df.DeleteElement(key_b);
+            count_blocks := count_blocks + 1;
+            sleepms(1);
+        endforeach
+    endif
+    SendSysMessage(who, "[UL_RESET] mutated_blocks: " + count_blocks + " entries");
+
+    SendSysMessage(who, "[UL_RESET] Reset completo. Restart POL recomendado para limpar packet cache do cliente.");
+    print("[UL_RESET] Concluido: phases=" + count_phases + " pieces=" + count_pieces + " items=" + count_items + " mutations=" + count_mutations + " blocks=" + count_blocks);
+
+    SendSysMessage(who, "[UL_RESET] Forcando save imediato (SaveWorldState)...");
+    print("[UL_RESET] SaveWorldState iniciado...");
+    var save_res := SaveWorldState();
+    if (save_res.errortext)
+        SendSysMessage(who, "[UL_RESET] ERRO no save: " + save_res.errortext);
+        print("[UL_RESET] SaveWorldState FAIL: " + save_res.errortext);
+    else
+        SendSysMessage(who, "[UL_RESET] Save concluido. Reset persistido no disco.");
+        print("[UL_RESET] SaveWorldState OK: ElapsedMs=" + save_res.ElapsedMilliseconds);
+    endif
+    return 1;
+endprogram
