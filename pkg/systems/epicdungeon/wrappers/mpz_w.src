@@ -1,0 +1,35 @@
+use uo;
+use os;
+
+program mpz_w(params)
+    var dm     := params[1];
+    var pos    := params[2];
+    var pv     := params[3];
+    var offset := CInt(pv[1]);
+
+    if (offset == 0)
+        SendSysMessage(dm, "[EpicDungeon] Offset 0 — nada a mover.");
+        return 0;
+    endif
+
+    var items := ListItemsNearLocation(pos.x, pos.y, pos.z, 1, pos.realm);
+    if (!items || items.size() == 0)
+        SendSysMessage(dm, "[EpicDungeon] Nenhum item encontrado nessa posicao.");
+        return 0;
+    endif
+
+    var count := 0;
+    foreach item in items
+        var was_movable := item.movable;
+        if (!was_movable) item.movable := 1; endif
+        MoveObjectToLocation(item, item.x, item.y, item.z + offset, item.realm, MOVEOBJECT_FORCELOCATION);
+        if (!was_movable) item.movable := 0; endif
+        count += 1;
+        sleepms(5);
+    endforeach
+
+    var sinal := "";
+    if (offset > 0) sinal := "+"; endif
+    SendSysMessage(dm, "[EpicDungeon] " + count + " item(s) movido(s) Z" + sinal + offset + ".");
+    return 1;
+endprogram

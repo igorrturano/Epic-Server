@@ -1,0 +1,20 @@
+use uo;
+use os;
+
+include "include/packets";
+
+program shake(params)
+    var mobs      := params[2];
+    var pv        := params[3];
+    var magnitude := CInt(pv[1]);
+    var duration  := CDbl(pv[2]);
+
+    if (duration <= 0) duration := 0.5; endif
+    if (magnitude <= 0) magnitude := 5; endif
+
+    foreach mob in mobs
+        ScreenShake(mob, duration, magnitude);
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

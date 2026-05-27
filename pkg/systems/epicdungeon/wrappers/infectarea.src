@@ -1,0 +1,22 @@
+use uo;
+use os;
+
+include ":medicine:disease";
+
+program infectarea(params)
+    var pos    := params[2];
+    var pv     := params[3];
+    var raio   := CInt(pv[1]);
+    var duracao := CInt(pv[2]);
+
+    if (raio   <= 0) raio   := 5;   endif
+    if (duracao <= 0) duracao := 120; endif
+
+    foreach mobile in ListMobilesNearLocationEX(pos.x, pos.y, pos.z, raio, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN, pos.realm)
+        if (!mobile.npctemplate)
+            InfectMobile(mobile, duracao, 1, 3, "random", DISEASE_GRADES::MODERATE);
+            sleepms(5);
+        endif
+    endforeach
+    return 1;
+endprogram

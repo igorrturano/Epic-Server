@@ -1,0 +1,8 @@
+use uo;
+use os;
+
+program powerup_w(params)
+    var dm := params[1];
+    Start_Script(":attributes:commands/coun/powerup", dm);
+    return 1;
+endprogram

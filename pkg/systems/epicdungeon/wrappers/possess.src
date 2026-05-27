@@ -1,0 +1,21 @@
+use uo;
+use os;
+use polsys;
+use datafile;
+use attributes;
+use vitals;
+
+include ":commands:possess";
+
+program possess_wrapper(params)
+    var dm  := params[1];
+    var npc := params[2];
+
+    if (!npc || !npc.serial || !npc.npctemplate)
+        SendSysMessage(dm, "[EpicDungeon] Selecione um NPC valido.");
+        return 0;
+    endif
+
+    possess(dm, npc);
+    return 1;
+endprogram
