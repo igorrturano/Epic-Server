@@ -12,9 +12,11 @@ program ul_block_monitor(who)
         var bx := CInt(who.x) / 8;
         var by := CInt(who.y) / 8;
         if (bx != last_bx || by != last_by)
+            var ddx := bx - last_bx;
+            var ddy := by - last_by;
             last_bx := bx;
             last_by := by;
-            UL_SendPlayerBlockWindow(who);
+            UL_SendBlockDelta(who, bx, by, ddx, ddy);
         endif
     endwhile
 endprogram
