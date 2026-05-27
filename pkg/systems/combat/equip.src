@@ -74,6 +74,15 @@ program equipweapon(who, item)
 			endif
 		endif
 	endif
+
+	// Block equipping a two-handed weapon while a shield is already in the off-hand
+	if (item.isA(POLCLASS_WEAPON) && left_hand && left_hand.isA(POLCLASS_ARMOR))
+		var weapCfg := ReadConfigFile(":combat:itemdesc");
+		if (CStr(weapCfg[item.objtype].Attribute) == "Two_Handed")
+			SendSysMessageEx(who, "Voce nao pode usar arma de duas maos com escudo.", SSM_FAIL);
+			return 0;
+		endif
+	endif
 	if (who.npctemplate)
 		return 1;
 	endif
