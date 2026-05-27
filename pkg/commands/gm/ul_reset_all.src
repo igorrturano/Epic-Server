@@ -2,7 +2,7 @@ use uo;
 use os;
 use basic;
 
-include ":datafile:datafile";
+include ":ultimalive:include/packets";
 
 program ul_reset_all(who, text)
     var args := SplitWords(text);
@@ -16,18 +16,39 @@ program ul_reset_all(who, text)
     SendSysMessage(who, "[UL_RESET] Iniciando reset completo...");
     print("[UL_RESET] Executado por " + who.name);
 
-    var count_phases    := 0;
-    var count_pieces    := 0;
-    var count_items     := 0;
-    var count_mutations := 0;
-    var count_blocks    := 0;
-    var df              := 0;
-    var elems           := 0;
-    var el              := 0;
-    var serial          := 0;
-    var item            := 0;
+    var count_phases      := 0;
+    var count_pieces      := 0;
+    var count_items       := 0;
+    var count_mutations   := 0;
+    var count_blocks      := 0;
+    var df                := 0;
+    var elems             := 0;
+    var el                := 0;
+    var serial            := 0;
+    var item              := 0;
+    var blocks_to_refresh := array{};
+    var refresh_count     := 0;
 
-    // 1. tree_pieces — destrói items físicos antes de limpar o DF
+    // 1. Coletar blocos mutados ANTES de limpar
+    SendSysMessage(who, "[UL_RESET] Coletando coords dos blocos mutados...");
+    df := DFOpenDataFile(":ultimalive:mutated_blocks", DF_CREATE);
+    if (df)
+        elems := DFGetElemNames(df);
+        foreach key_collect in (elems)
+            var parts := SplitWords(key_collect);
+            if (Len(parts) >= 3)
+                var bi    := struct{};
+                bi.+realm := parts[1];
+                bi.+bx    := CInt(parts[2]);
+                bi.+by    := CInt(parts[3]);
+                blocks_to_refresh.Append(bi);
+            endif
+            sleepms(1);
+        endforeach
+    endif
+    SendSysMessage(who, "[UL_RESET] Coletados " + Len(blocks_to_refresh) + " blocos para refresh visual.");
+
+    // 2. tree_pieces — destrói items físicos antes de limpar o DF
     df := DFOpenDataFile(":ultimalive:tree_pieces", DF_CREATE);
     if (df)
         elems := DFGetElemNames(df);
@@ -50,7 +71,7 @@ program ul_reset_all(who, text)
     endif
     SendSysMessage(who, "[UL_RESET] tree_pieces: " + count_pieces + " entries (" + count_items + " items destruidos)");
 
-    // 2. tree_phases
+    // 3. tree_phases
     df := DFOpenDataFile(":ultimalive:tree_phases", DF_CREATE);
     if (df)
         elems := DFGetElemNames(df);
@@ -62,7 +83,7 @@ program ul_reset_all(who, text)
     endif
     SendSysMessage(who, "[UL_RESET] tree_phases: " + count_phases + " entries");
 
-    // 3. mutations
+    // 4. mutations
     df := DFOpenDataFile(":ultimalive:mutations", DF_CREATE);
     if (df)
         elems := DFGetElemNames(df);
@@ -74,7 +95,7 @@ program ul_reset_all(who, text)
     endif
     SendSysMessage(who, "[UL_RESET] mutations: " + count_mutations + " entries");
 
-    // 4. mutated_blocks
+    // 5. mutated_blocks
     df := DFOpenDataFile(":ultimalive:mutated_blocks", DF_CREATE);
     if (df)
         elems := DFGetElemNames(df);
@@ -86,9 +107,7 @@ program ul_reset_all(who, text)
     endif
     SendSysMessage(who, "[UL_RESET] mutated_blocks: " + count_blocks + " entries");
 
-    SendSysMessage(who, "[UL_RESET] Reset completo. Restart POL recomendado para limpar packet cache do cliente.");
-    print("[UL_RESET] Concluido: phases=" + count_phases + " pieces=" + count_pieces + " items=" + count_items + " mutations=" + count_mutations + " blocks=" + count_blocks);
-
+    // 6. SaveWorldState
     SendSysMessage(who, "[UL_RESET] Forcando save imediato (SaveWorldState)...");
     print("[UL_RESET] SaveWorldState iniciado...");
     var save_res := SaveWorldState();
@@ -99,5 +118,30 @@ program ul_reset_all(who, text)
         SendSysMessage(who, "[UL_RESET] Save concluido. Reset persistido no disco.");
         print("[UL_RESET] SaveWorldState OK: ElapsedMs=" + save_res.ElapsedMilliseconds);
     endif
+
+    // 7. Broadcast visual pra players proximos dos blocos afetados
+    if (Len(blocks_to_refresh) > 0)
+        SendSysMessage(who, "[UL_RESET] Forcando refresh visual nos players proximos...");
+        foreach bi in (blocks_to_refresh)
+            foreach ch in EnumerateOnlineCharacters()
+                if (CStr(ch.realm) == bi.realm)
+                    var dx := CInt(ch.x) / 8 - bi.bx;
+                    var dy := CInt(ch.y) / 8 - bi.by;
+                    if (dx < 0) dx := -dx; endif
+                    if (dy < 0) dy := -dy; endif
+                    if (dx <= 2 && dy <= 2)
+                        UL_SendStaticsUpdate(ch, ch.realm, bi.bx, bi.by);
+                        refresh_count := refresh_count + 1;
+                    endif
+                endif
+            endforeach
+            sleepms(2);
+        endforeach
+        SendSysMessage(who, "[UL_RESET] Refresh visual enviado aos players proximos.");
+        print("[UL_RESET] Broadcast: " + Len(blocks_to_refresh) + " blocos, " + refresh_count + " packets enviados");
+    endif
+
+    print("[UL_RESET] Concluido: phases=" + count_phases + " pieces=" + count_pieces + " items=" + count_items + " mutations=" + count_mutations + " blocks=" + count_blocks);
+    SendSysMessage(who, "[UL_RESET] Reset completo. Refresh visual enviado aos players proximos.");
     return 1;
 endprogram
