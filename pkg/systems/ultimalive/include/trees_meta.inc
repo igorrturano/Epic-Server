@@ -4,10 +4,11 @@
 use basic;
 
 function UL_GetTreeMeta(graphic)
-    var trunk     := 0;
-    var foliage   := 0;
-    var type_name := "";
-    var log_type  := 0;
+    var trunk       := 0;
+    var foliage     := 0;
+    var type_name   := "";
+    var log_type    := 0;
+    var is_mushroom := 0;
 
     case (CInt(graphic))
         0xCD6:
@@ -106,6 +107,15 @@ function UL_GetTreeMeta(graphic)
             foliage   := 0x30C8;
             type_name := "Ebano";
             log_type  := 0xEE3B;
+        0x222E:
+        0x222F:
+        0x2230:
+        0x2231:
+            trunk       := CInt(graphic);
+            foliage     := 0;
+            type_name   := "Cogumelo";
+            log_type    := 0xEE3C;
+            is_mushroom := 1;
     endcase
 
     if (!trunk)
@@ -113,9 +123,10 @@ function UL_GetTreeMeta(graphic)
     endif
 
     var meta := struct{};
-    meta.+trunk     := trunk;
-    meta.+foliage   := foliage;
-    meta.+type_name := type_name;
-    meta.+log_type  := log_type;
+    meta.+trunk       := trunk;
+    meta.+foliage     := foliage;
+    meta.+type_name   := type_name;
+    meta.+log_type    := log_type;
+    meta.+is_mushroom := is_mushroom;
     return meta;
 endfunction

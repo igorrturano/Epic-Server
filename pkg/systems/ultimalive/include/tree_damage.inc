@@ -8,10 +8,11 @@ include ":ultimalive:include/packets";
 include ":ultimalive:include/trees_meta";
 include ":ultimalive:include/tree_pieces";
 
-const UL_TREE_PHASES_DF     := ":ultimalive:tree_phases";
-const UL_PHASE_1_THRESHOLD  := 20;       // wood_amount > 20 → fase 1
-const UL_TREE_STUMP_GRAPHIC := 0x0E59;
-const UL_REGEN_SECONDS      := 1800;     // 30*60 em producao
+const UL_TREE_PHASES_DF         := ":ultimalive:tree_phases";
+const UL_PHASE_1_THRESHOLD      := 20;       // wood_amount > 20 → fase 1
+const UL_TREE_STUMP_GRAPHIC     := 0x0E59;
+const UL_MUSHROOM_STUMP_GRAPHIC := 0x0DAC;
+const UL_REGEN_SECONDS          := 1800;     // 30*60 em producao
 
 function _UL_GetTreePhasesDF()
     var df := DFOpenDataFile(UL_TREE_PHASES_DF, DF_CREATE);
@@ -119,7 +120,9 @@ endfunction
 
 function _UL_FindStaticZ(realm, x, y, target_graphic)
     var statics := ListStaticsAtLocation(CInt(x), CInt(y), LIST_IGNORE_Z, 0, realm);
+    print("[UL_DEBUG] FindStaticZ: x=" + CInt(x) + " y=" + CInt(y) + " target=" + Hex(CInt(target_graphic)) + " found_count=" + Len(statics));
     foreach st in statics
+        print("[UL_DEBUG]   static z=" + st.z + " objtype=" + Hex(CInt(st.objtype)));
         if (CInt(st.objtype) == CInt(target_graphic))
             return st.z;
         endif
@@ -138,19 +141,19 @@ function _UL_ApplyFaseTransition(realm, x, y, meta, new_phase, old_phase, who)
     res.+z_trunk   := -1;
     res.+z_foliage := -1;
 
-    if (new_phase == 2 &&
-        old_phase < 2)
-        z_found := _UL_FindStaticZ(realm, x, y, meta.foliage);
-        if (!z_found.errortext)
-            z_foliage := CInt(z_found);
-            UL_DeleteStatic(realm, x, y, z_foliage, meta.foliage);
-            PrintTextAbove(who, "*folhas comecam a cair*");
+    if (!meta.is_mushroom)
+        if (new_phase == 2 && old_phase < 2)
+            z_found := _UL_FindStaticZ(realm, x, y, meta.foliage);
+            if (!z_found.errortext)
+                z_foliage := CInt(z_found);
+                UL_DeleteStatic(realm, x, y, z_foliage, meta.foliage);
+                PrintTextAbove(who, "*folhas comecam a cair*");
+            endif
         endif
     endif
 
-    if (new_phase == 3 &&
-        old_phase < 3)
-        if (old_phase < 2)
+    if (new_phase == 3 && old_phase < 3)
+        if (!meta.is_mushroom && old_phase < 2)
             z_found := _UL_FindStaticZ(realm, x, y, meta.foliage);
             if (!z_found.errortext)
                 z_foliage := CInt(z_found);
@@ -163,9 +166,14 @@ function _UL_ApplyFaseTransition(realm, x, y, meta, new_phase, old_phase, who)
             return res;
         endif
         z_trunk := CInt(z_found);
-        PrintTextAbove(who, "*o tronco do " + meta.type_name + " cede com um estalo*");
-        UL_SetStatic(realm, x, y, z_trunk, UL_TREE_STUMP_GRAPHIC, 0, "ul_tree_damage", meta.trunk);
-        UL_CreateFallenLogs(realm, x, y, z_trunk, meta, who);
+        if (meta.is_mushroom)
+            PrintTextAbove(who, "*o " + meta.type_name + " desmorona*");
+            UL_SetStatic(realm, x, y, z_trunk, UL_MUSHROOM_STUMP_GRAPHIC, 0, "ul_tree_damage", meta.trunk);
+        else
+            PrintTextAbove(who, "*o tronco do " + meta.type_name + " cede com um estalo*");
+            UL_SetStatic(realm, x, y, z_trunk, UL_TREE_STUMP_GRAPHIC, 0, "ul_tree_damage", meta.trunk);
+            UL_CreateFallenLogs(realm, x, y, z_trunk, meta, who);
+        endif
     endif
 
     UL_NotifyNearbyPlayers(realm, bx, by);
@@ -181,7 +189,16 @@ function UL_DamageTree(realm, x, y, tree_graphic, wood_amount, who)
     if (meta.errortext)
         return 0;
     endif
-    var new_phase := _UL_DetermineFase(CInt(wood_amount));
+    var new_phase := 0;
+    if (meta.is_mushroom)
+        if (CInt(wood_amount) == 0)
+            new_phase := 3;
+        else
+            new_phase := 1;
+        endif
+    else
+        new_phase := _UL_DetermineFase(CInt(wood_amount));
+    endif
     var old_phase := _UL_GetStoredPhase(realm, x, y, meta.trunk);
     if (old_phase == 0)
         old_phase := 1;
@@ -196,5 +213,8 @@ function UL_DamageTree(realm, x, y, tree_graphic, wood_amount, who)
     endif
     _UL_StorePhase(realm, x, y, meta.trunk, new_phase, res.z_trunk, res.z_foliage);
     print("[UL_DEBUG] StorePhase: phase=" + new_phase + " z_trunk=" + res.z_trunk + " z_foliage=" + res.z_foliage);
+    if (meta.is_mushroom && new_phase == 3)
+        _UL_SetWillRegenAt(realm, x, y, meta.trunk);
+    endif
     return new_phase;
 endfunction

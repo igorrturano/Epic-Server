@@ -131,7 +131,10 @@ program skill_LumberJack(who, tool)
 		CheckToolWear(who, tool, "Lumberjacking");
 		sleep(1);
 		if (LJ_GetWoodAmount(who.realm, targ.x, targ.y) == 0)
-			PrintTextAbove(who, "*derruba a arvore*");
+			var _meta := UL_GetTreeMeta(CInt(targ.objtype));
+			if (!_meta.errortext && !_meta.is_mushroom)
+				PrintTextAbove(who, "*derruba a arvore*");
+			endif
 			break;
 		endif
 	endwhile
@@ -151,20 +154,19 @@ function ChopTree(who, tool, targ, orig_x, orig_y)
 		sleepms(1200);
 	endfor
 
-	var wood_type := GetWoodType(targ);
+	var wood_type   := GetWoodType(targ);
 	var wood_amount := LJ_GetWoodAmount(who.realm, targ.x, targ.y);
+	var max_wood    := CInt(LJ_GetSettingsCfgElem("Settings").MaxWood);
+	var difficulty  := DetermineLumberDifficulty(wood_type);
 
-	var max_wood := CInt(LJ_GetSettingsCfgElem("Settings").MaxWood);
-	var difficulty := DetermineLumberDifficulty(wood_type); // feita
-	// The less wood there is, the more difficult it becomes.
-	/*
-	//var difficulty := CInt(105 - (100 * wood_amount / max_wood));
-	//var difficulty := CInt(0 + (max_wood - wood_amount)*3);
+	var chop_meta   := UL_GetTreeMeta(CInt(targ.objtype));
+	var is_mushroom := (!chop_meta.errortext && chop_meta.is_mushroom);
 
-	if (difficulty > 30)
-		difficulty := 30;
+	if (is_mushroom && wood_amount >= max_wood)
+		wood_amount := 4;
+		LJ_SetWoodAmount(who.realm, targ.x, targ.y, wood_amount);
 	endif
-*/
+
 	if (tool.objtype == 0x0f43)
 		difficulty := difficulty - 10;
 		if (difficulty < 0)
@@ -172,15 +174,15 @@ function ChopTree(who, tool, targ, orig_x, orig_y)
 		endif
 	endif
 
-	// if ( who.cmdlevel )
-	// 	SendSysMessage(who, "MaxWood="+max_wood+"    CurWood="+wood_amount);
-	// 	SendSysMessage(who, "Difficulty ->"+difficulty);
-	// endif
-
-	if (SkillCheck(who, "Lumberjacking", difficulty) > 0 || MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
-		var amt := Cint(EffectiveSkill(who, "Lumberjacking") / 20);
-		if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_LUMBERJACK))
-			amt := amt + 4;
+	if (is_mushroom || SkillCheck(who, "Lumberjacking", difficulty) > 0 || MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
+		var amt := 0;
+		if (is_mushroom)
+			amt := 1;
+		else
+			amt := CInt(EffectiveSkill(who, "Lumberjacking") / 20);
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_LUMBERJACK))
+				amt := amt + 4;
+			endif
 		endif
 		if (amt <= 0)
 			amt := 1;
