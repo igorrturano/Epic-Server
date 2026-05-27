@@ -137,7 +137,7 @@ function _UL_DoRegen(el, key)
     var settings := LJ_GetSettingsCfgElem("Settings");
     LJ_SetWoodAmount(realm, x, y, CInt(settings.MaxWood));
 
-    _UL_NotifyNearbyPlayers(realm, bx, by);
+    UL_NotifyNearbyPlayers(realm, bx, by);
 
     var df_ph := _UL_GetTreePhasesDF();
     if (!df_ph.errortext)
@@ -186,16 +186,3 @@ function _UL_HasPiecesRemaining(realm, parent_x, parent_y)
     return 0;
 endfunction
 
-function _UL_NotifyNearbyPlayers(realm, bx, by)
-    foreach who in EnumerateOnlineCharacters()
-        if (CStr(who.realm) == CStr(realm))
-            var dx := CInt(who.x) / 8 - bx;
-            var dy := CInt(who.y) / 8 - by;
-            if (dx < 0) dx := -dx; endif
-            if (dy < 0) dy := -dy; endif
-            if (dx <= 2 && dy <= 2)
-                UL_SendStaticsUpdate(who, realm, bx, by);
-            endif
-        endif
-    endforeach
-endfunction

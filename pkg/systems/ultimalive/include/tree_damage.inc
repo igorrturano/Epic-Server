@@ -168,7 +168,7 @@ function _UL_ApplyFaseTransition(realm, x, y, meta, new_phase, old_phase, who)
         UL_CreateFallenLogs(realm, x, y, z_trunk, meta, who);
     endif
 
-    UL_SendStaticsUpdate(who, realm, bx, by);
+    UL_NotifyNearbyPlayers(realm, bx, by);
     res.ok        := 1;
     res.z_trunk   := z_trunk;
     res.z_foliage := z_foliage;

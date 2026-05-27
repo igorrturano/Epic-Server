@@ -358,3 +358,17 @@ endfunction
 function UL_HandleHashQuery(player, packet)
     return error{"errortext" := "STUB - sub-fase 1.E"};
 endfunction
+
+function UL_NotifyNearbyPlayers(realm, bx, by)
+    foreach who in EnumerateOnlineCharacters()
+        if (CStr(who.realm) == CStr(realm))
+            var dx := CInt(who.x) / 8 - bx;
+            var dy := CInt(who.y) / 8 - by;
+            if (dx < 0) dx := -dx; endif
+            if (dy < 0) dy := -dy; endif
+            if (dx <= 2 && dy <= 2)
+                UL_SendStaticsUpdate(who, realm, bx, by);
+            endif
+        endif
+    endforeach
+endfunction
