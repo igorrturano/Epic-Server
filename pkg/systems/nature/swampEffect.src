@@ -28,7 +28,7 @@ program spiderWebEffect(who)
 				PlaysoundEffect(who, sounds[RandomInt(sounds.size()) + 1]);
 				PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0x54f7, 10, 30, 2283);
 
-				if (SkillCheck(who, NATURE, RESIST_HARD, 0, ADV_SKILL) > 0)
+				if (SwampNatureCheck(who, "nature_swamp_mushroom", RESIST_HARD))
 					SendSysMessage(who, "Voce evita os esporos.");
 				else
 					TS_StartTimer(who, "defaultPoison", 120, RandomInt(4) + 1);
@@ -38,7 +38,7 @@ program spiderWebEffect(who)
 		endforeach
 
 		if (is_on_swamp)
-			if (SkillCheck(who, NATURE, RESIST_MEDIUM, 0, ADV_SKILL) <= 0)
+			if (!SwampNatureCheck(who, "nature_swamp_slow", RESIST_MEDIUM))
 				PlayerSpeedSlower(who, 1);
 			endif
 		else
@@ -48,3 +48,13 @@ program spiderWebEffect(who)
 		sleepms(200);
 	endwhile
 endprogram
+
+function SwampNatureCheck(who, cooldownName, dif)
+	if (GetCooldown(who, cooldownName) > 0)
+		return CInt(GetObjProperty(who, "#" + cooldownName));
+	endif
+	var passed := (SkillCheck(who, NATURE, dif, 0, ADV_SKILL) > 0) ? 1 : 0;
+	SetObjProperty(who, "#" + cooldownName, passed);
+	SetCooldown(who, cooldownName, 30);
+	return passed;
+endfunction
