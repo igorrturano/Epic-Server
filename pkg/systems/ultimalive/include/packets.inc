@@ -296,28 +296,6 @@ function UL_SendStaticsUpdate(who, realm, blockX, blockY)
         return pkt;
     endif
 
-    var block_number := pkt.GetInt32(3);
-    var n            := pkt.GetInt32(7);
-    var map_id       := pkt.GetInt8(14);
-
-    Print("UL_SEND_STATICS realm=" + realm + " blockX=" + blockX + " blockY=" + blockY +
-          " block=" + block_number + " mapId=" + map_id + " N=" + n + " size=" + pkt.GetSize());
-
-    var dump_end := pkt.GetSize() - 1;
-    if (dump_end > 63) dump_end := 63; endif
-    var i          := 0;
-    var line       := "";
-    var line_start := 0;
-    while (i <= dump_end)
-        line := line + _UL_Hex2(pkt.GetInt8(i)) + " ";
-        if ((i % 32) == 31 || i == dump_end)
-            Print("UL_SEND_STATICS bytes[" + line_start + ".." + i + "] " + line);
-            line       := "";
-            line_start := i + 1;
-        endif
-        i += 1;
-    endwhile
-
     pkt.SendPacket(who);
     return 1;
 endfunction
