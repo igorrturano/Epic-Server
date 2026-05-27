@@ -120,9 +120,7 @@ endfunction
 
 function _UL_FindStaticZ(realm, x, y, target_graphic)
     var statics := ListStaticsAtLocation(CInt(x), CInt(y), LIST_IGNORE_Z, 0, realm);
-    print("[UL_DEBUG] FindStaticZ: x=" + CInt(x) + " y=" + CInt(y) + " target=" + Hex(CInt(target_graphic)) + " found_count=" + Len(statics));
     foreach st in statics
-        print("[UL_DEBUG]   static z=" + st.z + " objtype=" + Hex(CInt(st.objtype)));
         if (CInt(st.objtype) == CInt(target_graphic))
             return st.z;
         endif
@@ -184,7 +182,6 @@ function _UL_ApplyFaseTransition(realm, x, y, meta, new_phase, old_phase, who)
 endfunction
 
 function UL_DamageTree(realm, x, y, tree_graphic, wood_amount, who)
-    print("[UL_DEBUG] DamageTree: realm=" + CStr(realm) + " x=" + CInt(x) + " y=" + CInt(y) + " graphic=" + Hex(CInt(tree_graphic)) + " wood=" + CInt(wood_amount) + " who=" + who.name);
     var meta := UL_GetTreeMeta(CInt(tree_graphic));
     if (meta.errortext)
         return 0;
@@ -203,7 +200,6 @@ function UL_DamageTree(realm, x, y, tree_graphic, wood_amount, who)
     if (old_phase == 0)
         old_phase := 1;
     endif
-    print("[UL_DEBUG] type=" + meta.type_name + " phase old->new=" + old_phase + "->" + new_phase);
     if (new_phase <= old_phase)
         return 0;
     endif

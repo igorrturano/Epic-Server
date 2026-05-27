@@ -23,7 +23,6 @@ function _UL_RegenPhase()
     if (df.errortext) return; endif
     var elems := DFGetElemNames(df);
     var now   := polcore().systime;
-    print("[UL_DEBUG] RegenCycle start: now=" + now);
     foreach key in (elems)
         var el        := df.FindElement(key);
         var phase     := CInt(el.GetProp("Phase"));
@@ -57,7 +56,6 @@ function _UL_CleanupPieces()
     if (df.errortext) return; endif
     var elems := DFGetElemNames(df);
     var now   := polcore().systime;
-    print("[UL_DEBUG] CleanupCycle start");
     foreach key in (elems)
         var el         := df.FindElement(key);
         var created_at := CInt(el.GetProp("CreatedAt"));

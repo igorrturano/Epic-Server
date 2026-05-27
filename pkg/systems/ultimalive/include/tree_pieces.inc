@@ -236,12 +236,10 @@ function UL_DamagePiece(realm, x, y, who, tool)
 
     if (SkillCheck(who, "Lumberjacking", diff) > 0)
         new_hp := new_hp - damage;
-        print("[UL_DEBUG] DamagePiece: x=" + CInt(x) + " y=" + CInt(y) + " HP=" + data.hp + "->" + new_hp);
         if (new_hp <= 0)
             _UL_DestroyPiece(realm, x, y);
             if (data.trunk_graphic != 0)
                 remaining := _UL_DecrementPieces(realm, data.parent_x, data.parent_y, data.trunk_graphic);
-                print("[UL_DEBUG] PiecesRemaining: parent=" + CInt(data.parent_x) + "," + CInt(data.parent_y) + " remaining=" + remaining);
                 if (remaining == 0)
                     _UL_SetWillRegenAt(realm, data.parent_x, data.parent_y, data.trunk_graphic);
                 endif
@@ -257,12 +255,10 @@ function UL_DamagePiece(realm, x, y, who, tool)
         endif
     else
         new_hp := new_hp - CInt(damage / 2);
-        print("[UL_DEBUG] DamagePiece: x=" + CInt(x) + " y=" + CInt(y) + " HP=" + data.hp + "->" + new_hp);
         if (new_hp <= 0)
             _UL_DestroyPiece(realm, x, y);
             if (data.trunk_graphic != 0)
                 remaining := _UL_DecrementPieces(realm, data.parent_x, data.parent_y, data.trunk_graphic);
-                print("[UL_DEBUG] PiecesRemaining: parent=" + CInt(data.parent_x) + "," + CInt(data.parent_y) + " remaining=" + remaining);
                 if (remaining == 0)
                     _UL_SetWillRegenAt(realm, data.parent_x, data.parent_y, data.trunk_graphic);
                 endif
