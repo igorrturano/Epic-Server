@@ -351,6 +351,68 @@ function UL_SendPlayerBlockWindow(who)
     endwhile
 endfunction
 
+function UL_MaybeSendBlock(who, bx, by, max_bx, max_by)
+    if (bx < 0 || bx > max_bx || by < 0 || by > max_by)
+        return;
+    endif
+    if (UL_IsBlockMutated(who.realm, bx, by))
+        var r := UL_SendStaticsUpdate(who, who.realm, bx, by);
+        if (r == error)
+            Print("UL delta error [" + who.name + "] block(" + bx + "," + by + "): " + r.errortext);
+        endif
+    endif
+endfunction
+
+function UL_SendBlockDelta(who, bx, by, ddx, ddy)
+    var realm_info := Realms()[CStr(who.realm)];
+    if (!realm_info)
+        return;
+    endif
+    var max_bx := CInt(realm_info.width)  / 8 - 1;
+    var max_by := CInt(realm_info.height) / 8 - 1;
+
+    var abs_ddx := ddx;
+    var abs_ddy := ddy;
+    if (abs_ddx < 0) abs_ddx := -abs_ddx; endif
+    if (abs_ddy < 0) abs_ddy := -abs_ddy; endif
+    if (abs_ddx > 2 || abs_ddy > 2)
+        UL_SendPlayerBlockWindow(who);
+        return;
+    endif
+
+    if (ddx > 0)
+        var sy := -2;
+        while (sy <= 2)
+            UL_MaybeSendBlock(who, bx + 2, by + sy, max_bx, max_by);
+            sy := sy + 1;
+        endwhile
+    endif
+
+    if (ddx < 0)
+        var sy := -2;
+        while (sy <= 2)
+            UL_MaybeSendBlock(who, bx - 2, by + sy, max_bx, max_by);
+            sy := sy + 1;
+        endwhile
+    endif
+
+    if (ddy > 0)
+        var sx := -2;
+        while (sx <= 2)
+            UL_MaybeSendBlock(who, bx + sx, by + 2, max_bx, max_by);
+            sx := sx + 1;
+        endwhile
+    endif
+
+    if (ddy < 0)
+        var sx := -2;
+        while (sx <= 2)
+            UL_MaybeSendBlock(who, bx + sx, by - 2, max_bx, max_by);
+            sx := sx + 1;
+        endwhile
+    endif
+endfunction
+
 function UL_BuildHashResponsePacket(realm, centerBlockX, centerBlockY)
     return error{"errortext" := "STUB - sub-fase 1.E"};
 endfunction
