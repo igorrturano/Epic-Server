@@ -1,0 +1,16 @@
+// FOG-FASE5: Camada E — Comando GM .fogregion
+use uo;
+use os;
+
+include ":gumps:/include/epicGumps";
+include ":fog_regions:gumps/fogRegionGump";
+
+program command_FogRegion(who, params)
+    if (who.cmdlevel < 3)
+        SendSysMessage(who, "Sem permissão.");
+        return 0;
+    endif
+
+    ShowFogRegionMenu(who);
+    return 1;
+endprogram

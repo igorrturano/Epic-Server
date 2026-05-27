@@ -1,0 +1,18 @@
+// Boot hook: re-dispara fogRegionEffect para regiões timed ativas; expira as vencidas offline.
+
+use os;
+
+include ":fog_regions:include/fogRegionCore";
+
+var regions := LoadRegions();
+foreach r in regions
+    if (r.Status == FOG_REGION_STATUS_ACTIVE && r.Mode == FOG_REGION_MODE_TIMED)
+        if (polcore().systime < r.TimerEnd)
+            start_script(":fog_regions:fogRegionEffect", r.Name);
+        else
+            // Já expirou enquanto servidor estava offline — atualiza agora
+            r.Status := FOG_REGION_STATUS_STOPPED;
+            SaveRegion(r);
+        endif
+    endif
+endforeach
