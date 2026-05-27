@@ -4,6 +4,7 @@
 use uo;
 use basic;
 use math;
+use os;
 
 include ":attributes:attributes";
 include ":crafting:toolWear";
@@ -74,12 +75,17 @@ function _UL_SpawnPiece(realm, x, y, z, graphic, meta, parent_x, parent_y, piece
     if (!el)
         el := df.CreateElement(key);
     endif
-    el.SetProp("Serial",     item.serial);
-    el.SetProp("PieceIndex", CInt(piece_index));
-    el.SetProp("HP",         UL_PIECE_HP_INITIAL);
-    el.SetProp("LogType",    CInt(meta.log_type));
-    el.SetProp("ParentX",    CInt(parent_x));
-    el.SetProp("ParentY",    CInt(parent_y));
+    el.SetProp("Serial",       item.serial);
+    el.SetProp("PieceIndex",   CInt(piece_index));
+    el.SetProp("HP",           UL_PIECE_HP_INITIAL);
+    el.SetProp("LogType",      CInt(meta.log_type));
+    el.SetProp("ParentX",      CInt(parent_x));
+    el.SetProp("ParentY",      CInt(parent_y));
+    el.SetProp("Realm",        CStr(realm));
+    el.SetProp("X",            CInt(x));
+    el.SetProp("Y",            CInt(y));
+    el.SetProp("TrunkGraphic", CInt(meta.trunk));
+    el.SetProp("CreatedAt",    polcore().systime);
     return 1;
 endfunction
 
@@ -102,9 +108,24 @@ function _UL_TryDirection(direction, realm, stump_x, stump_y, stump_z, meta)
     endif
     var z3 := GetWorldHeight(p3.x, p3.y, realm);
 
-    _UL_SpawnPiece(realm, p1.x, p1.y, z1, _UL_PieceGraphic(1), meta, stump_x, stump_y, 1);
-    _UL_SpawnPiece(realm, p2.x, p2.y, z2, _UL_PieceGraphic(2), meta, stump_x, stump_y, 2);
-    _UL_SpawnPiece(realm, p3.x, p3.y, z3, _UL_PieceGraphic(3), meta, stump_x, stump_y, 3);
+    // OESTE: inverter ordem (sprite tem orientacao visual fixa)
+    var g1 := 0;
+    var g2 := 0;
+    var g3 := 0;
+    if (direction == "OESTE")
+        g1 := _UL_PieceGraphic(3);
+        g2 := _UL_PieceGraphic(2);
+        g3 := _UL_PieceGraphic(1);
+    else
+        g1 := _UL_PieceGraphic(1);
+        g2 := _UL_PieceGraphic(2);
+        g3 := _UL_PieceGraphic(3);
+    endif
+
+    _UL_SpawnPiece(realm, p1.x, p1.y, z1, g1, meta, stump_x, stump_y, 1);
+    _UL_SpawnPiece(realm, p2.x, p2.y, z2, g2, meta, stump_x, stump_y, 2);
+    _UL_SpawnPiece(realm, p3.x, p3.y, z3, g3, meta, stump_x, stump_y, 3);
+    _UL_SetPiecesRemaining(realm, stump_x, stump_y, meta.trunk, 3);
     return 1;
 endfunction
 
@@ -119,12 +140,13 @@ function _UL_GetPieceData(realm, x, y)
         return error{"errortext" := "UL_GetPieceData: posicao nao registrada"};
     endif
     var d := struct{};
-    d.+serial      := CInt(el.GetProp("Serial"));
-    d.+piece_index := CInt(el.GetProp("PieceIndex"));
-    d.+hp          := CInt(el.GetProp("HP"));
-    d.+log_type    := CInt(el.GetProp("LogType"));
-    d.+parent_x    := CInt(el.GetProp("ParentX"));
-    d.+parent_y    := CInt(el.GetProp("ParentY"));
+    d.+serial        := CInt(el.GetProp("Serial"));
+    d.+piece_index   := CInt(el.GetProp("PieceIndex"));
+    d.+hp            := CInt(el.GetProp("HP"));
+    d.+log_type      := CInt(el.GetProp("LogType"));
+    d.+parent_x      := CInt(el.GetProp("ParentX"));
+    d.+parent_y      := CInt(el.GetProp("ParentY"));
+    d.+trunk_graphic := CInt(el.GetProp("TrunkGraphic"));
     return d;
 endfunction
 
@@ -139,7 +161,7 @@ function _UL_DestroyPiece(realm, x, y)
         return;
     endif
     var serial := CInt(el.GetProp("Serial"));
-    el.Delete();
+    df.DeleteElement(key);
     var item := SystemFindObjectBySerial(serial);
     if (!item.errortext)
         DestroyItem(item);
@@ -210,11 +232,20 @@ function UL_DamagePiece(realm, x, y, who, tool)
     var damage    := CInt(skill_val / 2);
     var new_hp    := data.hp;
     var diff      := DetermineLumberDifficulty(data.log_type);
+    var remaining := 0;
 
     if (SkillCheck(who, "Lumberjacking", diff) > 0)
         new_hp := new_hp - damage;
+        print("[UL_DEBUG] DamagePiece: x=" + CInt(x) + " y=" + CInt(y) + " HP=" + data.hp + "->" + new_hp);
         if (new_hp <= 0)
             _UL_DestroyPiece(realm, x, y);
+            if (data.trunk_graphic != 0)
+                remaining := _UL_DecrementPieces(realm, data.parent_x, data.parent_y, data.trunk_graphic);
+                print("[UL_DEBUG] PiecesRemaining: parent=" + CInt(data.parent_x) + "," + CInt(data.parent_y) + " remaining=" + remaining);
+                if (remaining == 0)
+                    _UL_SetWillRegenAt(realm, data.parent_x, data.parent_y, data.trunk_graphic);
+                endif
+            endif
             var amt := CInt(skill_val / 20);
             if (amt < 1)
                 amt := 1;
@@ -226,8 +257,16 @@ function UL_DamagePiece(realm, x, y, who, tool)
         endif
     else
         new_hp := new_hp - CInt(damage / 2);
+        print("[UL_DEBUG] DamagePiece: x=" + CInt(x) + " y=" + CInt(y) + " HP=" + data.hp + "->" + new_hp);
         if (new_hp <= 0)
             _UL_DestroyPiece(realm, x, y);
+            if (data.trunk_graphic != 0)
+                remaining := _UL_DecrementPieces(realm, data.parent_x, data.parent_y, data.trunk_graphic);
+                print("[UL_DEBUG] PiecesRemaining: parent=" + CInt(data.parent_x) + "," + CInt(data.parent_y) + " remaining=" + remaining);
+                if (remaining == 0)
+                    _UL_SetWillRegenAt(realm, data.parent_x, data.parent_y, data.trunk_graphic);
+                endif
+            endif
             SendSysMessage(who, "O pedaco de madeira se fragmenta.");
             CheckToolWear(who, tool, "Lumberjacking");
             return 2;
