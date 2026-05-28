@@ -24,8 +24,17 @@ endprogram
 function ShowMainGump(who, minasdf)
 	var gump := GFECreateGump("Controle das Minas", 500, 400);
 
+	// Detecta mina na posição atual do GM
+	var mina_aqui := GetMiningRegion(who.x, who.y, who.realm);
+	var y_pos := 50;
+	if (mina_aqui == "Whole_World")
+		GFTextLine(gump, 20, y_pos, 33, "Posição atual: sem mina configurada");
+	else
+		GFTextLine(gump, 20, y_pos, 66, "Mina aqui (" + who.x + "," + who.y + "): " + mina_aqui);
+	endif
+
 	// Opção para adicionar nova mina
-	var y_pos := 70;
+	y_pos += 20;
 	GFTextLine(gump, 35, y_pos, 1153, "Adicionar Nova Mina");
 	GFAddButton(gump, 20, y_pos + 2, 2117, 2118, GF_CLOSE_BTN, 100);
 
@@ -36,9 +45,10 @@ function ShowMainGump(who, minasdf)
 
 	var i := 1;
 	foreach mina in (minasdf.keys())
-		GFTextLine(gump, 35, y_pos, 1153, mina);
 		GFAddButton(gump, 20, y_pos + 2, 2117, 2118, GF_CLOSE_BTN, 200 + i);
-		y_pos += 15;
+		GFTextLine(gump, 50, y_pos, 1153, mina);
+		GFAddButton(gump, 440, y_pos + 2, 2437, 2438, GF_CLOSE_BTN, 300 + i);
+		y_pos += 20;
 		i += 1;
 	endforeach
 
@@ -52,12 +62,17 @@ function ShowMainGump(who, minasdf)
 		var form_data := struct{ "name" := "",
 						 		"selected_ores" := array{},
 						 		"rarities" := array{},
-						 		"rect" := "", "realm" := who.realm // Usa o realm atual do jogador
-						 		
+						 		"rect" := "", "realm" := who.realm
 						 		};
 
-		// Inicia o processo de edição para nova mina
 		EditMineProcess(who, minasdf, form_data);
+	elseif (button >= 300)
+		// Apaga mina existente
+		var index := button - 300;
+		var mina_name := minasdf.keys()[index];
+		DeleteMineConfirm(who, minasdf, mina_name);
+		ShowMainGump(who, minasdf);
+		return;
 	elseif (button >= 200)
 		// Edita mina existente
 		var index := button - 200;
@@ -399,6 +414,30 @@ function DisplayMineGump(who, byref form_data)
 	// Envia o gump e retorna a resposta
 	var input := GFSendGump(who, gump);
 	return input;
+endfunction
+
+function DeleteMineConfirm(who, minasdf, mina_name)
+	var gump := GFECreateGump("Apagar Mina", 320, 180);
+
+	GFTextLine(gump, 30, 70, 33, "Apagar a mina '" + mina_name + "'?");
+	GFTextLine(gump, 30, 90, 1153, "Esta ação não pode ser desfeita.");
+
+	GFAddButton(gump, 60, 130, 2128, 2129, GF_CLOSE_BTN, 1); // Sim
+	GFTextLine(gump, 100, 130, 1153, "Sim, apagar");
+
+	GFAddButton(gump, 190, 130, 2119, 2120, GF_CLOSE_BTN, 2); // Não
+	GFTextLine(gump, 230, 130, 1153, "Cancelar");
+
+	var input := GFSendGump(who, gump);
+	if (input[0] == 1)
+		var elem := minasdf.FindElement(mina_name);
+		if (elem != error)
+			elem.Delete();
+			SendSysMessage(who, "Mina '" + mina_name + "' apagada.", 66);
+		endif
+	else
+		SendSysMessage(who, "Operação cancelada.", 33);
+	endif
 endfunction
 
 function SelectAreaCorner(who, byref form_data, corner)

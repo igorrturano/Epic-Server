@@ -39,7 +39,7 @@ endprogram
 
 function GM_Disease_MainGump(mob)
 
-    var g := GFECreateGump("GM - Disease Control", 420, 420);
+    var g := GFECreateGump("GM - Disease Control", 420, 470);
 
     var y := 77;
 
@@ -55,7 +55,7 @@ function GM_Disease_MainGump(mob)
 	GM_Button(g, 40, y, 6, "Debug Disease (alvo)"); y += 28;
 	GM_Button(g, 40, y, 11, "Debug Vicios (alvo)"); y += 28;
 	GM_Button(g, 40, y, 12, "Debug Fraturas (alvo)"); y += 28;
-	
+	GM_Button(g, 40, y, 13, "Corrigir Infectados Sem Sintomas"); y += 28;
 
     return g;
 
@@ -186,6 +186,9 @@ function ProcessarAcaoGM(mob, btn)
 		12:
 			var trgt := Target(mob);
 			GM_Debug_Fraturas(mob, trgt);
+			return;
+		13:
+			GM_Disease_FixBrokenInfected(mob);
 			return;
 		endcase
 
@@ -1033,6 +1036,124 @@ function DeferFractureDebug(ghost, fracture_name, tempo, gump_name)
 
 	SetObjProperty(ghost, "Fractures", visible);
 	EraseObjProperty(ghost, "#deferred_fratura");
-	TS_StartTimer(ghost, fracture_name, tempo); 
+	TS_StartTimer(ghost, fracture_name, tempo);
+
+endfunction
+
+// ============================================================
+// FIX RETROATIVO - INFECTADOS SEM SINTOMAS
+// ============================================================
+
+function GM_Disease_FixBrokenInfected(mob)
+
+	SendSysMessageEx(mob, "Varrendo todos os personagens (online + offline)...", SSM_INFO);
+
+	var fixed    := 0;
+	var orphaned := 0;
+	var checked  := 0;
+	var orphaned_names := array{};
+
+	foreach acct_name in SplitWords(ListAccounts(), " ")
+		acct_name := Trim(acct_name, type := TRIM_BOTH, to_trim := " ,");
+		if (!acct_name || acct_name == "") continue; endif
+
+		var acct := FindAccount(acct_name);
+		if (!acct || acct.errortext) continue; endif
+
+		for slot := 1 to 5
+			var chr := acct.GetCharacter(slot);
+			if (!chr) continue; endif
+
+			checked := checked + 1;
+
+			var ds := GetObjProperty(chr, "Diseases_System");
+			if (ds == error || TypeOf(ds) != "Struct") continue; endif
+
+			var diseases := ds.diseases;
+			var is_broken := (typeof(diseases) != "Array" || diseases.size() == 0);
+			if (!is_broken) continue; endif
+
+			var timer_info := TS_GetTimerInfo(chr, "disease");
+			var has_timer  := (timer_info != error && !timer_info.errortext);
+
+			if (has_timer)
+				var level := CInt(timer_info.level);
+				if (level < 1) level := 3; endif
+
+				var new_diseases := GenerateRandomDiseases(level);
+				UpdateDiseaseProperty(chr, "diseases", new_diseases);
+
+				if (!ds.grade)
+					UpdateDiseaseProperty(chr, "grade", DISEASE_GRADES::LIGHT);
+				endif
+
+				var nm := CStr(GetObjProperty(chr, "nome_inicial"));
+				if (!nm || nm == "0") nm := chr.name; endif
+				Print("[epidemic-fix] " + nm + " corrigido (level=" + level + ", sintomas=" + new_diseases.size() + ")");
+				fixed := fixed + 1;
+			else
+				// Diseases_System sem timer ativo = estado órfão
+				var nm := CStr(GetObjProperty(chr, "nome_inicial"));
+				if (!nm || nm == "0") nm := chr.name; endif
+				orphaned_names.append(nm);
+				orphaned := orphaned + 1;
+			endif
+
+			sleepms(2);
+		endfor
+	endforeach
+
+	SendSysMessageEx(mob, "Verificados: " + checked + " | Corrigidos: " + fixed + " | Órfãos: " + orphaned, SSM_INFO);
+
+	if (orphaned == 0)
+		return;
+	endif
+
+	SendSysMessageEx(mob, "Estados órfãos (timer inativo + Diseases_System presente):", SSM_INFO);
+	foreach nm in orphaned_names
+		SendSysMessage(mob, "  - " + nm);
+	endforeach
+
+	var confirm := YesNo(mob,
+		"Limpar " + orphaned + " estados órfãos? (Diseases_System sem timer ativo)",
+		"Limpar",
+		"Deixar"
+	);
+
+	if (!confirm) return; endif
+
+	foreach acct_name in SplitWords(ListAccounts(), " ")
+		acct_name := Trim(acct_name, type := TRIM_BOTH, to_trim := " ,");
+		if (!acct_name || acct_name == "") continue; endif
+
+		var acct := FindAccount(acct_name);
+		if (!acct || acct.errortext) continue; endif
+
+		for slot := 1 to 5
+			var chr := acct.GetCharacter(slot);
+			if (!chr) continue; endif
+
+			var ds := GetObjProperty(chr, "Diseases_System");
+			if (ds == error || TypeOf(ds) != "Struct") continue; endif
+
+			var diseases := ds.diseases;
+			var is_broken := (typeof(diseases) != "Array" || diseases.size() == 0);
+			if (!is_broken) continue; endif
+
+			var timer_info := TS_GetTimerInfo(chr, "disease");
+			if (timer_info != error && !timer_info.errortext) continue; endif
+
+			RemoveDiseaseEffects(chr);
+			EraseObjProperty(chr, "Diseases_System");
+
+			var nm := CStr(GetObjProperty(chr, "nome_inicial"));
+			if (!nm || nm == "0") nm := chr.name; endif
+			Print("[epidemic-fix] " + nm + " estado órfão limpo");
+
+			sleepms(2);
+		endfor
+	endforeach
+
+	SendSysMessageEx(mob, "Estados órfãos limpos.", SSM_INFO);
 
 endfunction

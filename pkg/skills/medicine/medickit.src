@@ -524,14 +524,14 @@ function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médic
 		TS_LowerDuration(patient, "disease", -1);
 		sleepms(15);
 		TS_StartTimer(patient, "disease", 65000, past_level);
-		UpdateDiseaseProperty(patient, "Diseases", diseases);
+		UpdateDiseaseProperty(patient, "diseases", diseases);
 		PlaySoundEffect(patient, sound_effect);
 		PlayObjectCenteredEffect(patient, 0x376A, 10, 10);
 
 		return 0;
 	endif
 
-	UpdateDiseaseProperty(patient, "Diseases", new_diseases);
+	UpdateDiseaseProperty(patient, "diseases", new_diseases);
 
 	// Verificar se todos os sintomas foram curados
 	if (new_diseases.size() == 0)

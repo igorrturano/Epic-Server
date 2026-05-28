@@ -33,10 +33,17 @@ function ApplyAreaDamage(mobile, rune)
 
 	if (GetObjProperty(rune, "hits"))
 		damage_dealt.hits := CInt(GetObjProperty(rune, "hits"));
-		// tipodano is a runtime-set rune property — expected to be a
-		// DAMAGE_TYPE enum value. Missing/unknown values fall through to
-		// no damage (was a silent no-op in the legacy path too).
-		DealDamage(mobile, damage_dealt.hits, GetObjProperty(rune, "tipodano"));
+		var damage_types := array{ DAMAGE_TYPE::BLUNT, DAMAGE_TYPE::FIRE, DAMAGE_TYPE::COLD, DAMAGE_TYPE::POISON, DAMAGE_TYPE::ENERGY };
+		var any_type_applied := 0;
+		foreach dmg_type in damage_types
+			if (GetObjProperty(rune, "tipo_dano_" + dmg_type))
+				DealDamage(mobile, damage_dealt.hits, dmg_type);
+				any_type_applied := 1;
+			endif
+		endforeach
+		if (!any_type_applied)
+			DealDamage(mobile, damage_dealt.hits, DAMAGE_TYPE::BLUNT);
+		endif
 	endif
 
 	if (GetObjProperty(rune, "mana"))

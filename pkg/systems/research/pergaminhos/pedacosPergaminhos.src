@@ -192,6 +192,12 @@ function CriarPergaminho(who, tipo)
 	endif
 
 	if (ConfirmarCriacaoPergaminho(who, tipo, nivel))
+		var escola := "";
+		if (tipo == TIPO_PERGAMINHO_MAGIA)
+			escola := SelecionarEscolaMagia(who);
+			if (!escola) return; endif
+		endif
+
 		PrintTextAbove(who, "*Juntando as folhas*");
 		PlaySoundEffect(who, 0x24A);
 		Sleep(3);
@@ -205,7 +211,7 @@ function CriarPergaminho(who, tipo)
 		var soundID := (who.gender == 0) ? 0x41B : 0x30C;
 		PlaySoundEffect(who, soundID);
 
-		var pergaminho := CreatePergaminhoItem(who, tipo, nivel);
+		var pergaminho := CreatePergaminhoItem(who, tipo, nivel, escola);
 		if (pergaminho)
 			ConsumirPedacos(who, tipo, QUANTIDADES[nivel]);
 			SendSysMessage(who, "Você criou um novo pergaminho de " + GetTipoNome(tipo) + "!");
@@ -215,12 +221,34 @@ function CriarPergaminho(who, tipo)
 	endif
 endfunction
 
+function SelecionarEscolaMagia(who)
+	var escolas := array{ "Kaijin", "Evocatium", "Velkyn", "Ahtaleloreth", "Aradalore" };
+	var gump := GFECreateGump("Escola de Magia", 300, 295);
+
+	GFTextMid(gump, 20, 35, 260, 53, "Qual escola deseja pesquisar?");
+
+	var y := 75;
+	for i := 1 to escolas.size()
+		GFAddButton(gump, 40, y, 2117, 2118, GF_CLOSE_BTN, i);
+		GFTextLine(gump, 65, y, 53, escolas[i]);
+		y += 35;
+	endfor
+
+	GFAddButton(gump, 40, y + 5, 2119, 2120, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 65, y + 5, 53, "Cancelar");
+
+	var input := GFSendGump(who, gump);
+	var choice := input[0];
+	if (!choice) return ""; endif
+	return escolas[choice];
+endfunction
+
 function CountPedacos(who, tipo)
 	var count := 0;
 	var objtype := GetObjtypePorTipo(tipo);
 	foreach item in EnumerateItemsInContainer(who.backpack)
 		if (item.objtype == objtype)
-			count += 1;
+			count += item.amount;
 		endif
 	endforeach
 	return count;
@@ -277,7 +305,7 @@ function GetTipoNome(tipo)
 	endcase
 endfunction
 
-function CreatePergaminhoItem(who, tipo, nivel)
+function CreatePergaminhoItem(who, tipo, nivel, escola := "")
 	var itemID;
 	case (tipo)
 		TIPO_PERGAMINHO_METALWORK:    itemID := GetScrollObjtype("MW",      nivel);
@@ -285,12 +313,17 @@ function CreatePergaminhoItem(who, tipo, nivel)
 		TIPO_PERGAMINHO_DOMESTICWORK: itemID := GetScrollObjtype("DW",      nivel);
 		TIPO_PERGAMINHO_ALQUIMIA:     itemID := GetScrollObjtype("alchemy", nivel);
 		TIPO_PERGAMINHO_TINTA:        itemID := GetScrollObjtype("dye",     nivel);
-		TIPO_PERGAMINHO_MAGIA:        itemID := GetMagicScrollObjtype(nivel);
+		TIPO_PERGAMINHO_MAGIA:
+			// escola selecionada sempre produz scroll de spell (não void/purge)
+			if (escola)
+				itemID := GetSpellScrollObjtype(nivel);
+			else
+				itemID := GetMagicScrollObjtype(nivel);
+			endif
 		default: return 0;
 	endcase
 	if (!itemID) return 0; endif
 
-	// CreateItemInBackpack fires the CreateScript which assigns the recipe via scrollRecipes.inc
 	var pergaminho := CreateItemInBackpack(who, itemID, 1);
 	if (!pergaminho)
 		SendSysMessage(who, "Erro ao criar o item da pesquisa.");
@@ -304,19 +337,28 @@ function CreatePergaminhoItem(who, tipo, nivel)
 		TIPO_PERGAMINHO_METALWORK:    pergaminho.name := "instrucoes de fabricacao de metal";
 		TIPO_PERGAMINHO_WOODWORK:     pergaminho.name := "instrucoes de fabricacao de madeira";
 		TIPO_PERGAMINHO_DOMESTICWORK: pergaminho.name := "instrucoes de fabricacao domestica";
+		TIPO_PERGAMINHO_MAGIA:
+			if (escola)
+				AssignSpellRecipeBySchool(pergaminho, escola);
+			endif
 	endcase
 
 	return pergaminho;
 endfunction
 
 function ConsumirPedacos(who, tipo, quantidade)
-	var consumidos := 0;
+	var restante := quantidade;
 	var objtype := GetObjtypePorTipo(tipo);
 	foreach item in EnumerateItemsInContainer(who.backpack)
 		if (item.objtype == objtype)
-			DestroyItem(item);
-			consumidos += 1;
-			if (consumidos >= quantidade)
+			if (item.amount <= restante)
+				restante -= item.amount;
+				DestroyItem(item);
+			else
+				SubtractAmount(item, restante);
+				restante := 0;
+			endif
+			if (restante <= 0)
 				break;
 			endif
 		endif

@@ -1,0 +1,20 @@
+// Hook logon: limpa preview markers residuais e inicia fogRegionWatcher.
+use uo;
+use os;
+
+include ":fog_regions:include/fogRegionCore";
+
+program logon(who)
+    if (!who || !who.connected)
+        return 0;
+    endif
+
+    CleanupFogPreviewMarkers(who);
+
+    if (GetObjProperty(who, "#fogWatcherActive") == 1)
+        return 1;
+    endif
+
+    start_script(":fog_regions:fogRegionWatcher", who);
+    return 1;
+endprogram

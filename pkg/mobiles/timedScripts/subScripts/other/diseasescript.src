@@ -29,15 +29,12 @@ program diseaseScript(params)
 		var current_diseases := diseases_system.diseases;
 
 		var new_diseases;
-		//print("diseases sao "+current_diseases);
-		if (current_diseases != "random")
+		if (current_diseases != "random" && typeof(current_diseases) == "Array" && current_diseases.size() > 0)
 			new_diseases := current_diseases;
 		else
-			// Gera sintomas aleatórios baseados no nível
 			new_diseases := GenerateRandomDiseases(level);
 			diseases_system.diseases := new_diseases;
 		endif
-		//print("diseases agora são "+diseases_system.diseases);
 		if (!diseases_system.grade) 
 			diseases_system.grade := DISEASE_GRADES::LIGHT; // Adiciona outras propriedades necessárias
 		endif
@@ -64,7 +61,7 @@ program diseaseScript(params)
 		endif
 
 		ApplyDiseaseEffects(mobile, new_diseases, diseases_system.grade);
-		ScheduleNextDiseaseEffect(mobile, current_diseases);
+		ScheduleNextDiseaseEffect(mobile, diseases_system.grade);
 	//endif
 
 	return 1;

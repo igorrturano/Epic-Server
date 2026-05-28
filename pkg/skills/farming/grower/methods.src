@@ -290,13 +290,11 @@ endfunction
 
 exported function GetMaxProduceAmount(grower)
 	var data_elem := GetGrowerDataElem(grower);
-	var produce_amt := data_elem.GetProp("MaxProduce");
-	if (produce_amt == error)
-		produce_amt := 5;
-		SetProduceAmount(grower, produce_amt);
+	var max_amt := data_elem.GetProp("MaxAmount");
+	if (max_amt == error)
+		max_amt := GetDefaultMaxProduceAmount(grower);
 	endif
-
-	return CInt(produce_amt);
+	return CInt(max_amt);
 endfunction
 
 exported function GetDefaultMaxProduceAmount(grower)

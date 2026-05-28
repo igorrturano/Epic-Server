@@ -214,6 +214,289 @@ function SelectRandomSpell(power)
 endfunction
 
 // =================================================================
+// FILTERED SELECTION (for pesquisa extensiva — skip known recipes)
+// =================================================================
+
+// Returns a craft recipe key the player doesn't know yet.
+// Falls back to any random recipe if all are known.
+function SelectFilteredCraftRecipe(who, level, skillType)
+    var known := GetObjProperty(who, "recipes");
+    if (known == error) known := array{}; endif
+
+    var cfg := ReadConfigFile(":recipes:recipes");
+    if (cfg.errortext) return 0; endif
+
+    var menuKeys := _BuildMenuKeys(skillType);
+    var fullPool := array{};
+    var unknownPool := array{};
+
+    foreach key in (GetConfigStringKeys(cfg))
+        var elem := FindConfigElem(cfg, key);
+        if (!elem or GetConfigInt(elem, "level") != level) continue; endif
+        if (!(key in menuKeys)) continue; endif
+        fullPool.append(key);
+        if (!(key in known))
+            unknownPool.append(key);
+        endif
+    endforeach
+
+    if (unknownPool.size() > 0)
+        return unknownPool[RandomInt(unknownPool.size()) + 1];
+    endif
+    if (fullPool.size() > 0)
+        return fullPool[RandomInt(fullPool.size()) + 1];
+    endif
+    return 0;
+endfunction
+
+// Returns an alchemy recipe key the player doesn't know yet.
+function SelectFilteredAlchemyRecipe(who, level)
+    var known := GetObjProperty(who, "recipes");
+    if (known == error) known := array{}; endif
+
+    var cfg := ReadConfigFile(":alchemy:config/recipes");
+    if (cfg.errortext) return 0; endif
+
+    var menuKeys := _BuildMenuKeys("alchemy");
+    var fullPool := array{};
+    var unknownPool := array{};
+
+    foreach key in (GetConfigIntKeys(cfg))
+        var elem := FindConfigElem(cfg, key);
+        if (!elem or GetConfigInt(elem, "level") != level) continue; endif
+        var name := GetConfigString(elem, "Name");
+        if (!(name in menuKeys)) continue; endif
+
+        var knownKey;
+        if (Find(name, "-", 1) > 0)
+            knownKey := name;
+        else
+            knownKey := name + "-1";
+        endif
+
+        fullPool.append(key);
+        if (!(knownKey in known))
+            unknownPool.append(key);
+        endif
+    endforeach
+
+    if (unknownPool.size() > 0)
+        return unknownPool[RandomInt(unknownPool.size()) + 1];
+    endif
+    if (fullPool.size() > 0)
+        return fullPool[RandomInt(fullPool.size()) + 1];
+    endif
+    return 0;
+endfunction
+
+// Returns a dye recipe key the player doesn't know yet.
+function SelectFilteredDyeRecipe(who, level)
+    var known := GetObjProperty(who, "recipes");
+    if (known == error) known := array{}; endif
+
+    var cfg := ReadConfigFile(":alchemy:config/recipestintas");
+    if (cfg.errortext) return 0; endif
+
+    var fullPool := array{};
+    var unknownPool := array{};
+
+    foreach key in (GetConfigIntKeys(cfg))
+        var elem := FindConfigElem(cfg, key);
+        if (!elem or GetConfigInt(elem, "level") != level) continue; endif
+        var name := GetConfigString(elem, "Name");
+
+        var recipeName := StrReplace(Lower(name), " ", "");
+        var knownKey;
+        if (Find(recipeName, "-", 1) > 0)
+            knownKey := recipeName;
+        else
+            knownKey := recipeName + "-1";
+        endif
+
+        fullPool.append(key);
+        if (!(knownKey in known))
+            unknownPool.append(key);
+        endif
+    endforeach
+
+    if (unknownPool.size() > 0)
+        return unknownPool[RandomInt(unknownPool.size()) + 1];
+    endif
+    if (fullPool.size() > 0)
+        return fullPool[RandomInt(fullPool.size()) + 1];
+    endif
+    return 0;
+endfunction
+
+// Called by CompleteResearch — overrides the CreateScript's random assignment
+// with a recipe the player doesn't know yet.
+function OverrideResearchRecipe(who, item, recipeType, power, craftSkillType)
+    var filteredKey := 0;
+    var skType := craftSkillType;
+    var dyeRecipe;
+
+    case (recipeType)
+        "Instrução de Metalurgia":
+            if (skType == error) skType := "MW"; endif
+            filteredKey := SelectFilteredCraftRecipe(who, power, skType);
+            if (filteredKey) SetObjProperty(item, "recipe", filteredKey); endif
+        "Instrução de Marcenaria":
+            if (skType == error) skType := "WW"; endif
+            filteredKey := SelectFilteredCraftRecipe(who, power, skType);
+            if (filteredKey) SetObjProperty(item, "recipe", filteredKey); endif
+        "Instrução de Trabalho Doméstico":
+            if (skType == error) skType := "DW"; endif
+            filteredKey := SelectFilteredCraftRecipe(who, power, skType);
+            if (filteredKey) SetObjProperty(item, "recipe", filteredKey); endif
+        "Receita Alquimica":
+            filteredKey := SelectFilteredAlchemyRecipe(who, power);
+            if (filteredKey) SetObjProperty(item, "AlchemyRecipe", filteredKey); endif
+        "Tinta":
+            filteredKey := SelectFilteredDyeRecipe(who, power);
+            if (filteredKey)
+                dyeRecipe := struct;
+                dyeRecipe.+recipe := filteredKey;
+                SetObjProperty(item, "recipe", dyeRecipe);
+            endif
+    endcase
+endfunction
+
+// =================================================================
+// SPELL FILTERING (for pesquisa extensiva de magia)
+// =================================================================
+
+// Returns array of {id, School} for every spell in the player's grimórios.
+// Uses cancast CProp to identify grimório containers.
+function CollectKnownSpellIds(who)
+    var known := array{};
+    foreach item in EnumerateItemsInContainer(who.backpack)
+        if (GetObjProperty(item, "cancast") != 1) continue; endif
+        var spells := GetObjProperty(item, "spells");
+        if (TypeOf(spells) != "Array") continue; endif
+        foreach spell in spells
+            if (spell.id)
+                known.append(struct{ "id" := spell.id, "School" := spell.School });
+            endif
+        endforeach
+    endforeach
+    return known;
+endfunction
+
+// Returns struct{id, school} for a spellcaster spell of the given circle
+// that the player does NOT have in any grimório.
+// Falls back to any random spell if all are known.
+function SelectFilteredSpell(who, power)
+    var known := CollectKnownSpellIds(who);
+    var fullPool := array{};
+    var unknownPool := array{};
+
+    foreach cfg_path in (GetMageSchoolConfigPaths())
+        var spellcfg := ReadConfigFile(cfg_path);
+        if (!spellcfg) continue; endif
+        foreach key in (GetConfigIntKeys(spellcfg))
+            var elem := FindConfigElem(spellcfg, key);
+            if (GetConfigString(elem, "Type") != "spellcaster") continue; endif
+            if (GetConfigInt(elem, "Circle") != power) continue; endif
+            var school := GetConfigString(elem, "School");
+            var entry := struct{ "id" := key, "school" := school };
+            fullPool.append(entry);
+
+            var isKnown := 0;
+            foreach k in known
+                if (k.id == key and k.School == school)
+                    isKnown := 1;
+                    break;
+                endif
+            endforeach
+            if (!isKnown) unknownPool.append(entry); endif
+        endforeach
+    endforeach
+
+    if (unknownPool.size() > 0)
+        return unknownPool[RandomInt(unknownPool.size()) + 1];
+    endif
+    if (fullPool.size() > 0)
+        return fullPool[RandomInt(fullPool.size()) + 1];
+    endif
+    return 0;
+endfunction
+
+// Overrides spellinfo on an item with the exact spell selected by pesquisa extensiva.
+// Also sets item.graphic by school to match AssignSpellRecipe behavior.
+// Cleans up the legacy SpellId property.
+function ForceAssignSpellInfo(item, spellId, school)
+    var spellinfo := struct;
+    spellinfo.+id := spellId;
+    spellinfo.+magic_path := "spellcaster";
+    spellinfo.+School := school;
+
+    case (school)
+        "Kaijin":       item.graphic := 0x0E39;
+        "Evocatium":    item.graphic := 0x0E35;
+        "Velkyn":       item.graphic := 0x0E3A;
+        "Ahtaleloreth": item.graphic := 0x0E38;
+        "Aradalore":    item.graphic := 0x0E37;
+    endcase
+
+    SetObjProperty(item, "spellinfo", spellinfo);
+    EraseObjProperty(item, "SpellId");
+endfunction
+
+// =================================================================
+// SPELL SCHOOL SELECTION (for folhas soltas de magia)
+// =================================================================
+
+// Returns the objtype for a spell scroll (no void/purge roll).
+function GetSpellScrollObjtype(level)
+    if (level < 1 or level > 5) return 0; endif
+    return SCROLL_SPELL[level];
+endfunction
+
+// Assigns a spell from a specific school to a spell scroll item.
+// Falls back to AssignSpellRecipe if no spells found for that school.
+function AssignSpellRecipeBySchool(item, school)
+    if (GetObjProperty(item, "spellinfo") != error) return; endif
+
+    var scrollcfg := ReadConfigFile(":spells:itemdesc");
+    var lvl := scrollcfg[item.objtype].Circle;
+    if (!lvl) lvl := 1; endif
+
+    var pool := array{};
+    foreach cfg_path in (GetMageSchoolConfigPaths())
+        var spellcfg := ReadConfigFile(cfg_path);
+        if (!spellcfg) continue; endif
+        foreach key in (GetConfigIntKeys(spellcfg))
+            var elem := FindConfigElem(spellcfg, key);
+            if (GetConfigString(elem, "Type") != "spellcaster") continue; endif
+            if (GetConfigInt(elem, "Circle") != lvl) continue; endif
+            if (GetConfigString(elem, "School") == school)
+                pool.append(key);
+            endif
+        endforeach
+    endforeach
+
+    if (pool.size() == 0)
+        AssignSpellRecipe(item);
+        return;
+    endif
+
+    var spellinfo := struct;
+    spellinfo.+id := pool[RandomInt(pool.size()) + 1];
+    spellinfo.+magic_path := "spellcaster";
+    spellinfo.+School := school;
+
+    case (school)
+        "Kaijin":       item.graphic := 0x0E39;
+        "Evocatium":    item.graphic := 0x0E35;
+        "Velkyn":       item.graphic := 0x0E3A;
+        "Ahtaleloreth": item.graphic := 0x0E38;
+        "Aradalore":    item.graphic := 0x0E37;
+    endcase
+
+    SetObjProperty(item, "spellinfo", spellinfo);
+endfunction
+
+// =================================================================
 // PRIVATE HELPERS
 // =================================================================
 

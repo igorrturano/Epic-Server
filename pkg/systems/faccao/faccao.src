@@ -138,7 +138,8 @@ program faccao(params)
 		return Faccoes(who);
 	else
 		// Aberto pelo mural de recrutamento (item clicado)
-		guild := targ.guild;
+		// targ é o item — guild ID fica em ObjProperty, não em atributo nativo
+		guild := FindGuild(CInt(GetObjProperty(targ, "guild")));
 		use_member_alias := (who.cmdlevel >= 1) ? 2 : 1;
 		// Player em múltiplas facções: mostra seleção em vez de abrir direto
 		if (!who.cmdlevel)

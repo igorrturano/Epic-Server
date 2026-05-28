@@ -263,18 +263,20 @@ function InRect(x_pos, y_pos, rect)
 	return ( (x_pos >= x1 && x_pos <= x2) && (y_pos >= y1 && y_pos <= y2) );
 endfunction
 
-function GetMiningRegion(x, y)
+function GetMiningRegion(x, y, realm)
 
-  var df := opendatafile(":gathering:miningspots");
-  foreach elem in (df.Keys())
-
-    var region := df.FindElement(elem);
-    var rect := region.getProp("Rect");
-    if (inrect(x, y, SplitWords(rect)))
-      return elem;
-    endif
-
-  endforeach
+	var df := opendatafile(":gathering:miningspots");
+	foreach elem in (df.Keys())
+		var region := df.FindElement(elem);
+		var rect := region.getProp("Rect");
+		var mine_realm := region.getProp("Realm");
+		if (!mine_realm || mine_realm == error)
+			mine_realm := "britannia";
+		endif
+		if (mine_realm == realm && InRect(x, y, SplitWords(rect)))
+			return elem;
+		endif
+	endforeach
 
 	return "Whole_World";
 
