@@ -103,8 +103,9 @@ function EDLoadActions()
         action.+description := GetConfigString(elem, "Description");
         action.+scope       := GetConfigString(elem, "Scope");
         action.+params      := GetConfigString(elem, "Params");
-        action.+confirm     := GetConfigInt(elem, "Confirm");
-        action.+script      := GetConfigString(elem, "Script");
+        action.+confirm       := GetConfigInt(elem, "Confirm");
+        action.+script        := GetConfigString(elem, "Script");
+        action.+external_gump := GetConfigInt(elem, "ExternalGump");
         actions.append(action);
         sleepms(2);
     endforeach
@@ -125,4 +126,5 @@ endfunction
 function EDExecuteAction(dm, action, mob, param_values)
     Start_Script(action.script, array{ dm, mob, param_values });
     SendSysMessage(dm, "[EpicDungeon] " + action.label + " executado.");
+    return CInt(action.external_gump);
 endfunction
