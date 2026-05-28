@@ -2,7 +2,7 @@ use uo;
 use os;
 use vitals;
 
-include "include/packets";
+include ":fls_core:packets";
 include ":epicdungeon:include/epicdungeon";
 
 program arremessar_w(params)

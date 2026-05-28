@@ -2,7 +2,10 @@ use uo;
 use os;
 
 program render_w(params)
-    var dm := params[1];
-    Start_Script(":commands:player/render", dm);
+    var mobs := params[2];
+    foreach mob in mobs
+        Start_Script(":commands:player/render", mob);
+        sleepms(50);
+    endforeach
     return 1;
 endprogram

@@ -132,15 +132,23 @@ program epicDungeonMain(params)
                     if (CInt(current_action_obj.confirm))
                         pending_confirm := 1;
                     else
-                        EDDoExecute(who);
+                        var ext1 := EDDoExecute(who);
                         EDResetAction();
+                        if (ext1)
+                            SendSysMessage(who, "[EpicDungeon] Use .epicdungeon para reabrir o painel.");
+                            break;
+                        endif
                     endif
                 endif
             elseif (btn == BTN_ACTION_BACK)
                 EDResetAction();
             elseif (btn == BTN_CONFIRM_YES)
-                EDDoExecute(who);
+                var ext2 := EDDoExecute(who);
                 EDResetAction();
+                if (ext2)
+                    SendSysMessage(who, "[EpicDungeon] Use .epicdungeon para reabrir o painel.");
+                    break;
+                endif
             elseif (btn == BTN_CONFIRM_NO)
                 pending_confirm := 0;
             elseif (btn < BTN_ACTION_EXEC)
@@ -236,39 +244,40 @@ function EDDoExecute(who)
         var mobs := EDResolveMobs(who);
         if (!mobs || mobs.size() == 0)
             SendSysMessage(who, "[EpicDungeon] Roster vazio, nenhum jogador afetado.");
-            return;
+            return 0;
         endif
-        EDExecuteAction(who, action, mobs, current_param_values);
+        return EDExecuteAction(who, action, mobs, current_param_values);
 
     elseif (scope == "PerTarget")
         if (!current_target_serial)
             SendSysMessage(who, "[EpicDungeon] Selecione um alvo primeiro.");
-            return;
+            return 0;
         endif
         var mob := SystemFindObjectBySerial(current_target_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
         if (mob == error || !mob || !mob.connected)
             SendSysMessage(who, "[EpicDungeon] Alvo invalido ou offline.");
-            return;
+            return 0;
         endif
-        EDExecuteAction(who, action, array{ mob }, current_param_values);
+        return EDExecuteAction(who, action, array{ mob }, current_param_values);
 
     elseif (scope == "Global")
-        EDExecuteAction(who, action, 0, current_param_values);
+        return EDExecuteAction(who, action, 0, current_param_values);
 
     elseif (scope == "Position")
         SendSysMessage(who, "[EpicDungeon] Clique no local no mundo.");
         var targ := TargetCoordinates(who);
         if (targ == error || !targ)
             SendSysMessage(who, "[EpicDungeon] Cancelado.");
-            return;
+            return 0;
         endif
         var pos := struct{};
         pos.+x     := CInt(targ.x);
         pos.+y     := CInt(targ.y);
         pos.+z     := CInt(targ.z);
         pos.+realm := who.realm;
-        EDExecuteAction(who, action, pos, current_param_values);
+        return EDExecuteAction(who, action, pos, current_param_values);
     endif
+    return 0;
 endfunction
 
 function EDShowMainGump(who)
@@ -322,7 +331,7 @@ function EDAddSidebar(byref gump, dm)
             break;
         endif
         count += 1;
-        GFAddButton(gump, ED_SIDEBAR_X + ED_SIDEBAR_W - 22, row_y, 2119, 2120, 1, BTN_ROSTER_REM_BASE + count);
+        GFAddButton(gump, ED_SIDEBAR_X + ED_SIDEBAR_W - 72, row_y, 2119, 2120, 1, BTN_ROSTER_REM_BASE + count);
         var display := entry.name;
         if (Len(display) > 22) display := SubStr(display, 1, 22) + ".."; endif
         var label_disp := entry.label;
@@ -426,24 +435,6 @@ function EDAddActionList(byref gump, category)
         idx += 1;
         action_list.append(action);
 
-        var hint := "";
-        var all_p := EDParseAllParams(action.params);
-        if (all_p.size() > 0)
-            var fp := all_p[1];
-            if (fp.ptype == "slider")
-                hint := fp.name + ": " + fp.pmin + "-" + fp.pmax;
-            elseif (fp.ptype == "text")
-                hint := fp.name;
-            elseif (fp.ptype == "dropdown")
-                hint := fp.name + " (" + fp.poptions.size() + " opcoes)";
-            elseif (fp.ptype == "hue")
-                hint := fp.name + " (cor)";
-            endif
-            if (all_p.size() > 1)
-                hint := hint + " +mais";
-            endif
-        endif
-
         var lcol := 1153;
         if (action.scope == "Position")
             lcol := 53;
@@ -451,14 +442,8 @@ function EDAddActionList(byref gump, category)
             lcol := 230;
         endif
 
-        GFTextLine(gump, ED_CONTENT_X + 15, row_y + 2,  lcol, action.label);
-        if (hint != "")
-            GFTextLine(gump, ED_CONTENT_X + 15, row_y + 16, 2100, hint);
-        endif
-
-        GFAddButton(gump, ED_CONTENT_X + ED_CONTENT_W - 110, row_y + 2, 2103, 2104, 1,
-                    BTN_ACTION_BASE + idx);
-        GFTextLine(gump,  ED_CONTENT_X + ED_CONTENT_W - 75,  row_y + 4, 53, "Executar");
+        GFAddButton(gump, ED_CONTENT_X + 15, row_y + 7, 2103, 2104, 1, BTN_ACTION_BASE + idx);
+        GFTextLine(gump,  ED_CONTENT_X + 35, row_y + 2,  lcol, action.label);
 
         row_y += 36;
         sleepms(2);
@@ -623,12 +608,7 @@ endfunction
 function EDAddFooter(byref gump)
     GFResizePic(gump, 20, ED_FOOTER_DIV, 3000, ED_W - 47, 2);
 
-    GFAddButton(gump, 25,         ED_FOOTER_BTN, 2119, 2120, 1, BTN_CLEAR_RAID);
-    GFTextLine(gump,  62,         ED_FOOTER_BTN + 2, 33,   "Limpar Raid");
-
-    GFAddButton(gump, 162,        ED_FOOTER_BTN, 2103, 2104, 1, BTN_REFRESH);
-    GFTextLine(gump,  197,        ED_FOOTER_BTN + 2, 53,   "Refresh");
-
-    GFAddButton(gump, ED_W - 200, ED_FOOTER_BTN, 2119, 2120, 1, 0);
-    GFTextLine(gump,  ED_W - 163, ED_FOOTER_BTN + 2, 33,   "Fechar Painel");
+    GFAddButton(gump, 25,  ED_FOOTER_BTN, 2119, 2120, 1, BTN_CLEAR_RAID);
+    GFAddButton(gump, 147, ED_FOOTER_BTN + 5, 2103, 2104, 1, BTN_REFRESH);
+    GFTextLine(gump,  182, ED_FOOTER_BTN + 2, 53, "Refresh");
 endfunction

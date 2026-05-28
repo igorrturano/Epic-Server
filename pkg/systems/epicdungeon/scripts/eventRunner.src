@@ -1,0 +1,82 @@
+use uo;
+
+include ":attributes:attributes";
+include ":epicspawn:epicCombatEventsController";
+
+program eventRunner(params)
+    var npc := params[1];
+    if (!npc || npc.dead) return 0; endif
+
+    SetObjProperty(npc, "EDEventsRunning", 1);
+    _SetupTracking(npc);
+
+    while (npc && !npc.dead)
+        if (npc.opponent)
+            _ProcessEvents(npc);
+        endif
+        sleep(2);
+    endwhile
+
+    EraseObjProperty(npc, "EDEventsRunning");
+    return 1;
+endprogram
+
+function _SetupTracking(npc)
+    var events := GetObjProperty(npc, "CombatEvents");
+    if (!events || !events.size()) return; endif
+
+    var times := dictionary{};
+    foreach ev in events
+        times[ev.name] := 0;
+    endforeach
+    SetObjProperty(npc, "EventLastCastTimes", times);
+endfunction
+
+function _ProcessEvents(npc)
+    var events := GetObjProperty(npc, "CombatEvents");
+    if (!events || !events.size()) return 0; endif
+
+    var times := GetObjProperty(npc, "EventLastCastTimes");
+    if (!times)
+        _SetupTracking(npc);
+        times := GetObjProperty(npc, "EventLastCastTimes");
+    endif
+
+    var now := ReadGameClock();
+
+    foreach ev in events
+        if (!ev.name) continue; endif
+
+        var actions := array{};
+        if (ev.steps && ev.steps.size() > 0)
+            actions := ev.steps;
+        elseif (ev.actions && ev.actions.size() > 0)
+            actions := ev.actions;
+        else
+            continue;
+        endif
+
+        if (times.exists(ev.name) && (now - times[ev.name]) < CInt(ev.cd))
+            continue;
+        endif
+
+        if (ev.onlybloodied)
+            var max_hp := AP_GetVitalMaximumValue(npc, HITS);
+            var cur_hp := AP_GetVital(npc, HITS);
+            if (cur_hp > (max_hp * 0.5)) continue; endif
+        endif
+
+        if (ev.dist > 0)
+            var opp := npc.opponent;
+            if (!opp || Distance(npc, opp) > ev.dist) continue; endif
+        endif
+
+        if (ExecuteCombatEvent(npc, ev, actions))
+            times[ev.name] := now;
+            SetObjProperty(npc, "EventLastCastTimes", times);
+            break;
+        endif
+    endforeach
+
+    return 1;
+endfunction
