@@ -1,0 +1,39 @@
+use uo;
+use os;
+
+program findfat(who)
+    print("=== findfat: scanning mobiles ===");
+    var checked := 0;
+    var found := 0;
+    var biggest_serial := 0;
+    var biggest_bytes := 0;
+    var biggest_name := "";
+
+    foreach m in (ListMobilesInBox(-1, -1, -128, 32767, 32767, 127, "britannia"))
+        checked += 1;
+        var props := GetObjPropertyNames(m);
+        var totals := 0;
+        foreach p in (props)
+            var v := GetObjProperty(m, p);
+            totals += len(CStr(v));
+        endforeach
+
+        if (totals > biggest_bytes)
+            biggest_bytes := totals;
+            biggest_serial := m.serial;
+            biggest_name := m.name;
+        endif
+
+        if (totals > 50000)
+            found += 1;
+            print("MOB " + Hex(m.serial) + " '" + m.name + "' bytes=" + totals + " props=" + len(props));
+        endif
+
+        if (checked % 500 == 0)
+            sleepms(50);
+        endif
+    endforeach
+
+    print("--- mobile scan done: " + checked + " scanned, " + found + " over 50KB ---");
+    print("biggest mobile: " + Hex(biggest_serial) + " '" + biggest_name + "' with " + biggest_bytes + " bytes");
+endprogram
