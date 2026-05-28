@@ -10,11 +10,14 @@ use os;
 use polsys;
 include ":taming:taming";
 include "include/epicMageryUtils";
+include ":fog_regions:include/fogRegionCore";
 
 program LogOff(who)
 	logoutpets(who);
 	LogOffElementalWeapon(who);
 	IsGm(who);
+	EraseObjProperty(who, "#fogWatcherActive");
+	CleanupFogPreviewMarkers(who);
 	return 1;
 endprogram
 

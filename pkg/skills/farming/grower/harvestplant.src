@@ -58,10 +58,14 @@ function HarvestPlant(who, grower)
 	endif
 
 	if (SkillCheck(who, "Provisioning", difficulty, award_diff) > 0)
+		var harvest_amt := 1;
 		if (MobileWrapper(who).HasAbility(ABILITY_ID::HARVEST_LUCK))
-			CreateItemInBackPack(who, grower.GetProduceType(), 2);
-		else
-			CreateItemInBackPack(who, grower.GetProduceType(), 1);
+			harvest_amt := 2;
+		endif
+		var harvest_item := CreateItemInBackPack(who, grower.GetProduceType(), harvest_amt);
+		if (harvest_item.errortext)
+			SendSysMessage(who, "Erro ao gerar item de colheita: " + harvest_item.errortext + " (tipo: " + grower.GetProduceType() + ")");
+			return 0;
 		endif
 		SendSysMessage(who, "Voce guardou os frutos na sua mochila.");
 		var seed_chance := grower.GetSeedDice();

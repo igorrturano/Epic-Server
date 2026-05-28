@@ -272,8 +272,9 @@ function FindPeixePretendido(who, isca)
  	elseif (isca.objtype == 0x9982) return "Dourado"; 
  	elseif (isca.objtype == 0x9983) return "Anchova";  
  	elseif (isca.objtype == 0x9984) return "Sardinha";  
-	elseif (isca.objtype == 0x9985) return "Perca"; 
-	elseif (isca.objtype == 0x9987) return "Robalo"; 
+	elseif (isca.objtype == 0x9985) return "Perca";
+	elseif (isca.objtype == 0x9987) return "Robalo";
+	elseif (isca.objtype == 0xdd6) return "Robalo";
  	elseif (isca.graphic == 0x0C82) return "PeixeGalo";
 	elseif (isca.graphic == 0x1CEF) return "Lambari";
 	endif
@@ -285,8 +286,9 @@ function FindPeixeId(who, isca)
  	elseif (isca.objtype == 0x9982) return "0x9cf"; 
  	elseif (isca.objtype == 0x9983) return "0x9ce";  
  	elseif (isca.objtype == 0x9984) return "0xdd7";  
-	elseif (isca.objtype == 0x9985) return "0x9cd"; 
-	elseif (isca.objtype == 0x9987) return "0x9cc"; 
+	elseif (isca.objtype == 0x9985) return "0x9cd";
+	elseif (isca.objtype == 0x9987) return "0x9cc";
+	elseif (isca.objtype == 0xdd6) return "0x9cc";
  	elseif (isca.graphic == 0x0C82) return "0xdd9";
 	elseif (isca.graphic == 0x1CEF) return "0x9987"; 
 	endif

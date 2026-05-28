@@ -1,0 +1,110 @@
+use uo;
+use os;
+use polsys;
+use util;
+use math;
+
+include "include/say";
+include "include/client";
+include ":gumps:include/epicGumps";
+include ":epicspawn:epicCombatEvents";
+include ":epicdungeon:include/epicdungeon";
+
+program injectcombatevent_w(params)
+    var who := params[1];
+
+    SendSysMessage(who, "[EpicDungeon] Clique no NPC para gerenciar combat events.");
+    var npc := Target(who);
+    if (!npc || npc == error || !npc.IsA(POLCLASS_NPC))
+        SendSysMessage(who, "[EpicDungeon] Alvo inválido — selecione um NPC.");
+        return 0;
+    endif
+
+    _ManageEvents(who, npc);
+    return 1;
+endprogram
+
+function _ManageEvents(who, npc)
+    while (1)
+        var events := GetObjProperty(npc, "CombatEvents");
+        if (!events) events := array{}; endif
+
+        var gump_h := 120 + events.size() * 40;
+        if (gump_h < 160) gump_h := 160; endif
+
+        var gump := GFECreateGump("Combat Events: " + npc.name, 520, gump_h);
+
+        GFAddButton(gump, 30, 60, 2117, 2118, GF_CLOSE_BTN, 1);
+        GFTextLine(gump, 60, 62, 1153, "Adicionar Novo Evento");
+
+        var y := 95;
+        if (events.size() > 0)
+            var i := 1;
+            foreach ev in events
+                var label := i + ". [cd:" + ev.cd + "s]  " + ev.name;
+                if (ev.onlybloodied) label += "  (bloodied)"; endif
+                GFTextLine(gump, 30, y, 1153, label);
+                var steps_count := 0;
+                if (ev.steps) steps_count := ev.steps.size(); endif
+                GFTextLine(gump, 30, y + 15, 2100, "     " + steps_count + " acoes");
+                GFAddButton(gump, 480, y, 2437, 2438, GF_CLOSE_BTN, 100 + i);
+                y += 40;
+                i += 1;
+            endforeach
+        else
+            GFTextLine(gump, 30, y, 2100, "Nenhum evento configurado.");
+            y += 30;
+        endif
+
+        GFAddButton(gump, 30, y + 10, 2119, 2120, GF_CLOSE_BTN, 999);
+
+        var result := GFSendGump(who, gump);
+
+        if (result[0] == 999 || result[0] == 0)
+            return;
+        elseif (result[0] == 1)
+            var new_event := struct{
+                name := "Evento " + (events.size() + 1),
+                cd := 30,
+                onlybloodied := 0,
+                dist := 0,
+                actions := array{},
+                steps := array{}
+            };
+            var ok := ShowCombatEventsList(who, new_event);
+            if (ok && new_event.actions.size() > 0)
+                new_event.steps := array{};
+                foreach a in (new_event.actions)
+                    new_event.steps.append(a);
+                endforeach
+                events.append(new_event);
+                _SaveAndEnsureRunner(npc, events);
+                SendSysMessage(who, "[EpicDungeon] Evento '" + new_event.name + "' injetado em " + npc.name + ".");
+            endif
+        elseif (result[0] >= 100)
+            var idx := result[0] - 100;
+            if (idx >= 1 && idx <= events.size())
+                var ename := events[idx].name;
+                events.Erase(idx);
+                _SaveAndEnsureRunner(npc, events);
+                SendSysMessage(who, "[EpicDungeon] Evento '" + ename + "' removido de " + npc.name + ".");
+            endif
+        endif
+    endwhile
+endfunction
+
+function _SaveAndEnsureRunner(npc, events)
+    SetObjProperty(npc, "CombatEvents", events);
+
+    // Bosses already have combatEventsControl running — just update the prop
+    if (GetObjProperty(npc, "IsBoss"))
+        return;
+    endif
+
+    // Don't start duplicate runner
+    if (GetObjProperty(npc, "EDEventsRunning") || !events.size())
+        return;
+    endif
+
+    Start_Script(":epicdungeon:scripts/eventRunner", array{npc});
+endfunction

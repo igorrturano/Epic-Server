@@ -71,6 +71,14 @@ program pigeonmailbox(who, mailbox)
 		sender_nome := CStr(who.name);
 	endif
 
+	if (is_gm)
+		sender_nome := AskGMSenderName(who, sender_nome);
+		if (!sender_nome)
+			SendSysMessage(who, "Envio cancelado.", 33);
+			return;
+		endif
+	endif
+
 	if (is_gm && CInt(input[9]) == 1)
 		SendBroadcast(who, msg, sender_nome, animal_type);
 		return;
@@ -272,4 +280,32 @@ function BuildMailGump(conhecidos, is_gm)
 	endwhile
 
 	return gump;
+endfunction
+
+// Pergunta ao GM qual nome o destinatário verá como remetente.
+// Retorna o nome escolhido, ou 0 se o GM cancelou.
+function AskGMSenderName(who, default_nome)
+	var W := 300;
+	var H := 130;
+	var gump := GFCreateGump(150, 200);
+
+	GFResizePic(gump, 0,    0,    9200, W,   H);
+	GFHTMLArea(gump,  10,   10,   W-20, 20,  "<BASEFONT color=#111111><CENTER><B>Nome do remetente</B></CENTER>", 0, 0);
+	GFHTMLArea(gump,  10,   35,   W-20, 20,  "<BASEFONT color=#111111>Qual nome o destinatário verá?</CENTER>", 0, 0);
+	GFResizePic(gump, 10,   58,   3000, W-20, 22);
+	GFTextEntry(gump, 15,   60,   W-30, 18,  0, default_nome, 1, 50);
+	GFAddButton(gump, 80,   95,   0xF7, 0xF8, GF_CLOSE_BTN, 1); // Confirmar
+	GFAddButton(gump, 180,  95,   0xF1, 0xF2, GF_CLOSE_BTN, 0); // Cancelar
+
+	var input  := GFSendGump(who, gump);
+	if (CInt(input[0]) != 1)
+		return 0;
+	endif
+
+	var nome := CStr(GFExtractData(input, 1));
+	if (Len(nome) == 0)
+		return default_nome;
+	endif
+
+	return nome;
 endfunction

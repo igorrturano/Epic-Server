@@ -143,7 +143,7 @@ function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
 		sleep(1);
 	endfor
 
-	var miningregion := GetMiningRegion(targx, targy); // feita
+	var miningregion := GetMiningRegion(targx, targy, who.realm);
 	var ore_type := DetermineOreType(who, miningregion); // feit
 
 	var ore_amount := GetOreAmount(who.realm, targx, targy); // feita

@@ -1,0 +1,75 @@
+use uo;
+use os;
+include ":timedScripts:timedScripts";
+include ":alchemy:alchemy";
+include ":mobileRescale:include/rerender";
+
+const SCALE_TIMER  := "pocaoEscala";
+const SCALE_ENDKEY := "pocaoEscala_endtime";
+
+function _GetFactor(objtype)
+    if (objtype == 0xDF01) return  300; endif  // 30%
+    if (objtype == 0xDF02) return  600; endif  // 60%
+    if (objtype == 0xDF03) return 1200; endif  // 120%
+    if (objtype == 0xDF04) return 1500; endif  // 150%
+    return 0;
+endfunction
+
+// Race.ScaleModifier * 1000 por gráfico de raça.
+// mod_h = componente Y (altura/vertical), mod_w = componente X (largura/horizontal).
+// Estes valores espelham exatamente os campos do PequilhoRace.cs / AnaoRace.cs etc.
+function _GetRacialMods(graphic)
+    if (graphic == 400  || graphic == 401)  return struct{ mod_h :=    0, mod_w :=    0 }; endif // Humano
+    if (graphic == 1828 || graphic == 1829) return struct{ mod_h := -150, mod_w :=   80 }; endif // Anão
+    if (graphic == 1830 || graphic == 1831) return struct{ mod_h :=  -50, mod_w :=    0 }; endif // Elfo/Drow
+    if (graphic == 1832 || graphic == 1833) return struct{ mod_h :=   90, mod_w :=  120 }; endif // Orc
+    if (graphic == 1834 || graphic == 1835) return struct{ mod_h := -250, mod_w := -250 }; endif // Pequilho
+    return struct{ mod_h := 0, mod_w := 0 };
+endfunction
+
+// Calcula entityScale relativo ao tamanho racial do mobile.
+// Fórmula: server = (1000 + mod) * factor / 1000 - mod
+// Garante que o visual final = tamanho_racial_normal × factor/1000.
+function _CalcRelativeScale(graphic, factor)
+    var mods := _GetRacialMods(graphic);
+    var h := CInt((1000 + mods.mod_h) * factor / 1000) - mods.mod_h;
+    var w := CInt((1000 + mods.mod_w) * factor / 1000) - mods.mod_w;
+    return struct{ height := h, width := w };
+endfunction
+
+program drinkScalePotion(who, potion)
+    if (!Accessible(who, potion))
+        return;
+    endif
+    if (potion.movable == 0)
+        SendSysMessage(who, "Você não pode beber isto.");
+        return;
+    endif
+    if (!checkifcandrink(who, potion))
+        return;
+    endif
+
+    var factor := _GetFactor(potion.objtype);
+    if (!factor)
+        return;
+    endif
+
+    var skill    := CInt(GetObjProperty(potion, "crafterskill"));
+    var duration := 300 + CInt(skill * 15);
+
+    // armazena endtime antes de cancelar o timer anterior — o EndScript antigo
+    // (disparado assincronamente por TS_LowerDuration) verifica este valor e não interfere
+    var endtime := ReadGameClock() + duration;
+    SetObjProperty(who, SCALE_ENDKEY, endtime);
+
+    if (!(TS_GetTimerInfo(who, SCALE_TIMER) is @Exception))
+        TS_LowerDuration(who, SCALE_TIMER, -1);
+    endif
+
+    var scale := _CalcRelativeScale(who.graphic, factor);
+    SetObjProperty(who, "entityScale", scale);
+    ForceScaleRerender(who);
+
+    TS_StartTimer(who, SCALE_TIMER, duration);
+    empty_bottle(who, potion);
+endprogram

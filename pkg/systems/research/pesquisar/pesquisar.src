@@ -651,12 +651,12 @@ function StartResearch(who, recipe, remainingTime := 0)
     endif
 
     if (recipe.type == "Magia")
-        var spellId := SelectRandomSpell(recipe.power);
-        if (spellId)
-            recipe.spellId := spellId;
-        else
+        var spellInfo := SelectFilteredSpell(who, recipe.power);
+        if (!spellInfo)
             return 0;
         endif
+        recipe.spellId := spellInfo.id;
+        recipe.spellSchool := spellInfo.school;
     endif
 
     SetObjProperty(who, "aprenderrecipe", recipe);
@@ -675,9 +675,9 @@ function StartResearch(who, recipe, remainingTime := 0)
             SendSysMessageEx(who, "Condições de estudo não atendidas.", SSM_FAIL);
             return 0;
         endif
-        
+
         PrintTextAbove(who, research_actions[RandomInt(research_actions.size()) + 1]);
-        PlaySoundEffect(who, 0x24a);   
+        PlaySoundEffect(who, 0x24a);
 
         sleep(3);
     endfor
@@ -692,7 +692,8 @@ function StartResearch(who, recipe, remainingTime := 0)
         "recipePower" := recipe.power,
         "craftSkillType" := recipe.craftSkillType,
         "startTime" := recipe.start,
-        "spellId" := recipe.spellId
+        "spellId" := recipe.spellId,
+        "spellSchool" := recipe.spellSchool
     };
 
     var result := TS_StartTimer(who, timerName, duration, level, timerInfo);
@@ -1455,16 +1456,21 @@ function CompleteResearch(who, recipe, byref gump)
         return 0;
     endif
 
-    // CreateItemInBackpack fires the CreateScript which assigns the recipe via scrollRecipes.inc
+    // CreateItemInBackpack fires the CreateScript which assigns the recipe via scrollRecipes.inc.
+    // OverrideResearchRecipe runs after, replacing that assignment with one the player doesn't know yet.
     var item := CreateItemInBackpack(who, itemID, 1);
     if (item)
+        OverrideResearchRecipe(who, item, recipe.type, recipe.power, recipe.craftSkillType);
+
         if (recipe.type == "Magia")
             if (!recipe.spellId)
                 SendSysMessageEx(who, "Erro ao definir a magia. Contate um GM.", SSM_FAIL);
                 DestroyItem(item);
                 return 0;
             endif
-            SetObjProperty(item, "SpellId", recipe.spellId);
+            if (recipe.spellSchool != error)
+                ForceAssignSpellInfo(item, recipe.spellId, recipe.spellSchool);
+            endif
             SendSysMessageEx(who, "Você criou um novo pergaminho de magia!", SSM_INFO);
         else
             SendSysMessageEx(who, "Você concluiu sua pesquisa com sucesso!", SSM_INFO);
