@@ -42,12 +42,27 @@ program showdfdiff(params)
 
 	print(" " + who.name);
 
+	// Spotting timer per NPC. Counts ticks of continuous LoS; the reveal
+	// check fires only after >= 2 ticks (~6s grace) so entering LoS isn't
+	// an instant tripwire. NPCs that leave LoS get dropped from the dict
+	// each tick (rebuilt from the current sweep).
+	var spotting := struct{};
+
 	while (who.hidden && who.connected)
 
+		var new_spotting := struct{};
 		var mobs := ListMobilesInLineOfSight(who, 11);
 		foreach mob in mobs
 			if (!mob.hiding)
+				var dist := Distance(mob, who);
 				var diff := CInt(CalculateDHDiff(mob, who));
+				// Far-range passive detection is much harder. CalculateDHDiff
+				// caps at mobile_skill * 1.0 from dist 8 onwards; tighten that
+				// for *passive* use so distant NPCs rarely catch a stealther
+				// just for being on screen.
+				if (dist >= 8)
+					diff := CInt(diff * 1.5);
+				endif
 				var pct := CalcSuccessPercent(mob, AWARENESS, cdbl(diff),
 											   EffectiveTrueSkill(mob, "Perception"));
 				var shown := CInt(pct);
@@ -55,11 +70,16 @@ program showdfdiff(params)
 				if (shown > 100) shown := 100; endif
 				SendOverheadLabel(who, mob, "" + shown + "%", PerceptionHue(shown));
 
-				// Passive NPC perception: hostile NPCs in LoS roll Awareness
-				// against the stealth diff each tick (3s). On hit, the player
-				// is revealed and the NPC engages.
 				if (mob.npctemplate && mob.alignment != 0 && mob != who)
-					if (SkillCheck(mob, AWARENESS, diff) > 0)
+					var key := CStr(mob.serial);
+					var ticks := 0;
+					if (spotting.Exists(key))
+						ticks := CInt(spotting[key]);
+					endif
+					ticks := ticks + 1;
+					new_spotting[key] := ticks;
+
+					if (ticks >= 2 && SkillCheck(mob, AWARENESS, diff) > 0)
 						who.hidden := 0;
 						ScreenShake(who, 0.6, 15);
 						Message("*!*").SendAbove(mob);
@@ -73,6 +93,7 @@ program showdfdiff(params)
 			sleepms(2);
 		endforeach
 
+		spotting := new_spotting;
 		sleep(3);
 	endwhile
 
