@@ -432,6 +432,21 @@ function comprarHabilidade(who, item, nv:=-1)
 
 	nivel := nivel*2;
 
+	// True Mode gates ability tiers purely by character Level — even-level
+	// abilities arrive as the pergaminho scroll (granted by LevelUp), and
+	// odd-level stat slots are opened by character Level in
+	// SetPlayerSkillLevel / RepairMigratedBuyhab. The skill-distribution
+	// gate stays for Story Mode characters, who progress on the old
+	// "accumulate enough primary skill points" curve.
+	if (chardata.game_mode != "True Mode")
+		var diference := Trunc(GetBuyHabDiference(who, nivel),1);
+
+		if (diference > 0)
+			SendSysMessageEx(who, "Você não pode comprar habilidade desse nivel, faltam {} pontos de skill distribuídas nas suas primárias. ".format(diference), SSM_FAIL);
+			return 0;
+		endif
+	endif
+
 	if ( possiveis.size() > 0 )
 		SendSysMessageEx(who, "Escolha sua habilidade.", SSM_REQUEST);
 		var escolhida := ComprarHabGump(who, possiveis);
@@ -919,6 +934,11 @@ function GetSkillLevelInfo(who)
 	var levelAtual := cint(periciaCombinadaAcima/divisor);
 
 	return struct { primaryDivisor := divisor, currentLevel := levelAtual , relevantCombinedSkills := periciaCombinadaAcima};
+endfunction
+
+function GetBuyHabDiference(who, desiredLevel)
+	var skillLevelInfo := GetSkillLevelInfo(who);
+	return (skillLevelInfo.relevantCombinedSkills - (desiredLevel * skillLevelInfo.primaryDivisor)) * -1;
 endfunction
 
 function GetCharacterSkills(who, prioridadePericia)
