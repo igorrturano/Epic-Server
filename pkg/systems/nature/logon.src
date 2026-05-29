@@ -6,8 +6,5 @@ include ":fls_core:fls_characters";
 program logon(who)
 	InitPlayerVision(who);
 
-	EraseObjProperty(who, "underwater");
-	EraseObjProperty(who, "#uw_running");
-
 	destroyIllyraOutsideDungeons(who);
 endprogram

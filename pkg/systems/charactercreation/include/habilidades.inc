@@ -838,19 +838,45 @@ function ShowCapInfo(byref gump, who)
     var chardata := GetObjProperty(who, "chardata");
     var cappri, capsec, capter, capprimax, capsecmax, captermax;
 
-    var primarias := getPrimarias(who);
-    var pri := primarias[1];
-    cappri := Cdbl(AP_GetSkillCap(who)) + Cdbl(valorinicial(who, pri));
-    capprimax := 100;
-    capsec := cappri - 20;
-    capsecmax := capprimax - 30;
-    capter := capsec - 20;
-    captermax := (chardata.vantagemracial == "Sabedoria dos Antigos") ? 50 : 40;
-    if (capsec > capsecmax)
-        capsec := capsecmax;
-    endif
-    if (capter > captermax)
-        capter := captermax;
+    if (chardata != error && chardata && chardata.game_mode == "True Mode")
+        // True Mode: caps grow +3 per level. Per-tier ceilings:
+        // Primary 100, Secondary 60, Tertiary 40. Matches AP_GetSkillCap
+        // → TrueModeSkillCap formula so the display matches gain behavior.
+        var level := CInt(GetObjProperty(who, "Level"));
+        if (level < 1)
+            level := 1;
+        endif
+        capprimax := 100;
+        capsecmax := 60;
+        captermax := (chardata.vantagemracial == "Sabedoria dos Antigos") ? 50 : 40;
+        cappri := 40 + (level * 3);
+        capsec := 20 + (level * 3);
+        capter := level * 3;
+        if (cappri > capprimax)
+            cappri := capprimax;
+        endif
+        if (capsec > capsecmax)
+            capsec := capsecmax;
+        endif
+        if (capter > captermax)
+            capter := captermax;
+        endif
+    else
+        // Story Mode (and legacy / unset characters): age-based progression.
+        var primarias := getPrimarias(who);
+        var pri := primarias[1];
+        cappri := Cdbl(AP_GetSkillCap(who)) + Cdbl(valorinicial(who, pri));
+        capprimax := 100;
+        capsec := cappri - 20;
+        capsecmax := capprimax - 30;
+        capter := capsec - 20;
+        captermax := (chardata.vantagemracial == "Sabedoria dos Antigos") ? 50 : 40;
+        if (capsec > capsecmax)
+            capsec := capsecmax;
+        endif
+        if (capter > captermax)
+            capter := captermax;
+        endif
     endif
 
     var y_pos := GUMP_HEIGHT - 60;
@@ -908,6 +934,26 @@ function SetPlayerSkillLevel(who)
 	var habs := GetObjProperty(who, "buyhab");
 	if(!habs)
 		habs[0] := 1;
+	endif
+
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata != error && chardata && chardata.game_mode == "True Mode")
+		// True Mode: stat slots open by character Level, not the Story
+		// Mode skill-accumulation curve. Odd levels (3,5,...,19) grant a
+		// +2 stat purchase; even levels deliver abilities via the
+		// pergaminho scroll, so only the odd slots open here. Mirrors
+		// RepairMigratedBuyhab, but runs every menu open instead of once.
+		var curr_level := CInt(GetObjProperty(who, "Level"));
+		if (curr_level < 1)
+			curr_level := 1;
+		endif
+		for level := 1 to curr_level
+			if (level % 2 == 1 && !habs[level])
+				habs[level] := 1;
+			endif
+		endfor
+		SetObjProperty(who, "buyhab", habs);
+		return;
 	endif
 
 	var levelInfo := GetSkillLevelInfo(who);

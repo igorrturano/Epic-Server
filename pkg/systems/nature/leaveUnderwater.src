@@ -1,7 +1,7 @@
 use uo;
 use vitals;
 
-program leaveunderwater(who)
+program removeunderwatereffect(who)
 	EraseObjProperty(who, "underwater");
 	RecalcVitals(who);
 endprogram

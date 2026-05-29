@@ -125,12 +125,82 @@ endfunction
 const NO_SKILL_NAME		:= 0x0;
 
 /*
+ * TrueModeSkillCap(mobile, skill_name)
+ *
+ * Path-rework True Mode cap: governed by character Level, not age.
+ *   Primary (tier 3): starts at 40, +3 per level, capped at 100
+ *   Secondary (tier 2): starts at 20, +3 per level, capped at 60
+ *   Tertiary / untiered: same growth, no per-tier ceiling (falls back to
+ *     general SkillCap from settings.cfg).
+ *
+ * Levels: L1 → primary 43 / secondary 23 ... L20 → primary 100 / secondary 60.
+ *
+ * Tier comes from chardata.Skills (with ResolveSkillTier handling alias and
+ * split mismatches that otherwise leave the dict-key lookup blank).
+ */
+function TrueModeSkillCap(mobile, skill_name)
+    if (mobile.npctemplate)
+        return 120.0;
+    endif
+
+    var chardata := GetObjProperty(mobile, "chardata");
+    if (chardata == error || !chardata)
+        return 120.0;
+    endif
+
+    var myskills := chardata.Skills;
+    var tier := myskills[skill_name];
+    if (tier == error || CInt(tier) == 0)
+        tier := ResolveSkillTier(myskills, skill_name);
+    endif
+
+    var initial := 0;
+    var ceiling := 0;
+    if (tier == 3)
+        initial := 40;
+        ceiling := 100;
+    elseif (tier == 2)
+        initial := 20;
+        ceiling := 60;
+    else
+        // Tertiary / unselected — let it grow without a tier-specific ceiling.
+        // Fall back to the general SkillCap from settings.cfg.
+        ceiling := CInt(GetConfigReal(AP_GetSettingsCfgElem("Skills"), "SkillCap"));
+        if (ceiling <= 0)
+            ceiling := 120;
+        endif
+    endif
+
+    var level := CInt(GetObjProperty(mobile, "Level"));
+    if (level < 1)
+        level := 1;
+    endif
+
+    var cap := initial + (level * 3);
+    if (cap > ceiling)
+        cap := ceiling;
+    endif
+
+    return CDbl(cap);
+endfunction
+
+/*
  * AP_GetSkillCap(skill_name)
  * Purpose: Gets the number a skill caps at.
  * Parameters: skill_name: Name of the skill to check
  * Return: a number or error
  */
 function AP_GetSkillCap(mobile, skill_name:=NO_SKILL_NAME)
+    // True Mode (chardata.game_mode == "True Mode") uses a level-gated cap.
+    // Story Mode, unset, and legacy characters all fall through to the
+    // age-based cap below.
+    if (skill_name)
+        var chardata := GetObjProperty(mobile, "chardata");
+        if (chardata != error && chardata && chardata.game_mode == "True Mode")
+            return TrueModeSkillCap(mobile, skill_name);
+        endif
+    endif
+
     var cfg_elem := AP_GetSettingsCfgElem("Skills");
     var cap_val;
 

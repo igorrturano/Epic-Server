@@ -2,17 +2,8 @@ use uo;
 use os;
 use util;
 
-program enterunderwater(who, regname)
-	if (!who || who.npctemplate)
-		return;
-	endif
+include ":nature:tremor";
 
-	SetObjProperty(who, "underwater", regname);
-
-	if (GetObjProperty(who, "#uw_running"))
-		return;
-	endif
-	SetObjProperty(who, "#uw_running", 1);
-
-	start_script(":nature:underwatereffect", { who });
+program terremoto(who, regname)
+	start_script(":nature:underwatereffect", { who, regname });
 endprogram

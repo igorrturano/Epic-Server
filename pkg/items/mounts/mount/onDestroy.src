@@ -1,6 +1,7 @@
 use uo;
 
 include ":attributes:attributes";
+include ":brainAI:include/npcUtil";
 
 program UnMountingScript(mount_piece)
 
