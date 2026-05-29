@@ -38,13 +38,13 @@ function customizeNpc(mob, set_tier := "0")
 	elseif(classe == LADINO || mob.isSpider())
 		AP_SetTrueSkill(mob, SNEAK, mob_skill);
 		AP_SetTrueSkill(mob, PICKPOCKETING, mob_skill);
+		AP_SetTrueSkill(mob, AWARENESS, mob_skill);
 	else
 		skill_combat := WRESTLING;
 		skill_support := TACTICS;
 		AP_SetTrueSkill(mob, SURVIVAL, mob_skill);
 	endif
 
-	AP_SetTrueSkill(mob, AWARENESS, mob_skill);
 	AP_SetTrueSkill(mob, WRESTLING, mob_skill);
 	AP_SetTrueSkill(mob, TACTICS, tactics);
 
