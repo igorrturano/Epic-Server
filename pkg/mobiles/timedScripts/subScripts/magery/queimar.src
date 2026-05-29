@@ -19,7 +19,7 @@ program TimedScript_sacrificio(params)
 			var dmg := RandomDiceRoll("2d8");
 			PrintTextAbove(who, "Incinerado: " + Cstr(dmg));
 			ApplyRawDamage(who, dmg);
-			PlayObjectCenteredEffectHuefx(who, 0x6e26, 10, 20, 0, 1);
+			PlayObjectCenteredEffectEx(who, 0x6e26, 10, 20, 0, 1);
 		endif
 
 		sleep(2);

@@ -49,12 +49,17 @@ function ProgressAttackSkills(byRef attackInfo)
 	// Sendo o alvo um personagem jogador ou NPC com combate melhor que o atacante, permite o up de skill de combate
 	var can_gain := 0;
 	var next_gain := CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#CS_GainTime"));
-	if (ReadGameClock() >= next_gain)
+	var now := ReadGameClock();
+	if (now >= next_gain)
 		if (CS_GetSettingsCfgElem("General").PvPGains)
 			can_gain := 1;
 		elseif (attackInfo.GetDefender().IsNPC())
 			can_gain := 1;
+		else
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_UP, Message("Skill UP bloqueado: ganho em PvP desabilitado."));
 		endif
+	else
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_UP, Message("Skill UP em cooldown (" + CStr(next_gain - now) + "s restantes)."));
 	endif
 
 	if (can_gain)

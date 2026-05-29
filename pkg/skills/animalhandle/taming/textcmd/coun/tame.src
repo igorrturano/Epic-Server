@@ -2,6 +2,8 @@ use uo;
 use cfgfile;
 use os;
 
+include ":taming:taming";
+
 program Tame(who)
 	var targ := target(who);
 
@@ -18,6 +20,6 @@ program Tame(who)
 		targ.script := ":epicai:tamedBrain";
 		RestartScript(targ);
 
-		Run_Script_To_Completion(":death:npcdeath", { targ });
+		SnapshotPetAttributes(targ);
 	endif
 endprogram

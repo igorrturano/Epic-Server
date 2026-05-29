@@ -34,9 +34,9 @@ class ShadowBlade(CombatAbility)
         var defender := attackInfo.GetDefender();
         var mlore := CInt(attacker.GetSkill(ARCANA));
 
-        // Forced shadow damage (bypasses resistances)
+        // Forced shadow damage (bypasses resistances) — fed through combat pipeline
         var shadowDmg := CInt(mlore / 2);
-        ApplyRawDamage(defender.GetObjRef(), shadowDmg);
+        attackInfo.GetDamage().IncreaseForcedRawDamage(shadowDmg);
 
         // Bleed effect
         MakeBleed(defender.GetObjRef());
@@ -47,7 +47,7 @@ class ShadowBlade(CombatAbility)
 
         // Visual/sound effects
         PlaySoundEffect(defender.GetObjRef(), 0x51D);
-        PlayObjectCenteredEffectHuefx(defender.GetObjRef(), 0x54b3, 10, 20, 1254, 1);
+        PlayObjectCenteredEffectEx(defender.GetObjRef(), 0x54b3, 10, 20, 1254, 1);
         PlaySoundEffect(defender.GetObjRef(), 0x1FB);
 
         Message("*lamina sombria*").SendAbove(attacker.GetObjRef());

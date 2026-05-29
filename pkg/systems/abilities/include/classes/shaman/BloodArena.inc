@@ -59,7 +59,7 @@ class BloodArena(CombatAbility)
 			TS_StartTimer(defender, "apodrecer", shaman_souls + duration);
 
 			PlaySoundEffect(defender, 0x654);
-			PlayObjectCenteredEffectHuefx(defender, 0x6c91, 1, 30, 2731, 0);
+			PlayObjectCenteredEffectEx(defender, 0x6c91, 1, 30, 2731, 0);
 			Message("Voce esta aterrorizado com visoes de morte.").SendSys(defender);
 		endif
 

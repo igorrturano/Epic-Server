@@ -54,7 +54,7 @@ program HitScript(params)
 		SendSysMessageEx(who, "Voce nao ve o alvo.", SSM_FAIL);
 		return 0;
 	endif
-	PlayObjectCenteredEffectHuefx(targ, 0x54CE, 10, 20, 1420, 1);
+	PlayObjectCenteredEffectEx(targ, 0x54CE, 10, 20, 1420, 1);
 
 	targ.hidden := 1;
 
@@ -85,7 +85,7 @@ program HitScript(params)
 	sleep(1);
 	targ.hidden := 0;
 	who.frozen := 0;
-	PlayObjectCenteredEffectHuefx(targ, 0x54CE, 10, 20, 1420, 1);
+	PlayObjectCenteredEffectEx(targ, 0x54CE, 10, 20, 1420, 1);
 
 	return 1;
 endprogram

@@ -303,15 +303,34 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
     var skill_gain := CDbl(ApplySkillGain(mobile, skill_name)); 
 
     // If it's a pet, notify the owner
-    if (mobile.npctemplate) 
+    if (mobile.npctemplate)
         var owner := GetObjProperty(mobile, "owner");
-        if (owner != error) 
+        if (owner != error)
             var petskills := GetObjProperty(mobile, "petskills");
-            if (TypeOf(petskills) != "Dictionary") 
+            if (TypeOf(petskills) != "Dictionary")
                 petskills := dictionary;
             endif
             petskills[skill_name] := skill_gain;
             setObjProperty(mobile, "petskills", petskills);
+
+            // Refresh full stat/skill snapshot so resurrection restores the
+            // post-gain state. Mirrors SnapshotPetAttributes in :taming:taming
+            // (inlined here to avoid a cyclic include with :attributes:*).
+            var snap := GetObjProperty(mobile, "petSnapshot");
+            if (TypeOf(snap) != "Struct")
+                snap := struct;
+                snap.+stats := dictionary;
+                snap.+skills := dictionary;
+                foreach stat_name in (AP_ListAttributesByType("Stat"))
+                    snap.stats[stat_name] := AP_GetTrueStat(mobile, stat_name);
+                endforeach
+                foreach sk_name in (AP_ListAttributesByType("Skill"))
+                    snap.skills[sk_name] := AP_GetTrueSkill(mobile, sk_name);
+                endforeach
+            endif
+            snap.skills[skill_name] := AP_GetTrueSkill(mobile, skill_name);
+            SetObjProperty(mobile, "petSnapshot", snap);
+
             SetObjProperty(mobile, fail_count_skill, 0);
             DebugMsg(owner, DEBUG_UP, Message(FormatSkillName(skill_name) + " do seu pet aumentou para " + RoundValueToOneDecimal(skill_gain) + "!"));
         endif

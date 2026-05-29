@@ -1723,49 +1723,6 @@ function looksGump(who, chardata)
 endfunction
 
 
-function gameModeGump(who, religion_pic)
-    var next_btn := array{"9903", "9904"};
-    var prev_btn := array{"9909", "9910"};
-
-    var gump := GFCreateGump();
-    GFClosable(gump, 0);
-    GFGumpPic(gump, 17, 31, 0x9E6);
-
-    GFHTMLArea(gump, 326, 56, 192, 40, "<BASEFONT Size=55 Color=#999999 >Escolha seu modo de jogo", 0, 0); //shadow
-    GFHTMLArea(gump, 325, 55, 192, 40, "<BASEFONT Size=55 Color=#ffffff >Escolha seu modo de jogo", 0, 0);
-    var x := 63;
-    var y := 100;
-    var i := 0;
-
-    GFHTMLArea(gump, 100, 550, 650, 120, gameModeDescriptionByPictureId(religion_pic), 1, 1);
-    GFAddButton(gump, 543, 300, next_btn[1], next_btn[2], GF_CLOSE_BTN, 201);
-    GFAddButton(gump, 273, 300, prev_btn[1], prev_btn[2], GF_CLOSE_BTN, 210);
-    GFAddButton(gump, 653, 680, 4005, 4007, GF_CLOSE_BTN, 200);
-
-    GFGumpPic(gump, 298, 100, religion_pic);
-
-    return GFSendGump(who, gump);
-endfunction
-
-function gameModeByPictureId(gameModeId)
-    case (gameModeId)
-        0x9FC:
-            return TRUE_MODE;
-        0x9FB:
-            return STORY_MODE;
-    endcase
-endfunction
-
-function gameModeDescriptionByPictureId(gameModeId)
-    var textosConfig := ReadConfigFile(":charactercreation:/config/descricoes");
-    case (gameModeId)
-        0x9FC:
-            return FindConfigElem(textosConfig, "trueMode").descricao;
-        0x9FB:
-            return FindConfigElem(textosConfig, "storyMode").descricao;
-    endcase
-endfunction
-
 function getWisdomPathsByCulture(who)
     var wisdomPaths := array{"Mago", "Alquimista"};
     var chardata := GetObjProperty(who, "chardata");

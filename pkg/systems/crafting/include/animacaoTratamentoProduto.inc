@@ -37,6 +37,10 @@ function isAnimacaoFerreiroPossivel(quem, estacao, ferramentaNecessaria, posicao
 endfunction
 
 function isAnimacaoPadraoPossivel(quem, estacao, ferramentaNecessaria, posicaoInicial, saudeInicial, profissao)
+	if(quem.hidden)
+		SendSysMessageEx(quem,"Você não pode trabalhar enquanto está escondido.",SSM_FAIL);
+		return false;
+	endif
 	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
 	var profissaoElem :=FindConfigElem( profissaoConfig, profissao );
 	var verificaLos := !CheckLosBetween( quem.x, quem.y, quem.z, estacao.x, estacao.y, estacao.z, quem.realm)  && TypeOfInt(estacao.item) != OT_ITEMREF;

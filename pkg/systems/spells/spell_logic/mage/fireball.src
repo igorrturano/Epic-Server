@@ -19,7 +19,7 @@ program spell_fireball(params)
 	var caster := params[1];
 	var cast_on := params[2];
 	var spell := params[3];
-	var spell_circle := spell.Circle;
+	var spell_circle := CInt(spell.Circle[1]);
 	var spell_school := spell.School;
 
 	params := 0;
