@@ -521,6 +521,12 @@ function comprarHabilidade(who, item, nv:=-1)
 			endif
 			known.append(chosen);
 			SetObjProperty(who, "linguas_conhecidas", known);
+			var poliglota_langs := GetObjProperty(who, "#poliglota_languages");
+			if (poliglota_langs == error || !poliglota_langs)
+				poliglota_langs := array{};
+			endif
+			poliglota_langs.append(chosen);
+			SetObjProperty(who, "#poliglota_languages", poliglota_langs);
 			SendSysMessageEx(who, "Voce aprendeu o idioma: " + chosen, SSM_INFO);
 		endif
 		myhabs[nivel] := escolhida_id;
