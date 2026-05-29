@@ -58,14 +58,18 @@ program skill_animal_lore(who)
 				SendSysMessage(who, "Esse nao pode ser um alvo valido.");
 				return 0;
 			endif
-			var ev := struct;
-			ev.+type;
-			ev.type := EVID_PEACEMADE; // ajetra isso
-			ev.+source;
-			ev.source := who;
-			sendEvent(creature, ev);
-			SetCooldown(creature, "peacemade", cint(EffectiveSkill(who, calm_skill) * 5));
-			PrintTextPrivate(creature, "A criatura foi acalmada.", who);
+			if (IsTamedPet(creature))
+				SendSysMessageEx(who, creature.name + " não pode ser acalmado.", SSM_FAIL);
+			else
+				var ev := struct;
+				ev.+type;
+				ev.type := EVID_PEACEMADE; // ajetra isso
+				ev.+source;
+				ev.source := who;
+				sendEvent(creature, ev);
+				SetCooldown(creature, "peacemade", cint(EffectiveSkill(who, calm_skill) * 5));
+				PrintTextPrivate(creature, "A criatura foi acalmada.", who);
+			endif
 		endif
 
 		if (input[0] == 999)
@@ -74,14 +78,18 @@ program skill_animal_lore(who)
 				SendSysMessage(who, "Esse nao pode ser um alvo valido.");
 				return 0;
 			endif
-			var ev := struct;
-			ev.+type;
-			ev.type := EVID_PEACEMADE;
-			ev.+source;
-			ev.source := who;
-			sendEvent(creature, ev);
-			SetCooldown(creature, "peacemade", cint(EffectiveSkill(who, calm_skill) * 5));
-			PrintTextPrivate(creature, "A criatura foi acalmada.", who);
+			if (IsTamedPet(creature))
+				SendSysMessageEx(who, creature.name + " não pode ser acalmado.", SSM_FAIL);
+			else
+				var ev := struct;
+				ev.+type;
+				ev.type := EVID_PEACEMADE;
+				ev.+source;
+				ev.source := who;
+				sendEvent(creature, ev);
+				SetCooldown(creature, "peacemade", cint(EffectiveSkill(who, calm_skill) * 5));
+				PrintTextPrivate(creature, "A criatura foi acalmada.", who);
+			endif
 		endif
 	else
 		PrintTextPrivate(creature, "Voce falha em conseguir examinar este animal.", who);
