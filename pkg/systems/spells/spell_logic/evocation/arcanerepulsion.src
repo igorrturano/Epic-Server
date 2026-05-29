@@ -18,7 +18,7 @@ program SpellScript(params)
 	var caster := params[1];
 	var info := params[2];
 	var spellinfo := params[3];
-	var spell_circle := spellinfo.Circle;
+	var spell_circle := CInt(spellinfo.Circle[1]);
 	var spell_school := spellinfo.School;
 	params := 0;
 

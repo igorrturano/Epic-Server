@@ -21,7 +21,7 @@ program earthquake(parms)
 	var caster := parms[1];
 	var info := parms[2];
 	var spell := parms[3];
-	var spell_circle := info.Circle;
+	var spell_circle := CInt(info.Circle[1]);
 	var spell_school := spell.School;
 
 	SendSysMessageEx(caster, "Voce ve o chao tremer com extrema violencia.", SSM_INFO);
