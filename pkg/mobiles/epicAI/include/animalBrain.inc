@@ -74,6 +74,9 @@ function AnimalBrain()
             case (ev.type)
                 SYSEVENT_ENGAGED:
                     last_activity_time := polcore().systime;
+                    if (GetCooldown(me, "peacemade") > 0)
+                        SetCooldown(me, "peacemade", 0);
+                    endif
                     AddThreat(ev.source, 0);
                     if (should_flee)
                         SM_TransitionTo("FLEEING", struct{ "target" := ev.source, "steps" := 0 });
@@ -83,6 +86,9 @@ function AnimalBrain()
                     endif
                 SYSEVENT_DAMAGED:
                     last_activity_time := polcore().systime;
+                    if (GetCooldown(me, "peacemade") > 0)
+                        SetCooldown(me, "peacemade", 0);
+                    endif
                     AddThreat(ev.source, 0);
                     UpdateThreatList(me, ev);
                     if (SM_GetState() == "AMBUSH")
