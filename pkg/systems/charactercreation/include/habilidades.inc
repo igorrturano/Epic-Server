@@ -777,6 +777,16 @@ function ShowEmTreinamentoPage(byref gump, who)
     GFHTMLArea(gump, 240, 495, 100, 20, "<BASEFONT SIZE=5>Atualizar</BASEFONT>", 0, 0);
 endfunction
 
+function FormatCap(value)
+    var scaled := CInt(CDbl(value) * 10);
+    var whole := CInt(scaled / 10);
+    var tenths := scaled - (whole * 10);
+    if (tenths < 0)
+        tenths := -tenths;
+    endif
+    return whole + "." + tenths;
+endfunction
+
 function ShowCapInfo(byref gump, who)
     var chardata := GetObjProperty(who, "chardata");
     var cappri, capsec, capter, capprimax, capsecmax, captermax;
@@ -798,9 +808,9 @@ function ShowCapInfo(byref gump, who)
 
     var y_pos := GUMP_HEIGHT - 60;
     GFTextMid(gump, 55, y_pos, 300, 53, "Cap/MaxCap:");
-    GFTextLine(gump, 50, y_pos + 20, 300, "Pri.: " + cappri + "/" + capprimax);
-    GFTextLine(gump, 160, y_pos + 20, 300, "Sec.: " + capsec + "/" + capsecmax);
-    GFTextLine(gump, 270, y_pos + 20, 300, "Ter.: " + capter + "/" + captermax);
+    GFTextLine(gump, 50, y_pos + 20, 300, "Pri.: " + FormatCap(cappri) + "/" + FormatCap(capprimax));
+    GFTextLine(gump, 160, y_pos + 20, 300, "Sec.: " + FormatCap(capsec) + "/" + FormatCap(capsecmax));
+    // GFTextLine(gump, 270, y_pos + 20, 300, "Ter.: " + FormatCap(capter) + "/" + FormatCap(captermax));
 endfunction
 
 function Habilidades(who, nivel)
