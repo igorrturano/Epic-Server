@@ -25,7 +25,7 @@ class Valdruk(CombatAbility)
         var who := mobile.GetObjRef();
         var duration := CInt(mobile.GetSkill(ARCANA) / 5);
 
-        PlayObjectCenteredEffectHuefx(who, 0x54CE, 10, 20, 1420, 1);
+        PlayObjectCenteredEffectEx(who, 0x54CE, 10, 20, 1420, 1);
         PlaySoundEffect(who, 0x204);
 
         TS_StartTimer(who, "conceal", duration);
