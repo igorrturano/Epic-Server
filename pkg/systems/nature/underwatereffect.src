@@ -8,61 +8,37 @@ include "include/epicConstants";
 
 program underwater(params)
 	var who := params[1];
-	var underwaterMessageSent := 0;
 
-	while (who)
-		if (who.dead)
-			break;
+	if (!who || who.npctemplate)
+		EraseObjProperty(who, "#uw_running");
+		return;
+	endif
+
+	SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
+
+	while (who && !who.dead && GetObjProperty(who, "underwater"))
+		if (GetCooldown(who, "can_breath") > 0)
+			sleepms(2000);
+			continue;
 		endif
 
-		var z := who.z;
-		var statics := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
+		if (SkillCheck(who, NATURE, RESIST_VERY_HARD, 0, ADV_SKILL) > 0)
+			SetCooldown(who, "can_breath", 3);
+			SendSysMessageEx(who, "A água sustenta você por um momento — saia daqui!", SSM_INFO);
+			sleepms(2000);
+			continue;
+		endif
 
-		var is_on_water_tile := 0;
-
-		foreach static in statics
-			if (CInt(static.objtype) >= 5818 && CInt(static.objtype) <= 5839)
-				is_on_water_tile := 1;
-				break;
-			endif
-		endforeach
-
-		if (is_on_water_tile && z <= -20)
-			if (GetCooldown(who, "can_breath") > 0)
-				break;
-			endif
-
-			if (GetObjProperty(who, "underwater"))
-				if (!underwaterMessageSent)
-					SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
-					underwaterMessageSent := 1;
-				endif
-
-				if (SkillCheck(who, NATURE, RESIST_VERY_HARD, 0, ADV_SKILL) > 0)
-					SetCooldown(who, "can_breath", 3);
-					SendSysMessageEx(who, "A água sustenta você por um momento — saia daqui!", SSM_INFO);
-					sleepms(2000);
-					continue;
-				endif
-
-				if (!AP_ConsumeVital(who, "Stamina", 10))
-					AP_ConsumeVital(who, "Hits", 10);
-				endif
-			else
-				SetObjProperty(who, "underwater", 1);
-				SendSysMessageEx(who, "Você não consegue respirar!", SSM_FAIL);
-				underwaterMessageSent := 1;
-			endif
-		else
-			break;
+		if (!AP_ConsumeVital(who, "Stamina", 10))
+			AP_ConsumeVital(who, "Hits", 10);
 		endif
 
 		sleepms(2000);
 	endwhile
 
-	if (who && GetObjProperty(who, "underwater"))
-		EraseObjProperty(who, "underwater");
-		if (!who.dead)
+	if (who)
+		EraseObjProperty(who, "#uw_running");
+		if (!who.dead && !GetObjProperty(who, "underwater"))
 			SendSysMessageEx(who, "Você consegue respirar novamente!", SSM_INFO);
 		endif
 	endif

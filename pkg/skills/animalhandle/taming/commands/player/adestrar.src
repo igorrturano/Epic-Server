@@ -96,7 +96,7 @@ function tamecreature(who)
 			var erase_selvagem := GetObjProperty(targ, "Selvagem");
 			SetTamedProperties(targ, who);
 
-			Run_Script_To_Completion(":death:npcdeath", { targ });
+			SnapshotPetAttributes(targ);
 
 			AddPet(who, targ.serial);
 
@@ -153,12 +153,10 @@ function SetTamingCooldown(who)
 endfunction
 
 function SetTamedProperties(targ, who)
-	EraseObjProperty(targ, "NpcTier");
-	EraseObjProperty(targ, "#npc_cache");
-	SetObjProperty(targ, "hitsmod", 0);
-	var npc_elem := NPC_GetNPCConfig(targ);
-	customizeNpc(targ, npc_elem.Tier);
-
+	// Do NOT re-run customizeNpc here: the wild NPC was already customized at
+	// spawn, and customizeNpc rerolls Wrestling and Tactics from random tier
+	// ranges (see scripts/include/epicNPCUtils.inc). The other tame entry
+	// point (taming.src) does not do this — adestrar.src was the outlier.
 	SetObjProperty(targ, "owner", who.serial);
 	SetObjProperty(targ, "name", targ.name);
 	SetObjProperty(targ, "script", targ.script);

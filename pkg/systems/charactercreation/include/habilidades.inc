@@ -4,6 +4,7 @@ include ":attributes:attributes";
 include "include/epicConstants";
 include "include/epicUtils";
 include ":tn:equipment";
+include ":tn:tngumps";
 include ":abilities:include/models/Ability";
 include ":census:include/CensusController";
 include ":wrappers:Objects/Model/MobileWrapper";
@@ -431,21 +432,6 @@ function comprarHabilidade(who, item, nv:=-1)
 
 	nivel := nivel*2;
 
-	// True Mode gates ability tiers purely by character Level — even-level
-	// abilities arrive as the pergaminho scroll (granted by LevelUp), and
-	// odd-level stat slots are opened by character Level in
-	// SetPlayerSkillLevel / RepairMigratedBuyhab. The skill-distribution
-	// gate stays for Story Mode characters, who progress on the old
-	// "accumulate enough primary skill points" curve.
-	if (chardata.game_mode != "True Mode")
-		var diference := Trunc(GetBuyHabDiference(who, nivel),1);
-
-		if (diference > 0)
-			SendSysMessageEx(who, "Você não pode comprar habilidade desse nivel, faltam {} pontos de skill distribuídas nas suas primárias. ".format(diference), SSM_FAIL);
-			return 0;
-		endif
-	endif
-
 	if ( possiveis.size() > 0 )
 		SendSysMessageEx(who, "Escolha sua habilidade.", SSM_REQUEST);
 		var escolhida := ComprarHabGump(who, possiveis);
@@ -511,6 +497,37 @@ function comprarHabilidade(who, item, nv:=-1)
 			endif
 		elseif(escolhida_id == ABILITY_ID::AURA_DE_FE)
 			ChooseFlag(who);
+		elseif (escolhida_id == ABILITY_ID::POLIGLOTA)
+			var all_languages := array{ "Imperialis", "Aglâb", "Ahruwën", "Haiei", "Phalk",
+										"Grumnak", "Björ", "Idrith'har", "Comum", "Sylovir" };
+			var known := GetObjProperty(who, "linguas_conhecidas");
+			if (known == error || !known)
+				known := array{};
+			endif
+			var available := array{};
+			foreach lang in all_languages
+				if (!(lang in known))
+					available.append(lang);
+				endif
+			endforeach
+			if (!available.size())
+				SendSysMessageEx(who, "Voce ja conhece todos os idiomas disponiveis.", SSM_FAIL);
+				return 0;
+			endif
+			var chosen := RadioGump(who, 250, 200, "Qual idioma deseja aprender?", available);
+			if (!chosen)
+				SendSysMessageEx(who, "Voce cancelou a compra da habilidade.", SSM_FAIL);
+				return 0;
+			endif
+			known.append(chosen);
+			SetObjProperty(who, "linguas_conhecidas", known);
+			var poliglota_langs := GetObjProperty(who, "#poliglota_languages");
+			if (poliglota_langs == error || !poliglota_langs)
+				poliglota_langs := array{};
+			endif
+			poliglota_langs.append(chosen);
+			SetObjProperty(who, "#poliglota_languages", poliglota_langs);
+			SendSysMessageEx(who, "Voce aprendeu o idioma: " + chosen, SSM_INFO);
 		endif
 		myhabs[nivel] := escolhida_id;
 		habs[nivel] := 2;
@@ -792,56 +809,40 @@ function ShowEmTreinamentoPage(byref gump, who)
     GFHTMLArea(gump, 240, 495, 100, 20, "<BASEFONT SIZE=5>Atualizar</BASEFONT>", 0, 0);
 endfunction
 
+function FormatCap(value)
+    var scaled := CInt(CDbl(value) * 10);
+    var whole := CInt(scaled / 10);
+    var tenths := scaled - (whole * 10);
+    if (tenths < 0)
+        tenths := -tenths;
+    endif
+    return whole + "." + tenths;
+endfunction
+
 function ShowCapInfo(byref gump, who)
     var chardata := GetObjProperty(who, "chardata");
     var cappri, capsec, capter, capprimax, capsecmax, captermax;
 
-    if (chardata != error && chardata && chardata.game_mode == "True Mode")
-        // True Mode: caps grow +3 per level. Per-tier ceilings:
-        // Primary 100, Secondary 60, Tertiary 40. Matches AP_GetSkillCap
-        // → TrueModeSkillCap formula so the display matches gain behavior.
-        var level := CInt(GetObjProperty(who, "Level"));
-        if (level < 1)
-            level := 1;
-        endif
-        capprimax := 100;
-        capsecmax := 60;
-        captermax := (chardata.vantagemracial == "Sabedoria dos Antigos") ? 50 : 40;
-        cappri := 40 + (level * 3);
-        capsec := 20 + (level * 3);
-        capter := level * 3;
-        if (cappri > capprimax)
-            cappri := capprimax;
-        endif
-        if (capsec > capsecmax)
-            capsec := capsecmax;
-        endif
-        if (capter > captermax)
-            capter := captermax;
-        endif
-    else
-        // Story Mode (and legacy / unset characters): age-based progression.
-        var primarias := getPrimarias(who);
-        var pri := primarias[1];
-        cappri := Cdbl(AP_GetSkillCap(who)) + Cdbl(valorinicial(who, pri));
-        capprimax := 100;
-        capsec := cappri - 20;
-        capsecmax := capprimax - 30;
-        capter := capsec - 20;
-        captermax := (chardata.vantagemracial == "Sabedoria dos Antigos") ? 50 : 40;
-        if (capsec > capsecmax)
-            capsec := capsecmax;
-        endif
-        if (capter > captermax)
-            capter := captermax;
-        endif
+    var primarias := getPrimarias(who);
+    var pri := primarias[1];
+    cappri := Cdbl(AP_GetSkillCap(who)) + Cdbl(valorinicial(who, pri));
+    capprimax := 100;
+    capsec := cappri - 20;
+    capsecmax := capprimax - 30;
+    capter := capsec - 20;
+    captermax := (chardata.vantagemracial == "Sabedoria dos Antigos") ? 50 : 40;
+    if (capsec > capsecmax)
+        capsec := capsecmax;
+    endif
+    if (capter > captermax)
+        capter := captermax;
     endif
 
     var y_pos := GUMP_HEIGHT - 60;
     GFTextMid(gump, 55, y_pos, 300, 53, "Cap/MaxCap:");
-    GFTextLine(gump, 50, y_pos + 20, 300, "Pri.: " + cappri + "/" + capprimax);
-    GFTextLine(gump, 160, y_pos + 20, 300, "Sec.: " + capsec + "/" + capsecmax);
-    GFTextLine(gump, 270, y_pos + 20, 300, "Ter.: " + capter + "/" + captermax);
+    GFTextLine(gump, 50, y_pos + 20, 300, "Pri.: " + FormatCap(cappri) + "/" + FormatCap(capprimax));
+    GFTextLine(gump, 160, y_pos + 20, 300, "Sec.: " + FormatCap(capsec) + "/" + FormatCap(capsecmax));
+    // GFTextLine(gump, 270, y_pos + 20, 300, "Ter.: " + FormatCap(capter) + "/" + FormatCap(captermax));
 endfunction
 
 function Habilidades(who, nivel)
@@ -894,26 +895,6 @@ function SetPlayerSkillLevel(who)
 		habs[0] := 1;
 	endif
 
-	var chardata := GetObjProperty(who, "chardata");
-	if (chardata != error && chardata && chardata.game_mode == "True Mode")
-		// True Mode: stat slots open by character Level, not the Story
-		// Mode skill-accumulation curve. Odd levels (3,5,...,19) grant a
-		// +2 stat purchase; even levels deliver abilities via the
-		// pergaminho scroll, so only the odd slots open here. Mirrors
-		// RepairMigratedBuyhab, but runs every menu open instead of once.
-		var curr_level := CInt(GetObjProperty(who, "Level"));
-		if (curr_level < 1)
-			curr_level := 1;
-		endif
-		for level := 1 to curr_level
-			if (level % 2 == 1 && !habs[level])
-				habs[level] := 1;
-			endif
-		endfor
-		SetObjProperty(who, "buyhab", habs);
-		return;
-	endif
-
 	var levelInfo := GetSkillLevelInfo(who);
 
 	for level := 1 to levelInfo.currentLevel
@@ -938,11 +919,6 @@ function GetSkillLevelInfo(who)
 	var levelAtual := cint(periciaCombinadaAcima/divisor);
 
 	return struct { primaryDivisor := divisor, currentLevel := levelAtual , relevantCombinedSkills := periciaCombinadaAcima};
-endfunction
-
-function GetBuyHabDiference(who, desiredLevel)
-	var skillLevelInfo := GetSkillLevelInfo(who);
-	return (skillLevelInfo.relevantCombinedSkills - (desiredLevel * skillLevelInfo.primaryDivisor)) * -1;
 endfunction
 
 function GetCharacterSkills(who, prioridadePericia)

@@ -14,7 +14,7 @@ program SpellScript(params)
 	var who := params[1];
 	var targ := params[2];
 	var spellinfo := params[3];
-	var spell_circle := spellinfo.Circle;
+	var spell_circle := CInt(spellinfo.Circle[1]);
 	var spell_school := spellinfo.School;
 
 	SendSysMessage(who, "Selecione o alvo.");
@@ -42,7 +42,7 @@ program SpellScript(params)
 		var dmg;
 		if (i == mlore)
 			// Carro-chefe: ultimo dardo rola o dado completo do circulo (com bump do Evocator).
-			dmg := epicSpellDamageRoll(who, spell_circle, 0);
+			dmg := epicSpellDamageRoll(who, spell_circle, spell_school);
 		else
 			// Dardos regulares: dano pequeno e confiavel, sem escalar.
 			dmg := RandomDiceRoll("1d4") + 1;

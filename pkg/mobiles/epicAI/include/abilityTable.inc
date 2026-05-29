@@ -67,7 +67,7 @@ function BuildCombatAbilities(who)
         table.append(struct{ "id" := "BreathWeapon", "range_min" := 3, "range_max" := 8 });
         table.append(struct{ "id" := "WingBuffet", "range_min" := 1, "range_max" := 4 });
         table.append(struct{ "id" := "TailSwipe", "range_min" := 0, "range_max" := 2 });
-        table.append(struct{ "id" := "DiveAttack", "range_min" := 3, "range_max" := 15, "cd" := 15 });
+        table.append(struct{ "id" := "DiveAttack", "range_min" := 3, "range_max" := 15, "cd" := 45 });
     endif
 
     // Undead abilities
@@ -258,7 +258,7 @@ function _StartDiveAttack(who, opponent)
 		return 0;
 	endif
 
-	SetCooldown(who, "dive_attack", 15);
+	SetCooldown(who, "dive_attack", 45);
 	start_script(":epicAI:abilities/DiveAttack", array{ who, opponent });
 	return 1;
 endfunction
@@ -339,7 +339,7 @@ function _BuildRaceAbilities(race, byref table)
 			table.append(struct{ "id" := "TidalPull", "range_min" := 3, "range_max" := 6, "cd" := 15 });
 		"harpia":
 			table.append(struct{ "id" := "ScreechAttack", "range_min" := 2, "range_max" := 4, "cd" := 20 });
-			table.append(struct{ "id" := "DiveAttack", "range_min" := 3, "range_max" := 6, "cd" := 15 });
+			table.append(struct{ "id" := "DiveAttack", "range_min" := 3, "range_max" := 6, "cd" := 45 });
 		"wendigo":
 			table.append(struct{ "id" := "FrostAura", "range_min" := 0, "range_max" := 3, "cd" := 15 });
 		"troll":

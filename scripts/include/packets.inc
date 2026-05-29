@@ -491,25 +491,6 @@ function fixPacketLength( packetString, byteLength )
     return packetString;
 endfunction
 
-
-function PlayObjectCenteredEffectHuefx( center, effect, speed, loop := 0, color := 0, translucent := 0 )
-    var packetString := "C0";
-    packetString := packetString + "03";
-    packetString := packetString + fixPacketLength(hex(center.serial),4);
-    packetString := packetString + fixPacketLength(hex(0),4);
-    packetString := packetString + fixPacketLength(hex(effect),2);
-    packetString := packetString + fixPacketLength(hex(0),10);
-    packetString := packetString + fixPacketLength(hex(speed),1); //speed
-    packetString := packetString + fixPacketLength(hex(loop),1); //loop
-    packetString := packetString + "000000000000" ;
-    packetString := packetString + fixPacketLength(hex(color),2); //color
-    packetString := packetString + "000000";
-    packetString := packetString + fixPacketLength(hex(translucent),1); //tran
-    foreach chr in ListMobilesNearLocation( center.x, center.y, center.z, 16 );
-        SendPacket( chr, packetString );
-    endforeach
-endfunction
-
 function PlayMovingEffectHuefx( source, dest, effect, speed, loop :=0, explode := 0, color := 0, translucent := 0)
     var packetString := "C0";
     packetString := packetString + "00";

@@ -824,6 +824,13 @@ function Setup()
 		SetObjProperty(me, "happiness", happiness);
 	endif
 
+	// Back-compat: pets tamed before the petSnapshot rollout have no snapshot.
+	// Capture current stats/skills so the next death/rez locks them in instead
+	// of re-rolling from the template.
+	if (TypeOf(GetObjProperty(me, "petSnapshot")) != "Struct")
+		SnapshotPetAttributes(me);
+	endif
+
 	if (!me.backpack)
 		var new_pack := CreateItemAtLocation(me.x, me.y, me.z, "backpack", 1);
 		EquipItem(me, new_pack);

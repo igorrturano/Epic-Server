@@ -275,7 +275,7 @@ function ProduzComponentes(quem,configRecursos,objtype,byref materiaisEncontrado
 		return 0;
 	endif
 
-	var isConsumido := ConsomeMateriais(chaveMaterialPrincipal,materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer);
+	var isConsumido := ConsomeMateriais(quem,chaveMaterialPrincipal,materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer);
 	if(!isConsumido)
 		SendSysMessageEX(quem,"Consumo de material interrompido, ação cancelada.",SSM_FAIL);
 		return 0;
@@ -371,7 +371,7 @@ function CalculaQuantidadePossivel(quantidade, materiaisEscolhidos,byref materia
 	return quantidadeAFazer;
 endfunction
 
-function ConsomeMateriais(byref chaveMaterialPrincipal,byref materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer)
+function ConsomeMateriais(quem,byref chaveMaterialPrincipal,byref materiaisEncontrados,materiaisEscolhidos,quantidadeAFazer)
 	foreach materialEscolhido in materiaisEscolhidos
 			
 	
@@ -395,10 +395,11 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,byref materiaisEncontrado
 				break; 
 			endif;
 			
+			var objtypeConsumido := itemEncontrado.objtype;
 			if(itemEncontrado.stackable)
 				var quantidadeASubtrair := quantidadeRestante;
 				var quantidadeItem := itemEncontrado.amount;
-				var redutor; 
+				var redutor;
 				var isSucesso := SubtractAmount(itemEncontrado, quantidadeRestante);
 				quantidadeRestante := quantidadeRestante  - cint(quantidadeItem);
 
@@ -410,20 +411,22 @@ function ConsomeMateriais(byref chaveMaterialPrincipal,byref materiaisEncontrado
 
 				if(isSucesso)
 					SubtraiTotal(
-						materiaisEncontrados, 
-						Lower(materialEscolhido.tipoMaterial), 
-						materialEscolhido.objtype, 
+						materiaisEncontrados,
+						Lower(materialEscolhido.tipoMaterial),
+						materialEscolhido.objtype,
 						redutor
 					);
+					DevolveContainerVazio(quem, objtypeConsumido, redutor);
 				else
 					return 0;
 				endif
-				
+
 			else
-				
+
 				quantidadeRestante -= 1;
 				DestroyItem(itemEncontrado);
 				SubtraiTotal(materiaisEncontrados, Lower(materialEscolhido.tipoMaterial), materialEscolhido.objtype, 1);
+				DevolveContainerVazio(quem, objtypeConsumido, 1);
 			endif
 			Sleepms(2);
 		endforeach

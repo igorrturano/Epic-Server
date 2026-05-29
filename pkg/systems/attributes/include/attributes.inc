@@ -263,13 +263,6 @@ endfunction
 // to `EffectiveSkill(who, <new>)` opportunistically. Once the player base
 // has fully migrated (Phase 6), this helper collapses into AP_GetSkill.
 function EffectiveSkill(who, skill_name)
-	// Path-rework hide rules (defense in depth). Stored value is preserved
-	// on legacy chars but reads zero so spell/check sites that route through
-	// EffectiveSkill stop honoring the hidden skill immediately.
-	var hide_chardata := GetObjProperty(who, "chardata");
-	if (hide_chardata != error && hide_chardata && HiddenSkillForArchetype(hide_chardata.classe) == skill_name)
-		return 0;
-	endif
 	case (skill_name)
 		"Provisioning":
 			var cur := AP_GetSkill(who, "Provisioning");
@@ -391,10 +384,6 @@ endfunction
 // For non-split names this is just AP_GetTrueSkill(who, name) — backward
 // compatible with every existing SkillCheck call.
 function EffectiveTrueSkill(who, skill_name)
-	var hide_chardata := GetObjProperty(who, "chardata");
-	if (hide_chardata != error && hide_chardata && HiddenSkillForArchetype(hide_chardata.classe) == skill_name)
-		return 0;
-	endif
 	case (skill_name)
 		"Provisioning":
 			var cur := AP_GetTrueSkill(who, "Provisioning");

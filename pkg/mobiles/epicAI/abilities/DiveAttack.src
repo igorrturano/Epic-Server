@@ -46,7 +46,7 @@ program DiveAttack(params)
 	var step_count := 0;
 	foreach phase in ascent_phases
 		for idx := 1 to phase[1]
-			if (me.dead || targ.dead)
+			if (me.dead || targ.dead || targ.hidden || targ.concealed || targ.realm != origin_realm || Distance(me, targ) > 25)
 				aborted := 1;
 				break;
 			endif
@@ -76,7 +76,7 @@ program DiveAttack(params)
 	// Brief first-peak hover — let the player see the dragon up there before the feints
 	PrintTextAbove(me, "*paira sobre a presa...*");
 	for hidx := 1 to 2
-		if (me.dead || targ.dead)
+		if (me.dead || targ.dead || targ.hidden || targ.concealed || targ.realm != origin_realm || Distance(me, targ) > 25)
 			break;
 		endif
 		PerformAction(me, 1);
@@ -84,7 +84,7 @@ program DiveAttack(params)
 		sleepms(500);
 	endfor
 
-	if (me.dead || targ.dead)
+	if (me.dead || targ.dead || targ.hidden || targ.concealed || targ.realm != origin_realm || Distance(me, targ) > 25)
 		MoveObjectToLocation(me, origin_x, origin_y, origin_z, origin_realm, MOVEOBJECT_FORCELOCATION);
 		me.frozen := 0;
 		return 0;
@@ -93,14 +93,14 @@ program DiveAttack(params)
 	// Feints: dip + rise, each peak higher than the last — builds tension before the real dive
 	var feint_count := 3;
 	for feint := 1 to feint_count
-		if (me.dead || targ.dead)
+		if (me.dead || targ.dead || targ.hidden || targ.concealed || targ.realm != origin_realm || Distance(me, targ) > 25)
 			aborted := 1;
 			break;
 		endif
 		// Dip down — fast, fakes a commit
 		PerformAction(me, 1);
 		for didx := 1 to 5
-			if (me.dead || targ.dead)
+			if (me.dead || targ.dead || targ.hidden || targ.concealed || targ.realm != origin_realm || Distance(me, targ) > 25)
 				aborted := 1;
 				break;
 			endif
@@ -114,7 +114,7 @@ program DiveAttack(params)
 		PlaySoundEffect(me, 0x20F);
 		PerformAction(me, 1);
 		for uidx := 1 to 9
-			if (me.dead || targ.dead)
+			if (me.dead || targ.dead || targ.hidden || targ.concealed || targ.realm != origin_realm || Distance(me, targ) > 25)
 				aborted := 1;
 				break;
 			endif
@@ -130,7 +130,7 @@ program DiveAttack(params)
 		sleepms(250); // brief pause at new peak
 	endfor
 
-	if (aborted || me.dead || targ.dead)
+	if (aborted || me.dead || targ.dead || targ.hidden || targ.concealed || targ.realm != origin_realm || Distance(me, targ) > 25)
 		MoveObjectToLocation(me, origin_x, origin_y, origin_z, origin_realm, MOVEOBJECT_FORCELOCATION);
 		me.frozen := 0;
 		return 0;
@@ -140,7 +140,7 @@ program DiveAttack(params)
 	PerformAction(me, 1);
 	sleepms(400);
 
-	if (me.dead || targ.dead)
+	if (me.dead || targ.dead || targ.hidden || targ.concealed || targ.realm != origin_realm || Distance(me, targ) > 25)
 		MoveObjectToLocation(me, origin_x, origin_y, origin_z, origin_realm, MOVEOBJECT_FORCELOCATION);
 		me.frozen := 0;
 		return 0;
@@ -155,7 +155,7 @@ program DiveAttack(params)
 	var fall_z := me.z;
 	var fall_steps := array{ 3, 15, 15, 15 }; // detach + 3 big chunks
 	foreach delta in fall_steps
-		if (me.dead || targ.dead)
+		if (me.dead || targ.dead || targ.hidden || targ.concealed || targ.realm != origin_realm || Distance(me, targ) > 25)
 			aborted := 1;
 			break;
 		endif
@@ -167,7 +167,7 @@ program DiveAttack(params)
 		sleepms(40);
 	endforeach
 
-	if (aborted || me.dead || targ.dead)
+	if (aborted || me.dead || targ.dead || targ.hidden || targ.concealed || targ.realm != origin_realm || Distance(me, targ) > 25)
 		MoveObjectToLocation(me, origin_x, origin_y, origin_z, origin_realm, MOVEOBJECT_FORCELOCATION);
 		me.frozen := 0;
 		return 0;

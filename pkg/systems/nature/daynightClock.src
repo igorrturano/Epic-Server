@@ -19,7 +19,13 @@ program daynightClocksystem(parameters)
 	var previousLightLevel := lightLevel;
 	setregionlightlevel("Umbraeterna", cint(config.DungeonDarkness));
 
-	var dayManager := struct{ previousDay := 0, day := 1, isDayDone := false, isNightDone := false};
+	var bootHour := getCurrentHour();
+	var dayManager := struct{
+		previousDay := 0,
+		day := 1,
+		isDayDone := (bootHour >= 18 || bootHour < 6),
+		isNightDone := (bootHour >= 6 && bootHour < 18)
+	};
 
 	while(1)
 		var gmAcceleration := cint(GetGlobalProperty("daynightAccelaration"));

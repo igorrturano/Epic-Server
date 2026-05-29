@@ -366,15 +366,6 @@ function ConsomeRequisitos(quem, contagem, quantidade := 1)
 	endforeach
 endfunction
 
-function DevolveContainerVazio(quem, objtypeConsumido, quantidadeConsumida)
-	if(!quem || quantidadeConsumida <= 0) return; endif
-	var descItem := itemsConfig[objtypeConsumido];
-	if(!descItem) return; endif
-	var emptyObjType := cint(GetConfigInt(descItem, "emptyObjType"));
-	if(emptyObjType <= 0) return; endif
-	CreateItemInBackpack(quem, emptyObjType, quantidadeConsumida);
-endfunction
-
 function RegistraInformacoesContagem(byref catalogoContagem ,byref item , quantidadeNecessaria, lote, encaixe := 0, tierDesc := "")
 
 	if(!catalogoContagem.exists(item.objtype))
