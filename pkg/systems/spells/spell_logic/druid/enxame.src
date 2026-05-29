@@ -7,7 +7,9 @@ include "include/sounds";
 include "include/say";
 include ":attributes:attributes";
 include ":charactercreation:habilidades";
+include "include/tileEffects";
 include ":spells:Controller/SpellController";
+include ":spells:Controller/SpellEffectBuilder";
 include ":wrappers:Objects/Model/MobileWrapper";
 
 program SpellScript(params)
@@ -25,13 +27,9 @@ program SpellScript(params)
 		return;
 	endif
 
-	// Block recast while swarm is still active on the target.
-	var existing := MobileWrapper(targ).GetProperty($"SpellOpts_{CInt(spell.id)}");
-	if (existing && !existing.errortext)
-		SendSysMessageEx(caster, "O alvo já está sendo atacado por um enxame!", SSM_FAIL);
-		return;
-	endif
-
+	// Recast refreshes the swarm (instance_id mismatch makes the old tick
+	// driver exit, no double-tick). Damage per tick is sampled at cast time
+	// so the new swarm may roll harder or weaker than the prior one.
 	var nature := AP_GetSkill(caster, NATURE);
 
 	var total_ticks := CInt(nature / 10);
@@ -50,16 +48,19 @@ program SpellScript(params)
 	PrintTextAbove(targ, "*Coberto por insetos*");
 	PlayMovingEffect(caster, targ, 0x91B, 20);
 
-	var opts := struct{};
-	opts.+buff_category := "insect_swarm";
-	opts.+displayname := "Enxame";
-	opts.+desc := $"{damage_per_tick} dano / tick";
-	opts.+tick_script := ":spells:spell_logic/druid/enxameTick";
-	opts.+tick_interval := tick_interval;
-	opts.+tick_params := struct{
-		damage_per_tick := damage_per_tick,
-		total_ticks := total_ticks
-	};
+	var opts := SpellEffectBuilder()
+		.SetCategory("insect_swarm")
+		.SetDisplayName("Enxame")
+		.SetDesc($"{damage_per_tick} dano / tick")
+		.SetTickInterval(tick_interval)
+		.SetTickDamage(struct{ amount := damage_per_tick, type := DAMAGE_TYPE::PIERCING })
+		.SetTickPresentation(TickPresentation()
+			.SetFx(FX_SWARM_3_MAGIC, 70, 50)
+			.SetSound(0x5CD)
+			.SetPeriodicEmote("Os insetos continuam a te morder!", 3, SSM_FAIL)
+			.SetFinalOverhead("*Os insetos se dispersam*")
+			.SetFinalEmote("O enxame finalmente se dispersa.", SSM_INFO))
+		.ToOpts();
 
 	SC_ApplyEffect(caster, targ, opts, duration, CInt(spell.id));
 

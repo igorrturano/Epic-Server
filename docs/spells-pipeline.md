@@ -233,8 +233,10 @@ Set only what the spell modifies; remove is the exact inverse.
 | `desc` | appended to buff-icon text | — | `_SC_BuildDescription` (`:632`) auto-prepends resist/stat lines. |
 | `maintainable` | gates the maintain offer | — | Needs a live caster at expiry. |
 | `on_apply_script` + `on_apply_params` | started every apply | — | Args `{caster, targ, spellId, params}`. Fires on maintain too — no one-shot logic here (pitfall 7). |
-| `tick_script` + `tick_interval` + `tick_params` | tick driver | driver self-exits | Args `{caster, targ, spellId, tick_number, params}`. |
-| `tick_damage` `{amount,type}` + `tick_interval` | declarative DoT via `SC_DealDamage` | driver self-exits | Independent of `tick_script` — set either/both. **Skill omitted this.** |
+| `tick_script` + `tick_interval` + `tick_params` | tick driver | driver self-exits | Escape hatch for non-generalizable per-tick logic (santuario, manashield, etc.). Args `{caster, targ, spellId, tick_number, params}`. |
+| `tick_damage` `{amount,type}` *or* `{dice,bonus,type}` + `tick_interval` | declarative DoT via `SC_DealDamage` | driver self-exits | `amount` fixed at cast; `dice` re-rolls each tick via `RandomDiceRoll` (`bonus` adds a flat int after). Independent of `tick_script` — set either/both. |
+| `tick_heal` `{base,remainder}` + `tick_interval` | declarative HoT via `applyEpicHealing` | driver self-exits | Driver applies `base + (tick_number <= remainder ? 1 : 0)` so the leftover from `total / ticks` distributes across the first `remainder` ticks. |
+| `tick_presentation` | driver-only (no apply mutation) | driver-only | One nested struct: `{ fx:{id,speed,frames}, sound, periodic_emote:{text,every,color}, final_overhead, final_emote:{text,color}, caster_feedback }`. All sub-fields optional. Driver plays per-tick FX/sound, emits periodic emote at `tick % every == 0`, fires `final_overhead`/`final_emote` on the last tick, and (for HoTs with `caster_feedback`) reports `+{n} HP ({tick}/{total})` to the caster. **Last-tick = `tick_number >= totalDuration/tick_interval`** — no `total_ticks` plumbing needed. |
 | `on_expire_script` + `on_expire_params` | — | fired by `SC_RemoveEffect` **before** revert, args `{0, targ, spellId, params}` (no caster) | Read pre-removal opts here. |
 | `spellId`/`totalDuration`/`instance_id`/`caster_serial` | auto-stamped — never set by hand | — | Resync + tick driver rely on these. |
 
@@ -442,6 +444,21 @@ session-only (re-push), additive math (leave), persistent server field
    pair into `CalculateSpellSourceDamage` (see the spell-source bonus
    damage section above). The flag is purely a contract between your
    spell and your combat hook.
+8. **`tick_presentation` is driver-only, never apply/remove state.**
+   It lives outside the `_SC_ApplyOpts` / `_SC_RemoveOpts` inverse pair
+   on purpose — re-stamping it on resync would replay starting from
+   tick 1 (`SC_ResyncOnLogin` re-launches the driver with a fresh tick
+   counter), but the original totals still expire on the same wall
+   clock, so the final-tick emote may never fire if the player logged
+   back in past the last expected tick. That's an accepted edge case;
+   don't try to "fix" it by persisting tick state — the symptom is just
+   a missing flavor line, not gameplay impact.
+9. **Persisted opts must stay a flat struct, never a class instance.**
+   The eScript class-serialization rule (see codebase memory) eats
+   method dispatch on `SetProperty`/`Start_Script` round-trips.
+   `SpellEffectBuilder` and `TickPresentation` are ephemeral authoring
+   objects whose `.ToOpts()` / `.ToStruct()` flatten to plain structs
+   before persistence — don't try to persist the builder itself.
 
 ## Connection to the other pipelines
 
@@ -458,9 +475,17 @@ session-only (re-push), additive math (leave), persistent server field
   `SC_ApplyEffect`. Start from `imunidadeveneno.src` (verified minimal
   maintainable template). `SC_RemoveEffect(targ, CInt(spell.id))` first
   for idempotent re-cast.
-- DoT/HoT: prefer `opts.tick_damage` (declarative, fires ability hooks
-  via `SC_DealDamage`) over a hand-rolled `tick_script` doing
-  `ApplyRawDamage`.
+- **Prefer `SpellEffectBuilder`** (`:spells:Controller/SpellEffectBuilder`)
+  for opts authoring — typed chained setters, returns `this`, and
+  `.ToOpts()` flattens to the plain struct `SC_ApplyEffect` consumes.
+  `TickPresentation` is its presentation sub-builder. See
+  `ignite.src` / `burninghands.src` / `enxame.src` / `druidheal.src`
+  for canonical usage.
+- DoT/HoT: prefer `opts.tick_damage` (variable per-tick via `dice` or
+  fixed via `amount`) and `opts.tick_heal`, paired with
+  `opts.tick_presentation`, over a hand-rolled `tick_script`. Reach for
+  `tick_script` only when per-tick behavior is non-generalizable
+  (mutating ObjProps, conditional disengage, weapon-bound effects).
 - New `_SC_ApplyOpts` field: add the exact inverse to `_SC_RemoveOpts`,
   add a `_SC_BuildDescription` line if user-visible, and decide its
   resync class.
