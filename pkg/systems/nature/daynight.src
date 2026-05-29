@@ -74,8 +74,10 @@ program daynightsystem()
 		DebugMsgAll(DEBUG_CLIMA, Message($"Duração da noite: {actual_night_period_seconds / 60}min"));
 
 		if(!isAlreadyStarted)
-			SetGlobalProperty("halfdaytime", ReadGameClock());
-			SetGlobalProperty("dia", "dia");
+			if (!GetGlobalProperty("halfdaytime") || !GetGlobalProperty("dia"))
+				SetGlobalProperty("halfdaytime", ReadGameClock());
+				SetGlobalProperty("dia", "dia");
+			endif
 		endif
 
 		if(!clockPid)
