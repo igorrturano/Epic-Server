@@ -373,6 +373,17 @@ For the broader religion mechanic see
 
 ## 10. Game modes (2)
 
+> **Hotfix note (2026-05-29):** the `gameModeSelection(who)` call is
+> currently commented out in the orchestrator
+> ([epicgumpcriacao.src:70](../pkg/systems/charactercreation/epicgumpcriacao.src#L70)).
+> New characters skip the selection and never get `chardata.game_mode`
+> written — they fall through to Story Mode behavior everywhere
+> `chardata.game_mode == "True Mode"` is checked. Legacy True Mode
+> characters keep the field set and continue using the level-based
+> skill cap (`TrueModeSkillCap`) and level-based buyhab slot opening
+> in `SetPlayerSkillLevel`. The function and helpers stay in source
+> so a future re-enable is a single uncomment.
+
 `gameModeSelection` cycles `0x9FB..0x9FC`. `gameModeByPictureId`:
 
 - `0x9FB` → STORY_MODE — softer, age-based skill caps; the only mode that
