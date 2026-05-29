@@ -67,6 +67,7 @@ program epicCreationGump(who)
 	skillSelection(who, culture_pic);
 	attributeSelection(who, culture_pic);
 	religionSelection(who);
+	gameModeSelection(who);
 	applyClassStarter(who);
 	itemInheritance(who);
 	languageSelection(who, culture_pic);
@@ -606,6 +607,39 @@ function religionSelection(who)
 
 	SendSysMessageEX(who, "Sua religião será " + chardata.religion, SSM_INFO);
 	return religion_pic;
+endfunction
+
+function gameModeSelection(who)
+	var chardata := GetObjProperty(who, "chardata");
+	var game_mode_pic := 0x9FB;
+	var btn_value;
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var input := gameModeGump(who, game_mode_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		btn_value := input[0];
+
+		if (btn_value == 201)
+			game_mode_pic++;
+		elseif (btn_value == 210)
+			game_mode_pic--;
+		else
+			break;
+		endif
+
+		if (game_mode_pic < 0x9FB)
+			game_mode_pic := 0x9FC;
+		elseif (game_mode_pic > 0x9FC)
+			game_mode_pic := 0x9FB;
+		endif
+	endwhile
+	chardata.+game_mode := gameModeByPictureId(game_mode_pic);
+	SetObjProperty(who, "chardata", chardata);
+
+	SendSysMessageEX(who, "Seu modo de jogo será " + chardata.game_mode, SSM_INFO);
+	return game_mode_pic;
 endfunction
 
 function looksSelection(who)

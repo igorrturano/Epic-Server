@@ -50,6 +50,11 @@ enum RELIGIAO
     CETICOS := "Céticos"
 endenum
 
+enum GAME_MODE
+    TRUE_MODE := "True Mode",
+    STORY_MODE := "Story Mode"
+endenum
+
 enum ARCANE_SCHOOLS
     EVOCATIUM := "Evocatium",
     VELKYN := "Velkyn",
