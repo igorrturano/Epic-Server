@@ -74,6 +74,15 @@ class AcademicTraining(CombatAbility)
 	endfunction
 endclass
 
+// Poliglota - ABILITY_ID::POLIGLOTA (3629)
+// Passive (pool): each purchase teaches one new language the player doesn't already know.
+// Effect handled at purchase time in charactercreation/include/habilidades.inc::comprarHabilidade.
+class Poliglota(CombatAbility)
+	function Poliglota(this)
+		Super(ABILITY_ID::POLIGLOTA);
+	endfunction
+endclass
+
 // Prestidigitator - ABILITY_ID::PRESTIDIGITATOR (3627)
 // Passive: Sleight of hand - cheat at dice/coin games, hide items during searches, rope bonus.
 // Effect handled in dicegame.src, caraoucoroa.src, revistar.src, corda.src.
