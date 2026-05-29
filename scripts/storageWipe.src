@@ -19,7 +19,11 @@ program storagewipe()
 		EraseGlobalProperty("storageend");
 	endif
 
-	npctest := CreateNpcFromTemplate("banker", 5445, 1153, 0, 0, "britannia"); // newmap problem
+	// Template names need a package namespace. `banker` sem prefixo falha
+	// no startup ("NPC template 'banker' not found"). O GM command
+	// `.createnpc banker` funciona porque tenta :epicAI:/:brainAI:/:merchants:
+	// em cascata. O banker tá em :merchants: (pkg/mobiles/merchants/npcdesc.cfg).
+	npctest := CreateNpcFromTemplate(":merchants:banker", 5445, 1153, 0, 0, "britannia");
 	// Guard contra silent fail: se CreateNpcFromTemplate retornar error,
 	// endnum := error.serial é uninit, o for loop não roda, wipe nunca
 	// executa. Loga o errortext do POL pra entender POR QUE falhou

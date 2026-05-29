@@ -55,6 +55,9 @@ program KillPlayers()
         anchor_var := GetObjProperty(me, "anchor");
         SetWarMode(0);
 
+        // [LEAK_DEBUG] log activation
+        print("BRAIN_ACT " + Hex(me.serial) + " t=" + polcore().systime + " type=" + brain_type);
+
         // Send ENTEREDAREA events for nearby players/pets so brain can detect them
         InitializeEnterArea(me);
 
@@ -65,6 +68,15 @@ program KillPlayers()
             "passive":  PassiveBrain();
             default:    GenericBrain();
         endcase
+
+        // [LEAK_DEBUG] log dormancy + dict sizes (before reset wipes them)
+        print("BRAIN_DOR " + Hex(me.serial) + " t=" + polcore().systime
+            + " threat=" + len(threat_table_var)
+            + " nearby=" + len(nearby_cache_var)
+            + " hazard=" + len(hazard_cache_var)
+            + " threat_list=" + len(threat_list_var)
+            + " combat_ab=" + len(combat_abilities)
+            + " enter_ab=" + len(enter_abilities));
 
         // Brain returned (ShouldGoDormant triggered) - reset and go dormant
         SetWarMode(0);

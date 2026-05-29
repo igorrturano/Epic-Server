@@ -42,6 +42,7 @@ program chainLightning(params)
 		casterThenNextMobile := mobile;
 		PlaySoundEffect(mobile, SFX_SPELL_LIGHTNING);
 		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
 		SC_DealDamage(caster, mobile, CInt(spellinfo.id), cint(dmg), DAMAGE_TYPE::ENERGY);
 		sleepms(600);

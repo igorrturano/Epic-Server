@@ -50,6 +50,7 @@ program earthquake(parms)
 		sleepms(200);
 		SendSysMessageEx(mobile, "Voce sente o chao tremer com extrema violencia.", SSM_FAIL);
 		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 
 		// REFLEX save halves damage per affected mobile.
 		if (CheckResist(mobile, REFLEXES, diff, -bonus))

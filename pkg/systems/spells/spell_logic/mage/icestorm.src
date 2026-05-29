@@ -38,6 +38,7 @@ program spell_iceStorm(parms)
 	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, radius, targ);
 
 	var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
 	DanificaObjetosProximos(caster, targ.x, targ.y, targ.z, targ.realm, struct{ dano := dmg,
 																				desc := "Chuva de Gelo." },
 							radius, 0xDF2F);
@@ -51,6 +52,7 @@ program spell_iceStorm(parms)
 		PlaySoundEffect(mobile, 0x5c7);
 		PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0xDF2F, 0, 70, 0, mobile.realm);
 		var target_dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		target_dmg := bonusSpellDamageForSpecialists(caster, target_dmg, spell_school);
 
 		if (CheckResist(mobile, REFLEXES, diff, -bonus))
 			target_dmg := Cint(target_dmg / 2);

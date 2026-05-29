@@ -38,8 +38,7 @@ endprogram
 function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
 	PlaySoundEffect(caster, SFX_AQUARIUM_USE);
 	PlayMovingEffectXYZHued(caster, targ, 0x54AD, 10, 1643, 0);
-	var dmg := RandomDiceRoll("1d4"); /* epicSpellDamageRoll(caster, spell_circle); */
-	// dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+	var dmg := RandomDiceRoll("1d4");
 
 	// REFLEX save halves the cold ray's damage.
 	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
