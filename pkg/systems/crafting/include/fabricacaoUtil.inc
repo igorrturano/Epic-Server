@@ -440,6 +440,15 @@ function PegaValorMaterialPrincipalFabricacao(item, caracteristica)
 	return Cint(efeitos.valorPrincipal) + Cint(principal.tier.valor);
 endfunction
 
+function DevolveContainerVazio(quem, objtypeConsumido, quantidadeConsumida)
+	if(!quem || quantidadeConsumida <= 0) return; endif
+	var descItem := itemsConfig[objtypeConsumido];
+	if(!descItem) return; endif
+	var emptyObjType := cint(GetConfigInt(descItem, "emptyObjType"));
+	if(emptyObjType <= 0) return; endif
+	CreateItemInBackpack(quem, emptyObjType, quantidadeConsumida);
+endfunction
+
 function AplicaFechadura(quem, item)
 	var levelFechadura := PegaValorFabricacao(item, CARACTERISTICA_FABRICACAO_TRANCA);
 	
