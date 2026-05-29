@@ -36,19 +36,18 @@ every selection. Each gump loop sleeps 2 ms and validates via
 | 6 | `skillSelection`               | `Skills` dict (skill → tier); also writes base skill values       |
 | 7 | `attributeSelection`           | `str`, `dex`, `int`, `attribute_points`                           |
 | 8 | `religionSelection`            | `religion`                                                        |
-| 9 | `gameModeSelection`            | `game_mode`                                                       |
-| 10 | `applyClassStarter`           | `magia` (casting type); grants spellbook/scrolls/items per class  |
-| 11 | `itemInheritance`             | (no chardata write) — grants coins, outfit, weapons, tools         |
-| 12 | `languageSelection`           | (writes `linguas_conhecidas`, `lingua_escolhida` on `who`)         |
-| 13 | `signSelection`               | `sign` (one of 12 constellations)                                  |
-| 14 | `birthDaySelection`           | `birthdate.day`                                                    |
-| 15 | `RPcharacteristicsSelection`  | `caracteristicas_rp`, `idade_escolhida`, `idade_aparente`, `idade_real` |
-| 16 | `setBirthdate`                | finalizes `birthdate` (year/month/day), `initial_age`, `current_age` |
-| 17 | `looksSelection`              | `hair`, `hair_item`, `hair_color`, `beard`, `beard_color`, `skin_color` |
-| 18 | `setCitizenship`              | `citizenship_title` + nobility/professional title arrays           |
-| 19 | `startAdventure`              | `Level := 1`; moves character into the world                       |
+| 9 | `applyClassStarter`            | `magia` (casting type); grants spellbook/scrolls/items per class  |
+| 10 | `itemInheritance`             | (no chardata write) — grants coins, outfit, weapons, tools         |
+| 11 | `languageSelection`           | (writes `linguas_conhecidas`, `lingua_escolhida` on `who`)         |
+| 12 | `signSelection`               | `sign` (one of 12 constellations)                                  |
+| 13 | `birthDaySelection`           | `birthdate.day`                                                    |
+| 14 | `RPcharacteristicsSelection`  | `caracteristicas_rp`, `idade_escolhida`, `idade_aparente`, `idade_real` |
+| 15 | `setBirthdate`                | finalizes `birthdate` (year/month/day), `initial_age`, `current_age` |
+| 16 | `looksSelection`              | `hair`, `hair_item`, `hair_color`, `beard`, `beard_color`, `skin_color` |
+| 17 | `setCitizenship`              | `citizenship_title` + nobility/professional title arrays           |
+| 18 | `startAdventure`              | `Level := 1`; moves character into the world                       |
 
-After step 19, `creation_completed` is set on `who`
+After step 18, `creation_completed` is set on `who`
 ([epicgumpcriacao.src:91](../pkg/systems/charactercreation/epicgumpcriacao.src#L91))
 and (for non-GMs) the census is incremented.
 
@@ -371,14 +370,24 @@ For the broader religion mechanic see
 
 ---
 
-## 10. Game modes (2)
+## 10. Game mode (single)
 
-`gameModeSelection` cycles `0x9FB..0x9FC`. `gameModeByPictureId`:
+Removed. There is no mode selection step at creation. Every character runs
+the single unified ruleset:
 
-- `0x9FB` → STORY_MODE — softer, age-based skill caps; the only mode that
-  preserves the `createdate` invariant
-  ([epicgumpcriacao.src:77-85](../pkg/systems/charactercreation/epicgumpcriacao.src#L77-L85)).
-- `0x9FC` → TRUE_MODE — full ruleset, harder.
+- **Skill cap** = `limiteportempo(days_since_creation)` for all characters
+  (see [skills.inc](../pkg/systems/attributes/include/skills.inc) —
+  `AP_GetSkillCap` / `limiteportempo`). Skills grow by use up to the
+  age-based cap; `createdate` is preserved unconditionally
+  ([epicgumpcriacao.src:88-92](../pkg/systems/charactercreation/epicgumpcriacao.src#L88-L92)).
+- **Level** grants HP (Phase 4 dice on odd levels) and ability picks (the
+  `pergaminho_<level>` scroll on even levels). Ability picks have **no**
+  skill prerequisite — class/level/culture are the only gates
+  (see [habilidades.inc::comprarHabilidade](../pkg/systems/charactercreation/include/habilidades.inc)).
+
+Legacy characters with `chardata.game_mode` set keep the field as an inert
+display value (read by `ficharp.src`, `questbutton.src`, census logs); the
+field has no effect on game mechanics.
 
 ---
 
@@ -551,9 +560,9 @@ Until that flag is set, **any logon will reopen `epicCreationGump`** —
 - **Trait struct uses lowercase `.nome`** — reading `.Nome` silently
   returns nothing and breaks Sabe-Tudo's 2P+5S slot rebuild
   (see [comment at line 441](../pkg/systems/charactercreation/epicgumpcriacao.src#L441)).
-- **`createdate` is conditional**, not unconditional — Story Mode's
-  age-based skill caps depend on it, and the migration stone preserves it
-  ([lines 77-85](../pkg/systems/charactercreation/epicgumpcriacao.src#L77-L85)).
+- **`createdate` is conditional**, not unconditional — age-based skill
+  caps depend on it, and the migration stone preserves it
+  ([lines 88-92](../pkg/systems/charactercreation/epicgumpcriacao.src#L88-L92)).
 - **Legacy `chardata.classe`** is still written
   ([line 376](../pkg/systems/charactercreation/epicgumpcriacao.src#L376))
   so old ability registries and `pathOfWisdom`-era checks keep working.
