@@ -18,7 +18,7 @@ program cast_firebolt(params)
 	var spell := params[3];
 	var spell_school := spell.School;
 
-	var spell_circle := spell.Circle;
+	var spell_circle := CInt(spell.Circle[1]);
 	params := 0; // No longer needed
 
 	SendSysMessage(caster, "Selecione o alvo.");
