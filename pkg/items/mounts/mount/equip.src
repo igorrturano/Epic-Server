@@ -4,6 +4,8 @@
 use uo;
 
 include ":attributes:attributes";
+include ":brainAI:include/npcUtil";
+
 program EquipScript(mobile, item, start_up)
 
 	mobile := mobile;
