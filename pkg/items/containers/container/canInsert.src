@@ -30,7 +30,15 @@ program canInsert(mobile, container, item, move_type, insert_type, adding_item, 
 				aux := aux.container;
 			endwhile
 			var mobWrapper := MobileWrapper(mobile);
-			if (aux == mobile && mobWrapper.HasFreeHand())
+			if (aux == mobile)
+				if (mobWrapper.IsMounted())
+					SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
+					return 0;
+				endif
+				if (mobile.frozen || mobile.paralyzed)
+					SendSysMessage(mobile, "Voce esta paralizado.");
+					return 0;
+				endif
 				return 1;
 			endif
 
