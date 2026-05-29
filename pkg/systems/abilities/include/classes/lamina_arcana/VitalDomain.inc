@@ -47,7 +47,7 @@ class VitalDomain(CombatAbility)
         var dist := Distance(who, targ);
         var total_distance := CInt(mobile.GetSkill(ARCANA) / 10);
 
-        PlayObjectCenteredEffectHuefx(targ, 0xB468, 10, 20, 0, 1);
+        PlayObjectCenteredEffectEx(targ, 0xB468, 10, 20, 0, 1);
 
         if (dist == 1)
             PushBack(targ, total_distance, 300);
@@ -57,7 +57,7 @@ class VitalDomain(CombatAbility)
             Message("Voce puxou o alvo para perto.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
         endif
 
-        PlayObjectCenteredEffectHuefx(targ, 0xB468, 10, 20, 0, 1);
+        PlayObjectCenteredEffectEx(targ, 0xB468, 10, 20, 0, 1);
 
         DebugMsg(
             who,

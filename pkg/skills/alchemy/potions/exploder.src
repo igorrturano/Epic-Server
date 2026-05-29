@@ -259,7 +259,7 @@ function ExplosionEffect(who, potion, dmg)
 					critter.hidden := 0;
 				else
 					SendSysMessageEx(critter, "Voce escapou parcialmente da explosao.", SSM_INFO);
-					PlayObjectCenteredEffectHuefx(critter, 0x36b0, 7, 0x10, color);
+					PlayObjectCenteredEffectEx(critter, 0x36b0, 7, 0x10, color);
 					PlaySoundEffect(critter, 0x208);
 					// ApplyDamageEX(critter, dmg, DAMAGE_TYPE::FIRE);
 					DealDamage(critter, CInt(dmg / 2), dmg_type, who);
@@ -281,7 +281,7 @@ function ExplosionEffect(who, potion, dmg)
 			else
 				if (MobileWrapper(critter).HasAbility(ABILITY_ID::ESSENCIA_EXPLOSIVA))
 					SendSysMessageEx(critter, "Por instinto voce escapou parcialmente da explosao.", SSM_INFO);
-					PlayObjectCenteredEffectHuefx(critter, 0x36b0, 7, 0x10, color);
+					PlayObjectCenteredEffectEx(critter, 0x36b0, 7, 0x10, color);
 					PlaySoundEffect(critter, 0x208);
 					// ApplyDamageEX(critter, dmg, DAMAGE_TYPE::FIRE);
 					DealDamage(critter, CInt(dmg / 2), dmg_type, who);
@@ -300,7 +300,7 @@ function ExplosionEffect(who, potion, dmg)
 						endcase	
 					endif
 				else
-					PlayObjectCenteredEffectHuefx(critter, 0x36b0, 7, 0x10, color);
+					PlayObjectCenteredEffectEx(critter, 0x36b0, 7, 0x10, color);
 					PlaySoundEffect(critter, 0x208);
 					// ApplyDamageEX(critter, dmg, DAMAGE_TYPE::FIRE);
 					DealDamage(critter, dmg, dmg_type, who);

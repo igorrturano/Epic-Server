@@ -96,7 +96,7 @@ function _GrantBonus(who, targ)
     endif
 
     PlaySoundEffect(who, 0x5CF);
-    PlayObjectCenteredEffectHuefx(targ, 0x6db6, 10, 20, effect_color, 0);
+    PlayObjectCenteredEffectEx(targ, 0x6db6, 10, 20, effect_color, 0);
 endfunction
 
 function _RevokeBonus(who, targ)

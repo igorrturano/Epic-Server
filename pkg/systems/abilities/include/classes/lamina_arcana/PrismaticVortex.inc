@@ -38,7 +38,7 @@ class PrismaticVortex(CombatAbility)
         Message("Voce carrega seu vortice prismatico.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
         SetCooldown(who, "vortice_prismatico", 10);
         SetObjProperty(who, "#vortice_dmg", 0);
-        PlayObjectCenteredEffectHuefx(who, 0xB468, 10, 60, 0, 1);
+        PlayObjectCenteredEffectEx(who, 0xB468, 10, 60, 0, 1);
 
         DebugMsg(
             who,
@@ -92,7 +92,7 @@ class PrismaticVortex(CombatAbility)
                         TS_StartTimer(char, "queimar", 10);
                     elseif (effect == DAMAGE_TYPE::COLD)
                         PlaySoundEffect(char, 0x65b);
-                        PlayObjectCenteredEffectHuefx(char, 0x54f7, 30, 60, COLOR_ELEMENTAL_ICE, 0);
+                        PlayObjectCenteredEffectEx(char, 0x54f7, 30, 60, COLOR_ELEMENTAL_ICE, 0);
                         DealDamage(char, total_dmg, DAMAGE_TYPE::COLD, who);
                         TS_StartTimer(char, "congelamento", 10);
                     elseif (effect == DAMAGE_TYPE::ENERGY)

@@ -75,15 +75,15 @@ class ArcaneArmor(CombatAbility)
         if (elemental.type == DAMAGE_TYPE::FIRE)
             TS_StartTimer(attacker, "queimar", status_duration);
             PlaySoundEffect(attacker, 0x5cb);
-            PlayObjectCenteredEffectHuefx(attacker, 0x6d77, 7, 30, COLOR_ELEMENTAL_FIRE, 0);
+            PlayObjectCenteredEffectEx(attacker, 0x6d77, 7, 30, COLOR_ELEMENTAL_FIRE, 0);
         elseif (elemental.type == DAMAGE_TYPE::COLD)
             TS_StartTimer(attacker, "congelamento", status_duration);
             PlaySoundEffect(attacker, 0x5c8);
-            PlayObjectCenteredEffectHuefx(attacker, 0x54f7, 30, 30, COLOR_ELEMENTAL_ICE, 0);
+            PlayObjectCenteredEffectEx(attacker, 0x54f7, 30, 30, COLOR_ELEMENTAL_ICE, 0);
         elseif (elemental.type == DAMAGE_TYPE::ENERGY)
             TS_StartTimer(attacker, "lentidao", status_duration);
             PlaySoundEffect(attacker, 0x666);
-            PlayObjectCenteredEffectHuefx(attacker, 0xcdaf, 7, 30, COLOR_ELEMENTAL_ENERGY, 0);
+            PlayObjectCenteredEffectEx(attacker, 0xcdaf, 7, 30, COLOR_ELEMENTAL_ENERGY, 0);
         else
             return false;
         endif
