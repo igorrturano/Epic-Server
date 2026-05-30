@@ -399,7 +399,7 @@ function ShowDeathEventsList(who, byref death_event)
             SendSysMessage(who, "Selecione um template de item:");
             var target_item := Target(who);
             if (target_item && target_item.IsA(POLCLASS_ITEM))
-                var template := CreateItemTemplate(target_item);
+                var template := CreateItemTemplate(target_item, 1);
                 if (template == error)
                     SendSysMessage(who, "Erro ao criar template do item: " + template.errortext);
                 else
