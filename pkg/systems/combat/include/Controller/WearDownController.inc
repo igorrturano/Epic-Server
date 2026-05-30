@@ -3,6 +3,7 @@ include ":wrappers:Objects/Model/WeaponWrapper";
 include ":diceroll:model/DiceRoll";
 include ":message:model/Message";
 include ":runecarving:runeCarving";
+include ":combat:settings";
 
 include ":combat:Exceptions/InvalidEquipmentException";
 
@@ -35,6 +36,11 @@ function WearDownEquip(equip, weapon := false, wearMlt := 1) // equip EquipWrapp
 		return InvalidEquipmentException("The weapon must be an instance of WeaponWrapper!");
 	endif
 
+	// Cargas rúnicas se gastam a cada golpe, independente da rolagem de desgaste.
+	if (equip is @ArmorWrapper)
+		DamageRuneCharges(equip);
+	endif
+
 	var wearChance := CalculateWearChance(equip);
 
 	if (Dice("1d100").Roll().GetResult() > wearChance)
@@ -51,11 +57,11 @@ function CalculateWearChance(equip)
 		if (equip.IsShield())
 			wearChance := 80.0;
 		else
-			wearChance := 20.0;
+			wearChance := 30.0;
 		endif
 
 		if (equip.GetProperty("encerada"))
-			wearChance -= 10.0;
+			wearChance -= 15.0;
 		endif
 	elseif (equip is @WeaponWrapper)
 		wearChance := 2.0;
@@ -69,61 +75,62 @@ function CalculateWearChance(equip)
 endfunction
 
 function DamageEquipment(equip, weapon, wearMlt := 1)
-	var damage := CalculateWearDamage(equip) * wearMlt;
-	var owner := equip.GetOwner();
-	
-	if (equip is @ArmorWrapper)
-		if (CInt(equip.GetProperty("priestrune") &&
-			CInt(equip.GetProperty("runecharges")) > 0))
-			DamageRuneCharges(equip);
-			return;
-		endif
-
-	elseif (equip is @WeaponWrapper)
-		if (equip.GetCategory() == WEAPON_CATEGORY::UNARMED)
-			return; // Arma natural, não desgasta
-		endif
+	if (equip is @WeaponWrapper && equip.GetCategory() == WEAPON_CATEGORY::UNARMED)
+		return; // Arma natural, não desgasta
 	endif
+
+	var damage := CalculateWearDamage(equip, weapon) * wearMlt;
+	var owner := equip.GetOwner();
 
 	Message($"{equip.GetName()} levou {damage} de dano.").SetColor(Color(SYSTEM_COLOR::BAD)).SendSys(owner.GetObjRef());
 
 	ApplyDamageOnEquip(equip, damage);
 endfunction
 
-function CalculateWearDamage(equip)
-	var damage := 0;
+function CalculateWearDamage(equip, weapon := false)
+	var wearRate := 0;
 
 	if (equip is @WeaponWrapper)
-		damage := 1;
+		wearRate := CInt(CS_GetSettingsCfgElem("Weapons").WearRate);
 	elseif (equip is @ArmorWrapper)
-		if (equip.IsShield())
-			damage := 3;
-		else
-			damage := 1;
-		endif
+		wearRate := equip.IsShield() ? CInt(CS_GetSettingsCfgElem("Parry").WearRate)
+									 : CInt(CS_GetSettingsCfgElem("Armor").WearRate);
+	else
+		return 0;
 	endif
 
-	return damage;
+	// Armas com a propriedade "ArmorDmg" desgastam armaduras/escudos mais rápido.
+	var bonus := 0;
+	if (equip is @ArmorWrapper && weapon is @WeaponWrapper && CInt(weapon.GetProperty("ArmorDmg")) == 1)
+		bonus := Dice("1d4").Roll().GetResult();
+	endif
+
+	return wearRate + bonus;
 endfunction
 
 function DamageRuneCharges(equip)
 	var rune := equip.GetProperty("priestrune");
-	var charges := CInt(equip.GetProperty("runecharges"));
-
-	if (charges > 0)
-		charges -= 1;
-		equip.SetProperty("runecharges", charges);
+	if (!rune || rune is @Exception)
+		return; // Equipamento sem runa.
 	endif
 
+	var charges := CInt(equip.GetProperty("runecharges"));
 	if (charges <= 0)
-		removeRuneBonus(equip, rune);
-		Message($"A benção divina da {rune.name} em {equip.GetName()} se esvaiu.").SetColor(Color(SYSTEM_COLOR::BAD)).SendSys(equip.GetOwner());
+		return; // Runa já esgotada.
+	endif
+
+	charges -= 1;
+	equip.SetProperty("runecharges", charges);
+
+	if (charges <= 0)
+		removeRuneBonus(equip.GetObjRef(), rune);
+		Message($"A benção divina da {rune} em {equip.GetName()} se esvaiu.").SetColor(Color(SYSTEM_COLOR::BAD)).SendSys(equip.GetOwner().GetObjRef());
 	endif
 endfunction
 
 function ApplyDamageOnEquip(equip, damage)
 	equip.SetHP(equip.GetHP() - damage);
-	
+
 	if (equip.GetHP() <= 0)
 		BreakEquip(equip);
 	endif

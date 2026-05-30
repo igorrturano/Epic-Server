@@ -448,13 +448,12 @@ endfunction
 //   1. Hard player-only gates (party/UI) where CanActivate always returns false
 //      for NPCs (AURA_DE_FE, PRESENCA_DIVINA).
 //   2. Per-file IsNPC fail-fast guards (CONTROLAR_MORTOS, CONVOCACAO_SELVAGEM,
-//      TRANSMUTAR, TRUQUE_SUJO) — selecting them just burns the 2s ability
+//      TRUQUE_SUJO) — selecting them just burns the 2s ability
 //      cooldown on a guaranteed-false ExecuteOn.
 function _IsNPCBlacklistedAbility(id)
     case (id)
         ABILITY_ID::AURA_DE_FE:           return 1;
         ABILITY_ID::PRESENCA_DIVINA:      return 1;
-        ABILITY_ID::TRANSMUTAR:           return 1;
         ABILITY_ID::TRUQUE_SUJO:          return 1;
         ABILITY_ID::CONTROLAR_MORTOS:     return 1;
         ABILITY_ID::CONVOCACAO_SELVAGEM:  return 1;
@@ -700,14 +699,16 @@ function ChooseWarriorAbility(npc, state, habs)
         return ABILITY_ID::FURIA;
     endif
 
-    // Mutante self-buff — fire FORMA_ADAPTAVEL once so the resist mod is in
-    // place before random combat picks. AdaptableForm.ExecuteOn writes the
-    // "Mutacao" ObjProperty and erases it on toggle-off.
-    if (wrapper.HasAbility(ABILITY_ID::FORMA_ADAPTAVEL) && !GetObjProperty(npc, "Mutacao"))
-        return ABILITY_ID::FORMA_ADAPTAVEL;
+    // Mutante engine — open with Hiperestimulo while healthy. NPC vicios sit at
+    // full cap, so the snapshot yields a fixed combat bonus for the window; the
+    // 15% HP cost is why we gate on not-dying (CanActivate also refuses low HP).
+    if (wrapper.HasAbility(ABILITY_ID::HIPERESTIMULO) && !wrapper.IsAbilityOnCooldown(ABILITY_ID::HIPERESTIMULO) && state.health != "dying")
+        return ABILITY_ID::HIPERESTIMULO;
     endif
 
     if (state.health == "dying")
+        // Sobredose juggernaut commit — CC + critical immunity to survive the burst.
+        if (wrapper.HasAbility(ABILITY_ID::SOBREDOSE) && !wrapper.IsAbilityOnCooldown(ABILITY_ID::SOBREDOSE))  return ABILITY_ID::SOBREDOSE;  endif
         if (wrapper.HasAbility(ABILITY_ID::MANOBRA_DA_RESILIENCIA))  return ABILITY_ID::MANOBRA_DA_RESILIENCIA;  endif
         // RESILIENCIA_BARBARA.CanActivate requires the furia cooldown to be live.
         if (GetCooldown(npc, "furia") && wrapper.HasAbility(ABILITY_ID::RESILIENCIA_BARBARA))     return ABILITY_ID::RESILIENCIA_BARBARA;     endif
@@ -869,9 +870,8 @@ function HandleEnteredAreaAbilities(opponent, is_ranged := 0)
         case (hab)
             ABILITY_ID::COMANDO_DE_FERAS:
                 NPC_UseAbilityById(me, hab);
-            ABILITY_ID::INVOCACAO_DO_CAOS: 
+            ABILITY_ID::INVOCACAO_DO_CAOS:
             ABILITY_ID::ARCANE_BOW:
-            ABILITY_ID::FORMA_ADAPTAVEL:
             ABILITY_ID::SAND_BROTHERS:
             ABILITY_ID::TACTICAL_SHOULDER:
             ABILITY_ID::TARGETING_VISOR:

@@ -216,6 +216,13 @@ function _SC_ApplyOpts(targ, opts)
 		AP_ModifyStatMod(targ, INTELLIGENCE, opts.int_mod);
 	endif
 
+	// Stat mods live in the mobile's runtime layer (wiped on restart, kept on
+	// reconnect). This marker shares that lifecycle so resync knows whether the
+	// bonus is still applied — see SC_ResyncOnLogin.
+	if (opts.str_mod || opts.dex_mod || opts.int_mod)
+		SetObjProperty(targ, "#sc_statmods_live", 1);
+	endif
+
 	// Color change
 	if (opts.color)
 		targ.color := opts.color;
@@ -493,11 +500,9 @@ endfunction
  *   - Native mobile fields (color, run_speed, hitchance_mod, frozen,
  *     graphic, armor_hit_scripts array) persist across restart — no
  *     reapply needed.
- *   - Re-apply attribute TemporaryMods (str/dex/int). These go through
- *     SetAttributeTemporaryMod, which is volatile and gets wiped on
- *     logout. Without this re-apply, the buff icon shows +N but the
- *     stat is 0; when the timer later expires, _SC_RemoveOpts subtracts
- *     N from 0 and the player ends up with a -N stat mod.
+ *   - Re-apply str/dex/int TemporaryMods only when the runtime layer was
+ *     wiped (restart), detected via the #sc_statmods_live marker. On a
+ *     reconnect the mods are still live, so re-applying would double them.
  *
  * @param mobile Mobile - the player logging in
  */
@@ -506,6 +511,10 @@ function SC_ResyncOnLogin(mobile)
 	var mw := MobileWrapper(mobile);
 	var found := 0;
 	var active_opts := array{};
+
+	// Present => reconnect (stat mods still live, skip re-apply); absent =>
+	// restart wiped them (re-apply). Read once so every buff sees the same state.
+	var statmods_live := GetObjProperty(mobile, "#sc_statmods_live");
 
 	foreach timer in (timer_list)
 		if (_timer_iter[1, 12] != "spelleffect_")
@@ -530,13 +539,14 @@ function SC_ResyncOnLogin(mobile)
 		if (opts && !opts.errortext)
 			active_opts.Append(opts);
 
-			// Re-apply volatile attribute TemporaryMods. SetAttributeTemporaryMod
-			// is wiped on logout, so without this the stat is 0 while the buff
-			// icon still claims +N — and the eventual _SC_RemoveOpts subtracts
-			// N from 0, leaving the player at -N.
-			if (opts.str_mod) AP_ModifyStatMod(mobile, STRENGTH,     CInt(opts.str_mod)); endif
-			if (opts.dex_mod) AP_ModifyStatMod(mobile, DEXTERITY,    CInt(opts.dex_mod)); endif
-			if (opts.int_mod) AP_ModifyStatMod(mobile, INTELLIGENCE, CInt(opts.int_mod)); endif
+			// Restore str/dex/int only if the runtime layer was wiped (restart).
+			// AP_ModifyStatMod is additive — re-applying on a reconnect doubles it.
+			if (!statmods_live && (opts.str_mod || opts.dex_mod || opts.int_mod))
+				if (opts.str_mod) AP_ModifyStatMod(mobile, STRENGTH,     CInt(opts.str_mod)); endif
+				if (opts.dex_mod) AP_ModifyStatMod(mobile, DEXTERITY,    CInt(opts.dex_mod)); endif
+				if (opts.int_mod) AP_ModifyStatMod(mobile, INTELLIGENCE, CInt(opts.int_mod)); endif
+				SetObjProperty(mobile, "#sc_statmods_live", 1);
+			endif
 
 			// Client-session-only state — lost on disconnect, must re-push.
 			if (opts.speed_boost && !mobile.npctemplate)
@@ -625,6 +635,11 @@ function _SC_CleanupOrphans(mobile)
 	var buff := mw.GetProperty("#buff_resist");
 	if (buff && !buff.errortext)
 		mw.EraseProperty("#buff_resist");
+	endif
+
+	// No active buffs => the stat-mod marker is stale.
+	if (GetObjProperty(mobile, "#sc_statmods_live"))
+		EraseObjProperty(mobile, "#sc_statmods_live");
 	endif
 
 	if (GetObjProperty(mobile, "metamorfose") != error)

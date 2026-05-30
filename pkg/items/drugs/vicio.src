@@ -14,7 +14,7 @@ program Hunger(who)
 
 		if (vicio_str <= 40)
 			if (cint(GetObjProperty(who, "ultimastr")) + 3600 < readgameclock())
-				if (!TS_GetTimerInfo(who, "abstinencia_str"))
+				if (!TS_GetTimerInfo(who, "abstinencia_str") && !GetObjProperty(who, "#hiperestimulo_active"))
 					SendSysMessageEx(who, "Você sente os efeitos da abstinência.", SSM_INFO);
 					TS_StartTimer(who, "abstinencia_str", 1, debuff_abstinencia_str);
 				endif
@@ -39,7 +39,7 @@ program Hunger(who)
 
 		if (vicio_dex <= 40)
 			if (cint(GetObjProperty(who, "ultimadex")) + 3600 < readgameclock())
-				if (!TS_GetTimerInfo(who, "abstinencia_dex"))
+				if (!TS_GetTimerInfo(who, "abstinencia_dex") && !GetObjProperty(who, "#hiperestimulo_active"))
 					SendSysMessageEx(who, "Você sente os efeitos da abstinência.", SSM_INFO);
 					TS_StartTimer(who, "abstinencia_dex", 1, debuff_abstinencia_dex);
 				endif
@@ -64,7 +64,7 @@ program Hunger(who)
 
 		if (vicio_int <= 40)
 			if (cint(GetObjProperty(who, "ultimaint")) + 3600 < readgameclock())
-				if (!TS_GetTimerInfo(who, "abstinencia_int"))
+				if (!TS_GetTimerInfo(who, "abstinencia_int") && !GetObjProperty(who, "#hiperestimulo_active"))
 					SendSysMessageEx(who, "Você sente os efeitos da abstinência.", SSM_INFO);
 					TS_StartTimer(who, "abstinencia_int", 1, debuff_abstinencia_int);
 				endif
