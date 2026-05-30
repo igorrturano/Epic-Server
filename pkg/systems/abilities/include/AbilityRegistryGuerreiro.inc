@@ -87,10 +87,10 @@ include ":abilities:classes/samurai/SwordMaster";
 //===========================================
 // MUTANTE (900-904)
 //===========================================
-include ":abilities:classes/mutante/AdaptableForm";
-include ":abilities:classes/mutante/HunterOil";
-include ":abilities:classes/mutante/MetabolicBoost";
-include ":abilities:classes/mutante/Transmute";
+include ":abilities:classes/mutante/Hyperstimulus";
+include ":abilities:classes/mutante/ChemicalArmor";
+include ":abilities:classes/mutante/QuickSynthesis";
+include ":abilities:classes/mutante/Overdose";
 include ":abilities:classes/mutante/Mutagenic";
 
 // === ABILITY_CLASSES Registrations ===
@@ -159,8 +159,8 @@ ABILITY_CLASSES[ABILITY_ID::WIND_STRIKE] := @WindStrike;
 ABILITY_CLASSES[ABILITY_ID::SWORD_MASTER] := @SwordMaster;
 
 // Mutante (900-904)
-ABILITY_CLASSES[ABILITY_ID::FORMA_ADAPTAVEL] := @AdaptableForm;
-ABILITY_CLASSES[ABILITY_ID::OLEO_DO_CACADOR] := @HunterOil;
-ABILITY_CLASSES[ABILITY_ID::IMPULSO_METABOLICO] := @MetabolicBoost;
-ABILITY_CLASSES[ABILITY_ID::TRANSMUTAR] := @Transmute;
+ABILITY_CLASSES[ABILITY_ID::HIPERESTIMULO] := @Hyperstimulus;
+ABILITY_CLASSES[ABILITY_ID::BLINDAGEM_QUIMICA] := @ChemicalArmor;
+ABILITY_CLASSES[ABILITY_ID::SINTESE_VELOZ] := @QuickSynthesis;
+ABILITY_CLASSES[ABILITY_ID::SOBREDOSE] := @Overdose;
 ABILITY_CLASSES[ABILITY_ID::MUTAGENICO] := @Mutagenic;

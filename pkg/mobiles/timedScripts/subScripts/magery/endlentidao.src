@@ -2,6 +2,7 @@ use uo;
 use os;
 
 include ":attributes:attributes";
+include ":fls_core:packets";
 
 program cureScript(params)
 	var who := params[1];
@@ -13,6 +14,7 @@ program cureScript(params)
 	var info := GetObjProperty(who, "#Slowness");
 	AP_ModifyStatMod(who, DEXTERITY, info.dexmod);
 	who.paralyzed := 0;
+	PlayerSpeedSlower(who, 0);
 
 	EraseObjProperty(who, "#Slowness");
 endprogram

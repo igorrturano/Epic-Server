@@ -144,6 +144,20 @@ aborts engagement. No damage is dealt here.
   (synchronous). **Off hand** → `Start_Script` (async, because of the
   off-hand delay) (`:231-235`).
 
+> **Serialization-safety constraint (load-bearing).** Both branches pass the
+> `AttackInfo` *class instance* across a script boundary. POL serializes it by
+> its **assigned** member values — a field that has only a declaration-time
+> default (`var _x := true;`) and is never explicitly assigned deserializes as
+> **uninitialized** inside `mainHitScript`. Falsy defaults survive by
+> coincidence (uninit is falsy); a *truthy* default silently becomes uninit.
+> This is exactly how armor weardown broke: `_appliesArmorWear := true` was a
+> declaration-only default, came back uninit (falsy), and the
+> `GetAppliesArmorWear()` gate in `CalculateDefenderResist` skipped every
+> `WearDownEquip` on armor. **Rule:** every `AttackInfo` field must be
+> initialized in the *constructor*, not via a declaration default. Methods
+> dispatch fine across the boundary because `mainHitScript` includes the class
+> def — only un-assigned field *values* are lost.
+
 `mainHitScript.src::MainHitScript(attackInfo)` (`:22-51`):
 
 1. `SetScriptController(attacker)` (`:24`).
@@ -248,7 +262,7 @@ CalculateDefenderResist()                       # body/armor/spell % reduction (
 ### 5d — `ApplyCombatDamage()` (`:1114-1210`)
 
 - Fires `ExecuteCombatAbilitiesOnHit` first (`:1115`).
-- **Branches on `attackInfo.UsesChannelApply()`**:
+- **Branches on `attackInfo.AppliesByChannel()`**:
   - **Swing path** (`_ApplyPhysicalDamageByPosture`): zeroes the two
     non-active physical channels, **guarantees min 1** on the active
     posture channel.
@@ -279,7 +293,7 @@ DealDamage(defender, amount, dmgType, source := 0, spellId := 0)
 Inside (`:172-203`):
 1. Builds `AttackInfo` with `MobileWrapper(source)` (or `MobileWrapper(defender)`
    if sourceless — defender doubles as attacker).
-2. Sets flags: `SetSkipParry(true).SetSkipCrit(true).SetSkipBodyRegion(true).SetAppliesArmorWear(false).SetUsesChannelApply(true)`.
+2. Sets flags: `SetSkipParry(true).SetSkipCrit(true).SetSkipBodyRegion(true).SetAppliesArmorWear(false).SetAppliesByChannel(true)`.
 3. If `spellId > 0`, calls `SetSpellOrigin(spellId, dmgType)` — flags
    `_isSpell` for forensics; same flag-setup as above.
 4. Stamps damage via `Damage.IncreaseRawDamageByType(dmgType, amount)`.

@@ -2,9 +2,15 @@ use uo;
 use os;
 use util;
 include ":charactercreation:habilidades";
+include ":tn:cooldown";
 
 program TimedScript_Paralysis(params)
 	var mobile := params[1];
+
+	// Sobredose (Mutante L10): immune to sleep while the window is live.
+	if (GetCooldown(mobile, "sobredose"))
+		return;
+	endif
 
 	PlaySoundEffect(mobile, 0x205);
 

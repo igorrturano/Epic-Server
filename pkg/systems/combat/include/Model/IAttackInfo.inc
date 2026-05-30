@@ -53,8 +53,7 @@ class IAttackInfo()
 	uninit function SetParryChance(this, parryChance);
 	
 	uninit function GetParryChanceMod(this);
-	uninit function SetParryChancePenalty(this, penalty);
-	
+
 	uninit function GetParryChanceResult(this);
 	uninit function GetAttackerAbilities(this);
 	uninit function GetDefenderAbilities(this);
@@ -65,5 +64,4 @@ class IAttackInfo()
 	uninit function Succeeded(this);
 	uninit function Parried(this);
 	uninit function ResolveSubstituicao(this);
-	uninit function ExecuteAbilitesOnMomentum(this, momentum);
 endclass
