@@ -343,9 +343,15 @@ function SetupItemsForSpecificClasses(mobile, npc_elem)
                 makeRace(mobile, ELFO);
             endif
 
-            if (ABILITY_ID::FORMA_ADAPTAVEL in habs)
+            if (ABILITY_ID::HIPERESTIMULO in habs)
                 var two_handed := array{0x1401, 0x1440, 0x0f51, 0x0f63, 0x143c, 0x13B2};
                 EquipRandomFromArray(mobile, two_handed);
+                // Pre-saturate the chem-baron: NPCs never drink potions, so
+                // without low vicios Hiperestimulo (bonus = Cap - Vicio) would
+                // grant nothing. Seed to 0 for a full-power opening rage.
+                AP_SetVital(mobile, "viciostr", 0);
+                AP_SetVital(mobile, "viciodex", 0);
+                AP_SetVital(mobile, "vicioint", 0);
             endif
 
     endcase

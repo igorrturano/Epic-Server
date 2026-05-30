@@ -18,7 +18,8 @@ program TimedScript_Paralysis(params)
 	endif
 
 	if (temhabilidade(mobile, "Movimento Livre") || GetCooldown(mobile, "vitalidadeinabalavel") ||
-	 GetCooldown(mobile, "VontadeIndomavel") || (MobileWrapper(mobile).HasAbility(ABILITY_ID::FURIA_INDOMAVEL) &&
+	 GetCooldown(mobile, "VontadeIndomavel") || GetCooldown(mobile, "sobredose") ||
+	 (MobileWrapper(mobile).HasAbility(ABILITY_ID::FURIA_INDOMAVEL) &&
 	 GetCooldown(mobile, "furia")))
 		return;
 	endif

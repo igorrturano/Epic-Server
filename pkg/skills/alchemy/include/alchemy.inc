@@ -350,7 +350,7 @@ Function PotionSpecialistBonus (who, bonus, science)
 			bonus := Cint(bonus * spec);
 		elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VENENO_PURO) && science == VENENO);
 			bonus := Cint(bonus * spec);
-		elseif (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO) && science == BUFF);
+		elseif (MobileWrapper(who).HasAbility(ABILITY_ID::SINTESE_VELOZ) && science == BUFF);
 			bonus := Cint(bonus * spec);
 		endif
 
@@ -394,7 +394,7 @@ Function AplicaVicio (who, potion, Atr)
     ult := "ultimaint";
   endif
   
-  if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
+  if (MobileWrapper(who).HasAbility(ABILITY_ID::SINTESE_VELOZ))
       bonus := (getobjProperty(potion, "bonus")*-1);
   endif
   
