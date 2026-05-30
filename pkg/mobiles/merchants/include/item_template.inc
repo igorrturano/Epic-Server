@@ -5,7 +5,7 @@ use datafile;
 
 include ":datafile:datafile";
 
-function CreateItemTemplate(item)
+function CreateItemTemplate(item, capture_contents := 0)
 	if ( !item.IsA(POLCLASS_ITEM) )
 		var temp := error;
 		temp.+errortext := "Error: CreateItemTemplate() -> Object passed is not an item.";
@@ -141,7 +141,48 @@ function CreateItemTemplate(item)
 	*/
 	template.+isVendorTemplate := true;
 
+	// Optionally snapshot a container's contents recursively (opt-in so the
+	// other callers of CreateItemTemplate are unaffected).
+	if (capture_contents && item.IsA(POLCLASS_CONTAINER))
+		template.+__contents := CaptureContainerContents(item, 1);
+	endif
+
 	return template;
+endfunction
+
+// Recursively snapshot a container's contents as an array of item templates.
+// Each child carries its own members; nested containers recurse with a depth
+// guard so pathological nesting can't hang the capture.
+function CaptureContainerContents(container, depth)
+	var contents := array{};
+	if (depth > 10)
+		Print("CaptureContainerContents: nesting exceeds depth 10, truncating");
+		return contents;
+	endif
+	foreach child in (EnumerateItemsInContainer(container))
+		var child_template := CreateItemTemplate(child, 0);
+		if (child_template != error)
+			if (child.IsA(POLCLASS_CONTAINER))
+				child_template.+__contents := CaptureContainerContents(child, depth + 1);
+			endif
+			contents.append(child_template);
+		endif
+		sleepms(2);
+	endforeach
+	return contents;
+endfunction
+
+// Recreate captured contents inside a freshly created container. Recurses via
+// CreateItemInContainerFromTemplate, which restores nested contents in turn.
+function RestoreContainerContents(container, contents)
+	if (!contents || !container)
+		return 0;
+	endif
+	foreach child_template in (contents)
+		CreateItemInContainerFromTemplate(container, child_template);
+		sleepms(2);
+	endforeach
+	return 1;
 endfunction
 
 function CreateIteminBackpackFromTemplate(player, selling)
@@ -186,6 +227,9 @@ function CreateItemAtLocationFromTemplate(x, y, z, realm, selling)
 	endif
 	foreach prop in selling
 		//sendsysmessage(player, " " + _prop_iter + " "+ selling[_prop_iter]);
+		if (_prop_iter == "__contents")
+			continue; // restored separately as child items
+		endif
 		purchase.set_member(_prop_iter, selling[_prop_iter]);
 	endforeach
 	if (purchase.isBook())
@@ -204,6 +248,12 @@ function CreateItemAtLocationFromTemplate(x, y, z, realm, selling)
 	if (selling.amount == 1)
 		SetName(purchase, selling.desc);
 	endif
+
+	// Recreate captured container contents (recursive)
+	if (selling.__contents && purchase.IsA(POLCLASS_CONTAINER))
+		RestoreContainerContents(purchase, selling.__contents);
+	endif
+
 	purchase.movable := 1;
 	return purchase;
 endfunction
@@ -227,7 +277,12 @@ function CreateItemInContainerFromTemplate(container, template)
     
     // Apply all template properties to the item
     ApplyTemplatePropertiesToItem(item, template);
-    
+
+    // Recreate captured container contents (recursive)
+    if (template.__contents && item.IsA(POLCLASS_CONTAINER))
+        RestoreContainerContents(item, template.__contents);
+    endif
+
     return item;
 endfunction
 
@@ -239,6 +294,7 @@ function ApplyTemplatePropertiesToItem(item, template)
         case (prop_name)
             "objtype": continue; // Skip, already set
             "amount": continue;  // Skip, already set
+            "__contents": continue; // Skip, restored separately as child items
             "color": item.color := CInt(prop_value);
             "name": SetName(item, CStr(prop_value));
             "desc": item.desc := CStr(prop_value);

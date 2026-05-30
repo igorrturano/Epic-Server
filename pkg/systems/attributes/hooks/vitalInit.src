@@ -279,9 +279,18 @@ exported function GetVicioPotRegenRate(mobile)
 	var base_regen := Cint(((AP_GetSettingsCfgElem("Regen").Vicio) * 28) + (cint(mobile.lower_reagent_cost_mod))*100);
 	var regen := base_regen + AP_GetVitalRegenRateMod(mobile, "vicio");
 
+	// Sintese Veloz (Mutante L5): vicios regenerate 3x faster.
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SINTESE_VELOZ))
+		regen := regen * 3;
+	endif
+
 	return regen;
 endfunction
 
 exported function GetViciopotMaximumValue(mobile)
+	// Blindagem Quimica (Mutante L3): raises the vicio cap 100 -> 150.
+	if (MobileWrapper(mobile).HasAbility(ABILITY_ID::BLINDAGEM_QUIMICA))
+		return 150 * 100;
+	endif
 	return 100 * 100;
 endfunction
