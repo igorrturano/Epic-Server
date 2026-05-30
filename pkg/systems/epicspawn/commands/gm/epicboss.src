@@ -638,7 +638,7 @@ function ShowPage1(who, title, gump_width, gump_height)
 	GFResizePic(gump, 650, 490, 3000, 2, 100);
 
 	// Add Respawn Time Configuration
-	GFTextLine(gump, 670, 490, 1153, "Tempo de Respawn (minutos):");
+	GFTextLine(gump, 670, 510, 1153, "Tempo de Respawn (minutos):");
 
 	// Minimum respawn time
 	GFTextLine(gump, 670, 530, 1153, "Mínimo:");
@@ -1004,8 +1004,9 @@ function ShowPage3(who, title, gump_width, gump_height)
 	if (form_data.combatevents && form_data.combatevents.size() > 0)
 		for i := 1 to form_data.combatevents.size()
 			var event := form_data.combatevents[i];
-			// Add delete button before the event name
-			GFAddButton(gump, 550, y_posc, 30008, 30009, GF_CLOSE_BTN, 44 + i); // Button ID will be 45 for first event
+			// Edit (200+i) and delete (300+i) buttons per event — matches action/death-text editors
+			GFAddButton(gump, 550, y_posc, 2117, 2118, GF_CLOSE_BTN, 200 + i); // Edit
+			GFAddButton(gump, 790, y_posc, 30008, 30009, GF_CLOSE_BTN, 300 + i); // Delete
 			GFTextLine(gump, 580, y_posc, 1153,
 						"- " + event.name + " (Steps: " + event.steps.size() + ", CD: " + event.cd + "s" +
 						(event.once ? ", Once" : "") +
@@ -1130,11 +1131,26 @@ function ShowPage3(who, title, gump_width, gump_height)
 	elseif (input[0] == 40) // Add Combat Event
 		HandleAddCombatEvent(who, input, form_data);
 		return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
-	elseif (input[0] >= 45 && input[0] < 45 + 10) // Support up to 10 events, adjust if needed
-		var event_idx := input[0] - 44; // Button 45 corresponds to index 1
+	elseif (input[0] >= 200 && input[0] < 300) // Edit combat event (button 200+i)
+		var event_idx := input[0] - 200;
+		if (event_idx >= 1 && event_idx <= form_data.combatevents.size())
+			var ev := form_data.combatevents[event_idx];
+			if (ShowCombatEventsList(who, ev))
+				// Re-mirror actions -> steps, same as HandleAddCombatEvent does on add
+				ev.steps.length := 0;
+				foreach action in (ev.actions)
+					ev.steps.append(action);
+				endforeach
+				form_data.combatevents[event_idx] := ev;
+				SendSysMessage(who, "Combat event '" + ev.name + "' updated.");
+			endif
+		endif
+		return ShowPage3(who, title, gump_width, gump_height);
+	elseif (input[0] >= 300 && input[0] < 400) // Delete combat event (button 300+i)
+		var event_idx := input[0] - 300;
 		if (event_idx >= 1 && event_idx <= form_data.combatevents.size())
 			var event_name := form_data.combatevents[event_idx].name;
-			SendSysMessage(who, "Removing combat event '" + event_name + "' (index " + event_idx + ")");
+			SendSysMessage(who, "Removing combat event '" + event_name + "'");
 			form_data.combatevents.Erase(event_idx);
 			if (form_data.combatevents.size() == 0)
 				form_data.combatevents := array{}; // Reset to empty array if last event was removed
@@ -2500,7 +2516,7 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
 	boss.special := array{};                     // will be filled by copying form_data.special
 	boss.loot := array{};
 	boss.deathevents := form_data.deathevents;
-	boss.combatevents := array{};               // will be filled by copying form_data.combatevents
+	boss.combatevents := array{};               // default; raw form events passed through below
 	boss.custom_abilities := form_data.custom_abilities; // keep reference if not mutated here
 
 	// Basic info
@@ -2545,32 +2561,10 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
 		boss.spawn_scale := CInt(form_data.spawn_scale);
 	endif
 
+	// Pass the raw form events straight through; CreateEpicBoss runs them all
+	// through NormalizeCombatEvent (the single source of truth for the shape).
 	if (form_data.combatevents && form_data.combatevents.size() > 0)
-		foreach event in (form_data.combatevents)
-
-			// Create a clean event structure with only necessary properties
-			var event_struct := struct{};
-			event_struct.+name := event.name;
-			event_struct.+cd := event.cd;
-			event_struct.+onlybloodied := event.onlybloodied;
-			event_struct.+dist := event.dist;
-			event_struct.+once := event.once;
-			event_struct.+hp_percent := event.hp_percent;
-
-			// Initialize both arrays to ensure compatibility
-			event_struct.+actions := array{};
-			event_struct.+steps := array{}; // Keep both for compatibility
-
-			// Copy all actions
-			if (event.actions && event.actions.size() > 0)
-				foreach action in (event.actions)
-					event_struct.actions.append(action);
-					event_struct.steps.append(action); // Copy to both arrays for compatibility
-				endforeach
-			endif
-
-			boss.combatevents.append(event_struct);
-		endforeach
+		boss.combatevents := form_data.combatevents;
 	endif
 	if (form_data.special && form_data.special.size() > 0)
 		foreach ability in (form_data.special)
