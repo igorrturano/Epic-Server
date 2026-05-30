@@ -1,0 +1,84 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":attributes:attributes";
+include ":combat:weaponInfo";
+include ":training:training";
+include ":training:dummyDps";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Model/AttackInfo";
+include ":combat:Controller/DamageController";
+
+const DUMMY_HIT_SOUND := 0x13C;
+
+program PracticeDummy(who, dummy)
+	if (dummy.container)
+		return 0;
+	elseif (!ReserveItem(dummy))
+		SendSysMessage(who, "Alguem ja esta usando isto.");
+		return 0;
+	endif
+
+	var weapon := who.weapon;
+
+	if (!TP_CheckRange(who, weapon, dummy))
+		ReleaseItem(dummy);
+		return 0;
+	endif
+
+	var weapon_anim := CInt(CS_GetWeaponInfo(weapon, "Anim"));
+	var weapon_attribute := CS_GetWeaponInfo(weapon, "Attribute");
+
+	PerformAction(who, weapon_anim);
+
+	var totalDmg := RollDummyDamage(who);
+
+	PlaySoundEffect(who, DUMMY_HIT_SOUND);
+	DummyRegisterHit(dummy, totalDmg);
+	SkillCheck(who, weapon_attribute, -1, 0, 0);
+
+	DummyRock(dummy);
+endprogram
+
+function RollDummyDamage(who)
+	var attacker := MobileWrapper(who);
+	var weaponWrap := attacker.GetEquipBySlot(WEAPON);
+	if (weaponWrap is @Exception)
+		return 0;
+	endif
+
+	var attackInfo := AttackInfo(attacker, attacker);
+	attackInfo.SetWeapon(weaponWrap)
+	          .SetAttackType(attacker.GetCombatTraits().GetPosture())
+	          .SetDamageHand(DAMAGE_HAND::MAINHAND);
+
+	CalculateAttackerDamage(attackInfo);
+	var total := CInt(attackInfo.GetDamage().GetTotalBaseDamage());
+
+	if (weaponWrap.GetAttribute() == DUALWIELD)
+		attackInfo.SetDamageHand(DAMAGE_HAND::OFFHAND);
+		CalculateAttackerDamage(attackInfo);
+		total += CInt(attackInfo.GetDamage().GetTotalBaseDamage());
+	endif
+
+	return total;
+endfunction
+
+function DummyRock(dummy)
+	case (dummy.graphic)
+		4208:
+			dummy.graphic := 4209;
+			sleepms(3600);
+			dummy.graphic := 4208;
+			break;
+
+		4212:
+			dummy.graphic := 4213;
+			sleepms(3600);
+			dummy.graphic := 4212;
+			break;
+	endcase
+
+	return 1;
+endfunction

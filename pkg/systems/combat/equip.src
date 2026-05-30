@@ -1,0 +1,291 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":tn:cooldown";
+include "include/say";
+include "include/client";
+include ":message:model/Message";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":debug:Controller/DebugController";
+include ":entropy:entropy";
+include ":abilities:models/Ability";
+
+program equipweapon(who, item)
+	//TODO Refatorar este script, tá meio bagunçado. ass: Deiro.
+	var descmod_item := GetObjProperty(item, "descmod");
+	var descmod := array;
+	var aux := array;
+	descmod := GetObjProperty(who, "descmod");
+
+	if (descmod_item != error)
+		var add := 1;
+		if (descmod != error)
+			foreach desc in descmod
+				if (descmod_item == desc)
+					add := 0;
+				endif
+			endforeach
+			if (add)
+				aux := descmod;
+				aux.append(descmod_item);
+			else
+				aux := descmod;
+			endif
+		else
+			aux.append(descmod_item);
+		endif
+	endif
+	if (aux.size() == 0)
+		if (!GetObjProperty(who, "descmod"))
+			EraseObjProperty(who, "descmod");
+		endif
+	else
+		SetObjProperty(who, "descmod", aux);
+	endif
+	var ori_name := who.name;
+	SetName(who, " ");
+	SetName(who, ori_name);
+
+	// Nao deixa o player equipar itens que sao restritos a mobs
+	if (GetObjProperty(item, "restrito_mob"))
+		SendSysMessageEx(who, "Voce nao pode equipar esse item.", SSM_FAIL);
+		return 0;
+	endif
+
+	var left_hand := GetEquipmentByLayer(who, LAYER_HAND2);
+	var right_hand := GetEquipmentByLayer(who, LAYER_HAND1);
+	if (item.isA(POLCLASS_WEAPON) && ((left_hand && left_hand.isA(POLCLASS_WEAPON)) || (right_hand &&
+	 right_hand.isA(POLCLASS_WEAPON))))
+		SendSysMessageEx(who, "Ja possui arma equipada.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Block equipping shield with a two-handed melee weapon
+	if (item.isA(POLCLASS_ARMOR) && item.tile_layer == LAYER_HAND2)
+		var weapon := GetEquipmentByLayer(who, LAYER_HAND1);
+		if (weapon && weapon.isA(POLCLASS_WEAPON))
+			var weapCfg := ReadConfigFile(":combat:itemdesc");
+			if (CStr(weapCfg[weapon.objtype].Attribute) == "Two_Handed")
+				SendSysMessageEx(who, "Voce nao pode usar escudo com arma de duas maos.", SSM_FAIL);
+				return 0;
+			endif
+		endif
+	endif
+	if (who.npctemplate)
+		return 1;
+	endif
+
+	if (GetObjProperty(who, "desarmar") == 1)
+		SendSysMessageEx(who, "Voce nao consegue se armar.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (GetObjProperty(who, "metamorfose") != error)
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::ELO_NATURAL))
+			if (item.isa(POLCLASS_WEAPON) || item.isa(POLCLASS_ARMOR))
+				SendSysMessageEx(who, "Voce nao pode equipar nada nessa forma.");
+				return 0;
+			endif
+		else
+			SendSysMessageEx(who, "Voce nao pode equipar nada nessa forma.");
+			return 0;
+		endif
+	endif
+
+	if (GetObjProperty(who, "pilotando"))
+		SendSysMessageEx(who, "Voce nao pode equipar nada nessa forma.");
+		return 0;
+	endif
+
+	// Steam Gadgets: can only be installed via Ombreira Tatica
+	if (item.objtype == 0xFFC6 || item.objtype == 0xFFC7 || item.objtype == 0xFFC8 )
+		if (GetObjProperty(item, "#steam_install"))
+			EraseObjProperty(item, "#steam_install");
+		else
+			SendSysMessageEx(who, "Acople seu mecanismo atraves da ombreira.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	// Steam Armor: Dwarves only
+	var steam_objtypes := array{ 0xFFC1, 0xFFC2, 0xFFC3, 0xFFC4, 0xFFC5, 0xFFC9 };
+	if (item.objtype in steam_objtypes)
+		var raca := GetObjProperty(who, "chardata").raca;
+		if (raca != "Anão")
+			SendSysMessageEx(who, "Essa armadura nao se encaixa em voce.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	// Steam Gloves: block gloves, weapons and shields
+	var steamGloves := GetEquipmentByLayer(who, LAYER_HAND2);
+	if (steamGloves && steamGloves.objtype == 0xFFC1)
+		if (item.objtype != 0xFFC1 && item.objtype != 0xFFCA)
+			if (item.tile_layer == LAYER_GLOVES || item.tile_layer == LAYER_HAND1 || item.tile_layer == LAYER_HAND2)
+				SendSysMessageEx(who, "Remova suas manoplas a vapor primeiro.", SSM_FAIL);
+				return 0;
+			endif
+		endif
+	elseif (item.objtype == 0xFFC1)
+		var rh := GetEquipmentByLayer(who, LAYER_HAND1);
+		if (rh)
+			SendSysMessageEx(who, "Remova sua arma antes de equipar as manoplas a vapor.", SSM_FAIL);
+			return 0;
+		endif
+		var existing_gloves := GetEquipmentByLayer(who, LAYER_GLOVES);
+		if (existing_gloves)
+			SendSysMessageEx(who, "Remova suas luvas antes de equipar as manoplas a vapor.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::FURIA) && item.isa(POLCLASS_ARMOR))
+		var cfg := ReadConfigFile(":combat:itemdesc");
+		var tipoProtecao := CStr(cfg[item.objtype].TipoProtecao);
+		if (tipoProtecao["Armadura"])
+			SendSysMessageEx(who, "Como bárbaro você se recusa a usar armaduras.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	var is_bone_armor_and_shields := array{ 0x144e, 0x144f, 0x1450, 0x1451, 0xF0C9, 0xF0CC, 0xF0CB, 0xF0CD,
+											0x1452, 0x1B73, 0x1B72, 0xFF9E, 0x1B75, 0x1B76, 0x1B77, 0x1B78,
+											0x1B79, 0x1B7B, 0x1bc4, 0x1bc3, 0x1B7A, 0x1f0b };
+	if (who.isShaman() && item.isA(POLCLASS_ARMOR))
+		var cfg := ReadConfigFile(":combat:itemdesc");
+		var elem := FindConfigElem(cfg, item.objtype);
+		if (!(item.objtype in is_bone_armor_and_shields) && elem.TipoProtecao)
+			SendSysMessageEx(who, "Como Shaman voce se recusa a usar armaduras que nao sejam de ossos",
+							  SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	// STR Required check
+	var wrapper := item.isA(POLCLASS_ARMOR) ? ArmorWrapper(item) : item.isA(POLCLASS_WEAPON) ? WeaponWrapper(item) : EquipWrapper(item);
+	var str_required := wrapper.GetStrRequired();
+	if (str_required > 0)
+		var total_str := AP_GetStat(who, STRENGTH);
+		if (total_str < str_required)
+			SendSysMessageEx(who, "Você não tem força suficiente para equipar este item.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	if (!GetCooldown(item, "blessweapon") && GetObjProperty(item, "armaSagradaOriginalColor") != error)
+		item.color := Cint(GetObjProperty(item, "armaSagradaOriginalColor"));
+		EraseObjProperty(item, "armaSagradaOriginalColor");
+	endif
+
+	var elementalWeapon := GetObjProperty(item, "#elementalweapon");
+	if (elementalWeapon != error)
+		if (ReadGameClock() > elementalWeapon.endtime)
+			item.color := cint(elementalWeapon.originalColor);
+			EraseObjProperty(item, "#elementalweapon");
+		endif
+	endif
+
+	if (GetObjProperty(item, "armaespiritual"))
+		if (GetObjProperty(item, "swordmage") != who.serial)
+			SendSysMessageEx(who, "Voce nao pode usar esta arma.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	if (GetObjProperty(item, "swordmage") == who.serial)
+		var pid := GetObjProperty(item, "#swordmagepid");
+		if (pid)
+			var script := GetProcess(pid);
+			script.kill();
+		endif
+		start_script(":spells:spell_logic:swordmage", { who, item });
+	endif
+
+	// Epic Item: check entropy threshold for sacred/cursed items
+	var epic_entropy := GetObjProperty(item, "epicEntropy");
+	if (epic_entropy != error && CInt(epic_entropy) != 0)
+		var equip_mods := GetObjProperty(item, "equip");
+		var current_entropy := CInt(GetObjProperty(who, "entropy"));
+		if (equip_mods)
+			if (equip_mods.sacred && current_entropy < CInt(epic_entropy))
+				SendSysMessageEx(who, "Sua alma nao eh pura o suficiente para empunhar este item sagrado.", SSM_FAIL);
+				return 0;
+			elseif (equip_mods.cursed && current_entropy > CInt(epic_entropy))
+				SendSysMessageEx(who, "Sua alma nao eh corrupta o suficiente para empunhar este item.", SSM_FAIL);
+				return 0;
+			endif
+		endif
+	endif
+
+	if (item.cursed == 1)
+		UpdateMobileEntropy(who, -100);
+	endif
+
+	// Cleanup stale `#armor_evasion_penalty` from legacy AR penalty system (Phase 5 redesign).
+	// Wiped on equip so subsequent unequip is a no-op, preventing free evasion exploit
+	// when stale properties travel on dropped/traded items.
+	if (item.isa(POLCLASS_ARMOR))
+		EraseObjProperty(item, "#armor_evasion_penalty");
+	endif
+
+	Run_Script_To_Completion(":equipsys:equipitem", { who, item });
+
+	// SteamGloves: auto-equip companion armor for hands protection
+	// if (item.objtype == 0xFFC1)
+	// 	var companion := CreateItemInContainer(who.backpack, 0xFFCA, 1);
+	// 	if (companion)
+	// 		SetObjProperty(companion, "#steam_install", 1);
+	// 		SetObjProperty(companion, "#steamgloves_companion", 1);
+	// 		EquipItem(who, companion);
+
+	// 		// Copy defesa component from SteamGloves fabricado to companion
+	// 		// (SteamGloves now have defesa from the crafting recipe)
+	// 		var glove_fabricado := GetObjProperty(item, "fabricado");
+	// 		if (glove_fabricado != error && glove_fabricado.componentes && glove_fabricado.componentes["defesa"])
+	// 			var defesaComp := glove_fabricado.componentes["defesa"];
+	// 			var companionFabricado := struct{};
+	// 			companionFabricado.+componentes := dictionary{};
+	// 			companionFabricado.componentes["defesa"] := defesaComp;
+	// 			SetObjProperty(companion, "fabricado", companionFabricado);
+	// 		endif
+	// 	endif
+	// endif
+
+	var cfg := readconfigfile(":combat:itemdesc");
+	if (cint(cfg[item.objtype].parrybonus) > 0)
+		EraseObjProperty(who, "twohanded");
+	endif
+
+	// Carry-weight bonus sources are recomputed from scratch (single source of
+	// truth) instead of += here — prevents the accumulator drift that let
+	// nerfed/old bonuses stick. The equipscript runs BEFORE the item is on its
+	// layer, so it is not in ListEquippedItems yet — pass it as includeItem.
+	if (item.objtype == 0xFFC2 || item.objtype == 0xEDA0)
+		MobileWrapper(who).RecalcCarryWeightMod(0, item);
+	endif
+
+	// Steam Armor: Dex penalty (double heaviest normal armor)
+	// Note: SteamGloves (0xFFC1) dex penalty is handled by companion armor now
+	if (item.objtype in steam_objtypes)
+		var dex_penalty := 0;
+		case (item.objtype)
+			0xFFC2: dex_penalty := 14; // Legs
+			0xFFC3: dex_penalty := 14; // Arms
+			0xFFC4: dex_penalty := 12; // Helm
+			0xFFC5: dex_penalty := 20; // Chest
+			0xFFC9: dex_penalty := 12; // Gorget
+		endcase
+
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::EXPLOSIVE_FIST))
+			dex_penalty := CInt(dex_penalty / 2);
+		endif
+
+		SetObjProperty(item, "#steam_dex_penalty", dex_penalty);
+		AP_ModifyStatMod(who, DEXTERITY, -dex_penalty);
+	endif
+
+	return 1;
+endprogram

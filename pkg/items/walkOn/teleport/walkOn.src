@@ -1,0 +1,73 @@
+/*
+ * $Id: walkOn.src 111 2006-05-27 07:59:36Z austinheilman $
+ *
+*/
+use uo;
+use os;
+use polsys;
+include ":fls_core:fls_characters";
+include "include/epicCombatUtils";
+
+program walkOn(mobile, tile)
+	if (JustTeleported(mobile))
+		return 0;
+	endif
+
+	var pets := ListPetsNear(mobile, 4);
+	var hostiles := ListHostiles(mobile, 4);
+	var dest := GetObjProperty(tile, "Destination");
+	var racesAllowed := dest.race;
+	if (racesAllowed == "all")
+		racesAllowed := array{ ANAO, DROW, ELFO, ORC, HUMANO, PEQUILHO };
+	else
+		racesAllowed := splitWords(racesAllowed);
+	endif
+
+	var result;
+	if (mobile.getRace() in racesAllowed || mobile.cmdlevel > 2)
+		result := tile.SendToDestination(mobile);
+	else
+		SendSysMessageEx(mobile, "Seu tamanho é desproporcional!", SSM_FAIL);
+		return 0;
+	endif
+
+	SetObjProperty(mobile, "#Teleported", ReadMillisecondClock());
+	if (result.errortext)
+		SendSysMessage(mobile, "Error teleporting ->" + result.errortext);
+	endif
+
+	foreach pet in pets
+		SetObjProperty(pet, "#Teleported", ReadMillisecondClock());
+		MoveObjectToLocation(pet, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+		sleepms(10);
+	endforeach
+
+	if (hostiles[1])
+		foreach x in hostiles
+			if (!x.acctname)
+				SetObjProperty(x, "#Teleported", ReadMillisecondClock());
+				MoveObjectToLocation(x, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+			endif
+			sleepms(10);
+		endforeach
+	endif
+
+	destroyIllyraOutsideDungeons(mobile);
+	var name := mobile.IsInTheDungeon();
+	if (name)
+		SendSysMessageEx(mobile, "Dungeon: " + name + ". Seu feedback é importante para nós!( .feedback ou no Discord)",
+				   SSM_INFO);
+	endif
+	return 1;
+endprogram
+
+function JustTeleported(mobile)
+	var tele_time := CInt(GetObjProperty(mobile, "#Teleported"));
+	if (tele_time > ReadMillisecondClock() - 500)
+		// Mobile just teleported. Too soon to teleport again.
+		return 1;
+	else
+		// Safe to teleport the mobile
+		return 0;
+	endif
+endfunction

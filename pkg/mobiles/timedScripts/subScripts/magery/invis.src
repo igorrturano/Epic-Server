@@ -1,0 +1,10 @@
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	mobile.hidden := 1;
+endprogram

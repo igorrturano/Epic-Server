@@ -1,0 +1,33 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":timedScripts:timedScripts";
+include ":alchemy:alchemy";
+
+program drink_blue(who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if (!Accessible(who, potion))
+		return;
+	endif
+	if (potion.movable == 0)
+		SendSysMessage(who, "Voce nao pode beber isto.");
+		return;
+	endif
+
+	if (!checkifcandrink(who, potion))
+		return;
+	endif
+	
+	var vicio := (AP_getvital(who, "Viciodex"));
+	if (vicio < 30)
+		vicio := 30;
+	endif
+	vicio := vicio / 100;
+	var bonus := GetObjProperty(potion, "bonus");
+	bonus := PotionSpecialistBonus(who, bonus, BUFF);
+	TS_StartTimer(who, "velocidade", (360 + bonus * 10 * vicio), 20);
+	empty_bottle(who, potion);
+	Aplicavicio(who, potion, DEXTERITY); 
+endprogram

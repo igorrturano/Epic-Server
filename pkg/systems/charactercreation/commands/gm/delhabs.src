@@ -1,0 +1,57 @@
+use uo;
+use cfgfile;
+
+include "include/say";
+include ":tn:tngumps";
+
+program resethab(who)
+
+	sendsysmessageEx(who, "Escolha quem voce quer resetar as habs", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!targ)
+		return 1;
+	endif
+
+	var habs := GetObjProperty(targ, "buyhab");
+	var myhabs := GetObjProperty(targ, "myhabs");
+
+	// Load ability config to get names from IDs
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+
+	// Build list of ability names for display, and map names back to keys
+	var habnames := array;
+	var name_to_key := struct{};
+	foreach j in (myhabs.keys())
+		if (myhabs[j])
+			var hab_id := myhabs[j];
+			var elem := FindConfigElem(habcfg, hab_id);
+			var ability_name := GetConfigString(elem, "nome");
+			if (ability_name)
+				habnames.append(ability_name);
+				name_to_key[ability_name] := j;
+			endif
+		endif
+	endforeach
+
+	var newsizey := myhabs.size() + 50;
+	var opts := CheckBoxGump(who, 300, 150 + newsizey, "Escolha as habs para resetar", habnames);
+
+	sendsysmessage(who, "saida " + opts);
+
+	// Remove selected abilities using name-to-key mapping
+	foreach hab_name in opts
+		var key := name_to_key[hab_name];
+		if (key != error)
+			myhabs.erase(key);
+			habs[key] := 1;
+		endif
+	endforeach
+
+	SetObjProperty(targ, "buyhab", habs);
+	SetObjProperty(targ, "myhabs", myhabs);
+
+	SendSysMessageEx(who, "Habs resetadas do alvo: " + opts, SSM_INFO);
+	SendSysMessageEx(targ, "Suas habs foram resetadas " + opts);
+
+endprogram

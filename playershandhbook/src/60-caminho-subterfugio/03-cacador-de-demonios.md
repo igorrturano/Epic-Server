@@ -1,0 +1,129 @@
+# Caçador de Demônios
+<br>
+
+{{note
+<br>
+
+##### "A linha entre caçador e monstro é tênue. Eu danço nela todos os dias."
+
+*-- Lyraniel, <br> A Prateada <br>*
+{text-align:right}
+}}
+
+<br>
+<br><br>
+
+{{width:10px}}
+Os caçadores de demônios são jurados divinos, determinados a caçar e exterminar todo tipo de demônio e criatura corrompida. Sua exposição à energia abissal os levou a desenvolver características demoníacas que utilizam contra a própria corrupção.
+
+<br>
+<br>
+
+{{imageMaskCorner20,--offsetX:-46%,--offsetY:-28%,--rotation:0
+  ![](https://i.imgur.com/cbtjCwU.jpeg){height:70%,left:-20%}
+}}
+
+\column
+
+{{classTable,frame,decoration
+##### Caçador de Demônios
+**Dado de Vida:** d8
+| Level | Habilidades |
+|:-----:|:-----------:|
+|  2 |Sigilo de Proteção |
+|  6 |Sentença Profana |
+|  10 |Mancha da Corrupção |
+|  14 |Armadilha Demoníaca |
+|  20 |Forma Abissal |
+
+##### * Skill Necessária: Theology
+}}
+<br>
+<br>
+
+## Habilidades
+A cada level alcançado, o jogador poderá escolher uma habilidade dentre as opções disponíveis para o level em referência.
+
+::
+
+### Sigilo de Proteção
+*Habilidade Nível 2*
+
+**Tipo:**     :: Passiva
+**Custo:**    :: --
+**Cooldown:** :: --
+
+Como caçador de demônios, você aprendeu a usar sigilos mágicos protetivos mesmo usando armaduras leves. Sua fé inabalável fortalece sua vontade e lhe concede vantagem contra criaturas demoníacas.
+
+::
+
+### Sentença Profana
+*Habilidade Nível 6*
+
+**Tipo:**     :: Ativa
+**Custo:**    :: 15 stamina
+**Cooldown:** :: 120s
+
+Seu próximo ataque desfere dano divino adicional. Conforme a sua religião, ele também aplica um efeito extra no alvo:
+
+- **Lóre**: Nenhum efeito adicional (apenas o dano divino)
+- **Veneratio**: Silencia o alvo
+- **Bokk Bharaz**: Deixa o alvo mais lento
+- **Ush'krar**: Nenhum efeito adicional (apenas o dano divino)
+- **Halleuad**: Cega o alvo
+- **Eluith'orth**: Envolve o alvo em trevas
+- **Kai**: Causa sangramento no alvo
+
+{{footnote [Voltar ao Índice](#p4)}}
+{{pageNumber,auto}}
+
+\page
+
+### Mancha da Corrupção
+*Habilidade Nível 10*
+
+**Tipo:**     :: Passiva
+**Custo:**    :: --
+**Cooldown:** :: --
+
+Uma marca visível de corrupção se manifesta em seu corpo, concedendo um bônus de acerto e tornando seus inimigos mais fáceis de atingir.
+
+::
+
+### Armadilha Demoníaca
+*Habilidade Nível 14*
+
+**Tipo:**     :: Ativa
+**Custo:**    :: 40 stamina
+**Cooldown:** :: 300s
+
+Você cria um pentagrama que impede demônios e mortos-vivos de escapar. O alvo principal recebe dano total enquanto os demais na área sofrem dano parcial.
+
+\column
+
+### Forma Abissal
+*Habilidade Nível 20*
+
+**Tipo:**     :: Ativa
+**Custo:**    :: 50 stamina
+**Cooldown:** :: 300s
+
+Asas demoníacas se manifestam em seu corpo, permitindo que você voe fora de combate. Em batalha, você se torna um avatar abissal, recebendo bônus consideráveis em todos os atributos. Enquanto a forma estiver ativa, cada golpe recebido provoca uma represália abissal — e conforme a sua religião, ela carrega um efeito extra sobre o atacante:
+
+- **Lóre**: Nenhum efeito adicional
+- **Veneratio**: Drena a mana do atacante
+- **Bokk Bharaz**: Reduz a velocidade do atacante
+- **Ush'krar**: Nenhum efeito adicional
+- **Halleuad**: Cega o atacante
+- **Eluith'orth**: Envolve o atacante em trevas
+- **Kai**: Reduz o dano físico (corte, perfuração e contusão) do atacante
+
+{{imageMaskEdge1,--offset:-8%,--rotation:0
+  ![](https://i.imgur.com/dwMkvEF.png){height:70%,right:-20%,top:35%}
+}}
+
+{{footnote [Voltar ao Índice](#p4)}}
+{{pageNumber,auto}}
+
+\page
+

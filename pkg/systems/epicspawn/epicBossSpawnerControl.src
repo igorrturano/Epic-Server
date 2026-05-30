@@ -1,0 +1,181 @@
+use uo;
+use os;
+use util;
+use basicio;
+include ":attributes:attributes";
+
+include ":combat:hitscripts";
+include "include/epicNPCUtils";
+include ":epicspawn:epicBoss";
+
+// Boss spawner states
+enum SPAWNER_STATES
+	INACTIVE := 0,
+	ACTIVE := 1
+endenum
+
+program epicBossSpawnerControl(spawner)
+	if (!spawner)
+		return 0;
+	endif
+
+	InitializeSpawner(spawner);
+
+	while (spawner && spawner.serial)
+		ProcessSpawnerState(spawner);
+		sleep(60);
+	endwhile
+endprogram
+
+function InitializeSpawner(spawner)
+	// Initialize properties with defaults if needed
+	if (GetObjProperty(spawner, "SpawnerState") == error)
+		SetObjProperty(spawner, "SpawnerState", INACTIVE);
+	endif
+
+	if (GetObjProperty(spawner, "SpawnQueue") == error)
+		SetObjProperty(spawner, "SpawnQueue", 0);
+	endif
+
+	if (GetObjProperty(spawner, "ChildSerial") == error)
+		SetObjProperty(spawner, "ChildSerial", "Empty");
+	endif
+
+	ValidateDelaySettings(spawner);
+endfunction
+
+function ValidateDelaySettings(spawner)
+	var minDelay := CInt(GetObjProperty(spawner, "MinDelay"));
+	var maxDelay := CInt(GetObjProperty(spawner, "MaxDelay"));
+
+	// Set defaults if needed
+	if (!minDelay)
+		minDelay := 60;
+		SetObjProperty(spawner, "MinDelay", minDelay);
+	endif
+
+	if (!maxDelay)
+		maxDelay := 120;
+		SetObjProperty(spawner, "MaxDelay", maxDelay);
+	endif
+
+	// Enforce constraints (min ≥ 0, max ≥ min)
+	if (minDelay < 0)
+		minDelay := 0;
+		SetObjProperty(spawner, "MinDelay", minDelay);
+	endif
+
+	if (maxDelay < minDelay)
+		maxDelay := minDelay;
+		SetObjProperty(spawner, "MaxDelay", maxDelay);
+	endif
+
+endfunction
+
+function ProcessSpawnerState(spawner)
+	// Handle reset request
+	if (GetObjProperty(spawner, "ResetMe"))
+		KillBoss(spawner);
+		ResetSpawner(spawner);
+		EraseObjProperty(spawner, "ResetMe");
+	endif
+
+	// Get current properties
+	var state := CInt(GetObjProperty(spawner, "SpawnerState"));
+	var childSerial := GetObjProperty(spawner, "ChildSerial");
+	var spawnQueue := CInt(GetObjProperty(spawner, "SpawnQueue"));
+	var bossData := GetObjProperty(spawner, "BossStruct") ? GetObjProperty(spawner, "BossStruct") :
+								GetObjProperty(spawner, "form_data");
+
+	// Check if active boss is still alive
+	if (state == ACTIVE && childSerial != "Empty")
+		var boss := SystemFindObjectBySerial(childSerial);
+		if (!boss || boss.dead)
+			SetObjProperty(spawner, "ChildSerial", "Empty");
+			SetObjProperty(spawner, "SpawnerState", INACTIVE);
+			CalculateRespawnTime(spawner);
+		endif
+	endif
+
+	// Handle inactive state
+	if (state == INACTIVE)
+		var respawnTime := CInt(GetObjProperty(spawner, "RespawnTime"));
+
+		if (ReadGameClock() >= respawnTime)
+			AttemptBossSpawn(spawner, bossData);
+		else
+			// Update the queue count for display purposes
+			var minutesLeft := CInt((respawnTime - ReadGameClock()) / 60);
+			if (minutesLeft != spawnQueue)
+				SetObjProperty(spawner, "SpawnQueue", minutesLeft);
+			endif
+		endif
+	endif
+endfunction
+
+function AttemptBossSpawn(spawner, bossData)
+	if (!bossData)
+		return;
+	endif
+
+	var boss := CreateEpicBoss(bossData, spawner.x, spawner.y, spawner.z, spawner.realm);
+
+	if (boss && boss != error)
+		SetObjProperty(boss, "epicspawner", spawner.serial);
+		SetObjProperty(spawner, "ChildSerial", boss.serial);
+		SetObjProperty(spawner, "SpawnerState", ACTIVE);
+		SetObjProperty(spawner, "SpawnQueue", 0);
+	else
+		SetObjProperty(spawner, "SpawnQueue", 5);
+	endif
+endfunction
+
+function ResetSpawner(spawner)
+	SetObjProperty(spawner, "ChildSerial", "Empty");
+	SetObjProperty(spawner, "SpawnerState", INACTIVE);
+	CalculateRespawnTime(spawner);
+endfunction
+
+function KillBoss(spawner)
+	var childSerial := GetObjProperty(spawner, "ChildSerial");
+	if (childSerial && childSerial != "Empty")
+		var boss := SystemFindObjectBySerial(childSerial);
+		if (boss)
+			ApplyRawDamage(boss, GetVital(boss, HITS) + 3);
+		endif
+	endif
+endfunction
+
+function CalculateRespawnTime(spawner)
+	var minDelay := CInt(GetObjProperty(spawner, "MinDelay"));
+	var maxDelay := CInt(GetObjProperty(spawner, "MaxDelay"));
+
+	// Use defaults if missing
+	if (minDelay == error || !minDelay)
+		minDelay := 60;
+	endif
+
+	if (maxDelay == error || !maxDelay)
+		maxDelay := 120;
+	endif
+
+	// Ensure maxDelay is at least equal to minDelay
+	if (maxDelay < minDelay)
+		maxDelay := minDelay;
+	endif
+
+	// Calculate random delay - FIX: adding +1 to include upper bound
+	var delay;
+	if (minDelay == maxDelay)
+		delay := minDelay;
+	else
+		delay := RandomInt(maxDelay - minDelay + 1) + minDelay;
+	endif
+
+	// Store both a respawn timestamp and the queue value
+	var respawnTime := ReadGameClock() + (delay * 60);
+	SetObjProperty(spawner, "RespawnTime", respawnTime);
+	SetObjProperty(spawner, "SpawnQueue", delay);
+
+	return delay;
+endfunction

@@ -1,0 +1,33 @@
+// Author: Deiro || Rafael Santos
+
+include ":gumps:autoClose";
+include ":gumps:epicGumps";
+include ":gumps:dropDownGump";
+
+program DropDownGump(parametros)
+	var quem := parametros[1];
+	var pidPai := parametros[2];
+	var objetoDropDown := parametros[3];
+	var retonoPai := 0;
+
+	if (!objetoDropDown)
+		return 1;
+	endif
+
+	Sleepms(200);
+	var retornoDropDown := 1;
+	while (GetProcess(pidPai) && retornoDropDown)
+
+		while (retornoDropDown)
+			var gump := MontaDropDownGump(objetoDropDown.PegaX(), objetoDropDown.PegaY(), objetoDropDown.PegaLargura(),
+										   objetoDropDown.PegaItens(), objetoDropDown.CalculaIdOpcaoInicial());
+			retornoDropDown := SendDialogGump(quem, gump.layout, gump.data, gump.base.x, gump.base.y, 0,
+											   objetoDropDown.idBottao);
+
+			if (retornoDropDown[0])
+				return GFCloseGump(quem, pidPai, retornoDropDown[0]);
+			endif
+		endwhile
+		SleepMS(5);
+	endwhile
+endprogram

@@ -1,0 +1,41 @@
+use uo;
+
+include "include/say";
+include ":tn:cooldown";
+include ":spells:tnmagery";
+include "include/encantarObjeto";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program SpellScript(params)
+	var who := MobileWrapper(params[1]);
+	var use_on := params[2];
+	params := 0; // No longer needed
+
+	Message("Qual item deseja encantar?", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+
+	if (!use_on)
+		return;
+	endif
+
+	if (use_on.amount > 10 && IsAmmunition(use_on))
+		Message("Você não pode encantar pilhas de munição com mais de 10 unidades.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return;
+	endif
+
+	// Bonus em duas escalas — armor virou % no redesign, mas weapon/ammo
+	// continuam aplicando dano elemental flat (escala legacy intocada).
+	// Domínio Vital aplica o mesmo multiplicador (×1.4) nas duas escalas.
+	var arcana := CInt(who.GetSkill(ARCANA));
+	var bonusFlat := CInt(arcana * 0.05);  // weapon/ammo flat damage (max +5, +7 com DV)
+	var bonusPct := CInt(arcana / 2);      // armor % reduction (max 50, 70 com DV)
+
+	if (who.HasAbility(ABILITY_ID::DOMINIO_VITAL))
+		bonusFlat := CInt(bonusFlat * 1.4);
+		bonusPct := CInt(bonusPct * 1.4);
+	endif
+
+	setBonus(who, use_on, bonusFlat, bonusPct);
+
+	return 1;
+endprogram

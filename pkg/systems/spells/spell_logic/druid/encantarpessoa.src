@@ -1,0 +1,74 @@
+include "include/epicCombatUtils";
+include "include/say";
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+include "include/epicNPCUtils";
+include ":charactercreation:resists";
+
+include "include/sysEvent";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
+
+	params := 0;
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Voce so pode encantar criaturas vivas.", SSM_FAIL);
+		return;
+	endif
+
+	if (targ == who)
+		SendSysMessageEx(who, "Voce nao pode encantar a si mesmo.", SSM_FAIL);
+		return;
+	endif
+
+	if (!targ.acctname && !targ.isHumanoidBrain())
+		Message("Voce so consegue encantar humanoides").SendSys(who);
+		return;
+	endif
+
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var bonus := epicWisdomPathBonus(who);
+
+	if (CheckResist(targ, WILL, diff, -bonus) || isTrueBoss(targ))
+		SendSysMessageEx(who, "Você nota que o alvo não foi afetado.", SSM_FAIL);
+		SendSysMessageEx(targ, "Você resistiu a magia.", SSM_INFO);
+		return;
+	endif
+
+	var duration := cint(AP_GetSkill(who, NATURE) / 5);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
+		duration := Cint(duration * 1.5);
+	endif
+
+	SC_HandleSound(who, targ, SFX_SPELL_TELEKINESIS);
+	PlayObjectCenteredEffect(targ, FX_HIPNOSYS, 10, 10);
+
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	var opts := struct{};
+	opts.+properties := dictionary{
+		"charmed_by" -> who.serial,
+		"charmed_cannot_attack" -> who.serial
+	};
+	opts.+buff_category := "mind_control";
+	opts.+displayname := "Encantar Pessoa";
+	opts.+desc := $"Encantado por {who.name}";
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+
+	SendSysMessageEx(targ, "Você foi encantado por " + who.name + " e não consegue atacá-lo.", SSM_INFO);
+	SendSysMessageEx(who, "Você encantou " + targ.name + ".", SSM_INFO);
+
+	return 1;
+endprogram

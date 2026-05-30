@@ -1,0 +1,146 @@
+
+use uo;
+
+// Comando GM: cria uma bolsa com 1 unidade de cada cabeca tratada (curada)
+// Tratadas sao o resultado de curar raws no curtidor — usadas como material na carpintaria para fabricar trofeus
+program criar_cabecas_intactas(who)
+
+	var intactas := array{
+		// === CABEÇAS ANIMAIS ===
+		0xd1f1,  // cabecaboi (tratada)
+		0xd1f2,  // cabecaporco (tratada)
+		0xd1f3,  // cabecamorsa (tratada)
+		0xd1f4,  // cabecaalce (tratada)
+		0xd1f5,  // cabecacervo (tratada)
+		0xd1e7,  // CabecaAlce4 (tratada)
+		0xd1e3,  // CabecaTouro (tratada)
+		0xd1e2,  // CabecaGrandeTouro (tratada)
+		0xd1e1,  // craniocomchifre (tratada)
+		0xd1ca,  // CabecaLhama (tratada)
+		0xd1cd,  // CabecaOstard (tratada)
+
+		// === URSOS ===
+		0xd1be,  // bearhead (tratada)
+		0xd1bf,  // brownbearhead (tratada)
+		0xd1e4,  // CabecaUrsoNegro (tratada)
+		0xd1e6,  // CabecaUrsoPolar1 (tratada)
+
+		// === FELINOS ===
+		0xd1dd,  // CabecaLeao (tratada)
+		0xd1dc,  // CabecaLeaoGigante (tratada)
+		0xd1de,  // CabecaTigreDenteSabre (tratada)
+		0xd1c7,  // CabecaTigre (tratada)
+		0xd1df,  // CabecaOnca (tratada)
+		0xd1f8,  // cabecadefelino (tratada)
+
+		// === CANINOS / SÍMIOS ===
+		0xd1f6,  // cabecadegorila (tratada)
+		0xd1e5,  // CabecaGorilaGigante (tratada)
+		0xd1f9,  // cabecadelobodasneves (tratada)
+
+		// === RÉPTEIS / LAGARTOS ===
+		0xd1f7,  // cabecadelagarto (tratada)
+		0xd1e0,  // CabecaLagartoDeserto2 (tratada)
+		0xd1ce,  // CabecaDinossauro (tratada)
+		0xd1d1,  // CranioDinossauro (tratada)
+		0xd1d0,  // CabecaMamute (tratada)
+		0xd21e,  // cabecatriceratops (tratada)
+		0xd21f,  // cabecalagartodefogo (tratada)
+		0xd220,  // cabecalagartodigelo (tratada)
+		0xd221,  // cabecalagartodeserto2 (tratada)
+
+		// === DRAGÕES ===
+		0xd1e8,  // CabecaDragao (tratada)
+		0xd1e9,  // CabecaDragaoAzul (tratada)
+		0xd1eb,  // cabecadedragaovermelho (tratada)
+		0xd1ef,  // cabecadedragaobranco (tratada)
+		0xd1f0,  // cabecadedragaoverde (tratada)
+		0xd1c2,  // CabecaDragaoNegro (tratada)
+		0xd1ee,  // cabecadedrake (tratada)
+		0xd1c3,  // CranioEsqueletoGrandeDragao (tratada)
+		0xd1c4,  // CranioEsqueleticoCavalo (tratada)
+		0xd1d2,  // CranioDragao1 (tratada)
+		0xd219,  // cabecadragao6 (tratada)
+		0xd21a,  // cabecadragao9 (tratada)
+		0xd21b,  // cabecadragao10 (tratada)
+		0xd21c,  // cabecadragao11 (tratada)
+		0xd21d,  // cabecadragao12 (tratada)
+
+		// === HUMANOIDES / GOBLINOIDES ===
+		0xd1fa,  // cabecadegoblin (tratada)
+		0xd1db,  // CabecaHomemLagarto (tratada)
+		0xd1fc,  // cabecademinotauro (tratada)
+		0xd1da,  // CabecaCiclops (tratada)
+		0xd1fb,  // cabecadegigante (tratada)
+		0xd1d9,  // CabecaGigante (tratada)
+		0xd1c6,  // CabecaOrc (tratada)
+		0xd1c5,  // CabecaTitan (tratada)
+		0xd1cf,  // CabecaGargula (tratada)
+		0xd1cb,  // BustoHarpia (tratada)
+		0xd20d,  // humanears (tratada)
+
+		// === DEMÔNIOS ===
+		0xd1d5,  // CabecaDemonio (tratada)
+		0xd20e,  // cabecademonio3 (tratada)
+		0xd210,  // cabecademonio1 (tratada)
+		0xd212,  // cabecademonionegro (tratada)
+		0xd213,  // cabecagrandedemonio (tratada)
+		0xd214,  // cabecademoniochifrudo (tratada)
+		0xd215,  // cabecademoniodasprofundezas (tratada)
+		0xd20f,  // cabecademonioparede (tratada)
+		0xd211,  // cabecademonioparede1 (tratada)
+
+		// === GIGANTES ===
+		0xd216,  // CabecaGiganteGelo (tratada)
+		0xd217,  // cabecagigantedeserto2 (tratada)
+		0xd218,  // cabecagigantegelocombatente (tratada)
+		0xd1b7,  // cabecadeogro (tratada)
+		0xd222,  // cabecadetroll (tratada)
+
+		// === MONSTROS ESPECIAIS ===
+		0xd1d4,  // CabecaMindflayer (tratada)
+		0xd1d3,  // GrandeRinoceronteDemoniaco (tratada)
+		0xd1c8,  // CabecaMonstroFome (tratada)
+		0xd1c9,  // CabecaMonstroPulante (tratada)
+		0xd1d6,  // CabecaOvelhaLouca (tratada)
+		0xd1d8,  // CabecaCachorroGigante (tratada)
+		0xd1cc,  // CabecaCavaloDemoniaco (tratada)
+		0xd1ea,  // CabecaTubarao (tratada)
+		0xd1c1,  // cabecaderato (tratada)
+		0xd1c0,  // pigshead (tratada)
+		0xd1ed,  // unicornhead (tratada)
+
+		// === CHIFRES ===
+		0xd20b,  // chifre (tratada)
+		0xd206,  // chifre1 (tratada)
+		0xd207,  // chifre2 (tratada)
+		0xd208,  // chifre3 (tratada)
+		0xd209,  // chifre4 (tratada)
+		0xd20a,  // ChifreAlce (tratada)
+
+		// === AVES ===
+		0xd20c,  // corpodeaguia (tratada)
+
+		// === PEIXES CURADOS ===
+		0xd1fd,  // peixeazul (tratada)
+		0xd1fe,  // lambari (tratada)
+		0xd1ff,  // robalo (tratada)
+		0xd200,  // anchova (tratada)
+		0xd201,  // sardinha (tratada)
+		0xd202,  // peixegalo (tratada)
+		0xd203,  // atum (tratada)
+		0xd204,  // dourado (tratada)
+		0xd205,  // perca (tratada)
+		0xd223   // perca variante (tratada)
+	};
+
+	var bolsa := CreateItemInBackpack(who, "backpack", 1);
+	bolsa.color := 1167;
+	bolsa.name := "Cabecas Tratadas (curadas)";
+
+	foreach coisa in intactas
+		CreateItemInContainer(bolsa, coisa, 1);
+	endforeach
+
+	SendSysMessage(who, "Bolsa criada com " + intactas.size() + " cabecas tratadas.");
+endprogram

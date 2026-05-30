@@ -1,0 +1,88 @@
+use uo;
+use os;
+
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include ":sysbook:include/sealedBooks";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":DiscordWebhook:outbound";
+include ":gumps:/include/epicGumps";
+include ":merchants:cambio";
+
+program BrainNerve(params)
+	var npc := params[1];
+	var event := params[3];
+	params := 0;
+
+	while (npc)
+		if (event)
+			case (event.type)
+				SYSEVENT_ITEM_GIVEN: ItemGivenEvent(npc, event); break;
+				default:             break;
+			endcase
+			event := 0;
+		endif
+		sleepms(5);
+		event := wait_for_event(900000);
+	endwhile
+endprogram
+
+function ItemGivenEvent(npc, byref event)
+	var item := event.item;
+	var source := event.source;
+	const PRECO_COPIA := 5;
+
+	if (item.IsBook() && GetObjProperty(item, "Selado") == "sim")
+		var gump_params := array{ BORDER_GOLDEN, NO_CLOSABLE };
+		var gump := GFECreateGump("Biblioteca Real", 400, 200, gump_params);
+
+		GFTextMid(gump, 10, 80, 380, 2100, "Deseja pagar " + PRECO_COPIA + " moedas para iniciar");
+		GFTextMid(gump, 10, 100, 380, 2100, "o processo de cópia e distribucão do livro?");
+
+		GFAddButton(gump, 100, 140, 4002, 4004, GF_CLOSE_BTN, 1);
+		GFTextLine(gump, 135, 140, 2100, "Pagar " + PRECO_COPIA + " moedas");
+
+		GFAddButton(gump, 250, 140, 4005, 4007, GF_CLOSE_BTN, 2);
+		GFTextLine(gump, 285, 140, 2100, "Cancelar");
+
+		var input := GFSendGump(source, gump);
+
+		if (input[0] == 1)
+			if (!EfetuaDebito(source, PRECO_COPIA))
+				SendSysMessage(source, "Voce nao tem moedas suficientes!", color := 33);
+				return;
+			endif
+
+			var account_name := source.acctname;
+			SetObjProperty(item, "status", "aguardando_aprovacao");
+			var sealed_serial := SealBookToDatafile(item, account_name);
+
+			if (sealed_serial)
+				SendSysMessage(source, "O bibliotecario aceita as moedas e envia o livro para aprovacao.",
+								color := 66);
+				AI_Speak(npc, "Excelente! O livro sera enviado para aprovacao.", SPEAK_TEXTTYPE_DEFAULT);
+
+				// Preparar dados comuns
+				var book_title := item.GetTitle() ? item.GetTitle() : "Sem título";
+				var book_author := item.GetAuthor() ? item.GetAuthor() : "Autor Desconhecido";
+
+				// Mensagem RP - Quando o bibliotecário recebe
+				var message1 := "**AVISO!** O Bibliotecário chefe acaba de receber um livro que foi enviado para os copistas. "
+																													 + "O pagamento foi feito e em breve ele será distribuído.";
+
+				// Mensagem de aguardando aprovação
+				var message2 := "**LIVRO AGUARDANDO APROVAÇÃO** -> *" + source.name + "* conta [" + source.acctname + "] enviou o livro **'"
+															+ book_title + "'** escrito por *" + book_author + "*";
+
+				// Enviar apenas as mensagens iniciais
+				PresetDiscordMessage(message1, "livros_log_rp");
+				PresetDiscordMessage(message2, "livros_log");
+
+				DestroyItem(item);
+			endif
+		endif
+	else
+		SendSysMessage(source, "Só posso aceitar livros que estejam selados!", color := 33);
+	endif
+endfunction

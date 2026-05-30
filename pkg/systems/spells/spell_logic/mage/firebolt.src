@@ -1,0 +1,67 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include ":spells:Controller/SC_Damage";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":destroyable:include/destroyItem";
+include ":propagacao:include/efeitosIncendiarios";
+include ":charactercreation:resists";
+
+program cast_firebolt(params)
+	var caster := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	var spell_circle := CInt(spell.Circle[1]);
+	var spell_school := spell.School;
+	params := 0; // No longer needed
+
+	SendSysMessage(caster, "Selecione o alvo.");
+	if (!targ.IsA(POLCLASS_MOBILE))
+
+		var isDisparo := TentaCriarFagulhaIncendiaria(caster, targ);
+		if (!isDisparo)
+			SendSysMessage(caster, "Alvo invalido  ou fora de visão.");
+			return 0;
+		endif
+	endif
+
+	if (!targ)
+		SendSysMessageEx(caster, "Cancelado", SSM_FAIL);
+		return 0;
+	endif
+
+	LaunchProjectile(caster, targ, spell_circle, spell_school, CInt(spell.id));
+endprogram
+
+function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
+	PlaySoundEffect(caster, SFX_MAGIC_ARROW);
+	if (GetObjProperty(caster, "chardata").magia == "Druid")
+		PlayObjectCenteredEffect(targ, 0x548F, 80, 60);
+	else
+		var projSpeed := 13;
+		if (spellId == 6)
+			projSpeed := 255;
+		endif
+		PlayMovingEffectXYZHued(caster, targ, FX_MAGIC_ARROW, projSpeed, 1643, 0);
+	endif
+	var dmg := RandomDiceRoll("1d4");
+
+	// REFLEX save halves the bolt's damage.
+	if (targ.IsA(POLCLASS_MOBILE))
+		var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+		var bonus := epicWisdomPathBonus(caster);
+		if (CheckResist(targ, REFLEXES, diff, -bonus))
+			dmg := Cint(dmg / 2);
+			SendSysMessageEx(targ, "Voce desvia parcialmente do projetil de fogo.", SSM_INFO);
+		endif
+	endif
+
+	SC_DealDamage(caster, targ, spellId, cint(dmg), DAMAGE_TYPE::FIRE);
+endfunction

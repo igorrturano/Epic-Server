@@ -1,0 +1,157 @@
+use uo;
+use util;
+
+include ":attributes:attributes";
+include "include/epicCombatUtils";
+include "include/epicConstants";
+include "include/client";
+include ":message:model/Message";
+include ":death:death";
+include ":spells:Controller/SC_Damage";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
+
+program spell_bloodbath(params)
+    var who := params[1];
+    var info := params[2];
+    var spell := params[3];
+    SendSysMessageEx(who, "Você invoca um Banho de Sangue!", SSM_INFO);
+    if (who.gender == 0)
+        // PlaySoundEffect(who, 0x697); // blood laughter
+    endif
+
+    var shaman_souls := CInt(GetObjProperty(who, "shaman_souls"));
+    var nature := AP_GetSkill(who, NATURE);
+    var hp_threshold := CInt((nature / 2) + (shaman_souls * 2));
+    
+    // Get all mobiles nearby except pets and party
+    var mobiles := listAllMobilesNearbyButPetsAndParty(who, 8, who);
+
+    // First pass: identify eligible creatures and store their data
+    var diff := handleSpellResistDiffForSpecialists(who, spell.School);
+    var bonus := epicWisdomPathBonus(who);
+    var victims := array{};
+    foreach mobile in mobiles
+        var is_eligible := 0;
+
+        // Check HP threshold
+        if (AP_GetVital(mobile, "Hits") < hp_threshold)
+            // If it's a player, also check DP
+            if (mobile.acctname)
+                if (AP_GetVital(mobile, "DP") < 10)
+                    is_eligible := 1;
+                endif
+            else
+                // NPCs only need HP check
+                is_eligible := 1;
+            endif
+        endif
+
+        // FORTITUDE save negates the ritual entirely for this victim — no
+        // paralyze, no execution. Toughing it out at the edge of death.
+        if (is_eligible && CheckResist(mobile, FORTITUDE, diff, -bonus))
+            SendSysMessageEx(mobile, "Voce resiste ao chamado do Banho de Sangue.", SSM_INFO);
+            is_eligible := 0;
+        endif
+
+        if (is_eligible)
+            // Store victim data (position, items, reference)
+            var victim_data := struct{
+                mobile := mobile,
+                x := mobile.x,
+                y := mobile.y,
+                z := mobile.z,
+                realm := mobile.realm
+            };
+            victims.append(victim_data);
+
+            // Paralyze immediately
+            mobile.SetParalyzed(1);
+        endif
+    endforeach
+
+    PlayStationaryEffectEx(who.x, who.y, who.z-5, who.realm, FX_POISON_SKULL_MAGIC, 1, 35, 0, 2117);
+    foreach victim_data in victims
+        // PlayStationaryEffect(victim_data.x+1, victim_data.y+1, victim_data.z, 0xD139, 10, 35, 0, victim_data.realm);
+        // PlayStationaryEffectEx(victim_data.x+1, victim_data.y+1, victim_data.z, victim_data.realm, 0xD139, 125, 35, 0, 2117);
+        PrintTextAbove(victim_data.mobile, "AAAAAHH!!");
+    endforeach
+
+    // Dramatic pause before the explosion
+    sleepms(2650);
+
+    // Fourth pass: Kill creatures and let loot generate, then scatter items
+    var kills := 0;
+    var corpse_data := array{};
+
+    foreach victim_data in victims
+        var mobile := victim_data.mobile;
+
+        // Kill the creature normally to generate loot (DON'T use GuardKill - it destroys loot!).
+        // SC_DealDamage routes through DamageFLS so loot generation works AND the shaman gets
+        // proper AFTER_DAMAGE / ON_KILL hook credit for each soul harvested.
+        SC_DealDamage(who, mobile, CInt(spell.id), hp_threshold, DAMAGE_TYPE::FORCED);
+    endforeach
+
+    // Wait for death processing to complete
+    sleepms(500);
+
+    // Fifth pass: Find corpses, change graphic, and play explosion effect
+    foreach victim_data in victims
+        // Find the corpse at the victim's location (works for both humanoids and monsters)
+        var corpse := 0;
+        foreach item in ListItemsNearLocation(victim_data.x, victim_data.y, victim_data.z, 2, victim_data.realm)
+            if (item.isA(POLCLASS_CORPSE))
+                var item_pos := struct{ x := item.x, y := item.y };
+                var victim_pos := struct{ x := victim_data.x, y := victim_data.y };
+                if ((item_pos.x == victim_pos.x) && (item_pos.y == victim_pos.y))
+                    corpse := item;
+                    break;
+                endif
+            endif
+        endforeach
+
+        if (corpse)
+            // Play explosion effect only for creatures that actually died
+            PlayStationaryEffect(victim_data.x, victim_data.y, victim_data.z, 0xE2A4 , 125, 10, 0, victim_data.realm);
+            corpse.graphic := 0xC9DE;
+            kills := kills + 1;
+        endif
+    endforeach
+
+
+    sleepms(700);
+
+    // Sixth pass: Slowly spawn blood pools - gore aftermath
+    var max_blood := 0;
+    foreach victim_data in victims
+        var blood_count := RandomInt(3) + 2; // 2-4 blood pools per victim
+        if (blood_count > max_blood)
+            max_blood := blood_count;
+        endif
+    endforeach
+
+    // Grant shaman souls (done once at the end)
+    shaman_souls := shaman_souls + kills;
+    SetObjProperty(who, "shaman_souls", shaman_souls);
+    
+    if (kills > 0)
+        for blood_index := 1 to max_blood
+            foreach victim_data in victims
+                var blood_count := RandomInt(3) + 2;
+                if (blood_index <= blood_count)
+                    var x_offset := RandomInt(3) - 1;
+                    var y_offset := RandomInt(3) - 1;
+                    CreateItemAtLocation(victim_data.x + x_offset, victim_data.y + y_offset, victim_data.z, "blood", 1, victim_data.realm);
+                endif
+            endforeach
+            sleepms(1500); // Slow blood drip effect
+        endfor
+
+        Message("Você colheu " + (kills * 2) + " almas no Banho de Sangue!").SendSys(who);
+    else
+        Message("Nenhuma criatura estava fraca o suficiente.").SendSys(who);
+    endif
+    
+    return 1;
+endprogram

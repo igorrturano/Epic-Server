@@ -1,0 +1,64 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		SendSysMessageEx(who, "Escolha um alvo para detectar impurezas.", SSM_REQUEST);
+		targ := Target(who, TGTOPT_CHECK_LOS);
+	endif
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	// Visual and audio feedback
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_BLESS_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_BLESS);
+
+	PrintTextAbove(who, "*analisando impurezas*");
+
+	// Check if target is a mobile
+	if (targ.isa(POLCLASS_MOBILE))
+		var disease_system := GetObjProperty(targ, "Diseases_System");
+
+		if (disease_system && disease_system.diseases.Size() > 0)
+			SendSysMessageEx(who, "Voce detecta doencas em " + targ.name + ".", SSM_INFO);
+			SendSysMessageEx(who, "O alvo esta doente e precisa de cura.", SSM_INFO);
+
+			// Visual effect to indicate disease detected
+			PlayStationaryEffect(targ.x, targ.y, targ.z, 0x374A, 3, 3);
+		else
+			SendSysMessageEx(who, targ.name + " nao possui doencas.", SSM_INFO);
+		endif
+	// Check if target is an item
+	elseif (targ.isa(POLCLASS_ITEM))
+		var poison_info := GetObjProperty(targ, "poisonInfo");
+
+		if (poison_info)
+			SendSysMessageEx(who, "Voce detecta veneno neste item.", SSM_INFO);
+			SendSysMessageEx(who, "O item " + targ.desc + " contem veneno.", SSM_INFO);
+
+			// Visual effect to indicate poison detected
+			PlayStationaryEffect(targ.x, targ.y, targ.z, 0x374A, 3, 3);
+		else
+			SendSysMessageEx(who, "Este item nao contem veneno.", SSM_INFO);
+		endif
+	else
+		SendSysMessageEx(who, "Este nao e um alvo valido.", SSM_FAIL);
+		return;
+	endif
+
+	return 1;
+endprogram

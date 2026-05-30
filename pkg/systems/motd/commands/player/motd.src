@@ -1,0 +1,28 @@
+use uo;
+use os;
+
+include ":datafile:datafile";
+include ":motd:motd_settings";
+
+program MOTD(who, text)
+	if (text)
+		text := lower(text);
+		var data_file := DFOpenDataFile(":motd:settings", DF_CREATE);
+		var data_elem := DFFindElement(data_file, who.acctname, DF_CREATE);
+
+		if (text == "off")
+			MOTD_SetMode(data_elem, MOTD_MODE_OFF);
+			SendSysMessage(who, "Mensagens do Dia nao vai mais abrir ao logar.");
+		elseif (text == "on")
+			MOTD_SetMode(data_elem, MOTD_MODE_ALWAYS);
+			SendSysMessage(who, "Mensagens do Dia vai abrir sempre que voce logar.");
+		elseif (text == "novidade")
+			MOTD_SetMode(data_elem, MOTD_MODE_UNREAD);
+			SendSysMessage(who, "Mensagens do Dia vai abrir ao logar apenas quando houver novidade.");
+		else
+			SendSysMessage(who, "Syntax: .motd [on | off | novidade]");
+		endif
+	else
+		Start_Script(":motd:motd", who);
+	endif
+endprogram

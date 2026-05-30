@@ -1,0 +1,20 @@
+use cfgfile;
+use util;
+
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":crafting:include/fabricacaoComplexosGump";
+include ":crafting:craftingRepair";
+include ":crafting:toolWear";
+include ":itemutils:canAccess";
+include ":fls_core:fls_crafting";
+include "include/say";
+include ":keys:key";
+include ":crafting:craftingUtil";
+
+program use_TinkerTool(who, tool)
+
+	FabricaItensComplexos(who, "Tinkering");
+
+endprogram

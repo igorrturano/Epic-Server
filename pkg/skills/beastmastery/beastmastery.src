@@ -1,0 +1,34 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":debug:Controller/DebugController";
+include "include/say";
+
+// Beastmastery skill entry point. Path-rework Phase 4d/B1: this exists so
+// players have a way to exercise the Beastmastery skill and gain progression
+// before the full pet-command system is built.
+//
+// Today it's a practice routine: clicking the skill button runs a SkillCheck
+// at a moderate difficulty, gated by a short cooldown to prevent spam-gain.
+// When the war-pet command system lands (attack/kill/retreat), real combat
+// commands will replace this practice loop and run SkillCheck per command.
+
+const BEASTMASTERY_DIFFICULTY := 30;
+const BEASTMASTERY_COOLDOWN_SEC := 8;
+
+program BeastmasterySkill(who)
+    var now := ReadGameClock();
+    var ready_at := CInt(GetObjProperty(who, "#beastmastery_cd"));
+    if (ready_at > now)
+        SendSysMessage(who, "Você precisa esperar um momento antes de praticar novamente.");
+        DebugMsg(who, DEBUG_UP, Message("Beastmastery em cooldown (" + CStr(ready_at - now) + "s restantes)."));
+        return;
+    endif
+    SetObjProperty(who, "#beastmastery_cd", now + BEASTMASTERY_COOLDOWN_SEC);
+
+    PrintTextAbove(who, "*pratica comandos de guerra*", 3, 1153);
+    DebugMsg(who, DEBUG_UP, Message("Beastmastery: praticando comandos de guerra (dif " + CStr(BEASTMASTERY_DIFFICULTY) + ")."));
+    SkillCheck(who, "Beastmastery", BEASTMASTERY_DIFFICULTY);
+endprogram

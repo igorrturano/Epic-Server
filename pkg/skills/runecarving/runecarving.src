@@ -1,0 +1,160 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":runecarving:runeCarving";
+// include "include/client";
+// include "include/say";
+include ":gumps:yesNo";
+include ":tn:tngumps";
+include ":itemutils:itemtypes";
+// include ":wrappers:Objects/Model/MobileWrapper";
+// include ":abilities:models/Ability";
+
+program runecarving(who, chisel)
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if (!Accessible(who, chisel))
+		return;
+	endif
+	var chardata := GetObjProperty(who, "chardata");
+	var mob := MobileWrapper(who);
+	if (chardata.magia != "Sacerdote"
+	    && !mob.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
+	    && !mob.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO)
+	    && !(who.cmdlevel > 1))
+		SendSysMessageEx(who, "Apenas Acolitos, Paladinos e Cacadores de Demonios dominam o conhecimento para confeccao de runas.",
+				   SSM_FAIL);
+		return 0;
+	endif
+
+	// Check if character has Theology skill (priest only)
+	var theology := CInt(AP_GetSkill(who, THEOLOGY));
+	if (theology < 20)
+		SendSysMessageEx(who, "Você não possui conhecimento divino para entalhar runas.", SSM_FAIL);
+		return;
+	endif
+
+	// Ask for the gem to carve
+	SendSysMessageEx(who, "Qual gema deseja entalhar?", SSM_REQUEST);
+	var gem := Target(who);
+
+	if (!gem)
+		SendSysMessageEx(who, "Cancelado.", SSM_INFO);
+		return;
+	endif
+
+	if (!IsAGem(gem.objtype))
+		SendSysMessageEx(who, "Isto não é uma gema.", SSM_FAIL);
+		return;
+	endif
+
+	if (gem.container != who.backpack)
+		SendSysMessageEx(who, "A gema precisa estar na sua mochila.", SSM_FAIL);
+		return;
+	endif
+
+	var gemtype := gem.objtype;
+
+	// Display rune type selection menu
+	var rune_choices := array{
+		RuneType::PROTECTION,
+		RuneType::FIRE_RESIST,
+		RuneType::COLD_RESIST,
+		RuneType::ENERGY_RESIST,
+		RuneType::POISON_RESIST,
+		RuneType::HOLY_WEAPON
+	};
+
+	var choice := RadioGump(who, 220, 230, "Escolha o tipo de runa:", rune_choices);
+
+	if (!choice)
+		SendSysMessageEx(who, "Cancelado.", SSM_INFO);
+		return;
+	endif
+
+	var runeType := choice; // choice will be 1-6, matching our RUNE_* constants
+
+	// HOLY_WEAPON e a unica runa de ARMA — mantida na escala flat legacy
+	// porque weapon damage nao foi convertido para % no redesign atual.
+	// Demais runas (de armor) usam a escala % nova: theology/5 + gem 5.
+	var baseBonus, materialBonus;
+	if (runeType == RuneType::HOLY_WEAPON)
+		baseBonus := CInt(theology / 20);  // legacy: max 5 flat
+		materialBonus := getGemBonusFlat(gemtype, runeType);  // legacy: +1 flat se matching
+	else
+		baseBonus := CInt(theology / 5);   // novo %: max 20%
+		materialBonus := getGemBonus(gemtype, runeType);  // novo %: +5% se matching
+	endif
+
+	if (baseBonus < 1)
+		baseBonus := 1; // fallback — theology >= 20 gates above
+	endif
+
+	var totalBonus := baseBonus + materialBonus;
+
+
+
+	// Start carving process
+	SendSysMessageEx(who, "Você começa a entalhar a runa na gema...", SSM_INFO);
+	var x := who.x;
+	var y := who.y;
+
+	// Calculate carving time
+	var carvingTime := CInt(theology / 20);
+	if (carvingTime < 2)
+		carvingTime := 2; // Minimum 2 seconds
+	endif
+
+	for i := 1 to carvingTime
+		if (!gem || gem.container != who.backpack || who.x != x || who.y != y)
+			SendSysMessageEx(who, "Você parou de entalhar.", SSM_FAIL);
+			return;
+		endif
+		PerformAction(who, 0xA);
+		PlaySoundEffect(who, 0x202);
+		Sleep(2);
+	endfor
+
+	SendSysMessageEx(who, "Símbolos divinos começam a brilhar na gema.", SSM_INFO);
+
+	// Create the carved rune
+	var runeObjtype := getRuneObjtype(runeType);
+	if (!runeObjtype)
+		SendSysMessageEx(who, "Erro ao criar a runa.", SSM_FAIL);
+		return;
+	endif
+
+	var carvedRune := CreateItemInBackpack(who, runeObjtype, 1);
+	carvedRune.graphic := gem.graphic; 
+	if (!carvedRune)
+		SendSysMessageEx(who, "Não há espaço na mochila.", SSM_FAIL);
+		return;
+	endif
+
+	// Set properties on the carved rune
+	SetObjProperty(carvedRune, "runetype", runeType);
+	SetObjProperty(carvedRune, "runebonus", totalBonus);
+	SetObjProperty(carvedRune, "gemtype", gemtype);
+	SetObjProperty(carvedRune, "charges", CInt(theology)); // Charges based on theology
+	SetObjProperty(carvedRune, "carvedby", who.serial);
+
+	var equip := dictionary;
+	equip.sacred := 1;
+	SetObjProperty(carvedRune, "equip", equip);
+
+	// Set the name to include the gem type
+	SetName(carvedRune, "Runa de " + runeType + " (" + gem.name + ")");
+
+	// Destroy the raw gem
+	SubtractAmount(gem, 1);
+
+	var sound := getRuneSound(runeType);
+	PlaySoundEffect(who, sound);
+	PlayObjectCenteredEffect(who, FX_MARK_EFFECT, 7, 16);
+
+	return 1;
+endprogram
+

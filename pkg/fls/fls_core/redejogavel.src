@@ -1,0 +1,89 @@
+use uo;
+use os;
+
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include ":brainAI:commonFunctions";
+include ":attributes:attributes";
+include "include/shapes";
+include "include/client";
+include "include/sounds";
+include "include/facings";
+include "include/epicNPCUtils";
+include ":timedScripts:timedScripts";
+
+program jogarede(who, rede)
+
+	if (who.hidden)
+		SendSysMessageEx(who, "Voce nao pode fazer isso escondido.", SSM_FAIL);
+		return 0;
+	elseif (GetEquipmentByLayer(who, 0x19))
+		SendSysMessageEx(who, "Voce nao consegue fazer isso montado.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (AP_GetVital(who, "Stamina") < 10)
+		SendSysMessageEx(who, "Voce esta cansado demais para jogar uma rede", SSM_FAIL);
+		return 0;
+	endif
+
+	var alvo;
+
+	SendSysMessageEx(who, "No que deseja arremesar a rede?", SSM_REQUEST);
+	alvo := Target(who);
+
+	if (who.npctemplate)
+		alvo := GetRandomNearbyHostile(who);
+	endif
+
+	if (alvo == who)
+		SendSysMessageEx(who, "Voce acha que talvez isso nao seja uma boa ideia.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (alvo in EnumerateItemsInContainer(who.backpack))
+		SendSysMessageEx(who, "Voce nao pode jogar a rede nisso.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!CheckLosAt(who, alvo.x, alvo.y, alvo.z))
+		SendSysMessageEx(who, "Voce nao consegue ver o alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (GetObjProperty(alvo, "corda"))
+		SendSysMessage(who, "Este alvo ja esta amarrado!");
+		return;
+	endif
+
+	AP_ConsumeVital(who, "Stamina", 10);
+
+	PrintTextAbove(who, "*Arremessa uma rede em " + alvo.name + "*");
+	PlaySoundEffect(who, 0x51C);
+	PlayMovingEffect(who, alvo, rede, 10);
+
+	if (alvo.npctemplate)
+		var preso1 := CreateItemAtLocation(alvo.x, alvo.y, alvo.z + 1, 0x1EA4, alvo.realm);
+		PrintTextAbove(alvo, "*Preso*");
+		TS_StartTimer(alvo, "paralysis", 8);
+		sleep(4);
+		PrintTextAbove(alvo, "*Começa a se soltar*");
+		sleep(4);
+		DestroyItem(preso1);
+		var redeleftovers := CreateItemAtLocation(alvo.x, alvo.y, alvo.z + 1, 0x1EA3, alvo.realm);
+		redeleftovers.movable := 1;
+		DestroyItem(rede);
+		return 1;
+	else
+		var preso1 := CreateItemAtLocation(alvo.x, alvo.y, alvo.z + 1, 0x1EA4, alvo.realm);
+		PrintTextAbove(alvo, "*Preso*");
+		SetObjProperty(alvo, "corda", 1);
+		TS_StartTimer(alvo, "paralysis", 6);
+		sleep(6);
+		DestroyItem(preso1);
+		EraseObjProperty(alvo, "corda");
+		DestroyItem(rede);
+		return 1;
+	endif
+
+endprogram

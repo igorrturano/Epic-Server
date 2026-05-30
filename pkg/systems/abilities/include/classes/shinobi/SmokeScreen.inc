@@ -1,0 +1,88 @@
+use uo;
+use os;
+
+include ":abilities:models/CombatAbility";
+include ":message:model/Message";
+include ":attributes:attributes";
+include "include/client";
+
+/**
+ * Cortina de Fumaca (Smoke Screen) - ABILITY_ID::SMOKE_SCREEN (1302)
+ *
+ * Passive: Doubles stealth steps, removes distance penalty for detection.
+ * Active (OnUse): Creates a smoke cloud that hides all party members.
+ *   Only the ninja can attack without revealing while inside the smoke.
+ *   The cloud persists for the full duration regardless of the ninja's
+ *   position; walking back into it re-applies stealth automatically.
+ *   Area = Sneak/10 tiles, Duration = Sneak/5 seconds.
+ */
+class SmokeScreen(CombatAbility)
+
+	function SmokeScreen(this)
+		Super(ABILITY_ID::SMOKE_SCREEN);
+		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
+	endfunction
+
+	function ExecuteOn(this, mobile)
+		if (!this)
+			return false;
+		endif
+		var who := mobile.GetObjRef();
+		var sneak := CInt(mobile.GetSkill(SNEAK));
+
+		var area := CInt(sneak / 10);
+		if (area < 1)
+			area := 1;
+		endif
+
+		var duration := CInt(sneak / 5);
+		if (duration < 1)
+			duration := 1;
+		endif
+
+		var smoke_expires := ReadGameClock() + duration;
+
+		// Animation
+		PerformAction(who, HUMAN_ANIM::ATTACK_2HAND_BLUNT);
+		PlaySoundEffect(who, 0x533);
+		Sleep(1);
+		// Set smoke protection on the ninja (only inside smoke area)
+		PlayStationaryEffect(who.x, who.y, who.z, FX_FUMACA_NOVA, 0, 15, 0, who.realm); // Smoke visual effect
+		SetObjProperty(
+			who,
+			"#smoke_state",
+			struct{
+				"expires" := smoke_expires,
+				"x" := who.x,
+				"y" := who.y,
+				"radius" := area
+			}
+		);
+
+		mobile.ApplySmokeProtection();
+		Message("*Lanca uma bomba de fumaca!*").SendEmote(who);
+
+		// Hide party members in range (they only get hidden, reveal normally on attack)
+		if (who.party)
+			foreach member in (who.party.members)
+				if (member.serial != who.serial && Distance(who, member) <= area)
+					member.hidden := 1;
+					Message("*Escondido pela fumaca*").SendAbove(member);
+				endif
+			endforeach
+		endif
+
+		DebugMsg(
+			who,
+			DEBUG_HAB,
+			Message($"[SMOKE_SCREEN] Area: {area}, Duracao: {duration}s", Color(SYSTEM_COLOR::SUCCESS))
+		);
+
+		// Visual loop runs in a separate process so ExecuteOn returns immediately
+		// (NPC brains can't afford to block here for `duration` seconds).
+		Start_Script(":abilities:scripts/Ativa/OnUse/smokescreen_visual", {who, area, smoke_expires});
+
+		return true;
+	endfunction
+
+endclass

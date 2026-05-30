@@ -1,0 +1,68 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include "include/tileEffects";
+include ":spells:Controller/SpellController";
+include ":spells:Controller/SpellEffectBuilder";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program SpellScript(params)
+	var caster := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(caster, "Isto não pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	// Recast refreshes the swarm (instance_id mismatch makes the old tick
+	// driver exit, no double-tick). Damage per tick is sampled at cast time
+	// so the new swarm may roll harder or weaker than the prior one.
+	var nature := AP_GetSkill(caster, NATURE);
+
+	var total_ticks := CInt(nature / 10);
+	if (total_ticks < 4)
+		total_ticks := 4;
+	elseif (total_ticks > 10)
+		total_ticks := 10;
+	endif
+
+	var damage_per_tick := CInt(nature / 20) + RandomDiceRoll("1d4");
+	var tick_interval := 2;
+	var duration := total_ticks * tick_interval;
+
+	SendSysMessageEx(caster, "Um enxame de insetos ataca " + targ.name + "!", SSM_INFO);
+	SendSysMessageEx(targ, "Você está sendo atacado por um enxame de insetos!", SSM_FAIL);
+	PrintTextAbove(targ, "*Coberto por insetos*");
+	PlayMovingEffect(caster, targ, 0x91B, 20);
+
+	var opts := SpellEffectBuilder()
+		.SetCategory("insect_swarm")
+		.SetDisplayName("Enxame")
+		.SetDesc($"{damage_per_tick} dano / tick")
+		.SetTickInterval(tick_interval)
+		.SetTickDamage(struct{ amount := damage_per_tick, type := DAMAGE_TYPE::PIERCING })
+		.SetTickPresentation(TickPresentation()
+			.SetFx(FX_SWARM_3_MAGIC, 70, 50)
+			.SetSound(0x5CD)
+			.SetPeriodicEmote("Os insetos continuam a te morder!", 3, SSM_FAIL)
+			.SetFinalOverhead("*Os insetos se dispersam*")
+			.SetFinalEmote("O enxame finalmente se dispersa.", SSM_INFO))
+		.ToOpts();
+
+	SC_ApplyEffect(caster, targ, opts, duration, CInt(spell.id));
+
+	return 1;
+endprogram

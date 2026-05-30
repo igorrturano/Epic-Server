@@ -1,0 +1,359 @@
+use uo;
+use os;
+use polsys;
+use cfgfile;
+
+include ":commands:cmdhelp";
+include ":commands:create";
+include ":gumps:gumps_ex";
+include "/include/gms";
+include "/include/epicPropNames";
+include ":crafting:include/fabricacaoComplexos";
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Text";
+include ":gumpDesigner:Control/Button";
+
+// .createtier <item> [quantidade]
+// Busca o item pelo nome ou objtype e abre gump de seleção de material+tier.
+program createtier_textcmd(mobile, search_string)
+
+	var amount := 1;
+	var search_results := dictionary;
+	var page := 0;
+	var gump := 0;
+	var result := 0;
+
+	var split := SplitWords(search_string, " ", -1);
+	if (split.Size() == 1)
+		search_string := Trim(split[1], TRIM_BOTH);
+	elseif (split.Size() >= 2)
+		search_string := Trim(split[1], TRIM_BOTH);
+		if (CInt(split[2]) >= 1)
+			amount := CInt(split[2]);
+		endif
+	endif
+
+	if (search_string == "?")
+		SendSysMessage(mobile, "Uso: .createtier <nome ou objtype> [quantidade]", 0x3, 0x32);
+		return 1;
+	endif
+
+	if (CInt(search_string))
+		var itemInfo := GetItemInfo(CInt(search_string), GetItemDescriptor(CInt(search_string)));
+		CreateItemComMaterial(mobile, itemInfo, amount);
+		return 1;
+	elseif (GetObjtypeByName(search_string))
+		var ot := GetObjtypeByName(search_string);
+		var itemInfo := GetItemInfo(ot, GetItemDescriptor(ot));
+		CreateItemComMaterial(mobile, itemInfo, amount);
+		return 1;
+	elseif (search_string.Length())
+		if (search_string.Length() > 2)
+			amount := -1;
+			BuildList(search_string, search_results);
+		else
+			SendSysMessage(mobile, "Busca muito curta (mínimo 3 caracteres).", 0x3, 0x32);
+			return 0;
+		endif
+	endif
+
+	var pid := GetObjProperty(mobile, "#CreateGumpPid");
+	if (TypeOfInt(GetProcess(pid)) == OT_SCRIPTEXREF)
+		CloseGump(mobile, pid, 0);
+	endif
+	SetObjProperty(mobile, "#CreateGumpPid", GetPid());
+
+	while (mobile.connected)
+		if (search_string.Length() > 3)
+			gump := CreateGump(search_string, page, search_results, 1);
+		else
+			gump := CreateGump(search_string, page, search_results, 0);
+		endif
+
+		result := GFSendGump(mobile, gump);
+		if (result[0] <= 1)
+			SendSysMessage(mobile, "Cancelado.", 0x3, 0x32);
+			return 0;
+		elseif (result[0] == 2)
+			search_string := GFExtractData(result, 3);
+			if (search_string.errortext)
+				search_string := "";
+			endif
+			amount := -1;
+			page := 0;
+			search_results := dictionary;
+			if (search_string.Length())
+				if (search_string.Length() > 2)
+					BuildList(search_string, search_results);
+				else
+					SendSysMessage(mobile, "Busca muito curta (mínimo 3 caracteres).", 0x3, 0x32);
+				endif
+			endif
+		elseif (result[0] == 4)
+			page -= 1;
+		elseif (result[0] == 5)
+			page += 1;
+		elseif (result[0] >= 6 && result[0] <= 5006)
+			var selectedItem := search_results[search_results.Keys()[result[0] - 5]];
+			CreateItemComMaterial(mobile, selectedItem, amount);
+			amount := -1;
+		endif
+	endwhile
+
+	return 1;
+endprogram
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Retorna o tipo de material principal do item (ex: "METAL", "WOOD") ou 0.
+function PegaTipoMaterialItem(objtype)
+	var fabricacaoDesc := ReadConfigFile(":*:fabricacaoDesc");
+	var componenteDesc := ReadConfigFile(":*:componentes");
+
+	var itemFab := fabricacaoDesc[objtype];
+	if (TypeOfInt(itemFab) == OT_ERROR || TypeOfInt(itemFab) == OT_UNINIT) return 0; endif
+
+	var encaixesList := GetConfigStringArray(itemFab, "ComponenteEncaixe");
+	if (!encaixesList || encaixesList.size() == 0) return 0; endif
+
+	// Formato: classe caracteristica encaixe qtd [principal|opcional]
+	foreach encaixeStr in encaixesList
+		Sleepms(1);
+		var partes := SplitWords(encaixeStr);
+		if (partes.size() < 5) continue; endif
+		if (partes[5] != "principal") continue; endif
+
+		var nomeEncaixe := partes[3];
+
+		foreach chave in GetConfigStringKeys(componenteDesc)
+			Sleepms(1);
+			var comp := componenteDesc[chave];
+			if (Upper(CStr(comp.encaixe)) == Upper(nomeEncaixe))
+				return Upper(CStr(comp.principalMaterial));
+			endif
+		endforeach
+	endforeach
+
+	return 0;
+endfunction
+
+// Retorna dictionary { tier(1-5) -> array of {chave, nome, tier, hpmod, weightMod} }
+function PegaMateriaisAgrupadosPorTier(tipo)
+	var materiais := LISTA_TIPO_MATERIAL[Upper(tipo)];
+	if (!materiais) return dictionary; endif
+
+	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
+	var grupos := dictionary;
+
+	foreach mat in materiais
+		Sleepms(1);
+		var elem := configRecursos[mat.chave];
+		var t := CInt(elem.tier);
+		if (!grupos.exists(t))
+			grupos.insert(t, array);
+		endif
+		grupos[t].append(struct{
+			chave     := mat.chave,
+			nome      := CStr(elem.Name),
+			tier      := t,
+			hpmod     := CInt(elem.hpmod),
+			weightMod := CInt(elem.weightMod)
+		});
+	endforeach
+
+	return grupos;
+endfunction
+
+function BuildListaIgnorados(byref configRecursos, tipo, excetoChave)
+	var lista := array;
+	foreach chave in GetConfigStringKeys(configRecursos)
+		Sleepms(1);
+		var elem := configRecursos[chave];
+		if (Upper(CStr(elem.Type)) == Upper(tipo) && CStr(chave) != CStr(excetoChave))
+			lista.append(CInt(chave));
+		endif
+	endforeach
+	return lista;
+endfunction
+
+// Gump de erro: item não está no sistema de crafting.
+function GumpItemSemMaterial(mobile, itemNome)
+	var gump := Gump(mobile, "Criar: " + itemNome, 390, 195);
+	gump.AddControl(Text("t1", 15, 48, "Este item não possui material configurado no sistema de crafting.", 53));
+	gump.AddControl(Text("t2", 15, 72, "Use  .create <objtype> <qtd>  para criá-lo sem material.", 2100));
+
+	var btnF := Button("btnF", 15, 130, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+	gump.AddControl(btnF);
+	gump.AddControl(Text("lblF", 40, 133, "Fechar", TEXT_COLOR::COLOR_RED));
+
+	var evento := gump.Show();
+	gump.Dispose();
+endfunction
+
+// Gump de seleção de material. Retorna o struct do material ou 0 se cancelado.
+function GumpSelecionaMaterial(mobile, itemNome, amount, grupos, craftaveis)
+	var TIER_NAMES := array{"Normal", "Melhorado", "Notável", "Superior", "Excepcional"};
+
+	var totalRows := 0;
+	for t := 1 to 5
+		if (!grupos.exists(t) || grupos[t].size() == 0) continue; endif
+		totalRows += 1 + grupos[t].size();
+	endfor
+	totalRows += 1; // cancelar
+
+	if (totalRows <= 1) return 0; endif
+
+	var W        := 430;
+	var BX       := 22;
+	var NX       := 53;
+	var HX       := 260;
+	var PX       := 345;
+	var ROW_H    := 24;
+	var HEADER_Y := 72;
+	var gumpH    := HEADER_Y + (totalRows * ROW_H) + 65;
+
+	var gump := Gump(mobile, "Criar: " + itemNome + "  x" + amount, W, gumpH);
+
+	var buttons := array;
+	var curY := HEADER_Y;
+
+	for t := 1 to 5
+		if (!grupos.exists(t) || grupos[t].size() == 0) continue; endif
+
+		gump.AddControl(Text("hdr" + t, 38, curY + 5,
+			"─ Tier " + t + " · " + TIER_NAMES[t] + " ────────────",
+			230));
+		curY += ROW_H;
+
+		var matsDoTier := grupos[t];
+		foreach mat in matsDoTier
+			Sleepms(1);
+			var hpStr  := (mat.hpmod >= 0 ? "HP:+" : "HP:") + mat.hpmod;
+			var wStr   := (mat.weightMod >= 0 ? "Peso:+" : "Peso:") + mat.weightMod + "%";
+			var hpColor := mat.hpmod >= 0 ? TEXT_COLOR::COLOR_GREEN : TEXT_COLOR::COLOR_YELLOW;
+			var wColor  := mat.weightMod <= 0 ? TEXT_COLOR::COLOR_GREEN : TEXT_COLOR::COLOR_YELLOW;
+
+			var btn := Button("mat_" + mat.chave, BX, curY + 3, 2151, 2153);
+			gump.AddControl(btn);
+			gump.AddControl(Text("nm_" + mat.chave, NX, curY + 5, mat.nome, 53));
+			if (craftaveis.exists(CStr(mat.chave)) && !craftaveis[CStr(mat.chave)])
+				gump.AddControl(Text("nc_" + mat.chave, HX, curY + 5, "(não craftável)", TEXT_COLOR::COLOR_RED));
+			else
+				gump.AddControl(Text("hp_" + mat.chave, HX, curY + 5, hpStr, hpColor));
+				gump.AddControl(Text("wt_" + mat.chave, PX, curY + 5, wStr, wColor));
+			endif
+
+			var entry := struct{ btn := btn, mat := mat };
+			buttons.append(entry);
+			curY += ROW_H;
+		endforeach
+	endfor
+
+	curY += 6;
+	var btnCancel := Button("btnCancel", BX, curY + 3,
+		BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+	gump.AddControl(btnCancel);
+	gump.AddControl(Text("lblCancel", NX, curY + 5, "Cancelar", TEXT_COLOR::COLOR_RED));
+
+	var evento := gump.Show();
+	gump.Dispose();
+
+	if (evento.GetControl() == EVENT_ACTION::CLOSED || evento.GetControl().Equals(btnCancel))
+		return 0;
+	endif
+
+	foreach entry in buttons
+		if (evento.GetControl().Equals(entry.btn))
+			return entry.mat;
+		endif
+	endforeach
+
+	return 0;
+endfunction
+
+// Fluxo principal: detecta material → gump → cria o item.
+function CreateItemComMaterial(byref mobile, byref item_entry, byref amount)
+	if (amount == -1)
+		amount := CInt(RequestInput(mobile, mobile.backpack, "Quantos itens criar?"));
+		if (amount <= 0)
+			SendSysMessage(mobile, "Cancelado.", 0x3, 0x32);
+			return 0;
+		endif
+	endif
+
+	var objtype := CInt(item_entry.Objtype);
+
+	var tipo := PegaTipoMaterialItem(objtype);
+	if (!tipo)
+		GumpItemSemMaterial(mobile, item_entry.Name);
+		return 0;
+	endif
+
+	// Valida que o item tem receita em alguma profissão antes de abrir o gump.
+	if (!EncontraProfissao(objtype))
+		GumpItemSemMaterial(mobile, item_entry.Name);
+		return 0;
+	endif
+
+	var grupos := PegaMateriaisAgrupadosPorTier(tipo);
+	if (!grupos || grupos.size() == 0)
+		SendSysMessage(mobile, "Nenhum material encontrado para este tipo de item.", 0x3, 0x32);
+		return 0;
+	endif
+
+	var configRecursos := ReadConfigFile(":crafting:config/resourceList");
+
+	SendSysMessage(mobile, "Verificando materiais...", 0x3, 0x32);
+	var craftaveis := dictionary;
+	for t := 1 to 5
+		if (!grupos.exists(t)) continue; endif
+		var matsDoTier := grupos[t];
+		foreach mat in matsDoTier
+			Sleepms(1);
+			var listaIgnoradosTeste := BuildListaIgnorados(configRecursos, tipo, mat.chave);
+			var teste := GeraItemComplexo(mobile.backpack, objtype, 1, mat.tier, 1, listaIgnoradosTeste);
+			if (!teste || TypeOfInt(teste) == OT_ERROR || teste.errortext)
+				craftaveis.insert(CStr(mat.chave), 0);
+			else
+				craftaveis.insert(CStr(mat.chave), 1);
+				DestroyItem(teste);
+			endif
+		endforeach
+	endfor
+
+	var matSelecionado := GumpSelecionaMaterial(mobile, item_entry.Name, amount, grupos, craftaveis);
+	if (!matSelecionado)
+		return 0;
+	endif
+
+	var listaIgnorados := BuildListaIgnorados(configRecursos, tipo, matSelecionado.chave);
+
+	var isIndestrutivel := PegaPreferenciaGm(mobile, PREFERENCIA_GM_IS_INDESTRUTIVEL_PADRAO);
+	var isIndispensavel := PegaPreferenciaGm(mobile, PREFERENCIA_GM_IS_INDISPENSAVEL_PADRAO);
+
+	var avisouFallback := 0;
+	for i := 1 to amount
+		var created := GeraItemComplexo(mobile.backpack, objtype, 1, matSelecionado.tier, 1, listaIgnorados);
+		var usouFallback := 0;
+		if (!created || TypeOfInt(created) == OT_ERROR || created.errortext)
+			created := GeraItemComplexo(mobile.backpack, objtype, 1, matSelecionado.tier, 1);
+			usouFallback := 1;
+		endif
+		if (!created || TypeOfInt(created) == OT_ERROR || created.errortext)
+			SendSysMessage(mobile, "Erro ao criar item. O item pode não estar configurado no sistema de crafting.", 0x3, 0x32);
+			return 0;
+		endif
+		if (usouFallback && !avisouFallback)
+			SendSysMessage(mobile, "Aviso: material exato (" + matSelecionado.nome + ") não pôde ser aplicado. Item criado no tier " + matSelecionado.tier + " com material padrão.", 0x3, 0x35);
+			avisouFallback := 1;
+		endif
+		SetObjProperty(created, PROPNAME_INDESTRUTIVEL, isIndestrutivel);
+		SetObjProperty(created, PROPNAME_DISPENSAVEL_FLAG, !isIndispensavel);
+		ITEM_ReportText(mobile, "Item serial: " + created.serial + ", item name " + created.desc
+						 + " created by " + mobile.name + " [" + mobile.acctname + "]", ITEM_REPORT_SYSLOG);
+		SendSysMessage(mobile, created.desc + " criado na backpack.", 0x3, 0x32);
+		Sleepms(1);
+	endfor
+
+	return 1;
+endfunction

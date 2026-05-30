@@ -1,0 +1,101 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include ":taming:taming";
+
+program SpellScript(params)
+	var caster := params[1];
+	var corpse := params[2];
+	if (!corpse)
+		SendSysMessageEx(caster, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Verifica se é um corpse
+	if (!corpse.IsA(POLCLASS_CORPSE))
+		SendSysMessageEx(caster, "Isso não é um corpo de animal.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Verifica se o corpse tem npctemplate (é um NPC/animal)
+	var npctemplate := GetObjProperty(corpse, "npctemplate");
+	if (!npctemplate)
+		SendSysMessageEx(caster, "Isso não é um corpo de animal.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Verifica se o animal tinha um dono (só pode ressuscitar pets domesticados)
+	var owner := GetObjProperty(corpse, "owner");
+	if (!owner)
+		SendSysMessageEx(caster, "A natureza já reclamou este ser.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Converte serial se necessário
+	if (TypeOf(owner) != "Integer")
+		owner := CInt(owner);
+	endif
+
+	var owner_obj := SystemFindObjectBySerial(owner);
+
+	// Só permite ressuscitar se for o dono ou se o animal não tinha dono
+	if (owner_obj && owner_obj != caster)
+		SendSysMessageEx(caster, "Você não pode ressuscitar o animal de outra pessoa.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Verifica se o corpo ainda pode ser ressuscitado (cooldown)
+	if (GetObjProperty(corpse, "#resurrected"))
+		SendSysMessageEx(caster, "Este animal já foi ressuscitado recentemente.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Efeitos visuais e sonoros - luz dourada do nascer do sol
+	PlayObjectCenteredEffect(corpse, 0x376A, 10, 20); // Efeito de luz divina
+	PlaySoundEffect(corpse, 0x214); // Som de ressurreição/cura
+	PlaySoundEffect(corpse, 0x15F); // Som adicional místico
+
+	SendSysMessageEx(caster, "Você invoca a luz do primeiro nascer do sol...", SSM_INFO);
+	PrintTextAbove(corpse, "*Banhado em luz dourada*");
+
+	sleepms(1500);
+
+	// Segunda onda de efeitos
+	PlayObjectCenteredEffect(corpse, 0x373A, 10, 15); // Efeito de vida/natureza
+	PlaySoundEffect(corpse, 0x202); // Som de vida retornando
+
+	// Usa a função do sistema de taming para ressuscitar
+	// is_bandage = 0 (não é bandagem, então cooldown de 180 segundos)
+	var npc := RessuscitarPet(corpse, owner_obj, 0);
+
+	if (npc)
+		// Efeito final no animal ressuscitado
+		PlayObjectCenteredEffect(npc, 0x376A, 7, 10);
+		PlaySoundEffect(npc, 0x1F2);
+
+		SendSysMessageEx(caster, "A vida retorna a " + npc.name + "!", SSM_INFO);
+		SendSysMessageEx(owner_obj, npc.name + " foi ressuscitado pela luz da natureza!", SSM_INFO);
+
+		PrintTextAbove(npc, "*Desperta*");
+
+		// Se o caster é druida com habilidades especiais, aplica bônus
+		if (TemHabilidade(caster, "Filho da Floresta"))
+			// Cura o animal completamente
+			ApplyEpicHealing(npc, 999);
+			SendSysMessageEx(caster, "Sua conexão com a natureza restaura " + npc.name + " completamente!", SSM_INFO);
+			PlayObjectCenteredEffect(npc, 0x376A, 5, 10);
+		endif
+
+		return 1;
+	else
+		SendSysMessageEx(caster, "Você não conseguiu ressuscitar o animal.", SSM_FAIL);
+		return 0;
+	endif
+
+endprogram

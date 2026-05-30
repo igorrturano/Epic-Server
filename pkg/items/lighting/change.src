@@ -1,0 +1,255 @@
+//
+// created by Zulu  zuluhotel@home.com
+// made Jan 15, 2000 - updated Jan 17, 2000
+//
+//   elem.change     #	(decimal)
+//   elem.changesnd  #	(decimal)
+//   elem.originsnd  #	(decimal)
+//   elem.staff	     #	(1-4)
+//
+
+use uo;
+use os;
+use cfgfile;
+include ":tn:cooldown";
+include "include/say";
+include ":destroyable:include/destroyItem";
+include ":propagacao:include/propagacao";
+include ":crafting:/include/fabricacaoUtil";
+include "include/epicValidAction";
+include ":propagacao:include/efeitosIncendiarios";
+include ":propagacao:include/combustiveis/impl/combustivelEstaticos";
+include ":propagacao:include/combustiveis/impl/combustivelTerreno";
+include ":propagacao:include/tiles/TileScanner";
+include ":hotbar:include/custombuff";
+
+const LANTERN_BUFF_ID := 30001;
+const LANTERN_BUFF_ICON := 0x8C5;
+
+program change(who, item)
+	var cfg := ReadConfigFile(":*:itemdesc");
+	var elem := FindConfigElem(cfg, item.objtype);
+	if (elem.staff > who.cmdlevel)
+		return;
+	endif
+
+	if (who.warmode && GetEquipmentByLayer(who, LAYER_HAND2) == item && item.graphic == 0x0a12)
+		SendSysMessage(who, "[Modo Guerra] Escolha o item que deseja incendiar.");
+		var targ := TargetCoordinates(who);
+
+		if (!targ)
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+		endif
+
+		if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 1)
+			SendSysMessageEX(who, "Você sestá muito distante.", SSM_FAIL);
+			return 0;
+		endif
+
+		var materialConfig;
+		var inflamabilidade := 0;
+		if (targ.item)
+			
+			if (!CheckLineOfSight(who, item))
+				SendSysMessageEX(who, "Você não exerga este item.", SSM_FAIL);
+				return 0;
+			endif
+
+			var materialChave := GetObjProperty(targ.item, PROPNAME_MATERIAL);
+			materialConfig := PegaMaterialConfig(materialChave);
+			inflamabilidade := cint(materialConfig.inflamavel);
+		else
+			if (!CheckLosAt(who, targ.x, targ.y, targ.z))
+				SendSysMessageEX(who, "Você não exerga este ponto.", SSM_FAIL);
+				return 0;
+			endif
+			var combustiveis := dictionary{
+								COMBUSTIVEIS::ESTATICOS -> CombustivelEstaticos(), 
+								COMBUSTIVEIS::TERRENO -> CombustivelTerreno()
+							};
+			var tileScanner := TileScanner(targ.x, targ.y, targ.z, targ.realm);
+
+			var tileProspectado := tileScanner.AdicionaManipulador(TILE_SCANNER::STATICOS)
+												.AdicionaManipulador(TILE_SCANNER::TERRENO)
+												.Prospectar();
+
+			foreach combustivel in combustiveis
+				if(combustivel.ProcuraCombustivel(targ,tileProspectado))
+					inflamabilidade := cint(combustivel.PegaFatorInflamavel());
+					break;
+				endif
+			endforeach
+		endif
+
+		var momentoInicial := ReadGameClock();
+		var posicaoInicial := struct{ x := who.x, y := who.y, z := who.z, realm := who.realm };
+		while (true)
+			if(!inflamabilidade)
+				SendSysMessageEX(who, "Você não encontrou nada inflamável para atear fogo.", SSM_FAIL);
+				return 0;
+			endif
+			if (CheckHasMoved(who, posicaoInicial) || !CheckIsAlive(who) || !CheckIsFree(who))
+				SendSysMessageEX(who, "Você parou de tentar iniciar um incêndio.", SSM_FAIL);
+				break;
+			endif
+			
+			var tempoDecorrido := ReadGameClock() - momentoInicial;
+			var deveCriarMarcadorIncendio := false;
+			if (tempoDecorrido % 2 == 0)
+				PerformAction(who, 0x20); // Bow
+				PrintTextAbove(who, "*Tentando iniciar um incêndio*");
+			endif
+
+			var limiteTempo;
+			case (inflamabilidade)
+				0: limiteTempo := 4; break;
+				1: limiteTempo := 4; break;
+				2: limiteTempo := 3; break;
+				3: limiteTempo := 2; break;
+				default:
+					if (limiteTempo > 3)
+						limiteTempo := 1;
+					else
+						limiteTempo := 4;
+					endif
+			endcase
+
+			if (tempoDecorrido >= limiteTempo)
+				targ ? targ.item : targ;
+				var marcador := CriaFagulhaIncendiaria(who, targ);
+				SubtractAmount(item, 1);
+				SendSysMessageEX(who, "Você usou sua tocha para iniciar um incêndio.", SSM_HELPFU);
+
+				if (who.hidden)
+					who.hidden := 0;
+					SendSysMessage(who, "Você foi revelado!");
+				endif
+				break;
+			endif
+			sleep(1);
+		endwhile
+
+		return 0;
+	endif
+
+	if (GetCooldown(who, "darkness") > 0)
+		SendSysMessage(who, "Você está envolto em sombras!", SSM_FAIL);
+		return;
+	endif
+	if (item.graphic == item.objtype)
+		// Lanterna seca (queimou até o fim): exige reabastecimento com óleo
+		// antes de acender de novo. Itens sem Duration (tochas/archotes) não
+		// passam por isto pois nunca recebem #fuel_dry.
+		if (CInt(elem.Duration) > 0 && GetObjProperty(item, "#fuel_dry") != error)
+			SendSysMessageEX(who, "A lanterna esta sem oleo. Use um frasco de oleo para reabastece-la.", SSM_FAIL);
+			return;
+		endif
+
+		if (elem.changesnd)
+			PlaySoundEffect(who, elem.changesnd);
+		endif
+		item.graphic := elem.change;
+		setobjproperty(item, "graphic", item.graphic);
+		StartFuelBurn(who, item, elem);
+		if (item.graphic == 6222)
+			var k := 1;
+			while (k < 60)
+				foreach balao in listitemsnearlocation(item.x, item.y, item.z, 1)
+					print(balao);
+					if ((balao.objtype == 6194) || (balao.objtype == 6195) || (balao.objtype == 6196))
+						foreach beker in listitemsnearlocation(item.x, item.y, item.z, 1)
+							if ((beker.objtype == 6192) || (beker.objtype == 6193))
+								Destilar(balao, beker, who, item);
+								k := 60;
+								break;
+							endif
+						endforeach
+						break;
+					endif
+				endforeach
+				k := k + 1;
+				sleep(1);
+			endwhile
+			item.graphic := item.objtype;
+		endif
+	else
+		if (elem.originsnd)
+			PlaySoundEffect(who, elem.originsnd);
+		endif
+		item.graphic := item.objtype;
+		setobjproperty(item, "graphic", item.graphic);
+		StopFuelBurn(who, item);
+	endif
+endprogram
+
+// Acende: se houver tempo guardado em #fuel_remaining (extinção manual anterior),
+// retoma a partir dele; caso contrário começa com elem.Duration completo. Itens
+// sem Duration (tochas de parede, archotes estáticos) ignoram tudo isto.
+function StartFuelBurn(who, item, elem)
+	var duration := CInt(elem.Duration);
+	if (duration <= 0)
+		return;
+	endif
+
+	var saved := CInt(GetObjProperty(item, "#fuel_remaining"));
+	if (saved > 0)
+		duration := saved;
+		EraseObjProperty(item, "#fuel_remaining");
+	endif
+
+	SetObjProperty(item, "#fuel_expires", CInt(ReadGameClock() + duration));
+	SendCustomBuff(who, LANTERN_BUFF_ID, LANTERN_BUFF_ICON, duration, "Lanterna acesa", "Combustivel ardendo. Use oleo para reabastecer.", duration);
+	Start_Script(":lighting:fuelTimer", array{ item.serial });
+endfunction
+
+// Extinção manual: guarda o tempo remanescente em #fuel_remaining para que uma
+// próxima relight retome de onde parou (apagar não desperdiça óleo). Auto-extinção
+// pelo fuelTimer NÃO chama isto — quando o combustível acaba, nada a preservar.
+function StopFuelBurn(who, item)
+	var expires := CInt(GetObjProperty(item, "#fuel_expires"));
+	if (!expires)
+		return;
+	endif
+	var remaining := expires - ReadGameClock();
+	if (remaining > 0)
+		SetObjProperty(item, "#fuel_remaining", remaining);
+	endif
+	EraseObjProperty(item, "#fuel_expires");
+	RemoveCustomBuff(who, LANTERN_BUFF_ID);
+endfunction
+
+function Destilar(balao, beker, who, item)
+
+	item.movable := 0;
+	balao.movable := 0;
+	beker.movable := 0;
+
+	SendSysMessage(who, "O extrato começa a ferver.");
+	sleep(5);
+	PlaySoundEffect(who, 0x0021);
+	PrintTextAbove(balao, "O liquido esta em ebulicao.");
+	sleep(5);
+	PlaySoundEffect(who, 0x241);
+	sleep(3);
+
+	var extrato := CINT(GetObjProperty(balao, "extrato"));
+	print(extrato);
+	case (extrato)
+		61249: SetObjProperty(beker, "pocao", 0xef46);
+		61250: print("lol"); SetObjProperty(beker, "pocao", 0xef53);
+		61251: SetObjProperty(beker, "pocao", 0xef47);
+		61252: SetObjProperty(beker, "pocao", 0xef48);
+		61253: SetObjProperty(beker, "pocao", 0xef49);
+		61254: SetObjProperty(beker, "pocao", 0xef52);
+		61268: SetObjProperty(beker, "pocao", 0xef55);
+		61270: SetObjProperty(beker, "pocao", 0xef57);
+		61272: SetObjProperty(beker, "pocao", 0xef59);
+	endcase
+
+	EraseObjProperty(balao, "extrato");
+	item.movable := 1;
+	balao.movable := 1;
+	beker.movable := 1;
+
+endfunction

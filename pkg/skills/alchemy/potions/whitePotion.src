@@ -1,0 +1,43 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":timedScripts:timedScripts";
+include ":alchemy:alchemy";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program drink_blue(who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+	if (!Accessible(who, potion))
+		return;
+	endif
+	if (potion.movable == 0)
+		SendSysMessage(who, "Voce nao pode beber isto.");
+		return;
+	endif
+
+	if (!checkifcandrink(who, potion))
+		return;
+	endif
+
+	var vicio := AP_getvital(who, "Viciostr");
+	if (vicio <= 30)
+		vicio := 30;
+	endif
+	vicio := vicio / 100;
+	var bonus := GetObjProperty(potion, "bonus");
+	var tier := peganivelpocao(who, potion);
+	var stat := AP_GetTrueStat(who, STRENGTH);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::IMPULSO_METABOLICO))
+		tier := (tier + 2);
+	endif
+	var duration := 180*tier*vicio;
+	var buff := 0.10 * tier;
+	buff := cint((stat * buff + bonus));
+
+	TS_StartTimer(who, "strength", duration, buff);
+	empty_bottle(who, potion);
+	Aplicavicio(who, potion, STRENGTH);
+endprogram

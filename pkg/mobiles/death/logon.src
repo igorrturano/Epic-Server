@@ -1,0 +1,18 @@
+use uo;
+use os;
+
+program logon(player)
+	var remaining := CInt(GetObjProperty(player, "death_remaining"));
+	if (!remaining || remaining <= 0)
+		return 1;
+	endif
+
+	if (CInt(GetObjProperty(player, "morto")) == 1)
+		EraseObjProperty(player, "death_remaining");
+		EraseObjProperty(player, "death_corpse_serial");
+		return 1;
+	endif
+
+	Start_Script(":death:deathscripts/deathRecover", {player});
+	return 1;
+endprogram

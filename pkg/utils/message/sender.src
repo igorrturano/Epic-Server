@@ -1,0 +1,79 @@
+use uo;
+use polsys;
+
+include ":message:model/Message";
+include ":message:Controller/Translator";
+
+program Sender(message)
+	if (message.WantTranslation())
+		var translator := Translator();
+		message.SetText(translator.Translate(message.GetText()));
+	endif
+
+	if (message.GetType() == MESSAGE_TYPE::SYSTEM)
+		SendSysTo(message.GetToWhom(), SplitMessage(message));
+	elseif (message.GetType() == MESSAGE_TYPE::NORMAL)
+		SendAboveTo(message.GetToWhom(), SplitMessage(message), message.GetPacketLanguage());
+	elseif (message.GetType() == MESSAGE_TYPE::NORMAL_PRIVATE)
+		SendAbovePrivateTo(message.GetFromWhom(), SplitMessage(message), message.GetToWhom(), message.GetPacketLanguage());
+	elseif (message.GetType() == MESSAGE_TYPE::EMOTE)
+		SendEmoteTo(message.GetToWhom(), SplitMessage(message));
+	endif
+endprogram
+
+function SplitMessage(message)
+	var msgSplitted := array{};
+	var maxSize;
+	
+	
+	if (message.GetType() == MESSAGE_TYPE::NORMAL ||
+		message.GetType() == MESSAGE_TYPE::NORMAL_PRIVATE ||
+	    message.GetType() == MESSAGE_TYPE::EMOTE)
+		maxSize := MESSAGE_MAXSIZE::NORMAL;
+	else
+		maxSize := MESSAGE_MAXSIZE::SYSTEM;
+	endif
+	
+	var msgFragmentsAmtTarget := CountFragments(message.GetText().GetTextTarget(), maxSize);
+
+	for i := 1 to (msgFragmentsAmtTarget)
+		var start := ((i - 1) * maxSize) + 1;
+		var length := Min(message.GetText().GetTextTarget().length() - start + 1, maxSize);
+		msgSplitted.append(struct{
+			textSource := message.GetText().GetTextSource()[start, length],
+			textTarget := message.GetText().GetTextTarget()[start, length],
+			color := message.GetColor(),
+			font := message.GetFont()
+		});
+	endfor
+
+	return msgSplitted;
+endfunction
+
+function CountFragments(text, maxSize)
+	return CInt(text.length() / maxSize) + 1;
+endfunction
+
+function SendAboveTo(who, splitedMessage, langcode := "ENG")
+	foreach part in (splitedMessage)
+		PrintText(who, part.textTarget, part.color.GetValue(), part.font.GetValue(), langcode);
+	endforeach
+endfunction
+
+function SendAbovePrivateTo(who, splitedMessage, whoSee, langcode := "ENG")
+	foreach part in (splitedMessage)
+		PrintTextPrivate(who, part.textTarget, whoSee, part.color.GetValue(), part.font.GetValue(), JOURNAL_UC_PRINT_NAME, langcode);
+	endforeach
+endfunction
+
+function SendSysTo(who, splitedMessage)
+	foreach part in (splitedMessage)
+		SendSysMessageUNI(who, part.textTarget, part.color.GetValue(), part.font.GetValue());
+	endforeach
+endfunction
+
+function SendEmoteTo(who, splitedMessage)
+	foreach part in (splitedMessage)
+		PrintEmote(who, part.textTarget, part.color.GetValue(), part.font.GetValue());
+	endforeach
+endfunction

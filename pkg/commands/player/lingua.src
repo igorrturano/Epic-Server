@@ -1,0 +1,15 @@
+use uo;
+use os;
+
+include "include/say";
+include ":tn:tngumps";
+
+program linguas(parms)
+	var who := parms[1];
+	var known_languages := GetObjProperty(who, "linguas_conhecidas");
+	var chosen_language := RadioGump(who, 250, 200, "Em que idioma deseja se comunicar?",
+								  known_languages);
+
+	SendSysMessageEX(who, "Você se comunicará em " + chosen_language, SSM_INFO);
+	SetObjProperty(who, "lingua_escolhida", chosen_language);
+endprogram

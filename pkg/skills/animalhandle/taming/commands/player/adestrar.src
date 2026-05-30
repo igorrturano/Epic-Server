@@ -1,0 +1,199 @@
+use cfgfile;
+use uo;
+use os;
+use util;
+
+include "include/epicCombatUtils";
+include ":attributes:attributes";
+include ":attributes:stats";
+include ":brainAI:include/npcCommands";
+include ":gumps:gumps_ex";
+include ":gumps:gumps"; // add
+include "include/say";
+include ":taming:taming";
+include ":mounts:mounts";
+include ":tn:characters";
+
+include ":charactercreation:habilidades";
+include "include/epicNPCUtils";
+
+const START_Y := 91;
+const END_Y := 311;
+const BACKGROUND := 0xBB8;
+const FOREGROUND := 0xDAC;
+const INIT_DET_PAGE := 10;
+
+var template;
+var index_list;
+var info_cfg;
+var entries_list := dictionary;
+var btn_maxId := 2;
+var new_list := array;
+var det_page := INIT_DET_PAGE; // numero da pagina de detalhes
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+program tamingskill(who)
+	tamecreature(who);
+endprogram
+
+function tamecreature(who)
+	SendSysMessageEx(who, "Que animal voce deseja adestrar?", SSM_REQUEST);
+	var targ := target(who);
+	if (who.hidden)
+		who.hidden := 0;
+	endif
+	if (!targ.IsA(POLCLASS_NPC))
+		SendSysMessageEx(who, "Cancelado", SSM_FAIL);
+		return;
+	elseif (IsTamedPet(targ)) // Verifica se o animal ja esta domado/ tem script de tamed
+		SendSysMessageEx(who, targ.name + " nao pode ser adestrado.", SSM_FAIL);
+		return 0;
+	elseif (!CanAcquirePet(who, targ))
+		SendSysMessageEx(who, "Este animal excede a sua capacidade atual de animais domesticados.",
+				   SSM_FAIL);
+		return 0;
+	endif
+
+	if (!CheckLineOfSight(who, targ))
+		SendSysMessage(who, "Você não consegue ver " + targ.name + " claramente.");
+		return;
+	endif
+	if (isTrueBoss(targ))
+		SendSysMessageEx(who, "Essa criatura nao aceita ser domesticada.", SSM_FAIL);
+		return 0;
+	endif
+
+	var tame_diff := targ.getTameDifficulty();
+
+	if (!tame_diff)
+		SendSysMessageEx(who, "Voce nao pode adestrar " + targ.name + ".", SSM_FAIL);
+		return;
+	endif
+
+	var skill := EffectiveSkill(who, "Taming");
+	var info := struct;
+	info.+x := who.x;
+	info.+y := who.y;
+	info.+facing := who.facing;
+	info.+difficulty := tame_diff;
+	if (info.difficulty > (skill + 15))
+		SendSysMessageEx(who, "A dificuldade para adestrar " + targ.name + " é muito alta (" + info.difficulty + ").",
+				   SSM_FAIL);
+		return 0;
+	endif
+
+	SetTamingCooldown(who);
+
+	var tamed_success := 0;
+	while (TameLoop(who, targ, info))
+		SetTamingCooldown(who);
+
+		sleep(3);
+		if (SkillCheck(who, "Taming", CInt(info.difficulty)) > 0)
+			SendSysMessageEx(who, "Voce ganhou a confianca de " + targ.name + ".", SSM_INFO);
+			targ.SetMaster(who);
+			var erase_selvagem := GetObjProperty(targ, "Selvagem");
+			SetTamedProperties(targ, who);
+
+			SnapshotPetAttributes(targ);
+
+			AddPet(who, targ.serial);
+
+			tamed_success := 1;
+			break;
+		endif
+
+		if (events_waiting())
+			clear_event_queue();
+		endif
+
+	endwhile
+	if (tamed_success)
+		PostTameSuccess(who, targ);
+	endif
+endfunction
+
+function TameLoop(who, targ, byref info)
+	if (!CheckHostileConditions(who, targ))
+		return 0;
+	endif
+
+	PrintTextAbove(who, "*tentando adestrar " + targ.name + "*");
+
+	var ownerarray := GetObjProperty(targ, "LastOwners"); // identifica se teve último dono
+	if (!ownerarray)
+		ownerarray := {};
+	endif
+	var check := SkillCheck(who, "Taming", info.difficulty);
+	if ((check > 0) || (who.serial in ownerarray))
+		SendSysMessageEx(who, "" + targ.name + " parece ser seu amigo.", SSM_INFO);
+		AI_MoveXY(targ, info.x, NEMOVE_TOWARD, NEMOVE_WALK, WAKEUP, 1);
+
+		return 1;
+	elseif (check < -15)
+		var dist := Distance(who, targ);
+		SetObjProperty(targ, "#ForceFlee", 1);
+		AI_Move(targ, who, NEMOVE_AWAY, NEMOVE_RUN, NOWAKE, 100);
+		sleepms(160);
+		if (dist == Distance(who, targ))
+			SendSysMessageEx(who, targ.name + " nao aceitou voce como dono.", SSM_FAIL);
+		else
+			SendSysMessageEx(who, "Voce assustou " + targ.name + " .", SSM_FAIL);
+		endif
+		return 0;
+	else
+		SendSysMessageEx(who, "Voce falhou ao domar esse animal!", SSM_FAIL);
+		return 0;
+	endif
+endfunction
+
+function SetTamingCooldown(who)
+	SetObjProperty(who, "#tamewait", ReadGameClock() + 5);
+endfunction
+
+function SetTamedProperties(targ, who)
+	// Do NOT re-run customizeNpc here: the wild NPC was already customized at
+	// spawn, and customizeNpc rerolls Wrestling and Tactics from random tier
+	// ranges (see scripts/include/epicNPCUtils.inc). The other tame entry
+	// point (taming.src) does not do this — adestrar.src was the outlier.
+	SetObjProperty(targ, "owner", who.serial);
+	SetObjProperty(targ, "name", targ.name);
+	SetObjProperty(targ, "script", targ.script);
+	SetObjProperty(targ, "happiness", 50);
+	SetObjProperty(targ, "AntigoTreinadorID", who.serial);
+	SetObjProperty(targ, "Fidelizar?", "nao");
+
+	var time := ReadGameClock();
+	SetObjProperty(targ, "countercheck", time);
+	if (GetObjProperty(targ, "Selvagem") == 1)
+		EraseObjProperty(targ, "Selvagem");
+		EraseObjProperty(targ, "Critic");
+	endif
+	targ.script := ":epicai:tamedBrain";
+	RestartScript(targ);
+endfunction
+
+function CheckHostileConditions(who, targ)
+	var my_hostiles := ListHostiles(who, 15);
+	var targ_hostiles := ListHostiles(targ, 15);
+
+	if (targ.master)
+		SendSysMessage(who, targ.name + " nao pode ser adestrado.", SSM_FAIL);
+		return false;
+	endif
+	if (targ_hostiles.size() > 0)
+		SendSysMessageEx(who, "Alguém está atacando " + targ.name + ".", SSM_FAIL);
+		return false;
+	endif
+	if (my_hostiles.size() > 0)
+		SendSysMessageEx(who, "Você não pode adestrar " + targ.name + " enquanto está sendo atacado.",
+				   SSM_FAIL);
+		return false;
+	endif
+	return true;
+endfunction
+
+function PostTameSuccess(who, targ)
+	SendSysMessageEx(who, "Você domesticou " + targ.name + " com sucesso!", SSM_INFO);
+endfunction

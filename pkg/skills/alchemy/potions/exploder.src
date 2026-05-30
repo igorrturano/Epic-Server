@@ -1,0 +1,454 @@
+use uo;
+use os;
+use util;
+use vitals;
+use polsys;
+include "include/client";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include "include/shapes";
+include ":timedScripts:timedScripts";
+include ":charactercreation:resists";
+include ":alchemy:alchemy";
+include ":destroyable:include/destroyItem";
+include ":propagacao:include/efeitosIncendiarios";
+include "include/flash";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include "include/utils";
+
+program exploder(parms)
+
+	var potion := parms[1];
+	// 	if(GetObjProperty(potion,"running"))
+	// 		return;
+	// 	endif
+
+	SetObjProperty(potion, "running", 1);
+	var who := parms[2];
+	var mods := GetObjProperty(who, "ExplosivoConfig");
+
+	if (GetObjProperty(potion, "pause"))
+		sleepms(250);
+	endif
+	var thecenter := potion;
+	while (thecenter.item)
+		thecenter := thecenter.item;
+	endwhile
+	SetScriptController(who);
+	var tier := peganivelpocao(who, potion);
+	var bonus := CInt(GetObjProperty(potion, "bonus"));
+	bonus := (PotionSpecialistBonus(who, bonus, BOMBA));
+	var dmg := epicPotionDamageRoll(tier, bonus);
+	if (cint(GetObjProperty(potion, "nodmg")) != 1)
+		case (potion.objtype)
+			// 56328: dmg :=  dmg + 20; ExplosionEffect(who, potion, dmg);
+			0xef60: ExplosionEffect(who, potion, dmg); if(mods.reforco == REFORCO_CARGA_DUPLA) ExplosionEffect(who, potion, dmg/2); endif
+			0xef63: FlashbangEffect(who, potion, bonus);
+			0xbf0e: GlueEffect(who, potion);
+			0xbf0f: PoisonEffect(who, potion, tier);
+			0xbf13: FlameEffect(who, potion, tier, bonus);
+			0xbf16: HalluEffect(who, potion, 3);
+			0xbf1c: Acideffetct(who, potion);
+			0xbf1d: Sleepeffect(who, potion, bonus);
+			0xbf1e: FlameEffect(who, potion, tier, bonus);
+			0xdc09: MudBomb(who, potion, bonus);
+		endcase
+	endif
+
+	var e := DestroyItem(potion);
+// sendsysmessage(who, "alo " + e);
+
+endprogram
+
+function FlameEffect(who, potion, lvl, bonus)
+	var mods := GetObjProperty(who, "ExplosivoConfig");
+	PlayStationaryEffect(potion.x, potion.y, potion.z, 0x36b0, 7, 10, 1, who.realm);
+	PlaySoundEffect(potion, 0x208);
+	potion.graphic := 1;
+	lvl := lvl + 1;
+	var dist := lvl;
+	var dice := Cstr("2d" + lvl * 2 + "+" + bonus / 2);
+	var combustivel := lvl * 500;
+	if(mods.carga != error || mods.carga != CARGA_BALANCEADA)
+		case(mods.carga)
+			CARGA_CONCENTRADA: dist := dist-1; combustivel := combustivel*1.5;
+			CARGA_DISPERSA:	dist := dist + 1; combustivel := combustivel/1.5;
+		endcase
+	endif
+	var coords := GetCoordsInSquare(potion.x, potion.y, dist);
+	
+
+	foreach coord in coords
+		var standingHeight := GetStandingHeight(coord.x, coord.y, potion.z, potion.realm);
+		if (CheckLosBetween(potion.x, potion.y, potion.z, coord.x, coord.y, standingHeight.z, potion.realm))
+			var alcool := CreateItemAtLocation(coord.x, coord.y, standingHeight.z, 0xC875, 1, potion.realm);
+
+			SetObjProperty(alcool, PROPNAME_DURABILIDADE_MAX, combustivel);
+			SetObjProperty(alcool, PROPNAME_DURABILIDADE, combustivel);
+			alcool.decayat := ReadGameClock() + 180;
+		endif
+		sleepms(5);
+	endforeach
+
+	var field := CriaFagulhaIncendiaria(who, potion);
+
+	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, dist, potion.realm))
+		if (CheckLineOfSight(potion, critter))
+			if (critter.hidden)
+				critter.hidden := 0;
+				SendSysMessage(critter, "Voce foi revelado na explosao!");
+			endif
+			PlayObjectCenteredEffect(critter, 0x36b0, 7, 0x10);
+			PlaySoundEffect(critter, 0x208);
+			// ApplyDamageEX(critter, lvl*15, DAMAGE_TYPE::FIRE);
+			case(lvl)
+				2:	TS_StartTimer(critter, "chamasperpetuas", 4);
+				3:	TS_StartTimer(critter, "chamasperpetuas", 8);
+				4:	TS_StartTimer(critter, "chamasperpetuas", 12);
+				5:	TS_StartTimer(critter, "chamasperpetuas", 16);
+			endcase
+		endif
+	endforeach
+
+// efeitocascata(potion, who);
+// destroycraft(potion, who);
+
+endfunction
+
+function HalluEffect(who, potion, lvl)
+	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, 6, potion.realm))
+		if (CheckLineOfSight(potion, critter))
+			PlayStationaryEffect(critter.x, critter.y, critter.z, FX_POISON_GAS, 10, 10, 0, critter.realm);
+			TS_StartTimer(critter, "hallucination", 120, lvl);
+		endif
+	endforeach
+
+endfunction
+
+function PoisonEffect(who, potion, lvl)
+	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, 3, potion.realm))
+		if (CheckLineOfSight(potion, critter))
+			PlayStationaryEffect(critter.x, critter.y, critter.z, FX_POISON_GAS, 10, 10, 0, critter.realm);
+			if (CheckResist(critter, FORTITUDE, RESIST_EASY, -2 * lvl))
+				SendSysMessageEx(critter, "Voce resistiu ao veneno.", SSM_INFO);
+			else
+				TS_StartTimer(critter, "defaultPoison", 30, lvl, who);
+			endif
+		endif
+	endforeach
+endfunction
+
+function GlueEffect(who, potion)
+	var mods := getobjproperty(who, "ExplosivoConfig");
+	var dist := 4;
+	var chance := 3;
+	if(mods.carga != error || mods.carga != CARGA_BALANCEADA)
+		case(mods.carga)
+			CARGA_CONCENTRADA: dist := dist-2; chance := 2;
+			CARGA_DISPERSA:	dist := dist + 2; chance := 4;
+		endcase
+	endif
+
+	var coords := GetCoordsInSquare(potion.x, potion.y, dist);
+	foreach coord in coords
+		if (RandomInt(chance) != 1) // Don't place a fire field
+			continue;
+		endif
+		var field := CreateItemAtLocation(coord.x, coord.y, potion.z+15, "SpiderWeb", 1, who.realm);
+		if (CheckLineOfSight(field, potion))
+			field.SetDuration(20);
+			PlayStationaryEffect(field.x, field.y, field.z, 0xB452, 7, 200, 0, who.realm);
+		else
+			DestroyItem(field);
+		endif
+		sleepms(5);
+	endforeach
+
+	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, dist, potion.realm))
+		if (CheckLineOfSight(potion, critter))
+			if (critter.hidden && critter.acct)
+				critter.hidden := 0;
+				SendSysMessage(critter, "Voce foi revelado pela teia!");
+			endif
+		endif
+	endforeach
+
+endfunction
+
+function Acideffetct(who, potion)
+	var mods := getobjproperty(who, "ExplosivoConfig");
+	var dist := 4;
+	var chance := 3;
+	if(mods.carga != error || mods.carga != CARGA_BALANCEADA)
+		case(mods.carga)
+			CARGA_CONCENTRADA: dist := dist-2; chance := 2;
+			CARGA_DISPERSA:	dist := dist + 2; chance := 4;
+		endcase
+	endif
+	var coords := GetCoordsInSquare(potion.x, potion.y, dist);
+	foreach coord in coords
+		if (RandomInt(chance) != 1) // Don't place a fire field
+			continue;
+		endif
+
+		/* var field2 := CreateItemAtLocation(coord.x, coord.y, potion.z, 0x3915, 1);
+		if (CheckLineOfSight(field2, potion))
+			field2.SetDuration(20);
+		endif */
+		var field := CreateItemAtLocation(coord.x, coord.y, potion.z, 0xA370, 1, who.realm);
+		if (CheckLineOfSight(field, potion))
+			field.SetDuration(20);
+		else
+			DestroyItem(field);
+		// 	DestroyItem(field2);
+		endif
+		sleepms(5);
+	endforeach
+
+	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, dist, potion.realm))
+		if (CheckLineOfSight(potion, critter))
+			if (critter.hidden && critter.acct)
+				critter.hidden := 0;
+				SendSysMessage(critter, "Voce foi revelado pelo acido");
+			endif
+		endif
+	endforeach
+
+endfunction
+
+function ExplosionEffect(who, potion, dmg)
+	var color := COLOR_ELEMENTAL_FIRE;
+	var dmg_type := DAMAGE_TYPE::FIRE;
+	var mods := GetObjProperty(who, "ExplosivoConfig");
+	var bonus := GetObjProperty(potion,"bonus");
+	var push := bonus/3;
+	case(mods.elemento)
+		ELEMENTO_GELO:		color := COLOR_ELEMENTAL_ICE;		dmg_type := DAMAGE_TYPE::COLD;
+		ELEMENTO_ENERGIA:	color := COLOR_ELEMENTAL_ENERGY;	dmg_type := DAMAGE_TYPE::ENERGY;
+	endcase
+	var dist := 4;
+	var diff := -1;
+	if (mods.carga != error || mods.carga != CARGA_BALANCEADA)
+		case(mods.carga) 
+			CARGA_CONCENTRADA:	
+				dist := 2;	
+				diff := -1.5;
+			CARGA_DISPERSA:
+				dist := 6;
+				diff := -0.6;
+		endcase
+	endif
+	diff := CInt(diff * dmg);
+	PlayStationaryEffectEx(potion.x, potion.y, potion.z, potion.realm, 0x36b0, 7, 10, color);
+	PlaySoundEffect(potion, 0x208);
+	potion.graphic := 1;
+
+	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, dist, potion.realm))
+		if (checkLineOfSight(potion, critter))
+			if (critter.hidden)
+				critter.hidden := 0;
+				SendSysMessage(critter, "Voce foi revelado na explosao!");
+			endif
+			if (CheckResist(critter, REFLEXES, RESIST_EASY, diff))
+				if (MobileWrapper(critter).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
+					SendSysMessageEx(critter, "Voce escapou completamente da explosao.", SSM_INFO);
+					critter.hidden := 0;
+				elseif (MobileWrapper(critter).HasAbility(ABILITY_ID::ESSENCIA_EXPLOSIVA))
+					SendSysMessageEx(critter, "Voce escapou completamente da explosao.", SSM_INFO);
+					critter.hidden := 0;
+				else
+					SendSysMessageEx(critter, "Voce escapou parcialmente da explosao.", SSM_INFO);
+					PlayObjectCenteredEffectEx(critter, 0x36b0, 7, 0x10, color);
+					PlaySoundEffect(critter, 0x208);
+					// ApplyDamageEX(critter, dmg, DAMAGE_TYPE::FIRE);
+					DealDamage(critter, CInt(dmg / 2), dmg_type, who);
+					DanificaObjetosProximos(who, potion.x, potion.y, potion.z, potion.realm, struct{ dano := dmg,
+																				 					desc := "Bomba de Fragmentacao." },
+											dist, 0x36b0, potion.serial, color);
+					case(mods.involucro)
+						INVOLUCRO_FRAGMENTACAO:	TS_StartTimer(critter, "bleed", 7);
+						INVOLUCRO_CONCUSSAO:	Pushback_alch(critter, potion.x, potion.y, potion.z, potion.realm, dist, push, push, 50);
+					endcase
+					if(mods.reforco == REFORCO_POTENCIA_ELEM)
+						case(dmg_type)
+							DAMAGE_TYPE::FIRE:	TS_StartTimer(critter, "queimar", 5);
+							DAMAGE_TYPE::COLD:	TS_StartTimer(critter, "lentidao", 5);
+							DAMAGE_TYPE::ENERGY:	TS_StartTimer(critter, "paralysis", 1);
+						endcase
+					endif
+				endif
+			else
+				if (MobileWrapper(critter).HasAbility(ABILITY_ID::ESSENCIA_EXPLOSIVA))
+					SendSysMessageEx(critter, "Por instinto voce escapou parcialmente da explosao.", SSM_INFO);
+					PlayObjectCenteredEffectEx(critter, 0x36b0, 7, 0x10, color);
+					PlaySoundEffect(critter, 0x208);
+					// ApplyDamageEX(critter, dmg, DAMAGE_TYPE::FIRE);
+					DealDamage(critter, CInt(dmg / 2), dmg_type, who);
+					DanificaObjetosProximos(who, potion.x, potion.y, potion.z, potion.realm, struct{ dano := dmg,
+																				 					desc := "Bomba de Fragmentacao." },
+											dist, 0x36b0, potion.serial);
+					case(mods.involucro)
+						INVOLUCRO_FRAGMENTACAO:	TS_StartTimer(critter, "bleed", 7);
+						INVOLUCRO_CONCUSSAO:	Pushback_alch(critter, potion.x, potion.y, potion.z, potion.realm, dist, push, push, 50);
+					endcase
+					if(mods.reforco == REFORCO_POTENCIA_ELEM)
+						case(dmg_type)
+							DAMAGE_TYPE::FIRE:	TS_StartTimer(critter, "queimar", 5);
+							DAMAGE_TYPE::COLD:	TS_StartTimer(critter, "lentidao", 5);
+							DAMAGE_TYPE::ENERGY:	TS_StartTimer(critter, "paralysis", 1);
+						endcase	
+					endif
+				else
+					PlayObjectCenteredEffectEx(critter, 0x36b0, 7, 0x10, color);
+					PlaySoundEffect(critter, 0x208);
+					// ApplyDamageEX(critter, dmg, DAMAGE_TYPE::FIRE);
+					DealDamage(critter, dmg, dmg_type, who);
+					DanificaObjetosProximos(who, potion.x, potion.y, potion.z, potion.realm, struct{ dano := dmg,
+																				 					desc := "Bomba de Fragmentacao." },
+											dist, 0x36b0, potion.serial);
+					case(mods.involucro)
+						INVOLUCRO_FRAGMENTACAO:	TS_StartTimer(critter, "bleed", 15);
+						INVOLUCRO_CONCUSSAO:	Pushback_alch(critter, potion.x, potion.y, potion.z, potion.realm, dist, push, push, 50);
+					endcase
+					if(mods.reforco == REFORCO_POTENCIA_ELEM)
+						case(dmg_type)
+							DAMAGE_TYPE::FIRE:	TS_StartTimer(critter, "queimar", 10);
+							DAMAGE_TYPE::COLD:	TS_StartTimer(critter, "lentidao", 10);
+							DAMAGE_TYPE::ENERGY:	TS_StartTimer(critter, "paralysis", 3);
+						endcase	
+					endif
+				endif
+			endif
+		endif
+		Sleepms(2);
+	endforeach
+
+// efeitocascata(potion, who);
+// destroycraft(potion, who);
+
+endfunction
+
+function Sleepeffect(who, potion, bonus)
+	var mods := getobjproperty(who, "ExplosivoConfig");
+	var dist := 6;
+	var diff := -1;
+	if (mods.carga != error || mods.carga != CARGA_BALANCEADA)
+		case(mods.carga) 
+			CARGA_CONCENTRADA:	
+				dist := 4;	
+				diff := -1.5;
+			CARGA_DISPERSA:
+				dist := 8;
+				diff := -0.6;
+		endcase
+	endif
+	diff := CInt(diff * bonus);
+	PlaySoundEffect(potion, 0x03F);
+	potion.graphic := 1;
+	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, dist, potion.realm))
+		if (checkLineOfSight(potion, critter))
+			if (CheckResist(critter, FORTITUDE, RESIST_VERY_HARD, diff))
+				SendSysMessage(critter, "Voce resiste ao sono.");
+			elseif (MobileWrapper(critter).HasAbility(ABILITY_ID::ESSENCIA_EXPLOSIVA))
+				SendSysMessage(critter, "Voce resiste ao sono.");
+			else
+				if (critter.hidden)
+					critter.hidden := 0;
+					SendSysMessage(critter, "Voce cai em sono profundo e foi revelado");
+				endif
+				TS_StartTimer(critter, "sleep", bonus);
+				PlayObjectCenteredEffect(critter, 0x11A6, 7, 0x10);
+				PlaySoundEffect(critter, 0x232);
+			endif
+		endif
+	endforeach
+endfunction
+
+function EfeitoCascata(potion, who)
+	var potions := { 61280, 61281, 61282, 48915, 48916, 48917 };
+	var counter := 1;
+	foreach item in (ListItemsNearLocation(potion.x, potion.y, potion.z, 8, potion.realm))
+		if (checklineofsight(potion, item))
+			if ((item.objtype in potions) && (item != potion))
+				if (counter > 10)
+					SetObjProperty(item, "nodmg", 1);
+				endif
+				SetObjProperty(item, "pause", 1);
+				SetObjProperty(item, "lit", 1);
+				var passparms := array;
+				passparms[1] := item;
+				passparms[2] := who;
+				var a := start_script(":alchemy:potions/exploder", passparms);
+				counter := counter + 1;
+			endif
+		endif
+	endforeach
+endfunction
+
+function MudBomb(who, potion, bonus)
+	var mods := getobjproperty(who, "ExplosivoConfig");
+	var dist := 1;
+	var time := 1;
+	var range := cint(bonus / 3);
+	var duration := Cint(GetObjProperty(potion, "crafterskill")) / 10;
+	if (mods.carga != error || mods.carga != CARGA_BALANCEADA)
+		case(mods.carga) 
+			CARGA_CONCENTRADA:	
+				range := Cint(range - 1);
+				duration := Cint(duration * 1.5);
+			CARGA_DISPERSA:
+				range := Cint(range + 1);
+				duration := Cint(duration / 2 );
+		endcase
+	endif
+	if (range < 1)
+		range := 1;
+	endif
+	if (duration < 1)
+		duration := 1;
+	endif
+
+	foreach critter in ListMobilesNearLocation(potion.x, potion.y, potion.z, range, potion.realm)
+		var lama := CreateItemAtLocation(critter.x, critter.y, critter.z, 4653, 1, critter.realm);
+		lama.color := 1008;
+		lama.name := "lama";
+		TS_StartTimer(critter, "lentidao", duration);
+	endforeach
+
+	return 1;
+endfunction
+
+function FlashbangEffect(who, potion, bonus)
+	// Efeito visual de explosão
+	PlayStationaryEffect(potion.x, potion.y, potion.z, 0x36b0, 7, 10, 1, potion.realm);
+	PlaySoundEffect(potion, 0x208);
+	potion.graphic := 1;
+
+	// Raio de efeito da flashbang
+	var flash_range := 8;
+	
+	// LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN = 0x03
+	var mobiles := ListMobilesNearLocationEx(potion.x, potion.y, potion.z, flash_range, LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN, potion.realm);
+
+	// Aplica flash branco (tipo 5) em todos na área
+	foreach critter in mobiles
+		if (CheckLineOfSight(potion, critter))
+			// Revela jogadores ocultos
+			if (critter.hidden)
+				critter.hidden := 0;
+				SendSysMessage(critter, "Voce foi revelado pela granada ofuscante!");
+			endif
+			
+			// Envia o flash branco (tipo 5 = FLASH_WHITE)
+			if (critter.connected)
+				SendScreenFlash(critter, FLASH_DROW_ON);
+				SendSysMessageEx(critter, "VOCE FOI OFUSCADO!", SSM_FAIL);
+				PlaySoundEffect(critter, 0x0028); // Som de zumbido nos ouvidos
+				TS_StartTimer(critter, "blinded", bonus / 2, 0, who);
+			endif
+		endif
+		Sleepms(2);
+	endforeach
+
+endfunction

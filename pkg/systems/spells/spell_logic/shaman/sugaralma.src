@@ -1,0 +1,63 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	SC_HandleSound(who, targ, SFX_SPELL_WEAKEN);
+
+	var time := 0;
+	var oldx := who.x;
+	var oldy := who.y;
+
+	var amt := Cint(AP_GetSkill(who, NATURE) / 10);
+
+	SetObjProperty(who, "#Casting", 1);
+
+	while (time < 10)
+		if ((who.x != oldx) || (who.y != oldy))
+			time := 10;
+			SendSysMessageEx(who, "Voce se moveu e cancelou a magia.", SSM_FAIL);
+		elseif (who.frozen)
+			time := 10;
+			SendSysMessageEx(who, "Voce esta incapaz de se mover.", SSM_FAIL);
+		elseif (Distance(who, targ) >= 16)
+			time := 10;
+			SendSysMessageEx(who, "O alvo se distanciou muito.", SSM_FAIL);
+		elseif (AP_GetVital(targ, HITS) <= 0)
+			time := 10;
+		else
+			PlayMovingEffectEx(targ, who, 3982, 10, 1, 2117);
+			PerformAction(who, HUMAN_ANIM::CAST_AREA);
+			ConsumeMana(targ, amt);
+			targ.setAggro(who.serial, 150);
+			if (GetObjProperty(targ, "#sleep"))
+				EraseObjProperty(targ, "#sleep");
+			endif
+			PrintTextPrivate(who, "+" + amt + " Vida", who, 3, 568); // verde
+			ApplyEpicHealing(who, amt);
+			DamageMana(targ, amt);
+			PrintTextPrivate(targ, "-" + amt + " Mana", who, 3, 38); // vermelho
+			time := time + 1;
+			sleep(1);
+		endif
+	endwhile
+
+	EraseObjProperty(who, "#Casting");
+	return 1;
+endprogram

@@ -1,0 +1,66 @@
+use vitals;
+use uo;
+use util;
+
+include "include/epicCombatUtils";
+include ":attributes:attributes";
+include ":magery:spells";
+include "include/client";
+include "include/say";
+include "include/shapes";
+include ":timedScripts:timedScripts";
+include "include/sysEvent";
+include "include/client";
+include "include/say";
+include ":taming:taming";
+include "include/epicMageryUtils";
+include ":spells:Controller/SC_Damage";
+include ":charactercreation:resists";
+
+program earthquake(parms)
+	var caster := parms[1];
+	var info := parms[2];
+	var spell := parms[3];
+	var spell_circle := CInt(info.Circle[1]);
+	var spell_school := spell.School;
+
+	SendSysMessageEx(caster, "Voce ve o chao tremer com extrema violencia.", SSM_INFO);
+	PlaySoundEffect(caster, SFX_220);
+	sleepms(200);
+	PlaySoundEffect(caster, SFX_221);
+	sleepms(200);
+	PlaySoundEffect(caster, SFX_222);
+	sleepms(200);
+	PlaySoundEffect(caster, SFX_223);
+	sleepms(200);
+
+	var range := Cint(AP_GetSKill(caster, NATURE) / 10);
+	var allMobiles := listAllMobilesNearbyButPetsAndParty(caster, range);
+
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+	foreach mobile in allMobiles
+		PlaySoundEffect(mobile, SFX_220);
+		sleepms(200);
+		PlaySoundEffect(mobile, SFX_221);
+		sleepms(200);
+		PlaySoundEffect(mobile, SFX_222);
+		sleepms(200);
+		PlaySoundEffect(mobile, SFX_223);
+		sleepms(200);
+		SendSysMessageEx(mobile, "Voce sente o chao tremer com extrema violencia.", SSM_FAIL);
+		var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+
+		// REFLEX save halves damage per affected mobile.
+		if (CheckResist(mobile, REFLEXES, diff, -bonus))
+			dmg := Cint(dmg / 2);
+			SendSysMessageEx(mobile, "Voce mantem o equilibrio em parte do tremor.", SSM_INFO);
+		endif
+
+		SC_DealDamage(caster, mobile, CInt(spell.id), cint(dmg), DAMAGE_TYPE::FORCED);
+		sleepms(600);
+	endforeach
+
+	return 1;
+endprogram

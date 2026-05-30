@@ -1,0 +1,54 @@
+use uo;
+use os;
+use npc;
+
+include "include/say";
+include ":attributes:attributes";
+include ":spells:Controller/SC_Damage";
+
+program SpellScript(params)
+	var who := params[1];
+	var spell := params[3];
+	params := 0;
+
+	SendSysMessageEx(who, "Invocando poder sagrado para banir criaturas malignas...", SSM_INFO);
+
+	var max_tier := CInt(AP_GetSkill(who, THEOLOGY) / 20);
+	var range := max_tier;
+	var affected := 0;
+
+	var nearby := ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm);
+	SendSysMessageEx(who, "Encontrados " + nearby.size() + " alvos próximos.", SSM_INFO);
+
+	foreach mobile in nearby
+		if (mobile.npctemplate)
+			var npctemplate := NPC_ParseTemplateName(mobile.npctemplate);
+			var cfg := ReadConfigFile(":*:npcdesc");
+			var inimigo := array{ "Undead", "Demons" };
+
+			var elem := NPC_GetNPCConfig(mobile.npctemplate);
+			var tier := CInt(GetConfigString(elem, "Tier"));
+			var is_boss := GetObjProperty(mobile, "true_boss");
+
+			if ((cfg[npctemplate.template].Environment in inimigo) && tier <= max_tier && !is_boss)
+				affected += 1;
+				PlayObjectCenteredEffect(mobile, 0x37CC, 10, 10);
+				PrintTextAbove(mobile, "*Banido*", who);
+				SC_DealDamage(who, mobile, CInt(spell.id), 9999, DAMAGE_TYPE::FORCED);
+			elseif ((cfg[npctemplate.template].Environment in inimigo) && (tier > max_tier || is_boss))
+				PrintTextAbove(mobile, "*Resiste ao Banimento*");
+				SendSysMessageEx(who, "A criatura é poderosa demais para ser banida!", SSM_FAIL);
+			endif
+		endif
+		sleepms(2);
+	endforeach
+
+	if (affected)
+		SendSysMessageEx(who, "Você baniu " + affected + " criaturas malignas!", SSM_INFO);
+	else
+		SendSysMessageEx(who, "Não há criaturas malignas que possam ser banidas.", SSM_INFO);
+	endif
+
+	PlaySoundEffect(who, 0x215);
+	return 1;
+endprogram

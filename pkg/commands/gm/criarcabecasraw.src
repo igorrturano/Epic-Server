@@ -1,0 +1,145 @@
+
+use uo;
+
+// Comando GM: cria uma bolsa com 1 unidade de cada cabeca raw (nao curada)
+// Raws sao o que dropa do cadaver — precisam ser curtidas no curtidor para virar tratadas
+program criar_cabecas_raw(who)
+
+	var raws := array{
+		// === CABEÇAS ANIMAIS ===
+		0xC04C,  // cabecaboi
+		0xC04F,  // cabecaporco
+		0xC052,  // cabecamorsa
+		0xC058,  // cabecaalce
+		0xC05B,  // cabecacervo
+		0xC073,  // CabecaAlce4
+		0xC091,  // CabecaTouro
+		0xC094,  // CabecaGrandeTouro
+		0xC0B5,  // craniocomchifre
+		0xC5C1,  // CabecaLhama
+		0xC142,  // CabecaOstard
+
+		// === URSOS ===
+		0x1e37,  // bearhead
+		0xC08D,  // brownbearhead
+		0xC08E,  // CabecaUrsoNegro
+		0xC079,  // CabecaUrsoPolar1
+
+		// === FELINOS ===
+		0xC0CA,  // CabecaLeao
+		0xC0CD,  // CabecaLeaoGigante
+		0xC0C7,  // CabecaTigreDenteSabre
+		0xC5D0,  // CabecaTigre
+		0xC0C1,  // CabecaOnca
+		0xC0BE,  // cabecadefelino
+
+		// === CANINOS / SÍMIOS ===
+		0xC085,  // cabecadegorila
+		0xC088,  // CabecaGorilaGigante
+		0xC0C4,  // cabecadelobodasneves
+
+		// === RÉPTEIS / LAGARTOS ===
+		0xC0BB,  // cabecadelagarto
+		0xC0B8,  // CabecaLagartoDeserto2
+		0xC13C,  // CabecaDinossauro
+		0xC127,  // CranioDinossauro
+		0xC12A,  // CabecaMamute
+		0xC121,  // cabecatriceratops
+		0xC133,  // cabecalagartodefogo
+		0xC136,  // cabecalagartodigelo
+		0xC139,  // cabecalagartodeserto2
+
+		// === DRAGÕES ===
+		0xC03A,  // CabecaDragao
+		0xC031,  // CabecaDragaoAzul
+		0xC02B,  // cabecadedragaovermelho
+		0x9e32,  // cabecadedragaobranco
+		0xC02E,  // cabecadedragaoverde
+		0xFEA0,  // CabecaDragaoNegro
+		0xC034,  // cabecadedrake
+		0xFE5F,  // CranioEsqueletoGrandeDragao
+		0xFC8C,  // CranioEsqueleticoCavalo
+		0xC124,  // CranioDragao1
+		0xC037,  // cabecadragao6
+		0xC040,  // cabecadragao9
+		0xC043,  // cabecadragao10
+		0xC046,  // cabecadragao11
+		0xC049,  // cabecadragao12
+
+		// === HUMANOIDES / GOBLINOIDES ===
+		0xC0D6,  // cabecadegoblin
+		0xC0D3,  // CabecaHomemLagarto
+		0xC13F,  // cabecademinotauro
+		0xC0D9,  // CabecaCiclops
+		0xC0EE,  // cabecadegigante
+		0xC0DC,  // CabecaGigante
+		0xC5D6,  // CabecaOrc
+		0xC5D8,  // CabecaTitan
+		0xC12D,  // CabecaGargula
+		0xC5BB,  // BustoHarpia
+		0x312f,  // humanears
+
+		// === DEMÔNIOS ===
+		0xC106,  // CabecaDemonio
+		0xC028,  // cabecademonio3
+		0xC103,  // cabecademonio1
+		0xC10F,  // cabecademonionegro
+		0xC112,  // cabecagrandedemonio
+		0xC115,  // cabecademoniochifrudo
+		0xC118,  // cabecademoniodasprofundezas
+		0xC100,  // cabecademonioparede
+		0xC109,  // cabecademonioparede1
+
+		// === GIGANTES ===
+		0xC0E2,  // CabecaGiganteGelo
+		0xC0E5,  // cabecagigantedeserto2
+		0xC0E8,  // cabecagigantegelocombatente
+		0xC0EB,  // cabecadeogro
+		0xC130,  // cabecadetroll
+
+		// === MONSTROS ESPECIAIS ===
+		0xC11B,  // CabecaMindflayer
+		0xC11E,  // GrandeRinoceronteDemoniaco
+		0xC5CC,  // CabecaMonstroFome
+		0xC5C5,  // CabecaMonstroPulante
+		0xC0FD,  // CabecaOvelhaLouca
+		0xC0FA,  // CabecaCachorroGigante
+		0xC145,  // CabecaCavaloDemoniaco
+		0xC148,  // CabecaTubarao
+		0xC01F,  // cabecaderato
+		0x1e8e,  // pigshead
+		0x315B,  // unicornhead
+
+		// === CHIFRES ===
+		0xC097,  // chifre
+		0xC061,  // chifre1
+		0xC064,  // chifre2
+		0xC067,  // chifre3
+		0xC06A,  // chifre4
+		0xC06D,  // ChifreAlce
+
+		// === AVES ===
+		0xC082,  // corpodeaguia
+
+		// === PEIXES (curáveis no curtidor) ===
+		0xC09A,  // peixeazul
+		0xC09D,  // lambari
+		0xC0A0,  // robalo
+		0xC0A3,  // anchova
+		0xC0A6,  // sardinha
+		0xC0A9,  // peixegalo
+		0xC0AC,  // atum
+		0xC0B2,  // dourado
+		0xEE63   // perca
+	};
+
+	var bolsa := CreateItemInBackpack(who, "backpack", 1);
+	bolsa.color := 1161;
+	bolsa.name := "Cabecas Raw (nao curadas)";
+
+	foreach coisa in raws
+		CreateItemInContainer(bolsa, coisa, 1);
+	endforeach
+
+	SendSysMessage(who, "Bolsa criada com " + raws.size() + " cabecas raw.");
+endprogram

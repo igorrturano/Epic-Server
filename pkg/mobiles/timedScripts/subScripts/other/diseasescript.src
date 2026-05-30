@@ -1,0 +1,69 @@
+
+include ":medicine:disease";
+include ":medicine:util/diseaseConstants";
+
+program diseaseScript(params)
+	var mobile := params[1];
+	var attacker := params[2]; // Pode ser null quando chamado de outro script
+	var level := params[3]; // Level 1-5
+
+	// Verifica se é uma falha de cura
+	var diseases_system := GetObjProperty(mobile, "Diseases_System");
+		if (!diseases_system)
+			diseases_system := struct{};
+		endif
+	var falhou_cura := diseases_system.falhou_cura;
+
+	// Se falhou na tentativa de cura
+/*	if (falhou_cura)
+		// Remove a flag de falha na cura
+		UpdateDiseaseProperty(mobile, "falhou_cura", 0);
+		// Reseta o timer
+		PRINT("FALHOU CURA");
+		return 1;*/
+	//else
+		//print("PRIMEIRA INFECCAO");
+		// Primeira infecção ou nova infecção
+		// Verifica se já está infectado
+
+		var current_diseases := diseases_system.diseases;
+
+		var new_diseases;
+		if (current_diseases != "random" && typeof(current_diseases) == "Array" && current_diseases.size() > 0)
+			new_diseases := current_diseases;
+		else
+			new_diseases := GenerateRandomDiseases(level);
+			diseases_system.diseases := new_diseases;
+		endif
+		if (!diseases_system.grade) 
+			diseases_system.grade := DISEASE_GRADES::LIGHT; // Adiciona outras propriedades necessárias
+		endif
+		
+		diseases_system.falhou_cura := 0;
+
+		SendSysMessageEx(mobile, "Você começa a se sentir doente!", SSM_FAIL);
+		/*var corpo_peste := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0xd1bc, 1);
+		//print ("NÃO TEM");
+		corpo_peste.movable := 1;
+		EquipItem(mobile, corpo_peste);
+		corpo_peste.movable := 0;
+		diseases_system.serial_peste_corpse := corpo_peste.serial;*/
+		
+		diseases_system.RegenDiseaseMod := -50;
+		AP_SetVitalRegenRateMod(mobile, "Stamina", -50);
+		AP_SetVitalRegenRateMod(mobile, "Mana", -50);
+		RecalcVitals(mobile);
+
+		SetObjProperty(mobile, "Diseases_System", diseases_system);
+
+		if (attacker)
+			PrintTextAbove(attacker, "*Infecta " + mobile.name + "*");
+		endif
+
+		ApplyDiseaseEffects(mobile, new_diseases, diseases_system.grade);
+		ScheduleNextDiseaseEffect(mobile, diseases_system.grade);
+	//endif
+
+	return 1;
+endprogram
+

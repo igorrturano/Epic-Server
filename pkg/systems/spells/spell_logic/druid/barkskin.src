@@ -1,0 +1,94 @@
+use uo;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	// Remove efeito anterior se existir
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	// Calcula bonus de spell resist (% de reducao multiplicativa). Variavel
+	// magiclore_skill mantem o nome legacy mas HandleSpellSkill retorna NATURE
+	// pra druida (e ARCANA pra mago). Escala % do redesign: skill/3 (max 33% no GM).
+	var magiclore_skill := HandleSpellSkill(who);
+	var armor_bonus := CInt(magiclore_skill / 3);
+	if (armor_bonus < 1)
+		armor_bonus := 1; // Minimum 1%
+	endif
+
+	// +10% quando o alvo nao usa armadura — casca grossa sobre pele nua.
+	if (!HasArmorProtection(targ))
+		armor_bonus += 10;
+	endif
+
+	var duration := CInt(20 + (magiclore_skill * 2 / 5)); // 20s base + up to 40s at 100 skill (max 60s)
+
+	// Bonus de especializacao Coracao da Matilha: +5% spell resist + 20% duracao.
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
+		duration := CInt(duration * 1.2);
+		armor_bonus += 5;
+	endif
+
+	var opts := struct{};
+	opts.+slash_resist := armor_bonus;
+	opts.+piercing_resist := armor_bonus;
+	opts.+blunt_resist := armor_bonus;
+	opts.+color := 2826;
+	opts.+buff_category := "armor_protection";
+	opts.+displayname := "Pele de Árvore";
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{ fx := FX_PELE_DE_ARVORE, sound := SFX_SPELL_PROTECTION };
+
+	// Apply effect via SpellController (no sleep needed)
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+
+	SendSysMessageEx(who, "A casca de arvore protege " + targ.name + ".", SSM_INFO);
+	SendSysMessageEx(targ, "Sua pele endurece como casca de arvore.", SSM_INFO);
+
+	return 1;
+endprogram
+
+function HasArmorProtection(targ)
+	// Wildshape acts as natural armor for spell-resist scaling — a transformed
+	// druid is treated as armored, so casting barkskin on them skips the +10%
+	// naked bonus.
+	if (GetObjProperty(targ, "metamorfose") != error)
+		return 1;
+	endif
+
+	var itemdesc := ReadConfigFile(":*:itemdesc");
+	foreach item in (ListEquippedItems(targ))
+		if (!item.isa(POLCLASS_ARMOR))
+			continue;
+		endif
+		var tipoProtecao := CStr(itemdesc[item.objtype].TipoProtecao);
+		if (tipoProtecao["Armadura"])
+			return 1;
+		endif
+	endforeach
+	return 0;
+endfunction

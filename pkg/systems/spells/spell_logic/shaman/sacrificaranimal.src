@@ -1,0 +1,24 @@
+use uo;
+include ":message:model/Message";
+include "include/NPCUtil";
+
+program sacrifice(params)
+    var who := params[1];
+    var targ := params[2];
+
+    if (!targ.isAnimalBrain())
+        Message("Apenas animais podem ser sacrificados aqui.").SendSys(who);
+        return;
+    endif
+    var msg := "Sacrificio aceito.";
+    var npc_elem := NPC_GetNPCConfig(targ);
+    if (npc_elem.Environment == "Aklats")
+        SetObjProperty(targ, "aklat_sacrifice", who.serial);
+        msg := "Guntramm sorri para você.";
+    endif
+
+    SetObjProperty(targ, "animal_sacrifice", who.serial);
+
+    Message(msg).SendSys(who);
+    Message("O animal foi marcado. Mate-o perto de um altar xamanico para receber a protecao contra a morte.").SendSys(who);
+endprogram

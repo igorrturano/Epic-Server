@@ -1,0 +1,89 @@
+'''
+Converts a CSV file back to a CFG file format, specifically for NPCTemplates.
+'''
+import csv
+import os
+
+def convert_csv_to_cfg(csv_filepath, cfg_filepath):
+    '''
+    Reads a CSV file and converts its content back to a CFG file format.
+
+    Args:
+        csv_filepath (str): The path to the input CSV file.
+        cfg_filepath (str): The path to the output CFG file.
+    '''
+    try:
+        with open(csv_filepath, 'r', encoding='utf-8') as f_csv, \
+             open(cfg_filepath, 'w', encoding='utf-8') as f_cfg:
+
+            reader = csv.DictReader(f_csv)
+            
+            if not reader.fieldnames:
+                print(f"Warning: CSV file '{csv_filepath}' is empty or has no header. Output CFG will be empty.")
+                return
+
+            # Ensure TemplateName is a field
+            if 'TemplateName' not in reader.fieldnames:
+                print(f"Error: CSV file '{csv_filepath}' must contain a 'TemplateName' column.")
+                return
+
+            for row_number, row in enumerate(reader):
+                template_name = row.get('TemplateName')
+                if not template_name: # Skip rows with no TemplateName
+                    print(f"Warning: Skipping row {row_number + 2} in CSV due to missing TemplateName.")
+                    continue
+
+                template_suffix = row.get('TemplateSuffix', '') # Get suffix, default to empty string if not present
+
+                # Construct NPCTemplate line
+                npc_template_line = "NPCTemplate "
+                npc_template_line += template_name
+                if template_suffix: # Add suffix only if it has a value
+                    npc_template_line += " " + template_suffix
+                
+                f_cfg.write(npc_template_line + "\n")
+                f_cfg.write("{\n")
+
+                # Get ordered field names from the CSV reader to process them in CSV column order
+                field_names = reader.fieldnames if reader.fieldnames else []
+
+                for key in field_names: # Iterate in CSV column order
+                    if key in ['TemplateName', 'TemplateSuffix']:
+                        continue # Skip these as they are handled already
+
+                    value = row.get(key, '') # Get value, default to empty string
+
+                    if key == '_INSERT_BLANK_' and value.strip().upper() == 'TRUE':
+                        f_cfg.write("\n") # Write a blank line
+                    elif value and key != '_INSERT_BLANK_': # Only write if value is not empty and not the special blank line key
+                        # Basic check for multi-word values that might need quoting in some CFG formats
+                        # For this specific CFG, it seems values are not quoted, even with spaces.
+                        # If quoting were needed: if ' ' in value and not (value.startswith('"') and value.endswith('"')):
+                        #    value_to_write = f'"{value}"'
+                        # else:
+                        #    value_to_write = value
+                        f_cfg.write(f"\t{key}\t\t{value}\n")
+                
+                f_cfg.write("}\n\n") # Closing brace and a blank line for separation
+            
+            print(f"Successfully converted '{csv_filepath}' to '{cfg_filepath}'")
+
+    except FileNotFoundError:
+        print(f"Error: Input CSV file '{csv_filepath}' not found.")
+    except IOError as e:
+        print(f"Error: Could not read/write file. CSV: '{csv_filepath}', CFG: '{cfg_filepath}'. Details: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+if __name__ == '__main__':
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # CSV and CFG files in the same directory as the script
+    csv_file_path_abs = os.path.join(script_dir, 'npcdesc.csv')
+    cfg_file_path_abs = os.path.join(script_dir, 'npcdesc_from_csv.cfg')
+
+    print(f"Input CSV file: {csv_file_path_abs}")
+    print(f"Output CFG file: {cfg_file_path_abs}")
+
+    convert_csv_to_cfg(csv_file_path_abs, cfg_file_path_abs)

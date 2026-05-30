@@ -1,0 +1,81 @@
+use uo;
+use vitals;
+use os;
+include ":attributes:attributes";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+
+program danoarea(rune)
+	while (1)
+		var range := CInt(GetObjProperty(rune, "range"));
+		if (!range)
+			range := 6;
+		endif
+		var intervalo := CInt(GetObjProperty(rune, "intervalo"));
+		if (!intervalo)
+			intervalo := 4;
+		endif
+
+		var nearbypeople := ListMobilesNearLocation(rune.x, rune.y, rune.z, range, rune.realm);
+		if (nearbypeople.size() > 0)
+			foreach people in nearbypeople
+				if ((!people.npctemplate || people.master) && !(people.cmdlevel))
+					ApplyAreaDamage(people, rune);
+				endif
+			endforeach
+		endif
+		sleep(intervalo);
+	endwhile
+endprogram
+
+function ApplyAreaDamage(mobile, rune)
+	var damage_dealt := struct{ "hits" := 0, "mana" := 0, "stam" := 0 };
+
+	if (GetObjProperty(rune, "hits"))
+		damage_dealt.hits := CInt(GetObjProperty(rune, "hits"));
+		var damage_types := array{ DAMAGE_TYPE::BLUNT, DAMAGE_TYPE::FIRE, DAMAGE_TYPE::COLD, DAMAGE_TYPE::POISON, DAMAGE_TYPE::ENERGY };
+		var any_type_applied := 0;
+		foreach dmg_type in damage_types
+			if (GetObjProperty(rune, "tipo_dano_" + dmg_type))
+				DealDamage(mobile, damage_dealt.hits, dmg_type);
+				any_type_applied := 1;
+			endif
+		endforeach
+		if (!any_type_applied)
+			DealDamage(mobile, damage_dealt.hits, DAMAGE_TYPE::BLUNT);
+		endif
+	endif
+
+	if (GetObjProperty(rune, "mana"))
+		damage_dealt.mana := CInt(GetObjProperty(rune, "mana"));
+		var current_mana := AP_GetVital(mobile, "Mana");
+		AP_SetVital(mobile, "Mana", current_mana - damage_dealt.mana);
+	endif
+
+	if (GetObjProperty(rune, "stam"))
+		damage_dealt.stam := CInt(GetObjProperty(rune, "stam"));
+		var current_stam := AP_GetVital(mobile, "Stamina");
+		AP_SetVital(mobile, "Stamina", current_stam - damage_dealt.stam);
+	endif
+
+	var damage_message := "";
+	if (damage_dealt.hits > 0)
+		damage_message += "Dano: -" + damage_dealt.hits + " HP ";
+	endif
+	if (damage_dealt.mana > 0)
+		damage_message += "-" + damage_dealt.mana + " Mana ";
+	endif
+	if (damage_dealt.stam > 0)
+		damage_message += "-" + damage_dealt.stam + " Stamina";
+	endif
+
+	if (damage_message != "")
+		PrintTextAbove(mobile, damage_message, 3, 38);
+	endif
+
+	var mensagem := GetObjProperty(rune, "mensagem");
+	if (!mensagem)
+		mensagem := "O ambiente afeta seu corpo.";
+	endif
+	SendSysMessage(mobile, mensagem);
+endfunction

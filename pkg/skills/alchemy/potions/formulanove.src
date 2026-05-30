@@ -1,0 +1,88 @@
+use uo;
+use os;
+use math;
+use vitals;
+
+include "include/say";
+include ":mounts:mounts";
+include ":attributes:attributes";
+include "include/shapes";
+include "include/client";
+include "include/sounds";
+include "include/facings";
+include ":alchemy:alchemy";
+
+program formula90(who, pocao)
+
+	if (!hasFreeHandToDrink(who))
+		return 0;
+	endif
+
+	var cfgComponentes := ReadConfigFile(":*:componentes");
+
+	SendSysMessageEx(who, "Qual item deseja transmutar?", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!targ)
+		SendSysMessage(who, "Cancelado");
+		return 0;
+	endif
+
+	if (targ in EnumerateItemsInContainer(who.backpack))
+		SendSysMessageEx(who, "Voce nao pode transmutar objetos em sua bolsa", SSM_FAIL);
+		return 0;
+	endif
+
+	if (targ.isA(POLCLASS_WEAPON) || targ.isA(POLCLASS_ARMOR))
+
+		var fabricado := GetObjProperty(targ, "fabricado");
+
+		if (!fabricado || !fabricado.componentes)
+			SendSysMessageEx(who, "Este item nao pode ser transmutado", SSM_FAIL);
+			return 0;
+		endif
+
+		var item := 0;
+		var metal := 0.0;
+
+		foreach comp in (fabricado.componentes)
+			Sleepms(2);
+			var compElem := cfgComponentes[hex(comp.item.objtype)];
+			var compMats := GetConfigStringDictionary(compElem, "materials");
+			var compMetal := cdbl(compMats.metal);
+			if (compMetal > 0)
+				if (!item)
+					item := cint(comp.material.chave);
+				endif
+				metal := metal + (compMetal * cint(comp.componenteNecessario.qtdNecessaria));
+			endif
+		endforeach
+
+		if (metal <= 0 || !item)
+			SendSysMessageEx(who, "Este item nao pode ser transmutado", SSM_FAIL);
+			return 0;
+		endif
+
+		var skill := (getobjProperty(pocao, "crafterskill") * 0.6);
+		var amt := cint(metal * skill / 100);
+
+		if (amt <= 0)
+			SendSysMessageEx(who, "Habilidade insuficiente para transmutar este item", SSM_FAIL);
+			return 0;
+		endif
+
+		CreateItemAtLocation(targ.x, targ.y, targ.z, item, amt, targ.realm);
+
+		empty_bottle(who, pocao, 1); 
+		playsoundeffect(who, 0x1EB);
+		var brilho := CreateItemAtLocation(targ.x, targ.y, (targ.z - 2), 0x375A, 1, targ.realm);
+		sleepms(2000);
+		Destroyitem(brilho);
+		destroyitem(targ);
+
+	else
+		SendSysMessage(who, "Voce pode transmutar apenas armas e armaduras de metal");
+		return 0;
+	endif
+
+endprogram

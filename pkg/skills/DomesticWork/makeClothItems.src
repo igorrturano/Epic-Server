@@ -1,0 +1,10 @@
+use cfgfile;
+use util;
+
+include ":crafting:include/fabricacaoComplexosGump";
+
+program use_SmithTool(who, tool)
+
+	FabricaItensComplexos(who, "Tailoring");
+
+endprogram

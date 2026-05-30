@@ -1,0 +1,57 @@
+/*
+ * epicTrapWalkOn.src
+ *
+ * WalkOn script for Epic Traps
+ * Executes custom trap effects when a player steps on the trap
+ */
+
+use uo;
+use os;
+
+include "include/say";
+include ":traps:epicTraps";
+include "include/noiseAlert";
+
+program EpicTrapWalkOn(mobile, trap)
+    // Validate mobile
+    if (mobile.dead)
+        // Ghosts don't trigger traps
+        return 0;
+    elseif (mobile.concealed)
+        // Concealed GMs don't trigger traps
+        return 0;
+    elseif (GetObjProperty(trap, "trap_inativa") == 1)
+        // Trap is disabled
+        return 0;
+    elseif (mobile.npctemplate)
+        // NPCs don't trigger traps
+        return 0;
+    endif
+
+    // Check resurrection protection (10s immunity after respawn)
+    if (GetCooldown(mobile, "res_trap_protection") > 0)
+        return 0;
+    endif
+
+    // Check cooldown to prevent spam
+    if (GetObjProperty(trap, "last_triggered"))
+        var last_time := GetObjProperty(trap, "last_triggered");
+        if ((ReadGameClock() - last_time) < 10) // 10 second cooldown
+            return 0;
+        endif
+    endif
+
+    // Set cooldown
+    SetObjProperty(trap, "last_triggered", ReadGameClock());
+
+    EmitNoise(mobile);
+
+    // Execute the trap effect
+    ExecuteEpicTrapEffect(mobile, trap);
+
+    // Wait before hiding trap again
+    sleep(3);
+    trap.invisible := 1;
+
+    return 1;
+endprogram

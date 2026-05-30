@@ -1,0 +1,167 @@
+/*
+ * Export all NPCTemplates from epicAI organized by Category to a file
+ */
+
+use uo;
+use os;
+use cfgfile;
+use file;
+
+program exportNPCsByCategory(who)
+    var categories := OrganizeNPCsByCategory();
+
+    if (!categories)
+        SendSysMessage(who, "Error: Could not read NPCs");
+        return 0;
+    endif
+
+    SendSysMessage(who, "Exporting NPCs by category...");
+
+    var output_file := "npcdesc/npcs_by_category.txt";
+    var lines := array{};
+
+    // Write header
+    lines.append("=================================================");
+    lines.append("Epic Shard - NPCs Organized by Category");
+    lines.append("Generated: " + POLCore().systime);
+    lines.append("=================================================");
+    lines.append("");
+
+    var total_npcs := 0;
+
+    // Sort categories alphabetically
+    var sorted_categories := categories.keys();
+    sorted_categories.sort();
+
+    foreach category_name in sorted_categories
+        var npc_list := categories[category_name];
+        total_npcs := total_npcs + npc_list.size();
+
+        lines.append("");
+        lines.append("### " + category_name + " (" + npc_list.size() + " NPCs) ###");
+        lines.append("---------------------------------------------------");
+
+        // Sort NPCs by tier, then by name
+        npc_list := SortNPCList(npc_list);
+
+        foreach npc_info in npc_list
+            var tier_str := npc_info.tier;
+            if (!tier_str || tier_str == "")
+                tier_str := "0";
+            endif
+
+            var line := "  [Tier " + tier_str + "] " + npc_info.template;
+            line := line + " - " + npc_info.name;
+            line := line + " (" + npc_info.alignment + ")";
+
+            lines.append(line);
+            sleepms(2);
+        endforeach
+
+        sleepms(10);
+    endforeach
+
+    // Write summary
+    lines.append("");
+    lines.append("=================================================");
+    lines.append("Total Categories: " + sorted_categories.size());
+    lines.append("Total NPCs: " + total_npcs);
+    lines.append("=================================================");
+
+    // Write all lines to file
+    var result := WriteFile(output_file, lines);
+    if (!result)
+        SendSysMessage(who, "Error: Could not write file!", 33);
+        return 0;
+    endif
+
+    SendSysMessage(who, "Export complete! Total: " + total_npcs + " NPCs in " + sorted_categories.size() + " categories");
+    SendSysMessage(who, "File: " + output_file);
+
+    return 1;
+endprogram
+
+function OrganizeNPCsByCategory()
+    // Read the npcdesc.cfg from epicAI package
+    var cfg := ReadConfigFile(":epicAI:npcdesc");
+
+    if (!cfg)
+        return error{"errortext" := "Could not read :epicAI:npcdesc config file"};
+    endif
+
+    var categories := dictionary;
+    var default_category := "Uncategorized";
+
+    // Get all NPC template entries
+    var elem_names := GetConfigStringKeys(cfg);
+
+    foreach template_name in elem_names
+        var npc_elem := cfg[template_name];
+
+        // Get category, default to "Uncategorized" if not set
+        var category := GetConfigString(npc_elem, "Environment");
+        if (!category || category == "")
+            category := default_category;
+        endif
+
+        // Create array for this category if it doesn't exist
+        if (!categories.exists(category))
+            categories[category] := array{};
+        endif
+
+        // Create NPC info struct
+        var npc_info := struct;
+        npc_info.+template := template_name;
+        npc_info.+name := GetConfigString(npc_elem, "Name");
+        npc_info.+tier := GetConfigString(npc_elem, "Tier");
+        npc_info.+alignment := GetConfigString(npc_elem, "Alignment");
+        npc_info.+objtype := GetConfigString(npc_elem, "ObjType");
+        npc_info.+npcrace := GetConfigString(npc_elem, "NPCRace");
+
+        categories[category].append(npc_info);
+
+        sleepms(2);
+    endforeach
+
+    return categories;
+endfunction
+
+function SortNPCList(npc_list)
+    // Simple bubble sort by tier, then by name
+    var sorted := npc_list;
+    var n := sorted.size();
+
+    for i := 1 to n
+        for j := 1 to (n - i)
+            var current := sorted[j];
+            var next := sorted[j + 1];
+
+            var current_tier := CInt(current.tier);
+            var next_tier := CInt(next.tier);
+
+            if (!current_tier)
+                current_tier := 0;
+            endif
+            if (!next_tier)
+                next_tier := 0;
+            endif
+
+            // Compare by tier first, then by name
+            var should_swap := 0;
+            if (current_tier > next_tier)
+                should_swap := 1;
+            elseif (current_tier == next_tier)
+                if (current.name > next.name)
+                    should_swap := 1;
+                endif
+            endif
+
+            if (should_swap)
+                sorted[j] := next;
+                sorted[j + 1] := current;
+            endif
+        endfor
+    endfor
+
+    return sorted;
+endfunction

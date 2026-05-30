@@ -1,0 +1,301 @@
+use uo;
+use os;
+use datafile;
+include ":gumps:gumps_ex";
+include ":gumps:yesNo";
+include ":sysbook:include/sealedBooks";
+include ":gumps:/include/epicGumps";
+include ":DiscordWebhook:outbound";
+include ":datafile:datafile";
+
+program GerenciamentoLivros(who)
+	while (1)
+		var resposta := MostrarGumpGerenciamento(who);
+		if (!resposta)
+			break;
+		endif
+	endwhile
+endprogram
+
+function MostrarGumpGerenciamento(who)
+	var df := OpenDataFile(SEALED_BOOKS_DATAFILE);
+	if (df.errortext)
+		SendSysMessage(who, "Erro ao abrir datafile de livros lacrados: " + df.errortext, 3, 38);
+		return 0;
+	endif
+
+	var keys := df.Keys();
+	if (!keys.size())
+		SendSysMessage(who, "Nenhum livro lacrado encontrado.");
+		return 0;
+	endif
+
+	// --- Preparar Dados para a Tabela ---
+	var dados_tabela := array{};
+	var serials_mapeados := array{};
+	var item_id_counter := 1;
+
+	foreach serial_key in (keys)
+		var elem := df.FindElement(serial_key);
+		if (elem && !elem.errortext)
+			var livro_struct := struct;
+
+			// Campos visíveis no gump
+			livro_struct.+col_titulo := elem.GetProp("title") ? Trim(CStr(elem.GetProp("title"))) : "[N/A]";
+			livro_struct.+col_autor_livro := elem.GetProp("author") ? Trim(CStr(elem.GetProp("author"))) : "[N/A]";
+
+			// Obter o nome da conta do jogador
+			var conta_do_entregador := elem.GetProp("original_player_name");
+			if (conta_do_entregador && conta_do_entregador != error && Trim(CStr(conta_do_entregador)))
+				livro_struct.+col_jogador_selou := Trim(CStr(conta_do_entregador));
+			else
+				livro_struct.+col_jogador_selou := "[N/A]";
+			endif
+
+			livro_struct.+col_status := elem.GetProp("status") ? Trim(CStr(elem.GetProp("status"))) : "aguardando_aprovacao";
+
+			// CORREÇÃO: Usar dados_tabela.size() + 1 para garantir sequência correta
+			var current_index := dados_tabela.size() + 1;
+
+			// Botões de ação com índices baseados na posição real
+			livro_struct.+col_acao_criar := struct{ isColunaBotao := 1, valor := current_index };
+			livro_struct.+col_acao_publicar := struct{ isColunaBotao := 1, valor := 2000 + current_index };
+			livro_struct.+col_acao_deletar := struct{ isColunaBotao := 1, valor := 1000 + current_index };
+
+			// Adicionar DEPOIS de definir os botões
+			dados_tabela.append(livro_struct);
+			serials_mapeados.append(CStr(serial_key)); // Mapear posição -> serial
+		endif
+		SleepMS(2);
+	endforeach
+
+	if (!dados_tabela.size())
+		SendSysMessage(who, "Nenhum livro válido encontrado para listar.");
+		return 0;
+	endif
+
+	// 1. Configurar opcoes das colunas (ordem de exibicao, largura, etc.)
+	var opcoes_colunas := dictionary;
+	opcoes_colunas["col_acao_criar"] := struct{ titulo := "Gerar", largura := 1, ordem := 1 }; // 1
+	opcoes_colunas["col_titulo"] := struct{ titulo := "Título", largura := 3, ordem := 2 };
+	// 3 (era 4)
+
+	opcoes_colunas["col_autor_livro"] := struct{ titulo := "Autor", largura := 2, ordem := 3 }; // 2
+	opcoes_colunas["col_jogador_selou"] := struct{ titulo := "Conta", largura := 2, ordem := 4 }; // 2
+	opcoes_colunas["col_status"] := struct{ titulo := "Status", largura := 2, ordem := 5 }; // 2
+	opcoes_colunas["col_acao_publicar"] := struct{ titulo := "Pub", largura := 1, ordem := 6 }; // 1
+	opcoes_colunas["col_acao_deletar"] := struct{ titulo := "X", largura := 1, ordem := 7 };
+
+	// 2. Ordenar colunas pela propriedade 'ordem'
+	var colunas_ordenadas := array{};
+	var colunas_validas := array{ "col_acao_criar", "col_titulo", "col_autor_livro", "col_jogador_selou",
+							  	"col_status", "col_acao_publicar", "col_acao_deletar" };
+
+	foreach coluna_key in (opcoes_colunas.keys())
+		// Verificar se a coluna está na lista de válidas
+		var eh_valida := 0;
+		foreach coluna_valida in colunas_validas
+			if (coluna_key == coluna_valida)
+				eh_valida := 1;
+				break;
+			endif
+		endforeach
+
+		if (eh_valida)
+			var col_info := opcoes_colunas[coluna_key];
+			col_info.+nome_coluna := coluna_key;
+			colunas_ordenadas.append(col_info);
+		endif
+	endforeach
+
+	// Ordenação manual por bubble sort baseado na propriedade 'ordem'
+	var n := colunas_ordenadas.size();
+	for i := 1 to n - 1
+		for j := 1 to n - i
+			if (colunas_ordenadas[j].ordem > colunas_ordenadas[j + 1].ordem)
+				// Trocar posições
+				var temp := colunas_ordenadas[j];
+				colunas_ordenadas[j] := colunas_ordenadas[j + 1];
+				colunas_ordenadas[j + 1] := temp;
+			endif
+		endfor
+	endfor
+
+	// 3. Configurar opcoes da tabela
+	var opcoes_tabela := dictionary;
+	opcoes_tabela[TITULO_TABELA] := "Livros Arquivados para Lore";
+	opcoes_tabela[QTD_LINHA_LIMITE] := 15;
+	opcoes_tabela[BOTAO_SOLTO] := 2117;
+	opcoes_tabela[BOTAO_APERTADO] := 2118;
+
+	// 4. Criar o gump principal
+	var largura_gump_total := 900;
+	var altura_gump_total := 520;
+	var gump_params := array{};
+	var gump := GFECreateGump("Livros de Jogador Selados", largura_gump_total, altura_gump_total,
+						   gump_params);
+	GFPage(gump, 1);
+
+	// 5. Criar a tabela
+	var x_tabela := 25;
+	var y_tabela := 70;
+	var largura_tabela := largura_gump_total - (x_tabela * 2) - 20;
+
+	CriaTabelaGumpPaginada(x_tabela, y_tabela, largura_tabela, dados_tabela, gump, opcoes_tabela,
+							opcoes_colunas);
+
+	// 6. Enviar o gump e processar resposta
+	var input_values := GFSendGump(who, gump);
+	var clicked_button_id := CInt(input_values[0]);
+
+	if (!clicked_button_id)
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	// AÇÕES DOS BOTÕES
+
+	// Ação de Deletar (1000+)
+	if (clicked_button_id >= 1000 && clicked_button_id < 2000)
+		var acao_item_index := clicked_button_id - 1000; // Já é 1-based
+
+		if (acao_item_index >= 1 && acao_item_index <= dados_tabela.size())
+			var livro_info_struct := dados_tabela[acao_item_index]; // POL usa 1-based
+			var serial_to_delete := serials_mapeados[acao_item_index]; // POL usa 1-based
+			var title_to_delete := CStr(livro_info_struct.col_titulo);
+			var author_to_delete := CStr(livro_info_struct.col_autor_livro);
+
+			Print("[DEBUG_DELETE] Tentando deletar index: " + acao_item_index + " serial: '" + serial_to_delete + "'");
+
+			if (YesNo(who, "Tem certeza que deseja APAGAR o livro '" + title_to_delete + "'?", "Sim", "Não"))
+				df := OpenDataFile(SEALED_BOOKS_DATAFILE);
+				if (df.errortext)
+					SendSysMessage(who, "Erro ao reabrir datafile: " + df.errortext, 3, 38);
+					return 0;
+				endif
+
+				var elem_to_delete := df.FindElement(serial_to_delete);
+				if (!elem_to_delete || elem_to_delete.errortext)
+					SendSysMessage(who, "Erro: Livro não encontrado no datafile (serial: " + serial_to_delete + ")",
+									3, 38);
+					Print("[ERROR_DELETE] Elemento não encontrado: " + serial_to_delete);
+					return MostrarGumpGerenciamento(who);
+				endif
+
+				var delete_result := df.DeleteElement(serial_to_delete);
+				if (!delete_result || delete_result.errortext)
+					var error_msg := delete_result.errortext ? delete_result.errortext : "Erro desconhecido";
+					SendSysMessage(who, "Erro ao deletar livro: " + error_msg, 3, 38);
+					Print("[ERROR_DELETE] Falha ao deletar: " + error_msg + " (serial: " + serial_to_delete + ")");
+				else
+					SendSysMessage(who, "Livro '" + title_to_delete + "' deletado com sucesso!", 3, 68);
+					Print("[SEALED_BOOKS_GUMP] " + who.name + " deletou livro: " + serial_to_delete);
+
+					// NOVA MENSAGEM PARA DISCORD - LIVRO REJEITADO
+					var gm_account := who.acctname ? who.acctname : who.name;
+					var reject_message := "**LIVRO NEGADO** -> GM *" + gm_account + "* rejeitou o livro **'" + title_to_delete
+														+ "'** escrito por *" + author_to_delete + "*";
+
+					// Enviar mensagem para o Discord
+					PresetDiscordMessage(reject_message, "livros_log");
+				endif
+			else
+				SendSysMessage(who, "Deleção cancelada.");
+			endif
+			return MostrarGumpGerenciamento(who);
+		else
+			SendSysMessage(who, "Erro: Índice de deleção inválido.", 3, 38);
+			Print("[ERROR_DELETE] Índice inválido: " + acao_item_index + " (tamanho array: " + dados_tabela.size()
+																			   + ")");
+			return MostrarGumpGerenciamento(who);
+		endif
+
+	// Ação de Publicar (2000+)
+	elseif (clicked_button_id >= 2000)
+		var acao_item_index := clicked_button_id - 2000; // Remove o offset
+
+		// Verificar se o índice é válido (POL usa 1-based arrays)
+		if (acao_item_index >= 1 && acao_item_index <= dados_tabela.size())
+			var livro_info_struct := dados_tabela[acao_item_index]; // POL usa 1-based
+			var serial_to_publish := serials_mapeados[acao_item_index]; // POL usa 1-based
+			var status_atual := CStr(livro_info_struct.col_status);
+
+			if (status_atual == "publicado")
+				SendSysMessage(who, "Este livro já está publicado!", color := 33);
+				return MostrarGumpGerenciamento(who);
+			endif
+
+			if (YesNo(who, "Deseja PUBLICAR o livro '" + livro_info_struct.col_titulo + "'?", "Sim", "Nao"))
+				df := OpenDataFile(SEALED_BOOKS_DATAFILE);
+				if (df.errortext)
+					SendSysMessage(who, "Erro ao abrir datafile: " + df.errortext, 3, 38);
+					return MostrarGumpGerenciamento(who);
+				endif
+
+				var elem := df.FindElement(CStr(serial_to_publish)); // FORÇAR conversão para string
+				if (elem && !elem.errortext)
+					elem.SetProp("status", "publicado");
+					SendSysMessage(who, "Livro publicado com sucesso!", color := 66);
+
+					// Preparar dados para mensagem
+					var book_title := livro_info_struct.col_titulo;
+					var gm_account := who.acctname ? who.acctname : who.name;
+
+					// Mensagem de livro aprovado com nome da conta do GM
+					var message := "**LIVRO APROVADO E COPIADO** - Aprovado por GM *" + gm_account + "*. Leiam o livro: **'" + book_title
+																	   + "'**";
+
+					// Enviar mensagem para o Discord
+					PresetDiscordMessage(message, "livros_log_rp");
+
+					Print("[SEALED_BOOKS_PUBLISHED] GM " + who.name + " publicou o livro '" + CStr(livro_info_struct.col_titulo)
+						   + "' de " + CStr(livro_info_struct.col_autor_livro));
+				else
+					SendSysMessage(who, "Erro ao encontrar livro para publicar (serial: " + serial_to_publish + ")",
+									3, 38);
+					Print("[ERROR_PUBLISH] Elemento não encontrado para publicar: " + serial_to_publish + (elem &&
+		   elem.errortext ? " Erro: " + elem.errortext : ""));
+				endif
+			endif
+			return MostrarGumpGerenciamento(who);
+		else
+			SendSysMessage(who, "Erro: Índice de publicação inválido.", 3, 38);
+			Print("[ERROR_PUBLISH] Índice inválido: " + acao_item_index + " (tamanho array: " + dados_tabela.size()
+																				+ ")");
+			return MostrarGumpGerenciamento(who);
+		endif
+	// Ação de Criar/Gerar (1-999) - VERSÃO CORRIGIDA
+	else
+		var acao_item_index := clicked_button_id; // Já é o índice correto (1-based)
+
+		Print("[DEBUG_CREATE] Button ID: " + clicked_button_id + " -> Index: " + acao_item_index);
+		Print("[DEBUG_CREATE] Array size: " + dados_tabela.size() + " | Serials size: " + serials_mapeados.size());
+
+		// Verificar se o índice é válido (POL usa 1-based arrays)
+		if (acao_item_index >= 1 && acao_item_index <= dados_tabela.size())
+			// Usar serials_mapeados para obter o serial da chave do livro
+			var book_serial_to_clone := serials_mapeados[acao_item_index]; // POL usa 1-based
+
+			Print("[DEBUG_CREATE] Serial to clone: '" + book_serial_to_clone + "' Type: " + TypeOf(book_serial_to_clone));
+
+			var book := SealedBooks_CloneToContainer(book_serial_to_clone, who.backpack);
+			if (!book || book.errortext)
+				SendSysMessage(who, "Erro ao criar livro: " + (book.errortext ? book.errortext : "Falha desconhecida"),
+								3, 38);
+				Print("[ERROR_CREATE] Falha ao criar livro. Serial: " + book_serial_to_clone + (book &&
+		  book.errortext ? " Erro: " + book.errortext : " Objeto nulo"));
+				return 0;
+			else
+				SendSysMessage(who, "Livro criado na sua mochila!", 3, 68);
+				Print("[SUCCESS_CREATE] Livro criado com sucesso. Serial: " + book_serial_to_clone);
+			endif
+		else
+			SendSysMessage(who, "Erro: Índice de criação inválido.", 3, 38);
+			Print("[ERROR_CREATE] Índice inválido: " + acao_item_index + " (tamanho array: " + dados_tabela.size()
+																			   + ")");
+			return MostrarGumpGerenciamento(who);
+		endif
+	endif
+
+	return 1;
+endfunction

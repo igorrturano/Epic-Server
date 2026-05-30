@@ -1,0 +1,384 @@
+use uo;
+// use math;
+use os;
+use polsys;
+
+include ":charactercreation:habilidades";
+include "include/epicLoggerUtils";
+include ":message:model/Message";
+include ":text:_all";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:Controller/Translator";
+include ":attributes:attributes";
+include ":commands:/include/r";
+
+program speech_hooks()
+	Print("Hooking Unicode Outgoing...");
+	return 1;
+endprogram
+
+enum class PACKET_POSITION
+	SERIAL := 3, // Quem enviou a mensagem
+	MODEL := 7, // Não sei para o que serve
+	TYPE := 9, // Tipo da mensagem
+	COLOR := 10, // Cor da mensagem
+	FONT := 12, // Fonte da mensagem
+	LANGUAGE := 14, // Lingua da mensagem
+	NAME_ID := 18, // Nome de quem fala
+	MESSAGE := 48 // Mensagem
+endenum
+
+enum class MESSAGE_DISTANCE
+	WHISPER := 2,
+	NORMAL := 12,
+	EMOTE := 12,
+	YELL := 20
+endenum
+
+exported function handleUCOutgoing(character, byref packet)
+	var messageData := GetPacketData(packet);
+	messageData.+target := MobileWrapper(character);
+	if (messageData.source.GetSerial() == messageData.target.GetSerial())
+		LogPlayerSpeech(messageData.source.GetObjRef(), messageData.message);
+		SayMessageSpy(messageData.source.GetObjRef(), messageData.message);
+	endif
+
+	// TODO: Remover o block depois de implementar cada um dos tipos
+		// Bloqueei pra a gente pode entender a necessidade de cada
+	var blockPorEnquanto := array{
+		MESSAGE_TYPE::ALLIANCE,
+		MESSAGE_TYPE::GUILD,
+		MESSAGE_TYPE::COMMAND_PROMPTS
+	};
+
+	if (messageData.type in blockPorEnquanto)
+		// Print($"Player {messageData.source.GetName()} tentou usar um tipo de mensagem bloqueada: {Hex(messageData.type)}");
+		return 1;
+	endif
+
+	CheckSourceName(messageData);
+
+	if (CheckSaying(messageData))
+		if (!CanUnderstand(messageData))
+			messageData.message := "*Incompreensível*";
+		else
+			CheckPrefixAndSuffix(messageData);
+		endif
+	endif
+
+	if (!CanSpeak(messageData))
+		return 1;
+	endif
+
+	if (!CanHear(messageData))
+		return 1;
+	endif
+
+	if (DispatchTranslation(messageData))
+		return 1; // Dublagem: bloqueia o pacote original; o ouvinte verá apenas a fala traduzida
+	endif
+
+	ReassemblePacket(packet, messageData);
+
+	return 0;
+endfunction
+
+function DispatchTranslation(byRef messageData)
+	// Pacotes que nós mesmos geramos para entregar tradução vêm marcados com "TXL"
+	// no campo language. Sem essa checagem, o hook re-dispara e cria loop infinito.
+	if (messageData.language[1, 3] == "TXL")
+		return false;
+	endif
+
+	if (messageData.source.GetSerial() == messageData.target.GetSerial())
+		return false;
+	endif
+
+	if (messageData.source.IsNPC())
+		return false;
+	endif
+
+	if (messageData.message == "*Incompreensível*")
+		return false;
+	endif
+
+	var mode := messageData.target.GetObjRef().GetProp("translation");
+	if (mode == error || mode == "")
+		mode := 1; // unset = legenda by default
+	endif
+	if (mode == 0)
+		return false; // explicit opt-out
+	endif
+
+	var sourceAcct := FindAccount(messageData.source.GetObjRef().acctname);
+	var targetAcct := FindAccount(messageData.target.GetObjRef().acctname);
+	if (sourceAcct == error || targetAcct == error || !sourceAcct || !targetAcct)
+		return false;
+	endif
+
+	var sourceLang := sourceAcct.GetProp("original_language");
+	if (sourceLang == error || !sourceLang)
+		sourceLang := LANGUAGE::PORTUGUESE;
+	endif
+
+	var targetLang := targetAcct.GetProp("original_language");
+	if (targetLang == error || !targetLang)
+		targetLang := LANGUAGE::PORTUGUESE;
+	endif
+
+	if (sourceLang == targetLang)
+		return false;
+	endif
+
+	Message(messageData.message, Color(messageData.color), Font(messageData.font))
+		.RequestTranslation(sourceLang, targetLang)
+		.SetPacketLanguage("TXL")
+		.SendAbovePrivate(messageData.target.GetObjRef(), messageData.source.GetObjRef());
+
+	return mode == 2;
+endfunction
+
+function CheckSaying(byRef messageData)
+	case (messageData.type)
+		MESSAGE_TYPE::NORMAL:
+		MESSAGE_TYPE::YELL:
+		MESSAGE_TYPE::WHISPER:
+			return true;
+
+		default:
+			return false;
+	endcase
+
+	// Ê packet nativo do POL cagado, hein.....
+	if (messageData.source == 0 ||
+		messageData.sourceName == "System")
+		return false;
+	endif
+
+	return false;
+endfunction
+
+function CanSpeak(byRef messageData)
+	// if (messageData.source.GetProperty("metamorfose") && !messageData.source.HasAbility(ABILITY_ID::ELO_NATURAL))
+	// 	if (messageData.type == MESSAGE_TYPE::NORMAL)
+	// 		return false;
+	// 	endif
+	// endif
+
+	// if (messageData.source.GetProperty("mudo"))
+	// 	return false;
+	// endif
+
+	if (messageData.source.GetProperty("#sleep"))
+		return false;
+	endif
+
+	return true;
+endfunction
+
+function CanHear(byRef messageData)
+	var hearDistance;
+	var playerDistance := Distance(messageData.source.GetObjRef(), messageData.target.GetObjRef());
+	var rangeMod := CheckLineOfSight(messageData.source.GetObjRef(), messageData.target.GetObjRef()) ? 1 : 3;
+	// print(messageData);
+	// print($"Distância entre fonte e alvo: {playerDistance}. Modificador de alcance: {rangeMod}.");
+
+	if (messageData.type == MESSAGE_TYPE::WHISPER)
+		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
+							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::WHISPER / rangeMod);
+		
+		if (playerDistance > hearDistance)
+			return false;
+		endif
+	elseif (messageData.type == MESSAGE_TYPE::YELL)
+		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
+							CInt(MESSAGE_DISTANCE::YELL / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::YELL / rangeMod);
+
+		if (playerDistance > hearDistance || 
+			Abs(messageData.source.GetObjRef().z - messageData.target.GetObjRef().z) >= hearDistance)
+			return false;
+		endif
+	elseif (messageData.type == MESSAGE_TYPE::NORMAL)
+		hearDistance := messageData.target.HasAbility(ABILITY_ID::NINJA_PATH) ?
+							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod) + 4 :
+							CInt(MESSAGE_DISTANCE::NORMAL / rangeMod);
+
+		if (playerDistance > hearDistance)
+			return false;
+		endif
+	elseif (messageData.type == MESSAGE_TYPE::EMOTE)
+		hearDistance := CInt(MESSAGE_DISTANCE::EMOTE / rangeMod);
+
+		if (playerDistance > hearDistance)
+			return false;
+		endif
+	endif
+
+	return true;
+endfunction
+
+function CheckSourceName(byRef messageData)
+	var targetObj := messageData.target.GetObjRef();
+	var sourceObj := messageData.source.GetObjRef();
+	var nickname := GetKnownNickname(targetObj, sourceObj);
+	if (nickname != "")
+		messageData.sourceName := nickname;
+	endif
+endfunction
+
+function GetPacketData(packet)
+	var serial := packet.GetInt32(PACKET_POSITION::SERIAL);
+	var model := packet.GetInt16(PACKET_POSITION::MODEL);
+	var source := CreateObjectWrapper(SystemFindObjectBySerial(serial));
+	var type := packet.GetInt8(PACKET_POSITION::TYPE);
+	var color := packet.GetInt16(PACKET_POSITION::COLOR);
+	var font := packet.GetInt16(PACKET_POSITION::FONT);
+	var language := packet.GetString(PACKET_POSITION::LANGUAGE, 4);
+	var sourceName := packet.GetString(PACKET_POSITION::NAME_ID, 30);
+	var message_length := (packet.GetInt16(1) - 49) / 2;
+	var message := packet.GetUnicodeString(PACKET_POSITION::MESSAGE, message_length);
+
+	return struct{
+		source := source,
+		model := model,
+		type := type,
+		color := color,
+		font := font,
+		language := language,
+		sourceName := sourceName,
+		message := message
+	};
+endfunction
+
+function CreateObjectWrapper(obj)
+	if (obj.IsA(POLCLASS_MOBILE))
+		return MobileWrapper(obj);
+	elseif (obj.IsA(POLCLASS_CONTAINER))
+		return ContainerWrapper(obj);
+	elseif (obj.IsA(POLCLASS_ARMOR))
+		return ArmorWrapper(obj);
+	elseif (obj.IsA(POLCLASS_WEAPON))
+		return WeaponWrapper(obj);
+	elseif (obj.IsA(POLCLASS_ITEM))
+		return ItemWrapper(obj);
+	endif
+endfunction
+
+function ReassemblePacket(byRef packet, byRef messageData);
+	packet.SetInt32(PACKET_POSITION::SERIAL, messageData.source.GetSerial());
+	packet.SetInt16(PACKET_POSITION::MODEL, messageData.model);
+	packet.SetInt8(PACKET_POSITION::TYPE, messageData.type);
+	packet.SetInt16(PACKET_POSITION::COLOR, messageData.color);
+	packet.SetInt16(PACKET_POSITION::FONT, messageData.font);
+	packet.SetString(PACKET_POSITION::LANGUAGE, messageData.language, 0);
+	packet.SetString(PACKET_POSITION::NAME_ID, messageData.sourceName, 1);
+	packet.SetUnicodeString(PACKET_POSITION::MESSAGE, messageData.message, 1);
+endfunction
+
+function MustContinue(data)
+	var typesToIgnore := array{
+		MESSAGE_TYPE::BROADCAST,
+		MESSAGE_COLOR::SYSTEM
+	};
+	
+	if (data.type in typesToIgnore)
+		return false; // Mensagens que não precisam de tratamento, apenas de tradução (se o receptor quiser)
+	endif
+
+	return true;
+endfunction
+
+function CheckPrefixAndSuffix(byRef messageData)
+	var typesToPrefix := array{
+		MESSAGE_TYPE::NORMAL,
+		MESSAGE_TYPE::WHISPER,
+		MESSAGE_TYPE::YELL
+	};
+
+	if (messageData.type in typesToPrefix)
+		var chosen_language := messageData.source.GetProperty("lingua_escolhida");
+		if (chosen_language && chosen_language != error && chosen_language != "Comum")
+			messageData.message := $"[{chosen_language}] " + messageData.message;
+		endif
+	endif
+endfunction
+
+function CanUnderstand(byRef messageData)
+	if (messageData.target.GetObjRef().cmdlevel >= 1)
+		return true;
+	endif
+
+	if (messageData.source == messageData.target)
+		return true;
+	endif
+
+	if (!messageData.source.GetObjRef().IsA(POLCLASS_MOBILE))
+		return true;
+	endif
+
+	if (messageData.source.IsNPC())
+		return true;
+	endif
+
+	var sourceLanguage := messageData.source.GetProperty("lingua_escolhida");
+	var targetKnownLanguages := messageData.target.GetProperty("linguas_conhecidas");
+
+	if (sourceLanguage in targetKnownLanguages)
+		return true;
+	endif
+
+	return false;
+endfunction
+
+
+
+
+
+function SayMessageSpy(who, message_txt)
+	foreach player in GetGlobalProperty("GmsOnlines")
+		player := SystemFindObjectBySerial(CInt(player));
+		if (GetObjProperty(player, "SaySpyOn") && player.cmdlevel >= 3 && player != who)
+			var sayspy := GetObjProperty(player, "SaySpyOn");
+			var acct := who.acctname;
+			var truename := GetObjProperty(who, "nome_inicial");
+
+			if (sayspy == "on")
+				SendSysMessage(player, "[SAY-SPY][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);
+			elseif (TypeOf(sayspy) == "Array" && who.name in sayspy)
+				SendSysMessage(player, "[SAY-SPY][" + acct + "] " + truename + ": " + message_txt, _DEFAULT_TEXT_FONT, 0x003e);
+			endif
+		endif
+		Sleepms(2);
+	endforeach
+endfunction
+
+// Deixa isso aqui pra quando precisar testar.....
+function _debugMe(byRef packet)
+	var data := GetPacketData(packet);
+
+	if (data.type == MESSAGE_TYPE::NORMAL)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um say: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::BROADCAST)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um broadcast: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::EMOTE)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um emote: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::SYSTEM)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um system: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::MESSAGE_CORNER)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um message corner: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::WHISPER)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um whisper: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::YELL)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um yell: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::SPELL)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um spell: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::GUILD)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um guild: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::ALLIANCE)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um alliance: " + data.message, 1);
+	elseif (data.type == MESSAGE_TYPE::COMMAND_PROMPTS)
+		packet.SetUnicodeString(PACKET_POSITION::MESSAGE, "Sou um command prompts: " + data.message, 1);
+	endif
+endfunction

@@ -1,0 +1,324 @@
+// GRAPHICS:
+// Elven Forge: 0x2DD8
+// Elven Anvil: 0x2DD5 - 0x2DD6
+// Soulforge Anvil: 0x4254 - 0x4257
+// Forge: 0xB203 - 0xB20A
+// Forge (com tampa): 0xB4F1 - 0xB502
+
+include "include/objtype";
+include ":gathering:mining";
+include ":gathering:smelting/water";
+include ":gathering:smelting/smelt";
+include ":debug:Controller/DebugController";
+include ":gumps:epicGumps";
+
+const PROP_NAME := "Smelting";
+const COLOR_FULL := 0x486;
+const COLOR_EMPTY := 951;
+const SOUND_SMELTING := 0x22;
+const SOUND_COOLING := 0x23F;
+
+program smelt_that_ore(who, item)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if (!Accessible(who, item))
+		return;
+	endif
+
+	OpenGump(who, item);
+endprogram
+
+function OpenGump(who, pot)
+	var gump := GFECreateGump("Menu de Smelting", 340, 600);
+	var ableToSmelt := dictionary{};
+	var indexAbleToSmelt := array{};
+	var bag := EnumerateItemsInContainer(who.backpack);
+	ableToSmelt := getOresAbleToSmelt(bag, ableToSmelt, indexAbleToSmelt);
+
+	var x := 30;
+	var y := 80;
+	var y_space := 50;
+	var btnID := 100;
+	var tBoxAmt := dictionary{};
+	var options := array{};
+	foreach oreObjType in indexAbleToSmelt
+		var graphic := 0x1BF4; // TODO: MELHORAR ESSE GET
+
+		if (ableToSmelt[oreObjType].ore.oreType == ORE_CHARCOAL)
+			graphic := 0xDF9;
+		endif
+
+		var diff := ableToSmelt[oreObjType].ore.difficulty;
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
+			diff := diff - 5;
+		endif
+		if (CDbl(EffectiveSkill(who, "Mining")) >= diff)
+			var x2 := x;
+			GFAddButton(gump, x, y, 2151, 2154, GF_CLOSE_BTN, btnID);
+			x2 += 35;
+			GFTilePic(gump, x2, y, graphic, ableToSmelt[oreObjType].ore.color);
+			x2 += 50;
+			GFTextLine(gump, x2, y + 5, ableToSmelt[oreObjType].ore.color, ableToSmelt[oreObjType].ore.ingotName);
+			x2 += 160;
+			tBoxAmt[oreObjType] := GFEAddTextBox(gump, x2, y, 30, 16, COLOR_YELLOW,
+												  ableToSmelt[oreObjType].items.amount, 0, 4);
+			options.append(struct{ "btnID" := btnID, "oreObjType" := oreObjType });
+			y += y_space;
+			btnID++;
+		endif
+	endforeach
+
+	var toSmeltItems := array{};
+	var toSmeltOre;
+	var toSmeltAmount;
+	var input := GFSendGump(who, gump);
+	if (input[0] == 1)
+		return;
+	else
+		foreach option in options
+			if (input[0] == option.btnID)
+				var neededOresToSmelt := ableToSmelt[option.oreObjType].ore.neededToCraft;
+				toSmeltAmount := GFExtractData(input, tBoxAmt[option.oreObjType]);
+				toSmeltOre := ableToSmelt[option.oreObjType].ore;
+				toSmeltItems := ableToSmelt[option.oreObjType].items.toSmelt;
+
+				foreach item in toSmeltItems
+					DebugMsg(who, DEBUG_SMELTING, Message("Item: " + item.desc));
+					DebugMsg(who, DEBUG_SMELTING, Message("Quantidade: " + toSmeltAmount));
+				endforeach
+				break;
+			endif
+		endforeach
+	endif
+
+	if (!CheckSmelt(who, toSmeltOre, toSmeltItems, toSmeltAmount))
+		return;
+	endif
+
+	SmeltOres(who, pot, toSmeltOre, toSmeltItems, toSmeltAmount);
+
+endfunction
+
+function CheckSmelt(who, mainOre, itemsToSmelt, amount)
+	amount := CInt(amount); // POL BUGADO DO CARALHO!!!!!!!!!!!
+	foreach ore in itemsToSmelt
+		if (!ReserveItem(ore))
+			return 0;
+		endif
+
+		if (!Accessible(who, ore))
+			SendSysMessageEx(who, "Você não alcança " + ore.name, FONT_NORMAL, SSM_FAIL);
+			return 0;
+		endif
+
+		if (ore.amount < amount)
+			SendSysMessageEx(who, "Quantidade informada superior à disponível.", FONT_NORMAL, SSM_FAIL);
+			return 0;
+		endif
+	endforeach
+
+	if (!CheckForWater(who))
+		SendSysMessageEx(who, "Nenhuma fonte de água próxima encontrada.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!mainOre.ingotObjType)
+		SendSysMessageEx(who, "Você não tem conhecimento para derreter nenhum material da bolsa.",
+				   SSM_FAIL);
+		return 0;
+	endif
+
+	return 1;
+endfunction
+
+function getOresInBag(oreList, bag)
+	var oresInBag := array{};
+	foreach item in bag
+		foreach ore in oreList
+			if (item.objtype == ore.oreObjType)
+				oresInBag.append(item);
+			endif
+		endforeach
+	endforeach
+
+	return oresInBag;
+endfunction
+
+function getOresAbleToSmelt(bag, ableToSmelt, byref index)
+	var oresList := getAllOres();
+	var oresInBag := getOresInBag(oresList, bag);
+
+	// Feito assim pra manter a ordem da lista de ores, apesar de diminuir um pouco o desempenho
+	foreach oreInOresList in oresList
+		foreach oreInOresInBag in oresInBag
+			if (oreInOresInBag.objtype == oreInOresList.oreObjType)
+				var otherMaterialsNeeded := oreInOresList.neededToCraft;
+				var canSmelt := 0;
+
+				// Checa se tem todos os materiais pra poder smeltar
+				var otherMaterialsFound := array{};
+				var otherObjTypesFound := array{};
+				if (otherMaterialsNeeded.Size() > 0) // Caso seja liga
+					foreach objtypeNeeded in otherMaterialsNeeded
+						foreach item in bag
+							if (item.objtype == objtypeNeeded && !(item.objtype in otherObjTypesFound))
+								otherMaterialsFound.append(item);
+								otherObjTypesFound.append(item.objtype);
+							endif
+						endforeach
+					endforeach
+
+					if (otherMaterialsFound.Size() == otherMaterialsNeeded.Size())
+						canSmelt := 1;
+					endif
+				else // Se não é liga pode smeltar direto
+					canSmelt := 1;
+				endif
+
+				// Adcionar no índice (pro gump) e na dictionary
+				if (canSmelt)
+					// Monta o índice pra ficar na ordem correta, caso o item não esteja
+					if (!(oreInOresInBag.objtype in index))
+						index.append(oreInOresInBag.objtype);
+					endif
+
+					ableToSmelt[oreInOresInBag.objtype] := struct{};
+					// Adiciona os dados da liga
+					ableToSmelt[oreInOresInBag.objtype].+ore := oreInOresList;
+
+					// Adiciona os itemRef de todos os minérios necessários
+					var toSmelt := array{ oreInOresInBag };
+
+					// Adiciona no array os demais minérios que serão derretidos
+					if (otherMaterialsFound.Size() > 0)
+						foreach material in otherMaterialsFound
+							toSmelt.append(material);
+						endforeach
+					endif
+
+					// Checa a menor quantidade
+					var amount := oreInOresInBag.amount;
+					foreach item in otherMaterialsFound
+						if (item.amount < amount)
+							amount := item.amount;
+						endif
+					endforeach
+
+					// Adiciona os items e a menor quantidade
+					ableToSmelt[oreInOresInBag.objtype].+items := struct{ "toSmelt" := toSmelt, "amount" := amount };
+				endif
+			endif
+		endforeach
+	endforeach
+
+	return ableToSmelt;
+endfunction
+
+function SmeltOres(who, pot, mainOre, itemsToSmelt, amt)
+	if (CheckSmeltDifficulty(who, mainOre))
+		if (Len(itemsToSmelt) > 1)
+			SendSysMessageEx(who, "Você fez a fusão entre os metais.", COLOR_CYAN_LIGHT , FONT_NORMAL);
+		else
+			SendSysMessageEx(who, "Você derreteu o minério e retirou as impurezas", COLOR_CYAN_LIGHT , FONT_NORMAL);
+		endif
+
+		var prop := struct{ "ingot" := mainOre.ingotObjType, "amount" := amt };
+		SetObjProperty(pot, PROP_NAME, prop);
+
+		foreach item in itemsToSmelt
+			SmeltSuccess(who, pot, item, amt);
+			SleepMS(500);
+		endforeach
+
+		CoolPot(who, pot);
+	else
+		SmeltFail(who, itemsToSmelt, amt);
+	endif
+
+	return 1;
+endfunction
+
+function CoolPot(who, pot)
+	var inPot := GetObjProperty(pot, PROP_NAME);
+	PlayEffectCooling(who, pot);
+	pot.color := COLOR_EMPTY;
+	EraseObjProperty(pot, PROP_NAME);
+
+	if (inPot.ingot == 7134) // Se for carvão, multiplicar por 12
+		CreateItemInBackpack(who, inPot.ingot, Cint(inPot.amount) * 12);
+	else
+		CreateItemInBackpack(who, inPot.ingot, CInt(inPot.amount));
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH))
+			smeltaImpurezasRaras(who, CInt(inPot.amount));
+		endif
+	endif
+endfunction
+
+function SmeltSuccess(who, pot, item, amt)
+	PrintTextAbove(who, "*derretendo minerios*");
+	SubtractAmount(item, CInt(amt));
+	PlayEffectSmelt(who, pot);
+endfunction
+
+function SmeltFail(who, ores, amt)
+	amt := CInt(amt); // POL BUGADO DO CARALHO!!!
+
+	var roll := RandomInt(6);
+	var lostBySkill := CInt(((EffectiveSkill(who, "Mining") - 100) * -1) / 10);
+	var amtLost := roll + lostBySkill;
+
+	if (amtLost > amt)
+		amtLost := amt;
+	endif
+
+	DebugMsg(who, DEBUG_SMELTING, Message("***ERROU***"));
+	DebugMsg(who, DEBUG_SMELTING, Message($"Rolagem de erro (0-5): {roll}"));
+	DebugMsg(who, DEBUG_SMELTING, Message($"Fator de perda pelo Mining: {lostBySkill}"));
+	DebugMsg(who, DEBUG_SMELTING, Message($"Perdeu: {amtLost}"));
+
+	SendSysMessageEx(who, "Você errou o processo e perdeu parte dos minérios.", FONT_NORMAL,
+				  SSM_FAIL);
+	foreach ore in ores
+		SubtractAmount(ore, CInt(amtLost));
+		SendSysMessageEx(who, "Você perdeu " + amtLost + " " + ore.desc, FONT_NORMAL, SSM_FAIL);
+		SleepMS(50);
+	endforeach
+endfunction
+
+function CheckSmeltDifficulty(who, ore)
+	var diff := DetermineMiningDifficulty(ore.oreObjType);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
+		diff := diff - 5;
+	endif
+	if (SkillCheck(who, "Mining", diff, ((diff / 2) + 10)) > 0)
+		return 1;
+	endif
+	return 0;
+endfunction
+
+function PlayEffectSmelt(who, pot)
+	pot.color := COLOR_FULL;
+	who.frozen := 1;
+	PlaySoundEffect(who, SOUND_SMELTING);
+	Sleep(4);
+endfunction
+
+function PlayEffectCooling(who, pot)
+	pot.color := COLOR_EMPTY;
+	PlaySoundEffect(who, SOUND_COOLING);
+	SleepMS(1500);
+	who.frozen := 0;
+endfunction
+
+function getItemsInBag(toSearch, bag)
+	var items := array{};
+	foreach ore in toSearch
+		foreach item in bag
+			if (item.objtype == ore)
+				items.append(item);
+			endif
+		endforeach
+	endforeach
+	return items;
+endfunction

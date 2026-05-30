@@ -1,0 +1,243 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":voidrift:include/voidrift";
+include ":entropy:entropy";
+include ":message:include/model/Message";
+include "include/epicConstants";
+
+program useScroll(who, scroll)
+    var scroll_type := GetObjProperty(scroll, "scroll_type");
+    var scroll_level := GetObjProperty(scroll, "scroll_level");
+    var ritual_id := GetObjProperty(scroll, "ritual");
+
+    if (!ritual_id)
+        Message("Este pergaminho nao possui um ritual valido.").SendSys(who);
+        return 0;
+    endif
+
+    var ritual := LoadRitualConfig(ritual_id);
+    if (ritual.errortext)
+        Message(ritual.errortext).SendSys(who);
+        return 0;
+    endif
+
+    var desc := GetConfigString(ritual, "desc");
+    var reagents := GetRitualReagents(ritual);
+
+    // Criar gump
+    var gump := GFCreateGump(140, 100);
+    GFClosable(gump, 1);
+    GFResizePic(gump, 0, 0, 0x9D8, 300, 280);
+
+    // Título
+    var title;
+    if (scroll_type == "chaos")
+        title := "Ritual do Caos";
+    else
+        title := "Ritual de Purificacao";
+    endif
+    GFTextLine(gump, 50, 15, 0, title);
+
+    // Descrição
+    GFHTMLArea(gump, 30, 50, 220, 100, desc, 0, 0);
+
+    // Ingredientes necessários
+    var y := 155;
+    GFTextLine(gump, 30, y-20, 53, "Ingredientes:");
+    foreach reagent in reagents
+        var item_name := GetReagentName(reagent.objtype);
+        var text := "- " + item_name + " x" + reagent.amount;
+        GFTextLine(gump, 30, y, 0, text);
+        y := y + 18;
+    endforeach
+
+    // Botões
+    GFAddButton(gump, 60, 250, 0x81A, 0x81B, GF_CLOSE_BTN, 1);   // Executar
+    GFAddButton(gump, 170, 250, 0x819, 0x818, GF_CLOSE_BTN, 0);  // Cancelar
+
+    var input := GFSendGump(who, gump);
+
+    if (input[0] == 1)
+        ExecuteRitual(who, scroll, scroll_type, scroll_level, reagents);
+    endif
+
+endprogram
+
+function GetReagentName(objtype)
+    // Reagentes comuns
+    case (objtype)
+       0x1437: return "Vela";
+       0x0A0F: return "Vela";
+     
+       0xF86:  return "Mandrake";
+       0x1F91: return "Agua";
+    endcase
+       
+    // Buscar nome no itemdesc para itens customizados
+    var itemcfg := ReadConfigFile(":*:itemdesc");
+    if (itemcfg)
+        var elem := FindConfigElem(itemcfg, objtype);
+        if (elem)
+            var name := GetConfigString(elem, "Desc");
+            if (name)
+                return name;
+            endif
+        endif
+    endif
+    
+    return "Reagente";
+endfunction
+
+function ConjureRitual(who, portal_level, ritual_type)
+    var total_actions := portal_level * 3;
+    // Salvar posição inicial
+    var start_x := who.x;
+    var start_y := who.y;
+    var start_z := who.z;
+    
+    for i := 1 to total_actions
+        if (ritual_type == "chaos")
+            PerformAction(who, HUMAN_ANIM::CAST_DIR);
+            PlayObjectCenteredEffect(who, FX_ENERGY_BEAM_MAGIC, 0, 13);
+            PlaySoundEffect(who, 0x1f1);
+        else
+            PerformAction(who, HUMAN_ANIM::CAST_AREA);
+            PlayObjectCenteredEffect(who, FX_ILUMINADO, 0, 15);
+            PlaySoundEffect(who, 0x1EC);
+        endif
+        // Verificar se jogador se moveu
+        if (who.x != start_x || who.y != start_y || who.z != start_z)
+            Message("O ritual foi interrompido! Voce precisa permanecer parado.").SendSys(who);
+            return 0;
+        endif
+
+        sleep(2);
+    endfor
+endfunction
+
+function ExecuteRitual(who, scroll, scroll_type, scroll_level, reagents)
+    // Verificar ingredientes e coletar itemRefs
+    var items_to_consume := CheckReagents(who, reagents);
+    if (!items_to_consume)
+        Message("Voce nao possui os ingredientes necessarios.").SendSys(who);
+        return 0;
+    endif
+
+    // Consumir ingredientes
+    ConsumeIngredients(items_to_consume);
+
+    if (scroll_type == "chaos")
+        ExecuteChaosRitual(who, scroll, scroll_level);
+    else
+        ExecutePurgeRitual(who, scroll, scroll_level);
+    endif
+
+    // Destruir pergaminho
+    DestroyItem(scroll);
+endfunction
+
+function ExecuteChaosRitual(who, scroll, scroll_level)
+    var mobile := MobileWrapper(who);
+    // Ajustar entropia mínima
+    if (mobile.GetEntropy() > VOIDRIFT_MIN_CORRUPTION)
+        mobile.SetEntropy(VOIDRIFT_MIN_CORRUPTION);
+    endif
+
+    // Adicionar entropia do pergaminho
+    var entropy_amount;
+    case (scroll_level)
+        1: entropy_amount := -1000;
+        2: entropy_amount := -2000;
+        3: entropy_amount := -3000;
+        4: entropy_amount := -4000;
+    endcase
+    UpdateMobileEntropy(who, entropy_amount);
+
+    // Corromper jogadores próximos
+    foreach mobile in ListMobilesNearLocation(who.x, who.y, who.z, VOIDRIFT_CORRUPT_RANGE, who.realm)
+        if (mobile.acctname && mobile != who)
+            var mobileWrapper := MobileWrapper(mobile);
+            if (mobileWrapper.GetEntropy() > VOIDRIFT_MIN_CORRUPTION)
+                mobileWrapper.SetEntropy(VOIDRIFT_MIN_CORRUPTION);
+            endif
+            UpdateMobileEntropy(mobile, entropy_amount);
+            Message("Voce sente uma energia sombria corromper sua alma!").SendSys(mobile);
+        endif
+    endforeach
+
+    // Calcular quantidade de criaturas
+    var spawn_amount := GetSpawnAmount(who);
+
+    // Animação do ritual
+    ConjureRitual(who, scroll_level, "chaos");
+
+    // Criar portal
+    var portal := CreateItemAtLocation(who.x, who.y, who.z, VOIDRIFT_PORTAL_OBJTYPE, 1, who.realm);
+    if (!portal)
+        Message("Erro ao criar o portal!").SendSys(who);
+        return 0;
+    endif
+
+    SetObjProperty(portal, "portal_level", scroll_level);
+    SetObjProperty(portal, "max_creatures", spawn_amount);
+    SetObjProperty(portal, "spawned_by", who.serial);
+    SetObjProperty(portal, "min_respawn", 120);
+    SetObjProperty(portal, "max_respawn", 150);
+    SetObjProperty(portal, "creatures", array{});
+
+    // Efeito visual do portal
+    PlayObjectCenteredEffect(portal, FX_PORTAL_SUGADOR, 0, 30);
+    PlaySoundEffect(who, 0x20D);
+    Message("O portal do vazio foi aberto! " + spawn_amount + " criaturas serao invocadas.").SendSys(who);
+    // ControlScript inicia automaticamente via itemdesc.cfg
+endfunction
+
+function ExecutePurgeRitual(who, scroll, scroll_level)
+    var mobile := MobileWrapper(who);
+    // Buscar portal próximo
+    var portal := FindNearbyPortal(who, scroll_level);
+
+    if (!portal)
+        Message("Nao ha portais do vazio proximos que possam ser destruidos.").SendSys(who);
+        // Ainda adiciona entropia positiva
+        var entropy_amount;
+        case (scroll_level)
+            1: entropy_amount := 1000;
+            2: entropy_amount := 2000;
+            3: entropy_amount := 3000;
+            4: entropy_amount := 4000;
+        endcase
+        mobile.UpdateEntropy(entropy_amount);
+        return 0;
+    endif
+
+    // Animação do ritual
+    ConjureRitual(who, scroll_level, "purge");
+
+    // Efeito visual de purificação
+    PlayObjectCenteredEffect(portal, FX_DIVINE_BLESS, 0, 20);
+    PlaySoundEffect(who, 0x213);  // Som de destruição do portal
+    sleepms(1100);
+
+    // Destruir criaturas do portal
+    DestroyPortalCreatures(portal);
+
+    // Destruir portal
+    DestroyItem(portal);
+    
+    // Adicionar entropia positiva
+    var entropy_amount;
+    case (scroll_level)
+        1: entropy_amount := 1000;
+        2: entropy_amount := 2000;
+        3: entropy_amount := 3000;
+        4: entropy_amount := 4000;
+    endcase
+    mobile.UpdateEntropy(entropy_amount);
+
+    Message("O portal do vazio foi purificado e fechado!").SendSys(who);
+endfunction

@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+program sfx(params)
+    var mobs   := params[2];
+    var pv     := params[3];
+    var som_id := CInt(pv[1]);
+
+    foreach mob in mobs
+        PlaySoundEffect(mob, som_id);
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

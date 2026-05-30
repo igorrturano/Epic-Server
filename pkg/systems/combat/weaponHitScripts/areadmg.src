@@ -1,0 +1,126 @@
+use uo;
+use util;
+
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include "include/client";
+include "include/sounds";
+include ":acid:acid";
+include ":fls_core:packets";
+include ":taming:taming";
+include ":destroyable:include/destroyItem";
+include "include/epicCombatUtils";
+
+program HitScript(params)
+	var attacker := params[1];
+	// var defender	:= params[2];
+	// var weapon	:= params[3];
+	// var armor	:= params[4];
+	// var basedamage	:= params[5];
+	var rawdamage := params[6];
+	var dmgtype := params[7];
+	var range := params[8];
+
+	if (!range || range == error)
+		range := 2;
+	endif
+
+	if (!dmgtype || dmgtype == error)
+		dmgtype := DAMAGE_TYPE::BLUNT;
+	endif
+
+	params := 0; // Not needed anymore.
+
+	var allPets := array{};
+	var party_members := attacker.party.members;
+
+	if (attacker.party)
+		foreach member in party_members
+			if (member != attacker)
+				var memberObj := SystemFindObjectBySerial(member.serial);
+				var allPetsAndSummonedPets := ListAllPetsAndSummonedPetsNear(memberObj, 8);
+				foreach pet in allPetsAndSummonedPets
+					allPets.append(pet);
+				endforeach
+			endif
+		endforeach
+	endif
+
+	if (dmgtype == DAMAGE_TYPE::COLD)
+		var itemDmg := cint((rawdamage * 0.5) + 1);
+		DanificaObjetosProximos(attacker, attacker.x, attacker.y, attacker.z, attacker.realm, struct{ dano := itemDmg,
+																							  		desc := "Hit Script [Frio]." },
+								range, FX_BLUE_SPARKLE_GROUND);
+		foreach defender in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, range,
+													  attacker.realm))
+			sleepms(2);
+			if (!(defender in attacker.party.members) && !(defender in allPets))
+				if (defender.serial != attacker.serial)
+					PlayObjectCenteredEffect(defender, FX_BLUE_SPARKLE_GROUND, 7, 16);
+					PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
+					var total := DealDamage(defender, cint((rawdamage * 0.5) + 1), DAMAGE_TYPE::COLD);
+					DisplayDamage(defender, total, attacker);
+
+				endif
+			endif
+		endforeach
+	elseif (dmgtype == DAMAGE_TYPE::FIRE)
+		var itemDmg := cint((rawdamage * 0.5) + 1);
+		DanificaObjetosProximos(attacker, attacker.x, attacker.y, attacker.z, attacker.realm, struct{ dano := itemDmg,
+																							  		desc := "Hit Script [Fogo]." },
+								range, FX_EXPLODE_1);
+		foreach defender in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, range,
+													  attacker.realm))
+			sleepms(2);
+			if (!(defender in attacker.party.members) && !(defender in allPets))
+				if (defender.serial != attacker.serial)
+					PlayObjectCenteredEffect(defender, FX_EXPLODE_1, 7, 16);
+					PlaySoundEffect(defender, SFX_EXPLOSION_11);
+					var total := DealDamage(defender, cint((rawdamage * 0.5) + 1), DAMAGE_TYPE::FIRE);
+					DisplayDamage(defender, total, attacker);
+				endif
+			endif
+		endforeach
+	elseif (dmgtype == DAMAGE_TYPE::ENERGY)
+		var itemDmg := cint((rawdamage * 0.5) + 1);
+		DanificaObjetosProximos(attacker, attacker.x, attacker.y, attacker.z, attacker.realm, struct{ dano := itemDmg,
+																							  		desc := "Hit Script [Energia]." },
+								range, FX_ENERGY);
+		foreach defender in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, range,
+													  attacker.realm))
+			sleepms(2);
+			if (!(defender in attacker.party.members) && !(defender in allPets))
+				if (defender.serial != attacker.serial)
+					PlayMovingEffectXYZ(defender.x, defender.y, defender.z + 15, defender.x - 1, defender.y,
+										 defender.z + 15, FX_ENERGY, 5, 25);
+					PlayMovingEffectXYZ(defender.x, defender.y, defender.z + 15, defender.x + 1, defender.y,
+										 defender.z + 15, FX_ENERGY, 5, 25);
+					PlayMovingEffectXYZ(defender.x, defender.y, defender.z + 15, defender.x, defender.y + 1,
+										 defender.z + 15, FX_ENERGY, 5, 25);
+					PlayMovingEffectXYZ(defender.x, defender.y, defender.z + 15, defender.x, defender.y - 1,
+										 defender.z + 15, FX_ENERGY, 5, 25);
+					PlaySoundEffect(defender, SFX_LIGHTNING);
+					var total := DealDamage(defender, cint((rawdamage * 0.5) + 1), DAMAGE_TYPE::ENERGY);
+					DisplayDamage(defender, total, attacker);
+				endif
+			endif
+		endforeach
+	elseif (dmgtype == DAMAGE_TYPE::BLUNT)
+		var itemDmg := cint((rawdamage * 1.5) + 1);
+		DanificaObjetosProximos(attacker, attacker.x, attacker.y, attacker.z, attacker.realm, struct{ dano := itemDmg,
+																							  		desc := "Hit Script [Fisico]." },
+								range, 0x22c6);
+		foreach defender in (ListMobilesNearLocation(attacker.x, attacker.y, attacker.z, range,
+													  attacker.realm))
+			sleepms(2);
+			if (!(defender in attacker.party.members) && !(defender in allPets))
+				if (defender.serial != attacker.serial)
+					PlayObjectCenteredEffectEx(defender, 0x22c6, 1, 9);
+					var total := DealDamage(defender, cint((rawdamage * 1.5) + 1), DAMAGE_TYPE::BLUNT);
+					DisplayDamage(attacker, total, defender);
+				endif
+			endif
+		endforeach
+	endif
+	return 1;
+endprogram

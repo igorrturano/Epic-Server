@@ -1,0 +1,764 @@
+use uo;
+use os;
+
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Text";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/CheckBox";
+include ":gumpDesigner:Control/RadioButton";
+include ":gumpDesigner:Control/TextBox";
+include ":attributes:attributeConstants";
+
+// ─── Dimensões e páginas ──────────────────────────────────────────
+const W         := 760;
+const H         := 560;
+const NAV_Y     := 70;
+const CONTENT_Y := 132;
+const BOT_Y     := 542;
+const P_MODO    := 1;
+const P_IDENT   := 2;
+const P_COND    := 3;
+const P_SKILLS  := 4;
+const SALVAR    := 99;
+
+// ─── Listas globais ───────────────────────────────────────────────
+var _FACCOES := array{
+	"Regentes de Valtheris", "Sinodo", "Rufioes",
+	"Conselho Sofocratico", "A Liga do Pacto Comum"
+};
+var _RACAS_C1 := array{ "Anão", "Elfo", "Orc" };
+var _RACAS_C2 := array{ "Drow", "Humano", "Pequilho" };
+var _RELIGIOES_C1 := array{ "Veneratio", "Kai", "Halleuad", "Lórё" };
+var _RELIGIOES_C2 := array{ "Eluith'orth", "Bokk Bharaz", "Ushkr'ar", "Céticos" };
+var _MOONGATE_GRAFICOS := array{ 0, 0x1fd4, 0xb70c, 0xb748, 0xe4e6, 0x0dda, 0x0f6c };
+var _MOONGATE_NOMES    := array{ "Nenhum", "Negro", "Quebrado 1", "Quebrado 2", "Portal 1", "Vermelho", "Azul" };
+
+var _SKILL_IDS := array{
+	ALCHEMY, MAGERY, ARCANA, SCIENCE, THEOLOGY,
+	PARRY, ONEHANDED, TWOHANDED, DUALWIELD, RANGED, TACTICS,
+	SNEAK, PICKPOCKETING, AWARENESS, MECHANICS,
+	MEDICINE, SURVIVAL, METALWORKING, WOODWORKING,
+	DOMESTIC_WORK, GATHERING, HANDLEANIMAL, WRESTLING,
+	// Path-rework split skills (legacy entries above stay for migration window)
+	"Tailoring", "Provisioning", "Mining", "Lumberjacking", "Taming", "Beastmastery"
+};
+var _SKILL_NOMES := array{
+	"Alquimia", "Magia", "Arcana", "Ciência", "Teologia",
+	"Defesa", "Uma Mão", "Duas Mãos", "Dualidade", "Arco", "Táticas",
+	"Furtividade", "Furto", "Percepção", "Mecânica",
+	"Medicina", "Sobrevivência", "Metalurgia", "Marcenaria",
+	"Dom. Doméstico", "Coleta", "Trein. Animal", "Luta Livre",
+	"Costura", "Suprimentos", "Mineração", "Lenhadoria", "Doma", "Mestre de Bestas"
+};
+
+var form_data := struct{};
+
+// ─── Entry point ──────────────────────────────────────────────────
+
+program useScript(who, tile)
+	if (who.cmdlevel < 2)
+		SendSysMessage(who, "Apenas GMs podem configurar este telepad.");
+		return 0;
+	endif
+
+	_InitFormData(tile);
+	var pagina := P_MODO;
+
+	while (1)
+		var next;
+		case (pagina)
+			P_MODO:   next := PaginaModo(who);
+			P_IDENT:  next := PaginaIdentidade(who);
+			P_COND:   next := PaginaCondicoes(who);
+			P_SKILLS: next := PaginaSkills(who);
+		endcase
+
+		if (next == 0)
+			break;
+		elseif (next == SALVAR)
+			SetObjProperty(tile, "form_data", form_data);
+			SendSysMessage(who, "TelePad Master configurado.");
+			break;
+		else
+			pagina := next;
+		endif
+	endwhile
+	return 1;
+endprogram
+
+// ─── Inicialização ────────────────────────────────────────────────
+
+function _InitFormData(tile)
+	var saved := GetObjProperty(tile, "form_data");
+	if (saved && !saved.errortext)
+		form_data := saved;
+		if (form_data.moongate.errortext) form_data.+moongate := 0; endif
+		if (form_data.moongate_cor.errortext) form_data.+moongate_cor := 0; endif
+		if (form_data.portal_ttl.errortext) form_data.+portal_ttl := 5; endif
+		return;
+	endif
+	form_data := struct{};
+	form_data.+mode      := 0;
+	form_data.+dest_x    := "";
+	form_data.+dest_y    := "";
+	form_data.+dest_z    := "";
+	form_data.+dest_realm := "";
+	form_data.+destinos   := array{};
+	form_data.+faccoes    := array{};
+	form_data.+genero     := 0;
+	form_data.+racas      := array{};
+	form_data.+animais    := 1;
+	form_data.+scale_min  := "";
+	form_data.+scale_max  := "";
+	form_data.+religioes  := array{};
+	form_data.+skills     := array{};
+	form_data.+moongate     := 0;
+	form_data.+moongate_cor := 0;
+	form_data.+portal_ttl   := 5;
+endfunction
+
+// ─── Helpers de gump compartilhados ──────────────────────────────
+
+function _AddControlesBase(gump, pagina_atual)
+	var nomes := array{ "Modo", "Identidade", "Condições", "Skills" };
+	var base := struct{};
+	var navs := array{};
+	var x := 18;
+	for p := 1 to 4
+		var cor := (p == pagina_atual) ? TEXT_COLOR::COLOR_GREEN : TEXT_COLOR::COLOR_BLUE;
+		var btn := Button("nav" + p, x, NAV_Y, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gump.AddControl(btn);
+		gump.AddControl(Text("navL" + p, x + 22, NAV_Y + 2, nomes[p], cor));
+		navs.append(btn);
+		x += 178;
+	endfor
+	base.+navs := navs;
+
+	base.+salvar := Button("salvar", W - 155, BOT_Y, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+	gump.AddControl(base.salvar);
+	gump.AddControl(Text("lSalvar", W - 130, BOT_Y + 2, "Salvar", TEXT_COLOR::COLOR_GREEN));
+
+	base.+cancelar := Button("cancelar", W - 78, BOT_Y, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+	gump.AddControl(base.cancelar);
+	gump.AddControl(Text("lCanc", W - 53, BOT_Y + 2, "Fechar", TEXT_COLOR::COLOR_RED));
+
+	return base;
+endfunction
+
+function _ChecarNav(evento, base)
+	if (evento.GetControl() == EVENT_ACTION::CLOSED)
+		return 0;
+	endif
+	if (evento.GetControl().Equals(base.cancelar))
+		return 0;
+	endif
+	if (evento.GetControl().Equals(base.salvar))
+		return SALVAR;
+	endif
+	for i := 1 to base.navs.size()
+		if (evento.GetControl().Equals(base.navs[i]))
+			return i;
+		endif
+	endfor
+	return -1;
+endfunction
+
+function _CheckBoxGrupo(gump, lista, selecionados, prefixo, cx, cy, espaco)
+	var chks := array{};
+	for i := 1 to lista.size()
+		var val := (lista[i] in selecionados) ? CHECKBOX_VALUE::CHECKED : CHECKBOX_VALUE::UNCHECKED;
+		var chk := CheckBox(prefixo + i, cx, cy + (i - 1) * espaco,
+			CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, val);
+		gump.AddControl(chk);
+		gump.AddControl(Text(prefixo + "L" + i, cx + 25, cy + (i - 1) * espaco + 2, lista[i], 2100));
+		chks.append(chk);
+	endfor
+	return chks;
+endfunction
+
+function _LerCheckBoxGrupo(chks, lista)
+	var result := array{};
+	for i := 1 to chks.size()
+		if (chks[i].GetValue() == CHECKBOX_VALUE::CHECKED)
+			result.append(lista[i]);
+		endif
+	endfor
+	return result;
+endfunction
+
+function _RemoverElemento(arr, idx)
+	var novo := array{};
+	for i := 1 to arr.size()
+		if (i != idx)
+			novo.append(arr[i]);
+		endif
+	endfor
+	return novo;
+endfunction
+
+function _StrSafe(v)
+	if (v.errortext) return ""; endif
+	return CStr(v);
+endfunction
+
+function _LerCampo(tb)
+	return _StrSafe(tb.GetValue());
+endfunction
+
+// ─── Página 1: Modo & Destino ─────────────────────────────────────
+
+function PaginaModo(who)
+	while (1)
+		var gump := Gump(who, "EPIC TELEPAD", W, H);
+		var base := _AddControlesBase(gump, P_MODO);
+
+		gump.AddControl(Text("hModo", 20, CONTENT_Y, "Modo de Ativação:", TEXT_COLOR::COLOR_YELLOW));
+
+		var corW      := (CInt(form_data.mode) == 0) ? TEXT_COLOR::COLOR_GREEN : 2100;
+		var corP      := (CInt(form_data.mode) == 1) ? TEXT_COLOR::COLOR_GREEN : 2100;
+		var btn_walk   := Button("mW", 22, CONTENT_Y + 25, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		var btn_palavra := Button("mP", 22, CONTENT_Y + 50, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gump.AddControl(btn_walk);
+		gump.AddControl(Text("lW", 47, CONTENT_Y + 27, "WalkOn — jogador pisa e teleporta", corW));
+		gump.AddControl(btn_palavra);
+		gump.AddControl(Text("lP", 47, CONTENT_Y + 52, "Palavra Mágica — jogador fala para abrir", corP));
+
+		// Controles de destino dependentes do modo
+		var tb_x := 0;
+		var tb_y := 0;
+		var tb_z := 0;
+		var tb_realm := 0;
+		var btn_add := 0;
+		var btn_visual := 0;
+		var tb_ttl := 0;
+		var btns_editar := array{};
+		var btns_remover := array{};
+		var y0 := CONTENT_Y + 90;
+
+		if (CInt(form_data.mode) == 0)
+			gump.AddControl(Text("hDest", 20, y0, "Destino único:", TEXT_COLOR::COLOR_YELLOW));
+			var dy := y0 + 28;
+			gump.AddControl(Text("lX", 20, dy + 2, "X:", 2100));
+			tb_x := TextBox("dx", 38, dy, 70, 1, 2100, _StrSafe(form_data.dest_x));
+			gump.AddControl(tb_x);
+			gump.AddControl(Text("lY", 118, dy + 2, "Y:", 2100));
+			tb_y := TextBox("dy", 136, dy, 70, 1, 2100, _StrSafe(form_data.dest_y));
+			gump.AddControl(tb_y);
+			gump.AddControl(Text("lZ", 216, dy + 2, "Z:", 2100));
+			tb_z := TextBox("dz", 234, dy, 58, 1, 2100, _StrSafe(form_data.dest_z));
+			gump.AddControl(tb_z);
+			gump.AddControl(Text("lR", 302, dy + 2, "Realm:", 2100));
+			tb_realm := TextBox("dr", 352, dy, 110, 1, 2100, _StrSafe(form_data.dest_realm));
+			gump.AddControl(tb_realm);
+		else
+			gump.AddControl(Text("hDest", 20, y0, "Destinos (máx 10):", TEXT_COLOR::COLOR_YELLOW));
+
+			btn_visual := Button("visual", 20, y0 + 26, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+			gump.AddControl(btn_visual);
+			var nome_mg := _NomeMoongate(CInt(form_data.moongate));
+			var txt_mg := "Visual do Portal: " + nome_mg;
+			if (CInt(form_data.moongate_cor) > 0)
+				txt_mg := txt_mg + " | Cor: " + CStr(form_data.moongate_cor);
+			endif
+			gump.AddControl(Text("lVisual", 45, y0 + 28, txt_mg, TEXT_COLOR::COLOR_BLUE));
+			gump.AddControl(Text("lTtl", 460, y0 + 28, "Duração (s):", 2100));
+			tb_ttl := TextBox("ttl", 553, y0 + 26, 55, 1, 2100, CStr(CInt(form_data.portal_ttl)));
+			gump.AddControl(tb_ttl);
+
+			if (form_data.destinos.size() < 10)
+				btn_add := Button("addD", 20, y0 + 54, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+				gump.AddControl(btn_add);
+				gump.AddControl(Text("lAdd", 45, y0 + 56, "Adicionar Destino", TEXT_COLOR::COLOR_GREEN));
+			endif
+
+			for li := 1 to form_data.destinos.size()
+				var d := form_data.destinos[li];
+				var dy2 := y0 + 80 + (li - 1) * 26;
+
+				gump.AddControl(Text("dn" + li, 20, dy2 + 2, "#" + li, TEXT_COLOR::COLOR_YELLOW));
+
+				var lpalavra := (CStr(d.palavra) != "") ? CStr(d.palavra) : "(sem palavra)";
+				gump.AddControl(Text("dp" + li, 48, dy2 + 2, lpalavra, 2100));
+
+				var lcoord := CStr(d.x) + "," + CStr(d.y) + "," + CStr(d.z);
+				gump.AddControl(Text("dc" + li, 230, dy2 + 2, lcoord, 2100));
+				gump.AddControl(Text("dr" + li, 360, dy2 + 2, CStr(d.realm), 2100));
+
+				var be := Button("de" + li, 500, dy2, BUTTON_IMAGE::MODERN_EDIT_UNPRESSED, BUTTON_IMAGE::MODERN_EDIT_PRESSED);
+				gump.AddControl(be);
+				btns_editar.append(be);
+
+				var br := Button("drem" + li, 540, dy2, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+				gump.AddControl(br);
+				btns_remover.append(br);
+			endfor
+		endif
+
+		var evento := gump.Show();
+
+		// Ler campos de destino WalkOn
+		if (tb_x)
+			form_data.dest_x     := _LerCampo(tb_x);
+			form_data.dest_y     := _LerCampo(tb_y);
+			form_data.dest_z     := _LerCampo(tb_z);
+			form_data.dest_realm := _LerCampo(tb_realm);
+		endif
+
+		if (tb_ttl)
+			var ttl_raw := CInt(_LerCampo(tb_ttl));
+			form_data.portal_ttl := (ttl_raw > 0) ? ttl_raw : 5;
+		endif
+
+		gump.Dispose();
+
+		// Mudança de modo — re-renderiza imediatamente
+		if (evento.GetControl().Equals(btn_walk))
+			form_data.mode := 0;
+			continue;
+		elseif (evento.GetControl().Equals(btn_palavra))
+			form_data.mode := 1;
+			continue;
+		endif
+
+		var nav := _ChecarNav(evento, base);
+		if (nav != -1)
+			return nav;
+		endif
+
+		// Visual do portal
+		if (btn_visual)
+			if (evento.GetControl().Equals(btn_visual))
+				var resultado_mg := GumpMoongate(who);
+				if (resultado_mg)
+					form_data.moongate     := resultado_mg.moongate;
+					form_data.moongate_cor := resultado_mg.moongate_cor;
+				endif
+				continue;
+			endif
+		endif
+
+		// Adicionar destino
+		if (btn_add)
+			if (evento.GetControl().Equals(btn_add))
+				var novo := GumpEditarDestino(who, 0);
+				if (novo)
+					form_data.destinos.append(novo);
+				endif
+				continue;
+			endif
+		endif
+
+		// Editar / Remover destino
+		for i := 1 to btns_editar.size()
+			if (evento.GetControl().Equals(btns_editar[i]))
+				var editado := GumpEditarDestino(who, form_data.destinos[i]);
+				if (editado)
+					form_data.destinos[i] := editado;
+				endif
+				break;
+			endif
+		endfor
+		for i := 1 to btns_remover.size()
+			if (evento.GetControl().Equals(btns_remover[i]))
+				form_data.destinos := _RemoverElemento(form_data.destinos, i);
+				break;
+			endif
+		endfor
+	endwhile
+endfunction
+
+// ─── Página 2: Identidade ────────────────────────────────────────
+
+function PaginaIdentidade(who)
+	while (1)
+		var gump := Gump(who, "EPIC TELEPAD", W, H);
+		var base := _AddControlesBase(gump, P_IDENT);
+		var y := CONTENT_Y;
+
+		gump.AddControl(Text("hFacc", 20, y, "Facções: (vazio = todas passam)", TEXT_COLOR::COLOR_YELLOW));
+		var chkFacc := _CheckBoxGrupo(gump, _FACCOES, form_data.faccoes, "cf", 20, y + 22, 22);
+
+		y := y + 22 + _FACCOES.size() * 22 + 18;
+
+		gump.AddControl(Text("hGen", 20, y, "Gênero:", TEXT_COLOR::COLOR_YELLOW));
+		var r_ambos := RadioButton("gA", 22, y + 22,
+			RADIOBUTTON_IMAGE::DEFAULT_UNPRESSED, RADIOBUTTON_IMAGE::DEFAULT_PRESSED,
+			(CInt(form_data.genero) == 0) ? RADIOBUTTON_VALUE::PRESSED : RADIOBUTTON_VALUE::UNPRESSED);
+		var r_homem := RadioButton("gH", 182, y + 22,
+			RADIOBUTTON_IMAGE::DEFAULT_UNPRESSED, RADIOBUTTON_IMAGE::DEFAULT_PRESSED,
+			(CInt(form_data.genero) == 1) ? RADIOBUTTON_VALUE::PRESSED : RADIOBUTTON_VALUE::UNPRESSED);
+		var r_mulher := RadioButton("gM", 342, y + 22,
+			RADIOBUTTON_IMAGE::DEFAULT_UNPRESSED, RADIOBUTTON_IMAGE::DEFAULT_PRESSED,
+			(CInt(form_data.genero) == 2) ? RADIOBUTTON_VALUE::PRESSED : RADIOBUTTON_VALUE::UNPRESSED);
+		gump.AddControl(r_ambos);
+		gump.AddControl(Text("lA", 47, y + 24, "Ambos", 2100));
+		gump.AddControl(r_homem);
+		gump.AddControl(Text("lH", 207, y + 24, "Homem", 2100));
+		gump.AddControl(r_mulher);
+		gump.AddControl(Text("lM", 367, y + 24, "Mulher", 2100));
+
+		y := y + 22 + 30 + 12;
+
+		gump.AddControl(Text("hRaca", 20, y, "Raças: (vazio = todas passam)", TEXT_COLOR::COLOR_YELLOW));
+		var chkRacas1 := _CheckBoxGrupo(gump, _RACAS_C1, form_data.racas, "rc1", 20,  y + 22, 22);
+		var chkRacas2 := _CheckBoxGrupo(gump, _RACAS_C2, form_data.racas, "rc2", 280, y + 22, 22);
+
+		var evento := gump.Show();
+
+		// Ler gênero
+		if (r_ambos.GetValue() == RADIOBUTTON_VALUE::PRESSED)
+			form_data.genero := 0;
+		elseif (r_homem.GetValue() == RADIOBUTTON_VALUE::PRESSED)
+			form_data.genero := 1;
+		elseif (r_mulher.GetValue() == RADIOBUTTON_VALUE::PRESSED)
+			form_data.genero := 2;
+		endif
+
+		// Ler facções
+		form_data.faccoes := _LerCheckBoxGrupo(chkFacc, _FACCOES);
+
+		// Ler raças (unir as duas colunas)
+		form_data.racas := array{};
+		var r1 := _LerCheckBoxGrupo(chkRacas1, _RACAS_C1);
+		var r2 := _LerCheckBoxGrupo(chkRacas2, _RACAS_C2);
+		foreach rr in r1
+			form_data.racas.append(rr);
+		endforeach
+		foreach rr in r2
+			form_data.racas.append(rr);
+		endforeach
+
+		gump.Dispose();
+
+		var nav := _ChecarNav(evento, base);
+		if (nav != -1)
+			return nav;
+		endif
+	endwhile
+endfunction
+
+// ─── Página 3: Condições ─────────────────────────────────────────
+
+function PaginaCondicoes(who)
+	while (1)
+		var gump := Gump(who, "EPIC TELEPAD", W, H);
+		var base := _AddControlesBase(gump, P_COND);
+		var y := CONTENT_Y;
+
+		// Animais
+		gump.AddControl(Text("hAnim", 20, y, "Animais:", TEXT_COLOR::COLOR_YELLOW));
+		var animVal := (CInt(form_data.animais) == 1) ? CHECKBOX_VALUE::CHECKED : CHECKBOX_VALUE::UNCHECKED;
+		var chkAnim := CheckBox("anim", 22, y + 22,
+			CHECKBOX_IMAGE::DEFAULT_UNCHECKED, CHECKBOX_IMAGE::DEFAULT_CHECKED, animVal);
+		gump.AddControl(chkAnim);
+		gump.AddControl(Text("lAnim", 47, y + 24, "Permitir NPCs animais e pets serem teleportados", 2100));
+
+		y := y + 22 + 28 + 16;
+
+		// Escala
+		gump.AddControl(Text("hScale", 20, y, "Escala (%):", TEXT_COLOR::COLOR_YELLOW));
+		gump.AddControl(Text("lSmin", 20, y + 22, "De:", 2100));
+		var tb_smin := TextBox("smin", 48, y + 22, 65, 1, 2100, _StrSafe(form_data.scale_min));
+		gump.AddControl(tb_smin);
+		gump.AddControl(Text("lSmax", 125, y + 22, "Até:", 2100));
+		var tb_smax := TextBox("smax", 157, y + 22, 65, 1, 2100, _StrSafe(form_data.scale_max));
+		gump.AddControl(tb_smax);
+		gump.AddControl(Text("lScaleNote", 235, y + 24, "(vazio = sem restrição)", TEXT_COLOR::COLOR_BLUE));
+
+		y := y + 22 + 30 + 16;
+
+		// Religiões
+		gump.AddControl(Text("hRel", 20, y, "Religiões: (vazio = todas passam)", TEXT_COLOR::COLOR_YELLOW));
+		var chkRel1 := _CheckBoxGrupo(gump, _RELIGIOES_C1, form_data.religioes, "re1", 20,  y + 22, 22);
+		var chkRel2 := _CheckBoxGrupo(gump, _RELIGIOES_C2, form_data.religioes, "re2", 380, y + 22, 22);
+
+		var evento := gump.Show();
+
+		form_data.animais   := (chkAnim.GetValue() == CHECKBOX_VALUE::CHECKED) ? 1 : 0;
+		form_data.scale_min := _LerCampo(tb_smin);
+		form_data.scale_max := _LerCampo(tb_smax);
+
+		form_data.religioes := array{};
+		var rl1 := _LerCheckBoxGrupo(chkRel1, _RELIGIOES_C1);
+		var rl2 := _LerCheckBoxGrupo(chkRel2, _RELIGIOES_C2);
+		foreach rr in rl1
+			form_data.religioes.append(rr);
+		endforeach
+		foreach rr in rl2
+			form_data.religioes.append(rr);
+		endforeach
+
+		gump.Dispose();
+
+		var nav := _ChecarNav(evento, base);
+		if (nav != -1)
+			return nav;
+		endif
+	endwhile
+endfunction
+
+// ─── Página 4: Skills ────────────────────────────────────────────
+
+function PaginaSkills(who)
+	while (1)
+		var gump := Gump(who, "EPIC TELEPAD", W, H);
+		var base := _AddControlesBase(gump, P_SKILLS);
+		var y := CONTENT_Y;
+
+		gump.AddControl(Text("hSkills", 20, y, "Restrições de Skill: (vazio = sem restrição)", TEXT_COLOR::COLOR_YELLOW));
+
+		var btns_remover := array{};
+		for li := 1 to form_data.skills.size()
+			var req := form_data.skills[li];
+			var dy := y + 22 + (li - 1) * 24;
+			var nome_exib := _NomeSkill(CStr(req.nome));
+			gump.AddControl(Text("sk" + li, 20, dy + 2,
+				nome_exib + ":  >= " + CStr(req.valor), 2100));
+			var br := Button("skr" + li, 500, dy, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+			gump.AddControl(br);
+			btns_remover.append(br);
+		endfor
+
+		var btn_add := 0;
+		if (form_data.skills.size() < 10)
+			var ay := y + 22 + form_data.skills.size() * 24 + 16;
+			btn_add := Button("addSk", 20, ay, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+			gump.AddControl(btn_add);
+			gump.AddControl(Text("lAddSk", 45, ay + 2, "Adicionar Restrição de Skill", TEXT_COLOR::COLOR_GREEN));
+		endif
+
+		var evento := gump.Show();
+		gump.Dispose();
+
+		var nav := _ChecarNav(evento, base);
+		if (nav != -1)
+			return nav;
+		endif
+
+		// Remover skill
+		for i := 1 to btns_remover.size()
+			if (evento.GetControl().Equals(btns_remover[i]))
+				form_data.skills := _RemoverElemento(form_data.skills, i);
+				break;
+			endif
+		endfor
+
+		// Adicionar skill
+		if (btn_add)
+			if (evento.GetControl().Equals(btn_add))
+				var skill_id := GumpSelecionarSkill(who);
+				if (skill_id)
+					var valor := GumpValorSkill(who, _NomeSkill(skill_id));
+					if (valor && CStr(valor) != "")
+						var nova_req := struct{};
+						nova_req.+nome  := skill_id;
+						nova_req.+valor := CDbl(valor);
+						form_data.skills.append(nova_req);
+					endif
+				endif
+			endif
+		endif
+	endwhile
+endfunction
+
+// ─── Sub-gump: Editar Destino ─────────────────────────────────────
+
+function GumpEditarDestino(who, destino)
+	var gump := Gump(who, "Editar Destino", 440, 270);
+
+	gump.AddControl(Text("lPal", 20, 55, "Palavra Mágica:", 2100));
+	var tb_pal := TextBox("pal", 160, 55, 240, 1, 2100,
+		destino ? CStr(destino.palavra) : "");
+	gump.AddControl(tb_pal);
+
+	gump.AddControl(Text("lX", 20, 90, "X:", 2100));
+	var tb_x := TextBox("ex", 40, 90, 75, 1, 2100,
+		destino ? CStr(destino.x) : "");
+	gump.AddControl(tb_x);
+
+	gump.AddControl(Text("lY", 125, 90, "Y:", 2100));
+	var tb_y := TextBox("ey", 145, 90, 75, 1, 2100,
+		destino ? CStr(destino.y) : "");
+	gump.AddControl(tb_y);
+
+	gump.AddControl(Text("lZ", 230, 90, "Z:", 2100));
+	var tb_z := TextBox("ez", 250, 90, 60, 1, 2100,
+		destino ? CStr(destino.z) : "");
+	gump.AddControl(tb_z);
+
+	gump.AddControl(Text("lR", 20, 125, "Realm:", 2100));
+	var tb_realm := TextBox("er", 80, 125, 120, 1, 2100,
+		destino ? CStr(destino.realm) : "");
+	gump.AddControl(tb_realm);
+
+	var btn_ok := Button("ok", 120, 200, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+	gump.AddControl(btn_ok);
+	gump.AddControl(Text("lOk", 145, 202, "Salvar", TEXT_COLOR::COLOR_GREEN));
+
+	var btn_cancel := Button("cancel", 250, 200, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+	gump.AddControl(btn_cancel);
+	gump.AddControl(Text("lCancel", 275, 202, "Cancelar", TEXT_COLOR::COLOR_RED));
+
+	var evento := gump.Show();
+	var pal  := _LerCampo(tb_pal);
+	var ex   := _LerCampo(tb_x);
+	var ey   := _LerCampo(tb_y);
+	var ez   := _LerCampo(tb_z);
+	var erm  := _LerCampo(tb_realm);
+	gump.Dispose();
+
+	if (evento.GetControl() == EVENT_ACTION::CLOSED || evento.GetControl().Equals(btn_cancel))
+		return 0;
+	endif
+
+	var novo := struct{};
+	novo.+palavra := pal;
+	novo.+x       := CInt(ex);
+	novo.+y       := CInt(ey);
+	novo.+z       := CInt(ez);
+	novo.+realm   := erm;
+	return novo;
+endfunction
+
+// ─── Sub-gump: Selecionar Skill ───────────────────────────────────
+
+function GumpSelecionarSkill(who)
+	var gump := Gump(who, "Selecionar Skill", 520, 460);
+	gump.AddControl(Text("hSel", 20, 40, "Clique na skill para selecionar:", TEXT_COLOR::COLOR_YELLOW));
+
+	var btns := array{};
+	var metade := CInt(_SKILL_IDS.size() / 2);
+	for i := 1 to _SKILL_IDS.size()
+		var cx := (i <= metade) ? 20 : 265;
+		var row := (i <= metade) ? (i - 1) : (i - metade - 1);
+		var cy := 68 + row * 26;
+		var btn := Button("sk" + i, cx, cy, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gump.AddControl(btn);
+		gump.AddControl(Text("skL" + i, cx + 22, cy + 2, _SKILL_NOMES[i], 2100));
+		btns.append(btn);
+	endfor
+
+	var btn_cancel := Button("skCancel", 200, 415, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+	gump.AddControl(btn_cancel);
+	gump.AddControl(Text("lSkCancel", 225, 417, "Cancelar", TEXT_COLOR::COLOR_RED));
+
+	var evento := gump.Show();
+	gump.Dispose();
+
+	if (evento.GetControl() == EVENT_ACTION::CLOSED || evento.GetControl().Equals(btn_cancel))
+		return 0;
+	endif
+
+	for i := 1 to btns.size()
+		if (evento.GetControl().Equals(btns[i]))
+			return _SKILL_IDS[i];
+		endif
+	endfor
+	return 0;
+endfunction
+
+// ─── Sub-gump: Valor mínimo da Skill ─────────────────────────────
+
+function GumpValorSkill(who, skill_nome)
+	var gump := Gump(who, "Valor Mínimo de Skill", 340, 210);
+	gump.AddControl(Text("hVal", 20, 50, "Skill: " + skill_nome, TEXT_COLOR::COLOR_YELLOW));
+	gump.AddControl(Text("lVal", 20, 90, "Valor mínimo (0.0 – 100.0):", 2100));
+	var tb := TextBox("val", 20, 112, 100, 1, 2100, "");
+	gump.AddControl(tb);
+
+	var btn_ok := Button("ok", 80, 160, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+	gump.AddControl(btn_ok);
+	gump.AddControl(Text("lOk", 105, 162, "Confirmar", TEXT_COLOR::COLOR_GREEN));
+
+	var btn_cancel := Button("cancel", 210, 160, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+	gump.AddControl(btn_cancel);
+	gump.AddControl(Text("lCancel", 235, 162, "Cancelar", TEXT_COLOR::COLOR_RED));
+
+	var evento := gump.Show();
+	var val := _LerCampo(tb);
+	gump.Dispose();
+
+	if (evento.GetControl() == EVENT_ACTION::CLOSED || evento.GetControl().Equals(btn_cancel))
+		return 0;
+	endif
+	return val;
+endfunction
+
+// ─── Utilitário ───────────────────────────────────────────────────
+
+function _NomeSkill(skill_id)
+	for i := 1 to _SKILL_IDS.size()
+		if (_SKILL_IDS[i] == skill_id)
+			return _SKILL_NOMES[i];
+		endif
+	endfor
+	return skill_id;
+endfunction
+
+function _NomeMoongate(grafico)
+	for i := 1 to _MOONGATE_GRAFICOS.size()
+		if (CInt(_MOONGATE_GRAFICOS[i]) == CInt(grafico))
+			return _MOONGATE_NOMES[i];
+		endif
+	endfor
+	return "Nenhum";
+endfunction
+
+// ─── Sub-gump: Visual do Portal ──────────────────────────────────
+
+function GumpMoongate(who)
+	var selecionado := CInt(form_data.moongate);
+	var cor_str := (CInt(form_data.moongate_cor) > 0) ? CStr(form_data.moongate_cor) : "";
+
+	while (1)
+		var gump := Gump(who, "Visual do Portal", 520, 320);
+		gump.AddControl(Text("hMg", 20, 40, "Escolha o tipo de moongate:", TEXT_COLOR::COLOR_YELLOW));
+
+		var btns_mg := array{};
+		for i := 1 to _MOONGATE_GRAFICOS.size()
+			var row := (i <= 4) ? 0 : 1;
+			var col := (i <= 4) ? (i - 1) : (i - 5);
+			var cx := 20 + col * 120;
+			var cy := 70 + row * 50;
+			var cor_btn := (selecionado == CInt(_MOONGATE_GRAFICOS[i])) ? TEXT_COLOR::COLOR_GREEN : 2100;
+			var btn := Button("mg" + i, cx, cy, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+			gump.AddControl(btn);
+			gump.AddControl(Text("mgL" + i, cx + 22, cy + 2, _MOONGATE_NOMES[i], cor_btn));
+			btns_mg.append(btn);
+		endfor
+
+		gump.AddControl(Text("hCor", 20, 185, "Cor (hue, 0 = padrão):", TEXT_COLOR::COLOR_YELLOW));
+		var tb_cor := TextBox("cor", 20, 207, 100, 1, 2100, cor_str);
+		gump.AddControl(tb_cor);
+
+		var btn_ok := Button("ok", 150, 265, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+		gump.AddControl(btn_ok);
+		gump.AddControl(Text("lOk", 175, 267, "Confirmar", TEXT_COLOR::COLOR_GREEN));
+
+		var btn_cancel := Button("cancel", 300, 265, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+		gump.AddControl(btn_cancel);
+		gump.AddControl(Text("lCancel", 325, 267, "Cancelar", TEXT_COLOR::COLOR_RED));
+
+		var evento := gump.Show();
+		cor_str := _LerCampo(tb_cor);
+		gump.Dispose();
+
+		if (evento.GetControl() == EVENT_ACTION::CLOSED || evento.GetControl().Equals(btn_cancel))
+			return 0;
+		endif
+
+		if (evento.GetControl().Equals(btn_ok))
+			var res := struct{};
+			res.+moongate     := selecionado;
+			res.+moongate_cor := CInt(cor_str);
+			return res;
+		endif
+
+		for i := 1 to btns_mg.size()
+			if (evento.GetControl().Equals(btns_mg[i]))
+				selecionado := CInt(_MOONGATE_GRAFICOS[i]);
+				break;
+			endif
+		endfor
+	endwhile
+endfunction

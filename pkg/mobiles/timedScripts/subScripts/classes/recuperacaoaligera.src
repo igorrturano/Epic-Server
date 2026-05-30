@@ -1,0 +1,52 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":timedscripts:poisonUtil";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program default_poison(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := CInt(params[3]);
+
+	var tactics_bonus := CInt(AP_GetSkill(who, TACTICS) / 10);
+	var time := CInt(AP_GetSkill(who, TACTICS) / 5);
+	var i := 0;
+
+	var parry_bonus := CInt(AP_GetSkill(who, PARRY) / 10);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::MARTIAL_ARTIST))
+		while (1 < time)
+			if (who.dead)
+				break;
+			endif
+			applyEpicHealing(who, tactics_bonus);
+
+			sleep(2);
+		endwhile
+	elseif (MobileWrapper(who).HasAbility(ABILITY_ID::MANOBRA_DA_RESILIENCIA))
+		time := CInt(AP_GetSkill(who, PARRY) / 5);
+		while (1 < time)
+			if (who.dead)
+				break;
+			endif
+			applyEpicHealing(who, parry_bonus);
+
+			sleep(2);
+		endwhile
+	else // Fúria
+		while (1 < time)
+			if (who.dead)
+				break;
+			endif
+			applyEpicHealing(who, tactics_bonus);
+
+			sleep(2);
+		endwhile
+	endif
+	var script := GetProcess(GetPid());
+	script.kill();
+	return;
+endprogram

@@ -1,0 +1,42 @@
+use uo;
+use os;
+use basic;
+
+program emote_cuspir(params)
+    var mobs := params[2];
+    foreach mob in mobs
+        _BroadcastAnim(mob, 34);
+        sleepms(50);
+    endforeach
+    return 1;
+endprogram
+
+function _BroadcastAnim(who, anim_id)
+    var pkt := "6E";
+    pkt := pkt + _FixLen(hex(who.serial), 4);
+    pkt := pkt + _FixLen(hex(anim_id),    2);
+    pkt := pkt + _FixLen(hex(2),          2); // framecount
+    pkt := pkt + _FixLen(hex(1),          2); // numrepeats
+    pkt := pkt + _FixLen(hex(1),          1); // dir backward
+    pkt := pkt + _FixLen(hex(0),          1); // doesrepeat
+    pkt := pkt + _FixLen(hex(5),          1); // speed
+    foreach chr in ListMobilesNearLocation(who.x, who.y, who.z, 16, who.realm)
+        SendPacket(chr, pkt);
+        sleepms(10);
+    endforeach
+endfunction
+
+function _FixLen(s, byteLen)
+    if (!s || s == error) s := "0"; endif
+    s := CStr(s);
+    if (s[1, 2] == "0x") s := s[3, Len(s)]; endif
+    var expected := byteLen * 2;
+    if (Len(s) > expected)
+        s := s[Len(s) - expected + 1, expected];
+    endif
+    while (Len(s) < expected)
+        s := "0" + s;
+        sleepms(0);
+    endwhile
+    return s;
+endfunction

@@ -1,0 +1,14 @@
+use uo;
+use os;
+
+// DEPRECATED. Incognito apply/remove is now the synchronous, idempotent
+// subsystem in :disguise:incognito (ApplyIncognito/RemoveIncognito/IsIncognito),
+// called directly from EquipTest/UnequipTest/onDestroy/plyrdeath/logon.
+//
+// This async script (sleepms 100 before stashing/renaming) raced the
+// synchronous removal paths and left players stuck as "Desconhecido".
+// Kept as a no-op stub so any stray start_script("misc/applyIncognito")
+// reference cannot break; do NOT reintroduce logic here.
+program applyIncognito(params)
+	return 1;
+endprogram

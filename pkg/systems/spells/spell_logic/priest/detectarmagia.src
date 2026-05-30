@@ -1,0 +1,59 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		SendSysMessageEx(who, "Escolha um objeto para detectar magia.", SSM_REQUEST);
+		targ := Target(who, TGTOPT_CHECK_LOS);
+	endif
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	// Visual and audio feedback
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_BLESS_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_BLESS);
+
+	if (targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Este não é um alvo valido.", SSM_FAIL);
+		var magia := GetObjProperty(targ, "chardata").magia;
+		if (magia == error)
+			SendSysMessageEx(who, "Este alvo não possui propriedade arcana em seu corpo.", SSM_INFO);
+		elseif (magia == "spellcaster")
+			SendSysMessageEx(who, "Voce detecta afinidade arcana no alvo.", SSM_INFO);
+		elseif (magia == "Sacerdote" || magia == "Shaman" || magia == "Druid")
+			SendSysMessageEx(who, "Voce detecta energia divina no alvo.", SSM_INFO);	
+		endif
+		return;
+	endif
+
+	PrintTextAbove(who, "*analisando um item*");
+
+	// Check if item has magical properties
+	var has_magic := GetObjProperty(targ, "magic");
+
+	if (has_magic)
+		SendSysMessageEx(who, "Voce detecta propriedades magicas neste item.", SSM_INFO);
+		SendSysMessageEx(who, "O item " + targ.desc + " possui encantamentos.", SSM_INFO);
+
+		// Visual effect to indicate magic detected
+		PlayStationaryEffect(targ.x, targ.y, targ.z, 0x373A, 3, 3);
+	else
+		SendSysMessageEx(who, "Este item não possui propriedades mágicas.", SSM_INFO);
+	endif
+
+	return 1;
+endprogram

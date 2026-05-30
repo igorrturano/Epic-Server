@@ -1,0 +1,61 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":spells:Controller/SC_Damage";
+include "include/tileEffects";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0; // No longer needed
+
+	if (!targ)
+		SendSysMessageEx(who, "Selecione o alvo do Flame Strike.", SSM_REQUEST);
+		targ := Target(who, TGTOPT_CHECK_LOS);
+	endif
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	// Perform casting animation
+	PerformAction(who, HUMAN_ANIM::CAST_DIR);
+
+	// Play visual effect on target (Holy Flame Strike effect)
+	PlayStationaryEffect(targ.x, targ.y, targ.z, 0x3715, 15, 60, 0, targ.realm);
+
+	// Play sound effect
+	PlaySoundEffect(targ, 0x358);
+
+	// Calculate damage: 8d6 holy fire damage
+	var dmg := RandomDiceRoll("8d6");
+
+	// REFLEX save halves the strike.
+	var diff := handleSpellResistDiffForSpecialists(who, spell.School);
+	var bonus := epicWisdomPathBonus(who);
+	if (CheckResist(targ, REFLEXES, diff, -bonus))
+		dmg := Cint(dmg / 2);
+		SendSysMessageEx(targ, "Voce desvia parcialmente das chamas sagradas.", SSM_INFO);
+	endif
+
+	// Apply damage with fire type via SC (routes through after-damage ability hooks)
+	SC_DealDamage(who, targ, CInt(spell.id), cint(dmg), DAMAGE_TYPE::FIRE);
+
+	SendSysMessageEx(who, "Voce invoca chamas sagradas sobre " + targ.name + "!", SSM_INFO);
+
+	return 1;
+endprogram

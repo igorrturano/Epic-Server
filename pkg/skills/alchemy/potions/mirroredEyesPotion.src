@@ -1,0 +1,49 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":alchemy:alchemy";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program drink_potion (who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if(!Accessible(who, potion))
+		return;
+	endif
+
+	if(potion.movable == 0)
+		SendSysMessageEx(who, "Voce nao pode beber isto.", SSM_FAIL);
+		return;
+	endif
+
+	if (!hasFreeHandToDrink(who))
+		return;
+	endif
+
+	var tier := peganivelpocao(who, potion);
+	if (!tier)
+		tier := 1;
+	endif
+
+	// Calculate protection duration based on tier
+	var duration := 300 * tier;  // Base 5 minutes per tier
+	var buff := tier * 10;       // Increase protection strength with tier
+
+	// Apply the petrify protection timer
+	TS_StartTimer(who, "mirroredEyesProtection", duration, buff);
+
+	SendSysMessageEx(who, "Seus olhos começam a brilhar com um reflexo prateado...", SSM_INFO);
+	SendSysMessageEx(who, "Você está protegido contra petrificação!", SSM_INFO);
+	PrintTextAbove(who, "*olhos espelhados*");
+
+	// Visual and sound effects
+	PlayObjectCenteredEffect(who, 0x37B9, 10, 20);  // Silver mirror effect
+	PlaySoundEffect(who, 0x41);                     // Magic sound
+
+	empty_bottle(who, potion);
+
+	return 1;
+endprogram

@@ -1,0 +1,402 @@
+use uo;
+use os;
+use polsys;
+
+include ":timedScripts:timedScripts";
+include "include/client";
+include "include/sysEvent";
+include ":tn:tngumps";
+include "include/say";
+include ":attributes:attributes";
+include ":spells:include/tnmagery";
+include ":timeUtils:time";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+const SPELL_BTN := 200;
+
+program orderSpells(who, item)
+	var chardata := GetObjProperty(who, "chardata");
+	var magia := chardata.magia;
+	var religiao := chardata.religion;
+	var altar := altarByObjtype(who, item);
+	var cultura := chardata.culture;
+	var classe := chardata.classe;
+
+	// Check if player wants to convert religion
+	if (religiao != altar)
+		var convert := YesNo(who, "Deseja se converter a esta religião?", "Converter", "Continuar");
+		if (convert)
+			if (handleReligionConversion(who, item))
+				return;
+			endif
+			return;
+		endif
+	endif
+
+	// if (altar == LORE && cultura == ALURIEL && !MobileWrapper(who).HasAbility(ABILITY_ID::ARCANE_BOW) && classe == SABIO)
+	// 	if (ArcaneArcherDevotion(who))
+	// 		playAltarAnimations(who, item);
+	// 		return;
+	// 	endif
+	// endif
+
+	if (magia != "Sacerdote")
+		if (religiao == altar && !GetCooldown(who, "religion_bless"))
+			var choice := CreateAltarBlessingGump(who);
+			if (choice)
+				ApplyAltarBlessing(who, item, choice);
+			endif
+			return;
+		endif
+		SendSysMessageEx(who, "O altar parece imponente.", SSM_INFO);
+		return;
+	endif
+
+	if (magia == "Sacerdote" && religiao != altar)
+		SendSysMessageEx(who, "Você não pode ordenar bênçãos de uma religião que não segue.", SSM_FAIL);
+		return;
+	endif
+
+	var mlore := cint(AP_GetSkill(who, THEOLOGY));
+	var cfg := ReadConfigFile(":spells:config/priest");
+	var priest_slots := Cint(mlore / 5);
+
+	var priest_list := GetObjProperty(who, "priest_list");
+	if (!priest_list)
+		priest_list := array{};
+	endif
+
+	// Auto-grant cantrips on first visit (circle 0 spells)
+	if (!GetObjProperty(who, "cantrips_granted"))
+		foreach spell in (GetConfigIntKeys(cfg))
+			var spell_elem := FindConfigElem(cfg, spell);
+			if (!spell_elem)
+				continue;
+			endif
+			
+			var circle := GetConfigInt(spell_elem, "Circle");
+			if (circle == 0)
+				var cantrip := struct{
+					"id" := GetConfigInt(spell_elem, "SpellId"),
+					"name" := GetConfigString(spell_elem, "Name"),
+					"circle" := 0,
+					"description" := GetConfigString(spell_elem, "Desc"),
+					"flavortext" := GetConfigString(spell_elem, "FlavorText"),
+					"cantrip" := 1  // Flag to prevent removal
+				};
+				priest_list.Append(cantrip);
+			endif
+			sleepms(2);
+		endforeach
+		SetObjProperty(who, "priest_list", priest_list);
+		SetObjProperty(who, "cantrips_granted", 1);
+	endif
+
+	var spell_list := array{};
+	var slots_used := 0;
+
+	// Count slots used (excluding cantrips)
+	foreach spell in priest_list
+		if (spell.circle > 0)
+			slots_used += cint(spell.circle);
+		endif
+		sleepms(2);
+	endforeach
+
+	// Build list of available spells to memorize
+	foreach spell_id in (GetConfigIntKeys(cfg))
+		var spell_elem := FindConfigElem(cfg, spell_id);
+		if (!spell_elem)
+			continue;
+		endif
+		
+		var circle := GetConfigInt(spell_elem, "Circle");
+		if (circle > Cint((mlore + 10) / 20)) // 10, 30, 50 , 70 , 90 habs pra castar
+			continue;
+		elseif (GetConfigString(spell_elem, "Type") == "Auto")
+			continue;
+		elseif (circle == 0) // Skip cantrips - they're auto-granted
+			continue;
+		endif
+		
+		var spell := struct{
+			"SpellId" := GetConfigInt(spell_elem, "SpellId"),
+			"name" := GetConfigString(spell_elem, "Name"),
+			"circle" := circle,
+			"desc" := GetConfigString(spell_elem, "Desc")
+		};
+		spell_list.append(spell);
+		sleepms(2);
+	endforeach
+
+	var available_slots := priest_slots - slots_used;
+	var canceled := 0;
+	while (!canceled)
+		RemoveUsedSpells(who, priest_list, available_slots);
+		var input := CreateClericGump(who, spell_list, available_slots, priest_list, slots_used, priest_slots);
+
+		if (input[0] >= 200)
+			if (TS_GetTimerInfo(who, "orderspell")) // TODO
+				return SendSysMessageEx(who, "Voce deve aguardar um pouco antes de pedir por bencaos novamente.",
+										 SSM_FAIL);
+			endif
+			var spell := spell_list[input[0] - 200];
+			var ret := StoreSpell(who, spell, priest_list, available_slots);
+			if (ret)
+				playAltarAnimations(who, item);
+			endif
+		elseif (!input[0])
+			canceled := 1;
+		endif
+	endwhile
+endprogram
+
+function CreateClericGump(who, spell_list, available_slots, priest_list, slots_used, total_slots)
+	var gump := GFCreateGump();
+	// Count only non-cantrip spells (circle != 0) for gump sizing
+	var non_cantrip_count := 0;
+	foreach spell in spell_list
+		if (spell.circle != 0)
+			non_cantrip_count += 1;
+		endif
+		sleepms(2);
+	endforeach
+
+	var size := 0;
+	if (non_cantrip_count > 0)
+		size := non_cantrip_count * 26;
+	endif
+	GFResizePic(gump, 17, 31, 9390, 359, 125 + size);
+	// GFHtmlShadowed(gump, 115, 70, 192, 20, "#feb98e ", "<BASEFONT Size=5>Lista de Bençãos");
+	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Divinismo", 0, 0); // shadow
+	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Divinismo", 0, 0); // shadow
+	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#ffffff >Divinismo", 0, 0);
+	GFGumpPic(gump, 63, 91, 1469);
+	GFGumpPic(gump, 80, 91, 1469);
+	GFTextLine(gump, 63, 100, 0, "Rituais Divinos");
+	GFTextLine(gump, 259, 100, 0, "Slots");
+	GFTextLine(gump, 304, 100, 0, "Receber");
+	GFGumpPic(gump, 38, 103, 9773, 0);
+	GFGumpPic(gump, 296, 0, 9000, 0);
+
+	var y := 121;
+	foreach spell in spell_list
+		var color := "a745a7";
+		if (spell.circle != 0)
+			GFHTMLArea(gump, 63, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
+			GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format(color,
+				 spell.desc));
+			GFHTMLArea(gump, 259, y, 34, 24, "<center>{}".format(spell.circle), 1, 0);
+
+			// Check if spell already exists in priest_list
+			var spell_exists := FindAllElemInArray(priest_list, struct{ id := spell.SpellId }, 1);
+
+			if (available_slots >= spell.circle && !spell_exists)
+				GFAddButton(gump, 319, y + 4, 10006, 10006, GF_CLOSE_BTN, 200 + _spell_iter);
+			else
+				GFGumpPic(gump, 319, y + 5, 10006, 1891);
+			endif
+			sleepms(2);
+			y += 26;
+		endif
+	endforeach
+
+	GFTextLine(gump, 63, y + 15, 0, "Slots: {}/{}".format(slots_used, total_slots));
+
+	return GFSendGump(who, gump);
+endfunction
+
+function StoreSpell(who, spellinfo, byref priest_list, byref available_slots)
+	if (available_slots - spellinfo.circle < 0)
+		SendSysMessageEx(who, "Sem slots suficientes para memorizar.", SSM_FAIL);
+		return 0;
+	elseif (!AP_ConsumeVital(who, MANA, 5 * spellinfo.circle))
+		SendSysMessageEx(who, "Voce nao consegue se concentrar em sua oracao.", SSM_FAIL);
+		sleep(2);
+		return 0;
+	endif
+	var new_spell := struct{ "id" := spellinfo.SpellId,
+						 	"name" := spellinfo.name,
+						 	"circle" := spellinfo.circle,
+						 	"time" := AddTimeTo(polcore().systime, 20, "minutes"),
+						 	"description" := spellinfo.desc,
+						 	"used" := 0 };
+	available_slots -= spellinfo.circle;
+	priest_list.append(new_spell);
+	SetObjProperty(who, "priest_list", priest_list);
+	SendSysMessageEx(who, "Obteve a benção dos Deuses.", SSM_INFO);
+	return 1;
+endfunction
+
+function RemoveUsedSpells(who, byref priest_list, byref available_slots)
+	foreach spell in priest_list
+		if (spell.used && polcore().systime > spell.time)
+			var index := FindInArray(priest_list, spell);
+			priest_list.Erase(index);
+			available_slots += spell.circle;
+		endif
+		sleepms(2);
+	endforeach
+
+	SetObjProperty(who, "priest_list", priest_list);
+endfunction
+
+const ALTAR_BTN_HEAL       := 1;
+const ALTAR_BTN_HEAL_DONATE := 2;
+const ALTAR_BTN_PROT       := 3;
+const ALTAR_BTN_PROT_DONATE := 4;
+
+function CreateAltarBlessingGump(who)
+	var gump := GFCreateGump();
+	GFResizePic(gump, 17, 31, 9390, 359, 250);
+
+	GFHTMLArea(gump, 114, 49, 192, 20, "<BASEFONT Size=5 Color=#999999>Altar Divino", 0, 0);
+	GFHTMLArea(gump, 116, 51, 192, 20, "<BASEFONT Size=5 Color=#999999>Altar Divino", 0, 0);
+	GFHTMLArea(gump, 115, 50, 192, 20, "<BASEFONT Size=5 Color=#ffffff>Altar Divino", 0, 0);
+
+	GFHTMLArea(gump, 50, 80, 300, 40, "<BASEFONT Color=#CCCCCC>Escolha uma bênção. Doar uma moeda triplica o efeito.", 0, 0);
+
+	// Heal section
+	GFGumpPic(gump, 38, 115, 9773, 0);
+	GFHTMLArea(gump, 63, 120, 200, 20, "<BASEFONT Color=#a745a7>Cura Divina", 0, 0);
+	GFAddButton(gump, 270, 124, 10006, 10006, GF_CLOSE_BTN, ALTAR_BTN_HEAL);
+	GFHTMLArea(gump, 293, 120, 60, 20, "<BASEFONT Color=#FFFFFF>Orar", 0, 0);
+
+	GFHTMLArea(gump, 63, 146, 200, 20, "<BASEFONT Color=#FFD700>Cura Divina + Doação", 0, 0);
+	GFAddButton(gump, 270, 150, 10006, 10006, GF_CLOSE_BTN, ALTAR_BTN_HEAL_DONATE);
+	GFHTMLArea(gump, 293, 146, 60, 20, "<BASEFONT Color=#FFD700>Doar", 0, 0);
+
+	// Protection section
+	GFGumpPic(gump, 38, 175, 9773, 0);
+	GFHTMLArea(gump, 63, 180, 200, 20, "<BASEFONT Color=#a745a7>Proteção contra Morte", 0, 0);
+	GFAddButton(gump, 270, 184, 10006, 10006, GF_CLOSE_BTN, ALTAR_BTN_PROT);
+	GFHTMLArea(gump, 293, 180, 60, 20, "<BASEFONT Color=#FFFFFF>Orar", 0, 0);
+
+	GFHTMLArea(gump, 63, 206, 200, 20, "<BASEFONT Color=#FFD700>Proteção + Doação", 0, 0);
+	GFAddButton(gump, 270, 210, 10006, 10006, GF_CLOSE_BTN, ALTAR_BTN_PROT_DONATE);
+	GFHTMLArea(gump, 293, 206, 60, 20, "<BASEFONT Color=#FFD700>Doar", 0, 0);
+
+	var input := GFSendGump(who, gump);
+	return input[0];
+endfunction
+
+function ApplyAltarBlessing(who, item, choice)
+	var donated := 0;
+	if (choice == ALTAR_BTN_HEAL_DONATE || choice == ALTAR_BTN_PROT_DONATE)
+		if (!ConsumeSubstance(who.backpack, SESTERTIUS, 1))
+			SendSysMessageEx(who, "Você não possui moedas para doar.", SSM_FAIL);
+			return;
+		endif
+		donated := 1;
+	endif
+
+	SetCooldown(who, "religion_bless", 60 * 60 * 2);
+	playAltarAnimations(who, item);
+
+	if (choice == ALTAR_BTN_HEAL || choice == ALTAR_BTN_HEAL_DONATE)
+		var healed := 25;
+		if (donated)
+			healed := 85;
+		endif
+		applyEpicHealing(who, healed);
+		if (donated)
+			SendSysMessageEx(who, "A generosidade fortalece a cura divina.", SSM_INFO);
+		else
+			SendSysMessageEx(who, "Você sente a cura dos deuses.", SSM_INFO);
+		endif
+	elseif (choice == ALTAR_BTN_PROT || choice == ALTAR_BTN_PROT_DONATE)
+		var duration := 180; // 3 minutos
+		if (donated)
+			duration := 600; // 10 minutos
+		endif
+		SetCooldown(who, "protecaomorte", duration);
+		if (donated)
+			SendSysMessageEx(who, "Sua devoção fortalece a proteção divina.", SSM_INFO);
+		else
+			SendSysMessageEx(who, "Você sente uma aura de proteção envolta de sua alma.", SSM_INFO);
+		endif
+	endif
+endfunction
+
+function handleReligionConversion(who, altar)
+	var chardata := GetObjProperty(who, "chardata");
+	if (!chardata)
+		SendSysMessageEx(who, "Erro ao acessar dados do personagem.", SSM_FAIL);
+		return 0;
+	endif
+
+	var current_religion := chardata.religion;
+	var target_religion := altarByObjtype(who, altar);
+
+	if (!target_religion || target_religion == "")
+		SendSysMessageEx(who, "Este altar não representa uma religião válida.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (current_religion == target_religion)
+		SendSysMessageEx(who, "Você já segue esta religião.", SSM_INFO);
+		return 0;
+	endif
+
+	// Check conversion cooldown (1 month = 30 days)
+	if (GetCooldown(who, "religion_conversion"))
+		var remaining := GetCooldown(who, "religion_conversion");
+		var days := Cint(remaining / (60 * 60 * 24));
+		SendSysMessageEx(who, "Você deve aguardar {} dias antes de poder se converter novamente.".format(days),
+				   SSM_FAIL);
+		return 0;
+	endif
+
+	var religion_names := struct{ "Veneratio" := "Veneratio",
+							  	"Eluith'orth" := "Eluith'orth",
+							  	"Kai" := "Kai",
+							  	"Halleuad" := "Halleuad",
+							  	"Lórё" := "Lórё",
+							  	"Bokk Bharaz" := "Bokk Bharaz",
+							  	"Ushkr'ar" := "Ushkr'ar",
+							  	"Céticos" := "Céticos" };
+
+	var target_name := religion_names[target_religion];
+	if (!target_name)
+		target_name := target_religion;
+	endif
+
+	var current_name := religion_names[current_religion];
+	if (!current_name)
+		current_name := current_religion;
+	endif
+
+	var conversion_text := "";
+	if (current_religion && current_religion != "")
+		conversion_text := "Deseja abandonar {} e se converter a {}?".format(current_name, target_name);
+	else
+		conversion_text := "Deseja se converter a {}?".format(target_name);
+	endif
+
+	var confirm := YesNo(who, conversion_text, "Sim", "Não");
+	if (!confirm)
+		return 0;
+	endif
+
+	// Perform conversion
+	chardata.religion := target_religion;
+	SetObjProperty(who, "chardata", chardata);
+
+	// Set cooldown for 1 month (30 days)
+	SetCooldown(who, "religion_conversion", 60 * 60 * 24 * 30);
+
+	// Play conversion animations
+	playAltarAnimations(who, altar);
+	PerformAction(who, 0x0020); // Bow
+	if (current_religion && current_religion != "")
+		SendSysMessageEx(who, "Você abandonou {} e se converteu a {}.".format(current_name, target_name),
+				   SSM_INFO);
+	else
+		SendSysMessageEx(who, "Você se converteu a {}.".format(target_name), SSM_INFO);
+	endif
+
+	return 1;
+endfunction

@@ -1,0 +1,48 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include ":spells:Controller/SC_Damage";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
+
+program cast_lightningbolt(params)
+	var caster := params[1];
+	var targ := params[2];
+	var spellinfo := params[3];
+	var spell_circle := CInt(spellinfo.Circle[1]);
+	var spell_school := spellinfo.School;
+
+	params := 0;
+
+	SendSysMessage(caster, "Selecione o alvo.");
+	if (!targ || !targ.IsA(POLCLASS_MOBILE))
+		SendSysMessage(caster, "Alvo invalido.");
+		return 0;
+	endif
+
+	PlaySoundEffect(caster, SFX_SPELL_ENERGY_BOLT);
+	// PlayMovingEffectXYZHued(caster, targ, 0xCDE5, 10, 1643, 0);
+	PlayObjectCenteredEffect(targ, 0xCDE5, 15, 10);
+	// C5 single-target ultimate: circle dice + flat Arcana/5.
+	var dmg := epicSpellDamageRoll(caster, spell_circle, spell_school);
+	dmg := bonusSpellDamageForSpecialists(caster, dmg, spell_school);
+	dmg := dmg + Cint(AP_GetSkill(caster, ARCANA) / 5);
+
+	// REFLEX save halves the bolt's damage (normalized to canonical
+	// halve-on-success — was fail-is-crit pre-R2G).
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+	if (CheckResist(targ, REFLEXES, diff, -bonus))
+		dmg := Cint(dmg / 2);
+		SendSysMessageEx(targ, "Voce desvia parcialmente do raio.", SSM_INFO);
+	endif
+
+	SC_DealDamage(caster, targ, CInt(spellinfo.id), cint(dmg), DAMAGE_TYPE::ENERGY);
+endprogram

@@ -1,0 +1,53 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+
+include ":alchemy:alchemy";
+include ":spells:spell_logic/swordmage/include/encantarObjeto";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program drink_blue(who, potion)
+	who := MobileWrapper(who);
+	who.GetObjRef().EraseProp("IsMeditating");
+	who.GetObjRef().EraseProp("HealTimer");
+
+	if (!Accessible(who.GetObjRef(), potion))
+		return;
+	endif
+
+	if (!potion.movable)
+		Message("Você não pode usar isto.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return;
+	endif
+
+	if (!hasFreeHandToDrink(who.GetObjRef()))
+		return;
+	endif
+
+	Message("Qual item deseja encantar?", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+	var use_on := Target(who.GetObjRef());
+
+	if (!use_on)
+		Message("Cancelado", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return 0;
+	endif
+
+	if (!use_on.isA(POLCLASS_WEAPON) && !use_on.isA(POLCLASS_ARMOR))
+		Message("Isto não pode ser banhado por essa poção.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return;
+	endif
+
+	// Bonus em duas escalas — armor virou % no redesign, mas weapon/ammo
+	// continuam aplicando dano elemental flat. Mesma escala que encantarobjeto.src
+	// mas usando crafterskill (alchemia) em vez de Arcana. Sem multiplicador de DV
+	// (DV e habilidade de mage, nao se aplica a pocao).
+	var crafterskill := Cint(GetObjProperty(potion, "crafterskill"));
+	var bonusFlat := CInt(crafterskill * 0.05);
+	var bonusPct := CInt(crafterskill / 2);
+
+	empty_bottle(who.GetObjRef(), potion, 0);
+
+	Message("Você encantou o objeto.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+	setBonus(who, use_on, bonusFlat, bonusPct);
+endprogram

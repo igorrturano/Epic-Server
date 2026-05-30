@@ -1,0 +1,7 @@
+include ":expbar:expbar";
+
+program expbar_logon(who)
+    sleep(1); // Wait for logon processes to complete
+    UpdateXPClient(who);
+    return 1;
+endprogram

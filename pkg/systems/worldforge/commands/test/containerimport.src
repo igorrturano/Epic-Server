@@ -1,0 +1,106 @@
+///////////////////////////////////////////////////////////////////////////////////
+//
+//   ContainerImport - Importiert komplette Container inkl. SubContainer-Struktur
+//
+//     Author: Shinigami
+//     eMail : Shinigami@gmx.net
+//
+//   Modifications:
+//
+///////////////////////////////////////////////////////////////////////////////////
+//
+// Needs:
+//   statics/container.cfg
+//
+////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+use uo;
+use os;
+use cfgfile;
+
+/////////////////
+// Hauptprogram
+/////////////////
+
+program TextCMD_ContainerImport(who)
+	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+	SendSysMessage(who, "ContainerImport: ImportItems started...");
+	ImportItems(who);
+	SendSysMessage(who, "ContainerImport: ImportItems done.");
+endprogram
+
+///////////////////////////////////////
+// ImportItems - Importiert die Items
+///////////////////////////////////////
+
+function ImportItems(who)
+	var datafile := ReadConfigFile(":worldforge:config/container");
+	if (datafile)
+		var subcontainer := dictionary;
+		var container := 0;
+		var itemdesc;
+		var item;
+
+		foreach name in GetConfigStringKeys(datafile)
+			itemdesc := datafile[name];
+			if (itemdesc)
+				item := CreateItemAtLocation(who.x, who.y, who.z, itemdesc.objtype, 1);
+				if (item)
+					if (item.isa(POLCLASS_CONTAINER))
+						subcontainer[itemdesc.serial] := item;
+					endif
+
+					SetName(item, itemdesc.name);
+					item.graphic := itemdesc.graphic;
+					if (itemdesc.amount > 1)
+						AddAmount(item, itemdesc.amount - 1);
+					endif
+					item.color := itemdesc.color;
+					if (itemdesc.hp)
+						item.hp := itemdesc.hp;
+					endif
+					if (itemdesc.quality)
+						item.quality := itemdesc.quality;
+					endif
+					if (itemdesc.xwest)
+						item.xwest := itemdesc.xwest;
+						item.ynorth := itemdesc.ynorth;
+						item.xeast := itemdesc.xeast;
+						item.ysouth := itemdesc.ysouth;
+						item.gumpwidth := itemdesc.gumpwidth;
+						item.gumpheight := itemdesc.gumpheight;
+					endif
+					item.newbie := itemdesc.newbie;
+
+					foreach cprop in GetConfigStringArray(itemdesc, "CPROP")
+						cprop := SplitWords(cprop);
+						SetObjProperty(item, cprop[1], UnPack(cprop[2]));
+					endforeach
+
+					item.movable := 1;
+
+					if (!container) // MasterContainer erzeugt, nicht verschieben
+						container := 1;
+					else
+						MoveItemToContainer(item, subcontainer[itemdesc.container], itemdesc.x, itemdesc.y);
+					endif
+
+					item.movable := itemdesc.movable;
+				else
+					SendSysMessage(who, "Was impossible to create Item " + Lower(Hex(itemdesc.serial)));
+				endif
+			endif
+		endforeach
+
+		UnloadConfigFile(":worldforge:config/container");
+
+		SendSysMessage(who, "Items have been imported.");
+	else
+		SendSysMessage(who, "Problems on Reading Config File!");
+	endif
+endfunction

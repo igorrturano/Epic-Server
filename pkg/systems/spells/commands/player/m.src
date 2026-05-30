@@ -1,0 +1,43 @@
+/*
+ * Mage Spell Command (.m)
+ * 
+ * Entry point for mage/trickster spells. Works with both:
+ * - Text commands: .m fireball (who, spellname as separate args)
+ * - Hotbar/scripts: Start_Script(script, {who, spellname})
+ */
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":spells:spellbooks";
+include ":charactercreation:habilidades";
+include ":spells:include/spell_executor";
+
+// Main program - handles both text commands and Start_Script calls
+program magia(who, spellname := "")
+	// Handle Start_Script array format: {who, spellname}
+	if (TypeOf(who) == "Array")
+		var params := who;
+		who := params[1];
+		spellname := params[2];
+	endif
+	
+	// If no spell name provided, show grimoire or error
+	if (!spellname || spellname == "")
+		SendSysMessageEx(who, "Uso: .m <nome da magia>", SSM_INFO);
+		return 0;
+	endif
+	
+	// .m has no spell type of its own — resolve to the actual school the
+	// spell lives in. Trickster bypass (SENSIBILIDADE_ARCANA) is enforced
+	// inside the executor's grimoire check based on player state, so we
+	// don't need a separate code path here.
+	var spell_type := ResolveMageSchoolForSpell(spellname);
+	if (!spell_type)
+		SendSysMessageEx(who, "A magia " + spellname + " nao existe.", SSM_FAIL);
+		return 0;
+	endif
+
+	return ExecuteSpellByName(who, spellname, spell_type);
+endprogram

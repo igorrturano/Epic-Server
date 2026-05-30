@@ -1,0 +1,37 @@
+use uo;
+use os;
+use polsys;
+
+include "include/packets";
+
+program controleclima(params)
+    var mobs    := params[2];
+    var pv      := params[3];
+    var idx     := CInt(pv[1]);
+    var duracao := CInt(pv[2]);  // minutos; 0 = permanente
+
+    // dropdown: 0=Chuva, 1=Neve, 2=Tempestade, 3=Limpar
+    var weather_types := array{ 0, 2, 1, 255 };
+    var weather := weather_types[idx + 1];
+    if (!weather && idx != 0) weather := 255; endif
+
+    var seriais := array{};
+    foreach mob in mobs
+        SetWeatherForPlayer(mob, weather, 50);
+        seriais.append(mob.serial);
+        sleepms(2);
+    endforeach
+
+    if (duracao > 0 && weather != 255)
+        Sleep(duracao * 60);
+        foreach serial in seriais
+            var mob := SystemFindObjectBySerial(serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+            if (mob && mob.connected)
+                SetWeatherForPlayer(mob, 255, 50);
+            endif
+            sleepms(2);
+        endforeach
+    endif
+
+    return 1;
+endprogram

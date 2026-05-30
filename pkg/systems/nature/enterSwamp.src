@@ -1,0 +1,9 @@
+use uo;
+use os;
+use vitals;
+
+include ":charactercreation:resists";
+
+program swamp(who)
+	start_script(":nature:swampEffect", who);
+endprogram

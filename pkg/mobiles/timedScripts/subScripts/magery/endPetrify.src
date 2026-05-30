@@ -1,0 +1,32 @@
+use uo;
+use os;
+
+program TimedScript_EndPetrify(params)
+	var mobile := params[1];
+
+	// Remove paralisia
+	mobile.paralyzed := 0;
+
+	// Restaura a cor original
+	var original_color := GetObjProperty(mobile, "#originalcolor");
+	if (original_color)
+		mobile.color := original_color;
+		EraseObjProperty(mobile, "#originalcolor");
+	else
+		// Se não tinha cor salva, volta para cor padrão
+		mobile.color := 0;
+	endif
+
+	// Remove marca de petrificado
+	EraseObjProperty(mobile, "#petrified");
+	EraseObjProperty(mobile, "noattack");
+
+	// Visual and audio effects showing recovery
+	PlaySoundEffect(mobile, 0x1F1);  // Som de despetrificação
+	PlayObjectCenteredEffect(mobile, 0x373A, 10, 10); // Efeito visual
+
+	SendSysMessage(mobile, "Voce voltou ao normal!");
+	PrintTextAbove(mobile, "*Livre da pedra*");
+
+	return 1;
+endprogram

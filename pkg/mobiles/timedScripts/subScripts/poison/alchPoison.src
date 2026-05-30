@@ -1,0 +1,55 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":timedscripts:poisonUtil";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+
+program default_poison(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := CInt(params[3]);
+
+	if (attacker)
+		SetScriptController(attacker);
+	endif
+
+	var tier := cint(getobjProperty(who, "#poisontier"));
+	var bonus := cint(getobjProperty(who, "#poisonbonus"));
+	var loops := level / 20;
+	var dmg := (level/loops)+bonus;
+	var damage;
+	var time := 6;
+	var i := 0;
+
+	while (i < loops)
+		case (tier)
+			default:
+			1: damage := (dmg * 0.2); time := 5;
+			2: damage := (dmg * 0.4); time := 4;
+			3: damage := (dmg * 0.6); time := 4;
+			4: damage := dmg; time := 3;
+		endcase
+
+		sleep(time);
+		// Alch poison ticks inside the body — bypass the resist chain.
+		DealDamage(who, cint(damage), DAMAGE_TYPE::FORCED, attacker);
+
+		if (who.dead)
+			break;
+		endif
+
+		i := i + 1;
+	endwhile
+
+	// 	TS_CurePoison(who, 120,"P", 5);
+	TS_LowerDuration(who, "alchPoison", -1);
+	EraseObjProperty(who, "#poisontier");
+	EraseObjProperty(who, "#poisonbonus");
+	var script := GetProcess(GetPid());
+	script.kill();
+
+	return;
+endprogram

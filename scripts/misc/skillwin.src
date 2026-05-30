@@ -1,0 +1,91 @@
+
+use uo;
+use os;
+use cfgfile;
+
+include ":tn:characters";
+include ":tn:tngumps";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":attributes:titles";
+include ":attributes:skills";
+include "include/say";
+include ":charactercreation:createchar";
+include ":charactercreation:habilidades";
+include ":gumps:requestGump";
+include ":gumps:epicGumps";
+include ":mastery:Gump";
+
+const GUMP_WIDTH := 440;
+const GUMP_HEIGHT := 565;
+
+var skillList := array{ "Alchemy",
+						"Arcana",
+						"Science",
+						"Theology",
+						"Magery",
+						"Survival",
+						"Handle_Animal",
+						"Awareness",
+						"Medicine",
+						"Domestic_Work",
+						"Sneak",
+						"Mechanics",
+						"Pickpocketing",
+						"Wood_Working",
+						"Metal_Working",
+						"Ranged",
+						"Two_Handed",
+						"One_Handed",
+						"Parry",
+						"Tactics",
+						"Gathering",
+						"Dual_Wield" };
+
+program core_skillWin(who)
+	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+	if (who.dead)
+		SendSysMessage(who, "Você está morto e não pode fazer isto.");
+		return;
+	endif
+
+	SetPlayerSkillLevel(who);
+	var gump;
+	var page := 1;
+	while (1)
+		case (page)
+			1:
+				gump := GFECreateGump("Menu de Perícias", GUMP_WIDTH, GUMP_HEIGHT);
+				ShowSkillsPage(gump, who);
+				AddNavigationBar(gump, 1);
+			2:
+				gump := GFECreateGump("Menu de Habilidades", GUMP_WIDTH, GUMP_HEIGHT);
+				ShowHabilidadesPage(gump, who);
+				AddNavigationBar(gump, 2);
+
+			// 3:
+			// 	gump := GFECreateGump("Menu de Maestria", GUMP_WIDTH, GUMP_HEIGHT);
+			// 	ShowMasteryGump(gump, who);
+			// 	AddNavigationBar(gump, 3);
+		endcase
+
+		var input := GFSendGump(who, gump);
+		if (input[0] == 0)
+			break;
+		endif
+
+		if (input[0] >= 1 && input[0] <= 3)
+			page := input[0];
+		elseif (input[0] >= 0 && input[0] <= 60)
+			Run_Script_To_Completion(AP_GetSkillScript(GetSkillNameByID(input[0])), who);
+		elseif (input[0] >= 1001 && input[0] <= 1021)
+			var nivel := CInt((input[0] - 1001));
+			if (nivel % 2 == 0)
+				comprarHabilidade(who, 0, nivel / 2);
+			else
+				Habilidades(who, nivel);
+			endif
+		endif
+	endwhile
+endprogram

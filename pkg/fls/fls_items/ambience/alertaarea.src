@@ -1,0 +1,31 @@
+use uo;
+use os;
+
+program alertaarea(rune)
+	while (1)
+		var range := CInt(GetObjProperty(rune, "range"));
+		if (!range)
+			range := 10;
+		endif
+
+		var intervalo := CInt(GetObjProperty(rune, "intervalo"));
+		if (!intervalo)
+			intervalo := 10;
+		endif
+
+		var mensagem := GetObjProperty(rune, "mensagem");
+		if (!mensagem)
+			mensagem := "Escuta algo estranho.";
+		endif
+
+		var nearbypeople := ListMobilesNearLocation(rune.x, rune.y, rune.z, range, rune.realm);
+		foreach people in nearbypeople
+			if (!people.npctemplate)
+				SendSysMessage(people, mensagem, 3, 53);
+				PrintTextAbovePrivate(people, mensagem, 3, 53);
+			endif
+		endforeach
+
+		sleep(intervalo);
+	endwhile
+endprogram

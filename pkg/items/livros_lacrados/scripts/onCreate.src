@@ -1,0 +1,23 @@
+// onCreate.src
+// Executado quando o LivroLacrado (nivel 3, bau) e criado.
+// Le container.level para herdar o nivel do bau; fallback = 3.
+
+use uo;
+use os;
+use util;
+
+include ":livros_lacrados:include/livrosLacrados";
+
+program OnCreateLivroLacrado(book, param)
+    var nivel := 3;
+    var container := book.container;
+    if (container)
+        var nivel_prop := GetObjProperty(container, "level");
+        if (nivel_prop && !nivel_prop.errortext)
+            nivel := CInt(nivel_prop);
+        endif
+    endif
+    if (nivel < 3) nivel := 3; endif
+    if (nivel > 5) nivel := 5; endif
+    return ExecutarOnCreate(book, nivel);
+endprogram

@@ -1,0 +1,26 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/say";
+
+// SC on_expire hook for Barreira de Mana. Clears the absorb property and
+// reverts any Evocator Vontade bonus that was stacked on apply.
+program SpellScript(args)
+	var targ := args[2];
+	args := 0;
+
+	if (!targ || targ.errortext)
+		return;
+	endif
+
+	EraseObjProperty(targ, "#manashield");
+
+	var prior_bonus := CInt(GetObjProperty(targ, "#manashield_vontade_bonus"));
+	if (prior_bonus != 0)
+		SetObjProperty(targ, "#VontadeMod", CInt(GetObjProperty(targ, "#VontadeMod")) - prior_bonus);
+		EraseObjProperty(targ, "#manashield_vontade_bonus");
+	endif
+
+	PrintTextAbove(targ, "*barreira arcana se dissipa*");
+endprogram

@@ -1,0 +1,170 @@
+/* $Id: mapmakersPen.src 905 2005-11-05 08:20:50Z muaddiblsd $
+ *
+*/
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":itemutils:canAccess";
+include "include/say";
+include ":tn:tngumps";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":gumps:yesNo";
+
+
+program use_MapmakersPen(who, tool)
+
+	if (!can_access(who, tool))
+		return 0;
+	endif
+	if ((!tool.movable) || !ReserveItem(tool))
+		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
+		return 0;
+	endif
+	if (!(tool in EnumerateItemsInContainer(who.backpack)))
+		SendSysMessage(who, "O item precisa estar na sua mochila.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (GetAttributeBaseValue(who, "Intelligence") < 40)
+		SendSysMessage(who, "Voce eh burro demais pra usar isso.", SSM_FAIL);
+		return 0;
+	endif
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	SendSysMessageEx(who, "O que quer fazer com isto?", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	var blank_array := array{ 0xE34, 0xEF3, 0x14EB, 0x14EC };
+
+	if (targ.objtype in blank_array)
+
+		// TODO: Implementar sistema de cartografia
+		SendSysMessageEx(who, "Sistema ainda não foi implementado, consulte a staff.", SSM_FAIL);
+		return 0;
+	elseif (targ.isBook())
+		if (!targ.isWritable())
+			var content := targ.ExtractInfo();
+			var linguagem := GetObjProperty(targ, "lingua");
+			var linguas := GetObjProperty(who, "linguas_conhecidas");
+
+			if (content.Contents.size() > 1)
+				SendSysMessageEx(who, "Escolha outro livro para copiar.", SSM_REQUEST);
+				var copy := target(who);
+				if (!copy || !copy.isBook())
+					SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+					return;
+				endif
+				if (!copy.isWritable())
+					SendSysMessageEx(who, "Voce nao pode escrever neste livro.", SSM_FAIL);
+					return;
+				elseif (linguagem != error)
+					if (!(MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO) ||
+		 (linguas != error && linguagem in linguas)))
+						SendSysMessageEx(who, "Voce nao conhece essa lingua para copiar o livro.");
+						return;
+					else
+						var traduzir := YesNo(who, "Traduzir pra idioma comum ou copiar o livro?", "Traduzir",
+											   "Copiar");
+						if (traduzir)
+							if (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
+								linguas := array{ "Antigo vanirio", "Antigo aquilrano", "Antigo thuriao", "Antigo Asanita",
+				  								"Antigo Zharkiano", "Draconiano", "Abissal", "Silvestre", "Lingua dos Mortos" };
+								linguas.append("Antigo Esquecido");
+								linguas.append("Alquimico");
+								linguas.append("Nobreza Memmar");
+								linguas.append("Memmar");
+							endif
+							var idiomaEscrita := RadioGump(who, 200, 400, "Escolha o idioma da traducao:", linguas);
+							SetObjProperty(copy, "lingua", idiomaEscrita);
+							SendSysMessageEx(who, "Traduzindo para " + idiomaEscrita + ".", SSM_INFO);
+						endif
+					endif
+				endif
+
+				PrintTextAbove(who, "*copiando um livro*");
+				PlaySoundEffect(who, 0x24a);
+				sleep(5);
+
+				copy.SetContents(content.Contents);
+				copy.SetAuthor(content.Author);
+				copy.SetTitle(content.Title);
+
+				SendSysMessageEx(who, "Voce terminou de copiar o livro.", SSM_INFO);
+				return 1;
+			else
+				SendSysMessageEx(who, "Nao tem conteudo no livro para ser copiado.", SSM_INFO);
+				return;
+			endif
+		else
+			var linguagem := GetObjProperty(targ, "lingua");
+			var linguas := GetObjProperty(who, "linguas_conhecidas");
+			var yes;
+			var idiomaEscrita;
+
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::ARCHAEOLOGIST) || MobileWrapper(who).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
+				linguas := array{ "Imperialis", "Aglâb", "Ahruwën", "Haiei",
+				  				"Phalk", "Grumnak", "Björ", "Idrith'har" };
+			endif
+
+			if (targ.ExtractInfo().Contents.size() > 1) // O livro não está vazio
+				if (linguagem) // está escrito em linguas
+					if (linguas != error && linguagem in linguas)
+						yes := RadioGump(who, 300, 200, "Escrito em " + linguagem + ". O que fazer?", array{ "Manter idioma",
+																					 						"Mudar para Comum",
+																					 						"Mudar para Outros" });
+						if (yes == "Mudar para Comum")
+							EraseObjProperty(targ, "lingua");
+						elseif (yes == "Mudar para Outros")
+							idiomaEscrita := RadioGump(who, 200, 400, "Escolha o idioma de escrita:", linguas);
+							SetObjProperty(targ, "lingua", idiomaEscrita);
+						endif
+					else
+						yes := YesNo(who, "Nao entende que esta escrito. Quer apagar o conteudo?");
+						if (yes)
+							PrintTextAbove(who, "*Apagando livro*");
+							EraseObjProperty(targ, "lingua");
+							return 0;
+						else
+							PrintTextAbove(who, "*fecha livro*");
+						endif
+					endif
+				else
+					yes := YesNo(who, "Escrever em outra lingua");
+					if (yes)
+						idiomaEscrita := RadioGump(who, 200, 400, "Escolha o idioma de escrita:", linguas);
+						SetObjProperty(targ, "lingua", idiomaEscrita);
+					else
+						EraseObjProperty(targ, "lingua");
+					endif
+				endif
+			else // livro vazio
+				yes := YesNo(who, "Escrever em outra lingua");
+				if (yes)
+					idiomaEscrita := RadioGump(who, 200, 400, "Escolha o idioma de escrita:", linguas);
+					SetObjProperty(targ, "lingua", idiomaEscrita);
+				else
+					EraseObjProperty(targ, "lingua");
+				endif
+			endif
+			yes := YesNo(who, "Deseja lacrar o livro?");
+			if (yes)
+				targ.ReadOnly(1);
+				SendSysMessageEx(who, "O livro esta lacrado.", SSM_INFO);
+				return 1;
+			endif
+		endif
+	else
+		SendSysMessageEx(who, "Voce nao pode fazer nada com isto.", SSM_FAIL);
+		return;
+	endif
+
+endprogram

@@ -1,0 +1,54 @@
+include ":message:model/Message";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
+include "packets/UpdateEquipmentRequest";
+include ":combat:Model/ManaModFabricacao";
+
+program unequipitem(params)
+	var who := params[1];
+	var item := params[2];
+	var layer :=  item.layer;
+	
+	var equip;
+	if (item.IsA(POLCLASS_ARMOR))
+		equip := ArmorWrapper(item);
+	elseif (item.IsA(POLCLASS_WEAPON))
+		equip := WeaponWrapper(item);
+	endif
+
+	who := MobileWrapper(who);
+	if (who.isShaman())
+		equip.SetModifier(AttributeModifier(MAGERY, 0));
+	endif
+
+	if (item.IsA(POLCLASS_ARMOR) && who.HasAbility(ABILITY_ID::CONEXAO_DIVINA))
+		var tipoProtecao := equip.GetTipoProtecao();
+		if (tipoProtecao["Armadura Leve"] || tipoProtecao["Armadura Media"])
+			equip.SetModifier(AttributeModifier(MAGERY, 0));
+		endif
+	endif
+
+	if (item.IsA(POLCLASS_ARMOR) && equip.IsShield())
+		var chardata := GetObjProperty(who.GetObjRef(), "chardata");
+		var isScutum := {0x1B76, 0x1B77, 0xFA62};
+		if (chardata.trait == "Força da Legião" && (item.objtype in isScutum))
+			var dexMod := equip.GetModifier(DEXTERITY).GetValue();
+			equip.SetModifier(AttributeModifier(DEXTERITY, CInt(dexMod / 2)));
+		endif
+	endif
+
+	who.TriggerUnequipPassives(equip);
+	who.RemoveItemModifiers(equip);
+
+	// Magic-focus mana mods — reverse of equipitem.src ManaModFabricacao apply.
+	if (item.IsA(POLCLASS_WEAPON))
+		var cat := equip.GetCategory();
+		if (cat == WEAPON_CATEGORY::STAFF || cat == WEAPON_CATEGORY::WAND || cat == WEAPON_CATEGORY::SPELLBOOK)
+			ManaModFabricacao(item).RemoveFrom(who.GetObjRef());
+		endif
+	endif
+
+	Start_Script("packets/AssyncUpdateEquipment", array{who, false, item, layer});
+	return 1;
+endprogram

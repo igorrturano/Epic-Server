@@ -1,0 +1,35 @@
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var mlore := params[3];
+
+	var physical_resist_mod := Cint(mlore / 20);
+
+	if (physical_resist_mod > 5)
+		physical_resist_mod := 5;
+	endif
+
+	if (GetObjProperty(mobile, "phMod") != error)
+		return;
+	endif
+
+	if (GetObjProperty(mobile, "auraPhMod") != error)
+		mobile.resist_physical_mod := mobile.resist_physical_mod - GetObjProperty(mobile, "auraPhMod")
+														   + physical_resist_mod;
+		SetObjProperty(mobile, "phMod", physical_resist_mod);
+		EraseObjProperty(mobile, "auraPhMod");
+	else
+		SetObjProperty(mobile, "phMod", physical_resist_mod);
+		mobile.resist_physical_mod := mobile.resist_physical_mod + physical_resist_mod;
+	endif
+
+	// SetObjProperty(mobile, "PhysicalResistMod", (cint(GetObjProperty(mobile, "PhysicalResistMod" )) + points));
+
+	return 1;
+endprogram

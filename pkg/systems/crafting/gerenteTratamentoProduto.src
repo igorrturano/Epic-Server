@@ -1,0 +1,193 @@
+use uo;
+use os;
+
+include "/include/epicPropNames";
+include ":gumps:/include/epicGumps";
+include ":gumps:/include/posicaoGump";
+include ":crafting:/gumps/fabricacaoGumps";
+include ":crafting:/include/fabricacaoUtil";
+include ":gumps:/include/posicaoGump";
+include ":crafting:include/util/fabricacaoConstants";
+include ":expbar:expbar";
+
+program GerenteTratamentoProduto(parametros)
+	var quem := parametros[1];
+	var produto := parametros[2];
+	var alvo := parametros[3];
+
+	var evento;
+	var receitaAntigaProp := GetObjProperty(produto, PROPNAME_FABRICADO);
+	var receitaAntigaObjtype := receitaAntigaProp.receita.objtype;
+	var corOriginal := produto.color;
+	var processosGerenciados := IniciaProcessosGerenciados(dictionary, quem, getPid(), produto, alvo);
+
+	var fazerSemelhantes := true;
+	var estadoGerenciamento := CICLANDO;
+
+	while (!DeveFinalizarPesquisaSemelhante(estadoGerenciamento))
+		Sleepms(2);
+		while (!DeveFinalizarTratamento(estadoGerenciamento))
+			evento := Wait_For_Event(60);
+			var eventoId := evento.id;
+
+			foreach processo in processosGerenciados // Se algum dos processos gerênciados morrer, marca para sair do loop.
+				if (!processo.state)
+					eventoId := EV_CANCELADO;
+					break;
+				endif
+				Sleepms(2);
+			endforeach
+
+			if (DeveFinalizarTratamento(estadoGerenciamento) && eventoId != EV_CANCELADO) // sai do loop imediatamente, a não ser que seja cancelamento.
+				LimpaProcessosGerenciados(quem, processosGerenciados);
+				break;
+			endif
+
+			case (eventoId)
+				EV_FIM_CICLO:
+					CloseGump(quem, processosGerenciados[GUMP_INTERATIVO].pid, 5);
+					estadoGerenciamento := CICLANDO;
+					break;
+
+				EV_ITEM_PRODUZIDO:
+					SendSysMessageEx(quem, "Item produzido com sucesso.", SSM_INFO);
+					CloseGump(quem, processosGerenciados[GUMP_INTERATIVO].pid, 0);
+					processosGerenciados[CICLO].kill();
+					var fabProp := GetObjProperty(produto, PROPNAME_FABRICADO);
+					if (fabProp && CInt(fabProp.xpPendente) > 0)
+						GrantCraftXP(quem, CInt(fabProp.xpPendente), fabProp.xpCategoria);
+					endif
+					CriaItemFabricado(quem, produto);
+					estadoGerenciamento := FINALIZADO;
+					break;
+
+				EV_ITEM_QUEBROU:
+					SendSysMessageEx(quem, "O Item se partiu.", SSM_FAIL);
+					PrintTextAbove(produto, "*O Item se parte*");
+					Sleepms(200);
+					CloseGump(quem, processosGerenciados[GUMP_INTERATIVO].pid, 0);
+					processosGerenciados[CICLO].kill();
+					estadoGerenciamento := FINALIZADO;
+					break;
+
+				EV_TODOS_ALTERADO:
+					fazerSemelhantes := evento.fazerTodos;
+					break;
+
+				EV_CANCELADO:
+					estadoGerenciamento := CANCELADO;
+					break;
+			endcase
+		endwhile
+
+		if (estadoGerenciamento != CANCELADO)
+			if (fazerSemelhantes)
+				
+				var produtoAntigo := produto;
+
+				ConsomeProduto(produtoAntigo);
+
+				if(produtoAntigo.amount > 0)
+					produto := produtoAntigo;
+				else
+					produto := EncontraNovoProduto(quem, receitaAntigaObjtype, produto);
+				endif
+
+				if (produto)
+					EraseObjProperty(alvo.item, PROPNAME_ISESTACAO_OCUPADA);
+					processosGerenciados := IniciaProcessosGerenciados(processosGerenciados, quem,
+																		getPid(), produto, alvo);
+					estadoGerenciamento := SEMELHANTE_ENCONTRADO;
+				else
+					DevolveProdutoMontado(quem, produtoAntigo);
+					estadoGerenciamento := FINALIZADO;
+				endif
+			else
+				ConsomeProduto(produto);
+			endif
+		else
+			if (produto)
+				// evento interrompido (EV_CANCELADO).
+				produto.color := corOriginal;
+				DevolveProdutoMontado(quem, produto);
+				LimpaProcessosGerenciados(quem, processosGerenciados);
+			endif
+		endif
+
+	endwhile
+
+	EraseObjProperty(alvo.item, PROPNAME_ISESTACAO_OCUPADA);
+	SendSysMessageEX(quem, "Tratamento Finalizado.", SSM_INFO);
+endprogram
+
+function ConsomeProduto(produto)
+	if (produto.stackable)
+		SubtractAmount(produto, 1);
+	else
+		DestroyItem(produto);
+	endif
+endfunction
+
+function DeveFinalizarTratamento(estadoGerenciamento)
+	return estadoGerenciamento == FINALIZADO || estadoGerenciamento == CANCELADO;
+endfunction
+
+function DeveFinalizarPesquisaSemelhante(estadoGerenciamento)
+	return estadoGerenciamento == FINALIZADO || estadoGerenciamento == CANCELADO;
+endfunction
+
+function IniciaProcessosGerenciados(processosAntigos, quem, pidGerente, produto, alvo)
+	if (processosAntigos.size() > 0)
+		LimpaProcessosGerenciados(quem, processosAntigos);
+	endif
+
+	return dictionary{ GUMP_INTERATIVO -> Start_Script(":crafting:tratamentoProdutoGump", array{ quem,
+																							 	produto,
+																							 	pidGerente,
+																							 	alvo }),
+				   	CICLO -> Start_Script(":crafting:cicloTratamentoProduto", array{ quem,
+																							 	produto,
+																							 	pidGerente,
+																							 	alvo }),
+				   	ANIMACAO -> Start_Script(":crafting:animacaoTratamentoProduto", array{ quem,
+																							 	produto,
+																							 	pidGerente,
+																							 	alvo }) };
+endfunction
+
+function DevolveProdutoMontado(quem, produto)
+	MoveObjectToLocation( 
+								produto,
+								quem.x,
+								quem.y,
+								quem.height, 
+								quem.realm, 
+								MOVEOBJECT_FORCELOCATION+MOVEITEM_IGNOREMOVABLE );
+	Sleepms(2);
+	produto.movable := 1;
+	MoveItemToContainer(produto, quem.backpack);
+endfunction
+
+function LimpaProcessosGerenciados(quem, processosGerenciados)
+	foreach processo in processosGerenciados
+		if (_processo_iter == GUMP_INTERATIVO || _processo_iter == GUMP_STATICO)
+			CloseGump(quem, processosGerenciados[_processo_iter].pid, 0);
+		endif
+		processo.kill();
+		Sleepms(2);
+	endforeach
+	Clear_Event_Queue();
+endfunction
+
+function EncontraNovoProduto(quem, receitaAntigaObjtype,produtoAtual)
+	foreach item in EnumerateItemsInContainer(quem.backpack)
+		Sleepms(2);
+		if (item.objtype == OBJTYPE_ITEM_MONTADO) // ambos são produtos montados.
+			var itemProp := GetObjProperty(item, PROPNAME_FABRICADO);
+			if (cint(itemProp.receita.objtype) == receitaAntigaObjtype && produtoAtual.serial != item.serial)
+				return item;
+			endif
+		endif
+	endforeach
+	return 0;
+endfunction

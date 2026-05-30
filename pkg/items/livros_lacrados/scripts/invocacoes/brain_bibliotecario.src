@@ -1,0 +1,66 @@
+// brain_bibliotecario.src - responde ao leitor com fragmentos de saber lacrado; sai apos 4 respostas.
+// params: {npc, who, expira_systime}
+
+use uo;
+use os;
+use util;
+
+include "include/sysEvent";
+
+program BrainBibliotecario(params)
+    var npc    := params[1];
+    var who    := params[2];
+    var expira := CInt(params[3]);
+
+    var lore := array{
+ "...o decimo quatro foi selado antes de ser aberto. Nunca houve um decimo tres...",
+ "...a tinta dos selos e feita de memoria, nao de substancia...",
+ "...todo livro lacrado tem uma segunda natureza. Poucos chegam a encontra-la...",
+ "...o autor raramente importa. O que importa e quem assinou o selo...",
+ "...alguns leitores desaparecem. O livro continua...",
+ "...havia uma biblioteca onde todos os livros eram brancos. Por razao obvia...",
+ "...o selo nao prende o que esta dentro. Prende o que esta fora...",
+ "...certos titulos so aparecem para quem ja leu o suficiente para ser perigoso..."
+    };
+
+    var idle := array{
+ "*folheia um livro invisivel*",
+ "*anota algo no ar*",
+ "*compara dois volumes que nao existem*",
+ "*passa o dedo por uma prateleira imaginaria*"
+    };
+
+    var respostas := 0;
+    var tick := 0;
+
+    while (npc && !npc.errortext && ReadGameClock() < expira)
+        var ev := npc.GetEvent(20);
+
+        if (ev && ev.type == SYSEVENT_SPEECH)
+            if (ev.source.serial == who.serial)
+ PrintTextAbove(npc, "*consulta o livro invisivel*");
+                sleep(2);
+                PrintTextAbove(npc, lore[RandomInt(lore.size()) + 1]);
+                respostas := respostas + 1;
+
+                if (respostas >= 4)
+                    sleep(3);
+ PrintTextAbove(npc, "*fecha o livro devagar* Nao ha mais nada aqui para voce.");
+                    sleep(2);
+                    break;
+                endif
+            endif
+        endif
+
+        tick := tick + 1;
+        var resto := tick - (CInt(tick / 30) * 30);
+        if (resto == 0)
+            PrintTextAbove(npc, idle[RandomInt(idle.size()) + 1]);
+        endif
+
+        sleepms(500);
+    endwhile
+
+    sleep(1);
+    if (npc && !npc.errortext) npc.kill(); endif
+endprogram

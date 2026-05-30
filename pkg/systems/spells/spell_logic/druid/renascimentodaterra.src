@@ -1,0 +1,127 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:attributes";
+include "include/shapes";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var cast_on := params[2];
+	var spell := params[3];
+	params := 0;
+
+
+	var nature := AP_GetSkill(who, NATURE);
+	var forward_tiles := CInt(nature / 20) + 1;
+	var side_tiles := CInt(nature / 10) + 2;
+	var duration := CInt(nature);
+	if (duration < 30)
+		duration := 30;
+	endif
+
+	PlaySoundEffect(who, 0x220);
+
+	var parts := array{};
+	var coord_list := GetCoordsInLine(who.x, who.y, cast_on.x, cast_on.y);
+	var tiles_placed := 0;
+	var last_coord := struct{ "x" := who.x, "y" := who.y };
+
+	foreach coord in coord_list
+		if (tiles_placed == 0)
+			tiles_placed++;
+			continue;
+		endif
+
+		if (tiles_placed > forward_tiles)
+			break;
+		endif
+
+		var z := GetWorldHeight(coord.x, coord.y, who.realm);
+		var stone := CreateItemAtLocation(coord.x, coord.y, z - 20, 2272, 1, who.realm);
+
+		if (stone)
+			parts.append(stone);
+			last_coord.x := coord.x;
+			last_coord.y := coord.y;
+		endif
+
+		tiles_placed++;
+		sleepms(50);
+	endforeach
+
+	var dx := cast_on.x - who.x;
+	var dy := cast_on.y - who.y;
+	var perp_dx := -dy;
+	var perp_dy := dx;
+
+	if (perp_dx != 0)
+		perp_dx := CInt(perp_dx / Abs(perp_dx));
+	endif
+	if (perp_dy != 0)
+		perp_dy := CInt(perp_dy / Abs(perp_dy));
+	endif
+
+	var i;
+	for (i := 1; i <= side_tiles; i++)
+		var new_x := last_coord.x + (perp_dx * i);
+		var new_y := last_coord.y + (perp_dy * i);
+		var z := GetWorldHeight(new_x, new_y, who.realm);
+
+		var stone := CreateItemAtLocation(new_x, new_y, z - 20, 2272, 1, who.realm);
+		if (stone)
+			parts.append(stone);
+		endif
+		sleepms(50);
+	endfor
+
+	for (i := 1; i <= side_tiles; i++)
+		var new_x := last_coord.x - (perp_dx * i);
+		var new_y := last_coord.y - (perp_dy * i);
+		var z := GetWorldHeight(new_x, new_y, who.realm);
+
+		var stone := CreateItemAtLocation(new_x, new_y, z - 20, 2272, 1, who.realm);
+		if (stone)
+			parts.append(stone);
+		endif
+		sleepms(50);
+	endfor
+
+	var rise_count := 1;
+	while (rise_count <= 20)
+		foreach part in parts
+			MoveObjectToLocation(part, part.x, part.y, part.z + 1, part.realm,
+								MOVEOBJECT_FORCELOCATION | MOVEITEM_IGNOREMOVABLE);
+		endforeach
+		rise_count := rise_count + 1;
+		sleepms(100);
+	endwhile
+
+	PlaySoundEffect(who, 0x220);
+	SendSysMessageEx(who, "A terra responde ao seu chamado!", SSM_INFO);
+	PrintTextAbove(who, "*Pedras emergem da terra*");
+
+	// Hand off lifecycle to SC: duration timer + on_expire teardown.
+	// If dispelled, the wall collapses early — same teardown script fires.
+	var stone_serials := array{};
+	foreach part in parts
+		stone_serials.append(part.serial);
+	endforeach
+
+	var opts := struct{};
+	opts.+buff_category := "earth_wall";
+	opts.+displayname := "Renascimento da Terra";
+	opts.+desc := "Parede de pedra erguida";
+	opts.+on_expire_script := ":spells:spell_logic/druid/renascimentodaterraExpire";
+	opts.+on_expire_params := struct{
+		stone_serials := stone_serials
+	};
+
+	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
+
+	return 1;
+endprogram

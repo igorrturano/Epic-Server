@@ -1,0 +1,18 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var mobile := params[1];
+
+	var color := CInt(GetObjProperty(mobile, "#RealColor"));
+	// PrintTextAbove(mobile, "color " + color);
+	if (color)
+		mobile.color := color;
+	endif
+	EraseObjProperty(mobile, "#RealColor");
+	mobile.hitchance_mod := mobile.hitchance_mod + 15;
+
+	return 1;
+endprogram

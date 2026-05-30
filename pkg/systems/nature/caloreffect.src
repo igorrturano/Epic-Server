@@ -1,0 +1,227 @@
+use uo;
+use os;
+use vitals;
+
+include ":charactercreation:resists";
+include ":attributes:attributes";
+include "include/epicConstants";
+include ":nature:nature";
+include ":crafting:/include/caracteristicasFabricacao";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+var ironArmors := { 0x1c04,
+					0x1408,
+					0x1409,
+					0x140A,
+					0x140B,
+					0x140C,
+					0x140D,
+					0x140E,
+					0x140F,
+					0x1412,
+					0x1419,
+					0x13ec,
+					0x13ed,
+					0x13ee,
+					0x13ef,
+					0x13f0,
+					0x13f1,
+					0x13f2,
+					0x1415,
+					0x1416,
+					0x1410,
+					0x1417,
+					0x1411,
+					0x141A,
+					0x1414,
+					0x1418,
+					0x1413,
+					0x13BB,
+					0x13C0,
+					0x13BE,
+					0x13C3,
+					0x13BF,
+					0x13C4,
+					0xF04A,
+					0xF04B,
+					0xF04C };
+
+var chitinArmor := { 0xF990, 0xF991, 0xF992, 0xF993, 0xF994, 0xF995 };
+
+program calor(params)
+
+	var who := params[1];
+
+	SetObjProperty(who, "calor", 1);
+
+	if (GetObjProperty(who, "teste_de_calor") != error)
+		return;
+	endif
+
+	SetObjProperty(who, "teste_de_calor", 1);
+	detach();
+
+	while (1)
+			sleep(300);
+
+			if (GetObjProperty(who, "calor") == error)
+				var p := cint(GetObjProperty(who, "penalidadeclima"));
+				if (p > 0)
+					if (p == 1)
+						RemoveHeatMod(who, 1);
+					elseif (p >= 2)
+						RemoveHeatMod(who, 1);
+						RemoveHeatMod(who, 2);
+					endif
+				endif
+				EraseObjProperty(who, "penalidadeclima");
+				EraseObjProperty(who, "teste_de_calor");
+				EraseObjProperty(who, "calor_streak");
+				return;
+			endif
+
+			var dif := RESIST_ALMOST_IMPOSSIBLE;
+
+			if (GetGlobalProperty("dia") == "dia")
+				dif := dif + 1;
+			endif
+
+			if (cint(GetGlobalProperty("season")) == 1) // if verão
+				dif := dif + 1;
+			endif
+
+			if (cint(GetGlobalProperty("season")) == 3) // if inverno
+				dif := dif - 1;
+			endif
+
+			if (GetGlobalProperty("weather") != error) // ta chovendo ou nevando
+				dif := dif - 1;
+			endif
+
+			if (GetObjProperty(who, "chardata").trait == "Cria do Deserto")
+				dif := dif - 10;
+			endif
+
+			if (GetObjProperty(who, "chardata").trait == "Adaptável")
+				dif := dif - 2;
+			endif
+
+			if (GetObjProperty(who, "chardata").culture == BJORSKA)
+				dif := dif + 2;
+			endif
+
+			if (GetObjProperty(who, "chardata").culture == GULTHRAK)
+				dif := dif - 5;
+			endif
+			
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::RESISTENCIA_DO_DESERTO))
+				dif := dif - 5;
+			endif
+
+			if (GetObjProperty(who, "chardata").culture == LESTE)
+				dif := dif - 2;
+			endif
+
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::CRAB_STYLE))
+				dif := dif - 2;
+			endif
+
+			dif := dif - cint(AP_GetSkill(who, NATURE) / 25);
+
+			foreach item in (ListEquippedITems(who))
+				// Manto de Aquil facilita a resistência contra calor
+				if (item.objtype == 0xA35e)
+					dif := dif - 1;
+				endif
+
+				dif -= PegaValorFabricacao(item, CARACTERISTICA_FABRICACAO_RESISTENCIACLIMACALOR);
+				dif += PegaValorFabricacao(item, CARACTERISTICA_FABRICACAO_RESISTENCIACLIMAFRIO);
+			// Itens de couro draconiano facilitam a resistência contra calor
+			endforeach
+
+			foreach item in (ListItemsNearLocation(who.x, who.y, who.z, 8, who.realm))
+				// Oasis facilita a resistência ao calor em três níveis de dificuldade
+				if ((item.objtype == 0xa5a))
+					dif := dif - 3;
+					break;
+				endif
+				sleepms(20);
+			endforeach
+
+			// Phase 2: cantil heat ward — active hydration buff
+			var cantilBuff := cint(GetObjProperty(who, "cantilBuff"));
+			if (cantilBuff > ReadGameClock())
+				dif := dif - (2 + cint(AP_GetSkill(who, SURVIVAL) / 25));
+			elseif (cantilBuff > 0)
+				EraseObjProperty(who, "cantilBuff");
+			endif
+
+			// Modificador de dificuldade baseado em regions
+			var cfg := ReadConfigFile("::regions/regions");
+			var elems := GetconfigStringKeys(cfg);
+			foreach elem in elems
+				var region := FindConfigElem(cfg, elem);
+				var rect := GetConfigString(region, "Range");
+				if (InRect(who, who.x, who.y, rect))
+					var tempmod := cint(GetConfigString(region, "TempMod"));
+					if (tempmod > 0)
+						dif := dif + tempmod;
+					endif
+					break;
+				endif
+			endforeach
+
+			var resistcheck;
+			var resistchecked;
+			foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, 10, who.realm))
+				if (mobile.npctemplate == ":brainai:protetordeclima")
+					SendSysMessageEX(who, "O Protetor de Gelo lhe protege do calor.", SSM_INFO);
+					dif := dif - 5;
+				endif
+				if ((MobileWrapper(mobile).HasAbility(ABILITY_ID::MESTRE_DE_FERAS)) && who.party &&
+		(who.party.leader == mobile.party.leader))
+					resistchecked := mobile;
+				endif
+				sleepms(20);
+			endforeach
+
+			var calorStreak := cint(GetObjProperty(who, "calor_streak")) + 1;
+			SetObjProperty(who, "calor_streak", calorStreak);
+			dif := dif + calorStreak;
+
+			if (SkillCheck(who, NATURE, dif, 0, ADV_SKILL) > 0)
+				SendSysMessageEx(who, "Sua sintonia com a natureza protege voce do calor.", SSM_INFO);
+				continue;
+			endif
+
+			var penalty := cint(GetObjProperty(who, "penalidadeclima"));
+
+			if (!resistchecked)
+				resistcheck := CheckResist(who, FORTITUDE, dif);
+			else
+				resistcheck := CheckResist(resistchecked, FORTITUDE, dif);
+			endif
+
+			if (resistcheck)
+				SendSysMessageEx(who, "Voce resiste aos efeito do calor.", SSM_INFO);
+				if (penalty == 1)
+					penalty := 0;
+					RemoveHeatMod(who, 1);
+				elseif (penalty == 2)
+					penalty := 1;
+					RemoveHeatMod(who, 2);
+				endif
+			else
+				SendSysMessageEx(who, "Voce nao resiste aos efeitos do calor.", SSM_FAIL);
+				if (penalty == 0)
+					penalty := 1;
+					ApplyHeatMod(who, 1);
+				elseif (penalty >= 1)
+					penalty := 2;
+					ApplyHeatMod(who, 2);
+				endif
+			endif
+			SetObjProperty(who, "penalidadeclima", penalty);
+		endwhile
+endprogram

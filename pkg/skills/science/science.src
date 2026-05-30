@@ -1,0 +1,86 @@
+
+use cfgfile;
+use uo;
+
+include ":attributes:attributes";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":loot:magicLoot";
+include ":charactercreation:habilidades";
+include "include/epicConstants";
+include ":alchemy:include/alchemy";
+
+program skill_science(who)
+
+	SendSysMessageEx(who, "Escolha uma pocao para avaliar.", SSM_REQUEST);
+	var item := Target(who, TGTOPT_CHECK_LOS);
+
+	if (!item)
+		SendSysMEssageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if (item.graphic == 3849)
+		PrintTextAbove(who, "*analisando um frasco*");
+
+		var identificado := GetObjProperty(item, "magicwho");
+
+		if (who.serial in identificado)
+			var cfg := ReadConfigFile(":*:itemdesc");
+			var entry := cfg[item.objtype];
+			if (entry.Name == "extrato")
+				var objtype := GetObjProperty(item, "extrato");
+				var pot := cfg[objtype];
+				SendSysMessageEx(who, "Voce ja identificou o liquido do frasco: Extrato de " + pot.Type,
+								  SSM_INFO);
+			else
+				SendSysMessageEx(who, "Voce ja identificou o liquido do frasco: " + entry.Type, SSM_INFO);
+			endif
+			return 1;
+		elseif (SkillCheck(who, SCIENCE, -1) > 0)
+			var cfg := ReadConfigFile(":*:itemdesc");
+			var nivel := NomeNivelPocao(who, item);
+			var entry := cfg[item.objtype];
+			var desc := entry.Type + " " + nivel;
+			if (entry)
+				if (entry.Name == "extrato")
+					var objtype := GetObjProperty(item, "extrato");
+					var pot := cfg[objtype];
+					SetObjProperty(item, "pocaoname", "Extrato de " + pot.Type);
+					SendSysMessageEx(who, "Voce identificou o liquido do frasco: Extrato de " + pot.Type, SSM_INFO);
+				else
+					SetObjProperty(item, "pocaoname", desc);
+					SendSysMessageEx(who, "Voce identificou o liquido do frasco: " + entry.Type, SSM_INFO);
+				endif
+			endif
+			cfg := 0;
+			entry := 0;
+			var whos := GetObjProperty(item, "magicwho");
+			if (whos == error)
+				whos := array;
+			endif
+			if (!(who.serial in whos))
+				whos.append(who.serial);
+				SetObjProperty(item, "magicwho", whos);
+			endif
+			var backup := GetAmount(item);
+			SubtractAmount(item, backup - 1);
+			SetName(item, item.desc);
+			AddAmount(item, backup - 1);
+		else
+			SendSysMessageEx(who, "Voce nao esta certo...", SSM_FAIL);
+		endif
+	endif
+endprogram
+
+function NomeNivelPocao(who, pocao)
+	var tier := PegaNivelPocao(who, pocao);
+	if (pocao.objtype == 0xbf0d || pocao.objtype == 0x6073 || pocao.objtype == 0xdce6)
+		tier := 2;
+	endif
+	case (tier)
+		1: return "Menor";
+		2: return ;
+		3: return "Maior";
+	endcase
+Endfunction

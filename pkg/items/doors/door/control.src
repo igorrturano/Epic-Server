@@ -1,0 +1,23 @@
+use uo;
+
+program controlScript(door)
+    if (!door.locked)
+        if (door.IsOpen())
+            door.Close();
+        endif
+    endif
+
+    var time := Cint(GetObjProperty(door, "time"));
+    if (time) // se eh uma porta de dungeon
+        var relock_at := Cint(GetObjProperty(door, "relock_at"));
+        if (relock_at && !door.locked) // se foi aberta E está destrancada
+            if (polcore().systime >= relock_at) // se o tempo atual atingiu o momento de trancar
+                door.locked := 1; // tranca a porta novamente
+                EraseObjProperty(door, "relock_at");
+                EraseObjProperty(door, "fechadura_quebrada");
+            endif
+        endif
+    endif
+
+    return 1;
+endprogram

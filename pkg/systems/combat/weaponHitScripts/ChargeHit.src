@@ -1,0 +1,41 @@
+use uo;
+use util;
+use vitals;
+
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include "include/client";
+include "include/sounds";
+include ":attributes:vitals";
+include ":attributes:attributes";
+include ":mounts:mounts";
+
+program HitScript(params)
+	var attacker := params[1];
+	var defender := params[2];
+	// var weapon	:= params[3];
+	// var armor	:= params[4];
+	// var basedamage	:= params[5];
+	var rawdamage := params[6];
+	params := 0; // Not needed anymore.
+
+	var mount := GetEquipmentByLayer(attacker, LAYER_MOUNT);
+
+	if (mount)
+		var dmg := rawdamage * 0.2;
+		if (dmg < 2)
+			dmg := 2;
+		endif
+
+		// Charge bonus inherits the weapon's attack type — lance/spear = piercing,
+		// hammer/mace = blunt, sword = slash. Naked attackers fall back to blunt.
+		var chargeType := WeaponWrapper(attacker.weapon).GetAttackType();
+		if (!chargeType || chargeType is @Exception)
+			chargeType := DAMAGE_TYPE::BLUNT;
+		endif
+		DealDamage(defender, cint(dmg), chargeType, attacker);
+	// ApplyRawDamage(defender, CInt(dmg));
+	endif
+	return 1;
+endprogram

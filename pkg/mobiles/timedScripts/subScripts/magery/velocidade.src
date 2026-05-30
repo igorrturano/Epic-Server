@@ -1,0 +1,24 @@
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":fls_core:packets";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	params := 0; // Not needed anymore.
+
+	if (mobile.npctemplate)
+		SetObjProperty(mobile, "runspeed", mobile.run_speed);
+		mobile.run_speed := 250;
+	else
+		PlayerSpeedBoost(mobile, 1);
+	endif
+
+	return 1;
+endprogram

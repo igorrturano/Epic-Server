@@ -1,0 +1,40 @@
+
+use uo;
+
+include ":charactercreation:createchar";
+include "include/say";
+include ":gumps:yesNo";
+include ":charactercreation:chargumps";
+include ":tn:characters";
+include ":tn:tngumps";
+include ":attributes:attributes";
+
+program criachar(who)
+
+	if (getObjProperty(who, "classe") != error)
+		SendSysMessageEx(who, "Voce nao pode usar este comando.", SSM_FAIL);
+		return;
+	endif
+
+	var yes := YesNo(who, "Voce pode redefinir seus status, skills e escolher uma classe.", "Sim. Vou fazer agora.", "Nao, vou fazer depois");
+
+	if (yes)
+		var  classe := RadioGump(who, 180, 340, "Escolha a sua classe", {"Guerreiro", "Ladino", "Sabio", "Artifice" });
+		SetObjProperty(who, "classe", classe);
+		var chardata := struct;
+		TN_AttributesGump(who, chardata);
+		skillsgump(who,  chardata);
+
+		chardata := GetObjProperty(who, "chardata");
+		var myskills := chardata.Skills.keys();
+		foreach attrib in AP_ListAttributesByType()
+			if ((attrib != "Dexterity") && (attrib != "Strength") && (attrib != "Intelligence"))
+				if ( !(attrib in myskills))
+					AP_SetTrueSkill(who, attrib, 0);
+				endif
+			endif
+			sleepms(10);
+		endforeach
+	endif
+
+endprogram

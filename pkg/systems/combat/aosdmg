@@ -1,0 +1,65 @@
+AoS Dmg System
+
+All sources of dmg have they dmg divided in 5 types: Physical, Fire, Cold, Poison and Energy.
+
+Sources of dmg:
+
+NPCs: In npcdesc they have the description of the dmg. Eg.: Liche have 80% of physical dmg and 20% of cold dmg. I put it in a Cprop dictionary: 
+CProp DamageTypes d5:S8:Physicalr1.0S4:Firer0.0S4:Coldr0S6:Poisonr0S6:Energyr0
+This means that tge creature with this Cprop have 1.0 (100%) of Physical Dmg.
+TODO: maybe a more human readable Cprop?
+
+Weapons: I assume that weapons without Cprops are 100% physical dmg. The only way that weapons can have other type of dmg are using diferent types of ingots/materials, then, when a weapon is crafted I check if the material give any type of dmg, Eg: Copper Weapons are 70% physical, 10% Poison and 20% Energy. Exceptional weapons have +30% randomly distributed in all types of dmg.
+
+Spells: The dmg is defined when you call ApplyRawDamageEX in the spell script.
+
+Resistances:
+
+NPCS: In npcdesc they have this section:
+Physical-ResistMult	0.5
+Fire-ResistMult		1.0
+Cold-ResistMult		0.0
+Poison-ResistMult	0.2
+Energy-ResistMult	0.5
+
+Players: They can have 2 ways to get Resistances:
+1- Using Armors: Each piece of armor give a % in all resistances, I put it in a Cprop in itemdesc.cfg:
+CProp Resistances d5:S8:Physicalr2.0S4:Firer4.0S4:Coldr3.0S6:Poisonr3.0S6:Energyr3.0
+This means +2% of Physical Resistamce +4% of Fire Resistance, +3% of Cold Resistance, +3% of Poison Resistance and +3% of Energy.
+Ingots and Hides give more bonus when the item is crafted.
+
+2- Resisting Spells: The formula is (magicResist-40)/3)*2 (from stratics) to ALL resistances. if you are equiped with armor then the greater value is used.
+
+Scripts:
+
+To code this system I modified the files:
+
+- npcdesc.cfg to write the resistances and dmg types in ALL npcs.
+
+- itemdesc.cfg to wrote the resistances of all pieces of armors
+
+- damage.inc with more new functions and modified the functions:
+  - CalcDamageAmount: If a npc have 1.0 (100%) os resistance it is immune (and not with 0) and 
+  - GetResistance: This function is a bit more complicated, if the mobile is a npc, then read the npcdesc or try to get a Cprop, if it is a player then get the resistances from equipment and from the Resisting Spells skill.
+  - I added this function: GetDamageList(mobile, weapon), it will check if the mobile is a NPC or player, if NPC get the Cprop , if is a player get the Cprop from the weapon, if the weapon doesnt have Cprop return 100% Physical.
+
+- crafting.inc to add the cprops when the item is crafted. To do this task I created a new include craftingUtil.inc with the following functions:
+
+	- AddWeaponMaterialBonus(theitem, DmgMods, isExceptional := 0)
+	- AddArmorMaterialBonus(theitem, ResistMods, isExceptional := 0)
+	- AddExceptionalDamageMod(byref finaldmg)
+	- AddExceptionalResistMod(byref finalresist)
+
+- mainHitScript to calculate the dmg of each type and subtract the resistance then apply the result. To do it I added this :
+
+	if ( rawdamage > 0 )
+		var dmgList := dictionary;
+		dmgList := getDamageList(attacker, weapon);
+		var keylist := dmgList.keys();
+		foreach type in keylist
+			var typeDmg := basedamage * dmgList[type];
+			var temp := ApplyRawDamageEX(defender, CInt(typeDmg), type  );
+		endforeach
+		keylist := 0;
+		MakeBleed(defender);
+	endif

@@ -1,0 +1,817 @@
+use uo;
+use os;
+include ":timedScripts:timedScripts";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:epicGumps";
+include ":gathering:mining";
+include ":blood:blood";
+include ":gumps:yesNo";
+include ":medicine:anatomy";
+include ":medicine:disease";
+
+const COLOR_REGULAR := 1153; // Branco
+
+program medical_items_gump(who, item)
+	SendSysMessage(who, "Selecione o paciente para o procedimento médico ou recurso para recarregar suas doses.");
+var patient := TargetCoordinates(who);
+
+if (!patient)
+    return 0;
+endif
+
+var tgt := 0;
+
+if (patient.mobile)
+    tgt := patient.mobile;
+elseif (patient.item)
+    tgt := patient.item;
+endif
+
+	var gump := GFECreateGump("Procedimentos Médicos", 350, 450, array{ BORDER_BLUE });
+
+	var items := array{ struct{ objtype := 0xD1DB, name := "Cautério",
+								symptom := DISEASES::PUSTULES, tooltip := "Ferramenta de ferro em brasa para cauterização." },
+						
+						struct{
+								objtype := 0xD1C2,
+								name := "Injeção de sangue de touro",
+								doseType := "bull",
+								sourceObjtype := 0xE9,
+								symptom := DISEASES::THROMBOSIS,
+								maxDoses := 25, 
+								tooltip := "Transfusão rústica que estimula a circulação. Recarregar em touros." },
+
+						struct{ objtype := 0xD1C7,
+								name := "Unguento de húmus de minhoca",
+								doseType := "worm",
+								sourceObjtype := 0x9980,
+								symptom := DISEASES::ITCHING,
+								maxDoses := 25, 
+								tooltip := "Para aplicação cutânea para alívio imediato. Recarrega com minhocas." },
+
+						struct{ objtype := 0xD1CB, name := "Alicate retal", symptom := DISEASES::COLIC, tooltip := "Instrumento para desobstrução intestinal." },
+						
+						struct{ objtype := 0x102A, name := "Martelada de Compressão", symptom := DISEASES::PALPITATIONS, tooltip := "Ferramenta para percussão torácica." },
+						
+						struct{
+								objtype := 0xD1C9,
+								name := "Vapores de água pantanosa",
+								doseType := "swamp",
+								symptom :=  DISEASES::NAUSEA,
+								maxDoses := 25, 
+								tooltip := "Tratamento com inalação por vaporização. Recarregar em água pantanosa." },
+
+						struct{ objtype := 0xD1BD, name := "Trépano", symptom := DISEASES::HEADACHE, tooltip := "Ferramenta para trepanação craniana." },
+						
+						struct{
+								objtype := 0x64EA,
+								name := "Cataplasma térmica de areia",
+								doseType := "sand",
+								symptom := DISEASES::FEVER,
+								maxDoses := 25, 
+								tooltip := "Compressa aquecida para indução de sudorese. Recarrega em areia." },
+
+						struct{ objtype := 0x1879, name := "Fibras de entranhas", symptom := DISEASES::LACERATION, doseType := "tripa", maxDoses := 25, sourceObjtype := 0xee46, tooltip := "Para sutura. Recarrega com entranhas." } };
+
+if (CoordinateDistance(who.x, who.y, patient.x, patient.y) > 2)
+    if (!tgt || tgt.container != who.backpack)
+        SendSysMessage(who, "Alvo está muito longe. Aproxime-se mais!", color := 33);
+        return 0;
+    endif
+endif
+	
+	// Verificar se o alvo selecionado é uma fonte para recarregar algum item
+	var recharged := 0;
+if (!patient.mobile)
+    var objtype := patient.objtype;
+
+    if (tgt)
+        objtype := tgt.objtype;
+    endif
+
+    foreach item_info in items
+        if (item_info.doseType != error && item_info.sourceObjtype != error)
+            if (objtype == item_info.sourceObjtype)
+
+                var currentDoses := GetItemDoses(item, item_info.doseType);
+
+                if (currentDoses >= item_info.maxDoses)
+                    SendSysMessage(who, "O item " + item_info.name + " já está com doses máximas!");
+                    return 1;
+                endif
+
+                SetItemDoses(item, item_info.doseType, item_info.maxDoses);
+
+                SendSysMessage(who, "Você encheu " + item_info.name + " (" + item_info.maxDoses + " doses)!");
+                PlaySoundEffect(who, 0x02c);
+
+                return 1;
+            endif
+        endif
+        Sleepms(2);
+    endforeach
+
+    // =========================
+    // PÂNTANO
+    // =========================
+    if (IsSwampTarget(patient))
+        foreach item_info in items
+            if (item_info.doseType == "swamp")
+
+                var currentDoses := GetItemDoses(item, item_info.doseType);
+
+                if (currentDoses >= item_info.maxDoses)
+                    SendSysMessage(who, "O item " + item_info.name + " já está com doses máximas!");
+                    return 1;
+                endif
+
+                SetItemDoses(item, item_info.doseType, item_info.maxDoses);
+
+                SendSysMessage(who, "Você coletou líquido do pântano (" + item_info.maxDoses + " doses)!");
+                PerformAction(who, 0x0B);
+				PlaySoundEffect(who, 0x0026);
+
+                return 1;
+            endif
+            Sleepms(2);
+        endforeach
+    endif
+
+    // =========================
+    // AREIA
+    // =========================
+    if (CanMine(patient, "Sand"))
+        foreach item_info in items
+            if (item_info.doseType == "sand")
+
+                var currentDoses := GetItemDoses(item, item_info.doseType);
+
+                if (currentDoses >= item_info.maxDoses)
+                    SendSysMessage(who, "O item " + item_info.name + " já está com doses máximas!");
+                    return 1;
+                endif
+
+                SetItemDoses(item, item_info.doseType, item_info.maxDoses);
+
+                SendSysMessage(who, "Você encheu o Cataplasma de areia térmica (" + item_info.maxDoses + " doses)!");
+                PerformAction(who, 0x0B);
+                PlaySoundEffect(who, 0x126);
+
+                return 1;
+            endif
+            Sleepms(2);
+        endforeach
+    endif
+
+    SendSysMessage(who, "Nada para recarregar aqui.");
+    return 1;
+elseif (patient.objtype == 0xE9) //touro
+ foreach item_info in items
+            if (item_info.doseType == "bull")
+
+                var currentDoses := GetItemDoses(item, item_info.doseType);
+
+                if (currentDoses >= item_info.maxDoses)
+                    SendSysMessage(who, "O item " + item_info.name + " já está com doses máximas!");
+                    return 1;
+                endif
+
+                SetItemDoses(item, item_info.doseType, item_info.maxDoses);
+
+                SendSysMessage(who, "Você coletou o sangue do touro, (" + item_info.maxDoses + " doses)!");
+                PerformAction(who, 0x0B);
+				PlaySoundEffect(who, 0x069);
+
+                return 1;
+            endif
+            Sleepms(2);
+        endforeach
+endif
+
+	var diseases_system := GetObjProperty(patient, "Diseases_System");
+	var disease_grade := diseases_system.grade;
+
+	if (disease_grade == "Incuravel")
+		SendSysMessage(who, "A doença do paciente é intratável!");
+		return 0;
+	endif
+
+	// Informar que o paciente foi selecionado e solicitar permissão
+	if (patient.mobile.serial == who.serial || who.cmdlevel > 3)
+	else
+		var permissao := YesNo(patient.mobile, "Permite que o médico realize tratamentos em você?");
+		if (!permissao)
+			SendSysMessage(who, "O paciente não aceitou ser tratado.");
+			return;
+		endif
+	endif
+
+	var y_pos := 80;
+	var btn_id := 1;
+
+	if (who.cmdlevel > 3)
+		GFAddButton(gump, 320, 420, 2117, 2118, GF_CLOSE_BTN, 20);
+		GFTextLine(gump, 250, 420, 53, "Doses Max");
+	endif
+
+	// Adicionar itens ao gump usando foreach
+	foreach item_info in items
+		// Botão para selecionar o item
+		GFAddButton(gump, 30, y_pos, 2510, 2511, GF_CLOSE_BTN, btn_id);
+		GFAddAlphaRegion(gump, 58, y_pos - 5, 35, 35); // Quadrado preto menor
+
+		// Imagem do item com cor apropriada
+		var hue := 0;
+		if (item_info.color != error)
+			hue := item_info.color;
+		endif
+		GFTilePic(gump, 60, y_pos - 5, item_info.objtype, hue);
+		GFTextLine(gump, 110, y_pos, 53, item_info.name);
+		//Botão de interrogação com tooltip
+		GFAddButton(gump, 300, y_pos, 22153, 22153, GF_DUMMY_BTN);
+		GFTooltipText(gump, item_info.tooltip);
+
+		// Verificar e exibir doses se aplicável
+		if (item_info.doseType != error)
+			var doses := GetItemDoses(item, item_info.doseType);
+			if (doses > 0)
+				GFTextLine(gump, 110, y_pos + 15, 63, "Doses: " + doses);
+			else
+				GFTextLine(gump, 110, y_pos + 15, 38, "Vazio");
+			endif
+		endif
+
+		y_pos += 40;
+		btn_id += 1;
+		Sleepms(2);
+	endforeach
+
+	var result := GFSendGump(who, gump);
+
+	// Processa a seleção do jogador
+	if (result[0] > 0 && result[0] <= items.size())
+		var selected := items[result[0]];
+
+		// Verificar se o item tem doses e se há doses disponíveis
+		if (selected.doseType != error)
+			var doses := GetItemDoses(item, selected.doseType);
+			if (doses <= 0)
+				SendSysMessage(who, "Este item está vazio! Para recarregar, selecione "
+								+ GetRechargeInstructions(selected) + ".");
+				return 0;
+			endif
+
+			SetItemDoses(item, selected.doseType, doses - 1);
+		endif
+
+		PerformMedicalProcedure(who, patient.mobile, selected.objtype, selected.name, selected.symptom);
+	elseif (result[0] == 20)
+		SetItemDoses(item, "bull", 25);
+		SetItemDoses(item, "worm", 25);
+		SetItemDoses(item, "sand", 25);
+		SetItemDoses(item, "swamp", 25);
+		SetItemDoses(item, "tripa", 25);
+		SendSysMessage(who, "tudo foi recarregado");
+	endif
+
+	return 1;
+endprogram
+
+// Função para obter instruções de recarga
+function GetRechargeInstructions(itemInfo)
+	case (itemInfo.doseType)
+		"bull":  return "um touro";
+		"worm":  return "uma minhoca";
+		"sand":  return "uma área com areia";
+		"swamp": return "uma área de água no pântano";
+		"tripa": return "uma entranha";
+		default: return "a fonte adequada";
+	endcase
+endfunction
+
+// Função para verificar se está em uma área de pântano
+function IsSwampTarget(targ)
+	if (targ.objtype >= 5850 && targ.objtype <= 5871)
+		return 1;
+	endif
+	return 0;
+endfunction
+
+// Função para obter o número de doses de um item específico
+function GetItemDoses(item, doseType)
+	var doses := GetObjProperty(item, "doses_" + doseType);
+	if (doses == error)
+		return 0;
+	endif
+	return CInt(doses);
+endfunction
+
+// Função para definir o número de doses de um item específico
+function SetItemDoses(item, doseType, doses)
+	SetObjProperty(item, "doses_" + doseType, CInt(doses));
+endfunction
+
+function PerformMedicalProcedure(who, patient, objtype, name, symptom) // Médico executa o procedimento no paciente
+	// Obter sintomas atuais do paciente
+	var diseases_system := GetObjProperty(patient, "Diseases_System");
+	var disease_grade := diseases_system.grade;
+	var diseases := diseases_system.diseases;
+
+	if (!diseases || !diseases.size())
+		SendSysMessage(who, "O paciente não apresenta sintomas de doença para tratar.");
+		return 0;
+	endif
+
+	// Verificação de sintomas
+	var original_symptoms := diseases_system.temp_symptoms;
+
+	if (!original_symptoms)
+		// Primeira vez tratando esta doença - salvar sintomas originais
+		original_symptoms := array{};
+		foreach disease in diseases
+			original_symptoms.append(disease);
+			Sleepms(2);
+		endforeach
+		original_symptoms.sort();
+		UpdateDiseaseProperty(patient, "temp_symptoms", original_symptoms);
+	endif
+
+	// Verificar se é uma doença conhecida (datafile)
+	var datafile_disease := GetDiseaseInfoFromDatafile(original_symptoms);
+	var is_known_disease := (datafile_disease != 0);
+	PrintTextAbove(who, "Realizando o procedimento: " + name);
+
+	// Configurar dificuldade baseada no grau da doença
+	var diff_grade;
+	if (disease_grade == DISEASE_GRADES::LIGHT)
+		diff_grade := 30;
+	elseif (disease_grade == DISEASE_GRADES::MODERATE)
+		diff_grade := 45;
+	elseif (disease_grade == DISEASE_GRADES::SERIOUS)
+		diff_grade := 80;
+	endif
+
+	var skill_check := SkillCheck(who, MEDICINE, diff_grade);
+
+	// Verificar se o tratamento é adequado para algum dos sintomas do paciente
+	var found := 0;
+	var new_diseases := array{};
+
+	// Verificar histórico de sintomas curados para doenças do datafile
+	var cured_symptoms := diseases_system.cured_symptoms;
+	if (!cured_symptoms)
+		cured_symptoms := array{};
+	endif
+
+	var success_msg, fail_skill_msg, incompatible_msg, sound_effect;
+
+	case (objtype)
+		0xD1DB:   // TROCAR ferro de cauterização
+			success_msg := "O ferro em brasa queima as postúlas, e o paciente sente alívio após a dor intensa.";
+			fail_skill_msg := "O ferro foi aplicado de forma incorreta, agravando e causando sofrimento extremo.";
+			sound_effect := 0x4f;
+			break;
+
+		0xD1C2: // Injeção de sangue de touro
+			success_msg := "O paciente sente um pouco de dor, mas há redução do inchaço.";
+			fail_skill_msg := "A mão do médico tremeu e ele errou a aplicação da injeção!";
+			sound_effect := 0x62c;
+			break;
+
+		0xD1C7: // Unguento de húmus de minhoca
+			success_msg := "O unguento tem um cheiro forte, mas parece curar a coceira";
+			fail_skill_msg := "O unguento escorreu antes de fazer efeito no local afetado.";
+			sound_effect := 0x1C9;
+			break;
+
+		0xD1CB: // Alicate retal
+			success_msg := "Um procedimento desconfortável, mas resolve o problema intestinal.";
+			fail_skill_msg := "O alicate escorregou no momento crítico!";
+			sound_effect := 0x4D3;
+			break;
+
+		0x102A: // Martelada de Compressão
+			success_msg := "A compressão regulou o ritmo cardíaco do paciente";
+			fail_skill_msg := "O médico aplicou força demais com o martelo e o procedimento não surtiu efeito.";
+			sound_effect := 0x510;
+			break;
+
+		0xD1C9: // Inalação de vapores do pântano
+			success_msg := "Os vapores do pântano causam tontura, mas parecem ter propriedades medicinais.";
+			fail_skill_msg := "O paciente tossiu e não conseguiu inalar corretamente os vapores medicinais.";
+			sound_effect := 0x230;
+			break;
+
+		0xD1BD: // Trepanação
+			success_msg := "O procedimento é extremamente doloroso, mas a mente está livre da dor.";
+			fail_skill_msg := "O instrumento de trepanação deslizou e o procedimento falhou. O paciente sente uma dor aguda.";
+			sound_effect := 0x219;
+			break;
+
+		0xa3e8: // Cataplasma de areia térmica
+			success_msg := "A areia normalizou a temperatura corporal do paciente.";
+			fail_skill_msg := "A cataplasma esfriou demais antes de ser aplicada e perdeu sua eficácia.";
+			sound_effect := 0x2A2;
+			break;
+
+		0xD1C3: // Sutura
+			success_msg := "A sutura fecha as feridas profundas do paciente.";
+			fail_skill_msg := "Os pontos não ficaram firmes o suficiente e a sutura se desfez.";
+			sound_effect := 0x3e4;
+			break;
+
+		default: // Caso padrão
+			success_msg := "O procedimento foi realizado com sucesso e o sintoma foi tratado.";
+			fail_skill_msg := "O médico falhou ao realizar o procedimento médico.";
+			sound_effect := 0x1D6;
+	endcase
+
+	incompatible_msg := "Este procedimento não é adequado para os sintomas apresentados.";
+
+	// Verificar se o tratamento é adequado para algum sintoma
+	foreach disease in diseases
+		Sleepms(2);
+		if (disease == symptom)
+			found := 1;
+			if (skill_check > 0)
+				// SendSysMessage(who, "O procedimento " + name + " tratou com sucesso o sintoma: " + symptom, 3, 73);
+				if (patient.serial != who.serial)
+				// SendSysMessage(patient, "O procedimento " + name + " tratou com sucesso seu sintoma: " + symptom, 3, 73);
+				endif
+
+				PrintTextAbove(patient, success_msg, 3, 73);
+
+				if (is_known_disease)
+					// Obter histórico de cura em ordem
+					var cure_history := diseases_system.cure_history;
+					if (!cure_history)
+						cure_history := array{};
+					endif
+
+					cure_history.append(symptom);
+					UpdateDiseaseProperty(patient, "cure_history", cure_history);
+
+					var shortcut_result := CheckShortcutCure(cure_history, datafile_disease);
+
+					if (shortcut_result == "shortcut_complete")
+						SendSysMessage(who, "Ao curar o sintoma primário seguido do secundário, você descobriu o atalho! A doença "
+										+ datafile_disease.name + " foi completamente curada!", 3, 73);
+
+						new_diseases := array{};
+						UpdateDiseaseProperty(patient, "cure_history", 0);
+						UpdateDiseaseProperty(patient, "temp_symptoms", 0);
+
+						UpdateDiseaseProperty(patient, "diseases", new_diseases);
+						TS_LowerDuration(patient, "disease", -1);
+
+						AddDiseaseToPersonalKnowledge(who, datafile_disease.name);
+
+						PlaySoundEffect(patient, sound_effect);
+						PlayObjectCenteredEffect(patient, 0x376A, 10, 10);
+
+						return 1;
+					endif
+
+				else
+					// Para doenças não catalogadas, usar sistema simples
+					var cured_symptoms := diseases_system.cured_symptoms;
+					if (!cured_symptoms)
+						cured_symptoms := array{};
+					endif
+					cured_symptoms.append(symptom);
+					UpdateDiseaseProperty(patient, "cured_symptoms", cured_symptoms);
+				endif
+
+			else
+				// Falha no skill check - manter sintoma e agravar
+				new_diseases.append(disease);
+				MakeBleed(patient);
+				ApplyRawDamage(who, 30);
+
+				PrintTextAbove(patient, fail_skill_msg, 3, 33);
+				AgravarDoenca(who, patient, disease_grade);
+				UpdateDiseaseProperty(patient, "diseases", new_diseases);
+
+				PlaySoundEffect(patient, sound_effect);
+				PlayObjectCenteredEffect(patient, 0x376A, 10, 10);
+
+				return 0;
+			endif
+		else
+			// Manter os outros sintomas
+			new_diseases.append(disease);
+		endif
+	endforeach
+
+	// Se não encontrou o sintoma correspondente
+	if (found == 0)
+		SendSysMessage(who, "O procedimento " + name + " não foi adequado para os sintomas do paciente!",
+						3, 33);
+		if (patient.serial != who.serial)
+			SendSysMessage(patient, "O procedimento " + name + " não foi adequado para seus sintomas e piorou sua condição!",
+							3, 33);
+		endif
+
+		PrintTextAbove(patient, incompatible_msg, 3, 33);
+
+		AgravarDoenca(who, patient, disease_grade);
+
+		MakeBleed(patient);
+		ApplyRawDamage(who, 20);
+		UpdateDiseaseProperty(patient, "falhou_cura", 1);
+		var past_level := TS_GetTimerLevel(patient, "disease");
+		TS_LowerDuration(patient, "disease", -1);
+		sleepms(15);
+		TS_StartTimer(patient, "disease", 65000, past_level);
+		UpdateDiseaseProperty(patient, "diseases", diseases);
+		PlaySoundEffect(patient, sound_effect);
+		PlayObjectCenteredEffect(patient, 0x376A, 10, 10);
+
+		return 0;
+	endif
+
+	UpdateDiseaseProperty(patient, "diseases", new_diseases);
+
+	// Verificar se todos os sintomas foram curados
+	if (new_diseases.size() == 0)
+		PrintTextAbove(patient, "*Curado!*");
+		SendSysMessage(who, "Todos os sintomas foram tratados! O paciente está curado.", 3, 73);
+		TS_LowerDuration(patient, "disease", -1);
+
+		// DESCOBERTA DE DOENÇA - apenas se curou TODOS os sintomas
+		if (is_known_disease)
+			AddDiseaseToPersonalKnowledge(who, datafile_disease.name);
+		else
+			DiscoverNewDisease(who, original_symptoms);
+		endif
+	endif
+
+	PlaySoundEffect(patient, sound_effect);
+	PlayObjectCenteredEffect(patient, 0x376A, 10, 10);
+
+	return 1;
+endfunction
+
+// NOVA FUNÇÃO: Verificar se o atalho foi ativado
+function CheckShortcutCure(cure_history, disease_info)
+	if (!cure_history || cure_history.size() < 2)
+		return "incomplete";
+	endif
+
+	var primary := disease_info.primary;
+	var secondary := disease_info.secondary;
+
+	// Procurar a sequência primário -> secundário na ordem correta
+	for i := 1 to (cure_history.size() - 1)
+		if (cure_history[i] == primary && cure_history[i + 1] == secondary)
+			// Encontrou a sequência correta: primário seguido imediatamente por secundário
+			return "shortcut_complete";
+		endif
+		Sleepms(2);
+	endfor
+
+	return "no_shortcut";
+endfunction
+
+// Função simplificada para adicionar doença ao conhecimento pessoal do médico
+function AddDiseaseToPersonalKnowledge(who, disease_name)
+	var known_diseases := GetObjProperty(who, "KnownDiseases");
+	if (!known_diseases)
+		known_diseases := array{};
+		Sleepms(2);
+	endif
+
+	// Verificar se já conhece esta doença
+	foreach known_disease in known_diseases
+		if (known_disease == disease_name)
+			return;
+		endif
+	endforeach
+
+	// Adicionar apenas o nome da doença ao conhecimento pessoal
+	known_diseases.append(disease_name);
+	SetObjProperty(who, "KnownDiseases", known_diseases);
+	SendSysMessage(who, "Você aprendeu sobre uma doença existente: " + disease_name, 3, 73);
+endfunction
+
+function DiscoverNewDisease(who, original_symptoms)
+	var gump := GFECreateGump("DESCOBRIU NOVA DOENÇA!", 350, 450, array{ BORDER_BLUE });
+	GFTextLine(gump, 50, 70, COLOR_REGULAR, "Parabéns! Você curou uma doença desconhecida.");
+
+	GFTextLine(gump, 50, 90, COLOR_REGULAR, "Nome da Doença:");
+	GFTextEntry(gump, 50, 110, 360, 25, 2100, "", 1);
+
+	GFTextLine(gump, 50, 140, COLOR_REGULAR, "Lista de Sintomas:");
+	GFTextLine(gump, 180, 140, COLOR_REGULAR, "Primário");
+	GFTextLine(gump, 260, 140, COLOR_REGULAR, "Secundário");
+
+	var y_pos := 170;
+	var primary_group := 1;
+	var secondary_group := 2;
+
+	GFSetRadioGroup(gump, primary_group);
+
+	foreach symptom in original_symptoms
+		GFTextLine(gump, 50, y_pos, COLOR_REGULAR, symptom);
+		GFRadioButton(gump, 200, y_pos, 210, 211, 0, 100 + _symptom_iter);
+		y_pos += 25;
+		Sleepms(2);
+	endforeach
+
+	y_pos := 170;
+	GFSetRadioGroup(gump, secondary_group);
+
+	foreach symptom in original_symptoms
+		GFRadioButton(gump, 300, y_pos, 210, 211, 0, 200 + _symptom_iter);
+		y_pos += 25;
+		Sleepms(2);
+	endforeach
+
+	GFAddButton(gump, 150, y_pos + 20, 2130, 2129, GF_CLOSE_BTN, 1);
+	GFAddButton(gump, 250, y_pos + 20, 2119, 2120, GF_CLOSE_BTN, 0);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 1)
+		var disease_name := GFExtractData(input, 1);
+		var primary_symptom := "";
+		var secondary_symptom := "";
+
+		for i := 1 to original_symptoms.size()
+			if (input[100 + i])
+				primary_symptom := original_symptoms[i];
+			endif
+			if (input[200 + i])
+				secondary_symptom := original_symptoms[i];
+			endif
+			Sleepms(2);
+		endfor
+
+		if (!disease_name)
+			SendSysMessage(who, "Você deve nomear a doença.", 3, 33);
+			return DiscoverNewDisease(who, original_symptoms);
+		elseif (!primary_symptom || !secondary_symptom)
+			SendSysMessageEx(who, "Você deve selecionar ambos os sintomas primário e secundário.",
+							  SSM_FAIL);
+			return DiscoverNewDisease(who, original_symptoms);
+		elseif (primary_symptom == secondary_symptom)
+			SendSysMessageEx(who, "Os sintomas primário e secundário devem ser diferentes.", SSM_FAIL);
+			return DiscoverNewDisease(who, original_symptoms);
+		else
+			// Processamento normal
+			if (AddDiseaseToDatafile(who, original_symptoms, disease_name, primary_symptom, secondary_symptom))
+				AddDiseaseToPersonalKnowledge(who, disease_name);
+				return 1;
+			endif
+		endif
+	endif
+
+	return 0;
+endfunction
+
+// Função para adicionar doença ao datafile global
+function AddDiseaseToDatafile(who, symptoms_array, disease_name, primary_symptom, secondary_symptom)
+	var diseases_data := OpenDataFile(":tn:diseases");
+	if (!diseases_data)
+		CreateDataFile(":tn:diseases");
+		diseases_data := OpenDataFile(":tn:diseases");
+	endif
+
+	// Verificar se essa doença já existe
+	var elem := DFFindElement(diseases_data, disease_name);
+	if (elem)
+		return 0; // Doença já descoberta
+	endif
+
+	// Criar elemento da doença
+	var disease_elem := diseases_data.CreateElement(disease_name);
+	var name_by := GetObjProperty(who, "nome_inicial");
+	disease_elem.SetProp("name", disease_name);
+	disease_elem.SetProp("symptoms", symptoms_array);
+	disease_elem.SetProp("primary", primary_symptom);
+	disease_elem.SetProp("secondary", secondary_symptom);
+	disease_elem.SetProp("discovered_by", Cstr(name_by));
+	disease_elem.SetProp("discovered_time", POLCore().systime);
+	SendSysMessage(who, "Você descobriu e nomeou a doença: " + disease_name, 3, 73);
+	return 1;
+endfunction
+
+
+// Função para obter informações de doença do datafile
+function GetDiseaseInfoFromDatafile(patient_symptoms)
+	if (patient_symptoms == error || typeof(patient_symptoms) != "Array")
+		return 0;
+	endif
+
+	var diseases_data := OpenDataFile(":tn:diseases");
+	if (!diseases_data)
+		return 0;
+	endif
+
+	// Percorrer todas as doenças registradas
+	var disease_elements := DFGetElemNames(diseases_data);
+
+	foreach disease_name in disease_elements
+		Sleepms(2);
+		var elem := DFFindElement(diseases_data, disease_name);
+		if (!elem)
+			continue;
+		endif
+
+		// Obter os sintomas desta doença
+		var disease_symptoms := DFGetProp(elem, "symptoms");
+		if (disease_symptoms == error || typeof(disease_symptoms) != "Array")
+			continue;
+		endif
+
+		// Verificar se o número de sintomas é o mesmo
+		if (disease_symptoms.size() != patient_symptoms.size())
+			continue;
+		endif
+
+		// Criar cópias normalizadas dos arrays de sintomas
+		var temp_disease_symptoms := array{};
+		var temp_patient_symptoms := array{};
+
+		foreach symptom in disease_symptoms
+			if (symptom != error && typeof(symptom) == "String")
+				temp_disease_symptoms.append(Lower(symptom));
+			endif
+			Sleepms(2);
+		endforeach
+
+		foreach symptom in patient_symptoms
+			if (symptom != error && typeof(symptom) == "String")
+				temp_patient_symptoms.append(Lower(symptom));
+			endif
+			Sleepms(2);
+		endforeach
+
+		// Ordenar ambos para comparação consistente
+		temp_disease_symptoms.sort();
+		temp_patient_symptoms.sort();
+
+		// Verificar se os arrays são iguais
+		var matches := true;
+		if (temp_disease_symptoms.size() == temp_patient_symptoms.size())
+			var i := 0;
+			while (i < temp_disease_symptoms.size())
+				if (temp_disease_symptoms[i] != temp_patient_symptoms[i])
+					matches := false;
+					break;
+				endif
+				i := i + 1;
+				Sleepms(2);
+			endwhile
+		else
+			matches := false;
+		endif
+
+		if (matches)
+			var disease_info := struct;
+			disease_info.+name := DFGetProp(elem, "name");
+			disease_info.+symptoms := disease_symptoms;
+			disease_info.+primary := DFGetProp(elem, "primary");
+			disease_info.+secondary := DFGetProp(elem, "secondary");
+			disease_info.+discovered_by := DFGetProp(elem, "discovered_by");
+			disease_info.+discovered_time := DFGetProp(elem, "discovered_time");
+
+			return disease_info;
+		endif
+	endforeach
+
+	return 0;
+endfunction
+
+// Função auxiliar para agravar a doença
+function AgravarDoenca(who, patient, disease_grade)
+	var diseases_system := GetObjProperty(patient, "Diseases_System");
+	case (disease_grade)
+		DISEASE_GRADES::LIGHT:
+			UpdateDiseaseProperty(patient, "grade", DISEASE_GRADES::MODERATE);
+			SendSysMessageEX(who, "A doença do paciente progrediu para um grau moderado!", SSM_FAIL);
+			PrintTextAbove(patient, "Aparenta estar pior!", 3, 33);
+			// TS_UpdateTimerDuration(patient, "disease", 8600); //Não está funcioanando!!!
+			break;
+		DISEASE_GRADES::MODERATE:
+			UpdateDiseaseProperty(patient, "grade", DISEASE_GRADES::SERIOUS);
+			SendSysMessageEX(who, "A doença do paciente progrediu para um grau grave!", SSM_FAIL);
+			PrintTextAbove(patient, "Aparenta estar muito pior!", 3, 33);
+			break;
+		DISEASE_GRADES::SERIOUS:
+			UpdateDiseaseProperty(patient, "grade", DISEASE_GRADES::INCURABLE);
+			SendSysMessageEX(who, "A doença se tornou incurável! Não será mais possível tratar os sintomas.",
+							  SSM_FAIL);
+			break;
+	endcase
+endfunction
+
+function FindItemInContainer(container, objtype)
+    foreach obj in EnumerateItemsInContainer(container)
+        if (obj.objtype == objtype)
+            return obj;
+        endif
+    endforeach
+    return 0;
+endfunction

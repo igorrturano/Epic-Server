@@ -1,0 +1,196 @@
+/* $Id: parseCharProfile.src 375 2006-06-17 19:26:32Z austinheilman $
+ * script by MuadDib
+ *11
+*/
+use uo;
+use os;
+use polsys;
+use datafile;
+
+include ":datafile:datafile";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:htmlGump";
+include ":fls_core:fls_characters";
+include ":commands:/include/r";
+include "profile_packets";
+
+const PROFILE_MSGTYPE := 0xB8;
+const PROFILE_TITLE := "Profile for ";
+const PROFILE_UPDATE_MODE := 1;
+const PROFILE_REQUEST_MODE := 0;
+const HEADER_SIZE := 7;
+const NULL_SIZE := 1;
+const UNULL_SIZE := 2;
+const UCHAR_SIZE := 2;
+
+const OFFSET_MSGTYPE := 0;
+const OFFSET_MSGLEN := 1;
+const OFFSET_MODE := 3;
+const OFFSET_SERIAL_OUT := 3;
+const OFFSET_SERIAL_IN := 4;
+const OFFSET_TITLE_STR := 7;
+const OFFSET_CMDTYPE := 8;
+const OFFSET_NEW_PROFILE_TEXTLEN := 10;
+const OFFSET_NEW_PROFILE := 12;
+
+const GUMP_BACKGROUND := 39929;
+const INTERNAL_BACKGROUND := 9350;
+const GUMP_WIDTH := 395;
+const GUMP_HEIGHT := 340;
+const TEXT_ENTRY_BACKGROUND := 2620;
+
+const PROFILE_GUMP_WIDTH := 232;
+const PROFILE_GUMP_HEIGHT := 510;
+const PROFILE_IMAGE_WIDTH := 210;
+const PROFILE_IMAGE_HEIGHT := 330;
+const PROFILE_IMAGE_Y := 41;
+const PROFILE_RACE_Y := 375;
+const PROFILE_DESC_Y := 400;
+const PROFILE_DESC_HEIGHT := 100;
+
+program runScript_CharProfileRequest(params)
+	var who := params[1];
+	var packet := params[2];
+	var mode := packet.GetInt8(OFFSET_MODE);
+	var id := packet.GetInt32(OFFSET_SERIAL_IN);
+	var chr := SystemFindObjectBySerial(id);
+
+	if (chr.serial == who.serial)
+		if (who.name == "Desconhecido" || who.name == "Incognito")
+			SendSysMessage(who, "Voce esta incognito");
+			return;
+		endif
+
+		var gump := GFCreateGump(0, 0, GUMP_WIDTH, GUMP_HEIGHT);
+		GFDisposable(gump, 0);
+		GFGumpPicTiled(gump, 10, 10, GUMP_WIDTH - 20, GUMP_HEIGHT - 20, GUMP_BACKGROUND);
+		AddMoldura(gump);
+
+		GFTextMid(gump, 60, 20, 300, 53, "Editar Perfil: " + who.name);
+
+		GFTextLine(gump, 40, 60, 1153, "URL da Imagem (imagem = 210x330):");
+		GFResizePic(gump, 40, 80, TEXT_ENTRY_BACKGROUND, 320, 25);
+		var url_txt := GetObjProperty(who, "url");
+		if (url_txt == error || url_txt == "")
+			url_txt := "";
+		endif
+		var txt_1 := GFTextEntry(gump, 45, 82, 310, 20, 2100, url_txt, 0);
+
+		GFTextLine(gump, 40, 115, 1153, "Descrição:");
+		GFResizePic(gump, 40, 135, TEXT_ENTRY_BACKGROUND, 320, 120);
+		var descricao_txt := GetObjProperty(who, "descricao");
+		if (!descricao_txt)
+			descricao_txt := "";
+		endif
+		var txt_2 := GFTextEntry(gump, 45, 137, 310, 115, 2100, descricao_txt, 0);
+
+		var okay_btn := GFAddButton(gump, (GUMP_WIDTH / 2) - 30, GUMP_HEIGHT - 40, 2128, 2129,
+									 GF_CLOSE_BTN);
+
+		var input := GFSendGump(who, gump);
+		if (input[0] <= 1)
+			SendSysMessage(who, "Cancelled.");
+			return 0;
+		elseif (input[okay_btn])
+			SendSysMessage(who, "*** Profile salvo ***");
+
+			var url := GFExtractData(input, txt_1);
+			var descricao := GFExtractData(input, txt_2);
+
+			SendSysMessage(who, url + " " + descricao);
+			if (url == error || url == "")
+				url := "https://media.discordapp.net/attachments/621351501511524353/1186245051953725450/image.png";
+			endif
+			SetObjProperty(who, "url", url);
+			SetObjProperty(who, "descricao", descricao);
+
+			// Broadcast profile update to self and party members
+			UpdateProfileClient(who, who.serial, url);
+			BroadcastProfileToParty(who);
+
+			var nickname := GetKnownNickname(who, chr);
+			var Object_Name := (nickname != "") ? nickname : chr.name;
+
+            var gump := GFCreateGump();
+            var raca := who.title_race;
+            GFPage(gump, 0);
+            GFResizePic(gump, 4, 3, 9270, PROFILE_GUMP_WIDTH, PROFILE_GUMP_HEIGHT);
+            GFHTMLArea(gump, 15, 14, PROFILE_IMAGE_WIDTH, 24, Object_Name, 1, 0);
+            GFHTMLArea(gump, 15, PROFILE_IMAGE_Y, PROFILE_IMAGE_WIDTH, PROFILE_IMAGE_HEIGHT, "<img src=\"" + url + "\" width=\"" + PROFILE_IMAGE_WIDTH + "\" height=\"" + PROFILE_IMAGE_HEIGHT + "\" x=\"0\" y=\"0\">");
+            GFHTMLArea(gump, 15, PROFILE_RACE_Y, PROFILE_IMAGE_WIDTH, 24, raca, 1, 0);
+            GFHTMLArea(gump, 15, PROFILE_DESC_Y, PROFILE_IMAGE_WIDTH, PROFILE_DESC_HEIGHT, descricao, 1, 1);
+
+			GFSendGump(who, gump);
+		endif
+	elseif (chr.serial != who.serial)
+		var isIncognito := GetObjProperty(chr, "Incognito");
+		if (isIncognito)
+			var incognito_url := "https://th.bing.com/th/id/OIG.0XmfkJZCmPd.wGE6C9x_?pid=ImgGn&w=1024&h=1024&rs=1";
+			var incognito_descricao := "A fisionomia desse indvíduo é difícil de discernir.";
+
+            var gump2 := GFCreateGump();
+            GFPage(gump2, 0);
+            GFResizePic(gump2, 4, 3, 9270, PROFILE_GUMP_WIDTH, PROFILE_GUMP_HEIGHT);
+            GFHTMLArea(gump2, 15, 14, PROFILE_IMAGE_WIDTH, 24, "Incognito", 1, 0);
+            GFHTMLArea(gump2, 15, PROFILE_IMAGE_Y, PROFILE_IMAGE_WIDTH, PROFILE_IMAGE_HEIGHT, "<img src=\"" + incognito_url + "\" width=\"" + PROFILE_IMAGE_WIDTH + "\" height=\"" + PROFILE_IMAGE_HEIGHT + "\" x=\"0\" y=\"0\">");
+            GFHTMLArea(gump2, 15, PROFILE_RACE_Y, PROFILE_IMAGE_WIDTH, 24, "Desconhecido", 1, 0);
+            GFHTMLArea(gump2, 15, PROFILE_DESC_Y, PROFILE_IMAGE_WIDTH, PROFILE_DESC_HEIGHT, incognito_descricao, 1, 1);
+
+			GFSendGump(who, gump2);
+		else
+			var nickname := GetKnownNickname(who, chr);
+			var Object_Name := (nickname != "") ? nickname : chr.name;
+
+			var gump2 := GFCreateGump();
+			GFPage(gump2, 0);
+			GFResizePic(gump2, 4, 3, 9270, PROFILE_GUMP_WIDTH, PROFILE_GUMP_HEIGHT);
+			GFHTMLArea(gump2, 15, 14, PROFILE_IMAGE_WIDTH, 24, Object_Name, 1, 0);
+			GFHTMLArea(gump2, 15, PROFILE_IMAGE_Y, PROFILE_IMAGE_WIDTH, PROFILE_IMAGE_HEIGHT, "<img src=\"" + GetObjProperty(chr, "url") + "\" width=\"" + PROFILE_IMAGE_WIDTH + "\" height=\"" + PROFILE_IMAGE_HEIGHT + "\" x=\"0\" y=\"0\">");
+			
+			var raca := GetObjProperty(chr, "raca");
+			if (raca == error)
+				raca := "Desconhecida";
+			endif
+			GFHTMLArea(gump2, 15, PROFILE_RACE_Y, PROFILE_IMAGE_WIDTH, 24, raca, 1, 0);
+			GFHTMLArea(gump2, 15, PROFILE_DESC_Y, PROFILE_IMAGE_WIDTH, PROFILE_DESC_HEIGHT, GetObjProperty(chr, "descricao"), 1, 1);
+
+			GFSendGump(who, gump2);
+
+
+			if (who.hidden || who.concealed)
+				return;
+			else
+				PrintTextPrivate(who, "*" + who.name + " esta observando voce*", chr, 3, 568);
+			endif
+		endif
+	endif
+
+	return 1;
+
+endprogram
+
+function AddMoldura(byref gump)
+	var molduras := array{ struct{ x := 0, y := 0, width := 25, height := 25, gump := 39925 },
+					   	
+					   	struct{ x := GUMP_WIDTH - 25, y := 0, width := 35, height := 25, gump := 39927 },
+					   	
+					   	struct{ x := 25, y := 0, width := GUMP_WIDTH - 41, height := 25, gump := 39926 },
+					   	
+					   	struct{ x := 25, y := GUMP_HEIGHT - 25, width := GUMP_WIDTH - 25,
+							   	height := 35, gump := 39932 },
+					   	
+					   	struct{ x := 0, y := 25, width := 10, height := GUMP_HEIGHT - 50, gump := 39928 },
+					   	
+					   	struct{ x := GUMP_WIDTH - 25, y := 25, width := 35,
+							   	height := GUMP_HEIGHT - 50, gump := 39930 },
+					   	
+					   	struct{ x := GUMP_WIDTH - 25, y := GUMP_HEIGHT - 25,
+							   	width := 35, height := 35, gump := 39933 },
+					   	
+					   	struct{ x := 0, y := GUMP_HEIGHT - 25, width := 35, height := 35, gump := 39931 } };
+
+	foreach moldura in molduras
+		GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.width, moldura.height, moldura.gump);
+	endforeach
+endfunction

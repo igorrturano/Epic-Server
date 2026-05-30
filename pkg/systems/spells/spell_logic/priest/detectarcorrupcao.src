@@ -1,0 +1,138 @@
+use uo;
+use os;
+use vitals;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":attributes:attributes";
+include ":charactercreation:resists";
+include ":message:include/model/Message";
+
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	params := 0; // No longer needed
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		Message("Isto não pode ser alvejado por essa magia.")
+			.SetColor(SYSTEM_COLOR::FAIL)
+			.SendSys(who);
+		return;
+	endif
+
+	// Check 1-hour cooldown on target
+	if (GetCooldown(targ, "detect_corruption"))
+		Message("Este alvo foi recentemente investigado. Aguarde antes de tentar novamente.")
+			.SetColor(SYSTEM_COLOR::FAIL)
+			.SendSys(who);
+		return 0;
+	endif
+
+	// Get entropy values
+	var caster_wrapper := MobileWrapper(who);
+	var target_wrapper := MobileWrapper(targ);
+
+	if (caster_wrapper.GetObjRef().errortext || target_wrapper.GetObjRef().errortext)
+		Message("Algo deu errado ao tentar detectar corrupção.")
+			.SetColor(SYSTEM_COLOR::FAIL)
+			.SendSys(who);
+		return 0;
+	endif
+
+	var caster_entropy := caster_wrapper.GetEntropy();
+	var target_entropy := target_wrapper.GetEntropy();
+
+	// Visual/audio effects
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+
+	// Check if target has anti-detection potion active
+	// If caster has maximum virtue (20000 entropy), potion is ineffective
+	if (GetCooldown(targ, "necrotic") && caster_entropy < 20000)
+		Message("A alma de " + targ.name + " parece pura e sem corrupção.")
+			.SetColor(GENERAL_COLOR::BLUE_LIGHT)
+			.SendSys(who);
+		SetCooldown(targ, "detect_corruption", 3600); // 1 hour cooldown
+		return 1;
+	endif
+
+	// Target resists with VONTADE (willpower)
+	// Difficulty scales with caster's Theology skill
+	var theology_skill := CInt(AP_GetSkill(who, THEOLOGY));
+	var resist_difficulty := RESIST_EASY + CInt(theology_skill / 20); // Scales from EASY to VERY_HARD
+
+	if (CheckResist(targ, WILL, resist_difficulty))
+		Message(targ.name + " resiste à investigação espiritual!")
+			.SetColor(SYSTEM_COLOR::FAIL)
+			.SendSys(who);
+		Message("Você sente uma força divina tentando perscrutar sua alma, mas consegue resistir.")
+			.SetColor(SYSTEM_COLOR::INFO)
+			.SendSys(targ);
+		SetCooldown(targ, "detect_corruption", 3600); // 1 hour cooldown even on resist
+		return 0;
+	endif
+
+	// Notify target they're being investigated
+	Message("Você sente uma presença divina investigando sua alma...")
+		.SetColor(SYSTEM_COLOR::INFO)
+		.SendSys(targ);
+
+	// Determine corruption tier based on entropy (negative entropy = corruption)
+	var corruption_msg;
+	var msg_color;
+
+	if (target_entropy <= -20000)
+		corruption_msg := "A alma de " + targ.name + " está completamente consumida pela escuridão! Corrupção EXTREMA detectada.";
+		msg_color := GENERAL_COLOR::VIOLET_DARK;
+	elseif (target_entropy <= -16000)
+		corruption_msg := "A alma de " + targ.name + " está profundamente corrompida. Corrupção SEVERA detectada.";
+		msg_color := GENERAL_COLOR::VIOLET_DARK;
+	elseif (target_entropy <= -12000)
+		corruption_msg := "A alma de " + targ.name + " mostra sinais claros de corrupção. Corrupção ALTA detectada.";
+		msg_color := GENERAL_COLOR::VIOLET_DARK;
+	elseif (target_entropy <= -8000)
+		corruption_msg := "A alma de " + targ.name + " apresenta manchas de escuridão. Corrupção MODERADA detectada.";
+		msg_color := GENERAL_COLOR::VIOLET_DARK;
+	elseif (target_entropy <= -4000)
+		corruption_msg := "A alma de " + targ.name + " tem leves traços de corrupção. Corrupção LEVE detectada.";
+		msg_color := GENERAL_COLOR::VIOLET_DARK;
+	elseif (target_entropy < 4000)
+		corruption_msg := "A alma de " + targ.name + " parece neutra, sem sinais significativos de corrupção ou virtude.";
+		msg_color := SYSTEM_COLOR::INFO;
+	elseif (target_entropy < 8000)
+		corruption_msg := "A alma de " + targ.name + " brilha com uma leve luz. Virtude LEVE detectada.";
+		msg_color := GENERAL_COLOR::BLUE_LIGHT;
+	elseif (target_entropy < 12000)
+		corruption_msg := "A alma de " + targ.name + " emana uma luz clara. Virtude MODERADA detectada.";
+		msg_color := GENERAL_COLOR::BLUE_LIGHT;
+	elseif (target_entropy < 16000)
+		corruption_msg := "A alma de " + targ.name + " resplandece com luz divina. Virtude ALTA detectada.";
+		msg_color := GENERAL_COLOR::BLUE_LIGHT;
+	elseif (target_entropy < 20000)
+		corruption_msg := "A alma de " + targ.name + " irradia grande pureza espiritual. Virtude SEVERA detectada.";
+		msg_color := GENERAL_COLOR::BLUE_LIGHT;
+	else
+		corruption_msg := "A alma de " + targ.name + " é um farol de luz divina! Virtude EXTREMA detectada.";
+		msg_color := GENERAL_COLOR::BLUE_LIGHT;
+	endif
+
+	Message(corruption_msg)
+		.SetColor(msg_color)
+		.SendSys(who);
+
+	// Set 1-hour cooldown
+	SetCooldown(targ, "detect_corruption", 3600);
+
+	return 1;
+endprogram

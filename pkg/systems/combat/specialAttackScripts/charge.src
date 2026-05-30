@@ -1,0 +1,50 @@
+use uo;
+use os;
+
+program SpecialAttack_Charge(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
+	var effectTime := combatInfo.effectTime;
+	var moveTo_x := attacker.x;
+	var moveTo_y := attacker.y;
+	var hitted := array{};
+
+	if (CInt(Distance(attacker, defender)) <= 1)
+		return 0;
+	endif // Perto demais para usar Charge
+
+	while (moveTo_x != defender.x || moveTo_y != defender.y)
+		var facing := GetFacing(attacker.x, attacker.y, defender.x, defender.y);
+
+		if (moveTo_x < defender.x)
+			moveTo_x++;
+		elseif (moveTo_x > defender.x)
+			moveTo_x--;
+		endif
+
+		if (moveTo_y < defender.y)
+			moveTo_y++;
+		elseif (moveTo_y > defender.y)
+			moveTo_y--;
+		endif
+
+		MoveObjectToLocation(attacker, moveTo_x, moveTo_y, attacker.z, defender.realm,
+					   MOVEOBJECT_FORCELOCATION);
+
+		var alvos := ListMobilesInLineOfSight(attacker, 1);
+		foreach alvo in alvos
+			if (alvo != attacker)
+				if (alvo in hitted)
+					continue;
+				endif // Já atingido
+
+				attacker.attack_once(alvo);
+				attacker.facing(facing);
+				hitted.append(alvo);
+			endif
+		endforeach
+		SleepMS(100);
+	endwhile
+
+	return 1;
+endprogram

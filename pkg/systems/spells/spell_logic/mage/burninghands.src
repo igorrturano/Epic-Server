@@ -1,0 +1,170 @@
+use uo;
+use os;
+use util;
+use math;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+;
+;
+include "include/client";
+include "include/sounds";
+include ":spells:Controller/SC_Damage";
+include ":taming:taming";
+include "include/shapes";
+include ":magery:fields";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
+include "include/tileEffects";
+include ":spells:Controller/SpellController";
+include ":spells:Controller/SpellEffectBuilder";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program SpellScript(params)
+	var caster := params[1];
+	var info := params[2];
+	var spellinfo := params[3];
+	var spell_circle := CInt(spellinfo.Circle[1]);
+	var spell_school := spellinfo.School;
+	var range := cint(AP_GetSkill(caster, ARCANA) / 20);
+
+	SendSysMessage(caster, "Escolha a direcao para onde expandira a magia");
+	var targ := TargetCoordinates(caster);
+	if (!targ)
+		SendSysMessageEx(caster, "Voce cancelou.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(caster, "Uma fina camada de chamas brota das pontas dos seus dedos estendidos.",
+				  SSM_INFO);
+
+	// Use TurnObjectToward para virar o caster na direção do alvo.
+	TurnObjectToward(caster, targ.x, targ.y);
+	sleepms(300);
+
+	var effect_id := 0x6d70;
+	var effect_duration := 30;
+
+	var rings := BuildConeRings(caster, range);
+	PlayConeEffect(rings, caster.z, caster.realm, effect_id, effect_duration);
+
+	var cone_tiles := dictionary{};
+	foreach ring in rings
+		foreach tile in ring
+			cone_tiles[$"{tile.x},{tile.y}"] := 1;
+		endforeach
+	endforeach
+
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+	var arcana := AP_GetSkill(caster, ARCANA);
+	var dot_total_ticks := Cint(arcana / 15);
+	if (dot_total_ticks < 4)
+		dot_total_ticks := 4;
+	elseif (dot_total_ticks > 10)
+		dot_total_ticks := 10;
+	endif
+
+	var mobs := ListMobilesNearLocation(caster.x, caster.y, caster.z, range, caster.realm);
+	foreach mob in mobs
+		if (mob == caster)
+			continue;
+		endif
+		if (!cone_tiles.Exists($"{mob.x},{mob.y}"))
+			continue;
+		endif
+
+		var damage := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		damage := bonusSpellDamageForSpecialists(caster, damage, spell_school);
+
+		// Reflex save halves the initial blast damage but does NOT prevent the burn DoT.
+		if (CheckResist(mob, REFLEXES, diff, -bonus) > 0)
+			damage := Cint(damage / 2);
+			SendSysMessageEx(mob, "Voce se esquiva de parte das chamas.", SSM_INFO);
+		endif
+
+		SendSysMessageEx(mob, "As chamas queimam voce.", SSM_FAIL);
+		SC_DealDamage(caster, mob, CInt(spellinfo.id), cint(damage), DAMAGE_TYPE::FIRE);
+
+		// Apply SC-based burn DoT on top of the initial blast. Chip fixo de
+		// 1d4+1 por tick (sem escalar com Arcana). A escala vem do impact
+		// (via epicSpellDamageRoll com bump do Evocator) + duracao.
+		// Re-cast refreshes the DoT and replays the impact above — the new
+		// SC_ApplyEffect's instance_id mismatch makes the old tick driver
+		// exit, so there's no double-tick. Players keep targets burning by
+		// paying mana per recast; the DoT itself never stacks.
+		var tick_interval := 2;
+		var opts := SpellEffectBuilder()
+			.SetCategory("fire_dot")
+			.SetDisplayName("Maos Flamejantes")
+			.SetDesc("1d4+1 dano / tick")
+			.SetTickInterval(tick_interval)
+			.SetTickDamage(struct{ dice := "1d4", bonus := 1, type := DAMAGE_TYPE::FIRE })
+			.SetTickPresentation(TickPresentation()
+				.SetFx(FX_SMALL_FIRE_MAGIC, 10, 15)
+				.SetSound(0x357)
+				.SetPeriodicEmote("As chamas continuam a te consumir!", 3, SSM_FAIL)
+				.SetFinalOverhead("*as chamas se extinguem*")
+				.SetFinalEmote("As chamas finalmente se apagam.", SSM_INFO))
+			.ToOpts();
+		SC_ApplyEffect(caster, mob, opts, dot_total_ticks * tick_interval, CInt(spellinfo.id));
+
+		sleepms(50);
+	endforeach
+endprogram
+
+function BuildConeRings(caster, lines_count)
+	var rings := array{};
+	var facing := caster.facing;
+	var start_x := caster.x;
+	var start_y := caster.y;
+
+	for line := 0 to lines_count
+		var ring := array{};
+		for i := -line to line
+			var pos_x, pos_y;
+			case (facing)
+				0: // North
+					pos_x := start_x + i;
+					pos_y := start_y - line;
+				1: // Northeast
+					pos_x := start_x + line;
+					pos_y := start_y - line + i;
+				2: // East
+					pos_x := start_x + line;
+					pos_y := start_y + i;
+				3: // Southeast
+					pos_x := start_x + line;
+					pos_y := start_y + line - i;
+				4: // South
+					pos_x := start_x + i;
+					pos_y := start_y + line;
+				5: // Southwest
+					pos_x := start_x - line;
+					pos_y := start_y + line - i;
+				6: // West
+					pos_x := start_x - line;
+					pos_y := start_y + i;
+				7: // Northwest
+					pos_x := start_x - line;
+					pos_y := start_y - line + i;
+			endcase
+
+			if (pos_x != start_x || pos_y != start_y)
+				ring.Append(struct{ x := pos_x, y := pos_y });
+			endif
+		endfor
+		rings.Append(ring);
+	endfor
+	return rings;
+endfunction
+
+function PlayConeEffect(rings, z, realm, effect_id, effect_duration)
+	foreach ring in rings
+		foreach tile in ring
+			PlayStationaryEffect(tile.x, tile.y, z, effect_id, 10, effect_duration, 0, realm);
+		endforeach
+		sleepms(50);
+	endforeach
+endfunction

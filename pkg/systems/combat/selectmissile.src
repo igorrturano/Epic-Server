@@ -1,0 +1,63 @@
+use uo;
+
+include ":wrappers:Objects/Model/WeaponWrapper";
+
+program select(who, item)
+	const ARROW_GRAPHIC := 3903;
+	const BOLT_GRAPHIC := 7163;
+	const STONE_GRAPHIC := 6584;
+	const AMMO_GRAPHIC := 0xE73;
+
+	var weapon := WeaponWrapper(item);
+	var category := weapon.GetCategory();
+
+	var ammoGraphic;
+	var wrongAmmoMsg;
+	var selectedMsg;
+
+	if (category == WEAPON_CATEGORY::BOW || category == WEAPON_CATEGORY::MAGICBOW)
+		ammoGraphic := ARROW_GRAPHIC;
+		wrongAmmoMsg := "Isto não parece uma flecha.";
+		selectedMsg := "Você selecionou a munição que vai usar com este arco.";
+	elseif (category == WEAPON_CATEGORY::CROSSBOW)
+		ammoGraphic := BOLT_GRAPHIC;
+		wrongAmmoMsg := "Isto não parece um virote.";
+		selectedMsg := "Você selecionou a munição que vai usar com esta besta.";
+	elseif (category == WEAPON_CATEGORY::THROWING)
+		ammoGraphic := STONE_GRAPHIC;
+		wrongAmmoMsg := "Isto não parece uma pedra.";
+		selectedMsg := "Você selecionou a munição que vai usar com esta funda.";
+	elseif (weapon.isFireWeapon())
+		ammoGraphic := AMMO_GRAPHIC;
+		wrongAmmoMsg := "Isto não parece munição para arma de fogo.";
+		selectedMsg := "Você selecionou a munição que vai usar com esta arma de fogo.";
+	else
+		SendSysMessage(who, "Isto não parece uma arma de projéteis.");
+		return 1;
+	endif
+
+	SendSysMessage(who, "Escolha o tipo de munição.");
+	var alvo := Target(who);
+
+	if (alvo.graphic != ammoGraphic)
+		SendSysMessage(who, wrongAmmoMsg);
+		return 1;
+	endif
+
+	SetObjProperty(item, "ammo", alvo.serial);
+	var DmgMods := GetObjProperty(alvo, "dmgmods");
+	if (DmgMods)
+		ApplyDamageModifiers(item, DmgMods);
+	endif
+
+	SendSysMessage(who, selectedMsg);
+	return 1;
+endprogram
+
+function ApplyDamageModifiers(item, DmgMods)
+	item.damage_physical_mod := CInt(DmgMods[1]);
+	item.damage_fire_mod := CInt(DmgMods[2]);
+	item.damage_cold_mod := CInt(DmgMods[3]);
+	item.damage_poison_mod := CInt(DmgMods[4]);
+	item.damage_energy_mod := CInt(DmgMods[5]);
+endfunction

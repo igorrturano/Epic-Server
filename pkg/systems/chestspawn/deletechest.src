@@ -1,0 +1,37 @@
+use uo;
+use datafile;
+use os;
+
+program deletespawn(item)
+	if (!item)
+		return 0;
+	endif
+
+	// Limpa baús existentes antes de remover spawner
+	CleanupExistingChests(item);
+
+	var df := OpenDataFile(":tn:chestspawns");
+	if (!df)
+		return 0;
+	endif
+
+	// Limpa propriedades do spawner
+	EraseObjProperty(item, "chests");
+	EraseObjProperty(item, "CreatedOn");
+	EraseObjProperty(item, "IsChestSpawner");
+
+	return 1;
+endprogram
+
+function CleanupExistingChests(item)
+	var chests := GetObjProperty(item, "chests");
+	if (chests)
+		foreach chestserial in chests
+			var chest := SystemFindObjectBySerial(chestserial);
+			if (chest)
+				DestroyItem(chest);
+			endif
+			sleepms(2);
+		endforeach
+	endif
+endfunction

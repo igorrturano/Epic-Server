@@ -1,0 +1,29 @@
+use uo;
+
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include "include/sysEvent";
+include "include/client";
+include "include/say";
+include ":charactercreation:resists";
+
+include "include/eventID";
+
+
+program taunt(who)
+
+	if (TS_GetCooldown(who, "habilidade dois"))
+		return SendSysMessageEX(who, "Habilidade em Cooldown!", SSM_FAIL);
+	endif
+
+	PrintTextAbove(who, "*urra*");
+	PlaySoundEffect(who, 96);
+	PerformAction(who, HUMAN_ANIM::ATTACK_1HAND_SLASH);
+	// Voltar aqui depois, parece que é magia de druida. usar o outro lá de VONTADe para magos do epicmagerytutils
+	var targ := Target(who);
+	if (!CheckResist(targ, WILL, who))
+		var event := struct{ "type" := EVID_FLEE, "source" := who };
+		SendEvent(targ, event);
+		PrintTextAbove(targ, "*Em panico*");
+	endif
+endprogram

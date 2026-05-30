@@ -1,0 +1,43 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/client";
+include "include/say";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var spell := params[3];
+	params := 0;
+
+	var theology := AP_GetSkill(who, THEOLOGY);
+	var duration := cint(theology);
+	if (duration < 10)
+		duration := 10;
+	endif
+
+	// Original loop cadence: one outer pass every duration/10 seconds,
+	// silencing in-range mobiles for the same window each time.
+	var tick_interval := CInt(duration / 10);
+	if (tick_interval < 1)
+		tick_interval := 1;
+	endif
+
+	var opts := struct{};
+	opts.+buff_category := "antimagic_field";
+	opts.+displayname := "Campo Anti-Magia";
+	opts.+desc := "Area silenciada";
+	opts.+tick_script := ":spells:spell_logic/priest/antimagicfieldTick";
+	opts.+tick_interval := tick_interval;
+	opts.+tick_params := struct{
+		silence_duration := tick_interval,
+		caster_serial := who.serial
+	};
+
+	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
+
+	SendSysMessageEx(who, "Voce criou um campo anti-magia por " + duration + " segundos.", SSM_INFO);
+
+	return 1;
+endprogram

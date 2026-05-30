@@ -1,0 +1,30 @@
+use os;
+
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
+
+program WhirlwindAttack(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
+
+	PlaySoundEffect(attacker, 0x520);
+	PlayObjectCenteredEffectEx(attacker, 0x54CE, 0, 25, COLOR_WHITE);
+
+	var original_facing := attacker.facing;
+	for i := 0 to 7
+		attacker.facing := i;
+		PlayAttackFX(AttackInfo(MobileWrapper(attacker), MobileWrapper(defender)));
+		SleepMS(100);
+	endfor
+	// MoveObjectToLocation(attacker, attacker.x, attacker.y, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+	attacker.facing := original_facing;
+
+	var opponents := ListMobilesNearLocationEx(attacker.x, attacker.y, attacker.z, 2,
+												LISTEX_FLAG_NORMAL + LISTEX_FLAG_HIDDEN);
+	foreach mobile in opponents
+		PlayObjectCenteredEffect(mobile, 0x3728, 7, 20);
+		attacker.attack_once(mobile);
+	endforeach
+
+	return true;
+endprogram

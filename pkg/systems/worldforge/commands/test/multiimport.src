@@ -1,0 +1,102 @@
+////////////////////////////////////////////////////
+//
+//   MultiImport - ReImport Multi for Modification
+//
+//     Author: Shinigami
+//     eMail : Shinigami@gmx.net
+//
+//   Modifications:
+//
+////////////////////////////////////////////////////
+//
+// Needs:
+//   statics/multi.cfg
+//
+////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+use uo;
+use os;
+use cfgfile;
+
+/////////////
+// Includes
+/////////////
+
+include ":worldforge:errormsg_wf";
+
+///////////////
+// Konstanten
+///////////////
+
+const ERRORMSGS_GERMAN := "{}MultiImport: ImportArea aktiviert..." + "{}MultiImport: ImportArea beendet." + "{}MultiImport: Item %% an %% %% %% konnte nicht erzeugt werden!"
+																   + "{}Die Items wurden importiert." + "{}Probleme beim Lesen der Configdateien!";
+const ERRORMSGS_ENGLISH := "{}MultiImport: ImportArea started..." + "{}MultiImport: ImportArea done." + "{}MultiImport: Was impossible to create Item %% at %% %% %%!"
+																  + "{}Items have been imported." + "{}Problems on Reading Config File!";
+
+/////////////////
+// Hauptprogram
+/////////////////
+
+program TextCMD_MultiImport(who)
+	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+	PrintErrorMessage(1);
+	ImportArea(who);
+	PrintErrorMessage(2);
+endprogram
+
+//////////////////////////////////////
+// ImportArea - Importiert die Items
+//////////////////////////////////////
+
+function ImportArea(who)
+	var datafile := ReadConfigFile(":worldforge:config/multi");
+	if (datafile)
+		var min_x := 6144;
+		var min_y := 4096;
+		var object;
+		var item;
+
+		foreach name in GetConfigStringKeys(datafile)
+			item := datafile[name];
+			if (item)
+				if (min_x > item.x)
+					min_x := item.x;
+				endif
+				if (min_y > item.y)
+					min_y := item.y;
+				endif
+			endif
+		endforeach
+
+		min_x := min_x - who.x;
+		min_y := min_y - who.y;
+
+		foreach name in GetConfigStringKeys(datafile)
+			item := datafile[name];
+			if (item)
+				object := CreateItemAtLocation(item.x - min_x, item.y - min_y, item.z, item.id, 1);
+				if (object)
+					if (item.name)
+						SetName(object, item.name);
+					endif
+					object.color := item.color;
+					object.decayat := 0;
+					object.movable := 0;
+				else
+					PrintErrorMessage(3, { item.id, item.x, item.y, item.z });
+				endif
+			endif
+		endforeach
+
+		UnloadConfigFile(":worldforge:config/multi");
+
+		PrintErrorMessage(4, {}, who);
+	else
+		PrintErrorMessage(5, {}, who);
+	endif
+endfunction

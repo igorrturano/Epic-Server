@@ -1,0 +1,310 @@
+/*
+ * artifact_spawner.src
+ * 
+ * Script de gerenciamento de respawn de artefatos roubáveis
+ * 
+ * Este script é executado continuamente e gerencia o ciclo de vida de um artefato:
+ * 1. Verifica se o artefato atual existe
+ * 2. Se não existir ou foi roubado, aguarda o tempo de respawn baseado na raridade
+ * 3. Spawna um novo artefato na localização do spawner
+ * 
+ * REFATORADO: Código KISS e DRY
+ */
+
+use uo;
+use os;
+
+include "include/say";
+include ":stealables:stealables";
+include ":traps:traps";
+include ":attributes:attributes";
+
+// Constantes
+const CHECK_INTERVAL  := 60; // Intervalo padrão (segundos) — respawn e área vazia
+const NOTIFY_INTERVAL := 5;  // Intervalo quando há jogadores na área de interesse
+const AREA_RANGE      := 20; // Raio de detecção de presença (antes da checagem por skill)
+
+program artifact_spawner(spawner)	
+	if (!spawner)
+		return 0;
+	endif
+	
+	// Registra o processo para evitar duplicação
+	SetObjProperty(spawner, "SpawnerPid", GetPid());
+	
+	// Carrega configuração do spawner
+	var config := LoadSpawnerConfig(spawner);
+	if (!config)
+		return 0;
+	endif
+	
+	// Loop principal
+	while (spawner)
+		// Se outro processo assumiu o controle, encerra este
+		if (CInt(GetObjProperty(spawner, "SpawnerPid")) != GetPid())
+			return 1;
+		endif
+
+		var current_artifact := GetCurrentArtifact(spawner);
+
+		// Se o artefato não existe, precisa spawnar um novo
+		if (!current_artifact)
+			WaitForRespawnCooldown(spawner);
+			SpawnArtifact(spawner, config);
+			Sleep(CHECK_INTERVAL);
+		else
+			var anyone_nearby := NotifyNearbyPlayers(current_artifact);
+			Sleep(anyone_nearby ? NOTIFY_INTERVAL : CHECK_INTERVAL);
+		endif
+	endwhile
+	
+	return 1;
+endprogram
+
+/*
+ * LoadSpawnerConfig(spawner)
+ * 
+ * Carrega configuração do spawner em um struct
+ * 
+ * NOVO: Centraliza leitura de propriedades (KISS)
+ */
+function LoadSpawnerConfig(spawner)
+	var config := struct;
+	config.+rarity := CInt(GetObjProperty(spawner, "Rarity"));
+	config.+objtype := CInt(GetObjProperty(spawner, "ArtifactObjtype"));
+	config.+color := GetObjProperty(spawner, "ArtifactColor");
+	config.+name := GetObjProperty(spawner, "ArtifactName");
+	config.+desc := GetObjProperty(spawner, "ArtifactDesc");
+	config.+trap_enabled := CInt(GetObjProperty(spawner, "TrapEnabled"));
+	config.+trap_type := GetObjProperty(spawner, "TrapType");
+	config.+trap_level := CInt(GetObjProperty(spawner, "TrapLevel"));
+	
+	// Valida configuração mínima
+	if (!config.rarity || !config.objtype)
+		return 0;
+	endif
+	
+	return config;
+endfunction
+
+/*
+ * GetCurrentArtifact(spawner)
+ * 
+ * Retorna o artefato atual vinculado ao spawner, se existir
+ */
+function GetCurrentArtifact(spawner)
+	var artifact_serial := GetObjProperty(spawner, "CurrentArtifactSerial");
+
+	if (!artifact_serial)
+		return 0;
+	endif
+
+	var artifact := SystemFindObjectBySerial(artifact_serial);
+
+	// Item não existe mais
+	if (!artifact)
+		EraseObjProperty(spawner, "CurrentArtifactSerial");
+		return 0;
+	endif
+
+	// Item não está mais exatamente no ponto do spawner
+	if (artifact.x != spawner.x ||
+	    artifact.y != spawner.y ||
+	    artifact.z != spawner.z ||
+	    artifact.realm != spawner.realm)
+		EraseObjProperty(spawner, "CurrentArtifactSerial");
+		return 0;
+	endif
+
+	return artifact;
+endfunction
+
+/*
+ * WaitForRespawnCooldown(spawner)
+ * 
+ * Aguarda o tempo de cooldown antes de spawnar
+ * 
+ * REFATORADO: Extraído para função separada (KISS)
+ */
+function WaitForRespawnCooldown(spawner)
+	var next_spawn_time := CInt(GetObjProperty(spawner, "NextSpawnTime"));
+	
+	if (!next_spawn_time || next_spawn_time <= ReadGameClock())
+		return 1; // Sem cooldown ou já expirou
+	endif
+	
+	// Aguarda em chunks de 60 segundos
+	var wait_seconds := next_spawn_time - ReadGameClock();
+	
+	while (wait_seconds > 0 && spawner)
+		var sleep_time := (wait_seconds < CHECK_INTERVAL) ? wait_seconds : CHECK_INTERVAL;
+		Sleep(sleep_time);
+		wait_seconds := next_spawn_time - ReadGameClock();
+	endwhile
+	
+	// Limpa a propriedade de cooldown
+	EraseObjProperty(spawner, "NextSpawnTime");
+	
+	return 1;
+endfunction
+
+/*
+ * SpawnArtifact(spawner, config)
+ * 
+ * Cria um novo artefato na localização do spawner
+ */
+function SpawnArtifact(spawner, config)
+	var artifact := CreateItemAtLocation(
+		spawner.x, 
+		spawner.y, 
+		spawner.z, 
+		config.objtype, 
+		1, 
+		spawner.realm
+	);
+	
+	if (!artifact)
+		return 0;
+	endif
+	
+	// Configura aparência
+	if (config.color)
+		artifact.color := config.color;
+	endif
+	
+	if (config.name)
+		artifact.name := config.name;
+	endif
+	
+	if (config.desc)
+		artifact.desc := config.desc;
+	endif
+	
+	// Marca como artefato roubável
+	SetObjProperty(artifact, "PropStealable", 1);
+	SetObjProperty(artifact, "StealableRarity", config.rarity);
+	SetObjProperty(artifact, "StealableSpawnerSerial", spawner.serial);
+	
+	// Protege o artifact do sistema de destruíveis
+	SetObjProperty(artifact, "isIndestrutivel", 1);
+	
+	// Adiciona armadilha se configurada
+	if (config.trap_enabled && config.trap_type && config.trap_level)
+		ApplyTrap(artifact, config);
+	endif
+	
+	// Fixa o item no chão
+	artifact.movable := 0;
+	
+	// Registra o serial do artefato no spawner
+	SetObjProperty(spawner, "CurrentArtifactSerial", artifact.serial);
+	
+	return artifact;
+endfunction
+
+/*
+ * ApplyTrap(artifact, config)
+ * 
+ * Aplica armadilha ao artefato
+ * 
+ * NOVO: Extraído para função separada (KISS)
+ */
+function ApplyTrap(artifact, config)
+	// Calcula nível final da armadilha
+	var final_trap_level := CalculateTrapLevel(config.rarity, config.trap_level);
+	
+	// Define o level do item (necessário para awareness e mechanics)
+	SetObjProperty(artifact, "level", final_trap_level);
+	
+	// Usa AddTrap() do sistema de armadilhas existente
+	AddTrap(artifact, config.trap_type, final_trap_level);
+	
+	return 1;
+endfunction
+
+/*
+ * CalculateTrapLevel(rarity, base_trap_level)
+ * 
+ * Calcula o nível final da armadilha baseado na raridade
+ * 
+ * REFATORADO: Simplificado de 50 linhas para fórmula matemática (KISS)
+ * 
+ * Lógica:
+ * - Raridades 1-2: Trap level 1
+ * - Raridades 3-4: Trap level 2
+ * - Raridades 5-6: Trap level 3
+ * - Raridades 7-8: Trap level 4
+ * - Raridades 9-10: Trap level 5
+ * - Raridades 11-12: Trap level 6
+ * 
+ * O GM pode escolher um nível específico (1-5) como modificador.
+ * Usa o maior entre o nível da raridade e a escolha do GM.
+ */
+function CalculateTrapLevel(rarity, base_trap_level)
+	// Converte raridade (1-12) para trap level (1-6)
+	// Fórmula: (raridade + 1) / 2, arredondado para cima
+	var rarity_trap_level := CInt((rarity + 1) / 2);
+	
+	// Usa o maior dos dois (raridade ou escolha do GM)
+	var final_level := rarity_trap_level;
+	if (base_trap_level > 0 && base_trap_level > rarity_trap_level)
+		final_level := base_trap_level;
+	endif
+	
+	// Clamp entre 1 e 6
+	if (final_level < 1)
+		return 1;
+	elseif (final_level > 6)
+		return 6;
+	endif
+	
+	return final_level;
+endfunction
+
+/*
+ * NotifyNearbyPlayers(artifact)
+ *
+ * Varre jogadores próximos ao artefato (padrão alertaarea).
+ * Notifica quem tem modo passivo de Awareness ligado e skill suficiente.
+ */
+// Retorna 1 se havia jogadores dentro de AREA_RANGE, 0 caso contrário.
+// O retorno controla o intervalo do loop principal: curto quando há presença, longo quando não há.
+function NotifyNearbyPlayers(artifact)
+	var anyone_nearby := 0;
+
+	foreach player in EnumerateOnlineCharacters()
+		if (player.npctemplate)
+			continue;
+		endif
+
+		if (CStr(player.realm) != CStr(artifact.realm))
+			continue;
+		endif
+
+		var dist := Distance(player, artifact);
+
+		if (dist > AREA_RANGE)
+			continue;
+		endif
+
+		anyone_nearby := 1;
+
+		var skill         := CInt(AP_GetSkill(player, "Awareness"));
+		var passive_range := CInt((skill - 20) / 20); // 40=1tile 60=2 80=3 100=4 120=5
+
+		if (passive_range <= 0 || dist > passive_range)
+			continue;
+		endif
+
+		var cooldown_key := "#StealableAlert_" + CStr(artifact.serial);
+
+		if (CInt(GetObjProperty(player, cooldown_key)) >= POLCore().systime)
+			continue;
+		endif
+
+		SendSysMessage(player, "Seu instinto aguçado capta a presença de algo valioso nas proximidades.", 3, 53);
+		SetObjProperty(player, cooldown_key, POLCore().systime + 300);
+	endforeach
+
+	return anyone_nearby;
+endfunction

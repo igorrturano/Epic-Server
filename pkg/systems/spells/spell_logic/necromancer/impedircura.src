@@ -1,0 +1,36 @@
+use uo;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":charactercreation:resists";
+include "include/epicMageryUtils";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	// Remove efeito anterior se existir
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	var duration := CInt(AP_GetSkill(who, ARCANA));
+
+	var opts := struct{};
+	opts.+properties := dictionary{ "nocure" -> 1 };
+	opts.+desc := "Impedir Cura";
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+	SC_HandleSound(who, targ, SFX_SPELL_WEAKEN);
+
+	Corromper(who, 91, targ);
+	return 1;
+endprogram

@@ -1,0 +1,65 @@
+/* $Id$
+ *
+*/
+use uo;
+use util;
+
+include "include/client";
+include "include/say";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":charactercreation:habilidades";
+include ":charactercreation:resists";
+include "include/epicConstants";
+include ":destroyable:include/destroyItem";
+include ":timedscripts:timedScripts";
+
+program trapScript(params)
+	var mobile := params[1];
+	var object := params[2];
+	var trap_info := params[3];
+	// var trap_index := params[4];
+	var dmg := CINT(trap_info.Strength);
+	if (!dmg)
+		dmg := 1;
+	endif
+	params := 0; // Not needed anymore.
+
+	var dmgfinal := 15 * dmg;
+
+	var range := trap_info.Strength;
+	if (range < 1)
+		range := 1;
+	endif
+	range := range * 3;
+
+	var mobiles := ListMobilesNearLocationEx(object.x, object.y, object.z, range,
+										  LISTEX_FLAG_HIDDEN + LISTEX_FLAG_NORMAL, object.realm);
+	DanificaObjetosProximos(mobile, object.x, object.y, object.z, object.realm, struct{ dano := dmgfinal,
+																						desc := "Armadilha Explosão." },
+							range, FX_EXPLODE_3, object.serial);
+
+	PlaySoundEffect(object, 0x208);
+	foreach mobile in mobiles
+		if (!mobile.npctemplate && GetCooldown(mobile, "res_trap_protection") == 0)
+			SendSysMessageEx(mobile, "Voce foi atingido por uma armadilha explosiva.", SSM_FAIL);
+			PlayObjectCenteredEffect(mobile, FX_EXPLODE_3, 10, 10);
+
+			if (CheckResist(mobile, REFLEXES, RESIST_MEDIUM, -2 * dmg))
+				if (MobileWrapper(mobile).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
+					SendSysMessageEx(mobile, "Voce escapou completamente da armadilha explosiva.", SSM_INFO);
+					mobile.hidden := 0;
+					continue;
+				else
+					SendSysMessageEx(mobile, "Voce evitou parte do dano da armadilha explosiva.", SSM_INFO);
+					dmgfinal := CInt(dmgfinal * 0.5);
+				endif
+			endif
+
+			DealDamage(mobile, dmgfinal, DAMAGE_TYPE::FIRE);
+			mobile.hidden := 0;
+		endif
+		Sleepms(3);
+	endforeach
+	return 1;
+endprogram

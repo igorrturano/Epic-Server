@@ -1,0 +1,42 @@
+use uo;
+use os;
+
+include ":combat:armorZones";
+include ":tn:equipment";
+include ":equipsys:Model/EquipModStamper";
+include ":disguise:incognito";
+
+program UnequipTest(mobile, item)
+	var retval := 1;
+
+	if ((mobile.frozen) || (mobile.paralyzed))
+		SendSysMessage(mobile, "You are unable to move in order to unequip that.");
+		retval := 0;
+	else
+		// Cursed block must short-circuit before the remove path so the
+		// stamp survives the refused unequip.
+		var equip_data := GetObjProperty(item, "equip");
+		if (equip_data && equip_data.Exists("cursed"))
+			retval := 0;
+		endif
+	endif
+
+	if (mobile.hidden)
+		var zones := CS_GetArmorZone(item);
+		if ("Body" IN zones || "Arms" IN zones || "Legs/feet" IN zones)
+			SendSysMessage(mobile, "Voce apareceu ao colocar " + item.desc + ".");
+			mobile.hidden := 0;
+			PrintTextAbove(mobile, "*aparece*");
+		endif
+	endif
+
+	if (retval)
+		EquipModStamper(item).RemoveFrom(mobile);
+		EraseObjProperty(item, "#EquippedOn");
+		if (coverFace(item))
+			RemoveIncognito(mobile, item);
+		endif
+	endif
+
+	return retval;
+endprogram

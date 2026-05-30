@@ -1,0 +1,26 @@
+use uo;
+use os;
+
+program relockDoor(params)
+	var door := params[1];
+	var delay := CInt(params[2]);
+
+	if (!door)
+		return 0;
+	endif
+
+	// Wait for the specified delay
+	sleep(delay);
+
+	// Check if the door still exists before relocking
+	door := SystemFindObjectBySerial(door.serial);
+	if (!door)
+		return 0;
+	endif
+
+	// Relock the door
+	door.locked := 1;
+	EraseObjProperty(door, "TempUnlocked");
+
+	return 1;
+endprogram

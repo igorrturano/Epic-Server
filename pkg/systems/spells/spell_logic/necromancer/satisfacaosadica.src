@@ -1,0 +1,30 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+include ":hotbar:include/custombuff";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	var spell := params[3];
+	params := 0; // No longer needed
+
+	var bonus := cint(AP_GetSkill(who, ARCANA) * 6);
+	var duration := ReadGameClock() + bonus;
+	SetObjProperty(who, "#satisfacaosadica", duration);
+
+	SendSpellBuff(who, who, CInt(spell.id), bonus);
+	SC_HandleSound(who, who, 385);
+	SendSysMessageEx(who, "Cada morte e um presente.", SSM_INFO);
+	Corromper(who, 20, 0);
+
+	return 1;
+endprogram

@@ -1,0 +1,78 @@
+use uo;
+use os;
+
+include "include/say";
+include ":attributes:attributes";
+
+/**
+ * Fingir Morte (Gishi) - Spell 1103
+ * Forges death - actually kills the player, creates a real corpse,
+ * then resurrects concealed. Moving away from the corpse reveals you.
+ * Restores original vitals and equipment after.
+ */
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	var hostiles := ListHostiles(who, 20);
+	if (hostiles[1])
+		SendSysMessageEx(who, "Voce nao pode usar essa tecnica enquanto esta sendo atacado.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(who, "Voce forjou sua morte, fique parado ou voce sera revelado!", SSM_INFO);
+	SetObjProperty(who, "forjoumorte", 1);
+
+	var x := who.x;
+	var y := who.y;
+	var z := who.z;
+	var r := who.realm;
+	var mana := AP_GetVital(who, MANA);
+	var hits := AP_GetVital(who, HITS);
+	var stamina := AP_GetVital(who, STAMINA);
+
+	who.kill();
+	Detach();
+	sleep(2);
+	Resurrect(who);
+	EraseObjProperty(who, "forjoumorte");
+	who.concealed := 1;
+	who.squelch(-1);
+
+	var ressrobe := GetEquipmentByLayer(who, 0x16);
+	DestroyItem(ressrobe);
+
+	MoveObjectToLocation(who, x, y, z, r, MOVEOBJECT_FORCELOCATION);
+	var corpse := who.getCorpse();
+
+	while (who.connected)
+		if ((who.x != corpse.x) && (who.y != corpse.y))
+			SendSysMessageEx(who, "Voce nao esta mais no local inicial.", SSM_FAIL);
+			break;
+		endif
+		sleepms(500);
+	endwhile
+
+	who.concealed := 0;
+	who.squelch(0);
+
+	var serialC := who.serial;
+	foreach item in EnumerateItemsInContainer(corpse)
+		if (item.container == corpse)
+			MoveObjectToLocation(item, who.x, who.y, who.z, who.realm);
+			MoveItemToContainer(item, who.backpack);
+			if (CInt(GetObjProperty(item, "#EquippedOn")) == serialC)
+				if (!EquipItem(who, item))
+					EraseObjProperty(item, "#EquippedOn");
+				endif
+			endif
+		endif
+	endforeach
+
+	DestroyItem(corpse);
+	AP_SetVital(who, HITS, hits);
+	AP_SetVital(who, MANA, mana);
+	AP_SetVital(who, STAMINA, stamina);
+
+	return 1;
+endprogram

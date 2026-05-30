@@ -1,0 +1,87 @@
+use uo;
+use os;
+use util;
+
+include ":charactercreation:resists";
+include ":timedScripts:timedScripts";
+include "include/say";
+include ":tn:cooldown";
+include ":fls_core:packets";
+include ":nature:nature";
+include ":medicine:disease";
+
+program DiseaseAreEffect(params)
+	var who := params[1];
+	var regioname := params[2];
+	var sounds := { 560, 561, 562 };
+
+	SendSysMessage(who, "INICIOU");
+
+	// CHECAGEM INICIAL - antes de fazer qualquer coisa
+	if (!checkMarker(who, regioname))
+		return; // Sai sem fazer nada
+	endif
+
+	SetObjProperty(who, "diseaseArea", 1);
+	detach();
+
+	if (GetObjProperty(who, "teste_de_doenca") == error)
+		while (1)
+			SetObjProperty(who, "teste_de_doenca", 1);
+			sleep(300); // 5 minutos entre testes
+		if (!checkMarker(who, regioname))
+			SendSysMessageEX(who, "Ar do ambiente está puro, livre de contaminação!", SSM_INFO);
+			EraseObjProperty(who, "diseaseArea");
+			EraseObjProperty(who, "teste_de_doenca");
+			return; // Sai do script
+		endif
+			if (GetObjProperty(who, "diseaseArea") == error)
+				EraseObjProperty(who, "teste_de_doenca");
+				return;
+			endif
+			var diseases := "random";
+			var disease_grade := "Leve";
+			InfectMobile(who,0,0,3,diseases,disease_grade);	
+		endwhile
+	endif
+endprogram
+
+function checkMarker(who, regioname)
+	// Detecta em qual região o player está
+	var cfg := ReadConfigFile("::regions/regions");
+	var region := FindConfigElem(cfg, regioname);
+	var rect := GetConfigString(region, "Range");
+	//SendSysMessage(who, "regiao " + regioname + " rect " + rect);
+	// Se o player está em uma região Disease, enumera os itens apenas nesta região
+	var coords := SplitWords(rect);
+	var x1 := CInt(coords[1]);
+	var y1 := CInt(coords[2]);
+	var x2 := CInt(coords[3]);
+	var y2 := CInt(coords[4]);
+
+	// Calcula o centro e o range máximo da região
+	var center_x := (x1 + x2) / 2;
+	var center_y := (y1 + y2) / 2;
+	var range_x := abs(x2 - x1) / 2;
+	var range_y := abs(y2 - y1) / 2;
+	var max_range := range_x;
+	if (range_y > range_x)
+		max_range := range_y;
+	endif
+	//SendSysMessage(who, "max_range " + max_range);
+	// Procura por itens do tipo 0x3c (switches) na região
+	var items_in_area := ListItemsNearLocationOfType(center_x, center_y, LIST_IGNORE_Z, max_range,
+												  0xd1b8, who.realm);
+
+	foreach item in items_in_area
+		sleepms(2);
+		var switch_prop := GetObjProperty(item, "graphic");
+		if (switch_prop == 0x9F4F)
+			// Se switch == 1, retorna 0 e sai do script
+			//SendSysMessage(who, "Ele tá ligado, sai!");
+			return 0;
+		endif
+	endforeach
+
+	return 1;
+endfunction

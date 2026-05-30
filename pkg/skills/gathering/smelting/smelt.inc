@@ -1,0 +1,215 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+
+include "include/client";
+include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+const UOBJECT_EMPTY_BOTTLE := 0x0f0e;
+
+//TODO: Ver se futuramente precisa remover essa função, talvez tenha virado Dead Code
+	//Analisando bem, talvez o arquivo inteiro tenha virado (conferir melhor)
+function EsfriarLiga(user, item)
+  var hasestanho, hascobre;
+  var num := CINT(GetObjProperty(item, "numMetal"));
+  if (num)
+    if (num == 1)
+      PlaySoundEffect(user, 0x23f);
+      sleepms(1500);
+      var amt := CINT(GetObjProperty(item, "amt1"));
+      var ingot := GetObjProperty(item, "oreObj1");
+      if (ingot == "carvao")
+        SendSysMessage(user, "Voce apenas estragou carvao!", FONT_NORMAL, 40);
+      else
+        SendSysMessage(user, "Voce esfriou o metal derretido e fez as barras.", FONT_NORMAL, 90);
+        CreateItemInBackpack(user, ingot, amt);
+        if (MobileWrapper(user).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH))
+          smeltaImpurezasRaras(user, amt);
+        endif
+      endif
+      EraseObjProperty(item, "ingType");
+      EraseObjProperty(item, "numMetal");
+      EraseObjProperty(item, "amt1");
+      EraseObjProperty(item, "oreObj1");
+      item.color := 951;
+    else
+      var metals := {};
+      var metal;
+      var i := 1;
+      while ( i<=num) //pega a lista de metais que tem no pot
+		metal := GetObjProperty(item, "oreObj"+i);
+		metals.append(metal);
+		i := i +1;
+      endwhile
+      PlaySoundEffect(user, 0x23f);
+      sleepms(1500);
+      var amt := CINT(GetObjProperty(item, "amt1"));
+      var ingot := DeterminaLiga(metals, user);
+
+      if (ingot == "noIngot")
+        deleteProp(item);
+        item.color := 951;
+        SendSysMessage(user, "Voce nao conseguiu fazer uma liga com esses metais", FONT_NORMAL, 40);
+        return;
+      endif
+
+      SendSysMessage(user, "Voce esfriou a liga metalica derretida e fez as barras.", FONT_NORMAL, 90);
+      item.color := 951;
+      deleteProp(item);
+      if (ingot == 0x6317) //metal liquido, nao foi implementado no shard ainda mas quandofor
+                //eh so consertar isso
+        var hasbottle:= 0;
+        foreach item in EnumerateItemsInContainer(user.backpack)
+          if(item.objtype == UOBJECT_EMPTY_BOTTLE)
+          SubtractAmount(item, 1);
+          hasbottle := 1;
+          break;
+          endif
+        endforeach
+        if (hasbottle)
+          CreateItemInBackpack(user, ingot, amt);
+        else
+          SendSysMessage(user, "Voce deixou o metal liquido derramar no chao.", FONT_NORMAL, 40);
+          return;
+        endif
+      else
+        CreateItemInBackpack(user, ingot, amt);
+        if (MobileWrapper(user).HasAbility(ABILITY_ID::TREASURE_FROM_TRASH))
+          smeltaImpurezasRaras(user, amt);
+        endif
+      endif
+    endif
+  endif
+endfunction
+
+function deleteProp(item)
+  var num := CINT(GetObjProperty(item, "numMetal"));
+  eraseobjproperty(item, "numMetal");
+  var i := 1;
+  while (i <= num)
+        EraseObjProperty(item, "amt"+i);
+        EraseObjProperty(item, "oreObj"+i);
+        i := i +1;
+  endwhile
+endfunction
+
+function DeterminaLiga(metals, who)
+	var metais := array;
+  foreach item in metals
+     case(Cint(item))
+        0x1bde: metais.append("carvao");
+        0x6309: metais.append("ferro");
+        0x62ff: metais.append("impuro");
+        0x6465: metais.append("cobre");
+        0x6991: metais.append("estanho");
+        0x6460: metais.append("frigutium");
+        0x6310: metais.append("atrium");
+        0x6311: metais.append("mithril");
+        0x6315: metais.append("illyra");
+        0x630b: metais.append("fulmium");
+        0x630c: metais.append("venetium");
+        0x630d: metais.append("ignium");
+        0x6993: metais.append("prata");
+        0x630e: metais.append("golden");
+        0x6995: metais.append("aco");
+     endcase
+  endforeach
+  print("metais: " + metais);
+  if (metais.size() == 2)
+    // if (("ferro"  in metais ) && ("carvao" in metais) ) // TODO: Verificar como fazer barra de ferro aceitavel aqui
+    //   return 0x6995; //aco
+    // elseif (("prata" in metais) && ("estanho" in metais))
+    //   return 0x6603; //cristalith
+    if (("cobre"  in metais ) && ("estanho" in metais))
+      return 0x6994; //bronze
+    elseif (("carvao"  in metais ) && ("impuro" in metais))
+      return 0x6309; //ferro
+    elseif (("carvao"  in metais ) && ("ferro" in metais))
+      return 0x6995; //aco
+    else
+      return "noIngot";
+    endif
+  elseif (metais.size() == 3)
+    if (("aco" in metais) && ("carvao" in metais)  && ("ignium" in metais))
+      return 0x630d; //ignium
+    elseif (("aco" in metais) && ("carvao" in metais)  && ("frigutium" in metais))
+      return 0x6606; //frigutium
+    elseif (("aco" in metais) && ("carvao" in metais)  && ("venetium" in metais))
+      return 0x6607; //venetium
+    elseif (("aco" in metais) && ("carvao" in metais)  && ("fulmium" in metais))
+      return 0x6608; //fulmium
+    // elseif (("aco" in metais) && ("carvao" in metais)  && ("ferro" in metais))
+    //   return 0x6602; //acielith
+    // elseif (("cobre" in metais) && ("prata" in metais)  && ("golden" in metais))
+    //   return 0x6604; //platina
+    else
+      return "noIngot";
+    endif
+  elseif (metais.size() == 5)
+    if(("mithril" in metais) && ("fulmium" in metais) && ("venetium" in metais) && ("ignium" in metais) && ("frigutium" in metais))
+      return 0x699B; //oricalcum
+    else
+      return "noIngot";
+    endif
+  else
+    return "noIngot";
+  endif
+endfunction
+
+function smeltaImpurezasRaras(who, amt)
+  if (amt < 40)
+    return 0;
+  endif
+
+  var chunks := CInt(amt / 40);
+  var drops := dictionary;
+  var i;
+  for (i := 1; i <= chunks; i := i + 1)
+    var rand := RandomFloat(20);
+    var metal := 0;
+    if (rand < 0.1)
+      metal := 0x6311; // Mithril
+    elseif (rand < 0.2)
+      metal := 0x6315; // Illyra
+    elseif (rand < 0.5)
+      metal := 0x630b; // Fulmium
+    elseif (rand < 0.8)
+      metal := 0x630c; // Venetium
+    elseif (rand < 1.1)
+      metal := 0x630d; // Ignium
+    elseif (rand < 1.4)
+      metal := 0x6460; // Frigutium
+    endif
+
+    if (metal)
+      if (!drops.Exists(metal))
+        drops[metal] := 0;
+      endif
+      drops[metal] := drops[metal] + 1;
+    endif
+  endfor
+
+  var keys := drops.keys();
+  if (!keys.size())
+    return 0;
+  endif
+
+  var names := dictionary;
+  names[0x6311] := "Mithril";
+  names[0x6315] := "Illyra";
+  names[0x630b] := "Fulmium";
+  names[0x630c] := "Venetium";
+  names[0x630d] := "Ignium";
+  names[0x6460] := "Frigutium";
+
+  foreach objtype in (keys)
+    var qty := drops[objtype];
+    CreateItemInBackpack(who, objtype, qty);
+    SendSysMessage(who, $"Achou {qty} unidade(s) de {names[objtype]} em meio aos minerios.");
+  endforeach
+
+  SkillCheck(who, "Mining", -1);
+  return 1;
+endfunction

@@ -1,0 +1,57 @@
+use uo;
+use os;
+use vitals;
+
+include ":attributes:attributes";
+include ":tn:cooldown";
+include "include/client";
+include "include/say";
+include "include/sounds";
+include "include/epicConstants";
+include ":spells:Controller/SpellController";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program sanctuary(params)
+	var who := params[1];
+	var spell := params[3];
+	params := 0;
+
+	// Guard conditions — same list enforced per-tick.
+	if (GetEquipmentByLayer(who, 1) || GetEquipmentByLayer(who, 2))
+		SendSysMessageEx(who, "Voce precisa estar desequipado para o santuario.", SSM_FAIL);
+		return 0;
+	endif
+	if (who.warmode)
+		SendSysMessageEx(who, "Voce nao pode entrar em santuario em modo de combate.", SSM_FAIL);
+		return 0;
+	endif
+	if (GetCooldown(who, "martir") > 0)
+		SendSysMessageEx(who, "Voce optou pelo sacrificio pessoal.", SSM_FAIL);
+		return 0;
+	endif
+
+	var duration := CInt(AP_GetSkill(who, THEOLOGY) / 2);
+
+	// Snapshot HP so the tick can detect incoming damage (area/trap/DoT/etc.)
+	// and break sanctuary. `#`-prefixed property is dropped on world save.
+	SetObjProperty(who, "#sanctuary_hp_snapshot", GetVital(who, HITS));
+	PlaySoundEffect(who, 0x216);
+
+	// Religion drives the visual: Kai gets fire engulf, every other faith gets
+	// the energy burst. Cast-time and per-tick FX share the same id.
+	var fx_id := (MobileWrapper(who).GetReligion() == KAI) ? FX_FIRE_ENGULF : FX_EXPLOSAO_DE_ENERGIA;
+	PlayObjectCenteredEffect(who, fx_id, 10, 80);
+
+	var opts := struct{};
+	opts.+buff_category := "sanctum";
+	opts.+displayname := "Santuario";
+	opts.+desc := "Inalcançavel";
+	opts.+properties := dictionary{ "#sanctuary" -> 1 };
+	opts.+tick_script := ":spells:spell_logic/priest/santuarioTick";
+	opts.+tick_interval := 1;
+	opts.+tick_params := struct{ fx := fx_id };
+
+	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
+
+	return 1;
+endprogram

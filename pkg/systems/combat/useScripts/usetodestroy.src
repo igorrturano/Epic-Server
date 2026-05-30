@@ -1,0 +1,49 @@
+/* $Id: bladed.src 1344 2006-05-12 08:12:38Z austin $
+ *
+ *
+*/
+use uo;
+use os;
+use util;
+
+include ":gathering:lumberJack";
+include ":survival:fishingFunctions";
+include "include/objtype";
+include ":attributes:attributes";
+include "include/client";
+include "include/say";
+include ":tn:cooldown";
+include ":destroyable:include/destroyItem";
+
+program use_Break(who, tool)
+	if (who.warmode)
+		return ComportamentoWarMode(who, tool);
+	endif
+	
+	// If weapon is not equipped, equip it
+	if (who.weapon != tool)
+		if (EquipItem(who, tool))
+			Message("Voce equipa sua arma!").SetColor(SSM_INFO).SendSys(who);
+			Message("Dica: Clique na arma equipada para desarmá-la.").SetColor(SSM_INFO).SendSys(who);
+			return 1;
+		else
+			Message("Nao foi possivel equipar a arma.").SetColor(SSM_FAIL).SendSys(who);
+			return 0;
+		endif
+	endif
+
+
+	Message("Dica: Clique na arma equipada para desarmá-la.").SetColor(SSM_INFO).SendSys(who);
+	var targ := TargetCoordinates(who);
+	// If target is the equipped weapon itself, unequip it
+	if (targ.item && targ.item == who.weapon)
+		if (MoveItemToContainer(tool, who.backpack))
+			Message("Voce guardou sua arma!").SetColor(SSM_INFO).SendSys(who);
+			return 1;
+		else
+			Message("Nao foi possivel guardar a arma.").SetColor(SSM_FAIL).SendSys(who);
+			return 0;
+		endif
+	endif
+
+endprogram

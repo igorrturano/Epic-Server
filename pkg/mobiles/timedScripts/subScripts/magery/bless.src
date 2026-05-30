@@ -1,0 +1,39 @@
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	if (GetObjProperty(mobile, "#AgilityMod"))
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+
+	if (GetObjProperty(mobile, "#StrengthMod"))
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+
+	if (mobile.isShaman())
+		attacker := mobile;
+	endif
+
+	var cast_points := epicWisdomPathBonus(attacker);
+	var final := Cint(cast_points + 5);
+	var points := final;
+
+	SetObjProperty(mobile, "#AgilityMod", points);
+	AP_ModifyStatMod(mobile, DEXTERITY, points);
+
+	SetObjProperty(mobile, "#StrengthMod", points);
+	AP_ModifyStatMod(mobile, STRENGTH, points);
+	PlayStationaryEffect(mobile.x, mobile.y, mobile.z+10, FX_BLESS_SPELL, 10, 20, 0, mobile.realm);
+
+	return 1;
+endprogram

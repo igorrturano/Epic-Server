@@ -1,0 +1,62 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	var theology := AP_GetSkill(who, THEOLOGY);
+	var bonus := CInt(theology / 20);
+	if (bonus < 1)
+		bonus := 1;
+	endif
+
+	var duration := CInt(theology / 2);
+	if (duration < 15)
+		duration := 15;
+	endif
+
+	var opts := struct{};
+	opts.+hitchance_mod := bonus;
+	opts.+buff_category := "hit_bonus";
+	opts.+displayname := "Orientar";
+	opts.+desc := $"+{bonus} no ataque";
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{
+		fx := FX_BLESS_EFFECT,
+		fx_speed := 2,
+		fx_duration := 2,
+		sound := SFX_BLESS
+	};
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+
+	PlayObjectCenteredEffect(targ, FX_BLESS_SPELL, 1, 25);
+
+	SendSysMessageEx(who, "Voce guia " + targ.name + " com uma bencao divina.", SSM_INFO);
+	SendSysMessageEx(targ, "Voce sente uma orientacao divina guiando seus golpes. (+" + bonus + " no ataque por " + duration + " segundos)", SSM_INFO);
+
+	return 1;
+endprogram

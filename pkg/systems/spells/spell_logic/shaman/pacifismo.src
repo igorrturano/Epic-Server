@@ -1,0 +1,37 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (!info.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Voce so pode alvejar seres vivos com esta magia.", SSM_FAIL);
+		return;
+	endif
+
+	SC_RemoveEffect(info, CInt(spell.id));
+
+	var penalty := -CInt(AP_GetSkill(who, NATURE) / 5);
+	if (penalty > -1)
+		penalty := -1;
+	endif
+
+	var opts := struct{};
+	opts.+hitchance_mod := penalty;
+	opts.+desc := "Intimidar";
+
+	SC_ApplyEffect(who, info, opts, 60, CInt(spell.id));
+	PlaySoundEffect(info, SFX_SPELL_PROTECTION);
+	SendSysMessageEx(who, info.name + " foi encantado com sucesso", SSM_INFO);
+
+	return 1;
+endprogram

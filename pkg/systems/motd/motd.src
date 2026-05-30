@@ -1,0 +1,140 @@
+/* $Id: motd.src 1035 2005-11-20 03:23:06Z austin $
+ *
+ * Mensagem do Dia. Moldura no estilo do mural da cidade (sem imagem),
+ * texto escuro e legivel sobre pergaminho, rolavel, com escolha de
+ * quando abrir ao logar. Traduz o texto para o idioma da conta via
+ * CachedTranslator quando o jogador nao optou por desativar.
+ */
+use uo;
+use os;
+use file;
+use polsys;
+
+include ":datafile:datafile";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":motd:motd_settings";
+include ":message:Controller/CachedTranslator";
+include ":text:TranslatableText";
+
+const MOTD_RB_ALWAYS := 1;
+const MOTD_RB_UNREAD := 2;
+const MOTD_RB_OFF    := 3;
+const MOTD_BTN_SAVE  := 9;
+
+const MOTD_BG_TILE   := 39929;
+const MOTD_PANEL     := 9350;
+
+program MessageOfTheDay(mobile)
+
+	var data_file := DFOpenDataFile(":motd:settings", DF_CREATE);
+	var data_elem := DFFindElement(data_file, mobile.acctname, DF_CREATE);
+	var mode := MOTD_GetMode(data_elem);
+
+	var text_lines := ReadFile("motd.txt");
+	if (text_lines == error)
+		text_lines := array;
+	endif
+	var text_lines_fix := ReadFile("motdfixo.txt");
+	if (text_lines_fix == error)
+		text_lines_fix := array;
+	endif
+	var fixtext := text_lines_fix + text_lines;
+	var text := "";
+
+	foreach line in fixtext
+		text := text + line + "\n";
+		sleepms(5);
+	endforeach
+
+	if (text == "")
+		text := "Nao ha nenhuma Mensagem do Dia hoje.";
+	endif
+
+	text := MOTD_Localize(mobile, text);
+
+	// Pergaminho claro -> texto escuro
+	text := "<BASEFONT COLOR=#2A1A0A>" + text;
+
+	var gump_w := 560;
+	var gump_h := 520;
+
+	var gump := GFCreateGump();
+	GFClosable(gump, 1);
+	GFDisposable(gump, 0);
+
+	GFGumpPicTiled(gump, 0, 0, gump_w, gump_h, MOTD_BG_TILE);
+	MOTD_DrawFrame(gump, gump_w, gump_h);
+
+	GFResizePic(gump, 15, 50, MOTD_PANEL, gump_w - 30, gump_h - 100);
+	GFTextMid(gump, 25, 22, gump_w - 50, 53, "Mensagens do Dia");
+
+	var content_y := 70;
+	var footer_y := gump_h - 128;
+	var body_h := footer_y - content_y - 8;
+	GFHTMLArea(gump, 35, content_y, gump_w - 70, body_h, text, 0, 1);
+
+	GFSetRadioGroup(gump, 1);
+	GFRadioButton(gump, 35, footer_y, 208, 209, (mode == MOTD_MODE_ALWAYS), MOTD_RB_ALWAYS);
+	GFTextLine(gump, 58, footer_y + 1, 1153, "Sempre abrir ao logar");
+
+	GFRadioButton(gump, 35, footer_y + 23, 208, 209, (mode == MOTD_MODE_UNREAD), MOTD_RB_UNREAD);
+	GFTextLine(gump, 58, footer_y + 24, 1153, "Abrir apenas se houver novidade");
+
+	GFRadioButton(gump, 35, footer_y + 46, 208, 209, (mode == MOTD_MODE_OFF), MOTD_RB_OFF);
+	GFTextLine(gump, 58, footer_y + 47, 1153, "Nunca abrir ao logar");
+
+	GFAddButton(gump, gump_w - 130, footer_y + 70, 0x659, 0x65A, GF_CLOSE_BTN, MOTD_BTN_SAVE);
+	GFTextLine(gump, gump_w - 108, footer_y + 70, 53, "Salvar");
+
+	if (text_lines.size() > 0)
+		data_elem.SetProp("FirstLine", text_lines[1]);
+	endif
+
+	var input := GFSendGump(mobile, gump);
+
+	if (input && input[MOTD_BTN_SAVE])
+		if (input[MOTD_RB_ALWAYS])
+			MOTD_SetMode(data_elem, MOTD_MODE_ALWAYS);
+		elseif (input[MOTD_RB_OFF])
+			MOTD_SetMode(data_elem, MOTD_MODE_OFF);
+		else
+			MOTD_SetMode(data_elem, MOTD_MODE_UNREAD);
+		endif
+	endif
+
+endprogram
+
+// Moldura decorativa no estilo do mural da cidade.
+function MOTD_DrawFrame(byref gump, width, height)
+	var molduras := array{
+		struct{ x := 0,          y := 0,           w := 25,          h := 25,          g := 39925 },
+		struct{ x := width - 25, y := 0,           w := 35,          h := 25,          g := 39927 },
+		struct{ x := 25,         y := 0,           w := width - 41,  h := 25,          g := 39926 },
+		struct{ x := 25,         y := height - 25, w := width - 25,  h := 35,          g := 39932 },
+		struct{ x := 0,          y := 25,          w := 10,          h := height - 50, g := 39928 },
+		struct{ x := width - 25, y := 25,          w := 35,          h := height - 50, g := 39930 },
+		struct{ x := width - 25, y := height - 25, w := 35,          h := 35,          g := 39933 },
+		struct{ x := 0,          y := height - 25, w := 35,          h := 35,          g := 39931 }
+	};
+	foreach moldura in molduras
+		GFGumpPicTiled(gump, moldura.x, moldura.y, moldura.w, moldura.h, moldura.g);
+	endforeach
+endfunction
+
+// Translates MOTD text into the account language via the shared CachedTranslator.
+// Cache is keyed by (lang, text), so a MOTD edit naturally invalidates the entry.
+function MOTD_Localize(mobile, text)
+	if (GetObjProperty(mobile, "translation") == 0)
+		return text; // explicit opt-out
+	endif
+	var acct := mobile.acct;
+	if (acct == error || !acct)
+		return text;
+	endif
+	var targetLang := acct.GetProp("original_language");
+	if (targetLang == error || !targetLang)
+		return text;
+	endif
+	return CachedTranslator().Translate(text, LANGUAGE::PORTUGUESE, targetLang);
+endfunction

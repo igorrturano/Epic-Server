@@ -1,0 +1,48 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+include ":spells:Controller/SpellController";
+
+program sacrificioFlamejanteTick(params)
+	// SC tick signature: { caster, targ, spellId, tick_number, tick_params }
+	var who := params[2];
+	var spellId := CInt(params[3]);
+	var tick_number := CInt(params[4]);
+	var tick_params := params[5];
+
+	if (!who || who is @Exception || who.dead)
+		return;
+	endif
+
+	// Legacy cap: effect self-terminates after 10 ticks regardless of remaining duration.
+	if (tick_number > 10)
+		SC_RemoveEffect(who, spellId);
+		return;
+	endif
+
+	var weapon_serial := CInt(tick_params.weapon_serial);
+	if (!who.weapon || who.weapon.serial != weapon_serial)
+		SC_RemoveEffect(who, spellId);
+		return;
+	endif
+
+	var divisor := CInt(tick_params.divisor);
+	if (divisor < 1)
+		divisor := 1;
+	endif
+
+	var dano := RandomIntMinMax(5, 15);
+	dano := Floor(dano / divisor);
+	// Self-damage as a casting cost — intentionally NOT routed through SC_DealDamage,
+	// which would fire AFTER_DAMAGE/ON_KILL hooks against the swordmage for damaging themselves.
+	ApplyRawDamage(who, dano);
+
+	var dmgbonus := Cint(GetObjProperty(who, "#dmgbonus"));
+	SetObjProperty(who, "#dmgbonus", dmgbonus + Cint(AP_GetSkill(who, ARCANA) / 20));
+	SetObjProperty(who, "#xsac", tick_number);
+	PrintTextAbove(who, "*queimando com chamas da espada*");
+
+	return 1;
+endprogram

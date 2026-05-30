@@ -1,0 +1,175 @@
+use uo;
+
+include ":attributes:attributes";
+include ":epicspawn:epicCombatEventsController";
+include "include/utils";
+
+program combatEventsControl(params)
+	var npc := params[1];
+	if (!npc || npc.dead)
+		return 0;
+	endif
+
+	// Check if this is a boss
+	if (!GetObjProperty(npc, "IsBoss"))
+		return 0;
+	endif
+
+	// Initialize tracking for combat events
+	SetupCombatEventTracking(npc);
+
+	var in_combat := 0;
+	var combat_start := 0;
+	var fired_this_combat := dictionary{};
+
+	// Run the main loop while NPC is alive
+	while (npc && !npc.dead)
+		// Process combat events if in combat
+		if (npc.opponent)
+			if (!in_combat)
+				// New engagement: anchor run-once events and clear their fired set
+				in_combat := 1;
+				combat_start := ReadGameClock();
+				fired_this_combat := dictionary{};
+			endif
+			ProcessCombatEvents(npc, combat_start, fired_this_combat);
+		else
+			in_combat := 0;
+		endif
+
+		// Sleep to avoid excessive CPU usage
+		sleep(2);
+	endwhile
+
+	return 1;
+endprogram
+
+/*
+ * SetupCombatEventTracking(npc)
+ * Purpose: Initializes tracking for combat events
+ * Parameters: npc - The NPC to setup combat event tracking for
+*/
+function SetupCombatEventTracking(npc)
+	// Get the combat events
+	var combat_events := GetObjProperty(npc, "CombatEvents");
+
+	if (!combat_events || !combat_events.size())
+		return;
+	endif
+
+	// Initialize last cast times for each event
+	var last_cast_times := dictionary{};
+	foreach event in combat_events
+		last_cast_times[event.name] := 0; // Never cast yet
+	endforeach
+
+	// Store the last cast times
+	SetObjProperty(npc, "EventLastCastTimes", last_cast_times);
+endfunction
+
+/*
+ * ProcessCombatEvents(npc, combat_start, fired_this_combat)
+ * Purpose: Processes any combat events configured for the NPC
+ * Parameters: npc - The NPC to process combat events for
+ *             combat_start - game clock time the current engagement began
+ *             fired_this_combat - dict of event names already fired this engagement
+ * Return: 1 if any events were processed, 0 if none
+*/
+function ProcessCombatEvents(npc, combat_start, byref fired_this_combat)
+	// Get the combat events
+	var combat_events := GetObjProperty(npc, "CombatEvents");
+	if (!combat_events || !combat_events.size())
+		return 0;
+	endif
+
+	// Get the last cast times
+	var last_cast_times := GetObjProperty(npc, "EventLastCastTimes");
+	if (!last_cast_times)
+		// Initialize if missing
+		SetupCombatEventTracking(npc);
+		last_cast_times := GetObjProperty(npc, "EventLastCastTimes");
+	endif
+
+	var current_time := ReadGameClock();
+	var processed := 0;
+
+	// Check each combat event
+	foreach event in combat_events
+		// Skip if no name
+		if (!event.name)
+			continue;
+		endif
+
+		// Check if the event has steps or actions
+		var event_actions := array{};
+		if (event.steps && event.steps.size() > 0)
+			event_actions := event.steps;
+		elseif (event.actions && event.actions.size() > 0)
+			event_actions := event.actions;
+		else
+			continue; // No actions to perform
+		endif
+
+		// Run-once gate: if this event already fired in the current engagement, skip
+		if (event.once && fired_this_combat.exists(event.name))
+			continue;
+		endif
+
+		// HP threshold gate: only fire once the boss is at or below the configured %
+		if (CInt(event.hp_percent) > 0)
+			var hp_max := AP_GetVitalMaximumValue(npc, HITS);
+			var hp_curr := AP_GetVital(npc, HITS);
+			if (hp_max <= 0 || hp_curr > (hp_max * CInt(event.hp_percent)) / 100)
+				continue;
+			endif
+		endif
+
+		// Cooldown check. For run-once events the cooldown is measured from the
+		// start of the engagement, so it acts as a delay before the single trigger.
+		var cd_anchor := 0;
+		if (last_cast_times.exists(event.name))
+			cd_anchor := last_cast_times[event.name];
+		endif
+		if (event.once)
+			cd_anchor := combat_start;
+		endif
+		if ((current_time - cd_anchor) < CInt(event.cd))
+			continue;
+		endif
+
+		// Check if the NPC is bloodied (below 50% health) if required
+		if (event.onlybloodied)
+			var max_hits := AP_GetVitalMaximumValue(npc, HITS);
+			var curr_hits := AP_GetVital(npc, HITS);
+			if (curr_hits > (max_hits * 0.5))
+				continue; // Not bloodied, skip
+			endif
+		endif
+
+		// Check if opponent is within required distance
+		if (event.dist > 0)
+			var opponent := npc.opponent;
+			if (!opponent || Distance(npc, opponent) > event.dist)
+				continue; // Opponent too far, skip
+			endif
+		endif
+
+		// All conditions met, execute the event
+
+		// Execute the event using the function from epicCombatEvents.inc
+		if (ExecuteCombatEvent(npc, event, event_actions))
+			// Update the last cast time
+			last_cast_times[event.name] := current_time;
+			SetObjProperty(npc, "EventLastCastTimes", last_cast_times);
+			if (event.once)
+				fired_this_combat[event.name] := 1;
+			endif
+			processed += 1;
+
+			// Only process one event per cycle
+			break;
+		endif
+	endforeach
+
+	return processed;
+endfunction

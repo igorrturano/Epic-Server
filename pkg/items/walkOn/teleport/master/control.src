@@ -1,0 +1,91 @@
+use uo;
+use os;
+use polsys;
+
+include "include/sysEvent";
+include "include/client";
+
+program controlScript(tile)
+	RegisterForSpeechEvents(tile, 2);
+	EnableEvents(SYSEVENT_SPEECH, 1);
+
+	while (tile)
+		var event := wait_for_event(30);
+
+		_LimparPortalExpirado(tile);
+
+		if (!event || event.type != SYSEVENT_SPEECH)
+			continue;
+		endif
+
+		var fd := GetObjProperty(tile, "form_data");
+		if (!fd || fd.errortext || CInt(fd.mode) != 1)
+			continue;
+		endif
+		if (!fd.destinos || fd.destinos.size() == 0)
+			continue;
+		endif
+
+		var texto := CStr(event.text);
+		for i := 1 to fd.destinos.size()
+			var destino := fd.destinos[i];
+			if (CStr(destino.palavra) != "" && texto == CStr(destino.palavra))
+				var estado := struct{};
+				estado.+idx := i;
+				estado.+ts  := ReadMillisecondClock();
+				SetObjProperty(tile, "#aberto", estado);
+				_AbrirPortal(tile, fd);
+				break;
+			endif
+		endfor
+	endwhile
+endprogram
+
+function _AbrirPortal(tile, fd)
+	PlayStationaryEffect(tile.x, tile.y, tile.z, FX_BLUE_SPARKLE_SWIRL, 10, 16, 1, tile.realm);
+	PlaySoundEffect(tile, SFX_SPELL_GATE_TRAVEL);
+
+	var grafico := 0;
+	if (!fd.moongate.errortext) grafico := CInt(fd.moongate); endif
+	if (grafico > 0)
+		_DestruirMoongate(tile);
+		var item := CreateItemAtLocation(tile.x, tile.y, tile.z, grafico, 1, tile.realm);
+		if (item && !item.errortext)
+			item.movable := 0;
+			var cor := 0;
+			if (!fd.moongate_cor.errortext) cor := CInt(fd.moongate_cor); endif
+			if (cor > 0)
+				item.color := cor;
+			endif
+			SetObjProperty(tile, "#moongate_item", item.serial);
+		endif
+	endif
+endfunction
+
+function _DestruirMoongate(tile)
+	var serial := GetObjProperty(tile, "#moongate_item");
+	if (!serial || serial.errortext)
+		return;
+	endif
+	var item := SystemFindObjectBySerial(CInt(serial));
+	if (item && !item.errortext)
+		DestroyItem(item);
+	endif
+	EraseObjProperty(tile, "#moongate_item");
+endfunction
+
+function _LimparPortalExpirado(tile)
+	var aberto := GetObjProperty(tile, "#aberto");
+	if (!aberto || aberto.errortext)
+		return;
+	endif
+	var fd := GetObjProperty(tile, "form_data");
+	var ttl := 5000;
+	if (fd && !fd.errortext && !fd.portal_ttl.errortext)
+		ttl := CInt(fd.portal_ttl) * 1000;
+	endif
+	if (ReadMillisecondClock() - CInt(aberto.ts) > ttl)
+		EraseObjProperty(tile, "#aberto");
+		_DestruirMoongate(tile);
+	endif
+endfunction

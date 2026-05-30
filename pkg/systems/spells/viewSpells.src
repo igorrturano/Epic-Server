@@ -1,0 +1,244 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/sysEvent";
+include ":attributes:attributes";
+include "include/tnmagery";
+include ":timeUtils:time";
+include ":tn:tngumps";
+
+const SPELL_BTN := 200;
+const CAST_BTN := 300;
+const GUMPID_CLERICSPELL := 0x00001C;
+
+program clericPowerWords(who)
+	detach();
+	var magia := GetObjProperty(who, "chardata").magia;
+	if (magia != "Shaman" && magia != "Sacerdote" && magia != "Druid")
+		SendSysMessageEx(who, "Este menu nao e acessivel para voce.", SSM_FAIL);
+		return;
+	endif
+	CloseGump(who, GUMPID_CLERICSPELL);
+
+	if (magia == "Shaman")
+		var shaman_list := GetObjProperty(who, "shaman_list");
+		if (!shaman_list)
+			shaman_list := array{};
+		endif
+		var canceled := 0;
+		while (!canceled)
+			var input := CreateClericGump(who, shaman_list);
+
+			if (!input[0])
+				canceled := 1;
+			elseif (input[0] >= CAST_BTN)
+				var slot := input[0] - CAST_BTN;
+				shaman_list := GetObjProperty(who, "shaman_list");
+				var spell := shaman_list[slot];
+				// Save gump position
+				SetObjProperty(who, "#spell_gump_x", input.x);
+				SetObjProperty(who, "#spell_gump_y", input.y);
+				// Cast the spell
+				if (spell.id)
+					var spellinfo := struct{ "id" := spell.id };
+					start_script(":spells:cast_spell", array{who, spellinfo});
+				endif
+				// Reopen gump after 1 second
+				sleep(1);
+				// Don't cancel, continue the loop to reopen the gump
+			elseif (input[0] >= SPELL_BTN)
+				var slot := input[0] - SPELL_BTN;
+				shaman_list := GetObjProperty(who, "shaman_list");
+				var spell := shaman_list[slot];
+				// Check if trying to remove a cantrip
+				if (spell.cantrip)
+					SendSysMessageEx(who, "Você não pode esquecer um truque.", SSM_FAIL);
+					canceled := 1;
+				else
+					shaman_list.Erase(slot);
+					SetObjProperty(who, "shaman_list", shaman_list);
+					SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
+					canceled := 1;
+				endif
+			endif
+		endwhile
+	elseif (magia == "Sacerdote")
+		var priest_list := GetObjProperty(who, "priest_list");
+		if (!priest_list)
+			priest_list := array{};
+		endif
+		var canceled := 0;
+		while (!canceled)
+			var input := CreateClericGump(who, priest_list);
+
+			if (!input[0])
+				canceled := 1;
+			elseif (input[0] >= CAST_BTN)
+				var slot := input[0] - CAST_BTN;
+				priest_list := GetObjProperty(who, "priest_list");
+				var spell := priest_list[slot];
+				// Save gump position
+				SetObjProperty(who, "#spell_gump_x", input.x);
+				SetObjProperty(who, "#spell_gump_y", input.y);
+				// Cast the spell
+				if (spell.id)
+					var spellinfo := struct{ "id" := spell.id };
+					start_script(":spells:cast_spell", array{who, spellinfo});
+				endif
+				// Reopen gump after 1 second
+				sleep(1);
+				// Don't cancel, continue the loop to reopen the gump
+			elseif (input[0] >= SPELL_BTN)
+				var slot := input[0] - SPELL_BTN;
+				priest_list := GetObjProperty(who, "priest_list");
+				var spell := priest_list[slot];
+				// Check if trying to remove a cantrip
+				if (spell.cantrip)
+					SendSysMessageEx(who, "Você não pode esquecer um truque.", SSM_FAIL);
+					canceled := 1;
+				else
+					priest_list.Erase(slot);
+					SetObjProperty(who, "priest_list", priest_list);
+					SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
+					canceled := 1;
+				endif
+			endif
+		endwhile
+	elseif (magia == "Druid")
+		var druid_list := GetObjProperty(who, "druid_list");
+		if (!druid_list)
+			druid_list := array{};
+		endif
+		var canceled := 0;
+		while (!canceled)
+			var input := CreateClericGump(who, druid_list);
+
+			if (!input[0])
+				canceled := 1;
+			elseif (input[0] >= CAST_BTN)
+				var slot := input[0] - CAST_BTN;
+				druid_list := GetObjProperty(who, "druid_list");
+				var spell := druid_list[slot];
+				// Save gump position
+				SetObjProperty(who, "#spell_gump_x", input.x);
+				SetObjProperty(who, "#spell_gump_y", input.y);
+				// Cast the spell
+				if (spell.id)
+					var spellinfo := struct{ "id" := spell.id };
+					start_script(":spells:cast_spell", array{who, spellinfo});
+				endif
+				// Reopen gump after 1 second
+				sleep(1);
+				// Don't cancel, continue the loop to reopen the gump
+			elseif (input[0] >= SPELL_BTN)
+				var slot := input[0] - SPELL_BTN;
+				druid_list := GetObjProperty(who, "druid_list");
+				var spell := druid_list[slot];
+				// Check if trying to remove a cantrip
+				if (spell.cantrip)
+					SendSysMessageEx(who, "Você não pode esquecer um truque.", SSM_FAIL);
+					canceled := 1;
+				else
+					druid_list.Erase(slot);
+					SetObjProperty(who, "druid_list", druid_list);
+					SendSysMessageEx(who, "Voce abandonou o ritual.", SSM_INFO);
+					canceled := 1;
+				endif
+			endif
+		endwhile
+	endif
+endprogram
+
+function CreateClericGump(who, shaman_list)
+	// Get saved gump position
+	var gump_x := GetObjProperty(who, "#spell_gump_x");
+	var gump_y := GetObjProperty(who, "#spell_gump_y");
+
+	var gump;
+	if (gump_x && gump_y)
+		gump := GFCreateGump(gump_x, gump_y);
+	else
+		gump := GFCreateGump();
+	endif
+
+	var size := shaman_list.Size();
+
+	if (size >= 1)
+		size := size * 26;
+	else
+		size := 0;
+	endif
+
+	GFSetId(gump, GUMPID_CLERICSPELL);
+	GFClosable(gump, 1);
+	GFResizePic(gump, 10, 26, 9390, 220, 120 + size);
+	// GFHTMLArea(gump, 60, 65, 152, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Rituais", 0, 0); // shadow
+	// GFHTMLArea(gump, 62, 67, 152, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Rituais", 0, 0);
+	// GFHTMLArea(gump, 61, 66, 152, 20, "<BASEFONT Size=5 Color=#ffffff >Lista de Rituais", 0, 0); // shadow
+	// // GFResizePic(gump, 36, 84, 1469, 130, 2); // barra branca
+	GFGumpPic(gump, 31, 68, 9773, 0); // seta p baixo
+	GFTextLine(gump, 56, 65, 1445, "Rituais Memorizados");
+
+	// for i := 1 to available_slots
+	//      shaman_list.append(struct{});
+	//   endfor
+
+	var y := 91;
+	foreach spell in shaman_list
+		var spellname := spell.name;
+		var desc := spell.desc;
+		var color := "";
+
+		// Cantrips shown in a different color (green)
+		if (spell.cantrip)
+			color := "<BASEFONT color=#8B7500>";
+		elseif (spell.used)
+			color := "<BASEFONT color=#BDB76B>";
+		else 
+			color := "<BASEFONT color=#665D1E>";
+		endif
+
+		// Add cast button (10 pixels before spell name, +5y offset)
+		GFAddButton(gump, 35, y + 7, 2103, 2104, GF_CLOSE_BTN, CAST_BTN + _spell_iter);
+		GFToolTipText(gump, "Conjurar ritual");
+
+		GFHTMLArea(gump, 52, y, 140, 24, "{}{}".format(color, spellname), 1, 0);
+		// Build tooltip for spell name
+		if (spell.flavortext)
+			var tooltip := "<BASEFONT color=#BDB76B>{}".format(spell.flavortext);
+			GFToolTipText(gump, tooltip);
+		endif
+
+		// Allow forgetting non-cantrip spells that are used or expired
+		var not_empty := isNotEmpty(spell);
+		if (!spell.cantrip && (not_empty == 0 || not_empty == 3))
+			GFAddButton(gump, 195, y + 4, 22150, 22151, GF_CLOSE_BTN, SPELL_BTN + _spell_iter);
+			GFToolTipText(gump, "Esquecer ritual");
+		endif
+
+		y += 26;
+		sleepms(2);
+	endforeach
+
+	var shaman_souls := GetObjProperty(who, "shaman_souls");
+	if (shaman_souls)
+		GFTextLine(gump, 35, y + 10, 1445, "Colheita: {} almas".format(shaman_souls));
+	endif
+
+	return GFSendGump(who, gump);
+endfunction
+
+function isNotEmpty(spell)
+	if (spell.id == 1 || !spell.time)
+		return 2; // cannot remove
+	elseif (spell.time < polcore().systime && spell.used)
+		return 3; // can remove and already used
+	elseif (spell.time < polcore().systime)
+		return 0; // can remove
+	elseif (spell.used)
+		return 1; // already used
+	endif
+
+	return 2; // cannot remove
+endfunction

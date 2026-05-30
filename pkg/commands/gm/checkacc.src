@@ -1,0 +1,352 @@
+use uo;
+use os;
+use basic;
+
+program textcmd_checkacc(who, contas)
+	contas := SplitWords(contas);
+	var conta1_name := contas[1];
+	var conta2_name := contas[2];
+
+	if (!conta1_name)
+		return ScanServidorInteiro(who);
+	endif
+
+	var conta1 := FindAccount(conta1_name);
+	if (conta1.errortext)
+		SendSysMessage(who, "Conta nao encontrada: " + conta1_name + " - " + conta1.errortext);
+		return 0;
+	endif
+
+	if (conta2_name)
+		return CompararDuasContas(who, conta1, conta2_name);
+	else
+		return CheckarTodasContas(who, conta1);
+	endif
+endprogram
+
+function ScanServidorInteiro(who)
+	SendSysMessage(who, "Escaneando TODAS as contas por multi acc. Aguarde...");
+
+	var todas_contas := SplitWords(ListAccounts(), " ");
+
+	var ip_to_accts := dictionary;
+	var hwid_to_accts := dictionary;
+	var count := 0;
+
+	foreach conta_name in todas_contas
+		conta_name := Trim(conta_name, type := TRIM_BOTH, to_trim := ",");
+		if (conta_name == "" || conta_name == " ")
+			continue;
+		endif
+
+		var acct := FindAccount(CStr(conta_name));
+		if (acct.errortext)
+			continue;
+		endif
+
+		var ips := acct.GetProp("IP");
+		if (ips)
+			foreach ip in ips
+				if (!ip_to_accts.Exists(ip))
+					ip_to_accts[ip] := array{};
+				endif
+				var arr := ip_to_accts[ip];
+				arr.Append(acct.name);
+				ip_to_accts[ip] := arr;
+			endforeach
+		endif
+
+		var hwids := acct.GetProp("HWID");
+		if (hwids)
+			foreach hwid in hwids
+				if (!hwid_to_accts.Exists(hwid))
+					hwid_to_accts[hwid] := array{};
+				endif
+				var arr2 := hwid_to_accts[hwid];
+				arr2.Append(acct.name);
+				hwid_to_accts[hwid] := arr2;
+			endforeach
+		endif
+
+		count := count + 1;
+		if (count % 100 == 0)
+			sleepms(2);
+		endif
+	endforeach
+
+	var grupos := dictionary;
+
+	// Group by shared IPs
+	foreach accts in (ip_to_accts)
+		if (accts.size() < 2)
+			continue;
+		endif
+		var ip := _accts_iter;
+		var key := MakeGroupKey(accts);
+
+		if (!grupos.Exists(key))
+			grupos[key] := struct{ ips := array{}, hwids := array{} };
+		endif
+		var grupo := grupos[key];
+		grupo.ips.Append(ip);
+		grupos[key] := grupo;
+	endforeach
+
+	// Group by shared HWIDs
+	foreach accts in (hwid_to_accts)
+		if (accts.size() < 2)
+			continue;
+		endif
+		var hwid := _accts_iter;
+		var key := MakeGroupKey(accts);
+
+		if (!grupos.Exists(key))
+			grupos[key] := struct{ ips := array{}, hwids := array{} };
+		endif
+		var grupo := grupos[key];
+		grupo.hwids.Append(hwid);
+		grupos[key] := grupo;
+	endforeach
+
+	if (grupos.size() == 0)
+		SendSysMessage(who, "Nenhum multi acc detectado no servidor.");
+		return 0;
+	endif
+
+	SendSysMessage(who, "=== Multi-Accounts Detectados ===");
+	var discord_msg := "**Scan Completo de Multi-Account**\n";
+	var total_grupos := 0;
+
+	foreach grupo in (grupos)
+		var contas_str := _grupo_iter;
+		total_grupos += 1;
+
+		SendSysMessage(who, "Contas: " + contas_str);
+		discord_msg += "\n**Grupo " + total_grupos + ":** " + contas_str + "\n";
+
+		if (grupo.ips.size() > 0)
+			SendSysMessage(who, "  IPs em comum:");
+			discord_msg += "IPs: ";
+			foreach ip in (grupo.ips)
+				SendSysMessage(who, "    - " + ip);
+				discord_msg += "`" + ip + "` ";
+			endforeach
+			discord_msg += "\n";
+		endif
+
+		if (grupo.hwids.size() > 0)
+			SendSysMessage(who, "  HWIDs em comum:");
+			discord_msg += "HWIDs: ";
+			foreach hwid in (grupo.hwids)
+				SendSysMessage(who, "    - " + hwid);
+				discord_msg += "`" + hwid + "` ";
+			endforeach
+			discord_msg += "\n";
+		endif
+	endforeach
+
+	SendSysMessage(who, "Total: " + total_grupos + " grupo(s) de multi acc.");
+	discord_msg += "\n**Total:** " + total_grupos + " grupo(s)\nVerificado por: " + who.name;
+	Start_script(":DiscordWebhook:discord", { "multiacc", who.name, who.acctname, discord_msg, "", "", "" });
+
+	SendSysMessage(who, "Resultado enviado ao Discord.");
+	return 1;
+endfunction
+
+function MakeGroupKey(accts)
+	var sorted := SortAccountNames(accts);
+	var key := "";
+	foreach nome in sorted
+		if (key != "")
+			key += ",";
+		endif
+		key += nome;
+	endforeach
+	return key;
+endfunction
+
+function SortAccountNames(names)
+	var sorted := names;
+	var n := sorted.size();
+	var i, j;
+	for (i := 1; i <= n - 1; i := i + 1)
+		for (j := 1; j <= n - i; j := j + 1)
+			if (sorted[j] > sorted[j + 1])
+				var tmp := sorted[j];
+				sorted[j] := sorted[j + 1];
+				sorted[j + 1] := tmp;
+			endif
+		endfor
+	endfor
+	return sorted;
+endfunction
+
+function CompararDuasContas(who, conta1, conta2_name)
+	var conta2 := FindAccount(conta2_name);
+	if (conta2.errortext)
+		SendSysMessage(who, "Conta nao encontrada: " + conta2_name + " - " + conta2.errortext);
+		return 0;
+	endif
+
+	var found := 0;
+
+	// Compare IPs
+	var ips1 := conta1.GetProp("IP");
+	var ips2 := conta2.GetProp("IP");
+	if (ips1 && ips2)
+		var ips_comuns := EncontrarComuns(ips1, ips2);
+		if (ips_comuns.size() > 0)
+			found := 1;
+			SendSysMessage(who, conta1.name + " e " + conta2.name + " compartilham " + ips_comuns.size() + " IP(s):");
+			foreach ip in ips_comuns
+				SendSysMessage(who, "  - " + ip);
+			endforeach
+		endif
+	endif
+
+	// Compare HWIDs
+	var hwids1 := conta1.GetProp("HWID");
+	var hwids2 := conta2.GetProp("HWID");
+	if (hwids1 && hwids2)
+		var hwids_comuns := EncontrarComuns(hwids1, hwids2);
+		if (hwids_comuns.size() > 0)
+			found := 1;
+			SendSysMessage(who, conta1.name + " e " + conta2.name + " compartilham " + hwids_comuns.size() + " HWID(s):");
+			foreach hwid in hwids_comuns
+				SendSysMessage(who, "  - " + hwid);
+			endforeach
+		endif
+	endif
+
+	if (!found)
+		SendSysMessage(who, "Nenhum IP ou HWID em comum entre " + conta1.name + " e " + conta2.name + ".");
+	endif
+
+	return 1;
+endfunction
+
+function CheckarTodasContas(who, conta1)
+	SendSysMessage(who, "Checando multi acc para " + conta1.name + ". Aguarde...");
+
+	var ips1 := conta1.GetProp("IP");
+	var hwids1 := conta1.GetProp("HWID");
+
+	if (!ips1 && !hwids1)
+		SendSysMessage(who, "Conta nao possui historico de IP ou HWID.");
+		return 0;
+	endif
+
+	var ip_set := dictionary;
+	if (ips1)
+		foreach ip in ips1
+			ip_set[ip] := 1;
+		endforeach
+	endif
+
+	var hwid_set := dictionary;
+	if (hwids1)
+		foreach hwid in hwids1
+			hwid_set[hwid] := 1;
+		endforeach
+	endif
+
+	var todas_contas := SplitWords(ListAccounts(), " ");
+	var multi_accs := dictionary;
+
+	var count := 0;
+	foreach conta_name in todas_contas
+		conta_name := Trim(conta_name, type := TRIM_BOTH, to_trim := ",");
+		if (conta_name == "" || conta_name == " ")
+			continue;
+		endif
+
+		var conta2 := FindAccount(CStr(conta_name));
+		if (conta2.errortext || conta2.name == conta1.name)
+			continue;
+		endif
+
+		var match_ips := array{};
+		var ips2 := conta2.GetProp("IP");
+		if (ips2 && ips1)
+			foreach ip in ips2
+				if (ip_set.Exists(ip))
+					match_ips.Append(ip);
+				endif
+			endforeach
+		endif
+
+		var match_hwids := array{};
+		var hwids2 := conta2.GetProp("HWID");
+		if (hwids2 && hwids1)
+			foreach hwid in hwids2
+				if (hwid_set.Exists(hwid))
+					match_hwids.Append(hwid);
+				endif
+			endforeach
+		endif
+
+		if (match_ips.size() > 0 || match_hwids.size() > 0)
+			multi_accs[conta2.name] := struct{ ips := match_ips, hwids := match_hwids };
+		endif
+
+		count := count + 1;
+		if (count % 100 == 0)
+			sleepms(2);
+		endif
+	endforeach
+
+	if (multi_accs.size() == 0)
+		SendSysMessage(who, "Nenhum indicio de multi acc encontrado para " + conta1.name + ".");
+		return 0;
+	endif
+
+	SendSysMessage(who, "Contas com IP/HWID em comum com " + conta1.name + ":");
+	var discord_msg := "**Multi-Account Detectado** - " + conta1.name + "\n";
+
+	foreach match in (multi_accs)
+		var nome := _match_iter;
+		SendSysMessage(who, "  " + nome + ":");
+
+		discord_msg += "- **" + nome + "**: ";
+
+		if (match.ips.size() > 0)
+			SendSysMessage(who, "    IPs (" + match.ips.size() + "):");
+			discord_msg += match.ips.size() + " IP(s) ";
+			foreach ip in (match.ips)
+				SendSysMessage(who, "      - " + ip);
+			endforeach
+		endif
+
+		if (match.hwids.size() > 0)
+			SendSysMessage(who, "    HWIDs (" + match.hwids.size() + "):");
+			discord_msg += match.hwids.size() + " HWID(s) ";
+			foreach hwid in (match.hwids)
+				SendSysMessage(who, "      - " + hwid);
+			endforeach
+		endif
+
+		discord_msg += "\n";
+	endforeach
+
+	discord_msg += "\nVerificado por: " + who.name;
+	Start_script(":DiscordWebhook:discord", { "multiacc", who.name, who.acctname, discord_msg, "", "", "" });
+
+	SendSysMessage(who, "Resultado enviado ao Discord.");
+	return 1;
+endfunction
+
+function EncontrarComuns(list1, list2)
+	var set := dictionary;
+	foreach item in list1
+		set[item] := 1;
+	endforeach
+
+	var comuns := array{};
+	foreach item in list2
+		if (set.Exists(item))
+			comuns.Append(item);
+		endif
+	endforeach
+
+	return comuns;
+endfunction

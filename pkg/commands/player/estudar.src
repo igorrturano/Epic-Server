@@ -1,0 +1,144 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":training:training";
+include ":estudar:estudavel";
+include ":tn:cooldown";
+
+// ============================================================================
+// COMANDO PLAYER: Estudar item
+// ============================================================================
+
+program estudar(who)
+    if (who.hidden)
+        SendSysMessage(who, "Você não pode estudar enquanto estiver oculto.");
+        return 0;
+    endif
+    
+    SendSysMessage(who, "Selecione o item de estudo para começar.");
+    var item := Target(who);
+
+    if (!item || !item.isa(POLCLASS_ITEM))
+        SendSysMessage(who, "Você deve selecionar um item válido.");
+        return 0;
+    endif
+
+    return ExecutarEstudo(who, item);
+endprogram
+
+// ============================================================================
+// FUNÇÕES
+// ============================================================================
+
+function ValidarItem(item)
+    if (!item || item.container)
+        SendSysMessage(item.held_by, "Debug: Item inválido ou no container.");
+        return 0;
+    endif
+
+    var skill_name := GetObjProperty(item, "estudavel");
+    if (!skill_name)
+        SendSysMessage(item.held_by, "Este item não é para estudo.");
+        return 0;
+    endif
+
+    if (!(skill_name in GetValidSkills()))
+        SendSysMessage(item.held_by, "Skill inválida para estudo: " + skill_name);
+        return 0;
+    endif
+
+    return 1;
+endfunction
+
+function VerificarLimiteSkill(who, skill_name)
+    var skill_atual := AP_GetTrueSkill(who, skill_name);
+    var cap := AP_GetSkillCap(who, skill_name);
+    if (cap < SKILL_LIMIT)
+        cap := SKILL_LIMIT;
+    endif
+    if (skill_atual >= cap)
+        SendSysMessage(who, "Sua habilidade em " + skill_name + " já está no máximo para estudo.");
+        return 0;
+    endif
+    return 1;
+endfunction
+
+function ExecutarSequenciaAcoes(who, frases)
+    var actions_sequence := array{
+        struct{ emote := "*Estudando*", phrases := frases.estudando },
+        struct{ emote := "*Analisando*", phrases := frases.analisando },
+        struct{ emote := "*Consultando*", phrases := frases.consultando },
+        struct{ emote := "*Registrando*", phrases := frases.registrando },
+        struct{ emote := "*Praticando*", phrases := frases.praticando }
+    };
+
+    var num_actions := RandomInt(NUM_ACTIONS_MAX - NUM_ACTIONS_MIN + 1) + NUM_ACTIONS_MIN;
+    var selected_actions := array{};
+
+    for i := 1 to num_actions
+        var idx := RandomInt(actions_sequence.size()) + 1;
+        selected_actions.append(actions_sequence[idx]);
+        actions_sequence.erase(idx);
+    endfor
+
+    for i := 1 to selected_actions.size()
+        var action_struct := selected_actions[i];
+        
+        PrintTextAbove(who, action_struct.emote);
+        sleepms(DELAY_EMOTE_TO_PHRASE);
+        
+        var phrase := action_struct.phrases[RandomInt(action_struct.phrases.size()) + 1];
+        PrintTextAbove(who, phrase);
+        PlaySoundEffect(who, SOUND_STUDY);
+        
+        if (i < selected_actions.size())
+            sleepms(DELAY_BETWEEN_ACTIONS);
+        endif
+    endfor
+
+    sleepms(DELAY_FINAL);
+endfunction
+
+function ExecutarEstudo(who, item)
+    if (!ValidarItem(item))
+        return 0;
+    endif
+
+    var cd := getCooldown(who, "estudar");
+    if (cd)
+        SendSysMessage(who, "Você precisa esperar " + cd + " segundos para estudar novamente.");
+        return 0;
+    endif
+
+    setCooldown(who, "estudar", 60);
+    
+    var skill_name := GetObjProperty(item, "estudavel");
+
+    if (AP_GetTrueSkill(who, skill_name) <= 0)
+        SendSysMessage(who, "Você não possui a habilidade " + skill_name + " e não pode estudá-la.");
+        return 0;
+    endif
+
+    if (!VerificarLimiteSkill(who, skill_name))
+        return 0;
+    endif
+
+    var frases := GetFrasesPorSkill(skill_name);
+    ExecutarSequenciaAcoes(who, frases);
+
+    // 33% de chance de ganhar skill
+    if (RandomInt(100) < 33)
+        var cap := AP_GetSkillCap(who, skill_name);
+        var new_skill := AP_GetTrueSkill(who, skill_name) + GAIN_AMOUNT;
+        if (new_skill > cap)
+            new_skill := cap;
+        endif
+        AP_SetTrueSkill(who, skill_name, new_skill);
+        SendSysMessage(who, "Você ganhou " + GAIN_AMOUNT + " em " + skill_name + "!");
+        return 1;
+    else
+        SendSysMessage(who, "Você tentou estudar, mas não conseguiu aprender nada novo.");
+        return 0;
+    endif
+endfunction

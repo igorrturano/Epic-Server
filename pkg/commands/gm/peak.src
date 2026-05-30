@@ -1,0 +1,376 @@
+// .peak - visualiza estatísticas do tracker de jogadores online
+// Lê os CSVs produzidos por scripts/misc/onlineTracker.src
+// (data/log/online/<DD-MM-YYYY>/online.log - schema: ts,total,gms)
+use uo;
+use os;
+use file;
+use util;
+use polsys;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:/include/epicGumps";
+
+const GUMP_WIDTH  := 560;
+const GUMP_HEIGHT := 600;
+
+const LOG_ROOT := "data/log/online";
+
+program peak(who)
+	var stats := LoadStats();
+	FoldLiveSample(stats);
+	if (stats.total_samples == 0)
+		var gump := GFECreateGump("Online - Pico", GUMP_WIDTH, 180);
+		GFHTMLArea(gump, 25, 75, GUMP_WIDTH - 45, 60, "<BASEFONT Color=#FFFFFF>Nenhum registro encontrado em <i>" + LOG_ROOT + "</i>.<BR>O OnlineTracker pode não ter rodado ainda.", 0, 0);
+		GFSendGump(who, gump);
+		return 0;
+	endif
+
+	var page := 1;
+	while (1)
+		var gump := BuildGump(stats, page);
+		var input := GFSendGump(who, gump);
+		if (!input || input[0] == 0)
+			break;
+		endif
+		if (input[0] == 100)
+			page := (page == 1) ? 2 : 1;
+		else
+			break;
+		endif
+	endwhile
+	return 1;
+endprogram
+
+function BuildGump(stats, page)
+	var title := (page == 1) ? "Online - Por Hora do Dia" : "Online - Por Dia";
+	var gump := GFECreateGump(title, GUMP_WIDTH, GUMP_HEIGHT);
+
+	// Header stats - each cell with its own tooltip
+	var hdr_font := "<BASEFONT Color=#FFD700 Size=4>";
+
+	GFHTMLArea(gump, 25, 70, 175, 24, hdr_font + "<b>Recorde:</b> " + stats.alltime_peak + " jogadores", 0, 0);
+	GFTooltipText(gump, "Maior numero de jogadores online registrado em qualquer amostra desde que o tracker comecou a rodar. Nao conta GMs.");
+
+	GFHTMLArea(gump, 205, 70, 165, 24, hdr_font + "<b>Dias:</b> " + stats.days_count, 0, 0);
+	GFTooltipText(gump, "Quantidade de dias diferentes que tem log do OnlineTracker em data/log/online/. Cada dia vira uma pasta DD-MM-YYYY com um online.log dentro.");
+
+	GFHTMLArea(gump, 375, 70, 165, 24, hdr_font + "<b>Amostras:</b> " + stats.total_samples, 0, 0);
+	GFTooltipText(gump, "Cada amostra = 1 medicao feita pelo OnlineTracker a cada 5 minutos. Total acumulado em todos os dias. Quanto mais amostras, mais confiavel a media por hora.");
+
+	if (page == 1)
+		RenderHourly(gump, stats);
+	else
+		RenderDaily(gump, stats);
+	endif
+
+	var nav_y := GUMP_HEIGHT - 35;
+	GFAddButton(gump, GUMP_WIDTH - 80, nav_y, 0x15E1, 0x15E5, GF_CLOSE_BTN, 100);
+	GFTextLine(gump, 30, nav_y + 3, 53, (page == 1) ? "Pagina 1/2 - Por hora" : "Pagina 2/2 - Por dia");
+	return gump;
+endfunction
+
+// --------------------------------------------------------------------------
+// Hourly view: bar chart 0h..23h
+// --------------------------------------------------------------------------
+function RenderHourly(byref gump, stats)
+	var hourly := stats.hourly; // dict h -> struct{sum,count,peak}
+
+	// Find max avg to scale bars
+	var max_avg := 0.0;
+	for h := 0 to 23
+		var hkey := PadHour(h);
+		if (hourly.Exists(hkey))
+			var avg := hourly[hkey].sum / hourly[hkey].count;
+			if (avg > max_avg)
+				max_avg := avg;
+			endif
+		endif
+	endfor
+	if (max_avg < 1.0)
+		max_avg := 1.0;
+	endif
+
+	var html := "<BASEFONT Color=#FFFFFF Size=3>";
+	html := html + "<i>Media de jogadores online por hora (todos os dias agregados)</i><BR><BR>";
+
+	for h := 0 to 23
+		var hkey := PadHour(h);
+		var avg := 0.0;
+		var peak := 0;
+		var samples := 0;
+		if (hourly.Exists(hkey))
+			avg := hourly[hkey].sum / hourly[hkey].count;
+			peak := hourly[hkey].peak;
+			samples := hourly[hkey].count;
+		endif
+
+		// Build bar: max 25 blocks
+		var blocks := CInt((avg / max_avg) * 25.0);
+		var filled := "";
+		var i := 0;
+		while (i < blocks)
+			filled := filled + "=";
+			i := i + 1;
+		endwhile
+		var empty := "";
+		while (i < 25)
+			empty := empty + "-";
+			i := i + 1;
+		endwhile
+
+		var bar_color := HourColor(avg, max_avg);
+		// Hour label in white, bar colored, stats in white
+		html := html + "<BASEFONT Color=#FFFFFF><b>" + hkey + "h</b> ";
+		html := html + "<BASEFONT Color=" + bar_color + ">" + filled;
+		html := html + "<BASEFONT Color=#555555>" + empty;
+		html := html + "<BASEFONT Color=#FFFFFF>  media <b>" + FmtFloat(avg) + "</b>  pico <b>" + peak + "</b>";
+		if (samples == 0)
+			html := html + " <BASEFONT Color=#888888><i>(sem dados)</i>";
+		endif
+		html := html + "<BR>";
+	endfor
+
+	GFHTMLArea(gump, 25, 115, GUMP_WIDTH - 45, GUMP_HEIGHT - 160, html, 0, 1);
+	GFTooltipText(gump, "Cada linha = 1 hora do dia (00h-23h). A barra mostra a media de jogadores online naquela hora, escalada em relacao a hora mais movimentada. Media = total de jogadores / amostras coletadas. Pico = maior valor unico registrado naquela hora. Cor vermelha = horario de pico, dourado = alto, verde = medio, azul = calmo.");
+endfunction
+
+// --------------------------------------------------------------------------
+// Daily view: chronological list with bars
+// --------------------------------------------------------------------------
+function RenderDaily(byref gump, stats)
+	var days := stats.daily; // dict "DD-MM-YYYY" -> struct{sum,count,peak}
+	var keys := days.keys();
+	SortDateKeys(keys);
+
+	// Find max daily peak to scale
+	var max_peak := 0;
+	foreach k in keys
+		if (days[k].peak > max_peak)
+			max_peak := days[k].peak;
+		endif
+	endforeach
+	if (max_peak < 1)
+		max_peak := 1;
+	endif
+
+	var html := "<BASEFONT Color=#FFFFFF Size=3>";
+	html := html + "<i>Pico e media por dia (mais recente em cima)</i><BR><BR>";
+
+	var shown := 0;
+	var idx := keys.size();
+	while (idx >= 1 && shown < 30)
+		var k := keys[idx];
+		var d := days[k];
+		var avg := d.sum / d.count;
+
+		var blocks := CInt((CDbl(d.peak) / CDbl(max_peak)) * 25.0);
+		var filled := "";
+		var i := 0;
+		while (i < blocks)
+			filled := filled + "=";
+			i := i + 1;
+		endwhile
+		var empty := "";
+		while (i < 25)
+			empty := empty + "-";
+			i := i + 1;
+		endwhile
+
+		html := html + "<BASEFONT Color=#FFFFFF><b>" + k + "</b> ";
+		html := html + "<BASEFONT Color=#FFD700>" + filled;
+		html := html + "<BASEFONT Color=#555555>" + empty;
+		html := html + "<BASEFONT Color=#FFFFFF>  pico <b>" + d.peak + "</b>  media <b>" + FmtFloat(avg) + "</b><BR>";
+
+		idx := idx - 1;
+		shown := shown + 1;
+	endwhile
+
+	GFHTMLArea(gump, 25, 115, GUMP_WIDTH - 45, GUMP_HEIGHT - 160, html, 0, 1);
+	GFTooltipText(gump, "Cada linha = 1 dia (data DD-MM-YYYY). A barra dourada mostra o pico do dia, escalado em relacao ao maior pico ja registrado. Pico = maior valor unico naquele dia. Media = total / amostras do dia. Mostra ate 30 dias, mais recente em cima.");
+endfunction
+
+// --------------------------------------------------------------------------
+// Loader: walk LOG_ROOT, parse every online.log, aggregate
+// --------------------------------------------------------------------------
+function LoadStats()
+	var stats := struct;
+	stats.+hourly := dictionary;       // "HH"          -> {sum,count,peak}
+	stats.+daily  := dictionary;       // "DD-MM-YYYY"  -> {sum,count,peak}
+	stats.+alltime_peak  := 0;
+	stats.+days_count    := 0;
+	stats.+total_samples := 0;
+
+	var dirs := ListDirectory(LOG_ROOT, LISTDIR_NO_FILES, LISTDIR_LIST_DIRS);
+	if (!dirs || dirs.errortext)
+		return stats;
+	endif
+
+	foreach day_dir in dirs
+		var path := LOG_ROOT + "/" + day_dir + "/online.log";
+		if (!FileExists(path))
+			continue;
+		endif
+
+		var lines := ReadFile(path);
+		if (!lines || lines.errortext)
+			continue;
+		endif
+
+		var d_entry := struct;
+		d_entry.+sum := 0.0;
+		d_entry.+count := 0;
+		d_entry.+peak := 0;
+
+		foreach line in lines
+			// "DD-MM-YYYY HH:MM:SS,total,gms"
+			var parts := SplitWords(line, ",");
+			if (parts.size() < 2)
+				continue;
+			endif
+			var ts := parts[1];
+			var total := CInt(parts[2]);
+
+			// Extract HH from "DD-MM-YYYY HH:MM:SS"
+			var space := Find(ts, " ", 1);
+			if (space < 1)
+				continue;
+			endif
+			var time_part := ts[space + 1, ts.length() - space];
+			var hh := time_part[1, 2];
+
+			// Hourly bucket
+			if (!stats.hourly.Exists(hh))
+				var h := struct;
+				h.+sum := 0.0;
+				h.+count := 0;
+				h.+peak := 0;
+				stats.hourly[hh] := h;
+			endif
+			stats.hourly[hh].sum   := stats.hourly[hh].sum + CDbl(total);
+			stats.hourly[hh].count := stats.hourly[hh].count + 1;
+			if (total > stats.hourly[hh].peak)
+				stats.hourly[hh].peak := total;
+			endif
+
+			// Daily bucket
+			d_entry.sum   := d_entry.sum + CDbl(total);
+			d_entry.count := d_entry.count + 1;
+			if (total > d_entry.peak)
+				d_entry.peak := total;
+			endif
+
+			if (total > stats.alltime_peak)
+				stats.alltime_peak := total;
+			endif
+			stats.total_samples := stats.total_samples + 1;
+			sleepms(2);
+		endforeach
+
+		if (d_entry.count > 0)
+			stats.daily[day_dir] := d_entry;
+			stats.days_count := stats.days_count + 1;
+		endif
+	endforeach
+
+	return stats;
+endfunction
+
+// Live sample so the gump reflects the current moment, not just the last
+// 1-minute tick of the OnlineTracker. Folds the live count into both the
+// all-time peak and the current hour/day buckets.
+function FoldLiveSample(byref stats)
+	var total := 0;
+	foreach p in EnumerateOnlineCharacters()
+		if (p.cmdlevel < 1)
+			total := total + 1;
+		endif
+	endforeach
+
+	if (total > stats.alltime_peak)
+		stats.alltime_peak := total;
+	endif
+
+	var now  := polcore().systime;
+	var hkey := StrFormatTime("%H", now);
+	var dkey := StrFormatTime("%d-%m-%Y", now);
+
+	if (!stats.hourly.Exists(hkey))
+		var h := struct;
+		h.+sum := 0.0;
+		h.+count := 0;
+		h.+peak := 0;
+		stats.hourly[hkey] := h;
+	endif
+	if (total > stats.hourly[hkey].peak)
+		stats.hourly[hkey].peak := total;
+	endif
+
+	if (!stats.daily.Exists(dkey))
+		var d := struct;
+		d.+sum := 0.0;
+		d.+count := 0;
+		d.+peak := 0;
+		stats.daily[dkey] := d;
+		stats.days_count := stats.days_count + 1;
+	endif
+	if (total > stats.daily[dkey].peak)
+		stats.daily[dkey].peak := total;
+	endif
+endfunction
+
+// --------------------------------------------------------------------------
+// Helpers
+// --------------------------------------------------------------------------
+function PadHour(h)
+	if (h < 10)
+		return "0" + CStr(h);
+	endif
+	return CStr(h);
+endfunction
+
+function FmtFloat(v)
+	// Show one decimal place
+	var times10 := CInt(v * 10.0 + 0.5);
+	var whole := CInt(times10 / 10);
+	var frac := times10 - (whole * 10);
+	return CStr(whole) + "." + CStr(frac);
+endfunction
+
+function HourColor(avg, max_avg)
+	var ratio := avg / max_avg;
+	if (ratio >= 0.75)
+		return "#FF6347"; // peak - coral
+	elseif (ratio >= 0.40)
+		return "#FFD700"; // high - gold
+	elseif (ratio >= 0.15)
+		return "#9ACD32"; // mid - green
+	endif
+	return "#6699CC";     // low - cool blue
+endfunction
+
+// Sort "DD-MM-YYYY" strings chronologically (ascending) in-place
+function SortDateKeys(byref keys)
+	var n := keys.size();
+	var i := 1;
+	while (i <= n)
+		var j := i + 1;
+		while (j <= n)
+			if (DateKeyToSortable(keys[j]) < DateKeyToSortable(keys[i]))
+				var tmp := keys[i];
+				keys[i] := keys[j];
+				keys[j] := tmp;
+			endif
+			j := j + 1;
+		endwhile
+		i := i + 1;
+	endwhile
+endfunction
+
+function DateKeyToSortable(k)
+	// "DD-MM-YYYY" -> "YYYYMMDD"
+	if (k.length() != 10)
+		return k;
+	endif
+	return k[7, 4] + k[4, 2] + k[1, 2];
+endfunction

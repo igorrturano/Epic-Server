@@ -1,0 +1,6 @@
+Cprops do FLS
+
+Vitality: tem em todo char.
+poisoned: diz se um item esta envenenado 
+magic: 0/1/2: 0 o item nao eh magico, 1 o item eh magico masn ao foi ativado, 2 o item eh magico e ativado.
+morto: 1: char morto.

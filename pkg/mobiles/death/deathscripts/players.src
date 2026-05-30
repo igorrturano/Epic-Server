@@ -1,0 +1,597 @@
+
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":death:death";
+include ":mounts:mounts";
+include ":death:settings";
+include ":attributes:attributes";
+include ":attributes:skills";
+include "include/say";
+include ":tn:cooldown";
+include ":charactercreation:habilidades";
+include ":attributes:advanceCheck";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":charactercreation:resists";
+include ":charactercreation:createchar";
+include ":containers:storageAreas";
+include ":keys:key";
+include ":death:wakeup";
+include ":duel:duel";
+
+program death(params)
+
+	var corpse := params[1];
+	var ghost := params[2];
+	var lastDamage := GetObjProperty(ghost, "LastDamage");
+	Setobjproperty(corpse, "account", ghost.acctname);
+	// sendsysmessage(ghost, " " + corpse.x + " " + corpse.y);
+
+	if (GetObjProperty(ghost, "forjoumorte") == 1)
+		return 1;
+	endif
+
+	// Se virou fantasma, para de dar dano
+	if (GetObjProperty(ghost, "defaultPoison"))
+		TS_LowerDuration(ghost, "defaultPoison", -1);
+	endif
+
+	var lastHit := GetObjProperty(ghost, "lastHit");
+		var killer := 0;
+	if (lastHit != error && lastHit["attacker"])
+		killer := SystemFindObjectBySerial(lastHit["attacker"]);
+	endif
+	var dmg := lastHit.amount;
+
+	// Duel death check - read and clean up #duel property
+	var duel_data := GetObjProperty(ghost, "#duel");
+	var is_duel_death := (duel_data != error && killer.acctname && duel_data["partner"] == killer.serial);
+	if (duel_data != error)
+		EraseObjProperty(ghost, "#duel");
+	endif
+
+	if (killer.npctemplate || killer.connected) // Assassino existente
+		if (temhabilidade(ghost, "Ultimo Suspiro") && Distance(killer, corpse) <= 2)
+			PrintTextAbove(corpse, "*acerta um ponto vital de " + killer.name + "*");
+			TS_StartTimer(killer, "bleed", 30);
+		endif
+	endif
+
+	// var protecao := Cint(GetObjProperty(ghost, "protecaomorte"));
+	var save := 0;
+	var protecao := 0;
+	if (GetCooldown(ghost, "#phylactery") > 0 || GetCooldown(ghost, "protecaomorte") > 0)
+		protecao := 1;
+	endif
+	if (getObjProperty(ghost, "savegame") != error)
+		protecao := 1;
+		save := 1;
+	endif
+
+	// Check no Chain Of Pain, para retirar 1 do copnumber se for o caso.
+	if (getObjProperty(corpse, "chainofpain"))
+		var seriais := getObjProperty(corpse, "chainofpain");
+		var copnumber := getObjProperty(corpse, "copnumber");
+		copnumber := copnumber - 1;
+		foreach serial in seriais
+			var mobile := SystemFindObjectBySerial(serial);
+			SetObjProperty(mobile, "copnumber", copnumber);
+		endforeach
+	endif
+
+	if (corpse.x >= 4855 && corpse.y >= 879)
+
+		if (corpse.x <= 4869 && corpse.y <= 890)
+			corpse.movable := 1;
+			var e := MoveObjectToLocation(corpse, 4859, 876, 1, corpse.realm, MOVEOBJECT_FORCELOCATION);
+			corpse.movable := 0;
+		// 	sendsysmessage(ghost, " " + e);
+		endif
+	endif
+
+	if (corpse.x >= 4919 && corpse.y >= 1044)
+
+		if (corpse.x <= 4933 && corpse.y <= 1066)
+			corpse.movable := 1;
+			var e := MoveObjectToLocation(corpse, 4893, 1014, 1, corpse.realm, MOVEOBJECT_FORCELOCATION);
+			corpse.movable := 0;
+		// 	sendsysmessage(ghost, " " + e);
+		endif
+	endif
+
+	if (getObjProperty(corpse, "oldbodyserial"))
+		KataWakeUp(ghost, corpse);
+	endif
+	if (is_duel_death)
+		// Duelo: sem perda de DP
+		SendSysMessage(ghost, "Voce foi derrotado no duelo.");
+	elseif (protecao) // Protecao Contra Morte
+		SendSysMessageEx(ghost, "Sua alma esta protegida");
+	elseif (ghost.cmdlevel) // GM
+		// GM nao perde DP
+	else
+		// Perda de DP para TODAS as mortes (NPC e PvP)
+		EraseObjProperty(ghost, "#Casting");
+		var dp_loss := 10;
+		var bodyregion := lastHit["bodyregion"];
+		if (bodyregion == "Neck")
+			dp_loss := 20;
+		endif
+		AP_ConsumeVital(ghost, "DP", dp_loss);
+		SendSysMessage(ghost, "Voce perdeu " + (dp_loss / 10) + " DP e agora tem " + AP_GetVital(ghost, "DP") / 10);
+		var tempo := 180;
+		var regiao := BodyRegionName(bodyregion);
+		if (AP_GetVital(ghost, "DP") <= 19)
+			if (!CheckResist(ghost, FORTITUDE, RESIST_EXTREMELY_HARD))
+				SendSysMessage(ghost, "Voce fraturou sua(s) " + regiao + "! Melhor se cuidar.");
+				DeferFracture(ghost, bodyregion, 0);
+			endif
+		elseif (AP_GetVital(ghost, "DP") < 30)
+			if (!CheckResist(ghost, FORTITUDE, RESIST_VERY_HARD))
+				SendSysMessage(ghost, "Voce fraturou sua(s) " + regiao + "!");
+				DeferFracture(ghost, bodyregion, 300);
+			endif
+		elseif (AP_GetVital(ghost, "DP") < 40)
+			if (!CheckResist(ghost, FORTITUDE, RESIST_HARD))
+				SendSysMessage(ghost, "Voce fraturou sua(s) " + regiao + "!");
+				DeferFracture(ghost, bodyregion, 240);
+			endif
+		elseif ((AP_GetVital(ghost, "DP") < 50))
+			if (!CheckResist(ghost, FORTITUDE, RESIST_MEDIUM))
+				SendSysMessage(ghost, "Voce fraturou sua(s) " + regiao + "!");
+				DeferFracture(ghost, bodyregion, 180);
+			endif
+		endif
+		if (AP_GetVital(ghost, "DP") < 10 || CInt(GetObjProperty(ghost, "morto")))
+			SendSysMessage(ghost, "Voce morreu.");
+			var region := GetRegionName(corpse);
+			var tipo := "morreu";
+			var coords := { corpse.x, corpse.y, corpse.z, CStr(corpse.realm) };
+			var nome := GetObjProperty(ghost, "nome_inicial");
+			var killer_name := "desconhecido";
+			if (lastHit != error && lastHit["source"] == "trap")
+				killer_name := "armadilha";
+			elseif (killer)
+				var nome_killer := GetObjProperty(killer, "nome_inicial");
+				if (nome_killer)
+					killer_name := nome_killer;
+				elseif (killer.corpsetype)
+					var desc := killer.desc;
+					desc["A corpse of "] := "";
+					desc["corpo de "] := "";
+					killer_name := desc;
+				elseif (killer.name && !killer.name.errortext)
+					killer_name := killer.name;
+				endif
+			endif
+			ProcurarItensQuarto(ghost);
+			if (!CInt(GetObjProperty(ghost, "morto")))
+				Start_script(":DiscordWebhook:discord", { tipo, nome, ghost.acctname, killer_name,
+										  				region, coords, corpse });
+			endif
+			SetCooldown(ghost, "morto_recentemente", 300);
+			SetObjProperty(corpse, "morto", 1);
+			SetObjProperty(ghost, "morto", 1);
+			SetObjProperty(corpse, "deathtimer", polcore().systime);
+			EraseObjProperty(ghost, "death_remaining");
+			EraseObjProperty(ghost, "death_corpse_serial");
+			sleep(5);
+			return 1;
+		endif
+	endif
+
+	if (killer.acctname)
+		var region := GetRegionName(corpse);
+		var tipo := "pvp";
+		var coords := { corpse.x, corpse.y };
+		var nome := GetObjProperty(killer, "nome_inicial");
+		var nome_ghost := GetObjProperty(ghost, "nome_inicial");
+		Start_script(":DiscordWebhook:discord", { tipo, nome, killer.acctname, nome_ghost,
+										  		region, coords, ghost.acctname });
+	endif
+	SendSysMessage(ghost, "Voce desmaiou.");
+
+	var pacto := PactoSepulturaCheck(ghost, corpse);
+	if (pacto == 1)
+		return 234;
+	endif
+
+	var tempo := 4; // 6 ticks * 30s = 3 minutos
+	if (dmg > CInt(AP_GetVitalMaximumValue(ghost, HITS) / 5))
+		tempo := tempo * 1.5;
+	endif
+	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::RECOVERY))
+		tempo := tempo / 2;
+	endif
+	if (MobileWrapper(ghost).HasAbility(ABILITY_ID::TRAPACEIRO_EXPERIENTE) && GetCooldown(ghost, "trapacearmorte") == 0)
+		tempo := 1;
+		SetCooldown(ghost, "trapacearmorte", 300);
+		SendSysMessage(ghost, "Sua experiencia como trapaceiro lhe permite se recuperar rapidamente!");
+	endif
+	if (save)
+		tempo := 0;
+	endif
+	if (is_duel_death)
+		tempo := CInt(tempo / 2);
+		var duel_partner := SystemFindObjectBySerial(duel_data["partner"]);
+		EndDuel(ghost, duel_partner, "faint");
+	endif
+	SetObjProperty(ghost, "death_remaining", tempo * 30);
+	SetObjProperty(ghost, "death_corpse_serial", corpse.serial);
+	while (tempo > 0)
+		if (tempo % 2 == 0)
+			SendSysMessage(ghost, "Voce acordara em " + (tempo / 2) + " minuto(s).");
+		endif
+		if (tempo != 1)
+			sleep(30);
+		else
+			if (GetObjProperty(corpse, "webseal"))
+				tempo := 1;
+			else
+				SendSysMessage(ghost, "30 segundos...");
+				sleep(10);
+				SendSysMessage(ghost, "20 segundos...");
+				sleep(10);
+				SendSysMessage(ghost, "10 segundos...");
+				sleep(10);
+			endif
+		endif
+		if (GetObjProperty(corpse, "curado"))
+			SendSysMessage(ghost, "Voce foi curado e acordara em 5 segundos!");
+			EraseObjProperty(ghost, "#deferred_fratura");
+			EraseObjProperty(corpse, "prolongardesmaio");
+			sleep(5);
+			break;
+		elseif (GetObjProperty(corpse, "prolongardesmaio"))
+			SendSysMessageEx(ghost, "Seus batimentos cardíacos se reduzem, e você tem mais dificuldade em recobrar a consciência.",
+							  SSM_FAIL);
+			EraseObjProperty(corpse, "prolongardesmaio");
+			SetObjProperty(corpse, "japrolongou", 1);
+			tempo := tempo * 2;
+			SetObjProperty(ghost, "death_remaining", tempo * 30);
+		elseif (CInt(GetObjProperty(corpse, "morto")) || CInt(GetObjProperty(ghost, "morto")))
+			SendSysMessage(ghost, "Algo aconteceu... Voce morreu.");
+			// Penalizar o assassino que matou o jogador desmaiado
+			var finalHit := GetObjProperty(ghost, "lastHit");
+			if (finalHit != error && finalHit["attacker"])
+				var assassino := SystemFindObjectBySerial(finalHit["attacker"]);
+				if (assassino.acctname && !assassino.cmdlevel)
+					AP_ConsumeVital(assassino, "DP", 10);
+					SendSysMessage(assassino, "Voce assassinou um jogador desmaiado e perdeu 1 DP. Agora tem " + AP_GetVital(assassino, "DP") / 10);
+				endif
+			endif
+			SetObjProperty(corpse, "morto", 1);
+			SetObjProperty(ghost, "morto", 1);
+			SetObjProperty(corpse, "deathtimer", polcore().systime);
+			SetCooldown(corpse, "morto_recentemente", 300);
+			ProcurarItensQuarto(ghost);
+			// var dias := idadeCharInDays(ghost);
+			// if (dias < 2 || dias == error || dias > 1000) // byte hell, char recriado muitas vzes tava vindo com 19k+ dias
+			// 	dias := 2;
+			// endif
+			// SendSysMessage(ghost, "Seu proximo char comecara com " + Cint((dias / 2)) + " dias de cap.");
+			// FindAccount(ghost.acctname).setprop("heir_days", CInt(dias / 2));
+			// SetObjProperty(ghost, "heir_days", CInt(dias / 2)); // 24horas*60minutos*60segundos = 86400 segundos //esse é só pra ver se foi calculado certo
+
+			// var skill_heir := get_heir_skills(ghost);
+
+			// FindAccount(ghost.acctname).setprop("herdeiro", skill_heir);
+			// if (FindAccount(ghost.acctname).getprop("herdado")) // limpa a variavel caso exista
+			// 	FindAccount(ghost.acctname).eraseprop("herdado");
+			// endif
+
+			// dias := Cint((dias / 2)) * 86400; // 24h em segundos
+			// dias := (polcore().systime - dias);
+
+			// var logs := FindAccount(ghost).getprop("mortelog");
+			// if (logs == error || logs < dias)
+			//    logs := dias;
+			// endif
+			// FindAccount(ghost.acctname).setprop("mortelog", logs);
+			EraseObjProperty(ghost, "death_remaining");
+			EraseObjProperty(ghost, "death_corpse_serial");
+			return 1;
+		elseif (GetObjProperty(corpse, "webseal"))
+			tempo := 1;
+			SendSysMessageEx(corpse, "Você está preso na teia de aranha!", SSM_FAIL);
+		endif
+		tempo := tempo - 1;
+		SetObjProperty(ghost, "death_remaining", tempo * 30);
+	endwhile
+	EraseObjProperty(corpse, "japrolongou");
+
+	// 	RessPlayer(ghost, corpse);
+	if (is_duel_death)
+		DuelWakeUp(ghost, corpse);
+	else
+		KataWakeUp(ghost, corpse);
+	endif
+	return 1;
+endprogram
+
+/* Move o player
+ * Ressucita
+ * Equipa os itens no corpo
+ * Destroi o corpo
+ * Seta os vitals
+*/
+function RessPlayer(who, corpse)
+
+	MoveObjectToLocation(who, corpse.x, corpse.y, corpse.z, corpse.realm);
+	who.frozen := 1;
+	sleep(1);
+	who.frozen := 0;
+	Resurrect(who);
+
+	var mypack := who.backpack;
+	if (!mypack)
+		return;
+	endif
+
+	DestroyItem(GetEquipmentByLayer(who, 0x16)); // layer da robe
+
+	foreach thing in EnumerateItemsInContainer(corpse)
+		if (thing.container == corpse)
+
+			MoveObjectToLocation(thing, who.x, who.y, who.z, who.realm);
+			MoveItemToContainer(thing, who.backpack);
+		endif
+	endforeach
+
+	foreach thing in EnumerateItemsInContainer(who.backpack)
+		EquipItem(who, thing);
+	endforeach
+
+	var regen := CInt(DP_GetVitalsRegen());
+	if (!regen)
+		regen := 0.25;
+	endif
+
+	var hp := AP_GetVitalMaximumValue(who, HITS);
+	var stam := AP_GetVitalMaximumValue(who, STAMINA);
+	AP_SetVital(who, HITS, hp * regen);
+	AP_SetVital(who, STAMINA, stam * regen);
+	DestroyItem(corpse);
+
+endfunction
+
+
+function PactoSepulturaCheck(ghost, corpse)
+
+	var pacto := 0;
+	if (getobjProperty(ghost, "pactodesepultura"))
+		var targserial := getobjProperty(ghost, "pactodesepultura");
+		var targ := SystemFindObjectBySerial(targserial);
+		var dmg := Cint(getobjProperty(corpse, "pactodesepulturadmg"));
+		ApplyDamage(targ, dmg);
+		var targhp := AP_GetVital(targ, "hits");
+		if (targhp <= 0)
+			SendSysMessage(ghost, "Voce voltara a vida com o pacto de sepultura.", 3, 191);
+			sleepms(1500);
+			KataWakeUp(ghost, corpse);
+			pacto := 1;
+		endif
+		EraseObjProperty(ghost, "pactodesepultura");
+		EraseObjProperty(ghost, "pactodesepulturadmg");
+		EraseObjProperty(corpse, "pactodesepultura");
+		EraseObjProperty(corpse, "pactodesepulturadmg");
+	endif
+	return pacto;
+
+endfunction
+
+function get_heir_skills(who)
+	var primarias := GetPrimarias(who);
+	var chardata := GetObjProperty(who, "chardata");
+	var primarias_sum := 0;
+	foreach skill in primarias
+		primarias_sum += Cint(AP_GetTrueSkill(who, skill));
+	endforeach
+	if (chardata.trait == "Sabe-Tudo")
+		primarias_sum *= 2;
+	endif
+	var bonus_primarias := (primarias_sum - 80) / 4; // metade da media de pontos upados acima de 40 nas primarias
+
+	var secundarias := GetSecundarias(who);
+	var count := 0;
+	var secundarias_sum := 0;
+
+	foreach skill in secundarias
+		count++;
+		secundarias_sum += Cint(AP_GetTrueSkill(who, skill));
+	endforeach
+	var bonus_secundarias := (secundarias_sum - (count * 20)) / (count * 2); // metade da media de pontos upados acima de 20 nas secundárias
+
+	var terciarias := GetTerciarias(who);
+	var terciarias_sum := 0;
+	count := 0;
+	foreach skill in terciarias
+		count++;
+		terciarias_sum += Cint(AP_GetTrueSkill(who, skill));
+	endforeach
+	var bonus_terciarias := (terciarias_sum / (count * 2)); // metade da media de pontos upados acima de 0 ns terciárias
+
+	var skills_bonus := struct;
+	skills_bonus.+bonus_primarias := bonus_primarias;
+	skills_bonus.+bonus_secundarias := bonus_secundarias;
+	skills_bonus.+bonus_terciarias := bonus_terciarias;
+	return skills_bonus;
+endfunction
+
+function idadeCharInDays(character) // para 10000 deu 292 segundos 300
+	var criadoEm := cint(GetObjProperty(character, "createdate"));
+	var tempoAgora := polcore().systime; // segundos
+	var tempoDevida := tempoAgora - criadoEm;
+	var dias := cint(tempoDevida / (86400)); // 24horas*60minutos*60segundos = 86400 segundos
+	return dias;
+endfunction
+
+function MoverItensQuartoParaNpc(x, y, z, r, player, npc)
+	var objects := ListItemsNearLocation(x, y, z, 10, r);
+	var backpack;
+	if (player && player != error)
+		backpack := CreateItemAtLocation(x, y, z, hex(3701), 1, r);
+		backpack.desc := player.name;
+	endif
+	foreach obj in objects
+		if (obj.isDoor())
+			sleepms(20);
+			continue;
+		endif
+		if (CheckLosBetween(x, y, z, obj.x, obj.y, obj.z, r))
+			if (GetObjProperty(obj, "crafterserial"))
+				if (player && player != error)
+					obj.movable := 1;
+					MoveItemToContainer(obj, backpack);
+				else
+					DestroyItem(obj);
+				endif
+
+			elseif (obj.IsA(POLCLASS_CONTAINER))
+				if (player && player != error)
+					foreach item in EnumerateItemsInContainer(obj, ENUMERATE_IGNORE_LOCKED)
+						item.movable := 1;
+						sleepms(20);
+					endforeach
+					obj.movable := 1;
+					MoveItemToContainer(obj, backpack);
+				else
+					DestroyItem(obj);
+				endif
+			endif
+		endif
+		sleepms(20);
+	endforeach
+	if (player && player != error)
+		if (!npc.backpack)
+			Set_Critical(1);
+			var newpack := CreateItemAtLocation(npc.x, npc.y, npc.z, "backpack", 1, npc.realm);
+			if (!EquipItem(npc, newpack))
+				DestroyItem(newpack);
+				return 0;
+			endif
+		endif
+		MoveItemToContainer(backpack, npc.backpack);
+		var confiscado := GetObjProperty(npc, "confiscados");
+		if (!confiscado || confiscado == error)
+			confiscado := struct;
+		endif
+		confiscado.insert("" + player.serial, backpack.serial);
+		SetObjProperty(npc, "confiscados", confiscado);
+	endif
+	return 1;
+endfunction
+
+function ProcurarItensQuarto(who)
+	var innkeepers := getglobalproperty("InnKeeper");
+
+	if (innkeepers[1] == error)
+		return 1;
+	endif
+
+	var x := 1;
+	while (x <= innkeepers.size())
+		var npc := SystemFindObjectBySerial(cint(innkeepers[x]));
+		if (npc.errortext)
+			innkeepers.erase(x);
+			SetGlobalProperty("InnKeeper", innkeepers);
+			sleepms(20);
+			continue;
+		endif
+
+		var quartos := GetObjProperty(npc, "quartos");
+		if (!quartos || quartos == error)
+			x := x + 1;
+			sleepms(20);
+			continue;
+		endif
+
+		var i := 1;
+		while (i <= quartos.size())
+			if (quartos[i].inquilino == who.serial)
+				var quarto := quartos[i];
+				var cent := quarto.centro;
+				var cent_size := cent.size();
+				var room_realm := npc.realm;
+				if (cent_size == 4)
+					room_realm := cent[4];
+				elseif (cent_size == 7)
+					room_realm := cent[7];
+				endif
+				if (cent[1])
+					MoverItensQuartoParaNpc(cent[1], cent[2], cent[3], room_realm, who, npc);
+					if (cent_size == 6 || cent_size == 7)
+						MoverItensQuartoParaNpc(cent[4], cent[5], cent[6], room_realm, who, npc);
+					endif
+				endif
+			endif
+			i := i + 1;
+			sleepms(20);
+		endwhile
+
+		x := x + 1;
+		sleepms(20);
+	endwhile
+endfunction
+
+function BodyRegionName(bodyregion)
+	case (bodyregion)
+		"Head":    return "cabeca";
+		"Hands":   return "maos";
+		"Arms":    return "bracos";
+		"Body":    return "torso";
+		"Legs":    return "pernas";
+		"Feet":    return "pernas";
+		"Neck":    return "pescoco";
+		default:   return "corpo";
+	endcase
+endfunction
+
+function BodyRegionToFracture(bodyregion)
+	case (bodyregion)
+		"Head":    return "fratura_cabeca";
+		"Hands":   return "fratura_maos";
+		"Arms":    return "fratura_bracos";
+		"Body":    return "fratura_torso";
+		"Legs":    return "fratura_pernas";
+		"Feet":    return "fratura_pernas";
+		"Neck":    return "fratura_torso";
+		default:   return "fratura_pernas";
+	endcase
+endfunction
+
+function FractureToGumpName(fracture_name)
+	case (fracture_name)
+		"fratura_cabeca": return "Cabeca";
+		"fratura_maos":   return "Maos";
+		"fratura_bracos": return "Bracos";
+		"fratura_torso":  return "Torso";
+		"fratura_pernas": return "Pernas";
+		default:          return "Torso";
+	endcase
+endfunction
+
+function DeferFracture(ghost, bodyregion, tempo)
+	var fracture_name := BodyRegionToFracture(bodyregion);
+	var fractures := GetObjProperty(ghost, "#deferred_fratura");
+	if (fractures == error)
+		fractures := array{};
+	endif
+	fractures.append(struct{ part := fracture_name, tempo := tempo });
+	SetObjProperty(ghost, "#deferred_fratura", fractures);
+
+	// Add to Fractures array for forensic evaluation gump
+	var gump_name := FractureToGumpName(fracture_name);
+	var visible_fractures := GetObjProperty(ghost, "Fractures");
+	if (visible_fractures == error)
+		visible_fractures := array{};
+	endif
+	if (!(gump_name in visible_fractures))
+		visible_fractures.append(gump_name);
+	endif
+	SetObjProperty(ghost, "Fractures", visible_fractures);
+endfunction

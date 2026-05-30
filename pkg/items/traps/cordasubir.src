@@ -1,0 +1,96 @@
+use uo;
+use os;
+use util;
+
+include ":moongates:moongate";
+include "include/say";
+include ":attributes:attributes";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":charactercreation:resists";
+include ":taming:taming";
+include "include/epicConstants";
+include "include/epicCombatUtils";
+
+program cordasubir(who, item)
+
+	if (!GetObjProperty(item, "cooldown"))
+		Start_Script(":traps:sumir:", item);
+	endif
+
+	var dest := GetObjProperty(item, "Destination");
+	var zdif;
+
+	if (dest.z < who.z)
+		zdif := who.z - dest.z;
+	else
+		zdif := dest.z - who.z;
+	endif
+
+	var dmg := zdif / 4;
+
+	if (Distance(who, item) > 1)
+		SendSysMessageEx(who, " Voce esta muito distante!", SSM_FAIL);
+		return;
+	endif
+
+	var i;
+	var j := GetObjProperty(item, "direcao");
+	var pets := ListPetsNear(who, 4);
+
+	for (i := 0; i <= 5; i := i + 1)
+
+		case (j)
+			"up":
+				PrintTextAbove(who, "*subindo*");
+				MoveObjectToLocation(who, who.x, who.y, who.z + 1, who.realm, MOVEOBJECT_FORCELOCATION);
+
+				if (!Wait(who, 1))
+					if (CheckResist(who, REFLEXES, RESIST_MEDIUM))
+						SendSysMessageEx(who, "Voce solta a corda e aterriza com leveza", SSM_FAIL);
+						return 0;
+					else
+
+						SendSysMessageEx(who, "Voce se moveu e soltou da corda!", SSM_FAIL);
+						DealDamage(who, cInt(dmg * i), DAMAGE_TYPE::BLUNT);
+						return 0;
+					endif
+				endif
+			"down":
+				PrintTextAbove(who, "*descendo*");
+				MoveObjectToLocation(who, who.x, who.y, who.z - 1, who.realm, MOVEOBJECT_FORCELOCATION);
+
+				if (!Wait(who, 1))
+					if (CheckResist(who, REFLEXES, RESIST_MEDIUM))
+						SendSysMessageEx(who, "Voce solta a corda e aterriza com leveza", SSM_FAIL);
+						MoveObjectToLocation(who, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+						foreach pet in pets
+							MoveObjectToLocation(pet, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+						endforeach
+					else
+
+						MoveObjectToLocation(who, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+						foreach pet in pets
+							MoveObjectToLocation(pet, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+						endforeach
+						SendSysMessageEx(who, "Voce se moveu e soltou da corda!", SSM_FAIL);
+						DealDamage(who, cInt(dmg / i), DAMAGE_TYPE::BLUNT);
+					endif
+				endif
+		endcase
+
+	endfor
+
+	if (!dest)
+
+		return error{ "errortext" := "moongate has no destination set." };
+	else
+
+		MoveObjectToLocation(who, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+		foreach pet in pets
+			MoveObjectToLocation(pet, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+		endforeach
+
+	endif
+
+endprogram

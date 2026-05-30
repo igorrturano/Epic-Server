@@ -1,0 +1,64 @@
+// use uo;
+// use os;
+
+// include ":attributes:vitals";
+// include ":wrappers:Objects/Model/MobileWrapper";
+
+// program heal(who, text)
+// 	SendSysMessage(who, "Selecione o alvo para curar...");
+// 	var targ := Target(who);
+
+// 	if (!targ)
+// 		SendSysMessage(who, "Cancelado.");
+// 		return;
+// 	endif
+
+// 	if (!targ.isA(POLCLASS_MOBILE))
+// 		SendSysMessage(who, "Alvo deve ser um mobile!");
+// 		return;
+// 	endif
+
+// 	// Parse do valor de cura
+// 	var amount := CInt(text);
+// 	if (!text || text == "" || amount <= 0)
+// 		SendSysMessage(who, "Uso: .heal <quantidade>");
+// 		SendSysMessage(who, "Exemplo: .heal 100");
+
+// 		// Mostrar info do alvo
+// 		var mobile := MobileWrapper(targ);
+// 		var entropy := mobile.GetEntropy();
+// 		var hp := mobile.GetCurrentHP();
+// 		var maxhp := mobile.GetMaxHP();
+
+// 		SendSysMessage(who, "=== " + targ.name + " ===");
+// 		SendSysMessage(who, "HP: " + hp + "/" + maxhp);
+// 		SendSysMessage(who, "Entropia: " + entropy);
+// 		return;
+// 	endif
+
+// 	// Mostrar entropia antes
+// 	var mobile := MobileWrapper(targ);
+// 	var entropy := mobile.GetEntropy();
+// 	var hp_before := mobile.GetCurrentHP();
+
+// 	SendSysMessage(who, "Aplicando cura de " + amount + " HP em " + targ.name + "...");
+// 	SendSysMessage(who, "Entropia atual: " + entropy);
+
+// 	// Aplicar cura usando o novo sistema
+// 	var result := applyEpicHealing(targ, amount);
+
+// 	if (result)
+// 		var hp_after := mobile.GetCurrentHP();
+// 		var diff := hp_after - hp_before;
+
+// 		if (diff > 0)
+// 			SendSysMessage(who, "Cura aplicada: +" + diff + " HP");
+// 		elseif (diff < 0)
+// 			SendSysMessage(who, "Dano causado: " + Abs(diff) + " HP (corrupção extrema!)");
+// 		else
+// 			SendSysMessage(who, "Sem efeito (corrupção bloqueou a cura)");
+// 		endif
+// 	else
+// 		SendSysMessage(who, "Falha ao aplicar cura (nocure?)");
+// 	endif
+// endprogram

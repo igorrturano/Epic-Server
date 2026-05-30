@@ -1,0 +1,159 @@
+use uo;
+use os;
+use polsys;
+use util;
+
+include "include/eventID";
+include "include/say";
+include "include/client";
+include ":attributes:attributes";
+
+
+/**
+ * Kage Bunshin no Jutsu - Spell 1109
+ * Creates a shadow clone decoy of the ninja.
+ * The clone has 1 HP, copies appearance/equipment, and taunts hostiles.
+ * The ninja is briefly hidden during the swap.
+ */
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	var sneak := CInt(EffectiveSkill(who, "Stealth"));
+	var duration := CInt(sneak / 5);
+	if (duration < 5)
+		duration := 5;
+	endif
+
+	// 1) Hide caster while clone spawns
+	who.hidden := 1;
+
+	// 2) Create clone
+	var clonePos := GetRandomPosition(who);
+	var clone := CreateClone(who, clonePos);
+	if (!clone)
+		who.hidden := 0;
+		SendSysMessageEx(who, "A tecnica falhou.", SSM_FAIL);
+		return 0;
+	endif
+
+	// 3) Swap position with clone for the illusion
+	SwapPositions(who, clone);
+
+	// 4) Reveal caster
+	who.hidden := 0;
+
+	PlaySoundEffect(who, 0x228);
+	PrintTextAbove(who, "*Kage Bunshin no Jutsu!*");
+
+	// 5) Taunt hostiles toward clone
+	var hostiles := ListHostiles(who, 10, LH_FLAG_LOS);
+	if (hostiles && len(hostiles) > 0)
+		TauntHostilesOntoClone(clone, hostiles);
+	endif
+
+	SendSysMessageEx(who, $"Clone criado por {duration}s.", SSM_INFO);
+
+	// 6) Wait duration then cleanup
+	Detach();
+	sleep(duration);
+	DestroyClone(clone);
+
+	return 1;
+endprogram
+
+function TauntHostilesOntoClone(clone, hostiles)
+	foreach hostile in hostiles
+		if (hostile.acctname || hostile.dead || hostile.hidden)
+			continue;
+		endif
+
+		SetObjProperty(hostile, "#ForcedTarget", clone.serial);
+		var ev := struct{ "type" := EVID_TAUNT, "source" := clone };
+		SendEvent(hostile, ev);
+		sleepms(10);
+	endforeach
+endfunction
+
+function CreateClone(original, position)
+	var template := ":epicAI:humanmale";
+	if (original.gender == 1)
+		template := ":epicAI:humanfemale";
+	endif
+
+	var clone := CreateNPCFromTemplate(template, position.x, position.y, position.z, 0, original.realm);
+	if (!clone)
+		return 0;
+	endif
+
+	// Mark as clone (epicAI brain checks this to skip humanoid init)
+	SetObjProperty(clone, "MirrorImage", 1);
+	SetObjProperty(clone, "NoCorpse", 1);
+	SetObjProperty(clone, "Creator", original.serial);
+
+	// Blue name + targetable by red NPCs
+	clone.setMaster(original);
+
+	// 1 HP - dies in one hit, no defense
+	SetVital(clone, "hits", 1);
+	SetVital(clone, "stamina", 1);
+	SetVital(clone, "mana", 1);
+
+	// Copy appearance and equipment
+	CopyAppearance(original, clone);
+	CopyEquipment(original, clone);
+
+	return clone;
+endfunction
+
+function GetRandomPosition(who)
+	return struct{
+		"x" := CInt(who.x + (RandomInt(6) - 3)),
+		"y" := CInt(who.y + (RandomInt(6) - 3)),
+		"z" := CInt(who.z)
+	};
+endfunction
+
+function CopyAppearance(source, dest)
+	dest.gender := source.gender;
+	dest.graphic := source.graphic;
+	dest.color := source.color;
+	dest.name := source.name;
+	dest.title_race := source.title_race;
+	dest.title_suffix := source.title_suffix;
+	dest.title_prefix := source.title_prefix;
+	dest.TrueColor := source.TrueColor;
+	dest.trueobjtype := source.trueobjtype;
+endfunction
+
+function CopyEquipment(source, dest)
+	var mypack := CreateItemAtLocation(20, 20, 0, 0xe75, 1, dest.realm);
+
+	foreach item in ListEquippedItems(source)
+		var newItem := CreateItemCopyAtLocation(20, 20, 0, item);
+		if (newItem)
+			newItem.color := item.color;
+			newItem.name := item.name;
+			EquipItem(dest, newItem);
+		endif
+	endforeach
+
+	EquipItem(dest, mypack);
+endfunction
+
+function SwapPositions(char1, char2)
+	var tempX := char1.x;
+	var tempY := char1.y;
+	var tempZ := char1.z;
+
+	MoveObjectToLocation(char1, char2.x, char2.y, char2.z, char1.realm, MOVEOBJECT_FORCELOCATION);
+	MoveObjectToLocation(char2, tempX, tempY, tempZ, char2.realm, MOVEOBJECT_FORCELOCATION);
+	char1.facing := char2.facing;
+endfunction
+
+function DestroyClone(clone)
+	if (clone)
+		SetObjProperty(clone, "guardkill", 1);
+		ApplyDamage(clone, 9999);
+	endif
+endfunction

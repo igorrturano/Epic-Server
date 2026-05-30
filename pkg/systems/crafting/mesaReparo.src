@@ -1,0 +1,5 @@
+include ":crafting:/include/controladoraFabricacaoAjuda";
+
+program mesaReparo(who, item)
+// TODO implementar sistema de reparo.
+endprogram

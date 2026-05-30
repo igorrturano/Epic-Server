@@ -1,0 +1,60 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/client";
+include "include/eventID";
+include ":attributes:attributes";
+
+
+/**
+ * Distracao (Mayowashi no Jutsu) - Spell 1104
+ * Creates a decoy NPC that taunts nearby enemies, giving the ninja time to escape.
+ */
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	var hostiles := ListHostiles(who, 10, LH_FLAG_LOS);
+	if (!hostiles || len(hostiles) == 0)
+		SendSysMessageEx(who, "Nenhum inimigo proximo para distrair.", SSM_FAIL);
+		return 0;
+	endif
+
+	var sneak := CInt(EffectiveSkill(who, "Stealth"));
+	var duration := CInt(sneak / 10);
+	if (duration < 3)
+		duration := 3;
+	endif
+
+	// Create decoy NPC
+	var decoy := CreateNpcFromTemplate(":epicai:globodeluz", who.x, who.y, who.z, 0, who.realm);
+	if (!decoy)
+		SendSysMessageEx(who, "A distracao falhou.", SSM_FAIL);
+		return 0;
+	endif
+
+	decoy.name := "Distracao";
+	SetObjProperty(decoy, "NoCorpse", 1);
+	SetObjProperty(decoy, "hitsmod", 500);
+
+	PlaySoundEffect(who, 0x228);
+	PrintTextAbove(who, "*Mayowashi no Jutsu!*");
+
+	// Taunt all hostiles to attack the decoy
+	foreach mob in hostiles
+		SetObjProperty(mob, "#ForcedTarget", decoy.serial);
+		var event := struct{ "type" := EVID_TAUNT, "source" := decoy };
+		SendEvent(mob, event);
+		sleepms(10);
+	endforeach
+
+	SendSysMessageEx(who, $"Voce distraiu {len(hostiles)} inimigo(s) por {duration}s.", SSM_INFO);
+
+	// Decoy lasts for duration then dies
+	sleep(duration);
+	SetObjProperty(decoy, "guardkill", 1);
+	ApplyDamage(decoy, 9999);
+
+	return 1;
+endprogram

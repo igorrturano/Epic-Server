@@ -1,0 +1,42 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
+include "include/sounds";
+include "include/say";
+
+// Spell 621 - Frenesi (shaman.cfg)
+// Grants the caster "Enfurecido": +Nature/20 raw damage on slash/pierce/blunt
+// for Nature/5 seconds. Combat reads the "enfurecido" ObjProperty inside
+// CalculateEnfurecidoDamage; the flag is set/erased by SC_ApplyEffect /
+// SC_RemoveEffect via opts.properties.
+program SpellScript(params)
+	var who := params[1];
+	var spell := params[3];
+	params := 0;
+
+	SC_RemoveEffect(who, CInt(spell.id));
+
+	var nature := AP_GetSkill(who, NATURE);
+	var duration := CInt(nature / 5);
+	if (duration < 5)
+		duration := 5;
+	endif
+
+	var bonus := CInt(nature / 20);
+
+	var opts := struct{};
+	opts.+properties := dictionary{ "enfurecido" -> 1 };
+	opts.+buff_category := "frenesi";
+	opts.+displayname := "Enfurecido";
+	opts.+desc := $"+{bonus} dano fisico";
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{ sound := 0x44B };
+
+	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
+
+	SendSysMessageEx(who, "Voce entrou em um estado de furia.", SSM_INFO);
+	return 1;
+endprogram

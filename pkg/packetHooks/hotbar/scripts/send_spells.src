@@ -1,0 +1,646 @@
+// ============================================================================
+// Send Spells Packet (0x55) - Standalone sender script
+// ============================================================================
+// Spawned via Start_Script() to isolate data segment from main handler.
+// Loads spells from spellbooks, memorized lists, and ability-based access.
+// For GMs (cmdlevel > 1): Loads ALL spells from ALL config files.
+// ============================================================================
+
+use uo;
+use os;
+use cfgfile;
+
+include ":hotbar:include/shared_constants";
+include ":hotbar:include/hotbar_write";
+include ":hotbar:include/spell_index";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:AbilityRegistry";
+include ":spells:SpellRegistry";
+
+program SendSpells(who)
+    var spells;
+
+    // GM: load ALL spells from ALL config files
+    if (who.cmdlevel > 1)
+        spells := GetAllSpellsForGM();
+    else
+        spells := GetPlayerSpells(who);
+    endif
+
+    if (!spells)
+        spells := array{};
+    endif
+
+    // Calculate packet size
+    var data_size := 0;
+    foreach item in spells
+        sleepms(2);
+        data_size := data_size + 2 + len(item.name);
+        data_size := data_size + 2 + len(CStr(item.circle));
+        data_size := data_size + 2 + len(item.desc);
+        data_size := data_size + 2 + len(item.school);
+        data_size := data_size + 2; // iconid
+        data_size := data_size + 2; // hue
+        data_size := data_size + 2; // mana_cost
+        data_size := data_size + 2; // min_skill
+        data_size := data_size + 2; // reagents (empty)
+        data_size := data_size + 2; // spell_id
+        var prefix_len := 1;
+        if (item.command_prefix)
+            prefix_len := len(item.command_prefix);
+        endif
+        data_size := data_size + 2 + prefix_len;
+    endforeach
+
+    // Header: PacketID(1) + Length(2) + Subcommand(2) + DataType(1) + Count(2)
+    var packet_size := 8 + data_size;
+    var packet := CreatePacket(PACKET_EXTENDED, packet_size);
+
+    packet.SetInt8(0, PACKET_EXTENDED);
+    packet.SetInt16(1, packet_size);
+    packet.SetInt16(3, SUBCOMMAND_SPELLS_RESPONSE);
+    packet.SetInt8(5, ACTION_TYPE_SPELL);
+    var offset := 6;
+
+    offset := SetInt16BE(packet, offset, spells.size());
+
+    foreach item in spells
+        sleepms(2);
+        offset := WriteStringBE(packet, offset, item.name);
+        offset := WriteStringBE(packet, offset, CStr(item.circle));
+        offset := WriteStringBE(packet, offset, item.desc);
+        offset := WriteStringBE(packet, offset, item.school);
+        offset := SetInt16BE(packet, offset, item.iconid);
+        offset := SetInt16BE(packet, offset, CInt(item.hue));
+        offset := SetInt16BE(packet, offset, item.mana_cost);
+        offset := SetInt16BE(packet, offset, 0);  // min_skill
+        offset := SetInt16BE(packet, offset, 0);  // reagents length
+        offset := SetInt16BE(packet, offset, item.id);
+        var cmd_prefix := item.command_prefix ? item.command_prefix : "m";
+        offset := WriteStringBE(packet, offset, cmd_prefix);
+    endforeach
+
+    packet.SendPacket(who);
+    return 1;
+endprogram
+
+// ============================================================================
+// GetAllSpellsForGM - Load ALL spells from ALL config files
+// ============================================================================
+function GetAllSpellsForGM()
+    var spells := LoadSpellsFromCfg(":spells:config/cantrips",     "Cantrip",      "t");
+    spells := spells + LoadSpellsFromCfg(":spells:config/evocation",    "Evocatium",    "m");
+    spells := spells + LoadSpellsFromCfg(":spells:config/necromancy",   "Kaijin",       "m");
+    spells := spells + LoadSpellsFromCfg(":spells:config/illusion",     "Velkyn",       "m");
+    spells := spells + LoadSpellsFromCfg(":spells:config/swordmage",    "Ahtaleloreth", "m");
+    spells := spells + LoadSpellsFromCfg(":spells:config/priest",       "Priest",       "d");
+    spells := spells + LoadSpellsFromCfg(":spells:config/shaman",       "Shaman",       "d");
+    spells := spells + LoadSpellsFromCfg(":spells:config/druid",        "Druid",        "d");
+    spells := spells + LoadSpellsFromCfg(":spells:config/paladin",      "Paladino",     "p");
+    spells := spells + LoadSpellsFromCfg(":spells:config/demonhunter",  "Demon Hunter", "c");
+    spells := spells + LoadSpellsFromCfg(":spells:config/trickster",    "Trickster",    "m");
+    spells := spells + LoadSpellsFromCfg(":spells:config/shinobi",      "Shinobi",      "n");
+    return spells;
+endfunction
+
+// ============================================================================
+// LoadSpellsFromCfg - Load spells from a single config file
+// ============================================================================
+function LoadSpellsFromCfg(cfg_path, default_school, default_prefix := "m")
+    var spells := array{};
+
+    var spell_cfg := ReadConfigFile(cfg_path);
+    if (!spell_cfg)
+        return spells;
+    endif
+
+    var spell_ids := GetConfigIntKeys(spell_cfg);
+    if (!spell_ids)
+        return spells;
+    endif
+
+    foreach spell_id in spell_ids
+        sleepms(2);
+        var spell_elem := FindConfigElem(spell_cfg, spell_id);
+        if (!spell_elem)
+            continue;
+        endif
+
+        var spell_name := GetConfigString(spell_elem, "Name");
+        if (!spell_name)
+            continue;
+        endif
+
+        var icon_id := GetConfigInt(spell_elem, "Icon");
+        var icon_hue := GetConfigInt(spell_elem, "Hue");
+        if (!icon_id)
+            icon_id := 0x5DCD;
+        endif
+
+        var school := GetConfigString(spell_elem, "School");
+        if (!school)
+            school := default_school;
+        endif
+
+        var spell := struct{};
+        spell.+id := spell_id;
+        spell.+name := spell_name;
+        spell.+school := school;
+        spell.+circle := CInt(GetConfigString(spell_elem, "Circle"));
+        spell.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+        spell.+iconid := icon_id;
+        spell.+hue := icon_hue;
+        var spell_desc := GetConfigString(spell_elem, "Desc");
+        spell.+desc := spell_desc ? spell_desc : "";
+        spell.+command_prefix := default_prefix;
+
+        spells.append(spell);
+    endforeach
+
+    return spells;
+endfunction
+
+// ============================================================================
+// GetPlayerSpells - Load player-specific spells (non-GM)
+// ============================================================================
+function GetPlayerSpells(who)
+    var spells := array{};
+    var chardata := GetObjProperty(who, "chardata");
+
+    // Find spellbooks in backpack
+    var backpack := who.backpack;
+    if (!backpack)
+        return spells;
+    endif
+
+    foreach item in EnumerateItemsInContainer(backpack)
+        sleepms(2);
+        if (item.objtype == 0xEFA || item.objtype == 0x2253 || item.objtype == 0x9E80)
+            var booktype := GetObjProperty(item, "Booktype");
+            if (!booktype)
+                booktype := "spellcaster";
+            endif
+
+            var spell_cfg_path := "";
+            case (booktype)
+                "spellcaster":
+                "mage":
+                    // With unique IDs, spells resolve via SpellRegistry
+                    // Default to evocation; individual spells use GetConfigFromId
+                    spell_cfg_path := "";
+                "priest":
+                    spell_cfg_path := ":spells:config/priest";
+                "druid":
+                    spell_cfg_path := ":spells:config/druid";
+                "shaman":
+                "Shaman":
+                    spell_cfg_path := ":spells:config/shaman";
+                "paladin":
+                    spell_cfg_path := ":spells:config/paladin";
+                "demonhunter":
+                    spell_cfg_path := ":spells:config/demonhunter";
+                "trickster":
+                    spell_cfg_path := ":spells:config/trickster";
+                "cantrip":
+                    spell_cfg_path := ":spells:config/cantrips";
+            endcase
+
+            var spell_cfg;
+            if (spell_cfg_path)
+                spell_cfg := ReadConfigFile(spell_cfg_path);
+            endif
+            var spells_array := GetObjProperty(item, "spells");
+
+            if (!spells_array || TypeOf(spells_array) != "Array")
+                continue;
+            endif
+
+            foreach spell_struct in spells_array
+                sleepms(2);
+                if (TypeOf(spell_struct) == "Struct")
+                    var spell_id := spell_struct.id;
+                    // For mage books (no fixed cfg), resolve each spell via SpellRegistry
+                    var spell_elem;
+                    if (spell_cfg)
+                        spell_elem := FindConfigElem(spell_cfg, spell_id);
+                    else
+                        spell_elem := ResolveSpell(spell_id);
+                    endif
+
+                    var spell_name := "<unknown>";
+                    var spell_circle := 1;
+                    var spell_mana := 0;
+
+                    if (spell_elem)
+                        spell_name := GetConfigString(spell_elem, "Name");
+                        spell_circle := CInt(GetConfigString(spell_elem, "Circle"));
+                        spell_mana := CInt(GetConfigString(spell_elem, "Mana"));
+                    endif
+
+                    var icon_id := GetConfigInt(spell_elem, "Icon");
+                    var icon_hue := GetConfigInt(spell_elem, "Hue");
+                    if (!icon_id)
+                        icon_id := 0x5DCD;
+                    endif
+
+                    var spell := struct{};
+                    spell.+id := spell_id;
+                    spell.+name := spell_name;
+                    spell.+school := spell_struct.school;
+                    spell.+circle := spell_circle;
+                    spell.+mana_cost := spell_mana;
+                    spell.+iconid := icon_id;
+                    spell.+hue := icon_hue;
+                    var sp_desc := GetConfigString(spell_elem, "Desc");
+                    spell.+desc := sp_desc ? sp_desc : "";
+                    spell.+command_prefix := "m";
+
+                    spells.append(spell);
+                endif
+            endforeach
+        endif
+    endforeach
+
+    // Load cantrips if player has the trait
+    if (chardata)
+        var player_magia := chardata.magia;
+        var trait := chardata.trait;
+
+        if (player_magia == "spellcaster" || trait == "Natureza Arcana" || player_magia == "arcane_archer")
+            var cantrip_cfg := ReadConfigFile(":spells:config/cantrips");
+            if (cantrip_cfg)
+                foreach cantrip_id in GetConfigIntKeys(cantrip_cfg)
+                    sleepms(2);
+                    var cantrip_elem := FindConfigElem(cantrip_cfg, cantrip_id);
+                    if (cantrip_elem)
+                        var cantrip_name := GetConfigString(cantrip_elem, "Name");
+                        var icon_id := GetConfigInt(cantrip_elem, "Icon");
+                        var icon_hue := GetConfigInt(cantrip_elem, "Hue");
+                        if (!icon_id)
+                            icon_id := 0x9b9f;
+                        endif
+
+                        var spell := struct{};
+                        spell.+id := cantrip_id;
+                        spell.+name := cantrip_name;
+                        spell.+school := GetConfigString(cantrip_elem, "School");
+                        spell.+circle := CInt(GetConfigString(cantrip_elem, "Circle"));
+                        spell.+mana_cost := CInt(GetConfigString(cantrip_elem, "Mana"));
+                        spell.+iconid := icon_id;
+                        spell.+hue := icon_hue;
+                        var ct_desc := GetConfigString(cantrip_elem, "Desc");
+                        spell.+desc := ct_desc ? ct_desc : "";
+                        spell.+command_prefix := "t";
+
+                        spells.append(spell);
+                    endif
+                endforeach
+            endif
+        endif
+    endif
+
+    // Load Shaman memorized spells
+    if (chardata && chardata.magia == "Shaman")
+        var shaman_list := GetObjProperty(who, "shaman_list");
+        if (shaman_list && TypeOf(shaman_list) == "Array" && shaman_list.size() > 0)
+            var shaman_cfg := ReadConfigFile(":spells:config/shaman");
+            if (shaman_cfg)
+                foreach spell_data in shaman_list
+                    sleepms(2);
+                    if (!spell_data.id)
+                        continue;
+                    endif
+                    var spell_elem := FindConfigElem(shaman_cfg, spell_data.id);
+                    if (!spell_elem)
+                        continue;
+                    endif
+                    var spell_name := GetConfigString(spell_elem, "Name");
+                    if (!spell_name)
+                        continue;
+                    endif
+                    var icon_id := GetConfigInt(spell_elem, "Icon");
+                    var icon_hue := GetConfigInt(spell_elem, "Hue");
+                    if (!icon_id)
+                        icon_id := 0x59dd;
+                        icon_hue := 1150;
+                    endif
+
+                    var spell := struct{};
+                    spell.+id := spell_data.id;
+                    spell.+name := spell_name;
+                    spell.+school := "Shaman";
+                    spell.+circle := CInt(spell_data.circle);
+                    spell.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                    spell.+iconid := icon_id;
+                    spell.+hue := icon_hue;
+                    var sh_desc := GetConfigString(spell_elem, "Desc");
+                    spell.+desc := sh_desc ? sh_desc : "";
+                    spell.+command_prefix := "d";
+
+                    spells.append(spell);
+                endforeach
+            endif
+        endif
+    endif
+
+    // Load Priest memorized spells
+    if (chardata && (chardata.magia == "Priest" || chardata.magia == "Sacerdote"))
+        var priest_list := GetObjProperty(who, "priest_list");
+        if (priest_list && TypeOf(priest_list) == "Array" && priest_list.size() > 0)
+            var priest_cfg := ReadConfigFile(":spells:config/priest");
+            if (priest_cfg)
+                foreach spell_data in priest_list
+                    sleepms(2);
+                    var spell_elem;
+                    var spell_id;
+                    var spell_name;
+
+                    if (spell_data.id)
+                        spell_id := spell_data.id;
+                        spell_elem := FindConfigElem(priest_cfg, spell_id);
+                    elseif (spell_data.name)
+                        spell_name := spell_data.name;
+                        spell_id := GetSpellIdByName("priest", spell_name);
+                        if (spell_id != error)
+                            spell_elem := GetSpellById("priest", spell_id);
+                        endif
+                    else
+                        continue;
+                    endif
+
+                    if (!spell_elem)
+                        continue;
+                    endif
+                    if (!spell_name)
+                        spell_name := GetConfigString(spell_elem, "Name");
+                    endif
+                    if (!spell_name)
+                        continue;
+                    endif
+
+                    var icon_id := GetConfigInt(spell_elem, "Icon");
+                    var icon_hue := GetConfigInt(spell_elem, "Hue");
+                    if (!icon_id)
+                        icon_id := 0x59db;
+                        icon_hue := 1153;
+                    endif
+
+                    var spell := struct{};
+                    spell.+id := spell_id;
+                    spell.+name := spell_name;
+                    spell.+school := "Priest";
+                    spell.+circle := CInt(spell_data.circle);
+                    spell.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                    spell.+iconid := icon_id;
+                    spell.+hue := icon_hue;
+                    var pr_desc := GetConfigString(spell_elem, "Desc");
+                    spell.+desc := pr_desc ? pr_desc : "";
+                    spell.+command_prefix := "d";
+
+                    spells.append(spell);
+                endforeach
+            endif
+        endif
+    endif
+
+    // Load Druid memorized spells
+    if (chardata && (chardata.magia == "Druid" || chardata.magia == "Druida"))
+        var druid_list := GetObjProperty(who, "druid_list");
+        if (druid_list && TypeOf(druid_list) == "Array" && druid_list.size() > 0)
+            var druid_cfg := ReadConfigFile(":spells:config/druid");
+            if (druid_cfg)
+                foreach spell_data in druid_list
+                    sleepms(2);
+                    var spell_elem;
+                    var spell_id;
+                    var spell_name;
+
+                    if (spell_data.id)
+                        spell_id := spell_data.id;
+                        spell_elem := FindConfigElem(druid_cfg, spell_id);
+                    elseif (spell_data.name)
+                        spell_name := spell_data.name;
+                        spell_id := GetSpellIdByName("druid", spell_name);
+                        if (spell_id != error)
+                            spell_elem := GetSpellById("druid", spell_id);
+                        endif
+                    else
+                        continue;
+                    endif
+
+                    if (!spell_elem)
+                        continue;
+                    endif
+                    if (!spell_name)
+                        spell_name := GetConfigString(spell_elem, "Name");
+                    endif
+                    if (!spell_name)
+                        continue;
+                    endif
+
+                    var icon_id := GetConfigInt(spell_elem, "Icon");
+                    var icon_hue := GetConfigInt(spell_elem, "Hue");
+                    if (!icon_id)
+                        icon_id := 0x59de;
+                        icon_hue := 1152;
+                    endif
+
+                    var spell := struct{};
+                    spell.+id := spell_id;
+                    spell.+name := spell_name;
+                    spell.+school := "Druid";
+                    spell.+circle := CInt(spell_data.circle);
+                    spell.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                    spell.+iconid := icon_id;
+                    spell.+hue := icon_hue;
+                    var dr_desc := GetConfigString(spell_elem, "Desc");
+                    spell.+desc := dr_desc ? dr_desc : "";
+                    spell.+command_prefix := "d";
+
+                    spells.append(spell);
+                endforeach
+            endif
+        endif
+    endif
+
+    // Casting access is by class identity from level 1 (CanCastAsClass); the
+    // ability itself is a separate level-up reward gated by HasAbility.
+    var has_paladin := CanCastAsClass(who, "Paladino");
+    var has_trickster := CanCastAsClass(who, "Malandro_Arcano");
+    var has_demonhunter := CanCastAsClass(who, "Cacador_de_Demonios");
+    var has_shinobi := CanCastAsClass(who, "Shinobi");
+
+    // Paladin spells
+    if (has_paladin)
+        var paladin_cfg := ReadConfigFile(":spells:config/paladin");
+        if (paladin_cfg)
+            var theology_skill := CInt(AP_GetSkill(who, "Theology"));
+            var max_circle := theology_skill / 20;
+            if (max_circle < 1)
+                max_circle := 1;
+            endif
+
+            foreach spell_id in GetConfigIntKeys(paladin_cfg)
+                sleepms(2);
+                var spell_elem := FindConfigElem(paladin_cfg, spell_id);
+                if (!spell_elem)
+                    continue;
+                endif
+                var spell_circle := CInt(GetConfigInt(spell_elem, "Circle"));
+                if (spell_circle > max_circle)
+                    continue;
+                endif
+                var spell_name := GetConfigString(spell_elem, "Name");
+                if (!spell_name)
+                    continue;
+                endif
+                var icon_id := GetConfigInt(spell_elem, "Icon");
+                var icon_hue := GetConfigInt(spell_elem, "Hue");
+                if (!icon_id)
+                    icon_id := 0x9BA6;
+                    icon_hue := 1153;
+                endif
+
+                var spell := struct{};
+                spell.+id := spell_id;
+                spell.+name := spell_name;
+                spell.+school := "Paladino";
+                spell.+circle := spell_circle;
+                spell.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                spell.+iconid := icon_id;
+                spell.+hue := icon_hue;
+                var pl_desc := GetConfigString(spell_elem, "Desc");
+                spell.+desc := pl_desc ? pl_desc : "";
+                spell.+command_prefix := "p";
+
+                spells.append(spell);
+            endforeach
+        endif
+    endif
+
+    // Trickster spells
+    if (has_trickster)
+        var trickster_cfg := ReadConfigFile(":spells:config/trickster");
+        if (trickster_cfg)
+            foreach spell_id in GetConfigIntKeys(trickster_cfg)
+                sleepms(2);
+                var spell_elem := FindConfigElem(trickster_cfg, spell_id);
+                if (!spell_elem)
+                    continue;
+                endif
+                var spell_name := GetConfigString(spell_elem, "Name");
+                if (!spell_name)
+                    continue;
+                endif
+                var icon_id := GetConfigInt(spell_elem, "Icon");
+                var icon_hue := GetConfigInt(spell_elem, "Hue");
+                if (!icon_id)
+                    icon_id := 0x9b99;
+                endif
+
+                var spell := struct{};
+                spell.+id := spell_id;
+                spell.+name := spell_name;
+                spell.+school := "Trickster";
+                spell.+circle := CInt(GetConfigInt(spell_elem, "Circle"));
+                spell.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                spell.+iconid := icon_id;
+                spell.+hue := icon_hue;
+                var tr_desc := GetConfigString(spell_elem, "Desc");
+                spell.+desc := tr_desc ? tr_desc : "";
+                spell.+command_prefix := "m";
+
+                spells.append(spell);
+            endforeach
+        endif
+    endif
+
+    // Demon Hunter spells
+    if (has_demonhunter)
+        var dh_cfg := ReadConfigFile(":spells:config/demonhunter");
+        if (dh_cfg)
+            foreach spell_id in GetConfigIntKeys(dh_cfg)
+                sleepms(2);
+                var spell_elem := FindConfigElem(dh_cfg, spell_id);
+                if (!spell_elem)
+                    continue;
+                endif
+                var spell_name := GetConfigString(spell_elem, "Name");
+                if (!spell_name)
+                    continue;
+                endif
+                var icon_id := GetConfigInt(spell_elem, "Icon");
+                var icon_hue := GetConfigInt(spell_elem, "Hue");
+                if (!icon_id)
+                    icon_id := 0x9b96;
+                endif
+
+                var spell := struct{};
+                spell.+id := spell_id;
+                spell.+name := spell_name;
+                spell.+school := "Demon Hunter";
+                spell.+circle := CInt(GetConfigInt(spell_elem, "Circle"));
+                spell.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                spell.+iconid := icon_id;
+                spell.+hue := icon_hue;
+                var dh_desc := GetConfigString(spell_elem, "Desc");
+                spell.+desc := dh_desc ? dh_desc : "";
+                spell.+command_prefix := "c";
+
+                spells.append(spell);
+            endforeach
+        endif
+    endif
+
+    // Shinobi techniques
+    if (has_shinobi)
+        var shinobi_cfg := ReadConfigFile(":spells:config/shinobi");
+        if (shinobi_cfg)
+            var tactics_skill := CInt(EffectiveSkill(who, "Stealth"));
+            var max_circle_sh := tactics_skill / 20;
+            if (max_circle_sh < 1)
+                max_circle_sh := 1;
+            endif
+
+            foreach spell_id in GetConfigIntKeys(shinobi_cfg)
+                sleepms(2);
+                var spell_elem := FindConfigElem(shinobi_cfg, spell_id);
+                if (!spell_elem)
+                    continue;
+                endif
+                var spell_circle := CInt(GetConfigInt(spell_elem, "Circle"));
+                if (spell_circle > max_circle_sh)
+                    continue;
+                endif
+                var spell_name := GetConfigString(spell_elem, "Name");
+                if (!spell_name)
+                    continue;
+                endif
+                var icon_id := GetConfigInt(spell_elem, "Icon");
+                var icon_hue := GetConfigInt(spell_elem, "Hue");
+                if (!icon_id)
+                    icon_id := 0x9b96;
+                    icon_hue := 1109;
+                endif
+
+                var spell := struct{};
+                spell.+id := spell_id;
+                spell.+name := spell_name;
+                spell.+school := "Shinobi";
+                spell.+circle := spell_circle;
+                spell.+mana_cost := CInt(GetConfigString(spell_elem, "Mana"));
+                spell.+iconid := icon_id;
+                spell.+hue := icon_hue;
+                var sh_desc := GetConfigString(spell_elem, "Desc");
+                spell.+desc := sh_desc ? sh_desc : "";
+                spell.+command_prefix := "n";
+
+                spells.append(spell);
+            endforeach
+        endif
+    endif
+
+    return spells;
+endfunction

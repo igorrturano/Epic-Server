@@ -1,0 +1,41 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include ":spells:Controller/SC_Damage";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
+
+program cast_thornstorm(params)
+	var caster := params[1];
+	var targ := params[2];
+	var spellinfo := params[3];
+	params := 0;
+
+	LaunchProjectile(caster, targ, spellinfo);
+endprogram
+
+function LaunchProjectile(caster, targ, spellinfo)
+	PlaySoundEffect(caster, 0x231);
+	PlayObjectCenteredEffect(targ, 0xCADD, 10, 15);
+
+	sleepms(500);
+	PlaySoundEffect(targ, 0x22F);
+
+	var dmg := cint(AP_GetSkill(caster, NATURE) / 10) + epicSpellDamageRoll(caster, CInt(spellinfo.Circle[1]));
+
+	// REFLEX save halves the thorn-storm's damage.
+	var diff := handleSpellResistDiffForSpecialists(caster, spellinfo.School);
+	var bonus := epicWisdomPathBonus(caster);
+	if (CheckResist(targ, REFLEXES, diff, -bonus))
+		dmg := Cint(dmg / 2);
+		SendSysMessageEx(targ, "Voce desvia parcialmente dos espinhos.", SSM_INFO);
+	endif
+
+	SC_DealDamage(caster, targ, CInt(spellinfo.id), cint(dmg), DAMAGE_TYPE::BLUNT);
+endfunction

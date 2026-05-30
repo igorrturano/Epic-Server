@@ -1,0 +1,82 @@
+/*
+ * List all NPCTemplates from epicAI organized by Category
+ * Similar to createnpc.src organization
+ */
+
+use uo;
+use os;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+program listNPCsByCategory(who)
+    var categories := OrganizeNPCsByCategory();
+
+    if (!categories)
+        SendSysMessage(who, "Error: Could not read NPCs");
+        return 0;
+    endif
+
+    // Display results
+    SendSysMessage(who, "=== NPCs organized by Category ===");
+
+    foreach category_name in (categories.keys())
+        var npc_list := categories[category_name];
+        SendSysMessage(who, "");
+        SendSysMessage(who, "Category: " + category_name + " (" + npc_list.size() + " NPCs)");
+
+        foreach npc_info in npc_list
+            SendSysMessage(who, "  - " + npc_info.template + " (" + npc_info.name + ") Tier: " + npc_info.tier);
+            sleepms(2);
+        endforeach
+
+        sleepms(10);
+    endforeach
+
+    return 1;
+endprogram
+
+function OrganizeNPCsByCategory()
+    // Read the npcdesc.cfg from epicAI package
+    var cfg := ReadConfigFile(":epicAI:npcdesc");
+
+    if (!cfg)
+        return error{"errortext" := "Could not read :epicAI:npcdesc config file"};
+    endif
+
+    var categories := dictionary;
+    var default_category := "Uncategorized";
+
+    // Get all NPC template entries
+    var elem_names := GetConfigStringKeys(cfg);
+
+    foreach template_name in elem_names
+        var npc_elem := cfg[template_name];
+
+        // Get category, default to "Uncategorized" if not set
+        var category := GetConfigString(npc_elem, "Environment");
+        if (!category || category == "")
+            category := default_category;
+        endif
+
+        // Create array for this category if it doesn't exist
+        if (!categories.exists(category))
+            categories[category] := array{};
+        endif
+
+        // Create NPC info struct
+        var npc_info := struct;
+        npc_info.+template := template_name;
+        npc_info.+name := GetConfigString(npc_elem, "Name");
+        npc_info.+tier := GetConfigString(npc_elem, "Tier");
+        npc_info.+alignment := GetConfigString(npc_elem, "Alignment");
+        npc_info.+objtype := GetConfigString(npc_elem, "ObjType");
+
+        categories[category].append(npc_info);
+
+        sleepms(2);
+    endforeach
+
+    return categories;
+endfunction

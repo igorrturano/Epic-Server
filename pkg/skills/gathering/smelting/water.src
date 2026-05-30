@@ -1,0 +1,46 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+
+include "include/client";
+include ":charactercreation:habilidades";
+include ":gathering:smelting/smelt";
+
+var item;
+var item2;
+var obj;
+var cprop;
+var cpropn;
+var cproplist;
+
+program coolOff(user, water)
+	SendSysMessage(user, "Selecione o item.");
+	item := Target(user);
+	if (!water)
+		return;
+	endif
+	if (!item)
+		SendSysMessage(user, "Cancelado.");
+		return;
+	endif
+	if (!Accessible(user, item))
+		SendSysMessage(user, "Voce nao alcanca isto.");
+		return;
+	endif
+	if (item.objtype == 0x5107)
+		EsfriarLiga(user, item);
+		return;
+	endif
+
+	if (item.color != 0x486)
+		SendSysMessage(user, "Voce nao pode esfriar este item.", FONT_NORMAL, 40);
+		return;
+	endif
+	PlaySoundEffect(user, 0x23f);
+	sleepms(1500);
+	SendSysMessage(user, "Voce esfriou " + item.desc + ".", FONT_NORMAL, 90);
+	var cor := GetObjProperty(item, "color");
+	item.color := cor;
+	PlaySoundEffect(user, 0x2c);
+endprogram

@@ -1,0 +1,199 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+
+include ":attributes:attributes";
+include ":epicAI:epicai";
+include "include/epicConstants";
+
+const NATURE_CACHE_PROP := "natureInspectCache";
+const NATURE_CACHE_TTL := 600;
+
+program use_nature(who)
+	SendSysMessage(who, "Qual criatura voce deseja estudar?");
+	var creature := Target(who, TGTOPT_CHECK_LOS);
+	if (!creature)
+		return 0;
+	endif
+
+	if (creature == who || !creature.npctemplate)
+		SendSysMessage(who, "Voce nao pode estudar este alvo.");
+		return 0;
+	endif
+
+	var npccfg := ReadConfigFile(":*:npcdesc");
+	var template := ParseTemplateName(creature.npctemplate).template;
+	var entry := npccfg[template];
+	if (entry == error)
+		SendSysMessage(who, "Voce nao pode estudar este alvo.");
+		return 0;
+	endif
+
+	var brain := GetConfigString(entry, "BrainType");
+	if (brain != "monster")
+		SendSysMessage(who, "Voce nao pode estudar este alvo.");
+		return 0;
+	endif
+
+	var environment := CStr(GetConfigString(entry, "Environment"));
+	if (environment in {"Undead", "Demons", "Void"})
+		SendSysMessage(who, "Esta criatura antinatural só lhe diz que o equilíbrio foi deslocado.");
+		return 0;
+	endif
+
+	var cache := GetObjProperty(who, NATURE_CACHE_PROP);
+	if (!cache || cache == error)
+		cache := dictionary{};
+	endif
+
+	var now := ReadGameClock();
+	var key := CStr(creature.serial);
+	if (cache.Exists(key) && cache[key].expires > now)
+		SendSysMessage(who, cache[key].prose);
+		return 1;
+	endif
+
+	var tier := CInt(GetConfigString(entry, "Tier"));
+	var dif := RESIST_EASY;
+	if (tier >= 5)
+		dif := RESIST_VERY_HARD;
+	elseif (tier >= 3)
+		dif := RESIST_HARD;
+	elseif (tier >= 1)
+		dif := RESIST_MEDIUM;
+	endif
+
+	PrintTextAbove(who, "*Estudando " + creature.name + "*");
+	Sleep(1);
+
+	if (SkillCheck(who, NATURE, dif, 0, ADV_SKILL) <= 0)
+		SendSysMessage(who, "Voce nao consegue discernir os detalhes desta criatura.");
+		return 0;
+	endif
+
+	var prose := BuildNatureLoreProse(entry);
+	SendSysMessage(who, prose);
+
+	cache[key] := struct{ expires := now + NATURE_CACHE_TTL, prose := prose };
+	SetObjProperty(who, NATURE_CACHE_PROP, cache);
+	return 1;
+endprogram
+
+function BuildNatureLoreProse(entry)
+	var attackTiers := SplitWords(CStr(GetConfigString(entry, "EpicAttackDamage")));
+	var speedTier   := CStr(GetConfigString(entry, "EpicAttackSpeed"));
+	var elemDamage  := SplitWords(CStr(GetConfigString(entry, "EpicElemDamage")));
+	var elemResists := SplitWords(CStr(GetConfigString(entry, "EpicElemResists")));
+	var fisResists  := SplitWords(CStr(GetConfigString(entry, "EpicFisResists")));
+
+	var damageWord := struct{
+		NPC_LOW := "fraca",
+		NPC_MID := "normal",
+		NPC_HIGH := "forte",
+		NPC_DEVASTATING := "devastadora",
+		NPC_BRUTAL := "brutal"
+	};
+
+	var speedWord := struct{
+		MELEE_LOW := "lenta",
+		MELEE_MID := "normal",
+		MELEE_HIGH := "veloz"
+	};
+
+	var resistWord := struct{
+		T0 := "vulnerável",
+		T1 := "proteção fraca",
+		T2 := "proteção normal",
+		T3 := "proteção forte",
+		T4 := "imune",
+		T5 := "imune"
+	};
+
+	var elemSlots := {"fogo", "frio", "veneno", "energia"};
+	var fisSlots  := {"cortes", "perfurações", "impactos"};
+
+	var parts := array{};
+
+	// Attack strength + speed
+	var attackText := "";
+	if (attackTiers.size() >= 3 && damageWord.Exists(attackTiers[1]))
+		attackText := "Esta criatura ataca com força " + damageWord[attackTiers[1]];
+	endif
+	if (speedWord.Exists(speedTier))
+		if (attackText != "")
+			attackText := attackText + " e velocidade " + speedWord[speedTier];
+		else
+			attackText := "Esta criatura tem velocidade " + speedWord[speedTier];
+		endif
+	endif
+	if (attackText != "")
+		parts.append(attackText + ".");
+	endif
+
+	// Elemental damage threats (skip DAMAGE_NONE)
+	var elemThreats := array{};
+	var i;
+	for (i := 1; i <= 4; i := i + 1)
+		if (elemDamage[i] != error && elemDamage[i] != "DAMAGE_NONE" && elemDamage[i] != "")
+			elemThreats.append(elemSlots[i]);
+		endif
+	endfor
+	if (elemThreats.size() > 0)
+		parts.append("Apresenta perigo de " + JoinList(elemThreats) + ".");
+	else
+		parts.append("Não apresenta perigo elemental.");
+	endif
+
+	// Elemental resists (only mention notable ones)
+	var elemNotes := array{};
+	for (i := 1; i <= 4; i := i + 1)
+		if (elemResists[i] != error && resistWord.Exists(elemResists[i]))
+			elemNotes.append(resistWord[elemResists[i]] + " a " + elemSlots[i]);
+		endif
+	endfor
+	if (elemNotes.size() > 0)
+		parts.append("Resistências elementais: " + JoinList(elemNotes) + ".");
+	endif
+
+	// Physical resists
+	var fisNotes := array{};
+	for (i := 1; i <= 3; i := i + 1)
+		if (fisResists[i] != error && resistWord.Exists(fisResists[i]))
+			fisNotes.append(resistWord[fisResists[i]] + " a " + fisSlots[i]);
+		endif
+	endfor
+	if (fisNotes.size() > 0)
+		parts.append("Resistências físicas: " + JoinList(fisNotes) + ".");
+	endif
+
+	return JoinParts(parts);
+endfunction
+
+function JoinList(items)
+	var joined := "";
+	var i;
+	for (i := 1; i <= items.size(); i := i + 1)
+		if (i == 1)
+			joined := items[i];
+		elseif (i == items.size())
+			joined := joined + " e " + items[i];
+		else
+			joined := joined + ", " + items[i];
+		endif
+	endfor
+	return joined;
+endfunction
+
+function JoinParts(parts)
+	var joined := "";
+	var i;
+	for (i := 1; i <= parts.size(); i := i + 1)
+		if (i == 1)
+			joined := parts[i];
+		else
+			joined := joined + " " + parts[i];
+		endif
+	endfor
+	return joined;
+endfunction

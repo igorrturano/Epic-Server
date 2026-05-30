@@ -1,0 +1,78 @@
+
+use uo;
+use os;
+use polsys;
+use unicode;
+use util;
+
+include ":attributes:attributes";
+include "include/client";
+include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program pickupItems()
+	Print("Hooking Item Pickup...");
+	return 1;
+endprogram
+
+exported function HandleItemPickup(who, byref packet)
+
+	if (GetProcess(CInt(GetObjProperty(who, "#PickPid"))))
+		SendSysMessageEx(who, "Voce esta ocupado roubando alguem");
+		SendPacket(who, "2705");
+		return 1;
+	endif
+
+	packet := packet;
+
+	var item := SystemFindObjectBySerial(packet.GetInt32(1)); // pega os 32 bits depois do primeiro byte
+
+	if (GetObjProperty(who, "pilotando") || GetObjProperty(who, "metamorfose") != error)
+		SendPacket(who, "2705");
+		SendSysMessageEx(who, "Você não consegue pegar itens.", SSM_INFO);
+		return 1;
+	endif
+
+	var item1 := GetEquipmentByLayer(who, 1);
+	var item2 := GetEquipmentByLayer(who, 2);
+
+	if (!item.container)
+		var mobWrapper := MobileWrapper(who);
+		var mounted := mobWrapper.IsMounted();
+		if (mounted || !mobWrapper.HasFreeHand())
+			if (mounted)
+				SendSysMessage(who, "Voce nao pode fazer isto montado.");
+			endif
+			SendPacket(who, "2705");
+			return 1;
+		else
+			if (item.movable != 0)
+				var primeira := GetObjProperty(item, "primeiro_dono");
+				if (GetObjProperty(item, "itemunico") == 1 && !primeira &&
+		(who.cmdlevel <= 0)) // Para o DiscordWebhook funcionar
+					Setobjproperty(item, "primeiro_dono", who.name);
+					var region := GetRegionName(who);
+					var char_name := who.serial;
+					var fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
+					var coords := { who.x, who.y };
+					var tipo := "unico";
+					var nome := GetObjProperty(who, "nome_inicial");
+					Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, "chão",
+										  					region, coords, item.desc });
+				endif
+				if (!(who.hidden || who.concealed))
+					PrintTextAbove(who, "*Pegou " + item.desc + "*");
+				endif
+			endif
+
+			if (IsChairGraphic(item.graphic))
+				TriggerChairFall(item.x, item.y, item.z, item.realm);
+			endif
+		endif
+	endif
+
+	// o packet vai ser enviado pro core pra ser tratado
+	return 0;
+endfunction
+
+include ":furniture:chairfall";

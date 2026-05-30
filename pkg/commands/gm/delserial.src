@@ -1,0 +1,38 @@
+use uo;
+use os;
+
+program textcmd_delserial(who, text)
+	// Single serial deletion
+	var a := SystemFindObjectBySerial(CInt(text), SYSFIND_SEARCH_OFFLINE_MOBILES);
+	if (!a)
+		SendSysMessage(who, "No object found with serial: " + text);
+		return;
+	endif
+
+	SendSysMessage(who, "Found object at: " + a.x + ", " + a.y + ", " + a.z + " in realm: " + a.realm);
+	SendSysMessage(who, "Name: " + a.name + " (Objtype: " + a.objtype + ")");
+
+	if (DeleteObject(a))
+		SendSysMessage(who, "Object deleted successfully!");
+	else
+		SendSysMessage(who, "Failed to delete object.");
+	endif
+endprogram
+
+function DeleteObject(obj)
+	var success := 0;
+
+	// Check if it's a mobile/NPC (has .npctemplate property or .script property)
+	if (obj.npctemplate || obj.script)
+		success := obj.Kill();
+		if (!success)
+			// If Kill() failed, try MoveObjectToLocation to move it out of the world
+			success := MoveObjectToLocation(obj, 10, 10, 10, "britannia", MOVEOBJECT_FORCELOCATION);
+		endif
+	else
+		// It's an item
+		success := DestroyItem(obj);
+	endif
+
+	return success;
+endfunction

@@ -1,0 +1,18 @@
+use uo;
+
+include ":debug:Controller/DebugController";
+include ":timedScripts:timedScripts";
+
+program SpecialAttack_Knockdown(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
+	var effectTime := combatInfo.effectTime;
+
+	PrintTextAbove(defender, "*Derrubado*");
+	SendSysMessage(attacker, "Você derruba o oponente.");
+	SendSysMessage(defender, "Você foi derrubado temporariamente.");
+
+	TS_StartTimer(defender, "tombar", effectTime);
+
+	return 1;
+endprogram

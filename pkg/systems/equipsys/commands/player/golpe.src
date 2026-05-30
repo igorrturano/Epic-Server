@@ -1,0 +1,111 @@
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Container/ContainerGridLayout";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/ImageGump";
+include ":gumpDesigner:Control/Tooltip";
+include ":equipsys:packets/UpdateEquipmentRequest";
+
+program cmd_golpe(who, text)
+	var newPosture;
+	who := MobileWrapper(who);
+	
+	// Se passou argumento (slash, piercing, blunt), muda direto
+	if (text && text != "")
+		var posture_arg := Lower(text);
+		
+		if (posture_arg == "slash")
+			SetNewPosture(who, DAMAGE_TYPE::SLASH);
+			return;
+		elseif (posture_arg == "piercing")
+			SetNewPosture(who, DAMAGE_TYPE::PIERCING);
+			return;
+		elseif (posture_arg == "blunt")
+			SetNewPosture(who, DAMAGE_TYPE::BLUNT);
+			return;
+		endif
+	endif
+	
+	// Sem argumento ou argumento inválido: abre o gump de seleção
+	newPosture := ChoosePosture(who);
+endprogram
+
+function ChoosePosture(who)
+	var eventHandled;
+	
+	var gump := Gump(who.GetObjRef(), "Postura de Combate", 300, 175);
+	var container := ContainerGridLayout("Container", 25, 70, 260, 90, 1, 3);
+	var imgSelector := ImageGump("Selector", 0, 0, 30062);
+	var selectedOption := ImageGump("SelectedButton", 12, 23, 1009).SetColor(COLOR_RED);
+	var buttonSlash := Button("SlashDamage", 12, 23, 1004, 1004);
+	var buttonPiercing := Button("PiercingDamage", 12, 23, 1008, 1008);
+	var buttonBlunt := Button("BluntDamage", 12, 23, 1009, 1009);
+	var tooltipSlash := Tooltip("TooltipSlash", "Golpe cortante.");
+	var tooltipPiercing := Tooltip("TooltipPiercing", "Golpe perfurante.");
+	var tooltipBlunt := Tooltip("TooltipBlunt", "Golpe contundente.");
+
+	while (true)
+		var button1 := buttonSlash;
+		var button2 := buttonPiercing;
+		var button3 := buttonBlunt;
+
+		if (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::SLASH)
+			container.AddControl(imgSelector, 1, 1);
+			button1 := selectedOption.SetImage(buttonSlash.GetPressedImage());
+		elseif (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::PIERCING)
+			container.AddControl(imgSelector, 1, 2);
+			button2 := selectedOption.SetImage(buttonPiercing.GetPressedImage());
+		elseif (who.GetCombatTraits().GetPosture() == DAMAGE_TYPE::BLUNT)
+			container.AddControl(imgSelector, 1, 3);
+			button3 := selectedOption.SetImage(buttonBlunt.GetPressedImage());
+		endif
+
+		button1.SetTooltip(tooltipSlash);
+		button2.SetTooltip(tooltipPiercing);
+		button3.SetTooltip(tooltipBlunt);
+		container.AddControl(button1, 1, 1);
+		container.AddControl(button2, 1, 2);
+		container.AddControl(button3, 1, 3);
+		gump.AddControl(container);
+
+		eventHandled := gump.Show();
+
+		if (eventHandled.GetControl() == EVENT_ACTION::CLOSED)
+			return gump.Dispose();
+		elseif (eventHandled.GetControl().Equals(buttonSlash))
+			SetNewPosture(who, DAMAGE_TYPE::SLASH);
+		elseif (eventHandled.GetControl().Equals(buttonPiercing))
+			SetNewPosture(who, DAMAGE_TYPE::PIERCING);
+		elseif (eventHandled.GetControl().Equals(buttonBlunt))
+			SetNewPosture(who, DAMAGE_TYPE::BLUNT);
+		endif
+
+		gump.Dispose();
+	endwhile
+endfunction
+
+function SetNewPosture(who, newPosture)
+	if (Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::UNARMED))
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+		Message("Você deve estar empunhando uma arma para mudar sua postura de combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+	elseif (Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::BOW))
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
+		Message("Arcos não podem mudar postura de combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+	elseif(Upper(who.GetEquipBySlot(WEAPON).GetCategory()) == Upper(WEAPON_CATEGORY::CROSSBOW))
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::PIERCING));
+		Message("Bestas não podem mudar postura de combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+	elseif(who.GetEquipBySlot(WEAPON).isFireWeapon())
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(DAMAGE_TYPE::BLUNT));
+		Message("Armas de fogo não podem mudar postura de combate.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+	else
+		who.SetCombatTraits(who.GetCombatTraits().SetPosture(newPosture));
+		Start_Script("packets/AssyncUpdateEquipment", 
+						array{who, 
+						true, 
+						who.GetEquipBySlot(WEAPON)}
+					);
+		Message("Você mudou sua postura de combate.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who.GetObjRef());
+		Message($"adota postura {newPosture}").SendEmote(who.GetObjRef());
+	endif
+endfunction

@@ -1,0 +1,63 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/tileEffects";
+include "include/sounds";
+include ":spells:Controller/SC_Damage";
+include "include/client";
+// O Deserto de Kordum (1214) - C4
+// Fogo AoE: Arc/3 dano imediato + Arc/10 por tick por 4 ticks em area 4 tiles
+program SpellScript(params)
+	var who := params[1];
+	var spell := params[3];
+
+	var arcana    := CInt(AP_GetSkill(who, ARCANA));
+	var burst_dmg := CInt(arcana / 3);
+	if (burst_dmg < 1)  burst_dmg := 1;  endif
+	if (burst_dmg > 33) burst_dmg := 33; endif
+	var dot_dmg   := CInt(arcana / 10);
+	if (dot_dmg < 1)  dot_dmg := 1;  endif
+
+	PrintTextAbove(who, "*Kordum nao tem misericordia. O sol la nunca se poem.*", 3, 38);
+	PlaySoundEffect(who, 0x15E);
+
+	// Coleta alvos
+	var targets := array;
+	var count   := 0;
+	foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, 4, who.realm))
+		if (mobile.isa(POLCLASS_MOBILE) && mobile != who && mobile.IsHostile(who))
+			targets[count + 1] := mobile;
+			count += 1;
+		endif
+	endforeach
+
+	if (count == 0)
+		SendSysMessageEx(who, "Nenhum inimigo no alcance.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Burst inicial
+	PlayStationaryEffect(who.x, who.y, who.z, 0x36CB, 5, 5);
+	foreach mobile in targets
+		if (mobile && !mobile.dead)
+			SC_DealDamage(who, mobile, CInt(spell.id), burst_dmg, DAMAGE_TYPE::FIRE);
+		endif
+	endforeach
+	SendSysMessageEx(who, $"Deserto de Kordum: {burst_dmg} dano de fogo em {count} alvo(s)!", SSM_INFO);
+
+	// DoT 4 ticks
+	var t := 1;
+	while (t <= 4)
+		sleepms(2000);
+		foreach mobile in targets
+			if (mobile && !mobile.dead)
+				PlayStationaryEffect(mobile.x, mobile.y, mobile.z, 0x36CB, 1, 1);
+				SC_DealDamage(who, mobile, CInt(spell.id), dot_dmg, DAMAGE_TYPE::FIRE, 0);
+			endif
+		endforeach
+		t += 1;
+	endwhile
+
+	return 1;
+endprogram

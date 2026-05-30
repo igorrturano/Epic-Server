@@ -1,0 +1,141 @@
+/* $Id: makeswarm.src 1383 2006-05-13 09:26:14Z austin $
+ *
+*/
+// Example: .makeswarm [template] [radius] [tamed] [tier] - Makes npcs on every tile in the radius around you.
+
+use uo;
+use os;
+use util;
+
+include ":gumps:requestGump";
+include "include/epicNPCUtils";
+
+program MakeSwarm(who, text)
+
+	var template := 0, radius := 0;
+	var tamed := 0, tier := 0;
+	if (text)
+		text := SplitWords(text);
+		template := text[1];
+		radius := CInt(text[2]);
+		tamed := CInt(text[3]); // Alterado por Edmond 13.09
+		tier := CInt(text[4]);
+	endif
+
+	if (!template)
+		template := RequestGump(who, "Enter the npc template name to use.", "");
+		if (!template)
+			SendSysMessage(who, "Cancelled.");
+			return 0;
+		endif
+	endif
+	if (!radius)
+		if (!radius)
+			radius := CInt(RequestGump(who, "Enter the radius to create npcs.", "", 1));
+		endif
+		if (!radius)
+			SendSysMessage(who, "Radius is less than 1. Setting to 1.");
+			radius := 1;
+		endif
+	endif
+
+	// Adicionado por Edmond 13.09
+	if (!tamed)
+		if (!tamed)
+			tamed := CInt(RequestGump(who, "Tamed? 1 = Tamed", "", 1));
+		endif
+		if ((tamed != 0) && (tamed != 1))
+			SendSysMessage(who, "Tamed is different from 0 or 1. Setting to 0.");
+			tamed := 0;
+		endif
+	endif
+
+	if (!tier)
+		tier := CInt(RequestGump(who, "Enter the NPC tier (0-5).", "", 1));
+		if (!tier)
+			SendSysMessage(who, "No tier specified. Setting to 0.");
+			tier := "0";
+		endif
+	endif
+
+	if (radius > 10) // 100 npcs
+		SendSysMessage(who, "Radius exceeds 10 spaces. Setting to 10.");
+		radius := 10;
+	endif
+
+	var start_x := who.x - CInt(radius);
+	var start_y := who.y - CInt(radius);
+	var end_x := who.x + CInt(radius);
+	var end_y := who.y + CInt(radius);
+
+	var x := start_x, y := start_y;
+	var created := 0;
+
+	// OPTIMIZATION: Batch spawning to prevent server overload
+	const BATCH_SIZE := 20;       // Create 20 NPCs per batch
+	const BATCH_DELAY := 500;     // 500ms delay between batches
+	var created_in_batch := 0;
+	var batch_number := 1;
+
+	// Log batch spawning start
+	if (GetGlobalProperty("ai_profiling_enabled"))
+		syslog($"[MAKESWARM START] Creating {template} NPCs in radius {radius} with batching (size={BATCH_SIZE}, delay={BATCH_DELAY}ms)");
+	endif
+
+	for (x := start_x; x <= end_x; x := x + 1)
+		for (y := start_y; y <= end_y; y := y + 1)
+			var npc := CreateNPCFromTemplate(":epicAI:" + template, x, y, who.z, 0, who.realm);
+			npc.facing := who.facing;
+			if (npc.errortext)
+				npc := CreateNpcFromTemplate(":brainAI:" + template, x, y, who.z, 0, who.realm);
+				if (npc.errortext)
+					npc := CreateNpcFromTemplate(":merchants:" + template, x, y, who.z, 0, who.realm);
+					if (npc.errortext)
+						Print("Error creating NPC [" + template + "] at (" + x + "," + y + ") -> " + npc.errortext);
+						sleepms(3);
+						continue;
+					endif
+				endif
+			endif
+
+			customizeNpc(npc, tier);
+
+			// Alterado por Edmond 13.09
+			if (tamed == 1)
+				npc.SetMaster(who);
+				SetObjProperty(npc, "owner", who.serial);
+				SetObjProperty(npc, "name", npc.name);
+				SetObjproperty(npc, "script", npc.script);
+				npc.script := ":epicai:tamedBrain";
+				RestartScript(npc);
+			endif
+			//
+			if (npc)
+				created := created + 1;
+				created_in_batch := created_in_batch + 1;
+
+				// OPTIMIZATION: Pause between batches to let server process initialization
+				if (created_in_batch >= BATCH_SIZE)
+					SendSysMessage(who, $"Created batch #{batch_number} ({BATCH_SIZE} NPCs). Total: {created}. Waiting {BATCH_DELAY}ms...");
+					if (GetGlobalProperty("ai_profiling_enabled"))
+						syslog($"[MAKESWARM BATCH #{batch_number}] Completed {BATCH_SIZE} NPCs, total={created}, pausing {BATCH_DELAY}ms");
+					endif
+					sleepms(BATCH_DELAY);
+					created_in_batch := 0;
+					batch_number += 1;
+				endif
+			endif
+
+			sleepms(3);
+		endfor
+	endfor
+
+	SendSysMessage(who, "Done making npc swarm. Created [" + created + "] [" + template + "] npcs.");
+
+	// Log completion for profiling
+	if (GetGlobalProperty("ai_profiling_enabled"))
+		syslog($"[MAKESWARM COMPLETE] Created {created} {template} NPCs in {batch_number} batches");
+	endif
+
+	return 1;
+endprogram

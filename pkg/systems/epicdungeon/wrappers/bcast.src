@@ -1,0 +1,17 @@
+use uo;
+use os;
+
+include "include/client";
+
+program bcast(params)
+    var dm  := params[1];
+    var pv  := params[3];
+    var msg := pv[1];
+
+    if (!msg || msg == "")
+        return 0;
+    endif
+
+    Broadcast(dm.name + ": " + msg, FONT_BOLD, 73);
+    return 1;
+endprogram

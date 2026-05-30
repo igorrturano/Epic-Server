@@ -1,0 +1,85 @@
+include "system/diagnostics/StackTrace/StackTrace";
+
+// Internal
+include ":combat:Controller/DamageController";
+include ":combat:Controller/HitController";
+include ":combat:Controller/HitScriptController";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+include ":abilities:AbilityRegistry";
+include ":combat:Controller/WearDownController";
+
+// External
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":mastery:CombatController";
+include ":achievements:controllers/CombatController";
+include ":IO:CFGFile";
+// include ":message:model/Message";
+include ":tn:cooldown";
+
+program MainHitScript(attackInfo)
+	// Define attacker como o originador do ataque
+	SetScriptController(attackInfo.GetAttacker().GetObjRef());
+
+	if (attackInfo.GetDamageHand() == DAMAGE_HAND::OFFHAND)
+		SleepMS(OFFHAND_DELAY); // Adiciona delay para ataques com a segunda arma
+	endif
+
+	if (attackInfo.GetDefender().IsDead()) // Se já estiver morto, não aplica outro dano (impede erro de dano em mobile que não existe, caso haja condição de corrida)
+		return 1;
+	endif
+
+	CheckBodyRegionToHit(attackInfo); // Verifica a parte do corpo a ser atingida
+
+	WeaponHitScripts(attackInfo);
+	sleepms(2);
+
+	WearDownEquip(attackInfo.GetWeapon());
+	ProccessCombatDamage(attackInfo);
+	ArmorHitScripts(attackInfo);
+	sleepms(2);
+	PlayAttackFX(attackInfo);
+	PlayAttackSFX(attackInfo);
+
+	ProgressAttackSkills(attackInfo);
+	MasteryCombat_Advance(attackInfo.GetAttacker().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalBaseDamage() });
+	AchievementCombat_Advance(attackInfo.GetAttacker().GetObjRef(), attackInfo.GetDefender().GetObjRef(), struct{ hits := 1, damage := attackInfo.GetDamage().GetTotalBaseDamage() });
+
+	return 1;
+endprogram
+
+function CheckBodyRegionToHit(byRef attackInfo)
+	var zoneToHit := CS_GetRandomArmorZone();
+	attackInfo.SetBodyRegion(zoneToHit);
+	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_HIT, Message($"Região atingida: {zoneToHit}"));
+endfunction
+
+function DoMovement(byRef attackInfo)
+	var move := attackInfo.GetAttacker().GetObjRef().GetProp("movement");
+	var movtime := CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#movtime"));
+	if (move != error)
+		if (ReadGameClock() < movtime + 30)
+			var armorsInSlot := attackInfo.GetDefender().GetEquipBySlot(attackInfo.GetBodyRegion());
+			foreach armor in (armorsInSlot)
+				var e := start_script(
+					CStr(move),
+					array{
+						attackInfo.GetAttacker().GetObjRef(),
+						attackInfo.GetDefender().GetObjRef(),
+						attackInfo.GetWeapon().GetObjRef(),
+						armor,
+						attackInfo.GetDamage().GetTotalBaseDamage(),
+						attackInfo.GetDamage().GetTotalRawDamage()
+					}
+				);
+			endforeach
+			attackInfo.GetAttacker().GetObjRef().EraseProp("movement");
+			return 1;
+		else
+			Message("Você perdeu seu ataque especial.", Color(SYSTEM_COLOR::INFO)).SendSys(attackInfo.GetAttacker().GetObjRef());
+			attackInfo.GetAttacker().GetObjRef().EraseProp("movement");
+		endif
+	endif
+endfunction

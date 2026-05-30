@@ -1,0 +1,56 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/tileEffects";
+include "include/sounds";
+
+// Marcha dos Bravos (1204) - C1
+// +STR party (Arc/5) por Arc/3 segundos
+program SpellScript(params)
+	var who := params[1];
+
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
+	var bonus    := CInt(arcana / 5);
+	if (bonus < 1)  bonus    := 1;  endif
+	if (bonus > 20) bonus    := 20; endif
+	var duration := CInt(arcana / 3);
+	if (duration < 5)  duration := 5;  endif
+	if (duration > 33) duration := 33; endif
+
+	var range := 8;
+	var buffed := 0;
+	var buffed_list := array;
+
+	PrintTextAbove(who, "*E a tropa marchou, e a terra tremeu sob seus pes.*", 3, 1152);
+	PlaySoundEffect(who, 0x11C);
+
+	foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm))
+		if (mobile.isa(POLCLASS_MOBILE) && !mobile.IsHostile(who))
+			AP_ModifyStatMod(mobile, STRENGTH, bonus);
+			SetObjProperty(mobile, "#cantico_str_up", bonus);
+			PlayStationaryEffect(mobile.x, mobile.y, mobile.z, FX_BLESS_EFFECT, 2, 2);
+			SendSysMessageEx(mobile, $"Marcha dos Bravos: +{bonus} Forca por {duration}s.", SSM_INFO);
+			buffed_list[buffed + 1] := mobile;
+			buffed += 1;
+		endif
+	endforeach
+
+	if (buffed == 0)
+		SendSysMessageEx(who, "Nenhum aliado por perto para abençoar.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(who, $"Marcha dos Bravos: {buffed} aliado(s) fortalecido(s) por {duration}s.", SSM_INFO);
+
+	sleep(duration);
+
+	foreach mobile in buffed_list
+		if (mobile && !mobile.dead && GetObjProperty(mobile, "#cantico_str_up") == bonus)
+			AP_ModifyStatMod(mobile, STRENGTH, -bonus);
+			EraseObjProperty(mobile, "#cantico_str_up");
+		endif
+	endforeach
+
+	return 1;
+endprogram

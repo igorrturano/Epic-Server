@@ -1,0 +1,1052 @@
+use cfgfile;
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":tn:tngumps";
+include ":gumps:requestGump";
+include ":attributes:attributes";
+include "include/client";
+include ":charactercreation:createchar";
+include ":charactercreation:raceDisplay";
+include ":disguise:disguise";
+include ":datafile:datafile";
+include "include/say";
+include "include/creationUtils";
+include "include/sounds";
+include "include/epicConstants";
+include ":charactercreation:include/RPTraits";
+include ":abilities:include/models/Ability";
+include ":nature:nature";
+include ":crafting:/include/fabricacaoComplexos";
+include ":census:include/CensusController";
+
+// Gate dos while loops do gump. Se o player desconectou OU o ref ficou
+// inválido (account/char deletados mid-creation), retorna 1 pra encerrar
+// o loop — senão o script vira zumbi e fica logando "Could not attach
+// modules for external function call jump" pro resto da uptime,
+// segurando memória até OOM.
+//
+// POL error é falsy: `!who` cobre both invalid ref (error) e desconectado
+// (Integer 0). Ver docs/escript-error-handling.md.
+function CreationCompleted(who)
+	if (!who) return 1; endif
+	if (!who.connected) return 1; endif
+	return GetObjProperty(who, "creation_completed");
+endfunction
+
+// Retorna 1 se o gump retornou algo válido, 0 se foi fechado por colisão/erro.
+// Previne tight loops quando SendDialogGump retorna imediatamente.
+function IsGumpValid(input)
+	if (!input || input == error)
+		sleepms(500);
+		return 0;
+	endif
+	return 1;
+endfunction
+
+program epicCreationGump(who)
+	if (CreationCompleted(who))
+		return;
+	endif
+
+	resetCharacter(who);
+
+	// Create chardata at the very start - this serves as the "creation in progress" flag
+	var chardata := struct;
+	SetObjProperty(who, "chardata", chardata);
+	
+	var culture_pic := culturalSelection(who);
+	SetObjProperty(who, "nome_inicial", who.name);
+
+	racialSelection(who, culture_pic);
+	pathSelection(who, culture_pic);
+	classSelection(who, culture_pic);
+	traitSelection(who, culture_pic);
+	skillSelection(who, culture_pic);
+	attributeSelection(who, culture_pic);
+	religionSelection(who);
+	// gameModeSelection(who);  // hotfix: skip selection for new chars; legacy True Mode chars keep working via chardata.game_mode field
+	applyClassStarter(who);
+	itemInheritance(who);
+	languageSelection(who, culture_pic);
+	signSelection(who);
+	birthDaySelection(who);
+	RPcharacteristicsSelection(who, culture_pic);
+	setBirthdate(who);
+	looksSelection(who);
+	setCitizenship(who);
+
+	AP_SetVital(who, "Hunger", 0);
+	ApplyEpicHealing(who, 200);
+	RecalcVitals(who);
+	// Only stamp createdate for genuinely new characters. The migration
+	// stone wipes chardata + creation_completed but NOT createdate, so an
+	// unconditional set here would clobber the original creation date and
+	// reset Story Mode age-based skill caps on every migration rerun.
+	var existing_createdate := GetObjProperty(who, "createdate");
+	if (existing_createdate == error || CInt(existing_createdate) == 0)
+		var tempo_agora := polcore().systime;
+		SetObjProperty(who, "createdate", tempo_agora);
+	endif
+
+	// Open Beta 28/09
+	startAdventure(who);
+	
+	// Mark creation as completed
+	SetObjProperty(who, "creation_completed", 1);
+
+	// Track character creation for census (only players, not GMs)
+	if (who.cmdlevel == 0)
+		var chardata_census := GetObjProperty(who, "chardata");
+		CensusTrackCreation(chardata_census);
+	endif
+
+	// Migration handoff (Phase 5). If migrationStone.src triggered this run,
+	// it stashed the player's pre-migration XP/Level/createdate/name into
+	// `migration_preserve`. Restore them now so the player keeps their
+	// progression and identity across the rerun. Recalculate vitals so
+	// max HP reflects the restored Level under the new formula.
+	var preserve := GetObjProperty(who, "migration_preserve");
+	if (preserve != error && preserve)
+		// "Experience" is the canonical XP property (see expbar.inc:56,82).
+		// The old code mistakenly used "XP" which is a phantom property
+		// nobody reads, effectively wiping migrated players' XP.
+		SetObjProperty(who, "Experience", preserve.Experience);
+		SetObjProperty(who, "Level", preserve.Level);
+		SetObjProperty(who, "createdate", preserve.createdate);
+		if (preserve.original_name && preserve.original_name != "")
+			who.name := preserve.original_name;
+		endif
+		// Note: migration_preserve is NOT erased here. Its continued presence
+		// is the signal logon.src (RepairMigratedBuyhab) uses to detect a
+		// stone-driven migration and reset the odd-level buyhab slots. Logon
+		// erases it after the repair runs.
+		RecalcVitals(who);
+		SendSysMessageEX(who, "Migração completa. XP, nível, nome e data de criação preservados.", SSM_INFO);
+	endif
+endprogram
+
+function culturalSelection(who)
+	var chardata := struct;
+	var culture_pic := 0x9E7;
+	var btn_value;
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var input := CultureGump(who, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		btn_value := input[0];
+
+		if (btn_value == 201)
+			culture_pic++;
+		elseif (btn_value == 210)
+			culture_pic--;
+		else
+			break;
+		endif
+
+		if (culture_pic < 0x9E7)
+			culture_pic := 0x9EE;
+		elseif (culture_pic > 0x9EE)
+			culture_pic := 0x9E7;
+		endif
+	endwhile
+	chardata.+culture := getCultureByPictureId(culture_pic);
+	chardata.+crafting := getCraftCultureByPictureId(culture_pic);
+	SetObjProperty(who, "chardata", chardata);
+
+	SendSysMessageEX(who, "Sua cultura será " + chardata.culture, SSM_INFO);
+	return culture_pic;
+endfunction
+
+function racialSelection(who, culture_pic)
+	var btn_value;
+	var chardata := GetObjProperty(who, "chardata");
+
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var input := EpicRaceGump(who, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		foreach key in (input.keys)
+			btn_value := key;
+		endforeach
+		if (btn_value == 201)
+			chardata.raca := ANAO;
+			break;
+		elseif (btn_value == 202)
+			chardata.raca := DROW;
+			break;
+		elseif (btn_value == 203)
+			chardata.raca := ELFO;
+			break;
+		elseif (btn_value == 204)
+			chardata.raca := HUMANO;
+			break;
+		elseif (btn_value == 205)
+			chardata.raca := ORC;
+			break;
+		elseif (btn_value == 206)
+			chardata.raca := PEQUILHO;
+			break;
+		elseif (chardata.culture == AIGLANA || chardata.culture == LESTE)
+			SendSysMessageEX(who, "Escolha sua raça!", SSM_FAIL);
+		else
+			chardata.raca := getRaceByCulturalId(culture_pic)[1];
+			break;
+		endif
+	endwhile
+	var raceDisplay := RaceDisplayFromChardata(chardata);
+	SendSysMessageEX(who, "Voce será um " + raceDisplay, SSM_INFO);
+
+	// Set both .graphic AND .trueobjtype so the race body is the canonical
+	// "true" form. Anything that reverts via trueobjtype (polymorph end,
+	// resurrection, metamorfose dispel, ironmaiden release) will restore to
+	// the race body instead of the humano template (400/401).
+	if (who.graphic == 400 && (chardata.raca == ELFO || chardata.raca == DROW))
+		who.graphic := 1830;
+		who.trueobjtype := 1830;
+	elseif (who.graphic == 401 && (chardata.raca == ELFO || chardata.raca == DROW))
+		who.graphic := 1831;
+		who.trueobjtype := 1831;
+	elseif (who.graphic == 400 && (chardata.raca == ORC))
+		who.graphic := 1832;
+		who.trueobjtype := 1832;
+	elseif (who.graphic == 401 && (chardata.raca == ORC))
+		who.graphic := 1833;
+		who.trueobjtype := 1833;
+	elseif (who.graphic == 400 && (chardata.raca == ANAO))
+		who.graphic := 1828;
+		who.trueobjtype := 1828;
+	elseif (who.graphic == 401 && (chardata.raca == ANAO))
+		who.graphic := 1829;
+		who.trueobjtype := 1829;
+	elseif (who.graphic == 400 && (chardata.raca == PEQUILHO))
+		who.graphic := 1835;
+		who.trueobjtype := 1835;
+	elseif (who.graphic == 401 && (chardata.raca == PEQUILHO))
+		who.graphic := 1834;
+		who.trueobjtype := 1834;
+	endif
+
+	who.title_race := raceDisplay;
+	who.race := chardata.raca;
+	who.name := raceDisplay;
+	SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function RPcharacteristicsSelection(who, culture_pic)
+	var chardata := GetObjProperty(who, "chardata");
+	var CaracteristicasCategories := array{ "Altura", "Peso", "Olhos", "Idade Aparente", "Voz" };
+
+	chardata.+caracteristicas_rp := struct{};
+	foreach category in CaracteristicasCategories
+		chardata.caracteristicas_rp[category] := -1;
+	endforeach
+
+	var racial_traits := GetRacialTraits(chardata.raca);
+	var categories := GetPageCategories();
+	var required_categories := array{ "Altura", "Peso", "Olhos", "Voz" };
+
+	var input;
+	var all_requirements_met := 0;
+
+	while (!all_requirements_met && !CreationCompleted(who))
+		sleepms(2);
+		input := CaracteristicasRPGump(who, chardata, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+
+		var age_input := GFExtractData(input, 1000); // Textbox ID for Age
+
+		if (input[0] == 222) // 222 é o botão de finalizar
+			var selected_count := CountSelectedCategories(chardata.caracteristicas_rp, required_categories);
+			var age_filled := !(age_input == "" || typeof(age_input) == "Error");
+
+			if (selected_count == 4 && age_filled)
+				all_requirements_met := 1;
+				chardata.idade_escolhida := CInt(age_input);
+
+				var age_info := ConvertAge(chardata.raca, CInt(chardata.idade_escolhida));
+				chardata.idade_aparente := age_info[1];
+				chardata.idade_real := age_info[2];
+
+				SendSysMessageEx(who, "Sua idade aparente é " + chardata.idade_aparente
+								  + " (" + chardata.idade_real + " anos).", SSM_INFO);
+			else
+				if (selected_count < 4)
+					SendSysMessageEX(who, "Você precisa selecionar uma opção para Altura, Peso, Olhos e Voz antes de continuar.",
+									  SSM_FAIL);
+				endif
+				if (!age_filled)
+					SendSysMessageEX(who, "Você precisa preencher sua idade antes de continuar.", SSM_FAIL);
+				endif
+			endif
+		else
+			ProcessSelection(chardata, input[0]);
+		endif
+	endwhile
+
+	SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function CountSelectedCategories(caracteristicas_rp, required_categories)
+	var count := 0;
+	foreach category in required_categories
+		if (caracteristicas_rp[category] != -1)
+			count += 1;
+		endif
+	endforeach
+	return count;
+endfunction
+
+function pathSelection(who, culture_pic)
+	var btn_value;
+	var chardata := GetObjProperty(who, "chardata");
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var input := PathGump(who, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		foreach key in (input.keys)
+			btn_value := key;
+		endforeach
+		if (btn_value == 201)
+			chardata.+path := MILITAR;
+			break;
+		elseif (btn_value == 202)
+			chardata.+path := CIVIL;
+			break;
+		else
+			SendSysMessageEX(who, "Escolha sua vocação", SSM_FAIL);
+		endif
+	endwhile
+
+	SetObjProperty(who, "chardata", chardata);
+	SendSysMessageEX(who, "Você escolheu o caminho " + chardata.path, SSM_INFO);
+endfunction
+
+// Class selection (Phase 3 rework). Player picks one of 29 specific classes
+// regardless of their chosen path. The class determines:
+//   chardata.subclasse — specific class (e.g. "Paladino"), used by new code
+//   chardata.classe    — legacy archetype label ("Guerreiro"/"Ladino"/"Sabio"),
+//                        preserved so existing code reading chardata.classe
+//                        (ability registries, pathOfWisdom-era checks, etc.)
+//                        continues to function unchanged
+//   chardata.dice      — HP die for the new HP formula (Phase 4)
+function classSelection(who, culture_pic)
+	var btn_value;
+	var chardata := GetObjProperty(who, "chardata");
+	var cfg := ReadConfigFile(":charactercreation:config/classes");
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var input := ClasseSelectionGump(who, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		foreach key in (input.keys)
+			btn_value := key;
+		endforeach
+
+		if (btn_value <= 200)
+			SendSysMessageEX(who, "Escolha sua classe", SSM_FAIL);
+			continue;
+		endif
+
+		var flat := ClassFlatList();
+		var idx := btn_value - 200;
+		if (idx < 1 || idx > flat.size())
+			SendSysMessageEX(who, "Escolha sua classe", SSM_FAIL);
+			continue;
+		endif
+
+		var picked := flat[idx];
+		var elem := FindConfigElem(cfg, picked);
+		if (elem == error)
+			SendSysMessageEX(who, "Erro ao carregar classe " + picked, SSM_FAIL);
+			continue;
+		endif
+
+		chardata.+subclasse := picked;
+		chardata.+classe    := elem.archetype;
+		chardata.+dice      := elem.dice;
+		break;
+	endwhile
+
+	SetObjProperty(who, "chardata", chardata);
+	SetObjProperty(who, "classe", chardata.classe);
+	SendSysMessageEX(who, "Você escolheu a classe " + StrReplace(chardata.subclasse, "_", " ") + " (" + chardata.classe + ", " + chardata.dice + ")", SSM_INFO);
+endfunction
+
+function backgroundSelection(who, culture_pic)
+	var btn_value;
+	var chardata := GetObjProperty(who, "chardata");
+	var cfg := ReadConfigFile(":charactercreation:config/backgrounds");
+
+	// Build array in same iteration order as backgroundGump()
+	var bg_list := array;
+	var all_backgrounds := BACKGROUNDS;
+	foreach bg in (all_backgrounds)
+		bg_list.append(bg);
+	endforeach
+
+	var cultural_bg := backgroundByCulture(who);
+	var cultural_btn := 200 + bg_list.size() + 1;
+
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var input := backgroundGump(who, culture_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		foreach key in (input.keys)
+			btn_value := key;
+		endforeach
+
+		var idx := btn_value - 200;
+		if (btn_value == cultural_btn)
+			chardata.+background := cultural_bg;
+			chardata.+bgBonus := cfg[cultural_bg].Bonus;
+			break;
+		elseif (idx >= 1 && idx <= bg_list.size())
+			var selected_bg := bg_list[idx];
+			chardata.+background := selected_bg;
+			chardata.+bgBonus := cfg[selected_bg].Bonus;
+			break;
+		else
+			SendSysMessageEX(who, "Escolha seu histórico", SSM_FAIL);
+		endif
+	endwhile
+
+	SetObjProperty(who, "chardata", chardata);
+	SendSysMessageEX(who, "Seu passado é " + chardata.background, SSM_INFO);
+endfunction
+
+function traitSelection(who, culture_pic)
+	var btn_value;
+	var chardata := GetObjProperty(who, "chardata");
+	var traits := listTraits(who, chardata);
+	var i := 1;
+
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var input := traitGump(who, culture_pic, traits);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		foreach key in (input.keys)
+			btn_value := key;
+		endforeach
+		if (btn_value > 200)
+			// listTraits() builds trait structs with lowercase `.nome`
+			// (creationUtils.inc:629). Reading `.Nome` returns empty/error,
+			// silently storing a blank chardata.trait and breaking every
+			// trait-dependent check downstream (most visibly Sabe-Tudo's
+			// 2P+5S slot build).
+			chardata.+trait := traits[btn_value - 200].nome;
+			break;
+		else
+			SendSysMessageEX(who, "Escolha sua característica", SSM_FAIL);
+		endif
+	endwhile
+
+	SetObjProperty(who, "chardata", chardata);
+	SendSysMessageEX(who, "Sua característica é " + chardata.trait, SSM_INFO);
+endfunction
+
+// Slot-based skill selection (Phase 2 rework).
+//
+// Each character picks 3 Primary + 3 Secondary skills (or 2P + 5S with Sabe-Tudo)
+// from buckets gated by their chosen path. No points pool, no background bonus,
+// no class-driven primary cap — slot layout is fixed by path + trait.
+//
+// Primary starts at 40, Secondary starts at 10. See BuildSkillSlots for the
+// per-path slot layout.
+function skillSelection(who, culture_pic)
+	var chardata := GetObjProperty(who, "chardata");
+	var has_sabe_tudo := (chardata.trait == "Sabe-Tudo");
+	var slots := BuildSkillSlots(chardata.path, has_sabe_tudo);
+	var total := slots.size();
+
+	chardata.+Skills := dictionary;
+	var picked_skills := array;
+
+	var slot_idx := 1;
+	while (slot_idx <= total && !CreationCompleted(who))
+		sleepms(2);
+		var slot_def := slots[slot_idx];
+		var input := SlotSkillGump(who, culture_pic, chardata, slot_idx, total, slot_def, picked_skills);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+
+		var btn_value := 0;
+		foreach key in (input.keys)
+			btn_value := key;
+		endforeach
+
+		var pick := SkillFromSlotInput(slot_def, btn_value, chardata);
+		if (pick == "" || pick in picked_skills)
+			SendSysMessageEX(who, "Selecione uma habilidade válida", SSM_FAIL);
+			continue;
+		endif
+
+		chardata.Skills[pick] := slot_def.tier;
+		picked_skills.append(pick);
+		// Persist after every pick so the breadcrumb in the NEXT slot's gump
+		// reflects the running picks (showPreviousGumpInformation reads from
+		// the ObjProperty, not the local var).
+		SetObjProperty(who, "chardata", chardata);
+		slot_idx++;
+	endwhile
+
+	SetObjProperty(who, "chardata", chardata);
+	SetObjProperty(who, "skill", 1);
+	SendSysMessageEX(who, "Você definiu suas skills", SSM_INFO);
+
+	// Apply: Primary (tier 3) starts at 40, Secondary (tier 2) starts at 20.
+	foreach skill in (chardata.Skills.keys())
+		var value := 0;
+		if (chardata.Skills[skill] == 3)
+			value := 40;
+		elseif (chardata.Skills[skill] == 2)
+			value := 20;
+		endif
+		if (AP_GetTrueSkill(who, skill) == 0)
+			AP_SetTrueSkill(who, skill, value);
+		endif
+	endforeach
+endfunction
+
+function attributeSelection(who, culture_pic)
+	var btn_value;
+	var chardata := GetObjProperty(who, "chardata");
+	chardata.+attribute_points := 80;
+	chardata.+str := 40;
+	chardata.+dex := 40;
+	chardata.+int := 40;
+	var traits := listTraits(who, chardata);
+	var i := 1;
+
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var input := attributeGump(who, culture_pic, chardata);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		foreach key in (input.keys)
+			btn_value := key;
+		endforeach
+		if (btn_value == 200)
+			chardata.str += 5;
+			chardata.attribute_points -= 5;
+		elseif (btn_value == 201)
+			chardata.str -= 5;
+			chardata.attribute_points += 5;
+		elseif (btn_value == 210)
+			chardata.dex += 5;
+			chardata.attribute_points -= 5;
+		elseif (btn_value == 211)
+			chardata.dex -= 5;
+			chardata.attribute_points += 5;
+		elseif (btn_value == 220)
+			chardata.int += 5;
+			chardata.attribute_points -= 5;
+		elseif (btn_value == 221)
+			chardata.int -= 5;
+			chardata.attribute_points += 5;
+		else
+			if (chardata.attribute_points < 0)
+				SendSysMessageEX(who, "Compra de atributo inválida", SSM_FAIL);
+				DisconnectClient(who);
+			endif
+
+			SetObjProperty(who, "chardata", chardata);
+			attributeBonusByRaceAndTraits(who);
+
+			SendSysMessageEX(who, "Você selecionou seus atributos", SSM_INFO);
+			break;
+		endif
+	endwhile
+endfunction
+
+function religionSelection(who)
+	var chardata := GetObjProperty(who, "chardata");
+	var religion_pic := 0x9F6;
+	var btn_value;
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var input := ReligionGump(who, religion_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		btn_value := input[0];
+
+		if (btn_value == 201)
+			religion_pic++;
+		elseif (btn_value == 210)
+			religion_pic--;
+		else
+			break;
+		endif
+
+		if (religion_pic < 0x9EF)
+			religion_pic := 0x9F6;
+		elseif (religion_pic > 0x9F6)
+			religion_pic := 0x9EF;
+		endif
+	endwhile
+	chardata.+religion := getReligionByPictureId(religion_pic);
+	SetObjProperty(who, "chardata", chardata);
+
+	SendSysMessageEX(who, "Sua religião será " + chardata.religion, SSM_INFO);
+	return religion_pic;
+endfunction
+
+function gameModeSelection(who)
+	var chardata := GetObjProperty(who, "chardata");
+	var game_mode_pic := 0x9FB;
+	var btn_value;
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var input := gameModeGump(who, game_mode_pic);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		btn_value := input[0];
+
+		if (btn_value == 201)
+			game_mode_pic++;
+		elseif (btn_value == 210)
+			game_mode_pic--;
+		else
+			break;
+		endif
+
+		if (game_mode_pic < 0x9FB)
+			game_mode_pic := 0x9FC;
+		elseif (game_mode_pic > 0x9FC)
+			game_mode_pic := 0x9FB;
+		endif
+	endwhile
+	chardata.+game_mode := gameModeByPictureId(game_mode_pic);
+	SetObjProperty(who, "chardata", chardata);
+
+	SendSysMessageEX(who, "Seu modo de jogo será " + chardata.game_mode, SSM_INFO);
+	return game_mode_pic;
+endfunction
+
+function looksSelection(who)
+	var chardata := GetObjProperty(who, "chardata");
+	var btn_value;
+	var currentPage := 1;
+	chardata.+hair := "";
+	chardata.+hair_item := 0;
+	var continue_loop := 1;
+
+	// reseta cabelo e barba antes de iniciar as opções
+	resetHairAndBeard(who, chardata);
+
+	while (continue_loop && !CreationCompleted(who))
+		sleepms(2);
+		var input := hairSelectionGump(who, chardata, currentPage);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		btn_value := input[0];
+		case (btn_value)
+			1001: currentPage += 1; // Next page
+			1002: currentPage -= 1; // Previous page
+			500:
+				DestroyItem(GetEquipmentByLayer(who, LAYER_HAIR));
+				var myHair := CreateItemAtLocation(who.x, who.y, who.z, chardata.hair_item, 1, who.realm);
+				EquipItem(who, myHair);
+				continue_loop := 0; // This will break the loop
+			82:   // opção no gump que é sem cabelo
+				chardata.hair := "";
+				chardata.hair_item := "";
+			default:
+				if (btn_value)
+					chardata.hair := GetHairGumpGraphic(btn_value);
+					chardata.hair_item := btn_value;
+				endif
+		endcase
+	endwhile
+
+	SetObjProperty(who, "chardata", chardata);
+
+	// Adicionar seleção de barba se for homem e/ou que não seja elfo ou drow
+	if (who.gender == 0 && chardata.raca != "Elfo" && chardata.raca != "Drow")
+		beardSelection(who, chardata);
+	endif
+
+	// caso cabelo e barba não tenham sido selecionados, pular opcao de cor de cabelo e barba
+	if ((chardata.hair && chardata.hair != "") || (chardata.beard && chardata.beard != ""))
+		hairAndBeardColorSelection(who, chardata);
+	endif
+
+	skinColorSelection(who, chardata);
+endfunction
+
+function resetHairAndBeard(who, byref chardata)
+	if (chardata)
+		chardata.beard := "";
+		chardata.beard_item := "";
+		chardata.beard_color := "";
+		DestroyItem(GetEquipmentByLayer(who, LAYER_BEARD));
+
+		chardata.hair := "";
+		chardata.hair_item := "";
+		chardata.hair_color := "";
+		DestroyItem(GetEquipmentByLayer(who, LAYER_HAIR));
+	endif
+endfunction
+
+function hairAndBeardColorSelection(who, byref chardata)
+	var btn_value;
+	var currentPage := 1;
+	var continue_loop := 1;
+
+	while (continue_loop && !CreationCompleted(who))
+		sleepms(2);
+		var input := hairAndBeardColorSelectionGump(who, chardata, currentPage);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		btn_value := input[0];
+		case (btn_value)
+			1001: currentPage += 1; // Next page
+			1002: currentPage -= 1; // Previous page
+			1003: continue_loop := 0; // This will break the loop
+			default:
+				if (btn_value)
+					if (chardata.hair_item)
+						chardata.hair_color := btn_value;
+					endif
+					if (chardata.beard_item)
+						chardata.beard_color := btn_value;
+					endif
+					// Atualizar o cabelo e a barba do personagem imediatamente
+					UpdateCharacterHair(who, chardata);
+				endif
+		endcase
+	endwhile
+
+	SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function skinColorSelection(who, byref chardata)
+	var btn_value;
+	var currentPage := 1;
+	var continue_loop := 1;
+
+	while (continue_loop && !CreationCompleted(who))
+		sleepms(2);
+		var input := skinColorSelectionGump(who, chardata, currentPage);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		btn_value := input[0];
+		case (btn_value)
+			1:   currentPage += 1; // Next page
+			2:   currentPage -= 1; // Previous page
+			500: continue_loop := 0; // This will break the loop
+			default:
+				if (btn_value)
+					chardata.skin_color := CInt(btn_value);
+					// Atualizar a cor da pele do personagem imediatamente
+					UpdateCharacterSkin(who, chardata);
+				endif
+		endcase
+	endwhile
+
+	SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function beardSelection(who, byref chardata)
+	var btn_value;
+	var currentPage := 1;
+	chardata.+beard := "";
+	chardata.+beard_item := 0;
+	var continue_loop := 1;
+
+	while (continue_loop && !CreationCompleted(who))
+		sleepms(2);
+		var input := beardSelectionGump(who, chardata, currentPage);
+		if (!IsGumpValid(input))
+			continue;
+		endif
+		btn_value := input[0];
+		case (btn_value)
+			1001: currentPage += 1; // Next page
+			1002: currentPage -= 1; // Previous page
+			500:
+				DestroyItem(GetEquipmentByLayer(who, LAYER_BEARD));
+				var myBeard := CreateItemAtLocation(who.x, who.y, who.z, chardata.beard_item, 1, who.realm);
+				EquipItem(who, myBeard);
+				continue_loop := 0; // This will break the loop
+			82:   // opcao no gump que é sem barba
+				chardata.beard := "";
+				chardata.beard_item := "";
+			default:
+				if (btn_value)
+					chardata.beard := GetBeardGumpGraphic(btn_value);
+					chardata.beard_item := btn_value;
+				endif
+		endcase
+	endwhile
+
+	SetObjProperty(who, "chardata", chardata);
+endfunction
+
+// applyClassStarter dispatches starter-kit side-effects by the new-system
+// class (chardata.subclasse). Replaces the legacy pathOfWisdom gump flow.
+//
+// Sets chardata.magia and grants starting items for spellcaster-style
+// classes (Magus, Cleric, Druida, Shaman, Engenheiro, Arqueiro_Arcano,
+// Necromante, Lamina_Arcana). Other classes get nothing here — they pull
+// abilities/equipment from the level-up system as before.
+function applyClassStarter(who)
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata == error || !chardata)
+		return;
+	endif
+
+	var subclasse := chardata.subclasse;
+	if (subclasse == error || !subclasse)
+		return;
+	endif
+
+	if (subclasse == "Magus" || subclasse == "Necromante" || subclasse == "Lamina_Arcana"
+		|| subclasse == "Deslocador_das_Sombras")
+		// All are arcane "spellcaster" casters: they get the grimoire and the
+		// starter spell-choice scrolls so they can buy/cast spells. Note the
+		// Ladino rogue Dancarino_das_Sombras is deliberately NOT here — it
+		// shares the 1800-1804 ability tree but is a martial class with no
+		// spellbook; only the Sabio Deslocador_das_Sombras casts.
+		chardata.+magia := "spellcaster";
+		var grimorio := CreateItemInBackpack(who, "grimoriodasmagias", 1);
+		SetObjProperty(grimorio, "Booktype", "spellcaster");
+		SetObjProperty(grimorio, "serialid", who.serial);
+		SetObjProperty(grimorio, "marked", who.name + " - " + who.acctname);
+		grimorio.newbie := 1;
+		grimorio.graphic := 0x0EFA;
+		var spellinfo := struct;
+		spellinfo.+magic_path := "spellcaster";
+		var chosenSpells := spellChoices(who);
+		foreach spell in chosenSpells
+			var scroll := CreateItemInBackpack(who, "pergaminhospellcaster1");
+			spellinfo.id := spell.id;
+			spellinfo.school := spell.school;
+			SetObjProperty(scroll, "spellinfo", spellinfo);
+		endforeach
+
+	elseif (subclasse == "Cleric")
+		chardata.+magia := "Sacerdote";
+		// Haroloth-culture clerics get the whip starter (newbie via
+		// CreateItemInicial — was a bug in legacy code using CreateItemInBackpack).
+		if (chardata.culture == HAROLOTH)
+			CreateItemInicial(who, 0x166E, 1);
+		endif
+		CreateItemInBackPack(who, "chisels", 1);
+		var gems := array{
+			"rawstarsapphire",
+			"rawemerald",
+			"rawsapphire",
+			"rawruby",
+			"rawcitrine",
+			"rawamethyst",
+			"rawtourmaline",
+			"rawamber",
+			"rawdiamond"
+		};
+		CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
+		CreateItemInBackPack(who, gems[RandomIntMinMax(1, gems.size()+1)], 1);
+
+	elseif (subclasse == "Druida")
+		chardata.+magia := "Druid";
+
+	elseif (subclasse == "Shaman")
+		chardata.+magia := "Shaman";
+
+	elseif (subclasse == "Engenheiro")
+		CreateItemInBackPack(who, "ammo", 20);
+		CreateItemInBackPack(who, "powder", 20);
+		CreateItemInBackPack(who, "powderfixer", 1);
+		CreateItemInBackpack(who, 0xC892, 1); // Bandoleira
+		var pistol1 := CreateItemInBackPack(who, "pistol1", 1);
+		var pistol2 := CreateItemInBackPack(who, "pistol2", 1);
+		SetObjProperty(pistol1, "serialid", who.serial);
+		SetObjProperty(pistol2, "serialid", who.serial);
+
+	elseif (subclasse == "Arqueiro_Arcano")
+		chardata.+magia := "arcane_archer";
+		chardata.+religion := LORE;
+		// ARCANE_BOW is granted at creation (NOT a level-up reward): the
+		// arcane archer's abilities require the arrow to function. Other
+		// casting classes get casting via chardata.subclasse, not a grant.
+		var myhabs := GetObjProperty(who, "myhabs");
+		if (myhabs == error)
+			myhabs := dictionary;
+		endif
+		var habs := GetObjProperty(who, "buyhab");
+		if (habs[0] == error)
+			habs[0] := 1;
+		endif
+		myhabs[2] := ABILITY_ID::ARCANE_BOW;
+		habs[2] := 2;
+		SetObjProperty(who, "myhabs", myhabs);
+		SetObjProperty(who, "buyhab", habs);
+
+	endif
+
+	SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function startAdventure(who)
+	SetObjProperty(who, "Level", 1);
+	MoveObjectToLocation(who, 1407, 1062, -4, "britannia_alt", MOVEOBJECT_FORCELOCATION);
+
+	// PlaySoundEffectPrivate(who, 0x306, who);
+	// PlayStationaryEffect(who.x + 1, who.y + 1, 5, FX_SMOKE, 10, 20, 0, who.realm);
+	// sleep(1);
+	// PlayStationaryEffect(who.x - 2, who.y + 1, 4, FX_SMOKE, 10, 20, 0, who.realm);
+	// sleep(1);
+	// PlayStationaryEffect(who.x - 2, who.y, 2, FX_SMOKE, 10, 20, 0, who.realm);
+	// sleep(1);
+	// PlaySoundEffectPrivate(who, 0x2F4, who);
+
+	// // Cria lanternas para os exploradores
+	// CreateItemInBackpack(who, 0xC61F, 1);
+	// CreateItemInBackpack(who, 0xC627, 1);
+	// CreateItemInBackpack(who, 0x6161, 1);
+	CreateItemInicial(who,0xdce6, 3);// pocao adaptar visao
+	
+	PlayStationaryEffect(who.x, who.y, who.z, 0xD11B, 0, 30, 0, who.realm);
+	PlaySoundEffect(who, 0x1f2);
+
+	// PlayObjectCenteredEffect(who, FX_SMOKE, 0, 5);
+	sleep(2);
+	startAdventureGump(who);
+endfunction
+
+function languageSelection(who, culture_pic)
+	var linguasOpt := array{ "Imperialis", "Aglâb", "Ahruwën", "Haiei", "Phalk",
+						 	"Grumnak", "Björ", "Idrith'har", "Comum" };
+	var known_languages := array;
+	var btn_value;
+	SetObjProperty(who, "#LastSpeechTime", ReadGameClock());
+	while (!CreationCompleted(who))
+		sleepms(2);
+		var total_amount := 1;
+		known_languages.append(parseLanguageByCulture(who, linguasOpt));
+		if (AP_GetTrueStat(who, INTELLIGENCE) >= 40)
+			total_amount += cint(((AP_GetTrueStat(who, INTELLIGENCE) - 30) / 30) + 1);
+			known_languages.append("Comum");
+		endif
+		var input := languageSelectionGump(who, culture_pic, linguasOpt, known_languages, total_amount);
+		if (!IsGumpValid(input))
+			known_languages := array;
+			continue;
+		endif
+
+		foreach key in (input.keys)
+			btn_value := key;
+			if (btn_value > 200)
+				if (linguasOpt[key - 200])
+					known_languages.append(linguasOpt[key - 200]);
+				endif
+			endif
+
+		endforeach
+		if (known_languages.size() < total_amount || known_languages.size() > total_amount)
+			known_languages := array;
+			SendSysMessageEx(who, "Você não escolheu a quantidade correta de idiomas.", SSM_FAIL);
+		else
+			break;
+		endif
+
+	endwhile
+	
+	if (GetObjProperty(who, "chardata").magia == "Druid")
+		known_languages.append("Sylovir");
+	endif
+
+	SendSysMessageEX(who, "Você compreende " + CStr(known_languages), SSM_INFO);
+	SetObjProperty(who, "linguas_conhecidas", known_languages);
+	SetObjProperty(who, "lingua_escolhida", parseLanguageByCulture(who, linguasOpt));
+endfunction
+
+function calculateBirthdate(who)
+	var chardata := GetObjProperty(who, "chardata");
+
+	if (!chardata.birthdate)
+		chardata.+birthdate := struct{};
+	endif
+
+	var current_year := getYear();
+
+	var age_value := chardata.idade_real;
+	if (age_value == error)
+		SendSysMessageEX(who, "Erro ao calcular a idade.", SSM_FAIL);
+		return;
+	endif
+	var birth_year := current_year - age_value;
+	var birth_month := MONTHS[getMonthBySign(chardata.sign)].name;
+	var birth_day := chardata.birthdate.day;
+
+	chardata.birthdate := struct{ "year" := birth_year, "month" := birth_month, "day" := birth_day };
+
+	// Adicionar a idade inicial e a idade atual
+	chardata.+initial_age := age_value;
+	chardata.+current_age := age_value;
+
+	SetObjProperty(who, "chardata", chardata);
+	return chardata.birthdate;
+endfunction
+
+function setCitizenship(who)
+	var chardata := GetObjProperty(who, "chardata");
+	if (!chardata)
+		chardata := struct{};
+	endif
+
+	chardata.+citizenship_title := "Plebeu";
+	chardata.+available_citizenship_titles := array{ "Banido", "Indigente", "Plebeu",
+												 	"Cidadão", "Nobre" };
+
+	// Definir títulos de nobreza baseados no gênero do personagem
+	if (who.gender == 0) // Masculino
+		chardata.+nobility_titles := array{ "Rei", "Príncipe", "Duque", "Marquês", "Conde", "Visconde",
+											"Barão", "Cavaleiro", "Lorde", "Escudeiro" };
+	else // Feminino
+		chardata.+nobility_titles := array{ "Rainha", "Princesa", "Duquesa", "Marquesa", "Condessa",
+											"Viscondessa", "Baronesa", "Dama", "Lady", "Escudeira" };
+	endif
+
+	chardata.+current_nobility_title := "Nenhum"; // Inicialmente sem título de nobreza
+
+	// Definir cargos profissionais disponíveis
+	chardata.+available_professional_positions := array{ "Imperador", "Mão do Rei", "Conselheiro Nobre",
+													 	"Arcebispo", "Senador", "Serviçal" };
+
+	chardata.+current_professional_position := "Nenhum"; // Inicialmente sem cargo profissional
+
+	SetObjProperty(who, "chardata", chardata);
+endfunction
+
+function setBirthdate(who)
+	var birthdate := calculateBirthdate(who);
+	if (birthdate)
+		SendSysMessageEX(who, "Data de Nascimento: " + birthdate.day + " de " + birthdate.month
+				   + ", Ano " + birthdate.year, SSM_INFO);
+	else
+		SendSysMessageEX(who, "Não foi possível calcular a data de nascimento.", SSM_FAIL);
+	endif
+endfunction

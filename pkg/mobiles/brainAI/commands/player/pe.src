@@ -1,0 +1,14 @@
+use os;
+use uo;
+
+include "include/say";
+
+program textcmd_sayabove_pet(who, text)
+	SendSysMessage(who, "Selecione o animal:");
+
+	var what := Target(who);
+
+	if (what.master == who)
+		PrintTextAbove(what, "*" + text + "*");
+	endif
+endprogram

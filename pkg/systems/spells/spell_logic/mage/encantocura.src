@@ -1,0 +1,32 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+
+	if (!info.usescript == ":healing:healing")
+		SendSysMessageEx(who, "Voce so pode usar esta magia em ataduras.", SSM_FAIL);
+		return 0;
+	endif
+	if (info.objtype != 0xe21 && info.objtype != 0xfdde)
+		SendSysMessageEx(who, "Voce pode encantar apenas ataduras.", SSM_FAIL);
+		return 0;
+	elseif (info.amount > 10)
+		SendSysMessageEx(who, "Voce pode encantar no maximo 10 ataduras.", SSM_FAIL);
+		return 0;
+	endif
+
+	PlaySoundEffect(info, SFX_SPELL_HEAL);
+	SetObjProperty(info, "encantada", 1);
+	info.color := 161;
+	SendSysMessageEx(who, "Voce encantou os ataduras com sucesso.", SSM_INFO);
+
+	return 1;
+endprogram

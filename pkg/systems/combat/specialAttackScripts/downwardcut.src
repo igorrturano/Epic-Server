@@ -1,0 +1,48 @@
+use os;
+
+include ":debug:Controller/DebugController";
+include ":combat:Controller/FXController";
+include ":combat:Model/AttackInfo";
+
+program SpecialAttack_DownwardCut(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
+	var moveTo_x := attacker.x;
+	var moveTo_y := attacker.y;
+	var attackInfo := AttackInfo(MobileWrapper(attacker), MobileWrapper(defender));
+
+	// Salta 15 tiles
+	MoveObjectToLocation(attacker, attacker.x, attacker.y, attacker.z + 15, defender.realm,
+					  MOVEOBJECT_FORCELOCATION);
+	PlayAttackFX(attackInfo);
+
+	// Move o atacante step por step até o alvo
+	while (moveTo_x != defender.x || moveTo_y != defender.y)
+		if (moveTo_x < defender.x)
+			moveTo_x++;
+		elseif (moveTo_x > defender.x)
+			moveTo_x--;
+		endif
+
+		if (moveTo_y < defender.y)
+			moveTo_y++;
+		elseif (moveTo_y > defender.y)
+			moveTo_y--;
+		endif
+
+		PlayAttackFX(attackInfo); // Re-executa a animação pra poder ficar travado na postura.
+		MoveObjectToLocation(attacker, moveTo_x, moveTo_y, attacker.z, defender.realm,
+					   MOVEOBJECT_FORCELOCATION);
+		SleepMS(100);
+	endwhile
+
+	// Desce os tiles que pulou
+	PlayAttackFX(attackInfo);
+	MoveObjectToLocation(attacker, attacker.x, attacker.y, defender.z, defender.realm,
+					  MOVEOBJECT_FORCELOCATION);
+
+	attacker.facing(GetFacing(attacker.x, attacker.y, defender.x, defender.y)); // Vira o char para o alvo
+	attacker.attack_once(defender);
+
+	return 1;
+endprogram

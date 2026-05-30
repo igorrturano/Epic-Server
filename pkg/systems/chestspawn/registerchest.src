@@ -1,0 +1,31 @@
+use uo;
+use datafile;
+use os;
+
+program registerspawn(item)
+	if (!item)
+		return 0;
+	endif
+
+	var df := OpenDataFile(":tn:chestspawns");
+	if (!df)
+		df := CreateDataFile(":tn:chestspawns", DF_KEYTYPE_INTEGER);
+		if (!df)
+			return 0;
+		endif
+	endif
+
+	var elem := df.FindElement(item.serial);
+	if (!elem)
+		elem := df.CreateElement(item.serial);
+		if (!elem)
+			return 0;
+		endif
+
+		// Registra informações iniciais
+		SetObjProperty(item, "CreatedOn", ReadGameClock());
+		SetObjProperty(item, "IsChestSpawner", 1);
+	endif
+
+	return 1;
+endprogram

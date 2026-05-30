@@ -1,0 +1,256 @@
+use uo;
+use os;
+use util;
+
+// listen -- Todos os NPCs com "AIScript	Listen :brainAI:scripts/init/listen" atribuido, vão "ouvir"
+
+include ":brainAI:eventid";
+include ":brainAI:npcNerves";
+include ":brainAI:npcCommands";
+include ":containers:storageAreas";
+include ":containers:containers";
+include ":fls_core:tax";
+include "include/sysEvent";
+include ":brainAI:eventid";
+include ":thor:handling/thorai";
+include ":thor:include/openai";
+
+// Inicializar ou obter a variável global gossip_storage
+var gossip_storage := GetGlobalProperty("gossip_storage");
+if (!gossip_storage)
+	gossip_storage := array{};
+	SetGlobalProperty("gossip_storage", gossip_storage);
+endif
+
+// OpenAICompletion now uses centralized function from :thor:include/openai
+// Wrapper to maintain compatibility
+function OpenAICompletion(systemMessage, questions)
+	return OpenAICompletion_Thor(systemMessage, questions, 0.7, 1.0, 1);
+endfunction
+
+program BrainNerve(params)
+
+	var npc := params[1];
+	// var nerve_name:= params[2];
+	var event := params[3];
+	// var settings	:= params[4];
+	// var scripts	:= params[5];
+	params := 0; // Not needed anymore.
+
+	while (npc)
+		if (event)
+			case (event.type)
+				SYSEVENT_SPEECH: SpeechEvent(npc, event); break;
+				NPCEVENT_AI_RESPONSE: AIResponseEvent(npc, event); break;
+				default:         break;
+			endcase
+
+			event := 0;
+		endif
+
+		sleepms(5);
+		event := wait_for_event(100000);
+	endwhile
+endprogram
+
+// Função para adicionar fofocas ao armazenamento global
+function add_gossip(gossip)
+	if (gossip != "")
+		// Obtém o array de fofocas globalmente armazenado
+		gossip_storage := GetGlobalProperty("gossip_storage");
+		gossip_storage.append(gossip); // Adiciona fofoca ao array global
+
+		// Atualiza o array global após a modificação
+		SetGlobalProperty("gossip_storage", gossip_storage);
+	// print("Fofoca adicionada: " + gossip);
+	else
+		print("Fofoca vazia, nada adicionado.");
+	endif
+endfunction
+
+// Função para obter uma fofoca aleatória
+// Função para obter uma fofoca aleatória
+function get_random_gossip()
+	// Obtém o array de fofocas globalmente armazenado
+	gossip_storage := GetGlobalProperty("gossip_storage");
+
+	// print("gossip_storage");
+	// print(gossip_storage);  // Verifique se as fofocas foram armazenadas
+
+	if (gossip_storage.size() == 0)
+		return "Ainda não ouvi nenhuma fofoca...";
+	endif
+
+	var random_index := RandomInt(gossip_storage.size()) + 1; // RandomInt vai de 1 até o tamanho da lista
+	return gossip_storage[random_index]; // Subtrai 1 para obter o índice correto (baseado em 0)
+endfunction
+
+// Handle AI responses from background async script
+function AIResponseEvent(npc, byref event)
+	var response := event.text;
+	if (response)
+		AI_Turn(npc, event.source, NETURN_TOWARD);
+		AI_Speak(npc, response);
+	endif
+	return 1;
+endfunction
+
+function SpeechEvent(npc, byref event)
+	var text := Lower(event.text);
+	var source := event.source;
+
+	// if ( source.IsA(POLCLASS_NPC) )
+	// 	// Remember - NPCs can send speech events now. - AIERA
+	// 	return 0;
+	if (!CheckLineOfSight(npc, event.source))
+		// No line of sight - ignore speech.
+		return 0;
+	endif
+
+	if (text != " . . . ")
+		// LAYER 0: NPC Busy Check (30-40% chance NPC is too busy)
+		var busy_response := CheckNPCBusy("Merchant");
+		if (busy_response)
+			AI_Turn(npc, source, NETURN_TOWARD);
+			AI_Speak(npc, busy_response);
+			return 1;
+		endif
+
+		// LAYER 1: Heuristic Pattern Matching (instant responses for common phrases)
+		var heuristic_response := CheckHeuristicMatch(text, npc.npctemplate);
+		if (heuristic_response)
+			AI_Turn(npc, source, NETURN_TOWARD);
+			AI_Speak(npc, heuristic_response);
+			return 1; // No AI needed
+		endif
+
+		// LAYER 2: Input length check (too short = unclear)
+		if (Len(text) < 3)
+			AI_Turn(npc, source, NETURN_TOWARD);
+			AI_Speak(npc, "Fala mais claro...");
+			return 1;
+		endif
+
+		// LAYER 3: AI Processing (for complex questions)
+		var sourceRaca := GetObjProperty(event.source, "chardata").raca;
+		var sourceDescription := GetObjProperty(event.source, "descricao");
+		if (npc.npctemplate == ":merchants:rumorAI")
+			if (Distance(npc, event.source) > 2)
+				AI_Turn(npc, source, NETURN_TOWARD);
+				AI_Speak(npc, "Nao consigo te ouvir");
+				return 0;
+			endif
+
+			AI_Turn(npc, source, NETURN_TOWARD);
+
+			// Check budget
+			if (!CheckAIBudget())
+				AI_Speak(npc, "Tô sem palavras agora...");
+				return 1;
+			endif
+
+			var lore_ctx := LoadNPCLoreContext("Taverneiro", npc);
+		print("=== DEBUG rumorAI ===");
+		print("lore_ctx.Base: '" + lore_ctx.Base + "'");
+		
+		if (!lore_ctx.Base || lore_ctx.Base == "")
+			AI_Speak(npc, "Tô sem contexto...");
+			return 1;
+		endif
+		
+		var base_context := lore_ctx.Base + " Você receberá uma notícia ou fofoca. Você reproduz a fofoca na taverna como deseja.";
+		var systemMessage := BuildVariedContext(base_context, npc.npctemplate, npc);
+		print("systemMessage: '" + systemMessage + "'");
+		
+		if (!systemMessage || systemMessage == "")
+			AI_Speak(npc, "Tô confuso...");
+			return 1;
+		endif
+		
+		var temperatura := 0.6 + (RandomInt(4) * 0.1); // 0.6-0.9 variation
+		var questions := array{ struct{ "user" := text } };
+
+		var responseText := OpenAICompletion_Thor(systemMessage, questions, temperatura, 1.0, 1);
+
+		// Track usage
+		IncrementAIUsage();
+
+		add_gossip(responseText);
+
+		print("=== SPEECH DEBUG (rumorAI) ===");
+		print("responseText: '" + responseText + "'");
+		var speak_result := AI_Speak(npc, responseText);
+		print("AI_Speak result: " + speak_result);
+		PrintTextAbove(npc, "[AI] " + responseText);
+
+		elseif (npc.npctemplate == ":merchants:rumorAIRepro")
+			if (Distance(npc, event.source) > 2)
+				AI_Turn(npc, source, NETURN_TOWARD);
+				AI_Speak(npc, "Nao consigo te ouvir");
+				return 0;
+			endif
+
+			var randomGossip := get_random_gossip(); // Obtém uma fofoca aleatória
+			AI_Turn(npc, source, NETURN_TOWARD);
+
+			// Check budget
+			if (!CheckAIBudget())
+				AI_Speak(npc, "Tô sem palavras agora...");
+				return 1;
+			endif
+
+			var lore_ctx := LoadNPCLoreContext("Taverneiro", npc);
+			var base_context := lore_ctx.Base + " Essas são as fofocas que você conhece: " + randomGossip + " . Você reproduz uma fofoca na taverna como deseja.";
+			var systemMessage := BuildVariedContext(base_context, npc.npctemplate, npc);
+			var temperatura := 0.6 + (RandomInt(4) * 0.1); // 0.6-0.9 variation
+			var questions := array{ struct{ "user" := text } };
+
+			var responseText := OpenAICompletion_Thor(systemMessage, questions, temperatura, 1.0, 1);
+
+			// Track usage
+			IncrementAIUsage();
+
+		print("=== SPEECH DEBUG (rumorAIRepro) ===");
+		print("responseText: '" + responseText + "'");
+		var speak_result := AI_Speak(npc, responseText);
+		print("AI_Speak result: " + speak_result);
+		PrintTextAbove(npc, "[AI] " + responseText);
+
+		elseif (npc.npctemplate == ":brainai:guardafaccaoAI")
+			if (Distance(npc, event.source) > 2)
+				AI_Turn(npc, source, NETURN_TOWARD);
+				AI_Speak(npc, "Nao te ouço tão longe, aproxime-se, cidadão");
+				return 0;
+			endif
+
+			AI_Turn(npc, source, NETURN_TOWARD);
+
+			// Check budget
+			if (!CheckAIBudget())
+				AI_Speak(npc, "Tô sem palavras agora...");
+				return 1;
+			endif
+
+			var lore_ctx := LoadNPCLoreContext("Guard", npc);
+			var race_behavior := GetRaceBehavior(sourceRaca, npc);
+			var base_context := "Você é um guarda medieval de RPG. O aventureiro que fala com você é um "
+																									  + sourceRaca + " com descrição " + sourceDescription + ". " + lore_ctx.Base + race_behavior + " " + lore_ctx.Style + " Máximo de " + lore_ctx.MaxChars + " caracteres.";
+			var systemMessage := BuildVariedContext(base_context, npc.npctemplate, npc);
+			var temperatura := 0.6 + (RandomInt(4) * 0.1); // 0.6-0.9 variation
+			var questions := array{ struct{ "user" := text } };
+
+			var responseText := OpenAICompletion_Thor(systemMessage, questions, temperatura, 1.0, 1);
+
+			// Track usage
+			IncrementAIUsage();
+
+		print("=== SPEECH DEBUG (guardafaccaoAI) ===");
+		print("responseText: '" + responseText + "'");
+		var speak_result := AI_Speak(npc, responseText);
+		print("AI_Speak result: " + speak_result);
+		PrintTextAbove(npc, "[AI] " + responseText);
+		endif
+	endif
+	
+	return 1;
+endfunction

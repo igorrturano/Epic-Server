@@ -1,0 +1,9 @@
+use uo;
+
+include "include/say";
+include ":spells:Controller/SpellController";
+
+program Logon(who)
+	SC_ResyncOnLogin(who);
+	return 1;
+endprogram

@@ -1,0 +1,122 @@
+///////////////////////////////////////////////////////////////////////////////////
+//
+//   ContainerExport - Exportiert komplette Container inkl. SubContainer-Struktur
+//
+//     Author: Shinigami
+//     eMail : Shinigami@gmx.net
+//
+//   Modifications:
+//
+///////////////////////////////////////////////////////////////////////////////////
+//
+// Needs:
+//   statics/container.cfg
+//
+////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+use uo;
+use os;
+use cfgfile;
+
+/////////////////
+// Hauptprogram
+/////////////////
+
+program TextCMD_ContainerExport(who)
+	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+	SendSysMessage(who, "Please choose a container!");
+
+	var container := Target(who);
+	if (container.isa(POLCLASS_CONTAINER))
+		SendSysMessage(who, "ContainerExport: ExportItems started...");
+		ExportItems(who, container);
+		SendSysMessage(who, "ContainerExport: ExportItems done.");
+	else
+		SendSysMessage(who, "This isn't a container!");
+	endif
+endprogram
+
+///////////////////////////////////////
+// ExportItems - Exportiert die Items
+///////////////////////////////////////
+
+function ExportItems(who, container)
+	var datafile := ReadConfigFile(":worldforge:config/container");
+	if (datafile)
+		var counter := GetNextCounterNumber(datafile);
+
+		ExportItem(container, counter);
+		foreach item in EnumerateItemsInContainer(container)
+			ExportItem(item, counter);
+		endforeach
+
+		UnloadConfigFile(":worldforge:config/container");
+
+		SendSysMessage(who, "Items have been exported.");
+	else
+		SendSysMessage(who, "Problems on Reading Config File!");
+	endif
+endfunction
+
+/////////////////////////////////////
+// ExportItem - Exportiert ein Item
+/////////////////////////////////////
+
+function ExportItem(item, byref counter)
+	var elem := {};
+	if (item.isa(POLCLASS_CONTAINER))
+		elem.append({ "SERIAL", Lower(Hex(item.serial)) });
+	endif
+
+	elem.append({ "NAME", item.desc });
+	elem.append({ "OBJTYPE", item.objtype });
+	elem.append({ "GRAPHIC", item.graphic });
+	elem.append({ "X", item.x });
+	elem.append({ "Y", item.y });
+	elem.append({ "AMOUNT", item.amount });
+	elem.append({ "COLOR", item.color });
+
+	if (item.isa(POLCLASS_WEAPON) Or item.isa(POLCLASS_ARMOR))
+		elem.append({ "HP", item.hp });
+		elem.append({ "QUALITY", item.quality });
+	endif
+
+	if (item.isa(POLCLASS_MAP))
+		elem.append({ "XWEST", item.xwest });
+		elem.append({ "YNORTH", item.ynorth });
+		elem.append({ "XEAST", item.xeast });
+		elem.append({ "YSOUTH", item.ysouth });
+		elem.append({ "GUMPWIDTH", item.gumpwidth });
+		elem.append({ "GUMPHEIGHT", item.gumpheight });
+	endif
+
+	elem.append({ "MOVABLE", item.movable });
+	elem.append({ "NEWBIE", item.newbie });
+	elem.append({ "CONTAINER", Lower(Hex(item.container.serial)) });
+
+	foreach propname in GetObjPropertyNames(item)
+		elem.append({ "CPROP", propname + " " + Pack(GetObjProperty(item, propname)) });
+	endforeach
+
+	AppendConfigFileElem(":worldforge:config/container", "SECTION", "WORLDITEM " + counter, elem);
+
+	counter := counter + 1;
+endfunction
+
+/////////////////////////////////////////////////////////
+// GetNextCounterNumber - Die naechste Nummer ermitteln
+/////////////////////////////////////////////////////////
+
+function GetNextCounterNumber(datafile)
+	var counter := GetConfigStringKeys(datafile);
+	if (Len(counter))
+		return (Len(counter));
+	else
+		return (0);
+	endif
+endfunction

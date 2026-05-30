@@ -1,0 +1,7 @@
+use os;
+use uo;
+
+program RazorLogon(who)
+// Desativado para funcionar o classicuo web
+// Start_Script(":razornegotiate:handshake", who);
+endprogram

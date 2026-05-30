@@ -1,0 +1,257 @@
+use cfgfile;
+
+function CreateItemFromRecipe(who, index)
+    var cfg := ReadConfigFile(":recipes:recipes");
+
+    var elem := FindConfigElem(cfg, index);
+    if (!elem)
+        print("Elemento não encontrado para o índice: " + index);
+        return error{"errortext":="Receita não encontrada"};
+    endif
+
+    var level := GetConfigInt(elem, "level");
+    var objtype;
+
+	if (level)
+        case (level)
+            1: objtype := 0xff990;
+            2: objtype := 0xfe995;
+            3: objtype := 0xfe996;
+            4: objtype := 0xfe997;
+            5: objtype := 0xfe998;
+            default: objtype := 0xff990;
+        endcase
+    else
+        objtype := GetConfigInt(elem, "objtype");
+    endif
+
+    if (!objtype)
+        print("Erro: objtype não encontrado para a receita " + index);
+        return error{"errortext":="Tipo de objeto não definido para a receita"};
+    endif
+
+    var item := CreateItemInBackpack(who, objtype, 1);
+    if (item == error)
+        print("Erro ao criar o item: " + item.errortext);
+        return error{"errortext":="Não foi possível criar o item: " + item.errortext};
+    endif
+
+
+	var name := GetConfigString(elem, "name");
+	if (name != error)
+		SetName(item, name);
+	endif
+
+	var color := GetconfigInt(elem, "color");
+	if (color != error)
+		item.color := color;
+	endif
+
+	var graphic := GetConfigInt(elem, "graphic");
+	if (graphic != error)
+		item.graphic := graphic;
+	endif
+
+	var equips := GetConfigStringDictionary(elem, "equip");
+	if (equips != error)
+		SetObjProperty(item, "equip", equips);
+	endif
+
+	item.resist_cold_mod := item.resist_cold_mod + cint(GetConfigInt(elem, "ColdResistMod"));
+	item.resist_fire_mod := item.resist_fire_mod + cint(GetConfigInt(elem, "FireResistMod"));
+	item.resist_poison_mod := item.resist_poison_mod + cint(GetConfigInt(elem, "PoisonResistMod"));
+	item.resist_energy_mod := item.resist_energy_mod + cint(GetConfigInt(elem, "EnergyResistMod"));
+	item.resist_physical_mod := item.resist_physical_mod + cint(GetConfigInt(elem, "PhysicalResistMod"));
+
+	var dmg_mod := GetConfigInt(elem, "dmg_mod");
+	item.dmg_mod := dmg_mod;
+
+	var hp_mod := GetConfigInt(elem, "hp_mod");
+	item.hp_mod := hp_mod;
+	print("Criando item para receita: " + index + ", level: " + level + ", objtype: " + Hex(objtype));
+	return item;
+
+	var item := CreateItemInBackpack(who, objtype, 1);
+if (item == error)
+    print("Erro ao criar o item: " + item.errortext);
+    return error{"errortext":="Não foi possível criar o item: " + item.errortext};
+endif
+print("Item criado com sucesso: " + item.serial);
+
+if (level < 1 || level > 5)
+    print("Erro: Nível inválido para a receita " + index);
+    return error{"errortext":="Nível inválido para a receita"};
+endif
+
+endfunction
+
+function CraftRecipe(who, index)
+
+
+	//SendSysMessage(who, "Fabricando um item.. ");
+	if (index < 0)
+		index := index*-1;
+	endif
+
+
+	var cfg := ReadConfigFile(":recipes:craft-recipes");
+
+	var elem := FindConfigElem(cfg, index);
+	if (!elem)
+		SendSysMessage(who, "Cfg elem not found " + index);
+		return 0;
+	endif
+
+	var craft_skill := lower(GetConfigString(elem, "mainskill"));
+	var diff := GetConfigInt(elem, "difficulty");
+	var points := GetConfigInt(elem, "points");
+	var itemindex := GetconfigInt(elem, "itemindex");
+	var materials := GetConfigStringDictionary(elem, "materials");
+	var principalMaterial := GetConfigString(elem, "principalMaterial"); //o material q vai dar bonus
+	var chosenPrincipalMaterial := 0;
+	var theitem;
+
+	var craft_sound  := menu_config[craft_skill].CraftSound;
+	var craft_loops  := menu_config[craft_skill].CraftLoops;
+	var craft_delay  := menu_config[craft_skill].CraftDelay;
+	var craft_action := menu_config[craft_skill].CraftAnim;
+
+	//SendSysMessage(who, index + " " + craft_skill + " " + diff + " " + points + " " + itemindex );
+
+	var targMaterials := dictionary;
+		//sendsysmessage(who,  " " + index);
+		//sendsysmessage(who,  " " + materials);
+	foreach thing in (materials.keys())
+	//	sendsysmessage(who, " " + thing);
+		if (thing == "metal" || thing == "wood" || thing == "glass"
+			|| thing == "cloth" || thing == "leather" || thing == "stone" || thing == "ossos")
+			var ret := MaterialSelection(who, craft_skill, thing, 0);
+			if (!ret)
+				return 0;
+			else
+				if (ret[1].amount < materials[thing] )
+					SendSysMessageEx(who, "Voce nao possui os materiais necessarios." , SSM_FAIL);
+					return 0;
+				else
+					targMaterials[ret[1].objtype] := materials[thing];
+					if (thing == principalMaterial)
+						chosenPrincipalMaterial := ret[1].objtype;
+					endif
+				endif
+			endif
+		else
+			foreach item in (EnumerateItemsInContainer(who.backpack))
+					//sendsysmessage(who, " " + item.objtype + " " + cint(thing));
+				if (item.objtype == cint(thing))
+					if (targMaterials[thing])
+						targMaterials[thing] := targMaterials[thing] + item.amount;
+					else
+						targMaterials[thing] :=  item.amount;
+					endif
+				endif
+			endforeach
+			if ( targMaterials[thing] < materials[thing])
+				SendSysMessageEx(who, "Voce nao possui os materiais necessarios." + targMaterials[thing] + " " + materials[thing] , SSM_FAIL);
+				return 0;
+			else
+				targMaterials[thing] := materials[thing];
+			endif
+		endif
+
+	endforeach
+
+	//no loop anterior procurou os materiais, agora consome.
+	foreach thing in (targMaterials.keys())
+			foreach item in (EnumerateItemsInContainer(who.backpack))
+				if (cint(item.objtype) == cint(thing))
+					if (item.amount >= targMaterials[thing] )
+						var chk := SubtractAmount(item, cint(targMaterials[thing]));
+						if (!chk )
+							SendSysMessage(who, "chk " + chk);
+						endif
+						targMaterials[thing] := 0;
+					else
+						targMaterials[thing] := targMaterials[thing] - item.amount;
+						SubtractAmount(item, item.amount);
+					endif
+				endif
+			endforeach
+			if (targMaterials[thing] > 0)
+				SendSysMessageEx(who, "Voce nao possui todos os materiais.", SSM_FAIL);
+				return 0;
+			endif
+
+	endforeach
+
+	var check := Skillcheck(who, craft_skill, diff, points) ;
+
+	if(check > 0)
+		playCraftWork(who, craft_sound, craft_loops, craft_delay, craft_action);
+		theitem := CreateItemFromRecipe(who, itemindex);
+		if(!theitem)
+			SendSysMessageEx(who, "Voce nao tem espaco suficiente na sua mochila!", SSM_FAIL);
+			return 0;
+		endif
+		//CheckToolWear (who, tool, craft_skill);
+		theitem.movable := 1;
+		SendSysMessageEx(who, "Voce criou o item o colocou na mochila.", SSM_INFO);
+		if(theitem.isA(POLCLASS_CONTAINER))
+			SetObjProperty(theitem, "trappable", 1);
+		endif
+	else
+		SendSysMessageEx(who, "Voce falhou ao fazer o item e perdeu material." , SSM_FAIL);
+		return 0;
+	endif
+
+	if (chosenPrincipalMaterial)
+		var elem    := FindConfigElem(resource_config, chosenPrincipalMaterial);
+    		if (elem)
+      			var DmgMods := GetConfigString(elem, "AoSDamageMod");
+      			DmgMods := SplitWords(DmgMods);
+      			var ResistMods := GetConfigString(elem, "AoSResistMod");
+      			ResistMods := SplitWords(ResistMods);
+     	 		var hpmod := GetConfigInt(elem, "hpmod");
+			if(theitem.isA(POLCLASS_WEAPON))
+				var finaldmg := dictionary;
+				finaldmg[DAMAGE_TYPE::BLUNT] := Cdbl(DmgMods[1]);
+				finaldmg[DAMAGE_TYPE::FIRE] := Cdbl(DmgMods[2]);
+				finaldmg[DAMAGE_TYPE::COLD] := Cdbl(DmgMods[3]);
+				finaldmg[DAMAGE_TYPE::POISON] := Cdbl(DmgMods[4]);
+				finaldmg[DAMAGE_TYPE::ENERGY] := Cdbl(DmgMods[5]);
+				SetObjProperty(theitem, "DamageTypes", finaldmg );
+			elseif(theitem.isA(POLCLASS_ARMOR))
+			        var itemresist := GetObjProperty(theitem, "Resistances");
+				var finalresist := dictionary;
+				finalresist[DAMAGE_TYPE::BLUNT] := Cint(ResistMods[1])+ Cint(itemresist[DAMAGE_TYPE::BLUNT]);
+				finalresist[DAMAGE_TYPE::FIRE] := Cint(ResistMods[2]) + Cint(itemresist[DAMAGE_TYPE::FIRE]);
+				finalresist[DAMAGE_TYPE::COLD] := Cint(ResistMods[3]) + Cint(itemresist[DAMAGE_TYPE::COLD]);
+				finalresist[DAMAGE_TYPE::POISON] := Cint(ResistMods[4]) +  Cint(itemresist[DAMAGE_TYPE::POISON]);
+				finalresist[DAMAGE_TYPE::ENERGY] := Cint(ResistMods[5]) +  Cint(itemresist[DAMAGE_TYPE::ENERGY]);
+				SetObjProperty(theitem, "Resistances", finalresist );
+			endif
+		endif
+	endif
+
+	return theitem;
+
+endfunction
+
+function GetRecipeList(who, skill)
+
+    var itens := GetObjProperty(who,  "recipes"); //pega a lista de recipes
+    var df := ReadConfigFile(":recipes:craft-recipes");
+
+    var recipelist := array; //lista temp pra veriicar se os itens sao da skill do menu
+    foreach x in itens
+      var elem := FindConfigElem(df, x);
+      var itemskill := GetConfigString(elem, "mainskill");
+      if (itemskill)
+        if (lower(itemskill) == lower(skill))
+          recipelist.append(x);
+        endif
+      endif
+    endforeach
+
+    return recipelist;
+
+endfunction

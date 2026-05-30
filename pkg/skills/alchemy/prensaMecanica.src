@@ -1,0 +1,159 @@
+use uo;
+use cfgfile;
+use util;
+use os;
+
+include "include/say";
+include "include/epicValidAction";
+include "include/client";
+
+enum class  ORIGENS_OLEO 
+	ORIGEM_ANIMAL,
+	ORIGEM_VEGETAL,
+	ORIGEM_CERA
+endenum
+
+enum class  OLEOS_OBJTYPE 
+	ANIMAL := 0x7876,
+	VEGETAL := 0x7875,
+	CERA := 0x7877
+endenum
+
+var origensAnimais := array{
+	                     0x7879 //"banhaanimal"   
+					};
+
+var origensVegetais := array {
+						0x7016,     //"CarrotSeed"                         
+						0x700F,		//"CornSeed"                           
+						0x7012,		//"LettuceSeed"                        
+						0x7017,		//"CabbageSeed"                        
+						0x7010,		//"OnionSeed"                          
+						0x7038,		//"GarlicSeed"                         
+						0x7037,		//"GinsengSeed"                        
+						0x701A,		//"GrapeSeed"                          
+						0x701C,		//"WheatSeed"                          
+						0x7019,		//"BarleySeed"                         
+						0x7011,		//"WatermelonSeed"                     
+						0x7021,		//"StrawberrySeed"                     
+						0x7014,		//"PumpkinSeed"                        
+						0x702F,		//"CottonSeed"                         
+						0x701B,		//"HoneydewSeed"                       
+						0x703A,		//"CantelopeSeed"                      
+						0x701F,		//"AppleSeed"                          
+						0x702F,		//"TurnipSeed"                         
+						0x702A,		//"peachSeed"                          
+						0x7024,		//"pearSeed"                           
+						0x7013,		//"GourdSeed"                          
+						0x7035,		//"FlaxSeed"                           
+						0x7035,		//"SquashSeed"                         
+						0x7018,		//"HopsSeed"                           
+						0x701D,		//"mushroomseed"                       
+						0x701E,		//"FlowerSeed"                         
+						0x7036,		//"MandrakeSeed"                       
+						0x7039,		//"NightshadeSeed"                     
+						0xD4E8,		//"ExecutionerCapSeed"                 
+						0xD4E9,		//"BloodMossSeed"
+						0x7033,		//"CocoaSeed"
+						0xbf1f		//"TabacoSeed"
+					};
+
+var derivadosCera := array{
+	                            0x1422 // "beeswax" 
+					};
+
+const FRASCO_VIDRO := 0x0F0E;
+
+program PrensaMecanica(quem, item)
+
+	if (!Accessible(quem, item))
+		SendSysMessageEx(quem, "Voce nao alcanca o item.", SSM_FAIL);
+		return;
+	endif
+	
+	if (!ReserveItem(item))
+		SendSysMessageEx(quem, "Este item esta em uso.", SSM_FAIL);
+		return;
+	endif
+
+	SendSysMessageEx(quem, "Selecione o item a ser processado na prensa. (cera de abelha, sementes ou banha animal)", SSM_INFO);
+	var targ := Target(quem);
+
+	if(targ)
+		if(targ.isa(POLCLASS_ITEM))
+			Print("targ.objtype " + targ.objtype + " origensAnimais " + origensAnimais + "or" + typeOf(origensAnimais["banhaanimal"]) + " " + TypeOf(targ.objtype)  + "  " + (targ.objtype in origensAnimais));
+			if(targ.objtype in origensAnimais)
+				Print("entrou animal");
+				CriaOleo(quem,targ,ORIGENS_OLEO::ORIGEM_ANIMAL);
+			elseif(targ.objtype in origensVegetais)
+				CriaOleo(quem,targ,ORIGENS_OLEO::ORIGEM_VEGETAL);
+			elseif(targ.objtype in derivadosCera)
+				CriaOleo(quem,targ,ORIGENS_OLEO::ORIGEM_CERA);
+			else
+				SendSysMessageEx(quem, "Este item não pode ser processado nesta prensa.", SSM_FAIL);
+			endif
+			Detach();
+			return 1;
+		endif
+		SendSysMessageEx(quem, "Isto não pode ser processado nesta prensa.", SSM_FAIL);
+		Detach();
+		return 0;
+	else
+		SendSysMessageEx(quem, "Cancelado.", SSM_FAIL);
+		Detach();
+		return 0;
+	endif
+endprogram
+
+function TocaImersao(quem)
+	PerformAction(quem, HUMAN_ANIM::SALUTE);
+	PlaySoundEffect(quem, SFX_243);
+	sleep(2);
+	PerformAction(quem, HUMAN_ANIM::SALUTE);
+	PlaySoundEffect(quem, SFX_241);
+	sleepms(500);
+endfunction
+
+function FindFrasco(quem)
+	foreach item in (EnumerateItemsInContainer(quem.backpack))
+		if (item.objtype == FRASCO_VIDRO)
+			return item;
+		endif
+	endforeach
+	return 0;
+endfunction
+
+function CriaOleo(quem, item, origem)
+
+	var frasco := FindFrasco(quem);
+	var posicaoIncial := BuildPositionStruct(quem);
+	var vidaInicial := AP_GetVital(quem, "Hits");
+
+	for i := 1 to item.amount
+		
+		if(!CheckCanWork(quem, vidaInicial, posicaoIncial))
+			return 0;
+		endif
+
+		if(!frasco || frasco.amount < 1)
+			frasco := FindFrasco(quem);
+			if(!frasco)
+				SendSysMessageEx(quem, "Você precisa de um frasco de vidro em sua mochila para guardar o liquido produzido.", SSM_FAIL);
+				return;
+			endif
+		endif
+		
+		TocaImersao(quem);
+		SubtractAmount(frasco, 1);
+		SubtractAmount(item, 1);
+		
+		case(origem)
+			ORIGENS_OLEO::ORIGEM_ANIMAL:
+				CreateItemInBackpack(quem, OLEOS_OBJTYPE::ANIMAL, 1);
+			ORIGENS_OLEO::ORIGEM_VEGETAL:
+				CreateItemInBackpack(quem, OLEOS_OBJTYPE::VEGETAL, 1);
+			ORIGENS_OLEO::ORIGEM_CERA:
+				CreateItemInBackpack(quem, OLEOS_OBJTYPE::CERA, 1);
+		endcase
+	endfor
+endfunction

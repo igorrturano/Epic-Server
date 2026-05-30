@@ -1,0 +1,25 @@
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program TimedScript_Clumsy(params)
+	var who := params[1];
+	var attacker := params[2];
+	var skill := params[3];
+
+	if (GetObjProperty(who, "#dmgreductionspell"))
+		return 0;
+	endif
+	var total := Cdbl(skill / 200); // 50% da skill
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
+		total := total * 0.8;
+	endif
+	SetObjProperty(who, "dmgreduction", Cdbl(GetObjProperty(who, "dmgreduction") + total));
+	SetObjProperty(who, "#dmgreductionspell", Cdbl(total));
+
+	return 1;
+endprogram

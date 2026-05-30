@@ -1,0 +1,304 @@
+use uo;
+use os;
+use util;
+use basicio;
+include ":attributes:attributes";
+
+include ":combat:hitscripts";
+include ":faccao:faccao";
+include "include/epicNPCUtils";
+
+program spawnpointcontrol(spawnpoint)
+	var templates := array{};
+	var amounts := array{};
+	var tiers := array{};
+	var names := array{};
+	var totalAmount := 0;
+	var i;
+
+	for (i := 1; i <= 3; i += 1)
+		var t := GetObjProperty(spawnpoint, "Template" + i);
+		if (t && t != "")
+			var a := GetObjProperty(spawnpoint, "Amount" + i);
+			var rTier := GetObjProperty(spawnpoint, "Tier" + i);
+			var rName := GetObjProperty(spawnpoint, "Name" + i);
+			a := a ? a : "0";
+			rTier := rTier ? rTier : "0";
+			rName := rName ? rName : "";
+
+			templates.append(t);
+			amounts.append(Cint(a));
+			tiers.append(rTier);
+			names.append(rName);
+			totalAmount += Cint(a);
+		endif
+	endfor
+
+	if (templates.size() == 0)
+		var singleTemplate := GetObjProperty(spawnpoint, "Spawn");
+		if (singleTemplate && singleTemplate != "" && singleTemplate != "NONE")
+			var singleAmount := GetObjProperty(spawnpoint, "Amount");
+			singleAmount := singleAmount ? singleAmount : "0";
+
+			templates.append(singleTemplate);
+			amounts.append(Cint(singleAmount));
+			tiers.append(GetObjProperty(spawnpoint, "Tier") ? GetObjProperty(spawnpoint, "Tier") : "0");
+			names.append(GetObjProperty(spawnpoint, "Name") ? GetObjProperty(spawnpoint, "Name") : "");
+			totalAmount := Cint(singleAmount);
+		endif
+	endif
+
+	while (templates.size() == 0 || (templates.size() == 1 && templates[0] == "NONE"))
+		sleep(10);
+
+		// Recarrega caso algo tenha mudado dinamicamente
+		templates := array{};
+		amounts := array{};
+		tiers := array{};
+		names := array{};
+		totalAmount := 0;
+
+		for (i := 1; i <= 3; i += 1)
+			var t := GetObjProperty(spawnpoint, "Template" + i);
+			if (t && t != "")
+				var a := GetObjProperty(spawnpoint, "Amount" + i);
+				var rTier := GetObjProperty(spawnpoint, "Tier" + i);
+				var rName := GetObjProperty(spawnpoint, "Name" + i);
+				a := a ? a : "0";
+				rTier := rTier ? rTier : "0";
+				rName := rName ? rName : "";
+
+				templates.append(t);
+				amounts.append(Cint(a));
+				tiers.append(rTier);
+				names.append(rName);
+				totalAmount += Cint(a);
+			endif
+		endfor
+
+		if (templates.size() == 0)
+			var st := GetObjProperty(spawnpoint, "Spawn");
+			if (st && st != "NONE" && st != "")
+				var sa := GetObjProperty(spawnpoint, "Amount");
+				sa := sa ? sa : "0";
+				templates.append(st);
+				amounts.append(Cint(sa));
+				tiers.append(GetObjProperty(spawnpoint, "Tier") ? GetObjProperty(spawnpoint, "Tier") : "0");
+				names.append(GetObjProperty(spawnpoint, "Name") ? GetObjProperty(spawnpoint, "Name") : "");
+				totalAmount := Cint(sa);
+			endif
+		endif
+	endwhile
+
+	// Verifica se já tem NPCs spawnados
+	var childrenSerial := GetObjProperty(spawnpoint, "Children");
+	var spawnqueue := GetObjProperty(spawnpoint, "SpawnQueue");
+
+	// Se não tiver NPCs spawnados ainda, inicializa tudo
+	if (!childrenSerial)
+		childrenSerial := array{};
+		spawnqueue := array{};
+		for (i := 1; i <= totalAmount; i += 1)
+			spawnqueue[i] := "Empty";
+			childrenSerial[i] := "Empty";
+		endfor
+
+		SetObjProperty(spawnpoint, "Children", childrenSerial);
+		SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
+		ResetSpawnQueue(spawnpoint, amounts);
+	endif
+
+	var randSleep := RandomInt(20);
+	sleep(randSleep);
+
+	var resetme;
+	var x;
+
+	while (spawnpoint)
+		resetme := GetObjProperty(spawnpoint, "ResetMe");
+		if (resetme)
+			KillChildren(spawnpoint, totalAmount);
+			ResetSpawnQueue(spawnpoint, amounts);
+			EraseObjProperty(spawnpoint, "ResetMe");
+		endif
+
+		childrenSerial := GetObjProperty(spawnpoint, "Children");
+		spawnqueue := GetObjProperty(spawnpoint, "SpawnQueue");
+
+		// Verifica NPCs mortos ou ausentes
+		for (i := 1; i <= totalAmount; i += 1)
+			if ((childrenSerial[i] != error) && (childrenSerial[i] != "Empty"))
+				x := SystemFindObjectBySerial(childrenSerial[i]);
+				if ((!x) || (x.dead == 1) || (x.master))
+					spawnqueue[i] := "Empty";
+					childrenSerial[i] := "Empty";
+				endif
+			endif
+		endfor
+
+		SetObjProperty(spawnpoint, "Children", childrenSerial);
+		SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
+		ResetSpawnQueue(spawnpoint, amounts);
+
+		// Spawna os NPCs quando o tempo chega em 0
+		spawnqueue := GetObjProperty(spawnpoint, "SpawnQueue");
+		for (i := 1; i <= totalAmount; i += 1)
+			var state := spawnqueue[i];
+			if (state != "Empty" && state != "Active")
+				if (state == 0)
+					while (HasPlayerNearSpawn(spawnpoint.x, spawnpoint.y, spawnpoint.realm))
+						sleep(60);
+					endwhile
+					childrenSerial[i] := CreateSpawn(spawnpoint, templates, amounts, tiers, names, i);
+					spawnqueue[i] := "Active";
+				else
+					spawnqueue[i] := state - 1;
+				endif
+			endif
+		endfor
+
+		SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
+		SetObjProperty(spawnpoint, "Children", childrenSerial);
+
+		sleep(60);
+	endwhile
+endprogram
+
+function HasPlayerNearSpawn(x, y, realm)
+	var num_player := ListMobilesNearLocation(x, y, 19, LISTEX_FLAG_PLAYERS_ONLY && LISTEX_FLAG_NORMAL,
+										   realm).size();
+	return num_player > 0;
+endfunction
+
+function KillChildren(spawnpoint, totalAmount)
+	var i;
+	var children := GetObjProperty(spawnpoint, "Children");
+	if (children)
+		foreach x in children
+			if (x != "Empty")
+				var npcSerial := CInt(x);
+				var npc := SystemFindObjectBySerial(npcSerial);
+				if (npc && !npc.master)
+					SetObjProperty(npc, "summoned", 1);
+					SetObjProperty(npc, "spawnkill", 1);
+					RevokePrivilege(npc, "invul");
+					ApplyRawDamage(npc, GetVital(npc, HITS) + 3);
+				endif
+			endif
+		endforeach
+	endif
+
+	var spawnqueue := array{};
+	children := array{};
+	for (i := 1; i <= totalAmount; i += 1)
+		spawnqueue[i] := "Empty";
+		children[i] := "Empty";
+	endfor
+	SetObjProperty(spawnpoint, "Children", children);
+	SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
+endfunction
+
+function ResetSpawnQueue(spawnpoint, amounts)
+	var i;
+	var mindelay := GetObjProperty(spawnpoint, "MinDelay");
+	var maxdelay := GetObjProperty(spawnpoint, "MaxDelay");
+	var spawnqueue := GetObjProperty(spawnpoint, "SpawnQueue");
+
+	mindelay := mindelay ? Cint(mindelay) : 1;
+	maxdelay := maxdelay ? Cint(maxdelay) : 1;
+
+	if (mindelay < 1)
+		mindelay := 1;
+	endif
+	if (maxdelay < 1)
+		maxdelay := 1;
+	endif
+
+	for (i := 1; i <= spawnqueue.size(); i += 1)
+		if (spawnqueue[i] == "Empty")
+			if (mindelay == maxdelay)
+				spawnqueue[i] := mindelay;
+			else
+				spawnqueue[i] := RandomInt(maxdelay - mindelay) + mindelay + 1;
+			endif
+		endif
+	endfor
+	SetObjProperty(spawnpoint, "SpawnQueue", spawnqueue);
+endfunction
+
+function CreateSpawn(spawnpoint, templates, amounts, tiers, names, index)
+	var cumulative := 0;
+	var chosenTemplateIndex := 0;
+	var i;
+
+	for (i := 1; i <= templates.size(); i += 1)
+		cumulative += amounts[i];
+		if (index <= cumulative)
+			chosenTemplateIndex := i;
+			break;
+		endif
+	endfor
+
+	var chosenTemplate := templates[chosenTemplateIndex];
+	var chosenTier := tiers[chosenTemplateIndex] ? tiers[chosenTemplateIndex] : "0";
+	var chosenName := names[chosenTemplateIndex] ? names[chosenTemplateIndex] : "";
+
+	var npcSerial := SetupSpawn(spawnpoint, chosenTemplate, chosenTier, chosenName);
+
+	// Legacy "unique boss" stat-mod path: SetBoss is currently disabled in
+	// faccao.inc. Spawnpoint still spawns the base NPC; the unique modifier
+	// is a no-op until SetBoss (or an equivalent in :epicspawn:) is restored.
+	// var theBoss := GetObjProperty(spawnpoint, "unique");
+	// if (theBoss)
+	// 	var spawnmod := GetObjProperty(spawnpoint, "uniquestat");
+	// 	if (spawnmod != error)
+	// 		var npc := SystemFindObjectBySerial(npcSerial);
+	// 		if (npc)
+	// 			SetBoss(npc, spawnmod);
+	// 		endif
+	// 	endif
+	// endif
+
+	return npcSerial;
+endfunction
+
+function SetupSpawn(spawnpoint, spawn, tier, npcName)
+	var x := spawnpoint.x;
+	var y := spawnpoint.y;
+	var z := spawnpoint.z;
+	var npc;
+
+	npc := CreateNpc(spawn, x, y, z, 0, spawnpoint.realm);
+	if (npc)
+		SetObjProperty(npc, "spawnpoint", spawnpoint.serial);
+		SetupCustomProps(spawnpoint, npc, tier, npcName);
+		return npc.serial;
+	endif
+
+	return 0;
+endfunction
+
+function SetupCustomProps(spawnpoint, npc, tier, npcName)
+	customizeNpc(npc, tier);
+	if (npcName && npcName != "")
+		SetName(npc, npcName);
+	endif
+endfunction
+
+function CreateNpc(template, x, y, z, props, realm)
+	var result;
+	var paths := array{ ":epicAI:" + template, ":brainAI:" + template, ":merchants:" + template };
+
+	if (SplitWords(template)[1] != ":")
+		foreach path in paths
+			result := CreateNpcFromTemplate(path, x, y, z, props, realm);
+			if (result)
+				return result;
+			endif
+		endforeach
+	else
+		result := CreateNpcFromTemplate(template, x, y, z, props, realm);
+	endif
+
+	return result;
+endfunction

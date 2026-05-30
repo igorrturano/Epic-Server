@@ -1,0 +1,38 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include ":attributes:attributes";
+include ":blood:blood";
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+	params := 0; // No longer needed
+
+	MakeBleed(who);
+
+	// Self-damage as a casting cost — intentionally NOT routed through SC_DealDamage,
+	// which would fire AFTER_DAMAGE/ON_KILL hooks against the caster for damaging themselves.
+	ApplyRawDamage(who, 10);
+	var mana := AP_GetVital(who, MANA);
+	var maxmana := AP_GetVitalMaximumValue(who, MANA);
+	//refund +20, + 10 do HP e +20% do Arcana
+	var bonus := 20 + 10 + AP_GetSkill(who, ARCANA) / 5; // da de +10 a +20 de mana
+	mana := mana + bonus;
+
+	if (mana > maxmana)
+		mana := maxmana;
+	endif
+	AP_SetVital(who, MANA, mana);
+
+	SC_HandleSound(who, who, 385);
+	SendSysMessageEx(who, "Voce converteu sua energia vital em mana", SSM_INFO);
+
+	return 1;
+endprogram

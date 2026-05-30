@@ -1,0 +1,70 @@
+use cfgfile;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":abilities:controllers/AbilityMonitor";
+include ":message:model/Message";
+
+program cmd_ability(who, text)
+	var playerRef := who;
+	who := MobileWrapper(who);
+
+	if (who.IsDead())
+		Message("Você não pode usar habilidades enquanto está morto.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return 1;
+	endif
+
+	if (!text)
+		Message("Uso: .shab <nome ou id da habilidade>", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return 1;
+	endif
+
+	var abilityId := CInt(text);
+
+	// If text is not a number, look up by name
+	if (abilityId == 0 && text != "0")
+		abilityId := FindAbilityIdByName(text);
+		if (!abilityId)
+			Message("Habilidade não encontrada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+			return 1;
+		endif
+	endif
+
+	var ability := Ability(abilityId);
+
+	if (!ability.GetName())
+		Message("Habilidade não encontrada.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return 1;
+	endif
+
+	// GMs (cmdlevel >= 2) can use any ability
+	if (!who.HasAbility(ability) && (who.GetObjRef().cmdlevel < 2))
+		Message("Você não possui esta habilidade.", Color(SYSTEM_COLOR::FAIL)).SendSys(who.GetObjRef());
+		return 1;
+	endif
+
+	AbilityMonitor(ability).ActivateOn(who);
+endprogram
+
+function FindAbilityIdByName(name)
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+
+	if (!habcfg)
+		return 0;
+	endif
+
+	var keys := GetConfigStringKeys(habcfg);
+	name := Lower(name);
+
+	foreach key in keys
+		var elem := FindConfigElem(habcfg, key);
+		var abilityName := Lower(GetConfigString(elem, "nome"));
+
+		// Match exact or partial name
+		if (abilityName == name || abilityName[name])
+			return CInt(key);
+		endif
+	endforeach
+
+	return 0;
+endfunction

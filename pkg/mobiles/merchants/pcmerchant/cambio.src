@@ -1,0 +1,74 @@
+use uo;
+use cfgfile;
+
+include ":gumps:gumps";
+include "include/say";
+include ":merchants:/include/cambio";
+include "include/epicConstants";
+
+program troca(params)
+
+	var who := params[2];
+	var npc := params[1];
+	var calculo := 0;
+	var resto := 0;
+
+	SendSysMessage(who, "Selecione as moedas que deseja trocar");
+	var moedas := Target(who, options := TGTOPT_CHECK_LOS + TGTOPT_NEUTRAL);
+
+	if ((moedas.objtype == SESTERTIUS) || (moedas.objtype == DENARIUS) || (moedas.objtype == AUREUS))
+
+		var gump := GFCreateGump();
+		GFDisposable(gump, 0);
+		var sizey := 3;
+		GFResizePic(gump, 0, 25, 3600, 250, 180);
+		GFResizePic(gump, 15, 40, 0x13BE, 220, 150);
+		GFTextLine(gump, 30, 50, 1153, "Deseja trocar para: ");
+
+		var prata := GFRadioButton(gump, 30, 80, 210, 211, 0, 1);
+		GFTextLine(gump, 50, 80, 1153, "Moedas de Prata");
+
+		var ouro := GFRadioButton(gump, 30, 100, 210, 211, 0, 2);
+		GFTextLine(gump, 50, 100, 1153, "Moedas de Ouro");
+
+		var cobre := GFRadioButton(gump, 30, 120, 210, 211, 0, 3);
+		GFTextLine(gump, 50, 120, 1153, "Moedas de Cobre");
+
+		GFAddButton(gump, 250 - 70, 130, 4502, 4502, 1, 999);
+		GFTextLine(gump, 50, 145, 800, "Confirmar transação.");
+
+		var escolha := GFSendGump(who, gump);
+		if (1 in escolha.keys) // prata
+
+			var retorno := ConverterMoeda(moedas.amount, moedas.objtype, DENARIUS);
+			if (retorno != error)
+				CriarMoedas(who, DENARIUS, retorno.valorConvertido, { moedas });
+				CriarMoedas(who, moedas.objtype, retorno.resto);
+			else
+				SendSysMessage(who, "Quantidade insuficiente para troca.");
+			endif
+
+		elseif (2 in escolha.keys) // Ouro
+			var retorno := ConverterMoeda(moedas.amount, moedas.objtype, AUREUS);
+			if (retorno != error)
+				CriarMoedas(who, AUREUS, retorno.valorConvertido, { moedas });
+				CriarMoedas(who, moedas.objtype, retorno.resto);
+			else
+				SendSysMessage(who, "Quantidade insuficiente para troca.");
+			endif
+
+		elseif (3 in escolha.keys) // cobre
+			var retorno := ConverterMoeda(moedas.amount, moedas.objtype, SESTERTIUS);
+			if (retorno != error)
+				CriarMoedas(who, SESTERTIUS, retorno.valorConvertido, { moedas });
+				CriarMoedas(who, moedas.objtype, retorno.resto);
+			else
+				SendSysMessage(who, "Quantidade insuficiente para troca.");
+			endif
+		endif
+
+	else
+		SendSysMessage(who, "Selecione apenas moedas.");
+	endif
+
+endprogram

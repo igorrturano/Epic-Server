@@ -1,0 +1,90 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":tn:cooldown";
+include "include/epicMageryUtils";
+include ":IO:CFGFile";
+include ":attributes:attributes";
+include ":message:model/Message";
+include ":gumps:yesNo";
+
+// Absorver Arma - Absorbs a weapon's essence (graphic + name) into the spiritual pool.
+// Pool capacity: 3 with Vinculo Elemental, 1 otherwise.
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0;
+
+	// Pool capacity: 3 for Vinculo Elemental, 1 for others
+	var mw := MobileWrapper(who);
+	var maxSlots := mw.HasAbility(ABILITY_ID::VINCULO_ELEMENTAL) ? 3 : 1;
+
+	var pool := GetObjProperty(who, "spiritualWeaponPool");
+	if (!pool)
+		pool := array{};
+	endif
+
+	if (pool.size() >= maxSlots)
+		if (maxSlots == 1)
+			var confirm := YesNo(who, "Voce ja possui uma arma salva, adicionar uma nova vai fazer voce esquecer a antiga. Deseja continuar?");
+			if (!confirm)
+				return 0;
+			endif
+			pool := array{};
+			EraseObjProperty(who, "spiritualWeaponPool");
+		else
+			Message($"Seu arsenal espiritual esta cheio! ({pool.size()}/{maxSlots})", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return 0;
+		endif
+	endif
+
+	Message("Escolha a arma que deseja absorver.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	var targ := Target(who);
+
+	if (!targ)
+		Message("Cancelado.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	if (!targ.isA(POLCLASS_WEAPON))
+		Message("Isso nao e uma arma.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	var targWeapon := WeaponWrapper(targ);
+	var attr := targWeapon.GetAttribute();
+	if (attr == "Ranged" || attr == "Throwing")
+		Message("Apenas armas corpo a corpo podem ser absorvidas.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	// Must be in backpack (not equipped)
+	if (targ.container != who.backpack)
+		Message("A arma precisa estar no seu inventario.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	// Store graphic + name + objtype in pool
+	var weaponData := struct{};
+	weaponData.+graphic := targ.graphic;
+	weaponData.+name := targ.desc;
+	weaponData.+objtype := targ.objtype;
+	pool.Append(weaponData);
+	SetObjProperty(who, "spiritualWeaponPool", pool);
+
+	// Destroy original weapon
+	var weaponName := targ.desc + " espiritual";
+	DestroyItem(targ);
+
+	// VFX
+	PlaySoundEffect(who, 0x1F0);
+	PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0xB462, 8, 40, 0);
+	Message("*Absorvendo arma*").SendAbove(who);
+	Message($"A essencia de {weaponName} foi absorvida! ({pool.size()}/{maxSlots})", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+	return 1;
+endprogram

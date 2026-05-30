@@ -1,0 +1,87 @@
+use uo;
+use os;
+use cfgfile;
+include "include/say";
+include ":epicAI:include/epicNPCCombat";   // RestoreDoppelgangerAppearance
+include ":tn:npcutil";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include ":death:death";
+include ":entropy:entropy";
+include ":timedscripts:timedScripts";
+exported function CanDie(mobile)
+	// Passive Soul Harvest - check for nearby shamans with the ability
+	ShamanSoulHarvest(mobile);
+	handleEntropyGain(mobile);
+
+	// Restore doppelganger appearance before death (while still alive)
+	if (GetObjProperty(mobile, "#doppelganger_transformed"))
+		RestoreDoppelgangerAppearance(mobile);
+	endif
+
+	// Revert druid wildshape before corpse is created, otherwise POL creates
+	// an animal-type corpse and equipped items spill to the ground. Graphic
+	// must flip synchronously here; TS_LowerDuration is event-based and the
+	// timer controller won't process the -1 until after corpse creation.
+	// Stats and properties are cleaned up later by endmetamorfose (idempotent).
+	var metamorfose := GetObjProperty(mobile, "metamorfose");
+	if (metamorfose != error)
+		mobile.graphic := mobile.trueobjtype;
+		mobile.truegraphic := mobile.trueobjtype;
+		mobile.color := metamorfose.originalcolor;
+		var charname := GetObjProperty(mobile, "charname");
+		if (charname != error)
+			SetName(mobile, charname);
+		endif
+		TS_LowerDuration(mobile, "metamorfosedruida", -1);
+	endif
+
+	if (GetObjProperty(mobile, "allowdeath") == 1)
+		return 1;
+	endif
+
+	var isBoss := GetObjProperty(mobile, "EpicBossStruct");
+	if (!isBoss)
+		return 1;
+	endif
+
+	var death_events := GetObjProperty(mobile, "DeathEvents");
+	if (death_events.size() > 0)
+		// Check if already processing to avoid duplicate calls
+		if (GetObjProperty(mobile, "ProcessingDeathEvents"))
+			var last_words := GetObjProperty(mobile, "Ultimas Palavras");
+			if (!last_words)
+				var call_stack := GetEnvironmentVariable("CALL_STACK");
+				if (call_stack && "speaklastwords" in call_stack)
+					return 1;
+				endif
+
+				var processed := GetObjProperty(mobile, "DeathEventsProcessed");
+				if (processed)
+					return 1;
+				endif
+			endif
+			return 0;
+		endif
+
+		var i := 1;
+		foreach event in (death_events)
+			i += 1;
+		endforeach
+
+		// Set processing flag to prevent duplicate processing
+		SetObjProperty(mobile, "ProcessingDeathEvents", 1);
+		var process := start_script(":epicspawn:scripts/deathEventsControl", array{ mobile });
+
+		if (process.errortext)
+			EraseObjProperty(mobile, "ProcessingDeathEvents");
+			SetObjProperty(mobile, "allowdeath", 1);
+			return 1; // Allow death anyway if script fails to start
+		else
+			return 0; // Prevent death until events are processed
+		endif
+	endif
+
+	return 1;
+endfunction
+

@@ -1,0 +1,39 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Voce so pode alvejar seres vivos com esta magia.", SSM_FAIL);
+		return;
+	endif
+
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	PlaySoundEffect(targ, SFX_108);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 7, 16);
+	PlaySoundEffect(targ, SFX_109);
+
+	var duration := CInt(GetSpellDuration(AP_GetSkill(who, NATURE)));
+
+	var opts := struct{};
+	opts.+dex_mod := -20;
+	opts.+desc := "Rajada de Vento";
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+
+	pushback(targ, 5, 100);
+	SendSysMessageEx(targ, "Uma rajada de vento frio atinge voce.", SSM_FAIL);
+
+	return 1;
+endprogram

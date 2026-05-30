@@ -1,0 +1,754 @@
+use cfgfile;
+use uo;
+use os;
+use util;
+
+include "include/say";
+include ":gumps:include/epicGumps";
+include ":attributes:attributes";
+include ":timedscripts:poisonUtil";
+include ":attributes:stats";
+include ":charactercreation:habilidades";
+include ":gumps:include/requestGump";
+include ":taming:taming";
+
+const START_Y := 91;
+const END_Y := 311;
+const BACKGROUND := 0xBB8;
+const FOREGROUND := 0xDAC;
+const INIT_DET_PAGE := 10;
+
+var template;
+var index_list;
+var info_cfg;
+var entries_list := dictionary;
+var btn_maxId := 2;
+var new_list := array;
+var det_page := INIT_DET_PAGE; // numero da pagina de detalhes
+
+// ============================================================
+// ENTRY
+// ============================================================
+
+program GM_PetFidelity_Gump(mob)
+
+    SendSysMessage(mob, "Selecione o pet ou a si mesmo para acessar opções globais.");
+    var pet := Target(mob);
+
+    if (!pet)
+        return;
+    endif
+
+    var g := GM_PetFidelity_BuildGump(mob, pet);
+    var input := GFSendGump(mob, g);
+
+    if (!input || !input[0])
+        return;
+    endif
+
+    GM_PetFidelity_Process(mob, pet, input[0]);
+
+endprogram
+
+// ============================================================
+// GUMP
+// ============================================================
+
+function GM_PetFidelity_BuildGump(mob, pet)
+
+    var g := GFECreateGump("GM - Fidelidade do Pet", 420, 360);
+
+    // ===== RESUMO =====
+    var bond := GetObjProperty(pet, "bond");
+    var fidel := GetObjProperty(pet, "happiness");
+    var inst := GetObjProperty(pet, "instincts");
+
+    if (fidel == error)
+        fidel := 0;
+    endif
+
+    var inst_count := 0;
+    if (inst && typeof(inst) == "Dictionary")
+        inst_count := inst.Size();
+    endif
+if (!IsTamedPet(pet))
+    GFTextLine(g, 310, 260, 123, "Não é PET!");
+else
+    GFTextLine(g, 310, 240, 123, "Pet: " + pet.name);
+	var dono := pet.master;
+    GFTextLine(g, 310, 260, 123, "Dono: " + dono.getprop("nome_inicial"));
+	GFTextLine(g, 310, 280, 123, "Fiel: " + (bond == "fiel" ? "SIM" : "NAO"));
+    GFTextLine(g, 310, 300, 123, "Felicidade: " + fidel);
+    GFTextLine(g, 310, 320, 123, "Instintos: " + inst_count);
+endif
+
+    // ===== BOTÕES =====
+    var y := 90;
+
+    GM_Button(g, 30, y, 1, "Ajustar Fidelidade (0-100)"); y += 28;
+    GM_Button(g, 30, y, 2, "Fidelizar / Desfidelizar"); y += 28;
+	GM_Button(g, 30, y, 7, "Alterar tempo de fidelização"); y += 28;
+    GM_Button(g, 30, y, 3, "Curar e Normalizar"); y += 28;
+    GM_Button(g, 30, y, 4, "Resetar Habilidades"); y += 28;
+    GM_Button(g, 30, y, 5, "Aplicar Habilidade"); y += 28;
+    GM_Button(g, 30, y, 6, "Debug do Pet"); y += 28;
+    GM_Button(g, 30, y, 8, "Ressuscitar pet(alvo)"); y += 28;
+	GM_Button(g, 30, y, 9, "Teleportar pets/corpse para o dono");
+
+    return g;
+
+endfunction
+
+// ============================================================
+// PROCESSAMENTO
+// ============================================================
+
+function GM_PetFidelity_Process(mob, pet, btn)
+
+    case(btn)
+
+        // Ajustar fidelidade
+        1:
+            var val := RequestGump(mob, "Digite a fidelidade (0 a 100):");
+            if (!val || val == error)
+                return;	
+            endif
+
+            val := CInt(val);
+            if (val < 0 || val > 100)
+                SendSysMessage(mob, "Valor invalido. Use 0 a 100.");
+                return;
+            endif
+
+            SetObjProperty(pet, "happiness", val);
+            SendSysMessage(mob, "Fidelidade ajustada para " + val + ".");
+            return;
+
+        // Fidelizar / Desfidelizar
+        2:
+            var bond := GetObjProperty(pet, "bond");
+
+            if (bond == "fiel")
+                EraseObjProperty(pet, "bond");
+                SetObjProperty(pet, "Fidelizar?", "nao");
+                SendSysMessage(mob, pet.name + " não é mais fiel.");
+            else
+                SetObjProperty(pet, "bond", "fiel");
+                SetObjProperty(pet, "Fidelizar?", "nao");
+                SetObjProperty(pet, "happiness", 100);
+                SendSysMessage(mob, pet.name + " agora é fiel.");
+            endif
+            return;
+
+        // Curar e normalizar
+        3:
+GM_Pet_Curar(mob, pet);
+            return;
+
+        // Resetar habilidades
+        4:
+            EraseObjProperty(pet, "instincts");
+            EraseObjProperty(pet, "Group_natural");
+            EraseObjProperty(pet, "Group_savage");
+            EraseObjProperty(pet, "Critic");
+            EraseObjProperty(pet, "hitsmod");
+
+            RecalcVitals(pet);
+            SendSysMessage(mob, "Habilidades resetadas.");
+            return;
+
+        // Aplicar habilidade (reaproveita sistema existente)
+        5:
+            TeachGump(mob, pet);
+            return;
+
+        // Debug
+        6:
+            GM_Pet_Debug(mob, pet);
+            return;
+		
+		7:
+			GM_Pet_AlterarTempoFidelizacao(mob, pet);
+			return;
+		
+		8:
+			GM_Disease_ResurrectPet(mob);
+			return;
+		9:
+			GM_PetFiel_TeleportPets_SelectOwner(mob);
+			return;
+		10:
+			var achar := ListOfflineMobilesinRealm(mob.realm);
+			print("achar eh "+achar);
+    endcase
+
+endfunction
+
+// ============================================================
+// DEBUG
+// ============================================================
+
+function GM_Pet_Debug(mob, pet)
+
+    SendSysMessage(mob, "===== PET DEBUG =====");
+    SendSysMessage(mob, "Nome: " + pet.name);
+    SendSysMessage(mob, "Serial: " + pet.serial);
+
+    var props := GetObjPropertyNames(pet);
+    if (!props)
+        return;
+    endif
+
+    foreach p in props
+
+        var lname := Lower(p);
+
+        if ( lname.find("bond") >= 1 ||
+             lname.find("happiness") >= 1 ||
+             lname.find("instinct") >= 1 ||
+             lname.find("group") >= 1 ||
+             lname.find("critic") >= 1 ||
+             lname.find("disease") >= 1 )
+
+            var val := GetObjProperty(pet, p);
+
+            if (val == error)
+                SendSysMessage(mob, p + " = <error>");
+
+            elseif (typeof(val) == "Dictionary")
+                SendSysMessage(mob, p + " = <dictionary>");
+
+                foreach k in val
+                    SendSysMessage(mob, "  - " + k + " = " + val[k]);
+                endforeach
+
+            elseif (typeof(val) == "Array")
+                SendSysMessage(mob, p + " = <array>");
+                foreach i in val
+                    SendSysMessage(mob, "  - " + i);
+                endforeach
+
+            else
+                SendSysMessage(mob, p + " = " + val);
+            endif
+
+        endif
+    endforeach
+
+    SendSysMessage(mob, "======================");
+
+endfunction
+
+
+// ============================================================
+// HELPER
+// ============================================================
+
+function GM_Button(byref g, x, y, id, text)
+    GFAddButton(g, x, y, 0x845, 0x846, GF_CLOSE_BTN, id);
+    GFTextLine(g, x + 40, y, 53, text);
+endfunction
+
+function TeachGump(who, creature)
+
+	info_cfg := ReadConfigFile(":taming:taming");
+	if (!info_cfg)
+		SendSysMessage(who, "Erro ao ler cfg ->" + info_cfg);
+		return 0;
+	else
+		index_list := GetConfigStringArray(info_cfg["Index"], "Ins");
+	endif
+
+	template := GumpTemplate();
+
+	var gump := BuildGump(who, creature);
+	var input := GFSendGump(who, gump);
+
+	if (input[0] > 1) // Define na hora de apertar o botão ensinar
+		ProcessInput(who, creature, input);
+	endif
+
+endfunction
+
+function ProcessInput(who, creature, input)
+	var id := 2;
+
+	foreach ins in new_list
+		if (input[0] == id)
+			TeachNow(who, creature, ins);
+			break;
+		else
+			id := id + 1;
+		endif
+	endforeach
+endfunction
+
+function GumpTemplate()
+	var gump := GFECreateGump("MENU DESPERTAR", 350, 500);
+	GFPage(gump, 0);
+	GFGumpPic(gump, 180, 290, 1629); // jacaré primeiro lateral, segundo altura
+	GFGumpPic(gump, 25, 105, 1631); // boi
+	GFPage(gump, 1);
+
+	return gump;
+endfunction
+
+function BuildGump(who, creature)
+	var gump := template;
+	var y_pos := START_Y;
+
+	foreach index in index_list
+		var ins_elem := info_cfg[index];
+		BuildInstincts(who, creature, gump, ins_elem, y_pos);
+		new_list.append(index);
+		SleepMS(2);
+	endforeach
+
+	det_page := INIT_DET_PAGE;
+	y_pos := START_Y;
+
+	foreach index in new_list
+		BuildDetails(gump, index, y_pos);
+		SleepMS(2);
+	endforeach
+
+	return gump;
+endfunction
+
+function BuildInstincts(who, creature, byref gump, ins_elem, byref y_pos)
+
+	if (y_pos > END_Y)
+		GFAddButton(gump, 243, 34, 2224, 2224, GF_PAGE_BTN, gump.cur_page + 1); // botão de numero de página
+		y_pos := START_Y;
+		GFPage(gump, gump.cur_page + 1); // vai para a lista da descrição
+	endif
+
+	if (y_pos == START_Y) // texto inicial e títulos
+		GFTextLine(gump, 200, 100, 10, "Despertar Natureza");
+		GFTextLine(gump, 45, 67, 0, "Você pode despertar a natureza (stats) ou o");
+		GFTextLine(gump, 45, 80, 0, "instinto (crítico-dano) do seu fiel animal.");
+		GFTextLine(gump, 45, 450, 30, " 	OBS: o animal só pode ter uma natureza e");
+		GFTextLine(gump, 125, 463, 30, "  			um instinto!");
+		GFTextLine(gump, 55, 290, 90, "Despertar Instintos");
+	endif
+
+	if (gump.cur_page > 1) // botão de número da página
+		GFAddButton(gump, 213, 34, 2223, 2223, GF_PAGE_BTN, gump.cur_page - 1);
+	endif
+
+	var mount_packs := (creature.npctemplate == ":brainai:horse" || creature.npctemplate == ":brainai:horse2" ||
+					 creature.npctemplate == ":brainai:horse3" || creature.npctemplate == ":brainai:horse4" ||
+					 creature.npctemplate == ":brainai:horse5" || creature.npctemplate == ":brainai:llama"); // quem pode treinar animal de carga
+	var sense_ones := (creature.npctemplate == ":brainai:dog" || creature.npctemplate == ":brainai:eagle"); // quem pode treinar sentido aguçado
+	var npccfgfile := ReadConfigFile(":*:npcdesc");
+	var creature_who := NPC_ParseTemplateName(creature.npctemplate).template;
+	var creature_taxonomy := GetConfigString(npccfgfile[creature_who], "Taxonomy"); // identifca a taxonomy do npcdesc
+	var pet_instinct := GetConfigStringArray(ins_elem, "Taxonomy"); // LISTA TODOS do cfg
+	var equal_taxonomy := (creature_taxonomy in pet_instinct); // identifica a taxonomy do cfg de acordo com o alvo
+	if ((ins_elem.Type == 0)) // listagem dos instintos naturais
+
+		GFTextLine(gump, 190, y_pos + 30, 1890, ins_elem.Nome); // tive que listar individualmente pra não dar bode, a lista do cfg de acordo com o CONST inicial começa no 10
+		if (ins_elem.Nome == "Ferocidade")
+			GFAddButton(gump, 310, y_pos + 33, 1209, 1210, GF_PAGE_BTN, 10);
+
+			y_pos := y_pos + 20;
+		elseif (ins_elem.Nome == "Flexibilidade")
+			GFAddButton(gump, 310, y_pos + 33, 1209, 1210, GF_PAGE_BTN, 11);
+
+			y_pos := y_pos + 20;
+		elseif (ins_elem.Nome == "Fortaleza")
+			GFAddButton(gump, 310, y_pos + 33, 1209, 1210, GF_PAGE_BTN, 12);
+
+			y_pos := y_pos + 20;
+		endif
+
+	elseif ((ins_elem.Type == 2 && sense_ones))
+		GFTextLine(gump, 170, y_pos + 20, 1890, ins_elem.Nome);
+		GFAddButton(gump, 290, y_pos + 23, 1209, 1210, GF_PAGE_BTN, 13);
+
+		y_pos := y_pos + 20;
+	elseif ((ins_elem.Type == 1) && (equal_taxonomy))
+		GFTextLine(gump, 47, y_pos + 160, 1890, ins_elem.Nome);
+		var det_pagex := ins_elem.Number; // inseri um valor number no cfg pra ficar mais facil para listar, lá começa no 15
+		GFAddButton(gump, 27, y_pos + 163, 1209, 1210, GF_PAGE_BTN, det_pagex);
+
+		y_pos := y_pos + 20;
+	endif
+
+	return 1;
+endfunction
+
+function BuildDetails(byref gump, ins_name, byref y_pos)
+
+	var cfg_elem := info_cfg[ins_name];
+
+	GFPage(gump, det_page);
+	GFAddButton(gump, 80, 44, 2223, 2223, GF_PAGE_BTN, 1);
+	GFTextLine(gump, 70, 60, 0, "(voltar)");
+	if (cfg_elem.Type == 1) // identificar se é instinto selvagem para onde aparecer o título descrição e o botão de ensinar
+		GFTextLine(gump, 55, 280, 0, "Descrição");
+		GFTextLine(gump, 58, 400, 0, "Ensinar");
+		GFAddButton(gump, 67, y_pos + 300, 1209, 1210, GF_CLOSE_BTN, btn_maxId);
+	else // identificar se é instinto natural para onde aparecer a descrição e o botão de ensinar
+		GFTextLine(gump, 200, 55, 0, "Descrição");
+		GFTextLine(gump, 210, 200, 0, "Ensinar");
+		GFAddButton(gump, 221, y_pos + 95, 1209, 1210, GF_CLOSE_BTN, btn_maxId);
+	endif
+
+	var desc := GetConfigStringArray(cfg_elem, "Desc");
+	if (desc.Size() < 1) // se não tiver descrição não aparece nada
+		return 0;
+	endif
+
+	foreach line in desc // identificar se é instinto natural ou selvagem para aparecer a descrição da hab
+		if (cfg_elem.Type == 1)
+			GFTextLine(gump, 20, y_pos + 220, 1890, line);
+			y_pos := y_pos + 20;
+			SleepMS(2);
+		else
+			GFTextLine(gump, 180, y_pos + 10, 1890, line);
+			y_pos := y_pos + 20;
+			SleepMS(2);
+		endif
+	endforeach
+
+	y_pos := y_pos + 20;
+
+	det_page := det_page + 1;
+	btn_maxId := btn_maxId + 1;
+	y_pos := START_Y;
+
+	return 1;
+endfunction
+
+function TeachNow(who, tamed, ins)
+	if (Distance(who, tamed) > 1)
+		SendSysMessage(who, "Você não vai conseguir ensinar nada de tão longe!");
+		return;
+	endif
+
+	var instincts := GetObjProperty(tamed, "instincts");
+	var info_cfg := ReadConfigFile(":taming:taming");
+	var ins_natural := GetObjProperty(tamed, "Group_natural");
+	var ins_savage := GetObjProperty(tamed, "Group_savage");
+	var ins_2 := info_cfg[ins].Group;
+	if ((ins_2 == 1) && (ins_natural == 1)) // check para quem já tem 1 instinto natural e não pode mais pegar do mesmo tipo
+		SendSysMessage(who, "Você já despertou a natureza nesse animal!");
+		return;
+	elseif ((ins_2 == 2) && (ins_savage == 1)) // check para instinto selvagem e não poder pegar mais um
+		SendSysMessage(who, "Você já despertou o instinto selvagem nesse animal!");
+		return;
+	else
+	endif
+
+	if (!instincts)
+		instincts := dictionary;
+	endif
+
+	if (instincts[ins]) // não repetir hab no pet
+		SendSysMessage(who, "Este animal já despertou esse instinto.");
+		return;
+	endif
+
+	var new_ins := struct;
+	var groupa := info_cfg[ins].Group;
+	var critic := info_cfg[ins].Critic;
+
+	new_ins.ins_name := ins;
+	instincts.insert(ins, new_ins); // identificar a prop de acordo com o instinto escolhido
+	SetObjProperty(tamed, "instincts", instincts); // inserir no pet
+
+	if (groupa == 1) // insere se é instinto natural ou selvagem para não poder pegar mais
+		SetObjProperty(tamed, "Group_natural", 1);
+	elseif (groupa == 2)
+		SetObjProperty(tamed, "Group_savage", 1);
+	endif
+
+	if (!critic) // adiciona os criticos ou modificações nos stats
+		if (info_cfg[ins].Nome == "Ferocidade")
+			AP_SetTrueStat(tamed, STRENGTH, AP_GetStat(tamed, STRENGTH) + 15);
+			tamed.resist_physical_mod := tamed.resist_physical_mod + 20;
+			RecalcVitals(tamed);
+		elseif (info_cfg[ins].Nome == "Flexibilidade")
+			AP_SetTrueStat(tamed, DEXTERITY, AP_GetStat(tamed, DEXTERITY) + 15);
+			tamed.resist_physical_mod := tamed.resist_physical_mod + 20;
+			RecalcVitals(tamed);
+		elseif (info_cfg[ins].Nome == "Fortaleza")
+			var hits := CInt(AP_GetVitalMaximumValue(tamed, "Hits"));
+			var variavel := Cint(hits / 2);
+			var variavel2 := Cint(variavel / 2); // não sei pq ele duplica por isso a divisão pela metade
+			setObjProperty(tamed, "hitsmod", variavel2);
+			RecalcVitals(tamed);
+		elseif (info_cfg[ins].Nome == "Sentidos Aguçados")
+			var teste := GetAttribute(tamed, AWARENESS);
+			AP_SetTrueSkill(tamed, AWARENESS, teste + 40);
+			tamed.resist_physical_mod := tamed.resist_physical_mod + 20;
+			RecalcVitals(tamed);
+		// elseif(info_cfg[ins].Nome == "Animal de Carga") //DECICIDIR SE VAI TER OU NÃO, HJ O CARA SÓ BOTA A BACKPACK E JÁ CRIA ANIMAL DE CARGA
+		// if (tamed.objtype == 0xdc) //para lhamas
+		// tamed.graphic := 292;
+		// else // para cavalos
+		// tamed.graphic := 291;
+		// endif
+		// var newbackpack := CreateItemAtLocation(tamed.x, tamed.y, tamed.z, 0xe75,1, tamed.realm); // equipa a mochila no pet
+		// if (!EquipItem(tamed, newbackpack))
+		// return;
+		// endif
+		endif
+		SendSysMessageEX(who, "Você despertou a natureza com sucesso.", SSM_INFO);
+	else
+		SetObjProperty(tamed, "Critic", critic); // Aqui define os criticos do instinto selvagem, TO DO -> script de criticos para definir essas habs
+		SendSysMessageEX(who, "Você despertou o instinto com sucesso.", SSM_INFO);
+	endif
+
+endfunction
+
+function GM_Pet_AlterarTempoFidelizacao(mob, pet)
+
+   var bond := GetObjProperty(pet, "bond");
+
+    if (!bond)
+        SendSysMessage(mob, "Este pet ainda não iniciou fidelização.");
+        return;
+    endif
+
+    if (bond == "fiel")
+        SendSysMessage(mob, "Este pet já está FIEL. Não há tempo para ajustar.");
+        return;
+    endif
+
+    if (typeof(bond) != "Integer")
+        SendSysMessage(mob, "Estado de bond inválido.");
+        return;
+    endif
+
+    var now := ReadGameClock();
+    var restante := bond - now;
+    if (restante < 0)
+        restante := 0;
+    endif
+
+    SendSysMessage(
+        mob,
+        "Tempo restante atual: " + restante + " segundos."
+    );
+
+    var val := RequestGump(
+        mob,
+        "Digite o NOVO tempo de fidelização (em segundos):"
+    );
+
+    if (!val || val == error)
+        return;
+    endif
+
+    val := CInt(val);
+
+    if (val < 0)
+        SendSysMessage(mob, "Valor inválido.");
+        return;
+    endif
+
+    var novo_bond := ReadGameClock() + val;
+
+    SetObjProperty(pet, "bond", novo_bond);
+
+    SendSysMessage(
+        mob,
+        "Novo tempo de fidelização definido para " + val + " segundos."
+    );
+
+endfunction
+
+function GM_Pet_Curar(mob, tgt)
+
+    // Cura HP total
+    AP_SetVital(
+        tgt,
+        "hits",
+        AP_GetVitalMaximumValue(tgt, "hits")
+    );
+
+    // Remove poison (como bandagem com garlic)
+    TS_CurePoison(tgt, 10000, "P", 10);
+
+    // Remove bleed
+    TS_LowerDuration(tgt, "bleed", -1);
+
+    // Remove estado de cura pendente
+    EraseObjProperty(tgt, "curando");
+
+    RecalcVitals(tgt);
+
+    SendSysMessage(mob, tgt.name + " foi completamente curado.");
+
+endfunction
+
+function GM_Disease_ResurrectPet(mob)
+
+    SendSysMessage(mob, "Selecione o pet que deseja ressuscitar.");
+    var pet := Target(mob);
+
+    if (!pet)
+        return;
+    endif
+
+    var ownerSerial := GetObjProperty(pet, "owner");
+    if (!ownerSerial)
+        SendSysMessage(mob, "Este NPC não é um pet.");
+        return;
+    endif
+
+    var owner := SystemFindObjectBySerial(ownerSerial);
+    if (!owner)
+        SendSysMessage(mob, "Dono do pet não encontrado.");
+        return;
+    endif
+
+    // chamada OFICIAL do sistema
+    RessuscitarPet(pet, owner, 1);
+
+    SendSysMessage(mob, "Pet ressuscitado com sucesso.");
+
+endfunction
+
+function GM_PetFiel_TeleportPets_SelectOwner(mob)
+
+    SendSysMessage(mob, "Selecione o dono dos pets.");
+    var owner := Target(mob);
+
+    if (!owner)
+        return;
+    endif
+
+    if (!owner.IsA(POLCLASS_MOBILE) || owner.npctemplate)
+        SendSysMessage(mob, "O alvo deve ser um jogador.");
+        return;
+    endif
+
+    var pets := GetObjProperty(owner, "TamedPets");
+    if (!pets || pets.size() == 0)
+        SendSysMessage(mob, "Este jogador não possui pets.");
+        return;
+    endif
+
+    GM_PetFiel_TeleportPets_Gump(mob, owner, pets);
+
+endfunction
+
+function GM_PetFiel_TeleportPets_Gump(mob, owner, pets)
+
+    var g := GFECreateGump("Teleportar Pets", 420, 420);
+
+    GFTextLine(g, 30, 30, 53, "Dono: " + owner.name);
+    GFTextLine(g, 30, 50, 53, "Selecione os pets:");
+
+    var y := 80;
+    var idx := 1;
+
+var entries := array{};
+
+var corpse_prop := GetObjProperty(owner, "LastPetCorpse");
+
+var corpse := 0;
+
+if (corpse_prop && corpse_prop != error)
+
+    if (typeof(corpse_prop) == "Integer")
+        corpse := SystemFindObjectBySerial(corpse_prop);
+    else
+        corpse := corpse_prop; // já é objeto
+    endif
+
+    if (corpse)
+
+        var entry := struct;
+        entry.serial := corpse.serial;
+        entry.type := "corpse";
+        entries.append(entry);
+
+        GFCheckBox(g, 30, y, 2361, 2362, 0, 100 + idx);
+        GFTextLine(g, 60, y, 53, "[CORPO] " + corpse.desc);
+
+        y += 25;
+        idx += 1;
+
+    endif
+endif
+
+foreach serial in pets
+
+    var pet := SystemFindObjectBySerial(serial);
+    if (!pet)
+        continue;
+    endif
+
+    var entry := struct;
+    entry.serial := serial;
+    entry.type := "pet";
+    entries.append(entry);
+
+    GFCheckBox(g, 30, y, 2361, 2362, 0, 100 + idx);
+    GFTextLine(g, 60, y, 53, pet.name);
+
+    y += 25;
+    idx += 1;
+
+endforeach
+
+
+    GFAddButton(g, 100, 360, 2130, 2129, GF_CLOSE_BTN, 1); // Teleportar
+    GFAddButton(g, 220, 360, 2119, 2120, GF_CLOSE_BTN, 0); // Cancelar
+
+    var input := GFSendGump(mob, g);
+
+    if (!input || input[0] != 1)
+        return;
+    endif
+
+    GM_PetFiel_TeleportPets_Execute(mob, owner, entries, input);
+
+endfunction
+
+function GM_PetFiel_TeleportPets_Execute(mob, owner, entries, input)
+
+    var ox := owner.x;
+    var oy := owner.y;
+    var oz := owner.z;
+    var realm := owner.realm;
+
+    var idx := 1;
+
+    foreach entry in entries
+
+      if (input[100 + idx])
+
+    var obj := SystemFindObjectBySerial(entry.serial);
+    if (!obj)
+        idx += 1;
+        continue;
+    endif
+
+    // === CORPSE PRECISA SER MOVABLE ===
+    obj.movable := 1;
+
+
+    MoveObjectToLocation(
+        obj,
+        ox + RandomInt(2) - 1,
+        oy + RandomInt(2) - 1,
+        oz,
+        owner.realm,
+        MOVEOBJECT_FORCELOCATION
+    );
+
+endif
+
+
+        idx += 1;
+
+    endforeach
+
+    SendSysMessage(mob, "Pets e/ou corpos teleportados para o dono.");
+
+endfunction

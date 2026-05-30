@@ -1,0 +1,15 @@
+use uo;
+use datafile;
+
+include ":datafile:datafile";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":help:help";
+include ":gumps:htmlGump";
+include ":attributes:advanceCheck";
+
+program gmpage(who)
+
+	GMPageGump(who);
+
+endprogram

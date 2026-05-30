@@ -1,0 +1,18 @@
+include ":awareness:awareness";
+include "include/say";
+
+program alert(mobile)
+	if (!mobile)
+		return 1;
+	endif
+	while (mobile && mobile.connected)
+		examinarArea(mobile);
+		if (MobileWrapper(mobile).HasAbility(ABILITY_ID::SEMPRE_ALERTA))
+			sleep(3);
+		else
+			sleep(15);
+		endif
+	endwhile
+
+	return 1;
+endprogram

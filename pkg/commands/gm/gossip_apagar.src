@@ -1,0 +1,5 @@
+use os;
+
+program textcmd_gossipgump(who)
+	start_script(":gossipgump:gossip_gump", who);
+endprogram

@@ -1,0 +1,100 @@
+use uo;
+
+include ":attributes:attributes";
+include ":awareness:awareness";
+include "include/colormap";
+include "include/sysEvent";
+include "include/packets";
+include ":message:model/Message";
+
+// EpicUO custom 0xBF/0x00B0: overhead text above `source`, only `viewer` sees it.
+// No journal entry, no speech hook. Layout:
+//   BF | len_u16 | 00B0 | serial_u32 | hue_u16 | textlen_u8 | ascii[textlen]
+function SendOverheadLabel(viewer, source, text, hue)
+	var bytes := len(text);
+	if (bytes > 255) bytes := 255; endif
+	var size := 12 + bytes;
+	var pkt := CreatePacket(0xBF, size);
+	pkt.SetInt8(0, 0xBF);
+	SetInt16BE(pkt, 1, size);
+	SetInt16BE(pkt, 3, 0x00B0);
+	pkt.SetInt32(5, source.serial);
+	SetInt16BE(pkt, 9, hue);
+	pkt.SetInt8(11, bytes);
+	var i := 0;
+	while (i < bytes)
+		pkt.SetInt8(12 + i, CAsc(text[i + 1]));
+		i := i + 1;
+	endwhile
+	pkt.SendPacket(viewer);
+endfunction
+
+function PerceptionHue(pct)
+	if (pct >= 80)     return 0x0044; endif  // green
+	if (pct >= 50)     return 0x0035; endif  // yellow
+	if (pct >= 25)     return 0x002B; endif  // orange
+	return 0x0021;                            // red
+endfunction
+
+program showdfdiff(params)
+
+	var who := params[1];
+
+	print(" " + who.name);
+
+	// Spotting timer per NPC. Counts ticks of continuous LoS; the reveal
+	// check fires only after >= 2 ticks (~6s grace) so entering LoS isn't
+	// an instant tripwire. NPCs that leave LoS get dropped from the dict
+	// each tick (rebuilt from the current sweep).
+	var spotting := struct{};
+
+	while (who.hidden && who.connected)
+
+		var new_spotting := struct{};
+		var mobs := ListMobilesInLineOfSight(who, 11);
+		foreach mob in mobs
+			if (!mob.hiding)
+				var dist := Distance(mob, who);
+				var diff := CInt(CalculateDHDiff(mob, who));
+				// Far-range passive detection is much harder. CalculateDHDiff
+				// caps at mobile_skill * 1.0 from dist 8 onwards; tighten that
+				// for *passive* use so distant NPCs rarely catch a stealther
+				// just for being on screen.
+				if (dist >= 8)
+					diff := CInt(diff * 1.5);
+				endif
+				var pct := CalcSuccessPercent(mob, AWARENESS, cdbl(diff),
+											   EffectiveTrueSkill(mob, "Perception"));
+				var shown := CInt(pct);
+				if (shown < 0) shown := 0; endif
+				if (shown > 100) shown := 100; endif
+				SendOverheadLabel(who, mob, "" + shown + "%", PerceptionHue(shown));
+
+				if (mob.npctemplate && mob.alignment != 0 && mob != who)
+					var key := CStr(mob.serial);
+					var ticks := 0;
+					if (spotting.Exists(key))
+						ticks := CInt(spotting[key]);
+					endif
+					ticks := ticks + 1;
+					new_spotting[key] := ticks;
+
+					if (ticks >= 2 && SkillCheck(mob, AWARENESS, diff) > 0)
+						who.hidden := 0;
+						ScreenShake(who, 0.6, 15);
+						Message("*!*").SendAbove(mob);
+						Message("*aparece*").SendEmote(who);
+						SendSysMessageEx(who, mob.name + " te encontrou!", SSM_FAIL);
+						SendEvent(mob, struct{ "type" := SYSEVENT_ENGAGED, "source" := who });
+						break;
+					endif
+				endif
+			endif
+			sleepms(2);
+		endforeach
+
+		spotting := new_spotting;
+		sleep(3);
+	endwhile
+
+endprogram

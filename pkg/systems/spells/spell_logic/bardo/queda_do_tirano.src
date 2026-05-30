@@ -1,0 +1,52 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/client";
+include "include/sounds";
+include ":spells:Controller/SC_Damage";
+
+// A Queda do Tirano (1206) - C2
+// Dano FORCED (Arc/3) + -DEX (Arc/5) por Arc/3 segundos
+program SpellScript(params)
+	var who   := params[1];
+	var targ  := params[2];
+	var spell := params[3];
+
+	if (!targ || !targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return 0;
+	endif
+
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
+	var damage   := CInt(arcana / 3);
+	if (damage < 1)  damage   := 1;  endif
+	if (damage > 33) damage   := 33; endif
+	var dex_pen  := CInt(arcana / 5);
+	if (dex_pen < 1)  dex_pen := 1;  endif
+	if (dex_pen > 20) dex_pen := 20; endif
+	var duration := CInt(arcana / 3);
+	if (duration < 5)  duration := 5;  endif
+	if (duration > 33) duration := 33; endif
+
+	PrintTextAbove(who, "*O tirano acreditava ser invencivel, ate que uma unica nota ecoou...*", 3, 38);
+	PlaySoundEffect(who, 0x211);
+	PlayStationaryEffect(targ.x, targ.y, targ.z, 0x36CB, 3, 3);
+
+	SC_DealDamage(who, targ, CInt(spell.id), damage, DAMAGE_TYPE::FORCED);
+	SendSysMessageEx(who, $"Queda do Tirano: {damage} dano forcado.", SSM_INFO);
+
+	AP_ModifyStatMod(targ, DEXTERITY, -dex_pen);
+	SetObjProperty(targ, "#cantico_dex_down", dex_pen);
+	PrintTextAbove(targ, $"-{dex_pen} DEX", 3, 38);
+	SendSysMessageEx(targ, $"Queda do Tirano: -{dex_pen} Destreza por {duration}s.", SSM_FAIL);
+
+	sleep(duration);
+
+	if (GetObjProperty(targ, "#cantico_dex_down") == dex_pen)
+		AP_ModifyStatMod(targ, DEXTERITY, dex_pen);
+		EraseObjProperty(targ, "#cantico_dex_down");
+	endif
+
+	return 1;
+endprogram

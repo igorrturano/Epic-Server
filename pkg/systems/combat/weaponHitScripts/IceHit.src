@@ -1,0 +1,27 @@
+use uo;
+use util;
+
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include "include/client";
+include "include/sounds";
+include ":acid:acid";
+include "include/epicConstants";
+
+program HitScript(params)
+	var attacker := params[1];
+	var defender := params[2];
+	// var weapon	:= params[3];
+	// var armor	:= params[4];
+	// var basedamage	:= params[5];
+	var rawdamage := params[6];
+	params := 0; // Not needed anymore.
+
+	PlayObjectCenteredEffectEx(defender, FX_BLUE_SPARKLE_GROUND, 7, 16, COLOR_ELEMENTAL_ICE);
+	PlaySoundEffect(defender, SFX_GLASS_BREAK_3);
+
+	// ApplyDamageEX(defender, RandomDiceRoll("1d3"), DAMAGE_TYPE::COLD, attacker);
+	DealDamage(defender, cint((rawdamage * 0.5) + 1), DAMAGE_TYPE::COLD, attacker);
+
+	return 1;
+endprogram

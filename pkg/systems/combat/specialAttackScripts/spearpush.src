@@ -1,0 +1,62 @@
+use util;
+use vitals;
+
+include "include/client";
+include ":debug:Controller/DebugController";
+
+program SpearPush(combatInfo)
+	var attacker := combatInfo.attacker;
+	var defender := combatInfo.defender;
+
+	PushTarget(attacker, defender);
+
+	DebugMsg(attacker, DEBUG_MASTERY, Message($"Executou Maestria SpearPush em {defender.name}"));
+	SendSysMessage(attacker, "Seu impulso permite um segundo golpe!", 3, 89);
+
+	return false;
+endprogram
+
+function PushTarget(attacker, defender)
+	var facing := GetFacing(attacker.x, attacker.y, defender.x, defender.y);
+
+	var newx := defender.x, newy := defender.y;
+	case (facing)
+		0: newy -= 1; break;
+		1:
+			newx += 1;
+			newy -= 1;
+			break;
+		2: newx += 1; break;
+		3:
+			newx += 1;
+			newy += 1;
+			break;
+		4: newy += 1; break;
+		5:
+			newx -= 1;
+			newy += 1;
+			break;
+		6: newx -= 1; break;
+		7:
+			newx -= 1;
+			newy -= 1;
+			break;
+	endcase
+
+	SendSysMessage(attacker, "Você empurrou seu oponente!", 3, 89);
+	PrintTextAbove(attacker, $"*Empurra {defender.name}*", COLOR_BLUE);
+	PrintTextAbove(defender, $"*Empurrado por {attacker.name}*", COLOR_RED);
+	attacker.attack_once(defender);
+
+	if (CheckLOSAt(defender, newx, newy, defender.z))
+		MoveObjectToLocation(defender, newx, newy, defender.z, defender.realm, MOVEOBJECT_FORCELOCATION);
+
+		return true;
+	else // Se bateu em algo toma dano extra
+		ApplyRawDamage(defender, RandomDiceRoll("1d4"));
+		PlaySoundEffect(defender, 0x136);
+		PrintTextAbove(defender, "*Bate em algo*", COLOR_RED);
+	endif
+
+	return false;
+endfunction

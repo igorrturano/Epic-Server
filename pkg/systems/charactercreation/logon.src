@@ -1,0 +1,129 @@
+use uo;
+use os;
+include ":message:include/model/Message";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+// Repairs the buyhab dict for a character who just completed a stone-driven
+// migration. The migrationStone sets `migration_preserve` and the creation
+// flow leaves it in place after the XP/Level/name restore; logon (here)
+// treats its presence as the repair flag, resets all odd-level slots
+// (1, 3, 5, ..., 19) up to the character's current level so they can
+// re-spend the stat purchases stranded by the rework, then erases the
+// property so the repair only fires once.
+function RepairMigratedBuyhab(who)
+    var preserve := GetObjProperty(who, "migration_preserve");
+    if (preserve == error || !preserve)
+        return;
+    endif
+
+    var habs := GetObjProperty(who, "buyhab");
+    if (habs == error || !habs)
+        habs := dictionary;
+    endif
+
+    var curr_level := CInt(GetObjProperty(who, "Level"));
+    if (curr_level < 1)
+        curr_level := 1;
+    endif
+
+    var level;
+    for (level := 1; level <= curr_level; level := level + 1)
+        if (level % 2 == 1)
+            habs[level] := 1;
+        endif
+    endfor
+
+    SetObjProperty(who, "buyhab", habs);
+    EraseObjProperty(who, "migration_preserve");
+
+    Message("Sua redistribuição de status foi liberada — abra o menu de habilidades para reaplicar.")
+        .SetColor(SSM_INFO)
+        .SendSys(who);
+endfunction
+
+// One-shot repair for the old AdaptableForm (Forma Adaptável) toggle bug.
+// The legacy toggle could subtract its bonus from #FortitudeMod/#ReflexosMod/
+// #VontadeMod without a matching add (double-revert / orphaned marker),
+// stranding the stat permanently negative — and the buggy revert often
+// erased its own markers, so the damage is no longer attributable.
+//
+// AF only ever adds a positive bonus then removes exactly that, so while
+// it is NOT legitimately active its contribution must be >= 0. With no
+// consistent active marker, any negative on these three mods is AF
+// residue: clear the stuck markers and floor the mods at 0.
+//
+// Guarded by `af_sweep_v1` so it runs exactly once per character — the
+// reworked AdaptableForm prevents new strands, so this only needs to
+// clear the existing backlog and must never fight nature/Temor on later
+// logins. Scope is AdaptableForm only by request; a transient combat
+// debuff (Temor) never survives a logout, so flooring at login can't
+// cancel a legitimately active one.
+function RepairAdaptableFormMods(who)
+    if (GetObjProperty(who, "af_sweep_v1"))
+        return;
+    endif
+
+    var marker := GetObjProperty(who, "formaadaptavel");
+    var amount := CInt(GetObjProperty(who, "Mutacao"));
+    var consistentActive := (marker == "Fortitude" || marker == "Reflexes" || marker == "Will") && amount > 0;
+
+    if (!consistentActive)
+        EraseObjProperty(who, "formaadaptavel");
+        EraseObjProperty(who, "Mutacao");
+
+        var modKeys := { "#FortitudeMod", "#ReflexosMod", "#VontadeMod" };
+        var repaired := 0;
+        foreach key in (modKeys)
+            if (CInt(GetObjProperty(who, key)) < 0)
+                SetObjProperty(who, key, 0);
+                repaired := 1;
+            endif
+        endforeach
+
+        if (repaired)
+            Message("Seus atributos de resistência (Fortitude/Reflexos/Vontade) foram restaurados após uma correção da Forma Adaptável.")
+                .SetColor(SSM_INFO)
+                .SendSys(who);
+        endif
+    endif
+
+    SetObjProperty(who, "af_sweep_v1", 1);
+endfunction
+
+program createChar(who)
+    var creation_completed := GetObjProperty(who, "creation_completed");
+
+    // One-shot migration repair: runs once per char after the migration
+    // stone, before bailing out for already-created chars.
+    RepairMigratedBuyhab(who);
+
+    // If already completed, never run again. Before bailing, recompute the
+    // carry-weight mod from current sources (single source of truth). This
+    // self-heals every existing character that still carries a drifted
+    // carrying_capacity_mod from the old scattered +=/-=/:= era — idempotent,
+    // so running it on every login is safe.
+    if (creation_completed)
+        MobileWrapper(who).RecalcCarryWeightMod();
+        RepairAdaptableFormMods(who);
+        return;
+    endif
+    
+    // Check if there's incomplete creation data
+    var chardata := GetObjProperty(who, "chardata");
+    
+    if (chardata)
+        // Character creation is broken/incomplete
+        Message("Criação de personagem incompleta ou corrompida. Por favor, delete este personagem e crie um novo. Contate um GM se precisar de assistência.")
+            .SetColor(SSM_FAIL)
+            .SendSys(who);
+
+            SetObjProperty(who, "Delete", 1); // Insta logoff
+            
+            sleep(1);
+            DisconnectClient(who);
+        return;
+    endif
+    
+    // Start the creation process (only once)
+    Start_Script(":charactercreation:epicgumpcriacao", who);
+endprogram

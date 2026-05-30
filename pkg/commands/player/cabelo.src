@@ -1,0 +1,297 @@
+use uo;
+use os;
+
+include "include/client";
+include "include/say";
+include ":survival:fishingFunctions";
+
+program cabelo(who, estilo)
+
+	var cabelo := GetEquipmentByLayer(who, LAYER_HAIR);
+	var corcabelo := cabelo.color;
+	var cabelonovo;
+
+	// Estilos originais
+	var solto         := 0x203C;  // Long_Hair
+	var preso         := 0x203d;  // Pony_Tail
+	var tranca        := 0x2049;  // Braids
+	var pena          := 12224;   // Long_Feather
+	var flor          := 12236;   // Flower
+	var trancalonga   := 12239;   // Big_Braid
+	var preso1        := 12238;   // Big_Knob
+	var preso2        := 12240;   // Big_Bun
+
+	// Estilos longos adicionais
+	var midlong       := 12223;   // Mid_Long
+	var longo2        := 41394;   // Longo2
+	var longo3        := 41395;   // Longo3
+
+	// Novos cabelos longos
+	var moicanolongo       := 51631;  // MoicanoLongo
+	var topknotforte       := 51632;  // TopknotForte
+	var cabeloplantalongo  := 51633;  // cabeloplantalongo
+
+	// Coques
+	var coquelongo    := 51639;   // CoqueLongo
+	var coquecurto    := 51640;   // CoqueCurto
+	var coquelivre    := 51641;   // CoqueLivre
+	var coquetrabalhado := 51642; // CoqueTrabalhado
+	var coquelateral1 := 51643;   // CoqueLateral1
+	var coquelateral2 := 51644;   // CoqueLateral2
+	var coquesamurai1 := 51645;   // CoqueSamurai1
+	var coquesamurai2 := 51646;   // CoqueSamurai2
+	var coquesamurai3 := 51647;   // CoqueSamurai3
+	var coquesamurai4 := 51648;   // CoqueSamurai4
+	var coque1        := 51649;
+	var coque2        := 51650;
+	var coque3        := 51651;
+	var coque4        := 51652;
+	var coque5        := 51653;
+	var coque6        := 51654;
+	var coque7        := 51655;
+	var coque8        := 51656;
+	var coque9        := 51657;
+	var coque10       := 51658;
+	var coque11       := 51659;
+	var coquelongo2   := 51660;   // CoqueLongo2
+	var coquelongo3   := 51661;   // CoqueLongo3
+	var coquelongo4   := 51662;   // Coquelongo4
+	var coquelongo5   := 51663;   // CoqueLongo5
+	var coquelongo6   := 51664;   // CoqueLongo6
+	var coquelongo7   := 51665;   // CoqueLongo7
+	var coquelongo8   := 51666;   // CoqueLongo8
+	var coquelongo9   := 51667;   // CoqueLongo9
+
+	var realm := who.realm;
+
+	if (estilo == "lavar")
+		SendSysMessage(who, "Selecione um lugar para lavar o cabelo.");
+		var targ := TargetCoordinates(who);
+		if (!targ)
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+		endif
+		var locinfo := GetMapInfo(targ.x, targ.y, who.realm);
+		if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2)
+			SendSysMessage(who, "Voce esta muito longe de onde deseja lavar as bandagens.");
+		elseif (IsWater(targ, locinfo))
+			PrintTextAbove(who, "*lava o cabelo*");
+			var hair := GetEquipmentByLayer(who, LAYER_HAIR);
+			var beard := GetEquipmentByLayer(who, LAYER_BEARD);
+			var origin := GetObjProperty(who, "haircolor");
+			if (origin)
+				hair.color := origin;
+				beard.color := origin;
+				EraseObjProperty(who, "haircolor");
+			endif
+		else
+			SendSysMessage(who, "Voce precisa de agua para lava o cabelo.");
+		endif
+		return 0;
+	endif
+
+	var longosvalidos := {
+		solto, preso, tranca, pena, flor, trancalonga, preso1, preso2,
+		midlong, longo2, longo3,
+		moicanolongo, topknotforte, cabeloplantalongo,
+		coquelongo, coquecurto, coquelivre, coquetrabalhado,
+		coquelateral1, coquelateral2,
+		coquesamurai1, coquesamurai2, coquesamurai3, coquesamurai4,
+		coque1, coque2, coque3, coque4, coque5, coque6,
+		coque7, coque8, coque9, coque10, coque11,
+		coquelongo2, coquelongo3, coquelongo4, coquelongo5,
+		coquelongo6, coquelongo7, coquelongo8, coquelongo9
+	};
+
+	if (!(cabelo.objtype IN longosvalidos))
+		SendSysMessage(who, "Seu Cabelo esta curto demais para fazer qualquer coisa.");
+		return 0;
+	elseif (!estilo)
+		SendSysMessage(who, ".cabelo <prender, soltar, trancar, flor, trancalonga, pena, preso1, preso2, midlong, longo2, longo3, moicanolongo, topknotforte, cabeloplantalongo, coquelongo, coquecurto, coquelivre, coquetrabalhado, coquelateral1, coquelateral2, coquesamurai1-4, coque1-11, coquelongo2-9>");
+		return 0;
+	endif
+
+	case (estilo)
+		"prender":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, preso, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo*");
+			break;
+		"soltar":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, solto, 1, realm);
+			PrintTextAbove(who, "*solta o cabelo*");
+			break;
+		"trancar":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, tranca, 1, realm);
+			PrintTextAbove(who, "*trança o cabelo*");
+			break;
+		"trancalonga":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, trancalonga, 1, realm);
+			PrintTextAbove(who, "*trança o cabelo*");
+			break;
+		"flor":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, flor, 1, realm);
+			PrintTextAbove(who, "*coloca uma flor no cabelo*");
+			break;
+		"pena":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, pena, 1, realm);
+			PrintTextAbove(who, "*coloca uma pena no cabelo*");
+			break;
+		"preso1":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, preso1, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo*");
+			break;
+		"preso2":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, preso2, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo*");
+			break;
+		"midlong":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, midlong, 1, realm);
+			PrintTextAbove(who, "*arruma o cabelo*");
+			break;
+		"longo2":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, longo2, 1, realm);
+			PrintTextAbove(who, "*arruma o cabelo*");
+			break;
+		"longo3":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, longo3, 1, realm);
+			PrintTextAbove(who, "*arruma o cabelo*");
+			break;
+		"moicanolongo":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, moicanolongo, 1, realm);
+			PrintTextAbove(who, "*arruma o cabelo em moicano longo*");
+			break;
+		"topknotforte":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, topknotforte, 1, realm);
+			PrintTextAbove(who, "*amarra o cabelo*");
+			break;
+		"cabeloplantalongo":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, cabeloplantalongo, 1, realm);
+			PrintTextAbove(who, "*arruma o cabelo*");
+			break;
+		"coquelongo":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelongo, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coquecurto":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquecurto, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coquelivre":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelivre, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coquetrabalhado":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquetrabalhado, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque trabalhado*");
+			break;
+		"coquelateral1":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelateral1, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque lateral*");
+			break;
+		"coquelateral2":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelateral2, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque lateral*");
+			break;
+		"coquesamurai1":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquesamurai1, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque samurai*");
+			break;
+		"coquesamurai2":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquesamurai2, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque samurai*");
+			break;
+		"coquesamurai3":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquesamurai3, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque samurai*");
+			break;
+		"coquesamurai4":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquesamurai4, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque samurai*");
+			break;
+		"coque1":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coque1, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coque2":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coque2, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coque3":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coque3, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coque4":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coque4, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coque5":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coque5, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coque6":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coque6, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coque7":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coque7, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coque8":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coque8, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coque9":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coque9, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coque10":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coque10, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coque11":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coque11, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coquelongo2":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelongo2, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coquelongo3":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelongo3, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coquelongo4":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelongo4, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coquelongo5":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelongo5, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coquelongo6":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelongo6, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coquelongo7":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelongo7, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coquelongo8":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelongo8, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+		"coquelongo9":
+			cabelonovo := CreateItemAtLocation(who.x, who.y, who.z - 4, coquelongo9, 1, realm);
+			PrintTextAbove(who, "*prende o cabelo em um coque*");
+			break;
+	endcase
+
+	if (cabelonovo)
+		DestroyItem(cabelo);
+		cabelonovo.color := corcabelo;
+		EquipItem(who, cabelonovo);
+	else
+		SendSysMessage(who, ".cabelo <prender, soltar, trancar, flor, trancalonga, pena, preso1, preso2, midlong, longo2, longo3, moicanolongo, topknotforte, cabeloplantalongo, coquelongo, coquecurto, coquelivre, coquetrabalhado, coquelateral1, coquelateral2, coquesamurai1-4, coque1-11, coquelongo2-9>");
+	endif
+
+endprogram

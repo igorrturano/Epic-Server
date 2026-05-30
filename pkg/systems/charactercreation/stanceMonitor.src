@@ -1,0 +1,57 @@
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":message:model/Message";
+include ":combat:Model/CombatTraits";
+include ":combat:Controller/StanceController";
+
+const CHECK_INTERVAL := 15; // Check every 15 seconds
+
+/**
+ * Background script that monitors a player's stance and auto-resets to neutral
+ * when they're no longer in combat (not in war mode or no hostiles nearby)
+ */
+program StanceMonitor(mobileRef)
+	var mobile := MobileWrapper(mobileRef);
+
+	// Verify wrapper creation
+	if (mobile.GetObjRef().errortext)
+		return;
+	endif
+
+	// Monitor loop - runs while player is online and has a non-neutral stance
+	while (true)
+		sleep(CHECK_INTERVAL);
+
+		// Get current stance
+		var traits := mobile.GetCombatTraits();
+		if (!traits || traits.errortext)
+			break;
+		endif
+
+		// Reset if disconnected or dead
+		if (!mobile.IsConnected() || mobile.IsDead())
+			mobile.SetCombatTraits(traits.SetStance(STANCE_TYPE::NEUTRAL));
+			break;
+		endif
+
+		var currentStance := traits.GetStance();
+
+		// If neutral, stop monitoring
+		if (!currentStance || currentStance == STANCE_TYPE::NEUTRAL)
+			break;
+		endif
+
+		// Check if player is still in combat conditions
+		// They need to be in war mode AND have hostiles nearby
+		var inWarMode := mobile.IsWarMode();
+		var hostiles := ListHostiles(mobile.GetObjRef());
+
+		// If NOT in war mode OR no hostiles, reset to neutral
+		if (!inWarMode || hostiles.size() == 0)
+			ResetStanceToNeutral(mobile);
+			break; // Stop monitoring after reset
+		endif
+	endwhile
+
+	// Clean up monitoring flag
+	StopStanceMonitor(mobile);
+endprogram

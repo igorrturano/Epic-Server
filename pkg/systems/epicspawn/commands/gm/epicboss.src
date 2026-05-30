@@ -1,0 +1,3933 @@
+use uo;
+use os;
+use polsys;
+use util;
+
+include "include/client";
+include "include/say";
+include ":gumps:include/epicGumps";
+include ":epicspawn:epicBoss";
+include ":epicspawn:epicCombatEvents";
+include ":epicspawn:epicDeathEvents";
+include ":combat:Model/Damage";
+include "include/creationUtils";
+
+// Constants for button IDs and menu pages
+const BOTAO_PAGE1 := 1;
+const BOTAO_PAGE2 := 2;
+const BOTAO_PAGE3 := 3;
+const BOTAO_PAGE4 := 4;
+const BOTAO_PAGE5 := 5;
+
+const MENU_PAGE1 := 1;
+const MENU_PAGE2 := 2;
+const MENU_PAGE3 := 3;
+const MENU_PAGE4 := 4;
+const MENU_PAGE5 := 5;
+
+enum SPAWNER_STATES
+	INACTIVE := 0,
+	ACTIVE := 1
+endenum
+
+// Track which button was last clicked
+var button_states := array{ 1, 0, 0, 0, 0 };
+var last_clicked_button := BOTAO_PAGE1;
+var form_data := struct{};
+
+program epicBOSS(params)
+	var who := params[1];
+	var spawner := params[2];
+	if (spawner == who)
+		spawner := 0;
+	endif
+	// Create a gump with title "EPIC BOSS"
+	var gump_width := 960; // Reduced from 1200 (20% reduction)
+	var gump_height := 720;
+	var title := "EPIC! BOSS";
+
+	// Check if editing an existing spawner
+	var editing_existing := 0;
+	if (spawner)
+		editing_existing := 1;
+	endif
+	// Initialize form data based on whether we're editing or creating new
+	if (editing_existing && spawner)
+		var saved_form_data := GetObjProperty(spawner, "form_data");
+		if (saved_form_data)
+			form_data := saved_form_data;
+		else
+			InitializeFormData();
+		endif
+	else
+		InitializeFormData();
+	endif
+
+	// Show the first page initially
+	var input := ShowPage1(who, title, gump_width, gump_height);
+
+	// Process user input until they close the gump
+	while (input[0] != 0)
+		// Check if any navigation button was clicked
+		var nav_button_clicked := 0;
+		for i := 1 to 5
+			if (input[i])
+				nav_button_clicked := i;
+			endif
+		endfor
+
+		// Extract data from the current page
+		ExtractPageData(input, last_clicked_button);
+
+		// Check if the Cancel button was clicked
+		if (input[0] == 101 || input[101])
+			SendSysMessage(who, "Boss creation cancelled.");
+			break; // Exit without creating the boss
+		endif
+
+		// Check if the Create Boss button was clicked
+		if (input[0] == 100 || input[100])
+			// Save form data before creating the boss
+			SendSysMessage(who, "Creating boss...");
+			CreateBossFromGump(who, form_data, spawner); // Pass the spawner parameter
+			break; // Exit after creating the boss
+		endif
+
+		// Update the menu state and get the new page to show
+		var new_menu := UpdateMenuState(input[0], who);
+
+		// Show the new page
+		case (new_menu)
+			MENU_PAGE1: input := ShowPage1(who, title, gump_width, gump_height);
+			MENU_PAGE2: input := ShowPage2(who, title, gump_width, gump_height);
+			MENU_PAGE3: input := ShowPage3(who, title, gump_width, gump_height);
+			MENU_PAGE4: input := ShowPage4(who, title, gump_width, gump_height);
+			MENU_PAGE5: input := ShowPage5(who, title, gump_width, gump_height);
+		endcase
+	endwhile
+
+	return 1;
+endprogram
+
+// Initialize the form data structure with default values
+function InitializeFormData()
+	// Basic info
+	form_data.npctemplate := "goblin";
+	form_data.name := "";
+	form_data.color := "0";
+	form_data.tier := "0"; // Default tier
+	form_data.description := "";
+	form_data.trueboss := 0;
+	form_data.special_ai := "";
+	form_data.url := "";
+	form_data.detailed_description := "";
+	form_data.amount := "1"; // Add amount field
+
+	// Add default respawn time values
+	form_data.min_respawn := "60"; // Default 60 minutes
+	form_data.max_respawn := "120"; // Default 120 minutes
+
+	// Visual size (SpawnScale)
+	form_data.spawn_scale := "100";
+
+	// Attributes
+	form_data.str := "0";
+	form_data.dex := "0";
+	form_data.int := "0";
+	form_data.hits := "0";
+	form_data.dmg := "0";
+
+	// Resistances
+	form_data.phresist := "0";
+	form_data.firesist := "0";
+	form_data.coresist := "0";
+	form_data.enresist := "0";
+	form_data.poresist := "0";
+
+	// Skills - Initialize skills_mod as a nested struct for cleaner in-game reading
+	form_data.+skills_mod := struct{};
+	form_data.skills_mod.+wrestling := "0";
+	form_data.skills_mod.+tactics := "0";
+	form_data.skills_mod.+magery := "0";
+	form_data.skills_mod.+awareness := "0";
+	form_data.skills_mod.+alchemy := "0";
+	form_data.skills_mod.+arcana := "0";
+	form_data.skills_mod.+domestic_work := "0";
+	form_data.skills_mod.+dual_wield := "0";
+	form_data.skills_mod.+gathering := "0";
+	form_data.skills_mod.+handle_animal := "0";
+	form_data.skills_mod.+mechanics := "0";
+	form_data.skills_mod.+medicine := "0";
+	form_data.skills_mod.+metal_working := "0";
+	form_data.skills_mod.+one_handed := "0";
+	form_data.skills_mod.+parry := "0";
+	form_data.skills_mod.+pickpocketing := "0";
+	form_data.skills_mod.+ranged := "0";
+	form_data.skills_mod.+science := "0";
+	form_data.skills_mod.+sneak := "0";
+	form_data.skills_mod.+survival := "0";
+	form_data.skills_mod.+theology := "0";
+	form_data.skills_mod.+throwing := "0";
+	form_data.skills_mod.+two_handed := "0";
+	form_data.skills_mod.+wood_working := "0";
+
+	// Behavior
+	form_data.teleport_health := "25";
+	form_data.aggression := "High";
+	form_data.flee_health := "0";
+	form_data.target_selection := "";
+
+	// Equipment
+	form_data.weapon_type := "";
+	form_data.specific_weapon := "";
+	form_data.equipments := array{}; // Ensure equipments is always an array
+	form_data.classe := "";
+	form_data.magic_school := "";
+	form_data.drop_chance := "25";
+
+	// Special abilities, loot, and death events will be initialized as needed
+	form_data.special := array{};
+	form_data.loot := array{};
+	form_data.deathevents := array{};
+	form_data.combatevents := array{}; // Add this line to initialize combat events array
+
+	// Patrol and teleport locations
+	form_data.patrol_loc1 := struct{};
+	form_data.patrol_loc2 := struct{};
+	form_data.teleport_loc := struct{};
+
+	// Add class-related fields
+	form_data.classe := "";
+
+	// Race and gender related fields
+	form_data.race := HUMANO;
+	form_data.gender := 0; // Default to male
+	form_data.graphic := 400; // Default to human male
+endfunction
+
+// Extract data from the current page
+function ExtractPageData(input, page)
+
+	case (page)
+		BOTAO_PAGE1:
+			// Basic info
+			var npctemplate := GFExtractData(input, 1);
+			if (npctemplate != error && npctemplate != "")
+				form_data.npctemplate := npctemplate;
+			endif
+
+			var name := GFExtractData(input, 2);
+			if (name != error && name != "")
+				form_data.name := name;
+			endif
+
+			var color := GFExtractData(input, 3);
+			if (color != error && color != "")
+				form_data.color := color;
+			endif
+
+			var amount := GFExtractData(input, 44);
+			if (amount != error && amount != "")
+				form_data.amount := amount;
+			endif
+
+			// Add tier extraction (new)
+			var tier := GFExtractData(input, 9);
+			if (tier != error && tier != "" && tier != "0")
+				// Validate tier range
+				tier := CInt(tier);
+				if (tier < 1)
+					tier := 1;
+				elseif (tier > 5)
+					tier := 5;
+				endif
+				form_data.tier := tier;
+			endif
+
+			var description := GFExtractData(input, 4);
+			if (description != error && description != "")
+				form_data.description := description;
+			endif
+
+			form_data.trueboss := input[5];
+
+			var special_ai := GFExtractData(input, 6);
+			if (special_ai != error && special_ai != "")
+				form_data.special_ai := special_ai;
+			endif
+
+			var url := GFExtractData(input, 7);
+			if (url != error && url != "")
+				form_data.url := url;
+			endif
+
+			var detailed_description := GFExtractData(input, 8);
+			if (detailed_description != error && detailed_description != "")
+				form_data.detailed_description := detailed_description;
+			endif
+
+			// Extract respawn time values
+			var min_respawn := GFExtractData(input, 42);
+			if (min_respawn != error && min_respawn != "")
+				form_data.min_respawn := CInt(min_respawn);
+			endif
+
+			var max_respawn := GFExtractData(input, 43);
+			if (max_respawn != error && max_respawn != "")
+				form_data.max_respawn := CInt(max_respawn);
+			endif
+
+			var spawn_scale := GFExtractData(input, 45);
+			if (spawn_scale != error && spawn_scale != "")
+				var scale_val := CInt(spawn_scale);
+				if (scale_val > 0)
+					form_data.spawn_scale := scale_val;
+				endif
+			endif
+
+			break;
+
+		BOTAO_PAGE2:
+			// Attributes
+			var str := GFExtractData(input, 10);
+			if (str != error && str != "")
+				form_data.str := str;
+			endif
+
+			var dex := GFExtractData(input, 11);
+			if (dex != error && dex != "")
+				form_data.dex := dex;
+			endif
+
+			var int := GFExtractData(input, 12);
+			if (int != error && int != "")
+				form_data.int := int;
+			endif
+
+			var hits := GFExtractData(input, 13);
+			if (hits != error && hits != "")
+				form_data.hits := hits;
+			endif
+
+			var dmg := GFExtractData(input, 14);
+			if (dmg != error && dmg != "")
+				form_data.dmg := dmg;
+			endif
+
+			// Resistances
+			var phresist := GFExtractData(input, 15);
+			if (phresist != error && phresist != "")
+				form_data.phresist := phresist;
+			endif
+
+			var firesist := GFExtractData(input, 16);
+			if (firesist != error && firesist != "")
+				form_data.firesist := firesist;
+			endif
+
+			var coresist := GFExtractData(input, 17);
+			if (coresist != error && coresist != "")
+				form_data.coresist := coresist;
+			endif
+
+			var enresist := GFExtractData(input, 18);
+			if (enresist != error && enresist != "")
+				form_data.enresist := enresist;
+			endif
+
+			var poresist := GFExtractData(input, 19);
+			if (poresist != error && poresist != "")
+				form_data.poresist := poresist;
+			endif
+
+			// Skills - Update to use skills_mod nested structure
+			var wrestling := GFExtractData(input, 20);
+			if (wrestling != error && wrestling != "")
+				form_data.skills_mod.wrestling := wrestling;
+			endif
+
+			var tactics := GFExtractData(input, 21);
+			if (tactics != error && tactics != "")
+				form_data.skills_mod.tactics := tactics;
+			endif
+
+			var magery := GFExtractData(input, 22);
+			if (magery != error && magery != "")
+				form_data.skills_mod.magery := magery;
+			endif
+
+			var awareness := GFExtractData(input, 23);
+			if (awareness != error && awareness != "")
+				form_data.skills_mod.awareness := awareness;
+			endif
+
+			var alchemy := GFExtractData(input, 41);
+			if (alchemy != error && alchemy != "")
+				form_data.skills_mod.alchemy := alchemy;
+			endif
+
+			var arcana := GFExtractData(input, 44);
+			if (arcana != error && arcana != "")
+				form_data.skills_mod.arcana := arcana;
+				print("FORM DATA ARCANA:"+form_data.skills_mod.arcana);
+			endif
+
+			var domestic_work := GFExtractData(input, 36);
+			if (domestic_work != error && domestic_work != "")
+				form_data.skills_mod.domestic_work := domestic_work;
+			endif
+
+			var dual_wield := GFExtractData(input, 39);
+			if (dual_wield != error && dual_wield != "")
+				form_data.skills_mod.dual_wield := dual_wield;
+			endif
+
+			var gathering := GFExtractData(input, 37);
+			if (gathering != error && gathering != "")
+				form_data.skills_mod.gathering := gathering;
+			endif	
+
+			var handle_animal := GFExtractData(input, 38);
+			if (handle_animal != error && handle_animal != "")
+				form_data.skills_mod.handle_animal := handle_animal;
+			endif
+
+			var mechanics := GFExtractData(input, 31);
+			if (mechanics != error && mechanics != "")
+				form_data.skills_mod.mechanics := mechanics;
+			endif
+
+			var medicine := GFExtractData(input, 32);
+			if (medicine != error && medicine != "")
+				form_data.skills_mod.medicine := medicine;
+			endif		
+
+			var metal_working := GFExtractData(input, 34);
+			if (metal_working != error && metal_working != "")
+				form_data.skills_mod.metal_working := metal_working;
+			endif		
+
+			var one_handed := GFExtractData(input, 26);
+			if (one_handed != error && one_handed != "")
+				form_data.skills_mod.one_handed := one_handed;
+			endif		
+
+			var parry := GFExtractData(input, 25);
+			if (parry != error && parry != "")
+				form_data.skills_mod.parry := parry;
+			endif		
+
+			var pickpocketing := GFExtractData(input, 30);
+			if (pickpocketing != error && pickpocketing != "")
+				form_data.skills_mod.pickpocketing := pickpocketing;
+			endif	
+
+			var ranged := GFExtractData(input, 28);
+			if (ranged != error && ranged != "")
+				form_data.skills_mod.ranged := ranged;
+			endif	
+
+			var science := GFExtractData(input, 43);
+			if (science != error && science != "")
+				form_data.skills_mod.science := science;
+			endif	
+
+			var sneak := GFExtractData(input, 29);
+			if (sneak != error && sneak != "")
+				form_data.skills_mod.sneak := sneak;
+			endif	
+
+			var survival := GFExtractData(input, 33);
+			if (survival != error && survival != "")
+				form_data.skills_mod.survival := survival;
+			endif	
+
+			
+			var theology := GFExtractData(input, 42);
+			if (theology != error && theology != "")
+				form_data.skills_mod.theology := theology;
+			endif	
+
+			var two_handed := GFExtractData(input, 27);
+			if (two_handed != error && two_handed != "")
+				form_data.skills_mod.two_handed := two_handed;
+			endif
+
+			var wood_working := GFExtractData(input, 35);
+			if (wood_working != error && wood_working != "")
+				form_data.skills_mod.wood_working := wood_working;
+			endif
+			break;
+
+		BOTAO_PAGE3:
+			// Special abilities
+			// These would be handled by specific buttons on page 3
+			break;
+
+		BOTAO_PAGE4:
+
+			var flee_health := GFExtractData(input, 76);
+			if (flee_health != error && flee_health != "")
+				form_data.flee_health := flee_health;
+			endif
+			break;
+
+		BOTAO_PAGE5:
+			// Equipment
+			var specific_weapon := GFExtractData(input, 84);
+			if (specific_weapon != error && specific_weapon != "")
+				form_data.specific_weapon := specific_weapon;
+			endif
+
+			var magic_school := GFExtractData(input, 88);
+			if (magic_school != error && magic_school != "")
+				form_data.magic_school := magic_school;
+			endif
+
+			var drop_chance := GFExtractData(input, 91);
+			if (drop_chance != error && drop_chance != "")
+				form_data.drop_chance := drop_chance;
+			endif
+
+			// Handle radio buttons
+			if (input[80])
+				form_data.weapon_type := "Dual Wield";
+			endif
+
+			if (input[81])
+				form_data.weapon_type := "One-Handed";
+			endif
+
+			if (input[82])
+				form_data.weapon_type := "Two-Handed";
+			endif
+
+			if (input[83])
+				form_data.weapon_type := "Ranged";
+			endif
+
+			break;
+	endcase
+endfunction
+
+// Function to update which menu is active based on button click
+function UpdateMenuState(input, who)
+	// Update the last clicked button
+	last_clicked_button := input;
+
+	// Inform the user that their data is being saved
+	case (input)
+		BOTAO_PAGE1:
+			button_states := array{ 1, 0, 0, 0, 0 };
+			SendSysMessage(who, "Switching to Basic Info page. Your data has been saved.");
+			return MENU_PAGE1;
+		BOTAO_PAGE2:
+			button_states := array{ 0, 1, 0, 0, 0 };
+			SendSysMessage(who, "Switching to Attributes page. Your data has been saved.");
+			return MENU_PAGE2;
+		BOTAO_PAGE3:
+			button_states := array{ 0, 0, 1, 0, 0 };
+			SendSysMessage(who, "Switching to Abilities page. Your data has been saved.");
+			return MENU_PAGE3;
+		BOTAO_PAGE4:
+			button_states := array{ 0, 0, 0, 1, 0 };
+			SendSysMessage(who, "Switching to Behavior page. Your data has been saved.");
+			return MENU_PAGE4;
+		BOTAO_PAGE5:
+			button_states := array{ 0, 0, 0, 0, 1 };
+			SendSysMessage(who, "Switching to Equipment page. Your data has been saved.");
+			return MENU_PAGE5;
+	endcase
+
+	// Default to page 1 if no valid input
+	button_states := array{ 1, 0, 0, 0, 0 };
+	last_clicked_button := BOTAO_PAGE1;
+	SendSysMessage(who, "Switching to Basic Info page. Your data has been saved.");
+	return MENU_PAGE1;
+endfunction
+
+// Function to add navigation buttons at the top of the gump
+function AddNavigationButtons(byref gump, gump_width)
+	var titles := array{ "BASIC INFO", // Basic boss information
+					 	
+					 	"ATTRIBUTES",                // Stats, skills, resistances
+					 	
+					 	"ABILITIES",                 // Special abilities and combat events
+					 	
+					 	"BEHAVIOR",                  // Patrol areas, conditions, AI settings
+					 	"EQUIPMENT"                  // Weapons, armor, and loot
+					 	
+					 	};
+	var x_positions := array{ 120, 280, 440, 600, 760 }; // Adjusted from {150, 350, 550, 750, 950}
+	var buttons := array{ BOTAO_PAGE1, BOTAO_PAGE2, BOTAO_PAGE3, BOTAO_PAGE4, BOTAO_PAGE5 };
+
+	// Create a background for the navigation bar
+	GFResizePic(gump, 40, 80, 9350, gump_width - 80, 40);
+
+	// Add each button with appropriate styling
+	for i := 1 to titles.size()
+		var gump_button := 2151; // Normal button
+		var text_color := 53; // Normal text color
+
+		if (buttons[i] == last_clicked_button)
+			gump_button := 2153; // Active button
+			text_color := 230; // Active text color
+		endif
+
+		// Add the text and button
+		GFTextLine(gump, x_positions[i], 90, text_color, titles[i]);
+		GFAddButton(gump, x_positions[i] - 35, 85, gump_button, gump_button, 1, buttons[i]);
+	endfor
+endfunction
+
+// Functions for each page
+function ShowPage1(who, title, gump_width, gump_height)
+	var gump := GFECreateGump(title, gump_width, gump_height);
+
+	// Add navigation buttons
+	AddNavigationButtons(gump, gump_width);
+
+	// Page 1 content - BASIC INFO
+	GFTextMid(gump, 0, 130, gump_width, 1153, "BASIC INFORMATION");
+
+	// Add a divider line
+	GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
+
+	// Left side - Form fields
+	// NPC Template selection
+	GFTextLine(gump, 50, 170, 1153, "NPC Template:");
+	GFTextEntry(gump, 200, 170, 300, 20, 1150, form_data.npctemplate ? form_data.npctemplate : "", 1);
+	GFTextLine(gump, 200, 190, 2100, "(No need to specify :brainAI: or :epicAI: prefix)");
+
+	// Boss Name
+	GFTextLine(gump, 50, 220, 1153, "Boss Name:");
+	GFTextEntry(gump, 200, 220, 300, 20, 1150, form_data.name ? form_data.name : "", 2);
+
+	// Color
+	GFTextLine(gump, 50, 250, 1153, "Color:");
+	GFTextEntry(gump, 200, 250, 100, 20, 1150, form_data.color ? form_data.color : "0", 3);
+
+	// Add Tier selection (new)
+	GFTextLine(gump, 50, 280, 1153, "Tier (1-5):");
+	GFTextEntry(gump, 200, 280, 100, 20, 1150, form_data.tier ? form_data.tier : "", 9);
+	GFTextLine(gump, 310, 280, 2100, "(Padrão se não especificado)");
+
+	// Description
+	GFTextLine(gump, 50, 310, 1153, "Description:");
+	GFTextEntry(gump, 200, 310, 300, 60, 1150, form_data.description ? form_data.description : "", 4);
+
+	// Tamanho do Mob (SpawnScale)
+	GFTextLine(gump, 50, 380, 1153, "Tamanho do Mob:");
+	GFTooltipText(gump, "Define o tamanho visual do mob em percentual. 100 = tamanho original. 150 = 50% maior. 50 = metade do tamanho. Deixe em 100 para usar o valor do template.");
+	GFTextEntry(gump, 200, 380, 80, 20, 1150, form_data.spawn_scale ? form_data.spawn_scale : "100", 45);
+	GFTextLine(gump, 290, 380, 2100, "(% do tamanho original)");
+
+	// True Boss checkbox
+	GFCheckBox(gump, 50, 410, 2510, 2511, form_data.trueboss ? form_data.trueboss : 0, 5);
+	GFTextLine(gump, 80, 410, 1153, "True Boss");
+
+	// Special AI
+	GFTextLine(gump, 50, 440, 1153, "Special AI:");
+	GFTextEntry(gump, 200, 440, 300, 20, 1150, form_data.special_ai ? form_data.special_ai : "", 6);
+
+	// Amount - Add this field
+	GFTextLine(gump, 50, 470, 1153, "Amount to Spawn:");
+	GFTextEntry(gump, 200, 470, 100, 20, 1150, form_data.amount ? form_data.amount : "1", 44);
+
+	// Add a divider line for Respawn Time Configuration
+	GFResizePic(gump, 650, 490, 3000, 2, 100);
+
+	// Add Respawn Time Configuration
+	GFTextLine(gump, 670, 490, 1153, "Tempo de Respawn (minutos):");
+
+	// Minimum respawn time
+	GFTextLine(gump, 670, 530, 1153, "Mínimo:");
+	GFResizePic(gump, 720, 530, 9350, 60, 25);
+	GFTextEntry(gump, 725, 535, 50, 20, 1153, form_data.min_respawn ? form_data.min_respawn : "60",
+				 42);
+
+	// Maximum respawn time - positioned beside minimum
+	GFTextLine(gump, 800, 530, 1153, "Máximo:");
+	GFResizePic(gump, 850, 530, 9350, 60, 25);
+	GFTextEntry(gump, 855, 535, 50, 20, 1153, form_data.max_respawn ? form_data.max_respawn : "120",
+				 43);
+
+	// Add a vertical divider
+	GFResizePic(gump, 520, 160, 3000, 2, 330);
+
+	// Right side - Preview and Profile
+	// Add a preview box for the boss image
+	GFResizePic(gump, 550, 170, 9350, 210, 330);
+
+	// If URL is provided, show the image
+	if (form_data.url && form_data.url != "")
+		GFHTMLArea(gump, 550, 170, 210, 330,
+					"<img src=\"" + form_data.url + "\" width=\"210\" height=\"330\" x=\"0\" y=\"0\">", 0, 0);
+	else
+		GFTextMid(gump, 550, 335, 210, 1153, "Preview Image");
+	endif
+
+	// NPC Profile Section
+	GFTextMid(gump, 0, 510, gump_width, 1153, "NPC PROFILE");
+
+	// Add a divider line
+	GFResizePic(gump, 40, 530, 3000, gump_width - 80, 2);
+
+	// URL for image
+	GFTextLine(gump, 50, 550, 1153, "Image URL (210x330):");
+	GFTextEntry(gump, 200, 550, 400, 20, 1150, form_data.url ? form_data.url : "", 7);
+
+	// Detailed Description
+	GFTextLine(gump, 50, 580, 1153, "Detailed Description:");
+	GFTextEntry(gump, 200, 580, 400, 60, 1150, form_data.detailed_description ?
+				 form_data.detailed_description : "", 8);
+
+	// Add a divider line before buttons
+	GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
+
+	// Add Create Boss and Cancel buttons at the bottom
+	// Create a background for the buttons
+	GFResizePic(gump, gump_width / 2 - 150, gump_height - 60, 9350, 300, 40);
+
+	// Add Create Boss button
+	GFAddButton(gump, gump_width / 2 - 130, gump_height - 50, 2128, 2129, 1, 100);
+	GFTextLine(gump, gump_width / 2 - 70, gump_height - 50, 33, "CREATE BOSS");
+
+	// Add Cancel button
+	GFAddButton(gump, gump_width / 2 + 30, gump_height - 50, 2119, 2120, 1, 101);
+	GFTextLine(gump, gump_width / 2 + 90, gump_height - 50, 33, "CANCEL");
+
+	// Send the gump to the player
+	var input := GFSendGump(who, gump);
+	return input;
+endfunction
+
+function ShowPage2(who, title, gump_width, gump_height)
+	var gump := GFECreateGump(title, gump_width, gump_height);
+
+	// Add navigation buttons
+	AddNavigationButtons(gump, gump_width);
+
+	// Page 2 content - ATTRIBUTES
+	GFTextMid(gump, 0, 130, gump_width, 1153, "ATTRIBUTES & STATS");
+
+	// Add a divider line
+	GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
+
+	// Stats section
+	GFTextMid(gump, 0, 160, gump_width, 1153, "Base Stats");
+
+	// Strength
+	GFTextLine(gump, 50, 190, 1153, "Strength Modifier:");
+	GFTextEntry(gump, 200, 190, 100, 20, 1150, form_data.str ? form_data.str : "0", 10);
+
+	// Dexterity
+	GFTextLine(gump, 50, 220, 1153, "Dexterity Modifier:");
+	GFTextEntry(gump, 200, 220, 100, 20, 1150, form_data.dex ? form_data.dex : "0", 11);
+
+	// Intelligence
+	GFTextLine(gump, 50, 250, 1153, "Intelligence Modifier:");
+	GFTextEntry(gump, 200, 250, 100, 20, 1150, form_data.int ? form_data.int : "0", 12);
+
+	// Hits
+	GFTextLine(gump, 50, 280, 1153, "Hits Modifier:");
+	GFTextEntry(gump, 200, 280, 100, 20, 1150, form_data.hits ? form_data.hits : "0", 13);
+
+	// Damage Modifier
+	GFTextLine(gump, 50, 310, 1153, "Damage Modifier (0.1-1.0):");
+	GFTextEntry(gump, 250, 310, 100, 20, 1150, form_data.dmg ? form_data.dmg : "0", 14);
+
+	// Add a vertical divider
+	GFResizePic(gump, 520, 160, 3000, 2, 230);
+
+	// Resistances section
+	GFTextMid(gump, 90, 160, gump_width, 1153, "Resistances");
+
+	// Physical
+	GFTextLine(gump, 550, 190, 1153, "Physical:");
+	GFTextEntry(gump, 650, 190, 30, 20, 1150, form_data.phresist ? form_data.phresist : "0", 15, 4);
+
+	// Fire
+	GFTextLine(gump, 550, 220, 1153, "Fire:");
+	GFTextEntry(gump, 650, 220, 30, 20, 1150, form_data.firesist ? form_data.firesist : "0", 16, 4);
+
+	// Cold
+	GFTextLine(gump, 550, 250, 1153, "Cold:");
+	GFTextEntry(gump, 650, 250, 30, 20, 1150, form_data.coresist ? form_data.coresist : "0", 17, 4);
+
+	// Energy
+	GFTextLine(gump, 550, 280, 1153, "Energy:");
+	GFTextEntry(gump, 650, 280, 30, 20, 1150, form_data.enresist ? form_data.enresist : "0", 18, 4);
+
+	// Poison
+	GFTextLine(gump, 550, 310, 1153, "Poison:");
+	GFTextEntry(gump, 650, 310, 30, 20, 1150, form_data.poresist ? form_data.poresist : "0", 19, 4);
+
+	// Add a divider line
+	GFResizePic(gump, 40, 360, 3000, gump_width - 80, 2);
+
+	// Skills section with new title
+	GFTextMid(gump, 0, 380, gump_width, 1153, "Skills Modifier");
+
+	// Define the skill layout - 5 columns with 5 rows max
+	var skill_x_start := array{ 50, 230, 410, 590, 770 };
+	var skill_entry_x_start := array{ 160, 340, 520, 700, 880 };
+	var skill_y_start := 410;
+	var skill_y_spacing := 25; // Reduced from 30 to 25
+
+	// Organize skills in alphabetical order
+	// Column 1
+	// Alchemy
+	GFTextLine(gump, skill_x_start[1], skill_y_start, 1153, "Alchemy:");
+	GFTextEntry(gump, skill_entry_x_start[1], skill_y_start, 30, 20, 1150, form_data.skills_mod.alchemy ?
+				 form_data.skills_mod.alchemy : "0", 41, 4);
+
+	// Arcana
+	GFTextLine(gump, skill_x_start[1], skill_y_start + skill_y_spacing, 1153, "Arcana:");
+	GFTextEntry(gump, skill_entry_x_start[1], skill_y_start + skill_y_spacing, 30, 20, 1150,
+				 form_data.skills_mod.arcana ? form_data.skills_mod.arcana : "0", 44, 4);
+
+	// Awareness
+	GFTextLine(gump, skill_x_start[1], skill_y_start + skill_y_spacing * 2, 1153, "Awareness:");
+	GFTextEntry(gump, skill_entry_x_start[1], skill_y_start + skill_y_spacing * 2, 30, 20, 1150,
+				 form_data.skills_mod.awareness ? form_data.skills_mod.awareness : "0", 23, 4);
+
+	// Domestic Work
+	GFTextLine(gump, skill_x_start[1], skill_y_start + skill_y_spacing * 3, 1153, "Domestic Work:");
+	GFTextEntry(gump, skill_entry_x_start[1], skill_y_start + skill_y_spacing * 3, 30, 20, 1150,
+				 form_data.skills_mod.domestic_work ? form_data.skills_mod.domestic_work : "0", 36, 4);
+
+	// Dual Wield
+	GFTextLine(gump, skill_x_start[1], skill_y_start + skill_y_spacing * 4, 1153, "Dual Wield:");
+	GFTextEntry(gump, skill_entry_x_start[1], skill_y_start + skill_y_spacing * 4, 30, 20, 1150,
+				 form_data.skills_mod.dual_wield ? form_data.skills_mod.dual_wield : "0", 39, 4);
+
+	// Column 2
+	// Gathering
+	GFTextLine(gump, skill_x_start[2], skill_y_start, 1153, "Gathering:");
+	GFTextEntry(gump, skill_entry_x_start[2], skill_y_start, 30, 20, 1150, form_data.skills_mod.gathering ?
+				 form_data.skills_mod.gathering : "0", 37, 4);
+
+	// Handle Animal
+	GFTextLine(gump, skill_x_start[2], skill_y_start + skill_y_spacing, 1153, "Handle Animal:");
+	GFTextEntry(gump, skill_entry_x_start[2], skill_y_start + skill_y_spacing, 30, 20, 1150,
+				 form_data.skills_mod.handle_animal ? form_data.skills_mod.handle_animal : "0", 38, 4);
+
+	// Magic Lore
+	GFTextLine(gump, skill_x_start[2], skill_y_start + skill_y_spacing * 2, 1153, "Magic Lore:");
+	GFTextEntry(gump, skill_entry_x_start[2], skill_y_start + skill_y_spacing * 2, 30, 20, 1150,
+				 form_data.skills_mod.magic_lore ? form_data.skills_mod.magic_lore : "0", 24, 4);
+
+	// Magery
+	GFTextLine(gump, skill_x_start[2], skill_y_start + skill_y_spacing * 3, 1153, "Magery:");
+	GFTextEntry(gump, skill_entry_x_start[2], skill_y_start + skill_y_spacing * 3, 30, 20, 1150,
+				 form_data.skills_mod.magery ? form_data.skills_mod.magery : "0", 22, 4);
+
+	// Mechanics
+	GFTextLine(gump, skill_x_start[2], skill_y_start + skill_y_spacing * 4, 1153, "Mechanics:");
+	GFTextEntry(gump, skill_entry_x_start[2], skill_y_start + skill_y_spacing * 4, 30, 20, 1150,
+				 form_data.skills_mod.mechanics ? form_data.skills_mod.mechanics : "0", 31, 4);
+
+	// Column 3
+	// Medicine
+	GFTextLine(gump, skill_x_start[3], skill_y_start, 1153, "Medicine:");
+	GFTextEntry(gump, skill_entry_x_start[3], skill_y_start, 30, 20, 1150, form_data.skills_mod.medicine ?
+				 form_data.skills_mod.medicine : "0", 32, 4);
+
+	// Metal Working
+	GFTextLine(gump, skill_x_start[3], skill_y_start + skill_y_spacing, 1153, "Metal Working:");
+	GFTextEntry(gump, skill_entry_x_start[3], skill_y_start + skill_y_spacing, 30, 20, 1150,
+				 form_data.skills_mod.metal_working ? form_data.skills_mod.metal_working : "0", 34, 4);
+
+	// One Handed
+	GFTextLine(gump, skill_x_start[3], skill_y_start + skill_y_spacing * 2, 1153, "One Handed:");
+	GFTextEntry(gump, skill_entry_x_start[3], skill_y_start + skill_y_spacing * 2, 30, 20, 1150,
+				 form_data.skills_mod.one_handed ? form_data.skills_mod.one_handed : "0", 26, 4);
+
+	// Parry
+	GFTextLine(gump, skill_x_start[3], skill_y_start + skill_y_spacing * 3, 1153, "Parry:");
+	GFTextEntry(gump, skill_entry_x_start[3], skill_y_start + skill_y_spacing * 3, 30, 20, 1150,
+				 form_data.skills_mod.parry ? form_data.skills_mod.parry : "0", 25, 4);
+
+	// Pickpocketing
+	GFTextLine(gump, skill_x_start[3], skill_y_start + skill_y_spacing * 4, 1153, "Pickpocketing:");
+	GFTextEntry(gump, skill_entry_x_start[3], skill_y_start + skill_y_spacing * 4, 30, 20, 1150,
+				 form_data.skills_mod.pickpocketing ? form_data.skills_mod.pickpocketing : "0", 30, 4);
+
+	// Column 4
+	// Ranged
+	GFTextLine(gump, skill_x_start[4], skill_y_start, 1153, "Ranged:");
+	GFTextEntry(gump, skill_entry_x_start[4], skill_y_start, 30, 20, 1150, form_data.skills_mod.ranged ?
+				 form_data.skills_mod.ranged : "0", 28, 4);
+
+	// Science
+	GFTextLine(gump, skill_x_start[4], skill_y_start + skill_y_spacing, 1153, "Science:");
+	GFTextEntry(gump, skill_entry_x_start[4], skill_y_start + skill_y_spacing, 30, 20, 1150,
+				 form_data.skills_mod.science ? form_data.skills_mod.science : "0", 43, 4);
+
+	// Sneak
+	GFTextLine(gump, skill_x_start[4], skill_y_start + skill_y_spacing * 2, 1153, "Sneak:");
+	GFTextEntry(gump, skill_entry_x_start[4], skill_y_start + skill_y_spacing * 2, 30, 20, 1150,
+				 form_data.skills_mod.sneak ? form_data.skills_mod.sneak : "0", 29, 4);
+
+	// Survival
+	GFTextLine(gump, skill_x_start[4], skill_y_start + skill_y_spacing * 3, 1153, "Survival:");
+	GFTextEntry(gump, skill_entry_x_start[4], skill_y_start + skill_y_spacing * 3, 30, 20, 1150,
+				 form_data.skills_mod.survival ? form_data.skills_mod.survival : "0", 33, 4);
+
+	// Tactics
+	GFTextLine(gump, skill_x_start[4], skill_y_start + skill_y_spacing * 4, 1153, "Tactics:");
+	GFTextEntry(gump, skill_entry_x_start[4], skill_y_start + skill_y_spacing * 4, 30, 20, 1150,
+				 form_data.skills_mod.tactics ? form_data.skills_mod.tactics : "0", 21, 4);
+
+	// Column 5 - Using the same spacing pattern as the other columns
+	// Add a new element to the arrays for the 5th column
+	skill_x_start.append(950);
+	skill_entry_x_start.append(1060);
+
+	// Theology
+	GFTextLine(gump, skill_x_start[5], skill_y_start, 1153, "Theology:");
+	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start, 30, 20, 1150, form_data.skills_mod.theology ?
+				 form_data.skills_mod.theology : "0", 42, 4);
+
+	// Two Handed
+	GFTextLine(gump, skill_x_start[5], skill_y_start + skill_y_spacing * 2, 1153, "Two Handed:");
+	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start + skill_y_spacing * 2, 30, 20, 1150,
+				 form_data.skills_mod.two_handed ? form_data.skills_mod.two_handed : "0", 27, 4);
+
+	// Wood Working
+	GFTextLine(gump, skill_x_start[5], skill_y_start + skill_y_spacing * 3, 1153, "Wood Working:");
+	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start + skill_y_spacing * 3, 30, 20, 1150,
+				 form_data.skills_mod.wood_working ? form_data.skills_mod.wood_working : "0", 35, 4);
+
+	// Wrestling
+	GFTextLine(gump, skill_x_start[5], skill_y_start + skill_y_spacing * 4, 1153, "Wrestling:");
+	GFTextEntry(gump, skill_entry_x_start[5], skill_y_start + skill_y_spacing * 4, 30, 20, 1150,
+				 form_data.skills_mod.wrestling ? form_data.skills_mod.wrestling : "0", 20, 4);
+
+	// Add a divider line before buttons
+	GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
+
+	// Add Create Boss and Cancel buttons at the bottom
+	// Create a background for the buttons
+	GFResizePic(gump, gump_width / 2 - 150, gump_height - 60, 9350, 300, 40);
+
+	// Add Create Boss button
+	GFAddButton(gump, gump_width / 2 - 130, gump_height - 50, 2128, 2129, 1, 100);
+	GFTextLine(gump, gump_width / 2 - 70, gump_height - 50, 33, "CREATE BOSS");
+
+	// Add Cancel button
+	GFAddButton(gump, gump_width / 2 + 30, gump_height - 50, 2119, 2120, 1, 101);
+	GFTextLine(gump, gump_width / 2 + 90, gump_height - 50, 33, "CANCEL");
+
+	// Send the gump to the player
+	var input := GFSendGump(who, gump);
+	return input;
+endfunction
+
+function ShowPage3(who, title, gump_width, gump_height)
+	var gump := GFECreateGump(title, gump_width, gump_height);
+
+	// Add navigation buttons
+	AddNavigationButtons(gump, gump_width);
+
+	// Page 3 content - ABILITIES
+	GFTextMid(gump, 0, 130, gump_width, 1153, "SPECIAL ABILITIES");
+
+	// Add a divider line
+	GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
+
+	// Special Abilities section
+	GFTextLine(gump, 50, 160, 1153, "Special Abilities:");
+
+	// Add Weapon Special Ability button (using the same style as Page 5)
+	GFAddButton(gump, 50, 190, 2117, 2118, GF_CLOSE_BTN, 10);
+	GFTextLine(gump, 80, 190, 1153, "Add Weapon Special Ability");
+
+	// Add Armor Special Ability button (right below the Weapon button)
+	GFAddButton(gump, 50, 220, 2117, 2118, GF_CLOSE_BTN, 11);
+	GFTextLine(gump, 80, 220, 1153, "Add Armor Special Ability");
+
+	// Display chosen abilities in the center area
+	GFTextLine(gump, 330, 160, 1153, "Chosen abilities:");
+
+	var y_pos := 190;
+
+	// Display weapon special abilities with delete buttons
+	if (form_data.special && form_data.special.size() > 0)
+		GFTextLine(gump, 330, y_pos, 33, "Weapon Abilities:");
+		y_pos += 20;
+
+		// Button IDs for weapon special abilities: 140-149 (up to 10 abilities)
+		for i := 1 to form_data.special.size()
+			var ability := form_data.special[i];
+			// Add X button for deletion
+			GFAddButton(gump, 330, y_pos, 30008, 30009, GF_CLOSE_BTN, 139 + i); // Button ID will be 140 for first ability
+			GFTextLine(gump, 350, y_pos, 2100, ability.name);
+			if (ability.description)
+				GFTooltipText(gump, ability.description);
+			endif
+			y_pos += 20;
+		endfor
+
+		y_pos += 10; // Add some spacing between sections
+	endif
+
+	// Display armor special abilities with delete buttons
+	if (form_data.armorspecial && form_data.armorspecial.size() > 0)
+		GFTextLine(gump, 330, y_pos, 33, "Armor Abilities:");
+		y_pos += 20;
+
+		// Button IDs for armor special abilities: 150-159 (up to 10 abilities)
+		for i := 1 to form_data.armorspecial.size()
+			var ability := form_data.armorspecial[i];
+			// Add X button for deletion
+			GFAddButton(gump, 330, y_pos, 30008, 30009, GF_CLOSE_BTN, 149 + i); // Button ID will be 150 for first ability
+			GFTextLine(gump, 350, y_pos, 2100, ability.name);
+			if (ability.description)
+				GFTooltipText(gump, ability.description);
+			endif
+			y_pos += 20;
+		endfor
+	endif
+
+	// Add a vertical divider
+	GFResizePic(gump, 520, 160, 3000, 2, 230);
+
+	// Combat Events section
+	GFTextLine(gump, 550, 160, 1153, "Combat Events:");
+	GFAddButton(gump, 750, 160, 2103, 2104, GF_CLOSE_BTN, 40);
+	GFTextLine(gump, 780, 160, 1153, "Add Combat Event");
+
+	// Display existing combat events
+	var y_posc := 190;
+	if (form_data.combatevents && form_data.combatevents.size() > 0)
+		for i := 1 to form_data.combatevents.size()
+			var event := form_data.combatevents[i];
+			// Add delete button before the event name
+			GFAddButton(gump, 550, y_posc, 30008, 30009, GF_CLOSE_BTN, 44 + i); // Button ID will be 45 for first event
+			GFTextLine(gump, 580, y_posc, 1153,
+						"- " + event.name + " (Steps: " + event.steps.size() + ", CD: " + event.cd + "s" +
+						(event.once ? ", Once" : "") +
+						(CInt(event.hp_percent) > 0 ? ", HP<=" + event.hp_percent + "%" : "") + ")");
+			y_posc += 20;
+		endfor
+	else
+		GFTextLine(gump, 580, y_posc, 1153, "No combat events configured");
+	endif
+
+	// Add a divider line
+	GFResizePic(gump, 40, 340, 3000, gump_width - 80, 2);
+
+	// Natural Properties section
+	GFTextLine(gump, 50, 350, 1153, "Natural Traits:");
+	GFAddButton(gump, 250, 350, 2103, 2104, GF_CLOSE_BTN, 20);
+	GFTextLine(gump, 280, 350, 1153, "Add Natural Traits");
+
+	// Display existing natural traits
+	y_pos := 380;
+	if (form_data.natural_traits)
+		// Display immunities
+		if (form_data.natural_traits.immunities && form_data.natural_traits.immunities.size() > 0)
+			GFTextLine(gump, 80, y_pos, 33, "Immunities:");
+			y_pos += 20;
+			// Button IDs for immunities: 110-119 (up to 10 immunities)
+			for i := 1 to form_data.natural_traits.immunities.size()
+				var trait := form_data.natural_traits.immunities[i];
+				// Add X button for deletion
+				GFAddButton(gump, 80, y_pos, 30008, 30009, GF_CLOSE_BTN, 109 + i); // Button ID will be 110 for first immunity
+				GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
+				y_pos += 20;
+			endfor
+			y_pos += 10; // Add some spacing between sections
+		endif
+
+		// Display resistances
+		if (form_data.natural_traits.resistances && form_data.natural_traits.resistances.size() > 0)
+			GFTextLine(gump, 80, y_pos, 33, "Resistances:");
+			y_pos += 20;
+			// Button IDs for resistances: 120-129 (up to 10 resistances)
+			for i := 1 to form_data.natural_traits.resistances.size()
+				var trait := form_data.natural_traits.resistances[i];
+				// Add X button for deletion
+				GFAddButton(gump, 80, y_pos, 30008, 30009, GF_CLOSE_BTN, 119 + i); // Button ID will be 120 for first resistance
+				GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
+				y_pos += 20;
+			endfor
+			y_pos += 10; // Add some spacing between sections
+		endif
+
+		// Display vulnerabilities
+		if (form_data.natural_traits.vulnerabilities && form_data.natural_traits.vulnerabilities.size()
+	  > 0)
+			GFTextLine(gump, 80, y_pos, 33, "Vulnerabilities:");
+			y_pos += 20;
+			// Button IDs for vulnerabilities: 130-139 (up to 10 vulnerabilities)
+			for i := 1 to form_data.natural_traits.vulnerabilities.size()
+				var trait := form_data.natural_traits.vulnerabilities[i];
+				// Add X button for deletion
+				GFAddButton(gump, 80, y_pos, 30008, 30009, GF_CLOSE_BTN, 129 + i); // Button ID will be 130 for first vulnerability
+				GFTextLine(gump, 100, y_pos, 1153, "- " + trait);
+				y_pos += 20;
+			endfor
+		endif
+	endif
+
+	// Death Events section
+	GFTextLine(gump, 550, 350, 1153, "Death Events:");
+	GFAddButton(gump, 750, 350, 2103, 2104, 1, 30);
+	GFTextLine(gump, 780, 350, 1153, "Add Death Event");
+
+	// Display existing death events
+	var y_posd := 380; // Use a different y position than combat events
+	if (form_data.deathevents && form_data.deathevents.size() > 0)
+		GFTextLine(gump, 580, y_posd, 1153, "Death Events:");
+		y_posd += 20;
+
+		// Display each death event with a delete button
+		for i := 1 to form_data.deathevents.size()
+			var event := form_data.deathevents[i];
+			// Add X button for deletion - Use button ID 55+i to distinguish from combat events
+			GFAddButton(gump, 550, y_posd, 30008, 30009, GF_CLOSE_BTN, 54 + i); // Button ID will be 55 for first event
+			GFTextLine(gump, 580, y_posd, 1153, "- " + event.name + " (Type: " + event.type + ")");
+			y_posd += 20;
+		endfor
+	else
+		GFTextLine(gump, 580, y_posd, 1153, "No death events configured");
+	endif
+
+	// Add a divider line before buttons
+	GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
+
+	// Add Create Boss and Cancel buttons at the bottom
+	// Create a background for the buttons
+	GFResizePic(gump, gump_width / 2 - 150, gump_height - 60, 9350, 300, 40);
+
+	// Add Create Boss button
+	GFAddButton(gump, gump_width / 2 - 130, gump_height - 50, 2128, 2129, 1, 100);
+	GFTextLine(gump, gump_width / 2 - 70, gump_height - 50, 33, "CREATE BOSS");
+
+	// Add Cancel button
+	GFAddButton(gump, gump_width / 2 + 30, gump_height - 50, 2119, 2120, 1, 101);
+	GFTextLine(gump, gump_width / 2 + 90, gump_height - 50, 33, "CANCEL");
+
+	// Send the gump to the player
+	var input := GFSendGump(who, gump);
+
+	// Handle special ability buttons
+	if (input[0] == 10) // Add Weapon Special Ability
+		HandleAddWeaponSpecialAbility(who, input, form_data);
+		return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
+	elseif (input[0] == 11) // Add Armor Special Ability
+		HandleAddArmorSpecialAbility(who, input, form_data);
+		return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
+	elseif (input[0] == 20) // Add Resistances
+		HandleNaturalTraits(who, input, form_data);
+		return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
+	elseif (input[0] == 30) // Add Death Event
+		HandleAddDeathEvent(who, input, form_data);
+		return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
+	elseif (input[0] == 40) // Add Combat Event
+		HandleAddCombatEvent(who, input, form_data);
+		return ShowPage3(who, title, gump_width, gump_height); // Return to page 3 after adding
+	elseif (input[0] >= 45 && input[0] < 45 + 10) // Support up to 10 events, adjust if needed
+		var event_idx := input[0] - 44; // Button 45 corresponds to index 1
+		if (event_idx >= 1 && event_idx <= form_data.combatevents.size())
+			var event_name := form_data.combatevents[event_idx].name;
+			SendSysMessage(who, "Removing combat event '" + event_name + "' (index " + event_idx + ")");
+			form_data.combatevents.Erase(event_idx);
+			if (form_data.combatevents.size() == 0)
+				form_data.combatevents := array{}; // Reset to empty array if last event was removed
+			endif
+		endif
+		return ShowPage3(who, title, gump_width, gump_height);
+	elseif (input[0] >= 55 && input[0] < 55 + 10) // Support up to 10 death events, adjust if needed
+		var event_idx := input[0] - 54; // Button 55 corresponds to index 1
+		SendSysMessage(who, "Death event button pressed: " + input[0] + ", calculated index: " + event_idx);
+		if (event_idx >= 1 && event_idx <= form_data.deathevents.size())
+			var event_name := form_data.deathevents[event_idx].name;
+			SendSysMessage(who, "Removing death event '" + event_name + "' (index " + event_idx + ")");
+			form_data.deathevents.Erase(event_idx);
+			if (form_data.deathevents.size() == 0)
+				form_data.deathevents := array{}; // Reset to empty array if no events left
+			endif
+		endif
+		return ShowPage3(who, title, gump_width, gump_height);
+	elseif (input[0] >= 110 && input[0] <= 119) // Handle immunity deletion (up to 10 immunities) - new range 110-119
+		var trait_idx := input[0] - 109; // Button ID 110 corresponds to index 1
+		SendSysMessage(who, "Natural trait button pressed: " + input[0] + ", calculated index: "
+						+ trait_idx);
+		if (trait_idx >= 1 && trait_idx <= form_data.natural_traits.immunities.size())
+			var trait_name := form_data.natural_traits.immunities[trait_idx];
+			SendSysMessage(who, "Removing immunity '" + trait_name + "'");
+			form_data.natural_traits.immunities.Erase(trait_idx);
+			if (form_data.natural_traits.immunities.size() == 0)
+				form_data.natural_traits.immunities := array{}; // Reset to empty array if all immunities are deleted
+			endif
+		endif
+		return ShowPage3(who, title, gump_width, gump_height);
+	elseif (input[0] >= 120 && input[0] <= 129) // Handle resistance deletion (up to 10 resistances) - new range 120-129
+		var trait_idx := input[0] - 119; // Button ID 120 corresponds to index 1
+		SendSysMessage(who, "Natural trait button pressed: " + input[0] + ", calculated index: "
+						+ trait_idx);
+		if (trait_idx >= 1 && trait_idx <= form_data.natural_traits.resistances.size())
+			var trait_name := form_data.natural_traits.resistances[trait_idx];
+			SendSysMessage(who, "Removing resistance '" + trait_name + "'");
+			form_data.natural_traits.resistances.Erase(trait_idx);
+			if (form_data.natural_traits.resistances.size() == 0)
+				form_data.natural_traits.resistances := array{}; // Reset to empty array if all resistances are deleted
+			endif
+		endif
+		return ShowPage3(who, title, gump_width, gump_height);
+	elseif (input[0] >= 130 && input[0] <= 139) // Handle vulnerability deletion (up to 10 vulnerabilities) - new range 130-139
+		var trait_idx := input[0] - 129; // Button ID 130 corresponds to index 1
+		SendSysMessage(who, "Natural trait button pressed: " + input[0] + ", calculated index: "
+						+ trait_idx);
+		if (trait_idx >= 1 && trait_idx <= form_data.natural_traits.vulnerabilities.size())
+			var trait_name := form_data.natural_traits.vulnerabilities[trait_idx];
+			SendSysMessage(who, "Removing vulnerability '" + trait_name + "'");
+			form_data.natural_traits.vulnerabilities.Erase(trait_idx);
+			if (form_data.natural_traits.vulnerabilities.size() == 0)
+				form_data.natural_traits.vulnerabilities := array{}; // Reset to empty array if all vulnerabilities are deleted
+			endif
+		endif
+		return ShowPage3(who, title, gump_width, gump_height);
+	elseif (input[0] >= 140 && input[0] <= 149) // Handle weapon special ability deletion (up to 10 abilities) - range 140-149
+		var ability_idx := input[0] - 139; // Button ID 140 corresponds to index 1
+		SendSysMessage(who, "Weapon special ability button pressed: " + input[0]
+						+ ", calculated index: " + ability_idx);
+		if (ability_idx >= 1 && ability_idx <= form_data.special.size())
+			var ability_name := form_data.special[ability_idx].name;
+			SendSysMessage(who, "Removing weapon special ability '" + ability_name + "'");
+			form_data.special.Erase(ability_idx);
+			if (form_data.special.size() == 0)
+				form_data.special := array{}; // Reset to empty array if all abilities are deleted
+			endif
+		endif
+		return ShowPage3(who, title, gump_width, gump_height);
+	elseif (input[0] >= 150 && input[0] <= 159) // Handle armor special ability deletion (up to 10 abilities) - range 150-159
+		var ability_idx := input[0] - 149; // Button ID 150 corresponds to index 1
+		SendSysMessage(who, "Armor special ability button pressed: " + input[0]
+						+ ", calculated index: " + ability_idx);
+		if (ability_idx >= 1 && ability_idx <= form_data.armorspecial.size())
+			var ability_name := form_data.armorspecial[ability_idx].name;
+			SendSysMessage(who, "Removing armor special ability '" + ability_name + "'");
+			form_data.armorspecial.Erase(ability_idx);
+			if (form_data.armorspecial.size() == 0)
+				form_data.armorspecial := array{}; // Reset to empty array if all abilities are deleted
+			endif
+		endif
+		return ShowPage3(who, title, gump_width, gump_height);
+	endif
+
+	return input;
+endfunction
+
+// Function to handle adding weapon special abilities
+function HandleAddWeaponSpecialAbility(who, input, byref form_data)
+	var weapon_abilities := GetWeaponHitScripts();
+
+	// Create a gump with the same style as in the screenshot
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450); // Increased height
+	GFResizePic(gump, 15, 15, 9350, 470, 420); // Increased height
+
+	GFTextMid(gump, 0, 25, 500, 1153, "Select Weapon Special Ability");
+
+	var y_pos := 60;
+	var counter := 1;
+
+	foreach ability in weapon_abilities
+		// Use blue gem buttons as shown in the screenshot
+		GFAddButton(gump, 30, y_pos, 2104, 2103, GF_CLOSE_BTN, counter);
+		GFTextLine(gump, 60, y_pos, 1153, ability);
+		y_pos += 20;
+		counter += 1;
+	endforeach
+
+	// Add Cancel button at the bottom right - without text
+	// CRITICAL FIX: Use a special value (999) for the cancel button
+	GFAddButton(gump, 400, 400, 4017, 4019, GF_CLOSE_BTN, 999);
+
+	var result := GFSendGump(who, gump);
+
+	// Check for the cancel button (result[0] == 999)
+	if (result[0] == 999)
+		SendSysMessage(who, "Weapon ability selection cancelled.");
+		return 0; // User canceled
+	endif
+
+	if (result[0] == 0)
+		SendSysMessage(who, "Weapon ability selection cancelled.");
+		return 0; // User canceled
+	endif
+
+	var selected_ability := weapon_abilities[result[0]];
+
+	// Now display options for the selected ability
+	var config_result := DisplayWeaponAbilityOptions(who, input, selected_ability, form_data);
+
+	// Only return success if the configuration was completed successfully
+	if (config_result)
+		return 1;
+	endif
+
+	return 0;
+endfunction
+
+function DisplayWeaponAbilityOptions(who, input, ability, byref form_data)
+	// Create a gump with the same style as in the screenshot
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450); // Increased height
+	GFResizePic(gump, 15, 15, 9350, 470, 420); // Increased height
+
+	GFTextMid(gump, 0, 25, 500, 1153, "Configure " + ability);
+
+	var y_pos := 60;
+	var script_path := "";
+	var description := "";
+
+	case (ability)
+		"Ice Hit":
+			description := "Ice Hit applies cold damage to the target";
+			script_path := ":combat:weaponHitScripts/IceHit";
+			break;
+		"Fire Hit":
+			description := "Fire Hit applies fire damage to the target";
+			script_path := ":combat:weaponHitScripts/FireHit";
+			break;
+		"Energy Hit":
+			description := "Energy Hit applies energy damage to the target";
+			script_path := ":combat:weaponHitScripts/LightningHit";
+			break;
+		"Life Drain":
+			description := "Life Drain steals health from the target";
+			script_path := ":combat:weaponHitScripts/draintouch";
+			break;
+		"Bleeding Strike":
+			description := "Bleeding Strike causes the target to bleed over time";
+			script_path := ":combat:weaponHitScripts/bleedingstrike";
+			break;
+		"Concussion Hit":
+			description := "Concussion Hit drains stamina from the target";
+			script_path := ":combat:weaponHitScripts/ConcussionHit";
+			break;
+		"Disease Hit":
+			description := "Infects target with random diseases (40% chance). Tier determines disease level & severity. Respects Fortitude resistance.";
+			script_path := ":combat:weaponHitScripts/DiseaseHit";
+			break;
+		"Unmount Hit":
+			description := "Unmount Hit knocks players off their mounts";
+			script_path := ":combat:weaponHitScripts/UnmountHit";
+			break;
+		"Anti Mounted Hit":
+			description := "Anti Mounted Hit does extra damage to mounted players";
+			script_path := ":combat:weaponHitScripts/AntiMountedHit";
+			break;
+		"Charge Hit":
+			description := "Charge Hit does extra damage when mounted";
+			script_path := ":combat:weaponHitScripts/ChargeHit";
+			break;
+		"Height Hit":
+			description := "Height Hit does damage based on height difference";
+			script_path := ":combat:weaponHitScripts/HeightHit";
+			break;
+		"Free Armor Hit":
+			description := "Free Armor Hit ignores armor protection";
+			script_path := ":combat:weaponHitScripts/FreeArmorHit";
+			break;
+		"Queima Roupa":
+			description := "Queima Roupa does extra damage at close range";
+			script_path := ":combat:weaponHitScripts/QueimaRoupa";
+			break;
+		"Area Damage":
+			description := "Area Damage affects multiple targets";
+			script_path := ":combat:weaponHitScripts/areadmg";
+			break;
+		"Freeze Hit":
+			description := "Freeze Hit temporarily paralyzes the target";
+			script_path := ":combat:weaponHitScripts/freezehitumsec";
+			break;
+		"Slayer":
+			description := "Slayer does extra damage to specific creature types";
+			script_path := ":combat:weaponHitScripts/slayer";
+			break;
+		"Pushback":
+			description := "Pushback knocks the target back";
+			script_path := ":combat:weaponHitScripts/pushback";
+			break;
+		"Spit Acid":
+			description := "Spit Acid applies acid damage to the target";
+			script_path := ":combat:weaponHitScripts/spitacid";
+			break;
+		"Custom Hit Script":
+			description := "Custom hit script";
+			GFTextLine(gump, 30, y_pos, 1153, "Enter custom hit script path:");
+			y_pos += 30;
+			GFTextEntry(gump, 30, y_pos, 300, 20, 1153, "", 1);
+			break;
+		default: description := "No additional configuration needed"; break;
+	endcase
+
+	GFTextLine(gump, 30, y_pos, 1153, description);
+	y_pos += 30;
+
+	if (ability != "Custom Hit Script")
+		GFTextLine(gump, 30, y_pos, 1153, "Script: " + script_path);
+	endif
+
+	y_pos += 50;
+	// Use the same button style as page 5
+	GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 1); // Confirm button - returns 1
+
+	// CRITICAL FIX: Change the button type to GF_CLOSE_BTN and use a different return value
+	GFAddButton(gump, 400, 400, 4017, 4019, GF_CLOSE_BTN, 999); // Cancel button - returns 999
+
+	var result := GFSendGump(who, gump);
+
+	// Check for the cancel button (result[0] == 999)
+	if (result[0] == 999)
+		SendSysMessage(who, "Weapon ability configuration cancelled.");
+		return 0; // User canceled
+	endif
+
+	// Only proceed if the confirm button was clicked (result[0] == 1)
+	if (result[0] != 1)
+		SendSysMessage(who, "Unexpected result: " + result[0]);
+		return 0;
+	endif
+
+	// Add the ability to the form_data structure
+	if (!form_data.special)
+		form_data.+special := array{};
+	endif
+
+	var ability_struct := struct{};
+	ability_struct.+name := ability;
+	ability_struct.+description := description;
+
+	if (ability == "Custom Hit Script")
+		ability_struct.+script_path := GFExtractData(result, 1);
+	else
+		ability_struct.+script_path := script_path;
+	endif
+
+	form_data.special.append(ability_struct);
+	SendSysMessage(who, "Added " + ability + " to weapon special abilities.");
+
+	return 1;
+endfunction
+
+function HandleAddArmorSpecialAbility(who, input, byref form_data)
+	var armor_abilities := GetArmorHitScripts();
+
+	// Create a gump with the same style as in the screenshot
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 450); // Increased height
+	GFResizePic(gump, 15, 15, 9350, 470, 420); // Increased height
+
+	GFTextMid(gump, 0, 25, 500, 1153, "Select Armor Special Ability");
+
+	var y_pos := 60;
+	var counter := 1;
+
+	foreach ability in armor_abilities
+		// Use the same button style as page 5 (2117/2118)
+		GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, counter);
+		GFTextLine(gump, 60, y_pos, 1153, ability);
+		y_pos += 20;
+		counter += 1;
+	endforeach
+
+	// Add Cancel button with the same style as page 5
+	// CRITICAL FIX: Use a special value (999) for the cancel button
+	GFAddButton(gump, 200, 350, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var result := GFSendGump(who, gump);
+
+	// Check for the cancel button (result[0] == 999)
+	if (result[0] == 999)
+		SendSysMessage(who, "Armor ability selection cancelled.");
+		return 0; // User canceled
+	endif
+
+	if (result[0] == 0)
+		SendSysMessage(who, "Armor ability selection cancelled.");
+		return 0; // User canceled
+	endif
+
+	var selected_ability := armor_abilities[result[0]];
+
+	// Now display options for the selected ability
+	var config_result := DisplayArmorAbilityOptions(who, input, selected_ability, form_data);
+
+	// Only return success if the configuration was completed successfully
+	if (config_result)
+		return 1;
+	endif
+
+	return 0;
+endfunction
+
+function DisplayArmorAbilityOptions(who, input, ability, byref form_data)
+	// Create a gump with the same style as page 5
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 400);
+	GFResizePic(gump, 15, 15, 9350, 470, 370); // Using the same background as page 5
+
+	GFTextMid(gump, 0, 25, 500, 1153, "Configure " + ability);
+
+	var y_pos := 60;
+	var script_path := "";
+	var description := "";
+
+	case (ability)
+		"Damage Return":
+			description := "Damage Return reflects damage back to the attacker";
+			script_path := ":combat:armorHitScripts/dmgreturn";
+			break;
+		"Raw Damage Return":
+			description := "Raw Damage Return reflects raw damage back to the attacker";
+			script_path := ":combat:armorHitScripts/rawdmgreturn";
+			break;
+		"Bog Thing":
+			description := "Bog Thing summons a creature when hit";
+			script_path := ":combat:armorHitScripts/bogthing";
+			break;
+		"Campo Eletrico":
+			description := "Campo Eletrico creates an electric field when hit";
+			script_path := ":combat:armorHitScripts/campoeletrico";
+			break;
+		"Dupe Me":
+			description := "Dupe Me creates a duplicate of the NPC when hit";
+			script_path := ":combat:armorHitScripts/dupeme";
+			break;
+		"Custom Armor Hit Script":
+			description := "Custom armor hit script";
+			GFTextLine(gump, 30, y_pos, 1153, "Enter custom armor hit script path:");
+			y_pos += 30;
+			GFTextEntry(gump, 30, y_pos, 300, 20, 1153, "", 1);
+			break;
+		default: description := "No additional configuration needed"; break;
+	endcase
+
+	GFTextLine(gump, 30, y_pos, 1153, description);
+	y_pos += 30;
+
+	if (ability != "Custom Armor Hit Script")
+		GFTextLine(gump, 30, y_pos, 1153, "Script: " + script_path);
+	endif
+
+	y_pos += 50;
+	// Use the same button style as page 5
+	GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 1); // Confirm button - returns 1
+
+	// CRITICAL FIX: Change the button type to GF_CLOSE_BTN and use a different return value
+	GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999); // Cancel button - returns 999
+
+	var result := GFSendGump(who, gump);
+
+	// Check for the cancel button (result[0] == 999)
+	if (result[0] == 999)
+		SendSysMessage(who, "Armor ability configuration cancelled.");
+		return 0; // User canceled
+	endif
+
+	// Only proceed if the confirm button was clicked (result[0] == 1)
+	if (result[0] != 1)
+		SendSysMessage(who, "Unexpected result: " + result[0]);
+		return 0;
+	endif
+
+	// Add the ability to the form_data structure
+	if (!form_data.armorspecial)
+		form_data.+armorspecial := array{};
+	endif
+
+	var ability_struct := struct{};
+	ability_struct.+name := ability;
+	ability_struct.+description := description;
+
+	if (ability == "Custom Armor Hit Script")
+		ability_struct.+script_path := GFExtractData(result, 1);
+	else
+		ability_struct.+script_path := script_path;
+	endif
+
+	form_data.armorspecial.append(ability_struct);
+	SendSysMessage(who, "Added " + ability + " to armor special abilities.");
+
+	return 1;
+endfunction
+
+function ShowPage4(who, title, gump_width, gump_height)
+	var gump := GFECreateGump(title, gump_width, gump_height);
+
+	// Add navigation buttons
+	AddNavigationButtons(gump, gump_width);
+
+	// Page 4 content - BEHAVIOR
+	GFTextMid(gump, 0, 130, gump_width, 1153, "BEHAVIOR & MOVEMENT");
+
+	// Add a divider line
+	GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
+
+	// Patrol Areas section
+	GFTextLine(gump, 50, 160, 1153, "Patrol Areas:");
+	GFAddButton(gump, 250, 160, 2103, 2104, 1, 70);
+	GFTextLine(gump, 280, 160, 1153, "Add Patrol Point");
+
+	// Display existing patrol points
+	var y_pos := 190;
+	if (form_data.patrol_points)
+		GFTextLine(gump, 50, y_pos, 1153, "Current Patrol Points:");
+		y_pos += 20;
+
+		for i := 1 to form_data.patrol_points.size()
+			var point := form_data.patrol_points[i];
+			GFTextLine(gump, 70, y_pos, 33, i + ": " + point.x + ", " + point.y);
+			y_pos += 20;
+		endfor
+
+		// Add clear all button if there are points
+		if (form_data.patrol_points.size() > 0)
+			GFAddButton(gump, 250, y_pos, 2103, 2104, 1, 71);
+			GFTextLine(gump, 280, y_pos, 1153, "Clear All Patrol Points");
+			y_pos += 20;
+		endif
+	endif
+
+	// Teleport Conditions section
+	GFTextLine(gump, 50, 300, 1153, "Teleport When Health Below:");
+	// Set Teleport Location - MOVED to where Ability Conditions was
+	GFAddButton(gump, 250, 300, 2103, 2104, 1, 73);
+	GFTextLine(gump, 280, 300, 1153, "Set Teleport Location");
+
+	// Add display of configured teleport locations
+	y_pos := 350;
+	if (form_data.teleport_locations && form_data.teleport_locations.size() > 0)
+		GFTextLine(gump, 50, y_pos, 1153, "Current Teleport Locations:");
+		y_pos += 25;
+
+		foreach location in (form_data.teleport_locations)
+			GFTextLine(gump, 70, y_pos, 66, "HP " + location.hp_percent + "% → X:" + location.x
+						+ " Y:" + location.y + " Z:" + location.z);
+			y_pos += 20;
+		endforeach
+
+		// Add button to clear teleport locations
+		GFAddButton(gump, 50, y_pos + 10, 2103, 2104, 1, 78);
+		GFTextLine(gump, 80, y_pos + 10, 33, "Clear Teleport Locations");
+	endif
+	// Add a vertical divider
+	GFResizePic(gump, 520, 160, 3000, 2, 230);
+
+	// AI Settings section
+	GFTextLine(gump, 550, 160, 1153, "AI Settings:");
+
+	// Replace Aggression Level with Target Priority
+	GFTextLine(gump, 550, 190, 1153, "Target Priority:");
+	GFAddButton(gump, 680, 190, 2103, 2104, 1, 75);
+	GFTextLine(gump, 710, 190, 1153, form_data.target_priority ? form_data.target_priority : "Normal");
+
+	// Flee Level
+	GFTextLine(gump, 550, 220, 1153, "Flee When Health Below:");
+	GFTextEntry(gump, 730, 220, 100, 20, 1150, form_data.flee_health ? form_data.flee_health : "0",
+				 76);
+	GFTextLine(gump, 840, 220, 1153, "%");
+
+	// Target Selection
+	GFTextLine(gump, 550, 250, 1153, "Alvo favorito:");
+	GFAddButton(gump, 680, 250, 2103, 2104, 1, 77);
+	GFTextLine(gump, 710, 250, 1153, form_data.target_selection ? form_data.target_selection : "");
+
+	// Add a divider line
+	GFResizePic(gump, 40, 290, 3000, gump_width - 80, 2);
+
+	// Special abilities section - Fixed position and better aligned with the rest of the content
+	GFTextLine(gump, 550, 300, 1153, "Add Custom Behavior:");
+	GFAddButton(gump, 680, 300, 2103, 2104, 1, 74);
+
+	// Display existing custom abilities
+	y_pos := 330;
+	if (form_data.custom_abilities && form_data.custom_abilities.size() > 0)
+		foreach ability in (form_data.custom_abilities)
+			GFTextLine(gump, 580, y_pos, 1153, "- " + ability.name);
+			y_pos += 20;
+		endforeach
+	endif
+
+	// Add a divider line before buttons
+	GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
+
+	// Add Create Boss and Cancel buttons at the bottom
+	// Create a background for the buttons
+	GFResizePic(gump, gump_width / 2 - 150, gump_height - 60, 9350, 300, 40);
+
+	// Add Create Boss button
+	GFAddButton(gump, gump_width / 2 - 130, gump_height - 50, 2128, 2129, 1, 100);
+	GFTextLine(gump, gump_width / 2 - 70, gump_height - 50, 33, "CREATE BOSS");
+
+	// Add Cancel button
+	GFAddButton(gump, gump_width / 2 + 30, gump_height - 50, 2119, 2120, 1, 101);
+	GFTextLine(gump, gump_width / 2 + 90, gump_height - 50, 33, "CANCEL");
+
+	// Send the gump to the player
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 70) // Add Patrol Point
+		SelectPatrolArea(who, form_data);
+		return ShowPage4(who, title, gump_width, gump_height);
+	elseif (input[0] == 71) // Clear All Patrol Points
+		form_data.patrol_points := array{};
+		SendSysMessage(who, "All patrol points cleared.");
+		return ShowPage4(who, title, gump_width, gump_height);
+	elseif (input[0] == 73) // Set Teleport Locations
+		SelectTeleportLocations(who, form_data);
+		return ShowPage4(who, title, gump_width, gump_height);
+	elseif (input[0] == 78) // Clear Teleport Locations - changed button ID
+		form_data.teleport_locations := array{};
+		SendSysMessage(who, "Teleport locations cleared.", color := 33);
+		return ShowPage4(who, title, gump_width, gump_height);
+	elseif (input[0] == 74) // Add Custom Ability button
+		HandleAddCustomAbility(who, form_data);
+		return ShowPage4(who, title, gump_width, gump_height);
+	elseif (input[0] == 77) // Target Selection button
+		ShowTargetSelectionMenu(who, form_data);
+		return ShowPage4(who, title, gump_width, gump_height);
+	elseif (input[0] == 75) // Target Priority button
+		ShowTargetPriorityMenu(who, form_data);
+		return ShowPage4(who, title, gump_width, gump_height);
+	endif
+
+	return input;
+endfunction
+
+function ShowPage5(who, title, gump_width, gump_height)
+	var gump := GFECreateGump(title, gump_width, gump_height);
+
+	// Add navigation buttons
+	AddNavigationButtons(gump, gump_width);
+
+	// Page 5 content - EQUIPMENT
+	GFTextMid(gump, 0, 130, gump_width, 1153, "EQUIPMENT & LOOT");
+
+	// Add a divider line
+	GFResizePic(gump, 40, 150, 3000, gump_width - 80, 2);
+
+	// Weapon Selection section
+	GFTextLine(gump, 50, 160, 1153, "Weapon Type:");
+
+	// Weapon type radio buttons
+	GFAddButton(gump, 50, 190, 2151, 2153, 1, 80);
+	GFTextLine(gump, 80, 190, 1153, "Dual Wield");
+
+	GFAddButton(gump, 50, 220, 2151, 2153, 1, 81);
+	GFTextLine(gump, 80, 220, 1153, "One-Handed");
+
+	GFAddButton(gump, 50, 250, 2151, 2153, 1, 82);
+	GFTextLine(gump, 80, 250, 1153, "Two-Handed");
+
+	GFAddButton(gump, 50, 280, 2151, 2153, 1, 83);
+	GFTextLine(gump, 80, 280, 1153, "Ranged");
+
+	// Specific weapon
+	GFTextLine(gump, 50, 320, 1153, "Specific Weapon (ID or Name):");
+	GFTextEntry(gump, 250, 320, 200, 20, 1150, form_data.specific_weapon ? form_data.specific_weapon :
+				 "", 84);
+
+	// Add a vertical divider
+	GFResizePic(gump, 520, 160, 3000, 2, 230);
+
+	// Loot section
+	GFTextLine(gump, 550, 160, 1153, "Loot Items:");
+	GFAddButton(gump, 750, 160, 2103, 2104, 1, 90);
+	GFTextLine(gump, 780, 160, 1153, "Add Loot Item");
+	// Display configured loot items
+	var loot_y := 190;
+	if (form_data.loot && form_data.loot.size() > 0)
+
+		foreach item in (form_data.loot)
+			var loot_name := item.desc;
+			if (item.template)
+				if (item.template.name && item.template.name != "")
+					loot_name := item.template.name;
+				elseif (item.template.desc && item.template.desc != "")
+					loot_name := item.template.desc;
+				endif
+			endif
+
+			var loot_label := "- " + loot_name + " (" + item.drop_chance + "%)";
+			if (item.template && item.template.color)
+				loot_label := loot_label + " [hue " + item.template.color + "]";
+			endif
+
+			GFTextLine(gump, 580, loot_y, 1153, loot_label);
+			// Add delete button for each item
+			GFAddButton(gump, 550, loot_y, 4017, 4019, 1, 91 + _item_iter);
+			loot_y += 20;
+		endforeach
+	endif
+
+	// Add a divider line
+	GFResizePic(gump, 40, 350, 3000, gump_width - 80, 2);
+
+	// Class Selection (for humanoid)
+	GFTextLine(gump, 50, 360, 1153, "Class (for Humanoid):");
+
+	// Class type radio buttons
+	GFAddButton(gump, 50, 390, 2151, 2153, 1, 85);
+	GFTextLine(gump, 80, 390, 1153, "Guerreiro");
+
+	GFAddButton(gump, 50, 420, 2151, 2153, 1, 86);
+	GFTextLine(gump, 80, 420, 1153, "Sabio");
+
+	GFAddButton(gump, 50, 450, 2151, 2153, 1, 87);
+	GFTextLine(gump, 80, 450, 1153, "Ladino");
+
+	GFTextLine(gump, 200, 360, 1153, "" + (form_data.classe ? form_data.classe : "None"));
+
+	// Magic School (for mage)
+	GFTextLine(gump, 50, 500, 1153, "Magic School:");
+	GFAddButton(gump, 200, 500, 2117, 2118, 1, 88);
+	GFTextLine(gump, 230, 500, 1153, form_data.magic_school ? form_data.magic_school : "Select School");
+
+	// Add a divider line before buttons
+	GFResizePic(gump, 40, gump_height - 70, 3000, gump_width - 80, 2);
+
+	// Appearence Section
+	GFTextLine(gump, 550, 370, 1153, "Appearence:");
+
+	// Add Race
+	GFAddButton(gump, 750, 370, 2103, 2104, 1, 93);
+	GFTextLine(gump, 780, 370, 1153, "Escolher raça & gênero");
+
+	// Add Appearence
+	GFAddButton(gump, 750, 400, 2103, 2104, 1, 92);
+	GFTextLine(gump, 780, 400, 1153, "Escolher aparência");
+
+	// Display current race and gender if set
+	if (form_data.race && form_data.gender != error)
+		var gender_text := (form_data.gender == 1) ? "Female" : "Male";
+		GFTextMid(gump, 500, 400, 200, 1153, form_data.race + " " + gender_text);
+	endif
+
+	// Add Equipments
+	GFAddButton(gump, 750, 430, 2103, 2104, 1, 94);
+	GFTextLine(gump, 780, 430, 1153, "Escolher equipamentos");
+
+	// Add Mount
+	GFAddButton(gump, 750, 460, 2103, 2104, 1, 95);
+	GFTextLine(gump, 780, 460, 1153, "Escolher montaria");
+
+	// Add Colors
+	GFAddButton(gump, 750, 490, 2103, 2104, 1, 96);
+	GFTextLine(gump, 780, 490, 1153, "Escolher cores");
+
+	// Add Create Boss and Cancel buttons at the bottom
+	// Create a background for the buttons
+	GFResizePic(gump, gump_width / 2 - 150, gump_height - 60, 9350, 300, 40);
+
+	// Add Create Boss button
+	GFAddButton(gump, gump_width / 2 - 130, gump_height - 50, 2128, 2129, 1, 100);
+	GFTextLine(gump, gump_width / 2 - 70, gump_height - 50, 33, "CREATE BOSS");
+
+	// Add Cancel button
+	GFAddButton(gump, gump_width / 2 + 30, gump_height - 50, 2119, 2120, 1, 101);
+	GFTextLine(gump, gump_width / 2 + 90, gump_height - 50, 33, "CANCEL");
+
+	// Send the gump to the player
+	var input := GFSendGump(who, gump);
+
+	// Handle Dual Wield button click
+	if (input[0] == 80)
+		return ShowDualWieldWeapons(who, title, gump_width, gump_height);
+	elseif (input[0] == 81)
+		return OneHandedWeapons(who, title, gump_width, gump_height);
+	elseif (input[0] == 82)
+		return TwoHandedWeapons(who, title, gump_width, gump_height);
+	elseif (input[0] == 83)
+		return RangedWeapons(who, title, gump_width, gump_height);
+	elseif (input[0] == 85) // Guerreiro selected
+		form_data.classe := ShowClassAbilities(who, title, gump_width, gump_height, "Guerreiro");
+		return ShowPage5(who, title, gump_width, gump_height);
+	elseif (input[0] == 86) // Sabio selected
+		form_data.classe := ShowClassAbilities(who, title, gump_width, gump_height, "Sabio");
+		return ShowPage5(who, title, gump_width, gump_height);
+	elseif (input[0] == 87) // Ladino selected
+		form_data.classe := ShowClassAbilities(who, title, gump_width, gump_height, "Ladino");
+		return ShowPage5(who, title, gump_width, gump_height);
+	elseif (input[0] == 88) // Magic School button
+		var selected_school := ShowMagicSchoolSelection(who, title, gump_width, gump_height);
+		if (selected_school != "")
+			form_data.magic_school := selected_school;
+			SendSysMessage(who, "Selected magic school: " + selected_school);
+		endif
+		return ShowPage5(who, title, gump_width, gump_height);
+	elseif (input[0] == 90) // Add Loot Item button
+		HandleAddLootItem(who, form_data);
+		return ShowPage5(who, title, gump_width, gump_height);
+	// Handle delete loot item buttons
+	elseif (input[0] >= 91 && input[0] <= 91 + form_data.loot.size())
+		var index := input[0] - 91;
+		form_data.loot.erase(index);
+		SendSysMessage(who, "Loot item removed.");
+		return ShowPage5(who, title, gump_width, gump_height);
+	elseif (input[0] == 92) // Edit Appearence button
+		HandleEditAppearance(who, form_data);
+		return ShowPage5(who, title, gump_width, gump_height);
+	elseif (input[0] == 93) // Add Race
+		HandleAddRace(who, form_data);
+		return ShowPage5(who, title, gump_width, gump_height);
+	elseif (input[0] == 94) // Add Armors & Equipments
+		HandleAddEquipments(who, form_data);
+		return ShowPage5(who, title, gump_width, gump_height);
+	elseif (input[0] == 95) // Create Boss button
+		HandleAddMount(who, form_data);
+		return ShowPage5(who, title, gump_width, gump_height);
+	elseif (input[0] == 96) // Add Colors
+		HandleAddColors(who, form_data);
+		return ShowPage5(who, title, gump_width, gump_height);
+	endif
+
+	return input;
+endfunction
+
+// Function to handle boss appearance editing
+function HandleEditAppearance(who, byref form_data)
+	// Main appearance category selection
+	var continue_editing := 1;
+
+	while (continue_editing)
+		var gump := GFCreateGump();
+		GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 600);
+
+		// Title
+		GFTextMid(gump, 0, 25, 500, 1153, "Boss Appearance Editor");
+
+		// Current appearance summary
+		GFTextLine(gump, 30, 60, 1153, "Current Appearance Settings:");
+		var y_pos := 85;
+
+		// Display current settings
+		if (form_data.appearance)
+			if (form_data.appearance.hair_style)
+				GFTextLine(gump, 50, y_pos, 2100, "Hair Style: " + form_data.appearance.hair_style);
+				y_pos += 20;
+			endif
+			if (form_data.appearance.hair_color)
+				GFTextLine(gump, 50, y_pos, form_data.appearance.hair_color, "Hair Color: Selected");
+				y_pos += 20;
+			endif
+			if (form_data.appearance.beard_style)
+				GFTextLine(gump, 50, y_pos, 2100, "Beard Style: " + form_data.appearance.beard_style);
+				y_pos += 20;
+			endif
+			if (form_data.appearance.beard_color)
+				GFTextLine(gump, 50, y_pos, form_data.appearance.beard_color, "Beard Color: Selected");
+				y_pos += 20;
+			endif
+			if (form_data.appearance.skin_color)
+				GFTextLine(gump, 50, y_pos, form_data.appearance.skin_color, "Skin Color: Selected");
+				y_pos += 20;
+			endif
+		else
+			GFTextLine(gump, 50, y_pos, 2100, "No appearance settings configured yet");
+			y_pos += 20;
+		endif
+
+		y_pos += 30;
+
+		// Category buttons
+		GFTextLine(gump, 30, y_pos, 1153, "Select Category to Edit:");
+		y_pos += 30;
+
+		GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 101);
+		GFTextLine(gump, 60, y_pos, 1153, "Hair Style");
+		y_pos += 30;
+
+		GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 102);
+		GFTextLine(gump, 60, y_pos, 1153, "Hair Color");
+		y_pos += 30;
+
+		GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 103);
+		GFTextLine(gump, 60, y_pos, 1153, "Beard Style");
+		y_pos += 30;
+
+		GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 104);
+		GFTextLine(gump, 60, y_pos, 1153, "Beard Color");
+		y_pos += 30;
+
+		GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 105);
+		GFTextLine(gump, 60, y_pos, 1153, "Skin Color");
+		y_pos += 50;
+
+		// Done and cancel buttons
+		GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 999);
+		GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 998);
+
+		var input := GFSendGump(who, gump);
+
+		if (input[0] == 998 || input[0] == 0)
+			// Cancel
+			continue_editing := 0;
+		elseif (input[0] == 999)
+			// Done
+			continue_editing := 0;
+		elseif (input[0] == 101)
+			// Hair Style
+			EditHairStyle(who, form_data);
+		elseif (input[0] == 102)
+			// Hair Color
+			EditHairColor(who, form_data);
+		elseif (input[0] == 103)
+			// Beard Style
+			EditBeardStyle(who, form_data);
+		elseif (input[0] == 104)
+			// Beard Color
+			EditBeardColor(who, form_data);
+		elseif (input[0] == 105)
+			// Skin Color
+			EditSkinColor(who, form_data);
+		endif
+	endwhile
+endfunction
+
+// Hair style selection
+function EditHairStyle(who, byref form_data, page := 1)
+	if (!form_data.appearance)
+		form_data.+appearance := struct{};
+	endif
+
+	var config := ReadConfigFile(":fls_core:config/hairtypes");
+	if (!config)
+		SendSysMessage(who, "Error: Could not load hair types configuration.");
+		return;
+	endif
+
+	var hair_config := config["todos"];
+	var hair_styles := GetConfigStringArray(hair_config, "Style");
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+
+	GFTextMid(gump, 0, 25, 600, 1153, "Select Hair Style");
+
+	// Calculate pagination for grid layout
+	var grid_width := 4; // Number of items per row
+	var grid_height := 3; // Number of rows per page
+	var items_per_page := grid_width * grid_height; // Items per page
+	var total_items := hair_styles.size(); // Only count actual hair styles
+	var total_pages := Ceil(total_items / items_per_page);
+	var start_index := (page - 1) * items_per_page;
+	var end_index := Min(start_index + items_per_page, total_items);
+
+	var current_item := 0;
+
+	// Process each hair style in a grid layout
+	var style_index := 0;
+	var cell_width := 120; // Width of each grid cell
+	var cell_height := 100; // Height of each grid cell
+	var start_x := 30;
+	var start_y := 60;
+
+	foreach style_line in hair_styles
+		style_index += 1;
+
+		// Check if this style should be displayed on current page
+		if (style_index < start_index || style_index >= end_index)
+			continue;
+		endif
+
+		var style_parts := SplitWords(style_line);
+		if (style_parts.size() >= 2)
+			var style_name := style_parts[1];
+			var style_id := CInt(style_parts[2]);
+
+			// Replace underscores with spaces for display
+			while (style_name["_"])
+				style_name["_"] := " ";
+			endwhile
+
+			// Calculate position in grid
+			var grid_pos := current_item;
+			var col := grid_pos % grid_width;
+			var row := grid_pos / grid_width;
+			var item_x := start_x + (col * cell_width);
+			var item_y := start_y + (row * cell_height);
+
+			// Draw the hair graphic and button below it
+			GFGumpPic(gump, item_x, item_y, GetHairGumpGraphic(style_id));
+			GFAddButton(gump, item_x + 40, item_y + 70, 2117, 2118, GF_CLOSE_BTN, style_id);
+
+			current_item += 1;
+		endif
+	endforeach
+
+	// Add pagination controls
+	var pagination_y := 600;
+
+	// Create a background for pagination controls
+	GFResizePic(gump, 100, pagination_y - 10, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 400, 40);
+
+	// Previous page button
+	if (page > 1)
+		GFAddButton(gump, 140, pagination_y, 2117, 2118, GF_CLOSE_BTN, 900);
+		GFTextLine(gump, 170, pagination_y, 1153, "Previous");
+	endif
+
+	// Page indicator
+	GFTextMid(gump, 250, pagination_y, 100, 1153, "Page " + page + " of " + total_pages);
+
+	// Next page button
+	if (page < total_pages)
+		GFAddButton(gump, 360, pagination_y, 2117, 2118, GF_CLOSE_BTN, 901);
+		GFTextLine(gump, 390, pagination_y, 1153, "Next");
+	endif
+
+	// Done button
+	GFAddButton(gump, 30, 650, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	// Handle pagination buttons
+	if (input[0] == 900) // Previous page
+		return EditHairStyle(who, form_data, page - 1);
+	elseif (input[0] == 901) // Next page
+		return EditHairStyle(who, form_data, page + 1);
+	endif
+
+	if (input[0] != 999 && input[0] != 0)
+		form_data.appearance.hair_style := input[0];
+		if (input[0] == 0)
+			form_data.appearance.hair_style_name := "Bald";
+		else
+			// Find the style name
+			foreach style_line in hair_styles
+				var style_parts := SplitWords(style_line);
+				if (style_parts.size() >= 2 && CInt(style_parts[2]) == input[0])
+					var style_name := style_parts[1];
+					form_data.appearance.hair_style_name := style_name;
+					break;
+				endif
+			endforeach
+		endif
+		SendSysMessage(who, "Hair style selected: " + form_data.appearance.hair_style_name);
+	endif
+endfunction
+
+// Hair color selection
+function EditHairColor(who, byref form_data)
+	if (!form_data.appearance)
+		form_data.+appearance := struct{};
+	endif
+
+	var color_cfg := ReadConfigFile(":hair:config/hairColors");
+	if (!color_cfg)
+		SendSysMessage(who, "Error: Could not load hair color configuration.");
+		return;
+	endif
+
+	// Select the correct color configuration based on race
+	var color_elem;
+	case (form_data.race)
+		ANAO: color_elem := color_cfg["Cabelo Anao"];
+		ELFO: color_elem := color_cfg["Cabelo Elfo"];
+		DROW: color_elem := color_cfg["Cabelo Drow"];
+		ORC:  color_elem := color_cfg["Cabelo Orc"];
+		PEQUILHO:
+		HUMANO:
+		default:
+			color_elem := color_cfg["Cabelo Imperial"];
+	endcase
+
+	// Get colors directly from the race-specific element
+	var colors := GetConfigStringArray(color_elem, "Color");
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 700, 600);
+
+	GFTextMid(gump, 0, 25, 700, 1153, "Select Hair Color - " + form_data.race);
+
+	var y_pos := 60;
+	var x_pos := 30;
+	var colors_per_row := 8;
+	var color_count := 0;
+
+	GFSetRadioGroup(gump, 1);
+
+	foreach color in colors
+		var color_val := CInt(color);
+
+		GFRadioButton(gump, x_pos, y_pos, 210, 211, (form_data.appearance.hair_color == color_val),
+					   color_val);
+		GFTextLine(gump, x_pos + 25, y_pos, color_val, "Color");
+
+		color_count += 1;
+		if (color_count % colors_per_row == 0)
+			y_pos += 25;
+			x_pos := 30;
+		else
+			x_pos += 80;
+		endif
+
+		if (y_pos > 500)
+			break; // Prevent overflow
+		endif
+	endforeach
+
+	// Buttons
+	GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
+	GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 998)
+		// Find selected color from radio buttons
+		foreach key in (input.keys)
+			if (key > 1000 && key != 998 && key != 999)
+				form_data.appearance.hair_color := key;
+				SendSysMessage(who, "Hair color selected: " + key);
+				break;
+			endif
+		endforeach
+	endif
+endfunction
+
+// Beard style selection
+function EditBeardStyle(who, byref form_data, page := 1)
+	if (!form_data.appearance)
+		form_data.+appearance := struct{};
+	endif
+
+	if (form_data.gender == 1 || form_data.race == DROW || form_data.race == ELFO)
+		SendSysMessageEx(who, "Raça ou gênero não permite barba.", SSM_FAIL);
+		return 0;
+	endif
+
+	var config := ReadConfigFile(":fls_core:config/hairtypes");
+	if (!config)
+		SendSysMessage(who, "Error: Could not load hair types configuration.");
+		return;
+	endif
+
+	var beard_config := config["beard"];
+
+	if (form_data.race == ANAO)
+		beard_config := config["dwarwen_beard"];
+		if (!beard_config)
+			SendSysMessage(who, "Error: Could not find dwarwen_beard configuration section.");
+			beard_config := config["beard"]; // Fallback to regular beard
+		endif
+	endif
+
+	var beard_styles := GetConfigStringArray(beard_config, "Style");
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+
+	GFTextMid(gump, 0, 25, 600, 1153, "Select Beard Style");
+
+	// Calculate pagination for grid layout
+	var grid_width := 4; // Number of items per row
+	var grid_height := 3; // Number of rows per page
+	var items_per_page := grid_width * grid_height; // Items per page
+	var total_items := beard_styles.size();
+	var total_pages := Ceil(total_items / items_per_page);
+	var start_index := (page - 1) * items_per_page;
+	var end_index := Min(start_index + items_per_page, total_items);
+
+	var current_item := 0;
+
+	// Process each beard style in a grid layout
+	var style_index := 0;
+	var cell_width := 120; // Width of each grid cell
+	var cell_height := 100; // Height of each grid cell
+	var start_x := 30;
+	var start_y := 60;
+
+	foreach style_line in beard_styles
+		style_index += 1;
+
+		// Check if this style should be displayed on current page
+		if (style_index < start_index || style_index >= end_index)
+			continue;
+		endif
+
+		var style_parts := SplitWords(style_line);
+		if (style_parts.size() >= 2)
+			var style_name := style_parts[1];
+			var style_id := CInt(style_parts[2]);
+
+			// Replace underscores with spaces for display
+			while (style_name["_"])
+				style_name["_"] := " ";
+			endwhile
+
+			// Calculate position in grid
+			var grid_pos := current_item;
+			var col := grid_pos % grid_width;
+			var row := grid_pos / grid_width;
+			var item_x := start_x + (col * cell_width);
+			var item_y := start_y + (row * cell_height);
+
+			// Draw the beard graphic and button below it
+			GFGumpPic(gump, item_x + 30, item_y, GetBeardGumpGraphic(style_id));
+			GFAddButton(gump, item_x + 40, item_y + 70, 2117, 2118, GF_CLOSE_BTN, style_id);
+
+			current_item += 1;
+		endif
+	endforeach
+
+	// Add pagination controls
+	var pagination_y := 600;
+
+	// Create a background for pagination controls
+	GFResizePic(gump, 100, pagination_y - 10, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 400, 40);
+
+	// Previous page button
+	if (page > 1)
+		GFAddButton(gump, 140, pagination_y, 2117, 2118, GF_CLOSE_BTN, 900);
+		GFTextLine(gump, 170, pagination_y, 1153, "Previous");
+	endif
+
+	// Page indicator
+	GFTextMid(gump, 250, pagination_y, 100, 1153, "Page " + page + " of " + total_pages);
+
+	// Next page button
+	if (page < total_pages)
+		GFAddButton(gump, 360, pagination_y, 2117, 2118, GF_CLOSE_BTN, 901);
+		GFTextLine(gump, 390, pagination_y, 1153, "Next");
+	endif
+
+	// Done button
+	GFAddButton(gump, 30, 650, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	// Handle pagination buttons
+	if (input[0] == 900) // Previous page
+		return EditBeardStyle(who, form_data, page - 1);
+	elseif (input[0] == 901) // Next page
+		return EditBeardStyle(who, form_data, page + 1);
+	endif
+
+	if (input[0] != 999 && input[0] != 0)
+		form_data.appearance.beard_style := input[0];
+		if (input[0] == 0)
+			form_data.appearance.beard_style_name := "No Beard";
+		else
+			// Find the style name
+			foreach style_line in beard_styles
+				var style_parts := SplitWords(style_line);
+				if (style_parts.size() >= 2 && CInt(style_parts[2]) == input[0])
+					var style_name := style_parts[1];
+					while (style_name["_"])
+						style_name["_"] := " ";
+					endwhile
+					form_data.appearance.beard_style_name := style_name;
+					break;
+				endif
+			endforeach
+		endif
+		SendSysMessage(who, "Beard style selected: " + form_data.appearance.beard_style_name);
+	endif
+endfunction
+
+// Beard color selection (reuses hair color logic)
+function EditBeardColor(who, byref form_data)
+	if (form_data.gender == 1 || form_data.race == DROW || form_data.race == ELFO)
+		SendSysMessageEx(who, "Raça ou gênero não permite barba.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!form_data.appearance)
+		form_data.+appearance := struct{};
+	endif
+
+	var color_cfg := ReadConfigFile(":hair:config/hairColors");
+	if (!color_cfg)
+		SendSysMessage(who, "Error: Could not load hair color configuration.");
+		return;
+	endif
+
+	var hair_elem := color_cfg["Cabelo Imperial"]; // Default to Imperial colors
+
+	case (form_data.race)
+		ANAO: hair_elem := color_cfg["Cabelo Anao"];
+		ELFO: hair_elem := color_cfg["Cabelo Elfo"];
+		DROW: hair_elem := color_cfg["Cabelo Drow"];
+		ORC:  hair_elem := color_cfg["Cabelo Orc"];
+		PEQUILHO:
+		HUMANO:
+		default:
+			hair_elem := color_cfg["Cabelo Imperial"]; // Default to Imperial colors
+	endcase
+
+	var colors := GetConfigStringArray(hair_elem, "Color");
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 700, 600);
+
+	GFTextMid(gump, 0, 25, 700, 1153, "Select Beard Color");
+
+	var y_pos := 60;
+	var x_pos := 30;
+
+	GFSetRadioGroup(gump, 1);
+
+	var color_x := x_pos + 20;
+	var colors_per_row := 8;
+	var color_count := 0;
+
+	foreach color in colors
+		var color_val := CInt(color);
+
+		GFRadioButton(gump, color_x, y_pos, 210, 211, (form_data.appearance.beard_color == color_val),
+					   color_val);
+		GFTextLine(gump, color_x + 25, y_pos, color_val, "Color");
+
+		color_count += 1;
+		if (color_count % colors_per_row == 0)
+			y_pos += 25;
+			color_x := x_pos + 20;
+		else
+			color_x += 80;
+		endif
+	endforeach
+
+	// Buttons
+	GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
+	GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 998)
+		// Find selected color
+		foreach key in (input.keys)
+			if (key > 1000 && key != 998 && key != 999)
+				form_data.appearance.beard_color := key;
+				SendSysMessage(who, "Beard color selected: " + key);
+				break;
+			endif
+		endforeach
+	endif
+endfunction
+
+// Skin color selection
+function EditSkinColor(who, byref form_data)
+	if (!form_data.appearance)
+		form_data.+appearance := struct{};
+	endif
+
+	var skin_cfg := ReadConfigFile(":fls_core:config/skincolors");
+	if (!skin_cfg)
+		SendSysMessage(who, "Error: Could not load skin color configuration.");
+		return;
+	endif
+
+	var skin_config := skin_cfg["list"];
+	case (form_data.race)
+		ELFO: skin_config := skin_cfg["elfo"];
+		DROW: skin_config := skin_cfg["drow"];
+		ORC:  skin_config := skin_cfg["orc"];
+		ANAO:
+		PEQUILHO:
+		HUMANO:
+		default:
+			skin_config := skin_cfg["list"]; // Default to standard list
+	endcase
+
+	var skin_colors := GetConfigStringArray(skin_config, "color");
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 600);
+
+	GFTextMid(gump, 0, 25, 600, 1153, "Select Skin Color");
+
+	var y_pos := 60;
+	var x_pos := 30;
+	var colors_per_row := 6;
+	var color_count := 0;
+
+	GFSetRadioGroup(gump, 1);
+
+	foreach color in skin_colors
+		var color_val := CInt(color);
+
+		GFRadioButton(gump, x_pos, y_pos, 210, 211, (form_data.appearance.skin_color == color_val),
+					   color_val);
+		GFTextLine(gump, x_pos + 25, y_pos, color_val, "Skin");
+
+		color_count += 1;
+		if (color_count % colors_per_row == 0)
+			y_pos += 30;
+			x_pos := 30;
+		else
+			x_pos += 90;
+		endif
+
+		if (y_pos > 500)
+			break; // Prevent overflow
+		endif
+	endforeach
+
+	// Buttons
+	GFAddButton(gump, 30, 550, 2128, 2129, GF_CLOSE_BTN, 998);
+	GFAddButton(gump, 200, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 998)
+		// Find selected color
+		foreach key in (input.keys)
+			if (key > 1000 && key != 998 && key != 999)
+				form_data.appearance.skin_color := key;
+				SendSysMessage(who, "Skin color selected: " + key);
+				break;
+			endif
+		endforeach
+	endif
+endfunction
+
+// Add a function to create the boss from form data
+function CreateBossFromGump(who, form_data, existing_spawner := 0)
+	// Create a boss structure
+	var boss := struct{};
+
+	// Initialize arrays
+	// Only initialize arrays that will be populated below to avoid aliasing
+	boss.special := array{};                     // will be filled by copying form_data.special
+	boss.loot := array{};
+	boss.deathevents := form_data.deathevents;
+	boss.combatevents := array{};               // will be filled by copying form_data.combatevents
+	boss.custom_abilities := form_data.custom_abilities; // keep reference if not mutated here
+
+	// Basic info
+	boss.npctemplate := form_data.npctemplate;
+	boss.name := form_data.name;
+	boss.amount := CInt(form_data.amount); // Add amount to boss structure
+	boss.color := CInt(form_data.color);
+	boss.description := form_data.description;
+	boss.trueboss := form_data.trueboss;
+	if (form_data.tier && (form_data.tier != "0" || form_data.tier != ""))
+		boss.tier := CInt(form_data.tier);
+	else
+		boss.tier := "0";
+		// Default to 0 if no tier is specified
+		SendSysMessage(who, "No tier specified, using NPC's default tier.");
+	endif
+
+	// Set race and gender if provided
+	if (form_data.race)
+		boss.race := form_data.race;
+	endif
+
+	if (form_data.gender != error)
+		boss.gender := form_data.gender;
+	endif
+
+	if (form_data.graphic)
+		boss.graphic := form_data.graphic;
+	endif
+
+	// Appearance data
+	if (form_data.appearance)
+		boss.appearance := form_data.appearance;
+	endif
+
+	// Add respawn time values to boss structure
+	boss.min_respawn := CInt(form_data.min_respawn);
+	boss.max_respawn := CInt(form_data.max_respawn);
+
+	// Visual size override
+	if (form_data.spawn_scale && CInt(form_data.spawn_scale) > 0)
+		boss.spawn_scale := CInt(form_data.spawn_scale);
+	endif
+
+	if (form_data.combatevents && form_data.combatevents.size() > 0)
+		foreach event in (form_data.combatevents)
+
+			// Create a clean event structure with only necessary properties
+			var event_struct := struct{};
+			event_struct.+name := event.name;
+			event_struct.+cd := event.cd;
+			event_struct.+onlybloodied := event.onlybloodied;
+			event_struct.+dist := event.dist;
+			event_struct.+once := event.once;
+			event_struct.+hp_percent := event.hp_percent;
+
+			// Initialize both arrays to ensure compatibility
+			event_struct.+actions := array{};
+			event_struct.+steps := array{}; // Keep both for compatibility
+
+			// Copy all actions
+			if (event.actions && event.actions.size() > 0)
+				foreach action in (event.actions)
+					event_struct.actions.append(action);
+					event_struct.steps.append(action); // Copy to both arrays for compatibility
+				endforeach
+			endif
+
+			boss.combatevents.append(event_struct);
+		endforeach
+	endif
+	if (form_data.special && form_data.special.size() > 0)
+		foreach ability in (form_data.special)
+
+			// Copy the ability to the boss structure
+			var ability_struct := struct{};
+			ability_struct.+name := ability.name;
+			ability_struct.+script_path := ability.script_path;
+			boss.special.append(ability_struct);
+		endforeach
+	endif
+
+	if (form_data.armorspecial && form_data.armorspecial.size() > 0)
+		foreach ability in (form_data.armorspecial)
+
+			// Copy the ability to the boss structure
+			var ability_struct := struct{};
+			ability_struct.+name := ability.name;
+			ability_struct.+script_path := ability.script_path;
+
+			// Initialize armorspecial array if needed
+			if (!boss.armorspecial)
+				boss.+armorspecial := array{};
+			endif
+
+			boss.armorspecial.append(ability_struct);
+		endforeach
+	endif
+
+	if (form_data.timedscripts && form_data.timedscripts.size() > 0)
+
+		// Initialize timedscripts array if needed
+		if (!boss.timedscripts)
+			boss.+timedscripts := array{};
+		endif
+
+		foreach script in (form_data.timedscripts)
+			boss.timedscripts.append(script);
+		endforeach
+	endif
+
+	// Special AI
+	if (form_data.special_ai != "")
+		var ai_spec := struct{};
+		ai_spec.name := "Special AI";
+		ai_spec.ai := form_data.special_ai;
+		boss.special.append(ai_spec);
+	endif
+
+	// NPC Profile
+	boss.url := form_data.url;
+	boss.detailed_description := form_data.detailed_description;
+
+	// Attributes
+	boss.str := CInt(form_data.str);
+	boss.dex := CInt(form_data.dex);
+	boss.int := CInt(form_data.int);
+	boss.hits := CInt(form_data.hits);
+	boss.dmg := CDbl(form_data.dmg);
+
+	// Resistances
+	boss.phresist := CInt(form_data.phresist);
+	boss.firesist := CInt(form_data.firesist);
+	boss.coresist := CInt(form_data.coresist);
+	boss.enresist := CInt(form_data.enresist);
+	boss.poresist := CInt(form_data.poresist);
+
+	// Skills - Create nested skills_mod structure for cleaner in-game reading
+	boss.+skills_mod := struct{};
+
+	// Basic 4 skills
+	boss.skills_mod.+wrestling := CInt(form_data.skills_mod.wrestling);
+	boss.skills_mod.+tactics := CInt(form_data.skills_mod.tactics);
+	boss.skills_mod.+magery := CInt(form_data.skills_mod.magery);
+	boss.skills_mod.+awareness := CInt(form_data.skills_mod.awareness);
+
+	// Additional skills from Page 2
+	if (form_data.skills_mod.alchemy)
+		boss.skills_mod.+alchemy := CInt(form_data.skills_mod.alchemy);
+	endif
+
+	if (form_data.skills_mod.arcana)
+		boss.skills_mod.+arcana := CInt(form_data.skills_mod.arcana);
+	endif
+
+	if (form_data.skills_mod.domestic_work)
+		boss.skills_mod.+domestic_work := CInt(form_data.skills_mod.domestic_work);
+	endif
+
+	if (form_data.skills_mod.dual_wield)
+		boss.skills_mod.+dual_wield := CInt(form_data.skills_mod.dual_wield);
+	endif
+
+	if (form_data.skills_mod.gathering)
+		boss.skills_mod.+gathering := CInt(form_data.skills_mod.gathering);
+	endif
+
+	if (form_data.skills_mod.handle_animal)
+		boss.skills_mod.+handle_animal := CInt(form_data.skills_mod.handle_animal);
+	endif
+
+	if (form_data.skills_mod.magic_lore)
+		boss.skills_mod.+magic_lore := CInt(form_data.skills_mod.magic_lore);
+	endif
+
+	if (form_data.skills_mod.mechanics)
+		boss.skills_mod.+mechanics := CInt(form_data.skills_mod.mechanics);
+	endif
+
+	if (form_data.skills_mod.medicine)
+		boss.skills_mod.+medicine := CInt(form_data.skills_mod.medicine);
+	endif
+
+	if (form_data.skills_mod.metal_working)
+		boss.skills_mod.+metal_working := CInt(form_data.skills_mod.metal_working);
+	endif
+
+	if (form_data.skills_mod.one_handed)
+		boss.skills_mod.+one_handed := CInt(form_data.skills_mod.one_handed);
+	endif
+
+	if (form_data.skills_mod.parry)
+		boss.skills_mod.+parry := CInt(form_data.skills_mod.parry);
+	endif
+
+	if (form_data.skills_mod.pickpocketing)
+		boss.skills_mod.+pickpocketing := CInt(form_data.skills_mod.pickpocketing);
+	endif
+
+	if (form_data.skills_mod.ranged)
+		boss.skills_mod.+ranged := CInt(form_data.skills_mod.ranged);
+	endif
+
+	if (form_data.skills_mod.science)
+		boss.skills_mod.+science := CInt(form_data.skills_mod.science);
+	endif
+
+	if (form_data.skills_mod.sneak)
+		boss.skills_mod.+sneak := CInt(form_data.skills_mod.sneak);
+	endif
+
+	if (form_data.skills_mod.survival)
+		boss.skills_mod.+survival := CInt(form_data.skills_mod.survival);
+	endif
+
+	if (form_data.skills_mod.theology)
+		boss.skills_mod.+theology := CInt(form_data.skills_mod.theology);
+	endif
+
+	if (form_data.skills_mod.throwing)
+		boss.skills_mod.+throwing := CInt(form_data.skills_mod.throwing);
+	endif
+
+	if (form_data.skills_mod.two_handed)
+		boss.skills_mod.+two_handed := CInt(form_data.skills_mod.two_handed);
+	endif
+
+	if (form_data.skills_mod.wood_working)
+		boss.skills_mod.+wood_working := CInt(form_data.skills_mod.wood_working);
+	endif
+
+	// Movement
+	boss.flee_health := CInt(form_data.flee_health);
+	SendSysMessage(who, "Creating boss...");
+
+	if (form_data.classe && form_data.classee != "")
+		boss.classe := form_data.classe;
+	endif
+
+	if (form_data.loot && form_data.loot.size() > 0)
+		boss.+loot := array{}; // Ensure loot array exists in boss struct
+
+		foreach item in (form_data.loot)
+			// Keep the same structure as form_data
+			var loot_entry := struct{ "template" := item.template, // Keep as template
+						  			
+						  			"drop_chance" := item.drop_chance,             // Keep as drop_chance
+						  			
+						  			"on_death" := item.on_death,
+						  			"desc" := item.desc };
+			boss.loot.append(loot_entry);
+		endforeach
+	endif
+
+	// Set class and abilities
+	if (form_data.classe)
+		boss.classe := form_data.classe;
+	endif
+
+	// In CreateBossFromGump function, add:
+	if (form_data.magic_school)
+		boss.spell_school := form_data.magic_school;
+	endif
+
+	if (form_data.preferred_target)
+		boss.preferred_target := form_data.preferred_target;
+	endif
+
+	if (form_data.target_priority)
+		boss.target_priority := form_data.target_priority;
+	endif
+
+	// Save weapon type
+	if (form_data.weapon_type)
+		boss.weapon_type := form_data.weapon_type;
+	endif
+
+	// Save specific weapon
+	if (form_data.specific_weapon)
+		boss.specific_weapon := form_data.specific_weapon;
+	endif
+
+	if (form_data.equipments)
+		boss.equipments := form_data.equipments;
+	endif
+
+	if (form_data.mount)
+		boss.mount := form_data.mount;
+	endif
+
+	// Save behavior settings
+	if (form_data.teleport_health)
+		boss.teleport_health := CInt(form_data.teleport_health);
+	endif
+
+	if (form_data.patrol_points && form_data.patrol_points.size() > 0)
+		boss.patrol_points := form_data.patrol_points;
+	endif
+
+	// Save weapon type
+	if (form_data.weapon_type)
+		boss.weapon_type := form_data.weapon_type;
+	endif
+
+	// Save specific weapon
+	if (form_data.specific_weapon)
+		boss.specific_weapon := form_data.specific_weapon;
+	endif
+
+	// Save behavior settings
+	if (form_data.teleport_health)
+		boss.teleport_health := CInt(form_data.teleport_health);
+	endif
+
+	if (form_data.natural_traits && form_data.natural_traits.size() > 0)
+		boss.natural_traits := form_data.natural_traits;
+	endif
+
+	// Save color ranges for boss equipment
+	if (form_data.color_ranges && form_data.color_ranges.size() > 0)
+		boss.color_ranges := form_data.color_ranges;
+	endif
+
+	// Check if we're updating an existing spawner or creating a new one
+	var spawner;
+	if (existing_spawner)
+		// Use the existing spawner
+		spawner := existing_spawner;
+
+		// Check if there's a currently spawned boss linked to this spawner
+		var child_serial := Cint(GetObjProperty(spawner, "ChildSerial"));
+		if (child_serial)
+			var existing_boss := SystemFindObjectBySerial(child_serial);
+			if (existing_boss)
+				// Kill the existing boss before spawning a new one
+				SetObjProperty(existing_boss, "allowdeath", 1);
+				existing_boss.Disable("invul");
+				SetObjProperty(existing_boss, "GuardKill", 1);
+				ApplyRawDamage(existing_boss, CInt(AP_GetVitalMaximumValue(existing_boss, "Hits")));
+
+				// Give the game a moment to process the boss's death
+				SleepMS(500);
+			endif
+		endif
+	else
+		// FIX: Create spawner first with explicit error checking
+		SendSysMessage(who, "Creating new spawner at your location...");
+		spawner := CreateItemAtLocation(who.x, who.y, who.z, 0xA402, 1, who.realm);
+
+		// Check if spawner creation succeeded
+		if (!spawner || spawner.errortext)
+			SendSysMessage(who, "ERROR: Failed to create spawner: " + spawner.errortext);
+			return 0;
+		endif
+
+		// Move the spawner to the ground to ensure it's placed correctly
+		MoveObjectToLocation(spawner, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
+	endif
+
+	var amount := boss.amount ? boss.amount : 1;
+
+	var npcs := array{};
+	var npc;
+
+	for i := 1 to amount
+		npc := CreateEpicBoss(boss, who.x, who.y, who.z, who.realm);
+		if (npc == error)
+			SendSysMessage(who, "Error creating boss " + i + ": " + npc.errortext);
+			return 0;
+		endif
+		npcs.append(npc);
+		sleepms(100); // Small delay between spawns
+	endfor
+
+	if (spawner && spawner.IsA(POLCLASS_ITEM))
+		// Set the boss structure in the spawner
+		SetObjProperty(spawner, "BossStruct", boss);
+		SetObjProperty(spawner, "form_data", form_data); // Save FULL form data
+
+		// Set default spawn settings
+		SetObjProperty(spawner, "MinDelay", CInt(form_data.min_respawn));
+		SetObjProperty(spawner, "MaxDelay", CInt(form_data.max_respawn));
+		SetObjProperty(spawner, "Range", 5); // 5 tiles
+		SetObjProperty(spawner, "SpawnerState", ACTIVE);
+		SetObjProperty(spawner, "SpawnQueue", "Active");
+
+		// Link ALL spawned bosses to the spawner
+		var child_serials := array{};
+		foreach boss_npc in npcs
+			SetObjProperty(boss_npc, "epicspawner", spawner.serial);
+			child_serials.append(boss_npc.serial);
+		endforeach
+
+		// Store all child serials in the spawner
+		if (npcs.size() == 1)
+			SetObjProperty(spawner, "ChildSerial", npcs[1].serial); // Single boss compatibility
+		else
+			SetObjProperty(spawner, "ChildSerials", child_serials); // Multiple bosses
+		endif
+
+		spawner.invisible := 1;
+	endif
+
+	return 1;
+endfunction
+
+function HandleNaturalTraits(who, input, byref form_data)
+	// Initialize traits if not exists
+	if (!form_data.natural_traits)
+		form_data.natural_traits := struct{ "immunities" := array{},
+											"resistances" := array{}, "vulnerabilities" := array{} };
+	endif
+
+	var done := 0;
+	while (!done)
+		var gump := GFCreateGump();
+		GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 700);
+		GFResizePic(gump, 15, 15, 9350, 470, 670);
+
+		GFTextMid(gump, 0, 25, 500, 1153, "Natural Traits Configuration");
+
+		// Display current traits
+		var y_pos := 60;
+
+		// Show Immunities
+		GFTextLine(gump, 50, y_pos, 1153, "Current Immunities:");
+		y_pos += 20;
+		foreach immunity in (form_data.natural_traits.immunities)
+			GFTextLine(gump, 70, y_pos, 66, "- " + immunity);
+			// Add remove button
+			GFAddButton(gump, 50, y_pos, 30008, 30009, GF_CLOSE_BTN, 100 + _immunity_iter);
+			y_pos += 20;
+		endforeach
+
+		y_pos += 20;
+
+		// Show Resistances
+		GFTextLine(gump, 50, y_pos, 1153, "Current Resistances:");
+		y_pos += 20;
+		foreach resistance in (form_data.natural_traits.resistances)
+			GFTextLine(gump, 70, y_pos, 66, "- " + resistance);
+			// Add remove button
+			GFAddButton(gump, 50, y_pos, 30008, 30009, GF_CLOSE_BTN, 200 + _resistance_iter);
+			y_pos += 20;
+		endforeach
+
+		y_pos += 20;
+
+		// Show Vulnerabilities
+		GFTextLine(gump, 50, y_pos, 1153, "Current Vulnerabilities:");
+		y_pos += 20;
+		foreach vulnerability in (form_data.natural_traits.vulnerabilities)
+			GFTextLine(gump, 70, y_pos, 66, "- " + vulnerability);
+			// Add remove button
+			GFAddButton(gump, 50, y_pos, 30008, 30009, GF_CLOSE_BTN, 300 + _vulnerability_iter);
+			y_pos += 20;
+		endforeach
+
+		y_pos += 40;
+
+		// Add new trait buttons
+		GFAddButton(gump, 50, y_pos, 2103, 2104, GF_CLOSE_BTN, 1);
+		GFTextLine(gump, 80, y_pos, 1153, "Add Immunity");
+
+		y_pos += 30;
+		GFAddButton(gump, 50, y_pos, 2103, 2104, GF_CLOSE_BTN, 2);
+		GFTextLine(gump, 80, y_pos, 1153, "Add Resistance");
+
+		y_pos += 30;
+		GFAddButton(gump, 50, y_pos, 2103, 2104, GF_CLOSE_BTN, 3);
+		GFTextLine(gump, 80, y_pos, 1153, "Add Vulnerability");
+
+		// Done and Cancel buttons
+		GFAddButton(gump, 50, 650, 2128, 2129, GF_CLOSE_BTN, 998);
+		GFAddButton(gump, 200, 650, 2119, 2120, GF_CLOSE_BTN, 999);
+
+		var result := GFSendGump(who, gump);
+
+		case (result[0])
+			1:   // Add Immunity
+				var trait := SelectTraitType(who, "Immunity", form_data);
+				if (trait)
+					// Check if this trait already has a different type
+					if (TraitExistsInOtherTypes(trait, "immunity", form_data))
+						SendSysMessage(who, "This trait already exists as a different type!", color := 33);
+					else
+						form_data.natural_traits.immunities.append(trait);
+					endif
+				endif
+
+			2:   // Add Resistance
+				var trait := SelectTraitType(who, "Resistance", form_data);
+				if (trait)
+					if (TraitExistsInOtherTypes(trait, "resistance", form_data))
+						SendSysMessage(who, "This trait already exists as a different type!", color := 33);
+					else
+						form_data.natural_traits.resistances.append(trait);
+					endif
+				endif
+
+			3:   // Add Vulnerability
+				var trait := SelectTraitType(who, "Vulnerability", form_data);
+				if (trait)
+					if (TraitExistsInOtherTypes(trait, "vulnerability", form_data))
+						SendSysMessage(who, "This trait already exists as a different type!", color := 33);
+					else
+						form_data.natural_traits.vulnerabilities.append(trait);
+					endif
+				endif
+
+			998: // Done
+				done := 1;
+
+			999: // Cancel
+				return 0;
+
+			default:
+				if (result[0] >= 100 && result[0] < 200) // Remove immunity
+					var idx := result[0] - 100;
+					form_data.natural_traits.immunities.erase(idx);
+				elseif (result[0] >= 200 && result[0] < 300) // Remove resistance
+					var idx := result[0] - 200;
+					form_data.natural_traits.resistances.erase(idx);
+				elseif (result[0] >= 300 && result[0] < 400) // Remove vulnerability
+					var idx := result[0] - 300;
+					form_data.natural_traits.vulnerabilities.erase(idx);
+				endif
+		endcase
+	endwhile
+
+	return 1;
+endfunction
+
+function SelectTraitType(who, trait_type, byref form_data)
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 700);
+	GFResizePic(gump, 15, 15, 9350, 470, 670);
+
+	GFTextMid(gump, 0, 25, 500, 1153, "Select " + trait_type + " Type");
+
+	var options := array{ CStr(DAMAGE_TYPE::BLUNT), CStr(DAMAGE_TYPE::SLASH), CStr(DAMAGE_TYPE::PIERCING), CStr(DAMAGE_TYPE::BLUNT),
+					  	CStr(DAMAGE_TYPE::FIRE), CStr(DAMAGE_TYPE::COLD), CStr(DAMAGE_TYPE::POISON), CStr(DAMAGE_TYPE::ENERGY),
+					  	"Backstab", "Spells" };
+
+	var y_pos := 60;
+	var counter := 1;
+
+	foreach option in options
+		GFAddButton(gump, 50, y_pos, 2103, 2104, GF_CLOSE_BTN, counter);
+		GFTextLine(gump, 80, y_pos, 1153, option);
+		y_pos += 30;
+		counter += 1;
+	endforeach
+
+	// Add cancel button
+	GFAddButton(gump, 200, 650, 2119, 2120, GF_CLOSE_BTN, 0);
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 0)
+		return 0;
+	endif
+
+	return options[input[0]];
+endfunction
+
+function TraitExistsInOtherTypes(trait, current_type, form_data)
+	if (current_type != "immunity" && trait in form_data.natural_traits.immunities)
+		return 1;
+	endif
+
+	if (current_type != "resistance" && trait in form_data.natural_traits.resistances)
+		return 1;
+	endif
+
+	if (current_type != "vulnerability" && trait in form_data.natural_traits.vulnerabilities)
+		return 1;
+	endif
+
+	return 0;
+endfunction
+
+function SelectTeleportLocations(who, byref form_data)
+	// Initialize teleport_locations in form_data if it doesn't exist
+	if (!form_data.teleport_locations)
+		form_data.teleport_locations := array{};
+	endif
+
+	SendSysMessage(who, "Target where you want the monster to teleport to.", color := 33);
+	var targ := TargetCoordinates(who);
+	if (!targ)
+		SendSysMessage(who, "Cancelled.", color := 33);
+		return 0;
+	endif
+
+	// Create health percentage selection gump
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, 9200, 400, 400);
+	GFResizePic(gump, 10, 10, 9350, 380, 380);
+
+	GFTextMid(gump, 10, 20, 380, 1153, "Select Health Percentage Threshold");
+	GFTextLine(gump, 50, 60, 1153, "When HP drops below this %, monster will teleport to:");
+	GFTextLine(gump, 50, 85, 66, "X: " + targ.x + " Y: " + targ.y + " Z: " + targ.z
+				+ " Realm: " + who.realm);
+
+	// Common health thresholds as buttons
+	var y_pos := 130;
+	var thresholds := { 75, 50, 25, 10 };
+	var btn_id := 1;
+
+	foreach threshold in thresholds
+		GFAddButton(gump, 50, y_pos, 2117, 2118, 1, btn_id);
+		GFTextLine(gump, 80, y_pos, 1153, threshold + "% Health");
+		y_pos += 30;
+		btn_id += 1;
+	endforeach
+
+	// Custom health threshold
+	GFTextLine(gump, 50, 250, 1153, "Or enter custom percentage (1-99):");
+	GFResizePic(gump, 50, 275, 9350, 60, 30);
+	GFTextEntry(gump, 55, 280, 50, 25, 1153, "", 5);
+	GFAddButton(gump, 120, 275, 2117, 2118, 1, 10);
+
+	// Cancel button
+	GFAddButton(gump, 150, 350, 2119, 2120, 1, 0);
+	GFTextLine(gump, 185, 350, 33, "Cancel");
+
+	var input := GFSendGump(who, gump);
+	if (!input[0])
+		SendSysMessage(who, "Cancelled.", color := 33);
+		return 0;
+	endif
+
+	var hp_percent;
+
+	if (input[0] == 10) // Custom input
+		hp_percent := CInt(GFExtractData(input, 5));
+		if (!hp_percent || hp_percent < 1 || hp_percent > 99)
+			SendSysMessage(who, "Invalid health percentage. Must be between 1 and 99.", color := 33);
+			return 0;
+		endif
+	else // Preset buttons
+		case (input[0])
+			1: hp_percent := 75; break;
+			2: hp_percent := 50; break;
+			3: hp_percent := 25; break;
+			4: hp_percent := 10; break;
+			default: SendSysMessage(who, "ERROR: Unknown button ID: " + input[0], color := 33); return 0;
+		endcase
+	endif
+	// Create a new teleport location struct
+	var teleport_location := struct{ "hp_percent" := hp_percent, "x" := targ.x,
+								 	"y" := targ.y, "z" := targ.z, "realm" := who.realm // Use the GM's realm as you mentioned
+								 	};
+
+	// Add to the form_data teleport_locations array
+	form_data.teleport_locations.append(teleport_location);
+
+	// Sort by hp_percent (highest to lowest)
+	form_data.teleport_locations.sort();
+	form_data.teleport_locations.reverse(); // Highest HP threshold first
+
+	SendSysMessage(who, "Teleport location added. Boss will teleport when health is at or below "
+					+ hp_percent + "%", color := 66);
+	return 1;
+endfunction
+
+function SelectPatrolArea(who, byref form_data)
+	// Initialize patrol points array if it doesn't exist
+	if (!form_data.patrol_points)
+		form_data.patrol_points := array{};
+	endif
+
+	SendSysMessage(who, "Select a location for the patrol point. ESC to cancel.");
+	var targ := TargetCoordinates(who);
+
+	if (!targ)
+		SendSysMessage(who, "Canceled.");
+		return 0;
+	endif
+
+	// Create a new patrol point struct
+	var patrol_point := struct{ "x" := targ.x, "y" := targ.y, "z" := targ.z, "realm" := who.realm };
+
+	form_data.patrol_points.append(patrol_point);
+	SendSysMessage(who, "Patrol point added: " + targ.x + ", " + targ.y + ", " + targ.z);
+
+	return 1;
+endfunction
+
+function SelectDamageType(who, nature_type, byref form_data)
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 700);
+	GFResizePic(gump, 15, 15, 9350, 470, 670);
+
+	GFTextMid(gump, 0, 25, 500, 1153, "Selecione o Tipo de Dano para " + nature_type);
+
+	var y_pos := 60;
+	var counter := 1;
+
+	foreach damage_type in (array{ DAMAGE_TYPE::BLUNT, DAMAGE_TYPE::SLASH, DAMAGE_TYPE::PIERCING, DAMAGE_TYPE::BLUNT,
+							   	DAMAGE_TYPE::FIRE, DAMAGE_TYPE::COLD, DAMAGE_TYPE::POISON, DAMAGE_TYPE::ENERGY })
+		GFAddButton(gump, 50, y_pos, 2103, 2104, GF_CLOSE_BTN, counter);
+		GFTextLine(gump, 80, y_pos, 1153, damage_type);
+		y_pos += 30;
+		counter += 1;
+	endforeach
+
+	// Add a cancel button
+	GFAddButton(gump, 200, 650, 2119, 2120, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 240, 650, 1153, "Cancelar");
+
+	var input := GFSendGump(who, gump);
+
+	if (!input[0])
+		return 0;
+	endif
+
+	var selected_damage_type;
+	case (input[0])
+		1: selected_damage_type := DAMAGE_TYPE::BLUNT;
+		2: selected_damage_type := DAMAGE_TYPE::SLASH;
+		3: selected_damage_type := DAMAGE_TYPE::PIERCING;
+		4: selected_damage_type := DAMAGE_TYPE::BLUNT;
+		5: selected_damage_type := DAMAGE_TYPE::FIRE;
+		6: selected_damage_type := DAMAGE_TYPE::COLD;
+		7: selected_damage_type := DAMAGE_TYPE::POISON;
+		8: selected_damage_type := DAMAGE_TYPE::ENERGY;
+	endcase
+
+	// Add to form_data
+	if (!form_data.natural_traits)
+		form_data.natural_traits := array{};
+	endif
+
+	form_data.natural_traits.append(struct{ "trait" := nature_type,
+											"damage" := selected_damage_type });
+
+	return 1;
+endfunction
+
+function AddSpecialNature(who, nature_type, byref form_data)
+	// Add the special trait directly
+	if (!form_data.natural_traits)
+		form_data.natural_traits := array{};
+	endif
+
+	form_data.natural_traits.append(struct{ "trait" := nature_type, "damage" := "Special" });
+
+	return 1;
+endfunction
+
+// Function to handle race and gender selection
+function HandleAddRace(who, byref form_data)
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 600);
+	GFResizePic(gump, 15, 15, 9350, 470, 570);
+
+	GFTextMid(gump, 0, 25, 500, 1153, "Select Race & Gender");
+
+	// Race Section
+	GFTextMid(gump, 0, 60, 500, 1153, "Race");
+
+	var races := array{ HUMANO, ELFO, DROW, ORC, ANAO, PEQUILHO };
+
+	var y_pos := 90;
+	GFSetRadioGroup(gump, 1);
+
+	for i := 1 to races.size()
+		GFRadioButton(gump, 100, y_pos, 210, 211, (form_data.race == races[i]), 100 + i);
+		GFTextLine(gump, 130, y_pos, 1153, races[i]);
+		y_pos += 30;
+	endfor
+
+	// Gender Section
+	GFTextMid(gump, 0, 280, 500, 1153, "Gender");
+
+	y_pos := 310;
+	GFSetRadioGroup(gump, 2);
+
+	// Male option
+	GFRadioButton(gump, 100, y_pos, 210, 211, (form_data.gender == 0 || !form_data.gender), 200);
+	GFTextLine(gump, 130, y_pos, 1153, "Male");
+
+	// Female option
+	y_pos += 30;
+	GFRadioButton(gump, 100, y_pos, 210, 211, (form_data.gender == 1), 201);
+	GFTextLine(gump, 130, y_pos, 1153, "Female");
+
+	// Buttons
+	GFAddButton(gump, 150, 530, 2128, 2129, GF_CLOSE_BTN, 1); // Confirm
+	GFAddButton(gump, 300, 530, 2119, 2120, GF_CLOSE_BTN, 0); // Cancel
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 0)
+		SendSysMessage(who, "Race selection cancelled.");
+		return 0;
+	endif
+
+	// Process race selection
+	var selected_race := "";
+	for i := 1 to races.size()
+		if (input[100 + i])
+			selected_race := races[i];
+			break;
+		endif
+	endfor
+
+	// Process gender selection
+	var selected_gender := error;
+	if (input[200])
+		selected_gender := 0; // Male
+	elseif (input[201])
+		selected_gender := 1; // Female
+	endif
+
+	// Update form_data if both race and gender were selected
+	if (selected_race && selected_gender != error)
+		form_data.race := selected_race;
+		form_data.gender := selected_gender;
+
+		// Set the appropriate graphic based on race and gender
+		form_data.graphic := GetRaceGraphic(selected_race, selected_gender);
+		SendSysMessage(who, "Race set to " + selected_race + " (" + (selected_gender ? "Female" : "Male") + ")");
+		return 1;
+	else
+		SendSysMessage(who, "Please select both a race and gender.");
+		return HandleAddRace(who, form_data); // Reopen the gump
+	endif
+endfunction
+
+// Helper function to get the appropriate graphic based on race and gender
+function GetRaceGraphic(race, gender)
+	var base_graphic := (gender == 1) ? 401 : 400; // Human female or male
+
+	if (race == ELFO || race == DROW)
+		return (gender == 1) ? 1831 : 1830;
+	elseif (race == ORC)
+		return (gender == 1) ? 1833 : 1832;
+	elseif (race == ANAO || race == PEQUILHO)
+		return (gender == 1) ? 1829 : 1828;
+	else
+		return base_graphic; // Human
+	endif
+endfunction
+
+// Function to handle equipment selection
+function HandleAddEquipments(who, byref form_data)
+	// Initialize equipments array if it doesn't exist
+	if (!form_data.equipments)
+		form_data.+equipments := array{};
+	endif
+
+	var continue_adding := 1;
+
+	while (continue_adding)
+		// Show current equipment selection gump
+		var gump := GFCreateGump();
+		GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+		GFResizePic(gump, 15, 15, 9350, 570, 670);
+
+		GFTextMid(gump, 0, 25, 600, 1153, "Equipment Selection");
+
+		// Display current equipment
+		var y_pos := 60;
+		GFTextLine(gump, 30, y_pos, 1153, "Current Equipment:");
+		y_pos += 25;
+
+		if (form_data.equipments && form_data.equipments.size() > 0)
+			for i := 1 to form_data.equipments.size()
+				var equipment := form_data.equipments[i];
+				// Add delete button for each equipment
+				GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 100 + i);
+				GFTextLine(gump, 60, y_pos, 66, equipment.name + " (ID: " + equipment.objtype + ")");
+				y_pos += 20;
+
+				// Prevent overflow
+				if (y_pos > 500)
+					break;
+				endif
+			endfor
+		else
+			GFTextLine(gump, 60, y_pos, 2100, "No equipment selected yet");
+		endif
+
+		// Add action buttons
+		y_pos := 520;
+		GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 1);
+		GFTextLine(gump, 60, y_pos, 1153, "Add Single Equipment");
+
+		y_pos += 30;
+		GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 2);
+		GFTextLine(gump, 60, y_pos, 1153, "Add from Container");
+
+		y_pos += 30;
+		GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 3);
+		GFTextLine(gump, 60, y_pos, 1153, "Clear All Equipment");
+
+		// Done and Cancel buttons
+		y_pos += 50;
+		GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 998);
+		GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999);
+
+		var input := GFSendGump(who, gump);
+
+		case (input[0])
+			1:   // Add Single Equipment
+				AddSingleEquipment(who, form_data);
+
+			2:   // Add from Container
+				AddEquipmentFromContainer(who, form_data);
+
+			3:   // Clear All Equipment
+				form_data.equipments := array{};
+				SendSysMessage(who, "All equipment cleared.", color := 33);
+
+			998: // Done
+				continue_adding := 0;
+				SendSysMessage(who, "Equipment selection completed. Total items: " + form_data.equipments.size());
+
+			999: // Cancel
+				continue_adding := 0;
+				SendSysMessage(who, "Equipment selection cancelled.");
+
+			default:
+				// Handle delete buttons (100+)
+				if (input[0] >= 101 && input[0] <= 100 + form_data.equipments.size())
+					var index := input[0] - 100;
+					var removed_item := form_data.equipments[index];
+					form_data.equipments.erase(index);
+					SendSysMessage(who, "Removed equipment: " + removed_item.name, color := 33);
+				endif
+		endcase
+	endwhile
+
+	return 1;
+endfunction
+
+// Function to add a single equipment item
+function AddSingleEquipment(who, byref form_data)
+	var continue_adding := 1;
+
+	SendSysMessage(who, "Target equipment to add. Press ESC to stop adding equipment.", color := 66);
+
+	while (continue_adding)
+		var targ := Target(who);
+
+		if (!targ)
+			SendSysMessage(who, "Stopping equipment selection.", color := 33);
+			break;
+		endif
+
+		if (!targ.IsA(POLCLASS_ITEM))
+			SendSysMessage(who, "You must target an item.", color := 33);
+			continue;
+		endif
+
+		// Check if this equipment is already in the list
+		var already_exists := 0;
+		if (form_data.equipments)
+			foreach equipment in (form_data.equipments)
+				if (equipment.objtype == targ.objtype)
+					already_exists := 1;
+					break;
+				endif
+			endforeach
+		endif
+
+		if (already_exists)
+			SendSysMessage(who, "Equipment " + targ.desc + " is already in the list.", color := 33);
+		else
+			// Add the equipment to the list
+			var equipment_entry := CreateEquipmentEntry(targ);
+
+			form_data.equipments.append(equipment_entry);
+			SendSysMessage(who, "Added equipment: " + targ.desc + " (ID: " + targ.objtype + ")", color := 66);
+		endif
+
+		SendSysMessage(who, "Target another equipment or press ESC to stop.", color := 66);
+	endwhile
+endfunction
+
+// Function to add equipment from a container
+function AddEquipmentFromContainer(who, byref form_data)
+	SendSysMessage(who, "Target a container to add all items as equipment.", color := 66);
+
+	var targ := Target(who);
+
+	if (!targ)
+		SendSysMessage(who, "Equipment container selection cancelled.", color := 33);
+		return 0;
+	endif
+
+	if (!targ.IsA(POLCLASS_CONTAINER))
+		SendSysMessage(who, "You must target a container.", color := 33);
+		return 0;
+	endif
+
+	var items_added := 0;
+	var items_skipped := 0;
+
+	// Iterate through all items in the container
+	foreach item in (EnumerateItemsInContainer(targ))
+		// Check if this equipment is already in the list
+		var already_exists := 0;
+		if (form_data.equipments)
+			foreach equipment in (form_data.equipments)
+				if (equipment.objtype == item.objtype)
+					already_exists := 1;
+					break;
+				endif
+			endforeach
+		endif
+
+		if (!already_exists)
+			// Add the equipment to the list
+
+			var equipment_entry := CreateEquipmentEntry(item);
+
+			form_data.equipments.append(equipment_entry);
+			SendSysMessage(who, "Added: " + item.desc + " (ID: " + item.objtype + ")", color := 66);
+			items_added += 1;
+		else
+			SendSysMessage(who, "Skipped (already exists): " + item.desc, color := 2100);
+			items_skipped += 1;
+		endif
+	endforeach
+
+	SendSysMessage(who, "Container processing complete. Added: " + items_added
+					+ " items, Skipped: " + items_skipped + " duplicates.", color := 33);
+
+	return 1;
+endfunction
+
+function HandleAddMount(who, byref form_data)
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+	GFResizePic(gump, 15, 15, 9350, 570, 670);
+
+	GFTextMid(gump, 0, 25, 600, 1153, "Mount Selection");
+
+	// Display current mount selection
+	var y_pos := 60;
+	if (form_data.mount)
+		GFTextLine(gump, 30, y_pos, 1153, "Current Mount:");
+		y_pos += 20;
+		GFTextLine(gump, 50, y_pos, 66, "Mount Name: " + form_data.mount_name);
+
+		// Add remove button
+		y_pos += 25;
+		GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 3); // Changed ID to 3
+		GFTextLine(gump, 60, y_pos, 33, "Remove Current Mount");
+		y_pos += 35;
+	else
+		GFTextLine(gump, 30, y_pos, 2100, "No mount selected");
+		y_pos += 35;
+	endif
+
+	// Add selection methods
+	GFTextLine(gump, 30, y_pos, 1153, "Select Mount:");
+	y_pos += 25;
+
+	// Method 1: Target an existing mount
+	GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 60, y_pos, 1153, "Target Existing Mount");
+
+	y_pos += 30;
+
+	// Method 2: Select from predefined list
+	GFAddButton(gump, 30, y_pos, 2117, 2118, GF_CLOSE_BTN, 2);
+	GFTextLine(gump, 60, y_pos, 1153, "Choose from Mount List");
+
+	// Done and Cancel buttons
+	y_pos := 620;
+	GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 998);
+	GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	case (input[0])
+		1:   // Target existing mount
+			return TargetExistingMount(who, form_data);
+
+		2:   // Choose from list
+			return SelectMountFromList(who, form_data);
+
+		3:   // Remove current mount - Changed from 999
+			form_data.mount := 0; // Changed from form_data.+mount
+			SendSysMessage(who, "Mount removed.", color := 33);
+			return HandleAddMount(who, form_data); // Reopen gump
+
+		998: // Done
+			SendSysMessage(who, "Mount selection completed.");
+			return 1;
+
+		999: // Cancel
+			SendSysMessage(who, "Mount selection cancelled.");
+			return 0;
+	endcase
+
+	return 0;
+endfunction
+
+function TargetExistingMount(who, byref form_data)
+	SendSysMessage(who, "Target a mount to copy its appearance.", color := 66);
+
+	var targ := Target(who);
+
+	if (!targ)
+		SendSysMessage(who, "Mount selection cancelled.", color := 33);
+		return HandleAddMount(who, form_data);
+	endif
+
+	// Check if target is a mobile with a mount
+	if (targ.IsA(POLCLASS_MOBILE))
+		var mount_graphic := targ.graphic;
+		form_data.+mount := mount_graphic;
+		SendSysMessage(who, "Mount selected with graphic: " + mount_graphic, color := 66);
+		return HandleAddMount(who, form_data); // Return to mount selection gump
+	endif
+
+	SendSysMessage(who, "Invalid target. Please target a mount", color := 33);
+	return HandleAddMount(who, form_data);
+endfunction
+
+function SelectMountFromList(who, byref form_data, page := 1)
+	var cfg := ReadConfigFile(":*:npcdesc");
+	if (!cfg)
+		SendSysMessage(who, "Error: Could not load npcdesc.", color := 33);
+		return HandleAddMount(who, form_data);
+	endif
+
+	var available_mounts := array{};
+	var elem_names := GetConfigStringKeys(cfg);
+
+	// Collect all mounts
+	foreach template in elem_names
+		var elem := cfg[template];
+		if (elem.Environment == "Mount")
+			var mount_struct := struct{ "name" := elem.Name, "graphic" := elem.Objtype,
+										"template" := template };
+			available_mounts.append(mount_struct);
+		endif
+	endforeach
+
+	if (available_mounts.size() == 0)
+		SendSysMessage(who, "No mounts found in configuration.", color := 33);
+		return HandleAddMount(who, form_data);
+	endif
+
+	// Sort mounts by name
+	available_mounts.sortby("name");
+
+	// Pagination
+	var items_per_page := 15;
+	var total_pages := CInt(Ceil(CDbl(available_mounts.size()) / items_per_page));
+	var start_index := (page - 1) * items_per_page;
+	var end_index := Min(start_index + items_per_page, available_mounts.size());
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 500, 600);
+	GFResizePic(gump, 15, 15, 9350, 470, 570);
+
+	GFTextMid(gump, 0, 25, 500, 1153, "Select Mount (Page " + page + "/" + total_pages + ")");
+
+	var y_pos := 60;
+	for i := start_index to end_index - 1
+		var mount := available_mounts[i + 1];
+		GFAddButton(gump, 30, y_pos, 2103, 2104, GF_CLOSE_BTN, i + 1);
+		GFTextLine(gump, 60, y_pos, 1153, mount.name + " (" + Hex(mount.graphic) + ")");
+		y_pos += 25;
+	endfor
+
+	// Navigation buttons
+	if (page > 1)
+		GFAddButton(gump, 30, 550, 2117, 2118, GF_CLOSE_BTN, 998); // Prev page
+		GFTextLine(gump, 60, 550, 33, "Previous Page");
+	endif
+
+	if (page < total_pages)
+		GFAddButton(gump, 200, 550, 2117, 2118, GF_CLOSE_BTN, 997); // Next page
+		GFTextLine(gump, 230, 550, 33, "Next Page");
+	endif
+
+	// Cancel button
+	GFAddButton(gump, 370, 550, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	case (input[0])
+		998: // Previous page
+			return SelectMountFromList(who, form_data, page - 1);
+		997: // Next page
+			return SelectMountFromList(who, form_data, page + 1);
+		999: // Cancel
+			SendSysMessage(who, "Mount selection cancelled.", color := 33);
+			return HandleAddMount(who, form_data);
+		default:
+			if (input[0] >= 1 && input[0] <= available_mounts.size())
+				var selected_mount := available_mounts[input[0]];
+				form_data.mount := selected_mount.graphic; // Fixed: use .mount instead of .+mount
+				form_data.mount_name := selected_mount.name; // Store mount name
+				SendSysMessage(who, "Selected mount: " + selected_mount.name + " (" + Hex(selected_mount.graphic) + ")",
+								color := 66);
+			endif
+	endcase
+
+	return HandleAddMount(who, form_data);
+endfunction
+
+function HandleAddColors(who, byref form_data)
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 600, 700);
+	GFResizePic(gump, 15, 15, 9350, 570, 670);
+
+	GFTextMid(gump, 0, 25, 600, 1153, "Boss Color Selection");
+
+	// Display current color selections
+	var y_pos := 60;
+	if (form_data.color_ranges && form_data.color_ranges.size() > 0)
+		GFTextLine(gump, 30, y_pos, 1153, "Selected Color Ranges:");
+		y_pos += 25;
+
+		for i := 1 to form_data.color_ranges.size()
+			var color_range := form_data.color_ranges[i];
+			GFTextLine(gump, 50, y_pos, 66, "- " + color_range);
+			// Add delete button for each color range - use the actual index
+			GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 200 + i);
+			y_pos += 20;
+		endfor
+
+		y_pos += 20;
+
+		// Add clear all button if there are color ranges
+		if (form_data.color_ranges.size() > 0)
+			GFAddButton(gump, 30, y_pos, 30008, 30009, GF_CLOSE_BTN, 150);
+			GFTextLine(gump, 60, y_pos, 33, "Clear All Colors");
+			y_pos += 30;
+		endif
+	else
+		GFTextLine(gump, 30, y_pos, 2100, "No color ranges selected yet");
+		y_pos += 50;
+	endif
+
+	// Basic color categories
+	GFTextLine(gump, 30, y_pos, 1153, "Basic Colors:");
+	y_pos += 25;
+
+	var basic_colors := array{ "Rosa", "Vermelho", "Azul", "Verde", "Amarelo",
+						   	"Laranja", "Neutro", "Cinza" };
+
+	var colors_per_row := 4;
+	var col := 0;
+	var x_start := 30;
+	var x_spacing := 130;
+
+	foreach color in basic_colors
+		var x_pos := x_start + (col * x_spacing);
+
+		GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, 100 + _color_iter);
+		GFTextLine(gump, x_pos + 30, y_pos, 1153, color);
+
+		col += 1;
+		if (col >= colors_per_row)
+			col := 0;
+			y_pos += 30;
+		endif
+	endforeach
+
+	// Move to next section
+	if (col > 0)
+		y_pos += 30;
+	endif
+	y_pos += 20;
+
+	// Regional color themes - USING CONSTANTS
+	GFTextLine(gump, 30, y_pos, 1153, "Cultural Themes:");
+	y_pos += 25;
+
+	var regional_colors := array{ AIGLANA, HAROLOTH, LESTE, BJORSKA, ALURIEL,
+							  	BADURAN, GULTHRAK, COLHESIANA };
+
+	col := 0;
+	colors_per_row := 2; // Fewer per row since names are longer
+	x_spacing := 250;
+
+	foreach region in regional_colors
+		var x_pos := x_start + (col * x_spacing);
+
+		GFAddButton(gump, x_pos, y_pos, 2117, 2118, GF_CLOSE_BTN, 120 + _region_iter);
+		GFTextLine(gump, x_pos + 30, y_pos, 1153, region);
+
+		col += 1;
+		if (col >= colors_per_row)
+			col := 0;
+			y_pos += 30;
+		endif
+	endforeach
+
+	// Done and Cancel buttons
+	y_pos := 620;
+	GFAddButton(gump, 30, y_pos, 2128, 2129, GF_CLOSE_BTN, 998);
+	GFAddButton(gump, 200, y_pos, 2119, 2120, GF_CLOSE_BTN, 999);
+
+	var input := GFSendGump(who, gump);
+
+	// Initialize color_ranges if it doesn't exist
+	if (!form_data.color_ranges)
+		form_data.+color_ranges := array{};
+	endif
+
+	case (input[0])
+		998: // Done
+			return 1;
+		999: // Cancel
+			return 0;
+		150: // Clear all colors
+			form_data.color_ranges := array{};
+			SendSysMessage(who, "All color ranges cleared.");
+			return HandleAddColors(who, form_data);
+
+		// Basic colors (101-108)
+		101: // Rosa
+			AddColorRange(form_data, "Rosa");
+			return HandleAddColors(who, form_data);
+		102: // Vermelho
+			AddColorRange(form_data, "Vermelho");
+			return HandleAddColors(who, form_data);
+		103: // Azul
+			AddColorRange(form_data, "Azul");
+			return HandleAddColors(who, form_data);
+		104: // Verde
+			AddColorRange(form_data, "Verde");
+			return HandleAddColors(who, form_data);
+		105: // Amarelo
+			AddColorRange(form_data, "Amarelo");
+			return HandleAddColors(who, form_data);
+		106: // Laranja
+			AddColorRange(form_data, "Laranja");
+			return HandleAddColors(who, form_data);
+		107: // Neutro
+			AddColorRange(form_data, "Neutro");
+			return HandleAddColors(who, form_data);
+		108: // Cinza
+			AddColorRange(form_data, "Cinza");
+			return HandleAddColors(who, form_data);
+
+		// Regional colors (121-128)
+		121: // AIGLANA
+			AddColorRange(form_data, AIGLANA);
+			return HandleAddColors(who, form_data);
+		122: // HAROLOTH
+			AddColorRange(form_data, HAROLOTH);
+			return HandleAddColors(who, form_data);
+		123: // LESTE
+			AddColorRange(form_data, LESTE);
+			return HandleAddColors(who, form_data);
+		124: // BJORSKA
+			AddColorRange(form_data, BJORSKA);
+			return HandleAddColors(who, form_data);
+		125: // ALURIEL
+			AddColorRange(form_data, ALURIEL);
+			return HandleAddColors(who, form_data);
+		126: // BADURAN
+			AddColorRange(form_data, BADURAN);
+			return HandleAddColors(who, form_data);
+		127: // GULTHRAK
+			AddColorRange(form_data, GULTHRAK);
+			return HandleAddColors(who, form_data);
+		128: // COLHESIANA
+			AddColorRange(form_data, COLHESIANA);
+			return HandleAddColors(who, form_data);
+
+		default:
+			// Handle delete buttons for color ranges (200+)
+			if (input[0] >= 201 && input[0] <= 200 + form_data.color_ranges.size())
+				var index := input[0] - 200; // Convert to proper index (201 becomes 1, 202 becomes 2, etc.)
+				var removed_color := form_data.color_ranges[index];
+				form_data.color_ranges.erase(index);
+				SendSysMessage(who, "Removed color range: " + removed_color);
+				return HandleAddColors(who, form_data);
+			endif
+			break;
+	endcase
+
+	return 0;
+endfunction
+
+// FIXED: Update this function to match the call signature
+function AddColorRange(byref form_data, color_name)
+	// Initialize color_ranges if it doesn't exist
+	if (!form_data.color_ranges)
+		form_data.+color_ranges := array{};
+	endif
+
+	// Check if this color range is already added
+	foreach existing_range in (form_data.color_ranges)
+		if (existing_range == color_name)
+			return 0; // Already exists
+		endif
+	endforeach
+
+	// Add the color name directly to the array
+	form_data.color_ranges.append(color_name);
+
+	return 1;
+endfunction
+
+function CreateEquipmentEntry(item)
+	var equipment_entry := struct{ "objtype" := item.objtype,
+							   	"color" := item.color,
+							   	"name" := item.desc, "properties" := struct{} };
+
+	// Get all object properties from the item
+	var all_props := GetObjPropertyNames(item);
+	if (all_props && all_props.size() > 0)
+		equipment_entry.+properties := struct{};
+
+		foreach prop_name in all_props
+			var prop_value := GetObjProperty(item, prop_name);
+			if (prop_value != error)
+				equipment_entry.properties[prop_name] := prop_value;
+				sleepms(20);
+			endif
+		endforeach
+	endif
+
+	return equipment_entry;
+endfunction

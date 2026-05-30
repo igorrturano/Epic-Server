@@ -1,0 +1,63 @@
+/*
+ * Ritual Command (.d)
+ * 
+ * Entry point for druid/priest/shaman ritual spells. Works with both:
+ * - Text commands: .d healing (who, spellname as separate args)
+ * - Hotbar/scripts: Start_Script(script, {who, spellname})
+ */
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":attributes:attributes";
+include ":spells:include/tnmagery";
+include ":spells:include/spell_executor";
+
+// Main program - handles both text commands and Start_Script calls
+program ritual(who, spellname := "")
+	// Handle Start_Script array format: {who, spellname}
+	if (TypeOf(who) == "Array")
+		var params := who;
+		who := params[1];
+		spellname := params[2];
+	endif
+
+	var chardata := GetObjProperty(who, "chardata");
+	if (!chardata)
+		SendSysMessageEx(who, "Erro ao acessar dados do personagem.", SSM_FAIL);
+		return 0;
+	endif
+
+	var magia := chardata.magia;
+
+	// Check if player is a ritualist class
+	if (magia != "Sacerdote" && magia != "Shaman" && magia != "Druid")
+		SendSysMessageEx(who, "Voce nao possui conhecimento sobre rituais.", SSM_FAIL);
+		return 0;
+	endif
+
+	// If no spell name provided, open the ritual gump
+	if (!spellname || spellname == "")
+		if (!GetObjProperty(who, "cantrips_granted"))
+			SendSysMessageEx(who, "Voce primeiro precisa visitar um altar.", SSM_FAIL);
+			return 0;
+		endif
+
+		Start_Script(":spells:viewSpells", who);
+		return 1;
+	endif
+
+	// Determine spell type based on class
+	var spell_type;
+	if (magia == "Sacerdote")
+		spell_type := SPELL_TYPE_PRIEST;
+	elseif (magia == "Shaman")
+		spell_type := SPELL_TYPE_SHAMAN;
+	elseif (magia == "Druid")
+		spell_type := SPELL_TYPE_DRUID;
+	endif
+	
+	// Execute the spell using the unified executor
+	return ExecuteSpellByName(who, spellname, spell_type);
+endprogram

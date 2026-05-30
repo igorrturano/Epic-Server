@@ -1,0 +1,63 @@
+// =============================================================================
+// prisaoteleport.src — Teleporte do player para a prisao apos KO
+// =============================================================================
+//
+// Responsavel por mover o player desmaiado ate as coordenadas da prisao e
+// exibir a mensagem de crime ao ressuscitar.
+//
+// FLUXO
+//   1. Aguarda ate 10s que o player fique morto (who.dead == true).
+//      Se nao desmaiar nesse tempo, aborta sem efeito.
+//   2. Aguarda PRISON_WAIT_MINUTES * 60 segundos de desmaio.
+//      Se ressuscitar antes (outro script ou GM), aborta.
+//   3. Teleporta o player para as coordenadas recebidas via params.
+//   4. Exibe mensagem de prisao com descricao do crime (GetCrimeDesc).
+//
+// PARAMETROS
+//   params[1] = serial do player
+//   params[2] = guildid da faccao
+//   params[3] = tier da infracao (1/2/3)
+//   params[4..7] = x, y, z, realm de destino na prisao
+//
+// OBSERVACAO
+//   O tempo de espera usa PRISON_WAIT_MINUTES de prisao.inc para manter
+//   consistencia com o timer do gump (nao duplica o valor hardcoded).
+//   KataWakeUp (death/players) le #prisao_destino e inicia prisaotimer
+//   apos o player ressuscitar.
+// =============================================================================
+
+use uo;
+use os;
+use guilds;
+
+include "include/say";
+include "include/prisao";
+
+set_script_option(SCRIPTOPT_CAN_ACCESS_OFFLINE_MOBILES, 1);
+
+program prisaoteleport(params)
+    var who_serial := CInt(params[1]);
+    var guildid    := CInt(params[2]);
+    var tier       := CInt(params[3]);
+    var px         := CInt(params[4]);
+    var py         := CInt(params[5]);
+    var pz         := CInt(params[6]);
+    var prealm     := CStr(params[7]);
+
+    var who := SystemFindObjectBySerial(who_serial);
+    if (!who || !who.isA(POLCLASS_MOBILE)) return; endif
+
+    var _w := 0;
+    while (!who.dead && _w < 20)
+        sleepms(500);
+        _w := _w + 1;
+    endwhile
+    if (!who.dead) return; endif
+
+    Sleep(PRISON_WAIT_MINUTES * 60);
+    if (!who.dead) return; endif
+
+    MoveObjectToLocation(who, px, py, pz, prealm, MOVEOBJECT_FORCELOCATION);
+    PrintTextAbovePrivate(who, "*acorda na prisao*", who);
+    SendSysMessageEx(who, "Voce foi preso pela faccao. " + GetCrimeDesc(tier), SSM_HARMFUL);
+endprogram

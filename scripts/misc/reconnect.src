@@ -1,0 +1,55 @@
+/* $Id: reconnect.src 1345 2006-05-12 08:18:29Z austin $
+ *
+ * Purpose
+ * This script allows code to run when the player logs in after having recently logged off.
+ *
+*/
+use uo;
+use os;
+
+include "include/client";
+include ":fls_core:fls_characters";
+include ":accounts:accounts";
+
+program core_reconnect(who)
+	who := who; // Avoid compiler warnings.
+	//  PrintTextAbove(who, "Reconnecting");
+	//  who.setlightlevel(0, 2);
+	//  return 1;
+	EraseObjProperty(who, "#Casting"); // Bugs de cast
+
+	var cheiro_expira := CInt(GetObjProperty(who, "#cheiro_expira"));
+	if (cheiro_expira)
+		if (CInt(polcore().systime) >= cheiro_expira)
+			EraseObjProperty(who, "descmodboss");
+			EraseObjProperty(who, "#cheiro_expira");
+			EraseObjProperty(who, "#cheiro_pid");
+		else
+			var cheiro_pid := CInt(GetObjProperty(who, "#cheiro_pid"));
+			var proc := cheiro_pid ? GetProcess(cheiro_pid) : 0;
+			if (!proc || !proc.pid)
+				Start_Script(":fezes:scripts/cheiro", array{who});
+			endif
+		endif
+	endif
+
+	if (who.cmdlevel <= 1)
+		var acc := who.acct;
+		var count := ACCT_GetNumCharacters(acc);
+		if (count > 1)
+			var maxChars := CInt(acc.getprop("maxchars"));
+			if (count > maxChars)
+				SetObjProperty(who, "delete", 1);
+				SetObjProperty(who, "#delete", 1);
+				SendSysMessage(who, "Voce nao pode criar mais personagens na sua conta!");
+				sleep(1);
+				DisconnectClient(who);
+				sleep(2);
+				return 1;
+			endif
+		endif
+	endif
+
+	destroyIllyraOutsideDungeons(who);
+	return 1;
+endprogram

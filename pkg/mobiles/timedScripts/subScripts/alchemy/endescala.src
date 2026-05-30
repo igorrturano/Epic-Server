@@ -1,0 +1,24 @@
+use uo;
+use os;
+include ":mobileRescale:include/rerender";
+
+const SCALE_ENDKEY := "pocaoEscala_endtime";
+
+program endescala(params)
+    var mobile := params[1];
+    if (!mobile || !mobile.IsA(POLCLASS_MOBILE))
+        return;
+    endif
+
+    // guarda de geração: se endtime foi atualizado por uma poção mais nova
+    // (endtime futuro), este EndScript pertence ao timer antigo — não interfere
+    var endtime := CInt(GetObjProperty(mobile, SCALE_ENDKEY));
+    if (endtime > ReadGameClock() + 2)
+        return 1;
+    endif
+
+    EraseObjProperty(mobile, SCALE_ENDKEY);
+    EraseObjProperty(mobile, "entityScale");
+    ForceScaleRerender(mobile);
+    return 1;
+endprogram

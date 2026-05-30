@@ -1,0 +1,44 @@
+use uo;
+use os;
+use util;
+use cfgfile;
+include ":attributes:attributes";
+include "include/epicUtils";
+
+program start_skill(who, txt)
+	if (who.dead)
+		SendSysMessage(who, "Você está morto e não pode fazer isto.");
+		return;
+	endif
+
+	var delay := GetObjProperty(who, "delayskill");
+	SetObjProperty(who, "delayskill", ReadGameClock() + 5);
+	if (delay)
+		if (delay > ReadGameClock())
+			SendSysMessage(who, "Você ainda está fazendo outra coisa.");
+			return;
+		endif
+	endif
+
+	txt := NormalizeString(txt);
+
+	var skillname := "";
+	var attributes := AP_ListAttributesByType("Skill");
+	foreach attribute in attributes
+		if (NormalizeString(attribute) == txt)
+			skillname := attribute;
+			break;
+		endif
+	endforeach
+
+	if (skillname)
+		var script := AP_GetAttributeCfgElem(skillname).Script;
+		if (script)
+			start_script(script, who);
+		else
+			SendSysMessage(who, "Esta skill não possui um script associado.");
+		endif
+	else
+		SendSysMessage(who, "Essa skill não existe.");
+	endif
+endprogram

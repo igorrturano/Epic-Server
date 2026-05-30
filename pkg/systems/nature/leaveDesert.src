@@ -1,0 +1,20 @@
+use uo;
+use os;
+use vitals;
+
+include ":nature:nature";
+
+program removecalor(who, textarea)
+	EraseObjProperty(who, "calor");
+
+	var p := cint(GetObjProperty(who, "penalidadeclima"));
+	if (p > 0)
+		if (p == 1)
+			RemoveHeatMod(who, 1);
+		elseif (p >= 2)
+			RemoveHeatMod(who, 1);
+			RemoveHeatMod(who, 2);
+		endif
+	endif
+	EraseObjProperty(who, "penalidadeclima");
+endprogram

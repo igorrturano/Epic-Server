@@ -1,0 +1,85 @@
+use uo;
+use os;
+
+include ":message:model/Message";
+include ":abilities:controllers/AbilityMonitor";
+include ":abilities:AbilityRegistry";
+include ":abilities:models/Ability";
+include ":attributes:attributes";
+include ":hotbar:include/cooldown_packet";
+
+// IMPORTANT: `mobile` and `monitor` are class instances that came in via
+// Start_Script. Their fields survived the trip; their method tables did NOT.
+// Calling any method on them here will silently crash the program.
+//   - Field access (mobile.ObjRef, monitor.Pid, monitor.AbilityId): OK.
+//   - Method calls (mobile.GetCurrentHP(), monitor.Deactivate()): WILL CRASH.
+// Pass them through to the executor (which re-wraps in its own script context
+// where method dispatch works) or rebuild via MobileWrapper(mobile.ObjRef).
+program AbilityMonitor(params)
+	var mobile := params[1];  // MobileWrapper — fields OK, methods broken
+	var monitor := params[2]; // AbilityMonitor — same constraint
+
+	if (!mobile.ObjRef || mobile.ObjRef.dead)
+		if (mobile.ObjRef)
+			Message("Você não pode usar esta habilidade enquanto estiver morto.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile.ObjRef);
+		endif
+		return;
+	endif
+
+	monitor.Pid := GetPid();
+	var abilityId := monitor.AbilityId;
+	var archetype := GetAbilityArchetype(abilityId);
+	var executorScript := $"{ABILITY_PKG}AbilityExecutor{archetype}";
+
+	SetScriptController(mobile.ObjRef);
+
+	// Query executor metadata only (does not run ability activation).
+	var shouldRunAsyncOnUse := run_script_to_completion(executorScript,
+		array{"query_is_on_use", abilityId});
+
+	if (shouldRunAsyncOnUse)
+		// ON_USE with targeting must run asynchronously to preserve client interaction.
+		run_script(executorScript, array{"activate_async", abilityId, mobile, monitor});
+		return;
+	endif
+
+	// Phase 1: Activate (delegates to executor)
+	var result := run_script_to_completion(executorScript,
+		array{"activate", abilityId, mobile, monitor});
+	if (result.hasError)
+		Message(result.errorMsg, Color(SYSTEM_COLOR::FAIL)).SendSys(mobile.ObjRef);
+		// Rebuild the wrapper here so method dispatch works for the rollback call.
+		MobileWrapper(mobile.ObjRef).RollbackAbilityActivation(abilityId);
+		return;
+	endif
+
+	// Phase 2: Event loop (no ability instance needed)
+	var duration := result.duration;
+	var abilityName := result.name;
+	Message($"Habilidade {abilityName} ativada por {duration}s.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(mobile.ObjRef);
+
+	var endTime := POLCore().systime + duration;
+	var remainingTime := duration;
+
+	while (remainingTime > 0)
+		var event := Wait_For_Event(remainingTime);
+
+		if (event == ABILITY_EVENT_ID::ABORT)
+			Message($"Habilidade {abilityName} foi cancelada.", Color(SYSTEM_COLOR::FAIL)).SendSys(mobile.ObjRef);
+			break;
+		elseif (event == ABILITY_EVENT_ID::COMPLETE)
+			break;
+		elseif (event == ABILITY_EVENT_ID::REFRESH)
+			Message($"Habilidade {abilityName} renovada.", Color(SYSTEM_COLOR::INFO)).SendSys(mobile.ObjRef);
+			endTime := POLCore().systime + duration;
+		elseif (!event)
+			break;
+		endif
+
+		remainingTime := endTime - POLCore().systime;
+	endwhile
+
+	// Phase 3: Deactivate (delegates to executor)
+	run_script_to_completion(executorScript,
+		array{"deactivate", abilityId, mobile});
+endprogram

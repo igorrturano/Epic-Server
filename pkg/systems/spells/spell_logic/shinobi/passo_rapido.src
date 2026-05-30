@@ -1,0 +1,35 @@
+use uo;
+use os;
+
+include "include/say";
+include "include/client";
+include "include/utils";
+include ":attributes:attributes";
+
+/**
+ * Passo Rapido (Shunshin no Jutsu) - Spell 1102
+ * Dash forward in the direction the ninja is facing.
+ */
+program SpellScript(params)
+	var who := params[1];
+	params := 0;
+
+	var sneak := CInt(EffectiveSkill(who, "Stealth"));
+	var dist := CInt(sneak / 10);
+	if (dist < 3)
+		dist := 3;
+	endif
+
+	// Dash: hide, push forward, reveal
+	PlaySoundEffect(who, 0x51C);
+	PrintTextAbove(who, "*Shunshin no Jutsu!*");
+	who.hidden := 1;
+	sleepms(200);
+	PushBack(who, dist, 75, 1);
+	who.hidden := 0;
+
+	// Visual effect at destination
+	PlayObjectCenteredEffect(who, 0x3728, 10, 10);
+
+	return 1;
+endprogram

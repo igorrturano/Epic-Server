@@ -1,0 +1,77 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var spell := params[3];
+	params := 0;
+
+	var theology := AP_GetSkill(who, THEOLOGY);
+	var bonus := CInt(theology / 20);
+	if (bonus < 1)
+		bonus := 1;
+	endif
+
+	var duration := CInt(theology / 2);
+	if (duration < 5)
+		duration := 5;
+	endif
+
+	var max_allies := CInt(theology / 20);
+	if (max_allies < 1)
+		max_allies := 1;
+	endif
+
+	var allies := MobileWrapper(who).GetNearbyAllies(5);
+	var blessed_count := 0;
+
+	foreach mobile in allies
+		if (blessed_count >= max_allies)
+			break;
+		endif
+
+		SC_RemoveEffect(mobile, CInt(spell.id));
+
+		var opts := struct{};
+		opts.+hitchance_mod := bonus;
+		opts.+buff_category := "hit_bonus";
+		opts.+displayname := "Abencoar";
+		opts.+desc := $"+{bonus} no ataque";
+		opts.+on_apply_script := ":spells:shared/playApplyFX";
+		opts.+on_apply_params := struct{
+			fx := FX_BLESS_EFFECT,
+			fx_speed := 2,
+			fx_duration := 2,
+			sound := SFX_BLESS
+		};
+
+		SC_ApplyEffect(who, mobile, opts, duration, CInt(spell.id));
+
+		PlayObjectCenteredEffect(mobile, FX_BLESS_SPELL, 1, 25);
+		PlayObjectCenteredEffect(mobile, FX_EXPLOSAO_DE_ENERGIA, 0, duration * 20);
+
+		SendSysMessageEx(mobile, "Voce sente uma bencao divina guiando seus golpes. (+" + bonus + " no ataque por " + duration + " segundos)", SSM_INFO);
+
+		blessed_count := blessed_count + 1;
+	endforeach
+
+	PlayStationaryEffect(who.x, who.y, who.z, FX_BLESS_EFFECT, 3, 3);
+	PlaySoundEffect(who, SFX_BLESS);
+
+	if (blessed_count > 0)
+		SendSysMessageEx(who, "Voce abencoa " + blessed_count + " aliado(s) com orientacao divina.", SSM_INFO);
+		SendSysMessageEx(who, "Bonus: +" + bonus + " no ataque por " + duration + " segundos.", SSM_INFO);
+	else
+		SendSysMessageEx(who, "Nenhum aliado foi abencoado.", SSM_FAIL);
+	endif
+
+	return 1;
+endprogram

@@ -1,0 +1,48 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":timedScripts:timedScripts";
+include ":charactercreation:resists";
+
+program MaldicaoMetamorfose(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	if (GetObjProperty(targ, "metamorfose") == error)
+		return 0;
+	endif
+
+	// Per-target dispel guard. Two undead casting in the same tick used to
+	// queue two endmetamorfose runs and double-subtract polymorph_* deltas.
+	var dispelled_until := GetObjProperty(targ, "#metamorfose_dispelled");
+	if (dispelled_until != error && polcore().systime < dispelled_until)
+		return 0;
+	endif
+	SetObjProperty(targ, "#metamorfose_dispelled", polcore().systime + 3);
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	var duration := tier * 5;
+
+	if (CheckResist(targ, WILL, RESIST_HARD))
+		duration := CInt(duration / 2);
+	endif
+
+	PrintTextAbove(me, "*corrompe a natureza*");
+	PlaySoundEffect(me, 0x1ED);
+
+	TS_LowerDuration(targ, "metamorfosedruida", -1);
+
+	var str_penalty := tier * 5;
+	TS_StartTimer(targ, "dmgreduction", duration, str_penalty, me);
+	TS_StartTimer(targ, "desarmar", duration);
+	TS_StartTimer(targ, "desmontar", duration);
+
+	SendSysMessageEx(targ, "A corrupção morta-viva desfaz sua transformação!", SSM_FAIL);
+
+	return 1;
+endprogram

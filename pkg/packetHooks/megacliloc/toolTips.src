@@ -1,0 +1,94 @@
+/* $Id: toolTips.src 104 2006-05-25 22:14:15Z montuz $
+ *	Description: AOS Tooltips. Starter script.
+ *	This packet takes awhile to get used to.
+*/
+use uo;
+use basic;
+use cfgfile;
+use polsys;
+
+use os;
+
+include ":attributes:attributes";
+include "include/client";
+include ":megacliloc:/include/gettersTTipUtils";
+include ":megacliloc:/include/nomeObjetoTTip";
+include ":megacliloc:/include/descricaoObjetoTTip";
+include "include/epicConstants";
+
+const OFFSET_OBJECT_SERIAL := 0x05;
+const OFFSET_CLILOC_ID := 0x0F;
+const OFFSET_LENGTH_ID := 0x13;
+const OFFSET_UNICODE_TEXT := 0x14;
+
+program Install()
+
+	Print("INSTALLING: Outgoing Tooltip PH...");
+	return 1;
+
+endprogram
+
+exported function MegaCliloc(who, byref packet)
+	var Object_Name;
+
+	var xDesc := ""; // Será utilizado para juntar as informações do tooltip do item
+	var desc; // Salva o campo de descrição do item ou personagem
+
+	// Encontra o objeto que terá o tooltip preenchido
+	var item := SystemFindObjectBySerial(packet.GetInt32(OFFSET_OBJECT_SERIAL));
+
+	// Items que não devem mostrar tooltip (portas secretas, etc)
+	// Configurados em config/secretDoors.cfg
+	// Usa FindConfigElem para lookup O(1) ao invés de iterar array
+	if (item)
+		var noTooltipCfg := ReadConfigFile(":megacliloc:config/secretDoors");
+		if (noTooltipCfg && FindConfigElem(noTooltipCfg, item.objtype))
+			// Bloqueia o pacote de tooltip completamente
+			return 1;
+		endif
+	endif
+
+	if (item)
+		packet.SetSize(15); // primeira parte do packet eh tamanho 15
+
+		Object_Name := PreencheNome(item, who);
+
+		// MONTA E ENVIA PACOTE COM ATUALIZAÇÃO DO NOME DO ITEM
+		Object_Name := CAscZ(Object_Name);
+		packet.SetInt32(OFFSET_CLILOC_ID, 1042971);
+		packet.SetUnicodeString(OFFSET_UNICODE_TEXT, Object_Name, 1);
+		packet.SetInt16(OFFSET_LENGTH_ID, Object_Name.Size() * 2);
+		// I've noticed that this packet is only sent if this value has changed
+		// from the last time it was checked. And using html to change the size doesn't work
+		// for some reason. Maybe a core/client issue?
+
+		xDesc := "";
+		xDesc := AddSpecialBookshelfDescription(item, xDesc);
+		xDesc := MontaDescPersonagem(item,who,xDesc);
+
+		// MONTA DEscrição commum a qualquer item. [Colocar as novas descs dentro deste metodo]
+		xDesc := MontaDescricaoItem(item, who, xDesc);
+
+		// MONTA E ENVIA PACOTE COM ATUALIZAÇÃO DAS DESCRIÇÕES
+		xDesc := CAscZ(xDesc);
+
+		if (xDesc.Size() > 0)
+			// Cliloc ID if these two ID's match it'll only show one line.
+			packet.SetInt32(packet.GetSize() - 1, 1070722);
+
+			// Get the offset of where the next text size
+			var Length_ID := packet.GetSize();
+			packet.SetUnicodeString(packet.GetSize() + 1, xDesc, 1);
+
+			// SetUnicodeString adds 00 BYTE[1] at the start of the Unicode offset, which messes with the length offset.
+			// Setting the length of the unicode text below will fix that issue. Same deal as above.
+			packet.SetInt16(Length_ID, xDesc.Size() * 2);
+		endif
+
+		// End of loop.
+		packet.SetInt32(packet.GetSize(), 0);
+	endif
+
+	return 0;
+
+endfunction

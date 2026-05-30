@@ -1,0 +1,45 @@
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/dungeons";
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+include "include/epicConstants";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+
+	// Load secret doors config
+	var secretDoorCfg := ReadConfigFile(":megacliloc:config/secretDoors");
+	if (!secretDoorCfg)
+		SendSysMessage(who, "Erro ao carregar configuracao de portas secretas.");
+		return 0;
+	endif
+
+	// Check if the target is a secret door
+	if (!FindConfigElem(secretDoorCfg, targ.objtype))
+		SendSysMessage(who, "Isso nao e uma passagem secreta.");
+		return 0;
+	endif
+
+	// Visual effect at caster
+	SC_HandleSound(who, targ, SFX_SPELL_CLUMSY);
+
+	// Visual effect - divination eyes on the secret door
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_DIVINATION_EYES, 10, 30, 0, targ.realm);
+	sleepms(100);
+
+	// Sparkle effect around the door
+	PlayStationaryEffect(targ.x, targ.y, targ.z + 5, FX_YELLOW_SPARKLE, 7, 20, 0, targ.realm);
+
+	// Start script to animate the secret passage
+	start_script(":epicspawn:scripts/animatePassage", array{ targ, 20, 60 });
+
+	SendSysMessage(who, "Voce revelou uma passagem secreta!");
+
+endprogram

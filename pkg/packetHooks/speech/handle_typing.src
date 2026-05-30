@@ -1,0 +1,25 @@
+use uo;
+
+include "include/packets";
+include ":text:Color";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program typing_hook()
+	Print("INSTALLING: Typing Hooking... OK!");
+	return 1;
+endprogram
+
+exported function TypingHandler(who, byRef packet)
+	who := MobileWrapper(who);
+	
+	var prop := who.GetProperty("#lastyping");
+	var delay := 4; // seconds
+	if (prop > polcore().systime)
+		return 1;
+	endif
+	var result := PlayObjectCenteredEffectEx(who.GetObjRef(), 0xFF6B, 1, 16*delay, Color(GENERAL_COLOR::TRUE_BLACK).GetValue());
+
+	who.SetProperty("#lastyping", polcore().systime + delay);
+
+	return 1;
+endfunction

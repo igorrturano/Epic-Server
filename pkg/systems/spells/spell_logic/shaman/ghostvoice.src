@@ -1,0 +1,68 @@
+include ":attributes:attributes";
+include ":gumps:requestGump";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+const PACKET_UC_SPEECH := 0xAE;
+
+const OFFSET_LEN      := 1;
+const OFFSET_SERIAL   := 3;
+const OFFSET_MODEL    := 7;
+const OFFSET_TYPE     := 9;
+const OFFSET_COLOR    := 10;
+const OFFSET_FONT     := 12;
+const OFFSET_LANG     := 14;
+const OFFSET_NAME     := 18;
+const OFFSET_MESSAGE  := 48;
+
+program SpellScript(params)
+
+	var who  := params[1];
+	var targ := params[2];
+	params := 0;
+
+	if (!targ.acctname)
+		SendSysMessageEx(who, "Você não pode usar este feitiço nesse alvo.", SSM_FAIL);
+		return 0;
+	endif
+
+	var frase := RequestGump(who, "Escreva a frase");
+	if (!frase || frase == "")
+		return 0;
+	endif
+
+	// 🔑 Decide RP language (pure game logic)
+	var rp_language := GetObjProperty(who, "lingua_escolhida");
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
+		rp_language := GetObjProperty(targ, "lingua_escolhida");
+	endif
+
+	var finalText := "[" + rp_language + "] " + frase;
+
+	// Create Unicode Speech packet
+	var packet := CreatePacket(PACKET_UC_SPEECH, MSGLEN_VARIABLE);
+
+	packet.SetInt32(OFFSET_SERIAL, targ.serial);
+	packet.SetInt16(OFFSET_MODEL, targ.graphic);
+	packet.SetInt8 (OFFSET_TYPE, MESSAGE_TYPE::SPELL);
+	packet.SetInt16(OFFSET_COLOR, targ.last_textcolor);
+	packet.SetInt16(OFFSET_FONT, _DEFAULT_TEXT_FONT);
+
+	// ⚠️ Protocol language ONLY
+	packet.SetString(OFFSET_LANG, "ENU", 0);
+
+	packet.SetString(OFFSET_NAME, targ.name, 0);
+	packet.SetUnicodeString(OFFSET_MESSAGE, finalText, 1);
+
+	packet.SetInt16(OFFSET_LEN, packet.GetSize());
+
+	// 🔊 Broadcast properly
+	packet.SendPacket(targ);
+	foreach listener in ListMobilesInLineOfSight(targ, 12)
+		if (listener.acctname)
+			packet.SendPacket(listener);
+		endif
+	endforeach
+
+	return 1;
+endprogram

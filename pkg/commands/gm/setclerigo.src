@@ -1,0 +1,21 @@
+use uo;
+
+include ":attributes:attributes";
+include ":abilities:include/models/Ability";
+
+program textcmd_setclerigo(who)
+	SendSysMessage(who, "escolha o char");
+	var targ := Target(who);
+
+	if (!targ.IsA(POLCLASS_MOBILE))
+		SendSysMessage(who, "Cancelled.");
+		return 0;
+	endif
+
+	var myhabs := dictionary;
+	myhabs.insert(1, ABILITY_ID::CONEXAO_DIVINA);
+	SetObjProperty(targ, "myhabs", myhabs);
+	SendSysMessage(who, targ.name + " agora tem a hab Conexao Divina.");
+
+	return 1;
+endprogram

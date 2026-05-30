@@ -1,0 +1,51 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/tileEffects";
+include "include/sounds";
+
+// Requiem do Silencio (1208) - C2
+// Silencia todos os inimigos em 3 tiles por Arc/10 segundos
+program SpellScript(params)
+	var who := params[1];
+
+	var arcana   := CInt(AP_GetSkill(who, ARCANA));
+	var duration := CInt(arcana / 10);
+	if (duration < 2)  duration := 2;  endif
+	if (duration > 10) duration := 10; endif
+
+	PrintTextAbove(who, "*E entao, o silencio. Nenhuma palavra, nenhum feitico...*", 3, 1153);
+	PlaySoundEffect(who, 0x3D);
+
+	var silenced := 0;
+	var silenced_list := array;
+
+	foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, 3, who.realm))
+		if (mobile.isa(POLCLASS_MOBILE) && mobile != who && mobile.IsHostile(who))
+			SetObjProperty(mobile, "#bard_silenced", 1);
+			PrintTextAbove(mobile, "*silenciado*", 3, 1153);
+			SendSysMessageEx(mobile, "Voce esta silenciado! Nao pode conjurar magias por " + duration + "s.", SSM_FAIL);
+			silenced_list[silenced + 1] := mobile;
+			silenced += 1;
+		endif
+	endforeach
+
+	if (silenced == 0)
+		SendSysMessageEx(who, "Nenhum inimigo por perto para silenciar.", SSM_FAIL);
+		return 0;
+	endif
+
+	SendSysMessageEx(who, $"Requiem do Silencio: {silenced} inimigo(s) silenciado(s) por {duration}s.", SSM_INFO);
+
+	sleep(duration);
+
+	foreach mobile in silenced_list
+		if (mobile && !mobile.dead && GetObjProperty(mobile, "#bard_silenced"))
+			EraseObjProperty(mobile, "#bard_silenced");
+			SendSysMessageEx(mobile, "O silencio se desfaz.", SSM_INFO);
+		endif
+	endforeach
+
+	return 1;
+endprogram

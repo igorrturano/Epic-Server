@@ -1,0 +1,17 @@
+use uo;
+use os;
+
+program ferramentas_construcao_use(who, item)
+	if (!who)
+		return 0;
+	endif
+
+	if (!item || item.container != who.backpack)
+		SendSysMessage(who, "As ferramentas de construção devem estar em sua mochila para serem usadas.");
+		return 0;
+	endif
+
+	start_script(":faccao:ferramentas_construcao_gump", array{who});
+
+	return 1;
+endprogram

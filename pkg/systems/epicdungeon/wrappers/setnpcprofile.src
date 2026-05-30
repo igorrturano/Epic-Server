@@ -1,0 +1,24 @@
+use uo;
+use os;
+
+program setnpcprofile(params)
+    var dm   := params[1];
+    var npc  := params[2];
+    var pv   := params[3];
+    var url  := pv[1];
+    var desc := pv[2];
+
+    if (!npc || !npc.serial)
+        SendSysMessage(dm, "[EpicDungeon] Alvo invalido.");
+        return 0;
+    endif
+    if (!npc.npctemplate)
+        SendSysMessage(dm, "[EpicDungeon] Alvo nao e um NPC.");
+        return 0;
+    endif
+
+    SetObjProperty(npc, "profile_url", url);
+    SetObjProperty(npc, "profile_desc", desc);
+    SendSysMessage(dm, "[EpicDungeon] Perfil definido em " + npc.name);
+    return 1;
+endprogram

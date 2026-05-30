@@ -1,0 +1,10 @@
+// Author: Deiro || Rafael Santos
+
+include ":itemutils:canAccess";
+include ":crafting:fabricaComponentes";
+
+program fabricaComponentes(who, tool)
+
+	var rinfo := fabricaComponentes(who);
+
+endprogram

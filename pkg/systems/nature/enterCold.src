@@ -1,0 +1,9 @@
+use uo;
+use os;
+use vitals;
+
+include ":charactercreation:resists";
+
+program neve(who, regioname)
+	start_script(":nature:coldeffect", { who });
+endprogram

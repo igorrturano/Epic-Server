@@ -1,0 +1,70 @@
+// jailorPunish — guard-only gump that picks the crime severity and targets
+// the offender. One click per option, matches the menu-button style used
+// by :commands:player/classe (4005/4007).
+
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include "include/say";
+include ":jailor:include/jailAction";
+
+const BTN_LEVE      := 1;
+const BTN_MODERADO  := 2;
+const BTN_PESADO    := 3;
+const BTN_SUBORNO   := 4;
+
+program jailorPunish(params)
+	var jailor := params[1];
+	var guard := params[2];
+
+	if (!jailor || !guard)
+		return;
+	endif
+
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, 9200, 380, 280);
+	GFResizePic(gump, 15, 15, 9350, 350, 250);
+	GFTextMid(gump, 15, 30, 350, 53, "Sentenca");
+	GFTextLine(gump, 35, 60, 1153, "Selecione o nivel da pena:");
+
+	GFAddButton(gump, 40, 95,  4005, 4007, GF_CLOSE_BTN, BTN_LEVE);
+	GFTextLine(gump, 80, 98,   1153, "Leve  -  100 pedras / 10 moedas");
+
+	GFAddButton(gump, 40, 130, 4005, 4007, GF_CLOSE_BTN, BTN_MODERADO);
+	GFTextLine(gump, 80, 133,  1153, "Moderado  -  400 pedras / 40 moedas");
+
+	GFAddButton(gump, 40, 165, 4005, 4007, GF_CLOSE_BTN, BTN_PESADO);
+	GFTextLine(gump, 80, 168,  1153, "Pesado  -  1000 pedras / 100 moedas");
+
+	GFAddButton(gump, 40, 200, 4005, 4007, GF_CLOSE_BTN, BTN_SUBORNO);
+	GFTextLine(gump, 80, 203,  1153, "Suborno  -  resolver socialmente");
+
+	GFAddButton(gump, 175, 240, 2119, 2120, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 210, 243, 1153, "Cancelar");
+
+	var input := GFSendGump(guard, gump);
+	if (!input)
+		return;
+	endif
+
+	var pressed := Cint(input[0]);
+	var severity := "";
+	case (pressed)
+		BTN_LEVE:     severity := SEVERITY_LEVE;
+		BTN_MODERADO: severity := SEVERITY_MODERADO;
+		BTN_PESADO:   severity := SEVERITY_PESADO;
+		BTN_SUBORNO:  severity := SEVERITY_SUBORNO;
+		default:      return;
+	endcase
+
+	SendSysMessageEx(guard, "Mire no alvo da sentenca.", SSM_REQUEST);
+	var prisoner := Target(guard);
+	if (!prisoner)
+		SendSysMessageEx(guard, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	JailPlayer(jailor, guard, prisoner, severity);
+endprogram

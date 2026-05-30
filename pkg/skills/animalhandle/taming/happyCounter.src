@@ -1,0 +1,49 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":stables:include/stable";
+include ":taming:petidentity";
+
+program happyCounter(parms)
+	var me := parms[1];
+	var timer := parms[2];
+	var happiness;
+	while ((AP_GetVital(me, HITS) > 0) && IsTamedPet(me))
+		if (GetObjProperty(me, "countercheck") != timer)
+			break;
+		endif
+		if (IsStabled(me) || IsInLimbo(me))
+			while (IsStabled(me) || IsInLimbo(me))
+				if (GetObjProperty(me, "countercheck") != timer)
+					break;
+				endif
+				sleep(600);
+			endwhile
+		elseif (GetObjProperty(me, "onhold"))
+			while (GetObjProperty(me, "onhold"))
+				if (GetObjProperty(me, "countercheck") != timer)
+					break;
+				endif
+				sleep(120);
+			endwhile
+		else
+			while (!IsStabled(me) && !IsInLimbo(me) && !GetObjProperty(me, "onhold"))
+				if (GetObjProperty(me, "countercheck") != timer)
+					break;
+				endif
+				// previous_location marcado pelo LogoutPets — se o pet esta
+				// offline, nao decai happiness.
+				if (!GetObjProperty(me, "previous_location"))
+					happiness := GetObjProperty(me, "happiness");
+					happiness := happiness - 1;
+					if (happiness < 0)
+						happiness := 0;
+					endif
+					SetObjProperty(me, "happiness", happiness);
+				endif
+				sleep(60);
+			endwhile
+		endif
+	endwhile
+endprogram

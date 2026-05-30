@@ -1,0 +1,687 @@
+/*
+ * Purpose
+ * TODO
+ *
+ * Function List
+ * GFCloseGump()
+ * GFCloseGumpTimed()
+ * GFExtractData()
+ * GFOptimizeGump()
+ * GFTextCoords()
+ * GFTextMid()
+ * GFTextRight()
+ * GFTextWidth()
+ * GFWordWrap()
+ *
+ */
+use uo;
+use os;
+use math;
+use polsys;
+use cfgfile;
+
+include ":gumps:gumps";
+
+enum GUMP_CONSTANTS
+	G_DIVISOR_DEFAULT := 0x1, 
+	G_DIVISOR_ALTERNATE := 0x2, 
+	G_DIVISOR_LINE := 0x3, 
+
+	// BAR
+	YELLOW_BAR := 9753,
+	BLUE_BAR := 9751,
+	GREEN_BAR := 9750,
+endenum
+
+// CONSTants for GFTextCoords()
+enum  TEXT_ALIGNMENT_CONSTANTS
+	ALIGN_CENTER	:= 0x1,
+	ALIGN_RIGHT	:= 0x2,
+	ALIGN_CENTER_Y	:= 0x3,
+endenum
+
+function GFHtmlShadowed(byref gump, x, y, width, height, color, text, size := 5);
+	GFHTMLArea(gump, x-1, y-1, width, height, "<BASEFONT SIZE={} COLOR=#111111>{}".format(size, text));
+   GFHTMLArea(gump, x+1, y+1, width, height, "<BASEFONT SIZE={} COLOR=#111111>{}".format(size, text));
+   GFHTMLArea(gump, x+1, y-1, width, height, "<BASEFONT SIZE={} COLOR=#111111>{}".format(size, text));
+   GFHTMLArea(gump, x-1, y+1, width, height, "<BASEFONT SIZE={} COLOR=#111111>{}".format(size, text));
+   GFHTMLArea(gump, x, y, width, height, "<BASEFONT SIZE={} COLOR={}>{}".format(size, color, text));
+endfunction
+
+/*
+ * GetCfgConst(elem_name, prop_name)
+ *
+ * Purpose
+ * Rather than have a lot of CONSTants at the top for
+ * different gump images, they are placed in GumpInfo.cfg
+ * and retrieved with this function.
+ * The idea is that it is easier to update GumpInfo.cfg than
+ * to recompile all scripts that use these includes.
+ *
+ * Parameters
+ * elem_name:	The elem of the config to look at.
+ * prop_name:	The name of the CONSTant to retrieve.
+ *
+ * Return value
+ * An integer for the gump graphical number
+ *
+ */
+function GFCfgConst(elem_name, prop_name)
+	var cfg := ReadConfigFile(":gumps:config/GumpInfo");
+	if ( cfg.errortext )
+		return XGFError("GetCfgConst():: Unable to open GumpInfo.cfg -> "+cfg.errortext);
+	endif
+
+	var elem := cfg[elem_name];
+	if ( elem.errortext )
+		return XGFError("GetCfgConst():: Unable to find GumpInfo.cfg["+elem_name+"] ->"+elem.errortext);
+	endif
+
+	var value := GetConfigInt(elem, prop_name);
+	if ( !value )
+		return XGFError("GetCfgConst():: Unable to find property ["+prop_name+"] in elem ["+elem_name+"]");
+	endif
+
+	return value;
+endfunction
+
+
+/*
+ * GFGetCfgConst(elem_name, prop_name)
+ *
+ * Purpose
+ * Rather than have a lot of CONSTants at the top for
+ * different gump images, they are placed in GumpInfo.cfg
+ * and retrieved with this function.
+ * The idea is that it is easier to update GumpInfo.cfg than
+ * to recompile all scripts that use these includes.
+ *
+ * Parameters
+ * elem_name:	The elem of the config to look at.
+ * prop_name:	The name of the CONSTant to retrieve.
+ *
+ * Return value
+ * An integer for the gump graphical number
+ *
+ */
+function GFGetCfgConst(elem_name, prop_name)
+	var cfg := ReadConfigFile(":gumps:GumpInfo");
+	if ( cfg.errortext )
+		return XGFError("GFGetCfgConst():: Unable to open GumpInfo.cfg -> "+cfg.errortext);
+	endif
+
+	var elem := cfg[elem_name];
+	if ( elem.errortext )
+		return XGFError("GFGetCfgConst():: Unable to find GumpInfo.cfg["+elem_name+"] ->"+elem.errortext);
+	endif
+
+	var value := GetConfigInt(elem, prop_name);
+	if ( !value )
+		return XGFError("GFGetCfgConst():: Unable to find property ["+prop_name+"] in elem ["+elem_name+"]");
+	endif
+
+	return value;
+endfunction
+
+/*
+ * GFExtractData(input, data_id)
+ *
+ * Purpose
+ * Retrieves the information for a text entry's data and
+ * removes the "#: " from the begining of it.
+ *
+ * Parameters
+ * input:	The variable/information returned from GFSendGump();
+ * data_id:	An index value returned by GFTextEntry()
+ *
+ * Return value
+ * A string containing the text entry's input value.
+ *
+ */
+function GFExtractData(input, data_id)
+	var key_string := CStr(data_id)+": ";
+	var data_string := input[data_id];
+	var ret_val := data_string[Len(key_string)+1,Len(data_string)];
+
+	return ret_val;
+endfunction
+
+/*
+ * GFOptimizeGump(gump)
+ *
+ * Purpose
+ * Finds duplicate page number entries and combines their information.
+ *
+ * Parameters
+ * gump:	The gump to optimize
+ *
+ * Return value
+ * Returns 1
+ *
+ */
+function GFOptimizeGump(byref gump)
+	//Arrays cant do [0] for page 0
+	var cur_page := 0;
+	var gump_pages := dictionary;
+	gump_pages[0] := array;
+
+	//Break the pages apart.
+	foreach entry in (gump.layout)
+		var l_entry := Lower(entry);
+		if ( l_entry[1, 5] == "page " )
+			//  12345   6
+			// "Page " "#"
+			var page_num := CInt(l_entry[6, Len(l_entry)]);
+			if ( !gump_pages.Exists(page_num) )
+				gump_pages[page_num] := array;
+				cur_page := page_num;
+			else
+				cur_page := page_num;
+				continue;
+			endif
+		endif
+		gump_pages[cur_page].Append(entry);
+		SleepMS(2);
+	endforeach
+
+	//Put the gump back together again.
+	gump.layout := array{}; // Wipe it out
+	foreach page_array in (gump_pages)
+		 // Goes through the dictionary which contains each page's array.
+		foreach entry in (page_array)
+			// Goes through the array containing layout data for that page.
+			(gump.layout).Append(entry);
+			SleepMS(2);
+		endforeach
+		SleepMS(2);
+	endforeach
+
+	return 1;
+endfunction
+
+/*
+ * GFTextCoords(type, gump_text, x_pos, width)
+ *
+ * Purpose
+ * Returns the X coordinate to pass to GFTextLine() that will align
+ * the text.
+ *
+ * Parameters
+ * type:	The type of horizontal alignment to do.
+ *		ALIGN_CENTER - Aligns text between the x_pos and width position.
+ *		ALIGN_RIGHT -  Aligns text so that it ends on the x_pos. (width not needed)
+ * gump_text:	The text to find the x coordinate for.
+ * x_pos:	The x position to align the text off of.
+ * width:	When center aligning the text, specify the width of the area it will fit into.
+ *
+ * Return value
+ * Returns the x coordinate to place the text on.
+ *
+ */
+function GFTextCoords(type:=ALIGN_CENTER, gump_text, x_pos, width:=0)
+	x_pos := CInt(x_pos);
+	width := CInt(width);
+	if ( type == ALIGN_CENTER )
+		return CInt(x_pos+CInt((width-GFTextWidth(gump_text))/2));
+	elseif ( type == ALIGN_RIGHT )
+		return CInt(x_pos-GFTextWidth(gump_text));
+	endif
+endfunction
+
+/*
+ * GFTextMid(gump, x, y, width, color, text)
+ *
+ * Purpose
+ * Aligns text between the x position and width position.
+ *
+ * Parameters
+ * gump:	Reference to the gump
+ * x:		The top-left spot of the X axis.
+ * y:		The top-left spot of the Y axis.
+ * width:	The right-most point the text will fit into.
+ * hue:		The decimal number representing the Label's hue
+ * text:	The string that is to be exposed.
+ *
+ * Return value
+ * Return value is the result from GFTextLine()
+ *
+ */
+function GFTextMid(byref gump, x, y, width, color, text)
+	var x_pos := GFTextCoords(ALIGN_CENTER, text, x, CStr(width));
+	return GFTextLine(gump, x_pos, y, color, CStr(text));
+endfunction
+
+/*
+ * GFTextRight(gump, x, y, color, text)
+ *
+ * Purpose
+ * Aligns text between the x position and width position.
+ *
+ * Parameters
+ * gump:	Reference to the gump
+ * x:		The right-most coordinate the text will end on.
+ * y:		The top-left spot of the Y axis.
+ * hue:		The decimal number representing the Label's hue
+ * text:	The string that is to be exposed.
+ *
+ * Return value
+ * Return value is the result from GFTextLine()
+ *
+ */
+function GFTextRight(byref gump, x, y, color, text)
+	var x_pos := GFTextCoords(ALIGN_RIGHT, CStr(text), x);
+	return GFTextLine(gump, x_pos, y, color, CStr(text));
+endfunction
+
+/*
+ * GFGetTextWidth(char)
+ *
+ * Purpose
+ * To figure how the width in pixels of text on a gump.
+ *
+ * Parameters
+ * gump_text:	The text to get the pixel width of.
+ *
+ * NOTE: This needs to be expanded to support fonts - and possibly be config driven?
+ *
+ * Return value
+ * The width, in pixels, of the text's width on a gump.
+ *
+ */
+function GFTextWidth(gump_text)
+	var gft_length := struct;
+	gft_length.+charsf :=
+	"||||||||||||||"+	//  2
+	"`',.;:::::::::"+	//  3
+	"!!!!!!!!!!!!!!"+	//  4
+	"iíl1[]]]]]]]]]\""+	//  5
+	"bcejot”(){}==="+	//  6
+	"aáãdfpqrszI„~~~~"+	//  7
+	"ghnuvy <>-----"+	//  8
+	"xJ578$?++++++ "+	//  9
+	"kCEÊ2369^/*****"+	// 10
+	"mwABDFOPŽ™40%%"+	// 11
+	"GLNQSZ@#######"+	// 12
+	"HRT&__________"+	// 13
+	"KšUYYYYYYYYYYY"+	// 14
+	"XXXXXXXXXXXXXX"+	// 15
+	"VVVVVVVVVVVVVV"+	// 16
+	"MMMMMMMMMMMMMM"+	// 18
+	"WWWWWWWWWWWWWW";	// 21
+	gft_length.+width := array
+	{
+		2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+		12, 13, 14, 15, 16, 18, 21
+	};
+
+	var points:=0;
+	var j := Len(gump_text);
+
+	for ( j; j>0; j-=1 )
+		var i := Find(gft_length.charsf, gump_text[j], 1) - 1;
+		if ( i>=0 )
+			points += gft_length.width[CInt(i/14)+1];
+		else
+			print("XGFTextWidth: Unknown Character = '"+gump_text[j]+"'");
+		endif
+	endfor
+
+	return (points);
+endfunction
+
+/*
+ * GFWordWrap(text, pixels)
+ *
+ * Purpose
+ * Breaks a string up into an array of strings.
+ * Each string will be less than or equal to 'pixels' in width.
+ *
+ * Parameters
+ * text:	The text to break up.
+ * pixels:	The maximum width a line of text can be.
+ *
+ * Return value
+ * An array of strings
+ *
+ */
+function GFWordWrap(text, pixels)
+	var wrap_lines := array{};
+	var word_list := SplitWords(text);
+	//var num_words := word_list.Size();
+
+	var space_size := GFTextWidth(" ");
+
+	var cur_line := "";
+	var cur_length := 0;
+	var start_new := 0;
+
+	foreach word in ( word_list )
+		var word_width := GFTextWidth(word);
+
+		if ( word == "[P]" )
+			// [P] will force a line break
+			word := "";
+			word_width := 0;
+			start_new := 1;
+		elseif ( (word_width+cur_length) > pixels )
+			start_new := 1;
+			if ( cur_line[Len(cur_line)] == " " )
+				cur_line[Len(cur_line)] := "";
+			endif
+		endif
+
+		if ( start_new )
+			start_new := 0;
+			wrap_lines.Append(cur_line);
+			cur_line := "";
+			cur_length := 0;
+		endif
+		if ( word )
+			cur_line += word+" ";
+			cur_length += word_width+space_size;
+		endif
+
+		SleepMS(2);
+	endforeach
+
+	//Make sure nothing got left behind.
+	if ( wrap_lines[wrap_lines.Size()] != cur_line )
+		if ( cur_line[Len(cur_line)] == " " )
+			cur_line[Len(cur_line)] := "";
+		endif
+		wrap_lines.Append(cur_line);
+	endif
+
+	return wrap_lines;
+endfunction
+
+/*
+ * GFCenterRectangle(type, gump_rect, x_pos, width)
+ *
+ * Purpose
+ * Returns the X coordinate to pass to a gump that will align
+ * the rectangle.
+ * 
+ * Parameters
+ * type:	The type of horizontal alignment to do.
+ *		ALIGN_CENTER - Aligns rectangle between the x_pos and width position.
+ * 	ALIGN_CENTER_Y - Aligns rectangle between the y_pos and height position.
+ *		ALIGN_RIGHT -  Aligns rectangle so that it ends on the x_pos. (width not needed)
+ * rect_size_x:	The rectangle to find the x coordinate for.
+ * x_pos:	The x (or y) position to align the rectangle off of.
+ * width:	When center aligning the rectangle, specify the width (or height) of the area it will fit into.
+ *
+ * Return value
+ * Returns the x coordinate to place the rectangle on.
+ *	
+ */
+function GFCenterRectangle(type:=ALIGN_CENTER, rect_size_x, x_pos, width:=0)
+	x_pos := CInt(x_pos);
+	width := CInt(width);
+	rect_size_x := CInt(rect_size_x);
+	case(type)
+		ALIGN_CENTER: return CInt(x_pos+CInt((width-(rect_size_x+20))/2));
+		ALIGN_CENTER_Y: return CInt(x_pos+CInt((width-rect_size_x)/2));
+		ALIGN_RIGHT: return CInt(x_pos+(width - rect_size_x));
+	endcase
+endfunction
+
+
+function GFTableProps(width, height, rowWidth, rowHeight, nOfItens)
+	var numberOfColumns := cint(Floor(width / rowWidth));
+	var numberOfRows := cint(Floor(height / rowHeight)); // assuming rowHeight is the height of each row
+
+	var nOfPages := cint(Ceil(cdbl(nOfItens) / cdbl(numberOfColumns * numberOfRows)));
+	var itemsPerPage := numberOfColumns * numberOfRows;
+	
+	return struct{
+		numberOfColumns := numberOfColumns, 
+		numberOfRows := numberOfRows, 
+		nOfPages := nOfPages, 
+		itemsPerPage := itemsPerPage
+	};
+endfunction
+
+
+/*
+ * GFColumnPosition(column_width, num_columns, total_width)
+ *
+ * Purpose
+ * Returns the X coordinate for a specified column.
+ * 
+ * Parameters
+ * column_width:	The width of each column.
+ * num_columns:	The number of columns.
+ * total_width:	The total width the columns will fill into.
+ * x_pos:	The x position to align the text off of.
+ *
+ * Return value
+ * Returns the x coordinate for each column.
+ *	
+ */
+function GFColumnPosition(column_width, num_columns, total_width, x_pos:=0)
+	column_width := CInt(column_width);
+	num_columns := CInt(num_columns);
+	total_width := CInt(total_width);
+	x_pos := CInt(x_pos);
+	
+	var space_between := (total_width - (column_width * num_columns)) / (num_columns + 1);
+	
+	var positions := array{};
+	var i;
+	for (i := 1; i <= num_columns; i += 1)
+		positions[i] := space_between * i + column_width * (i - 1) + x_pos;
+	endfor
+	
+	return positions;
+endfunction
+
+function GFColumnPositionByWidthArray(column_widths, total_width, x_pos:=0)
+	if (typeof(column_widths) != "Array") 
+		print("GFColumnPositionByWidthArray: column_widths is not an array");
+		return; 
+	endif
+
+	total_width := CInt(total_width);
+	x_pos := CInt(x_pos);
+	
+	var num_columns := column_widths.size();
+	var total_column_width := ArraySum(column_widths);
+	
+	var space_between := (total_width - total_column_width) / (num_columns + 1);
+	
+	var positions := array{};
+	var i;
+	var current_x := x_pos + space_between;
+	for (i := 1; i <= num_columns; i += 1)
+		positions[i] := current_x;
+		current_x := current_x + column_widths[i] + space_between;
+	endfor
+	
+	return positions;
+endfunction
+
+
+/*
+ * GFRowPosition(row_height, num_rows, total_height)
+ *
+ * Purpose
+ * Returns the Y coordinate for a specified row.
+ * 
+ * Parameters
+ * align: The alignment of the row. (ALIGN_CENTER, ALIGN_RIGHT, 0 = no alignment)
+ * row_height:	The height of each row.
+ * num_rows:	The number of rows.
+ * total_height:	The total height the rows will fill into.
+ *
+ * Return value
+ * Returns the y coordinate for each row.
+ *	
+ */
+function GFRowPosition(align:=ALIGN_CENTER, row_height, num_rows, total_height, y_pos:=0)
+	row_height := CInt(row_height);
+	num_rows := CInt(num_rows);
+	total_height := CInt(total_height);
+	y_pos := CInt(y_pos);
+	
+	var space_between := (total_height - (row_height * num_rows)) / (num_rows + 1);
+	
+	var positions := array{};
+	var i;
+	for (i := 1; i <= num_rows; i += 1)
+		if (align == ALIGN_CENTER)
+			positions[i] := space_between * i + row_height * (i - 1) + y_pos;
+		elseif (align == ALIGN_RIGHT)
+			positions[i] := total_height - row_height * (num_rows - i) - space_between * (num_rows - i + 1) + y_pos;
+		else
+			positions[i] := row_height * (i - 1) + y_pos;
+		endif
+	endfor
+	
+	return positions;
+endfunction
+
+/*
+ * Creates a gump with buttons each 52 pixels apart.
+ *
+ * @param who
+ *
+ * @return The selected position as an array [x, y]
+ */
+function SelectWindowPosition(who)
+	var gump := GFCreateGump();
+	GFClosable(gump, 0);
+	GFMovable(gump, 0);
+	GFResizePic(gump, 0, 0, 9200, 1800, 1600);
+	GFAddAlphaRegion(gump, 1, 2, 1800, 1600);
+
+   var x := 1;
+   var y := 3;
+   var i := 1;
+   var positions := array{};
+   var b;
+   while (!b)
+      GFAddButton(gump, x, y, 1209, 1210, GF_CLOSE_BTN, i);
+      positions[i] := array{x, y};
+      x += 52;
+      if (x >= 1800)
+         y += 52;
+         x := 3;
+      endif
+
+      if (y >= 1600)
+         b := 1;
+      endif
+      i += 1;
+      sleepms(2);
+   endwhile
+
+	GFTextLine(gump, 341, 25, 1153, "Clique em um botão para reposicionar");
+
+	var input := GFSendGump(who, gump);
+
+   if (input[0])
+      return positions[input[0]];
+   endif 
+endfunction
+
+// GFPageScrollBar documentation
+//
+// Parameters:
+//   gump: The gump object to add the scrollbar to
+//   pos_x: The x position of the scrollbar
+//   pos_y: The y position of the scrollbar
+//   n_of_pages: The total number of pages
+//   cur_page: The current page
+//   scrollHeight: The height of the scrollbar background
+//
+// Description:
+// This function adds a scrollbar to a gump object. It is intended to be used
+// with the GFPageBtn event handler.
+//
+// Returns: None
+function GFPageScrollBar(byref gump, pos_x := 0, pos_y := 0, n_of_pages := 1, cur_page := 1, scrollHeight := 0)
+	GFResizePic(gump, pos_x, pos_y+10, 5120, 19, scrollHeight); // Scrollbar background
+
+   GFAddButton(gump, pos_x, pos_y, 2650, 2651, GF_PAGE_BTN, (cur_page > 1) ? cur_page-1 : cur_page); // Previous Button
+   GFAddButton(gump, pos_x, pos_y+scrollHeight+5, 2648, 2649, GF_PAGE_BTN, (cur_page < n_of_pages) ? cur_page+1 : cur_page); // Next Button
+
+	var pointerHeight := (scrollHeight - 20) / n_of_pages; // Calculate the height of the scroll inside the scrollbar, reducing the window for the scrollbar pointer
+	var scrollYPos := pos_y + 10 + (pointerHeight * (cur_page - 1)); // Calculate Y position of the scroll based on current page and offset
+	GFResizePic(gump, pos_x, scrollYPos+12, 9550, 19, pointerHeight); // Scrollbar pointer with offset applied to both top and bottom
+endfunction
+
+
+// GFBuildBar documentation
+//
+// Parameters:
+//   gump: The gump object to add the bar to
+//   x: The x position of the bar
+//   y: The y position of the bar
+//   width: The width of the bar
+//   value: The current value of the bar
+//   maxexp: The maximum value of the bar
+//   barGump: An array containing the background and foreground gump ids
+//
+// Description:
+// This function adds a bar to a gump object. It is intended to display a progress bar with a current value and a maximum value.
+//
+// Returns: None
+function GFBuildBar(byref gump, x, y, width, curValue := 0, maxValue := 0, barColor := YELLOW_BAR) 
+
+   GFGumpPicTiled(gump, x, y, width, 8, 9750);
+
+   var exp_width := cint((curValue * width) / maxValue);
+   GFGumpPicTiled(gump, x, y, exp_width, 8, barColor);
+endfunction
+
+/**
+ * GFDivisorHorizontal documentation
+ *
+ * Parameters:
+ *   gump: The gump object to add the divisor to
+ *   x: The x position of the divisor
+ *   y: The y position of the divisor
+ *   width: The width of the divisor
+ *   gumpStyle: The style of the divisor (optional, default value is DEFAULT_DIVISOR)
+ *
+ * Description:
+ * This function adds a horizontal divisor to a gump object. It is intended to visually separate sections within a gump.
+ *
+ * Returns: None
+ */
+function GFDivisorHorizontal(byref gump, x, y, width, gumpStyle := G_DIVISOR_DEFAULT)
+	if (gumpStyle == G_DIVISOR_LINE)
+		GFGumpPicTiled(gump, x, y, width, 1, 2701);  // divisor
+		return;
+	endif
+
+	var divisorStart := gumpStyle == G_DIVISOR_DEFAULT ? 57 : 95;
+	var divisorMiddle := gumpStyle == G_DIVISOR_DEFAULT ? 58 : 96;
+	var divisorEnd := gumpStyle == G_DIVISOR_DEFAULT ? 59 : 97;
+	var color := 0;
+	var middleWidth := width - 56;
+	
+	GFGumpPic(gump, x, y, divisorStart, color); // start
+	GFGumpPicTiled(gump, x+28, y, middleWidth, 21, divisorMiddle); //middle
+	GFGumpPic(gump, x+28+middleWidth, y, divisorEnd, color); // end
+endfunction
+
+/**
+ * GFDivisorVertical documentation
+ *
+ * Parameters:
+ *   gump: The gump object to add the divisor to
+ *   x: The x position of the divisor
+ *   y: The y position of the divisor
+ *   height: The height of the divisor
+ *   gumpStyle: The style of the divisor (optional, default value is DEFAULT_DIVISOR)
+ *
+ * Description:
+ * This function adds a vertical divisor to a gump object. It is intended to visually separate sections within a gump.
+ *
+ * Returns: None
+ */
+function GFDivisorVertical(byref gump, x, y, height)
+	GFGumpPicTiled(gump, x, y, 1, height, 2701);  // divisor
+endfunction

@@ -1,0 +1,996 @@
+use uo;
+use os;
+use math;
+use cfgfile;
+
+include ":gumps:gumps";
+include "include/say";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include "include/creationUtils";
+include "include/epicConstants";
+
+const MOEDA_OBJTYPE := 47715;
+const STAT_RESPEC_COST := 2;
+const SKILL_RESPEC_COST := 100;
+const MIN_STAT := 40;
+const MAX_STAT := 100;
+
+program TrainerMenu(params)
+	var npc := params[1];
+	var who := params[2];
+
+	if (who.hidden)
+		who.hidden := 0;
+		SendSysMessageEx(who, "Voce se revelou ao treinador.", SSM_FAIL);
+	endif
+
+	var gump := GFCreateGump();
+	GFDisposable(gump, 0);
+	GFResizePic(gump, 0, 25, 3600, 280, 180);
+	GFResizePic(gump, 15, 40, 0x13BE, 250, 150);
+	GFTextLine(gump, 60, 50, 1153, "O que deseja fazer?");
+
+	// GFAddButton(gump, 30, 90, 4005, 4007, GF_CLOSE_BTN, 1);
+	// GFTextLine(gump, 65, 90, 1153, "Redistribuir Atributos");
+
+	GFAddButton(gump, 30, 120, 4005, 4007, GF_CLOSE_BTN, 2);
+	GFTextLine(gump, 65, 120, 1153, "Remover Habilidade");
+
+	// GFAddButton(gump, 30, 150, 4005, 4007, GF_CLOSE_BTN, 3);
+	// GFTextLine(gump, 65, 150, 1153, "Redistribuir Skills");
+
+	var input := GFSendGump(who, gump);
+	var btn := 0;
+	foreach key in (input.keys)
+		btn := key;
+	endforeach
+
+	if (btn == 1)
+		StatRedistribution(who, npc);
+	elseif (btn == 2)
+		AbilityRemoval(who, npc);
+	elseif (btn == 3)
+		SkillRedistribution(who, npc);
+	endif
+endprogram
+
+// =============================================================================
+// STAT REDISTRIBUTION
+// =============================================================================
+function StatRedistribution(who, npc)
+	// Get actual current stats directly from the character
+	var cur_str := CInt(AP_GetTrueStat(who, STRENGTH));
+	var cur_dex := CInt(AP_GetTrueStat(who, DEXTERITY));
+	var cur_int := CInt(AP_GetTrueStat(who, INTELLIGENCE));
+
+	if (cur_str + cur_dex + cur_int == 0)
+		SendSysMessageEx(who, "Erro ao carregar seus atributos.", SSM_FAIL);
+		return;
+	endif
+
+	// Per-stat bonus from race + trait. The redistribution range slides by this
+	// bonus so racial/trait bonuses stay locked to the stat that earned them.
+	var bonus := GetStatBonuses(who);
+	var min_str := MIN_STAT + CInt(bonus.str);
+	var max_str := MAX_STAT + CInt(bonus.str);
+	var min_dex := MIN_STAT + CInt(bonus.dex);
+	var max_dex := MAX_STAT + CInt(bonus.dex);
+	var min_int := MIN_STAT + CInt(bonus.int);
+	var max_int := MAX_STAT + CInt(bonus.int);
+
+	SendSysMessageEx(who, "O custo e de " + STAT_RESPEC_COST + " moedas. Selecione suas moedas.", SSM_REQUEST);
+	var targ := Target(who);
+	if (!targ || targ.objtype != MOEDA_OBJTYPE)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+	if (targ.amount < STAT_RESPEC_COST)
+		SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_FAIL);
+		return;
+	endif
+
+	SendSysMessageEx(who, "Redistribua seus atributos. O pagamento sera cobrado ao confirmar.", SSM_INFO);
+
+	// Save originals to compute deltas later
+	var orig_str := cur_str;
+	var orig_dex := cur_dex;
+	var orig_int := cur_int;
+	var pool := 0;
+
+	var minus_btn := {0x9F7, 0x9F8};
+	var plus_btn := {0x9F9, 0x9FA};
+
+	while (who)
+		var gump := GFCreateGump();
+		GFDisposable(gump, 0);
+		GFResizePic(gump, 0, 25, 3600, 280, 240);
+		GFResizePic(gump, 15, 40, 0x13BE, 250, 200);
+		GFTextLine(gump, 45, 50, 1153, "Redistribuir Atributos");
+
+		// STR
+		GFTextLine(gump, 40, 90, 1153, "Forca:        " + cur_str);
+		if (cur_str > min_str)
+			GFAddButton(gump, 180, 93, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 201);
+		endif
+		if (cur_str < max_str && pool >= 1)
+			GFAddButton(gump, 200, 93, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 200);
+		endif
+
+		// DEX
+		GFTextLine(gump, 40, 115, 1153, "Destreza:     " + cur_dex);
+		if (cur_dex > min_dex)
+			GFAddButton(gump, 180, 118, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 211);
+		endif
+		if (cur_dex < max_dex && pool >= 1)
+			GFAddButton(gump, 200, 118, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 210);
+		endif
+
+		// INT
+		GFTextLine(gump, 40, 140, 1153, "Inteligencia: " + cur_int);
+		if (cur_int > min_int)
+			GFAddButton(gump, 180, 143, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, 221);
+		endif
+		if (cur_int < max_int && pool >= 1)
+			GFAddButton(gump, 200, 143, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, 220);
+		endif
+
+		// Pool display
+		GFTextLine(gump, 40, 175, 1153, "Pontos livres: " + pool);
+
+		// Confirm button only when pool is 0
+		if (pool == 0)
+			GFAddButton(gump, 170, 210, 4005, 4007, GF_CLOSE_BTN, 999);
+			GFTextLine(gump, 205, 210, 1153, "Confirmar");
+		endif
+
+		var input := GFSendGump(who, gump);
+		var btn := 0;
+		foreach key in (input.keys)
+			btn := key;
+		endforeach
+
+		case (btn)
+			200:
+				if (cur_str < max_str && pool >= 1)
+					cur_str += 1;
+					pool -= 1;
+				endif
+			201:
+				if (cur_str > min_str)
+					cur_str -= 1;
+					pool += 1;
+				endif
+			210:
+				if (cur_dex < max_dex && pool >= 1)
+					cur_dex += 1;
+					pool -= 1;
+				endif
+			211:
+				if (cur_dex > min_dex)
+					cur_dex -= 1;
+					pool += 1;
+				endif
+			220:
+				if (cur_int < max_int && pool >= 1)
+					cur_int += 1;
+					pool -= 1;
+				endif
+			221:
+				if (cur_int > min_int)
+					cur_int -= 1;
+					pool += 1;
+				endif
+			999:
+				if (pool == 0)
+					// Charge only on confirm so cancelling does not cost moedas.
+					if (targ.amount < STAT_RESPEC_COST)
+						SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_FAIL);
+						return;
+					endif
+					if (!SubtractAmount(targ, STAT_RESPEC_COST))
+						SendSysMessageEx(who, "Erro ao cobrar moedas.", SSM_FAIL);
+						return;
+					endif
+
+					// Apply the new stats directly
+					AP_SetTrueStat(who, STRENGTH, cur_str);
+					AP_SetTrueStat(who, DEXTERITY, cur_dex);
+					AP_SetTrueStat(who, INTELLIGENCE, cur_int);
+
+					// Update chardata with the deltas
+					var chardata := GetObjProperty(who, "chardata");
+					if (chardata)
+						chardata.str := CInt(chardata.str) + (cur_str - orig_str);
+						chardata.dex := CInt(chardata.dex) + (cur_dex - orig_dex);
+						chardata.int := CInt(chardata.int) + (cur_int - orig_int);
+						SetObjProperty(who, "chardata", chardata);
+					endif
+
+					SendSysMessageEx(who, "Seus atributos foram redistribuidos!", SSM_INFO);
+					return;
+				endif
+			default:
+				SendSysMessageEx(who, "Redistribuicao cancelada.", SSM_FAIL);
+				return;
+		endcase
+	endwhile
+endfunction
+
+// Mirrors the race + trait stat math from attributeBonusByRaceAndTraits in
+// scripts/include/creationUtils.inc:1188 so the trainer can offset the
+// 40-100 redistribution range per stat.
+function GetStatBonuses(who)
+	var bonus := struct{ str := 0, dex := 0, int := 0 };
+	var chardata := GetObjProperty(who, "chardata");
+	if (!chardata || chardata == error)
+		return bonus;
+	endif
+
+	var raca := chardata.raca;
+	if (raca == ANAO)
+		bonus.str += 10;
+	elseif (raca == ELFO)
+		bonus.int += 10;
+	elseif (raca == DROW)
+		bonus.dex += 5;
+		bonus.int += 5;
+	elseif (raca == ORC)
+		bonus.str += 5;
+		bonus.int += 5;
+	elseif (raca == PEQUILHO)
+		bonus.dex += 10;
+	endif
+
+	if (chardata.trait == "Corpulento")
+		bonus.str += 10;
+		bonus.dex -= 5;
+		bonus.int -= 5;
+	elseif (chardata.trait == "Agil")
+		bonus.str -= 5;
+		bonus.dex += 10;
+		bonus.int -= 5;
+	elseif (chardata.trait == "Genio")
+		bonus.str -= 5;
+		bonus.dex -= 5;
+		bonus.int += 10;
+	elseif (chardata.trait == "Robusto")
+		bonus.str += 15;
+		bonus.dex -= 5;
+		bonus.int -= 5;
+	endif
+
+	return bonus;
+endfunction
+
+// =============================================================================
+// SKILL REDISTRIBUTION
+// =============================================================================
+// Player resets and rebuys all class skills using the original points budget.
+// Skills kept at the same tier preserve their TrueSkill value (gains from play).
+// Upgraded tiers (e.g. secondary -> primary) keep current value if it already
+// exceeds the new tier base. Downgraded tiers and removed skills reset to the
+// new tier base (or 0). Cap baseline auto-refreshes via valorInicial reading
+// chardata.Skills.
+function SkillRedistribution(who, npc)
+	var chardata := GetObjProperty(who, "chardata");
+	if (!chardata || chardata == error || !chardata.classe)
+		SendSysMessageEx(who, "Erro ao carregar seus dados de personagem.", SSM_FAIL);
+		return;
+	endif
+
+	// Each tier-up cost depends on the class priority of the skill:
+	// P=1pt/level, S=2pt/level, T=3pt/level, Q=4pt/level (matches creation in
+	// pkg/systems/charactercreation/epicgumpcriacao.src:393-466).
+	var skill_costs := BuildSkillCostMap(chardata);
+
+	// Snapshot only skills that are part of the rebuyable set (class config plus
+	// bgBonus / Cavar Buracos overrides). Skills the player gained outside this
+	// set (GM grants, etc.) are not touched by the respec.
+	var original_tiers := dictionary;
+	var original_values := dictionary;
+	var orig_skills := chardata.Skills;
+	if (orig_skills && orig_skills != error)
+		foreach skill_name in (orig_skills.keys())
+			if (!skill_costs.Exists(skill_name))
+				continue;
+			endif
+			var tier := CInt(orig_skills[skill_name]);
+			if (tier >= 1 && tier <= 3)
+				original_tiers[skill_name] := tier;
+				original_values[skill_name] := CInt(AP_GetTrueSkill(who, skill_name));
+			endif
+		endforeach
+	endif
+
+	if (original_tiers.size() == 0)
+		SendSysMessageEx(who, "Voce nao possui skills para redistribuir.", SSM_FAIL);
+		return;
+	endif
+
+	// Budget mirrors creation (epicgumpcriacao.src:370-376): 20 base, +5 for the
+	// Sabe-Tudo trait, +2 for the Humano race. Race and trait are immutable
+	// after creation, so the formula is authoritative for respec.
+	var total_budget := 20;
+	if (chardata.trait == "Sabe-Tudo")
+		total_budget += 5;
+	endif
+	if (chardata.raca == "Humano")
+		total_budget += 2;
+	endif
+
+	var pri_allowed := howManyPrimarias(chardata);
+
+	// Working state used by the respec gump. Mirrors the chardata fields skillGump
+	// would touch, but kept separate from the player's stored chardata until commit.
+	var respec_data := struct;
+	respec_data.+classe := chardata.classe;
+	respec_data.+trait := chardata.trait;
+	respec_data.+raca := chardata.raca;
+	respec_data.+bgBonus := chardata.bgBonus;
+	respec_data.+Skills := dictionary;
+	respec_data.+points := total_budget;
+	respec_data.+Primarias := 0;
+
+	SendSysMessageEx(who, "O custo e de " + SKILL_RESPEC_COST + " moedas. Selecione suas moedas.", SSM_REQUEST);
+	var targ := Target(who);
+	if (!targ || targ.objtype != MOEDA_OBJTYPE)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+	if (targ.amount < SKILL_RESPEC_COST)
+		SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_FAIL);
+		return;
+	endif
+
+	SendSysMessageEx(who, "Distribua " + total_budget + " pontos. O pagamento sera cobrado ao confirmar.", SSM_INFO);
+
+	while (who)
+		var input := SkillRespecGump(who, respec_data, pri_allowed);
+		if (!input || input == error)
+			SendSysMessageEx(who, "Redistribuicao cancelada.", SSM_FAIL);
+			return;
+		endif
+
+		var btn := 0;
+		foreach key in (input.keys)
+			btn := key;
+		endforeach
+
+		// Cancel button or window closed without confirming.
+		if (btn == 0 || btn == 501)
+			SendSysMessageEx(who, "Redistribuicao cancelada.", SSM_FAIL);
+			return;
+		endif
+
+		// Confirm: validate budget spent and primary count, then commit.
+		if (btn == 500)
+			if (respec_data.points != 0)
+				SendSysMessageEx(who, "Distribua todos os pontos antes de confirmar.", SSM_FAIL);
+				continue;
+			endif
+			var pri_count := CountPrimaries(respec_data);
+			if (pri_count > pri_allowed)
+				SendSysMessageEx(who, "Voce ultrapassou o limite de primarias (" + pri_allowed + ").", SSM_FAIL);
+				continue;
+			endif
+
+			// Charge only on confirmed valid distribution.
+			if (targ.amount < SKILL_RESPEC_COST)
+				SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_FAIL);
+				return;
+			endif
+			if (!SubtractAmount(targ, SKILL_RESPEC_COST))
+				SendSysMessageEx(who, "Erro ao cobrar moedas.", SSM_FAIL);
+				return;
+			endif
+
+			ApplyRespecResults(who, chardata, respec_data, original_tiers, original_values);
+			SendSysMessageEx(who, "Suas skills foram redistribuidas!", SSM_INFO);
+			return;
+		endif
+
+		// Tier up/down button — mutate respec_data and redraw.
+		ApplyRespecButton(who, respec_data, btn, pri_allowed);
+	endwhile
+endfunction
+
+// Builds a dict skill_name -> per-level cost for the player's class. Mirrors
+// creation rules: bgBonus override -> cost 1; primarias (P) -> 1; secundarias
+// (S) -> 2; terciarias (T) -> 3; quaternarias (Q) -> 4. Cavar Buracos trait
+// promotes Mining to secondary cost regardless of class list.
+function BuildSkillCostMap(chardata)
+	var costs := dictionary;
+	var cfg := ReadConfigFile(":charactercreation:config/classes");
+	var elem := FindConfigElem(cfg, CStr(chardata.classe));
+	if (elem == error)
+		return costs;
+	endif
+
+	var primarias := GetConfigStringArray(elem, "P");
+	var secundarias := GetConfigStringArray(elem, "S");
+	var terciarias := GetConfigStringArray(elem, "T");
+	var quaternarias := GetConfigStringArray(elem, "Q");
+	var hidden := HiddenSkillForArchetype(chardata.classe);
+
+	foreach skill in primarias
+		if (skill == hidden) continue; endif
+		costs[skill] := 1;
+	endforeach
+	foreach skill in secundarias
+		if (skill == hidden) continue; endif
+		if (!costs.Exists(skill))
+			costs[skill] := 2;
+		endif
+	endforeach
+	foreach skill in terciarias
+		if (skill == hidden) continue; endif
+		if (!costs.Exists(skill))
+			costs[skill] := 3;
+		endif
+	endforeach
+	foreach skill in quaternarias
+		if (skill == hidden) continue; endif
+		if (!costs.Exists(skill))
+			costs[skill] := 4;
+		endif
+	endforeach
+
+	// bgBonus is treated as primary regardless of which list it appears in.
+	var bg := chardata.bgBonus;
+	if (bg != error && bg && bg != hidden)
+		costs[bg] := 1;
+	endif
+
+	// Note: legacy Cavar Buracos discount removed. New system has no skill
+	// point-buying; the trait now grants only the +2 amount bonus on mining
+	// yield (see oremining/mining.src and meteoritos.inc).
+
+	return costs;
+endfunction
+
+// Same button-id convention as skillSelection in epicgumpcriacao.src:393-466.
+// Ranges 100/130/200/230/300/330/400/430 are -/+ for tiers 1/2/3/4 respectively
+// (refund value / point cost = 1, 2, 3, 4). The +N is GetSkillIdFromName.
+function ApplyRespecButton(who, byref respec_data, btn, pri_allowed)
+	if (btn >= 100 && btn < 130)
+		var skill := GetSkillNameFromId(btn - 100);
+		AdjustSkillTier(who, respec_data, skill, -1, 1, pri_allowed);
+	elseif (btn >= 130 && btn < 200)
+		var skill := GetSkillNameFromId(btn - 130);
+		AdjustSkillTier(who, respec_data, skill, 1, 1, pri_allowed);
+	elseif (btn >= 200 && btn < 230)
+		var skill := GetSkillNameFromId(btn - 200);
+		AdjustSkillTier(who, respec_data, skill, -1, 2, pri_allowed);
+	elseif (btn >= 230 && btn < 300)
+		var skill := GetSkillNameFromId(btn - 230);
+		AdjustSkillTier(who, respec_data, skill, 1, 2, pri_allowed);
+	elseif (btn >= 300 && btn < 330)
+		var skill := GetSkillNameFromId(btn - 300);
+		AdjustSkillTier(who, respec_data, skill, -1, 3, pri_allowed);
+	elseif (btn >= 330 && btn < 400)
+		var skill := GetSkillNameFromId(btn - 330);
+		AdjustSkillTier(who, respec_data, skill, 1, 3, pri_allowed);
+	elseif (btn >= 400 && btn < 430)
+		var skill := GetSkillNameFromId(btn - 400);
+		AdjustSkillTier(who, respec_data, skill, -1, 4, pri_allowed);
+	elseif (btn >= 430 && btn < 500)
+		var skill := GetSkillNameFromId(btn - 430);
+		AdjustSkillTier(who, respec_data, skill, 1, 4, pri_allowed);
+	endif
+endfunction
+
+// .values() on a dictionary stored in a struct field returns nothing in this
+// codebase's eScript runtime — the creation flow uses .keys() + index access
+// for the same reason (see epicgumpcriacao.src:476-480). This helper is the
+// single canonical way to count primaries (tier-3 skills) in respec_data.
+function CountPrimaries(respec_data)
+	var count := 0;
+	foreach skill_name in (respec_data.Skills.keys())
+		if (CInt(respec_data.Skills[skill_name]) == 3)
+			count += 1;
+		endif
+	endforeach
+	return count;
+endfunction
+
+function AdjustSkillTier(who, byref respec_data, skill, delta, cost, pri_allowed)
+	if (!skill || skill == "" || skill == error)
+		return;
+	endif
+	var current := CInt(respec_data.Skills[skill]);
+	if (delta > 0)
+		if (current >= 3)
+			return;
+		endif
+		if (respec_data.points - cost < 0)
+			return;
+		endif
+		// Hard cap on primaries: when promoting from tier 2 to tier 3, refuse
+		// if the player is already at their primary limit (2 normally, 1 for
+		// the Sabe-Tudo trait).
+		if (current == 2)
+			if (CountPrimaries(respec_data) >= pri_allowed)
+				SendSysMessageEx(who, "Voce ja atingiu o limite de primarias (" + pri_allowed + ").", SSM_FAIL);
+				return;
+			endif
+		endif
+		respec_data.Skills[skill] := current + 1;
+		respec_data.points -= cost;
+	else
+		if (current <= 0)
+			return;
+		endif
+		respec_data.Skills[skill] := current - 1;
+		respec_data.points += cost;
+		if (respec_data.Skills[skill] == 0)
+			respec_data.Skills.Erase(skill);
+		endif
+	endif
+endfunction
+
+function ApplyRespecResults(who, chardata, respec_data, original_tiers, original_values)
+	var seen := dictionary;
+
+	// Apply new/changed/removed skills.
+	foreach skill_name in (respec_data.Skills.keys())
+		seen[skill_name] := 1;
+		var new_tier := CInt(respec_data.Skills[skill_name]);
+		var old_tier := CInt(original_tiers[skill_name]);
+		var old_val := CInt(original_values[skill_name]);
+		var new_base := 0;
+		if (new_tier == 3)
+			new_base := 40;
+		elseif (new_tier == 2)
+			new_base := 20;
+		endif
+		if (new_tier == old_tier)
+			// Unchanged tier — keep current TrueSkill value untouched.
+		elseif (new_tier > old_tier)
+			// Upgrade: keep gains if already above new base.
+			if (old_val > new_base)
+				AP_SetTrueSkill(who, skill_name, old_val);
+			else
+				AP_SetTrueSkill(who, skill_name, new_base);
+			endif
+		else
+			// Downgrade (still selected at lower tier): reset to new tier base.
+			AP_SetTrueSkill(who, skill_name, new_base);
+		endif
+	endforeach
+
+	// Removed skills (had tier originally, missing from respec): wipe to 0.
+	foreach skill_name in (original_tiers.keys())
+		if (!seen.Exists(skill_name))
+			AP_SetTrueSkill(who, skill_name, 0);
+		endif
+	endforeach
+
+	// Merge respec changes into chardata.Skills. Skills not in the rebuyable set
+	// (out-of-class additions like GM grants) keep their existing tier so
+	// valorInicial still returns the correct cap baseline for them.
+	var new_skills := dictionary;
+	if (chardata.Skills && chardata.Skills != error)
+		foreach skill_name in (chardata.Skills.keys())
+			if (!original_tiers.Exists(skill_name))
+				new_skills[skill_name] := chardata.Skills[skill_name];
+			endif
+		endforeach
+	endif
+	foreach skill_name in (respec_data.Skills.keys())
+		new_skills[skill_name] := respec_data.Skills[skill_name];
+	endforeach
+	chardata.Skills := new_skills;
+	SetObjProperty(who, "chardata", chardata);
+endfunction
+
+// Custom respec UI: lists every skill in the player's class config (P/S/T/Q)
+// plus the special trait/background slots that creation supports. Mirrors the
+// button-id convention of skillGump so ApplyRespecButton can decode them.
+function SkillRespecGump(who, byref respec_data, pri_allowed)
+	var gump := GFCreateGump();
+	GFDisposable(gump, 0);
+
+	var cfg := ReadConfigFile(":charactercreation:config/classes");
+	var elem := FindConfigElem(cfg, CStr(respec_data.classe));
+	var primarias := GetConfigStringArray(elem, "P");
+	var secundarias := GetConfigStringArray(elem, "S");
+	var terciarias := GetConfigStringArray(elem, "T");
+	var quaternarias := GetConfigStringArray(elem, "Q");
+
+	// Recompute primary count from current selection.
+	var pri_count := CountPrimaries(respec_data);
+	respec_data.Primarias := pri_count;
+
+	var minus_btn := {0x9F7, 0x9F8};
+	var plus_btn := {0x9F9, 0x9FA};
+
+	GFResizePic(gump, 0, 25, 3600, 360, 820);
+	GFResizePic(gump, 15, 40, 0x13BE, 330, 785);
+	GFTextLine(gump, 100, 50, 1153, "Redistribuir Skills");
+
+	var x := 35;
+	var y := 80;
+
+	// PRIMARIAS (cost 1)
+	GFHTMLArea(gump, x, y, 280, 24, "<BASEFONT color=#0000CC >Primarias</BASEFONT>", 0, 0);
+	y += 24;
+	foreach skill in primarias
+		y := DrawSkillRow(gump, respec_data, skill, x, y, 1, 100, 130, minus_btn, plus_btn, pri_allowed);
+	endforeach
+	var bg := respec_data.bgBonus;
+	if (bg != error && bg && !(bg in primarias))
+		y := DrawSkillRow(gump, respec_data, bg, x, y, 1, 100, 130, minus_btn, plus_btn, pri_allowed);
+	endif
+	y += 8;
+
+	// SECUNDARIAS (cost 2)
+	GFHTMLArea(gump, x, y, 280, 24, "<BASEFONT color=#007A23 >Secundarias</BASEFONT>", 0, 0);
+	y += 24;
+	foreach skill in secundarias
+		if (skill == respec_data.bgBonus)
+			continue;
+		endif
+		y := DrawSkillRow(gump, respec_data, skill, x, y, 2, 200, 230, minus_btn, plus_btn, pri_allowed);
+	endforeach
+	y += 8;
+
+	// TERCIARIAS (cost 3)
+	GFHTMLArea(gump, x, y, 280, 24, "<BASEFONT color=#FFE700 >Terciarias</BASEFONT>", 0, 0);
+	y += 24;
+	foreach skill in terciarias
+		if (skill == respec_data.bgBonus)
+			continue;
+		endif
+		y := DrawSkillRow(gump, respec_data, skill, x, y, 3, 300, 330, minus_btn, plus_btn, pri_allowed);
+	endforeach
+	y += 8;
+
+	// QUATERNARIAS (cost 4)
+	GFHTMLArea(gump, x, y, 280, 24, "<BASEFONT color=#CC0000 >Quaternarias</BASEFONT>", 0, 0);
+	y += 24;
+	foreach skill in quaternarias
+		if (skill == respec_data.bgBonus)
+			continue;
+		endif
+		y := DrawSkillRow(gump, respec_data, skill, x, y, 4, 400, 430, minus_btn, plus_btn, pri_allowed);
+	endforeach
+	y += 12;
+
+	GFTextLine(gump, x, y, 1153, "Pontos restantes: " + respec_data.points);
+	y += 22;
+	GFTextLine(gump, x, y, 1153, "Primarias: " + pri_count + " / " + pri_allowed);
+	y += 28;
+
+	// Confirm + Cancel buttons.
+	GFAddButton(gump, x, y, 4023, 4025, GF_CLOSE_BTN, 500);
+	GFTextLine(gump, x + 35, y + 4, 1153, "Confirmar");
+	GFAddButton(gump, x + 160, y, 4017, 4019, GF_CLOSE_BTN, 501);
+	GFTextLine(gump, x + 195, y + 4, 1153, "Cancelar");
+
+	return GFSendGump(who, gump);
+endfunction
+
+function DrawSkillRow(byref gump, byref respec_data, skill, x, y, cost, refund_base, buy_base, minus_btn, plus_btn, pri_allowed)
+	if (skill == error || !skill || skill == "")
+		return y;
+	endif
+	if (skill == HiddenSkillForArchetype(respec_data.classe))
+		return y;
+	endif
+	var skill_id := GetSkillIdFromName(skill);
+	if (TypeOf(skill_id) != "Integer")
+		return y;
+	endif
+	var current := CInt(respec_data.Skills[skill]);
+
+	GFHTMLArea(gump, x, y, 200, 22, "<BASEFONT color=#FFFFFF >" + StrReplace(skill, "_", " ") + " (" + GetSkillValueDesc(current) + ")</BASEFONT>", 1, 0);
+	if (current >= 1)
+		GFAddButton(gump, x + 210, y + 2, minus_btn[1], minus_btn[2], GF_CLOSE_BTN, refund_base + skill_id);
+	endif
+	if (current < 3 && respec_data.points - cost >= 0)
+		// Block tier-up to primary if already at primary cap unless this skill
+		// is upgrading from <3 to 3 with room available.
+		var would_be_primary := (current == 2);
+		if (!would_be_primary || respec_data.Primarias < pri_allowed)
+			GFAddButton(gump, x + 240, y + 2, plus_btn[1], plus_btn[2], GF_CLOSE_BTN, buy_base + skill_id);
+		endif
+	endif
+	return y + 22;
+endfunction
+
+// Reverses the persistent stat/privilege side-effects an ability applied at
+// purchase time in comprarHabilidade (:charactercreation:habilidades). Each
+// branch is the exact inverse of one purchase mutation so a buy+remove nets
+// to zero. Called after the ability is erased from myhabs.
+//
+// Carry-weight abilities (PACK_MULE / BOLSA_INFINITA) are intentionally NOT
+// handled here: carrying_capacity_mod has a single source of truth in
+// MobileWrapper.RecalcCarryWeightMod, which AbilityRemoval calls after myhabs
+// is persisted (HasAbility then returns false, so the bonus drops on its own).
+function ReverseAbilityPurchaseEffects(who, hab_id)
+	var id := CInt(hab_id);
+
+	if (id == ABILITY_ID::CACADOR_IMPLACAVEL || id == ABILITY_ID::RESISTENCIA_DO_DESERTO)
+		var hitsmod := CInt(GetObjProperty(who, "hitsmod")) - 20;
+		SetObjProperty(who, "hitsmod", hitsmod);
+		recalcvitals(who);
+	elseif (id == ABILITY_ID::ELO_NATURAL)
+		EraseObjProperty(who, "empatiacomanimais");
+	elseif (id == ABILITY_ID::TIRO_EM_MOVIMENTO)
+		who.disable("firewhilemoving");
+		RevokePrivilege(who, "firewhilemoving");
+	elseif (id == ABILITY_ID::POLIGLOTA)
+		// Pop the most recently learned Poliglota language and strip it from
+		// linguas_conhecidas. Starting/cultural languages never enter
+		// #poliglota_languages, so they are safe from removal.
+		var poliglota_langs := GetObjProperty(who, "#poliglota_languages");
+		if (poliglota_langs == error || !poliglota_langs || !poliglota_langs.size())
+			return;
+		endif
+		var removed := poliglota_langs[poliglota_langs.size()];
+		poliglota_langs.erase(poliglota_langs.size());
+		if (poliglota_langs.size())
+			SetObjProperty(who, "#poliglota_languages", poliglota_langs);
+		else
+			EraseObjProperty(who, "#poliglota_languages");
+		endif
+		var known := GetObjProperty(who, "linguas_conhecidas");
+		if (known != error && known)
+			var new_known := array{};
+			var skipped := 0;
+			foreach lang in known
+				if (!skipped && lang == removed)
+					skipped := 1;
+					continue;
+				endif
+				new_known.append(lang);
+			endforeach
+			SetObjProperty(who, "linguas_conhecidas", new_known);
+			var current := GetObjProperty(who, "lingua_escolhida");
+			if (current == removed)
+				SetObjProperty(who, "lingua_escolhida", "Comum");
+			endif
+		endif
+	endif
+endfunction
+
+// =============================================================================
+// ABILITY REMOVAL
+// =============================================================================
+function AbilityRemoval(who, npc)
+	var habs := GetObjProperty(who, "myhabs");
+	var buy := GetObjProperty(who, "buyhab");
+
+	if (!habs || !buy || habs.size() == 0)
+		SendSysMessageEx(who, "Voce nao possui habilidades para trocar.", SSM_FAIL);
+		return;
+	endif
+
+	var habcfg := ReadConfigFile(":abilities:configs/habilidades");
+	var hab_keys := habs.keys(); // array of dict keys: {2, 6, 10, 14, 20, ...}
+
+	var gump := GFCreateGump();
+	GFDisposable(gump, 0);
+	var sizey := GetHabGumpSizeY(habs, habcfg);
+	GFResizePic(gump, 0, 25, 3600, 280, sizey + 70);
+	GFResizePic(gump, 15, 40, 0x13BE, 250, sizey + 40);
+	GFTextLine(gump, 55, 50, 1153, "Trocar Habilidade");
+
+	var i := 1;
+	var y := 90;
+	foreach dict_key in hab_keys
+		var hab_id := habs[dict_key];
+		var nivel := CInt(dict_key) / 2;
+		if (nivel < 1)
+			nivel := 1;
+		endif
+		var custo := CInt(Pow(2, nivel - 1));
+
+		var habelem := FindConfigElem(habcfg, hab_id);
+		var is_pool := CInt(GetConfigInt(habelem, "pool"));
+		var hab_nome := GetConfigString(habelem, "nome");
+		if (!hab_nome)
+			hab_nome := CStr(hab_id);
+		endif
+
+		if (is_pool)
+			var poolCounts := GetObjProperty(who, "myhabs_pool") ?: dictionary;
+			var count := CInt(poolCounts[hab_id]);
+			hab_nome := hab_nome + " (x" + count + ")";
+		endif
+
+		// Radio value = sequential index i, maps back via hab_keys[i]
+		GFRadioButton(gump, 30, y, 210, 211, 0, i);
+		GFTextLine(gump, 50, y, 1153, hab_nome + " - " + custo + " moedas");
+
+		if (!is_pool)
+			var requisitos := retornaRequisitos(hab_id);
+			foreach req in requisitos
+				if (SubStr(req, 1, 3) != "kit")
+					y += 20;
+					GFTextLine(gump, 70, y, SSM_REQUEST, "Req: " + req);
+				endif
+			endforeach
+		endif
+
+		y += 20;
+		i += 1;
+	endforeach
+
+	GFAddButton(gump, 180, sizey + 20, 4005, 4007, GF_CLOSE_BTN, 999);
+	GFTextLine(gump, 215, sizey + 20, 1153, "Remover");
+
+	var input := GFSendGump(who, gump);
+
+	if (input[0] != 999)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	// Map radio index back to dictionary key via hab_keys
+	var selected_key := 0;
+	var selected_hab := 0;
+	foreach key in (input.keys)
+		if (key != 0 && hab_keys[key])
+			selected_key := CInt(hab_keys[key]); // e.g. radio 5 -> hab_keys[5] = 20
+			selected_hab := habs[selected_key];   // e.g. habs[20] = 604
+			break;
+		endif
+	endforeach
+
+	if (!selected_hab)
+		SendSysMessageEx(who, "Nenhuma habilidade selecionada.", SSM_FAIL);
+		return;
+	endif
+
+	var habelem := FindConfigElem(habcfg, selected_hab);
+	var selected_nome := GetConfigString(habelem, "nome");
+	if (!selected_nome)
+		selected_nome := CStr(selected_hab);
+	endif
+	var is_pool := CInt(GetConfigInt(habelem, "pool"));
+
+	// Check dependencies (skip for pool abilities - they have no dependents)
+	if (!is_pool)
+		// Build list of ability names that will remain after removal
+		var remaining_names := array;
+		foreach k in hab_keys
+			var hid := habs[k];
+			if (hid != selected_hab)
+				var elem := FindConfigElem(habcfg, hid);
+				var nome := GetConfigString(elem, "nome");
+				if (nome)
+					remaining_names.append(nome);
+				endif
+			endif
+		endforeach
+
+		// Check if any remaining ability requires the one being removed
+		foreach k in hab_keys
+			var hid := habs[k];
+			if (hid != selected_hab)
+				var requisitos := retornaRequisitos(hid);
+				foreach req in requisitos
+					if (SubStr(req, 1, 3) != "kit" && SubStr(req, 1, 7) != "cultura")
+						if (!(req in remaining_names))
+							var dep_elem := FindConfigElem(habcfg, hid);
+							var dep_nome := GetConfigString(dep_elem, "nome");
+							SendSysMessageEx(who, "Voce nao pode remover " + selected_nome
+											 + " porque e pre-requisito para " + dep_nome, SSM_FAIL);
+							return;
+						endif
+					endif
+				endforeach
+			endif
+		endforeach
+	endif
+
+	// Calculate cost from dict key
+	var nivel := CInt(selected_key) / 2;
+	if (nivel < 1)
+		nivel := 1;
+	endif
+	var custo := CInt(Pow(2, nivel - 1));
+
+	SendSysMessageEx(who, "O custo e de " + custo + " moedas. Selecione suas moedas.", SSM_REQUEST);
+	var targ := Target(who);
+	if (!targ || targ.objtype != MOEDA_OBJTYPE)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+	if (targ.amount < custo)
+		SendSysMessageEx(who, "Voce nao tem moedas suficientes.", SSM_FAIL);
+		return;
+	endif
+	if (!SubtractAmount(targ, custo))
+		SendSysMessageEx(who, "Erro ao cobrar moedas.", SSM_FAIL);
+		return;
+	endif
+
+	// Handle pool abilities
+	if (is_pool)
+		var poolCounts := GetObjProperty(who, "myhabs_pool") ?: dictionary;
+		var count := CInt(poolCounts[selected_hab]);
+		if (count > 1)
+			poolCounts[selected_hab] := count - 1;
+			SetObjProperty(who, "myhabs_pool", poolCounts);
+			SendSysMessageEx(who, selected_nome + " reduzida! (x" + (count - 1) + " restante)", SSM_INFO);
+		else
+			poolCounts.erase(selected_hab);
+			SetObjProperty(who, "myhabs_pool", poolCounts);
+			habs.erase(selected_key);
+			buy[selected_key] := 1;
+			SetObjProperty(who, "myhabs", habs);
+			SetObjProperty(who, "buyhab", buy);
+			// Carry-weight has its own single source of truth (recomputed
+			// from HasAbility, idempotent). Everything else an ability applied
+			// at purchase (hitsmod, empatiacomanimais, firewhilemoving) is
+			// reversed here — no-op for abilities without such effects.
+			MobileWrapper(who).RecalcCarryWeightMod();
+			ReverseAbilityPurchaseEffects(who, selected_hab);
+			SendSysMessageEx(who, selected_nome + " removida completamente!", SSM_INFO);
+		endif
+
+		// Give back pergaminho for the level
+		var pergaminho_name := "pergaminho_" + selected_key;
+		var scroll := CreateItemInBackpack(who, pergaminho_name);
+		if (scroll)
+			SetObjProperty(scroll, "owner", who.serial);
+			scroll.color := 2117;
+			scroll.newbie := 1;
+		endif
+		return;
+	endif
+
+	// Non-pool ability removal
+	if (selected_nome == "Inventario")
+		EraseObjProperty(who, "recipes");
+	endif
+
+	habs.erase(selected_key);
+	buy[selected_key] := 1;
+
+	SetObjProperty(who, "myhabs", habs);
+	SetObjProperty(who, "buyhab", buy);
+
+	// Carry-weight: single source of truth, recomputed from HasAbility after
+	// myhabs is persisted (covers PACK_MULE / BOLSA_INFINITA). Other purchase
+	// side-effects (hitsmod, empatiacomanimais, firewhilemoving privilege) are
+	// reversed separately — RecalcCarryWeightMod does not touch those.
+	MobileWrapper(who).RecalcCarryWeightMod();
+	ReverseAbilityPurchaseEffects(who, selected_hab);
+
+	// Give back the pergaminho
+	var pergaminho_name := "pergaminho_" + selected_key;
+	var scroll := CreateItemInBackpack(who, pergaminho_name);
+	if (scroll)
+		SetObjProperty(scroll, "owner", who.serial);
+		scroll.color := 2117;
+		scroll.newbie := 1;
+	endif
+
+	var resethab := CInt(GetObjProperty(who, "resethab")) + 1;
+	SetObjProperty(who, "resethab", resethab);
+
+	SendSysMessageEx(who, selected_nome + " removida! Voce recebeu um pergaminho de volta.", SSM_INFO);
+endfunction
+
+function GetHabGumpSizeY(habs, habcfg)
+	var y := 90;
+	foreach dict_key in (habs.keys())
+		var hab_id := habs[dict_key];
+		var habelem := FindConfigElem(habcfg, hab_id);
+		var is_pool := CInt(GetConfigInt(habelem, "pool"));
+		if (!is_pool)
+			var requisitos := retornaRequisitos(hab_id);
+			foreach req in requisitos
+				if (SubStr(req, 1, 3) != "kit")
+					y += 20;
+				endif
+			endforeach
+		endif
+		y += 20;
+	endforeach
+	return y;
+endfunction

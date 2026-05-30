@@ -1,0 +1,90 @@
+/*
+ * Cantrip Command (.t)
+ * 
+ * Entry point for cantrip spells. Works with both:
+ * - Text commands: .t fireball (who, spellname as separate args)
+ * - Hotbar/scripts: Start_Script(script, {who, spellname})
+ */
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":charactercreation:habilidades";
+include ":spells:include/spell_executor";
+
+const SPELL_BTN := 200;
+const GUMPID_CLERICSPELL := 0x00001C;
+
+// Main program - handles both text commands and Start_Script calls
+program magia(who, spellname := "")
+	// Handle Start_Script array format: {who, spellname}
+	if (TypeOf(who) == "Array")
+		var params := who;
+		who := params[1];
+		spellname := params[2];
+	endif
+	
+	var cfg := ReadConfigFile(":spells:config/cantrips");
+
+	// Validate access
+	var chardata := GetObjProperty(who, "chardata");
+	var magia := chardata.magia;
+	if (magia != "spellcaster" && chardata.trait != "Natureza Arcana" && magia != "arcane_archer")
+		SendSysMessageEx(who, "Este menu nao e acessivel para voce.", SSM_FAIL);
+		return 0;
+	endif
+
+	// If no spell name provided, show the gump
+	if (!spellname || spellname == "")
+		CantripsGump(who, GetConfigIntKeys(cfg));
+		return 1;
+	endif
+	
+	// Execute the spell using the unified executor
+	return ExecuteSpellByName(who, spellname, SPELL_TYPE_CANTRIP);
+endprogram
+
+function CantripsGump(who, shaman_list)
+	var gump := GFCreateGump();
+	var cfg := ReadConfigFile(":spells:config/cantrips");
+
+	var size := shaman_list.Size();
+	if (size >= 1)
+		size := size * 26;
+	else
+		size := 0;
+	endif
+
+	GFSetId(gump, GUMPID_CLERICSPELL);
+	GFClosable(gump, 1);
+	GFResizePic(gump, 10, 26, 9390, 276, 140 + size);
+	GFHTMLArea(gump, 80, 65, 142, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Truques", 0, 0); // shadow
+	GFHTMLArea(gump, 82, 67, 142, 20, "<BASEFONT Size=5 Color=#666666 >Lista de Truques", 0, 0);
+	GFHTMLArea(gump, 81, 66, 142, 20, "<BASEFONT Size=5 Color=#ffffff >Lista de Truques", 0, 0); // shadow
+	GFGumpPic(gump, 41, 84, 1469);
+	// GFTextLine(gump, 187, 66, 0, "Lista de Bençãos");
+	// GFGumpPic(gump, 31, 98, 9773, 0);
+	var y := 116;
+	foreach spell in shaman_list
+		spell := FindConfigElem(cfg, spell);
+
+		var spellname := "<basefont Size= 1>Empty";
+		var powerwords := "";
+
+		if (spell)
+			spellname := spell.name;
+		endif
+
+		var color := "";
+
+		GFHTMLArea(gump, 52, y, 192, 24, "{}{}".format(color, spellname), 1, 0);
+		GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format("A020F0",
+																						 spell.flavortext));
+
+		y += 26;
+		sleepms(2);
+	endforeach
+
+	return GFSendGump(who, gump);
+endfunction

@@ -1,0 +1,131 @@
+use uo;
+use os;
+use util;
+
+include ":gumps:gumps";
+include ":charactercreation:habilidades";
+include ":attributes:attributes";
+include ":crafting:fabricacaoUtil";
+include ":crafting:fabricaComponentes";
+
+var cfgRecursos := ReadConfigFile(":crafting:config/resourceList");
+
+program usar_serra(who, item)
+
+	if (!Accessible(who, item))
+		SendSysMessage(who, "Você não alcanca aquilo!");
+		return;
+	endif
+
+	if (!ReserveItem(item))
+		SendSysMessage(who, "você não pode usar isso agora.");
+		return;
+	endif
+
+	SendSysMessage(who, "O que você deseja fazer com isto?");
+	var targetted := Target(who);
+
+	if (targetted.graphic != 0x1bdd)
+		SendSysMessage(who, "Você deve usar a serra nos troncos de madeira!");
+		return;
+	endif
+
+	if (!targetted)
+		SendSysMessage(who, "Cancelado.");
+		return;
+	endif
+	if (!Accessible(who, targetted))
+		SendSysMessage(who, "Você não alcanca isto!");
+		return;
+	endif
+	if (!targetted.movable)
+		SendSysMessage(who, "Você não pode usar isto.");
+		return;
+	endif
+	if (!ReserveItem(targetted))
+		SendSysMessage(who, "Você não pode usar isto agora.");
+		return;
+	endif
+
+	if (CStr(Hex(targetted.objtype)) in (dictionary.keys()))
+		SendSysMessage(who, "Você deve usar a serra nos troncos de madeira!");
+		return;
+	else
+		OpenMenuLog(who, targetted);
+	endif
+
+endprogram
+
+function OpenMenuLog(who, targetted)
+
+	var sawgump := GFCreateGump();
+	GFResizePic(sawgump, 0, 60, 3600, 260, 230);
+	GFResizePic(sawgump, 15, 75, 0x13BE, 230, 200);
+	// cor 55 e 600 sao boas
+	GFTextLine(sawgump, 50, 93, 55, "O que você deseja fazer?");
+	GFTextLine(sawgump, 50, 123, 600, "Tabuas");
+	GFTextLine(sawgump, 170, 123, 600, "Componentes");
+	GFTilePic(sawgump, 60, 153, 7127);
+	GFTilePic(sawgump, 180, 153, 3978);
+
+	GFAddButton(sawgump, 160, 240, 0x819, 0x818, 1, 1);
+	GFAddButton(sawgump, 25, 153, 210, 211, 1, 2);
+	GFAddButton(sawgump, 145, 153, 210, 211, 1, 3);
+
+	var retv := GFSendGump(who, sawgump);
+
+	if (retv[0] == 1)
+		return 0;
+	elseif (retv[0] == 2)
+		MakeBoardSerra(who, targetted, CATALOGO_LOG_PRA_TABUA[Lower(CStr(Hex(targetted.objtype)))]);
+	elseif (retv[0] == 3)
+		FabricaComponentes(who, "Wood_Working");
+	else
+		return -1;
+	endif
+
+endfunction
+
+function MakeBoardSerra(who, item, nova_tabua)
+
+	var characterx := who.x;
+	var charactery := who.y;
+	var toras;
+
+	PrintTextAbove(who, "*começa a serrar madeira*");
+	repeat
+		if ((item.amount) <= 0)
+			break;
+		endif
+		MakeSerraEfect(who);
+		// Versão que faz por conjutos de toras
+		if (item.amount < 20)
+			toras := item.amount;
+		else
+			toras := 20;
+		endif
+		if (TemHabilidade(who, "Secagem da Madeira"))
+			CreateItemInContainer(who.backpack, nova_tabua, toras * 4);
+		else
+			CreateItemInContainer(who.backpack, nova_tabua, toras * 2);
+		endif
+		SubtractAmount(item, toras);
+	// fim alternativa
+
+	/*
+        //Versão que faz tudo de uma vez
+        if(TemHabilidade(who,"Secagem da Madeira"))
+            CreateItemInContainer (who.backpack, nova_tabua, item.amount*2);
+        else
+            CreateItemInContainer (who.backpack, nova_tabua, item.amount);
+        endif
+        SubtractAmount(item, item.amount);
+*/
+	until ((who.x != characterx || who.y != charactery));
+
+endfunction
+
+function MakeSerraEfect(who)
+	PlaySoundEffect(who, 0xff);
+	sleep(2);
+endfunction

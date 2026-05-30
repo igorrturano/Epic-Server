@@ -1,0 +1,12 @@
+use uo;
+use os;
+
+program kill(params)
+    var mobs := params[2];
+
+    foreach mob in mobs
+        mob.Kill();
+        sleepms(2);
+    endforeach
+    return 1;
+endprogram

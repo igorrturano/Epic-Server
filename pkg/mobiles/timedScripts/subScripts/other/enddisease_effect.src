@@ -1,0 +1,353 @@
+use uo;
+use os;
+use util;
+use vitals;
+include ":attributes:attributes";
+include "include/client";
+include "include/say";
+include ":mounts:mounts";
+include ":timedscripts:timedScripts";
+include ":fls_core:packets";
+include ":attributes:attributes";
+include "include/imersao"; // This would be the path to your immersion script
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":medicine:anatomy";
+include ":medicine:util/diseaseConstants";
+
+program disease_effects(params)
+	var mobile := params[1];
+	var duration := params[2];
+
+	if (!mobile)
+		return 0;
+	endif
+
+	var diseases_system := GetObjProperty(mobile, "Diseases_System");
+
+	if (diseases_system.end_disease == 1)
+		RemoveDiseaseEffects(mobile);
+		RecalcVitals(mobile);
+		Eraseobjproperty(mobile, "Diseases_System");
+		return 0;
+	endif
+
+	var disease_grade := diseases_system.grade;
+	var diseases := diseases_system.diseases;
+
+	if (diseases)
+		// Seleciona aleatoriamente apenas um sintoma da lista para exibir
+		if (diseases.size() > 0)
+			var random_index := RandomInt(diseases.size()) + 1;
+			var random_symptom := diseases[random_index];
+
+			// Exibe apenas o efeito do sintoma sorteado
+			DisplaySymptomEffect(mobile, random_symptom, disease_grade);
+		endif
+
+		sleep(2);
+		ScheduleNextDiseaseEffect(mobile, disease_grade);
+	else
+		return 1;
+	endif
+
+endprogram
+
+function ScheduleNextDiseaseEffect(subject, disease_grade)
+	// Base: 3-5 horas para leve, 1-3 horas para moderado, 30min-1hora para grave
+	var min_minutes, max_minutes;
+
+	case (disease_grade)
+		DISEASE_GRADES::LIGHT:
+			min_minutes := 185; // 3 horas ALTERADO PARA TESTES
+			max_minutes := 300; // 5 horas
+			break;
+		DISEASE_GRADES::MODERATE:
+			min_minutes := 60; // 1 hora
+			max_minutes := 180; // 3 horas
+			break;
+		DISEASE_GRADES::SERIOUS:
+			min_minutes := 30; // 30 minutos
+			max_minutes := 60; // 1 hora
+			break;
+		default: min_minutes := 120; max_minutes := 240;
+	endcase
+
+	// Adiciona variação aleatória no intervalo definido
+	var next_effect_minutes := RandomInt(max_minutes - min_minutes + 1) + min_minutes;
+
+	// Converte para segundos do jogo
+	var next_effect_time := next_effect_minutes * 60;
+
+	// Programa o próximo efeito
+	TS_StartTimer(subject, "diseaseeffect", next_effect_time, 1); // ALTERADO PARA TESTES
+	return 1;
+endfunction
+
+function DisplaySymptomEffect(mobile, symptom, disease_grade)
+	// Don't display effects if character is in combat
+	if (mobile.opponent)
+		return 0;
+	endif
+
+	// Calculate damage based on disease grade
+	var damage := 0;
+
+	case (disease_grade)
+		DISEASE_GRADES::LIGHT:     damage := 15; break;
+		DISEASE_GRADES::MODERATE: damage := 30; break;
+		DISEASE_GRADES::SERIOUS:    damage := 45; break;
+		default:    damage := 15;
+	endcase
+
+	case (symptom)
+		DISEASES::FEVER:       DoFeverEffect(mobile, damage); break;
+		DISEASES::THROMBOSIS:      DoThromboEffect(mobile, damage); break;
+		DISEASES::PUSTULES:    DoPustulesEffect(mobile, damage); break;
+		DISEASES::LACERATION:   DoLacerationEffect(mobile, damage); break;
+		DISEASES::ITCHING:     DoItchingEffect(mobile, damage); break;
+		DISEASES::COLIC:     DoStomachacheEffect(mobile, damage); break;
+		DISEASES::PALPITATIONS: DoPalpitationsEffect(mobile, damage); break;
+		DISEASES::NAUSEA:      DoNauseaEffect(mobile, damage); break;
+		DISEASES::HEADACHE:    DoHeadacheEffect(mobile, damage); break;
+		default:       break;
+	endcase
+
+	return 1;
+endfunction
+
+function DoFeverEffect(mobile, damage)
+	// Fever effects: sweating, shivering, etc.
+	Imersao(mobile, "arfar");
+	PrintTextAbove(mobile, "*suando*");
+
+	// Apply life damage
+	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::FORCED);
+
+	return 1;
+endfunction
+
+function DoThromboEffect(mobile, damage)
+	// Thrombus effects: limping, sudden pain
+	Imersao(mobile, "gemer"); // Just the animation, no sound or emote
+	PlayerSpeedSlower(mobile, 1);
+	PrintTextAbove(mobile, "*manca*");
+
+	// Apply stamina damage
+	ReduceStamina(mobile, damage);
+
+	sleep(5);
+	PlayerSpeedSlower(mobile, 0);
+
+	return 1;
+endfunction
+
+function DoPustulesEffect(mobile, damage)
+	// Pustules effects: scratching, visible pustules
+	PrintTextAbove(mobile, "*coça a pele irritada*");
+	// Use bow animation for scratching motion
+	sleep(1);
+	Imersao(mobile, "tossir1");
+
+	// Apply life damage
+	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::FORCED);
+
+	sleep(3);
+	PrintTextAbove(mobile, "*uma pústula estoura*");
+
+	var pus := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0x122A, 1); // Small blood pool
+	pus.name := "pus nojento";
+	pus.color := 0x0490; // Yellowish
+	pus.movable := 0;
+	pus.decayAt := ReadGameClock() + 30;
+	return 1;
+endfunction
+
+function DoLacerationEffect(mobile, damage)
+	// Laceration effects: bleeding, pain
+	Imersao(mobile, "sentirdor"); // Pain sound
+	PrintTextAbove(mobile, "*segura o ferimento*");
+
+	// Apply life damage
+	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::FORCED);
+
+	// Bleeding effect
+	PlaySoundEffect(mobile, 0x26); // Liquid sound
+
+	// Create blood drops
+	var blood := CreateItemAtLocation(mobile.x, mobile.y, mobile.z, 0x122A, 1); // Blood pool
+	blood.movable := 0;
+	blood.decayAt := ReadGameClock() + 60;
+
+	return 1;
+endfunction
+
+function DoItchingEffect(mobile, damage)
+	// Itching effects: scratching, irritation
+	var scratch_spots := array{ "*coça os braços furiosamente*", "*coça as pernas*", "*coça o pescoço*",
+								"*coça as costas contra uma superfície*", "*coça o rosto*" };
+
+	var spot := scratch_spots[RandomInt(scratch_spots.size()) + 1];
+	PrintTextAbove(mobile, spot);
+	Imersao(mobile, "bow"); // Bow animation for scratching
+
+	// Apply stamina damage
+	ReduceStamina(mobile, damage);
+
+	return 1;
+endfunction
+
+function DoStomachacheEffect(mobile, damage)
+	// Colic/Stomachache effects: doubling over, pain
+	PrintTextAbove(mobile, "*segura o estômago*");
+	Imersao(mobile, "vomitar"); // Sound and emote
+
+var half := CInt(damage / 2);
+DealDamage(mobile, half, DAMAGE_TYPE::FORCED);
+ReduceStamina(mobile, half);
+
+	DoVomit(mobile);
+
+	return 1;
+endfunction
+
+function DoPalpitationsEffect(mobile, damage)
+	// Palpitations effects: heart racing, breathing difficulties
+	// Chest pain
+	PrintTextAbove(mobile, "*segura o peito*");
+	Imersao(mobile, "arfar"); // Pain sound
+
+	// Apply stamina damage
+	ReduceStamina(mobile, damage);
+
+	sleep(2);
+	PrintTextAbove(mobile, "*sente o coração acelerado*");
+	Imersao(mobile, "tossir2"); // Stagger animation
+	mobile.facing := RandomDiceRoll("1d8");
+
+	return 1;
+endfunction
+
+function DoNauseaEffect(mobile, damage)
+	// Nausea effects: discomfort, potential vomiting
+	PrintTextAbove(mobile, "*parece enjoado*");
+	Imersao(mobile, "vomitar"); // Discomfort sound
+
+	// Apply stamina damage
+	ReduceStamina(mobile, damage);
+
+	DoVomit(mobile);
+
+	return 1;
+endfunction
+
+function DoHeadacheEffect(mobile, damage)
+	// Headache effects: holding head, dizziness
+	PrintTextAbove(mobile, "*Você se sente tonto*");
+	Imersao(mobile, "cair"); // Pain sound
+	PlayCharCair(mobile);
+
+	// Apply life damage
+	DealDamage(mobile, CInt(damage), DAMAGE_TYPE::FORCED);
+
+	sleep(1);
+	mobile.freeze := 1;
+	sleep(2);
+	mobile.freeze := 0;
+
+	if (GetEquipmentByLayer(mobile, 25))
+		// Fall from mount if severe
+		MP_Unmount(mobile);
+		SendSysMessage(mobile, "A dor de cabeça faz você perder o equilíbrio e cair.", FONT_NORMAL,
+						33);
+	endif
+
+	return 1;
+endfunction
+
+function DoVomit(mobile)
+	// Make the character hungry (keeping this part of your original code)
+	var hunger := GetObjProperty(mobile, "hunger");
+	if (!hunger)
+		hunger := 5;
+	elseif ((hunger + 2) > 10)
+		hunger := 10;
+	else
+		hunger := hunger + 2;
+	endif
+	SetObjProperty(mobile, "hunger", hunger);
+
+	return 1;
+endfunction
+
+function PlayCharCair(who)
+	var dir := 1;
+	var speed := 5; // 0 = fastest, 30 = way too  slow
+	var doesrepeat := 0;
+	var framecount := 6; // seems to set the frame it uses?
+	var numrepeats := 1;
+
+	var packetString := "6E";
+	packetString := packetString + fixPacketLength(hex(who.serial), 4);
+	packetString := packetString + fixPacketLength(hex(21), 2); // animation
+	packetString := packetString + fixPacketLength(hex(framecount), 2); // frame count
+	packetString := packetString + fixPacketLength(hex(numrepeats), 2); // Repetition times
+	packetString := packetString + fixPacketLength(hex(dir), 1); // 00 == fwd, 01 == bkwd
+	packetString := packetString + fixPacketLength(hex(doesrepeat), 1); // Does this animation repeat? 01 == yes
+	packetString := packetString + fixPacketLength(hex(speed), 1); // frame delay
+
+	foreach chr in ListMobilesNearLocation(who.x, who.y, who.z, 16, who.realm)
+		SendPacket(chr, packetString);
+		SleepMS(10);
+	endforeach
+
+	return 1;
+endfunction
+
+// New function to handle stamina reduction
+function ReduceStamina(who, stam)
+	Set_Critical(1);
+	var curr := CInt(AP_GetVital(who, "Stamina"));
+	if (curr >= stam)
+		AP_SetVital(who, "Stamina", (curr - stam));
+	else
+		AP_SetVital(who, "Stamina", 0);
+	endif
+	Set_Critical(0);
+
+	return 1;
+endfunction
+
+// Função para remover efeitos de doença
+function RemoveDiseaseEffects(mobile)
+	var diseases_system := GetObjProperty(mobile, "Diseases_System");
+
+	// Remove modificadores de atributos anteriores
+	var str_mod := diseases_system.StrDiseaseMod;
+	if (str_mod)
+		AP_ModifyStatMod(mobile, STRENGTH, -str_mod);
+	// UpdateDiseaseProperty(mobile, "StrDiseaseMod", 0);
+	endif
+
+	var dex_mod := diseases_system.DexDiseaseMod;
+	if (dex_mod)
+		AP_ModifyStatMod(mobile, DEXTERITY, -dex_mod);
+	// UpdateDiseaseProperty(mobile, "DexDiseaseMod", 0);
+	endif
+
+	var int_mod := diseases_system.IntDiseaseMod;
+	if (int_mod)
+		AP_ModifyStatMod(mobile, INTELLIGENCE, -int_mod);
+	// UpdateDiseaseProperty(mobile, "IntDiseaseMod", 0);
+	endif
+
+	var regen_mod := diseases_system.RegenDiseaseMod;
+	if (regen_mod)
+		var current_stamina_mod := AP_GetVitalRegenRateMod(mobile, "Stamina");
+		var current_mana_mod := AP_GetVitalRegenRateMod(mobile, "Mana");
+		AP_SetVitalRegenRateMod(mobile, "Stamina", current_stamina_mod(regen_mod));
+		AP_SetVitalRegenRateMod(mobile, "Mana", current_mana_mod(regen_mod));
+	// Remover mod de regeneração se implementado
+	// UpdateDiseaseProperty(mobile, "RegenDiseaseMod", 0);
+	endif
+endfunction

@@ -1,0 +1,71 @@
+use uo;
+use os;
+use datafile;
+
+include ":livros_lacrados:scripts/setup_helper";
+
+program SetupLoreCat3(who, cmdline)
+ var df := OpenDataFile(":livros_lacrados:lore_entidades");
+    if (df.errortext)
+ df := CreateDataFile(":livros_lacrados:lore_entidades", DF_KEYTYPE_STRING);
+    else
+    endif
+    if (df.errortext)
+ if (who) SendSysMessage(who, "Erro df: " + df.errortext); endif
+        return;
+    endif
+
+    //   -- -- -- cantante   -- -- --
+
+ _SetupStr(df, "cantante_titulo", "O Cantante");
+ _SetupStr(df, "cantante_autor", "Capitão Thren, Crônica");
+ _SetupPags(df, "cantante", array{
+ "A primeira vez foi no ancoradouro de Vetharn, três dias antes da batalha do estreito. Estava verificando os cabos quando o canto chegou da direção do mar aberto.<br><br>Não era voz humana. Não era instrumento que conheço. Era algo que usava o ar da mesma forma que esses dois usam, mas que vinha de fundo demais e durava alto demais para qualquer garganta ou madeira.",
+ "Vi algo na superfície. Do tamanho de uma corveta, ou maior. Estortorando, como coisa encalhada. Some em segundos. O mar fechou como se nada tivesse estado lá.<br><br>Três dias depois, a batalha do estreito. Quarenta e dois mortos. Meus mortos.",
+ "Registro das três ocorrências:<br><br>PRIMEIRA: Vetharn, antes da batalha do estreito. Quarenta e dois mortos em combate.<br><br>SEGUNDA: Porto de Alenkar, antes da tempestade do décimo segundo ano de serviço. Dezoito afogados. Dois navios perdidos.",
+ "TERCEIRA: Patrulha costeira norte, antes do colapso da torre de vigilância. Ninguém morreu. Mas a torre caiu e levou consigo arquivos de quinze anos.<br><br>Tentei convencer a mim mesmo que era coincidência durante anos. Olhei para os números. Os números não me deixam.",
+ "Esta é minha teoria, e sei que parece de louco para qualquer homem que não esteve nos três lugares:<br><br>O Cantante não prevê catástrofes. Ele simplesmente existe há muito mais tempo do que qualquer coisa que nomeamos -- antes dos peixes, antes dos mares terem nome. O que chamamos de 'canto' é o som do que há antes de haver som.",
+ "Quando ele aparece, é porque o silêncio ficou fino naquele ponto do mundo. O silêncio fica fino antes de coisas grandes acontecerem.<br><br>Não é causa. A‰ sinal da mesma causa que vem depois.<br><br>Sou um velho capitão com quarenta anos de mar. Não acredito em profecia. Acredito nos meus três dados. E nos três dados ele estava lá."
+    });
+
+    //   -- -- -- coisa_imita   -- -- --
+
+ _SetupStr(df, "coisa_imita_titulo", "A Coisa Que Imita");
+ _SetupStr(df, "coisa_imita_autor", "Depoimento de Testemunha");
+ _SetupPags(df, "coisa_imita", array{
+ "DEPOIMENTO REGISTRADO -- ARQUIVO DO LIMIAR<br><br>Eu estava a vinte passos quando o livro foi aberto. Vi a abertura. Vi o que saiu.<br><br>No primeiro instante havia uma figura. No segundo instante havia duas figuras idênticas. A segunda não surgiu de lugar nenhum que eu pudesse apontar -- estava simplesmente lá, onde um segundo antes não estava.",
+ "As duas eram o leitor. Mesmo rosto. Mesma roupa. Mesma postura. A única diferença, por cerca de três segundos, era que a segunda olhava para o leitor com uma expressão que o leitor não tinha -- algo entre curiosidade e cálculo.",
+ "Observei o combate por aproximadamente oito minutos.<br><br>Tentei usar os olhos como usaria em qualquer combate -- marcas fisicas, padrao de movimento, preferencia de mao. O original era destro. A Coisa copiou o gesto destro com um segundo de atraso, o tempo exato de observar e replicar.",
+ "Quando o original parou para recuperar folego, a Coisa parou. Depois copiou o padrao de respiracao. Depois copiou o modo de segurar a arma.<br><br>Ao final do oitavo minuto eu havia perdido a certeza de qual era qual. Continuei observando. Precisava de algo que a Coisa nao pudesse copiar. Nao encontrei.",
+ "A luta terminou. Uma das figuras estava no chao. A que ficou de pe se virou para mim e disse o nome do leitor como resposta a pergunta que eu ia fazer.<br><br>Disse as coisas certas. Sabia detalhes que a Coisa nao poderia saber -- ou que deveria nao poder saber.<br><br>Registrei o depoimento. Assinei. Fui embora.",
+ "O que nao coloquei no depoimento oficial e o seguinte: existe algo na pessoa que voltou que nao estava la antes. Nao ausencia -- presenca de algo novo. Nao sei nomear.<br><br>Talvez seja so o choque do combate. Talvez seja outra coisa.<br><br>Nao consigo confirmar que o original sobreviveu. Nao consigo confirmar que nao."
+    });
+
+    //   -- -- -- ovo   -- -- --
+
+ _SetupStr(df, "ovo_titulo", "Sobre o Ovo Lacrado");
+ _SetupStr(df, "ovo_autor", "Portador anterior, ano ?");
+ _SetupPags(df, "ovo", array{
+ "DIA 1<br><br>O ovo tem o tamanho de um melao grande. Casca azulada, lisa, sem costura visivel. Estava no chao quando o livro foi aberto. Eu o peguei porque parecia correto pega-lo -- nao houve deliberacao, so acao.<br><br>DIA 4<br><br>E mais pesado de manha do que a noite. Nao muito -- apenas o suficiente para notar.",
+ "DIA 7<br><br>Na primeira noite com ele acordei com um som. Nao vinha de fora. Vinha de dentro do ovo, ou do quarto, ou de algum lugar que nao e um lugar fisico exato. Um som como de alguem respirando muito devagar, muito fundo.",
+ "DIA 14<br><br>Ele vibra perto de agua corrente. Levei ao rio -- a vibracao aumentou ate ficar quase desconfortavel de segurar, depois parou.<br><br>DIA 19<br><br>Esfriou quando passei pela entrada das ruinas ao norte. Nao muito -- como a temperatura de uma mao que ainda nao aqueceu. Voltei. Aqueceu.",
+ "DIA 25<br><br>Esta e a parte que nao sei como registrar: eu estava dormindo e o ovo estava quente como brasa. Nao queimava, mas irradiava. Acordei e fui segura-lo no escuro. A vibracao era diferente. Ritmica.<br><br>Nao sei se ele me avalia ou se simplesmente reage. Mas ha algo acontecendo que e responsivo. Algo la dentro esta prestando atencao.",
+ "DIA 30<br><br>Acordei com o ovo aberto.<br><br>A casca estava em fragmentos no chao. Sem violencia -- como se tivesse simplesmente decidido nao ser mais necessaria.<br><br>O que nasceu olhou para mim.",
+ "Nao vou descrever o que era. Descrevelo seria reduzir a coisa a partes, e a coisa nao era partes. Era uma inteireza que eu nunca vi antes numa criatura viva.<br><br>O que vou registrar e o que senti quando ele me olhou pela primeira vez: o reconhecimento de que ele sabia exatamente quem eu era, o que eu havia feito para chegar ate ali, e que havia considerado tudo isso suficiente para nascer."
+    });
+
+    //   -- -- -- pequenos_limiar   -- -- --
+
+ _SetupStr(df, "pequenos_limiar_titulo", "Os Pequenos do Limiar");
+ _SetupStr(df, "pequenos_limiar_autor", "Observações, Brumajord");
+ _SetupPags(df, "pequenos_limiar", array{
+ "TENTATIVA DE DESCRIA‡AƒO -- PRIMEIRO DIA<br><br>Tamanho: aproximadamente o de um gato adulto. Mas a comparação falha imediatamente, porque gato tem forma definida e estes não têm forma definida da mesma maneira.<br><br>Cor: cinza? Marrom? Reli minha própria anotação três vezes e cada vez eu teria dito algo diferente.",
+ "Patas: quatro, mas o número de dedos muda conforme onde você olha. Não enquanto observa. Entre uma observação e a próxima.<br><br>O xamã Birger disse: 'Os Khar têm registros de quase tudo que existe em pedra. Não têm registro destes.' Não sei se isso me tranquiliza ou o oposto.",
+ "Semana dois. Tentei captura. A armadilha fechou. O Pequeno estava dentro. A armadilha continuava fechada. O Pequeno estava fora.<br><br>Não houve movimento visível entre os dois estados. Havia apenas os dois estados.<br><br>Prossigo com observação passiva.",
+ "Nota sobre comportamento: aparecem consistentemente em lugares onde alguém está sozinho. Não em grupo. Uma pessoa sozinha, num corredor, numa beira de rio. O xamã Birger diz que isso não é predatório -- é curiosidade. Diz que o Limiar tem curiosidade sobre o que fica só.<br><br>Não sei o que fazer com isso.",
+ "CONCLUSAƒO -- APA“S SEIS SEMANAS<br><br>Não sei o que são.<br><br>Sei que não fazem mal. Nenhum dos moradores de Brumajord que os encontrou foi ferido. As crianças que os viram não se perturbaram. Os cachorros se afastam, o que é informação, mas não é explicação.",
+ "O que me perturba não é o que eles fazem. A‰ o que eles são sem fazer nada: coisas que existem de uma forma que o nosso vocabulário de existência não cobre.<br><br>O fato de não fazerem mal não os torna seguros. Seguro é uma categoria para coisas que entendemos."
+    });
+
+ if (who) SendSysMessage(who, "[Lore DS] Cat3 ok."); endif
+endprogram

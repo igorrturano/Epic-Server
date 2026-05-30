@@ -1,0 +1,27 @@
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program TimedScript_Clumsy(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	params := 0; // Not needed anymore.
+
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VINCULO_ELEMENTAL))
+		if (GetObjProperty(who.weapon, "#elementalweapon")) // seta com a arma
+			return 1;
+		endif
+	endif
+
+	SetObjProperty(who, "desarmar", 1);
+
+	return 1;
+endprogram

@@ -1,0 +1,65 @@
+/* $Id$
+ *
+*/
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":wrappers:Objects/Model/WeaponWrapper";
+
+// Sheath objtype -> array of accepted WEAPON_CATEGORY values.
+// Add new sheaths here, not new weapon objtypes.
+function BainhaCategories()
+	return dictionary{
+		0xa40e -> array{ WEAPON_CATEGORY::DAGGER },   // bainha de adaga
+		0xa40d -> array{ WEAPON_CATEGORY::SWORD },    // bainha de espada
+		0xa40c -> array{ WEAPON_CATEGORY::MACE },     // bainha de maça
+		0xC60F -> array{ WEAPON_CATEGORY::AXE },      // bainha de machado
+		0xC604 -> array{ WEAPON_CATEGORY::SPEAR, WEAPON_CATEGORY::POLEARM } // bainha de haste
+	};
+endfunction
+
+program on_insert(who, bainha, movetype, inserttype, item, existing_stack, amt)
+
+	amt := amt;
+	existing_stack := existing_stack;
+	movetype := movetype;
+	inserttype := inserttype;
+
+	var categoryMap := BainhaCategories();
+	if (categoryMap.Exists(bainha.objtype))
+		var allowed := categoryMap[bainha.objtype];
+		var weapon := WeaponWrapper(item);
+		var category := weapon.GetCategory();
+
+		// Debug: confirma se item_count inclui ou não o item sendo inserido.
+		print("[bainha] objtype=" + bainha.objtype + " item_count=" + bainha.item_count + " category=" + category);
+
+		if (category is @Exception || !(category in allowed))
+			SendSysMessageEx(who, "Voce nao pode guardar isto na bainha.", SSM_FAIL);
+			MoveItemToContainer(item, who.backpack);
+			return 0;
+		endif
+
+		if (bainha.item_count > 2)
+			SendSysMessageEx(who, "Ja existe uma arma nesta bainha.", SSM_FAIL);
+			MoveItemToContainer(item, who.backpack);
+			return 0;
+		endif
+	endif
+
+	if (bainha.movable == 0)
+		SendSysMessage(who, "Cancelado.");
+		MoveItemToContainer(item, who.backpack);
+		return 0;
+	elseif (!ReserveItem(bainha) || !ReserveItem(item))
+		MoveItemToContainer(item, who.backpack);
+		SendSysMessage(who, "A bainha esta em uso.");
+		return 0;
+	else
+		return 1;
+	endif
+
+	return 1;
+endprogram

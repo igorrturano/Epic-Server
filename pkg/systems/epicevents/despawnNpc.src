@@ -1,0 +1,30 @@
+use uo;
+use os;
+include ":attributes:vitals";
+
+// Sleeper script that despawns an event NPC after its lifetime expires
+program despawnNpc(params)
+	var npc := params[1];
+	var lifetime_minutes := params[2];
+
+	if (!npc || npc.dead)
+		return 0;
+	endif
+
+	// Sleep for the lifetime duration
+	var lifetime_ms := lifetime_minutes * 60 * 1000;
+	sleepms(lifetime_ms);
+
+	// Check if NPC still exists and is alive
+	if (!npc || npc.dead)
+		return 0;
+	endif
+
+	// Kill NPC cleanly (NoCorpse property ensures no corpse left behind)
+	SetObjProperty(npc, "allowdeath", 1);
+	SetObjProperty(npc, "GuardKill", 1);
+	SetObjProperty(npc, "nocorpse", 1);
+	ApplyRawDamage(npc, CInt(AP_GetVitalMaximumValue(npc, "Hits")));
+
+	return 1;
+endprogram

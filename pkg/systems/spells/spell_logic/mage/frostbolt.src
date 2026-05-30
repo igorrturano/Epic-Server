@@ -1,0 +1,64 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include ":spells:Controller/SC_Damage";
+include ":charactercreation:resists";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+
+program cast_frostbolt(params)
+	var caster := params[1];
+	var targ := params[2];
+	var spellinfo := params[3];
+	var spell_circle := CInt(spellinfo.Circle[1]);
+	var spell_school := spellinfo.School;
+	params := 0;
+
+	SendSysMessage(caster, "Selecione o alvo.");
+	if (!targ || !targ.IsA(POLCLASS_MOBILE))
+		SendSysMessage(caster, "Alvo invalido.");
+		return 0;
+	endif
+
+	PlaySoundEffect(caster, SFX_AQUARIUM_USE);
+	PlayObjectCenteredEffect(targ, 0xE184, 0, 30);
+
+	// Congelar is pure CC. Direct damage is a token frostbite, scaling comes from the freeze duration.
+	var token_dmg := RandomDiceRoll("1d4");
+	SC_DealDamage(caster, targ, CInt(spellinfo.id), token_dmg, DAMAGE_TYPE::COLD);
+
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+	var arcana := AP_GetSkill(caster, ARCANA);
+
+	if (CheckResist(targ, WILL, diff, -bonus) > 0)
+		// Saved: partial freeze (slow) for Arcana/20 seconds.
+		var slow_duration := Cint(arcana / 20);
+		if (slow_duration < 2)
+			slow_duration := 2;
+		endif
+		TS_Starttimer(targ, "lentidao", slow_duration);
+		PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 3, 4);
+		SendSysMessageEx(caster, "O alvo resistiu parcialmente a magia.", SSM_INFO);
+		SendSysMessageEx(targ, "Suas pernas ficam pesadas.", SSM_FAIL);
+		PrintTextAbove(targ, "*lento*");
+		return 1;
+	endif
+
+	// Failed: hard freeze for Arcana/10 seconds.
+	var freeze_duration := Cint(arcana / 10);
+	if (freeze_duration < 2)
+		freeze_duration := 2;
+	endif
+	TS_Starttimer(targ, "prisaogelida", freeze_duration);
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLE_GROUND, 3, 4);
+	PlaySoundEffect(targ, SFX_GLASS_BREAK_3);
+
+	return 1;
+endprogram

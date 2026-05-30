@@ -1,0 +1,96 @@
+use uo;
+use os;
+use vitals;
+
+include ":timedScripts:timedScripts";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/tileEffects";
+include ":attributes:attributes";
+include ":spells:Controller/SpellController";
+include ":spells:Controller/SpellEffectBuilder";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+
+	if (who.npctemplate)
+		targ := who;
+	endif
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	if (GetVital(targ, HITS) == GetVitalMaximumValue(targ, HITS))
+		SendSysMessageEx(who, "O alvo nao parece ferido.", SSM_FAIL);
+		return;
+	endif
+
+	// Block recast while HoT is still ticking on the target. If SpellOpts
+	// is present without a matching timer, treat it as an orphan (race in
+	// endspelleffect's shared "prop" channel can leave SpellOpts behind
+	// without a timer, jamming recast forever) and clear it before casting.
+	var spell_id := CInt(spell.id);
+	var existing := MobileWrapper(targ).GetProperty($"SpellOpts_{spell_id}");
+	if (existing && !existing.errortext)
+		var timer_list := TS_GetTimerList(targ);
+		if (!timer_list.Exists($"spelleffect_{spell_id}"))
+			SC_RemoveEffect(targ, spell_id);
+		else
+			SendSysMessageEx(who, "O alvo ja esta sob efeito de uma cura.", SSM_FAIL);
+			return;
+		endif
+	endif
+
+	// Rule: 70 Nature => 17 instant + 17 over 4 ticks.
+	var base_heal := cint(AP_GetSkill(who, NATURE) / 3);
+	if (base_heal < 1)
+		base_heal := 1;
+	endif
+
+	// Instant heal
+	SendSysMessageEx(targ, "Voce sente seus ferimentos se curarem magicamente.", SSM_INFO);
+	var hp_before := GetVital(targ, HITS);
+	applyEpicHealing(targ, base_heal);
+	var hp_after := GetVital(targ, HITS);
+	var instant_real_heal := hp_after - hp_before;
+
+	// HoT via SC tick-callback
+	var hot_total := base_heal;
+	var hot_ticks := 4;
+	var hot_tick_interval := 5;
+	var hot_base_tick := cint(hot_total / hot_ticks);
+	var hot_remainder := hot_total - (hot_base_tick * hot_ticks);
+	var duration := hot_ticks * hot_tick_interval;
+
+	var opts := SpellEffectBuilder()
+		.SetCategory("druid_hot")
+		.SetDisplayName("Cura Leve")
+		.SetDesc($"+{hot_base_tick} HP / tick")
+		.SetMaintainable(1)
+		.SetOnApply(":spells:shared/playApplyFX", struct{
+			fx := FX_SPARK_EFFECT,
+			fx_speed := 2,
+			fx_duration := 2,
+			sound := SFX_SPELL_HEAL
+		})
+		.SetTickInterval(hot_tick_interval)
+		.SetTickHeal(struct{ base := hot_base_tick, remainder := hot_remainder })
+		.SetTickPresentation(TickPresentation()
+			.SetFx(FX_YELLOW_SPARKLE, 2, 2)
+			.SetCasterFeedback(1))
+		.ToOpts();
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+
+	return 1;
+endprogram

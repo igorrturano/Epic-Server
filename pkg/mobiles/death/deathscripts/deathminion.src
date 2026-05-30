@@ -1,0 +1,53 @@
+/* $Id$
+ *
+*/
+use uo;
+use os;
+use util;
+use cfgfile;
+use vitals;
+
+include "include/client";
+include "include/sysEvent";
+include ":attributes:attributes";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":attributes:vitals";
+include ":epicAI:epicai";
+
+program DeathScript(params)
+	var corpse := params[1];
+
+	var npccfgfile := ReadConfigFile(":*:npcdesc");
+	var npctemplate := GetobjProperty(corpse, "npctemplate");
+	var mytemplate := ParseTemplateName(npctemplate).template;
+
+	var mother := GetobjProperty(corpse, "source");
+	var find_mother := SystemFindObjectbySerial(mother);
+	var txt := npccfgfile[mytemplate].DeathScriptTxt;
+	var order := npccfgfile[mytemplate].DeathScriptOrder;
+	var dmgtype := npccfgfile[mytemplate].DeathScriptDmgtype;
+	var life_mother := Cint(AP_GetVitalMaximumValue(find_mother, HITS));
+	var dmg;
+	if (order == 1)
+		dmg := life_mother * 0.05;
+		case (dmgtype)
+			"fire":     DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::FIRE);
+			"cold":     DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::COLD);
+			"energy":   DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::ENERGY);
+			"poison":   DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::POISON);
+			"physical": DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::BLUNT);
+		endcase
+	else
+		dmg := life_mother * 0.15;
+		case (dmgtype)
+			"fire":     DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::FIRE);
+			"cold":     DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::COLD);
+			"energy":   DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::ENERGY);
+			"poison":   DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::POISON);
+			"physical": DealDamage(find_mother, Cint(dmg), DAMAGE_TYPE::BLUNT);
+		endcase
+	endif
+
+	return 1;
+endprogram

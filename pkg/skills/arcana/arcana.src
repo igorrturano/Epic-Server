@@ -1,0 +1,77 @@
+use cfgfile;
+use uo;
+include ":attributes:attributes";
+include "include/say";
+include ":loot:magicLoot";
+include ":tn:equipment";
+include ":equipsys:Model/EquipModStamper";
+
+program skill_armslore(who)
+
+	SendSysMessageEx(who, "Escolha um objeto para avaliar.", SSM_REQUEST);
+	var item := Target(who, TGTOPT_CHECK_LOS);
+
+	if ((GetObjProperty(item, "magic") == 2))
+		SendSysMessageEx(who, "Voce já identificou encantamentos nesse item.", SSM_FAIL);
+		return;
+	endif
+
+	if (!item)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if (!item.isa(POLCLASS_ITEM))
+		SendSysMessageEx(who, "Este não é um alvo valido.", SSM_FAIL);
+		return;
+	endif
+
+	var whos := GetObjProperty(item, "magicwho");
+	if (whos == error)
+		whos := array;
+	endif
+	if (!(who.serial in whos))
+		PrintTextAbove(who, "*analisando um item*");
+		if (SkillCheck(who, ARCANA, -1) > 0)
+			whos.append(who.serial);
+			SetObjProperty(item, "magicwho", whos);
+			if (GetObjProperty(item, "magic"))
+				var equip_check := GetObjProperty(item, "equip");
+				// Sacred/cursed items belong to Theology — Arcana won't identify them.
+				if (equip_check && (equip_check.sacred || equip_check.cursed))
+					SendSysMessageEx(who, "Este item possui uma aura divina — use Teologia para identifica-lo.", SSM_INFO);
+					return;
+				endif
+				if (equip_check)
+					ActivateMagicItem(item);
+					var equipped_on := CInt(GetObjProperty(item, "#EquippedOn"));
+					if (equipped_on)
+						var wearer := SystemFindObjectBySerial(equipped_on);
+						if (wearer && wearer != error)
+							EquipModStamper(item).ApplyOn(wearer);
+						endif
+					endif
+					IncRevision(item);
+				endif
+				SendSysMessageEx(who, "Voce identificou encantamentos nesse item.", SSM_INFO);
+				var cfg := ReadConfigFile(":spells:config/swordmage");
+				var elem := FindConfigElem(cfg, whos[1]);
+				var name := GetConfigString(elem, "Name");
+				if (name)
+					SetObjProperty(item, "swordmage", name);
+				endif
+				var backup := GetAmount(item);
+				SubtractAmount(item, backup - 1);
+				SetName(item, item.desc);
+				AddAmount(item, backup - 1);
+			else
+				SendSysMessageEx(who, "Este item não possui propriedades mágicas a serem ativadas.", SSM_INFO);
+			endif
+		else
+			SendSysMessageEx(who, "Voce não descobriu nada.", SSM_FAIL);
+		endif
+	else
+		SendSysMEssageEx(who, "Você já identificou este item", SSM_INFO);
+	endif
+
+endprogram

@@ -1,0 +1,51 @@
+// brain_scatter_wander.src
+// Fase 1: foge do ponto de invocacao em linha reta (scatter_steps tiles).
+// Fase 2: vaga aleatoriamente ate expirar, depois se mata.
+// params: {npc, expira_systime, scatter_steps}
+
+use uo;
+use os;
+use util;
+
+program BrainScatterWander(params)
+    var npc    := params[1];
+    var expira := CInt(params[2]);
+    var steps  := CInt(params[3]);
+    if (!steps || steps < 5) steps := 25; endif
+
+    if (!npc || npc.errortext) return; endif
+
+    // Fase 1: fugir em linha reta numa direcao aleatoria
+    var dir := RandomInt(8);
+    var dx_tbl := array{0, 1, 1, 1, 0, -1, -1, -1};
+    var dy_tbl := array{-1, -1, 0, 1, 1, 1, 0, -1};
+    var dx := dx_tbl[dir + 1];
+    var dy := dy_tbl[dir + 1];
+
+    var s := 0;
+    while (s < steps && npc && !npc.errortext)
+        MoveObjectToLocation(npc,
+            npc.x + dx,
+            npc.y + dy,
+            npc.z, npc.realm, MOVEOBJECT_FORCELOCATION);
+        s += 1;
+        sleepms(80);
+    endwhile
+
+    // Fase 2: vagar ate expirar
+    while (npc && !npc.errortext)
+        if (ReadGameClock() >= expira)
+            if (npc && !npc.errortext) npc.kill(); endif
+            return;
+        endif
+
+        if (RandomInt(3) == 0)
+            MoveObjectToLocation(npc,
+                npc.x + RandomInt(5) - 2,
+                npc.y + RandomInt(5) - 2,
+                npc.z, npc.realm, MOVEOBJECT_NORMAL);
+        endif
+
+        sleep(5);
+    endwhile
+endprogram

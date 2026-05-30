@@ -1,0 +1,62 @@
+use uo;
+use vitals;
+use os;
+
+include ":attributes:attributes";
+include ":attributes:skills";
+include ":timedscripts:timedScripts";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":blood:blood";
+include "include/client";
+
+program default_poison(params)
+
+	var who := params[1];
+	var attacker := params[2];
+
+	if (attacker)
+		SetScriptController(attacker);
+	endif
+
+	var dmg := 0;
+	var loops := 0;
+
+	dmg := CInt(AP_GetSkill(attacker, ALCHEMY) / 8);
+	loops := CInt(AP_GetSkill(attacker, ALCHEMY) / 10);
+
+
+	var i;
+	var poisonedmsg := "dmg " + dmg + " " + "loops" + loops;
+	var viewermsg := "";
+	poisonedmsg := "Voce sente um corte profundo!";
+	viewermsg := "*" + who.name + " esta sangrando!*";
+
+	for (i := 0; i < loops; i := i + 1)
+		PrintTextPrivate(who, poisonedmsg, who);
+		foreach mobile in (ListMobilesInLineOfSight(who, 8))
+			if (mobile.ip && mobile != who)
+				PrintTextPrivate(who, viewermsg, mobile);
+			endif
+			sleepms(2);
+		endforeach
+
+		// Bleed is internal cut damage — bypasses the resist chain.
+		DealDamage(who, cint(dmg), DAMAGE_TYPE::FORCED, attacker);
+		MakeBleed(who);
+		PlayObjectCenteredEffect(who, FX_BLOOD_DROP, 0, 15);
+
+		if (who.dead)
+			break;
+		endif
+
+		sleep(4);
+	endfor
+
+	// 	TS_CurePoison(who, 120,"P", 5);
+	TS_LowerDuration(who, "bleedingstrike", -1);
+	var script := GetProcess(GetPid());
+	script.kill();
+
+	return;
+endprogram

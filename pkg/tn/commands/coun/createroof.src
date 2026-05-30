@@ -1,0 +1,909 @@
+/////////////////////////////////////////////////////
+//
+// 		".createroof" - Opens a gump to create a roof.
+//
+// 		A powerful command that allows you to create
+// 		roofs for houses in about 3 clicks. A gump is
+// 		provided allowing the user to select both type,
+// 		direction, and the base z-height of the roof.
+// 		The base z-height is the height of the lowest
+// 		portion of the roof, the first row of tiles.
+// 		Then you select opposing corners of the structure
+// 		you wish to build the roof on. Currently you can
+// 		only create rectangular roofs.
+//
+// 		CHANGE LOG:
+// 			Version 1.0.0 -- Danielle Elora
+// 				Initial Release
+//
+// 			Version 1.0.1 -- Danielle Elora
+// 				- Added a sleepms(); in the while loops to try and cut back on going runaway.
+//
+// 			Version 1.1.0 -- Danielle Elora
+// 				- Added the ability to manipulate the roof while previewing it.
+// 				- Sped up roof creation speed.
+// 				-	Roof tiles will now be "locked down" immediately after creation. This should
+// 					prevent portions of the roof from decaying.
+// 				- Added some additional message to try and increased user-friendliness.
+// 				- Fixed some typos and very minor tweak to the help text.
+//
+// 		Author: Danielle Elora, webmaster@nightscapeonline.com
+// 		Nightscape Shard, http://www.nightscapeonline.com
+//
+/////////////////////////////////////////////////////
+
+use uo;
+use os;
+use math;
+use basic;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":gumps:gumps";
+
+const CUSTO_TELHADO_POR_TILE := 5;
+
+// Objtypes de madeira (logs de todos os tipos)
+var WOOD_IDS := array{ 0x1bdd, 0xee36, 0xee37, 0xee38, 0xee39, 0xee3a, 0xee3b, 0xee3c, 0xee3d, 0xee3e, 0xee3f, 0xee40 };
+
+var coordStructOne;
+var coordStructTwo;
+var n_side;
+var ns_peak;
+var s_side;
+var w_side;
+var ew_peak;
+var e_side;
+var gump_return;
+
+program textcmd_createroof(params)
+	var who, from_item;
+	if (typeof(params) == "Array")
+		who := params[1];
+		from_item := params[2];
+	else
+		who := params;
+		from_item := 0;
+	endif
+
+	if (who.cmdlevel >= 1)
+		// Staff/GM: acesso irrestrito
+	elseif (from_item)
+		if (!MobileWrapper(who).HasAbility(ABILITY_ID::ARCHITECT))
+			SendSysMessageEx(who, "Você não tem a habilidade de arquiteto.", SSM_INFO);
+			return 0;
+		endif
+		var _guild := who.guild;
+		if (_guild && _guild.GetProp("tipo_faccao") == "staff")
+			SendSysMessageEx(who, "Membros da facção staff não podem usar esta ferramenta.", SSM_INFO);
+			return 0;
+		endif
+	else
+		SendSysMessageEx(who, "Apenas GMs podem usar este comando. Use a ferramenta de telhado.", SSM_INFO);
+		return 0;
+	endif
+
+
+	//////////////////////
+	// 	BUILD THE GUMP	//
+	//////////////////////
+	var gflayout := array{ "nodispose",
+					   	"noclose",
+					   	"page 0",
+					   	"resizepic 80 12 9200 470 664",       // main background
+
+					   	"resizepic 126 20 9500 311 34",       // title background
+
+					   	"button 505 18 22150 22152 1 0 9999", // close button
+
+					   	"button 528 18 22153 22155 0 3 0",    // help button
+
+					   	"text 166 29 2485 0",                 // title text - 0 in array
+
+					   	"resizepic 300 496 9300 50 20",       // z height text entry background
+
+					   	"textentry 305 496 40 20 0 5555 13",  // z height text entry - 13 in array
+
+					   	"gumppic 10 0 10400",                 // dragon head
+
+					   	"gumppic 10 227 10401",               // dragon middle
+
+					   	"gumppic 10 453 10401",               // dragon middle (extra)
+
+					   	"gumppic 10 599 10402",               // dragon tail
+					   	
+					   	"page 1",                             // PAGE ONE -- north-to-south direction
+
+					   	"text 115 62 1952 1",                  // item 1 text - 1 in array
+
+					   	"text 205 62 1952 2",                 // item 2 text - 2 in array
+
+					   	"text 308 62 1952 3",                 // item 3 text - 3 in array
+
+					   	"text 410 62 1952 4",                 // item 4 text - 4 in array
+
+					   	"text 109 208 1952 5",                 // item 5 text - 5 in array
+
+					   	"text 221 208 1952 6",                // item 6 text - 6 in array
+
+					   	"text 314 208 1952 7",                // item 7 text - 7 in array
+
+					   	"text 396 208 1952 8",                // item 8 text - 8 in array
+
+					   	"text 115 354 1952 17",                // item 9 text (Folha) - 17 in array
+
+					   	"resizepic 94 79 3500 93 87",         // item 1 background
+
+					   	"resizepic 194 79 3500 93 87",        // item 2 background
+
+					   	"resizepic 294 79 3500 93 87",        // item 3 background
+
+					   	"resizepic 394 79 3500 93 87",        // item 4 background
+
+					   	"resizepic 94 226 3500 93 87",        // item 5 background
+
+					   	"resizepic 194 226 3500 93 87",       // item 6 background
+
+					   	"resizepic 294 226 3500 93 87",       // item 7 background
+
+					   	"resizepic 394 226 3500 93 87",       // item 8 background
+
+					   	"resizepic 94 372 3500 93 87",        // item 9 background (Folha)
+
+					   	"button 109 167 247 248 1 0 100",      // item 1 button
+
+					   	"button 209 167 247 248 1 0 200",     // item 2 button
+
+					   	"button 309 167 247 248 1 0 300",     // item 3 button
+
+					   	"button 409 167 247 248 1 0 400",     // item 4 button
+
+					   	"button 109 315 247 248 1 0 500",      // item 5 button
+
+					   	"button 209 315 247 248 1 0 600",     // item 6 button
+
+					   	"button 309 315 247 248 1 0 700",     // item 7 button
+
+					   	"button 409 315 247 248 1 0 800",     // item 8 button
+
+					   	"button 109 461 247 248 1 0 1700",     // item 9 button (NS Folha)
+
+					   	"tilepic 116 98 1532",                 // item 1 image
+
+					   	"tilepic 218 98 1427",                // item 2 image
+
+					   	"tilepic 318 98 1441",                // item 3 image
+
+					   	"tilepic 418 98 1539",                // item 4 image
+
+					   	"tilepic 116 246 1634",                // item 5 image
+
+					   	"tilepic 218 246 1448",               // item 6 image
+
+					   	"tilepic 318 246 1471",               // item 7 image
+
+					   	"tilepic 418 246 1486",               // item 8 image
+
+					   	"tilepic 116 392 11161",               // item 9 image (NS Folha - n_side 0x2B99)
+
+					   	"gumppic 96 198 96",                  // left divider - top
+
+					   	"gumppic 300 198 96",                 // right divider - top
+
+					   	"gumppic 96 344 96",                  // left divider - middle
+
+					   	"gumppic 300 344 96",                 // right divider - middle
+
+					   	"gumppic 96 523 96",                  // left divider - bottom
+
+					   	"gumppic 300 523 96",                 // right divider - bottom
+
+					   	"button 93 495 4005 4007 0 2 0",      // toggle direction button
+
+					   	"text 125 495 1952 12",                // toggle direction text - 12 in array
+
+					   	"text 353 495 1952 14",               // z height text label - 14 in array
+
+					   	"text 89 528 1952 11",                // instructions title text - 11 in array
+
+					   	"htmlgump 89 548 400 100 9 1 1",      // instructions - 9 in array
+					   	
+					   	"page 2",                             // PAGE TWO -- east to west direction
+
+					   	"text 115 62 1952 1",                  // item 1 text - 1 in array
+
+					   	"text 205 62 1952 2",                 // item 2 text - 2 in array
+
+					   	"text 308 62 1952 3",                 // item 3 text - 3 in array
+
+					   	"text 410 62 1952 4",                 // item 4 text - 4 in array
+
+					   	"text 109 208 1952 5",                 // item 5 text - 5 in array
+
+					   	"text 221 208 1952 6",                // item 6 text - 6 in array
+
+					   	"text 314 208 1952 7",                // item 7 text - 7 in array
+
+					   	"text 396 208 1952 8",                // item 8 text - 8 in array
+
+					   	"text 115 354 1952 17",                // item 17 text (Folha) - 17 in array
+
+					   	"resizepic 94 79 3500 93 87",         // item 1 background
+
+					   	"resizepic 194 79 3500 93 87",        // item 2 background
+
+					   	"resizepic 294 79 3500 93 87",        // item 3 background
+
+					   	"resizepic 394 79 3500 93 87",        // item 4 background
+
+					   	"resizepic 94 226 3500 93 87",        // item 5 background
+
+					   	"resizepic 194 226 3500 93 87",       // item 6 background
+
+					   	"resizepic 294 226 3500 93 87",       // item 7 background
+
+					   	"resizepic 394 226 3500 93 87",       // item 8 background
+
+					   	"resizepic 94 372 3500 93 87",        // item 17 background (Folha)
+
+					   	"button 109 167 247 248 1 0 900",      // item 9 button
+
+					   	"button 209 167 247 248 1 0 1000",    // item 10 button
+
+					   	"button 309 167 247 248 1 0 1100",    // item 11 button
+
+					   	"button 409 167 247 248 1 0 1200",    // item 12 button
+
+					   	"button 109 315 247 248 1 0 1300",     // item 13 button
+
+					   	"button 209 315 247 248 1 0 1400",    // item 14 button
+
+					   	"button 309 315 247 248 1 0 1500",    // item 15 button
+
+					   	"button 409 315 247 248 1 0 1600",    // item 16 button
+
+					   	"button 109 461 247 248 1 0 1800",     // item 17 button (EW Folha)
+
+					   	"tilepic 116 98 1520",                 // item 9 image
+
+					   	"tilepic 218 98 1424",                // item 10 image
+
+					   	"tilepic 318 98 1429",                // item 11 image
+
+					   	"tilepic 418 98 1612",                // item 12 image
+
+					   	"tilepic 116 246 1608",                // item 13 image
+
+					   	"tilepic 218 246 1445",               // item 14 image
+
+					   	"tilepic 318 246 1459",               // item 15 image
+
+					   	"tilepic 418 246 1474",               // item 16 image
+
+					   	"tilepic 116 392 11156",               // item 17 image (EW Folha - e_side 0x2B94)
+
+					   	"gumppic 96 198 96",                  // left divider - top
+
+					   	"gumppic 300 198 96",                 // right divider - top
+
+					   	"gumppic 96 344 96",                  // left divider - middle
+
+					   	"gumppic 300 344 96",                 // right divider - middle
+
+					   	"gumppic 96 523 96",                  // left divider - bottom
+
+					   	"gumppic 300 523 96",                 // right divider - bottom
+
+					   	"button 93 495 4005 4007 0 1 0",      // toggle direction button
+
+					   	"text 125 495 1952 12",                // toggle direction text - 12 in array
+
+					   	"text 353 495 1952 14",               // z height text label - 14 in array
+
+					   	"text 89 528 1952 11",                // instructions title text - 11 in array
+
+					   	"htmlgump 89 548 400 100 9 1 1",      // instructions - 9 in array
+					   	
+					   	"page 3",                             // PAGE THREE -- help and support page
+					   	
+					   	"text 92 65 1952 15",                 // help and support title - 15 in array
+					   	
+					   	"button 420 61 2322 2323 0 1 0",      // previous button
+					   	"htmlgump 92 85 400 420 16 1 1"       // instructions - 16 in array
+					   	
+					   	};
+	var gfdata := array{ "Criador de Telhado",                             // 0
+
+					 	"Troncos",                              // 1
+
+					 	"Palmeira",                               // 2
+
+					 	"Ardósia Azul",                                    // 3
+
+					 	"Tenda Azul",                                      // 4
+
+					 	"Tenda Cinza",                                     // 5
+
+					 	"Palha",                                           // 6
+
+					 	"Telha",                                  // 7
+
+					 	"Ripa",                                  // 8
+
+					 	"Escolha o tipo de telhado e selecione dois cantos opostos da estrutura. Ao selecionar o canto superior esquerdo, clique ligeiramente dentro da parede. Ao selecionar o canto inferior direito, clique ligeiramente fora da parede.
+
+		Cada pedaço do telhado consome 5 logs de madeira.
+
+		Se cometer um erro, não se preocupe — basta cancelar e recomeçar.
+
+		Nota: Atualmente apenas telhados retangulares podem ser criados com esta ferramenta.",
+					 	// 9
+
+					 	"v. 1.1.0",                                        // 10
+
+					 	"Instruções",                                      // 11
+
+					 	"Alternar Direção do Telhado",                     // 12
+
+					 	(
+					 	who.z + 20),                                       // 13
+
+					 	"Altura Z Base",                                   // 14
+
+					 	"Ajuda",                                           // 15
+
+					 	"Primeiro determine a direção que deseja para o telhado. A regra geral é que a cumeeira deve ser paralela ao lado mais longo da construção.
+
+		Em seguida, determine a altura Z base do telhado. Essa é a altura da primeira fileira de telhas. Para a maioria dos tipos de parede, isso é 20 unidades Z acima do andar superior. Por exemplo, se o piso está a 5 Z, some 20 e a altura Z base será 25.
+
+		Depois escolha o estilo do telhado conforme sua preferência.
+
+		Você verá um cursor de alvo. Selecione o canto superior esquerdo da estrutura, clicando ligeiramente <i>dentro</i> da parede. Se errar, cancele e tente novamente.
+
+		Em seguida, selecione o canto inferior direito, clicando ligeiramente <i>fora</i> da parede para que o telhado forme a beira corretamente.
+
+		Se errar, não se preocupe. Cancele, o telhado será destruído automaticamente, e comece de novo.",
+					 	// 16
+
+					 	"Folha"                                  // 17
+
+					 	};
+
+	// Display the gump menu
+	gump_return := SendDialogGump(who, gflayout, gfdata, 0, 0);
+
+	if (gump_return[9999])
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	if (!gump_return[9999])
+		SendSysmessage(who, "Selecione o canto superior esquerdo da estrutura.");
+		coordStructOne := TargetCoordinates(who);
+		if (!coordStructOne)
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+		endif
+		SendSysmessage(who, "Agora selecione o canto inferior direito da estrutura.");
+		coordStructTwo := TargetCoordinates(who);
+		if (!coordStructTwo)
+			SendSysMessage(who, "Cancelado.");
+			return 0;
+		endif
+	endif
+
+	// Calcular área e custo
+	var _minX, _maxX, _minY, _maxY;
+	if (coordStructOne.x <= coordStructTwo.x)
+		_minX := coordStructOne.x;
+		_maxX := coordStructTwo.x;
+	else
+		_minX := coordStructTwo.x;
+		_maxX := coordStructOne.x;
+	endif
+	if (coordStructOne.y <= coordStructTwo.y)
+		_minY := coordStructOne.y;
+		_maxY := coordStructTwo.y;
+	else
+		_minY := coordStructTwo.y;
+		_maxY := coordStructOne.y;
+	endif
+	var _totalTiles := (_maxX - _minX + 1) * (_maxY - _minY + 1);
+	var _totalCost := _totalTiles * CUSTO_TELHADO_POR_TILE;
+
+	if (!ShowRoofCostGump(who, _totalCost))
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	if (who.cmdlevel < 1)
+		if (!ConsumeWood(who, _totalCost))
+			SendSysMessageEx(who, "Você não tem madeira suficiente. Necessário: " + _totalCost + " madeiras.", SSM_INFO);
+			return 0;
+		endif
+	endif
+
+	if (gump_return[100])
+		// Create a NS Log Roof
+		n_side := 0x5FE;
+		ns_peak := 0x5FC;
+		s_side := 0x5FD;
+		CreateRoof(who, "ns_log", _totalCost);
+		return;
+	elseif (gump_return[200])
+		// Create a NS Palm Frond Roof
+		n_side := 0x594;
+		ns_peak := 0x593;
+		s_side := 0x592;
+		CreateRoof(who, "ns_palm", _totalCost);
+		return;
+	elseif (gump_return[300])
+		// Create a NS Slate Roof
+		n_side := 0x5A3;
+		ns_peak := 0x5A1;
+		s_side := 0x5A2;
+		CreateRoof(who, "ns_slate", _totalCost);
+		return;
+	elseif (gump_return[400])
+		// Create a NS Blue Tent Roof
+		n_side := 0x600;
+		ns_peak := 0x603;
+		s_side := 0x601;
+		CreateRoof(who, "ns_btent", _totalCost);
+		return;
+	elseif (gump_return[500])
+		// Create a NS Grey Tent Roof
+		n_side := 0x65F;
+		ns_peak := 0x662;
+		s_side := 0x660;
+		CreateRoof(who, "ns_gtent", _totalCost);
+		return;
+	elseif (gump_return[600])
+		// Create a NS Thatch Roof
+		n_side := 0x5A9;
+		ns_peak := 0x5A8;
+		s_side := 0x5A7;
+		CreateRoof(who, "ns_thatch", _totalCost);
+		return;
+	elseif (gump_return[700])
+		// Create a NS Tile Roof
+		n_side := 0x5C1;
+		ns_peak := 0x5BF;
+		s_side := 0x5C0;
+		CreateRoof(who, "ns_tile", _totalCost);
+		return;
+	elseif (gump_return[800])
+		// Create a NS Wood Shingle Roof
+		n_side := 0x5D0;
+		ns_peak := 0x5CE;
+		s_side := 0x5CF;
+		CreateRoof(who, "ns_wood", _totalCost);
+		return;
+
+	// East to West Direction Roofs
+
+	elseif (gump_return[900])
+		// Create a EW Log Roof
+		w_side := 0x5F2;
+		ew_peak := 0x5F0;
+		e_side := 0x5F1;
+		CreateRoof(who, "ew_log", _totalCost);
+		return;
+	elseif (gump_return[1000])
+		// Create a EW Palm Frond Roof
+		w_side := 0x591;
+		ew_peak := 0x590;
+		e_side := 0x58F;
+		CreateRoof(who, "ew_palm", _totalCost);
+		return;
+	elseif (gump_return[1100])
+		// Create a EW Slate Roof
+		w_side := 0x597;
+		ew_peak := 0x595;
+		e_side := 0x596;
+		CreateRoof(who, "ew_slate", _totalCost);
+		return;
+	elseif (gump_return[1200])
+		// Create a EW Blue Tent Roof
+		w_side := 0x5FF;
+		ew_peak := 0x64C;
+		e_side := 0x602;
+		CreateRoof(who, "ew_btent", _totalCost);
+		return;
+	elseif (gump_return[1300])
+		// Create a EW Grey Tent Roof
+		w_side := 0x65E;
+		ew_peak := 0x648;
+		e_side := 0x661;
+		CreateRoof(who, "ew_gtent", _totalCost);
+		return;
+	elseif (gump_return[1400])
+		// Create a EW Thatch Roof
+		w_side := 0x5A6;
+		ew_peak := 0x5A5;
+		e_side := 0x5A4;
+		CreateRoof(who, "ew_thatch", _totalCost);
+		return;
+	elseif (gump_return[1500])
+		// Create a EW Tile Roof
+		w_side := 0x5B5;
+		ew_peak := 0x5B3;
+		e_side := 0x5B4;
+		CreateRoof(who, "ew_tile", _totalCost);
+		return;
+	elseif (gump_return[1600])
+		// Create a EW Wood Shingle Roof
+		w_side := 0x5C4;
+		ew_peak := 0x5C2;
+		e_side := 0x5C3;
+		CreateRoof(who, "ew_wood", _totalCost);
+		return;
+	elseif (gump_return[1700])
+		// Create a NS Folha Roof
+		n_side := 0x2B99;
+		ns_peak := 0x2B98;
+		s_side := 0x2B97;
+		CreateRoof(who, "ns_folha", _totalCost);
+		return;
+	elseif (gump_return[1800])
+		// Create a EW Folha Roof
+		w_side := 0x2B96;
+		ew_peak := 0x2B95;
+		e_side := 0x2B94;
+		CreateRoof(who, "ew_folha", _totalCost);
+		return;
+	else
+		SendSysMessage(who, "Canceled.");
+		return;
+	endif
+
+	set_debug(0);
+
+endprogram
+
+////////////////////////////////////////////
+//  Does the actual creation of the roof	//
+////////////////////////////////////////////
+function CreateRoof(who, rooftype, totalCost)
+	SendSysMessage(who, "Criando o telhado. Aguarde...");
+
+	var startX;
+	var startY;
+	var endX;
+	var endY;
+	var totalwidth;
+	var halfwidth;
+	var usepeak;
+	var item;
+	var tileZ := CInt(gump_return[5555][6, len(gump_return[5555])]) - 3;
+	var itemlist := array{};
+
+	if (coordStructOne.x <= coordStructTwo.x)
+		startX := coordStructOne.x;
+		endX := coordStructTwo.x;
+	else
+		startX := coordStructTwo.x;
+		endX := coordStructOne.x;
+	endif
+
+	if (coordStructOne.y <= coordStructTwo.y)
+		startY := coordStructOne.y;
+		endY := coordStructTwo.y;
+	else
+		startY := coordStructTwo.y;
+		endY := coordStructOne.y;
+	endif
+
+	if (find(rooftype, "ns", 0))
+		// Creating a north-to-south oriented roof
+
+		totalwidth := CDbl((endY - startY) + 1);
+		halfwidth := totalwidth / 2;
+
+		if (find(halfwidth, ".", 0))
+			// Roof is correct width for a peak
+			usepeak := 1;
+		else
+			// Roof does not need a peak
+			usepeak := 0;
+		endif
+
+		halfwidth := floor(halfwidth);
+
+		var fooX := StartX; // store the original startY for use after each iteration.
+
+		// setup the first side
+		item := n_side;
+
+		var rowsdone := 0;
+		var i := 0;
+		while (startY <= endY)
+			rowsdone := rowsdone + 1;
+			if (rowsdone > halfwidth)
+				item := s_side;
+				tileZ := tileZ - 3;
+				if (usepeak)
+					tileZ := tileZ + 6;
+					usepeak := 0;
+					item := ns_peak;
+					i := 1;
+				endif
+				if (!i)
+					i := 1;
+					tileZ := tileZ + 3;
+				endif
+			else
+				tileZ := tileZ + 3;
+			endif
+			while (startX <= endX)
+				// create the item and append it to an array.
+				itemlist.append(CreateItemAtLocation(startX, startY, tileZ, item, 1, coordStructOne.realm));
+				startX := startX + 1;
+				sleepms(5);
+			endwhile
+			startX := fooX;
+			startY := startY + 1;
+			sleepms(3);
+		endwhile
+
+	else // Creating a east-to-west oriented roof
+
+		totalwidth := CDbl((endX - startX) + 1);
+		halfwidth := totalwidth / 2;
+
+		if (find(halfwidth, ".", 0))
+			// Roof is correct width for a peak
+			usepeak := 1;
+		else
+			// Roof does not need a peak
+			usepeak := 0;
+		endif
+
+		halfwidth := floor(halfwidth);
+
+		var fooY := StartY; // store the original startY for use after each iteration.
+
+		// setup the first side
+		item := w_side;
+
+		var rowsdone := 0;
+		var i := 0;
+		while (startX <= endX)
+			rowsdone := rowsdone + 1;
+			if (rowsdone > halfwidth)
+				item := e_side;
+				tileZ := tileZ - 3;
+				if (usepeak)
+					tileZ := tileZ + 6;
+					usepeak := 0;
+					item := ew_peak;
+					i := 1;
+				endif
+				if (!i)
+					i := 1;
+					tileZ := tileZ + 3;
+				endif
+			else
+				tileZ := tileZ + 3;
+			endif
+			while (startY <= endY)
+				// create the item and append it to an array.
+				itemlist.append(CreateItemAtLocation(startX, startY, tileZ, item, 1, coordStructOne.realm));
+				item.movable := 0;
+				startY := startY + 1;
+				sleepms(5);
+			endwhile
+			startY := fooY;
+			startX := startX + 1;
+			sleepms(3);
+		endwhile
+		SendSysMessage(who, "Concluído! Ajuste a posição e confirme se deseja manter o telhado.");
+	endif
+
+	SysLog("[createroof][DEBUG] Telhado criado com " + itemlist.size() + " tiles para " + who.name + ". Abrindo ajustes...");
+
+	var do_adjust_yesNo;
+	// DO POSITION/HEIGHT ADJUST AND CONFIRM ROOF IS OKAY
+	repeat
+		SysLog("[createroof][DEBUG] Chamando adjust_roof para " + who.name);
+		do_adjust_yesNo := adjust_roof(who);
+		SysLog("[createroof][DEBUG] adjust_roof retornou: " + do_adjust_yesNo);
+		if (do_adjust_yesNo[100])
+			// Adjust to the North (-Y)
+			SendSysMessage(who, "Movendo o telhado para Norte. Aguarde...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, (item.y - 1), item.z, item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Concluído!");
+
+		elseif (do_adjust_yesNo[101])
+			// Adjust to the South (+X)
+			SendSysMessage(who, "Movendo o telhado para Sul. Aguarde...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, (item.y + 1), item.z, item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Concluído!");
+
+		elseif (do_adjust_yesNo[102])
+			// Adjust to the East (+Y)
+			SendSysMessage(who, "Movendo o telhado para Leste. Aguarde...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, (item.x - 1), item.y, item.z, item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Concluído!");
+
+		elseif (do_adjust_yesNo[103])
+			// Adjust to the West (-X)
+			SendSysMessage(who, "Movendo o telhado para Oeste. Aguarde...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, (item.x + 1), item.y, item.z, item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Concluído!");
+
+		elseif (do_adjust_yesNo[104])
+			// Adjust the Height Up (+Z)
+			SendSysMessage(who, "Aumentando a altura do telhado. Aguarde...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, item.y, (item.z + 1), item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Concluído!");
+
+		elseif (do_adjust_yesNo[105])
+			// Adjust the Height Down (-Z)
+			SendSysMessage(who, "Diminuindo a altura do telhado. Aguarde...");
+			foreach item in itemlist
+				item.movable := 1;
+				MoveObjectToLocation(item, item.x, item.y, (item.z - 1), item.realm, MOVEOBJECT_FORCELOCATION);
+				item.movable := 0;
+				sleepms(5);
+			endforeach
+			SendSysMessage(who, "Concluído!");
+
+		elseif (do_adjust_yesNo[5555])
+			// Adjust to the South (+X)
+			SendSysMessage(who, "Destruindo o telhado. Aguarde...");
+			foreach item in itemlist
+				DestroyItem(item);
+				sleepms(10);
+			endforeach
+			SendSysMessage(who, "O telhado foi destruído!");
+		endif
+	until ((do_adjust_yesNo[9999]) OR (do_adjust_yesNo[5555]) OR (!do_adjust_yesNo) OR (!who.ip));
+
+	if (do_adjust_yesNo[9999])
+		SendSysmessage(who, "Telhado criado com sucesso!");
+
+		// Salvar dados para desfazer
+		var serial_list := array{};
+		foreach _tile in itemlist
+			serial_list.append(_tile.serial);
+		endforeach
+		SetObjProperty(who, "#last_roof_tiles", serial_list);
+		SetObjProperty(who, "#last_roof_cost", totalCost);
+	endif
+
+endfunction
+
+function adjust_roof(who)
+
+	//////////////////////
+	// 	BUILD THE GUMP	//
+	//////////////////////
+	var gflayout_adjust := array{ "nodispose",
+							  	"noclose",
+							  	"page 0",
+							  	"resizepic 10 10 9200 381 170",     // outter background
+							  	
+							  	"resizepic 13 16 3500 373 160",     // inner background
+							  	
+							  	"tilepic 71 84 3568",               // black staff; forms the X
+							  	
+							  	"tilepic 38 85 3569",               // black staff; forms the X
+							  	
+							  	"page 1",
+							  	"text 38 24 1952 0",                // instructions text - 0 in array
+							  	
+							  	"text 38 42 1952 1",                // instructions text - 1 in array
+							  	
+							  	"button 101 58 4501 4501 1 0 100",  // North button
+							  	
+							  	"button 46 114 4505 4505 1 0 101",  // South button
+							  	
+							  	"button 46 58 4507 4507 1 0 102",   // East button
+							  	
+							  	"button 98 113 4503 4503 1 0 103",  // West button
+							  	
+							  	"text 36 60 1952 2",                // "-X" text - 2 in array
+							  	
+							  	"text 145 59 1952 3",               // "-Y" text - 3 in array
+							  	
+							  	"text 145 141 1952 4",              // "+X" text - 4 in array
+							  	
+							  	"text 35 141 1952 5",               // "+Y" text - 5 in array
+							  	
+							  	"text 73 101 1952 6",               // "POSITION" text - 6 in array
+							  	
+							  	"button 204 59 4500 4500 1 0 104",  // Up button
+							  	
+							  	"button 204 116 4504 4504 1 0 105", // Down button
+							  	
+							  	"text 240 61 1952 7",               // "Up" text - 7 in array
+							  	
+							  	"text 240 146 1952 8",              // "Down" text - 8 in array
+							  	
+							  	"text 209 103 1952 9",              // "HEIGHT" text - 9 in array
+							  	
+							  	"button 291 75 247 248 1 0 9999",   // Okay button
+							  	"button 291 122 243 241 1 0 5555"   // Cancel button
+							  	
+							  	};
+
+	var gfdata_adjust := array{ "Use os controles abaixo para ajustar a posição do telhado.", "Clique em \"Ok\" para confirmar ou \"Cancelar\" para destruir o telhado.",
+								"-X", "-Y", "+X", "+Y", "POSIÇÃO", "Cima", "Baixo", "ALTURA" };
+
+	return SendDialogGump(who, gflayout_adjust, gfdata_adjust, 0, 0);
+
+endfunction
+
+////////////////////////////////////////////
+// Gump de confirmação de custo do telhado
+////////////////////////////////////////////
+function ShowRoofCostGump(who, cost)
+	var gump := GFCreateGump(270, 70);
+	GFResizePic(gump, 0, 0, 0x254E, 190, 90);
+	GFClosable(gump, 1);
+	GFDisposable(gump, 1);
+	GFMovable(gump, 1);
+
+	GFTextLine(gump, 10, 10, 2100, "Custo do Telhado");
+	GFTextLine(gump, 10, 30, 1152, "Serão consumidas " + cost + " madeiras.");
+
+	GFAddButton(gump, 15, 57, 2117, 2118, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 35, 55, 2100, "Confirmar");
+
+	GFAddButton(gump, 105, 57, 2117, 2118, GF_CLOSE_BTN, 2);
+	GFTextLine(gump, 125, 55, 2100, "Cancelar");
+
+	var result := GFSendGump(who, gump);
+	return (result[0] == 1);
+endfunction
+
+////////////////////////////////////////////
+// Consome madeira da mochila do jogador
+////////////////////////////////////////////
+function ConsumeWood(who, amount)
+	var remaining := amount;
+
+	foreach item in EnumerateItemsInContainer(who.backpack)
+		if (remaining <= 0)
+			break;
+		endif
+		if (item.objtype in WOOD_IDS)
+			if (item.amount <= remaining)
+				remaining := remaining - item.amount;
+				DestroyItem(item);
+			else
+				SubtractAmount(item, remaining);
+				remaining := 0;
+			endif
+		endif
+		sleepms(2);
+	endforeach
+
+	return (remaining <= 0);
+endfunction

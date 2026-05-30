@@ -1,0 +1,86 @@
+use uo;
+use os;
+
+include ":death:wakeup";
+include "include/say";
+
+program deathRecover(params)
+	var player := params[1];
+
+	sleep(3); // Let all logon scripts finish first
+
+	// Re-check: might have been cleared by another script
+	var remaining := CInt(GetObjProperty(player, "death_remaining"));
+	if (!remaining || remaining <= 0)
+		return 1;
+	endif
+
+	if (CInt(GetObjProperty(player, "morto")) == 1)
+		EraseObjProperty(player, "death_remaining");
+		EraseObjProperty(player, "death_corpse_serial");
+		return 1;
+	endif
+
+	var corpse_serial := CInt(GetObjProperty(player, "death_corpse_serial"));
+	var corpse := SystemFindObjectBySerial(corpse_serial);
+
+	if (!corpse)
+		FallbackResurrect(player);
+		return 1;
+	endif
+
+	// Run the countdown (same structure as players.src sleep loop)
+	var ticks := CInt(remaining / 30);
+	if (ticks < 1)
+		ticks := 1;
+	endif
+
+	SendSysMessage(player, "Voce esta desmaiado. Aguarde...");
+
+	while (ticks > 0)
+		if (ticks % 2 == 0)
+			SendSysMessage(player, "Voce acordara em " + (ticks / 2) + " minuto(s).");
+		endif
+		if (ticks != 1)
+			sleep(30);
+		else
+			SendSysMessage(player, "30 segundos...");
+			sleep(10);
+			SendSysMessage(player, "20 segundos...");
+			sleep(10);
+			SendSysMessage(player, "10 segundos...");
+			sleep(10);
+		endif
+
+		// Re-check corpse state each tick
+		corpse := SystemFindObjectBySerial(corpse_serial);
+		if (corpse)
+			if (GetObjProperty(corpse, "curado"))
+				SendSysMessage(player, "Voce foi curado e acordara em 5 segundos!");
+				EraseObjProperty(player, "#deferred_fratura");
+				sleep(5);
+				break;
+			elseif (CInt(GetObjProperty(corpse, "morto")) || CInt(GetObjProperty(player, "morto")))
+				SendSysMessage(player, "Algo aconteceu... Voce morreu.");
+				SetObjProperty(corpse, "morto", 1);
+				SetObjProperty(player, "morto", 1);
+				EraseObjProperty(player, "death_remaining");
+				EraseObjProperty(player, "death_corpse_serial");
+				return 1;
+			endif
+		endif
+
+		ticks := ticks - 1;
+		SetObjProperty(player, "death_remaining", ticks * 30);
+	endwhile
+
+	// Wake up
+	corpse := SystemFindObjectBySerial(corpse_serial);
+	if (corpse)
+		KataWakeUp(player, corpse);
+	else
+		FallbackResurrect(player);
+	endif
+
+	return 1;
+endprogram

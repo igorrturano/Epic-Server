@@ -1,0 +1,13 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+
+program default_poison(params)
+	var who := params[1];
+	var level := CInt(params[3]);
+
+	who.graphic := level;
+
+endprogram

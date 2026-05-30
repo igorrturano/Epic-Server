@@ -1,0 +1,127 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Text";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/Container/ContainerGridLayout";
+include ":mobileRescale:include/rerender";
+
+var SCALES := array{10, 30, 50, 60, 70, 80, 100, 120, 150, 200};
+
+// Retorna a escala padrão do template do NPC (em raw, ex: 800 para 80%).
+// Para players ou NPCs sem SpawnScale retorna 0 (= apagar entityScale).
+function _GetTemplateScale(targ)
+    if (!targ.npctemplate)
+        return 0;
+    endif
+    var cfg  := ReadConfigFile(":*:npcdesc");
+    var elem := cfg[targ.npctemplate];
+    if (elem.errortext)
+        return 0;
+    endif
+    var spawnScale := CInt(GetConfigString(elem, "SpawnScale"));
+    if (spawnScale > 0 && spawnScale != 100)
+        return spawnScale * 10;
+    endif
+    return 0;
+endfunction
+
+program GMSetScale(who, text)
+    if (who.cmdlevel < 2)
+        SendSysMessage(who, "Sem permissão.");
+        return 0;
+    endif
+
+    SendSysMessage(who, "Selecione o mobile.");
+    var targ := Target(who);
+    if (!targ || !targ.IsA(POLCLASS_MOBILE))
+        SendSysMessage(who, "Selecione um mobile válido.");
+        return 0;
+    endif
+
+    var scaleProp    := GetObjProperty(targ, "entityScale");
+    var curHeightPct := 100;
+    var curWidthPct  := 100;
+    if (scaleProp && scaleProp.height && scaleProp.width)
+        curHeightPct := CInt(scaleProp.height) / 10;
+        curWidthPct  := CInt(scaleProp.width)  / 10;
+    endif
+
+    var templateRaw := _GetTemplateScale(targ);
+    var templatePct := templateRaw ? (templateRaw / 10) : 100;
+
+    var gump := Gump(who, "Escala do Mobile", 220, 360);
+
+    var txtNome    := Text("txtNome",    15, 15, targ.name, TEXT_COLOR::COLOR_YELLOW);
+    var txtAtual   := Text("txtAtual",   15, 38, "Atual: " + curHeightPct + "%  |  Padrão: " + templatePct + "%", TEXT_COLOR::COLOR_DEFAULT);
+
+    // Grid: escala individuais + Restaurar Padrão + Resetar 100%
+    var grid := ContainerGridLayout("grid", 10, 65, 40, 220, 12, 2);
+
+    var buttons := array{};
+    foreach pct in SCALES
+        var idx := _pct_iter;
+        var btn := Button("btn" + pct, 10, 2, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+        var lbl := Text("lbl" + pct, 5, 5,
+            pct + "%" + (pct == curHeightPct ? "  ◀" : "") + (pct == templatePct ? "  ★" : ""),
+            pct == curHeightPct ? TEXT_COLOR::COLOR_GREEN : TEXT_COLOR::COLOR_DEFAULT);
+        buttons.append(btn);
+        grid.AddControl(btn, idx, 1);
+        grid.AddControl(lbl, idx, 2);
+    endforeach
+
+    var btnPadrao := Button("btnPadrao", 10, 2, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    var lblPadrao := Text("lblPadrao",  5,  5, "★ Restaurar Padrão (" + templatePct + "%)", TEXT_COLOR::COLOR_YELLOW);
+    grid.AddControl(btnPadrao, 11, 1);
+    grid.AddControl(lblPadrao, 11, 2);
+
+    var btnReset  := Button("btnReset",  10, 2, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+    var lblReset  := Text("lblReset",    5,  5, "✕ Resetar 100% Base", TEXT_COLOR::COLOR_DEFAULT);
+    grid.AddControl(btnReset, 12, 1);
+    grid.AddControl(lblReset, 12, 2);
+
+    gump.AddControl(txtNome);
+    gump.AddControl(txtAtual);
+    gump.AddControl(grid);
+
+    var evento := gump.Show();
+    gump.Dispose();
+
+    if (evento.GetControl() == EVENT_ACTION::CLOSED)
+        return 0;
+    endif
+
+    if (evento.GetControl().Equals(btnPadrao))
+        if (templateRaw)
+            SetObjProperty(targ, "entityScale", struct{ height := templateRaw, width := templateRaw });
+            SendSysMessage(who, targ.name + ": escala restaurada para o padrão do template (" + templatePct + "%).");
+        else
+            EraseObjProperty(targ, "entityScale");
+            SendSysMessage(who, targ.name + ": escala restaurada para o padrão (100%).");
+        endif
+        ForceScaleRerender(targ);
+        return 1;
+    endif
+
+    if (evento.GetControl().Equals(btnReset))
+        EraseObjProperty(targ, "entityScale");
+        ForceScaleRerender(targ);
+        SendSysMessage(who, targ.name + ": escala forçada para 100% base.");
+        return 1;
+    endif
+
+    foreach btn in buttons
+        if (evento.GetControl().Equals(btn))
+            var pct := SCALES[_btn_iter];
+            var val := pct * 10;
+            SetObjProperty(targ, "entityScale", struct{ height := val, width := val });
+            ForceScaleRerender(targ);
+            SendSysMessage(who, targ.name + ": escala definida para " + pct + "%.");
+            return 1;
+        endif
+    endforeach
+
+    return 0;
+endprogram

@@ -1,0 +1,11 @@
+use cfgfile;
+use util;
+
+include ":itemutils:canAccess";
+include ":crafting:include/fabricacaoComplexosGump";
+
+program use_SmithTool(who, tool)
+
+	var rinfo := FabricaItensComplexos(who, "Blacksmithy");
+
+endprogram

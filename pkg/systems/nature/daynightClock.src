@@ -1,0 +1,100 @@
+use uo;
+use util;
+use os;
+use cfgfile;
+
+include ":nature:nature";
+include "include/epicConstants";
+include ":nature:Controller/LightController";
+
+program daynightClocksystem(parameters)
+
+	var dayCycleSystemPid := parameters[0]; 
+	var gmAcceleration := cint(GetGlobalProperty("daynightAccelaration"));
+	var config := readconfigfile(":nature:config/daynight");
+	config := config["settings"];
+	var maxSystemDarkness := cint(config.maxSystemDarkness);
+	var maxHoursDayCycle := cint(config.maxHoursDayCycle);
+	var lightLevel := maxSystemDarkness;
+	var previousLightLevel := lightLevel;
+	setregionlightlevel("Umbraeterna", cint(config.DungeonDarkness));
+
+	var bootHour := getCurrentHour();
+	var dayManager := struct{
+		previousDay := 0,
+		day := 1,
+		isDayDone := (bootHour >= 18 || bootHour < 6),
+		isNightDone := (bootHour >= 6 && bootHour < 18)
+	};
+
+	while(1)
+		var gmAcceleration := cint(GetGlobalProperty("daynightAccelaration"));
+		var tempestade := GetGlobalProperty("tempestade");//TODO  lembrar de implementar isso pra afetar a luz.
+		var maxAllowedDarkness := GeTMoonLightMod();
+		var currentHour := getCurrentHour();
+		var currentMinute := getCurrentMinute();
+		var timeInMinutes := currentHour * 60 + currentMinute;
+		var wholeDayInMinutes := maxHoursDayCycle * 60 ;
+		var halfHourAmountInADay := wholeDayInMinutes / 30;
+		var halfHourAmountElapsed := timeInMinutes / 30;
+
+		var midDay := halfHourAmountInADay / 2;
+
+		var LightIncrementDecrement := halfHourAmountElapsed % midDay;
+		
+		if(halfHourAmountElapsed >= midDay )
+			var addition := 0 + LightIncrementDecrement;
+			lightLevel := addition > maxSystemDarkness ? maxSystemDarkness : addition ;
+		else
+			var subtraction := maxSystemDarkness - LightIncrementDecrement;
+			lightLevel := subtraction < 0 ? 0 : subtraction ;
+		endif
+
+		var finalLightLevel :=  lightLevel > maxAllowedDarkness ? maxAllowedDarkness : lightLevel;
+
+		if(finalLightLevel != previousLightLevel)
+			setregionlightlevel("Superficie", finalLightLevel);
+			SetGlobalProperty("lightlevel", finalLightLevel);
+			previousLightLevel := finalLightLevel;
+		endif
+
+		if(currentHour >= 6 && currentHour < 18)
+			if(!dayManager.isNightDone)
+				Broadcast("O sol esta nascendo.");
+				if(dayManager.previousDay != 0)
+					SetGlobalProperty("halfdaytime", ReadGameClock());
+					SetGlobalProperty("dia", "dia");
+				endif
+				UpdateGlobalEventLevers("dia");
+				UpdateAllShiftMerchants();
+				dayManager.isNightDone := true;
+			endif
+		else
+			if(currentHour >= 18  || currentHour < 6)
+				if(!dayManager.isDayDone)
+					broadcast("O sol esta se pondo.");
+					SetGlobalProperty("halfdaytime", ReadGameClock());
+					SetGlobalProperty("dia", "noite");
+					UpdateGlobalEventLevers("noite");
+					UpdateAllShiftMerchants();
+					dayManager.isDayDone := true;
+				endif
+			endif
+		endif
+		 
+		 if(dayManager.isDayDone && dayManager.isNightDone && dayManager.previousDay != dayManager.day)
+			 
+		 	var system := GetProcess(dayCycleSystemPid);
+			if(!system)
+				break;
+			endif
+			system.sendEvent(struct { id :=  DAYNIGHT_EVTS::EV_ADVANCE_DAY_ID });
+			dayManager.previousDay := dayManager.day;
+			dayManager.day := dayManager.day + 1;
+			dayManager.isNightDone := false;
+			dayManager.isDayDone := false;
+		 endif
+
+		Sleepms(60000 / gmAcceleration);//roda todo minuto, pra não perder sincronia.
+	endwhile
+endprogram

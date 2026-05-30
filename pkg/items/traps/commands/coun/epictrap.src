@@ -1,0 +1,351 @@
+/*
+ * epictrap.src
+ *
+ * GM Command to create custom epic traps
+ * Usage: .epictrap
+ */
+
+use uo;
+use os;
+use util;
+
+include ":gumps:gumps";
+include ":gumps:epicGumps";
+include ":gumps:dropDownGump";
+include "include/say";
+include ":traps:epicTraps";
+
+program epictrap(who)
+    var res := CreateEpicTrapGump(who);
+
+    if (res && res[99]) // Create button pressed
+        // Extract form data
+        var trap_name := GFExtractData(res, 1);
+        if (!trap_name || trap_name == "")
+            trap_name := "Armadilha Epica";
+        endif
+
+        var damage_dice := GFExtractData(res, 2);
+        if (!damage_dice || damage_dice == "")
+            damage_dice := "1d20";
+        endif
+
+        // Get selected SFX and FX from dropdowns
+        var sfx_id := CInt(GetObjProperty(who, "#epic_trap_sfx_selected"));
+        var fx_id := CInt(GetObjProperty(who, "#epic_trap_fx_selected"));
+
+        if (!sfx_id || sfx_id == 0)
+            SendSysMessageEx(who, "Voce precisa selecionar um efeito sonoro!", SSM_FAIL);
+            EraseObjProperty(who, "#epic_trap_sfx_selected");
+            EraseObjProperty(who, "#epic_trap_fx_selected");
+            return;
+        endif
+
+        if (!fx_id || fx_id == 0)
+            SendSysMessageEx(who, "Voce precisa selecionar um efeito visual!", SSM_FAIL);
+            EraseObjProperty(who, "#epic_trap_sfx_selected");
+            EraseObjProperty(who, "#epic_trap_fx_selected");
+            return;
+        endif
+
+        // Get damage types from checkboxes
+        var damage_types := array{};
+        if (res[50]) damage_types.append("Physical"); endif
+        if (res[51]) damage_types.append("Fire"); endif
+        if (res[52]) damage_types.append("Cold"); endif
+        if (res[53]) damage_types.append("Poison"); endif
+        if (res[54]) damage_types.append("Energy"); endif
+
+        // Default to Physical if none selected
+        if (!damage_types.size())
+            damage_types.append("Physical");
+            SendSysMessageEx(who, "Nenhum tipo de dano selecionado. Usando Fisico como padrao.");
+        endif
+
+        // Get effect type (Stationary or Moving)
+        var fx_type := "Stationary";
+        if (res[60]) // Moving effect checkbox
+            fx_type := "Moving";
+        endif
+
+        var fx_source := 0;
+        if (fx_type == "Moving")
+            // Get the source coordinates
+            fx_source := GetObjProperty(who, "#epic_trap_fx_source");
+            if (!fx_source || !fx_source.x)
+                SendSysMessageEx(who, "Efeito de movimento requer coordenadas de origem! Selecione novamente.", SSM_FAIL);
+                EraseObjProperty(who, "#epic_trap_sfx_selected");
+                EraseObjProperty(who, "#epic_trap_fx_selected");
+                EraseObjProperty(who, "#epic_trap_fx_source");
+                return;
+            endif
+        endif
+
+        // Clean up temp properties
+        EraseObjProperty(who, "#epic_trap_sfx_selected");
+        EraseObjProperty(who, "#epic_trap_fx_selected");
+        EraseObjProperty(who, "#epic_trap_fx_source");
+
+        // Target location for trap
+        SendSysMessageEx(who, "Selecione a localizacao para a armadilha...");
+        var targ := TargetCoordinates(who);
+        if (!targ)
+            SendSysMessageEx(who, "Criacao de armadilha cancelada.");
+            return;
+        endif
+
+        // Create the trap
+        var trap := CreateItemAtLocation(targ.x, targ.y, targ.z, 0xee7, 1, who.realm);
+        if (trap)
+            SetObjProperty(trap, "epic_trap_name", trap_name);
+            SetObjProperty(trap, "epic_trap_sfx", sfx_id);
+            SetObjProperty(trap, "epic_trap_fx", fx_id);
+            SetObjProperty(trap, "epic_trap_damage_dice", damage_dice);
+            SetObjProperty(trap, "epic_trap_damage_types", damage_types);
+            SetObjProperty(trap, "epic_trap_fx_type", fx_type);
+            if (fx_source)
+                SetObjProperty(trap, "epic_trap_fx_source", fx_source);
+            endif
+            trap.invisible := 1; // Hidden by default
+
+            SendSysMessageEx(who, "Armadilha Epica '" + trap_name + "' criada com sucesso em " +
+                           targ.x + ", " + targ.y + ", " + targ.z + "!");
+        else
+            SendSysMessageEx(who, "Falha ao criar a armadilha.", SSM_FAIL);
+        endif
+    else
+        // Clean up any temp properties
+        EraseObjProperty(who, "#epic_trap_sfx_selected");
+        EraseObjProperty(who, "#epic_trap_fx_selected");
+        SendSysMessageEx(who, "Criacao de armadilha cancelada.");
+    endif
+endprogram
+
+function CreateEpicTrapGump(who)
+    // Initialize dropdown manager
+    var gerenciador := GerenciadorDropDown(
+        10,     // maxOpcoes - max 10 items visible at once
+        10,     // adicionalIdDropDown - dropdown IDs start at 10
+        210,    // adicionalIdOpcoes - option IDs start at 210
+        2       // maxDropDown - 2 dropdowns (SFX and FX)
+    );
+
+    var continue_editing := 1;
+
+    while (continue_editing)
+        gerenciador.FechaTodosDropdowns(who);
+
+        // Get or create SFX dropdown (position 1)
+        var dropdown_sfx := gerenciador.ObtemDropDown(1, 300);
+        var sfx_list := GetCommonSFXList();
+
+        foreach sfx_entry in sfx_list
+            dropdown_sfx.AdicionaOpcao(
+                sfx_entry.name + " (" + sfx_entry.category + ")",
+                _sfx_entry_iter,
+                struct{ id := sfx_entry.id, name := sfx_entry.name }
+            );
+            sleepms(2);
+        endforeach
+
+        // Get or create FX dropdown (position 2)
+        var dropdown_fx := gerenciador.ObtemDropDown(2, 300);
+        var fx_list := GetEpicFXList();
+
+        foreach fx_entry in fx_list
+            dropdown_fx.AdicionaOpcao(
+                fx_entry.name + " (" + fx_entry.category + ")",
+                _fx_entry_iter,
+                struct{ id := fx_entry.id, name := fx_entry.name }
+            );
+            sleepms(2);
+        endforeach
+
+        // Create main gump
+        var gump := GFECreateGump("Configuracao de Armadilha Epica", 450, 520);
+
+        var y_pos := 80;
+        var x_label := 30;
+        var x_input := 200;
+
+        // Trap Name
+        GFTextLine(gump, x_label, y_pos, 1153, "Nome da Armadilha:");
+        GFTextEntry(gump, x_input, y_pos, 200, 20, 1153, "Armadilha Epica", 1);
+        y_pos += 35;
+
+        // Damage Dice
+        GFTextLine(gump, x_label, y_pos, 1153, "Dado de Dano (ex: 1d20):");
+        GFTextEntry(gump, x_input, y_pos, 100, 20, 1153, "1d20", 2);
+        y_pos += 35;
+
+        GFResizePic(gump, x_label, y_pos, 3000, 390, 2);
+        y_pos += 10;
+
+        // Sound Effect Dropdown
+        GFTextLine(gump, x_label, y_pos, 1153, "Efeito Sonoro:");
+        y_pos += 20;
+        GFAddButton(gump, x_label + 10, y_pos, 2117, 2118, GF_CLOSE_BTN, 11); // Dropdown button
+
+        var selected_sfx := GetObjProperty(who, "#epic_trap_sfx_selected");
+        var sfx_display := "Clique para selecionar";
+        if (selected_sfx)
+            foreach sfx in sfx_list
+                if (sfx.id == selected_sfx)
+                    sfx_display := sfx.name;
+                    break;
+                endif
+            endforeach
+        endif
+        GFTextLine(gump, x_label + 40, y_pos + 2, 1153, sfx_display);
+
+        // Preview button for sound
+        GFAddButton(gump, x_label + 280, y_pos, 2117, 2118, GF_CLOSE_BTN, 100);
+        GFTextLine(gump, x_label + 310, y_pos + 2, 68, "Preview");
+
+        dropdown_sfx.AtribuiX(x_label + 10);
+        dropdown_sfx.AtribuiY(y_pos + 25);
+        y_pos += 50;
+
+        // Graphic Effect Dropdown
+        GFTextLine(gump, x_label, y_pos, 1153, "Efeito Visual:");
+        y_pos += 20;
+        GFAddButton(gump, x_label + 10, y_pos, 2117, 2118, GF_CLOSE_BTN, 12); // Dropdown button
+
+        var selected_fx := GetObjProperty(who, "#epic_trap_fx_selected");
+        var fx_display := "Clique para selecionar";
+        if (selected_fx)
+            foreach fx in fx_list
+                if (fx.id == selected_fx)
+                    fx_display := fx.name;
+                    break;
+                endif
+            endforeach
+        endif
+        GFTextLine(gump, x_label + 40, y_pos + 2, 1153, fx_display);
+
+        // Preview button for FX
+        GFAddButton(gump, x_label + 280, y_pos, 2117, 2118, GF_CLOSE_BTN, 101);
+        GFTextLine(gump, x_label + 310, y_pos + 2, 68, "Preview");
+
+        dropdown_fx.AtribuiX(x_label + 10);
+        dropdown_fx.AtribuiY(y_pos + 25);
+        y_pos += 50;
+
+        // Moving Effect Options
+        var fx_source := GetObjProperty(who, "#epic_trap_fx_source");
+        var is_moving := fx_source && fx_source.x;
+
+        GFCheckBox(gump, x_label, y_pos, 2510, 2511, is_moving ? 1 : 0, 60);
+        GFTextLine(gump, x_label + 30, y_pos, 1153, "Efeito em Movimento");
+
+        GFAddButton(gump, x_label + 200, y_pos, 2117, 2118, GF_CLOSE_BTN, 102);
+        GFTextLine(gump, x_label + 230, y_pos + 2, 1153, "Definir Origem");
+
+        if (fx_source && fx_source.x)
+            GFTextLine(gump, x_label + 30, y_pos + 20, 68,
+                "Origem: " + fx_source.x + ", " + fx_source.y + ", " + fx_source.z);
+        endif
+
+        y_pos += 50;
+
+        GFResizePic(gump, x_label, y_pos, 3000, 390, 2);
+        y_pos += 10;
+
+        // Damage Types
+        GFTextLine(gump, x_label, y_pos, 1153, "Tipos de Dano:");
+        y_pos += 25;
+
+        GFCheckBox(gump, x_label + 10, y_pos, 2510, 2511, 1, 50);
+        GFTextLine(gump, x_label + 40, y_pos, 1153, "Fisico");
+
+        GFCheckBox(gump, x_label + 130, y_pos, 2510, 2511, 0, 51);
+        GFTextLine(gump, x_label + 160, y_pos, 1153, "Fogo");
+
+        GFCheckBox(gump, x_label + 250, y_pos, 2510, 2511, 0, 52);
+        GFTextLine(gump, x_label + 280, y_pos, 1153, "Gelo");
+
+        y_pos += 30;
+
+        GFCheckBox(gump, x_label + 10, y_pos, 2510, 2511, 0, 53);
+        GFTextLine(gump, x_label + 40, y_pos, 1153, "Veneno");
+
+        GFCheckBox(gump, x_label + 130, y_pos, 2510, 2511, 0, 54);
+        GFTextLine(gump, x_label + 160, y_pos, 1153, "Energia");
+
+        y_pos += 40;
+
+        GFResizePic(gump, x_label, y_pos, 3000, 390, 2);
+        y_pos += 10;
+
+        // Action Buttons
+        GFAddButton(gump, x_label + 80, y_pos, 2450, 2451, GF_CLOSE_BTN, 99); // Create
+        GFAddButton(gump, x_label + 250, y_pos, 2453, 2454, GF_CLOSE_BTN, 0); // Cancel
+
+        var input := GFSendGump(who, gump);
+
+        // Handle dropdown interactions
+        if (gerenciador.IsIdDentroDropDowns(input[0]))
+            var posicaoDropDown := input[0] - gerenciador.PegaAdicionalIdDropDown();
+            var objetoDropDown := gerenciador.BuscaDropDownPorPosicao(posicaoDropDown);
+            gerenciador.FechaTodosDropdowns(who);
+            objetoDropDown.SendGump(who, GetPid());
+
+        elseif (gerenciador.IsIdDentroOpcoes(input[0]))
+            var dropdown := gerenciador.DefineValorEscolhido(input[0]);
+            var valorEscolhido := dropdown.PegaValorEscolhido();
+
+            // Determine which dropdown was selected
+            var dropdown_pos := dropdown.PegaPosicaoBottao();
+            if (dropdown_pos == 1)
+                // SFX dropdown
+                SetObjProperty(who, "#epic_trap_sfx_selected", valorEscolhido.id);
+            elseif (dropdown_pos == 2)
+                // FX dropdown
+                SetObjProperty(who, "#epic_trap_fx_selected", valorEscolhido.id);
+            endif
+
+        elseif (input[0] == 100)
+            // Preview sound button
+            var sfx_id := GetObjProperty(who, "#epic_trap_sfx_selected");
+            if (sfx_id)
+                PlaySoundEffect(who, CInt(sfx_id));
+                SendSysMessageEx(who, "Reproduzindo som...");
+            else
+                SendSysMessageEx(who, "Selecione um efeito sonoro primeiro!", SSM_FAIL);
+            endif
+
+        elseif (input[0] == 101)
+            // Preview FX button
+            var fx_id := GetObjProperty(who, "#epic_trap_fx_selected");
+            if (fx_id)
+                PlayObjectCenteredEffect(who, CInt(fx_id), 7, 20);
+                SendSysMessageEx(who, "Exibindo efeito visual...");
+            else
+                SendSysMessageEx(who, "Selecione um efeito visual primeiro!", SSM_FAIL);
+            endif
+
+        elseif (input[0] == 102)
+            // Define source coordinates for moving effect
+            SendSysMessageEx(who, "Selecione a localizacao de origem do efeito (ex: de onde o pedregulho vem)...");
+            var source_targ := TargetCoordinates(who);
+            if (source_targ)
+                var source_struct := struct{
+                    x := source_targ.x,
+                    y := source_targ.y,
+                    z := source_targ.z,
+                    realm := who.realm
+                };
+                SetObjProperty(who, "#epic_trap_fx_source", source_struct);
+                SendSysMessageEx(who, "Origem definida: " + source_targ.x + ", " + source_targ.y + ", " + source_targ.z);
+            else
+                SendSysMessageEx(who, "Selecao de origem cancelada.");
+            endif
+
+        elseif (input[0] == 99 || input[0] == 0)
+            // Create or Cancel
+            return input;
+        endif
+    endwhile
+
+    return 0;
+endfunction

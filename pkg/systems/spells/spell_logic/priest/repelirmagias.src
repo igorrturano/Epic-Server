@@ -1,0 +1,41 @@
+use uo;
+use os;
+use vitals;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+include ":tn:cooldown";
+include ":hotbar:include/custombuff";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0; // No longer needed
+
+	if (who.npctemplate)
+		targ := who;
+	endif
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	var duration := AP_GetSkill(who, THEOLOGY);
+	SetCooldown(targ, "repeal", duration);
+	SendSpellBuff(who, targ, CInt(spell.id), duration);
+
+	PlayStationaryEffect(targ.x, targ.y, targ.z, FX_SPARK_EFFECT, 2, 2);
+	PlaySoundEffect(targ, SFX_SPELL_HEAL);
+
+	return 1;
+endprogram

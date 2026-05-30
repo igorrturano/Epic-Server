@@ -1,0 +1,12 @@
+use uo;
+use basic;
+
+program textcmd_getstatic(who)
+
+	SendSysMessage(who, "Select coordinates.");
+
+	var targ := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
+
+	SendSysMessage(who, "ObjType: " + targ);
+
+endprogram

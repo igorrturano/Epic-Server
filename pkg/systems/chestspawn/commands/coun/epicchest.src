@@ -1,0 +1,627 @@
+use uo;
+use os;
+use util;
+
+include ":gumps:gumps";
+include ":gumps:epicGumps";
+include "include/say";
+include "include/client";
+include ":chestspawn:treasurechest";
+
+// Constantes para botões de categoria
+const BTN_BAUS := 201;
+const BTN_BOLSAS := 202;
+const BTN_CESTOS := 203;
+const BTN_ESTANTES := 204;
+const BTN_BARRIS := 205;
+const BTN_TUMBAS := 206;
+
+// Constantes para identificação de menus
+const MENU_BAUS := 0;
+const MENU_BOLSAS := 1;
+const MENU_CESTOS := 2;
+const MENU_ESTANTES := 3;
+const MENU_BARRIS := 4;
+const MENU_TUMBAS := 5;
+
+// Estado dos botões de categoria (1 = ativo, 0 = inativo)
+var category_button_states := array{ 1, 0, 0, 0, 0, 0 };
+
+// Cache de arrays de gráficos por categoria (otimização de memória)
+var CACHED_CATEGORY_GRAPHICS := dictionary;
+
+program epicchest(who)
+
+	var selected_chest_graphics := array{}; // Store selected chest graphics from viewchests
+	
+	while (1)
+		var res := CreateEpicChestGump(who, selected_chest_graphics);
+		if (!res)
+			SendSysMessageEx(who, "Criação do Gerador de Baú Épico cancelada.");
+			break;
+		endif
+		
+		// Check if the "Select Chest Types" button was clicked (ID 200)
+		if (res[200])
+			// Open the viewchests gump with previously selected chests
+			var new_selection := OpenChestGallery(who, selected_chest_graphics);
+			selected_chest_graphics := new_selection;
+			// Continue the loop to reopen the epicchest gump with updated selection
+			continue;
+		endif
+		
+		if (res[99]) // Create button pressed
+			// Level (radio buttons IDs 11-15)
+			var level := 1;
+			if (res[12])
+				level := 2;
+			elseif (res[13])
+				level := 3;
+			elseif (res[14])
+				level := 4;
+			elseif (res[15])
+				level := 5;
+			endif
+
+			// Amount (radio buttons IDs 21-25)
+			var amount := 1;
+			if (res[22])
+				amount := 2;
+			elseif (res[23])
+				amount := 3;
+			elseif (res[24])
+				amount := 4;
+			elseif (res[25])
+				amount := 5;
+			endif
+
+			// Range (radio buttons IDs 31-35)
+			var range_val := 2;
+			if (res[32])
+				range_val := 3;
+			elseif (res[33])
+				range_val := 4;
+			elseif (res[34])
+				range_val := 5;
+			elseif (res[35])
+				range_val := 6;
+			endif
+			
+
+
+			// Chest Type (radio buttons IDs 41-45)
+			var chest_type := "Warrior";
+			if (res[42])
+				chest_type := "Thief";
+			elseif (res[43])
+				chest_type := "Artifice";
+			elseif (res[44])
+				chest_type := "Mage";
+			elseif (res[45])
+				chest_type := "Misto";
+			endif
+
+		var is_mimic := CInt(res[50]); // Checkbox value is 0 or 1
+		var mimic_chance := 0;
+		if (is_mimic)
+			// Get the actual text value entered by the user
+			mimic_chance := CInt(GFExtractData(res, 51)); // Get text entry value for mimic chance
+			if (mimic_chance < 0)
+				mimic_chance := 0;
+			endif
+			if (mimic_chance > 100)
+				mimic_chance := 100;
+			endif
+		endif
+
+		var is_puzzle := CInt(res[60]); // Checkbox value for puzzle chest (ID 60)
+		var puzzle_limit_count := 5; // Default to 5 (previously was -1)
+		if (is_puzzle)
+			// Read from new text entry ID 62 for the limit
+			if (res[62] != "") // Check if the text entry is not empty
+				puzzle_limit_count := CInt(GFExtractData(res, 62));
+				if (puzzle_limit_count < 0)
+					puzzle_limit_count := 0; // Limit cannot be negative, 0 means no puzzle chests of this type.
+				endif
+			endif
+		// If text entry is empty, use default of 5
+		endif
+
+		var is_buried := CInt(res[70]); // Checkbox for buried chest (ID 70)
+
+		var spawner := CreateItemAtLocation(who.x, who.y, who.z, 0x9F16, 1, who.realm);
+		if (spawner)
+			SetObjProperty(spawner, "epic_level", level);
+			SetObjProperty(spawner, "epic_amount", amount);
+			SetObjProperty(spawner, "epic_range", range_val);
+			SetObjProperty(spawner, "epic_chest_type", chest_type);
+			SetObjProperty(spawner, "epic_is_mimic", is_mimic);
+			SetObjProperty(spawner, "epic_mimic_chance", mimic_chance);
+			SetObjProperty(spawner, "epic_is_puzzle", is_puzzle);
+			SetObjProperty(spawner, "epic_puzzle_limit_count", puzzle_limit_count);
+			SetObjProperty(spawner, "epic_is_buried", is_buried);
+			
+			// Save selected chest graphics
+			if (selected_chest_graphics.size() > 0)
+				SetObjProperty(spawner, "epic_chest_graphics", selected_chest_graphics);
+			endif
+
+			// Handle rest period (convert minutes to seconds)
+			var rest_period := CInt(GFExtractData(res, 36));
+			if (!rest_period || rest_period < 30) // Minimum 60 minutes
+				rest_period := 120; // Default to 120 minutes if invalid
+				SendSysMessageEx(who, "Período de descanso inválido ou muito curto. Usando o padrão de 120 minutos.");
+			endif
+			if (rest_period > 1440) // Cap at 24 hours
+				rest_period := 1440;
+				SendSysMessageEx(who, "Período de descanso muito longo. Limitando a 24 horas (1440 minutos).");
+			endif
+			SetObjProperty(spawner, "duration", rest_period * 60); // Convert minutes to seconds
+
+			SetObjProperty(spawner, "script", ":chestspawn:epicchestspawner");
+			spawner.invisible := 1;
+			SendSysMessageEx(who, "Gerador de Baú Épico criado com sucesso em " + spawner.x
+							  + " " + spawner.y + " " + spawner.z + ".");
+		else
+			SendSysMessageEx(who, "Falha ao criar o item gerador.");
+		endif
+		break; // Exit after creating
+		else
+			SendSysMessageEx(who, "Criação do Gerador de Baú Épico cancelada.");
+			break;
+		endif
+	endwhile
+endprogram
+
+function OpenChestGallery(who, previous_selected_graphics)
+	var page := 1;
+	var continue_viewing := 1;
+	var selected_chests := array{}; // Store { category, index, graphic } structs
+	var max_selection := 5;
+	var current_category := MENU_BAUS; // Começa na aba "Baús"
+	
+	// Não converte previous_selected_graphics pois vamos manter seleção vazia inicialmente
+	
+	while (continue_viewing)
+		var res := CreateChestGalleryGumpWithCategories(who, page, selected_chests, max_selection, current_category);
+		if (!res)
+			break;
+		endif
+		
+		// Process navigation buttons FIRST (before processing checkboxes)
+		if (res[0] == 99) // Confirm button
+			// Convert selected structs to graphics array
+			var selected_graphics := array{};
+			foreach selection in selected_chests
+				selected_graphics.append(selection.graphic);
+			endforeach
+			return selected_graphics;
+		elseif (res[0] == 100) // Cancel button
+			break;
+		elseif (res[0] == 0) // Close button (X)
+			break;
+		endif
+		
+		// ========================================
+		// PASSO 1: VERIFICA SE FOI NAVEGAÇÃO
+		// ========================================
+		var foi_navegacao := 0;
+		
+		// Verifica navegação de páginas
+		if (res[0] == 10 || res[0] == 11) // Previous ou Next
+			foi_navegacao := 1;
+		endif
+		
+		// Verifica mudança de categoria
+		if (res[0] >= BTN_BAUS && res[0] <= BTN_TUMBAS)
+			foi_navegacao := 1;
+		endif
+		
+		// ========================================
+		// PASSO 2: PROCESSA CLIQUE EM ITEM (BOTÕES 1000+)
+		// ========================================
+		if (!foi_navegacao && res[0] >= 1000)
+			var item_index := res[0] - 1000; // ID do botão - 1000 = index do item
+			
+			// Verifica se já está selecionado
+			var already_selected := 0;
+			var selected_pos := 0;
+			foreach selection in selected_chests
+				selected_pos := selected_pos + 1;
+				if (selection.category == current_category && selection.index == item_index)
+					already_selected := selected_pos;
+					break;
+				endif
+			endforeach
+			
+			if (already_selected)
+				// Item já selecionado - REMOVE
+				selected_chests.erase(already_selected);
+			else
+				// Item não selecionado - ADICIONA (se houver espaço)
+				if (selected_chests.size() < max_selection)
+					var chest_graphics := GetCategoryGraphics(current_category);
+					var graphic := chest_graphics[item_index];
+					
+					var selection := struct{
+						"category" := current_category,
+						"index" := item_index,
+						"graphic" := graphic
+					};
+					selected_chests.append(selection);
+				endif
+			endif
+		endif
+		
+		// ========================================
+		// PASSO 3: APLICA A NAVEGAÇÃO/CATEGORIA
+		// ========================================
+		
+		// Agora aplica a mudança de página/categoria
+		if (res[0] == 10) // Previous page
+			if (page > 1)
+				page := page - 1;
+			endif
+		elseif (res[0] == 11) // Next page
+			page := page + 1;
+		endif
+		
+		// Verifica clique nos botões de categoria
+		if (res[0] >= BTN_BAUS && res[0] <= BTN_TUMBAS)
+			var new_category := UpdateCategoryState(res[0]);
+			
+			// Só muda se for categoria diferente
+			if (new_category != current_category)
+				current_category := new_category;
+				page := 1; // Reset para página 1 ao mudar de categoria
+			endif
+		endif
+	endwhile
+	
+	// Return empty if cancelled
+	return array{};
+endfunction
+
+function CreateEpicChestGump(who, selected_chest_graphics)
+	var gump := GFECreateGump("Epic! Configuração de Baús", 480, 700);
+
+	var y_pos := 80;
+	var x_label := 30;
+	var x_options_start := 200;
+	var radio_spacing := 28;
+
+	// --- Chest Level (1-5) ---
+	GFTextLine(gump, x_label, y_pos, 1153, "Nível do Baú (1-5):");
+	GFSetRadioGroup(gump, 1);
+	GFRadioButton(gump, x_options_start, y_pos, 208, 209, 1, 11);
+	GFTextLine(gump, x_options_start + 20, y_pos, 1153, "1");
+	GFRadioButton(gump, x_options_start + radio_spacing * 2, y_pos, 208, 209, 0, 12);
+	GFTextLine(gump, x_options_start + radio_spacing * 2 + 20, y_pos, 1153, "2");
+	GFRadioButton(gump, x_options_start + radio_spacing * 4, y_pos, 208, 209, 0, 13);
+	GFTextLine(gump, x_options_start + radio_spacing * 4 + 20, y_pos, 1153, "3");
+	GFRadioButton(gump, x_options_start + radio_spacing * 6, y_pos, 208, 209, 0, 14);
+	GFTextLine(gump, x_options_start + radio_spacing * 6 + 20, y_pos, 1153, "4");
+	GFRadioButton(gump, x_options_start + radio_spacing * 8, y_pos, 208, 209, 0, 15);
+	GFTextLine(gump, x_options_start + radio_spacing * 8 + 20, y_pos, 1153, "5");
+	y_pos += 30;
+
+	// --- Chest Amount (1-5) ---
+	GFTextLine(gump, x_label, y_pos, 1153, "Quantidade de Baús (1-5):");
+	GFSetRadioGroup(gump, 2);
+	GFRadioButton(gump, x_options_start, y_pos, 208, 209, 1, 21);
+	GFTextLine(gump, x_options_start + 20, y_pos, 1153, "1");
+	GFRadioButton(gump, x_options_start + radio_spacing * 2, y_pos, 208, 209, 0, 22);
+	GFTextLine(gump, x_options_start + radio_spacing * 2 + 20, y_pos, 1153, "2");
+	GFRadioButton(gump, x_options_start + radio_spacing * 4, y_pos, 208, 209, 0, 23);
+	GFTextLine(gump, x_options_start + radio_spacing * 4 + 20, y_pos, 1153, "3");
+	GFRadioButton(gump, x_options_start + radio_spacing * 6, y_pos, 208, 209, 0, 24);
+	GFTextLine(gump, x_options_start + radio_spacing * 6 + 20, y_pos, 1153, "4");
+	GFRadioButton(gump, x_options_start + radio_spacing * 8, y_pos, 208, 209, 0, 25);
+	GFTextLine(gump, x_options_start + radio_spacing * 8 + 20, y_pos, 1153, "5");
+	y_pos += 30;
+
+	// --- Spawn Radius (2-6 tiles) ---
+	GFTextLine(gump, x_label, y_pos, 1153, "Raio de Spawn (2-6 tiles):");
+	GFSetRadioGroup(gump, 3);
+	GFRadioButton(gump, x_options_start, y_pos, 208, 209, 1, 31);
+	GFTextLine(gump, x_options_start + 20, y_pos, 1153, "2");
+	GFRadioButton(gump, x_options_start + radio_spacing * 2, y_pos, 208, 209, 0, 32);
+	GFTextLine(gump, x_options_start + radio_spacing * 2 + 20, y_pos, 1153, "3");
+	GFRadioButton(gump, x_options_start + radio_spacing * 4, y_pos, 208, 209, 0, 33);
+	GFTextLine(gump, x_options_start + radio_spacing * 4 + 20, y_pos, 1153, "4");
+	GFRadioButton(gump, x_options_start + radio_spacing * 6, y_pos, 208, 209, 0, 34);
+	GFTextLine(gump, x_options_start + radio_spacing * 6 + 20, y_pos, 1153, "5");
+	GFRadioButton(gump, x_options_start + radio_spacing * 8, y_pos, 208, 209, 0, 35);
+	GFTextLine(gump, x_options_start + radio_spacing * 8 + 20, y_pos, 1153, "6");
+	y_pos += 30;
+
+	// --- Rest Period ---
+	GFTextLine(gump, x_label, y_pos, 1153, "Período de Descanso (em minutos):");
+	GFTextEntry(gump, x_options_start + 40, y_pos, 60, 20, 1153, "120", 36); // ID 36 for rest period
+	y_pos += 30;
+
+	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+	y_pos += 20;
+
+	// --- Chest Type ---
+	GFTextLine(gump, x_label, y_pos, 1153, "Tipo do Baú:");
+	GFSetRadioGroup(gump, 4);
+	y_pos += 25;
+	GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 1, 41);
+	GFTextLine(gump, x_label + 45, y_pos, 1153, "Guerreiro");
+	y_pos += 25;
+	GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 42);
+	GFTextLine(gump, x_label + 45, y_pos, 1153, "Ladrão");
+	y_pos += 25;
+	GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 43);
+	GFTextLine(gump, x_label + 45, y_pos, 1153, "Artífice");
+	y_pos += 25;
+	GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 44);
+	GFTextLine(gump, x_label + 45, y_pos, 1153, "Mago");
+	y_pos += 25;
+	GFRadioButton(gump, x_label + 20, y_pos, 208, 209, 0, 45);
+	GFTextLine(gump, x_label + 45, y_pos, 1153, "Misto (sem flavor de classe)");
+	y_pos += 30;
+
+	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+	y_pos += 20;
+
+	// --- Chest Graphics Selection ---
+	GFTextLine(gump, x_label, y_pos, 1153, "Selecionar tipos de Baú:");
+	GFAddButton(gump, x_label + 165, y_pos + 1, 2117, 2118, GF_CLOSE_BTN, 200); // Button moved down 3px (from -2 to +1)
+	y_pos += 30;
+	
+	// Display selection count instead of images
+	if (selected_chest_graphics.size() > 0)
+		var count_text := selected_chest_graphics.size() + " tipos de baús foram selecionados";
+		GFTextLine(gump, x_label + 20, y_pos, 1153, count_text);
+		y_pos += 30;
+	else
+		GFTextLine(gump, x_label + 20, y_pos, 1153, "(Nenhum baú selecionado - usará aleatório)");
+		y_pos += 30;
+	endif
+	
+	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+	y_pos += 20;
+
+	// --- Mimic Options ---
+	GFCheckbox(gump, x_label, y_pos, 210, 211, 0, 50);
+	GFTextLine(gump, x_label + 25, y_pos, 1153, "Gerar como Mímico?");
+	y_pos += 25;
+	GFTextLine(gump, x_label + 20, y_pos, 1153, "Chance de Mímico (%):");
+	GFTextEntry(gump, x_options_start, y_pos, 60, 20, 1153, "10", 51); // ID 51 for text entry
+	y_pos += 30;
+
+	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+	y_pos += 20;
+
+	// --- Puzzle Chest Options ---
+	GFCheckbox(gump, x_label, y_pos, 210, 211, 0, 60); // ID 60 for puzzle chest
+	GFTextLine(gump, x_label + 25, y_pos, 1153, "Gerar como Baú de Quebra-Cabeça?");
+	y_pos += 25;
+	GFTextLine(gump, x_label + 20, y_pos, 1153, "Máx. Baús de Quebra-Cabeça (deixe vazio para todos):"); // Changed text
+	GFTextEntry(gump, x_options_start + 180, y_pos, 50, 20, 1153, "", 62); // New ID 62, default empty, adjusted x position
+	y_pos += 30;
+
+	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+	y_pos += 20;
+
+	// --- Buried Chest Options ---
+	GFCheckbox(gump, x_label, y_pos, 210, 211, 0, 70); // ID 70 for buried chest
+	GFTextLine(gump, x_label + 25, y_pos, 1153, "Gerar como Baú Enterrado? (Requer Pá para desenterrar)");
+	y_pos += 30;
+
+	GFResizePic(gump, x_label, y_pos, 3000, 420, 2); // Divider
+	y_pos += 20;
+
+	// --- Buttons ---
+	GFAddButton(gump, x_label + 80, y_pos, 2450, 2451, GF_CLOSE_BTN, 99); // Create ID 99
+	GFAddButton(gump, x_label + 250, y_pos, 2453, 2454, GF_CLOSE_BTN, 0); // Cancel ID 0
+
+	return GFSendGump(who, gump);
+endfunction
+
+// Retorna os gráficos de baús baseado na categoria selecionada (com cache)
+// Carrega gráficos de uma categoria - Lista curada manualmente
+// Categorização baseada no VISUAL dos itens, não apenas no material
+// Usa cache para performance (carrega apenas uma vez por categoria)
+function GetCategoryGraphics(category)
+	
+	// Verifica se já existe no cache
+	if (CACHED_CATEGORY_GRAPHICS.exists(category))
+		var cached := CACHED_CATEGORY_GRAPHICS[category];
+		return cached;
+	endif
+	
+	// Mapeia a constante do menu para o nome da categoria no cfg
+	var category_name := "";
+	
+	case (category)
+		MENU_BAUS:
+			category_name := "Chest";
+		MENU_BOLSAS:
+			category_name := "Bag";
+		MENU_CESTOS:
+			category_name := "Crate";
+		MENU_ESTANTES:
+			category_name := "Bookshelf";
+		MENU_BARRIS:
+			category_name := "Barrel";
+		MENU_TUMBAS:
+			category_name := "Tomb";
+		default:
+			category_name := "";
+	endcase
+	
+	
+	if (category_name == "")
+		return array{};
+	endif
+	
+	// Chama a função do treasurechest.inc que lê do cfg
+	
+	var graphics := GetChestGraphicsByCategory(category_name);
+	
+	
+	if (graphics.size() == 0)
+	else
+		// Log dos primeiros 3 gráficos
+		var count := 0;
+		foreach gfx in graphics
+			count := count + 1;
+			if (count <= 3)
+			endif
+		endforeach
+	endif
+	
+	// Armazena no cache antes de retornar
+	CACHED_CATEGORY_GRAPHICS[category] := graphics;
+	
+	return graphics;
+endfunction
+
+
+// Atualiza o estado dos botões de categoria e retorna o menu correspondente
+function UpdateCategoryState(button_id)
+	case (button_id)
+		BTN_BAUS:     category_button_states := array{ 1, 0, 0, 0, 0, 0 }; return MENU_BAUS;
+		BTN_BOLSAS:   category_button_states := array{ 0, 1, 0, 0, 0, 0 }; return MENU_BOLSAS;
+		BTN_CESTOS:   category_button_states := array{ 0, 0, 1, 0, 0, 0 }; return MENU_CESTOS;
+		BTN_ESTANTES: category_button_states := array{ 0, 0, 0, 1, 0, 0 }; return MENU_ESTANTES;
+		BTN_BARRIS:   category_button_states := array{ 0, 0, 0, 0, 1, 0 }; return MENU_BARRIS;
+		BTN_TUMBAS:   category_button_states := array{ 0, 0, 0, 0, 0, 1 }; return MENU_TUMBAS;
+		default:      return MENU_BAUS;
+	endcase
+endfunction
+
+// Cria o gump de galeria com navegação por categorias
+function CreateChestGalleryGumpWithCategories(who, page, selected_chests, max_selection, current_category)
+	var chest_graphics := GetCategoryGraphics(current_category);
+	
+	var chests_per_page := 12;
+	var total_pages := 1;
+	if (chest_graphics.size() > 0)
+		total_pages := CInt((chest_graphics.size() + chests_per_page - 1) / chests_per_page);
+	endif
+	
+	if (page < 1)
+		page := 1;
+	endif
+	if (page > total_pages)
+		page := total_pages;
+	endif
+	
+	var gump := GFECreateGump("", 700, 600);
+	
+	// Título principal (ajustado: +3px no x, -2px no y)
+	GFTextLine(gump, 33, 8, 53, "Galeria de Baús - Selecione até " + max_selection);
+	
+	// Botões de navegação por categoria (movido de y=50 para y=30)
+	var cat_texts := array{ "Baús", "Bolsas", "Caixas", "Estantes", "Barris", "Túmulos" };
+	var cat_buttons := array{ BTN_BAUS, BTN_BOLSAS, BTN_CESTOS, BTN_ESTANTES, BTN_BARRIS, BTN_TUMBAS };
+	
+	var cat_x := 30;
+	var cat_y := 30;
+	
+	for i := 1 to 6
+		var btn_gfx := 2151; // Botão normal (cinza)
+		var text_color := 53; // Texto normal (cinza escuro)
+		
+		if (category_button_states[i])
+			btn_gfx := 2153; // Botão ativo (dourado)
+			text_color := 230; // Texto ativo (amarelo)
+		endif
+		
+		GFAddButton(gump, cat_x, cat_y, btn_gfx, btn_gfx, 0x1, cat_buttons[i]); // Botão categoria
+		GFTextLine(gump, cat_x + 30, cat_y + 5, text_color, cat_texts[i]);
+		
+		cat_x := cat_x + 95;
+	endfor
+	
+	// Linha de informação da página e contador de seleção (descido 10 pixels: y=65 para y=75)
+	GFTextLine(gump, 30, 75, 53, "Página " + page + " de " + total_pages);
+	
+	var counter_text := "Selecionados: " + selected_chests.size() + "/" + max_selection;
+	GFTextLine(gump, 520, 75, 53, counter_text);
+	
+	// Área de exibição dos baús com melhor distribuição (grid 4x3)
+	var x_start := 70;
+	var y_start := 140;
+	var col_spacing := 150;
+	var row_spacing := 110;
+	var cols := 4;
+	
+	if (chest_graphics.size() > 0)
+		var start_index := ((page - 1) * chests_per_page) + 1;
+		var end_index := start_index + chests_per_page - 1;
+		if (end_index > chest_graphics.size())
+			end_index := chest_graphics.size();
+		endif
+		
+		var current_col := 0;
+		var current_row := 0;
+		
+		// Loop pelos itens da página atual
+		for i := start_index to end_index
+			// Verifica se o índice existe no array antes de acessar
+			if (i > chest_graphics.size())
+				break; // Sai se ultrapassou o tamanho do array
+			endif
+			
+			var gfx := chest_graphics[i]; // Acessa pela posição absoluta
+			var x_pos := x_start + (current_col * col_spacing);
+			var y_pos := y_start + (current_row * row_spacing);
+			
+			// Verifica se este item está selecionado
+			var is_selected := 0;
+			foreach selection in selected_chests
+				if (selection.category == current_category && selection.index == i)
+					is_selected := 1;
+					break;
+				endif
+			endforeach
+			
+			// Desenha o número acima do item (numeração visual)
+			var item_number := i;
+			GFTextLine(gump, x_pos - 5, y_pos - 20, 1153, CStr(item_number)); // Sempre cinza
+			
+			// Desenha o item centralizado
+			GFTilePic(gump, x_pos + 20, y_pos, gfx, 0);
+			
+			// Botão de seleção ABAIXO do item: azul se não selecionado, verde se selecionado
+			if (is_selected)
+				// Botão verde (selecionado) - ID 2361
+				GFAddButton(gump, x_pos - 5, y_pos + 4, 2361, 2361, 0x1, 1000 + i);
+			else
+				// Botão azul (não selecionado) - ID 2362
+				GFAddButton(gump, x_pos - 5, y_pos + 4, 2362, 2362, 0x1, 1000 + i);
+			endif
+			
+			current_col := current_col + 1;
+			if (current_col >= cols)
+				current_col := 0;
+				current_row := current_row + 1;
+			endif
+		endfor
+	else
+		// Mensagem quando categoria está vazia
+		GFTextLine(gump, 280, 300, 33, "Categoria vazia");
+	endif
+	
+	// Botões de navegação de página e confirmação (movido de y=550 para y=530)
+	var btn_y := 530;
+	var center_x := 280;
+	
+	if (page > 1 && chest_graphics.size() > 0)
+		GFAddButton(gump, center_x, btn_y, 4014, 4016, 0x1, 10); // Botão "Anterior"
+	endif
+	
+	if (page < total_pages && chest_graphics.size() > 0)
+		GFAddButton(gump, center_x + 50, btn_y, 4005, 4007, 0x1, 11); // Botão "Próxima"
+	endif
+	
+	GFAddButton(gump, center_x + 120, btn_y, 2450, 2451, 0x1, 99); // Botão "Confirmar" (check verde)
+	GFAddButton(gump, 580, btn_y, 2453, 2454, 0x1, 100); // Botão "Cancelar" (X vermelho)
+	
+	return GFSendGump(who, gump);
+endfunction

@@ -1,0 +1,161 @@
+use uo;
+use os;
+use datafile;
+
+include ":gumpDesigner:include/Gump/Gump";
+include ":gumpDesigner:include/Control/Button";
+include ":gumpDesigner:include/Control/Text";
+
+const BORDER_PROP    := "#mapeador_serials";
+const BORDER_GRAPHIC := 0xF240;
+const BORDER_COLOR   := 39;
+
+program mapeador_use(who, mapeador)
+    var guild := who.guild;
+    if (!guild)
+        SendSysMessage(who, "Você não pertence a uma facção.");
+        return 0;
+    endif
+
+    var faction_name := guild.GetProp("name");
+    if (!faction_name)
+        SendSysMessage(who, "Sua guilda não parece ser uma facção válida.");
+        return 0;
+    endif
+
+    var gump := Gump(who, "Mapeador de Território", 260, 130);
+    gump.AddControl(Text("txtFac", 20, 15, "Facção: " + faction_name, TEXT_COLOR::COLOR_YELLOW));
+
+    var btnMapear := Button("btnMapear", 20, 55, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnMapear);
+    gump.AddControl(Text("lblMapear", 58, 58, "Mapear Território", TEXT_COLOR::COLOR_DEFAULT));
+
+    var btnApagar := Button("btnApagar", 20, 88, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnApagar);
+    gump.AddControl(Text("lblApagar", 58, 91, "Apagar Bordas", TEXT_COLOR::COLOR_DEFAULT));
+
+    var evento := gump.Show();
+    gump.Dispose();
+
+    if (evento.GetControl() == EVENT_ACTION::CLOSED)
+        return 0;
+    endif
+
+    LimparBordas(mapeador);
+
+    if (evento.GetControl().Equals(btnMapear))
+        MapearTerritorio(who, mapeador, faction_name);
+    elseif (evento.GetControl().Equals(btnApagar))
+        SendSysMessage(who, "Bordas apagadas.");
+    endif
+
+    return 1;
+endprogram
+
+function LimparBordas(mapeador)
+    var serials := GetObjProperty(mapeador, BORDER_PROP);
+    if (!serials || serials.errortext)
+        return;
+    endif
+
+    var item;
+    foreach serial in serials
+        item := SystemFindObjectBySerial(serial);
+        if (item)
+            DestroyItem(item);
+        endif
+    endforeach
+
+    EraseObjProperty(mapeador, BORDER_PROP);
+endfunction
+
+function MapearTerritorio(who, mapeador, faction_name)
+    var df := OpenDataFile(":architect:areas");
+    if (!df)
+        SendSysMessage(who, "Erro ao acessar os territórios do servidor.");
+        return;
+    endif
+
+    var found   := 0;
+    var serials := array{};
+    var item;
+    var x, y, z;
+    var x1, y1, x2, y2;
+    var realm;
+    var rects;
+
+    foreach area_name in (df.keys())
+        var elem := df.FindElement(area_name);
+        if (elem.GetProp("Faction") == faction_name)
+            rects := SplitWords(elem.GetProp("Rect"));
+            realm := elem.GetProp("Realm");
+            if (!realm)
+                realm := who.realm;
+            endif
+
+            if (rects.size() >= 4)
+                x1 := CInt(rects[1]);
+                y1 := CInt(rects[2]);
+                x2 := CInt(rects[3]);
+                y2 := CInt(rects[4]);
+
+                // Bordas horizontais: topo (y1) e base (y2)
+                x := x1;
+                while (x <= x2)
+                    z := GetWorldHeight(x, y1, realm);
+                    item := CreateItemAtLocation(x, y1, z, BORDER_GRAPHIC, 1, realm);
+                    if (item)
+                        item.invisible   := 0;
+                        item.color       := BORDER_COLOR;
+                        item.saveonexit  := 0;
+                        serials.append(item.serial);
+                    endif
+
+                    z := GetWorldHeight(x, y2, realm);
+                    item := CreateItemAtLocation(x, y2, z, BORDER_GRAPHIC, 1, realm);
+                    if (item)
+                        item.invisible   := 0;
+                        item.color       := BORDER_COLOR;
+                        item.saveonexit  := 0;
+                        serials.append(item.serial);
+                    endif
+
+                    x += 1;
+                endwhile
+
+                // Bordas verticais: esquerda (x1) e direita (x2), sem repetir os cantos
+                y := y1 + 1;
+                while (y < y2)
+                    z := GetWorldHeight(x1, y, realm);
+                    item := CreateItemAtLocation(x1, y, z, BORDER_GRAPHIC, 1, realm);
+                    if (item)
+                        item.invisible   := 0;
+                        item.color       := BORDER_COLOR;
+                        item.saveonexit  := 0;
+                        serials.append(item.serial);
+                    endif
+
+                    z := GetWorldHeight(x2, y, realm);
+                    item := CreateItemAtLocation(x2, y, z, BORDER_GRAPHIC, 1, realm);
+                    if (item)
+                        item.invisible   := 0;
+                        item.color       := BORDER_COLOR;
+                        item.saveonexit  := 0;
+                        serials.append(item.serial);
+                    endif
+
+                    y += 1;
+                endwhile
+
+                found += 1;
+            endif
+        endif
+    endforeach
+
+    if (found > 0)
+        SetObjProperty(mapeador, BORDER_PROP, serials);
+        SendSysMessage(who, "Território(s) mapeado(s): " + found + " área(s). Use o item novamente para apagar.");
+    else
+        SendSysMessage(who, "A facção " + faction_name + " não tem territórios registrados.");
+    endif
+endfunction

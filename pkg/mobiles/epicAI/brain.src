@@ -1,0 +1,135 @@
+include "include/epicNPCCombat";
+include "include/spellCache";
+include "include/stateManager";
+include "include/abilityTable";
+include "include/monsterBrain";
+include "include/animalBrain";
+include "include/humanoidBrain";
+include "include/epicNPCUtils";
+include "include/genericBrain";
+include "include/passiveBrain";
+include "include/eventID";
+
+var brain_type;
+var me := Self();
+const AREA_SIZE := 18;
+
+// Script-level vars for ephemeral combat state (replaces per-tick SetObjProperty/GetObjProperty)
+var pursuit_tracker := 0;
+var los_cache_var := 0;
+var path_cache_var := 0;
+var runaway_progress_var := 0;
+var threat_list_var := array{};
+var cached_weapon_range := 0;
+var combat_abilities := array{};
+var enter_abilities := array{};
+var anchor_var := 0;
+var spell_target_var := 0;
+var hazard_cache_var := 0;
+
+/*
+ * KillPlayers()
+ *
+ * Phase 3: Pure Event-Driven Dormancy (No Polling)
+ * - NPCs only wake from ENTEREDAREA events, zero CPU when dormant
+ * - No HasPlayerNear polling fallback
+ * - Script loops between dormant and active states
+ */
+program KillPlayers()
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+    // Initialize NPC once at spawn (extracted to a sub-script so init's
+    // transitive includes - makeRace, item_template, mounts via taming, etc. -
+    // stay out of brain.src's 64KB data segment). Run_Script blocks until
+    // initialize.src returns - the existing "started" guard above still works.
+    if (!GetObjProperty(me, "started"))
+        Run_Script(":epicAI:scripts/initialize", me);
+    endif
+
+    EnableMainEvents();
+
+    // Main loop: activate brain immediately on spawn, then alternate dormant/active
+    while (me)
+        // ===== ACTIVE MODE =====
+        DetermineBrainType();
+        anchor_var := GetObjProperty(me, "anchor");
+        SetWarMode(0);
+
+        // [LEAK_DEBUG] log activation
+        print("BRAIN_ACT " + Hex(me.serial) + " t=" + polcore().systime + " type=" + brain_type);
+
+        // Send ENTEREDAREA events for nearby players/pets so brain can detect them
+        InitializeEnterArea(me);
+
+        case (brain_type)
+            "monster":  MonsterBrain();
+            "animal":   AnimalBrain();
+            "humanoid": HumanoidBrain();
+            "passive":  PassiveBrain();
+            default:    GenericBrain();
+        endcase
+
+        // [LEAK_DEBUG] log dormancy + dict sizes (before reset wipes them)
+        print("BRAIN_DOR " + Hex(me.serial) + " t=" + polcore().systime
+            + " threat=" + len(threat_table_var)
+            + " nearby=" + len(nearby_cache_var)
+            + " hazard=" + len(hazard_cache_var)
+            + " threat_list=" + len(threat_list_var)
+            + " combat_ab=" + len(combat_abilities)
+            + " enter_ab=" + len(enter_abilities));
+
+        // Brain returned (ShouldGoDormant triggered) - reset and go dormant
+        SetWarMode(0);
+        SetOpponent(0);
+        pursuit_tracker := 0;
+        los_cache_var := 0;
+        path_cache_var := 0;
+        runaway_progress_var := 0;
+        threat_list_var := array{};
+        threat_table_var := dictionary;
+        last_threat_decay_var := 0;
+        cached_weapon_range := 0;
+        combat_abilities := array{};
+        enter_abilities := array{};
+        anchor_var := 0;
+        spell_target_var := 0;
+        hazard_cache_var := 0;
+        nearby_cache_var := dictionary;
+        enemy_last_loc_var := 0;
+        initial_allies_var := 0;
+        SM_TransitionTo("IDLE");
+
+        // ===== DORMANT MODE =====
+        // Pure event-driven: only wake on ENTEREDAREA, no polling
+        while (me)
+            var ev := wait_for_event(120);
+
+            if (!ev)
+                continue;
+            endif
+
+            if (ev.type == SYSEVENT_ENTEREDAREA)
+                if (ev.source.acctname)
+                    break;
+                endif
+            endif
+        endwhile
+    endwhile
+endprogram
+
+/*
+ * DetermineBrainType()
+ *
+ * Purpose: Determine which brain AI to run
+ * Now uses cached data instead of config lookup
+ */
+function DetermineBrainType()
+    var cache := NPC_GetCachedData(me);
+    brain_type := cache.brain_type;
+    if (!brain_type)
+        brain_type := "generic";
+    endif
+    if (cache.spell_school || GetObjProperty(me, "SpellSchool"))
+        InitSpellCache();
+    endif
+endfunction

@@ -1,0 +1,43 @@
+/*
+ * Paladin Spell Command (.p)
+ * 
+ * Entry point for paladin divine spells. Works with both:
+ * - Text commands: .p smite (who, spellname as separate args)
+ * - Hotbar/scripts: Start_Script(script, {who, spellname})
+ */
+use uo;
+use os;
+use cfgfile;
+
+include "include/say";
+include ":charactercreation:habilidades";
+include ":attributes:attributes";
+include ":spells:include/spell_executor";
+
+// Main program - handles both text commands and Start_Script calls
+program magia_paladin(who, spellname := "")
+	// Handle Start_Script array format: {who, spellname}
+	if (TypeOf(who) == "Array")
+		var params := who;
+		who := params[1];
+		spellname := params[2];
+	endif
+
+	// Casting identity is the class (chardata.subclasse) from level 1; the
+	// CONSAGRACAO_DIVINA ability is a separate level-up reward. CanCastAsClass
+	// also honors legacy chars who earned casting by buying the ability.
+	var isPaladin := CanCastAsClass(who, "Paladino");
+	if (!isPaladin)
+		SendSysMessageEx(who, "Apenas Paladinos podem usar este comando.", SSM_FAIL);
+		return 0;
+	endif
+
+	// If no spell name provided, nothing to do
+	if (!spellname || spellname == "")
+		SendSysMessageEx(who, "Use: .p <nome_da_magia>", SSM_FAIL);
+		return 0;
+	endif
+
+	// Execute the spell using the unified executor
+	return ExecuteSpellByName(who, spellname, SPELL_TYPE_PALADIN);
+endprogram

@@ -1,0 +1,35 @@
+use uo;
+use os;
+
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":charactercreation:resists";
+include ":timedScripts:timedScripts";
+
+program Gnaw(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	if (Distance(me, targ) > 1)
+		return 0;
+	endif
+
+	PrintTextAbove(me, "*morde*");
+	PlaySoundEffect(me, 0x28a);
+
+	var resist := CheckResist(targ, REFLEXES, RESIST_MEDIUM);
+	if (!resist)
+		DealDamage(targ, "1d6", DAMAGE_TYPE::BLUNT, me);
+	elseif (resist == -1)
+		TS_StartTimer(targ, "paralysis", 3);
+		SendSysMessageEx(targ, "A mordida paralisa você!", SSM_FAIL);
+	else
+		PrintTextAbove(targ, "*esquiva*");
+	endif
+
+	return 1;
+endprogram

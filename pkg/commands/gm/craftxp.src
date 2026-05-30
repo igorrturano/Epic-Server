@@ -1,0 +1,39 @@
+// .craftxp           - show whether craft XP is enabled or suppressed
+// .craftxp on        - enable craft XP grants (paid at completion)
+// .craftxp off       - suppress craft XP (log-only, fail-safe default)
+//
+// XP is paid at completion (EV_ITEM_PRODUZIDO), not at montagem, so the
+// old assembly-spam farm is closed. There is still no rate limit / fatigue
+// system, so a 24h AFK crafter is unbounded until that lands (Phase 2).
+
+use uo;
+use os;
+
+include "include/say";
+
+program craftxp(who, text)
+	if (who.cmdlevel < 3)
+		return 0;
+	endif
+
+	var arg := "";
+	if (text && text != error)
+		arg := Lower(CStr(text));
+	endif
+
+	if (arg == "on")
+		SetGlobalProperty("CraftXpEnabled", 1);
+		SendSysMessage(who, "Craft XP ENABLED (paid at completion). No rate limit yet - watch xp.log for AFK farmers.");
+		return 1;
+	endif
+
+	if (arg == "off")
+		SetGlobalProperty("CraftXpEnabled", 0);
+		SendSysMessage(who, "Craft XP suppressed (log-only). Would-be grants logged as CRAFT_SUPPRESSED.");
+		return 1;
+	endif
+
+	var enabled := CInt(GetGlobalProperty("CraftXpEnabled")) == 1;
+	SendSysMessage(who, "Craft XP is currently " + (enabled ? "ENABLED" : "SUPPRESSED (log-only)") + ". Use: .craftxp on | off");
+	return 1;
+endprogram

@@ -1,0 +1,38 @@
+/*
+ * $Id$
+ *
+*/
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	params := 0; // No longer needed
+	var range := cint(AP_GetSkill(who, THEOLOGY) / 10);
+	var amt := cint(AP_GetSkill(who, THEOLOGY) / 20);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::AURA_DIVINA))
+		amt := amt * 2;
+	endif
+	var points := (CInt(AP_GetSkill(who, THEOLOGY)) / 5) + RandomDiceRoll("6d8");
+	var hostiles := ListHostiles(who, range);
+	foreach mob in ListMobilesNearLocation(who.x, who.y, who.z, range, who.realm)
+		var i := 1;
+		if (!(mob in hostiles) && i <= amt)
+			PlayObjectCenteredEffect(mob, FX_BLUE_SPARKLE_SWIRL, 7, 16);
+			PlaySoundEffect(mob, SFX_HEAL);
+			ApplyEpicHealing(mob, points);
+			i := i + 1;
+		endif
+	endforeach
+
+	SendSysMessage(who, "Voce curou " + points + " pontos de vida.");
+
+	return 1;
+endprogram

@@ -1,0 +1,78 @@
+use uo;
+use os;
+use polsys;
+
+include "include/client";
+include "/include/epicPropNames";
+include ":propagacao:include/marcadores/marcadorPropagacaoFabrica";
+
+program controladoraPropagacao(esteItemMarcador)
+
+	var propPropagacao := GetObjProperty(esteItemMarcador, PROPNAME_PROP_PROPAGACAO);
+	var momentoInicial := ReadMillisecondClock();
+	var propagacaoConfig := ReadConfigFile(":propagacao:config/propagacao");
+
+	Set_Event_Queue_Size(20);
+
+	var marcadorOrigem := propPropagacao.marcadorOrigem;
+	if (propPropagacao.?esteMarcadorPid)
+		propPropagacao.esteMarcadorPid := GetPid();
+	else
+		propPropagacao.+esteMarcadorPid := GetPid();
+	endif
+
+	SetObjProperty(esteItemMarcador, PROPNAME_PROP_PROPAGACAO, propPropagacao);
+
+	var params := FabricaPropagacaoParametros();
+	params.marcador := esteItemMarcador;
+	params.momentoNascimento := momentoInicial;
+
+	var esteObjetoMarcador := MarcadorPropagacaoFabrica().Montar(params);
+
+	if(esteObjetoMarcador)
+		esteObjetoMarcador.Iniciar();
+		var descansoMinimo := esteObjetoMarcador.descasoMinimo 
+								? esteObjetoMarcador.descasoMinimo 
+								: cint(propagacaoConfig["sistema"].descansoMinimo);
+
+		while (esteItemMarcador)
+			var event;
+
+			if (esteObjetoMarcador.IsEstadoControle(CONTROLE_PROPAGACAO::DORMENTE))// Condição para adicionar mais descanso se não tiver razão pro marcador estar ativo.
+				Sleepms(esteObjetoMarcador.descansoControleDormente);
+
+				var descanso := (
+								esteObjetoMarcador.descansoControleDormente 
+								* propagacaoConfig["sistema"].multiplicadorDescansoDormente
+								/ 1000);
+				
+				event := Wait_For_Event(
+										esteObjetoMarcador.IsEstadoMarcador(ESTADO_PROPAGACAO::DORMENTE) 
+										? cint(descanso)
+										: 0);
+			else
+				
+				Sleepms(descansoMinimo);
+				event := Wait_For_Event(0);
+			endif
+
+			if (event == EV_PROPAGACAO::TIMEOUT)
+				//Por enquanto nada.
+			elseif (event.id == EV_PROPAGACAO::ESTIMULO)
+				esteObjetoMarcador.RecebeEstimulo(event.valor, event.isAcumulando);
+			elseif (event.id == EV_PROPAGACAO::COMBUSTIVEL)
+				esteObjetoMarcador.InjetaCombustivel(event.deveResetarEstado);
+			elseif (event.id == EV_PROPAGACAO::PISAO)
+				esteObjetoMarcador.AtribuiEstadoControle(CONTROLE_PROPAGACAO::ATIVO);
+			endif
+
+			if (!esteObjetoMarcador.IsEstadoControle(CONTROLE_PROPAGACAO::MORTO))
+				esteObjetoMarcador.EfetuarCiclo();
+			else
+				DestroyItem(esteItemMarcador);
+			endif
+		endwhile
+	else
+		Print("Pid {} - {}".format (GetPid(),esteObjetoMarcador.errortext));
+	endif
+endprogram

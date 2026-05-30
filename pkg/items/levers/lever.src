@@ -1,0 +1,1252 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+use vitals;
+use datafile;
+
+include "include/client";
+include ":attributes:attributes";
+include ":gumps:requestGump";
+include ":gumps:gumps";
+include ":tn:tngumps";
+include ":timedscripts:timedScripts";
+include ":traps:traps";
+include ":levers:lever";
+include "include/lever_mockmulti";
+
+include ":combat:hitscripts";
+include ":itemUtils:itemInfo";
+include ":message:include/model/Message";
+include ":medicine:disease";
+
+CONST SOUND_PLAY_BTN := 0xF112; // Botão para tocar som
+CONST SOUND_OK_BTN   := 0xF113; // Botão para confirmar som
+
+function ConstructGump(item)
+   var opts := item.GetLeverOpts();
+   var gump := GFCreateGump();
+	GFSetID(gump, 0x597);
+	GFPage(gump, 0);
+	GFResizePic(gump, 0, 0, 9200, 480, 440);
+   GFTextLine(gump, 165, 20, 900, "Alavancas");
+   GFPage(gump, 1);
+
+   var y := 48;
+   GFTextLine(gump, 45, y, 560, "Testar");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 99);
+   if (!opts.is_linked)
+      y += 20;
+      GFTextLine(gump, 45, y, _ifElse(opts.lights, 520, 500), "ON/OFF Luzes/item");
+      GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 4);
+      y += 20;
+      GFTextLine(gump, 45, y, _ifElse(opts.opendoors, 520, 500), "Abrir/Destrancar porta");
+      GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 102);
+      y += 20;
+      GFTextLine(gump, 45, y, _ifElse(opts.moveitems, 520, 500), "Mover objetos");
+      GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 101);
+      y += 20;
+      GFTextLine(gump, 45, y, _ifElse(opts.teleport_to, 520, 500), "Teleportar usuário");
+      GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 5);
+   endif
+
+   y += 20;
+   GFTextLine(gump, 45, y, _ifElse(opts.graphicarrays, 520, 500), "Mudar gráfico da alavanca");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_PAGE_BTN, 2);
+   y += 20;
+   GFTextLine(gump, 45, y, _ifElse(GetObjProperty(item, "HaveTrap"), 520, 500), "Adicionar armadilhas");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_PAGE_BTN, 4);
+   
+   // =====================================================
+// NUVEM PATOGÊNICA (PROPAGAÇÃO)
+// =====================================================
+/*y += 20;
+GFTextLine(
+   gump,
+   45,
+   y,
+   _ifElse(GetObjProperty(item, "LEVER_PATOGENICO"), 520, 500),
+   "Nuvem Patogênica (Propagação)"
+);
+GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 131);
+// =====================================================
+  */ 
+   y += 20;
+   GFTextLine(gump, 45, y, _ifElse(GetObjProperty(item, "level"), 520, 500), "Esconder Alavanca");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 100);
+   y += 20;
+   GFTextLine(gump, 45, y, _ifElse(GetObjProperty(item, "powerword"), 520, 500), "Esconder Alavanca e revelar por fala");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 9);
+   y += 20;
+   
+   GFTextLine(gump, 45, y, _ifElse(opts.nature_event, 520, 500), "Esconder Alavanca e revelar por evento");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 130);
+   y += 20;
+
+   GFTextLine(gump, 45, y, _ifELse(opts.ontext, 520, 500), "Mudar on/off texto");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 97);
+   if (!opts.is_linked)
+      y += 20;
+      GFTextLine(gump, 45, y, _ifElse(opts.linked_to, 520, 500), "Linkar outras alavancas");
+      GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 3);
+      if (opts.linked_to)
+         y += 20;
+         GFTextLine(gump, 45, y, _ifElse(opts.sync_toggle, 520, 500), "Sincronizar toggle (interruptores)");
+         GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 108);
+      endif
+   endif
+   y += 20;
+   GFTextLine(gump, 45, y, _ifElse(opts.linked_to || opts.is_linked, 520, 500), "Unlink alavancas");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 6);
+   y += 20;
+   
+   // Nova opção agrupada: Modo de ativação
+   var activation_active := (opts.walkon || GetObjProperty(item, "requires_item_delivery"));
+   GFTextLine(gump, 45, y, _ifElse(activation_active, 520, 500), "Modo de ativação");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_PAGE_BTN, 5);
+   y += 20;
+   
+   GFTextLine(gump, 45, y, _ifElse(opts.spawn_boss, 520, 500), "Spawn Boss");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 55);
+
+   // Ordem de ativação se tiver graphic e moveitems
+   if (opts.graphicarraysitem && opts.moveitems)
+      //y += 25; // Espaço extra
+      GFTextLine(gump, 335, y, 900, "Qual acionar primeiro?");
+      var y_order := y;
+	  y_order += 20;
+      
+      // Pega a sequência atual (padrão é 1 = move primeiro)
+      var current_sequence := GetObjProperty(item, "sequence");
+      if (!current_sequence)
+         current_sequence := 1;
+      endif
+      
+      // Cria grupo de radio buttons
+      GFSetRadioGroup(gump, 1);
+      
+      // Opção 1: Mover primeiro
+      GFRadioButton(gump, 315, y_order, 210, 211, (current_sequence == 2), 106);
+      GFTextLine(gump, 335, y_order, 900, "Mover objetos primeiro");
+      
+      y_order += 18;
+      
+      // Opção 2: Gráfico primeiro  
+      GFRadioButton(gump, 315, y_order, 210, 211, (current_sequence == 1), 107);
+      GFTextLine(gump, 335, y_order, 900, "Mudar gráfico primeiro");
+        GFAddButton(gump, 357, y_order+20, 239, 240, 1, 105);
+      //y += 25; // Espaço após as opções
+   endif
+
+   y += 20;
+   GFTextLine(gump, 45, y, _ifElse(opts.efeitos, 520, 500), "Efeito em area");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 56);
+
+   y += 20;
+   GFTextLine(gump, 45, y, _ifElse(opts.changegraphicitem, 520, 500), "Mudar graphic de certo item");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 98);
+
+   y += 20;
+   GFTextLine(gump, 45, y, _ifElse(opts.mockmulti, 520, 500), "Controlar MockMulti");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 109);
+
+   y += 20;
+   GFTextLine(gump, 45, y, _ifElse(GetObjProperty(item, "status") == "on", 520, 500), "Resetar agora");
+   GFAddButton(gump, 25, y+2, 2117, 2118, GF_CLOSE_BTN, 8);
+
+
+   GFPage(gump, 2);
+   GFTextLine(gump, 145, 50, 900, "Escolha o gráfico da alavanca");
+
+   GFTilePic(gump, 105, 120, 4237);
+   GFAddButton(gump, 85, 130, 210, 211, GF_CLOSE_BTN, 20);
+   GFTilePic(gump, 355, 120, 4244);
+   GFAddButton(gump, 345, 130, 210, 211, GF_CLOSE_BTN, 21);
+   GFTilePic(gump, 105, 270, 4240);
+   GFAddButton(gump, 85, 270, 210, 211, GF_CLOSE_BTN, 22);
+   GFTilePic(gump, 355, 270, 4241);
+   GFAddButton(gump, 345, 270, 210, 211, GF_CLOSE_BTN, 23);
+   GFAddButton(gump, 240, 200, 210, 211, GF_CLOSE_BTN, 25);
+   GFTextLine(gump, 235, 220, 900, "Outro");
+
+   GFAddButton(gump, 45, 350, 2453, 2454, GF_PAGE_BTN, 1);
+
+   GFPage(gump, 3);
+   
+   GFPage(gump, 4);
+   GFTextLine(gump, 145, 50, 900, "Escolha a armadilha da alavanca");
+
+   GFTilePic(gump, 105, 120, 4347);
+   GFTilePic(gump, 355, 120, 4414);
+   GFTilePic(gump, 105, 270, 4401);
+   GFTilePic(gump, 355, 270, 8128);
+
+   GFAddButton(gump, 85, 130, 210, 211, GF_CLOSE_BTN, 15);
+   GFAddButton(gump, 345, 130, 210, 211, GF_CLOSE_BTN, 16);
+   GFAddButton(gump, 85, 270, 210, 211, GF_CLOSE_BTN, 17);
+   GFAddButton(gump, 345, 270, 210, 211, GF_CLOSE_BTN, 18);
+   GFAddButton(gump, 45, 350, 2453, 2454, GF_PAGE_BTN, 1);
+
+   // Nova página 5: Modo de ativação
+   GFPage(gump, 5);
+   GFTextLine(gump, 145, 50, 900, "Modo de Ativação");
+   
+   var y_activation := 80;
+   GFTextLine(gump, 45, y_activation, _ifElse(opts.walkon, 520, 500), "Ativar ao andar por cima");
+   GFAddButton(gump, 25, y_activation+2, 2117, 2118, GF_CLOSE_BTN, 7);
+   
+   y_activation += 25;
+   GFTextLine(gump, 45, y_activation, _ifElse(GetObjProperty(item, "requires_item_delivery"), 520, 500), "Ativar por entrega de itens");
+   GFAddButton(gump, 25, y_activation+2, 2117, 2118, GF_CLOSE_BTN, 103);
+   
+   y_activation += 25;
+   GFTextLine(gump, 45, y_activation, 500, "Remover todos os modos");
+   GFAddButton(gump, 25, y_activation+2, 2117, 2118, GF_CLOSE_BTN, 104);
+   
+   GFAddButton(gump, 45, 350, 2453, 2454, GF_PAGE_BTN, 1);
+
+   return gump;
+endfunction
+
+program lever(who, item)
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1); //Adicionado para diminuir a quantidade de logs no arquivo script.log
+
+	var cfg := GetObjProperty(item,"configboss");
+		if  (cfg == error)
+			cfg := struct;
+			cfg.+boss := struct;
+		endif
+	
+   _resolveParams(who, item);
+   if ( !ReserveItem(item) || GetObjProperty(item, "#inuse") == 1 )
+      SendSysMessage(who, "O item esta em uso.");
+      return;
+   endif
+
+   if(who.cmdlevel > 0)
+      var gump := ConstructGump(item);
+      var res  := GFSendGump(who, gump);
+
+      var trapstrength := CInt(GetObjProperty(item,"trap_strength"));
+      if (!trapstrength) trapstrength := 2; endif
+
+      case(res[0])
+         //2: doorstatus(who, item);
+         3: bindlevers(who, item);
+         4: bindlights(who, item);
+         5: linkteleport(who, item);
+         6: unbindlevers(who, item);
+         7: togglewalkon(who, item);
+         8: reset(item, 1);
+         9: setPowerEvent(who, item);
+
+         15:
+            SetObjProperty(item, "HaveTrap", "Explosion");
+            AddTrap(item, "Explosion", trapstrength);
+         16:
+            SetObjProperty(item, "HaveTrap", "PoisonGas");
+            AddTrap(item, "PoisonGas", trapstrength);
+         17:
+            SetObjProperty(item, "HaveTrap", "Needle");
+            AddTrap(item, "Needle", trapstrength);
+         18:
+            SetObjProperty(item, "HaveTrap", "Magic");
+            AddTrap(item, "Magic", trapstrength);
+
+         20: item.graphic := 0x108e;           // graphic 1
+            item.name    := "alavanca";
+         21: item.graphic := 0x1095;           // graphic 2
+            item.name    := "alavanca";
+         22: item.graphic := 0x108f;           // graphic 3
+            item.name    := "interruptor";
+         23: item.graphic := 0x1092;           // graphic 4
+            item.name    := "interruptor";
+         24: setprp(who, item);           // setobjproperty()
+		 25: var graphic_lev := Cint(RequestGump(who, "Para que grafico a alavanca deve mudar?"));
+			if (!graphic_lev)
+			else
+			item.graphic := graphic_lev;
+			endif
+		 55: spawn_boss(who, item);
+		 56: efeitos (who, item);
+		 //98: setprp(who, item, res);           // setobjproperty()
+		 98: changegraphic(who, item);
+		 109: setMockMulti(who, item);
+         97: setOnofftext(who, item);
+         99: normalusage(who, item);           // use item like normal
+         100: setHiding(who, item);
+         101: setMoveObject(who, item);
+         102: setOpenDoor(who, item);
+		 103: ConfigureRequiredItems(who, item);
+		 130: SetGlobalEventGump(who, item);
+		// 131: SetPatogenico (who, item);
+		 104: RemoveActivationModes(who, item);  // Nova função para remover todos os modos
+		 108: toggleSyncToggle(who, item);  // Toggle sync mode for linked levers
+		 105: 	  foreach key in (res.keys) sleepms(2);
+   case (key)
+      106: // Mover primeiro
+         SetObjProperty(item, "sequence", 2);
+         SendSysMessage(who, "Configurado para mover objetos primeiro.");
+      107: // Gráfico primeiro
+         SetObjProperty(item, "sequence", 1);
+         SendSysMessage(who, "Configurado para mudar gráfico primeiro.");
+   endcase
+endforeach
+      endcase
+      return;
+   endif
+
+   normalusage(who, item);
+endprogram
+
+function CreatePatogenicoGump(item)
+
+   var alcance := GetObjProperty(item, "patog_alcance");
+   if (!alcance) alcance := 3; endif
+
+   var ciclos := GetObjProperty(item, "patog_ciclos");
+   if (!ciclos && ciclos != 0) ciclos := 1; endif
+
+   var duracao_nuvem := GetObjProperty(item, "patog_duracao_nuvem");
+   if (!duracao_nuvem) duracao_nuvem := 2; endif
+
+   var duracao_pat := GetObjProperty(item, "patog_duracao");
+   if (!duracao_pat) duracao_pat := 0; endif
+
+   var nivel := GetObjProperty(item, "patog_nivel");
+   if (!nivel) nivel := 1; endif
+
+   var gravidade := GetObjProperty(item, "patog_gravidade");
+   if (!gravidade) gravidade := "MODERADO"; endif
+
+   var gump := GFCreateGump();
+
+   GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 420, 620);
+   GFResizePic(gump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 400, 600);
+
+   GFTextMid(gump, 10, 20, 400, 2100, "Configuração – Nuvem Patogênica");
+
+   // =========================
+   // Campos numéricos
+   // =========================
+   GFTextLine(gump, 30, 60, 2100, "Alcance:");
+   GFTextEntry(gump, 220, 60, 80, 20, 2100, ""+alcance, 10);
+
+   GFTextLine(gump, 30, 90, 2100, "Ciclos até expansão:");
+   GFTextEntry(gump, 220, 90, 80, 20, 2100, ""+ciclos, 11);
+
+   GFTextLine(gump, 30, 120, 2100, "Duração da nuvem (ciclos):");
+   GFTextEntry(gump, 220, 120, 80, 20, 2100, ""+duracao_nuvem, 12);
+
+   GFTextLine(gump, 30, 150, 2100, "Duração do patógeno:");
+   GFTextEntry(gump, 220, 150, 80, 20, 2100, ""+duracao_pat, 13);
+
+   GFTextLine(gump, 30, 180, 2100, "Nível de infecção:");
+   GFTextEntry(gump, 220, 180, 80, 20, 2100, ""+nivel, 14);
+
+   // =========================
+   // Sintomas (IGUAL infectar)
+   // =========================
+   GFTextLine(gump, 30, 220, 2100, "Sintomas:");
+
+   GFCheckBox(gump, 30, 250, 2361, 2362, 0, 1);
+   GFTextLine(gump, 60, 250, 2100, "Febre");
+
+   GFCheckBox(gump, 30, 280, 2361, 2362, 0, 2);
+   GFTextLine(gump, 60, 280, 2100, "Trombo");
+
+   GFCheckBox(gump, 30, 310, 2361, 2362, 0, 3);
+   GFTextLine(gump, 60, 310, 2100, "Pústulas");
+
+   GFCheckBox(gump, 200, 250, 2361, 2362, 0, 4);
+   GFTextLine(gump, 230, 250, 2100, "Laceração");
+
+   GFCheckBox(gump, 200, 280, 2361, 2362, 0, 5);
+   GFTextLine(gump, 230, 280, 2100, "Prurido");
+
+   GFCheckBox(gump, 200, 310, 2361, 2362, 0, 6);
+   GFTextLine(gump, 230, 310, 2100, "Cólicas");
+
+   GFCheckBox(gump, 30, 340, 2361, 2362, 0, 7);
+   GFTextLine(gump, 60, 340, 2100, "Palpitações");
+
+   GFCheckBox(gump, 200, 340, 2361, 2362, 0, 8);
+   GFTextLine(gump, 230, 340, 2100, "Náusea");
+
+   GFCheckBox(gump, 30, 370, 2361, 2362, 0, 9);
+   GFTextLine(gump, 60, 370, 2100, "Cefaleia");
+
+   GFCheckBox(gump, 200, 370, 210, 211, 0, 50);
+   GFTextLine(gump, 230, 370, 3700, "Random (Selecione só ele!)");
+
+   // =========================
+   // Gravidade
+   // =========================
+   GFTextLine(gump, 30, 410, 2100, "Gravidade:");
+
+   GFRadioButton(gump, 30, 440, 210, 211, gravidade=="LEVE", 20);
+   GFTextLine(gump, 60, 440, 2100, "Leve");
+
+   GFRadioButton(gump, 30, 470, 210, 211, gravidade=="MODERADO", 21);
+   GFTextLine(gump, 60, 470, 2100, "Moderado");
+
+   GFRadioButton(gump, 30, 500, 210, 211, gravidade=="GRAVE", 22);
+   GFTextLine(gump, 60, 500, 2100, "Grave");
+
+   // =========================
+   // Botões
+   // =========================
+   GFAddButton(gump, 140, 540, 2128, 2129, GF_CLOSE_BTN, 100);
+   GFAddButton(gump, 230, 540, 2119, 2120, GF_CLOSE_BTN, 0);
+
+   return gump;
+endfunction
+
+function SetPatogenico(who, item)
+
+   SetObjProperty(item, "LEVER_PATOGENICO", 1);
+
+   var gump := CreatePatogenicoGump(item);
+   var input := GFSendGump(who, gump);
+
+   if (!input || input[0] == 0)
+      SendSysMessage(who, "Configuração da nuvem patogênica cancelada.");
+      return;
+   endif
+
+   // Ler campos de texto
+   var alcance := CInt(GFExtractData(input, 10));
+   var ciclos := CInt(GFExtractData(input, 11));
+   var duracao_nuvem := CInt(GFExtractData(input, 12));
+   var duracao_pat := CInt(GFExtractData(input, 13));
+   var nivel := CInt(GFExtractData(input, 14));
+
+   if (!alcance) alcance := 3; endif
+   if (!ciclos && ciclos != 0) ciclos := 1; endif
+   if (!duracao_nuvem) duracao_nuvem := 2; endif
+   if (!duracao_pat) duracao_pat := 0; endif
+   if (duracao_pat >= 5001)
+		SendSysMessageEx(who, "Duração do patogênico redefinida para o máximo permitido (5000 segundos)!", SSM_FAIL);
+		duracao_pat := 5000;
+	endif
+
+   if (!nivel) nivel := 1; endif
+
+   // Gravidade (radio buttons)
+   var gravidade := "";
+
+   if (input[20] && input[20] == 1)
+      gravidade := "Leve";
+   elseif (input[21] && input[21] == 1)
+      gravidade := "Moderado";
+   elseif (input[22] && input[22] == 1)
+      gravidade := "Grave";
+   endif
+
+   if (gravidade == "")
+      SendSysMessageEx(who, "Você precisa selecionar a gravidade da infecção.", SSM_FAIL);
+      return;
+   endif
+
+// =========================
+// Sintomas
+// =========================
+var sintomas := array{};
+
+if (input[1] && input[1] == 1)
+   sintomas.append(DISEASES::FEVER);
+endif
+if (input[2] && input[2] == 1)
+   sintomas.append(DISEASES::THROMBOSIS);
+endif
+if (input[3] && input[3] == 1)
+   sintomas.append(DISEASES::PUSTULES);
+endif
+if (input[4] && input[4] == 1)
+   sintomas.append(DISEASES::LACERATION);
+endif
+if (input[5] && input[5] == 1)
+   sintomas.append(DISEASES::ITCHING);
+endif
+if (input[6] && input[6] == 1)
+   sintomas.append(DISEASES::COLIC);
+endif
+if (input[7] && input[7] == 1)
+   sintomas.append(DISEASES::PALPITATIONS);
+endif
+if (input[8] && input[8] == 1)
+   sintomas.append(DISEASES::NAUSEA);
+endif
+if (input[9] && input[9] == 1)
+   sintomas.append(DISEASES::HEADACHE);
+endif
+
+if (input[50] && input[50] == 1)
+   sintomas := "random";
+endif
+
+   // Salvar propriedades
+   SetObjProperty(item, "patog_alcance", alcance);
+   SetObjProperty(item, "patog_ciclos", ciclos);
+   SetObjProperty(item, "patog_duracao_nuvem", duracao_nuvem);
+   SetObjProperty(item, "patog_duracao", duracao_pat);
+   SetObjProperty(item, "patog_nivel", nivel);
+   SetObjProperty(item, "patog_gravidade", gravidade);
+   SetObjProperty(item, "patog_sintomas", sintomas);
+
+   SendSysMessageEx(who, "Configuração da nuvem patogênica salva.", SSM_INFO);
+
+endfunction
+
+
+function RemoveActivationModes(who, item)
+   var opts := item.GetLeverOpts();
+   
+   // Remove modo walk-on
+   if (opts.walkon)
+      opts.-"walkon";
+      item.graphic := 0x108c; // Volta ao gráfico padrão da alavanca
+   endif
+   
+   // Remove modo de entrega de itens
+   EraseObjProperty(item, "required_items");
+   EraseObjProperty(item, "requires_item_delivery");
+   
+   item.setLeverOpts(opts);
+   SendSysMessageEx(who, "Todos os modos de ativação foram removidos.", SSM_INFO);
+endfunction
+
+function setMoveObject(who, item)
+   var opts := item.GetLeverOpts();
+
+   SendSysMessageEx(who, "Escolha o que você deseja mover.");
+   var trg;
+   var newarray := array{};
+   while(1 && who.connected)
+      trg := Target(who);
+      if(!trg)
+         break;
+      endif
+      newarray.append(trg.serial);
+      sleepms(2);
+      SendSysMessageEx(who, "Conectado", SSM_INFO);
+   endwhile
+
+   if (!newarray.size()) return; endif
+   if (!opts.movefinal) opts.movefinal := array{0, 0, 1}; endif
+   if (!opts.movetime) opts.movetime := 15; endif
+
+   var input_list := array{};
+   input_list.append(struct{ "title" := "Quantas vezes será repetido o movimento?", "marked" := ""+cint(opts.movetime) });
+   input_list.append(struct{ "title" := "Qual posição será movida? (+x +y +z)", "marked" := " ".join(opts.movefinal) });
+   var output := QuestionsGump(who, input_list);
+   if (!output)
+      return;
+   elseif (SplitWords(output[2]).size() < 3)
+      return;
+   endif
+
+   opts.moveitems := newarray;
+   opts.movetime := cint(output[1]);
+   opts.movefinal := SplitWords(output[2]);
+
+   EraseObjProperty(item, "moveinital");
+   item.setLeverOpts(opts);
+endfunction
+
+function setHiding(who, item)
+	var dif := (RadioGump(who, 0, 0, "Qual o level do interruptor?", array{"1", "2", "3", "4", "5", "Invisivel", "Remover"}, 0, 1));
+	if (dif == "Invisivel")
+		item.invisible := 1;
+		return;
+	endif
+   if (dif == "Remover")
+      EraseObjProperty(item, "level");
+      item.invisible := 0;     
+	return;
+   endif
+
+	SetObjProperty(item, "level", Cint(dif));
+	item.invisible := 1;
+endfunction
+
+function setPowerEvent(who, item)
+   var powerword := GetObjProperty(item, "powerword");
+   if (!powerword) powerword := ""; endif
+
+   var input_list := array{};
+   input_list.append(struct{ "title" := "Qual frase irá revelar a alavanca? (em branco para remover)", "marked" := powerword });
+   var output := QuestionsGump(who, input_list);
+   if (!output)
+      return;
+   endif
+
+   if (!output[1])
+      EraseObjProperty(item, "powerword");
+      if (!GetObjProperty(item, "level"))
+         item.invisible := 1;
+      endif
+   else
+      item.invisible := 1;
+      SetObjProperty(item, "powerword", lower(output[1]));
+   endif
+
+   SendSysMessageEx(who, "Frase para revelar alavanca adicionado", SSM_INFO);
+endfunction
+
+function changegraphic(who, item)
+   var opts := item.GetLeverOpts();
+   var newarray := array{};
+   SendSysMessage(who,"Escolha os itens que quer adicionar. Esc para terminar.");
+   var trg;
+   
+   while(1)
+      trg := Target(who);
+      if(!trg)
+         break;
+      endif
+      SetObjProperty(trg, "switched", 1);
+      SetObjProperty(trg, "originalgraphic", trg.graphic);
+      newarray.append(trg.serial);
+      var graphic := Cint(RequestGump(who, "Para que grafico o item deve mudar?"));
+	  SetObjProperty(trg, "graphicto", graphic);
+	  var nome_novo := Cstr(RequestGump(who, "Deseja mudar o nome do item? (Em branco para NÃO)"));
+	  SetObjProperty(trg, "old_name",trg.name);
+	  SetObjProperty(trg, "new_name", nome_novo);
+   endwhile
+
+   if (!newarray.size()) return; endif
+
+//   var graphic := Cint(RequestGump(who, "Para que grafico os itens devem mudar?."));
+   
+   //opts.graphicto := graphic;
+   opts.graphicarraysitem := newarray;
+   opts.changegraphicitem := 1;
+   item.setLeverOpts(opts);
+   SendSysMessageEx(who,"Os objetos foram ligados a alavanca.");
+endfunction
+
+function setOpenDoor(who, item)
+   var opts := item.GetLeverOpts();
+   var newarray := array{};
+   SendSysMessageEx(who,"Escolha a porta que você deseja linkar com esta alavanca. Esc para cancelar");
+   var trg;
+   while(1)
+         trg := Target(who);
+         if(!trg)
+            break;
+         elseif (!trg.isDoor())
+            SendSysMessageEx(who, "Isso não é uma porta", SSM_FAIL);
+            continue;
+         endif
+         newarray.append(trg.serial);
+         trg.locked := 1;
+         SendSysMessageEx(who,"Porta conectada.");
+   endwhile
+   if (!newarray.size()) return; endif
+
+   opts.opendoors := newarray;
+
+   item.setLeverOpts(opts);
+   SendSysMessageEx(who,"A alavanca foi ligada com as porta(s)");
+endfunction
+
+function setprp(who, item)
+   var opts := item.GetLeverOpts();
+   item.setLeverOpts(opts);
+
+   SendSysMessageEx(who,"As proprieades foram ligadas a alavanca");
+endfunction
+
+
+function setOnofftext(who, item)
+   var opts := item.GetLeverOpts();
+
+   if (!opts.ontext) opts.ontext := ""; endif
+
+   var input_list := array{};
+   input_list.append(struct{ "title" := "Qual frase será enviada quando alavanca for ativada? (não use acentos)", "marked" := opts.ontext });
+   var output := QuestionsGump(who, input_list);
+   if (!output)
+      return;
+   endif
+
+   if (!output[1])
+      opts.-"ontext";
+   else
+      opts.ontext := output[1];
+   endif
+
+   item.setLeverOpts(opts);
+   SendSysMessageEx(who, "Frase de acionamento adicionado", SSM_INFO);
+endfunction
+
+function linkteleport(who, item)
+   var opts := item.GetLeverOpts();
+
+   var loc := RequestGump(who, "Escreva o x, y, z e realm onde o usuario sera teleportado. Formato: x y z realm", "Deixe em branco para apagar o teleport");
+       loc := splitwords(loc);
+      if(loc [1] == error || loc[2] == error || loc[3] == error)
+         EraseObjProperty(item, "x_tp");
+         EraseObjProperty(item, "y_tp");
+         EraseObjProperty(item, "z_tp");
+         EraseObjProperty(item, "realm_tp");
+         SendSysMessageEx(who,"O teleporte foi cancelado/apagado");
+         opts.-"teleport_to";
+      else
+         var x := SetObjProperty(item, "x_tp", loc[1]);
+         var y := SetObjProperty(item, "y_tp", loc[2]);
+         var z := SetObjProperty(item, "z_tp", loc[3]);
+         var realm := SetObjProperty(item, "realm_tp", loc[4]);
+         if (!realm)
+            SetObjProperty(item, "realm_tp", who.realm); // If no realm specified, use current realm
+         endif
+		 var tp_all := RequestGump(who, "Se quiser que teleport todos em uma área digite o tamanho do range, caso contrário deixe em branco");
+			if (tp_all != 0)
+				SetObjProperty(item, "teleport_all", Cint(tp_all));
+			endif
+      opts.teleport_to := 1;
+      SendSysMessageEx(who,"O teleporte foi adicionado a alavanca");
+      endif
+   item.setLeverOpts(opts);
+endfunction
+
+function doorstatus(who, item)
+   var opts := item.GetLeverOpts();
+   var newarray := array{};
+   SendSysMessageEx(who,"Escolha a porta que você deseja linkar com esta alavanca. Esc para cancelar", SSM_REQUEST);
+   var trg;
+   while(1)
+      trg := Target(who);
+      if(!trg)
+         break;
+      elseif (!trg.isDoor())
+         SendSysMessageEx(who, "Isso não é uma porta", SSM_FAIL);
+         continue;
+      endif
+      newarray.append(trg.serial);
+   endwhile
+
+   if (!newarray.size()) return; endif
+
+   opts.doorstatus := newarray;
+   item.setLeverOpts(opts);
+
+   SendSysMessageEx(who,"As portas foram ligadas a alavanca");
+endfunction
+
+function bindlights(who, item)
+   var opts := item.GetLeverOpts();
+   var newarray := array{};
+   SendSysMessageEx(who,"Escolha as luzes que você deseja linkar com esta alavanca. Esc para cancelar", SSM_REQUEST);
+   var trg;
+   while(1)
+      trg := Target(who);
+      if(!trg)
+         break;
+      endif
+      newarray.append(trg.serial);
+       SetObjProperty(trg,"switched", 1);
+      SendSysMessageEx(who,"Luz conectada.");
+   endwhile
+
+   if (!newarray.size()) return; endif
+
+   opts.lights := newarray;
+   item.setLeverOpts(opts);
+
+   SendSysMessageEx(who,"As luzes foram ligadas a alavanca");
+endfunction
+
+function bindlevers(who, item)
+   var opts := item.GetLeverOpts();
+   SendSysMessageEx(who,"Escolha as alavancas que você deseja linkar com esta alavanca. Esc para cancelar", SSM_REQUEST);
+   SendSysMessageEx(who,"As alavancas escolhidas perderão suas proprieades", SSM_INFO);
+   SendSysMessageEx(who,"em conjunto com esta alavanca", SSM_INFO);
+   var trg;
+   var newarray := array{};
+   while(1)
+      sleepms(2);
+	  trg := Target(who);
+      if(!trg)
+         break;
+      elseif (trg.objtype != 0x108c)
+         SendSysMessageEx(who,"Isso não é uma alavanca.");
+         continue;
+      endif
+
+      newarray.append(trg.serial);
+      SetObjProperty(item, "switched", 0);
+      trg.setLeverOpts(struct{ "is_linked" := item.serial });
+      SendSysMessageEx(who,"Alavanca conectada.");
+   endwhile
+
+   if (!newarray.size()) return; endif
+
+   opts.linked_to := newarray;
+   var input_list := array{};
+   input_list.append(struct{ "title" := "Todas as alavancas devem ser acionadas?", "marked" := cint(opts.all_levers)+1, "radio" := array{"Não", "Sim"} });
+   input_list.append(struct{ "title" := "Precisam ordem para serem acionadas?", "marked" := _getOrderOption(opts.all_levers_order), "radio" := array{"Não", "Sim (ordem selecionada)", "Random"} });
+   var output := QuestionsGump(who, input_list);
+   if (!output)
+      return;
+   endif
+
+   opts.all_levers := cint(output[1] == "Sim");
+  // Definir o tipo de ordem baseado na resposta
+   if (output[2] == "Não")
+      opts.all_levers_order := 0;
+   elseif (output[2] == "Sim (ordem selecionada)")
+      opts.all_levers_order := 1;
+   elseif (output[2] == "Random")
+      opts.all_levers_order := 2;
+   endif
+
+   item.setLeverOpts(opts);
+    // Definir ordem baseada na opção escolhida
+   if (opts.all_levers_order == 1)
+      // Ordem selecionada: usar a ordem que o player selecionou
+      var leverorder := array{item.serial} + opts.linked_to;
+      SetObjProperty(item, "leverorder", leverorder);
+   elseif (opts.all_levers_order == 2)
+      // Ordem random: usar SetRandomOrder
+      SetRandomOrder(item);
+   else
+      // Sem ordem específica
+      EraseObjProperty(item, "leverorder");
+   endif
+   SendSysMessageEx(who,"As alavancas foram ligadas a esta alavancas");
+endfunction
+
+// Função auxiliar para determinar qual opção está marcada no gump
+function _getOrderOption(order_type)
+   case(order_type)
+      0: return 1; // "Não"
+      1: return 2; // "Sim (ordem selecionada)"
+      2: return 3; // "Random"
+      default: return 1;
+   endcase
+endfunction
+
+function unbindlevers(who, item)
+   var opts := item.GetLeverOpts();
+   if (opts.linked_to)
+      foreach item in (opts.linked_to)
+         item := SystemFindObjectBySerial(item);
+         item.SetLeverOpts(struct{});
+         sleepms(2);
+      endforeach
+      opts.-"linked_to";
+      item.setLeverOpts(opts);
+   elseif (opts.is_linked)
+      var origin_lever := SystemFindObjectBySerial(opts.is_linked);
+      var origin_props := origin_lever.GetLeverOpts();
+      if (origin_props.linked_to)
+         var index := FindInArray(origin_props.linked_to, item.serial);
+         if (index)
+            origin_props.linked_to.Erase(index);
+            if (!origin_props.linked_to.size())
+               origin_props.-"linked_to";
+            endif
+            origin_lever.setLeverOpts(origin_props);
+         endif
+         SetRandomorder(origin_lever);
+      endif
+      opts.-"is_linked";
+      item.setLeverOpts(opts);
+   endif
+endfunction
+
+function togglewalkon(who, item)
+   var opts := item.GetLeverOpts();
+   if (opts.walkon)
+      SendSysMessageEx(who, "O item não será mais ativado ao andar por cima", SSM_FAIL);
+      opts.-"walkon";
+   else
+      SendSysMessageEx(who, "O item será ativado ao andar por cima. O graphic alterado para padrão passable, se quiser pode alterar por outro passable nas opções da alavanca", SSM_INFO);
+      opts.walkon := 1;
+	  item.graphic := 0x0523;
+   endif
+   item.setLeverOpts(opts);
+endfunction
+
+function toggleSyncToggle(who, item)
+   var opts := item.GetLeverOpts();
+   if (opts.sync_toggle)
+      SendSysMessageEx(who, "Modo sincronizado desativado. As alavancas funcionarão de forma independente.", SSM_FAIL);
+      opts.-"sync_toggle";
+   else
+      SendSysMessageEx(who, "Modo sincronizado ativado. Qualquer alavanca pode ligar/desligar o mecanismo.", SSM_INFO);
+      opts.sync_toggle := 1;
+      // Disable all_levers when sync_toggle is enabled (they are mutually exclusive)
+      if (opts.all_levers)
+         opts.-"all_levers";
+         opts.-"all_levers_order";
+         EraseObjProperty(item, "leverorder");
+         SendSysMessageEx(who, "Nota: Modo 'todas as alavancas' foi desativado automaticamente.", SSM_INFO);
+      endif
+   endif
+   item.setLeverOpts(opts);
+endfunction
+
+function spawn_boss(who, item)
+   var opts := item.GetLeverOpts();
+
+   // Ask where the boss should spawn
+   Message("Selecione o local onde deseja que o boss apareça (CUIDADO: o local tem que ser passable!)").SetColor(SSM_INFO).SendSys(who);
+   var trg_boss := TargetCoordinates(who);
+   if (!trg_boss)
+      Message("Cancelado").SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   if (CheckImpassable(trg_boss.objtype) == 1)
+      Message("Essa não é uma localização válida").SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   var loc := RequestGump(who, "Você quer definir como essa localização mesmo ou deseja alterar algum valor?", "", ""+Cint(trg_boss.x)+" "+Cint(trg_boss.y)+" "+Cint(trg_boss.z)+ " " +Cstr(trg_boss.realm), 1);
+   if (loc == error)
+      Message("Cancelado").SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   loc := SplitWords(loc);
+   if (loc[1] == "nada")
+      SetObjProperty(item, "spawn_at_lever", 1);
+   else
+      SetObjProperty(item, "spawn_x", CInt(loc[1]));
+      SetObjProperty(item, "spawn_y", CInt(loc[2]));
+      SetObjProperty(item, "spawn_z", CInt(loc[3]));
+      EraseObjProperty(item, "spawn_at_lever");
+   endif
+
+   var text_above := RequestGump(who, "Escreva o que deseja que apareça em textabove na criatura, se não quer deixe em branco");
+   if (text_above && text_above != "")
+      SetObjProperty(item, "spawn_textabove", text_above);
+   else
+      EraseObjProperty(item, "spawn_textabove");
+   endif
+
+   // Configure respawn cooldown time
+   var respawn_min := RequestGump(who, "Tempo mínimo de respawn em MINUTOS (deixe em branco para usar padrão de 120 min)", "", "120");
+   if (respawn_min && respawn_min != "")
+      SetObjProperty(item, "respawn_min", CInt(respawn_min));
+   else
+      SetObjProperty(item, "respawn_min", 120);
+   endif
+
+   var respawn_max := RequestGump(who, "Tempo máximo de respawn em MINUTOS (deixe em branco para usar padrão de 150 min)", "", "150");
+   if (respawn_max && respawn_max != "")
+      SetObjProperty(item, "respawn_max", CInt(respawn_max));
+   else
+      SetObjProperty(item, "respawn_max", 150);
+   endif
+
+   // Call the epicboss command to configure the boss
+   Message("Agora configure o boss usando o sistema Epic Boss...").SetColor(SSM_INFO).SendSys(who);
+   var result := start_script(":epicspawn:commands/gm/epicboss", array{who, item});
+   if (result == error)
+      Message("Erro ao iniciar o configurador de boss: " + result.errortext).SetColor(SSM_FAIL).SendSys(who);
+      return;
+   endif
+
+   // The epicboss command will save the form_data to the item
+   // Wait a bit to ensure the script has started
+   sleepms(100);
+
+   opts.spawn_boss := 1;
+   item.setLeverOpts(opts);
+
+   Message("Configuração da alavanca com boss concluída!").SetColor(SSM_INFO).SendSys(who);
+endfunction
+
+function efeitos(who, item)
+   var opts := item.GetLeverOpts();
+   
+   var result := CheckBoxGump(who, 150, 200, "Opções de Efeito", {"Tremor","Clima","Nuvem Patogênica","Sons","Apagar"});
+   foreach r in result
+	  sleepms(2);
+      if (r == "Tremor")
+         opts.tremor := 1;
+         var loc := RequestGump(who, "*TREMOR* Escreva na seguinte ordem: o dano base, o dano aleatório, o diff para teste de resitência e o range", "(Os valores abaixo são os padrões)", "15 85 60 10");
+         loc := splitwords(loc);
+         var tremor_config := array{};
+         tremor_config.append(Cint(loc[1]));
+         tremor_config.append(Cint(loc[2]));
+         tremor_config.append(Cint(loc[3]));
+         tremor_config.append(Cint(loc[4]));
+         SetObjProperty(item,  "tremor_cfg", tremor_config);
+         SendSysMessageEx(who, "O efeito area (tremor) estah ativo", SSM_INFO);
+         opts.efeitos := 1;
+	elseif (r == "Nuvem Patogênica")
+		opts.nuvem := 1;
+		SetPatogenico (who, item);
+		opts.efeitos := 1;
+      elseif (r ==  "Clima")
+         opts.clima := 1;
+
+         var result2 := RadioGump(who, 220, 250, "Opcoes de Clima", {"Chuva","Neve","Vento","Vento Forte","Tempestade","Tempestade de Raios"});
+            if (result2 == "Chuva")
+               SetObjProperty(item, "clima", 1);
+            elseif (result2 == "Neve")
+               SetObjProperty(item, "clima", 2);
+            elseif (result2 == "Vento")
+               SetObjProperty(item, "clima", 5);
+            elseif (result2 == "Vento Forte")
+               SetObjProperty(item, "clima", 6);
+            elseif (result2 == "Tempestade")
+               SetObjProperty(item, "clima", 3);
+            elseif (result2 == "Tempestade de Raios")
+               SetObjProperty(item, "clima", 4);
+            endif
+         var loc2 := RequestGump(who, "*CLIMA* Escreva na seguinte ordem: duração do efeito e range", "(Os valores abaixo são os padrões)", "20 10");
+         loc2 := splitwords(loc2);
+         var clima_config := array{};
+         clima_config.append(Cint(loc2[1]));
+         clima_config.append(Cint(loc2[2]));
+         SetObjProperty(item,  "clima_cfg", clima_config);
+         SendSysMessageEx(who, "O efeito area (clima) estah ativo", SSM_INFO);
+         opts.efeitos := 1;
+	  elseif (r == "Sons")
+		var sons_op := RadioGump(who, 150, 200, "Opções de Sons", {"Som Inicial/Acionamento","Som Final/Efeito"});
+			if (sons_op == "Som Inicial/Acionamento")
+				var som1_request := RequestGump(who, "Escreva o id do som de acionamento (use .sfx <sfx/mid> id_sound para testar o som)");			
+				SetObjProperty(item, "som_inicial", som1_request);
+			elseif (sons_op == "Som Final/Efeito")
+				var som2_request := RequestGump(who, "Escreva o id do som de efeito/final (use <.sfx <sfx/mid> id_sound> para testar o som)");	
+				opts.somfim := 1;
+				SetObjProperty(item, "Som_fim", som2_request);
+			endif
+         SendSysMessageEx(who, "Os sons foram configurados!", SSM_INFO);
+      elseif (r == "Apagar")
+         EraseObjProperty(item, "clima_cfg");
+         EraseObjProperty(item, "tremor_cfg");
+         EraseObjProperty(item, "clima");
+		EraseObjProperty(item, "som_inicial");
+		EraseObjProperty(item, "Som_fim");
+		opts.-"somfim";
+         opts.-"clima";
+         opts.-"tremor";
+		 opts.-"nuvem";
+		 EraseObjProperty(item, "LEVER_PATOGENICO");
+		 EraseObjProperty(item, "patog_alcance");
+		 EraseObjProperty(item, "patog_ciclos");
+		 EraseObjProperty(item, "patog_duracao");
+		 EraseObjProperty(item, "patog_duracao_nuvem");
+		 EraseObjProperty(item, "patog_gravidade");
+		 EraseObjProperty(item, "patog_nivel");
+		 EraseObjProperty(item, "patog_sintomas");
+         opts.efeitos := 0;
+         SendSysMessageEx(who, "Os efeitos foram deletados", SSM_FAIL);
+      endif
+   endforeach
+   
+   item.setLeverOpts(opts);
+endfunction
+
+function ConfigureRequiredItems(who, item)
+   var opts := item.GetLeverOpts();
+   
+   var choice := RadioGump(who, 200, 250, "Configurar Entrega de Itens", {"Configurar itens necessários", "Remover configuração"});
+   
+   if (choice == "Configurar itens necessários")
+      var required_items := array{};
+      SendSysMessage(who, "Configure os itens necessários para ativar a alavanca.");
+      SendSysMessage(who, "Escolha os itens que devem ser entregues. ESC para terminar.");
+      
+      var target_item := Target(who);
+      while (target_item)
+         sleepms(2);
+		 var amount := CInt(RequestGump(who, "Quantidade necessária deste item:", "1", "", 1));
+         if (amount > 0)
+            required_items.append(struct{
+               "objtype" := target_item.objtype,
+               "amount" := amount,
+               "desc" := target_item.desc
+            });
+            SendSysMessage(who, "Adicionado: " + amount + "x " + target_item.desc);
+         endif
+         target_item := Target(who);
+      endwhile
+      
+      if (required_items.size() > 0)
+         SetObjProperty(item, "required_items", required_items);
+         SetObjProperty(item, "requires_item_delivery", 1);
+         SendSysMessageEx(who, "Configuração salva. A alavanca agora requer entrega de " + required_items.size() + " tipos de itens.", SSM_INFO);
+      else
+         SendSysMessageEx(who, "Configuração cancelada.", SSM_FAIL);
+      endif
+      
+   elseif (choice == "Remover configuração")
+      EraseObjProperty(item, "required_items");
+      EraseObjProperty(item, "requires_item_delivery");
+      SendSysMessageEx(who, "Configuração de entrega de itens removida.", SSM_INFO);
+   endif
+endfunction
+
+function SetGlobalEventGump(who, item)
+   var current_event := GetObjProperty(item, "nature_event");
+   var current_text := "";
+   if (current_event)
+      current_text := "Atual: " + current_event;
+   endif
+   
+   var result := CheckBoxGump(who, 290, 350, "Global Events - " + current_text, 
+                             {"dia","noite","Primavera","Verão","Outono","Inverno",
+                              "Kalendae - Lua Nova","Nonae - Lua Crescente","Idus - Lua Cheia","Decrescens - Lua Minguante","Remover"});
+   
+foreach r in result
+   sleepms(2);
+   if (r == "dia")
+      SetObjProperty(item, "nature_event", "dia");
+      AddEventLever(item, r);
+      sleepms(5);
+   elseif (r == "noite")
+      SetObjProperty(item, "nature_event", "noite");
+      AddEventLever(item, r);
+      sleepms(5);
+   elseif (r == "Primavera")
+      SetObjProperty(item, "nature_event", r);
+      AddEventLever(item, r);
+      sleepms(5);
+   elseif (r == "Verão")
+      SetObjProperty(item, "nature_event", r);
+      AddEventLever(item, r);
+      sleepms(5);
+   elseif (r == "Outono")
+      SetObjProperty(item, "nature_event", r);
+      AddEventLever(item, r);
+      sleepms(5);
+   elseif (r == "Inverno")
+      SetObjProperty(item, "nature_event", r);
+      AddEventLever(item, r);
+      sleepms(5);
+   elseif (r == "Kalendae - Lua Nova")
+      SetObjProperty(item, "nature_event", "Kalendae");
+      AddEventLever(item, "Kalendae");
+      sleepms(5);
+   elseif (r == "Nonae - Lua Crescente")
+      SetObjProperty(item, "nature_event", "Nonae");
+      AddEventLever(item, "Nonae");
+      sleepms(5);
+   elseif (r == "Idus - Lua Cheia")
+      SetObjProperty(item, "nature_event", "Idus");
+      AddEventLever(item, "Idus");
+      sleepms(5);
+   elseif (r == "Decrescens - Lua Minguante")
+      SetObjProperty(item, "nature_event", "Decrescens");
+      AddEventLever(item, "Decrescens");
+      sleepms(5);
+   elseif (r == "Remover")
+      RemoveEventLever(item);
+	  break;
+   endif
+   CheckNatureEvent(item);
+endforeach
+endfunction
+
+function AddEventLever(item, event_type)
+   var opts := item.GetLeverOpts();
+   var ds := OpenDataFile(":itemutils:lever_events2");
+   if (!ds)
+      ds := CreateDataFile(":itemutils:lever_events2");
+      if (!ds)
+         return;
+      endif
+   endif
+   
+   var elem := ds.FindElement(event_type);
+   if (!elem)
+      elem := ds.CreateElement(event_type);
+      if (!elem)
+         return;
+      endif
+   endif
+   
+   var serial_str := Hex(item.serial);
+   if (serial_str[1,2] == "0x")
+      serial_str := serial_str[3,len(serial_str)];
+   endif
+   
+   // Pega a lista atual de levers
+   var current_levers := DFGetProp(elem, "levers");
+   
+   var new_levers;
+   
+   // Se não existe propriedade ou é vazia/error
+   if (!current_levers || current_levers == error || current_levers == "")
+      new_levers := serial_str;
+   else
+      // Verifica se já existe usando SplitWords para busca precisa
+      var lever_list := SplitWords(current_levers);
+      var already_exists := 0;
+      
+      foreach existing_serial in lever_list
+         if (existing_serial == serial_str)
+            already_exists := 1;
+            break;
+         endif
+      endforeach
+      
+      if (already_exists)
+         new_levers := current_levers;
+      else
+         new_levers := current_levers + " " + serial_str;
+      endif
+   endif
+      
+   // Salva a propriedade
+   elem.SetProp("levers", new_levers);
+   
+   // Verificação final
+   var final_check := DFGetProp(elem, "levers");
+      
+   opts.nature_event := 1;
+   item.setLeverOpts(opts);
+endfunction
+
+function RemoveEventLever(item)
+   var opts := item.GetLeverOpts();
+   var ds := OpenDataFile(":itemutils:lever_events2");
+   var serial_str := Hex(item.serial);
+   var found_and_removed := 0;
+   var keys_ds := ds.Keys();
+   // Pega todas as seções do DS automaticamente
+   foreach event in keys_ds
+      var elem := ds.FindElement(event);
+      if (elem)
+         var lever_list := GetConfigStringArray(elem, "levers");
+         if (lever_list)
+            var new_list := array{};
+            var found_in_this_event := 0;
+            
+            foreach serial in lever_list
+               if (serial != serial_str)
+                  new_list.append(serial);
+               else
+                  found_in_this_event := 1;
+                  found_and_removed := 1;
+               endif
+            endforeach
+            
+            // Se encontrou o serial neste evento, atualiza a lista
+            if (found_in_this_event)
+               if (new_list.size() > 0)
+                  elem.SetProp("levers", new_list);
+               else
+                  elem.EraseProp("levers");
+               endif
+            endif
+         endif
+      endif
+   endforeach
+   
+   if (found_and_removed)
+      ds.SaveFile();
+   endif
+   EraseObjProperty(item, "nature_event");
+   opts.-"nature_event";
+   item.setLeverOpts(opts);
+   return found_and_removed;
+endfunction

@@ -1,0 +1,49 @@
+/*
+ * $Id: clumsy.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+*/
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	params := 0; // Not needed anymore.
+
+	if (GetObjProperty(mobile, "#ClumsyMod"))
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+
+	if (GetObjProperty(mobile, "#FeebleMindMod"))
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+
+	if (GetObjProperty(mobile, "#WeakenMod"))
+		// Condition is met if the mobile logs out and back in.
+		// Prevents mod from being applied twice.
+		return 0;
+	endif
+
+	var cast_points := CInt(AP_GetSkill(attacker, ARCANA));
+	var int_bonus := CInt(AP_GetStat(attacker, INTELLIGENCE));
+	cast_points := CInt(((int_bonus - 50) / 10) + (cast_points / 10));
+	var final := cast_points;
+	var points := cint(final * -1);
+
+	SetObjProperty(mobile, "#ClumsyMod", points);
+	AP_ModifyStatMod(mobile, DEXTERITY, points);
+
+	SetObjProperty(mobile, "#WeakenMod", points);
+	AP_ModifyStatMod(mobile, STRENGTH, points);
+
+	SetObjProperty(mobile, "#FeebleMindMod", points);
+	AP_ModifyStatMod(mobile, INTELLIGENCE, points);
+
+	return 1;
+endprogram

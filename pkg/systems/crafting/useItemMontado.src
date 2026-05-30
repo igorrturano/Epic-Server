@@ -1,0 +1,54 @@
+use os;
+use uo;
+use cfgfile;
+
+include ":message:include/model/Message";
+include "/include/epicPropNames";
+include "/include/epicConstants";
+include ":gumps:/include/epicGumps";
+include ":gumps:/include/posicaoGump";
+include ":crafting:/gumps/fabricacaoGumps";
+
+program useItemMontado(quem, item)
+
+	var profissaoConfig := ReadConfigFile(PROFISSAO_CONFIG_PATH);
+	var itensCfg := ReadConfigFile(":*:itemdesc");
+	var propFabricado := GetObjProperty(item, PROPNAME_FABRICADO);
+	var profissao := propFabricado.receita.profissao;
+	var estacoesValidas := GetConfigStringArray(profissaoConfig[profissao], "EstacoesValidas");
+	estacoesValidas := SplitWords(estacoesValidas);
+
+	var stringEstacoes := "";
+	foreach estacao in estacoesValidas
+		Sleepms(2);
+		if(estacao)
+			if(estacao != CRAFTING_ESTACAO_SUPERFICIE)
+				var elemEstacao := itensCfg[cint(estacao)];
+				if(!elemEstacao)
+					continue;
+				endif
+				var nome := elemEstacao.desc ? elemEstacao.desc : elemEstacao.name;
+				var jaInseriada := Find(stringEstacoes, nome, 1) > 0 ;
+
+				if(jaInseriada)
+					continue;
+				endif
+				stringEstacoes += elemEstacao.desc ? elemEstacao.desc : elemEstacao.name + " ";
+			else
+				stringEstacoes += "Qualquer superfície "; 
+			endif
+		else
+				stringEstacoes += " [Erro Verificar com a Staff]"; 
+		endif
+	endforeach
+	
+	Message("Selecione uma estação válida [{}]".format(Trim(stringEstacoes))).SendSys(quem);
+	var alvo := TargetCoordinates(quem);
+	if (alvo)
+		Message("Processo de Tratamento iniciado!".format(Trim(stringEstacoes))).SendSys(quem);
+		Start_Script(":crafting:gerenteTratamentoProduto", array{ quem, item, alvo });
+	else
+		Message("Alvo cancelado.".format(Trim(stringEstacoes))).SendSys(quem);
+	endif
+	return;
+endprogram

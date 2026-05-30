@@ -1,0 +1,33 @@
+include "include/say";
+include "include/dungeons";
+include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (!InDarkness(who))
+		SendSysMessage(who, "Voce precisa estar na escuridao para usar essa habilidade.");
+		return 0;
+	endif
+
+	SC_RemoveEffect(who, CInt(spell.id));
+
+	var duration := CInt(AP_GetSkill(who, ARCANA) / 2.5);
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::VALDRUK))
+		duration := CInt(duration * 1.5);
+	endif
+
+	var opts := struct{};
+	opts.+color := 30000;
+	opts.+evasionchance_mod := 20;
+	opts.+desc := "Forma Espectral";
+
+	SC_ApplyEffect(who, who, opts, duration, CInt(spell.id));
+	SendSysMessageEx(who, "Voce assume uma forma espectral.", SSM_INFO);
+endprogram

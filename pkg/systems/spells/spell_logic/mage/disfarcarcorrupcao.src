@@ -1,0 +1,38 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/tileEffects";
+include ":attributes:attributes";
+
+program SpellScript(params)
+	var who := params[1];
+	params := 0; // No longer needed
+
+	// Check if already has the effect active
+	if (GetCooldown(who, "necrotic"))
+		Message("Você já está disfarçando sua corrupção.")
+		.SetColor(SYSTEM_COLOR::FAIL)
+		.SendSys(who);
+		return 0;
+	endif
+
+	// Calculate duration based on Arcana skill (5 minutes + 1 minute per 20 Arcana)
+	var arcana_skill := CInt(AP_GetSkill(who, ARCANA));
+	var duration := (arcana_skill * 60 * 6);
+	// Apply the necrotic disguise cooldown
+	SetCooldown(who, "necrotic", duration);
+
+	Message("Sombras envolvem sua alma, obscurecendo sua verdadeira natureza...").SetColor(SYSTEM_COLOR::SUCCESS).SendSys(who);
+	Message("Sua corrupção está disfarçada por {} minutos!".format(CInt(duration/60))).SetColor(SYSTEM_COLOR::SUCCESS).SendSys(who);
+
+	// Visual and sound effects
+	PlayObjectCenteredEffect(who, FX_POISON_DEATH, 0, 10);
+	PlaySoundEffect(who, 0x483);
+
+	return 1;
+endprogram

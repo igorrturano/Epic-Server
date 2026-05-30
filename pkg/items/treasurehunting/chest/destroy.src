@@ -1,0 +1,83 @@
+use uo;
+use os;
+
+include ":treasurehunting:diggingEffects";
+
+program destroy_chest(chest)
+	if (!chest)
+		return;
+	endif
+
+	// Initialize destruction time
+	var destroy_at := GetObjProperty(chest, "DestroyAt");
+	if (!destroy_at)
+		destroy_at := ReadGameClock() + 120;
+		SetObjProperty(chest, "DestroyAt", destroy_at);
+		SetObjProperty(chest, "CreatedOn", ReadGameClock());
+	endif
+
+	// Single wait loop until destruction time
+	while (chest && chest.graphic)
+		if (!CheckChestStatus(chest))
+			return;
+		endif
+
+		var time_left := destroy_at - ReadGameClock();
+		if (time_left <= 0)
+			break;
+		endif
+
+		Sleep(5);
+	endwhile
+
+	if (chest)
+		DestroyTreasureChest(chest);
+	endif
+endprogram
+
+function CheckChestStatus(chest)
+	if (!chest || !chest.serial || !chest.graphic)
+		return 0;
+	endif
+	if (GetObjProperty(chest, "ChestAborted") == 1)
+		return 0;
+	endif
+	if (GetObjProperty(chest, "CreatedOn") == error)
+		return 0;
+	endif
+	if (GetObjProperty(chest, "DestroyAt") == error)
+		return 0;
+	endif
+	return 1;
+endfunction
+
+function DestroyTreasureChest(chest)
+	if (!CheckChestStatus(chest))
+		return;
+	endif
+
+	var cleaned_items := CleanupChestDirt(chest);
+	var items_count := EnumerateItemsInContainer(chest).size();
+
+	var level := GetObjProperty(chest, "level");
+	if (level == error)
+		level := GetObjProperty(chest, "MapLevel");
+	endif
+	if (level == error)
+		level := "Desconhecido";
+	endif
+
+	var found_by := GetObjProperty(chest, "FoundBy");
+	if (found_by != error)
+		var finder := SystemFindObjectBySerial(found_by, SYSFIND_SEARCH_OFFLINE_MOBILES);
+		if (finder)
+			found_by := finder.name;
+		else
+			found_by := "Desconhecido";
+		endif
+	else
+		found_by := "Desconhecido";
+	endif
+
+	DestroyItem(chest);
+endfunction

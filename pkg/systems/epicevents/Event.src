@@ -1,0 +1,852 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:requestGump";
+include ":epicevents:View/EventGumpBuilder";
+include ":epicevents:Controller/EventEditorController";
+include ":epicevents:Model/EventConfig";
+include ":message:model/Message";
+include "include/utility";
+
+// Menu button IDs
+const BTN_MENU_VIEW := 100;
+const BTN_MENU_EDIT_TRIGGER := 101;
+const BTN_MENU_EDIT_ACTIONS := 102;
+const BTN_MENU_EDIT_CONDITION := 105;
+const BTN_MENU_DELETE := 103;
+const BTN_MENU_RESET_COOLDOWN := 104;
+
+program Event(who, item := 0)
+	if (who.cmdlevel < 2)
+		Message("Voce nao tem permissao para usar este comando.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	// Branch based on whether item has config
+	if (item && GetObjProperty(item, "config"))
+		// EDIT MODE - double-clicked existing event
+		return EditEventFlow(who, item);
+	else
+		// CREATE MODE - called from command or new item
+		return CreateEventFlow(who);
+	endif
+endprogram
+
+// ============================================================================
+// CREATE FLOW - Wizard to create new event
+// ============================================================================
+function CreateEventFlow(who)
+	// Step 1: Select trigger type
+	var trigger_gump := BuildTriggerSelectionGump();
+	var trigger_input := GFSendGump(who, trigger_gump);
+
+	if (!trigger_input)
+		Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	// Determine trigger type from button pressed
+	var trigger_type := ParseTriggerSelection(trigger_input);
+	if (!trigger_type)
+		Message("Nenhum gatilho selecionado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	Message($"Gatilho selecionado: {trigger_type}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+
+	// Step 2: Configure trigger parameters and delays (with Target button loop)
+	var working_params := struct{};
+	var config_result;
+	var trigger_config_loop := 1;
+
+	while (trigger_config_loop)
+		var config_gump := BuildTriggerConfigGump(trigger_type, working_params);
+		var config_input := GFSendGump(who, config_gump);
+
+		if (!config_input)
+			Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
+		endif
+
+		// Check for Target button (ITEM_GIVEN)
+		if (config_input[BTN_TRIGGER_TARGET_ITEM])
+			Message("Selecione o item para adicionar a lista.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			var targ := Target(who);
+			if (targ)
+				var current_list := Trim(GFExtractData(config_input, ID_TRIGGER_ITEMS_LIST));
+				if (current_list && current_list != "")
+					current_list := current_list + $", {Hex(targ.objtype)}:1";
+				else
+					current_list := $"{Hex(targ.objtype)}:1";
+				endif
+				working_params.+items_list := current_list;
+			endif
+			continue;
+		endif
+
+		config_result := ParseTriggerConfigInput(config_input, trigger_type);
+		if (!config_result)
+			if (trigger_type == "SPEECH")
+				Message("Palavra-chave obrigatoria para gatilho de fala!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			elseif (trigger_type == "ITEM_GIVEN")
+				Message("Pelo menos um item deve ser configurado!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			else
+				Message("Configuracao invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			endif
+			return 0;
+		endif
+
+		trigger_config_loop := 0;
+	endwhile
+
+	var trigger_params := config_result.trigger_params;
+	var min_delay := config_result.min_delay;
+	var max_delay := config_result.max_delay;
+	var one_time_only := config_result.one_time_only;
+
+	// Step 3: Configure actions and conditions
+	var actions := array{};
+	var event_condition := 0;
+	var action_loop := 1;
+
+	while (action_loop)
+		var action_list_gump := BuildActionListGump(actions, event_condition);
+		var action_list_input := GFSendGump(who, action_list_gump);
+
+		var action_result := ParseActionListInput(action_list_input);
+
+		case (action_result.action)
+			"cancel":
+				Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+				return 0;
+
+			"done":
+				action_loop := 0;
+
+			"add":
+				var type_gump := BuildActionTypeSelectionGump();
+				var type_input := GFSendGump(who, type_gump);
+				var action_type := ParseActionTypeSelectionInput(type_input);
+
+				if (!action_type)
+					Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+					continue;
+				endif
+
+				var temp_action := 0;
+				var new_action := HandleActionEdit(who, action_type, temp_action);
+
+				if (!new_action)
+					Message("Acao cancelada ou invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+
+				actions.append(new_action);
+				Message($"Acao adicionada: {GetActionDescription(new_action)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+			"edit":
+				var index := action_result.index;
+
+				if (index < 1 || index > actions.size())
+					Message("Indice de acao invalido!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+
+				var existing_action := actions[index];
+				var updated_action := HandleActionEdit(who, existing_action.type, existing_action);
+
+				if (!updated_action)
+					Message("Acao invalida! Verifique os parametros.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+
+				actions[index] := updated_action;
+				Message($"Acao atualizada: {GetActionDescription(updated_action)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+			"delete":
+				var index := action_result.index;
+
+				if (index < 1 || index > actions.size())
+					Message("Indice de acao invalido!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+
+				var deleted_action := actions[index];
+				actions.erase(index);
+				Message($"Acao removida: {GetActionDescription(deleted_action)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+			"condition":
+				var new_condition := HandleConditionEdit(who, event_condition);
+				if (new_condition != -1)  // -1 means cancelled
+					event_condition := new_condition;
+					if (new_condition)
+						Message($"Condicao configurada: {GetConditionDescription(new_condition)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+					else
+						Message("Condicao removida.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+					endif
+				endif
+		endcase
+	endwhile
+
+	// Step 4: Configure spawn details if needed
+	var need_spawn_gump := 0;
+	var has_spawn_action := 0;
+
+	if (actions.size() == 0)
+		need_spawn_gump := 1;
+		Message("Nenhuma acao configurada. Usando sistema de spawn padrao.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	else
+		foreach action in actions
+			if (action.type == "SPAWN")
+				has_spawn_action := 1;
+				break;
+			endif
+		endforeach
+	endif
+
+	var config := EventConfig();
+
+	if (need_spawn_gump)
+		var gump := BuildEventConfigGump();
+		var input := GFSendGump(who, gump);
+
+		if (!input)
+			Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
+		endif
+
+		config := ParseEventConfigInput(input);
+		if (!config)
+			Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
+		endif
+
+		if (!config.IsValid())
+			Message("Configuracao invalida! Verifique: 1) Pelo menos uma criatura configurada, 2) Delay minimo >= 1, 3) Delay maximo >= minimo.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return 0;
+		endif
+
+		if (has_spawn_action)
+			foreach action in actions
+				if (action.type == "SPAWN")
+					action.params := config.ToStruct();
+				endif
+			endforeach
+		endif
+	endif
+
+	// Set configuration fields
+	config.trigger_type := trigger_type;
+	config.trigger_params := trigger_params;
+	config.actions := actions;
+	config.min_delay := min_delay;
+	config.max_delay := max_delay;
+	config.condition := event_condition;
+	config.one_time_only := one_time_only;
+
+	// NPC-based triggers: use NPC setup wizard
+	if (trigger_type == "ITEM_GIVEN" || trigger_type == "DOUBLECLICKED")
+		var targ := NpcSetupWizard(who);
+		if (!targ)
+			return 0;
+		endif
+
+		// Load existing configs or create new array
+		var configs_data := GetObjProperty(targ, "event_configs");
+		if (!configs_data)
+			configs_data := array{};
+		endif
+
+		// Append new config
+		configs_data.append(config.ToStruct());
+		SetObjProperty(targ, "event_configs", configs_data);
+
+		// Save original script for potential restoration
+		if (!GetObjProperty(targ, "original_script"))
+			SetObjProperty(targ, "original_script", targ.script);
+		endif
+
+		// Set NPC's main script to our event controller and restart it
+		// This is required because EnableEvents only works on the NPC's primary script
+		targ.script := ":epicevents:NpcEventController";
+		RestartScript(targ);
+
+		Message($"Epic Event NPC criado com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+		Message($"NPC: {targ.name} (Serial: {Hex(targ.serial)})", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		Message($"Gatilho: {trigger_type}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		Message($"Configs no NPC: {configs_data.size()}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	else
+		// Item-based triggers: create event spawner item at location
+		Message("Selecione a localizacao do Event Spawner.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		var targ := TargetCoordinates(who);
+		if (!targ)
+			Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
+		endif
+
+		var item := CreateItemAtLocation(targ.x, targ.y, targ.z, 0x1F13, 1, who.realm);
+		if (!item || item.errortext)
+			Message("Erro ao criar o item do event spawner: " + item.errortext, Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			return 0;
+		endif
+
+		item.invisible := 1;
+		item.movable := 0;
+
+		SetObjProperty(item, "config", config.ToStruct());
+
+		Message($"Epic Event criado com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+		Message($"Gatilho: {trigger_type}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		Message($"Acoes configuradas: {actions.size()}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		if (config.GetCreatureCount() > 0)
+			Message($"Criaturas: {config.GetCreatureCount()} tipo(s) configurado(s)", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		endif
+	endif
+
+	return 1;
+endfunction
+
+// ============================================================================
+// EDIT FLOW - Edit existing event
+// ============================================================================
+function EditEventFlow(who, item)
+	var config_data := GetObjProperty(item, "config");
+	if (!config_data)
+		Message("Este item nao possui configuracao de evento!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+		return 0;
+	endif
+
+	var config := EventConfig();
+	config.FromStruct(config_data);
+
+	// Show main menu
+	var menu_loop := 1;
+	while (menu_loop)
+		var menu_gump := BuildEditMenuGump(config);
+		var menu_input := GFSendGump(who, menu_gump);
+
+		if (!menu_input)
+			Message("Menu fechado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
+		endif
+
+		if (menu_input[BTN_MENU_VIEW])
+			ShowConfigSummary(who, config);
+
+		elseif (menu_input[BTN_MENU_EDIT_TRIGGER])
+			var new_config := EditTrigger(who, config);
+			if (new_config)
+				config := new_config;
+				SaveConfig(item, config);
+				Message("Gatilho atualizado com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			endif
+
+		elseif (menu_input[BTN_MENU_EDIT_ACTIONS])
+			var new_config := EditActions(who, config);
+			if (new_config)
+				config := new_config;
+				SaveConfig(item, config);
+				Message("Acoes atualizadas com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			endif
+
+		elseif (menu_input[BTN_MENU_EDIT_CONDITION])
+			var new_config := EditCondition(who, config);
+			if (new_config)
+				config := new_config;
+				SaveConfig(item, config);
+				Message("Condicao de natureza atualizada!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+			endif
+
+		elseif (menu_input[BTN_MENU_RESET_COOLDOWN])
+			EraseObjProperty(item, "next_trigger_time");
+			Message("Cooldown resetado! O evento pode ser acionado novamente.", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+		elseif (menu_input[BTN_MENU_DELETE])
+			if (ConfirmDelete(who))
+				DestroyItem(item);
+				Message("Evento removido com sucesso!", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+				return 1;
+			endif
+
+		else
+			menu_loop := 0;
+		endif
+	endwhile
+
+	return 1;
+endfunction
+
+// ============================================================================
+// SHARED HELPER FUNCTIONS
+// ============================================================================
+
+// Parse trigger selection input
+function ParseTriggerSelection(input)
+	if (input[BTN_TRIGGER_SPEECH])
+		return "SPEECH";
+	elseif (input[BTN_TRIGGER_ENTEREDAREA])
+		return "ENTEREDAREA";
+	elseif (input[BTN_TRIGGER_LEFTAREA])
+		return "LEFTAREA";
+	elseif (input[BTN_TRIGGER_ITEM_GIVEN])
+		return "ITEM_GIVEN";
+	elseif (input[BTN_TRIGGER_DOUBLECLICKED])
+		return "DOUBLECLICKED";
+	endif
+	return "";
+endfunction
+
+function BuildEditMenuGump(config)
+	var gump := GFECreateGump("Epic Events - Editar Evento", 500, 620);
+	var y := SetupGumpFrame(gump, 500, 620, 0);
+
+	var x := 40;
+	var spacing := 65;
+
+	// Current config summary header
+	GFTextMid(gump, 0, y, 500, GUMP_COLOR::SECTION_HEADER, "EVENTO ATUAL");
+	y := y + 20;
+	GFResizePic(gump, 30, y, 3000, 440, 2);
+	y := y + 15;
+
+	// Brief summary
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, $"Gatilho: {config.trigger_type}");
+	y := y + 20;
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, $"Acoes: {config.actions.size()} configurada(s)");
+	y := y + 20;
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, $"Delay: {config.min_delay}-{config.max_delay} min");
+	y := y + 20;
+	if (config.one_time_only)
+		GFTextLine(gump, x, y, 38, "Uso unico (sera destruido apos ativacao)");
+		y := y + 20;
+	endif
+	y := y + 15;
+
+	// Divider
+	GFResizePic(gump, 30, y, 3000, 440, 2);
+	y := y + 20;
+
+	// Menu options
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_MENU_VIEW);
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Ver Configuracao Completa");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Exibe todos os detalhes do evento");
+	y := y + spacing;
+
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_MENU_EDIT_TRIGGER);
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Editar Gatilho");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Alterar tipo e parametros do gatilho");
+	y := y + spacing;
+
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_MENU_EDIT_ACTIONS);
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Editar Acoes");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Adicionar, editar ou remover acoes");
+	y := y + spacing;
+
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_MENU_EDIT_CONDITION);
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Editar Condicoes de Gatilho");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Item, lua, estacao, horario, dia/noite");
+	y := y + spacing;
+
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_MENU_RESET_COOLDOWN);
+	GFTextLine(gump, x + 40, y + 2, GUMP_COLOR::HIGHLIGHT, "Resetar Cooldown");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Permite testar o evento imediatamente");
+	y := y + spacing;
+
+	GFAddButton(gump, x, y, 2152, 2153, GF_CLOSE_BTN, BTN_MENU_DELETE);
+	GFTextLine(gump, x + 40, y + 2, 38, "Excluir Evento");
+	GFTextLine(gump, x + 40, y + 20, GUMP_COLOR::HELP_TEXT, "Remove permanentemente este evento");
+
+	return gump;
+endfunction
+
+function ShowConfigSummary(who, config)
+	var gump := GFECreateGump("Epic Events - Configuracao", 600, 550);
+	var y := SetupGumpFrame(gump, 600, 550, 0);
+
+	var x := 40;
+
+	// Trigger section
+	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "GATILHO");
+	y := y + 20;
+	GFResizePic(gump, 30, y, 3000, 540, 2);
+	y := y + 15;
+
+	GFTextLine(gump, x, y, GUMP_COLOR::LABEL, $"Tipo: {config.trigger_type}");
+	y := y + 20;
+
+	if (config.trigger_params)
+		if (config.trigger_params.keyword)
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, $"Palavra-chave: {config.trigger_params.keyword}");
+			y := y + 20;
+		endif
+		if (config.trigger_params.radius)
+			GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, $"Raio: {config.trigger_params.radius} tiles");
+			y := y + 20;
+		endif
+	endif
+
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, $"Delay: {config.min_delay} - {config.max_delay} minutos");
+	y := y + 20;
+	GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, $"Uso unico: {(config.one_time_only ? "Sim" : "Nao")}");
+	y := y + 30;
+
+	// Condition section (if configured)
+	if (config.condition && config.condition.type && config.condition.type != "NONE")
+		GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "CONDICAO DE NATUREZA");
+		y := y + 20;
+		GFResizePic(gump, 30, y, 3000, 540, 2);
+		y := y + 15;
+
+		var cond_desc := GetConditionDescription(config.condition);
+		GFTextLine(gump, x, y, GUMP_COLOR::LABEL, cond_desc);
+		y := y + 30;
+	endif
+
+	// Actions section
+	GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "ACOES");
+	y := y + 20;
+	GFResizePic(gump, 30, y, 3000, 540, 2);
+	y := y + 15;
+
+	if (config.actions.size() == 0)
+		GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "Nenhuma acao configurada (usando spawn padrao)");
+		y := y + 25;
+	else
+		var action_num := 1;
+		foreach action in (config.actions)
+			var desc := GetActionDescription(action);
+			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, $"{action_num}. {desc}");
+			y := y + 20;
+
+			if (action.delay && action.delay > 0)
+				GFTextLine(gump, x + 20, y, GUMP_COLOR::HELP_TEXT, $"Atraso: {action.delay}s");
+				y := y + 18;
+			endif
+
+			if (action.condition && action.condition.type && action.condition.type != "NONE")
+				var cond_desc := GetConditionDescription(action.condition);
+				GFTextLine(gump, x + 20, y, GUMP_COLOR::HELP_TEXT, $"Condicao: {cond_desc}");
+				y := y + 18;
+			endif
+
+			action_num := action_num + 1;
+			y := y + 5;
+
+			if (action_num > 8)
+				GFTextLine(gump, x, y, GUMP_COLOR::HELP_TEXT, "... e mais acoes");
+				break;
+			endif
+		endforeach
+	endif
+
+	y := y + 15;
+
+	// Creatures section (if any)
+	if (config.creatures.size() > 0)
+		GFTextMid(gump, 0, y, 600, GUMP_COLOR::SECTION_HEADER, "CRIATURAS (SPAWN PADRAO)");
+		y := y + 20;
+		GFResizePic(gump, 30, y, 3000, 540, 2);
+		y := y + 15;
+
+		foreach creature in (config.creatures)
+			var creature_line := creature.template;
+			if (creature.name && creature.name != "")
+				creature_line := creature.name + " (" + creature.template + ")";
+			endif
+			creature_line := creature_line + $" x{creature.amount}";
+			if (creature.tier && creature.tier != "")
+				creature_line := creature_line + $" [Tier {creature.tier}]";
+			endif
+			GFTextLine(gump, x, y, GUMP_COLOR::LABEL, creature_line);
+			y := y + 20;
+		endforeach
+	endif
+
+	// Close button
+	GFAddButton(gump, 280, 490, 2152, 2153, GF_CLOSE_BTN, BTN_OK);
+
+	GFSendGump(who, gump);
+endfunction
+
+function EditTrigger(who, config)
+	// Step 1: Select new trigger type
+	var trigger_gump := BuildTriggerSelectionGump();
+	var trigger_input := GFSendGump(who, trigger_gump);
+
+	if (!trigger_input)
+		Message("Edicao cancelada.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	var trigger_type := ParseTriggerSelection(trigger_input);
+	if (!trigger_type)
+		Message("Nenhum gatilho selecionado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+		return 0;
+	endif
+
+	// Step 2: Configure trigger parameters (with Target button loop)
+	var working_params := struct{};
+	var config_result;
+	var trigger_config_loop := 1;
+
+	while (trigger_config_loop)
+		var config_gump := BuildTriggerConfigGump(trigger_type, working_params);
+		var config_input := GFSendGump(who, config_gump);
+
+		if (!config_input)
+			Message("Edicao cancelada.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
+		endif
+
+		// Check for Target button (ITEM_GIVEN)
+		if (config_input[BTN_TRIGGER_TARGET_ITEM])
+			Message("Selecione o item para adicionar a lista.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			var targ := Target(who);
+			if (targ)
+				var current_list := Trim(GFExtractData(config_input, ID_TRIGGER_ITEMS_LIST));
+				if (current_list && current_list != "")
+					current_list := current_list + $", {Hex(targ.objtype)}:1";
+				else
+					current_list := $"{Hex(targ.objtype)}:1";
+				endif
+				working_params.+items_list := current_list;
+			endif
+			continue;
+		endif
+
+		config_result := ParseTriggerConfigInput(config_input, trigger_type);
+		if (!config_result)
+			if (trigger_type == "SPEECH")
+				Message("Palavra-chave obrigatoria para gatilho de fala!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			elseif (trigger_type == "ITEM_GIVEN")
+				Message("Pelo menos um item deve ser configurado!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			else
+				Message("Configuracao invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+			endif
+			return 0;
+		endif
+
+		trigger_config_loop := 0;
+	endwhile
+
+	// Update config with new trigger settings
+	config.trigger_type := trigger_type;
+	config.trigger_params := config_result.trigger_params;
+	config.min_delay := config_result.min_delay;
+	config.max_delay := config_result.max_delay;
+	config.one_time_only := config_result.one_time_only;
+
+	return config;
+endfunction
+
+function EditActions(who, config)
+	var actions := array{};
+	foreach action in (config.actions)
+		actions.append(action);
+	endforeach
+
+	var event_condition := config.condition;
+	var action_loop := 1;
+
+	while (action_loop)
+		var action_list_gump := BuildActionListGump(actions, event_condition);
+		var action_list_input := GFSendGump(who, action_list_gump);
+
+		var action_result := ParseActionListInput(action_list_input);
+
+		case (action_result.action)
+			"cancel":
+				Message("Edicao cancelada.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+				return 0;
+
+			"done":
+				action_loop := 0;
+
+			"add":
+				var type_gump := BuildActionTypeSelectionGump();
+				var type_input := GFSendGump(who, type_gump);
+				var action_type := ParseActionTypeSelectionInput(type_input);
+
+				if (!action_type)
+					Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+					continue;
+				endif
+
+				var temp_action := 0;
+				var new_action := HandleActionEdit(who, action_type, temp_action);
+
+				if (!new_action)
+					Message("Acao cancelada ou invalida!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+
+				actions.append(new_action);
+				Message($"Acao adicionada: {GetActionDescription(new_action)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+			"edit":
+				var index := action_result.index;
+
+				if (index < 1 || index > actions.size())
+					Message("Indice de acao invalido!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+
+				var existing_action := actions[index];
+				var updated_action := HandleActionEdit(who, existing_action.type, existing_action);
+
+				if (!updated_action)
+					Message("Acao invalida! Verifique os parametros.", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+
+				actions[index] := updated_action;
+				Message($"Acao atualizada: {GetActionDescription(updated_action)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+			"delete":
+				var index := action_result.index;
+
+				if (index < 1 || index > actions.size())
+					Message("Indice de acao invalido!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+
+				var deleted_action := actions[index];
+				actions.erase(index);
+				Message($"Acao removida: {GetActionDescription(deleted_action)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+
+			"condition":
+				var new_condition := HandleConditionEdit(who, event_condition);
+				if (new_condition != -1)  // -1 means cancelled
+					event_condition := new_condition;
+					if (new_condition)
+						Message($"Condicao configurada: {GetConditionDescription(new_condition)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+					else
+						Message("Condicao removida.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+					endif
+				endif
+		endcase
+	endwhile
+
+	config.actions := actions;
+	config.condition := event_condition;
+	return config;
+endfunction
+
+function EditCondition(who, config)
+	var new_condition := HandleConditionEdit(who, config.condition);
+
+	if (new_condition == -1)  // Cancelled
+		return 0;
+	endif
+
+	config.condition := new_condition;
+
+	if (new_condition)
+		Message($"Condicao configurada: {GetConditionDescription(new_condition)}", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	else
+		Message("Condicao removida.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+	endif
+
+	return config;
+endfunction
+
+function ConfirmDelete(who)
+	var gump := GFECreateGump("Confirmar Exclusao", 400, 200);
+	SetupGumpFrame(gump, 400, 200, 0);
+
+	GFTextMid(gump, 0, 100, 400, 38, "Tem certeza que deseja excluir este evento?");
+	GFTextMid(gump, 0, 120, 400, GUMP_COLOR::HELP_TEXT, "Esta acao nao pode ser desfeita!");
+
+	GFAddButton(gump, 120, 150, 2152, 2153, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 160, 155, GUMP_COLOR::LABEL, "Sim");
+
+	GFAddButton(gump, 220, 150, 2152, 2153, GF_CLOSE_BTN, 2);
+	GFTextLine(gump, 260, 155, GUMP_COLOR::LABEL, "Nao");
+
+	var input := GFSendGump(who, gump);
+
+	return (input && input[1]);
+endfunction
+
+function SaveConfig(item, config)
+	SetObjProperty(item, "config", config.ToStruct());
+	// Restart the EventController to apply changes immediately
+	RestartScript(item);
+endfunction
+
+// ============================================================================
+// NPC SETUP WIZARD
+// ============================================================================
+function NpcSetupWizard(who)
+	var working_params := struct{};
+	working_params.+graphic := "0x0190";
+	working_params.+npc_name := "NPC";
+
+	while (1)
+		var setup_gump := BuildNpcSetupGump(working_params);
+		var setup_input := GFSendGump(who, setup_gump);
+
+		var result := ParseNpcSetupInput(setup_input);
+		if (!result)
+			Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+			return 0;
+		endif
+
+		case (result.action)
+			"use_existing":
+				Message("Selecione o NPC alvo para o evento.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+				var targ := Target(who);
+				if (!targ)
+					Message("Cancelado.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+					return 0;
+				endif
+				if (!targ.npctemplate)
+					Message("O alvo deve ser um NPC!", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					continue;
+				endif
+				return targ;
+
+			"copy_graphic":
+				Message("Clique na criatura/NPC para copiar o graphic.", Color(SYSTEM_COLOR::INFO)).SendSys(who);
+				var targ := Target(who);
+				if (targ)
+					working_params.graphic := Hex(targ.graphic);
+					Message($"Graphic copiado: {Hex(targ.graphic)}", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+				endif
+				if (result.npc_name && result.npc_name != "")
+					working_params.npc_name := result.npc_name;
+				endif
+				continue;
+
+			"create_new":
+				var graphic_val := CInt(result.graphic);
+				if (!graphic_val || graphic_val <= 0)
+					graphic_val := 0x0190;
+				endif
+
+				var npc_name := result.npc_name;
+				if (!npc_name || npc_name == "")
+					npc_name := "NPC";
+				endif
+
+				var npc := CreateNpcFromTemplate(":epicevents:epic_event_npc", who.x, who.y, who.z, 0, who.realm);
+				if (!npc || npc.errortext)
+					Message($"Erro ao criar NPC: {npc.errortext}", Color(SYSTEM_COLOR::FAIL)).SendSys(who);
+					return 0;
+				endif
+
+				npc.graphic := graphic_val;
+				npc.name := npc_name;
+				npc.title_suffix := "";
+
+				Message($"NPC criado: {npc.name} (Graphic: {Hex(graphic_val)})", Color(SYSTEM_COLOR::SUCCESS)).SendSys(who);
+				return npc;
+		endcase
+	endwhile
+
+	return 0;
+endfunction
+
+// Editor functions (HandleConditionEdit, HandleActionEdit, ConversationEditorLoop, etc.)
+// are provided by include/Controller/EventEditorController.inc

@@ -1,0 +1,96 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
+include ":spells:Controller/SC_Damage";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/epicMageryUtils";
+include ":hotbar:include/custombuff";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
+	params := 0; // No longer needed
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		SC_HandleSound(who);
+		return;
+	endif
+
+	SC_HandleSound(who, targ, SFX_SPELL_WEAKEN);
+
+	var time := 0;
+	var oldx := who.x;
+	var oldy := who.y;
+
+	who.frozen := 1;
+	SendSpellBuff(who, targ, CInt(spell.id), 10);
+
+	Corromper(who, 13, targ);
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var bonus := epicWisdomPathBonus(who);
+	if (CheckResist(targ, WILL, diff, -bonus))
+		SendSysMessageEx(who, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+		who.frozen := 0;
+		SC_HandleSound(who);
+		return;
+	endif
+
+	targ.frozen := 1;
+
+	while (time < 10)
+
+		if ((who.x != oldx) || (who.y != oldy))
+			SendSysMessageEx(who, "Voce se moveu e cancelou a magia.", SSM_FAIL);
+			break;
+		endif
+
+		if (Distance(who, targ) >= 12)
+			SendSysMessageEx(who, "O alvo se distanciou muito.", SSM_FAIL);
+			break;
+		endif
+
+		var mydmg := cint(AP_GetVital(who, HITS) / 10); // O calculo eh baseado somente no hp do caster
+
+		if ((AP_GetVital(who, HITS) - mydmg) <= 1)
+			mydmg := AP_GetVital(who, HITS) - (AP_GetVital(who, HITS) - 1);
+
+			// Da o ultimo dano antes de parar o spell
+			SC_DealDamage(who, targ, CInt(spell.id), mydmg, DAMAGE_TYPE::POISON);
+			// Self-damage as channel cost — raw HP deduct only, no hooks (would
+			// fire AFTER_DAMAGE/ON_KILL against the caster for damaging themself).
+			DisplayDamage(who, mydmg, 0);
+			ApplyRawDamage(who, mydmg);
+
+			SendSysMessageEx(who, "Voce usou toda sua forca vital.", SSM_FAIL);
+			break;
+		endif
+
+		SC_DealDamage(who, targ, CInt(spell.id), mydmg, DAMAGE_TYPE::POISON, time == 0 ? 1 : 0);
+		// Self-damage as channel cost — raw HP deduct only, no hooks.
+		DisplayDamage(who, mydmg, 0);
+		ApplyRawDamage(who, mydmg);
+
+		if (targ.dead)
+			break;
+		endif
+
+		PerformAction(who, HUMAN_ANIM::CAST_AREA);
+		PlayObjectCenteredEffect(who, FX_RED_SPARKLES, 7, 7);
+		PlayObjectCenteredEffect(targ, FX_RED_SPARKLES, 7, 7);
+		time := time + 1;
+		sleep(1);
+	endwhile
+
+	who.frozen := 0;
+	targ.frozen := 0;
+
+	return 1;
+endprogram

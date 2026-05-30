@@ -1,0 +1,88 @@
+use uo;
+use os;
+use util;
+
+include ":expbar:expbar";
+include "include/say";
+
+program start_xpbar(who, text)
+	var tparams := SplitWords(CStr(text));
+	var first := tparams.size() ? Lower(tparams[1]) : "";
+
+	if (who.cmdlevel > 2)
+		if (first == "boost")
+			HandleBoostCommand(who, tparams);
+			return 1;
+		endif
+
+		SendSysMessageEx(who, "Escolha quem receberá XP: ", SSM_REQUEST);
+		var targ := Target(who);
+		if (!targ)
+			return 0;
+		endif
+
+		var amount := tparams.size() ? CInt(tparams[1]) : 0;
+		AddXP(targ, amount, XP_GM);
+		SendSysMessage(who, "Dado " + amount + " XP para " + targ.name);
+		PrintTextAbovePrivate(targ, "Você recebeu " + amount + " XP pela qualidade do seu RP, parabens!!", targ);
+		return 1;
+	endif
+
+	var lvl := GetPlayerLevel(who);
+	var xp := GetPlayerXP(who);
+	var next := GetXPToNextLevel(who);
+	SendSysMessage(who, "Level: " + lvl + " | XP: " + xp + "/" + next);
+
+	var status := GetXPBoostStatus();
+	if (status)
+		SendSysMessage(who, "*** XP boost ativo: x" + status.mult + " (" + FormatBoostTime(status.seconds) + " restantes) ***", _DEFAULT_TEXT_FONT, 53);
+	endif
+endprogram
+
+function HandleBoostCommand(who, tparams)
+	var sub := tparams.size() >= 2 ? Lower(tparams[2]) : "";
+
+	if (sub == "off" || sub == "cancel")
+		ClearXPBoost();
+		SendSysMessage(who, "XP boost cancelado.");
+		BroadcastBoost("O boost de XP global foi cancelado.");
+		return;
+	endif
+
+	if (sub == "status")
+		var status := GetXPBoostStatus();
+		if (!status)
+			SendSysMessage(who, "Nenhum XP boost ativo.");
+		else
+			SendSysMessage(who, "XP boost ativo: x" + status.mult + " por mais " + FormatBoostTime(status.seconds));
+		endif
+		return;
+	endif
+
+	var mult := tparams.size() >= 2 ? CDbl(tparams[2]) : 0.0;
+	var minutes := tparams.size() >= 3 ? CInt(tparams[3]) : 0;
+	if (mult <= 1.0)
+		mult := 2.0;
+	endif
+	if (minutes <= 0)
+		minutes := 60;
+	endif
+
+	SetXPBoost(mult, minutes);
+	SendSysMessage(who, "XP boost ativado: x" + mult + " por " + minutes + " minutos.");
+
+	BroadcastBoost("*** XP GLOBAL x" + mult + " POR " + minutes + " MINUTOS! ***");
+endfunction
+
+function FormatBoostTime(seconds)
+	var minutes := CInt(seconds / 60);
+	var secs := seconds - minutes * 60;
+	return minutes + "m" + secs + "s";
+endfunction
+
+function BroadcastBoost(msg)
+	foreach p in EnumerateOnlineCharacters()
+		SendSysMessage(p, msg, _DEFAULT_TEXT_FONT, 53);
+		PlaySoundEffect(p, 0x1F3);
+	endforeach
+endfunction

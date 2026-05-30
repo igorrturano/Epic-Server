@@ -1,0 +1,58 @@
+/*
+ *
+*/
+use uo;
+use os;
+include "include/say";
+include "include/epicEconomyAudit";
+include ":timedScripts:timedScripts";
+include ":tn:cooldown";
+
+program onRemove(character, container, item, item_amount, move_type)
+	if (container.ownerserial == character.serial)
+		return 1;
+	elseif (!(character.concealed || character.hidden))
+		if (GetObjProperty(character, "maosleves") == 1 || GetCooldown(character, "#PickPid"))
+			EraseObjProperty(character, "maosleves");
+		else
+			PrintTextAbove(character, "*Pegou " + item.desc + " do " + container.desc + "*", 41);
+		endif
+	elseif (GetObjProperty(character, "pilotando"))
+		SendSysMessageEx(character, "Você não pode pegar itens enquanto estiver pilotando um golem.",
+				   SSM_INFO);
+		return 0;
+	elseif (GetObjProperty(character, "metamorfose") != error)
+		SendSysMessageEx(character, "Você não pode pegar itens enquanto estiver metamorfoseado.",
+				   SSM_INFO);
+		return 0;
+	endif
+
+	var primeira := GetObjProperty(item, "primeiro_dono");
+	if (GetObjProperty(item, "itemunico") == 1 && !primeira &&
+	 (character.cmdlevel <= 0)) // para o DiscordWebhook funcionar
+		Setobjproperty(item, "primeiro_dono", character.name);
+		var region := GetRegionName(character);
+		var char_name := character.serial;
+		var fin := SystemFindObjectBySerial(char_name, SYSFIND_SEARCH_OFFLINE_MOBILES);
+		var coords := { character.x, character.y };
+		var tipo := "unico";
+		var nome := GetObjProperty(character, "nome_inicial");
+		Start_script(":DiscordWebhook:discord", { tipo, nome, fin.acctname, container.name,
+										  		region, coords, item.desc });
+	endif
+
+	var hostiles := ListHostiles(character, 8, LH_FLAG_LOS);
+	if (hostiles.size() >= 1 && !GetCooldown(character, "#PickPid"))
+		TS_StartTimer(character, "paralysis", 6);
+	endif
+	if (cint(GetObjProperty(container, "looteado")) == 0)
+		if (item.objtype == 0xba63)
+			SetObjProperty(character, "lootmoedas",
+							cint(GetObjProperty(character, "lootmoedas")) + item_amount);
+			SetObjProperty(container, "looteado", 1);
+		endif
+	endif
+
+	EA_Record(EA_TRANSFER_CORPSE_LOOT, item, item_amount, container, character,
+			  "ownerserial=" + (container.ownerserial ? Hex(container.ownerserial) : "0"));
+endprogram

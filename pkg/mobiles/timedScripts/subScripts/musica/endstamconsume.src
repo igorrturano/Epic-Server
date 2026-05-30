@@ -1,0 +1,11 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program cureScript(params)
+	var mobile := params[1];
+	var attacker := params[2];
+	var sword := params[4];
+
+endprogram

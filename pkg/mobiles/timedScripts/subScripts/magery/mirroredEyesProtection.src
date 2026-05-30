@@ -1,0 +1,19 @@
+use uo;
+use os;
+use util;
+
+program TimedScript_MirroredEyesProtection(params)
+	var mobile := params[1];
+	var protection_strength := params[2];
+
+	// Visual indicator - periodic silver shimmer
+	PlayObjectCenteredEffect(mobile, 0x37B9, 10, 15);
+
+	// Add property to mark mobile as protected
+	SetObjProperty(mobile, "#mirroredEyesProtection", protection_strength);
+
+	SendSysMessage(mobile, "Seus olhos refletem uma proteção prateada e mágica.");
+	PrintTextAbove(mobile, "*proteção espelhada*");
+
+	return 1;
+endprogram

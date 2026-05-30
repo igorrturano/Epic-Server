@@ -1,0 +1,79 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":spells:tnmagery";
+include ":spells:Controller/SpellController";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/epicMageryUtils";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+include ":message:model/Message";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0; // No longer needed
+
+	// Validate target
+	if (!targ)
+		Message("Voce precisa selecionar um alvo.").SetColor(SSM_FAIL).SendSys(who);
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_ITEM))
+		Message("Isto nao e um item.").SetColor(SSM_FAIL).SendSys(who);
+		return;
+	endif
+
+	// Check if target is food (has eat script)
+	var foodcfg := ReadConfigFile(":*:itemdesc");
+	var foodelem := FindConfigElem(foodcfg, targ.objtype);
+	var itemscript := GetConfigString(foodelem, "script");
+
+	if (itemscript != "eat")
+		Message("Isto nao e um alimento.").SetColor(SSM_FAIL).SendSys(who);
+		return;
+	endif
+
+	if (targ.amount > 1)
+		Message("Voce so pode abencoar um alimento por vez.").SetColor(SSM_FAIL).SendSys(who);
+		return;
+	endif
+
+	// Calculate healing power based on nature skill
+	var nature_skill := HandleSpellSkill(who);
+	var healing_bonus := CInt(nature_skill);
+
+	if (healing_bonus < 20)
+		healing_bonus := 20; // Minimum healing
+	endif
+
+	// Bonus de especialização
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CORACAO_DA_MATILHA))
+		healing_bonus := Cint(healing_bonus * 1.2);
+	endif
+
+	// Convert the food item into a healing fruit
+	targ.name := "Fruta Curativa";
+	targ.color := 1151; // Green color for magical fruit
+	SetObjProperty(targ, "bonus", healing_bonus);
+	SetObjProperty(targ, "created_by", who.serial);
+	SetObjProperty(targ, "imbue_expires", polcore().systime + (nature_skill * 60));
+
+	// Set the script to use when consumed
+	targ.usescript := ":tn:fruta_curativa";
+
+	// Visual effects
+	PlayObjectCenteredEffect(targ, FX_BLUE_SPARKLES, 10, 10);
+	SC_HandleSound(who, targ, SFX_SPELL_HEAL);
+
+	Message("Voce abencoa o alimento com energia curativa.").SetColor(SSM_INFO).SendSys(who);
+
+	return 1;
+endprogram

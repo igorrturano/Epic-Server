@@ -1,0 +1,203 @@
+use uo;
+use os;
+use polsys;
+
+include ":timedScripts:timedScripts";
+include "include/client";
+include "include/sysEvent";
+include ":tn:tngumps";
+include "include/say";
+include ":attributes:attributes";
+include ":spells:include/tnmagery";
+include ":timeUtils:time";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+
+const SPELL_BTN := 200;
+
+program orderSpells(who, item)
+	var magia := GetObjProperty(who, "chardata").magia;
+	if (magia != "Druid")
+		SendSysMessageEx(who, "A energia natural deste lugar nao responde ao seu chamado.", SSM_INFO);
+		return;
+	endif
+
+	var mlore := cint(AP_GetSkill(who, NATURE));
+	var cfg := ReadConfigFile(":spells:config/druid");
+	var cleric_slots := Cint(mlore / 5);
+
+	var druid_list := GetObjProperty(who, "druid_list");
+	if (!druid_list)
+		druid_list := array{};
+	endif
+
+	// Auto-grant cantrips on first visit (circle 0 spells)
+	if (!GetObjProperty(who, "cantrips_granted"))
+		foreach spell in (GetConfigIntKeys(cfg))
+			spell := FindConfigElem(cfg, spell);
+			sleepms(2);
+			if (spell.circle == 0)
+				var cantrip := struct{
+					"id" := spell.SpellId,
+					"name" := spell.name,
+					"circle" := 0,
+					"description" := spell.desc,
+					"flavortext" := spell.flavortext,
+					"cantrip" := 1  // Flag to prevent removal
+				};
+				druid_list.Append(cantrip);
+			endif
+		endforeach
+		SetObjProperty(who, "druid_list", druid_list);
+		SetObjProperty(who, "cantrips_granted", 1);
+	endif
+
+	var spell_list := array{};
+	var slots_used := 0;
+
+	// Count slots used (excluding cantrips)
+	foreach spell in druid_list
+		if (spell.circle > 0)
+			slots_used += cint(spell.circle);
+		endif
+		sleepms(2);
+	endforeach
+
+	// Build list of available spells to memorize
+	foreach spell in (GetConfigIntKeys(cfg))
+		spell := FindConfigElem(cfg, spell);
+		sleepms(2);
+
+		if (spell.circle > Cint((mlore + 10) / 20)) // 10, 30, 50 , 70 , 90 habs pra castar
+			continue;
+		elseif (spell.type == "Auto")
+			continue;
+		elseif (spell.circle == 0) // Skip cantrips - they're auto-granted
+			continue;
+		endif
+		spell_list.append(spell);
+		sleepms(2);
+	endforeach
+
+	var available_slots := cleric_slots - slots_used;
+	var canceled := 0;
+	while (!canceled)
+		RemoveUsedSpells(who, druid_list, available_slots);
+		var input := CreateDruidGump(who, spell_list, available_slots, druid_list, slots_used, cleric_slots);
+
+		if (input[0] >= 200)
+			if (TS_GetTimerInfo(who, "orderspell")) // TODO
+				return SendSysMessageEx(who, "Voce deve aguardar um pouco antes de pedir por bencaos novamente.",
+										 SSM_FAIL);
+			endif
+			var spell := spell_list[input[0] - 200];
+			var ret := StoreSpell(who, spell, druid_list, available_slots);
+			if (ret)
+				var i := 1;
+				var item_graphic := item.graphic;
+				while (i < 8)
+					item.graphic := Cint(item.graphic) + 1;
+					sleepms(100);
+					i += 1;
+				endwhile
+				item.graphic := item_graphic;
+				// playAltarAnimations(who, item);
+			endif
+		elseif (!input[0])
+			canceled := 1;
+		endif
+	endwhile
+endprogram
+
+function CreateDruidGump(who, spell_list, available_slots, druid_list, slots_used, total_slots)
+	var gump := GFCreateGump();
+	// Count only non-cantrip spells (circle != 0) for gump sizing
+	var non_cantrip_count := 0;
+	foreach spell in spell_list
+		if (spell.circle != 0)
+			non_cantrip_count += 1;
+		endif
+		sleepms(2);
+	endforeach
+
+	var size := 0;
+	if (non_cantrip_count > 0)
+		size := non_cantrip_count * 26;
+	endif
+	GFResizePic(gump, 17, 31, 9390, 359, 125 + size);
+	GFHTMLArea(gump, 114, 69, 192, 20, "<BASEFONT Size=5 Color=#999999 >Druidismo", 0, 0); // shadow
+	GFHTMLArea(gump, 116, 71, 192, 20, "<BASEFONT Size=5 Color=#999999 >Druidismo", 0, 0); // shadow
+	GFHTMLArea(gump, 115, 70, 192, 20, "<BASEFONT Size=5 Color=#2d8a2d >Druidismo", 0, 0);
+	GFGumpPic(gump, 63, 91, 1469);
+	GFGumpPic(gump, 80, 91, 1469);
+	GFTextLine(gump, 63, 100, 0, "Rituais Druídicos");
+	GFTextLine(gump, 259, 100, 0, "Slots");
+	GFTextLine(gump, 304, 100, 0, "Receber");
+	GFGumpPic(gump, 38, 103, 9773, 0);
+	GFGumpPic(gump, 296, 0, 9000, 0);
+
+	var y := 121;
+	foreach spell in spell_list
+		var color := "2d8a2d";
+		if (spell.circle != 0)
+			GFHTMLArea(gump, 63, y, 192, 24, "<BASEFONT color=#{}>{}".format(color, spell.name), 1, 0);
+			GFToolTipText(gump, "<BASEFONT color=#{}>{}<br><BASEFONT color=#FFFFFF>".format(color,
+				 spell.desc));
+			GFHTMLArea(gump, 259, y, 34, 24, "<center>{}".format(spell.circle), 1, 0);
+
+			// Check if spell already exists in druid_list
+			var spell_exists := FindAllElemInArray(druid_list, struct{ id := spell.SpellId }, 1);
+
+			if (available_slots >= spell.circle && !spell_exists)
+				GFAddButton(gump, 319, y + 4, 10006, 10006, GF_CLOSE_BTN, 200 + _spell_iter);
+			else
+				GFGumpPic(gump, 319, y + 5, 10006, 1891);
+			endif
+			sleepms(2);
+			y += 26;
+		endif
+	endforeach
+
+	GFTextLine(gump, 63, y + 15, 0, "Slots: {}/{}".format(slots_used, total_slots));
+
+	return GFSendGump(who, gump);
+endfunction
+
+function StoreSpell(who, spellinfo, byref druid_list, byref available_slots)
+	if (available_slots - spellinfo.circle < 0)
+		SendSysMessageEx(who, "Sem slots suficientes para memorizar.", SSM_FAIL);
+		return 0;
+	elseif (!AP_ConsumeVital(who, MANA, 5 * spellinfo.circle))
+		SendSysMessageEx(who, "Voce nao consegue se concentrar em sua meditacao.", SSM_FAIL);
+		sleep(2);
+		return 0;
+	endif
+
+	var new_spell := struct{ "id" := spellinfo.SpellId,
+						 	"name" := spellinfo.name,
+						 	"powerwords" := spellinfo.powerwords,
+						 	"circle" := spellinfo.circle,
+						 	"time" := AddTimeTo(polcore().systime, 20, "minutes"),
+						 	"flavortext" := spellinfo.flavortext,
+							"description" := spellinfo.desc,
+						 	"used" := 0 };
+
+	available_slots -= spellinfo.circle;
+	druid_list.append(new_spell);
+	SetObjProperty(who, "druid_list", druid_list);
+	SendSysMessageEx(who, "A natureza ouviu seu chamado e concedeu sua bencao.", SSM_INFO);
+	return 1;
+endfunction
+
+function RemoveUsedSpells(who, byref druid_list, byref available_slots)
+	foreach spell in druid_list
+		if (spell.used && polcore().systime > spell.time)
+			var index := FindInArray(druid_list, spell);
+			druid_list.Erase(index);
+			available_slots += spell.circle;
+		endif
+		sleepms(2);
+	endforeach
+
+	SetObjProperty(who, "druid_list", druid_list);
+endfunction

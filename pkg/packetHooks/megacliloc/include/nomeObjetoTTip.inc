@@ -1,0 +1,182 @@
+use uo;
+include "/include/epicConstants";
+include ":attributes:attributes";
+include ":commands:/include/r";
+include ":custompizza:/itemrp/include/lore_items";
+include ":megacliloc:/include/tradutores";
+include ":megacliloc:/include/gettersTTipUtils";
+
+
+function PreencheNome(objeto,quem)
+	var nomeObjeto;
+
+	if (objeto.IsA(POLCLASS_MOBILE))
+		return PreencheNomeMobile(objeto,quem,nomeObjeto);
+	elseif( objeto.IsA(POLCLASS_ITEM) )
+		return PreencheNomeITem(objeto);
+	else
+		nomeObjeto := objeto.name;
+	endif
+
+	return nomeObjeto;
+endfunction
+
+function PreencheNomeMobile(objeto,quem, nomeObjeto := "")
+
+	//Cor do nome dos NPC conforme skill de combate
+	if (objeto.npctemplate)
+		nomeObjeto := PreencheNomeNpc(quem,objeto, nomeObjeto);
+	else
+		nomeObjeto := PreencheNomePersonagem(quem,objeto, nomeObjeto);
+	endif
+
+	return nomeObjeto;
+
+endfunction
+
+function PreencheNomeNpc(quem,objeto, nomeObjeto := "")
+
+	if(!objeto.IsA(POLCLASS_MOBILE)) return error{"errortext":="Object passed was not an POLCLASS_MOBILE."}; endif
+	  nomeObjeto :=  objeto.name;
+
+	var desc_npc := GetObjProperty(objeto, "descmodboss");
+
+	if (desc_npc) //Adicionado para mostrar descrição do boss
+		nomeObjeto := objeto.name +"<br>"+WHITE+desc_npc;
+	endif
+	if (objeto.alignment == 1) // only hostile (evil) NPCs show gold/red skill color
+		var npc_wrestling := AP_GetSkill(objeto, WRESTLING);
+		if (quem.weapon.attribute != WRESTLING)
+			var player_skill := AP_GetSkill(quem, quem.weapon.attribute);
+			var is_gold := (npc_wrestling + 10) >= player_skill;
+			if (is_gold)
+				nomeObjeto :=  AMARELO_CLARO + nomeObjeto;
+			endif
+		else
+			var player_wrestling := AP_GetSkill(quem, WRESTLING);
+			var is_gold_wr := (npc_wrestling + 10) >= player_wrestling;
+			if (is_gold_wr)
+				nomeObjeto :=  AMARELO_CLARO + nomeObjeto;
+			endif
+		endif
+	endif
+	
+	return nomeObjeto;
+endfunction
+
+function PreencheNomePersonagem(quem,objeto, nomeObjeto := "")
+
+	if(!objeto.IsA(POLCLASS_MOBILE)) return error{"errortext":="Object passed was not an POLCLASS_MOBILE."}; endif
+
+	//Caso em que tá desconhecido
+	if (GetObjProperty(objeto, "realname"))
+		nomeObjeto := AMARELO_CLARO + "Incognito";
+	else
+		var nickname := GetKnownNickname(quem, objeto);
+		nomeObjeto := (nickname != "") ? nickname : objeto.name;
+	endif
+
+	if (quem.cmdlevel > 1) //Staff consegue ver o nome e raça
+		nomeObjeto := nomeObjeto + " [" + objeto.acctname + "]";
+	endif
+
+	var desc := GetObjProperty(objeto, "descmodboss");
+	if (desc)
+		nomeObjeto := nomeObjeto + "<br>" + WHITE + desc;
+	endif
+
+	return nomeObjeto;
+endfunction
+
+function PreencheNomeItem(objeto)
+    if(!objeto.IsA(POLCLASS_ITEM)) return error{"errortext":="Object passed was not an POLCLASS_ITEM."}; endif
+    var nomeObjeto := "";
+    nomeObjeto := recuperaNomeItemMaterial(objeto);
+
+    if(IsLoreItem(objeto))
+        nomeObjeto := AdicionaLore(objeto,nomeObjeto);
+    endif
+    
+    return nomeObjeto;
+endfunction
+
+function recuperaNomeItemMaterial(objeto)
+	var material := GetObjProperty(objeto, "material");
+	if (!material)
+		return objeto.desc;
+	endif
+	var resource_config := ReadConfigFile(":crafting:config/resourceList");
+	return objeto.desc + " [" + resource_config[material].name + "]";
+endfunction
+
+function IsLoreItem(objeto)
+	if (GetObjProperty(objeto, "IsLoreItem"))
+		return 1;
+	endif
+	var cfg := ReadConfigFile(":*:itemdesc");
+	var elem := FindConfigElem(cfg, objeto.objtype);
+	if (elem)
+		return GetConfigInt(elem, "IsLoreItem");
+	endif
+	return 0;
+endfunction
+
+function AdicionaLore(objeto,nomeObjeto)
+	var item_info := GetLoreItemInfo(objeto.objtype);
+	if (item_info)
+		nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#FFD700>Item Lendário";
+		nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#FFFFFF>Povo: " + item_info.culture_name;
+
+		// Verifica se o item já foi avaliado por um especialista
+		if (GetObjProperty(objeto, "evaluated_skill"))
+			nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#d98cd9>Esse item foi avaliado por um " + TraduzirProfissao(item_info.required_skill);
+		else
+			nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#d98cd9>" + GetConsultaEspecialistaTexto(item_info.required_skill);
+		endif
+
+		// Verifica se o item já foi examinado por um arqueólogo
+		if (GetObjProperty(objeto, "evaluated_archaeology"))
+			nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#a1eca7>Esse item foi avaliado por um Arqueólogo";
+		else
+			nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#a1eca7>Consulte um Arqueólogo";
+		endif
+	endif
+	return nomeObjeto;
+endfunction
+
+function AddSpecialBookshelfDescription(item, xDesc)
+    case (item.objtype)
+        0x6F97:
+        0x6F98:
+            xDesc += "<BASEFONT COLOR=#FFFFFF>Estante de Pesquisa com Livros Comuns<BR>";
+            break;
+        0x63FE:
+        0x63FD:
+        0x63FF:
+        0x6400:
+        0x6A9E:
+        0x6A9F:
+        0x6AA0:
+        0x6AA1:
+            xDesc += "<BASEFONT COLOR=#87CEEB>Estante de Pesquisa com Manuscritos Antigos<BR>";
+            break;
+        0xEA08:
+        0xEA07:
+        0x2DEF:
+        0x2DF0:
+            xDesc += "<BASEFONT COLOR=#FFD700>Estante de Pesquisa com Livros Raros<BR>";
+            break;
+        0x6A94:
+        0x6A95:
+        0x6A96:
+        0x6A97:
+        0x0C15:
+        0x0C14:
+            xDesc += "<BASEFONT COLOR=#C56252>Estante de Pesquisa com Livros Ancestrais<BR>";
+            break;
+        default:
+            return xDesc;
+    endcase
+
+    return xDesc;
+endfunction

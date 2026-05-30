@@ -1,0 +1,71 @@
+use uo;
+use os;
+use math;
+use util;
+use cfgfile;
+
+
+include "include/client";
+include "include/say";
+include ":survival:fishingFunctions";
+include ":nature:nature";
+
+program clima(who)
+	var fase := GetGlobalProperty("moonfase");
+	var diaounoite := GetGlobalProperty("dia");
+	var colore;
+	var solpos;
+	var tempestade := GetGlobalProperty("tempestade");
+
+	if (InDungeon(who))
+		SendSysMessageEx(who, "Esse comando nao pode ser usado dentro de Dungeons ou Cavernas.", SSM_FAIL);
+		return;
+	endif
+
+
+	//Posicao do Sol
+	var config := readconfigfile(":nature:config/daynight");
+	config := config["settings"];
+	var daylength := cint(config.daylength) * 60;
+	var horanascer := cint(getGlobalProperty("halfdaytime"));
+	var currentTime := ReadGameClock();
+	var timeSinceSunrise := (currentTime - horanascer) % daylength;
+	if (timeSinceSunrise < 0)
+		timeSinceSunrise += daylength;
+	endif
+
+	// Calculate hour using same formula as sundial
+	var hour := getCurrentHour();
+
+	solpos := getSunPosition(tempestade);
+	// Apply your specified time ranges
+	if (hour >= 6 && hour < 9)
+		solpos := "Parece ter nascido há pouco"; 
+	elseif (hour >= 9 && hour < 12)
+		solpos := "Caminhando ao topo do céu";
+	elseif (hour >= 12 && hour < 15)
+		solpos := "A Pino";
+	elseif (hour >= 15 && hour < 18)
+		solpos := "Caminhando ao horizonte";
+	elseif (hour >= 18 && hour < 19)
+		solpos := "Quase se pondo";
+	elseif ((tempestade == 0) || (tempestade == 1) || (tempestade == 2))
+		solpos := "A tempestade atrapalha a visão do sol";
+	endif
+
+    //Especificando Faixa de Temperaturas e Sensações
+	var basetemp := getTemperature(who);
+    var temp_sensation := GetTemperatureSensation(basetemp);
+    var temp_color := GetTemperatureColor(basetemp);
+
+    //Mensagens para o Usuario
+    SendSysMessageEx(who, "Estacao do Ano: " + GetSeasonName(getSeason()));
+    if(diaounoite == "noite")
+        SendSysMessageEx(who, "Fase da Lua: " + fase, SSM_INFO);
+    endif
+    if(diaounoite == "dia")
+        SendSysMessageEx(who, "Posicao do Sol: " + solpos, SSM_INFO);
+    endif
+    SendSysMessageEx(who, "A sensacao termica esta em torno de " + basetemp + "°C (" + temp_sensation + ")", temp_color);
+endprogram
+

@@ -1,0 +1,33 @@
+use uo;
+use util;
+use vitals;
+
+include "include/client";
+include "include/sounds";
+include ":attributes:vitals";
+include ":attributes:attributes";
+include "include/client";
+include ":mounts:mounts";
+include ":timedScripts:timedScripts";
+
+program HitScript(attackInfo)
+	var attacker := attackInfo.GetAttacker();
+	var defender := attackInfo.GetDefender();
+
+	var mount := defender.IsMounted();
+	if (mount)
+		var dmg := attacker.GetMainDamageModifier(STRENGTH);
+		if (dmg < 2)
+			dmg := 2;
+		endif
+
+		attackInfo.GetDamage()
+			.IncreaseSlashRawDamage(dmg)
+			.IncreasePiercingRawDamage(dmg)
+			.IncreaseBluntRawDamage(dmg);
+
+		TS_StartTimer(defender.GetObjRef(), "desmontar", cint(attacker.GetSkill(TACTICS) / 5));
+	endif
+
+	return true;
+endprogram

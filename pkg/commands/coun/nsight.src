@@ -1,0 +1,20 @@
+use uo;
+
+program textcmd_nsight(who, level)
+	level := CInt(level);
+
+	SendSysMessage(who, "Escolha o alvo para aplicar o efeito de visao noturna:");
+	
+	if ( level >= 0 )
+		who.setlightlevel(level, 9000);
+		SendSysMessage(who, "Nivel de luz " + level + " aplicado em " + who.name + ".");
+		SendSysMessage(who, "Sua visao foi alterada por um consul.");
+	else
+		// -1 restores the real light level
+		SendSysMessage(who, "Restaurando visao normal de " + who.name + ".");
+		SendSysMessage(who, "Sua visao foi restaurada ao normal.");
+		who.setlightlevel(1, 0);
+	endif
+
+	return 1;
+endprogram

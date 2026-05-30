@@ -1,0 +1,36 @@
+include ":spells:summon";
+include ":timedScripts:timedScripts";
+
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+
+	var arcana := CInt(AP_GetSkill(who, ARCANA));
+	var theology := CInt(AP_GetSkill(who, THEOLOGY));
+	var skill := arcana;
+	if (theology > arcana)
+		skill := theology;
+	endif
+
+	var globodeluz := summon(":epicai:globodeluz", who, who);
+
+	var duracao := 60 + (skill * 3);
+
+	PlaySoundEffect(who, SFX_SPELL_STRENGTH);
+	PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
+
+	// Bonus de especialização
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::EVOCATOR))
+		duracao := Cint(duracao * 1.2);
+	endif
+
+	TS_StartTimer(globodeluz, "summon", duracao);
+
+	sleepms(500);
+	var ev := struct;
+	ev.+type := 0xA001; // FOLLOW_CMD
+	ev.+source := who;
+	ev.+targ := who;
+	SendEvent(globodeluz, ev);
+endprogram

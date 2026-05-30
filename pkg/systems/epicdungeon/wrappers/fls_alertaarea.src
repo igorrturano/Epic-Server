@@ -1,0 +1,17 @@
+use uo;
+use os;
+
+program fls_alertaarea(params)
+    var dm  := params[1];
+    var pos := params[2];
+
+    var item := CreateItemAtLocation(pos.x, pos.y, pos.z, 0xeefed, 1, pos.realm);
+    if (!item || item == error)
+        SendSysMessage(dm, "[EpicDungeon] Falha ao criar area de alerta.");
+        return 0;
+    endif
+
+    PlayStationaryEffect(pos.x, pos.y, pos.z, 14089, 30, 0, 0, pos.realm);
+    SendSysMessage(dm, "[EpicDungeon] Area de alerta criada. Clique duas vezes para configurar.");
+    return 1;
+endprogram

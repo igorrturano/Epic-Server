@@ -1,0 +1,23 @@
+
+use uo;
+use os;
+
+include ":attributes:attributes";
+
+program TimedScript_Clumsy(params)
+	var who := params[1];
+	var attacker := params[2];
+	var level := params[3];
+	params := 0; // Not needed anymore.
+
+	if (GetObjProperty(who, "#glory"))
+		return;
+	endif
+	level := Cint(level / 10);
+
+	SetObjProperty(who, "#glory", level);
+	SetObjProperty(who, "#dmgbonus", cdbl(GetObjProperty(who, "#dmgbonus")) + level);
+	SetObjProperty(who, "#hitbonus", cdbl(GetObjProperty(who, "#hitbonus")) + level);
+
+	return 1;
+endprogram

@@ -1,0 +1,30 @@
+use uo;
+use util;
+include "/include/epicPropNames";
+include ":propagacao:include/propagacao";
+include ":propagacao:include/afetaMobilePropagacao";
+
+program onPisarMarcador(quem, item, lastx, lasty, lastz, lastrealm)
+	lastx == 0;
+	lasty == 0;
+	lastz == 0;
+	lastrealm == 0;
+
+	item.EnviaEventoPisado();
+	var propPropagacao := GetObjProperty(item, PROPNAME_PROP_PROPAGACAO);
+	if (propPropagacao)
+		var estado := propPropagacao.lerEstadoAtual;
+		if(item.IsMarcadorTipo(PROPAGACAO_TIPO::INCENDIO))
+			if (estado > ESTADO_PROPAGACAO::DORMENTE)
+				AfetaMobileIncendiado(quem,estado,propPropagacao);
+			endif
+		elseif(item.IsMarcadorTipo(PROPAGACAO_TIPO::PATOGENICO))
+			if(estado == ESTADO_PROPAGACAO::INTENSO)
+				var propagacaoConfig := ReadConfigFile( ":propagacao:config/propagacao" );
+
+				AfetaMobileInfectado(quem,propPropagacao, cint(propagacaoConfig["patogenica"].resfriamento));
+			endif
+		endif
+	endif
+endprogram
+

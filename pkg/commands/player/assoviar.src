@@ -1,0 +1,203 @@
+use uo;
+use os;
+use npc;
+use util;
+use math;
+
+include "include/say";
+include ":taming:taming";
+include ":stables:include/stable";
+
+const COOLDOWN_SECONDS := 20;
+
+program textcmd_Assoviar(character)
+	var current_time := ReadGameClock();
+	var last_use := OwnerLastWhistle(character);
+
+	PrintTextAbove(character, "*assovia*");
+
+	if (last_use && current_time < last_use + COOLDOWN_SECONDS)
+		var tempo_restante := last_use + COOLDOWN_SECONDS - current_time;
+		SendSysMessage(character, "Aguarde " + tempo_restante + " segundos.");
+		return 0;
+	endif
+
+	var limbo_serial := OwnerLimboPetSerial(character);
+	var success := 0;
+
+	if (limbo_serial)
+		success := CallPetBack(character, limbo_serial);
+	else
+		success := SendPetAway(character);
+	endif
+
+	if (success)
+		SetOwnerLastWhistle(character, current_time);
+	endif
+
+	return success;
+endprogram
+
+function CallPetBack(character, pet_serial)
+	var pet := SystemFindObjectBySerial(pet_serial);
+
+	if (!pet)
+		SendSysMessage(character, "Seu pet nao foi encontrado.");
+		OwnerClearPetRef(character, pet_serial);
+		return 0;
+	endif
+
+	if (pet.master != character)
+		// Pet foi transferido ou libertado enquanto estava em limbo. Limpa
+		// o estado de limbo e as refs do player.
+		ClearPetStableAndLimboState(pet);
+		OwnerClearPetRef(character, pet_serial);
+		SendSysMessage(character, "Seu pet nao esta mais com voce.");
+		return 0;
+	endif
+
+	if (!IsInLimbo(pet))
+		SendSysMessage(character, "Nao foi possivel chamar o pet.");
+		OwnerClearPetRef(character, pet_serial);
+		return 0;
+	endif
+
+	// Contrato expirado ou perdido: traz o pet de volta de graca, encerra
+	// contrato silenciosamente. Nao frustra o jogador — ele so perde o
+	// direito ao .assoviar dali em diante.
+	var contrato_expirou := !HasContract(pet) || IsContractExpired(pet);
+
+	if ( (GetNumPets(character) + GetPetCost(pet)) > GetMaxPets(character) )
+		SendSysMessage(character, "Voce nao tem slots suficientes para resgatar seu pet.");
+		return 0;
+	endif
+
+	// Remove estados especiais que impedem o movimento.
+	pet.hidden := 0;
+	pet.frozen := 0;
+	pet.invul := 0;
+
+	PlaySoundEffect(character, 0x448);
+
+	var appear_loc := FindSpawnLocationNearby(character);
+	MoveObjectToLocation(pet, appear_loc.x, appear_loc.y, appear_loc.z, character.realm,
+	                     MOVEOBJECT_FORCELOCATION);
+
+	PrintTextAbove(pet, "*voltando para " + character.name + "*");
+
+	if (appear_loc.x != character.x || appear_loc.y != character.y)
+		var walk_event := struct{ "type" := 0xA008,
+		                          "source" := character,
+		                          "targ" := struct{ "x" := character.x, "y" := character.y,
+		                                            "type" := "walk" } };
+		SendEvent(pet, walk_event);
+	endif
+
+	ExitLimbo(character, pet);
+
+	if (contrato_expirou)
+		var data := GetPetStable(pet);
+		if (data != error && CInt(data["post"]))
+			var post := SystemFindObjectBySerial(CInt(data["post"]));
+			if (post && CInt(GetObjProperty(post, "StoredAnimal")) == pet.serial)
+				EraseObjProperty(post, "StoredAnimal");
+			endif
+		endif
+		ClearPetStable(pet);
+		OwnerClearPetRef(character, pet.serial);
+		SendSysMessage(character, "Seu contrato de estabulo expirou, mas " + pet.name + " voltou.");
+	else
+		SendSysMessage(character, pet.name + " voltou!");
+	endif
+
+	GetNumPets(character);
+	return 1;
+endfunction
+
+function SendPetAway(character)
+	var any_eligible := 0;
+	var tamed := GetObjProperty(character, "TamedPets");
+	if (tamed)
+		foreach serial in tamed
+			var candidate := SystemFindObjectBySerial(serial);
+			if (candidate && candidate.master == character
+			    && !candidate.dead
+			    && !IsStabled(candidate) && !IsInLimbo(candidate))
+				any_eligible := 1;
+				break;
+			endif
+			sleepms(2);
+		endforeach
+	endif
+
+	if (!any_eligible)
+		if (OwnerHasStabledPet(character))
+			SendSysMessage(character, "Voce precisa resgatar seu animal do estabulo para utilizar o comando assoviar.");
+		else
+			SendSysMessage(character, "Voce nao tem pets.");
+		endif
+		return 0;
+	endif
+
+	SendSysMessage(character, "Selecione o pet para enviar.");
+	var target_pet := Target(character);
+
+	if (!target_pet || !target_pet.IsA(POLCLASS_NPC) || target_pet.master != character || target_pet.dead)
+		SendSysMessage(character, "Pet invalido.");
+		return 0;
+	endif
+
+	if (IsPackAnimal(target_pet))
+		SendSysMessage(character, "Animais de carga nao podem ser enviados para um local seguro.");
+		return 0;
+	endif
+
+	if (IsInLimbo(target_pet))
+		SendSysMessage(character, "Este pet ja esta em um local seguro.");
+		return 0;
+	endif
+
+	if (IsStabled(target_pet))
+		SendSysMessage(character, "Retire o pet do estabulo antes de envia-lo para um local seguro.");
+		return 0;
+	endif
+
+	if (!HasContract(target_pet))
+		SendSysMessage(character, "Este pet precisa estar registrado em um estabulo para ser protegido.");
+		return 0;
+	endif
+
+	if (IsContractExpired(target_pet))
+		SendSysMessage(character, "O contrato de estabulo deste pet expirou. Visite o estabulo.");
+		return 0;
+	endif
+
+	EnterLimbo(character, target_pet);
+
+	PlaySoundEffect(character, 0x336);
+	PrintTextAbove(target_pet, "*correndo pro horizonte*");
+	sleepms(300);
+
+	var params := struct{ pet_serial := target_pet.serial,
+	                      owner_serial := character.serial,
+	                      run_away := 1 };
+
+	var script := start_script(":stables:sendpetlimbo", params);
+	if (script == error)
+		syslog("[assoviar] start_script :stables:sendpetlimbo falhou para " + character.name + " (" + character.serial + "): " + script.errortext);
+		SendSysMessage(character, "Erro ao enviar pet.");
+		ExitLimbo(character, target_pet);
+		return 0;
+	endif
+
+	GetNumPets(character);
+	SendSysMessage(character, target_pet.name + " foi para um local seguro.");
+	return 1;
+endfunction
+
+function IsPackAnimal(pet)
+	var tmpl := Lower(CStr(pet.npctemplate));
+	return ( tmpl == ":epicai:packhorse"  || tmpl == "packhorse"
+	      || tmpl == ":epicai:packhorse2" || tmpl == "packhorse2"
+	      || tmpl == ":epicai:packllama"  || tmpl == "packllama" );
+endfunction

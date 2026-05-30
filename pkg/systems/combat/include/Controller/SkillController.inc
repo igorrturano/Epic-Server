@@ -1,0 +1,106 @@
+include ":combat:settings";
+include ":combat:Model/AttackInfo";
+include ":abilities:models/Ability";
+
+include ":wrappers:Objects/Model/MobileWrapper";
+// include ":wrappers:Objects/Model/WeaponWrapper";
+include ":debug:Controller/DebugController";
+
+include ":attributes:attributes";
+
+function ProgressAttackSkills(byRef attackInfo)
+	var skillUsedForCritical := TACTICS;
+
+	if (!attackInfo.GetAttacker().IsConnected()) // Se o atacante estiver offline, não upa
+		return false;
+	endif
+
+	// Testa se é possivel ganhar skill com o NPC alvo
+	var skillAttacker := attackInfo.GetAttacker().GetSkillBase(attackInfo.GetWeapon().GetAttribute());
+	var skillDefender;
+	if (attackInfo.GetDefender().IsNPC())
+		skillDefender := attackInfo.GetDefender().GetSkillBase(WRESTLING);
+	else
+		skillDefender := attackInfo.GetDefender().GetSkillBase(attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetAttribute());
+	endif
+
+	// Swordmage exception: arma marcada com swordmage prop usa skill ONEHANDED
+	// independente da Attribute do template. Mantido por compat com a habilidade.
+	if (attackInfo.GetDefender().IsNPC() && attackInfo.GetAttacker().IsConnected())
+		if (attackInfo.GetWeapon().GetObjRef().GetProp("swordmage") == attackInfo.GetAttacker().GetSerial())
+			skillAttacker := attackInfo.GetAttacker().GetSkillBase(ONEHANDED);
+		endif
+
+		if (attackInfo.GetDefender().GetEquipBySlot(WEAPON).GetObjRef().GetProp("swordmage") == attackInfo.GetDefender().GetSerial())
+			skillDefender := attackInfo.GetDefender().GetSkillBase(ONEHANDED);
+		endif
+	endif
+
+	// Gate por skill: weapon e tactics são avaliados separadamente contra o defensor
+	var skillAttackerTactics := attackInfo.GetAttacker().GetSkillBase(skillUsedForCritical);
+	var canGainWeapon := skillAttacker <= (skillDefender + 10);
+	var canGainTactics := skillAttackerTactics <= (skillDefender + 10);
+
+	if (!canGainWeapon && !canGainTactics)
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_UP, Message("Skill UP bloqueado: Voce tem 10 de skill a mais que seu oponente"));
+		return 0;
+	endif
+
+	// Sendo o alvo um personagem jogador ou NPC com combate melhor que o atacante, permite o up de skill de combate
+	var can_gain := 0;
+	var next_gain := CInt(attackInfo.GetAttacker().GetObjRef().GetProp("#CS_GainTime"));
+	var now := ReadGameClock();
+	if (now >= next_gain)
+		if (CS_GetSettingsCfgElem("General").PvPGains)
+			can_gain := 1;
+		elseif (attackInfo.GetDefender().IsNPC())
+			can_gain := 1;
+		else
+			DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_UP, Message("Skill UP bloqueado: ganho em PvP desabilitado."));
+		endif
+	else
+		DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_UP, Message("Skill UP em cooldown (" + CStr(next_gain - now) + "s restantes)."));
+	endif
+
+	if (can_gain)
+		var gain_wait := CInt(CS_GetSettingsCfgElem("General").GainWait);
+		attackInfo.GetAttacker().GetObjRef().SetProp("#CS_GainTime", ReadGameClock() + gain_wait);
+		var attackerWeapon := attackInfo.GetWeapon();
+		var shouldGainArcana := attackerWeapon.GetCategory() == WEAPON_CATEGORY::MAGICBOW
+			|| attackerWeapon.GetCategory() == WEAPON_CATEGORY::SPIRITUALBLADE;
+
+		var weaponSkill;
+		if (attackInfo.GetWeapon().GetObjType() == 0x13b9)
+			if (!attackInfo.GetAttacker().GetEquipBySlot(SHIELD))
+				weaponSkill := TWOHANDED;
+			else
+				weaponSkill := ONEHANDED;
+			endif
+		else
+			weaponSkill := attackInfo.GetWeapon().GetAttribute();
+		endif
+
+		// Randomize order so weapon skill and tactics level up ~50/50
+		if (RandomInt(2) == 0)
+			if (canGainWeapon)
+				SkillCheck(attackInfo.GetAttacker().GetObjRef(), weaponSkill, -1);
+			endif
+			SleepMS(5);
+			if (canGainTactics)
+				SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+			endif
+		else
+			if (canGainTactics)
+				SkillCheck(attackInfo.GetAttacker().GetObjRef(), skillUsedForCritical, -1);
+			endif
+			SleepMS(5);
+			if (canGainWeapon)
+				SkillCheck(attackInfo.GetAttacker().GetObjRef(), weaponSkill, -1);
+			endif
+		endif
+
+		if (shouldGainArcana && canGainWeapon)
+			SkillCheck(attackInfo.GetAttacker().GetObjRef(), ARCANA, -1);
+		endif
+	endif
+endfunction

@@ -1,0 +1,352 @@
+// $Id: methods.src 386 2005-10-03 00:22:39Z muaddiblsd $
+
+/*
+From core-changes.txt:
+
+Added support for the client's book interface:
+uo::SendOpenBook(chr,book) kicks it off
+
+The 'book' passed must have a Method Script, exporting the following functions:
+	exported function IsWritable(book) - returns 0 or 1 for readonly/writable
+	exported function GetNumLines(book) - returns maximum number of lines
+        exported function GetTitle(book)
+        exported function GetAuthor(book)
+        exported function GetLine(book, line) - line is 1-based
+
+Writable books must provide the following functions:
+        exported function SetAuthor(book,author)
+        exported function SetTitle(book,title)
+        exported function SetLine(book,line,text)
+        exported function GetContents(book) - returns an array of all lines
+*/
+/////////////////////////////////////////////////////////////////
+// * Function List *
+//
+// IsBook(book)
+//
+// IsWritable(book)
+// GetNumLines(book)
+// GetTitle(book)
+// GetAuthor(book)
+// GetLine(book, line_num)
+// GetContents(book)
+// SetAuthor(book, author)
+// SetTitle(book, title)
+// SetLine(book, line_num, text)
+// SetOwner(book, serial)
+// GetOwner(book)
+// ReadOnly(book, value)
+// ExtractInfo(book)
+//
+/////////////////////////////////////////////////////////////////
+// * Internal/Private Function List *
+//
+// GetInfo(book, prop_name)
+// SetInfo(book, prop_name, prop_value)
+//
+///////////////////////////
+
+use uo;
+use os;
+use cfgfile;
+
+include ":datafile:datafile";
+
+var readonly_cache := dictionary{};
+
+program Install()
+	return 1;
+endprogram
+
+exported function IsBook(book)
+	return book;
+endfunction
+
+// ++++++++++++++++++++++++++++
+// Core Required Functions
+// ++++++++++++++++++++++++++++
+
+exported function IsWritable(book)
+	var book_key := CStr(book.serial);
+
+	// CACHE: Verifica primeiro no cache local (solução definitiva)
+	if (readonly_cache.exists(book_key))
+		var cached_value := readonly_cache[book_key];
+		if (cached_value == 1)
+			return 0;
+		else
+			return 1;
+		endif
+	endif
+
+	// Se não está no cache, usa o método original
+	var ro_flag := GetInfo(book, "ReadOnly");
+	if (ro_flag == 1)
+		// Adiciona ao cache para próximas consultas
+		readonly_cache[book_key] := 1;
+		return 0;
+	else
+		// Adiciona ao cache para próximas consultas
+		if (ro_flag == 0)
+			readonly_cache[book_key] := 0;
+		endif
+		return 1;
+	endif
+endfunction
+
+exported function GetNumLines(book)
+	// There are 8 lines per page.
+	// For simplicity, take in the number of pages and return 8 lines for every page.
+	return (CInt(GetInfo(book, "NumPages")) * 8);
+endfunction
+
+exported function GetTitle(book)
+	// One line. Looks for a property called "Title".
+	return CStr(GetInfo(book, "Title"));
+endfunction
+
+exported function GetAuthor(book)
+	// One line. :ooks for a property called "Author".
+	return CStr(GetInfo(book, "Author"));
+endfunction
+
+exported function GetLine(book, line_num)
+	// Used to get a specific line from the book.
+
+	// Uses the GetContents() function.
+	var contents := GetContents(book);
+	if (line_num <= contents.Size())
+		var line := contents[line_num];
+
+		if (line && line != error)
+			return line;
+		endif
+	endif
+
+	// If there wasnt a line, return an empty string.
+	return "";
+endfunction
+
+exported function GetContents(book)
+	// Returns an array of all lines
+	var info := GetInfo(book, "Contents");
+	if (!info || info == error)
+		info := array;
+	endif
+	return info;
+endfunction
+
+exported function SetAuthor(book, author)
+	return SetInfo(book, "Author", CStr(author));
+endfunction
+
+exported function SetTitle(book, title)
+	if (Len(title) > 0)
+		SetName(book, title);
+	else
+		SetName(book, "a book");
+	endif
+
+	return SetInfo(book, "Title", CStr(title));
+endfunction
+
+exported function SetLine(book, line_num, text)
+	// Gets all the lines, then edits the appropriate line.
+	// Returns the contents of the book.
+
+	// Reuses the GetContents() function.
+	var contents := GetContents(book);
+	if (!contents || contents == error)
+		contents := array;
+	endif
+
+	// Reuses the GetNumLines() function
+	if (line_num <= GetNumLines(book))
+		contents[line_num] := CStr(text);
+		SetInfo(book, "Contents", contents);
+	endif
+
+	return contents;
+endfunction
+
+// ++++++++++++++++++++++++++++
+// Helper Functions
+// ++++++++++++++++++++++++++++
+
+exported function SetOwner(book, serial)
+	if (serial.IsA(POLCLASS_MOBILE))
+		serial := serial.serial;
+	endif
+
+	// book.SetOwner(serial)
+	// Sets the serial of who owns the book.
+	return SetInfo(book, "Owner", CInt(serial));
+endfunction
+
+exported function GetOwner(book)
+	// book.GetOwner()
+	// Gets the serial of the owner of the book.
+	return GetInfo(book, "Owner");
+endfunction
+
+exported function ReadOnly(book, mode)
+	// book.ReadOnly(1|0)
+	// Mode:
+	// 	1 - Disable read write (sets to read only)
+	// 	0 - Enable read write
+
+	mode := CInt(mode);
+	if (mode < 0)
+		mode := 0;
+	elseif (mode > 1)
+		mode := 1;
+	endif
+
+	var book_key := CStr(book.serial);
+
+	// Salva no datafile (mantém a funcionalidade original)
+	var result := SetInfo(book, "ReadOnly", CInt(mode));
+
+	// CACHE: Sempre salva no cache local para garantir acesso imediato
+	readonly_cache[book_key] := mode;
+
+	return result;
+endfunction
+
+exported function ExtractInfo(book)
+	// book.ExtractInfo()
+	// Get all the info you need about a book
+	// useful for copying one or something else.
+
+	// Returns a structure
+	// .Author
+	// .Contents
+	// .Title
+
+	var book_info := struct;
+	book_info.+Author := GetAuthor(book);
+	book_info.+Contents := GetContents(book);
+	book_info.+Title := GetTitle(book);
+
+	return book_info;
+endfunction
+
+exported function SetContents(book, contents)
+	return SetInfo(book, "Contents", contents);
+endfunction
+
+exported function GetNumPages(book)
+	return CInt(GetInfo(book, "NumPages"));
+endfunction
+
+exported function SetNumPages(book, num_pages)
+	return SetInfo(book, "NumPages", CInt(num_pages));
+endfunction
+
+// ++++++++++++++++++++++++++++
+// Internal/Private Functions
+// ++++++++++++++++++++++++++++
+
+// *GetInfo(book, prop_name)
+//
+// Function for getting a book's info.
+// First it will search for a datafile entry for the value based on
+// the book's serial. Then it will look on the book for a cprop, then
+// if neither of the previous two were found, it will fall back on the
+// itemdesc.cfg entry for the book.
+
+function GetInfo(book, prop_name)
+	var prop_value;
+	var key := Hex(book.serial);
+
+	var book_data_file := DFOpenDataFile(":sysbook:books", DF_CREATE);
+	var book_elem := DFFindElement(book_data_file, key, DF_NO_CREATE);
+
+	if (book_elem && !book_elem.errortext)
+		prop_value := book_elem.GetProp(prop_name);
+		if (prop_value != error)
+			return prop_value;
+		endif
+	else
+
+		// SOLUÇÃO: Se não encontrou o elemento, força reload do datafile
+		if (prop_name == "ReadOnly")
+
+			var datafile_name := ":sysbook:books";
+			UnloadDataFile(datafile_name);
+			sleepms(10);
+
+			// Tenta novamente após reload
+			book_data_file := DFOpenDataFile(datafile_name, DF_NO_CREATE);
+			if (book_data_file && !book_data_file.errortext)
+				book_elem := DFFindElement(book_data_file, key, DF_NO_CREATE);
+				if (book_elem && !book_elem.errortext)
+					prop_value := book_elem.GetProp(prop_name);
+					if (prop_value != error)
+						return prop_value;
+					endif
+				endif
+			endif
+
+		endif
+	endif
+
+	// CProp fallback
+	prop_value := GetObjProperty(book, prop_name);
+	if (prop_value != error)
+		return prop_value;
+	endif
+
+	// ItemDesc fallback
+	var cfg_file := ReadConfigFile(":*:itemdesc");
+	var item_cfg := cfg_file[book.objtype];
+	if (item_cfg)
+		prop_value := GetConfigString(item_cfg, prop_name);
+		if (prop_value != error)
+			return prop_value;
+		endif
+	else
+	endif
+
+	return 0;
+endfunction
+
+// *SetInfo(book, prop_name, prop_value)
+//
+// Private function for setting a value for a book.
+// Writes to a datafile, the elem being the book's serial #
+//
+// Note: Make sure the prop_name never has any spaces.
+//       Datafiles dont like that.
+//
+function SetInfo(book, prop_name, prop_value)
+	var book_data_file := DFOpenDataFile(":sysbook:books", DF_CREATE);
+	var book_elem := DFFindElement(book_data_file, Hex(book.serial), DF_CREATE);
+
+	if (!book_elem || book_elem.errortext)
+		return 0;
+	endif
+
+	var setResult := book_elem.SetProp(CStr(prop_name), prop_value);
+
+	// SOLUÇÃO: Forçar sincronização do datafile
+	if (setResult && prop_name == "ReadOnly")
+
+		// Método 1: Unload/Reload do datafile
+		var datafile_name := ":sysbook:books";
+		UnloadDataFile(datafile_name);
+		sleepms(10); // Pequena pausa para garantir que foi descarregado
+
+		// Teste: tentar ler imediatamente para forçar reload
+		var test_df := DFOpenDataFile(datafile_name, DF_NO_CREATE);
+		if (test_df && !test_df.errortext)
+			var test_elem := DFFindElement(test_df, Hex(book.serial), DF_NO_CREATE);
+			if (test_elem && !test_elem.errortext)
+				var test_value := test_elem.GetProp(CStr(prop_name));
+			endif
+		endif
+
+	endif
+
+	return setResult;
+endfunction

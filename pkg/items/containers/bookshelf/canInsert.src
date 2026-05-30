@@ -1,0 +1,47 @@
+// $Id: canInsert.src 87 2006-05-23 19:04:43Z sroyalty $
+
+use uo;
+use cfgfile;
+include ":attributes:attributes";
+include ":containers:checks";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program CanInsert(mobile, container, move_type, insert_type, item, existing_stack, amt_to_add)
+
+	if (move_type == MOVETYPE_COREMOVE)
+		return 1;
+	elseif (CP_RootContainerLocked(item))
+		SendSysMessage(mobile, "voce não pode por isto em um container trancado.");
+		return 0;
+	endif
+
+	if (mobile)
+		if (!mobile.npctemplate)
+			var aux := container;
+			while (aux.container)
+				aux := aux.container;
+			endwhile
+			var mobWrapper := MobileWrapper(mobile);
+			if (aux == mobile && mobWrapper.HasFreeHand())
+				return 1;
+			endif
+
+			if (mobWrapper.IsMounted())
+				SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
+				return 0;
+			endif
+
+			if (!mobWrapper.HasFreeHand())
+				return 0;
+			endif
+
+			if (mobile.frozen || mobile.paralyzed)
+				SendSysMessage(mobile, "Voce esta paralizado.");
+				return 0;
+			endif
+		endif
+	endif
+
+	return 1;
+
+endprogram

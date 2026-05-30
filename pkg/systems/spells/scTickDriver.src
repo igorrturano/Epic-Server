@@ -1,0 +1,155 @@
+use uo;
+use os;
+use util;
+use vitals;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":spells:Controller/SC_Damage";
+include ":spells:Controller/SpellController";
+include ":attributes:attributes";
+include ":attributes:vitals";
+include "include/client";
+include "include/say";
+include "include/sounds";
+
+// Periodic driver for SC tick-callback effects.
+// Sleeps `tick_interval` seconds, verifies the effect is still active by
+// looking up SpellOpts_{spellId} on the target, fires the tick script, repeats.
+// Self-terminates when the opts go missing (expiration, dispel, or replacement).
+// A fresh driver is launched by SC_ApplyEffect and re-launched by SC_ResyncOnLogin
+// after a server restart.
+//
+// Declarative tick fields driver consumes (any combination, or none):
+//   opts.tick_damage       struct{ amount|dice, bonus, type }      -> SC_DealDamage
+//                          (dice rolls per-tick via RandomDiceRoll;
+//                           bonus adds flat int; amount is the fixed
+//                           fallback when dice is unset)
+//   opts.tick_heal         struct{ base, remainder }               -> applyEpicHealing
+//   opts.tick_presentation struct{ fx, sound, periodic_emote,      -> FX / sound / sysmsg /
+//                                   final_overhead, final_emote,      overhead text
+//                                   caster_feedback }
+//   opts.tick_script       <script path>                           -> escape hatch for
+//                                                                     non-generalizable
+//                                                                     per-tick logic
+// Authoring is centralized in :spells:Controller/SpellEffectBuilder — spells
+// should chain SpellEffectBuilder + TickPresentation, then SC_ApplyEffect on
+// the resulting flat opts. The persisted struct stays flat because
+// SetProperty round-trips lose class method dispatch.
+program SCTickDriver(args)
+	var caster := args[1];
+	var targ := args[2];
+	var spellId := CInt(args[3]);
+	var tick_script := args[4];
+	var tick_interval := CInt(args[5]);
+	var tick_params := args[6];
+	var my_instance := CInt(args[7]);
+	args := 0;
+
+	if (!targ || tick_interval < 1)
+		return;
+	endif
+
+	set_critical(0);
+	detach();
+
+	var tick_number := 1;
+
+	while (1)
+		sleep(tick_interval);
+
+		if (!targ || targ is @Exception)
+			return;
+		endif
+
+		var opts := MobileWrapper(targ).GetProperty($"SpellOpts_{spellId}");
+		if (!opts || opts.errortext)
+			return;
+		endif
+
+		// Opts were replaced by a newer apply (e.g. via maintain re-cast) —
+		// that apply launched its own driver, so this one must exit to avoid
+		// duplicate ticks. Legacy opts without instance_id keep working.
+		if (my_instance && CInt(opts.instance_id) != my_instance)
+			return;
+		endif
+
+		// Safety net for orphaned SpellOpts. The expiration timer (currently
+		// owned by TimerControl via "spelleffect_{id}") is supposed to call
+		// endspelleffect -> SC_RemoveEffect long before we hit this point. If
+		// it didn't (race on the shared "prop" ObjProperty between concurrent
+		// endscripts is a known offender), the driver would tick forever and
+		// any spell that gates recast on SpellOpts existence stays jammed.
+		// Force the cleanup ourselves and exit. +2 grace ticks because the
+		// expiration handler races with this loop and may need a beat.
+		var total_duration := CInt(opts.totalDuration);
+		var expected_max_ticks := 0;
+		if (total_duration > 0)
+			expected_max_ticks := CInt(total_duration / tick_interval);
+			if (tick_number > expected_max_ticks + 2)
+				SC_RemoveEffect(targ, spellId);
+				return;
+			endif
+		endif
+		var is_final_tick := (expected_max_ticks > 0 && tick_number >= expected_max_ticks);
+
+		if (opts.tick_damage)
+			// Tick declarativo = chip; NAO carrega bonus do foco. O golpe
+			// direto da magia ja aplica o elemental do foco uma vez no cast;
+			// os chips do DoT nao multiplicam (padrao magicmissile, ver 63%).
+			var amt;
+			if (opts.tick_damage.dice)
+				amt := RandomDiceRoll(opts.tick_damage.dice) + CInt(opts.tick_damage.bonus);
+			else
+				amt := CInt(opts.tick_damage.amount);
+			endif
+			SC_DealDamage(caster, targ, spellId, amt, opts.tick_damage.type, 0);
+		endif
+
+		var heal_real := 0;
+		if (opts.tick_heal)
+			var heal := CInt(opts.tick_heal.base);
+			if (tick_number <= CInt(opts.tick_heal.remainder))
+				heal += 1;
+			endif
+			var hp_before := GetVital(targ, HITS);
+			applyEpicHealing(targ, heal);
+			heal_real := GetVital(targ, HITS) - hp_before;
+		endif
+
+		var pres := opts.tick_presentation;
+		if (pres)
+			if (pres.fx)
+				PlayObjectCenteredEffect(targ, pres.fx.id, CInt(pres.fx.speed), CInt(pres.fx.frames));
+			endif
+			if (pres.sound)
+				PlaySoundEffect(targ, CInt(pres.sound));
+			endif
+			if (pres.periodic_emote)
+				var every := CInt(pres.periodic_emote.every);
+				if (every < 1) every := 1; endif
+				if (tick_number % every == 0)
+					SendSysMessageEx(targ, pres.periodic_emote.text, pres.periodic_emote.color);
+				endif
+			endif
+			if (is_final_tick)
+				if (pres.final_overhead)
+					PrintTextAbove(targ, pres.final_overhead);
+				endif
+				if (pres.final_emote)
+					SendSysMessageEx(targ, pres.final_emote.text, pres.final_emote.color);
+				endif
+			endif
+			if (pres.caster_feedback && caster && !(caster is @Exception) && caster.connected)
+				if (opts.tick_heal)
+					SendSysMessageEx(caster, $"+{heal_real} HP ({tick_number}/{expected_max_ticks})", SSM_INFO);
+				endif
+			endif
+		endif
+
+		if (tick_script)
+			start_script(tick_script, array{ caster, targ, spellId, tick_number, tick_params });
+		endif
+
+		tick_number += 1;
+	endwhile
+endprogram

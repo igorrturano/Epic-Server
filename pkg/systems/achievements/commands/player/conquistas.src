@@ -1,0 +1,7 @@
+// include ":achievements:Gump";
+include ":message:model/Message";
+
+program CMD_conquistas(who, params)
+	Message(who, "Menu desativado para o Beta").SendSys*(who);
+	// ShowAchievementsGump(who);
+endprogram

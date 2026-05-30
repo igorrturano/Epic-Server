@@ -1,0 +1,71 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:regen";
+include ":attributes:vitals";
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (who.npctemplate)
+		var time := CInt(AP_GetSkill(who, ARCANA)) * 2;
+		var lvl := 0.5;
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::CETRO_DA_MORTE))
+			lvl := 0.7;
+		endif
+
+		SC_RemoveEffect(who, CInt(spell.id));
+
+		var opts := struct{};
+		opts.+properties := dictionary{ "dmgreturn" -> lvl };
+		opts.+armor_hit_scripts := array{ ":combat:armorHitScripts/rawdmgreturn" };
+		opts.+desc := "Retribuicao Profana";
+		opts.+maintainable := 1;
+
+		SC_ApplyEffect(who, who, opts, time, CInt(spell.id));
+		return 1;
+	endif
+
+	var chardata := GetObjProperty(who, "chardata");
+	if (chardata.wisdom_path != "Mago" && chardata.magia != "spellcaster"
+		&& !TemHabilidade(who, "Aura Mortis")
+		&& !MobileWrapper(who).HasAbility(ABILITY_ID::SENSIBILIDADE_ARCANA))
+		SendSysMessageEx(who, "Voce nao sabe usar essa magia.", SSM_INFO);
+		return 1;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	var lvl := 0.5;
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::CETRO_DA_MORTE))
+		lvl := 0.7;
+	endif
+
+	var time := CInt(AP_GetSkill(who, ARCANA)) * 2;
+
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	var opts := struct{};
+	opts.+properties := dictionary{ "dmgreturn" -> lvl };
+	opts.+armor_hit_scripts := array{ ":combat:armorHitScripts/rawdmgreturn" };
+	opts.+desc := "Retribuicao Profana";
+
+	SC_ApplyEffect(who, targ, opts, time, CInt(spell.id));
+	Corromper(who, 28, targ);
+	SendSysMessageEx(targ, "Olho por olho...", SSM_INFO);
+
+	return 1;
+endprogram

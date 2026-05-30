@@ -1,0 +1,83 @@
+
+use cfgfile;
+use uo;
+
+include ":attributes:attributes";
+include "include/say";
+include ":timedscripts:timedScripts";
+include "include/epicConstants";
+include ":equipsys:Model/EquipModStamper";
+
+program skill_theology(who)
+
+	SendSysMessageEx(who, "Escolha um item para avaliar.", SSM_REQUEST);
+	var item := Target(who, TGTOPT_CHECK_LOS);
+
+	if (!item)
+		SendSysMessageEx(who, "Cancelado.", SSM_FAIL);
+		return;
+	endif
+
+	if (!item.IsA(POLCLASS_ITEM))
+		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return;
+	endif
+
+	PrintTextAbove(who, "*analisando o item*");
+
+	var identificado := GetObjProperty(item, "theologywho");
+
+	if (who.serial in identificado)
+		var equip_props := GetObjProperty(item, "equip");
+		if (equip_props)
+			if (equip_props.sacred)
+				SendSysMessageEx(who, "Voce ja identificou este item: Sagrado", SSM_INFO);
+			elseif (equip_props.cursed)
+				SendSysMessageEx(who, "Voce ja identificou este item: Amaldicoado", SSM_INFO);
+			else
+				SendSysMessageEx(who, "Voce ja identificou este item: Mundano (sem propriedades divinas)", SSM_INFO);
+			endif
+		else
+			SendSysMessageEx(who, "Voce ja identificou este item: Mundano (sem propriedades divinas)", SSM_INFO);
+		endif
+		return 1;
+	elseif (SkillCheck(who, THEOLOGY, -1) > 0)
+		var equip_props := GetObjProperty(item, "equip");
+		if (equip_props)
+			if (equip_props.sacred)
+				SendSysMessageEx(who, "Voce identificou este item: Sagrado", SSM_INFO);
+			elseif (equip_props.cursed)
+				SendSysMessageEx(who, "Voce identificou este item: Amaldicoado", SSM_INFO);
+			else
+				SendSysMessageEx(who, "Voce identificou este item: Mundano (sem propriedades divinas)", SSM_INFO);
+			endif
+		else
+			SendSysMessageEx(who, "Voce identificou este item: Mundano (sem propriedades divinas)", SSM_INFO);
+		endif
+
+		var whos := GetObjProperty(item, "theologywho");
+		if (whos == error)
+			whos := array;
+		endif
+		if (!(who.serial in whos))
+			whos.append(who.serial);
+			SetObjProperty(item, "theologywho", whos);
+		endif
+
+		// Sacred/cursed identified via Theology; plain magic still routes through Arcana.
+		var equip_data := GetObjProperty(item, "equip");
+		if (equip_data && (equip_data.sacred || equip_data.cursed))
+			SetObjProperty(item, "magic", 2);
+			var equipped_on := CInt(GetObjProperty(item, "#EquippedOn"));
+			if (equipped_on)
+				var wearer := SystemFindObjectBySerial(equipped_on);
+				if (wearer && wearer != error)
+					EquipModStamper(item).ApplyOn(wearer);
+				endif
+			endif
+			IncRevision(item);
+		endif
+	else
+		SendSysMessageEx(who, "Voce nao esta certo...", SSM_FAIL);
+	endif
+endprogram

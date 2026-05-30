@@ -1,0 +1,74 @@
+use uo;
+use os;
+
+include ":gumps:gumps";
+include ":gumps:epicGumps";
+include ":estudar:estudavel";
+
+// ============================================================================
+// COMANDO GM: Criar item de estudo
+// ============================================================================
+
+program estudarcriar(who)
+    if (who.cmdlevel < 3)
+        SendSysMessage(who, "Apenas GMs podem usar este comando.");
+        return 0;
+    endif
+
+    SendSysMessage(who, "Selecione o item para tornar estudável.");
+    var item := Target(who);
+    
+    if (!item || !item.isa(POLCLASS_ITEM))
+        SendSysMessage(who, "Item inválido.");
+        return 0;
+    endif
+
+    // Criar gump
+    var res := CriarGumpSelecaoSkill(who);
+    
+    if (res && res[99])
+        var skill := "";
+        if (res[1])
+            skill := "Theology";
+        elseif (res[2])
+            skill := "Science";
+        elseif (res[3])
+            skill := "Arcana";
+        endif
+
+        if (skill)
+            SetObjProperty(item, "estudavel", skill);
+            SendSysMessage(who, "Item agora é estudável para " + skill + ".");
+        endif
+    else
+        SendSysMessage(who, "Operação cancelada.");
+    endif
+
+    return 1;
+endprogram
+
+// ============================================================================
+// FUNÇÃO GUMP
+// ============================================================================
+
+function CriarGumpSelecaoSkill(who)
+    var gump := GFECreateGump("Escolha a Skill para Estudo", 300, 250);
+    
+    GFTextLine(gump, 30, 80, 1153, "Selecione a skill para estudo:");
+    
+    GFSetRadioGroup(gump, 1);
+    GFRadioButton(gump, 40, 120, 208, 209, 1, 1);
+    GFTextLine(gump, 60, 120, 1153, "Theology");
+    
+    GFRadioButton(gump, 40, 150, 208, 209, 0, 2);
+    GFTextLine(gump, 60, 150, 1153, "Science");
+    
+    GFRadioButton(gump, 40, 180, 208, 209, 0, 3);
+    GFTextLine(gump, 60, 180, 1153, "Arcana");
+    
+    // Botões
+    GFAddButton(gump, 60, 220, 2450, 2451, GF_CLOSE_BTN, 99);  // Create
+    GFAddButton(gump, 150, 220, 2453, 2454, GF_CLOSE_BTN, 0);  // Cancel
+    
+    return GFSendGump(who, gump);
+endfunction

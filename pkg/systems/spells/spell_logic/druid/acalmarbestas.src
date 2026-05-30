@@ -1,0 +1,69 @@
+use uo;
+use cfgfile;
+use os;
+
+include ":charactercreation:habilidades";
+include ":attributes:include/attributeConstants";
+include ":attributes:include/attributes";
+
+include ":tn:npcutil";
+include ":tn:cooldown";
+include "include/sysEvent";
+include "include/eventID";
+include ":taming:taming";
+
+program textcmd_acalmar(params)
+	var who := params[1];
+	var creature := params[2];
+
+	var delay := GetObjProperty(who, "delayskill");
+	if (delay)
+		if (delay > ReadGameClock())
+			SendSysMessage(who, "Voce ainda esta fazendo outra coisa.");
+			return;
+		endif
+	endif
+	SetObjProperty(who, "delayskill", ReadGameClock() + 5);
+
+	if (who.hidden)
+		SendSysMessageEx(who, "Você precisa ser visto para acalmar criaturas.", SSM_FAIL);
+		return;
+	endif
+
+	SendSysMessageEx(who, "Selecione a criatura que você deseja acalmar.", SSM_REQUEST);
+
+	if (GetObjProperty(creature, "Blocked") || creature.frozen)
+		SendSysMessage(who, "O raciocinio por tras da sua analise esta incorreto.");
+		return 0;
+	endif
+
+	var dist := Distance(who, creature);
+	if (dist > 8)
+		SendSysMessageEx(who, "Você está longe demais.");
+		return 0;
+	endif
+
+	var tameDifficulty := creature.getTameDifficulty();
+	var isAnimal := creature.isAnimalBrain();
+	if (!isAnimal)
+		SendSysMessage(who, "Esse não pode ser um alvo válido.");
+		return 0;
+	endif
+	if (IsTamedPet(creature))
+		SendSysMessageEx(who, creature.name + " não pode ser acalmado.", SSM_FAIL);
+		return 0;
+	endif
+
+	PrintTextAbove(who, "*Tenta acalmar " + creature.name + "*");
+	Sleep(1);
+	if (SkillCheck(who, NATURE, tameDifficulty, tameDifficulty - 15) > 0)
+		var eventStruct := struct{ type := EVID_PEACEMADE, source := who };
+		sendEvent(creature, eventStruct);
+		SetCooldown(creature, "peacemade", cint(AP_GetSkill(who, NATURE)));
+		PrintTextPrivate(creature, "A criatura foi acalmada.", who);
+		return 1;
+	else
+		PrintTextPrivate(creature, "Voce falha em acalmar o animal.", who);
+		return 0;
+	endif
+endprogram

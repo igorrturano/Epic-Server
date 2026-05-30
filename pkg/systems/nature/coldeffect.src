@@ -1,0 +1,210 @@
+use uo;
+use os;
+use vitals;
+
+include ":charactercreation:resists";
+include ":attributes:attributes";
+include "include/epicConstants";
+include ":nature:nature";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":itemUtils:objtype";
+
+var leatherArmors := { 0x13C7, 0x13CD, 0x13C6, 0x1DB9, 0x13CB, 0x13CC, 0x13D3, 0x13D6,
+					   0x13D5, 0x13D4, 0x13DA, 0x13DB, 0x170B, 0x1711 };
+
+program neve(params)
+
+	var who := params[1];
+
+	SetObjProperty(who, "neve", 1);
+
+	if (GetObjProperty(who, "teste_de_frio") != error)
+		return;
+	endif
+
+	SetObjProperty(who, "teste_de_frio", 1);
+	detach();
+
+	while (1)
+			sleep(300);
+
+			if (GetObjProperty(who, "neve") == error)
+				var p := cint(GetObjProperty(who, "penalidadeclima"));
+				if (p > 0)
+					if (p == 1)
+						RemoveColdMod(who, 1);
+					elseif (p >= 2)
+						RemoveColdMod(who, 1);
+						RemoveColdMod(who, 2);
+					endif
+				endif
+				EraseObjProperty(who, "penalidadeclima");
+				EraseObjProperty(who, "teste_de_frio");
+				EraseObjProperty(who, "frio_streak");
+				return;
+			endif
+
+			var dif := RESIST_VERY_HARD;
+
+			if (GetGlobalProperty("dia") == "noite")
+				dif := dif + 1;
+			endif
+
+			if (cint(GetGlobalProperty("season")) == 1) // if verão
+				dif := dif - 1;
+			endif
+
+			if (cint(GetGlobalProperty("season")) == 3) // inverno
+				dif := dif + 1;
+			endif
+
+			if (GetGlobalProperty("weather") != error) // ta chovendo ou nevando
+				dif := dif + 1;
+			endif
+
+			if (GetObjProperty(who, "chardata").trait == "Cria do Deserto")
+				dif := dif + 4;
+			endif
+
+			if (GetObjProperty(who, "chardata").trait == "Adaptável")
+				dif := dif - 2;
+			endif
+
+			if (MobileWrapper(who).HasAbility(ABILITY_ID::CRAB_STYLE))
+				dif := dif - 2;
+			endif
+
+			if (GetObjProperty(who, "chardata").culture == BJORSKA)
+				dif := dif - 5;
+			endif
+
+			if (GetObjProperty(who, "chardata").culture == LESTE)
+				dif := dif - 2;
+			endif
+
+			if (GetObjProperty(who, "chardata").culture == GULTHRAK)
+				dif := dif + 2;
+			endif
+
+			dif := dif - cint(AP_GetSkill(who, NATURE) / 25);
+
+			foreach item in (ListEquippedITems(who))
+
+				dif += PegaValorFabricacao(item, CARACTERISTICA_FABRICACAO_RESISTENCIACLIMACALOR);
+				dif -= PegaValorFabricacao(item, CARACTERISTICA_FABRICACAO_RESISTENCIACLIMAFRIO);
+			endforeach
+
+			// Fontes de calor ajudam contra o frio
+			foreach item in (ListItemsNearLocation(who.x, who.y, who.z, 4, who.realm))
+				if ((item.objtype >= 0x0461) && (item.objtype <= 0x046f))
+					dif := dif - 1;
+					break;
+				elseif ((item.objtype >= 0x092b) & (item.objtype <= 0x0934))
+					dif := dif - 1;
+					break;
+				elseif ((item.objtype >= 0x08cf) && (item.objtype <= 0x08df))
+					dif := dif - 1;
+					break;
+				elseif ((item.objtype >= 0x092b) && (item.objtype <= 0x096c))
+					dif := dif - 1;
+					break;
+				elseif ((item.objtype >= 0x45d) && (item.objtype <= 0x48e))
+					dif := dif - 1;
+					break;
+				elseif ((item.objtype >= 0x0de3) && (item.objtype <= 0x0de9))
+					dif := dif - 1;
+					break;
+				elseif ((item.objtype >= 0x0e31) && (item.objtype <= 0x0e33))
+					dif := dif - 1;
+					break;
+				elseif ((item.objtype >= 0x1849) && (item.objtype <= 0x1850))
+					dif := dif - 1;
+					break;
+				elseif ((item.objtype >= 0x197a) && (item.objtype <= 0x19a9))
+					dif := dif - 1;
+					break;
+				elseif ((item.objtype >= 0x0de3) && (item.objtype <= 0x0de9))
+					dif := dif - 1;
+					break;
+				elseif ((item.objtype == 0x19bb) || (item.objtype == 0x0fb1))
+					dif := dif - 1;
+					break;
+				endif
+				sleepms(20);
+			endforeach
+
+			// Phase 2: scaled cold ward — closest campfire within 4 tiles, scales with Survival
+			var closestFireDist := -1;
+			foreach fireItem in (ListItemsNearLocation(who.x, who.y, who.z, 4, who.realm))
+				if (fireItem.objtype == UOBJ_CAMPFIRE)
+					var d := CoordinateDistance(who.x, who.y, fireItem.x, fireItem.y);
+					if (closestFireDist == -1 || d < closestFireDist)
+						closestFireDist := d;
+					endif
+				endif
+				sleepms(20);
+			endforeach
+			if (closestFireDist >= 0)
+				var fireBonus := (5 - closestFireDist) + cint(AP_GetSkill(who, SURVIVAL) / 25);
+				if (fireBonus < 0)
+					fireBonus := 0;
+				endif
+				dif := dif - fireBonus;
+			endif
+
+			var resistcheck;
+			var resistchecked;
+
+			foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, 10, who.realm))
+				if (mobile.npctemplate == ":brainai:protetordeclima")
+					SendSysMessageEX(who, "O Protetor de Fogo lhe protege do frio.", SSM_INFO);
+					dif := dif - 4;
+				endif
+				if ((MobileWrapper(mobile).HasAbility(ABILITY_ID::MESTRE_DE_FERAS)) && who.party &&
+		(who.party.leader == mobile.party.leader))
+					resistchecked := mobile;
+				endif
+				sleepms(20);
+			endforeach
+
+			var frioStreak := cint(GetObjProperty(who, "frio_streak")) + 1;
+			SetObjProperty(who, "frio_streak", frioStreak);
+			dif := dif + frioStreak;
+
+			if (SkillCheck(who, NATURE, dif, 0, ADV_SKILL) > 0)
+				SendSysMessageEx(who, "Sua sintonia com a natureza protege voce do frio.", SSM_INFO);
+				continue;
+			endif
+
+			var penalty := cint(GetObjProperty(who, "penalidadeclima"));
+
+			if (!resistchecked)
+				resistcheck := CheckResist(who, FORTITUDE, dif);
+			else
+				resistcheck := CheckResist(resistchecked, FORTITUDE, dif);
+			endif
+
+			if (resistcheck)
+				SendSysMessageEx(who, "Voce resiste aos efeito do frio.", SSM_INFO);
+				if (penalty == 1)
+					penalty := 0;
+					RemoveColdMod(who, 1);
+				elseif (penalty == 2)
+					penalty := 1;
+					RemoveColdMod(who, 2); // Add missing removal
+				endif
+			else
+				SendSysMessageEx(who, "Voce nao resiste aos efeito do frio.", SSM_FAIL);
+				if (penalty == 0)
+					penalty := 1;
+					ApplyColdMod(who, 1);
+				elseif (penalty >= 1)
+					penalty := 2;
+					ApplyColdMod(who, 2);
+				endif
+			endif
+
+			SetObjProperty(who, "penalidadeclima", penalty);
+		endwhile
+endprogram

@@ -1,0 +1,10 @@
+use uo;
+use os;
+
+include ":musicianship:bardmusic";
+
+program TimedScript_bard_contagiante_end(alvo)
+	EraseObjProperty(alvo, "#Bard_contagiante");
+	SendSysMessage(alvo, "A vontade de dançar parou.", BARD_FONT, BARD_FONT_COLOR_NEUTRA);
+	return 1;
+endprogram

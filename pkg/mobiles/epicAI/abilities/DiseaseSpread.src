@@ -1,0 +1,52 @@
+use uo;
+use os;
+
+include ":medicine:disease";
+include ":medicine:util/diseaseConstants";
+include ":charactercreation:resists";
+
+program DiseaseSpread(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	// Use NpcTier ObjProperty (set by customizeNpc) for effective tier
+	var tier := CInt(GetObjProperty(me, "NpcTier"));
+
+	if (tier < 3)
+		return 0;
+	endif
+
+	if (Distance(me, targ) > 1)
+		return 0;
+	endif
+
+	var resist_dc;
+	var disease_grade;
+	case (tier)
+		3:
+			resist_dc := RESIST_EASY;
+			disease_grade := DISEASE_GRADES::LIGHT;
+			break;
+		4:
+			resist_dc := RESIST_HARD;
+			disease_grade := DISEASE_GRADES::MODERATE;
+			break;
+		default:
+			resist_dc := RESIST_VERY_HARD;
+			disease_grade := DISEASE_GRADES::SERIOUS;
+	endcase
+
+	PrintTextAbove(me, "*espalha doenca*");
+
+	if (!CheckResist(targ, FORTITUDE, resist_dc))
+		InfectMobile(targ, 0, me, tier, "random", disease_grade, 0);
+	else
+		SendSysMessageEx(targ, "Voce resiste a infeccao!", SSM_REQUEST);
+	endif
+
+	return 1;
+endprogram

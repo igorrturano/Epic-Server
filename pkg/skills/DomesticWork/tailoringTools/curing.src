@@ -1,0 +1,614 @@
+use uo;
+use os;
+
+// include "include/client";
+// include "include/objtype";
+// include "include/canAccess";
+include "include/say";
+include ":attributes:attributeConstants";
+include ":attributes:skills";
+include ":attributes:skillCheck";
+include ":survival:skinning";
+
+program use_curing(who, item)
+
+	var carregar := GetObjProperty(item, "#uso");
+	var temitem := GetObjProperty(item, "#item");
+
+	if (carregar == "1")
+		SendSysMessage(who, "Voce nao pode usar este item agora!");
+		return;
+
+	else
+		if (temitem == "1")
+			if (getobjproperty(item, "#itemtype") == "string")
+				SendSysMessage(who, "Voce pegou a corda pra arco");
+				EraseObjProperty(item, "#item");
+				EraseObjProperty(item, "#itemtype");
+				CreateItemInBackpack(who, 0xee47, 1);
+				PlaySoundEffect(who, 0x49);
+			elseif (getobjproperty(item, "#itemtype") == "couro")
+				SendSysMessage(who, "Voce pegou o couro curtido");
+				EraseObjProperty(item, "#item");
+				EraseObjProperty(item, "#itemtype");
+				CreateItemInBackpack(who, 0xee45, 1);
+				PlaySoundEffect(who, 0x49);
+			elseif (getobjproperty(item, "#itemtype") == "pelebege")
+				SendSysMessage(who, "Voce pegou a pele curtida");
+				EraseObjProperty(item, "#item");
+				EraseObjProperty(item, "#itemtype");
+				CreateItemInBackpack(who, 0xee57, 1);
+				PlaySoundEffect(who, 0x49);
+			elseif (getobjproperty(item, "#itemtype") == "pelecinza")
+				SendSysMessage(who, "Voce pegou a pele curtida");
+				EraseObjProperty(item, "#item");
+				EraseObjProperty(item, "#itemtype");
+				CreateItemInBackpack(who, 0xee55, 1);
+				PlaySoundEffect(who, 0x49);
+			elseif (getobjproperty(item, "#itemtype") == "pelemarrom")
+				SendSysMessage(who, "Voce pegou a pele curtida");
+				EraseObjProperty(item, "#item");
+				EraseObjProperty(item, "#itemtype");
+				CreateItemInBackpack(who, 0xee56, 1);
+				PlaySoundEffect(who, 0x49);
+			elseif (getobjproperty(item, "#itemtype") == "pelebranca")
+				SendSysMessage(who, "Voce pegou a pele curtida");
+				EraseObjProperty(item, "#item");
+				EraseObjProperty(item, "#itemtype");
+				CreateItemInBackpack(who, 0xee58, 1);
+				PlaySoundEffect(who, 0x49);
+			else
+				SendSysMessage(who, "Nao a nada aqui para pegar");
+			endif
+		else
+			EraseObjProperty(who, "IsMeditating");
+			EraseObjProperty(who, "HealTimer");
+			if (!Accessible(who, item))
+				return;
+			endif
+			SendSysMessage(who, "Escolha o que voce deseja usar aqui.");
+			var useon := Target(who);
+			if (!useon)
+				return;
+			endif
+			if (!ReserveItem(useon))
+				SendSysMessage(who, "Este item esta em uso.");
+				return;
+			endif
+
+			var obj_type := useon.objtype;
+			var prod_type;
+
+			var intacta_obj := 0;
+			var intacta_name := "";
+						case (obj_type)
+				0xC0D6:
+					intacta_obj := 0xd1fa;
+					intacta_name := "cabecadegoblin";
+					break;
+				0xC0EE:
+					intacta_obj := 0xd1fb;
+					intacta_name := "cabecadegigante";
+					break;
+				0xC0DC:
+					intacta_obj := 0xd1d9;
+					intacta_name := "CabecaGigante";
+					break;
+				0xC0D3:
+					intacta_obj := 0xd1db;
+					intacta_name := "CabecaHomemLagarto";
+					break;
+				0xC13F:
+					intacta_obj := 0xd1fc;
+					intacta_name := "cabecademinotauro";
+					break;
+				0x1e37:
+					intacta_obj := 0xd1be;
+					intacta_name := "bearhead";
+					break;
+				0xC08D:
+					intacta_obj := 0xd1bf;
+					intacta_name := "brownbearhead";
+					break;
+				0xC08E:
+					intacta_obj := 0xd1e4;
+					intacta_name := "CabecaUrsoNegro";
+					break;
+				0xC079:
+					intacta_obj := 0xd1e6;
+					intacta_name := "CabecaUrsoPolar1";
+					break;
+				0xC0CA:
+					intacta_obj := 0xd1dd;
+					intacta_name := "CabecaLeao";
+					break;
+				0xC0CD:
+					intacta_obj := 0xd1dc;
+					intacta_name := "CabecaLeaoGigante";
+					break;
+				0xC0C7:
+					intacta_obj := 0xd1de;
+					intacta_name := "CabecaTigreDenteSabre";
+					break;
+				0xC5D0:
+					intacta_obj := 0xd1c7;
+					intacta_name := "CabecaTigre";
+					break;
+				0xC0C1:
+					intacta_obj := 0xd1df;
+					intacta_name := "CabecaOnca";
+					break;
+				0xC0BE:
+					intacta_obj := 0xd1f8;
+					intacta_name := "cabecadefelino";
+					break;
+				0xC085:
+					intacta_obj := 0xd1f6;
+					intacta_name := "cabecadegorila";
+					break;
+				0xC088:
+					intacta_obj := 0xd1e5;
+					intacta_name := "CabecaGorilaGigante";
+					break;
+				0xC0C4:
+					intacta_obj := 0xd1f9;
+					intacta_name := "cabecadelobodasneves";
+					break;
+				0xC08B:
+					intacta_obj := 0xd1f9;
+					intacta_name := "cabecadelobointacta";
+					break;
+				0xC04C:
+					intacta_obj := 0xd1f1;
+					intacta_name := "cabecaboi";
+					break;
+				0xC04F:
+					intacta_obj := 0xd1f2;
+					intacta_name := "cabecaporco";
+					break;
+				0xC052:
+					intacta_obj := 0xd1f3;
+					intacta_name := "cabecamorsa";
+					break;
+				0xC058:
+					intacta_obj := 0xd1f4;
+					intacta_name := "cabecaalce";
+					break;
+				0xC05B:
+					intacta_obj := 0xd1f5;
+					intacta_name := "cabecacervo";
+					break;
+				0xC073:
+					intacta_obj := 0xd1e7;
+					intacta_name := "CabecaAlce4";
+					break;
+				0xC091:
+					intacta_obj := 0xd1e3;
+					intacta_name := "CabecaTouro";
+					break;
+				0xC094:
+					intacta_obj := 0xd1e2;
+					intacta_name := "CabecaGrandeTouro";
+					break;
+				0xC0B5:
+					intacta_obj := 0xd1e1;
+					intacta_name := "craniocomchifre";
+					break;
+				0xC5C1:
+					intacta_obj := 0xd1ca;
+					intacta_name := "CabecaLhama";
+					break;
+				0xC0BB:
+					intacta_obj := 0xd1f7;
+					intacta_name := "cabecadelagarto";
+					break;
+				0xC0B8:
+					intacta_obj := 0xd1e0;
+					intacta_name := "CabecaLagartoDeserto2";
+					break;
+				0xC142:
+					intacta_obj := 0xd1cd;
+					intacta_name := "CabecaOstard";
+					break;
+				0xC03A:
+					intacta_obj := 0xd1e8;
+					intacta_name := "CabecaDragao";
+					break;
+				0xC031:
+					intacta_obj := 0xd1e9;
+					intacta_name := "CabecaDragaoAzul";
+					break;
+				0xC02B:
+					intacta_obj := 0xd1eb;
+					intacta_name := "cabecadedragaovermelho";
+					break;
+				0x9e32:
+					intacta_obj := 0xd1ef;
+					intacta_name := "cabecadedragaobranco";
+					break;
+				0xC02E:
+					intacta_obj := 0xd1f0;
+					intacta_name := "cabecadedragaoverde";
+					break;
+				0xFEA0:
+					intacta_obj := 0xd1c2;
+					intacta_name := "CabecaDragaoNegro";
+					break;
+				0xC034:
+					intacta_obj := 0xd1ee;
+					intacta_name := "cabecadedrake";
+					break;
+				0xFE5F:
+					intacta_obj := 0xd1c3;
+					intacta_name := "CranioEsqueletoGrandeDragao";
+					break;
+				0xFC8C:
+					intacta_obj := 0xd1c4;
+					intacta_name := "CranioEsqueleticoCavalo";
+					break;
+				0xC127:
+					intacta_obj := 0xd1d1;
+					intacta_name := "CranioDinossauro";
+					break;
+				0xC124:
+					intacta_obj := 0xd1d2;
+					intacta_name := "CranioDragao1";
+					break;
+				0xC106:
+					intacta_obj := 0xd1d5;
+					intacta_name := "CabecaDemonio";
+					break;
+				0xC11B:
+					intacta_obj := 0xd1d4;
+					intacta_name := "CabecaMindflayer";
+					break;
+				0xC11E:
+					intacta_obj := 0xd1d3;
+					intacta_name := "GrandeRinoceronteDemoniaco";
+					break;
+				0xC5D8:
+					intacta_obj := 0xd1c5;
+					intacta_name := "CabecaTitan";
+					break;
+				0xC5D6:
+					intacta_obj := 0xd1c6;
+					intacta_name := "CabecaOrc";
+					break;
+				0xC5CC:
+					intacta_obj := 0xd1c8;
+					intacta_name := "CabecaMonstroFome";
+					break;
+				0xC5C5:
+					intacta_obj := 0xd1c9;
+					intacta_name := "CabecaMonstroPulante";
+					break;
+				0xC5BB:
+					intacta_obj := 0xd1cb;
+					intacta_name := "BustoHarpia";
+					break;
+				0xC0FD:
+					intacta_obj := 0xd1d6;
+					intacta_name := "CabecaOvelhaLouca";
+					break;
+				0xC0FA:
+					intacta_obj := 0xd1d8;
+					intacta_name := "CabecaCachorroGigante";
+					break;
+				0xC0D9:
+					intacta_obj := 0xd1da;
+					intacta_name := "CabecaCiclops";
+					break;
+				0xC13C:
+					intacta_obj := 0xd1ce;
+					intacta_name := "CabecaDinossauro";
+					break;
+				0xC12A:
+					intacta_obj := 0xd1d0;
+					intacta_name := "CabecaMamute";
+					break;
+				0xC12D:
+					intacta_obj := 0xd1cf;
+					intacta_name := "CabecaGargula";
+					break;
+				0xC145:
+					intacta_obj := 0xd1cc;
+					intacta_name := "CabecaCavaloDemoniaco";
+					break;
+				0xC148:
+					intacta_obj := 0xd1ea;
+					intacta_name := "CabecaTubarao";
+					break;
+				0xC01F:
+					intacta_obj := 0xd1c1;
+					intacta_name := "cabecaderato";
+					break;
+				0x1e8e:
+					intacta_obj := 0xd1c0;
+					intacta_name := "pigshead";
+					break;
+				0x315B:
+					intacta_obj := 0xd1ed;
+					intacta_name := "unicornhead";
+					break;
+							// --- Materiais de trofeu (nao-cabecas) ---
+				0xC09A:
+					intacta_obj := 0xd1fd;
+					intacta_name := "peixeazul";
+					break;
+				0xC09D:
+					intacta_obj := 0xd1fe;
+					intacta_name := "lambari";
+					break;
+				0xC0A0:
+					intacta_obj := 0xd1ff;
+					intacta_name := "robalo";
+					break;
+				0xC0A3:
+					intacta_obj := 0xd200;
+					intacta_name := "anchova";
+					break;
+				0xC0A6:
+					intacta_obj := 0xd201;
+					intacta_name := "sardinha";
+					break;
+				0xC0A9:
+					intacta_obj := 0xd202;
+					intacta_name := "peixegalo";
+					break;
+				0xC0AC:
+					intacta_obj := 0xd203;
+					intacta_name := "atum";
+					break;
+				0xC0B2:
+					intacta_obj := 0xd204;
+					intacta_name := "dourado";
+					break;
+				0xEE63: 
+					intacta_obj := 0xd205;
+					intacta_name := "perca";
+					break;
+				0xC061:
+					intacta_obj := 0xd206;
+					intacta_name := "chifre1";
+					break;
+				0xC064:
+					intacta_obj := 0xd207;
+					intacta_name := "chifre2";
+					break;
+				0xC067:
+					intacta_obj := 0xd208;
+					intacta_name := "chifre3";
+					break;
+				0xC06A:
+					intacta_obj := 0xd209;
+					intacta_name := "chifre4";
+					break;
+				0xC06D:
+					intacta_obj := 0xd20a;
+					intacta_name := "ChifreAlce";
+					break;
+				0xC097:
+					intacta_obj := 0xd20b;
+					intacta_name := "chifre";
+					break;
+				0xC082:
+					intacta_obj := 0xd20c;
+					intacta_name := "corpodeaguia";
+					break;
+				0x312f:
+					intacta_obj := 0xd20d;
+					intacta_name := "humanears";
+					break;
+				0xC028:
+					intacta_obj := 0xd20e;
+					intacta_name := "cabecademonio3";
+					break;
+				0xC100:
+					intacta_obj := 0xd20f;
+					intacta_name := "cabecademonioparede";
+					break;
+				0xC103:
+					intacta_obj := 0xd210;
+					intacta_name := "cabecademonio1";
+					break;
+				0xC109:
+					intacta_obj := 0xd211;
+					intacta_name := "cabecademonioparede1";
+					break;
+				0xC10F:
+					intacta_obj := 0xd212;
+					intacta_name := "cabecademonionegro";
+					break;
+				0xC112:
+					intacta_obj := 0xd213;
+					intacta_name := "cabecagrandedemonio";
+					break;
+				0xC115:
+					intacta_obj := 0xd214;
+					intacta_name := "cabecademoniochifrudo";
+					break;
+				0xC118:
+					intacta_obj := 0xd215;
+					intacta_name := "cabecademoniodasprofundezas";
+					break;
+				0xC0E2:
+					intacta_obj := 0xd216;
+					intacta_name := "cabecagiganteGelo";
+					break;
+				0xC0E5:
+					intacta_obj := 0xd217;
+					intacta_name := "cabecagigantedeserto2";
+					break;
+				0xC0E8:
+					intacta_obj := 0xd218;
+					intacta_name := "cabecagigantegelocombatente";
+					break;
+				0xC037:
+					intacta_obj := 0xd219;
+					intacta_name := "cabecadragao6";
+					break;
+				0xC040:
+					intacta_obj := 0xd21a;
+					intacta_name := "cabecadragao9";
+					break;
+				0xC043:
+					intacta_obj := 0xd21b;
+					intacta_name := "cabecadragao10";
+					break;
+				0xC046:
+					intacta_obj := 0xd21c;
+					intacta_name := "cabecadragao11";
+					break;
+				0xC049:
+					intacta_obj := 0xd21d;
+					intacta_name := "cabecadragao12";
+					break;
+				0xC121:
+					intacta_obj := 0xd21e;
+					intacta_name := "cabecatriceratops";
+					break;
+				0xC133:
+					intacta_obj := 0xd21f;
+					intacta_name := "cabecalagartodefogo";
+					break;
+				0xC136:
+					intacta_obj := 0xd220; 
+					intacta_name := "cabecalagartodigelo";
+					break;
+				0xC139: 
+					intacta_obj := 0xd221;
+					intacta_name := "cabecalagartodeserto2";
+					break;
+				// --- fixes mapeamento trofeus ---
+				0xC0EB:
+					intacta_obj := 0xd1b7;
+					intacta_name := "cabecadeogro";
+					break;
+				0xC130:
+					intacta_obj := 0xd222;
+					intacta_name := "cabecadetroll";
+					break;
+				0xC0AF:
+					intacta_obj := 0xd223;
+					intacta_name := "perca";
+					break;
+endcase
+
+			if (intacta_obj)
+				var dom_skill := EffectiveTrueSkill(who, "Tailoring");
+				var sur_skill := AP_GetTrueSkill(who, SURVIVAL);
+				var use_skill := "Tailoring";
+				if (sur_skill > dom_skill)
+					use_skill := SURVIVAL;
+				endif
+				var difficulty := GetSkinningDifficulty(intacta_name);
+
+				PrintTextAbove(who, "*curtindo cabeca*");
+				Sleep(3);
+
+				if (SkillCheck(who, use_skill, difficulty) > 0)
+					if (SubtractAmount(useon, 1))
+						CreateItemInBackpack(who, intacta_obj, 1);
+						SendSysMessage(who, "Voce curtiu a cabeca com sucesso.");
+						PlaySoundEffect(who, 0x49);
+					endif
+				else
+					if (SubtractAmount(useon, 1))
+						SendSysMessage(who, "Voce estragou a cabeca ao tentar curti-la.");
+					endif
+				endif
+				return;
+			endif
+
+			case (obj_type)
+				0x1078:
+				0x1079:
+					// couro
+					prod_type := 0xee45;
+					break;
+				0xee46:
+					// corda
+					prod_type := 0xee47;
+					break;
+				0xee51:
+					// pelebege
+					prod_type := 0xee57;
+					break;
+				0xee52:
+					// pelepolar
+					prod_type := 0xee58;
+					break;
+				0xee53:
+					// pelemarrom
+					prod_type := 0xee56;
+					break;
+				0xee54:
+					// pelecinza
+					prod_type := 0xee55;
+					break;
+				0xef11:
+					// couroescamoso
+					prod_type := 0xef20;
+					break;
+				0xef13:
+					// courosombrio
+					prod_type := 0xc605;
+					break;
+				0xef14:
+					// couronegro
+					prod_type := 0xef23;
+					break;
+				0xef15:
+					// couropeludo
+					prod_type := 0xef24;
+					break;
+				0xef16:
+					// courocinzento
+					prod_type := 0xef25;
+					break;
+				0xef17:
+					// couropolar
+					prod_type := 0xef26;
+					break;
+				0xef18:
+					// courogigante
+					prod_type := 0xef27;
+					break;
+				0xed20:
+					// courodraconiano
+					prod_type := 0xed29;
+					break;
+				default: SendSysMessage(who, "Voce so pode usar couro aqui"); return;
+			endcase
+
+			var characterx := who.x;
+			var charactery := who.y;
+			var qtd := useon.amount;
+			repeat
+				if (qtd > 5)
+					if (SubtractAmount(useon, 5))
+						PrintTextAbove(who, "*curtindo couro*");
+						Sleep(3);
+						CreateItemInBackpack(who, prod_type, 5);
+						PlaySoundEffect(who, 0x49);
+						qtd := qtd - 5;
+					else
+						SendSysMessage(who, "Voce nao tem mais material para usar aqui");
+						break;
+					endif
+				else
+					if (SubtractAmount(useon, qtd))
+						PrintTextAbove(who, "*curtindo couro*");
+						Sleep(3);
+						CreateItemInBackpack(who, prod_type, qtd);
+						PlaySoundEffect(who, 0x49);
+						break;
+					else
+						SendSysMessage(who, "Voce nao tem mais material para usar aqui");
+						break;
+					endif
+				endif
+			until (who.x != characterx || who.y != charactery);
+		endif
+	endif
+endprogram

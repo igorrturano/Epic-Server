@@ -1,0 +1,198 @@
+use uo;
+use os;
+include ":merchants:merchant";
+include ":brainAI:npcCommands";
+include ":gumps:yesNo";
+include ":charactercreation:habilidades";
+include ":timedscripts:timedScripts";
+include ":medicine:util/diseaseConstants";
+
+program CurandeiroMenu(params)
+	var npc := params[1];
+	var player := params[2];
+	var escondido := player.hidden;
+
+	if (escondido)
+		player.hidden := 0;
+		SendSysMessageEx(player, "Voce se revelou ao curandeiro.", SSM_FAIL);
+	endif
+
+	var custo_cura := Cint(GetObjProperty(npc, "custo"));
+	if (!custo_cura)
+		custo_cura := 10;
+	endif
+	var diseases_system := GetObjProperty(player, "Diseases_System");
+	var sintomas := diseases_system.diseases;
+	var grade := diseases_system.grade;
+	var grade_valour;
+
+	if (!diseases_system)
+		PrintTextAbove(npc, "Você não está doente!");
+		return;
+	endif
+
+	if (grade == DISEASE_GRADES::MODERATE)
+		grade_valour := 2;
+	elseif (grade == DISEASE_GRADES::SERIOUS)
+		grade_valour := 3;
+	else
+		grade_valour := 1;
+	endif
+
+	var valor_final := sintomas.size() * grade_valour * custo_cura;
+
+	// Aplicar desconto se tiver habilidade
+	if (TemHabilidade(player, "Negociador Eximio"))
+		valor_final := CInt(valor_final * 0.7);
+		SendSysMessage(player, "O custo final vai ser de " + valor_final + " com desconto.");
+	endif
+
+	PrintTextAbove(npc, "Meu custo para cura são " + custo_cura + " moedas de cobre por sintoma e gravidade. No seu caso o valor é "
+		   + valor_final + " moedas de cobre.");
+
+	// Verificar se tem recursos suficientes
+	var recursosDisponiveis := CalculaRecursosDisponiveis(player, MOEDAS_COBRE);
+	var totalRecursos := recursosDisponiveis[5];
+
+	SendSysMessage(player, "Recursos disponíveis: " + totalRecursos + " moedas de cobre (equivalente).");
+
+	if (totalRecursos < valor_final)
+		PrintTextAbove(npc, "Você não tem moedas suficientes para o tratamento.");
+		return;
+	endif
+
+	// Mostrar gump de confirmação
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, 9270, 400, 200);
+	GFTextMid(gump, 0, 20, 400, 1153, "Confirmação de Pagamento");
+	GFTextMid(gump, 0, 60, 400, 2100, "Custo do tratamento: " + valor_final + " moedas de cobre");
+	GFTextMid(gump, 0, 85, 400, 2100, "Você tem recursos suficientes.");
+	GFTextMid(gump, 0, 110, 400, 2100, "Deseja prosseguir com o pagamento?");
+
+	GFAddButton(gump, 100, 150, 4005, 4007, GF_CLOSE_BTN, 1); // Sim
+	GFAddButton(gump, 250, 150, 4005, 4007, GF_CLOSE_BTN, 2); // Não
+	GFTextMid(gump, 90, 152, 60, 2100, "Sim");
+	GFTextMid(gump, 240, 152, 60, 2100, "Não");
+
+	var result := GFSendGump(player, gump);
+
+	if (!result || result[0] != 1)
+		PrintTextAbove(npc, "Tratamento cancelado.");
+		return;
+	endif
+
+	// Processar pagamento
+	if (ProcessarPagamento(player, npc, valor_final))
+		// Curar o jogador
+		TS_LowerDuration(player, "disease", -1);
+		SendSysMessageEx(player, "Todas as doenças foram removidas", SSM_INFO);
+		PrintTextAbove(npc, "Tratamento concluído com sucesso!");
+	else
+		PrintTextAbove(npc, "Erro no processamento do pagamento.");
+	endif
+
+	return 1;
+endprogram
+
+function ProcessarPagamento(player, npc, valor_final)
+	var recursosDisponiveis := CalculaRecursosDisponiveis(player, MOEDAS_COBRE);
+	var totalRecursos := recursosDisponiveis[5];
+
+	if (totalRecursos < valor_final)
+		return 0; // Não tem recursos suficientes
+	endif
+
+	var totalPago := 0;
+	var faltaPagar := valor_final;
+
+	Set_Critical(1);
+
+	// Tentar pagar com cobres primeiro
+	if (faltaPagar > 0)
+		var dicionarioCobres := recursosDisponiveis[1];
+		foreach serial in dicionarioCobres
+			var moeda := SystemFindObjectBySerial(_serial_iter);
+			if (!moeda)
+				continue;
+			endif
+
+			var diferenca := faltaPagar - moeda.amount;
+			if (diferenca > 0)
+				totalPago += moeda.amount;
+				faltaPagar -= moeda.amount;
+				DestroyItem(moeda);
+			else
+				totalPago += faltaPagar;
+				SubtractAmount(moeda, faltaPagar);
+				faltaPagar := 0;
+				break;
+			endif
+		endforeach
+	endif
+
+	// Tentar pagar com pratas
+	if (faltaPagar > 0)
+		var dicionarioPratas := recursosDisponiveis[2];
+		foreach serial in dicionarioPratas
+			var moeda := SystemFindObjectBySerial(_serial_iter);
+			if (!moeda)
+				continue;
+			endif
+
+			var valorPrata := moeda.amount * 10;
+			var diferenca := faltaPagar - valorPrata;
+			if (diferenca > 0)
+				totalPago += valorPrata;
+				faltaPagar -= valorPrata;
+				DestroyItem(moeda);
+			else
+				var troco := valorPrata - faltaPagar;
+				DestroyItem(moeda);
+				totalPago += faltaPagar;
+				if (troco > 0)
+					DarTroco(player, npc, troco);
+				endif
+				faltaPagar := 0;
+				break;
+			endif
+		endforeach
+	endif
+
+	// Tentar pagar com ouros
+	if (faltaPagar > 0)
+		var dicionarioOuros := recursosDisponiveis[3];
+		foreach serial in dicionarioOuros
+			var moeda := SystemFindObjectBySerial(_serial_iter);
+			if (!moeda)
+				continue;
+			endif
+
+			var valorOuro := moeda.amount * 100;
+			var diferenca := faltaPagar - valorOuro;
+			if (diferenca > 0)
+				totalPago += valorOuro;
+				faltaPagar -= valorOuro;
+				DestroyItem(moeda);
+			else
+				var troco := valorOuro - faltaPagar;
+				DestroyItem(moeda);
+				totalPago += faltaPagar;
+				if (troco > 0)
+					DarTroco(player, npc, troco);
+				endif
+				faltaPagar := 0;
+				break;
+			endif
+		endforeach
+	endif
+
+	Set_Critical(0);
+
+	if (faltaPagar <= 0)
+		SendSysMessage(player, "Pagamento processado com sucesso!");
+		return 1;
+	else
+		SendSysMessage(player, "Erro no processamento do pagamento.");
+		return 0;
+	endif
+endfunction

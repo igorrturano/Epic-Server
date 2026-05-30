@@ -1,0 +1,7 @@
+use uo;
+include "include/say";
+
+program tironojoelho(who, tool)
+	EquipItem(who, tool);
+	SendSysMessageEx(who, "Você equipa sua arma!", SSM_INFO);
+endprogram

@@ -1,0 +1,22 @@
+use os;
+
+include "include/say";
+include ":charactercreation:habilidades";
+include ":achievements:controllers/ExplorationController";
+include ":abilities:controllers/AbilityMonitor";
+
+program checkeventsonwalk()
+	Print("INSTALLING: checkeventsonwalk...");
+	return 1;
+endprogram
+
+exported function CheckEventsWalk(who, byref packet)
+	if (who.hidden == 1)
+		if (who.stealthsteps >= 1)
+			var passos := who.stealthsteps - 1;
+			SendSysMessage(who, "Ainda lhe restam " + passos + " passos.");
+		endif
+	endif
+
+	return 0;
+endfunction

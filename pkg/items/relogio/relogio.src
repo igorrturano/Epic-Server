@@ -1,0 +1,12 @@
+use uo;
+use os;
+use util;
+
+include "include/say";
+include ":nature:nature";
+
+program dclick(item)
+	var tempo := getGameTime();
+
+	PrintTextAbove(item, "Sao: {} horas e {} minutos".format(tempo.hour, tempo.minute));
+endprogram

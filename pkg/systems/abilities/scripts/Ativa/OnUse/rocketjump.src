@@ -1,0 +1,60 @@
+use uo;
+use os;
+
+include "include/facings";
+include "include/utils";
+include ":message:model/Message";
+
+program rocketjump(params)
+	var who := params[1];
+
+	PerformAction(who, 12);
+	PrintTextAbove(who, "*Aciona os propulsores*");
+
+	var world_z := GetStandingHeight(who.x, who.y, who.z + 15, who.realm);
+	var moved := 0;
+	if (world_z.z <= who.z + 1)
+		moved := 1;
+		MoveObjectToLocation(who, who.x, who.y, who.z + 15, who.realm, MOVEOBJECT_FORCELOCATION);
+	endif
+	sleepms(100);
+	_RocketPushForward(who, 5, 50);
+
+	sleepms(200);
+	if (moved)
+		MoveObjectToLocation(who, who.x, who.y, who.z - 15, who.realm);
+	endif
+
+	return 1;
+endprogram
+
+function _RocketPushForward(who, dist, delay)
+	var mod := GetModByFacing(who.facing);
+	var x := mod[1];
+	var y := mod[2];
+
+	var finalx := who.x + (dist * x);
+	var finaly := who.y + (dist * y);
+	var world_z := GetStandingHeight(finalx, finaly, who.z - 15, who.realm);
+	var force := _ifElse(world_z.z != error && world_z.z <= who.z, MOVEOBJECT_FORCELOCATION,
+					  MOVEOBJECT_NORMAL);
+	for i := 1 to dist
+		finalx := (who.x + x);
+		finaly := (who.y + y);
+		if (!CheckLosAt(who, finalx, finaly, who.z))
+			return 0;
+		endif
+		world_z := GetStandingHeight(who.x, who.y, who.z, who.realm);
+		if (world_z.z > who.z)
+			return 0;
+		endif
+
+		var err := MoveObjectToLocation(who, finalx, finaly, who.z, who.realm, force);
+		if (err == error)
+			return 0;
+		endif
+		sleepms(delay);
+	endfor
+
+	return 1;
+endfunction

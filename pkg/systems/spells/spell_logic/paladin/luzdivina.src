@@ -1,0 +1,36 @@
+include ":spells:summon";
+include ":timedScripts:timedScripts";
+
+include "include/epicMageryUtils";
+
+program SpellScript(params)
+	var who := params[1];
+
+	var summons := GetObjProperty(who, "SummonedPets");
+	if (summons)
+		foreach serial in summons
+			var npc := SystemFindObjectBySerial(serial);
+			if (npc && npc.name == "Globo de Luz")
+				SendSysMessageEx(who, "Voce ja possui um globo de luz invocado.", SSM_FAIL);
+				return;
+			endif
+		endforeach
+	endif
+
+	var theology := CInt(AP_GetSkill(who, THEOLOGY));
+	var globodeluz := summon(":epicai:globodeluz", who, who);
+
+	var duracao := 60 + (theology * 3);
+
+	PlaySoundEffect(who, SFX_SPELL_STRENGTH);
+	PlayStationaryEffect(who.x, who.y, who.z, FX_SPARK_EFFECT, 2, 2);
+
+	TS_StartTimer(globodeluz, "summon", duracao);
+
+	sleepms(500);
+	var ev := struct;
+	ev.+type := 0xA001; // FOLLOW_CMD
+	ev.+source := who;
+	ev.+targ := who;
+	SendEvent(globodeluz, ev);
+endprogram

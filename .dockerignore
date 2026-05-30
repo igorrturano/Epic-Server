@@ -1,0 +1,74 @@
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de log
+*.log
+logs/
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Arquivos de backup
+*.bak
+*.backup
+
+# Arquivos de desenvolvimento
+.vscode/
+.idea/
+*.sublime-*
+
+# Arquivos Git
+.git/
+.gitignore
+
+# Arquivos Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Arquivos de documentação
+README.md
+*.md
+
+# Arquivos de configuração local
+*.local.cfg
+
+# Arquivos de compilação
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+runecl
+#pol - Keep POL executable
+#uoconvert - Keep UO converter
+
+# Runtime files
+*.pid
+pol.pid
+
+# Data directories (mounted as volumes)
+#realm/ - Keep realm config files, but data will be in volume
+data/save/
+data/backup/
+uo-data/
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Arquivos de cache
+.cache/
+*.cache
+
+# Arquivos de teste
+test/
+tests/
+*.test 

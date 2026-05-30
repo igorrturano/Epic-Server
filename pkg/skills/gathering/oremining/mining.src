@@ -1,0 +1,251 @@
+
+use uo;
+use cfgfile;
+use os;
+use util;
+
+include "include/client";
+include ":datafile:datafile";
+include ":attributes:attributeConstants";
+include ":attributes:attributes";
+include ":attributes:skillCheck";
+include ":crafting:toolWear";
+include ":gathering:mining";
+include ":gathering:meteoritos";
+include "include/say";
+include ":charactercreation:habilidades";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+include ":tn:tngumps";
+include ":treasurehunting:treasuremaps"; // Adiciona esta linha
+include ":treasurehunting:treasuredigging";
+include ":destroyable:include/destroyItem";
+
+const MINING_ANIMATION := 0xB;
+const MINING_SOUND := 0x126;
+
+program OreMining(who, tool)
+
+	if (who.warmode)
+		return ComportamentoWarMode(who, tool);
+	endif
+
+	if (GetEquipmentByLayer(who, LAYER_MOUNT))
+		SendSysMessage(who, "Você não pode minerar montado.");
+		return;
+	endif
+
+	Message("Onde você deseja minerar?").SetColor(SSM_REQUEST).SendSys(who);
+	Message("Digite .skill gathering para selecionar o minerio desejado.").SetColor(SSM_REQUEST).SendSys(who);
+	var targ := TargetCoordinates(who);
+	var quebravel := GetObjProperty(targ.item, "quebrável");
+
+	if (targ.item && IsMeteorite(targ.item))
+		return MeteoriteExtractFlow(who, tool, targ.item);
+	endif
+
+	if (CoordinateDistance(who.x, who.y, targ.x, targ.y) > 2)
+		SendSysMessage(who, "Muito longe.");
+		return;
+	elseif (!CanMine(targ, "Stone"))
+		var maps := GetMapsInBackpack(who);
+		print("DEBUG: Mapas encontrados: " + maps.size());
+
+		if (maps.size() > 0)
+			var map := maps[1];
+			if (maps.size() > 1)
+				SendSysMessageEx(who, "Escolha o mapa que quer procurar.", SSM_REQUEST);
+				map := target(who);
+				if (!(IsTreasureMap(map)))
+					print("DEBUG: Mapa inválido selecionado");
+					return;
+				endif
+			endif
+
+			// Verificações adicionais de debug
+			print("DEBUG: Verificando mapa...");
+			if (!IsTreasureMap(map))
+				SendSysMessageEx(who, "Este mapa não parece ser um mapa do tesouro válido.", SSM_FAIL);
+				return;
+			endif
+
+			if (IsMapSolved(map))
+				SendSysMessageEx(who, "Este mapa já foi resolvido.", SSM_FAIL);
+				return;
+			endif
+
+			if (!CanDecodeMap(who, map))
+				SendSysMessageEx(who, "Você não consegue entender este mapa.", SSM_FAIL);
+				return;
+			endif
+
+			var coords := GetMapCoordinates(map);
+			print("DEBUG: Coordenadas do mapa - X: " + coords.x + " Y: "
+							+ coords.y + " Z: " + coords.z);
+
+			// Tenta iniciar a escavação
+			if (!DigForMap(who, targ, map))
+				SendSysMessageEx(who, "Falha ao iniciar escavação.", SSM_FAIL);
+				return;
+			endif
+
+			return;
+		else
+			SendSysMessageEx(who, "Voce nao pode minerar aqui.", SSM_FAIL);
+			return;
+		endif
+	endif
+
+	var my_x := who.x;
+	var my_y := who.y;
+	var my_facing := who.facing;
+
+	if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+		SendsysMessage(who, "Você parou de minerar.");
+		return;
+	endif
+
+	while (MiningLoop(who, tool, my_x, my_y, targ.x, targ.y, my_facing))
+		CheckToolWear(who, tool, "Mining");
+
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::EXTRACTOR_VIGOR))
+			if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+				break;
+			elseif (AP_GetVital(who, "Stamina") < 3)
+				SendSysMessage(who, "Voce esta muito cansado para minerar.");
+				break;
+			endif
+			AP_ConsumeVital(who, "Stamina", 3);
+		else
+			if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+				break;
+			elseif (AP_GetVital(who, "Stamina") < 5)
+				SendSysMessage(who, "Voce esta muito cansado para minerar.");
+				break;
+			endif
+			AP_ConsumeVital(who, "Stamina", 5);
+		endif
+		sleep(3);
+	endwhile
+
+	SendSysMessage(who, "Você parou de minerar.");
+
+endprogram
+
+function MiningLoop(who, tool, my_x, my_y, targx, targy, my_facing)
+	var i;
+	for (i := 0; i < 3; i := i + 1)
+		if (!CheckLoop(who, tool, my_x, my_y, my_facing))
+			return 0;
+		endif
+		PerformAction(who, MINING_ANIMATION);
+		PlaySoundEffect(who, MINING_SOUND);
+		sleep(1);
+	endfor
+
+	var miningregion := GetMiningRegion(targx, targy, who.realm);
+	var ore_type := DetermineOreType(who, miningregion); // feit
+
+	var ore_amount := GetOreAmount(who.realm, targx, targy); // feita
+	var difficulty := DetermineMiningDifficulty(ore_type); // feita
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::PROSPECTOR))
+		difficulty := difficulty - 5;
+	endif
+
+	if (who.cmdlevel > 2)
+		SendSysMessage(who, "ore " + ore_type);
+		SendSysMessage(who, "region " + miningregion);
+		SendSysMessage(who, "amount " + ore_amount);
+		SendSysMessage(who, "difficulty " + difficulty);
+	endif
+
+	if (!ore_type)
+		return 0;
+	/* elseif (ore_type == 20481) // Se for pedra
+		if ( SkillCheck(who, "Mining", difficulty) > 0 )
+			var minerio := CreateItemInBackPack(who, ore_type, 1);
+			minerio.movable := 1;
+			SendSysMessage(who, "Voce pegou alguns minerios. " );
+		else
+			SendSysMessage(who, "Voce falhou em pegar minerios.");
+		endif
+		return 1; */
+	endif
+	var chardata := GetObjProperty(who, "chardata");
+	if (ore_amount > 0)
+		if (ore_type != 999) // 999 eh quando nao passou na chance de raridade do minerio
+
+			if (SkillCheck(who, "Mining", difficulty) > 0)
+				var amt := Cint(EffectiveSkill(who, "Mining") / 20);
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::TALENTED_MINER) || chardata.trait == "Cavar Buracos")
+					amt := amt + 2;
+				endif
+				if (amt <= 0)
+					amt := 1;
+				endif
+				ore_amount := ore_amount - amt;
+				if (ore_amount < 0)
+					ore_amount := 0;
+				endif
+				SetOreAmount(who.realm, targx, targy, ore_amount); // feita
+				var minerio := CreateItemInBackPack(who, ore_type, amt);
+				minerio.movable := 1;
+				SendSysMessage(who, "Você pegou alguns minérios. ");
+				// Verifica se encontra joia
+				if (EffectiveSkill(who, "Mining") > 40.0)
+					Garimpeiro(who);
+				endif
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::MINE_RARITIES))
+					if (mineraRaroAleatorio(who))
+						PrintTextAbove(who, "*encontra algo chamativo*");
+					endif
+				endif
+			else
+				SendSysMessage(who, "Você falhou em pegar minérios.");
+			endif
+		endif
+	else
+		SendSysMessage(who, "Parece não ter mais minérios aqui.");
+		return 0;
+	endif
+
+	return 1;
+endfunction
+
+function mineraRaroAleatorio(who)
+	var rand := RandomFloat(100.0);
+	var achou := 0;
+	if (rand < 0.1)
+		SendSysMessage(who, "Achou um pouco de Mithril em meio ao minérios.");
+		achou := 1;
+		CreateItemInBackPack(who, 0x6308, 1); // return 95; //mithril
+	elseif (rand < 0.2)
+		SendSysMessage(who, "Achou um pouco de Atrita em meio ao minérios.");
+		CreateItemInBackPack(who, 0x6307, 1); // atrita raw
+		achou := 1;
+	elseif (rand < 0.4)
+		SendSysMessage(who, "Achou um pouco de Fulmetita em meio ao minérios.");
+		CreateItemInBackPack(who, 0x6302, 1); // fulmetita raw
+		achou := 1;
+	elseif (rand < 0.6)
+		SendSysMessage(who, "Achou um pouco de Venetita em meio ao minérios.");
+		CreateItemInBackPack(who, 0x6303, 1); // venetita raw
+		achou := 1;
+	elseif (rand < 0.8)
+		SendSysMessage(who, "Achou um pouco de Ignitita em meio ao minérios.");
+		CreateItemInBackPack(who, 0x6304, 1); // ignitita raw
+		achou := 1;
+	elseif (rand < 1.0)
+		SendSysMessage(who, "Achou um pouco de Frigutita em meio ao minérios.");
+		CreateItemInBackPack(who, 0x6451, 1); // frigutita raw
+		achou := 1;
+	elseif (rand < 1.4)
+		SendSysMessage(who, "Achou um pouco de Ouro em meio ao minérios.");
+		CreateItemInBackPack(who, 0x6305, 1); // return 40; //golden
+		achou := 1;
+	endif
+	if (achou)
+		SkillCheck(who, "Mining", -1);
+	endif
+	return achou;
+endfunction

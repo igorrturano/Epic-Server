@@ -1,0 +1,10 @@
+use uo;
+use os;
+use vitals;
+
+include ":charactercreation:resists";
+
+program disease_enter(who, regioname)
+	PrintTextAbove(who, "entrou");
+	start_script(":nature:diseaseAreaEffect", { who, regioname });
+endprogram

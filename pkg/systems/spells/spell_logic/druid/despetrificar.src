@@ -1,0 +1,64 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+
+program SpellScript(params)
+	var caster := params[1];
+	var targ := params[2];
+
+	if (!targ)
+		SendSysMessageEx(caster, "Cancelado.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (!targ.IsA(POLCLASS_MOBILE))
+		SendSysMessageEx(caster, "Isso não é uma criatura.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Verifica se o alvo está petrificado
+	if (!GetObjProperty(targ, "#petrified"))
+		SendSysMessageEx(caster, targ.name + " não está petrificado.", SSM_FAIL);
+		return 0;
+	endif
+
+	// Efeitos visuais e sonoros - energia vital da natureza
+	PlayObjectCenteredEffect(caster, 0x373A, 10, 16); // Efeito de natureza no caster
+	PlaySoundEffect(caster, 0x1F2); // Som místico de cura
+
+	SendSysMessageEx(caster, "Você invoca o pulsar vital da natureza...", SSM_INFO);
+	PrintTextAbove(caster, "*canaliza energia vital*");
+
+	sleepms(1000);
+
+	// Efeito visual viajando do caster para o alvo
+	PlayMovingEffect(caster, targ, 0x36D4, 10, 1, 0);
+	PlaySoundEffect(targ, 0x1E9); // Som de quebra
+
+	sleepms(500);
+
+	// Efeitos no alvo - pedra quebrando e vida retornando
+	PlayObjectCenteredEffect(targ, 0xDBCA, 10, 16); // Efeito de explosão/quebra
+	PlaySoundEffect(targ, 0x3E8); // Som de quebra de pedra
+
+	sleepms(300);
+
+	// Remove a petrificação
+	TS_LowerDuration(targ, "petrify", -1);
+
+	// Efeitos finais de restauração
+	PlayObjectCenteredEffect(targ, 0x376A, 7, 10); // Luz divina/vida
+	PlaySoundEffect(targ, 0x202); // Som de cura
+
+	SendSysMessageEx(caster, "A vida flui novamente em " + targ.name + "!", SSM_INFO);
+	SendSysMessageEx(targ, "O pulsar vital da natureza restaura seu corpo!", SSM_INFO);
+
+	PrintTextAbove(targ, "*a pedra se desfaz*");
+
+	return 1;
+endprogram

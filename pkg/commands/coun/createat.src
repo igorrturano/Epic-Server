@@ -1,0 +1,172 @@
+use uo;
+use os;
+use polsys;
+
+include ":commands:cmdhelp";
+include ":commands:create";
+include ":gumps:gumps_ex";
+include "/include/gms";
+include "/include/epicPropNames";
+include ":crafting:include/fabricacaoComplexos";
+
+program createat_textcmd(mobile, search_string)
+
+	var gump := 0, result := 0, page := 0, amount := 1, search_results := dictionary, tier := -1;;
+
+	var split := SplitWords(search_string, " ", -1);
+	if (split.Size() == 1)
+		search_string := Trim(split[1], TRIM_BOTH);
+	elseif (split.Size() == 2)
+		search_string := Trim(split[1], TRIM_BOTH);
+		if (CInt(split[2]) >= 1)
+			amount := CInt(split[2]);
+		else
+			amount := 1;
+		endif
+		
+	elseif (split.Size() == 3)
+		search_string := Trim(split[1], TRIM_BOTH);
+		if (CInt(split[2]) >= 1)
+			amount := CInt(split[2]);
+		else
+			amount := 1;
+		endif
+		tier := cint(Trim(split[3], TRIM_BOTH));
+	endif
+
+	if (search_string == "?")
+		GetCmdHelp(mobile, ":commands:seer/createat.txt");
+		search_string := "";
+	endif
+
+	// If the search_string is an int we will try to create the item,
+	// If the search_string typed in matches an existing item name, we will
+	// create the item,
+	// If the search_string typed in is a string of any length, we will try to match
+	// names accordingly.
+	// I should likely do a string length match so the user doesn't type in a single letter
+	// and get hit with tons of items in the list.
+	if (CInt(search_string))
+		CreateItem(mobile, GetItemInfo(CInt(search_string), GetItemDescriptor(CInt(search_string))),
+					amount, tier);
+		return 1;
+	elseif (GetObjtypeByName(search_string))
+		CreateItem(mobile, GetItemInfo(GetObjtypeByName(search_string),
+										GetItemDescriptor(GetObjtypeByName(search_string))), amount, tier);
+		return 1;
+	elseif (search_string.Length())
+		if (search_string.Length() > 2)
+			amount := -1;
+			BuildList(search_string, search_results);
+		else
+			SendSysMessage(mobile, "Invalid search string.", 0x3, 0x32);
+		endif
+	endif
+
+	var pid := GetObjProperty(mobile, "#CreateGumpPid");
+	if (TypeOfInt(GetProcess(pid)) == OT_SCRIPTEXREF)
+		CloseGump(mobile, pid, 0);
+	endif
+	SetObjProperty(mobile, "#CreateGumpPid", GetPid());
+
+	while (mobile.connected)
+		if (search_string.Length() > 3)
+			gump := CreateGump(search_string, page, search_results, 1);
+		else
+			gump := CreateGump(search_string, page, search_results, 0);
+		endif
+
+		result := GFSendGump(mobile, gump);
+		if (result[0] <= 1)
+			SendSysMessage(mobile, "Cancelled action.", 0x3, 0x32);
+			return 0;
+		elseif (result[0] == 2)
+			search_string := GFExtractData(result, 3);
+			if (search_string.errortext)
+				search_string := "";
+			endif
+			amount := -1;
+			page := 0;
+			search_results := dictionary;
+
+			if (search_string.Length())
+				if (search_string.Length() > 2)
+					BuildList(search_string, search_results);
+				else
+					SendSysMessage(mobile, "Invalid search string.", 0x3, 0x32);
+				endif
+			endif
+		elseif (result[0] == 4)
+			page -= 1;
+		elseif (result[0] == 5)
+			page += 1;
+		elseif (result[0] >= 6 && result[0] <= 5006)
+			CreateItem(mobile, search_results[search_results.Keys()[result[0] - 5]], amount, tier);
+			amount := -1;
+		endif
+	endwhile
+
+	return 1;
+endprogram
+
+function CreateItem(byref mobile, byref item_entry, byref amount, byref tier)
+
+	if (amount == -1)
+		amount := CInt(RequestInput(mobile, mobile.backpack, "How many of this object do you want to create?"));
+		if (amount <= 0)
+			SendSysMessage(mobile, "Cancelled action.", 0x3, 0x32);
+			return 0;
+		endif
+	endif
+
+	if (!item_entry.Stackable)
+		if (amount > 10)
+			amount == 10;
+		endif
+	endif
+
+	SendSysMessage(mobile, "Where do you wish to place this object?", 0x3, 0x42);
+	var loc := TargetCoordinates(mobile);
+	if (!loc)
+		SendSysMessage(mobile, "Cancelled action.", 0x3, 0x32);
+		return 0;
+	endif
+
+	var finalObjtype;
+
+	if(tier > 0)
+		finalObjtype := GeraDescriptorComplexo(item_entry.Objtype, tier);
+	else
+		finalObjtype := item_entry.Objtype;
+	endif
+
+	var created := array;
+	if (!item_entry.Stackable)
+		created := CreateItemUnstackableAtLocation(mobile, finalObjtype, amount, loc.x, loc.y,
+													loc.z, loc.realm);
+	elseif (item_entry.Stackable)
+		created := CreateItemStacksAtLocation(mobile, finalObjtype, amount, loc.x, loc.y, loc.z,
+											   loc.realm);
+	endif
+	
+	if(created.size() == 0 && tier > 0)
+		SendSysMessageEx(mobile,"É possível que não exista um material configurado para este tier, por favor verifique.",SSM_INFO_IC);
+	endif
+
+	foreach obj in (created)
+		var isIndestrutivel := PegaPreferenciaGm(mobile, PREFERENCIA_GM_IS_INDESTRUTIVEL_PADRAO);
+		var isIndispensavel := PegaPreferenciaGm(mobile, PREFERENCIA_GM_IS_INDISPENSAVEL_PADRAO);
+
+		if (!isIndispensavel || isIndestrutivel)
+			var objRef := SystemFindObjectBySerial(obj.Serial);
+			obj.hp := obj.maxhp;
+			if (isIndispensavel || isIndestrutivel)
+				var objRef := SystemFindObjectBySerial(obj.Serial);
+				SetObjProperty(objRef, PROPNAME_INDESTRUTIVEL, isIndestrutivel);
+				SetObjProperty(objRef, PROPNAME_DISPENSAVEL_FLAG, !isIndispensavel);
+			endif
+		endif
+		ITEM_ReportText(mobile, "Item serial: " + obj.Serial + ", item name " + obj.Desc
+						 + " created by " + mobile.name + " [" + mobile.acctname + "]", ITEM_REPORT_SYSLOG);
+	endforeach
+endfunction

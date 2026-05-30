@@ -1,0 +1,48 @@
+use uo;
+
+include "include/say";
+
+// .createmulti <objtype|name> [facing]
+//
+// <objtype|name> must resolve to a House or Boat block in some
+// itemdesc.cfg (e.g. 0x6060 / smallstonehouse / 0x11000 / SmallBoat).
+// NOT a deed objtype, and NOT the raw MultiID from multis.cfg.
+//
+// [facing] is optional and only meaningful for boats:
+//   0=N  0x100=E  0x200=S  0x300=W   (houses must use 0)
+program textcmd_CreateMulti(who, text)
+	if (!text)
+		SendSysMessage(who, "Uso: .createmulti <objtype|nome> [facing]");
+		return 0;
+	endif
+
+	var parts := SplitWords(text);
+	var token := parts[1];
+	var flags := CInt(parts[2]); // 0 when omitted
+
+	var objtype := CInt(token);
+	if (!objtype)
+		objtype := CInt(GetObjtypeByName(token));
+	endif
+	if (!objtype)
+		SendSysMessage(who, "'" + token + "' nao resolve para um objtype de House/Boat.");
+		return 0;
+	endif
+
+	SendSysMessage(who, "Select a target to create multi (" + Hex(objtype) + ").");
+	var targ := TargetMultiPlacement(who, objtype, flags);
+	if (targ.errortext)
+		SendSysMessage(who, "TargetMultiPlacement: " + targ.errortext);
+		return 0;
+	endif
+
+	var multi := CreateMultiAtLocation(targ.x, targ.y, targ.z, objtype, flags, who.realm);
+	if (multi.errortext)
+		SendSysMessage(who, "CreateMultiAtLocation: " + multi.errortext);
+		return 0;
+	endif
+
+	SendSysMessage(who, "Multi criado: " + multi.serial + " em " +
+		targ.x + "," + targ.y + "," + targ.z);
+	return 1;
+endprogram

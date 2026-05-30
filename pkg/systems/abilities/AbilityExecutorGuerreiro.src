@@ -1,0 +1,9 @@
+use uo;
+use os;
+
+include ":abilities:AbilityRegistryGuerreiro";
+include ":abilities:AbilityService";
+
+program AbilityExecutorGuerreiro(params)
+	return AbilityExecutionController().Run(params);
+endprogram

@@ -1,0 +1,26 @@
+use uo;
+
+include ":tn:equipment";
+include ":equipsys:Model/EquipModStamper";
+include ":disguise:incognito";
+
+program OnDestroy(item)
+	var equipped := CInt(GetObjProperty(item, "#EquippedOn"));
+	if (!equipped)
+		return 1;
+	endif
+
+	var mobile := SystemFindObjectBySerial(equipped);
+	if (!mobile || mobile == error)
+		return 1;
+	endif
+
+	// Destroy bypasses UnequipTest, so we must roll back the stamp here.
+	EquipModStamper(item).RemoveFrom(mobile);
+
+	if (coverFace(item))
+		RemoveIncognito(mobile, item);
+	endif
+
+	return 1;
+endprogram

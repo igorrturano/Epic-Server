@@ -1,0 +1,9 @@
+use uo;
+use os;
+
+include ":abilities:AbilityRegistryCaminho";
+include ":abilities:AbilityService";
+
+program AbilityExecutorCaminho(params)
+	return AbilityExecutionController().Run(params);
+endprogram

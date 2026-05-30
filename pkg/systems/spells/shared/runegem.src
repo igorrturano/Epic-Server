@@ -1,0 +1,141 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":runecarving:runeCarving";
+include "include/client";
+include "include/say";
+include "include/epicConstants";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program runegem(who, rune)
+
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if (!Accessible(who, rune))
+		return;
+	endif
+
+	if (rune.movable == 0)
+		SendSysMessageEx(who, "Você não pode usar isto.", SSM_FAIL);
+		return;
+	endif
+
+	var chardata := GetObjProperty(who, "chardata");
+	var mob := MobileWrapper(who);
+	if (chardata.magia != "Sacerdote"
+	    && !mob.HasAbility(ABILITY_ID::CONSAGRACAO_DIVINA)
+	    && !mob.HasAbility(ABILITY_ID::SIGILO_DE_PROTECAO)
+	    && !(who.cmdlevel > 1))
+		SendSysMessageEx(who, "Apenas Acolitos, Paladinos e Cacadores de Demonios dominam o conhecimento para confeccao de runas.",
+				   SSM_FAIL);
+		return 0;
+	endif
+
+	// Get rune properties from the carved gem
+	var runeType := GetObjProperty(rune, "runetype");
+	var runeBonus := CInt(GetObjProperty(rune, "runebonus"));
+	var gemType := CInt(GetObjProperty(rune, "gemtype"));
+	var charges := CInt(GetObjProperty(rune, "charges"));
+
+	if (!runeType || !runeBonus || !charges)
+		SendSysMessageEx(who, "Esta runa está danificada ou não foi entalhada corretamente.", SSM_FAIL);
+		return;
+	endif
+
+	SendSysMessageEx(who,"Onde deseja acoplar esta runa?", SSM_REQUEST);
+	var targ := Target(who);
+
+	if (!targ)
+		SendSysMessageEx(who, "Cancelado.", SSM_INFO);
+		return;
+	endif
+
+	if (!targ.isA(POLCLASS_ITEM))
+		SendSysMessageEx(who, "Isto não é um equipamento.", SSM_FAIL);
+		return;
+	endif
+
+	// Validate target type based on rune
+	if (runeType == RuneType::HOLY_WEAPON)
+		if (!targ.isA(POLCLASS_WEAPON))
+			SendSysMessageEx(who, "Runas da Arma Sagrada só podem ser aplicadas em armas.", SSM_FAIL);
+			return;
+		endif
+	else
+		if (!targ.isA(POLCLASS_ARMOR))
+			SendSysMessageEx(who, "Runas de proteção só podem ser aplicadas em armaduras.", SSM_FAIL);
+			return;
+		endif
+	endif
+
+	// Check if item is accessible
+	if (!targ.container)
+		SendSysMessageEx(who, "O item precisa estar na sua mochila.", SSM_FAIL);
+		return;
+	endif
+
+	if (targ.container != who.backpack)
+		SendSysMessageEx(who, "O item precisa estar na sua mochila.", SSM_FAIL);
+		return;
+	endif
+
+	// Check if item already has a priest rune
+	if (GetObjProperty(targ, "priestrune"))
+		SendSysMessageEx(who, "Este equipamento já possui uma runa sagrada.", SSM_FAIL);
+		return;
+	endif
+
+	SendSysMessageEx(who, "Você começa a gravar a " + runeType + " no equipamento...", SSM_INFO);
+
+	// Calculate carving time. Runes are Theology-only (Cleric/Paladino/
+	// Caçador de Demônios); Druida and Shaman do not carve runes.
+	var carvingTime := CInt(AP_GetSkill(who, THEOLOGY) / 20);
+	if (carvingTime < 2)
+		carvingTime := 2; // Minimum 2 seconds
+	endif
+	var x := who.x;
+	var y := who.y;
+	for i := 1 to carvingTime
+		if (!targ || targ.container != who.backpack || who.x != x || who.y != y)
+			SendSysMessageEx(who, "Você parou de entalhar.", SSM_FAIL);
+			return;
+		endif
+		PerformAction(who, 0xA);
+		PlaySoundEffect(who, 0x202);
+		Sleep(2);
+	endfor
+
+	// Apply bonus to item
+	if (!applyRuneBonus(targ, runeType, runeBonus, charges))
+		SendSysMessageEx(who, "Falha ao aplicar a runa.", SSM_FAIL);
+		return;
+	endif
+
+	// Visual effects based on item type
+	if (targ.isA(POLCLASS_ARMOR))
+		PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, FX_GOLDEN_ARMOR_SPELL, 255, 15, 0, 0);
+	else
+		PlayStationaryEffectEx(who.x, who.y, who.z, who.realm, 0x6DF1, 255, 15, 0, 0);
+	endif
+
+	PerformAction(who, HUMAN_ANIM::CAST_DIR);
+	PlaySoundEffect(who, getRuneSound(runeType));
+
+	// Destroy the carved rune
+	DestroyItem(rune);
+
+	SendSysMessageEx(who, "Você gravou a " + runeType + " no equipamento!", SSM_INFO);
+	SendSysMessageEx(who, "A benção divina concede +" + runeBonus + " de bônus por " + charges + " acertos.", SSM_INFO);
+
+	// Update item name to show it's runed
+	var currentDesc := targ.desc;
+	if (!currentDesc || currentDesc == "")
+		currentDesc := targ.name;
+	endif
+	SetName(targ, currentDesc + " [Rúnico]");
+
+	return 1;
+endprogram

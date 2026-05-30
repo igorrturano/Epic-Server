@@ -1,0 +1,35 @@
+use uo;
+use os;
+use file;
+use datafile;
+
+include ":help:help";
+
+// Notificação visual para GMs de nova GMPage ou BugReport.
+// params[1] = mobile (GM)
+// params[2] = tipo ("gmpage" ou "bug")
+// params[3] = nome do jogador
+
+program gump_notif_gm(params)
+	var mob  := params[1];
+	var tipo := params[2];
+
+	if (!mob || !mob.isA(POLCLASS_MOBILE) || !mob.connected)
+		return;
+	endif
+
+	var gump := GFCreateGump(10, 30);
+	GFAddButton(gump, 0, 0, 0x7D2, 0x7D2, GF_CLOSE_BTN, 1);
+
+	var input := GFSendGump(mob, gump);
+
+	if (input[0] == 1)
+		PlaySoundEffect(mob, 0x038);
+		if (tipo == "gmpage")
+			GMPageGump(mob);
+		else
+			GMBugGump(mob);
+		endif
+	endif
+
+endprogram

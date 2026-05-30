@@ -1,0 +1,42 @@
+use uo;
+use os;
+use util;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":epicdungeon:include/epicdungeon";
+
+program diceroll_w(params)
+    var dm   := params[1];
+    var mobs := params[2];
+    var alvo := mobs[1];
+
+    if (!alvo || alvo == error || !alvo.IsA(POLCLASS_MOBILE))
+        SendSysMessage(dm, "[EpicDungeon] Alvo inválido.");
+        return 0;
+    endif
+
+    var gump := GFCreateGump(250, 350);
+    GFMovable(gump, 1);
+    GFClosable(gump, 1);
+    GFResizePic(gump, 0, 0,  9200, 200, 75);
+    GFResizePic(gump, 10, 8, 9350, 180, 40);
+    GFTextMid(gump, 10, 16, 180, 1153, "Rolar 1D20");
+    GFAddButton(gump, 83, 52, 247, 248, GF_CLOSE_BTN, 1);
+
+    var result := GFSendGump(alvo, gump);
+
+    if (result[0] != 1)
+        SendSysMessage(dm, "[EpicDungeon] " + alvo.name + " recusou a rolagem.");
+        return 0;
+    endif
+
+    // PlayStationaryEffectEx: x, y, z, realm, effect, speed, loop, color, translucent
+    var valor := RandomInt(20) + 1;
+    PlayStationaryEffectEx(alvo.x, alvo.y, 17, alvo.realm, 0xb12b, 3, 70, 0, 0);
+    sleep(4);
+    PrintTextAbove(alvo, CStr(valor), 1153);
+    SendSysMessage(dm, "[EpicDungeon] " + alvo.name + " rolou D20: " + valor + ".");
+
+    return 1;
+endprogram

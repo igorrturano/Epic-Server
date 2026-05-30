@@ -1,0 +1,197 @@
+/* $Id: sendStats.src 1054 2007-04-28 13:30:16Z tekproxy $
+ *
+*/
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  name:    Send Stats Packet Hook
+//  version: 1.1a
+//  author:  MuadDib
+//
+//  Purpose:  This hooks the core 0x11 stats packet, and rewrites it for sending the char all the
+//            extended stats for Age of Shadows like Pet Count, Min/Max Damage, statcap, etc. 2
+//            Flags used per a CONST in order to decide which of the type to send.
+//
+//  Notes:    This is done only for example functionality. Pet Count, Damage Reports, etc is NOT
+//            implemented into anything nor is the resists and luck. You can also change the global
+//            var STATCAP to be a variable if required for special rising stat cap systems.
+//
+// CONST settings:
+// BIT_MASK  = 0x00000003 DO NOT CHANGE!
+//
+// Global Variables:
+// STATCAP = Set this to your shard's Stat Cap. If based on age, race, etc, just add a function
+//           at the beginning of the exported function to check and set the statcap variable.
+//
+///////////////////////////////////////////////////////////////////////////////////////////////
+use polsys;
+
+include "include/client";
+include ":attributes:attributes";
+include ":attributes:intrinsicStats";
+include ":commands:/include/r";
+
+program sendStats()
+	Print("INSTALLING: Outgoing Status PH...");
+	return 1;
+endprogram
+
+const BIT_MASK := 0x00000003;
+
+var STATCAP := 225;
+var MODE := 0;
+var STATLOCK := 0;
+
+const QTD_RESISTENCIAS := 7;
+const CHARACTER_STATUS_PACKET_ID := 0x11;
+const OLD_INDEX_IS_RENAMABLE := 41;
+
+enum class OLD_STATUS_OFFSETS
+	SOURCE_SERIAL := 3,
+	NAME := 7,
+	HITS := 37,
+	HITS_MAX := 39,
+	IS_RENAMABLE := 41,
+	IS_FEMALE := 43,
+	STRENGTH := 44,
+	DEXTERITY := 46,
+	INTELLIGENCE := 48,
+	STAMINA := 50,
+	STAMINA_MAX := 52,
+	MANA := 54,
+	MANA_MAX := 56,
+	WEIGHT := 64,
+	WEIGHT_MAX := 66,
+	RACE := 68,
+	FOLLOWERS := 71,
+	FOLLOWERS_MAX := 72,
+	MIN_DAMAGE :=  83,
+	MAX_DAMAGE :=  85
+endenum
+
+enum class NEW_STATUS_OFFSETS
+	SOURCE_SERIAL := 3,
+	NAME := 7,
+	HITS := 37,
+	HITS_MAX := 39,
+	IS_RENAMABLE := 41,
+	STRENGTH := 42,
+	DEXTERITY := 44,
+	INTELLIGENCE := 46,
+	STAMINA := 48,
+	STAMINA_MAX := 50,
+	MANA := 52,
+	MANA_MAX := 54,
+	WEIGHT := 56,
+	WEIGHT_MAX := 58,
+	FOLLOWERS := 60,
+	FOLLOWERS_MAX := 61,
+	FORTITUDE := 62,
+	REFLEXES := 63,
+	WILL := 64,
+	DEATH_POINTS := 65,
+	DEATH_POINTS_MAX := 67,
+	ADDICTION_STR := 69,
+	ADDICTION_DEX := 70,
+	ADDICTION_INT := 71,
+	HUNGER := 72,
+	LEVEL := 73,
+	GOLD := 74,
+	MOBILE_LAST_INDEX := 42,
+endenum
+
+
+exported function HandleSendStats(character, byref packet)
+	var pacoteFinal := CreatePacket(CHARACTER_STATUS_PACKET_ID, MSGLEN_VARIABLE);
+	var serial :=  packet.GetInt32(OLD_STATUS_OFFSETS::SOURCE_SERIAL);
+	
+	var source := SystemFindObjectBySerial(serial);
+	if (!source || source == error)
+		return 0;
+	endif
+
+	pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::SOURCE_SERIAL, serial);
+
+	if (source.IsA(POLCLASS_MOBILE))
+		var nome := TrataNomeMobile(character, source);
+		if (!nome || nome == error)
+			nome := source.name;
+		endif
+		pacoteFinal.SetString(NEW_STATUS_OFFSETS::NAME, nome, 1);
+		pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::HITS, packet.GetInt16(OLD_STATUS_OFFSETS::HITS));
+		pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::HITS_MAX, packet.GetInt16(OLD_STATUS_OFFSETS::HITS_MAX));
+		pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::IS_RENAMABLE, packet.GetInt8(OLD_STATUS_OFFSETS::IS_RENAMABLE));
+
+		if(character.serial == serial)
+
+			var levelAtual := CInt(GetObjProperty(character, "Level"));
+				if (!levelAtual) levelAtual := 1; endif
+
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::STRENGTH, packet.GetInt16(OLD_STATUS_OFFSETS::STRENGTH));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEXTERITY, packet.GetInt16(OLD_STATUS_OFFSETS::DEXTERITY));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::INTELLIGENCE, packet.GetInt16(OLD_STATUS_OFFSETS::INTELLIGENCE));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::STAMINA, packet.GetInt16(OLD_STATUS_OFFSETS::STAMINA));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::STAMINA_MAX, packet.GetInt16(OLD_STATUS_OFFSETS::STAMINA_MAX));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::MANA, packet.GetInt16(OLD_STATUS_OFFSETS::MANA));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::MANA_MAX, packet.GetInt16(OLD_STATUS_OFFSETS::MANA_MAX));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::WEIGHT, packet.GetInt16(OLD_STATUS_OFFSETS::WEIGHT));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::WEIGHT_MAX, packet.GetInt16(OLD_STATUS_OFFSETS::WEIGHT_MAX));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FOLLOWERS, packet.GetInt8(OLD_STATUS_OFFSETS::FOLLOWERS));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FOLLOWERS_MAX, packet.GetInt8(OLD_STATUS_OFFSETS::FOLLOWERS_MAX));
+
+			// Bypass AP_GetStat for intrinsic-only stats — these 3 have no
+			// base value nor temp mods registered in attributes.cfg, so
+			// AP_GetStat(FORTITUDE) == GetIntrinsicFortitude(source)/TENTHS.
+			// Batch avoids 3x MobileWrapper + 3x chardata read per paperdoll view.
+			var intrinsics := IntrinsicStatsBatch(source);
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::FORTITUDE, cint(intrinsics.fortitude / INTRINSIC_TENTHS));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::REFLEXES,  cint(intrinsics.reflexes / INTRINSIC_TENTHS));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::WILL,      cint(intrinsics.will / INTRINSIC_TENTHS));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEATH_POINTS, cint(AP_GetVital(source, DEATH_POINTS)));
+			pacoteFinal.SetInt16(NEW_STATUS_OFFSETS::DEATH_POINTS_MAX,  cint(AP_GetVitalMaximumValue(source, DEATH_POINTS)));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::ADDICTION_STR, VICIO_MAX_POINTS - cint( AP_GetVital(source, ADDICTION_STR)));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::ADDICTION_DEX, VICIO_MAX_POINTS - cint( AP_GetVital(source, ADDICTION_DEX)));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::ADDICTION_INT, VICIO_MAX_POINTS - cint( AP_GetVital(source, ADDICTION_INT)));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::HUNGER,  CInt( AP_GetVital(source, HUNGER) / 60));
+			pacoteFinal.SetInt8(NEW_STATUS_OFFSETS::LEVEL,  levelAtual);
+			//pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::GOLD, mobileEnvelopado.GetGold());
+			pacoteFinal.SetInt32(NEW_STATUS_OFFSETS::GOLD, 0);
+
+			// Player's OWN ProfileURL is sent via dedicated packet 0xD7:0x58 (see CharProfile/profile_packets.inc)
+		else
+			// For NPCs and other players/mobiles, send URL in status packet (position 42)
+			// This is needed when viewing someone else's health bar
+			var url := GetObjProperty(source, "url");
+			if (url && !url.errortext)
+				pacoteFinal.SetString(NEW_STATUS_OFFSETS::MOBILE_LAST_INDEX, url, 1);
+			endif
+		endif
+	endif
+
+	packet.SetSize(pacoteFinal.GetSize());
+	packet.Assign(pacoteFinal);
+	return 0;
+endfunction
+
+function TrataNomeMobile(character, source)
+	if(!source.npctemplate)
+		var nomeJogador;
+
+		if (GetObjProperty(source, "realname"))
+					nomeJogador := "Incognito";
+		else
+			var nickname := GetKnownNickname(character, source);
+			nomeJogador := (nickname != "") ? nickname : source.name;
+		endif
+
+		if (character.cmdlevel > 1) // Staff consegue ver mais
+			var nome_inicial := GetObjProperty(source, "nome_inicial");
+			if (nome_inicial && !nome_inicial.errortext)
+				nomeJogador := nomeJogador + " [" + nome_inicial + "]";
+			endif
+		endif
+
+		return nomeJogador;
+	else
+		return source.name;
+	endif
+endfunction

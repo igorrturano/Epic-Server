@@ -1,0 +1,60 @@
+// Intentionally bypasses SpellController: the defaultPoison cfg entry needs
+// IndicatePoison=1 (green health-bar) and the Type=P immunity gating that
+// subScripts/poison/defaultPoison performs (protecaoveneno, mumificacao,
+// kit-encantadores). SC has no equivalent.
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":attributes:regen";
+include ":attributes:vitals";
+include ":attributes:attributes";
+include ":timedScripts:timedScripts";
+include ":charactercreation:resists";
+include "include/epicMageryUtils";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
+	params := 0; // No longer needed
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	var lvl := cint(AP_GetSkill(who, ARCANA) / 25);
+
+	if (MobileWrapper(who).HasAbility(ABILITY_ID::SACRIFICIO_DA_CARNE))
+		if (isBloodied(who))
+			lvl := lvl + 1;
+		endif
+	endif
+
+	Set_Critical(1);
+	if (GetObjProperty(targ, "defaultPoison"))
+		SendSysMessageEx(who, "O alvo ja esta envenenado", SSM_FAIL);
+		return;
+	endif
+
+	var diff := handleSpellResistDiffForSpecialists(who, spell_school);
+	var bonus := epicWisdomPathBonus(who);
+	if (!CheckResist(targ, WILL, diff, -bonus))
+		TS_StartTimer(targ, "defaultPoison", 120, lvl, who);
+		Corromper(who, 22, targ);
+	else
+		SendSysMessageEx(who, "O alvo  resistiu a magia.", SSM_FAIL);
+		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+	endif
+	Set_Critical(0);
+	PrintTextPrivate(targ, "Veneno level " + lvl + ".", who, 3, 38); // vermelho
+
+	return 1;
+endprogram

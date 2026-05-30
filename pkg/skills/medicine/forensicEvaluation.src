@@ -1,0 +1,907 @@
+use uo;
+use cfgfile;
+use os;
+use util;
+use datafile;
+use vitals;
+use attributes;
+
+include "include/client";
+include ":attributes:attributes";
+include ":gumps:gumps_ex";
+include ":gumps:gumps";
+include "include/say";
+include ":tn:cooldown";
+include ":charactercreation:habilidades";
+include ":blood:blood";
+include ":gumps:yesNo";
+include ":gumps:selectionGump";
+include ":medicine:anatomy";
+include ":charactercreation:createchar";
+include ":timedscripts:timedScripts";
+
+const UOBJ_PROOF := 0x1BE34;
+// Constantes para cores de sintomas
+const COLOR_PRIMARY := 61; // Verde
+const COLOR_SECONDARY := 53; // Amarelo
+const COLOR_REGULAR := 1153; // Branco
+
+program forensic(who)
+	EraseObjProperty(who, "IsMeditating");
+	if (GetObjProperty(who, "#forensicwait") > ReadGameClock())
+		SendSysMessage(who, "Você precisa esperar para usar esta skill de novo.", SSM_FAIL);
+		return;
+	endif
+
+	SetObjProperty(who, "#forensicwait", ReadGameClock() + 5);
+
+	var primarias := GetPrimarias(who);
+	var heal_skill := AP_GetSkill(who, MEDICINE);
+	if ("Medicine" in primarias || who.cmdlevel > 3 || heal_skill >= 62)
+	else
+		SendSysMessage(who, "Você não tem conhecimento o bastante para diagnosticar alguém!");
+		return 0;
+	endif
+
+	SendSysMessage(who, "Quem você quer examinar?");
+	var subject := Target(who, TGTOPT_CHECK_LOS);
+	if (!subject)
+		SendSysMessage(who, "Alvo cancelado");
+		return;
+	elseif (!subject.IsA(POLCLASS_MOBILE) && !subject.IsA(POLCLASS_CORPSE))
+		SendSysMessageEx(who, "O alvo tem que ser um corpo ou ser vivo.", SSM_FAIL);
+		return 0;
+	elseif (subject.IsA(POLCLASS_CORPSE))
+	// Obter informações do corpo
+		var autopsy_data := GetObjProperty(subject, "Autopsy");
+		var lastDamage := GetObjProperty(subject, "LastDamage");
+			if (!autopsy_data || !lastDamage)
+				PrintTextPrivate(who, "*O corpo está muito deteriorado para uma autopsia adequada.*", who);
+				return;
+			endif
+	elseif (Distance(who, subject) > 1)
+		SendSysMessage(who, "Seu alvo está muito longe", color := 33);
+		return 0;
+	endif
+
+	if (subject.warmode)
+		SendSysMessage(who, "Você não pode analisar um alvo que está muito agitado");
+		return 0;
+	endif
+
+	var stethoscope;
+	var container := EnumerateItemsInContainer(who.backpack);
+	foreach item in container
+		if (item.objtype == 0xedfe)
+			stethoscope := 1;
+			SendSysMessageEX(who, "Por estar usando um estetoscópio: +5 na análise", SSM_INFO);
+			break;
+		endif
+		Sleepms(2);
+	endforeach
+
+	PrintTextAbove(who, "*Tateando e analisando*");
+	sleep(3);
+
+	if (Distance(who, subject) > 1)
+		SendSysMessage(who, "Você e seu paciente devem permanecer quietos!", color := 33);
+		return 0;
+	endif
+
+	var diseases_system := GetObjProperty(subject, "Diseases_System");
+	var disease := diseases_system.diseases;
+	var disease_grade := diseases_system.grade;
+
+	var skill_check := SkillCheck(who, MEDICINE, 10); // CORRIGIR TAVA -1 ANTES
+	if (stethoscope == 1)
+		skill_check := skill_check + 5;
+	endif
+	if (skill_check > 0)
+		var yn_gump := GFCreateGump(160, 130);
+		var serial;
+		GFClosable(yn_gump, 1);
+		GFResizePic(yn_gump, 7, 5, 83, 500, 342); // Linha em volta do quadro
+		GFGumpPic(yn_gump, 15, 15, 292); // background do centro do quadro - MUDAR PARA 292
+		GFGumpPic(yn_gump, 200, -5, 1590); // cabeçalho do Menu
+		GFTextCrop(yn_gump, 220, -3, 100, 320, text := "Análise Forense");
+
+		var y_pos := 20;
+		var text_diag := diagnosis(who, subject);
+		// var agressor_info := info_corpo(who, subject);
+		var dead_one := subject.isA(POLCLASS_CORPSE); // Aqui é dictionary
+		var fracture := GetObjProperty(subject, "Fractures"); // Aqui é array
+
+		var corpse_str := AP_GetStatMod(subject, STRENGTH);
+
+		GFTextLine(yn_gump, 100, 20, 42, "FRATURAS");
+		if (!fracture)
+			GFTextLine(yn_gump, 90, 153, 1153, "Sem fraturas");
+		else
+			if ("Cabeca" in fracture)
+				GFTextLine(yn_gump, 116, 60, 1153, "Cabeça");
+				GFAddButton(yn_gump, 100, (63), 2117, 2118, GF_CLOSE_BTN, 2);
+				GFGumpPic(yn_gump, 38, 25, 0xd1d2); //Cabeça
+			endif
+			if ("Maos" in fracture)
+				GFTextLine(yn_gump, 200, 120, 1153, "Mãos");
+				GFAddButton(yn_gump, 210, (140), 2117, 2118, GF_CLOSE_BTN, 3);
+				GFGumpPic(yn_gump, 165, -5, 0xd1d0); //mao
+				GFGumpPic(yn_gump, 158, -4, 0xd1d0); //mao
+			endif
+			if ("Bracos" in fracture)
+				GFTextLine(yn_gump, 175, 105, 1153, "Braços");
+				GFAddButton(yn_gump, 186, (123), 2117, 2118, GF_CLOSE_BTN, 4);
+				GFTilePic(yn_gump, 155, 75, 0xD1E1); //braço
+			endif
+			if ("Torso" in fracture)
+				GFTextLine(yn_gump, 90, 153, 1153, "Torso");
+				GFAddButton(yn_gump, 97, (143), 2117, 2118, GF_CLOSE_BTN, 5);
+				GFGumpPic(yn_gump, 36, 20, 0xd1d4); //torso
+			endif
+			if ("Pernas" in fracture)
+				GFAddButton(yn_gump, 92, (208), 2117, 2118, GF_CLOSE_BTN, 6);
+				GFTextLine(yn_gump, 80, 220, 1153, "Pernas");
+				GFGumpPic(yn_gump, 42, 45, 0xD1cb);
+			endif
+		endif
+
+		GFTextLine(yn_gump, 335, 20, 91, "DIAGNÓSTICO");
+		GFTextEntry(yn_gump, 250, 40, 240, 160, 1153, text_diag, 50, 0);
+
+		GFTextLine(yn_gump, 300, 180, 28, "DOENÇAS E SINTOMAS");
+
+		if (disease_grade == "Leve")
+			GFTextLine(yn_gump, 320, 200, 40, "leves");
+		elseif (disease_grade == "Moderado")
+			GFTextLine(yn_gump, 310, 200, 38, "moderados");
+		elseif (disease_grade == "Grave")
+			GFTextLine(yn_gump, 320, 200, 36, "graves");
+		endif
+
+		if (disease)
+			GFAddAlphaRegion(yn_gump, 250, 220, 245, 62); // Quadrado preto menor
+			// Adicionar informações de doenças se existirem
+			GFTextLine(yn_gump, 255, 200, 1153, "Sintomas ");
+			GFTextLine(yn_gump, 370, 200, 1153, "de ");
+			var known_disease := GetDiseaseInfo(disease);
+			var my_known_diseases := GetKnownDiseaseInfo(who, disease);
+			if (known_disease)
+				GFTextLine(yn_gump, 390, 200, 28, "" + known_disease.name);
+				GFTextLine(yn_gump, 300, 280, 1153, "Descoberta por " + known_disease.discovered_by);
+			else
+				GFTextLine(yn_gump, 390, 200, 1153, "uma Doença");
+			endif
+
+			// SUBSTITUIR toda a seção de sintomas individuais por:
+			if ("Palpitacoes" in disease)
+				var color := 1153; // cor padrão
+				if (my_known_diseases && my_known_diseases.primary == "Palpitacoes")
+					color := COLOR_PRIMARY; // Verde
+				elseif (my_known_diseases && my_known_diseases.secondary == "Palpitacoes")
+					color := COLOR_SECONDARY; // Azul
+				endif
+				GFTextCrop(yn_gump, 255, 240, 100, 320, color, text := "Palpitações");
+			endif
+
+			if ("Nausea" in disease)
+				var color := 1153;
+				if (my_known_diseases && my_known_diseases.primary == "Nausea")
+					color := COLOR_PRIMARY;
+				elseif (my_known_diseases && my_known_diseases.secondary == "Nausea")
+					color := COLOR_SECONDARY;
+				endif
+				GFTextCrop(yn_gump, 255, 260, 100, 320, color, text := "Náusea");
+			endif
+
+			if ("Cefaleia" in disease)
+				var color := 1153;
+				if (my_known_diseases && my_known_diseases.primary == "Cefaleia")
+					color := COLOR_PRIMARY;
+				elseif (my_known_diseases && my_known_diseases.secondary == "Cefaleia")
+					color := COLOR_SECONDARY;
+				endif
+				GFTextCrop(yn_gump, 255, 220, 100, 320, color, text := "Cefaleia");
+			endif
+
+			if ("Febre" in disease)
+				var color := 1153;
+				if (my_known_diseases && my_known_diseases.primary == "Febre")
+					color := COLOR_PRIMARY;
+				elseif (my_known_diseases && my_known_diseases.secondary == "Febre")
+					color := COLOR_SECONDARY;
+				endif
+				GFTextCrop(yn_gump, 355, 220, 100, 320, color, text := "Febre");
+			endif
+
+			if ("Trombo" in disease)
+				var color := 1153;
+				if (my_known_diseases && my_known_diseases.primary == "Trombo")
+					color := COLOR_PRIMARY;
+				elseif (my_known_diseases && my_known_diseases.secondary == "Trombo")
+					color := COLOR_SECONDARY;
+				endif
+				GFTextCrop(yn_gump, 355, 240, 100, 320, color, text := "Trombo");
+			endif
+
+			if ("Pustulas" in disease)
+				var color := 1153;
+				if (my_known_diseases && my_known_diseases.primary == "Pustulas")
+					color := COLOR_PRIMARY;
+				elseif (my_known_diseases && my_known_diseases.secondary == "Pustulas")
+					color := COLOR_SECONDARY;
+				endif
+				GFTextCrop(yn_gump, 355, 260, 100, 320, color, text := "Pústulas");
+			endif
+
+			if ("Laceracao" in disease)
+				var color := 1153;
+				if (my_known_diseases && my_known_diseases.primary == "Laceracao")
+					color := COLOR_PRIMARY;
+				elseif (my_known_diseases && my_known_diseases.secondary == "Laceracao")
+					color := COLOR_SECONDARY;
+				endif
+				GFTextCrop(yn_gump, 430, 220, 100, 320, color, text := "Laceração");
+			endif
+
+			if ("Prurido" in disease)
+				var color := 1153;
+				if (my_known_diseases && my_known_diseases.primary == "Prurido")
+					color := COLOR_PRIMARY;
+				elseif (my_known_diseases && my_known_diseases.secondary == "Prurido")
+					color := COLOR_SECONDARY;
+				endif
+				GFTextCrop(yn_gump, 430, 240, 100, 320, color, text := "Prurido");
+			endif
+
+			if ("Colicas" in disease)
+				var color := 1153;
+				if (my_known_diseases && my_known_diseases.primary == "Colicas")
+					color := COLOR_PRIMARY;
+				elseif (my_known_diseases && my_known_diseases.secondary == "Colicas")
+					color := COLOR_SECONDARY;
+				endif
+				GFTextCrop(yn_gump, 430, 260, 100, 320, color, text := "Cólica");
+			endif
+
+			// ADICIONAR legendas das cores se o jogador conhece a doença:
+			if (my_known_diseases)
+				GFTextLine(yn_gump, 255, 300, COLOR_PRIMARY, "Sintoma Primário (curar 1º)");
+				GFTextLine(yn_gump, 255, 320, COLOR_SECONDARY, "Sintoma Secundário (curar 2º)");
+			endif
+		else
+			GFTextLine(yn_gump, 255, 200, 1153, "Não apresenta qualquer sintoma.");
+		endif
+
+		// Checar o tempo dos crimes para aparecer os botões de investigação/autópsia
+		var lastDamage := GetObjProperty(subject, "LastDamage");
+		var time_actual := POLCore().systime;
+		var time_lastdamage := 0;
+		var time_inquerito_agressao := 0;
+
+		if (lastDamage)
+			time_lastdamage := lastDamage.time;
+			time_inquerito_agressao := time_actual - time_lastdamage;
+		endif
+
+		if (dead_one)
+			GFAddButton(yn_gump, 245, (310), 2117, 2118, GF_CLOSE_BTN, 8);
+			GFTextLine(yn_gump, 265, 308, 1153, "Autópsia");
+		endif
+
+		var input := GFSendGump(who, yn_gump);
+		input := input[0];
+		if (input == 2)
+			HandleFracture(subject, "Cabeca");
+			HealFractureTimer(who, subject, "fratura_cabeca");
+		elseif (input == 3)
+			HandleFracture(subject, "Maos");
+			HealFractureTimer(who, subject, "fratura_maos");
+		elseif (input == 4)
+			HandleFracture(subject, "Bracos");
+			HealFractureTimer(who, subject, "fratura_bracos");
+		elseif (input == 5)
+			HandleFracture(subject, "Torso");
+			HealFractureTimer(who, subject, "fratura_torso");
+		elseif (input == 6)
+			HandleFracture(subject, "Pernas");
+			HealFractureTimer(who, subject, "fratura_pernas");
+		elseif (input == 8)
+			Autopsy(who, subject);
+		endif
+	else
+		SendSysMessage(who, "Você falhou em sua análise");
+		if (GetObjProperty(who, "fail"))
+			PrintTextAbove(who, "Você enfiou a mão onde não deve e machucou o paciente");
+			ApplyDamage(subject, 1);
+			Eraseobjproperty(who, "Fail");
+		endif
+		return;
+	endif
+endprogram
+
+// Função para inicializar o datastore de doenças se necessário
+function create_disease_datastore()
+	// Cria ou acessa o datastore
+	var diseases_data := OpenDataFile(":tn:diseases");
+	if (!diseases_data)
+		diseases_data := CreateDataFile(":tn:diseases", DF_KEYTYPE_STRING);
+		if (!diseases_data)
+			print("Erro ao criar datafile de doenças");
+			return 0;
+		endif
+	endif
+
+	return 1;
+endfunction
+
+function diagnosis(who, subject)
+	// variables for sys messages
+	var streng := getStreng(AP_GetStat(subject, STRENGTH), subject.graphic, subject.gender);
+	var dext := getDext(AP_GetStat(subject, DEXTERITY), subject.graphic, subject.gender);
+	var int := getInt(AP_GetStat(subject, INTELLIGENCE));
+	var fort := getFort(AP_GetStat(subject, FORTITUDE));
+	var skill := GetAttribute(who, MEDICINE);
+	var strMsg;
+	var humanoides := { 0x190, 0x191, 1828, 1829, 1830, 1831, 1832, 1833 };
+	if (!(subject.graphic in humanoides))
+		strMsg := "A criatura";
+	else
+		strMsg := subject.title_race;
+	endif
+	var addiction_text := GetAddictionState(subject);
+	var base_diagnosis := strMsg + " aparenta " + streng + " e é " + dext + ". " + " Seus trejeitos indicam "
+													  + int + ", e está " + DPMsg(subject,
+													  who) + ". Seu sistema imunológico é " + fort + ". " + addiction_text;
+
+	return base_diagnosis;
+endfunction
+
+function GetAddictionState(subject)
+    var vstr := AP_GetVital(subject, "Viciostr");
+    var vdex := AP_GetVital(subject, "Viciodex");
+    var vint := AP_GetVital(subject, "Vicioint");
+
+    // pega o pior estado (menor valor)
+    var addiction := vstr;
+    if (vdex < addiction)
+        addiction := vdex;
+    endif
+    if (vint < addiction)
+        addiction := vint;
+    endif
+
+    // interpretação (0–100)
+if (addiction >= 80 && addiction <= 100)
+    return "Não há sinais aparentes de dependência.";
+elseif (addiction >= 60 && addiction < 80)
+    return "Apresenta sinais sutis de uso recorrente, porém ainda mantém controle sobre si.";
+elseif (addiction > 40 && addiction < 60)
+    return "Seus trejeitos indicam um início de dependência, com leves inquietações e olhar disperso.";
+else // <= 40
+    return "Demonstra claros sinais de abstinência: tremores, inquietação e dificuldade de foco.";
+endif
+endfunction
+
+function info_corpo(who, subject) // Infos do agressor para furtos, corpos mortos e agressões
+	var lastDamage := GetObjProperty(subject, "LastDamage");
+	var furto := GetObjProperty(subject, "ultimo_furto");
+	var time_actual := POLCore().systime;
+	var text_death := "";
+	var text_damage := "";
+	var dead_one := subject.isA(POLCLASS_CORPSE);
+
+	// Verifica dano
+	if (lastDamage)
+		var type_damage := lastDamage["TipoEquip"];
+		var time_damage := lastDamage.time;
+		var time_death := (time_actual) - (time_damage);
+
+		if (dead_one)
+			if (time_death < 600)
+				text_death := "<basefont color=#FFFFFF>O corpo está quente.</basefont> ";
+			else
+				text_death := "<basefont color=#FFFFFF>O corpo está frio.</basefont> ";
+			endif
+			text_damage := "<basefont color=#FFFFFF>Há vestígios de </basefont><basefont color=#FF0000>homicídio</basefont><basefont color=#FFFFFF> cujo golpe fulminante foi "
+																																										  + type_damage + ". </basefont>";
+		endif
+	endif
+
+	// Compõe a resposta final
+	if (text_damage != "")
+		return text_death + text_damage;
+	else
+		return "<basefont color=#FFFFFF>Não há vestígios de crimes recentes.</basefont>";
+	endif
+endfunction
+
+function HandleFracture(subject, fractureName)
+	// Então, cria um novo array com as fraturas que não foram selecionadas
+	var newFracture := array;
+	var fracture := GetObjProperty(subject, "Fractures");
+	foreach element in fracture
+		if (element != fractureName)
+			newFracture.append(element);
+		endif
+		Sleepms(2);
+	endforeach
+
+	// Verifica se o novo array está vazio
+	if (newFracture.size() == 0)
+		// Se estiver vazio, remove a propriedade "Fractures" do objeto
+		EraseObjProperty(subject, "Fractures");
+	else
+		// Caso contrário, adiciona o novo array de fraturas
+		EraseObjProperty(subject, "Fractures");
+		SetObjProperty(subject, "Fractures", newFracture);
+	endif
+endfunction
+
+function Autopsy(who, corpse)
+	// Obter valores que vão desaparecer depois do corpo ser retaliado
+	var corpseserial := corpse.serial;
+	var corpsex := corpse.x;
+	var corpsey := corpse.y;
+	var corpsez := corpse.z;
+	var corpserealm := corpse.realm;
+
+	// Obter a descrição específica que algum gm tenha dado para o corpo
+	var gm_desc := GetObjProperty(corpse, "gm_desc_autopsy");
+
+	// Realizar o teste de habilidade de medicina
+	var cfg := ReadConfigFile(":combat:itemdesc");
+	var equippedright := GetEquipmentByLayer(who, 0x01);
+	var equippedleft := GetEquipmentByLayer(who, 0x02);
+	var twohanded := (cfg[equippedright.objtype]);
+	var bisturi := { 0xD1CE, 0XD1D1, 0XD1CF };
+	var check_result_orig := SkillCheck(who, MEDICINE, 35);
+	var check_result;
+
+	var autopsy_data := GetObjProperty(corpse, "Autopsy");
+	var lastDamage := GetObjProperty(corpse, "LastDamage");
+
+	if ((equippedright.objtype in bisturi) || (equippedleft.objtype in bisturi))
+		check_result := check_result_orig + 10;
+		SendSysMessageEx(who, "Por usar o bisturi você tem bônus de +10", SSM_INFO);
+	else
+		if (!(twohanded.TipoAtaque == "Cortante" && twohanded.Attribute == "One_Handed"))
+			SendSysMessageEx(who, "Voce não está portando arma cortante.", SSM_FAIL);
+			return;
+		endif
+		check_result := check_result_orig;
+	endif
+
+	if (GetObjProperty(who, "#DoingAutopsy"))
+		SendSysMessageEx(who, "Você já está realizando uma autópsia.", SSM_FAIL);
+		return;
+	endif
+
+	// Definir a propriedade para indicar que o personagem está realizando uma autópsia
+	SetObjProperty(who, "#DoingAutopsy", 1);
+
+	var discovery_results := dictionary{};
+
+	// Props que sempre são repassadas
+	discovery_results["taxonomy"] := autopsy_data.taxonomy;
+	discovery_results["rastros"] := autopsy_data.rastros;
+	discovery_results["serial_weapon"] := autopsy_data.serial_weapon;
+	discovery_results["objtype"] := autopsy_data.objtype;
+
+	// Props do lastDamage - todas são repassadas
+	foreach key in (lastDamage.keys())
+		discovery_results["lastdamage_" + key] := lastDamage[key];
+		Sleepms(2);
+	endforeach
+
+	// Criar lista de categorias completas para sorteio
+	var optional_categories := array{};
+
+	// Stats como categoria completa
+	if (autopsy_data.stats)
+		optional_categories.append(struct{ "name" := "stats", "desc" := "atributos físicos e mentais",
+								   		"data" := autopsy_data.stats });
+	endif
+
+	// Vitals como categoria completa
+	if (autopsy_data.vitals)
+		optional_categories.append(struct{ "name" := "vitals", "desc" := "resistências vitais",
+								   		"data" := autopsy_data.vitals });
+	endif
+
+	// Skills como categoria completa
+	if (autopsy_data.skills)
+		optional_categories.append(struct{ "name" := "skills", "desc" := "habilidades",
+								   		"data" := autopsy_data.skills });
+	endif
+
+	// Resists como categoria completa
+	if (autopsy_data.resists)
+		optional_categories.append(struct{ "name" := "resists", "desc" := "resistências elementais",
+								   		"data" := autopsy_data.resists });
+	endif
+
+	// Elemental Damage como categoria completa
+	if (autopsy_data.elemdamage)
+		optional_categories.append(struct{ "name" := "elemdamage", "desc" := "danos elementais",
+								   		"data" := autopsy_data.elemdamage });
+	endif
+
+	// Dano Principal como categoria individual
+	if (autopsy_data.dano_principal)
+		optional_categories.append(struct{ "name" := "dano_principal", "desc" := "tipo de dano principal",
+								   		"data" := autopsy_data.dano_principal });
+	endif
+
+	// Determinar quantas categorias descobrir baseado no check_result
+	var discoveries_to_make := 0;
+	if (check_result >= 30)
+		discoveries_to_make := optional_categories.size(); // Todas
+	elseif (check_result >= 20)
+		discoveries_to_make := CInt(optional_categories.size() * 0.75); // 75%
+	elseif (check_result >= 10)
+		discoveries_to_make := CInt(optional_categories.size() * 0.5); // 50%
+	elseif (check_result > 0)
+		discoveries_to_make := CInt(optional_categories.size() * 0.25); // 25%
+	else
+		EraseObjProperty(who, "#DoingAutopsy");
+		PrintTextPrivate(who, "*Você não consegue obter nenhuma informação relevante da autopsia.*",
+				   who);
+		return;
+	endif
+
+	// Garantir pelo menos 1 descoberta se passou no teste
+	if (discoveries_to_make < 1 && check_result > 0)
+		discoveries_to_make := 1;
+	endif
+
+	// Dividir descobertas em 3 etapas máximo
+	var etapas := 3;
+	if (discoveries_to_make < 3)
+		etapas := discoveries_to_make;
+	endif
+
+	var discoveries_per_stage := array{};
+	var remaining := discoveries_to_make;
+
+	for i := 1 to etapas
+		var per_stage := CInt(remaining / (etapas - i + 1));
+		if (per_stage < 1)
+			per_stage := 1;
+		endif
+		discoveries_per_stage.append(per_stage);
+		remaining -= per_stage;
+		Sleepms(2);
+	endfor
+
+	// Embaralhar categorias
+	var shuffled_categories := array{};
+	var temp_categories := optional_categories;
+	while (temp_categories.size() > 0)
+		var index := RandomInt(temp_categories.size()) + 1;
+		shuffled_categories.append(temp_categories[index]);
+		temp_categories.erase(index);
+		Sleepms(2);
+	endwhile
+
+	var category_index := 1;
+	var stage_messages := array{ "*Você inicia um exame externo minucioso do corpo, observando ferimentos e características físicas*",
+							 	"*Você procede com uma análise mais profunda, examinando músculos, tendões e órgãos internos*",
+							 	"*Você finaliza a autopsia com um exame detalhado dos sistemas corporais e evidências forenses*" };
+
+	// Executar etapas
+	for stage := 1 to etapas
+		PrintTextPrivate(who, stage_messages[stage], who);
+		PerformAction(who, 0x0009);
+		Sleep(3);
+
+		var discoveries_this_stage := discoveries_per_stage[stage];
+		var stage_discoveries := array{};
+
+		for d := 1 to discoveries_this_stage
+			if (category_index <= shuffled_categories.size())
+				var category := shuffled_categories[category_index];
+
+				// Adicionar toda a categoria aos resultados
+				if (category.name == "dano_principal")
+					discovery_results[category.name] := category.data;
+				else
+					// Para categorias que são dicionários/structs, adicionar todas as propriedades
+					foreach key in (category.data.keys())
+						discovery_results[category.name + "_" + key] := category.data[key];
+						Sleepms(2);
+					endforeach
+				endif
+
+				stage_discoveries.append(category.desc);
+				category_index++;
+			endif
+		endfor
+
+		if (stage_discoveries.size() > 0)
+			var discovery_text := "*Descobertas: " + stage_discoveries[1];
+			for i := 2 to stage_discoveries.size()
+				discovery_text += ", " + stage_discoveries[i];
+			endfor
+			discovery_text += "*";
+			SendSysMessageEx(who, discovery_text, SSM_INFO);
+		endif
+
+		if (stage < etapas)
+			Sleep(3);
+		endif
+	endfor
+
+	if (gm_desc)
+		Sleep(3);
+		PrintTextPrivate(who, "*Você encontra algo diferente: " + gm_desc + "*", who);
+		discovery_results["observação"] := gm_desc;
+	endif
+
+	PrintTextPrivate(who, "*Você conclui a autopsia com sucesso.*", who);
+
+	// Criar o laudo médico
+	CreateReportItem(who, discovery_results, corpse);
+
+	EraseObjProperty(who, "#DoingAutopsy");
+	DesmembreCorpse(corpse);
+endfunction
+
+// Função para criar o item de laudo médico
+function CreateReportItem(who, discovery_results, corpse)
+	// Verificar quantos laudos o personagem já tem
+	var report_counter := 1;
+	var container := EnumerateItemsInContainer(who.backpack);
+	foreach item in container
+		if (item.objtype == 0xedfd)
+			report_counter += 1;
+		endif
+		Sleepms(2);
+	endforeach
+	var npccfgfile := ReadConfigFile(":*:npcdesc");
+	// Criar gump para definir o nome do laudo
+	var default_name := "Laudo #" + report_counter;
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 300, 200);
+	GFResizePic(gump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 280, 180);
+
+	GFTextMid(gump, 10, 20, 280, 2100, "Nome do Laudo Médico");
+
+	GFTextEntry(gump, 50, 60, 200, 25, 2100, default_name, 1);
+
+	GFAddButton(gump, 115, 120, 2130, 2129, GF_CLOSE_BTN, 1);
+
+	var input := GFSendGump(who, gump);
+	var report_name;
+
+	if (input[0] == 1)
+		report_name := GFExtractData(input, 1);
+		if (!report_name)
+			report_name := default_name;
+		endif
+	else
+		report_name := default_name;
+	endif
+
+	// Criar o item do laudo
+	var report := CreateItemInBackpack(who, 0xedfd, 1);
+	if (!report)
+		SendSysMessageEx(who, "Sua mochila está cheia demais para guardar o laudo.", SSM_FAIL);
+		return;
+	endif
+
+	// Configurar o nome e propriedades do laudo
+	SetName(report, report_name);
+	var time_death := tempoMorto(corpse, corpse.LastDamage.time);
+	// Salvar as informações da autópsia no item
+	SetObjProperty(report, "autopsy_results", discovery_results);
+	SetObjProperty(report, "corpse_serial", corpse.serial);
+	SetObjProperty(report, "victim_name", corpse.desc);
+	SetObjProperty(report, "examiner", who.name);
+	SetObjProperty(report, "exam_time", time_death);
+
+	SendSysMessageEx(who, "Você registrou suas descobertas no laudo médico.", SSM_INFO);
+endfunction
+
+function DesmembreCorpse(cadaver)
+	SetObjProperty(cadaver, "morto", 1);
+
+	var beardlist := { 0x203e, 0x203f, 0x2040, 0x2041, 0x204b, 0x204c, 0x204d };
+	var hairlist := { 0x2044, 0x2045, 0x2046, 0x2047, 0x2048, 0x2049, 0x204a, 0x203b, 0x203c, 0x203d };
+	foreach thing in EnumerateItemsInContainer(cadaver)
+		if ((thing.objtype in hairlist) or (thing.objtype in beardlist))
+			DestroyItem(thing);
+		else
+			MoveObjectToLocation(thing, cadaver.x, cadaver.y, cadaver.z, thing.realm, MOVEOBJECT_FORCELOCATION);
+		endif
+		Sleepms(2);
+	endforeach
+	var partsarray := {};
+	var part;
+	part := CreateItemAtLocation(cadaver.x - 1, cadaver.y, cadaver.z, 0x1da0, 1, cadaver.realm);
+	partsarray.append(part);
+	part := CreateItemAtLocation(cadaver.x - 1, cadaver.y + 1, cadaver.z, 0x1CF0, 1, cadaver.realm);
+	partsarray.append(part);
+	part := CreateItemAtLocation(cadaver.x + 1, cadaver.y, cadaver.z, 0x1CEE, 1, cadaver.realm);
+	partsarray.append(part);
+	part := CreateItemAtLocation(cadaver.x + 1, cadaver.y + 1, cadaver.z, 0x1CED, 1, cadaver.realm);
+	partsarray.append(part);
+	part := CreateItemAtLocation(cadaver.x, cadaver.y, cadaver.z, 0x1CEA, 1, cadaver.realm);
+	partsarray.append(part);
+	MakeBleed(cadaver);
+	DestroyItem(cadaver);
+	
+endfunction
+
+// Função simplificada para obter informações de doença conhecida
+function GetKnownDiseaseInfo(who, patient_symptoms)
+	// Verificar se patient_symptoms é um array válido
+	if (patient_symptoms == error || typeof(patient_symptoms) != "Array")
+		return 0;
+	endif
+
+	// Obter a lista de doenças que o jogador conhece (apenas nomes)
+	var known_diseases := GetObjProperty(who, "KnownDiseases");
+	if (!known_diseases || known_diseases.size() == 0)
+		return 0;
+	endif
+
+	// Primeiro, descobrir qual doença o paciente tem baseado nos sintomas
+	var disease_info := GetDiseaseInfo(patient_symptoms);
+	if (!disease_info)
+		return 0;
+	endif
+
+	// Verificar se o jogador conhece esta doença específica
+	var disease_name := disease_info.name;
+	var player_knows_disease := false;
+
+	foreach known_disease in known_diseases
+		if (Lower(known_disease) == Lower(disease_name))
+			player_knows_disease := true;
+			break;
+		endif
+		Sleepms(2);
+	endforeach
+
+	// Se o jogador conhece a doença, retorna as informações completas do datafile
+	if (player_knows_disease)
+		return disease_info;
+	else
+		return 0;
+	endif
+endfunction
+
+// Função para obter informações de uma doença baseada nos sintomas do paciente (DATAFILE GLOBAL)
+function GetDiseaseInfo(patient_symptoms)
+	// Verificar se patient_symptoms é um array válido
+	if (patient_symptoms == error || typeof(patient_symptoms) != "Array")
+		return 0;
+	endif
+
+	var diseases_data := OpenDataFile(":tn:diseases");
+	if (!diseases_data)
+		return 0;
+	endif
+
+	// Percorrer todas as doenças registradas
+	var disease_elements := DFGetElemNames(diseases_data);
+
+	foreach disease_name in disease_elements
+		var elem := DFFindElement(diseases_data, disease_name);
+		if (!elem)
+			continue;
+		endif
+
+		// Obter os sintomas desta doença
+		var disease_symptoms := DFGetProp(elem, "symptoms");
+		if (disease_symptoms == error || typeof(disease_symptoms) != "Array")
+			continue;
+		endif
+
+		// Verificar se o número de sintomas é o mesmo
+		if (disease_symptoms.size() != patient_symptoms.size())
+			continue;
+		endif
+
+		// Criar cópias normalizadas dos arrays de sintomas
+		var temp_disease_symptoms := array{};
+		var temp_patient_symptoms := array{};
+		Sleepms(2);
+		foreach symptom in disease_symptoms
+			if (symptom != error && typeof(symptom) == "String")
+				temp_disease_symptoms.append(Lower(symptom));
+			endif
+			Sleepms(2);
+		endforeach
+
+		foreach symptom in patient_symptoms
+			if (symptom != error && typeof(symptom) == "String")
+				temp_patient_symptoms.append(Lower(symptom));
+			endif
+			Sleepms(2);
+		endforeach
+
+		// Ordenar ambos para comparação consistente
+		temp_disease_symptoms.sort();
+		temp_patient_symptoms.sort();
+
+		// Verificar se os arrays são iguais
+		var matches := true;
+		if (temp_disease_symptoms.size() == temp_patient_symptoms.size())
+			var i := 0;
+			while (i < temp_disease_symptoms.size())
+				if (temp_disease_symptoms[i] != temp_patient_symptoms[i])
+					matches := false;
+					break;
+				endif
+				i := i + 1;
+				Sleepms(2);
+			endwhile
+		else
+			matches := false;
+		endif
+
+		if (matches)
+			// Encontramos uma correspondência exata!
+			var disease_info := struct;
+			disease_info.+name := DFGetProp(elem, "name");
+			disease_info.+symptoms := disease_symptoms;
+			disease_info.+primary := DFGetProp(elem, "primary");
+			disease_info.+secondary := DFGetProp(elem, "secondary");
+			disease_info.+discovered_by := DFGetProp(elem, "discovered_by");
+			disease_info.+discovered_time := DFGetProp(elem, "discovered_time");
+
+			return disease_info;
+		endif
+	endforeach
+
+	return 0;
+endfunction
+
+// Função auxiliar para criar uma chave única para um array de sintomas
+function SortArray(symptoms_array)
+	var sorted_array := array{};
+	foreach symptom in symptoms_array
+		sorted_array.append(symptom);
+		Sleepms(2);
+	endforeach
+	sorted_array.sort();
+
+	return "disease_" + sorted_array.join("_");
+endfunction
+
+function HealFractureTimer(medic, subject, timer_name)
+    var total := 0;
+
+    foreach item in EnumerateItemsInContainer(medic.backpack)
+        if (item.objtype == 0xe21)
+            total := total + item.amount;
+        endif
+    endforeach
+
+    if (total >= 5)
+        TS_LowerDuration(subject, timer_name, -1);
+        EraseObjProperty(subject, "#hurt_" + timer_name);
+
+        var remaining := 5;
+
+        foreach item in EnumerateItemsInContainer(medic.backpack)
+            if (item.objtype == 0xe21)
+                if (item.amount <= remaining)
+                    remaining := remaining - item.amount;
+                    DestroyItem(item);
+                else
+                    SubtractAmount(item, remaining);
+                    remaining := 0;
+                endif
+
+                if (remaining <= 0)
+                    break;
+                endif
+            endif
+        endforeach
+
+    else
+        SendSysMessageEx(medic, "Você não tem bandagens necessárias (5).");
+    endif
+endfunction

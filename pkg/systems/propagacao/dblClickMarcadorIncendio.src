@@ -1,0 +1,28 @@
+use uo;
+use util;
+use polsys;
+
+include ":propagacao:include/propagacao";
+include "include/say";
+include "include/client";
+include "include/facings";
+
+program dblClickMarcadorIncendio(quem, item)
+	var tentativas := 0;
+	if (item.IsMarcadorTipo(PROPAGACAO_TIPO::INCENDIO))
+		while (cint(item.LerEstado()) > ESTADO_PROPAGACAO::DORMENTE && !quem.isdead &&
+		 Distance(quem, item) <= 1)
+			if (tentativas % 8 == 0)
+				TurnObjectToward(quem, item.x, item.y);
+				PrintTextAbove(quem, "*Tentando apagar incêndio*");
+				PerformAction(quem, HUMAN_ANIM::BOW);
+				PlaySoundEffect(quem, SFX_12A);
+			endif
+			item.Estimular(RESFRIAMENTOS::BASICO, true);
+
+			Sleepms(300);
+			++tentativas;
+		endwhile
+		SendSysMessageEx(quem, "Você parou de tentar apagar o incêndio.", SSM_INFO);
+	endif
+endprogram

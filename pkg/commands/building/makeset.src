@@ -1,0 +1,276 @@
+/*
+ * $Id: makeset.src 129 2006-05-27 18:08:54Z austinheilman $
+ *
+*/
+use uo;
+use os;
+use datafile;
+use cfgfile;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":gumps:yesNo";
+include ":datafile:datafile";
+
+
+program textcmd_MakeSet(who, set_name)
+
+	var ds := OpenDataFile(":tn:sets");
+
+	if (!ds)
+		SendSysMessage(who, "Could not open sets datastore.");
+		return 0;
+	endif
+
+	if (set_name == "transport")
+		TransportSetsToDataStore(who);
+		return 1;
+	endif
+
+	if (!set_name)
+		set_name := SetNamesGump(who, ds);
+
+		if (!set_name)
+			SendSysMessage(who, "Cancelled.");
+			return 0;
+		endif
+	endif
+
+	var set_elem := DFFindElement(ds, set_name);
+
+	if (!set_elem)
+
+		SendSysMessage(who, "Could not find set name " + set_name);
+		return 0;
+
+	endif
+
+	SendSysMessage(who, "Target where you want to place " + set_name);
+
+	var targ := TargetCoordinates(who);
+
+	if (!targ)
+		return 0;
+	endif
+
+	var setdata := set_elem.GetProp("items");
+
+	foreach line in setdata
+
+		line := SplitWords(line);
+
+		var objtype := CInt(line[1]),
+			graphic := CInt(line[2]),
+			color := CInt(line[3]);
+
+		var x := CInt(line[4]),
+			y := CInt(line[5]),
+			z := CInt(line[6]);
+
+		var item := CreateItemAtLocation(
+			targ.x + x,
+			targ.y + y,
+			targ.z + z,
+			objtype,
+			1,
+			who.realm
+		);
+
+		item.color := color;
+		item.graphic := graphic;
+		item.movable := 0;
+
+		if (!item)
+			SendSysMessage(who, "Error creating line! " + item.errortext);
+		endif
+
+		SleepMS(2);
+
+	endforeach
+
+	SendSysMessage(who, "Done.");
+	return 1;
+
+endprogram
+
+function TransportSetsToDataStore(byref who)
+
+	var config := ReadConfigFile("::noncore/sets");
+
+	if (!config)
+		SendSysMessage(who, "Could not open old cfg.");
+		return 0;
+	endif
+
+	var ds := OpenDataFile(":tn:sets");
+
+	if (!ds)
+		CreateDataFile(":tn:sets");
+		ds := OpenDataFile(":tn:sets");
+	endif
+
+	var elem_names := GetConfigStringKeys(config);
+
+	var imported := 0;
+	var skipped := 0;
+
+	foreach set_name in elem_names
+
+		// pega array de items exatamente como o script antigo fazia
+		var itemlist := GetConfigStringArray(config[set_name], "item");
+
+		if (!itemlist)
+			skipped := skipped + 1;
+			continue;
+		endif
+
+		if (itemlist.size() == 0)
+			skipped := skipped + 1;
+			continue;
+		endif
+
+		var set_elem := DFFindElement(ds, set_name);
+
+		if (!set_elem)
+			set_elem := ds.CreateElement(set_name);
+		endif
+
+		set_elem.SetProp("items", itemlist);
+
+		imported := imported + 1;
+
+		SleepMS(1);
+
+	endforeach
+
+	SendSysMessage(who, "Imported: " + imported + " / Skipped: " + skipped);
+
+	return 1;
+
+endfunction
+
+function ConfirmDeleteSet(byref who, byref ds, set_name)
+
+	var gump := GFCreateGump();
+
+	GFResizePic(gump, 0, 0, 2620, 250, 120);
+
+	GFTextLine(gump, 25, 20, 33, "Delete set:");
+	GFTextLine(gump, 25, 40, 1152, set_name);
+	GFTextLine(gump, 25, 65, 2100, "Are you sure?");
+
+	// YES
+	GFAddButton(gump, 25, 90, 247, 248, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 60, 90, 2100, "YES");
+
+	// NO
+	GFAddButton(gump, 140, 90, 241, 242, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 175, 90, 2100, "NO");
+
+	var input := GFSendGump(who, gump);
+
+	input := input[0];
+
+	if (input != 1)
+		return 0;
+	endif
+
+	var elem := DFFindElement(ds, set_name);
+
+	if (!elem)
+		SendSysMessage(who, "Set not found.");
+		return 0;
+	endif
+
+	ds.DeleteElement(set_name);
+
+	SendSysMessage(who, "Deleted set: " + set_name);
+
+	return 1;
+
+endfunction
+
+function SetNamesGump(byref who, byref ds)
+
+	while (1)
+
+		var elem_names := ds.keys();
+
+		var gump := GFCreateGump();
+
+		GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 300, 450);
+		GFResizePic(gump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 280, 430);
+
+		GFPage(gump, 1);
+
+		var y_pos := 25;
+		var page_num := 1;
+		var visual_counter := 0;
+		var real_index := 0;
+
+		foreach elem_name in (elem_names)
+
+			real_index := real_index + 1;
+			visual_counter := visual_counter + 1;
+
+			// LOAD BUTTON
+			GFAddButton(gump, 20, y_pos + 5, 2103, 2104, GF_CLOSE_BTN, real_index);
+
+			// DELETE BUTTON
+			GFAddButton(gump, 240, y_pos + 5, 4017, 4019, GF_CLOSE_BTN, real_index + 1000);
+
+			GFTextLine(gump, 40, y_pos, 2100, elem_name);
+
+			y_pos := y_pos + 25;
+
+			if (visual_counter >= 16)
+
+				visual_counter := 0;
+				y_pos := 25;
+
+				GFAddButton(gump, 260, 410, 2648, 2649, GF_PAGE_BTN, page_num + 1);
+
+				page_num := page_num + 1;
+
+				GFPage(gump, page_num);
+
+				GFAddButton(gump, 260, 20, 2650, 2651, GF_PAGE_BTN, page_num - 1);
+
+			endif
+
+			SleepMS(2);
+
+		endforeach
+
+		var input := GFSendGump(who, gump);
+
+		input := input[0];
+
+		if (!input)
+			return 0;
+		endif
+
+		// DELETE
+		if (input >= 1001)
+
+			var idx := input - 1000;
+
+			var set_name := elem_names[idx];
+
+			if (set_name)
+
+				ConfirmDeleteSet(who, ds, set_name);
+
+			endif
+
+			continue;
+
+		endif
+
+		SendSysMessage(who, "->" + elem_names[input]);
+
+		return elem_names[input];
+
+	endwhile
+
+endfunction

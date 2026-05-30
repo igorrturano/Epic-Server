@@ -1,0 +1,86 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":timedScripts:timedScripts";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+include ":spells:Controller/SC_Damage";
+
+// Spell 909 (Transferência Vital). Hardcoded because this program uses the legacy
+// single-arg manobra(mobile) dispatch signature and does not receive the spell elem.
+const SPELL_ID_TRANSFERENCIA_VITAL := 909;
+
+program manobra(mobile)
+	SendSysMessageEx(mobile, "Escolha o receptor da energia vital.", SSM_FAIL);
+	var who := Target(mobile);
+	if (mobile.npctemplate)
+		who := mobile;
+	endif
+	SendSysMessageEx(mobile, "Escolha o doador da energia vital.", SSM_FAIL);
+	var targ := Target(mobile);
+	if (mobile.npctemplate)
+		targ := GetRandomNearbyHostile(mobile);
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(mobile, "Isto nao pode ser alvejado por essa magia.", SSM_FAIL);
+		return;
+	endif
+
+	PlaySoundEffect(targ, SFX_SPELL_WEAKEN);
+
+	var time := 0;
+	var oldx := mobile.x;
+	var oldy := mobile.y;
+
+	mobile.frozen := 1;
+
+	var amt := 10;
+
+	Corromper(mobile, 9, targ);
+	var diff := handleSpellResistDiffForSpecialists(mobile, KAIJIN);
+	var bonus := epicWisdomPathBonus(mobile);
+	if (CheckResist(mobile, WILL, diff, -bonus))
+		SendSysMessageEx(mobile, "Voce nota que o alvo nao foi afetado.", SSM_FAIL);
+		SendSysMessageEx(targ, "Voce resistiu a magia.", SSM_INFO);
+		mobile.frozen := 0;
+		return;
+	endif
+
+	while (time < 10)
+
+		if ((mobile.x != oldx) || (mobile.y != oldy))
+			SendSysMessageEx(who, "Voce se moveu e cancelou a magia.", SSM_FAIL);
+			break;
+		endif
+
+		if (Distance(who, targ) >= 16)
+			SendSysMessageEx(who, "O alvo se distanciou muito.", SSM_FAIL);
+			break;
+		endif
+
+		if (targ.dead)
+			break;
+		endif
+
+		SC_DealDamage(mobile, targ, SPELL_ID_TRANSFERENCIA_VITAL, amt, DAMAGE_TYPE::FORCED);
+		ApplyEpicHealing(who, amt);
+
+		if (targ.dead)
+			break;
+		endif
+
+		PlayMovingEffectEx(targ, who, 3982, 5, 1, 2117);
+		PerformAction(mobile, HUMAN_ANIM::CAST_AREA);
+		time := time + 1;
+		sleep(1);
+	endwhile
+
+	mobile.frozen := 0;
+
+	return 1;
+endprogram

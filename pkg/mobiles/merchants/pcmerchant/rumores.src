@@ -1,0 +1,501 @@
+
+use uo;
+use os;
+
+include ":containers:storageAreas";
+include ":containers:containers";
+include ":gumps:requestGump";
+include ":gumps:gumps";
+include ":gumps:yesNo";
+include "include/say";
+include ":keys:key";
+include ":tn:tngumps";
+include ":gumps:htmlGump";
+include ":wrappers:Objects/Model/MobileWrapper";
+include "include/epicConstants";
+include ":gumps:gumps_ex";
+
+// Gump Constants
+const BKGND_STONESLAB := 9200; // Gray stone slab background
+const BKGND_BLUESLAB := 3600; // Raised edge (blocky)
+const GF_STDCOLOR := 1890;
+
+const MOEDAS := 47715;
+
+// Pagination
+const RUMORES_POR_PAGINA := 15;
+
+var item_cfg := ReadConfigFile(":*:itemdesc");
+
+// Helper function to check if player can see a rumor
+function CanSeeRumor(player, rumor, gmViewMode := 0)
+	// GMs in GM view mode can see everything
+	if (player.cmdlevel >= 3 && gmViewMode)
+		return 1;
+	endif
+
+	// Check race restriction
+	if (rumor.racas && rumor.racas.size() > 0)
+		var playerWrapper := MobileWrapper(player);
+		var playerRace := playerWrapper.GetRace();
+		if (!(playerRace in rumor.racas))
+			return 0;
+		endif
+	endif
+
+	// Check culture restriction
+	if (rumor.culturas && rumor.culturas.size() > 0)
+		var playerWrapper := MobileWrapper(player);
+		var playerCulture := playerWrapper.GetCulture();
+		if (!(playerCulture in rumor.culturas))
+			return 0;
+		endif
+	endif
+
+	return 1;
+endfunction
+
+// Helper function to create a temporary book for text editing
+function CreateTempBook(player, title := "Rascunho")
+	var book := CreateItemAtLocation(player.x, player.y, player.z, "book1", 1, player.realm); // 30-page book
+	if (!book || book.errortext)
+		return error;
+	endif
+
+	// Set book properties using method functions
+	book.SetTitle(title);
+	book.SetAuthor(player.name);
+
+	// Mark as temporary so we can find and clean it later
+	SetObjProperty(book, "#TempRumorBook", 1);
+
+	return book;
+endfunction
+
+// Helper function to safely destroy a temporary book
+function DestroyTempBook(book)
+	if (!book || book.errortext)
+		return;
+	endif
+
+	// Try to release any locks on the book
+	ReleaseItem(book);
+
+	// Small delay to ensure the client releases it
+	sleepms(50);
+
+	// Try to destroy
+	var result := DestroyItem(book);
+
+	// If it failed, try one more time after a longer delay
+	if (!result)
+		sleepms(200);
+		ReleaseItem(book);
+		DestroyItem(book);
+	endif
+endfunction
+
+// Helper to check if character breaks words (space, punctuation, etc)
+function IsWordBreaker(ch)
+	if (!ch || ch == "")
+		return 1;
+	endif
+
+	// Check for spaces and common punctuation that ends sentences/words
+	if (ch == " " || ch == "." || ch == "," || ch == "!" || ch == "?" ||
+	    ch == ";" || ch == ":" || ch == ")" || ch == "]" || ch == "}")
+		return 1;
+	endif
+
+	// Everything else (letters, numbers) is NOT a word breaker
+	return 0;
+endfunction
+
+// Helper function to extract text from book, joining all lines
+// Detects when words are broken across lines (his/toria = historia)
+function ExtractBookText(book)
+	var contents := book.GetContents();
+	if (!contents || contents.size() == 0)
+		return "";
+	endif
+
+	var text := "";
+	foreach line in contents
+		if (line && line != "")
+			if (text != "")
+				// Check last char of previous text and first char of current line
+				var lastChar := text[len(text), 1];
+				var firstChar := line[1, 1];
+
+				// If previous line ends with punctuation/space OR current line starts with space,
+				// add space between lines. Otherwise it's a broken word - join directly.
+				if (IsWordBreaker(lastChar) || firstChar == " ")
+					text := text + " " + line;
+				else
+					// Word was broken mid-word, join without space
+					text := text + line;
+				endif
+			else
+				text := line;
+			endif
+		endif
+	endforeach
+
+	// Clean up double spaces (single pass)
+	text := StrReplace(text, "  ", " ");
+
+	return text;
+endfunction
+
+// Helper function to display text with smart word wrapping in HTMLGump
+function SendSmartHTMLGump(player, title, text)
+	var gump := GFCreateGump(0, 0);
+
+	// Background
+	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 360, 480);
+
+	// Title bar
+	GFResizePic(gump, 15, 12, GFCfgConst("Defaults", "ForeGround"), 330, 30);
+	GFTextMid(gump, 15, 17, 330, 2100, title);
+
+	// Content area with gold trim
+	GFResizePic(gump, 15, 45, GFCfgConst("Backgrounds", "GOLDTRIM"), 330, 390);
+
+	// Word-wrapped text display using GFHTMLArea (supports scrolling)
+	// Convert plain text to HTML format for better display
+	var html_text := "<BASEFONT COLOR=#000000>" + text + "</BASEFONT>";
+	GFHTMLArea(gump, 22, 53, 315, 375, html_text, 0, 1);
+
+	// Close button
+	GFResizePic(gump, 15, 438, GFCfgConst("Defaults", "ForeGround"), 330, 30);
+	GFAddButton(gump, 285, 440, 4023, 4024, GF_CLOSE_BTN, 1);
+	GFTextLine(gump, 220, 440, 2100, "Fechar");
+
+	return GFSendGump(player, gump);
+endfunction
+
+program MerchantMenu(params)
+
+	var npc := params[1];
+	var player := params[2];
+	var gmViewMode := params[3]; // 0 = view as player, 1 = view as GM
+	// 	var npc := player;
+
+	// Default GM view mode for GMs
+	if (gmViewMode == error && player.cmdlevel >= 3)
+		gmViewMode := 1;
+	elseif (gmViewMode == error)
+		gmViewMode := 0;
+	endif
+
+	if (player.hidden)
+		player.hidden := 0;
+		SendSysMessageEx(player, "Voce se revelou.", SSM_FAIL);
+	endif
+
+	// Clean up any leftover temporary books from previous sessions
+	var backpack := player.backpack;
+	if (backpack)
+		foreach item in EnumerateItemsInContainer(backpack)
+			if (GetObjProperty(item, "#TempRumorBook"))
+				DestroyTempBook(item);
+			endif
+		endforeach
+	endif
+
+	var currentPage := 1;
+
+	while (1)
+		var gump := GFCreateGump(0, 0);
+		GFResizePic(gump, 15, 50, 2620, 310, 380);
+
+		GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 360, 480);
+
+		GFResizePic(gump, 15, 12, GFCfgConst("Defaults", "ForeGround"), 330, 30);
+		if (player.cmdlevel >= 3)
+			if (gmViewMode)
+				GFTextMid(gump, 15, 17, 330, 2100, "Rumores [Visão GM]");
+			else
+				GFTextMid(gump, 15, 17, 330, 2100, "Rumores [Visão Jogador]");
+			endif
+		else
+			GFTextMid(gump, 15, 17, 330, 2100, "Rumores");
+		endif
+
+		GFResizePic(gump, 15, 45, GFCfgConst("Backgrounds", "GOLDTRIM"), 330, 390);
+		// GFHTMLArea(gump, 22, 53, 322, 375, text, 0, 1);
+
+		GFResizePic(gump, 15, 438, GFCfgConst("Defaults", "ForeGround"), 330, 30);
+
+		if (player.cmdlevel >= 3)
+			GFAddButton(gump, 285, 440, 4011, 4030, GF_CLOSE_BTN, 20);
+			GFTextLine(gump, 170, 440, 2100, "Adicionar Rumor");
+			// Add view mode toggle button
+			if (gmViewMode)
+				GFAddButton(gump, 20, 440, 4011, 4030, GF_CLOSE_BTN, 21);
+				GFTextLine(gump, 43, 440, 2100, "Ver como Jogador");
+			else
+				GFAddButton(gump, 20, 440, 4011, 4030, GF_CLOSE_BTN, 21);
+				GFTextLine(gump, 43, 440, 2100, "Ver como GM");
+			endif
+		endif
+
+		// Get all rumors and filter visible ones
+		var rumores := GetObjProperty(npc, "rumores");
+		if (rumores == error)
+			rumores := array;
+		endif
+
+		// Build list of visible rumors with their original indices
+		var visibleRumors := array;
+		var i;
+		for (i := 1; i <= rumores.size(); i := i + 1)
+			if (CanSeeRumor(player, rumores[i], gmViewMode))
+				var entry := struct;
+				entry.+originalIndex := i;
+				entry.+rumor := rumores[i];
+				visibleRumors.append(entry);
+			endif
+		endfor
+
+		// Calculate pagination
+		var totalRumors := visibleRumors.size();
+		var totalPages := ((totalRumors - 1) / RUMORES_POR_PAGINA) + 1;
+		if (totalRumors == 0)
+			totalPages := 1;
+		endif
+		if (currentPage > totalPages)
+			currentPage := totalPages;
+		endif
+		if (currentPage < 1)
+			currentPage := 1;
+		endif
+
+		var startIndex := ((currentPage - 1) * RUMORES_POR_PAGINA) + 1;
+		var endIndex := startIndex + RUMORES_POR_PAGINA - 1;
+		if (endIndex > totalRumors)
+			endIndex := totalRumors;
+		endif
+
+		// Display rumors for current page
+		var y_pos := 70;
+		for (i := startIndex; i <= endIndex; i := i + 1)
+			var entry := visibleRumors[i];
+			var rumor_text := entry.rumor.nome;
+			if (entry.rumor.custo)
+				rumor_text := rumor_text + " [" + entry.rumor.custo + " moedas]";
+			endif
+			// Add restriction indicators for GMs
+			if (player.cmdlevel >= 3 && gmViewMode)
+				if (entry.rumor.racas && entry.rumor.racas.size() > 0)
+					rumor_text := rumor_text + " [R]";
+				endif
+				if (entry.rumor.culturas && entry.rumor.culturas.size() > 0)
+					rumor_text := rumor_text + " [C]";
+				endif
+			endif
+
+			GFTextLine(gump, 45, y_pos, 2100, rumor_text);
+			GFAddButton(gump, 25, y_pos + 2, 2117, 2118, GF_CLOSE_BTN, 200 + entry.originalIndex);
+			y_pos := y_pos + 19;
+		endfor
+
+		// Pagination controls (show only if more than one page)
+		if (totalPages > 1)
+			// Page indicator at bottom of content area
+			var pageText := "Pagina " + currentPage + "/" + totalPages;
+			GFTextMid(gump, 15, 405, 330, 2100, pageText);
+
+			// Previous button (left arrow)
+			if (currentPage > 1)
+				GFAddButton(gump, 50, 405, 4014, 4015, GF_CLOSE_BTN, 22);
+			endif
+
+			// Next button (right arrow)
+			if (currentPage < totalPages)
+				GFAddButton(gump, 300, 405, 4005, 4006, GF_CLOSE_BTN, 23);
+			endif
+		endif
+
+		var input := GFSendGump(player, gump);
+
+		if (input[0] == 20)
+			var r := GetObjProperty(npc, "rumores");
+			if (r == error)
+				r := array;
+			endif
+			var rumor := struct;
+			rumor.+nome := cstr(RequestGump(player, "Qual vai ser o nome do rumor?"));
+			if (!rumor.nome || rumor.nome == "")
+				SendSysMessage(player, "Nome do rumor cancelado ou invalido.");
+				continue;
+			endif
+
+			rumor.+custo := cint(RequestGump(player, "Quanto vai custar?"));
+
+			// Use book system for description (allows pasting and better editing)
+			SendSysMessage(player, "Um livro aparecera na sua mochila para escrever a descricao do rumor.");
+			SendSysMessage(player, "Escreva ou cole o texto. Clique em 'Concluido' quando terminar.");
+
+			var tempBook := CreateTempBook(player, "Descricao do Rumor");
+			if (!tempBook || tempBook.errortext)
+				SendSysMessage(player, "Erro ao criar livro temporario.");
+				continue;
+			endif
+
+			// Move book to player's backpack
+			if (!MoveItemToContainer(tempBook, player.backpack))
+				SendSysMessage(player, "Erro ao mover livro para mochila.");
+				DestroyTempBook(tempBook);
+				continue;
+			endif
+
+			// Let player edit the book
+			SendOpenBook(player, tempBook);
+
+			// Show confirmation gump and wait for player to finish
+			var confirmGump := GFCreateGump(200, 200);
+			GFResizePic(confirmGump, 0, 0, GFCfgConst("Defaults", "BackGround"), 300, 150);
+			GFResizePic(confirmGump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 280, 30);
+			GFTextMid(confirmGump, 10, 15, 280, 2100, "Editar Rumor");
+
+			GFResizePic(confirmGump, 10, 45, GFCfgConst("Backgrounds", "GOLDTRIM"), 280, 60);
+			GFTextLine(confirmGump, 20, 55, 1153, "Edite o livro na sua mochila.");
+			GFTextLine(confirmGump, 20, 75, 1153, "Clique em Concluido quando");
+			GFTextLine(confirmGump, 20, 90, 1153, "terminar de escrever.");
+
+			GFResizePic(confirmGump, 10, 108, GFCfgConst("Defaults", "ForeGround"), 280, 30);
+			GFAddButton(confirmGump, 100, 113, 4023, 4024, GF_CLOSE_BTN, 1);
+			GFTextLine(confirmGump, 130, 113, 2100, "Concluido");
+
+			var confirm := GFSendGump(player, confirmGump);
+
+			// Check if player canceled
+			if (!confirm || confirm[0] == 0)
+				SendSysMessage(player, "Edicao de rumor cancelada.");
+				DestroyTempBook(tempBook);
+				continue;
+			endif
+
+			// Extract the text from the book
+			rumor.+desc := ExtractBookText(tempBook);
+
+			// Clean up the temporary book
+			DestroyTempBook(tempBook);
+
+			if (!rumor.desc || rumor.desc == "")
+				SendSysMessage(player, "Descricao vazia. Rumor nao foi adicionado.");
+				continue;
+			endif
+
+			// Ask if GM wants to restrict by race/culture
+			var restrict := YesNo(player, "Deseja restringir este rumor por raca ou cultura?");
+			if (restrict)
+				// Race restrictions
+				var racas_disponiveis := {ANAO, DROW, ELFO, ORC, HUMANO, PEQUILHO};
+				var racas_selecionadas := CheckBoxGump(player, 300, 200, "Selecione as raças que podem ver este rumor (deixe vazio para todas):", racas_disponiveis);
+				if (racas_selecionadas.size() > 0)
+					rumor.+racas := racas_selecionadas;
+				endif
+
+				// Culture restrictions
+				var culturas_disponiveis := {AIGLANA, HAROLOTH, LESTE, BJORSKA, ALURIEL, BADURAN, GULTHRAK, COLHESIANA};
+				var culturas_selecionadas := CheckBoxGump(player, 300, 200, "Selecione as culturas que podem ver este rumor (deixe vazio para todas):", culturas_disponiveis);
+				if (culturas_selecionadas.size() > 0)
+					rumor.+culturas := culturas_selecionadas;
+				endif
+			endif
+
+			r.append(rumor);
+			SetObjProperty(npc, "rumores", r);
+			SendSysMessage(player, "Novo rumor adicionado.");
+			// Continue loop to show menu again
+		elseif (input[0] == 21)
+			// Toggle GM view mode
+			if (gmViewMode)
+				gmViewMode := 0;
+			else
+				gmViewMode := 1;
+			endif
+			// Continue loop to show menu again
+		elseif (input[0] == 22)
+			// Previous page
+			if (currentPage > 1)
+				currentPage := currentPage - 1;
+			endif
+			// Continue loop to show menu again
+		elseif (input[0] == 23)
+			// Next page
+			currentPage := currentPage + 1;
+			// Continue loop to show menu again
+		elseif (input[0] > 200)
+			// SendSysMessage(player, " " + rumores[input[0]-200].desc);
+			var id := input[0] - 200;
+			if (player.cmdlevel >= 3)
+				var options := { "Ler", "Apagar" };
+				// Add move options if not at boundaries
+				if (id > 1)
+					options.append("Mover para Cima");
+				endif
+				if (id < rumores.size())
+					options.append("Mover para Baixo");
+				endif
+
+				var result := RadioGump(player, 300, 200, "Opções de GM", options);
+				if (result == "Apagar")
+					rumores.Erase(id);
+					SetObjProperty(npc, "rumores", rumores);
+					SendSysMessage(player, "rumor deletado.");
+					// Continue loop to show menu again
+				elseif (result == "Ler")
+					SendHTMLGump(player, rumores[id].nome, rumores[id].desc);
+					// Continue loop to show menu again
+				elseif (result == "Mover para Cima")
+					// Swap with previous rumor
+					var temp := rumores[id - 1];
+					rumores[id - 1] := rumores[id];
+					rumores[id] := temp;
+					SetObjProperty(npc, "rumores", rumores);
+					SendSysMessage(player, "Rumor movido para cima.");
+					// Continue loop to show menu again
+				elseif (result == "Mover para Baixo")
+					// Swap with next rumor
+					var temp := rumores[id + 1];
+					rumores[id + 1] := rumores[id];
+					rumores[id] := temp;
+					SetObjProperty(npc, "rumores", rumores);
+					SendSysMessage(player, "Rumor movido para baixo.");
+					// Continue loop to show menu again
+				else
+					// User canceled, continue loop
+					continue;
+				endif
+			else
+				if (cint(rumores[id].custo) != 0)
+					PrintTextAbove(npc, "Eu conto tudo que sei por " + rumores[id].custo + " moedas .");
+					var moedas := target(player);
+					if (moedas.objtype == 47715)
+						if (moedas.amount >= cint(rumores[id].custo))
+							if (!SubtractAmount(moedas, cint(rumores[id].custo)))
+								PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+								continue;
+							endif
+						else
+							PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+							continue;
+						endif
+					else
+						// Player canceled target, continue loop
+						continue;
+					endif
+				endif
+				SendHTMLGump(player, rumores[id].nome, rumores[id].desc);
+				// Continue loop to show menu again
+			endif
+		else
+			// User closed gump, exit loop
+			break;
+		endif
+	endwhile
+
+endprogram

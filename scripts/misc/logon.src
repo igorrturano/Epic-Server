@@ -1,0 +1,367 @@
+use uo;
+use os;
+use polsys;
+use file;
+include ":fls_core:fls_characters";
+include "include/say";
+include "include/client";
+include ":taming:taming";
+include ":gumps:gumpPrompt";
+include ":gumps:gumpPrompt";
+include ":charactercreation:resists";
+include ":attributes:advanceCheck";
+include ":attributes:skills";
+include ":datafile:datafile";
+include ":motd:motd_settings";
+include ":tn:equipment";
+include ":disguise:incognito";
+
+program Logon(who)
+
+	// Self-heal: a player flagged incognito but wearing no face-covering item
+	// is stuck (the async-race / death / relog failure mode). Clear it before
+	// the race-name init below so that runs on clean state. A legitimately
+	// masked player keeps the mask equipped, so this is skipped for them.
+	if (!who.npctemplate && IsIncognito(who))
+		var stillMasked := 0;
+		foreach eq in (EnumeratePhysicalItems(who))
+			if (coverFace(eq))
+				stillMasked := 1;
+				break;
+			endif
+		endforeach
+		if (!stillMasked)
+			RemoveIncognito(who);
+		endif
+	endif
+
+	// Inicializa exibir apenas nome da raca
+	if (!who.npctemplate && !GetObjProperty(who, "nome_inicial"))
+		if (who.name != who.title_race)
+			if (who.name != "" && GetObjProperty(who, "chardata"))
+				SetObjProperty(who, "nome_inicial", who.name);
+				SetName(who, who.title_race);
+			endif
+		else
+			SetName(who, who.title_race);
+		endif
+	endif
+	var chardata := GetObjProperty(who, "chardata");
+	if (who.graphic == 400 && chardata.raca == "Elfo")
+		who.graphic := 1830;
+	elseif (who.graphic == 401 && chardata.raca == "Elfo")
+		who.graphic := 1831;
+	endif
+
+	EraseObjProperty(who, "#pegueiesse"); // evitar bugs no stealing.
+	EraseObjProperty(who, "#torobando");
+	EraseObjProperty(who, "#Casting"); // Bugs de cast
+	SetObjProperty(who, "ConnectTime", polcore().systime);
+
+	if (getObjProperty(who, "already_fighting"))
+		EraseObjProperty(who, "already_fighting");
+	endif
+
+	var createdat := getobjproperty(who, "createdate");
+
+	destroyIllyraOutsideDungeons(who);
+	var recorde := GetGlobalProperty("maxonline");
+	if (!recorde)
+		recorde := 0;
+	endif
+
+	var players := EnumerateOnlineCharacters();
+	var total := 0;
+	foreach player in players
+		if (player.cmdlevel == 0)
+			total += 1;
+		endif
+	endforeach
+	if (total > recorde)
+		BroadCast("Novo recorde do shard de players online batido! Total: " + total + "!", FONT_BOLD,
+				   SSM_INFO);
+		SetGlobalPRoperty("maxonline", total);
+	endif
+
+	var milestoneBase := 20;
+	var milestoneStep := 5;
+	var milestoneWindow := 7200;
+	var now := polcore().systime;
+	var windowStart := CInt(GetGlobalProperty("milestone_window_start"));
+	var lastAnnounced := CInt(GetGlobalProperty("milestone_last_announced"));
+	if (now - windowStart >= milestoneWindow)
+		windowStart := now;
+		lastAnnounced := 0;
+		SetGlobalProperty("milestone_window_start", windowStart);
+		SetGlobalProperty("milestone_last_announced", 0);
+	endif
+	if (total >= milestoneBase)
+		var milestone := milestoneBase + CInt((total - milestoneBase) / milestoneStep) * milestoneStep;
+		if (milestone > lastAnnounced)
+			BroadCast(milestone + " jogadores online!!", FONT_BOLD, SSM_INFO);
+			SetGlobalProperty("milestone_last_announced", milestone);
+		endif
+	endif
+
+	var acc := who.acct;
+	var ips := acc.GetProp("IP");
+	if (!ips)
+		ips := array;
+		ips.Append(who.ip);
+		acc.SetProp("IP", ips);
+	elseif (CInt(ips.size()) > 0)
+		if (who.ip in ips)
+		// Do Nothing
+		else
+			ips.Append(who.ip);
+			acc.SetProp("IP", ips);
+		endif
+	endif
+
+	IsGm(who);
+
+	if (cint(acc.getprop("novasenha")) != 1)
+		GumpPrompt(who, "Por favor, altere a senha da sua conta com o comando .senha ");
+	endif
+
+	LogonPets(who);
+	RecalcVitals(who);
+
+	MOTDLogon(who);
+
+	Start_Script(":lighting:fuelRehydrate", who);
+
+	// Enforce skill cap when the player logs in
+	// EnforceSkillCap(who);
+
+	// checa se vai subir skill passiva
+	if (CInt(FindAccount(who.acctname).getprop("nota")) == 4)
+
+		var intervalo := 3600 * 5; // 0.1 a cada 5 horas
+
+		var lastPrize := CInt(getobjproperty(who, "lastprize"));
+		if (lastPrize == error)
+			lastPrize := polcore().systime;
+			SetObjProperty(who, "lastprize", lastPrize);
+			return 0;
+		endif
+
+		var deltaTime := polcore().systime - lastPrize;
+		var ticks := cint(deltaTime / intervalo);
+
+		SendSysMessage(who, "NotaRP 4: Calculando UP passivo...");
+		if (ticks >= 1) // da +0.1 a cada 5h
+			var time := ticks * intervalo; // soma apenas o tempo que foi usado pra subir a skill
+			SendSysMessage(who, who.name + " tem tempo para subir 0.1 " + ticks + "vezes.");
+			var i := 0;
+
+			var possiveis := array;
+			var skills := GetObjProperty(who, "chardata").Skills;
+			if (!skills)
+				return 0;
+			endif
+			var temp;
+			var chosen;
+			for (i := 0; i < ticks; i := i + 1)
+
+				possiveis := array;
+
+				foreach skill in (skills.keys())
+					if (CanPassiveIncreaseSkill(who, skill))
+						possiveis.append(skill);
+					endif
+					sleep(2);
+				endforeach
+
+				if (possiveis[1] == error)
+					SendSysMessage(who, who.name + " nao tem mais skills pra subir passivamente.");
+					SetObjProperty(who, "lastprize", polcore().systime);
+					SendSysMessage(who, who.name + " (" + who.acctname + ") nao tem como melhorar passivamente com o cap atual.");
+					return 0;
+				endif
+
+				chosen := possiveis[RandomInt(possiveis.size()) + 1];
+				SetObjProperty(who, "skillpassiva", cint(GetObjProperty(who, "skillpassiva")) + 1); // conta quantos ups teve
+
+				temp := (AP_GetTrueSkill(who, chosen) + 0.1);
+
+				AP_SetTrueSkill(who, chosen, temp);
+				sleep(200);
+			endfor
+
+			SetObjProperty(who, "lastprize", lastPrize + time);
+		else
+			if (lastprize > polcore().systime)
+				lastprize := polcore().systime;
+			endif
+			SetObjProperty(who, "lastprize", lastPrize);
+			SendSysMessage(who, "NotaRP 4: Sem tempo suficiente para outro UP passivo.");
+		endif
+	else
+		EraseObjProperty(who, "lastprize");
+	endif
+	return 1;
+endprogram
+
+// Abre a Mensagem do Dia ao logar conforme a preferencia do jogador:
+// sempre, apenas quando houver novidade (padrao), ou nunca.
+function MOTDLogon(who)
+	var data_file := DFOpenDataFile(":motd:settings", DF_CREATE);
+	if (data_file == error)
+		return;
+	endif
+	var data_elem := DFFindElement(data_file, who.acctname, DF_CREATE);
+	if (data_elem == error)
+		return;
+	endif
+
+	var mode := MOTD_GetMode(data_elem);
+	if (mode == MOTD_MODE_OFF)
+		return;
+	endif
+	if (mode == MOTD_MODE_ALWAYS)
+		Start_Script(":motd:motd", who);
+		return;
+	endif
+
+	// MOTD_MODE_UNREAD: so abre se motd.txt mudou desde a ultima leitura.
+	// Script de core: caminho relativo resolve a partir da raiz do POL.
+	var lines := ReadFile("pkg/systems/motd/motd.txt");
+	var current := "";
+	if (lines != error && lines.size() > 0)
+		current := CStr(lines[1]);
+	endif
+	var seenProp := data_elem.GetProp("FirstLine");
+	var seen := "";
+	if (seenProp != error)
+		seen := CStr(seenProp);
+	endif
+	if (current != seen)
+		Start_Script(":motd:motd", who);
+	endif
+endfunction
+
+function IsGm(who)
+	if (who.cmdlevel >= 1)
+		var GmsOnlines := GetGlobalProperty("GmsOnlines");
+		if (GmsOnlines)
+			GmsOnlines.append(who.serial);
+		else
+			GmsOnlines := { who.serial };
+		endif
+		SetGlobalProperty("GmsOnlines", GmsOnlines);
+	endif
+endfunction
+
+function TestClientInfo(who)
+
+	var info := who.clientinfo;
+
+	LogToFile("log/ips.log", "ClientInfo " + who.name + "' [" + who.acctname + "]");
+	LogToFile("log/ips.log", "IP: " + who.ip);
+
+	if (info.unknown1)
+
+		LogToFile("log/ips.log", "  Unknown1                 = " + Lower(Hex(info.unknown1)));
+
+		LogToFile("log/ips.log", "  Unique Instance ID of UO = " + Lower(Hex(info.instance)));
+
+		LogToFile("log/ips.log", "  OS Version               = " + info.os_major + "."
+				   + info.os_minor + "." + info.os_revision);
+
+		LogToFile("log/ips.log", "  CPU Manufacturer         = " + info.cpu_manufacturer);
+
+		LogToFile("log/ips.log", "  CPU Family               = " + info.cpu_family);
+
+		LogToFile("log/ips.log", "  CPU Model                = " + info.cpu_model);
+
+		LogToFile("log/ips.log", "  CPU Clock Speed          = " + info.cpu_clockspeed + " MHz");
+
+		LogToFile("log/ips.log", "  CPU Quantity             = " + info.cpu_quantity);
+
+		LogToFile("log/ips.log", "  Memory                   = " + info.memory + " MB");
+
+		LogToFile("log/ips.log", "  Screen Resolution        = " + info.screen_width
+				   + " x " + info.screen_height + " x " + info.screen_depth + " Bit");
+
+		LogToFile("log/ips.log", "  Direct X Version         = " + info.directx_major
+				   + "." + info.directx_minor);
+
+		LogToFile("log/ips.log", "  Video Card Description   = " + CChrZ(info.video_description));
+
+		LogToFile("log/ips.log", "  Video Card Vendor ID     = " + info.video_vendor);
+
+		LogToFile("log/ips.log", "  Video Card Device ID     = " + info.video_device);
+
+		LogToFile("log/ips.log", "  Video Card Memory        = " + info.video_memory + " MB");
+
+		LogToFile("log/ips.log", "  Distribution             = " + info.distribution);
+
+		LogToFile("log/ips.log", "  Clients Running          = " + info.clients_running);
+
+		LogToFile("log/ips.log", "  Clients Installed        = " + info.clients_installed);
+
+		LogToFile("log/ips.log", "  Partial Insstalled       = " + info.partial_installed);
+
+		LogToFile("log/ips.log", "  Language Code            = " + CChrZ(info.langcode));
+
+		LogToFile("log/ips.log", "  Unknown2                 = " + info.unknown2);
+
+	else
+
+		LogToFile("log/ips.log", "No ClientInfo '" + who.name + "' [" + who.acctname + "]");
+
+	endif
+
+endfunction
+
+// Contribuição de Marcknight
+function CanPassiveIncreaseSkill(who, skill)
+
+	var bonus_tempo := 0;
+	var true_skill := AP_GetTrueSkill(who, skill);
+	if (GetObjProperty(who, "bonus_tempo"))
+		bonus_tempo := bonus_tempo + 20;
+	endif
+	// verifica se ainda não alcancou o cap máximo permitido para aquela skill e se não atingiu o cap permitido por tempo de criação do personagem
+	if ((AP_GetSkillCap(who) + valorinicial(who, skill)) > true_skill)
+		var maximo := AP_CheckClassSkillCap(who, skill);
+		if (true_skill >= maximo) // verifica quanto pode subir com base na classe
+			return 0;
+		else
+			return 1;
+		endif
+	else
+		return 0;
+	endif
+endfunction
+
+// The function to enforce skill cap
+function EnforceSkillCap(who)
+	if (who.cmdlevel >= 1)
+		return 0;
+	endif
+	var chardata := GetObjProperty(who, "chardata");
+	if (!chardata)
+		return 0; // No character data found
+	endif
+
+	var skillsmap := chardata.Skills;
+	if (!skillsmap)
+		return 0; // No skills found
+	endif
+
+	var skillsArray := skillsmap.keys();
+	var true_skill := 0;
+	var skill_cap := 0;
+	foreach skill in skillsArray
+		true_skill := AP_GetTrueSkill(who, skill);
+		skill_cap := AP_GetSkillCap(who, skill);
+		// If the current skill is higher than the cap, revert it to the cap
+		if (CInt(true_skill > skill_cap))
+			AP_SetTrueSkill(who, skill, CInt(skill_cap));
+			SendSysMessage(who, "Sua habilidade em " + skill + " foi ajustada para o limite máximo de "
+							+ skill_cap);
+		endif
+	endforeach
+endfunction

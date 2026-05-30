@@ -1,0 +1,245 @@
+use uo;
+use os;
+use file;
+use util;
+
+include ":gumps:gumps";
+include ":gumps:requestGump";
+
+program exportspawners(who)
+    SendSysMessage(who, "Exporting all Epic Spawners to JSON...", 66);
+
+    // Get all spawners from global property
+    var globalSpawns := GetGlobalProperty("epicSpawns");
+    if (!globalSpawns || globalSpawns.size() == 0)
+        SendSysMessage(who, "No spawners found in global registry.", 33);
+        return 0;
+    endif
+
+    var spawners_array := array{};
+    var exported_count := 0;
+    var failed_count := 0;
+
+    foreach spawner_serial in globalSpawns
+        var spawner := SystemFindObjectBySerial(spawner_serial);
+        if (!spawner)
+            failed_count := failed_count + 1;
+            continue;
+        endif
+
+        var cfg := GetObjProperty(spawner, "config");
+        if (!cfg)
+            SendSysMessage(who, "WARNING: Spawner at (" + spawner.x + "," + spawner.y + ") has no config", 33);
+            failed_count := failed_count + 1;
+            continue;
+        endif
+
+        // Build JSON structure for this spawner
+        var spawner_json := dictionary{};
+        spawner_json["spawner_name"] := cfg.spawner_name ? cfg.spawner_name : "Unnamed";
+        spawner_json["description"] := cfg.description ? cfg.description : "";
+
+        // Location
+        var loc_dict := dictionary{};
+        if (cfg.location)
+            loc_dict["x"] := cfg.location.x;
+            loc_dict["y"] := cfg.location.y;
+            loc_dict["z"] := cfg.location.z;
+            loc_dict["realm"] := cfg.location.realm;
+        else
+            loc_dict["x"] := spawner.x;
+            loc_dict["y"] := spawner.y;
+            loc_dict["z"] := spawner.z;
+            loc_dict["realm"] := spawner.realm;
+        endif
+        spawner_json["location"] := loc_dict;
+
+        // Spawn area
+        if (cfg.rect && cfg.rect != "")
+            var coords := SplitWords(cfg.rect);
+            if (coords.size() >= 4)
+                var area_dict := dictionary{};
+                area_dict["x1"] := CInt(coords[1]);
+                area_dict["y1"] := CInt(coords[2]);
+                area_dict["x2"] := CInt(coords[3]);
+                area_dict["y2"] := CInt(coords[4]);
+                spawner_json["spawn_area"] := area_dict;
+            endif
+        endif
+
+        // Level 1
+        if (cfg.mobslvl1 && cfg.mobslvl1 != "")
+            var lvl1 := dictionary{};
+            lvl1["mobs"] := cfg.mobslvl1;
+            lvl1["amount"] := cfg.amtlvl1 ? cfg.amtlvl1 : 0;
+            spawner_json["level1"] := lvl1;
+        endif
+
+        // Level 2
+        if (cfg.mobslvl2 && cfg.mobslvl2 != "")
+            var lvl2 := dictionary{};
+            lvl2["mobs"] := cfg.mobslvl2;
+            lvl2["amount"] := cfg.amtlvl2 ? cfg.amtlvl2 : 0;
+            spawner_json["level2"] := lvl2;
+        endif
+
+        // Level 3
+        if (cfg.mobslvl3 && cfg.mobslvl3 != "")
+            var lvl3 := dictionary{};
+            lvl3["mobs"] := cfg.mobslvl3;
+            lvl3["amount"] := cfg.amtlvl3 ? cfg.amtlvl3 : 0;
+            spawner_json["level3"] := lvl3;
+        endif
+
+        // Respawn times
+        var respawn_dict := dictionary{};
+        respawn_dict["min_minutes"] := cfg.min_respawn ? cfg.min_respawn : 60;
+        respawn_dict["max_minutes"] := cfg.max_respawn ? cfg.max_respawn : 120;
+        spawner_json["respawn"] := respawn_dict;
+
+        spawners_array.append(spawner_json);
+        exported_count := exported_count + 1;
+    endforeach
+
+    if (spawners_array.size() == 0)
+        SendSysMessage(who, "No valid spawners to export.", 33);
+        return 0;
+    endif
+
+    // Build the complete JSON structure
+    var output_json := dictionary{};
+    output_json["spawners"] := spawners_array;
+
+    // Ask for filename
+    var gump := GFCreateGump();
+    GFResizePic(gump, 0, 0, 9350, 450, 150);
+    GFTextLine(gump, 20, 20, 1153, "Export Spawners to JSON");
+    GFTextLine(gump, 20, 50, 1153, "Enter filename:");
+    GFResizePic(gump, 20, 75, 9350, 410, 25);
+
+    // Generate default filename with timestamp
+    var default_name := "epic-spawners-export-" + GetTimeStamp() + ".json";
+    GFTextEntry(gump, 25, 75, 400, 20, 1153, default_name, 1);
+    GFAddButton(gump, 150, 110, 2128, 2129, GF_CLOSE_BTN, 1);
+
+    var input := GFSendGump(who, gump);
+
+    if (input[0] != 1)
+        SendSysMessage(who, "Export cancelled.", 33);
+        return 0;
+    endif
+
+    var filename := GFExtractData(input, 1);
+    if (!filename || filename == "")
+        filename := default_name;
+    endif
+
+    // Build path with spawners/ directory (like Logs/ in rps.src)
+    var file_path := "spawners/" + filename;
+
+    // Write JSON to file in spawners/ subdirectory
+    if (WriteJSONFile(file_path, output_json))
+        SendSysMessage(who, "Export successful!", 66);
+        SendSysMessage(who, "File: " + file_path, 66);
+        SendSysMessage(who, "Exported: " + exported_count + " spawners", 66);
+        if (failed_count > 0)
+            SendSysMessage(who, "Failed: " + failed_count + " spawners", 33);
+        endif
+    else
+        SendSysMessage(who, "ERROR: Failed to write file!", 33);
+    endif
+
+    return 1;
+endprogram
+
+function WriteJSONFile(filename, data)
+    var json_string := PackJSON(data);
+    if (!json_string)
+        return 0;
+    endif
+
+    // Format the JSON with indentation for readability
+    json_string := FormatJSON(json_string);
+
+    // Split into lines for WriteFile
+    var lines := SplitLines(json_string);
+
+    // Write to file
+    var result := WriteFile(filename, lines);
+    if (!result)
+        return 0;
+    endif
+
+    return 1;
+endfunction
+
+function SplitLines(text)
+    var lines := array{};
+    var current_line := "";
+    var i;
+
+    for (i := 1; i <= len(text); i := i + 1)
+        var char := text[i];
+        if (char == "\n")
+            lines.append(current_line);
+            current_line := "";
+        else
+            current_line := current_line + char;
+        endif
+    endfor
+
+    // Add last line if it's not empty
+    if (len(current_line) > 0)
+        lines.append(current_line);
+    endif
+
+    return lines;
+endfunction
+
+function FormatJSON(json_str)
+    // Simple JSON formatter - adds newlines and indentation
+    var formatted := "";
+    var indent_level := 0;
+    var in_string := 0;
+    var i;
+
+    for (i := 1; i <= len(json_str); i := i + 1)
+        var char := json_str[i];
+
+        if (char == "\"" && (i == 1 || json_str[i-1] != "\\"))
+            in_string := !in_string;
+            formatted := formatted + char;
+        elseif (!in_string)
+            if (char == "{" || char == "[")
+                formatted := formatted + char + "\n";
+                indent_level := indent_level + 1;
+                formatted := formatted + GetIndent(indent_level);
+            elseif (char == "}" || char == "]")
+                indent_level := indent_level - 1;
+                formatted := formatted + "\n" + GetIndent(indent_level) + char;
+            elseif (char == ",")
+                formatted := formatted + char + "\n" + GetIndent(indent_level);
+            else
+                formatted := formatted + char;
+            endif
+        else
+            formatted := formatted + char;
+        endif
+    endfor
+
+    return formatted;
+endfunction
+
+function GetIndent(level)
+    var indent := "";
+    var i;
+    for (i := 1; i <= level; i := i + 1)
+        indent := indent + "  ";
+    endfor
+    return indent;
+endfunction
+
+function GetTimeStamp()
+    var now := POLCore().systime;
+    return CStr(now);
+endfunction

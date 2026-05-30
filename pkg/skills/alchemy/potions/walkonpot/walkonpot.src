@@ -1,0 +1,59 @@
+use uo;
+use os;
+use cfgfile;
+use util;
+
+include "include/say";
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":abilities:models/Ability";
+
+program potionWalkOn(mobile, potion)
+	if (mobile.dead)
+		// Ghosts dont trigger potions.
+		return 0;
+	elseif (mobile.concealed)
+		// Concealed GM's dont trigger potions.
+		return 0;
+	endif
+
+	var cfg := ReadConfigFile(":*:itemdesc");
+	cfg := cfg[potion.graphic];
+
+	PrintTextAbove(potion, "*Quebra*");
+	if(GetObjProperty(potion, "pottrap") == 1)
+		SendSysMessageEx(mobile, "Voce pisou em uma mina terrestre", SSM_FAIL);
+	else
+		SendSysMessageEx(mobile, "Voce pisou em algo de vidro.", SSM_FAIL);
+	endif
+	PlaySoundEffect(potion, 0x03F);
+	sleepms(250);
+
+		start_script("potions/exploder", { potion, potion });
+
+		sleepms(250);
+
+		DestroyItem(potion);
+
+endprogram
+
+function EfeitoCascata(potion, mobile)
+
+	var potions := { 61280, 61281, 61282, 48915, 48916, 48917 };
+	var counter := 1;
+	foreach item in (ListItemsNearLocation(potion.x, potion.y, potion.z, 8, potion.realm))
+		if (checklineofsight(potion, item))
+			if ((item.objtype in potions) && (item != potion))
+				if (counter > 10)
+					SetObjProperty(item, "nodmg", 1);
+				endif
+				SetObjProperty(item, "pause", 1);
+				SetObjProperty(item, "lit", 1);
+				var passparms := array;
+				passparms[1] := item;
+				passparms[2] := mobile;
+				var a := start_script(":alchemy:potions/exploder", passparms);
+				counter := counter + 1;
+			endif
+		endif
+	endforeach
+endfunction

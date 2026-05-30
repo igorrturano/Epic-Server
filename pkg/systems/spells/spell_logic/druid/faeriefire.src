@@ -1,0 +1,92 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/dungeons";
+include ":attributes:attributes";
+include ":charactercreation:habilidades";
+
+program SpellScript(params)
+	var who := params[1];
+
+	// Verifica se está em dungeon
+	if (InDungeon(who))
+		SendSysMessageEx(who, "A luz da lua não alcança este lugar.", SSM_FAIL);
+		return 0;
+	endif
+
+	PlaySoundEffect(who, 0x1E9);
+
+	// Calcula o range baseado no nature do druida
+	var range := CInt(AP_GetSkill(who, NATURE) / 10);
+	if (range < 5)
+		range := 5;
+	elseif (range > 15)
+		range := 15;
+	endif
+
+	// Dificuldade do teste é o nature do druida
+	var difficulty := CInt(AP_GetSkill(who, NATURE));
+
+	var revealed_count := 0;
+
+	// Lista todos os mobiles escondidos na área
+	var nearby := ListMobilesNearLocationEx(who.x, who.y, who.z, range,
+											LISTEX_FLAG_HIDDEN + LISTEX_FLAG_CONCEALED,
+											who.realm);
+
+	SendSysMessageEx(who, "Um brilho prateado da lua emana ao seu redor...", SSM_INFO);
+
+	foreach mobile in nearby
+		sleepms(50);
+
+		// Ignora o próprio druida
+		if (mobile == who)
+			continue;
+		endif
+
+		// Verifica linha de visão
+		if (!CheckLineOfSight(who, mobile))
+			continue;
+		endif
+
+		// Verifica se está escondido ou concealed
+		if (mobile.hidden == 1)
+			// O alvo faz um teste de SNEAK contra o NATURE do druida
+			var target_sneak := CInt(EffectiveSkill(mobile, "Stealth"));
+
+			// Teste resistido: nature do druida vs sneak do alvo
+			if (SkillCheck(mobile, SNEAK, difficulty) <= 0)
+				// Falhou no teste - é revelado
+				mobile.hidden := 0;
+				mobile.concealed := 0;
+
+				// Efeitos visuais - luz prateada da lua
+				PlayObjectCenteredEffect(mobile, 0x375A, 10, 15);
+				PlaySoundEffect(mobile, 0x1E9);
+
+				// Mensagens
+				PrintTextAbove(mobile, "*Coberto por luz prateada*");
+				SendSysMessageEx(who, "Você revelou " + mobile.name + "!", SSM_INFO);
+				SendSysMessageEx(mobile, "A luz da lua revela sua presença!", SSM_FAIL);
+
+				revealed_count := revealed_count + 1;
+			else
+				// Passou no teste - permanece escondido
+				SendSysMessageEx(mobile, "Você resiste à magia de revelação!", SSM_INFO);
+			endif
+		endif
+	endforeach
+
+	// Mensagem final
+	if (revealed_count > 0)
+		SendSysMessageEx(who, "Você revelou " + revealed_count + " inimigo(s) escondido(s).", SSM_INFO);
+	else
+		SendSysMessageEx(who, "Nenhum inimigo escondido foi encontrado na área.", SSM_INFO);
+	endif
+
+	return 1;
+endprogram

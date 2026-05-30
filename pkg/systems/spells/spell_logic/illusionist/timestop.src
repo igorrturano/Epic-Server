@@ -1,0 +1,39 @@
+use uo;
+use os;
+
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include "include/dungeons";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var info := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (!InDarkness(who))
+		SendSysMessage(who, "Voce precisa estar na escuridao para usar essa habilidade.");
+		return 0;
+	endif
+
+	PlaySoundEffect(who, SFX_SPELL_STRENGTH);
+
+	foreach mobile in (ListMobilesNearLocation(who.x, who.y, who.z, 12, who.realm))
+		if (mobile != who && CheckLineOfSight(who, mobile))
+			SC_RemoveEffect(mobile, CInt(spell.id));
+
+			var opts := struct{};
+			opts.+frozen := 1;
+			opts.+desc := "Parar o Tempo";
+
+			SC_ApplyEffect(who, mobile, opts, 20, CInt(spell.id));
+			SendSysMessageEx(mobile, "Voce esta completamente paralisado.", SSM_INFO);
+			PlayStationaryEffectEx(mobile.x, mobile.y, mobile.z + 15, mobile.realm, 6161, 200, 200);
+		endif
+	endforeach
+
+	return 1;
+endprogram

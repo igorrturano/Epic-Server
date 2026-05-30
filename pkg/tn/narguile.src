@@ -1,0 +1,86 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":fls_core:packets";
+include "include/sysEvent";
+include ":timedScripts:timedScripts";
+
+program usenarguile(who, item)
+
+	if (item.objtype == 0x9958)
+		SendSysMessage(who, "Escolha a base de Narguile que voce vai preencher com a erva mentolada", 3, 191);
+		var narguile := target(who);
+		if (!narguile || narguile.errortext)
+			return 0;
+		endif
+
+		if (narguile.objtype == 0x9959)
+			SendSysMessage(who, "Voce deve preencher a base do Narguile com a Erva!", 3, 28);
+			return 0;
+		endif
+
+		if (narguile.objtype == 0x9956)
+			PrintTextAbove(who, "*Preenchendo o Narguile com ervas mentolada*", 3, 0);
+			TS_StartTimer(narguile, "narguile", 600);
+			var tragadas := GetObjProperty(narguile, "tragadas");
+			if (tragadas.errortext)
+				tragadas := 0;
+			endif
+			SetObjProperty(narguile, "tragadas", (tragadas + 20));
+			SubtractAmount(item, 1);
+		endif
+		return;
+	endif
+
+	if (item.objtype == 0x9956)
+		if (GetObjProperty(who, "#fumando"))
+			SendSysMessage(who, "Voce ja esta fumando.", 3, 28);
+			return 0;
+		endif
+
+		var tragadas := GetObjProperty(item, "tragadas");
+		if (tragadas.errortext || tragadas <= 0)
+			SendSysMessage(who, "Esse Narguile nao possui ervas para tragar", 3, 28);
+			return 0;
+		endif
+
+		var items := ListItemsAtLocation(item.x, item.y, item.z, who.realm);
+		var found := 0;
+		var replace_x, replace_y, replace_z;
+		foreach possivel in items
+			if (possivel.objtype == 0x9959)
+				replace_x := possivel.x;
+				replace_y := possivel.y;
+				replace_z := possivel.z;
+				DestroyItem(possivel);
+				found := 1;
+			endif
+		endforeach
+
+		if (!found)
+			SendSysMessage(who, "Voce precisa do Narguile para tragar a erva", 3, 28);
+			return 0;
+		endif
+
+		SetObjProperty(who, "#fumando", 1);
+		PrintTextAbove(who, "*Tragando o Narguile*", 3, 0);
+		// Fumaça na posição do jogador — item pode estar no inventário e ter x/y/z zerados
+		var fumaca := CreateItemAtLocation(who.x, who.y, who.z + 10, 14133, 1, who.realm);
+		fumaca.color := 1150;
+
+		detach();
+		Sleep(6);
+
+		EraseObjProperty(who, "#fumando");
+		if (fumaca)
+			DestroyItem(fumaca);
+		endif
+		if (item)
+			var t := GetObjProperty(item, "tragadas");
+			SetObjProperty(item, "tragadas", (t - 1));
+		endif
+		CreateItemAtLocation(replace_x, replace_y, replace_z, 0x9959, 1, who.realm);
+	endif
+
+endprogram

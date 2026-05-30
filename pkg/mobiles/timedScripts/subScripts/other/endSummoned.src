@@ -1,0 +1,55 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include "include/say";
+include "include/client";
+include "include/sounds";
+include ":mounts:mounts";
+include ":timedScripts:timedScripts";
+
+program endSummoned(params)
+	var mobile := params[1];
+
+	PrintTextAbove(mobile, "*sumindo pouco a pouco*");
+
+	// Limpa montaria do Dread Lord se necessário
+	if (getObjProperty(mobile, "owner"))
+		var masterserial := getObjProperty(mobile, "owner");
+		var master := SystemFindObjectBySerial(masterserial);
+		if (master)
+			if (GetEquipmentByLayer(master, LAYER_MOUNT) && getObjProperty(master, "dread_lord"))
+				MP_Unmount(master);
+				TS_StartTimer(master, "desmontar", 5); // previne montar novamente e impedir a montaria de sumir
+				EraseObjProperty(master, "dread_lord");
+			endif
+
+			// Limpa contador de Necro Summons
+			if (getobjproperty(mobile, "Necro"))
+				var numbersummons := Cint(GetObjProperty(master, "NecroSummons"));
+				SetObjProperty(master, "NecroSummons", (numbersummons - 1));
+			endif
+
+			// Remove da lista de summons do owner
+			var summons := GetObjProperty(master, "SummonedPets");
+			if (summons)
+				var new_summons := array;
+				foreach serial in summons
+					if (serial != mobile.serial)
+						new_summons.append(serial);
+					endif
+				endforeach
+				SetObjProperty(master, "SummonedPets", new_summons);
+			endif
+		endif
+	endif
+
+	// Aplica dano até morrer
+	sleep(5);
+	while (mobile && AP_GetVital(mobile, HITS) > 0)
+		ApplyRawDamage(mobile, 200);
+		sleepms(500);
+	endwhile
+
+	return 1;
+endprogram

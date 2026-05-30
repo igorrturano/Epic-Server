@@ -1,0 +1,17 @@
+use uo;
+
+program split(who, item)
+	var opened;
+
+	if (item.objtype == 0x1726)
+		opened := 0x1725;
+	endif
+	SendSysMessage(who, "Voce abre o coco.");
+	playsoundeffect(who, 0x58);
+	var openedItem := CreateItemInBackpack(who, opened, 1);
+	if (openedItem == error)
+		SendSysMessage(who, "Sua mochila esta cheia.");
+		return 0;
+	endif
+	destroyitem(item);
+endprogram

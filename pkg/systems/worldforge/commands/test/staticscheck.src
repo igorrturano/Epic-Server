@@ -1,0 +1,238 @@
+/////////////////////////////////////////////////////////////////
+//
+//   StaticsCheck - Checks for Double Items
+//
+//     Author: Shinigami
+//     eMail : Shinigami@gmx.net
+//
+//   Modifications:
+//     2002/03/01 Shinigami: Fix: Letzte Nummer
+//     2004/02/28 Shingiami: Max. 3 Lichtquellen an einem Fleck
+//
+/////////////////////////////////////////////////////////////////
+//
+// Needs:
+//   statics/staticscheck.cfg
+//   statics/staticscheckstacks.cfg
+//   statics/staticscheckstackslarge.cfg
+//
+//////////////////////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+use uo;
+use os;
+use cfgfile;
+
+/////////////
+// Includes
+/////////////
+
+include ":worldforge:errormsg_wf";
+
+///////////////
+// Konstanten
+///////////////
+
+const ERRORMSGS_GERMAN := "{}StaticsCheck: CheckArea aktiviert..." + "{}StaticsCheck: CheckArea beendet." + "{}X1 muss kleiner-gleich X2 bzw. Y1 muss kleiner-gleich Y2 sein!"
+																   + "{}%% darf nur 0 bis 4095 sein!" + "{}%% darf nur 0 bis 6143 sein!" + "{}Sie muessen 0 (ganze Welt) oder 4 Paramter angeben: X1 Y1 X2 Y2"
+																   + "{}%%Region %% %% %% %%" + "{}Die Ergebnisse wurden geschrieben." + "{}Probleme beim Lesen der Configdateien!";
+const ERRORMSGS_ENGLISH := "{}StaticsCheck: CheckArea started..." + "{}StaticsCheck: ChecktArea done." + "{}X1 must be lower/equal X2 and Y1 must be lower/equal Y2!"
+																  + "{}%% must be between 0 and 4095!" + "{}%% must be between 0 and 6143!" + "{}U've to enter 0 (whole World) or 4 Paramters: X1 Y1 X2 Y2"
+																  + "{}%%Region %% %% %% %%" + "{}Results are written." + "{}Problems on Reading Config File!";
+
+/////////////////
+// Hauptprogram
+/////////////////
+
+program TextCMD_StaticsCheck(who, params)
+	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+	if (Len(who) > 1) // Called by StaticsCheckExport
+		params := who[2];
+		who := who[1];
+	endif
+
+	params := SplitWords(params);
+	if (params.size() == 4)
+		if ((0 <= CInt(params[1])) And (CInt(params[1]) < 6144))
+			if ((0 <= CInt(params[2])) And (CInt(params[2]) < 4096))
+				if ((0 <= CInt(params[3])) And (CInt(params[3]) < 6144))
+					if ((0 <= CInt(params[4])) And (CInt(params[4]) < 4096))
+						if ((CInt(params[1]) <= CInt(params[3])) And (CInt(params[2]) <= CInt(params[4])))
+							PrintErrorMessage(1);
+							CheckArea(who, CInt(params[1]), CInt(params[2]), CInt(params[3]), CInt(params[4]));
+							PrintErrorMessage(2);
+						else
+							PrintErrorMessage(3, {}, who);
+						endif
+					else
+						PrintErrorMessage(4, { "Y2" }, who);
+					endif
+				else
+					PrintErrorMessage(5, { "X2" }, who);
+				endif
+			else
+				PrintErrorMessage(4, { "Y1" }, who);
+			endif
+		else
+			PrintErrorMessage(5, { "X1" }, who);
+		endif
+	elseif (params.size() == 0)
+		PrintErrorMessage(1);
+		CheckArea(who, 0, 0, 6143, 4095);
+		PrintErrorMessage(2);
+	else
+		PrintErrorMessage(6, {}, who);
+	endif
+endprogram
+
+/////////////////////////////////////////
+// CheckArea - Durchsucht einen Bereich
+/////////////////////////////////////////
+
+function CheckArea(who, x1, y1, x2, y2)
+	var datafile := ReadConfigFile(":worldforge:config/staticscheck");
+	if (datafile)
+		var itemdesc := ReadConfigFile("::itemdesc");
+		var counter := GetNextCounterNumber(datafile);
+
+		var startx := CInt(x1 / 64);
+		var starty := CInt(y1 / 64);
+		var endx := CInt(x2 / 64);
+		var endy := CInt(y2 / 64);
+
+		var x;
+		var y;
+		for (x := startx; x <= endx; x := x + 1)
+			for (y := starty; y <= endy; y := y + 1)
+				var matrix := {};
+				matrix[1044481] := 0;
+
+				var basestartx := CInt(x * 64);
+				var basestarty := CInt(y * 64);
+				var baseendx := CInt(basestartx + 63);
+				var baseendy := CInt(basestarty + 63);
+				if (x == startx)
+					basestartx := x1;
+				endif
+				if (y == starty)
+					basestarty := y1;
+				endif
+				if (x == endx)
+					baseendx := x2;
+				endif
+				if (y == endy)
+					baseendy := y2;
+				endif
+
+				PrintErrorMessage(7, { "", basestartx, basestarty, baseendx, baseendy }, who);
+				PrintErrorMessage(7, { "StaticsCheck:   ", basestartx, basestarty, baseendx, baseendy });
+
+				var number;
+				var value;
+				foreach item in ListObjectsInBox(basestartx, basestarty, -128, baseendx, baseendy, 127)
+					number := (item.x - basestartx) + ((item.y - basestarty) * 64) + ((item.z + 128) * 4096) + 1;
+
+					value := matrix[number];
+					if (!value)
+						matrix[number] := 1;
+					elseif (value == 1)
+						var subcounter := 0;
+						var elem;
+
+						var facing := itemdesc[item.objtype].facing;
+						if (!((facing == 0) Or (facing))) // Keine Lichtquelle
+							var itemlist := {};
+
+							foreach haufenitem in ListItemsAtLocation(item.x, item.y, item.z)
+								if (haufenitem.objtype in itemlist)
+									elem := {};
+
+									elem.append({ "ObjType", Hex(haufenitem.objtype) });
+									elem.append({ "X", haufenitem.x });
+									elem.append({ "Y", haufenitem.y });
+									elem.append({ "Z", haufenitem.z });
+									elem.append({ "Color", haufenitem.color });
+									elem.append({ "Amount", haufenitem.amount });
+									elem.append({ "Movable", haufenitem.movable });
+
+									var cprops := dictionary;
+									foreach cpropname in GetObjPropertyNames(haufenitem)
+										cprops[cpropname] := GetObjProperty(haufenitem, cpropname);
+									endforeach
+									elem.append({ "CProps", Pack(cprops) });
+
+									if (haufenitem.amount == 1) // Genau ein Item?
+										AppendConfigFileElem(":worldforge:config/staticscheck", "SECTION",
+															  "WORLDITEM " + counter + " " + subcounter, elem);
+										DestroyItem(haufenitem);
+									elseif (haufenitem.amount < 10) // Kleinere Stacks?
+										AppendConfigFileElem(":worldforge:config/staticscheckstacks", "SECTION",
+															  "WORLDITEM " + counter + " " + subcounter, elem);
+										DestroyItem(haufenitem);
+									else // Grosse Stacks
+										AppendConfigFileElem(":worldforge:config/staticscheckstackslarge", "SECTION",
+															  "WORLDITEM " + counter + " " + subcounter, elem);
+									endif
+
+									subcounter := subcounter + 1;
+									counter := counter + 1;
+								else
+									itemlist.append(haufenitem.objtype);
+								endif
+							endforeach
+						else // Ist eine Lichtquelle -> max. 3 gleiche Items
+							var anzahl := 0;
+
+							foreach haufenitem in ListItemsAtLocation(item.x, item.y, item.z)
+								if (haufenitem.objtype == item.objtype)
+									anzahl := anzahl + 1;
+
+									if (anzahl > 3)
+										elem := {};
+										elem.append({ "ObjType", Hex(haufenitem.objtype) });
+										elem.append({ "X", haufenitem.x });
+										elem.append({ "Y", haufenitem.y });
+										elem.append({ "Z", haufenitem.z });
+										elem.append({ "Color", haufenitem.color });
+										AppendConfigFileElem("statics/staticscheck", "SECTION", "WORLDITEM " + counter + " " + subcounter,
+															  elem);
+
+										DestroyItem(haufenitem);
+
+										subcounter := subcounter + 1;
+										counter := counter + 1;
+									endif
+								endif
+							endforeach
+						endif
+
+						matrix[number] := -1;
+					endif
+				endforeach
+			endfor
+		endfor
+
+		UnloadConfigFile(":worldforge:config/staticscheck");
+
+		PrintErrorMessage(8, {}, who);
+	else
+		PrintErrorMessage(9, {}, who);
+	endif
+endfunction
+
+/////////////////////////////////////////////////////////
+// GetNextCounterNumber - Die naechste Nummer ermitteln
+/////////////////////////////////////////////////////////
+
+function GetNextCounterNumber(datafile)
+	var counter := GetConfigStringKeys(datafile);
+	if (Len(counter))
+		return (Len(counter));
+	else
+		return (0);
+	endif
+endfunction

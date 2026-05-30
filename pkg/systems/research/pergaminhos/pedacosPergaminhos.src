@@ -1,0 +1,378 @@
+use uo;
+use os;
+use basic;
+use cfgfile;
+use math;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include ":attributes:attributes";
+include ":recipes:include/scrollRecipes";
+include ":gumps:epicGumps";
+
+const PERGAMINHO_METALWORK    := 0xFD2F;
+const PERGAMINHO_WOODWORK     := 0xFD3B;
+const PERGAMINHO_DOMESTICWORK := 0xFD3A;
+const PERGAMINHO_ALQUIMIA     := 0xFD3C;
+const PERGAMINHO_TINTA        := 0xFD3D;
+const PERGAMINHO_MAGIA        := 0xFD3E;
+
+const GRAFICO_PERGAMINHO_FABRICACAO   := 0xE9E8;
+const GRAFICO_PERGAMINHO_ALQUIMIA     := 0xE9EC;
+const GRAFICO_PERGAMINHO_TINTA        := 0x6BDC;
+const GRAFICO_PERGAMINHO_MAGIA        := 0xE9E5;
+
+enum TIPO_PERGAMINHO
+	TIPO_PERGAMINHO_METALWORK    := 1,
+	TIPO_PERGAMINHO_ALQUIMIA     := 2,
+	TIPO_PERGAMINHO_TINTA        := 3,
+	TIPO_PERGAMINHO_MAGIA        := 4,
+	TIPO_PERGAMINHO_WOODWORK     := 5,
+	TIPO_PERGAMINHO_DOMESTICWORK := 6
+endenum
+
+var QUANTIDADES := array{ 3, 5, 8, 10, 12 };
+
+program use_pergaminho_pedaco(who, item)
+
+	var tipo := DeterminarTipoPorObjtype(item.objtype);
+
+	if (!tipo)
+		SendSysMessage(who, "Este item não é um pedaço de pergaminho válido.");
+		return;
+	endif
+
+	var gump := CreatePergaminhoGump(who, tipo);
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 1)
+		CriarPergaminho(who, tipo);
+	endif
+endprogram
+
+function GetMaxNivel(tipo)
+	if (tipo == TIPO_PERGAMINHO_WOODWORK || tipo == TIPO_PERGAMINHO_DOMESTICWORK)
+		return 2;
+	endif
+	return 5;
+endfunction
+
+function CreatePergaminhoGump(who, tipo)
+	var maxNivel   := GetMaxNivel(tipo);
+	var maxPedacos := QUANTIDADES[maxNivel];
+	var gump := GFECreateGump("Folhas Soltas de " + GetTipoNome(tipo), 505, 460);
+
+	var pedacos := CountPedacos(who, tipo);
+	var x, y;
+	for j := 1 to maxPedacos
+		x := 35 + ((j - 1) % 6) * 75;
+		y := 80 + (Cint((j - 1) / 6) * 118);
+
+		GFPicTiled(gump, x, y, 60, 55, 87);
+		GFPicTiled(gump, x + 1, y + 67, 60, 16, 87);
+		GFPicTiled(gump, x + 1, y + 47, 59, 13, 90);
+		GFPicTiled(gump, x + 1, y - 7, 59, 21, 84);
+		GFPicTiled(gump, x + 48, y + 2, 13, 53, 88);
+		GFPicTiled(gump, x - 4, y + 2, 13, 53, 86);
+
+		GFTextMid(gump, x, y + 66, 60, 53, CStr(j));
+
+		if (j <= pedacos)
+			GFTilePic(gump, x + 5, y + 10, GetGraficoPorTipo(tipo));
+		endif
+	endfor
+
+	var nivel := DeterminarNivel(pedacos);
+	if (nivel > maxNivel)
+		nivel := maxNivel;
+	endif
+	GFTextLine(gump, 35, 355, 53, "Quantidade: " + pedacos);
+	GFTextLine(gump, 35, 375, 53,
+				"Nível do Pergaminho: " + (nivel > 0 ? CStr(nivel) : "Insuficiente"));
+
+	var panelHeight := maxNivel * 20 + 30;
+	GFPicTiled(gump, 250, 315, 230, panelHeight, 87);
+
+	var infoY := 325;
+	for i := 1 to maxNivel
+		GFTextLine(gump, 260, infoY, 53, QUANTIDADES[i] + " folhas soltas = pergaminho lvl " + i);
+		infoY += 20;
+	endfor
+
+	if (nivel > 0)
+		GFAddButton(gump, 35, 395, 2130, 2129, GF_CLOSE_BTN, 1);
+	endif
+
+	return gump;
+endfunction
+
+function ConfirmarCriacaoPergaminho(who, tipo, nivel)
+	var gump := GFECreateGump("", 340, 220);
+
+	GFTextMid(gump, 30, 35, 280, 53, "Confirmação da Criação");
+
+	GFTextLine(gump, 30, 80, 53, "Tipo: " + GetTipoNome(tipo));
+	GFTextLine(gump, 30, 105, 53, "Nível: " + nivel);
+	GFTextLine(gump, 30, 140, 53, "Deseja criar este pergaminho?");
+
+	GFAddButton(gump, 90, 170, 2130, 2129, GF_CLOSE_BTN, 1);
+
+	GFAddButton(gump, 190, 170, 2119, 2120, GF_CLOSE_BTN, 0);
+
+	var input := GFSendGump(who, gump);
+	return (input[0] == 1);
+endfunction
+
+function CountAllPedacos(who)
+	var pedacos := struct{
+		"METALWORK"    := 0,
+		"WOODWORK"     := 0,
+		"DOMESTICWORK" := 0,
+		"ALQUIMIA"     := 0,
+		"TINTA"        := 0,
+		"MAGIA"        := 0
+	};
+
+	foreach item in EnumerateItemsInContainer(who.backpack)
+		var tipo := DeterminarTipoPorObjtype(item.objtype);
+		if (tipo)
+			case (tipo)
+				TIPO_PERGAMINHO_METALWORK:    pedacos.METALWORK += 1;
+				TIPO_PERGAMINHO_WOODWORK:     pedacos.WOODWORK += 1;
+				TIPO_PERGAMINHO_DOMESTICWORK: pedacos.DOMESTICWORK += 1;
+				TIPO_PERGAMINHO_ALQUIMIA:     pedacos.ALQUIMIA += 1;
+				TIPO_PERGAMINHO_TINTA:        pedacos.TINTA += 1;
+				TIPO_PERGAMINHO_MAGIA:        pedacos.MAGIA += 1;
+			endcase
+		endif
+	endforeach
+
+	return pedacos;
+endfunction
+
+function GetMaiorTipo(pedacos)
+	var maiorTipo := TIPO_PERGAMINHO_METALWORK;
+	var maiorQuantidade := pedacos.METALWORK;
+
+	if (pedacos.WOODWORK > maiorQuantidade)
+		maiorTipo := TIPO_PERGAMINHO_WOODWORK;
+		maiorQuantidade := pedacos.WOODWORK;
+	endif
+	if (pedacos.DOMESTICWORK > maiorQuantidade)
+		maiorTipo := TIPO_PERGAMINHO_DOMESTICWORK;
+		maiorQuantidade := pedacos.DOMESTICWORK;
+	endif
+	if (pedacos.ALQUIMIA > maiorQuantidade)
+		maiorTipo := TIPO_PERGAMINHO_ALQUIMIA;
+		maiorQuantidade := pedacos.ALQUIMIA;
+	endif
+	if (pedacos.TINTA > maiorQuantidade)
+		maiorTipo := TIPO_PERGAMINHO_TINTA;
+		maiorQuantidade := pedacos.TINTA;
+	endif
+	if (pedacos.MAGIA > maiorQuantidade)
+		maiorTipo := TIPO_PERGAMINHO_MAGIA;
+		maiorQuantidade := pedacos.MAGIA;
+	endif
+
+	return maiorTipo;
+endfunction
+
+function CriarPergaminho(who, tipo)
+	var pedacos := CountPedacos(who, tipo);
+	var nivel := DeterminarNivel(pedacos);
+	var maxNivel := GetMaxNivel(tipo);
+	if (nivel > maxNivel)
+		nivel := maxNivel;
+	endif
+
+	if (nivel == 0)
+		SendSysMessage(who, "Você não tem pedaços suficientes para criar um pergaminho.");
+		return;
+	endif
+
+	if (ConfirmarCriacaoPergaminho(who, tipo, nivel))
+		var escola := "";
+		if (tipo == TIPO_PERGAMINHO_MAGIA)
+			escola := SelecionarEscolaMagia(who);
+			if (!escola) return; endif
+		endif
+
+		PrintTextAbove(who, "*Juntando as folhas*");
+		PlaySoundEffect(who, 0x24A);
+		Sleep(3);
+		PrintTextAbove(who, "*Organizando o material*");
+		PlaySoundEffect(who, 0x24A);
+		Sleep(3);
+		PrintTextAbove(who, "*Ordenando o texto*");
+		PlaySoundEffect(who, 0x24A);
+		Sleep(4);
+
+		var soundID := (who.gender == 0) ? 0x41B : 0x30C;
+		PlaySoundEffect(who, soundID);
+
+		var pergaminho := CreatePergaminhoItem(who, tipo, nivel, escola);
+		if (pergaminho)
+			ConsumirPedacos(who, tipo, QUANTIDADES[nivel]);
+			SendSysMessage(who, "Você criou um novo pergaminho de " + GetTipoNome(tipo) + "!");
+		else
+			SendSysMessage(who, "Houve um erro ao criar o pergaminho.");
+		endif
+	endif
+endfunction
+
+function SelecionarEscolaMagia(who)
+	var escolas := array{ "Kaijin", "Evocatium", "Velkyn", "Ahtaleloreth", "Aradalore" };
+	var gump := GFECreateGump("Escola de Magia", 300, 295);
+
+	GFTextMid(gump, 20, 35, 260, 53, "Qual escola deseja pesquisar?");
+
+	var y := 75;
+	for i := 1 to escolas.size()
+		GFAddButton(gump, 40, y, 2117, 2118, GF_CLOSE_BTN, i);
+		GFTextLine(gump, 65, y, 53, escolas[i]);
+		y += 35;
+	endfor
+
+	GFAddButton(gump, 40, y + 5, 2119, 2120, GF_CLOSE_BTN, 0);
+	GFTextLine(gump, 65, y + 5, 53, "Cancelar");
+
+	var input := GFSendGump(who, gump);
+	var choice := input[0];
+	if (!choice) return ""; endif
+	return escolas[choice];
+endfunction
+
+function CountPedacos(who, tipo)
+	var count := 0;
+	var objtype := GetObjtypePorTipo(tipo);
+	foreach item in EnumerateItemsInContainer(who.backpack)
+		if (item.objtype == objtype)
+			count += item.amount;
+		endif
+	endforeach
+	return count;
+endfunction
+
+function GetObjtypePorTipo(tipo)
+	case (tipo)
+		TIPO_PERGAMINHO_METALWORK:    return PERGAMINHO_METALWORK;
+		TIPO_PERGAMINHO_WOODWORK:     return PERGAMINHO_WOODWORK;
+		TIPO_PERGAMINHO_DOMESTICWORK: return PERGAMINHO_DOMESTICWORK;
+		TIPO_PERGAMINHO_ALQUIMIA:     return PERGAMINHO_ALQUIMIA;
+		TIPO_PERGAMINHO_TINTA:        return PERGAMINHO_TINTA;
+		TIPO_PERGAMINHO_MAGIA:        return PERGAMINHO_MAGIA;
+		default:                      return 0;
+	endcase
+endfunction
+function DeterminarNivel(quantidade)
+	if (quantidade >= QUANTIDADES[5])
+		return 5;
+	elseif (quantidade >= QUANTIDADES[4])
+		return 4;
+	elseif (quantidade >= QUANTIDADES[3])
+		return 3;
+	elseif (quantidade >= QUANTIDADES[2])
+		return 2;
+	elseif (quantidade >= QUANTIDADES[1])
+		return 1;
+	else
+		return 0;
+	endif
+endfunction
+
+function DeterminarTipoPorObjtype(objtype)
+	case (objtype)
+		PERGAMINHO_METALWORK:    return TIPO_PERGAMINHO_METALWORK;
+		PERGAMINHO_WOODWORK:     return TIPO_PERGAMINHO_WOODWORK;
+		PERGAMINHO_DOMESTICWORK: return TIPO_PERGAMINHO_DOMESTICWORK;
+		PERGAMINHO_ALQUIMIA:     return TIPO_PERGAMINHO_ALQUIMIA;
+		PERGAMINHO_TINTA:        return TIPO_PERGAMINHO_TINTA;
+		PERGAMINHO_MAGIA:        return TIPO_PERGAMINHO_MAGIA;
+		default:                 return 0;
+	endcase
+endfunction
+
+function GetTipoNome(tipo)
+	case (tipo)
+		TIPO_PERGAMINHO_METALWORK:    return "Metalurgia";
+		TIPO_PERGAMINHO_WOODWORK:     return "Marcenaria";
+		TIPO_PERGAMINHO_DOMESTICWORK: return "Trabalho Doméstico";
+		TIPO_PERGAMINHO_ALQUIMIA:     return "Alquimia";
+		TIPO_PERGAMINHO_TINTA:        return "Tinta";
+		TIPO_PERGAMINHO_MAGIA:        return "Magia";
+		default:                      return "Desconhecido";
+	endcase
+endfunction
+
+function CreatePergaminhoItem(who, tipo, nivel, escola := "")
+	var itemID;
+	case (tipo)
+		TIPO_PERGAMINHO_METALWORK:    itemID := GetScrollObjtype("MW",      nivel);
+		TIPO_PERGAMINHO_WOODWORK:     itemID := GetScrollObjtype("WW",      nivel);
+		TIPO_PERGAMINHO_DOMESTICWORK: itemID := GetScrollObjtype("DW",      nivel);
+		TIPO_PERGAMINHO_ALQUIMIA:     itemID := GetScrollObjtype("alchemy", nivel);
+		TIPO_PERGAMINHO_TINTA:        itemID := GetScrollObjtype("dye",     nivel);
+		TIPO_PERGAMINHO_MAGIA:
+			// escola selecionada sempre produz scroll de spell (não void/purge)
+			if (escola)
+				itemID := GetSpellScrollObjtype(nivel);
+			else
+				itemID := GetMagicScrollObjtype(nivel);
+			endif
+		default: return 0;
+	endcase
+	if (!itemID) return 0; endif
+
+	var pergaminho := CreateItemInBackpack(who, itemID, 1);
+	if (!pergaminho)
+		SendSysMessage(who, "Erro ao criar o item da pesquisa.");
+		return 0;
+	endif
+
+	SetObjProperty(pergaminho, "Tipo", tipo);
+	SetObjProperty(pergaminho, "Nivel", nivel);
+
+	case (tipo)
+		TIPO_PERGAMINHO_METALWORK:    pergaminho.name := "instrucoes de fabricacao de metal";
+		TIPO_PERGAMINHO_WOODWORK:     pergaminho.name := "instrucoes de fabricacao de madeira";
+		TIPO_PERGAMINHO_DOMESTICWORK: pergaminho.name := "instrucoes de fabricacao domestica";
+		TIPO_PERGAMINHO_MAGIA:
+			if (escola)
+				AssignSpellRecipeBySchool(pergaminho, escola);
+			endif
+	endcase
+
+	return pergaminho;
+endfunction
+
+function ConsumirPedacos(who, tipo, quantidade)
+	var restante := quantidade;
+	var objtype := GetObjtypePorTipo(tipo);
+	foreach item in EnumerateItemsInContainer(who.backpack)
+		if (item.objtype == objtype)
+			if (item.amount <= restante)
+				restante -= item.amount;
+				DestroyItem(item);
+			else
+				SubtractAmount(item, restante);
+				restante := 0;
+			endif
+			if (restante <= 0)
+				break;
+			endif
+		endif
+	endforeach
+endfunction
+
+function GetGraficoPorTipo(tipo)
+	case (tipo)
+		TIPO_PERGAMINHO_METALWORK:    return GRAFICO_PERGAMINHO_FABRICACAO;
+		TIPO_PERGAMINHO_WOODWORK:     return GRAFICO_PERGAMINHO_FABRICACAO;
+		TIPO_PERGAMINHO_DOMESTICWORK: return GRAFICO_PERGAMINHO_FABRICACAO;
+		TIPO_PERGAMINHO_ALQUIMIA:     return GRAFICO_PERGAMINHO_ALQUIMIA;
+		TIPO_PERGAMINHO_TINTA:        return GRAFICO_PERGAMINHO_TINTA;
+		TIPO_PERGAMINHO_MAGIA:        return GRAFICO_PERGAMINHO_MAGIA;
+		default:                      return 0;
+	endcase
+endfunction

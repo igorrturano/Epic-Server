@@ -1,0 +1,87 @@
+use uo;
+use os;
+use cfgfile;
+
+include ":attributes:attributes";
+include ":wrappers:Objects/Model/MobileWrapper";
+
+program unequipweapon(who, item)
+	// Cursed death-path safety net (UnequipTest is canonical for the live path).
+	var mods := GetObjProperty(item, "equip");
+	if (mods && "cursed" in (mods.keys()))
+		if (who.dead)
+			Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
+		endif
+		return 0;
+	endif
+
+	var descmod_item := GetObjProperty(item, "descmod");
+	var descmod := array;
+	var aux := array;
+
+	descmod := GetObjProperty(who, "descmod");
+
+	if ((descmod_item != error) && (descmod != error))
+		foreach desc in descmod
+			if (descmod_item != desc)
+				aux.append(desc);
+			endif
+		endforeach
+
+		if (aux.size() == 0)
+			EraseObjProperty(who, "descmod");
+		else
+			SetObjProperty(who, "descmod", aux);
+		endif
+
+		var ori_name := who.name;
+		SetName(who, " ");
+		SetName(who, ori_name);
+	endif
+
+	if (who.npctemplate)
+		return 1;
+	endif
+
+	if (item.isA(POLCLASS_WEAPON))
+		EraseObjProperty(who, "twohanded");
+	endif
+
+	// Carry-weight bonus recomputed from scratch (single source of truth).
+	if (item.objtype == 0xFFC2 || item.objtype == 0xEDA0)
+		MobileWrapper(who).RecalcCarryWeightMod(item.serial);
+	endif
+
+	// Steam Armor: remove dex penalty
+	var steam_dex_penalty := CInt(GetObjProperty(item, "#steam_dex_penalty"));
+	if (steam_dex_penalty > 0)
+		AP_ModifyStatMod(who, DEXTERITY, steam_dex_penalty);
+		EraseObjProperty(item, "#steam_dex_penalty");
+	endif
+
+	// Reverte penalidade de esquiva de armadura nao-leve aplicada no equip
+	var evasion_penalty := CInt(GetObjProperty(item, "#armor_evasion_penalty"));
+	if (evasion_penalty > 0)
+		who.evasionchance_mod := who.evasionchance_mod + evasion_penalty;
+		EraseObjProperty(item, "#armor_evasion_penalty");
+	endif
+
+	// Block SteamArms removal if a gadget is installed
+	if (item.objtype == 0xFFC3)
+		if (GetObjProperty(item, "InstalledGadget"))
+			SendSysMessageEx(who, "Remova o gadget instalado antes de desequipar os Bracos a Vapor.", SSM_FAIL);
+			return 0;
+		endif
+	endif
+
+	// Destroy SteamGloves companion armor on unequip
+	if (item.objtype == 0xFFC1)
+		var companion := GetEquipmentByLayer(who, LAYER_GLOVES);
+		if (companion && GetObjProperty(companion, "#steamgloves_companion"))
+			DestroyItem(companion);
+		endif
+	endif
+
+	Run_Script_To_Completion(":equipsys:unequipitem", { who, item });
+
+endprogram

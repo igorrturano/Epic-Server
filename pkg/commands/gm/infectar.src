@@ -1,0 +1,202 @@
+use uo;
+use os;
+use util;
+include "include/client";
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+include "include/say";
+include ":timedscripts:timedScripts";
+include ":medicine:disease";
+
+program infectar(who)
+
+	
+	SendSysMessage(who, "Quem você quer infectar?");
+	var subject := Target(who, TGTOPT_CHECK_LOS);
+	if (!subject)
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	elseif (!subject.IsA(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Você só pode infectar seres vivos.", SSM_FAIL);
+		return 0;
+	endif
+//var timer_disease := TS_GetTimerInfo(subject, "disease");
+	//	if (!timer_disease)
+		//else	
+			//TS_AddDuration(subject, "disease", 60);
+			//SendSysMessageEx(subject, "AO TEMPO FOI ADICIONADO 60 SEGUNDOS, LEMBRE OS SCRIPTERS QUE PRECISA CORRIGIR ISSO PARA ATUALIZAR NA BARRA BUFF/DEBUFF", SSM_FAIL);
+			//return;
+		//endif
+	var gump := CreateDiseaseGump();
+	var input := GFSendGump(who, gump);
+
+	if (input[0] == 0)
+		SendSysMessage(who, "Cancelado.");
+		return 0;
+	endif
+
+	var diseases := array{};
+	var disease_grade;
+
+	// CORREÇÃO: Verificar apenas o valor, mas com proteção contra chaves inexistentes
+
+   //if (!duration) duration := 0; endif
+
+	if (input[1] && input[1] == 1)
+		diseases.append(DISEASES::FEVER);
+	endif
+	if (input[2] && input[2] == 1)
+		diseases.append(DISEASES::THROMBOSIS);
+	endif
+	if (input[3] && input[3] == 1)
+		diseases.append(DISEASES::PUSTULES);
+	endif
+	if (input[4] && input[4] == 1)
+		diseases.append(DISEASES::LACERATION);
+	endif
+	if (input[5] && input[5] == 1)
+		diseases.append(DISEASES::ITCHING);
+	endif
+	if (input[6] && input[6] == 1)
+		diseases.append(DISEASES::COLIC);
+	endif
+	if (input[7] && input[7] == 1)
+		diseases.append(DISEASES::PALPITATIONS);
+	endif
+	if (input[8] && input[8] == 1)
+		diseases.append(DISEASES::NAUSEA);
+	endif
+	if (input[9] && input[9] == 1)
+		diseases.append(DISEASES::HEADACHE);
+	endif
+	if (input[13] && input[13] == 1)
+		diseases := "random";
+	endif	
+
+	// Verificar qual gravidade foi selecionada
+	if (input[150] && input[150] == 1)
+		disease_grade := DISEASE_GRADES::LIGHT;
+	elseif (input[151] && input[151] == 1)
+		disease_grade := DISEASE_GRADES::MODERATE;
+	elseif (input[152] && input[152] == 1)
+		disease_grade := DISEASE_GRADES::SERIOUS;
+	endif
+
+	// Ler o valor digitado no campo de texto
+	var level_text := GFExtractData(input, 50);
+	var level := CInt(level_text);
+	var duration := CInt(GFExtractData(input, 113));
+	if (duration >= 5001)
+		SendSysMessageEx(who, "Duração da doença redefinida para o máximo permitido (5000 segundos)!", SSM_FAIL);
+		duration := 5000;
+	endif
+	// Validar o nível
+	if (!level || level < 1)
+		level := 1;
+	elseif (level > 5)
+		level := 5;
+	endif
+
+	// Se nenhum sintoma foi selecionado, remover doenças
+	if (diseases.size() == 0 && diseases != "random")
+		var diseases_system := GetObjProperty(subject, "Diseases_System");
+		// UpdateDiseaseProperty(subject, "end_disease", 1);
+		TS_LowerDuration(subject, "disease", -1);
+		SendSysMessageEx(who, "Todas as doenças foram removidas de " + subject.name, SSM_INFO);
+		return 1;
+	endif
+
+	// Se nenhuma gravidade foi selecionada
+	if (disease_grade == 0)
+		SendSysMessageEx(who, "Você precisa selecionar a gravidade da doença.", SSM_FAIL);
+		return 0;
+	endif
+//print("DISEASE EH "+diseases);
+	var isInfectado := InfectMobile(subject,duration,1, level, diseases, disease_grade);
+	if(isInfectado)
+		SendSysMessageEx(who, "Você infectou " + subject.name + " com os sintomas selecionados: "
+					+ diseases, SSM_INFO);
+		PrintText(who, "*Infectado*");
+	else
+		SendSysMessageEx(who, "Erro ao infectar " + subject.name + " com os sintomas selecionados: "
+					+ diseases, SSM_FAIL);
+	endif
+	return 1;
+endprogram
+
+function CreateDiseaseGump()
+	var gump := GFCreateGump();
+	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), 400, 520);
+	GFResizePic(gump, 10, 10, GFCfgConst("Defaults", "ForeGround"), 380, 500);
+
+	GFTextMid(gump, 10, 20, 380, 2100, "Infectar Personagem");
+
+	// Sintomas
+	GFTextLine(gump, 30, 60, 2100, "Sintomas:");
+
+	// Primeira coluna
+	GFCheckBox(gump, 30, 90, 2361, 2362, 0, 1);
+	GFTextLine(gump, 60, 90, 2100, "Febre");
+
+	GFCheckBox(gump, 30, 120, 2361, 2362, 0, 2);
+	GFTextLine(gump, 60, 120, 2100, "Trombo");
+
+	GFCheckBox(gump, 30, 150, 2361, 2362, 0, 3);
+	GFTextLine(gump, 60, 150, 2100, "Pústulas");
+
+	// Segunda coluna
+	GFCheckBox(gump, 200, 90, 2361, 2362, 0, 4);
+	GFTextLine(gump, 230, 90, 2100, "Laceração");
+
+	GFCheckBox(gump, 200, 120, 2361, 2362, 0, 5);
+	GFTextLine(gump, 230, 120, 2100, "Prurido");
+
+	GFCheckBox(gump, 200, 150, 2361, 2362, 0, 6);
+	GFTextLine(gump, 230, 150, 2100, "Cólicas");
+
+	// Terceira coluna (novos sintomas)
+	GFCheckBox(gump, 30, 180, 2361, 2362, 0, 7);
+	GFTextLine(gump, 60, 180, 2100, "Palpitações");
+
+	GFCheckBox(gump, 200, 180, 2361, 2362, 0, 8);
+	GFTextLine(gump, 230, 180, 2100, "Náusea");
+
+	GFCheckBox(gump, 30, 210, 2361, 2362, 0, 9);
+	GFTextLine(gump, 60, 210, 2100, "Cefaleia");
+
+	GFCheckBox(gump, 200, 210, 210, 211, 0, 13);
+	GFTextLine(gump, 230, 210, 3700, "Random (Selecione só ele!)");
+
+	// Gravidade
+	GFTextLine(gump, 30, 250, 2100, "Gravidade:");
+
+	GFRadioButton(gump, 30, 280, 210, 211, 0, 150);
+	GFTextLine(gump, 60, 280, 2100, "Leve");
+
+	GFRadioButton(gump, 30, 310, 210, 211, 0, 151);
+	GFTextLine(gump, 60, 310, 2100, "Moderado");
+
+	GFRadioButton(gump, 30, 340, 210, 211, 0, 152);
+	GFTextLine(gump, 60, 340, 2100, "Grave");
+
+	// Nível (campo de texto)
+	GFTextLine(gump, 200, 250, 2100, "Nível (1-5):");
+	GFResizePic(gump, 200, 280, 3500, 80, 30);
+	GFTextEntry(gump, 205, 285, 70, 20, 2100, "1", 50);
+	
+	// Duração (campo de texto)
+	GFTextLine(gump, 200, 340, 2100, "Duração:");
+	GFResizePic(gump, 255, 340, 3500, 80, 30);
+	GFTextEntry(gump, 260, 340, 80, 20, 2100, "0", 113);
+	GFTextLine(gump, 160, 370, 2100, "(No 0 a duração é definida conforme");
+	GFTextLine(gump, 260, 385, 2100, " o level)");
+
+	// Texto informativo
+	GFTextLine(gump, 30, 440, 2100, "Nota: Selecione sintomas e gravidade, ou nenhum sintoma para curar.");
+
+	// Botões
+	GFAddButton(gump, 150, 460, 2128, 2129, GF_CLOSE_BTN, 100); // OK
+	GFAddButton(gump, 250, 460, 2119, 2120, GF_CLOSE_BTN, 0); // Cancelar
+
+	return gump;
+endfunction

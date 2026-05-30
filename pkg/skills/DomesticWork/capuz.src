@@ -1,0 +1,77 @@
+/* $Id: openpack.src 87 2006-05-23 19:04:43Z sroyalty $
+ *
+*/
+use uo;
+use os;
+include "include/client";
+include "include/say";
+
+program textcmd_openPack(who, robe)
+	// Logic for robe (0x1f03 / 0x2684) - Toggle graphic
+	if (robe.graphic == 0x1f03 || robe.graphic == 0x2684)
+		var equip := GetEquipmentByLayer(who, LAYER_ROBE);
+		if (robe != equip)
+			SendSysMessageEx(who, "Voce precisa esta vestindo o robe.", SSM_FAIL);
+			return 0;
+		endif
+		var new_graphic;
+		if (robe.graphic == 0x1f03)
+			new_graphic := 0x2684;
+			PrintText(who, "*veste o capuz*");
+		else
+			new_graphic := 0x1f03;
+			PrintText(who, "*remove o capuz*");
+		endif
+
+		// Unequip, re-equip, THEN change graphic (EquipItem resets graphic to original)
+		MoveItemToContainer(robe, who.backpack);
+		EquipItem(who, robe);
+		robe.graphic := new_graphic;
+
+		return 1;
+	endif
+
+	// Logic for cloak (0xc690) - Create/equip hood item at helm layer
+	if (robe.graphic == 0xc690)
+		var helm := GetEquipmentByLayer(who, LAYER_HELM);
+
+		// If helm layer has the hood item (0xa410), remove it
+		if (helm && helm.graphic == 0xa410)
+			PrintText(who, "*remove o capuz*");
+			MoveItemToContainer(helm, who.backpack);
+			DestroyItem(helm);
+			return 1;
+		endif
+
+		// If helm layer is not empty, can't wear hood
+		if (helm)
+			SendSysMessageEx(who, "Voce nao pode vestir o capuz sobre o elmo.", SSM_FAIL);
+			return 0;
+		endif
+
+		// Create hood item at helm layer
+		var hood := CreateItemAtLocation(who.x, who.y, who.z, 0xa410, 1, who.realm);
+		if (!hood)
+			SendSysMessageEx(who, "Erro ao criar o capuz.", SSM_FAIL);
+			return 0;
+		endif
+
+		// Set hood color to match cloak color
+		hood.color := robe.color;
+
+		// Set hood HP to match cloak HP
+		hood.hp := robe.hp;
+
+		// Equip the hood
+		if (!EquipItem(who, hood))
+			SendSysMessageEx(who, "Nao foi possivel equipar o capuz.", SSM_FAIL);
+			DestroyItem(hood);
+			return 0;
+		endif
+
+		PrintText(who, "*veste o capuz*");
+		return 1;
+	endif
+
+	return 1;
+endprogram

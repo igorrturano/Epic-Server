@@ -1,0 +1,47 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":timedScripts:timedScripts";
+include ":charactercreation:resists";
+
+program VenomousFangs(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	if (Distance(me, targ) > 1)
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	if (!tier) tier := 1; endif
+
+	var diff := RESIST_EASY;
+	case (tier)
+		1: diff := RESIST_EASY;
+		2: diff := RESIST_MEDIUM;
+		3: diff := RESIST_HARD;
+		4: diff := RESIST_VERY_HARD;
+		5: diff := RESIST_EXTREMELY_HARD;
+	endcase
+
+	PrintTextAbove(me, "*cravam presas venenosas*");
+	PlaySoundEffect(me, 0x28a);
+	DealDamage(targ, tier * 2, DAMAGE_TYPE::PIERCING, me);
+
+	if (CheckResist(targ, FORTITUDE, diff))
+		SendSysMessageEx(targ, "Você resiste ao veneno das presas.", SSM_REQUEST);
+		return 1;
+	endif
+
+	TS_StartTimer(targ, "defaultPoison", 60, tier, me);
+	SendSysMessageEx(targ, "O veneno da serpente corre em suas veias!", SSM_FAIL);
+
+	return 1;
+endprogram

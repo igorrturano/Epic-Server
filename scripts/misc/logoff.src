@@ -1,0 +1,43 @@
+/* $Id: logoff.src 1345 2006-05-12 08:18:29Z austin $
+ *
+ * Purpose
+ * This script allows the scripter to run cleanup code after a character exits the world.
+ * Useful for stuff like cleaning up summoned NPCs, etc.
+ *
+*/
+use uo;
+use os;
+use polsys;
+include ":taming:taming";
+include "include/epicMageryUtils";
+include ":fog_regions:include/fogRegionCore";
+
+program LogOff(who)
+	logoutpets(who);
+	LogOffElementalWeapon(who);
+	IsGm(who);
+	EraseObjProperty(who, "#fogWatcherActive");
+	CleanupFogPreviewMarkers(who);
+	return 1;
+endprogram
+
+function IsGm(who)
+	if (who.cmdlevel >= 1)
+		var GmsOnlines := GetGlobalProperty("GmsOnlines");
+		if (GmsOnlines)
+			var i;
+			for (i := 1; i <= GmsOnlines.Size(); i := i + 1)
+				if (GmsOnlines[i] == who.serial)
+					GmsOnlines.erase(i);
+				endif
+				sleepms(10);
+			endfor
+		endif
+
+		if (GmsOnlines)
+			SetGlobalProperty("GmsOnlines", GmsOnlines);
+		else
+			EraseGlobalProperty("GmsOnlines");
+		endif
+	endif
+endfunction

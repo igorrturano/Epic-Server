@@ -1,0 +1,375 @@
+use uo;
+use os;
+use file;
+use cfgfile;
+
+include "/include/epicPropNames";
+
+include ":gumpDesigner:include/Gump/Gump";
+include ":gumpDesigner:include/Control/Button";
+include ":gumpDesigner:include/Control/Text";
+
+const CFG_PATH    := ":commands:gm/mockmultis";
+const ROW_H       := 28;
+const ROW_PAD     := 4;
+const HEADER_H    := 42;
+const FOOTER_H    := 38;
+const GUMP_W      := 320;
+const PER_PAGE    := 12;
+const GHOST_COLOR := 0x0492;
+
+program textcmd_createmockmulti(who, text)
+    Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+    var cfg := ReadConfigFile(CFG_PATH);
+    if (!cfg || cfg.errortext)
+        SendSysMessage(who, "Erro ao ler mockmultis.cfg.");
+        return 0;
+    endif
+
+    var keys := GetConfigStringKeys(cfg);
+    if (!keys || keys.size() == 0)
+        SendSysMessage(who, "Nenhum mockmulti cadastrado.");
+        return 0;
+    endif
+
+    var entries := array{};
+    foreach key in keys
+        var elem := FindConfigElem(cfg, key);
+        var nome := GetConfigString(elem, "Name");
+        var filepath := GetConfigString(elem, "File");
+        if (!nome) nome := key; endif
+        var dim := GetDimensoes(filepath);
+        var label := nome + " (" + dim.w + "x" + dim.h + ")";
+        var area := dim.w * dim.h;
+        var s := struct{ key := key, nome := label, filepath := filepath, area := area };
+        entries.append(s);
+    endforeach
+
+    // Ordena do menor para o maior (bubble sort por area)
+    var n := entries.size();
+    var i := 1;
+    while (i < n)
+        var j := 1;
+        while (j <= n - i)
+            if (entries[j].area > entries[j+1].area)
+                var tmp := entries[j];
+                entries[j] := entries[j+1];
+                entries[j+1] := tmp;
+            endif
+            j += 1;
+        endwhile
+        i += 1;
+    endwhile
+
+    // Seleção da estrutura com paginação
+    var page := 0;
+    var selected := 0;
+    while (page >= 0)
+        var result := MostrarGumpSelecao(who, entries, page);
+        if (!result)
+            return 0;
+        elseif (result.acao == "next")
+            page += 1;
+        elseif (result.acao == "prev")
+            if (page > 0) page -= 1; endif
+        elseif (result.acao == "closed")
+            return 0;
+        else
+            selected := result;
+            page := -1;
+        endif
+    endwhile
+
+    if (!selected)
+        return 0;
+    endif
+
+    var lines := ReadFile(selected.filepath);
+    if (!lines || lines.errortext)
+        SendSysMessage(who, "Erro ao ler: " + selected.filepath);
+        return 0;
+    endif
+
+    var tiles := ParseTiles(lines);
+    if (tiles.size() == 0)
+        SendSysMessage(who, "Nenhum tile encontrado em " + selected.filepath);
+        return 0;
+    endif
+
+    // Loop: target -> ghost -> confirmar/mover/cancelar
+    var continuar := 1;
+    while (continuar)
+        SendSysMessage(who, "Clique onde posicionar '" + selected.nome + "' (ESC cancela)");
+        var targ := TargetCoordinates(who);
+        if (!targ)
+            return 0;
+        endif
+
+        var ghosts := CriarGhost(tiles, targ.x, targ.y, targ.z, who.realm);
+
+        var acao := MostrarGumpConfirmacao(who, selected.nome);
+
+        DestruirGhosts(ghosts);
+
+        if (acao == "confirmar")
+            CriarReal(tiles, targ.x, targ.y, targ.z, who.realm, selected.nome, who);
+            continuar := 0;
+        elseif (acao == "mover")
+            // volta ao inicio do loop para novo target
+        else
+            continuar := 0;
+        endif
+    endwhile
+
+    return 1;
+endprogram
+
+// ─── Parsing ─────────────────────────────────────────────────────────────────
+
+function GetDimensoes(filepath)
+    var lines := ReadFile(filepath);
+    if (!lines || lines.errortext)
+        var err := struct{ w := 0, h := 0 };
+        return err;
+    endif
+
+    var min_dx :=  32767;
+    var max_dx := -32767;
+    var min_dy :=  32767;
+    var max_dy := -32767;
+    var found  := 0;
+
+    foreach linha in lines
+        linha := Trim(linha, TRIM_BOTH);
+        if (!linha) continue; endif
+        if (SubStr(linha, 1, 2) == "//") continue; endif
+
+        var cols := SplitWords(linha);
+        if (cols.size() < 4) continue; endif
+
+        var graphic := CInt(cols[1]);
+        if (graphic <= 1) continue; endif
+
+        var dx := CInt(cols[2]);
+        var dy := CInt(cols[3]);
+
+        if (dx < min_dx) min_dx := dx; endif
+        if (dx > max_dx) max_dx := dx; endif
+        if (dy < min_dy) min_dy := dy; endif
+        if (dy > max_dy) max_dy := dy; endif
+        found := 1;
+    endforeach
+
+    if (!found)
+        var zero := struct{ w := 0, h := 0 };
+        return zero;
+    endif
+
+    var dim := struct{ w := max_dx - min_dx + 1, h := max_dy - min_dy + 1 };
+    return dim;
+endfunction
+
+function ParseTiles(lines)
+    var tiles := array{};
+    foreach linha in lines
+        linha := Trim(linha, TRIM_BOTH);
+        if (!linha) continue; endif
+        if (SubStr(linha, 1, 2) == "//") continue; endif
+
+        var cols := SplitWords(linha);
+        if (cols.size() < 4) continue; endif
+
+        var graphic := CInt(cols[1]);
+        var dx := CInt(cols[2]);
+        var dy := CInt(cols[3]);
+        var dz := CInt(cols[4]);
+
+        if (graphic <= 1) continue; endif
+
+        var t := struct{ graphic := graphic, dx := dx, dy := dy, dz := dz };
+        tiles.append(t);
+    endforeach
+    return tiles;
+endfunction
+
+// ─── Ghost ───────────────────────────────────────────────────────────────────
+
+function CriarGhost(tiles, bx, by, bz, realm)
+    var serials := array{};
+    foreach t in tiles
+        var item := CreateItemAtLocation(bx + t.dx, by + t.dy, bz + t.dz, t.graphic, 1, realm);
+        if (item && !item.errortext)
+            item.color      := GHOST_COLOR;
+            item.movable    := 0;
+            item.saveonexit := 0;
+            serials.append(item.serial);
+        endif
+        SleepMS(2);
+    endforeach
+    return serials;
+endfunction
+
+function DestruirGhosts(serials)
+    foreach serial in serials
+        var item := SystemFindObjectBySerial(serial);
+        if (item)
+            DestroyItem(item);
+        endif
+    endforeach
+endfunction
+
+function CriarReal(tiles, bx, by, bz, realm, nome, who)
+    var groupId := polcore().systime;
+    var serials := array{};
+    var criados  := 0;
+    foreach t in tiles
+        var item := CreateItemAtLocation(bx + t.dx, by + t.dy, bz + t.dz, t.graphic, 1, realm);
+        if (item && !item.errortext)
+            item.movable := 0;
+            SetObjProperty(item, PROPNAME_INDESTRUTIVEL, 1);
+            SetObjProperty(item, PROPNAME_MOCKMULTI_GROUP, groupId);
+            SetObjProperty(item, PROPNAME_MOCKMULTI_Z, bz + t.dz);
+            serials.append(item.serial);
+            criados += 1;
+        endif
+        SleepMS(2);
+    endforeach
+
+    // Registra no grupo global para mockmultimove
+    var grupos := GetGlobalProperty("mockmultiGroups");
+    if (!grupos) grupos := array{}; endif
+    if (!(groupId in grupos)) grupos.append(groupId); endif
+    SetGlobalProperty("mockmultiGroups", grupos);
+    SetGlobalProperty("mmGroup_" + groupId, struct{
+        nome    := nome,
+        serials := serials,
+        realm   := realm,
+        ax      := bx,
+        ay      := by,
+        az      := bz
+    });
+
+    SendSysMessage(who, "'" + nome + "' criado: " + criados + " item(s) | grupo #" + groupId);
+endfunction
+
+// ─── GUMPs ───────────────────────────────────────────────────────────────────
+
+function MostrarGumpConfirmacao(who, nome)
+    var gump := Gump(who, "Confirmar Posicao", 310, 140);
+    gump.AddControl(Text("msg1", 15, 13, "Posicionar aqui:", TEXT_COLOR::COLOR_YELLOW));
+    gump.AddControl(Text("msg2", 15, 33, nome, TEXT_COLOR::COLOR_DEFAULT));
+
+    var btnConfirmar := Button("btnConfirmar", 15, 80,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnConfirmar);
+    gump.AddControl(Text("lblConfirmar", 53, 83, "Confirmar", TEXT_COLOR::COLOR_DEFAULT));
+
+    var btnMover := Button("btnMover", 135, 80,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnMover);
+    gump.AddControl(Text("lblMover", 173, 83, "Mover", TEXT_COLOR::COLOR_DEFAULT));
+
+    var btnCancelar := Button("btnCancelar", 215, 80,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnCancelar);
+    gump.AddControl(Text("lblCancelar", 253, 83, "Cancelar", TEXT_COLOR::COLOR_DEFAULT));
+
+    var evento := gump.Show();
+    gump.Dispose();
+
+    if (evento.GetControl() == EVENT_ACTION::CLOSED)
+        return "cancelar";
+    endif
+
+    if (evento.GetControl().Equals(btnConfirmar))
+        return "confirmar";
+    elseif (evento.GetControl().Equals(btnMover))
+        return "mover";
+    endif
+
+    return "cancelar";
+endfunction
+
+function MostrarGumpSelecao(who, entries, page)
+    var total    := entries.size();
+    var max_page := CInt((total - 1) / PER_PAGE);
+    var has_prev := (page > 0);
+    var has_next := (page < max_page);
+
+    var start := page * PER_PAGE + 1;
+    var end   := start + PER_PAGE - 1;
+    if (end > total) end := total; endif
+    var n := end - start + 1;
+
+    var footer := 10;
+    if (has_prev || has_next)
+        footer := FOOTER_H;
+    endif
+    var gump_h := HEADER_H + n * (ROW_H + ROW_PAD) + footer;
+
+    var pag_str := "Pag. " + (page + 1) + "/" + (max_page + 1);
+    var gump := Gump(who, "MockMultis - " + pag_str, GUMP_W, gump_h);
+    gump.AddControl(Text("titulo", 15, 13, "Selecione uma estrutura:", TEXT_COLOR::COLOR_YELLOW));
+
+    var btns := array{};
+    var i := start;
+    while (i <= end)
+        var entry := entries[i];
+        var gy := HEADER_H + (i - start) * (ROW_H + ROW_PAD);
+        var btn := Button("btn" + i, 15, gy,
+            BUTTON_IMAGE::MODERN_V_UNPRESSED,
+            BUTTON_IMAGE::MODERN_V_PRESSED);
+        gump.AddControl(btn);
+        gump.AddControl(Text("lbl" + i, 53, gy + 5, entry.nome, TEXT_COLOR::COLOR_DEFAULT));
+        var par := struct{ btn := btn, entry := entry };
+        btns.append(par);
+        i += 1;
+    endwhile
+
+    var btn_prev := 0;
+    var btn_next := 0;
+    var nav_y := HEADER_H + n * (ROW_H + ROW_PAD) + 6;
+
+    if (has_prev)
+        btn_prev := Button("btnPrev", 15, nav_y,
+            BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+        gump.AddControl(btn_prev);
+        gump.AddControl(Text("lblPrev", 53, nav_y + 5, "< Anterior", TEXT_COLOR::COLOR_DEFAULT));
+    endif
+
+    if (has_next)
+        btn_next := Button("btnNext", 175, nav_y,
+            BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+        gump.AddControl(btn_next);
+        gump.AddControl(Text("lblNext", 213, nav_y + 5, "Proxima >", TEXT_COLOR::COLOR_DEFAULT));
+    endif
+
+    var evento := gump.Show();
+    gump.Dispose();
+
+    if (evento.GetControl() == EVENT_ACTION::CLOSED)
+        return 0;
+    endif
+
+    if (btn_prev && evento.GetControl().Equals(btn_prev))
+        var nav_prev := struct{ acao := "prev" };
+        return nav_prev;
+    endif
+
+    if (btn_next && evento.GetControl().Equals(btn_next))
+        var nav_next := struct{ acao := "next" };
+        return nav_next;
+    endif
+
+    i := 1;
+    while (i <= btns.size())
+        var par := btns[i];
+        if (evento.GetControl().Equals(par.btn))
+            return par.entry;
+        endif
+        i += 1;
+    endwhile
+
+    return 0;
+endfunction

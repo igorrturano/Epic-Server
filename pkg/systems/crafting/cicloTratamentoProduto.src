@@ -1,0 +1,86 @@
+use uo;
+use os;
+
+include ":crafting:/include/fabricacaoUtil";
+include "/include/epicPropNames";
+
+program CicloTratamentoProduto(parametros)
+	var quem := parametros[1];
+	var produto := parametros[2];
+	var pidGerente := parametros[3];
+	var estacao := parametros[4];
+
+	var deveSair := false;
+	var evento;
+	var tempContador := 0;
+
+	while (!deveSair)
+		Sleep(2);
+		var processoGerente := GetProcess(pidGerente);
+		Attach(quem);
+
+		if (processoGerente.state)
+			var propFabricado := GetObjProperty(produto, PROPNAME_FABRICADO);
+
+			var dificuldades := PegaDificuldadeFrabicarObjeto(quem, propFabricado.receita.objtype,
+															   propFabricado.receita.profissao, propFabricado.receita.pericia,
+															   propFabricado.receita.receitaClassificada.classe,
+															   propFabricado.receita.sucessosNecessarios, 
+															   produto, 
+															   estacao);
+
+			var rolagem := RandomIntMinMax(0, 100);
+			CheckSkillAdvance(quem, propFabricado.receita.pericia, dificuldades.skill + 15,
+							   dificuldades.chancePelaSkill);
+			var isSucesso := rolagem <= Cint(dificuldades.chanceTotal);
+			var propTratamento := GetObjProperty(produto, PROPNAME_FABRICADO_TRATAMENTO);
+
+			if (!propTratamento)
+				propTratamento := struct{ sucessos := 0, falhas := 0, ciclos := 0,
+						  				ultimoSucesso := false, isTratando := true };
+			endif
+
+			if (isSucesso)
+				propTratamento.sucessos += 1;
+			else
+				propTratamento.falhas += 1;
+			endif
+
+			propTratamento.ciclos += 1;
+			propTratamento.ultimoSucesso := isSucesso;
+
+			if (propTratamento.falhas >= PegaMaximoFalhas(produto))
+				FinalizaTratamento(propTratamento, processoGerente, produto, EV_ITEM_QUEBROU);
+			endif
+
+			if (propTratamento.sucessos >= propFabricado.receita.sucessosNecessarios)
+				FinalizaTratamento(propTratamento, processoGerente, produto, EV_ITEM_PRODUZIDO);
+			endif
+
+			if (propTratamento.isTratando)
+				SetObjProperty(produto, PROPNAME_FABRICADO_TRATAMENTO, propTratamento);
+				processoGerente.sendEvent(struct{ id := EV_FIM_CICLO });
+			endif
+		else
+			deveSair := true;
+		endif
+	endwhile
+endprogram
+
+function FinalizaTratamento(byref propTratamento, processoGerente, produto, event)
+	if (produto.stackable)
+		ReinicializaPropTratamento(propTratamento);
+	else
+		propTratamento.isTratando := false;
+	endif
+	SetObjProperty(produto, PROPNAME_FABRICADO_TRATAMENTO, propTratamento);
+	processoGerente.sendEvent(struct{ id := event });
+endfunction
+
+function ReinicializaPropTratamento(byref propTratamento)
+	propTratamento.sucessos := 0;
+	propTratamento.falhas := 0;
+	propTratamento.ciclos := 0;
+	propTratamento.ultimoSucesso := false;
+	propTratamento.isTratando := true;
+endfunction

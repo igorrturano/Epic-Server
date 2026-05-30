@@ -1,0 +1,33 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include ":combat:Controller/DamageController";
+include ":combat:Model/Damage";
+include ":charactercreation:resists";
+include ":timedScripts:timedScripts";
+
+program Rend(params)
+	var me := params[1];
+	var targ := params[2];
+
+	if (!me || !targ || me.dead || targ.dead)
+		return 0;
+	endif
+
+	if (Distance(me, targ) > 1)
+		return 0;
+	endif
+
+	var tier := CInt(MobileWrapper(me).GetTier());
+	var damage := tier * 4;
+
+	PrintTextAbove(me, "*rasga com as garras!*");
+	DealDamage(targ, damage, DAMAGE_TYPE::BLUNT, me);
+
+	if (!CheckResist(targ, FORTITUDE, RESIST_HARD))
+		TS_StartTimer(targ, "bleed", 15, tier, me);
+	endif
+
+	return 1;
+endprogram

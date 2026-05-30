@@ -1,0 +1,47 @@
+use uo;
+use cfgfile;
+include "include/client";
+include "include/say";
+include ":charactercreation:habilidades";
+include ":treasurehunting:treasuremaps";
+
+program decode_map(who, map)
+	if (!Accessible(who, map))
+		SendSysMessageEx(who, "Voce nao alcanca o mapa.", SSM_FAIL);
+		return;
+	endif
+	if (map.movable == 0)
+		SendSysMessageEx(who, "Voce nao pode usar isto.", SSM_FAIL);
+		return;
+	endif
+
+	if (!CanDecodeMap(who, map))
+		SendSysMessageEx(who, "Voce nao compreende esse mapa.", SSM_FAIL);
+		return;
+	endif
+
+	var item_cfg := ReadConfigFile(":treasurehunting:itemdesc");
+	var elem := FindConfigElem(item_cfg, map.objtype);
+	var maplevel := GetConfigInt(elem, "Level");
+
+	var newmap := CreateNewTreasureMap(who, maplevel);
+	if (!newmap)
+		SendSysMessageEx(who, "Nao foi possivel criar o mapa do tesouro.", SSM_FAIL);
+		return;
+	endif
+
+	// Configura o gump do mapa com pin na localização do tesouro
+	var coords := GetMapCoordinates(newmap);
+	var x := coords.x;
+	var y := coords.y;
+	newmap.xwest   := (x < 75) ? 0 : x - 75;
+	newmap.ynorth  := (y < 75) ? 0 : y - 75;
+	newmap.xeast   := x + 75;
+	newmap.ysouth  := y + 75;
+	newmap.gumpwidth  := 200;
+	newmap.gumpheight := 200;
+	newmap.AppendPin(x, y);
+
+	SendSysMessage(who, "Voce desvendou o mapa!");
+	DestroyItem(map);
+endprogram

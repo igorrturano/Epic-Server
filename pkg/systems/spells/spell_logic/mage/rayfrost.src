@@ -1,0 +1,44 @@
+use uo;
+use os;
+use util;
+
+include ":attributes:attributes";
+include ":timedscripts:timedScripts";
+include ":magery:spells";
+include "include/client";
+include "include/sounds";
+include ":spells:Controller/SC_Damage";
+include "include/epicConstants";
+include "include/epicMageryUtils";
+
+program cast_firebolt(params)
+	var caster := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	var spell_school := spell.School;
+
+	var spell_circle := CInt(spell.Circle[1]);
+	params := 0; // No longer needed
+
+	SendSysMessage(caster, "Selecione o alvo.");
+	if (!targ.IsA(POLCLASS_MOBILE))
+		SendSysMessage(caster, "Alvo invalido.");
+		return 0;
+	endif
+
+	if (!targ)
+		SendSysMessageEx(caster, "Cancelado", SSM_FAIL);
+		return 0;
+	endif
+
+	LaunchProjectile(caster, targ, spell_circle, spell_school, CInt(spell.id));
+endprogram
+
+function LaunchProjectile(caster, targ, spell_circle, spell_school, spellId)
+	var speed := 25;
+	Print("[RAYFROST] caster=" + caster.name + " pos=(" + caster.x + "," + caster.y + "," + caster.z + ") targ=" + targ.name + " pos=(" + targ.x + "," + targ.y + "," + targ.z + ") dist=" + Distance(caster, targ) + " speed=" + speed + " graphic=0x54AD");
+	PlaySoundEffect(caster, SFX_AQUARIUM_USE);
+	PlayMovingEffectXYZHued(caster, targ, 0x54AD, speed, 1643, 0);
+	var dmg := RandomDiceRoll("1d4");
+	SC_DealDamage(caster, targ, spellId, cint(dmg), DAMAGE_TYPE::COLD);
+endfunction

@@ -1,0 +1,4 @@
+program Install()
+	print("INSTALLING: Methods for UObject... OK!");
+	return 1;
+endprogram

@@ -1,0 +1,181 @@
+include ":message:model/Message";
+include ":wrappers:Objects/Model/ArmorWrapper";
+include ":wrappers:Objects/Model/WeaponWrapper";
+include ":wrappers:Objects/Model/MobileWrapper";
+include "packets/UpdateEquipmentRequest";
+include ":debug:Controller/DebugController";
+include ":combat:Model/ManaModFabricacao";
+
+program equipitem(params)
+	var who := MobileWrapper(params[1]);
+	var item := params[2];
+
+	var equip;
+	if (item.IsA(POLCLASS_ARMOR))
+		equip := ArmorWrapper(item);
+		debugArmor(who.GetObjRef(), equip);
+	elseif (item.IsA(POLCLASS_WEAPON))
+		equip := WeaponWrapper(item);
+		updateCombatTraits(who, equip);
+		debugWeapon(who.GetObjRef(), equip);
+	endif
+
+	equip.Update();
+
+	if (who.isShaman())
+		equip.SetModifier(AttributeModifier(MAGERY, 0));
+	endif
+
+	if (item.IsA(POLCLASS_ARMOR) && who.HasAbility(ABILITY_ID::CONEXAO_DIVINA))
+		var tipoProtecao := equip.GetTipoProtecao();
+		if (tipoProtecao["Armadura Leve"] || tipoProtecao["Armadura Media"])
+			equip.SetModifier(AttributeModifier(MAGERY, 0));
+		endif
+	endif
+
+	if (item.IsA(POLCLASS_ARMOR) && equip.IsShield())
+		var chardata := GetObjProperty(who.GetObjRef(), "chardata");
+		var isScutum := {0x1B76, 0x1B77, 0xFA62};
+		if (chardata.trait == "Força da Legião" && (item.objtype in isScutum))
+			var dexMod := equip.GetModifier(DEXTERITY).GetValue();
+			equip.SetModifier(AttributeModifier(DEXTERITY, CInt(dexMod / 2)));
+		endif
+	endif
+
+	who.TriggerEquipPassives(equip);
+
+	who.ApplyItemModifiers(equip);
+
+	// Magic-focus mana mods (Imbuia/Mogno staff, Atrium/Mithril wand, etc.)
+	if (item.IsA(POLCLASS_WEAPON))
+		var cat := equip.GetCategory();
+		if (cat == WEAPON_CATEGORY::STAFF || cat == WEAPON_CATEGORY::WAND || cat == WEAPON_CATEGORY::SPELLBOOK)
+			ManaModFabricacao(item).ApplyOn(who.GetObjRef());
+		endif
+	endif
+
+	Start_Script("packets/AssyncUpdateEquipment", array{who, true, item, item.layer});
+	return 1;
+endprogram
+
+function debugWeapon(who, equip)
+	DebugMsg(who, DEBUG_EQUIP, $"====================
+		Arma: {equip.GetName()}
+		====================");
+	DebugMsg(who, DEBUG_EQUIP, Message($"[DANO PRINCIPAL] {DAMAGE_TYPE::SLASH}: {equip.GetMainDamage().GetSlashDamage()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"[DANO PRINCIPAL] {DAMAGE_TYPE::PIERCING}: {equip.GetMainDamage().GetPiercingDamage()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"[DANO PRINCIPAL] {DAMAGE_TYPE::BLUNT}: {equip.GetMainDamage().GetBluntDamage()}"));
+
+	if (equip.IsDualWield())
+		DebugMsg(who, DEBUG_EQUIP, Message($"[DANO SECUNDÁRIO] {DAMAGE_TYPE::SLASH}: {equip.GetOffDamage().GetSlashDamage()}"));
+		DebugMsg(who, DEBUG_EQUIP, Message($"[DANO SECUNDÁRIO] {DAMAGE_TYPE::PIERCING}: {equip.GetOffDamage().GetPiercingDamage()}"));
+		DebugMsg(who, DEBUG_EQUIP, Message($"[DANO SECUNDÁRIO] {DAMAGE_TYPE::BLUNT}: {equip.GetOffDamage().GetBluntDamage()}"));
+	endif
+
+	DebugMsg(who, DEBUG_EQUIP, Message($"[DANO PRINCIPAL] Fogo: {equip.GetMainDamage().GetFireDamage()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"[DANO PRINCIPAL] Gelo: {equip.GetMainDamage().GetColdDamage()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"[DANO PRINCIPAL] Veneno: {equip.GetMainDamage().GetPoisonDamage()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"[DANO PRINCIPAL] Energia: {equip.GetMainDamage().GetEnergyDamage()}"));
+
+	if (equip.IsDualWield())
+		DebugMsg(who, DEBUG_EQUIP, Message($"[DANO SECUNDÁRIO] Fogo: {equip.GetOffDamage().GetFireDamage()}"));
+		DebugMsg(who, DEBUG_EQUIP, Message($"[DANO SECUNDÁRIO] Gelo: {equip.GetOffDamage().GetColdDamage()}"));
+		DebugMsg(who, DEBUG_EQUIP, Message($"[DANO SECUNDÁRIO] Veneno: {equip.GetOffDamage().GetPoisonDamage()}"));
+		DebugMsg(who, DEBUG_EQUIP, Message($"[DANO SECUNDÁRIO] Energia: {equip.GetOffDamage().GetEnergyDamage()}"));
+	endif
+
+	// DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
+	DebugMsg(who, DEBUG_EQUIP, Message($"Principal Postura de Ataque: {equip.GetAttackType()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Velocidade: {equip.GetSpeed()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Chance de Crítico: {equip.GetCriticalChance()}%"));
+endfunction
+
+function debugArmor(who, equip)
+	var slot := equip.GetCoverage();
+	var type := equip.GetTipoProtecao();
+
+	DebugMsg(who, DEBUG_EQUIP, Message($"====================
+		Equipamento: {equip.GetName()}
+		===================="));
+
+	DebugMsg(who, DEBUG_EQUIP, Message($"Slot: {slot}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Durabilidade: {equip.GetMaxHP()}"));
+
+	DebugMsg(who, DEBUG_EQUIP, Message($"[RESISTÊNCIA FÍSICA]"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"{DAMAGE_TYPE::SLASH}: {equip.GetResists().GetSlashResist()} (+{equip.GetResistsMod().GetSlashResist()})"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"{DAMAGE_TYPE::PIERCING}: {equip.GetResists().GetPiercingResist()} (+{equip.GetResistsMod().GetPiercingResist()})"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"{DAMAGE_TYPE::BLUNT}: {equip.GetResists().GetBluntResist()} (+{equip.GetResistsMod().GetBluntResist()})"));
+	// DebugMsg(who, DEBUG_EQUIP, $"Material ({materialName}): {resistByMaterial["SlashResist"]}/{resistByMaterial["PiercingResist"]}/{resistByMaterial["BluntResist"]}");
+	// DebugMsg(who, DEBUG_EQUIP, $"Slot ({slot}): {resistBySlot["SlashResist"]}/{resistBySlot["PiercingResist"]}/{resistBySlot["BluntResist"]}");
+	// DebugMsg(who, DEBUG_EQUIP, $"Tipo de Proteção ({type}): {resistByProtection["SlashResist"]}/{resistByProtection["PiercingResist"]}/{resistByProtection["BluntResist"]}
+	// ");
+
+	DebugMsg(who, DEBUG_EQUIP, Message($"[RESISTÊNCIA ELEMENTAL]"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Fogo: {equip.FireResist}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Gelo: {equip.ColdResist}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Veneno: {equip.PoisonResist}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Energia: {equip.EnergyResist}"));
+
+	DebugMsg(who, DEBUG_EQUIP, Message($"[PENALIDADES]"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Dexterity: {equip.GetModifier(DEXTERITY).GetValue()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Sneak: {equip.GetModifier(SNEAK).GetValue()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Mechanics: {equip.GetModifier(MECHANICS).GetValue()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Magery: {equip.GetModifier(MAGERY).GetValue()}"));
+	DebugMsg(who, DEBUG_EQUIP, Message($"Awareness: {equip.GetModifier(AWARENESS).GetValue()}"));
+
+	DebugMsg(who, DEBUG_EQUIP, Message($"[MODIFICADORES]"));
+// DebugMsg(who, DEBUG_EQUIP, $"Material: {materialName}");
+// DebugMsg(who, DEBUG_EQUIP, $"Durabilidade: {itemAttr.MaxHP} ({getDurabilityByType(item)} + {CInt((getDurabilityByType(item)*getDurabilityModByMaterial(item))-getDurabilityByType(item))}) (Mod: {getDurabilityModByMaterial(item)})");
+// DebugMsg(who, DEBUG_EQUIP, $"Peso: {itemAttr.Weight} ({getWeightByType(item)} + {CInt((getWeightByType(item)*getWeightModByMaterial(item))-getWeightByType(item))}) (Mod: {getWeightModByMaterial(item)})");
+endfunction
+
+function updatePosture(who, weapon)
+	var category := weapon.GetCategory();
+	var traits := who.GetCombatTraits();
+
+	// Check if combattraits is valid (must check BEFORE calling any methods)
+	if (traits.errortext)
+		return false;
+	endif
+
+	var newPosture;
+	if (Upper(category) == Upper(WEAPON_CATEGORY::UNARMED))
+		newPosture := DAMAGE_TYPE::BLUNT;
+	elseif (Upper(category) == Upper(WEAPON_CATEGORY::BOW))
+		newPosture := DAMAGE_TYPE::PIERCING;
+	elseif(Upper(category) == Upper(WEAPON_CATEGORY::CROSSBOW))
+		newPosture := DAMAGE_TYPE::PIERCING;
+	elseif(weapon.isFireWeapon())
+		newPosture := DAMAGE_TYPE::BLUNT;
+	else
+		return false; // Weapon doesn't force a specific posture
+	endif
+
+	who.SetCombatTraits(traits.SetPosture(newPosture));
+	Message($"Postura de combate alterada para {newPosture}").SendSys(who.GetObjRef());
+	return true;
+endfunction
+
+function updateStance(who, weapon)
+	var weaponAttr := weapon.GetAttribute();
+
+	if (weaponAttr == RANGED)
+		var traits := who.GetCombatTraits();
+
+		// Check if combattraits is valid (must check BEFORE calling any methods)
+		if (traits.errortext)
+			return false;
+		endif
+
+		who.SetCombatTraits(traits.SetStance(STANCE_TYPE::NEUTRAL));
+		Message("Sua postura de combate foi alterada para Neutra.", Color(SYSTEM_COLOR::INFO)).SendSys(who.GetObjRef());
+		return true;
+	endif
+
+	return false;
+endfunction
+
+function updateCombatTraits(who, weapon)
+	updatePosture(who, weapon);
+	updateStance(who, weapon);
+endfunction

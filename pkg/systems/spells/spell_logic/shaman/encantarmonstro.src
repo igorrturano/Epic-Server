@@ -1,0 +1,68 @@
+include "include/epicCombatUtils";
+include "include/say";
+include ":attributes:attributes";
+include "include/epicMageryUtils";
+include "include/epicNPCUtils";
+include ":charactercreation:resists";
+
+include "include/sysEvent";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+    var who := params[1];
+    var targ := params[2];
+    var spell := params[3];
+    var spell_school := spell.School;
+
+    params := 0; // No longer needed
+
+    if (!targ)
+        return;
+    endif
+
+    if (!targ.isa(POLCLASS_MOBILE))
+        SendSysMessageEx(who, "Voce so pode encantar criaturas vivas.", SSM_FAIL);
+        return;
+    endif
+
+    if (targ == who)
+        SendSysMessageEx(who, "Voce nao pode encantar a si mesmo.", SSM_FAIL);
+        return;
+    endif
+
+    if (!targ.isMonsterBrain())
+        Message("Voce so consegue encantar monstros").SendSys(who);
+        return;
+    endif
+
+    var diff := handleSpellResistDiffForDivineCasters(who, spell_school);
+    var bonus := epicWisdomPathBonus(who);
+
+    if (CheckResist(targ, WILL, diff, -bonus) || isTrueBoss(targ))
+        SendSysMessageEx(who, "Você nota que o alvo não foi afetado.", SSM_FAIL);
+        SendSysMessageEx(targ, "Você resistiu a magia.", SSM_INFO);
+        return;
+    endif
+
+    var duration := cint(AP_GetSkill(who, ARCANA) / 5);
+    if (MobileWrapper(who).HasAbility(ABILITY_ID::SAND_BROTHERS))
+        duration := Cint(duration * 1.5);
+    endif
+
+    SC_HandleSound(who, targ, SFX_SPELL_TELEKINESIS);
+    sleep(2);
+    PlayObjectCenteredEffect(targ, FX_HIPNOSYS, 250, 10);
+
+    SetObjProperty(targ, "charmed_by", who.serial);
+    SetObjProperty(targ, "charmed_cannot_attack", who.serial); // Cannot attack the shaman
+    SetCooldown(targ, "charmed", duration);
+
+    Message(who, "Você encantou " + targ.name + ".").SendSys(who);
+
+    sleep(duration);
+    EraseObjProperty(targ, "charmed_by");
+    EraseObjProperty(targ, "charmed_cannot_attack");
+
+    Message(who, "O encantamento em " + targ.name + " se desfez.").SendSys(who);
+    return 1;
+endprogram

@@ -1,0 +1,135 @@
+////////////////////////////////////////////////////////////////////////////////
+//
+//   MultiExport - Extract Items to make Multi, using Multi Scripter by Slayde
+//
+//     Author: Shinigami
+//     eMail : Shinigami@gmx.net
+//
+//   Modifications:
+//     2002/03/01 Shinigami: Fix: Letzte Nummer
+//
+////////////////////////////////////////////////////////////////////////////////
+//
+// Needs:
+//   statics/multi.cfg
+//
+////////////////////////
+
+/////////////////
+// Bibliotheken
+/////////////////
+
+use uo;
+use os;
+use cfgfile;
+
+/////////////
+// Includes
+/////////////
+
+include ":worldforge:errormsg_wf";
+
+///////////////
+// Konstanten
+///////////////
+
+const ERRORMSGS_GERMAN := "{}MultiExport: ExportArea aktiviert..." + "{}MultiExport: ExportArea beendet." + "{}X1 muss kleiner-gleich X2 bzw. Y1 muss kleiner-gleich Y2 sein!"
+																   + "{}%% darf nur 0 bis 4095 sein!" + "{}%% darf nur 0 bis 6143 sein!" + "{}Sie muessen 4 Paramter angeben: X1 Y1 X2 Y2" +
+																   "{}Die Items wurden exportiert." + "{}Probleme beim Lesen der Configdateien!";
+const ERRORMSGS_ENGLISH := "{}MultiExport: ExportArea started..." + "{}MultiExport: ExportArea done." + "{}X1 must be lower/equal X2 and Y1 must be lower/equal Y2!"
+																  + "{}%% must be between 0 and 4095!" + "{}%% must be between 0 and 6143!" + "{}U've to enter 4 Paramters: X1 Y1 X2 Y2" + "{}Items have been exported."
+																  + "{}Problems on Reading Config File!";
+
+/////////////////
+// Hauptprogram
+/////////////////
+
+program TextCMD_MultiExport(who, params)
+	Set_Script_Option(SCRIPTOPT_NO_RUNAWAY, 1);
+
+	if (Len(who) > 1) // Called by MultiCheckExport
+		params := who[2];
+		who := who[1];
+	endif
+
+	params := SplitWords(params);
+	if (params.size() == 4)
+		if ((0 <= CInt(params[1])) And (CInt(params[1]) < 6144))
+			if ((0 <= CInt(params[2])) And (CInt(params[2]) < 4096))
+				if ((0 <= CInt(params[3])) And (CInt(params[3]) < 6144))
+					if ((0 <= CInt(params[4])) And (CInt(params[4]) < 4096))
+						if ((CInt(params[1]) <= CInt(params[3])) And (CInt(params[2]) <= CInt(params[4])))
+							PrintErrorMessage(1);
+							ExportArea(who, CInt(params[1]), CInt(params[2]), CInt(params[3]), CInt(params[4]));
+							PrintErrorMessage(2);
+						else
+							PrintErrorMessage(3, {}, who);
+						endif
+					else
+						PrintErrorMessage(4, { "Y2" }, who);
+					endif
+				else
+					PrintErrorMessage(5, { "X2" }, who);
+				endif
+			else
+				PrintErrorMessage(4, { "Y1" }, who);
+			endif
+		else
+			PrintErrorMessage(5, { "X1" }, who);
+		endif
+	else
+		PrintErrorMessage(6, {}, who);
+	endif
+endprogram
+
+//////////////////////////////////////
+// ExportArea - Extrahiert die Items
+//////////////////////////////////////
+
+function ExportArea(who, x1, y1, x2, y2)
+	var datafile := ReadConfigFile(":worldforge:config/multi");
+	if (datafile)
+		var counter := GetNextCounterNumber(datafile);
+
+		var elem;
+		foreach item in ListObjectsInBox(x1, y1, -128, x2, y2, 127)
+			if (item.isa(POLCLASS_ITEM))
+				elem := {};
+				elem.append({ "SERIAL", item.serial });
+				elem.append({ "NAME", item.desc });
+				elem.append({ "ID", item.graphic });
+				elem.append({ "X", item.x });
+				elem.append({ "Y", item.y });
+				elem.append({ "Z", item.z });
+				elem.append({ "CONT", -1 });
+				elem.append({ "TYPE", 1 });
+				elem.append({ "AMOUNT", 1 });
+				elem.append({ "COLOR", item.color });
+				AppendConfigFileElem("statics/multi", "SECTION", "WORLDITEM " + counter, elem);
+
+				DestroyItem(item);
+
+				counter := counter + 1;
+			endif
+		endforeach
+
+		UnloadConfigFile(":worldforge:config/multi");
+
+		PrintErrorMessage(7, {}, who);
+	else
+		PrintErrorMessage(8, {}, who);
+	endif
+endfunction
+
+/////////////////////////////////////////////////////////
+// GetNextCounterNumber - Die naechste Nummer ermitteln
+/////////////////////////////////////////////////////////
+
+function GetNextCounterNumber(datafile)
+	var counter := GetConfigStringKeys(datafile);
+	if (Len(counter))
+		return (Len(counter));
+	else
+		return (0);
+	endif
+endfunction

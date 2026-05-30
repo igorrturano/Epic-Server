@@ -1,0 +1,71 @@
+# IDE files
+.idea/
+.vscode/launch.json
+.claude
+
+# Logs
+log
+*.log
+*.dmp
+
+# Ecompiled Scripts
+*.ecl
+*.dep
+*.dbg
+
+# Data Except pol.txt
+data
+*.bak
+
+# POL Server
+config/boats.cfg
+config/extobj.cfg
+config/servers.cfg
+core-changes.txt
+packethooks.txt
+packets.zip
+pol
+pol.cfg.example
+poltool
+uoconvert
+uoconvert.txt
+uotool
+ecompile.cfg
+ecompile
+scripts/ecompile
+scripts/ecompile.cfg
+scripts/ecompile.cfg.example
+scripts/modules
+scripts/runecl
+scripts/leftovers.txt
+scripts/orphans.txt
+*.exe
+servers.cfg
+leftovers.txt
+orphans.txt
+
+# UOConvert Files
+config/multis.cfg
+config/tiles.cfg
+config/landtiles.cfg
+uoconvert.bat
+landtiles.cfg
+multis.cfg
+tiles.cfg
+pol.cfg
+
+# Muls
+muls/
+realm/
+objtypes.txt
+pcs.txt
+
+# DLL files
+*.dll
+fiddler/**/*.dll
+plugins/**/*.dll
+
+# Web WWW Accounts
+/pkg/systems/accounts/config/settings.cfg
+
+/.claudetools/__pycache__/

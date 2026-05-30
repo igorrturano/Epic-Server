@@ -1,0 +1,99 @@
+use uo;
+use os;
+
+include ":gumps:requestGump";
+include "include/string";
+include ":gumps:gumps";
+include ":merchants:merchant";
+include ":brainAI:npcCommands";
+include ":gumps:yesNo";
+include "include/say";
+include ":charactercreation:habilidades";
+include "include/client";
+include ":disguise:disguise";
+
+program MerchantMenu(params)
+	var npc := params[1];
+	var player := params[2];
+	var escondido := player.hidden;
+
+	if (escondido)
+		player.hidden := 0;
+		SendSysMessageEx(player, "Voce se revelou ao mercador.", SSM_FAIL);
+	endif
+
+	PrintTextAbove(npc, "Meu custo para barba e cabelo e 1 moeda de cobre.");
+	var moedas := target(player);
+	if (moedas.objtype == 47715)
+		if (moedas.amount >= 1)
+			if (!SubtractAmount(moedas, 1))
+				PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+				return;
+			endif
+		else
+			PrintTextAbove(npc, "Voce nao tem moedas necessarias.");
+			return;
+		endif
+	else
+		return;
+	endif
+
+	var chardata := GetObjProperty(player, "chardata");
+
+	// Salvar estado original
+	var origHair := GetEquipmentByLayer(player, LAYER_HAIR);
+	var origHairType := 0;
+	var origHairColor := 0;
+	if (origHair)
+		origHairType := origHair.objtype;
+		origHairColor := origHair.color;
+	endif
+
+	var origBeard := GetEquipmentByLayer(player, LAYER_BEARD);
+	var origBeardType := 0;
+	var origBeardColor := 0;
+	if (origBeard)
+		origBeardType := origBeard.objtype;
+		origBeardColor := origBeard.color;
+	endif
+
+	var disfarce := struct;
+	disfarce.+barba := "";
+	disfarce.+cabelo := "";
+	disfarce.+corcabelo := origHairColor;
+	disfarce.+corbarba := origBeardColor;
+
+	// Escolher cabelo (aplica ao vivo via preview)
+	escolherCabelo(player, disfarce, "Qualquer", 1);
+
+	// Escolher cor do cabelo (aplica ao vivo via preview)
+	escolheCorCabelo(player, disfarce, origHairColor, "Qualquer", 1, 1);
+
+	// Escolher barba (aplica ao vivo via preview)
+	if (chardata.raca != "Elfo")
+		escolherBarba(player, disfarce, 1);
+	endif
+
+	// Confirmar ou reverter
+	var confirmar := YesNo(player, "Deseja manter o novo visual?");
+	if (!confirmar)
+		// Reverter ao estado original
+		DestroyItem(GetEquipmentByLayer(player, LAYER_HAIR));
+		DestroyItem(GetEquipmentByLayer(player, LAYER_BEARD));
+		if (origHairType)
+			var restoredHair := CreateItemAtLocation(player.x, player.y, player.z, origHairType, 1, player.realm);
+			restoredHair.color := origHairColor;
+			EquipItem(player, restoredHair);
+		endif
+		if (origBeardType)
+			var restoredBeard := CreateItemAtLocation(player.x, player.y, player.z, origBeardType, 1, player.realm);
+			restoredBeard.color := origBeardColor;
+			EquipItem(player, restoredBeard);
+		endif
+		SendSysMessageEx(player, "Visual revertido ao original.", SSM_INFO);
+	else
+		SendSysMessageEx(player, "Voce trocou seu cabelo e cor.", SSM_INFO);
+	endif
+
+	return 1;
+endprogram

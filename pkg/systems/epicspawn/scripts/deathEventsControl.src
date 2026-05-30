@@ -1,0 +1,288 @@
+use uo;
+use os;
+use basic;
+use util;
+
+include "include/say";
+
+include ":timedscripts:timedScripts";
+include ":merchants:include/item_template";
+
+program DeathEventsControl(params)
+	var npc := params[1];
+	if (!npc || npc.errortext)
+		print("Error: Invalid NPC");
+		return 0;
+	endif
+
+	// Add a flag to prevent multiple processing of the same death events
+	if (GetObjProperty(npc, "DeathEventsProcessed"))
+		print("Death events already processed");
+		SetObjProperty(npc, "allowdeath", 1);
+		return 0;
+	endif
+
+	// Check if NPC has death events
+	var death_events := GetObjProperty(npc, "DeathEvents");
+	if (!death_events || !death_events.size())
+		print("Error: No death events found");
+		EraseObjProperty(npc, "ProcessingDeathEvents");
+		SetObjProperty(npc, "allowdeath", 1);
+		return 0;
+	endif
+
+	var event_count := 0;
+	var success_count := 0;
+
+	// First check if there's a LastWords event and process it FIRST
+	var last_words_processed := 0;
+	foreach event in (death_events)
+		if (event.type == "Ultimas Palavras")
+			if (ProcessLastWordsEvent(npc, event))
+				success_count += 1;
+				last_words_processed := 1;
+
+			// Note that we DON'T return here so other death events will still process
+			// The speaklastwords script will handle the actual killing
+			endif
+			break; // Only process the first LastWords event found
+		endif
+	endforeach
+
+	// Then process all other events (except LastWords which was already processed)
+	event_count := 0;
+	foreach event in (death_events)
+		if (event.type != "Ultimas Palavras")
+			event_count += 1;
+			var result := 0;
+
+			case (event.type)
+				"Criar Npcs":     result := ProcessCreateNpcsEvent(npc, event); break;
+				"Criar Itens":    result := ProcessCreateItemsEvent(npc, event); break;
+				"Abrir Porta":    result := ProcessOpenDoorEventNonBlocking(npc, event); break;
+				"Abrir Passagem": result := ProcessOpenPassageEventNonBlocking(npc, event); break;
+				"Sem corpo":
+					SetObjProperty(npc, "NoCorpse", 1);
+					result := 1;
+					break;
+				"Efeito Grafico": result := ProcessGraphicEffectEvent(npc, event); break;
+				"Tocar Som":      result := ProcessSoundEvent(npc, event); break;
+			endcase
+
+			if (result)
+				success_count += 1;
+			endif
+
+			sleepms(100);
+		endif
+	endforeach
+
+	// Mark as processed for future reference
+	SetObjProperty(npc, "DeathEventsProcessed", 1);
+
+	// Allow death now that events are processed
+	SetObjProperty(npc, "allowdeath", 1);
+
+	// Clear the processing flag
+	EraseObjProperty(npc, "ProcessingDeathEvents");
+
+	if (!last_words_processed)
+		npc.kill();
+	endif
+
+	return 1;
+endprogram
+
+function ProcessCreateItemsEvent(npc, event)
+	if (!event.items || !event.items.size())
+		return 0;
+	endif
+
+	var success_count := 0;
+	var i := 1;
+
+	foreach iteminfo in (event.items)
+		var item := 0;
+		var item_realm := iteminfo.realm ? CStr(iteminfo.realm) : CStr(npc.realm);
+
+		if (iteminfo.template)
+			item := CreateItemAtLocationFromTemplate(CInt(iteminfo.x), CInt(iteminfo.y), CInt(iteminfo.z),
+										 item_realm, iteminfo.template);
+		elseif (iteminfo.item)
+			item := CreateItemAtLocation(CInt(iteminfo.x), CInt(iteminfo.y), CInt(iteminfo.z),
+								   CInt(iteminfo.item), 1, item_realm);
+		endif
+
+		if (item != error)
+			success_count += 1;
+		endif
+
+		i += 1;
+		sleepms(100);
+	endforeach
+
+	return success_count > 0;
+endfunction
+
+function ProcessOpenDoorEventNonBlocking(npc, event)
+	if (!event.items || !event.items.size())
+		return 0;
+	endif
+
+	var success_count := 0;
+
+	foreach serial in (event.items)
+		var item := SystemFindObjectBySerial(serial);
+		if (item)
+			item.locked := 0;
+			SetObjProperty(item, "TempUnlocked", 1);
+			start_script(":epicspawn:scripts/relockDoor", array{ item, 60 });
+			success_count += 1;
+		endif
+		sleepms(20);
+	endforeach
+
+	return success_count > 0;
+endfunction
+
+function ProcessOpenPassageEventNonBlocking(npc, event)
+	if (!event.items || !event.items.size())
+		return 0;
+	endif
+
+	var success_count := 0;
+
+	foreach serial in (event.items)
+		var item := SystemFindObjectBySerial(serial);
+		if (item)
+			item.movable := 1;
+
+			// Store the original location to restore it later
+			SetObjProperty(item, "OriginalZ", item.z);
+
+			// Start a separate script to animate the passage movement
+			// This will move the passage up 1 unit at a time and then back down after the delay
+			var process := start_script(":epicspawn:scripts/animatePassage", array{ item, 20, 60 });
+
+			if (!process.errortext)
+				success_count += 1;
+			endif
+		endif
+		sleepms(20);
+	endforeach
+
+	return success_count > 0;
+endfunction
+
+function ProcessCreateNpcsEvent(npc, event)
+	if (!event.amount || !event.npctemplate)
+		return 0;
+	endif
+
+	var amt := 0;
+	var fail_count := 0;
+	var max_attempts := CInt(event.amount) * 3;
+	var range := CInt(event.range);
+
+	var base_x, base_y, base_z, realm;
+	var using_targeted_location := 0;
+
+	if (event.x != 6 || event.y != 6)
+		if (event.x != npc.x || event.y != npc.y)
+			base_x := CInt(event.x);
+			base_y := CInt(event.y);
+			base_z := CInt(event.z);
+			realm := CStr(event.realm);
+			if (!realm || realm == "")
+				realm := npc.realm;
+			endif
+			using_targeted_location := 1;
+		endif
+	endif
+
+	if (!using_targeted_location)
+		base_x := npc.x;
+		base_y := npc.y;
+		base_z := npc.z;
+		realm := npc.realm;
+	endif
+
+	while (amt < CInt(event.amount) && fail_count < max_attempts)
+		var spawn_x := RandomIntMinMax(base_x - range, base_x + range);
+		var spawn_y := RandomIntMinMax(base_y - range, base_y + range);
+
+		var template := CStr(event.npctemplate);
+		var new_npc := error;
+
+		if (template[1] != ":")
+			var prefixes := array{ ":epicAI:", ":brainAI:", ":merchants:", "" };
+			foreach prefix in prefixes
+				new_npc := CreateNpcFromTemplate(prefix + template, spawn_x, spawn_y, base_z, 0, realm);
+				if (new_npc && !new_npc.errortext)
+					break;
+				endif
+				sleepms(5);
+			endforeach
+		else
+			new_npc := CreateNpcFromTemplate(template, spawn_x, spawn_y, base_z, 0, realm);
+		endif
+
+		if (new_npc && !new_npc.errortext)
+			amt := amt + 1;
+			var duration := event.duracao ? CInt(event.duracao) : 120;
+			TS_StartTimer(new_npc, "summon", duration);
+
+			if (event.summontext)
+				PrintTextAbove(new_npc, event.summontext);
+			endif
+			fail_count := 0;
+		else
+			fail_count := fail_count + 1;
+			sleepms(50);
+		endif
+
+		sleepms(10);
+	endwhile
+
+	return (amt > 0);
+endfunction
+
+function ProcessLastWordsEvent(npc, event)
+	if (!event.text || !event.text.size())
+		return 0;
+	endif
+
+	SetObjProperty(npc, "Ultimas Palavras", event.text);
+	var script := start_script(":death:hooks/speaklastwords", npc);
+
+	if (script.errortext)
+		return 0;
+	else
+		return 1;
+	endif
+endfunction
+
+function ProcessGraphicEffectEvent(npc, event)
+	if (!event.fxid)
+		return 0;
+	endif
+
+	var fx_id := CInt(event.fxid);
+	var speed := event.speed ? CInt(event.speed) : 7;
+	var loops := event.loops ? CInt(event.loops) : 1;
+
+	// Since this is a death event, we'll only use stationary effects at the NPC's location
+	// Moving effects could be problematic since the NPC might be dead
+	PlayObjectCenteredEffect(npc, fx_id, speed, loops);
+
+	return 1;
+endfunction
+
+function ProcessSoundEvent(npc, event)
+	if (!event.soundid)
+		return 0;
+	endif
+
+	PlaySoundEffect(npc, CInt(event.soundid));
+	return 1;
+endfunction

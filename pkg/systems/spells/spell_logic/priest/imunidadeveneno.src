@@ -1,0 +1,47 @@
+use uo;
+use os;
+
+include ":attributes:attributes";
+include ":spells:tnmagery";
+include "include/client";
+include "include/sounds";
+include "include/say";
+include ":spells:Controller/SpellController";
+
+program SpellScript(params)
+	var who := params[1];
+	var targ := params[2];
+	var spell := params[3];
+	params := 0;
+
+	if (!targ)
+		return;
+	endif
+
+	if (!targ.isa(POLCLASS_MOBILE))
+		SendSysMessageEx(who, "Voce so pode usar esta magia em coisas vivas.", SSM_FAIL);
+		return 0;
+	endif
+
+	SC_RemoveEffect(targ, CInt(spell.id));
+
+	var duration := CInt(AP_GetSkill(who, THEOLOGY));
+	if (duration < 30)
+		duration := 30;
+	endif
+
+	var opts := struct{};
+	opts.+properties := dictionary{ "protecaoveneno" -> 1 };
+	opts.+buff_category := "poison_ward";
+	opts.+displayname := "Imunidade a Veneno";
+	opts.+desc := "Proximo veneno sera neutralizado";
+	opts.+maintainable := 1;
+	opts.+on_apply_script := ":spells:shared/playApplyFX";
+	opts.+on_apply_params := struct{ sound := SFX_SPELL_HEAL };
+
+	SC_ApplyEffect(who, targ, opts, duration, CInt(spell.id));
+
+	SendSysMessageEx(who, "O alvo foi encantado com sucesso.", SSM_INFO);
+	SendSysMessageEx(targ, "Voce sente uma protecao contra veneno te envolvendo.", SSM_INFO);
+	return 1;
+endprogram
