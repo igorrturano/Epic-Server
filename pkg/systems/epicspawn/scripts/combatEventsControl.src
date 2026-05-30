@@ -137,15 +137,6 @@ function ProcessCombatEvents(npc, combat_start, byref fired_this_combat)
 			continue;
 		endif
 
-		// Check if the NPC is bloodied (below 50% health) if required
-		if (event.onlybloodied)
-			var max_hits := AP_GetVitalMaximumValue(npc, HITS);
-			var curr_hits := AP_GetVital(npc, HITS);
-			if (curr_hits > (max_hits * 0.5))
-				continue; // Not bloodied, skip
-			endif
-		endif
-
 		// Check if opponent is within required distance
 		if (event.dist > 0)
 			var opponent := npc.opponent;

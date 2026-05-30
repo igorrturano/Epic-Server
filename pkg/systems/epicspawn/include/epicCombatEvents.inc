@@ -32,7 +32,6 @@ function HandleAddCombatEvent(who, input, byref form_data)
     var combat_event := struct{
         name := "Evento de Combate " + (form_data.combatevents.size() + 1),
         cd := 30,
-        onlybloodied := 0,
         dist := 0,
         actions := array{},
         steps := array{}, // Mantém isto para compatibilidade com versões anteriores
@@ -82,9 +81,6 @@ function ShowCombatEventsList(who, byref combat_event)
         
         GFTextLine(gump, 30, 90, 1153, "Cooldown (seconds):");
         GFTextEntry(gump, 150, 90, 100, 20, 1153, combat_event.cd, 2);
-        
-        GFCheckBox(gump, 30, 120, 2510, 2511, combat_event.onlybloodied, 3);
-        GFTextLine(gump, 60, 120, 1153, "Only when bloodied");
         
         GFTextLine(gump, 300, 120, 1153, "Required Distance:");
         GFTextEntry(gump, 420, 120, 100, 20, 1153, combat_event.dist, 4);
@@ -166,12 +162,10 @@ function ShowCombatEventsList(who, byref combat_event)
             endif
             
             var cooldown := CInt(GFExtractData(input, 2));
-            if (cooldown > 0)
-                combat_event.cd := cooldown;
+            if (cooldown >= 0)
+                combat_event.cd := cooldown; // 0 = no cooldown (fires every cycle)
             endif
-            
-            combat_event.onlybloodied := input[3] ? 1 : 0;
-            
+
             var dist := CInt(GFExtractData(input, 4));
             if (dist >= 0)
                 combat_event.dist := dist;
