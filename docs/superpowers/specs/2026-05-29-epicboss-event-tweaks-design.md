@@ -28,34 +28,59 @@ Backward compat: bosses already spawned carry `onlybloodied` in their stored
 ## Feature 2 — Edit a combat event from Page 3
 
 Today each combat-event row on Page 3 has only a delete button (id `44+i`,
-range 45–54). Add an **edit** button per row.
+range 45–54). Add an **edit** button per row, following the codebase's
+established edit-list idiom rather than inventing a new one.
 
-- Button range: **160–169** (verified unused on Page 3). Edit button for event
-  `i` = `159 + i`.
-- New handler `HandleEditCombatEvent(who, byref form_data, idx)` in
-  epicCombatEvents.inc, placed beside `HandleAddCombatEvent`. It:
-  1. Guards `idx` against `form_data.combatevents.size()`.
-  2. Calls the existing in-place editor `ShowCombatEventsList(who, byref event)`
-     on the existing event struct (it edits by reference, returns 1 saved / 0
-     cancelled).
-  3. On save, re-runs the same `actions → steps` mirror that
-     `HandleAddCombatEvent` does ([epicCombatEvents.inc:54-58](../../../pkg/systems/epicspawn/include/epicCombatEvents.inc#L54-L58)),
-     so an edited event persists its steps the same way a new one does.
-  4. On cancel, leaves the event unchanged.
+### House pattern (what we're matching)
+The combat **action** editor and the death-event **text-line** editor both use
+the same scheme: per row, an **edit button at `200+i`** and a **delete button at
+`300+i`**, handled **inline** in the list function, with the result written back
+**by index**:
+- [epicCombatEvents.inc:116-117](../../../pkg/systems/epicspawn/include/epicCombatEvents.inc#L116-L117) (render) and [205-221](../../../pkg/systems/epicspawn/include/epicCombatEvents.inc#L205-L221) (handlers — edit `200+i`, delete `300+i`, edit reassigns `actions[idx] := ConfigureCombatAction(who, actions[idx])`).
+- [epicDeathEvents.inc:255-256](../../../pkg/systems/epicspawn/include/epicDeathEvents.inc#L255-L256) (same `200+i` / `300+i` pair).
+- The editor fn distinguishes add vs edit by an optional param
+  (`ConfigureCombatAction(who, action := 0)`).
 
-  Keeping the steps-mirror logic shared with Add avoids the drift class of bug
-  fixed earlier this session (the normalizer refactor).
+### Applying it to Page-3 combat events
+Convert the combat-event row from delete-only to the **edit/delete pair**,
+adopting the `200+i` / `300+i` ranges (both verified unused in Page 3's `input[0]`
+scope — Page 3 only uses 10,11,20,30,40,45–64,110–159).
 
-- Page-3 rendering ([epicboss.src:1004-1014](../../../pkg/systems/epicspawn/commands/gm/epicboss.src#L1004-L1014)):
-  draw an edit button at `159 + i` next to each row's delete button. Keep the
-  row text identical.
-- Page-3 input handling: add a branch
-  `elseif (input[0] >= 160 && input[0] < 160 + 10)` →
-  `HandleEditCombatEvent(who, form_data, input[0] - 159)` →
-  `return ShowPage3(...)` to redraw. Place it adjacent to the existing
-  add/delete branches ([epicboss.src:1130-1143](../../../pkg/systems/epicspawn/commands/gm/epicboss.src#L1130-L1143)).
+- **Render** ([epicboss.src:1004-1014](../../../pkg/systems/epicspawn/commands/gm/epicboss.src#L1004-L1014)):
+  per event `i`, draw an edit button `200+i` and a delete button `300+i`
+  (replacing the current single `44+i` delete). Row text unchanged.
+- **Handlers** ([epicboss.src:1133-1143](../../../pkg/systems/epicspawn/commands/gm/epicboss.src#L1133-L1143)):
+  replace the `input[0] >= 45 && < 55` delete block with two blocks:
+  - `elseif (input[0] >= 200 && input[0] < 300)` — **edit**, `idx = input[0]-200`:
+    ```escript
+    var ev := form_data.combatevents[idx];
+    if (ShowCombatEventsList(who, ev))            // reuse the existing editor
+        ev.steps.length := 0;                     // same actions→steps mirror
+        foreach action in (ev.actions)            // as HandleAddCombatEvent
+            ev.steps.append(action);
+        endforeach
+        form_data.combatevents[idx] := ev;        // write back by index (house idiom)
+    endif
+    return ShowPage3(...);
+    ```
+  - `elseif (input[0] >= 300 && input[0] < 400)` — **delete**, `idx = input[0]-300`
+    (move the current Erase/empty-reset logic here).
 
-No data-shape change; `NormalizeCombatEvent` already persists the edited event.
+Notes:
+- Reusing `ShowCombatEventsList(who, byref event)` is exactly how the inner
+  action list is edited (it already renders/edits an event's actions). No new
+  `Handle*` wrapper — that would be a shape not used elsewhere for list edits.
+- The `actions → steps` mirror is the same block `HandleAddCombatEvent` runs on
+  add ([epicCombatEvents.inc:54-58](../../../pkg/systems/epicspawn/include/epicCombatEvents.inc#L54-L58));
+  re-running it on edit keeps steps authoritative and avoids the drift class of
+  bug fixed earlier this session.
+- Stored form-data events carry both `actions` and `steps` (built by
+  `HandleAddCombatEvent`), so `ev.actions` is present when re-editing.
+- No data-shape change downstream; `NormalizeCombatEvent` persists the edited
+  event.
+
+Out of scope: death events on Page 3 remain delete-only (id 55–64) — not part of
+this request. Their inner text-line editor already has edit (`200+i`).
 
 ---
 
@@ -145,5 +170,6 @@ Manual test matrix:
 After implementation, update [docs/epicboss-gm-tool.md](../../epicboss-gm-tool.md):
 - §9.1 and gotcha #12 ("combat events stored twice / actions+steps") are already
   stale after this session's `NormalizeCombatEvent` refactor (single `steps`).
-- Add the Page-3 edit button (range 160–169) to the §7 button map.
+- Update the §7 button map: combat events on Page 3 now use the edit/delete
+  pair `200+i` / `300+i` (was delete-only `45–54`).
 - Note `onlybloodied` removal.
