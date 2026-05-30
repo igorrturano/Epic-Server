@@ -246,31 +246,14 @@ function CreateEpicBoss(boss, x, y, z, realm)
 
     // Set combat events
     if (boss.combatevents && boss.combatevents.size() > 0)
-        // Create a clean array with consistent structure
+        // Normalize every event through the single source of truth so the
+        // runtime (combatEventsControl.src) always sees the same shape,
+        // regardless of which creation path built this boss.
         var cleaned_events := array{};
-        
         foreach event in (boss.combatevents)
-            var clean_event := struct{};
-            clean_event.+name := event.name;
-            clean_event.+cd := event.cd;
-            clean_event.+onlybloodied := event.onlybloodied;
-            clean_event.+dist := event.dist;
-            clean_event.+steps := array{};
-            
-            // Use actions if available, otherwise fall back to steps
-            if (event.actions && event.actions.size() > 0)
-                foreach action in (event.actions)
-                    clean_event.steps.append(action);
-                endforeach
-            elseif (event.steps && event.steps.size() > 0)
-                foreach action in (event.steps)
-                    clean_event.steps.append(action);
-                endforeach
-            endif
-            
-            cleaned_events.append(clean_event);
+            cleaned_events.append(NormalizeCombatEvent(event));
         endforeach
-        
+
         SetObjProperty(npc, "CombatEvents", cleaned_events);
         var res := start_script(":epicspawn:scripts/combatEventsControl", array{npc});
         if(res == error)
@@ -368,6 +351,36 @@ function CreateEpicBoss(boss, x, y, z, realm)
 endfunction
 
 // Creates an NPC with the appropriate package prefix
+/*
+ * NormalizeCombatEvent(event)
+ * Single source of truth for the persisted combat-event shape. Every boss
+ * creation path (GM tool, spawner respawn, champ altar, lever) funnels through
+ * CreateEpicBoss, so normalizing here guarantees combatEventsControl.src always
+ * sees the same fields. The canonical action list lives in `steps`; a legacy
+ * `actions` array on the input is accepted and folded in.
+ */
+function NormalizeCombatEvent(event)
+    var clean_event := struct{};
+    clean_event.+name := event.name;
+    clean_event.+cd := event.cd;
+    clean_event.+dist := event.dist;
+    clean_event.+once := event.once;
+    clean_event.+hp_percent := event.hp_percent;
+    clean_event.+steps := array{};
+
+    var source_actions := array{};
+    if (event.actions && event.actions.size() > 0)
+        source_actions := event.actions;
+    elseif (event.steps && event.steps.size() > 0)
+        source_actions := event.steps;
+    endif
+    foreach action in (source_actions)
+        clean_event.steps.append(action);
+    endforeach
+
+    return clean_event;
+endfunction
+
 function CreateNpcWithPrefix(template, x, y, z, realm)
     var npc;
     
