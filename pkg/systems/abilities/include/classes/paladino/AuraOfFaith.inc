@@ -87,14 +87,12 @@ class AuraOfFaith(CombatAbility)
                 foreach member in (festa.members)
                     if (member.serial != paladin.serial)
                         if (Distance(paladin, member) < range)
-                            if (isBloodied(member))
-                                var memberWrapper := MobileWrapper(member);
-                                var heal_amount := CInt(memberWrapper.GetCurrentHP() - memberWrapper.GetMaxHP() + theology / 10);
-                                if (has_banner && memberWrapper.GetReligion() == paladin_religion)
-                                    heal_amount := CInt(heal_amount * 1.5);
-                                endif
-                                applyEpicHealing(member, heal_amount);
+                            var memberWrapper := MobileWrapper(member);
+                            var heal_amount := CInt(memberWrapper.GetCurrentHP() - memberWrapper.GetMaxHP() + theology / 10);
+                            if (has_banner && memberWrapper.GetReligion() == paladin_religion)
+                                heal_amount := CInt(heal_amount * 1.5);
                             endif
+                            applyEpicHealing(member, heal_amount);
                         endif
                     endif
                 endforeach
