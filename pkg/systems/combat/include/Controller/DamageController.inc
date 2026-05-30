@@ -182,7 +182,7 @@ function DealDamage(defender, amount, dmgType, source := 0, spellId := 0)
 			  .SetSkipCrit(true)
 			  .SetSkipBodyRegion(true)
 			  .SetAppliesArmorWear(false)
-			  .SetUsesChannelApply(true);
+			  .SetAppliesByChannel(true);
 
 	if (CInt(spellId) > 0)
 		attackInfo.SetSpellOrigin(spellId, dmgType);
@@ -237,7 +237,7 @@ function ApplyFieldDamage(defender, amount, dmgType, source := 0)
 			  .SetSkipCrit(true)
 			  .SetSkipBodyRegion(true)
 			  .SetAppliesArmorWear(false)
-			  .SetUsesChannelApply(true);
+			  .SetAppliesByChannel(true);
 
 	attackInfo.GetDamage().IncreaseRawDamageByType(dmgType, CInt(amount));
 	CalculateDefenderResist(attackInfo);
@@ -1260,7 +1260,8 @@ function CalculateCriticalChance(byRef attackInfo)
 
 	if (GetCooldown(attackInfo.GetDefender().GetObjRef(), "VontadeIndomavel") ||
 		GetCooldown(attackInfo.GetDefender().GetObjRef(), "vitalidadeinabalavel") > 0 ||
-	 	GetCooldown(attackInfo.GetDefender().GetObjRef(), "balance_restored"))
+	 	GetCooldown(attackInfo.GetDefender().GetObjRef(), "balance_restored") ||
+	 	GetCooldown(attackInfo.GetDefender().GetObjRef(), "sobredose"))
 		Message("Você não leva o crítico").SendSys(attackInfo.GetDefender().GetObjRef());
 		return 0;
 	endif
@@ -1462,10 +1463,8 @@ function ApplyCombatDamage(byRef attackInfo)
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message("================="));
 	DebugMsg(attackInfo.GetAttacker().GetObjRef(), DEBUG_DAMAGE, Message($"Dano aplicado em: {attackInfo.GetDefender().GetName()}"));
 
-	// Non-swing damage (spells, DealDamage env/abilities/bleed/poison) applies
-	// whatever physical channel was stamped — no posture zeroing or min-1
-	// phantom damage. Real swings keep the legacy posture-driven application.
-	if (attackInfo.UsesChannelApply())
+	// Spells/DealDamage apply each stamped channel as-is; swings collapse physical to posture.
+	if (attackInfo.AppliesByChannel())
 		_ApplyPhysicalDamageByChannel(attackInfo);
 	else
 		_ApplyPhysicalDamageByPosture(attackInfo);
