@@ -1,0 +1,172 @@
+// Comando temporário sub-fase 1.C — remover quando sub-fase 1.F encerrar.
+
+use uo;
+use basic;
+
+include ":ultimalive:include/ultimalive";
+
+program ul_test_mutation(who, text)
+    var args := SplitWords(text);
+    if (Len(args) < 1)
+        SendSysMessage(who, "Uso: .ul_test_mutation <get|set|delete|revert|setland|getland|revertland> [args]");
+        return 0;
+    endif
+
+    var subcmd := Lower(args[1]);
+
+    if (subcmd == "get")
+        return _Cmd_Get(who);
+    elseif (subcmd == "set")
+        return _Cmd_Set(who, args);
+    elseif (subcmd == "delete")
+        return _Cmd_Delete(who);
+    elseif (subcmd == "revert")
+        return _Cmd_Revert(who);
+    elseif (subcmd == "setland")
+        return _Cmd_SetLand(who, args);
+    elseif (subcmd == "getland")
+        return _Cmd_GetLand(who);
+    elseif (subcmd == "revertland")
+        return _Cmd_RevertLand(who);
+    else
+        SendSysMessage(who, "Subcomando invalido. Use: get, set, delete, revert, setland, getland, revertland");
+        return 0;
+    endif
+endprogram
+
+function _Cmd_Get(who)
+    var natives := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
+    var found := 0;
+    foreach st in natives
+        if (CInt(st.z) == CInt(who.z))
+            var m := UL_GetMutation(who.realm, who.x, who.y, who.z, CInt(st.objtype));
+            if (m != error)
+                SendSysMessage(who, "Mutation em (" + who.x + ", " + who.y + ", " + who.z + ") graphic=" + Hex(CInt(st.objtype)) + ":");
+                SendSysMessage(who, "  Type: " + m.MutationType);
+                SendSysMessage(who, "  Graphic: " + m.Graphic + " (" + Hex(m.Graphic) + ")");
+                SendSysMessage(who, "  Hue: " + m.Hue);
+                SendSysMessage(who, "  Created: " + m.CreatedAt + " (epoch)");
+                SendSysMessage(who, "  Source: " + m.Source);
+                found := 1;
+            endif
+        endif
+    endforeach
+    if (!found)
+        SendSysMessage(who, "Sem mutacao em (" + who.x + ", " + who.y + ", " + who.z + ").");
+    endif
+    return 1;
+endfunction
+
+function _Cmd_Set(who, args)
+    if (Len(args) < 2)
+        SendSysMessage(who, "Uso: .ul_test_mutation set <graphic> [hue]");
+        return 0;
+    endif
+    // CInt aceita "0x1234" — confirmado em bounty/CONTEXT_LOG e nature.inc
+    var graphic := CInt(args[2]);
+    var hue := 0;
+    if (Len(args) >= 3)
+        hue := CInt(args[3]);
+    endif
+    var result := UL_SetStatic(who.realm, who.x, who.y, who.z, graphic, hue, "admin");
+    if (result == error)
+        SendSysMessage(who, "Erro ao setar static: " + result.errortext);
+        return 0;
+    endif
+    SendSysMessage(who, "Static setado: graphic=" + graphic + " (" + Hex(graphic) + ") hue=" + hue + " em (" + who.x + ", " + who.y + ", " + who.z + ").");
+    return 1;
+endfunction
+
+function _Cmd_Delete(who)
+    var natives := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
+    var g := 0;
+    foreach st in natives
+        if (CInt(st.z) == CInt(who.z))
+            g := CInt(st.objtype);
+            break;
+        endif
+    endforeach
+    if (!g)
+        SendSysMessage(who, "Nenhum static nativo em (" + who.x + ", " + who.y + ", " + who.z + ").");
+        return 0;
+    endif
+    var result := UL_DeleteStatic(who.realm, who.x, who.y, who.z, g, "admin");
+    if (result == error)
+        SendSysMessage(who, "Erro ao deletar static: " + result.errortext);
+        return 0;
+    endif
+    SendSysMessage(who, "static_delete registrado em (" + who.x + ", " + who.y + ", " + who.z + ") graphic=" + Hex(g) + ".");
+    return 1;
+endfunction
+
+function _Cmd_Revert(who)
+    var natives := ListStaticsAtLocation(who.x, who.y, LIST_IGNORE_Z, 0, who.realm);
+    var g := 0;
+    foreach st in natives
+        if (CInt(st.z) == CInt(who.z))
+            g := CInt(st.objtype);
+            break;
+        endif
+    endforeach
+    if (!g)
+        SendSysMessage(who, "Nenhum static nativo em (" + who.x + ", " + who.y + ", " + who.z + ").");
+        return 0;
+    endif
+    var result := UL_RevertMutation(who.realm, who.x, who.y, who.z, g);
+    if (result == error)
+        if (result.errortext == "no mutation to revert")
+            SendSysMessage(who, "Nada pra reverter em (" + who.x + ", " + who.y + ", " + who.z + ") graphic=" + Hex(g) + ".");
+        else
+            SendSysMessage(who, "Erro ao reverter: " + result.errortext);
+        endif
+        return 0;
+    endif
+    SendSysMessage(who, "Mutacao revertida em (" + who.x + ", " + who.y + ", " + who.z + ") graphic=" + Hex(g) + ".");
+    return 1;
+endfunction
+
+function _Cmd_SetLand(who, args)
+    if (Len(args) < 2)
+        SendSysMessage(who, "Uso: .ul_test_mutation setland <graphic>");
+        return 0;
+    endif
+    // CInt aceita "0x1234" — confirmado em bounty/CONTEXT_LOG e nature.inc
+    var graphic := CInt(args[2]);
+    var result := UL_SetLandTile(who.realm, who.x, who.y, graphic, "admin");
+    if (result == error)
+        SendSysMessage(who, "Erro ao setar land tile: " + result.errortext);
+        return 0;
+    endif
+    SendSysMessage(who, "Land tile setado: graphic=" + graphic + " (" + Hex(graphic) + ") em (" + who.x + ", " + who.y + ", z=0).");
+    return 1;
+endfunction
+
+function _Cmd_GetLand(who)
+    // z=0, graphic=0 é a chave de land mutations
+    var m := UL_GetMutation(who.realm, who.x, who.y, 0, 0);
+    if (m == error)
+        SendSysMessage(who, "Sem mutacao de land em (" + who.x + ", " + who.y + ", 0).");
+        return 0;
+    endif
+    SendSysMessage(who, "Land mutation em (" + who.x + ", " + who.y + ", 0) realm=" + who.realm + ":");
+    SendSysMessage(who, "  Type: " + m.MutationType);
+    SendSysMessage(who, "  Graphic: " + m.Graphic + " (" + Hex(m.Graphic) + ")");
+    SendSysMessage(who, "  Created: " + m.CreatedAt + " (epoch)");
+    SendSysMessage(who, "  Source: " + m.Source);
+    return 1;
+endfunction
+
+function _Cmd_RevertLand(who)
+    // z=0, graphic=0 é a chave de land mutations
+    var result := UL_RevertMutation(who.realm, who.x, who.y, 0, 0);
+    if (result == error)
+        if (result.errortext == "no mutation to revert")
+            SendSysMessage(who, "Nada pra reverter em (" + who.x + ", " + who.y + ", 0).");
+        else
+            SendSysMessage(who, "Erro ao reverter land: " + result.errortext);
+        endif
+        return 0;
+    endif
+    SendSysMessage(who, "Land mutation revertida em (" + who.x + ", " + who.y + ", 0).");
+    return 1;
+endfunction
