@@ -349,6 +349,22 @@ function ExplosionEffect(who, potion, dmg)
 		Sleepms(2);
 	endforeach
 
+	// Campo Minado (L5) chain reaction: detonate the owner's other mines caught
+	// in this blast. Chain range = blast radius, so bigger bombs chain farther.
+	// Each triggered mine runs its own exploder and scans again, propagating the
+	// cascade outward; the "running" flag exploder sets on entry guards re-fires.
+	if (owner && owner.isA(POLCLASS_MOBILE))
+		var nearbyItems := ListItemsNearLocation(potion.x, potion.y, potion.z, dist, potion.realm);
+		foreach m in (nearbyItems)
+			if (m != potion && CInt(GetObjProperty(m, "pottrap")) == 1
+				&& CInt(GetObjProperty(m, "CreatedBy")) == owner.serial
+				&& !GetObjProperty(m, "running"))
+				SetObjProperty(m, "running", 1);
+				start_script(":alchemy:potions/exploder", { m, m });
+			endif
+		endforeach
+	endif
+
 // efeitocascata(potion, who);
 // destroycraft(potion, who);
 
