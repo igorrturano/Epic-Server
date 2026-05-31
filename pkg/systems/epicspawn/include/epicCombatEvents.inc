@@ -386,13 +386,12 @@ function ConfigureActionProperties(who, action)
             
             GFTextLine(gump, 30, y_pos, 1153, "Damage Type:");
             
-            // Initialize damage types array if it doesn't exist
+            // Initialize damage types array if it doesn't exist. Do NOT pre-select
+            // a type here — pre-checking "Physical" makes the user save both
+            // Physical + their pick (double damage). The save-time fallback below
+            // already defaults to Physical only when nothing is checked.
             if (!action.dmgtypes)
-                action.+dmgtypes := array{}; 
-                // Default to Physical if nothing selected
-                if (!action.dmgtypes.size())
-                    action.dmgtypes.append("Physical");
-                endif
+                action.+dmgtypes := array{};
             endif
             
             // Convert legacy dmgtype string to array if needed
