@@ -240,6 +240,28 @@ function ExplosionEffect(who, potion, dmg)
 		endcase
 	endif
 	diff := CInt(diff * dmg);
+
+	// --- Zona de Pressao (L3): scale radius/damage or slow victims if the blast
+	//     center sits inside the owner's active zone. Owner is the thrower for
+	//     bombs, or the mine's CreatedBy for mines. ---
+	var zoneSlowSecs := 0;
+	var owner := who;
+	if (!who.isA(POLCLASS_MOBILE))
+		var createdBy := GetObjProperty(who, "CreatedBy");
+		owner := createdBy ? SystemFindObjectBySerial(createdBy) : 0;
+	endif
+	if (owner && owner.isA(POLCLASS_MOBILE))
+		var zone := GetObjProperty(owner, "PressureZone");
+		if (zone && zone.realm == potion.realm && polcore().systime < zone.expires
+			&& CoordinateDistance(potion.x, potion.y, zone.x, zone.y) <= 3)
+			case (zone.type)
+				ZONA_TIPO_PRESSAO:  dist := CInt(dist * 1.5);
+				ZONA_TIPO_PRECISAO: dmg  := CInt(dmg * 1.5);
+				ZONA_TIPO_LENTIDAO: zoneSlowSecs := CInt(MobileWrapper(owner).GetSkill(SCIENCE) / 10);
+			endcase
+		endif
+	endif
+
 	PlayStationaryEffectEx(potion.x, potion.y, potion.z, potion.realm, 0x36b0, 7, 10, color);
 	PlaySoundEffect(potion, 0x208);
 	potion.graphic := 1;
@@ -249,6 +271,9 @@ function ExplosionEffect(who, potion, dmg)
 			if (critter.hidden)
 				critter.hidden := 0;
 				SendSysMessage(critter, "Voce foi revelado na explosao!");
+			endif
+			if (zoneSlowSecs > 0 && critter != owner)
+				TS_StartTimer(critter, "lentidao", zoneSlowSecs);
 			endif
 			if (CheckResist(critter, REFLEXES, RESIST_EASY, diff))
 				if (MobileWrapper(critter).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))

@@ -37,6 +37,11 @@ CONST REFORCO_COMUM := 51;
 CONST REFORCO_CARGA_DUPLA := 52;
 CONST REFORCO_POTENCIA_ELEM := 53;
 
+// Zona de Pressao (L3) — tipo pre-comprometido no momento da ativacao
+CONST ZONA_TIPO_PRESSAO  := 61;  // +50% raio de explosao
+CONST ZONA_TIPO_LENTIDAO := 62;  // vitimas slowed por Science/10s
+CONST ZONA_TIPO_PRECISAO := 63;  // +50% dano
+
 // Facade de mensagem sobre MobileWrapper.HasFreeHand(). A regra real
 // (ocupacao de layer + Two_Handed/Dual_Wield) vive no wrapper; aqui so
 // emitimos a mensagem de pocao. Toda pocao consumida passa por aqui.
