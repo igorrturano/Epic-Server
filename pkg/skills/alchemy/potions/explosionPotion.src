@@ -10,6 +10,7 @@ include ":combat:Model/Damage";
 include ":attributes:attributes";
 include ":mounts:mounts";
 include ":alchemy:alchemy";
+include ":alchemy:mines";
 
 program use_explosion(who, potion)
 	EraseObjProperty(who, "IsMeditating");
@@ -69,6 +70,14 @@ program use_explosion(who, potion)
 	endif
 	var cast_on := 0;
 	if(mods.gatilho == GATILHO_MINA)
+		var mineCap := CInt(AP_GetSkill(who, SCIENCE) / 25);
+		if (mineCap < 1)
+			mineCap := 1;
+		endif
+		if (CountOwnedMines(who.serial) >= mineCap)
+			SendSysMessage(who, "Voce ja tem o maximo de minas ativas.");
+			return;
+		endif
 		detach();
 		PrintTextAbove(who, "*Plantando mina*");
 		Sleep(2);
@@ -138,6 +147,7 @@ function Minaterrestre(who, potion)
 	SetObjProperty(potion, "pottrap", 1);
 	SetObjProperty(potion, "ExplosivoConfig", mods);
 	SetObjProperty(potion, "myhabs", habs);
+	SetObjProperty(potion, "CreatedBy", who.serial);
 
 	potion.invisible := 1;
 	potion.movable := 0;
