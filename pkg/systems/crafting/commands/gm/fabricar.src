@@ -18,6 +18,8 @@ program fabricarItem(quem, texto)
 				FabricaItensComplexos(quem, "Alchemy", true);
 			elseif(UPPER(entrada[2]) == "FL")
 				FabricaItensComplexos(quem, "BowcraftFletching", true);
+			elseif(UPPER(entrada[2]) == "DY")
+				FabricaItensComplexos(quem, "Dyeing", true);
 			else
 				SendSysMessageEX(quem, "parametros possiveis para complexos:", SSM_INFO);
 				SendSysMessageEX(quem, "bs para Blacksmithy", SSM_INFO);
@@ -26,6 +28,7 @@ program fabricarItem(quem, texto)
 				SendSysMessageEX(quem, "tk para tinkering", SSM_INFO);
 				SendSysMessageEX(quem, "al para alchemy", SSM_INFO);
 				SendSysMessageEX(quem, "fl para fletching", SSM_INFO);
+				SendSysMessageEX(quem, "dy para dyeing", SSM_INFO);
 			endif
 		else
 			SendSysMessageEX(quem, "parametros possiveis [complexos <opcoes>]", SSM_INFO);
