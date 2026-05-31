@@ -8,7 +8,7 @@ include ":alchemy:alchemy";
 include ":gumps:include/epicGumps";
 
 /**
- * Experienced Alchemist (Alquimista Experiente) - ABILITY_ID::ALQUIMISTA_EXPERIENTE (2500)
+ * Experienced Alchemist (Alquimista Experiente) - ABILITY_ID::ENGENHARIA_DE_GATILHOS (2500)
  *
  * Active (OnUse):
  *   - Player: opens explosive configuration gump (menuExplosivos2).
@@ -20,7 +20,7 @@ include ":gumps:include/epicGumps";
 class ExperiencedAlchemist(CombatAbility)
 
 	function ExperiencedAlchemist(this)
-		Super(ABILITY_ID::ALQUIMISTA_EXPERIENTE);
+		Super(ABILITY_ID::ENGENHARIA_DE_GATILHOS);
 		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	endfunction
 
@@ -35,7 +35,7 @@ class ExperiencedAlchemist(CombatAbility)
 		DebugMsg(
 			who,
 			DEBUG_HAB,
-			Message("[ALQUIMISTA_EXPERIENTE] modificacoes ativas", Color(SYSTEM_COLOR::SUCCESS))
+			Message("[ENGENHARIA_DE_GATILHOS] modificacoes ativas", Color(SYSTEM_COLOR::SUCCESS))
 		);
 
 		return true;
@@ -171,10 +171,10 @@ function UpdateMenuState(input, who)
     last_clicked_button := input;
     case (input)
         BOTAO_GATILHO:         button_states := array{1,0,0,0,0}; return MENU_GATILHO;
-        BOTAO_ELEMENTO:        button_states := array{0,1,0,0,0}; if(MobileWrapper(who).HasAbility(ABILITY_ID::INFUSAO_QUIMICA))return MENU_ELEMENTO; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
-        BOTAO_INVOLUCRO:     button_states := array{0,0,1,0,0}; if(MobileWrapper(who).HasAbility(ABILITY_ID::BOMBARDEIRO_EFICIENTE)) return MENU_INVOLUCRO; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
-        BOTAO_CARGA:    button_states := array{0,0,0,1,0}; if(MobileWrapper(who).HasAbility(ABILITY_ID::ESSENCIA_EXPLOSIVA)) return MENU_CARGA; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
-        BOTAO_REFORCO: button_states := array{0,0,0,0,1}; if(MobileWrapper(who).HasAbility(ABILITY_ID::INFUSAO_APRIMORADA)) return MENU_REFORCO; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
+        BOTAO_ELEMENTO:        button_states := array{0,1,0,0,0}; if(MobileWrapper(who).HasAbility(ABILITY_ID::ZONA_DE_PRESSAO))return MENU_ELEMENTO; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
+        BOTAO_INVOLUCRO:     button_states := array{0,0,1,0,0}; if(MobileWrapper(who).HasAbility(ABILITY_ID::CAMPO_MINADO)) return MENU_INVOLUCRO; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
+        BOTAO_CARGA:    button_states := array{0,0,0,1,0}; if(MobileWrapper(who).HasAbility(ABILITY_ID::TORRETA_GRANADEIRA)) return MENU_CARGA; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
+        BOTAO_REFORCO: button_states := array{0,0,0,0,1}; if(MobileWrapper(who).HasAbility(ABILITY_ID::PROTOCOLO_MESTRE)) return MENU_REFORCO; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
     endcase
     button_states := array{1,0,0,0,0};
     last_clicked_button := BOTAO_GATILHO;

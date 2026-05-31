@@ -40,7 +40,7 @@ program use_explosion(who, potion)
 		potion := pot;
 	endif
 
-	if(mods.gatilho == GATILHO_PAVIO || mods == ERROR) 
+	if(mods.gatilho == GATILHO_PAVIO || mods.gatilho == GATILHO_PAVIO_CURTO || mods.gatilho == GATILHO_PAVIO_NORMAL || mods.gatilho == GATILHO_PAVIO_LONGO || mods == ERROR)
 		if (!Cint(GetObjProperty(potion, "#bomb")))
 			var parms := {};
 			parms[1] := potion;

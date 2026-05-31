@@ -8,14 +8,14 @@ include ":message:model/Message";
 include ":fls_core:packets";
 
 /**
- * Chemical Infusion (Infusão Química) - ABILITY_ID::INFUSAO_QUIMICA (2501)
+ * Chemical Infusion (Infusão Química) - ABILITY_ID::ZONA_DE_PRESSAO (2501)
  *
  * Passive gate: unlocks the "Elemento" tab in menuExplosivos2 (ExperiencedAlchemist).
  */
 class ChemicalInfusion(CombatAbility)
 
 	function ChemicalInfusion(this)
-		Super(ABILITY_ID::INFUSAO_QUIMICA);
+		Super(ABILITY_ID::ZONA_DE_PRESSAO);
 		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	endfunction
 
