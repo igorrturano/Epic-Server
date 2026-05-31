@@ -394,10 +394,6 @@ Function AplicaVicio (who, potion, Atr)
     ult := "ultimaint";
   endif
   
-  if (MobileWrapper(who).HasAbility(ABILITY_ID::SINTESE_VELOZ))
-      bonus := (getobjProperty(potion, "bonus")*-1);
-  endif
-  
   var dmg := epicPotionDamageRoll (tier, bonus);
   If(dmg < 0)
     dmg := 0;
@@ -415,7 +411,10 @@ Endfunction
 
 function TesteVicio(who, potion, dmg)
   var tier := PegaNivelPocao(who, potion);
-  var pureza := getobjproperty(potion, "bonus"); 
+  var pureza := getobjproperty(potion, "bonus");
+  if (MobileWrapper(who).HasAbility(ABILITY_ID::SINTESE_VELOZ))
+      pureza := pureza * -1;
+  endif
   var dif := 0;
   case (tier)
     1: dif := RESIST_EASY;
