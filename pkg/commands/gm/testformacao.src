@@ -1,0 +1,146 @@
+use uo;
+use os;
+use basic;
+
+include ":tropas:formationCore";
+
+// ============================================================================
+// testformacao.src — SCAFFOLD DESCARTÁVEL de validação da geometria de formação
+// ============================================================================
+// NÃO faz parte do sistema final. Valida FormationOffsets/RotateOffset/
+// SlotWorldPos do formationCore.inc colocando marcadores visuais no chão,
+// SEM mover NPC, SEM criar squad real, SEM persistir nada.
+//
+// Uso (GM):
+//   .testformacao linha 8 0       -> linha, 8 unidades, Norte
+//   .testformacao cunha 7 2       -> cunha, 7 unidades, Leste  (caso complexo)
+//   .testformacao quadrado 12 4   -> quadrado 4-largura, 12 unidades, Sul
+//   .testformacao limpar          -> remove todos os marcadores criados
+//
+// Cores dos marcadores (mesmo graphic 0xF240, distintos por cor):
+//   ANCHOR  verde (centro)   FRENTE  vermelho (1 tile a frente do facing)
+//   SLOT    amarelo (cada vaga)
+// Deletar este arquivo apos validacao.
+// ============================================================================
+
+const MARK_GRAPHIC := 0xF240;   // objtype de marcador (mesmo do fog_regions preview)
+const HUE_ANCHOR   := 0x0040;   // verde — centro
+const HUE_FRENTE   := 0x0026;   // vermelho — direcao
+const HUE_SLOT     := 0x0035;   // amarelo — vagas
+
+program testformacao(who, text)
+    if (!who.cmdlevel)
+        SendSysMessage(who, "Apenas GM.", 33);
+        return 0;
+    endif
+
+    if (!text || text == "")
+        SendSysMessage(who, "Uso: .testformacao <linha|coluna|quadrado|cunha> <n> <facing 0/2/4/6>", 33);
+        SendSysMessage(who, "     .testformacao limpar", 33);
+        return 0;
+    endif
+
+    var parts := SplitWords(text);
+
+    if (Lower(parts[1]) == "limpar")
+        LimparMarcadores(who);
+        return 0;
+    endif
+
+    if (parts.size() < 3)
+        SendSysMessage(who, "Uso: .testformacao <formacao> <n> <facing 0/2/4/6>", 33);
+        return 0;
+    endif
+
+    var formation := Upper(parts[1]);
+    var n := CInt(parts[2]);
+    var facing := CInt(parts[3]);
+
+    if (n < 1)
+        SendSysMessage(who, "n deve ser >= 1.", 33);
+        return 0;
+    endif
+    if (facing != 0 && facing != 2 && facing != 4 && facing != 6)
+        SendSysMessage(who, "facing deve ser 0(N) 2(L) 4(S) 6(O).", 33);
+        return 0;
+    endif
+
+    // squad FAKE em memoria — so o que SlotWorldPos le. Members fake: n zeros
+    // (count importa; serial nao, pois nao movemos NPC nenhum).
+    var fake_members := array{};
+    var i;
+    for (i := 1; i <= n; i := i + 1)
+        fake_members.append(0);
+    endfor
+
+    var squad := struct;
+    squad.+AnchorX   := who.x;
+    squad.+AnchorY   := who.y;
+    squad.+AnchorZ   := who.z;
+    squad.+Realm     := who.realm;
+    squad.+Formation := formation;
+    squad.+Facing    := facing;
+    squad.+Spacing   := 1;
+    squad.+Members   := fake_members;
+
+    LimparMarcadores(who);   // limpa rodada anterior antes de desenhar a nova
+
+    // anchor (centro da formacao)
+    CriarMarcador(who, who.x, who.y, who.z, who.realm, HUE_ANCHOR);
+
+    // frente: 1 tile na direcao do facing — confirma orientacao visualmente
+    var fr := RotateOffset(0, 1, facing);
+    CriarMarcador(who, who.x + fr.dx, who.y + fr.dy, who.z, who.realm, HUE_FRENTE);
+
+    // slots
+    var criados := 0;
+    for (i := 1; i <= n; i := i + 1)
+        var pos := SlotWorldPos(squad, i);
+        if (pos.errortext)
+            SendSysMessage(who, "Slot " + CStr(i) + " erro: " + pos.errortext, 33);
+            continue;
+        endif
+        CriarMarcador(who, pos.x, pos.y, who.z, who.realm, HUE_SLOT);
+        criados := criados + 1;
+    endfor
+
+    SendSysMessage(who, "Formacao " + formation + " n=" + CStr(n) + " facing="
+                        + CStr(facing) + " -> " + CStr(criados) + " slots (+anchor +frente).", 66);
+    return 1;
+endprogram
+
+// -- cria 1 marcador e registra o serial no GM p/ limpeza posterior -----------
+function CriarMarcador(who, x, y, z, realm, hue)
+    var item := CreateItemAtLocation(x, y, z, MARK_GRAPHIC, 1, realm);
+    if (!item)
+        SendSysMessage(who, "Falha ao criar marcador em (" + CStr(x) + "," + CStr(y) + ")", 33);
+        return;
+    endif
+    item.movable := 0;
+    item.color := hue;
+
+    var lista := GetObjProperty(who, "#testform_marks");
+    if (!lista || lista.errortext || TypeOf(lista) != "Array")
+        lista := array{};
+    endif
+    lista.append(item.serial);
+    SetObjProperty(who, "#testform_marks", lista);
+endfunction
+
+// -- remove todos os marcadores criados por este GM ---------------------------
+function LimparMarcadores(who)
+    var lista := GetObjProperty(who, "#testform_marks");
+    if (!lista || lista.errortext || TypeOf(lista) != "Array")
+        EraseObjProperty(who, "#testform_marks");
+        return;
+    endif
+    var s;
+    foreach s in (lista)
+        var item := SystemFindObjectBySerial(s);
+        if (item)
+            DestroyItem(item);
+        endif
+    endforeach
+    EraseObjProperty(who, "#testform_marks");
+    SendSysMessage(who, "Marcadores limpos.", 66);
+endfunction
