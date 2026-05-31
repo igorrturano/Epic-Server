@@ -43,27 +43,11 @@ function reduce_container_fullness (byref character, byref container)
 	var cfgfile := ReadConfigFile( "itemdesc" );
 
 	if (!fullness)
-		SetObjProperty (container, "fullness", 5);
-		container.name := "Um balde de tinta cheio";
-	
-	elseif (fullness == 5)
-
-		SetObjProperty (container, "fullness", 4);
-		container.name := "Um balde de tinta quase cheio";
-
-	elseif (fullness == 4)
-		SetObjProperty (container, "fullness", 3);
-		container.name := "Um balde tinta pela metade";
-
-	elseif (fullness == 3)
-		SetObjProperty (container, "fullness", 2);
-		container.name := "Um balde com menos da metade de tinta";
-
-	elseif (fullness == 2)
-		SetObjProperty (container, "fullness", 1);
-		container.name := "Um balde de tinta quase vazio";
+		container.color := 0;
+	elseif (fullness > 1)
+		fullness := fullness - 1;
+		SetObjProperty(container, "fullness", fullness);
 	else
-		container.name := "Um balde de tinta vazio";
-		container.color :=0;
+		container.color := 0;
 	endif
 endfunction  
