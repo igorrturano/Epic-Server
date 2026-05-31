@@ -1,0 +1,6 @@
+// ul_query_block.src — Handler exportado para o packet hook 0x3F (UltimaLive hash query).
+// Sub-fase 1.A: stub. Sub-fase 1.E: registrado via packetHook e implementado.
+
+exported function UL_OnHashQuery(who, byref packet)
+    return 0;
+endfunction
