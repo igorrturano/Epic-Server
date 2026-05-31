@@ -14,6 +14,7 @@ include ":attributes:attributes";
 include ":combat:Controller/DamageController";
 include ":combat:Model/Damage";
 include ":epicspawn:epicBoss";
+include ":spells:tnmagery";
 /*
  * ExecuteCombatEvent(npc, event, actions)
  * Propósito:          // Aplicar dano
@@ -96,7 +97,10 @@ function ExecuteCombatAction(npc, action)
             
         "Timedscripts":
             return ExecuteTimedScriptAction(npc, targets, action);
-            
+
+        "Spell":
+            return ExecuteSpellAction(npc, targets, action);
+
         default:
             return 0;
     endcase
@@ -222,6 +226,31 @@ function ExecuteHealAction(targets, action)
         success := 1;
     endforeach
     
+    return success;
+endfunction
+
+function ExecuteSpellAction(npc, targets, action)
+    if (!action.spell_id)
+        return 0;
+    endif
+
+    // Resolve the spell config by id (SpellRegistry path). spellinfo.script holds
+    // the SpellScript — the authoritative castable marker; bail if absent.
+    var spellinfo := struct{ id := CInt(action.spell_id) };
+    WritespellInfo(npc, spellinfo);
+    if (spellinfo.script == error || !spellinfo.script)
+        return 0;
+    endif
+
+    var success := 0;
+    foreach targ in targets
+        // Pass the boss as caster (params[1]) so the spell's own damage attributes
+        // to the boss as source (no sourceless double-number). Target passed
+        // explicitly as params[4] — no reliance on the brain's spell_target_var.
+        Start_Script(":spells:cast_spell", array{npc, spellinfo, 0, targ});
+        success := 1;
+    endforeach
+
     return success;
 endfunction
 
