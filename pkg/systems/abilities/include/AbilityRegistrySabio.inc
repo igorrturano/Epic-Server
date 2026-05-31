@@ -54,7 +54,7 @@ include ":abilities:classes/arqueiro_arcano/PrismaticShot";
 //===========================================
 include ":abilities:classes/granadeiro/TriggerEngineering";
 include ":abilities:classes/granadeiro/PressureZone";
-include ":abilities:classes/granadeiro/EfficientBombardier";
+include ":abilities:classes/granadeiro/Minefield";
 include ":abilities:classes/granadeiro/ExplosiveEssence";
 include ":abilities:classes/granadeiro/EnhancedInfusion";
 
@@ -125,7 +125,7 @@ ABILITY_CLASSES[ABILITY_ID::PRISMATIC_SHOT] := @PrismaticShot;
 // Granadeiro (2500-2504)
 ABILITY_CLASSES[ABILITY_ID::ENGENHARIA_DE_GATILHOS] := @TriggerEngineering;
 ABILITY_CLASSES[ABILITY_ID::ZONA_DE_PRESSAO] := @PressureZone;
-ABILITY_CLASSES[ABILITY_ID::CAMPO_MINADO] := @EfficientBombardier;
+ABILITY_CLASSES[ABILITY_ID::CAMPO_MINADO] := @Minefield;
 ABILITY_CLASSES[ABILITY_ID::TORRETA_GRANADEIRA] := @ExplosiveEssence;
 ABILITY_CLASSES[ABILITY_ID::PROTOCOLO_MESTRE] := @EnhancedInfusion;
 
