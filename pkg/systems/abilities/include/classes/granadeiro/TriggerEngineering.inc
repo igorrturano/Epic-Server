@@ -17,7 +17,6 @@ include ":gumps:include/epicGumps";
  *
  * Passive (no hook, checked inline via HasAbility):
  * - Reduces reagent costs by 50% [alchemybook.src, dyebook.src]
- * - Engatilhar Pocao (ally buff throw) lives in the buff potion scripts.
  */
 class TriggerEngineering(CombatAbility)
 
