@@ -9,7 +9,7 @@ include "include/client";
 include "include/epicConstants";
 
 /**
- * Enhanced Infusion (Infusão Aprimorada) - ABILITY_ID::INFUSAO_APRIMORADA (2504)
+ * Enhanced Infusion (Infusão Aprimorada) - ABILITY_ID::PROTOCOLO_MESTRE (2504)
  *
  * Active (ON_USE): Creates a Philosopher's Stone (Pedra Filosofal) item
  * that provides death protection, following the Lich phylactery pattern.
@@ -23,7 +23,7 @@ include "include/epicConstants";
 class EnhancedInfusion(CombatAbility)
 
 	function EnhancedInfusion(this)
-		Super(ABILITY_ID::INFUSAO_APRIMORADA);
+		Super(ABILITY_ID::PROTOCOLO_MESTRE);
 		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	endfunction
 
@@ -70,7 +70,7 @@ class EnhancedInfusion(CombatAbility)
 		DebugMsg(
 			who,
 			DEBUG_HAB,
-			Message("[INFUSAO_APRIMORADA] Pedra Filosofal criada", Color(SYSTEM_COLOR::SUCCESS))
+			Message("[PROTOCOLO_MESTRE] Pedra Filosofal criada", Color(SYSTEM_COLOR::SUCCESS))
 		);
 		return true;
 	endfunction

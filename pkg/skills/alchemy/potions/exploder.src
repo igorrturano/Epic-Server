@@ -254,7 +254,7 @@ function ExplosionEffect(who, potion, dmg)
 				if (MobileWrapper(critter).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 					SendSysMessageEx(critter, "Voce escapou completamente da explosao.", SSM_INFO);
 					critter.hidden := 0;
-				elseif (MobileWrapper(critter).HasAbility(ABILITY_ID::ESSENCIA_EXPLOSIVA))
+				elseif (MobileWrapper(critter).HasAbility(ABILITY_ID::CAMPO_MINADO))
 					SendSysMessageEx(critter, "Voce escapou completamente da explosao.", SSM_INFO);
 					critter.hidden := 0;
 				else
@@ -279,7 +279,7 @@ function ExplosionEffect(who, potion, dmg)
 					endif
 				endif
 			else
-				if (MobileWrapper(critter).HasAbility(ABILITY_ID::ESSENCIA_EXPLOSIVA))
+				if (MobileWrapper(critter).HasAbility(ABILITY_ID::CAMPO_MINADO))
 					SendSysMessageEx(critter, "Por instinto voce escapou parcialmente da explosao.", SSM_INFO);
 					PlayObjectCenteredEffectEx(critter, 0x36b0, 7, 0x10, color);
 					PlaySoundEffect(critter, 0x208);
@@ -350,7 +350,7 @@ function Sleepeffect(who, potion, bonus)
 		if (checkLineOfSight(potion, critter))
 			if (CheckResist(critter, FORTITUDE, RESIST_VERY_HARD, diff))
 				SendSysMessage(critter, "Voce resiste ao sono.");
-			elseif (MobileWrapper(critter).HasAbility(ABILITY_ID::ESSENCIA_EXPLOSIVA))
+			elseif (MobileWrapper(critter).HasAbility(ABILITY_ID::CAMPO_MINADO))
 				SendSysMessage(critter, "Voce resiste ao sono.");
 			else
 				if (critter.hidden)

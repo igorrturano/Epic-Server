@@ -238,7 +238,7 @@ function MakePotion(pot, item, who, magic, strength := 0)
 				thing := CreateItemInBackpack(who, id, 1);
 			else // se nao cria so o extrato
 				thing := CreateItemInBackpack(who, 0xcfff, 1);
-				if (MobileWrapper(who).HasAbility(ABILITY_ID::BOMBARDEIRO_EFICIENTE) && science == BOMBA)
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMPO_MINADO) && science == BOMBA)
 					thing := CreateItemInBackpack(who, 0xcfff, 1);
 				endif
 				SetObjProperty(thing, "extrato", id);
@@ -250,7 +250,7 @@ function MakePotion(pot, item, who, magic, strength := 0)
 					SendSysMessageEx(who, "Voce fez um extrato instantaneo.", SSM_INFO);
 					var pocao := GetObjProperty(thing, "extrato");
 					var pot := CreateItemInBackpack(who, pocao, 1);
-					if (MobileWrapper(who).HasAbility(ABILITY_ID::BOMBARDEIRO_EFICIENTE) && science == BOMBA)
+					if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMPO_MINADO) && science == BOMBA)
 						pot := CreateItemInBackpack(who, pocao, 1);
 					endif
 					SetObjProperty(pot, "bonus", bonus);

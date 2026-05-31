@@ -349,8 +349,8 @@ function HandleHumanoidCombatEvent(opponent, is_ranged)
         HumanoidPriestBehavior(me, opponent);
     endif
 
-    if (MobileWrapper(me).HasAbility(ABILITY_ID::ALQUIMISTA_EXPERIENTE))
-        NPC_UseAbilityById(me, ABILITY_ID::ALQUIMISTA_EXPERIENTE);
+    if (MobileWrapper(me).HasAbility(ABILITY_ID::ENGENHARIA_DE_GATILHOS))
+        NPC_UseAbilityById(me, ABILITY_ID::ENGENHARIA_DE_GATILHOS);
     endif
 
     return 1;
