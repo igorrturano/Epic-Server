@@ -8,18 +8,20 @@ include ":alchemy:alchemy";
 include ":gumps:include/epicGumps";
 
 /**
- * Experienced Alchemist (Alquimista Experiente) - ABILITY_ID::ENGENHARIA_DE_GATILHOS (2500)
+ * Engenharia de Gatilhos - ABILITY_ID::ENGENHARIA_DE_GATILHOS (2500)
  *
  * Active (OnUse):
- *   - Player: opens explosive configuration gump (menuExplosivos2).
+ *   - Player: opens explosive configuration gump (menuExplosivos2). All five
+ *             tabs are available from L1 (no tab gating).
  *   - NPC:    throws one explosive potion from backpack.
  *
  * Passive (no hook, checked inline via HasAbility):
  * - Reduces reagent costs by 50% [alchemybook.src, dyebook.src]
+ * - Engatilhar Pocao (ally buff throw) lives in the buff potion scripts.
  */
-class ExperiencedAlchemist(CombatAbility)
+class TriggerEngineering(CombatAbility)
 
-	function ExperiencedAlchemist(this)
+	function TriggerEngineering(this)
 		Super(ABILITY_ID::ENGENHARIA_DE_GATILHOS);
 		this.ActivationMoment := ABILITY_ACTIVATION::ON_USE;
 	endfunction
@@ -79,8 +81,13 @@ function menuExplosivos2(who)
         InitConfigData();
     endif
 
+    // Back-compat: legacy single Pavio / removed Impacto map to Pavio Normal
+    if (config_data.gatilho == GATILHO_PAVIO || config_data.gatilho == GATILHO_IMPACTO)
+        config_data.gatilho := GATILHO_PAVIO_NORMAL;
+    endif
+
     var gump_width  := 500;
-    var gump_height := 300;
+    var gump_height := 320;
     var title       := "Configuracao de Explosivo";
 
     var input := ShowPageGatilho(who, title, gump_width, gump_height);
@@ -107,7 +114,7 @@ function menuExplosivos2(who)
         case (new_menu)
             MENU_GATILHO:   	input := ShowPageGatilho(who, title, gump_width, gump_height);
             MENU_ELEMENTO:  	input := ShowPageElemento(who, title, gump_width, gump_height);
-            MENU_INVOLUCRO:		input := ShowPageInvolucro(who, title, gump_width, gump_height); 
+            MENU_INVOLUCRO:		input := ShowPageInvolucro(who, title, gump_width, gump_height);
             MENU_CARGA:   		input := ShowPageCarga(who, title, gump_width, gump_height);
             MENU_REFORCO: 		input := ShowPageReforco(who, title, gump_width, gump_height);
         endcase
@@ -120,7 +127,7 @@ endfunction
 // INICIALIZAÇÃO
 // ============================================================
 function InitConfigData()
-    config_data.gatilho         := GATILHO_PAVIO;
+    config_data.gatilho         := GATILHO_PAVIO_NORMAL;
     config_data.elemento        := ELEMENTO_FOGO;
     config_data.involucro 	    := INVOLUCRO_BASE;
     config_data.carga    		:= CARGA_BALANCEADA;
@@ -133,9 +140,10 @@ endfunction
 function ExtractPageData(input, page)
     case (page)
         BOTAO_GATILHO:
-            if (input[GATILHO_PAVIO])    config_data.gatilho := GATILHO_PAVIO;    endif
-            if (input[GATILHO_IMPACTO])  config_data.gatilho := GATILHO_IMPACTO;  endif
-            if (input[GATILHO_MINA])     config_data.gatilho := GATILHO_MINA;     endif
+            if (input[GATILHO_PAVIO_CURTO])  config_data.gatilho := GATILHO_PAVIO_CURTO;  endif
+            if (input[GATILHO_PAVIO_NORMAL]) config_data.gatilho := GATILHO_PAVIO_NORMAL; endif
+            if (input[GATILHO_PAVIO_LONGO])  config_data.gatilho := GATILHO_PAVIO_LONGO;  endif
+            if (input[GATILHO_MINA])         config_data.gatilho := GATILHO_MINA;         endif
             break;
 
         BOTAO_ELEMENTO:
@@ -165,16 +173,16 @@ function ExtractPageData(input, page)
 endfunction
 
 // ============================================================
-// ATUALIZAÇÃO DE ESTADO
-// ============================================================ else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); 
+// ATUALIZAÇÃO DE ESTADO (todas as abas disponiveis no L1)
+// ============================================================
 function UpdateMenuState(input, who)
     last_clicked_button := input;
     case (input)
-        BOTAO_GATILHO:         button_states := array{1,0,0,0,0}; return MENU_GATILHO;
-        BOTAO_ELEMENTO:        button_states := array{0,1,0,0,0}; if(MobileWrapper(who).HasAbility(ABILITY_ID::ZONA_DE_PRESSAO))return MENU_ELEMENTO; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
-        BOTAO_INVOLUCRO:     button_states := array{0,0,1,0,0}; if(MobileWrapper(who).HasAbility(ABILITY_ID::CAMPO_MINADO)) return MENU_INVOLUCRO; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
-        BOTAO_CARGA:    button_states := array{0,0,0,1,0}; if(MobileWrapper(who).HasAbility(ABILITY_ID::TORRETA_GRANADEIRA)) return MENU_CARGA; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
-        BOTAO_REFORCO: button_states := array{0,0,0,0,1}; if(MobileWrapper(who).HasAbility(ABILITY_ID::PROTOCOLO_MESTRE)) return MENU_REFORCO; else SendSysMessage(who, "Voce ainda nao aprendeu este tipo de modificacao"); endif
+        BOTAO_GATILHO:   button_states := array{1,0,0,0,0}; return MENU_GATILHO;
+        BOTAO_ELEMENTO:  button_states := array{0,1,0,0,0}; return MENU_ELEMENTO;
+        BOTAO_INVOLUCRO: button_states := array{0,0,1,0,0}; return MENU_INVOLUCRO;
+        BOTAO_CARGA:     button_states := array{0,0,0,1,0}; return MENU_CARGA;
+        BOTAO_REFORCO:   button_states := array{0,0,0,0,1}; return MENU_REFORCO;
     endcase
     button_states := array{1,0,0,0,0};
     last_clicked_button := BOTAO_GATILHO;
@@ -235,14 +243,41 @@ function AddRadioBlock(byref gump, label1, label2, label3, val1, val2, val3, cur
 endfunction
 
 // ============================================================
+// HELPER: bloco de 4 radio buttons (pagina Gatilho)
+// ============================================================
+function AddRadioBlock4(byref gump, label1, label2, label3, label4, val1, val2, val3, val4, current)
+    var y_base := 90;
+    var x_btn  := 40;
+    var x_txt  := 70;
+
+    GFSetRadioGroup(gump, 1);
+
+    GFRadioButton(gump, x_btn, y_base,       210, 211, (current == val1), val1);
+    GFTextLine(gump,    x_txt, y_base,       1153, label1);
+
+    GFRadioButton(gump, x_btn, y_base + 40,  210, 211, (current == val2), val2);
+    GFTextLine(gump,    x_txt, y_base + 40,  1153, label2);
+
+    GFRadioButton(gump, x_btn, y_base + 80,  210, 211, (current == val3), val3);
+    GFTextLine(gump,    x_txt, y_base + 80,  1153, label3);
+
+    GFRadioButton(gump, x_btn, y_base + 120, 210, 211, (current == val4), val4);
+    GFTextLine(gump,    x_txt, y_base + 120, 1153, label4);
+endfunction
+
+// ============================================================
 // PÁGINAS
 // ============================================================
 function ShowPageGatilho(who, title, gump_width, gump_height)
     var gump := GFECreateGump(title, gump_width, gump_height);
     AddNavBar(gump, gump_width);
     GFTextMid(gump, 0, 72, gump_width, 1153, "Gatilho");
-    AddRadioBlock(gump, "Pavio: Detona apos 3 segundos de ativacao.", "Impacto: Detona no impacto com o alvo.", "Mina: Oculta o explosivo, funcionando como uma armadilha.",
-                  GATILHO_PAVIO, GATILHO_IMPACTO, GATILHO_MINA,
+    AddRadioBlock4(gump,
+                  "Pavio Curto: Detona apos 2 segundos de ativacao.",
+                  "Pavio Normal: Detona apos 3 segundos de ativacao.",
+                  "Pavio Longo: Detona apos 5 segundos de ativacao.",
+                  "Mina: Oculta o explosivo, funcionando como uma armadilha.",
+                  GATILHO_PAVIO_CURTO, GATILHO_PAVIO_NORMAL, GATILHO_PAVIO_LONGO, GATILHO_MINA,
                   config_data.gatilho);
     AddFooter(gump, gump_width, gump_height);
     return GFSendGump(who, gump);

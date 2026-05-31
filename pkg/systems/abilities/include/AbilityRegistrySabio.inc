@@ -52,7 +52,7 @@ include ":abilities:classes/arqueiro_arcano/PrismaticShot";
 //===========================================
 // GRANADEIRO (2500-2504)
 //===========================================
-include ":abilities:classes/granadeiro/ExperiencedAlchemist";
+include ":abilities:classes/granadeiro/TriggerEngineering";
 include ":abilities:classes/granadeiro/ChemicalInfusion";
 include ":abilities:classes/granadeiro/EfficientBombardier";
 include ":abilities:classes/granadeiro/ExplosiveEssence";
@@ -123,7 +123,7 @@ ABILITY_CLASSES[ABILITY_ID::ARCANE_MASTERY] := @ArcaneMastery;
 ABILITY_CLASSES[ABILITY_ID::PRISMATIC_SHOT] := @PrismaticShot;
 
 // Granadeiro (2500-2504)
-ABILITY_CLASSES[ABILITY_ID::ENGENHARIA_DE_GATILHOS] := @ExperiencedAlchemist;
+ABILITY_CLASSES[ABILITY_ID::ENGENHARIA_DE_GATILHOS] := @TriggerEngineering;
 ABILITY_CLASSES[ABILITY_ID::ZONA_DE_PRESSAO] := @ChemicalInfusion;
 ABILITY_CLASSES[ABILITY_ID::CAMPO_MINADO] := @EfficientBombardier;
 ABILITY_CLASSES[ABILITY_ID::TORRETA_GRANADEIRA] := @ExplosiveEssence;
