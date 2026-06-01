@@ -58,12 +58,8 @@ function ShowLoreItemInfo(who, item, item_info)
 		// trunca a URL no primeiro & (querystrings do Discord/CDN quebram).
 		if (item_info.flavor_url && item_info.flavor_url != "")
 			var safe_url := StrReplace(item_info.flavor_url, "&", "&amp;");
-			var html_tag := "<img src=\"" + safe_url + "\" width=\"330\" height=\"485\" x=\"0\" y=\"0\">";
-			// [LORE_DEBUG] mostra in-game o HTML real que está sendo enviado ao cliente
-			SendSysMessage(who, "[LORE_DEBUG] flavor_url='" + item_info.flavor_url + "'");
-			SendSysMessage(who, "[LORE_DEBUG] safe_url='" + safe_url + "'");
-			SendSysMessage(who, "[LORE_DEBUG] html_tag len=" + CStr(Len(html_tag)));
-			GFHTMLArea(gump, 25, 28, 330, 485, html_tag, 0, 0);
+			GFHTMLArea(gump, 25, 28, 330, 485,
+				"<img src=\"" + safe_url + "\" width=\"330\" height=\"485\" x=\"0\" y=\"0\">", 0, 0);
 		elseif (item_info.flavor_image)
 			GFGumpPic(gump, 25, 28, item_info.flavor_image, 0);
 		else
