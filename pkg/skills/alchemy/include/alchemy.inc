@@ -14,9 +14,12 @@ include ":crafting:/include/caracteristicasFabricacao";
 include ":crafting:/include/fabricacaoUtil";
 
 CONST DRINK_SOUND := 0x32;
-CONST GATILHO_PAVIO := 11;
-CONST GATILHO_IMPACTO := 12;
+CONST GATILHO_PAVIO := 11;       // legacy single 3s fuse (back-compat; treated as Pavio Normal)
+CONST GATILHO_IMPACTO := 12;     // legacy impact trigger (removed from configurator; treated as Pavio Normal)
 CONST GATILHO_MINA := 13;
+CONST GATILHO_PAVIO_CURTO := 14;  // 2s
+CONST GATILHO_PAVIO_NORMAL := 15; // 3s
+CONST GATILHO_PAVIO_LONGO := 16;  // 5s
 
 CONST ELEMENTO_FOGO := 21;
 CONST ELEMENTO_ENERGIA := 22;
@@ -33,6 +36,11 @@ CONST CARGA_DISPERSA := 43;
 CONST REFORCO_COMUM := 51;
 CONST REFORCO_CARGA_DUPLA := 52;
 CONST REFORCO_POTENCIA_ELEM := 53;
+
+// Zona de Pressao (L3) — tipo pre-comprometido no momento da ativacao
+CONST ZONA_TIPO_PRESSAO  := 61;  // +50% raio de explosao
+CONST ZONA_TIPO_LENTIDAO := 62;  // vitimas slowed por Science/10s
+CONST ZONA_TIPO_PRECISAO := 63;  // +50% dano
 
 // Facade de mensagem sobre MobileWrapper.HasFreeHand(). A regra real
 // (ocupacao de layer + Two_Handed/Dual_Wield) vive no wrapper; aqui so
@@ -346,7 +354,7 @@ endfunction
 Function PotionSpecialistBonus (who, bonus, science)
 	var spec := 2;
 
-		if (MobileWrapper(who).HasAbility(ABILITY_ID::BOMBARDEIRO_EFICIENTE) && science == BOMBA);
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMPO_MINADO) && science == BOMBA);
 			bonus := Cint(bonus * spec);
 		elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VENENO_PURO) && science == VENENO);
 			bonus := Cint(bonus * spec);
@@ -394,10 +402,6 @@ Function AplicaVicio (who, potion, Atr)
     ult := "ultimaint";
   endif
   
-  if (MobileWrapper(who).HasAbility(ABILITY_ID::SINTESE_VELOZ))
-      bonus := (getobjProperty(potion, "bonus")*-1);
-  endif
-  
   var dmg := epicPotionDamageRoll (tier, bonus);
   If(dmg < 0)
     dmg := 0;
@@ -415,7 +419,10 @@ Endfunction
 
 function TesteVicio(who, potion, dmg)
   var tier := PegaNivelPocao(who, potion);
-  var pureza := getobjproperty(potion, "bonus"); 
+  var pureza := getobjproperty(potion, "bonus");
+  if (MobileWrapper(who).HasAbility(ABILITY_ID::SINTESE_VELOZ))
+      pureza := pureza * -1;
+  endif
   var dif := 0;
   case (tier)
     1: dif := RESIST_EASY;
