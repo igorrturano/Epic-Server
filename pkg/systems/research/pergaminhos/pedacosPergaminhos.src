@@ -339,6 +339,10 @@ function CreatePergaminhoItem(who, tipo, nivel, escola := "")
 		TIPO_PERGAMINHO_DOMESTICWORK: pergaminho.name := "instrucoes de fabricacao domestica";
 		TIPO_PERGAMINHO_MAGIA:
 			if (escola)
+				// CreateScript de :recipes:create/spellCreate ja gravou spellinfo
+				// aleatorio. Limpa antes do override por escola — AssignSpellRecipeBySchool
+				// tem early return se spellinfo existir.
+				EraseObjProperty(pergaminho, "spellinfo");
 				AssignSpellRecipeBySchool(pergaminho, escola);
 			endif
 	endcase
