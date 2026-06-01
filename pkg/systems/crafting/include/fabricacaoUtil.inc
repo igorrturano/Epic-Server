@@ -348,10 +348,12 @@ function AplicaAtributosItemFabricado(quem, item, propFabricadoMontado)
 		if(quantidadeDoses)
 			SetObjProperty(item, "doses", quantidadeDoses);
 		endif
-		SetObjProperty(item, "tier", infoPote.tier);
-		SetObjProperty(item, "crafterskill", infoPote.crafterskill);
-		SetObjProperty(item, "science", infoPote.science);
-		SetObjProperty(item, "bonus", infoPote.bonus);
+		if(infoPote.science != "Tinta")
+			SetObjProperty(item, "tier", infoPote.tier);
+			SetObjProperty(item, "crafterskill", infoPote.crafterskill);
+			SetObjProperty(item, "science", infoPote.science);
+			SetObjProperty(item, "bonus", infoPote.bonus);
+		endif
 	endif
 
 	AplicaFechadura(quem, item);
