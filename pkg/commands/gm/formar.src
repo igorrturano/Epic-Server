@@ -1,0 +1,77 @@
+use uo;
+use os;
+use basic;
+
+include ":tropas:formationCore";
+include ":tropas:formationEnlist";
+
+// ============================================================================
+// formar.src — comando de formação. Mesma FormationOrder que o gump vai chamar.
+//   .formar linha | coluna | quadrado | cunha [facing 0/2/4/6] [spacing]
+//   .formar dispersar
+// Facing default = facing atual do comandante. Spacing default = 1.
+// (No MVP e GM-level; quando virar comando de player de faccao, move pra outra
+//  pasta ou relaxa o gate — CanCommandNPC ja cobre a regra.)
+// ============================================================================
+
+program formar(who, text)
+    if (!who.cmdlevel)
+        SendSysMessage(who, "Apenas GM.", 33);
+        return 0;
+    endif
+
+    if (!text || text == "")
+        SendSysMessage(who, "Uso: .formar <linha|coluna|quadrado|cunha> [facing 0/2/4/6] [spacing]", 33);
+        SendSysMessage(who, "     .formar dispersar", 33);
+        return 0;
+    endif
+
+    var parts := SplitWords(text);
+    var arg1 := Lower(parts[1]);
+
+    if (arg1 == "dispersar")
+        var d := FormationDisperse(who, 0);
+        SendSysMessage(who, CStr(d) + " NPC(s) dispersado(s).", 66);
+        return 1;
+    endif
+
+    // mapeia o texto pra constante de formacao do core
+    var formation;
+    if (arg1 == "linha")
+        formation := FORM_LINHA;
+    elseif (arg1 == "coluna")
+        formation := FORM_COLUNA;
+    elseif (arg1 == "quadrado")
+        formation := FORM_QUADRADO;
+    elseif (arg1 == "cunha")
+        formation := FORM_CUNHA;
+    else
+        SendSysMessage(who, "Formacao invalida: " + arg1, 33);
+        return 0;
+    endif
+
+    // facing opcional (default = facing do comandante); valida 4 cardeais
+    var facing := who.facing;
+    if (parts[2])
+        facing := CInt(parts[2]);
+        if (facing != 0 && facing != 2 && facing != 4 && facing != 6)
+            SendSysMessage(who, "Facing deve ser 0(N) 2(L) 4(S) 6(O).", 33);
+            return 0;
+        endif
+    endif
+
+    // spacing opcional (default 1)
+    var spacing := 1;
+    if (parts[3])
+        spacing := CInt(parts[3]);
+    endif
+
+    var r := FormationOrder(who, formation, facing, spacing, 0);
+    if (r.errortext)
+        SendSysMessage(who, "Falha: " + r.errortext, 33);
+        return 0;
+    endif
+
+    SendSysMessage(who, "Formacao " + arg1 + ": " + CStr(r.count) + " NPC(s) em posicao.", 66);
+    return 1;
+endprogram

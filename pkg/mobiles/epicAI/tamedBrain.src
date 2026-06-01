@@ -14,6 +14,7 @@ include ":tn:cooldown";
 include "include/produzTeia";
 include ":tn:include/cooldown";
 include "include/eventID";
+include ":tropas:formationCore";
 
 // ============================================================================
 // tamedBrain.src - epicAI tamed-pet brain (Phase 4)
@@ -42,6 +43,7 @@ var following := 0;
 var fighting := 0;
 var opponent := 0;
 var going_loc := 0;
+var formation_slot := 0;   // {squad_id, slot_index} — efemero, sai se o brain reiniciar
 var areasize := 10;
 
 var owner_serial;
@@ -162,6 +164,13 @@ program TamedBrain()
 
 				endif
 			SYSEVENT_ITEM_GIVEN: TakeItem(ev);
+
+			FORMATION_CMD:
+				formation_slot := ev.targ;
+
+			FORMATION_BREAK:
+				formation_slot := 0;
+
 		endcase
 
 		var summoned := GetObjProperty(me, "summoned");
@@ -187,6 +196,8 @@ program TamedBrain()
 		elseif (following)
 			Follow();
 			look_around();
+		elseif (formation_slot)
+			FollowFormation();
 		elseif (guarding)
 			Guard();
 			look_around();
@@ -1034,4 +1045,58 @@ function Go(forma, todos)
 		going_loc := data;
 	endif
 
+endfunction
+
+// ============================================================================
+// FollowFormation — anda ate o slot da formacao. Le {squad_id, slot_index} de
+// formation_slot. Recarrega o squad a cada tick (anchor/facing mudam quando o
+// comandante reordena). Movimento espelha o goToLoc do tamedBrain (RunToward +
+// boost de run_speed), mas SEM cancelar por distancia: o slot e stateful, quem
+// ficou pra tras continua voltando. Saidas defensivas limpam formation_slot e
+// voltam ao idle (NAO mexem em master/brain — formacao nao e posse).
+// ============================================================================
+function FollowFormation()
+	var squad := SquadLoad(formation_slot.squad_id);
+	if (squad.errortext)
+		formation_slot := 0;
+		wait_time := 10;
+		return;
+	endif
+
+	var slot_idx := CInt(formation_slot.slot_index);
+	if (slot_idx < 1 || slot_idx > squad.Members.size())
+		formation_slot := 0;
+		wait_time := 10;
+		return;
+	endif
+	if (squad.Members[slot_idx] != me.serial)
+		// Reformar/reordenar mudou meu slot — saio ate receber novo FORMATION_CMD.
+		formation_slot := 0;
+		wait_time := 10;
+		return;
+	endif
+
+	var pos := SlotWorldPos(squad, slot_idx);
+	if (pos.errortext)
+		formation_slot := 0;
+		wait_time := 10;
+		return;
+	endif
+
+	var dist := CoordinateDistance(me.x, me.y, pos.x, pos.y);
+	if (dist <= 0)
+		// no slot — alinha facing ao do squad e segura posicao.
+		// NAO limpa formation_slot: o slot permanece valido.
+		me.facing := squad.Facing;
+		wait_time := 5;
+		return;
+	endif
+
+	// fora do slot: corre ate ele. Boost temporario de run_speed (idiom do
+	// goToLoc do tamedBrain). SEM cancelamento por dist>20 — slot e stateful.
+	var ma := 200 - me.run_speed;
+	me.run_speed := me.run_speed + ma;
+	RunTowardLocation(pos.x, pos.y);
+	me.run_speed := me.run_speed - ma;
+	wait_time := 0;
 endfunction
