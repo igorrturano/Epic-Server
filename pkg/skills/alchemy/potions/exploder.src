@@ -240,21 +240,59 @@ function ExplosionEffect(who, potion, dmg)
 		endcase
 	endif
 	diff := CInt(diff * dmg);
+
+	// --- Zona de Pressao (L3): scale radius/damage or slow victims if the blast
+	//     center sits inside the owner's active zone. Owner is the thrower for
+	//     bombs, or the mine's CreatedBy for mines. ---
+	var zoneSlowSecs := 0;
+	var protocolSkipAllies := 0;
+	var ownerMw := 0;
+	var owner := who;
+	if (!who.isA(POLCLASS_MOBILE))
+		var createdBy := GetObjProperty(who, "CreatedBy");
+		owner := createdBy ? SystemFindObjectBySerial(createdBy) : 0;
+	endif
+	if (owner && owner.isA(POLCLASS_MOBILE))
+		var zone := GetObjProperty(owner, "PressureZone");
+		if (zone && zone.realm == potion.realm && polcore().systime < zone.expires
+			&& CoordinateDistance(potion.x, potion.y, zone.x, zone.y) <= 3)
+			case (zone.type)
+				ZONA_TIPO_PRESSAO:  dist := CInt(dist * 1.5);
+				ZONA_TIPO_PRECISAO: dmg  := CInt(dmg * 1.5);
+				ZONA_TIPO_LENTIDAO: zoneSlowSecs := CInt(MobileWrapper(owner).GetSkill(SCIENCE) / 10);
+			endcase
+		endif
+
+		// --- Protocolo Mestre (L10): +30% radius, no friendly fire to allies ---
+		var pm := GetObjProperty(owner, "ProtocoloMestreActive");
+		if (pm && pm > polcore().systime)
+			dist := CInt(dist * 1.3);
+			protocolSkipAllies := 1;
+			ownerMw := MobileWrapper(owner);
+		endif
+	endif
+
 	PlayStationaryEffectEx(potion.x, potion.y, potion.z, potion.realm, 0x36b0, 7, 10, color);
 	PlaySoundEffect(potion, 0x208);
 	potion.graphic := 1;
 
 	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, dist, potion.realm))
 		if (checkLineOfSight(potion, critter))
+			if (protocolSkipAllies && critter != owner && ownerMw.IsAllyOf(MobileWrapper(critter)) == 1)
+				continue;
+			endif
 			if (critter.hidden)
 				critter.hidden := 0;
 				SendSysMessage(critter, "Voce foi revelado na explosao!");
+			endif
+			if (zoneSlowSecs > 0 && critter != owner)
+				TS_StartTimer(critter, "lentidao", zoneSlowSecs);
 			endif
 			if (CheckResist(critter, REFLEXES, RESIST_EASY, diff))
 				if (MobileWrapper(critter).HasAbility(ABILITY_ID::DESBRAVADOR_NATO))
 					SendSysMessageEx(critter, "Voce escapou completamente da explosao.", SSM_INFO);
 					critter.hidden := 0;
-				elseif (MobileWrapper(critter).HasAbility(ABILITY_ID::ESSENCIA_EXPLOSIVA))
+				elseif (MobileWrapper(critter).HasAbility(ABILITY_ID::CAMPO_MINADO))
 					SendSysMessageEx(critter, "Voce escapou completamente da explosao.", SSM_INFO);
 					critter.hidden := 0;
 				else
@@ -279,7 +317,7 @@ function ExplosionEffect(who, potion, dmg)
 					endif
 				endif
 			else
-				if (MobileWrapper(critter).HasAbility(ABILITY_ID::ESSENCIA_EXPLOSIVA))
+				if (MobileWrapper(critter).HasAbility(ABILITY_ID::CAMPO_MINADO))
 					SendSysMessageEx(critter, "Por instinto voce escapou parcialmente da explosao.", SSM_INFO);
 					PlayObjectCenteredEffectEx(critter, 0x36b0, 7, 0x10, color);
 					PlaySoundEffect(critter, 0x208);
@@ -324,6 +362,22 @@ function ExplosionEffect(who, potion, dmg)
 		Sleepms(2);
 	endforeach
 
+	// Campo Minado (L5) chain reaction: detonate the owner's other mines caught
+	// in this blast. Chain range = blast radius, so bigger bombs chain farther.
+	// Each triggered mine runs its own exploder and scans again, propagating the
+	// cascade outward; the "running" flag exploder sets on entry guards re-fires.
+	if (owner && owner.isA(POLCLASS_MOBILE))
+		var nearbyItems := ListItemsNearLocation(potion.x, potion.y, potion.z, dist, potion.realm);
+		foreach m in (nearbyItems)
+			if (m != potion && CInt(GetObjProperty(m, "pottrap")) == 1
+				&& CInt(GetObjProperty(m, "CreatedBy")) == owner.serial
+				&& !GetObjProperty(m, "running"))
+				SetObjProperty(m, "running", 1);
+				start_script(":alchemy:potions/exploder", { m, m });
+			endif
+		endforeach
+	endif
+
 // efeitocascata(potion, who);
 // destroycraft(potion, who);
 
@@ -350,7 +404,7 @@ function Sleepeffect(who, potion, bonus)
 		if (checkLineOfSight(potion, critter))
 			if (CheckResist(critter, FORTITUDE, RESIST_VERY_HARD, diff))
 				SendSysMessage(critter, "Voce resiste ao sono.");
-			elseif (MobileWrapper(critter).HasAbility(ABILITY_ID::ESSENCIA_EXPLOSIVA))
+			elseif (MobileWrapper(critter).HasAbility(ABILITY_ID::CAMPO_MINADO))
 				SendSysMessage(critter, "Voce resiste ao sono.");
 			else
 				if (critter.hidden)

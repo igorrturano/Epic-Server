@@ -3,29 +3,34 @@ use os;
 use cfgfile;
 
 include "include/say";
+include ":alchemy:alchemy";
 
 program explosion_timer(parms)
 	var potion := parms[1];
 	var who := parms[2];
 	Set_Priority(5);
-	if (potion.container)
-		PrintTextAbove(who, "3");
-	else
-		PrintTextAbove(potion, "3");
+
+	var mods := GetObjProperty(who, "ExplosivoConfig");
+	var seconds := 3;
+	if (mods != ERROR)
+		case (mods.gatilho)
+			GATILHO_PAVIO_CURTO:  seconds := 2;
+			GATILHO_PAVIO_NORMAL: seconds := 3;
+			GATILHO_PAVIO_LONGO:  seconds := 5;
+			default:              seconds := 3;
+		endcase
 	endif
-	sleep(1);
-	if (potion.container)
-		PrintTextAbove(who, "2");
-	else
-		PrintTextAbove(potion, "2");
-	endif
-	sleep(1);
-	if (potion.container)
-		PrintTextAbove(who, "1");
-	else
-		PrintTextAbove(potion, "1");
-	endif
-	sleep(1);
+
+	while (seconds > 0)
+		if (potion.container)
+			PrintTextAbove(who, CStr(seconds));
+		else
+			PrintTextAbove(potion, CStr(seconds));
+		endif
+		sleep(1);
+		seconds := seconds - 1;
+	endwhile
+
 	if (potion in EnumerateItemsInContainer(who.backpack))
 		MoveObjectToLocation(potion, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
 	endif

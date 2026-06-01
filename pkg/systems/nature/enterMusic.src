@@ -1,0 +1,10 @@
+use uo;
+use os;
+
+include ":nature:regionMusic";
+
+// EnterScript genérico de música ambiente dia/noite.
+// Usado por regiões sem outro EnterScript (ex.: Valtheris).
+program enterMusic(who, regioname)
+	PlayRegionMusic(who, regioname);
+endprogram

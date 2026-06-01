@@ -57,6 +57,25 @@ function _ElemToStruct(elem, name)
     r.+DesatInt   := CInt(elem.GetProp("DesatInt"));
     r.+PresetName := CStr(elem.GetProp("PresetName"));
     r.+TimerEnd   := CInt(elem.GetProp("TimerEnd"));
+    // FOG-FASE5/F: fallback para regiões criadas antes do suporte a Z-height.
+    var zmin_prop := elem.GetProp("WorldZMin");
+    if (zmin_prop.errortext)
+        r.+WorldZMin := -128;
+    else
+        r.+WorldZMin := CInt(zmin_prop);
+    endif
+    var zmax_prop := elem.GetProp("WorldZMax");
+    if (zmax_prop.errortext)
+        r.+WorldZMax := 127;
+    else
+        r.+WorldZMax := CInt(zmax_prop);
+    endif
+    var zfade_prop := elem.GetProp("FalloffZ"); // FOG-FASE6/G
+    if (zfade_prop.errortext)
+        r.+FalloffZ := 10;
+    else
+        r.+FalloffZ := CInt(zfade_prop);
+    endif
     return r;
 endfunction
 
@@ -159,6 +178,9 @@ function SaveRegion(region_struct)
     elem.SetProp("DesatInt",   region_struct.DesatInt);
     elem.SetProp("PresetName", region_struct.PresetName);
     elem.SetProp("TimerEnd",   region_struct.TimerEnd);
+    elem.SetProp("WorldZMin",  region_struct.WorldZMin); // FOG-FASE5/F
+    elem.SetProp("WorldZMax",  region_struct.WorldZMax); // FOG-FASE5/F
+    elem.SetProp("FalloffZ",   region_struct.FalloffZ);  // FOG-FASE6/G
     return 1;
 endfunction
 
@@ -178,11 +200,21 @@ function _Fog_SetInt16BE(byref packet, offset, value)
     packet.SetInt8(offset + 1, value % 256);
 endfunction
 
-// Envia packet 0x0070 com parâmetros customizados para o GM (não persiste).
+// FOG-FASE5/F: escreve Int16 BE com suporte a valores negativos (two's complement).
+function _Fog_SetInt16BESigned(byref packet, offset, value)
+    var uval := value;
+    if (uval < 0)
+        uval := uval + 65536;
+    endif
+    packet.SetInt8(offset,     CInt(uval / 256));
+    packet.SetInt8(offset + 1, uval % 256);
+endfunction
+
+// Envia packet 0x0070 v6 com parâmetros customizados para o GM (não persiste).
 function SendFogTestPacket(who, params)
-    var pkt := CreatePacket(0xD7, 29);
+    var pkt := CreatePacket(0xD7, 35); // FOG-FASE6/G: v6 = 35 bytes
     pkt.SetInt8(0, 0xD7);
-    _Fog_SetInt16BE(pkt, 1,  29);
+    _Fog_SetInt16BE(pkt, 1,  35); // FOG-FASE6/G
     _Fog_SetInt16BE(pkt, 3,  0x0070);
     pkt.SetInt8(5, 1);
     _Fog_SetInt16BE(pkt, 6,  params.density_int);
@@ -198,6 +230,9 @@ function SendFogTestPacket(who, params)
     pkt.SetInt8(25, params.color_g);
     pkt.SetInt8(26, params.color_b);
     _Fog_SetInt16BE(pkt, 27, params.desat_int);
+    _Fog_SetInt16BESigned(pkt, 29, params.world_z_min);  // FOG-FASE5/F
+    _Fog_SetInt16BESigned(pkt, 31, params.world_z_max);  // FOG-FASE5/F
+    _Fog_SetInt16BE(pkt, 33, params.world_z_fade);        // FOG-FASE6/G
     pkt.SendPacket(who);
 endfunction
 
@@ -211,11 +246,11 @@ function SendFogOffToGm(who)
     pkt.SendPacket(who);
 endfunction
 
-// Envia packet 0x0070 com parâmetros de uma região para o player (watcher).
+// Envia packet 0x0070 v6 com parâmetros de uma região para o player (watcher).
 function SendFogPacketForRegion(who, region)
-    var pkt := CreatePacket(0xD7, 29);
+    var pkt := CreatePacket(0xD7, 35); // FOG-FASE6/G: v6 = 35 bytes
     pkt.SetInt8(0, 0xD7);
-    _Fog_SetInt16BE(pkt, 1,  29);
+    _Fog_SetInt16BE(pkt, 1,  35); // FOG-FASE6/G
     _Fog_SetInt16BE(pkt, 3,  0x0070);
     pkt.SetInt8(5, 1);
     _Fog_SetInt16BE(pkt, 6,  region.DensityInt);
@@ -231,6 +266,9 @@ function SendFogPacketForRegion(who, region)
     pkt.SetInt8(25, region.ColorG);
     pkt.SetInt8(26, region.ColorB);
     _Fog_SetInt16BE(pkt, 27, region.DesatInt);
+    _Fog_SetInt16BESigned(pkt, 29, region.WorldZMin); // FOG-FASE5/F
+    _Fog_SetInt16BESigned(pkt, 31, region.WorldZMax); // FOG-FASE5/F
+    _Fog_SetInt16BE(pkt, 33, region.FalloffZ);        // FOG-FASE6/G
     pkt.SendPacket(who);
 endfunction
 

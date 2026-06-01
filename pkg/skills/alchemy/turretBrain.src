@@ -1,0 +1,111 @@
+use uo;
+use os;
+
+include ":wrappers:Objects/Model/MobileWrapper";
+include "/include/epicPropNames";
+
+/**
+ * Torreta Granadeira control loop (L7). Runs for ~30 seconds: every 3s it
+ * targets the nearest hostile within 6 tiles (LoS) and lobs a basic Explosivo
+ * (0xef60) through the standard exploder pipeline. Ends when the 30s elapse or
+ * the turret's HP (PROPNAME_DURABILIDADE, drained by the destroyable system when
+ * players attack it) reaches 0. Plays the death graphic 0x9F88 on timeout.
+ *
+ * parms: { turret, owner, science }
+ */
+
+const TURRET_LIFETIME := 30;   // seconds
+const TURRET_RANGE    := 6;    // tiles
+const TURRET_BOMB     := 0xef60;
+
+program turret_brain(parms)
+    var turret  := parms[1];
+    var owner   := parms[2];
+    var science := CInt(parms[3]);
+    if (!turret || !owner)
+        return;
+    endif
+
+    // HP for the destroyable system + no-respawn flag (so Destruir won't mark
+    // this temporary turret for recreation).
+    SetObjProperty(turret, PROPNAME_DURABILIDADE, science * 2);
+    SetObjProperty(turret, PROPNAME_DISPENSAVEL_FLAG, 1);
+
+    var bombTier  := 1;
+    var bombBonus := CInt(science / 15);
+    var deployTime := readgameclock();
+
+    while (1)
+        if (!turret)
+            break;  // destroyed by the destroyable system (player attack)
+        endif
+        if (readgameclock() - deployTime >= TURRET_LIFETIME)
+            _TurretDeath(turret);
+            break;
+        endif
+        if (CInt(GetObjProperty(turret, PROPNAME_DURABILIDADE)) <= 0)
+            break;  // killed; Destruir() already removed the item
+        endif
+
+        var targ := _NearestHostile(turret, owner);
+        if (targ)
+            _ThrowBomb(turret, owner, targ, bombTier, bombBonus);
+        endif
+
+        sleep(3);
+    endwhile
+
+    if (owner)
+        EraseObjProperty(owner, "activeTurret");
+    endif
+endprogram
+
+function _NearestHostile(turret, owner)
+    var ownerMw := MobileWrapper(owner);
+    var hostiles := ownerMw.GetNearbyHostiles(20);
+    if (hostiles is @Exception)
+        return 0;
+    endif
+
+    var best := 0;
+    var bestDist := TURRET_RANGE + 1;
+    foreach hostile in (hostiles)
+        if (!hostile || hostile.dead)
+            continue;
+        endif
+        if (hostile.realm != turret.realm)
+            continue;
+        endif
+        var dist := CoordinateDistance(turret.x, turret.y, hostile.x, hostile.y);
+        if (dist <= TURRET_RANGE && dist < bestDist && CheckLineOfSight(turret, hostile))
+            best := hostile;
+            bestDist := dist;
+        endif
+    endforeach
+    return best;
+endfunction
+
+function _ThrowBomb(turret, owner, targ, bombTier, bombBonus)
+    var bomb := CreateItemAtLocation(targ.x, targ.y, targ.z, TURRET_BOMB, 1, turret.realm);
+    if (!bomb)
+        return;
+    endif
+    bomb.movable := 0;
+    SetObjProperty(bomb, "CreatedBy", owner.serial);
+    SetObjProperty(bomb, "bonus", bombBonus);
+    SetObjProperty(bomb, "fabricado", struct{ classe := bombTier });
+    PlayMovingEffectXYZ(turret.x, turret.y, turret.z + 5, targ.x, targ.y, targ.z, 0x0f09, 10, 0, 0);
+    start_script(":alchemy:potions/exploder", { bomb, bomb });
+endfunction
+
+function _TurretDeath(turret)
+    if (!turret)
+        return;
+    endif
+    turret.graphic := 0x9F88;
+    PlaySoundEffect(turret, 0x207);
+    sleepms(600);
+    if (turret)
+        DestroyItem(turret);
+    endif
+endfunction

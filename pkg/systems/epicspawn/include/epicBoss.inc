@@ -502,18 +502,27 @@ endfunction
 
 /*
  * GetAllOpponents(npc)
- * Purpose: Gets all opponents (players) in combat with the NPC
+ * Purpose: Gets the boss's AoE victims — nearby players and their pets.
+ * Note: we cannot rely on the engine opponent relationship (ListHostiles /
+ * mobile.opponent == npc both return empty because the boss<->player link is
+ * one-directional). Instead we use the proven house idiom from every NPC AoE
+ * (HammerSlam/WingBuffet/ScreechAttack): proximity scan + skip self/dead and
+ * skip wild NPCs (npctemplate without a master), keeping players + their pets.
  * Parameters: npc - The NPC to get opponents for
  * Return: Array of opponents
  */
 function GetAllOpponents(npc)
     var opponents := array{};
     var range := 8; // Search range
-    
+
     foreach mobile in ListMobilesNearLocation(npc.x, npc.y, npc.z, range, npc.realm)
-        if (mobile.IsA(POLCLASS_MOBILE) && !mobile.dead && mobile.opponent == npc)
-            opponents.append(mobile);
+        if (mobile.serial == npc.serial || mobile.dead)
+            continue;
         endif
+        if (mobile.npctemplate && !mobile.master)
+            continue; // wild NPC, not a player or pet
+        endif
+        opponents.append(mobile);
     endforeach
     
     return opponents;

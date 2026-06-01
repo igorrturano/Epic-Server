@@ -1,0 +1,186 @@
+use uo;
+use os;
+use basic;
+
+include ":ultimalive:include/tree_damage";
+include ":gathering:lumberJack";
+include ":gathering:settings";
+
+const UL_PIECE_TIMEOUT_SECONDS := 900;  // 15*60 em producao
+
+program ul_tree_regen()
+    SetGlobalProperty("#UL_TreeRegenPid", GetPid());
+    while (1)
+        _UL_RegenPhase();
+        sleep(2);
+        _UL_CleanupPieces();
+        sleep(58);
+    endwhile
+endprogram
+
+function _UL_RegenPhase()
+    var df    := _UL_GetTreePhasesDF();
+    if (df.errortext) return; endif
+    var elems := DFGetElemNames(df);
+    var now   := polcore().systime;
+    foreach key in (elems)
+        var el        := df.FindElement(key);
+        var phase     := CInt(el.GetProp("Phase"));
+        var regen_at  := CInt(el.GetProp("WillRegenAt"));
+        var realm_raw := el.GetProp("Realm");
+        if (realm_raw.errortext)
+            df.DeleteElement(key);
+            sleep(1);
+            continue;
+        endif
+        var realm := CStr(realm_raw);
+        var x     := CInt(el.GetProp("X"));
+        var y     := CInt(el.GetProp("Y"));
+        if (phase == 3 && regen_at == 0)
+            if (!_UL_HasPiecesRemaining(realm, x, y))
+                print("[UL_DEBUG] Found tree: realm=" + realm + " x=" + x + " y=" + y + " phase=" + phase + " regen_at=" + regen_at);
+                print("[UL_DEBUG] Regenerating: realm=" + realm + " x=" + x + " y=" + y);
+                _UL_DoRegen(el, key);
+            endif
+        elseif (regen_at > 0 && now >= regen_at)
+            print("[UL_DEBUG] Found tree: realm=" + realm + " x=" + x + " y=" + y + " phase=" + phase + " regen_at=" + regen_at);
+            print("[UL_DEBUG] Regenerating: realm=" + realm + " x=" + x + " y=" + y);
+            _UL_DoRegen(el, key);
+        endif
+        sleep(1);
+    endforeach
+endfunction
+
+function _UL_CleanupPieces()
+    var df    := _UL_GetTreePiecesDF();
+    if (df.errortext) return; endif
+    var elems := DFGetElemNames(df);
+    var now   := polcore().systime;
+    foreach key in (elems)
+        var el         := df.FindElement(key);
+        var created_at := CInt(el.GetProp("CreatedAt"));
+        if (created_at == 0 || (now - created_at) >= UL_PIECE_TIMEOUT_SECONDS)
+            var realm_prop := el.GetProp("Realm");
+            if (realm_prop.errortext)
+                print("[UL_DEBUG] PieceExpired (legacy/no props): key=" + key);
+            else
+                var realm_p     := CStr(realm_prop);
+                var x_p         := CInt(el.GetProp("X"));
+                var y_p         := CInt(el.GetProp("Y"));
+                var parent_x_p  := CInt(el.GetProp("ParentX"));
+                var parent_y_p  := CInt(el.GetProp("ParentY"));
+                var trunk_gfx_p := CInt(el.GetProp("TrunkGraphic"));
+                print("[UL_DEBUG] PieceExpired: realm=" + realm_p + " x=" + x_p + " y=" + y_p + " created=" + created_at + " age=" + (now - created_at));
+                if (parent_x_p > 0 && parent_y_p > 0 && trunk_gfx_p > 0)
+                    var rem := _UL_DecrementPieces(realm_p, parent_x_p, parent_y_p, trunk_gfx_p);
+                    if (rem == 0)
+                        _UL_SetWillRegenAt(realm_p, parent_x_p, parent_y_p, trunk_gfx_p);
+                    endif
+                endif
+            endif
+            var serial := CInt(el.GetProp("Serial"));
+            df.DeleteElement(key);
+            var item := SystemFindObjectBySerial(serial);
+            if (!item.errortext)
+                DestroyItem(item);
+            endif
+        endif
+        sleep(1);
+    endforeach
+endfunction
+
+function _UL_DoRegen(el, key)
+    var realm_raw := el.GetProp("Realm");
+    if (realm_raw.errortext)
+        var df_ph := _UL_GetTreePhasesDF();
+        if (!df_ph.errortext)
+            df_ph.DeleteElement(key);
+        endif
+        return;
+    endif
+    var realm         := CStr(realm_raw);
+    var x             := CInt(el.GetProp("X"));
+    var y             := CInt(el.GetProp("Y"));
+    var trunk_graphic := CInt(el.GetProp("TrunkGraphic"));
+    var bx            := x / 8;
+    var by            := y / 8;
+
+    var z_trunk_prop   := el.GetProp("ZTrunk");
+    var z_foliage_prop := el.GetProp("ZFoliage");
+    var z_trunk        := 0;
+    var z_foliage      := 0;
+    var has_z_trunk    := 0;
+    var has_z_foliage  := 0;
+    if (!z_trunk_prop.errortext)
+        z_trunk     := CInt(z_trunk_prop);
+        has_z_trunk := 1;
+    endif
+    if (!z_foliage_prop.errortext)
+        z_foliage     := CInt(z_foliage_prop);
+        has_z_foliage := 1;
+    endif
+
+    var meta := UL_GetTreeMeta(trunk_graphic);
+    if (!meta.errortext)
+        if (has_z_foliage)
+            UL_RevertMutation(realm, x, y, z_foliage, meta.foliage);
+        endif
+        if (has_z_trunk)
+            UL_RevertMutation(realm, x, y, z_trunk, trunk_graphic);
+        endif
+    endif
+
+    _UL_DestroyAllPiecesForParent(realm, x, y);
+
+    var settings := LJ_GetSettingsCfgElem("Settings");
+    LJ_SetWoodAmount(realm, x, y, CInt(settings.MaxWood));
+
+    UL_NotifyNearbyPlayers(realm, bx, by);
+
+    var df_ph := _UL_GetTreePhasesDF();
+    if (!df_ph.errortext)
+        df_ph.DeleteElement(key);
+    endif
+endfunction
+
+function _UL_DestroyAllPiecesForParent(realm, parent_x, parent_y)
+    var df    := _UL_GetTreePiecesDF();
+    if (df.errortext) return; endif
+    var elems := DFGetElemNames(df);
+    foreach key in (elems)
+        var el := df.FindElement(key);
+        if (CStr(el.GetProp("Realm"))   == CStr(realm)    &&
+            CInt(el.GetProp("ParentX")) == CInt(parent_x) &&
+            CInt(el.GetProp("ParentY")) == CInt(parent_y))
+            var serial := CInt(el.GetProp("Serial"));
+            df.DeleteElement(key);
+            var item := SystemFindObjectBySerial(serial);
+            if (!item.errortext)
+                DestroyItem(item);
+            endif
+        endif
+        sleep(1);
+    endforeach
+endfunction
+
+function _UL_HasPiecesRemaining(realm, parent_x, parent_y)
+    var df := _UL_GetTreePhasesDF();
+    if (df.errortext) return 0; endif
+    var elems := DFGetElemNames(df);
+    foreach key in (elems)
+        var el := df.FindElement(key);
+        var rx := el.GetProp("Realm");
+        if (rx.errortext)
+            sleepms(1);
+            continue;
+        endif
+        var ex := CInt(el.GetProp("X"));
+        var ey := CInt(el.GetProp("Y"));
+        if (CStr(rx) == CStr(realm) && ex == CInt(parent_x) && ey == CInt(parent_y))
+            return CInt(el.GetProp("PiecesRemaining")) > 0;
+        endif
+        sleepms(1);
+    endforeach
+    return 0;
+endfunction
+

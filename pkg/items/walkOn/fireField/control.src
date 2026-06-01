@@ -14,6 +14,7 @@ include ":combat:Model/Damage";
 include ":destroyable:include/destroyItem";
 
 const FIELD_TICK_MS := 250;
+const PERMANENT_TICK_MS := 2500; // fields with no Duration are decorative/permanent
 const ITEM_DAMAGE_EVERY_N_TICKS := 4; // ~1s
 
 program controlScript(field)
@@ -34,9 +35,16 @@ program controlScript(field)
 
 	var tickCount := 0;
 	while (field)
+		// A field with no Duration never expires (permanent fire is intentional).
+		// Such fields tick far slower and skip the durability scan so they cost
+		// almost nothing — they still burn mobiles standing in them.
+		var dur := GetObjProperty(field, "Duration");
+		var isPermanent := (dur == error || !dur);
+		var tickMs := isPermanent ? PERMANENT_TICK_MS : FIELD_TICK_MS;
+
 		BurnNearbyMobiles(field, dmg_dice);
 
-		if (tickCount % ITEM_DAMAGE_EVERY_N_TICKS == 0)
+		if (!isPermanent && tickCount % ITEM_DAMAGE_EVERY_N_TICKS == 0)
 			DanificaObjetosProximos(creator, field.x, field.y, field.z, field.realm,
 				struct{ dano := RandomDiceRoll(dmg_dice), desc := "Campo Flamejante." + sumDesc },
 				0, 0, field.serial);
@@ -57,7 +65,7 @@ program controlScript(field)
 			DestroyItem(field);
 			return 1;
 		endif
-		sleepms(FIELD_TICK_MS);
+		sleepms(tickMs);
 		tickCount := tickCount + 1;
 	endwhile
 endprogram
