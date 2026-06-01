@@ -3,7 +3,11 @@ use os;
 use vitals;
 
 include ":charactercreation:resists";
+include ":nature:regionMusic";
 
 program neve(who, regioname)
+	// Taiga (nortegelado_parteN): música ambiente dia/noite.
+	// Ice_Dungeon_* também usa este script e é ignorado por PlayRegionMusic.
+	PlayRegionMusic(who, regioname);
 	start_script(":nature:coldeffect", { who });
 endprogram
