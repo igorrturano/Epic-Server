@@ -245,6 +245,8 @@ function ExplosionEffect(who, potion, dmg)
 	//     center sits inside the owner's active zone. Owner is the thrower for
 	//     bombs, or the mine's CreatedBy for mines. ---
 	var zoneSlowSecs := 0;
+	var protocolSkipAllies := 0;
+	var ownerMw := 0;
 	var owner := who;
 	if (!who.isA(POLCLASS_MOBILE))
 		var createdBy := GetObjProperty(who, "CreatedBy");
@@ -260,6 +262,14 @@ function ExplosionEffect(who, potion, dmg)
 				ZONA_TIPO_LENTIDAO: zoneSlowSecs := CInt(MobileWrapper(owner).GetSkill(SCIENCE) / 10);
 			endcase
 		endif
+
+		// --- Protocolo Mestre (L10): +30% radius, no friendly fire to allies ---
+		var pm := GetObjProperty(owner, "ProtocoloMestreActive");
+		if (pm && pm > polcore().systime)
+			dist := CInt(dist * 1.3);
+			protocolSkipAllies := 1;
+			ownerMw := MobileWrapper(owner);
+		endif
 	endif
 
 	PlayStationaryEffectEx(potion.x, potion.y, potion.z, potion.realm, 0x36b0, 7, 10, color);
@@ -268,6 +278,9 @@ function ExplosionEffect(who, potion, dmg)
 
 	foreach critter in (ListMobilesNearLocation(potion.x, potion.y, potion.z, dist, potion.realm))
 		if (checkLineOfSight(potion, critter))
+			if (protocolSkipAllies && critter != owner && ownerMw.IsAllyOf(MobileWrapper(critter)) == 1)
+				continue;
+			endif
 			if (critter.hidden)
 				critter.hidden := 0;
 				SendSysMessage(critter, "Voce foi revelado na explosao!");
