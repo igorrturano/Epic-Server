@@ -902,8 +902,9 @@ function ProcessVendorDoubleClick(npc, player)
 			SendSysMessageEx(player, "Nao foi possivel equipar: " + res.errortext, SSM_FAIL);
 		endif
 	elseif (input == 8)
+		var container := CreateItemAtLocation(npc.x, npc.y, npc.z, "backpack", 1, npc.realm);
 		foreach item in (EnumeratePhysicalItems(npc))
-			MoveItemToContainer(item, player.backpack);
+			MoveItemToContainer(item, container);
 			SleepMS(2);
 		endforeach
 		PrintTextAbove(npc, "Tomei a liberdade de tirar minhas vestes.");
