@@ -1,0 +1,25 @@
+use uo;
+use util;
+use os;
+
+include ":brainAI:include/npcInit";
+
+// Init shared dos NPCs da Liga.
+// Chamado por ligafaccao/main.src::Setup() de forma idempotente.
+// Aplica o EquipTemplate definido no NPCTemplate (EquipIndex/EquipGroups
+// do brainAI). Sem efeito quando o template nao define EquipTemplate.
+
+program LigaInit(params)
+	var npc := params[1];
+	if (!npc) return 0; endif
+
+	var result := NPC_SetupRandomEquipment(npc);
+	if (result.errortext)
+		// Sem EquipTemplate ou template nao encontrado — apenas registra.
+		syslog("[LigaInit] {} ({}): {}".format(
+			npc.name, npc.npctemplate, result.errortext));
+		return 0;
+	endif
+
+	return 1;
+endprogram
