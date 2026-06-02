@@ -1,0 +1,7 @@
+use uo;
+use os;
+
+program injectevent(who, text)
+    Start_Script(":epicdungeon:wrappers/injectcombatevent_w", array{ who });
+    return 1;
+endprogram
