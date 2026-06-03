@@ -119,16 +119,18 @@ Botão "Criar região aqui" pré-popula o canto NW com a posição atual e abre 
 ```
 Player loga
   → POL chama pkg/systems/fog_regions/logon.src
-  → start_script :fog_regions:fogRegionWatcher
+  → se #fogWatcherPid resolve p/ processo vivo (GetProcess) → não duplica
+  → senão start_script :fog_regions:fogRegionWatcher e guarda scr.pid em #fogWatcherPid
   → Loop while(who.connected):
-      current_region = GetRegionAtPosition(who.x, who.y, who.realm)
+      se GetFogRegionsVersion() mudou → recarrega cache (LoadRegions); senão reusa
+      current_region = MatchRegionAtPosition(regions_cache, who.x, who.y, who.realm)
       if (current_region != last_region):
           SendFogOff(who)             (se estava em outra)
           SendFogPacketForRegion(...)  (se entrou em nova)
       sleep(2)
 ```
 
-Encerra automaticamente no logoff (loop sai quando `!who.connected`). Linha defensiva em `scripts/misc/logoff.src` apaga `#fogWatcherActive` pra cobrir edge case de reconexão rápida.
+Encerra automaticamente no logoff (loop sai quando `!who.connected`). Dedup por liveness de processo: `#fogWatcherPid` + `GetProcess` no logon (sobrevive a restart/OOM, ao contrário de uma flag persistida). Linha defensiva em `scripts/misc/logoff.src` apaga `#fogWatcherPid`.
 
 **Por que watcher em vez de EnterScript/LeaveScript nativos do POL:** EnterScript precisa de restart do server pra ativar nova região. Watcher per-player funciona imediatamente — GM cria região e testa AGORA. Trade-off escolhido: UX > elegância arquitetural.
 
@@ -178,7 +180,7 @@ pkg/commands/gm/
 └── fogregion.src                   entrypoint do comando .fogregion
 
 pkg/commands/config/icp.cfg         registro do comando (1 linha)
-scripts/misc/logoff.src             limpeza de #fogWatcherActive (1 linha)
+scripts/misc/logoff.src             limpeza de #fogWatcherPid (1 linha)
 ```
 
 ## API pública — fogRegionCore.inc
