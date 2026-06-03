@@ -65,7 +65,7 @@ Validar coração funcional do sistema.
 6. **Esperado:** fog volta
 
 Se esta suite falha, sistema não funciona. Investigar:
-- Watcher rodando? Via `.props` no GM, verificar `#fogWatcherActive`
+- Watcher rodando? Via `.props` no GM, verificar `#fogWatcherPid` (e que o pid está vivo)
 - Server log mostra erro em `SendFogPacketForRegion`?
 - Cliente EpicUO está com Camada B? Build correto?
 
@@ -219,7 +219,7 @@ Validar regions.cfg como source of truth.
 |---|---|
 | `ecompile` falha | Cole stderr completo. Sintaxe POL (`is @error`?), include path incorreto, função inexistente |
 | Tela não abre ao clicar `.fogregion` | Verificar log POL. Comando registrado em icp.cfg? .ecl existe? |
-| Watcher não detecta região | `.props` no GM verifica `#fogWatcherActive`. Se ausente, logon hook não disparou |
+| Watcher não detecta região | `.props` no GM verifica `#fogWatcherPid`. Se ausente ou pid morto, logon hook não (re)disparou |
 | Fog não desaparece ao sair | SendFogOff não chamado. Verificar transição no watcher loop |
 | Timer não expira | Effect script rodando? `.scripts` (se houver tool) ou log POL deve mostrar |
 | Gump renderiza estranho | Cores ou IDs de botão errados. Cross-check com `convenção de cores e botões` no README |
