@@ -10,11 +10,20 @@ program fogRegionWatcher(who)
         return;
     endif
 
-    SetObjProperty(who, "#fogWatcherActive", 1);
     var last_region_name := "";
+    var regions          := LoadRegions();
+    var regions_version  := GetFogRegionsVersion();
 
-    while (who && who.connected && GetObjProperty(who, "#fogWatcherActive") == 1)
-        var current      := GetRegionAtPosition(who.x, who.y, who.realm);
+    while (who && who.connected)
+        // Só recarrega o datafile quando um GM muta uma região (bump da versão);
+        // caso contrário reusa o cache local. Corta o reload por tick.
+        var v := GetFogRegionsVersion();
+        if (v != regions_version)
+            regions         := LoadRegions();
+            regions_version := v;
+        endif
+
+        var current      := MatchRegionAtPosition(regions, who.x, who.y, who.realm);
         var current_name := "";
         if (!current.errortext)
             current_name := current.Name;
@@ -36,6 +45,4 @@ program fogRegionWatcher(who)
     if (Len(last_region_name) > 0 && who && who.connected)
         SendFogOff(who);
     endif
-
-    EraseObjProperty(who, "#fogWatcherActive");
 endprogram

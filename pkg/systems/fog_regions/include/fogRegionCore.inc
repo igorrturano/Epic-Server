@@ -14,6 +14,9 @@ const FOG_REGION_STATUS_ACTIVE  := 1;
 const FOG_REGION_STATUS_STOPPED := 0;
 const FOG_REGION_MODE_PERMANENT := "permanent";
 const FOG_REGION_MODE_TIMED     := "timed";
+// Contador global incrementado a cada mutação de região. Watchers comparam contra
+// um valor cacheado e só recarregam o datafile quando ele muda (ver fogRegionWatcher).
+const FOG_REGIONS_VERSION_GLOBAL := "fogRegionsVersion";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -29,6 +32,16 @@ function _OpenRegionsDF()
         df := CreateDataFile(FOG_REGION_DATA_FILE, DF_KEYTYPE_STRING);
     endif
     return df;
+endfunction
+
+// Versão atual do conjunto de regiões (0 se nunca houve mutação).
+function GetFogRegionsVersion()
+    return CInt(GetGlobalProperty(FOG_REGIONS_VERSION_GLOBAL));
+endfunction
+
+// Incrementa a versão — chamado por toda escrita (SaveRegion/DeleteRegion).
+function _BumpFogRegionsVersion()
+    SetGlobalProperty(FOG_REGIONS_VERSION_GLOBAL, GetFogRegionsVersion() + 1);
 endfunction
 
 // Converte elemento do datafile em struct de região.
@@ -125,10 +138,10 @@ function IsRegionLogicallyActive(region)
     return 1;
 endfunction
 
-// Retorna a primeira região logicamente ativa que contém (x, y, realm).
-// Retorna error se nenhuma encontrada.
-function GetRegionAtPosition(x, y, realm)
-    var regions := LoadRegions();
+// Varre um array de regiões JÁ carregado e retorna a primeira logicamente ativa
+// que contém (x, y, realm). IsRegionLogicallyActive reavalia systime a cada chamada,
+// então expiração de regiões timed continua detectada mesmo sobre um cache.
+function MatchRegionAtPosition(regions, x, y, realm)
     foreach r in regions
         if (!IsRegionLogicallyActive(r))
             continue;
@@ -141,6 +154,13 @@ function GetRegionAtPosition(x, y, realm)
         endif
     endforeach
     return error{"errortext" := "nenhuma fog region nesta posição"};
+endfunction
+
+// Retorna a primeira região logicamente ativa que contém (x, y, realm).
+// Retorna error se nenhuma encontrada. (Recarrega tudo — para chamadas pontuais;
+// loops devem cachear via LoadRegions + MatchRegionAtPosition.)
+function GetRegionAtPosition(x, y, realm)
+    return MatchRegionAtPosition(LoadRegions(), x, y, realm);
 endfunction
 
 // Salva (cria ou sobrescreve) uma região no data store.
@@ -181,6 +201,7 @@ function SaveRegion(region_struct)
     elem.SetProp("WorldZMin",  region_struct.WorldZMin); // FOG-FASE5/F
     elem.SetProp("WorldZMax",  region_struct.WorldZMax); // FOG-FASE5/F
     elem.SetProp("FalloffZ",   region_struct.FalloffZ);  // FOG-FASE6/G
+    _BumpFogRegionsVersion();
     return 1;
 endfunction
 
@@ -190,7 +211,9 @@ function DeleteRegion(name)
     if (!df)
         return error{"errortext" := "data file não encontrado"};
     endif
-    return df.DeleteElement(name);
+    var result := df.DeleteElement(name);
+    _BumpFogRegionsVersion();
+    return result;
 endfunction
 
 // ── Packet helpers ────────────────────────────────────────────────────────────
