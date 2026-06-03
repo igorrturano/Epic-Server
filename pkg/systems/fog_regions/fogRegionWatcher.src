@@ -10,10 +10,9 @@ program fogRegionWatcher(who)
         return;
     endif
 
-    SetObjProperty(who, "#fogWatcherActive", 1);
     var last_region_name := "";
 
-    while (who && who.connected && GetObjProperty(who, "#fogWatcherActive") == 1)
+    while (who && who.connected)
         var current      := GetRegionAtPosition(who.x, who.y, who.realm);
         var current_name := "";
         if (!current.errortext)
@@ -36,6 +35,4 @@ program fogRegionWatcher(who)
     if (Len(last_region_name) > 0 && who && who.connected)
         SendFogOff(who);
     endif
-
-    EraseObjProperty(who, "#fogWatcherActive");
 endprogram
