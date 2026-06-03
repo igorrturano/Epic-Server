@@ -11,10 +11,17 @@ program logon(who)
 
     CleanupFogPreviewMarkers(who);
 
-    if (GetObjProperty(who, "#fogWatcherActive") == 1)
+    // Dedup por liveness de processo (sobrevive a restart/OOM, ao contrário de uma
+    // flag persistida): se o pid guardado ainda resolve para um processo vivo, o
+    // watcher já está rodando; senão (inclusive pid orfão de crash) inicia um novo.
+    var existing := GetObjProperty(who, "#fogWatcherPid");
+    if (existing && GetProcess(CInt(existing)))
         return 1;
     endif
 
-    start_script(":fog_regions:fogRegionWatcher", who);
+    var scr := start_script(":fog_regions:fogRegionWatcher", who);
+    if (scr && !scr.errortext)
+        SetObjProperty(who, "#fogWatcherPid", scr.pid);
+    endif
     return 1;
 endprogram
