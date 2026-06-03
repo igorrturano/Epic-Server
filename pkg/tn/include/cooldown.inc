@@ -30,5 +30,10 @@ function setCooldown(who, hability, time)
 		SetObjProperty(who, hability, Cint(ReadGameClock()+time) );
 		return 0;
 	endif
-	
+
+endfunction
+
+//remove um cooldown ativo imediatamente (consumo de uso unico)
+function eraseCooldown(who, hability)
+	EraseObjProperty(who, "#" + hability);
 endfunction
