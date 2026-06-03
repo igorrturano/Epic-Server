@@ -29,7 +29,7 @@ program canRemove(mobile, container, item, move_type)
 			endwhile
 			var mobWrapper := MobileWrapper(mobile);
 			if (aux == mobile)
-				if (mobWrapper.IsMounted())
+				if (mobWrapper.IsMounted() && !IsMountSwappableEquip(item))
 					SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
 					return 0;
 				endif
@@ -40,7 +40,7 @@ program canRemove(mobile, container, item, move_type)
 				return 1;
 			endif
 
-			if (mobWrapper.IsMounted())
+			if (mobWrapper.IsMounted() && !IsMountSwappableEquip(item))
 				SendSysMessage(mobile, "Voce nao pode fazer isto montado.");
 				return 0;
 			endif
