@@ -257,9 +257,6 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
         return 0;
     endif
 
-    // Special handling for Budōka (Monk) skill transformations (e.g. Wrestling)
-    skill_name := HandleBudokaSkillTransform(mobile, skill_name);
-
     // Check for valid training skills (if training skills are enforced)
     if (!ValidTrainingSkill(mobile, skill_name)) 
         SkillDbgMsg(mobile, "Not part of training skills.");
@@ -343,31 +340,6 @@ function CheckSkillAdvance(mobile, skill_name, award_diff, pass_chance)
 endfunction
 
 /*
- * HandleBudokaSkillTransform(mobile, skill_name)
- * 
- * Transforms Wrestling skill into One-Handed or Two-Handed 
- * if the character has the "Budōka" (Monk) ability.
- */
-function HandleBudokaSkillTransform(mobile, skill_name)
-    if (MobileWrapper(mobile).HasAbility(ABILITY_ID::MARTIAL_ARTIST) && skill_name == "Wrestling")
-        var chardata := GetObjProperty(mobile, "chardata");
-        var skillsmap := chardata.Skills;
-        var skillsArray := skillsmap.keys();
-        //add dual wield
-        foreach skill in skillsArray
-            if (skill == "One_Handed")
-                return "One_Handed";
-            elseif (skill == "Two_Handed")
-                return "Two_Handed";
-            elseif (skill == "Dual_Wield")
-                return "Dual_Wield";
-            endif
-        endforeach
-    endif
-    return skill_name;
-endfunction
-
-/*
  * ValidTrainingSkill(mobile, skill_name)
  * 
  * Ensures the skill is part of the character's valid training skills.
@@ -386,7 +358,11 @@ endfunction
  * Ensures enough time has passed since the last skill gain.
  */
 function SkillGainCooldownPassed(mobile, skill_name, settings)
-    var next_check := CInt(GetObjProperty(mobile, "#LastSkillGain")) + GetConfigInt(settings, "GainWait");
+    var delays := GetObjProperty(mobile, "#LastSkillGain");
+    if (TypeOf(delays) != "Dictionary") // legacy scalar value (or unset) → start fresh per-skill
+        delays := dictionary;
+    endif
+    var next_check := CInt(delays[skill_name]) + GetConfigInt(settings, "GainWait");
     var game_clock := ReadGameClock();
     var diff := CInt(next_check - game_clock);
     if (next_check > game_clock) 
@@ -512,8 +488,13 @@ function ApplySkillGain(mobile, skill_name)
         sleepms(10);
     endwhile
     AP_SetTrueSkill(mobile, skill_name, temp);
-    // Record the last skill gain time
-    SetObjProperty(mobile, "#LastSkillGain", ReadGameClock());
+    // Record the last skill gain time, per-skill, all kept in one dict
+    var delays := GetObjProperty(mobile, "#LastSkillGain");
+    if (TypeOf(delays) != "Dictionary")
+        delays := dictionary;
+    endif
+    delays[skill_name] := ReadGameClock();
+    SetObjProperty(mobile, "#LastSkillGain", delays);
 
     return new_skill_value;
 endfunction
