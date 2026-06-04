@@ -122,8 +122,8 @@ program core_npcDeath(params)
 			endif
 
 			var summon := GetObjProperty(corpse, "summoned");
-			if (summon == 1) // se for summon de druid para retirar da barra de buff e liberar o slot
-				var masterseriali := getObjProperty(corpse, "owneri");
+			if (summon == 1) // se for summon de druid para retirar da barra de buff e liberar o slot			
+			var masterseriali := getObjProperty(corpse, "owneri");
 				if (masterseriali && !masterseriali.errortext)
 					var masteri := SystemFindObjectBySerial(masterseriali);
 					if (masteri)
@@ -132,7 +132,9 @@ program core_npcDeath(params)
 						TS_LowerDuration(masteri, timer, -1);
 					endif
 				endif
-			elseif (!getobjproperty(corpse, "Necro"))
+			elseif (!getobjproperty(corpse, "Necro"))			
+			var originalSerial := GetObjProperty(corpse, "Original_serial");
+				Erasepet(master, originalSerial);
 				GetNumPets(master);
 				var teste := GetObjProperty(corpse, "LastDP");
 				SetObjProperty(master, "LastPetCorpse", corpse.serial);
@@ -146,8 +148,8 @@ program core_npcDeath(params)
 				// SendSysMessageEx(master, "Seu pet fiel precisa ser reanimado!", SSM_FAIL);
 				// endif
 				endif
-			else
-				var numbersummons := Cint(GetObjProperty(master, "NecroSummons"));
+			else			
+			var numbersummons := Cint(GetObjProperty(master, "NecroSummons"));
 				SetObjProperty(master, "NecroSummons", (numbersummons - 1));
 			endif
 		endif // Close the masterserial check				
