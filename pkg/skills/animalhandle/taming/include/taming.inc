@@ -132,7 +132,7 @@ function _TallyPets(who)
 			sleepms(2);
 			continue;
 		endif
-		if ( pet.master != who || GetObjProperty(pet, "summoned") )
+		if ( pet.IsA(POLCLASS_CORPSE) || pet.master != who || GetObjProperty(pet, "summoned") )
 			tamed.erase(_serial_iter);
 			sleepms(2);
 			continue;
@@ -482,12 +482,13 @@ endfunction
 function RessuscitarPet(corpse, owner, is_bandage := 0)
     var npc := CreateNpcFromTemplate(GetObjProperty(corpse, "npctemplate"), corpse.x, corpse.y, corpse.z, 0, corpse.realm);
     CopyPropsPet(corpse, npc);
-    var corpse_parsed := corpse.name[13, len(corpse.name)-12];
+    var corpse_parsed := corpse.name[10, len(corpse.name)-9];
     npc.script := ":epicai:tamedBrain";
     RestartScript(npc);
     SetName(npc, corpse_parsed);
     RecalcVitals(npc);
-
+	EraseObjProperty(npc, "Original_serial");
+	SetObjProperty(npc, "Original_serial", npc.serial);
     // Lógica de contagem de animais fidelizados
     var pets := GetObjProperty(owner, "TamedPets");
     var habs := MobileWrapper(owner).HasAbility(ABILITY_ID::ESPREITA_SELVAGEM);
@@ -520,29 +521,10 @@ function RessuscitarPet(corpse, owner, is_bandage := 0)
 
     DestroyItem(corpse);
     SetCooldown(npc, "resurrect", is_bandage ? 120 : 180);
-
-    if (!RestorePetAttributes(npc))
-        // Pre-snapshot pet (tamed before petSnapshot rollout): fall back to the
-        // legacy petskills-only restore so old pets aren't worse than today.
-        var skills := GetObjProperty(npc, "petskills");
-        if (skills)
-            foreach skill in (skills.keys())
-                AP_SetTrueSkill(npc, skill, skills[skill]);
-            endforeach
-        endif
-        // Legacy path also needs to re-apply the natural-instinct stat bonuses,
-        // since the snapshot would have captured them but petskills did not.
-        var instincts_legacy := GetObjProperty(npc, "instincts");
-        if (instincts_legacy)
-            if (instincts_legacy["Ferocidade"].ins_name == "Ferocidade")
-                AP_SetTrueStat(npc, STRENGTH, AP_GetStat(npc, STRENGTH) + 15);
-            endif
-            if (instincts_legacy["Flexibilidade"].ins_name == "Flexibilidade")
-                AP_SetTrueStat(npc, DEXTERITY, AP_GetStat(npc, DEXTERITY) + 15);
-            endif
-            RecalcVitals(npc);
-        endif
-    endif
+    var skills := GetObjProperty(npc, "petskills");
+    foreach skill in (skills.keys())
+        AP_SetTrueSkill(npc, skill, skills[skill]);
+    endforeach
 
     // Desconta o DP dos fieis
     if (GetObjProperty(npc, "bond") == "fiel")
@@ -553,17 +535,22 @@ function RessuscitarPet(corpse, owner, is_bandage := 0)
         endif
     endif
 
-    // Fortaleza hitsmod is a separate ObjProperty, not a stat — recompute it
-    // even when the snapshot already restored STR/DEX/skills.
+    // Repõe as habilidades do despertar natureza do pet
     var instincts := GetObjProperty(npc, "instincts");
     if (instincts)
+        if (instincts["Ferocidade"].ins_name == "Ferocidade")
+            AP_SetTrueStat(npc, STRENGTH, AP_GetStat(npc, STRENGTH) + 15);
+        endif
         if (instincts["Fortaleza"].ins_name == "Fortaleza")
             var hits := CInt(AP_GetVitalMaximumValue(npc, "Hits"));
             var variavel := CInt(hits / 3);
             var variavel2 := CInt(variavel / 2);
             SetObjProperty(npc, "hitsmod", variavel2);
-            RecalcVitals(npc);
         endif
+        if (instincts["Flexibilidade"].ins_name == "Flexibilidade")
+            AP_SetTrueStat(npc, DEXTERITY, AP_GetStat(npc, DEXTERITY) + 15);
+        endif
+        RecalcVitals(npc);
     endif
 	
 	//Checar a felicidade do animal quando ressuscita

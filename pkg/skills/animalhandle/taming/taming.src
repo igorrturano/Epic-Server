@@ -241,6 +241,7 @@ function tamecreature(who)
 			SetObjProperty(targ, "AntigoTreinadorID", who.serial);
 			SetObjProperty(targ, "Fidelizar?", "nao");
 			SetObjproperty(targ, "Cruzar", "nao");
+			SetObjproperty(targ, "Original_serial", targ.serial);
 			if (GetObjProperty(targ, "descmodboss"))
 				EraseObjProperty(targ, "descmodboss");
 				SetObjProperty(targ, "Sexo", 0);
