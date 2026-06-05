@@ -29,6 +29,10 @@ endprogram
 
 function reduce_container_fullness (byref character, byref container)
 	//sendsysmessage(character, " " + container);
+	if (GetObjProperty(container, "tintainfinita"))
+		return;
+	endif
+
 	var fullness := GetObjProperty (container, "fullness");
 
 	var cfgfile := ReadConfigFile( "itemdesc" );
