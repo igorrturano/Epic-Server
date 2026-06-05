@@ -634,6 +634,12 @@ function ShowPage1(who, title, gump_width, gump_height)
 	GFTextLine(gump, 50, 470, 1153, "Amount to Spawn:");
 	GFTextEntry(gump, 200, 470, 100, 20, 1150, form_data.amount ? form_data.amount : "1", 44);
 
+	// Graphic atual + botao que abre popup de edicao (estilo .info).
+	GFTextLine(gump, 50, 500, 1153, "Quer mudar o graphic?");
+	GFAddButton(gump, 230, 500, 2117, 2118, GF_CLOSE_BTN, 113);
+	GFTextLine(gump, 260, 500, 1153, "Atual: "
+				+ CStr(form_data.graphic ? form_data.graphic : 400));
+
 	// Add a divider line for Respawn Time Configuration
 	GFResizePic(gump, 650, 490, 3000, 2, 100);
 
@@ -699,6 +705,13 @@ function ShowPage1(who, title, gump_width, gump_height)
 
 	// Send the gump to the player
 	var input := GFSendGump(who, gump);
+
+	// Botao "Editar graphic" abre popup de edicao (estilo .info PropEditWithNavigation).
+	if (input[0] == 113)
+		EditBossGraphic(who, form_data);
+		return ShowPage1(who, title, gump_width, gump_height);
+	endif
+
 	return input;
 endfunction
 
@@ -2547,6 +2560,12 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
 		boss.graphic := form_data.graphic;
 	endif
 
+	// Marca override explicito do graphic via editor inline na pagina 1.
+	// CreateEpicBoss usa essa flag para forcar npc.graphic POS-makeRace.
+	if (form_data.graphic_overridden)
+		boss.graphic_overridden := 1;
+	endif
+
 	// Appearance data
 	if (form_data.appearance)
 		boss.appearance := form_data.appearance;
@@ -2866,6 +2885,23 @@ function CreateBossFromGump(who, form_data, existing_spawner := 0)
 			return 0;
 		endif
 		npcs.append(npc);
+
+		// Diagnostico do graphic override: so no primeiro spawn pra evitar spam.
+		// Aguarda o initialize.src assincrono terminar e checa se npc.graphic bateu
+		// com o solicitado. Se bater, sucesso; senao, body provavelmente invalido.
+		if (i == 1 && boss.graphic_overridden)
+			sleepms(400);
+			var requested := CInt(boss.graphic);
+			var actual := CInt(npc.graphic);
+			SendSysMessage(who, "[BOSS] graphic override solicitado=" + requested
+							+ " final=" + actual, color := 66);
+			if (actual != requested)
+				SendSysMessage(who, "[WARN] Body " + requested + " nao foi aplicado. "
+								+ "Verifique se existe em anim*.mul / bodyconv.def.",
+								color := 33);
+			endif
+		endif
+
 		sleepms(100); // Small delay between spawns
 	endfor
 
@@ -3924,4 +3960,67 @@ function CreateEquipmentEntry(item)
 	endif
 
 	return equipment_entry;
+endfunction
+
+// Popup de edicao de graphic — espelha PropEditWithNavigation de pkg/commands/gm/info.src.
+// Marca form_data.graphic_overridden quando o valor muda, para que CreateEpicBoss aplique
+// o override pos-makeRace (senao a raca selecionada na pagina 5 venceria).
+function EditBossGraphic(who, byref form_data)
+	while (1)
+		var value := CInt(form_data.graphic ? form_data.graphic : 400);
+
+		var gump := GFCreateGump();
+		GFPage(gump, 0);
+		GFResizePic(gump, 0, 0, GFGetCfgConst("Backgrounds", "GOLDTRIM"), 400, 200);
+
+		// Titulo
+		GFResizePic(gump, 15, 15, 9350, 370, 35);
+		GFTextLine(gump, 25, 22, 2100, "Editando: graphic de "
+					+ (form_data.name ? form_data.name : "Boss"));
+
+		// Area principal
+		GFResizePic(gump, 15, 60, 9350, 370, 100);
+
+		GFTextLine(gump, 25, 80, 2100, "Valor atual:");
+		GFTextLine(gump, 120, 80, 2100, CStr(value));
+
+		GFAddButton(gump, 25, 110, 4014, 4015, GF_CLOSE_BTN, 1); // -1
+		GFTextLine(gump, 50, 113, 2100, "-1");
+
+		GFAddButton(gump, 120, 110, 4005, 4006, GF_CLOSE_BTN, 2); // +1
+		GFTextLine(gump, 145, 113, 2100, "+1");
+
+		GFTextLine(gump, 200, 80, 2100, "Ou digite valor:");
+		var campo_gra := GFTextEntry(gump, 200, 100, 100, 20, 2100, CStr(value), 10);
+
+		GFAddButton(gump, 25, 170, 4023, 4024, GF_CLOSE_BTN, 4); // Fechar
+
+		GFAddButton(gump, 120, 170, 4020, 4021, GF_CLOSE_BTN, 0); // Cancelar
+
+		GFAddButton(gump, 300, 100, 4023, 4024, GF_CLOSE_BTN, 3); // Aplicar valor digitado
+		GFTextLine(gump, 345, 103, 2100, "Aplicar");
+
+		var input := GFSendGump(who, gump);
+		var button := input[0];
+		var novocampogra := GFExtractData(input, campo_gra);
+
+		if (button == 3 && novocampogra) // Aplicar valor digitado
+			form_data.graphic := CInt(novocampogra);
+			form_data.graphic_overridden := 1;
+			SendSysMessage(who, "Graphic setado para " + CInt(novocampogra) + ".", color := 66);
+		elseif (button == 1) // -1
+			if (value > 0)
+				form_data.graphic := value - 1;
+				form_data.graphic_overridden := 1;
+			endif
+		elseif (button == 2) // +1
+			form_data.graphic := value + 1;
+			form_data.graphic_overridden := 1;
+		else
+			// Fechar, Cancelar ou X — sai do loop sem mudar nada novo
+			break;
+		endif
+	endwhile
+
+	return 1;
 endfunction

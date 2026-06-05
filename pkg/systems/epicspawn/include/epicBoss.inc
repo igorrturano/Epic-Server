@@ -42,6 +42,11 @@ function CreateEpicBoss(boss, x, y, z, realm)
 
     var tier := boss.tier != 0 ? boss.tier : npc.getTier();
     customizeNpc(npc, tier);
+
+    // Nota: o override de graphic acontece em InitializeEpicNPC (epicAI), DEPOIS do
+    // type-dispatch async (que chama makeRace/setupNPCGender). Tentar aplicar aqui
+    // seria sobrescrito pela cadeia async que dispara via brain.src.
+
     // Set basic properties
     if (boss.name)
         SetName(npc, boss.name);
