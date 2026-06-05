@@ -17,6 +17,11 @@ program UseTub(mobile, dyetub)
 		return 0;
 	endif
 
+	if (targ.objtype == 0xFAB || targ.objtype == 0x5EBE)
+		SendSysMessage(mobile, "Voce nao pode pintar outro balde de tinta.");
+		return 0;
+	endif
+
 	if (CanDye(targ) || mobile.cmdlevel)
 		PlaySoundEffect(mobile, 0x23F);
 		targ.color := dyetub.color;
