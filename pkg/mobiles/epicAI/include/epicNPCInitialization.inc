@@ -100,13 +100,21 @@ function InitializeEpicNPC(mobile)
         default:    InitializeGenericNPC(mobile, npc_elem, elem, sounds);
     endcase
 
+    // Graphic override do GM tem PRIORIDADE MAXIMA. Roda DEPOIS do dispatch
+    // type-specific (que executa makeRace/setupNPCGender e pode forcar mobile.graphic
+    // pela raca selecionada). Sem este passo, o boss aparece com body humano mesmo
+    // tendo o GM digitado graphic=1250 no popup .info-style da pagina 1.
+    var graphicOverride := 0;
+    if (bossStruct && bossStruct.graphic_overridden && bossStruct.graphic)
+        mobile.graphic := CInt(bossStruct.graphic);
+        graphicOverride := 1;
+    endif
+
     SetObjProperty(mobile, "started", 1);
 
-    // Se o NPC tem SpawnScale, o 0x78 inicial foi enviado antes do init
-    // (antes do entityScale estar setado), então forçamos um re-render
-    // teleportando para fora do range e voltando.
-    // Nota: spawnScale já inclui o override do EpicBossStruct (lido acima).
-    if (spawnScale > 0 && spawnScale != 100)
+    // Re-render forcado: SpawnScale ou graphic override precisam de novo packet 0x78,
+    // senao o cliente segura a animacao intermediaria do body anterior ate o NPC andar.
+    if ((spawnScale > 0 && spawnScale != 100) || graphicOverride)
         var ox := mobile.x;
         var oy := mobile.y;
         var oz := mobile.z;
@@ -647,6 +655,14 @@ endfunction
 
 
 function SetupNPCEquip(who, npc_elem)
+    // Se o boss usa graphic override (body monstro escolhido manualmente no gump),
+    // pula vestiments/armaduras/armas humanoides — nao renderizam em body nao-humano
+    // e so consomem memoria/items inuteis. Stats/skills/abilities seguem normais.
+    var boss_override := GetObjProperty(who, "EpicBossStruct");
+    if (boss_override && boss_override.graphic_overridden)
+        return 0;
+    endif
+
     var categ := GetConfigString(npc_elem, "Equip");
     categ := categ;
     if(isMaleGraphic(who))
@@ -1026,17 +1042,24 @@ endfunction
 function SetupNPCAppearence(mobile)
     // Get boss data to check for appearance settings
     var boss := GetObjProperty(mobile, "EpicBossStruct");
+
+    // Override de graphic ativo: nao tenta criar hair/beard/skin de humano
+    // num body monstro — os items so existiriam no layer humano sem renderizar.
+    if (boss && boss.graphic_overridden)
+        return 0;
+    endif
+
     if (mobile.gender == 1)
         var existing_beard := GetEquipmentByLayer(mobile, LAYER_BEARD);
         if (existing_beard)
             DestroyItem(existing_beard);
         endif
     endif
-    
+
     if (!boss)
         return 0;
     endif
-    
+
     if (!boss.appearance)
         return 0;
     endif
