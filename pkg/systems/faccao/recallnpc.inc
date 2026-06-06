@@ -3,7 +3,7 @@
 // Dois comportamentos no mesmo botão (ao lado do nome do NPC no mural):
 //   GM    → teleporta o GM até o NPC (só observa, sem cooldown).
 //   Player → puxa o NPC pra posição atual do player, se ele estiver em terreno
-//            da facção. Cooldown de 1h por player.
+//            da facção. Cooldown de 1h por agente (cada NPC tem o próprio).
 //
 // Permissão: privilégio "recallnpc" ("Convocar Agentes"). Líder tem por default.
 
@@ -61,13 +61,13 @@ function _RecallOrTeleportNpcHandler(who, guild, npc_idx)
 
     // ── Player: convoca o NPC pra posição do player ────────────────────────
 
-    // Cooldown
+    // Cooldown por agente (timestamp vive no próprio NPC).
     var agora := polcore().systime;
-    var cd_ate := CInt(GetObjProperty(who, RECALL_CD_PROP));
+    var cd_ate := CInt(GetObjProperty(npc, RECALL_CD_PROP));
     if (cd_ate > agora)
         var restam := cd_ate - agora;
         return SendSysMessageEx(who,
-                                "Seu agente ainda esta cansado. Tente novamente em " + _FormatarCooldown(restam) + ".",
+                                npc.name + " ainda esta cansado. Tente novamente em " + _FormatarCooldown(restam) + ".",
                                 SSM_FAIL);
     endif
 
@@ -85,7 +85,7 @@ function _RecallOrTeleportNpcHandler(who, guild, npc_idx)
         return SendSysMessageEx(who, "Nao foi possivel convocar o agente.", SSM_FAIL);
     endif
 
-    SetObjProperty(who, RECALL_CD_PROP, agora + RECALL_COOLDOWN);
+    SetObjProperty(npc, RECALL_CD_PROP, agora + RECALL_COOLDOWN);
 
     SendSysMessageEx(who, npc.name + " foi convocado.", SSM_INFO);
     AddReport(guild, who.name + " convocou agente " + npc.name);
