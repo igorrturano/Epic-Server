@@ -11,6 +11,7 @@ include ":faccao:npc";
 include ":faccao:faccao";
 include ":faccao:laws";
 include ":faccao:capas";
+include ":faccao:recallnpc";
 include ":gumps:gumps";
 include ":gumps:gumps_ex";
 include ":gumps:selectionGump";
@@ -47,6 +48,7 @@ const BUTTON_TERRITORY := 0x500; // ID de botão para manipulador de território
 const BUTTON_TERRITORIES := 0x505; // Botão para acessar o gump de territórios
 
 const BUTTON_BUY_CAPE := 0x600; // Botão "Capas" no mural — abre gump de compra
+const BUTTON_RECALL_NPC := 0x700; // Base do botão "convocar/teleportar NPC" (offset = índice do NPC)
 
 var guild;
 var privilegies;
@@ -61,6 +63,7 @@ var priv_list := struct{ "above_guards" := "Controle de Guardas",
 						 "unlockdoors" := "Controle de Portas",
 						 "buyuniforms" := "Controle de Uniformes",
 						 "buycapes" := "Comprar Capas",
+						 "recallnpc" := "Convocar Agentes",
 						 "abovelaws" := "Leis não se aplicam a este personagem",
 						 "equipguard" := "Controle de Equipamento de Guardas" };
 
@@ -314,6 +317,19 @@ program faccao(params)
 		var desc := "Soldo: {}<br>Tipo: {}".format(npc.price, npc.type);
 		total_soldo += npc.price;
 		GFToolTipText(gump, desc);
+
+		// Botão "convocar/teleportar" — GM teleporta-se ao NPC; player puxa o NPC
+		// (precisa do privilégio recallnpc, terreno de facção e cooldown 1h).
+		if (who.cmdlevel >= 1 || is_gm_or_leader || privilegies.recallnpc)
+			GFAddButton(gump, 426 + 100, y, 0x845, 0x846, GF_CLOSE_BTN,
+						BUTTON_RECALL_NPC + _npc_iter - i);
+			if (who.cmdlevel >= 1)
+				GFToolTipText(gump, "Teleportar ate o agente");
+			else
+				GFToolTipText(gump, "Convocar agente (precisa estar em terreno da faccao)");
+			endif
+		endif
+
 		y += 18;
 	endforeach
 
@@ -371,6 +387,8 @@ program faccao(params)
 		guildHandler(who, input[0]);
 	elseif (input[0] == BUTTON_BUY_CAPE)
 		_ComprarCapaHandler(who, guild);
+	elseif (input[0] >= BUTTON_RECALL_NPC && input[0] <= BUTTON_RECALL_NPC + 0x50)
+		_RecallOrTeleportNpcHandler(who, guild, input[0] - BUTTON_RECALL_NPC);
 	elseif (input[0] == BUTTON_GM_OPTS)
 		if (gmHandler(who) == 99)
 			return;
