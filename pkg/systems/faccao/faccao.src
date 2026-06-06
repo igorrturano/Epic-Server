@@ -855,6 +855,18 @@ function playerHandler(who, input)
 	var output := RadioGump(who, 300, 0, "Escolha uma opcao", options, 0, 1);
 	if (output["Alterar"])
 		var privs := guild.GetProp(cstr(input));
+		if (!privs || privs == error) privs := struct{}; endif
+		// Auto-injetar keys que existem em priv_list mas faltam no struct persistido
+		// (mantém o gump em sincronia quando novas permissões são adicionadas no código)
+		var _changed := 0;
+		foreach _key in (priv_list.keys())
+			if (privs[_key] == error)
+				privs[_key] := 0;
+				_changed := 1;
+			endif
+		endforeach
+		if (_changed) guild.SetProp(cstr(input), privs); endif
+
 		var checked := array{};
 		var priv_opts := array{};
 		foreach opt in (privs.keys())

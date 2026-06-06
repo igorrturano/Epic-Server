@@ -29,7 +29,8 @@ var DEFAULT_MEMBER_STRUCT := struct{
     "contractnpc"     := 0,
     "fixitems"        := 0,
     "unlockdoors"     := 0,
-    "buyuniforms"     := 0
+    "buyuniforms"     := 0,
+    "buycapes"        := 0
 };
 
 // ============================================================

@@ -389,7 +389,8 @@ function _AddFullMember(faccao, mobile)
       "contractnpc" := 0,
       "fixitems" := 0,
       "unlockdoors" := 0,
-      "buyuniforms" := 0
+      "buyuniforms" := 0,
+      "buycapes" := 0
    };
    faccao.SetProp(cstr(mobile.serial), member_obj);
    if (GetFaccaoTipo(faccao) == "staff")
