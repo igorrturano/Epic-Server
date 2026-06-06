@@ -223,6 +223,18 @@ program NPCMonitor()
 			// DoObjectiveGuard();
 		endif
 
+		// Guard cross-realm: NPC nunca opera fora do realm canonico da guild.
+		if (EnforceGuildRealm())
+			fighting := 0;
+			following := 0;
+			warning := 0;
+			SetOpponent(0);
+			SetWarMode(0);
+			wait_time := 1;
+			sleepms(100);
+			continue;
+		endif
+
 		// Controle de território: staff usa rect hardcoded, player usa rect da guild.
 		if (GetObjProperty(me, "guild"))
 			if (GetObjProperty(me, "tipo_faccao") == "staff")
@@ -270,8 +282,7 @@ program NPCMonitor()
 					else
 						_dest := GetGuildCenter(guild, me.z);
 					endif
-					if (_dest)
-						RunTowardLocation(_dest.x, _dest.y);
+					if (MoveOrTeleportToGuildPoint(_dest))
 						wait_time := 0;
 					endif
 				endif
@@ -741,21 +752,28 @@ function SendToStartPosition()
 		return 1;
 	endif
 
+	// Realm canonico da guild (com fallback para realm corrente do NPC)
+	var _dest_realm := me.realm;
+	if (guild)
+		var _gr := GetGuildRealm(guild);
+		if (_gr) _dest_realm := _gr; endif
+	endif
+
 	if (fix_location)
 		if (CoordinateDistance(fix_location.x, fix_location.y, me.x, me.y) > 20)
-			if (HasPlayerNearLocation(fix_location.x, fix_location.y, me.realm))
+			if (HasPlayerNearLocation(fix_location.x, fix_location.y, _dest_realm))
 				return 0;
 			endif
 		endif
 
-		MoveObjectToLocation(me, fix_location.x, fix_location.y, fix_location.z, me.realm,
+		MoveObjectToLocation(me, fix_location.x, fix_location.y, fix_location.z, _dest_realm,
 					   MOVEOBJECT_FORCELOCATION);
 		me.facing := fix_location.facing;
 	endif
 
 	if (patrolling)
 		if (CoordinateDistance(patrolling.x, patrolling.y, me.x, me.y) > 20)
-			if (HasPlayerNearLocation(patrolling[1].x, patrolling[1].y, me.realm))
+			if (HasPlayerNearLocation(patrolling[1].x, patrolling[1].y, _dest_realm))
 				return 0;
 			endif
 
@@ -763,7 +781,7 @@ function SendToStartPosition()
 				procura_em_volta(me);
 			endif
 
-			MoveObjectToLocation(me, patrolling[1].x, patrolling[1].y, patrolling[1].z, me.realm,
+			MoveObjectToLocation(me, patrolling[1].x, patrolling[1].y, patrolling[1].z, _dest_realm,
 								  MOVEOBJECT_FORCELOCATION);
 		endif
 	endif
@@ -780,6 +798,15 @@ function FightADV(opponent := 0)
 			return;
 		elseif (IsMemberOfFaccao(guild, opponent))
 			if (opponent.IsA(POLCLASS_NPC))
+				return;
+			endif
+		endif
+
+		// Nunca engaja alvo fora do realm da guild — evita perseguicao cross-realm
+		// (NPC seguindo player que cruza moongate/teleporter e some no realm errado).
+		if (guild)
+			var _g_realm := GetGuildRealm(guild);
+			if (_g_realm && opponent.realm && opponent.realm != _g_realm)
 				return;
 			endif
 		endif
