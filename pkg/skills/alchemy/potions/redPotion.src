@@ -7,7 +7,9 @@ include ":attributes:attributes";
 include ":timedScripts:timedScripts";
 include "include/say";
 
-program drink_blue(who, potion)
+program drink_blue(params)
+	var who := params[1];
+	var potion := params[2];
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
 	if (!Accessible(who, potion))
