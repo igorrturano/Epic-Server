@@ -227,14 +227,19 @@ function ExaminarArea(who)
 	endforeach
 
 	foreach item in ListItemsNearLocation(who.x, who.y, who.z, range, who.realm)
-		// Ignore invisible items without a level (ambience/system items that should never be revealed)
-		lvl := Cint(GetObjProperty(item, "level"));
-		if (item.invisible && lvl == error)
+		// FIX 2026-06-06: guard original usava Cint(GetObjProperty()) == error, mas Cint(error)
+		// retorna 0 em POL — então qualquer item invisível sem prop level caía no default
+		// diff=-1 e era revelado (markers de infectarea, spawners epicboss/chest, etc).
+		// Impacto: só itens com "level" (artefatos roubavel) continuam revelaveis — system
+		// markers ficam invisíveis como deveria. Testado: roubavel + infectarea no servidor.
+		var rawLvl := GetObjProperty(item, "level");
+		if (item.invisible && rawLvl == error)
 			continue;
 		endif
+		lvl := Cint(rawLvl);
 
 		// Process discoverable hidden items (invisible with level)
-		if ( item.invisible && lvl != error)
+		if ( item.invisible && rawLvl != error)
 			// Items permanently invisible by itemdesc should never be revealed
 			var elemDesc := FindConfigElem(itemdescCfg, item.objtype);
 			if (elemDesc.Invisible)
