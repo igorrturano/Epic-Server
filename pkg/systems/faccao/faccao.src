@@ -134,6 +134,12 @@ program faccao(params)
 		targ := params[2];
 		cmd := params[3];
 		use_member_alias := params[4]; // preserva contexto de mural ao reabrir
+		// Defesa: nem todo chamador passa o 4º elemento — quando ausente,
+		// params[4] retorna error{"Array index out of bounds"} e o gump renderiza
+		// nomes errados. Normaliza usando cmdlevel.
+		if (use_member_alias == error || typeof(use_member_alias) != "Integer")
+			use_member_alias := (who.cmdlevel >= 1) ? 2 : 1;
+		endif
 	endif
 
 	if (cmd == "guild")
@@ -864,6 +870,11 @@ function playerHandler(who, input)
 		options.append("Mudar Tipo de Membro");
 	endif
 
+	// Mudar apelido — só líder/GM, qualquer membro (full ou honorário)
+	if (is_gm_or_leader)
+		options.append("Mudar Apelido");
+	endif
+
 	options.append("Cancelar");
 
 	if (options.size() < 1)
@@ -914,8 +925,50 @@ function playerHandler(who, input)
 		endif
 	elseif (output["Mudar Tipo"])
 		_MudarTipoMembroHandler(who, player);
+	elseif (output["Apelido"])
+		_MudarApelidoHandler(who, player);
 	endif
 
+endfunction
+
+// -------------------------------------------------------
+// Permite ao líder alterar o "apelido" (nome_personalizado em dados_convite)
+// de um membro — o nome exibido no mural. Não mexe em cargo_rp.
+// -------------------------------------------------------
+function _MudarApelidoHandler(who, targ)
+	if (!targ)
+		return SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+	endif
+
+	var dados_atuais := GetObjProperty(targ, "dados_convite");
+	var nome_atual   := "";
+	if (dados_atuais && dados_atuais != error && dados_atuais.nome_personalizado)
+		nome_atual := dados_atuais.nome_personalizado;
+	endif
+
+	var prompt := "Novo apelido de " + targ.name;
+	if (nome_atual != "")
+		prompt := prompt + " (atual: " + nome_atual + ")";
+	endif
+	prompt := prompt + ":";
+
+	var nome := RequestInput(who, who.backpack, prompt);
+	if (!nome || nome == error || nome == "")
+		return SendSysMessageEx(who, "Cancelado.", SSM_INFO);
+	endif
+
+	var dados_antigos := GetObjProperty(targ, "dados_convite");
+	SetObjProperty(targ, "dados_convite", struct{
+		"nome_personalizado" := nome,
+		"cargo_rp"           := (dados_antigos && dados_antigos != error && dados_antigos.cargo_rp) ? dados_antigos.cargo_rp : "",
+		"data_convite"       := (dados_antigos && dados_antigos != error && dados_antigos.data_convite) ? dados_antigos.data_convite : POLCore().systime,
+		"convidado_por"      := (dados_antigos && dados_antigos != error && dados_antigos.convidado_por) ? dados_antigos.convidado_por : who.serial
+	});
+
+	SendSysMessageEx(who, "Apelido de " + targ.name + " alterado para: " + nome, SSM_INFO);
+	if (targ.connected)
+		SendSysMessage(targ, "O lider da faccao trocou seu apelido. Agora voce sera conhecido como " + nome + ".");
+	endif
 endfunction
 
 // -------------------------------------------------------
