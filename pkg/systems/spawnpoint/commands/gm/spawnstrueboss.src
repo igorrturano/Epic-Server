@@ -1,0 +1,7 @@
+use uo;
+
+include ":spawnpoint:spawnFilter";
+
+program spawnstrueboss(who)
+	ShowSpawnFilteredGump(who, "trueboss");
+endprogram

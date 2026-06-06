@@ -1,0 +1,7 @@
+use uo;
+
+include ":spawnpoint:spawnFilter";
+
+program spawnsmob(who)
+	ShowSpawnFilteredGump(who, "regular");
+endprogram
