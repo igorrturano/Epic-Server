@@ -8,7 +8,7 @@
 // Helpers públicos:
 //   _CriarCapaItem(player, guild, capa)   — instancia 0x1515 com cor/nome/descmod/hp
 //   _CriarCapasHandler(who, guild)        — gump GM (configurar cor + CRUD lista)
-//   _ComprarCapaHandler(who, guild)       — gump comprador (listar + comprar 25 cobres)
+//   _ComprarCapaHandler(who, guild)       — gump comprador (listar + comprar 5 cobres)
 
 use uo;
 use os;
@@ -22,7 +22,7 @@ include ":ligafaccao:include/coins";
 
 const CAPA_GRAPHIC := 0x1515;
 const CAPA_HP      := 400;
-const CAPA_PRECO   := 25;
+const CAPA_PRECO   := 5;
 
 // Retorna só a primeira linha de uma descmod (até o primeiro "<br>"), ou a string
 // inteira se não houver "<br>".
