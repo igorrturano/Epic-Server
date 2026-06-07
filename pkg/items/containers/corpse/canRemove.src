@@ -21,9 +21,6 @@ program canRemove(character, container, item, move_type)
 		SendSysMessage(character, "Voce nao pode fazer isto montado.");
 		return 0;
 	endif
-	if (!mobWrapper.HasFreeHand())
-		return 0;
-	endif
 
 	if (character.frozen || character.paralyzed)
 		SendSysMessage(character, "Voce esta paralizado.");
