@@ -4,6 +4,7 @@ use math;
 use vitals;
 
 include "include/say";
+include "/include/epicPropNames";
 include ":mounts:mounts";
 
 program cabelo(who)
@@ -30,6 +31,11 @@ program cabelo(who)
 
 	if (!targ.objtype)
 		SendSysMessageEx(who, "Alvo invalido.", SSM_FAIL);
+		return 0;
+	endif
+
+	if (GetObjProperty(targ.item, PROPNAME_MOCKMULTI_GROUP))
+		SendSysMessageEx(who, "Voce nao pode pular cercas de construcoes.", SSM_FAIL);
 		return 0;
 	endif
 
