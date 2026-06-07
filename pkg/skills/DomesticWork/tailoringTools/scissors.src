@@ -33,6 +33,26 @@ program use_scissors(who, scissors)
 		SendSysMessage(who, "Voce nao pode cortar algo que esta vestindo!");
 		return;
 	endif
+
+	if (cloth.IsContainer())
+		if (EnumerateItemsInContainer(cloth).size() > 0)
+			SendSysMessage(who, "Voce nao pode cortar um recipiente com itens dentro. Esvazie-o primeiro.");
+			return;
+		endif
+		if (!YesNo(who, "Cortar este recipiente vai gerar 6 bandagens. Deseja continuar?"))
+			SendSysMessage(who, "Cancelado.");
+			return;
+		endif
+		PlaySoundEffect(who, 0x0249);
+		if (DestroyItem(cloth))
+			CreateItemInContainer(who.backpack, UOBJ_BANDAGE, 6);
+			CheckToolWear(who, scissors, "Tailoring");
+			SendSysMessage(who, "Voce usou a tesoura para cortar o recipiente.");
+		else
+			SendSysMessage(who, "Voce nao pode usar as tesouras nisso.");
+		endif
+		return;
+	endif
 	// 	SendSysMessage(who, "tipo "+ cloth.objtype);
 	var material := Cint(scissors_cfg[cloth.objtype].material);
 	// 	SendSysMessage(who, "material "+ material);
