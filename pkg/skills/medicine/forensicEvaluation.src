@@ -55,10 +55,14 @@ program forensic(who)
 	// Obter informações do corpo
 		var autopsy_data := GetObjProperty(subject, "Autopsy");
 		var lastDamage := GetObjProperty(subject, "LastDamage");
-			if (!autopsy_data || !lastDamage)
-				PrintTextPrivate(who, "*O corpo está muito deteriorado para uma autopsia adequada.*", who);
-				return;
-			endif
+		if (!autopsy_data || !lastDamage)
+			PrintTextPrivate(who, "*O corpo está muito deteriorado para uma autopsia adequada.*", who);
+			return;
+		endif
+		if (Distance(who, subject) > 1)
+			SendSysMessage(who, "Você precisa estar próximo ao corpo.", color := 33);
+			return 0;
+		endif
 	elseif (Distance(who, subject) > 1)
 		SendSysMessage(who, "Seu alvo está muito longe", color := 33);
 		return 0;
@@ -84,7 +88,11 @@ program forensic(who)
 	sleep(3);
 
 	if (Distance(who, subject) > 1)
-		SendSysMessage(who, "Você e seu paciente devem permanecer quietos!", color := 33);
+		if (subject.IsA(POLCLASS_CORPSE))
+			SendSysMessage(who, "Você se afastou do corpo durante o exame.", color := 33);
+		else
+			SendSysMessage(who, "O exame foi interrompido — você e o paciente devem permanecer quietos.", color := 33);
+		endif
 		return 0;
 	endif
 

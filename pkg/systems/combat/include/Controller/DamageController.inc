@@ -99,8 +99,22 @@ function SetLastDamageInfo(mobile, amount, type, source, spell := 0)
 			skills_combat.+tactics := AP_GetTrueSkill(mobile, TACTICS);
 		endif
 		autopsy.+skills := skills_combat;
-		autopsy.+taxonomy := npc_elem.Taxonomy;
-		autopsy.+rastros := npc_elem.rastro;
+
+		// Player não tem npcdesc — fallback usa chardata.raca como taxonomy
+		// e marca rastros como humanoides genéricos.
+		if (npc_elem && CStr(npc_elem.Taxonomy))
+			autopsy.+taxonomy := npc_elem.Taxonomy;
+			autopsy.+rastros := npc_elem.rastro;
+		else
+			var chardata := GetObjProperty(mobile, "chardata");
+			if (chardata && chardata.raca)
+				autopsy.+taxonomy := CStr(chardata.raca);
+				autopsy.+rastros := "Pegadas humanoides";
+			else
+				autopsy.+taxonomy := "Indeterminada";
+				autopsy.+rastros := "Indeterminados";
+			endif
+		endif
 
 		SetObjProperty(mobile, "Autopsy", autopsy);
 	endif
