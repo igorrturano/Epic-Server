@@ -533,15 +533,23 @@ function Autopsy(who, corpse)
 	endif
 
 	// Determinar quantas categorias descobrir baseado no check_result
+	// Curva calibrada (2026-06): 6 tiers + falha branda + falha categórica.
+	// SkillCheck(MEDICINE, 35) satura pass_chance em Med 56+; o roll (0-100)
+	// faz a margem variar, e o bisturi soma +10. Falha real só abaixo de -50.
 	var discoveries_to_make := 0;
-	if (check_result >= 30)
-		discoveries_to_make := optional_categories.size(); // Todas
-	elseif (check_result >= 20)
-		discoveries_to_make := CInt(optional_categories.size() * 0.75); // 75%
-	elseif (check_result >= 10)
-		discoveries_to_make := CInt(optional_categories.size() * 0.5); // 50%
-	elseif (check_result > 0)
-		discoveries_to_make := CInt(optional_categories.size() * 0.25); // 25%
+	var total_cats := optional_categories.size();
+	if (check_result >= 50)
+		discoveries_to_make := total_cats;            // mestria (100%)
+	elseif (check_result >= 30)
+		discoveries_to_make := CInt(total_cats * 0.85);
+	elseif (check_result >= 15)
+		discoveries_to_make := CInt(total_cats * 0.70);
+	elseif (check_result >= 0)
+		discoveries_to_make := CInt(total_cats * 0.55);
+	elseif (check_result >= -20)
+		discoveries_to_make := CInt(total_cats * 0.35);
+	elseif (check_result >= -50)
+		discoveries_to_make := 1;                     // mínimo simbólico
 	else
 		EraseObjProperty(who, "#DoingAutopsy");
 		PrintTextPrivate(who, "*Você não consegue obter nenhuma informação relevante da autopsia.*",
@@ -549,8 +557,7 @@ function Autopsy(who, corpse)
 		return;
 	endif
 
-	// Garantir pelo menos 1 descoberta se passou no teste
-	if (discoveries_to_make < 1 && check_result > 0)
+	if (discoveries_to_make < 1)
 		discoveries_to_make := 1;
 	endif
 
@@ -691,7 +698,28 @@ function CreateReportItem(who, discovery_results, corpse)
 
 	// Configurar o nome e propriedades do laudo
 	SetName(report, report_name);
-	var time_death := tempoMorto(corpse, corpse.LastDamage.time);
+
+	var death_time := CInt(GetObjProperty(corpse, "deathtimer"));
+	if (!death_time)
+		var ld := GetObjProperty(corpse, "LastDamage");
+		if (ld)
+			death_time := CInt(ld.time);
+		endif
+	endif
+
+	var time_death := "Indeterminado";
+	if (death_time > 0)
+		var dias := CInt((polcore().systime - death_time) / 86400);
+		if (dias <= 2)
+			time_death := "Corpo quente";
+		elseif (dias <= 8)
+			time_death := "Corpo frio";
+		elseif (dias <= 15)
+			time_death := "Corpo gelado";
+		else
+			time_death := "Corpo decomposto";
+		endif
+	endif
 	// Salvar as informações da autópsia no item
 	SetObjProperty(report, "autopsy_results", discovery_results);
 	SetObjProperty(report, "corpse_serial", corpse.serial);
