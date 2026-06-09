@@ -615,15 +615,15 @@ function GetDietByTaxonomy(tax)
         return {"fruit", "grain", "vegetable"};
 
     elseif (tax == "bovidae")
-        return {"grain", "vegetable"};
+        return {"grain", "vegetable", "fruit"};
     elseif (tax == "equus")
-        return {"grain", "vegetable"};
+        return {"grain", "vegetable", "fruit"};
     elseif (tax == "camelidae")
-        return {"grain", "vegetable"};
+        return {"grain", "vegetable", "fruit"};
     elseif (tax == "cervidae")
-        return {"grain", "vegetable"};
+        return {"grain", "vegetable", "fruit"};
     elseif (tax == "rodentia")
-        return {"grain", "vegetable"};
+        return {"grain", "vegetable", "fruit"};
 
     elseif (tax == "aves")
         return {"grain", "fish"};
