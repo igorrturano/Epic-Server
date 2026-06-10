@@ -819,7 +819,7 @@ endfunction
 
 function ProcessVendorDoubleClick(npc, player)
 	var gump := GFCreateGump(220, 70);
-	GFResizePic(gump, 0, 0, 0x254E, 160, 160);
+	GFResizePic(gump, 0, 0, 0x254E, 160, 200);
 
 	GFTextLine(gump, 30, 15, 2100, "Produtos à Venda");
 	GFTooltipText(gump, "Abre a lista de produtos à venda deste vendedor.");
@@ -844,6 +844,14 @@ function ProcessVendorDoubleClick(npc, player)
 	GFTextLine(gump, 30, 115, 2100, "Configurar");
 	GFTooltipText(gump, "Abre o painel de configuracao do vendedor (imposto, bau, restricoes).");
 	GFAddButton(gump, 15, 117, 2117, 2118, 1, 6);
+
+	GFTextLine(gump, 30, 135, 2100, "Equipar");
+	GFTooltipText(gump, "Equipa um item no vendedor.");
+	GFAddButton(gump, 15, 137, 2117, 2118, 1, 7);
+
+	GFTextLine(gump, 30, 155, 2100, "Despir");
+	GFTooltipText(gump, "Remove todos os itens do vendedor e coloca na sua mochila.");
+	GFAddButton(gump, 15, 157, 2117, 2118, 1, 8);
 
 	var input := GFSendGump(player, gump)[0];
 	var ev := struct;
@@ -914,6 +922,25 @@ function ProcessVendorDoubleClick(npc, player)
 		endif
 	elseif (input == 6)
 		SetupMerchant(npc, player);
+	elseif (input == 7)
+		SendSysMessageEx(player, "O que deve ser equipado?", SSM_REQUEST);
+		var what := Target(player);
+		if (!what)
+			return SendSysMessageEx(player, "Cancelado.", SSM_FAIL);
+		endif
+		var res := EquipItem(npc, what);
+		if (res)
+			PrintTextAbove(npc, "Equipado.");
+		else
+			SendSysMessageEx(player, "Nao foi possivel equipar: " + res.errortext, SSM_FAIL);
+		endif
+	elseif (input == 8)
+		var container := CreateItemAtLocation(npc.x, npc.y, npc.z, "backpack", 1, npc.realm);
+		foreach item in (EnumeratePhysicalItems(npc))
+			MoveItemToContainer(item, container);
+			SleepMS(2);
+		endforeach
+		PrintTextAbove(npc, "Tomei a liberdade de tirar minhas vestes.");
 	endif
 endfunction
 
