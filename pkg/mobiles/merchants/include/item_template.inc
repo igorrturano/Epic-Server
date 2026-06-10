@@ -198,9 +198,24 @@ function CreateIteminBackpackFromTemplate(player, selling)
 		SetName(purchase, selling.desc);
 	endif
 	foreach prop in selling
-		//sendsysmessage(player, " " + _prop_iter + " "+ selling[_prop_iter]);
+		// "CProps", "__contents" e flags internas são tratados separadamente — pular aqui.
+		if (_prop_iter == "CProps" || _prop_iter == "__contents" || _prop_iter == "isVendorTemplate")
+			continue;
+		endif
 		purchase.set_member(_prop_iter, selling[_prop_iter]);
 	endforeach
+
+	// REAPLICA CProps do template ao item final, sobrescrevendo o que o
+	// CreateScript do itemdesc possa ter aleatorizado (ex: AssignCraftRecipe
+	// gera recipe RANDOM toda vez que um recipe scroll é criado por objtype).
+	// Sem esta reaplicação, o comprador recebe um scroll com recipe diferente
+	// do que estava à venda — bug histórico do vendor.
+	if (purchase && purchase != error && TypeOf(selling.CProps) == "Dictionary")
+		foreach custom_prop in (selling.CProps.Keys())
+			SetObjProperty(purchase, custom_prop, selling.CProps[custom_prop]);
+			sleepms(2);
+		endforeach
+	endif
 
 	if (purchase.isBook())
 		var bookinfo := GetObjProperty(purchase, "bookinfo");
@@ -215,6 +230,13 @@ function CreateIteminBackpackFromTemplate(player, selling)
 		var book_elem := DFFindElement(book_data_file, Hex(purchase.serial), DF_CREATE);
 		book_elem.SetProp("Contents", bookinfo.contents);
 	endif
+
+	// Restaura conteúdo de container preservado por CreateItemTemplate(item, 1).
+	// Sem isso, vender uma bag cheia entregava bag vazia ao comprador.
+	if (selling.__contents && purchase.IsA(POLCLASS_CONTAINER))
+		RestoreContainerContents(purchase, selling.__contents);
+	endif
+
 	purchase.movable := 1;
 	return purchase;
 endfunction
