@@ -741,9 +741,9 @@ function Patrol()
 		else
 			SetObjProperty(me, "patrol_next", 1);
 		endif
-		SetCooldown(me, "patrol_stand", (randomInt(3) + 1) * 60);
+		SetCooldown(me, "patrol_stand", randomInt(15) + 15); // vigilia 15-30s (antes 60-240s)
 	else
-		wait_time := 1;
+		wait_time := 0; // anda na velocidade nativa do POL — antes esperava 1s/tile no loop
 	endif
 endfunction
 
