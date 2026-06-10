@@ -1,0 +1,70 @@
+// Comando GM de migração one-shot: reseta cost.time de TODOS os itens em
+// TODOS os vendores para polcore().systime. Use exatamente uma vez após o
+// deploy do sistema de devolução de itens não-vendidos, para evitar que o
+// primeiro .dblclick em cada vendor antigo dispare arquivamento em massa
+// de itens parados há meses (criando pendências eternas para sellers que
+// não jogam mais).
+//
+// Resultado: todos os itens existentes ganham 7 dias adicionais. O sistema
+// novo começa a contar do zero.
+
+use uo;
+use os;
+use datafile;
+
+include "include/say";
+include ":datafile:include/datafile";
+include ":uose:/include/merchant";
+include ":gumps:yesNo";
+
+program merchantanistia(who)
+	if (!YesNo(who, "Anistia: vai resetar cost.time de TODOS os itens em TODOS os vendores. Continuar?", "Sim", "Cancelar"))
+		SendSysMessageEx(who, "Cancelado.", SSM_INFO);
+		return;
+	endif
+
+	var data_file := GetMerchantDataFile();
+	var elem_names := DFGetElemNames(data_file);
+	var now := polcore().systime;
+
+	var vendores := 0;
+	var itens_total := 0;
+
+	foreach elem_name in elem_names
+		sleepms(2);
+		if (!elem_name["-ItemsSelling"])
+			continue;
+		endif
+
+		var data_elem := DFFindElement(data_file, elem_name, DF_NO_CREATE);
+		if (data_elem == error || !data_elem)
+			continue;
+		endif
+
+		var props := DFGetElemProps(data_elem);
+		var itens_neste := 0;
+
+		foreach key in props
+			sleepms(2);
+			if (key == "LastNum")
+				continue;
+			endif
+
+			var info := data_elem.GetProp(key);
+			if (info == error || !info)
+				continue;
+			endif
+
+			info[1].time := now;
+			data_elem.SetProp(key, info);
+			itens_neste += 1;
+		endforeach
+
+		if (itens_neste > 0)
+			vendores += 1;
+			itens_total += itens_neste;
+		endif
+	endforeach
+
+	SendSysMessageEx(who, "Anistia aplicada: {} itens em {} vendores. Relógio resetado.".format(itens_total, vendores), SSM_INFO);
+endprogram

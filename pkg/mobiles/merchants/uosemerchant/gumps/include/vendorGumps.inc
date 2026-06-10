@@ -209,26 +209,30 @@ function PainelProduto(byref gump,session ,x,y,isAdministrador)
 	var linha := 0;
 	var paginaAtual := 1;
 	var quantidadeItensTotal := session.itensVendidos.size();
-	var paginaMaxima :=  ceil(quantidadeItensTotal / session.paginador.itensPorPagina);
+	// cdbl em ambos os operandos: int/int em eScript trunca antes do ceil,
+	// fazendo 10/9 virar 1 (deveria ser 2). Página máxima ficava menor que
+	// o número real de páginas e o clamp abaixo travava o player.
+	var paginaMaxima := CInt(Ceil(cdbl(quantidadeItensTotal) / cdbl(session.paginador.itensPorPagina))) - 1;
+	if (paginaMaxima < 0) paginaMaxima := 0; endif
 	if ( quantidadeItensTotal < 1 )
 		GFTextLine( gump, PAINELPRODUTO_POS_CENTRO_X - 40, 295, 1051, "Nenhum item a venda!" );
 	endif
 
-	session.paginador.pagina := 
+	session.paginador.pagina :=
 					session.paginador.pagina > paginaMaxima
 					? paginaMaxima
 					: session.paginador.pagina;
 
 	var paginador := MontaPaginador(session.paginador.pagina, session.paginador.itensPorPagina);
-	
+
 	GFTextLine( gump, PAINELPRODUTO_POS_CENTRO_X - 50, 568, 1153, "Página {} de {}"
-		.format( 
-			session.paginador.pagina + 1,  
-			Ceil((quantidadeItensTotal - 1) / session.paginador.itensPorPagina) + 1)
+		.format(
+			session.paginador.pagina + 1,
+			paginaMaxima + 1)
 		);
 
 	if(quantidadeItensTotal >= paginador.indicePaginaSeguinte)
-		GFAddButton( gump, PAINELPRODUTO_POS_CENTRO_X + 40, 571, 2224, 2224, GF_CLOSE_BTN, ID_BOTAO_PROXIMA_PAGINA );
+		GFAddButton( gump, PAINELPRODUTO_POS_CENTRO_X + 55, 571, 2224, 2224, GF_CLOSE_BTN, ID_BOTAO_PROXIMA_PAGINA );
 	endif
 	if(1 >= paginador.indicePaginaAnterior)
 		GFAddButton( gump, PAINELPRODUTO_POS_CENTRO_X - 75, 571, 2223, 2223, GF_CLOSE_BTN, ID_BOTAO_PAGINA_ANTERIOR );
