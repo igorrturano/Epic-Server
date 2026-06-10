@@ -412,9 +412,10 @@ endfunction
 // Mundo — utilitarios
 // -----------------------------------------------------------------------------
 
-// Procura um tile caminhavel ao redor do dono usando CanWalk (valida pathing
-// real — nao cai em casa, montanha ou agua). Tenta ate 16 amostras aleatorias
-// num raio de 3 a 6 tiles. Fallback: o proprio tile do dono (sempre valido).
+// Procura um tile caminhavel ao redor do dono ancorando o z na elevacao
+// real dele (GetStandingHeight a partir do character.z), nao no chao bruto
+// do mapa. Rejeita pontos verticalmente distantes (telhado vs chao, dungeon
+// vs superficie). Fallback: tile exato do dono (sempre valido, mesmo z+realm).
 function FindSpawnLocationNearby(character)
 	var attempts := 16;
 	while (attempts > 0)
@@ -424,13 +425,16 @@ function FindSpawnLocationNearby(character)
 		var radian := angle * (ConstPi() / 180);
 		var x := character.x + CInt(dist * Cos(radian));
 		var y := character.y + CInt(dist * Sin(radian));
-		var map_info := GetMapInfo(x, y, character.realm);
-		if (!map_info)
+		var sh := GetStandingHeight(x, y, character.z, character.realm);
+		if (sh == error || !sh)
 			continue;
 		endif
-		if (CanWalk("L", character.x, character.y, character.z, x, y, character.realm) != error)
-			return struct{ x := x, y := y, z := map_info.z };
+		var z := CInt(sh.z);
+		// Tolerancia 10 cobre escadas/slopes mas rejeita andar errado.
+		if (Abs(z - character.z) > 10)
+			continue;
 		endif
+		return struct{ x := x, y := y, z := z };
 	endwhile
 	return struct{ x := character.x, y := character.y, z := character.z };
 endfunction
