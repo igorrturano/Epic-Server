@@ -35,6 +35,11 @@ program erguer(who, param)
 		return 0;
 	endif
 
+	if (alvo.IsA(POLCLASS_CONTAINER) && (!who.cmdlevel))
+		SendSysMessageEx(who, "Voce nao pode erguer containers.", SSM_FAIL);
+		return 0;
+	endif
+
 	if (!alvo.movable)
 		SendSysMessageEx(who, "Voce voce precisa desfixar o objeto para poder ergue-lo.", SSM_FAIL);
 		return 0;
