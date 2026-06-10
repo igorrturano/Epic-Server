@@ -418,6 +418,24 @@ function _AddHonoraryMember(faccao, mobile)
 endfunction
 
 
+// Garante que o jogador tenha dados_convite com convidado_por preenchido.
+// NUNCA inventa nome_personalizado a partir de nome_inicial/raca/conta —
+// o display em mural cai no apelido .r do convidador como fallback.
+// Bug recorrente: "nome do jogador some no mural" — ver _ResolveRPName em faccao.src.
+function _EnsureDadosConvite(mobile, convidado_por_serial)
+   var dados := GetObjProperty(mobile, "dados_convite");
+   if (dados && !dados.errortext && dados.convidado_por)
+      return; // ja tem registro de quem convidou — nada a fazer
+   endif
+   SetObjProperty(mobile, "dados_convite", struct{
+      "nome_personalizado" := (dados && dados.nome_personalizado) ? dados.nome_personalizado : "",
+      "cargo_rp"           := (dados && dados.cargo_rp)           ? dados.cargo_rp           : "Membro",
+      "data_convite"       := (dados && dados.data_convite)       ? dados.data_convite       : POLCore().systime,
+      "convidado_por"      := convidado_por_serial
+   });
+endfunction
+
+
 // ── Saída da facção ───────────────────────────────────────────────────────────
 
 function RemMember(faccao, mobile)
