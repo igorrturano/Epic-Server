@@ -512,7 +512,8 @@ function Faccoes(who, page := 1)
 			return SendSysMessageEx(who, "Cancelado");
 		endif
 
-		var new_guild := CreateFaccao(output[1], array{}, 0);
+		// Realm herdado do criador — facção nasce no realm onde o player a criou
+		var new_guild := CreateFaccao(output[1], array{}, 0, who.realm);
 		if (new_guild && !who.cmdlevel)
 			AddMember(new_guild, who);
 			new_guild.SetProp("leader", who.serial);
