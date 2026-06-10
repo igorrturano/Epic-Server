@@ -153,7 +153,28 @@ function GetMochilaCouroNome(mochila)
 	return GetCouroNomeByObjtype(ot);
 endfunction
 
-// Atualiza o tooltip da mochila com nome do couro + capacidade efetiva.
+// Compoe o nome canonico da mochila a partir do couro principal.
+function ComposeMochilaNome(mochila)
+	var couroNome := GetMochilaCouroNome(mochila);
+	var prefixo := "Mochila";
+	if (mochila.objtype == MOCHILA_REFORCADA_OBJTYPE)
+		prefixo := "Mochila Reforcada";
+	endif
+	if (couroNome)
+		return prefixo + " de " + couroNome;
+	endif
+	return prefixo;
+endfunction
+
+// Define o nome visivel da mochila (linha amarela do tooltip).
+function UpdateMochilaName(mochila)
+	if (!IsMochilaPackhorse(mochila))
+		return;
+	endif
+	SetName(mochila, ComposeMochilaNome(mochila));
+endfunction
+
+// Atualiza o descmod (linha branca) com a capacidade efetiva.
 // Stones efetivos = base do cfg (400) + max_weight_mod aplicado.
 function UpdateMochilaDescmod(mochila)
 	if (!IsMochilaPackhorse(mochila))
@@ -162,16 +183,7 @@ function UpdateMochilaDescmod(mochila)
 	var tier := GetMochilaTier(mochila);
 	var mod := GetMochilaMaxWeightMod(mochila.objtype, tier);
 	var efetivo := 400 + mod;
-	var couroNome := GetMochilaCouroNome(mochila);
-	var prefixo := "Mochila";
-	if (mochila.objtype == MOCHILA_REFORCADA_OBJTYPE)
-		prefixo := "Mochila Reforcada";
-	endif
-	var nome := prefixo;
-	if (couroNome)
-		nome := prefixo + " de " + couroNome;
-	endif
-	SetObjProperty(mochila, "descmod", nome + "<br>Capacidade: " + efetivo + " stones<br>");
+	SetObjProperty(mochila, "descmod", "Capacidade: " + efetivo + " stones<br>");
 endfunction
 
 function ApplyMochilaTier(mochila)
@@ -181,6 +193,7 @@ function ApplyMochilaTier(mochila)
 	var tier := GetMochilaTier(mochila);
 	var mod := GetMochilaMaxWeightMod(mochila.objtype, tier);
 	ContainerWrapper(mochila).SetMaxWeight(mod);
+	UpdateMochilaName(mochila);
 	UpdateMochilaDescmod(mochila);
 	return mod;
 endfunction
