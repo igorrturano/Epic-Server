@@ -216,6 +216,12 @@ function CreateIteminBackpackFromTemplate(player, selling)
 		book_elem.SetProp("Contents", bookinfo.contents);
 	endif
 	purchase.movable := 1;
+
+	if (GetObjProperty(purchase, "crafterserial") != error)
+		SetObjProperty(purchase, "crafterserial", player.serial);
+		SetObjProperty(purchase, "fixer", player.serial);
+	endif
+
 	return purchase;
 endfunction
 
