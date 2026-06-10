@@ -33,7 +33,10 @@ program do_empty(who)
 		return;
 
 	else
-		var tierComponente := 1;
+		var flaskObjtype := 0x0F0E;
+		var flaskMaterial := 7139;
+		var flaskColor := 1328;
+		var flaskTier := 1;
 		var fabricado := GetObjProperty(the_potion, "fabricado");
 		if (fabricado)
 			var comp := 0;
@@ -52,23 +55,39 @@ program do_empty(who)
 					endif
 				endforeach
 			endif
-			if (comp && comp.tier)
-				var tierId := comp.tier.id;
-				if (!tierId)
-					tierId := cint(comp.tier);
+			if (comp)
+				if (comp.item && comp.item.objtype)
+					flaskObjtype := CInt(comp.item.objtype);
 				endif
-				if (tierId > 0)
-					tierComponente := tierId;
+				if (comp.material && comp.material.chave)
+					flaskMaterial := CInt(comp.material.chave);
+					var configRecursos := ReadConfigFile(":crafting:config/resourceList");
+					var resourceElem := FindConfigElem(configRecursos, comp.material.chave);
+					if (resourceElem)
+						var corCfg := CInt(resourceElem.Color);
+						if (corCfg > 0)
+							flaskColor := corCfg;
+						endif
+					endif
+				endif
+				if (comp.tier)
+					var tierId := comp.tier.id;
+					if (!tierId)
+						tierId := cint(comp.tier);
+					endif
+					if (tierId > 0)
+						flaskTier := tierId;
+					endif
 				endif
 			endif
 		endif
 		SendSysMessageEx(who, "Voce esvaziou a pocao.", SSM_REQUEST);
 		PlaySoundEffect(who, 0x241);
-		var pot := CreateItemInBackpack(who, 0x0F0E, the_potion.amount);
+		var pot := CreateItemInBackpack(who, flaskObjtype, the_potion.amount);
 		setobjproperty(pot, "encaixeComponente", "frasco");
-		setobjproperty(pot, "material", 7139);
-		setobjproperty(pot, "tierComponente", tierComponente);
-		pot.color := 1328;
+		setobjproperty(pot, "material", flaskMaterial);
+		setobjproperty(pot, "tierComponente", flaskTier);
+		pot.color := flaskColor;
 		DestroyItem(the_potion);
 		return;
 	endif
