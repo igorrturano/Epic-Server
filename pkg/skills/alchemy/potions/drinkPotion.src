@@ -1,0 +1,28 @@
+use os;
+use uo;
+use util;
+use cfgfile;
+include ":alchemy:alchemy";
+
+program drink_potion(who, potion)
+	EraseObjProperty(who, "IsMeditating");
+	EraseObjProperty(who, "HealTimer");
+
+	if (!Accessible(who, potion))
+		return;
+	endif
+
+	if (potion.movable == 0)
+		SendSysMessage(who, "Voce nao pode beber isto.");
+		return;
+	endif
+
+	if (!hasFreeHandToDrink(who))
+		return;
+	endif
+
+    var effect := Cstr(potion.getCfgElem().efeito);
+
+	var pid := Start_Script(effect, array := {who, potion});
+	Detach();
+endprogram
