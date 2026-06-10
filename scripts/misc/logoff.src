@@ -16,7 +16,7 @@ program LogOff(who)
 	logoutpets(who);
 	LogOffElementalWeapon(who);
 	IsGm(who);
-	EraseObjProperty(who, "#fogWatcherActive");
+	EraseObjProperty(who, "#fogWatcherPid");
 	CleanupFogPreviewMarkers(who);
 	return 1;
 endprogram

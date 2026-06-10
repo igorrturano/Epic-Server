@@ -52,11 +52,11 @@ include ":abilities:classes/arqueiro_arcano/PrismaticShot";
 //===========================================
 // GRANADEIRO (2500-2504)
 //===========================================
-include ":abilities:classes/granadeiro/ExperiencedAlchemist";
-include ":abilities:classes/granadeiro/ChemicalInfusion";
-include ":abilities:classes/granadeiro/EfficientBombardier";
-include ":abilities:classes/granadeiro/ExplosiveEssence";
-include ":abilities:classes/granadeiro/EnhancedInfusion";
+include ":abilities:classes/granadeiro/TriggerEngineering";
+include ":abilities:classes/granadeiro/PressureZone";
+include ":abilities:classes/granadeiro/Minefield";
+include ":abilities:classes/granadeiro/GrenadeTurret";
+include ":abilities:classes/granadeiro/MasterProtocol";
 
 //===========================================
 // SHAMAN / XAMÃ (2600-2604)
@@ -123,11 +123,11 @@ ABILITY_CLASSES[ABILITY_ID::ARCANE_MASTERY] := @ArcaneMastery;
 ABILITY_CLASSES[ABILITY_ID::PRISMATIC_SHOT] := @PrismaticShot;
 
 // Granadeiro (2500-2504)
-ABILITY_CLASSES[ABILITY_ID::ALQUIMISTA_EXPERIENTE] := @ExperiencedAlchemist;
-ABILITY_CLASSES[ABILITY_ID::INFUSAO_QUIMICA] := @ChemicalInfusion;
-ABILITY_CLASSES[ABILITY_ID::BOMBARDEIRO_EFICIENTE] := @EfficientBombardier;
-ABILITY_CLASSES[ABILITY_ID::ESSENCIA_EXPLOSIVA] := @ExplosiveEssence;
-ABILITY_CLASSES[ABILITY_ID::INFUSAO_APRIMORADA] := @EnhancedInfusion;
+ABILITY_CLASSES[ABILITY_ID::ENGENHARIA_DE_GATILHOS] := @TriggerEngineering;
+ABILITY_CLASSES[ABILITY_ID::ZONA_DE_PRESSAO] := @PressureZone;
+ABILITY_CLASSES[ABILITY_ID::CAMPO_MINADO] := @Minefield;
+ABILITY_CLASSES[ABILITY_ID::TORRETA_GRANADEIRA] := @GrenadeTurret;
+ABILITY_CLASSES[ABILITY_ID::PROTOCOLO_MESTRE] := @MasterProtocol;
 
 // Shaman / Xamã (2600-2604)
 ABILITY_CLASSES[ABILITY_ID::SOUL_HARVEST] := @SoulHarvest;

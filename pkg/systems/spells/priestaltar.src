@@ -14,8 +14,10 @@ include "include/epicConstants";
 include "include/epicMageryUtils";
 include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
+include ":hotbar:include/custombuff";
 
 const SPELL_BTN := 200;
+const SPELL_PROTECAOMORTE := 519; // priest.cfg Spell 519 (icone/nome reaproveitados no buff)
 
 program orderSpells(who, item)
 	var chardata := GetObjProperty(who, "chardata");
@@ -308,11 +310,12 @@ function ApplyAltarBlessing(who, item, choice)
 			SendSysMessageEx(who, "Você sente a cura dos deuses.", SSM_INFO);
 		endif
 	elseif (choice == ALTAR_BTN_PROT || choice == ALTAR_BTN_PROT_DONATE)
-		var duration := 180; // 3 minutos
+		var duration := 900; // 15 minutos
 		if (donated)
-			duration := 600; // 10 minutos
+			duration := 2700; // 45 minutos (triplo)
 		endif
 		SetCooldown(who, "protecaomorte", duration);
+		SendSpellBuff(who, who, SPELL_PROTECAOMORTE, duration);
 		if (donated)
 			SendSysMessageEx(who, "Sua devoção fortalece a proteção divina.", SSM_INFO);
 		else

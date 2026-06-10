@@ -14,9 +14,12 @@ include ":crafting:/include/caracteristicasFabricacao";
 include ":crafting:/include/fabricacaoUtil";
 
 CONST DRINK_SOUND := 0x32;
-CONST GATILHO_PAVIO := 11;
-CONST GATILHO_IMPACTO := 12;
+CONST GATILHO_PAVIO := 11;       // legacy single 3s fuse (back-compat; treated as Pavio Normal)
+CONST GATILHO_IMPACTO := 12;     // legacy impact trigger (removed from configurator; treated as Pavio Normal)
 CONST GATILHO_MINA := 13;
+CONST GATILHO_PAVIO_CURTO := 14;  // 2s
+CONST GATILHO_PAVIO_NORMAL := 15; // 3s
+CONST GATILHO_PAVIO_LONGO := 16;  // 5s
 
 CONST ELEMENTO_FOGO := 21;
 CONST ELEMENTO_ENERGIA := 22;
@@ -33,6 +36,11 @@ CONST CARGA_DISPERSA := 43;
 CONST REFORCO_COMUM := 51;
 CONST REFORCO_CARGA_DUPLA := 52;
 CONST REFORCO_POTENCIA_ELEM := 53;
+
+// Zona de Pressao (L3) — tipo pre-comprometido no momento da ativacao
+CONST ZONA_TIPO_PRESSAO  := 61;  // +50% raio de explosao
+CONST ZONA_TIPO_LENTIDAO := 62;  // vitimas slowed por Science/10s
+CONST ZONA_TIPO_PRECISAO := 63;  // +50% dano
 
 // Facade de mensagem sobre MobileWrapper.HasFreeHand(). A regra real
 // (ocupacao de layer + Two_Handed/Dual_Wield) vive no wrapper; aqui so
@@ -103,12 +111,36 @@ function empty_bottle(character, potion, drinkSound:= 1, silent:= 0)
       props := PegaComponenteFabricacao(potion, "vazio");
     endif
 
+    var flaskObjtype := 0x0F0E;
+    var flaskMaterial := 7139;
+    var flaskColor := 1328;
+    var flaskTier := 1;
+    if (props)
+      if (props.item && props.item.objtype)
+        flaskObjtype := CInt(props.item.objtype);
+      endif
+      if (props.material && props.material.chave)
+        flaskMaterial := CInt(props.material.chave);
+        var configRecursos := ReadConfigFile(":crafting:config/resourceList");
+        var resourceElem := FindConfigElem(configRecursos, props.material.chave);
+        if (resourceElem)
+          var corCfg := CInt(resourceElem.Color);
+          if (corCfg > 0)
+            flaskColor := corCfg;
+          endif
+        endif
+      endif
+      if (props.tier && props.tier.id)
+        flaskTier := CInt(props.tier.id);
+      endif
+    endif
+
     SubtractAmount( potion, 1 );
-		var pot := CreateItemInBackpack(character, 0x0F0E, 1);
+		var pot := CreateItemInBackpack(character, flaskObjtype, 1);
     setobjproperty(pot, "encaixeComponente", "frasco");
-    setobjproperty(pot, "material", 7139);
-    setobjproperty(pot, "tierComponente", props.tier.id ? props.tier.id : 1);
-    pot.color := 1328;
+    setobjproperty(pot, "material", flaskMaterial);
+    setobjproperty(pot, "tierComponente", flaskTier);
+    pot.color := flaskColor;
 	  return 1;
 	endif
   IncRevision(potion);
@@ -346,7 +378,7 @@ endfunction
 Function PotionSpecialistBonus (who, bonus, science)
 	var spec := 2;
 
-		if (MobileWrapper(who).HasAbility(ABILITY_ID::BOMBARDEIRO_EFICIENTE) && science == BOMBA);
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMPO_MINADO) && science == BOMBA);
 			bonus := Cint(bonus * spec);
 		elseif (MobileWrapper(who).HasAbility(ABILITY_ID::VENENO_PURO) && science == VENENO);
 			bonus := Cint(bonus * spec);

@@ -14,6 +14,7 @@ include ":attributes:attributes";
 include ":combat:Controller/DamageController";
 include ":combat:Model/Damage";
 include ":epicspawn:epicBoss";
+include ":spells:tnmagery";
 /*
  * ExecuteCombatEvent(npc, event, actions)
  * Propósito:          // Aplicar dano
@@ -36,11 +37,11 @@ function ExecuteCombatEvent(npc, event, actions)
         if (!ExecuteCombatAction(npc, action))
             continue; // Tenta a próxima ação
         endif
-        
+
         // Pausa brevemente entre ações para permitir animações etc.
         sleepms(200);
     endforeach
-    
+
     return 1;
 endfunction
 
@@ -55,12 +56,12 @@ function ExecuteCombatAction(npc, action)
     if (!action.type)
         return 0;
     endif
-    
+
     // Obtém alvos baseados na propriedade targ da ação
     var targets := GetActionTargets(npc, action);
-    
+
     // Executa a ação baseada em seu tipo
-    case (action.type)           
+    case (action.type)
         "Teleport":
             return ExecuteTeleportAction(npc, targets, action);
             
@@ -80,7 +81,7 @@ function ExecuteCombatAction(npc, action)
             return ExecuteHealAction(targets, action);
             
         "Dmg":
-            return ExecuteDamageAction(targets, action);
+            return ExecuteDamageAction(npc, targets, action);
             
         "Graphic Effect":
             return ExecuteGraphicEffectAction(npc, targets, action);
@@ -96,11 +97,14 @@ function ExecuteCombatAction(npc, action)
             
         "Timedscripts":
             return ExecuteTimedScriptAction(npc, targets, action);
-            
+
+        "Spell":
+            return ExecuteSpellAction(npc, targets, action);
+
         default:
             return 0;
     endcase
-    
+
     return 0;
 endfunction
 
@@ -115,7 +119,7 @@ function GetActionTargets(npc, action)
     var targets := array{};
 
     var target_type := action.target;
-    
+
     // Determina alvos baseados na propriedade target
     if (!target_type || target_type == "Self")
         targets.append(npc);
@@ -125,9 +129,12 @@ function GetActionTargets(npc, action)
             targets.append(opponent);
         endif
     elseif (target_type == "All Opponents")
-        targets := ListHostiles(npc, 8, LH_FLAG_LOS);
+        // ListHostiles / mobile.opponent==npc both return empty here: the boss's
+        // combat link is one-directional. GetAllOpponents uses the proven AoE
+        // idiom (proximity scan, players + pets) instead.
+        targets := GetAllOpponents(npc);
     endif
-    
+
     return targets;
 endfunction
 
@@ -222,14 +229,39 @@ function ExecuteHealAction(targets, action)
     return success;
 endfunction
 
-function ExecuteDamageAction(targets, action)
+function ExecuteSpellAction(npc, targets, action)
+    if (!action.spell_id)
+        return 0;
+    endif
+
+    // Resolve the spell config by id (SpellRegistry path). spellinfo.script holds
+    // the SpellScript — the authoritative castable marker; bail if absent.
+    var spellinfo := struct{ id := CInt(action.spell_id) };
+    WritespellInfo(npc, spellinfo);
+    if (spellinfo.script == error || !spellinfo.script)
+        return 0;
+    endif
+
+    var success := 0;
+    foreach targ in targets
+        // Pass the boss as caster (params[1]) so the spell's own damage attributes
+        // to the boss as source (no sourceless double-number). Target passed
+        // explicitly as params[4] — no reliance on the brain's spell_target_var.
+        Start_Script(":spells:cast_spell", array{npc, spellinfo, 0, targ});
+        success := 1;
+    endforeach
+
+    return success;
+endfunction
+
+function ExecuteDamageAction(npc, targets, action)
     if (!action.dmg)
         return 0;
     endif
-    
+
     var damage := CInt(action.dmg);
     var damage_types := array{};
-    
+
     // Trata ambos os formatos antigo e novo dos tipos de dano
     if (action.dmgtypes && action.dmgtypes.size())
         damage_types := action.dmgtypes;
@@ -238,17 +270,17 @@ function ExecuteDamageAction(targets, action)
     else
         damage_types.append("Physical"); // Padrão
     endif
-    
+
     // Obtém os vitais a afetar
     var vitals := action.vitals;
     if (!vitals || !vitals.size())
         vitals := array{"Hits"}; // Padrão para Hits se não especificado
     endif
-    
+
     var success := 0;
-    
+
     foreach targ in targets
-        
+
         // Processa cada vital
         foreach vital in vitals
             if (vital == "Hits")
@@ -264,7 +296,10 @@ function ExecuteDamageAction(targets, action)
                         default:    dmg_type := DAMAGE_TYPE::BLUNT;
                     endcase
 
-                    DealDamage(targ, damage, dmg_type);
+                    // Pass the boss as source. Without it, DealDamage falls back to
+                    // attacker=target, so DisplayDamage sends the number to the target
+                    // twice (as "source" and as "damaged") — the double "50 50".
+                    DealDamage(targ, damage, dmg_type, npc);
                 endforeach
             elseif (vital == "Mana")
                 AP_ConsumeVital(targ, MANA, damage);
@@ -272,10 +307,10 @@ function ExecuteDamageAction(targets, action)
                 AP_ConsumeVital(targ, STAMINA, damage);
             endif
         endforeach
-            
+
         success := 1;
     endforeach
-    
+
     return success;
 endfunction
 

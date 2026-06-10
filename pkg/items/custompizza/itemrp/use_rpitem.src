@@ -15,7 +15,7 @@ include ":wrappers:Objects/Model/MobileWrapper";
 include ":abilities:models/Ability";
 
 program use_LoreItem(who, item)
-	var item_info := GetLoreItemInfo(item.objtype);
+	var item_info := GetLoreItemInfoForItem(item);
 	if (!item_info)
 		SendSysMessage(who, "Este item não possui informações de lore.");
 		return 0;
@@ -52,8 +52,19 @@ function ShowLoreItemInfo(who, item, item_info)
 		// Fundo para o item
 		GFResizePic(gump, 393, 36, 83, 100, 82);
 
-		// Imagem central (usando a imagem de flavor do item_info)
-		GFGumpPic(gump, 25, 28, item_info.flavor_image, 0);
+		// Imagem central: URL hospedada (item GM-criado), flavor gump art (catálogo),
+		// ou fallback no tile do item se nada estiver disponível.
+		// `&` precisa ser escapado em atributo HTML, senão o parser do client
+		// trunca a URL no primeiro & (querystrings do Discord/CDN quebram).
+		if (item_info.flavor_url && item_info.flavor_url != "")
+			var safe_url := StrReplace(item_info.flavor_url, "&", "&amp;");
+			GFHTMLArea(gump, 25, 28, 330, 485,
+				"<img src=\"" + safe_url + "\" width=\"330\" height=\"485\" x=\"0\" y=\"0\">", 0, 0);
+		elseif (item_info.flavor_image)
+			GFGumpPic(gump, 25, 28, item_info.flavor_image, 0);
+		else
+			GFTilePic(gump, 145, 220, item_info.image, item.color);
+		endif
 
 		// Imagens em mosaico para a borda
 		GFGumpPicTiled(gump, 0, 5, 35, 36, 39925);
@@ -194,7 +205,7 @@ function EvaluateItem(who, item, eval_type)
 	var sound;
 
 	if (eval_type == "skill")
-		var item_info := GetLoreItemInfo(item.objtype);
+		var item_info := GetLoreItemInfoForItem(item);
 		var profession := item_info.required_skill;
 
 		case (profession)
@@ -220,6 +231,33 @@ function EvaluateItem(who, item, eval_type)
 			"Handle_Animal":
 				text := "examinando as características animais";
 				sound := 0x04F; // Som de animal (latido)
+			"Science":
+				text := "realizando experimentos para identificar a composição";
+				sound := 0x023; // Som de líquido em frasco
+			"Theology":
+				text := "recitando preces e estudando símbolos sagrados";
+				sound := 0x055; // Som de sino ressoando
+			"Beastmastery":
+				text := "estudando o comportamento e os vestígios da criatura";
+				sound := 0x368; // Som de criatura/grunhido
+			"Tailoring":
+				text := "examinando a trama, o nó e a tintura do tecido";
+				sound := 0x248; // Som de tesoura cortando
+			"Provisioning":
+				text := "verificando frescor, origem e preparo dos víveres";
+				sound := 0x225; // Som de fogão/preparo
+			"Mining":
+				text := "raspando com a picareta para analisar o mineral";
+				sound := 0x125; // Som de picareta na pedra
+			"Lumberjacking":
+				text := "marcando o grão e contando os anéis da madeira";
+				sound := 0x13E; // Som de machado na madeira
+			"Taming":
+				text := "tentando perceber o vínculo deixado pela criatura";
+				sound := 0x4D3; // Som de assobio para domar
+			"Nature":
+				text := "identificando plantas, pólen e marcas naturais";
+				sound := 0x10E; // Som de folhagem/vento
 			default:
 				text := "utilizando ferramentas para identificar melhor o objeto";
 				sound := 0x0; // Sem som

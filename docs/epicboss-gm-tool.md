@@ -213,6 +213,25 @@ Skills (`skills_mod.*`):
 Most "delete" ranges support up to 10 entries; the combat-event edit/delete
 ranges (`200`–`299` / `300`–`399`) support up to ~99.
 
+#### Combat-event action sub-gump (`ConfigureActionProperties`, in `epicCombatEvents.inc`)
+
+Each combat event holds a `steps` array of action structs. Action types:
+`Teleport, Perform Action, Text, Play Sound, Heal, Dmg, Graphic Effect,
+Summon Npcs, Pushback, Timedscripts, Spell, Delay`. Type-select buttons are the
+1-based index into that list; shared target radios are `1001`/`1002`/`1003`
+(Self / Opponent / All Opponents).
+
+The **Spell** action makes the boss cast a configured spell:
+- **Picker buttons** — `5000+i` selects spell `i` from `GetAllCastableSpells()`
+  (every spell with a `SpellScript` line across the schools in
+  `GetAllSpellConfigPaths`); `5100` = Previous page, `5101` = Next page.
+- **Struct keys** — `spell_id` (resolved spell id, the runtime key), `spell_name`
+  (display), `target` (Self / Opponent / All Opponents), `page` (picker state).
+- **Runtime** — `ExecuteSpellAction` (`epicCombatEventsController.inc`) builds
+  `spellinfo` by id via `WritespellInfo` and launches `:spells:cast_spell` with the
+  **boss as caster** (source) and one cast per resolved target. NPC casts scale off
+  the boss's own magery skill — there is no level field.
+
 ### Page 4 — button / field IDs
 | ID | Action |
 |---|---|
