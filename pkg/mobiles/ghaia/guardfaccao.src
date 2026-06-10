@@ -630,7 +630,7 @@ function ProcessDoubleClick(ev)
 	endif
 
 	var gump := GFCreateGump(220, 70);
-	GFResizePic(gump, 0, 0, 0x254E, 125, 200);
+	GFResizePic(gump, 0, 0, 0x254E, 125, 240);
 
 	GFTextLine(gump, 30, 15, 2100, "Ir");
 	GFTooltipText(gump, "Ordena o guarda ir ate um local");
@@ -664,6 +664,15 @@ function ProcessDoubleClick(ev)
 	GFTooltipText(gump, "Configura palavras-chave de voz para comandar este guarda.");
 	GFAddButton(gump, 15, 157, 2117, 2118, 1, 90);
 
+	GFTextLine(gump, 30, 175, 2100, "Equipar");
+	GFTooltipText(gump, "Equipa um item no guarda.");
+	GFAddButton(gump, 15, 177, 2117, 2118, 1, 91);
+
+	GFTextLine(gump, 30, 195, 2100, "Despir");
+	GFTooltipText(gump, "Remove todos os itens do guarda e coloca na sua mochila.");
+	GFAddButton(gump, 15, 197, 2117, 2118, 1, 92);
+
+
 	var input := GFSendGump(ev.source, gump)[0];
 	case (input)
 		70: ResolveSpeech(0, ev.source, "Ir ate"); break;
@@ -674,7 +683,31 @@ function ProcessDoubleClick(ev)
 		50: ResolveSpeech(0, ev.source, "Manter Posicao"); break;
 		80: ShowFacingGump(ev.source); break;
 		90: OpenCommunicationGump(ev.source, guild); break;
+		91: DoEquipGump(ev.source); break;
+		92: DoStripGump(ev.source); break;
 	endcase
+endfunction
+
+function DoEquipGump(who)
+	SendSysMessage(who, "O que deve ser equipado?");
+	var what := Target(who);
+	if (!what)
+		return SendSysMessage(who, "Cancelado.");
+	endif
+	var res := EquipItem(me, what);
+	if (res)
+		PrintTextAbove(me, "Equipado.");
+	else
+		SendSysMessage(who, "Nao foi possivel equipar: " + res.errortext);
+	endif
+endfunction
+
+function DoStripGump(who)
+	foreach item in (EnumeratePhysicalItems(me))
+		MoveItemToContainer(item, who.backpack);
+		SleepMS(2);
+	endforeach
+	PrintTextAbove(me, "Como desejar.");
 endfunction
 
 function ShowFacingGump(who)
