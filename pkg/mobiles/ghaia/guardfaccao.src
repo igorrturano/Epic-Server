@@ -50,6 +50,7 @@ include ":tn:cooldown";
 include ":faccao:npc";
 include ":faccao:faccao";
 include ":faccao:npc_laws_enforce";
+include ":faccao:include/voice_aliases";
 include "include/dungeons";
 include "include/utils";
 include "include/epicNPCUtils";
@@ -474,6 +475,11 @@ function ResolveSpeech(ev, source := 0, order := 0)
 	var text := lower(ev.text);
 	var name := lower(me.name);
 
+	// Aplica aliases customizados de voz da guild (slot broadcast inclusive)
+	if (guild)
+		text := ApplyVoiceAliases(text, guild);
+	endif
+
 	if (!source)
 		var privs := guild.GetProp(cstr(ev.source.serial));
 		var user_subguilds := ev.source.guild.getProp("subguilds");
@@ -613,7 +619,7 @@ function ProcessDoubleClick(ev)
 	endif
 
 	var gump := GFCreateGump(220, 70);
-	GFResizePic(gump, 0, 0, 0x254E, 125, 180);
+	GFResizePic(gump, 0, 0, 0x254E, 125, 200);
 
 	GFTextLine(gump, 30, 15, 2100, "Ir");
 	GFTooltipText(gump, "Ordena o guarda ir ate um local");
@@ -643,6 +649,10 @@ function ProcessDoubleClick(ev)
 	GFTooltipText(gump, "Define a direcao para onde o guarda ficara olhando.");
 	GFAddButton(gump, 15, 137, 2117, 2118, 1, 80);
 
+	GFTextLine(gump, 30, 155, 2100, "Comunicacao");
+	GFTooltipText(gump, "Configura palavras-chave de voz para comandar este guarda.");
+	GFAddButton(gump, 15, 157, 2117, 2118, 1, 90);
+
 	var input := GFSendGump(ev.source, gump)[0];
 	case (input)
 		70: ResolveSpeech(0, ev.source, "Ir ate"); break;
@@ -652,6 +662,7 @@ function ProcessDoubleClick(ev)
 		40: ResolveSpeech(0, ev.source, "Patrulha"); break;
 		50: ResolveSpeech(0, ev.source, "Manter Posicao"); break;
 		80: ShowFacingGump(ev.source); break;
+		90: OpenCommunicationGump(ev.source, guild); break;
 	endcase
 endfunction
 
