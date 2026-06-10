@@ -39,6 +39,9 @@ const BUTTON_GM_OPTS := 0x301;
 
 const BTN_FACCAO := 0x100;
 const BTN_NEW_FACCAO := 0x4;
+const BTN_PREV_PAGE := 0x5;
+const BTN_NEXT_PAGE := 0x6;
+const FACCAO_PER_PAGE := 8;
 
 const BUTTON_CHECK_GUILD := 0x350;
 
@@ -380,7 +383,7 @@ program faccao(params)
 	start_script(":faccao:faccao", array{ who, guild.guildid, "guild", use_member_alias });
 endprogram
 
-function Faccoes(who)
+function Faccoes(who, page := 1)
 	var gump := GFCreateGump();
 	GFSetId(gump, 0x12353);
 	GFResizePic(gump, 84, 90, 9260, 320, 300);
@@ -390,16 +393,43 @@ function Faccoes(who)
 
 	var y := 135;
 	var my_guilds := array{};
+	var total_pages := 1;
 
 	if (who.cmdlevel)
-		// GMs veem todas as facções
+		// GMs veem todas as facções — paginado em blocos de FACCAO_PER_PAGE
+		var all_guilds := array{};
 		foreach g in ListGuilds()
-			my_guilds.append(g);
-			GFTextLine(gump, 170, y, 2100, "{}".format(g.GetProp("name")));
-			GFAddButton(gump, 150, y + 3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO + _g_iter);
-			y += 20;
+			all_guilds.append(g);
 			sleepms(2);
 		endforeach
+
+		var total := all_guilds.size();
+		total_pages := CInt((total + FACCAO_PER_PAGE - 1) / FACCAO_PER_PAGE);
+		if (total_pages < 1)
+			total_pages := 1;
+		endif
+		if (page < 1)
+			page := 1;
+		endif
+		if (page > total_pages)
+			page := total_pages;
+		endif
+
+		var start_idx := (page - 1) * FACCAO_PER_PAGE + 1;
+		var end_idx := start_idx + FACCAO_PER_PAGE - 1;
+		if (end_idx > total)
+			end_idx := total;
+		endif
+
+		var idx := start_idx;
+		while (idx <= end_idx)
+			var g := all_guilds[idx];
+			my_guilds.append(g);
+			GFTextLine(gump, 170, y, 2100, "{}".format(g.GetProp("name")));
+			GFAddButton(gump, 150, y + 3, 0x845, 0x846, GF_CLOSE_BTN, BTN_FACCAO + my_guilds.size());
+			y += 20;
+			idx += 1;
+		endwhile
 	else
 		// Jogadores veem apenas as suas facções
 		if (who.guild)
@@ -428,6 +458,18 @@ function Faccoes(who)
 	GFAddButton(gump, 172, y, 0x80E, 0x80E, GF_CLOSE_BTN, BTN_NEW_FACCAO);
 	GFHTMLArea(gump, 170, y, 115, 25, "<basefont color=#0555D4><center>Nova Facção", 1);
 
+	// Controles de paginação (apenas GM, mais de uma página)
+	if (who.cmdlevel && total_pages > 1)
+		y += 28;
+		if (page > 1)
+			GFAddButton(gump, 110, y + 2, 0x15E3, 0x15E7, GF_CLOSE_BTN, BTN_PREV_PAGE);
+		endif
+		GFHtmlShadowed(gump, 170, y, 115, 18, "#FFC33C", "<center>Página " + page + "/" + total_pages, 1);
+		if (page < total_pages)
+			GFAddButton(gump, 310, y + 2, 0x15E1, 0x15E5, GF_CLOSE_BTN, BTN_NEXT_PAGE);
+		endif
+	endif
+
 	var input := GFSendGump(who, gump)[0];
 
 	if (input >= BTN_FACCAO)
@@ -435,6 +477,12 @@ function Faccoes(who)
 		if (g)
 			start_script(":faccao:faccao", array{ who, g.guildid, "guild" });
 		endif
+
+	elseif (input == BTN_PREV_PAGE)
+		return Faccoes(who, page - 1);
+
+	elseif (input == BTN_NEXT_PAGE)
+		return Faccoes(who, page + 1);
 
 	elseif (input == BTN_NEW_FACCAO)
 		var _err := _CanCreateFaccao(who);
