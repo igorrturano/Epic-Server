@@ -72,6 +72,10 @@ program textcmd_testdiscordbot(params)
 		var message := "**MORREU** -> *" + name + "* conta [" + acct_name + "] morreu em combate com " + boss_name
 														+ " na regiao " + region + ", coordenadas: " + coords;
 		var outbound := PresetDiscordMessage(message);
+	elseif (tipo == "petmorreu")
+		var message := "**PET** -> *" + name + "* conta [" + acct_name + "] perdeu seu pet " + item + " derrubado por "
+														+ boss_name + " na regiao " + region + ", coordenadas: " + coords;
+		var outbound := PresetDiscordMessage(message);
 	elseif (tipo == "pk")
 		var message := "**PK** -> *" + name + "* conta [" + acct_name + "] decepou a cabeça de " + boss_name +
 													  " conta [" + item + "] na regiao " + region + ", coordenadas: " + coords;
