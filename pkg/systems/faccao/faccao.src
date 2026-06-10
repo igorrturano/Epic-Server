@@ -582,6 +582,7 @@ function guildHandler(who, input)
 			endif
 		endif
 		AddMember(guild, targ, _tipo);
+		_EnsureDadosConvite(targ, who.serial);
 		var _tipo_str := _tipo ? "honorário" : "full";
 		SendSysMessageEx(who, "{} ingressou como membro {}.".format(targ.name, _tipo_str), SSM_INFO);
 		SendSysMessage(targ, "Você entrou na facção {} como membro {}!".format(guild_name, _tipo_str));
@@ -2181,31 +2182,47 @@ function ShowTerritoriesGump(who, guild)
 	start_script(":faccao:faccao", array{ who, guild.guildid, "guild" });
 endfunction
 
-// Retorna o nome personalizado do membro (definido na inscrição) ou o nome real como fallback.
-// use_alias := 1 para mostrar o nome da inscrição (mural), 0 para mostrar mob.name normal.
-// use_alias := 2 (GM): mesmo nome de inscrição + [conta] para identificação.
+// Retorna o nome RP do membro para exibicao em gumps de faccao (mural, etc).
+//
+// REGRA INVIOLAVEL (bug recorrente — ja aconteceu varias vezes):
+//   NUNCA exibir raca (mob.name = "Humano"/"Pequilho")
+//   NUNCA exibir nome_inicial (nome OOC do char)
+//   NUNCA exibir acctname (nome da conta — OOC, vaza login)
+//
+// Cadeia de fallback:
+//   1. dados_convite.nome_personalizado (preenchido na Mesa/Pergaminho — IDEAL)
+//   2. Apelido que o convidador deu ao convidado via .r (conhecidos[serial])
+//   3. "Membro Desconhecido" (ultimo recurso, sem vazar OOC)
 function GetMemberDisplayName(mob, use_alias := 0)
 	if (!mob) return ""; endif
-	if (use_alias == 2)
-		// GM: nome de inscrição [conta]
-		var dados := GetObjProperty(mob, "dados_convite");
-		var nome;
-		if (!dados || dados.errortext)
-			nome := mob.name;
-		else
-			nome := dados.nome_personalizado;
-			if (!nome || nome.errortext) nome := mob.name; endif
-		endif
-		var acct := mob.acctname;
-		if (acct && !acct.errortext) return nome + " [" + acct + "]"; endif
-		return nome;
-	elseif (use_alias == 1)
-		// Player: nome da Mesa de Inscrição ou fallback para raça
-		var dados := GetObjProperty(mob, "dados_convite");
-		if (!dados || dados.errortext) return mob.name; endif
-		var nome_rp := dados.nome_personalizado;
-		if (!nome_rp || nome_rp.errortext) return mob.name; endif
-		return nome_rp;
+	if (use_alias == 1 || use_alias == 2)
+		return _ResolveRPName(mob);
 	endif
 	return mob.name;
 endfunction
+
+function _ResolveRPName(mob)
+	var dados := GetObjProperty(mob, "dados_convite");
+	if (dados && !dados.errortext)
+		var nome_rp := dados.nome_personalizado;
+		if (nome_rp && !nome_rp.errortext && nome_rp != "") return nome_rp; endif
+
+		// Fallback: apelido (.r) que o convidador deu ao convidado
+		var convidador_serial := dados.convidado_por;
+		if (convidador_serial)
+			var convidador := SystemFindObjectBySerial(convidador_serial,
+				SYSFIND_SEARCH_OFFLINE_MOBILES);
+			if (convidador)
+				var conhecidos := GetObjProperty(convidador, "conhecidos");
+				if (conhecidos && !conhecidos.errortext)
+					var apelido := conhecidos[CStr(mob.serial)];
+					if (apelido && !apelido.errortext && apelido != "") return apelido; endif
+				endif
+			endif
+		endif
+	endif
+	return "Membro Desconhecido";
+endfunction
+
+// _EnsureDadosConvite movido para include/faccao.inc para ser
+// reaproveitado por outros pontos de entrada (JOIN_FACTION action, etc).
