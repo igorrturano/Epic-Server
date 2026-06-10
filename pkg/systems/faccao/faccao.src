@@ -1568,7 +1568,8 @@ function npcHandler(who, input)
 				struct{ "template" := ":epicai:guardafaccaofraco",   "price" := 25,  "name" := "Guarda Recruta (Fraco)",      "equipment" := array{} },
 				struct{ "template" := ":epicai:guardafaccaomedio",   "price" := 70,  "name" := "Guarda Veterano (Medio)",     "equipment" := array{} },
 				struct{ "template" := ":epicai:guardafaccaoforte",   "price" := 100, "name" := "Guarda Elite (Forte)",         "equipment" := array{} },
-				struct{ "template" := ":merchants:merchantfaccao",   "price" := 10,  "name" := "Vendedor da Faccao",           "equipment" := array{} }
+				struct{ "template" := ":merchants:merchantfaccao",   "price" := 10,  "name" := "Vendedor da Faccao",           "equipment" := array{} },
+				struct{ "template" := ":merchants:bardofaccao",      "price" := 10,  "name" := "Bardo",                        "equipment" := array{} }
 			};
 			// Persiste os defaults para que ContractNPC (que usa listNPC) possa ler o template correto.
 			// Sem isso, listNPC retorna array vazio, o NPC não é criado mas o dinheiro já foi consumido.
