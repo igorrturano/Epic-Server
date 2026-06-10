@@ -5,6 +5,7 @@ include ":loot:lootParser";
 include ":loot:chestPostProcess";
 include ":traps:traps";
 include ":chestspawn:treasurechest"; // Assuming this contains CreateTreasureChests
+include ":chestspawn:include/trancaEspecial";
 
 program EpicChestSpawner(spawner)
 	var level := GetObjProperty(spawner, "epic_level");
@@ -16,6 +17,12 @@ program EpicChestSpawner(spawner)
 	var is_puzzle := GetObjProperty(spawner, "epic_is_puzzle");
 	var puzzle_limit_count := GetObjProperty(spawner, "epic_puzzle_limit_count");
 	var is_buried := GetObjProperty(spawner, "epic_is_buried");
+
+	// Baú de tranca especial — defaults para spawners antigos
+	var tranca_enabled           := GetPropOrDefault(spawner, "epic_tranca_enabled", 1);
+	var tranca_chance            := ClampPct(GetPropOrDefault(spawner, "epic_tranca_chance", DEFAULT_TRANCA_CHANCE), MIN_TRANCA_CHANCE, 100);
+	var tranca_mastermind_chance := ClampPct(GetPropOrDefault(spawner, "epic_tranca_mastermind_chance", DEFAULT_TRANCA_MASTERMIND_CHANCE));
+
 	var frq := GetObjProperty(spawner, "duration"); // Duration in seconds
 
 	if (!frq)
@@ -77,7 +84,7 @@ program EpicChestSpawner(spawner)
 			endif
 			ClearMySpawnedChests(spawner); // Clear opened chests before spawning new ones
 			MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic, mimic_chance, is_puzzle,
-							puzzle_limit_count, is_buried);
+							puzzle_limit_count, is_buried, tranca_enabled, tranca_chance, tranca_mastermind_chance);
 		endif
 
 		sleep(frq); // Use the configured frequency for respawn
@@ -85,7 +92,8 @@ program EpicChestSpawner(spawner)
 endprogram
 
 function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic, mimic_chance,
-						 is_puzzle, puzzle_limit_count, is_buried := 0)
+						 is_puzzle, puzzle_limit_count, is_buried := 0,
+						 tranca_enabled := 1, tranca_chance := 10, tranca_mastermind_chance := 25)
 	var current_chests_serials := GetObjProperty(spawner, "spawned_epic_chests");
 	if (!current_chests_serials)
 		current_chests_serials := array;
@@ -165,8 +173,17 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 					var new_chest;
 					var chests := array{};
 
+					// Sorteio independente de baú de tranca especial
+					var tranca_roll := RandomInt(100);
+					var tranca_hit := tranca_enabled && tranca_roll < tranca_chance;
+					TrancaDebug("Hook sorteio: enabled=" + tranca_enabled + " roll=" + tranca_roll + " chance=" + tranca_chance + "% -> " + (tranca_hit ? "SIM" : "NAO"));
+					if (tranca_hit)
+						var tranca_custom_graphics := GetObjProperty(spawner, "epic_chest_graphics");
+						new_chest := CreateBauTrancaEspecial(new_x, new_y, new_z, spawner.realm, level, base_lootname, flavor_suffix, tranca_mastermind_chance, tranca_custom_graphics);
+					endif
+
 					// Determine what type of chest to create
-					if (is_puzzle)
+					if (!new_chest && is_puzzle)
 						var current_puzzle_count := CInt(GetObjProperty(spawner, "current_puzzle_count"));
 						if (!current_puzzle_count)
 							current_puzzle_count := 0;
@@ -258,19 +275,23 @@ function MakeEpicChests(spawner, level, amount, range_val, chest_type, is_mimic,
 						placed := 1;
 						SetObjProperty(new_chest, "link", spawner.serial);
 						SetObjProperty(new_chest, "IsEpicChest", 1);
-						SetObjProperty(new_chest, "level", level);
 						SetObjProperty(new_chest, "chest_type", chest_type);
 						SetObjProperty(new_chest, PROPNAME_DISPENSAVEL_FLAG, true);
 						SetObjProperty(new_chest, "CreatedOn", ReadGameClock());
 						new_chest.movable := 0;
 						new_chest.locked := 1;
 
-						if (GetObjProperty(new_chest, "IsPuzzleChest"))
-							Loot_Generate(new_chest, base_lootname);
-							if (flavor_suffix != "")
-								Loot_Generate(new_chest, base_lootname + flavor_suffix);
+						// Baú de tranca especial já gerou loot e setou seu próprio level dentro do helper
+						if (!GetObjProperty(new_chest, "IsTrancaEspecial"))
+							SetObjProperty(new_chest, "level", level);
+
+							if (GetObjProperty(new_chest, "IsPuzzleChest"))
+								Loot_Generate(new_chest, base_lootname);
+								if (flavor_suffix != "")
+									Loot_Generate(new_chest, base_lootname + flavor_suffix);
+								endif
+								ChestLoot_PostProcess(new_chest);
 							endif
-							ChestLoot_PostProcess(new_chest);
 						endif
 
 						created_chests_this_cycle.append(new_chest.serial);
@@ -309,6 +330,111 @@ function ClearMySpawnedChests(spawner)
 		endforeach
 		SetObjProperty(spawner, "spawned_epic_chests", valid_chests); // Update the list with only locked chests
 	endif
+endfunction
+
+// ============================================================
+// BAÚ DE TRANCA ESPECIAL
+// ============================================================
+// Sorteio mastermind vs pinos pelo mastermind_chance recebido.
+// chest.level = spawner_level (afeta loot tier e diff de lockpick).
+// Pinos: graphic visual real + minigame_lock; mastermind: objtype 0xf022 + graphic visual sobrescrito.
+// Sempre indestrutível. Armadilha herda intensidade do spawner.
+function CreateBauTrancaEspecial(x, y, z, realm, spawner_level, base_lootname, flavor_suffix, mastermind_chance := DEFAULT_TRANCA_MASTERMIND_CHANCE, custom_graphics := 0)
+	var mastermind_roll := RandomInt(100);
+	var is_mastermind := (mastermind_roll < mastermind_chance);
+
+	TrancaDebug("=== SPAWN BAÚ ESPECIAL ===");
+	TrancaDebug("Mastermind roll: " + mastermind_roll + " < " + mastermind_chance + "? -> " + (is_mastermind ? "MASTERMIND" : "PINOS"));
+
+	// Pool visual: GM selecionou ou default
+	var graphics_pool;
+	if (custom_graphics && custom_graphics.size() > 0)
+		graphics_pool := custom_graphics;
+		TrancaDebug("Pool: customizado do spawner (" + graphics_pool.size() + " graphics)");
+	else
+		graphics_pool := GetDefaultTrancaGraphics();
+		TrancaDebug("Pool: default (GM não selecionou)");
+	endif
+	var visual_graphic := graphics_pool[RandomInt(graphics_pool.size()) + 1];
+
+	// Pinos: criar direto com o graphic visual (já dispara container/use).
+	// Mastermind: criar com 0xf022 (dispara PuzzleChestOpen via itemdesc), sobrescrever graphic depois.
+	var create_objtype := is_mastermind ? BAU_ESPECIAL_PUZZLE_OBJTYPE : visual_graphic;
+	var info := GetChestInfoByGraphic(visual_graphic);
+	var chest_level := spawner_level;
+
+	TrancaDebug("Objtype: " + Hex(create_objtype) + " | Visual: " + Hex(visual_graphic));
+	TrancaDebug("Chest level (=spawner): " + chest_level + " | Material: " + Hex(info.material) + " | MaxHp: " + (info.maxhp * chest_level));
+	TrancaDebug("Localização: " + x + "," + y + "," + z + " realm=" + realm);
+
+	var new_chest := CreateItemAtLocation(x, y, z, create_objtype, 1, realm);
+	if (!new_chest)
+		TrancaDebug("ERRO: CreateItemAtLocation falhou!");
+		return 0;
+	endif
+
+	TrancaDebug("Chest criado: serial=" + Hex(new_chest.serial));
+
+	// Força graphic visual (necessário pra mastermind, onde 0xf022 é body de mob no client)
+	new_chest.graphic := visual_graphic;
+	SetName(new_chest, "baú de tranca especial");
+
+	SetObjProperty(new_chest, "IsTrancaEspecial", 1);
+	SetObjProperty(new_chest, PROPNAME_INDESTRUTIVEL, 1);
+	SetObjProperty(new_chest, PROPNAME_MATERIAL, info.material);
+	SetObjProperty(new_chest, PROPNAME_DURABILIDADE_MAX, info.maxhp * chest_level);
+	SetObjProperty(new_chest, "level", chest_level);
+
+	if (is_mastermind)
+		// Não setar IsPuzzleChest — script PuzzleChestOpen já vem do itemdesc do 0xf022.
+		// Setar evitaria Loot_Generate duplo no bloco final de MakeEpicChests.
+		TrancaDebug("Mecânica: MASTERMIND (PuzzleChestOpen via itemdesc do 0xf022)");
+	else
+		SetObjProperty(new_chest, "minigame_lock", 1);
+		TrancaDebug("Mecânica: PINOS (minigame_lock=1)");
+	endif
+
+	AddRandomTraps(new_chest, spawner_level);
+	_LogTraps(new_chest, spawner_level);
+
+	_GenerateAndLogLoot(new_chest, chest_level, flavor_suffix);
+
+	TrancaDebug("=== FIM SPAWN ===");
+	return new_chest;
+endfunction
+
+function _LogTraps(chest, strength)
+	if (!DEBUG_TRANCA)
+		return;
+	endif
+	var trap_list := GetObjProperty(chest, "TrapList");
+	if (trap_list == error)
+		TrancaDebug("Sem armadilhas");
+		return;
+	endif
+	TrancaDebug("Armadilhas: " + trap_list.size());
+	foreach trap in trap_list
+		TrancaDebug("  - " + trap.Name + " (strength " + strength + ")");
+	endforeach
+endfunction
+
+function _GenerateAndLogLoot(chest, chest_level, flavor_suffix)
+	var loot_name := "EpicChest" + chest_level;
+	TrancaDebug("Gerando loot: " + loot_name + (flavor_suffix != "" ? " + " + loot_name + flavor_suffix : ""));
+	Loot_Generate(chest, loot_name);
+	if (flavor_suffix != "")
+		Loot_Generate(chest, loot_name + flavor_suffix);
+	endif
+	ChestLoot_PostProcess(chest);
+
+	if (!DEBUG_TRANCA)
+		return;
+	endif
+	var dropped := EnumerateItemsInContainer(chest);
+	TrancaDebug("Itens dropados: " + dropped.size());
+	foreach item in dropped
+		TrancaDebug("  - " + item.name + " (" + Hex(item.objtype) + ") x" + item.amount);
+	endforeach
 endfunction
 
 // Helper function - needs to be implemented based on how puzzle chests are tracked globally or per spawner.

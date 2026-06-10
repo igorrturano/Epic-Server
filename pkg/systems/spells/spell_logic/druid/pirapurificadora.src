@@ -1,113 +1,160 @@
 use uo;
 use os;
 use util;
+use math;
 
-include ":spells:tnmagery";
+include ":attributes:attributes";
 include "include/client";
 include "include/sounds";
 include "include/say";
-include ":attributes:attributes";
-include "include/facings";
-include ":charactercreation:habilidades";
+include "include/epicMageryUtils";
+include ":charactercreation:resists";
+include ":spells:Controller/SC_Damage";
 include ":spells:Controller/SpellController";
+include ":spells:Controller/SpellEffectBuilder";
 
 const SOUND_EFFECT_FIRE := 0x1de;
-const UOBJ_FIREFIELD_NS := 0x398c;
-const UOBJ_FIREFIELD_EW := 0x3996;
 const EFFECT_FIRE := 0x3709;
 
 program SpellScript(params)
 	var caster := params[1];
 	var targ := params[2];
-	var spell := params[3];
+	var spellinfo := params[3];
 	params := 0;
 
-	var nature := AP_GetSkill(caster, NATURE);
-	var range := CInt(nature / 20) + 2;
-	var duration := CInt(nature / 10);
-
-	if (duration < 4)
-		duration := 4;
+	if (!targ)
+		SendSysMessageEx(caster, "Voce cancelou.", SSM_FAIL);
+		return 0;
 	endif
+
+	var spell_circle := CInt(spellinfo.Circle[1]);
+	var spell_school := spellinfo.School;
+	var nature := AP_GetSkill(caster, NATURE);
+	var range := CInt(nature / 20);
 
 	TurnObjectToward(caster, targ.x, targ.y);
 	sleepms(300);
 
 	SendSysMessageEx(caster, "Uma pira purificadora emerge de sua vontade!", SSM_INFO);
-	PrintTextAbove(caster, "*Chamas sagradas brotam*");
-
 	PlaySoundEffect(caster, SOUND_EFFECT_FIRE);
 	PlaySoundEffect(caster, 0x208);
 
-	var facing := caster.facing;
-	var start_x := caster.x;
-	var start_y := caster.y;
-	var fire_serials := array{};
+	var rings := BuildConeRings(caster, range);
+	PlayConeEffect(rings, caster.z, caster.realm, EFFECT_FIRE, 10);
 
-	for line := 1 to range
-		for i := -line to line
-			var pos_x, pos_y;
+	var cone_tiles := dictionary{};
+	foreach ring in rings
+		foreach tile in ring
+			cone_tiles[$"{tile.x},{tile.y}"] := 1;
+		endforeach
+	endforeach
 
-			case (facing)
-				0: pos_x := start_x + i;    pos_y := start_y - line;
-				1: pos_x := start_x + line; pos_y := start_y - line + i;
-				2: pos_x := start_x + line; pos_y := start_y + i;
-				3: pos_x := start_x + line; pos_y := start_y + line - i;
-				4: pos_x := start_x + i;    pos_y := start_y + line;
-				5: pos_x := start_x - line; pos_y := start_y + line - i;
-				6: pos_x := start_x - line; pos_y := start_y + i;
-				7: pos_x := start_x - line; pos_y := start_y - line + i;
-			endcase
+	var diff := handleSpellResistDiffForSpecialists(caster, spell_school);
+	var bonus := epicWisdomPathBonus(caster);
+	var dot_total_ticks := CInt(nature / 15);
+	if (dot_total_ticks < 4)
+		dot_total_ticks := 4;
+	elseif (dot_total_ticks > 10)
+		dot_total_ticks := 10;
+	endif
 
-			if (pos_x == start_x && pos_y == start_y)
-				continue;
-			endif
+	var mobs := ListMobilesNearLocation(caster.x, caster.y, caster.z, range, caster.realm);
+	foreach mob in mobs
+		if (mob == caster)
+			continue;
+		endif
+		if (!cone_tiles.Exists($"{mob.x},{mob.y}"))
+			continue;
+		endif
 
-			var z := GetWorldHeight(pos_x, pos_y, caster.realm);
+		var damage := epicSpellDamageRoll(caster, spell_circle, spell_school);
+		damage := bonusSpellDamageForSpecialists(caster, damage, spell_school);
 
-			var fire_type := UOBJ_FIREFIELD_NS;
-			if (facing == 2 || facing == 6)
-				fire_type := UOBJ_FIREFIELD_EW;
-			endif
+		// Reflex save halves the initial blast but does not stop the burn DoT.
+		if (CheckResist(mob, REFLEXES, diff, -bonus) > 0)
+			damage := CInt(damage / 2);
+			SendSysMessageEx(mob, "Voce se esquiva de parte das chamas.", SSM_INFO);
+		endif
 
-			var fire := CreateItemAtLocation(pos_x, pos_y, z, fire_type, 1, caster.realm);
+		SendSysMessageEx(mob, "Chamas purificadoras queimam voce.", SSM_FAIL);
+		SC_DealDamage(caster, mob, CInt(spellinfo.id), CInt(damage), DAMAGE_TYPE::FIRE);
 
-			if (fire)
-				// Grace duration past the buff lifetime so pirapurificadoraExpire
-				// normally wins the destroy race; if it fails to run, the field
-				// still self-cleans instead of becoming a permanent world item.
-				fire.SetDuration(duration + 5);
-				fire_serials.append(fire.serial);
-				SetObjProperty(fire, "summoner", caster.serial);
-				PlayStationaryEffect(pos_x, pos_y, z, EFFECT_FIRE, 7, 10, 0, caster.realm);
-			endif
+		// Fire DoT on top of the blast. Chip fixo de 1d4+1 por tick; a escala vem
+		// do impacto (epicSpellDamageRoll) e da duracao (Nature). Re-cast troca o
+		// instance_id, fazendo o driver antigo sair — refresca sem empilhar.
+		var tick_interval := 2;
+		var opts := SpellEffectBuilder()
+			.SetCategory("fire_dot")
+			.SetDisplayName("Pira Purificadora")
+			.SetDesc("1d4+1 dano / tick")
+			.SetTickInterval(tick_interval)
+			.SetTickDamage(struct{ dice := "1d4", bonus := 1, type := DAMAGE_TYPE::FIRE })
+			.SetTickPresentation(TickPresentation()
+				.SetFx(FX_SMALL_FIRE_MAGIC, 10, 15)
+				.SetSound(0x357)
+				.SetPeriodicEmote("As chamas sagradas continuam a te consumir!", 3, SSM_FAIL)
+				.SetFinalOverhead("*as chamas se apagam*")
+				.SetFinalEmote("As chamas finalmente se apagam.", SSM_INFO))
+			.ToOpts();
+		SC_ApplyEffect(caster, mob, opts, dot_total_ticks * tick_interval, CInt(spellinfo.id));
 
-			sleepms(5);
-		endfor
-
-		PlaySoundEffect(caster, SOUND_EFFECT_FIRE);
-	endfor
-
-	// SC timer runs on the caster (icon + duration). Tick fires area damage.
-	// on_expire tears down the fire items — also fires if dispelled.
-	var tick_interval := 2;
-
-	var opts := struct{};
-	opts.+buff_category := "pira_purificadora";
-	opts.+displayname := "Pira Purificadora";
-	opts.+desc := "Chamas queimam em area";
-	opts.+tick_script := ":spells:spell_logic/druid/pirapurificadoraTick";
-	opts.+tick_interval := tick_interval;
-	opts.+tick_params := struct{
-		fire_serials := fire_serials,
-		nature := CInt(nature)
-	};
-	opts.+on_expire_script := ":spells:spell_logic/druid/pirapurificadoraExpire";
-	opts.+on_expire_params := struct{
-		fire_serials := fire_serials
-	};
-
-	SC_ApplyEffect(caster, caster, opts, duration, CInt(spell.id));
+		sleepms(50);
+	endforeach
 
 	return 1;
 endprogram
+
+function BuildConeRings(caster, lines_count)
+	var rings := array{};
+	var facing := caster.facing;
+	var start_x := caster.x;
+	var start_y := caster.y;
+
+	for line := 0 to lines_count
+		var ring := array{};
+		for i := -line to line
+			var pos_x, pos_y;
+			case (facing)
+				0: // North
+					pos_x := start_x + i;
+					pos_y := start_y - line;
+				1: // Northeast
+					pos_x := start_x + line;
+					pos_y := start_y - line + i;
+				2: // East
+					pos_x := start_x + line;
+					pos_y := start_y + i;
+				3: // Southeast
+					pos_x := start_x + line;
+					pos_y := start_y + line - i;
+				4: // South
+					pos_x := start_x + i;
+					pos_y := start_y + line;
+				5: // Southwest
+					pos_x := start_x - line;
+					pos_y := start_y + line - i;
+				6: // West
+					pos_x := start_x - line;
+					pos_y := start_y + i;
+				7: // Northwest
+					pos_x := start_x - line;
+					pos_y := start_y - line + i;
+			endcase
+
+			if (pos_x != start_x || pos_y != start_y)
+				ring.Append(struct{ x := pos_x, y := pos_y });
+			endif
+		endfor
+		rings.Append(ring);
+	endfor
+	return rings;
+endfunction
+
+function PlayConeEffect(rings, z, realm, effect_id, effect_duration)
+	foreach ring in rings
+		foreach tile in ring
+			PlayStationaryEffect(tile.x, tile.y, z, effect_id, 10, effect_duration, 0, realm);
+		endforeach
+		sleepms(50);
+	endforeach
+endfunction

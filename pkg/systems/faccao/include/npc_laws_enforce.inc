@@ -1702,6 +1702,13 @@ function IsValidCombatTarget(who)
     if (!who || !who.isA(POLCLASS_MOBILE)) return 0; endif
     if (who == me || who.dead || who.concealed)  return 0; endif
 
+    // Bloqueio cross-realm: NPC de faccao nunca persegue alvo em realm diferente
+    // do realm canonico da guild. Evita travessia de moongate/teleporter.
+    if (guild)
+        var _g_realm := GetGuildRealm(guild);
+        if (_g_realm && who.realm && who.realm != _g_realm) return 0; endif
+    endif
+
     if (who.npctemplate)
         // NPC da propria faccao (ex: pantera do cazador) — nunca atacar
         if (guild && GetObjProperty(who, "guild") == guild.guildid) return 0; endif
@@ -2171,6 +2178,18 @@ endfunction
 // Retorna 1 se o NPC foi redirecionado ao centro.
 function EnforceTerritoryBounds()
     if (!guild || GetObjProperty(me, "hunt_mode")) return 0; endif
+
+    // Realm tem precedencia: se NPC esta em realm errado, teleporte forcado
+    // e reset completo de estado (sobrescreve qualquer combate em andamento).
+    if (EnforceGuildRealm())
+        state    := 0;
+        fighting := 0;
+        SetOpponent(0);
+        SetWarMode(0);
+        wait_time := 0;
+        return 1;
+    endif
+
     if (GetObjProperty(me, "tipo_faccao") == "staff")
         HandleWalkRectBreach(me, wait_time);
         return 0;
@@ -2184,7 +2203,7 @@ function EnforceTerritoryBounds()
     var _center := GetGuildCenter(guild, me.z);
     if (_center)
         me.stealthsteps := 9999;
-        RunTowardLocation(_center.x, _center.y);
+        MoveOrTeleportToGuildPoint(_center);
         wait_time := 0;
     endif
     state    := 0;

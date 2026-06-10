@@ -152,8 +152,9 @@ endfunction
 // ###########################################
 
 
-function CreateFaccao(name, rect, money := 0)
+function CreateFaccao(name, rect, money := 0, realm := "britannia_alt")
    if (!name || typeof(name) != "String") return 0; endif
+   if (!realm || typeof(realm) != "String" || realm == "") realm := "britannia_alt"; endif
    var guild := CreateGuild();
    guild.setProp("name", name);
    guild.setProp("leader", 0);
@@ -165,6 +166,7 @@ function CreateFaccao(name, rect, money := 0)
    guild.setprop("uniforms", array{});
    guild.setprop("link_to", 0);
    guild.setprop("tipo_faccao", "player"); // "player" ou "staff"
+   guild.setprop("realm", realm);          // realm canonico da faccao
 
    return guild;
 endfunction
@@ -186,7 +188,8 @@ function GetFaccao(guild)
       "uniforms"    := guild.GetProp("uniforms"),
       "subguilds"   := guild.GetProp("subguilds"),
       "money"       := guild.GetProp("money"),
-      "tipo_faccao" := GetFaccaoTipo(guild)
+      "tipo_faccao" := GetFaccaoTipo(guild),
+      "realm"       := GetGuildRealm(guild)
    };
 
    return faccao_obj;
@@ -230,6 +233,10 @@ function EditFaccao(guild, props)
 
    if (props.tipo_faccao != null) // "player" ou "staff"
       faccao.tipo_faccao := props.tipo_faccao;
+   endif
+
+   if (props.realm != null && typeof(props.realm) == "String" && props.realm != "")
+      faccao.realm := props.realm;
    endif
 
    foreach key in (faccao.keys())
@@ -482,12 +489,93 @@ function isLeader(faccao, mobile)
    return 0;
 endfunction
 
+// Retorna o realm canonico da guild como String ("britannia", "britannia_alt", etc.).
+// Migracao lazy: se a guild ainda nao tem a prop "realm" salva, infere por essa ordem:
+//   1) Realm do primeiro territory configurado em "territories"
+//   2) Realm do primeiro ponto em "prisions"
+//   3) Realm de um NPC ativo em "npcs_active" (primeiro que estiver online)
+//   4) Fallback: "britannia_alt"
+// Persiste o resultado via guild.SetProp para evitar reinferir e para uniformizar.
+function GetGuildRealm(guild)
+    if (typeof(guild) == "String")
+        guild := FindGuild(guild);
+    endif
+    if (!guild) return "britannia_alt"; endif
+
+    var saved := guild.GetProp("realm");
+    if (saved && typeof(saved) == "String" && saved != "") return saved; endif
+
+    var inferred := 0;
+
+    var territories := guild.GetProp("territories");
+    if (territories && territories.size())
+        var rect_df := OpenDataFile(":architect:areas");
+        foreach territory in territories
+            sleepms(2);
+            var elem := rect_df.FindElement(territory);
+            if (elem)
+                var r := elem.GetProp("Realm");
+                if (r && typeof(r) == "String" && r != "")
+                    inferred := r;
+                    break;
+                endif
+            endif
+        endforeach
+    endif
+
+    if (!inferred)
+        var prisions := guild.GetProp("prisions");
+        if (prisions && prisions.size())
+            foreach pt in prisions
+                sleepms(2);
+                if (pt && pt.realm && typeof(pt.realm) == "String" && pt.realm != "")
+                    inferred := pt.realm;
+                    break;
+                endif
+            endforeach
+        endif
+    endif
+
+    if (!inferred)
+        var actives := guild.GetProp("npcs_active");
+        if (actives && actives.size())
+            foreach serial in actives
+                sleepms(2);
+                var npc := SystemFindObjectBySerial(CInt(serial));
+                if (npc && npc.isA(POLCLASS_MOBILE) && npc.realm)
+                    inferred := npc.realm;
+                    break;
+                endif
+            endforeach
+        endif
+    endif
+
+    if (!inferred)
+        inferred := "britannia_alt";
+        AddReport(guild, "AVISO: realm inferido como britannia_alt (sem territorio/prisao/npc ativo). Revisar.");
+    endif
+
+    guild.SetProp("realm", inferred);
+    return inferred;
+endfunction
+
 function inGuildRect(guild, item := 0, padding := 0)
     if (typeof(guild) == "String")
         guild := FindGuild(guild);
     endif
 
     if (!guild) return; endif
+
+    // Bloqueio de realm: NPC/player fora do realm canonico da guild nunca esta no rect.
+    // Tolera item sem campo "realm" (ex: struct vindo de TargetCoordinates) —
+    // nesse caso assume que o caller ja validou o realm.
+    var _g_realm := GetGuildRealm(guild);
+    if (_g_realm && item)
+        var _item_realm := item.realm;
+        if (_item_realm && typeof(_item_realm) == "String" && _item_realm != _g_realm)
+            return 0;
+        endif
+    endif
 
     // Verificar nas áreas definidas diretamente
     var area := guild.getProp("area");
@@ -526,18 +614,22 @@ function inGuildRect(guild, item := 0, padding := 0)
     return 0;
 endfunction
 
-// Retorna struct{x,y,z} com o centro do retangulo da guild.
+// Retorna struct{x,y,z,realm} com o centro do retangulo da guild.
 // Parametro z_ref: coordenada z de referencia (ex: npc.z).
+// O campo "realm" e sempre populado via GetGuildRealm (com migracao lazy).
 function GetGuildCenter(guild, z_ref := 0)
     if (typeof(guild) == "String") guild := FindGuild(guild); endif
     if (!guild) return 0; endif
+
+    var _g_realm := GetGuildRealm(guild);
 
     var area := guild.getProp("area");
     if (area)
         foreach rect in area
             if (rect && rect.size() >= 4)
                 var r := NormalizeRect(cint(rect[1]), cint(rect[2]), cint(rect[3]), cint(rect[4]));
-                return struct{ "x" := (r.x1 + r.x2) / 2, "y" := (r.y1 + r.y2) / 2, "z" := z_ref };
+                return struct{ "x" := (r.x1 + r.x2) / 2, "y" := (r.y1 + r.y2) / 2,
+                               "z" := z_ref, "realm" := _g_realm };
             endif
             sleepms(2);
         endforeach
@@ -552,13 +644,48 @@ function GetGuildCenter(guild, z_ref := 0)
                 var parsed := ParseRect(elem.GetProp("Rect"));
                 if (parsed)
                     var r := NormalizeRect(parsed.x1, parsed.y1, parsed.x2, parsed.y2);
-                    return struct{ "x" := (r.x1 + r.x2) / 2, "y" := (r.y1 + r.y2) / 2, "z" := z_ref };
+                    var _t_realm := elem.GetProp("Realm");
+                    if (!_t_realm || typeof(_t_realm) != "String" || _t_realm == "")
+                        _t_realm := _g_realm;
+                    endif
+                    return struct{ "x" := (r.x1 + r.x2) / 2, "y" := (r.y1 + r.y2) / 2,
+                                   "z" := z_ref, "realm" := _t_realm };
                 endif
             endif
             sleepms(2);
         endforeach
     endif
     return 0;
+endfunction
+
+// Move o NPC chamador para `dest` (struct com x,y,z,realm) — teleporta forcado
+// se o realm diferir do realm corrente do NPC, senao usa RunTowardLocation.
+// Requer que o script tenha `var me` (padrao em todo brain de faccao).
+// Retorna 0 se dest e invalido, 1 se executou movimento.
+function MoveOrTeleportToGuildPoint(dest)
+    if (!dest) return 0; endif
+    if (dest.realm && me.realm != dest.realm)
+        MoveObjectToLocation(me, dest.x, dest.y, dest.z, dest.realm, MOVEOBJECT_FORCELOCATION);
+    else
+        RunTowardLocation(dest.x, dest.y);
+    endif
+    return 1;
+endfunction
+
+// Detecta NPC fora do realm canonico da guild e teleporta de volta para o centro.
+// Acontece quando NPC persegue alvo que cruza moongate/teleporter — sem essa
+// trava o NPC fica orfao no realm errado e "some" da vista dos players.
+// Requer que o script tenha `var me` e `var guild` (padrao em todo brain de faccao).
+// Retorna 1 se teleportou — caller DEVE resetar estado de combate/follow e continuar.
+function EnforceGuildRealm()
+    if (!guild) return 0; endif
+    var _g_realm := GetGuildRealm(guild);
+    if (!_g_realm || me.realm == _g_realm) return 0; endif
+    var _c := GetGuildCenter(guild, 0);
+    if (_c)
+        MoveObjectToLocation(me, _c.x, _c.y, _c.z, _g_realm, MOVEOBJECT_FORCELOCATION);
+    endif
+    return 1;
 endfunction
 
 function AddReport(guild, report)

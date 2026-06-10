@@ -1,7 +1,37 @@
+use cfgfile;
+
+include ":spells:SpellRegistry";
+
+// Builds the list of castable spells for the Spell action picker: every spell
+// across all schools that defines a SpellScript (the authoritative castable
+// marker). Returns an array of struct{ id, name } ordered by school then id.
+function GetAllCastableSpells()
+    var spells := array{};
+    foreach cfg_path in (GetAllSpellConfigPaths())
+        var cfg := ReadConfigFile(cfg_path);
+        if (!cfg)
+            continue;
+        endif
+        foreach spell_id in (GetConfigIntKeys(cfg))
+            var elem := FindConfigElem(cfg, spell_id);
+            if (!GetConfigString(elem, "SpellScript"))
+                continue;
+            endif
+            var name := GetConfigString(elem, "Name");
+            if (!name)
+                continue;
+            endif
+            spells.append(struct{ id := CInt(spell_id), name := name });
+            sleepms(2);
+        endforeach
+    endforeach
+    return spells;
+endfunction
+
 var all_scripts := array{
     "summon", "summon_1", "summon_2", "summon_3", "summon_4", "sumir", "encantar", "events", 
     "defaultPoison", "hallucination", "paralysis", "congelamento", "alcohol", "clumsy", "feebleMind", 
-    "weaken", "spelleffect_219", "agility", "strength", "stamina", "graspingroots", "intelligence",
+    "weaken", "agility", "strength", "stamina", "graspingroots", "intelligence",
     "invis", "vinganca", "velocidade", "lentidao", "dominioprofano", "aparenciacadaverica", 
     "metamorfosedruida", "PhysicalResist", "MagicResist", "bless", "curse", "phmod", "auraphmod", "fimod", 
     "comod", "enmod", "aurafimod", "auracomod", "auraenmod", "aurahpregenmod", "aurastamregenmod", 
@@ -13,13 +43,7 @@ var all_scripts := array{
     "prisaogelida", "regensombrio", "temor", "gloria", "desarmar", "desviarprojetil", "recuperacaosalvadora", "martir", 
     "dmgreduction", "spectralform", "sleep", "dmgreturn", "recuperacaoaligera", "sacrificioflamejante", 
     "queimar", "bladedance", "hamelin", "firedance", "ensurdecer", "florescer", "kill", "delete", "stamconsume", 
-    "narguile", "cooldown", "mortedelay", "capmod", "dedodabesta", "cocarina", "areiaceleste", "fraturaexposta",
-    "spelleffect_206", "spelleffect_209", "spelleffect_211", "spelleffect_212",
-    "spelleffect_214", "spelleffect_215", "spelleffect_216", "spelleffect_218", "spelleffect_220",
-    "spelleffect_301", "spelleffect_2000", "spelleffect_311", "spelleffect_314", "spelleffect_310",
-    "spelleffect_108", "spelleffect_725", "spelleffect_302", "spelleffect_303", "spelleffect_618",
-    "spelleffect_619", "spelleffect_723", "spelleffect_716", "spelleffect_614",
-    "spelleffect_907", "spelleffect_905", "spelleffect_708", "spelleffect_727"
+    "narguile", "cooldown", "mortedelay", "capmod", "dedodabesta", "cocarina", "areiaceleste", "fraturaexposta"
 };
 
 function HandleAddCombatEvent(who, input, byref form_data)
@@ -131,6 +155,7 @@ function ShowCombatEventsList(who, byref combat_event)
                     "Graphic Effect": details += ", Effect: " + action.fxid; break;
                     "Summon Npcs": details += ", Template: " + action.npctemplate + ", Count: " + action.amount; break;
                     "Timedscripts": details += ", Script: " + action.name + ", Duration: " + action.duration + ", Level: " + action.level; break;
+                    "Spell": details += ", Spell: " + action.spell_name; break;
                 endcase
                 
                 GFTooltipText(gump, details);
@@ -236,6 +261,7 @@ function ConfigureCombatAction(who, action := 0)
         "Summon Npcs",
         "Pushback",
         "Timedscripts",
+        "Spell",
         "Delay"
     };
     
@@ -301,7 +327,7 @@ function ConfigureActionProperties(who, action)
     var y_pos := 80;
     
     // Common properties for many action types
-    if (action.type in array{"Teleport", "Perform Action", "Text", "Graphic Effect", "Dmg"})
+    if (action.type in array{"Teleport", "Perform Action", "Text", "Graphic Effect", "Dmg", "Spell"})
         GFTextLine(gump, 30, y_pos, 1153, "Target:");
         y_pos += 25;
         
@@ -386,13 +412,12 @@ function ConfigureActionProperties(who, action)
             
             GFTextLine(gump, 30, y_pos, 1153, "Damage Type:");
             
-            // Initialize damage types array if it doesn't exist
+            // Initialize damage types array if it doesn't exist. Do NOT pre-select
+            // a type here — pre-checking "Physical" makes the user save both
+            // Physical + their pick (double damage). The save-time fallback below
+            // already defaults to Physical only when nothing is checked.
             if (!action.dmgtypes)
-                action.+dmgtypes := array{}; 
-                // Default to Physical if nothing selected
-                if (!action.dmgtypes.size())
-                    action.dmgtypes.append("Physical");
-                endif
+                action.+dmgtypes := array{};
             endif
             
             // Convert legacy dmgtype string to array if needed
@@ -601,6 +626,37 @@ function ConfigureActionProperties(who, action)
             GFRadioButton(gump, 300, y, 210, 211, action.target == "All Opponents", 1003);
             GFTextLine(gump, 330, y, 1153, "All Opponents");
             y += 35;
+            break;
+
+        "Spell":
+            // Target radios render at top (shared whitelist). Here: paginated spell picker.
+            var all_spells := GetAllCastableSpells();
+            var page_size := 10;
+            var total_pages := (all_spells.size() + page_size - 1) / page_size;
+            if (total_pages < 1) total_pages := 1; endif
+            if (!action.page) action.page := 1; endif
+            var page := action.page;
+            if (page < 1) page := 1; endif
+            if (page > total_pages) page := total_pages; endif
+            var start_idx := (page - 1) * page_size + 1;
+            var end_idx := start_idx + page_size - 1;
+            if (end_idx > all_spells.size()) end_idx := all_spells.size(); endif
+            GFTextLine(gump, 30, y_pos, 1153, "Select Spell (page " + page + "/" + total_pages + "):");
+            var sy := y_pos + 25;
+            for i := start_idx to end_idx
+                var spell_entry := all_spells[i];
+                GFAddButton(gump, 30, sy, 2117, 2118, GF_CLOSE_BTN, 5000 + i);
+                GFTextLine(gump, 60, sy, 1153, spell_entry.name + (action.spell_id == spell_entry.id ? " (selected)" : ""));
+                sy += 25;
+            endfor
+            if (page > 1)
+                GFAddButton(gump, 300, sy, 9706, 9707, GF_CLOSE_BTN, 5100); // Prev
+                GFTextLine(gump, 330, sy, 1153, "Previous");
+            endif
+            if (page < total_pages)
+                GFAddButton(gump, 400, sy, 9702, 9703, GF_CLOSE_BTN, 5101); // Next
+                GFTextLine(gump, 430, sy, 1153, "Next");
+            endif
             break;
     endcase
     
@@ -811,6 +867,24 @@ function ConfigureActionProperties(who, action)
             endif
             action.duration := CInt(GFExtractData(result, 2));
             action.level := CInt(GFExtractData(result, 3));
+            break;
+
+        "Spell":
+            var all_spells := GetAllCastableSpells();
+            for i := 1 to all_spells.size()
+                if (result[5000 + i])
+                    action.spell_id := all_spells[i].id;
+                    action.spell_name := all_spells[i].name;
+                endif
+            endfor
+            // Handle pagination
+            if (result[5100])
+                action.page := (action.page ? action.page : 1) - 1;
+                return ConfigureActionProperties(who, action);
+            elseif (result[5101])
+                action.page := (action.page ? action.page : 1) + 1;
+                return ConfigureActionProperties(who, action);
+            endif
             break;
     endcase
     

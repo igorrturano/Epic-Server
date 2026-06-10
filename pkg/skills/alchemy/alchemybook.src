@@ -91,7 +91,7 @@ function MakePotion(pot, who)
 
 	foreach reag in (reagent_costs.keys())
 		amount := CInt(reagent_costs[reag]);
-		if (MobileWrapper(who).HasAbility(ABILITY_ID::ALQUIMISTA_EXPERIENTE) && (amount > 1))
+		if (MobileWrapper(who).HasAbility(ABILITY_ID::ENGENHARIA_DE_GATILHOS) && (amount > 1))
 			amount := CInt(amount / 2);
 		endif
 		if (!amount)
@@ -132,7 +132,7 @@ function MakePotion(pot, who)
 				thing := CreateItemInBackpack(who, id, 1);
 			else // se nao cria so o extrato
 				thing := CreateItemInBackpack(who, 0xcfff, 1);
-				if (MobileWrapper(who).HasAbility(ABILITY_ID::BOMBARDEIRO_EFICIENTE) && science == BOMBA)
+				if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMPO_MINADO) && science == BOMBA)
 					thing := CreateItemInBackpack(who, 0xcfff, 1);
 				endif
 				SetObjProperty(thing, "extrato", id);
@@ -144,7 +144,7 @@ function MakePotion(pot, who)
 					SendSysMessageEx(who, "Voce fez um extrato instantaneo.", SSM_INFO);
 					var pocao := GetObjProperty(thing, "extrato");
 					var pot := CreateItemInBackpack(who, pocao, 1);
-					if (MobileWrapper(who).HasAbility(ABILITY_ID::BOMBARDEIRO_EFICIENTE) && science == BOMBA)
+					if (MobileWrapper(who).HasAbility(ABILITY_ID::CAMPO_MINADO) && science == BOMBA)
 						pot := CreateItemInBackpack(who, pocao, 1);
 					endif
 					SetObjProperty(pot, "bonus", bonus);

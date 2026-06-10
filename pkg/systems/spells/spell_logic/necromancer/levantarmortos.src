@@ -18,7 +18,7 @@ program SpellScript(params)
 	var targ := params[2];
 	params := 0; // No longer needed
 
-	var skill := AP_GetSkill(who, "Magery");
+	var skill := AP_GetSkill(who, ARCANA);
 	var maxsummons := Cint(skill / 25);
 	var npctemplate := GetObjproperty(targ, "npctemplate");
 	var category := lower(getnpccategory(ParseTemplateName(npctemplate).template));
@@ -62,21 +62,21 @@ program SpellScript(params)
 	var undead;
 
 	if (random < 20)
-		undead := createnpcfromtemplate(":brainai:headless", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:headless", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 40)
-		undead := createnpcfromtemplate(":brainai:skeleton1", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:skeleton1", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 50)
-		undead := createnpcfromtemplate(":brainai:zombie", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:zombie", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 70)
-		undead := createnpcfromtemplate(":brainai:ossadaescarlate", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:ossadaescarlate", targ.x, targ.y, targ.z, 0, who.realm);// Template inexistente
 	elseif (random < 80)
-		undead := createnpcfromtemplate(":brainai:zombielord", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:zombielord", targ.x, targ.y, targ.z, 0, who.realm);// Template inexistente
 	elseif (random < 90)
-		undead := createnpcfromtemplate(":brainai:spectre", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:spectre", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 95)
-		undead := createnpcfromtemplate(":brainai:skeletonmage", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:skeletonmage", targ.x, targ.y, targ.z, 0, who.realm);
 	elseif (random < 5000)
-		undead := createnpcfromtemplate(":brainai:fleshgolem", targ.x, targ.y, targ.z, 0, who.realm);
+		undead := createnpcfromtemplate(":epicai:fleshgolem", targ.x, targ.y, targ.z, 0, who.realm);
 	endif
 
 	SC_HandleSound(who, targ, 383);
@@ -99,7 +99,7 @@ program SpellScript(params)
 	var numbersummons := Cint(GetObjProperty(who, "NecroSummons"));
 	SetObjProperty(who, "NecroSummons", (numbersummons + 1));
 
-	TS_StartTimer(undead, "summon", GetSpellDuration(AP_GetSkill(who, ARCANA)) / 2);
+	TS_StartTimer(undead, "summon", GetSpellDuration(skill) / 2);
 
 	SendSysMessageEx(who, "Voce teve sucesso ao levantar o corpo", SSM_INFO);
 	Corromper(who, 16, "0");

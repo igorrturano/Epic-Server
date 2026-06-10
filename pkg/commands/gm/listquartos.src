@@ -1,0 +1,609 @@
+use uo;
+use os;
+
+include ":gumpDesigner:Gump/Gump";
+include ":gumpDesigner:Control/Button";
+include ":gumpDesigner:Control/Text";
+include ":gumpDesigner:Control/Tooltip";
+include ":accounts:accounts";
+
+const GUMP_W       := 820;
+const PER_PAGE     := 12;
+const ROW_H        := 26;
+const HEADER_Y     := 105;
+const FIRST_ROW_Y  := 128;
+
+const COL_NPC_BTN  := 20;
+const COL_NPC_LBL  := 42;
+const COL_QUARTO   := 200;
+const COL_STATUS   := 310;
+const COL_INQUIL   := 390;
+const COL_INATIVO  := 600;
+const COL_ALUGUEL  := 665;
+const COL_GOTO_BTN := 730;
+const COL_DESP_BTN := 770;
+
+const F_ALL        := "all";
+const F_RENTED     := "rented";
+const F_VACANT     := "vacant";
+const F_INACTIVE   := "inactive30";
+const F_MULTI      := "multi";
+
+program listquartos(who)
+    if (who.cmdlevel < 2)
+        SendSysMessage(who, "Comando GM apenas.");
+        return;
+    endif
+
+    var rows := _CollectAllRooms();
+    if (rows.size() == 0)
+        SendSysMessage(who, "Nenhum quarto cadastrado em estalajadeiros.");
+        return;
+    endif
+
+    _CountByAccount(rows);
+    _ShowListGump(who, rows);
+endprogram
+
+// Varre a global property "InnKeeper" e monta uma linha por quarto.
+// Cada linha contém tudo que o gump precisa: posicao do NPC pra teleporte,
+// posicao da porta, status (vago/alugado/despejo), inquilino e tempo
+// ocioso da conta.
+function _CollectAllRooms()
+    var acc := array{};
+    var innkeepers := GetGlobalProperty("InnKeeper");
+    if (innkeepers == error || TypeOf(innkeepers) != "Array")
+        return acc;
+    endif
+
+    foreach serial in innkeepers
+        var npc := SystemFindObjectBySerial(CInt(serial));
+        if (npc == error)
+            sleepms(2);
+            continue;
+        endif
+
+        var quartos := GetObjProperty(npc, "quartos");
+        if (quartos == error || TypeOf(quartos) != "Array")
+            continue;
+        endif
+
+        var tempoalugado := GetObjProperty(npc, "tempoalugado");
+        if (tempoalugado == error || !tempoalugado)
+            tempoalugado := 7;
+        endif
+
+        var qi := 1;
+        foreach quarto in quartos
+            var row := struct;
+            row.+npc_serial := npc.serial;
+            row.+quarto_index := qi;
+            row.+npc_name   := npc.name;
+            row.+npc_x      := npc.x;
+            row.+npc_y      := npc.y;
+            row.+npc_z      := npc.z;
+            row.+npc_realm  := npc.realm;
+            row.+quarto_name := CStr(quarto.name);
+
+            // Coordenada pro botao Goto: prefere a porta; cai pro centro
+            // se a porta sumiu por algum motivo.
+            var door := SystemFindObjectBySerial(CInt(quarto.door));
+            if (door != error)
+                row.+door_x     := door.x;
+                row.+door_y     := door.y;
+                row.+door_z     := door.z;
+                row.+door_realm := door.realm;
+            else
+                var cent := quarto.centro;
+                if (cent != error && TypeOf(cent) == "Array" && cent.size() >= 3)
+                    row.+door_x := cent[1];
+                    row.+door_y := cent[2];
+                    row.+door_z := cent[3];
+                    var cs := cent.size();
+                    if (cs == 4)
+                        row.+door_realm := cent[4];
+                    elseif (cs == 7)
+                        row.+door_realm := cent[7];
+                    else
+                        row.+door_realm := npc.realm;
+                    endif
+                else
+                    row.+door_x := npc.x;
+                    row.+door_y := npc.y;
+                    row.+door_z := npc.z;
+                    row.+door_realm := npc.realm;
+                endif
+            endif
+
+            var inquilino_serial := CInt(quarto.inquilino);
+            if (inquilino_serial > 0)
+                var player := SystemFindObjectBySerial(inquilino_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+                if (player != error)
+                    var acctname := player.acctname;
+                    if (!acctname)
+                        acctname := "?";
+                    endif
+                    // nome_inicial e o nome real do char (escolhido na criacao).
+                    // Cai pra player.name (geralmente a raca) so se a prop nao existir.
+                    var nome_real := CStr(GetObjProperty(player, "nome_inicial"));
+                    if (nome_real == "" || nome_real == "0")
+                        nome_real := player.name;
+                    endif
+                    row.+inquilino_name := nome_real;
+                    row.+inquilino_acct := acctname;
+
+                    // Last login da conta (segundos systime). -1 sinaliza
+                    // que a conta nunca registrou um login post-deploy.
+                    var last := ACCT_GetLastLogin(acctname);
+                    if (last == error || !last)
+                        row.+dias_inativo := -1;
+                    else
+                        row.+dias_inativo := _CalcularDias(CInt(last));
+                    endif
+                else
+                    row.+inquilino_name := "(serial " + inquilino_serial + " sumiu)";
+                    row.+inquilino_acct := "";
+                    row.+dias_inativo   := -1;
+                endif
+
+                var rentdate := CInt(quarto.data);
+                var dias_aluguel := 0;
+                if (rentdate > 0)
+                    dias_aluguel := _CalcularDias(rentdate);
+                endif
+                row.+dias_aluguel := dias_aluguel;
+                if (dias_aluguel >= tempoalugado)
+                    row.+status := "despejo";
+                else
+                    row.+status := "alugado";
+                endif
+            else
+                row.+inquilino_name := "";
+                row.+inquilino_acct := "";
+                row.+dias_inativo   := 0;
+                row.+dias_aluguel   := 0;
+                row.+status         := "vago";
+            endif
+
+            row.+multi_count := 1;
+            acc.append(row);
+            qi := qi + 1;
+            sleepms(2);
+        endforeach
+    endforeach
+    return acc;
+endfunction
+
+// Conta quantos quartos cada acctname ocupa e grava de volta em cada
+// linha. >=2 destaca o inquilino em vermelho na lista.
+function _CountByAccount(byref rows)
+    var counts := dictionary;
+    foreach r in rows
+        if (r.status != "vago" && r.inquilino_acct != "")
+            if (counts.Exists(r.inquilino_acct))
+                counts[r.inquilino_acct] := counts[r.inquilino_acct] + 1;
+            else
+                counts[r.inquilino_acct] := 1;
+            endif
+        endif
+    endforeach
+
+    var i := 1;
+    while (i <= rows.size())
+        var r := rows[i];
+        if (r.status != "vago" && r.inquilino_acct != "" && counts.Exists(r.inquilino_acct))
+            r.multi_count := counts[r.inquilino_acct];
+            rows[i] := r;
+        endif
+        i := i + 1;
+    endwhile
+endfunction
+
+function _FilterRows(all_rows, filter)
+    var acc := array{};
+    foreach r in all_rows
+        var keep := 0;
+        if (filter == F_ALL)
+            keep := 1;
+        elseif (filter == F_RENTED && r.status != "vago")
+            keep := 1;
+        elseif (filter == F_VACANT && r.status == "vago")
+            keep := 1;
+        elseif (filter == F_INACTIVE && r.status != "vago" && r.dias_inativo >= 30)
+            keep := 1;
+        elseif (filter == F_MULTI && r.multi_count >= 2)
+            keep := 1;
+        endif
+        if (keep)
+            acc.append(r);
+        endif
+    endforeach
+    return acc;
+endfunction
+
+function _ShowListGump(who, all_rows)
+    var filter := F_ALL;
+    var page := 0;
+
+    // Contagens globais para o header.
+    var total := all_rows.size();
+    var n_rented := 0;
+    var n_vacant := 0;
+    var n_multi_accts := dictionary;
+    foreach r in all_rows
+        if (r.status == "vago")
+            n_vacant := n_vacant + 1;
+        else
+            n_rented := n_rented + 1;
+            if (r.multi_count >= 2 && r.inquilino_acct != "")
+                n_multi_accts[r.inquilino_acct] := 1;
+            endif
+        endif
+    endforeach
+    var n_multi := n_multi_accts.size();
+
+    while (1)
+        var rows := _FilterRows(all_rows, filter);
+        var view_total := rows.size();
+        var start  := page * PER_PAGE + 1;
+        var ending := start + PER_PAGE - 1;
+        if (ending > view_total)
+            ending := view_total;
+        endif
+
+        // Volta pra primeira pagina se o filtro encolheu a lista.
+        if (start > view_total && view_total > 0)
+            page := 0;
+            continue;
+        endif
+
+        var visible_rows := 0;
+        if (view_total > 0)
+            visible_rows := ending - start + 1;
+        endif
+
+        var gump_h := FIRST_ROW_Y + (PER_PAGE * ROW_H) + 50;
+        var gump := Gump(who, "Quartos de Estalagem", GUMP_W, gump_h);
+
+        // Header com contadores agregados.
+        gump.AddControl(Text("hdr", 20, 42,
+            "Total: " + total +
+            "    Alugados: " + n_rented +
+            "    Vagos: " + n_vacant +
+            "    Contas com 2+ quartos: " + n_multi,
+            TEXT_COLOR::COLOR_YELLOW));
+
+        // Filtros como botoes (label do filtro ativo em verde).
+        var btnAll     := _AddFilterBtn(gump, "all",     20,  72, "Todos",         filter);
+        var btnRented  := _AddFilterBtn(gump, "rented",  130, 72, "Alugados",      filter);
+        var btnVacant  := _AddFilterBtn(gump, "vacant",  250, 72, "Vagos",         filter);
+        var btnInact   := _AddFilterBtn(gump, "inact",   350, 72, "Inativos 30+",  filter);
+        var btnMulti   := _AddFilterBtn(gump, "multi",   500, 72, "Multi-conta",   filter);
+
+        // Cabecalhos das colunas (passe o mouse para ver explicacao).
+        _AddHeader(gump, "h1", COL_NPC_LBL,  HEADER_Y, "Estalagem",
+            "Nome do NPC estalajadeiro dono do quarto. Clique no botao verde da linha para teleportar ate ele.");
+        _AddHeader(gump, "h2", COL_QUARTO,   HEADER_Y, "Quarto",
+            "Nome interno do quarto (definido quando o estalajadeiro foi configurado).");
+        _AddHeader(gump, "h3", COL_STATUS,   HEADER_Y, "Status",
+            "Vago = disponivel. Alugado = pago e em dia. Despejo = passou do prazo de pagamento, ciclo automatico vai cobrar/limpar.");
+        _AddHeader(gump, "h4", COL_INQUIL,   HEADER_Y, "Inquilino (conta)",
+            "Nome inicial do personagem (escolhido na criacao) e, entre parenteses, o nome da conta. Se a mesma conta tiver 2+ quartos aparece em vermelho com xN (numero total de quartos daquela conta).");
+        _AddHeader(gump, "h5", COL_INATIVO,  HEADER_Y, "Inat",
+            "Dias desde o ultimo login da conta do inquilino. Amarelo: 30+ dias. Vermelho: 60+ dias. '?' = conta sem registro de login.");
+        _AddHeader(gump, "h6", COL_ALUGUEL,  HEADER_Y, "Alug",
+            "Dias desde o ultimo pagamento de aluguel. Quando atingir o periodo configurado no NPC (padrao 7), o ciclo cobra do banco do inquilino.");
+        _AddHeader(gump, "h7", COL_GOTO_BTN, HEADER_Y, "Ir",
+            "Teleporta voce ate a porta do quarto para inspecionar in loco.");
+        _AddHeader(gump, "h8", COL_DESP_BTN, HEADER_Y, "Desp",
+            "Despeja o inquilino: libera o quarto (inquilino := vazio) e remove a fechadura da porta. NAO destroi itens dentro do quarto - use 'Ir' para inspecionar manualmente antes. Pede confirmacao.");
+
+        var btns_npc  := array{};
+        var btns_goto := array{};
+        var btns_desp := array{};
+        var btns_desp_idx := array{};
+
+        if (view_total == 0)
+            gump.AddControl(Text("empty", COL_NPC_LBL, FIRST_ROW_Y + 5,
+                "Nenhum quarto neste filtro.",
+                TEXT_COLOR::COLOR_DEFAULT));
+        else
+            var y := FIRST_ROW_Y;
+            for i := start to ending
+                var r := rows[i];
+
+                // Botao + nome do NPC (clicar teleporta pro estalajadeiro).
+                var btnNpc := Button("bN_" + i, COL_NPC_BTN, y,
+                    BUTTON_IMAGE::MODERN_V_UNPRESSED,
+                    BUTTON_IMAGE::MODERN_V_PRESSED);
+                btns_npc.append(btnNpc);
+                gump.AddControl(btnNpc);
+                gump.AddControl(Text("nN_" + i, COL_NPC_LBL, y + 2,
+                    _Trunc(r.npc_name, 22), TEXT_COLOR::COLOR_DEFAULT));
+
+                gump.AddControl(Text("nQ_" + i, COL_QUARTO, y + 2,
+                    _Trunc(r.quarto_name, 16), TEXT_COLOR::COLOR_DEFAULT));
+
+                var status_color := TEXT_COLOR::COLOR_DEFAULT;
+                var status_label := "Alugado";
+                if (r.status == "vago")
+                    status_color := TEXT_COLOR::COLOR_GREEN;
+                    status_label := "Vago";
+                elseif (r.status == "despejo")
+                    status_color := TEXT_COLOR::COLOR_RED;
+                    status_label := "Despejo";
+                endif
+                gump.AddControl(Text("nS_" + i, COL_STATUS, y + 2,
+                    status_label, status_color));
+
+                if (r.status != "vago")
+                    var inq_color := TEXT_COLOR::COLOR_DEFAULT;
+                    if (r.multi_count >= 2)
+                        inq_color := TEXT_COLOR::COLOR_RED;
+                    endif
+                    var inq_label := _Trunc(r.inquilino_name, 16) + " (" + _Trunc(r.inquilino_acct, 12) + ")";
+                    if (r.multi_count >= 2)
+                        inq_label := inq_label + " x" + r.multi_count;
+                    endif
+                    gump.AddControl(Text("nI_" + i, COL_INQUIL, y + 2,
+                        inq_label, inq_color));
+
+                    var inat_color := TEXT_COLOR::COLOR_DEFAULT;
+                    var inat_label := CStr(r.dias_inativo);
+                    if (r.dias_inativo < 0)
+                        inat_label := "?";
+                        inat_color := TEXT_COLOR::COLOR_YELLOW;
+                    elseif (r.dias_inativo >= 60)
+                        inat_color := TEXT_COLOR::COLOR_RED;
+                    elseif (r.dias_inativo >= 30)
+                        inat_color := TEXT_COLOR::COLOR_YELLOW;
+                    endif
+                    gump.AddControl(Text("nT_" + i, COL_INATIVO, y + 2,
+                        inat_label, inat_color));
+
+                    gump.AddControl(Text("nA_" + i, COL_ALUGUEL, y + 2,
+                        CStr(r.dias_aluguel), TEXT_COLOR::COLOR_DEFAULT));
+                endif
+
+                var btnGoto := Button("bG_" + i, COL_GOTO_BTN, y,
+                    BUTTON_IMAGE::MODERN_EYE_UNPRESSED,
+                    BUTTON_IMAGE::MODERN_EYE_PRESSED);
+                btns_goto.append(btnGoto);
+                gump.AddControl(btnGoto);
+
+                // Botao Despejar — so renderiza se houver inquilino.
+                if (r.status != "vago")
+                    var btnDesp := Button("bD_" + i, COL_DESP_BTN, y,
+                        BUTTON_IMAGE::MODERN_X_UNPRESSED,
+                        BUTTON_IMAGE::MODERN_X_PRESSED);
+                    btns_desp.append(btnDesp);
+                    btns_desp_idx.append(start + i - 1);
+                    gump.AddControl(btnDesp);
+                endif
+
+                y := y + ROW_H;
+            endfor
+        endif
+
+        // Paginacao no rodape — so renderiza setas se necessario.
+        var nav_y := FIRST_ROW_Y + (PER_PAGE * ROW_H) + 12;
+        gump.AddControl(Text("pg_lbl", 20, nav_y + 2,
+            "Pagina " + (page + 1) + " / " + _PageCount(view_total),
+            TEXT_COLOR::COLOR_DEFAULT));
+
+        var btnPrev := Button("btnPrev", 320, nav_y,
+            BUTTON_IMAGE::MODERN_PREVIOUS_UNPRESSED,
+            BUTTON_IMAGE::MODERN_PREVIOUS_PRESSED);
+        var btnNext := Button("btnNext", 440, nav_y,
+            BUTTON_IMAGE::MODERN_NEXT_UNPRESSED,
+            BUTTON_IMAGE::MODERN_NEXT_PRESSED);
+        if (page > 0)
+            gump.AddControl(btnPrev);
+        endif
+        if (ending < view_total)
+            gump.AddControl(btnNext);
+        endif
+
+        var ev := gump.Show();
+        gump.Dispose();
+
+        if (ev.GetControl() == EVENT_ACTION::CLOSED)
+            return;
+        endif
+
+        // Filtros: troca filter e reseta paginacao.
+        if (ev.GetControl().Equals(btnAll))
+            filter := F_ALL; page := 0; continue;
+        endif
+        if (ev.GetControl().Equals(btnRented))
+            filter := F_RENTED; page := 0; continue;
+        endif
+        if (ev.GetControl().Equals(btnVacant))
+            filter := F_VACANT; page := 0; continue;
+        endif
+        if (ev.GetControl().Equals(btnInact))
+            filter := F_INACTIVE; page := 0; continue;
+        endif
+        if (ev.GetControl().Equals(btnMulti))
+            filter := F_MULTI; page := 0; continue;
+        endif
+
+        // Paginacao.
+        if (page > 0 && ev.GetControl().Equals(btnPrev))
+            page := page - 1;
+            continue;
+        endif
+        if (ending < view_total && ev.GetControl().Equals(btnNext))
+            page := page + 1;
+            continue;
+        endif
+
+        // Acoes por linha — teleportes para NPC ou porta.
+        var handled := 0;
+        for i := 1 to btns_npc.size()
+            if (ev.GetControl().Equals(btns_npc[i]))
+                var r := rows[start + i - 1];
+                MoveObjectToLocation(who, r.npc_x, r.npc_y, r.npc_z, r.npc_realm, MOVEOBJECT_FORCELOCATION);
+                handled := 1;
+                break;
+            endif
+            if (ev.GetControl().Equals(btns_goto[i]))
+                var r := rows[start + i - 1];
+                MoveObjectToLocation(who, r.door_x, r.door_y, r.door_z, r.door_realm, MOVEOBJECT_FORCELOCATION);
+                handled := 1;
+                break;
+            endif
+        endfor
+        if (handled)
+            continue;
+        endif
+
+        // Despejar — varre array separado (so quartos alugados tem botao).
+        for i := 1 to btns_desp.size()
+            if (ev.GetControl().Equals(btns_desp[i]))
+                var r := rows[btns_desp_idx[i]];
+                if (_ConfirmDespejo(who, r))
+                    var msg := _Despejar(r);
+                    SendSysMessage(who, msg, 66);
+                    // Recarrega dados pois a lista mudou.
+                    all_rows := _CollectAllRooms();
+                    _CountByAccount(all_rows);
+                    // Recalcula totais do header.
+                    total := all_rows.size();
+                    n_rented := 0;
+                    n_vacant := 0;
+                    n_multi_accts := dictionary;
+                    foreach rr in all_rows
+                        if (rr.status == "vago")
+                            n_vacant := n_vacant + 1;
+                        else
+                            n_rented := n_rented + 1;
+                            if (rr.multi_count >= 2 && rr.inquilino_acct != "")
+                                n_multi_accts[rr.inquilino_acct] := 1;
+                            endif
+                        endif
+                    endforeach
+                    n_multi := n_multi_accts.size();
+                endif
+                handled := 1;
+                break;
+            endif
+        endfor
+        if (handled)
+            continue;
+        endif
+    endwhile
+endfunction
+
+// Gump de confirmacao - retorna 1 se GM confirmou.
+function _ConfirmDespejo(who, r)
+    var gump := Gump(who, "Despejar inquilino", 420, 220);
+    gump.AddControl(Text("h1", 25,  40, "DESPEJAR ESTE QUARTO?", TEXT_COLOR::COLOR_RED));
+    gump.AddControl(Text("p1", 25,  72, "Estalagem: " + r.npc_name,    TEXT_COLOR::COLOR_DEFAULT));
+    gump.AddControl(Text("p2", 25,  90, "Quarto: "    + r.quarto_name, TEXT_COLOR::COLOR_DEFAULT));
+    gump.AddControl(Text("p3", 25, 108, "Inquilino: " + r.inquilino_name + " (" + r.inquilino_acct + ")",
+                    TEXT_COLOR::COLOR_DEFAULT));
+    gump.AddControl(Text("p4", 25, 134, "Itens dentro NAO sao removidos. Inspecione antes.",
+                    TEXT_COLOR::COLOR_YELLOW));
+
+    var btnSim := Button("btnSim", 25, 170, BUTTON_IMAGE::MODERN_V_UNPRESSED, BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btnSim);
+    gump.AddControl(Text("lblSim", 60, 173, "Despejar", TEXT_COLOR::COLOR_RED));
+
+    var btnNao := Button("btnNao", 220, 170, BUTTON_IMAGE::MODERN_X_UNPRESSED, BUTTON_IMAGE::MODERN_X_PRESSED);
+    gump.AddControl(btnNao);
+    gump.AddControl(Text("lblNao", 255, 173, "Cancelar", TEXT_COLOR::COLOR_DEFAULT));
+
+    var ev := gump.Show();
+    gump.Dispose();
+
+    if (ev.GetControl() == EVENT_ACTION::CLOSED) return 0; endif
+    if (ev.GetControl().Equals(btnSim))          return 1; endif
+    return 0;
+endfunction
+
+// Libera o quarto: inquilino := 0, remove LockId da porta. Mantem itens
+// dentro intactos — GM deve limpar manualmente se quiser.
+function _Despejar(r)
+    var npc := SystemFindObjectBySerial(CInt(r.npc_serial));
+    if (npc == error)
+        return "Falha: NPC estalajadeiro nao encontrado.";
+    endif
+
+    var quartos := GetObjProperty(npc, "quartos");
+    if (quartos == error || TypeOf(quartos) != "Array")
+        return "Falha: estalajadeiro nao tem quartos cadastrados.";
+    endif
+
+    var idx := CInt(r.quarto_index);
+    if (idx < 1 || idx > quartos.size())
+        return "Falha: indice de quarto invalido (" + idx + " / " + quartos.size() + ").";
+    endif
+
+    var quarto := quartos[idx];
+
+    // Confere que o quarto continua sendo o que o GM viu na lista — protege
+    // contra race condition se outro GM/cycle alterou a estrutura.
+    if (CStr(quarto.name) != r.quarto_name)
+        return "Falha: estrutura de quartos mudou enquanto voce escolhia. Tente de novo.";
+    endif
+
+    var door := SystemFindObjectBySerial(CInt(quarto.door));
+    if (door != error)
+        EraseObjProperty(door, "LockId");
+    endif
+
+    quartos[idx].inquilino := 0;
+    SetObjProperty(npc, "quartos", quartos);
+
+    return "Quarto '" + r.quarto_name + "' em '" + r.npc_name + "' liberado. Itens dentro nao foram tocados.";
+endfunction
+
+function _AddHeader(gump, id, x, y, label, tip)
+    var txt := Text(id, x, y, label, TEXT_COLOR::COLOR_YELLOW);
+    txt.SetTooltip(Tooltip("tip_" + id, tip));
+    gump.AddControl(txt);
+endfunction
+
+function _AddFilterBtn(gump, id, x, y, label, active)
+    var color := TEXT_COLOR::COLOR_DEFAULT;
+    var is_active := 0;
+    if ((id == "all"    && active == F_ALL) ||
+        (id == "rented" && active == F_RENTED) ||
+        (id == "vacant" && active == F_VACANT) ||
+        (id == "inact"  && active == F_INACTIVE) ||
+        (id == "multi"  && active == F_MULTI))
+        color := TEXT_COLOR::COLOR_GREEN;
+        is_active := 1;
+    endif
+    var btn := Button("f_" + id, x, y,
+        BUTTON_IMAGE::MODERN_V_UNPRESSED,
+        BUTTON_IMAGE::MODERN_V_PRESSED);
+    gump.AddControl(btn);
+    gump.AddControl(Text("fl_" + id, x + 22, y + 2, label, color));
+    return btn;
+endfunction
+
+function _PageCount(total)
+    if (total <= 0)
+        return 1;
+    endif
+    var n := CInt(total / PER_PAGE);
+    if ((n * PER_PAGE) < total)
+        n := n + 1;
+    endif
+    return n;
+endfunction
+
+function _Trunc(s, n)
+    var str := CStr(s);
+    if (len(str) <= n)
+        return str;
+    endif
+    return str[1, n - 1] + ".";
+endfunction
+
+function _CalcularDias(data)
+    var agora := POLCore().systime;
+    return CInt((agora - CInt(data)) / 86400);
+endfunction

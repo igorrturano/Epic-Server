@@ -40,3 +40,20 @@ function CP_RootContainerLocked(object)
 	
 	return 0;
 endfunction
+
+/*
+ * IsMountSwappableEquip(item)
+ *
+ * Itens que um jogador montado pode tirar/guardar da mochila para
+ * trocar de equipamento sem desmontar: armas e escudos. Demais
+ * armaduras e itens continuam bloqueados enquanto montado.
+ *
+ * @return 1 para arma (POLCLASS_WEAPON) ou escudo, 0 caso contrário.
+ */
+function IsMountSwappableEquip(item)
+	if (!item)
+		return 0;
+	endif
+
+	return item.IsA(POLCLASS_WEAPON) || (item.IsA(POLCLASS_ARMOR) && item.isShield());
+endfunction

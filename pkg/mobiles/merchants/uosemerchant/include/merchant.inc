@@ -1,10 +1,12 @@
 use uo;
 use math;
+use cfgfile;
 
 //include "include/bank";
 include ":datafile:include/datafile";
 include ":merchants:/include/item_template";
 include ":timeutils:time";
+include ":spells:SpellRegistry";
 
 function GetPaymentsDataFile()
 	var data_file := DFOpenDataFile(":merchants:payments", DF_CREATE);
@@ -171,14 +173,18 @@ function AddItemForSale(merchant, seller, item, cost_type, cost_name, cost_amt, 
 		return temp;
 	endif
 	
-	var template := CreateItemTemplate(item);
+	// capture_contents=1: se for container, snapshot recursivo dos itens
+	// dentro para que a venda preserve o conteúdo. Sem isso, DestroyItem(item)
+	// abaixo apaga a bag E todos os filhos junto, deixando o comprador com
+	// uma bag vazia (ou pior, perdendo itens).
+	var template := CreateItemTemplate(item, 1);
 	if ( template == error )
 		return template;
 	endif
-	
+
 	data_elem.SetProp("LastNum", new_num);
 	new_num := CStr(new_num);
-	
+
 	var cost_info := struct;
 	cost_info.+seller := CInt(seller.serial);
 	cost_info.+cost_type := CInt(cost_type);
@@ -207,14 +213,13 @@ endfunction
 // Returns the next available item number in the elem.
 //
 function FindAvailableNumber(data_elem)
-	const MIN_VALUE := 0xFF;
-	const MAX_VALUE := 0x14A;
-	//Range = 100
-	
+	const MIN_VALUE := 0xFF;   // 255
+	const MAX_VALUE := 0x1C6;  // 454 — range real = 200 slots (era 0x14A = 76 com comentário mentindo "100")
+
 	var new_num := CInt(data_elem.GetProp("LastNum"));
-	if ( new_num < MIN_VALUE )	
+	if ( new_num < MIN_VALUE )
 		return MIN_VALUE;
-	elseif ( new_num > MAX_VALUE )
+	elseif ( new_num >= MAX_VALUE )
 		var i := MIN_VALUE;
 		for ( i; i<=MAX_VALUE; i:=i+1 )
 			if ( !data_elem.GetProp(CStr(i)) )
@@ -222,7 +227,7 @@ function FindAvailableNumber(data_elem)
 			endif
 			sleepms(2);
 		endfor
-		// For some reason... no new numbers are available.
+		// Tudo ocupado mesmo após varrer o range — vendor lotado de verdade.
 		return error;
 	else
 		return new_num+1;
@@ -248,23 +253,108 @@ function RemoveItemForSale(merchant, item_num, amount := 0, confiscar := 0)
    return 1;
 endfunction
 
+// =============================================================================
+// Sistema de devolução de itens não-vendidos
+// =============================================================================
+// Itens parados por mais de 7 dias no vendor são arquivados (não destruídos).
+// O template do item vai para o datafile :merchants:returns indexado pelo
+// serial do seller. Na próxima vez que o seller logar, gump_returns notifica
+// e devolve os itens ao backpack (ou no chão como fallback).
+
+const MERCHANT_ITEM_MAX_AGE := SECONDS_IN_DAY * 7;
+
+function GetReturnsDataFile()
+	return DFOpenDataFile(":merchants:returns", DF_CREATE);
+endfunction
+
+function GetReturnsDataElem(seller_serial)
+	var df := GetReturnsDataFile();
+	return DFFindElement(df, Hex(CInt(seller_serial)), DF_CREATE);
+endfunction
+
+function GetPendingReturns(seller_serial)
+	var elem := GetReturnsDataElem(seller_serial);
+	var pending := elem.GetProp("pending");
+	if ( !pending )
+		return array{};
+	endif
+	return pending;
+endfunction
+
+function ClearPendingReturns(seller_serial)
+	var elem := GetReturnsDataElem(seller_serial);
+	elem.EraseProp("pending");
+endfunction
+
+// Move o slot `key` do merchant para a fila de devolução do seller. Não destrói.
+// Retorna 1 em sucesso, 0 em falha (slot inválido ou seller sem serial).
+function ArchiveItemForReturn(merchant, key)
+	var info := GetItemSoldInfo(merchant, key);
+	if ( !info || info == error )
+		return 0;
+	endif
+
+	var cost := info[1];
+	var template := info[2];
+	var seller_serial := CInt(cost.seller);
+	if ( !seller_serial )
+		return 0;
+	endif
+
+	var elem := GetReturnsDataElem(seller_serial);
+	var pending := elem.GetProp("pending");
+	if ( !pending )
+		pending := array{};
+	endif
+
+	pending.append(struct{
+		"template"      := template,
+		"npc_name"      := merchant.name,
+		"npc_serial"    := CInt(merchant.serial),
+		"archived_time" := polcore().systime
+	});
+	elem.SetProp("pending", pending);
+
+	// Remove o slot no merchant.
+	var data_elem := GetMerchantDataElem(Hex(merchant.serial)+"-ItemsSelling");
+	data_elem.EraseProp(CStr(key));
+
+	// Notifica o seller (online ou offline) via ObjProperty no mobile.
+	var seller := SystemFindObjectBySerial(seller_serial, SYSFIND_SEARCH_OFFLINE_MOBILES);
+	if ( seller && seller != error )
+		SetObjProperty(seller, "notif_vendor_returns", 1);
+	endif
+
+	return 1;
+endfunction
+
 //
-// Removes items that have been on the merchant for too long.
+// Garbage collector: arquiva (não destrói) itens parados há mais de 7 dias.
+// Itens com infinite=1 (lojas GM) nunca expiram.
 //
 function RemoveOldItemsForSale(merchant)
 	var selling_list := GetItemsSoldList(merchant);
-	var max_age := (SECONDS_IN_DAY*14);
-	
+	var now := polcore().systime;
+
 	foreach key in selling_list
 		var info := GetItemSoldInfo(merchant, key);
+		if ( !info || info == error )
+			sleepms(2);
+			continue;
+		endif
 		var cost := info[1];
-		
-		if ( cost.time < max_age )
-			RemoveItemForSale(merchant, key);
+
+		if ( CInt(cost.infinite) == 1 )
+			sleepms(2);
+			continue;
+		endif
+
+		if ( (now - CInt(cost.time)) > MERCHANT_ITEM_MAX_AGE )
+			ArchiveItemForReturn(merchant, key);
 		endif
 		sleepms(2);
 	endforeach
-endfunction		
+endfunction
 
 function SetMerchantLog(merchant, buyer_name, item_name, seller_name, cost)
 	var data_elem := GetPaymentsDataElem(Hex(merchant.serial));
@@ -283,6 +373,82 @@ function GetMerchantLog(merchant)
 	var data_elem := GetPaymentsDataElem(Hex(merchant.serial));
 	var my_sellings := data_elem.GetProp("sell_log");
    return my_sellings;
+endfunction
+
+// =============================================================================
+// Resolução de label para o card do vendor
+// =============================================================================
+// Receitas e pergaminhos carregam um item.desc genérico ("instrucoes de
+// fabricacao de metal", "Pergaminho de Magia") e guardam a identidade real
+// (qual receita, qual feitiço) em CProps. Esta função consulta essas CProps
+// e devolve um label legível, com fallback seguro para item.desc.
+function ResolveSellerCardLabel(item)
+	if ( !item || item == error )
+		return "";
+	endif
+
+	var cprops := item.CProps;
+	if ( cprops && cprops != error )
+		// Receitas: CProp "recipe" guarda a key em :recipes:recipes.cfg
+		var recipeKey := cprops["recipe"];
+		if ( recipeKey )
+			var recipeCfg := ReadConfigFile(":recipes:recipes");
+			if ( recipeCfg )
+				var recipeElem := FindConfigElem(recipeCfg, recipeKey);
+				if ( recipeElem )
+					var recipeName := GetConfigString(recipeElem, "name");
+					if ( recipeName && recipeName != "" )
+						return "Receita: " + recipeName;
+					endif
+				endif
+			endif
+		endif
+
+		// Pergaminhos de magia: CProp "spellinfo" tem id que resolve no SpellRegistry
+		var spellinfo := cprops["spellinfo"];
+		if ( spellinfo && TypeOf(spellinfo) == "Struct" )
+			var spellId := spellinfo.id;
+			if ( spellId )
+				var spellElem := ResolveSpell(spellId);
+				if ( spellElem && spellElem != error )
+					var spellName := GetConfigString(spellElem, "Name");
+					if ( spellName && spellName != "" )
+						return "Pergaminho: " + spellName;
+					endif
+				endif
+			endif
+		endif
+	endif
+
+	return item.desc;
+endfunction
+
+// Resume o conteúdo de um container vendido para anexar ao tooltip do card.
+// Retorna "" se o template não tem __contents.
+function FormatContainerContentsPreview(template)
+	if ( !template || template == error ) return ""; endif
+	var contents := template.__contents;
+	if ( !contents || contents == error || contents.size() == 0 ) return ""; endif
+
+	var s := "<br><BASEFONT COLOR=#c4d8e9>Dentro:</BASEFONT>";
+	var mostrados := 0;
+	foreach child in contents
+		var nome := ResolveSellerCardLabel(child);
+		if ( nome == "" || nome == error )
+			nome := "(item)";
+		endif
+		s := s + "<br>- " + nome;
+		if ( child.amount && CInt(child.amount) > 1 )
+			s := s + " x" + CStr(child.amount);
+		endif
+		mostrados += 1;
+		if ( mostrados >= 30 )
+			s := s + "<br>- ... (e mais {} itens)".format(contents.size() - 30);
+			break;
+		endif
+		sleepms(2);
+	endforeach
+	return s;
 endfunction
 
 //

@@ -1,0 +1,122 @@
+use uo;
+use os;
+use basic;
+
+include ":gumps:gumps";
+include ":gumps:gumps_ex";
+
+// .petsdomesticados
+// GM clica em um player e abre um gump com todos os pets domesticados dele.
+// Para cada pet: botao "Ir ate" (teleporta o GM ate o pet) e botao "Trazer"
+// (move o pet ate a posicao atual do GM).
+
+program command_petsdomesticados(who)
+	if (!who.cmdlevel)
+		SendSysMessage(who, "Voce nao tem permissao para usar este comando.");
+		return 0;
+	endif
+
+	SendSysMessage(who, "Selecione o jogador...", 66);
+	var alvo := Target(who, TGTOPT_NOCHECK_LOS);
+	if (!alvo)
+		SendSysMessage(who, "Cancelado.", 33);
+		return 0;
+	endif
+	if (!alvo.acctname)
+		SendSysMessage(who, "Alvo precisa ser um jogador.", 33);
+		return 0;
+	endif
+
+	var tamed := GetObjProperty(alvo, "TamedPets");
+	if (tamed == error || !tamed)
+		SendSysMessage(who, alvo.name + " nao possui pets domesticados.", 33);
+		return 0;
+	endif
+
+	// Resolve cada serial e mantem so os validos
+	var pets := array{};
+	foreach serial in tamed
+		var pet := SystemFindObjectBySerial(serial);
+		if (pet && pet.npctemplate)
+			pets.append(pet);
+		endif
+		sleepms(2);
+	endforeach
+
+	if (pets.Size() == 0)
+		SendSysMessage(who, alvo.name + " nao possui pets vivos no momento.", 33);
+		return 0;
+	endif
+
+	var gump := GFCreateGump();
+	var width  := 510;
+	var row_h  := 32;
+	var height := 90 + pets.Size() * row_h + 30;
+	GFResizePic(gump, 0, 0, GFCfgConst("Defaults", "BackGround"), width, height);
+	GFResizePic(gump, 10, 10, GFCfgConst("Defaults", "ForeGround"), width - 20, height - 20);
+
+	GFTextMid(gump, 10, 25, width - 20, 2100, "Pets de " + alvo.name);
+	GFTextLine(gump, 25,  55, 53, "Pet");
+	GFTextLine(gump, 380, 55, 53, "IR");
+	GFTextLine(gump, 445, 55, 53, "Trazer");
+
+	var y := 80;
+	var i := 1;
+	foreach pet in pets
+		var nome := pet.name;
+		if (pet.dead)
+			nome := nome + " (morto)";
+		endif
+		GFTextLine(gump, 25, y, 2100, nome);
+
+		var loc := pet.realm + " " + CStr(pet.x) + "," + CStr(pet.y) + "," + CStr(pet.z);
+		GFTextLine(gump, 25, y + 12, 1153, loc);
+
+		// Botao "IR" (teleporta GM ate o pet) -> id = 100 + i
+		GFAddButton(gump, 385, y, 2117, 2118, GF_CLOSE_BTN, 100 + i);
+		// Botao "Trazer" (move o pet ate o GM) -> id = 200 + i
+		GFAddButton(gump, 455, y, 2117, 2118, GF_CLOSE_BTN, 200 + i);
+
+		y += row_h;
+		i += 1;
+	endforeach
+
+	var input := GFSendGump(who, gump);
+	var btn := input[0];
+
+	if (btn <= 0)
+		return 0;
+	endif
+
+	var idx := 0;
+	var acao := "";
+	if (btn > 200)
+		idx := btn - 200;
+		acao := "trazer";
+	elseif (btn > 100)
+		idx := btn - 100;
+		acao := "ir";
+	endif
+
+	if (idx < 1 || idx > pets.Size())
+		return 0;
+	endif
+
+	var pet := pets[idx];
+	if (!pet)
+		SendSysMessage(who, "Pet nao encontrado.", 33);
+		return 0;
+	endif
+
+	if (acao == "ir")
+		MoveObjectToLocation(who, pet.x, pet.y, pet.z, pet.realm, MOVEOBJECT_FORCELOCATION);
+		SendSysMessage(who, "Teleportado ate " + pet.name + ".", 66);
+	elseif (acao == "trazer")
+		MoveObjectToLocation(pet, who.x, who.y, who.z, who.realm, MOVEOBJECT_FORCELOCATION);
+		SendSysMessage(who, pet.name + " foi trazido ate voce.", 66);
+	endif
+
+	// Reabre o gump para mais acoes
+	start_script(":commands:gm/petsdomesticados", who);
+
+endprogram

@@ -148,6 +148,33 @@ function GetMageSchoolConfigPaths()
 endfunction
 
 /*
+ * GetAllSpellConfigPaths - Returns config paths for every castable spell school
+ *
+ * The full set mirrored by GetConfigFromId's ID ranges. Useful for enumerating
+ * every spell across schools (e.g. building a picker). books.cfg is excluded:
+ * it holds spellbook definitions, not castable spells.
+ *
+ * @return Array of spell config paths
+ */
+function GetAllSpellConfigPaths()
+    return array{
+        ":spells:config/cantrips",
+        ":spells:config/evocation",
+        ":spells:config/necromancy",
+        ":spells:config/illusion",
+        ":spells:config/swordmage",
+        ":spells:config/priest",
+        ":spells:config/shaman",
+        ":spells:config/druid",
+        ":spells:config/paladin",
+        ":spells:config/demonhunter",
+        ":spells:config/trickster",
+        ":spells:config/shinobi",
+        ":spells:config/bardo"
+    };
+endfunction
+
+/*
  * IsCantrip - Check if a spell ID is a cantrip
  *
  * @param spell_id - The spell ID to check

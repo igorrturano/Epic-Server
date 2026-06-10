@@ -5,7 +5,9 @@ use cfgfile;
 include ":timedScripts:timedScripts";
 include ":alchemy:alchemy";
 
-program drink_blue(who, potion)
+program drink_blue(params)
+	var who := params[1];
+	var potion := params[2];
 	EraseObjProperty(who, "IsMeditating");
 	EraseObjProperty(who, "HealTimer");
 	if (!Accessible(who, potion))
