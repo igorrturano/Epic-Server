@@ -315,7 +315,19 @@ program MerchantMenu(params)
 	elseif (input[0] < 100 && input[0] >= 1) // alugar quarto
 
 		if (souInquilino)
-			SendSysMessageEx(player, "Voce ja tem um quarto.");
+			SendSysMessageEx(player, "Voce ja tem um quarto nesta estalagem.");
+			return 1;
+		endif
+
+		// Bloqueio global: 1 quarto por player no mundo todo. Varre todos os
+		// estalajadeiros cadastrados em InnKeeper e recusa se o player ja for
+		// inquilino em algum outro. Para liberar, ele precisa entregar o quarto
+		// antigo (botao "Entregar Quarto" do estalajadeiro original).
+		var outraEstalagem := _AchaQuartoExistente(player.serial, npc.serial);
+		if (outraEstalagem != "")
+			SendSysMessageEx(player,
+				"Voce ja possui um quarto em '" + outraEstalagem + "'. Entregue-o antes de alugar outro.",
+				SSM_FAIL);
 			return 1;
 		endif
 
@@ -661,4 +673,38 @@ function innerKeeperOpt(npc, player)
 
 	endforeach
 
+endfunction
+
+// Retorna o nome do NPC estalajadeiro onde o player ja possui quarto, ou
+// string vazia se nao tiver em lugar nenhum. Usado pra bloquear aluguel
+// duplicado entre estalagens. `exclude_npc_serial` pula o NPC corrente
+// (que ja foi checado via souInquilino) pra evitar dupla varredura.
+function _AchaQuartoExistente(player_serial, exclude_npc_serial)
+	var innkeepers := GetGlobalProperty("InnKeeper");
+	if (innkeepers == error || TypeOf(innkeepers) != "Array")
+		return "";
+	endif
+	foreach serial in innkeepers
+		if (CInt(serial) == CInt(exclude_npc_serial))
+			sleepms(2);
+			continue;
+		endif
+		var other := SystemFindObjectBySerial(CInt(serial));
+		if (other == error)
+			sleepms(2);
+			continue;
+		endif
+		var quartos := GetObjProperty(other, "quartos");
+		if (quartos == error || TypeOf(quartos) != "Array")
+			sleepms(2);
+			continue;
+		endif
+		foreach q in quartos
+			if (CInt(q.inquilino) == CInt(player_serial))
+				return other.name;
+			endif
+		endforeach
+		sleepms(2);
+	endforeach
+	return "";
 endfunction
