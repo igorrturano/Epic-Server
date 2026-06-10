@@ -33,12 +33,12 @@ program spawn_mochilas(who)
 		var c := couros[i];
 		var lineY := startY + (i - 1);
 
-		var comum := CreateMochila(MOCHILA_COMUM_OBJTYPE, c, "Mochila de", startX, lineY, sz, realm);
+		var comum := CreateMochila(MOCHILA_COMUM_OBJTYPE, c, startX, lineY, sz, realm);
 		if (comum)
 			spawnados := spawnados + 1;
 		endif
 
-		var reforcada := CreateMochila(MOCHILA_REFORCADA_OBJTYPE, c, "Mochila reforcada de", startX + 1, lineY, sz, realm);
+		var reforcada := CreateMochila(MOCHILA_REFORCADA_OBJTYPE, c, startX + 1, lineY, sz, realm);
 		if (reforcada)
 			spawnados := spawnados + 1;
 		endif
@@ -48,13 +48,12 @@ program spawn_mochilas(who)
 
 endprogram
 
-function CreateMochila(objtype, couro, prefixoNome, x, y, z, realm)
+function CreateMochila(objtype, couro, x, y, z, realm)
 	var item := CreateItemAtLocation(x, y, z, objtype, 1, realm);
 	if (!item)
 		return 0;
 	endif
 	item.color := couro.color;
-	SetName(item, prefixoNome + " " + couro.name);
 	SetObjProperty(item, "#mochila_tier", couro.tier);
 	SetObjProperty(item, "#mochila_couro_objtype", couro.objtype);
 	ApplyMochilaTier(item);
