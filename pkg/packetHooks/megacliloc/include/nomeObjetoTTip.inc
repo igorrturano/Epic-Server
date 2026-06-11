@@ -122,7 +122,7 @@ function IsLoreItem(objeto)
 endfunction
 
 function AdicionaLore(objeto,nomeObjeto)
-	var item_info := GetLoreItemInfo(objeto.objtype);
+	var item_info := GetLoreItemInfoForItem(objeto);
 	if (item_info)
 		nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#FFD700>Item Lendário";
 		nomeObjeto := nomeObjeto + "<br><BASEFONT COLOR=#FFFFFF>Povo: " + item_info.culture_name;

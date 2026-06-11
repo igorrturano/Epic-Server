@@ -1,0 +1,61 @@
+use uo;
+use os;
+use util;
+
+include ":containers:mochilaPackhorse";
+
+// Comando GM: cria todas as mochilas de packhorse (Comum + Reforcada) em todos
+// os 9 tipos de couro com tier oficial (resourceList.cfg). Total 18 mochilas
+// no chao em duas colunas (Comum a esquerda, Reforcada a direita), uma linha
+// por couro. Cada mochila ja vem com #mochila_tier, #mochila_couro_objtype,
+// cor herdada do couro e nome composto — pronta pra equipar num packhorse.
+program spawn_mochilas(who)
+
+	var couros := array{
+		struct{ objtype := 0xee45, name := "couro curtido",       tier := 1, color := 0    },
+		struct{ objtype := 0xef23, name := "couro negro",         tier := 1, color := 1175 },
+		struct{ objtype := 0xef24, name := "couro peludo",        tier := 2, color := 1807 },
+		struct{ objtype := 0xef25, name := "couro efervecido",    tier := 3, color := 2513 },
+		struct{ objtype := 0xef26, name := "couro polar",         tier := 5, color := 1150 },
+		struct{ objtype := 0xef20, name := "couro escamoso",      tier := 5, color := 2976 },
+		struct{ objtype := 0xed29, name := "couro draconiano",    tier := 5, color := 1218 },
+		struct{ objtype := 0xef27, name := "couro de gigante",    tier := 5, color := 2598 },
+		struct{ objtype := 0xc605, name := "couro das profundezas", tier := 5, color := 1109 }
+	};
+
+	var startX := who.x + 2;
+	var startY := who.y;
+	var sz     := who.z;
+	var realm  := who.realm;
+
+	var spawnados := 0;
+	for i := 1 to couros.Size()
+		var c := couros[i];
+		var lineY := startY + (i - 1);
+
+		var comum := CreateMochila(MOCHILA_COMUM_OBJTYPE, c, startX, lineY, sz, realm);
+		if (comum)
+			spawnados := spawnados + 1;
+		endif
+
+		var reforcada := CreateMochila(MOCHILA_REFORCADA_OBJTYPE, c, startX + 1, lineY, sz, realm);
+		if (reforcada)
+			spawnados := spawnados + 1;
+		endif
+	endfor
+
+	SendSysMessage(who, "Spawn de mochilas: " + spawnados + "/18 criadas.");
+
+endprogram
+
+function CreateMochila(objtype, couro, x, y, z, realm)
+	var item := CreateItemAtLocation(x, y, z, objtype, 1, realm);
+	if (!item)
+		return 0;
+	endif
+	item.color := couro.color;
+	SetObjProperty(item, "#mochila_tier", couro.tier);
+	SetObjProperty(item, "#mochila_couro_objtype", couro.objtype);
+	ApplyMochilaTier(item);
+	return item;
+endfunction

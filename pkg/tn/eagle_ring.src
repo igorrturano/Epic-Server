@@ -18,6 +18,7 @@ program Eagle_ring(who, ring)
 		SetObjProperty(who, "firstclick", 0);
 		TS_LowerDuration(who, "stamina", -1);
 		TS_LowerDuration(who, "velocidade", -1);
+		who.graphic := who.trueobjtype;
 		var oldname := GetObjProperty(who, "oldname");
 		who.name := CStr(oldname);
 		var oldrace := GetObjProperty(who, "oldrace");
@@ -30,7 +31,7 @@ program Eagle_ring(who, ring)
 			SetObjProperty(who, "oldname", CStr(oldname));
 			var oldrace := who.title_race;
 			SetObjProperty(who, "oldrace", CStr(oldrace));
-			var oldgraphic := who.graphic;
+			var oldgraphic := who.trueobjtype;
 			SetObjProperty(who, "oldgraphic", oldgraphic);
 			TS_StartTimer(who, "velocidade", 40);
 			TS_StartTimer(who, "stamina", 40);

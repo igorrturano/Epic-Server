@@ -1,0 +1,108 @@
+use uo;
+use os;
+use guilds;
+
+include ":timedscripts:timedScripts";
+include ":medicine:util/diseaseConstants";
+include ":faccao:faccao";
+include ":faccao:membership";
+include ":ligafaccao:include/tax";
+include ":ligafaccao:include/coins";
+include ":gumps:/include/gumps";
+include "include/say";
+include ":gumps:/include/gumps_ex";
+
+// Curandeiro da Faccao — programa chamado por ligafaccao/main.src
+// params[1]=npc  params[2]=player
+
+program CurandeiroFaccao(params)
+    var npc    := params[1];
+    var player := params[2];
+    if (!npc || !player) return; endif
+
+    SetObjProperty(npc, "#occupied", 1);
+
+    if (player.hidden)
+        player.hidden := 0;
+        SendSysMessageEx(player, "Voce se revelou ao curandeiro.", SSM_FAIL);
+    endif
+
+    var guild_id  := GetObjProperty(npc, "guild");
+    var guild     := guild_id ? FindGuild(guild_id) : 0;
+    var is_member := guild ? IsMemberOfFaccao(guild, player) : 0;
+
+    var diseases_system := GetObjProperty(player, "Diseases_System");
+    if (!diseases_system || !diseases_system.diseases)
+        PrintTextAbove(npc, "Voce nao esta doente, aventureiro!");
+        EraseObjProperty(npc, "#occupied");
+        return;
+    endif
+
+    var sintomas := diseases_system.diseases.size();
+    if (sintomas == 0)
+        PrintTextAbove(npc, "Voce esta saudavel!");
+        EraseObjProperty(npc, "#occupied");
+        return;
+    endif
+
+    var grade   := diseases_system.grade;
+    var grade_v := 1;
+    if    (grade == DISEASE_GRADES::SERIOUS)   grade_v := 3;
+    elseif (grade == DISEASE_GRADES::MODERATE) grade_v := 2;
+    endif
+
+    var custo_base  := CInt(GetObjProperty(npc, "custo"));
+    if (!custo_base) custo_base := 10; endif
+    var _tax_mult := GetMerchantTaxMultiplier(guild) * GetGuildTaxMultiplier(guild, player);
+    var valor_final := CInt(sintomas * grade_v * custo_base * _tax_mult);
+
+    if (is_member)
+        PrintTextAbove(npc, "Para um irmao do Pacto, e gratuito!");
+    else
+        PrintTextAbove(npc, "Tratamento: {} moedas de cobre.".format(valor_final));
+
+        var total_coins := CountCoins(player);
+        if (total_coins < valor_final)
+            PrintTextAbove(npc, "Voce nao tem moedas suficientes.");
+            EraseObjProperty(npc, "#occupied");
+            return;
+        endif
+
+        var gump := GFCreateGump(200, 100);
+        GFResizePic(gump, 0, 0, 9270, 360, 160);
+        GFTextMid(gump, 0, 20, 360, 1153, "Curandeiro da Faccao");
+        GFTextMid(gump, 0, 55, 360, 2100, "Custo: {} moedas de cobre".format(valor_final));
+        GFTextMid(gump, 0, 80, 360, 2100, "Deseja prosseguir?");
+        GFAddButton(gump, 80, 120, 4005, 4007, GF_CLOSE_BTN, 1);
+        GFTextMid(gump, 70, 122, 60, 2100, "Sim");
+        GFAddButton(gump, 220, 120, 4005, 4007, GF_CLOSE_BTN, 2);
+        GFTextMid(gump, 210, 122, 60, 2100, "Nao");
+
+        var result := GFSendGump(player, gump);
+        if (!result || result[0] != 1)
+            PrintTextAbove(npc, "Tratamento cancelado.");
+            EraseObjProperty(npc, "#occupied");
+            return;
+        endif
+
+        if (!TakeCoins(player, valor_final))
+            PrintTextAbove(npc, "Erro ao processar pagamento.");
+            EraseObjProperty(npc, "#occupied");
+            return;
+        endif
+
+        // 100% ao bau da faccao
+        if (guild)
+            var atual := CInt(guild.GetProp("money"));
+            guild.SetProp("money", atual + valor_final);
+            AddReport(guild, "{} curou {} por {} moedas".format(npc.name, player.name, valor_final));
+        endif
+    endif
+
+    TS_LowerDuration(player, "disease", -1);
+    SendSysMessageEx(player, "Todas as doencas foram removidas.", SSM_INFO);
+    PrintTextAbove(npc, "Tratamento concluido com sucesso!");
+
+    EraseObjProperty(npc, "#occupied");
+    return 1;
+endprogram

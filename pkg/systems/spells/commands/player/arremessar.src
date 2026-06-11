@@ -166,6 +166,9 @@ program arremesso(params)
 				AP_ConsumeVital(who, "Stamina", 20);
 			endif
 		endif
+	//Sapador jogar poção
+	elseif(MobileWrapper(who).HasAbility(ABILITY_ID::ENGENHARIA_DE_GATILHOS) && getobjProperty(targ, "science") == BUFF)
+		AP_ConsumeVital(who, "Stamina", 5);
 	elseif (who.weapon.IsThrowingWeapon())
 		AP_ConsumeVital(who, "Stamina", 10);
 	else
@@ -264,10 +267,16 @@ program arremesso(params)
 			else
 				PrintTextAbove(alvo, "*Foi acertado por " + targ.name + "*");
 				PlaySoundEffect(alvo, 0x136);
-				DealDamage(alvo, dmg, DAMAGE_TYPE::BLUNT, who);
-				PlaySoundEffect(alvo, 0x521);
-				if (alvo.isSpiderEggSac())
-					var pid := Start_Script(":lighting:onArremessado", array{ who, targ });
+				if(MobileWrapper(who).HasAbility(ABILITY_ID::ENGENHARIA_DE_GATILHOS) && getobjProperty(targ, "science") == "Buff")
+					var pot := CStr(targ.getCfgElem().efeito);
+					pot := ":alchemy:"+pot ;
+					var pid := Start_Script(pot, array{ alvo, targ });
+				else
+					DealDamage(alvo, dmg, DAMAGE_TYPE::BLUNT, who);
+					PlaySoundEffect(alvo, 0x521);
+					if (alvo.isSpiderEggSac())
+						var pid := Start_Script(":lighting:onArremessado", array{ who, targ });
+					endif
 				endif
 				return 1;
 			endif
