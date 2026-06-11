@@ -204,7 +204,9 @@ function AddItemForSale(merchant, seller, item, cost_type, cost_name, cost_amt, 
 		return temp;
 	endif
 
-	var template := CreateItemTemplate(item);
+	// capture_contents=1: preserva itens dentro de container vendido (ver
+	// :uose:/include/merchant para a mesma decisão).
+	var template := CreateItemTemplate(item, 1);
 	if ( template == error )
 		return template;
 	endif
@@ -244,14 +246,13 @@ endfunction
 // Returns the next available item number in the elem.
 //
 function FindAvailableNumber(data_elem)
-	const MIN_VALUE := 0xFF;
-	const MAX_VALUE := 0x1fe;
-	//Range = 255
+	const MIN_VALUE := 0xFF;   // 255
+	const MAX_VALUE := 0x1fe;  // 510 — range real = 256 slots
 
 	var new_num := CInt(data_elem.GetProp("LastNum"));
 	if ( new_num < MIN_VALUE )
 		return MIN_VALUE;
-	elseif ( new_num > MAX_VALUE )
+	elseif ( new_num >= MAX_VALUE )
 		var i := MIN_VALUE;
 		for ( i; i<=MAX_VALUE; i:=i+1 )
 			if ( !data_elem.GetProp(CStr(i)) )
@@ -259,7 +260,7 @@ function FindAvailableNumber(data_elem)
 			endif
 			sleepms(2);
 		endfor
-		// For some reason... no new numbers are available.
+		// Pool esgotado de verdade.
 		return error;
 	else
 		return new_num+1;
@@ -283,15 +284,24 @@ endfunction
 //
 // Removes items that have been on the merchant for too long.
 //
+// AVISO: esta função é dead code no momento — ninguém chama. Mantida apenas
+// por compatibilidade. O sistema de devolução de itens parados há mais de
+// 7 dias existe somente no fluxo de :uose:/include/merchant
+// (ArchiveItemForReturn + RemoveOldItemsForSale lá), que é usado pelo
+// uosemerchant e pelo merchantfaccao. O pcmerchant/guild_merchant ainda
+// não tem esse sistema. Se for ressuscitar isto, a comparação correta é
+// (polcore().systime - cost.time) > max_age — a versão antiga aqui
+// comparava o timestamp absoluto contra o delta e deletaria tudo.
 function RemoveOldItemsForSale(merchant)
 	var selling_list := GetItemsForSale(merchant);
 	var max_age := (SECONDS_IN_DAY*14);
+	var now := polcore().systime;
 
 	foreach key in selling_list
 		var info := GetItemsForSaleInfo(merchant, key);
 		var cost := info[1];
 
-		if ( cost.time < max_age )
+		if ( (now - CInt(cost.time)) > max_age )
 			RemoveItemForSale(merchant, key);
 		endif
 		sleepms(2);

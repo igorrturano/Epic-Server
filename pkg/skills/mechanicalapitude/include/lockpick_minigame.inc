@@ -8,6 +8,7 @@ include ":attributes:attributes";
 include ":charactercreation:habilidades";
 include ":gumps:/include/epicGumps";
 include ":gumps:yesNo";
+include ":chestspawn:include/trancaEspecial";
 //1640
 // Constantes de mensagem
 const SSM_SUCCESS := 64;
@@ -49,21 +50,39 @@ function CalculatePinCount(who, diff, mec_skill)
 endfunction
 
 function mini_game(who, diff, mec_skill, chest)
-    // Calculate dynamic number of pins
-    var total_pins := CalculatePinCount(who, diff, mec_skill);
-    
+    var is_esp := IsTrancaEspecial(chest);
+
+    // Tranca especial: pinos escalonados por tier do baú (3-6, ignora skill/diff).
+    // Normal: fórmula original baseada em skill_diff.
+    var total_pins;
+    if (is_esp)
+        total_pins := _PinsByTier(CInt(GetObjProperty(chest, "level")));
+    else
+        total_pins := CalculatePinCount(who, diff, mec_skill);
+    endif
+
+    if (is_esp)
+        TrancaDebug("=== MINIGAME PINOS INICIADO ===");
+        TrancaDebug("Player: " + who.name + " | Chest: " + Hex(chest.objtype) + " level=" + GetObjProperty(chest, "level"));
+        TrancaDebug("Skill: " + mec_skill + " | Diff: " + diff + " | Pinos: " + total_pins, who);
+    endif
+
     // Modify pins array based on total_pins
     pins := array{};
     var i;
     for(i := 1; i <= total_pins; i++)
         pins.append(6249 + (i-1)); // Assuming original pin IDs start at 6249
     endfor
-    
+
     // Modify sweet_spots and other arrays to match new pin count
     sweet_spots := GenerateSweetSpots(mec_skill, total_pins);
     current_attempts := array{};
     correct_pins := array{};
     tension := 0.0;
+
+    if (is_esp)
+        TrancaDebug("Sweet spots: " + sweet_spots);
+    endif
     
     // IMPORTANTE: Reiniciar a contagem de pinos mágicos usados ao iniciar uma nova tentativa
     if(GetObjProperty(chest, "level") == 6)
@@ -89,7 +108,7 @@ function mini_game(who, diff, mec_skill, chest)
         // Processar interação com os pinos
         if(Res[0] >= 11 && Res[0] <= (10 + total_pins))
             var pin_index := Res[0] - 10;
-            TryPickPin(who, pin_index);
+            TryPickPin(who, pin_index, chest);
         endif
         
         // Botões de magia para fechaduras level 6
@@ -281,30 +300,36 @@ function CreateLockpickGump(who, total_pins, chest)
     return gump;
 endfunction
 
-function TryPickPin(who, pin_index)
+function TryPickPin(who, pin_index, chest)
     // Não permite reposicionar pinos já acertados
     if(correct_pins[pin_index])
         return;
     endif
-    
+
     var current_position := RandomInt(10) + 1;
     var sweet_spot := sweet_spots[pin_index];
-    
+
     // Chance fixa de 20% de acertar o sweet spot
     var success := (RandomInt(5) == 0);
-    
+
     // Se sucesso, força a posição para o sweet spot
     if(success)
         current_position := sweet_spot;
     endif
-    
+
     // Calcula a tensão baseado na distância do sweet spot
     var tension_increase := Abs(current_position - sweet_spot);
     tension += tension_increase * 0.1;
-    
+
     // Adiciona a tentativa
     current_attempts[pin_index] := current_position;
-    
+
+    if (IsTrancaEspecial(chest))
+        var hit_text := (current_position == sweet_spot ? "ACERTOU" : "ERROU");
+        var tensao := CInt(tension*100)/100.0;
+        TrancaDebug("Pino " + pin_index + ": pos=" + current_position + " sweet=" + sweet_spot + " (" + hit_text + ") tensao=" + tensao, who);
+    endif
+
     // Mensagem de feedback
     if(current_position == sweet_spot)
         SendSysMessageEx(who, "Pino " + pin_index + " destravado!", SSM_SUCCESS);
@@ -513,6 +538,18 @@ function CalculateIdentifiablePins(who, chest)
     if(ident_mana < 0)
         ident_mana := 0;
     endif
-    
+
     return ident_mana;
+endfunction
+
+// Pinos escalonados por tier do baú especial (3-6).
+function _PinsByTier(tier)
+    case (tier)
+        1: return 3;                    // sempre 3
+        2: return 3 + RandomInt(2);     // 3 ou 4
+        3: return 4 + RandomInt(2);     // 4 ou 5
+        4: return 5 + RandomInt(2);     // 5 ou 6
+        5: return 6;                    // sempre 6
+        default: return 3 + RandomInt(4); // fallback 3-6
+    endcase
 endfunction

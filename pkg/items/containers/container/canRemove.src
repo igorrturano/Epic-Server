@@ -45,10 +45,6 @@ program canRemove(mobile, container, item, move_type)
 				return 0;
 			endif
 
-			if (!mobWrapper.HasFreeHand())
-				return 0;
-			endif
-
 			if (mobile.frozen || mobile.paralyzed)
 				SendSysMessage(mobile, "Voce esta paralizado.");
 				return 0;
